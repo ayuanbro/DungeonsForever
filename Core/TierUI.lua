@@ -54,7 +54,7 @@ TT.SPEC_BTN_GAP = 8
 TT.SPEC_BTN_PAD = 10
 TT.SPEC_BTN_Y   = TT.TOPCARD_TOP + TT.INSET + 20
 TT.SPEC_META_Y  = TT.TOPCARD_TOP + 10
-TT.MODE_KEYS    = { "rotation", "macro", "cq", "text" }
+TT.MODE_KEYS    = { "rotation", "macro", "talents", "cq", "text" }
 TT.MODE_H       = 24
 TT.MODE_GAP     = 8
 TT.MODE_Y       = TT.TOPCARD_TOP + TT.INSET + 52
@@ -140,7 +140,7 @@ local function DB()
     end
     if not s.tab then s.tab = T.pages[1].key end
     if s.nav ~= "spec" then s.nav = "rank" end
-    if s.mode ~= "rotation" and s.mode ~= "macro" and s.mode ~= "cq" then s.mode = "text" end
+    if s.mode ~= "rotation" and s.mode ~= "macro" and s.mode ~= "talents" and s.mode ~= "cq" then s.mode = "text" end
     return s
 end
 
@@ -287,6 +287,7 @@ TT.SEC_TITLE = {
 TT.MODE_TITLE = {
     rotation = L["输出循环"],
     macro = L["宏命令"],
+    talents = L["天赋"],
     cq = L["职业任务"],
     text = L["文字攻略"],
 }
@@ -1238,6 +1239,7 @@ end
 RenderSpec = function()
     TT.__renderGen = (TT.__renderGen or 0) + 1
     local cls, spec, data = TT.PaintHeader()
+    if ns.TalentTabUI then ns.TalentTabUI.Hide() end
     if not data then return end
     local db = DB()
 
@@ -1682,6 +1684,7 @@ function TT.HideSpec()
     TT.HideSpecContent()
     if ns.ClassCombatUI then ns.ClassCombatUI.HideRows() end
     if ns.ClassQuestUI then ns.ClassQuestUI.Hide() end
+    if ns.TalentTabUI then ns.TalentTabUI.Hide() end
 end
 
 local function PY()
@@ -1700,6 +1703,8 @@ function TT.Render()
         local mode = DB().mode
         local CQUI = ns.ClassQuestUI
         if CQUI then CQUI.Hide() end
+        local TUI = ns.TalentTabUI
+        if TUI then TUI.Hide() end
         if mode == "rotation" and CU then
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()
@@ -1708,6 +1713,10 @@ function TT.Render()
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()
             CU.RenderMacro()
+        elseif mode == "talents" and ns.TalentTrees then
+            TT.PlaceScroll(TT.MODE_TOP)
+            TT.HideSpecContent()
+            if TUI then TUI.Render() end
         elseif mode == "cq" and CQUI then
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()

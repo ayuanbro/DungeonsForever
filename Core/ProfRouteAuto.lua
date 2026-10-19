@@ -8,7 +8,6 @@ ns.ProfRouteAuto = RA
 local CALLER = "DungeonsForever"
 local CAP = 300
 local MAX_STALE = 2
-local MAX_PER_RECIPE = 3
 local CACHE_TTL = 600
 local G_YELLOW, G_GREEN = 0.5, 0.05
 
@@ -18,6 +17,7 @@ local SCHEME_LABEL = {
     matcost = "材料成本",
     crafts = "次数最少",
     optim = "乐观计数",
+    fishing = "纯钓鱼",
 }
 function RA.SchemeOrder() return SCHEME_ORDER end
 function RA.SchemeLabel(s)
@@ -26,6 +26,8 @@ function RA.SchemeLabel(s)
 end
 
 function RA.Available()
+    local bridge=ns.AuctionBridge
+    if bridge and bridge.PriceReady then return bridge.PriceReady() end
     return type(Auctionator) == "table"
         and type(Auctionator.API) == "table"
         and type(Auctionator.API.v1) == "table"
@@ -42,6 +44,7 @@ local priceCache = {}
 local NEG_TTL = 60
 
 local function AHPrice(id)
+    if not RA.Available() then return nil end
     local c = priceCache[id]
     if c ~= nil then
         if c ~= false then return c end
@@ -75,22 +78,23 @@ end
 local function VendorPrice(id)
     if ns.VendorPriceDB then
         local ok, p = pcall(ns.VendorPriceDB.GetPrice, id)
-        if ok and type(p) == "number" and p > 0 then return p end
+        if ok and type(p) == "number" and p >= 0 then return p end
     end
-    if not RA.Available() then return nil end
-    local fn = Auctionator.API.v1.GetVendorPriceByItemID
-    if type(fn) ~= "function" then return nil end
-    local p = CallAPI(fn, id)
-    if type(p) ~= "number" or p <= 0 then return nil end
-    return p
+    return nil
 end
 
 local function MatPrice(id, soldSet)
     local v = VendorPrice(id)
-    if soldSet[id] then return v end
+    local db=ns.VendorPriceDB
+    local hasSupplier = db and db.GetSuppliers and #db.GetSuppliers(id)>0
     local a = AHPrice(id)
+    if hasSupplier then return v or a end
     if a and v and v < a then return v end
     return a or v
+end
+function RA.VendorMaterialOf(id)
+    local db=ns.VendorPriceDB
+    return db and db.GetSuppliers and #db.GetSuppliers(id)>0 or false
 end
 
 local sellCache = {}
@@ -117,6 +121,21 @@ local function NPCSellPrice(id)
     end
     if p then sellCache[id] = p end
     return p
+end
+
+local function BasePrice(id)
+    local buy = VendorPrice(id)
+    if buy then return buy end
+    return NPCSellPrice(id)
+end
+
+local function SupplierName(id)
+    local db = ns.VendorPriceDB
+    if not db or not db.GetSuppliers then return nil end
+    local ok, list = pcall(db.GetSuppliers, id)
+    if not ok or type(list) ~= "table" then return nil end
+    local first = list[1]
+    return first and (first.npcName or first.name) or nil
 end
 
 local function ClientKnown(id)
@@ -150,6 +169,21 @@ end
 function RA.NPCSellPriceOf(itemID)
     if not itemID then return nil end
     return NPCSellPrice(itemID)
+end
+
+function RA.NPCBuyPriceOf(itemID)
+    if not itemID then return nil end
+    return VendorPrice(itemID)
+end
+
+function RA.NPCBuySupplierOf(itemID)
+    if not itemID then return nil end
+    return SupplierName(itemID)
+end
+
+function RA.NPCBasePriceOf(itemID)
+    if not itemID then return nil end
+    return BasePrice(itemID)
 end
 
 function RA.MatListCost(mats)
@@ -250,6 +284,23 @@ function RA.SpellKnown(spell)
     return LearnKnown(spell)
 end
 
+local function ClientRecipe(seed,spell,slug)
+    local rec={}; for k,v in pairs(seed) do rec[k]=v end
+    local canonical
+    if rec.mats or rec.learn then
+        canonical={spell=spell or seed.spell or seed[1],item=rec.makes or rec.item,count=rec.count or 1,mats=rec.mats}
+    else
+        canonical={spell=spell or seed[1],item=rec[2],count=rec[3] or 1,mats=rec[12]}
+    end
+    if ns.ProfEconomy and ns.ProfEconomy.ResolveRecipe then canonical=ns.ProfEconomy.ResolveRecipe(canonical,slug) end
+    if rec.mats or rec.learn then rec.mats=canonical.mats; rec.count=canonical.count; rec.makes=canonical.item
+    else rec[12]=canonical.mats; rec[3]=canonical.count; rec[2]=canonical.item end
+    rec.clientPending=canonical.clientPending
+    rec.dataSource=canonical.dataSource
+    rec.clientUnavailable=canonical.clientUnavailable
+    return rec
+end
+
 local function BuildCandidates(slug, opts)
     local _rf = ns.EnsureProfRecipes
     local Rg = _rf and _rf()[slug]
@@ -262,20 +313,21 @@ local function BuildCandidates(slug, opts)
     end
 
     local cands, recOf = {}, {}
-    for _, rec in ipairs(Rg.rows or {}) do
+    for _, seed in ipairs(Rg.rows or {}) do
+        local rec=ClientRecipe(seed,nil,slug)
         local spell, learn, yellow, green, grey = rec[1], rec[7], rec[8], rec[9], rec[10]
         local reagents = rec[12]
         if type(spell) == "number" and type(learn) == "number"
            and type(grey) == "number" and grey > learn
            and type(reagents) == "table" and #reagents > 0 then
-            local ok = true
-            local skipFormula = opts.noFormula and opts.scheme ~= "cheapest"
-            if ok and skipFormula and rec[13] then
-                local src = rec[14]
-                if not (type(src) == "table" and type(src.vendors) == "table" and #src.vendors > 0) then
-                    ok = false
-                end
-            end
+            local ok = not rec.clientUnavailable
+            local economy=ns.ProfEconomy
+            local formula=economy and economy.FormulaFor(economy.Normalize(rec,slug,"rows"))
+            if formula and not formula.usable then ok=false end
+            local policy=ns.ProfEconomy and ns.ProfEconomy.Policy(opts.exclusions or ns.ProfEconomy.GetPolicies(slug),{key=slug..":"..spell,spell=spell})
+            if policy then ok=false end
+            local rt=ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[spell]
+            if rt and rt.cooldown then ok=false end
             if ok and opts.learnedOnly and not LearnKnown(spell) then ok = false end
             if ok then
                 local cost, unpriced = 0, false
@@ -289,15 +341,10 @@ local function BuildCandidates(slug, opts)
                 end
                 if ok then
                     local itemID = rec[2]
-                    local f = rec[13]
-                    local fcost = 0
-                    if type(f) == "table" and type(f[1]) == "number" and not LearnKnown(spell) then
-                        fcost = MatPrice(f[1], soldSet) or 0
-                    end
                     local base, unknown = 0, false
                     for _, m in ipairs(reagents) do
                         if not ClientKnown(m[1]) then unknown = true end
-                        local sp = NPCSellPrice(m[1])
+                        local sp = BasePrice(m[1])
                         if sp then base = base + sp * (m[2] or 1) end
                     end
                     local cY = (type(yellow) == "number") and yellow or learn
@@ -306,7 +353,8 @@ local function BuildCandidates(slug, opts)
                         learn = learn, yellow = cY,
                         green = (type(green) == "number") and green or yellow or learn,
                         grey = grey, mats = reagents, cost = cost, unpriced = unpriced,
-                        fcost = fcost, base = base, cd = (rec[4] == "Transmutes") or nil,
+                        formula=formula,
+                        base = base, cd = (rec[4] == "Transmutes") or nil,
                         unknown = unknown or nil,
                         learnO = math.max(1, math.min(learn, cY - 25)),
                     }
@@ -316,12 +364,17 @@ local function BuildCandidates(slug, opts)
         end
     end
     if LV and type(LV.rinfo) == "table" then
-        for spell, ri in pairs(LV.rinfo) do
+        for spell, seed in pairs(LV.rinfo) do
+            local ri=ClientRecipe(seed,spell,slug)
             if type(spell) == "number" and not recOf[spell]
                and type(ri.learn) == "number" and type(ri.grey) == "number"
                and ri.grey > ri.learn
                and type(ri.mats) == "table" and #ri.mats > 0 then
-                local ok = not (opts.learnedOnly and not LearnKnown(spell))
+                local ok = not ri.clientUnavailable and not (opts.learnedOnly and not LearnKnown(spell))
+                local economy=ns.ProfEconomy
+                local recipe=economy and economy.FindRecipe(slug,spell)
+                local formula=recipe and economy.FormulaFor(recipe)
+                if formula and not formula.usable then ok=false end
                 local cost, unpriced = 0, false
                 if ok then
                     for _, m in ipairs(ri.mats) do
@@ -339,14 +392,15 @@ local function BuildCandidates(slug, opts)
                     local base, unknown = 0, false
                     for _, m in ipairs(ri.mats) do
                         if not ClientKnown(m[1]) then unknown = true end
-                        local sp = NPCSellPrice(m[1])
+                        local sp = BasePrice(m[1])
                         if sp then base = base + sp * (m[2] or 1) end
                     end
                     cands[#cands + 1] = {
                         spell = spell, item = (type(ri.makes) == "number") and ri.makes or nil,
                         learn = ri.learn, yellow = y, green = g, grey = ri.grey,
                         mats = ri.mats, cost = cost, unpriced = unpriced,
-                        fcost = 0, base = base, unknown = unknown or nil,
+                        formula=formula,
+                        base = base, unknown = unknown or nil,
                         learnO = math.max(1, math.min(ri.learn, y - 25)),
                     }
                     recOf[spell] = ri
@@ -375,19 +429,82 @@ local function GainOf(scheme, c, cur)
     if scheme == "optim" then return 1 end
     return Gain(cur, c)
 end
-local function MetricOf(scheme, c, g)
-    if scheme == "cheapest" then
-        local span = math.max(1, (c.grey or 0) - (c.learn or 0))
-        return c.cost / g + (c.fcost or 0) / span
-    end
+local function MetricOf(scheme, c, g, paid)
+    local f=c.formula
+    local fee=f and not f.known and not (paid and paid[f.id or f.recipeKey]) and (f.cost or 0) or 0
+    if scheme == "cheapest" then return c.cost / g+fee end
     if scheme == "crafts" then return 1 / g end
     if scheme == "optim" then return (c.base or 0) / g end
-    return c.cost / g
+    return c.cost / g+fee
+end
+
+local function SimulateSupply(cands,start,cap,scheme)
+    local economy=ns.ProfEconomy
+    if not economy or not economy.AuctionSupplyOf then return end
+    local caps,finite={},false
+    for _,c in ipairs(cands) do
+        for _,m in ipairs(c.mats) do
+            if not RA.VendorMaterialOf(m[1]) and not VendorPrice(m[1]) then
+                local supply=economy.AuctionSupplyOf(nil,m[1])
+                if supply then caps[m[1]]=supply.quantity;finite=true end
+            end
+        end
+        local f=c.formula
+        if f and not f.known and f.source=="ah" then
+            local supply=economy.AuctionSupplyOf(nil,f.id)
+            if supply then caps[f.id]=supply.quantity;finite=true end
+        end
+    end
+    if not finite then return end
+    local steps,gaps,used,paid={},{},{},{}
+    local cur,progress=math.max(1,start or 1),0
+    local guard=0
+    while cur<cap and guard<100000 do
+        guard=guard+1
+        local best,score,bestNeed
+        for _,c in ipairs(cands) do
+            if Usable(scheme,c,cur,false) then
+                local need={}
+                for _,m in ipairs(c.mats) do
+                    if caps[m[1]] then need[m[1]]=(need[m[1]] or 0)+m[2] end
+                end
+                local f=c.formula;local key=f and (f.id or f.recipeKey)
+                if f and not f.known and f.source=="ah" and not paid[key] and caps[f.id] then
+                    need[f.id]=(need[f.id] or 0)+1
+                end
+                local enough=true
+                for id,n in pairs(need) do if (used[id] or 0)+n>caps[id] then enough=false;break end end
+                if enough then
+                    local g=GainOf(scheme,c,cur)
+                    if g and g>0 then
+                        local metric=MetricOf(scheme,c,g,paid)
+                        if not best or metric<score-1e-9 or (math.abs(metric-score)<1e-9 and
+                            (c.cost<best.cost or c.cost==best.cost and c.spell<best.spell)) then
+                            best,score,bestNeed=c,metric,need
+                        end
+                    end
+                end
+            end
+        end
+        if not best then gaps[#gaps+1]={cur,cap-1};break end
+        for id,n in pairs(bestNeed) do used[id]=(used[id] or 0)+n end
+        if best.formula then paid[best.formula.id or best.formula.recipeKey]=true end
+        local from=cur
+        local gain=GainOf(scheme,best,cur)
+        progress=progress+gain;local whole=math.floor(progress+1e-7)
+        cur=math.min(cap,cur+whole);progress=progress-whole
+        local last=steps[#steps]
+        if last and last[3]==best.spell then last[2]=cur;last[4]=last[4]+1
+        else steps[#steps+1]={from,cur,best.spell,1,item=best.item} end
+    end
+    if cur<cap and #gaps==0 then gaps[#gaps+1]={cur,cap-1} end
+    return steps,gaps,cur
 end
 
 local function Simulate(cands, start, cap, allowUnpriced, scheme)
     local steps, gaps = {}, {}
-    local banned, segRun = {}, {}
+    local banned = {}
+    local paid={}
     local cur = math.max(1, math.min(cap - 1, start or 1))
     local guard = 0
 
@@ -400,7 +517,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
             if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
-                    local metric = MetricOf(scheme, c, g)
+                    local metric = MetricOf(scheme, c, g, paid)
                     if not best or metric < bestMetric - 1e-9
                        or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
                         best, bestMetric = c, metric
@@ -425,6 +542,8 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
                 cur = cap
             end
         else
+            if best.formula then paid[best.formula.id or best.formula.recipeKey]=true end
+            bestMetric=MetricOf(scheme,best,GainOf(scheme,best,cur),paid)
             local from = cur
             local crafts = 0
             while cur < cap do
@@ -436,7 +555,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
                 for _, c in ipairs(cands) do
                     if c ~= best and not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
-                        if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
+                        if g2 and MetricOf(scheme, c, g2, paid) < bestMetric - 1e-9 then
                             stop = true
                             break
                         end
@@ -456,8 +575,6 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
                     cost = best.cost * qty, item = best.item,
                     unpriced = best.unpriced,
                 }
-                segRun[best.spell] = (segRun[best.spell] or 0) + 1
-                if segRun[best.spell] >= MAX_PER_RECIPE then banned[best.spell] = true end
             end
         end
     end
@@ -466,7 +583,8 @@ end
 
 local function SimulateRange(cands, a, b, scheme)
     local steps = {}
-    local banned, segRun = {}, {}
+    local banned = {}
+    local paid={}
     local cur = a
     local guard = 0
     while cur <= b do
@@ -478,7 +596,7 @@ local function SimulateRange(cands, a, b, scheme)
                and not ((scheme == "optim") and (c.cd or c.unknown)) then
                 local g = GainOf(scheme, c, cur)
                 if g then
-                    local metric = MetricOf(scheme, c, g)
+                    local metric = MetricOf(scheme, c, g, paid)
                     if not best or metric < bestMetric - 1e-9
                        or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
                         best, bestMetric = c, metric
@@ -497,6 +615,8 @@ local function SimulateRange(cands, a, b, scheme)
             if not nxt then break end
             cur = nxt
         else
+            if best.formula then paid[best.formula.id or best.formula.recipeKey]=true end
+            bestMetric=MetricOf(scheme,best,GainOf(scheme,best,cur),paid)
             local from = cur
             local crafts = 0
             while cur <= b do
@@ -509,7 +629,7 @@ local function SimulateRange(cands, a, b, scheme)
                     if c ~= best and not banned[c.spell] and CanUse(scheme, c, cur)
                        and cur <= b and not ((scheme == "optim") and (c.cd or c.unknown)) then
                         local g2 = GainOf(scheme, c, cur)
-                        if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
+                        if g2 and MetricOf(scheme, c, g2, paid) < bestMetric - 1e-9 then
                             stop = true
                             break
                         end
@@ -530,8 +650,6 @@ local function SimulateRange(cands, a, b, scheme)
                     cost = best.cost * qty, item = best.item,
                     unpriced = best.unpriced, est = true,
                 }
-                segRun[best.spell] = (segRun[best.spell] or 0) + 1
-                if segRun[best.spell] >= MAX_PER_RECIPE then banned[best.spell] = true end
             end
         end
     end
@@ -587,35 +705,65 @@ local function FillGaps(cands, steps, gaps, scheme)
     return MergeSteps(newSteps), newGaps
 end
 
-local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
+local function FixedPurchase(id, need)
+    local db = ns.VendorPriceDB
+    local offers = db and db.GetOffers and db.GetOffers(id, {allowVendorCache=true}) or {}
+    local vendorOnly = RA.VendorMaterialOf(id) or #offers > 0
+    local best
+    for _, offer in ipairs(offers) do
+        local quantity = tonumber(offer.quantity or offer.bundleSize)
+        if offer.unlimited == true and type(offer.price) == "number" and offer.price >= 0
+            and quantity and quantity >= 1 and quantity == math.floor(quantity)
+            and offer.available ~= false and offer.purchasable ~= false and not offer.hasExtendedCost
+            and (not offer.currencyID or offer.currencyID == 0) then
+            local count = math.ceil(need / quantity) * quantity
+            local cost = count / quantity * offer.price
+            if not best or cost < best.cost or cost == best.cost and count < best.count then
+                best = {id, count, id=id, count=count, need=need, cost=cost,
+                    unit=offer.price/quantity, vendor=true, source="vendor", npcID=offer.npcID,
+                    url=offer.url, bundleSize=quantity, bundlePrice=offer.price,
+                    reference=offer.reference, estimated=offer.estimated, quoteSource=offer.source,
+                    priceBasis=offer.priceBasis, verifiedAt=offer.verifiedAt}
+            end
+        end
+    end
+    if best then return best end
+    if vendorOnly then
+        local suppliers = db and db.GetSuppliers and db.GetSuppliers(id) or {}
+        local supplier = suppliers[1]
+        return {id, need, id=id, count=need, need=need, cost=0, unit=0, vendor=true,
+            source="vendor", unpriced=true, npcID=supplier and supplier.npcID,
+            url=supplier and supplier.url}
+    end
+    local price = AHPrice(id)
+    return {id, need, id=id, count=need, need=need, cost=(price or 0)*need,
+        unit=price or 0, source="ah", vendor=false, unpriced=price == nil or nil}
+end
+
+local function SupplySummary(result)
+    local economy=ns.ProfEconomy
+    if economy and economy.SummarizeAuctionSupply then economy.SummarizeAuctionSupply(result) end
+    return result
+end
+
+local function SummarizeCore(steps, recOf, soldSet, slug)
+    local live={}
+    for spell,rec in pairs(recOf) do live[spell]=ClientRecipe(rec,spell,slug) end
+    recOf=live
     local total, crafts = 0, 0
     local productAH, productNPC, productPartial = 0, 0, false
-    local mats, firstAt, matPrice = {}, {}, {}
+    local mats, firstAt = {}, {}
+    local completeCost, referencePrices = true, nil
     for _, st in ipairs(steps) do
         local rec = recOf[st[3]]
         local ml = rec and (rec[12] or rec.mats) or nil
-        if st.cost == nil then
-            local sc, unpriced = 0, false
-            if ml then
-                for _, m in ipairs(ml) do
-                    local id = m[1]
-                    if matPrice[id] == nil then matPrice[id] = MatPrice(id, soldSet) end
-                    local p = matPrice[id]
-                    if p then
-                        sc = sc + p * (m[2] or 1) * (st[4] or 0)
-                    else
-                        unpriced = true
-                    end
-                end
-            end
-            st.cost = sc
-            st.unpriced = unpriced or nil
-        end
-        total = total + (st.cost or 0)
+        st.cost = 0
+        st.unpriced = (not st.checkpoint and (not ml or rec and rec.clientPending)) or nil
+        if st.unpriced then completeCost = false end
         crafts = crafts + (st[4] or 0)
         local prod = rec and rec[2]
-        if type(prod) == "number" then
-            local outN = (st[4] or 0) * (rec[3] or 1)
+        if type(prod) == "number" and type(rec[3] or rec.count)=="number" then
+            local outN = (st[4] or 0) * (rec[3] or rec.count)
             RequestProduct(prod)
             local ah = AHPrice(prod)
             if ah then
@@ -625,25 +773,25 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
             end
             local sp = NPCSellPrice(prod)
             if sp then productNPC = productNPC + sp * outN end
+        elseif not st.checkpoint then productPartial=true
         end
         if ml then
             for _, m in ipairs(ml) do
                 local id = m[1]
                 mats[id] = (mats[id] or 0) + (m[2] or 1) * (st[4] or 0)
                 if not firstAt[id] or st[1] < firstAt[id] then firstAt[id] = st[1] end
-                if matPrice[id] == nil then
-                    matPrice[id] = MatPrice(id, soldSet)
-                end
             end
         end
     end
-    local list = {}
+    local list, purchaseOf = {}, {}
     for id, n in pairs(mats) do
-        local p = matPrice[id]
-        if p == nil then p = MatPrice(id, soldSet) end
-        list[#list + 1] = { id, n, cost = (p or 0) * n, unit = p or 0,
-                            vendor = soldSet[id] and true or false,
-                            unpriced = (p == nil) and true or false }
+        if n > 0 then
+            local entry = FixedPurchase(id, n)
+            list[#list + 1] = entry; purchaseOf[id] = entry
+            total = total + entry.cost
+            if entry.unpriced or entry.estimated and not entry.reference then completeCost=false end
+            referencePrices = referencePrices or entry.reference
+        end
     end
     table.sort(list, function(a, b)
         local fa, fb = firstAt[a[1]] or math.huge, firstAt[b[1]] or math.huge
@@ -653,31 +801,44 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
     end)
     local vendorTotal = 0
     for _, e in ipairs(list) do
-        if e.vendor then vendorTotal = vendorTotal + (e.unit or 0) * e[2] end
+        if e.vendor then vendorTotal = vendorTotal + e.cost end
     end
-    local formulas, formulasTotal = {}, 0
+    local consumed = {}
     for _, st in ipairs(steps) do
         local rec = recOf[st[3]]
-        local f = rec and rec[13]
-        if type(f) == "table" and type(f[1]) == "number"
-           and not (skipLearnedFormulas and LearnKnown(st[3])) then
-            local dup = false
-            for _, x in ipairs(formulas) do
-                if x.id == f[1] then dup = true break end
-            end
-            if not dup then
-                local p = MatPrice(f[1], soldSet)
-                formulas[#formulas + 1] = {
-                    id = f[1], spell = st[3], cost = p or 0,
-                    vendor = soldSet[f[1]] and true or false,
-                    unpriced = (p == nil) and true or false,
-                }
-                formulasTotal = formulasTotal + (p or 0)
+        for _, mat in ipairs(rec and (rec[12] or rec.mats) or {}) do
+            local id, need = mat[1], (mat[2] or 1) * (st[4] or 0)
+            local entry = purchaseOf[id]
+            if entry and need > 0 then
+                if entry.unpriced then st.unpriced = true end
+                local before = consumed[id] or 0; consumed[id] = before + need
+                if entry.vendor and entry.bundleSize then
+                    local packs = math.ceil(consumed[id] / entry.bundleSize) - math.ceil(before / entry.bundleSize)
+                    st.cost = st.cost + packs * entry.bundlePrice
+                else st.cost = st.cost + need * entry.unit end
             end
         end
     end
+    local formulas,formulasTotal,formulaComplete={},0,true
+    local economy=ns.ProfEconomy
+    if economy and economy.CollectFormulas then formulas,formulasTotal,formulaComplete=economy.CollectFormulas(steps,slug) end
+    local formulaAH,formulaVendor=0,0
+    for _,f in ipairs(formulas) do
+        if f.source=="vendor" then formulaVendor=formulaVendor+(f.cost or 0)
+        elseif f.source=="ah" then formulaAH=formulaAH+(f.cost or 0) end
+        local keys={};for _,r in ipairs(f.recipes or {}) do keys[r.key or r.profession..":"..r.spell]=true end
+        for _,st in ipairs(steps) do
+            if keys[(st.profession or slug)..":"..tostring(st[3])] then
+                st.cost=(st.cost or 0)+(f.cost or 0);st.formulasTotal=(st.formulasTotal or 0)+(f.cost or 0)
+                st.unpriced=st.unpriced or f.unpriced;break
+            end
+        end
+        referencePrices=referencePrices or f.offer and f.offer.reference
+    end
     return total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
-           productAH, productNPC, productPartial
+           productAH, productNPC, productPartial,
+           {completeCost=completeCost and formulaComplete,formulaComplete=formulaComplete,referencePrices=referencePrices,
+            formulaAHTotal=formulaAH,formulaVendorTotal=formulaVendor}
 end
 
 function RA.SummarizeSteps(steps, slug, opts)
@@ -699,20 +860,23 @@ function RA.SummarizeSteps(steps, slug, opts)
         end
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
-          productAH, productNPC, productPartial =
-        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly)
-    return {
+          productAH, productNPC, productPartial, quoteInfo =
+        SummarizeCore(steps, recOf, soldSet, slug)
+    return SupplySummary({
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
-        total = total + formulasTotal, vendorTotal = vendorTotal,
-        ahTotal = total - vendorTotal,
+        total = total+formulasTotal, vendorTotal = vendorTotal+quoteInfo.formulaVendorTotal,
+        ahTotal = total-vendorTotal+quoteInfo.formulaAHTotal,
+        formulaAHTotal=quoteInfo.formulaAHTotal,formulaVendorTotal=quoteInfo.formulaVendorTotal,formulaRevision=1,
+        formulaComplete=quoteInfo.formulaComplete,
         productAH = productAH, productNPC = productNPC, productPartial = productPartial,
         crafts = crafts,
-        priced = RA.HasPriceData(),
+        priced = true, completeCost = quoteInfo.completeCost, costComplete = quoteInfo.completeCost,
+        referencePrices = quoteInfo.referencePrices,
         snapshotAge = SnapshotSec(),
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
-    }
+    })
 end
 
 local function ToReached(steps)
@@ -727,25 +891,6 @@ local function ToReached(steps)
     return out
 end
 
-local ROD_TOOLS = { { 1, 7421 }, { 130, 7795 }, { 173, 13628 }, { 218, 13702 } }
-
-local function InjectTools(stepsOut, slug, cap, startLv)
-    if slug ~= "enchanting" then return end
-    local have = {}
-    for _, st in ipairs(stepsOut) do have[st[3]] = true end
-    for _, rd in ipairs(ROD_TOOLS) do
-        local P, spell = rd[1], rd[2]
-        if P <= cap and P >= (startLv or 1) and not have[spell] then
-            local at = #stepsOut + 1
-            for i, st in ipairs(stepsOut) do
-                if (tonumber(st[2]) or 0) > P then at = i break end
-            end
-            table.insert(stepsOut, at, { P, P, spell, 1 })
-            have[spell] = true
-        end
-    end
-end
-
 function RA.Compute(slug, opts)
     opts = opts or {}
     local cands, recOf, soldSet = BuildCandidates(slug, opts)
@@ -754,9 +899,12 @@ function RA.Compute(slug, opts)
     if scheme == nil or not SCHEME_LABEL[scheme] then scheme = "cheapest" end
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
-    local steps, gaps = Simulate(cands, opts.start, cap, allowUnpriced, scheme)
+    local supplySteps,supplyGaps,plannedTo=SimulateSupply(cands,opts.start,cap,scheme)
+    local steps,gaps
+    if supplySteps then steps,gaps=supplySteps,supplyGaps
+    else steps,gaps=Simulate(cands,opts.start,cap,allowUnpriced,scheme) end
     local filled = false
-    if not allowUnpriced and #gaps > 0 then
+    if not supplySteps and not allowUnpriced and #gaps > 0 then
         steps, gaps = FillGaps(cands, steps, gaps, scheme)
         for _, st in ipairs(steps) do
             if st.est then filled = true break end
@@ -770,27 +918,32 @@ function RA.Compute(slug, opts)
             if c then st.cost = (c.base or 0) * (st[4] or 0) end
         end
     end
-    local stepsOut = ToReached(steps)
-    InjectTools(stepsOut, slug, cap, opts.start)
+    local stepsOut = supplySteps or ToReached(steps)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
-          productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly)
-    return {
+          productAH, productNPC, productPartial, quoteInfo =
+        SummarizeCore(stepsOut, recOf, soldSet, slug)
+    return SupplySummary({
         scheme = scheme,
+        supplyConstrained=supplySteps~=nil,plannedTo=plannedTo,
+        targetReached=supplySteps and plannedTo>=cap or nil,
+        partial=supplySteps and plannedTo<cap or nil,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
-        total = total + formulasTotal, matTotal = total,
+        total = total+formulasTotal, matTotal = total,
         formulas = formulas, formulasTotal = formulasTotal,
-        vendorTotal = vendorTotal, ahTotal = total - vendorTotal,
+        vendorTotal = vendorTotal+quoteInfo.formulaVendorTotal, ahTotal = total-vendorTotal+quoteInfo.formulaAHTotal,
+        formulaAHTotal=quoteInfo.formulaAHTotal,formulaVendorTotal=quoteInfo.formulaVendorTotal,formulaRevision=1,
+        formulaComplete=quoteInfo.formulaComplete,
         productAH = productAH, productNPC = productNPC, productPartial = productPartial,
         crafts = crafts,
         start = math.max(1, math.min(CAP - 1, opts.start or 1)),
         target = cap,
-        priced = RA.HasPriceData(),
+        priced = true, completeCost = quoteInfo.completeCost, costComplete = quoteInfo.completeCost,
+        referencePrices = quoteInfo.referencePrices,
         filled = filled,
         snapshotAge = SnapshotSec(),
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
-    }
+    })
 end
 
 local cache = {}
@@ -813,14 +966,15 @@ ahWatch:RegisterEvent("AUCTION_HOUSE_CLOSED")
 ahWatch:SetScript("OnEvent", function()
     C_Timer.After(0, function()
         RA.Invalidate()
+        if RA.RecalculateActive then RA.RecalculateActive() end
         for _, fn in ipairs(priceWatchers) do pcall(fn) end
     end)
 end)
 
 local function Fingerprint(opts)
-    return string.format("%s|%s|%s|%s|%s|%s",
+    return string.format("%s|%s|%s|%s|%s",
         tostring(opts.start), tostring(opts.onlyAH),
-        tostring(opts.noFormula), tostring(opts.learnedOnly),
+        tostring(opts.learnedOnly),
         tostring(opts.target and math.floor(tonumber(opts.target) or CAP)),
         tostring(opts.scheme))
 end
@@ -834,4 +988,347 @@ function RA.Get(slug, opts)
     local res = RA.Compute(slug, opts)
     cache[slug] = { fp = fp, res = res, stamp = now }
     return res
+end
+
+do
+    local E,S=ns.ProfEconomy,ns.ProfRouteSolver
+    if E and S then
+        local oldCompute,oldInvalidate=RA.Compute,RA.Invalidate
+        local slots,results,active,watchers={},{},{},{}
+        local revision=0
+        local CACHE_VERSION=3
+        local EMPTY_RESULT_REVISION=2
+        local VENDOR_QUOTE_REVISION=1
+        local function stamp() return time and time() or 0 end
+        local function serializable(value,seen)
+            local kind=type(value)
+            if kind=="number" or kind=="string" or kind=="boolean" then return value end
+            if kind~="table" then return nil end
+            seen=seen or {}; if seen[value] then return nil end
+            seen[value]=true; local out={}
+            for k,v in pairs(value) do
+                if type(k)=="number" or type(k)=="string" then out[k]=serializable(v,seen) end
+            end
+            seen[value]=nil; return out
+        end
+        local function saved(character)
+            DungeonsForeverDB=DungeonsForeverDB or {}
+            local db=DungeonsForeverDB; db.prof=db.prof or {}; db.prof.routeCache=db.prof.routeCache or {}
+            local char=character or E.CharacterKey(); local data=db.prof.routeCache[char]
+            if type(data)~="table" or data.version~=CACHE_VERSION then
+                data={version=CACHE_VERSION,routes={},active={}}; db.prof.routeCache[char]=data
+            end
+            data.routes=data.routes or {}; data.active=data.active or {}
+            return data
+        end
+        function RA.Gain(sk,learn,yellow,green,grey)
+            return E.Gain({learn=learn,yellow=yellow or learn,green=green or yellow or learn,grey=grey},sk)
+        end
+        function RA.OptionsFor(slug,start)
+            local pd=ns.ProfModule
+            local function setting(k,default)
+                if pd and pd.Setting then local v=pd.Setting(k); if v~=nil then return v end end
+                return default
+            end
+            local scheme=pd and pd.SettingRaw and pd.SettingRaw("autoScheme") or "cheapest"
+            local target=300
+            local db=DungeonsForeverDB and DungeonsForeverDB.prof
+            if slug=="cooking" and db and db.cookingRoute=="fishing" then scheme="fishing" end
+            if db and db.lvTarget then target=tonumber(db.lvTarget[slug]) or target end
+            local follows=ns.ProfFollow and ns.ProfFollow.Following and ns.ProfFollow.Following(slug)
+            local current=(E.Professions()[slug] or {}).cur
+            local fromCurrent=follows or setting("autoFromCurrent",true)
+            return {start=fromCurrent and (start or current or 1) or 1,fromCurrent=fromCurrent,
+                target=target,scheme=scheme,onlyAH=setting("autoOnlyAH",false),
+                learnedOnly=setting("autoLearnedOnly",false),allowSecondaryLeveling=setting("autoSecondaryLeveling",false),
+                secondaryProfession=E.GetRoutePartner(slug),
+                exclusions=E.Copy(E.GetPolicies(slug))}
+        end
+        function RA.OnPlanChanged(fn) if type(fn)=="function" then watchers[#watchers+1]=fn end end
+        local function options(slug,opts)
+            opts=E.Copy(opts or RA.OptionsFor(slug))
+            if opts.scheme==nil then opts.scheme="cheapest" end
+            if opts.scheme=="fishing" then
+                if slug~="cooking" then opts.scheme="cheapest"
+                else opts.allowSecondaryLeveling=false;opts.secondaryProfession=nil end
+            end
+            opts.target=tonumber(opts.target) or 300
+            opts.exclusions=E.Copy(opts.exclusions or E.GetPolicies(slug))
+            local following=ns.ProfFollow and ns.ProfFollow.Following and ns.ProfFollow.Following(slug)
+            if opts.follow or following then opts.start=(E.Professions()[slug] or {}).cur or opts.start or 1 end
+            local context=E.RouteContext(slug,opts)
+            opts.targetUnlearned=context.unlearned
+            opts.secondaryProfession=context.requiresPartner and context.partner or nil
+            opts.partnerRequired=context.requiresPartner and not context.partnerValid or false
+            return opts
+        end
+        local function signature(opts)
+            local startMode=opts.fromCurrent==false and ("fixed:"..tostring(opts.start or 1)) or "current"
+            return table.concat({tostring(opts.scheme),tostring(opts.target),tostring(opts.learnedOnly or false),
+                tostring(opts.onlyAH or false),tostring(opts.allowSecondaryLeveling or false),startMode,
+                E.PolicyFingerprint(opts.exclusions),tostring(opts.targetUnlearned),tostring(opts.secondaryProfession or "")},"|")
+        end
+        local function identities(slug,opts)
+            local char=E.CharacterKey(); local sig=signature(opts)
+            local scope=char.."|"..slug
+            if opts.snapshot then scope=scope.."|"..tostring(opts.snapshot); sig=sig.."|"..tostring(opts.start) end
+            return scope.."|"..sig,scope,slug.."|"..sig,sig,char
+        end
+        local function remember(j,res)
+            if j.opts.snapshot or res.status=="searching" then return end
+            local db=saved(j.char)
+            db.routes[j.savedKey]={slug=j.slug,signature=j.signature,options=serializable(j.opts),
+                result=serializable(res),savedAt=stamp()}
+            db.active[j.slug]=j.savedKey
+        end
+        local function publish(j,res)
+            if not res or j.invalid then return end
+            revision=revision+1; res.revision=revision
+            res.routeModel=CACHE_VERSION
+            res.formulaRevision=1
+            res.vendorQuoteRevision=VENDOR_QUOTE_REVISION
+            res.professionPolicy=1; res.targetUnlearned=j.opts.targetUnlearned
+            res.secondaryProfession=j.opts.secondaryProfession
+            res.emptyResultRevision=EMPTY_RESULT_REVISION
+            res.cacheSignature=j.signature; res.inputStart=res.start or j.opts.start
+            if j.stale then res.stale=true; res.staleReason=j.staleReason end
+            j.published=res; results[j.key]=res; active[j.scope]=j.key
+            remember(j,res)
+            for _,fn in ipairs(watchers) do pcall(fn,j.slug,res) end
+        end
+        local function schedule(j)
+            if j.scheduled then return end; j.scheduled=true
+            local function step()
+                if j.invalid then j.scheduled=false; return true end
+                local before=j.result; local done=S.Run(j,2)
+                if j.result and (j.result~=j.published or j.result~=before) then publish(j,j.result) end
+                if done then j.scheduled=false; return true end
+                return false
+            end
+            j.pump=step
+            if ns.IdleJobs and ns.IdleJobs.Add then ns.IdleJobs.Add(step)
+            elseif C_Timer and C_Timer.After then
+                local function later() if not step() then C_Timer.After(0,later) end end
+                C_Timer.After(0,later)
+            end
+        end
+        local function compatible(result,opts)
+            if opts.targetUnlearned then
+                return result.professionPolicy==1 and result.targetUnlearned==true
+                    and result.secondaryProfession==opts.secondaryProfession
+            end
+            return not result.targetUnlearned
+        end
+        local function sameRouteKind(result,opts)
+            return (result.scheme=="fishing")== (opts.scheme=="fishing")
+        end
+        local function gate(slug,opts,status,code)
+            local char=E.CharacterKey()
+            for key,j in pairs(slots) do
+                if j.slug==slug and j.char==char and (opts.partnerRequired or not compatible(j.published or {},opts)) then
+                    j.invalid=true; slots[key]=nil
+                    if results[key] and results[key].status=="searching" then results[key]=nil end
+                    if active[j.scope]==key then active[j.scope]=nil end
+                end
+            end
+            return {planVersion=2,scheme=opts.scheme,status=status,start=opts.start or 1,target=opts.target,
+                steps={},executionSteps={},actions={},mats={},gaps={},total=0,matTotal=0,ahTotal=0,vendorTotal=0,crafts=0,
+                feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
+                diagnostics={{code=code}},professionPolicy=1,targetUnlearned=opts.targetUnlearned,
+                secondaryProfession=opts.secondaryProfession,revision=revision,stamp=stamp()}
+        end
+        local function legacyOptions(opts)
+            local adjusted=E.Copy(opts)
+            if opts.targetUnlearned then adjusted.learnedOnly=false end
+            return adjusted
+        end
+        local function restoreVendorDiagnostics(result,record)
+            if result.vendorQuoteRevision==VENDOR_QUOTE_REVISION then return end
+            local vendor=ns.VendorPriceDB
+            if not vendor or type(vendor.GetOffers)~="function" then return end
+            local selected={}
+            for _,m in ipairs(result.mats or {}) do
+                local id=m.id or m[1]
+                if id and (m.source=="vendor" or m.vendor) then selected[id]=true end
+            end
+            local checked,changed={},false
+            for _,d in ipairs(result.diagnostics or {}) do
+                if type(d)=="table" and d.code=="vendorEstimate" and selected[d.item] then
+                    if checked[d.item]==nil then
+                        local context={character=E.CharacterKey(),professions=E.Professions(),
+                            level=UnitLevel and UnitLevel("player"),allowVendorCache=false,requireObservedPrice=false}
+                        local ok,offers=pcall(vendor.GetOffers,d.item,context)
+                        checked[d.item]=false
+                        for _,offer in ipairs(ok and type(offers)=="table" and offers or {}) do
+                            local quantity=tonumber(offer.quantity or offer.bundleSize)
+                            local reliable=offer.source=="merchant" and not offer.estimated
+                                or offer.reference==true and offer.priceVerified==true
+                            if reliable and offer.unlimited==true and offer.available~=false
+                                and offer.purchasable~=false and not offer.hasExtendedCost
+                                and (not offer.currencyID or offer.currencyID==0)
+                                and type(offer.price)=="number" and offer.price>=0
+                                and quantity and quantity>=1 and quantity==math.floor(quantity) then
+                                checked[d.item]=true;break
+                            end
+                        end
+                    end
+                    if checked[d.item] then d.code="vendorQuoteChanged";changed=true end
+                end
+            end
+            result.vendorQuoteRevision=VENDOR_QUOTE_REVISION
+            if changed then result.stale=true;result.staleReason="vendor-quotes" end
+            record.result.vendorQuoteRevision=VENDOR_QUOTE_REVISION
+            if changed then
+                record.result.diagnostics=serializable(result.diagnostics)
+                record.result.stale=true;record.result.staleReason="vendor-quotes"
+            end
+        end
+        local function restore(slug,record,key,scope,opts)
+            if type(record)~="table" or type(record.result)~="table" or record.result.routeModel~=CACHE_VERSION then return end
+            if not compatible(record.result,opts) then return end
+            if record.result.formulaRevision~=1 then return end
+            local old=record.result
+            if old.planVersion==2 then
+                local unpriced=old.pricePending or old.referenceRoute
+                for _,entry in ipairs(old.mats or {}) do if entry.unpriced then unpriced=true; break end end
+                if unpriced then return end
+            end
+            if old.planVersion==2 and #(old.steps or {})==0 and not old.targetReached
+                and (old.status=="incomplete" or old.status=="infeasible" or old.status=="error")
+                and old.emptyResultRevision~=EMPTY_RESULT_REVISION then
+                return
+            end
+            local result=serializable(record.result); result.cached=true
+            if result.auctionSupplyRevision~=2 then
+                E.SummarizeAuctionSupply(result,{prices={},auctionSupply={},auctionSupplyHistory={},priceObservedAt={}})
+                result.stale=true;result.staleReason="supply-model"
+            elseif E.AuctionSupplyChanged(result) then
+                result.stale=true;result.staleReason="supply"
+            end
+            restoreVendorDiagnostics(result,record)
+            revision=math.max(revision,result.revision or 0)
+            results[key]=result; active[scope]=key
+            return result
+        end
+        local function start(slug,opts)
+            local key,scope,savedKey,sig,char=identities(slug,opts)
+            if opts.scheme~="cheapest" then
+                local result
+                if opts.scheme=="fishing" and ns.ProfFishing then result=ns.ProfFishing.Compute(opts)
+                else result=oldCompute(slug,legacyOptions(opts)) end
+                if not result then
+                    result={scheme=opts.scheme,start=opts.start or 1,target=opts.target,steps={},executionSteps={},actions={},mats={},
+                        total=0,matTotal=0,ahTotal=0,vendorTotal=0,crafts=0,feasible=false,priced=false,costComplete=false,
+                        status="infeasible",diagnostics={{code="levelGap"}},stamp=stamp()}
+                end
+                result.status=result.status or "complete"
+                local j={key=key,scope=scope,savedKey=savedKey,signature=sig,slug=slug,char=char,opts=opts,finished=true}
+                publish(j,result); return result
+            end
+            local j=S.NewJob(slug,opts)
+            j.key=key; j.scope=scope; j.savedKey=savedKey; j.signature=sig; j.char=char
+            slots[key]=j
+            j.published=S.Result(j,nil,"searching"); j.published.revision=revision
+            results[key]=j.published; active[scope]=key
+            schedule(j)
+            return j.published
+        end
+        function RA.Compute(slug,opts)
+            opts=options(slug,opts)
+            if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
+            if opts.scheme=="fishing" and ns.ProfFishing then return ns.ProfFishing.Compute(opts) end
+            if opts.scheme~="cheapest" then return oldCompute(slug,legacyOptions(opts)) end
+            return S.Compute(slug,opts)
+        end
+        function RA.Get(slug,opts)
+            opts=options(slug,opts)
+            if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
+            local key,scope,savedKey=identities(slug,opts)
+            if results[key] then return results[key] end
+            if not opts.snapshot then
+                local db=saved(); local exact=db.routes[savedKey]
+                if exact then local restored=restore(slug,exact,key,scope,opts); if restored then return restored end end
+                local previousKey=db.active[slug]; local previous=previousKey and db.routes[previousKey]
+                if previous and sameRouteKind(previous.result or {},opts) then
+                    local restoredKey=E.CharacterKey().."|"..previousKey
+                    local result=results[restoredKey]
+                    if result and not compatible(result,opts) then result=nil end
+                    result=result or restore(slug,previous,restoredKey,scope,opts)
+                    if result then result.stale=true; result.settingsChanged=true; result.staleReason="settings"; return result end
+                    if not compatible(previous.result or {},opts) then return gate(slug,opts,"recalculate_required","pairingChanged") end
+                end
+            end
+            local current=not opts.snapshot and active[scope] and results[active[scope]]
+            if current and sameRouteKind(current,opts) then
+                if not compatible(current,opts) then return gate(slug,opts,"recalculate_required","pairingChanged") end
+                current.stale=true; current.settingsChanged=true; current.staleReason="settings"; return current
+            end
+            return start(slug,opts)
+        end
+        function RA.Recalculate(slug,opts)
+            opts=options(slug,opts)
+            local key,scope,savedKey,_,char=identities(slug,opts)
+            oldInvalidate()
+            for k,j in pairs(slots) do if j.slug==slug and j.char==char then j.invalid=true; slots[k]=nil end end
+            for k in pairs(results) do
+                if k:sub(1,#(char.."|"..slug.."|"))==char.."|"..slug.."|" then results[k]=nil end
+            end
+            active[scope]=nil
+            if not opts.snapshot then
+                local db=saved(); db.routes[savedKey]=nil; db.active[slug]=nil
+            end
+            if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
+            return start(slug,opts)
+        end
+        function RA.Cancel(slug)
+            for _,j in pairs(slots) do if j.slug==slug and not j.finished and coroutine.status(j.co)~="dead" then
+                j.status="stopped"; j.result=S.Result(j,j.best,"stopped"); publish(j,j.result)
+            end end
+        end
+        function RA.Continue(slug)
+            for _,j in pairs(slots) do if j.slug==slug and not j.finished and (j.status=="paused" or j.status=="stopped") and coroutine.status(j.co)~="dead" then
+                j.status="searching"; j.cpuUsed=0
+                if j.result then j.result=S.Result(j,j.best,"searching"); publish(j,j.result) end
+                schedule(j)
+            end end
+        end
+        function RA.Pump(slug)
+            for _,j in pairs(slots) do if (not slug or j.slug==slug) and j.pump then j.pump() end end
+        end
+        function RA.Invalidate(reason)
+            oldInvalidate()
+            reason=type(reason)=="string" and reason or "inputs"
+            for _,j in pairs(slots) do j.stale=true; j.staleReason=reason end
+            local notified={}
+            for key,result in pairs(results) do
+                result.stale=true; result.staleReason=reason
+                local j=slots[key]; if j then notified[j.slug]=result end
+            end
+            local db=saved()
+            for _,record in pairs(db.routes) do
+                if record.result then record.result.stale=true; record.result.staleReason=reason end
+                if record.slug then
+                    local sk=db.active[record.slug]
+                    if sk then local activeRecord=db.routes[sk]; notified[record.slug]=activeRecord and activeRecord.result end
+                end
+            end
+            for slug,result in pairs(notified) do for _,fn in ipairs(watchers) do pcall(fn,slug,result) end end
+        end
+        function RA.RecalculateActive()
+            local char=E.CharacterKey()
+            local slugs,seen={},{}
+            for key in pairs(results) do
+                local c,s=key:match("^([^|]+)|([^|]+)|")
+                if c==char and s and not seen[s] then
+                    seen[s]=true
+                    slugs[#slugs+1]=s
+                end
+            end
+            for _,slug in ipairs(slugs) do
+                RA.Recalculate(slug, RA.OptionsFor(slug))
+            end
+            return #slugs
+        end
+        RA.Start=RA.Get
+    end
 end

@@ -1019,15 +1019,8 @@ function M.Build(detail, hero)
     bossPinBtn:SetFrameLevel(frame:GetFrameLevel() + 2)
     Host.MakeOutline(bossPinBtn, 1, 0.82, 0)
     bossPinBtn.__huiKeepTextColor = true
-    bossPinBtn:SetScript("OnClick", function() M.ToggleBossPins() end)
+    bossPinBtn:SetScript("OnClick", function() M.ShowPinMenu(bossPinBtn) end)
     bossPinBtn:Hide()
-
-    local questPinBtn = Host.NewButton(frame, "", M.PIN_BTN_W, M.BAR_H, 14)
-    questPinBtn:SetFrameLevel(frame:GetFrameLevel() + 2)
-    Host.MakeOutline(questPinBtn, 1, 0.82, 0)
-    questPinBtn.__huiKeepTextColor = true
-    questPinBtn:SetScript("OnClick", function() M.ToggleQuestPins() end)
-    questPinBtn:Hide()
 
     local routePinBtn = Host.NewButton(frame, "", M.PIN_BTN_W, M.BAR_H, 14)
     routePinBtn:SetFrameLevel(frame:GetFrameLevel() + 2)
@@ -1114,7 +1107,6 @@ function M.Build(detail, hero)
     frame.btns = btns
     frame.route = routeLayer
     frame.bossPinBtn = bossPinBtn
-    frame.questPinBtn = questPinBtn
     frame.routePinBtn = routePinBtn
     frame.innerW = innerW
     frame.side = side
@@ -1182,9 +1174,6 @@ function M.SyncBar(layers, cur)
     local avail = M.FRAME_W - M.SIDE_PAD * 2
     if frame.bossPinBtn and frame.bossPinBtn:IsShown() then
         avail = avail - frame.bossPinBtn:GetWidth() - M.PIN_BTN_GAP
-    end
-    if frame.questPinBtn and frame.questPinBtn:IsShown() then
-        avail = avail - frame.questPinBtn:GetWidth() - M.PIN_BTN_GAP
     end
     if frame.routePinBtn and frame.routePinBtn:IsShown() then
         avail = avail - frame.routePinBtn:GetWidth() - M.PIN_BTN_GAP
@@ -1727,24 +1716,17 @@ end
 function M.SyncPinBtns()
     local frame = M.frame
     if not frame then return end
-    local bb, qb = frame.bossPinBtn, frame.questPinBtn
+    local bb = frame.bossPinBtn
     if bb then
-        local off = M.hideBossPins and true or false
-        bb:SetText(off and L["显示首领"] or L["隐藏首领"])
-        Host.SetOutline(bb, off, 1, 0.82, 0)
+        local any = M.HasKindPins(M.curId, "boss") or M.HasKindPins(M.curId, "quest")
+        local dim = (M.hideBossPins and M.HasKindPins(M.curId, "boss"))
+            or (M.hideQuestPins and M.HasKindPins(M.curId, "quest")) or false
+        bb:SetText(L["图钉显示"])
+        Host.SetOutline(bb, dim, 1, 0.82, 0)
         local fs = bb:GetFontString()
-        if fs then fs:SetTextColor(Unpack(off and C_GOLD or C_GREY)) end
+        if fs then fs:SetTextColor(Unpack(dim and C_GOLD or C_GREY)) end
         M.FitPinBtn(bb)
-        bb:SetShown(M.HasKindPins(M.curId, "boss"))
-    end
-    if qb then
-        local off = M.hideQuestPins and true or false
-        qb:SetText(off and L["显示任务"] or L["隐藏任务"])
-        Host.SetOutline(qb, off, 1, 0.82, 0)
-        local fs = qb:GetFontString()
-        if fs then fs:SetTextColor(Unpack(off and C_GOLD or C_GREY)) end
-        M.FitPinBtn(qb)
-        qb:SetShown(M.HasKindPins(M.curId, "quest"))
+        bb:SetShown(any)
     end
     local rb = frame.routePinBtn
     if rb then
@@ -1770,6 +1752,33 @@ function M.ToggleQuestPins()
     local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
     if type(s) == "table" then s.mapQuestHidden = M.hideQuestPins or nil end
     M.SyncPins()
+end
+
+function M.ShowPinMenu(owner)
+    local items = {}
+    local kinds = {
+        { key = "boss", label = L["首领图钉"], off = M.hideBossPins },
+        { key = "quest", label = L["任务图钉"], off = M.hideQuestPins },
+    }
+    for i = 1, #kinds do
+        local kd = kinds[i]
+        local has = M.HasKindPins(M.curId, kd.key)
+        items[#items + 1] = {
+            text = kd.label,
+            checked = has and not kd.off,
+            color = (not has or kd.off) and "|cff7a6a52" or nil,
+            func = function()
+                if kd.key == "boss" then
+                    M.ToggleBossPins()
+                else
+                    M.ToggleQuestPins()
+                end
+                M.SyncPinBtns()
+                M.ShowPinMenu(owner)
+            end,
+        }
+    end
+    ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
 end
 
 local function layoutLootRow(r, it, y, rowW)
@@ -2120,10 +2129,8 @@ function M.Paint(d)
     frame.bar:SetPoint("RIGHT", frame.hdrCard, "RIGHT", -M.SIDE_PAD, 0)
     frame.bossPinBtn:ClearAllPoints()
     frame.bossPinBtn:SetPoint("LEFT", frame.hdrCard, "LEFT", M.SIDE_PAD, 0)
-    frame.questPinBtn:ClearAllPoints()
-    frame.questPinBtn:SetPoint("LEFT", frame.bossPinBtn, "RIGHT", M.PIN_BTN_GAP, 0)
     frame.routePinBtn:ClearAllPoints()
-    frame.routePinBtn:SetPoint("LEFT", frame.questPinBtn, "RIGHT", M.PIN_BTN_GAP, 0)
+    frame.routePinBtn:SetPoint("LEFT", frame.bossPinBtn, "RIGHT", M.PIN_BTN_GAP, 0)
 
     if not layers then
         M.curLayer = nil

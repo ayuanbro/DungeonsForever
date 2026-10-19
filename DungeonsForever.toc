@@ -7,9 +7,10 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.8.20
+## Version: 1.8.22
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
+## OptionalDeps: Auctionator
 
 Locales\zhCN.lua
 Locales\zhTW.lua [AllowLoadTextLocale zhTW]
@@ -57,6 +58,8 @@ Core\Data\Data_ClassTier.lua
 Core\Data\Data_ClassGuide.lua
 Core\Data\Data_ClassCombat.lua
 Core\Data\Data_ClassQuest.lua
+Core\Data\Data_TalentTrees.lua
+Core\Data\Data_TalentPlans.lua
 Core\Data\Data_LootFilter.lua
 Core\Data\Data_RaidSets.lua
 Core\Data\Data_PvPRanks.lua
@@ -137,6 +140,10 @@ Core\Data\enUS\Data_ClassGuide.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ClassCombat.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_LootFilter.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_RaidSets.lua [AllowLoadTextLocale enUS]
+Core\Data\Data_ProfVendorOffers.lua
+Core\Data\Data_ProfFormulaSources.lua
+Core\Data\Data_ProfMining.lua
+Core\Data\Data_ProfFishingRoutes.lua
 Core\LootFilter.lua
 Core\DungeonUI.lua
 Core\PvPUI.lua
@@ -144,6 +151,9 @@ Core\FactionUI.lua
 Core\MapUI.lua
 Core\LootFilterUI.lua
 Core\RaidUI.lua
+Core\ProfEconomy.lua
+Core\ProfFishing.lua
+Core\ProfRouteSolver.lua
 Core\ProfRouteAuto.lua
 Core\ProfessionUI.lua
 Core\AuctionatorBridge.lua
@@ -156,6 +166,7 @@ Core\BisUI.lua
 Core\TierUI.lua
 Core\ClassCombatUI.lua
 Core\ClassQuestUI.lua
+Core\TalentTabUI.lua
 Core\GearUI.lua
 Core\MainFrame.lua
 Core\QuickBar.lua
