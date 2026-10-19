@@ -1,0 +1,77 @@
+function PV.RenderRanks()
+    local y = 0
+    -- ★★ 表头五列：x 锚点与行内列完全一致（2026-10-08 反馈：原单串「·」头与
+    --   右对齐的 点数 / 累计 / 最早解锁 列错位；奖励列与芯片起点 540 对齐）。
+    local rh = PV.rankHead
+    rh.lvl:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 6, -(y + 6))
+    rh.pts:SetPoint("TOPRIGHT", PV.child, "TOPLEFT", 366, -(y + 6))
+    rh.cum:SetPoint("TOPRIGHT", PV.child, "TOPLEFT", 448, -(y + 6))
+    rh.week:SetPoint("TOPRIGHT", PV.child, "TOPLEFT", 522, -(y + 6))
+    rh.rew:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 540, -(y + 6))
+    for _, fs in pairs(rh) do fs:Show() end
+    -- 当前军衔徽章（与冲刺页同一贴图族）：悬停显示实时军衔与进度。
+    local lv, lp = LiveState()
+    if lv and lv >= 1 then
+        PV.rankBadge:SetTexture(format("Interface\\PvPRankBadges\\PvPRank%02d", lv))
+        PV.rankBadge:SetPoint("TOPRIGHT", PV.child, "TOPLEFT",
+            PV.W - 76 - PV.TAB_STEP - 32, -(y + 1))
+        PV.rankBadge:Show()
+        if SetTip then
+            SetTip(PV.rankBadge, format(L["当前军衔：R%d · %.0f%%"], lv, (lp or 0) * 100))
+        end
+    end
+PV.facBtn2:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.W - 76 - PV.TAB_STEP, -(y + 1))
+    PV.facBtn2:Show()
+    PV.facBtn1:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.W - 76, -(y + 1))
+    PV.facBtn1:Show()
+    SetOutline(PV.facBtn1, PV.faction == "A", 1, 0.82, 0)
+    SetOutline(PV.facBtn2, PV.faction == "H", 1, 0.82, 0)
+    y = y + 26
+    local cursor = 1
+    for i = 1, 14 do
+        local rec = RD.ranks[i]
+        local row = PV.rankRows[i]
+        local nm = RANK_NAMES[i]
+        row.lvl:SetText(format("R%d", i))
+        row.nameA:SetText(nm.a)
+        row.slash:SetText("/")
+        row.nameH:SetText(nm.h)
+        if PV.faction == "H" then
+            row.nameA:Hide()
+            row.slash:Hide()
+            row.nameH:SetPoint("TOPLEFT", row, "TOPLEFT", 48, -6)
+            row.nameH:Show()
+        else
+            row.nameH:Hide()
+            row.slash:Hide()
+            row.nameA:Show()
+        end
+        row.pts:SetText(format("%d", rec.pts))
+        row.cum:SetText(format("%d", rec.cum))
+        row.week:SetText(format(L["第 %d 周"], rec.week))
+        local all = {}
+        local own = (PV.faction == "H") and rec.h or rec.a
+        for _, id in ipairs(own) do all[#all + 1] = id end
+        for _, id in ipairs(rec.s) do all[#all + 1] = id end
+        local cx = 540
+        for _, id in ipairs(all) do
+            local chip = PV.chips[cursor]
+            cursor = cursor + 1
+            chip.iconTex:SetTexture(ItemIcon(id))
+            chip.__id = id
+            chip:SetPoint("TOPLEFT", PV.child, "TOPLEFT", cx, -(y + 2))
+            chip:Show()
+            cx = cx + PV.CHIP + 4
+        end
+        row:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 0, -y)
+        row:Show()
+        y = y + PV.ROW_H
+    end
+    local foot = PV.labels.ranksFoot
+    foot:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -(y + 6))
+    foot:SetText(L["达到军衔后，在暴风城的勇士大厅 / 奥格瑞玛的传说大厅购买奖励；点数按赛季累计，升级不消耗"])
+    foot:Show()
+    PV.child:SetHeight(y + 30)
+end
+
+function PV.RenderSets()

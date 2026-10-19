@@ -1,0 +1,7 @@
+Files /tmp/Core_snap4/Core.lua and Core/Core.lua differ
+Files /tmp/Core_snap4/Data/Data_ClassGuide.lua and Core/Data/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/Data/Data_LootFilter.lua and Core/Data/Data_LootFilter.lua differ
+Files /tmp/Core_snap4/Data/enUS/Data_ClassGuide.lua and Core/Data/enUS/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/Data/zhTW/Data_ClassGuide.lua and Core/Data/zhTW/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/LootFilter.lua and Core/LootFilter.lua differ
+Files /tmp/Core_snap4/LootFilterUI.lua and Core/LootFilterUI.lua differ

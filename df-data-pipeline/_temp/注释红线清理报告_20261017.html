@@ -1,0 +1,108 @@
+<meta charset="utf-8">
+<title>注释红线清理报告 · 2026-10-17</title>
+<style>
+:root{--bg:#fff;--fg:#1b1b1b;--mut:#6b6b6b;--line:#e3e3e3;--bad:#A32D2D;--good:#0F6E56;--warn:#854F0B;}
+body{margin:0;padding:28px 32px;background:var(--bg);color:var(--fg);
+font:14px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;max-width:1080px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:26px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.sub{color:var(--mut);font-size:12.5px;margin:0 0 20px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 6px}
+.kpi div{background:#f7f7f7;border-radius:10px;padding:10px 16px;min-width:120px}
+.kpi b{display:block;font-size:22px;font-weight:600;line-height:1.25}
+.kpi span{color:var(--mut);font-size:12px}
+.bad{color:var(--bad)}.good{color:var(--good)}.warn{color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:6px}
+th,td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:500;background:#fafafa}
+tfoot td{font-weight:600;border-top:1px solid #bbb}
+code{background:#f4f4f4;padding:1px 5px;border-radius:4px;font-size:12px}
+ul{margin:6px 0;padding-left:20px}li{margin:3px 0}
+.box{border-left:3px solid var(--line);padding:2px 0 2px 14px;margin:10px 0}
+.box.b{border-color:var(--bad)}.box.g{border-color:var(--good)}.box.w{border-color:var(--warn)}
+</style>
+
+<h1>注释红线清理报告</h1>
+<p class="sub">DungeonsForever · 2026-10-17 · 手写件（Core/*.lua + 3 个手维护数据文件）</p>
+
+<div class="kpi">
+  <div><b class="good">2 941</b><span>删除的注释行</span></div>
+  <div><b class="good">0</b><span>剩余代码体注释</span></div>
+  <div><b>4 976 → 1 688</b><span>注释行总数（余下全是生成物头注释）</span></div>
+  <div><b class="good">0</b><span>功能回归</span></div>
+</div>
+
+<h2>一、为什么门禁一直是绿的</h2>
+<p>打包前检里的 <code>check_comment_redline.py</code> 只扫描「注释里是否出现其他插件名」，<b>完全不检查注释的数量、类型与内容</b>。它一路报 <code>[OK] 0 命中</code>，而 AGENTS.md 里「头注释只写 1~3 行、禁实现历程 / 归因证据 / 事故记录」这条从来没有对应的自动检查 —— 于是违规注释静默存活了整轮。</p>
+<p>另有一条历史线索：<code>_temp/clean_comments_20261010.py</code> 在 2026-10-10 做过一轮清理，但它<b>只清「文件头 + 溯源措辞」</b>，代码体内的注释不在它的处理范围内。所以「还有很多注释」不是新问题，是<b>存量从未被清</b>。</p>
+
+<h2>二、清理范围与效果</h2>
+<table>
+<thead><tr><th>文件</th><th>清理前<br>整行注释</th><th>行尾注释</th><th>清理后<br>代码体注释</th></tr></thead>
+<tbody>
+<tr><td>Core/ProfessionUI.lua</td><td>756</td><td>78</td><td>0</td></tr>
+<tr><td>Core/DungeonUI.lua</td><td>503</td><td>70</td><td>0</td></tr>
+<tr><td>Core/MapUI.lua</td><td>332</td><td>49</td><td>0</td></tr>
+<tr><td>Core/ProfFollow.lua</td><td>168</td><td>36</td><td>0</td></tr>
+<tr><td>Core/TierUI.lua</td><td>160</td><td>2</td><td>0</td></tr>
+<tr><td>Core/ExploreUI.lua</td><td>150</td><td>5</td><td>0</td></tr>
+<tr><td>Core/RaidUI.lua</td><td>150</td><td>22</td><td>0</td></tr>
+<tr><td>Core/CollectionUI.lua</td><td>137</td><td>43</td><td>0</td></tr>
+<tr><td>Core/ProfRouteAuto.lua</td><td>120</td><td>12</td><td>0</td></tr>
+<tr><td>Core/ExploreMap.lua</td><td>78</td><td>19</td><td>0</td></tr>
+<tr><td>Core/QuickBar.lua</td><td>59</td><td>21</td><td>0</td></tr>
+<tr><td>Core/PvPUI.lua</td><td>54</td><td>2</td><td>0</td></tr>
+<tr><td>Core/Hui.lua</td><td>46</td><td>2</td><td>0</td></tr>
+<tr><td>Core/LootFilterUI.lua</td><td>41</td><td>4</td><td>0</td></tr>
+<tr><td>Core/Data/Data_LootFilter.lua</td><td>38</td><td>2</td><td>0</td></tr>
+<tr><td>Core/BisUI.lua</td><td>32</td><td>5</td><td>0</td></tr>
+<tr><td>Core/Core.lua</td><td>31</td><td>1</td><td>0</td></tr>
+<tr><td>其余 11 个文件</td><td>80</td><td>12</td><td>0</td></tr>
+</tbody>
+<tfoot><tr><td>合计 27 个文件</td><td>2 905</td><td>383</td><td>0</td></tr></tfoot>
+</table>
+<p class="sub">清理后剩余的 1 688 行注释全部集中在<b>生成物</b>（<code>Core/Data/**</code>、<code>Locales/zhTW|enUS.lua</code>）的文件头，属脚本产出模板，按 AGENTS.md 豁免。</p>
+
+<h2>三、清理过程的安全证据</h2>
+<div class="box g">
+<b>删的只是注释，一个代码字符都没动。</b>落盘前逐文件比对「代码投影」（剥掉注释与空白后的字符流），27 个文件全部前后完全一致；另有真实 Lua 5.1 语法校验 147 个文件 0 失败。
+</div>
+<div class="box g">
+<b>行尾风格零变化。</b>DungeonUI.lua / Core.lua 等 CRLF 文件与其余 LF 文件逐一比对，24 LF + 3 CRLF，与清理前一致。
+</div>
+<div class="box g">
+<b>不存在被注释掉的死代码。</b>27 个文件里块注释 <code>--[[ ]]</code> 数量为 0，所有注释都是行注释，删除不碰任何逻辑。
+</div>
+<div class="box w">
+<b>备份在 <code>_temp/_cmt_bak_20261017/</code>（2.0 MB / 27 个文件）</b>，扩展名已改为 <code>.lua.bak</code>，不影响任何工具的扫描基线。
+</div>
+
+<h2>四、意外发现：测试断言锚在注释上</h2>
+<p>清完注释后 <code>df_dungeon_check</code> 反而报了 4 条失败。逐字追查原因 —— <b>断言的判定条件里直接写了源码注释原文</b>，例如：</p>
+<ul>
+<li><code>'斑马纹已承担行分隔' in profui</code> —— 该字符串在源码里就是一句注释；</li>
+<li><code>'PD.lvRouteHead = nil   -- 2026-10-11 用户：…逐次刷新' in profui</code> —— 要求「代码行 + 行尾注释」逐字出现；</li>
+<li>多行字面量里嵌着 <code>-- 弹窗锚着滚动内容…</code> 这类行尾注释。</li>
+</ul>
+<p>这类断言本质是<b>把注释当契约</b>：注释一清就断，而且反向也危险 —— 用「注释当负向锚」的断言会变成恒真白测。已按「锚代码、不锚注释」重写 <b>6 处断言子句 + 2 条变异锚</b>（全部改用唯一代码片段，如 <code>'PD.ResetItemNameMemo()\n    PD.lvRouteHead = nil'</code>）：</p>
+<table>
+<thead><tr><th>位置</th><th>原锚（依赖注释）</th><th>新锚（唯一代码片段）</th></tr></thead>
+<tbody>
+<tr><td>df_dungeon_check:1170</td><td>'斑马纹已承担行分隔'</td><td>'r.sep:Hide()'</td></tr>
+<tr><td>df_dungeon_check:2029</td><td>含 -- 弹窗锚着滚动内容… 的多行块</td><td>同块去注释</td></tr>
+<tr><td>df_dungeon_check:2082</td><td>PD.HideVendorPick() -- 行池复用…</td><td>PD.HideVendorPick()+if slug ~= PD.cur then</td></tr>
+<tr><td>df_dungeon_check:2083</td><td>PD.HideVendorPick() -- 弹窗锚着滚动内容…</td><td>PD.HideVendorPick()+DG.WheelScroll(…)</td></tr>
+<tr><td>df_dungeon_check:2162</td><td>PD.lvRouteHead = nil -- 工具行路线标题…</td><td>lvRouteHead=nil+local _learned=PD.ProfLearned()</td></tr>
+<tr><td>df_dungeon_check:2163</td><td>PD.lvRouteHead = nil -- 2026-10-11 用户…</td><td>PD.ResetItemNameMemo()+lvRouteHead=nil</td></tr>
+<tr><td>df_mut_check:1187</td><td>PD.HideVendorPick() -- 行池复用…（变异死锚）</td><td>同一代码对</td></tr>
+<tr><td>df_mut_check:1333</td><td>if PD.UpdateVScroll… -- 滚动条随内容高度刷新（变异死锚）</td><td>…end+PD.FlushPendingRows()</td></tr>
+</tbody>
+</table>
+<p class="sub">重锚后：df_dungeon_check <b>1 097 项全过</b>；df_mut_check 死锚由 5 条降到 3 条、变异后新 FAIL 206 条（全部有效捕获）。</p>
+
+<h2>五、遗留与建议</h2>
+<ul>
+<li><b>生成物头注释偏长</b>：<code>Core/Data/enUS/Data_ClassGuide.lua</code>(22 行)、<code>Data_Explore.lua</code>(20 行)、<code>Data_DungeonEntry.lua</code>(12 行)、<code>Data_DungeonGuide.lua</code>(10 行)、<code>Data_BossPos.lua</code>(9 行) 超过「1~3 行」口径。这些是生成器模板产物，要改需同步改对应 <code>_temp/gen_*.py</code>，否则重跑会被带回来。</li>
+<li><b>3 条既有变异死锚</b>（与本次无关，早已失效）：TierUI 热区吞滚轮、DungeonUI 卡片墙列数 3→2、卡片墙底色复位。</li>
+<li><b>建议补一道自动门</b>：把手写件的「代码体注释必须为 0」纳入打包前检，否则下一次仍会静默回潮。</li>
+</ul>

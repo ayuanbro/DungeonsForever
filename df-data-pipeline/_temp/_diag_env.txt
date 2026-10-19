@@ -1,0 +1,15 @@
+﻿which python:
+C:\Users\Administrator\.workbuddy\binaries\python\versions\3.13.12\python.exe
+---- try import lupa ----
+python.exe : Traceback (most recent call last):
+所在位置 行:445 字符: 264
++ ... ng UTF8 $o; & python -c "import sys,lupa; print(sys.version); print(' ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 1, in <module>
+    import sys,lupa; print(sys.version); print('lupa', getattr(lupa,'__version__','?'))
+    ^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'lupa'
+exit=1

@@ -1,0 +1,12 @@
+  [OK ] ★ 强制溢出：截断后卡片仍不越界/不重叠/child 高自洽/单卡  [[over=0 ovl=0 hbad=0 n=1]]
+  [OK ] ★ SEC_DROP 数值 pin：TT.SEC_DROP == 5（★ 专精内容区下移 5px 需求的回归保护；QA R1）  [[5]]
+  [OK ] ★ SEC_TOP 结构：== SEC_TAB_Y + SEC_TAB_H + SEC_DROP（SEC_DROP 真被消费）  [[143 vs 143]]
+  [OK ] ★★ 专精模式：TT.scroll 顶锚 = -SEC_TOP（spec 分支收口正确）  [[ok=true nav=spec topY=-143 -SEC_TOP=-143 err=nil]]
+  [OK ] ★★ 排行模式：TT.scroll 顶锚 = -BODY_TOP（rank 分支不受下移影响）  [[ok=true topY=-52 -BODY_TOP=-52 err=nil]]
+  [OK ] ★★ spec/rank 顶锚互异（SEC_TOP ~= BODY_TOP，分支不串）  [[143 vs 52]]
+
+通过 50 / 失败 0
+10:  [OK ] ★★ 默认板块零溢出降级（__overflow==0；真实峰值溢出见 PASS 1E）  [[0]]
+49:  [OK ] ★ SEC_DROP 数值 pin：TT.SEC_DROP == 5（★ 专精内容区下移 5px 需求的回归保护；QA R1）  [[5]]
+50:  [OK ] ★ SEC_TOP 结构：== SEC_TAB_Y + SEC_TAB_H + SEC_DROP（SEC_DROP 真被消费）  [[143 vs 143]]
+55:通过 50 / 失败 0

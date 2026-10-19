@@ -1,0 +1,18 @@
+=== ns.CloseSettings in MainFrame ===
+260:ns.CloseSettings = function()
+=== CloseConfig in LootFilterUI ===
+218:    gear:SetScript("OnClick", function() ns.PlaySound(1); UI:ToggleConfig() end)
+325:function UI:EnsureConfig()
+368:    shield:SetScript("OnMouseUp", function() UI:CloseConfig() end)
+474:    scroll:SetScript("OnMouseWheel", function(self, delta) UI:ScrollConfig(delta) end)
+476:    content:SetScript("OnMouseWheel", function(self, delta) UI:ScrollConfig(delta) end)
+513:        hdr.hit:SetScript("OnMouseWheel", function(self, delta) UI:ScrollConfig(delta) end)
+546:function UI:LayoutConfig()
+603:function UI:ScrollConfig(delta)
+634:function UI:ConfigHint(text)
+647:function UI:RefreshConfig()
+=== diff snap5 vs Core ===
+diff: /tmp/Core_snap5: No such file or directory
+=== MainFrame mtime now ===
+2026-09-30 05:03:53.259180500 +0800 Core/MainFrame.lua
+2026-09-30 05:03:52.750416300 +0800 Core/LootFilterUI.lua

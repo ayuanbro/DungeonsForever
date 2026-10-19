@@ -1,0 +1,28 @@
+﻿== BGLite tools dir ==
+True
+== search lupa*.pyd (C:\Users, D:\workspace, D:\Game) ==
+== search python.exe under venvs ==
+D:\workspace\project-002-horizon-news-radar\Horizon\.venv\Scripts\python.exe
+D:\workspace\project-003-video-extractor\outputs\20260805-001-本地视频提取器-绿色版\.venv\Scripts\python.exe
+D:\workspace\project-005-wow-addon-publisher\.venv\Scripts\python.exe
+D:\workspace\project-015-rvc-webui\src\.venv\Scripts\python.exe
+C:\Users\Administrator\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe
+C:\Users\Administrator\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\venv\scripts\nt\python.exe
+C:\Users\Administrator\.cache\codex-runtimes\codex-primary-runtime.previous-7806d494-6b28-4f44-b9a3-643965933ed2\dependencies\python\python.exe
+C:\Users\Administrator\.meituan-catpaw\runtimes\environments\python\3.12.13\049fa90d4678\Scripts\python.exe
+C:\Users\Administrator\.meituan-catpaw\runtimes\environments\python\3.12.13\5ebe05a9b581\Scripts\python.exe
+C:\Users\Administrator\.meituan-catpaw\runtimes\environments\python\3.12.13\8b68e89a43bf\Scripts\python.exe
+C:\Users\Administrator\.meituan-catpaw\runtimes\environments\python\3.12.13\b15a3a46bd23\Scripts\python.exe
+C:\Users\Administrator\.meituan-catpaw\runtimes\environments\python\3.12.13\e18c163fb33f\Scripts\python.exe
+C:\Users\Administrator\.meituan-catpaw\runtimes\environments\python\3.12.13\e3e1c23f9932\Scripts\python.exe
+C:\Users\Administrator\.meituan-catpaw\runtimes\python\versions\3.12.13\python.exe
+C:\Users\Administrator\.meituan-catpaw\runtimes\python\versions\3.12.13\Lib\venv\scripts\nt\python.exe
+C:\Users\Administrator\.venv-html-to-docx\Scripts\python.exe
+C:\Users\Administrator\.workbuddy\binaries\python\envs\default\Scripts\python.exe
+C:\Users\Administrator\.workbuddy\binaries\python\envs\video_analysis\Scripts\python.exe
+C:\Users\Administrator\.workbuddy\binaries\python\versions\3.13.12\python.exe
+C:\Users\Administrator\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe
+C:\Users\Administrator\openai_pay_long_link\.venv\Scripts\python.exe
+C:\Users\Administrator\python-sdk\python3.13.2\python.exe
+C:\Users\Administrator\WorkBuddy\2026-08-02-04-11-10\stable-audio-3\.venv\Scripts\python.exe
+DONE

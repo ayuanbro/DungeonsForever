@@ -1,0 +1,5447 @@
+[
+{
+"map": 1453,
+"en": "Tel'Athir",
+"zh": "泰兰希尔",
+"tw": "泰蘭希爾",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1455,
+"en": "Vosur Brakthel",
+"zh": "沃萨·布拉克塞尔",
+"tw": "沃薩·布拉克塞爾",
+"loc_en": "Tinker Town, Ironforge",
+"loc_zh": "Tinker Town · 铁炉堡",
+"loc_tw": "Tinker Town · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Milla Fairancora",
+"zh": "米拉·法拉科纳",
+"tw": "米拉·法拉科納",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1438,
+"en": "Cyndra Kindwhisper",
+"zh": "塞恩德拉·细语者",
+"tw": "塞恩德拉·細語者",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 1429,
+"en": "Alchemist Mallory",
+"zh": "炼金师玛洛瑞",
+"tw": "鍊金師瑪洛瑞",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1432,
+"en": "Ghak Healtouch",
+"zh": "加克",
+"tw": "加克",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 2991,
+"en": "Iaadaria Bitterwind",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2991,
+"en": "Nyassa Swiftdraught",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2991,
+"en": "Valiena Swiftgale",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Whuut",
+"zh": "伍特",
+"tw": "伍特",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Doctor Martin Felben",
+"zh": "马丁·费尔本",
+"tw": "馬丁·費爾本",
+"loc_en": "The Apothecarium, Undercity",
+"loc_zh": "药剂师区 · 幽暗城",
+"loc_tw": "藥劑師區 · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Kray",
+"zh": "克瑞",
+"tw": "克瑞",
+"loc_en": "Middle Rise, Thunder Bluff",
+"loc_zh": "Middle Rise · 雷霆崖",
+"loc_tw": "Middle Rise · 雷霆崖"
+},
+{
+"map": 1420,
+"en": "Carolai Anise",
+"zh": "卡罗莱·安尼斯",
+"tw": "卡羅萊·安尼斯",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1411,
+"en": "Miao'zan",
+"zh": "米奥赞",
+"tw": "米奧贊",
+"loc_en": "Sen'jin Village, Durotar",
+"loc_zh": "Sen'jin Village · 杜隆塔尔",
+"loc_tw": "Sen'jin Village · 杜隆塔爾"
+},
+{
+"map": 2991,
+"en": "Nyassa Swiftdraught",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2991,
+"en": "Valiena Swiftgale",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1453,
+"en": "Lilyssia Nightbreeze",
+"zh": "莉琳希亚·夜风",
+"tw": "莉琳希亞·夜風",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1457,
+"en": "Sylvanna Forestmoon",
+"zh": "希尔瓦娜·林月",
+"tw": "希爾瓦娜·林月",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1455,
+"en": "Tally Berryfizz",
+"zh": "塔雷·浆泡",
+"tw": "塔雷·漿泡",
+"loc_en": "Tinker Town, Ironforge",
+"loc_zh": "Tinker Town · 铁炉堡",
+"loc_tw": "Tinker Town · 鐵爐堡"
+},
+{
+"map": 1445,
+"en": "Alchemist Narett",
+"zh": "炼金师纳瑞特",
+"tw": "鍊金師納瑞特",
+"loc_en": "Theramore Isle, Dustwallow Marsh",
+"loc_zh": "Theramore Isle · 尘泥沼泽",
+"loc_tw": "Theramore Isle · 塵泥沼澤"
+},
+{
+"map": 1440,
+"en": "Kylanna",
+"zh": "凯兰娜",
+"tw": "凱蘭娜",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 1434,
+"en": "Jaxin Chong",
+"zh": "加克森",
+"tw": "加克森",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1454,
+"en": "Yelmak",
+"zh": "耶尔玛克",
+"tw": "耶爾瑪克",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Doctor Marsh",
+"zh": "马尔什医生",
+"tw": "馬爾什醫生",
+"loc_en": "The Apothecarium, Undercity",
+"loc_zh": "药剂师区 · 幽暗城",
+"loc_tw": "藥劑師區 · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Bena Winterhoof",
+"zh": "本娜·冰蹄",
+"tw": "本娜·冰蹄",
+"loc_en": "Middle Rise, Thunder Bluff",
+"loc_zh": "Middle Rise · 雷霆崖",
+"loc_tw": "Middle Rise · 雷霆崖"
+},
+{
+"map": 1424,
+"en": "Serge Hinott",
+"zh": "瑟尔格·希诺特",
+"tw": "瑟爾格·希諾特",
+"loc_en": "Tarren Mill, Hillsbrad Foothills",
+"loc_zh": "Tarren Mill · 希尔斯布莱德丘陵",
+"loc_tw": "Tarren Mill · 希爾斯布萊德丘陵"
+},
+{
+"map": 1440,
+"en": "Kylanna",
+"zh": "凯兰娜",
+"tw": "凱蘭娜",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 1434,
+"en": "Jaxin Chong",
+"zh": "加克森",
+"tw": "加克森",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1457,
+"en": "Ainethil",
+"zh": "安尼希尔",
+"tw": "安尼希爾",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1416,
+"en": "Linzy Blackbolt",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 1416,
+"en": "Patricia Egan",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 1458,
+"en": "Doctor Herbert Halsey",
+"zh": "赫伯特·哈尔希医生",
+"tw": "赫伯特·哈爾希醫生",
+"loc_en": "The Apothecarium, Undercity",
+"loc_zh": "药剂师区 · 幽暗城",
+"loc_tw": "藥劑師區 · 幽暗城"
+},
+{
+"map": 1444,
+"en": "Kylanna Windwhisper",
+"zh": "凯兰娜·风语",
+"tw": "凱蘭娜·風語",
+"loc_en": "Feathermoon Stronghold, Feralas",
+"loc_zh": "羽月要塞 · 菲拉斯",
+"loc_tw": "羽月要塞 · 菲拉斯"
+},
+{
+"map": 1448,
+"en": "Master Mycologist Shurome",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Emerald Sanctuary, Felwood",
+"loc_zh": "Emerald Sanctuary · Felwood",
+"loc_tw": "Emerald Sanctuary · Felwood"
+},
+{
+"map": 1435,
+"en": "Rogvar",
+"zh": "罗格瓦尔",
+"tw": "羅格瓦爾",
+"loc_en": "Stonard, Swamp of Sorrows",
+"loc_zh": "Stonard · 悲伤沼泽",
+"loc_tw": "Stonard · 悲傷沼澤"
+},
+{
+"map": 1448,
+"en": "Master Mycologist Shurome",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Emerald Sanctuary, Felwood",
+"loc_zh": "Emerald Sanctuary · Felwood",
+"loc_tw": "Emerald Sanctuary · Felwood"
+},
+{
+"map": 1453,
+"en": "Dane Lindgren",
+"zh": "丹恩·林德雷",
+"tw": "丹恩·林德雷",
+"loc_en": "Dwarven District, Stormwind City",
+"loc_zh": "Dwarven District · 暴风城",
+"loc_tw": "Dwarven District · 暴風城"
+},
+{
+"map": 1455,
+"en": "Groum Stonebeard",
+"zh": "格鲁姆·石须",
+"tw": "格魯姆·石須",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1429,
+"en": "Smith Argus",
+"zh": "铁匠阿古斯",
+"tw": "鐵匠阿古斯",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1426,
+"en": "Tognus Flintfire",
+"zh": "托格努斯·燧火",
+"tw": "托格努斯·燧火",
+"loc_en": "Kharanos, Dun Morogh",
+"loc_zh": "卡拉诺斯 · 丹莫罗",
+"loc_tw": "卡拉諾斯 · 丹莫羅"
+},
+{
+"map": 1439,
+"en": "Delfrum Flintbeard",
+"zh": "迪尔弗拉姆·火须",
+"tw": "迪爾弗拉姆·火須",
+"loc_en": "Auberdine, Darkshore",
+"loc_zh": "Auberdine · 黑海岸",
+"loc_tw": "Auberdine · 黑海岸"
+},
+{
+"map": 2548,
+"en": "Alphonse Dumas",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Riverglades",
+"loc_zh": "Riverglades",
+"loc_tw": "Riverglades"
+},
+{
+"map": 2991,
+"en": "Aedi Thriceforged",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Ug'thok",
+"zh": "乌格索克",
+"tw": "烏格索克",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Basil Frye",
+"zh": "巴兹尔·弗莱伊",
+"tw": "巴茲爾·弗萊伊",
+"loc_en": "War Quarter, Undercity",
+"loc_zh": "War Quarter · 幽暗城",
+"loc_tw": "War Quarter · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Thrag Stonehoof",
+"zh": "瑟拉格·石蹄",
+"tw": "瑟拉格·石蹄",
+"loc_en": "Lower Rise, Thunder Bluff",
+"loc_zh": "Lower Rise · 雷霆崖",
+"loc_tw": "Lower Rise · 雷霆崖"
+},
+{
+"map": 1411,
+"en": "Dwukk",
+"zh": "杜克",
+"tw": "杜克",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1421,
+"en": "Guillaume Sorouy",
+"zh": "古拉摩·索洛伊",
+"tw": "古拉摩·索洛伊",
+"loc_en": "The Sepulcher, Silverpine Forest",
+"loc_zh": "The Sepulcher · Silverpine Forest",
+"loc_tw": "The Sepulcher · Silverpine Forest"
+},
+{
+"map": 2991,
+"en": "Aedi Thriceforged",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 1453,
+"en": "Therum Deepforge",
+"zh": "瑟鲁姆·深炉",
+"tw": "瑟魯姆·深爐",
+"loc_en": "Dwarven District, Stormwind City",
+"loc_zh": "Dwarven District · 暴风城",
+"loc_tw": "Dwarven District · 暴風城"
+},
+{
+"map": 1455,
+"en": "Rotgath Stonebeard",
+"zh": "洛特加斯·石须",
+"tw": "洛特加斯·石須",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1431,
+"en": "Clarise Gnarltree",
+"zh": "克拉莉斯·纳尔特里",
+"tw": "克拉莉斯·納爾特里",
+"loc_en": "Darkshire, Duskwood",
+"loc_zh": "Darkshire · 暮色森林",
+"loc_tw": "Darkshire · 暮色森林"
+},
+{
+"map": 2991,
+"en": "Daeann Steelwind",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Snarl",
+"zh": "斯纳尔",
+"tw": "斯納爾",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "James Van Brunt",
+"zh": "詹姆斯·范·布朗特",
+"tw": "詹姆斯·範·布朗特",
+"loc_en": "War Quarter, Undercity",
+"loc_zh": "War Quarter · 幽暗城",
+"loc_tw": "War Quarter · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Karn Stonehoof",
+"zh": "卡恩·石蹄",
+"tw": "卡恩·石蹄",
+"loc_en": "Lower Rise, Thunder Bluff",
+"loc_zh": "Lower Rise · 雷霆崖",
+"loc_tw": "Lower Rise · 雷霆崖"
+},
+{
+"map": 1413,
+"en": "Traugh",
+"zh": "特劳弗",
+"tw": "特勞弗",
+"loc_en": "The Crossroads, The Barrens",
+"loc_zh": "The Crossroads · The Barrens",
+"loc_tw": "The Crossroads · The Barrens"
+},
+{
+"map": 1420,
+"en": "Angus Hammerhand",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Bandarion Keep, Tirisfal Glades",
+"loc_zh": "Bandarion Keep · 提瑞斯法林地",
+"loc_tw": "Bandarion Keep · 提瑞斯法林地"
+},
+{
+"map": 2991,
+"en": "Daeann Steelwind",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1455,
+"en": "Bengus Deepforge",
+"zh": "本古斯·深炉",
+"tw": "本古斯·深爐",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1416,
+"en": "Alard Schmied",
+"zh": "奥拉尔德·施米尔",
+"tw": "奧拉爾德·施米爾",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 1454,
+"en": "Saru Steelfury",
+"zh": "萨鲁·钢怒",
+"tw": "薩魯·鋼怒",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1434,
+"en": "Brikk Keencraft",
+"zh": "布里克·基克拉夫",
+"tw": "布里克·基克拉夫",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1434,
+"en": "Brikk Keencraft",
+"zh": "布里克·基克拉夫",
+"tw": "布里克·基克拉夫",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1453,
+"en": "Betty Quin",
+"zh": "贝蒂·奎恩",
+"tw": "貝蒂·奎恩",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1455,
+"en": "Thonys Pillarstone",
+"zh": "索洛尼斯·支柱石",
+"tw": "索洛尼斯·支柱石",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Lalina Summermoon",
+"zh": "拉琳娜·夏月",
+"tw": "拉琳娜·夏月",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1438,
+"en": "Alanna Raveneye",
+"zh": "阿兰娜·鸦眼",
+"tw": "阿蘭娜·鴉眼",
+"loc_en": "Oracle Glade, Teldrassil",
+"loc_zh": "先知林地 · 泰达希尔",
+"loc_tw": "先知林地 · 泰達希爾"
+},
+{
+"map": 2521,
+"en": "Nasalanna Windsinger",
+"zh": "娜萨拉娜·风歌",
+"tw": "娜薩拉娜·風歌",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Eaysaa Brightgust",
+"zh": "伊萨·明风",
+"tw": "伊薩·明風",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Jhag",
+"zh": "加格",
+"tw": "加格",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Malcomb Wynn",
+"zh": "马尔科姆·韦恩",
+"tw": "馬爾科姆·韋恩",
+"loc_en": "The Apothecarium, Undercity",
+"loc_zh": "药剂师区 · 幽暗城",
+"loc_tw": "藥劑師區 · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Mot Dawnstrider",
+"zh": "莫特·破晓者",
+"tw": "莫特·破曉者",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1420,
+"en": "Vance Undergloom",
+"zh": "范斯·安德格鲁姆",
+"tw": "範斯·安德格魯姆",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1411,
+"en": "Pa'zula",
+"zh": "帕祖拉",
+"tw": "帕祖拉",
+"loc_en": "Sen'jin Village, Durotar",
+"loc_zh": "Sen'jin Village · 杜隆塔尔",
+"loc_tw": "Sen'jin Village · 杜隆塔爾"
+},
+{
+"map": 2521,
+"en": "Nasalanna Windsinger",
+"zh": "娜萨拉娜·风歌",
+"tw": "娜薩拉娜·風歌",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Eaysaa Brightgust",
+"zh": "伊萨·明风",
+"tw": "伊薩·明風",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1453,
+"en": "Lucan Cordell",
+"zh": "卢坎·科德尔",
+"tw": "盧坎·科德爾",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1455,
+"en": "Gimble Thistlefuzz",
+"zh": "金布尔·刺球果",
+"tw": "金布爾·刺球果",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Taladan",
+"zh": "塔拉丹",
+"tw": "塔拉丹",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1444,
+"en": "Xylinnia Starshine",
+"zh": "希琳妮亚·星辉",
+"tw": "希琳妮亞·星輝",
+"loc_en": "Feathermoon Stronghold, Feralas",
+"loc_zh": "羽月要塞 · 菲拉斯",
+"loc_tw": "羽月要塞 · 菲拉斯"
+},
+{
+"map": 1454,
+"en": "Godan",
+"zh": "戈丹",
+"tw": "戈丹",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Lavinia Crowe",
+"zh": "拉维妮娅·克罗",
+"tw": "拉維妮婭·克羅",
+"loc_en": "The Apothecarium, Undercity",
+"loc_zh": "药剂师区 · 幽暗城",
+"loc_tw": "藥劑師區 · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Teg Dawnstrider",
+"zh": "泰格·破晓者",
+"tw": "泰格·破曉者",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1429,
+"en": "Kitta Firewind",
+"zh": "基塔·火风",
+"tw": "基塔·火風",
+"loc_en": "Tower of Azora, Elwynn Forest",
+"loc_zh": "阿佐拉之塔 · 艾尔文森林",
+"loc_tw": "阿佐拉之塔 · 艾爾文森林"
+},
+{
+"map": 1416,
+"en": "Vanessa Sellers",
+"zh": "瓦妮莎·塞勒斯",
+"tw": "瓦妮莎·塞勒斯",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 1442,
+"en": "Hgarth",
+"zh": "加加斯",
+"tw": "加加斯",
+"loc_en": "Sun Rock Retreat, Stonetalon Mountains",
+"loc_zh": "日石壁垒 · 石爪山脉",
+"loc_tw": "日石壁壘 · 石爪山脈"
+},
+{
+"map": 1418,
+"en": "Annora",
+"zh": "安诺拉",
+"tw": "安諾拉",
+"loc_en": "Inside Uldaman",
+"loc_zh": "Inside Uldaman",
+"loc_tw": "Inside Uldaman"
+},
+{
+"map": 1418,
+"en": "Annora",
+"zh": "安诺拉",
+"tw": "安諾拉",
+"loc_en": "Inside Uldaman",
+"loc_zh": "Inside Uldaman",
+"loc_tw": "Inside Uldaman"
+},
+{
+"map": 1426,
+"en": "Bronk Guzzlegear",
+"zh": "布隆克",
+"tw": "布隆克",
+"loc_en": "Steelgrill's Depot, Dun Morogh",
+"loc_zh": "Steelgrill's Depot · 丹莫罗",
+"loc_tw": "Steelgrill's Depot · 丹莫羅"
+},
+{
+"map": 1432,
+"en": "Deek Fizzlebizz",
+"zh": "迪克",
+"tw": "迪克",
+"loc_en": "Stonewrought Dam, Loch Modan",
+"loc_zh": "Stonewrought Dam · 洛克莫丹",
+"loc_tw": "Stonewrought Dam · 洛克莫丹"
+},
+{
+"map": 1455,
+"en": "Jemma Quikswitch",
+"zh": "耶玛",
+"tw": "耶瑪",
+"loc_en": "Tinker Town, Ironforge",
+"loc_zh": "Tinker Town · 铁炉堡",
+"loc_tw": "Tinker Town · 鐵爐堡"
+},
+{
+"map": 1439,
+"en": "Jenna Lemkenilli",
+"zh": "洁娜·雷姆尼利",
+"tw": "潔娜·雷姆尼利",
+"loc_en": "Auberdine, Darkshore",
+"loc_zh": "Auberdine · 黑海岸",
+"loc_tw": "Auberdine · 黑海岸"
+},
+{
+"map": 1453,
+"en": "Sprite Jumpsprocket",
+"zh": "斯普莱特",
+"tw": "斯普萊特",
+"loc_en": "Dwarven District, Stormwind City",
+"loc_zh": "Dwarven District · 暴风城",
+"loc_tw": "Dwarven District · 暴風城"
+},
+{
+"map": 1413,
+"en": "Tinkerwiz",
+"zh": "廷克维斯",
+"tw": "廷克維斯",
+"loc_en": "Ratchet, The Barrens",
+"loc_zh": "棘齿城 · The Barrens",
+"loc_tw": "棘齒城 · The Barrens"
+},
+{
+"map": 2521,
+"en": "Strange Hermit",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shadowgale Forest, Zephras Isle",
+"loc_zh": "Shadowgale Forest · 泽夫拉斯岛",
+"loc_tw": "Shadowgale Forest · 澤夫拉斯島"
+},
+{
+"map": 1458,
+"en": "Graham Van Talen",
+"zh": "格拉哈姆·范·塔伦",
+"tw": "格拉哈姆·範·塔倫",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Mukdrak",
+"zh": "穆德拉克",
+"tw": "穆德拉克",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1454,
+"en": "Thund",
+"zh": "桑德",
+"tw": "桑德",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1412,
+"en": "Twizwick Sprocketgrind",
+"zh": "图兹维克·斯普格林",
+"tw": "圖茲維克·斯普格林",
+"loc_en": "Venture Co. Mine, Mulgore",
+"loc_zh": "Venture Co. Mine · 莫高雷",
+"loc_tw": "Venture Co. Mine · 莫高雷"
+},
+{
+"map": 1413,
+"en": "Tinkerwiz",
+"zh": "廷克维斯",
+"tw": "廷克維斯",
+"loc_en": "Ratchet, The Barrens",
+"loc_zh": "棘齿城 · The Barrens",
+"loc_tw": "棘齒城 · The Barrens"
+},
+{
+"map": 2521,
+"en": "Strange Hermit",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shadowgale Forest, Zephras Isle",
+"loc_zh": "Shadowgale Forest · 泽夫拉斯岛",
+"loc_tw": "Shadowgale Forest · 澤夫拉斯島"
+},
+{
+"map": 1431,
+"en": "Finbus Geargrind",
+"zh": "芬布斯",
+"tw": "芬布斯",
+"loc_en": "Darkshire, Duskwood",
+"loc_zh": "Darkshire · 暮色森林",
+"loc_tw": "Darkshire · 暮色森林"
+},
+{
+"map": 1453,
+"en": "Lilliam Sparkspindle",
+"zh": "利廉姆·火轴",
+"tw": "利廉姆·火軸",
+"loc_en": "Dwarven District, Stormwind City",
+"loc_zh": "Dwarven District · 暴风城",
+"loc_tw": "Dwarven District · 暴風城"
+},
+{
+"map": 1455,
+"en": "Trixie Quikswitch",
+"zh": "特里克希",
+"tw": "特里克希",
+"loc_en": "Tinker Town, Ironforge",
+"loc_zh": "Tinker Town · 铁炉堡",
+"loc_tw": "Tinker Town · 鐵爐堡"
+},
+{
+"map": 1458,
+"en": "Franklin Lloyd",
+"zh": "弗兰克林·洛伊德",
+"tw": "弗蘭克林·洛伊德",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1454,
+"en": "Nogg",
+"zh": "诺格",
+"tw": "諾格",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1455,
+"en": "Springspindle Fizzlegear",
+"zh": "宾斯匹德",
+"tw": "賓斯匹德",
+"loc_en": "Tinker Town, Ironforge",
+"loc_zh": "Tinker Town · 铁炉堡",
+"loc_tw": "Tinker Town · 鐵爐堡"
+},
+{
+"map": 1454,
+"en": "Roxxik",
+"zh": "罗克希克",
+"tw": "羅克希克",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1446,
+"en": "Buzzek Bracketswing",
+"zh": "巴兹克·布拉斯温",
+"tw": "巴茲克·布拉斯溫",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2482,
+"en": "Kaylaena Springwhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Mount Hyjal",
+"loc_zh": "Mount Hyjal",
+"loc_tw": "Mount Hyjal"
+},
+{
+"map": 1446,
+"en": "Buzzek Bracketswing",
+"zh": "巴兹克·布拉斯温",
+"tw": "巴茲克·布拉斯溫",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2482,
+"en": "Kaylaena Springwhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Mount Hyjal",
+"loc_zh": "Mount Hyjal",
+"loc_tw": "Mount Hyjal"
+},
+{
+"map": 1429,
+"en": "Nancy Songflower",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Northshire, Elwynn Forest",
+"loc_zh": "Northshire · 艾尔文森林",
+"loc_tw": "Northshire · 艾爾文森林"
+},
+{
+"map": 1426,
+"en": "Emrys Flintbeard",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Coldridge Valley, Dun Morogh",
+"loc_zh": "Coldridge Valley · 丹莫罗",
+"loc_tw": "Coldridge Valley · 丹莫羅"
+},
+{
+"map": 1438,
+"en": "Eleyna Duskbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shadowglen, Teldrassil",
+"loc_zh": "Shadowglen · 泰达希尔",
+"loc_tw": "Shadowglen · 泰達希爾"
+},
+{
+"map": 1457,
+"en": "Firodren Mooncaller",
+"zh": "菲罗迪恩·唤月",
+"tw": "菲羅迪恩·喚月",
+"loc_en": "Temple Gardens, Darnassus",
+"loc_zh": "Temple Gardens · 达纳苏斯",
+"loc_tw": "Temple Gardens · 達納蘇斯"
+},
+{
+"map": 1455,
+"en": "Reyna Stonebranch",
+"zh": "雷纳·石枝",
+"tw": "雷納·石枝",
+"loc_en": "Ironforge",
+"loc_zh": "铁炉堡",
+"loc_tw": "鐵爐堡"
+},
+{
+"map": 1453,
+"en": "Tannysa",
+"zh": "塔尼莎",
+"tw": "塔尼莎",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1453,
+"en": "Shylamiir",
+"zh": "莎拉米尔",
+"tw": "莎拉米爾",
+"loc_en": "The Park, Stormwind City",
+"loc_zh": "The Park · 暴风城",
+"loc_tw": "The Park · 暴風城"
+},
+{
+"map": 1438,
+"en": "Malorne Bladeleaf",
+"zh": "玛洛尼·刃叶",
+"tw": "瑪洛尼·刃葉",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 1429,
+"en": "Herbalist Pomeroy",
+"zh": "草药师博米洛伊",
+"tw": "草藥師博米洛伊",
+"loc_en": "Elwynn Forest",
+"loc_zh": "艾尔文森林",
+"loc_tw": "艾爾文森林"
+},
+{
+"map": 1432,
+"en": "Kali Healtouch",
+"zh": "卡利",
+"tw": "卡利",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 1433,
+"en": "Alma Jainrose",
+"zh": "奥玛·詹洛斯",
+"tw": "奧瑪·詹洛斯",
+"loc_en": "Lakeshire, Redridge Mountains",
+"loc_zh": "Lakeshire · Redridge Mountains",
+"loc_tw": "Lakeshire · Redridge Mountains"
+},
+{
+"map": 1440,
+"en": "Cylania Rootstalker",
+"zh": "塞兰妮娅·伏根",
+"tw": "塞蘭妮婭·伏根",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 1437,
+"en": "Telurinon Moonshadow",
+"zh": "泰伦瑞诺·月影",
+"tw": "泰倫瑞諾·月影",
+"loc_en": "Menethil Harbor, Wetlands",
+"loc_zh": "Menethil Harbor · Wetlands",
+"loc_tw": "Menethil Harbor · Wetlands"
+},
+{
+"map": 1445,
+"en": "Brant Jasperbloom",
+"zh": "布兰特·加斯布鲁姆",
+"tw": "布蘭特·加斯布魯姆",
+"loc_en": "Theramore Isle, Dustwallow Marsh",
+"loc_zh": "Theramore Isle · 尘泥沼泽",
+"loc_tw": "Theramore Isle · 塵泥沼澤"
+},
+{
+"map": 1416,
+"en": "Edward Egan",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 2521,
+"en": "Halassa Fernbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Syriel Nightrain",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1434,
+"en": "Flora Silverwind",
+"zh": "弗洛拉·希沃温德",
+"tw": "弗洛拉·希沃溫德",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1450,
+"en": "Malvor",
+"zh": "玛沃尔",
+"tw": "瑪沃爾",
+"loc_en": "Nighthaven, Moonglade",
+"loc_zh": "Nighthaven · Moonglade",
+"loc_tw": "Nighthaven · Moonglade"
+},
+{
+"map": 1411,
+"en": "Zor'la",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valley of Trials, Durotar",
+"loc_zh": "Valley of Trials · 杜隆塔尔",
+"loc_tw": "Valley of Trials · 杜隆塔爾"
+},
+{
+"map": 1412,
+"en": "Garan Sunstrider",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Red Cloud Mesa, Mulgore",
+"loc_zh": "Red Cloud Mesa · 莫高雷",
+"loc_tw": "Red Cloud Mesa · 莫高雷"
+},
+{
+"map": 1420,
+"en": "Florence Nightshade",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Death Knell, Tirisfal Glades",
+"loc_zh": "Death Knell · 提瑞斯法林地",
+"loc_tw": "Death Knell · 提瑞斯法林地"
+},
+{
+"map": 1454,
+"en": "Jandi",
+"zh": "加迪",
+"tw": "加迪",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Komin Winterhoof",
+"zh": "克米恩·冰蹄",
+"tw": "克米恩·冰蹄",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Martha Alliestar",
+"zh": "马尔萨·奥列斯塔",
+"tw": "馬爾薩·奧列斯塔",
+"loc_en": "Apothecarium, Undercity",
+"loc_zh": "Apothecarium · 幽暗城",
+"loc_tw": "Apothecarium · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Mishiki",
+"zh": "米什基",
+"tw": "米什基",
+"loc_en": "Sen'Jin Village, Durotar",
+"loc_zh": "Sen'Jin Village · 杜隆塔尔",
+"loc_tw": "Sen'Jin Village · 杜隆塔爾"
+},
+{
+"map": 1420,
+"en": "Faruza",
+"zh": "法鲁萨",
+"tw": "法魯薩",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1424,
+"en": "Aranae Venomblood",
+"zh": "阿兰奈·维诺布拉德",
+"tw": "阿蘭奈·維諾布拉德",
+"loc_en": "Tarren Mill, Hillsbrad Foothills",
+"loc_zh": "Tarren Mill · 希尔斯布莱德丘陵",
+"loc_tw": "Tarren Mill · 希爾斯布萊德丘陵"
+},
+{
+"map": 1434,
+"en": "Angrun",
+"zh": "安格伦",
+"tw": "安格倫",
+"loc_en": "Grom'gol Base Camp, Stranglethorn Vale",
+"loc_zh": "Grom'gol Base Camp · 荆棘谷",
+"loc_tw": "Grom'gol Base Camp · 荊棘谷"
+},
+{
+"map": 1444,
+"en": "Ruw",
+"zh": "拉乌",
+"tw": "拉烏",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 2521,
+"en": "Halassa Fernbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Syriel Nightrain",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1434,
+"en": "Flora Silverwind",
+"zh": "弗洛拉·希沃温德",
+"tw": "弗洛拉·希沃溫德",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1450,
+"en": "Malvor",
+"zh": "玛沃尔",
+"tw": "瑪沃爾",
+"loc_en": "Nighthaven, Moonglade",
+"loc_zh": "Nighthaven · Moonglade",
+"loc_tw": "Nighthaven · Moonglade"
+},
+{
+"map": 1457,
+"en": "Firodren Mooncaller",
+"zh": "菲罗迪恩·唤月",
+"tw": "菲羅迪恩·喚月",
+"loc_en": "Temple Gardens, Darnassus",
+"loc_zh": "Temple Gardens · 达纳苏斯",
+"loc_tw": "Temple Gardens · 達納蘇斯"
+},
+{
+"map": 1455,
+"en": "Reyna Stonebranch",
+"zh": "雷纳·石枝",
+"tw": "雷納·石枝",
+"loc_en": "Ironforge",
+"loc_zh": "铁炉堡",
+"loc_tw": "鐵爐堡"
+},
+{
+"map": 1453,
+"en": "Tannysa",
+"zh": "塔尼莎",
+"tw": "塔尼莎",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1453,
+"en": "Shylamiir",
+"zh": "莎拉米尔",
+"tw": "莎拉米爾",
+"loc_en": "The Park, Stormwind City",
+"loc_zh": "The Park · 暴风城",
+"loc_tw": "The Park · 暴風城"
+},
+{
+"map": 1438,
+"en": "Malorne Bladeleaf",
+"zh": "玛洛尼·刃叶",
+"tw": "瑪洛尼·刃葉",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 1429,
+"en": "Herbalist Pomeroy",
+"zh": "草药师博米洛伊",
+"tw": "草藥師博米洛伊",
+"loc_en": "Elwynn Forest",
+"loc_zh": "艾尔文森林",
+"loc_tw": "艾爾文森林"
+},
+{
+"map": 1432,
+"en": "Kali Healtouch",
+"zh": "卡利",
+"tw": "卡利",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 1433,
+"en": "Alma Jainrose",
+"zh": "奥玛·詹洛斯",
+"tw": "奧瑪·詹洛斯",
+"loc_en": "Lakeshire, Redridge Mountains",
+"loc_zh": "Lakeshire · Redridge Mountains",
+"loc_tw": "Lakeshire · Redridge Mountains"
+},
+{
+"map": 1440,
+"en": "Cylania Rootstalker",
+"zh": "塞兰妮娅·伏根",
+"tw": "塞蘭妮婭·伏根",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 1437,
+"en": "Telurinon Moonshadow",
+"zh": "泰伦瑞诺·月影",
+"tw": "泰倫瑞諾·月影",
+"loc_en": "Menethil Harbor, Wetlands",
+"loc_zh": "Menethil Harbor · Wetlands",
+"loc_tw": "Menethil Harbor · Wetlands"
+},
+{
+"map": 1445,
+"en": "Brant Jasperbloom",
+"zh": "布兰特·加斯布鲁姆",
+"tw": "布蘭特·加斯布魯姆",
+"loc_en": "Theramore Isle, Dustwallow Marsh",
+"loc_zh": "Theramore Isle · 尘泥沼泽",
+"loc_tw": "Theramore Isle · 塵泥沼澤"
+},
+{
+"map": 1416,
+"en": "Edward Egan",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 2521,
+"en": "Halassa Fernbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Syriel Nightrain",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1434,
+"en": "Flora Silverwind",
+"zh": "弗洛拉·希沃温德",
+"tw": "弗洛拉·希沃溫德",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1450,
+"en": "Malvor",
+"zh": "玛沃尔",
+"tw": "瑪沃爾",
+"loc_en": "Nighthaven, Moonglade",
+"loc_zh": "Nighthaven · Moonglade",
+"loc_tw": "Nighthaven · Moonglade"
+},
+{
+"map": 1454,
+"en": "Jandi",
+"zh": "加迪",
+"tw": "加迪",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Komin Winterhoof",
+"zh": "克米恩·冰蹄",
+"tw": "克米恩·冰蹄",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Martha Alliestar",
+"zh": "马尔萨·奥列斯塔",
+"tw": "馬爾薩·奧列斯塔",
+"loc_en": "Apothecarium, Undercity",
+"loc_zh": "Apothecarium · 幽暗城",
+"loc_tw": "Apothecarium · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Mishiki",
+"zh": "米什基",
+"tw": "米什基",
+"loc_en": "Sen'Jin Village, Durotar",
+"loc_zh": "Sen'Jin Village · 杜隆塔尔",
+"loc_tw": "Sen'Jin Village · 杜隆塔爾"
+},
+{
+"map": 1420,
+"en": "Faruza",
+"zh": "法鲁萨",
+"tw": "法魯薩",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1424,
+"en": "Aranae Venomblood",
+"zh": "阿兰奈·维诺布拉德",
+"tw": "阿蘭奈·維諾布拉德",
+"loc_en": "Tarren Mill, Hillsbrad Foothills",
+"loc_zh": "Tarren Mill · 希尔斯布莱德丘陵",
+"loc_tw": "Tarren Mill · 希爾斯布萊德丘陵"
+},
+{
+"map": 1434,
+"en": "Angrun",
+"zh": "安格伦",
+"tw": "安格倫",
+"loc_en": "Grom'gol Base Camp, Stranglethorn Vale",
+"loc_zh": "Grom'gol Base Camp · 荆棘谷",
+"loc_tw": "Grom'gol Base Camp · 荊棘谷"
+},
+{
+"map": 1444,
+"en": "Ruw",
+"zh": "拉乌",
+"tw": "拉烏",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 2521,
+"en": "Halassa Fernbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Syriel Nightrain",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1434,
+"en": "Flora Silverwind",
+"zh": "弗洛拉·希沃温德",
+"tw": "弗洛拉·希沃溫德",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1450,
+"en": "Malvor",
+"zh": "玛沃尔",
+"tw": "瑪沃爾",
+"loc_en": "Nighthaven, Moonglade",
+"loc_zh": "Nighthaven · Moonglade",
+"loc_tw": "Nighthaven · Moonglade"
+},
+{
+"map": 1457,
+"en": "Firodren Mooncaller",
+"zh": "菲罗迪恩·唤月",
+"tw": "菲羅迪恩·喚月",
+"loc_en": "Temple Gardens, Darnassus",
+"loc_zh": "Temple Gardens · 达纳苏斯",
+"loc_tw": "Temple Gardens · 達納蘇斯"
+},
+{
+"map": 1455,
+"en": "Reyna Stonebranch",
+"zh": "雷纳·石枝",
+"tw": "雷納·石枝",
+"loc_en": "Ironforge",
+"loc_zh": "铁炉堡",
+"loc_tw": "鐵爐堡"
+},
+{
+"map": 1453,
+"en": "Tannysa",
+"zh": "塔尼莎",
+"tw": "塔尼莎",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1453,
+"en": "Shylamiir",
+"zh": "莎拉米尔",
+"tw": "莎拉米爾",
+"loc_en": "The Park, Stormwind City",
+"loc_zh": "The Park · 暴风城",
+"loc_tw": "The Park · 暴風城"
+},
+{
+"map": 1438,
+"en": "Malorne Bladeleaf",
+"zh": "玛洛尼·刃叶",
+"tw": "瑪洛尼·刃葉",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 1429,
+"en": "Herbalist Pomeroy",
+"zh": "草药师博米洛伊",
+"tw": "草藥師博米洛伊",
+"loc_en": "Elwynn Forest",
+"loc_zh": "艾尔文森林",
+"loc_tw": "艾爾文森林"
+},
+{
+"map": 1432,
+"en": "Kali Healtouch",
+"zh": "卡利",
+"tw": "卡利",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 1433,
+"en": "Alma Jainrose",
+"zh": "奥玛·詹洛斯",
+"tw": "奧瑪·詹洛斯",
+"loc_en": "Lakeshire, Redridge Mountains",
+"loc_zh": "Lakeshire · Redridge Mountains",
+"loc_tw": "Lakeshire · Redridge Mountains"
+},
+{
+"map": 1440,
+"en": "Cylania Rootstalker",
+"zh": "塞兰妮娅·伏根",
+"tw": "塞蘭妮婭·伏根",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 1437,
+"en": "Telurinon Moonshadow",
+"zh": "泰伦瑞诺·月影",
+"tw": "泰倫瑞諾·月影",
+"loc_en": "Menethil Harbor, Wetlands",
+"loc_zh": "Menethil Harbor · Wetlands",
+"loc_tw": "Menethil Harbor · Wetlands"
+},
+{
+"map": 1445,
+"en": "Brant Jasperbloom",
+"zh": "布兰特·加斯布鲁姆",
+"tw": "布蘭特·加斯布魯姆",
+"loc_en": "Theramore Isle, Dustwallow Marsh",
+"loc_zh": "Theramore Isle · 尘泥沼泽",
+"loc_tw": "Theramore Isle · 塵泥沼澤"
+},
+{
+"map": 1416,
+"en": "Edward Egan",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 2521,
+"en": "Halassa Fernbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Syriel Nightrain",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1434,
+"en": "Flora Silverwind",
+"zh": "弗洛拉·希沃温德",
+"tw": "弗洛拉·希沃溫德",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1450,
+"en": "Malvor",
+"zh": "玛沃尔",
+"tw": "瑪沃爾",
+"loc_en": "Nighthaven, Moonglade",
+"loc_zh": "Nighthaven · Moonglade",
+"loc_tw": "Nighthaven · Moonglade"
+},
+{
+"map": 1454,
+"en": "Jandi",
+"zh": "加迪",
+"tw": "加迪",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Komin Winterhoof",
+"zh": "克米恩·冰蹄",
+"tw": "克米恩·冰蹄",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Martha Alliestar",
+"zh": "马尔萨·奥列斯塔",
+"tw": "馬爾薩·奧列斯塔",
+"loc_en": "Apothecarium, Undercity",
+"loc_zh": "Apothecarium · 幽暗城",
+"loc_tw": "Apothecarium · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Mishiki",
+"zh": "米什基",
+"tw": "米什基",
+"loc_en": "Sen'Jin Village, Durotar",
+"loc_zh": "Sen'Jin Village · 杜隆塔尔",
+"loc_tw": "Sen'Jin Village · 杜隆塔爾"
+},
+{
+"map": 1420,
+"en": "Faruza",
+"zh": "法鲁萨",
+"tw": "法魯薩",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1424,
+"en": "Aranae Venomblood",
+"zh": "阿兰奈·维诺布拉德",
+"tw": "阿蘭奈·維諾布拉德",
+"loc_en": "Tarren Mill, Hillsbrad Foothills",
+"loc_zh": "Tarren Mill · 希尔斯布莱德丘陵",
+"loc_tw": "Tarren Mill · 希爾斯布萊德丘陵"
+},
+{
+"map": 1434,
+"en": "Angrun",
+"zh": "安格伦",
+"tw": "安格倫",
+"loc_en": "Grom'gol Base Camp, Stranglethorn Vale",
+"loc_zh": "Grom'gol Base Camp · 荆棘谷",
+"loc_tw": "Grom'gol Base Camp · 荊棘谷"
+},
+{
+"map": 1444,
+"en": "Ruw",
+"zh": "拉乌",
+"tw": "拉烏",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 2521,
+"en": "Halassa Fernbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Syriel Nightrain",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1434,
+"en": "Flora Silverwind",
+"zh": "弗洛拉·希沃温德",
+"tw": "弗洛拉·希沃溫德",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1450,
+"en": "Malvor",
+"zh": "玛沃尔",
+"tw": "瑪沃爾",
+"loc_en": "Nighthaven, Moonglade",
+"loc_zh": "Nighthaven · Moonglade",
+"loc_tw": "Nighthaven · Moonglade"
+},
+{
+"map": 1457,
+"en": "Firodren Mooncaller",
+"zh": "菲罗迪恩·唤月",
+"tw": "菲羅迪恩·喚月",
+"loc_en": "Temple Gardens, Darnassus",
+"loc_zh": "Temple Gardens · 达纳苏斯",
+"loc_tw": "Temple Gardens · 達納蘇斯"
+},
+{
+"map": 1455,
+"en": "Reyna Stonebranch",
+"zh": "雷纳·石枝",
+"tw": "雷納·石枝",
+"loc_en": "Ironforge",
+"loc_zh": "铁炉堡",
+"loc_tw": "鐵爐堡"
+},
+{
+"map": 1453,
+"en": "Tannysa",
+"zh": "塔尼莎",
+"tw": "塔尼莎",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1453,
+"en": "Shylamiir",
+"zh": "莎拉米尔",
+"tw": "莎拉米爾",
+"loc_en": "The Park, Stormwind City",
+"loc_zh": "The Park · 暴风城",
+"loc_tw": "The Park · 暴風城"
+},
+{
+"map": 1438,
+"en": "Malorne Bladeleaf",
+"zh": "玛洛尼·刃叶",
+"tw": "瑪洛尼·刃葉",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 1429,
+"en": "Herbalist Pomeroy",
+"zh": "草药师博米洛伊",
+"tw": "草藥師博米洛伊",
+"loc_en": "Elwynn Forest",
+"loc_zh": "艾尔文森林",
+"loc_tw": "艾爾文森林"
+},
+{
+"map": 1432,
+"en": "Kali Healtouch",
+"zh": "卡利",
+"tw": "卡利",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 1433,
+"en": "Alma Jainrose",
+"zh": "奥玛·詹洛斯",
+"tw": "奧瑪·詹洛斯",
+"loc_en": "Lakeshire, Redridge Mountains",
+"loc_zh": "Lakeshire · Redridge Mountains",
+"loc_tw": "Lakeshire · Redridge Mountains"
+},
+{
+"map": 1440,
+"en": "Cylania Rootstalker",
+"zh": "塞兰妮娅·伏根",
+"tw": "塞蘭妮婭·伏根",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 1437,
+"en": "Telurinon Moonshadow",
+"zh": "泰伦瑞诺·月影",
+"tw": "泰倫瑞諾·月影",
+"loc_en": "Menethil Harbor, Wetlands",
+"loc_zh": "Menethil Harbor · Wetlands",
+"loc_tw": "Menethil Harbor · Wetlands"
+},
+{
+"map": 1445,
+"en": "Brant Jasperbloom",
+"zh": "布兰特·加斯布鲁姆",
+"tw": "布蘭特·加斯布魯姆",
+"loc_en": "Theramore Isle, Dustwallow Marsh",
+"loc_zh": "Theramore Isle · 尘泥沼泽",
+"loc_tw": "Theramore Isle · 塵泥沼澤"
+},
+{
+"map": 1416,
+"en": "Edward Egan",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 2521,
+"en": "Halassa Fernbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Syriel Nightrain",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1434,
+"en": "Flora Silverwind",
+"zh": "弗洛拉·希沃温德",
+"tw": "弗洛拉·希沃溫德",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1450,
+"en": "Malvor",
+"zh": "玛沃尔",
+"tw": "瑪沃爾",
+"loc_en": "Nighthaven, Moonglade",
+"loc_zh": "Nighthaven · Moonglade",
+"loc_tw": "Nighthaven · Moonglade"
+},
+{
+"map": 1454,
+"en": "Jandi",
+"zh": "加迪",
+"tw": "加迪",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Komin Winterhoof",
+"zh": "克米恩·冰蹄",
+"tw": "克米恩·冰蹄",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Martha Alliestar",
+"zh": "马尔萨·奥列斯塔",
+"tw": "馬爾薩·奧列斯塔",
+"loc_en": "Apothecarium, Undercity",
+"loc_zh": "Apothecarium · 幽暗城",
+"loc_tw": "Apothecarium · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Mishiki",
+"zh": "米什基",
+"tw": "米什基",
+"loc_en": "Sen'Jin Village, Durotar",
+"loc_zh": "Sen'Jin Village · 杜隆塔尔",
+"loc_tw": "Sen'Jin Village · 杜隆塔爾"
+},
+{
+"map": 1420,
+"en": "Faruza",
+"zh": "法鲁萨",
+"tw": "法魯薩",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1424,
+"en": "Aranae Venomblood",
+"zh": "阿兰奈·维诺布拉德",
+"tw": "阿蘭奈·維諾布拉德",
+"loc_en": "Tarren Mill, Hillsbrad Foothills",
+"loc_zh": "Tarren Mill · 希尔斯布莱德丘陵",
+"loc_tw": "Tarren Mill · 希爾斯布萊德丘陵"
+},
+{
+"map": 1434,
+"en": "Angrun",
+"zh": "安格伦",
+"tw": "安格倫",
+"loc_en": "Grom'gol Base Camp, Stranglethorn Vale",
+"loc_zh": "Grom'gol Base Camp · 荆棘谷",
+"loc_tw": "Grom'gol Base Camp · 荊棘谷"
+},
+{
+"map": 1444,
+"en": "Ruw",
+"zh": "拉乌",
+"tw": "拉烏",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 2521,
+"en": "Halassa Fernbreeze",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Syriel Nightrain",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1434,
+"en": "Flora Silverwind",
+"zh": "弗洛拉·希沃温德",
+"tw": "弗洛拉·希沃溫德",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1450,
+"en": "Malvor",
+"zh": "玛沃尔",
+"tw": "瑪沃爾",
+"loc_en": "Nighthaven, Moonglade",
+"loc_zh": "Nighthaven · Moonglade",
+"loc_tw": "Nighthaven · Moonglade"
+},
+{
+"map": 1453,
+"en": "Randal Worth",
+"zh": "兰达尔·沃斯",
+"tw": "蘭達爾·沃斯",
+"loc_en": "Old Town, Stormwind City",
+"loc_zh": "Old Town · 暴风城",
+"loc_tw": "Old Town · 暴風城"
+},
+{
+"map": 1455,
+"en": "Gretta Finespindle",
+"zh": "格雷塔",
+"tw": "格雷塔",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Darianna",
+"zh": "达丽亚娜",
+"tw": "達麗亞娜",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1429,
+"en": "Adele Fielder",
+"zh": "艾德勒·费欧德",
+"tw": "艾德勒·費歐德",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1438,
+"en": "Nadyia Maneweaver",
+"zh": "纳迪娅·织发",
+"tw": "納迪婭·織發",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 1414,
+"en": "Waldor",
+"zh": "瓦多尔",
+"tw": "瓦多爾",
+"loc_en": "Cave above Wailing Caverns, The Barrens",
+"loc_zh": "Cave above Wailing Caverns · The Barrens",
+"loc_tw": "Cave above Wailing Caverns · The Barrens"
+},
+{
+"map": 2521,
+"en": "Indari Sunseam",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Zephras Isle",
+"loc_zh": "泽夫拉斯岛",
+"loc_tw": "澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Kamari",
+"zh": "卡玛瑞",
+"tw": "卡瑪瑞",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1454,
+"en": "Thuwd",
+"zh": "苏尔德",
+"tw": "蘇爾德",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Dan Golthas",
+"zh": "丹·戈萨斯",
+"tw": "丹·戈薩斯",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Mak",
+"zh": "马克",
+"tw": "馬克",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1412,
+"en": "Chaw Stronghide",
+"zh": "查尔·硬皮",
+"tw": "查爾·硬皮",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 1420,
+"en": "Shelene Rhobart",
+"zh": "舍伦尼·洛巴尔特",
+"tw": "舍倫尼·洛巴爾特",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1414,
+"en": "Waldor",
+"zh": "瓦多尔",
+"tw": "瓦多爾",
+"loc_en": "Cave above Wailing Caverns, The Barrens",
+"loc_zh": "Cave above Wailing Caverns · The Barrens",
+"loc_tw": "Cave above Wailing Caverns · The Barrens"
+},
+{
+"map": 2521,
+"en": "Indari Sunseam",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Zephras Isle",
+"loc_zh": "泽夫拉斯岛",
+"loc_tw": "澤夫拉斯島"
+},
+{
+"map": 1453,
+"en": "Simon Tanner",
+"zh": "西蒙·坦纳尔",
+"tw": "西蒙·坦納爾",
+"loc_en": "Old Town, Stormwind City",
+"loc_zh": "Old Town · 暴风城",
+"loc_tw": "Old Town · 暴風城"
+},
+{
+"map": 1455,
+"en": "Fimble Finespindle",
+"zh": "费布·钢轴",
+"tw": "費布·鋼軸",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Faldron",
+"zh": "法多恩",
+"tw": "法多恩",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1440,
+"en": "Aayndia Floralwind",
+"zh": "艾蒂安·花丛之风",
+"tw": "艾蒂安·花叢之風",
+"loc_en": "Astranaar, Ashenvale",
+"loc_zh": "Astranaar · 灰谷",
+"loc_tw": "Astranaar · 灰谷"
+},
+{
+"map": 2521,
+"en": "Emerii Tallgust",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Zephras Isle",
+"loc_zh": "泽夫拉斯岛",
+"loc_tw": "澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Karolek",
+"zh": "卡洛雷克",
+"tw": "卡洛雷克",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Arthur Moore",
+"zh": "亚瑟·摩尔",
+"tw": "亞瑟·摩爾",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Tarn",
+"zh": "塔恩",
+"tw": "塔恩",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1434,
+"en": "Brawn",
+"zh": "布劳恩",
+"tw": "布勞恩",
+"loc_en": "Grom'gol Base Camp, Stranglethorn Vale",
+"loc_zh": "Grom'gol Base Camp · 荆棘谷",
+"loc_tw": "Grom'gol Base Camp · 荊棘谷"
+},
+{
+"map": 1413,
+"en": "Krulmoo Fullmoon",
+"zh": "克鲁姆·满月",
+"tw": "克魯姆·滿月",
+"loc_en": "Camp Taurajo, The Barrens",
+"loc_zh": "陶拉祖营地 · The Barrens",
+"loc_tw": "陶拉祖營地 · The Barrens"
+},
+{
+"map": 2521,
+"en": "Emerii Tallgust",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Zephras Isle",
+"loc_zh": "泽夫拉斯岛",
+"loc_tw": "澤夫拉斯島"
+},
+{
+"map": 1457,
+"en": "Telonis",
+"zh": "泰龙尼斯",
+"tw": "泰龍尼斯",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1456,
+"en": "Una",
+"zh": "犹纳",
+"tw": "猶納",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1425,
+"en": "Drakk Stonehand",
+"zh": "德拉克·石手",
+"tw": "德拉克·石手",
+"loc_en": "Wildhammer Keep, Aerie Peak, The Hinterlands",
+"loc_zh": "Wildhammer Keep, Aerie Peak · The Hinterlands",
+"loc_tw": "Wildhammer Keep, Aerie Peak · The Hinterlands"
+},
+{
+"map": 1444,
+"en": "Hahrana Ironhide",
+"zh": "哈拉纳·铁皮",
+"tw": "哈拉納·鐵皮",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 1429,
+"en": "Kelsey Fargo",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Northshire, Elwynn Forest",
+"loc_zh": "Northshire · 艾尔文森林",
+"loc_tw": "Northshire · 艾爾文森林"
+},
+{
+"map": 1426,
+"en": "Sally Swiftwrench",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Coldridge Valley, Dun Morogh",
+"loc_zh": "Coldridge Valley · 丹莫罗",
+"loc_tw": "Coldridge Valley · 丹莫羅"
+},
+{
+"map": 1438,
+"en": "Fanorran Stilloak",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shadowglen, Teldrassil",
+"loc_zh": "Shadowglen · 泰达希尔",
+"loc_tw": "Shadowglen · 泰達希爾"
+},
+{
+"map": 1455,
+"en": "Geofram Bouldertoe",
+"zh": "吉尔弗拉姆·石趾",
+"tw": "吉爾弗拉姆·石趾",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1453,
+"en": "Gelman Stonehand",
+"zh": "吉尔曼·石手",
+"tw": "吉爾曼·石手",
+"loc_en": "Dwarven District, Stormwind City",
+"loc_zh": "Dwarven District · 暴风城",
+"loc_tw": "Dwarven District · 暴風城"
+},
+{
+"map": 1426,
+"en": "Yarr Hammerstone",
+"zh": "亚尔·锤石",
+"tw": "亞爾·錘石",
+"loc_en": "Steelgrill's Depot, Dun Morogh",
+"loc_zh": "Steelgrill's Depot · 丹莫罗",
+"loc_tw": "Steelgrill's Depot · 丹莫羅"
+},
+{
+"map": 1426,
+"en": "Dank Drizzlecut",
+"zh": "丹克·利刃",
+"tw": "丹克·利刃",
+"loc_en": "Gol'Bolar Quarry, Dun Morogh",
+"loc_zh": "Gol'Bolar Quarry · 丹莫罗",
+"loc_tw": "Gol'Bolar Quarry · 丹莫羅"
+},
+{
+"map": 1432,
+"en": "Brock Stoneseeker",
+"zh": "布洛克·寻石者",
+"tw": "布洛克·尋石者",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 1439,
+"en": "Kurdram Stonehammer",
+"zh": "库德拉姆·石锤",
+"tw": "庫德拉姆·石錘",
+"loc_en": "Auberdine, Darkshore",
+"loc_zh": "Auberdine · 黑海岸",
+"loc_tw": "Auberdine · 黑海岸"
+},
+{
+"map": 1431,
+"en": "Matt Johnson",
+"zh": "玛特·约翰森",
+"tw": "瑪特·約翰森",
+"loc_en": "Darkshire, Duskwood",
+"loc_zh": "Darkshire · 暮色森林",
+"loc_tw": "Darkshire · 暮色森林"
+},
+{
+"map": 2521,
+"en": "Messana Crestwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Halavuul Cragwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1446,
+"en": "Pikkle (Neutral)",
+"zh": "皮库尔",
+"tw": "皮庫爾",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2548,
+"en": "Grungle (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1411,
+"en": "Norzsh",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valley of Trials, Durotar",
+"loc_zh": "Valley of Trials · 杜隆塔尔",
+"loc_tw": "Valley of Trials · 杜隆塔爾"
+},
+{
+"map": 1412,
+"en": "Vartha Rockmane",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Red Cloud Mesa, Mulgore",
+"loc_zh": "Red Cloud Mesa · 莫高雷",
+"loc_tw": "Red Cloud Mesa · 莫高雷"
+},
+{
+"map": 1420,
+"en": "Walter Mason",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Death Knell, Tirisfal Glades",
+"loc_zh": "Death Knell · 提瑞斯法林地",
+"loc_tw": "Death Knell · 提瑞斯法林地"
+},
+{
+"map": 1454,
+"en": "Makaru",
+"zh": "马卡鲁",
+"tw": "馬卡魯",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Brek Stonehoof",
+"zh": "布瑞克·石蹄",
+"tw": "布瑞克·石蹄",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Brom Killian",
+"zh": "布罗姆·基里安",
+"tw": "布羅姆·基裏安",
+"loc_en": "War Quarter, Undercity",
+"loc_zh": "War Quarter · 幽暗城",
+"loc_tw": "War Quarter · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Krunn",
+"zh": "克鲁恩",
+"tw": "克魯恩",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1421,
+"en": "Johan Focht",
+"zh": "乔汉·弗彻",
+"tw": "喬漢·弗徹",
+"loc_en": "The Sepulcher, Silverpine Forest",
+"loc_zh": "The Sepulcher · Silverpine Forest",
+"loc_tw": "The Sepulcher · Silverpine Forest"
+},
+{
+"map": 2521,
+"en": "Messana Crestwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Halavuul Cragwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1446,
+"en": "Pikkle (Neutral)",
+"zh": "皮库尔",
+"tw": "皮庫爾",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2548,
+"en": "Grungle (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1455,
+"en": "Geofram Bouldertoe",
+"zh": "吉尔弗拉姆·石趾",
+"tw": "吉爾弗拉姆·石趾",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1453,
+"en": "Gelman Stonehand",
+"zh": "吉尔曼·石手",
+"tw": "吉爾曼·石手",
+"loc_en": "Dwarven District, Stormwind City",
+"loc_zh": "Dwarven District · 暴风城",
+"loc_tw": "Dwarven District · 暴風城"
+},
+{
+"map": 1426,
+"en": "Yarr Hammerstone",
+"zh": "亚尔·锤石",
+"tw": "亞爾·錘石",
+"loc_en": "Steelgrill's Depot, Dun Morogh",
+"loc_zh": "Steelgrill's Depot · 丹莫罗",
+"loc_tw": "Steelgrill's Depot · 丹莫羅"
+},
+{
+"map": 1426,
+"en": "Dank Drizzlecut",
+"zh": "丹克·利刃",
+"tw": "丹克·利刃",
+"loc_en": "Gol'Bolar Quarry, Dun Morogh",
+"loc_zh": "Gol'Bolar Quarry · 丹莫罗",
+"loc_tw": "Gol'Bolar Quarry · 丹莫羅"
+},
+{
+"map": 1432,
+"en": "Brock Stoneseeker",
+"zh": "布洛克·寻石者",
+"tw": "布洛克·尋石者",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 1439,
+"en": "Kurdram Stonehammer",
+"zh": "库德拉姆·石锤",
+"tw": "庫德拉姆·石錘",
+"loc_en": "Auberdine, Darkshore",
+"loc_zh": "Auberdine · 黑海岸",
+"loc_tw": "Auberdine · 黑海岸"
+},
+{
+"map": 1431,
+"en": "Matt Johnson",
+"zh": "玛特·约翰森",
+"tw": "瑪特·約翰森",
+"loc_en": "Darkshire, Duskwood",
+"loc_zh": "Darkshire · 暮色森林",
+"loc_tw": "Darkshire · 暮色森林"
+},
+{
+"map": 2521,
+"en": "Messana Crestwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Halavuul Cragwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1446,
+"en": "Pikkle (Neutral)",
+"zh": "皮库尔",
+"tw": "皮庫爾",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2548,
+"en": "Grungle (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1454,
+"en": "Makaru",
+"zh": "马卡鲁",
+"tw": "馬卡魯",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Brek Stonehoof",
+"zh": "布瑞克·石蹄",
+"tw": "布瑞克·石蹄",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Brom Killian",
+"zh": "布罗姆·基里安",
+"tw": "布羅姆·基裏安",
+"loc_en": "War Quarter, Undercity",
+"loc_zh": "War Quarter · 幽暗城",
+"loc_tw": "War Quarter · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Krunn",
+"zh": "克鲁恩",
+"tw": "克魯恩",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1421,
+"en": "Johan Focht",
+"zh": "乔汉·弗彻",
+"tw": "喬漢·弗徹",
+"loc_en": "The Sepulcher, Silverpine Forest",
+"loc_zh": "The Sepulcher · Silverpine Forest",
+"loc_tw": "The Sepulcher · Silverpine Forest"
+},
+{
+"map": 2521,
+"en": "Messana Crestwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Halavuul Cragwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1446,
+"en": "Pikkle (Neutral)",
+"zh": "皮库尔",
+"tw": "皮庫爾",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2548,
+"en": "Grungle (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1455,
+"en": "Geofram Bouldertoe",
+"zh": "吉尔弗拉姆·石趾",
+"tw": "吉爾弗拉姆·石趾",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1453,
+"en": "Gelman Stonehand",
+"zh": "吉尔曼·石手",
+"tw": "吉爾曼·石手",
+"loc_en": "Dwarven District, Stormwind City",
+"loc_zh": "Dwarven District · 暴风城",
+"loc_tw": "Dwarven District · 暴風城"
+},
+{
+"map": 1426,
+"en": "Yarr Hammerstone",
+"zh": "亚尔·锤石",
+"tw": "亞爾·錘石",
+"loc_en": "Steelgrill's Depot, Dun Morogh",
+"loc_zh": "Steelgrill's Depot · 丹莫罗",
+"loc_tw": "Steelgrill's Depot · 丹莫羅"
+},
+{
+"map": 1426,
+"en": "Dank Drizzlecut",
+"zh": "丹克·利刃",
+"tw": "丹克·利刃",
+"loc_en": "Gol'Bolar Quarry, Dun Morogh",
+"loc_zh": "Gol'Bolar Quarry · 丹莫罗",
+"loc_tw": "Gol'Bolar Quarry · 丹莫羅"
+},
+{
+"map": 1432,
+"en": "Brock Stoneseeker",
+"zh": "布洛克·寻石者",
+"tw": "布洛克·尋石者",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 1439,
+"en": "Kurdram Stonehammer",
+"zh": "库德拉姆·石锤",
+"tw": "庫德拉姆·石錘",
+"loc_en": "Auberdine, Darkshore",
+"loc_zh": "Auberdine · 黑海岸",
+"loc_tw": "Auberdine · 黑海岸"
+},
+{
+"map": 1431,
+"en": "Matt Johnson",
+"zh": "玛特·约翰森",
+"tw": "瑪特·約翰森",
+"loc_en": "Darkshire, Duskwood",
+"loc_zh": "Darkshire · 暮色森林",
+"loc_tw": "Darkshire · 暮色森林"
+},
+{
+"map": 2521,
+"en": "Messana Crestwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Halavuul Cragwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1446,
+"en": "Pikkle (Neutral)",
+"zh": "皮库尔",
+"tw": "皮庫爾",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2548,
+"en": "Grungle (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1454,
+"en": "Makaru",
+"zh": "马卡鲁",
+"tw": "馬卡魯",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Brek Stonehoof",
+"zh": "布瑞克·石蹄",
+"tw": "布瑞克·石蹄",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Brom Killian",
+"zh": "布罗姆·基里安",
+"tw": "布羅姆·基裏安",
+"loc_en": "War Quarter, Undercity",
+"loc_zh": "War Quarter · 幽暗城",
+"loc_tw": "War Quarter · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Krunn",
+"zh": "克鲁恩",
+"tw": "克魯恩",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1421,
+"en": "Johan Focht",
+"zh": "乔汉·弗彻",
+"tw": "喬漢·弗徹",
+"loc_en": "The Sepulcher, Silverpine Forest",
+"loc_zh": "The Sepulcher · Silverpine Forest",
+"loc_tw": "The Sepulcher · Silverpine Forest"
+},
+{
+"map": 2521,
+"en": "Messana Crestwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Halavuul Cragwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1446,
+"en": "Pikkle (Neutral)",
+"zh": "皮库尔",
+"tw": "皮庫爾",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2548,
+"en": "Grungle (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1455,
+"en": "Geofram Bouldertoe",
+"zh": "吉尔弗拉姆·石趾",
+"tw": "吉爾弗拉姆·石趾",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1453,
+"en": "Gelman Stonehand",
+"zh": "吉尔曼·石手",
+"tw": "吉爾曼·石手",
+"loc_en": "Dwarven District, Stormwind City",
+"loc_zh": "Dwarven District · 暴风城",
+"loc_tw": "Dwarven District · 暴風城"
+},
+{
+"map": 1426,
+"en": "Yarr Hammerstone",
+"zh": "亚尔·锤石",
+"tw": "亞爾·錘石",
+"loc_en": "Steelgrill's Depot, Dun Morogh",
+"loc_zh": "Steelgrill's Depot · 丹莫罗",
+"loc_tw": "Steelgrill's Depot · 丹莫羅"
+},
+{
+"map": 1426,
+"en": "Dank Drizzlecut",
+"zh": "丹克·利刃",
+"tw": "丹克·利刃",
+"loc_en": "Gol'Bolar Quarry, Dun Morogh",
+"loc_zh": "Gol'Bolar Quarry · 丹莫罗",
+"loc_tw": "Gol'Bolar Quarry · 丹莫羅"
+},
+{
+"map": 1432,
+"en": "Brock Stoneseeker",
+"zh": "布洛克·寻石者",
+"tw": "布洛克·尋石者",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 1439,
+"en": "Kurdram Stonehammer",
+"zh": "库德拉姆·石锤",
+"tw": "庫德拉姆·石錘",
+"loc_en": "Auberdine, Darkshore",
+"loc_zh": "Auberdine · 黑海岸",
+"loc_tw": "Auberdine · 黑海岸"
+},
+{
+"map": 1431,
+"en": "Matt Johnson",
+"zh": "玛特·约翰森",
+"tw": "瑪特·約翰森",
+"loc_en": "Darkshire, Duskwood",
+"loc_zh": "Darkshire · 暮色森林",
+"loc_tw": "Darkshire · 暮色森林"
+},
+{
+"map": 2521,
+"en": "Messana Crestwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Halavuul Cragwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1446,
+"en": "Pikkle (Neutral)",
+"zh": "皮库尔",
+"tw": "皮庫爾",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2548,
+"en": "Grungle (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1454,
+"en": "Makaru",
+"zh": "马卡鲁",
+"tw": "馬卡魯",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Brek Stonehoof",
+"zh": "布瑞克·石蹄",
+"tw": "布瑞克·石蹄",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Brom Killian",
+"zh": "布罗姆·基里安",
+"tw": "布羅姆·基裏安",
+"loc_en": "War Quarter, Undercity",
+"loc_zh": "War Quarter · 幽暗城",
+"loc_tw": "War Quarter · 幽暗城"
+},
+{
+"map": 1411,
+"en": "Krunn",
+"zh": "克鲁恩",
+"tw": "克魯恩",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1421,
+"en": "Johan Focht",
+"zh": "乔汉·弗彻",
+"tw": "喬漢·弗徹",
+"loc_en": "The Sepulcher, Silverpine Forest",
+"loc_zh": "The Sepulcher · Silverpine Forest",
+"loc_tw": "The Sepulcher · Silverpine Forest"
+},
+{
+"map": 2521,
+"en": "Messana Crestwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Halavuul Cragwind (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1446,
+"en": "Pikkle (Neutral)",
+"zh": "皮库尔",
+"tw": "皮庫爾",
+"loc_en": "Gadgetzan, Tanaris",
+"loc_zh": "加基森 · 塔纳利斯",
+"loc_tw": "加基森 · 塔納利斯"
+},
+{
+"map": 2548,
+"en": "Grungle (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1429,
+"en": "Riley Peltskinner",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Northshire, Elwynn Forest",
+"loc_zh": "Northshire · 艾尔文森林",
+"loc_tw": "Northshire · 艾爾文森林"
+},
+{
+"map": 1426,
+"en": "Brighid Stormflayer",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Coldridge Valley, Dun Morogh",
+"loc_zh": "Coldridge Valley · 丹莫罗",
+"loc_tw": "Coldridge Valley · 丹莫羅"
+},
+{
+"map": 1438,
+"en": "Terunne Bearshaper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shadowglen, Teldrassil",
+"loc_zh": "Shadowglen · 泰达希尔",
+"loc_tw": "Shadowglen · 泰達希爾"
+},
+{
+"map": 1455,
+"en": "Balthus Stoneflayer",
+"zh": "巴尔萨斯·裂石",
+"tw": "巴爾薩斯·裂石",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Eladriel",
+"zh": "艾拉迪尔",
+"tw": "艾拉迪爾",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1453,
+"en": "Maris Granger",
+"zh": "马瑞斯·格兰治",
+"tw": "馬瑞斯·格蘭治",
+"loc_en": "Old Town, Stormwind City",
+"loc_zh": "Old Town · 暴风城",
+"loc_tw": "Old Town · 暴風城"
+},
+{
+"map": 1429,
+"en": "Helene Peltskinner",
+"zh": "海伦尼·派特斯金纳",
+"tw": "海倫尼·派特斯金納",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1438,
+"en": "Radnaal Maneweaver",
+"zh": "拉德纳尔·织发",
+"tw": "拉德納爾·織發",
+"loc_en": "Road to Darnassus, Teldrassil",
+"loc_zh": "Road to Darnassus · 泰达希尔",
+"loc_tw": "Road to Darnassus · 泰達希爾"
+},
+{
+"map": 1433,
+"en": "Wilma Ranthal",
+"zh": "威尔玛·兰萨尔",
+"tw": "威爾瑪·蘭薩爾",
+"loc_en": "Redridge Mountains",
+"loc_zh": "Redridge Mountains",
+"loc_tw": "Redridge Mountains"
+},
+{
+"map": 1440,
+"en": "Jayla",
+"zh": "杰拉",
+"tw": "傑拉",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 2521,
+"en": "Mendalass Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Ishlee Breezewhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1411,
+"en": "Kagil",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valley of Trials, Durotar",
+"loc_zh": "Valley of Trials · 杜隆塔尔",
+"loc_tw": "Valley of Trials · 杜隆塔爾"
+},
+{
+"map": 1412,
+"en": "Nawka Wildsong",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Red Cloud Mesa, Mulgore",
+"loc_zh": "Red Cloud Mesa · 莫高雷",
+"loc_tw": "Red Cloud Mesa · 莫高雷"
+},
+{
+"map": 1420,
+"en": "Margaret Weaver",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Death Knell, Tirisfal Glades",
+"loc_zh": "Death Knell · 提瑞斯法林地",
+"loc_tw": "Death Knell · 提瑞斯法林地"
+},
+{
+"map": 1454,
+"en": "Thuwd",
+"zh": "苏尔德",
+"tw": "蘇爾德",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Mooranta",
+"zh": "莫兰塔",
+"tw": "莫蘭塔",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Killian Hagey",
+"zh": "基里安·哈根",
+"tw": "基裏安·哈根",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1412,
+"en": "Yonn Deepcut",
+"zh": "姚恩·深刺",
+"tw": "姚恩·深刺",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 1420,
+"en": "Rand Rhobart",
+"zh": "兰德·洛巴尔特",
+"tw": "蘭德·洛巴爾特",
+"loc_en": "Tirisfal Glades",
+"loc_zh": "提瑞斯法林地",
+"loc_tw": "提瑞斯法林地"
+},
+{
+"map": 1413,
+"en": "Dranh",
+"zh": "德拉恩",
+"tw": "德拉恩",
+"loc_en": "Camp Taurajo, The Barrens",
+"loc_zh": "陶拉祖营地 · The Barrens",
+"loc_tw": "陶拉祖營地 · The Barrens"
+},
+{
+"map": 1443,
+"en": "Malux",
+"zh": "马鲁克斯",
+"tw": "馬魯克斯",
+"loc_en": "Shadowprey Village, Desolace",
+"loc_zh": "暗影猎手村 · 凄凉之地",
+"loc_tw": "暗影獵手村 · 淒涼之地"
+},
+{
+"map": 1444,
+"en": "Kulleg Stonehorn",
+"zh": "库雷格·石角",
+"tw": "庫雷格·石角",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 2521,
+"en": "Mendalass Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Ishlee Breezewhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1455,
+"en": "Balthus Stoneflayer",
+"zh": "巴尔萨斯·裂石",
+"tw": "巴爾薩斯·裂石",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Eladriel",
+"zh": "艾拉迪尔",
+"tw": "艾拉迪爾",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1453,
+"en": "Maris Granger",
+"zh": "马瑞斯·格兰治",
+"tw": "馬瑞斯·格蘭治",
+"loc_en": "Old Town, Stormwind City",
+"loc_zh": "Old Town · 暴风城",
+"loc_tw": "Old Town · 暴風城"
+},
+{
+"map": 1429,
+"en": "Helene Peltskinner",
+"zh": "海伦尼·派特斯金纳",
+"tw": "海倫尼·派特斯金納",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1438,
+"en": "Radnaal Maneweaver",
+"zh": "拉德纳尔·织发",
+"tw": "拉德納爾·織發",
+"loc_en": "Road to Darnassus, Teldrassil",
+"loc_zh": "Road to Darnassus · 泰达希尔",
+"loc_tw": "Road to Darnassus · 泰達希爾"
+},
+{
+"map": 1433,
+"en": "Wilma Ranthal",
+"zh": "威尔玛·兰萨尔",
+"tw": "威爾瑪·蘭薩爾",
+"loc_en": "Redridge Mountains",
+"loc_zh": "Redridge Mountains",
+"loc_tw": "Redridge Mountains"
+},
+{
+"map": 1440,
+"en": "Jayla",
+"zh": "杰拉",
+"tw": "傑拉",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 2521,
+"en": "Mendalass Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Ishlee Breezewhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Thuwd",
+"zh": "苏尔德",
+"tw": "蘇爾德",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Mooranta",
+"zh": "莫兰塔",
+"tw": "莫蘭塔",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Killian Hagey",
+"zh": "基里安·哈根",
+"tw": "基裏安·哈根",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1412,
+"en": "Yonn Deepcut",
+"zh": "姚恩·深刺",
+"tw": "姚恩·深刺",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 1420,
+"en": "Rand Rhobart",
+"zh": "兰德·洛巴尔特",
+"tw": "蘭德·洛巴爾特",
+"loc_en": "Tirisfal Glades",
+"loc_zh": "提瑞斯法林地",
+"loc_tw": "提瑞斯法林地"
+},
+{
+"map": 1413,
+"en": "Dranh",
+"zh": "德拉恩",
+"tw": "德拉恩",
+"loc_en": "Camp Taurajo, The Barrens",
+"loc_zh": "陶拉祖营地 · The Barrens",
+"loc_tw": "陶拉祖營地 · The Barrens"
+},
+{
+"map": 1443,
+"en": "Malux",
+"zh": "马鲁克斯",
+"tw": "馬魯克斯",
+"loc_en": "Shadowprey Village, Desolace",
+"loc_zh": "暗影猎手村 · 凄凉之地",
+"loc_tw": "暗影獵手村 · 淒涼之地"
+},
+{
+"map": 1444,
+"en": "Kulleg Stonehorn",
+"zh": "库雷格·石角",
+"tw": "庫雷格·石角",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 2521,
+"en": "Mendalass Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Ishlee Breezewhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1455,
+"en": "Balthus Stoneflayer",
+"zh": "巴尔萨斯·裂石",
+"tw": "巴爾薩斯·裂石",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Eladriel",
+"zh": "艾拉迪尔",
+"tw": "艾拉迪爾",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1453,
+"en": "Maris Granger",
+"zh": "马瑞斯·格兰治",
+"tw": "馬瑞斯·格蘭治",
+"loc_en": "Old Town, Stormwind City",
+"loc_zh": "Old Town · 暴风城",
+"loc_tw": "Old Town · 暴風城"
+},
+{
+"map": 1429,
+"en": "Helene Peltskinner",
+"zh": "海伦尼·派特斯金纳",
+"tw": "海倫尼·派特斯金納",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1438,
+"en": "Radnaal Maneweaver",
+"zh": "拉德纳尔·织发",
+"tw": "拉德納爾·織發",
+"loc_en": "Road to Darnassus, Teldrassil",
+"loc_zh": "Road to Darnassus · 泰达希尔",
+"loc_tw": "Road to Darnassus · 泰達希爾"
+},
+{
+"map": 1433,
+"en": "Wilma Ranthal",
+"zh": "威尔玛·兰萨尔",
+"tw": "威爾瑪·蘭薩爾",
+"loc_en": "Redridge Mountains",
+"loc_zh": "Redridge Mountains",
+"loc_tw": "Redridge Mountains"
+},
+{
+"map": 1440,
+"en": "Jayla",
+"zh": "杰拉",
+"tw": "傑拉",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 2521,
+"en": "Mendalass Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Ishlee Breezewhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Thuwd",
+"zh": "苏尔德",
+"tw": "蘇爾德",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Mooranta",
+"zh": "莫兰塔",
+"tw": "莫蘭塔",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Killian Hagey",
+"zh": "基里安·哈根",
+"tw": "基裏安·哈根",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1412,
+"en": "Yonn Deepcut",
+"zh": "姚恩·深刺",
+"tw": "姚恩·深刺",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 1420,
+"en": "Rand Rhobart",
+"zh": "兰德·洛巴尔特",
+"tw": "蘭德·洛巴爾特",
+"loc_en": "Tirisfal Glades",
+"loc_zh": "提瑞斯法林地",
+"loc_tw": "提瑞斯法林地"
+},
+{
+"map": 1413,
+"en": "Dranh",
+"zh": "德拉恩",
+"tw": "德拉恩",
+"loc_en": "Camp Taurajo, The Barrens",
+"loc_zh": "陶拉祖营地 · The Barrens",
+"loc_tw": "陶拉祖營地 · The Barrens"
+},
+{
+"map": 1443,
+"en": "Malux",
+"zh": "马鲁克斯",
+"tw": "馬魯克斯",
+"loc_en": "Shadowprey Village, Desolace",
+"loc_zh": "暗影猎手村 · 凄凉之地",
+"loc_tw": "暗影獵手村 · 淒涼之地"
+},
+{
+"map": 1444,
+"en": "Kulleg Stonehorn",
+"zh": "库雷格·石角",
+"tw": "庫雷格·石角",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 2521,
+"en": "Mendalass Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Ishlee Breezewhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1455,
+"en": "Balthus Stoneflayer",
+"zh": "巴尔萨斯·裂石",
+"tw": "巴爾薩斯·裂石",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Eladriel",
+"zh": "艾拉迪尔",
+"tw": "艾拉迪爾",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1453,
+"en": "Maris Granger",
+"zh": "马瑞斯·格兰治",
+"tw": "馬瑞斯·格蘭治",
+"loc_en": "Old Town, Stormwind City",
+"loc_zh": "Old Town · 暴风城",
+"loc_tw": "Old Town · 暴風城"
+},
+{
+"map": 1429,
+"en": "Helene Peltskinner",
+"zh": "海伦尼·派特斯金纳",
+"tw": "海倫尼·派特斯金納",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1438,
+"en": "Radnaal Maneweaver",
+"zh": "拉德纳尔·织发",
+"tw": "拉德納爾·織發",
+"loc_en": "Road to Darnassus, Teldrassil",
+"loc_zh": "Road to Darnassus · 泰达希尔",
+"loc_tw": "Road to Darnassus · 泰達希爾"
+},
+{
+"map": 1433,
+"en": "Wilma Ranthal",
+"zh": "威尔玛·兰萨尔",
+"tw": "威爾瑪·蘭薩爾",
+"loc_en": "Redridge Mountains",
+"loc_zh": "Redridge Mountains",
+"loc_tw": "Redridge Mountains"
+},
+{
+"map": 1440,
+"en": "Jayla",
+"zh": "杰拉",
+"tw": "傑拉",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 2521,
+"en": "Mendalass Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Ishlee Breezewhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Thuwd",
+"zh": "苏尔德",
+"tw": "蘇爾德",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1456,
+"en": "Mooranta",
+"zh": "莫兰塔",
+"tw": "莫蘭塔",
+"loc_en": "Thunder Bluff",
+"loc_zh": "雷霆崖",
+"loc_tw": "雷霆崖"
+},
+{
+"map": 1458,
+"en": "Killian Hagey",
+"zh": "基里安·哈根",
+"tw": "基裏安·哈根",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1412,
+"en": "Yonn Deepcut",
+"zh": "姚恩·深刺",
+"tw": "姚恩·深刺",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 1420,
+"en": "Rand Rhobart",
+"zh": "兰德·洛巴尔特",
+"tw": "蘭德·洛巴爾特",
+"loc_en": "Tirisfal Glades",
+"loc_zh": "提瑞斯法林地",
+"loc_tw": "提瑞斯法林地"
+},
+{
+"map": 1413,
+"en": "Dranh",
+"zh": "德拉恩",
+"tw": "德拉恩",
+"loc_en": "Camp Taurajo, The Barrens",
+"loc_zh": "陶拉祖营地 · The Barrens",
+"loc_tw": "陶拉祖營地 · The Barrens"
+},
+{
+"map": 1443,
+"en": "Malux",
+"zh": "马鲁克斯",
+"tw": "馬魯克斯",
+"loc_en": "Shadowprey Village, Desolace",
+"loc_zh": "暗影猎手村 · 凄凉之地",
+"loc_tw": "暗影獵手村 · 淒涼之地"
+},
+{
+"map": 1444,
+"en": "Kulleg Stonehorn",
+"zh": "库雷格·石角",
+"tw": "庫雷格·石角",
+"loc_en": "Camp Mojache, Feralas",
+"loc_zh": "Camp Mojache · 菲拉斯",
+"loc_tw": "Camp Mojache · 菲拉斯"
+},
+{
+"map": 2521,
+"en": "Mendalass Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Ishlee Breezewhisper",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1453,
+"en": "Lawrence Schneider",
+"zh": "劳伦斯·斯涅德",
+"tw": "勞倫斯·斯涅德",
+"loc_en": "Duncan's Textiles, Mage Quarter, Stormwind City",
+"loc_zh": "Duncan's Textiles, Mage Quarter · 暴风城",
+"loc_tw": "Duncan's Textiles, Mage Quarter · 暴風城"
+},
+{
+"map": 1455,
+"en": "Uthrar Threx",
+"zh": "阿斯拉·瑞克斯",
+"tw": "阿斯拉·瑞克斯",
+"loc_en": "Stonebrow's Clothier, The Great Forge, Ironforge",
+"loc_zh": "Stonebrow's Clothier, The Great Forge · 铁炉堡",
+"loc_tw": "Stonebrow's Clothier, The Great Forge · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Trianna",
+"zh": "蒂安娜",
+"tw": "蒂安娜",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1429,
+"en": "Eldrin",
+"zh": "艾尔丁",
+"tw": "艾爾丁",
+"loc_en": "Eastvale Logging Camp, Elwynn Forest",
+"loc_zh": "Eastvale Logging Camp · 艾尔文森林",
+"loc_tw": "Eastvale Logging Camp · 艾爾文森林"
+},
+{
+"map": 1439,
+"en": "Grondal Moonbreeze",
+"zh": "格隆达尔·月风",
+"tw": "格隆達爾·月風",
+"loc_en": "Auberdine, Darkshore",
+"loc_zh": "Auberdine · 黑海岸",
+"loc_tw": "Auberdine · 黑海岸"
+},
+{
+"map": 1454,
+"en": "Snang",
+"zh": "斯诺恩",
+"tw": "斯諾恩",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Victor Ward",
+"zh": "维克多·瓦德",
+"tw": "維克多·瓦德",
+"loc_en": "Magic Quarter, Undercity",
+"loc_zh": "Magic Quarter · 幽暗城",
+"loc_tw": "Magic Quarter · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Vhan",
+"zh": "范恩",
+"tw": "範恩",
+"loc_en": "Central Bluff, Thunder Bluff",
+"loc_zh": "Central Bluff · 雷霆崖",
+"loc_tw": "Central Bluff · 雷霆崖"
+},
+{
+"map": 1420,
+"en": "Bowen Brisboise",
+"zh": "博文·布里斯博埃斯",
+"tw": "博文·布里斯博埃斯",
+"loc_en": "Cold Hearth Manor, Tirisfal Glades",
+"loc_zh": "Cold Hearth Manor · 提瑞斯法林地",
+"loc_tw": "Cold Hearth Manor · 提瑞斯法林地"
+},
+{
+"map": 1413,
+"en": "Kil'hala",
+"zh": "基尔哈拉",
+"tw": "基爾哈拉",
+"loc_en": "The Crossroads, The Barrens",
+"loc_zh": "The Crossroads · The Barrens",
+"loc_tw": "The Crossroads · The Barrens"
+},
+{
+"map": 1453,
+"en": "Sellandus",
+"zh": "塞拉多斯",
+"tw": "塞拉多斯",
+"loc_en": "Mage Quarter, Stormwind City",
+"loc_zh": "法师区 · 暴风城",
+"loc_tw": "法師區 · 暴風城"
+},
+{
+"map": 1455,
+"en": "Jormund Stonebrow",
+"zh": "约莫德·石眉",
+"tw": "約莫德·石眉",
+"loc_en": "Stonebrow's Clothier, The Great Forge, Ironforge",
+"loc_zh": "Stonebrow's Clothier, The Great Forge · 铁炉堡",
+"loc_tw": "Stonebrow's Clothier, The Great Forge · 鐵爐堡"
+},
+{
+"map": 1457,
+"en": "Me'lynn",
+"zh": "迈里恩",
+"tw": "邁裏恩",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1434,
+"en": "Grarnik Goodstitch",
+"zh": "格拉尼克·古斯提",
+"tw": "格拉尼克·古斯提",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 2521,
+"en": "Taleen Shimmerthread",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Othesia Evengale",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Magar",
+"zh": "玛加尔",
+"tw": "瑪加爾",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Rhiannon Davis",
+"zh": "雷安诺·戴维斯",
+"tw": "雷安諾·戴維斯",
+"loc_en": "Magic Quarter, Undercity",
+"loc_zh": "Magic Quarter · 幽暗城",
+"loc_tw": "Magic Quarter · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Tepa",
+"zh": "坦帕",
+"tw": "坦帕",
+"loc_en": "Central Bluff, Thunder Bluff",
+"loc_zh": "Central Bluff · 雷霆崖",
+"loc_tw": "Central Bluff · 雷霆崖"
+},
+{
+"map": 1413,
+"en": "Mahani",
+"zh": "马哈尼",
+"tw": "馬哈尼",
+"loc_en": "Camp Taurajo, The Barrens",
+"loc_zh": "陶拉祖营地 · The Barrens",
+"loc_tw": "陶拉祖營地 · The Barrens"
+},
+{
+"map": 1434,
+"en": "Grarnik Goodstitch",
+"zh": "格拉尼克·古斯提",
+"tw": "格拉尼克·古斯提",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 2521,
+"en": "Taleen Shimmerthread",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Othesia Evengale",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1453,
+"en": "Georgio Bolero",
+"zh": "乔吉奥·波利罗",
+"tw": "喬吉奧·波利羅",
+"loc_en": "Duncan's Textiles, Mage Quarter, Stormwind City",
+"loc_zh": "Duncan's Textiles, Mage Quarter · 暴风城",
+"loc_tw": "Duncan's Textiles, Mage Quarter · 暴風城"
+},
+{
+"map": 1416,
+"en": "Charles Worth",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Talismanic Textiles, Dalaran, Alterac Mountains",
+"loc_zh": "Talismanic Textiles, Dalaran · 奥特兰克山脉",
+"loc_tw": "Talismanic Textiles, Dalaran · 奧特蘭克山脈"
+},
+{
+"map": 1458,
+"en": "Josef Gregorian",
+"zh": "乔瑟夫·格里高利",
+"tw": "喬瑟夫·格里高利",
+"loc_en": "Magic Quarter, Undercity",
+"loc_zh": "Magic Quarter · 幽暗城",
+"loc_tw": "Magic Quarter · 幽暗城"
+},
+{
+"map": 1445,
+"en": "Timothy Worthington",
+"zh": "提莫斯·沃森特",
+"tw": "提莫斯·沃森特",
+"loc_en": "Theramore Isle, Dustwallow Marsh",
+"loc_zh": "Theramore Isle · 尘泥沼泽",
+"loc_tw": "Theramore Isle · 塵泥沼澤"
+},
+{
+"map": 1424,
+"en": "Daryl Stack",
+"zh": "达瑞尔·斯塔克",
+"tw": "達瑞爾·斯塔克",
+"loc_en": "Tarren Mill, Hillsbrad Foothills",
+"loc_zh": "Tarren Mill · 希尔斯布莱德丘陵",
+"loc_tw": "Tarren Mill · 希爾斯布萊德丘陵"
+},
+{
+"map": 1457,
+"en": "Alegorn",
+"zh": "阿雷贡",
+"tw": "阿雷貢",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1426,
+"en": "Cook Ghilm",
+"zh": "厨师格瑞姆",
+"tw": "廚師格瑞姆",
+"loc_en": "Gol'bolar Quarry, Dun Morogh",
+"loc_zh": "Gol'bolar Quarry · 丹莫罗",
+"loc_tw": "Gol'bolar Quarry · 丹莫羅"
+},
+{
+"map": 1433,
+"en": "Crystal Boughman",
+"zh": "克里斯托·鲍曼",
+"tw": "克里斯托·鮑曼",
+"loc_en": "Lakeshire, Redridge Mountains",
+"loc_zh": "Lakeshire · Redridge Mountains",
+"loc_tw": "Lakeshire · Redridge Mountains"
+},
+{
+"map": 1455,
+"en": "Daryl Riknussun",
+"zh": "达瑞尔·瑞克努索",
+"tw": "達瑞爾·瑞克努索",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1426,
+"en": "Gremlock Pilsnor",
+"zh": "格雷姆罗克·匹斯诺尔",
+"tw": "格雷姆羅克·匹斯諾爾",
+"loc_en": "Kharanos, Dun Morogh",
+"loc_zh": "卡拉诺斯 · 丹莫罗",
+"loc_tw": "卡拉諾斯 · 丹莫羅"
+},
+{
+"map": 2482,
+"en": "Hnaz Blunderflame",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Elderwild, Mount Hyjal",
+"loc_zh": "Elderwild · Mount Hyjal",
+"loc_tw": "Elderwild · Mount Hyjal"
+},
+{
+"map": 1416,
+"en": "Katherine Lee",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 1453,
+"en": "Stephen Ryback",
+"zh": "斯蒂芬·雷百克",
+"tw": "斯蒂芬·雷百克",
+"loc_en": "Old Town, Stormwind City",
+"loc_zh": "Old Town · 暴风城",
+"loc_tw": "Old Town · 暴風城"
+},
+{
+"map": 1429,
+"en": "Tomas",
+"zh": "厨师托马斯",
+"tw": "廚師托馬斯",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1438,
+"en": "Zarrin",
+"zh": "扎瑞恩",
+"tw": "扎瑞恩",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 2521,
+"en": "Nyalah Brightfire (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Zerril Softbreeze (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 1456,
+"en": "Aska Mistrunner",
+"zh": "阿丝卡·迷雾行者",
+"tw": "阿絲卡·迷霧行者",
+"loc_en": "Central Rise, Thunder Bluff",
+"loc_zh": "Central Rise · 雷霆崖",
+"loc_tw": "Central Rise · 雷霆崖"
+},
+{
+"map": 1411,
+"en": "Cook Torka",
+"zh": "厨师托尔卡",
+"tw": "廚師托爾卡",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1413,
+"en": "Duhng",
+"zh": "杜恩格",
+"tw": "杜恩格",
+"loc_en": "Outpost southeast of the Crossroads, The Barrens",
+"loc_zh": "Outpost southeast of the Crossroads · The Barrens",
+"loc_tw": "Outpost southeast of the Crossroads · The Barrens"
+},
+{
+"map": 1458,
+"en": "Eunice Burch",
+"zh": "尤奈斯·伯奇",
+"tw": "尤奈斯·伯奇",
+"loc_en": "Trade Quarter, Undercity",
+"loc_zh": "Trade Quarter · 幽暗城",
+"loc_tw": "Trade Quarter · 幽暗城"
+},
+{
+"map": 2548,
+"en": "Gorg",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Rog'mar, Riverglades",
+"loc_zh": "Rog'mar · Riverglades",
+"loc_tw": "Rog'mar · Riverglades"
+},
+{
+"map": 1434,
+"en": "Mudduk",
+"zh": "玛杜克",
+"tw": "瑪杜克",
+"loc_en": "Grom'gol Base Camp, Stranglethorn Vale",
+"loc_zh": "Grom'gol Base Camp · 荆棘谷",
+"loc_tw": "Grom'gol Base Camp · 荊棘谷"
+},
+{
+"map": 2482,
+"en": "Ortak Lomgok",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Elderwild, Mount Hyjal",
+"loc_zh": "Elderwild · Mount Hyjal",
+"loc_tw": "Elderwild · Mount Hyjal"
+},
+{
+"map": 1412,
+"en": "Pyall Silentstride",
+"zh": "派尔·沉默行者",
+"tw": "派爾·沉默行者",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 1420,
+"en": "William Pickman",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1454,
+"en": "Zamja",
+"zh": "扎姆沙",
+"tw": "扎姆沙",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 2521,
+"en": "Nyalah Brightfire (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Zerril Softbreeze (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 1457,
+"en": "Alegorn",
+"zh": "阿雷贡",
+"tw": "阿雷貢",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1426,
+"en": "Cook Ghilm",
+"zh": "厨师格瑞姆",
+"tw": "廚師格瑞姆",
+"loc_en": "Gol'bolar Quarry, Dun Morogh",
+"loc_zh": "Gol'bolar Quarry · 丹莫罗",
+"loc_tw": "Gol'bolar Quarry · 丹莫羅"
+},
+{
+"map": 1433,
+"en": "Crystal Boughman",
+"zh": "克里斯托·鲍曼",
+"tw": "克里斯托·鮑曼",
+"loc_en": "Lakeshire, Redridge Mountains",
+"loc_zh": "Lakeshire · Redridge Mountains",
+"loc_tw": "Lakeshire · Redridge Mountains"
+},
+{
+"map": 1455,
+"en": "Daryl Riknussun",
+"zh": "达瑞尔·瑞克努索",
+"tw": "達瑞爾·瑞克努索",
+"loc_en": "The Great Forge, Ironforge",
+"loc_zh": "大锻炉 · 铁炉堡",
+"loc_tw": "大鍛爐 · 鐵爐堡"
+},
+{
+"map": 1426,
+"en": "Gremlock Pilsnor",
+"zh": "格雷姆罗克·匹斯诺尔",
+"tw": "格雷姆羅克·匹斯諾爾",
+"loc_en": "Kharanos, Dun Morogh",
+"loc_zh": "卡拉诺斯 · 丹莫罗",
+"loc_tw": "卡拉諾斯 · 丹莫羅"
+},
+{
+"map": 2482,
+"en": "Hnaz Blunderflame",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Elderwild, Mount Hyjal",
+"loc_zh": "Elderwild · Mount Hyjal",
+"loc_tw": "Elderwild · Mount Hyjal"
+},
+{
+"map": 1416,
+"en": "Katherine Lee",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 1453,
+"en": "Stephen Ryback",
+"zh": "斯蒂芬·雷百克",
+"tw": "斯蒂芬·雷百克",
+"loc_en": "Old Town, Stormwind City",
+"loc_zh": "Old Town · 暴风城",
+"loc_tw": "Old Town · 暴風城"
+},
+{
+"map": 1429,
+"en": "Tomas",
+"zh": "厨师托马斯",
+"tw": "廚師托馬斯",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1438,
+"en": "Zarrin",
+"zh": "扎瑞恩",
+"tw": "扎瑞恩",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 2521,
+"en": "Nyalah Brightfire (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Zerril Softbreeze (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 1456,
+"en": "Aska Mistrunner",
+"zh": "阿丝卡·迷雾行者",
+"tw": "阿絲卡·迷霧行者",
+"loc_en": "Central Rise, Thunder Bluff",
+"loc_zh": "Central Rise · 雷霆崖",
+"loc_tw": "Central Rise · 雷霆崖"
+},
+{
+"map": 1411,
+"en": "Cook Torka",
+"zh": "厨师托尔卡",
+"tw": "廚師托爾卡",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1413,
+"en": "Duhng",
+"zh": "杜恩格",
+"tw": "杜恩格",
+"loc_en": "Outpost southeast of the Crossroads, The Barrens",
+"loc_zh": "Outpost southeast of the Crossroads · The Barrens",
+"loc_tw": "Outpost southeast of the Crossroads · The Barrens"
+},
+{
+"map": 1458,
+"en": "Eunice Burch",
+"zh": "尤奈斯·伯奇",
+"tw": "尤奈斯·伯奇",
+"loc_en": "Trade Quarter, Undercity",
+"loc_zh": "Trade Quarter · 幽暗城",
+"loc_tw": "Trade Quarter · 幽暗城"
+},
+{
+"map": 2548,
+"en": "Gorg",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Rog'mar, Riverglades",
+"loc_zh": "Rog'mar · Riverglades",
+"loc_tw": "Rog'mar · Riverglades"
+},
+{
+"map": 1434,
+"en": "Mudduk",
+"zh": "玛杜克",
+"tw": "瑪杜克",
+"loc_en": "Grom'gol Base Camp, Stranglethorn Vale",
+"loc_zh": "Grom'gol Base Camp · 荆棘谷",
+"loc_tw": "Grom'gol Base Camp · 荊棘谷"
+},
+{
+"map": 2482,
+"en": "Ortak Lomgok",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Elderwild, Mount Hyjal",
+"loc_zh": "Elderwild · Mount Hyjal",
+"loc_tw": "Elderwild · Mount Hyjal"
+},
+{
+"map": 1412,
+"en": "Pyall Silentstride",
+"zh": "派尔·沉默行者",
+"tw": "派爾·沉默行者",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 1420,
+"en": "William Pickman",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1454,
+"en": "Zamja",
+"zh": "扎姆沙",
+"tw": "扎姆沙",
+"loc_en": "The Drag, Orgrimmar",
+"loc_zh": "暗巷区 · 奥格瑞玛",
+"loc_tw": "暗巷區 · 奧格瑞瑪"
+},
+{
+"map": 2521,
+"en": "Nyalah Brightfire (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Zerril Softbreeze (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 1440,
+"en": "Shandrina",
+"zh": "珊蒂瑞亚",
+"tw": "珊蒂瑞亞",
+"loc_en": "Silverwind Refuge, Ashenvale",
+"loc_zh": "Silverwind Refuge · 灰谷",
+"loc_tw": "Silverwind Refuge · 灰谷"
+},
+{
+"map": 1443,
+"en": "Wulan",
+"zh": "乌兰",
+"tw": "烏蘭",
+"loc_en": "Shadowprey Village, Desolace",
+"loc_zh": "暗影猎手村 · 凄凉之地",
+"loc_tw": "暗影獵手村 · 淒涼之地"
+},
+{
+"map": 1457,
+"en": "Dannelor",
+"zh": "丹纳罗尔",
+"tw": "丹納羅爾",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1453,
+"en": "Shaina Fuller",
+"zh": "珊娜·弗勒",
+"tw": "珊娜·弗勒",
+"loc_en": "Cathedral of Light, Stormwind City",
+"loc_zh": "Cathedral of Light · 暴风城",
+"loc_tw": "Cathedral of Light · 暴風城"
+},
+{
+"map": 1455,
+"en": "Nissa Firestone",
+"zh": "尼莎·火石",
+"tw": "尼莎·火石",
+"loc_en": "Great Forge, Ironforge",
+"loc_zh": "Great Forge · 铁炉堡",
+"loc_tw": "Great Forge · 鐵爐堡"
+},
+{
+"map": 1438,
+"en": "Byancie",
+"zh": "拜恩希",
+"tw": "拜恩希",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 1429,
+"en": "Michelle Belle",
+"zh": "米歇尔·贝利",
+"tw": "米歇爾·貝利",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1426,
+"en": "Thamner Pol",
+"zh": "萨姆诺·普尔",
+"tw": "薩姆諾·普爾",
+"loc_en": "Kharanos, Dun Morogh",
+"loc_zh": "卡拉诺斯 · 丹莫罗",
+"loc_tw": "卡拉諾斯 · 丹莫羅"
+},
+{
+"map": 1437,
+"en": "Fremal Doohickey",
+"zh": "弗雷玛尔",
+"tw": "弗雷瑪爾",
+"loc_en": "Menethil Harbor, Wetlands",
+"loc_zh": "Menethil Harbor · Wetlands",
+"loc_tw": "Menethil Harbor · Wetlands"
+},
+{
+"map": 1416,
+"en": "Angelique Butler",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 2521,
+"en": "Naleeia Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Melasa Fairmend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Arnok",
+"zh": "阿诺克",
+"tw": "阿諾克",
+"loc_en": "Valley of Spirits, Orgrimmar",
+"loc_zh": "Valley of Spirits · 奥格瑞玛",
+"loc_tw": "Valley of Spirits · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Mary Edras",
+"zh": "玛丽·艾塔斯",
+"tw": "瑪麗·艾塔斯",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Pand Stonebinder",
+"zh": "潘德·缚石",
+"tw": "潘德·縛石",
+"loc_en": "Spirit Rise, Thunder Bluff",
+"loc_zh": "灵魂高地 · 雷霆崖",
+"loc_tw": "靈魂高地 · 雷霆崖"
+},
+{
+"map": 1411,
+"en": "Rawrk",
+"zh": "拉乌克",
+"tw": "拉烏克",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1420,
+"en": "Nurse Neela",
+"zh": "妮拉",
+"tw": "妮拉",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1412,
+"en": "Vira Younghoof",
+"zh": "维尔拉·幼蹄",
+"tw": "維爾拉·幼蹄",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 2521,
+"en": "Naleeia Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Melasa Fairmend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1457,
+"en": "Dannelor",
+"zh": "丹纳罗尔",
+"tw": "丹納羅爾",
+"loc_en": "Craftsmen's Terrace, Darnassus",
+"loc_zh": "工匠区 · 达纳苏斯",
+"loc_tw": "工匠區 · 達納蘇斯"
+},
+{
+"map": 1453,
+"en": "Shaina Fuller",
+"zh": "珊娜·弗勒",
+"tw": "珊娜·弗勒",
+"loc_en": "Cathedral of Light, Stormwind City",
+"loc_zh": "Cathedral of Light · 暴风城",
+"loc_tw": "Cathedral of Light · 暴風城"
+},
+{
+"map": 1455,
+"en": "Nissa Firestone",
+"zh": "尼莎·火石",
+"tw": "尼莎·火石",
+"loc_en": "Great Forge, Ironforge",
+"loc_zh": "Great Forge · 铁炉堡",
+"loc_tw": "Great Forge · 鐵爐堡"
+},
+{
+"map": 1438,
+"en": "Byancie",
+"zh": "拜恩希",
+"tw": "拜恩希",
+"loc_en": "Dolanaar, Teldrassil",
+"loc_zh": "多兰纳尔 · 泰达希尔",
+"loc_tw": "多蘭納爾 · 泰達希爾"
+},
+{
+"map": 1429,
+"en": "Michelle Belle",
+"zh": "米歇尔·贝利",
+"tw": "米歇爾·貝利",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1426,
+"en": "Thamner Pol",
+"zh": "萨姆诺·普尔",
+"tw": "薩姆諾·普爾",
+"loc_en": "Kharanos, Dun Morogh",
+"loc_zh": "卡拉诺斯 · 丹莫罗",
+"loc_tw": "卡拉諾斯 · 丹莫羅"
+},
+{
+"map": 1437,
+"en": "Fremal Doohickey",
+"zh": "弗雷玛尔",
+"tw": "弗雷瑪爾",
+"loc_en": "Menethil Harbor, Wetlands",
+"loc_zh": "Menethil Harbor · Wetlands",
+"loc_tw": "Menethil Harbor · Wetlands"
+},
+{
+"map": 1416,
+"en": "Angelique Butler",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Dalaran, Alterac Mountains",
+"loc_zh": "达拉然 · 奥特兰克山脉",
+"loc_tw": "達拉然 · 奧特蘭克山脈"
+},
+{
+"map": 2521,
+"en": "Naleeia Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Melasa Fairmend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1454,
+"en": "Arnok",
+"zh": "阿诺克",
+"tw": "阿諾克",
+"loc_en": "Valley of Spirits, Orgrimmar",
+"loc_zh": "Valley of Spirits · 奥格瑞玛",
+"loc_tw": "Valley of Spirits · 奧格瑞瑪"
+},
+{
+"map": 1458,
+"en": "Mary Edras",
+"zh": "玛丽·艾塔斯",
+"tw": "瑪麗·艾塔斯",
+"loc_en": "Rogues' Quarter, Undercity",
+"loc_zh": "Rogues' Quarter · 幽暗城",
+"loc_tw": "Rogues' Quarter · 幽暗城"
+},
+{
+"map": 1456,
+"en": "Pand Stonebinder",
+"zh": "潘德·缚石",
+"tw": "潘德·縛石",
+"loc_en": "Spirit Rise, Thunder Bluff",
+"loc_zh": "灵魂高地 · 雷霆崖",
+"loc_tw": "靈魂高地 · 雷霆崖"
+},
+{
+"map": 1411,
+"en": "Rawrk",
+"zh": "拉乌克",
+"tw": "拉烏克",
+"loc_en": "Razor Hill, Durotar",
+"loc_zh": "剃刀岭 · 杜隆塔尔",
+"loc_tw": "剃刀嶺 · 杜隆塔爾"
+},
+{
+"map": 1420,
+"en": "Nurse Neela",
+"zh": "妮拉",
+"tw": "妮拉",
+"loc_en": "Brill, Tirisfal Glades",
+"loc_zh": "布瑞尔 · 提瑞斯法林地",
+"loc_tw": "布瑞爾 · 提瑞斯法林地"
+},
+{
+"map": 1412,
+"en": "Vira Younghoof",
+"zh": "维尔拉·幼蹄",
+"tw": "維爾拉·幼蹄",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 2521,
+"en": "Naleeia Tattermend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Melasa Fairmend",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 1417,
+"en": "Deneb Walker",
+"zh": "德尼布·沃克",
+"tw": "德尼布·沃克",
+"loc_en": "Stromgarde Keep, Arathi Highlands",
+"loc_zh": "Stromgarde Keep · Arathi Highlands",
+"loc_tw": "Stromgarde Keep · Arathi Highlands"
+},
+{
+"map": 1445,
+"en": "Balai Lok'Wein",
+"zh": "赞巴莱",
+"tw": "贊巴萊",
+"loc_en": "Brackenwall Village, Dustwallow Marsh",
+"loc_zh": "Brackenwall Village · 尘泥沼泽",
+"loc_tw": "Brackenwall Village · 塵泥沼澤"
+},
+{
+"map": 1445,
+"en": "Doctor Gustaf VanHowzen",
+"zh": "古斯塔夫·范沃森医生",
+"tw": "古斯塔夫·範沃森醫生",
+"loc_en": "Foothold Citadel, Theramore Isle, Dustwallow Marsh",
+"loc_zh": "Foothold Citadel, Theramore Isle · 尘泥沼泽",
+"loc_tw": "Foothold Citadel, Theramore Isle · 塵泥沼澤"
+},
+{
+"map": 1417,
+"en": "Doctor Gregory Victor",
+"zh": "格里高利·维克托医生",
+"tw": "格里高利·維克托醫生",
+"loc_en": "Hammerfall, Arathi Highlands",
+"loc_zh": "Hammerfall · Arathi Highlands",
+"loc_tw": "Hammerfall · Arathi Highlands"
+},
+{
+"map": 1438,
+"en": "Androl Oakhand",
+"zh": "安多尔·橡木之手",
+"tw": "安多爾·橡木之手",
+"loc_en": "Rut'theran Village, Teldrassil",
+"loc_zh": "Rut'theran Village · 泰达希尔",
+"loc_tw": "Rut'theran Village · 泰達希爾"
+},
+{
+"map": 1453,
+"en": "Arnold Leland",
+"zh": "阿诺德·利兰",
+"tw": "阿諾德·利蘭",
+"loc_en": "Canal by the Trade District, Stormwind City",
+"loc_zh": "Canal by the Trade District · 暴风城",
+"loc_tw": "Canal by the Trade District · 暴風城"
+},
+{
+"map": 1457,
+"en": "Astaia",
+"zh": "阿斯坦娅",
+"tw": "阿斯坦婭",
+"loc_en": "Temple Gardens, Darnassus",
+"loc_zh": "Temple Gardens · 达纳苏斯",
+"loc_tw": "Temple Gardens · 達納蘇斯"
+},
+{
+"map": 1444,
+"en": "Brannock",
+"zh": "布拉诺克",
+"tw": "布拉諾克",
+"loc_en": "Feathermoon Stronghold, Feralas",
+"loc_zh": "羽月要塞 · 菲拉斯",
+"loc_tw": "羽月要塞 · 菲拉斯"
+},
+{
+"map": 1424,
+"en": "Donald Rabonne",
+"zh": "唐纳德·拉波尼",
+"tw": "唐納德·拉波尼",
+"loc_en": "Southshore, Hillsbrad Foothills",
+"loc_zh": "Southshore · 希尔斯布莱德丘陵",
+"loc_tw": "Southshore · 希爾斯布萊德丘陵"
+},
+{
+"map": 1455,
+"en": "Grimnur Stonebrand",
+"zh": "格瑞诺尔·石印",
+"tw": "格瑞諾爾·石印",
+"loc_en": "Forlorn Cavern, Ironforge",
+"loc_zh": "幽暗洞窟 · 铁炉堡",
+"loc_tw": "幽暗洞窟 · 鐵爐堡"
+},
+{
+"map": 1437,
+"en": "Harold Riggs",
+"zh": "哈洛德·李格斯",
+"tw": "哈洛德·李格斯",
+"loc_en": "Menethil Harbor, Wetlands",
+"loc_zh": "Menethil Harbor · Wetlands",
+"loc_tw": "Menethil Harbor · Wetlands"
+},
+{
+"map": 1424,
+"en": "Hunter Moore",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Hillsbrad Foothills",
+"loc_zh": "希尔斯布莱德丘陵",
+"loc_tw": "希爾斯布萊德丘陵"
+},
+{
+"map": 1429,
+"en": "Lee Brown",
+"zh": "李·布朗",
+"tw": "李·布朗",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1433,
+"en": "Matthew Hooper",
+"zh": "马修·胡柏",
+"tw": "馬修·胡柏",
+"loc_en": "Lakeshire, Redridge Mountains",
+"loc_zh": "Lakeshire · Redridge Mountains",
+"loc_tw": "Lakeshire · Redridge Mountains"
+},
+{
+"map": 1426,
+"en": "Paxton Ganter",
+"zh": "帕克斯顿·冈特尔",
+"tw": "帕克斯頓·岡特爾",
+"loc_en": "Brewnall Village, Dun Morogh",
+"loc_zh": "Brewnall Village · 丹莫罗",
+"loc_tw": "Brewnall Village · 丹莫羅"
+},
+{
+"map": 1432,
+"en": "Warg Deepwater",
+"zh": "瓦格·深水",
+"tw": "瓦格·深水",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 2521,
+"en": "Baelann Swiftcurrent (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Fenn Fairweather (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2548,
+"en": "Krix (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1434,
+"en": "Myizz Luckycatch (Neutral)",
+"zh": "麦依兹·拉齐卡",
+"tw": "麥依茲·拉齊卡",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1458,
+"en": "Armand Cromwell",
+"zh": "阿曼德·克伦威尔",
+"tw": "阿曼德·克倫威爾",
+"loc_en": "Magic Quarter, Undercity",
+"loc_zh": "Magic Quarter · 幽暗城",
+"loc_tw": "Magic Quarter · 幽暗城"
+},
+{
+"map": 1420,
+"en": "Clyde Kellen",
+"zh": "克莱德·凯林",
+"tw": "克萊德·凱林",
+"loc_en": "Brightwater Lake, Tirisfal Glades",
+"loc_zh": "Brightwater Lake · 提瑞斯法林地",
+"loc_tw": "Brightwater Lake · 提瑞斯法林地"
+},
+{
+"map": 1456,
+"en": "Kah Mistrunner",
+"zh": "卡尔·迷雾行者",
+"tw": "卡爾·迷霧行者",
+"loc_en": "Middle Tier, Thunder Bluff",
+"loc_zh": "Middle Tier · 雷霆崖",
+"loc_tw": "Middle Tier · 雷霆崖"
+},
+{
+"map": 1425,
+"en": "Katoom the Angler",
+"zh": "钓鱼者卡图姆",
+"tw": "釣魚者卡圖姆",
+"loc_en": "Revantusk Village, The Hinterlands",
+"loc_zh": "Revantusk Village · The Hinterlands",
+"loc_tw": "Revantusk Village · The Hinterlands"
+},
+{
+"map": 1440,
+"en": "Kil'Hiwana",
+"zh": "基尔希瓦纳",
+"tw": "基爾希瓦納",
+"loc_en": "South of Blackfathom Deeps, Ashenvale",
+"loc_zh": "South of Blackfathom Deeps · 灰谷",
+"loc_tw": "South of Blackfathom Deeps · 灰谷"
+},
+{
+"map": 1411,
+"en": "Lau'Tiki",
+"zh": "劳迪克",
+"tw": "勞迪克",
+"loc_en": "South of Sen'jin Village, Durotar",
+"loc_zh": "South of Sen'jin Village · 杜隆塔尔",
+"loc_tw": "South of Sen'jin Village · 杜隆塔爾"
+},
+{
+"map": 1443,
+"en": "Lui'Mala",
+"zh": "鲁伊马拉",
+"tw": "魯伊馬拉",
+"loc_en": "Shadowprey Village, Desolace",
+"loc_zh": "暗影猎手村 · 凄凉之地",
+"loc_tw": "暗影獵手村 · 淒涼之地"
+},
+{
+"map": 1454,
+"en": "Lumak",
+"zh": "鲁玛克",
+"tw": "魯瑪克",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1412,
+"en": "Uthan Stillwater",
+"zh": "尤萨恩·静水",
+"tw": "尤薩恩·靜水",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 2521,
+"en": "Baelann Swiftcurrent (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Fenn Fairweather (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2548,
+"en": "Krix (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1434,
+"en": "Myizz Luckycatch (Neutral)",
+"zh": "麦依兹·拉齐卡",
+"tw": "麥依茲·拉齊卡",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1438,
+"en": "Androl Oakhand",
+"zh": "安多尔·橡木之手",
+"tw": "安多爾·橡木之手",
+"loc_en": "Rut'theran Village, Teldrassil",
+"loc_zh": "Rut'theran Village · 泰达希尔",
+"loc_tw": "Rut'theran Village · 泰達希爾"
+},
+{
+"map": 1453,
+"en": "Arnold Leland",
+"zh": "阿诺德·利兰",
+"tw": "阿諾德·利蘭",
+"loc_en": "Canal by the Trade District, Stormwind City",
+"loc_zh": "Canal by the Trade District · 暴风城",
+"loc_tw": "Canal by the Trade District · 暴風城"
+},
+{
+"map": 1457,
+"en": "Astaia",
+"zh": "阿斯坦娅",
+"tw": "阿斯坦婭",
+"loc_en": "Temple Gardens, Darnassus",
+"loc_zh": "Temple Gardens · 达纳苏斯",
+"loc_tw": "Temple Gardens · 達納蘇斯"
+},
+{
+"map": 1444,
+"en": "Brannock",
+"zh": "布拉诺克",
+"tw": "布拉諾克",
+"loc_en": "Feathermoon Stronghold, Feralas",
+"loc_zh": "羽月要塞 · 菲拉斯",
+"loc_tw": "羽月要塞 · 菲拉斯"
+},
+{
+"map": 1424,
+"en": "Donald Rabonne",
+"zh": "唐纳德·拉波尼",
+"tw": "唐納德·拉波尼",
+"loc_en": "Southshore, Hillsbrad Foothills",
+"loc_zh": "Southshore · 希尔斯布莱德丘陵",
+"loc_tw": "Southshore · 希爾斯布萊德丘陵"
+},
+{
+"map": 1455,
+"en": "Grimnur Stonebrand",
+"zh": "格瑞诺尔·石印",
+"tw": "格瑞諾爾·石印",
+"loc_en": "Forlorn Cavern, Ironforge",
+"loc_zh": "幽暗洞窟 · 铁炉堡",
+"loc_tw": "幽暗洞窟 · 鐵爐堡"
+},
+{
+"map": 1437,
+"en": "Harold Riggs",
+"zh": "哈洛德·李格斯",
+"tw": "哈洛德·李格斯",
+"loc_en": "Menethil Harbor, Wetlands",
+"loc_zh": "Menethil Harbor · Wetlands",
+"loc_tw": "Menethil Harbor · Wetlands"
+},
+{
+"map": 1424,
+"en": "Hunter Moore",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Hillsbrad Foothills",
+"loc_zh": "希尔斯布莱德丘陵",
+"loc_tw": "希爾斯布萊德丘陵"
+},
+{
+"map": 1429,
+"en": "Lee Brown",
+"zh": "李·布朗",
+"tw": "李·布朗",
+"loc_en": "Goldshire, Elwynn Forest",
+"loc_zh": "闪金镇 · 艾尔文森林",
+"loc_tw": "閃金鎮 · 艾爾文森林"
+},
+{
+"map": 1433,
+"en": "Matthew Hooper",
+"zh": "马修·胡柏",
+"tw": "馬修·胡柏",
+"loc_en": "Lakeshire, Redridge Mountains",
+"loc_zh": "Lakeshire · Redridge Mountains",
+"loc_tw": "Lakeshire · Redridge Mountains"
+},
+{
+"map": 1426,
+"en": "Paxton Ganter",
+"zh": "帕克斯顿·冈特尔",
+"tw": "帕克斯頓·岡特爾",
+"loc_en": "Brewnall Village, Dun Morogh",
+"loc_zh": "Brewnall Village · 丹莫罗",
+"loc_tw": "Brewnall Village · 丹莫羅"
+},
+{
+"map": 1432,
+"en": "Warg Deepwater",
+"zh": "瓦格·深水",
+"tw": "瓦格·深水",
+"loc_en": "Thelsamar, Loch Modan",
+"loc_zh": "Thelsamar · 洛克莫丹",
+"loc_tw": "Thelsamar · 洛克莫丹"
+},
+{
+"map": 2521,
+"en": "Baelann Swiftcurrent (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Fenn Fairweather (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2548,
+"en": "Krix (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1434,
+"en": "Myizz Luckycatch (Neutral)",
+"zh": "麦依兹·拉齐卡",
+"tw": "麥依茲·拉齊卡",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+},
+{
+"map": 1458,
+"en": "Armand Cromwell",
+"zh": "阿曼德·克伦威尔",
+"tw": "阿曼德·克倫威爾",
+"loc_en": "Magic Quarter, Undercity",
+"loc_zh": "Magic Quarter · 幽暗城",
+"loc_tw": "Magic Quarter · 幽暗城"
+},
+{
+"map": 1420,
+"en": "Clyde Kellen",
+"zh": "克莱德·凯林",
+"tw": "克萊德·凱林",
+"loc_en": "Brightwater Lake, Tirisfal Glades",
+"loc_zh": "Brightwater Lake · 提瑞斯法林地",
+"loc_tw": "Brightwater Lake · 提瑞斯法林地"
+},
+{
+"map": 1456,
+"en": "Kah Mistrunner",
+"zh": "卡尔·迷雾行者",
+"tw": "卡爾·迷霧行者",
+"loc_en": "Middle Tier, Thunder Bluff",
+"loc_zh": "Middle Tier · 雷霆崖",
+"loc_tw": "Middle Tier · 雷霆崖"
+},
+{
+"map": 1425,
+"en": "Katoom the Angler",
+"zh": "钓鱼者卡图姆",
+"tw": "釣魚者卡圖姆",
+"loc_en": "Revantusk Village, The Hinterlands",
+"loc_zh": "Revantusk Village · The Hinterlands",
+"loc_tw": "Revantusk Village · The Hinterlands"
+},
+{
+"map": 1440,
+"en": "Kil'Hiwana",
+"zh": "基尔希瓦纳",
+"tw": "基爾希瓦納",
+"loc_en": "South of Blackfathom Deeps, Ashenvale",
+"loc_zh": "South of Blackfathom Deeps · 灰谷",
+"loc_tw": "South of Blackfathom Deeps · 灰谷"
+},
+{
+"map": 1411,
+"en": "Lau'Tiki",
+"zh": "劳迪克",
+"tw": "勞迪克",
+"loc_en": "South of Sen'jin Village, Durotar",
+"loc_zh": "South of Sen'jin Village · 杜隆塔尔",
+"loc_tw": "South of Sen'jin Village · 杜隆塔爾"
+},
+{
+"map": 1443,
+"en": "Lui'Mala",
+"zh": "鲁伊马拉",
+"tw": "魯伊馬拉",
+"loc_en": "Shadowprey Village, Desolace",
+"loc_zh": "暗影猎手村 · 凄凉之地",
+"loc_tw": "暗影獵手村 · 淒涼之地"
+},
+{
+"map": 1454,
+"en": "Lumak",
+"zh": "鲁玛克",
+"tw": "魯瑪克",
+"loc_en": "Valley of Honor, Orgrimmar",
+"loc_zh": "Valley of Honor · 奥格瑞玛",
+"loc_tw": "Valley of Honor · 奧格瑞瑪"
+},
+{
+"map": 1412,
+"en": "Uthan Stillwater",
+"zh": "尤萨恩·静水",
+"tw": "尤薩恩·靜水",
+"loc_en": "Bloodhoof Village, Mulgore",
+"loc_zh": "血蹄村 · 莫高雷",
+"loc_tw": "血蹄村 · 莫高雷"
+},
+{
+"map": 2521,
+"en": "Baelann Swiftcurrent (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Valanaar, Zephras Isle",
+"loc_zh": "瓦拉纳 · 泽夫拉斯岛",
+"loc_tw": "瓦拉納 · 澤夫拉斯島"
+},
+{
+"map": 2521,
+"en": "Fenn Fairweather (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Shen'dar Village, Zephras Isle",
+"loc_zh": "辛德村 · 泽夫拉斯岛",
+"loc_tw": "辛德村 · 澤夫拉斯島"
+},
+{
+"map": 2548,
+"en": "Krix (Neutral)",
+"zh": "NPC",
+"tw": "NPC",
+"loc_en": "Powderfuse Port, Riverglades",
+"loc_zh": "Powderfuse Port · Riverglades",
+"loc_tw": "Powderfuse Port · Riverglades"
+},
+{
+"map": 1434,
+"en": "Myizz Luckycatch (Neutral)",
+"zh": "麦依兹·拉齐卡",
+"tw": "麥依茲·拉齊卡",
+"loc_en": "Booty Bay, Stranglethorn Vale",
+"loc_zh": "藏宝海湾 · 荆棘谷",
+"loc_tw": "藏寶海灣 · 荊棘谷"
+}
+]

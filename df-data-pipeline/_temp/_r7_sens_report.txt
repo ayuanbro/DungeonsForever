@@ -1,0 +1,19 @@
+== 前置 ==
+  SRC  md5=35608efb52aac276e270ad13777d81d8
+  BETA md5=35608efb52aac276e270ad13777d81d8
+
+== [基线] probe（SEC_DROP=5，应全过）==
+  [OK ] ★ SEC_DROP 数值 pin：TT.SEC_DROP == 5（★ 专精内容区下移 5px 需求的回归保护；QA R1）  [[5]]
+  [OK ] ★ SEC_TOP 结构：== SEC_TAB_Y + SEC_TAB_H + SEC_DROP（SEC_DROP 真被消费）  [[143 vs 143]]
+  通过 50 / 失败 0
+
+== [变异] beta SEC_DROP 5 -> 10（新增 pin 应 FAIL）==
+  [FAIL] ★ SEC_DROP 数值 pin：TT.SEC_DROP == 5（★ 专精内容区下移 5px 需求的回归保护；QA R1）  [[10]]
+  [OK ] ★ SEC_TOP 结构：== SEC_TAB_Y + SEC_TAB_H + SEC_DROP（SEC_DROP 真被消费）  [[148 vs 148]]
+  通过 49 / 失败 1
+  FAIL 行数 = 1
+    [FAIL] ★ SEC_DROP 数值 pin：TT.SEC_DROP == 5（★ 专精内容区下移 5px 需求的回归保护；QA R1）  [[10]]
+
+== 后置（还原校验）==
+  BETA 还原 == SRC: True
+  BETA md5=35608efb52aac276e270ad13777d81d8

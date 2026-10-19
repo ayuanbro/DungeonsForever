@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>DungeonsForever · 注释零容忍收口报告（2026-10-17）</title>
+<style>
+  :root{
+    --bg:#14161a; --panel:#1c1f26; --panel2:#22262e; --line:#2c313b;
+    --tx:#e6e9ef; --tx2:#a7b0bf; --tx3:#7b8697;
+    --red:#ff5d5d; --green:#4dd48a; --gold:#e8b23a; --blue:#5aa9f0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+       font:14px/1.7 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1020px;margin:0 auto;padding:40px 28px 64px}
+  h1{font-size:24px;margin:0 0 6px;letter-spacing:.4px}
+  .sub{color:var(--tx3);font-size:13px;margin-bottom:28px}
+  h2{font-size:17px;margin:36px 0 14px;padding-left:11px;border-left:3px solid var(--gold)}
+  h3{font-size:14px;margin:22px 0 10px;color:var(--tx2)}
+  p{margin:10px 0}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:18px 0 8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .card .k{font-size:12px;color:var(--tx3);margin-bottom:6px}
+  .card .v{font-size:26px;font-weight:600;line-height:1.15}
+  .card .u{font-size:12px;color:var(--tx3);font-weight:400;margin-left:3px}
+  .g{color:var(--green)} .r{color:var(--red)} .y{color:var(--gold)} .b{color:var(--blue)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{color:var(--tx3);font-weight:500;background:var(--panel2)}
+  td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  code{background:#262b34;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12.5px}
+  pre{background:#11131a;border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow:auto;font-size:12.5px}
+  .box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--blue);
+       border-radius:8px;padding:14px 18px;margin:14px 0}
+  .box.warn{border-left-color:var(--red)}
+  .box.ok{border-left-color:var(--green)}
+  ul{margin:8px 0 8px 20px;padding:0}
+  li{margin:5px 0}
+  .pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel2);color:var(--tx2);margin-right:6px}
+  .foot{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);color:var(--tx3);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>DungeonsForever · 注释零容忍收口报告</h1>
+  <div class="sub">2026-10-17 · 口径：<b>插件内不带任何注释</b>（行内 / 代码体 / 文件头注释块全删）· 开发仓 <code>D:/workspace/DungeonsForever</code></div>
+
+  <div class="cards">
+    <div class="card"><div class="k">本轮删除注释</div><div class="v g">1 700<span class="u">处</span></div>
+      <div class="u">整行 997 + 行尾 703</div></div>
+    <div class="card"><div class="k">插件件剩余注释</div><div class="v g">0<span class="u">行</span></div>
+      <div class="u">开发仓 + 两个客户端目录</div></div>
+    <div class="card"><div class="k">生成器模板改动</div><div class="v y">111<span class="u">处</span></div>
+      <div class="u">26 个生成器脚本</div></div>
+    <div class="card"><div class="k">功能回归</div><div class="v g">0</div>
+      <div class="u">语法 / 断言 / 变异锚点</div></div>
+  </div>
+
+  <h2>一、为什么还有注释（上一轮的漏网）</h2>
+  <p>上一轮只清了 <code>Core/*.lua</code> 顶层 + 3 个 Data 文件，<b><code>Core/Data/</code> 子目录整个没进清单</b>。所以清完后仍剩 <b class="r">148 个文件 / 993 行</b>注释 —— 其中 970 行是<b>文件头注释块</b>（几乎全是 26 个生成器各自写出的同一套 banner 模板）。</p>
+  <p>最夸张的一处：<code>Core/Data/Data_VendorPrices.lua</code> 单文件 <b>642 处</b>注释（行尾 638 处，几乎每行都挂着一条说明）。</p>
+
+  <h2>二、本轮执行的三件事</h2>
+
+  <h3>① 现存 lua：全部清零</h3>
+  <p>新工具 <code>_temp/strip_lua_comments.py</code>：真词法扫描（<code>strip_comments.comment_spans</code>，字符串里的 <code>--</code> 不会误伤）、默认范围 Core + Locales、行尾风格原样保留、<b>落盘前做「代码投影」硬校验</b>（剥掉注释与空白后的字符流必须逐字节一致，不一致即拒绝写盘）。</p>
+  <ul>
+    <li>Core / Locales：整行 997 + 行尾 703 处</li>
+    <li>自家 <code>Libs/LibHUI</code>：47 + 6 处（<code>--include-libhui</code>）</li>
+    <li><b>豁免</b>：<code>Libs/</code> 下 5 个第三方库（CallbackHandler / LibDBIcon / LibDataBroker / LibStub / UTF8）—— 那里的注释是版权与许可声明，删掉等于抹对方的署名</li>
+  </ul>
+  <p>备份：<code>_temp/_cmt_bak_full_20261017/</code>（150 文件 / 14 MB，扩展名已改 <code>.lua.bak</code>）。</p>
+
+  <h3>② 生成器：改了模板，重跑不会把注释带回来</h3>
+  <p>注释的<b>源头</b>在 26 个生成器脚本的模板常量里（<code>HEAD</code> / <code>HEADER</code> / <code>head</code> / <code>append('-- …')</code> 等）。只删产物不改模板 = 下次重跑数据立刻回潮。</p>
+  <p>新工具 <code>_temp/gen_tpl_strip.py</code>：用 AST 定位「会写进 lua 的字符串常量」，再用 lua 词法<b>只剥注释行</b> —— 模板里的代码行（<code>local _, ns = ...</code> / locale 守卫 / <code>ns.X = {</code>）原样保留；<b>含 <code>%s</code> 格式化占位的模板自动跳过</b>（清空会让 <code>'' % x</code> 抛 TypeError）。</p>
+  <table>
+    <tr><th>处理方式</th><th>对象</th><th>说明</th></tr>
+    <tr><td>模板清理</td><td>25 个生成器 · 111 处</td><td>结构签名逐字不变；变了的 108 个字符串常量全部满足 <code>lua_strip(旧) == 新</code></td></tr>
+    <tr><td>收尾钩子升级</td><td><code>fc_gen</code> / <code>gen_enus_data</code> / <code>gen_locales</code> / <code>gen_zhtw_data</code></td><td>既有 <code>_strip_comments_after_gen()</code> 由「保留头块」改为<b>零注释</b>口径（新 API <code>strip_all_text</code>）</td></tr>
+    <tr><td>流水线收尾</td><td><code>fc_update.py --apply</code></td><td>末尾新增一步 <code>strip_lua_comments.py --apply</code></td></tr>
+    <tr><td>手工收尾</td><td>4 处</td><td>模板与 <code>%s</code> 纠缠的（<code>gen_zhtw_data.GUARD</code> 占位 10→3）、「代码 + 行尾注释」混排的（<code>gen_area_map</code> / <code>gen_factions_data</code>）、头拼接的（<code>gen_gear_scrape</code>）</td></tr>
+  </table>
+  <div class="box warn">
+    <b>踩到的坑（已修，值得记）</b>：AST 的 <code>col_offset</code> / <code>end_col_offset</code> 是<b>行内 UTF-8 字节偏移</b>，第一版工具按字符算偏移，在含多字节中文的模板上越界<b>吃掉了引号</b> —— 18 个文件一度全是坏的。已改成按字节切，并加 <code>ast.literal_eval(切片) == 节点值</code> 硬校验（不符即跳过不改）；随后从 <code>.bak</code> 全量回滚重跑。证据脚本 <code>_temp/_tpl_verify.py</code>。
+  </div>
+
+  <h3>③ 门禁：让回潮不再静默</h3>
+  <p>上一轮的最大教训是<b>门禁假绿</b>：打包前检只查「注释里有没有别的插件名」，完全不管注释的数量与内容。现新增 <code>_temp/check_zero_comments.py</code>，口径 = 打包集里出现<b>任何一行 lua 注释即 FAIL</b>（<code>Libs/</code> 第三方豁免），已接进两处：</p>
+  <ul>
+    <li><code>_temp/pack_verify.py</code> —— 打包前检</li>
+    <li><code>_temp/run_all_checks.py</code> —— 日常全量回归（第 6 项）</li>
+  </ul>
+  <p>双向验证过：0 行时输出 <code>[OK] 注释零容忍</code>，人为追加一行注释立刻 <code>[FAIL]</code>。</p>
+
+  <h2>三、验证（全部实测）</h2>
+  <table>
+    <tr><th>检查</th><th>结果</th></tr>
+    <tr><td>零注释门禁（开发仓）</td><td class="g">0 行注释 / 151 文件</td></tr>
+    <tr><td>零注释门禁（两个客户端目录）</td><td class="g">各 0 行注释 / 155 文件</td></tr>
+    <tr><td>真 Lua 5.1 语法（Core / Locales / Libs）</td><td class="g">147 + 3 + 12 文件，0 failed</td></tr>
+    <tr><td>行尾风格</td><td class="g">逐文件与备份一致（DungeonUI/Core 保持 CRLF，其余 LF）</td></tr>
+    <tr><td><code>df_dungeon_check</code>（副本页 1097 条断言）</td><td class="g">全部通过</td></tr>
+    <tr><td><code>df_mut_check</code>（变异锚点）</td><td class="g">基线 0 FAIL · 变异后新 FAIL 206 条（harness 非恒真）· 死锚 3 条（既有）</td></tr>
+    <tr><td><code>run_all_checks</code> 全量</td><td class="y">13 项 / 失败 1 —— 仅 <code>qa_lf_verify</code> 存量红 <code>stale=13</code>（早前已 A/B 实证为既有，与本次无关）</td></tr>
+    <tr><td><code>strip_comments --selftest</code></td><td class="g">6/6（见下）</td></tr>
+    <tr><td>deploy 双端</td><td class="g">一致 220 / 220，无需写入</td></tr>
+  </table>
+
+  <div class="box">
+    <b>连带修的一处「假红」</b>：<code>strip_comments.py --selftest</code> 原本拿仓库真文件当样本，判据是「文件头注释里有没有生成标记」—— 头注释一删，标记不复存在，5 个生成物样本全被判成手写件 ⇒ 假红。已改为<b>自足样本</b>（临时文件写样例头注释再判），守卫的判据逻辑一行没动，6/6 通过。<br>
+    另外 <code>strip_comments.is_generated()</code> 现在在仓库里恒为假（标记没了），CLI 默认范围随之空转 —— 清理请一律用 <code>strip_lua_comments.py</code>。
+  </div>
+
+  <h2>四、现在的规矩（已写进 AGENTS.md）</h2>
+  <p><span class="pill">清理</span><code>python _temp/strip_lua_comments.py --apply</code></p>
+  <p><span class="pill">门禁</span><code>python _temp/check_zero_comments.py</code>（已接 pack_verify + run_all_checks）</p>
+  <p><span class="pill">防回潮</span>改过生成器 / 重跑数据之后，<b>必须再跑一次清零</b>；<code>fc_update.py --apply</code> 末尾已自动带这一步。</p>
+  <p><span class="pill">红线</span>AI 会话一律不新增、不改写任何注释 —— 说明写进 <code>.workbuddy/memory/</code>，不进代码文件。</p>
+
+  <h2>五、未做（等明确指示）</h2>
+  <ul>
+    <li>git 提交 / 推送 / 打包 —— 按项目规矩<b>未动</b>，等你明说。</li>
+    <li>3 条既有变异死锚（TierUI 热区吞滚轮、DungeonUI 卡片墙 ×2）—— 与本次无关，未处理。</li>
+    <li>另注：<code>Core/TierUI.lua</code> 在 01:51 被并行会话改过（内衬 <code>INSET</code>→<code>2*INSET</code>、滚动条 6→7px）；<code>_qa_probe_spec</code> 的几何断言此后转 OK，当前全绿。</li>
+  </ul>
+
+  <div class="foot">产物：<code>_temp/注释零容忍收口报告_20261017.html</code> · 工具：<code>strip_lua_comments.py</code> / <code>check_zero_comments.py</code> / <code>gen_tpl_strip.py</code> / <code>_tpl_verify.py</code> · 备份：<code>_temp/_cmt_bak_full_20261017/</code>、<code>_temp/_tpl_bak_20261017/</code></div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>DungeonsForever · 右侧快捷按钮栏 · 静态预览</title>
+<style>
+  :root{
+    --ink:#2c2c2a; --ink2:#5f5e5a; --ink3:#888780;
+    --line:#d3d1c7; --card:#ffffff; --page:#f1efe8;
+    --panel:#2b2b2b; --panel2:#23252a; --pborder:#46484d;
+    --ptext:#e0e0e0; --pdim:#9e9e9e;
+    --gold:#ffd100; --acc:#46bf72;
+    --redge:#666a73;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 24px 40px;background:var(--page);color:var(--ink);
+       font:400 13px/1.6 "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+  h1{font-size:15px;font-weight:500;margin:0 0 4px}
+  h2{font-size:14px;font-weight:500;margin:26px 0 10px}
+  p.sub{margin:0 0 18px;color:var(--ink3)}
+  .stage{display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap}
+  .cell{display:flex;flex-direction:column;gap:8px}
+  .cap{font-size:12px;color:var(--ink3)}
+  .cap b{color:var(--ink2);font-weight:500}
+
+  /* 面板宽 120 = 内边距 8×2 + 内容 104（标题「5人本专业探索」14px ≈98px 的容身宽度） */
+  .qb{width:120px;background:var(--panel);border:1px solid var(--pborder);
+      border-radius:8px;padding:10px 8px 10px}
+  .qb h3{margin:0 0 4px 4px;font-size:14px;line-height:18px;font-weight:400;color:#f2f2f2}
+  .qb .rule{height:1px;background:rgba(255,255,255,.08);margin:0 0 6px}
+  /* 分组头：原为 11px，用户定「与按钮文字同号」→ 14px */
+  .grp{font-size:14px;line-height:18px;color:var(--pdim);margin:8px 0 4px;padding-left:4px}
+  /* 条目恒单行：固定 22 高，1px 圆角边框，文字垂直居中 */
+  .row{height:22px;display:flex;align-items:center;
+       border:1px solid var(--redge);border-radius:6px;background:rgba(255,255,255,.04);
+       padding:0 4px;margin:0 0 3px;font-size:14px;line-height:1;
+       color:var(--ptext);white-space:nowrap;overflow:hidden}
+  .row:last-child{margin-bottom:0}
+  /* 带图标的条目：左缩进 3 + 图标 16 + 间距 4 ⇒ 文本落在 23（无图标行是 4） */
+  .row.withic{padding-left:3px}
+  .row.gold{color:var(--gold)}
+  .row.acc{color:var(--acc)}
+  .row.dead{color:var(--pdim)}
+  .row.hot{border-color:var(--gold);background:rgba(255,255,255,.12)}
+  .row.sel{border-color:rgba(70,191,114,.75)}
+  /* 专业图标：游戏里是 Interface\Icons\<p.icon>，单独一层等大的帧挂圆角蒙版。
+     ★ 贴图四边各裁 7%（SetTexCoord 0.07~0.93）—— 等效「放大 1/0.86 ≈ 116.28% 后居中裁切」，
+     这里用 background-image（不用 background 简写，简写会把 size 复位）+ background-size 模拟同一裁切。
+     用渐变代替真图，只为示意；裁边本身在下面「裁边前后」一栏有对照。 */
+  .ic{width:16px;height:16px;border-radius:4px;flex:none;margin-right:4px;
+      background-image:linear-gradient(135deg,#8a8f98,#4a4e55);
+      background-size:116.28% 116.28%; background-position:center;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+  .ic.leather{background-image:linear-gradient(135deg,#c9a06a,#6b4a24)}
+  .ic.herb {background-image:linear-gradient(135deg,#7fbf5a,#2f6b2a)}
+  .ic.skin {background-image:linear-gradient(135deg,#c9a06a,#6b4a24)}
+  .ic.cook {background-image:linear-gradient(135deg,#e0a24a,#8a4b1e)}
+  .ic.fish {background-image:linear-gradient(135deg,#6fc0e0,#2a5f8a)}
+  .ic.first{background-image:linear-gradient(135deg,#e07070,#8a2a2a)}
+  .ic.smith{background-image:linear-gradient(135deg,#9aa3ad,#3b4149)}
+  .ic.ench {background-image:linear-gradient(135deg,#b48ce0,#4a2a8a)}
+  .ic.eng  {background-image:linear-gradient(135deg,#d8c27a,#6b5220)}
+  .ic.alch {background-image:linear-gradient(135deg,#8fd8b0,#1f6b4a)}
+  .ic.tail {background-image:linear-gradient(135deg,#e0a8c8,#7a2a5a)}
+  .ic.mine {background-image:linear-gradient(135deg,#c0b07a,#5a4a1f)}
+
+  /* 裁边前后对照：外圈那道深色 = 图标素材自带的边，7% 内缩会把它裁掉 */
+  .crop{display:flex;gap:26px;align-items:flex-start;margin-top:8px}
+  .crop figure{margin:0;text-align:center;font-size:12px;color:var(--ink)}
+  .crop figure em{display:block;font-style:normal;font-size:11px;color:var(--ink);opacity:.6;margin-top:5px}
+  .crop .big{width:64px;height:64px;border-radius:10px;
+      background-image:radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 62%, rgba(0,0,0,.66) 100%),
+                       linear-gradient(135deg,#7fbf5a,#2f6b2a);
+      background-size:100% 100%, 100% 100%; background-position:center}
+  .crop .big.cut{background-size:116.28% 116.28%, 116.28% 116.28%}
+
+  .zoom{ transform:scale(2); transform-origin:top left }
+  .zoombox{ width:240px }
+
+  .set{width:220px;background:var(--panel);border:1px solid var(--pborder);border-radius:8px;padding:14px}
+  .set h3{margin:0 0 2px;font-size:16px;line-height:20px;font-weight:400;color:#f2f2f2}
+  .sh{font-size:11px;line-height:14px;color:var(--pdim);margin:14px 0 6px}
+  .srow{position:relative;height:24px;display:flex;align-items:center;justify-content:space-between}
+  .srow span{font-size:14px;color:#e0e0e0}
+  .sw{width:36px;height:20px;border-radius:10px;background:#3a3d42;border:1px solid #55585e;position:relative;flex:none}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#8a8d92}
+  .sw.on{background:#2f4a35;border-color:var(--acc)}
+  .sw.on::after{left:auto;right:2px;background:#eaf3de}
+  .chips{display:flex;gap:6px;justify-content:flex-end;margin:2px 0 0}
+  .chip{width:68px;height:22px;border-radius:6px;border:1px solid #55585e;display:flex;
+        align-items:center;justify-content:center;font-size:14px;color:var(--pdim)}
+  .chip.on{border-color:var(--gold);color:var(--gold)}
+  .legend{font-size:12px;color:var(--ink3);margin-top:6px;max-width:460px}
+  code{background:#fff;border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:12px}
+</style>
+</head>
+<body>
+
+<h1>DungeonsForever · 主窗右侧「快捷按钮栏」</h1>
+<p class="sub">按 <code>Core/QuickBar.lua</code> 的代码口径复刻的静态预览（面板宽 <b>120</b> · 内边距 8 · 内容宽 104 · 字号 <b>14/14/11</b>）。<br>
+标题「5人本专业探索」与<b>分组头</b>（推荐五人本 / 专业 / 探索）同为 <b>14</b> · <b>「全部副本」摆在「推荐五人本」上方</b>（整页入口先给）·
+专业条目内嵌 <b>16px 圆角图标</b> · 条目<b>恒单行</b>（等级 / 熟练度只进悬停提示）· 条目 = <b>圆角按钮</b>（1px 圆角描边，悬停转金）·
+面板<b>吸附两档</b>（弹窗关着贴主窗 / 开着让位）。</p>
+
+<h2>一、真尺寸（游戏内就是这个大小）</h2>
+<div class="stage">
+  <div class="cell">
+    <div class="cap"><b>1:1</b> · 专业「只看已学」</div>
+    <div class="qb">
+      <h3>5人本专业探索</h3><div class="rule"></div>
+      <div class="row gold">全部副本</div>
+      <div class="grp">推荐五人本</div>
+      <div class="row">领主大厅</div>
+      <div class="row">怒焰裂谷</div>
+      <div class="row">洛丹伦废墟</div>
+      <div class="grp">专业</div>
+      <div class="row acc withic"><span class="ic leather"></span>制皮</div>
+      <div class="row acc withic"><span class="ic skin"></span>剥皮</div>
+      <div class="row acc withic"><span class="ic cook"></span>烹饪</div>
+      <div class="row acc withic"><span class="ic fish"></span>钓鱼</div>
+      <div class="row acc withic"><span class="ic first"></span>急救</div>
+      <div class="grp">探索</div>
+      <div class="row">40本书</div>
+      <div class="row">奖励总览</div>
+      <div class="row">睡袋</div>
+      <div class="row">战斗法师</div>
+    </div>
+    <div class="legend">金色「全部副本」在最上方（进整页副本列表）；绿色 = 已学专业（熟练度在悬停提示里，不占副行）。</div>
+  </div>
+  <div class="cell">
+    <div class="cap"><b>1:1</b> · 专业「全部」</div>
+    <div class="qb">
+      <h3>5人本专业探索</h3><div class="rule"></div>
+      <div class="row gold">全部副本</div>
+      <div class="grp">推荐五人本</div>
+      <div class="row">领主大厅</div>
+      <div class="row">怒焰裂谷</div>
+      <div class="row">洛丹伦废墟</div>
+      <div class="grp">专业</div>
+      <div class="row acc withic"><span class="ic leather"></span>制皮</div>
+      <div class="row withic"><span class="ic smith"></span>锻造</div>
+      <div class="row withic"><span class="ic ench"></span>附魔</div>
+      <div class="row withic"><span class="ic eng"></span>工程学</div>
+      <div class="row withic"><span class="ic alch"></span>炼金术</div>
+      <div class="row withic"><span class="ic tail"></span>裁缝</div>
+      <div class="row withic"><span class="ic mine"></span>采矿</div>
+      <div class="row withic"><span class="ic herb"></span>采药</div>
+      <div class="row acc withic"><span class="ic skin"></span>剥皮</div>
+      <div class="row acc withic"><span class="ic cook"></span>烹饪</div>
+      <div class="row acc withic"><span class="ic fish"></span>钓鱼</div>
+      <div class="row acc withic"><span class="ic first"></span>急救</div>
+      <div class="grp">探索</div>
+      <div class="row">40本书</div>
+      <div class="row">奖励总览</div>
+    </div>
+    <div class="legend">图标取自 <code>Data_Professions</code> 的 <code>p.icon</code>（如 <code>trade_leatherworking</code>）→ 运行期补成 <code>Interface\Icons\*</code>；
+      贴图四边各裁 7%（<code>SetTexCoord(0.07, 0.93, 0.07, 0.93)</code>）去掉素材自带的边。
+      仍超屏时栏内自带滚动（条目 / 滚动区 / 内容帧三处都接滚轮）。</div>
+  </div>
+</div>
+
+<h2>附 · 图标裁边前后（示意放大，非实机尺寸）</h2>
+<div class="stage">
+  <div class="cell">
+    <div class="crop">
+      <figure><div class="big"></div><em>未裁（0 ~ 1）</em></figure>
+      <figure><div class="big cut"></div><em>已裁（0.07 ~ 0.93）</em></figure>
+    </div>
+    <div class="legend">外圈那层深色 = 图标素材自带的边；四边各裁 7% 之后再进圆角蒙版，圆角里才不留一圈脏边。
+      这与全仓 <code>ProfessionUI</code> / <code>TierUI</code> / <code>BisUI</code> / <code>ExploreUI</code>
+      以及无限天赋模拟器法术书同一口径。实机图标只有 16px，这里用 64px 放大只为看清效果。</div>
+  </div>
+</div>
+
+<h2>二、2× 放大（看清圆角边框、圆角图标、单行与截断）</h2>
+<div class="stage">
+  <div class="cell">
+    <div class="cap">常态：每条都有 1px 圆角边框；专业行左侧 16px <b>圆角</b>图标；超宽名按「字」截断补「…」</div>
+    <div class="zoombox">
+      <div class="qb zoom">
+        <h3>5人本专业探索</h3><div class="rule"></div>
+        <div class="row gold">全部副本</div>
+        <div class="grp">推荐五人本</div>
+        <div class="row">领主大厅</div>
+        <div class="row">血色修道院…</div>
+        <div class="grp">专业</div>
+        <div class="row acc withic"><span class="ic leather"></span>制皮</div>
+        <div class="row withic"><span class="ic eng"></span>工程学</div>
+        <div class="grp">探索</div>
+        <div class="row">战斗法师</div>
+      </div>
+    </div>
+  </div>
+  <div class="cell">
+    <div class="cap">鼠标悬停：边框转金 + 底色提亮 + 提示框给全名 / 等级区间 / 熟练度</div>
+    <div class="zoombox">
+      <div class="qb zoom">
+        <h3>5人本专业探索</h3><div class="rule"></div>
+        <div class="row hot gold">全部副本</div>
+        <div class="grp">推荐五人本</div>
+        <div class="row sel">领主大厅</div>
+        <div class="row">怒焰裂谷</div>
+        <div class="row">洛丹伦废墟</div>
+        <div class="grp">专业</div>
+        <div class="row acc withic"><span class="ic leather"></span>制皮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>三、设置面板里新增的四组（挂在既有「设置」弹窗上，不另开窗口）</h2>
+<div class="stage">
+  <div class="cell">
+    <div class="cap">220 宽 · 内容 196 · 开关均为 iOS 开关（复用 <code>ns.hui.ReskinToggle</code>）</div>
+    <div class="set">
+      <h3>设置</h3>
+      <div class="sh">快捷按钮栏</div>
+      <div class="srow"><span>显示快捷按钮栏</span><div class="sw on"></div></div>
+      <div class="sh">显示分组</div>
+      <div class="srow"><span>推荐五人本</span><div class="sw on"></div></div>
+      <div class="srow"><span>专业</span><div class="sw on"></div></div>
+      <div class="srow"><span>探索</span><div class="sw on"></div></div>
+      <div class="sh">专业列表</div>
+      <div class="chips"><div class="chip on">只看已学</div><div class="chip">全部</div></div>
+      <div class="sh">探索子页</div>
+      <div class="srow"><span>40本书</span><div class="sw on"></div></div>
+      <div class="srow"><span>奖励总览</span><div class="sw on"></div></div>
+      <div class="srow"><span>睡袋</span><div class="sw on"></div></div>
+      <div class="srow"><span>战斗法师</span><div class="sw on"></div></div>
+    </div>
+  </div>
+  <div class="cell">
+    <div class="cap">★ 吸附两档：设置 / 装备过滤弹窗<b>都关着</b> → 贴主窗（+8）；<b>任一打开</b> → 让位（+236）</div>
+    <svg width="470" height="262" role="img" aria-label="两档吸附示意">
+      <!-- 状态 A -->
+      <text x="0" y="12" font-size="12" fill="#5f5e5a">① 弹窗都关着 —— 左靠、贴住主窗右缘（+8）</text>
+      <rect x="0" y="22" width="180" height="80" rx="6" fill="#fff" stroke="#d3d1c7"/>
+      <text x="12" y="46" font-size="11" fill="#2c2c2a">主窗口 1000×708</text>
+      <rect x="188" y="22" width="58" height="80" rx="6" fill="#2b2b2b" stroke="#46bf72"/>
+      <text x="217" y="60" font-size="11" fill="#e0e0e0" text-anchor="middle">快捷栏</text>
+      <text x="217" y="76" font-size="10" fill="#9e9e9e" text-anchor="middle">120 宽</text>
+      <line x1="180" y1="112" x2="188" y2="112" stroke="#46bf72" stroke-width="1.5"/>
+      <text x="150" y="126" font-size="10" fill="#888780">+8</text>
+
+      <!-- 状态 B -->
+      <text x="0" y="164" font-size="12" fill="#5f5e5a">② 有弹窗打开 —— 让位到第二槽（+236 = 220 + 8 + 8）</text>
+      <rect x="0" y="174" width="180" height="80" rx="6" fill="#fff" stroke="#d3d1c7"/>
+      <text x="12" y="198" font-size="11" fill="#2c2c2a">主窗口 1000×708</text>
+      <rect x="188" y="174" width="58" height="80" rx="6" fill="#f8f8f6" stroke="#b4b2a9" stroke-dasharray="5 4"/>
+      <text x="217" y="212" font-size="11" fill="#888780" text-anchor="middle">设置</text>
+      <text x="217" y="228" font-size="10" fill="#888780" text-anchor="middle">220 宽</text>
+      <rect x="262" y="174" width="58" height="80" rx="6" fill="#2b2b2b" stroke="#46bf72"/>
+      <text x="291" y="212" font-size="11" fill="#e0e0e0" text-anchor="middle">快捷栏</text>
+      <text x="291" y="228" font-size="10" fill="#9e9e9e" text-anchor="middle">120 宽</text>
+      <text x="190" y="250" font-size="10" fill="#888780">+8</text>
+      <text x="264" y="250" font-size="10" fill="#888780">+236</text>
+    </svg>
+    <div class="legend">切换靠弹窗自己的 <code>OnShow / OnHide</code> 钩子即时生效 —— 不用关掉主窗再打开。
+      面板是主窗的<b>子帧</b>、且登录时就建好（<code>QB:Boot</code>），所以主窗一显示它就跟着显示。</div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,2 @@
+===== BLOCK 0 (len 188) =====
+[ul][li]地域: 有争议的[/li][li]副本类型：地下城[/li][li]玩家人数: 5[/li][li]地区 ID：16611[/li][li]增加于 [acronym="1.60.1.69876"]1.60.1[/acronym][/li][li]英语：[copy button=false]Ruins of Lordaeron[/copy][/li][/ul]

@@ -1,0 +1,40 @@
+{
+  "context": {
+    "snapshot": "PIN-b4d284e3188d08779c84dd1537b28e34a57e2ff609b67a423c0204bd1d43bbeb",
+    "pin": {
+      "product": "forever",
+      "region": "us",
+      "fullBuild": "1.60.1.70170",
+      "buildConfig": "d3f2837397a016e380ea51c4e1e78d1d",
+      "cdnConfig": "032ffa3587e5f762df7c6ef823e17596",
+      "language": "zhCN",
+      "definitionCommit": "41d37841a6063f51f61632d5822cecad2105fda7"
+    },
+    "source": "listfile",
+    "listfile": {
+      "kind": "community-csv",
+      "files": [
+        {
+          "component": "listfile",
+          "url": "https://github.com/wowdev/wow-listfile/releases/latest/download/community-listfile.csv",
+          "bytes": 152790736,
+          "sha256": "931c765b5deee613d7ec46a0c43d2a54a1ce65d4278dbb99a0a7dfcfdeab7bea",
+          "blob": {
+            "sha256": "931c765b5deee613d7ec46a0c43d2a54a1ce65d4278dbb99a0a7dfcfdeab7bea",
+            "bytes": 152790736
+          }
+        }
+      ],
+      "fetchedAt": "2026-09-30T00:37:24.3612426Z",
+      "entryCount": 2255776,
+      "rejected": 0,
+      "totalBytes": 152790736,
+      "cache": "verified-cache"
+    }
+  },
+  "query": "worldmap/onyxialair",
+  "total": 0,
+  "returned": 0,
+  "truncated": false,
+  "files": null
+}

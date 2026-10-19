@@ -1,0 +1,1754 @@
+{
+ "184": {
+  "zh": "火焰之盾 II",
+  "en": "Fire Shield II"
+ },
+ "246": {
+  "zh": "减速术",
+  "en": "Slow"
+ },
+ "421": {
+  "zh": "闪电链",
+  "en": "Chain Lightning"
+ },
+ "674": {
+  "zh": "双武器",
+  "en": "Dual Wield"
+ },
+ "700": {
+  "zh": "催眠术",
+  "en": "Sleep"
+ },
+ "865": {
+  "zh": "冰霜新星",
+  "en": "Frost Nova"
+ },
+ "1026": {
+  "zh": "圣光术",
+  "en": "Holy Light"
+ },
+ "2818": {
+  "zh": "致命毒药",
+  "en": "Deadly Poison"
+ },
+ "3391": {
+  "zh": "痛击",
+  "en": "Thrash"
+ },
+ "3419": {
+  "zh": "强化格挡",
+  "en": "Improved Blocking"
+ },
+ "3490": {
+  "zh": "狂暴怒气",
+  "en": "Frenzied Rage"
+ },
+ "3603": {
+  "zh": "扰乱之痛",
+  "en": "Distracting Pain"
+ },
+ "3815": {
+  "zh": "毒云术",
+  "en": "Poison Cloud"
+ },
+ "5174": {
+  "zh": "烹制甜点",
+  "en": "Cookie's Cooking"
+ },
+ "5187": {
+  "zh": "治疗之触",
+  "en": "Healing Touch"
+ },
+ "5208": {
+  "zh": "毒性鱼叉",
+  "en": "Poisoned Harpoon"
+ },
+ "5213": {
+  "zh": "熔铁之水",
+  "en": "Molten Metal"
+ },
+ "5246": {
+  "zh": "破胆怒吼",
+  "en": "Intimidating Shout"
+ },
+ "5568": {
+  "zh": "践踏",
+  "en": "Trample"
+ },
+ "5588": {
+  "zh": "制裁之锤",
+  "en": "Hammer of Justice"
+ },
+ "6254": {
+  "zh": "闪电链",
+  "en": "Chained Bolt"
+ },
+ "6264": {
+  "zh": "迅捷反射",
+  "en": "Nimble Reflexes"
+ },
+ "6304": {
+  "zh": "拉克佐猛击",
+  "en": "Rhahk'Zor Slam"
+ },
+ "6306": {
+  "zh": "酸液溅射",
+  "en": "Acid Splash"
+ },
+ "6432": {
+  "zh": "重拳先生践踏",
+  "en": "Smite Stomp"
+ },
+ "6435": {
+  "zh": "重拳猛击",
+  "en": "Smite Slam"
+ },
+ "6533": {
+  "zh": "投网",
+  "en": "Net"
+ },
+ "6660": {
+  "zh": "射击",
+  "en": "Shoot"
+ },
+ "6713": {
+  "zh": "缴械",
+  "en": "Disarm"
+ },
+ "6742": {
+  "zh": "嗜血术",
+  "en": "Bloodlust"
+ },
+ "7068": {
+  "zh": "暗影迷雾",
+  "en": "Veil of Shadow"
+ },
+ "7125": {
+  "zh": "毒性唾液",
+  "en": "Toxic Saliva"
+ },
+ "7139": {
+  "zh": "恶魔践踏",
+  "en": "Fel Stomp"
+ },
+ "7164": {
+  "zh": "防御姿态",
+  "en": "Defensive Stance"
+ },
+ "7165": {
+  "zh": "战斗姿态",
+  "en": "Battle Stance"
+ },
+ "7295": {
+  "zh": "灵魂消耗",
+  "en": "Soul Drain"
+ },
+ "7399": {
+  "zh": "恐吓",
+  "en": "Terrify"
+ },
+ "7481": {
+  "zh": "嚎叫之怒",
+  "en": "Howling Rage"
+ },
+ "7485": {
+  "zh": "屠夫吸取",
+  "en": "Butcher Drain"
+ },
+ "7487": {
+  "zh": "召唤灰色座狼",
+  "en": "Call Bleak Worg"
+ },
+ "7488": {
+  "zh": "召唤被奴役的座狼",
+  "en": "Call Slavering Worg"
+ },
+ "7489": {
+  "zh": "召唤暗牙恐狼",
+  "en": "Call Lupine Horror"
+ },
+ "7587": {
+  "zh": "暗影传送",
+  "en": "Shadow Port"
+ },
+ "7621": {
+  "zh": "阿鲁高的诅咒",
+  "en": "Arugal's Curse"
+ },
+ "7803": {
+  "zh": "雷霆震荡",
+  "en": "Thundershock"
+ },
+ "7915": {
+  "zh": "召唤海龟",
+  "en": "Summon Tamed Turtle"
+ },
+ "7964": {
+  "zh": "烟雾弹",
+  "en": "Smoke Bomb"
+ },
+ "7965": {
+  "zh": "考布莱恩毒蛇形态",
+  "en": "Cobrahn Serpent Form"
+ },
+ "7967": {
+  "zh": "纳拉雷克斯的梦魇",
+  "en": "Naralex's Nightmare"
+ },
+ "8040": {
+  "zh": "德鲁伊的睡眠",
+  "en": "Druid's Slumber"
+ },
+ "8142": {
+  "zh": "缠绕之藤",
+  "en": "Grasping Vines"
+ },
+ "8147": {
+  "zh": "雷霆一击",
+  "en": "Thunderclap"
+ },
+ "8148": {
+  "zh": "荆棘光环",
+  "en": "Thorns Aura"
+ },
+ "8150": {
+  "zh": "雷霆震裂",
+  "en": "Thundercrack"
+ },
+ "8242": {
+  "zh": "盾牌猛击",
+  "en": "Shield Slam"
+ },
+ "8374": {
+  "zh": "圆弧斩",
+  "en": "Arcing Smash"
+ },
+ "8399": {
+  "zh": "催眠术",
+  "en": "Sleep"
+ },
+ "8435": {
+  "zh": "叉状闪电",
+  "en": "Forked Lightning"
+ },
+ "8599": {
+  "zh": "狂怒",
+  "en": "Enrage"
+ },
+ "9053": {
+  "zh": "火球术",
+  "en": "Fireball"
+ },
+ "9080": {
+  "zh": "断筋",
+  "en": "Hamstring"
+ },
+ "9128": {
+  "zh": "战斗怒吼",
+  "en": "Battle Shout"
+ },
+ "9532": {
+  "zh": "闪电箭",
+  "en": "Lightning Bolt"
+ },
+ "10870": {
+  "zh": "召唤燃烧仆从",
+  "en": "Summon Burning Servant"
+ },
+ "10887": {
+  "zh": "群体打击",
+  "en": "Crowd Pummel"
+ },
+ "11082": {
+  "zh": "百万伏特",
+  "en": "Megavolt"
+ },
+ "11084": {
+  "zh": "震击",
+  "en": "Shock"
+ },
+ "11085": {
+  "zh": "闪电链",
+  "en": "Chain Bolt"
+ },
+ "11130": {
+  "zh": "击退",
+  "en": "Knock Away"
+ },
+ "11970": {
+  "zh": "火焰新星",
+  "en": "Fire Nova"
+ },
+ "11976": {
+  "zh": "打击",
+  "en": "Strike"
+ },
+ "12097": {
+  "zh": "刺穿护甲",
+  "en": "Pierce Armor"
+ },
+ "13496": {
+  "zh": "眩晕",
+  "en": "Dazed"
+ },
+ "14873": {
+  "zh": "邪恶攻击",
+  "en": ""
+ },
+ "15496": {
+  "zh": "顺劈斩",
+  "en": "Cleave"
+ },
+ "15587": {
+  "zh": "心灵震爆",
+  "en": "Mind Blast"
+ },
+ "18072": {
+  "zh": "上钩拳",
+  "en": "Uppercut"
+ },
+ "18267": {
+  "zh": "虚弱诅咒",
+  "en": "Curse of Weakness"
+ },
+ "20800": {
+  "zh": "献祭",
+  "en": "Immolate"
+ },
+ "22709": {
+  "zh": "虚空箭",
+  "en": "Void Bolt"
+ },
+ "122": {
+  "zh": "冰霜新星",
+  "en": "Frost Nova"
+ },
+ "1243": {
+  "zh": "真言术：韧",
+  "en": "Power Word: Fortitude"
+ },
+ "3605": {
+  "zh": "召唤遥控傀儡",
+  "en": "Summon Remote-Controlled Golem"
+ },
+ "7074": {
+  "zh": "往日的尖啸",
+  "en": "Screams of the Past"
+ },
+ "11297": {
+  "zh": "闷棍",
+  "en": "Sap"
+ },
+ "11597": {
+  "zh": "破甲攻击",
+  "en": "Sunder Armor"
+ },
+ "12825": {
+  "zh": "变形术",
+  "en": "Polymorph"
+ },
+ "23925": {
+  "zh": "盾牌猛击",
+  "en": "Shield Slam"
+ },
+ "24021": {
+  "zh": "反魔法护盾",
+  "en": "Anti-Magic Shield"
+ },
+ "1291218": {
+  "zh": "召唤炽热的助手",
+  "en": "Summon Fiery Assistant"
+ },
+ "3358": {
+  "zh": "吸血毒药",
+  "en": "Leech Poison"
+ },
+ "10101": {
+  "zh": "击退",
+  "en": "Knock Away"
+ },
+ "12054": {
+  "zh": "撕裂",
+  "en": "Rend"
+ },
+ "17307": {
+  "zh": "击昏",
+  "en": "Knockout"
+ },
+ "26048": {
+  "zh": "心灵震爆",
+  "en": "Mind Blast"
+ },
+ "26070": {
+  "zh": "恐惧",
+  "en": "Fear"
+ },
+ "1220855": {
+  "zh": "冰霜新星",
+  "en": "Frost Nova"
+ },
+ "1266011": {
+  "zh": "生命吸取",
+  "en": "Life Drain"
+ },
+ "1279983": {
+  "zh": "烈焰风暴",
+  "en": "Flamestrike"
+ },
+ "1292602": {
+  "zh": "安威玛尔的诅咒",
+  "en": "Anvilmar's Curse"
+ },
+ "1293228": {
+  "zh": "自燃",
+  "en": "Combust"
+ },
+ "1301635": {
+  "zh": "反魔法护盾",
+  "en": "Anti-Magic Shield"
+ },
+ "14099": {
+  "zh": "全力一击",
+  "en": "Mighty Blow"
+ },
+ "17": {
+  "zh": "真言术：盾",
+  "en": "Power Word: Shield"
+ },
+ "45": {
+  "zh": "战争践踏",
+  "en": "War Stomp"
+ },
+ "642": {
+  "zh": "圣盾术",
+  "en": "Divine Shield"
+ },
+ "768": {
+  "zh": "猎豹形态",
+  "en": "Cat Form"
+ },
+ "853": {
+  "zh": "制裁之锤",
+  "en": "Hammer of Justice"
+ },
+ "1038": {
+  "zh": "拯救祝福",
+  "en": "Blessing of Salvation"
+ },
+ "1449": {
+  "zh": "魔爆术",
+  "en": "Arcane Explosion"
+ },
+ "1680": {
+  "zh": "旋风斩",
+  "en": "Whirlwind"
+ },
+ "1769": {
+  "zh": "脚踢",
+  "en": "Kick"
+ },
+ "1953": {
+  "zh": "闪现术",
+  "en": "Blink"
+ },
+ "2054": {
+  "zh": "治疗术",
+  "en": "Heal"
+ },
+ "2139": {
+  "zh": "法术反制",
+  "en": "Counterspell"
+ },
+ "2484": {
+  "zh": "地缚图腾",
+  "en": "Earthbind Totem"
+ },
+ "3242": {
+  "zh": "毁灭",
+  "en": "Ravage"
+ },
+ "3356": {
+  "zh": "烈焰鞭笞",
+  "en": "Flame Lash"
+ },
+ "3586": {
+  "zh": "快速传染",
+  "en": "Volatile Infection"
+ },
+ "3609": {
+  "zh": "麻痹之毒",
+  "en": "Paralyzing Poison"
+ },
+ "4304": {
+  "zh": "剑类武器入门",
+  "en": "Sword Finesse"
+ },
+ "4962": {
+  "zh": "覆体之网",
+  "en": "Encasing Webs"
+ },
+ "5137": {
+  "zh": "火焰的召唤",
+  "en": "Call of the Grave"
+ },
+ "5413": {
+  "zh": "毒害之灾",
+  "en": "Noxious Catalyst"
+ },
+ "5532": {
+  "zh": "顺劈斩",
+  "en": "Cleave"
+ },
+ "6016": {
+  "zh": "刺穿护甲",
+  "en": "Pierce Armor"
+ },
+ "6064": {
+  "zh": "治疗术",
+  "en": "Heal"
+ },
+ "6077": {
+  "zh": "恢复",
+  "en": "Renew"
+ },
+ "6146": {
+  "zh": "减速术",
+  "en": "Slow"
+ },
+ "6213": {
+  "zh": "恐惧术",
+  "en": "Fear"
+ },
+ "6215": {
+  "zh": "恐惧术",
+  "en": "Fear"
+ },
+ "6253": {
+  "zh": "反手一击",
+  "en": "Backhand"
+ },
+ "6346": {
+  "zh": "防护恐惧结界",
+  "en": "Fear Ward"
+ },
+ "6524": {
+  "zh": "大地震颤",
+  "en": "Ground Tremor"
+ },
+ "6913": {
+  "zh": "自然之力",
+  "en": "Force of Nature"
+ },
+ "7121": {
+  "zh": "反魔法盾",
+  "en": "Anti-Magic Shield"
+ },
+ "7289": {
+  "zh": "缩小",
+  "en": "Shrink"
+ },
+ "7366": {
+  "zh": "狂暴姿态",
+  "en": "Berserker Stance"
+ },
+ "7369": {
+  "zh": "顺劈斩",
+  "en": "Cleave"
+ },
+ "7645": {
+  "zh": "统御意志",
+  "en": "Dominate Mind"
+ },
+ "7713": {
+  "zh": "哀嚎死者",
+  "en": "Wailing Dead"
+ },
+ "7948": {
+  "zh": "野性回复",
+  "en": "Wild Regeneration"
+ },
+ "8143": {
+  "zh": "战栗图腾",
+  "en": "Tremor Totem"
+ },
+ "8245": {
+  "zh": "腐蚀酸液",
+  "en": "Corrosive Acid"
+ },
+ "8258": {
+  "zh": "虔诚光环",
+  "en": "Devotion Aura"
+ },
+ "8259": {
+  "zh": "旋风倾泻",
+  "en": "Whirling Barrage"
+ },
+ "8260": {
+  "zh": "急速冲锋",
+  "en": "Rushing Charge"
+ },
+ "8269": {
+  "zh": "狂怒",
+  "en": "Enrage"
+ },
+ "8270": {
+  "zh": "召唤地行者",
+  "en": "Summon Earth Rumbler"
+ },
+ "8281": {
+  "zh": "音素爆破",
+  "en": "Sonic Burst"
+ },
+ "8282": {
+  "zh": "血之诅咒",
+  "en": "Curse of Blood"
+ },
+ "8286": {
+  "zh": "召唤野猪之魂",
+  "en": "Summon Boar Spirit"
+ },
+ "8292": {
+  "zh": "闪电链",
+  "en": "Chain Bolt"
+ },
+ "8361": {
+  "zh": "纯净术",
+  "en": "Purity"
+ },
+ "8362": {
+  "zh": "恢复",
+  "en": "Renew"
+ },
+ "8376": {
+  "zh": "陷地图腾",
+  "en": "Earthgrab Totem"
+ },
+ "8398": {
+  "zh": "连发寒冰箭",
+  "en": "Frostbolt Volley"
+ },
+ "8600": {
+  "zh": "热疫",
+  "en": "Fevered Plague"
+ },
+ "8814": {
+  "zh": "烈焰尖刺",
+  "en": "Flame Spike"
+ },
+ "8858": {
+  "zh": "炸弹",
+  "en": "Bomb"
+ },
+ "8988": {
+  "zh": "沉默",
+  "en": "Silence"
+ },
+ "8989": {
+  "zh": "旋风斩",
+  "en": "Whirlwind"
+ },
+ "8990": {
+  "zh": "惩罚光环",
+  "en": "Retribution Aura"
+ },
+ "9034": {
+  "zh": "献祭",
+  "en": "Immolate"
+ },
+ "9232": {
+  "zh": "血色复活",
+  "en": "Scarlet Resurrection"
+ },
+ "9256": {
+  "zh": "深度睡眠",
+  "en": "Deep Sleep"
+ },
+ "9257": {
+  "zh": "圣疗术",
+  "en": "Lay on Hands"
+ },
+ "9373": {
+  "zh": "灵魂虹吸",
+  "en": "Soul Siphon"
+ },
+ "9433": {
+  "zh": "魔爆术",
+  "en": "Arcane Explosion"
+ },
+ "9435": {
+  "zh": "自爆",
+  "en": "Detonation"
+ },
+ "9438": {
+  "zh": "奥术气泡",
+  "en": "Arcane Bubble"
+ },
+ "9481": {
+  "zh": "圣光击",
+  "en": "Holy Smite"
+ },
+ "9482": {
+  "zh": "火焰增效",
+  "en": "Amplify Flames"
+ },
+ "9483": {
+  "zh": "投石",
+  "en": "Boulder"
+ },
+ "9613": {
+  "zh": "暗影箭",
+  "en": "Shadow Bolt"
+ },
+ "9739": {
+  "zh": "愤怒",
+  "en": "Wrath"
+ },
+ "9941": {
+  "zh": "法术反转",
+  "en": "Spell Reflection"
+ },
+ "10061": {
+  "zh": "召唤黑曜石碎片",
+  "en": "Summon Obsidian Shard"
+ },
+ "10072": {
+  "zh": "黑曜石破碎",
+  "en": "Splintered Obsidian"
+ },
+ "10094": {
+  "zh": "沙尘风暴",
+  "en": "Sand Storms"
+ },
+ "10216": {
+  "zh": "烈焰风暴",
+  "en": "Flamestrike"
+ },
+ "10252": {
+  "zh": "唤醒地灵守护者",
+  "en": "Awaken Earthen Guardians"
+ },
+ "10258": {
+  "zh": "唤醒地灵宝库守卫",
+  "en": "Awaken Vault Warder"
+ },
+ "10326": {
+  "zh": "超度亡灵",
+  "en": "Turn Undead"
+ },
+ "10892": {
+  "zh": "暗言术：痛",
+  "en": "Shadow Word: Pain"
+ },
+ "10894": {
+  "zh": "暗言术：痛",
+  "en": "Shadow Word: Pain"
+ },
+ "10896": {
+  "zh": "暗言术：痛",
+  "en": "Shadow Word: Pain - Spell - Classic World of Warcraft"
+ },
+ "10941": {
+  "zh": "渐隐术",
+  "en": "Fade"
+ },
+ "10955": {
+  "zh": "束缚亡灵",
+  "en": "Shackle Undead"
+ },
+ "11086": {
+  "zh": "祖穆拉恩结界",
+  "en": "Ward of Zum'rah"
+ },
+ "11089": {
+  "zh": "塞卡变形",
+  "en": "Theka Transform"
+ },
+ "11131": {
+  "zh": "冰柱",
+  "en": "Icicle"
+ },
+ "11198": {
+  "zh": "破甲",
+  "en": "Expose Armor"
+ },
+ "11303": {
+  "zh": "佯攻",
+  "en": "Feint"
+ },
+ "11549": {
+  "zh": "战斗怒吼",
+  "en": "Battle Shout"
+ },
+ "11574": {
+  "zh": "撕裂",
+  "en": "Rend"
+ },
+ "11599": {
+  "zh": "破甲攻击",
+  "en": "Sunder Armor - Spell - Classic World of Warcraft"
+ },
+ "11609": {
+  "zh": "顺劈斩",
+  "en": "Cleave"
+ },
+ "11642": {
+  "zh": "治疗术",
+  "en": "Heal"
+ },
+ "11647": {
+  "zh": "真言术：盾",
+  "en": "Power Word: Shield"
+ },
+ "11659": {
+  "zh": "暗影箭",
+  "en": "Shadow Bolt"
+ },
+ "11708": {
+  "zh": "虚弱诅咒",
+  "en": "Curse of Weakness"
+ },
+ "11713": {
+  "zh": "痛苦诅咒",
+  "en": "Bane of Agony"
+ },
+ "11836": {
+  "zh": "冰霜凝固",
+  "en": "Freeze Solid"
+ },
+ "11837": {
+  "zh": "挥砍",
+  "en": "Wide Slash"
+ },
+ "11876": {
+  "zh": "战争践踏",
+  "en": "War Stomp"
+ },
+ "11894": {
+  "zh": "安图苏尔的爪牙",
+  "en": "Antu'sul's Minion"
+ },
+ "11895": {
+  "zh": "安图苏尔的治疗波",
+  "en": "Healing Wave of Antu'sul"
+ },
+ "11899": {
+  "zh": "治疗结界",
+  "en": "Healing Ward"
+ },
+ "11902": {
+  "zh": "加兹瑞拉猛击",
+  "en": "Gahz'rilla Slam"
+ },
+ "11972": {
+  "zh": "盾击",
+  "en": "Shield Bash"
+ },
+ "11978": {
+  "zh": "脚踢",
+  "en": "Kick"
+ },
+ "12039": {
+  "zh": "治疗术",
+  "en": "Heal"
+ },
+ "12040": {
+  "zh": "暗影之盾",
+  "en": "Shadow Shield"
+ },
+ "12170": {
+  "zh": "复仇",
+  "en": "Revenge"
+ },
+ "12252": {
+  "zh": "撒网",
+  "en": "Web Spray"
+ },
+ "12254": {
+  "zh": "Virulent Poison Proc",
+  "en": "Virulent Poison Proc"
+ },
+ "12255": {
+  "zh": "图特卡什的诅咒",
+  "en": "Curse of Tuten'kash"
+ },
+ "12466": {
+  "zh": "火球术",
+  "en": "Fireball"
+ },
+ "12470": {
+  "zh": "火焰新星",
+  "en": "Fire Nova"
+ },
+ "12491": {
+  "zh": "治疗波",
+  "en": "Healing Wave"
+ },
+ "12493": {
+  "zh": "虚弱诅咒",
+  "en": "Curse of Weakness"
+ },
+ "12528": {
+  "zh": "沉默",
+  "en": "Silence"
+ },
+ "12533": {
+  "zh": "酸息术",
+  "en": "Acid Breath"
+ },
+ "12540": {
+  "zh": "凿击",
+  "en": "Gouge"
+ },
+ "12542": {
+  "zh": "恐惧术",
+  "en": "Fear"
+ },
+ "12551": {
+  "zh": "冰霜射击",
+  "en": "Frost Shot"
+ },
+ "12556": {
+  "zh": "霜甲术",
+  "en": "Frost Armor"
+ },
+ "12627": {
+  "zh": "疾病之云",
+  "en": "Disease Cloud"
+ },
+ "12642": {
+  "zh": "召唤冰霜亡魂",
+  "en": "Summon Frost Spectres"
+ },
+ "12674": {
+  "zh": "冰霜新星",
+  "en": "Frost Nova"
+ },
+ "12675": {
+  "zh": "寒冰箭",
+  "en": "Frostbolt"
+ },
+ "12739": {
+  "zh": "暗影箭",
+  "en": "Shadow Bolt"
+ },
+ "12741": {
+  "zh": "虚弱诅咒",
+  "en": "Curse of Weakness"
+ },
+ "12747": {
+  "zh": "纠缠根须",
+  "en": "Entangling Roots"
+ },
+ "12795": {
+  "zh": "狂怒",
+  "en": "Enrage"
+ },
+ "12824": {
+  "zh": "变形术",
+  "en": "Polymorph"
+ },
+ "12882": {
+  "zh": "拍翼",
+  "en": "Wing Flap"
+ },
+ "12888": {
+  "zh": "导致疯狂",
+  "en": "Cause Insanity"
+ },
+ "12889": {
+  "zh": "语言诅咒",
+  "en": "Curse of Tongues"
+ },
+ "12890": {
+  "zh": "深度沉睡",
+  "en": "Deep Slumber"
+ },
+ "12946": {
+  "zh": "腐烂恶臭",
+  "en": "Putrid Stench"
+ },
+ "12947": {
+  "zh": "枯萎之触",
+  "en": "Withered Touch"
+ },
+ "13009": {
+  "zh": "亚门纳尔之怒",
+  "en": "Amnennar's Wrath"
+ },
+ "13021": {
+  "zh": "冲击波",
+  "en": "Blast Wave"
+ },
+ "13183": {
+  "zh": "地精龙枪",
+  "en": "Goblin Dragon Gun"
+ },
+ "13322": {
+  "zh": "寒冰箭",
+  "en": "Frostbolt"
+ },
+ "13323": {
+  "zh": "变形术",
+  "en": "Polymorph"
+ },
+ "13338": {
+  "zh": "语言诅咒",
+  "en": "Curse of Tongues"
+ },
+ "13443": {
+  "zh": "撕裂",
+  "en": "Rend"
+ },
+ "13446": {
+  "zh": "打击",
+  "en": "Strike"
+ },
+ "13489": {
+  "zh": "燃灵术",
+  "en": "Burning Spirit"
+ },
+ "13704": {
+  "zh": "心灵尖啸",
+  "en": "Psychic Scream"
+ },
+ "13728": {
+  "zh": "地震术",
+  "en": "Earth Shock"
+ },
+ "13729": {
+  "zh": "烈焰震击",
+  "en": "Flame Shock"
+ },
+ "13730": {
+  "zh": "挫志怒吼",
+  "en": "Demoralizing Shout"
+ },
+ "13747": {
+  "zh": "减速术",
+  "en": "Slow"
+ },
+ "13787": {
+  "zh": "魔甲术",
+  "en": "Demon Armor"
+ },
+ "13880": {
+  "zh": "熔岩喷溅",
+  "en": "Magma Splash"
+ },
+ "13895": {
+  "zh": "召唤贝尔加的产物",
+  "en": "Summon Spawn of Bael'Gar"
+ },
+ "13899": {
+  "zh": "火焰风暴",
+  "en": "Fire Storm"
+ },
+ "13900": {
+  "zh": "火焰爆发",
+  "en": "Fiery Burst"
+ },
+ "13953": {
+  "zh": "神圣打击",
+  "en": "Holy Strike"
+ },
+ "14032": {
+  "zh": "暗言术：痛",
+  "en": "Shadow Word: Pain"
+ },
+ "14033": {
+  "zh": "法力燃烧",
+  "en": "Mana Burn"
+ },
+ "14145": {
+  "zh": "火焰冲击",
+  "en": "Fire Blast"
+ },
+ "14331": {
+  "zh": "恶毒撕裂",
+  "en": "Vicious Rend"
+ },
+ "14443": {
+  "zh": "多重射击",
+  "en": "Multi-Shot"
+ },
+ "14515": {
+  "zh": "统御意志",
+  "en": "Dominate Mind"
+ },
+ "14518": {
+  "zh": "十字军打击",
+  "en": "Crusader Strike"
+ },
+ "14621": {
+  "zh": "变形术",
+  "en": "Polymorph"
+ },
+ "14744": {
+  "zh": "燃灵术",
+  "en": "Burning Spirit"
+ },
+ "14887": {
+  "zh": "暗影箭雨",
+  "en": "Shadow Bolt Volley"
+ },
+ "15038": {
+  "zh": "灼烧图腾",
+  "en": "Scorching Totem"
+ },
+ "15039": {
+  "zh": "烈焰震击",
+  "en": "Flame Shock"
+ },
+ "15041": {
+  "zh": "防护火焰结界",
+  "en": "Fire Ward"
+ },
+ "15044": {
+  "zh": "防护冰霜结界",
+  "en": "Frost Ward"
+ },
+ "15095": {
+  "zh": "熔火爆裂",
+  "en": "Molten Blast"
+ },
+ "15230": {
+  "zh": "奥术箭",
+  "en": "Arcane Bolt"
+ },
+ "15242": {
+  "zh": "火球术",
+  "en": "Fireball"
+ },
+ "15245": {
+  "zh": "暗影箭雨",
+  "en": "Shadow Bolt Volley"
+ },
+ "15284": {
+  "zh": "顺劈斩",
+  "en": "Cleave"
+ },
+ "15285": {
+  "zh": "连珠火球",
+  "en": "Fireball Volley"
+ },
+ "15305": {
+  "zh": "闪电链",
+  "en": "Chain Lightning"
+ },
+ "15346": {
+  "zh": "清算圣印",
+  "en": "Seal of Reckoning"
+ },
+ "15470": {
+  "zh": "语言诅咒",
+  "en": "Curse of Tongues"
+ },
+ "15471": {
+  "zh": "包围之网",
+  "en": "Enveloping Web"
+ },
+ "15472": {
+  "zh": "暗影箭",
+  "en": "Shadow Bolt"
+ },
+ "15474": {
+  "zh": "蛛网爆炸",
+  "en": "Web Explosion"
+ },
+ "15475": {
+  "zh": "祸害之毒",
+  "en": "Baneful Poison"
+ },
+ "15493": {
+  "zh": "圣光术",
+  "en": "Holy Light"
+ },
+ "15499": {
+  "zh": "冰霜震击",
+  "en": "Frost Shock"
+ },
+ "15501": {
+  "zh": "地震术",
+  "en": "Earth Shock"
+ },
+ "15507": {
+  "zh": "闪电之盾",
+  "en": "Lightning Shield"
+ },
+ "15530": {
+  "zh": "寒冰箭",
+  "en": "Frostbolt"
+ },
+ "15531": {
+  "zh": "冰霜新星",
+  "en": "Frost Nova"
+ },
+ "15537": {
+  "zh": "暗影箭",
+  "en": "Shadow Bolt"
+ },
+ "15547": {
+  "zh": "射击",
+  "en": "Shoot"
+ },
+ "15548": {
+  "zh": "雷霆一击",
+  "en": "Thunderclap"
+ },
+ "15572": {
+  "zh": "破甲攻击",
+  "en": "Sunder Armor"
+ },
+ "15577": {
+  "zh": "旋风斩效果",
+  "en": "Whirlwind"
+ },
+ "15580": {
+  "zh": "打击",
+  "en": "Strike"
+ },
+ "15588": {
+  "zh": "雷霆一击",
+  "en": "Thunderclap"
+ },
+ "15589": {
+  "zh": "旋风斩效果",
+  "en": "Whirlwind"
+ },
+ "15605": {
+  "zh": "震击",
+  "en": "Shock"
+ },
+ "15615": {
+  "zh": "拳击",
+  "en": "Pummel"
+ },
+ "15616": {
+  "zh": "烈焰震击",
+  "en": "Flame Shock"
+ },
+ "15636": {
+  "zh": "烈焰化身",
+  "en": "Avatar of Flame"
+ },
+ "15642": {
+  "zh": "反对者",
+  "en": "Ironfoe"
+ },
+ "15654": {
+  "zh": "暗言术：痛",
+  "en": "Shadow Word: Pain"
+ },
+ "15657": {
+  "zh": "背刺",
+  "en": "Backstab"
+ },
+ "15667": {
+  "zh": "邪恶攻击",
+  "en": "Sinister Strike"
+ },
+ "15708": {
+  "zh": "致死打击",
+  "en": "Mortal Strike"
+ },
+ "15749": {
+  "zh": "盾牌冲锋",
+  "en": "Shield Charge"
+ },
+ "15970": {
+  "zh": "催眠术",
+  "en": "Sleep"
+ },
+ "15976": {
+  "zh": "刺破",
+  "en": "Puncture"
+ },
+ "16033": {
+  "zh": "闪电链",
+  "en": "Chain Lightning"
+ },
+ "16095": {
+  "zh": "恶毒撕裂",
+  "en": "Vicious Rend"
+ },
+ "16098": {
+  "zh": "血之诅咒",
+  "en": "Curse of Blood"
+ },
+ "16104": {
+  "zh": "结晶",
+  "en": "Crystallize"
+ },
+ "16128": {
+  "zh": "感染撕咬",
+  "en": "Infected Bite"
+ },
+ "16247": {
+  "zh": "荆棘诅咒",
+  "en": "Curse of Thorns"
+ },
+ "16350": {
+  "zh": "冰冻术",
+  "en": "Freeze"
+ },
+ "16418": {
+  "zh": "地穴甲虫",
+  "en": "Crypt Scarabs"
+ },
+ "16468": {
+  "zh": "蛛后的乳汁",
+  "en": "Mother's Milk"
+ },
+ "16495": {
+  "zh": "致命刺痛",
+  "en": "Fatal Bite"
+ },
+ "16508": {
+  "zh": "破胆咆哮",
+  "en": "Intimidating Roar"
+ },
+ "16727": {
+  "zh": "战争践踏",
+  "en": "War Stomp"
+ },
+ "16740": {
+  "zh": "战争践踏",
+  "en": "War Stomp"
+ },
+ "16791": {
+  "zh": "狂暴怒火",
+  "en": "Furious Anger"
+ },
+ "16793": {
+  "zh": "吸血一击",
+  "en": "Draining Blow"
+ },
+ "16798": {
+  "zh": "催眠曲",
+  "en": "Enchanting Lullaby"
+ },
+ "16799": {
+  "zh": "寒冰箭",
+  "en": "Frostbolt"
+ },
+ "16856": {
+  "zh": "致死打击",
+  "en": "Mortal Strike"
+ },
+ "16867": {
+  "zh": "女妖诅咒",
+  "en": "Banshee Curse"
+ },
+ "16868": {
+  "zh": "女妖哀嚎",
+  "en": "Banshee Wail"
+ },
+ "16869": {
+  "zh": "寒冰之墓",
+  "en": "Ice Tomb"
+ },
+ "16874": {
+  "zh": "防护暗影",
+  "en": "Shadow Protection"
+ },
+ "17139": {
+  "zh": "真言术：盾",
+  "en": "Power Word: Shield"
+ },
+ "17145": {
+  "zh": "冲击波",
+  "en": "Blast Wave"
+ },
+ "17194": {
+  "zh": "心灵震爆",
+  "en": "Mind Blast"
+ },
+ "17233": {
+  "zh": "圣疗术",
+  "en": "Lay on Hands"
+ },
+ "17235": {
+  "zh": "复活亡灵甲虫",
+  "en": "Raise Undead Scarab"
+ },
+ "17244": {
+  "zh": "占据",
+  "en": "Possess"
+ },
+ "17289": {
+  "zh": "暗影震击",
+  "en": "Shadow Shock"
+ },
+ "17293": {
+  "zh": "燃烧之风",
+  "en": "Burning Winds"
+ },
+ "17366": {
+  "zh": "火焰新星",
+  "en": "Fire Nova"
+ },
+ "17393": {
+  "zh": "暗影箭",
+  "en": "Shadow Bolt"
+ },
+ "17399": {
+  "zh": "暗影震击",
+  "en": "Shadow Shock"
+ },
+ "17405": {
+  "zh": "支配",
+  "en": "Domination"
+ },
+ "17467": {
+  "zh": "邪恶光环",
+  "en": "Unholy Aura"
+ },
+ "17470": {
+  "zh": "困兽之爪",
+  "en": "Ravenous Claw"
+ },
+ "17492": {
+  "zh": "索瑞森之手",
+  "en": "Hand of Thaurissan"
+ },
+ "17620": {
+  "zh": "吸取生命",
+  "en": "Drain Life"
+ },
+ "17687": {
+  "zh": "乱舞",
+  "en": "Flurry"
+ },
+ "17695": {
+  "zh": "污染光环",
+  "en": "Defiling Aura"
+ },
+ "17802": {
+  "zh": "强化暗影箭",
+  "en": "Improved Shadow Bolt - Spell - Classic World of Warcraft"
+ },
+ "17820": {
+  "zh": "暗影迷雾",
+  "en": "Veil of Shadow"
+ },
+ "18099": {
+  "zh": "冰冻新星",
+  "en": "Chill Nova"
+ },
+ "18100": {
+  "zh": "霜甲术",
+  "en": "Frost Armor"
+ },
+ "18327": {
+  "zh": "沉默",
+  "en": "Silence"
+ },
+ "18499": {
+  "zh": "狂暴之怒",
+  "en": "Berserker Rage"
+ },
+ "18647": {
+  "zh": "放逐术",
+  "en": "Banish"
+ },
+ "18670": {
+  "zh": "击退",
+  "en": "Knock Away"
+ },
+ "18702": {
+  "zh": "黑暗主宰诅咒",
+  "en": "Curse of the Darkmaster"
+ },
+ "18945": {
+  "zh": "击退",
+  "en": "Knock Away"
+ },
+ "19134": {
+  "zh": "破胆怒吼",
+  "en": "Intimidating Shout"
+ },
+ "19319": {
+  "zh": "恶毒之咬",
+  "en": "Vicious Bite"
+ },
+ "19983": {
+  "zh": "顺劈斩",
+  "en": "Cleave"
+ },
+ "20252": {
+  "zh": "拦截",
+  "en": "Intercept"
+ },
+ "20537": {
+  "zh": "法术反制",
+  "en": "Counterspell"
+ },
+ "20539": {
+  "zh": "致命刺痛",
+  "en": "Fatal Bite"
+ },
+ "20569": {
+  "zh": "顺劈斩",
+  "en": "Cleave"
+ },
+ "20787": {
+  "zh": "献祭",
+  "en": "Immolate"
+ },
+ "20812": {
+  "zh": "残废术",
+  "en": "Cripple"
+ },
+ "20904": {
+  "zh": "瞄准射击",
+  "en": "Aimed Shot"
+ },
+ "21007": {
+  "zh": "虚弱诅咒",
+  "en": "Curse of Weakness"
+ },
+ "21049": {
+  "zh": "嗜血术",
+  "en": "Bloodlust"
+ },
+ "21060": {
+  "zh": "致盲",
+  "en": "Blind"
+ },
+ "21687": {
+  "zh": "毒性箭雨",
+  "en": "Toxic Volley"
+ },
+ "21793": {
+  "zh": "扭曲宁静",
+  "en": "Twisted Tranquility"
+ },
+ "21868": {
+  "zh": "灰尘力场",
+  "en": "Dust Field"
+ },
+ "21869": {
+  "zh": "憎恨怒视",
+  "en": "Repulsive Gaze"
+ },
+ "22128": {
+  "zh": "荆棘术",
+  "en": "Thorns"
+ },
+ "22187": {
+  "zh": "真言术：盾",
+  "en": "Power Word: Shield"
+ },
+ "22371": {
+  "zh": "无力诅咒",
+  "en": "Curse of Impotence"
+ },
+ "22419": {
+  "zh": "激流",
+  "en": "Riptide"
+ },
+ "22420": {
+  "zh": "淹没",
+  "en": "Submersion"
+ },
+ "22421": {
+  "zh": "巨型喷泉",
+  "en": "Massive Geyser"
+ },
+ "22478": {
+  "zh": "剧烈痛楚",
+  "en": "Intense Pain"
+ },
+ "22540": {
+  "zh": "顺劈斩",
+  "en": "Cleave"
+ },
+ "22566": {
+  "zh": "妖术",
+  "en": "Hex"
+ },
+ "22651": {
+  "zh": "牺牲",
+  "en": "Sacrifice"
+ },
+ "22660": {
+  "zh": "暗灰狼形态",
+  "en": "Dire Wolf Form"
+ },
+ "22661": {
+  "zh": "弱化",
+  "en": "Enervate"
+ },
+ "22662": {
+  "zh": "寒冬",
+  "en": "Wither"
+ },
+ "22665": {
+  "zh": "暗影箭雨",
+  "en": "Shadow Bolt Volley"
+ },
+ "22689": {
+  "zh": "割碎",
+  "en": "Mangle"
+ },
+ "22691": {
+  "zh": "缴械",
+  "en": "Disarm"
+ },
+ "22710": {
+  "zh": "巨化术",
+  "en": "Enlarge"
+ },
+ "22714": {
+  "zh": "召唤水浪幼崽",
+  "en": "Summon Hydroling"
+ },
+ "22715": {
+  "zh": "喷液",
+  "en": "Hydrojet"
+ },
+ "22735": {
+  "zh": "洛恩塔姆之魂",
+  "en": "Spirit of Runn Tum"
+ },
+ "22833": {
+  "zh": "喷酒",
+  "en": "Booze Spit"
+ },
+ "22835": {
+  "zh": "醉酒怒气",
+  "en": "Drunken Rage"
+ },
+ "22857": {
+  "zh": "反击风暴",
+  "en": "Retaliation"
+ },
+ "22859": {
+  "zh": "致死顺劈",
+  "en": "Mortal Cleave"
+ },
+ "22860": {
+  "zh": "召唤劫掠者",
+  "en": "Call Reavers"
+ },
+ "22884": {
+  "zh": "心灵尖啸",
+  "en": "Psychic Scream"
+ },
+ "22886": {
+  "zh": "狂暴冲锋",
+  "en": "Berserker Charge"
+ },
+ "22899": {
+  "zh": "伊莫塔尔之眼",
+  "en": "Eye of Immol'thar"
+ },
+ "22908": {
+  "zh": "乱射",
+  "en": "Volley"
+ },
+ "22910": {
+  "zh": "献祭陷阱",
+  "en": "Immolation Trap"
+ },
+ "22914": {
+  "zh": "震荡射击",
+  "en": "Concussive Shot"
+ },
+ "22916": {
+  "zh": "上钩拳",
+  "en": "Uppercut"
+ },
+ "22917": {
+  "zh": "暗影形态",
+  "en": "Shadowform"
+ },
+ "22919": {
+  "zh": "精神鞭笞",
+  "en": "Mind Flay"
+ },
+ "22920": {
+  "zh": "奥术冲击",
+  "en": "Arcane Blast"
+ },
+ "22924": {
+  "zh": "缠绕之藤",
+  "en": "Grasping Vines"
+ },
+ "22950": {
+  "zh": "伊莫塔尔传送门",
+  "en": "Portal of Immol'thar"
+ },
+ "22994": {
+  "zh": "纠缠",
+  "en": "Entangle"
+ },
+ "22995": {
+  "zh": "召唤",
+  "en": "Summon"
+ },
+ "23511": {
+  "zh": "挫志怒吼",
+  "en": "Demoralizing Shout"
+ },
+ "24375": {
+  "zh": "战争践踏",
+  "en": "War Stomp"
+ },
+ "25054": {
+  "zh": "圣击术",
+  "en": "Holy Smite - Spell - Classic World of Warcraft"
+ },
+ "25055": {
+  "zh": "奥术箭",
+  "en": "Arcane Bolt"
+ },
+ "25174": {
+  "zh": "破甲顺劈",
+  "en": "Sundering Cleave"
+ },
+ "25309": {
+  "zh": "献祭",
+  "en": "Immolate"
+ },
+ "25311": {
+  "zh": "腐蚀术",
+  "en": "Corruption"
+ },
+ "25315": {
+  "zh": "恢复",
+  "en": "Renew"
+ },
+ "25322": {
+  "zh": "横扫猛击",
+  "en": "Sweeping Slam"
+ },
+ "25346": {
+  "zh": "奥术飞弹",
+  "en": "Arcane Missiles"
+ },
+ "25852": {
+  "zh": "鞭笞",
+  "en": "Lash"
+ },
+ "26192": {
+  "zh": "魔爆术",
+  "en": "Arcane Explosion"
+ },
+ "26977": {
+  "zh": "元素领主的诅咒",
+  "en": "Curse of the Elemental Lord"
+ },
+ "28340": {
+  "zh": "邪恶光环",
+  "en": "Unholy Aura"
+ },
+ "28599": {
+  "zh": "暗影箭雨",
+  "en": "Shadow Bolt Volley"
+ },
+ "30225": {
+  "zh": "沉默",
+  "en": "Silence"
+ }
+}

@@ -1,0 +1,18 @@
+=== scan_v4 (收紧后) ===
+★ 真漏网 = 0  | 译文缺失 = 0  | 无对应section = 1
+★ flow 长度不一致 = 0 []
+★ 无匹配section明细: [('mage_fire', 'viability', 'no matching section')]
+
+
+=== 生成物内 4 个补译 tb 是否落地 ===
+1
+1
+1
+1
+1
+
+=== warlock 增译是否已撤回 ===
+0
+
+=== fake 词残留 ===
+0

@@ -1,0 +1,706 @@
+{
+ "schema": 1,
+ "kind": "build-ledger",
+ "doc": "客户端版本账本：按时间顺序列出每个导出过的客户端版本。起点版本（genesis）不产生 added 事件；实体的「首次收录」= 第一次出现 added 事件的版本，没有就是起点版本（见 changes/first_seen.json）。exported_at 是该版本数据的导出 / 生成时间（manifest.built_at）。",
+ "genesis": "1.60.1.70094",
+ "latest": "1.60.1.70374",
+ "builds": [
+  {
+   "build": "1.60.1.70094",
+   "genesis": true,
+   "previous": null,
+   "ref": "build/1.60.1.70094",
+   "exported_at": "2026-10-01T22:19:12",
+   "counts": {
+    "recipes": 2595,
+    "new_recipes": 1147,
+    "items": 10946,
+    "itemsets": 532,
+    "epics": 1205,
+    "races": 10,
+    "racial_abilities": 40,
+    "achievements": 369,
+    "new_achievements": 119,
+    "quests": 6605,
+    "quests_new": 1757,
+    "questlines": 3,
+    "npcs": 515,
+    "npcs_new": 112,
+    "bosses": 339,
+    "boss_portraits": 286,
+    "boss_models": 266,
+    "creature_models": 131,
+    "instances": 48,
+    "new_instances": 20,
+    "atlas_maps": 60,
+    "atlas_zones": 50,
+    "taxi_nodes": 73,
+    "titles": 41,
+    "titles_new": 12,
+    "factions": 75,
+    "factions_new": 18,
+    "spellbook_spells": 1523,
+    "spellbook_new": 58,
+    "spellbook_hidden": 255,
+    "looks": 1686,
+    "transmog_sets": 7,
+    "transmog_sources": 1288,
+    "transmog_vendors": 156,
+    "icons": 1906
+   },
+   "changes": null,
+   "summary": null
+  },
+  {
+   "build": "1.60.1.70205",
+   "genesis": false,
+   "previous": "1.60.1.70094",
+   "ref": "build/1.60.1.70205",
+   "exported_at": "2026-10-04T20:51:26",
+   "counts": {
+    "recipes": 2595,
+    "new_recipes": 1147,
+    "items": 10933,
+    "itemsets": 532,
+    "epics": 1204,
+    "races": 10,
+    "racial_abilities": 40,
+    "achievements": 370,
+    "new_achievements": 120,
+    "quests": 6609,
+    "quests_new": 1761,
+    "questlines": 3,
+    "npcs": 515,
+    "npcs_new": 112,
+    "bosses": 339,
+    "boss_portraits": 286,
+    "boss_models": 266,
+    "creature_models": 131,
+    "instances": 47,
+    "new_instances": 19,
+    "atlas_maps": 60,
+    "atlas_zones": 50,
+    "taxi_nodes": 73,
+    "titles": 41,
+    "titles_new": 12,
+    "factions": 75,
+    "factions_new": 18,
+    "spellbook_spells": 1524,
+    "spellbook_new": 59,
+    "spellbook_hidden": 255,
+    "looks": 1688,
+    "transmog_sets": 7,
+    "transmog_sources": 1278,
+    "transmog_vendors": 156,
+    "icons": 1911
+   },
+   "changes": "changes/1.60.1.70205.json",
+   "summary": {
+    "events": 1065,
+    "by_kind": {
+     "added": 28,
+     "renamed": 74,
+     "changed": 931,
+     "removed": 32
+    },
+    "indirect": 301,
+    "highlights": 108,
+    "headline": [
+     "措辞「经典旧世」改为「传承」：140 条记录（成就 130、传承树节点 9、传承树 1）",
+     "措辞「肢解」改为「裂噬」：5 条记录（法术 5）",
+     "套装「腐疗者的法衣」：套装效果 2：spell 9106→14668、text +10 智力。→+5 暗影抗性。；3：spell 1321572→9106、text Reduces all threat gene…→+10 智力。（源于 spell:1321560）",
+     "汉化回退（中文变回英文）：523 条记录（配方 7、物品 175、套装 38、成就 14、声望 3、种族 4、天赋 8、法术 258、露营设施 16）",
+     "5 个配方同样改动：技能区间（变黄 / 变灰） 20、25 → 0、0（鱼缸、急救包、熏香蜡烛、磁石等）"
+    ],
+    "by_type": {
+     "recipe": 37,
+     "item": 306,
+     "set": 44,
+     "achievement": 157,
+     "quest": 4,
+     "npc": 8,
+     "look": 44,
+     "appearance": 8,
+     "instance": 1,
+     "title": 4,
+     "faction": 6,
+     "race": 4,
+     "talent": 14,
+     "spell": 395,
+     "legacy": 9,
+     "legacytree": 1,
+     "camping": 20,
+     "bundle": 1,
+     "profession": 2
+    },
+    "raw": {
+     "tables_changed": 73,
+     "rows_added": 1349,
+     "rows_removed": 167,
+     "rows_changed": 2290,
+     "decrypted_rows": 0
+    },
+    "files": {
+     "added": 346,
+     "removed": 169,
+     "changed": 4744,
+     "bytes": 2114534830,
+     "categories": [
+      "模型（角色）",
+      "场景与地图",
+      "着色器",
+      "模型（其他）"
+     ]
+    }
+   }
+  },
+  {
+   "build": "1.60.1.70235",
+   "genesis": false,
+   "previous": "1.60.1.70205",
+   "ref": "build/1.60.1.70235",
+   "exported_at": "2026-10-06T08:34:33",
+   "counts": {
+    "recipes": 2595,
+    "new_recipes": 1147,
+    "items": 10933,
+    "itemsets": 532,
+    "epics": 1204,
+    "races": 10,
+    "racial_abilities": 40,
+    "achievements": 370,
+    "new_achievements": 120,
+    "quests": 6609,
+    "quests_new": 1761,
+    "questlines": 3,
+    "npcs": 515,
+    "npcs_new": 112,
+    "bosses": 339,
+    "boss_portraits": 286,
+    "boss_models": 266,
+    "creature_models": 131,
+    "instances": 47,
+    "new_instances": 19,
+    "atlas_maps": 60,
+    "atlas_zones": 50,
+    "taxi_nodes": 73,
+    "titles": 41,
+    "titles_new": 12,
+    "factions": 75,
+    "factions_new": 18,
+    "spellbook_spells": 1524,
+    "spellbook_new": 59,
+    "spellbook_hidden": 255,
+    "looks": 1688,
+    "transmog_sets": 7,
+    "transmog_sources": 1278,
+    "transmog_vendors": 156,
+    "icons": 1911
+   },
+   "changes": "changes/1.60.1.70235.json",
+   "summary": {
+    "events": 0,
+    "by_kind": {},
+    "indirect": 0,
+    "highlights": 0,
+    "headline": [],
+    "by_type": {},
+    "raw": {
+     "tables_changed": 0,
+     "rows_added": 0,
+     "rows_removed": 0,
+     "rows_changed": 0,
+     "decrypted_rows": 0
+    },
+    "client": {
+     "exe": [
+      "WowT.exe",
+      "Wow.exe"
+     ],
+     "label": "中国正式版本 x64",
+     "compiled": "2026-10-05",
+     "files": {
+      "added": 5,
+      "removed": 8,
+      "changed": 4
+     }
+    },
+    "files": {
+     "added": 0,
+     "removed": 2,
+     "changed": 17,
+     "bytes": 44884176,
+     "categories": [
+      "程序"
+     ]
+    },
+    "server": {
+     "written": "2026-10-07T09:02:02+11:00",
+     "entries": 29332,
+     "pushes": 23,
+     "push_entries": 1463,
+     "replies": 12193,
+     "rows": {
+      "added": 3491,
+      "changed": 65,
+      "removed": 49
+     },
+     "tables": 35,
+     "items": {
+      "on_site": 1692,
+      "filled": 1012,
+      "new_on_site": 680
+     }
+    }
+   }
+  },
+  {
+   "build": "1.60.1.70245",
+   "genesis": false,
+   "previous": "1.60.1.70235",
+   "ref": "build/1.60.1.70245",
+   "exported_at": "2026-10-07T10:35:20",
+   "counts": {
+    "recipes": 2595,
+    "new_recipes": 1147,
+    "items": 10933,
+    "itemsets": 532,
+    "epics": 1204,
+    "races": 10,
+    "racial_abilities": 40,
+    "achievements": 370,
+    "new_achievements": 120,
+    "quests": 6609,
+    "quests_new": 1761,
+    "questlines": 3,
+    "npcs": 515,
+    "npcs_new": 112,
+    "bosses": 339,
+    "boss_portraits": 286,
+    "boss_models": 266,
+    "creature_models": 131,
+    "instances": 47,
+    "new_instances": 19,
+    "atlas_maps": 60,
+    "atlas_zones": 50,
+    "taxi_nodes": 73,
+    "titles": 41,
+    "titles_new": 12,
+    "factions": 75,
+    "factions_new": 18,
+    "spellbook_spells": 1524,
+    "spellbook_new": 59,
+    "spellbook_hidden": 255,
+    "looks": 1688,
+    "transmog_sets": 7,
+    "transmog_sources": 1278,
+    "transmog_vendors": 156,
+    "icons": 1911
+   },
+   "changes": "changes/1.60.1.70245.json",
+   "summary": {
+    "events": 0,
+    "by_kind": {},
+    "indirect": 0,
+    "highlights": 0,
+    "headline": [],
+    "by_type": {},
+    "raw": {
+     "tables_changed": 0,
+     "rows_added": 0,
+     "rows_removed": 0,
+     "rows_changed": 0,
+     "decrypted_rows": 0
+    },
+    "client": {
+     "exe": [
+      "Wow.exe",
+      "Wow.exe"
+     ],
+     "label": "中国正式版本 x64",
+     "compiled": "2026-10-05",
+     "files": {
+      "added": 0,
+      "removed": 0,
+      "changed": 9
+     }
+    },
+    "files": {
+     "added": 0,
+     "removed": 0,
+     "changed": 17,
+     "bytes": 44838608,
+     "categories": [
+      "程序"
+     ]
+    },
+    "server": {
+     "written": "2026-10-10T07:00:38+11:00",
+     "entries": 39998,
+     "pushes": 32,
+     "push_entries": 1579,
+     "replies": 12193,
+     "rows": {
+      "added": 3492,
+      "changed": 103,
+      "removed": 50
+     },
+     "tables": 37,
+     "items": {
+      "on_site": 1692,
+      "filled": 1012,
+      "new_on_site": 680
+     }
+    }
+   }
+  },
+  {
+   "build": "1.60.1.70334",
+   "genesis": false,
+   "previous": "1.60.1.70245",
+   "ref": "build/1.60.1.70334",
+   "exported_at": "2026-10-10T09:15:25",
+   "counts": {
+    "recipes": 2595,
+    "new_recipes": 1147,
+    "items": 10936,
+    "itemsets": 532,
+    "epics": 1166,
+    "races": 10,
+    "racial_abilities": 40,
+    "achievements": 372,
+    "new_achievements": 122,
+    "quests": 6610,
+    "quests_new": 1762,
+    "questlines": 3,
+    "npcs": 515,
+    "npcs_new": 112,
+    "bosses": 339,
+    "boss_portraits": 286,
+    "boss_models": 266,
+    "creature_models": 131,
+    "instances": 47,
+    "new_instances": 19,
+    "atlas_maps": 60,
+    "atlas_zones": 50,
+    "taxi_nodes": 73,
+    "titles": 41,
+    "titles_new": 12,
+    "factions": 75,
+    "factions_new": 18,
+    "spellbook_spells": 1524,
+    "spellbook_new": 59,
+    "spellbook_hidden": 255,
+    "looks": 1688,
+    "transmog_sets": 7,
+    "transmog_sources": 1281,
+    "transmog_vendors": 157,
+    "icons": 2005
+   },
+   "changes": "changes/1.60.1.70334.json",
+   "summary": {
+    "events": 555,
+    "by_kind": {
+     "added": 21,
+     "renamed": 9,
+     "changed": 525
+    },
+    "indirect": 96,
+    "highlights": 218,
+    "headline": [
+     "套装「紫罗兰巫师的法衣」：套装效果 +2 +5 奥术抗性。；+3 +10 精神。",
+     "汉化回退（中文变回英文）：38 条记录（物品 6、成就 4、天赋 6、法术 22）",
+     "3 个配方同样改动：技能区间（变黄 / 变灰） 260、300 → 280、310（美味海龟肉汤、冒热气的雄鹿排、史前手撕迅猛龙肉）",
+     "套装「克罗多克战甲」：套装效果 +2 +100 护甲。；+3 防御技能提高5点。",
+     "5 个物品同样改动：护甲 无 → 25；物品子类别 0 → 3（新兵之靴、侍从之靴、打斗者之靴、森达尔战士之靴）"
+    ],
+    "by_type": {
+     "recipe": 35,
+     "item": 201,
+     "set": 20,
+     "achievement": 15,
+     "quest": 1,
+     "npc": 16,
+     "look": 5,
+     "transmogset": 5,
+     "appearance": 6,
+     "instance": 2,
+     "map": 1,
+     "faction": 2,
+     "race": 1,
+     "talent": 15,
+     "spell": 221,
+     "legacytree": 1,
+     "camping": 1,
+     "bundle": 7
+    },
+    "raw": {
+     "tables_changed": 69,
+     "rows_added": 2699,
+     "rows_removed": 82,
+     "rows_changed": 1535,
+     "decrypted_rows": 0
+    },
+    "client": {
+     "exe": [
+      "Wow.exe",
+      "Wow.exe"
+     ],
+     "label": "中国正式版本 x64",
+     "compiled": "2026-10-09",
+     "files": {
+      "added": 0,
+      "removed": 0,
+      "changed": 10
+     }
+    },
+    "files": {
+     "added": 201,
+     "removed": 193186,
+     "changed": 5537,
+     "bytes": 1615023623,
+     "categories": [
+      "场景与地图",
+      "着色器",
+      "模型（角色）",
+      "影片"
+     ]
+    },
+    "server": {
+     "written": "2026-10-10T12:20:39+11:00",
+     "entries": 27303,
+     "pushes": 19,
+     "push_entries": 299,
+     "replies": 25624,
+     "rows": {
+      "added": 8127,
+      "changed": 44,
+      "removed": 1
+     },
+     "tables": 9,
+     "items": {
+      "on_site": 4130,
+      "filled": 1033,
+      "new_on_site": 3097
+     }
+    }
+   }
+  },
+  {
+   "build": "1.60.1.70338",
+   "genesis": false,
+   "previous": "1.60.1.70334",
+   "ref": "build/1.60.1.70338",
+   "exported_at": "2026-10-14T14:15:21",
+   "counts": {
+    "recipes": 2595,
+    "new_recipes": 1147,
+    "items": 10937,
+    "itemsets": 532,
+    "epics": 1166,
+    "races": 10,
+    "racial_abilities": 40,
+    "achievements": 372,
+    "new_achievements": 122,
+    "quests": 6610,
+    "quests_new": 1762,
+    "questlines": 3,
+    "npcs": 515,
+    "npcs_new": 112,
+    "bosses": 339,
+    "boss_portraits": 286,
+    "boss_models": 266,
+    "creature_models": 131,
+    "instances": 47,
+    "new_instances": 19,
+    "atlas_maps": 60,
+    "atlas_zones": 50,
+    "taxi_nodes": 73,
+    "titles": 41,
+    "titles_new": 12,
+    "factions": 75,
+    "factions_new": 18,
+    "spellbook_spells": 1524,
+    "spellbook_new": 59,
+    "spellbook_hidden": 255,
+    "looks": 1688,
+    "transmog_sets": 7,
+    "transmog_sources": 1281,
+    "transmog_vendors": 157,
+    "icons": 2157
+   },
+   "changes": "changes/1.60.1.70338.json",
+   "summary": {
+    "events": 0,
+    "by_kind": {},
+    "indirect": 0,
+    "highlights": 0,
+    "headline": [],
+    "by_type": {},
+    "raw": {
+     "tables_changed": 0,
+     "rows_added": 0,
+     "rows_removed": 0,
+     "rows_changed": 0,
+     "decrypted_rows": 0
+    },
+    "client": {
+     "exe": [
+      "Wow.exe",
+      "Wow.exe"
+     ],
+     "label": "中国正式版本 x64",
+     "compiled": "2026-10-09",
+     "files": {
+      "added": 0,
+      "removed": 0,
+      "changed": 9
+     }
+    },
+    "files": {
+     "added": 0,
+     "removed": 0,
+     "changed": 512,
+     "bytes": 316532937,
+     "categories": [
+      "着色器",
+      "程序"
+     ]
+    },
+    "server": {
+     "written": "2026-10-13T20:12:42+11:00",
+     "entries": 41094,
+     "pushes": 19,
+     "push_entries": 215,
+     "replies": 40879,
+     "rows": {
+      "added": 8456,
+      "changed": 45,
+      "removed": 1
+     },
+     "tables": 11,
+     "items": {
+      "on_site": 4300,
+      "filled": 1035,
+      "new_on_site": 3265
+     }
+    }
+   }
+  },
+  {
+   "build": "1.60.1.70374",
+   "genesis": false,
+   "previous": "1.60.1.70338",
+   "ref": "build/1.60.1.70374",
+   "exported_at": "2026-10-15T08:49:36",
+   "counts": {
+    "recipes": 2595,
+    "new_recipes": 1147,
+    "items": 10939,
+    "itemsets": 532,
+    "epics": 1167,
+    "races": 10,
+    "racial_abilities": 40,
+    "achievements": 372,
+    "new_achievements": 122,
+    "quests": 6610,
+    "quests_new": 1762,
+    "questlines": 3,
+    "npcs": 516,
+    "npcs_new": 113,
+    "bosses": 339,
+    "boss_portraits": 286,
+    "boss_models": 266,
+    "creature_models": 132,
+    "instances": 47,
+    "new_instances": 19,
+    "atlas_maps": 60,
+    "atlas_zones": 50,
+    "taxi_nodes": 73,
+    "titles": 41,
+    "titles_new": 12,
+    "factions": 75,
+    "factions_new": 18,
+    "spellbook_spells": 1524,
+    "spellbook_new": 59,
+    "spellbook_hidden": 255,
+    "looks": 1688,
+    "transmog_sets": 7,
+    "transmog_sources": 1281,
+    "transmog_vendors": 157,
+    "icons": 2158
+   },
+   "changes": "changes/1.60.1.70374.json",
+   "summary": {
+    "events": 4,
+    "by_kind": {
+     "added": 4
+    },
+    "indirect": 0,
+    "highlights": 13,
+    "headline": [
+     "新增物品「永恒探索战袍」（品质 史诗，物品等级 1，来源类型 隐藏直到收集）",
+     "新增NPC / 首领「碧波尔霸」（模型（CreatureDisplayInfo） 148274）",
+     "新增物品「永恒探索者背包」（品质 精良，物品等级 1，来源类型 隐藏直到收集）",
+     "Creature #275487 可读了：碧波尔霸",
+     "CreatureDifficulty #359325 可读了：{\"MinLevel\": \"1\", \"MaxLevel\": \"1\", \"FactionTemplateID\": \"188"
+    ],
+    "by_type": {
+     "item": 2,
+     "npc": 1,
+     "spell": 1
+    },
+    "raw": {
+     "tables_changed": 18,
+     "rows_added": 29,
+     "rows_removed": 0,
+     "rows_changed": 0,
+     "decrypted_rows": 9
+    },
+    "client": {
+     "exe": [
+      "Wow.exe",
+      "Wow.exe"
+     ],
+     "label": "中国正式版本 x64",
+     "compiled": "2026-10-12",
+     "files": {
+      "added": 0,
+      "removed": 0,
+      "changed": 9
+     }
+    },
+    "files": {
+     "added": 0,
+     "removed": 0,
+     "changed": 52,
+     "bytes": 51025618,
+     "categories": [
+      "程序",
+      "数据表",
+      "界面",
+      "着色器"
+     ]
+    },
+    "server": {
+     "written": "2026-10-15T08:39:12+11:00",
+     "entries": 28475,
+     "pushes": 23,
+     "push_entries": 274,
+     "replies": 27423,
+     "rows": {
+      "added": 8738,
+      "changed": 49,
+      "removed": 1
+     },
+     "tables": 20,
+     "items": {
+      "on_site": 4419,
+      "filled": 1042,
+      "new_on_site": 3377
+     }
+    }
+   }
+  }
+ ]
+}

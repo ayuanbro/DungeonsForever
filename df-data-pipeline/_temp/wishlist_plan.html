@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>心愿清单功能 · 可视化方案（DungeonsForever 1.7.x）</title>
+<style>
+  :root{
+    --l0:#0a0c10;--l1:#10131a;--l2:#161a22;--l3:#1b2029;--l4:#202532;--l5:#2b3140;--div:#38404f;
+    --gold:#f0c75e;--ok:#5ae38f;--txt:#dfe4ec;--txt2:#9aa3b2;--txt3:#6b7484;
+    --acc:#5b9dff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#eef0f4;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:#2a2f3a;padding:32px 20px 80px}
+  .wrap{max-width:1060px;margin:0 auto}
+  h1{font-size:26px;margin-bottom:6px}
+  .sub{color:#6b7484;font-size:14px;margin-bottom:36px}
+  h2{font-size:19px;margin:44px 0 6px;padding-left:12px;border-left:4px solid var(--acc)}
+  .desc{font-size:13.5px;color:#4a5160;margin:0 0 14px 16px;line-height:1.7}
+  .stage{background:#fff;border:1px solid #e2e5eb;border-radius:14px;padding:22px;margin-left:0;box-shadow:0 2px 10px rgba(20,30,60,.05)}
+  .note{font-size:12.5px;color:#8a92a0;margin-top:10px;margin-left:16px}
+  code{background:#e8ebf1;border-radius:4px;padding:1px 6px;font-family:Consolas,monospace;font-size:12.5px;color:#345}
+  pre{background:#171b24;color:#c8d2e0;border-radius:10px;padding:14px 18px;font-family:Consolas,monospace;font-size:12.5px;line-height:1.75;overflow-x:auto;margin-top:12px}
+  pre .k{color:#7fb3ff}pre .s{color:#a8d8a0}pre .c{color:#697488}pre .g{color:#f0c75e}
+
+  /* ---- 游戏内 UI 卡片（HUI 玻璃深色） ---- */
+  .ui{background:linear-gradient(160deg,var(--l2),var(--l1));border:1px solid var(--div);border-radius:12px;color:var(--txt);overflow:hidden}
+  .ui-title{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid rgba(56,64,79,.6);font-size:14px;font-weight:600}
+  .pill{display:inline-flex;align-items:center;gap:5px;background:var(--l5);border:1px solid var(--div);border-radius:20px;padding:2px 11px;font-size:11.5px;color:var(--txt2)}
+  .pill.gold{color:var(--gold);border-color:rgba(240,199,94,.4)}
+
+  /* 掉落行 mockup */
+  .lootrow{display:flex;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid rgba(56,64,79,.35);position:relative;transition:background .12s;cursor:default}
+  .lootrow:hover{background:rgba(255,255,255,.045)}
+  .icon{width:34px;height:34px;border-radius:6px;background:var(--l5);border:1px solid var(--div);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+  .iname{font-size:13.5px}
+  .isub{font-size:11.5px;color:var(--txt3);margin-top:2px}
+  .meta{margin-left:auto;text-align:right;font-size:11.5px;color:var(--txt2);flex-shrink:0}
+  .star{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--txt3);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity .12s;background:rgba(255,255,255,.06)}
+  .lootrow:hover .star{opacity:1}
+  .star.on{opacity:1;color:var(--gold)}
+  .star:hover{background:rgba(255,255,255,.12)}
+  .badge{font-size:10px;padding:1px 7px;border-radius:10px;margin-left:8px;vertical-align:1px}
+  .b-gold{background:rgba(240,199,94,.15);color:var(--gold)}
+  .hoverhint{font-size:11.5px;color:var(--txt3);padding:8px 16px;background:rgba(0,0,0,.18)}
+
+  /* tooltip mockup */
+  .tip{display:inline-block;background:rgba(8,10,16,.96);border:1px solid #4a5470;border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.8;color:#e8ecf4}
+  .tip .tl-gold{color:var(--gold)}
+  .tip .tl-dim{color:#8892a4}
+
+  /* 心愿单页 mockup */
+  .wishpage{display:flex;min-height:430px}
+  .wish-main{flex:1.75;padding:14px 16px;border-right:1px solid rgba(56,64,79,.6)}
+  .wish-side{flex:1;display:flex;flex-direction:column;padding:14px 14px;background:rgba(0,0,0,.14)}
+  .grp{margin-bottom:14px}
+  .grp-h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:6px 2px}
+  .grp-h .bar{width:3px;height:14px;border-radius:2px}
+  .grp-h .lv{margin-left:auto;font-size:10.5px;color:var(--txt3);font-weight:400}
+  .arrow{color:var(--txt3);font-size:11px;opacity:0;transition:opacity .12s}
+  .grp-h:hover .arrow{opacity:1}
+  .plan-h{font-size:12.5px;font-weight:700;color:var(--txt2);padding:2px 4px 10px;display:flex;align-items:center;gap:8px}
+  .planrow{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;margin-bottom:4px;cursor:pointer;transition:background .12s}
+  .planrow:hover{background:rgba(255,255,255,.05)}
+  .planrow .pbar{width:3px;height:18px;border-radius:2px;flex-shrink:0}
+  .planrow .pname{font-size:12.5px;font-weight:600}
+  .planrow .psub{font-size:10.5px;color:var(--txt3);margin-top:2px}
+  .cnt{margin-left:auto;background:var(--l5);border:1px solid var(--div);color:var(--acc);border-radius:12px;font-size:11px;padding:1px 9px;flex-shrink:0}
+  .plan-note{font-size:11px;color:var(--txt3);line-height:1.6;padding:10px 4px;margin-top:auto;border-top:1px solid rgba(56,64,79,.5)}
+  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--l4);border:1px solid var(--div);color:var(--txt2);border-radius:8px;padding:5px 14px;font-size:11.5px;cursor:pointer}
+  .btn:hover{background:var(--l5);color:var(--txt)}
+  .btn.primary{background:rgba(91,157,255,.18);border-color:rgba(91,157,255,.45);color:#9cc4ff}
+
+  /* 流程图 */
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .fnode{flex:1;min-width:150px;background:#f7f8fb;border:1.5px solid #d6dbe4;border-radius:12px;padding:14px;text-align:center}
+  .fnode .fi{font-size:24px}
+  .fnode .ft{font-weight:700;font-size:13.5px;margin-top:6px}
+  .fnode .fd{font-size:11.5px;color:#7a8292;margin-top:4px;line-height:1.55}
+  .farrow{display:flex;align-items:center;padding:0 8px;color:#a8b0be;font-size:20px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px;background:#fff}
+  th{background:#f0f2f6;text-align:left;padding:9px 12px;border:1px solid #e2e5eb;font-size:12.5px;color:#4a5160}
+  td{padding:9px 12px;border:1px solid #e8ebf0;line-height:1.6;vertical-align:top}
+  .tag{display:inline-block;font-size:11px;border-radius:5px;padding:1px 8px;margin-right:4px}
+  .t1{background:#e5efff;color:#2b6cd4}.t2{background:#e2f6e8;color:#1f8f4d}.t3{background:#fdf1d8;color:#a3761a}
+  ul.risk{margin:10px 0 0 30px;font-size:13px;line-height:2;color:#3a4150}
+  .two{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .two>div{flex:1;min-width:300px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⭐ 心愿清单（Wishlist）功能方案</h1>
+  <div class="sub">DungeonsForever 1.7.x · 参考 Lootified 心愿单模式 · 仅方案稿，未写任何代码</div>
+
+  <!-- ============ 1. 总览 ============ -->
+  <h2>① 功能总览：一条链路</h2>
+  <p class="desc">玩家在副本掉落页随手收藏装备 → 心愿单按「来源」自动分组陈列 → 侧栏给出「去哪打」计划（打哪个本、杀哪个 boss）→ 拾取到心愿装备时屏幕提醒（二期）。全程只存 itemID，名字运行期向客户端要。</p>
+  <div class="stage">
+    <div class="flow">
+      <div class="fnode"><div class="fi">☆→⭐</div><div class="ft">1. 掉落页收藏</div><div class="fd">每个装备行 hover<br>出现星标按钮，点击收藏</div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="fi">📋</div><div class="ft">2. 心愿单页</div><div class="fd">按来源分组：副本 / 开放世界 / 任务制造</div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="fi">🗺️</div><div class="ft">3. 去哪打（侧栏）</div><div class="fd">副本→boss 名单+件数<br>最忙的排最前</div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="fi">🔔</div><div class="ft">4. 掉落提醒（二期）</div><div class="fd">拾取到心愿装备<br>屏幕横幅+提示音</div></div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 收藏按钮 ============ -->
+  <h2>② 收藏按钮怎么加（掉落页行内星标）</h2>
+  <p class="desc">借鉴 Lootified 的做法：<b>星标是每个装备行右侧的独立按钮，平时隐藏，鼠标悬停该行时淡入</b>；已收藏的行星标常亮金色（空心☆ = 未收藏，实心★ = 已收藏）。点击星标只切换收藏、不触发行的跳转。下面可直接体验（悬停行、点星星）：</p>
+  <div class="stage">
+    <div class="ui">
+      <div class="ui-title">⚔️ 剃刀高地 · 掉落 <span class="pill">BOSS 掉落 12 件</span><span style="margin-left:auto;font-size:11px;color:var(--txt3)">「去这里打」按钮右侧留位</span></div>
+      <div class="lootrow"><div class="icon">🗡️</div><div><div class="iname" style="color:#9d5cf0">破坏者之刃</div><div class="isub">单手剑 · 掉落自 火眼莫尔甘</div></div><div class="meta">掉率 32%<div class="isub">布甲也可用</div></div><div class="star" title="加入心愿清单">☆</div></div>
+      <div class="lootrow"><div class="icon">🛡️</div><div><div class="iname" style="color:#1e9be0">血色十字盾</div><div class="isub">盾牌 · 掉落自 布洛格</div></div><div class="meta">掉率 24%</div><div class="star on" title="从心愿清单移除">★</div></div>
+      <div class="lootrow"><div class="icon">💎</div><div><div class="iname" style="color:#1e9be0">暗影之眼</div><div class="isub">饰品 · 掉落自 最终 Boss</div></div><div class="meta">掉率 11%</div><div class="star" title="加入心愿清单">☆</div></div>
+      <div class="hoverhint">⬆ 悬停任意行 → 星标淡入（右侧）；点星标 = 收藏/取消，点行其余部分 = 原有跳转行为不变</div>
+    </div>
+    <p class="note">同款星标还会出现在：<b>物品 tooltip 追加行</b>（见下）与<b>右键菜单</b>「加入/移出心愿清单」。收藏状态即时广播内部事件，所有已打开的页面同步刷新星星。</p>
+  </div>
+
+  <!-- ============ 3. tooltip ============ -->
+  <h2>③ 物品 Tooltip 标记</h2>
+  <p class="desc">已收藏的物品，在任何地方（游戏自带 tooltip、聊天链接、掉落列表）悬停时，底部追加一行金色标记。必须挂在现有 tooltip 管线的<b>单次通道守卫</b>之后——这条管线不可重入，是我们踩过实锤的地方。</p>
+  <div class="stage">
+    <div class="two">
+      <div><div class="tip">
+        <div style="color:#9d5cf0;font-weight:600">[破坏者之刃]</div>
+        <div class="tl-dim">单手剑</div>
+        <div class="tl-dim">伤害 42 - 64 · 速度 2.70</div>
+        <div class="tl-dim">需要等级 42</div>
+        <div style="border-top:1px solid #3a4358;margin:6px 0"></div>
+        <div class="tl-gold">⭐ 已在心愿清单</div>
+      </div></div>
+      <div>
+        <pre><span class="c">-- 追加行伪代码（挂 TooltipDataProcessor 后置钩子）</span>
+<span class="k">if</span> WishList.IsMarked(itemID) <span class="k">then</span>
+    tip:AddLine(<span class="s">"⭐ 已在心愿清单"</span>, gold)
+<span class="k">end</span>  <span class="c">-- __tipBusy 守卫内，只跑一次</span></pre>
+        <p class="note" style="margin-left:0">tooltip 钩子内<b>绝不创建/移动帧</b>，只 AddLine。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4. 心愿单页 ============ -->
+  <h2>④ 心愿清单页（新页签）</h2>
+  <p class="desc">主框架新增「心愿单」页签（与副本列表 / 专业页并列，仅无限服可加专业页并列逻辑）。左右分栏：<b>左主区</b>按来源分组陈列收藏的装备；<b>右侧栏</b>是「去哪打」计划——把心愿折算成要跑的副本和要杀的 boss，按件数从多到少排。</p>
+  <div class="stage">
+    <div class="ui">
+      <div class="ui-title">⭐ 心愿清单 <span class="pill gold">★ 6 件</span><span style="margin-left:auto;font-size:12px;color:var(--txt2)">来自 3 个来源 · 拾取到会提醒你</span><span class="btn" style="margin-left:14px">👑 加入我的毕业装</span></div>
+      <div class="wishpage">
+        <div class="wish-main">
+          <div class="grp">
+            <div class="grp-h"><span class="bar" style="background:#5b9dff"></span>剃刀高地 <span class="arrow">▶</span><span class="lv">等级 38–46</span></div>
+            <div class="lootrow"><div class="icon">🛡️</div><div><div class="iname" style="color:#1e9be0">血色十字盾</div><div class="isub">掉落自 布洛格</div></div><div class="meta">掉率 24%</div><div class="star on">★</div></div>
+            <div class="lootrow"><div class="icon">🗡️</div><div><div class="iname" style="color:#9d5cf0">破坏者之刃</div><div class="isub">掉落自 火眼莫尔甘</div></div><div class="meta">掉率 32%</div><div class="star on">★</div></div>
+            <div class="lootrow"><div class="icon">💎</div><div><div class="iname" style="color:#1e9be0">暗影之眼</div><div class="isub">掉落自 最终 Boss</div></div><div class="meta">掉率 11%</div><div class="star on">★</div></div>
+          </div>
+          <div class="grp">
+            <div class="grp-h"><span class="bar" style="background:var(--gold)"></span>开放世界 <span class="lv">稀有怪 · 野怪 · 任务</span></div>
+            <div class="lootrow"><div class="icon">🪓</div><div><div class="iname" style="color:#f0c75e">巨熊之爪</div><div class="isub">掉落自 稀有：老灰须 · 辛特兰</div></div><div class="meta">掉率 18%</div><div class="star on">★</div></div>
+          </div>
+          <div class="grp">
+            <div class="grp-h"><span class="bar" style="background:#6b7484"></span>任务奖励 · 制造与其他</div>
+            <div class="lootrow"><div class="icon">📜</div><div><div class="iname" style="color:#1e9be0">附魔图纸：十字军</div><div class="isub">任务奖励</div></div><div class="meta"></div><div class="star on">★</div></div>
+          </div>
+        </div>
+        <div class="wish-side">
+          <div class="plan-h">🎯 去哪打 <span class="pill" style="margin-left:auto">3</span></div>
+          <div class="planrow"><span class="pbar" style="background:#5b9dff"></span><div><div class="pname">剃刀高地</div><div class="psub">布洛格, 火眼莫尔甘, 最终 Boss</div></div><span class="cnt">3</span></div>
+          <div class="planrow"><span class="pbar" style="background:var(--gold)"></span><div><div class="pname">老灰须（稀有）</div><div class="psub">辛特兰 · 等级 48–50</div></div><span class="cnt">1</span></div>
+          <div class="planrow"><span class="pbar" style="background:#6b7484"></span><div><div class="pname">任务 / 制造</div><div class="psub">无固定刷点</div></div><span class="cnt">1</span></div>
+          <div class="plan-note">点击条目可直达对应副本页 / 物品页。<br>清空心愿单需 Shift+点击确认，防误删。</div>
+          <div style="display:flex;gap:8px;padding-top:10px"><span class="btn" style="flex:1;justify-content:center">🗑 清空心愿单</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="note">分组顺序 = 副本（按副本列表卡墙的顺序）→ 开放世界 → 任务/制造/其他；组内按 boss 序排。每条目右侧显示该物品在此来源的掉率，与掉落页同口径。</p>
+  </div>
+
+  <!-- ============ 5. 数据结构 ============ -->
+  <h2>⑤ 数据结构与事件流</h2>
+  <div class="stage">
+    <pre><span class="c">-- SavedVariables: DungeonsForeverDB 里加一张表（只存 ID，名字/图标运行期向客户端要——既有口径）</span>
+DB.wishlist = {
+  [<span class="g">16983</span>] = { t = <span class="g">1760000000</span>, inst = <span class="s">"rfk"</span>, boss = <span class="g">3</span> },  <span class="c">-- 收藏时间戳 + 首个已知来源（用于分组兜底）</span>
+  ...
+}
+
+<span class="c">-- 内部事件（仿现有消息总线）</span>
+DF_WISHLIST_CHANGED  <span class="c">-- 收藏/取消/清空时广播 → 掉落页星星、心愿单页、tooltip 同步刷新</span>
+
+<span class="c">-- 分组逻辑：复用 Data_DungeonLoot 已有的「掉落来源」表反查 itemID → (副本, boss 序)</span>
+<span class="c">-- 无副本来源 → 查世界掉落表 → 都没有归「其他」</span></pre>
+  </div>
+
+  <!-- ============ 6. 实施步骤 ============ -->
+  <h2>⑥ 实施步骤（建议两期，一期即完整可用）</h2>
+  <div class="stage">
+    <table>
+      <tr><th style="width:90px">阶段</th><th>内容</th><th style="width:270px">落点文件</th></tr>
+      <tr><td><span class="tag t1">一期 · 1</span></td><td>数据层：<code>DB.wishlist</code> 存储 / Toggle / 清空（Shift 确认）+ <code>DF_WISHLIST_CHANGED</code> 事件</td><td>新文件 <code>Core/WishList.lua</code>（手维护件）</td></tr>
+      <tr><td><span class="tag t1">一期 · 2</span></td><td>掉落页星标：行构建处加右侧星标按钮（hover 淡入 / 收藏常亮金），点击拦截不触发跳转</td><td><code>Core/DungeonUI.lua</code>（已冻结为手维护，可直接改）</td></tr>
+      <tr><td><span class="tag t1">一期 · 3</span></td><td>心愿单页：新页签 + 按来源分组主区 + 「去哪打」侧栏 + 空态引导</td><td>新文件 <code>Core/WishListUI.lua</code> + 主框架页签注册</td></tr>
+      <tr><td><span class="tag t1">一期 · 4</span></td><td>本地化：新增文案按「zhCN 键名即文案」登记，补齐繁体/英文生成链，重跑生成脚本 + toc</td><td><code>gen_zhtw.py</code> / <code>gen_enus.py</code> 扫描名单</td></tr>
+      <tr><td><span class="tag t2">二期 · 5</span></td><td>tooltip 追加行（单次通道守卫内 AddLine）+ 右键菜单项</td><td><code>Core/Hui.lua</code> 管线 / 菜单构建处</td></tr>
+      <tr><td><span class="tag t2">二期 · 6</span></td><td>掉落提醒：<code>LOOT_READY</code> / <code>START_LOOT_ROLL</code> 检查心愿物品，屏幕横幅 + 提示音，15 秒节流；设置页加开关</td><td><code>Core/WishList.lua</code> + 设置弹窗</td></tr>
+    </table>
+  </div>
+
+  <!-- ============ 7. 风险 ============ -->
+  <h2>⑦ 已知坑位预防（写进方案，动工前对照）</h2>
+  <div class="stage">
+    <ul class="risk">
+      <li><b>tooltip 管线不可重入</b>——追加行必须走现有守卫通道，钩子内禁止动帧，防栈爆。</li>
+      <li><b>Titan 同层绘制顺序随机</b>——星标若带边框纹理，边框上 OVERLAY 层、填充上 BORDER 层。</li>
+      <li><b>数据只存 ID</b>——不落物品名/图标（口径：界面名字唯一真源是客户端）。</li>
+      <li><b>来源反查只用静态表</b>——掉落来源反查走 Data_DungeonLoot / Data_AreaMap 同类静态表，不查运行时接口。</li>
+      <li><b>三语链</b>——新 UI 文案必须补进繁/英生成脚本的扫描名单，漏扫 = 对应语言静默缺键。</li>
+      <li><b>行尾纪律</b>——DungeonUI.lua 改后二进制复核行尾，防 AI 编辑工具改掉整文件行尾。</li>
+      <li><b>零孤儿媒体</b>——星标优先用现有 HUI 字形/纹理，新增贴图须有引用并同步登记。</li>
+    </ul>
+  </div>
+
+  <div style="margin-top:44px;text-align:center;color:#a0a8b6;font-size:12px">方案稿 v1 · 2026-10-10 · 确认后按「一期 1→4」顺序动工</div>
+</div>
+
+<script>
+document.querySelectorAll('.star').forEach(function(s){
+  s.addEventListener('click',function(e){
+    e.stopPropagation();
+    s.classList.toggle('on');
+    s.textContent = s.classList.contains('on') ? '★' : '☆';
+    s.title = s.classList.contains('on') ? '从心愿清单移除' : '加入心愿清单';
+  });
+});
+</script>
+</body>
+</html>

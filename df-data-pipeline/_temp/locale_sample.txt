@@ -1,0 +1,20 @@
+== Locales\enUS.lua len=40980
+"百夫长"] = "Centurion"
+L["督军"] = "Warlord"
+L["石头守卫"] = "Stone Guard"
+L["神圣"] = "Holy"
+L["神圣和戒律"] = "Holy & Discipline"
+L["第 %d 周"] = "Week %d"
+L["等级 4 和 10 永远不是某周的上限；第 7 周一次跳两级（等级 11
+== Locales\zhCN.lua len=2595
+  (key missing)
+== Locales\zhTW.lua len=23978
+= "點數"
+L["物品 #%d"] = "物品 #%d"
+L["百夫长"] = "百夫長"
+L["督军"] = "督軍"
+L["石头守卫"] = "石頭守衛"
+L["神圣"] = "神聖"
+L["神圣和戒律"] = "神聖和戒律"
+L["第 %d 周"] = "第 %d 週"
+L["等级 4 和 10 永远不是某周的上限；第 7 周一次跳两级（等级 11 

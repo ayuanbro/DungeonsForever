@@ -1,0 +1,53 @@
+{
+  "screen": [
+    3591,
+    2032
+  ],
+  "frames": [
+    {
+      "visible": true,
+      "type": "Frame",
+      "parents": [],
+      "children_count": 7,
+      "shown": true,
+      "regions_count": 0,
+      "alpha": 1,
+      "protected": true,
+      "mouse": true,
+      "rect": [
+        0,
+        0,
+        3591,
+        2032
+      ],
+      "name": "WorldFrame",
+      "scripts": [
+        "OnUpdate",
+        "OnMouseDown",
+        "OnMouseUp"
+      ],
+      "points": [
+        [
+          "TOPLEFT",
+          null,
+          "TOPLEFT",
+          0,
+          0
+        ],
+        [
+          "BOTTOMRIGHT",
+          null,
+          "BOTTOMRIGHT",
+          0,
+          0
+        ]
+      ],
+      "level": 1,
+      "strata": "WORLD",
+      "size": [
+        1357.2284,
+        768
+      ]
+    }
+  ]
+}

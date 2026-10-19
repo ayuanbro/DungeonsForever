@@ -1,0 +1,40 @@
+=== now ===
+2026-09-30 05:04:42
+=== mtimes ===
+2026-09-30 05:03:53.259180500 +0800 Core/MainFrame.lua
+2026-09-30 05:03:52.697854300 +0800 Core/Core.lua
+2026-09-30 05:03:52.750416300 +0800 Core/LootFilterUI.lua
+2026-09-30 05:03:52.724945800 +0800 Core/LootFilter.lua
+2026-09-30 05:04:01.093377700 +0800 Core/Data/Data_LootFilter.lua
+=== Core vs snap4 ===
+Files /tmp/Core_snap4/Data/Data_ClassGuide.lua and Core/Data/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/Data/Data_LootFilter.lua and Core/Data/Data_LootFilter.lua differ
+Files /tmp/Core_snap4/Data/enUS/Data_ClassGuide.lua and Core/Data/enUS/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/Data/zhTW/Data_ClassGuide.lua and Core/Data/zhTW/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/MainFrame.lua and Core/MainFrame.lua differ
+=== git status (short) ===
+ M Core/Core.lua
+ M Core/Data/Data_DungeonLoot.lua
+ M Core/Data/Data_Dungeons.lua
+ M Core/Data/Data_Explore.lua
+ M Core/Data/enUS/Data_DungeonLoot.lua
+ M Core/Data/enUS/Data_Dungeons.lua
+ M Core/Data/enUS/Data_Explore.lua
+ M Core/Data/zhTW/Data_DungeonLoot.lua
+ M Core/Data/zhTW/Data_Dungeons.lua
+ M Core/Data/zhTW/Data_Explore.lua
+ M Core/DungeonUI.lua
+ M Core/ExploreUI.lua
+ M Core/MainFrame.lua
+ M Core/ProfessionUI.lua
+ M Core/TierUI.lua
+ M DungeonsForever.toc
+?? Core/Data/Data_ClassGuide.lua
+?? Core/Data/Data_LootFilter.lua
+?? Core/Data/enUS/Data_ClassGuide.lua
+?? Core/Data/enUS/Data_LootFilter.lua
+?? Core/Data/zhTW/Data_ClassGuide.lua
+?? Core/Data/zhTW/Data_LootFilter.lua
+?? Core/LootFilter.lua
+?? Core/LootFilterUI.lua
+?? Media/textures/DF_Settings.tga

@@ -1,0 +1,70 @@
+=== 无限副本手册 打包前检  ===
+-- luacheck  exit=1
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:188:121: line is too long (146 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:195:121: line is too long (176 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:211:121: line is too long (142 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:296:121: line is too long (132 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:302:121: line is too long (170 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:319:121: line is too long (136 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:550:121: line is too long (124 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:555:121: line is too long (126 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:580:121: line is too long (248 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:592:121: line is too long (144 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:704:121: line is too long (142 > 120)
+       d:\workspace\DungeonsForever\Locales\zhTW.lua:706:121: line is too long (146 > 120)
+   
+   Total: 22628 warnings / 0 errors in 151 files
+[OK] luacheck 151 文件 0 errors
+-- 残留身份扫描
+[OK] 残留扫描 0 命中
+-- comment_redline  exit=0
+   [OK] 注释红线 0 命中（扫注释行 0 处 / 152 文件）
+-- check_zero_comments  exit=0
+   [OK] 注释零容忍：打包集 0 行注释（152 个文件）
+-- check_mut_anchors  exit=0
+   ==========================================================================
+   变异锚点体检（D:\workspace\DungeonsForever）：共 307 条，异常 0 条
+     ✓ 全部锚点恰好命中 1 次
+-- sync_beta  exit=0
+   [INFO] 源码仓根 d:\workspace\DungeonsForever（打包集 225 个文件）
+   
+   == 目标 D:\Game\World of Warcraft\_classic_beta_\Interface\AddOns\DungeonsForever（来自 client_targets.txt）
+      一致 225 / 需写入 0 / 多余 0
+      [OK] 同步完成：一致 225 / 需写入 0 / 多余 0
+   
+   == 目标 D:\Game\World of Warcraft\_cn_beta_\Interface\AddOns\DungeonsForever（来自 client_targets.txt）
+      一致 225 / 需写入 0 / 多余 0
+      [OK] 同步完成：一致 225 / 需写入 0 / 多余 0
+   [sync_beta] 委托 deploy_to_client.py ['(apply)']
+-- harness TF_BUILD=16001  exit=0
+     [OK ] ★★ ㉒ 灰显关掉 → passed 全清  [[0]]
+     [OK ] ★★ ㉒ 当前段唯一且上限跨着 42（= 下一格；分段随 fc 数据浮动不写死 58/45）  [[45]]
+     [OK ] ★★ ㉒ 当前段行框亮出（bT 可见且只此一行）  [[1]]
+     [OK ] ★★ ㉒ 高亮关掉 → cur 清零、行框全收（不残留）  [[0/0]]
+     [OK ] ★★ ㉒ 离开设置页 → iOS 开关全收（不残留）  [[0]]
+     [OK ] ★ ㉒ 收尾：开关键删净回落默认（全开）
+     [OK ] ★ 切回 5人本 → 专业页隐藏
+     [OK ] ★ 切回 5人本 → 副本页显示且仍是已构建态
+     [OK ] 页面复位时池引用已清空准备重建
+   ========================================================================
+   结论
+   ========================================================================
+   通过 1101 项 / 失败 0 项
+     ✓ 全部通过
+-- package_zip  exit=0
+      + Media/icon/FACTION/FactionIcon_Alliance.tga
+      + Media/icon/FACTION/FactionIcon_Horde.tga
+      + Media/icon/NAV/CrateNav.tga
+      + Media/icon/NAV/SortIcon.tga
+      + Media/textures/DF_Settings.tga
+      + Media/textures/YY_close.tga
+      + Media/textures/arrow.tga
+      + Media/textures/route_arrow.tga
+      + Media/textures/route_dial.tga
+   [OK] ZIP: D:\UGit\打包后\无限副本手册\DungeonsForever1.8.20.zip (225 files)
+   [OK] SHA-256: 55aaf9cb4e377dba742066c04fd9f489e09bb099eac327c34cb080419d518be6
+   [OK] Copied: D:\Game\World of Warcraft\_classic_beta_\Interface\AddOns\DungeonsForever1.8.20.zip
+   [OK] 两份 ZIP 哈希一致
+   [OK] 结构校验通过：225 个条目，顶层为 DungeonsForever/
+
+[PASS] 前检通过并已打包

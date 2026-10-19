@@ -1,0 +1,6 @@
+﻿file | source | beta | match
+Core\LootFilterUI.lua | ada12b51bd60b57ee41592846252bed9 | ada12b51bd60b57ee41592846252bed9 | True
+Core\LootFilter.lua | fb88f6b1da65dbbcbfb100d3b2940a5c | fb88f6b1da65dbbcbfb100d3b2940a5c | True
+Core\Data\Data_LootFilter.lua | 43803fef8ab11cf570567aaca33ced1f | 43803fef8ab11cf570567aaca33ced1f | True
+Core\Data\zhTW\Data_LootFilter.lua | 212df23c62e619fe1ef23fe85d34c116 | 212df23c62e619fe1ef23fe85d34c116 | True
+DungeonsForever.toc | 5675e792d9b03619417989d978d2a3e9 | 5675e792d9b03619417989d978d2a3e9 | True

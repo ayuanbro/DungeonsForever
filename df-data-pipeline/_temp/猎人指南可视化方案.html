@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DungeonsForever · 猎人指南 · 可视化方案（职业指南内）</title>
+<style>
+  :root{
+    --l0:#0A0C10; --l1:#10131A; --l2:#161A22; --l3:#202532; --l4:#2B3140; --l5:#38404F;
+    --border:rgba(255,255,255,.10); --ctrl:rgb(74,82,99);
+    --gold:rgb(255,209,0); --text:rgb(224,224,224); --grey:rgb(140,140,140);
+    --dim:rgb(161,161,161); --white:#fff; --green:rgb(64,217,89);
+    --bg:#F4F5F7; --ink:#1D2129; --ink2:#4E5969; --line:#E5E6EB;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;font-size:14px;line-height:1.6}
+  header{padding:26px 28px 14px;border-bottom:1px solid var(--line);background:#fff}
+  header h1{margin:0 0 6px;font-size:20px;font-weight:500}
+  header p{margin:0;color:var(--ink2);font-size:13px}
+  header .cred{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  header .cred span{font-size:12px;padding:2px 8px;border:1px solid var(--line);border-radius:4px;color:var(--ink2);background:#FAFAFB}
+  nav{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);
+      padding:10px 28px;display:flex;gap:8px;flex-wrap:wrap}
+  nav button{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);
+      border-radius:6px;background:#fff;color:var(--ink2);cursor:pointer}
+  nav button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  main{padding:22px 28px 60px;max-width:1140px;margin:0 auto}
+  .mock{display:none}
+  .mock.on{display:block}
+  .mock h2{font-size:16px;font-weight:500;margin:0 0 4px}
+  .mock .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  .stageWrap{overflow:hidden;border:1px solid var(--line);border-radius:10px;background:#20242C}
+  .stage{transform-origin:top left}
+  .specs{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+  .specs table{width:100%;border-collapse:collapse;font-size:13px}
+  .specs th{text-align:left;padding:9px 14px;background:#FAFAFB;border-bottom:1px solid var(--line);
+      font-weight:500;color:var(--ink2);font-size:12px;letter-spacing:.03em}
+  .specs td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  .specs tr:last-child td{border-bottom:0}
+  .specs td:first-child{color:var(--ink2);width:150px;white-space:nowrap}
+  code{background:#F2F3F5;border-radius:3px;padding:1px 5px;font-size:12px;
+       font-family:Consolas,Monaco,monospace;color:#B4362F}
+
+  .win{width:1000px;height:708px;background:var(--l0);position:relative;overflow:hidden;
+       border-radius:6px;font-family:"Microsoft YaHei",sans-serif;color:var(--text)}
+  .win .title{position:absolute;left:18px;top:4px;font-size:16px;color:var(--gold)}
+  .win .title small{margin-left:10px;font-size:12px;color:var(--grey)}
+  .win .close{position:absolute;right:12px;top:10px;width:28px;height:28px;border:1px solid var(--ctrl);
+       border-radius:6px;background:var(--l2);color:var(--dim);font-size:15px;
+       display:flex;align-items:center;justify-content:center}
+  .rail{position:absolute;left:472px;top:24px;transform:translateX(-50%);display:flex;height:20px}
+  .rail .t{width:82px;height:20px;font-size:14px;line-height:18px;text-align:center;
+       color:var(--grey);border:1px solid transparent;border-radius:6px}
+  .rail .t.on{background:var(--l4);border-color:rgba(255,209,0,.75);color:var(--white)}
+  .panel{position:absolute;left:20px;top:44px;width:960px;height:648px;background:var(--l0)}
+  .card{position:absolute;background:var(--l1);border:1px solid var(--border);border-radius:6px}
+
+  .sec{position:absolute;font-size:16px;color:var(--white)}
+  .rule{position:absolute;height:1px;background:rgba(255,255,255,.13)}
+  .lbl{position:absolute;font-size:14px;color:var(--grey)}
+  .lbl.b{color:var(--dim)}
+  .lbl.w{color:var(--white)}
+  .lbl.g{color:var(--gold)}
+  .lbl.sm{font-size:12px}
+
+  .cap{position:absolute;height:20px;line-height:18px;font-size:14px;text-align:center;
+       border:1px solid var(--ctrl);border-radius:6px;background:var(--l2);color:var(--grey)}
+  .cap.on{background:var(--l4);border-color:rgba(255,209,0,.75);color:var(--white)}
+  .etab{position:absolute;height:24px;line-height:22px;font-size:14px;text-align:center;
+       border:1px solid var(--ctrl);border-radius:6px;background:var(--l2);color:var(--grey)}
+  .etab.on{background:var(--l4);border-color:rgba(255,209,0,.75);color:var(--white)}
+  .btn{position:absolute;height:24px;line-height:22px;font-size:14px;text-align:center;
+       border:1px solid var(--ctrl);border-radius:6px;background:var(--l2);color:var(--dim)}
+  .chip{position:absolute;height:14px;line-height:12px;font-size:12px;text-align:center;
+        border:1px solid var(--border);border-radius:4px;background:var(--l3);color:#fff;padding:0 3px}
+  .fld{position:absolute;height:24px;line-height:22px;font-size:14px;padding:0 8px;
+       border:1px solid var(--ctrl);border-radius:6px;background:var(--l2);color:var(--grey)}
+  .row{position:absolute;background:var(--l2);border:1px solid var(--border);border-radius:6px}
+  .row.hov{background:var(--l4)}
+  .ico{position:absolute;border:1px solid var(--border);border-radius:6px;background:var(--l3);
+       display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:12px}
+  .bar{position:absolute;border-radius:3px;background:var(--l3);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--gold)}
+  .track{position:absolute;width:7px;border-radius:4px;background:var(--l2)}
+  .thumb{position:absolute;width:5px;border-radius:3px;background:var(--l4)}
+  .model{position:absolute;background:var(--l0);border:1px solid var(--border);border-radius:6px;
+       display:flex;align-items:center;justify-content:center;color:#3A4150;font-size:13px}
+  .flow{position:absolute;font-size:12px;color:#F0C869;background:rgba(255,209,0,.10);
+        border:1px solid rgba(255,209,0,.45);border-radius:4px;padding:1px 6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>猎人指南 · 可视化方案（全部做在职业指南内）</h1>
+  <p>全部内容承载于 <b>职业指南页 · 猎人专精 · 「宠物知识」板块</b>，不新增任何独立页。严格按 DungeonsForever 现有界面 1:1 绘制：窗口 1000×708、内容区 960、外缘 <code>PAGE_INSET 12</code>、卡内衬 <code>GUTTER 8</code>、胶囊页签 82×20、字号 16/14、按钮高 24、L0–L5 色阶。</p>
+  <div class="cred">
+    <span>窗口 1000 × 708</span><span>内容区 960 × 648</span>
+    <span>左导航卡 164×628</span><span>内容卡 764×628</span>
+    <span>顶卡 16–150</span><span>子页签行 158–182</span><span>视口 190–628</span>
+    <span>卡片底 L1 #10131A</span><span>内卡 L2 #161A22</span><span>行内卡 L3 #202532</span>
+    <span>悬停 L4 #2B3140</span><span>金 #FFD100</span>
+    <span>写操作已去除</span><span>外部导出已砍掉</span><span>升级预览保留</span>
+  </div>
+</header>
+
+<nav id="nav"></nav>
+<main id="stage"></main>
+
+<script>
+const TABS = ["5人本","团本","专业","探索","藏品","声望","BIS配装","职业指南","PvP","装备库"];
+
+function shell(body){
+  const rail = TABS.map(t=>`<div class="t${t==="职业指南"?" on":""}">${t}</div>`).join("");
+  return `<div class="stage">
+    <div class="win">
+      <div class="title">无限副本手册<small>1.8.12</small></div>
+      <div class="close">×</div>
+      <div class="rail">${rail}</div>
+      <div class="panel">${body}</div>
+    </div>
+  </div>`;
+}
+
+function tierNav(){
+  const classes = ["战士","圣骑士","猎人","潜行者","牧师","萨满祭司","法师","术士","德鲁伊"];
+  let h = `<div class="card" style="left:12px;top:8px;width:164px;height:628px">`;
+  h += `<div class="lbl b" style="left:8px;top:10px">指南</div>`;
+  h += `<div class="row" style="left:8px;top:30px;width:148px;height:26px"></div>`;
+  h += `<div class="lbl" style="left:16px;top:34px">职业排行</div>`;
+  h += `<div class="lbl b" style="left:8px;top:66px">专精指南</div>`;
+  classes.forEach((c,i)=>{
+    const y = 92 + i*30, on = c==="猎人";
+    h += `<div class="row${on?" hov":""}" style="left:8px;top:${y}px;width:148px;height:26px"></div>`;
+    h += `<div class="lbl${on?" w":""}" style="left:16px;top:${y+4}px">${c}</div>`;
+  });
+  h += `</div>`;
+  return h;
+}
+
+const OX = 184, OY = 8;
+function tierRight(subKey, contentHtml){
+  const specs = ["野兽控制","射击","生存"];
+  const secs = ["改动速览","定位评估","优缺点","新手上手","职业系统","种族推荐","专业推荐","宠物知识"];
+  const subs = ["科族","图鉴","技能","宠物","进阶","驯服","服务","笔记"];
+
+  let h = `<div class="card" style="left:${OX}px;top:${OY}px;width:764px;height:628px">`;
+
+  h += `<div class="card" style="left:8px;top:8px;width:748px;height:134px;background:var(--l2)">`;
+  specs.forEach((s,i)=>{
+    const w = 70, x = 16 + i*(w+8);
+    h += `<div class="cap${i===1?" on":""}" style="left:${x}px;top:16px;width:${w}px;height:22px">${s}</div>`;
+  });
+  h += `<div class="lbl sm" style="right:10px;top:20px">3 个专精 · 更新 2026/09/25</div>`;
+  h += `<div class="ico" style="left:16px;top:60px;width:44px;height:44px;font-size:16px">猎</div>`;
+  h += `<div class="lbl w" style="left:70px;top:50px;font-size:16px">野兽控制</div>`;
+  h += `<div class="lbl" style="left:70px;top:74px;font-size:13px">远程物理输出 · 宠物协同</div>`;
+  h += `<div class="lbl g" style="right:12px;top:52px;font-size:14px">★ S 级</div>`;
+  let sx = 16;
+  secs.forEach((s)=>{
+    const w = (s.length===3) ? 66 : 80;
+    const on = (s==="宠物知识");
+    h += `<div class="etab${on?" on":""}" style="left:${sx}px;top:110px;width:${w}px">${s}</div>`;
+    sx += w + 8;
+  });
+  h += `</div>`;
+
+  let bx = 8;
+  subs.forEach((s,i)=>{
+    const w = 86;
+    h += `<div class="etab${i===subKey?" on":""}" style="left:${bx}px;top:150px;width:${w}px">${s}</div>`;
+    bx += w + 6;
+  });
+
+  h += contentHtml;
+  h += `</div>`;
+  return h;
+}
+
+const VP = {top:182, bottom:620, left:8, right:756};
+function vp(inner){
+  return `<div class="card" style="left:${VP.left}px;top:${VP.top}px;width:${VP.right-VP.left}px;height:${VP.bottom-VP.top}px;background:var(--l1)">${inner}</div>`;
+}
+const W = VP.right - VP.left;
+
+const L = {};
+
+L.overview = () => {
+  let inner = `<div class="lbl b" style="left:12px;top:10px">职业指南页 · 猎人专精 · 「宠物知识」板块（第 8 个板块页签）</div>`;
+  const layers = [
+    ["1", "主窗胶囊页签", "职业指南", "已存在 · 第 8 键", 0],
+    ["2", "左列职业导航", "职业排行 + 9 职业", "已存在", 0],
+    ["3", "专精页签", "野兽控制 / 射击 / 生存", "已存在", 0],
+    ["4", "板块页签", "改动速览 … 宠物知识", "新增第 8 枚", 1],
+    ["5", "板块内子页签", "科族 图鉴 技能 宠物 进阶 驯服 服务 笔记", "全新 · 本次方案", 1],
+  ];
+  layers.forEach((r,i)=>{
+    const y = 40 + i*52;
+    inner += `<div class="row${r[4]?" hov":""}" style="left:12px;top:${y}px;width:${W-24}px;height:46px"></div>`;
+    inner += `<div class="lbl g" style="left:24px;top:${y+14}px;font-size:16px">${r[0]}</div>`;
+    inner += `<div class="lbl w" style="left:52px;top:${y+8}px">${r[1]}</div>`;
+    inner += `<div class="lbl sm" style="left:52px;top:${y+26}px">${r[2]}</div>`;
+    if(r[4]) inner += `<div class="flow" style="left:588px;top:${y+13}px">${r[3]}</div>`;
+    else inner += `<div class="lbl sm" style="left:588px;top:${y+15}px">${r[3]}</div>`;
+  });
+  const y2 = 40 + 5*52 + 6;
+  inner += `<div class="lbl sm" style="left:12px;top:${y2}px;width:${W-24}px">8 个子视图承载原手册的 7 个页面：科族（宠物页·科族）· 图鉴（含特殊 / 稀有筛选）· 技能（训练指南）· 宠物（我的宠物）· 进阶（下一步 + 升级预览）· 驯服 · 服务（寻找）· 笔记。</div>`;
+  return shell(tierNav() + tierRight(0, vp(inner)));
+};
+
+L.fam = () => {
+  const fams = [
+    ["狼","狂怒嚎叫","伤害 +0","肉类"],
+    ["猫科","潜行","伤害 +10","肉类、鱼类"],
+    ["熊","横扫","伤害 -9 · 生命 +8","杂食"],
+    ["陆行鸟","尘雾","破甲 · PvE 强","奶酪、水果"],
+    ["乌龟","甲壳护盾","护甲 +13","鱼类、蘑菇"],
+    ["迅猛龙","凶猛撕割","伤害 +10","肉类"],
+    ["风蛇","闪电吐息","伤害 +7","鱼类、面包"],
+    ["野猪","冲锋","伤害 -10 · 护甲 +9","杂食"],
+    ["蝎子","蝎毒","伤害 -6 · 护甲 +10","肉类"],
+    ["蜘蛛","结网","伤害 +7","肉类"],
+    ["猩猩","雷霆践踏","伤害 +2 · 生命 +4","蘑菇、水果"],
+    ["鳄鱼","肢解","护甲 +10","肉类、鱼类"],
+    ["狐狸","戏法之舞","伤害 +0 · 护甲 +5","肉类"],
+    ["土狼","断腱","护甲 +5","肉类、水果"],
+    ["螃蟹","钳击","伤害 -5 · 护甲 +13","鱼类、面包"],
+    ["蝙蝠","音爆","伤害 +7","蘑菇、水果"],
+    ["食腐鸟","挫志尖啸","护甲 +5","肉类、鱼类"],
+    ["猛禽","布雷！","伤害 +7","肉类"],
+  ];
+  const AVAIL = W - 24, COLS = 4, GAP = 8;
+  const CW = Math.floor((AVAIL - (COLS-1)*GAP)/COLS);
+  let inner = `<div class="lbl b" style="left:12px;top:10px">宠物家族一览 · 共 18 族 · 点卡片查看特有技能与代表野兽</div>`;
+  fams.forEach((f,i)=>{
+    const col = i%COLS, row = Math.floor(i/COLS);
+    const x = 12 + col*(CW+GAP), y = 34 + row*74;
+    inner += `<div class="row" style="left:${x}px;top:${y}px;width:${CW}px;height:66px"></div>`;
+    inner += `<div class="lbl g" style="left:${x+10}px;top:${y+7}px">${f[0]}</div>`;
+    inner += `<div class="lbl w" style="left:${x+10}px;top:${y+27}px;font-size:12px">${f[1]}</div>`;
+    inner += `<div class="lbl" style="left:${x+10}px;top:${y+44}px;font-size:12px">${f[2]}</div>`;
+    inner += `<div class="lbl sm" style="left:${x+10}px;top:${y+56}px;color:#5F6470">${f[3]}</div>`;
+  });
+  const dy = 34 + 5*74;
+  inner += `<div class="row hov" style="left:12px;top:${dy}px;width:${W-24}px;height:70px"></div>`;
+  inner += `<div class="lbl g" style="left:24px;top:${dy+8}px">猫科 · 潜行</div>`;
+  inner += `<div class="chip" style="left:118px;top:${dy+10}px;background:rgb(59,109,17)">伤害 +10</div>`;
+  inner += `<div class="chip" style="left:194px;top:${dy+10}px;background:#3A3F4A">生命 -2</div>`;
+  inner += `<div class="lbl" style="left:24px;top:${dy+34}px;width:${W-48}px;font-size:13px">非战斗状态可激活；从潜行发起的第一次攻击获得额外伤害加成。练级与 PvP 起手核心。技能名与效果数值运行期问客户端。</div>`;
+  return shell(tierNav() + tierRight(0, vp(inner)));
+};
+
+L.best = () => {
+  const rows = [
+    ["断牙","猫科 · 60 级 · 攻速 2.0 · 黑石塔","稀有"],
+    ["血斧座狼","狼 · 56-57 级 · 攻速 2.0 · 黑石塔","普通"],
+    ["冬泉谷尖啸者","猛禽 · 57-59 级 · 攻速 1.2 · 冬泉谷","普通"],
+    ["铁鬃熊","熊 · 41-42 级 · 攻速 2.0 · 菲拉斯","普通"],
+    ["暗牙蜘蛛","蜘蛛 · 35-36 级 · 攻速 2.0 · 尘泥沼泽","普通"],
+    ["班加拉什国王","猩猩 · 43 级 · 攻速 2.0 · 荆棘谷","稀有"],
+    ["霜刃豹","猫科 · 55-57 级 · 攻速 1.5 · 冬泉谷","普通"],
+    ["铁背","乌龟 · 51 级 · 攻速 2.0 · 辛特兰","稀有精英"],
+  ];
+  let inner = `<div class="fld" style="left:12px;top:10px;width:200px">搜索野兽名…</div>`;
+  inner += `<div class="btn" style="left:220px;top:10px;width:56px">清空</div>`;
+  inner += `<div class="cap on" style="left:290px;top:12px">全部</div>`;
+  inner += `<div class="cap" style="left:352px;top:12px">特殊</div>`;
+  inner += `<div class="cap" style="left:414px;top:12px">稀有</div>`;
+  inner += `<div class="lbl sm" style="left:490px;top:16px">共 660 只 · 153 稀有 · 60 区域</div>`;
+  inner += `<div class="btn" style="right:12px;top:10px;width:76px">排序：等级</div>`;
+  rows.forEach((r,i)=>{
+    const y = 46 + i*56;
+    inner += `<div class="row" style="left:12px;top:${y}px;width:${W-44}px;height:50px"></div>`;
+    inner += `<div class="lbl w" style="left:24px;top:${y+8}px">${r[0]}</div>`;
+    inner += `<div class="lbl sm" style="left:24px;top:${y+29}px">${r[1]}</div>`;
+    const bg = r[2]==="普通" ? "#3A3F4A" : (r[2]==="稀有" ? "rgb(24,95,165)" : "rgb(153,60,29)");
+    inner += `<div class="chip" style="right:76px;top:${y+18}px;background:${bg}">${r[2]}</div>`;
+    inner += `<div class="btn" style="right:28px;top:${y+13}px;width:44px;height:24px;line-height:22px">详情</div>`;
+  });
+  inner += `<div class="track" style="right:10px;top:44px;height:382px"></div>`;
+  inner += `<div class="thumb" style="right:11px;top:48px;height:120px"></div>`;
+  return shell(tierNav() + tierRight(1, vp(inner)));
+};
+
+L.skill = () => {
+  let inner = `<div class="btn" style="left:12px;top:10px;width:28px">‹</div>`;
+  for(let i=0;i<9;i++){
+    const x = 48 + i*54;
+    inner += `<div class="ico" style="left:${x}px;top:4px;width:42px;height:40px"></div>`;
+  }
+  inner += `<div class="btn" style="left:${W-40}px;top:10px;width:28px">›</div>`;
+  inner += `<div class="rule" style="left:12px;top:58px;width:${W-24}px"></div>`;
+  inner += `<div class="lbl w" style="left:12px;top:68px;font-size:16px">撕咬</div>`;
+  inner += `<div class="chip" style="left:70px;top:71px;background:rgb(59,109,17)">驯服习得</div>`;
+  inner += `<div class="lbl" style="left:12px;top:96px">适用科族：多数地面宠物科族</div>`;
+  inner += `<div class="lbl b" style="left:12px;top:126px">等级</div>`;
+  inner += `<div class="lbl b" style="left:96px;top:126px">门槛</div>`;
+  inner += `<div class="lbl b" style="left:176px;top:126px">训练点</div>`;
+  inner += `<div class="lbl b" style="left:266px;top:126px">代表教学野兽</div>`;
+  const ranks = [
+    ["R8","56","25","血斧座狼（56-57 · 黑石塔）"],
+    ["R7","48","21","铁背（51 · 辛特兰）"],
+    ["R6","40","17","死击狼蛛（40-41 · 悲伤沼泽）"],
+    ["R5","32","13","暗牙蜘蛛（35-36 · 尘泥沼泽）"],
+    ["R4","24","10","黑色劫掠者（24-25 · 暮色森林）"],
+    ["R3","16","7","血鼻座狼（16-17 · 银松森林）"],
+    ["R2","8","4","潜行者（9-10 · 艾尔文森林）"],
+    ["R1","1","1","褴褛拾荒者（2-3 · 提瑞斯法林地）"],
+  ];
+  ranks.forEach((r,i)=>{
+    const y = 148 + i*36;
+    inner += `<div class="row" style="left:12px;top:${y}px;width:${W-44}px;height:32px"></div>`;
+    inner += `<div class="lbl w" style="left:22px;top:${y+7}px">${r[0]}</div>`;
+    inner += `<div class="lbl" style="left:96px;top:${y+7}px">${r[1]}</div>`;
+    inner += `<div class="lbl" style="left:176px;top:${y+7}px">${r[2]}</div>`;
+    inner += `<div class="lbl b" style="left:266px;top:${y+7}px">${r[3]}</div>`;
+    inner += `<div class="btn" style="right:28px;top:${y+4}px;width:44px;height:24px;line-height:22px">图鉴</div>`;
+  });
+  inner += `<div class="track" style="right:10px;top:146px;height:280px"></div>`;
+  inner += `<div class="thumb" style="right:11px;top:150px;height:80px"></div>`;
+  return shell(tierNav() + tierRight(2, vp(inner)));
+};
+
+L.pet = () => {
+  let inner = `<div class="sec" style="left:12px;top:8px;font-size:16px">当前伙伴</div>`;
+  inner += `<div class="rule" style="left:12px;top:34px;width:${W-24}px"></div>`;
+  inner += `<div class="ico" style="left:12px;top:44px;width:58px;height:58px;font-size:22px">宠</div>`;
+  inner += `<div class="lbl w" style="left:84px;top:46px;font-size:16px">断牙</div>`;
+  inner += `<div class="lbl" style="left:84px;top:72px;font-size:13px">等级 60 · 猫科 · 忠诚度 6</div>`;
+  inner += `<div class="lbl g" style="left:84px;top:94px;font-size:13px">经验 12,480 / 26,700（46%）</div>`;
+  inner += `<div class="bar" style="left:84px;top:118px;width:250px;height:6px"><i style="width:46%"></i></div>`;
+  inner += `<div class="model" style="left:360px;top:44px;width:376px;height:86px">宠物模型视口（SetUnit("pet")）</div>`;
+  inner += `<div class="sec" style="left:12px;top:142px;font-size:16px">宠物状态</div>`;
+  inner += `<div class="rule" style="left:12px;top:168px;width:${W-24}px"></div>`;
+  const st = [["快乐度","满足（+25% 伤害）","83%"],["忠诚度","6 级 / 6 级","100%"],["训练点数","148 点可用","62%"],["食物","肉类、鱼类",""]];
+  st.forEach((s,i)=>{
+    const y = 178 + i*32;
+    inner += `<div class="row" style="left:12px;top:${y}px;width:${W-24}px;height:28px"></div>`;
+    inner += `<div class="lbl b" style="left:22px;top:${y+5}px">${s[0]}</div>`;
+    inner += `<div class="lbl w" style="left:150px;top:${y+5}px">${s[1]}</div>`;
+    if(s[2]) inner += `<div class="lbl" style="left:${W-70}px;top:${y+5}px">${s[2]}</div>`;
+  });
+  inner += `<div class="sec" style="left:12px;top:318px;font-size:16px">宠物技能</div>`;
+  inner += `<div class="rule" style="left:12px;top:344px;width:${W-24}px"></div>`;
+  for(let i=0;i<9;i++){
+    const x = 12 + i*52;
+    inner += `<div class="ico" style="left:${x}px;top:354px;width:44px;height:44px"></div>`;
+    inner += `<div class="lbl sm" style="left:${x}px;top:402px;width:44px;text-align:center">R${8-i}</div>`;
+  }
+  inner += `<div class="lbl" style="left:488px;top:358px;width:248px;font-size:13px">选中技能后显示等级效果与可学来源</div>`;
+  inner += `<div class="lbl sm" style="left:12px;top:424px;width:${W-24}px">无激活宠物时显示空态提示，不建模型视口。状态值为实时读数，OnUpdate 节流 1 秒。</div>`;
+  return shell(tierNav() + tierRight(3, vp(inner)));
+};
+
+L.adv = () => {
+  let inner = `<div class="sec" style="left:12px;top:8px;font-size:16px">下一个宠物任务</div>`;
+  inner += `<div class="rule" style="left:12px;top:34px;width:${W-24}px"></div>`;
+  inner += `<div class="lbl w" style="left:12px;top:44px;font-size:16px">教你的宠物学习「撕咬 等级 8」</div>`;
+  inner += `<div class="lbl" style="left:12px;top:70px;width:${W-24}px;font-size:13px">当前宠物已学会撕咬 等级 6，下一个门槛为 56 级；你已达到该等级，可前往黑石塔狩猎血斧座狼。</div>`;
+  inner += `<div class="lbl g" style="left:12px;top:104px;font-size:13px">预期提升：技能伤害 +18%</div>`;
+  inner += `<div class="sec" style="left:12px;top:132px;font-size:16px">升级预览 · 寄存宠物</div>`;
+  inner += `<div class="rule" style="left:12px;top:158px;width:${W-24}px"></div>`;
+  inner += `<div class="lbl b" style="left:12px;top:168px;font-size:12px">宠物</div>`;
+  inner += `<div class="lbl b" style="left:180px;top:168px;font-size:12px">技能</div>`;
+  inner += `<div class="lbl b" style="left:340px;top:168px;font-size:12px">当前</div>`;
+  inner += `<div class="lbl b" style="left:440px;top:168px;font-size:12px">可升级至</div>`;
+  inner += `<div class="lbl b" style="left:560px;top:168px;font-size:12px">状态</div>`;
+  const pv = [
+    ["断牙","撕咬","R6","R8","可升级",1],
+    ["鲁伯斯","爪击","R5","R7","可升级",1],
+    ["洛卡鱼人","突进","R3","R3","已达上限",0],
+    ["雪色狮王","低吼","R4","R6","可升级",1],
+    ["铁喙猛禽","俯冲","R2","R2","已达上限",0],
+    ["暗影狐","潜行","R1","R4","可升级",1],
+  ];
+  pv.forEach((r,i)=>{
+    const y = 190 + i*36;
+    inner += `<div class="row" style="left:12px;top:${y}px;width:${W-24}px;height:32px"></div>`;
+    inner += `<div class="lbl w" style="left:22px;top:${y+7}px">${r[0]}</div>`;
+    inner += `<div class="lbl b" style="left:180px;top:${y+7}px">${r[1]}</div>`;
+    inner += `<div class="lbl" style="left:340px;top:${y+7}px">${r[2]}</div>`;
+    inner += `<div class="lbl" style="left:440px;top:${y+7}px">${r[3]}</div>`;
+    inner += `<div class="chip" style="left:560px;top:${y+9}px;${r[4]?"background:rgb(59,109,17)":"background:#3A3F4A"}">${r[4]}</div>`;
+  });
+  inner += `<div class="rule" style="left:12px;top:418px;width:${W-24}px"></div>`;
+  inner += `<div class="lbl sm" style="left:12px;top:428px;width:${W-24}px">宠物升级或学会新技能时自动重算。寄存宠物的技能快照在每次召唤时记录（唯一新增存储点）。</div>`;
+  return shell(tierNav() + tierRight(4, vp(inner)));
+};
+
+L.tame = () => {
+  let inner = `<div class="lbl w" style="left:12px;top:10px">猎人等级 60 · 现有 5 项驯服习得技能可用</div>`;
+  const rows = [
+    ["撕咬 R8","56","血斧座狼","黑石塔"],
+    ["爪击 R8","56","冬泉谷尖啸者","冬泉谷"],
+    ["低吼 R7","58","血斧座狼","黑石塔"],
+    ["畏缩 R8","56","铁背","辛特兰"],
+    ["高级耐力 R4","55","铁鬃熊","菲拉斯"],
+    ["自然护甲 R4","56","棘刺爬行者","希利苏斯"],
+    ["突进 R3","42","霜刃豹","冬泉谷"],
+    ["雷霆践踏 R2","48","班加拉什国王","荆棘谷"],
+    ["尘雾 R1","44","草原陆行鸟","莫高雷"],
+  ];
+  rows.forEach((r,i)=>{
+    const y = 44 + i*44;
+    inner += `<div class="row" style="left:12px;top:${y}px;width:${W-44}px;height:40px"></div>`;
+    inner += `<div class="ico" style="left:22px;top:${y+6}px;width:28px;height:28px"></div>`;
+    inner += `<div class="lbl w" style="left:60px;top:${y+9}px">${r[0]}</div>`;
+    inner += `<div class="lbl" style="left:230px;top:${y+9}px">等级 ${r[1]}</div>`;
+    inner += `<div class="lbl b" style="left:340px;top:${y+9}px">来源：${r[2]}</div>`;
+    inner += `<div class="lbl" style="left:540px;top:${y+9}px">${r[3]}</div>`;
+    inner += `<div class="btn" style="right:28px;top:${y+8}px;width:44px;height:24px;line-height:22px">图鉴</div>`;
+  });
+  inner += `<div class="track" style="right:10px;top:42px;height:384px"></div>`;
+  inner += `<div class="thumb" style="right:11px;top:46px;height:120px"></div>`;
+  inner += `<div class="lbl sm" style="left:12px;top:436px;width:${W-24}px">列表随猎人等级变化，进页重算，不缓存。</div>`;
+  return shell(tierNav() + tierRight(5, vp(inner)));
+};
+
+L.find = () => {
+  let inner = `<div class="lbl" style="left:12px;top:12px">当前区域：冬泉谷</div>`;
+  const f = [["猎人训练师",1],["宠物训练师",0],["兽栏",0]];
+  let fx = 12;
+  f.forEach(t=>{
+    inner += `<div class="cap${t[1]?" on":""}" style="left:${fx}px;top:36px;width:110px">${t[0]}</div>`;
+    fx += 118;
+  });
+  inner += `<div class="rule" style="left:12px;top:72px;width:${W-24}px"></div>`;
+  const groups = [
+    ["冬泉谷", [["永望镇 · 猎人训练师","61.2, 38.4"],["永望镇 · 宠物训练师","60.8, 37.9"],["霜刃石 · 兽栏管理员","52.4, 46.1"]]],
+    ["辛特兰", [["鹰巢山 · 猎人训练师","15.2, 47.8"],["鹰巢山 · 兽栏管理员","14.6, 48.3"]]],
+  ];
+  let y = 84;
+  groups.forEach(g=>{
+    inner += `<div class="lbl b" style="left:12px;top:${y}px;font-size:12px">${g[0]}（${g[1].length} 个坐标点）</div>`;
+    y += 22;
+    g[1].forEach(r=>{
+      inner += `<div class="row" style="left:12px;top:${y}px;width:${W-44}px;height:36px"></div>`;
+      inner += `<div class="lbl w" style="left:22px;top:${y+8}px">${r[0]}</div>`;
+      inner += `<div class="lbl" style="left:470px;top:${y+8}px">${r[1]}</div>`;
+      inner += `<div class="btn" style="left:${W-76}px;top:${y+6}px;width:60px;height:24px;line-height:22px">定位</div>`;
+      y += 40;
+    });
+    y += 6;
+  });
+  inner += `<div class="rule" style="left:12px;top:${y+4}px;width:${W-24}px"></div>`;
+  inner += `<div class="lbl sm" style="left:12px;top:${y+14}px;width:${W-24}px">「记录 NPC」写操作已按你的决定去掉，本视图只读展示内置服务商坐标，不写新存储。</div>`;
+  return shell(tierNav() + tierRight(6, vp(inner)));
+};
+
+L.notes = () => {
+  let inner = `<div class="lbl w" style="left:12px;top:10px">已发现 128 只野兽 · 12 个科族 · 覆盖 9 个区域</div>`;
+  inner += `<div class="lbl sm" style="left:12px;top:34px;width:${W-24}px">记录通过野兽知识观察或成功驯服发现，仅保存在本地。</div>`;
+  inner += `<div class="rule" style="left:12px;top:58px;width:${W-24}px"></div>`;
+  const rows = [
+    ["断牙","猫科 · 60 级 · 黑石塔","已驯服"],
+    ["血斧座狼","狼 · 56-57 级 · 黑石塔","已观察"],
+    ["冬泉谷尖啸者","猛禽 · 57-59 级 · 冬泉谷","已驯服"],
+    ["铁鬃熊","熊 · 41-42 级 · 菲拉斯","已观察"],
+    ["暗牙蜘蛛","蜘蛛 · 35-36 级 · 尘泥沼泽","已驯服"],
+    ["班加拉什国王","猩猩 · 43 级 · 荆棘谷","已观察"],
+    ["霜刃豹","猫科 · 55-57 级 · 冬泉谷","已驯服"],
+    ["铁背","乌龟 · 51 级 · 辛特兰","已观察"],
+  ];
+  rows.forEach((r,i)=>{
+    const y = 70 + i*44;
+    inner += `<div class="row" style="left:12px;top:${y}px;width:${W-44}px;height:40px"></div>`;
+    inner += `<div class="lbl w" style="left:24px;top:${y+6}px">${r[0]}</div>`;
+    inner += `<div class="lbl sm" style="left:24px;top:${y+24}px">${r[1]}</div>`;
+    inner += `<div class="chip" style="left:${W-104}px;top:${y+12}px;${r[2]==="已驯服"?"background:rgb(59,109,17)":"background:#3A3F4A"}">${r[2]}</div>`;
+  });
+  inner += `<div class="track" style="left:${W-22}px;top:68px;height:358px"></div>`;
+  inner += `<div class="thumb" style="left:${W-21}px;top:72px;height:110px"></div>`;
+  inner += `<div class="lbl sm" style="left:12px;top:436px;width:${W-24}px">网站 / 导出按钮组已砍掉，只保留本地已发现列表。</div>`;
+  return shell(tierNav() + tierRight(7, vp(inner)));
+};
+
+const SPEC = {
+  overview: [["落点","职业指南页 · 猎人专精 · 「宠物知识」板块（第 8 枚板块页签）"],
+    ["页内层数","主窗胶囊页签 → 左列职业导航 → 专精页签 → 板块页签 → 板块内子页签，共 5 层"],
+    ["顶卡","16–150（高 134）：专精页签行 24–46 / hero 54–110 / 板块页签行 118–142"],
+    ["子页签行","158–182（高 24），8 枚，宽 86 + 间距 6 = 730 ≤ 748−16"],
+    ["视口","190–628（高 438），左右 192–940（宽 748），滚动条右缘 +7"],
+    ["新增常量","TT.SEC_TITLE 增 pets；子页签行常量链挂在 SEC_TOP 之后"]],
+  fam: [["子视图","科族 · 对应原手册「宠物页 · 科族」"],
+    ["布局","4 列家族卡墙 + 底部详情条"],
+    ["卡墙","列宽 floor((AVAIL−(COLS−1)×GAP)/COLS) 反算，AVAIL = 748−24，禁写死"],
+    ["家族卡","66 高：家族名（14 金）/ 特有技能（12 白）/ 属性修正（12 灰）/ 食物（12 暗）"],
+    ["详情条","L4 态 70 高：技能名 + 语义徽章 + 说明"],
+    ["数据","18 科族；家族名与食物直接落库（无公开查询口），技能效果运行期问客户端"]],
+  best: [["子视图","图鉴 · 对应原手册「宠物页 · 图鉴 / 特殊 / 稀有」"],
+    ["规模","660 只野兽 · 153 稀有 · 60 区域（唯一性能风险点）"],
+    ["列表","必须走虚拟窗口：几何段全量 + 只画视口 ±1 屏 + __painted 复用"],
+    ["筛选","「特殊 / 稀有」改为图鉴内筛选胶囊，不单列子页签（省 2 枚页签）"],
+    ["行","高 50 + 间距 6；野兽名 + 副行 + 品质徽章 + 详情按钮"],
+    ["品质色","普通 = 灰 L3 / 稀有 = 蓝 / 稀有精英 = 土橙"],
+    ["工具行","搜索框 + 清空 + 3 筛选胶囊 + 排序按钮，全部 24 高"]],
+  skill: [["子视图","技能 · 对应原手册「技能页 · 训练指南」"],
+    ["图标条","42×40 九格槽位 + 间距 12，两侧 ‹ › 翻页按钮 28×24"],
+    ["等级表","R1–R8 共 8 行，行高 32 + 间距 4"],
+    ["列","等级 / 门槛 / 训练点 / 代表教学野兽 / 图鉴按钮（44×24）"],
+    ["数据","33 个技能；技能名与说明运行期问客户端，仅存 ID 与门槛"]],
+  pet: [["子视图","宠物 · 对应原手册「我的宠物页」"],
+    ["数据来源","运行期客户端 API，零静态数据"],
+    ["头像","58×58 圆角 6 金边"],
+    ["模型视口","376×86 下沉件 L0，SetUnit(\"pet\") 跟随实时宠物"],
+    ["状态行","4 行 28 高 + 间距 4：快乐度 / 忠诚度 / 训练点 / 食物"],
+    ["刷新","实时值 OnUpdate 节流 1 秒"]],
+  adv: [["子视图","进阶 · 对应原手册「下一步页」"],
+    ["推荐段","下一任务标题 + 理由 + 预期提升（金色）"],
+    ["升级预览","保留项：6 行 32 高 + 间距 4，列 宠物/技能/当前/可升级至/状态"],
+    ["状态徽章","14 高 / 字号 12 / 内衬 3 / 圆角 4；可升级 = 绿底，达上限 = 灰底"],
+    ["存储","唯一新增 SavedVariables 段：寄存宠物技能快照"]],
+  tame: [["子视图","驯服 · 对应原手册「驯服页」"],
+    ["布局","顶部摘要行 + 9 行列表（44 步进）"],
+    ["行","图标 28 / 技能名 / 门槛 / 来源野兽 / 区域 / 图鉴按钮"],
+    ["过滤","依 UnitLevel(\"player\") 过滤，进页重算"]],
+  find: [["子视图","服务 · 对应原手册「寻找页」"],
+    ["筛选","三个 110×20 胶囊，选中态 L4 + 金描边"],
+    ["列表","按区域分组 + 行高 36 + 间距 4，行内「定位」60×24"],
+    ["已去除","「记录 NPC」写操作 ⇒ 不再需要写新存储"],
+    ["数据","只读内置服务商坐标表"]],
+  notes: [["子视图","笔记 · 对应原手册「笔记页」"],
+    ["摘要","统计行 + 说明"],
+    ["行","高 40 + 间距 4：野兽名 + 副行 + 状态徽章"],
+    ["已砍掉","网站 / 导出 / 数据三按钮组（外部项目信息，不进产物）"],
+    ["数据","本视图不写入新发现，仅展示"]]
+};
+
+const PAGES = [
+  ["overview","0 · 板块落位总览","「宠物知识」板块在职业指南中的位置与五层导航结构。"],
+  ["fam","1 · 子视图：科族","18 家族卡墙 + 详情条 —— 原手册「宠物页·科族」。"],
+  ["best","2 · 子视图：图鉴","660 只野兽虚拟窗口长列表，特殊 / 稀有并入筛选 —— 原手册「宠物页·图鉴」。"],
+  ["skill","3 · 子视图：技能","训练指南图标条 + R1–R8 等级表 —— 原手册「技能页」。"],
+  ["pet","4 · 子视图：宠物","实时宠物状态与技能 —— 原手册「我的宠物页」。"],
+  ["adv","5 · 子视图：进阶","下一任务推荐 + 寄存宠物升级预览（保留项）—— 原手册「下一步页」。"],
+  ["tame","6 · 子视图：驯服","按当前等级可学的驯服技能清单 —— 原手册「驯服页」。"],
+  ["find","7 · 子视图：服务","只读展示训练师与兽栏坐标（写操作已去除）—— 原手册「寻找页」。"],
+  ["notes","8 · 子视图：笔记","本地已发现野兽列表（导出按钮组已砍掉）—— 原手册「笔记页」。"],
+];
+
+const nav = document.getElementById("nav");
+const stage = document.getElementById("stage");
+
+PAGES.forEach((p,i)=>{
+  const btn = document.createElement("button");
+  btn.textContent = p[1];
+  btn.dataset.k = p[0];
+  if(i===0) btn.classList.add("on");
+  btn.onclick = ()=>show(p[0]);
+  nav.appendChild(btn);
+
+  const m = document.createElement("section");
+  m.className = "mock" + (i===0?" on":"");
+  m.id = "m-"+p[0];
+  const rows = SPEC[p[0]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+  m.innerHTML = `<h2>${p[1]}</h2><p class="lead">${p[2]}</p>
+    <div class="stageWrap" id="w-${p[0]}">${L[p[0]]()}</div>
+    <div class="specs"><table><tr><th colspan="2">1:1 规格</th></tr>${rows}</table></div>`;
+  stage.appendChild(m);
+});
+
+function show(k){
+  if(!document.getElementById("m-"+k)) k = PAGES[0][0];
+  document.querySelectorAll(".mock").forEach(e=>e.classList.toggle("on", e.id==="m-"+k));
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.k===k));
+  if(location.hash.slice(1)!==k) history.replaceState(null,"","#"+k);
+  fit();
+  window.scrollTo({top:0,behavior:"instant"});
+}
+
+function fit(){
+  const cur = document.querySelector(".mock.on .stageWrap");
+  if(!cur) return;
+  const avail = cur.clientWidth;
+  const s = Math.min(1, avail/1005);
+  const st = cur.querySelector(".stage");
+  if(st) st.style.transform = `scale(${s})`;
+  cur.style.height = (714*s)+"px";
+}
+window.addEventListener("resize", fit);
+window.addEventListener("hashchange",()=>show(location.hash.slice(1)||PAGES[0][0]));
+show(location.hash.slice(1)||PAGES[0][0]);
+fit();
+</script>
+</body>
+</html>

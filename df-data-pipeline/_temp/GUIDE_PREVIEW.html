@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>副本攻略页 · 卡片式版面预览（洛丹伦废墟）</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; padding:26px 16px 40px; background:#0d0d0d;
+         font-family:"Microsoft YaHei","PingFang SC",sans-serif; }
+  .note { max-width:1000px; margin:0 auto 16px; color:#7a7a7a; font-size:13px; line-height:1.75; }
+  .note b { color:#ffd100; }
+  .note code { color:#9ad; font-family:Consolas,monospace; }
+  .win { max-width:1000px; margin:0 auto; background:#161616; border:1px solid #2f2f2f;
+         border-radius:8px; padding:16px 20px 22px; }
+  .tabs { display:flex; justify-content:flex-end; gap:8px; margin-bottom:14px; }
+  .tabs span { padding:5px 18px; border:1px solid #3a3a3a; border-radius:3px;
+               color:#8c8c8c; font-size:14px; }
+  .tabs .on { border-color:#ffd100; color:#ffd100; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .card { position:relative; background:rgba(255,255,255,0.03);
+          border:1px solid rgba(255,255,255,0.05); border-radius:8px;
+          padding:10px 10px 10px 13px; }
+  .card::before { content:""; position:absolute; left:1px; top:1px; bottom:1px;
+                  width:3px; border-radius:8px 0 0 8px; background:var(--ac); }
+  .hd { display:flex; align-items:baseline; gap:8px; margin-bottom:9px; }
+  .ttl { font-size:16px; color:#ffd100; font-weight:600; }
+  .cnt { margin-left:auto; font-size:11px; color:#7a7a7a; }
+  p { margin:0 0 5px; font-size:14px; line-height:1.7; color:#e0e0e0; }
+  p.nm { color:#ffd100; font-weight:600; }
+  p.ind { padding-left:12px; }
+  b { color:#f2f2f2; }
+  .spec { max-width:1000px; margin:16px auto 0; color:#7a7a7a; font-size:12.5px;
+          line-height:1.9; border-top:1px solid #262626; padding-top:14px; }
+  .spec code { color:#9ad; font-family:Consolas,monospace; }
+  .spec b { color:#c9c9c9; }
+</style></head><body>
+
+<div class="note">
+  这是 <b>副本攻略</b> 子页签改成卡片式后的版面预览（真实数据取自 <code>Core/Data/Data_DungeonGuide.lua</code>）。
+  四张卡按 <b>2 列 × 2 行</b> 排布，页签条示意它在详情页里的位置 —— <b>任务 / 掉落的左边</b>。
+  BOSS 中文名运行时从掉落表反查（此处已按反查结果渲染）。目前只有<b>洛丹伦废墟</b>有条目，其余副本显示空态。
+  定位语（"洛丹伦废城地下的亡灵废墟：…"）已<b>并入「副本须知」首条</b>，卡片列<b>紧贴内容区顶部</b>起排，不再留空档。
+</div>
+
+<div class="win">
+  <div class="tabs"><span class="on">攻略</span><span>任务</span><span>掉落</span></div>
+  <div class="grid">
+<div class="card" style="--ac:#6bb8f0"><div class="hd"><span class="ttl">副本须知</span><span class="cnt">6 条</span></div><p>· 洛丹伦废城地下的亡灵废墟：6 个 boss、非线性流程，多数玩家的头几个副本之一。</p><p>· 非线性副本：6 个 boss 可以任意顺序挑战，漏掉某个 boss 不卡流程。</p><p>· 邪恶的维克托是隐藏 boss —— 在洛丹米尔眺望台西南建筑的烟囱处点燃炉火，先清 5 波小怪才会现身；beta 上偶尔不刷。</p><p>· 灵魂医者就在副本门口，团灭后跑尸路程很短。</p><p>· 任务在 17 级时仍显示为红色，但副本本身 17 级就能打通。</p><p>· 怪物密度高，很容易连着拉到好几群；没有控制技能时低等级会比较吃力。</p></div><div class="card" style="--ac:#31a078"><div class="hd"><span class="ttl">怎么进本</span><span class="cnt">双阵营</span></div><p><b>部落：</b>在幽暗城正上方的非副本区洛丹伦废墟就能找到入口（提瑞斯法林地，布瑞尔以南）。</p><p><b>联盟：</b></p><p class="ind">1. 从暴风城港口坐船到奥伯丁；</p><p class="ind">2. 在奥伯丁码头另一侧换船到米奈希尔港；</p><p class="ind">3. 继续坐这班船到希尔斯布莱德丘陵的南海镇；</p><p class="ind">4. 沿路从南海镇走到希尔斯布莱德农场，再北上绕过达拉然；</p><p class="ind">5. 往北游过银松森林的洛丹米尔湖，进入提瑞斯法林地；</p><p class="ind">6. 沿路走到洛丹伦废墟入口。</p></div><div class="card" style="--ac:#d9a621"><div class="hd"><span class="ttl">BOSS 打法</span><span class="cnt">6 个</span></div><p class="nm">枯牙（Witherfang）</p><p>在国王巷巡逻，坦克拉住打掉即可。身边带两只蛛魔，先把它们秒掉；有晕就晕，坦克中了吸血毒药记得驱散。</p><p class="nm">男爵（The Baron）</p><p>伤害很高，只有击昏一个技能：高额瞬发伤害并降低仇恨。坦克不满血时可能被直接打死，尽量用晕打断它的施法。</p><p class="nm">邪恶的维克托（Viktor the Vile）</p><p>隐藏 boss，位置在洛丹米尔眺望台西南建筑的烟囱里 —— 点燃炉火后先清 5 波小怪才会现身。它只有强力近战和吸血毒药，让坦克先建立仇恨。beta 上偶尔不刷。</p><p class="nm">被遗弃者（The Abandoned）</p><p>从洛丹米尔眺望台进市集街就能遇到。区域里的雕像会先触发 3 波小怪。它会冰霜新星、对近战命中者附加冰冷效果，并对坦克施放生命吸取 —— 在读条结束前打断或眩晕它。</p><p class="nm">比约克（Bjork）</p><p>只有一个很短的反魔法护盾，盾一破就是纯木桩，最好打的 boss。</p><p class="nm">拉斯玛尔（Rath'mael）</p><p>只会烈焰风暴：他开始读条就往旁边挪 —— 落点永远是他起手时坦克所在的位置；用晕可以让他完全放不出来。</p></div><div class="card" style="--ac:#c77364"><div class="hd"><span class="ttl">小怪应对</span><span class="cnt">4 组</span></div><p class="nm">蛛魔区</p><p>入口一带的蛛魔成组分布、还会巡逻。单群不难，麻烦的是拉怪时连带把巡逻群也引过来 —— 多盯着点，往回收着拉。</p><p class="nm">骷髅士兵与女妖</p><p>骷髅士兵在男爵一带巡逻，女妖会沉默；成群时伤害很足。用眩晕类控制让这几群好处理不少。</p><p class="nm">血肉魔像</p><p>伤害很高，还会击飞并降低仇恨。拉它们时注意站位，别被击飞到旁边的怪群里 —— 它们巡逻的洛丹米尔眺望台周围小怪很多。</p><p class="nm">食尸鬼</p><p>3~4 只一组，近战挥砍很重，而且和其它怪群挨得很近，极易连环拉。别贪，一次拉太多坦克和治疗会顶不住。</p></div>
+  </div>
+</div>
+
+<div class="spec">
+  <b>版面参数</b>（源码 <code>DungeonUI.lua</code> 常量）：
+  内容区 <code>DG.CHILD_W = 908</code> ·
+  网格宽 <code>DG.GUIDE_GRID_W = 920</code>（detail 实宽 936 − 左右留白 8×2）·
+  卡宽 <code>DG.GUIDE_CARD_W = 456</code> ·
+  列距 <code>DG.GUIDE_GAP_X = 8</code> ·
+  行距 <code>DG.GUIDE_GAP_Y = 8</code> ·
+  卡内边距 <code>DG.GUIDE_PAD = 10</code> ·
+  标题行高 <code>DG.GUIDE_HDR_H = 26</code> ·
+  左侧色条 <code>DG.GUIDE_STRIPE = 3</code>。
+  <br><b>等高规则</b>：<code>行内两卡等高</code>（取较高者），行随内容自适应 —— 上图为浏览器原生 grid
+  行为，与插件内实际逻辑一致（内容少的卡底部留白，不做拉伸）。
+  <br><b>安全线</b>：卡宽必须 ≤ 520 —— 暴雪 backdrop 的 edgeFile 在 760px 宽时会触发
+  <code>TexCoord out of range</code> 炸整次 Build（520px 实测安全）。因此不做「奇数卡通栏」。
+</div>
+</body></html>

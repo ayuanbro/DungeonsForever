@@ -1,0 +1,102 @@
+==============================================================================
+第七轮 ① Skyborne 统一 · 交付对照表
+==============================================================================
+
+【A】英文原名 → 规范中文名（用户拍板 5 条）
+    Skyborne Elves           → 天裔精灵
+    Skyborne Elf             → 天裔精灵
+    High Order Skyborne      → 高阶天裔
+    Windshaper Skyborne      → 掠风天裔
+    Alliance Skyborne        → 联盟天裔
+    Skyborne（天裔）             → 天裔
+    Skyborne                 → 天裔
+
+【B】既有旧写法 → 规范名（同义归一，16 条）
+    掠风天空裔        → 掠风天裔
+    尊主天空裔        → 高阶天裔
+    高空天行者        → 高阶天裔
+    天空之裔         → 天裔
+    天空之灵         → 天裔
+    天空之民         → 天裔
+    天空之城         → 天裔
+    天空行者         → 天裔
+    天裔族          → 天裔
+    天空裔          → 天裔
+    空中族          → 天裔
+    天翔族          → 天裔
+    天生族          → 天裔
+    空中精灵         → 天裔
+    驭风者          → 天裔
+    驭空           → 天裔
+
+【C】误译订正 + 拉丁残留补译（★ 逐条核英文原文，勿误伤真 Void Elf / Phoenix）
+    关键词：英文字典/包名里 Void Elf≠Skyborne、Phoenix≠Skyborne；须按具体 spec 的 EN 原文判
+    ── mage_arcane / races #0
+       EN 原文: Aside from the old class/race combinations, Mages can now also be Orcs on the Horde side, and Skyborne Elves on the Alliance side. Although interesting, these don't overshadow the old combinations sin
+       '虚空精灵'  →  '天裔精灵'
+    ── mage_fire / races #0
+       EN 原文: Aside from the old class/race combinations, Mages can now also be Orcs on the Horde side, and Skyborne Elves on the Alliance side. Although interesting, these don't overshadow the old combinations sin
+       '凤凰'  →  '天裔精灵'
+    ── paladin_protection / changes #2
+       EN 原文: [{"bg": "", "cells": ["Spell", "Description"]}, {"bg": "", "cells": ["|s20423|", "Fills the Paladin with divine fury for 30 sec, causing melee attacks to deal an additional (10% of Spell Power) Holy d
+       '、 protection和'  →  '、神圣保护和'
+    ── paladin_retribution / changes #2
+       EN 原文: [{"bg": "", "cells": ["Spell", "Description"]}, {"bg": "", "cells": ["|s10333|", "A new instant attack that deals Holy damage based on weapon damage and spell power; similar to Crusader Strike. A new 
+       '在与Samanarr合作时，'  →  ''
+       '“Echo”'  →  '“回响”'
+    ── priest_shadow / sw #1
+       EN 原文: [{"bg": "", "cells": ["Strengths", "", "Weaknesses"]}, {"bg": "", "cells": ["\u0003Strong solo PvP presence\u0004- Shadow Priest has a toolkit particularly well-suited for one-on-one PvP and this is u
+       '团本raid'  →  '团本'
+    ── shaman_elemental / races #6
+       EN 原文: Orc- Orc's racial|s20572|increases Attack and Spell Power by 10% for 15 sec on a 2-minute cooldown while using an Axe and grants 1% Critical Strike Chance thanks to|s20574|. Blood Fury is exceptiona
+       '\x03- 天裔的种族特长\x04'  →  '\x03天裔\x04'
+       '空中翱翔的种族特长'  →  '天裔的种族特长'
+    ── warlock_affliction / races #8
+       EN 原文: |s1259718|is a strong PvP racial that allows a Warlock to break stun effects.|s20597|now benefits warlocks by increasing our Crit chance by 2% if we have a sword equipped. Spirit doesn't significantly
+       '虽然 situational，但'  →  '虽然要看情况，但'
+    ── warlock_affliction / viability #0
+       EN 原文: Affliction is in a great place for raids. Curses no longer exclude you from using|s11713|or|s603|. At the same time,|s17793|no longer gets consumed by other casters. On top of that, Affliction's self-
+       'SL/SL'  →  '吸取生命/灵魂链接'
+    ── warlock_demonology / beginner #0
+       EN 原文: Demonology gives you strong pets and great survivability; it is a very friendly build for leveling and PvP. In PvE content, you need to keep your pet alive to maximize throughput. This means positioni
+       '在拥有|s17924|时施放|s440870|up。'  →  '在|s440870|生效时施放|s17924|。'
+    ── warlock_demonology / viability #0
+       EN 原文: Demonology is in a great place for raids.|s425464|lets you sacrifice a pet and summon another to deal damage. Stacked talents can put you around 30% bonus damage on one magic school at a time - shadow
+       'SL/SL'  →  '吸取生命/灵魂链接'
+    ── warlock_destruction / sw #0
+       EN 原文: Destruction has great burst with both|s18932|and|s18871|. It also has great AOE thanks to|s11684|and|s11678|, both Destruction spells that benefit from talents in the tree. Cleave isn't as strong as A
+       '|s18932|and|s18871|. '  →  '|s18932|和|s18871|。'
+       '|s11684|and|s11678|'  →  '|s11684|和|s11678|'
+    ── warlock_destruction / sw #1
+       EN 原文: [{"bg": "", "cells": ["Strengths", "", "Weaknesses"]}, {"bg": "", "cells": ["\u0003Burst\u0004- With|s18871|and|s18932|you have plenty of burst\u0005\u0003AOE DPS\u0004- All AOE spells are Destruction
+       '|s18871|and|s18932|'  →  '|s18871|和|s18932|'
+    ── warlock_destruction / viability #0
+       EN 原文: Destruction is the closest to vanilla Warlock, aside from the filler switching from|s25307|to|s1293813|. It has strong single-target damage and strong AOE abilities boosted by talents. Cleave with Des
+       '|s25307|to|s1293813|. '  →  '|s25307|变为|s1293813|。'
+
+【D】修复后残留计数（应全 0）与规范名分布
+    ===== Skyborne 旧写法残留（应全为 0）=====
+      高空天行者      = 0
+      尊主天空裔      = 0
+      掠风天空裔      = 0
+      天空行者       = 0
+      天空之裔       = 0
+      天空之灵       = 0
+      天空之民       = 0
+      天空之城       = 0
+      天裔族        = 0
+      天空裔        = 0
+      空中族        = 0
+      天翔族        = 0
+      天生族        = 0
+      空中精灵       = 0
+      驭风者        = 0
+      驭空         = 0
+      拉丁 Skyborne = 0
+    
+    ===== 规范名分布 =====
+      高阶天裔       = 5
+      掠风天裔       = 1
+      联盟天裔       = 1
+      天裔精灵       = 2
+      天裔         = 56

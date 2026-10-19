@@ -1,0 +1,45 @@
+﻿== git status --short ==
+ M Core/Core.lua
+ M Core/Data/Data_DungeonLoot.lua
+ M Core/Data/Data_Dungeons.lua
+ M Core/Data/Data_Explore.lua
+ M Core/Data/enUS/Data_DungeonLoot.lua
+ M Core/Data/enUS/Data_Dungeons.lua
+ M Core/Data/enUS/Data_Explore.lua
+ M Core/Data/zhTW/Data_DungeonLoot.lua
+ M Core/Data/zhTW/Data_Dungeons.lua
+ M Core/Data/zhTW/Data_Explore.lua
+ M Core/DungeonUI.lua
+ M Core/ExploreUI.lua
+ M Core/MainFrame.lua
+ M Core/ProfessionUI.lua
+ M Core/TierUI.lua
+ M DungeonsForever.toc
+?? Core/Data/Data_ClassGuide.lua
+?? Core/Data/Data_LootFilter.lua
+?? Core/Data/enUS/Data_ClassGuide.lua
+?? Core/Data/enUS/Data_LootFilter.lua
+?? Core/Data/zhTW/Data_ClassGuide.lua
+?? Core/Data/zhTW/Data_LootFilter.lua
+?? Core/LootFilter.lua
+?? Core/LootFilterUI.lua
+?? Media/textures/DF_Settings.tga
+== git diff --stat ==
+ Core/Core.lua                       |    6 +
+ Core/Data/Data_DungeonLoot.lua      |  292 ++++++----
+ Core/Data/Data_Dungeons.lua         |   14 +-
+ Core/Data/Data_Explore.lua          |   12 +-
+ Core/Data/enUS/Data_DungeonLoot.lua |  292 ++++++----
+ Core/Data/enUS/Data_Dungeons.lua    |   14 +-
+ Core/Data/enUS/Data_Explore.lua     |    6 +-
+ Core/Data/zhTW/Data_DungeonLoot.lua |  292 ++++++----
+ Core/Data/zhTW/Data_Dungeons.lua    |   14 +-
+ Core/Data/zhTW/Data_Explore.lua     |    6 +-
+ Core/DungeonUI.lua                  |  237 +++++---
+ Core/ExploreUI.lua                  |   85 ++-
+ Core/MainFrame.lua                  |   95 +++-
+ Core/ProfessionUI.lua               |    5 +-
+ Core/TierUI.lua                     | 1054 +++++++++++++++++++++++++++++++++--
+ DungeonsForever.toc                 |    8 +
+ 16 files changed, 1895 insertions(+), 537 deletions(-)
+== git diff Core/LootFilterUI.lua ==

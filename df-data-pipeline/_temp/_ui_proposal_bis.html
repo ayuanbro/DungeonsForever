@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>BIS 配装页（BisUI）· UI 规整审计与可视化方案</title>
+<style>
+  :root{
+    --l0:#0A0C10; --l1:#10131A; --l2:#161A22; --l3:#202532; --l4:#2B3140; --l5:#38404F;
+    --bd:rgba(255,255,255,.10); --gold:#F0C040; --txt:#E8EAF0; --dim:#8A93A6;
+    --red:#E5484D; --green:#46A758; --blue:#5B9DD9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--l0); color:var(--txt); font:14px/1.65 "Segoe UI","Microsoft YaHei",sans-serif; padding:28px 34px 60px;}
+  h1{font-size:21px; font-weight:600; margin-bottom:6px;}
+  h1 span{color:var(--gold);}
+  .sub{color:var(--dim); font-size:13px; margin-bottom:18px;}
+  .rules{display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap;}
+  .rule{background:var(--l1); border:1px solid var(--bd); border-radius:8px; padding:9px 14px; font-size:13px;}
+  .rule b{color:var(--gold); font-weight:600;}
+  h2{font-size:16px; font-weight:600; margin:34px 0 4px; padding-left:10px; border-left:3px solid var(--gold);}
+  h2 .tag{font-size:12px; color:var(--dim); font-weight:400; margin-left:10px;}
+  .duo{display:flex; gap:22px; align-items:flex-start; margin-top:12px;}
+  .panel{background:#0D0F14; border:1px solid var(--bd); border-radius:10px; padding:14px;}
+  .panel h3{font-size:13px; font-weight:600; margin-bottom:10px; color:var(--dim);}
+  .panel h3 em{font-style:normal; color:var(--red);}
+  .panel h3.good em{color:var(--green);}
+  .stage{position:relative; overflow:hidden;}
+  .s55{transform:scale(0.55); transform-origin:top left; width:960px;}
+  .s75{transform:scale(0.75); transform-origin:top left; width:420px;}
+  .win{background:var(--l0); border:1px solid var(--bd); border-radius:8px; position:relative;}
+  .notes{width:300px; font-size:12.5px; flex:none;}
+  .notes li{margin:0 0 8px 16px;}
+  .notes b{color:var(--red); font-weight:600; font-family:Consolas,monospace;}
+  .notes li.ok{color:var(--green);}
+  .notes li.n{color:var(--dim);}
+  .notes code{font-family:Consolas,monospace; color:var(--gold); font-size:11.5px;}
+  .card{background:var(--l1); border:1px solid var(--bd); border-radius:8px; position:absolute;}
+  .card2{background:var(--l2); border:1px solid var(--bd); border-radius:6px; position:absolute;}
+  .rowline{background:var(--l2); border:1px solid var(--bd); border-radius:6px; position:absolute;}
+  .badline{background:#30222A; border:1px solid rgba(255,255,255,.09); position:absolute;}
+  .lbl{position:absolute; font:10px/1.2 Consolas,monospace; color:var(--dim); white-space:nowrap;}
+  .badge{position:absolute; font:10px/1.3 Consolas,monospace; color:#fff; background:var(--red); border-radius:4px; padding:1px 5px; white-space:nowrap; z-index:5;}
+  .badge.g{background:var(--green);}
+  .badge.b{background:var(--blue);}
+  .hdr{position:absolute; font:600 12px/1.2 "Microsoft YaHei"; color:var(--txt);}
+  .cnt{position:absolute; font:10px/1.2 "Microsoft YaHei"; color:var(--dim);}
+  .tool{position:absolute; background:var(--l1); border:1px solid var(--bd); border-radius:5px; font:11px/22px "Microsoft YaHei"; color:var(--dim); text-align:center;}
+  .tool.sel{color:var(--gold); border-color:rgba(240,192,64,.55);}
+  .tool.bad{background:#30222A; border:1px solid rgba(255,255,255,.09); border-radius:0;}
+  .btn{position:absolute; background:var(--l2); border:1px solid var(--bd); border-radius:5px; font:10px/20px "Microsoft YaHei"; color:var(--dim); text-align:center;}
+  .btn.sel{color:var(--gold); border-color:rgba(240,192,64,.55);}
+  .edge{position:absolute; top:0; bottom:0; width:0; border-left:1px dashed rgba(91,157,217,.55); z-index:4;}
+  .edge span{position:absolute; top:-15px; left:-2px; font:10px Consolas; color:var(--blue); white-space:nowrap;}
+  .gedge{position:absolute; left:0; right:0; height:0; border-top:1px dashed rgba(91,157,217,.55); z-index:4;}
+  .gedge span{position:absolute; left:2px; top:-14px; font:10px Consolas; color:var(--blue); white-space:nowrap;}
+  table{border-collapse:collapse; width:100%; margin-top:14px; font-size:12.5px;}
+  th,td{border:1px solid var(--bd); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--l1); color:var(--dim); font-weight:600; white-space:nowrap;}
+  td b{color:var(--gold); font-family:Consolas,monospace;}
+  td .ln{font-family:Consolas,monospace; color:var(--blue); font-size:11.5px; white-space:nowrap;}
+  .ok{color:var(--green);} .no{color:var(--red);} .keep{color:var(--dim);}
+  .opt{margin:10px 0 0; padding:10px 14px; background:var(--l1); border:1px solid var(--bd); border-radius:8px; font-size:12.5px;}
+  .opt b.re{color:var(--green);}
+  .foot{margin-top:26px; color:var(--dim); font-size:12.5px; border-top:1px solid var(--bd); padding-top:14px;}
+  .foot b{color:var(--txt);}
+  .sw{display:inline-block; width:12px; height:12px; border-radius:3px; border:1px solid var(--bd); vertical-align:-2px; margin-right:4px;}
+</style>
+</head>
+<body>
+
+<h1>BIS 配装页（BisUI）· <span>UI 规整审计与可视化方案</span></h1>
+<div class="sub">范围：Core/BisUI.lua 全部子区块（职业顶栏 / 纸娃娃 / 方案卡 / 属性汇总 / 备选浏览器+附魔）｜ 依据：2026-10-10 全局定案标准 ｜ 基准页：CollectionUI / DungeonUI / ExploreUI ｜ 本方案只出报告，未改任何 Core 代码</div>
+
+<div class="rules">
+  <div class="rule">标准 1 · <b>L 色阶</b>：L0 0A0C10 / L1 10131A / L2 161A22 / L3 202532 / L4 2B3140 / L5 38404F / DIV 1B2029；卡细边 = 白 10%</div>
+  <div class="rule">标准 2 · <b>卡中卡提亮</b>：窗 L0 &lt; 容器卡 L1 &lt; 内卡 L2 &lt; 悬停 L4，不许同级/倒挂</div>
+  <div class="rule">标准 3 · <b>间距</b>：页级卡距页缘 8；卡↔卡 / 卡↔按钮 / 按钮↔按钮 / 卡↔轨道 = 8；同侧对齐</div>
+  <div class="rule">标准 4 · <b>圆角</b>：卡片/按钮走 BuildRoundedBG（容器 r8 / 行与内件 r6、搜索框 r5）+ 白 10% 细边，禁直角 SetBackdrop 老卡</div>
+  <div class="rule">标准 5 · <b>强调条禁用</b>：NEW 绿条/左侧彩条不得存在或新增（本页未发现 ✓）</div>
+  <div class="rule">标准 6 · <b>语义色不动</b>：品质/职业/阵营/金选中；金点标、文字徽标保留</div>
+</div>
+
+<!-- ═══════════ 页面盘点 ═══════════ -->
+<h2>0 · 页面子区块盘点 <span class="tag">页 960×648（bisPage = SetAllPoints 内容面板，直接坐主窗 L0）· 主 Build 在 BisUI.lua:1369</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>布局实测（等比 0.55）<em>（4 张容器卡 + 顶部职业轨道）</em></h3>
+    <div class="stage" style="height:400px;"><div class="s55">
+      <div class="win" style="width:960px; height:648px;">
+        <div class="edge" style="left:8px;"><span>8</span></div>
+        <div class="edge" style="left:952px;"><span>952</span></div>
+        <!-- topbar -->
+        <div class="tool bad" style="left:86px; top:13px; width:84px;">战士</div>
+        <div class="tool bad" style="left:174px; top:13px; width:84px;">圣骑士</div>
+        <div class="tool" style="left:262px; top:13px; width:84px;">猎人</div>
+        <div class="tool" style="left:350px; top:13px; width:84px;">潜行者</div>
+        <div class="lbl" style="left:86px; top:42px;">9 个职业按钮 · 缝 4 ✗ (V10) · y=13 顶轨 (O2)</div>
+        <!-- P1 -->
+        <div class="card" style="left:8px; top:45px; width:300px; height:570px; background:var(--l2);">
+          <div class="hdr" style="left:6px; top:4px;">① 专精/阵营 + 标题</div>
+          <div class="rowline" style="left:6px; top:56px; width:140px; height:44px;"></div>
+          <div class="rowline" style="left:154px; top:56px; width:140px; height:44px;"></div>
+          <div class="lbl" style="left:6px; top:106px;">纸娃娃 20 格 L2（卡中卡同级 ✗ V1 连带）</div>
+        </div>
+        <!-- P2 -->
+        <div class="card" style="left:316px; top:45px; width:224px; height:228px; background:var(--l2);">
+          <div class="hdr" style="left:8px; top:4px;">② 方案</div>
+          <div class="badline" style="left:8px; top:66px; width:200px; height:28px;"></div>
+          <div class="badline" style="left:8px; top:98px; width:200px; height:28px;"></div>
+          <div class="badge" style="left:120px; top:92px;">行距 4 ✗</div>
+        </div>
+        <!-- P3 -->
+        <div class="card" style="left:316px; top:281px; width:224px; height:334px; background:var(--l2);">
+          <div class="hdr" style="left:8px; top:4px;">③ 属性汇总</div>
+          <div class="lbl" style="left:8px; top:26px;">9 行文字 · 无卡 · 合规</div>
+        </div>
+        <!-- P4 -->
+        <div class="card" style="left:548px; top:45px; width:404px; height:570px; background:var(--l2);">
+          <div class="hdr" style="left:8px; top:4px;">④ 备选浏览器</div>
+          <div class="lbl" style="left:8px; top:22px;">搜索框直角黑α ✗ (V5) · 筛选缝 4 ✗ (V11)</div>
+          <div class="badline" style="left:8px; top:44px; width:388px; height:46px;"></div>
+          <div class="badline" style="left:8px; top:92px; width:388px; height:46px;"></div>
+          <div class="badge" style="left:210px; top:86px;">行距 2 ✗</div>
+          <div class="lbl" style="left:8px; top:150px;">备选 50 行池 + 附魔 6 行（行距 2 ✗）</div>
+        </div>
+        <div class="badge g" style="left:860px; top:300px;">面板缝全 8 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>四容器卡：P1 8..308（300 宽）、P2/P3 316..540（224 宽）、P4 548..952（404 宽）——<b>横向缝 8 / 纵向缝 8 全部合规</b>，页缘左右对称 8。</li>
+      <li>py=45 起排；顶栏职业按钮 y=13..37，与 P1 间距 8 ✓（顶轨 13 为居中轨道区，非卡片，保留 → O2）。</li>
+      <li>容器卡全部 <b>L2</b>（BisUI.lua:137）→ 应为 L1；连带纸娃娃 20 格（L2）在容器里<b>同级</b> ✗。</li>
+      <li class="n">属性汇总（③）是纯文字行无卡，无违规。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 汇总表 ═══════════ -->
+<h2>1 · 违规点汇总表 <span class="tag">14 项违规 + 3 项观察 · 全部集中在 BisUI.lua 单文件</span></h2>
+<table>
+  <tr><th>#</th><th>位置（行号）</th><th>结构</th><th>判定</th><th>现状</th><th>提议</th></tr>
+  <tr><td>V1</td><td><span class="ln">BisUI.lua:137</span></td><td>4 张容器卡 BuildPanels</td><td class="no">✗ 色阶</td><td>BuildRoundedBG r8 <b>L2</b></td><td>r8 不变，L2 → <b>L1</b>（基准 CollectionUI.lua:872）</td></tr>
+  <tr><td>V2</td><td><span class="ln">BisUI.lua:1044</span></td><td>方案行 ×(2+7) MakePlanRow</td><td class="no">✗ 直角+白α</td><td>Cardify：白 α0.035 底 + 白 0.09 直角边</td><td>hui 路径 BuildRoundedBG r6 <b>L2</b> + 悬停胶囊 L4（HuiCardFX）</td></tr>
+  <tr><td>V3</td><td><span class="ln">BisUI.lua:1277</span></td><td>附魔行 ×6</td><td class="no">✗ 直角+白α</td><td>同 Cardify</td><td>同 V2</td></tr>
+  <tr><td>V4</td><td><span class="ln">BisUI.lua:1316</span></td><td>备选物品行 ×50</td><td class="no">✗ 直角+白α</td><td>同 Cardify</td><td>同 V2</td></tr>
+  <tr><td>V5</td><td><span class="ln">BisUI.lua:1204-1211</span></td><td>搜索框</td><td class="no">✗ 直角+黑α</td><td>黑 α0.25 + 白 0.08 直角</td><td>hui 路径 BuildRoundedBG r5 <b>L2</b>（基准 CollectionUI.lua:921-922）；fallback 黑α 保留</td></tr>
+  <tr><td>V6</td><td><span class="ln">BisUI.lua:1062-1069</span></td><td>方案行内联编辑框</td><td class="keep">◐ 低优先</td><td>黑 α0.35 + 金 0.6 边，直角</td><td>金边=选中语义保留；直角顺手改 r4 圆角</td></tr>
+  <tr><td>V7</td><td><span class="ln">BisUI.lua:555, 572</span></td><td>方案行距</td><td class="no">✗ &lt;8</td><td>PLAN_H+4 = 32 步进</td><td>+8 = 36 步进</td></tr>
+  <tr><td>V8</td><td><span class="ln">BisUI.lua:665</span></td><td>备选物品行距</td><td class="no">✗ &lt;8</td><td>ROW_H+2 = 48 步进</td><td>+8 = 54 步进</td></tr>
+  <tr><td>V9</td><td><span class="ln">BisUI.lua:707</span></td><td>附魔行距</td><td class="no">✗ &lt;8</td><td>38 步进（36+2）</td><td>44 步进（36+8）</td></tr>
+  <tr><td>V10</td><td><span class="ln">BisUI.lua:962</span></td><td>职业顶栏 9 按钮</td><td class="no">✗ &lt;8</td><td>gap=4（总宽 788 居中）</td><td>gap=8（总宽 820，x=(960−820)/2=70 ≥10 仍居中）</td></tr>
+  <tr><td>V11</td><td><span class="ln">BisUI.lua:988, 998, 1242</span></td><td>专精/阵营/筛选按钮</td><td class="no">✗ &lt;8</td><td>步进 56（52+4）</td><td>步进 60（52+8，基准 CollectionUI.lua:912）</td></tr>
+  <tr><td>V12</td><td><span class="ln">BisUI.lua:1139</span></td><td>改名↔删除按钮</td><td class="no">✗ &lt;8</td><td>缝 4</td><td>缝 8</td></tr>
+  <tr><td>V13</td><td><span class="ln">BisUI.lua:1152-1156</span></td><td>另存↔恢复按钮</td><td class="no">✗ &lt;8</td><td>各宽 (w−6)/2、缝 6</td><td>各宽 (w−8)/2=100、缝 8（右内衬 8 不变）</td></tr>
+  <tr><td>V14</td><td><span class="ln">BisUI.lua:1251</span></td><td>备选列表底 ↔ 附魔标题</td><td class="no">✗ 0</td><td>列表 BOTTOM 与标题同一 y（缝 0）</td><td>列表底上收 8（scroll 底锚 −(bottomLocal−194)）</td></tr>
+  <tr><td>O1</td><td><span class="ln">BisUI.lua:918, 1045, 1278, 1317</span></td><td>行悬停白 α0.06</td><td class="keep">◐ 观察</td><td>白 6% SetHighlightTexture</td><td>随 V2-V4 换 HuiCardFX 悬停胶囊（底色 +2 档）后自然移除</td></tr>
+  <tr><td>O2</td><td><span class="ln">BisUI.lua:962</span></td><td>职业轨顶边 y=13</td><td class="keep">◐ 观察</td><td>距页缘 13</td><td>居中轨道区非卡片，保留现值；与 P1 间距已 =8 ✓</td></tr>
+  <tr><td>O3</td><td><span class="ln">BisUI.lua:998</span></td><td>专精行改缝 8 后右内衬</td><td class="keep">◐ 待决策</td><td>右内衬 18</td><td>步进 60 后末按钮右缘 298 / 面板 300 → 右内衬 2px（见决策 D2）</td></tr>
+</table>
+<div class="opt">合规确认（不动）：四容器卡横纵缝全 8 ✓ ｜ 纸娃娃列缝 8、行距 8（lh=52−44）、主手↔副手缝 8 ✓ ｜ 容器卡 r8 与基准一致 ✓ ｜ 页级卡距页缘 8 左右对称 ✓ ｜ 无任何强调条/彩条（标准 5）✓ ｜ 品质色/职业色/阵营徽标/金选中点全保留（标准 6）✓ ｜ Cardify 兜底路径仅非 hui 主题走，保留 ✓</div>
+
+<!-- ═══════════ V1+V6 色阶 ═══════════ -->
+<h2>2 · V1 容器卡色阶 + 卡中卡同级 <span class="tag">一行改动连带修复 20 个纸娃娃格</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（容器 L2 ⊃ 内卡 L2 → 同级倒挂）</em></h3>
+    <div class="stage" style="height:150px;"><div class="s75">
+      <div class="card" style="left:0; top:0; width:400px; height:180px; background:var(--l2);">
+        <div class="hdr" style="left:10px; top:6px;">容器卡（BisUI.lua:137）</div>
+        <div class="rowline" style="left:10px; top:30px; width:180px; height:44px;"></div>
+        <div class="rowline" style="left:200px; top:30px; width:180px; height:44px;"></div>
+        <div class="badge" style="left:10px; top:80px;">容器 L2 = 内卡 L2 同级 ✗</div>
+        <div class="lbl" style="left:10px; top:104px;">阶梯应为 窗L0 &lt; 容器L1 &lt; 内卡L2</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（容器 L1，内卡 L2 自动合规）</em></h3>
+    <div class="stage" style="height:150px;"><div class="s75">
+      <div class="card" style="left:0; top:0; width:400px; height:180px; background:var(--l1);">
+        <div class="hdr" style="left:10px; top:6px;">容器卡 L1 #10131A</div>
+        <div class="rowline" style="left:10px; top:30px; width:180px; height:44px;"></div>
+        <div class="rowline" style="left:200px; top:30px; width:180px; height:44px;"></div>
+        <div class="badge g" style="left:10px; top:80px;">L0 &lt; L1 &lt; L2 各亮一档 ✓</div>
+        <div class="lbl" style="left:10px; top:104px;">纸娃娃格 r6 L2（:898）不动</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>改动 <code>BisUI.lua:137</code>：<code>ns.hui.layer.L2</code> → <code>ns.hui.layer.L1</code>，仅 1 处（BuildPanels 循环建 4 张）。</li>
+      <li>与基准完全一致：CollectionUI.lua:872/1172 容器卡即 r8 L1，注释「容器卡=L1（主窗 L0 之上一层）」。</li>
+      <li>纸娃娃格（:894-898）已是 r6 L2，容器降档后立即合规，<b>零改动</b>。</li>
+      <li class="ok">改动量：1 行；无几何位移。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ V2/V3/V4 行卡 ═══════════ -->
+<h2>3 · V2/V3/V4 列表行直角白α底 <span class="tag">方案行 / 附魔行 / 物品行 共 3 处 Cardify 调用（白 α 叠加实测合成 ≈ #30222A，偏紫不走色阶）</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（Cardify 白α直角 · 悬停白 6% 叠加）</em></h3>
+    <div class="stage" style="height:130px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:160px; background:var(--l2); border:1px solid var(--bd); border-radius:8px;">
+        <div class="badline" style="left:8px; top:8px; width:384px; height:36px;"></div>
+        <div class="badline" style="left:8px; top:52px; width:384px; height:36px; background:#3D2F36;"></div>
+        <div class="lbl" style="left:14px; top:18px; color:#cdd3e0;">方案行 · 底=白3.5%叠L2 ≈ #30222A</div>
+        <div class="lbl" style="left:14px; top:62px; color:#cdd3e0;">悬停=再叠白6% ≈ #3D2F36</div>
+        <div class="badge" style="left:270px; top:16px;">直角 ✗</div>
+        <div class="badge" style="left:270px; top:60px;">白α ✗</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（r6 L2 + 白10%细边 + 悬停胶囊 L4）</em></h3>
+    <div class="stage" style="height:130px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:160px; background:var(--l1); border:1px solid var(--bd); border-radius:8px;">
+        <div class="rowline" style="left:8px; top:8px; width:384px; height:36px;"></div>
+        <div class="rowline" style="left:8px; top:52px; width:384px; height:36px; background:var(--l4);"></div>
+        <div class="lbl" style="left:14px; top:18px; color:#cdd3e0;">常态 L2 #161A22</div>
+        <div class="lbl" style="left:14px; top:62px; color:#cdd3e0;">悬停 L4 #2B3140（底色 +2 档）</div>
+        <div class="badge g" style="left:270px; top:16px;">r6 ✓</div>
+        <div class="badge g" style="left:270px; top:60px;">胶囊 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>Cardify（:120-130）是白 α 叠加底，合成色 #30222A 不在 L 阶梯里，且直角违反标准 4。</li>
+      <li>改法与 DungeonUI 五人本页一致：<b>HuiCardFX(f, 6, baseN=2)</b> 状态机 + 悬停 L4 胶囊（BACKGROUND sub=2 盖底不盖图标文字）。</li>
+      <li>注意：<code>HuiCardFX/HuiCardState</code> 目前是 DungeonUI.lua 的 <b>local 函数</b>（:132），BisUI 拿不到 → 见决策 D1。</li>
+      <li>三处调用点：方案行 :1044、附魔行 :1277、物品行 :1316；fallback（非 hui）继续走 Cardify，跨主题兼容不变。</li>
+      <li class="ok">每处约 8-10 行（底 + OnEnter/OnLeave 挂状态）。</li>
+    </ul>
+  </div>
+</div>
+<div class="opt"><b>决策 D1 · HuiCardFX 共享 vs 本地复制</b> —— A（推荐）：<b>提升到 ns.hui</b>（或 ns 层导出），BisUI 直接调用；TierUI/PvPUI 后续规整还要用，一次提升三页受益。B：BisUI 本地复制 ~25 行 —— 快但三份拷贝漂移风险高。<b>推荐 A。</b></div>
+
+<!-- ═══════════ V5 搜索框 ═══════════ -->
+<h2>4 · V5 搜索框直角黑α <span class="tag">BisUI.lua:1204-1213 · 基准已有现成写法</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（黑 25% 直角 + 白 8% 边）</em></h3>
+    <div class="stage" style="height:60px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:60px; background:var(--l2); border:1px solid var(--bd); border-radius:8px;">
+        <div style="position:absolute; left:242px; top:8px; width:150px; height:22px; background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.08);"></div>
+        <div class="lbl" style="left:248px; top:13px; color:#8A93A6;">搜索物品…</div>
+        <div class="badge" style="left:130px; top:10px;">直角+黑α ✗</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（BuildRoundedBG r5 L2，= CollectionUI.lua:921）</em></h3>
+    <div class="stage" style="height:60px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:60px; background:var(--l1); border:1px solid var(--bd); border-radius:8px;">
+        <div style="position:absolute; left:242px; top:8px; width:150px; height:22px; background:var(--l2); border:1px solid var(--bd); border-radius:5px;"></div>
+        <div class="lbl" style="left:248px; top:13px; color:#8A93A6;">搜索物品…</div>
+        <div class="badge g" style="left:130px; top:10px;">r5 L2 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>加 hui 分支：<code>if ns.hui and ns.hui.BuildRoundedBG then BuildRoundedBG(sb, 5, L2, "both", true, 1)</code>，else 保留黑α（非 hui 主题不变）。</li>
+      <li>容器卡 V1 降为 L1 后，搜索框 L2 正好「内件提亮一档」，与 CollectionUI 注释口径一致。</li>
+      <li class="ok">改动量：约 6 行；无几何变化（150×22 位置不动）。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ V7-V9 行距 ═══════════ -->
+<h2>5 · V7/V8/V9 列表行距 4 / 2 / 2 → 8 <span class="tag">卡↔卡 = 8；代价是可视行数各减约 0.5~1 行（滚动可用，见 D3）</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（方案 4 · 物品 2 · 附魔 2）</em></h3>
+    <div class="stage" style="height:170px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:220px; background:var(--l2); border:1px solid var(--bd); border-radius:8px;">
+        <div class="badline" style="left:8px; top:8px;   width:384px; height:28px;"></div>
+        <div class="badline" style="left:8px; top:40px;  width:384px; height:28px;"></div>
+        <div class="badline" style="left:8px; top:72px;  width:384px; height:28px;"></div>
+        <div class="badge" style="left:180px; top:40px;">缝 4 ✗</div>
+        <div class="badline" style="left:8px; top:110px; width:384px; height:36px;"></div>
+        <div class="badline" style="left:8px; top:148px; width:384px; height:36px;"></div>
+        <div class="badge" style="left:180px; top:140px;">缝 2 ✗</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（统一缝 8）</em></h3>
+    <div class="stage" style="height:170px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:220px; background:var(--l1); border:1px solid var(--bd); border-radius:8px;">
+        <div class="rowline" style="left:8px; top:8px;   width:384px; height:28px;"></div>
+        <div class="rowline" style="left:8px; top:44px;  width:384px; height:28px;"></div>
+        <div class="rowline" style="left:8px; top:80px;  width:384px; height:28px;"></div>
+        <div class="badge g" style="left:180px; top:44px;">缝 8 ✓</div>
+        <div class="rowline" style="left:8px; top:120px; width:384px; height:36px;"></div>
+        <div class="rowline" style="left:8px; top:164px; width:384px; height:36px;"></div>
+        <div class="badge g" style="left:180px; top:158px;">缝 8 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>方案行：<code>y + PLAN_H + 4 → + 8</code>（:555 预设、:572 用户方案）；planChild 高度公式 <code>y + 6</code>（:582）不改也自洽。</li>
+      <li>物品行：<code>y + ROW_H + 2 → + 8</code>（:665）；bwChild 高度 <code>y + LIST_PAD</code>（:682）自洽。</li>
+      <li>附魔行：<code>y + 38 → y + 44</code>（:707）；enchChild <code>y + 4</code>（:722）自洽。</li>
+      <li class="n">可视行数影响（滚动区高度固定）：方案 160/32→5 行 变 160/36→4.4 行；物品列表少约 1 行；附魔 156 高约 4.1→3.5 行。</li>
+    </ul>
+  </div>
+</div>
+<div class="opt"><b>决策 D3 · 行距 8 的可视行数代价</b> —— A（推荐）：全部改 8，接受少 0.5~1 行（滚动可用，且全局标准优先）。B：仅物品行（数据多、浏览频繁）改 8，方案/附魔保留 —— 但留下两处违规不闭环。<b>推荐 A。</b></div>
+
+<!-- ═══════════ V10-V13 按钮缝 ═══════════ -->
+<h2>6 · V10-V13 按钮缝 4 / 4 / 4 / 6 → 8 <span class="tag">按钮↔按钮 = 8 · 五处步进常量</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（职业栏 gap4 · 专精/筛选 step56 · 改名↔删除 4 · 另存↔恢复 6）</em></h3>
+    <div class="stage" style="height:150px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:200px; background:var(--l0); border:1px solid var(--bd); border-radius:8px;">
+        <div class="btn" style="left:8px;  top:8px; width:84px; height:24px;">战士</div>
+        <div class="btn" style="left:96px; top:8px; width:84px; height:24px;">圣骑士</div>
+        <div class="badge" style="left:184px; top:12px;">缝4 ✗</div>
+        <div class="btn" style="left:8px; top:44px; width:52px; height:22px;">副本</div>
+        <div class="btn" style="left:64px; top:44px; width:52px; height:22px;">战场</div>
+        <div class="btn" style="left:120px; top:44px; width:52px; height:22px;">坦克</div>
+        <div class="badge" style="left:180px; top:48px;">步进56 ✗</div>
+        <div class="hdr" style="left:8px; top:78px;">方案</div>
+        <div class="btn" style="left:52px; top:76px; width:44px; height:22px;">改名</div>
+        <div class="btn" style="left:100px; top:76px; width:44px; height:22px;">删除</div>
+        <div class="badge" style="left:150px; top:80px;">缝4 ✗</div>
+        <div class="btn" style="left:8px; top:108px; width:101px; height:24px;">另存当前</div>
+        <div class="btn" style="left:115px; top:108px; width:101px; height:24px;">恢复推荐</div>
+        <div class="badge" style="left:222px; top:112px;">缝6 ✗</div>
+        <div class="lbl" style="left:8px; top:142px;">面板 224 宽：另存 8..109 / 恢复 115..216，右内衬 8 ✓（改后 8..108 / 116..216 不变）</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（全部缝 8 / 步进 60）</em></h3>
+    <div class="stage" style="height:150px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:200px; background:var(--l0); border:1px solid var(--bd); border-radius:8px;">
+        <div class="btn" style="left:8px;  top:8px; width:84px; height:24px;">战士</div>
+        <div class="btn" style="left:100px; top:8px; width:84px; height:24px;">圣骑士</div>
+        <div class="badge g" style="left:190px; top:12px;">缝8 ✓</div>
+        <div class="btn" style="left:8px; top:44px; width:52px; height:22px;">副本</div>
+        <div class="btn" style="left:68px; top:44px; width:52px; height:22px;">战场</div>
+        <div class="btn" style="left:128px; top:44px; width:52px; height:22px;">坦克</div>
+        <div class="badge g" style="left:188px; top:48px;">步进60 ✓</div>
+        <div class="hdr" style="left:8px; top:78px;">方案</div>
+        <div class="btn" style="left:54px; top:76px; width:44px; height:22px;">改名</div>
+        <div class="btn" style="left:106px; top:76px; width:44px; height:22px;">删除</div>
+        <div class="badge g" style="left:156px; top:80px;">缝8 ✓</div>
+        <div class="btn" style="left:8px; top:108px; width:100px; height:24px;">另存当前</div>
+        <div class="btn" style="left:116px; top:108px; width:100px; height:24px;">恢复推荐</div>
+        <div class="badge g" style="left:224px; top:112px;">缝8 ✓</div>
+        <div class="lbl" style="left:8px; top:142px;">职业栏 gap8：9×84+8×8=820 ≤ 960，居中 x=70 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>职业栏：<code>gap = 4 → 8</code>（:962），total 公式（:964）已引用 gap 变量，居中逻辑自动适配。</li>
+      <li>专精/阵营：步进 <code>56 → 60</code>（:988、:998）；筛选按钮 <code>fx + 56 → 60</code>（:1242）。</li>
+      <li>改名↔删除：<code>RIGHT, 4 → 8</code>（:1139）；行总宽 ~138 &lt; 208 放得下。</li>
+      <li>另存/恢复：宽 <code>(w−6)/2 → (w−8)/2</code>（:1152、:1156），第二颗起点 <code>+6 → +8</code>；右内衬 8 保持不变。</li>
+      <li class="n">O3：专精行 5 颗步进 60 后末按钮右缘 298 / 面板 300 → 右内衬 2px，见 D2。</li>
+    </ul>
+  </div>
+</div>
+<div class="opt"><b>决策 D2 · 专精/阵营行右内衬</b> —— A（推荐）：步进 60 保持按钮 52 宽，右内衬 2px 接受（间距标准优先于卡内内衬美学，且文字按钮 52 已是下限）。B：按钮宽 52→50、步进 58，右内衬 12 —— 视觉更稳但 12px 内文字更挤。<b>推荐 A。</b></div>
+
+<!-- ═══════════ V14 + V6 ═══════════ -->
+<h2>7 · V14 备选列表底↔附魔标题缝 0 + V6 内联编辑框 <span class="tag">BisUI.lua:1251 / 1062-1069</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（列表底 = 附魔标题同一 y，缝 0；编辑框直角）</em></h3>
+    <div class="stage" style="height:150px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:200px; background:var(--l2); border:1px solid var(--bd); border-radius:8px;">
+        <div class="badline" style="left:8px; top:8px; width:384px; height:36px;"></div>
+        <div class="badline" style="left:8px; top:46px; width:384px; height:36px;"></div>
+        <div class="gedge" style="top:82px;"><span>y=376：列表底 = 标题顶</span></div>
+        <div class="hdr" style="left:8px; top:86px;">附魔</div>
+        <div class="badline" style="left:8px; top:108px; width:384px; height:36px;"></div>
+        <div class="badge" style="left:250px; top:70px;">缝 0 ✗</div>
+        <div style="position:absolute; left:8px; top:152px; width:200px; height:22px; background:rgba(0,0,0,.5); border:1px solid rgba(240,192,64,.6);"></div>
+        <div class="lbl" style="left:14px; top:157px; color:#cdd3e0;">改名编辑框（金边=选中 ✓ 直角✗）</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（列表底上收 8；编辑框圆角）</em></h3>
+    <div class="stage" style="height:150px;"><div class="s75">
+      <div style="position:absolute; left:0; top:0; width:400px; height:200px; background:var(--l1); border:1px solid var(--bd); border-radius:8px;">
+        <div class="rowline" style="left:8px; top:8px; width:384px; height:36px;"></div>
+        <div class="rowline" style="left:8px; top:52px; width:384px; height:36px;"></div>
+        <div class="gedge" style="top:96px;"><span>列表底 368 → 缝 8</span></div>
+        <div class="hdr" style="left:8px; top:100px;">附魔</div>
+        <div class="rowline" style="left:8px; top:122px; width:384px; height:36px;"></div>
+        <div class="badge g" style="left:250px; top:84px;">缝 8 ✓</div>
+        <div style="position:absolute; left:8px; top:166px; width:200px; height:22px; background:var(--l4); border:1px solid rgba(240,192,64,.6); border-radius:4px;"></div>
+        <div class="lbl" style="left:14px; top:171px; color:#cdd3e0;">编辑框 r4 L4 · 金边保留</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>V14：备选 scroll 底锚 <code>−(bottomLocal − 186)</code> → <code>−(bottomLocal − 194)</code>（:1251），列表整体少 8px、缝变 8；附魔区（标题 :1258、escroll :1266）不动。</li>
+      <li class="n">实测几何：ey=376，现列表底 376 与标题同行；改后 368，标题文字区 376..392 不受挤压。</li>
+      <li>V6：编辑框加 hui 分支 <code>BuildRoundedBG(r.edit, 4, L4, "both", true, 1)</code>，金 0.6 选中边与黑底语义保留；约 3 行，低优先顺手项。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 改动量预估 ═══════════ -->
+<h2>8 · 实施改动量预估 <span class="tag">全部在 Core/BisUI.lua 单文件 + 可选 Hui.lua 提升 · 无几何重排、无数据层改动</span></h2>
+<table>
+  <tr><th>批次</th><th>内容</th><th>涉及行</th><th>预估 diff</th><th>风险</th></tr>
+  <tr><td>① 色阶</td><td>V1 容器卡 L2→L1</td><td>:137</td><td>1 行</td><td class="ok">极低</td></tr>
+  <tr><td>② 行卡圆角化</td><td>V2/V3/V4 + O1（HuiCardFX 状态机；依赖 D1）</td><td>:1044 / :1277 / :1316 + OnEnter/OnLeave</td><td>约 25-40 行（D1-A 方案 BisUI 侧）</td><td>低（hover 状态挂接需回归三处列表）</td></tr>
+  <tr><td>③ 搜索框/编辑框</td><td>V5 + V6</td><td>:1204-1213 / :1062-1069</td><td>约 9 行</td><td class="ok">极低</td></tr>
+  <tr><td>④ 间距</td><td>V7-V13 行距与按钮缝</td><td>:555 :572 :665 :707 :962 :988 :998 :1139 :1152-1156 :1242 :1251</td><td>约 13 处单值改动</td><td class="ok">低（可视行数 -0.5~1，见 D3）</td></tr>
+  <tr><td>⑤ 共享助手（可选）</td><td>D1-A：HuiCardFX/HuiCardState 提升 ns.hui</td><td>DungeonUI.lua:132 导出 + Hui.lua（或 ns 挂载点）</td><td>约 10 行搬运</td><td>低（原页行为不变）</td></tr>
+</table>
+<div class="foot">
+  <b>合计</b>：BisUI.lua 约 <b>50-65 行</b> diff（+ 可选共享助手 10 行）；分 4 个可独立验证的批次，建议顺序 ①→④→③→②（②依赖 D1 决策）。<br>
+  <b>待决策</b>：D1 HuiCardFX 共享（推荐提升 ns.hui）｜ D2 专精行右内衬 2px（推荐接受）｜ D3 行距 8 可视行数代价（推荐接受）｜ V6 编辑框圆角（推荐顺手改）。<br>
+  <b>验证建议</b>：hui 主题实机过一遍 BIS 页 —— 容器/内卡色阶截图对比、三处列表 hover 胶囊、方案行右键改名、50 行池滚动、搜索过滤；非 hui 主题开一次确认 Cardify fallback 未回归。
+</div>
+
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>探索页 · 小动物 页面方案</title>
+<style>
+  body { margin:0; padding:32px 40px 64px; background:#f5f4f1; color:#26262a;
+         font-family:"Microsoft YaHei",-apple-system,"Segoe UI",sans-serif; }
+  h1 { font-size:22px; font-weight:500; margin:0 0 6px; }
+  h2 { font-size:16px; font-weight:500; margin:36px 0 10px; padding-bottom:6px;
+       border-bottom:1px solid #dcd9d2; }
+  h3 { font-size:14px; font-weight:500; margin:22px 0 8px; color:#4a4a52; }
+  p  { font-size:13px; line-height:1.75; color:#45454c; max-width:920px; }
+  .sub { color:#7a7a82; font-size:13px; margin:0 0 8px; }
+  .shot { background:#14161a; border-radius:12px; padding:16px 18px; margin:14px 0 6px;
+          border:1px solid #2b2f38; }
+  .cap { font-size:12px; color:#8a8a92; margin:0 0 22px; }
+  table { border-collapse:collapse; font-size:13px; margin:10px 0 18px; }
+  th,td { border:1px solid #dcd9d2; padding:7px 10px; text-align:left; vertical-align:top; }
+  th { background:#eceae5; font-weight:500; }
+  code { background:#eceae5; padding:1px 5px; border-radius:4px; font-size:12px; }
+  ul { font-size:13px; line-height:1.85; color:#45454c; max-width:920px; }
+  .new { color:#b8860b; font-weight:500; }
+</style>
+</head>
+<body>
+
+<h1>探索页 · 新增「小动物」子页 —— 可视化方案</h1>
+<p class="sub">数据来源：wowhead forever 两篇新闻（383170 首都双宠 / 383087 音乐跃风蛙）· 版面按 960×648 内容区实尺绘制</p>
+
+<h2>一、内容口径（三只小动物）</h2>
+<table>
+<tr><th>宠物</th><th>获取方式</th><th>关键 ID</th></tr>
+<tr>
+  <td>鳄鱼宝宝<br><span class="sub">Baby Crocolisk</span></td>
+  <td>暴风城 · 运河。击杀巡逻精英「下水道鳄鱼」(Lv50)，有几率掉落。血厚，建议组队。</td>
+  <td>item <code>282047</code> · npc <code>3581</code></td>
+</tr>
+<tr>
+  <td>活泼软泥怪<br><span class="sub">Excitable Slime</span></td>
+  <td>幽暗城 · 运河。① 向商人「波伊尔」买「营养丰富的泥浆怪淤泥」② 跳进运河找到巡逻的软泥怪 ③ 反复 <code>/dance</code> 直到它回舞并给出任务 ④ 交出淤泥获得。拿到后对宠物 <code>/dance</code> 它也会跳。</td>
+  <td>item <code>275682</code> · npc <code>269452</code> · 任务 <code>97583</code> · 淤泥 item <code>278265</code> · 商人 npc <code>4612</code>（56.2, 64.6）</td>
+</tr>
+<tr>
+  <td>音乐跃风蛙<br><span class="sub">Musical Gustjumper</span></td>
+  <td>泽弗拉斯岛 · 瀑布顶圆木。① 森达尔村沿路向南穿草地到瀑布顶圆木 ② 选中蛙群 <code>/sing</code> ③ 点击圆木上出现的青蛙获得。</td>
+  <td>item <code>268109</code> · npc <code>259006</code> / <code>259842</code> · 区域 <code>16593</code>（51.8, 71.7）</td>
+</tr>
+</table>
+
+<h2>二、方案 A（推荐）· 整页卡片流</h2>
+<p>三张宠物卡竖向排布，每张卡自带「图标 / 名称 / 阵营 + 难度标签 / 来源 + 坐标 / 编号步骤」。一屏看全，不用点选，最贴合现在「睡袋」「战斗法师」两个子页的信息密度。卡片高 144px，三张加间距 446px，正好落在导航高度内、不出现滚动条。</p>
+<div class="shot">
+<svg viewBox="0 0 680 565" width="100%" role="img" style="font-family:inherit;">
+<title>探索 · 小动物 页面版式稿（方案 A）</title>
+<desc>左侧导航新增宠物分组与小动物入口，右侧三张宠物卡片。</desc>
+<rect x="40" y="30" width="600" height="512" rx="12" fill="#14161a" stroke="#303540" stroke-width="1"/>
+<text x="40" y="20" font-size="11" fill="#8a8a92">960 × 648 · 探索页内容区</text>
+<rect x="50" y="42" width="108" height="488" rx="8" fill="#ffffff08" stroke="#ffffff14" stroke-width="1"/>
+<text x="58" y="66" font-size="11" fill="#8b9199">收集</text>
+<rect x="56" y="72" width="96" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="60" y="76" width="18" height="18" rx="4" fill="#5a6a7a"/>
+<text x="84" y="89" font-size="11" fill="#c8cdd4">40本书</text>
+<text x="146" y="89" font-size="11" fill="#ffd100" text-anchor="end">12/40</text>
+<rect x="56" y="104" width="96" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="60" y="108" width="18" height="18" rx="4" fill="#8a7a4a"/>
+<text x="84" y="121" font-size="11" fill="#c8cdd4">睡袋</text>
+<rect x="56" y="136" width="96" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="60" y="140" width="18" height="18" rx="4" fill="#7a5a8a"/>
+<text x="84" y="153" font-size="11" fill="#c8cdd4">战斗法师</text>
+<text x="58" y="186" font-size="11" fill="#8b9199">宠物</text>
+<rect x="56" y="192" width="96" height="26" rx="4" fill="#ffd1001f" stroke="#ffd100aa" stroke-width="1"/>
+<rect x="60" y="196" width="18" height="18" rx="4" fill="#c9a24a"/>
+<text x="84" y="209" font-size="11" fill="#ffffff">小动物</text>
+<circle cx="146" cy="205" r="3" fill="#ffd100"/>
+<text x="170" y="62" font-size="11" fill="#b9bec6">宠物获取 · 共 3 只</text>
+<text x="630" y="62" font-size="11" fill="#7f858e" text-anchor="end">点坐标可在世界地图标记</text>
+
+<rect x="170" y="78" width="460" height="144" rx="8" fill="#ffffff09" stroke="#ffffff14" stroke-width="1"/>
+<rect x="182" y="92" width="60" height="60" rx="8" fill="#3d5230" stroke="#ffd10055" stroke-width="1"/>
+<ellipse cx="212" cy="124" rx="18" ry="11" fill="#6f9d4f"/>
+<path d="M228 119L240 124L228 129Z" fill="#6f9d4f"/>
+<circle cx="210" cy="116" r="2.5" fill="#2b3a22"/>
+<text x="254" y="110" font-size="13" font-weight="500" fill="#ffffff">鳄鱼宝宝</text>
+<rect x="490" y="96" width="58" height="18" rx="4" fill="#6fa8dc22" stroke="#6fa8dc66" stroke-width="1"/>
+<text x="519" y="109" font-size="11" fill="#8ec0e8" text-anchor="middle">联盟限定</text>
+<rect x="554" y="96" width="66" height="18" rx="4" fill="#e24b4a22" stroke="#e24b4a66" stroke-width="1"/>
+<text x="587" y="109" font-size="11" fill="#e88b8a" text-anchor="middle">难度·组队</text>
+<text x="254" y="132" font-size="11" fill="#aeb4bc">暴风城 · 运河（巡逻精英 Lv50）</text>
+<line x1="254" y1="144" x2="620" y2="144" stroke="#ffffff14" stroke-width="1"/>
+<text x="254" y="162" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">①</tspan> 击杀运河里巡逻的精英「下水道鳄鱼」</text>
+<text x="254" y="177" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">②</tspan> 它有几率掉落「鳄鱼宝宝」；血量厚，建议组队前往</text>
+
+<rect x="170" y="232" width="460" height="144" rx="8" fill="#ffffff09" stroke="#ffffff14" stroke-width="1"/>
+<rect x="182" y="246" width="60" height="60" rx="8" fill="#3a3450" stroke="#ffd10055" stroke-width="1"/>
+<path d="M212 258c13-4 21 7 19 16c-2 10-13 16-21 12c-9-4-11-17-6-24z" fill="#9a7fd0"/>
+<circle cx="206" cy="266" r="3" fill="#efe6ff"/>
+<text x="254" y="264" font-size="13" font-weight="500" fill="#ffffff">活泼软泥怪</text>
+<rect x="490" y="250" width="58" height="18" rx="4" fill="#f27f7222" stroke="#f27f7266" stroke-width="1"/>
+<text x="519" y="263" font-size="11" fill="#f0a89e" text-anchor="middle">部落限定</text>
+<rect x="554" y="250" width="66" height="18" rx="4" fill="#5fd07a22" stroke="#5fd07a66" stroke-width="1"/>
+<text x="587" y="263" font-size="11" fill="#8fdfa3" text-anchor="middle">难度·单人</text>
+<text x="254" y="286" font-size="11" fill="#aeb4bc">幽暗城 · 运河（商人「波伊尔」出售淤泥）</text>
+<rect x="564" y="274" width="56" height="16" rx="4" fill="#ffffff0f" stroke="#ffffff22" stroke-width="1"/>
+<text x="592" y="285" font-size="11" fill="#c2c7ce" text-anchor="middle">56.2, 64.6</text>
+<line x1="254" y1="298" x2="620" y2="298" stroke="#ffffff14" stroke-width="1"/>
+<text x="254" y="316" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">①</tspan> 向商人「波伊尔」买「营养丰富的泥浆怪淤泥」</text>
+<text x="254" y="331" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">②</tspan> 跳进运河，找到正在巡逻的「活泼软泥怪」</text>
+<text x="254" y="346" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">③</tspan> 反复对它 /dance，直到它回舞并给出任务</text>
+<text x="254" y="361" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">④</tspan> 把淤泥交给它 → 到手。拿到后 /dance 它也会跳</text>
+
+<rect x="170" y="386" width="460" height="144" rx="8" fill="#ffffff09" stroke="#ffffff14" stroke-width="1"/>
+<rect x="182" y="400" width="60" height="60" rx="8" fill="#2f4530" stroke="#ffd10055" stroke-width="1"/>
+<circle cx="205" cy="414" r="5" fill="#7fbf4a"/>
+<circle cx="219" cy="414" r="5" fill="#7fbf4a"/>
+<circle cx="205" cy="414" r="2" fill="#1f2b12"/>
+<circle cx="219" cy="414" r="2" fill="#1f2b12"/>
+<ellipse cx="212" cy="428" rx="14" ry="12" fill="#7fbf4a"/>
+<text x="254" y="418" font-size="13" font-weight="500" fill="#ffffff">音乐跃风蛙</text>
+<rect x="490" y="404" width="58" height="18" rx="4" fill="#ffffff14" stroke="#ffffff33" stroke-width="1"/>
+<text x="519" y="417" font-size="11" fill="#d5dae0" text-anchor="middle">双阵营</text>
+<rect x="554" y="404" width="66" height="18" rx="4" fill="#5fd07a22" stroke="#5fd07a66" stroke-width="1"/>
+<text x="587" y="417" font-size="11" fill="#8fdfa3" text-anchor="middle">难度·简单</text>
+<text x="254" y="440" font-size="11" fill="#aeb4bc">泽弗拉斯岛 · 瀑布顶圆木（森达尔村南路）</text>
+<rect x="564" y="428" width="56" height="16" rx="4" fill="#ffffff0f" stroke="#ffffff22" stroke-width="1"/>
+<text x="592" y="439" font-size="11" fill="#c2c7ce" text-anchor="middle">51.8, 71.7</text>
+<line x1="254" y1="452" x2="620" y2="452" stroke="#ffffff14" stroke-width="1"/>
+<text x="254" y="470" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">①</tspan> 沿路向南穿过草地，跳到瀑布顶的圆木上</text>
+<text x="254" y="485" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">②</tspan> 选中「音乐跃风蛙」使用 /sing，蛙群随即消失</text>
+<text x="254" y="500" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">③</tspan> 点击圆木上出现的青蛙 → 获得「音乐跃风蛙」</text>
+</svg>
+</div>
+<p class="cap">方案 A：整页卡片流。左栏导航新增「宠物 → 小动物」，右栏三张自足卡片。</p>
+
+<h2>三、方案 B · 左列表 + 右详情</h2>
+<p>复刻副本详情的「选中—看详情」交互：左列三只宠物头像竖排可点选，右侧详情面板给大图标、标签、来源、步骤与关联 ID。好处是以后宠物变多不会撑长页面；代价是三只的时候多点一次，且步骤要滚动才看全。</p>
+<div class="shot">
+<svg viewBox="0 0 680 372" width="100%" role="img" style="font-family:inherit;">
+<title>探索 · 小动物 页面版式稿（方案 B）</title>
+<desc>左侧宠物列表，右侧详情面板。</desc>
+<rect x="40" y="30" width="600" height="300" rx="12" fill="#14161a" stroke="#303540" stroke-width="1"/>
+<text x="52" y="52" font-size="11" fill="#b9bec6">方案 B · 左列表 + 右详情</text>
+<rect x="52" y="62" width="166" height="46" rx="6" fill="#ffffff09" stroke="#ffffff14" stroke-width="1"/>
+<rect x="60" y="69" width="32" height="32" rx="6" fill="#3d5230"/>
+<ellipse cx="76" cy="86" rx="10" ry="6" fill="#6f9d4f"/>
+<text x="100" y="82" font-size="11" fill="#e6e9ec">鳄鱼宝宝</text>
+<text x="100" y="97" font-size="11" fill="#8b9199">暴风城 · 掉落</text>
+<rect x="52" y="114" width="166" height="46" rx="6" fill="#ffffff09" stroke="#ffd100aa" stroke-width="1"/>
+<rect x="52" y="114" width="3" height="46" rx="1.5" fill="#ffd100"/>
+<rect x="60" y="121" width="32" height="32" rx="6" fill="#3a3450"/>
+<path d="M76 130c7-2 11 4 10 9c-1 5-7 8-11 6c-5-2-6-9-3-13z" fill="#9a7fd0"/>
+<text x="100" y="134" font-size="11" fill="#ffffff">活泼软泥怪</text>
+<text x="100" y="149" font-size="11" fill="#8b9199">幽暗城 · 互动</text>
+<rect x="52" y="166" width="166" height="46" rx="6" fill="#ffffff09" stroke="#ffffff14" stroke-width="1"/>
+<rect x="60" y="173" width="32" height="32" rx="6" fill="#2f4530"/>
+<circle cx="72" cy="181" r="4" fill="#7fbf4a"/>
+<circle cx="83" cy="181" r="4" fill="#7fbf4a"/>
+<ellipse cx="78" cy="192" rx="9" ry="7" fill="#7fbf4a"/>
+<text x="100" y="186" font-size="11" fill="#e6e9ec">音乐跃风蛙</text>
+<text x="100" y="201" font-size="11" fill="#8b9199">泽弗拉斯岛 · 互动</text>
+<rect x="230" y="62" width="398" height="238" rx="8" fill="#ffffff06" stroke="#ffffff14" stroke-width="1"/>
+<rect x="244" y="76" width="64" height="64" rx="8" fill="#3a3450" stroke="#ffd10055" stroke-width="1"/>
+<path d="M276 90c14-4 22 8 20 17c-2 11-14 17-22 12c-9-4-11-18-6-25z" fill="#9a7fd0"/>
+<text x="322" y="98" font-size="13" font-weight="500" fill="#ffffff">活泼软泥怪</text>
+<rect x="494" y="84" width="58" height="18" rx="4" fill="#f27f7222" stroke="#f27f7266" stroke-width="1"/>
+<text x="523" y="97" font-size="11" fill="#f0a89e" text-anchor="middle">部落限定</text>
+<rect x="558" y="84" width="66" height="18" rx="4" fill="#5fd07a22" stroke="#5fd07a66" stroke-width="1"/>
+<text x="591" y="97" font-size="11" fill="#8fdfa3" text-anchor="middle">难度·单人</text>
+<text x="322" y="122" font-size="11" fill="#aeb4bc">幽暗城 · 运河 56.2, 64.6</text>
+<line x1="244" y1="138" x2="616" y2="138" stroke="#ffffff14" stroke-width="1"/>
+<text x="244" y="160" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">①</tspan> 向商人「波伊尔」买「营养丰富的泥浆怪淤泥」</text>
+<text x="244" y="175" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">②</tspan> 跳进运河，找到正在巡逻的「活泼软泥怪」</text>
+<text x="244" y="190" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">③</tspan> 反复对它 /dance，直到它回舞并给出任务</text>
+<text x="244" y="205" font-size="11" fill="#c2c7ce"><tspan fill="#ffd100">④</tspan> 把淤泥交给它 → 获得「活泼软泥怪」</text>
+<rect x="244" y="222" width="372" height="24" rx="4" fill="#ffffff0a"/>
+<text x="254" y="238" font-size="11" fill="#9aa1a9">物品 275682 · NPC 269452 · 任务 97583 · 淤泥 278265</text>
+<rect x="244" y="254" width="112" height="24" rx="4" fill="#ffffff0f" stroke="#ffffff22" stroke-width="1"/>
+<text x="300" y="270" font-size="11" fill="#c2c7ce" text-anchor="middle">在世界地图标记</text>
+<rect x="364" y="254" width="96" height="24" rx="4" fill="#ffffff0f" stroke="#ffffff22" stroke-width="1"/>
+<text x="412" y="270" font-size="11" fill="#c2c7ce" text-anchor="middle">已收集 ✓</text>
+</svg>
+</div>
+<p class="cap">方案 B：左列表 + 右详情。三只时略空，宠物变多时才划算。</p>
+
+<h2>四、导航入口的两种放法</h2>
+<div class="shot">
+<svg viewBox="0 0 680 262" width="100%" role="img" style="font-family:inherit;">
+<title>小动物入口的两种导航放法</title>
+<desc>左图并入收集分组，右图新建宠物分组。</desc>
+<rect x="40" y="30" width="600" height="212" rx="12" fill="#14161a" stroke="#303540" stroke-width="1"/>
+<text x="60" y="56" font-size="11" fill="#b9bec6">① 并入现有「收集」分组（改动最小）</text>
+<text x="360" y="56" font-size="11" fill="#b9bec6">② 新建「宠物」分组（后面好扩）</text>
+<text x="60" y="78" font-size="11" fill="#8b9199">收集</text>
+<rect x="60" y="84" width="190" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="64" y="88" width="18" height="18" rx="4" fill="#5a6a7a"/>
+<text x="90" y="101" font-size="11" fill="#c8cdd4">40本书</text>
+<rect x="60" y="116" width="190" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="64" y="120" width="18" height="18" rx="4" fill="#8a7a4a"/>
+<text x="90" y="133" font-size="11" fill="#c8cdd4">睡袋</text>
+<rect x="60" y="148" width="190" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="64" y="152" width="18" height="18" rx="4" fill="#7a5a8a"/>
+<text x="90" y="165" font-size="11" fill="#c8cdd4">战斗法师</text>
+<rect x="60" y="180" width="190" height="26" rx="4" fill="#ffd1001f" stroke="#ffd100aa" stroke-width="1"/>
+<rect x="64" y="184" width="18" height="18" rx="4" fill="#c9a24a"/>
+<text x="90" y="197" font-size="11" fill="#ffffff">小动物</text>
+<circle cx="240" cy="193" r="3" fill="#ffd100"/>
+<text x="360" y="78" font-size="11" fill="#8b9199">收集</text>
+<rect x="360" y="84" width="190" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="364" y="88" width="18" height="18" rx="4" fill="#5a6a7a"/>
+<text x="390" y="101" font-size="11" fill="#c8cdd4">40本书</text>
+<rect x="360" y="116" width="190" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="364" y="120" width="18" height="18" rx="4" fill="#8a7a4a"/>
+<text x="390" y="133" font-size="11" fill="#c8cdd4">睡袋</text>
+<rect x="360" y="148" width="190" height="26" rx="4" fill="#ffffff08" stroke="#ffffff12" stroke-width="1"/>
+<rect x="364" y="152" width="18" height="18" rx="4" fill="#7a5a8a"/>
+<text x="390" y="165" font-size="11" fill="#c8cdd4">战斗法师</text>
+<text x="360" y="198" font-size="11" fill="#8b9199">宠物</text>
+<rect x="360" y="204" width="190" height="26" rx="4" fill="#ffd1001f" stroke="#ffd100aa" stroke-width="1"/>
+<rect x="364" y="208" width="18" height="18" rx="4" fill="#c9a24a"/>
+<text x="390" y="221" font-size="11" fill="#ffffff">小动物</text>
+<circle cx="540" cy="217" r="3" fill="#ffd100"/>
+</svg>
+</div>
+
+<h2>五、落地要点</h2>
+<h3>数据层</h3>
+<p>新增 <code>Core/Data/Data_ExplorePets.lua</code>（手写，非生成物）：</p>
+<ul>
+  <li><code>ns.ExplorePets[i] = { itemID, areaID, x, y, fac, diff, src, steps = {…}, ids = {…} }</code></li>
+  <li>名称与图标不落盘：名称走 <code>C_PetInfo</code> / item 名，图标走 <code>select(10, GetItemInfo(itemID))</code>，查不到用 <code>FALLBACK_ICON</code>——与「40本书」同一条纪律。</li>
+  <li>文案对照：zhCN 基表 + <code>Locales/zhTW.lua</code> + <code>Core/Data/enUS/</code> 覆盖层。</li>
+</ul>
+<h3>界面层</h3>
+<ul>
+  <li><code>ExploreUI.lua</code>：<code>CurSub()</code> 增加 <code>"pets"</code>；<code>EG.Build</code> 里补一个 nav 按钮；<code>EG.Render</code> 加 <code>isPets</code> 分支；<code>EG.LayoutBody</code> 加 <code>EG.petFrame</code> 锚定（右上角/底部按既有 <code>NAV_TOP</code>/<code>PAGE_INSET</code> 口径，Create 后立刻 SetPoint）。</li>
+  <li>坐标芯片复用现有 <code>EG.MarkPoint(areaID, x, y)</code>，点击在世界地图打点。</li>
+  <li>新图标贴图必须 <code>SetTexCoord(0.07,0.93,0.07,0.93)</code> + <code>ns.hui.RoundIcon</code>，会顶到图标计数断言，同步改 <code>_temp/df_dungeon_check.py</code>。</li>
+  <li>改完跑 <code>run_all_checks.py</code> 五项，再 <code>sync_beta.py --apply</code>。</li>
+</ul>
+<h3>待确认</h3>
+<ul>
+  <li>「下水道鳄鱼」wowhead 未给精确坐标（运河巡逻），卡片暂不挂坐标芯片，<span class="new">需要补一个近似点</span>再去地图页对钉。</li>
+  <li>区域 16593「泽弗拉斯岛」的中文名以客户端为准，数据侧只存 areaID，不硬编码译名。</li>
+</ul>
+
+</body>
+</html>

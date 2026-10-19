@@ -1,0 +1,66 @@
+==============================================================================
+第七轮 ④ 收尾回归 · 生成器链（安全顺序）+ 零漂移快照核验
+==============================================================================
+
+快照基准：61 个文件（Core/** + Locales/*.lua + toc）
+
+▶ fc_gen.py   exit=0
+    Data_Professions.lua                 40 KB  UPDATED  ddc4983d75ba
+      Data_ProfRecipes.lua                652 KB  UPDATED  2dc8f7254a3f
+      Data_ProfLeveling.lua                35 KB  UPDATED  1a8afd454573
+      Data_ProfGathering.lua                8 KB  UPDATED  e6527eb3757d
+      合计 735 KB（已写盘）
+      文案：对照表 792 条 · 命中 792 条 · 回落英文 0 条
+    注释精简：收尾清理 4 个文件
+
+▶ gen_enus_data.py   exit=0
+    Data_LootFilter.lua          转换  220 处
+    Data_NPCLoc.lua              转换  241 处
+    Data_ProfGathering.lua       转换    0 处
+    Data_ProfLeveling.lua        转换   76 处
+    Data_ProfRecipes.lua         转换 3709 处
+    Data_Professions.lua         转换  396 处
+    共 15 个文件、10076 条字符串转为英文 → Core/Data/enUS/
+    注释精简：收尾清理 14 个文件（仅 enUS 数据副本）
+
+▶ gen_locales.py   exit=1
+    [stderr] Traceback (most recent call last):
+  File "D:\workspace\DungeonsForever\_temp\gen_locales.py", line 23, in <module>
+    src = open(SRC_LOCALE, 'rb').read().decode('utf-8')
+          ~~~~^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'D:\\workspace\\TalentsForever\\Locales\\zhCN.lua'
+
+▶ fc_guide.py   exit=0
+    ★ FOREVER 英文锚校验通过：英文含 Forever 的条目，中文均含「无限」且无「无限+杂词」。
+    -> D:\workspace\DungeonsForever\Core\Data\Data_ClassGuide.lua 147004 bytes
+    -> D:\workspace\DungeonsForever\Core\Data\enUS\Data_ClassGuide.lua 297976 bytes
+
+▶ gen_zhtw_data.py   exit=0
+      Data_LootFilter.lua          转换  348 处
+      Data_NPCLoc.lua              转换  176 处
+      Data_ProfGathering.lua       转换    0 处
+      Data_ProfLeveling.lua        转换   50 处
+      Data_ProfRecipes.lua         转换 2438 处
+      Data_Professions.lua         转换  366 处
+    共 15 个文件、8931 条字符串转为繁体 → Core/Data/zhTW/
+    注释精简：收尾清理 15 个文件（仅 zhTW 副本）
+
+------------------------------------------------------------------------------
+变更集（跑完全链后 vs 基准）：
+  内容变化 6 个：
+    MOD  Core/Data/Data_ClassGuide.lua
+    MOD  Core/Data/Data_Professions.lua
+    MOD  Core/Data/enUS/Data_LootFilter.lua
+    MOD  Core/Data/enUS/Data_Professions.lua
+    MOD  Core/Data/zhTW/Data_ClassGuide.lua
+    MOD  Core/Data/zhTW/Data_Professions.lua
+  新增 0 个：
+  删除 0 个：
+
+预期变更集（本轮 Skyborne/中英夹杂 只应动这 3 个）：
+    EXP  Core/Data/Data_ClassGuide.lua
+    EXP  Core/Data/enUS/Data_ClassGuide.lua
+    EXP  Core/Data/zhTW/Data_ClassGuide.lua
+
+★ 零漂移核验：需核对 —— 额外变更 ['Core/Data/Data_Professions.lua', 'Core/Data/enUS/Data_LootFilter.lua', 'Core/Data/enUS/Data_Professions.lua', 'Core/Data/zhTW/Data_Professions.lua']
+★ 生成器链耗时/退出码：exit=1

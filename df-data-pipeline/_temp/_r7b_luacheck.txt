@@ -1,0 +1,6 @@
+=== 基线口径（Core/*.lua Core/Data/*.lua Locales/*.lua）===
+
+Total: 4347 warnings / 0 errors in 30 files
+=== 全量（含 enUS/zhTW）===
+
+Total: 10862 warnings / 0 errors in 60 files

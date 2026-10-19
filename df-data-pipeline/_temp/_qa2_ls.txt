@@ -1,0 +1,3 @@
+enUS.lua
+zhCN.lua
+zhTW.lua

@@ -1,0 +1,381 @@
+function PV.Build(page)
+    if PV.built then return end
+    PV.built = true
+    PV.page = page
+    PV.tabs = {}
+    PV.chips = {}
+    PV.cards = {}
+    PV.rankRows = {}
+    PV.capRows = {}
+    PV.setRows = {}
+    PV.weekBf = {}
+    PV.taskRows = {}
+    PV.legacyRows = {}
+    PV.markChips = {}
+    PV.repBtns = {}
+    PV.spRows = {}
+    PV.goalBtns = {}
+    PV.simBtns = {}
+    PV.mileTicks = {}
+    PV.mileLabels = {}
+    PV.labels = {}
+    PV.faction = MyFaction()
+    PV.selSet = 1
+    PV.selRep = "spear"
+    PV.goal = 14
+    PV.simRank = nil
+
+    local title = MakeFS(page, 16, C_WHITE, "LEFT")
+    title:SetPoint("TOPLEFT", page, "TOPLEFT", PV.X + 2, -PV.TITLE_Y)
+    title:SetText(L["PvP"])
+    local count = MakeFS(page, 14, C_GREY, "RIGHT")
+    count:SetPoint("TOPRIGHT", page, "TOPRIGHT", -(PV.X + 2), -PV.TITLE_Y)
+    count:SetText(format(L["共 14 级军衔 · 每阵营 15 套 · 更新于 %s"], SD.updated))
+    local note = MakeFS(page, 11, C_GREY, "LEFT")
+    note:SetPoint("TOPLEFT", page, "TOPLEFT", PV.X + 2, -PV.NOTE_Y)
+    note:SetText(L["军衔点数来自战场与加基森 PvP 任务，荣誉另来自荣誉击杀（上限 25,000）"])
+    PV.title, PV.count, PV.note = title, count, note
+
+    for i, def in ipairs(TAB_DEFS) do
+        local bt = NewButton(page, def.text, PV.TAB_W, PV.TAB_H, 14)
+        bt:SetPoint("TOPLEFT", page, "TOPLEFT", PV.X + 2 + (i - 1) * PV.TAB_STEP, -PV.TAB_Y)
+        MakeOutline(bt, 1, 0.82, 0)
+        bt.__huiKeepTextColor = true
+        bt:SetScript("OnClick", function() PV.SetTab(def.key) end)
+        PV.tabs[def.key] = bt
+    end
+
+    local scroll = CreateFrame("ScrollFrame", nil, page)
+    scroll:SetPoint("TOPLEFT", page, "TOPLEFT", PV.X, -PV.TOP)
+    scroll:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", -(PV.X + 2), PV.X)
+    scroll:EnableMouseWheel(true)
+    scroll:SetScript("OnMouseWheel", function(_, delta)
+        if Host.DG and Host.DG.WheelScroll then
+            Host.DG.WheelScroll(PV.scroll, PV.child, delta)
+        end
+    end)
+    local child = CreateFrame("Frame", nil, scroll)
+    child:SetSize(PV.W, 10)
+    scroll:SetScrollChild(child)
+    PV.scroll, PV.child = scroll, child
+
+    for i = 1, PV.CHIP_MAX do
+        PV.chips[i] = PV.NewChip(child)
+        PV.chips[i]:Hide()
+    end
+    for i = 1, PV.CARD_MAX do
+        PV.cards[i] = PV.NewCard(child)
+        PV.cards[i]:Hide()
+    end
+
+    for i = 1, 14 do
+        local r = CreateFrame("Button", nil, child)
+        r:SetSize(PV.W, PV.ROW_H)
+        r.lvl = MakeFS(r, 14, C_GOLD, "LEFT")
+        r.lvl:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -6)
+        r.nameA = MakeFS(r, 14, C_TEXT, "LEFT")
+        r.nameA:SetPoint("TOPLEFT", r, "TOPLEFT", 48, -6)
+        r.slash = MakeFS(r, 14, C_DIM, "LEFT")
+        r.slash:SetPoint("TOPLEFT", r, "TOPLEFT", 140, -6)
+        r.nameH = MakeFS(r, 14, C_TEXT, "LEFT")
+        r.nameH:SetPoint("TOPLEFT", r, "TOPLEFT", 148, -6)
+        r.pts = MakeFS(r, 14, C_TEXT, "RIGHT")
+        r.pts:SetPoint("TOPRIGHT", r, "TOPLEFT", 366, -6)
+        r.cum = MakeFS(r, 14, C_GREY, "RIGHT")
+        r.cum:SetPoint("TOPRIGHT", r, "TOPLEFT", 448, -6)
+        r.week = MakeFS(r, 14, C_GREY, "RIGHT")
+        r.week:SetPoint("TOPRIGHT", r, "TOPLEFT", 522, -6)
+        r.sep = r:CreateTexture(nil, "BACKGROUND")
+        r.sep:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 4, 0)
+        r.sep:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -4, 0)
+        r.sep:SetHeight(1)
+        r.sep:SetColorTexture(1, 1, 1, 0.06)
+        ForwardWheel(r)
+        PV.rankRows[i] = r
+    end
+
+    -- ★★ 军衔页表头：五个独立列头，x 锚点与行内各列完全一致（2026-10-08 反馈：
+    --   原单串「等级 · 点数 · …」左对齐一整行，与右对齐的 点数/累计/最早解锁 错位）。
+    PV.rankHead = {
+        lvl = MakeFS(child, 14, C_GOLD, "LEFT"),
+        pts = MakeFS(child, 14, C_GOLD, "RIGHT"),
+        cum = MakeFS(child, 14, C_GOLD, "RIGHT"),
+        week = MakeFS(child, 14, C_GOLD, "RIGHT"),
+        rew = MakeFS(child, 14, C_GOLD, "LEFT"),
+    }
+    PV.rankHead.lvl:SetText(L["等级"])
+    PV.rankHead.pts:SetText(L["点数"])
+    PV.rankHead.cum:SetText(L["累计"])
+    PV.rankHead.week:SetText(L["最早解锁"])
+    PV.rankHead.rew:SetText(L["奖励"])
+    -- ★★ 军衔页当前军衔徽章：与冲刺页 PV.badge 同一贴图族，渲染期按实时军衔定位。
+    PV.rankBadge = child:CreateTexture(nil, "ARTWORK")
+    PV.rankBadge:SetSize(24, 24)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(PV.rankBadge) end
+
+    -- ★★ 周上限行：并入本周页后改双列网格，行内列随之紧凑（行高 30、条宽 120）。
+    local capColW = floor(PV.W / 2) - 16
+    for i = 1, 10 do
+        local r = CreateFrame("Frame", nil, child)
+        r:SetSize(capColW, 30)
+        r.week = MakeFS(r, 12, C_TEXT, "LEFT")
+        r.week:SetPoint("TOPLEFT", r, "TOPLEFT", 4, -7)
+        r.rank = MakeFS(r, 12, C_GOLD, "LEFT")
+        r.rank:SetPoint("TOPLEFT", r, "TOPLEFT", 64, -7)
+        r.barBG = r:CreateTexture(nil, "BACKGROUND")
+        r.barBG:SetPoint("TOPLEFT", r, "TOPLEFT", 106, -9)
+        r.barBG:SetSize(120, 10)
+        r.bar = r:CreateTexture(nil, "ARTWORK")
+        r.bar:SetPoint("TOPLEFT", r.barBG, "TOPLEFT", 0, 0)
+        r.bar:SetHeight(10)
+        r.bar:SetColorTexture(0.27, 0.75, 0.45, 0.85)
+        r.cum = MakeFS(r, 12, C_TEXT, "RIGHT")
+        r.cum:SetPoint("TOPRIGHT", r, "TOPLEFT", capColW - 36, -7)
+        r.inc = MakeFS(r, 12, C_GREY, "RIGHT")
+        r.inc:SetPoint("TOPRIGHT", r, "TOPLEFT", capColW - 4, -7)
+        r.sep = r:CreateTexture(nil, "BACKGROUND")
+        r.sep:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 2, 0)
+        r.sep:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -2, 0)
+        r.sep:SetHeight(1)
+        r.sep:SetColorTexture(1, 1, 1, 0.06)
+        PV.capRows[i] = r
+    end
+
+    for i = 1, #SD.sets do
+        local bt = CreateFrame("Button", nil, child)
+        bt:SetSize(252, PV.ROW_H)
+        local ic = bt:CreateTexture(nil, "ARTWORK")
+        ic:SetSize(20, 20)
+        ic:SetPoint("TOPLEFT", bt, "TOPLEFT", 8, -5)
+        ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(ic) end
+        bt.iconTex = ic
+        bt.name = MakeFS(bt, 14, C_TEXT, "LEFT")
+        bt.name:SetPoint("TOPLEFT", bt, "TOPLEFT", 36, -6)
+        bt.name:SetWordWrap(false)
+        bt.count = MakeFS(bt, 11, C_GREY, "RIGHT")
+        bt.count:SetPoint("TOPRIGHT", bt, "TOPRIGHT", -8, -8)
+        bt.bg = bt:CreateTexture(nil, "BACKGROUND")
+        bt.bg:SetAllPoints(bt)
+        bt.bg:SetColorTexture(1, 1, 1, 0.04)
+        MakeOutline(bt, 1, 0.82, 0)
+        bt.hover = bt:CreateTexture(nil, "OVERLAY")
+        bt.hover:SetAllPoints(bt)
+        bt.hover:SetColorTexture(1, 1, 1, 0.06)
+        bt.hover:Hide()
+        bt:SetScript("OnEnter", function(self) self.hover:Show() end)
+        bt:SetScript("OnLeave", function(self) self.hover:Hide() end)
+        bt.__idx = i
+        bt:SetScript("OnClick", function(self)
+            PV.selSet = self.__idx
+            PV.RenderSets()
+        end)
+        ForwardWheel(bt)
+        PV.setRows[i] = bt
+    end
+
+    for i = 1, 8 do
+        local m = RD.marks[i]
+        local bt = CreateFrame("Button", nil, child)
+        bt:SetSize(62, 26)
+        local ic = bt:CreateTexture(nil, "ARTWORK")
+        ic:SetSize(26, 26)
+        ic:SetPoint("TOPLEFT", bt, "TOPLEFT", 0, 0)
+        ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(ic) end
+        bt.iconTex = ic
+        bt.rank = MakeFS(bt, 11, C_GOLD, "LEFT")
+        bt.rank:SetPoint("TOPLEFT", bt, "TOPLEFT", 32, -6)
+        bt.__id = m.id
+        bt:SetScript("OnEnter", function(self)
+            if Host.DG and Host.DG.ShowItemTip then
+                Host.DG.ShowItemTip(self, { self.__id })
+            end
+        end)
+        bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        ForwardWheel(bt)
+        PV.markChips[i] = bt
+    end
+
+    for i = 1, 2 do
+        local bt = NewButton(child, i == 1 and L["联盟"] or L["部落"], PV.TAB_W, PV.TAB_H, 14)
+        MakeOutline(bt, 1, 0.82, 0)
+        bt.__huiKeepTextColor = true
+        bt.__fac = (i == 1) and "A" or "H"
+        bt:SetScript("OnClick", function(self)
+            PV.faction = self.__fac
+            PV.Render()
+        end)
+        PV["facBtn" .. i] = bt
+    end
+
+    -- ★★ 本周页战场轮换芯片：悬浮提示 等级段 / 人数 / 召唤轮换 全量信息。
+    for i, rec in ipairs(RD.battlefields) do
+        local bt = NewButton(child, FIELD_LABEL[rec.key] or rec.key, 148, 24, 12)
+        MakeOutline(bt, 1, 0.82, 0)
+        bt.__huiKeepTextColor = true
+        bt.__bf = rec
+        bt:SetScript("OnEnter", function(self)
+            local d = self.__bf
+            local cta = (d.cta > 0) and format(L["召唤轮换 %d"], d.cta) or L["不在轮换"]
+            if SetTip then
+                SetTip(self, format("%s · %s · %s",
+                    format(L["%d–%d 级"], d.minLevel, d.maxLevel),
+                    format(L["%d 对 %d"], d.size, d.size), cta))
+            end
+        end)
+        bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        ForwardWheel(bt)
+        PV.weekBf[i] = bt
+    end
+
+    -- ★★ 声望页二级阵营按钮：按 REP_DEFS 注册表生成，新阵营插一条即多一枚。
+    for i, def in ipairs(REP_DEFS) do
+        local bt = NewButton(child, def.text, 120, 24, 12)
+        MakeOutline(bt, 1, 0.82, 0)
+        bt.__huiKeepTextColor = true
+        bt.__rep = def.key
+        bt:SetScript("OnClick", function(self)
+            PV.selRep = self.__rep
+            PV.Render()
+        end)
+        PV.repBtns[i] = bt
+    end
+
+    for i = 1, #TASK_TEXTS do
+        local r = CreateFrame("Frame", nil, child)
+        r:SetSize(PV.W, 24)
+        r.dot = MakeFS(r, 14, C_GOLD, "LEFT")
+        r.dot:SetPoint("TOPLEFT", r, "TOPLEFT", 10, -4)
+        r.dot:SetText("·")
+        r.txt = MakeFS(r, 14, C_TEXT, "LEFT")
+        r.txt:SetPoint("TOPLEFT", r, "TOPLEFT", 28, -4)
+        r.txt:SetText(TASK_TEXTS[i])
+        PV.taskRows[i] = r
+    end
+
+    for i = 1, #LEGACY_TEXTS do
+        local r = CreateFrame("Frame", nil, child)
+        r:SetSize(PV.W, 24)
+        r.dot = MakeFS(r, 14, C_GOLD, "LEFT")
+        r.dot:SetPoint("TOPLEFT", r, "TOPLEFT", 10, -4)
+        r.dot:SetText("·")
+        r.txt = MakeFS(r, 14, C_TEXT, "LEFT")
+        r.txt:SetPoint("TOPLEFT", r, "TOPLEFT", 28, -4)
+        r.txt:SetText(LEGACY_TEXTS[i])
+        PV.legacyRows[i] = r
+    end
+
+    local secSpecs = {
+        { key = "ranksHead", fs = 14, col = C_GOLD },
+        { key = "ranksFoot", fs = 11, col = C_GREY },
+        { key = "capsFoot",  fs = 11, col = C_GREY },
+        { key = "weekCaps",  fs = 14, col = C_GOLD },
+        { key = "setsMarks", fs = 14, col = C_GOLD },
+        { key = "setsBlue",  fs = 14, col = C_GOLD },
+        { key = "setsEpic",  fs = 14, col = C_GOLD },
+        { key = "setsNote",  fs = 11, col = C_GREY },
+        { key = "bfHead",    fs = 14, col = C_GOLD },
+        { key = "bfFoot",    fs = 11, col = C_GREY },
+        { key = "taskHead",  fs = 14, col = C_GOLD },
+        { key = "legHead",   fs = 14, col = C_GOLD },
+        { key = "spHead",    fs = 14, col = C_GOLD },
+        { key = "spRule",    fs = 14, col = C_TEXT },
+        { key = "spHon",     fs = 14, col = C_GOLD },
+        { key = "spRev",     fs = 14, col = C_GOLD },
+        { key = "spNote",    fs = 11, col = C_GREY },
+        { key = "sprHead",   fs = 14, col = C_GOLD },
+        { key = "sprState",  fs = 14, col = C_TEXT },
+        { key = "sprMile",   fs = 14, col = C_GOLD },
+        { key = "sprScene",  fs = 14, col = C_GOLD },
+        { key = "sprGoal",   fs = 14, col = C_TEXT },
+        { key = "sprSim",    fs = 14, col = C_TEXT },
+        { key = "sprPath1",  fs = 14, col = C_GOLD },
+        { key = "sprPath2",  fs = 14, col = C_TEXT },
+        { key = "sprNote",   fs = 11, col = C_GREY },
+        { key = "setDetailName", fs = 16, col = C_WHITE },
+        { key = "setDetailSpec", fs = 14, col = C_GREY },
+    }
+    for _, sp in ipairs(secSpecs) do
+        local fs = MakeFS(child, sp.fs, sp.col, "LEFT")
+        if sp.fs == 11 then
+            fs:SetWordWrap(true)
+            fs:SetWidth(PV.W - 8)
+        end
+        PV.labels[sp.key] = fs
+    end
+
+    PV.setDetailIcon = child:CreateTexture(nil, "ARTWORK")
+    PV.setDetailIcon:SetSize(24, 24)
+    PV.setDetailIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(PV.setDetailIcon) end
+
+    if SetTip then
+        SetTip(PV.title, L["军衔不会衰减：没有任何东西会扣点数，等级是一条只增不减的进度条"])
+    end
+
+    PV.badge = child:CreateTexture(nil, "ARTWORK")
+    PV.badge:SetSize(40, 40)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(PV.badge) end
+
+    PV.mileBG = child:CreateTexture(nil, "BACKGROUND")
+    PV.mileBG:SetColorTexture(1, 1, 1, 0.08)
+    PV.mileRed = child:CreateTexture(nil, "ARTWORK")
+    PV.mileRed:SetColorTexture(0.85, 0.3, 0.25, 0.5)
+    PV.mileMark = child:CreateTexture(nil, "OVERLAY")
+    PV.mileMark:SetColorTexture(1, 0.82, 0, 0.95)
+    for i = 1, 4 do
+        PV.mileTicks[i] = child:CreateTexture(nil, "OVERLAY")
+        PV.mileTicks[i]:SetColorTexture(1, 1, 1, 0.35)
+        PV.mileLabels[i] = MakeFS(child, 11, C_GREY, "CENTER")
+    end
+
+    for i = 1, 5 do
+        local r = CreateFrame("Frame", nil, child)
+        r:SetSize(PV.W, 26)
+        r.sit = MakeFS(r, 14, C_GOLD, "LEFT")
+        r.sit:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -4)
+        r.need = MakeFS(r, 14, C_TEXT, "RIGHT")
+        r.need:SetPoint("TOPRIGHT", r, "TOPLEFT", 330, -4)
+        r.rem = MakeFS(r, 14, C_GREY, "RIGHT")
+        r.rem:SetPoint("TOPRIGHT", r, "TOPLEFT", 460, -4)
+        r.res = MakeFS(r, 14, C_TEXT, "RIGHT")
+        r.res:SetPoint("TOPRIGHT", r, "TOPLEFT", 690, -4)
+        r.sep = r:CreateTexture(nil, "BACKGROUND")
+        r.sep:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 4, 0)
+        r.sep:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -4, 0)
+        r.sep:SetHeight(1)
+        r.sep:SetColorTexture(1, 1, 1, 0.06)
+        ForwardWheel(r)
+        PV.spRows[i] = r
+    end
+
+    for i = 1, 13 do
+        local bt = NewButton(child, format("R%d", i + 1), 34, 22, 11)
+        MakeOutline(bt, 1, 0.82, 0)
+        bt.__goal = i + 1
+        bt:SetScript("OnClick", function(self)
+            PV.goal = self.__goal
+            PV.Render()
+        end)
+        PV.goalBtns[i] = bt
+    end
+    for i = 1, 14 do
+        local bt = NewButton(child, format("R%d", i), 34, 22, 11)
+        MakeOutline(bt, 1, 0.82, 0)
+        bt.__sim = i
+        bt:SetScript("OnClick", function(self)
+            if PV.simRank == self.__sim then
+                PV.simRank = nil
+            else
+                PV.simRank = self.__sim
+            end
+            PV.Render()
+        end)
+        PV.simBtns[i] = bt
+    end
+
+    PV.SetTab("ranks")
+end
+
+function PV.SetTab(key)

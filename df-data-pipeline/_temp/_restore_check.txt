@@ -1,0 +1,1 @@
+len=49444 nameA=5 rankcard=0

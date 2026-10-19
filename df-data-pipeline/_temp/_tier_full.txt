@@ -1,0 +1,388 @@
+
+
+################ DPS ################
+This tier list is based on the current beta build of the game and is strictly limited to level 20; everything is still subject to change, and this guide will be updated accordingly. 
+
+
+This list must be taken with a huge grain of salt. It’s designed to be an interesting discussion of what we think will make certain specs valuable, but it should not be used to decide which spec you’re going to play or which specs you'll make the players in your guild play! 
+
+
+This page will rank the DPS specializations in WoW: Forever, based on their damage output and the notable utility they bring to the party.
+
+We have also created tier lists for both Tanks and Healers, which you can check out below.
+
+Healer PvE Tier List Tank PvE Tier List
+
+
+
+## DPS Tier List for WoW: Forever
+
+
+
+
+
+=== TIER LIST ===
+
+
+
+[TIER q5] S
+
+<beast-mastery-hunter>
+<marksmanship-hunter>
+<survival-hunter>
+<arcane-mage>
+<fire-mage>
+<frost-mage>
+
+
+
+
+[TIER q4] A
+
+<enhancement-shaman>
+<elemental-shaman>
+<retribution-paladin>
+<arms-warrior>
+<fury-warrior>
+<subtlety-rogue>
+<assassination-rogue>
+<combat-rogue>
+
+
+
+
+
+
+[TIER q3] B
+
+<feral-druid>
+<demonology-warlock>
+<affliction-warlock>
+<destruction-warlock>
+<shadow-priest>
+
+
+
+
+
+
+[TIER q2] C
+
+<balance-druid>
+
+
+
+
+
+[TIER q1] D
+
+
+
+
+
+=== END ===
+
+
+Note: At this level bracket, there is very little variance between the specs (bar a few outliers), so a spec's placement is a representation of the class, not necessarily the individual spec. 
+
+
+## Tier List Considerations
+
+When putting together the tier list, we have assigned each specialization a rank on an overall scale from S to D, which is dependent on their ranking in a number of different categories, including:
+
+
+
+- Offensive Throughput: Simply how much damage the spec contributes to the group.
+
+- Buff Utility: What your spec brings to the group that benefits your fellow teammates.
+
+- Non-Buff Utility: Less tangible utility, such as the ability to off-tank in a dire situation.
+
+- Defensive Utility: This is a smaller consideration, but a dead DPS is a bad DPS. Having a toolkit that allows you to play safe by default will also allow you to have higher uptime on the target.
+
+
+WoW: Forever DPS Tier List Breakdown and Explanations
+
+It is important to note, if your chosen specialization is in a lower tier than expected, all of the DPS can clear all of the content offered in WoW: Forever; it may simply be more challenging than if you were playing a higher-ranked specialization.
+
+
+
+- Hunter (S-Tier)
+
+- Mage (S-Tier)
+
+
+- Shaman (A-Tier)
+
+- Paladin (A-Tier)
+
+- Warrior (A-Tier)
+
+- Rogue (A-Tier)
+
+
+- Feral Druid (B-Tier)
+
+- Warlock (B-Tier)
+
+- Shadow Priest (B-Tier)
+
+
+- Balance Druid (C-Tier)
+
+
+
+It's worth noting that your mileage will vary greatly from player to player and situation to situation. A clear example of this is the Mage's ability to output by far the highest AOE damage in the game during these early levels, but if your group does not pull more than 2-3 mobs at a time, then the Mage will be greatly outshone. Hunter is incredibly strong in those types of environments, but is less adept at AOE damage. 
+
+Overall, melee DPS performs the best at level 20 outside of the two outlier classes. Casters can still keep up for the most part, but mostly through using high-value damage-over-time effects or AOE cooldowns, and then wanding for the bulk of the dungeon. 
+
+Balance Druid is a bit of an outlier at the bottom, as they don't have any wanding option, but bring a high spell power «荆棘术» on the tank to compensate.
+
+
+
+
+## Changelog
+
+
+################ TANK ################
+This tier list is based on the current beta build of the game and is strictly limited to level 20; everything is still subject to change, and this guide will be updated accordingly. 
+
+
+This list must be taken with a huge grain of salt. It’s designed to be an interesting discussion of what we think will make certain specs valuable, but it should not be used to decide which spec you’re going to play or which specs you'll make the players in your guild play! 
+
+
+
+This page will rank the Tank specializations in WoW: Forever based on their single-target and AoE tanking capabilities, as well as their utility for the party, including buffs, debuffs, cooldowns, and more.
+
+
+
+We have also created tier lists for both Healers and DPS, which you can check out below.
+
+Healer PvE Tier List DPS PvE Tier List
+
+
+## Tank Tierlist for WOW: Forever
+
+
+
+
+
+=== TIER LIST ===
+
+
+
+[TIER q5] S
+
+<protection-paladin>
+
+
+
+
+[TIER q4] A
+
+<protection-warrior>
+
+
+
+
+[TIER q3] B
+
+<feral-druid>
+
+
+
+
+
+
+[TIER q2] C
+
+
+
+
+
+
+[TIER q1] D
+
+
+
+
+=== END ===
+
+
+
+## Tier List Considerations
+
+
+When putting together the tier list, we have assigned each specialization a rank on an overall scale from S to D, which is dependent on their ranking in a number of different categories, including:
+
+
+
+- Survivability: This includes the specialization's ability to survive high damage as a Main Tank, such as damage-reduction abilities, cooldowns, overall durability, and potential self-sustain.
+
+- Damage & Threat: This takes into account how much damage a specialization can deal and the amount of threat it can generate while still focusing on staying alive and main-tanking.
+
+- Trash & Adds: This focuses mainly on AoE threat generation and survivability.
+
+- Group Utility: This encompasses the utility a specialization has that helps the party overall.
+
+
+Note: Each tank will have aspects that they are better or worse at dealing with than other tanks. A high ranking does not automatically mean a tank will be particularly adept in all aspects of the game. But at level 20, the value of AOE threat and damage is a lot higher than it might be at the end-game, which skews the tier list.
+
+Honorary mention: Enhancement Shamans do have tanking support, but don't have a full-fledged tank toolkit. They will be perfectly fine or even good to bring as a dungeon tank, but bringing a Shaman tank to a raid will be ill-advised. 
+
+
+## WOW: Forever Tank Tier List Breakdown and Explanations
+
+As we mentioned above, a number of points were considered when assigning each specialization its overall rank, but the actual usage of certain tanks will differ depending on what type of content you're engaging in and what your party or raid might need.
+
+With that being said, you can clear all content in WoW: Forever with any tank specialization. Each tank will have their own niche, and if a particular tank becomes unviable, they will likely receive changes to bring them closer to the other tanks.
+
+Rankings:
+
+
+- Protection Paladin (S-Tier)
+
+- Protection Warrior (A-Tier)
+
+- Feral Druid (B-Tier)
+
+
+Protection Paladin stands out as a pick at level 20 as they get access to «奉献». With «惩罚光环» scaling with spell power and mana being less of a concern, particularly with talents like «神圣导能», they never struggle with threat and most often stake their spot at the top of the damage meters. 
+
+Protection Warriors and Feral Druids perform perfectly fine as well, however. Warriors have increased threat modifiers through spells like «复仇» and can now use «雷霆一击» in «防御姿态». Druids can bring their own «荆棘术», which deals a lot of damage at level 20, and have access to talents that increase the damage of «挥击». While Swipe may not scale with attack power, it still deals a solid amount of damage at lower levels. 
+
+
+
+
+
+
+
+## Changelog
+
+
+################ HEALER ################
+This tier list is based on the current beta build of the game and is strictly limited to level 20; everything is still subject to change, and this guide will be updated accordingly. 
+
+
+This list must be taken with a huge grain of salt. It’s designed to be an interesting discussion of what we think will make certain specs valuable, but it should not be used to decide which spec you’re going to play or which specs you'll make the players in your guild play! 
+
+
+This page will rank the Healer specializations in WoW: Forever, based on their healing and absorption output, utility, and overall performance.
+
+
+
+
+
+
+We have also created tier lists for both Tanks and DPS, which you can check out below.
+
+Tank PvE Tier List DPS PvE Tier List
+
+
+## Healer Tier List for WoW: Forever
+
+
+
+
+
+
+
+=== TIER LIST ===
+
+
+
+[TIER q5] S
+
+<restoration-druid>
+
+
+
+
+
+[TIER q4] A
+
+<discipline-priest> 
+<holy-priest>
+<holy-paladin>
+
+
+
+
+
+
+
+[TIER q3] B
+
+<restoration-shaman> 
+
+
+
+
+
+[TIER q2] C
+
+
+
+
+
+
+[TIER q1] D
+
+
+
+
+=== END ===
+
+
+
+## Tier List Considerations
+
+
+When putting together the tier list, we have assigned each specialization a rank on an overall scale from S to D, which is dependent on their ranking in several different categories, including:
+
+
+
+- Healing/Absorption: This includes the performance of a specialization when either healing or preventing damage, the Tanks and raid group will take.
+
+- Mana Efficiency: This takes into account the efficiency of a specialization when healing and how often they may run into Mana issues.
+
+- Cooldowns: This looks at the cooldowns each specialization has for dealing with periods of high incoming damage or other problematic areas.
+
+- Group Utility: This encompasses the buffs and utility a specialization has that helps the party overall.
+
+- Offensive Utility: This looks at how much damage the spec brings to their raid if the encounter allows for it.
+
+
+It is important to note that if your chosen specialization is in a lower tier than expected, all of the healers can clear all of the content offered in WoW: Forever.
+
+This list aims to give a baseline understanding of the power levels of each healer, but it's worth mentioning that the healer balancing is much closer than in previous iterations, and healers will excel on different encounters and environments.
+
+
+## Wow: Forever Healer Tier List Breakdown and Explanations
+
+As we mentioned above, several points were considered when assigning each specialization its overall rank, but the actual usage of certain Healers will differ depending on whether your raid group is farming a raid or progressing it for the first time. 
+
+
+
+- Restoration Druid (S-Tier)
+
+- Discipline Priest (A-Tier)
+
+- Holy Priest (A-Tier)
+
+- Holy Paladin (A-Tier)
+
+- Restoration Shaman (B-Tier)
+
+
+
+Every healing spec is performing well on the beta, but the Restoration Druid sticks out for two primary reasons: First, they have a very rounded toolkit with strong sustained healing and high mana regeneration, but secondly, bringing «荆棘术» to the tank is such a valuable buff with the current spell power scaling of the buff. This is also the primary reason why Holy Paladin is as high as it is in the list, due to bringing «惩罚光环», which fills a similar role to Thorns. 
+
+Priest is doing well all around, and by picking up «魔杖专精», they can output very viable damage without using any mana or interrupting the 5-second rule when it comes to mana regeneration. Restoration Shaman is a solid healer, and the totems they bring are certainly valuable, but before you get access to «风怒图腾», the additional free damage that the other healers bring isn't there. With that said, Shamans can certainly get some good damage out by using «灼热图腾» and «火焰新星». 
+
+
+
+
+
+
+## Changelog

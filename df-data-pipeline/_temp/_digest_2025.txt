@@ -1,0 +1,162 @@
+=== quest 166 | the_deadmines
+  现注释[the_deadmines]: 整个系列从格里安·斯托曼（西部荒野 - 哨兵岭 56,47）开始。范克里夫是死亡矿井的最终 首领，在船的最上层。
+  [2026-09-23 Bloodydemize 3] This quest currently gives 9,750 experience in the beta.
+  [2026-09-30 Cordraven 2] Think quest is currently bugged, turned in quest at lvl 20 on my druid and wasn't given any reward to get staff i wanted
+
+=== quest 167 | the_deadmines
+  现注释[the_deadmines]: 徽章由副本入口处的工头希斯奈特掉落。
+  [2026-10-03 1lonewolf1 1] If you are trying to do this solo, it is a good idea to wait until you are level 23 or so. These elites hit hard and, at times, chain pull. When you get to the quest mob, he is chained to another add.
+
+=== quest 168 | the_deadmines
+  现注释[the_deadmines]: 会员卡由副本入口附近的亡灵掉落。
+  [2026-09-29 aredherring 1] The drop rate on these union cards is really quite terrible, and they aren't shared among your group either, and currently are heavily farmed on beta. Expect to be here a while. I would give this quest a skip until this is adjusted.
+
+=== quest 214 | the_deadmines
+  现注释[the_deadmines]: 副本内外的矿工都会掉面罩。要先完成「护送迪菲亚叛徒」才会开放这个任务。
+  [2026-09-23 Bloodydemize 1] This quest currently gives 4,688 experience in the beta.
+  [2026-09-27 Ssateneth 1] Requires completing the "Defias Traitor" escort quest. [quest=155 domain=forever]
+
+=== quest 378 | the_stockade
+  现注释[the_stockade]: 前置任务同样找莫特雷·加玛森接。卡姆·深怒在副本内。
+  [2026-10-02 ironskillet 1] Was hoping theyd let this quest get picked up at lvl 22 without doing an pre-reqs. cuz i mean... comeon.. by the time you are doing the group quest you are over stockades.
+
+=== quest 962 | wailing_caverns
+  现注释[wailing_caverns]: 前置任务找药剂师赫布瑞姆接（贫瘠之地 - 十字路口 51,30）。副本前的山洞和副本内都能采到；学了草药学开追踪会在小地图上显示。
+  [2026-09-30 cpl0311 1] Cave entrance is at /way 30.9 30.9. There is a path off the bridge to Spirit Rise. Hope his help.
+
+=== quest 1199 | blackfathom_deeps
+  现注释[blackfathom_deeps]: 暮光之锤的敌人个个都掉坠饰。
+  [2026-10-02 vflower 1] This quest is currently bugged and gives you all 3 items when completing it.
+
+=== quest 1221 | razorfen_kraul
+  现注释[razorfen_kraul]: 箱子和手册都能在麦伯克·米希瑞克斯附近找到。
+  [2026-10-02 Dochunk 1] This quest can also be picked up by Horde on the Beta. I'll return to confirm this is still true when Forever goes LIVE.
+
+=== quest 1654 | the_deadmines; shadowfang_keep
+  现注释[the_deadmines]: 材料明细点开 [乔丹的武器材料单] 可以看到。
+  现注释[shadowfang_keep]: 材料明细点开 [乔丹的武器材料单] 可以看到。
+  [2026-10-03 deplorable 1] you can solo the whole thing at 25. if you're having issues with shadowmoon as the named worgen and 2 wolves tend to be linked. pop down release the mage. run out (or die) by the time you reenter the instance the door is magically open.. work your way down the left hand route (remember you'll have to take out 2 ghosts 2 worgen and a wolf. done and dusted.
+
+=== quest 2040 | the_deadmines
+  现注释[the_deadmines]: 这个任务可以直接接，也可以先做诺恩（铁炉堡 - 侏儒区 69,50）给的引导任务。发动机由斯尼德的伐木机掉落。
+  [2026-09-23 Bloodydemize 3] This quest currently gives 5,813 experience in the beta.
+  [2026-09-26 Sumomo8681 1] Should start with the quest in Ironforge "Speak with Shoni"
+
+=== quest 5722 | ragefire_chasm
+  现注释[ragefire_chasm]: 玛尔·恐怖图腾在副本内。拿到背包后带回雷霆崖交给拉哈罗。
+  [2026-09-19 ragedaug 1] In WoW Forever this quest gives 2,700 XP. At level 13, this is close to 1/5 of your XP bar.
+
+=== quest 5723 | ragefire_chasm
+  现注释[ragefire_chasm]: 进门就能看到穴居人。
+  [2026-09-19 ragedaug 3] In WoW Forever this quest gives 3,200 XP. At level 13, this is near 1/4 of your XP bar.
+  [2026-10-02 Khaozz 1] 2,150 XP after dungeon xp nerf
+
+=== quest 5725 | ragefire_chasm
+  现注释[ragefire_chasm]: 两本书都由燃刃信徒和燃刃术士掉落。
+  [2026-09-19 ragedaug 3] In WoW Forever this quest gives 4,400 XP. At level 13, this is more than 1/3 of your XP bar.
+
+=== quest 5728 | ragefire_chasm
+  现注释[ragefire_chasm]: 巴扎兰在副本内，祈求者耶戈什在副本内。
+  [2026-09-19 ragedaug 1] In WoW Forever this quest gives 3,500 XP. At level 13, this is more than 1/4 of your XP bar.
+
+=== quest 5761 | ragefire_chasm
+  现注释[ragefire_chasm]: 塔拉加曼在副本内。
+  [2026-09-19 ragedaug -1] In WoW Forever this quest gives 3,500 XP. At level 13, this is more than 1/4 of your XP bar.
+
+=== quest 6521 | razorfen_downs
+  现注释[razorfen_downs]: 前置由剃刀沼泽的最终 首领 给出。玛克林大使在进副本前的空地上（贫瘠之地 - 剃刀高地 48,92）。
+  [2026-10-03 Zubastikgt 1] The rewards are better at forever. See screenshot
+
+=== quest 6981 | wailing_caverns
+  现注释[wailing_caverns]: 流程较长：先杀 4 个德鲁伊并完成护送，最终 首领『吞噬者』穆坦努斯才会出现；杀他拿到发光的碎片。之后回棘齿城找那个地精（做《什么什么平衡器》的那位）说话——他头上没有问号，要自己点他——再回哀嚎洞外的山顶找菲拉·古风。
+  [2026-09-21 Rekal 4] In the World of Warcraft: Forever Beta, the reward for this is 7700 XP (@18)
+  [2026-09-29 Eckabeb 12] The Shard drops from Wailing Caverns. You need to talk to Sputtervalve in Ratchet near the Flightmaster after you accept the quest. I couldn't find him at first because there was a different quest above his head. After talking to Sputtervalve in Ratchet, you need to go see Falla Sagewind on the mountaintop above Wailing Caverns. She will then give you the next quest in the series.
+  [2026-10-01 Sumomo8681 3] XP 5150 at level 20
+  [2026-10-01 BlackhandRogue 3] Leads to In Nightmares [ul] [li][url=https://www.wowhead.com/forever/quest=3370/in-nightmares]Alliance[/url][/li] [li][url=https://www.wowhead.com/forever/quest=3369/in-nightmares]Horde[/url][/li] [/ul]
+
+=== quest 92401 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本外（银松森林 44.6,42.8）；交任务也找塔比莎·织心本人，进本前先接、出本后顺路交。
+  [2026-09-20 falcon2099 22] Turn in is with [npc=250686] at The Sepulcher
+  [2026-09-20 Mythralee 7] In the graveyard area with Rath'Mael
+  [2026-09-20 hmL420 3] She's located at "The Sepulcher," coordinates 44-48. The Sepulcher is located outside Undercity in Silverpine Forest. After leaving Undercity, follow the left path down on the map, shes kneeing on the graveyard.
+
+=== quest 92415 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本内（拉斯玛尔附近拾取「血染的信件」）；交任务要回暴风城找孤儿监护员奈丁加尔，跨地图回程，别漏交。
+  [2026-09-20 s1lentQ 4] The "Blood-Stained Letter" can be found in the Dungeon Ruins of Lordaeron at Undercity. It is located at the Graveyard deep inside the dungeon at one of the bosses. After picking it up, bring it to Orphan Matron Nightingale infront of the Stormwind Cathedral. She will send you to Darkshire in Duskwood where your gonna talk to Avette Fellwood, to give her the letter and turn in the 2nd quest.
+
+=== quest 92422 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本外（提瑞斯法林地 · 布瑞尔 65.2,60.2）；目标就是尾王拉斯玛尔，打完出本回布瑞尔交。
+  [2026-09-20 falcon2099 3] Turn in is at 65.2 60.1 just outside of UC to the east along the road. The "?" does NOT show up on the world map.
+  [2026-09-20 theta8159 4] This does not award any XP
+  [2026-09-21 Destrarion 3] on some website it is written that this quest is available on both faction : it's not i confirm as a NE the NPC that give the quest is Horde faction only. I prefer to point out since the undead NPC inside the dungeon is neutral
+  [2026-09-23 Terji 1] says "side:none" but he is hostile to alliance
+  [2026-09-25 Snyderz 3] You turn this in to [npc=251001] who is located in [zone=85] at [b]65, 60[/b].
+
+=== quest 92747 | the_deadmines
+  现注释[the_deadmines]: 毒素调查链的一环：几处矿井的样本都查过了，线索都指向月溪镇下方的死亡矿井。到月溪镇收集补给品，回阿尔巴·晴月处交任务后开启爆炸物筹备段。前导环「测井」的两个采样点：莫尔森农场 46.2,38.3、詹森农庄 56.7,18.7。
+  [2026-09-21 bugzy2341 5] The crates are inside the cave on the way to the entrance to the Deadmines. So, go into the building that leads to the Deadmines and work your way down into those caves. You will find them there.
+  [2026-10-01 123user 3] You can also find these crates from all over the buildings scattered in Moonbrook, including the "Moonbrook schoolhouse" [i](i.e. the big empty building)[/i]. No need to challenge any elites for this one. Best combined with [quest=13].
+
+=== quest 92753 | the_deadmines
+  现注释[the_deadmines]: 本链的副本段：进本前炸药已由爆炸物筹备段（斯普莱特 → 贾斯伯·菲尔）备齐。安放炸药后从副本出口出来，到月溪镇后方的山丘与阿尔巴·晴月会合。
+  [2026-10-01 123user 1] The Forge is the room where [npc=1763] spawns. You will have to run pretty close to the center, and then just plant the explosives there. [b]Don't hearth out of the dungeon after the run is complete; [u]exit from the backdoor, and continue the quest at the back entrance[/u].[/b] P.S. No reward outside of XP/reputation, but look at the numbers: [b]4050 XP[/b] for this, and another [b]680[/b] when you just talk to the quest giver afterwards. Even the quest for VanCleef himself only grants [b]2600 XP[/b], so in my opinion, this chain is worth the dynamite expenditure.
+
+=== quest 92819 | the_deadmines
+  现注释[the_deadmines]: 「爆破死亡矿井」的收尾环：与月溪镇后方山丘的阿尔巴·晴月会合后，使用起爆器收尾。
+  [2026-09-23 LimeScout 10] No item rewards, just exp and rep? Seems kinda weird for such a long chain, also involving a dungeon, to only reward exp.
+
+=== quest 95189 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本内（「洛丹伦纹章」在副本里有多处刷新点，拾取即开启）；交任务要回暴风城找德娜·肯尼迪。
+  [2026-09-20 Uper 1] This item you can find in ground or pinned to the wall in tower in dungeon Ruins or Lordaeron. Works also for Horde.
+  [2026-09-24 Cnror 1] We found it behind the door you can open, with the banshee inside.
+  [2026-09-25 Zenoriko 3] Comments are pretty unhelpful OR it has multiple spawn points. My group found it pinned to the wall at the top of the tower located right next to [npc=250631].
+  [2026-09-26 Kn3xis 1] I located on the rear side of the pavilion before Bjork
+  [2026-09-27 herztequila 1] As already mentioned the crest hast different possible spawnpoints in the instance. Loot it will start the quest, but there isn't a exclamation mark on the minimap for it, so you really need to search for it by yourself.
+  [2026-09-27 wetwilly2002 1] Also found on the back of the pavilion before the Bjok.
+  [2026-09-28 Rax21 1] I have found all spawn locations. Check every tower base and top. Bjoks main room on floors. If still hunting, there is a crypt door in the spider area near start with a banshee behind it, can also spawn there.
+  [2026-09-29 Sapp3r 1] 4 spawn points so far, that i have found. 1. Top of tower next to spider courtyard 2. Top of tower next to The Abandoned 3. Behind the door in the spider courtyard, protected by the banshee 4. On the floor in the room with the stairs & locked door, across from Bjork's courtyard (opposite end from The Abandon's room)
+  [2026-10-01 Sumomo8681 1] 6200XP at level 20
+
+=== quest 95195 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本内（「染血的徽记」（#268540）由副本里的亡灵小怪掉落，拾取即开启）；要凑齐 10 枚，清怪时留意；交任务回暴风城找马库斯·乔纳森将军。
+  [2026-09-27 herztequila 3] The quest starts in the instance by looting one a quest starting item. then you have to loot 9 aditional of those insignias. there're dropped by the undead mobs and there more than enough for the hole group.
+
+=== quest 95204 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本内（「洛丹伦纹章」在副本里有多处刷新点，拾取即开启）；交任务回幽暗城找奥兰·斯内克威瑟。
+  [2026-10-02 Failkin 1] Very top left on the square there is no !
+
+=== quest 95216 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本外（幽暗城 · 炼金房 47.0,72.6）；毒株要从 boss 枯牙身上取，属必经 boss，不用额外绕路。
+  [2026-09-30 SIXERD 1] Located by the alchemy trainers where you go into the lower levels in the apothecarium
+
+=== quest 95250 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本门口的图曼上尉（联盟军需官，对部落敌对）；目标要取男爵的头颅，打完男爵别急着走；交任务也找他本人。
+  [2026-09-23 Flo94 5] You can find Captain Truman to the left right as you enter the dungeon.
+  [2026-09-28 Curtnott 1] This quest has unique dialogue if you're a human. Really love how the dev's went the extra mile to factor that in.
+
+=== quest 96393 | hall_of_thanes
+  现注释[hall_of_thanes]: (无)
+  [2026-09-20 Metaplayer 18] To get this quest you have to [b]loot a quest item[/b], its not given by the NPC. The item [url=https://www.wowhead.com/forever/item=274268/dark-iron-map]Dark Iron Map[/url] drops from the dark iron mobs in the south east corner of Dun Morogh. Hand it in to [url=https://www.wowhead.com/forever/npc=264936/earthseer-farsen]Earthseer Farsen[/url] and he gives you this quest as a followup. I was already on a quest to kill these mobs by Farsen, it is not clear if that is requirement for the drop.
+  [2026-09-20 Inttallity 1] Is the weapon damage on the gun correct? That seems like a crazy high number.
+  [2026-09-22 Veksie 4] The dark iron dwarves that drop the item are located at /way 77,0 60,1 in Dun Morogh.
+  [2026-09-22 Gizmotechie22 3] This is not available for horde, the NPC you have to interact with is Alliance only.
+
+=== quest 96394 | hall_of_thanes
+  现注释[hall_of_thanes]: (无)
+  [2026-09-25 123user 1] This quest can easily be completed within 1 run. You'll find [url=https://www.wowhead.com/forever/npc=264943/afadra-dunwall#map]Afandia[/url] by going to The High Seat (the king's room), and then immediately turning left to enter the newly added dungeon entrance area. This quest's completion text also contains a typo as of now in the Beta: [i]Ah good, [b]its[/b] done then.[/i]; should be [i]it's[/i].
+
+=== quest 96395 | hall_of_thanes
+  现注释[hall_of_thanes]: (无)
+  [2026-09-21 fuda 17] Quest starts and ends inside the dungeon
+
+=== quest 96403 | hall_of_thanes
+  现注释[hall_of_thanes]: (无)
+  [2026-09-24 Yeahmate 1] From the beta, this quest is acceptable by both the alliance and the horde, as the quest giver belongs to the Gadgetzan faction.
+  [2026-09-25 123user 1] These items are sprinkled around throughout the dungeon. They don't all look the same, and they may be difficult to make out at times. Keep looking around the walls, chairs and tables and run your mouse over objects, and you'll start finding them fast. In the final room of the dungeon you may find these at the highest concentration behind Durgan's vaults.
+
+=== quest 97288 | ruins_of_lordaeron
+  现注释[ruins_of_lordaeron]: 起始在副本内（男爵掉落的「憎恶的头颅」，拾取即开启）；交任务回幽暗城找大药剂师法拉尼尔。
+  [2026-09-24 tuskstroll 1] You can share this quest and it will add the head to your party members' inventories if they accept. Edit: fixed
+  [2026-09-24 Odomiah 1] [i][b]You apply this to a big worm outside Apothecary quarters. Just stand near that Ganoosh and hit quest item on tracker.[/b][/i]
+  [2026-09-28 Gojira455 3] To use the item...after accepting the quest, go up the stairs to the right to reach the green ooze pool with pipes and the wooden walkway. Use the item there and then head back down to turn in.
+  [2026-09-30 Kaldazaar 2] Go up stairs to the right after accepting quest, use the item right next to NPC "Ganoosh" he's a little leper gnome looking guy

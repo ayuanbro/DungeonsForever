@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<meta property="og:image" content="/images/thumbnail.png" />
+		<meta property="og:site_name" content="Wago Tools" />
+		<meta property="og:title" content="Wago Tools" />
+		<meta property="og:type" content="object" />
+		<title>Wago Tools</title>
+		<link rel="icon" href="/favicon.ico">
+		<link rel="preload" as="style" href="https://wago.tools/build/assets/app-CwpdwwnA.css" /><link rel="stylesheet" href="https://wago.tools/build/assets/app-CwpdwwnA.css" />					<!-- Global site tag (gtag.js) - Google Analytics -->
+			<script async src="https://www.googletagmanager.com/gtag/js?id=G-JZ8RG7GQ8L" data-cookiecategory="analytics" type="text/plain"></script>
+			<script data-cookiecategory="analytics" type="text/plain">
+				window.dataLayer = window.dataLayer || [];
+				function gtag(){dataLayer.push(arguments);}
+				gtag('js', new Date());
+				gtag('config', 'G-JZ8RG7GQ8L', { 'anonymize_ip': true });
+			</script>
+			</head>
+	<body class="min-h-screen bg-background-700 text-white antialiased">
+		<div id="app" class="min-h-screen flex items-center justify-center px-4 py-12">
+			<main class="w-full max-w-xl">
+				<article class="rounded-xl border border-background-500 bg-background-600 p-8 shadow-lg sm:p-10 text-center">
+					<p class="text-sm font-semibold uppercase tracking-widest text-background-100">Bad request</p>
+					<h1 class="mt-3 text-7xl font-bold tracking-tight">400</h1>
+					<p class="mt-5 text-lg leading-relaxed text-white/80">
+						Version not found.
+					</p>
+					<a href="https://wago.tools" class="btn mt-8 inline-flex">Return to home</a>
+				</article>
+				<p class="mt-6 text-center text-sm text-white/60">Wago Tools</p>
+			</main>
+		</div>
+	</body>
+</html>

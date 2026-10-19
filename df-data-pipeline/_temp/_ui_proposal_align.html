@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>五人本页 · 对齐与间距规整方案</title>
+<style>
+  :root{
+    --l0:#0A0C10; --l1:#10131A; --l2:#161A22; --l4:#2B3140; --l5:#38404F;
+    --bd:rgba(255,255,255,.10); --gold:#F0C040; --txt:#E8EAF0; --dim:#8A93A6;
+    --red:#E5484D; --green:#46A758; --blue:#5B9DD9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--l0); color:var(--txt); font:14px/1.65 "Segoe UI","Microsoft YaHei",sans-serif; padding:28px 34px 60px;}
+  h1{font-size:21px; font-weight:600; margin-bottom:6px;}
+  h1 span{color:var(--gold);}
+  .sub{color:var(--dim); font-size:13px; margin-bottom:18px;}
+  .rules{display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap;}
+  .rule{background:var(--l1); border:1px solid var(--bd); border-radius:8px; padding:9px 14px; font-size:13px;}
+  .rule b{color:var(--gold); font-weight:600;}
+  h2{font-size:16px; font-weight:600; margin:34px 0 4px; padding-left:10px; border-left:3px solid var(--gold);}
+  h2 .tag{font-size:12px; color:var(--dim); font-weight:400; margin-left:10px;}
+  .duo{display:flex; gap:22px; align-items:flex-start; margin-top:12px;}
+  .panel{background:#0D0F14; border:1px solid var(--bd); border-radius:10px; padding:14px;}
+  .panel h3{font-size:13px; font-weight:600; margin-bottom:10px; color:var(--dim);}
+  .panel h3 em{font-style:normal; color:var(--red);}
+  .panel h3.good em{color:var(--green);}
+  .stage{position:relative; width:543px; overflow:hidden;}
+  .scale{transform:scale(0.58); transform-origin:top left; width:936px;}
+  .win{background:var(--l0); border:1px solid var(--bd); border-radius:8px; position:relative;}
+  .notes{width:300px; font-size:12.5px;}
+  .notes li{margin:0 0 8px 16px;}
+  .notes b{color:var(--red); font-weight:600; font-family:Consolas,monospace;}
+  .notes li.ok{color:var(--green);}
+  .notes li.n{color:var(--dim);}
+  .card{background:var(--l1); border:1px solid var(--bd); border-radius:6px; position:absolute;}
+  .card2{background:var(--l2); border:1px solid var(--bd); border-radius:6px; position:absolute;}
+  .rowline{background:var(--l2); border:1px solid var(--bd); border-radius:6px; position:absolute;}
+  .lbl{position:absolute; font:10px/1.2 Consolas,monospace; color:var(--dim); white-space:nowrap;}
+  .badge{position:absolute; font:10px/1.3 Consolas,monospace; color:#fff; background:var(--red); border-radius:4px; padding:1px 5px; white-space:nowrap; z-index:5;}
+  .badge.g{background:var(--green);}
+  .badge.b{background:var(--blue);}
+  .hdr{position:absolute; font:600 12px/1.2 "Microsoft YaHei"; color:var(--txt);}
+  .cnt{position:absolute; font:10px/1.2 "Microsoft YaHei"; color:var(--dim);}
+  .tool{position:absolute; background:var(--l1); border:1px solid var(--bd); border-radius:5px; font:11px/22px "Microsoft YaHei"; color:var(--dim); text-align:center;}
+  .tool.sel{color:var(--gold); border-color:rgba(240,192,64,.55);}
+  .edge{position:absolute; top:0; bottom:0; width:0; border-left:1px dashed rgba(91,157,217,.55); z-index:4;}
+  .edge span{position:absolute; top:-16px; left:-2px; font:10px Consolas; color:var(--blue); white-space:nowrap;}
+  table{border-collapse:collapse; width:100%; margin-top:14px; font-size:12.5px;}
+  th,td{border:1px solid var(--bd); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--l1); color:var(--dim); font-weight:600; white-space:nowrap;}
+  td b{color:var(--gold); font-family:Consolas,monospace;}
+  .ok{color:var(--green);} .no{color:var(--red);} .keep{color:var(--dim);}
+  .foot{margin-top:26px; color:var(--dim); font-size:12.5px; border-top:1px solid var(--bd); padding-top:14px;}
+  .foot b{color:var(--txt);}
+</style>
+</head>
+<body>
+
+<h1>五人本页 · <span>对齐与间距规整</span>方案</h1>
+<div class="sub">规则：① 同侧对齐（按钮缘 = 卡片缘 = 内容栅格缘）② 卡片间距 ≥ 8 ③ 卡片到窗口边 ≥ 8 ｜ 范围：五人本详情页四个子页签（掉落 / 任务 / 攻略 / 地图）</div>
+
+<div class="rules">
+  <div class="rule">规则一 · <b>同侧对齐</b>：所有页面的内容栅格统一为 <b>8 … 928</b>（容器 936 宽，左右内衬 8）</div>
+  <div class="rule">规则二 · <b>卡间距 ≥ 8</b>：横向与纵向全部按 8 取齐（现役 6 / 4 一律上调）</div>
+  <div class="rule">规则三 · <b>卡到窗沿 ≥ 8</b>：容器自身有 12 内衬，卡片不得再外扩出容器</div>
+</div>
+
+<!-- ═══════════ 全局栅格 ═══════════ -->
+<h2>0 · 全局病灶：右侧 28px 死区 <span class="tag">四个子页签里三个都中招</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状：内容列 908 宽，容器 936 宽 <em>→ 右缘参差</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:936px; height:180px;">
+        <div class="edge" style="left:8px;"><span>8</span></div>
+        <div class="edge" style="left:928px;"><span>928</span></div>
+        <div class="card" style="left:0; top:20px; width:908px; height:44px;"></div>
+        <div class="lbl" style="left:6px; top:70px;">掉落网格 908 → 右缘 908</div>
+        <div class="card" style="left:8px; top:96px; width:456px; height:36px;"></div>
+        <div class="card" style="left:472px; top:96px; width:456px; height:36px;"></div>
+        <div class="lbl" style="left:6px; top:140px;">攻略网格 920（8…928）→ 右缘 928</div>
+        <div class="card" style="left:0; top:160px; width:936px; height:14px; background:var(--l4);"></div>
+        <div class="lbl" style="left:6px; top:162px; color:#cdd3e0;">地图页满宽 936 → 右缘 936</div>
+        <div class="badge" style="left:836px; top:26px;">死区 28px</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li><b>CHILD_W = 908</b> 是内容面板还有皮肤时的历史遗留（960−24−28）；皮肤删除后这 28px 变成裸露死区。</li>
+      <li>掉落网格右缘 908、攻略右缘 928、地图右缘 936 —— <b>三个页签三种右缘</b>。</li>
+      <li>修法：<b>CHILD_W 908 → 936</b>（一改全改：掉落列宽、卡片视图、攻略 gchild 全部自动重排），再叠统一内衬 8。</li>
+      <li class="n">副本列表页共用 CHILD_W，会同步拉齐 —— 属预期收益。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 掉落 · 列表 ═══════════ -->
+<h2>1 · 掉落页 · 列表视图 <span class="tag">2 处修改</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（行距 6 ✗ · 网格左缘 0 与攻略 8 不齐 ✗）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:936px; height:170px;">
+        <div class="edge" style="left:8px;"><span>8</span></div>
+        <div class="edge" style="left:928px;"><span>928</span></div>
+        <div class="hdr" style="left:0; top:0;">深渊掉落</div>
+        <div class="cnt" style="right:0; top:2px;">12 件</div>
+        <div class="rowline" style="left:0;   top:24px; width:221px; height:44px;"></div>
+        <div class="rowline" style="left:229; top:24px; width:221px; height:44px;"></div>
+        <div class="rowline" style="left:458; top:24px; width:221px; height:44px;"></div>
+        <div class="rowline" style="left:687; top:24px; width:221px; height:44px;"></div>
+        <div class="rowline" style="left:0;   top:74px; width:221px; height:44px;"></div>
+        <div class="rowline" style="left:229; top:74px; width:221px; height:44px;"></div>
+        <div class="badge" style="left:250px; top:63px;">行距 6 &lt; 8</div>
+        <div class="badge" style="left:2px; top:128px;">左缘 0 ≠ 攻略的 8</div>
+        <div class="badge" style="left:790px; top:126px;">右缘 908，右侧空 28</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（网格 8…928 · 行距 8 · 列宽 224）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:936px; height:170px;">
+        <div class="edge" style="left:8px;"><span>8</span></div>
+        <div class="edge" style="left:928px;"><span>928</span></div>
+        <div class="hdr" style="left:8px; top:0;">深渊掉落</div>
+        <div class="cnt" style="right:8px; top:2px;">12 件</div>
+        <div class="rowline" style="left:8;   top:24px; width:224px; height:44px;"></div>
+        <div class="rowline" style="left:240; top:24px; width:224px; height:44px;"></div>
+        <div class="rowline" style="left:472; top:24px; width:224px; height:44px;"></div>
+        <div class="rowline" style="left:704; top:24px; width:224px; height:44px;"></div>
+        <div class="rowline" style="left:8;   top:76px; width:224px; height:44px;"></div>
+        <div class="rowline" style="left:240; top:76px; width:224px; height:44px;"></div>
+        <div class="badge g" style="left:252px; top:63px;">行距 8 ✓</div>
+        <div class="badge g" style="left:20px; top:130px;">左缘 8 = 攻略 ✓</div>
+        <div class="badge g" style="left:802px; top:130px;">右缘 928 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>网格整体内衬 8：列宽 221 → <b>224</b>（=⌊(920−3×8)/4⌋），右缘正好落在 928。</li>
+      <li>纵向行距 <b>LOOT_GAP_Y 6 → 8</b>；组间距 12、卡高 44 不动。</li>
+      <li>「N 件」计数随网格右对齐（原贴容器缘 0 内衬）。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 掉落 · 卡片 ═══════════ -->
+<h2>2 · 掉落页 · 卡片视图 <span class="tag">1 处修改（随全局重排）</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3 class="good">提案示意 <em style="color:var(--green)">（boss 卡宽随网格 221 → 224，纵向卡距 6 → 8）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:936px; height:150px;">
+        <div class="edge" style="left:8px;"><span>8</span></div>
+        <div class="edge" style="left:928px;"><span>928</span></div>
+        <div class="card" style="left:8;   top:0; width:224px; height:110px;">
+          <div class="hdr" style="left:6px; top:5px;">▼ 玛拉顿公主</div>
+          <div class="rowline" style="left:6px; top:26px; width:212px; height:36px; background:transparent;"></div>
+          <div class="rowline" style="left:6px; top:66px; width:212px; height:36px; background:transparent;"></div>
+        </div>
+        <div class="card" style="left:240; top:0; width:224px; height:74px;">
+          <div class="hdr" style="left:6px; top:5px;">▼ 瑟莱德丝公主</div>
+        </div>
+        <div class="card" style="left:8; top:118px; width:224px; height:40px; height:24px;">
+          <div class="hdr" style="left:6px; top:3px;">▼ 诺克赛恩</div>
+        </div>
+        <div class="badge g" style="left:250px; top:86px;">卡距 8 ✓</div>
+        <div class="badge g" style="left:120px; top:146px;">四列 8…928 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>卡片视图列宽/位置全部由 LOOT_CARD_W 推导，CHILD_W 修复 + 网格内衬后自动重排，无单独逻辑。</li>
+      <li>纵向卡距与列表视图共用 LOOT_GAP_Y：<b>6 → 8</b>。</li>
+      <li>卡内行距 4、内衬 6 属卡内几何（非卡-卡间距），保持不动。</li>
+      <li class="ok">boss 卡折叠、悬停胶囊等既有行为零波及。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 任务页 ═══════════ -->
+<h2>3 · 任务页 <span class="tag">重灾区 · 6 处修改</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（底板外扩：距窗沿 4 · 两板间隙 4）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:960px; height:250px;">
+        <div class="edge" style="left:12px;"><span>窗沿 12</span></div>
+        <div class="edge" style="left:948px;"><span></span></div>
+        <div class="tool" style="left:12px; top:0px; width:92px;">全部</div>
+        <div class="tool" style="left:110px; top:0; width:92px;">部落</div>
+        <div class="tool" style="left:208px; top:0; width:92px;">联盟</div>
+        <div class="card" style="left:4px; top:34px; width:530px; height:200px;">
+          <div class="rowline" style="left:8px; top:10px; width:520px; height:34px;"></div>
+          <div class="rowline" style="left:8px; top:48px; width:520px; height:34px;"></div>
+          <div class="rowline" style="left:8px; top:86px; width:520px; height:34px;"></div>
+        </div>
+        <div class="card" style="left:538px; top:34px; width:418px; height:200px;">
+          <div class="rowline" style="left:14px; top:10px; width:376px; height:38px;"></div>
+          <div class="rowline" style="left:14px; top:54px; width:376px; height:38px;"></div>
+        </div>
+        <div class="badge" style="left:0px; top:238px;">板左距窗沿 4 &lt; 8</div>
+        <div class="badge" style="left:497px; top:128px;">板间隙 4</div>
+        <div class="badge" style="left:600px; top:128px;">内容右缘 908，板内空洞 36</div>
+        <div class="badge" style="left:880px; top:238px;">板右距窗沿 4</div>
+        <div class="badge" style="left:120px; top:238px;">筛选行↔板 顶隙 2</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（板收进栅格 · 间隙 8 · 行内衬对称 8/8）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:960px; height:250px;">
+        <div class="edge" style="left:12px;"><span>窗沿 12</span></div>
+        <div class="edge" style="left:948px;"><span></span></div>
+        <div class="tool" style="left:20px; top:0; width:92px;">全部</div>
+        <div class="tool" style="left:118px; top:0; width:92px;">部落</div>
+        <div class="tool" style="left:216px; top:0; width:92px;">联盟</div>
+        <div class="card" style="left:12px; top:42px; width:524px; height:192px;">
+          <div class="rowline" style="left:8px; top:8px; width:508px; height:34px;"></div>
+          <div class="rowline" style="left:8px; top:48px; width:508px; height:34px;"></div>
+          <div class="rowline" style="left:8px; top:88px; width:508px; height:34px;"></div>
+        </div>
+        <div class="card" style="left:544px; top:42px; width:392px; height:192px;">
+          <div class="rowline" style="left:8px; top:8px; width:376px; height:38px;"></div>
+          <div class="rowline" style="left:8px; top:54px; width:376px; height:38px;"></div>
+        </div>
+        <div class="badge g" style="left:16px; top:238px;">板左 12 ✓</div>
+        <div class="badge g" style="left:505px; top:120px;">板间隙 8 ✓</div>
+        <div class="badge g" style="left:602px; top:128px;">内容满板 · 内衬 8/8 ✓</div>
+        <div class="badge g" style="left:872px; top:238px;">板右 12 ✓</div>
+        <div class="badge g" style="left:120px; top:238px;">筛选行↔板 10 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>两块 L1 底板原是包着「带皮肤的内容面板」设计的，外扩 −8/+8；皮肤删除后距窗沿只剩 <b>4px</b>、两板间隙也只有 <b>4px</b>。</li>
+      <li>提案几何（相对内容容器）：<b>板L = 0…524 · 板R = 532…924</b>，间隙 8，板到窗沿 12。</li>
+      <li>左栏任务行宽度 520 → <b>508</b>，两板内衬统一 <b>8/8</b>（现状左 8 右 2 不对称）。</li>
+      <li>右栏内容宽度 380 → <b>376</b> 并贴满板内宽（现状板内右侧空 36）。</li>
+      <li>板顶改与滚动区同高：筛选行 → 板顶间隙 2 → <b>10</b>。</li>
+      <li class="n">行高 34/38、左栏分组头、选中金标等内部版式全部不动。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 攻略页 ═══════════ -->
+<h2>4 · 攻略页 <span class="tag">0 处修改 · 本方案的基准页</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3 class="good">现状已合规 <em style="color:var(--green)">（GUIDE_SIDE=8 · 间距 8 · 网格 8…928）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:936px; height:150px;">
+        <div class="edge" style="left:8px;"><span>8</span></div>
+        <div class="edge" style="left:928px;"><span>928</span></div>
+        <div class="card" style="left:8px; top:0; width:456px; height:70px;">
+          <div class="hdr" style="left:10px; top:6px;">副本须知</div>
+        </div>
+        <div class="card" style="left:472px; top:0; width:456px; height:70px;">
+          <div class="hdr" style="left:10px; top:6px;">怎么进本</div>
+        </div>
+        <div class="card" style="left:8px; top:78px; width:456px; height:70px;">
+          <div class="hdr" style="left:10px; top:6px;">BOSS 打法</div>
+        </div>
+        <div class="card" style="left:472px; top:78px; width:456px; height:70px;">
+          <div class="hdr" style="left:10px; top:6px;">小怪应对</div>
+        </div>
+        <div class="badge g" style="left:420px; top:36px;">8 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>攻略页的 <b>GUIDE_SIDE=8 + GAP 8/8</b> 就是目标栅格，本方案等于把它的规格推广为全局。</li>
+      <li>CHILD_W 修复后 gchild 宽度 908 → 936，卡宽 456 不变，纯修正溢出、无视觉变化。</li>
+      <li class="ok">唯一改动：无。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 地图页 ═══════════ -->
+<h2>5 · 地图页 <span class="tag">0 处修改</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3 class="good">现状已合规 <em style="color:var(--green)">（满宽 936 · 侧栏卡距 8 · 行距 8）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:936px; height:130px;">
+        <div class="card" style="left:0; top:0; width:663px; height:130px; background:var(--l2);"><div class="lbl" style="left:10px; top:6px;">地图画布（满宽贴边，保持）</div></div>
+        <div class="card" style="left:673px; top:0; width:263px; height:60px;">
+          <div class="hdr" style="left:8px; top:5px;">▼ 首领名单</div>
+        </div>
+        <div class="card" style="left:673px; top:68px; width:263px; height:54px;">
+          <div class="hdr" style="left:8px; top:5px;">▼ 掉落 / 技能</div>
+        </div>
+        <div class="badge g" style="left:760px; top:57px;">卡距 8 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>地图页当年就是按满宽 936 设计的（M.FRAME_W），侧栏 BLK_GAP=8、LIST_GAP=8 全部达标。</li>
+      <li class="n">画布贴容器左缘（距窗沿 12）保持不变 —— 大图贴边更沉浸，且它不是「卡」。</li>
+      <li class="ok">唯一改动：无。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 工具行 ═══════════ -->
+<h2>6 · 工具行与按钮对齐 <span class="tag">3 处修改</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3>现状 <em>（筛选行贴 0 · 视图切换悬在 492）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:936px; height:56px;">
+        <div class="edge" style="left:8px;"><span>8</span></div>
+        <div class="edge" style="left:928px;"><span>928</span></div>
+        <div class="tool sel" style="left:0; top:8px; width:150px;">类型：全部 ▾</div>
+        <div class="tool" style="left:158px; top:8px; width:150px;">BOSS：全部 ▾</div>
+        <div class="tool sel" style="left:492px; top:8px; width:60px;">列表</div>
+        <div class="tool" style="left:556px; top:8px; width:60px;">卡片</div>
+        <div class="badge" style="left:2px; top:38px;">左缘 0 ≠ 栅格 8</div>
+        <div class="badge" style="left:430px; top:38px;">视图组悬空，右不齐 928</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="panel">
+    <h3 class="good">提案 <em style="color:var(--green)">（左组贴 8 · 视图组右对齐 928）</em></h3>
+    <div class="stage"><div class="scale">
+      <div class="win" style="width:936px; height:56px;">
+        <div class="edge" style="left:8px;"><span>8</span></div>
+        <div class="edge" style="left:928px;"><span>928</span></div>
+        <div class="tool sel" style="left:8px; top:8px; width:150px;">类型：全部 ▾</div>
+        <div class="tool" style="left:166px; top:8px; width:150px;">BOSS：全部 ▾</div>
+        <div class="tool sel" style="left:804px; top:8px; width:60px;">列表</div>
+        <div class="tool" style="left:868px; top:8px; width:60px;">卡片</div>
+        <div class="badge g" style="left:10px; top:38px;">左缘 8 ✓</div>
+        <div class="badge g" style="left:640px; top:38px;">右缘 928 = 栅格 ✓</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>筛选行 / 类型下拉 / BOSS 下拉：起点 0 → <b>8</b>，下拉间隙统一 8（158 → 166）。</li>
+      <li>「列表 / 卡片」切换组：<b>右对齐</b>到栅格右缘（492 → 804…928），与页签按钮右缘、掉落网格右缘三点一线。</li>
+      <li class="ok">返回键（8,−8）与页签（右 −8）本就贴 8 栅格，不动。</li>
+      <li class="n">任务页 5 颗筛选按钮同起点平移到 8，部落/联盟徽记逻辑不变。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 汇总表 ═══════════ -->
+<h2>7 · 修改点汇总</h2>
+<table>
+  <tr><th>#</th><th>子页面</th><th>位置</th><th>现状</th><th>提案</th></tr>
+  <tr><td>0</td><td>全局</td><td>CHILD_W</td><td class="no">908（右侧 28 死区）</td><td><b>936</b>，内容栅格统一 8…928（新常量 GUTTER=8，推广自 GUIDE_SIDE）</td></tr>
+  <tr><td>1a</td><td>掉落·列表</td><td>网格</td><td class="no">x=0，列宽 221，右缘 908</td><td>x=<b>8</b>，列宽 <b>224</b>，右缘 928</td></tr>
+  <tr><td>1b</td><td>掉落·列表/卡片</td><td>行/卡纵距</td><td class="no">LOOT_GAP_Y = 6</td><td><b>8</b></td></tr>
+  <tr><td>1c</td><td>掉落·列表</td><td>「N 件」计数</td><td class="no">贴容器右缘</td><td>随网格右对齐 928</td></tr>
+  <tr><td>2</td><td>掉落·卡片视图</td><td>boss 卡</td><td class="keep">随 LOOT_CARD_W 推导</td><td>自动重排（224 宽 / 4 列 / 距 8），无独立改动</td></tr>
+  <tr><td>3a</td><td>任务页</td><td>两块 L1 底板</td><td class="no">−8/+8 外扩：距窗沿 4、板间隙 4</td><td>板L <b>0…524</b> · 板R <b>532…924</b>：距窗沿 12、间隙 8</td></tr>
+  <tr><td>3b</td><td>任务页</td><td>左栏任务行</td><td class="no">宽 520，板内衬左 8 右 2</td><td>宽 <b>508</b>，板内衬 <b>8/8</b> 对称</td></tr>
+  <tr><td>3c</td><td>任务页</td><td>右栏内容</td><td class="no">宽 380，板内右空洞 36</td><td>宽 <b>376</b> 贴满板内宽（内衬 8/8）</td></tr>
+  <tr><td>3d</td><td>任务页</td><td>板顶</td><td class="no">与筛选行间隙 2</td><td>与滚动区同顶：间隙 <b>10</b></td></tr>
+  <tr><td>4</td><td>攻略页</td><td>—</td><td class="ok">已合规（8 栅格基准）</td><td class="keep">不动</td></tr>
+  <tr><td>5</td><td>地图页</td><td>—</td><td class="ok">已合规（满宽 + 8 间距）</td><td class="keep">不动</td></tr>
+  <tr><td>6a</td><td>工具行</td><td>筛选/下拉</td><td class="no">起点 0，下拉间隙 8✓ 但左缘不齐</td><td>起点 <b>8</b>（下拉 8…158、166…316）</td></tr>
+  <tr><td>6b</td><td>工具行</td><td>列表/卡片切换</td><td class="no">悬在 492</td><td>右对齐 <b>804…928</b></td></tr>
+</table>
+
+<div class="foot">
+  <b>实施与验证说明</b>：① 布局常量集中改（CHILD_W / LOOT_GAP_Y / Q_* / LOOT_VIEW_X 等）+ EnsureQuestLane 两块板与 qscroll/qdet 锚点重排，掉落网格加 GUTTER 偏移；② 行内几何全部按 detW/CHILD_W 相对推导，自动跟随；③ 改动行多为「版式常量 = 变异锚点」，落地后需同步重锚 df_mut_check 并补「间距 ≥8」断言到 df_dungeon_check；④ 行尾纪律（DungeonUI = CRLF）与五项检查照例全跑。副本列表页因共用 CHILD_W 顺带拉齐（预期收益，单独验收）。
+</div>
+
+</body>
+</html>

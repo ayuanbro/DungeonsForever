@@ -1,0 +1,10 @@
+10/13 15:06:06.497  Execution tainted by DungeonsForever while reading global DungeonsForever_MainFrame (<table: 000002401bf49380>) - Interface/AddOns/Blizzard_UIParentPanelManager/Shared/UIParentPanelManager.lua:1109
+10/13 15:06:06.497      Interface/AddOns/Blizzard_UIParentPanelManager/Shared/UIParentPanelManager.lua:1109
+10/13 15:06:06.497      securecall()
+10/13 15:06:06.497      Interface/AddOns/Blizzard_UIParentPanelManager/Shared/UIParentPanelManager.lua:1168 CloseWindows()
+10/13 15:06:06.497      Interface/AddOns/Blizzard_UIParentPanelManager/Shared/UIParentPanelManager.lua:1177 CloseAllWindows()
+10/13 15:06:06.497      Interface/AddOns/Blizzard_Game/Shared/EventImplementation.lua:307 HandlePlayerEnteringWorld()
+10/13 15:06:06.497      Interface/AddOns/Blizzard_Game/Mainline/EventImplementation.lua:783 HandlePlayerEnteringWorld()
+10/13 15:06:06.497      Interface/AddOns/Blizzard_Game/Camelot/EventImplementation.lua:4 HandlePlayerEnteringWorld()
+10/13 15:06:06.497      Interface/AddOns/Blizzard_Game/Camelot/EventRouting.lua:12 handler()
+10/13 15:06:06.497      Interface/AddOns/Blizzard_Game/Shared/EventRouting.lua:7

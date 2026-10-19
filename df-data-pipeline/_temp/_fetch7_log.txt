@@ -1,0 +1,49 @@
+title_by_qid=140 giver=223 tail_name=203
+Q 正义试炼 ← quest[1654] → The Test of Righteousness
+Q 铸盾师 ← quest[1701] → Fire Hardened Mail
+Q 解封咒语 ← quest[1951] → Rituals of Power
+Q 剃刀高地的亡灵天灾 ← quest[3525] → Extinguishing the Idol
+Q 瑞兹尔的图表 ← quest[1192] → Indurium Ore
+Q 昂贵的知识 ← quest[2200] → Back to Uldaman
+Q 尖啸者的灵魂 ← quest[3527] → The Prophecy of Mosh'aru
+Q 玛拉顿的传说 ← quest[7046] → The Scepter of Celebras
+Q 大地的污染 ← quest[7066] → Seed of Life
+Q 远古之卵 ← quest[3528] → The God Hakkar
+Q 石环 ← quest[3446] → Into the Depths
+Q 深入神庙 ← quest[3447] → Secret of the Circle
+Q 造访格雷甘 ← quest[4143] → Haze of Evil
+Q 碎浪多头怪 ← quest[8232] → The Green Drake
+Q 密文碎片 ← quest[8236] → The Azure Key
+Q 纳迦的珊瑚 ← quest[8253] → Destroy Morphaz
+Q 亡灵的腐液 ← quest[8257] → Blood of Morphaz
+Q 惰性天灾石 ← quest[8418] → Forging the Mightstone
+Q 奇怪的材料 ← quest[8422] → Trolls of a Feather
+Q 魔誓者之战 ← quest[8425] → Voodoo Feathers
+Q 毒性测试 ← quest[9053] → A Better Ingredient
+Q 黑铁的遗产 ← quest[3802] → Dark Iron Legacy
+Q 科林的烈酒 ← quest[4242] → Abandoned Hope
+Q 索瑞森废墟 ← quest[4341] → Kharan Mighthammer
+Q 烈焰精华 ← quest[4024] → A Taste of Flame
+Q 旗帜上的附魔 ← quest[9015] → The Challenge
+Q 净化之匣 ← quest[5526] → Shards of the Felvine
+Q 失落的摩沙鲁石板 ← quest[4788] → The Final Tablets
+Q 罗拉克斯的故事 ← quest[5127] → The Demon Forge
+Q 冷冻龙蛋 ← quest[4735] → Egg Collection
+Q 瓶中的小鬼（术士任务） ← quest[7631] → Dreadsteed of Xoroth
+Q 卡斯迪诺夫的恐惧之袋 ← quest[5384] → Kirtonos the Herald
+Q 瘟疫之龙 ← quest[5582] → Healthy Dragon Scale
+Q 禁锢灵魂的遗物 ← quest[5466] → The Lich, Ras Frostwhisper
+Q 克索诺斯星尘 ← quest[7629] → Imp Delivery
+Q 爱与家庭 ← quest[5848] → Of Love and Family
+Q 信仰奖章 ← quest[5125] → Aurius' Reckoning
+Q 血肉不会撒谎 ← quest[5213] → The Active Agent
+Q 档案管理员 ← quest[5262] → The Truth Comes Crashing Down
+Q 可怕的真相 ← quest[5263] → Above and Beyond
+Q 永不安息的灵魂 ← quest[5282] → The Restless Souls
+Q 亡灵莱斯·霜语 ← quest[5463] → Menethil's Gift
+Q 寻找安泰恩 ← quest[8945] → Dead Man's Plea
+Q 警示 ← quest[7622] → The Balance of Light and Shadow
+Q 被囚禁的水元素 ← quest[6821] → Eye of the Emberseer
+Q 晋升印章 ← quest[4743] → Seal of Ascension
+written: D:\workspace\DungeonsForever\_temp\enus_data_names2.py Q= 46 N= 113
+hand: 121

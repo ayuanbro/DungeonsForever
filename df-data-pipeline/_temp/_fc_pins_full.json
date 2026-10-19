@@ -1,0 +1,794 @@
+{
+ "alcaz-prison": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "blackfathom-deeps": {
+  "rsc_pins": [
+   {
+    "x": 32.9,
+    "y": 60.2,
+    "boss": "ghamoo-ra",
+    "face": 5027,
+    "kind": "boss",
+    "label": "å æ©æ"
+   },
+   {
+    "x": 10.1,
+    "y": 36.0,
+    "boss": "lady-sarevess",
+    "face": 4979,
+    "kind": "boss",
+    "label": "è¨å©ç»´ä¸"
+   },
+   {
+    "x": 52.3,
+    "y": 55.1,
+    "boss": "gelihast",
+    "face": 1773,
+    "kind": "boss",
+    "label": "æ ¼éåæ¯ç¹"
+   },
+   {
+    "x": 38.8,
+    "y": 20.0,
+    "boss": "lorgus-jett",
+    "face": 12822,
+    "kind": "boss",
+    "label": "æ´å¤æ¯Â·æ°ç¹"
+   },
+   {
+    "x": 44.1,
+    "y": 23.4,
+    "boss": "lorgus-jett",
+    "face": 12822,
+    "kind": "boss",
+    "label": "æ´å¤æ¯Â·æ°ç¹"
+   },
+   {
+    "x": 35.4,
+    "y": 48.3,
+    "boss": "lorgus-jett",
+    "face": 12822,
+    "kind": "boss",
+    "label": "æ´å¤æ¯Â·æ°ç¹"
+   },
+   {
+    "x": 33.8,
+    "y": 72.3,
+    "boss": "lorgus-jett",
+    "face": 12822,
+    "kind": "boss",
+    "label": "æ´å¤æ¯Â·æ°ç¹"
+   },
+   {
+    "x": 41.5,
+    "y": 75.4,
+    "boss": "baron-aquanis",
+    "face": 110,
+    "kind": "boss",
+    "label": "é¿å¥å°¼æ¯ç·çµ"
+   },
+   {
+    "x": 51.9,
+    "y": 81.6,
+    "boss": "twilight-lord-kelris",
+    "face": 4939,
+    "kind": "boss",
+    "label": "æ®åé¢ä¸»åå°éæ¯"
+   },
+   {
+    "x": 85.6,
+    "y": 86.6,
+    "boss": "aku-mai",
+    "face": 2837,
+    "kind": "boss",
+    "label": "é¿åºéº¦å°"
+   },
+   {
+    "x": 60.6,
+    "y": 31.2,
+    "boss": "old-serra-kis",
+    "face": 1816,
+    "kind": "boss",
+    "label": "çæåæ¯"
+   }
+  ],
+  "entrance": [],
+  "quest": []
+ },
+ "blackmaw-hold": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "blackrock-depths": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "city-of-dalaran": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "dire-maul-east": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "dire-maul-north": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "dire-maul-west": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "excavation-site": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "gnomeregan": {
+  "rsc_pins": [
+   {
+    "x": 81.9,
+    "y": 65.1,
+    "boss": "grubbis",
+    "face": 6533,
+    "kind": "boss",
+    "label": "æ ¼é²æ¯æ¯"
+   },
+   {
+    "x": 57.6,
+    "y": 56.6,
+    "boss": "viscous-fallout",
+    "face": 5497,
+    "kind": "boss",
+    "label": "ç²æ§è¾å°å°"
+   },
+   {
+    "x": 24.8,
+    "y": 67.9,
+    "boss": "electrocutioner-6000",
+    "face": 6915,
+    "kind": "boss",
+    "label": "çµåå¨6000å"
+   },
+   {
+    "x": 43.8,
+    "y": 86.5,
+    "boss": "crowd-pummeler-9-60",
+    "face": 6774,
+    "kind": "boss",
+    "label": "ç¾¤ä½æå»è9-60"
+   },
+   {
+    "x": 29.5,
+    "y": 54.0,
+    "boss": "dark-iron-ambassador",
+    "face": 6669,
+    "kind": "rare",
+    "label": "Dark Iron Ambassador"
+   },
+   {
+    "x": 31.3,
+    "y": 30.0,
+    "boss": "mekgineer-thermaplugg",
+    "face": 6980,
+    "kind": "boss",
+    "label": "æºæ¢°å¸ççæ®ææ ¼"
+   }
+  ],
+  "entrance": [],
+  "quest": []
+ },
+ "hall-of-thanes": {
+  "rsc_pins": [
+   {
+    "x": 50.9,
+    "y": 62.5,
+    "boss": "faldrim-anvilmar",
+    "face": 142826,
+    "kind": "boss",
+    "label": "æ³å¾·æÂ·å®å¨çå°"
+   },
+   {
+    "x": 62.5,
+    "y": 49.0,
+    "boss": "magmatus",
+    "face": 1070,
+    "kind": "boss",
+    "label": "Magmatus"
+   },
+   {
+    "x": 51.0,
+    "y": 49.5,
+    "boss": "plunder",
+    "face": 142840,
+    "kind": "boss",
+    "label": "å«æ è"
+   },
+   {
+    "x": 51.0,
+    "y": 22.0,
+    "boss": "durgen-dirgehammer",
+    "face": 142837,
+    "kind": "boss",
+    "label": "ææ ¹Â·æ½é¤"
+   }
+  ],
+  "entrance": [
+   {
+    "x": 50.9,
+    "y": 93.4,
+    "label": ""
+   }
+  ],
+  "quest": [
+   {
+    "x": 40.0,
+    "y": 63.8,
+    "label": "Ghostly Attendant 给予任务 An Ancient Grudge",
+    "quest": 96395
+   },
+   {
+    "x": 54.6,
+    "y": 16.9,
+    "label": "一块石板开启任务 The Treaty of Understanding",
+    "quest": 98423
+   }
+  ]
+ },
+ "kroldok-stronghold": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "lower-blackrock-spire": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "maraudon": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "ragefire-chasm": {
+  "rsc_pins": [
+   {
+    "x": 56.1,
+    "y": 38.0,
+    "boss": "oggleflint",
+    "face": 11611,
+    "kind": "boss",
+    "label": "å¥¥æ ¼å¼æç¹"
+   },
+   {
+    "x": 41.0,
+    "y": 57.7,
+    "boss": "taragaman-the-hungerer",
+    "face": 7970,
+    "kind": "boss",
+    "label": "é¥¥é¥¿èå¡æå æ¼"
+   },
+   {
+    "x": 33.0,
+    "y": 84.5,
+    "boss": "jergosh-the-invoker",
+    "face": 11429,
+    "kind": "boss",
+    "label": "ç¥æ±èè¶æä»"
+   },
+   {
+    "x": 41.5,
+    "y": 86.2,
+    "boss": "bazzalan",
+    "face": 2007,
+    "kind": "boss",
+    "label": "å·´æå°"
+   }
+  ],
+  "entrance": [],
+  "quest": []
+ },
+ "razorfen-downs": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "razorfen-kraul": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "ruins-of-lordaeron": {
+  "rsc_pins": [
+   {
+    "x": 58.8,
+    "y": 69.8,
+    "boss": "the-baron",
+    "face": 144188,
+    "kind": "boss",
+    "label": "The Baron"
+   },
+   {
+    "x": 66.8,
+    "y": 39.2,
+    "boss": "witherfang",
+    "face": 144189,
+    "kind": "boss",
+    "label": "æ¯ç"
+   },
+   {
+    "x": 41.0,
+    "y": 53.3,
+    "boss": "the-abandoned",
+    "face": 138667,
+    "kind": "boss",
+    "label": "è¢«éå¼è"
+   },
+   {
+    "x": 39.2,
+    "y": 42.5,
+    "boss": "bjork",
+    "face": 144170,
+    "kind": "boss",
+    "label": "æ¯çº¦å"
+   },
+   {
+    "x": 45.8,
+    "y": 62.7,
+    "boss": "rath-mael",
+    "face": 144175,
+    "kind": "boss",
+    "label": "ææ¯çå°"
+   },
+   {
+    "x": 37.7,
+    "y": 64.8,
+    "boss": "viktor-the-vile",
+    "face": 139455,
+    "kind": "boss",
+    "label": "éªæ¶çç»´åå¤"
+   }
+  ],
+  "entrance": [
+   {
+    "x": 61.0,
+    "y": 21.6,
+    "label": ""
+   }
+  ],
+  "quest": [
+   {
+    "x": 62.4,
+    "y": 28.5,
+    "label": "Captain Truman 给予任务 Abominable Creatures",
+    "quest": 95250
+   }
+  ]
+ },
+ "scarlet-monastery-armory": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "scarlet-monastery-cathedral": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "scarlet-monastery-graveyard": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "scarlet-monastery-library": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "scholomance": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "shadowfang-keep": {
+  "rsc_pins": [
+   {
+    "x": 66.1,
+    "y": 71.1,
+    "boss": "rethilgore",
+    "face": 524,
+    "kind": "boss",
+    "label": "é·å¸æå°"
+   },
+   {
+    "x": 33.1,
+    "y": 62.6,
+    "boss": "fel-steed-shadow-charger",
+    "face": 1952,
+    "kind": "boss",
+    "label": "Fel Steed / Shadow Charger"
+   },
+   {
+    "x": 25.5,
+    "y": 55.6,
+    "boss": "commander-springvale",
+    "face": 3223,
+    "kind": "boss",
+    "label": "ææ¥å®æ¯æ®æç¦å°"
+   },
+   {
+    "x": 37.3,
+    "y": 53.8,
+    "boss": "jordan-s-smithing-hammer",
+    "face": 0,
+    "kind": "object",
+    "label": "Jordan's Smithing Hammer"
+   },
+   {
+    "x": 48.0,
+    "y": 29.0,
+    "boss": "razorclaw-the-butcher",
+    "face": 524,
+    "kind": "boss",
+    "label": "å± å¤«æä½åå³"
+   },
+   {
+    "x": 29.5,
+    "y": 80.3,
+    "boss": "baron-silverlaine",
+    "face": 3222,
+    "kind": "boss",
+    "label": "å¸­ç¦è±æ©ç·çµ"
+   },
+   {
+    "x": 55.1,
+    "y": 77.1,
+    "boss": "odo-the-blindwatcher",
+    "face": 522,
+    "kind": "boss",
+    "label": "ç²ç¼å®å«å¥¥æ"
+   },
+   {
+    "x": 63.0,
+    "y": 52.5,
+    "boss": "deathsworn-captain",
+    "face": 3224,
+    "kind": "rare",
+    "label": "Deathsworn Captain"
+   },
+   {
+    "x": 55.7,
+    "y": 64.5,
+    "boss": "fenrus-the-devourer",
+    "face": 2352,
+    "kind": "boss",
+    "label": "åå¬èè¬é²æ¯"
+   },
+   {
+    "x": 59.0,
+    "y": 53.3,
+    "boss": "wolf-master-nandos",
+    "face": 11179,
+    "kind": "boss",
+    "label": "ç¼çåææ¯"
+   },
+   {
+    "x": 63.9,
+    "y": 20.0,
+    "boss": "archmage-arugal",
+    "face": 2353,
+    "kind": "boss",
+    "label": "å¤§æ³å¸é¿é²é«"
+   },
+   {
+    "x": 47.2,
+    "y": 79.3,
+    "boss": "the-book-of-ur",
+    "face": 0,
+    "kind": "object",
+    "label": "The Book of Ur"
+   }
+  ],
+  "entrance": [],
+  "quest": []
+ },
+ "shapers-terrace": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "stratholme-main-gate": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "stratholme-service-gate": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "sunken-temple": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "the-deadmines": {
+  "rsc_pins": [
+   {
+    "x": 38.6,
+    "y": 60.9,
+    "boss": "rhahk-zor",
+    "face": 14403,
+    "kind": "boss",
+    "label": "æåä½"
+   },
+   {
+    "x": 52.7,
+    "y": 50.5,
+    "boss": "miner-johnson",
+    "face": 556,
+    "kind": "rare",
+    "label": "Miner Johnson"
+   },
+   {
+    "x": 45.0,
+    "y": 88.9,
+    "boss": "sneed",
+    "face": 7125,
+    "kind": "boss",
+    "label": "æ¯å°¼å¾·"
+   },
+   {
+    "x": 48.5,
+    "y": 92.4,
+    "boss": "sneed-s-shredder",
+    "face": 1269,
+    "kind": "boss",
+    "label": "Sneed's Shredder"
+   },
+   {
+    "x": 11.9,
+    "y": 73.1,
+    "boss": "gilnid",
+    "face": 7124,
+    "kind": "boss",
+    "label": "åºå°å°¼æ ¼"
+   },
+   {
+    "x": 56.1,
+    "y": 26.5,
+    "boss": "mr-smite",
+    "face": 2026,
+    "kind": "boss",
+    "label": "éæ³åç"
+   },
+   {
+    "x": 61.7,
+    "y": 35.9,
+    "boss": "captain-greenskin",
+    "face": 7113,
+    "kind": "boss",
+    "label": "ç»¿ç®è¹é¿"
+   },
+   {
+    "x": 60.6,
+    "y": 45.9,
+    "boss": "edwin-vancleef",
+    "face": 2029,
+    "kind": "boss",
+    "label": "è¾å¾·æ¸©Â·èåéå¤«"
+   },
+   {
+    "x": 69.7,
+    "y": 42.0,
+    "boss": "cookie",
+    "face": 1305,
+    "kind": "boss",
+    "label": "æ²å¥"
+   }
+  ],
+  "entrance": [],
+  "quest": []
+ },
+ "the-drowned-city": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "the-stockade": {
+  "rsc_pins": [
+   {
+    "x": 69.2,
+    "y": 30.9,
+    "boss": "kam-deepfury",
+    "face": 825,
+    "kind": "boss",
+    "label": "å¡å§Â·æ·±æ"
+   },
+   {
+    "x": 38.1,
+    "y": 24.0,
+    "boss": "bruegal-ironknuckle",
+    "face": 2142,
+    "kind": "rare",
+    "label": "Bruegal Ironknuckle"
+   },
+   {
+    "x": 29.5,
+    "y": 44.7,
+    "boss": "bruegal-ironknuckle",
+    "face": 2142,
+    "kind": "rare",
+    "label": "Bruegal Ironknuckle"
+   },
+   {
+    "x": 61.6,
+    "y": 48.3,
+    "boss": "bruegal-ironknuckle",
+    "face": 2142,
+    "kind": "rare",
+    "label": "Bruegal Ironknuckle"
+   },
+   {
+    "x": 61.5,
+    "y": 25.1,
+    "boss": "bruegal-ironknuckle",
+    "face": 2142,
+    "kind": "rare",
+    "label": "Bruegal Ironknuckle"
+   },
+   {
+    "x": 49.9,
+    "y": 24.2,
+    "boss": "targorr-the-dread",
+    "face": 0,
+    "kind": "boss",
+    "label": "å¯æçå¡æ ¼å°"
+   },
+   {
+    "x": 42.4,
+    "y": 46.4,
+    "boss": "targorr-the-dread",
+    "face": 0,
+    "kind": "boss",
+    "label": "å¯æçå¡æ ¼å°"
+   },
+   {
+    "x": 57.8,
+    "y": 55.2,
+    "boss": "targorr-the-dread",
+    "face": 0,
+    "kind": "boss",
+    "label": "å¯æçå¡æ ¼å°"
+   },
+   {
+    "x": 33.3,
+    "y": 37.5,
+    "boss": "targorr-the-dread",
+    "face": 0,
+    "kind": "boss",
+    "label": "å¯æçå¡æ ¼å°"
+   },
+   {
+    "x": 78.2,
+    "y": 45.7,
+    "boss": "hamhock",
+    "face": 0,
+    "kind": "boss",
+    "label": "åå§éå"
+   },
+   {
+    "x": 85.7,
+    "y": 51.0,
+    "boss": "bazil-thredd",
+    "face": 0,
+    "kind": "boss",
+    "label": "å·´åå°Â·ç¹é·å¾·"
+   }
+  ],
+  "entrance": [],
+  "quest": []
+ },
+ "uldaman": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "upper-blackrock-spire": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ },
+ "wailing-caverns": {
+  "rsc_pins": [
+   {
+    "x": 15.6,
+    "y": 58.5,
+    "boss": "lord-cobrahn",
+    "face": 4213,
+    "kind": "boss",
+    "label": "èå¸è±æ©"
+   },
+   {
+    "x": 30.5,
+    "y": 43.2,
+    "boss": "lady-anacondra",
+    "face": 4313,
+    "kind": "boss",
+    "label": "å®å¨ç§å¾·æ"
+   },
+   {
+    "x": 28.1,
+    "y": 31.8,
+    "boss": "lady-anacondra",
+    "face": 4313,
+    "kind": "boss",
+    "label": "å®å¨ç§å¾·æ"
+   },
+   {
+    "x": 47.0,
+    "y": 45.6,
+    "boss": "lady-anacondra",
+    "face": 4313,
+    "kind": "boss",
+    "label": "å®å¨ç§å¾·æ"
+   },
+   {
+    "x": 40.3,
+    "y": 27.4,
+    "boss": "lady-anacondra",
+    "face": 4313,
+    "kind": "boss",
+    "label": "å®å¨ç§å¾·æ"
+   },
+   {
+    "x": 25.8,
+    "y": 44.6,
+    "boss": "kresh",
+    "face": 5126,
+    "kind": "boss",
+    "label": "åé·ä»"
+   },
+   {
+    "x": 62.5,
+    "y": 53.3,
+    "boss": "lord-serpentis",
+    "face": 4215,
+    "kind": "boss",
+    "label": "çè¬è¿ªæ¯"
+   },
+   {
+    "x": 56.4,
+    "y": 47.4,
+    "boss": "verdan-the-everliving",
+    "face": 4256,
+    "kind": "boss",
+    "label": "æ°¸çèæ²å°ä¸¹"
+   },
+   {
+    "x": 34.2,
+    "y": 15.8,
+    "boss": "mutanus-the-devourer",
+    "face": 4088,
+    "kind": "boss",
+    "label": "åå¬èç©å¦åªæ¯"
+   }
+  ],
+  "entrance": [],
+  "quest": []
+ },
+ "zulfarrak": {
+  "rsc_pins": [],
+  "entrance": [],
+  "quest": []
+ }
+}

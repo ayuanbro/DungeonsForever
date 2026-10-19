@@ -1,0 +1,366 @@
+{
+ "ragefire_chasm": {
+  "slug": "ragefire-chasm",
+  "map": "/dungeons/maps/ragefire-chasm.webp",
+  "pins": [
+   {
+    "npcid": 11611,
+    "name": "奥格弗林特",
+    "left": 56.1,
+    "top": 38.0
+   },
+   {
+    "npcid": 7970,
+    "name": "饥饿者塔拉加曼",
+    "left": 41.0,
+    "top": 57.7
+   },
+   {
+    "npcid": 11429,
+    "name": "祈求者耶戈什",
+    "left": 33.0,
+    "top": 84.5
+   },
+   {
+    "npcid": 2007,
+    "name": "巴扎兰",
+    "left": 41.5,
+    "top": 86.2
+   }
+  ]
+ },
+ "wailing_caverns": {
+  "slug": "wailing-caverns",
+  "map": "/dungeons/maps/wailing-caverns.webp",
+  "pins": [
+   {
+    "npcid": 4213,
+    "name": "考布莱恩",
+    "left": 15.6,
+    "top": 58.5
+   },
+   {
+    "npcid": 4313,
+    "name": "安娜科德拉",
+    "left": 30.5,
+    "top": 43.2
+   },
+   {
+    "npcid": 4313,
+    "name": "安娜科德拉",
+    "left": 28.1,
+    "top": 31.8
+   },
+   {
+    "npcid": 4313,
+    "name": "安娜科德拉",
+    "left": 47.0,
+    "top": 45.6
+   },
+   {
+    "npcid": 4313,
+    "name": "安娜科德拉",
+    "left": 40.3,
+    "top": 27.4
+   },
+   {
+    "npcid": 5126,
+    "name": "克雷什",
+    "left": 25.8,
+    "top": 44.6
+   },
+   {
+    "npcid": 4215,
+    "name": "瑟芬迪斯",
+    "left": 62.5,
+    "top": 53.3
+   },
+   {
+    "npcid": 4256,
+    "name": "永生者沃尔丹",
+    "left": 56.4,
+    "top": 47.4
+   },
+   {
+    "npcid": 4088,
+    "name": "吞噬者穆坦努斯",
+    "left": 34.2,
+    "top": 15.8
+   }
+  ]
+ },
+ "the_deadmines": {
+  "slug": "the-deadmines",
+  "map": "/dungeons/maps/the-deadmines-1.webp",
+  "pins": [
+   {
+    "npcid": 14403,
+    "name": "拉克佐",
+    "left": 38.6,
+    "top": 60.9
+   },
+   {
+    "npcid": 556,
+    "name": "Miner Johnson",
+    "left": 52.7,
+    "top": 50.5
+   },
+   {
+    "npcid": 7125,
+    "name": "斯尼德",
+    "left": 45.0,
+    "top": 88.9
+   },
+   {
+    "npcid": 1269,
+    "name": "Sneed&#x27;s Shredder",
+    "left": 48.5,
+    "top": 92.4
+   }
+  ]
+ },
+ "shadowfang_keep": {
+  "slug": "shadowfang-keep",
+  "map": "/dungeons/maps/shadowfang-keep-1.webp",
+  "pins": [
+   {
+    "npcid": 524,
+    "name": "雷希戈尔",
+    "left": 66.1,
+    "top": 71.1
+   },
+   {
+    "npcid": 1952,
+    "name": "Fel Steed / Shadow Charger",
+    "left": 33.1,
+    "top": 62.6
+   },
+   {
+    "npcid": 3223,
+    "name": "指挥官斯普林瓦尔",
+    "left": 25.5,
+    "top": 55.6
+   },
+   {
+    "npcid": null,
+    "name": "Jordan&#x27;s Smithing Hammer",
+    "left": 37.3,
+    "top": 53.8
+   }
+  ]
+ },
+ "blackfathom_deeps": {
+  "slug": "blackfathom-deeps",
+  "map": "/dungeons/maps/blackfathom-deeps-1.webp",
+  "pins": [
+   {
+    "npcid": 5027,
+    "name": "加摩拉",
+    "left": 32.9,
+    "top": 60.2
+   },
+   {
+    "npcid": 4979,
+    "name": "萨利维丝",
+    "left": 10.1,
+    "top": 36.0
+   },
+   {
+    "npcid": 1773,
+    "name": "格里哈斯特",
+    "left": 52.3,
+    "top": 55.1
+   }
+  ]
+ },
+ "the_stockade": {
+  "slug": "the-stockade",
+  "map": "/dungeons/maps/the-stockade.webp",
+  "pins": [
+   {
+    "npcid": 825,
+    "name": "卡姆·深怒",
+    "left": 69.2,
+    "top": 30.9
+   },
+   {
+    "npcid": 2142,
+    "name": "Bruegal Ironknuckle",
+    "left": 38.1,
+    "top": 24.0
+   },
+   {
+    "npcid": 2142,
+    "name": "Bruegal Ironknuckle",
+    "left": 29.5,
+    "top": 44.7
+   },
+   {
+    "npcid": 2142,
+    "name": "Bruegal Ironknuckle",
+    "left": 61.6,
+    "top": 48.3
+   },
+   {
+    "npcid": 2142,
+    "name": "Bruegal Ironknuckle",
+    "left": 61.5,
+    "top": 25.1
+   },
+   {
+    "npcid": null,
+    "name": "可怕的塔格尔",
+    "left": 49.9,
+    "top": 24.2
+   },
+   {
+    "npcid": null,
+    "name": "可怕的塔格尔",
+    "left": 42.4,
+    "top": 46.4
+   },
+   {
+    "npcid": null,
+    "name": "可怕的塔格尔",
+    "left": 57.8,
+    "top": 55.2
+   },
+   {
+    "npcid": null,
+    "name": "可怕的塔格尔",
+    "left": 33.3,
+    "top": 37.5
+   },
+   {
+    "npcid": null,
+    "name": "哈姆霍克",
+    "left": 78.2,
+    "top": 45.7
+   },
+   {
+    "npcid": null,
+    "name": "巴吉尔·特雷德",
+    "left": 85.7,
+    "top": 51.0
+   }
+  ]
+ },
+ "gnomeregan": {
+  "slug": "gnomeregan",
+  "map": "/dungeons/maps/gnomeregan-1.webp",
+  "pins": [
+   {
+    "npcid": 6533,
+    "name": "格鲁比斯",
+    "left": 81.9,
+    "top": 65.1
+   },
+   {
+    "npcid": 5497,
+    "name": "粘性辐射尘",
+    "left": 57.6,
+    "top": 56.6
+   }
+  ]
+ },
+ "razorfen_kraul": {
+  "slug": "razorfen-kraul",
+  "map": null,
+  "pins": []
+ },
+ "razorfen_downs": {
+  "slug": "razorfen-downs",
+  "map": null,
+  "pins": []
+ },
+ "sm_graveyard": {
+  "slug": "scarlet-monastery-graveyard",
+  "map": null,
+  "pins": []
+ },
+ "sm_library": {
+  "slug": "scarlet-monastery-library",
+  "map": null,
+  "pins": []
+ },
+ "sm_armory": {
+  "slug": "scarlet-monastery-armory",
+  "map": null,
+  "pins": []
+ },
+ "sm_cathedral": {
+  "slug": "scarlet-monastery-cathedral",
+  "map": null,
+  "pins": []
+ },
+ "uldaman": {
+  "slug": "uldaman",
+  "map": null,
+  "pins": []
+ },
+ "zul_farrak": {
+  "slug": "zulfarrak",
+  "map": null,
+  "pins": []
+ },
+ "maraudon": {
+  "slug": "maraudon",
+  "map": null,
+  "pins": []
+ },
+ "sunken_temple": {
+  "slug": "sunken-temple",
+  "map": null,
+  "pins": []
+ },
+ "blackrock_depths": {
+  "slug": "blackrock-depths",
+  "map": null,
+  "pins": []
+ },
+ "dire_maul_east": {
+  "slug": "dire-maul-east",
+  "map": null,
+  "pins": []
+ },
+ "dire_maul_north": {
+  "slug": "dire-maul-north",
+  "map": null,
+  "pins": []
+ },
+ "dire_maul_west": {
+  "slug": "dire-maul-west",
+  "map": null,
+  "pins": []
+ },
+ "lower_blackrock_spire": {
+  "slug": "lower-blackrock-spire",
+  "map": null,
+  "pins": []
+ },
+ "upper_blackrock_spire": {
+  "slug": "upper-blackrock-spire",
+  "map": null,
+  "pins": []
+ },
+ "scholomance": {
+  "slug": "scholomance",
+  "map": null,
+  "pins": []
+ },
+ "stratholme_main": {
+  "slug": "stratholme-main-gate",
+  "map": null,
+  "pins": []
+ },
+ "stratholme_service": {
+  "slug": "stratholme-service-gate",
+  "map": null,
+  "pins": []
+ },
+ "city_of_dalaran": {
+  "slug": "city-of-dalaran",
+  "map": "/dungeons/maps/city-of-dalaran-city.webp",
+  "pins": []
+ }
+}

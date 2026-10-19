@@ -1,0 +1,6 @@
+-- DungeonsForever · English (enUS) data overlay — Data_ClassGuide
+-- Loads on the enUS client only; other locales exit immediately.
+if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
+
+-- =============================================================================
+-- 无限副本手册 · 职业指南页 · 专精指南（生成物，勿手改）

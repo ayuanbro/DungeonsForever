@@ -1,0 +1,112 @@
+function PV.RenderWeek()
+    local y = 0
+    local liveRank, liveProg, honor, hk = LiveState()
+    local rank = PV.simRank or liveRank
+    local prog = PV.simRank and 0 or liveProg
+    if rank == 0 then rank = 1 end
+
+    local head = PV.labels.sprHead
+    head:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -y)
+    head:SetText(format("%s · %s", L["本周荣誉"], L["每周结算模型"]))
+    head:Show()
+    y = y + 26
+
+    PV.badge:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -(y + 4))
+    if rank >= 1 then
+        PV.badge:SetTexture(format("Interface\\PvPRankBadges\\PvPRank%02d", rank))
+        PV.badge:Show()
+    end
+    local st = PV.labels.sprState
+    st:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 54, -y)
+    local line1 = (rank >= 2)
+        and format(L["军衔 %d · 进度 %.1f%%"], rank, prog * 100)
+        or L["军衔 1 及以下无需荣誉：本周 15 次荣誉击杀即可晋级"]
+    local line2 = format(L["本周荣誉 %s · 荣誉击杀 %d"], fmtN(honor), hk)
+    if PV.simRank then
+        line2 = line2 .. " · " .. format(L["模拟中：从 R%d 0%% 起跑（再点一次取消）"], PV.simRank)
+    end
+    if type(GetSecondsUntilWeeklyReset) == "function" then
+        local s = GetSecondsUntilWeeklyReset() or 0
+        if s > 0 then
+            line2 = line2 .. " · " .. format(L["距每周重置 %d 天 %02d 小时"],
+                floor(s / 86400), floor((s % 86400) / 3600))
+        end
+    end
+    st:SetText(line1 .. "\n" .. line2)
+    st:Show()
+    y = y + 50
+
+    if rank >= 2 and HD.milestones[rank] then
+        local mh = PV.labels.sprMile
+        mh:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -y)
+        mh:SetText(format(L["本周荣誉里程碑（军衔 %d）"], rank))
+        mh:Show()
+        y = y + 26
+        local ms = HD.milestones[rank]
+        local bw = PV.W - 8
+        local lastM = ms[#ms]
+        PV.mileBG:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -(y + 4))
+        PV.mileBG:SetWidth(bw)
+        PV.mileBG:SetHeight(12)
+        PV.mileBG:Show()
+        local x1 = 4 + bw * ms[1] / lastM
+        PV.mileRed:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -(y + 4))
+        PV.mileRed:SetWidth(math.max(x1 - 4, 1))
+        PV.mileRed:SetHeight(12)
+        PV.mileRed:Show()
+        for i, m in ipairs(ms) do
+            local tx = 4 + bw * m / lastM
+            PV.mileTicks[i]:SetPoint("TOPLEFT", PV.child, "TOPLEFT", tx - 1, -(y + 2))
+            PV.mileTicks[i]:SetWidth(2)
+            PV.mileTicks[i]:SetHeight(16)
+            PV.mileTicks[i]:Show()
+            local lb = PV.mileLabels[i]
+            lb:SetText(fmtN(m))
+            lb:SetPoint("TOPLEFT", PV.child, "TOPLEFT",
+                math.min(math.max(tx - 32, 0), PV.W - 64), -(y + 20))
+            lb:Show()
+        end
+        local mx = 4 + bw * math.min(honor, lastM) / lastM
+        PV.mileMark:SetPoint("TOPLEFT", PV.child, "TOPLEFT", mx - 1, -y)
+        PV.mileMark:SetWidth(2)
+        PV.mileMark:SetHeight(20)
+        PV.mileMark:Show()
+        y = y + 44
+    end
+
+    local scHead = PV.labels.sprScene
+    scHead:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -y)
+    scHead:SetText(L["重置后场景（需至少 15 次本周荣誉击杀才结算）"])
+    scHead:Show()
+    y = y + 26
+    local opts = Scenarios(rank, honor, prog)
+    local cursor = 0
+    for _, o in ipairs(opts) do
+        if o.situation ~= "+1" then
+            cursor = cursor + 1
+            local row = PV.spRows[cursor]
+            row.sit:SetText(o.situation == "!!" and L["跳档"] or o.situation)
+            row.need:SetText(fmtN(o.need))
+            row.rem:SetText((o.remains or 0) > 0 and fmtN(o.remains) or "—")
+            row.res:SetText(format("R%d · %.0f%%", o.rank, (o.rankProgress or 0) * 100))
+            row:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 0, -y)
+            row:Show()
+            y = y + 26
+        end
+    end
+    y = y + 8
+
+    local gl = PV.labels.sprGoal
+    gl:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -(y + 4))
+    gl:SetText(L["冲刺目标"])
+    gl:Show()
+    for i = 1, 13 do
+        local bt = PV.goalBtns[i]
+        bt:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 110 + (i - 1) * 36, -y)
+        SetOutline(bt, PV.goal == i + 1, 1, 0.82, 0)
+        bt:Show()
+    end
+    y = y + 30
+
+    local sl = PV.labels.sprSim
+    sl:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -(y + 4))

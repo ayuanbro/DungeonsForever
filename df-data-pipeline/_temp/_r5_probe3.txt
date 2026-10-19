@@ -1,0 +1,22 @@
+全库用户可见未翻译单元格 = 20
+  1. [druid_restoration>changes>2>tb>v>2>1] mixed(59)   将我们的|s1430|、|s408120|和|s18562|down to one second. As a new talent to classic, we see Blizzard start to paint the picture of fast HoTs being a powerful
+  2. [druid_restoration>changes>2>tb>v>3>1] pure-EN     A 5% buff to our HoTs at max level. An easy pick-up for any talent build since it's in the first tier of Balance talents.
+  3. [druid_restoration>changes>2>tb>v>4>1] pure-EN     An extra 4% crit to our heals at max rank. All our HoTs can now crit, so this talent is a great pickup to improve our healing throughput.
+  4. [druid_restoration>changes>2>tb>v>5>1] mixed(24)   Lengthens the duration of our|s1430|和|s8938|HoTs. This talent has great synergy with|s18562|, which now heals for the total duration of the HoT instea
+  5. [druid_restoration>changes>3>p>v] pure-EN     There are many changes to our existing abilities and talents. We are seeing fresh updates on familiar effects that change how we think about their hea
+  6. [druid_restoration>changes>4>tb>v>0>1] pure-EN     Now scales the returned damage by the caster's Spell Power.
+  7. [druid_restoration>changes>4>tb>v>1>1] pure-EN     Significantly cheaper, and the HoT portion can now crit.
+  8. [druid_restoration>changes>4>tb>v>2>1] mixed(18)   Now baseline and can trigger off spell casts. Watching for the buff and then casting a large|s408120|、|s5188|, or|s8938|将对法力效率有极大帮助。
+  9. [hunter_beast-mastery>systems>2>h4>v] pure-EN     Pets
+ 10. [mage_arcane>systems>0>ul>v>0>text] mixed(47)   - 每次使用时|s1239700|，获得一层负面效果，最多叠加 4 层——每层都会提高下一次奥术冲击的法力消耗，并提升其伤害其他spell you use after. This other spell will clear the stacks back to 0. This is used 
+ 11. [mage_arcane>races>10>p>v] pure-EN     High Order Skyborne
+ 12. [priest_discipline>prof>1>h4>v] pure-EN     false
+ 13. [priest_discipline>prof>4>h4>v] pure-EN     false
+ 14. [rogue_subtlety>races>10>p>v] pure-EN     Dwarf
+ 15. [rogue_subtlety>races>11>p>v] pure-EN     Horde
+ 16. [rogue_subtlety>races>13>p>v] pure-EN     Orc
+ 17. [rogue_subtlety>races>14>p>v] pure-EN     Undead
+ 18. [rogue_subtlety>races>15>p>v] pure-EN     Troll
+ 19. [warlock_demonology>prof>1>tb>v>5>1] pure-EN     +5% damage to Beasts and Dragonkin.
+ 20. [warlock_destruction>changes>3>p>v] mixed(13)   |s17917|现在还会影响所有伤害性法术，而不仅仅是毁灭系法术。|s17793|不再消耗充能，且现在只影响你对目标造成的暗影伤害，不再作用于其他人的伤害。|s18119|increases|s348|的直接伤害并附加减速效果|s18932|。|s17959|现在需要5点天赋点而非1点。|s1792
+exit=0

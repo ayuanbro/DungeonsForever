@@ -1,0 +1,174 @@
+{
+ "alcaz-prison": {
+  "entrance": [],
+  "quest": []
+ },
+ "blackfathom-deeps": {
+  "entrance": [],
+  "quest": []
+ },
+ "blackmaw-hold": {
+  "entrance": [],
+  "quest": []
+ },
+ "blackrock-depths": {
+  "entrance": [],
+  "quest": []
+ },
+ "city-of-dalaran": {
+  "entrance": [],
+  "quest": []
+ },
+ "dire-maul-east": {
+  "entrance": [],
+  "quest": []
+ },
+ "dire-maul-north": {
+  "entrance": [],
+  "quest": []
+ },
+ "dire-maul-west": {
+  "entrance": [],
+  "quest": []
+ },
+ "excavation-site": {
+  "entrance": [],
+  "quest": []
+ },
+ "gnomeregan": {
+  "entrance": [],
+  "quest": []
+ },
+ "hall-of-thanes": {
+  "entrance": [
+   {
+    "left": 50.9,
+    "top": 93.4,
+    "name": ""
+   }
+  ],
+  "quest": [
+   {
+    "left": 40.0,
+    "top": 63.8,
+    "name": "Ghostly Attendant 给予任务 An Ancient Grudge",
+    "quest": 96395
+   },
+   {
+    "left": 54.6,
+    "top": 16.9,
+    "name": "一块石板开启任务 The Treaty of Understanding",
+    "quest": 98423
+   }
+  ]
+ },
+ "kroldok-stronghold": {
+  "entrance": [],
+  "quest": []
+ },
+ "lower-blackrock-spire": {
+  "entrance": [],
+  "quest": []
+ },
+ "maraudon": {
+  "entrance": [],
+  "quest": []
+ },
+ "ragefire-chasm": {
+  "entrance": [],
+  "quest": []
+ },
+ "razorfen-downs": {
+  "entrance": [],
+  "quest": []
+ },
+ "razorfen-kraul": {
+  "entrance": [],
+  "quest": []
+ },
+ "ruins-of-lordaeron": {
+  "entrance": [
+   {
+    "left": 61.0,
+    "top": 21.6,
+    "name": ""
+   }
+  ],
+  "quest": [
+   {
+    "left": 62.4,
+    "top": 28.5,
+    "name": "Captain Truman 给予任务 Abominable Creatures",
+    "quest": 95250
+   }
+  ]
+ },
+ "scarlet-monastery-armory": {
+  "entrance": [],
+  "quest": []
+ },
+ "scarlet-monastery-cathedral": {
+  "entrance": [],
+  "quest": []
+ },
+ "scarlet-monastery-graveyard": {
+  "entrance": [],
+  "quest": []
+ },
+ "scarlet-monastery-library": {
+  "entrance": [],
+  "quest": []
+ },
+ "scholomance": {
+  "entrance": [],
+  "quest": []
+ },
+ "shadowfang-keep": {
+  "entrance": [],
+  "quest": []
+ },
+ "shapers-terrace": {
+  "entrance": [],
+  "quest": []
+ },
+ "stratholme-main-gate": {
+  "entrance": [],
+  "quest": []
+ },
+ "stratholme-service-gate": {
+  "entrance": [],
+  "quest": []
+ },
+ "sunken-temple": {
+  "entrance": [],
+  "quest": []
+ },
+ "the-deadmines": {
+  "entrance": [],
+  "quest": []
+ },
+ "the-drowned-city": {
+  "entrance": [],
+  "quest": []
+ },
+ "the-stockade": {
+  "entrance": [],
+  "quest": []
+ },
+ "uldaman": {
+  "entrance": [],
+  "quest": []
+ },
+ "upper-blackrock-spire": {
+  "entrance": [],
+  "quest": []
+ },
+ "wailing-caverns": {
+  "entrance": [],
+  "quest": []
+ },
+ "zulfarrak": {
+  "entrance": [],
+  "quest": []
+ }
+}

@@ -1,0 +1,2 @@
+Core/Data/Data_ClassGuide.lua  高空天行者=0  高阶天裔=3  高階天裔=0
+Core/Data/zhTW/Data_ClassGuide.lua  高空天行者=0  高阶天裔=0  高階天裔=3

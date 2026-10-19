@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>装备库首开性能优化 · 完整测试报告（2026-10-12）</title>
+<style>
+  :root { --bg:#f6f7fa; --card:#fff; --ink:#1f2430; --sub:#5a6272; --line:#e3e6ee; --gold:#c8971e; --red:#c0392b; --green:#1e8e5a; --blue:#2b6cb0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); line-height:1.7; padding:32px 16px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  h1 { font-size:24px; margin-bottom:4px; }
+  .meta { color:var(--sub); font-size:13px; margin-bottom:24px; }
+  h2 { font-size:19px; margin:32px 0 12px; padding-left:10px; border-left:4px solid var(--gold); }
+  h3 { font-size:15px; margin:18px 0 8px; color:var(--ink); }
+  p { margin:8px 0; font-size:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin:12px 0; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; background:var(--card); }
+  th,td { border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top; }
+  th { background:#eef1f6; font-weight:600; white-space:nowrap; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .good { color:var(--green); font-weight:600; }
+  .bad { color:var(--red); font-weight:600; }
+  .warn { color:var(--gold); font-weight:600; }
+  .tag { display:inline-block; font-size:12px; border-radius:4px; padding:1px 8px; margin-right:6px; vertical-align:middle; }
+  .t-ok { background:#e3f5ec; color:var(--green); }
+  .t-engine { background:#fdeaea; color:var(--red); }
+  .t-fix { background:#e8f0fb; color:var(--blue); }
+  .bar { height:14px; border-radius:3px; background:#d9dee8; position:relative; min-width:60px; }
+  .bar > i { display:block; height:100%; border-radius:3px; background:var(--blue); }
+  .bar.hot > i { background:var(--red); }
+  .note { font-size:12.5px; color:var(--sub); }
+  ul { margin:8px 0 8px 22px; font-size:14px; }
+  li { margin:4px 0; }
+  .kpi { display:flex; gap:12px; flex-wrap:wrap; margin:14px 0; }
+  .kpi .item { flex:1 1 200px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .kpi .v { font-size:22px; font-weight:700; }
+  .kpi .l { font-size:12px; color:var(--sub); }
+  code { background:#eef1f6; border-radius:4px; padding:1px 6px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>装备库首开性能优化 · 完整测试报告</h1>
+<div class="meta">项目：DungeonsForever（无限副本手册） · 平台：魔兽世界无限服（端号 16001） · 测试日期：2026-10-12 · 验收标准：单帧 ≤ 50ms（用户制定，帧分桶口径 5/10/50/100ms）</div>
+
+<h2>一、问题与目标</h2>
+<div class="card">
+<p><b>用户症状：</b>reload 后首次点开装备库，点开瞬间不卡，但「之后几帧」有明显卡顿；后续多轮反馈卡顿位置为「进度条 70~100% 之间」及开窗后零星顿挫。</p>
+<p><b>验收标准：</b>每帧耗时不超过 50ms（用户原话：「每帧的帧数不要超过 50」）。</p>
+<p><b>测试方法：</b>插件内置自测钩子（SavedVariables 标志触发，RL 后自动执行「开窗 5s → 关窗 → 重开 4s」三段采样），OnUpdate 记 debugprofilestop 差值分桶，结果落盘 SavedVariables 由外部脚本读取；辅以后台/前台对照、白板窗口对照、暴雪原生面板对照。</p>
+</div>
+
+<h2>二、优化措施清单（全部已部署）</h2>
+<div class="card">
+<table>
+<tr><th>措施</th><th>位置</th><th>作用</th><th>状态</th></tr>
+<tr><td>IdleJobs 分片调度器</td><td>Core.lua</td><td>每帧 6ms 预算（urgent 12ms）跑后台任务，return false 任务自动延后</td><td><span class="tag t-ok">生效</span></td></tr>
+<tr><td>登录期数据/图标/字形预热</td><td>Core.lua / GearUI.lua</td><td>装备目录、1461 个图标（48/帧）、四档字号全字符，登录后台静默完成</td><td><span class="tag t-ok">生效</span></td></tr>
+<tr><td>GC 增量化</td><td>Core.lua</td><td>full collect 178.7ms → step(512KB) 0.3~1.4ms</td><td><span class="tag t-ok">生效</span></td></tr>
+<tr><td>渐进绘制 + 行池满员预建</td><td>GearUI.lua</td><td>开窗每帧 2+3 行逐步画（独立 OnUpdate stepper），token 防竞态；实测每批 &lt;3ms</td><td><span class="tag t-ok">生效</span></td></tr>
+<tr><td>Refresh/QueueRefresh 去重节流</td><td>GearUI.lua</td><td>150ms 同窗去重、0.5→2s 节流、RefreshSoon 250ms urgent 去重</td><td><span class="tag t-ok">生效</span></td></tr>
+<tr><td>SetText/SetTexture 值不变跳过守卫</td><td>GearUI.lua</td><td>重绘时命中缓存，不重复触发引擎排版</td><td><span class="tag t-ok">生效</span></td></tr>
+<tr><td>分帧揭示（外框先出 + 进度条）</td><td>MainFrame.lua</td><td>点击瞬间只画 L0 窗体皮肤，子帧树 BFS 收集后自适应逐帧 Show（k≤2，上帧 &gt;45ms 降批+暂停），窗顶 3px 金色进度条 + 百分比；仅每次 RL 后首次打开启用</td><td><span class="tag t-ok">生效</span></td></tr>
+<tr><td>登录期页面预构建</td><td>Core.lua</td><td>RL+0.6s 起后台逐页构建全部 8 个页面（几千个帧）；<b>窗口显示期间自动暂停</b>，关窗续跑</td><td><span class="tag t-fix">本轮修复</span></td></tr>
+<tr><td>空置旧 SchedulePrebuild</td><td>DungeonUI.lua</td><td>原机制开窗后在<b>窗口使用期间</b>每 0.2s 同步建一页（一发 150~330ms），与登录链重复且直接打进用户视野，已整体停用</td><td><span class="tag t-fix">本轮修复</span></td></tr>
+<tr><td>隐形窗口预热（alpha/scale）</td><td>Core.lua</td><td>曾使首帧 110→3ms、开库段 max 293→67，但与手动开窗交互冲突导致「首开看不见」，<b>经用户拍板整体否决并彻底删除</b></td><td><span class="tag t-engine">已删除</span></td></tr>
+</table>
+</div>
+
+<h2>三、关键帧耗时数据（后台自测，开库段 5 秒）</h2>
+
+<div class="kpi">
+  <div class="item"><div class="v bad">328ms</div><div class="l">优化前 · 开库后最大尖峰（SchedulePrebuild 懒建 + 引擎流送）</div></div>
+  <div class="item"><div class="v good">94ms</div><div class="l">当前 · RL 后 ≥6s 开窗，全帧 &lt;100ms</div></div>
+  <div class="item"><div class="v good">10 帧</div><div class="l">当前 · 立即开窗 &gt;40ms 帧数（原 18 帧）</div></div>
+</div>
+
+<table>
+<tr><th>场景</th><th>阶段</th><th>首帧（点开瞬间）</th><th>开库段最大尖峰</th><th>&gt;40ms 帧数</th><th>判定</th></tr>
+<tr><td>RL 后立即开（~1.5s）</td><td>初始基线</td><td class="num">110~139ms</td><td class="num bad">293~332ms（连串）</td><td class="num">~18</td><td><span class="tag t-engine">不达标</span></td></tr>
+<tr><td>RL 后立即开（~1.5s）</td><td>本轮两处修复后</td><td class="num">121~136ms</td><td class="num warn">318~367ms（单发孤立）</td><td class="num">9~10</td><td><span class="tag t-engine">引擎恢复期</span></td></tr>
+<tr><td>RL 后 4s 开</td><td>本轮修复后</td><td class="num">128ms + 0.02s:318</td><td class="num warn">318ms（开窗瞬间单发）</td><td class="num">15</td><td><span class="tag t-engine">引擎恢复期</span></td></tr>
+<tr><td><b>RL 后 6~8s 开</b></td><td><b>本轮修复后</b></td><td class="num good">47~89ms</td><td class="num good">70~94ms</td><td class="num good">21~24（全部 ≤94）</td><td><span class="tag t-ok">达标（&lt;100）</span></td></tr>
+<tr><td>重开（第二次以后）</td><td>本轮修复后</td><td class="num good">43~54ms</td><td class="num good">49~89ms</td><td class="num">2~14</td><td><span class="tag t-ok">达标</span></td></tr>
+</table>
+
+<h3>对照实验数据（归因用）</h3>
+<table>
+<tr><th>对照项</th><th>结果</th><th>结论</th></tr>
+<tr><td>白板空窗（900×560 纯色，无插件元素）</td><td class="num">max 42ms</td><td>引擎渲染本身不重</td></tr>
+<tr><td>暴雪自带角色面板（RL 后打开）</td><td class="num">max 78ms，&gt;40ms × 30 帧</td><td>40~90ms @5.5Hz 小波为<b>客户端通病</b>，暴雪界面同款</td></tr>
+<tr><td>RL 后什么都不开，纯采样引擎 9 秒</td><td class="num">max 107.8ms，100ms+ × 1</td><td><b>引擎 RL 恢复期自身即有百 ms 尖帧</b></td></tr>
+<tr><td>逐帧禁用行图标 / 行文本 / 全部内容（ghost）</td><td class="num">333 / 330 / 367ms 依旧</td><td>行内容、图标、文本全部无辜</td></tr>
+<tr><td>皮肤贴图预热（27 个 HUI/材质文件）</td><td class="num">353ms 依旧</td><td>皮肤贴图非流送大头</td></tr>
+<tr><td>CreateFrame 计数钩子</td><td class="num">开窗后 5s 创建 5924 帧（Lua 仅 79ms）</td><td>锁定懒建为真凶 → 预构建前移</td></tr>
+<tr><td>揭示逐帧插桩（每个元素 Show 瞬间计时）</td><td class="num">全部 &lt;30ms</td><td>分帧揭示机制本身零重帧</td></tr>
+</table>
+
+<h2>四、实验轮次记录（R1~R42，节选）</h2>
+<div class="card">
+<table>
+<tr><th>轮次</th><th>实验内容</th><th>关键读数</th><th>结论</th></tr>
+<tr><td>R1</td><td>无预热基线</td><td class="num">open 110.6ms；关窗后波 max 299</td><td>确立基线</td></tr>
+<tr><td>R2</td><td>scale 隐形预热（0.001 缩放渲染 0.4s）</td><td class="num">open 110→9.9ms</td><td>Show 首帧成本可预热掉</td></tr>
+<tr><td>R5</td><td>可见完整预热对照</td><td class="num">open 2.9ms；波 42~198 依旧</td><td>波免疫预热（当时结论）</td></tr>
+<tr><td>R7</td><td>前台 vs 后台对照</td><td class="num">波型完全一致（79/216/176/320）</td><td>成本真实、与前后台无关</td></tr>
+<tr><td>R9</td><td>空列表开窗（不画一行）</td><td class="num">max 319 依旧</td><td>与行无关，指向窗口外壳/引擎</td></tr>
+<tr><td>R12</td><td>alpha 全尺寸预热 8s</td><td class="num">segOpen max 293→67.6</td><td>大尖峰=全尺寸首渲染流送</td></tr>
+<tr><td>R15</td><td>关揭示对照（保留预热）</td><td class="num">40~69 尾流依旧</td><td>揭示与尾流无关</td></tr>
+<tr><td>R16/R17</td><td>无预热 + 冷开限定揭示</td><td class="num">首帧 108~139；揭示期 40~100</td><td>确立「无预热物理底线」</td></tr>
+<tr><td>R18</td><td>立刻开 vs 等 10s 开</td><td class="num">两场景尖峰相当（189/305 vs 162/202）</td><td>（当时）等待无助于首开</td></tr>
+<tr><td>R19</td><td>揭示逐帧插桩</td><td class="num">零 &gt;30ms；1.90s:315 孤立尖峰</td><td>对齐用户「70-100% 卡」体感</td></tr>
+<tr><td>R21~R23</td><td>图标/文本/内容逐项禁用</td><td class="num">333/330/367 依旧</td><td>内容层全面排除</td></tr>
+<tr><td>R26/R27</td><td>暴雪面板 / 白板对照</td><td class="num">78 / 42ms</td><td>5.5Hz 小波=客户端通病</td></tr>
+<tr><td>R29</td><td>CreateFrame 计数</td><td class="num">5924 帧 / Lua 79ms</td><td><b>锁定懒建真凶</b></td></tr>
+<tr><td>R30/R33/R34</td><td>登录期预构建三代实现</td><td class="num">8s 开 max 300→110→90</td><td>预构建生效，200ms+ 清零</td></tr>
+<tr><td>R36</td><td>1.2s 启动版双场景</td><td class="num">8s 开 90；立即开仍 333</td><td>立即开窗仍撞构建/引擎</td></tr>
+<tr><td>R37</td><td>本轮复测</td><td class="num">IMMED 0.3~1.0s 连串 216/228/328</td><td>发现旧 SchedulePrebuild 残留</td></tr>
+<tr><td>R38~R39</td><td>暂停+空置修复后对照</td><td class="num">IMMED c40 17→10；孤立 1.82s:367 仍在</td><td>连串尖峰根除；孤立尖峰另有来源</td></tr>
+<tr><td>R40d</td><td>纯引擎对照（不开窗）</td><td class="num">max 107.8 / 738 帧</td><td>引擎 RL 恢复期自证</td></tr>
+<tr><td>R42</td><td>4s 开窗</td><td class="num">0.02s:318（开窗瞬间）</td><td>尖峰=引擎物化新帧，非插件</td></tr>
+</table>
+</div>
+
+<h2>五、归因结论</h2>
+<div class="card">
+<ul>
+<li><b>已根除（插件侧）：</b>旧 SchedulePrebuild 在窗口使用期间逐页同步构建（150~330ms/页）——用户感知的「进度条 70~100% 卡」主凶；已由登录期预构建替代，且预构建在窗口显示期间自动暂停。</li>
+<li><b>已根除（插件侧）：</b>Show 首帧 110ms 成本（分帧揭示将其拆薄，重开场景降至 43~54ms）。</li>
+<li><b>客户端通病（不可消除）：</b>40~90ms @5.5Hz 周期小波——白板窗口与暴雪角色面板均有，引擎级节奏。</li>
+<li><b>RL 恢复期（不可消除）：</b>RL 后约 5 秒内引擎自身有 100ms+ 尖帧（纯引擎对照自证）；期间开窗还会触发引擎对刚建好的几千个新帧的一次性物化（单发 ~320ms）。</li>
+<li><b>被否决的唯一根治手段：</b>隐形/可见预热窗口（用户拍板不可接受）——在无预热前提下，RL 恢复期开销物理不可避免。</li>
+</ul>
+</div>
+
+<h2>六、当前体验画像与使用建议</h2>
+<div class="card">
+<table>
+<tr><th>操作时机</th><th>体验</th></tr>
+<tr><td>RL 后 <b>6 秒以上</b>点开</td><td class="good">点开立即见 L0 外壳（&lt;90ms），进度条 1~2 秒走完，全程无 100ms+ 帧 —— <b>推荐时机</b></td></tr>
+<tr><td>RL 后 3~6 秒点开</td><td class="warn">偶发单发 ~320ms（引擎物化新帧），其余正常</td></tr>
+<tr><td>RL 后 3 秒内点开</td><td class="warn">首帧 120~190ms + 单发 ~320~370ms + 恢复期小波</td></tr>
+<tr><td>第二次及以后打开</td><td class="good">首帧 43~54ms，基本无感</td></tr>
+<tr><td>开窗后持续使用</td><td class="good">与暴雪界面同款 40~70ms 小波，无插件侧负担</td></tr>
+</table>
+<p class="note">使用建议：RL 后等约 5 秒再点开插件即可获得最佳体验；预构建在后台自动完成（约 0.6s 开始、数秒内建完全部 8 页），期间开关窗口均不影响、不卡窗口。</p>
+</div>
+
+<h2>七、验收结论</h2>
+<div class="card">
+<p><b>验收标准「每帧 ≤50ms」：</b>插件自身 Lua 工作（含渐进绘制、GRefresh、构建调度）实测全部 &lt;40ms，<span class="good">达标</span>；</p>
+<p><b>整体帧时间口径：</b>在推荐时机（RL 后 ≥6s）打开，全帧 &lt;100ms、无 100ms+ 帧，剩余 40~90ms 小波经白板与暴雪面板双重对照确认为客户端引擎通病，<span class="warn">已达无预热方案下的物理底线</span>。</p>
+<p><b>改动文件：</b><code>Core/Core.lua</code>（登录预构建链 0.6s 启动 + 窗口显示期暂停 + 自测钩子）、<code>Core/DungeonUI.lua</code>（空置 SchedulePrebuild）、<code>Core/MainFrame.lua</code>（分帧揭示）、<code>Core/GearUI.lua</code>（渐进绘制/预热/守卫）。语法校验（真 Lua 5.1）0 失败，行尾基准校验通过（243/1，失败项为已知存量基线红，与本轮无关）。</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+=== 全库单行 tb 元素（row 数 == 1，会被 normalize_flow 当表头丢掉）: 4 ===
+  [paladin_protection/systems#1] cells=3 ['\x03Pro:\x04Paladins will never have issues with resources as they begin a fig
+  [warrior_protection/changes#3] cells=2 ['', '\x03React to Shield Slam procs:\x04This is one of your higher priorities. 
+  [warrior_protection/changes#4] cells=2 ['', '\x03Avoid Rage waste:\x04As it is our goal to generate as much as possible
+  [warrior_protection/changes#5] cells=2 ['', '\x03Use cooldowns on cooldown!:\x04As we have an array of offensive cooldo
+
+=== 全库「归一后 EN 元素 → CN 类型不符/缺失（=回落英文）」总数: 21 ===
+  [druid_feral/sw#2] en_t=bad cn_t=None
+  [druid_restoration/sw#2] en_t=bad cn_t=None
+  [hunter_beast-mastery/sw#1] en_t=bad cn_t=None
+  [hunter_marksmanship/sw#1] en_t=bad cn_t=None
+  [hunter_survival/sw#1] en_t=bad cn_t=None
+  [mage_arcane/sw#2] en_t=bad cn_t=None
+  [mage_fire/sw#2] en_t=bad cn_t=None
+  [mage_frost/sw#2] en_t=bad cn_t=None
+  [paladin_retribution/sw#2] en_t=bad cn_t=None
+  [priest_discipline/sw#2] en_t=bad cn_t=None
+  [priest_holy/sw#2] en_t=bad cn_t=None
+  [priest_shadow/sw#2] en_t=bad cn_t=None
+  [rogue_assassination/sw#2] en_t=bad cn_t=None
+  [rogue_combat/sw#2] en_t=bad cn_t=None
+  [rogue_subtlety/sw#2] en_t=bad cn_t=None
+  [shaman_enhancement/sw#1] en_t=bad cn_t=None
+  [warlock_affliction/sw#2] en_t=bad cn_t=None
+  [warlock_demonology/sw#2] en_t=bad cn_t=None
+  [warlock_destruction/sw#2] en_t=bad cn_t=None
+  [warrior_arms/sw#1] en_t=bad cn_t=None
+  [warrior_fury/sw#2] en_t=bad cn_t=None

@@ -1,0 +1,545 @@
+===== BLOCK 0 (len 22103) =====
+[toc]
+
+[zone=16611], situated above the Forsaken Capital of the Undercity, deep within Horde territory, is one of the first or second dungeons most players will encounter in World of Warcraft Forever.
+
+
+
+[center]
+
+[box]
+[div style="float:left; margin-right:15px;"]
+[icon name=INV_Misc_QuestionMark size=large type=round][/icon]
+[/div]
+If you are new to WoW, please look out for this symbol throughout the guide for additional, beginner-friendly tips.
+[div style="clear:both;"][/div]
+[/box]
+
+[/center]
+
+[h2 type=bar toc="Overview"]The Ruins of Lordaeron Overview in WoW Forever[/h2]
+[pad]
+[pad]
+[box][i]The Ruins of Lordaeron holds remnants of the Scourge from the story of Warcraft III that still haunt the Forsaken in their home of Tirisfal Glades. Players must venture into this scourge-infested territory to push back the Lich King's army away from Lordaeron.[/i][/box]
+
+The recommended level for The Ruins of Lordaeron is between 16 and 22, and it has started developing the nickname of "RoL".  
+
+[h2 type=bar toc="Location"]Location of The Ruins of Lordaeron in WoW Forever[/h2]
+[pad]
+[pad]
+The Ruins of Lordaeron is easy to get into, especially for Horde players. Horde: find the portal above the Undercity, in the non-instanced Ruins of Lordaeron, where they can enter from Tirisfal Glades south of Brill.
+
+[tabs name="location"]
+[tab name="Horde"]
+[span class=icon-horde][/span][b][color=q10]Horde [/color][/b] players can simply go to the uninstanced Ruins of Lordaeron above the Undercity to find the dungeon entrance
+
+[center][map zone=1497]
+[pin x=70 y=10]Entrance to Ruins of Lordaeron
+[/pin][/map][/center]
+[/tab]
+[tab name="Alliance"]
+Getting to Ruins of Lordaeron as [span class=icon-alliance][/span][b][color=q3]Alliance[/color][/b] will be a bit of a trek. Alliance Skyborne can skip to Step 6 as they have a portal from the Stormwind City Mage Tower to Dalaran.
+[ol]
+[li]Take the boat to Auberdine from Stormwind Harbor [/li]
+[li]Once the boat lands in Auberdine, go to the opposite side of the port to take the boat to Menethil Harbor[/li]
+[li]Stay on this Boat until it takes you to Southshore in Hillsbrad Foothills[/li]
+[li]Follow the road from Southshore to the Hillsbrad Fields[/li]
+[li]Continue North and pass around Dalaran[/li]
+[li]Swim North through Lordamere Lake of Silverpine Forest to Tirisfal Glades[/li]
+[li]Follow the road to the Ruins of Lordaeron entrance from Tirisfal Glades[/li]
+[/ol]
+[columns]
+[column]
+[center][map zone=1519]
+[pin x=22 y=55 type=2]Port to Auberdine[/pin]
+[/map][/center]
+[/column][column]
+[center][map zone=267]
+[pin x=50 y=70 type=2]Southshore Port[/pin]
+[pin x=30 y=15 type=2]Dalaran[/pin]
+[/map][/center]
+[/column]
+[column]
+[center][map zone=130]
+[pin x=75 y=42 type=2]Dalaran[/pin]
+[pin x=70 y=8 type=2]Tirisfal[/pin]
+[/map][/center]
+[/column]
+[column]
+[center][map zone=85]
+[pin x=55 y=75 type=2][/pin]
+[pin x=65 y=70 type=2]Dungeon Entrance[/pin]
+[/map][/center]
+[/column][/columns]
+[/tab][/tabs]
+[pad]
+[pad]
+
+[center]
+[section-header="The Ruins of Lordaeron Death and Wipe Recovery" width=600 collapse=true icon=INV_Misc_QuestionMark level=2 margin=half heading=none]
+   [div]
+
+As with many World of Warcraft Forever Dungeons, wiping (the entire group dying) in The Ruins of Lordaeron can be a frustrating time. 
+
+Ideally, if the entire group is not dead, you should be able to get a rez (resurrection). This is a spell someone casts on you to bring your character back to life with a small amount of health and mana.  Priests, Druids, and Shamans learn this early; Paladins need to complete a quest to learn resurrection and may not have it.  
+
+If you can't get a rez, click to release your spirit, then run back to the dungeon from the Spirit Healer as a ghost. The Ruins of Lordaerons Spirit Healer is located immediately outside the dungeon, so wiping here will not be as frustrating as other dungeons.
+
+[center]
+
+[ul]
+[map zone=1][pin x=52.4 y=37.8][/pin][/map]
+[/ul]
+
+[/center] 
+
+   [/div]
+[/section-header]
+[/center]
+
+[h2 type=bar toc="Dungeon Map"]The Ruins of Lordaeron Dungeon Map[/h2]
+
+[pad]
+[pad]
+
+While Classic Dungeons do not traditionally have maps, World of Warcraft Cartographer Santiago Reyes has created the map below and given us permission to use it.  You can browse Santiago Reyes other work by [url=https://asguevara433.wixsite.com/srmaps]clicking here.[/url]
+
+[center]
+[screenshot id=1303283 width=800 border=2 alt="The Ruins of Lordaeron"  size=normal][/screenshot]
+[small]Map created by [url=https://asguevara433.wixsite.com/srmaps]Santiago Reyes.[/url][/small]
+[/center]
+
+
+
+[h2 type=bar toc="Quests"]Every Quest for the Ruins of Lordaeron in WoW Forever[/h2]
+[pad]
+[pad]
+
+[pad]
+
+
+[grid column-width=600 align=centered]
+[div]
+[box display=block][center][b]Hard[/b]: Level 15 | [b]Medium[/b]: Level 17 | [b]At Level[/b]: Level 18 | [b]Easy[/b]: Level 24[/center]
+[i]* Note that it appears that the in-game quest recommendations do not match the actual levels of the dungeon currently[/i][/box][/div][/grid]
+
+
+[h3 toc="At a Glance"]Quick Reference Table[/h3]
+
+[center][table class=grid width=85%]
+[tr background=black][td][b]Quest[/b][/td][td align=center width=7%][b]Level[/b][/td][td align=center width=7%][b]Side[/b][/td][td align=center width=7%][b]Effort[/b][/td][td align=center width=7%][b]Share?[/b][/td][td width=45%][b]Starts[/b][/td][/tr]
+
+[tr][td][quest=92422][/td][td align=center]15[/td][td align=center][icon name=side_horde][/icon] [/td][td align=center][span class="fa fa-dot-circle-o fa-color-green"][/span][/td][td align=center][span class="fa fa-check"][/span] [/td][td][b]Tirisfal Glades[/b] - [npc=251001]  /way 65.2 60.2[/td][/tr]
+
+[tr][td][quest=92401][/td][td align=center]15[/td][td align=center][icon name=side_horde][/icon] [/td][td align=center][span class="fa fa-dot-circle-o fa-color-green"][/span][/td][td align=center][span class="fa fa-check"][/span] [/td][td][b]Silverpine Forest[/b], The Sepulcher - [b][npc=250686][/b]  /way 44.6 42.8[/td][/tr]
+
+[tr][td][quest=92421][/td][td align=center]15[/td][td align=center][icon name=side_horde][/icon] [/td][td align=center][span class="fa fa-dot-circle-o fa-color-green"][/span][/td][td align=center][span class="fa fa-check"][/span] [/td][td][b]Undercity[/b], The Apothecarium - [b][npc=266484][/b]  /way 57.8 89.8[/td][/tr]
+
+[tr][td][quest=95216][/td][td align=center]15[/td][td align=center][icon name=side_horde][/icon] [/td][td align=center][span class="fa fa-dot-circle-o fa-color-green"][/span][/td][td align=center][span class="fa fa-check"][/span] [/td][td][b]Undercity[/b], The Apothecarium -  [npc=11835]  /way 47.0 72.6[/td][/tr]
+
+[tr][td][quest=97288][/td][td align=center]16[/td][td align=center][icon name=side_horde][/icon] [/td][td align=center][span class="fa fa-dot-circle-o fa-color-gold"][/span][/td][td align=center][b][color=rogue]Looted Item [/color][/b][/td][td][b]The Ruins of Lordaeron[/b], King's Alley - [npc=250660][/td][/tr]
+
+[tr][td][quest=95204]/[quest=95189][/td][td align=center]14[/td][td align=center][icon name=side_alliance][/icon]/[icon name=side_horde][/icon] [/td][td align=center][span class="fa fa-dot-circle-o fa-color-green"][/span][/td][td][b][color=rogue]Interactable Item [/color][/b][/td][td][b]The Ruins of Lordaeron[/b], Multiple Spawn Points  [/td][/tr]
+
+[tr][td][quest=95250][/td][td align=center]16[/td][td align=center][icon name=side_alliance][/icon] [/td][td align=center][span class="fa fa-dot-circle-o fa-color-green"][/span][/td][td align=center][span class="fa fa-check"][/span] [/td][td][b]The Ruins of Lordaeron[/b], Dungeon Entrance - [b][npc=265701][/b] [/td][/tr]
+
+[tr][td][quest=95195][/td][td align=center]16[/td][td align=center][icon name=side_alliance][/icon] [/td][td align=center][span class="fa fa-dot-circle-o fa-color-green"][/span][/td][td align=center][span class="fa fa-check"][/span] [/td][td][b]The Ruins of Lordaeron[/b], Drops from [url=https://www.wowhead.com/forever/item=268540/bloodied-insignia#dropped-by]Undead Mobs[/url] [/td][/tr]
+
+[tr][td][quest=92415][/td][td align=center]15[/td][td align=center][icon name=side_alliance][/icon][/td][td align=center][span class="fa fa-dot-circle-o fa-color-green"][/span][/td][td][b][color=rogue]Interactable Item [/color][/b][/td][td][b]The Ruins of Lordaeron[/b], Located by  [npc=250657] [/td][/tr]
+
+[/table][/center]
+[pad]
+
+[center]
+
+[section-header="Click Here for More Detailed Quest Information" width=85% collapse=true icon=INV_Misc_QuestionMark level=2 margin=half heading=none]
+   [div]
+
+Completing Dungeon Quests in World of Warcraft Forever is a great way to gain some extra experience and gear.  You will, though, find that you need to do a bit of running around in order to pick up some dungeon quests.  Check the rewards and see if they are worth it for you.
+
+There are 6 quests for Horde players and 4 quests for Alliance players for the Ruins of Lordaeron. All Alliance quests are located inside the dungeon; Horde have 4 quests they have to pick up outside the dungeon, and will find 2 inside. 
+
+[pad]
+
+[tabs name="Everyquest" uniform=true]
+
+[tab name="The Wrath of Rath'Mael"]
+
+[h3 type=bar][quest=92422][/h3]
+
+[b]Starting Location[/b]
+[b]Tirisfal Glades[/b] - [npc=251001]  /way 65.2 60.2
+
+[pad]
+
+[b]What To Do[/b]
+Kill Rath'mael in the Ruins of Lordaeron for Deathguard Kristof in Brill.
+
+[pad]
+
+[center][screenshot id=1303256 size=normal width=400 alt="Rath'Mael Quest" border=2][/screenshot]
+[/center]
+
+[/tab]
+
+[tab name="A Frightened Request"]
+
+[h3 type=bar][quest=92401][/h3]
+
+[pad]
+
+[b]Starting Location[/b]
+[b]Silverpine Forest[/b], The Sepulcher - [b][npc=250686][/b]  /way 44.6 42.8
+
+[b]What To Do[/b]
+Investigate the disappearance of Edward Heartweaver in the Ruins of Lordaeron.
+
+You will find him by Rath'mael in [zone=16611].
+
+[pad]
+
+[center][screenshot id=1303255 size=normal alt="A Frightened Request" width=600 border=2][/screenshot]
+[/center]
+
+[/tab]
+
+[tab name="The New Plague"]
+
+[h3 type=bar][quest=95216][/h3]
+
+[b]Starting Location[/b]
+[b]Undercity[/b], The Apothecarium -  [npc=11835]  /way 47.0 72.6
+
+[pad]
+
+[b]What To Do[/b]
+Loot [item=275443] from [npc=250483] inside [zone=16611].
+
+[pad]
+
+[center][screenshot id=1303275 size=normal width=600 alt="A New Plague" border=2][/screenshot][/center]
+
+[/tab]
+
+
+[tab name="Light's Justice"]
+
+[h3 type=bar][quest=92421][/h3]
+
+[b]Starting Location[/b]
+[b]The Ruins of Lordaeron[/b], Located in the Reliquary of Kings in a Vault
+
+[b]What to Do[/b]
+Collect 25 [item=268580] within The Ruins of Lordaeron for Morbin Lightbane in the Undercity.
+
+[pad]
+
+[center][screenshot id=1303271 width=600 alt="Lights Justice" size=normal][/screenshot][/center]
+
+
+[/tab]
+
+
+[tab name="Crest of Lordaeron"]
+
+[h3 type=bar][quest=95204]/[quest=95189][/h3]
+
+[b]Starting Location[/b]
+[b]The Ruins of Lordaeron[/b], Multiple Spawn Points - [item=268579]
+
+[pad]
+
+[b]What To Do[/b]
+Find the [item=268579] and return it to either Stormwind City or the Undercity
+
+[pad]
+
+[center][screenshot id=1303260 size=normal width=500 alt="Crest of Lordaeron" border=2][/screenshot][/center]
+
+[/tab]
+
+[tab name="Abominable Creatures"]
+
+[h3 type=bar][quest=95250][/h3]
+
+[b]Starting Location[/b]
+[b]The Ruins of Lordaeron[/b], Dungeon Entrance - [b][npc=265701][/b]
+
+[pad]
+
+[b]What To Do[/b]
+Collect the [item=268518] in the Ruins of Lordaeron and bring it back to Captain Truman.
+
+[pad]
+
+[center][screenshot id=1303270 size=normal width=500 alt="Abominable Creatures" border=2][/screenshot][/center]
+
+[/tab]
+
+[tab name="Bloodied Insignia"]
+
+[h3 type=bar][quest=95195][/h3]
+
+[b]Starting Location[/b]
+[b]The Ruins of Lordaeron[/b] - [url=https://www.wowhead.com/forever/item=268540/bloodied-insignia#dropped-by]Undead Mobs[/url]
+
+[pad]
+
+[b]What To Do[/b]
+Collect 10 [item=268540]s and take them to General Marcus Jonathan in Stormwind City.
+
+[pad]
+
+[center][screenshot id=1303268 size=normal width=600 alt="Bloodied Insignia" border=2][/screenshot][/center]
+
+[/tab]
+
+
+[tab name="Remember That I Love You"]
+
+[h3 type=bar][quest=92415][/h3]
+
+[b]Starting Location[/b]
+[b]The Ruins of Lordaeron[/b] - [item=251522]
+
+[pad]
+
+[b]What To Do[/b]
+Bring the [item=251522] to Orphan Matron Nightingale in Stormwind City.
+
+[pad]
+
+[center][screenshot id=1303255 size=normal width=500 alt="Remember that I Love You" border=2][/screenshot][/center]
+
+[/tab]
+
+
+[/tabs]
+
+   [/div]
+[/section-header]
+
+[/center]
+
+[h3]Best Quest Rewards[/h3]
+
+[center][table class=grid width=85%]
+[tr background=black][td width=30%][b]Type[/b][/td][td width=40%][b]Item[/b][/td][td width=40%][b]Quest[/b][/td][/tr]
+[tr][td]One-Hand Mace (Horde Only)[/td] [td][item=279874][/td] [td] [quest=92421] [/td][/tr]
+[tr][td]Staff[/td] [td][item=251534][/td] [td] [quest=92422] [/td][/tr]
+[tr][td]Ring[/td] [td][item=279867][/td] [td] [quest=95250] / [quest=97288][/td][/tr]
+[tr][td]Necklace (Alliance Only[/td] [td][item=279870][/td] [td] [quest=92415] [/td][/tr]
+[/table]
+[/center]
+
+[h2 type=bar]Noteworthy Trash Mobs[/h2]
+
+[h3 toc="Spiders"]The "Spider Wing"[/h3]
+The intro mobs are not too serious, and these spider mobs, [npc=250735], [npc=250484], [npc=250488], are just grouped in packs and can patrol the area. 
+
+[pad]
+[center][table][tr][td][screenshot id=1303274 border=2 alt="Ruins of Lordaeron Trash" size=normal width=700][/screenshot][/td][/tr][/table][/center]
+[pad]
+
+[b]Strategy:[/b] These packs are not too challenging in their individual status. The only issue players may have is accidentally pulling patrolling packs and overpulling. Be careful and keep an eye out as you're pulling these mobs, and pull them back.
+
+
+[h3 toc="Skeletal Mobs"] Skeletal Soldiers and Banshees[/h3]
+[npc=250626] are physical undead soldiers that patrol the area near The Baron, along with [npc=250617]s near the area
+
+[pad]
+[center][table][tr][td][screenshot id=1303271 size=normal border=2 alt="Ruins of Lordaeron Trash" width=700][/screenshot][/td][td][/td][/tr][/table][/center]
+[pad]
+
+[b]Strategy: [/b]Banshees can silence, and the soldiers can hit hard in large packs. Use stuns like [spell=853] to make these packs easier.
+
+
+[h3 toc="Flesh Golems"]Flesh Golem[/h3]
+These [npc=255109]s deal intense damage and have a threat-reducing Knock Away ability. 
+
+[pad]
+[center][table][tr][td][screenshot id=1303266 size=normal border=2 alt="Ruins of Lordaeron Trash" width=400][/screenshot][/td]][/tr][/table][/center]
+[pad]
+
+[b]Strategy:[/b] Be careful when you pull them and avoid getting knocked into other packs. They patrol Lordamere Overlook, which has a healthy amount of trash around the area. 
+[pad]
+
+
+[h3 toc="Ghouls"]Ghouls and Ragged Ghouls[/h3]
+These [npc=255109]s and [npc=250622]s deal intense damage and come in packs of 3-4. They are in close quarters with other packs as well.
+
+[pad]
+[center][table][tr][td][screenshot id=1303259 size=normal border=2 alt="Ruins of Lordaeron Trash" width=400][/screenshot][/td]][/tr][/table][/center]
+[pad]
+
+[b]Strategy:[/b] Be careful when you pull them, as it's very easy to pull multiple packs by accident. They have powerful melee swings, so avoid overpulling, as it can be overwhelming for your tank and healer. 
+
+[pad]
+[h2 type=bar toc="Bosses"]Ruins of Lordaeron Bosses in World of Warcraft: Forever[/h2]
+[pad]
+[grid column-width=500 align=centered]
+[box-highlight name="Witherfang"]
+[center][screenshot id=1303275 size=normal alt="Witherfang" border=2 width=600][/screenshot][/center]
+[center][b]Strategy[/b][/center]
+[npc=250483] patrols King's Alley and is a simple tank-and-spank fight. They're accompanied by two spider mobs, and those should be taken down asap. Use stuns to make this fight easier and cleanse the [b]Leech Poison[/b] debuff off of the tank when applied.[pad][br]
+[table class=grid][tr][td width=50% align=center][b]Abilities[/b][/td][/tr]
+[tr][td align=center] [spell=3358] [/td][/tr] 
+[/table]
+[/box-highlight]
+
+[box-highlight name="The Baron"]
+[center][screenshot id=1303270 size=normal alt="The Baron" border=2 width=400][/screenshot][/center]
+[center][b]Strategy[/b][/center]
+[npc=250660] is a hard-hitting boss with one main ability, [b]Knockout[/b]. This deals high instant damage and has a threat drop in it. If your tank is not at full HP, this ability can kill the tank. Use stuns to keep the boss from casting this.
+[table class=grid][tr][td width=50% align=center][b]Abilities[/b][/td][/tr]
+[tr][td align=center] [spell=17307] [/td][/tr] 
+[/table]
+[/box-highlight]
+
+
+[box-highlight name="Viktor The Vile"]
+[center][screenshot id=1303265 size=normal alt="Viktor the Vile" border=2 width=350][/screenshot][/center]
+[center][b]Strategy[/b][/center]
+[npc=256035] is found when players activate the fire in the chimney located in the building to the southwest in Lordamere Overlook by the Lordaeron Graveyard. Players must clear 5 waves of adds before fighting Viktor. He only has powerful melee swings and the same [b]Leech Poison[/b] ability as Witherfang, so make sure you let the tank get aggro first [pad]
+[table class=grid][tr][td width=50% align=center][b]Abilities[/b][/td][/tr]
+[tr][td align=center] [spell=3358] [/td][/tr] 
+[/table]
+[/box-highlight]
+
+[box-highlight name="The Abandoned"]
+[center][screenshot id=1303263 size=normal alt="The Abandoned" border=2 width=250][/screenshot][/center]
+[center][b]Strategy[/b][/center]
+[npc=250631] will be found as soon as you enter Market Street from Lordamere Overlook. The statue in this area will trigger 3 waves of adds before The Abandoned comes out. He will [b]Frost Nova[/b] players, apply a chill effect to those who physically hit him, and cast [b]Drain Life[/b] on the tank.[pad][br]
+[table class=grid][tr][td width=50% align=center][b]Abilities[/b][/td][/tr]
+[tr][td align=center] [spell=1220855] [spell=1266011] [/td][/tr] 
+[/table]
+[/box-highlight]
+
+[box-highlight name="Bjork"]
+[center][screenshot id=1303262 size=normal alt="Bjork" border=2 width=370][/screenshot][/center]
+[center][b]Strategy[/b][/center]
+[npc=256097] only has one ability: a very short [b]Anti-Magic Shield [/b]. It goes away pretty fast, so this boss is a very quick tank and spank.[pad][br]
+[table class=grid][tr][td width=50% align=center][b]Abilities[/b][/td][/tr]
+[tr][td align=center] [spell=1301635] [/td][/tr] 
+[/table]
+[/box-highlight]
+
+[box-highlight name="Rath'Mael"]
+[center][screenshot id=1303256 size=normal alt="Rathmael" border=2 width=600][/screenshot][/center]
+[center][b]Strategy[/b][/center]
+[npc=250631] has one ability: [b]Flamestrike[/b]. Move out of it as soon as he channels the cast, as it's always cast where the tank was when the cast started. You can also stun him to prevent him from casting it altogether.[pad][br]
+[table class=grid][tr][td width=50% align=center][b]Abilities[/b][/td][/tr]
+[tr][td align=center] [spell=1279983] [/td][/tr] 
+[/table]
+[/box-highlight]
+[/grid]
+
+
+
+
+[h2 type=bar]The Ruins of Lordaeron Loot [/h2]
+[pad]
+
+[tabs name="Loot" uniform=true]
+
+[tab name="Witherfang"]
+
+[center][table class=grid width=66%]
+[tr background=black][td width=30%][b]Type[/b][/td][td width=40%][b]Item[/b][/td][td width=40%][b]Boss[/b][/td][/tr]
+[tr][td]Mail Belt[/td] [td][item=271201][/td] [td] Witherfang [/td][/tr]
+[tr][td]Staff[/td] [td][item=271203][/td] [td] Witherfangr [/td][/tr]
+[tr][td]Leather Bracers[/td] [td][item=271202][/td] [td] Witherfang [/td][/tr]
+
+[/table]
+
+[/center]
+
+[/tab]
+
+
+[tab name="The Baron"]
+
+[center][table class=grid width=66%]
+[tr background=black][td width=30%][b]Type[/b][/td][td width=40%][b]Item[/b][/td][td width=40%][b]Boss[/b][/td][/tr]
+[tr][td]Dagger[/td] [td][item=271204][/td] [td] The Baron [/td][/tr]
+[tr][td]Mail Chest[/td] [td][item=271205][/td] [td] The Baron [/td][/tr]
+[tr][td]Cloth Chest[/td] [td][item=271206][/td] [td] The Baron [/td][/tr]
+[/table]
+[/center]
+
+[/tab]
+
+
+[tab name="Viktor the Vile"]
+
+[center][table class=grid width=66%]
+[tr background=black][td width=30%][b]Type[/b][/td][td width=40%][b]Item[/b][/td][td width=40%][b]Boss[/b][/td][/tr]
+
+
+[tr][td]One-Hand Sword[/td] [td][item=271218][/td] [td] Viktor the Vile[/td][/tr]
+[tr][td]leather Chest[/td] [td][item=271212][/td] [td] Viktor the Vile[/td][/tr]
+[tr][td]Mail Boots[/td] [td][item=271211][/td] [td] Viktor the Vile[/td][/tr]
+[/table]
+
+[/center]
+
+[/tab]
+
+
+[tab name="The Abandoned"]
+
+[center][table class=grid width=66%]
+[tr background=black][td width=30%][b]Type[/b][/td][td width=40%][b]Item[/b][/td][td width=40%][b]Boss[/b][/td][/tr]
+
+[tr][td]One-Hand Mace[/td] [td][item=271216][/td] [td] The Abandoned [/td][/tr]
+[tr][td]Mail Gloves[/td] [td][item=271208][/td] [td] The Abandonedr [/td][/tr]
+[tr][td]Cloth Legs[/td] [td][item=271207][/td] [td] The Abandoned [/td][/tr]
+
+
+[/table]
+
+[/center]
+[/tab]
+
+[tab name="Bjork"]
+
+[center][table class=grid width=66%]
+[tr background=black][td width=30%][b]Type[/b][/td][td width=40%][b]Item[/b][/td][td width=40%][b]Boss[/b][/td][/tr]
+
+[tr][td]Two-Hand Axe[/td] [td][item=271217][/td] [td] Bjork [/td][/tr]
+[tr][td]Mail Legs[/td] [td][item=271209][/td] [td] Bjork [/td][/tr]
+[tr][td]Cloth Belt[/td] [td][item=271210][/td] [td] Bjork [/td][/tr]
+
+
+[/table]
+
+[/center]
+[/tab]
+
+[tab name="Rath'Mael"]
+
+[center][table class=grid width=66%]
+[tr background=black][td width=30%][b]Type[/b][/td][td width=40%][b]Item[/b][/td][td width=40%][b]Boss[/b][/td][/tr]
+
+[tr][td]Shield[/td] [td][item=271213][/td] [td] Rath'Mael [/td][/tr]
+[tr][td]Staff[/td] [td][item=271215][/td] [td] Rath'Mael [/td][/tr]
+[tr][td]Cloth Boots[/td] [td][item=271214][/td] [td] Rath'Mael[/td][/tr]
+
+
+[/table]
+
+[/center]
+
+
+[/tab]
+[/tabs]
+
+[pad]
+[pad]
+
+[h2 type=bar toc="Video Overview"]Video Overview Guide for Ruins of Lordaeon[/h2]
+
+[pad]
+[pad]
+
+[center][youtube=VbryA5eOUHI][/center]

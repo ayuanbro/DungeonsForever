@@ -1,0 +1,120 @@
+
+function PV.NewChip(parent)
+    local f = CreateFrame("Button", nil, parent)
+    f:SetSize(PV.CHIP, PV.CHIP)
+    local it = f:CreateTexture(nil, "ARTWORK")
+    it:SetAllPoints(f)
+    it:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(it) end
+    f.iconTex = it
+    f.hover = f:CreateTexture(nil, "OVERLAY")
+    f.hover:SetAllPoints(f)
+    f.hover:SetColorTexture(1, 1, 1, 0.08)
+    f.hover:Hide()
+    f:SetScript("OnEnter", function(self)
+        self.hover:Show()
+        if self.__id and Host.DG and Host.DG.ShowItemTip then
+            Host.DG.ShowItemTip(self, { self.__id })
+        end
+    end)
+    f:SetScript("OnLeave", function(self)
+        self.hover:Hide()
+        GameTooltip:Hide()
+    end)
+    f:SetScript("OnClick", function(self, button)
+        if Host.DG and Host.DG.ItemShiftClick then Host.DG.ItemShiftClick(self, button) end
+    end)
+    ForwardWheel(f)
+    return f
+end
+
+function PV.NewCard(parent)
+    local f = CreateFrame("Button", nil, parent)
+    f:SetSize(PV.CARD_W, PV.CARD_H)
+    local layer = ns.hui and ns.hui.layer
+    if ns.hui and ns.hui.BuildRoundedBG and layer then
+        ns.hui.BuildRoundedBG(f, 4, layer.L3, "both", true, 1)
+    else
+        f.edge = f:CreateTexture(nil, "BACKGROUND")
+        f.edge:SetAllPoints(f)
+        f.edge:SetColorTexture(1, 1, 1, 0.10)
+        f.bg = f:CreateTexture(nil, "BACKGROUND", nil, 1)
+        f.bg:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
+        f.bg:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
+        f.bg:SetColorTexture(0x36 / 255, 0x36 / 255, 0x36 / 255, 1)
+    end
+    local it = f:CreateTexture(nil, "ARTWORK")
+    it:SetSize(PV.CARD_ICON, PV.CARD_ICON)
+    it:SetPoint("LEFT", f, "LEFT", 6, 0)
+    it:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(it) end
+    f.iconTex = it
+    f.name = MakeFS(f, 14, C_TEXT, "LEFT")
+    f.name:SetPoint("TOPLEFT", f, "TOPLEFT", PV.CARD_TX, -4)
+    f.name:SetWidth(PV.CARD_W - PV.CARD_TX - 7)
+    f.name:SetWordWrap(false)
+    f.meta = MakeFS(f, 11, C_GREY, "LEFT")
+    f.meta:SetPoint("TOPLEFT", f, "TOPLEFT", PV.CARD_TX, -23)
+    f.meta:SetWordWrap(false)
+    f.hover = f:CreateTexture(nil, "OVERLAY")
+    f.hover:SetAllPoints(f)
+    f.hover:SetColorTexture(1, 1, 1, 0.06)
+    f.hover:Hide()
+    f:SetScript("OnEnter", function(self)
+        self.hover:Show()
+        if self.__id and Host.DG and Host.DG.ShowItemTip then
+            Host.DG.ShowItemTip(self, { self.__id })
+        end
+    end)
+    f:SetScript("OnLeave", function(self)
+        self.hover:Hide()
+        GameTooltip:Hide()
+    end)
+    f:SetScript("OnClick", function(self, button)
+        if Host.DG and Host.DG.ItemShiftClick then Host.DG.ItemShiftClick(self, button) end
+    end)
+    ForwardWheel(f)
+    return f
+end
+
+function PV.PaintCard(f, id)
+    f.__id = id
+    local nm, ok
+    if Host.DG and Host.DG.ItemName then nm, ok = Host.DG.ItemName(id) end
+    local txt = (ok and nm) or format(L["物品 #%d"], id or 0)
+    if Host.DG and Host.DG.FitText then
+        txt = Host.DG.FitText(txt, 14, f.name.__pw or (PV.CARD_W - PV.CARD_TX - 7))
+    end
+    f.name:SetText(txt)
+    f.meta:SetText("")
+    if ok then
+        if Host.DG.QColor and Host.DG.QualOf then
+            local qr, qg, qb = Host.DG.QColor(Host.DG.QualOf(id))
+            if qr then f.name:SetTextColor(qr, qg, qb) end
+        end
+        if Host.DG and Host.DG.ItemMeta then
+            local meta = Host.DG.ItemMeta(id)
+            if type(meta) == "string" and meta ~= "" then f.meta:SetText(meta) end
+        end
+    else
+        f.name:SetTextColor(Unpack(C_GREY))
+        if Host.DG and Host.DG.RequestItem then Host.DG.RequestItem(id) end
+    end
+    f.iconTex:SetTexture(ItemIcon(id))
+end
+
+function PV.OnItemData(itemID)
+    if not PV.built then return end
+    for i = 1, PV.CHIP_MAX do
+        local c = PV.chips[i]
+        if c and c.__id == itemID and c:IsShown() then
+            c.iconTex:SetTexture(ItemIcon(itemID))
+        end
+    end
+    for i = 1, PV.CARD_MAX do
+        local f = PV.cards[i]
+        if f and f.__id == itemID and f:IsShown() then PV.PaintCard(f, itemID) end
+    end
+end
+
+function PV.Build(page)

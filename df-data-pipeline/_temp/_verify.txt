@@ -1,0 +1,25 @@
+=mixed=
+report written: D:\workspace\DungeonsForever\_temp\_r7_mixed_report.txt  (hits=84)
+=scan=
+report written: D:\workspace\DungeonsForever\_temp\_r7_scan_report.txt  (sky=37, mixed=115)
+=legacy sky tail=
+   EN…tuations or in PVP.Skyborne- Skyborne's racialgrants 1% in…
+   CN: 兽人战士- 兽人的种族特长在使用斧类武器时，可使攻击强度和法术强度提高 10%，持续 15 秒，冷却时间为 2 分钟，并且因. 血性狂怒是一个强力的冷却技能，应在战斗中治疗需求最高的时刻使用，以增强你的治疗量。巨魔- 巨魔的种族特长使攻击速度和施法速度提高10%，持续10秒，冷却时间3分钟。
+[warrior_arms / races #5 t=p]
+   EN…Skyborne Warrior Skyborne is the new rac…
+   CN: 天裔战士是随《无限》一同推出的新种族，联盟和部落均可选择。可惜的是，天裔的种族特长更侧重于改善升级体验，对于追求最强终局表现的玩家来说会稍显逊色。天裔可以使用，让他们能够从高处跳下、在空中快速移动，并在空中改变方向。天裔还可以在主题区域使用，在元素汇聚点附近使用可获得持续 15 分钟的 10% 移动
+[warrior_fury / races #0 t=p]
+   EN…ning. The new Race, Skyborne, can also be Warriors for both …
+   CN: 乍看之下，战士的可选种族竞争相当激烈，兽人显著领跑，但巨魔、暗夜精灵和亡灵紧随其后。不过，随着未来的数值调整，这一格局可能会发生变化。新种族天裔双方阵营均可选择战士。
+[warrior_fury / races #4 t=p]
+   EN…rol. Both Human and Skyborne may have some niche uses, but s…
+   CN: 对联盟的狂怒战士来说，暗夜精灵似乎是首选，其种族特长提供强力的主动暴击提升和额外移动速度。侏儒看起来也是个稳妥的选择，其新种族特长可以与我们的爆发技能搭配，打出高额的伤害爆发，还附带一些脱离控制的实用功能。人类和天裔或许各有小众用途，但似乎弱于其他选项。矮人则看起来完全不占优势。
+[warrior_fury / races #6 t=p]
+   EN…t in other aspects. Skyborne may see some use in Elemental-f…
+   CN: 兽人似乎是狂怒战士整体最强的种族，拥有两种强大的伤害增益种族特长，还有昏迷时间缩短和强力的魔法防御。巨魔和亡灵同样相当强力，他们都拥有强力的种族特长，可能不如兽人那样全面，但能在其他方面有所补足。天裔在以急速为核心价值的首领战中可能会有用武之地，取决于急速的价值。牛头人的命中加成相对较弱，其昏迷技能
+
+===== CN 侧含 Skyborne 拉丁（未译）之处 =====
+
+===== CN 侧已汉化的种族专名落法 =====
+  天裔           x36
+  高阶天裔         x5

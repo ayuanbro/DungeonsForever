@@ -1,0 +1,205 @@
+[toc]
+
+There are a number of new mounts introduced in World of Warcraft: Forever. This guide will detail all of them, including their in-game models and where to get them.
+
+[grid column-width=800 align=centered] [div style="border:2px solid red; padding:10px;"] [center][b]World of Warcraft: Forever is a brand-new game for Classic WoW that hasn't been released yet.  Due to this, the information in this guide may be incomplete in places and may still change.  
+[/b][/center] [/div] [/grid]
+
+[pad][pad]
+[h2 type=bar toc="Quick Reference"]Mounts Quick Reference for WoW: Forever[/h2]
+This quick reference table shows all of the mounts released in Forever.
+
+[center][table class=grid width=90%]
+[tr background=cyan][td][b]Item[/b][/td][td][b]Source[/b][/td][td][b]Source Type[/b][/td][td][b][b]Details[/b][/b][/td][/tr]
+
+[tr][td][spell=1279399][/td][td]Paladin[/td][td]Quest[/td][td]Complete the Forsaken Paladin mount questline[/td][/tr]Summon Warhorse
+
+[tr][td][spell=1296534][/td][td]Paladin[/td][td]Quest[/td][td]Complete the Forsaken Paladin mount questline[/td][/tr]Summon Forsaken Charger
+
+[tr][td][item=280611][/td][td colspan=1]Blizzard Store[/td][td][/td][td]Purchase the [url=https://us.shop.battle.net/en-gb/product/world-of-warcraft-forever]Skyborne Epic Pack or Warcraft Forever Collection.[/url][/td][/tr]Veteran Adventurer's Loyal Companion
+
+[tr][td][item=280544][/td][td colspan=1]Blizzard Store[/td][td][/td][td]Purchase any of the [url=https://us.shop.battle.net/en-gb/product/world-of-warcraft-forever]World of Warcraft: Forever packs.[/url][/td][/tr]Cerulean Prideclaw
+
+[tr][td][item=277718][/td][td colspan=1]Legacy Track[/td][td][/td][td]Earn 55 Legacy Points[/td][/tr]Reins of the Spectral Bear
+
+[tr][td][item=269681][/td][td]Reputation[/td][td]Vendor[/td][td][b]Vendor: [/b] [npc=265756][br][b]Cost: [/b][money=200000][/td][/tr][/tr]Empyrean Galestrider
+
+[tr][td][item=269683][/td][td]Reputation[/td][td]Vendor[/td][td][b]Vendor: [/b] [npc=265756][br][b]Cost: [/b][money=200000][/td][/tr][/tr]Stormy Galestrider
+
+[tr][td][item=274930][/td][td]Reputation[/td][td]Vendor[/td][td][b]Vendor: [/b] [npc=265756][br][b]Cost: [/b][money=200000][/td][/tr][/tr]Umber Galestrider
+
+[tr][td][item=269671][/td][td]Reputation[/td][td]Vendor[/td][td][b]Vendor: [/b] [npc=265756][br][b]Cost: [/b][money=2000000][/td][/tr][/tr]Swift Empyrean Galestrider
+
+[tr][td][item=269678][/td][td]Reputation[/td][td]Vendor[/td][td][b]Vendor: [/b] [npc=265756][br][b]Cost: [/b][money=2000000][/td][/tr][/tr]Swift Stormy Galestrider
+
+[tr][td][item=274933][/td][td]Reputation[/td][td]Vendor[/td][td][b]Vendor: [/b] [npc=265756][br][b]Cost: [/b][money=2000000][/td][/tr][/tr]Swift Umber Galestrider
+
+[tr][td][item=262766][/td][td]Reputation[/td][td]Vendor[/td][td][b]Vendor: [/b][icon name=side_alliance][/icon][npc=256736] / [icon name=side_horde][/icon][npc=256400][br][b]Cost: [/b][currency=3402 amount=6000][/td][/tr]Reins of the Pack Kodo
+
+[tr][td][item=274706][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Reins of the Striped Dawnsaber
+
+[tr][td][item=276063][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Black Skeletal Horse
+
+[tr][td][item=265839][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Dark Skeletal Horse
+
+[tr][td][item=265838][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Green Skeletal Horse
+
+[tr][td][item=265840][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Purple Skeletal Horse
+
+[tr][td][item=274799][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Ochre Skeletal Warhorse
+
+[tr][td][item=269682][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Regal Galestrider
+
+[tr][td][item=269673][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Swift Regal Galestrider
+
+[tr][td][item=277960][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Lavender Kodo
+
+[tr][td][item=275993][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]White Kodo
+
+[tr][td][item=46102][/td][td colspan=3]Unknown[/td][td][/td][td][/td][/tr]Whistle of the Venomhide Ravasaur
+
+[/table][/center]
+
+[h2 type=bar toc="All Mount Models"]All Mount Models for WoW: Forever[/h2]
+All of the mounts released in Forever are showcased alphabetically with their source activity. For more information about how to add these to your collection, check out the Quick Reference tab.
+
+[grid column-width=300 align=centered][div]
+
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/126/145022.jpg alt="Black Skeletal Horse" width=400 border=2]
+[model npc=145022 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=276063]
+Unknown
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/81/146769.jpg alt="Cerulean Prideclaw" width=400 border=2]
+[model npc=146769 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=280544]
+Blizzard Store
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/188/144572.jpg alt="Dark Skeletal Horse" width=400 border=2]
+[model npc=144572 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=265839]
+Unknown
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/183/143799.jpg alt="Empyrean Galestrider" width=400 border=2]
+[model npc=143799 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=269681]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/80/144720.jpg alt="Forsaken Charger" width=400 border=2]
+[model npc=144720 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[spell=1296534]
+Quest
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/81/140881.png alt="Green Skeletal Horse" width=400 border=2]
+[model npc=140881 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=265838]
+Unknown
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/208/12240.jpg alt="Lavender Kodo" width=400 border=2]
+[model npc=12240 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=277960]
+Unknown
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/186/144570.jpg alt="Ochre Skeletal Warhorse" width=400 border=2]
+[model npc=144570 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=274799]
+Unknown
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/80/145488.jpg alt="Pack Kodo" width=400 border=2]
+[model npc=145488 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=262766]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/83/140883.jpg alt="Purple Skeletal Horse" width=400 border=2]
+[model npc=140883 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=265840]
+Unknown
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/184/143800.jpg alt="Regal Galestrider" width=400 border=2]
+[model npc=143800 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=269682]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/7/145671.jpg alt="Spectral Bear" width=400 border=2]
+[model npc=145671 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=277718]
+Legacy Track
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/186/143802.jpg alt="Stormy Galestrider" width=400 border=2]
+[model npc=143802 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=269683]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/125/144509.png alt="Striped Dawnsaber" width=400 border=2]
+[model npc=144509 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=274706]
+Unknown
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/116/144244.jpg alt="Swift Empyrean Galestrider" width=400 border=2]
+[model npc=144244 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=269671]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/118/144246.jpg alt="Swift Regal Galestrider" width=400 border=2]
+[model npc=144246 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=269673]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/117/144245.jpg alt="Swift Stormy Galestrider" width=400 border=2]
+[model npc=144245 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=269678]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/119/144247.jpg alt="Swift Umber Galestrider" width=400 border=2]
+[model npc=144247 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=274933]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/185/143801.jpg alt="Umber Galestrider" width=400 border=2]
+[model npc=143801 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=274930]
+Reputation
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/174/29102.jpg alt="Venomhide Ravasaur" width=400 border=2]
+[model npc=29102 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=46102]
+Unknown
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/149/146837.jpg alt="Veteran Adventurer's Loyal Companion" width=400 border=2]
+[model npc=146837 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=280611]
+Blizzard Store
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/60/141372.jpg alt="Warhorse" width=400 border=2]
+[model npc=141372 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[spell=1279399]
+Quest
+[/center]
+[/div][div]
+[center][img src=https://wow.zamimg.com/modelviewer/classicplus/webthumbs/npc/209/12241.jpg alt="White Kodo" width=400 border=2]
+[model npc=12241 slot=0 img=https://wow.zamimg.com/images/news/view-in-model-viewer-400.jpg][/model]
+[item=275993]
+Unknown
+[/center]
+[/div][/grid]

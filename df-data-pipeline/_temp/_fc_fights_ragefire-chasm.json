@@ -1,0 +1,59 @@
+{
+ "oggleflint": [
+  {
+   "spell": 5532,
+   "name": "顺劈斩",
+   "icon": "ability_warrior_cleave",
+   "flags": "\"tank\"",
+   "text": "攻击目标和离目标最近的玩家。"
+  }
+ ],
+ "taragaman-the-hungerer": [
+  {
+   "spell": 11970,
+   "name": "火焰新星",
+   "icon": "spell_fire_sealoffire",
+   "flags": "\"healer\"",
+   "text": "对他附近所有人造成火焰伤害，一场战斗好几次。治疗要把近战补满。"
+  },
+  {
+   "spell": 18072,
+   "name": "上钩拳",
+   "icon": "inv_gauntlets_05",
+   "flags": "\"tank\"",
+   "text": "重击并击退坦克。"
+  }
+ ],
+ "jergosh-the-invoker": [
+  {
+   "spell": 20800,
+   "name": "献祭",
+   "icon": "spell_fire_immolation",
+   "flags": "\"interrupt\",\"magic\"",
+   "text": "灼烧一名玩家，之后21秒内每隔几秒造成火焰伤害。打断施法或驱散灼烧。"
+  },
+  {
+   "spell": 18267,
+   "name": "虚弱诅咒",
+   "icon": "spell_shadow_curseofmannoroth",
+   "flags": "\"curse\"",
+   "text": "降低一名玩家的物理伤害，持续30秒。法师或德鲁伊可以解除。"
+  }
+ ],
+ "bazzalan": [
+  {
+   "spell": 744,
+   "name": "毒药",
+   "icon": "spell_nature_corrosivebreath",
+   "flags": "\"poison\"",
+   "text": "他的攻击会下毒：持续造成自然伤害。能解毒就解。"
+  },
+  {
+   "spell": 14873,
+   "name": "邪恶攻击",
+   "icon": "spell_shadow_ritualofsacrifice",
+   "flags": "\"tank\"",
+   "text": "每5到15秒对坦克造成额外伤害。"
+  }
+ ]
+}

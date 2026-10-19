@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>团本页（RaidUI）· UI 规整审计方案</title>
+<style>
+  :root{
+    --l0:#0A0C10; --l1:#10131A; --l2:#161A22; --l3:#202532; --l4:#2B3140; --l5:#38404F;
+    --div:#1B2029; --bd:rgba(255,255,255,.10); --gold:#F0C040; --txt:#E8EAF0; --dim:#8A93A6;
+    --red:#E5484D; --green:#46A758; --blue:#5B9DD9; --orange:#E9A463;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--l0); color:var(--txt); font:14px/1.65 "Segoe UI","Microsoft YaHei",sans-serif; padding:28px 34px 60px;}
+  h1{font-size:21px; font-weight:600; margin-bottom:6px;}
+  h1 span{color:var(--gold);}
+  .sub{color:var(--dim); font-size:13px; margin-bottom:18px;}
+  .rules{display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap;}
+  .rule{background:var(--l1); border:1px solid var(--bd); border-radius:8px; padding:9px 14px; font-size:13px;}
+  .rule b{color:var(--gold); font-weight:600;}
+  h2{font-size:16px; font-weight:600; margin:36px 0 4px; padding-left:10px; border-left:3px solid var(--gold);}
+  h2 .tag{font-size:12px; color:var(--dim); font-weight:400; margin-left:10px;}
+  /* ── 汇总表 ── */
+  table{border-collapse:collapse; width:100%; margin-top:12px; font-size:13px;}
+  th,td{border:1px solid var(--bd); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--l1); color:var(--dim); font-weight:600; white-space:nowrap;}
+  td code{font-family:Consolas,monospace; font-size:12px; color:var(--orange); background:rgba(255,255,255,.04); padding:1px 5px; border-radius:4px;}
+  .ok{color:var(--green); font-weight:600;}
+  .bad{color:var(--red); font-weight:600;}
+  .mid{color:var(--orange); font-weight:600;}
+  .arrow{color:var(--gold); font-family:Consolas,monospace;}
+  tr.cat td{background:var(--l1); color:var(--gold); font-weight:600; letter-spacing:1px;}
+  /* ── 对比区 ── */
+  .duo{display:flex; gap:22px; align-items:flex-start; margin-top:12px; flex-wrap:wrap;}
+  .panel{background:#0D0F14; border:1px solid var(--bd); border-radius:10px; padding:14px;}
+  .panel h3{font-size:13px; font-weight:600; margin-bottom:10px; color:var(--dim);}
+  .panel h3 em{font-style:normal; color:var(--red);}
+  .panel h3.good em{color:var(--green);}
+  .stage{position:relative; overflow:hidden; background:var(--l0); border:1px solid var(--bd); border-radius:8px;}
+  .notes{width:320px; font-size:12.5px;}
+  .notes li{margin:0 0 8px 16px;}
+  .notes b{color:var(--red); font-weight:600; font-family:Consolas,monospace;}
+  .notes li.ok{color:var(--green);}
+  .notes li.n{color:var(--dim);}
+  .m{position:absolute; font:10px/1.35 Consolas,monospace; color:var(--dim); white-space:nowrap;}
+  .badge{position:absolute; font:10px/1.3 Consolas,monospace; color:#fff; background:var(--red); border-radius:4px; padding:1px 5px; white-space:nowrap; z-index:6;}
+  .badge.g{background:var(--green);}
+  .badge.b{background:var(--blue);}
+  /* 结构块 */
+  .abs{position:absolute;}
+  .rect{position:absolute; border:1px solid var(--bd);}
+  .lbl-txt{position:absolute; font:600 12px/1.2 "Microsoft YaHei"; color:var(--txt);}
+  .lbl-sub{position:absolute; font:11px/1.2 "Microsoft YaHei"; color:var(--dim);}
+  .chipbtn{position:absolute; background:var(--l1); border:1px solid var(--bd); border-radius:5px; font:11px/22px "Microsoft YaHei"; color:var(--dim); text-align:center;}
+  .chipbtn.sel{color:var(--gold); border-color:rgba(240,192,64,.55);}
+  .dimline{position:absolute; border-left:1px dashed rgba(229,72,77,.5); z-index:5;}
+  .gaplbl{position:absolute; font:10px/1.2 Consolas,monospace; color:var(--red); background:rgba(229,72,77,.12); border-radius:3px; padding:0 4px; z-index:6;}
+  .gaplbl.g{color:var(--green); background:rgba(70,167,88,.12);}
+  /* 选项卡 */
+  .opts{display:flex; gap:14px; margin-top:12px; flex-wrap:wrap;}
+  .opt{flex:1; min-width:300px; background:var(--l1); border:1px solid var(--bd); border-radius:8px; padding:12px 14px; font-size:13px;}
+  .opt .t{font-weight:600; margin-bottom:6px;}
+  .opt.rec{border-color:rgba(70,167,88,.5);}
+  .opt.rec .t{color:var(--green);}
+  .opt .t::before{content:"● "; font-size:10px;}
+  .opt small{color:var(--dim);}
+  /* 改动量 */
+  .impact{margin-top:12px;}
+  .impact li{margin:0 0 7px 18px; font-size:13px;}
+  .impact code{font-family:Consolas,monospace; font-size:12px; color:var(--orange);}
+  .keep{margin-top:8px; background:rgba(70,167,88,.07); border:1px solid rgba(70,167,88,.35); border-radius:8px; padding:10px 14px; font-size:13px;}
+  .keep b{color:var(--green);}
+</style>
+</head>
+<body>
+
+<h1>团本页（RaidUI）<span>· UI 规整审计方案</span></h1>
+<div class="sub">依据 2026-10-10 全局定案标准逐条对照 · 仅方案不改码 · 审计对象 Core/RaidUI.lua（1371 行，含时间线 / 列表 / 套装三子页） · 2026-10-10</div>
+
+<div class="rules">
+  <div class="rule"><b>① L 色阶</b> L0=0A0C10 · L1=10131A · L2=161A22 · L3=202532 · L4=2B3140 · L5=38404F · 细边=白10%</div>
+  <div class="rule"><b>② 卡中卡</b> 内卡必须比外层亮一档：L0 &lt; L1 &lt; L2 &lt; 悬停L4（底+2档）</div>
+  <div class="rule"><b>③ 间距</b> 窗沿20 · 卡/按钮/组间一律 8 · 同侧边缘对齐</div>
+  <div class="rule"><b>④ 圆角</b> 卡/按钮走 BuildRoundedBG（r6+白10%细边）或 HuiCardFX</div>
+  <div class="rule"><b>⑤ 强调条</b> 左侧彩条/NEW条禁用 · 「新」文字徽标与金选中标可留</div>
+  <div class="rule"><b>⑥ 语义色不动</b> 规模色/职业色/品质色/金选中 · 遮罩保留黑</div>
+</div>
+
+<!-- ══════════════ 汇总表 ══════════════ -->
+<h2>一、违规点汇总表 <span class="tag">22 项 · 按 子区块 × 标准分组</span></h2>
+<table>
+<tr><th style="width:44px">#</th><th style="width:120px">位置</th><th style="width:90px">行号</th><th style="width:86px">标准</th><th style="width:46px">判定</th><th>现状 → 提议</th></tr>
+
+<tr class="cat"><td colspan="6">A · 列表子页卡片墙（RU.NewCard / SetHover / LayoutCards）</td></tr>
+<tr><td>1</td><td>卡底</td><td><code>L244</code></td><td>①④</td><td class="bad">✗</td><td><code>edge SetColorTexture(1,1,1,0.10)</code> 白10%全覆盖当卡底（直角） → <span class="arrow">HuiCardFX(c, hoverR, 1)：L1 底 + 白10%细边 + r6 圆角</span></td></tr>
+<tr><td>2</td><td>卡底叠加</td><td><code>L248</code></td><td>①</td><td class="bad">✗</td><td><code>bg SetColorTexture(0,0,0,0.35)</code> 黑 α 叠加非 L 真值 → <span class="arrow">随 #1 移除，L1 直接做底</span></td></tr>
+<tr><td>3</td><td>卡悬停</td><td><code>L187</code></td><td>②</td><td class="bad">✗</td><td><code>edge α 0.10→0.22</code> 白 α 提亮 → <span class="arrow">悬停胶囊 L3（L1 底 +2 档，随 #1 走 HuiCardFX）</span></td></tr>
+<tr><td>4</td><td>左侧竖条</td><td><code>L249-252</code><br><code>L268</code></td><td>⑤</td><td class="bad">✗</td><td><code>c.bar</code> 3px 规模色左竖条 → <span class="arrow">整条删除；规模色保留在 size/meta 文字（语义色不动）</span></td></tr>
+<tr><td>5</td><td>卡间距</td><td><code>L42</code></td><td>③</td><td class="bad">✗</td><td><code>RU.LS_GAP = 10</code> → <span class="arrow">8</span></td></tr>
+<tr><td>6</td><td>组内标签↔卡</td><td><code>L1223-1224</code></td><td>③</td><td class="bad">✗</td><td>标题行占位后卡顶间距 0（仅字体自然留白） → <span class="arrow">≥8（LayoutCards 传 y+8）</span></td></tr>
+<tr><td>7</td><td>组↔组</td><td><code>L1232</code></td><td>③</td><td class="bad">✗</td><td><code>pos.bottom + LS_LABEL_H</code>（上组卡底→下组标题顶 0 呼吸） → <span class="arrow">+8 后再进标题占位</span></td></tr>
+<tr><td>8</td><td>规则区分隔线</td><td><code>L1344</code></td><td>①</td><td class="mid">△</td><td><code>SetColorTexture(1,1,1,0.10)</code> 白 α 结构线 → <span class="arrow">DIV(1B2029)（低危，可选）</span></td></tr>
+
+<tr class="cat"><td colspan="6">B · 时间线子页（RU.NewRow / RenderTimeline）</td></tr>
+<tr><td>9</td><td>行悬停底</td><td><code>L214</code></td><td>①②④</td><td class="bad">✗</td><td><code>bg SetColorTexture(1,1,1,0.05)</code> 白 α 悬停、直角 → <span class="arrow">BuildCapsule L2（主窗 L0 上 +2 档）+ r4~6 圆角</span></td></tr>
+<tr><td>10</td><td>左侧竖条</td><td><code>L216-218</code><br><code>L230</code></td><td>⑤</td><td class="bad">✗</td><td><code>r.bar</code> 3px 规模色左竖条 → <span class="arrow">整条删除（meta 文字已带规模色）</span></td></tr>
+<tr><td>11</td><td>时间轴轴线</td><td><code>L1312</code></td><td>①</td><td class="mid">△</td><td><code>SetColorTexture(1,1,1,0.12)</code> 白 α → <span class="arrow">DIV(1B2029)（低危，可选；金节点标记保留）</span></td></tr>
+
+<tr class="cat"><td colspan="6">C · 套装子页 · 详情卡阶梯（RU.NewSetDetail / RU.NewPieceCard）</td></tr>
+<tr><td>12</td><td>详情卡底</td><td><code>L596</code></td><td>②</td><td class="bad">✗</td><td><code>BuildRoundedBG(d, 6, layer.L2)</code> 顶级卡直接挂主窗 L0 却用 L2（跳过 L1，亮两档） → <span class="arrow">L1（对齐 DungeonUI 顶级卡基准）</span></td></tr>
+<tr><td>13</td><td>物品卡底</td><td><code>L544</code></td><td>②</td><td class="bad">✗</td><td><code>BuildRoundedBG(f, 4, layer.L3)</code> → <span class="arrow">L2（随详情 L1 下移一档，内亮一档关系不变）</span></td></tr>
+<tr><td>14</td><td>详情卡降级路径</td><td><code>L598-604</code></td><td>①④</td><td class="mid">△</td><td>hui 缺失分支：白10%全覆盖 + 直角 L2 → <span class="arrow">同步改 L1 真值（低危：实机恒走 hui 路径）</span></td></tr>
+<tr><td>15</td><td>物品卡降级路径</td><td><code>L546-552</code></td><td>①④</td><td class="mid">△</td><td>同上直角 L2 + 白10% → <span class="arrow">同步改 L2 真值（低危）</span></td></tr>
+<tr><td>16</td><td>角色徽章底</td><td><code>L742,746</code></td><td>④</td><td class="mid">△</td><td><code>badgeBG</code> 46×20 直角色块（语义色 α0.18） → <span class="arrow">r4 圆角（语义色不动，低危可选）</span></td></tr>
+<tr><td>17</td><td>列表行间距</td><td><code>L1002</code></td><td>③</td><td class="bad">✗</td><td><code>y + SET_ROW_H + 2</code> 行↔行 2 → <span class="arrow">8（多解，见第四节）</span></td></tr>
+<tr><td>18</td><td>列表↔详情</td><td><code>L363</code></td><td>③</td><td class="bad">✗</td><td><code>RU.SET_LIST_GAP = 12</code> → <span class="arrow">8</span></td></tr>
+<tr><td>19</td><td>批次行↔正文</td><td><code>L354</code></td><td>③</td><td class="bad">✗</td><td><code>RU.SET_TOP = 124</code>（批次底 114 → 正文 10） → <span class="arrow">122（8）</span></td></tr>
+<tr><td>20</td><td>芯片间距</td><td><code>L347</code></td><td>③</td><td class="bad">✗</td><td><code>RU.SET_CHIP_GAP = 6</code> → <span class="arrow">8</span></td></tr>
+<tr><td>21</td><td>分节头左缘</td><td><code>L987</code></td><td>③</td><td class="mid">△</td><td>分节头 x=2 vs 列表行 x=0（child 内 2px 漂移） → <span class="arrow">统一 0（低危）</span></td></tr>
+
+<tr class="cat"><td colspan="6">D · 页面级（RU.Build / 三子页共用头）</td></tr>
+<tr><td>22</td><td>页签↔正文</td><td><code>L32</code></td><td>③</td><td class="bad">✗</td><td><code>RU.BODY_Y = 96</code>（页签底 82 → 正文 14） → <span class="arrow">90（8）</span></td></tr>
+<tr><td>23</td><td>页签间距</td><td><code>L31</code></td><td>③</td><td class="bad">✗</td><td><code>TAB_STEP=82</code> vs <code>TAB_W=76</code> 间距 6 → <span class="arrow">84（8）</span></td></tr>
+<tr><td>24</td><td>左缘 2px 漂移</td><td><code>L1275,1301</code> 等</td><td>③</td><td class="mid">△</td><td>文本/页签 x=<code>RU.X+2</code>，卡区真边缘 x=<code>RU.X</code> → <span class="arrow">待实测：+2 疑似 NewButton 胶囊内衬补偿；若文字起点与卡缘需严格对齐则统一（确认项）</span></td></tr>
+</table>
+
+<!-- ══════════════ 图 1 ══════════════ -->
+<h2>二、逐点示意 · 现状 vs 提案 <span class="tag">等比色块 · 936 逻辑宽按 58% 缩放</span></h2>
+
+<h2 style="font-size:14px; margin-top:22px;">图 1 · 列表子页卡片（#1 #2 #3 #4） <span class="tag">违规：白α叠加底 + 直角 + 左竖条 + 白α悬停</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3><em>现状</em> · NewCard L239-264</h3>
+    <div class="stage" style="width:300px; height:112px;">
+      <!-- 直角卡：白10%全覆盖 + 黑0.35 -->
+      <div class="abs" style="left:10px; top:10px; width:272px; height:92px; background:rgba(255,255,255,0.10);"></div>
+      <div class="abs" style="left:11px; top:11px; width:270px; height:90px; background:rgba(0,0,0,0.35);"></div>
+      <!-- 左竖条 -->
+      <div class="abs" style="left:11px; top:11px; width:3px; height:90px; background:rgba(107,168,219,0.95);"></div>
+      <div class="lbl-txt" style="left:26px; top:22px;">深穴</div>
+      <div class="lbl-sub" style="left:26px; top:44px;">10 人 · 深穴</div>
+      <div class="lbl-sub" style="left:26px; top:62px; color:var(--gold);">2026 年 12 月 9 日</div>
+      <div class="badge" style="right:8px; top:4px;">白10%全覆盖 · 直角</div>
+      <div class="badge" style="left:2px; top:106px; background:var(--blue);">3px 左竖条</div>
+      <div class="m" style="right:8px; bottom:4px;">hover: 白α .10→.22</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3 class="good"><em>提案</em> · HuiCardFX(c, true, 1)</h3>
+    <div class="stage" style="width:300px; height:112px;">
+      <!-- L1 圆角卡 + 细边 -->
+      <div class="abs" style="left:10px; top:10px; width:272px; height:92px; background:var(--l1); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="lbl-txt" style="left:26px; top:22px;">深穴</div>
+      <div class="lbl-sub" style="left:26px; top:44px;">10 人 · 深穴</div>
+      <div class="lbl-sub" style="left:26px; top:62px; color:var(--gold);">2026 年 12 月 9 日</div>
+      <div class="badge g" style="right:8px; top:4px;">L1=10131A · r6 · 白10%细边</div>
+      <div class="m" style="left:14px; bottom:4px;">hover → 胶囊 L3=202532（+2档）</div>
+      <div class="m" style="right:8px; bottom:4px;">10人 = 蓝（语义色留文字）</div>
+    </div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>现状卡底 = <b>0.10白(全覆盖)+0.35黑</b> 叠在主窗 L0 上，合成色不是任何 L 真值（≈#1A1C22 附近）。</li>
+      <li>提案走 DungeonUI.lua:132 <code>HuiCardFX</code>：底 <b>L1</b>、描边白10%（C_CARD_BORDER）、r6，悬停自动 L3。</li>
+      <li>规模色（10蓝/20绿/40橙）已由 size 文字带色，竖条删除不丢信息 —— 与套装页三次定稿（删竖条）先例一致。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 图 2 -->
+<h2 style="font-size:14px; margin-top:26px;">图 2 · 时间线行悬停（#9 #10） <span class="tag">违规：白α悬停 + 直角 + 左竖条</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3><em>现状</em> · NewRow L208-226</h3>
+    <div class="stage" style="width:300px; height:96px;">
+      <div class="abs" style="left:8px; top:10px; width:1px; height:76px; background:rgba(255,255,255,0.12);"></div>
+      <div class="abs" style="left:5px; top:14px; width:8px; height:8px; background:rgba(240,192,64,0.9);"></div>
+      <!-- 悬停行：白5%直角 -->
+      <div class="abs" style="left:30px; top:38px; width:250px; height:40px; background:rgba(255,255,255,0.05);"></div>
+      <div class="abs" style="left:32px; top:46px; width:3px; height:28px; background:rgba(107,168,219,0.95);"></div>
+      <div class="lbl-txt" style="left:44px; top:48px;">奥妮克希亚的巢穴</div>
+      <div class="lbl-sub" style="right:14px; top:48px; color:#E8A64A;">40 人 · 尘泥沼泽</div>
+      <div class="badge" style="left:220px; top:14px;">白5% 直角悬停</div>
+      <div class="badge b" style="left:24px; top:84px;">3px 竖条</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3 class="good"><em>提案</em> · BuildCapsule L2 悬停</h3>
+    <div class="stage" style="width:300px; height:96px;">
+      <div class="abs" style="left:8px; top:10px; width:1px; height:76px; background:var(--div);"></div>
+      <div class="abs" style="left:5px; top:14px; width:8px; height:8px; background:rgba(240,192,64,0.9);"></div>
+      <div class="abs" style="left:30px; top:38px; width:250px; height:40px; background:var(--l2); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="lbl-txt" style="left:44px; top:48px;">奥妮克希亚的巢穴</div>
+      <div class="lbl-sub" style="right:14px; top:48px; color:#E8A64A;">40 人 · 尘泥沼泽</div>
+      <div class="badge g" style="left:196px; top:14px;">L2=161A22 · r6 胶囊</div>
+      <div class="m" style="left:14px; bottom:2px;">轴线 → DIV=1B2029（可选）· 金节点保留 ✓</div>
+    </div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>行直接坐主窗 <b>L0</b> 上，悬停 = 底 +2 档 → <b>L2</b>，用 <code>ns.hui.BuildCapsule</code>（行池 Build 期建好，显隐切换）。</li>
+      <li>金节点标记（L1317-1319）属时间轴节点标 ≠ 强调条，<b>保留</b>（标准⑤「金选中标可留」同类）。</li>
+      <li>轴线白 0.12 建议换 DIV 色 —— 结构线不进白 α 通道（低危可选）。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 图 3 -->
+<h2 style="font-size:14px; margin-top:26px;">图 3 · 套装详情卡阶梯（#12 #13） <span class="tag">违规：顶级卡跳档 L0→L2，内卡 L3 顺移</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3><em>现状</em> · 阶梯倒挂风险</h3>
+    <div class="stage" style="width:300px; height:150px;">
+      <div class="abs" style="left:0; top:0; width:300px; height:150px; background:var(--l0);"></div>
+      <div class="abs" style="left:10px; top:10px; width:280px; height:130px; background:var(--l2); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="abs" style="left:24px; top:56px; width:120px; height:64px; background:var(--l3); border:1px solid var(--bd); border-radius:4px;"></div>
+      <div class="abs" style="left:154px; top:56px; width:120px; height:64px; background:var(--l3); border:1px solid var(--bd); border-radius:4px;"></div>
+      <div class="lbl-txt" style="left:28px; top:20px;">祝福板甲</div>
+      <div class="lbl-sub" style="left:28px; top:36px;">战士 · 惩戒 · 板甲 · 6 件套</div>
+      <div class="m" style="left:26px; top:62px;">物品卡 L3</div>
+      <div class="badge" style="right:8px; top:4px;">详情 L2：相对 L0 亮两档</div>
+      <div class="m" style="left:10px; bottom:2px;">主窗 L0=0A0C10</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3 class="good"><em>提案</em> · 全局阶梯对齐</h3>
+    <div class="stage" style="width:300px; height:150px;">
+      <div class="abs" style="left:0; top:0; width:300px; height:150px; background:var(--l0);"></div>
+      <div class="abs" style="left:10px; top:10px; width:280px; height:130px; background:var(--l1); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="abs" style="left:24px; top:56px; width:120px; height:64px; background:var(--l2); border:1px solid var(--bd); border-radius:4px;"></div>
+      <div class="abs" style="left:154px; top:56px; width:120px; height:64px; background:var(--l2); border:1px solid var(--bd); border-radius:4px;"></div>
+      <div class="lbl-txt" style="left:28px; top:20px;">祝福板甲</div>
+      <div class="lbl-sub" style="left:28px; top:36px;">战士 · 惩戒 · 板甲 · 6 件套</div>
+      <div class="m" style="left:26px; top:62px;">物品卡 L2</div>
+      <div class="badge g" style="right:8px; top:4px;">详情 L1 → 物品 L2（各亮一档）</div>
+      <div class="m" style="left:10px; bottom:2px;">主窗 L0=0A0C10</div>
+    </div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>全局阶梯：主窗 <b>L0</b> &lt; 顶级卡 <b>L1</b> &lt; 内卡 <b>L2</b> &lt; 悬停 <b>L4</b>。DungeonUI <code>HuiCardFX</code> 默认 base=L1，基准页顶级卡都是 L1。</li>
+      <li>现状「详情 L2 + 物品 L3」<b>相对关系合规</b>（亮一档），但详情相对主窗跳档两阶 → 整体上移一档。</li>
+      <li>套装页注释（L291「卡片底走 L2」）是旧 2 列平铺版式遗留，主窗压 L0 + 外壳底板已删后语境已变。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 图 4 间距总图 -->
+<h2 style="font-size:14px; margin-top:26px;">图 4 · 间距规整总图（#5 #6 #7 #17 #18 #19 #20 #22 #23） <span class="tag">红=现状违规值 · 绿=提案 8</span></h2>
+<div class="duo">
+  <div class="panel">
+    <h3><em>竖向</em> · 页头 → 正文（时间线/套装共用头）</h3>
+    <div class="stage" style="width:560px; height:236px; transform:scale(1); transform-origin:top left;">
+      <div class="abs" style="left:0; top:0; width:560px; height:236px; background:var(--l0);"></div>
+      <!-- 标题区 -->
+      <div class="lbl-txt" style="left:12px; top:10px;">团本</div>
+      <div class="lbl-sub" style="right:12px; top:12px;">共 7 座 · 更新于 2026-09-24</div>
+      <div class="lbl-sub" style="left:12px; top:30px;">首发即开放 10 / 20 / 40 人团本…</div>
+      <!-- 页签行 y=58 高24 → 底82 -->
+      <div class="chipbtn sel" style="left:12px; top:34px; width:76px; height:24px;">时间线</div>
+      <div class="chipbtn" style="left:12px; top:34px; width:0; height:0;"></div>
+      <div class="chipbtn" style="left:88px; top:34px; width:76px; height:24px;">列表</div>
+      <div class="chipbtn" style="left:164px; top:34px; width:76px; height:24px;">套装</div>
+      <div class="gaplbl" style="left:250px; top:34px;">页签间 6 ✗ → 8</div>
+      <!-- 现状正文顶 96：间距14 -->
+      <div class="dimline" style="left:8px; top:58px; height:44px;"></div>
+      <div class="gaplbl" style="left:12px; top:66px;">现状 82→96 = 14 ✗</div>
+      <div class="dimline g" style="left:140px; top:58px; height:36px; border-color:rgba(70,167,88,.5);"></div>
+      <div class="gaplbl g" style="left:144px; top:66px;">提案 90 = 8 ✓</div>
+      <!-- 正文示意 -->
+      <div class="abs" style="left:12px; top:90px; width:536px; height:20px; background:var(--l2); border:1px solid var(--bd); border-radius:6px; opacity:.55;"></div>
+      <div class="m" style="left:18px; top:94px;">正文区（时间线行 / 列表卡 / 套装批次+列表）</div>
+      <!-- 套装页批次行示意 -->
+      <div class="m" style="left:12px; top:124px;">套装子页：批次行 y=90（页签底 82 + 8 ✓）… 批次底 114 → 正文顶</div>
+      <div class="dimline" style="left:8px; top:148px; height:26px;"></div>
+      <div class="gaplbl" style="left:12px; top:152px;">现状 SET_TOP=124 → 10 ✗</div>
+      <div class="dimline g" style="left:180px; top:148px; height:22px; border-color:rgba(70,167,88,.5);"></div>
+      <div class="gaplbl g" style="left:184px; top:152px;">提案 122 = 8 ✓</div>
+      <div class="abs" style="left:12px; top:176px; width:200px; height:26px; background:var(--l1); border:1px solid var(--bd); border-radius:6px; opacity:.55;"></div>
+      <div class="abs" style="left:224px; top:176px; width:324px; height:52px; background:var(--l1); border:1px solid var(--bd); border-radius:6px; opacity:.55;"></div>
+      <div class="m" style="left:18px; top:182px;">左列表</div>
+      <div class="m" style="left:230px; top:182px;">右详情</div>
+      <div class="dimline" style="left:212px; top:176px; height:52px;"></div>
+      <div class="gaplbl" style="left:216px; top:196px;">12 ✗ → 8</div>
+      <div class="m" style="left:12px; bottom:2px;">LIST_GAP 12→8 · 详情/列表真边缘均锚 RU.X（同侧对齐 ✓）</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3><em>横向 / 行距</em> · 卡墙与列表行</h3>
+    <div class="stage" style="width:300px; height:236px;">
+      <div class="abs" style="left:0; top:0; width:300px; height:236px; background:var(--l0);"></div>
+      <!-- 卡墙 -->
+      <div class="abs" style="left:10px; top:10px; width:120px; height:60px; background:var(--l1); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="abs" style="left:142px; top:10px; width:120px; height:60px; background:var(--l1); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="dimline" style="left:132px; top:10px; height:60px;"></div>
+      <div class="gaplbl" style="left:118px; top:34px;">10✗→8</div>
+      <div class="abs" style="left:10px; top:82px; width:120px; height:60px; background:var(--l1); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="dimline" style="left:10px; top:70px; width:120px; height:0; border-left:none; border-top:1px dashed rgba(229,72,77,.5);"></div>
+      <div class="gaplbl" style="left:56px; top:72px;">同 10✗→8</div>
+      <!-- 组标签呼吸 -->
+      <div class="lbl-sub" style="left:10px; top:154px; color:var(--gold);">后续预告</div>
+      <div class="dimline" style="left:10px; top:168px; height:14px;"></div>
+      <div class="gaplbl" style="left:14px; top:170px;">标签→卡 0✗</div>
+      <div class="abs" style="left:10px; top:184px; width:120px; height:44px; background:var(--l1); border:1px solid var(--bd); border-radius:6px; opacity:.6;"></div>
+      <!-- 行距示意 -->
+      <div class="m" style="left:150px; top:86px;">列表行（套装页）</div>
+      <div class="abs" style="left:150px; top:100px; width:140px; height:30px; background:var(--l1); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="abs" style="left:150px; top:132px; width:140px; height:30px; background:var(--l1); border:1px solid var(--bd); border-radius:6px;"></div>
+      <div class="dimline" style="left:150px; top:130px; height:2px;"></div>
+      <div class="gaplbl" style="left:196px; top:118px;">行间 2 ✗ → 8</div>
+      <div class="m" style="left:150px; top:170px;">芯片间 SET_CHIP_GAP 6 ✗ → 8</div>
+      <div class="chipbtn" style="left:150px; top:184px; width:66px; height:24px;">全部</div>
+      <div class="chipbtn" style="left:224px; top:184px; width:66px; height:24px;">海加尔峰 T1</div>
+    </div>
+  </div>
+  <div class="notes">
+    <ul>
+      <li>逐项：<code>BODY_Y 96→90</code> · <code>TAB_STEP 82→84</code> · <code>LS_GAP 10→8</code> · <code>SET_TOP 124→122</code> · <code>SET_LIST_GAP 12→8</code> · <code>SET_CHIP_GAP 6→8</code> · 行间 <code>+2→+8</code>。</li>
+      <li>卡内内衬（SET_HEAD_Y=14、SET_BODY_Y=46、物品卡 6/5/7）<b>沿用现值</b>（标准③允许）。</li>
+      <li>组标签↔卡、组↔组两处呼吸补 8：改 RenderList 两行 y 推进，<code>LayoutCards</code> 纯函数不动签名。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════ 多解 ══════════════ -->
+<h2>三、多解与待决策点 <span class="tag">★ = 推荐</span></h2>
+<div class="opts">
+  <div class="opt rec">
+    <div class="t">决策 1 · 详情卡阶梯（#12/#13）</div>
+    ★ <b>方案 A：详情 L2→L1、物品卡 L3→L2</b> —— 对齐全局阶梯与 DungeonUI 顶级卡基准，两处各改一个实参。<br>
+    <small>方案 B：保持现值（L2/L3）—— 相对关系本就合规，视觉层级更沉；代价是与其他页顶级卡色阶不一致，全局色阶扫描会持续报黄。</small>
+  </div>
+  <div class="opt rec">
+    <div class="t">决策 2 · 列表行间距（#17）</div>
+    ★ <b>方案 A：+2 → +8</b> —— 严格按「按钮↔按钮=8」，30 行池滚区更高。<br>
+    <small>方案 B：+4 —— 行密度优先；若实机 +8 过松再退 +4（仍 &lt;8，需豁免记录）。</small>
+  </div>
+  <div class="opt rec">
+    <div class="t">决策 3 · 规模色竖条（#4/#10）</div>
+    ★ <b>方案 A：整条删除</b> —— 对齐套装页三次定稿先例；规模色保留在「N 人」文字（语义色不动）。<br>
+    <small>方案 B：保留为「语义动线」—— 主张属标准⑥语义色延伸，但与标准⑤字面冲突，需主理人特批豁免。</small>
+  </div>
+  <div class="opt">
+    <div class="t">确认项 · 左缘 +2（#24）</div>
+    文本起点 x=<code>RU.X+2</code> vs 卡区真边缘 x=<code>RU.X</code>。<br>
+    <small>疑似 NewButton 胶囊文字内衬补偿（视觉对齐）。建议实机截图量测后再定：若文字基线已视觉对齐卡缘则保留；否则文本类统一回 RU.X。</small>
+  </div>
+</div>
+
+<!-- ══════════════ 保留项 ══════════════ -->
+<div class="keep">
+  <b>合规保留项（✓ 不动）：</b>二级页签/批次芯片/职业下拉走 NewButton+MakeOutline hui 胶囊（L1300、L1133、L1166）·
+  金选中描边 SetOutline · 时间轴金节点标 · 规模/职业/品质/阵营语义色 · 角色徽章语义色 ·
+  物品卡 44 高/32 图标对齐五人本（L374-375）· EasyMenu 下拉路径 · 渲染期零建帧纪律 ·
+  卡内内衬现值 · 本页无 SetBackdrop 老卡、无 NEW 绿条、无压画遮罩。
+</div>
+
+<!-- ══════════════ 改动量 ══════════════ -->
+<h2>四、实施改动量预估 <span class="tag">只改 Core/RaidUI.lua · 不动 Core 其他文件</span></h2>
+<ul class="impact">
+  <li><b>文件</b>：仅 <code>Core/RaidUI.lua</code>，约 <b>20 处 / 净增 ±60 行</b>。</li>
+  <li><b>常量层（7 处）</b>：<code>BODY_Y 96→90</code>(L32) · <code>TAB_STEP 82→84</code>(L31) · <code>LS_GAP 10→8</code>(L42) ·
+      <code>SET_TOP 124→122</code>(L354) · <code>SET_CHIP_GAP 6→8</code>(L347) · <code>SET_LIST_GAP 12→8</code>(L363) ·
+      行距 <code>+2→+8</code>(L1002)。</li>
+  <li><b>结构层（4 处）</b>：<code>NewCard</code> 重构走 HuiCardFX（L239-264，删 edge/bg/bar 三纹理 + SetHover L186-188 一并撤）·
+      <code>NewRow</code> 悬停换 BuildCapsule（L208-226，删 bar）· <code>NewSetDetail</code> L2→L1（L596）·
+      <code>NewPieceCard</code> L3→L2（L544）；两条降级分支同步真值（L546-552 / L598-604）。</li>
+  <li><b>渲染层（2 处）</b>：<code>RenderList</code> 组呼吸（L1223、L1232）· <code>RenderSets</code> 行距与分节头左缘（L987、L1002）。</li>
+  <li><b>检查断言波及</b>：<code>_temp/df_dungeon_check.py</code> L288-292 / <code>mk_df_check.py</code> L346-349 钉了
+      <code>function RU.LayoutCards(list, w, h, y0)</code>、<code>c:SetPoint("TOPLEFT", RU.page, "TOPLEFT", pos[i].x, pos[i].y)</code>、
+      <code>y = pos.bottom + RU.LS_LABEL_H</code> 三条字面 —— 组呼吸若改在 LayoutCards 调用侧（推荐）则 <code>LS_LABEL_H</code> 字面保留，断言<b>预计零波及</b>；
+      若把呼吸并进常量需同步断言（+1 条）。字号 11/14/16 断言（mk L276）不受影响。</li>
+  <li><b>变异锚点</b>：保留 <code>RU.LayoutCards</code> 签名、<code>RU.axis:SetPoint("BOTTOMLEFT", …TOPLEFT…)</code>（mk L333）、
+      <code>RU.cnNote:SetPoint("LEFT", gdkpDesc, "RIGHT", 14, 0)</code>（rules 区本次不动）—— 均不触碰。</li>
+  <li><b>风险点</b>：NewCard 改 HuiCardFX 后 <code>c.edge</code> 字段消失 —— 全文件检索仅 SetHover/PaintCard 引用，无外部依赖（<code>RU.cards</code> 只做 SetSize/SetPoint/PaintCard）；NewRow 悬停胶囊需在 Build 期建好以守住「渲染期零建帧」纪律。</li>
+</ul>
+
+</body>
+</html>

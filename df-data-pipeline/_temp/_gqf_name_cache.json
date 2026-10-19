@@ -1,0 +1,1378 @@
+{
+"npcs": {
+"Anub'Rekhan": {
+"id": 15956,
+"zh": "阿努布雷坎"
+},
+"Arena Treasure Chest": {
+"id": null,
+"zh": null
+},
+"Avalanchion": {
+"id": 14464,
+"zh": "阿瓦兰奇奥"
+},
+"Ayamiss the Hunter": {
+"id": 15369,
+"zh": "狩猎者阿亚米斯"
+},
+"Azure Templar": {
+"id": 15211,
+"zh": "碧蓝圣殿骑士"
+},
+"Azuregos": {
+"id": 6109,
+"zh": "艾索雷葛斯"
+},
+"Balzaphon": {
+"id": null,
+"zh": "巴尔萨冯"
+},
+"Baron Geddon": {
+"id": 12056,
+"zh": "迦顿男爵"
+},
+"Baron Kazum": {
+"id": 15205,
+"zh": "卡苏姆男爵"
+},
+"Baron Silverlaine": {
+"id": null,
+"zh": "席瓦莱恩男爵"
+},
+"Battleguard Sartura": {
+"id": 15516,
+"zh": "沙尔图拉"
+},
+"Bayne": {
+"id": 10356,
+"zh": "贝恩"
+},
+"Blackmoss the Fetid": {
+"id": 3535,
+"zh": "恶臭的黑苔兽"
+},
+"Blackrock Shadowcaster": {
+"id": 436,
+"zh": "黑石暗影法师"
+},
+"Blackwing Warlock": {
+"id": 12459,
+"zh": "黑翼管理者"
+},
+"Blightsculler": {
+"id": 271080,
+"zh": "[Blightsculler]"
+},
+"Bloodlord Mandokir": {
+"id": 11382,
+"zh": "血领主曼多基尔"
+},
+"Bloodscalp Mystic": {
+"id": 701,
+"zh": "血顶秘法师"
+},
+"Bloodscalp Witch Doctor": {
+"id": 660,
+"zh": "血顶巫医"
+},
+"Bottle of Disease": {
+"id": null,
+"zh": null
+},
+"Brain Eater": {
+"id": 570,
+"zh": "食脑者"
+},
+"Bristleback Shaman": {
+"id": 2953,
+"zh": "刺背萨满祭司"
+},
+"Brontus": {
+"id": 5827,
+"zh": "布隆塔斯"
+},
+"Broodlord Lashlayer": {
+"id": 12017,
+"zh": "勒什雷尔"
+},
+"Brother Zendraas": {
+"id": 272045,
+"zh": "[Brother Zendraas]"
+},
+"Bryanna Embreeze": {
+"id": 263569,
+"zh": "[Bryanna Embreeze]"
+},
+"Buru the Gorger": {
+"id": 15370,
+"zh": "吞咽者布鲁"
+},
+"C'Thun": {
+"id": null,
+"zh": null
+},
+"Captain Flat Tusk": {
+"id": 5824,
+"zh": "獠牙队长"
+},
+"Captain Sander's Locker": {
+"id": null,
+"zh": null
+},
+"Chromaggus": {
+"id": 14020,
+"zh": "克洛玛古斯"
+},
+"Cirrusfly Soldier": {
+"id": 251402,
+"zh": "卷云蝇士兵"
+},
+"Crazed Murkblood Miner": {
+"id": null,
+"zh": null
+},
+"Creeg Bothunk": {
+"id": 263570,
+"zh": "[Creeg Bothunk]"
+},
+"Crimson Templar": {
+"id": 15209,
+"zh": "赤红圣殿骑士"
+},
+"Dalaran Summoner": {
+"id": 2358,
+"zh": "达拉然召唤师"
+},
+"Daniel Ulfman": {
+"id": 1917,
+"zh": "丹尼尔·奥夫曼"
+},
+"Death Flayer": {
+"id": 5823,
+"zh": "死亡毒蝎"
+},
+"Death Talon Captain": {
+"id": 12467,
+"zh": "死爪龙人队长"
+},
+"Death Talon Wyrmguard": {
+"id": 12460,
+"zh": "黑翼龙人护卫"
+},
+"Defias Magician": {
+"id": 1726,
+"zh": "迪菲亚法师"
+},
+"Den'dralass": {
+"id": 250936,
+"zh": "[Den'dralass]"
+},
+"Dishu": {
+"id": 5865,
+"zh": "迪舒"
+},
+"Duskstalker": {
+"id": 14430,
+"zh": "暮色巡游者"
+},
+"Dustwind Eggtender": {
+"id": 276194,
+"zh": "Dustwind Eggtender"
+},
+"Earthen Templar": {
+"id": 15307,
+"zh": "土色圣殿骑士"
+},
+"Ebonroc": {
+"id": 14601,
+"zh": "埃博诺克"
+},
+"Elaria Anvilwind": {
+"id": 271478,
+"zh": "艾拉莉亚·砧风"
+},
+"Emeriss": {
+"id": 14889,
+"zh": "艾莫莉丝"
+},
+"Emogg the Crusher": {
+"id": 14267,
+"zh": "摧毁者埃摩戈"
+},
+"Emperor Vek'lor": {
+"id": 15276,
+"zh": "维克洛尔大帝"
+},
+"Emperor Vek'nilash": {
+"id": 15275,
+"zh": "维克尼拉斯大帝"
+},
+"Enforcer Emilgund": {
+"id": 5787,
+"zh": "执行者埃米尔冈德"
+},
+"Ergaan Eastwind": {
+"id": 271483,
+"zh": "尔甘·东风"
+},
+"Falfaan Halfwind": {
+"id": 271465,
+"zh": "法尔凡·半风"
+},
+"Fankriss the Unyielding": {
+"id": 15510,
+"zh": "顽强的范克瑞斯"
+},
+"Fargon Mortalak": {
+"id": 2845,
+"zh": "法尔贡·莫塔拉克"
+},
+"Fellicent's Shade": {
+"id": 10358,
+"zh": "菲林森特的阴影"
+},
+"Felweaver Scornn": {
+"id": 5822,
+"zh": "斯考恩"
+},
+"Fernfeather": {
+"id": 256492,
+"zh": "[Fernfeather]"
+},
+"Firemaw": {
+"id": 11983,
+"zh": "费尔默"
+},
+"First Sergeant Hola'mahi": {
+"id": 12795,
+"zh": "一等军士长霍拉麦"
+},
+"Flagglemurk the Cruel": {
+"id": 7015,
+"zh": "残忍的弗拉格莫克"
+},
+"Flamegor": {
+"id": 11981,
+"zh": "弗莱格尔"
+},
+"Flamesnorting Whelp": {
+"id": 1044,
+"zh": "喷火雏龙"
+},
+"Foreman Grills": {
+"id": 5835,
+"zh": "工头葛瑞尔斯"
+},
+"Foreman Thistlenettle": {
+"id": 626,
+"zh": "工头希斯耐特"
+},
+"Forsaken Dark Stalker": {
+"id": 3808,
+"zh": "亡灵潜伏者"
+},
+"Friz Frazzlespark": {
+"id": 255897,
+"zh": "[Friz Frazzlespark]"
+},
+"Frostmane Troll Whelp": {
+"id": 706,
+"zh": "霜鬃巨魔幼崽"
+},
+"Gahz'ranka": {
+"id": 15114,
+"zh": "加兹兰卡"
+},
+"Galak Marauder": {
+"id": 4099,
+"zh": "加拉克掠夺者"
+},
+"Galemender Delanea": {
+"id": 259398,
+"zh": "[Galemender Delanea]"
+},
+"Garr": {
+"id": 12057,
+"zh": "加尔"
+},
+"Gehennas": {
+"id": 12259,
+"zh": "基赫纳斯"
+},
+"General Rajaxx": {
+"id": 15341,
+"zh": "拉贾克斯将军"
+},
+"Geolord Mottle": {
+"id": 5826,
+"zh": "吉欧洛德·杂斑"
+},
+"Geomancer Flintdagger": {
+"id": 2609,
+"zh": "地占师弗林塔格"
+},
+"Gezzy Gunkgear": {
+"id": 265575,
+"zh": "[Gezzy Gunkgear]"
+},
+"Ghost Howl": {
+"id": 3056,
+"zh": "鬼嚎"
+},
+"Ghostfang": {
+"id": 276111,
+"zh": "幽魂之牙"
+},
+"Gluth": {
+"id": 15932,
+"zh": "格拉斯"
+},
+"Golemagg the Incinerator": {
+"id": 11988,
+"zh": "焚化者古雷曼格"
+},
+"Gorefang": {
+"id": 12431,
+"zh": "血牙狼人"
+},
+"Gothik the Harvester": {
+"id": 16060,
+"zh": "收割者戈提克"
+},
+"Grand Widow Faerlina": {
+"id": 15953,
+"zh": "黑女巫法琳娜"
+},
+"Grimmaw": {
+"id": 14429,
+"zh": "格雷莫尔"
+},
+"Grizlak": {
+"id": 1425,
+"zh": "格瑞兹拉克"
+},
+"Gruff Swiftbite": {
+"id": 100,
+"zh": "格拉夫·疾齿"
+},
+"Hagg Taurenbane": {
+"id": 5859,
+"zh": "哈格"
+},
+"Hakkar": {
+"id": 14834,
+"zh": "哈卡"
+},
+"Heigan the Unclean": {
+"id": 15936,
+"zh": "肮脏的希尔盖"
+},
+"High Marshal Whirlaxis": {
+"id": 15204,
+"zh": "大元帅维拉希斯"
+},
+"High Priest Thekal": {
+"id": 14509,
+"zh": "高阶祭司塞卡尔"
+},
+"High Priest Venoxis": {
+"id": 14507,
+"zh": "高阶祭司温诺希斯"
+},
+"High Priestess Arlokk": {
+"id": 14515,
+"zh": "高阶祭司娅尔罗"
+},
+"High Priestess Jeklik": {
+"id": 14517,
+"zh": "高阶祭司耶克里克"
+},
+"High Priestess Mar'li": {
+"id": 14510,
+"zh": "高阶祭司玛尔里"
+},
+"Hoary Templar": {
+"id": 15212,
+"zh": "苍白圣殿骑士"
+},
+"Horde Scout": {
+"id": 11680,
+"zh": "部落斥候"
+},
+"Instructor Razuvious": {
+"id": 16061,
+"zh": "教官拉苏维奥斯"
+},
+"Isalien": {
+"id": null,
+"zh": "伊萨莉恩"
+},
+"Ivus the Forest Lord": {
+"id": 13419,
+"zh": "森林之王伊弗斯"
+},
+"Jailor Eston": {
+"id": 2427,
+"zh": "狱卒埃斯顿"
+},
+"Jang": {
+"id": 15078,
+"zh": "贾恩"
+},
+"Jin'do the Hexxer": {
+"id": 11380,
+"zh": "妖术师金度"
+},
+"Karrel Grayves": {
+"id": 1918,
+"zh": "卡雷尔·格莱弗斯"
+},
+"Kel'Thuzad": {
+"id": 15990,
+"zh": "克尔苏加德"
+},
+"Kurinnaxx": {
+"id": 15348,
+"zh": "库林纳克斯"
+},
+"Leprithus": {
+"id": 572,
+"zh": "莱布里萨斯"
+},
+"Lethon": {
+"id": 14888,
+"zh": "莱索恩"
+},
+"Lhara": {
+"id": 14846,
+"zh": "兰拉"
+},
+"Licillin": {
+"id": 2191,
+"zh": null
+},
+"Lieutenant Jackspring": {
+"id": 12784,
+"zh": "加克斯宾中尉"
+},
+"Loatheb": {
+"id": 16011,
+"zh": "洛欧塞布"
+},
+"Lord Kazzak": {
+"id": 12397,
+"zh": "卡扎克"
+},
+"Lord Kri": {
+"id": 15511,
+"zh": "克里勋爵"
+},
+"Lord Sinslayer": {
+"id": 7017,
+"zh": "辛斯雷尔"
+},
+"Lord Skwol": {
+"id": 15305,
+"zh": "斯古恩男爵"
+},
+"Lord Valthalak": {
+"id": null,
+"zh": "瓦塔拉克公爵"
+},
+"Lost One Chieftain": {
+"id": 763,
+"zh": "失落者酋长"
+},
+"Lost Whelp": {
+"id": 1043,
+"zh": "迷路的雏龙"
+},
+"Lucifron": {
+"id": 12118,
+"zh": "鲁西弗隆"
+},
+"Lumbering Horror": {
+"id": 14697,
+"zh": "笨拙的憎恶"
+},
+"Maexxna": {
+"id": 15952,
+"zh": "迈克斯纳"
+},
+"Magmadar": {
+"id": 11982,
+"zh": "玛格曼达"
+},
+"Matriarch Bristlefur": {
+"id": 276189,
+"zh": "[Matriarch Bristlefur]"
+},
+"Moam": {
+"id": 15340,
+"zh": "莫阿姆"
+},
+"Mor Grayhoof": {
+"id": null,
+"zh": "莫尔·灰蹄"
+},
+"Mugglefin": {
+"id": 10643,
+"zh": "玛戈芬"
+},
+"Murloc Scout": {
+"id": 578,
+"zh": "鱼人斥候"
+},
+"Murloc Tidecaller": {
+"id": 545,
+"zh": "鱼人招潮者"
+},
+"Mystmane": {
+"id": 259388,
+"zh": "[Mystmane]"
+},
+"Nal'taszar": {
+"id": 4066,
+"zh": "纳尔塔萨"
+},
+"Nefarian": {
+"id": 11583,
+"zh": "奈法利安"
+},
+"Nightscreech": {
+"id": 276101,
+"zh": "[Nightscreech]"
+},
+"Noth the Plaguebringer": {
+"id": 15954,
+"zh": "瘟疫使者诺斯"
+},
+"Old Vicejaw": {
+"id": 12432,
+"zh": "维斯迦尔"
+},
+"Onyxia": {
+"id": null,
+"zh": "奥妮克希亚"
+},
+"Ossirian the Unscarred": {
+"id": 15339,
+"zh": "无疤者奥斯里安"
+},
+"Ouro": {
+"id": 15517,
+"zh": "奥罗"
+},
+"Patchwerk": {
+"id": 16028,
+"zh": "帕奇维克"
+},
+"Pix Xizzix": {
+"id": 227853,
+"zh": "[Pix Xizzix]"
+},
+"Prince Skaldrenox": {
+"id": 15203,
+"zh": "斯卡德诺克斯王子"
+},
+"Princess Huhuran": {
+"id": 15509,
+"zh": "哈霍兰公主"
+},
+"Princess Tempestria": {
+"id": 14457,
+"zh": "泰比斯蒂亚公主"
+},
+"Ragged Ghoul": {
+"id": 250622,
+"zh": "肮脏的食尸鬼"
+},
+"Ragnaros": {
+"id": 11502,
+"zh": "拉格纳罗斯"
+},
+"Razorgore the Untamed": {
+"id": 12435,
+"zh": "狂野的拉佐格尔"
+},
+"Red Whelp": {
+"id": 1042,
+"zh": "红色雏龙"
+},
+"Ressan the Needler": {
+"id": 10357,
+"zh": "毒针雷萨恩"
+},
+"Rettrick": {
+"id": 265576,
+"zh": "[Rettrick]"
+},
+"Revanchion": {
+"id": 14690,
+"zh": "雷瓦克安"
+},
+"Riverpaw Outrunner": {
+"id": 478,
+"zh": "河爪豺狼人前锋"
+},
+"Riverpaw Overseer": {
+"id": 125,
+"zh": "河爪监工"
+},
+"Rocklance": {
+"id": 5841,
+"zh": "石枪"
+},
+"Rutherford Twing": {
+"id": 15126,
+"zh": "卢瑟弗·图恩"
+},
+"Sapphiron": {
+"id": 15989,
+"zh": "萨菲隆"
+},
+"Scarlet Convert": {
+"id": 1506,
+"zh": "血色信徒"
+},
+"Scarlet Initiate": {
+"id": 1507,
+"zh": "血色新兵"
+},
+"Scorn": {
+"id": 14693,
+"zh": "瑟克恩"
+},
+"Sergeant Major Clate": {
+"id": 12785,
+"zh": "克莱特军士长"
+},
+"Sever": {
+"id": 14682,
+"zh": "塞沃尔"
+},
+"Shadow of Doom": {
+"id": 16143,
+"zh": "末日之影"
+},
+"Shadowclaw": {
+"id": 2175,
+"zh": "影爪"
+},
+"Shadowforge Darkweaver": {
+"id": 2740,
+"zh": "暗炉巫师"
+},
+"Shal'ma": {
+"id": 276198,
+"zh": "[Shal'ma]"
+},
+"Shazzrah": {
+"id": 12264,
+"zh": "沙斯拉尔"
+},
+"Silithid Harvester": {
+"id": 3253,
+"zh": "异种收割者"
+},
+"Sister Rathtalon": {
+"id": 5830,
+"zh": "莱丝塔伦"
+},
+"Skeletal Healer": {
+"id": 787,
+"zh": "骷髅医师"
+},
+"Skeletal Miner": {
+"id": 623,
+"zh": "骷髅矿工"
+},
+"Skeletal Raider": {
+"id": 1110,
+"zh": "骷髅袭击者"
+},
+"Skeletal Warder": {
+"id": 785,
+"zh": "骷髅看守"
+},
+"Sludge Beast": {
+"id": 3295,
+"zh": "淤泥兽"
+},
+"Slydris": {
+"id": 255887,
+"zh": "[Slydris]"
+},
+"Snapbeak the Quick": {
+"id": 259394,
+"zh": "[Snapbeak the Quick]"
+},
+"Snarler": {
+"id": 5356,
+"zh": "咆哮者"
+},
+"Snarlflare": {
+"id": 14272,
+"zh": "斯纳弗莱尔"
+},
+"Snarlsnout": {
+"id": 276109,
+"zh": "[Snarlsnout]"
+},
+"Snort the Heckler": {
+"id": 5829,
+"zh": "土狼斯诺特"
+},
+"Splinter Fist Enslaver": {
+"id": 1487,
+"zh": "裂拳奴役者"
+},
+"Splinter Fist Fire Weaver": {
+"id": 891,
+"zh": "裂拳控火者"
+},
+"Splinter Fist Taskmaster": {
+"id": 892,
+"zh": "裂拳工头"
+},
+"Sri'skulk": {
+"id": 10359,
+"zh": "瑟斯库克"
+},
+"Stone Fury": {
+"id": 2258,
+"zh": "狂怒的石元素"
+},
+"Stone Guard Zarg": {
+"id": 12794,
+"zh": "石头守卫扎尔格"
+},
+"Stormherald Ukta": {
+"id": 276105,
+"zh": "[Stormherald Ukta]"
+},
+"Sulfuron Harbinger": {
+"id": 12098,
+"zh": "萨弗隆先驱者"
+},
+"Swinegart Spearhide": {
+"id": 5864,
+"zh": "斯文格加特·矛鬃"
+},
+"Taerar": {
+"id": 14890,
+"zh": "泰拉尔"
+},
+"Taliaa Brightsky": {
+"id": 271480,
+"zh": "塔莉亚·明空"
+},
+"Tamra Stormpike": {
+"id": 14275,
+"zh": "塔尔玛·雷矛"
+},
+"Tel'daeor the Stormspeaker": {
+"id": 259385,
+"zh": "[Tel'daeor the Stormspeaker]"
+},
+"Thaddius": {
+"id": 15928,
+"zh": "塔迪乌斯"
+},
+"The Condemned One": {
+"id": 276089,
+"zh": "受谴者"
+},
+"The Duke of Cynders": {
+"id": 15206,
+"zh": "灰烬公爵"
+},
+"The Duke of Fathoms": {
+"id": 15207,
+"zh": "深渊公爵"
+},
+"The Duke of Shards": {
+"id": 15208,
+"zh": "碎石公爵"
+},
+"The Duke of Zephyrs": {
+"id": 15220,
+"zh": "微风公爵"
+},
+"The Lost One": {
+"id": 256028,
+"zh": "[The Lost One]"
+},
+"The Prophet Skeram": {
+"id": 15263,
+"zh": "预言者斯克拉姆"
+},
+"Thomas Yance": {
+"id": null,
+"zh": null
+},
+"Thornstarter Igleg": {
+"id": 276108,
+"zh": "Thornstarter Igleg"
+},
+"Tunnel Rat Surveyor": {
+"id": 1177,
+"zh": "坑道鼠勘探员"
+},
+"Undead Dynamiter": {
+"id": 625,
+"zh": "亡灵爆破者"
+},
+"Undead Excavator": {
+"id": 624,
+"zh": "亡灵挖掘者"
+},
+"Vaelastrasz the Corrupt": {
+"id": 13020,
+"zh": "堕落的瓦拉斯塔兹"
+},
+"Vem": {
+"id": 15544,
+"zh": "维姆"
+},
+"Vengeful Ancient": {
+"id": 4030,
+"zh": "狂怒的树人"
+},
+"Venom Web Spider": {
+"id": 217,
+"zh": "结网毒蜘蛛"
+},
+"Viscidus": {
+"id": 15299,
+"zh": "维希度斯"
+},
+"Vultros": {
+"id": 462,
+"zh": "乌尔图斯"
+},
+"Warlord Kolkanis": {
+"id": 5808,
+"zh": "科卡尼斯"
+},
+"Watch Commander Zalaphil": {
+"id": 5809,
+"zh": "指挥官萨拉菲尔"
+},
+"Winklespark": {
+"id": 265574,
+"zh": "温克尔斯巴克"
+},
+"Wooden Chair": {
+"id": null,
+"zh": null
+},
+"Wrathvine": {
+"id": 276099,
+"zh": "Wrathvine"
+},
+"Wushoolay": {
+"id": 15085,
+"zh": "乌苏雷"
+},
+"Ysondre": {
+"id": 14887,
+"zh": "伊森德雷"
+},
+"Zippie Fizzbolt": {
+"id": 265577,
+"zh": "[Zippie Fizzbolt]"
+},
+"a container": {
+"id": null,
+"zh": null
+}
+},
+"quests": {
+"A Daughter's Love": {
+"id": 231,
+"zh": "女儿的爱"
+},
+"A Firm Response": {
+"id": 93746,
+"zh": "强硬的回应"
+},
+"A Grim Task": {
+"id": 304,
+"zh": "艰巨的任务"
+},
+"A Magical Affront": {
+"id": 94413,
+"zh": "[A Magical Affront]"
+},
+"A Recipe For Death": {
+"id": 451,
+"zh": "致命的配方"
+},
+"Aggressive Encroachment": {
+"id": 92473,
+"zh": "步步紧逼"
+},
+"Agmond's Fate": {
+"id": 704,
+"zh": "阿戈莫德的命运"
+},
+"Among the Faithful": {
+"id": 92528,
+"zh": "信徒之中"
+},
+"An Unholy Alliance": {
+"id": 6522,
+"zh": "邪恶的盟友"
+},
+"Arikara": {
+"id": 5088,
+"zh": "阿利卡拉"
+},
+"Arugal's Folly": {
+"id": 99,
+"zh": "阿鲁高的愚行"
+},
+"Avenged Tenfold": {
+"id": 92834,
+"zh": "十倍奉还"
+},
+"Banner of the Fallen": {
+"id": 86585,
+"zh": "[Banner of the Fallen]"
+},
+"Baron Marinous": {
+"id": 98028,
+"zh": "马里诺斯男爵"
+},
+"Big Game Hunter": {
+"id": 208,
+"zh": "王牌猎人"
+},
+"Bloodtalon Matriarch": {
+"id": 97223,
+"zh": "血爪族母"
+},
+"Boughs in the Wind": {
+"id": 93797,
+"zh": "[Boughs in the Wind]"
+},
+"Bounty on Murlocs": {
+"id": 46,
+"zh": "悬赏鱼人"
+},
+"Breaking the Breaker": {
+"id": 92645,
+"zh": "解决“破坏者”"
+},
+"Brewer's Trade": {
+"id": 98071,
+"zh": "[Brewer's Trade]"
+},
+"Bride of the Embalmer": {
+"id": 253,
+"zh": "藏尸者的妻子"
+},
+"Call to Arms": {
+"id": 679,
+"zh": "短兵相接"
+},
+"Carnage": {
+"id": 98283,
+"zh": "[Carnage]"
+},
+"Catching Wind": {
+"id": 92840,
+"zh": "捕风"
+},
+"Chakuyak": {
+"id": 96130,
+"zh": "[Chakuyak]"
+},
+"Collecting Memories": {
+"id": 168,
+"zh": "收集记忆"
+},
+"Cracking Maury's Foot": {
+"id": 613,
+"zh": "玛雷的腿"
+},
+"Crushridge Warmongers": {
+"id": 504,
+"zh": "破碎岭好战者"
+},
+"Deep Ocean, Vast Sea": {
+"id": 982,
+"zh": "深不可测的海洋"
+},
+"Deliver the News": {
+"id": 92703,
+"zh": "[Deliver the News]"
+},
+"Desperate Times": {
+"id": 92640,
+"zh": "非常时期"
+},
+"Earthen Arise": {
+"id": 6481,
+"zh": "土灵的觉醒"
+},
+"Elixir of Agony": {
+"id": 515,
+"zh": "苦楚药剂"
+},
+"Elixir of Pain": {
+"id": 501,
+"zh": "痛苦药剂"
+},
+"Exploring the Alliance": {
+"id": 93963,
+"zh": "[Exploring the Alliance]"
+},
+"Exploring the Horde": {
+"id": 93739,
+"zh": "[Exploring the Horde]"
+},
+"Flutterfly Dust": {
+"id": 92683,
+"zh": "扑翼蝶鳞粉"
+},
+"Forgotten Loa Idols": {
+"id": 97225,
+"zh": "被遗忘的洛阿神像"
+},
+"Foul Matriarch": {
+"id": 92470,
+"zh": "邪恶的族母"
+},
+"Free From the Hold": {
+"id": 898,
+"zh": "逃离监牢"
+},
+"Free the Hollows": {
+"id": 93172,
+"zh": "解放空洞风灵"
+},
+"Frosthowl": {
+"id": 98326,
+"zh": "[Frosthowl]"
+},
+"Gizelton Caravan": {
+"id": 5943,
+"zh": "基泽尔顿车队"
+},
+"Gleaming Crescent Necklace": {
+"id": 98027,
+"zh": "[Gleaming Crescent Necklace]"
+},
+"Gleaning Our Future": {
+"id": 98310,
+"zh": "[Gleaning Our Future]"
+},
+"Harmony in Balance": {
+"id": 92461,
+"zh": "平衡中的和谐"
+},
+"Hate the Hatefury": {
+"id": 97265,
+"zh": "[Hate the Hatefury]"
+},
+"Havoc in the Highlands": {
+"id": 92550,
+"zh": "高地之劫"
+},
+"Hides for the Forsaken": {
+"id": 97558,
+"zh": "被遗忘者的皮"
+},
+"Humbert's Sword": {
+"id": 547,
+"zh": "亨伯特的长剑"
+},
+"Insane Druids": {
+"id": 1012,
+"zh": "疯狂的德鲁伊"
+},
+"Khan Jehn": {
+"id": 93196,
+"zh": "[Khan Jehn]"
+},
+"Leonid's Letter": {
+"id": 98545,
+"zh": "[Leonid's Letter]"
+},
+"Lost in the Shadows": {
+"id": 99123,
+"zh": "[Lost in the Shadows]"
+},
+"Making Repairs": {
+"id": 91316,
+"zh": "[Making Repairs]"
+},
+"Mercy Falls on Deaf Ears": {
+"id": 93165,
+"zh": "充耳不闻的怜悯"
+},
+"Mortality Wanes": {
+"id": 1142,
+"zh": "临终遗言"
+},
+"Murlocs at the Gates": {
+"id": 91285,
+"zh": "门口的鱼人"
+},
+"No Honor Among Thieves": {
+"id": 79242,
+"zh": "[No Honor Among Thieves]"
+},
+"Oh Brother...": {
+"id": 167,
+"zh": "啊，兄弟……"
+},
+"Old Fire-Eye": {
+"id": 95140,
+"zh": "老火眼"
+},
+"Old Habits": {
+"id": 98223,
+"zh": "[Old Habits]"
+},
+"Ornery Ornery Galestriders": {
+"id": 92684,
+"zh": "暴躁的疾风陆行鸟"
+},
+"Packaged Pristine Pelts": {
+"id": 98156,
+"zh": "[Packaged Pristine Pelts]"
+},
+"Partial Mystical Notes": {
+"id": 95384,
+"zh": "[Partial Mystical Notes]"
+},
+"Proof of Concept": {
+"id": 92873,
+"zh": "[Proof of Concept]"
+},
+"Rare Books": {
+"id": 91777,
+"zh": "[Rare Books]"
+},
+"Rear Guard Patrol": {
+"id": 99156,
+"zh": "[Rear Guard Patrol]"
+},
+"Reclaiming the Charred Vale": {
+"id": 1059,
+"zh": "夺回焦炭谷"
+},
+"Red Silk Bandanas": {
+"id": 214,
+"zh": "红色丝质面罩"
+},
+"Return to Delgren": {
+"id": 78093,
+"zh": "[Return to Delgren]"
+},
+"Return to Rorian": {
+"id": 92469,
+"zh": "向罗里安复命"
+},
+"Return to Valanaar": {
+"id": 92880,
+"zh": "[Return to Valanaar]"
+},
+"Returning to Port": {
+"id": 97048,
+"zh": "[Returning to Port]"
+},
+"Rocks to Rests": {
+"id": 97326,
+"zh": "以石为座"
+},
+"Sentiments of the Lost": {
+"id": 88758,
+"zh": "[Sentiments of the Lost]"
+},
+"Serpentbloom": {
+"id": 962,
+"zh": "毒蛇花"
+},
+"Silver of the Waves": {
+"id": 86614,
+"zh": "[Silver of the Waves]"
+},
+"Stalk With The Earthmother": {
+"id": 76156,
+"zh": "[Stalk With The Earthmother]"
+},
+"Stonetalon Supply Run": {
+"id": 86574,
+"zh": "[Stonetalon Supply Run]"
+},
+"Stopping the Cycle": {
+"id": 98297,
+"zh": "[Stopping the Cycle]"
+},
+"Stormy Potential": {
+"id": 97282,
+"zh": "风暴潜能"
+},
+"Strahnbrad Mystery": {
+"id": 95534,
+"zh": "[Strahnbrad Mystery]"
+},
+"Teldrassil": {
+"id": 940,
+"zh": "泰达希尔"
+},
+"Terror of the Desert Skies": {
+"id": 78830,
+"zh": "[Terror of the Desert Skies]"
+},
+"Test Your Theory": {
+"id": 93045,
+"zh": "[Test Your Theory]"
+},
+"The Absent Minded Prospector": {
+"id": 943,
+"zh": "健忘的勘察员"
+},
+"The Book of Ur": {
+"id": 1013,
+"zh": "乌尔之书"
+},
+"The Cirrusfly Queen": {
+"id": 92463,
+"zh": "卷云蝇女王"
+},
+"The Criminal Element": {
+"id": 92517,
+"zh": "法外之徒"
+},
+"The Darkreaver Menace": {
+"id": 7668,
+"zh": "达克雷尔的威胁"
+},
+"The Fury Runs Deep": {
+"id": 378,
+"zh": "卡姆·深怒"
+},
+"The High Chieftain": {
+"id": 99082,
+"zh": "[The High Chieftain]"
+},
+"The Horn of Xelthos": {
+"id": 78261,
+"zh": "[The Horn of Xelthos]"
+},
+"The Killing Fields": {
+"id": 9,
+"zh": "清理荒野"
+},
+"The Moonsilver Blade": {
+"id": 95126,
+"zh": "[The Moonsilver Blade]"
+},
+"The Only Good Brinescale...": {
+"id": 95776,
+"zh": "未知"
+},
+"The People's Militia": {
+"id": 14,
+"zh": "西部荒野人民军"
+},
+"The Skybreaker Bulwark": {
+"id": 94003,
+"zh": "[The Skybreaker Bulwark]"
+},
+"The Sleeper Has Awakened": {
+"id": 5321,
+"zh": "昏昏欲睡"
+},
+"The Tempest's Weapons": {
+"id": 96016,
+"zh": "[The Tempest's Weapons]"
+},
+"Threat from Below": {
+"id": 99052,
+"zh": "来自深海的威胁"
+},
+"To Valanaar": {
+"id": 92579,
+"zh": "前往瓦拉纳尔"
+},
+"Tower Defense": {
+"id": 93320,
+"zh": "[Tower Defense]"
+},
+"Twisted Hatred": {
+"id": 932,
+"zh": "扭曲的仇恨"
+},
+"Twisting the Knife": {
+"id": 86758,
+"zh": "[Twisting the Knife]"
+},
+"Underground Assault": {
+"id": 2040,
+"zh": "地底突袭"
+},
+"Understanding Our Present": {
+"id": 98216,
+"zh": "[Understanding Our Present]"
+},
+"Unfortunate News": {
+"id": 92644,
+"zh": "[Unfortunate News]"
+},
+"Unwelcome Guests": {
+"id": 95508,
+"zh": "不速之客"
+},
+"WANTED: \"Hogger\"": {
+"id": 176,
+"zh": "通缉：霍格"
+},
+"WANTED: Incinerator Gar'im": {
+"id": 95999,
+"zh": "[WANTED: Incinerator Gar'im]"
+},
+"WANTED: Jai'vhanel": {
+"id": 98025,
+"zh": "通缉：贾伊瓦内尔"
+},
+"WANTED: Marez Cowl": {
+"id": 684,
+"zh": "通缉：玛雷兹·考尔"
+},
+"WANTED: Otto and Falconcrest": {
+"id": 685,
+"zh": "通缉：奥图和法库雷斯特"
+},
+"WANTED: Syndicate Personnel": {
+"id": 549,
+"zh": "通缉：辛迪加成员"
+},
+"WANTED: Vulgara the Insatiable": {
+"id": 93318,
+"zh": "悬赏：贪得无厌的乌尔加拉"
+},
+"Watching the Roads": {
+"id": 95981,
+"zh": "监视道路"
+},
+"What Comes Around...": {
+"id": 386,
+"zh": "伸张正义"
+},
+"Willix the Importer": {
+"id": 1144,
+"zh": "进口商威利克斯"
+},
+"Wrongly Blamed, Justly Corrected": {
+"id": 97250,
+"zh": "错怪无辜，罪有应得"
+}
+}
+}

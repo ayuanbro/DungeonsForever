@@ -1,0 +1,22 @@
+== zhTW 覆盖层一致性 ==
+  源繁化行数 = 496  zhTW 正文行数 = 496  逐行相等 = True
+  zhTW 归一化行数（含守卫）= 498
+  禁词命中 = clean
+  保留词 戰刃: zhTW=1 src=1（差值=0，注释里的同名会致差）
+  保留词 長矛: zhTW=1 src=2（差值=-1，注释里的同名会致差）
+  保留词 釣魚竿: zhTW=1 src=1（差值=0，注释里的同名会致差）
+  overlay 含 法術傷害   = True
+  overlay 含 職業限定   = True
+  overlay 含 保留戰網   = True
+  overlay 含 坦克裝備   = True
+  overlay 含 特定法術強度 = True
+
+== 隔离变异（逐条：注入 → df_dungeon_check 该断言变红 → 还原） ==
+  [OK] MUT_CLOSE_SETTINGS_GONE → 目标断言变红=True  (returncode=1)
+  [OK] MUT_WIDTH_560 → 目标断言变红=True  (returncode=1)
+  [OK] MUT_NO_RESKIN → 目标断言变红=True  (returncode=1)
+  [OK] MUT_NO_COLLAPSE_ROT → 目标断言变红=True  (returncode=1)
+  [OK] MUT_NO_SHUXING_LABEL → 目标断言变红=True  (returncode=1)
+  [OK] MUT_NO_MUTEX_MF → 目标断言变红=True  (returncode=1)
+  [OK] MUT_NO_PAGE_CLAMP → 目标断言变红=True  (returncode=1)
+  隔离变异全部命中 = True

@@ -1,0 +1,48 @@
+    y = y + FSHeight(note, 14) + 22
+
+    local capsHead = PV.labels.weekCaps
+    capsHead:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -y)
+    capsHead:SetText(L["周上限 · 按赛季累计点数"])
+    capsHead:Show()
+    y = y + 26
+    local maxCum = RD.caps[10].cum
+    local halfW = floor(PV.W / 2) - 16
+    for i = 1, 10 do
+        local rec = RD.caps[i]
+        local row = PV.capRows[i]
+        local col = (i - 1) % 2
+        local rowi = floor((i - 1) / 2)
+        -- caps 数据无 week 字段：第 N 档上限即第 N 周上限（站点口径），直接用序号。
+        row.week:SetText(format(L["第 %d 周"], i))
+        row.rank:SetText(format("R%d", rec.rank))
+        row.bar:SetWidth(floor(120 * rec.cum / maxCum))
+        row.cum:SetText(format("%d", rec.cum))
+        row.inc:SetText(format("+%d", rec.inc))
+        row:SetPoint("TOPLEFT", PV.child, "TOPLEFT", col * (halfW + 32), -(y + rowi * 30))
+        row:Show()
+    end
+    y = y + 5 * 30
+    local cfoot = PV.labels.capsFoot
+    cfoot:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -(y + 6))
+    cfoot:SetText(L["等级 4 和 10 永远不是某周的上限；第 7 周一次跳两级（等级 11 与黑色战争坐骑）；上限按赛季累计点数计算，晚开始可直接冲级"])
+    cfoot:Show()
+    y = y + FSHeight(cfoot, 14) + 22
+
+    local bfHead = PV.labels.bfHead
+    bfHead:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -y)
+    bfHead:SetText(format("%s · %s", L["战场轮换"], L["战斗的召唤"]))
+    bfHead:Show()
+    y = y + 26
+    for i, rec in ipairs(RD.battlefields) do
+        local bt = PV.weekBf[i]
+        bt:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4 + (i - 1) * 156, -y)
+        bt:Show()
+    end
+    y = y + 30
+    local bfoot = PV.labels.bfFoot
+    bfoot:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 4, -(y + 4))
+    bfoot:SetText(L["每周前三个战场轮流当“战斗的召唤”：暗矛群岛 → 阿拉希盆地 → 战歌峡谷，当周给更多荣誉与等级点数；各战场荣誉已拉平"])
+    bfoot:Show()
+    y = y + FSHeight(bfoot, 14) + 10
+    PV.child:SetHeight(y + 8)
+end

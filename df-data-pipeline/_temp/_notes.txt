@@ -1,0 +1,157 @@
+ 24 | Cast
+ 12 | Use
+  4 | Cast before engaging, and maintain it throughout the fight
+  4 | Maintain
+  4 | Before combat, cast
+  3 | Use (single target) or 多重射击 (multi-target)
+  3 | if your group is physical heavy and the mob will live long enough to benefit from the debuff
+  3 | just keep spamming your builder while refreshing Slice and Dice as close to .1s remaining as possible
+  3 | Cast , then 暗言术：痛
+  3 | for the rest of the fight
+  2 | Cast and maintain 5 stacks on the target
+  2 | Cast as you engage
+  2 | Cast if Undead or Demon
+  2 | Put on your target if you have the time for it
+  2 | 
+  2 | Use any excess Combo Points on on low armor enemies and 割裂 on high armor enemies
+  2 | Keep major buffs active ( and 心灵之火)
+  2 | If worried about your health, keep a active
+  2 | Keep on the Tank
+  2 | between pulls if you are not near full mana
+  2 | Keep and 心灵之火 up
+  2 | Open with
+  2 | Keep on yourself if the mob is hitting hard
+  2 | until the mob dies
+  2 | to pool mana
+  2 | Flamestrike (high mana cost option)
+  2 | Send in
+  2 | Pull with
+  1 | Cast and maintaing it throughout the fight
+  1 | Cast to maintain the debuff
+  1 | Cast if you just swung and you are not tanking the mob
+  1 | Cast if Rage allows for it
+  1 | Cast and maintain it on all targets
+  1 | Cast once you have 压制 ready
+  1 | Cast if rage allows for it
+  1 | Use if the target is above 70% HP
+  1 | Use or 顺劈斩
+  1 | Cast if in a group environment. Maintain 5 stacks on bosses
+  1 | Cast if you're already high on threat
+  1 | Cast if you have spare rage and the boss has 5 Sunder Armor stacks
+  1 | Cast on different targets
+  1 | Cast with excess rage
+  1 | If the enemy is an undead or demon, use
+  1 | Use with 光明圣印 to apply Judgment of Light on an enemy. You can replace your Seal afterward to do more damage, but remember that using 审判 will replace the currently active one
+  1 | Cast to quickly and cheaply heal someone, or use 圣光术 for a slower, more expensive heal that heals for much more, depending on the situation
+  1 | Cast if mana allows for it
+  1 | Optional: If the mob will survive moderately long, be sure to apply with your first 审判 to increase Holy damage
+  1 | Activate your primary seal - and refresh when it expires. Use for slower 2-handed weapons, generally at least 3.0 speed or slower, and use 正义圣印 for everything else
+  1 | on cooldown. This can be macro'd together with 神圣打击
+  1 | on cooldown
+  1 | For multiple enemies: Drop a on the ground; not worth using against a single enemy generally due to mana constraints
+  1 | Cast on cooldown if the enemy is Undead or Demon
+  1 | any particularly dangerous enemies
+  1 | Use and refresh when needed
+  1 | Put on your target
+  1 | Use as your builder when you are at or below 3 Combo Points. You never want to cast a 毁伤 at 4+ Combo Points
+  1 | Use for dagger builds and 邪恶攻击 for non-dagger builds
+  1 | Use with high Energy any time multiple enemies are present or when fighting a boss
+  1 | Use any excess Combo Points on on low armor enemies or 割裂 on high armor enemies
+  1 | Always use from Stealth
+  1 | Utilize both and 伺机待发 to reapply your 绞喉 after it has fully run its course
+  1 | Begin combat by casting (if you are level 20), or 惩击 otherwise
+  1 | Use Wand attacks until the enemy is defeated. If they have a lot of health, then you can cast again as it comes back off cooldown
+  1 | Begin combat by casting ; otherwise
+  1 | Use Wand attacks until the enemy is defeated. If they have a lot of health, then you can cast too
+  1 | the Tank before the pull. Skip this if they are a rage-based tank like Warrior or Druid since the absorb might hurt their rage generation (this is very prone to change through Beta)
+  1 | Use as your primary heal
+  1 | Use if someone is in imminent danger
+  1 | When the party is healthy, Wand trash to buy yourself time to regenerate mana. （ ​#371806） the "five second rule" we discussed earlier, and try to give yourself a clear window to regain mana
+  1 | Wand until the mob dies. Recast if it comes back up and the mob still has a lot of health
+  1 | Cast once you have it, then 暗言术：痛
+  1 | the Tank before the pull. Skip this on a Warrior or Druid. The absorb can starve them of rage, though that may change through Beta
+  1 | is the heal you live on
+  1 | if someone is about to die
+  1 | When you and the Tank are both hurt
+  1 | Only when most of the party is low. It is a 3-second cast, and it dumps mana
+  1 | the party is healthy, wand trash so the five-second rule can tick. Casting resets it
+  1 | Make sure your major buffs are active, like and 心灵之火. Undead players should also maintain 虚弱之触
+  1 | (Optional) Before combat, cast
+  1 | Begin combat by casting
+  1 | Cast , if available
+  1 | (Optional) Cast
+  1 | off the enemy with Wand attacks
+  1 | Drop for your group
+  1 | Use to attack targets at range
+  1 | Drop against a single target or 熔岩图腾 against multiple targets
+  1 | Use procs on 火焰新星 as much as possible, as it costs a significant amount of Mana but is also our hardest-hitting spell
+  1 | Use against multiple targets
+  1 | Alternate between and 地震术
+  1 | Enhancement Shamans are mostly reliant on their auto attacks. You will be using your shocks or to pull enemies to you and then usually preserve mana by not casting anything besides an occasional 风暴打击 to fish for 强化风暴打击 procs. You should keep your 闪电之盾 up between pulls, just to optimize your passive damage while also still using some leftover mana
+  1 | When you are in dungeons or fighting multiple enemies, you should focus on dropping your and using 火焰新星 as much as possible, until you either risk pulling threat or run out of mana
+  1 | Drop support totems, such as (with 元素的召唤 if dropping 2+ Totems at once or in a pre-pull situation) for your group
+  1 | Heal deeply injured targets with , especially the tank!
+  1 | Drop and use 火焰新星 on cooldown until low on mana against multiple targets if there isn't significant incoming damage
+  1 | Blast (never above 2 stacks unless it's a boss)
+  1 | Arcane Missiles if Missile Barrage proc'ed
+  1 | you didn't get Missile Barrage after 2-3 Arcane Blasts, Fire Blast instead to reset the stacks
+  1 | Arcane Explosion
+  1 | x5 if it's a high health target
+  1 | Once is stacked, cast Pyroblast
+  1 | Pre-Cast (high mana cost option)
+  1 | Spam
+  1 | Fingers of Frost procs, Cast Ice Lance
+  1 | the mobs are already grouped up and won't die before the cast is done, cast Blizzard
+  1 | spam Arcane Explosion
+  1 | and 痛苦灾祸
+  1 | First mob: , 痛苦灾祸 and 生命虹吸, then 恐惧术 it
+  1 | Second mob: send in and apply the same DoTs
+  1 | the second mob. Re-Fear the first whenever Fear ends
+  1 | the second mob is down, drain the first
+  1 | Low on mana: cast instead of Drain Life. Drain Life heals the health back
+  1 | health, or the mob is below about 20%: switch to your wand so you don't waste mana on a drain
+  1 | + 痛苦灾祸 the mob has a lot of health
+  1 | to brand the mob
+  1 | Searing Pain whenever the brand drops, roughly every 6 seconds
+  1 | Low on mana: cast instead of Drain Life
+  1 | below about 20%: switch to your wand so you don't waste mana on a drain
+  1 | in your pet so it takes aggro
+  1 | 腐蚀术 and 献祭. The DoTs let your pet keep aggro while you set up
+  1 | until the mob turns to you
+  1 | followed by 献祭 while the mob runs to you
+  1 | Once it reaches melee, switch to instant casts so you don't suffer pushback: , plus 腐蚀术 if you have 5/5 强化腐蚀术
+  1 | just before Immolate runs out, so you lose as little of the DoT as possible
+  1 | as the killing blow, once the mob is at or below one Shadowburn hit
+  1 | Rotation
+  1 | Cast to hold the enemy at range
+  1 | Cast twice
+  1 | Cast , then follow with two more 星火术
+  1 | Repeat the and 星火术 cycle until the enemy dies
+  1 | Opening with banks 日月之蚀 charges, so each pair of 星火术 that follows casts faster. If the enemy breaks free of 纠缠根须, stop your current cast and reapply 纠缠根须 before continuing. A 星火术 pushed back by melee hits costs you more time than the recast
+  1 | Apply
+  1 | both dots to any additional enemies you want in the pull
+  1 | Cast on yourself as they close in
+  1 | Let the pack hit you, cleaving them with while you keep your dots and 回春术 running
+  1 | your weapon swings faster than 1.5 seconds, weave melee attacks between your dot refreshes
+  1 | Pull up to three or four enemies with . (If you will naturally pull more, there is no need to cast 月火术 on all targets; it's better to get more hots onto yourself before going into 熊形态)
+  1 | Cast (or 愈合 if you have time) on yourself while they run to you
+  1 | Shift into
+  1 | Cast to reduce their damage
+  1 | until everything is dead
+  1 | Use to generate extra rage for more 横扫, particularly at the start of a pull when your rage is low
+  1 | if you will not waste any Energy, should always be under 50 Energy when used, and 节能施法 is not active
+  1 | if you have 4/5 combo-points and the target will live for 6 seconds or longer. Never apply if it's already active. Prioritize 5 combo-points if the target lives long enough
+  1 | if the target will live for 6 seconds or longer. Never apply if it's already active
+  1 | if it's not active and you won't waste Energy
+  1 | as long as it doesn't affect the uptime of the previous abilities
+  1 | if you can not 撕碎 due to positional requirement
+  1 | if you can't press anything else to get a chance of a 节能施法 proc
+  1 | Keep up on the tank
+  1 | Keep up on the tank and anyone you expect to take damage
+  1 | casting to regenerate mana, or join in on the DPS when mana is comfortable
+  1 | DPS for Deep Balance: everything, 纠缠根须 a few mobs away from the tank
+  1 | DPS for Deep Restoration: Spam or shift to 猎豹形态 for better mana regen
+  1 | When a direct heal is needed, start with to get the HoT up. Then use low ranks of 治疗之触 to fill the gaps
+  1 | If a life is in danger, use to pick them up. Even if a HoT is not up yet, 回春术 -> 迅捷治愈 is a 1.0s save
+  1 | If is on cooldown or we do not have 1.0s to spare, cast 自然迅捷 with a max rank 治疗之触
+  1 | When the emergency is party-wide, like too many enemies were pulled and threat is a mess, cast to keep everyone alive

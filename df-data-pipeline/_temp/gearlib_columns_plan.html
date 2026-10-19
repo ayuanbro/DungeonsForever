@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>装备库 · 右列改版方案</title>
+<style>
+  body { background:#0d1017; color:#d8dde6; font-family:"Microsoft YaHei",sans-serif; margin:0; padding:24px; }
+  h1 { color:#f0c85a; font-size:20px; margin:0 0 6px; }
+  .sub { color:#8a93a6; font-size:13px; margin-bottom:18px; }
+  .wrap { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+  .card { background:#161a22; border:1px solid #2a3142; border-radius:10px; padding:14px 16px; }
+  /* ===== 右栏 mock ===== */
+  .pane { width:760px; }
+  .titlebar { display:flex; justify-content:space-between; align-items:center; padding:2px 4px 10px; }
+  .titlebar .t { color:#f5f7fa; font-size:16px; font-weight:bold; }
+  .titlebar .c { color:#8a93a6; font-size:13px; }
+  .toolbar { display:flex; gap:6px; align-items:center; padding-bottom:8px; }
+  .chip { border:1px solid #333c4e; border-radius:5px; padding:2px 9px; font-size:12px; color:#9aa4b6; }
+  .chip.on { border-color:#f0c85a; }
+  .chip.q { color:#9d5cff; }
+  .chip.o { color:#ff9d2e; }
+  .chip.p { color:#2e9dff; }
+  .chip.b { color:#8a93a6; margin-left:auto; border-color:#f0c85a; color:#f0c85a; }
+  .grid { border:1px solid #2a3142; border-radius:8px; overflow:hidden; }
+  .hrow, .irow { display:flex; align-items:center; }
+  .hrow { background:#1d2330; font-size:12px; color:#8a93a6; height:26px; }
+  .irow { border-top:1px solid #232a38; height:44px; font-size:13px; }
+  .irow:hover { background:#1c212c; }
+  .c-name { width:200px; padding-left:12px; display:flex; align-items:center; gap:8px; }
+  .c-ilvl  { width:76px; text-align:center; }
+  .c-req   { width:76px; text-align:center; }
+  .c-type  { width:100px; }
+  .c-src   { flex:1; padding-right:6px; }
+  .c-wish  { width:52px; text-align:center; }
+  .hrow .c-name, .hrow .c-type, .hrow .c-src { padding-left:12px; }
+  .hrow .c-src { padding-left:6px; }
+  .ic { width:26px; height:26px; border-radius:5px; background:#232a38 center/20px no-repeat; border:1px solid #333c4e; flex:none; }
+  .nm { font-weight:bold; }
+  .nm.p { color:#2e9dff; } .nm.b { color:#9d5cff; } .nm.o { color:#ff9d2e; } .nm.e { color:#f6c445; }
+  .sub2 { color:#7d8698; font-size:11px; margin-top:1px; }
+  .src1 { color:#c9d2e0; font-size:12px; line-height:15px; }
+  .src2 { color:#7d8698; font-size:11px; line-height:14px; }
+  .star { color:#59637a; font-size:15px; }
+  .star.on { color:#ffd34d; }
+  .newtag { background:#3a2f14; color:#f0c85a; font-size:10px; border-radius:4px; padding:0 4px; margin-left:6px; border:1px solid #5a4a1e; }
+  /* ===== 说明卡 ===== */
+  .notes { background:#161a22; border:1px solid #2a3142; border-radius:10px; padding:14px 18px; width:330px; font-size:13px; line-height:1.9; }
+  .notes b { color:#f0c85a; }
+  .notes li { margin:3px 0; }
+  .ask { color:#ff9d68; }
+  .dim { color:#8a93a6; }
+</style>
+</head>
+<body>
+<h1>装备库 · 右列改版方案</h1>
+<div class="sub">新列序：名称 → 物品等级 → 需要等级 → 类型 → 来源（两行）→ 心愿。下表数据为真实示例。</div>
+<div class="wrap">
+  <div class="card pane">
+    <div class="titlebar"><span class="t">全部装备</span><span class="c">共 11987 件 · 第 1 / 300 页</span></div>
+    <div class="toolbar">
+      <span class="chip">稀有</span><span class="chip q on">史诗</span><span class="chip o">传说</span>
+      <span class="chip b">力量 +</span>
+    </div>
+    <div class="grid">
+      <div class="hrow">
+        <div class="c-name">名称</div>
+        <div class="c-ilvl">物品等级</div>
+        <div class="c-req">需要等级</div>
+        <div class="c-type">类型</div>
+        <div class="c-src">来源</div>
+        <div class="c-wish">心愿</div>
+      </div>
+      <div class="irow">
+        <div class="c-name"><div class="ic" style="background-image:url()"></div>
+          <div><div class="nm e">血怒者之爪<span class="newtag">新增</span></div><div class="sub2">拾取绑定 · 唯一</div></div></div>
+        <div class="c-ilvl" style="color:#f6c445">63</div>
+        <div class="c-req" style="color:#c9d2e0">58</div>
+        <div class="c-type">拳套</div>
+        <div class="c-src"><div class="src1">哈卡莱战守卫</div><div class="src2">祖尔格拉布</div></div>
+        <div class="c-wish"><span class="star">☆</span></div>
+      </div>
+      <div class="irow">
+        <div class="c-name"><div class="ic"></div>
+          <div><div class="nm p">灵风头冠</div><div class="sub2">拾取绑定</div></div></div>
+        <div class="c-ilvl" style="color:#9d5cff">66</div>
+        <div class="c-req" style="color:#c9d2e0">60</div>
+        <div class="c-type">布甲 · 头部</div>
+        <div class="c-src"><div class="src1">克洛苏斯</div><div class="src2">熔火之心</div></div>
+        <div class="c-wish"><span class="star on">★</span></div>
+      </div>
+      <div class="irow">
+        <div class="c-name"><div class="ic"></div>
+          <div><div class="nm b">恶魔布</div><div class="sub2">灰色商品</div></div></div>
+        <div class="c-ilvl" style="color:#c9d2e0">50</div>
+        <div class="c-req dim">—</div>
+        <div class="c-type">布料</div>
+        <div class="c-src"><div class="src1">世界掉落</div><div class="src2">费伍德森林</div></div>
+        <div class="c-wish"><span class="star">☆</span></div>
+      </div>
+      <div class="irow">
+        <div class="c-name"><div class="ic"></div>
+          <div><div class="nm o">萨弗拉斯之焰</div><div class="sub2">拾取绑定</div></div></div>
+        <div class="c-ilvl" style="color:#ff9d2e">80</div>
+        <div class="c-req" style="color:#c9d2e0">60</div>
+        <div class="c-type">双手锤</div>
+        <div class="c-src"><div class="src1">商人 琳达·冬泉</div><div class="src2">冬泉谷 · 永望镇</div></div>
+        <div class="c-wish"><span class="star">☆</span></div>
+      </div>
+      <div class="irow">
+        <div class="c-name"><div class="ic"></div>
+          <div><div class="nm e">燃魔之刃</div><div class="sub2">拾取绑定</div></div></div>
+        <div class="c-ilvl" style="color:#f6c445">65</div>
+        <div class="c-req" style="color:#c9d2e0">60</div>
+        <div class="c-type">单手剑</div>
+        <div class="c-src"><div class="src1">任务奖励</div><div class="src2">希利苏斯 · 其拉虫巢</div></div>
+        <div class="c-wish"><span class="star">☆</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <b>改版要点</b>
+    <ul>
+      <li><b>列序</b>：名称 → 物品等级 → 需要等级 → 类型 → 来源 → 心愿，表头同步换。</li>
+      <li><b>来源两行</b>：上行 = 掉落 NPC / 来源性质（boss 名、商人、任务奖励、世界掉落…），下行 = 掉落地点（副本名或地图·子区）。上行 12px 亮色、下行 11px 灰色。</li>
+      <li><b>行高 34 → 44</b>：容纳两行来源；每页行数按新行高自动重算（实测页高 ÷ 44）。</li>
+      <li><b>心愿列</b>：星标从「悬停才现身」改为<b>常驻最右列</b>，有收藏金色实心 ★、未收藏灰色空心 ☆，直接点击收藏/取消；表头「心愿」。</li>
+      <li><b>名称列</b>：保留图标 + 品质色名 + 新增小卡；副行新增「拾取绑定」等说明灰字（可选）。</li>
+      <li><b>类型列</b>：部位 · 子类合并一格（如「布甲 · 头部」「拳套」）。</li>
+      <li>物品等级/需要等级数字按品质淡色，无需求显示「—」。</li>
+      <li>tooltip、Shift+链接、右键收藏、跳副本等交互全部不变。</li>
+    </ul>
+    <b>待拍板</b>
+    <ul>
+      <li class="ask">1. 名称副行：加「拾取绑定/装绑」小灰字（如图，行内信息更全）还是不加（更紧凑）？</li>
+      <li class="ask">2. 星标常驻后，右键快捷收藏是否保留？（建议保留，双通道）</li>
+      <li class="ask">3. 来源上行拿不到 NPC 名时显示来源性质（如图「世界掉落/任务奖励」），同意？</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

@@ -1,3 +1,8 @@
+-- =============================================================================
+-- DungeonsForever · 专业升级 HUD（冲专业 1~300 跟随弹窗）
+-- 跟随专业页当前路线逐段提示制作与购物清单，实时跟随技能进度；只对无限服加载。
+-- =============================================================================
+
 local _, ns = ...
 
 if not ns.LoadForeverPages then return end
@@ -10,6 +15,7 @@ local DG = Host.DG
 local MakeFS, NewButton = Host.MakeFS, Host.NewButton
 local SetOutline = Host.SetOutline
 
+-- 专业图标：数据里是短名（trade_leatherworking），SetTexture 直接喂短名会静默失败
 local function ProfIconTex(name)
     if not name then return Host.FALLBACK_ICON end
     if type(name) == "string" and not name:find("\\", 1, true) then
@@ -18,6 +24,7 @@ local function ProfIconTex(name)
     return name
 end
 
+-- 倒圆角描边（HUI 主题走 BuildRoundBorder；非 HUI 返回 nil，保留原方角 backdrop 描边）
 local function RoundFrame(fr, radius, col)
     if not (ns.hui and ns.hui.BuildRoundBorder) then return nil end
     local pieces = ns.hui.BuildRoundBorder(fr, radius, col, fr, "OVERLAY", "both", 1) or {}
@@ -37,26 +44,30 @@ local function RGet(k)
     return R and R[k] or nil
 end
 local LV = ns.ProfLeveling
-local RA = ns.ProfRouteAuto
+local RA = ns.ProfRouteAuto   -- 自动路线计算（Core/ProfRouteAuto.lua，先于本文件加载）
 
 local format = string.format
 
 local PF = {}
 ns.ProfFollow = PF
 
+-- 「跳转制造」入口开关（2026-10-10 用户：功能暂缓先隐藏）。true = 恢复显示按钮；
+-- 引擎（jumpCraft/openProfPanel）完整保留，随时可重开。
 PF.CRAFT_BTN = false
 
-local W, W_BASE = 352, 352
+-- -------------------------------------------------------------------------
+-- 常量与小工具
+-- -------------------------------------------------------------------------
+local W, W_BASE = 352, 352      -- W 为当前有效宽（购物列超宽时加宽），W_BASE 为基准（352 = 底部四按钮排 92+92+66+66+3*4+2*PAD）
 local PAD = 12
 local BTN_W = { 92, 66, 66 }
 local BTN_GAP = 4
-local MAT_MAX = 6
+local MAT_MAX = 6          -- 当前段最多直列材料行，其余进购物清单
 local SHOP_MAX = 16
-local SWEEP_MAX = 5
-local IMPORT_TRIES = 5
+local SWEEP_MAX = 5        -- 懒加载名称重扫上限
+local IMPORT_TRIES = 5     -- 一键导入物品名懒加载重试上限
 
 local C_OK   = { 0.27, 0.75, 0.45 }
-local C_BAD  = { 0.85, 0.30, 0.30 }
 local C_HEAD = { 0.95, 0.78, 0.35 }
 
 local function Accent()
@@ -80,6 +91,7 @@ local function SpellName(id)
     return format(L["法术 #%d"], id)
 end
 
+-- 该制作法术是否已学会（段卡右上角显示「已学习」的依据）
 local function IsLearned(spellID)
     if not spellID then return false end
     if C_Spell and C_Spell.IsSpellKnown then
@@ -95,13 +107,15 @@ local function IsLearned(spellID)
     return false
 end
 
-local function Have(id)
+-- Only the manual craft-button guard reads carried materials. Route and shopping
+-- quantities deliberately ignore all pre-existing bag and bank items.
+local function HaveForCraft(id)
     if C_Item and C_Item.GetItemCount then
-        local ok, n = pcall(C_Item.GetItemCount, id, true)
+        local ok, n = pcall(C_Item.GetItemCount, id, false)
         if ok and type(n) == "number" then return n end
     end
     if type(GetItemCount) == "function" then
-        local ok, n = pcall(GetItemCount, id, true)
+        local ok, n = pcall(GetItemCount, id, false)
         if ok and type(n) == "number" then return n end
     end
     return 0
@@ -117,16 +131,14 @@ local function charKey()
     return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?")
 end
 
-local function onlyMissView()
-    return dbProf().shopOnlyMiss and true or false
-end
-
+-- 当前角色的跟随状态（收窗只标记 hidden，进度保留）
 local function st()
     local p = dbProf()
     p.follow = p.follow or {}
     return p.follow[charKey()]
 end
 
+-- 技能当前值（复用专业页 ProfLearned；取不到返回 nil）
 local function skillOf(slug)
     local PD = ns.ProfModule
     if PD and PD.ProfLearned then
@@ -137,6 +149,10 @@ local function skillOf(slug)
     return nil, nil
 end
 
+-- -------------------------------------------------------------------------
+-- HUD 通过统一门面取得剩余路线。最省钱方案允许仅靠商人完成；
+-- 等待计算或无解时保留自动模式，不能回落到违反排除限制的固定攻略。
+-- -------------------------------------------------------------------------
 local function routeTarget(slug)
     local PD = ns.ProfModule
     local v
@@ -150,6 +166,10 @@ local function routeTarget(slug)
     return math.max(1, math.min(300, math.floor(v)))
 end
 
+-- 固定路线按「目标等级」裁剪（2026-10-11 用户：HUD 固定路线也要按我设的等级显示）。
+--   口径与专业页 ClipFixedSteps 逐字一致：跨目标的段把止点裁到目标，
+--   制作数量按 (目标−起)/(止−起) 比例折算并 ceil（最少 1）。target 为 nil / >=300 时原样返回。
+--   ★ 自动路线不受影响：它的 opts.target 已在 Core/ProfRouteAuto.lua 内部 clamp。
 local function clipFixedSteps(steps, target)
     if not target or target >= 300 then return steps end
     local out = {}
@@ -166,42 +186,70 @@ local function clipFixedSteps(steps, target)
     return out
 end
 
+-- 返回 mode("auto"/"fixed")、段落表及自动结果快照。
 local function routeFor(slug, skill)
     local PD = ns.ProfModule
     local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme") or "cheapest"
-    if PD and PD.Setting and PD.Setting("autoRoute") and RA
-       and (scheme == "optim" or RA.Available()) then
-        local opts = {
+    local fishRoute=slug=="cooking" and ((PD and PD.CookingFishingMode and PD.CookingFishingMode(slug))
+        or dbProf().cookingRoute=="fishing" or (PD and PD.SettingRaw and PD.SettingRaw("cookingRoute")=="fishing"))
+    if fishRoute then scheme="fishing" end
+    -- 最省钱与乐观计数均不强制依赖拍卖行插件。
+    if PD and PD.Setting and (fishRoute or PD.Setting("autoRoute")) and RA
+       and (fishRoute or scheme == "cheapest" or scheme == "optim" or RA.Available()) then
+        local opts = RA.OptionsFor and RA.OptionsFor(slug, skill) or {
             start = (PD.Setting("autoFromCurrent") and skill) and math.max(1, skill) or 1,
             onlyAH = PD.Setting("autoOnlyAH"),
-            noFormula = PD.Setting("autoNoFormula"),
             learnedOnly = PD.Setting("autoLearnedOnly"),
             target = routeTarget(slug),
             scheme = scheme,
         }
+        opts.target = routeTarget(slug)
+        if scheme == "cheapest" or scheme=="fishing" then
+            -- 执行中的重算使用实际技能；购物数量始终按剩余路线计算。
+            opts.start = math.max(1, skill or skillOf(slug) or 1)
+            opts.follow = true
+        end
         local res = RA.Get(slug, opts)
-        if res and (res.priced or scheme == "optim") then return "auto", res.steps end
+        if res and (res.status == "selection_required" or res.status == "recalculate_required") then
+            return "auto", {}, res
+        end
+        if scheme == "cheapest" or scheme=="fishing" then
+            return "auto", (res and (res.executionSteps or res.steps)) or {}, res
+        end
+        if res and (res.priced or scheme == "optim") then return "auto", res.steps, res end
     end
     local lv = LV[slug]
+    -- ★ 固定路线必须按「目标等级」裁剪后再交给 HUD（2026-10-11 用户）。
+    --   原先直接返回 lv.steps（全量 1–300）⇒ 专业页设了目标、HUD 却一路画到 300，
+    --   段标分母 / 购物清单 / 完成判定全和专业页对不上。
     return "fixed", clipFixedSteps(lv and lv.steps or nil, routeTarget(slug))
 end
 
-local function routeKey(mode, steps)
+-- 路线指纹：模式 + 段数 + 首末段（自动路线随价格 / 设置重算时用它决定要不要重推指针）
+local function routeKey(mode, steps, res)
+    if res and res.planVersion == 2 then
+        return tostring(mode) .. ":v2:" .. tostring(res.revision or res.stamp or "pending")
+    end
     if not steps then return tostring(mode) .. ":0" end
     local a, b = steps[1], steps[#steps]
     return format("%s:%d:%s:%s:%s", tostring(mode), #steps,
                   tostring(a and a[1]), tostring(a and a[3]), tostring(b and b[2]))
 end
 
+-- 技能推导段落：第一段「上限 > 技能」的；全过则 #steps + 1
 local function derivedStep(slug, skill)
-    local _, steps = routeFor(slug, skill)
+    local _, steps, res = routeFor(slug, skill)
     if not steps then return nil end
+    -- 制材可能完全不涨点，另一专业的等级也不能和主专业比较。
+    if res and res.planVersion == 2 then return 1 end
     for i, s in ipairs(steps) do
         if skill < s[2] then return i end
     end
     return #steps + 1
 end
 
+-- spellID → 配方行（rec[2] = 产出物 ID / rec[12] = 材料 / rec[13]+rec[14] = 来源）
+-- rinfo 行（升级路线里配方表没有的法术：附魔配方 / 魔棒）用命名字段 makes / mats / learn…grey
 local function recMats(rec) return rec and (rec[12] or rec.mats) or nil end
 local function recItem(rec) return rec and (rec[2] or rec.makes) or nil end
 local function recBreaks(rec)
@@ -218,6 +266,7 @@ local function recMap(slug)
         if rr and rr.rows then
             for _, r in ipairs(rr.rows) do c[r[1]] = r end
         end
+        -- 自动 / 固定路线都可能引用 rinfo 里的法术（附魔配方游离在 enchants 之外、魔棒两头都不在）
         local lv = LV[slug]
         if lv and type(lv.rinfo) == "table" then
             for spell, ri in pairs(lv.rinfo) do
@@ -227,6 +276,37 @@ local function recMap(slug)
         recCache[slug] = c
     end
     return c
+end
+
+local function stepRecipe(seg, res, slug)
+    local base = recMap(seg.profession or slug)[seg[3]]
+    if not (res and res.planVersion == 2) then return base end
+    local rec = {}
+    for key, value in pairs(base or {}) do rec[key] = value end
+    if seg.recipe then
+        rec[2], rec.makes = seg.recipe.item, seg.recipe.item
+        rec[12], rec.mats = seg.recipe.mats, seg.recipe.mats
+        rec.count, rec.dataSource = seg.recipe.count, seg.recipe.dataSource
+        return rec
+    end
+    -- HUD 和制造按钮使用发布快照中的材料，不再从攻略二次推算。
+    rec[2], rec.makes = seg.item, seg.item
+    rec[12], rec.mats = nil, nil
+    for _, action in ipairs(res.actions or {}) do
+        if action.type == "craft" and action.profession == (seg.profession or slug)
+            and action.spell == seg[3] and action.inputs then
+            local mats = {}
+            for _, mat in ipairs(action.inputs) do
+                mats[#mats + 1] = { mat[1], mat[2] / math.max(1, action.count or 1) }
+            end
+            rec[12], rec.mats = mats, mats
+            rec[2], rec.makes = action.item or seg.item, action.item or seg.item
+            return rec
+        end
+    end
+    local rt = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[seg[3]]
+    if rt then rec[12], rec.mats = rt.mats, rt.mats; rec[2] = rt.item or seg.item end
+    return rec
 end
 
 local soldCache = {}
@@ -249,6 +329,9 @@ local function fmtTime(sec)
     return format(L["用时 %d 分 %d 秒"], m, s)
 end
 
+-- -------------------------------------------------------------------------
+-- 跟随引擎
+-- -------------------------------------------------------------------------
 function PF.IsActive(slug)
     local s = st()
     return (s and s.slug == slug and not s.hidden) and true or false
@@ -259,19 +342,76 @@ function PF.Following(slug)
     return (s and s.slug == slug) and true or false
 end
 
+local function actionKey(seg, i)
+    return seg.actionID or format("%d:%s:%s", i or 0, seg.profession or "", tostring(seg[3]))
+end
+
+local function actionRemaining(s, seg, i)
+    return math.max(0, (seg[4] or 0) - ((s.actionDone and s.actionDone[actionKey(seg, i)]) or 0))
+end
+
+local function syncActions(s, steps, res)
+    -- 计数只属于同一输入快照。重算已把实际技能写进新状态，不能再次扣计数。
+    if PF.planRef ~= res or PF.planSlug ~= s.slug or PF.planRevision ~= res.revision then
+        PF.planRef, PF.planSlug, PF.planRevision = res, s.slug, res.revision
+        s.actionDone = {}
+        s.step = 1
+        PF.view = 0
+    end
+    while (s.step or 1) <= #steps do
+        local i = s.step or 1
+        local seg = steps[i]
+        local complete
+        if seg.checkpoint or seg[3] == 0 then
+            local cur = skillOf(seg.profession or s.slug)
+            complete = cur and cur >= seg[2]
+        else
+            complete = actionRemaining(s, seg, i) <= 0
+        end
+        if not complete then break end
+        s.step = i + 1
+    end
+end
+
+-- 一次成功施法对应一次制造，不按产物件数计算。castGUID 去重避免重复事件。
+function PF.CraftSucceeded(unit, castGUID, spellID)
+    if unit ~= "player" or type(spellID) ~= "number" then return end
+    local s = st()
+    if not (s and s.slug and PF.planRef and PF.planRef.planVersion == 2) then return end
+    if castGUID and castGUID == PF.lastCastGUID then return end
+    if castGUID then PF.lastCastGUID = castGUID end
+    local res = PF.planRef
+    local steps = res.executionSteps or res.steps or {}
+    local i = s.step or 1
+    local seg = steps[i]
+    if not seg or seg.checkpoint or seg[3] ~= spellID then return end
+    s.actionDone = s.actionDone or {}
+    local key = actionKey(seg, i)
+    s.actionDone[key] = math.min(seg[4] or 0, (s.actionDone[key] or 0) + 1)
+    syncActions(s, steps, res)
+end
+
 function PF.Sync()
     local s = st()
     if not (s and s.slug) then return end
     local cur = skillOf(s.slug)
-    if cur and cur > (s.skill or 0) then
+    if cur and cur ~= s.skill then
         s.skill = cur
+        -- 技能涨了：若手册停在同一个专业的升级页，顺手重画高亮
         local PD = ns.ProfModule
         if PD and PD.built and PD.cur == s.slug and PD.page and PD.page:IsVisible() then
             pcall(PD.Render, PD)
         end
     end
-    local mode, steps = routeFor(s.slug, s.skill or 0)
-    local key = routeKey(mode, steps)
+    -- 路线模式 / 路线内容变了（自动路线随价格、设置重算）：段落表整块换掉，指针按技能重推
+    local mode, steps, res = routeFor(s.slug, s.skill or 0)
+    local key = routeKey(mode, steps, res)
+    if res and res.planVersion == 2 then
+        s.rkey = key
+        syncActions(s, steps, res)
+        return
+    end
+    PF.planRef, PF.planSlug, PF.planRevision = nil, nil, nil
     if key ~= s.rkey then
         s.rkey = key
         s.step = derivedStep(s.slug, s.skill or 0) or 1
@@ -281,6 +421,9 @@ function PF.Sync()
     if d and d > (s.step or 1) then s.step = d end
 end
 
+-- 目标等级变了 ⇒ 固定路线的段落表随之变短/变长，HUD 需要立刻按新目标重推指针并重画。
+--   PF.Sync 里已有「设置变更 ⇒ 同步到专业页」的反向联动，这里补正向（专业页改完
+--   只会 pcall(PD.Render) 重画专业页，HUD 的 rkey 不会自动刷新）。
 function PF.RefreshRoute(slug)
     local s = st()
     if not (s and s.slug) then return end
@@ -295,7 +438,8 @@ function PF.Toggle(slug)
     p.follow = p.follow or {}
     local k = charKey()
     local s = p.follow[k]
-    if s and s.slug ~= slug then s = nil end
+    if s and s.slug ~= slug then s = nil end      -- 换专业：重开一份跟随
+    -- 已在跟随该专业且窗口可见 → 收窗（进度保留）
     if s and not s.hidden and PF.f and PF.f:IsShown() then
         s.hidden = true
         PF.f:Hide()
@@ -304,19 +448,20 @@ function PF.Toggle(slug)
     if not s then
         local cur = skillOf(slug) or 0
         s = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1, t0 = time() }
-        local _mode, _steps = routeFor(slug, cur)
-        s.rkey = routeKey(_mode, _steps)
+        local _mode, _steps, _res = routeFor(slug, cur)
+        s.rkey = routeKey(_mode, _steps, _res)
         p.follow[k] = s
     end
     s.hidden = nil
     PF.Build()
-    if not PF.f then return end
+    if not PF.f then return end       -- Build 未建窗（异常兜底），不往下走
     PF.Sync()
     PF.view = 0
-    PF.f:Show()
+    PF.f:Show()                       -- Paint 对隐藏窗口早退，必须先 Show 再画
     PF.Paint()
 end
 
+-- 上一步 / 跳过只动浏览偏移（与滚轮同轨，不碰真实指针）；技能一涨 Sync 仍自动推进（卡不死）
 function PF.Prev()
     local s = st()
     if not (s and s.slug) then return end
@@ -335,14 +480,27 @@ function PF.Skip()
     PF.Paint()
 end
 
+-- -------------------------------------------------------------------------
+-- 剩余制作次数估算（按配方橙/黄/绿/灰断点的升点概率模型）
+-- 经典概率口径：橙色必升（1次/点）；黄色段 1.0→0.5 线性；绿色段 0.5→0.05 线性；灰色不升
+-- -------------------------------------------------------------------------
 local function expPerPoint(sk, o, y, g, gr)
+    if RA and RA.Gain then
+        local gain = RA.Gain(sk, o, y, g, gr)
+        return gain and gain > 0 and (1 / gain) or nil
+    end
     if sk < y then return 1 end
     if sk < g then return 1 / (1 - 0.5 * (sk - y) / (g - y)) end
     if sk < gr then return 1 / (0.5 - 0.45 * (sk - g) / (gr - g)) end
-    return nil
+    return nil -- 已灰，无法升点
 end
 
+-- 当前段还需制作次数：优先按难度断点逐点积分期望值；配方无断点数据或已灰时退回区间占比线性估算
 local function craftsLeft(seg, skill, rec)
+    if seg.actionID then
+        local s = st()
+        return s and actionRemaining(s, seg, s.step) or (seg[4] or 0)
+    end
     local from = math.max(skill or 0, seg[1])
     if from >= seg[2] then return 0 end
     local learn, y, g, gr = recBreaks(rec)
@@ -353,14 +511,58 @@ local function craftsLeft(seg, skill, rec)
             if not e then break end
             total = total + e
         end
+        -- 循环没被灰色打断才采用概率口径（打断说明中途已灰，退回线性口径）
         if expPerPoint(seg[2] - 1, learn, y, g, gr) then return total end
     end
     local span = math.max(1, seg[2] - seg[1])
     return (seg[4] or 0) * math.min(1, (seg[2] - from) / span)
 end
 
+-- -------------------------------------------------------------------------
+-- 购物清单（从当前段累计材料采购量，不扣除角色库存）
+-- -------------------------------------------------------------------------
 local function shopList(s)
-    local _, steps = routeFor(s.slug, s.skill)
+    local _, steps, res = routeFor(s.slug, s.skill)
+    local function purchaseSnapshot(entry, purchase)
+        for _, key in ipairs({"availableCount", "supplyObserved", "supplyComplete", "supplyObservedAt",
+                              "supplySource", "supplyOwnerExcluded", "supplyObservedPrice",
+                              "supplyHistoryQuantity", "supplyHistoryObservedAt", "priceObservedAt", "ahPrice"}) do
+            purchase[key] = entry[key]
+        end
+        return purchase
+    end
+    local function addFormulas(list,formulas)
+        for _,entry in ipairs(formulas or {}) do
+            if entry.id and not entry.known and entry.usable~=false and not entry.blocked then
+                list[#list+1]=purchaseSnapshot(entry,{id=entry.id,need=entry.count or 1,formula=true,
+                    source=entry.source,vendor=entry.vendor or entry.source=="vendor" or entry.source=="npc",npcID=entry.npcID,
+                    unpriced=entry.unpriced,remainingOnly=true})
+            end
+        end
+        return list
+    end
+    if res and res.planVersion == 2 then
+        local list = {}
+        if res.feasible ~= true then return list end
+        for _, entry in ipairs(res.mats or {}) do
+            local id = entry.id or entry[1]
+            local need = entry.count or entry.need or entry[2] or 0
+            if id and need > 0 then
+                list[#list + 1] = purchaseSnapshot(entry, {
+                    id = id, need = need,
+                    at = entry.at or (res.firstAt and res.firstAt[id]) or 0,
+                    source = entry.source or (entry.vendor and "vendor" or "ah"),
+                    vendor = entry.vendor, npcID = entry.npcID,
+                    remainingOnly = true,
+                })
+            end
+        end
+        for _,entry in ipairs(res.fishMaterials or {}) do
+            list[#list+1]={id=entry.id,need=entry.count or entry.need,source="fishing",remainingOnly=true,
+                areas=entry.areas,at=res.firstAt and res.firstAt[entry.id]}
+        end
+        return addFormulas(list,res.formulas)
+    end
     if not steps then return {} end
     local rm = recMap(s.slug)
     local totals, order = {}, {}
@@ -384,15 +586,49 @@ local function shopList(s)
             end
         end
     end
+    -- 按攻略里材料的首次出现顺序输出（不按缺口大小排序）
     local list = {}
     for _, id in ipairs(order) do
         local e = totals[id]
-        e.have = Have(e.id)
+        e.vendor=RA and RA.VendorMaterialOf and RA.VendorMaterialOf(id) or false
+        e.source=e.vendor and "vendor" or "ah"
         list[#list + 1] = e
+    end
+    local economy=ns.ProfEconomy
+    local formulas=res and res.formulas
+    if not formulas and economy and economy.CollectFormulas then
+        local remaining={};for i=s.step or 1,#steps do remaining[#remaining+1]=steps[i] end
+        formulas=economy.CollectFormulas(remaining,s.slug)
+    end
+    addFormulas(list,formulas)
+    if economy and economy.SummarizeAuctionSupply then
+        economy.SummarizeAuctionSupply({mats=list})
     end
     return list
 end
 
+-- 与主界面导出复用同一采购快照，便于诊断及离线验收。
+PF.GetRoute = routeFor
+PF.GetPurchases = shopList
+
+local function routeNotice(res)
+    if res and (res.message or res.blockedReason) then return res.message or res.blockedReason end
+    if res and res.status == "selection_required" then return L["请选择搭配的主专业"] end
+    if res and res.status == "recalculate_required" then return L["搭配专业已更改，点击重新计算应用。"] end
+    if res and res.partial then return format(L["已计算至 %d；后续路线待补全"],res.plannedTo or res.start or 1) end
+    for _, d in ipairs((res and res.diagnostics) or {}) do
+        if d.code == "clientDataPending" then return L["客户端数据待读取"] end
+    end
+    if res and (res.status == "infeasible" or res.status == "blocked" or res.status == "error") then
+        return L["当前限制下没有可行路线"]
+    end
+    return L["正在计算升级路线…"]
+end
+
+-- -------------------------------------------------------------------------
+-- 一键导入拍卖行插件（主界面按钮 + HUD 购物清单按钮共用）
+-- -------------------------------------------------------------------------
+-- tooltip 双行（标题 + 说明）；两个导入按钮共用
 local function TipOn(bt, title, body)
     bt:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -404,19 +640,32 @@ local function TipOn(bt, title, body)
     bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
+-- -------------------------------------------------------------------------
+-- 跳转制造（2026-10-10 用户定案）：定时器/事件上下文的自动制造被无限服硬拦
+-- （4 通道轮换全 ADDON_ACTION_BLOCKED，非战斗也拦）——插件侧自动施法无解，
+-- 合法方案 = 按钮点击（硬件事件）：打开专业面板 → 定位当前段配方 → 预填数量，
+-- 玩家在面板内点一次「制造」即批量完成。
+-- ★ 无限服 = 现代专业框架（ProfessionsFrame + C_TradeSkillUI + C_SpellBook）：
+--   - C_TradeSkillUI.OpenTradeSkill 的参数是 skillLineID（GetProfessionInfo
+--     第 7 个返回值），不是 GetProfessions() 的 index —— 传 index 会静默空转
+--     （我们最初「面板打不开」的根因）
+--   - 施法兜底走法术书扫描出的「制作入口法术」
+-- -------------------------------------------------------------------------
 local function craftNotify(msg)
     if DEFAULT_CHAT_FRAME then
         DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99无限副本手册:|r " .. msg, 1, 1, 1)
     end
 end
 
-local jumpPending
+local jumpPending   -- { spellID, count, name } 待定位的配方（面板打开后消费）
 local jumpEvt
-local jumpApply
+local jumpApply     -- 前置声明：jumpEvtInit 闭包引用它（Lua5.1 前向引用坑）
 
 local function jumpEvtInit()
     if jumpEvt or not CreateFrame then return end
     jumpEvt = CreateFrame("Frame")
+    -- ★ 无限服没有 TRADE_SKILL_UPDATE 事件（实测 RegisterEvent 报 unknown），
+    --   pcall 逐个注册，缺的静默跳过；定位另有 0.5s/1.5s 延时兜底
     pcall(function() jumpEvt:RegisterEvent("TRADE_SKILL_LIST_UPDATE") end)
     jumpEvt:SetScript("OnEvent", function()
         C_Timer.After(0, function()
@@ -425,6 +674,7 @@ local function jumpEvtInit()
     end)
 end
 
+-- 面板已开验证（现代帧名优先，兜底旧经典帧名）
 local function panelShown()
     local pf = _G.ProfessionsFrame
     if pf and pf.IsShown and pf:IsShown() then return true end
@@ -432,6 +682,7 @@ local function panelShown()
     return (tf and tf.IsShown and tf:IsShown()) or false
 end
 
+-- 从法术书找专业的「制作入口法术」ID
 local function CraftingEntrySpellID(index)
     if not C_SpellBook or not C_SpellBook.GetSpellBookItemInfo or not Enum
         or not Enum.SpellBookSpellBank or not GetProfessionInfo then return nil end
@@ -453,48 +704,46 @@ local function CraftingEntrySpellID(index)
     return fallback
 end
 
+-- 打开专业面板（点击上下文 = 硬件事件，合法）：
+--   A) OpenTradeSkill(skillLineID)
+--   B) 法术书入口法术施放（运行时施法版）
+--   C) CastSpellByName(专业名) —— 最后兜底
 local function openProfPanel(s)
     local profName = D.pro and D.pro[s.slug] and D.pro[s.slug].name
     local ids = (GetProfessions and { GetProfessions() }) or {}
     if C_TradeSkillUI and C_TradeSkillUI.OpenTradeSkill and type(GetProfessionInfo) == "function" then
-        for _, idx in ipairs(ids) do
+        for _, idx in ipairs(ids) do                     -- 名字匹配的优先
             if idx then
-                local nm, skillLine = GetProfessionInfo(idx)
+                local nm, _, _, _, _, _, skillLine = GetProfessionInfo(idx)
                 if profName and nm == profName and skillLine
                     and pcall(C_TradeSkillUI.OpenTradeSkill, skillLine) then
                     return true
                 end
             end
         end
-        for _, idx in ipairs(ids) do
-            if idx then
-                local skillLine = select(7, GetProfessionInfo(idx))
-                if skillLine and pcall(C_TradeSkillUI.OpenTradeSkill, skillLine) then
-                    return true
-                end
-            end
-        end
     end
-    for _, idx in ipairs(ids) do
+    for _, idx in ipairs(ids) do                         -- B) 入口法术
         if idx then
-            local sid = CraftingEntrySpellID(idx)
+            local nm = GetProfessionInfo and GetProfessionInfo(idx)
+            local sid = (nm == profName) and CraftingEntrySpellID(idx) or nil
             local nm = sid and SpellName(sid)
             if nm and CastSpellByName and pcall(CastSpellByName, nm) then return true end
             if sid and C_Spell and C_Spell.CastSpell and pcall(C_Spell.CastSpell, sid) then return true end
         end
     end
-    if profName and CastSpellByName then
+    if profName and CastSpellByName then                 -- C) 专业名
         pcall(CastSpellByName, profName)
         return true
     end
     return false
 end
 
-function jumpApply()
+function jumpApply()     -- 配合上方前置声明（function 不带 local，避免遮蔽）
     local p = jumpPending
     if not p then return end
     local selected, counted = false, false
     if C_TradeSkillUI then
+        -- 现代通道：定位配方 → 预填重复次数 → 读回校验（防「pcall 成功但静默空转」）
         if C_TradeSkillUI.SetSelectedRecipe then
             pcall(C_TradeSkillUI.SetSelectedRecipe, p.spellID)
             if C_TradeSkillUI.GetSelectedRecipeID then
@@ -508,6 +757,7 @@ function jumpApply()
             if pcall(C_TradeSkillUI.SetRecipeRepeatCount, p.spellID, p.count) then counted = true end
         end
     end
+    -- 经典通道兜底（按名字找行）
     if not counted and type(GetNumTradeSkills) == "function" then
         for i = 1, GetNumTradeSkills() do
             local nm = GetTradeSkillInfo(i)
@@ -526,34 +776,37 @@ function jumpApply()
         jumpPending = nil
         craftNotify(format(L["已选中配方 %s，请在专业面板输入制造数量"], p.name))
     end
+    -- 两者都没成：面板可能还在加载，等事件/下一轮兜底再试
 end
 
 local function jumpCraft()
     local s = st()
     if not (s and s.slug) then return end
-    local _, steps = routeFor(s.slug, s.skill)
+    local _, steps, res = routeFor(s.slug, s.skill)
     local seg = steps and steps[(s.step or 1)]
     if not seg then return end
+    if seg.checkpoint or seg[3] == 0 then return end
     local spellID = seg[3]
     if not IsLearned(spellID) then craftNotify(L["该配方还未学会，先找训练师学习"]) return end
-    local rec = recMap(s.slug)[spellID]
+    local stepSlug = seg.profession or s.slug
+    local rec = stepRecipe(seg, res, stepSlug)
     local mats = recMats(rec)
     if mats then
         for _, m in ipairs(mats) do
-            if (Have(m[1]) or 0) < (m[2] or 1) then
+            if (HaveForCraft(m[1]) or 0) < (m[2] or 1) then
                 craftNotify(L["材料不足，先按购物清单备齐再制造"]) return
             end
         end
     end
-    local count = math.max(1, math.ceil(craftsLeft(seg, s.skill, rec)))
+    local count = math.max(1, math.ceil(craftsLeft(seg, skillOf(stepSlug) or s.skill, rec)))
     local name = SpellName(spellID)
     if not name then craftNotify(L["配方数据未就绪，稍后再试"]) return end
     jumpEvtInit()
-    if openProfPanel(s) then
+    if openProfPanel({ slug = stepSlug }) then
         jumpPending = { spellID = spellID, count = count, name = name }
         craftNotify(format(L["正在打开专业面板并定位 %s（预填数量 %d）…"], name, count))
         if C_Timer and C_Timer.After then
-            C_Timer.After(0.5, function() if jumpPending then jumpApply() end end)
+            C_Timer.After(0.5, function() if jumpPending then jumpApply() end end)  -- 面板已开时无新事件，延时兜底
             C_Timer.After(1.5, function()
                 if jumpPending then
                     jumpApply()
@@ -573,6 +826,9 @@ local function jumpCraft()
     end
 end
 
+-- 推送当前专业的购物清单到拍卖行插件（经 ns.AuctionBridge）。
+-- 跟随中用真实指针；没跟随用临时态推导，不落盘、不动进度。
+-- 物品名没就绪（客户端物品库懒加载）先请求，1 秒后重试，最多 IMPORT_TRIES 次。
 local importTries = 0
 local function DoImport(slug, profName)
     if not (LV[slug] and LV[slug].steps) then return end
@@ -584,17 +840,27 @@ local function DoImport(slug, profName)
         local cur = skillOf(slug) or 0
         tmp = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1 }
     end
+    local mode, _, result = routeFor(slug, tmp.skill)
+    if mode == "auto" and (not result or (result.planVersion == 2 and result.feasible ~= true)) then
+        craftNotify(routeNotice(result))
+        return
+    end
     local list = shopList(tmp)
     local items, missing = {}, 0
     for _, e in ipairs(list) do
-        local nm, got = DG.ItemName(e.id)
-        if not got then
+        local isAH = not e.unpriced and (e.remainingOnly and not e.vendor and (e.source == "ah" or e.source == "auction")
+            or (not e.remainingOnly and not soldSet(slug)[e.id])
+            )
+        local nm, got
+        if isAH then nm, got = DG.ItemName(e.id) end
+        if not isAH then
+            -- 商人采购不进入拍卖行导入串。
+        elseif not got then
             missing = missing + 1
             DG.RequestItem(e.id)
         else
-            local lack = e.need - e.have
-            if lack > 0 then
-                items[#items + 1] = { name = nm, need = lack }
+            if e.need > 0 then
+                items[#items + 1] = { name = nm, need = e.need }
             end
         end
     end
@@ -609,13 +875,16 @@ local function DoImport(slug, profName)
     end
 end
 
+-- -------------------------------------------------------------------------
+-- HUD 窗体（一次建好，之后只改内容）
+-- -------------------------------------------------------------------------
 local f
 
 local rowsMat, rowsShop = {}, {}
-local rowsMatIcon = {}
-local rowsMatBadge = {}
-local rowsShopNum = {}
-local rowsShopMissPill, rowsShopSoldPill, rowsShopTagPill = {}, {}, {}
+local rowsMatIcon = {}          -- 材料行图标池（与 rowsMat 同索引）
+local rowsMatBadge = {}         -- 材料行数量角标池（挂图标右下角，显示单次用量）
+local rowsShopNum = {}          -- 采购数量列
+local rowsShopSourcePill, rowsShopTagPill = {}, {}   -- 采购来源和首次使用等级
 
 local function MakeLine(parent, fs, color)
     local t = MakeFS(parent, fs, color, "LEFT")
@@ -648,7 +917,10 @@ function PF.Build()
         PF.view = math.max(-(s.step - 1), math.min(#steps - s.step + 1, (PF.view or 0) - delta))
         PF.Paint()
     end)
-    f:SetScript("OnEvent", function()
+    f:SetScript("OnEvent", function(_, event, ...)
+        if event == "UNIT_SPELLCAST_SUCCEEDED" then
+            PF.CraftSucceeded(...)
+        end
         if f:IsShown() then
             C_Timer.After(0, function()
                 PF.Sync()
@@ -656,14 +928,17 @@ function PF.Build()
             end)
         end
     end)
-    f:RegisterEvent("BAG_UPDATE_DELAYED")
-    f:RegisterEvent("CHAT_MSG_SKILL")
+    for _, event in ipairs({ "BAG_UPDATE_DELAYED", "CHAT_MSG_SKILL", "UNIT_SPELLCAST_SUCCEEDED",
+                             "TRADE_SKILL_LIST_UPDATE", "SKILL_LINES_CHANGED", "PLAYERBANKSLOTS_CHANGED" }) do
+        pcall(f.RegisterEvent, f, event)
+    end
 
     f:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
         edgeFile = "Interface\\Buttons\\WHITE8x8",
         edgeSize = 1,
     })
+    -- 背景与主界面同源（DG.RowPaint 口径）：HUI 走 L2 层色，非 HUI 黑底
     if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L2 then
         local l2 = ns.hui.layer.L2
         f:SetBackdropColor(l2[1], l2[2], l2[3], 0.95)
@@ -675,6 +950,7 @@ function PF.Build()
     f.__round = RoundFrame(f, 6, { 1, 1, 1, 0.25 })
     if f.__round then f:SetBackdropBorderColor(0, 0, 0, 0) end
 
+    -- 头部（固定）：图标 / 标题 / 技能行 / 进度条
     f.icon = f:CreateTexture(nil, "ARTWORK")
     f.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(f.icon) end
@@ -696,7 +972,7 @@ function PF.Build()
     f.barBG:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -66)
     f.barBG:SetSize(W - 20, 5)
 
-    f.zone = f:CreateTexture(nil, "OVERLAY")
+    f.zone = f:CreateTexture(nil, "OVERLAY")   -- 当前段区间（黄色段，进度色压在其上）
     f.zone:SetColorTexture(1, 1, 1, 1)
     f.zone:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -66)
     f.zone:SetSize(1, 5)
@@ -706,6 +982,8 @@ function PF.Build()
     f.bar:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -66)
     f.bar:SetSize(1, 5)
 
+    -- 当前段卡（绿描边小面板）。卡中卡提亮：HUI 主题下主卡是 L2，内卡用 L3 实色；
+    -- 非 HUI 沿用白 overlay。
     f.card = CreateFrame("Frame", nil, f, BackdropTemplateMixin and "BackdropTemplate" or nil)
     f.card:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -721,6 +999,8 @@ function PF.Build()
     f.card:SetBackdropBorderColor(0, 0, 0, 0)
     f.card.__round = RoundFrame(f.card, 6, { 0, 1, 0.4, 0.9 })
 
+    -- 段卡悬停 → 产物物品提示框 + 五行价格段（2026-10-10 用户：提示框三页通用）。
+    --   __it/__mats 由 Paint 每拍刷新；价格段走 ns.ProfModule（PD）惰性取，避免加载环。
     f.card:EnableMouse(true)
     f.card:SetScript("OnEnter", function(self)
         if not self.__it then return end
@@ -775,6 +1055,7 @@ function PF.Build()
         rowsMatBadge[i] = bd
     end
 
+    -- 购物清单（灰描边小面板，展开 / 收起）。同上：HUI 主题内卡提亮到 L3。
     f.shop = CreateFrame("Frame", nil, f, BackdropTemplateMixin and "BackdropTemplate" or nil)
     f.shop:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -792,38 +1073,13 @@ function PF.Build()
     if f.shop.__round then f.shop:SetBackdropBorderColor(0, 0, 0, 0) end
     f.shop.head = MakeFS(f.shop, 14, C_HEAD, "LEFT")
     f.shop.head:SetPoint("TOPLEFT", f.shop, "TOPLEFT", 8, -8)
-    local labW = 70
-    do
-        local PDw = ns.ProfModule
-        if PDw and PDw.TextW then
-            local okw, wv = pcall(PDw.TextW, L["仅显示缺失"], 14)
-            if okw and type(wv) == "number" then labW = math.ceil(wv) end
-        end
-    end
-    local SHOP_TOG_W = labW + 48
-    f.shop.head:SetPoint("RIGHT", f.shop, "RIGHT", -(SHOP_TOG_W + 66 + 12), 0)
+    -- Material-only purchasing has no owned/missing toggle.
+    f.shop.head:SetPoint("RIGHT", f.shop, "RIGHT", -86, 0)
     f.shop.head:SetWordWrap(false)
-    f.shop.missTog = CreateFrame("CheckButton", nil, f.shop)
-    f.shop.missTog:SetSize(36, 20)
-    f.shop.missTog:EnableMouse(true)
-    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(f.shop.missTog) end
-    f.shop.missTog:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -6, -4)
-    f.shop.missLab = MakeFS(f.shop, 14, C_TEXT, "RIGHT")
-    f.shop.missLab:SetWordWrap(false)
-    f.shop.missLab:SetPoint("RIGHT", f.shop.missTog, "LEFT", -4, 0)
-    f.shop.missLab:SetText(L["仅显示缺失"])
-    f.shop.missTog:SetScript("OnClick", function(self)
-        dbProf().shopOnlyMiss = not onlyMissView()
-        self:SetChecked(onlyMissView())
-        PF.Paint()
-        ns.PlaySound(1)
-    end)
-    f.shop.missTog:SetChecked(onlyMissView())
-    TipOn(f.shop.missTog, L["仅显示缺失"],
-          L["开启：购物清单只列出还缺的材料，已备齐的自动隐藏。"])
     f.shop.empty = MakeFS(f.shop, 14, C_GREY, "LEFT")
     f.shop.empty:SetPoint("TOPLEFT", f.shop, "TOPLEFT", 8, -30)
     f.shop.empty:Hide()
+    -- 滚轮滚动购物清单（全部收录 + 右缘滚动条）
     f.shop:EnableMouse(true)
     f.shop:EnableMouseWheel(true)
     f.shop:SetScript("OnMouseWheel", function(_, delta)
@@ -838,8 +1094,13 @@ function PF.Build()
     f.shop.sbarThumb:SetColorTexture(1, 1, 1, 0.35)
     f.shop.sbarThumb:Hide()
     for i = 1, SHOP_MAX + 1 do
-        rowsShop[i] = MakeLine(f.shop, 14, C_TEXT)
-        rowsShopNum[i] = MakeLine(f.shop, 14, C_GOLD)
+        rowsShop[i] = MakeLine(f.shop, 14, C_TEXT)      -- 名字（白）
+        rowsShopNum[i] = MakeLine(f.shop, 14, C_GOLD)   -- 采购数量（金）
+        -- UI_RULES §4 胶囊小件（2026-10-11 用户重做）：旧「三段贴图压帽 + 0.99 预混」整体退役。
+        --   新做法 = 专用宿主帧 + BuildCapsule（四角/边条**锚定帧角**，SetSize 改宽自动跟随，
+        --   无缝无重叠 ⇒ 不再有预混/不透明批烦恼）；文字挂宿主帧自己的 FontString（ARTWORK
+        --   画在胶囊之上，§5-2「父 FontString 永远画在子帧下」由此规避）。
+        --   染色 = 每帧遍历 __cols SetVertexColor（语义色 C_BAD/C_OK 不变，§6）。
         local function MakePill(color)
             local p = CreateFrame("Frame", nil, f.shop)
             p:SetHeight(17)
@@ -859,11 +1120,26 @@ function PF.Build()
             p:Hide()
             return p
         end
-        rowsShopMissPill[i] = MakePill(C_TEXT)
-        rowsShopSoldPill[i] = MakePill(C_TEXT)
-        rowsShopTagPill[i] = MakePill(C_DIM)
+        rowsShopSourcePill[i] = MakePill(C_TEXT)   -- NPC/拍卖行采购来源
+        rowsShopSourcePill[i]:EnableMouse(true)
+        rowsShopSourcePill[i]:SetScript("OnEnter", function(self)
+            local entry = self.__purchase
+            if not entry then return end
+            local PD = ns.ProfModule
+            local extra = {{format(L["需要：%d"], entry.need or 0)}}
+            if PD and PD.AuctionSupplyLines then
+                for _, line in ipairs(PD.AuctionSupplyLines(entry)) do extra[#extra + 1] = line end
+            end
+            DG.ShowItemTip(self, {entry.id}, extra)
+        end)
+        rowsShopSourcePill[i]:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        rowsShopTagPill[i] = MakePill(C_DIM)     -- 等级丸 X+（灰字压淡灰底）
     end
 
+    -- 一键导入：把当前购物清单推送到拍卖行插件（未装时降级为导入串弹窗）。
+    -- 2026-10-08 晚改版：从购物面板页脚挪到底部按钮排（购物清单与上一步之间），
+    -- 尺寸 / 字号与「购物清单」按钮完全一致（92×22 / 14 号）。
+    -- 导入按钮位于购物清单表头右侧。
     f.shopImp = NewButton(f.shop, L["一键导入"], 66, 20, 13)
     f.shopImp.__huiKeepTextColor = true
     f.shopImp:SetScript("OnClick", function()
@@ -873,10 +1149,14 @@ function PF.Build()
         DoImport(s0.slug, nm)
         ns.PlaySound(1)
     end)
-    f.shopImp:SetPoint("RIGHT", f.shop.missTog, "LEFT", -(labW + 10), 0)
+    f.shopImp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -6, -4)
     TipOn(f.shopImp, L["一键导入到拍卖行"],
-          L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])
+          L["将路线选定的拍卖行采购数量导入 Auctionator，同名清单将被覆盖。"])
 
+    -- 「跳转制造」（2026-10-10 用户定案）：打开专业面板 + 定位当前段配方 + 预填数量；
+    --   定时器自动制造被无限服硬拦（防脚本机制），按钮点击 = 硬件事件 = 合法通道。
+    --   ★ 锚点在 Paint 里设（此时 f.btns 还没建）。
+    --   ★ 2026-10-10 用户：功能暂缓 → 入口隐藏（引擎保留，PF.CRAFT_BTN 一开即回）。
     f.craftBtn = NewButton(f, L["跳转制造"], 66, 22, 14)
     f.craftBtn.__huiKeepTextColor = true
     f.craftBtn:Hide()
@@ -903,7 +1183,9 @@ function PF.Build()
         bt:SetScript("OnClick", function() onclick[i]() ns.PlaySound(1) end)
         f.btns[i] = bt
     end
+    -- （shopImp 已挪入购物清单卡表头、craftBtn 已挂 btns[1] 右侧，均相对锚自动跟随）
 
+    -- 右上角关闭（收窗不删进度，再点入口按钮原地恢复）
     f.xBtn = NewButton(f, "×", 24, 22, 14)
     f.xBtn.__huiKeepTextColor = true
     f.xBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -8)
@@ -913,6 +1195,7 @@ function PF.Build()
         f:Hide()
     end)
 
+    -- 初始位置：记忆点 或 屏幕右侧
     local pos = dbProf().followPos
     f:ClearAllPoints()
     if pos and pos[1] then
@@ -921,6 +1204,7 @@ function PF.Build()
         f:SetPoint("CENTER", UIParent, "CENTER", 340, 60)
     end
 
+    -- 1 秒轮询（技能面板扫描兜底，兼带完成态计时刷新）
     if C_Timer.NewTicker then
         C_Timer.NewTicker(1, function()
             if f and f:IsShown() then
@@ -930,9 +1214,10 @@ function PF.Build()
         end)
     end
 
-    PF.f = f
+    PF.f = f            -- Toggle / 右上角×走 PF.f（f 是本函数局部，不挂回 PF 取不到）
 end
 
+-- 懒加载：物品名没就绪时挂几次重扫
 local sweep = 0
 local function sweepPaint(pending)
     if pending and sweep < SWEEP_MAX then
@@ -943,33 +1228,25 @@ local function sweepPaint(pending)
     end
 end
 
+-- -------------------------------------------------------------------------
+-- 绘制（全部 SetText / 显隐 / 尺寸，零新建帧）
+-- -------------------------------------------------------------------------
 local function paintMats(seg, rm, sold, w, remaining)
     local rec = rm[seg[3]]
     local mats = recMats(rec)
     local n = 0
     local pending = false
-    local canCraft
     if mats and #mats > 0 then
-        for _, m in ipairs(mats) do
-            local per = (m[2] or 1)
-            if per > 0 then
-                local c = math.floor(Have(m[1]) / per)
-                canCraft = (canCraft == nil) and c or math.min(canCraft, c)
-            end
-        end
         f.card.matHead:Hide()
         for i, m in ipairs(mats) do
             if i > MAT_MAX then break end
-            local have = Have(m[1])
             local per = (m[2] or 1)
-            local need = per * math.max(0, remaining or 0)
-            local ok = have >= need
+            local need = per * math.max(0, remaining or 0)   -- 预计还需总量 = 单次用量 × 剩余制作次数
             local nm, got = DG.ItemName(m[1])
             if not got then DG.RequestItem(m[1]) pending = true end
             local line = rowsMat[i]
-            line:SetTextColor(Unpack(ok and C_OK or C_BAD))
-            local txt = format("%s %d/%d", nm, have, need)
-            if sold[m[1]] then txt = txt .. " · " .. L["商人直卖"] end
+            line:SetTextColor(Unpack(C_TEXT))
+            local txt = format("%s ×%d", nm, need)
             line:SetText(txt)
             line:ClearAllPoints()
             line:SetPoint("TOPLEFT", f.card, "TOPLEFT", 36, -(61 + (i - 1) * 26))
@@ -1019,18 +1296,19 @@ local function paintMats(seg, rm, sold, w, remaining)
         rowsMatIcon[MAT_MAX + 1]:Hide()
         rowsMatBadge[MAT_MAX + 1]:Hide()
     end
-    return n, pending, canCraft
+    return n, pending
 end
 
 function PF.Paint()
     if not (f and f:IsShown()) then return end
+    -- 购物清单展开且列排不下时整体加宽 HUD（PF.wide 为额外宽，收起清单即回基准）
     W = W_BASE + ((PF.showShop and PF.wide) or 0)
     f:SetWidth(W)
     f.barBG:SetWidth(W - 20)
     local s = st()
     if not (s and s.slug) then f:Hide() return end
     local slug = s.slug
-    local mode, steps = routeFor(slug, s.skill)
+    local mode, steps, res = routeFor(slug, s.skill)
     if not steps then f:Hide() return end
     local p = D.pro and D.pro[slug]
     local accent = Accent()
@@ -1045,11 +1323,14 @@ function PF.Paint()
     f.bar:SetWidth(math.max(2, math.floor((W - 20) * ratio + 0.5)))
     f.bar:SetVertexColor(accent[1], accent[2], accent[3], 0.95)
 
-    local finished = (s.step or 1) > #steps
+    local waiting = mode == "auto" and (not res or (res.planVersion == 2 and
+        (res.feasible ~= true or (res.partial and (s.step or 1)>#steps))))
+    local finished = not waiting and (s.step or 1) > #steps
     local vi = math.max(1, math.min(#steps, (s.step or 1) + (PF.view or 0)))
     f.seg:SetText(((mode == "auto") and L["自动计算"] or L["固定路线"]) .. " · "
-                  .. format(L["段落 %d / %d"], vi, #steps))
+                  .. format(L["步骤 %d / %d"], vi, #steps))
 
+    -- 黄色段 = 当前段落区间（真实指针段，与浏览偏移无关）
     local segCur = (not finished) and steps[math.min((s.step or 1), #steps)] or nil
     if segCur then
         local x0 = math.floor((W - 20) * math.min(1, segCur[1] / 300) + 0.5)
@@ -1063,18 +1344,20 @@ function PF.Paint()
         f.zone:Hide()
     end
 
-    f.finish:SetShown(finished)
-    f.card:SetShown(not finished)
-    f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished)
-    f.craftBtn:SetShown(PF.CRAFT_BTN and not finished)
+    f.finish:SetShown(finished or waiting)
+    f.card:SetShown(not finished and not waiting)
+    f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished and not waiting)
+    f.craftBtn:SetShown(PF.CRAFT_BTN and not finished and not waiting)
 
-    local y = -82
+    local y = -82                      -- 头部固定高（「已过摘要」行已按用户要求移除）
     local pending = false
 
-    if not finished then
+    if not finished and not waiting then
         local seg = steps[vi]
-        local rm = recMap(slug)
-        local sold = soldSet(slug)
+        local stepSlug = seg.profession or slug
+        local rm = recMap(stepSlug)
+        if res and res.planVersion == 2 then rm = { [seg[3]] = stepRecipe(seg, res, stepSlug) } end
+        local sold = soldSet(stepSlug)
         local rec = rm[seg[3]]
         local card, w = f.card, W - 2 * PAD - 16
         local isCur = (vi == s.step)
@@ -1093,27 +1376,40 @@ function PF.Paint()
         else
             card.icon:SetTexture(Host.FALLBACK_ICON)
         end
+        -- 段卡悬停数据（OnEnter 用，见 Build）：产物 + 本段材料
         card.__it = prodItem and { prodItem } or nil
         card.__mats = recMats(rec)
         local PDm = ns.ProfModule
-        local nmText = SpellName(seg[3])
+        local checkpoint = seg.checkpoint or seg[3] == 0
+        local stepProf = D.pro and D.pro[stepSlug]
+        local nmText = checkpoint and L["实地采矿"] or SpellName(seg[3])
+        if stepSlug ~= slug then nmText = ((stepProf and stepProf.name) or stepSlug) .. " · " .. nmText end
         card.name:SetText(nmText)
 
+        -- 当前段还需制作次数（按升点概率估算；浏览预览段显示攻略全量）
         local crafts = seg[4] or 0
         local remaining = crafts
         if vi == s.step then
-            remaining = math.ceil(craftsLeft(seg, s.skill, rec))
+            remaining = math.ceil(craftsLeft(seg, skillOf(stepSlug) or s.skill, rec))
             crafts = remaining
         end
-        local nMat, pend, canCraft = paintMats(seg, rm, sold, w - 8, remaining)
+        local nMat, pend = paintMats(seg, rm, sold, w - 8, remaining)
         pending = pending or pend
 
+        -- 右上角：已学习（绿）/ 来源（灰）——替代原「当前」角标与底部来源行
         local src, detail
         if PDm and PDm.LevelSrc then
             src, detail = PDm.LevelSrc(rec)
         end
         local learned = IsLearned(seg[3])
         local tagText = learned and L["已学习"] or (src or L["向训练师学习"])
+        if checkpoint then tagText = L["实地采矿"] end
+        local tags = seg.tags or {}
+        local material = tags.material or seg.role == "material" or seg.role == "both" or seg.reason == "material"
+        local leveling = tags.leveling or seg.role == "level" or seg.role == "both" or not material
+        local role = material and (leveling and L["升级&中间产物"] or L["中间产物"]) or L["升级"]
+        if PDm and PDm.StepRole then role = PDm.StepRole(seg) end
+        tagText = role .. " · " .. tagText
         if detail and not learned then tagText = tagText .. " · " .. detail end
         card.srcTag:SetText(tagText)
         card.srcTag:SetTextColor(Unpack(learned and C_OK or C_GREY))
@@ -1124,10 +1420,18 @@ function PF.Paint()
         end
         card.srcTag:SetWidth(tagW)
 
+        -- 区间挪到配方名右侧（同行）；第二行只留次数信息
         local rangeText = format(L["%d – %d"], seg[1], seg[2])
         card.range:SetText(rangeText)
         local craftText = format(L["大约还需制作%d次"], crafts)
-        if canCraft then craftText = craftText .. " · " .. format(L["材料还可制作%d次"], canCraft) end
+        if checkpoint then craftText = L["达到目标技能后重新计算"] end
+        if seg.fishing and seg.fishing[1] then
+            local areas={}
+            for _,a in ipairs(seg.fishing[1].areas or {}) do
+                if #areas<2 then areas[#areas+1]=a.name or (DG.ZoneName and DG.ZoneName(a.zoneID)) or tostring(a.zoneID) end
+            end
+            if #areas>0 then craftText=craftText.." · "..table.concat(areas," / ") end
+        end
         card.crafts:SetText(craftText)
 
         local rangeW, nameW = 40, 90
@@ -1144,6 +1448,7 @@ function PF.Paint()
         card.range:SetPoint("TOPLEFT", f.card, "TOPLEFT", 42 + nameX + 10, -12)
         card.range:SetWidth(rangeW + 6)
 
+        -- 浏览偏移非零时卡内右下角留出「回到当前」按钮位
         local cardH = nMat * 26 + 60 + (((PF.view or 0) ~= 0) and 26 or 0)
         card:ClearAllPoints()
         card:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
@@ -1151,15 +1456,12 @@ function PF.Paint()
         y = y - cardH - 8
     end
 
-    if PF.showShop and not finished then
+    -- 购物清单（展开时）
+    if PF.showShop and not finished and not waiting then
         local list = shopList(s)
-        local shown = {}
-        for _, e in ipairs(list) do
-            e.missing = e.need - e.have
-            if (not onlyMissView()) or e.missing > 0 then shown[#shown + 1] = e end
-        end
+        local shown = list
         f.shop.head:SetText(L["购物清单"] .. format(L[" · 共%d种"], #shown))
-        f.shop.missTog:SetChecked(onlyMissView())
+        -- 先计算采购数量、来源、等级各列宽度，再统一对齐。
         local function tw(txt)
             local PDm = ns.ProfModule
             if PDm and PDm.TextW then
@@ -1169,52 +1471,57 @@ function PF.Paint()
             return #txt * 5 + 16
         end
         local rows = {}
-        local nameW, numW, missW, tagW, anySold = 0, 0, 0, 0, false
+        local nameW, numW, tagW, sourceW = 0, 0, 0, 0
         for _, e in ipairs(shown) do
             local nm, got = DG.ItemName(e.id)
             if not got then DG.RequestItem(e.id) pending = true end
+            if e.formula then nm=L["图纸"].." · "..nm end
             local row = {
                 nm = nm,
-                have = e.have,
+                purchase = e,
                 need = e.need,
-                missing = e.need - e.have,
-                sold = soldSet(slug)[e.id] and true or false,
+                fishing=e.source=="fishing",
+                sold = e.remainingOnly and (e.vendor or e.source == "vendor" or e.source == "npc")
+                    or (not e.remainingOnly and soldSet(slug)[e.id] and true or false),
                 at = e.at or 0,
             }
             local w1 = tw(row.nm)
             if w1 > nameW then nameW = w1 end
-            local w2 = tw(format("%d/%d", math.min(row.have, row.need), row.need))
+            local w2 = tw(format("×%d", row.need))
             if w2 > numW then numW = w2 end
-            local w3 = tw(row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
-            if w3 > missW then missW = w3 end
             local w5 = tw(format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
-            if row.sold then anySold = true end
+            row.source = row.fishing and L["自行钓取"] or row.sold and L["NPC购买"] or L["拍卖行"]
+            sourceW = math.max(sourceW, tw(row.source) + 10)
             rows[#rows + 1] = row
         end
-        local soldW = anySold and (tw(L["直售"]) + 10) or 0
+        local soldW = sourceW
+        -- 列位固定：名字 | 采购数量 | 采购来源 | 首次使用等级(贴右)
         local xName = 8
         local xNum = xName + nameW + 10
-        local xMiss = xNum + numW + 10
-        local xSold = xMiss + missW + 8
+        local xSold = xNum + numW + 10
+        -- 滚动窗口：全部收录（不再截断溢出行），SHOP_MAX 为可视行数
         local maxScroll = math.max(0, #rows - SHOP_MAX)
         PF.shopScroll = math.max(0, math.min(PF.shopScroll or 0, maxScroll))
         local scroll = PF.shopScroll
-        local needInner = xSold + soldW + 10 + tagW + 14
+        local needInner = xSold + soldW + 10 + tagW + 14      -- 右缘留滚动条位
         local baseInner = W_BASE - 2 * PAD - 16
         local newWide = (needInner > baseInner) and (needInner - baseInner) or nil
         if (newWide or 0) ~= (PF.wide or 0) then
             PF.wide = newWide
-            C_Timer.After(0, PF.Paint)
+            C_Timer.After(0, PF.Paint)      -- 下一帧按新宽整体重排（第二遍不再触发）
         end
         local n = 0
         for ri = scroll + 1, math.min(#rows, scroll + SHOP_MAX) do
             local row = rows[ri]
             local ry = -(30 + n * 20)
+            -- 固定列：名字白 / 采购数量金 / 采购来源 / 等级丸(X+)贴右
             local nmFS = rowsShop[n + 1]
             local num = rowsShopNum[n + 1]
-            local mp = rowsShopMissPill[n + 1]
-            local sp = rowsShopSoldPill[n + 1]
+            local sp = rowsShopSourcePill[n + 1]
+            sp.__purchase = row.purchase
+            -- 胶囊染色：a 缺省 0.99（f.shop 是 0.04 白底半透明 backdrop，顶点 alpha=1 会被
+            --   分进不透明批画到背板之下——见 2026-10-08 教训；胶囊件间无缝无重叠，0.99 无预混误差）
             local function paintPill(p, txt, x0, wpx, cr, cg, cb, ca)
                 p:ClearAllPoints()
                 p:SetPoint("TOPLEFT", f.shop, "TOPLEFT", x0, ry + 1)
@@ -1225,24 +1532,15 @@ function PF.Paint()
                 p:Show()
             end
             nmFS:SetText(row.nm)
-            num:SetText(format("%d/%d", math.min(row.have, row.need), row.need))
+            num:SetText(format("×%d", row.need))
             nmFS:ClearAllPoints()
             nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
             nmFS:Show()
             num:ClearAllPoints()
             num:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xNum, ry)
             num:Show()
-            if row.missing > 0 then
-                paintPill(mp, format(L["缺%d"], row.missing), xMiss, missW, Unpack(C_BAD))
-            else
-                local okr, okg, okb = Unpack(C_OK)
-                paintPill(mp, L["已备齐"], xMiss, missW, okr, okg, okb, 0.5)
-            end
-            if row.sold then
-                paintPill(sp, L["直售"], xSold, soldW, Unpack(C_OK))
-            else
-                sp:Hide()
-            end
+            paintPill(sp, row.source, xSold, soldW, Unpack(row.sold and C_OK or C_GREY))
+            -- 等级药丸（X+）贴右：胶囊宿主帧右锚（右缘 -14 让开滚动条），淡灰底
             local tp = rowsShopTagPill[n + 1]
             tp:ClearAllPoints()
             tp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -14, ry + 1)
@@ -1252,6 +1550,7 @@ function PF.Paint()
             tp:Show()
             n = n + 1
         end
+        -- 右缘滚动条（全部收录、超出可视行数时出现；thumb 反映窗口位置）
         local total = #rows
         if total > SHOP_MAX then
             local visH = SHOP_MAX * 20
@@ -1271,14 +1570,14 @@ function PF.Paint()
         for i = n + 1, #rowsShop do
             rowsShop[i]:Hide()
             rowsShopNum[i]:Hide()
-            rowsShopMissPill[i]:Hide()
-            rowsShopSoldPill[i]:Hide()
+            rowsShopSourcePill[i]:Hide()
+            rowsShopSourcePill[i].__purchase = nil
         end
         for i = n + 1, #rowsShopTagPill do
             rowsShopTagPill[i]:Hide()
         end
         if n > 0 then
-            local shopH = 30 + n * 20 + 10
+            local shopH = 30 + n * 20 + 10   -- 2026-10-08 晚：导入按钮挪到底部按钮排，页脚 26px 预留取消
             f.shop.empty:Hide()
             f.shop:ClearAllPoints()
             f.shop:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
@@ -1286,7 +1585,7 @@ function PF.Paint()
             f.shop:Show()
             y = y - shopH - 8
         else
-            f.shop.empty:SetText(#list > 0 and L["所有物品已备齐"] or L["无材料"])
+            f.shop.empty:SetText(L["无材料"])
             f.shop.empty:Show()
             local shopH = 30 + 20 + 10
             f.shop:ClearAllPoints()
@@ -1297,23 +1596,30 @@ function PF.Paint()
         end
     else
         f.shop:Hide()
-        PF.wide = nil
+        PF.wide = nil                    -- 收起购物清单即恢复基础宽度
         PF.shopScroll = nil
     end
 
-    if finished then
-        f.finish:SetText(format(L["%s跟随完成 · %s"], name, fmtTime(time() - (s.t0 or time()))))
+    -- 完成态
+    if finished or waiting then
+        local msg = format(L["%s跟随完成 · %s"], name, fmtTime(time() - (s.t0 or time())))
+        if waiting then
+            msg = routeNotice(res)
+        end
+        f.finish:SetText(msg)
         f.finish:ClearAllPoints()
         f.finish:SetPoint("TOPLEFT", f, "TOPLEFT", 10, y)
         f.finish:Show()
         y = y - 34
     end
 
-    if (PF.view or 0) ~= 0 and not finished then
+    -- 回到当前（浏览偏移非零时嵌在当前段卡右下角；SetShown 在上方统一做）
+    if (PF.view or 0) ~= 0 and not finished and not waiting then
         f.nowBtn:ClearAllPoints()
         f.nowBtn:SetPoint("BOTTOMRIGHT", f.card, "BOTTOMRIGHT", -6, 4)
     end
 
+    -- 底部按钮排：购物清单(+跳转制造)靠左，上一步/下一步靠右
     local by = y - 4
     f.btns[1]:ClearAllPoints()
     f.btns[1]:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, by)
@@ -1328,6 +1634,9 @@ function PF.Paint()
     sweepPaint(pending)
 end
 
+-- -------------------------------------------------------------------------
+-- 入口按钮（由 ProfessionUI.PickTabs 调用；本文件不持有专业页任何帧）
+-- -------------------------------------------------------------------------
 function PF.PaintButton(bt, slug)
     if not bt then return end
     local ok = slug and slug ~= "__index" and LV[slug] and LV[slug].steps
@@ -1347,6 +1656,8 @@ function PF.PaintButton(bt, slug)
     bt:SetShown(true)
 end
 
+-- 主界面「一键导入购物清单」按钮（升级 HUD 入口左边；显隐与 hudBtn 同条件，
+-- 由 ProfessionUI.PickTabs 调用；本文件不持有专业页任何帧，只刷状态与点击）
 function PF.PaintImportBtn(bt, slug)
     if not bt then return end
     local ok = slug and slug ~= "__index" and LV[slug] and LV[slug].steps
@@ -1367,4 +1678,17 @@ function PF.PaintImportBtn(bt, slug)
     SetOutline(bt, false, 1, 0.82, 0)
     bt:GetFontString():SetTextColor(Unpack(C_GREY))
     bt:SetShown(true)
+end
+
+-- 价格/配方/设置触发新结果时更新当前 HUD，不等下一次技能提升。
+if RA and RA.OnPlanChanged then
+    RA.OnPlanChanged(function(slug)
+        local s = st()
+        if not (s and s.slug == slug) then return end
+        local function refresh()
+            PF.Sync()
+            if PF.f and PF.f:IsShown() then PF.Paint() end
+        end
+        if C_Timer and C_Timer.After then C_Timer.After(0, refresh) else refresh() end
+    end)
 end

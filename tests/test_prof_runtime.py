@@ -1,0 +1,988 @@
+"""Lua loading, asynchronous publication and client-first recipe integration."""
+import os
+from pathlib import Path
+import sys
+import unittest
+import xml.etree.ElementTree as ET
+
+for p in (Path(os.environ.get("TEMP", "/tmp"))/"df-lua-runtime", Path.home()/"AppData/Local/Temp/df-lua-runtime"):
+    sys.path.insert(0,str(p))
+from lupa.lua51 import LuaRuntime
+
+ROOT=Path(__file__).resolve().parents[1]
+MOCKS=r'''
+ns={LoadForeverPages=true,L=setmetatable({}, {__index=function(_,k) return k end})}
+frames={}; queue={}; timers={}
+function CreateFrame()
+  local f={events={}}; function f:RegisterEvent(e) self.events[e]=true end
+  function f:SetScript(k,v) self[k]=v end
+  frames[#frames+1]=f; return f
+end
+C_Timer={After=function(_,fn) timers[#timers+1]=fn end}
+ns.IdleJobs={Add=function(fn) queue[#queue+1]=fn end}
+function time() return 1000 end
+function UnitName() return 'Test' end
+function GetRealmName() return 'Realm' end
+function fixture()
+  return {recipes={{profession='alchemy',spell=101,item=10,count=1,learn=1,yellow=20,green=30,grey=40,mats={{11,1}},cooldown=false}},
+    inventory={},professions={alchemy={cur=1,max=300}},known={['alchemy:101']=true},prices={[11]=7}}
+end
+function finish(slug,opts)
+  local r=ns.ProfRouteAuto.Get(slug,opts)
+  for i=1,100 do
+    ns.ProfRouteAuto.Pump(slug)
+    r=ns.ProfRouteAuto.Get(slug,opts)
+    if r.status~='searching' then return r end
+  end
+  error('job did not finish')
+end
+'''
+
+class RuntimeTests(unittest.TestCase):
+    def setUp(self):
+        self.lua=LuaRuntime(unpack_returned_tuples=True)
+        self.lua.execute(MOCKS)
+        self.load=self.lua.eval("function(p) assert(loadfile(p))('DungeonsForever',ns) end")
+        for name in ("ProfEconomy.lua","ProfRouteSolver.lua","ProfRouteAuto.lua"):
+            self.load(str(ROOT/"Core"/name))
+
+    def test_get_only_schedules_work_and_returns_pending_snapshot(self):
+        self.lua.execute("""
+          local o={snapshot=fixture(),start=1,target=2}
+          local r=ns.ProfRouteAuto.Get('alchemy',o)
+          assert(r.status=='searching' and not r.feasible and #queue==1)
+          assert(ns.ProfRouteAuto.Get('alchemy',o)==r and #queue==1)
+          r=finish('alchemy',o)
+          assert(r.feasible and r.total==7 and r.status=='complete' and r.revision>0)
+        """)
+
+    def test_cancel_resume_and_invalidation_do_not_publish_old_results(self):
+        self.lua.execute("""
+          local ra=ns.ProfRouteAuto
+          local o={snapshot=fixture(),start=1,target=2}
+          local updates={}; ra.OnPlanChanged(function(slug,r) if r then updates[#updates+1]=r end end)
+          ra.Get('alchemy',o); ra.Cancel('alchemy')
+          assert(ra.Get('alchemy',o).status=='stopped')
+          ra.Pump('alchemy'); ra.Continue('alchemy')
+          local done=finish('alchemy',o); assert(done.feasible and done.total==7)
+          local oldPump=queue[1]
+          ra.Invalidate()
+          assert(ra.Get('alchemy',o)==done and done.stale,'ordinary invalidation discarded saved route')
+          local pending=ra.Recalculate('alchemy',o); assert(pending.status=='searching')
+          local n=#updates; oldPump(); assert(#updates==n,'stale generation published')
+          assert(ra.Get('alchemy',o)==pending)
+          assert(finish('alchemy',o).revision>done.revision)
+        """)
+
+    def test_cache_keys_include_recipe_policies_and_secondary_option(self):
+        self.lua.execute("""
+          local s=fixture(); local a={snapshot=s,start=1,target=2}
+          local b={snapshot=s,start=1,target=2,exclusions={['alchemy:101']='ban'}}
+          assert(finish('alchemy',a).feasible)
+          local r=finish('alchemy',b); assert(not r.feasible)
+          assert(ns.ProfRouteAuto.Get('alchemy',a).feasible,'other option job was cancelled')
+          local c={snapshot=s,start=1,target=2,allowSecondaryLeveling=true}
+          assert(ns.ProfRouteAuto.Get('alchemy',c).status=='searching')
+        """)
+
+    def test_finished_result_cannot_be_reopened_by_cancel_continue(self):
+        self.lua.execute("""
+          local ra=ns.ProfRouteAuto; local o={snapshot=fixture(),start=1,target=2}
+          local r=finish('alchemy',o); assert(r.searchComplete)
+          ra.Cancel('alchemy'); ra.Continue('alchemy'); ra.Pump('alchemy')
+          assert(ra.Get('alchemy',o)==r and r.status=='complete')
+        """)
+
+    def live_capture_fixture(self):
+        self.lua.execute("""
+          captures=0; livePrice=7; liveSkill=1
+          ns.ProfEconomy.Capture=function(slug,opts)
+            captures=captures+1; local s=fixture()
+            s.prices[11]=livePrice; s.professions.alchemy.cur=liveSkill
+            return ns.ProfEconomy.Index(s)
+          end
+        """)
+
+    def test_live_route_reuses_quote_until_explicit_recalculate(self):
+        self.live_capture_fixture()
+        self.lua.execute("""
+          local ra=ns.ProfRouteAuto; local o={start=1,target=2}
+          local r=finish('alchemy',o); assert(r.total==7 and captures==1)
+          local jobs=#queue; livePrice=99; liveSkill=2
+          ra.Invalidate('prices')
+          local cached=ra.Get('alchemy',{start=2,target=2})
+          assert(cached==r and cached.total==7 and cached.start==1 and cached.stale)
+          assert(#queue==jobs and captures==1,'opening or input events restarted calculation')
+          ra.Recalculate('alchemy',o)
+          local fresh=finish('alchemy',o)
+          assert(fresh.total==99 and captures==2 and not fresh.stale)
+        """)
+
+    def test_saved_route_restores_after_module_reload_without_scanning(self):
+        self.live_capture_fixture()
+        self.lua.execute("""
+          savedOptions={start=1,target=2}; original=finish('alchemy',savedOptions)
+          assert(DungeonsForeverDB.prof.routeCache['Test-Realm'].active.alchemy)
+          jobsBeforeReload=#queue
+          livePrice=99; liveSkill=2
+        """)
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute("""
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=2,target=2})
+          assert(r.cached and r.total==7 and r.start==1 and r.status=='complete')
+          assert(captures==1 and #queue==jobsBeforeReload)
+          assert(#r.actions>0 and #r.steps==1 and #r.executionSteps==1)
+        """)
+
+    def test_old_empty_failure_recalculates_once_without_discarding_valid_cached_routes(self):
+        self.live_capture_fixture()
+        self.lua.execute('''
+          local r=finish('alchemy',{start=1,target=2})
+          local cache=DungeonsForeverDB.prof.routeCache['Test-Realm']
+          local old=cache.routes[cache.active.alchemy].result
+          old.steps={};old.executionSteps={};old.feasible=false;old.targetReached=false
+          old.status='incomplete';old.emptyResultRevision=nil
+        ''')
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          assert(ns.ProfRouteAuto.Get('alchemy',{start=1,target=2}).status=='searching')
+          local r=finish('alchemy',{start=1,target=2})
+          assert(r.targetReached and #r.steps==1 and captures==2 and r.emptyResultRevision==2)
+        ''')
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+          assert(r.cached and #r.steps==1 and captures==2)
+        ''')
+
+    def legacy_vendor_cache_fixture(self):
+        self.lua.execute('''
+          captures=0
+          ns.ProfEconomy.Capture=function()
+            captures=captures+1
+            local s=fixture();s.vendorItems={[11]=true};s.vendorSuppliers={[11]={{npcID=77}}}
+            s.offers={[11]=ns.VendorPriceDB and ns.VendorPriceDB.GetOffers(11,{allowVendorCache=true})
+              or {{npcID=77,price=7,quantity=1,unlimited=true,estimated=true,source='auctionator-vendor'}}}
+            return ns.ProfEconomy.Index(s)
+          end
+          local r=finish('alchemy',{start=1,target=2})
+          assert(r.vendorQuoteRevision==1 and r.total==7 and not r.costComplete)
+          local cache=DungeonsForeverDB.prof.routeCache['Test-Realm']
+          oldVendorCache=cache.routes[cache.active.alchemy].result
+          oldVendorCache.vendorQuoteRevision=nil
+          jobsBeforeVendorReload=#queue
+          ns.DB=function() return DungeonsForeverDB end
+        ''')
+
+    def install_vendor_reference_fixture(self):
+        self.lua.execute('''
+          ns.ProfVendorOffers={[11]={{itemID=11,npcID=77,price=3,quantity=1,unlimited=true,
+            available=true,source='wowhead-forever',verifiedAt='2026-10-18',reference=true,
+            priceVerified=true,estimated=true,priceBasis='wowhead-reference'}}}
+        ''')
+        self.load(str(ROOT/'Core'/'VendorPriceDB.lua'))
+
+    def test_saved_vendor_estimate_becomes_manual_quote_update_without_recalculating(self):
+        self.legacy_vendor_cache_fixture()
+        self.install_vendor_reference_fixture()
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+          assert(r.cached and r.vendorQuoteRevision==1 and r.stale and r.staleReason=='vendor-quotes')
+          assert(r.total==7 and r.vendorTotal==7 and not r.costComplete and not r.completeCost)
+          assert(#r.steps==1 and #r.executionSteps==1 and r.steps[1][3]==101 and #r.actions==2)
+          assert(r.mats[1].cost==7 and r.mats[1].estimated and not r.mats[1].reference)
+          assert(#r.diagnostics==1 and r.diagnostics[1].code=='vendorQuoteChanged' and r.diagnostics[1].item==11)
+          assert(ns.ProfEconomy.DiagnosticText(r.diagnostics[1]):find('点击重新计算',1,true))
+          assert(captures==1 and #queue==jobsBeforeVendorReload,'opening recaptured or queued a route search')
+          assert(oldVendorCache.vendorQuoteRevision==1 and oldVendorCache.diagnostics[1].code=='vendorQuoteChanged')
+          ns.ProfRouteAuto.Recalculate('alchemy',{start=1,target=2})
+          local fresh=finish('alchemy',{start=1,target=2})
+          assert(fresh.total==3 and fresh.costComplete and fresh.referencePrices and #fresh.diagnostics==0)
+          assert(fresh.vendorQuoteRevision==1 and not fresh.stale and captures==2)
+        ''')
+
+    def test_saved_unknown_vendor_estimate_keeps_pending_diagnostic(self):
+        self.legacy_vendor_cache_fixture()
+        self.load(str(ROOT/'Core'/'VendorPriceDB.lua'))
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+          assert(r.cached and r.total==7 and r.vendorQuoteRevision==1)
+          assert(#r.diagnostics==1 and r.diagnostics[1].code=='vendorEstimate')
+          assert(not r.costComplete and captures==1 and #queue==jobsBeforeVendorReload)
+        ''')
+
+    def test_rejected_vendor_reference_does_not_relabel_pending_cache(self):
+        for rejection in ('unlimited=false', 'hasExtendedCost=true', 'currencyID=777'):
+            with self.subTest(rejection=rejection):
+                self.setUp()
+                self.legacy_vendor_cache_fixture()
+                self.install_vendor_reference_fixture()
+                self.lua.execute('''
+                  DungeonsForeverDB.profVendorOffers={[11]={blocked={itemID=11,npcID=77,
+                    character='Test-Realm',source='merchant',available=true,unlimited=true,
+                    verifiedAt=1000,price=7,quantity=1,'''+rejection+'''}}}
+                ''')
+                self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+                self.lua.execute('''
+                  local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+                  assert(r.diagnostics[1].code=='vendorEstimate' and r.total==7 and r.vendorQuoteRevision==1)
+                  assert(captures==1 and #queue==jobsBeforeVendorReload)
+                ''')
+
+    def test_vendor_diagnostic_migration_requires_selected_procurement(self):
+        self.legacy_vendor_cache_fixture()
+        self.install_vendor_reference_fixture()
+        self.lua.execute("oldVendorCache.mats[1].source='ah';oldVendorCache.mats[1].vendor=false")
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+          assert(r.diagnostics[1].code=='vendorEstimate' and r.total==7)
+          assert(captures==1 and #queue==jobsBeforeVendorReload)
+        ''')
+
+    def test_vendor_cache_restores_safely_before_vendor_module_is_available(self):
+        self.legacy_vendor_cache_fixture()
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+          assert(r.cached and r.diagnostics[1].code=='vendorEstimate' and r.total==7)
+          assert(r.vendorQuoteRevision==nil and captures==1 and #queue==jobsBeforeVendorReload)
+        ''')
+        self.install_vendor_reference_fixture()
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+          assert(r.vendorQuoteRevision==1 and r.diagnostics[1].code=='vendorQuoteChanged')
+          assert(captures==1 and #queue==jobsBeforeVendorReload)
+        ''')
+
+    def test_changed_settings_and_exclusions_wait_for_manual_apply(self):
+        self.live_capture_fixture()
+        self.lua.execute("""
+          local ra=ns.ProfRouteAuto; local o={start=1,target=2}
+          local r=finish('alchemy',o); local jobs=#queue
+          ns.ProfEconomy.SetPolicy('alchemy','alchemy',101,'ban',true)
+          ns.ProfEconomy.ApplyPolicies('alchemy')
+          local changed={start=1,target=2,exclusions={['alchemy:101']='ban'}}
+          assert(ra.Get('alchemy',changed)==r and r.settingsChanged and r.stale)
+          assert(captures==1 and #queue==jobs)
+          ra.Recalculate('alchemy',changed)
+          local blocked=finish('alchemy',changed)
+          assert(not blocked.feasible and captures==2)
+          assert(ra.Get('alchemy',changed)==blocked,'infeasible cache restarted itself')
+        """)
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute("""
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2,exclusions={['alchemy:101']='ban'}})
+          assert(r.cached and not r.feasible and r.status~='searching' and captures==2)
+        """)
+
+    def test_saved_routes_are_character_scoped(self):
+        self.live_capture_fixture()
+        self.lua.execute("""
+          local ra=ns.ProfRouteAuto; local o={start=1,target=2}
+          assert(finish('alchemy',o).total==7)
+          UnitName=function() return 'Other' end; livePrice=11
+          assert(ra.Get('alchemy',o).status=='searching')
+          assert(finish('alchemy',o).total==11 and captures==2)
+          UnitName=function() return 'Test' end
+          assert(ra.Get('alchemy',o).total==7)
+          assert(DungeonsForeverDB.prof.routeCache['Other-Realm'].active.alchemy)
+        """)
+
+    def test_invalidation_while_searching_preserves_job_and_marks_published_input_stale(self):
+        self.live_capture_fixture()
+        self.lua.execute("""
+          local ra=ns.ProfRouteAuto; local o={start=1,target=2}
+          local pending=ra.Get('alchemy',o); local n=#queue
+          ra.Invalidate('recipe')
+          assert(ra.Get('alchemy',o)==pending and #queue==n)
+          local r=finish('alchemy',o)
+          assert(r.feasible and r.stale and r.staleReason=='recipe' and captures==1)
+        """)
+
+    def test_explicit_recalculation_cannot_receive_old_task_publication(self):
+        self.live_capture_fixture()
+        self.lua.execute("""
+          local ra=ns.ProfRouteAuto; local o={start=1,target=2}
+          ra.Get('alchemy',o); local old=queue[1]
+          local replacement=ra.Recalculate('alchemy',o)
+          local updates=0; ra.OnPlanChanged(function() updates=updates+1 end)
+          assert(old()); assert(updates==0 and ra.Get('alchemy',o)==replacement)
+          assert(finish('alchemy',o).total==7 and captures==1)
+        """)
+
+    def test_synthetic_snapshots_never_persist_or_cross_contaminate(self):
+        self.lua.execute("""
+          local a=fixture(); local b=fixture(); b.prices[11]=99
+          assert(finish('alchemy',{snapshot=a,start=1,target=2}).total==7)
+          assert(finish('alchemy',{snapshot=b,start=1,target=2}).total==99)
+          local d=DungeonsForeverDB and DungeonsForeverDB.prof and DungeonsForeverDB.prof.routeCache
+          assert(not d or not d['Test-Realm'] or next(d['Test-Realm'].routes)==nil)
+        """)
+
+    def test_old_cached_route_models_are_rejected_before_display(self):
+        self.live_capture_fixture()
+        self.lua.execute("""
+          DungeonsForeverDB={prof={routeCache={['Test-Realm']={version=1,
+            routes={old={slug='alchemy',result={total=900,status='complete'}}},active={alchemy='old'}}}}}
+          local o={start=1,target=2}; local pending=ns.ProfRouteAuto.Get('alchemy',o)
+          assert(pending.status=='searching','old duplicate-step route was displayed')
+          local r=finish('alchemy',o)
+          assert(r.total==7 and r.routeModel==3)
+          assert(DungeonsForeverDB.prof.routeCache['Test-Realm'].version==3)
+        """)
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute("""
+          local d=DungeonsForeverDB.prof.routeCache['Test-Realm']
+          d.routes[d.active.alchemy].result.routeModel=1
+          assert(ns.ProfRouteAuto.Get('alchemy',{start=1,target=2}).status=='searching',
+            'mislabelled old record bypassed snapshot-model check')
+          assert(finish('alchemy',{start=1,target=2}).routeModel==3 and captures==2)
+        """)
+
+    def test_missing_legacy_route_is_cached_as_infeasible(self):
+        self.lua.execute("""
+          ns.EnsureProfRecipes=function() return {} end
+          local ra=ns.ProfRouteAuto; local o={start=1,target=2,scheme='matcost'}
+          local r=ra.Get('alchemy',o)
+          assert(r and not r.feasible and r.status=='infeasible')
+          assert(ra.Get('alchemy',o)==r)
+        """)
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute("""
+          ns.EnsureProfRecipes=function() error('saved unavailable route should not rescan') end
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2,scheme='matcost'})
+          assert(r.cached and r.status=='infeasible')
+        """)
+
+    def test_capture_tracks_verified_vendor_supply_separately_from_known_price(self):
+        self.lua.execute("""
+          ns.ProfEconomy.Professions=function() return {alchemy={cur=1,max=75,primary=true}} end
+          ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,2}}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          UnitFactionGroup=function() return 'Alliance' end
+          UnitLevel=function() return 30 end
+          local contexts={}
+          ns.VendorPriceDB={
+            GetSuppliers=function(id,ctx)
+              contexts[#contexts+1]=ctx
+              if id==11 then return {{npcID=123,unlimited=true,available=true,source='wowhead-forever',verifiedAt='date'}} end
+              return {{npcID=456,unlimited=false,source='wowhead-forever',verifiedAt='date'}}
+            end,
+            GetOffers=function(id,ctx)
+              assert(ctx.allowVendorCache and ctx.requireObservedPrice==false)
+              assert(ctx.character=='Test-Realm' and ctx.faction=='A' and ctx.level==30 and ctx.professions.alchemy.cur==1)
+              if id==11 then return {{price=3,quantity=1,estimated=true,source='auctionator-cache',unlimited=true,npcID=123}} end
+              return {}
+            end}
+          local s=ns.ProfEconomy.Capture('alchemy',{})
+          assert(s.vendorItems[11] and not s.vendorItems[10])
+          assert(s.vendorSuppliers[11][1].npcID==123 and s.offers[11][1].source=='auctionator-cache')
+        """)
+
+    def test_drafts_are_per_character_and_only_apply_on_recalculate(self):
+        self.lua.execute("""
+          local e=ns.ProfEconomy
+          e.SetPolicy('alchemy','mining',101,'ban',true)
+          assert(e.GetPolicies('alchemy')['mining:101']==nil)
+          e.ApplyPolicies('alchemy'); assert(e.GetPolicies('alchemy')['mining:101']=='ban')
+          e.ResetPolicies('alchemy'); assert(e.GetPolicies('alchemy')['mining:101']=='ban')
+          e.ApplyPolicies('alchemy'); assert(e.GetPolicies('alchemy')['mining:101']==nil)
+          e.SetPolicy('alchemy','mining',101,'level',false)
+          UnitName=function() return 'Other' end
+          assert(e.GetPolicies('alchemy')['mining:101']==nil)
+        """)
+
+    def test_recipe_and_trainer_events_are_not_lost_when_coalesced(self):
+        self.lua.execute("""
+          local e=ns.ProfEconomy; local a,b=0,0
+          e.ScanRecipes=function() a=a+1 end; e.ScanTrainer=function() b=b+1 end
+          local f=frames[1]
+          f.OnEvent(f,'TRADE_SKILL_LIST_UPDATE'); f.OnEvent(f,'TRAINER_SHOW')
+          assert(#timers==1); timers[1](); assert(#queue==1)
+          assert(queue[1]()); assert(a==1 and b==1)
+        """)
+
+    def test_fixed_summary_uses_catalogue_fallback_and_prefers_client(self):
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={{101,10,99,'','','',1,2,3,4,false,{{11,99}}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfLeveling={alchemy={}}
+          local st={{1,2,101,1}}
+          local sum=ns.ProfRouteAuto.SummarizeSteps(st,'alchemy')
+          assert(#sum.mats==1 and sum.mats[1][1]==11 and sum.mats[1][2]==99)
+          ns.ProfRecipeRuntime={[101]={mats={{12,3}},count=2,item=14}}
+          st={{1,2,101,1}}; sum=ns.ProfRouteAuto.SummarizeSteps(st,'alchemy')
+          assert(#sum.mats==1 and sum.mats[1][1]==12 and sum.mats[1][2]==3)
+        """)
+
+    def test_modern_schematic_is_preferred_over_old_reagent_and_yield_api(self):
+        self.lua.execute("""
+          C_TradeSkillUI={GetRecipeInfo=function() return {learned=true} end,
+            GetRecipeSchematic=function() return {quantityMin=2,quantityMax=2,outputItemID=12,
+              reagentSlotSchematics={{quantityRequired=3,reagents={{itemID=14}}}}} end,
+            GetRecipeNumItemsProduced=function() return 99,99 end,
+            GetRecipeNumReagents=function() return 1 end,
+            GetRecipeReagentInfo=function() return 'stale',1,99 end,
+            GetRecipeReagentItemLink=function() return 'item:999' end,
+            GetRecipeOutputItemData=function() return {hyperlink='item:12'} end}
+          local r=ns.ProfEconomy.ReadRecipe(101)
+          assert(r.count==2 and r.item==12 and #r.mats==1 and r.mats[1][1]==14 and r.mats[1][2]==3)
+          C_TradeSkillUI.GetRecipeSchematic=function() return nil end
+          r=ns.ProfEconomy.ReadRecipe(101); assert(r.count==99 and r.mats[1][1]==999,'unavailable schematic did not use supported legacy API')
+        """)
+
+    def test_legacy_craft_recipe_reads_actual_enchant_inputs(self):
+        self.lua.execute("""
+          GetNumCrafts=function() return 1 end
+          GetCraftInfo=function() return 'TestEnchant','','optimal' end
+          GetSpellInfo=function(name) return name,nil,nil,nil,nil,nil,101 end
+          GetCraftNumReagents=function() return 1 end
+          GetCraftReagentInfo=function() return 'ActualDust',1,3 end
+          GetCraftReagentItemLink=function() return 'item:14' end
+          GetCraftItemLink=function() return 'enchant:101' end
+          ns.ProfEconomy.ScanCrafts()
+          local r=ns.ProfRecipeRuntime[101]
+          assert(r.learned and r.mats[1][1]==14 and r.mats[1][2]==3)
+        """)
+
+    def test_unlearned_profession_uses_reference_when_client_cannot_read(self):
+        self.lua.execute("""
+          ns.ProfRecipes={mining={rows={{2657,2840,1,'Smelting','','',1,25,47,70,false,{{2770,1}},nil,{skill=1}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfEconomy.Professions=function() return {} end
+          C_Item={GetItemCount=function() return 0 end}
+          C_TradeSkillUI={GetRecipeInfo=function() return nil end,GetRecipeSchematic=function() return nil end}
+          local s=ns.ProfEconomy.Capture('mining',{})
+          local r=s.recipes[1]
+          assert(not r.clientPending and not r.clientUnavailable)
+          assert(r.mats[1][1]==2770 and r.mats[1][2]==1 and r.count==1)
+          assert(r.materialSource=='catalogue' and r.outputSource=='catalogue' and r.dataSource=='catalogue')
+          assert(s.professions.mining.unlearned)
+        """)
+
+    def test_resolver_overrides_each_known_field_without_discarding_other_reference_fields(self):
+        self.lua.execute("""
+          local e=ns.ProfEconomy
+          local seed={profession='blacksmithing',spell=101,item=10,count=1,mats={{11,2}},tools={5956}}
+          ns.ProfRecipeRuntime={[101]={mats={{12,3}},learned=false}}
+          local r=e.ResolveRecipe(seed)
+          assert(r.item==10 and r.count==1 and r.mats[1][1]==12 and r.tools==nil)
+          assert(r.dataSource=='mixed' and r.materialSource=='client' and r.outputSource=='catalogue')
+          assert(seed.mats[1][1]==11,'resolver mutated reference data')
+          ns.ProfRecipeRuntime[101]={count=2,item=14,mats={{12,4}},toolsKnown=true,tools={}}
+          r=e.ResolveRecipe(seed)
+          assert(r.count==2 and r.item==14 and r.tools==nil and not r.clientPending)
+          assert(r.dataSource=='client' and r.toolSource==nil)
+        """)
+
+    def test_schematic_read_does_not_require_recipe_info_api(self):
+        self.lua.execute("""
+          C_TradeSkillUI={GetRecipeSchematic=function() return {quantityMin=2,quantityMax=2,outputItemID=14,
+            reagentSlotSchematics={{quantityRequired=3,reagents={{itemID=12}}}}} end}
+          local r=ns.ProfEconomy.ReadRecipe(101)
+          assert(r.available and r.count==2 and r.mats[1][1]==12)
+          local report=ns.ProfEconomy.APICapabilities()
+          assert(not report.functions['C_TradeSkillUI.GetRecipeInfo'])
+          assert(report.functions['C_TradeSkillUI.GetRecipeSchematic'])
+          assert(report.reads['C_TradeSkillUI.GetRecipeSchematic'].successes==1)
+        """)
+
+    def test_empty_or_failing_client_reads_retain_catalogue_and_diagnostic_evidence(self):
+        self.lua.execute("""
+          C_TradeSkillUI={GetRecipeInfo=function() error('not loaded') end,GetRecipeSchematic=function() return nil end}
+          assert(ns.ProfEconomy.ReadRecipe(101)==nil)
+          local r=ns.ProfEconomy.ResolveRecipe({spell=101,item=10,count=1,mats={{11,2}}},'alchemy')
+          assert(not r.clientPending and not r.clientUnavailable)
+          local report=ns.ProfEconomy.APIReport()
+          assert(report:find('GetRecipeInfo: available; data=0, empty=0, errors=1',1,true))
+          assert(report:find('GetRecipeSchematic: available; data=0, empty=1, errors=0',1,true))
+          assert(DungeonsForeverDB.prof.economy['Test-Realm'].apiReport)
+        """)
+
+    def test_authoritative_roster_only_filters_its_matching_profession(self):
+        self.lua.execute("""
+          local e=ns.ProfEconomy
+          e.Professions=function() return {alchemy={cur=1,max=75,primary=true}} end
+          C_TradeSkillUI={GetAllRecipeIDs=function() return {101,102} end,
+            GetBaseProfessionInfo=function() return {professionID=171} end,
+            IsDataSourceChanging=function() return false end,IsTradeSkillReady=function() return true end,
+            GetRecipeInfo=function(id) return {learned=id==101} end}
+          e.ScanRecipes()
+          local seed={spell=103,item=10,count=1,mats={{11,2}}}
+          assert(e.ResolveRecipe(seed,'alchemy').clientUnavailable)
+          assert(not e.ResolveRecipe(seed,'blacksmithing').clientUnavailable)
+          seed.spell=102; assert(not e.ResolveRecipe(seed,'alchemy').clientUnavailable)
+          GetBuildInfo=function() return 'new','build' end
+          e.APIReport()
+          seed.spell=103; assert(not e.ResolveRecipe(seed,'alchemy').clientUnavailable,'old build roster survived')
+        """)
+
+    def test_partial_learned_only_or_changing_roster_never_proves_absence(self):
+        self.lua.execute("""
+          local e=ns.ProfEconomy
+          e.Professions=function() return {alchemy={cur=1,max=75,primary=true}} end
+          C_TradeSkillUI={GetAllRecipeIDs=function() return {101} end,
+            GetBaseProfessionInfo=function() return {professionID=171} end,
+            IsDataSourceChanging=function() return false end,
+            GetRecipeInfo=function() return {learned=true} end}
+          e.ScanRecipes()
+          local seed={spell=103,item=10,count=1,mats={{11,2}}}
+          assert(not e.ResolveRecipe(seed,'alchemy').clientUnavailable)
+          C_TradeSkillUI.GetRecipeInfo=function() return {learned=false} end
+          C_TradeSkillUI.IsDataSourceChanging=function() return true end
+          e.ScanRecipes(); assert(not e.ResolveRecipe(seed,'alchemy').clientUnavailable)
+          C_TradeSkillUI.GetAllRecipeIDs=function() return nil end
+          e.ScanRecipes(); assert(not e.ResolveRecipe(seed,'alchemy').clientUnavailable)
+        """)
+
+    def test_client_unavailable_stays_blocked_but_valid_variable_range_uses_minimum(self):
+        self.lua.execute("""
+          local seed={spell=101,item=10,count=1,mats={{11,2}}}
+          ns.ProfRecipeRuntime={[101]={available=false}}
+          local r=ns.ProfEconomy.ResolveRecipe(seed,'alchemy')
+          assert(r.clientUnavailable and r.verified==false)
+          C_TradeSkillUI={GetRecipeInfo=function() return {learned=true} end,
+            GetRecipeSchematic=function() return {quantityMin=1,quantityMax=3,outputItemID=10,reagentSlotSchematics={}} end}
+          r=ns.ProfEconomy.ReadRecipe(101)
+          assert(r.variableOutput and r.count==1 and r.outputMin==1 and r.outputMax==3)
+          r=ns.ProfEconomy.ResolveRecipe(seed,'alchemy')
+          assert(not r.outputConflict and r.count==1 and r.outputBasis=='minimum' and r.outputSource=='client')
+        """)
+
+    def test_reference_fallback_does_not_clear_cooldown(self):
+        self.lua.execute("""
+          ns.ProfRecipeMeta={[101]={cooldown=true}}
+          local r=ns.ProfEconomy.ResolveRecipe({spell=101,item=10,count=1,mats={{11,2}}},'alchemy')
+          assert(r.cooldown and r.materialSource=='catalogue')
+          C_Spell={GetSpellBaseCooldown=function() return 0 end}
+          C_TradeSkillUI={GetRecipeInfo=function() return {learned=true,hasCooldown=true} end,
+            GetRecipeCooldown=function() return 0,false end}
+          r=ns.ProfEconomy.ReadRecipe(101)
+          assert(r.cooldown and r.cooldownVerified,'ready/base-zero API erased a real recipe cooldown')
+          ns.ProfRecipeRuntime[101]={cooldown=false}
+          assert(ns.ProfEconomy.ResolveRecipe({spell=101,item=10,count=1,mats={{11,2}}},'alchemy').cooldown,
+            'unverified base-zero observation erased reference cooldown')
+        """)
+
+    def test_partial_schematic_falls_back_field_by_field_to_client_legacy_api(self):
+        self.lua.execute('''
+          C_TradeSkillUI={GetRecipeInfo=function() return {recipeID=101,learned=false} end,
+            GetRecipeSchematic=function() return {quantityMin=0,quantityMax=0,outputItemID=0,
+              reagentSlotSchematics={{quantityRequired=0,reagents={{itemID=11}}}}} end,
+            GetRecipeNumItemsProduced=function() return 2,2 end,
+            GetRecipeNumReagents=function() return 1 end,
+            GetRecipeReagentItemLink=function() return 'item:11' end,
+            GetRecipeReagentInfo=function() return 'Material',1,3 end}
+          local rt=ns.ProfEconomy.ReadRecipe(101)
+          assert(rt.count==2 and rt.mats[1][1]==11 and rt.mats[1][2]==3)
+          local r=ns.ProfEconomy.ResolveRecipe({spell=101,item=10,count=5,mats={{12,7}}},'alchemy')
+          assert(r.count==2 and r.mats[1][1]==11 and r.outputSource=='client' and not r.clientPending)
+        ''')
+
+    def test_unlearned_empty_api_sentinels_keep_existing_catalogue_materials(self):
+        self.lua.execute('''
+          C_TradeSkillUI={GetRecipeInfo=function() return {recipeID=101,learned=false} end,
+            GetRecipeSchematic=function() return {quantityMin=0,reagentSlotSchematics={}} end,
+            GetRecipeNumReagents=function() return 0 end,GetRecipeReagentInfo=function() end}
+          ns.ProfEconomy.ReadRecipe(101)
+          local r=ns.ProfEconomy.ResolveRecipe({spell=101,item=10,count=3,mats={{11,2}}},'alchemy')
+          assert(r.count==3 and r.outputSource=='catalogue' and r.mats[1][1]==11 and r.mats[1][2]==2)
+          assert(r.materialSource=='catalogue' and not r.clientPending)
+        ''')
+
+    def test_old_random_marker_uses_reference_until_range_is_read_then_fixed_read_clears_it(self):
+        self.lua.execute('''
+          local seed={spell=101,item=10,count=3,mats={{11,2}}}
+          ns.ProfRecipeRuntime={[101]={variableOutput=true}}
+          local r=ns.ProfEconomy.ResolveRecipe(seed,'engineering')
+          assert(r.count==3 and r.outputBasis=='reference' and not r.outputConflict and not r.clientPending)
+          C_TradeSkillUI={GetRecipeInfo=function() return {recipeID=101,learned=false} end,
+            GetRecipeSchematic=function() return {quantityMin=2,quantityMax=4,outputItemID=10} end}
+          ns.ProfEconomy.ReadRecipe(101)
+          r=ns.ProfEconomy.ResolveRecipe(seed,'engineering')
+          assert(r.count==2 and r.outputMin==2 and r.outputMax==4 and r.outputBasis=='minimum')
+          C_TradeSkillUI.GetRecipeSchematic=function() return {} end
+          C_TradeSkillUI.GetRecipeNumItemsProduced=function() return 2,2 end
+          ns.ProfEconomy.ReadRecipe(101)
+          r=ns.ProfEconomy.ResolveRecipe(seed,'engineering')
+          assert(r.count==2 and not r.variableOutput and not r.outputConflict)
+        ''')
+
+    def test_foreign_recipe_id_cannot_overwrite_current_reference(self):
+        self.lua.execute('''
+          C_TradeSkillUI={GetRecipeInfo=function() return {recipeID=999,learned=true} end,
+            GetRecipeSchematic=function() return {quantityMin=100,outputItemID=999} end}
+          assert(ns.ProfEconomy.ReadRecipe(101)==nil)
+          local r=ns.ProfEconomy.ResolveRecipe({spell=101,item=10,count=3,mats={{11,2}}},'alchemy')
+          assert(r.item==10 and r.count==3 and r.materialSource=='catalogue')
+        ''')
+
+    def test_invalid_recipe_ids_do_not_query_api_and_positive_known_spell_overrides_false_cache(self):
+        self.lua.execute('''
+          C_TradeSkillUI={GetRecipeInfo=function() error('invalid recipe lookup') end}
+          assert(ns.ProfEconomy.ReadRecipe(nil)==nil and ns.ProfEconomy.ReadRecipe(0)==nil)
+          ns.ProfRecipeRuntime={[101]={learned=false}}
+          C_Spell={IsSpellKnown=function(spell) return spell==101 end}
+          assert(ns.ProfEconomy.Known(101) and not ns.ProfEconomy.Known(102))
+        ''')
+
+    def test_existing_guide_starting_threshold_is_fallback_and_actual_client_skill_wins(self):
+        self.lua.execute('''
+          ns.ProfLeveling={enchanting={rinfo={[7418]={learn=1,yellow=1,green=5,grey=25}}}}
+          local seed={spell=7418,item=10,count=1,learn=20,yellow=20,green=22,grey=25,mats={{11,1}}}
+          local r=ns.ProfEconomy.ResolveRecipe(seed,'enchanting')
+          assert(r.learn==1 and r.skillSource=='guide' and r.mats[1][1]==11)
+          ns.ProfRecipeRuntime={[7418]={learn=20}}
+          r=ns.ProfEconomy.ResolveRecipe(seed,'enchanting')
+          assert(r.learn==20 and r.skillSource=='client')
+        ''')
+
+    def test_complete_catalogues_use_reference_recipes_with_priced_materials_without_profession_api(self):
+        for filename in ('Data/Data_ProfRecipes.lua','Data/Data_ProfLeveling.lua','Data/Data_ProfMining.lua',
+                         'Data/Data_ProfVendorOffers.lua','VendorPriceDB.lua'):
+            self.load(str(ROOT/'Core'/filename))
+        self.lua.execute('''
+          ns.DB=function() return DungeonsForeverDB end
+          ns.ProfEconomy.Professions=function() return {engineering={cur=60,max=75,primary=true}} end
+          ns.ProfRouteAuto.AHPriceOf=function() return 1000 end
+          for _,case in ipairs({{'engineering',60,225},{'enchanting',1,225}}) do
+            local r,j=ns.ProfRouteSolver.Compute(case[1],{start=case[2],target=case[3],maxNodes=1})
+            assert(not j.error and #r.steps>0 and r.targetReached,case[1]..':'..tostring(r.plannedTo))
+            assert(not r.referenceRoute and not r.pricePending and r.completeCost)
+            local seen={};for _,step in ipairs(r.executionSteps) do
+              local key=step.profession..':'..step[3];assert(not seen[key],'repeated batch '..key);seen[key]=true
+              assert(step.recipe.mats and step[4]>0)
+            end
+            for _,m in ipairs(r.mats) do assert(not m.unpriced) end
+          end
+        ''')
+
+    def test_trainer_observation_allows_new_recipe_and_overrides_roster_omission(self):
+        self.lua.execute("""
+          local e=ns.ProfEconomy
+          e.APIReport()
+          local d=DungeonsForeverDB.prof.economy['Test-Realm']
+          d.recipeRosters={alchemy={complete=true,ids={[102]=true}}}
+          ns.ProfRecipeRuntime={[101]={trainerObserved=true,available=true}}
+          local seed={spell=101,item=10,count=1,mats={{11,2}},isNew=true,availabilityUnknown=true}
+          local r=e.ResolveRecipe(seed,'alchemy')
+          assert(r.learnSource=='trainer' and r.clientAvailable and r.verified)
+          assert(not r.clientUnavailable and not r.availabilityUnknown)
+        """)
+
+    def test_valid_client_materials_repair_missing_reference_materials(self):
+        self.lua.execute("""
+          ns.ProfRecipeRuntime={[101]={mats={{12,3}},count=2,item=14,learn=5}}
+          local row={101,10,1,'','','',nil,10,20,30,false,nil}
+          local r=ns.ProfEconomy.Normalize(row,'alchemy','rows')
+          assert(r and r.learn==5 and r.mats[1][1]==12 and r.count==2)
+          assert(ns.ProfEconomy.Normalize({101,10,1},'alchemy','rows')==nil,'missing skill thresholds were guessed')
+        """)
+
+    def test_zero_legacy_reagent_sentinel_never_erases_known_reference_inputs(self):
+        self.lua.execute("""
+          C_TradeSkillUI={GetRecipeInfo=function() return nil end,GetRecipeSchematic=function() return nil end,
+            GetRecipeNumReagents=function() return 0 end,GetRecipeReagentInfo=function() return nil end}
+          local e=ns.ProfEconomy
+          local rt=e.ReadRecipe(101)
+          assert(not rt.mats and not rt.available)
+          local r=e.ResolveRecipe({spell=101,item=12,count=1,mats={{10,5}}},'alchemy')
+          assert(r.mats[1][1]==10 and r.mats[1][2]==5 and r.materialSource=='catalogue')
+          rt.mats={}; rt.available=true
+          r=e.ResolveRecipe({spell=101,item=12,count=1,mats={{10,5}}},'alchemy')
+          assert(r.mats[1][2]==5,'resolver trusted an unproven old zero-input cache')
+          e.ReadRecipe(101)
+          assert(not rt.mats and not rt.available,'old unproven empty cache survived')
+        """)
+
+    def test_empty_schematic_placeholders_are_not_recipe_evidence(self):
+        self.lua.execute("""
+          C_TradeSkillUI={GetRecipeInfo=function() return {} end,
+            GetRecipeSchematic=function() return {reagentSlotSchematics={}} end,
+            GetRecipeNumReagents=function() return 0 end,GetRecipeReagentInfo=function() return nil end}
+          local e=ns.ProfEconomy; local rt=e.ReadRecipe(101)
+          assert(not rt.mats and not rt.available)
+          local r=e.ResolveRecipe({spell=101,item=12,count=1,mats={{10,5}}},'alchemy')
+          assert(r.mats[1][2]==5 and r.materialSource=='catalogue')
+          C_TradeSkillUI.GetRecipeSchematic=function() return {} end
+          rt=e.ReadRecipe(101); assert(not rt.mats and not rt.available)
+        """)
+
+    def test_zero_reagents_are_valid_for_positively_observed_recipe(self):
+        self.lua.execute("""
+          C_TradeSkillUI={GetRecipeInfo=function() return {learned=true} end,
+            GetRecipeNumReagents=function() return 0 end,GetRecipeReagentInfo=function() return nil end}
+          local rt=ns.ProfEconomy.ReadRecipe(101)
+          assert(rt.available and rt.mats and #rt.mats==0)
+          C_TradeSkillUI.GetRecipeInfo=function() return nil end
+          rt=ns.ProfEconomy.ReadRecipe(101)
+          assert(rt.mats and #rt.mats==0,'verified cached zero-input recipe was lost')
+        """)
+
+    def test_enchant_scroll_is_not_mistaken_for_learning_formula(self):
+        self.lua.execute("""
+          ns.ProfRecipes={enchanting={enchants={{'Name','','','',1,10,20,30,{{99,99}},nil,false,false,{},101,14}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfRecipeKeys={'enchanting'}
+          ns.ProfEconomy.Professions=function() return {enchanting={cur=1,max=300,primary=true}} end
+          C_Item={GetItemCount=function() return 0 end}
+          C_TradeSkillUI={GetRecipeInfo=function() return {learned=true} end,
+            GetRecipeNumItemsProduced=function() return 1,1 end,
+            GetRecipeItemLink=function() return 'item:14' end,
+            GetRecipeNumReagents=function() return 1 end,
+            GetRecipeReagentItemLink=function() return 'item:12' end,
+            GetRecipeReagentInfo=function() return 'Actual',1,2 end}
+          local s=ns.ProfEconomy.Capture('enchanting',{})
+          assert(#s.recipes==1 and s.recipes[1].item==14 and s.recipes[1].formula==nil)
+          assert(s.recipes[1].mats[1][1]==12 and s.recipes[1].mats[1][2]==2)
+        """)
+
+    def test_trainer_observation_reads_availability_and_skill_but_never_fees(self):
+        self.lua.execute("""
+          ns.EnsureProfRecipes=function() return {} end
+          ns.ProfRecipeKeys={}
+          GetSpellInfo=function() return 'Mining' end
+          GetNumTrainerServices=function() return 1 end
+          GetTrainerServiceInfo=function() return 'Mining','','available' end
+          GetTrainerServiceSpellID=function() return 2576 end
+          GetTrainerServiceCost=function() error("tuition must never be read") end
+          GetTrainerServiceLevelReq=function() return 10 end
+          GetTrainerServiceSkillReq=function() return 'Mining',50 end
+          ns.ProfEconomy.ScanTrainer()
+          local d=DungeonsForeverDB.prof.economy['Test-Realm']
+          assert(d.rankCosts==nil and d.trainerCosts==nil and d.rankRequirements==nil)
+          assert(d.learningRequirements[2576].level==10 and d.learningRequirements[2576].skill==50)
+          assert(ns.ProfRecipeRuntime[2576].trainerObserved)
+        """)
+
+    def test_trainer_rank_fallback_uses_client_spell_name_and_subtext(self):
+        self.lua.execute("""
+          ns.EnsureProfRecipes=function() return {} end; ns.ProfRecipeKeys={}
+          C_Spell={GetSpellName=function(id) if id==2575 or id==2576 then return 'Mining' end end,
+            GetSpellSubtext=function(id) return id==2575 and 'Apprentice' or 'Journeyman' end}
+          GetNumTrainerServices=function() return 1 end
+          GetTrainerServiceInfo=function() return 'Mining','Journeyman','available' end
+          ns.ProfEconomy.ScanTrainer()
+          local d=DungeonsForeverDB.prof.economy['Test-Realm']
+          assert(d.rankCosts==nil and d.trainerCosts==nil)
+          assert(ns.ProfRecipeRuntime[2576].trainerObserved)
+        """)
+
+    def test_capture_ignores_bags_bank_tuition_tools_and_already_known_formula_prices(self):
+        self.lua.execute("""
+          local e=ns.ProfEconomy
+          e.Professions=function() return {alchemy={cur=1,max=75,primary=true}} end
+          ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,2}},{99},{skill=1}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfRecipeMeta={[101]={tools={5956}}}
+          e.Have=function() error('material stock must never be read') end
+          C_Item={GetItemCount=function() error('bags/bank must never be read') end}
+          C_TradeSkillUI={GetRecipeInfo=function() return {learned=true} end,
+            GetRecipeTools=function() error('tools must never be read') end,
+            GetRecipeRequirements=function() error('tool requirements must never be read') end}
+          e.APIReport()
+          local d=DungeonsForeverDB.prof.economy['Test-Realm']
+          d.trainerCosts={[101]=500}; d.rankCosts={alchemy={[150]=1000}}
+          d.rankRequirements={alchemy={[150]={level=99}}}
+          local requested={}
+          ns.ProfRouteAuto.AHPriceOf=function(id) requested[id]=true; return 7 end
+          ns.VendorPriceDB={GetOffers=function(id) return {} end}
+          local s=e.Capture('alchemy',{})
+          assert(next(s.inventory)==nil and not s.inventoryUnknown)
+          assert(s.trainingCosts==nil and s.rankCosts==nil and s.rankRequirements==nil)
+          assert(requested[10] and requested[11] and not requested[99] and not requested[5956])
+          assert(s.recipes[1].tools==nil and not s.recipes[1].toolsUnknown)
+          assert(not frames[1].events.BAG_UPDATE_DELAYED and not frames[1].events.PLAYERBANKSLOTS_CHANGED,
+            'bag/bank activity still invalidates material-only routes')
+        """)
+
+    def test_injected_snapshot_cannot_restore_removed_cost_or_inventory_model(self):
+        self.lua.execute("""
+          local input=fixture(); input.inventory={[11]=900}
+          input.inventoryUnknown=true; input.trainingCosts={[101]=500}
+          input.rankCosts={alchemy={[150]=1000}}; input.stations={forge=true}
+          input.learningRequirements={[101]={level=99}}
+          local s=ns.ProfEconomy.Capture('alchemy',{snapshot=input})
+          assert(next(s.inventory)==nil and not s.inventoryUnknown)
+          assert(not s.trainingCosts and not s.rankCosts and not s.stations and not s.learningRequirements)
+        """)
+
+    def test_fixed_route_includes_formula_cost_but_excludes_tool_injection(self):
+        self.lua.execute("""
+          ns.ProfRecipes={enchanting={rows={{101,10,1,'','','',1,20,30,40,false,{{11,2}},{99},{skill=1}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfLeveling={enchanting={}}
+          Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)
+            return id==11 and 7 or 3
+          end}}}
+          local sum=ns.ProfRouteAuto.SummarizeSteps({{1,2,101,1}},'enchanting')
+          assert(sum.total==17 and sum.matTotal==14 and #sum.formulas==1 and sum.formulasTotal==3)
+          local r=ns.ProfRouteAuto.Compute('enchanting',{start=1,target=2,scheme='matcost',noFormula=true})
+          assert(#r.steps==1 and r.steps[1][3]==101,'removed tool recipe was injected')
+          assert(r.total==17 and r.formulasTotal==3)
+        """)
+
+    def test_removed_formula_option_does_not_change_async_cache(self):
+        self.lua.execute("""
+          local s=fixture(); local a={snapshot=s,start=1,target=2,noFormula=false}
+          local b={snapshot=s,start=1,target=2,noFormula=true}
+          assert(ns.ProfRouteAuto.Get('alchemy',a)==ns.ProfRouteAuto.Get('alchemy',b))
+          ns.ProfModule={Setting=function(k) return k=='autoNoFormula' end}
+          assert(ns.ProfRouteAuto.OptionsFor('alchemy').noFormula==nil)
+        """)
+
+    def test_fixed_route_vendor_reference_rounds_shared_packs_and_keeps_source(self):
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,3}}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfLeveling={alchemy={}}
+          ns.VendorPriceDB={GetSuppliers=function(id) return id==11 and {{npcID=1313}} or {} end,
+            GetOffers=function(id) assert(id==11); return {{unlimited=true,price=18,quantity=5,
+              npcID=1313,source='wowhead-forever',reference=true,estimated=true,
+              priceBasis='wowhead-reference',verifiedAt='2026-10-18',url='npc=1313'}} end}
+          local steps={{1,2,101,1,cost=999},{2,3,101,1,cost=999}}
+          local sum=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
+          assert(sum.priced and sum.completeCost and sum.costComplete and sum.referencePrices)
+          assert(sum.total==36 and sum.matTotal==36 and sum.vendorTotal==36 and sum.ahTotal==0)
+          local mat=sum.mats[1]
+          assert(#sum.mats==1 and mat.id==11 and mat.count==10 and mat[2]==10 and mat.need==6)
+          assert(mat.unit==18/5 and mat.bundleSize==5 and mat.bundlePrice==18 and mat.cost==36)
+          assert(mat.vendor and mat.source=='vendor' and mat.npcID==1313 and mat.reference)
+          assert(mat.quoteSource=='wowhead-forever' and mat.priceBasis=='wowhead-reference')
+          assert(mat.verifiedAt=='2026-10-18' and mat.url=='npc=1313' and mat.estimated)
+          assert(steps[1].cost==18 and steps[2].cost==18)
+          assert(steps[1][3]==101 and steps[2][3]==101 and steps[1][4]==1 and steps[2][4]==1)
+          assert(not steps[1].unpriced and #sum.formulas==0 and sum.formulasTotal==0)
+          ns.ProfRecipes.alchemy.rows[1][12]={{11,2}}
+          sum=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
+          assert(sum.total==18 and sum.mats[1].count==5 and sum.mats[1].need==4)
+          assert(steps[1].cost==18 and steps[2].cost==0,'reused pack was charged twice')
+        """)
+
+    def test_fixed_route_chooses_lowest_pack_total_rather_than_lowest_unit_price(self):
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,6}}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfLeveling={alchemy={}}
+          ns.VendorPriceDB={GetSuppliers=function(id) return id==11 and {{npcID=1},{npcID=2}} or {} end,
+            GetOffers=function(id) return {{unlimited=true,price=40,quantity=20,npcID=1,source='merchant'},
+              {unlimited=true,price=15,quantity=5,npcID=2,source='merchant'}} end}
+          Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)
+            assert(id~=11,'vendor material must not query auction pricing'); return 1
+          end}}}
+          local sum=ns.ProfRouteAuto.SummarizeSteps({{1,2,101,1}},'alchemy')
+          assert(sum.total==30 and sum.vendorTotal==30 and sum.ahTotal==0)
+          local mat=sum.mats[1]
+          assert(mat.npcID==2 and mat.count==10 and mat.need==6 and mat.unit==3)
+          assert(mat.quoteSource=='merchant' and not mat.reference and sum.completeCost)
+        """)
+
+    def test_fixed_route_unknown_npc_price_is_not_replaced_with_auction_price(self):
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,2}}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfLeveling={alchemy={}}
+          ns.VendorPriceDB={GetSuppliers=function(id) return id==11 and {{npcID=1313,url='npc=1313'}} or {} end,
+            GetOffers=function(id) return {} end}
+          Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)
+            assert(id~=11,'unknown vendor material must not query auction pricing'); return 1
+          end}}}
+          local steps={{1,2,101,1}}
+          local sum=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
+          assert(sum.priced and not sum.completeCost and sum.total==0 and sum.ahTotal==0)
+          local mat=sum.mats[1]
+          assert(mat.vendor and mat.source=='vendor' and mat.npcID==1313 and mat.unpriced)
+          assert(mat.count==2 and mat.need==2 and mat.url=='npc=1313' and steps[1].unpriced)
+        """)
+
+    def test_fixed_route_zero_cost_packs_and_auction_materials_share_consistent_totals(self):
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,3},{12,2}}}}}}
+          ns.EnsureProfRecipes=function() return ns.ProfRecipes end
+          ns.ProfLeveling={alchemy={}}
+          ns.VendorPriceDB={GetSuppliers=function(id) return id==11 and {{npcID=1313}} or {} end,
+            GetOffers=function(id) return id==11 and {{unlimited=true,price=0,quantity=4,
+              npcID=1313,source='merchant'}} or {} end}
+          Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id) return id==12 and 7 or 1 end}}}
+          local steps={{1,2,101,1},{2,3,101,1}}
+          local sum=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
+          assert(sum.completeCost and sum.total==28 and sum.vendorTotal==0 and sum.ahTotal==28)
+          assert(steps[1].cost==14 and steps[2].cost==14)
+          local mat
+          for _,m in ipairs(sum.mats) do if m.id==11 then mat=m end end
+          assert(mat.count==8 and mat.need==6 and mat.cost==0 and not mat.unpriced)
+        """)
+
+    def test_profession_api_preserves_primary_slots_and_handles_sparse_results(self):
+        self.lua.execute("""
+          GetProfessions=function() return 1,nil,3 end
+          GetProfessionInfo=function(i)
+            if i==1 then return 'Engineering',1,60,75,nil,nil,202 end
+            if i==3 then return 'Cooking',1,191,225,nil,nil,185 end
+          end
+          local p=ns.ProfEconomy.Professions()
+          assert(p.engineering.cur==60 and p.engineering.primary)
+          assert(p.cooking.cur==191 and not p.cooking.primary)
+        """)
+
+    def test_mining_catalogue_and_manual_gap_registry(self):
+        self.load(str(ROOT/"Core"/"Data"/"Data_ProfRecipes.lua"))
+        self.load(str(ROOT/"Core"/"Data"/"Data_ProfLeveling.lua"))
+        self.load(str(ROOT/"Core"/"Data"/"Data_ProfMining.lua"))
+        self.lua.execute("""
+          local rows=ns.ProfRecipes.mining.rows; assert(#rows==15)
+          local seen={}; for _,r in ipairs(rows) do assert(not seen[r[1]]);seen[r[1]]=true; assert(r[2]~=12360) end
+          assert(ns.ProfRecipeMeta[1306126].station=='moltenFoundry')
+          assert(rows[1][3]==1 and rows[3][3]==2,'spell effect display was treated as output quantity')
+          assert(not ns.ProfRecipeMeta[2657].outputConflict and ns.ProfRecipeMeta[1213638].outputConflict)
+          local gaps={}; for _,s in ipairs(ns.ProfLeveling.mining.steps) do if s.checkpoint then gaps[#gaps+1]=s end end
+          assert(#gaps==2 and gaps[1][1]==140 and gaps[1][2]==155 and gaps[2][1]==185 and gaps[2][2]==300)
+        """)
+
+    def test_material_model_migration_removes_obsolete_costs_but_keeps_rules(self):
+        self.lua.execute('''
+          DungeonsForeverDB={prof={autoNoFormula=true,shopOnlyMiss=true,economy={['Test-Realm']={
+            policies={alchemy={['alchemy:101']='ban'}},trainerCosts={[101]=999},
+            rankCosts={alchemy={[150]=999}},rankRequirements={alchemy={[150]={level=50}}},
+            recipes={[101]={mats={{11,2}},count=1,item=10,tools={5956},toolsKnown=true}}
+          }}}}
+          assert(ns.ProfEconomy.GetPolicies('alchemy')['alchemy:101']=='ban')
+          local d=DungeonsForeverDB.prof.economy['Test-Realm']
+          assert(d.materialModel==1 and d.trainerCosts==nil and d.rankCosts==nil and d.rankRequirements==nil)
+          assert(d.recipes[101].tools==nil and d.recipes[101].toolsKnown==nil)
+          assert(d.recipes[101].mats[1][2]==2 and d.recipes[101].item==10)
+          assert(DungeonsForeverDB.prof.autoNoFormula==nil and DungeonsForeverDB.prof.shopOnlyMiss==nil)
+        ''')
+
+class SourceValidationTests(unittest.TestCase):
+    def test_all_lua_sources_compile_in_lua51(self):
+        lua=LuaRuntime(unpack_returned_tuples=True)
+        compile=lua.eval("function(s,n) local f,e=loadstring(s,n); return f~=nil,e end")
+        for path in [*ROOT.joinpath('Core').rglob('*.lua'),*ROOT.joinpath('Locales').rglob('*.lua'),*ROOT.joinpath('Libs').rglob('*.lua')]:
+            ok,error=compile(path.read_text(encoding='utf-8-sig'),str(path))
+            self.assertTrue(ok,f'{path}: {error}')
+
+    def test_toc_and_xml_files_exist_and_new_load_order_is_valid(self):
+        toc=ROOT.joinpath('DungeonsForever.toc').read_text(encoding='utf-8-sig')
+        paths=[]
+        for line in toc.splitlines():
+            line=line.strip()
+            if not line or line.startswith('#'): continue
+            rel=line.split(' [',1)[0].replace('\\','/')
+            self.assertTrue((ROOT/rel).is_file(),rel); paths.append(rel)
+        self.assertLess(paths.index('Core/Data/enUS/Data_ProfRecipes.lua'),paths.index('Core/Data/Data_ProfMining.lua'))
+        for a,b in [('Core/ProfEconomy.lua','Core/ProfRouteSolver.lua'),('Core/ProfRouteSolver.lua','Core/ProfRouteAuto.lua'),('Core/ProfRouteAuto.lua','Core/ProfessionUI.lua'),('Core/ProfessionUI.lua','Core/ProfFollow.lua')]:
+            self.assertLess(paths.index(a),paths.index(b))
+        for path in ROOT.joinpath('Libs').rglob('*.xml'):
+            tree=ET.parse(path)
+            for element in tree.iter():
+                file=element.attrib.get('file')
+                if file:
+                    rel=file.replace('\\','/')
+                    self.assertTrue((path.parent/rel).is_file() or (ROOT/rel).is_file(),f'{path}: {file}')
+
+if __name__=='__main__': unittest.main()

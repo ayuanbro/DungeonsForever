@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>职业指南 · 职业任务页 方案预览</title>
+<style>
+  :root{
+    --gold:#ffd100;
+    --green:#40d959;
+    --red:#e65959;
+    --grey:#8c8c8c;
+    --dim:#a1a1a1;
+    --text:#e0e0e0;
+    --ink:#0b0c0e;
+    --card:rgba(255,255,255,.04);
+    --card2:rgba(255,255,255,.06);
+    --line:rgba(255,255,255,.10);
+    --line2:rgba(255,255,255,.22);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:#eef0f3;
+    color:#1c1f24;
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    padding:26px 22px 60px;
+  }
+  .page{max-width:1040px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px;letter-spacing:.5px}
+  .sub{font-size:13px;color:#5c636e;margin:0 0 18px;line-height:1.7}
+  .sub b{color:#1c1f24}
+  .bar{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+    margin:0 0 18px;padding:12px 14px;background:#fff;border:1px solid #dde1e7;border-radius:10px;
+    font-size:13px;
+  }
+  .bar .lab{color:#7a828d;font-size:12px;margin-right:2px}
+  .seg{display:flex;border:1px solid #d6dbe2;border-radius:7px;overflow:hidden}
+  .seg button{
+    border:0;background:#fff;color:#3d454f;font:inherit;font-size:13px;
+    padding:6px 12px;cursor:pointer;border-right:1px solid #e6eaef;
+  }
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:#1c1f24;color:#ffd100}
+  .chk{display:flex;align-items:center;gap:6px;cursor:pointer;color:#3d454f}
+  .spacer{flex:1}
+
+  /* ---------- 游戏内窗口 ---------- */
+  .stage{position:relative;width:960px;margin:0 auto}
+  .win{
+    width:960px;border-radius:6px;overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 30% 0%, #22262c 0%, #15171b 55%, #101216 100%);
+    box-shadow:0 18px 46px rgba(10,14,20,.35);
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+  .titlebar{
+    height:24px;display:flex;align-items:center;gap:8px;padding:0 10px;
+    background:linear-gradient(#202329,#171a1e);
+    border-bottom:1px solid rgba(255,255,255,.06);
+    font-size:11px;color:#8b929c;
+  }
+  .titlebar .dot{width:6px;height:6px;border-radius:50%;background:#46bf72}
+  .tabs{
+    display:flex;gap:4px;padding:6px 8px 0;background:#121418;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .tabs .t{
+    font-size:12px;padding:5px 13px;border-radius:5px 5px 0 0;color:#98a0aa;white-space:nowrap;
+  }
+  .tabs .t.on{background:#1c1f24;color:#ffd100;box-shadow:inset 0 1px 0 rgba(255,255,255,.10)}
+  .body{display:flex;padding:8px 12px 12px;gap:8px}
+
+  /* 左侧职业导航 */
+  .nav{width:148px;flex:0 0 148px}
+  .nav .hd{font-size:12px;color:#7f8791;margin:4px 0 4px 2px}
+  .nav .it{
+    display:flex;align-items:center;gap:7px;height:26px;margin-bottom:4px;padding:0 6px;
+    border:1px solid rgba(255,255,255,.10);border-radius:5px;
+    font-size:13px;color:#cfd4da;background:rgba(255,255,255,.02);
+  }
+  .nav .it.on{border-color:rgba(255,209,0,.75);color:#ffd100;background:rgba(255,209,0,.06)}
+  .nav .it .ci{width:20px;height:20px;border-radius:4px;background:linear-gradient(135deg,#7b4b2a,#c9a227)}
+
+  /* 右侧内容 */
+  .content{width:748px;flex:0 0 748px;position:relative}
+
+  .topcard{
+    height:92px;border:1px solid var(--line);border-radius:6px;
+    background:var(--card);padding:10px;display:flex;gap:10px;position:relative;overflow:hidden;
+  }
+  .topcard:before{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(70% 130% at 6% 30%, rgba(198,158,60,.20), transparent 60%);
+  }
+  .hero{width:44px;height:44px;border-radius:6px;position:relative;
+    background:linear-gradient(135deg,#8a5a2b,#e0c060);box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+  .hero:after{content:"战";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:18px;color:rgba(0,0,0,.45)}
+  .cname{font-size:19px;font-weight:700;color:#fff;letter-spacing:1px;position:relative;top:2px}
+  .cmeta{font-size:12px;color:var(--grey);margin-top:6px;position:relative}
+  .specs{position:absolute;right:10px;top:10px;display:flex;gap:8px}
+  .spec{
+    height:24px;padding:0 14px;display:flex;align-items:center;border-radius:4px;
+    border:1px solid var(--line2);font-size:13px;color:#b9bfc7;background:rgba(255,255,255,.02)
+  }
+  .spec.on{border-color:rgba(255,255,255,.55);color:#fff;box-shadow:0 0 0 1px rgba(255,209,0,.45) inset}
+
+  .modes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 8px}
+  .mode{
+    height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;
+    border:1px solid rgba(255,255,255,.16);font-size:13px;color:#a7aeb7;background:rgba(255,255,255,.02)
+  }
+  .mode.on{border-color:rgba(255,209,0,.85);color:var(--gold);background:rgba(255,209,0,.05)}
+  .mode.add{position:relative}
+  .mode.add:after{
+    content:"";position:absolute;inset:-4px;border:1px dashed rgba(255,209,0,.55);border-radius:6px;
+    pointer-events:none;opacity:0;transition:.15s;
+  }
+  .stage.anno .mode.add:after{opacity:1}
+
+  /* 两列 */
+  .cols{display:flex;gap:8px;height:560px}
+  .pane{
+    border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.18);
+    display:flex;flex-direction:column;overflow:hidden;position:relative;
+  }
+  .pane.list{width:268px;flex:0 0 268px}
+  .pane.detail{width:472px;flex:0 0 472px}
+
+  /* 列表头 */
+  .lhead{display:flex;align-items:center;gap:6px;padding:7px 8px 6px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .pill{
+    height:22px;display:flex;align-items:center;gap:5px;padding:0 8px;border-radius:4px;
+    border:1px solid rgba(255,255,255,.16);font-size:12px;color:#b6bcc4;background:rgba(255,255,255,.02);
+    cursor:pointer;white-space:nowrap;
+  }
+  .pill b{color:var(--gold);font-weight:400}
+  .pill .cr{color:#7d848d;font-size:9px}
+  .legend{display:flex;gap:10px;padding:5px 8px 4px;font-size:11px;color:#7d848d}
+  .legend i{display:inline-flex;align-items:center;gap:4px;font-style:normal}
+  .dt{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .dt.done{background:var(--green)}
+  .dt.active{background:var(--gold)}
+  .dt.todo{background:#8c8c8c}
+
+  .lbody{overflow:auto;flex:1;padding:2px 0 8px}
+  .lbody::-webkit-scrollbar{width:6px}
+  .lbody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:3px}
+
+  .sect{font-size:11px;color:#787f88;padding:8px 8px 4px;display:flex;align-items:center;gap:6px}
+  .sect:after{content:"";flex:1;height:1px;background:rgba(255,255,255,.07)}
+
+  .chain{
+    margin:0 6px 3px;border-radius:5px;border:1px solid transparent;
+    display:flex;align-items:center;height:26px;padding:0 6px;gap:5px;cursor:pointer;
+  }
+  .chain:hover{background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.10)}
+  .chain.on{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22)}
+  .chain .car{width:9px;font-size:9px;color:#8b929b;text-align:center;transition:.12s}
+  .chain.open .car{transform:rotate(90deg)}
+  .chain .nm{font-size:13px;color:#e6e9ec;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chain .pg{font-size:11px;color:#8b929b}
+  .chain .pg.g{color:var(--green)}
+  .chain .pg.y{color:var(--gold)}
+
+  .qrow{
+    display:flex;align-items:center;gap:6px;height:24px;margin:0 6px;padding:0 6px 0 18px;
+    border-radius:4px;cursor:pointer;border:1px solid transparent;
+  }
+  .qrow:hover{background:rgba(255,255,255,.045)}
+  .qrow.on{background:rgba(255,209,0,.10);border-color:rgba(255,209,0,.35)}
+  .qrow .nm{font-size:12.5px;color:#cdd2d8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qrow.on .nm{color:#fff}
+  .qrow.done .nm{color:#9aa0a7}
+  .qrow .lv{font-size:11px;color:#7d848d;min-width:16px;text-align:right}
+
+  /* 详情面板 */
+  .dbody{overflow:auto;flex:1;padding:10px 10px 14px}
+  .dsum{
+    display:flex;align-items:center;gap:6px;height:38px;padding:0 10px;flex:0 0 38px;
+    border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025);
+    font-size:11px;color:#7d848d;
+  }
+  .dsum .lab2{color:#8c8c8c;white-space:nowrap}
+  .dsum .ico{width:22px;height:22px;flex:0 0 22px;font-size:9px}
+  .dsum .nm2{font-size:11.5px;color:#cfd4da;white-space:nowrap}
+  .dbody::-webkit-scrollbar{width:6px}
+  .dbody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:3px}
+
+  .dtitle{font-size:16px;font-weight:700;color:var(--gold);letter-spacing:.5px}
+  .dtitle .id{font-size:12px;color:#8b929b;font-weight:400;margin-left:5px}
+  .badge{
+    display:inline-flex;align-items:center;height:15px;padding:0 5px;border-radius:3px;
+    font-size:10px;color:#12140f;margin-left:6px;vertical-align:2px;font-weight:700;
+  }
+  .badge.cls{background:#5f6a78;color:#e8edf2}
+  .badge.race{background:#8c6a1a;color:#ffe9a8}
+
+  .kv{font-size:12.5px;color:var(--text);line-height:22px;margin-top:2px}
+  .kv .k{color:var(--grey)}
+  .kv .g{color:var(--gold)}
+  .kv .gr{color:var(--green)}
+  .kv .rd{color:var(--red)}
+  .kv .dg{color:#6f767f}
+  .kv .npc{color:#ffd100}
+  .npcrow{display:flex;align-items:center;gap:0;line-height:22px;font-size:12.5px}
+  .npcrow .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mapbtn{
+    display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:4px;
+    border:1px solid rgba(255,255,255,.22);font-size:11px;color:#c8ced6;background:rgba(255,255,255,.03);
+    white-space:nowrap;margin-left:6px;
+  }
+  .mapbtn .pin{width:7px;height:9px;border:1px solid #c8ced6;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;position:relative}
+  .mapbtn .pin:after{content:"";position:absolute;left:2px;top:2.5px;width:2px;height:2px;border-radius:50%;background:#c8ced6}
+
+  .hr{height:1px;background:rgba(255,255,255,.06);margin:9px 0 7px}
+  .lh{font-size:12px;color:#9fa6ae;margin:10px 0 5px}
+
+  .node{
+    border:1px solid rgba(255,255,255,.10);border-radius:5px;background:rgba(255,255,255,.035);
+    padding:3px 7px 4px;margin-bottom:4px;height:38px;
+    display:flex;flex-direction:column;justify-content:center;gap:1px;cursor:pointer;overflow:hidden;
+  }
+  .node:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18)}
+  .node .r1{display:flex;align-items:center;gap:5px;line-height:15px}
+  .node .r1 .nm{font-size:12.5px;color:#e2e6ea;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .node .r1 .st{font-size:11px;color:var(--grey);white-space:nowrap}
+  .node .r2{font-size:11px;line-height:14px;color:#828a93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .node .mk{width:14px;height:14px;border-radius:50%;flex:0 0 14px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+  .mk.done{background:#40d959;color:#0b3d1a}
+  .mk.active{background:#ffd100;color:#3a2a00}
+  .mk.todo{background:#8c8c8c;color:#1a1a1a}
+
+  /* chips（物品/法术） */
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}
+  .chip{display:flex;align-items:center;gap:6px;height:34px}
+  .ico{
+    width:30px;height:30px;border-radius:4px;flex:0 0 30px;position:relative;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(0,0,0,.45);
+  }
+  .ico.spell{background:linear-gradient(135deg,#5d7f9a,#cfe1ef)}
+  .ico.item{background:linear-gradient(135deg,#7a5a2c,#d9b46a)}
+  .ico.mail{background:linear-gradient(135deg,#4c5a6b,#a9bccd)}
+  .chip .nm{font-size:12px;color:#dfe3e7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip .nm.ph{color:#9aa0a6;border-bottom:1px dashed #5c646d}
+  .rewrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rerow{display:flex;align-items:center;gap:6px}
+  .rerow .rl{font-size:11px;color:#7d848d}
+  .foot{font-size:11px;color:#4d4d4d;margin-top:12px}
+
+  /* 标注 */
+  .annoLayer{display:none}
+  .stage.anno .annoLayer{display:block}
+  .tick{
+    position:absolute;border:1px dashed rgba(255,209,0,.6);border-radius:2px;pointer-events:none;
+  }
+  .alg{
+    position:absolute;width:15px;height:15px;border-radius:50%;background:#ffd100;color:#12161b;
+    font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    pointer-events:none;z-index:9;transform:translate(-7px,-7px);
+  }
+  .legendbar{
+    width:960px;margin:8px auto 0;display:none;flex-wrap:wrap;gap:7px 20px;font-size:12px;color:#3d454f;
+    background:#fff;border:1px solid #dde1e7;border-radius:8px;padding:11px 14px;
+  }
+  .stage.anno ~ .legendbar{display:flex}
+  .legendbar span{display:inline-flex;align-items:center}
+  .legendbar b{
+    display:inline-flex;width:16px;height:16px;border-radius:50%;background:#ffd100;color:#12161b;
+    font-size:10px;align-items:center;justify-content:center;margin-right:5px;font-weight:700;
+  }
+
+  /* 方案 B */
+  .bwrap{height:560px;display:flex;flex-direction:column;gap:6px}
+  .bhead{
+    display:flex;align-items:center;height:24px;padding:0 10px;font-size:11px;color:#7d848d;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .bhead span:nth-child(1){width:26px}
+  .bhead span:nth-child(2){flex:1}
+  .bhead span:nth-child(3){width:78px}
+  .bhead span:nth-child(4){width:150px}
+  .bhead span:nth-child(5){width:250px}
+  .brow{
+    display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:4px;
+    border:1px solid transparent;cursor:pointer;
+  }
+  .brow:hover{background:rgba(255,255,255,.045)}
+  .brow.on{background:rgba(255,209,0,.09);border-color:rgba(255,209,0,.30)}
+  .brow .c1{width:26px;display:flex;align-items:center}
+  .brow .c2{flex:1;font-size:13px;color:#e2e6ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brow .c2 .id{font-size:11px;color:#7d848d;margin-left:4px}
+  .brow .c3{width:78px;font-size:11.5px;color:var(--grey);text-align:right}
+  .brow .c4{width:150px;display:flex;align-items:center;gap:3px;padding-left:8px}
+  .brow .c4 .ico{width:20px;height:20px;flex:0 0 20px;font-size:8px}
+  .brow .c5{width:250px;font-size:11.5px;color:#828a93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:8px}
+  .bexp{border-left:2px solid rgba(255,209,0,.5);margin:0 0 4px 13px;padding:8px 10px 4px 12px}
+  .bexp .dtitle{font-size:14px}
+
+  .spec-table{width:960px;margin:26px auto 0;background:#fff;border:1px solid #dde1e7;border-radius:10px;overflow:hidden}
+  .spec-table h2{font-size:14px;margin:0;padding:12px 16px;background:#f7f8fa;border-bottom:1px solid #e6eaef;color:#2a2f36}
+  .spec-table table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .spec-table th,.spec-table td{text-align:left;padding:8px 16px;border-bottom:1px solid #eef1f5;vertical-align:top;line-height:1.6}
+  .spec-table th{color:#6a7280;font-weight:600;width:132px;background:#fbfcfd}
+  .spec-table td b{color:#12161b}
+  .spec-table code{background:#f1f4f8;border:1px solid #e3e8ee;border-radius:3px;padding:0 4px;font-size:11.5px}
+  .hint{font-size:12px;color:#7a828d;margin:14px auto 0;width:960px;line-height:1.8}
+  .hint b{color:#2a2f36}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>职业指南 · 新增「职业任务」标签页 — 方案预览</h1>
+  <p class="sub">
+    把 <b>ClassQuestsForever</b> 的 9 职业 / 188 条任务链 / 628 条任务搬进职业指南，位置 = 顶部模式按钮「宏命令」右边。
+    下面两个方案共用同一份数据，右侧详情都按 <b>5 人本任务</b> 的详情排版来做。点列表、点链条、切方案、开标注都能试。
+  </p>
+
+  <div class="bar">
+    <span class="lab">布局</span>
+    <div class="seg" id="segPlan">
+      <button data-plan="a" class="on">方案 A · 左树 + 右详情（推荐）</button>
+      <button data-plan="b">方案 B · 单列宽行内联展开</button>
+    </div>
+    <span class="lab" style="margin-left:10px">进度模拟</span>
+    <div class="seg" id="segSim">
+      <button data-sim="now" class="on">当前进度</button>
+      <button data-sim="none">全未接</button>
+      <button data-sim="all">全完成</button>
+    </div>
+    <span class="spacer"></span>
+    <label class="chk"><input type="checkbox" id="ckAnno"> 显示尺寸标注</label>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="win">
+      <div class="titlebar"><span class="dot"></span>无限副本手册 &nbsp;v1.8.20 &nbsp;·&nbsp; /df</div>
+      <div class="tabs">
+        <div class="t">5 人本</div><div class="t">团本</div><div class="t">专业</div><div class="t">探索</div>
+        <div class="t">藏品</div><div class="t">声望</div><div class="t">BIS 配装</div>
+        <div class="t on">职业指南</div><div class="t">PvP</div><div class="t">装备库</div>
+      </div>
+      <div class="body">
+        <div class="nav">
+          <div class="hd">指南</div>
+          <div class="it"><span class="ci"></span>职业排行</div>
+          <div class="hd">专精指南</div>
+          <div class="it on"><span class="ci"></span>战士</div>
+          <div class="it"><span class="ci"></span>圣骑士</div>
+          <div class="it"><span class="ci"></span>猎人</div>
+          <div class="it"><span class="ci"></span>潜行者</div>
+          <div class="it"><span class="ci"></span>牧师</div>
+          <div class="it"><span class="ci"></span>萨满祭司</div>
+          <div class="it"><span class="ci"></span>法师</div>
+          <div class="it"><span class="ci"></span>术士</div>
+          <div class="it"><span class="ci"></span>德鲁伊</div>
+        </div>
+
+        <div class="content" id="content">
+          <div class="topcard">
+            <div class="hero"></div>
+            <div>
+              <div class="cname">战士</div>
+              <div class="cmeta">25 条任务链 · 66 条任务 · 仅无限服</div>
+            </div>
+            <div class="specs">
+              <div class="spec on">防护</div><div class="spec">武器</div><div class="spec">狂暴</div>
+            </div>
+          </div>
+
+          <div class="modes">
+            <div class="mode">输出循环</div>
+            <div class="mode">宏命令</div>
+            <div class="mode on add">职业任务</div>
+            <div class="mode">文字攻略</div>
+          </div>
+
+          <div id="colsHost"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="annoLayer" id="annoHost"></div>
+  </div>
+
+  <div class="legendbar" id="annoLegend"></div>
+
+  <div class="hint">
+    <b>方案 A</b> 与 5 人本任务页同一套骨架（左列表 520 / 右详情 392 的同款结构，这里按职业页 748 宽重算成 268 + 472）。
+    <b>方案 B</b> 把「总奖励」并进每一行右侧，点行在下方内联展开完整详情 —— 更省横向空间，但详情宽度只有约 700，长文本会变高。
+  </div>
+
+  <div class="spec-table">
+    <h2>落地要点（确认方案后再动手）</h2>
+    <table>
+      <tr><th>入口</th><td>`TT.MODE_KEYS = { "rotation", "macro", "quest", "text" }`，`TT.MODE_TITLE.quest = L["职业任务"]`；渲染分发在 `TT.Render` 加 `elseif mode == "quest"`。按钮宽度是按个数自动算的，加第 4 个不用改坐标。</td></tr>
+      <tr><th>数据</th><td>新建 <code>Core/Data/Data_ClassQuests.lua</code>：`ns.ClassQuests = { quests = { [id] = {nm,lv,req,f,races,s,e,items,spells} }, chains = { WARRIOR = {...} } }`，由 `_temp/gen_class_quests.py` 从 ClassQuestsForever 的 Data/*.lua 转换生成（禁手抄）。zhTW/enUS 目录各出一份。</td></tr>
+      <tr><th>任务名</th><td>ClassQuestsForever 的数据是英文名，页面上一律先问客户端 `DG.QuestName(id)`（`GetTitleForQuestID` + `PrefetchQuestData` 预热），拿不到才回退表里的英文名。链条标题同理，取链内第一步的中文名。</td></tr>
+      <tr><th>状态</th><td>复用 `DG.QuestDone / DG.QuestActive / DG.QuestState` 三态；链条进度 = 已完成步数 / 总步数；种族、阵营过滤按角色自身（换浏览种族做成列表头下拉）。</td></tr>
+      <tr><th>详情</th><td>抽一份 `DG.QuestDetailPool`（现在池子建在 `U.dungeonQDetPool` 里，绑在副本详情的 child 上）→ 改成「可换父级」的建池函数，两处共用：标题 / 状态 / 可接等级 / 任务难度 / 起始·结束 + 地图按钮 / 阵营 / 职业 / 种族 / 前置 / 后续 / 任务需求 / 任务奖励 / 收获。</td></tr>
+      <tr><th>性能</th><td>628 条任务全部走 `ns.PaintJob` 分帧；列表用固定行池 + 视口剔除（同 `CU.Cull`），链条折叠态只存内存（`ns.ClassQuestUI.open`），不进 `DB()`。</td></tr>
+      <tr><th>红线</th><td>零注释、无 ID 溯源、界面署名只保留 wowhead 一条；物品 / 法术名一律运行时取客户端，不落库中文名。</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+/* ---------------- 数据（示意：取自 ClassQuestsForever 的战士链，中文名为客户端名示意） ---------------- */
+const Q = {};
+function q(id, o){ Q[id] = Object.assign({id:id}, o); }
+
+q(1638,{nm:"战士的训练",lv:10,req:10,f:"A",doneKey:1,
+  s:{npc:"莉瑞亚·杜拉克",nid:913,zone:"艾尔文森林",xy:"41.0, 65.8"},
+  e:{npc:"哈里·布尔加德",nid:6089,zone:"暴风城",xy:"74.0, 37.2"},
+  desc:"去向暴风城的哈里·布尔加德报到，他会教你防御姿态的用法。"});
+q(1639,{nm:"醉鬼巴特莱比",lv:10,req:10,f:"A",doneKey:1,
+  s:{npc:"哈里·布尔加德",nid:6089,zone:"暴风城",xy:"74.0, 37.2"},
+  e:{npc:"巴特莱比",nid:6090,zone:"暴风城",xy:"73.8, 36.6"},
+  desc:"哈里让你去教训那个整天醉醺醺的巴特莱比。"});
+q(1640,{nm:"击败巴特莱比",lv:10,req:10,f:"A",doneKey:1,
+  s:{npc:"巴特莱比",nid:6090,zone:"暴风城",xy:"73.8, 36.6"},
+  e:{npc:"巴特莱比",nid:6090,zone:"暴风城",xy:"73.8, 36.6"},
+  obj:"击败巴特莱比，让他清醒过来。",desc:"用拳头说服巴特莱比，别把他打死。"});
+q(1665,{nm:"巴特莱比的酒杯",lv:10,req:10,f:"A",doneKey:1,note:"学会防御姿态后，武器任务线才会开启。",
+  s:{npc:"巴特莱比",nid:6090,zone:"暴风城",xy:"73.8, 36.6"},
+  e:{npc:"哈里·布尔加德",nid:6089,zone:"暴风城",xy:"74.0, 37.2"},
+  need:[{n:"巴特莱比的酒杯",i:1}],
+  rew:[{n:"防御姿态",spell:1}],
+  gains:"防御姿态（战士技能）",
+  pre:[1640,1639],fol:[1666],
+  desc:"把巴特莱比的酒杯还给哈里·布尔加德，他会正式传授你防御姿态。"});
+q(1666,{nm:"哈加德元帅",lv:10,req:10,f:"A",doneKey:1,
+  s:{npc:"哈里·布尔加德",nid:6089,zone:"暴风城",xy:"74.0, 37.2"},
+  e:{npc:"哈加德元帅",nid:294,zone:"艾尔文森林",xy:"84.6, 69.4"},
+  desc:"拿上哈里的推荐信，去艾尔文森林找哈加德元帅领武器。"});
+q(1667,{nm:"断牙杰克",lv:10,req:10,f:"A",doneKey:2,
+  s:{npc:"哈加德元帅",nid:294,zone:"艾尔文森林",xy:"84.6, 69.4"},
+  e:{npc:"哈加德元帅",nid:294,zone:"艾尔文森林",xy:"84.6, 69.4"},
+  obj:"击杀断牙杰克，取回他的武器。",
+  rew:[{n:"战斧（4 选 1）",ph:1},{n:"长剑（4 选 1）",ph:1},{n:"钉锤（4 选 1）",ph:1},{n:"匕首（4 选 1）",ph:1}],
+  desc:"断牙杰克在艾尔文森林东边游荡，把他解决掉。"});
+q(1698,{nm:"火焰淬硬锁甲",lv:20,req:20,f:"A",
+  s:{npc:"格瑞曼德·精锻",nid:6031,zone:"铁炉堡",xy:"48.6, 43.0"},
+  e:{npc:"格瑞曼德·精锻",nid:6031,zone:"铁炉堡",xy:"48.6, 43.0"}});
+q(1699,{nm:"火焰淬硬锁甲",lv:20,req:20,f:"A"});
+q(1702,{nm:"火焰淬硬锁甲",lv:22,req:20,f:"A"});
+q(1700,{nm:"格瑞曼德的护甲",lv:20,req:20,f:"A",races:[1]});
+q(1705,{nm:"格瑞曼德的护甲",lv:20,req:20,f:"A",races:[1]});
+q(1706,{nm:"格瑞曼德的护甲",lv:20,req:20,f:"A",races:[1]});
+q(1718,{nm:"狂暴姿态：混战",lv:30,req:30});
+q(1719,{nm:"狂暴姿态",lv:30,req:30});
+q(1791,{nm:"旋风武器",lv:40,req:40});
+q(1712,{nm:"旋风之心",lv:40,req:40});
+q(1713,{nm:"塞克隆尼亚",lv:40,req:40});
+q(1792,{nm:"旋风武器",lv:40,req:40});
+q(1714,{nm:"流放者的精华",lv:60,req:58,cat:"endgame"});
+
+/* 链条：level 用于等级段分组；steps 里 doneKey=1 表示「当前进度」下已完成 */
+const chains = [
+  {key:"war_stance", title:"防御姿态", level:10, group:"war_stance", steps:[1638,1639,1640,1665],
+   total:[{n:"防御姿态",spell:1},{n:"武器 ×4",ph:1}],
+   note:"本链教你防御姿态，同时解锁「武器」任务线；六个主城的入口不同，这里只显示人类这一支。"},
+  {key:"war_weapon_sw", title:"断牙杰克", level:10, steps:[1666,1667],
+   total:[{n:"武器（4 选 1）",ph:1}],
+   note:"防御姿态做完才会开启。奖励是 4 把武器任选其一。"},
+  {key:"war_firemail", title:"火焰淬硬锁甲", level:20, steps:[1698,1699,1702],
+   total:[{n:"火焰淬硬锁甲",ph:1}], note:"20 级锁甲套装，前置是本链第一步。"},
+  {key:"war_armor_human", title:"格瑞曼德的护甲", level:20, races:[1], steps:[1700,1705,1706],
+   total:[{n:"精制锁甲",ph:1}], note:"人类专属分支。"},
+  {key:"war_berserker", title:"狂暴姿态", level:30, steps:[1718,1719],
+   total:[{n:"狂暴姿态",spell:1}], note:"30 级解锁狂暴姿态。"},
+  {key:"war_whirlwind", title:"旋风武器", level:40, steps:[1791,1712,1713,1792],
+   total:[{n:"旋风之剑",ph:1}], note:"经典 40 级武器任务链，需要击杀塞克隆尼亚。"},
+  {key:"war_exile", title:"流放者的精华", level:60, cat:"endgame", steps:[1714],
+   total:[{n:"流放者套装",ph:1}], note:"满级内容，58 级起可接。"}
+];
+
+/* ---------------- 状态模拟 ---------------- */
+let sim = "now";           // now | none | all
+let plan = "a";
+let sel = {type:"quest", id:1665};   // 或 {type:"chain", key:"war_stance"}
+const open = { war_stance:true, war_weapon_sw:true };
+
+function statusOf(id){
+  const qq = Q[id]; if(!qq) return "todo";
+  if(sim === "all") return "done";
+  if(sim === "none") return "todo";
+  if(qq.doneKey === 1) return "done";
+  if(qq.doneKey === 2) return "active";
+  return "todo";
+}
+function chainStat(c){
+  let done = 0, act = 0;
+  c.steps.forEach(id=>{ const s = statusOf(id); if(s === "done") done++; else if(s === "active") act++; });
+  return {done, total:c.steps.length, act};
+}
+const ST_TXT = {done:"已完成", active:"已接取", todo:"未接取"};
+
+/* ---------------- 渲染：方案 A ---------------- */
+function renderA(){
+  const host = document.getElementById("colsHost");
+  const levels = [...new Set(chains.map(c=>c.level))].sort((a,b)=>a-b);
+  let left = `
+    <div class="pane list">
+      <div class="lhead">
+        <div class="pill">种族 <b>人类</b> <span class="cr">▾</span></div>
+        <div class="pill">状态 <b>全部</b> <span class="cr">▾</span></div>
+      </div>
+      <div class="legend">
+        <i><span class="dt done"></span>已完成</i>
+        <i><span class="dt active"></span>已接取</i>
+        <i><span class="dt todo"></span>未接取</i>
+      </div>
+      <div class="lbody">`;
+  levels.forEach(lv=>{
+    const group = chains.filter(c=>c.level===lv);
+    left += `<div class="sect">${lv} 级 · ${group.length} 条链</div>`;
+    group.forEach(c=>{
+      const st = chainStat(c);
+      const isOpen = !!open[c.key];
+      const on = sel.type==="chain" && sel.key===c.key;
+      const pgCls = st.done===st.total ? "g" : (st.act>0||st.done>0 ? "y" : "");
+      left += `<div class="chain ${isOpen?'open':''} ${on?'on':''}" data-chain="${c.key}">
+                 <span class="car">▶</span>
+                 <span class="nm">${c.title}</span>
+                 <span class="pg ${pgCls}">${st.done}/${st.total}</span>
+               </div>`;
+      if(isOpen){
+        c.steps.forEach(id=>{
+          const qq = Q[id], s = statusOf(id);
+          const qon = sel.type==="quest" && sel.id===id;
+          left += `<div class="qrow ${qon?'on':''} ${s==='done'?'done':''}" data-quest="${id}">
+                     <span class="dt ${s}"></span>
+                     <span class="nm">${qq?qq.nm:'任务 #'+id}</span>
+                     <span class="lv">${qq?qq.lv:''}</span>
+                   </div>`;
+        });
+      }
+    });
+  });
+  left += `</div></div>`;
+
+  const right = `<div class="pane detail">
+      <div class="dbody">${renderDetail()}</div>
+      ${renderSum()}
+    </div>`;
+  host.innerHTML = `<div class="cols">${left}${right}</div>`;
+
+  host.querySelectorAll("[data-chain]").forEach(el=>{
+    el.onclick = ()=>{
+      const k = el.dataset.chain;
+      open[k] = !open[k];
+      sel = {type:"chain", key:k};
+      renderA();
+    };
+  });
+  host.querySelectorAll("[data-quest]").forEach(el=>{
+    el.onclick = (ev)=>{
+      ev.stopPropagation();
+      sel = {type:"quest", id:Number(el.dataset.quest)};
+      renderA();
+    };
+  });
+}
+
+function chainOf(id){
+  return chains.find(c=>c.steps.indexOf(id) >= 0);
+}
+function renderSum(){
+  const c = sel.type === "chain" ? chains.find(x=>x.key===sel.key) : chainOf(sel.id);
+  if(!c || !c.total || !c.total.length) return "";
+  return `<div class="dsum">
+      <span class="lab2">本链总奖励</span>
+      ${c.total.map(t=>`<span class="ico ${t.spell?'spell':'item'}">${t.spell?'法':'物'}</span>
+        <span class="nm2 ${t.ph?'ph':''}" style="${t.ph?'border-bottom:1px dashed #5c646d;color:#9aa0a6':''}">${t.n}</span>`).join("")}
+      <span style="flex:1"></span>
+      <span class="dg">${c.steps.length} 步</span>
+    </div>`;
+}
+
+function mk(st){
+  const s = st==="done"?'✓':(st==="active"?'?':'!');
+  return `<span class="mk ${st}">${s}</span>`;
+}
+
+function npcRow(label, p){
+  return `<div class="npcrow">
+      <span class="t"><span class="k">${label}：</span><span class="npc">${p.npc}</span>
+        <span class="dg"> #${p.nid}</span><span class="dg"> · ${p.zone} ${p.xy}</span></span>
+      <span class="mapbtn"><span class="pin"></span>地图</span>
+    </div>`;
+}
+
+function renderDetail(){
+  if(sel.type === "chain"){
+    const c = chains.find(x=>x.key===sel.key);
+    if(!c) return "";
+    const st = chainStat(c);
+    let h = `<div class="dtitle">${c.title}<span class="id">任务链 · ${st.total} 步</span></div>`;
+    h += `<div class="kv"><span class="k">进度：</span><span class="${st.done===st.total?'gr':'g'}">${ST_TXT[st.done===st.total?'done':'active']}</span>
+            <span class="dg"> · 已完成 ${st.done}/${st.total}</span></div>`;
+    h += `<div class="kv"><span class="k">可接等级：</span><span class="g">${c.level} 级</span>
+            <span class="dg"> · 接取要求取链内最低</span></div>`;
+    h += `<div class="kv"><span class="k">阵营 / 种族：</span>联盟专属${c.races?` <span class="dg">· 人类专属</span>`:''}</div>`;
+    h += `<div class="hr"></div><div class="lh">本链总奖励</div>`;
+    h += `<div class="rewrow">` + c.total.map(t=>
+        `<span class="rerow">${t.spell?'<span class="ico spell">法</span>':'<span class="ico item">物</span>'}
+         <span class="nm ${t.ph?'ph':''}">${t.n}</span></span>`).join("") + `</div>`;
+    h += `<div class="lh">步骤</div>`;
+    c.steps.forEach((id,i)=>{
+      const qq = Q[id], s = statusOf(id);
+      const where = qq && qq.s ? `${qq.s.zone} ${qq.s.xy}` : "本表未收录起始信息";
+      h += `<div class="node" data-jump="${id}">
+              <div class="r1">${mk(s)}<span class="nm">${i+1}. ${qq?qq.nm:'任务 #'+id} <span class="dg">#${id}</span></span>
+                <span class="st" style="color:${s==='done'?'#40d959':(s==='active'?'#ffd100':'#8c8c8c')}">${ST_TXT[s]}</span></div>
+              <div class="r2">${where}${qq&&qq.lv?` · ${qq.lv} 级可接`:''}</div>
+            </div>`;
+    });
+    if(c.note) h += `<div class="kv" style="margin-top:6px;color:#9aa0a6;font-size:12px;line-height:20px">${c.note}</div>`;
+    h += `<div class="foot">状态来自你自己的任务日志，交完任务这里会自动变。</div>`;
+    return h;
+  }
+
+  const qq = Q[sel.id];
+  if(!qq) return "";
+  const s = statusOf(sel.id);
+  const sColor = s==="done"?'gr':(s==="active"?'g':'');
+  const sTxt = ST_TXT[s];
+  let h = `<div class="dtitle">${qq.nm}<span class="id">#${qq.id}</span></div>`;
+  h += `<div class="kv"><span class="k">状态：</span><span class="${sColor||'dg'}">${sTxt}</span></div>`;
+  h += `<div class="kv"><span class="k">可接等级：</span><span class="g">${qq.req} 级可接</span>
+          <span class="dg"> · 任务等级 Lv${qq.lv}</span>
+          <span class="dg"> · 共享：可分享</span></div>`;
+  h += `<div class="kv"><span class="k">任务难度：</span>
+          <span style="color:#f0c040">${qq.lv} ${qq.lv} ${qq.lv} ${qq.lv} ${qq.lv}</span></div>`;
+  if(qq.s) h += npcRow("起始", qq.s);
+  if(qq.e) h += npcRow("结束", qq.e);
+  h += `<div class="kv"><span class="k">阵营：</span><span style="color:#4a90d9">联盟专属</span></div>`;
+  h += `<div class="kv"><span class="k">职业：</span><span style="color:#c69b6d">战士专属</span></div>`;
+  if(qq.races) h += `<div class="kv"><span class="k">种族：</span><span style="color:#b35c2e">人类专属</span></div>`;
+
+  if(qq.pre && qq.pre.length){
+    h += `<div class="lh">前置任务</div>`;
+    qq.pre.forEach(id=>{
+      const p = Q[id], ps = statusOf(id);
+      h += `<div class="node">
+              <div class="r1">${mk(ps)}<span class="nm">${p?p.nm:'任务 #'+id} <span class="dg">#${id}</span></span>
+                <span class="st">${ps==='done'?'已完成':'下一步'}</span></div>
+              <div class="r2">${p&&p.s?p.s.zone+' '+p.s.xy:'本表未收录起始信息'} · ${p?p.lv:''} 级可接</div>
+            </div>`;
+    });
+  }
+  if(qq.fol && qq.fol.length){
+    h += `<div class="lh">后续任务</div>`;
+    qq.fol.forEach(id=>{
+      const f = Q[id], fs = statusOf(id);
+      h += `<div class="node">
+              <div class="r1">${mk(fs)}<span class="nm">${f?f.nm:'任务 #'+id} <span class="dg">#${id}</span></span>
+                <span class="st">${ST_TXT[fs]}</span></div>
+              <div class="r2">${f&&f.s?f.s.zone+' '+f.s.xy:'本表未收录起始信息'}</div>
+            </div>`;
+    });
+  }
+  if(qq.desc){
+    h += `<div class="lh">任务说明</div>
+          <div class="kv" style="color:#e0e0e0;line-height:20px">${qq.desc}</div>`;
+  }
+  if(qq.note){
+    h += `<div class="lh">任务注释</div>
+          <div class="kv" style="color:#e0e0e0;line-height:20px">${qq.note}</div>`;
+  }
+  if(qq.need){
+    h += `<div class="lh">任务需求</div><div class="chips">` +
+      qq.need.map(it=>`<div class="chip"><span class="ico item">需</span><span class="nm ${it.ph?'ph':''}">${it.n}</span></div>`).join("") +
+      `</div>`;
+    if(qq.obj) h += `<div class="kv" style="color:#e0e0e0;margin-top:2px">${qq.obj}</div>`;
+  }
+  if(qq.rew){
+    h += `<div class="lh">任务奖励</div><div class="chips">` +
+      qq.rew.map(it=>`<div class="chip"><span class="ico ${it.spell?'spell':'item'}">${it.spell?'法':'物'}</span>
+        <span class="nm ${it.ph?'ph':''}">${it.n}</span></div>`).join("") + `</div>`;
+  }
+  if(qq.gains){
+    h += `<div class="lh">收获</div><div class="kv" style="color:#e0e0e0">${qq.gains}</div>`;
+  }
+  h += `<div class="foot">状态来自你自己的任务日志，交完任务这里会自动变。</div>`;
+  return h;
+}
+
+/* ---------------- 渲染：方案 B ---------------- */
+function renderB(){
+  const host = document.getElementById("colsHost");
+  const levels = [...new Set(chains.map(c=>c.level))].sort((a,b)=>a-b);
+  let rows = "";
+  levels.forEach(lv=>{
+    rows += `<div class="sect" style="padding-left:10px">${lv} 级</div>`;
+    chains.filter(c=>c.level===lv).forEach(c=>{
+      c.steps.forEach(id=>{
+        const qq = Q[id], s = statusOf(id);
+        const on = sel.type==="quest" && sel.id===id;
+        const rew = (qq && qq.rew) ? qq.rew : (qq && qq.spell ? qq.spell : null);
+        rows += `<div class="brow ${on?'on':''}" data-bq="${id}">
+            <span class="c1">${mk(s)}</span>
+            <span class="c2">${qq?qq.nm:'任务 #'+id}<span class="id">#${id}</span></span>
+            <span class="c3">${ST_TXT[s]}</span>
+            <span class="c4">${
+              (qq&&qq.rew? qq.rew.slice(0,4):[]).map(it=>`<span class="ico ${it.spell?'spell':'item'}">${it.spell?'法':'物'}</span>`).join("")
+              || `<span style="font-size:10.5px;color:#5f666e">—</span>`
+            }</span>
+            <span class="c5">${qq&&qq.s?`<span class="npc" style="color:#cfd4da">${qq.s.npc}</span> · ${qq.s.zone} ${qq.s.xy}`:''}</span>
+          </div>`;
+        if(on) rows += `<div class="bexp">${renderDetail()}</div>`;
+      });
+    });
+  });
+
+  host.innerHTML = `<div class="bwrap">
+      <div class="pane" style="flex:1">
+        <div class="bhead"><span></span><span>任务</span><span>状态</span><span>总奖励</span><span>起始 / 地点</span></div>
+        <div class="dbody" style="padding:2px 4px 8px">${rows}</div>
+      </div>
+    </div>`;
+
+  host.querySelectorAll("[data-bq]").forEach(el=>{
+    el.onclick = ()=>{
+      const id = Number(el.dataset.bq);
+      sel = (sel.type==="quest" && sel.id===id) ? {type:"chain",key:"war_weapon_sw"} : {type:"quest",id};
+      renderB();
+    };
+  });
+}
+
+function render(){ plan === "a" ? renderA() : renderB(); if(annoOn) buildAnno(); }
+
+/* ---------------- 尺寸标注（跟着真实元素量） ---------------- */
+let annoOn = false;
+function buildAnno(){
+  const host = document.getElementById("annoHost");
+  const stage = document.getElementById("stage");
+  const bar = document.getElementById("annoLegend");
+  host.innerHTML = ""; bar.innerHTML = "";
+  const sr = stage.getBoundingClientRect();
+  let n = 0;
+  const add = (el, text)=>{
+    if(!el) return;
+    const r = el.getBoundingClientRect();
+    n++;
+    const box = document.createElement("div");
+    box.className = "tick";
+    box.style.left = (r.left - sr.left) + "px";
+    box.style.top = (r.top - sr.top) + "px";
+    box.style.width = r.width + "px";
+    box.style.height = r.height + "px";
+    host.appendChild(box);
+    const lab = document.createElement("div");
+    lab.className = "alg";
+    lab.textContent = n;
+    lab.style.left = (r.left - sr.left + r.width / 2) + "px";
+    lab.style.top = (r.top - sr.top) + "px";
+    host.appendChild(lab);
+    const it = document.createElement("span");
+    it.innerHTML = `<b>${n}</b>${text}`;
+    bar.appendChild(it);
+  };
+  const qs = s=>document.querySelector(s);
+  const all = s=>[...document.querySelectorAll(s)];
+  add(qs(".modes"), "模式按钮 4 等分 · 每条 ≈177×24");
+  add(qs(".pane.list"), "左列 268 · 可展开任务树");
+  add(qs(".pane.detail"), "右列 472 · 照 5 人本详情排版");
+  if(plan === "a"){
+    add(all(".chain")[0], "链行 26");
+    if(all(".qrow")[0]) add(all(".qrow")[0], "任务行 24 · 缩进 18");
+  } else {
+    add(all(".brow")[0], "任务行 30 · 名称 / 状态 / 总奖励 / 起始");
+  }
+  const nodes = all(".pane.detail .node");
+  if(nodes[0]) add(nodes[0], "节点卡 38");
+  const chips = all(".pane.detail .chips .chip");
+  if(chips[0]) add(chips[0], "奖励 chip 34 · 2 列");
+  const sum = all(".pane.detail .dsum");
+  if(sum[0]) add(sum[0], "底部常驻「本链总奖励」条 38");
+}
+
+document.getElementById("segPlan").onclick = e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  plan = b.dataset.plan;
+  if(plan === "b") sel = {type:"quest", id:1666};
+  render();
+};
+document.getElementById("segSim").onclick = e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  sim = b.dataset.sim;
+  render();
+};
+document.getElementById("ckAnno").onchange = e=>{
+  annoOn = e.target.checked;
+  document.getElementById("stage").classList.toggle("anno", annoOn);
+  if(annoOn) buildAnno(); else document.getElementById("annoHost").innerHTML = "";
+};
+document.addEventListener("click", e=>{
+  const j = e.target.closest("[data-jump]");
+  if(j){ sel = {type:"quest", id:Number(j.dataset.jump)}; render(); }
+});
+
+render();
+
+/* 供无头截图用：?plan=b&anno=1&sim=none */
+(function(){
+  const hp = new URLSearchParams(location.search);
+  if(hp.get("plan") === "b"){
+    document.querySelectorAll("#segPlan button").forEach(x=>x.classList.toggle("on", x.dataset.plan==="b"));
+    plan = "b"; sel = {type:"quest", id:1666}; render();
+  }
+  if(hp.get("sim")){
+    sim = hp.get("sim");
+    document.querySelectorAll("#segSim button").forEach(x=>x.classList.toggle("on", x.dataset.sim===sim));
+    render();
+  }
+  if(hp.get("anno") === "1"){
+    annoOn = true; document.getElementById("ckAnno").checked = true;
+    document.getElementById("stage").classList.add("anno"); buildAnno();
+  }
+})();
+</script>
+</body>
+</html>

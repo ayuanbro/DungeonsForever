@@ -1,0 +1,20 @@
+=== now ===
+05:07:51
+=== Core 净变更（vs round-4 基线 /tmp/Core_snap4）===
+Files /tmp/Core_snap4/Data/Data_ClassGuide.lua and Core/Data/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/Data/Data_LootFilter.lua and Core/Data/Data_LootFilter.lua differ
+Files /tmp/Core_snap4/Data/enUS/Data_ClassGuide.lua and Core/Data/enUS/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/Data/zhTW/Data_ClassGuide.lua and Core/Data/zhTW/Data_ClassGuide.lua differ
+Files /tmp/Core_snap4/Data/zhTW/Data_LootFilter.lua and Core/Data/zhTW/Data_LootFilter.lua differ
+Files /tmp/Core_snap4/LootFilterUI.lua and Core/LootFilterUI.lua differ
+Files /tmp/Core_snap4/MainFrame.lua and Core/MainFrame.lua differ
+=== 三件套内容 diff 行数 ===
+zhCN: 10
+zhTW: 10
+enUS: 28
+=== enUS 头部 ===
+-- DungeonsForever · English (enUS) data overlay — Data_ClassGuide
+-- Loads on the enUS client only; other locales exit immediately.
+if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
+
+-- =============================================================================

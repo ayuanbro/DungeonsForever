@@ -1,0 +1,1041 @@
+{
+  "context": {
+    "snapshot": "PIN-b4d284e3188d08779c84dd1537b28e34a57e2ff609b67a423c0204bd1d43bbeb",
+    "pin": {
+      "product": "forever",
+      "region": "us",
+      "fullBuild": "1.60.1.70170",
+      "buildConfig": "d3f2837397a016e380ea51c4e1e78d1d",
+      "cdnConfig": "032ffa3587e5f762df7c6ef823e17596",
+      "language": "zhCN",
+      "definitionCommit": "41d37841a6063f51f61632d5822cecad2105fda7"
+    },
+    "source": "listfile",
+    "listfile": {
+      "kind": "community-csv",
+      "files": [
+        {
+          "component": "listfile",
+          "url": "https://github.com/wowdev/wow-listfile/releases/latest/download/community-listfile.csv",
+          "bytes": 152790736,
+          "sha256": "931c765b5deee613d7ec46a0c43d2a54a1ce65d4278dbb99a0a7dfcfdeab7bea",
+          "blob": {
+            "sha256": "931c765b5deee613d7ec46a0c43d2a54a1ce65d4278dbb99a0a7dfcfdeab7bea",
+            "bytes": 152790736
+          }
+        }
+      ],
+      "fetchedAt": "2026-09-30T00:37:24.3612426Z",
+      "entryCount": 2255776,
+      "rejected": 0,
+      "totalBytes": 152790736,
+      "cache": "verified-cache"
+    }
+  },
+  "query": "onyxia",
+  "total": 270,
+  "returned": 200,
+  "truncated": true,
+  "files": [
+    {
+      "fileDataID": 109459,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair.wmo"
+    },
+    {
+      "fileDataID": 109460,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000.wmo"
+    },
+    {
+      "fileDataID": 109461,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_001.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_001.wmo"
+    },
+    {
+      "fileDataID": 109462,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_002.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_002.wmo"
+    },
+    {
+      "fileDataID": 109463,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_003.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_003.wmo"
+    },
+    {
+      "fileDataID": 109464,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_004.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_004.wmo"
+    },
+    {
+      "fileDataID": 109465,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_005.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_005.wmo"
+    },
+    {
+      "fileDataID": 109466,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_006.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_006.wmo"
+    },
+    {
+      "fileDataID": 109467,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_007.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_007.wmo"
+    },
+    {
+      "fileDataID": 109468,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a.wmo"
+    },
+    {
+      "fileDataID": 109469,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_000.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_000.wmo"
+    },
+    {
+      "fileDataID": 109470,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_001.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_001.wmo"
+    },
+    {
+      "fileDataID": 109471,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_002.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_002.wmo"
+    },
+    {
+      "fileDataID": 109472,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_003.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_003.wmo"
+    },
+    {
+      "fileDataID": 109473,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_004.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_004.wmo"
+    },
+    {
+      "fileDataID": 109474,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b.wmo"
+    },
+    {
+      "fileDataID": 109475,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_000.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_000.wmo"
+    },
+    {
+      "fileDataID": 109476,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_001.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_001.wmo"
+    },
+    {
+      "fileDataID": 109477,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_002.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_002.wmo"
+    },
+    {
+      "fileDataID": 109478,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_003.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_003.wmo"
+    },
+    {
+      "fileDataID": 109479,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_004.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_004.wmo"
+    },
+    {
+      "fileDataID": 109480,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_005.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_005.wmo"
+    },
+    {
+      "fileDataID": 109481,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_006.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_006.wmo"
+    },
+    {
+      "fileDataID": 109482,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007.wmo",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007.wmo"
+    },
+    {
+      "fileDataID": 123465,
+      "fileName": "creature/dragon/dragononyxia.m2",
+      "sourceName": "creature/dragon/dragononyxia.m2"
+    },
+    {
+      "fileDataID": 123466,
+      "fileName": "creature/dragon/dragononyxia1.blp",
+      "sourceName": "creature/dragon/dragononyxia1.blp"
+    },
+    {
+      "fileDataID": 123467,
+      "fileName": "creature/dragon/dragononyxia2.blp",
+      "sourceName": "creature/dragon/dragononyxia2.blp"
+    },
+    {
+      "fileDataID": 123468,
+      "fileName": "creature/dragon/dragononyxia3.blp",
+      "sourceName": "creature/dragon/dragononyxia3.blp"
+    },
+    {
+      "fileDataID": 137382,
+      "fileName": "item/objectcomponents/cape/cape_mail_d_01onyxia.blp",
+      "sourceName": "item/objectcomponents/cape/cape_mail_d_01onyxia.blp"
+    },
+    {
+      "fileDataID": 137383,
+      "fileName": "item/objectcomponents/cape/cape_mail_d_01onyxiagreen.blp",
+      "sourceName": "item/objectcomponents/cape/cape_mail_d_01onyxiagreen.blp"
+    },
+    {
+      "fileDataID": 166629,
+      "fileName": "spells/onyxia_impact_base.m2",
+      "sourceName": "spells/onyxia_impact_base.m2"
+    },
+    {
+      "fileDataID": 198379,
+      "fileName": "world/generic/human/passive doodads/onxiatrophy/alliancehangingonyxiatrophy.m2",
+      "sourceName": "world/generic/human/passive doodads/onxiatrophy/alliancehangingonyxiatrophy.m2"
+    },
+    {
+      "fileDataID": 202324,
+      "fileName": "world/kalimdor/onyxiaslair/doors/onyxiasgate01.m2",
+      "sourceName": "world/kalimdor/onyxiaslair/doors/onyxiasgate01.m2"
+    },
+    {
+      "fileDataID": 202325,
+      "fileName": "world/kalimdor/onyxiaslair/fallingrocks/onyziaslairfallingrocks.m2",
+      "sourceName": "world/kalimdor/onyxiaslair/fallingrocks/onyziaslairfallingrocks.m2"
+    },
+    {
+      "fileDataID": 202326,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplash.m2",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplash.m2"
+    },
+    {
+      "fileDataID": 202327,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrap.m2",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrap.m2"
+    },
+    {
+      "fileDataID": 202328,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrapmirror.m2",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrapmirror.m2"
+    },
+    {
+      "fileDataID": 202329,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap02.blp",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap02.blp"
+    },
+    {
+      "fileDataID": 202330,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap03.blp",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap03.blp"
+    },
+    {
+      "fileDataID": 202331,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap04.blp",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap04.blp"
+    },
+    {
+      "fileDataID": 202332,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap05.blp",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap05.blp"
+    },
+    {
+      "fileDataID": 202333,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap06.blp",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap06.blp"
+    },
+    {
+      "fileDataID": 202355,
+      "fileName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordenefarianpost.m2",
+      "sourceName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordenefarianpost.m2"
+    },
+    {
+      "fileDataID": 202356,
+      "fileName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordeonyxiatrophypost.m2",
+      "sourceName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordeonyxiatrophypost.m2"
+    },
+    {
+      "fileDataID": 202357,
+      "fileName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/onyxiatrophywoodenpost.blp",
+      "sourceName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/onyxiatrophywoodenpost.blp"
+    },
+    {
+      "fileDataID": 213030,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000_00_00.blp"
+    },
+    {
+      "fileDataID": 213031,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000_00_01.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000_00_01.blp"
+    },
+    {
+      "fileDataID": 213032,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000_01_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000_01_00.blp"
+    },
+    {
+      "fileDataID": 213033,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000_01_01.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_000_01_01.blp"
+    },
+    {
+      "fileDataID": 213034,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_002_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_002_00_00.blp"
+    },
+    {
+      "fileDataID": 213035,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_002_00_01.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_002_00_01.blp"
+    },
+    {
+      "fileDataID": 213036,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_003_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_003_00_00.blp"
+    },
+    {
+      "fileDataID": 213037,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_004_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_004_00_00.blp"
+    },
+    {
+      "fileDataID": 213038,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_005_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_005_00_00.blp"
+    },
+    {
+      "fileDataID": 213039,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_006_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_006_00_00.blp"
+    },
+    {
+      "fileDataID": 213040,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_007_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_007_00_00.blp"
+    },
+    {
+      "fileDataID": 213041,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_001_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_001_00_00.blp"
+    },
+    {
+      "fileDataID": 213042,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_002_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_002_00_00.blp"
+    },
+    {
+      "fileDataID": 213043,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_003_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_003_00_00.blp"
+    },
+    {
+      "fileDataID": 213044,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_004_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a_004_00_00.blp"
+    },
+    {
+      "fileDataID": 213045,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_001_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_001_00_00.blp"
+    },
+    {
+      "fileDataID": 213046,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_001_00_01.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_001_00_01.blp"
+    },
+    {
+      "fileDataID": 213047,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_002_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_002_00_00.blp"
+    },
+    {
+      "fileDataID": 213048,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_003_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_003_00_00.blp"
+    },
+    {
+      "fileDataID": 213049,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_004_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_004_00_00.blp"
+    },
+    {
+      "fileDataID": 213050,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_005_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_005_00_00.blp"
+    },
+    {
+      "fileDataID": 213051,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_006_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_006_00_00.blp"
+    },
+    {
+      "fileDataID": 213052,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007_00_00.blp"
+    },
+    {
+      "fileDataID": 213053,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007_00_01.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007_00_01.blp"
+    },
+    {
+      "fileDataID": 213054,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007_01_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007_01_00.blp"
+    },
+    {
+      "fileDataID": 213055,
+      "fileName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007_01_01.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b_007_01_01.blp"
+    },
+    {
+      "fileDataID": 252043,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplashstand.m2",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplashstand.m2"
+    },
+    {
+      "fileDataID": 254650,
+      "fileName": "interface/icons/achievement_boss_onyxia.blp",
+      "sourceName": "interface/icons/achievement_boss_onyxia.blp"
+    },
+    {
+      "fileDataID": 318959,
+      "fileName": "creature/dragon/onyxiamount3.blp",
+      "sourceName": "creature/dragon/onyxiamount3.blp"
+    },
+    {
+      "fileDataID": 318960,
+      "fileName": "creature/dragon/onyxiamount2.blp",
+      "sourceName": "creature/dragon/onyxiamount2.blp"
+    },
+    {
+      "fileDataID": 318961,
+      "fileName": "creature/dragon/onyxiamount1.blp",
+      "sourceName": "creature/dragon/onyxiamount1.blp"
+    },
+    {
+      "fileDataID": 318962,
+      "fileName": "creature/dragon/onyxiamountsaddle.blp",
+      "sourceName": "creature/dragon/onyxiamountsaddle.blp"
+    },
+    {
+      "fileDataID": 318963,
+      "fileName": "creature/dragon/onyxiamount.m2",
+      "sourceName": "creature/dragon/onyxiamount.m2"
+    },
+    {
+      "fileDataID": 325205,
+      "fileName": "item/objectcomponents/weapon/knife_1h_onyxia_a_01alt.blp",
+      "sourceName": "item/objectcomponents/weapon/knife_1h_onyxia_a_01alt.blp"
+    },
+    {
+      "fileDataID": 325206,
+      "fileName": "item/objectcomponents/weapon/knife_1h_onyxia_a_01alt.m2",
+      "sourceName": "item/objectcomponents/weapon/knife_1h_onyxia_a_01alt.m2"
+    },
+    {
+      "fileDataID": 326544,
+      "fileName": "creature/dragonwhelp/dragonwhelponyxia.blp",
+      "sourceName": "creature/dragonwhelp/dragonwhelponyxia.blp"
+    },
+    {
+      "fileDataID": 326545,
+      "fileName": "creature/dragonwhelp/dragonwhelponyxia.m2",
+      "sourceName": "creature/dragonwhelp/dragonwhelponyxia.m2"
+    },
+    {
+      "fileDataID": 329121,
+      "fileName": "interface/lfgframe/lfgicon-onyxiaencounter.blp",
+      "sourceName": "interface/lfgframe/lfgicon-onyxiaencounter.blp"
+    },
+    {
+      "fileDataID": 380531,
+      "fileName": "creature/onyxiaundead/dragononyxiaundead3.blp",
+      "sourceName": "creature/onyxiaundead/dragononyxiaundead3.blp"
+    },
+    {
+      "fileDataID": 380532,
+      "fileName": "creature/onyxiaundead/dragononyxiaundead1.blp",
+      "sourceName": "creature/onyxiaundead/dragononyxiaundead1.blp"
+    },
+    {
+      "fileDataID": 380533,
+      "fileName": "creature/onyxiaundead/dragononyxiaundead2.blp",
+      "sourceName": "creature/onyxiaundead/dragononyxiaundead2.blp"
+    },
+    {
+      "fileDataID": 380534,
+      "fileName": "creature/onyxiaundead/onyxiaundead.m2",
+      "sourceName": "creature/onyxiaundead/onyxiaundead.m2"
+    },
+    {
+      "fileDataID": 385326,
+      "fileName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia_dragonfloor02.blp",
+      "sourceName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia_dragonfloor02.blp"
+    },
+    {
+      "fileDataID": 385327,
+      "fileName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia_pillar02.blp",
+      "sourceName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia_pillar02.blp"
+    },
+    {
+      "fileDataID": 385328,
+      "fileName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia_pillar01.blp",
+      "sourceName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia_pillar01.blp"
+    },
+    {
+      "fileDataID": 385329,
+      "fileName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia.m2",
+      "sourceName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia.m2"
+    },
+    {
+      "fileDataID": 432006,
+      "fileName": "interface/icons/achievement_dungeon_blackwingdescent_raid_onyxia.blp",
+      "sourceName": "interface/icons/achievement_dungeon_blackwingdescent_raid_onyxia.blp"
+    },
+    {
+      "fileDataID": 434774,
+      "fileName": "world/minimaps/wmo/dungeon/blackwingv2/blackwingv2_elevator_onyxia_wmo_000_00_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/blackwingv2/blackwingv2_elevator_onyxia_wmo_000_00_00.blp"
+    },
+    {
+      "fileDataID": 434775,
+      "fileName": "world/minimaps/wmo/dungeon/blackwingv2/blackwingv2_elevator_onyxia_wmo_000_01_00.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/blackwingv2/blackwingv2_elevator_onyxia_wmo_000_01_00.blp"
+    },
+    {
+      "fileDataID": 434776,
+      "fileName": "world/minimaps/wmo/dungeon/blackwingv2/blackwingv2_elevator_onyxia_wmo_000_00_01.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/blackwingv2/blackwingv2_elevator_onyxia_wmo_000_00_01.blp"
+    },
+    {
+      "fileDataID": 434777,
+      "fileName": "world/minimaps/wmo/dungeon/blackwingv2/blackwingv2_elevator_onyxia_wmo_000_01_01.blp",
+      "sourceName": "world/minimaps/wmo/dungeon/blackwingv2/blackwingv2_elevator_onyxia_wmo_000_01_01.blp"
+    },
+    {
+      "fileDataID": 448070,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_1.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_1.blp"
+    },
+    {
+      "fileDataID": 448071,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_10.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_10.blp"
+    },
+    {
+      "fileDataID": 448072,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_11.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_11.blp"
+    },
+    {
+      "fileDataID": 448073,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_12.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_12.blp"
+    },
+    {
+      "fileDataID": 448074,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_2.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_2.blp"
+    },
+    {
+      "fileDataID": 448075,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_3.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_3.blp"
+    },
+    {
+      "fileDataID": 448076,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_4.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_4.blp"
+    },
+    {
+      "fileDataID": 448077,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_5.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_5.blp"
+    },
+    {
+      "fileDataID": 448078,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_6.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_6.blp"
+    },
+    {
+      "fileDataID": 448079,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_7.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_7.blp"
+    },
+    {
+      "fileDataID": 448080,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_8.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_8.blp"
+    },
+    {
+      "fileDataID": 448081,
+      "fileName": "interface/worldmap/onyxiaslair/onyxiaslair1_9.blp",
+      "sourceName": "interface/worldmap/onyxiaslair/onyxiaslair1_9.blp"
+    },
+    {
+      "fileDataID": 454431,
+      "fileName": "world/wmo/transports/wmo_elevators/blackwingv2_elevator_onyxia_transport.wmo",
+      "sourceName": "world/wmo/transports/wmo_elevators/blackwingv2_elevator_onyxia_transport.wmo"
+    },
+    {
+      "fileDataID": 454432,
+      "fileName": "world/wmo/transports/wmo_elevators/blackwingv2_elevator_onyxia_transport_000.wmo",
+      "sourceName": "world/wmo/transports/wmo_elevators/blackwingv2_elevator_onyxia_transport_000.wmo"
+    },
+    {
+      "fileDataID": 457317,
+      "fileName": "interface/unitpowerbaralt/onyxia_horizontal_fill.blp",
+      "sourceName": "interface/unitpowerbaralt/onyxia_horizontal_fill.blp"
+    },
+    {
+      "fileDataID": 457318,
+      "fileName": "interface/unitpowerbaralt/onyxia_horizontal_flash.blp",
+      "sourceName": "interface/unitpowerbaralt/onyxia_horizontal_flash.blp"
+    },
+    {
+      "fileDataID": 457319,
+      "fileName": "interface/unitpowerbaralt/onyxia_horizontal_frame.blp",
+      "sourceName": "interface/unitpowerbaralt/onyxia_horizontal_frame.blp"
+    },
+    {
+      "fileDataID": 457320,
+      "fileName": "interface/unitpowerbaralt/onyxia_horizontal_spark.blp",
+      "sourceName": "interface/unitpowerbaralt/onyxia_horizontal_spark.blp"
+    },
+    {
+      "fileDataID": 474011,
+      "fileName": "creature/dragon/dragononyxia02.skin",
+      "sourceName": "creature/dragon/dragononyxia02.skin"
+    },
+    {
+      "fileDataID": 474015,
+      "fileName": "creature/dragon/dragononyxia00.skin",
+      "sourceName": "creature/dragon/dragononyxia00.skin"
+    },
+    {
+      "fileDataID": 474016,
+      "fileName": "creature/dragon/dragononyxia0101-00.anim",
+      "sourceName": "creature/dragon/dragononyxia0101-00.anim"
+    },
+    {
+      "fileDataID": 474022,
+      "fileName": "creature/dragon/dragononyxia0064-00.anim",
+      "sourceName": "creature/dragon/dragononyxia0064-00.anim"
+    },
+    {
+      "fileDataID": 474030,
+      "fileName": "creature/dragon/dragononyxia0065-00.anim",
+      "sourceName": "creature/dragon/dragononyxia0065-00.anim"
+    },
+    {
+      "fileDataID": 474031,
+      "fileName": "creature/dragon/dragononyxia0060-00.anim",
+      "sourceName": "creature/dragon/dragononyxia0060-00.anim"
+    },
+    {
+      "fileDataID": 474036,
+      "fileName": "creature/dragon/onyxiamount00.skin",
+      "sourceName": "creature/dragon/onyxiamount00.skin"
+    },
+    {
+      "fileDataID": 474043,
+      "fileName": "creature/dragon/dragononyxia0100-00.anim",
+      "sourceName": "creature/dragon/dragononyxia0100-00.anim"
+    },
+    {
+      "fileDataID": 474045,
+      "fileName": "creature/dragon/onyxiamount01.skin",
+      "sourceName": "creature/dragon/onyxiamount01.skin"
+    },
+    {
+      "fileDataID": 474052,
+      "fileName": "creature/dragon/onyxiamount03.skin",
+      "sourceName": "creature/dragon/onyxiamount03.skin"
+    },
+    {
+      "fileDataID": 474053,
+      "fileName": "creature/dragon/dragononyxia0099-00.anim",
+      "sourceName": "creature/dragon/dragononyxia0099-00.anim"
+    },
+    {
+      "fileDataID": 474079,
+      "fileName": "creature/dragon/dragononyxia01.skin",
+      "sourceName": "creature/dragon/dragononyxia01.skin"
+    },
+    {
+      "fileDataID": 474100,
+      "fileName": "creature/dragon/dragononyxia0074-00.anim",
+      "sourceName": "creature/dragon/dragononyxia0074-00.anim"
+    },
+    {
+      "fileDataID": 474101,
+      "fileName": "creature/dragon/dragononyxia03.skin",
+      "sourceName": "creature/dragon/dragononyxia03.skin"
+    },
+    {
+      "fileDataID": 474104,
+      "fileName": "creature/dragon/dragononyxia0100-01.anim",
+      "sourceName": "creature/dragon/dragononyxia0100-01.anim"
+    },
+    {
+      "fileDataID": 474110,
+      "fileName": "creature/dragon/onyxiamount02.skin",
+      "sourceName": "creature/dragon/onyxiamount02.skin"
+    },
+    {
+      "fileDataID": 474379,
+      "fileName": "creature/dragonwhelp/dragonwhelponyxia01.skin",
+      "sourceName": "creature/dragonwhelp/dragonwhelponyxia01.skin"
+    },
+    {
+      "fileDataID": 474380,
+      "fileName": "creature/dragonwhelp/dragonwhelponyxia00.skin",
+      "sourceName": "creature/dragonwhelp/dragonwhelponyxia00.skin"
+    },
+    {
+      "fileDataID": 479004,
+      "fileName": "creature/onyxiaundead/onyxiaundead0065-00.anim",
+      "sourceName": "creature/onyxiaundead/onyxiaundead0065-00.anim"
+    },
+    {
+      "fileDataID": 479005,
+      "fileName": "creature/onyxiaundead/onyxiaundead0074-00.anim",
+      "sourceName": "creature/onyxiaundead/onyxiaundead0074-00.anim"
+    },
+    {
+      "fileDataID": 479006,
+      "fileName": "creature/onyxiaundead/onyxiaundead01.skin",
+      "sourceName": "creature/onyxiaundead/onyxiaundead01.skin"
+    },
+    {
+      "fileDataID": 479007,
+      "fileName": "creature/onyxiaundead/onyxiaundead0100-01.anim",
+      "sourceName": "creature/onyxiaundead/onyxiaundead0100-01.anim"
+    },
+    {
+      "fileDataID": 479008,
+      "fileName": "creature/onyxiaundead/onyxiaundead02.skin",
+      "sourceName": "creature/onyxiaundead/onyxiaundead02.skin"
+    },
+    {
+      "fileDataID": 479009,
+      "fileName": "creature/onyxiaundead/onyxiaundead0060-00.anim",
+      "sourceName": "creature/onyxiaundead/onyxiaundead0060-00.anim"
+    },
+    {
+      "fileDataID": 479010,
+      "fileName": "creature/onyxiaundead/onyxiaundead0064-00.anim",
+      "sourceName": "creature/onyxiaundead/onyxiaundead0064-00.anim"
+    },
+    {
+      "fileDataID": 479011,
+      "fileName": "creature/onyxiaundead/onyxiaundead03.skin",
+      "sourceName": "creature/onyxiaundead/onyxiaundead03.skin"
+    },
+    {
+      "fileDataID": 479012,
+      "fileName": "creature/onyxiaundead/onyxiaundead00.skin",
+      "sourceName": "creature/onyxiaundead/onyxiaundead00.skin"
+    },
+    {
+      "fileDataID": 479013,
+      "fileName": "creature/onyxiaundead/onyxiaundead0101-00.anim",
+      "sourceName": "creature/onyxiaundead/onyxiaundead0101-00.anim"
+    },
+    {
+      "fileDataID": 479014,
+      "fileName": "creature/onyxiaundead/onyxiaundead0100-00.anim",
+      "sourceName": "creature/onyxiaundead/onyxiaundead0100-00.anim"
+    },
+    {
+      "fileDataID": 492073,
+      "fileName": "item/objectcomponents/weapon/knife_1h_onyxia_a_01alt00.skin",
+      "sourceName": "item/objectcomponents/weapon/knife_1h_onyxia_a_01alt00.skin"
+    },
+    {
+      "fileDataID": 493890,
+      "fileName": "spells/onyxia_impact_base00.skin",
+      "sourceName": "spells/onyxia_impact_base00.skin"
+    },
+    {
+      "fileDataID": 495098,
+      "fileName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia00.skin",
+      "sourceName": "world/blackwingv2/passivedoodads/blackwingv2_elevator_onyxia00.skin"
+    },
+    {
+      "fileDataID": 504530,
+      "fileName": "world/generic/human/passive doodads/onxiatrophy/alliancehangingonyxiatrophy00.skin",
+      "sourceName": "world/generic/human/passive doodads/onxiatrophy/alliancehangingonyxiatrophy00.skin"
+    },
+    {
+      "fileDataID": 507540,
+      "fileName": "world/kalimdor/onyxiaslair/doors/onyxiasgate0100.skin",
+      "sourceName": "world/kalimdor/onyxiaslair/doors/onyxiasgate0100.skin"
+    },
+    {
+      "fileDataID": 507541,
+      "fileName": "world/kalimdor/onyxiaslair/fallingrocks/onyziaslairfallingrocks00.skin",
+      "sourceName": "world/kalimdor/onyxiaslair/fallingrocks/onyziaslairfallingrocks00.skin"
+    },
+    {
+      "fileDataID": 507542,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplashstand00.skin",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplashstand00.skin"
+    },
+    {
+      "fileDataID": 507543,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplash00.skin",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplash00.skin"
+    },
+    {
+      "fileDataID": 507544,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrap00.skin",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrap00.skin"
+    },
+    {
+      "fileDataID": 507545,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrapmirror00.skin",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrapmirror00.skin"
+    },
+    {
+      "fileDataID": 507576,
+      "fileName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordenefarianpost00.skin",
+      "sourceName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordenefarianpost00.skin"
+    },
+    {
+      "fileDataID": 507577,
+      "fileName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordeonyxiatrophypost00.skin",
+      "sourceName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordeonyxiatrophypost00.skin"
+    },
+    {
+      "fileDataID": 522257,
+      "fileName": "interface/encounterjournal/ui-ej-boss-onyxiabwd.blp",
+      "sourceName": "interface/encounterjournal/ui-ej-boss-onyxiabwd.blp"
+    },
+    {
+      "fileDataID": 566904,
+      "fileName": "sound/doodad/onyxiasgate01openclose.ogg",
+      "sourceName": "sound/doodad/onyxiasgate01openclose.ogg"
+    },
+    {
+      "fileDataID": 596093,
+      "fileName": "sound/doodad/blackwingv2_elevator_onyxia_lp01.ogg",
+      "sourceName": "sound/doodad/blackwingv2_elevator_onyxia_lp01.ogg"
+    },
+    {
+      "fileDataID": 596789,
+      "fileName": "sound/doodad/blackwingv2_elevator_onyxia_stop01.ogg",
+      "sourceName": "sound/doodad/blackwingv2_elevator_onyxia_stop01.ogg"
+    },
+    {
+      "fileDataID": 663763,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a.pd4",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_a.pd4"
+    },
+    {
+      "fileDataID": 663764,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b.pd4",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair_b.pd4"
+    },
+    {
+      "fileDataID": 663765,
+      "fileName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair.pd4",
+      "sourceName": "world/wmo/dungeon/kl_onyxiaslair/kl_onyxiaslair.pd4"
+    },
+    {
+      "fileDataID": 666271,
+      "fileName": "world/wmo/transports/wmo_elevators/blackwingv2_elevator_onyxia_transport.pd4",
+      "sourceName": "world/wmo/transports/wmo_elevators/blackwingv2_elevator_onyxia_transport.pd4"
+    },
+    {
+      "fileDataID": 674273,
+      "fileName": "creature/dragon/dragononyxia.mdx",
+      "sourceName": "creature/dragon/dragononyxia.mdx"
+    },
+    {
+      "fileDataID": 705283,
+      "fileName": "spells/onyxia_impact_base.mdx",
+      "sourceName": "spells/onyxia_impact_base.mdx"
+    },
+    {
+      "fileDataID": 725577,
+      "fileName": "world/generic/human/passive doodads/onxiatrophy/alliancehangingonyxiatrophy.mdx",
+      "sourceName": "world/generic/human/passive doodads/onxiatrophy/alliancehangingonyxiatrophy.mdx"
+    },
+    {
+      "fileDataID": 729793,
+      "fileName": "world/kalimdor/onyxiaslair/doors/onyxiasgate01.mdx",
+      "sourceName": "world/kalimdor/onyxiaslair/doors/onyxiasgate01.mdx"
+    },
+    {
+      "fileDataID": 729794,
+      "fileName": "world/kalimdor/onyxiaslair/fallingrocks/onyziaslairfallingrocks.mdx",
+      "sourceName": "world/kalimdor/onyxiaslair/fallingrocks/onyziaslairfallingrocks.mdx"
+    },
+    {
+      "fileDataID": 729797,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplash.mdx",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavasplash.mdx"
+    },
+    {
+      "fileDataID": 729799,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrap.mdx",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrap.mdx"
+    },
+    {
+      "fileDataID": 729800,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrapmirror.mdx",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrapmirror.mdx"
+    },
+    {
+      "fileDataID": 729871,
+      "fileName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordenefarianpost.mdx",
+      "sourceName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordenefarianpost.mdx"
+    },
+    {
+      "fileDataID": 729872,
+      "fileName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordeonyxiatrophypost.mdx",
+      "sourceName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/hordeonyxiatrophypost.mdx"
+    },
+    {
+      "fileDataID": 767580,
+      "fileName": "wtf/onyxia.wtf",
+      "sourceName": "wtf/onyxia.wtf"
+    },
+    {
+      "fileDataID": 767581,
+      "fileName": "wtf/onyxiainstance.wtf",
+      "sourceName": "wtf/onyxiainstance.wtf"
+    },
+    {
+      "fileDataID": 767582,
+      "fileName": "wtf/onyxialair.wtf",
+      "sourceName": "wtf/onyxialair.wtf"
+    },
+    {
+      "fileDataID": 767583,
+      "fileName": "wtf/onyxiapreinstance.wtf",
+      "sourceName": "wtf/onyxiapreinstance.wtf"
+    },
+    {
+      "fileDataID": 789920,
+      "fileName": "world/maps/onyxialairinstance/onyxialairinstance.tex",
+      "sourceName": "world/maps/onyxialairinstance/onyxialairinstance.tex"
+    },
+    {
+      "fileDataID": 789921,
+      "fileName": "world/maps/onyxialairinstance/onyxialairinstance.wdl",
+      "sourceName": "world/maps/onyxialairinstance/onyxialairinstance.wdl"
+    },
+    {
+      "fileDataID": 789922,
+      "fileName": "world/maps/onyxialairinstance/onyxialairinstance.wdt",
+      "sourceName": "world/maps/onyxialairinstance/onyxialairinstance.wdt"
+    },
+    {
+      "fileDataID": 1068414,
+      "fileName": "creature/onyxiaundead/dragonundeadhead.blp",
+      "sourceName": "creature/onyxiaundead/dragonundeadhead.blp"
+    },
+    {
+      "fileDataID": 1068415,
+      "fileName": "creature/onyxiaundead/dragonundeadwing.blp",
+      "sourceName": "creature/onyxiaundead/dragonundeadwing.blp"
+    },
+    {
+      "fileDataID": 1068416,
+      "fileName": "creature/onyxiaundead/orbreflectbright.blp",
+      "sourceName": "creature/onyxiaundead/orbreflectbright.blp"
+    },
+    {
+      "fileDataID": 1068417,
+      "fileName": "creature/onyxiaundead/clouds8x8.blp",
+      "sourceName": "creature/onyxiaundead/clouds8x8.blp"
+    },
+    {
+      "fileDataID": 1068418,
+      "fileName": "creature/onyxiaundead/onyxiaundead0099-00.anim",
+      "sourceName": "creature/onyxiaundead/onyxiaundead0099-00.anim"
+    },
+    {
+      "fileDataID": 1100819,
+      "fileName": "world/maps/onyxialairinstance/onyxialairinstance_lgt.wdt",
+      "sourceName": "world/maps/onyxialairinstance/onyxialairinstance_lgt.wdt"
+    },
+    {
+      "fileDataID": 1100822,
+      "fileName": "world/maps/onyxialairinstance/onyxialairinstance_occ.wdt",
+      "sourceName": "world/maps/onyxialairinstance/onyxialairinstance_occ.wdt"
+    },
+    {
+      "fileDataID": 1379025,
+      "fileName": "interface/encounterjournal/ui-ej-boss-onyxia.blp",
+      "sourceName": "interface/encounterjournal/ui-ej-boss-onyxia.blp"
+    },
+    {
+      "fileDataID": 1396463,
+      "fileName": "interface/encounterjournal/ui-ej-background-onyxiaslair.blp",
+      "sourceName": "interface/encounterjournal/ui-ej-background-onyxiaslair.blp"
+    },
+    {
+      "fileDataID": 1396589,
+      "fileName": "interface/encounterjournal/ui-ej-dungeonbutton-onyxia.blp",
+      "sourceName": "interface/encounterjournal/ui-ej-dungeonbutton-onyxia.blp"
+    },
+    {
+      "fileDataID": 2189623,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap02.blp.meta",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap02.blp.meta"
+    },
+    {
+      "fileDataID": 2189624,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap03.blp.meta",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap03.blp.meta"
+    },
+    {
+      "fileDataID": 2189625,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap04.blp.meta",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap04.blp.meta"
+    },
+    {
+      "fileDataID": 2189626,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap05.blp.meta",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap05.blp.meta"
+    },
+    {
+      "fileDataID": 2189627,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap06.blp.meta",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyzlavatrap06.blp.meta"
+    },
+    {
+      "fileDataID": 2189628,
+      "fileName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrapmirror.m2.meta",
+      "sourceName": "world/kalimdor/onyxiaslair/lavatraps/onyziaslairlavatrapmirror.m2.meta"
+    },
+    {
+      "fileDataID": 2189896,
+      "fileName": "world/kalimdor/onyxiaslair/doors/onyxiasgate01.m2.meta",
+      "sourceName": "world/kalimdor/onyxiaslair/doors/onyxiasgate01.m2.meta"
+    },
+    {
+      "fileDataID": 2190652,
+      "fileName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/onyxiatrophywoodenpost.blp.meta",
+      "sourceName": "world/kalimdor/orgrimmar/passivedoodads/onyxiatrophypost/onyxiatrophywoodenpost.blp.meta"
+    },
+    {
+      "fileDataID": 2190653,
+      "fileName": "creature/dragon/dragononyxia2.blp.meta",
+      "sourceName": "creature/dragon/dragononyxia2.blp.meta"
+    },
+    {
+      "fileDataID": 2190654,
+      "fileName": "creature/dragon/dragononyxia3.blp.meta",
+      "sourceName": "creature/dragon/dragononyxia3.blp.meta"
+    }
+  ]
+}

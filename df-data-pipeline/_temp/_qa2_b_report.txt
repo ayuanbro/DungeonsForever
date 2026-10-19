@@ -1,0 +1,66 @@
+=== B · gen_enus_data.py ENUS_EXCLUDE 复核 ===
+备份 Core → D:\workspace\DungeonsForever\_temp\_qa2_corebak（57 文件）
+跑前 enUS/Data_LootFilter.lua md5 = 579b526e194dfcc22d667a5811b0d487
+跑前 enUS/Data_ClassGuide.lua  md5 = 014da1e187f787fc4c5ddb1bc4ea9cc9
+
+--- gen_enus_data.py stdout ---
+Data_BIS.lua                 转换 2167 处
+Data_ClassTier.lua           转换   78 处
+Data_DungeonEntry.lua        转换   27 处
+Data_DungeonGuide.lua        转换   27 处
+Data_DungeonLoot.lua         转换  464 处
+Data_DungeonQuests.lua       转换 2483 处
+Data_Dungeons.lua            转换   70 处
+Data_Explore.lua             转换   48 处
+Data_NPCLoc.lua              转换  241 处
+Data_ProfGathering.lua       转换    0 处
+Data_ProfLeveling.lua        转换   76 处
+Data_ProfRecipes.lua         转换 3709 处
+Data_Professions.lua         转换  397 处
+跳过（不由本生成器产出）：Data_ClassGuide.lua、Data_LootFilter.lua
+共 13 个文件、9787 条字符串转为英文 → Core/Data/enUS/
+注释精简：收尾清理 13 个文件（仅 enUS 数据副本）
+--- stderr ---
+
+exit=0
+
+--- 跑后 vs 跑前：变更文件 ---
+变更 0 个：
+新增 0：[]
+删除 0：[]
+
+★ 目标文件字节不变？
+   Core/Data/enUS/Data_LootFilter.lua : YES(未被动)
+   Core/Data/enUS/Data_ClassGuide.lua : YES(未被动)
+
+★ 其余 enUS 产物是否仍被正常生成（应有非空且与跑前一致/幂等）:
+   Core/Data/enUS/Data_BIS.lua                same
+   Core/Data/enUS/Data_ClassGuide.lua         same
+   Core/Data/enUS/Data_ClassTier.lua          same
+   Core/Data/enUS/Data_DungeonEntry.lua       same
+   Core/Data/enUS/Data_DungeonGuide.lua       same
+   Core/Data/enUS/Data_DungeonLoot.lua        same
+   Core/Data/enUS/Data_DungeonQuests.lua      same
+   Core/Data/enUS/Data_Dungeons.lua           same
+   Core/Data/enUS/Data_Explore.lua            same
+   Core/Data/enUS/Data_LootFilter.lua         same
+   Core/Data/enUS/Data_NPCLoc.lua             same
+   Core/Data/enUS/Data_ProfGathering.lua      same
+   Core/Data/enUS/Data_ProfLeveling.lua       same
+   Core/Data/enUS/Data_ProfRecipes.lua        same
+   Core/Data/enUS/Data_Professions.lua        same
+
+=== 还原后校验: 与跑前一致? YES ===
+
+=== 残余“正文注释”扫描（body comments beyond header）===
+需清理（strip 会改动）的 .lua = 5
+   Core/Core.lua                              整行注释 2 / 行尾 0  is_generated=False
+   Core/LootFilter.lua                        整行注释 0 / 行尾 3  is_generated=False
+   Core/LootFilterUI.lua                      整行注释 35 / 行尾 4  is_generated=False
+   Core/MainFrame.lua                         整行注释 2 / 行尾 0  is_generated=False
+   Core/Data/Data_LootFilter.lua              整行注释 38 / 行尾 2  is_generated=False
+
+=== 归属交叉核对：谁生成 Data_DungeonEntry/Guide/Dungeons ===
+   Data_DungeonEntry.lua    引用它的 _temp 脚本: ['gen_dungeon_entry.py', '_qa2_b.py', '_qa2_heads.py']
+   Data_DungeonGuide.lua    引用它的 _temp 脚本: ['_qa2_b.py', '_qa2_heads.py', '_rl_guide_preview.py', '_rl_patch_meta.py']
+   Data_Dungeons.lua        引用它的 _temp 脚本: ['gen_dungeon_entry.py', 'sync_data.py', '_loot_fill_2029.py', '_qa2_b.py', '_qa2_heads.py']

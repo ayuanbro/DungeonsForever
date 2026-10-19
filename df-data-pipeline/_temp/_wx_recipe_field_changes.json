@@ -1,0 +1,461 @@
+[
+ {
+  "recipe": 8465,
+  "spell": 15628,
+  "name": "炸弹宠物",
+  "field": "trivial",
+  "before": [
+   205,
+   205
+  ],
+  "after": [
+   205,
+   210
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54417,
+  "spell": 1249015,
+  "name": "先祖防护图腾",
+  "field": "desc",
+  "before": "制作一个先祖折磨图腾。",
+  "after": null,
+  "importance": 1
+ },
+ {
+  "recipe": 54446,
+  "spell": 1248645,
+  "name": "附魔手套 - 自然能量",
+  "field": "desc",
+  "before": "Permanently enchant gloves to increase Nature damage by up to 20.",
+  "after": "给一双手套永久性地附魔，使其装备者的自然法术和技能所造成的伤害提高最多20点。",
+  "importance": 1
+ },
+ {
+  "recipe": 54473,
+  "spell": 1249957,
+  "name": "宁神茶",
+  "field": "trivial",
+  "before": [
+   25,
+   65
+  ],
+  "after": [
+   30,
+   45
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54474,
+  "spell": 1249958,
+  "name": "皇家茶",
+  "field": "trivial",
+  "before": [
+   85,
+   125
+  ],
+  "after": [
+   105,
+   125
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54479,
+  "spell": 1249963,
+  "name": "毒味冰沙",
+  "field": "trivial",
+  "before": [
+   5,
+   15
+  ],
+  "after": [
+   30,
+   45
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54480,
+  "spell": 1249964,
+  "name": "黏滑冰沙",
+  "field": "trivial",
+  "before": [
+   85,
+   95
+  ],
+  "after": [
+   105,
+   120
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54484,
+  "spell": 1249968,
+  "name": "邪恶冰沙",
+  "field": "trivial",
+  "before": [
+   240,
+   250
+  ],
+  "after": [
+   255,
+   270
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54490,
+  "spell": 1250142,
+  "name": "美味雄鹿小汉堡",
+  "field": "trivial",
+  "before": [
+   225,
+   255
+  ],
+  "after": [
+   230,
+   245
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54491,
+  "spell": 1250143,
+  "name": "翱翔的潘普洛纳",
+  "field": "trivial",
+  "before": [
+   275,
+   310
+  ],
+  "after": [
+   280,
+   310
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54493,
+  "spell": 1250145,
+  "name": "美味海龟肉汤",
+  "field": "trivial",
+  "before": [
+   260,
+   300
+  ],
+  "after": [
+   280,
+   310
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54495,
+  "spell": 1250147,
+  "name": "熊肉普切塔",
+  "field": "trivial",
+  "before": [
+   275,
+   305
+  ],
+  "after": [
+   280,
+   310
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54496,
+  "spell": 1250148,
+  "name": "冒热气的雄鹿排",
+  "field": "trivial",
+  "before": [
+   260,
+   300
+  ],
+  "after": [
+   280,
+   310
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54497,
+  "spell": 1250149,
+  "name": "迅击肉排",
+  "field": "trivial",
+  "before": [
+   175,
+   205
+  ],
+  "after": [
+   280,
+   310
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54498,
+  "spell": 1250150,
+  "name": "狂暴迅猛龙肋排",
+  "field": "trivial",
+  "before": [
+   185,
+   215
+  ],
+  "after": [
+   280,
+   310
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54500,
+  "spell": 1250152,
+  "name": "史前手撕迅猛龙肉",
+  "field": "trivial",
+  "before": [
+   260,
+   300
+  ],
+  "after": [
+   280,
+   310
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54501,
+  "spell": 1250153,
+  "name": "迅猛龙肉卷",
+  "field": "trivial",
+  "before": [
+   225,
+   250
+  ],
+  "after": [
+   230,
+   245
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54505,
+  "spell": 1250157,
+  "name": "早餐煎蛋卷",
+  "field": "trivial",
+  "before": [
+   75,
+   110
+  ],
+  "after": [
+   80,
+   95
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54506,
+  "spell": 1250158,
+  "name": "蛤蜊扁面条",
+  "field": "trivial",
+  "before": [
+   200,
+   240
+  ],
+  "after": [
+   280,
+   310
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 54745,
+  "spell": 1252282,
+  "name": "硬金胸甲",
+  "field": "cat",
+  "before": 2461,
+  "after": 2463,
+  "importance": 1
+ },
+ {
+  "recipe": 54808,
+  "spell": 1252345,
+  "name": "强化瑟银护腿",
+  "field": "cat",
+  "before": 2467,
+  "after": 2475,
+  "importance": 1
+ },
+ {
+  "recipe": 55051,
+  "spell": 1254990,
+  "name": "充能蝎壳护肩",
+  "field": "cat",
+  "before": 2554,
+  "after": 2562,
+  "importance": 1
+ },
+ {
+  "recipe": 55437,
+  "spell": 1257382,
+  "name": "无瑕手套",
+  "field": "cat",
+  "before": 2583,
+  "after": 2585,
+  "importance": 1
+ },
+ {
+  "recipe": 55744,
+  "spell": 1259345,
+  "name": "强效药膏",
+  "field": "desc",
+  "before": "制作一份强效药膏。",
+  "after": null,
+  "importance": 1
+ },
+ {
+  "recipe": 55745,
+  "spell": 1259344,
+  "name": "优质药膏",
+  "field": "desc",
+  "before": "制作一份优质药膏。",
+  "after": null,
+  "importance": 1
+ },
+ {
+  "recipe": 55746,
+  "spell": 1259343,
+  "name": "巧妙药膏",
+  "field": "desc",
+  "before": "制作一份巧妙药膏。",
+  "after": null,
+  "importance": 1
+ },
+ {
+  "recipe": 55747,
+  "spell": 1259342,
+  "name": "简易药膏",
+  "field": "desc",
+  "before": "制作一份简易药膏。",
+  "after": null,
+  "importance": 1
+ },
+ {
+  "recipe": 55748,
+  "spell": 1259341,
+  "name": "强力抗毒药剂",
+  "field": "desc",
+  "before": "制作一瓶强力抗毒药剂。",
+  "after": null,
+  "importance": 1
+ },
+ {
+  "recipe": 56881,
+  "spell": 1270633,
+  "name": "天空之墙舒芙蕾",
+  "field": "trivial",
+  "before": [
+   20,
+   45
+  ],
+  "after": [
+   30,
+   45
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 56882,
+  "spell": 1270635,
+  "name": "钳嘴龟块",
+  "field": "trivial",
+  "before": [
+   30,
+   55
+  ],
+  "after": [
+   40,
+   55
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 57021,
+  "spell": 1262978,
+  "name": "曲奇的大餐",
+  "field": "trivial",
+  "before": [
+   140,
+   145
+  ],
+  "after": [
+   145,
+   150
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 57200,
+  "spell": 1283400,
+  "name": "中级营火",
+  "field": "trivial",
+  "before": [
+   90,
+   140
+  ],
+  "after": [
+   95,
+   105
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 58290,
+  "spell": 1291341,
+  "name": "高级营火",
+  "field": "trivial",
+  "before": [
+   200,
+   225
+  ],
+  "after": [
+   205,
+   220
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 58428,
+  "spell": 1294054,
+  "name": "附魔手套 - 采莲之爪",
+  "field": "trivial",
+  "before": [
+   285,
+   290
+  ],
+  "after": [
+   295,
+   300
+  ],
+  "importance": 2
+ },
+ {
+  "recipe": 59138,
+  "spell": 1248668,
+  "name": "Enchant 2H Weapon - Strength",
+  "field": "trivial",
+  "before": [
+   290,
+   300
+  ],
+  "after": [
+   295,
+   300
+  ],
+  "importance": 2
+ }
+]

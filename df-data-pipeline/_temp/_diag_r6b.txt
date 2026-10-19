@@ -1,0 +1,38 @@
+=== git log -- Core/TierUI.lua ===
+a2040f6 feat: 1.4.0 — 职业指南页 + 团本页实装 + 副本攻略子页 + 任务详情走客户端 API
+=== git log -- Core/LootFilterUI.lua ===
+=== git status --short ===
+ M Core/Core.lua
+ M Core/Data/Data_DungeonLoot.lua
+ M Core/Data/Data_Dungeons.lua
+ M Core/Data/Data_Explore.lua
+ M Core/Data/enUS/Data_DungeonLoot.lua
+ M Core/Data/enUS/Data_Dungeons.lua
+ M Core/Data/enUS/Data_Explore.lua
+ M Core/Data/zhTW/Data_DungeonLoot.lua
+ M Core/Data/zhTW/Data_Dungeons.lua
+ M Core/Data/zhTW/Data_Explore.lua
+ M Core/DungeonUI.lua
+ M Core/ExploreUI.lua
+ M Core/MainFrame.lua
+ M Core/ProfessionUI.lua
+ M Core/TierUI.lua
+ M DungeonsForever.toc
+?? Core/Data/Data_ClassGuide.lua
+?? Core/Data/Data_LootFilter.lua
+?? Core/Data/enUS/Data_ClassGuide.lua
+?? Core/Data/enUS/Data_LootFilter.lua
+?? Core/Data/zhTW/Data_ClassGuide.lua
+?? Core/Data/zhTW/Data_LootFilter.lua
+?? Core/LootFilter.lua
+?? Core/LootFilterUI.lua
+?? Media/textures/DF_Settings.tga
+=== md5sum src vs beta ===
+22c63ca233128de58750f682e5805277 *Core/LootFilterUI.lua
+35608efb52aac276e270ad13777d81d8 *Core/TierUI.lua
+22c63ca233128de58750f682e5805277 */d/Game/World of Warcraft/_classic_beta_/Interface/AddOns/DungeonsForever/Core/LootFilterUI.lua
+35608efb52aac276e270ad13777d81d8 */d/Game/World of Warcraft/_classic_beta_/Interface/AddOns/DungeonsForever/Core/TierUI.lua
+=== mtimes (full-iso) ===
+-rw-r--r-- 1 Administrator 197121 281519 2026-09-30 05:31:09.539350900 +0800 Core/Data/Data_ClassGuide.lua
+-rw-r--r-- 1 Administrator 197121  32797 2026-09-30 05:36:28.790966800 +0800 Core/LootFilterUI.lua
+-rw-r--r-- 1 Administrator 197121  47203 2026-09-30 04:26:07.909654400 +0800 Core/TierUI.lua

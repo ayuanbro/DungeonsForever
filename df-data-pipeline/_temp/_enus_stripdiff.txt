@@ -1,0 +1,12 @@
+comments=0 tail=0 old_lines=1269 new_lines=1270
+'--- '
+'+++ '
+'@@ -23,6 +23,7 @@'
+' '
+' -- DungeonsForever · English (enUS) data overlay — Data_ClassGuide'
+' -- Loads on the enUS client only; other locales exit immediately.'
+'+'
+' if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end'
+' '
+' local _, ns = ...'
+exit=0

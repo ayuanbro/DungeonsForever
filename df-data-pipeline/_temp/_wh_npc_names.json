@@ -1,0 +1,1106 @@
+{
+ "598": {
+  "zh": "迪菲亚矿工",
+  "en": "Defias Miner"
+ },
+ "622": {
+  "zh": "地精工程师",
+  "en": "Goblin Engineer"
+ },
+ "636": {
+  "zh": "迪菲亚黑衣卫兵",
+  "en": "Defias Blackguard"
+ },
+ "639": {
+  "zh": "艾德温·范克里夫 &lt;迪菲亚兄弟会首脑&gt;",
+  "en": "Edwin VanCleef"
+ },
+ "641": {
+  "zh": "地精木匠",
+  "en": "Goblin Woodcarver"
+ },
+ "642": {
+  "zh": "斯尼德的伐木机 &lt;伐木工头&gt;",
+  "en": "Sneed's Shredder"
+ },
+ "643": {
+  "zh": "斯尼德 &lt;伐木工头&gt;",
+  "en": "Sneed"
+ },
+ "644": {
+  "zh": "拉克佐 &lt;工头&gt;",
+  "en": "Rhahk'Zor"
+ },
+ "645": {
+  "zh": "曲奇 &lt;船上的厨师&gt;",
+  "en": "Cookie"
+ },
+ "646": {
+  "zh": "重拳先生 &lt;船上的大副&gt;",
+  "en": "Mr. Smite"
+ },
+ "647": {
+  "zh": "绿皮船长",
+  "en": "Captain Greenskin"
+ },
+ "657": {
+  "zh": "迪菲亚海盗",
+  "en": "Defias Pirate"
+ },
+ "1663": {
+  "zh": "迪克斯特·瓦德",
+  "en": "Dextren Ward"
+ },
+ "1666": {
+  "zh": "卡姆·深怒",
+  "en": "Kam Deepfury"
+ },
+ "1696": {
+  "zh": "可怕的塔格尔",
+  "en": "Targorr the Dread"
+ },
+ "1706": {
+  "zh": "迪菲亚囚徒",
+  "en": "Defias Prisoner"
+ },
+ "1716": {
+  "zh": "巴基尔·斯瑞德",
+  "en": "Bazil Thredd"
+ },
+ "1717": {
+  "zh": "哈姆霍克",
+  "en": "Hamhock"
+ },
+ "1720": {
+  "zh": "布鲁高·铁拳",
+  "en": "Bruegal Ironknuckle"
+ },
+ "1725": {
+  "zh": "迪菲亚哨兵",
+  "en": "Defias Watchman"
+ },
+ "1731": {
+  "zh": "地精工匠",
+  "en": "Goblin Craftsman"
+ },
+ "1732": {
+  "zh": "迪菲亚塑风师",
+  "en": "Defias Squallshaper"
+ },
+ "1763": {
+  "zh": "基尔尼格 &lt;熔炼师&gt;",
+  "en": "Gilnid"
+ },
+ "3450": {
+  "zh": "迪菲亚鹦鹉",
+  "en": "Defias Companion"
+ },
+ "3586": {
+  "zh": "矿工约翰森",
+  "en": "Miner Johnson"
+ },
+ "3653": {
+  "zh": "克雷什",
+  "en": "Kresh"
+ },
+ "3669": {
+  "zh": "考布莱恩 &lt;毒牙之王&gt;",
+  "en": "Lord Cobrahn"
+ },
+ "3670": {
+  "zh": "皮萨斯 &lt;毒牙之王&gt;",
+  "en": "Lord Pythas"
+ },
+ "3671": {
+  "zh": "安娜科德拉 &lt;毒牙之王&gt;",
+  "en": "Lady Anacondra"
+ },
+ "3673": {
+  "zh": "瑟芬迪斯 &lt;毒牙之王&gt;",
+  "en": "Lord Serpentis"
+ },
+ "3674": {
+  "zh": "斯卡姆",
+  "en": "Skum"
+ },
+ "3840": {
+  "zh": "尖牙德鲁伊",
+  "en": "Druid of the Fang"
+ },
+ "3853": {
+  "zh": "影牙夜行者",
+  "en": "Shadowfang Moonwalker"
+ },
+ "3864": {
+  "zh": "地狱战马",
+  "en": "Fel Steed"
+ },
+ "3865": {
+  "zh": "暗影军马",
+  "en": "Shadow Charger"
+ },
+ "3866": {
+  "zh": "邪蝠",
+  "en": "Vile Bat"
+ },
+ "3872": {
+  "zh": "死亡之誓",
+  "en": "Deathsworn Captain"
+ },
+ "3877": {
+  "zh": "哀嚎的卫兵",
+  "en": "Wailing Guardsman"
+ },
+ "3886": {
+  "zh": "屠夫拉佐克劳",
+  "en": "Razorclaw the Butcher"
+ },
+ "3887": {
+  "zh": "席瓦莱恩男爵",
+  "en": "Baron Silverlaine"
+ },
+ "3914": {
+  "zh": "雷希戈尔 &lt;牢房看守&gt;",
+  "en": "Rethilgore"
+ },
+ "3927": {
+  "zh": "狼王南杜斯",
+  "en": "Wolf Master Nandos"
+ },
+ "4274": {
+  "zh": "吞噬者芬鲁斯",
+  "en": "Fenrus the Devourer"
+ },
+ "4278": {
+  "zh": "指挥官斯普林瓦尔",
+  "en": "Commander Springvale"
+ },
+ "4279": {
+  "zh": "盲眼守卫奥杜",
+  "en": "Odo the Blindwatcher"
+ },
+ "4829": {
+  "zh": "阿库麦尔",
+  "en": "Aku'mai"
+ },
+ "4830": {
+  "zh": "瑟拉吉斯",
+  "en": "Old Serra'kis"
+ },
+ "4831": {
+  "zh": "萨利维丝",
+  "en": "Lady Sarevess"
+ },
+ "4832": {
+  "zh": "梦游者克尔里斯",
+  "en": "Twilight Lord Kelris"
+ },
+ "4887": {
+  "zh": "加摩拉",
+  "en": "Ghamoo-ra"
+ },
+ "5761": {
+  "zh": "变异蹒跚者",
+  "en": "Deviate Shambler"
+ },
+ "5775": {
+  "zh": "永生者沃尔丹",
+  "en": "Verdan the Everliving"
+ },
+ "5912": {
+  "zh": "变异精灵龙",
+  "en": "Deviate Faerie Dragon"
+ },
+ "6228": {
+  "zh": "黑铁大师",
+  "en": "Dark Iron Ambassador"
+ },
+ "6229": {
+  "zh": "群体打击者9-60",
+  "en": "Crowd Pummeler 9-60"
+ },
+ "6235": {
+  "zh": "电刑器6000型",
+  "en": "Electrocutioner 6000"
+ },
+ "6243": {
+  "zh": "格里哈斯特",
+  "en": "Gelihast"
+ },
+ "7079": {
+  "zh": "粘性辐射尘",
+  "en": "Viscous Fallout"
+ },
+ "7361": {
+  "zh": "格鲁比斯",
+  "en": "Grubbis"
+ },
+ "7800": {
+  "zh": "机械师瑟玛普拉格",
+  "en": "Mekgineer Thermaplugg"
+ },
+ "7915": {
+  "zh": "步行炸弹",
+  "en": "Walking Bomb"
+ },
+ "7998": {
+  "zh": "爆破专家艾米·短线",
+  "en": "Blastmaster Emi Shortfuse"
+ },
+ "8886": {
+  "zh": "变异巨蟒",
+  "en": "Deviate Python"
+ },
+ "11517": {
+  "zh": "奥格弗林特",
+  "en": "Oggleflint"
+ },
+ "11518": {
+  "zh": "祈求者耶戈什",
+  "en": "Jergosh the Invoker"
+ },
+ "11519": {
+  "zh": "巴扎兰",
+  "en": "Bazzalan"
+ },
+ "11520": {
+  "zh": "饥饿者塔拉加曼",
+  "en": "Taragaman the Hungerer"
+ },
+ "250483": {
+  "zh": "枯牙",
+  "en": "Witherfang - NPC - Forever"
+ },
+ "250484": {
+  "zh": "蜘蛛",
+  "en": "Spider - NPC - Forever"
+ },
+ "250488": {
+  "zh": "狼蛛",
+  "en": "Tarantula - NPC - Forever"
+ },
+ "250617": {
+  "zh": "尖叫的女妖",
+  "en": "Shrieking Banshee - NPC - Forever"
+ },
+ "250626": {
+  "zh": "骷髅士兵",
+  "en": "Skeletal Soldier - NPC - Forever"
+ },
+ "250631": {
+  "zh": "被遗弃者",
+  "en": "The Abandoned - NPC - Forever"
+ },
+ "250657": {
+  "zh": "拉斯玛尔",
+  "en": "Rath'mael - NPC - Forever"
+ },
+ "250660": {
+  "zh": "男爵",
+  "en": "The Baron - NPC - Forever"
+ },
+ "250735": {
+  "zh": "毒液潜伏者",
+  "en": "Venom Lurker - NPC - Forever"
+ },
+ "255109": {
+  "zh": "血肉傀儡",
+  "en": "Flesh Golem - NPC - Forever"
+ },
+ "256035": {
+  "zh": "Viktor the Vile",
+  "en": "Viktor the Vile - NPC - Forever"
+ },
+ "256097": {
+  "zh": "比约克",
+  "en": "Bjork - NPC - Forever"
+ },
+ "261306": {
+  "zh": "法德林·安威玛尔",
+  "en": "Faldrim Anvilmar - NPC - Forever"
+ },
+ "261311": {
+  "zh": "劫掠者",
+  "en": "Plunder - NPC - Forever"
+ },
+ "261316": {
+  "zh": "玛格马图斯",
+  "en": "Magmatus - NPC - Forever"
+ },
+ "261319": {
+  "zh": "杜根·挽锤",
+  "en": "Durgen Dirgehammer - NPC - Forever"
+ },
+ "263396": {
+  "zh": "黑铁强夺者",
+  "en": "Dark Iron Looter - NPC - Forever"
+ },
+ "263397": {
+  "zh": "黑铁工程师",
+  "en": "Dark Iron Engineer - NPC - Forever"
+ },
+ "263438": {
+  "zh": "黑铁召唤师",
+  "en": "Dark Iron Summoner - NPC - Forever"
+ },
+ "263466": {
+  "zh": "次级石头傀儡",
+  "en": "Lesser Stone Golem - NPC - Forever"
+ },
+ "1853": {
+  "zh": "黑暗院长加丁",
+  "en": "Darkmaster Gandling - NPC - Forever"
+ },
+ "2748": {
+  "zh": "阿扎达斯",
+  "en": "Archaedas - NPC - Forever"
+ },
+ "3974": {
+  "zh": "驯犬者洛克希",
+  "en": "Houndmaster Loksey - NPC - Forever"
+ },
+ "3975": {
+  "zh": "赫洛德 &lt;血色十字军勇士&gt;",
+  "en": "Herod - NPC - Forever"
+ },
+ "3976": {
+  "zh": "血色十字军指挥官莫格莱尼",
+  "en": "Scarlet Commander Mograine - NPC - Forever"
+ },
+ "3977": {
+  "zh": "大检察官怀特迈恩",
+  "en": "High Inquisitor Whitemane - NPC - Forever"
+ },
+ "3983": {
+  "zh": "审讯员韦沙斯",
+  "en": "Interrogator Vishas - NPC - Forever"
+ },
+ "4304": {
+  "zh": "血色捕猎犬",
+  "en": "Scarlet Tracking Hound - NPC - Forever"
+ },
+ "4420": {
+  "zh": "主宰拉姆塔斯",
+  "en": "Overlord Ramtusk - NPC - Forever"
+ },
+ "4421": {
+  "zh": "卡尔加·刺肋",
+  "en": "Charlga Razorflank - NPC - Forever"
+ },
+ "4422": {
+  "zh": "暴怒的阿迦赛罗斯",
+  "en": "Agathelos the Raging - NPC - Forever"
+ },
+ "4424": {
+  "zh": "阿格姆",
+  "en": "Aggem Thorncurse - NPC - Forever"
+ },
+ "4425": {
+  "zh": "盲眼猎手",
+  "en": "Blind Hunter - NPC - Forever"
+ },
+ "4428": {
+  "zh": "亡语者贾格巴",
+  "en": "Death Speaker Jargba - NPC - Forever"
+ },
+ "4438": {
+  "zh": "剃刀沼泽刺鬃守卫",
+  "en": "Razorfen Spearhide - NPC - Forever"
+ },
+ "4543": {
+  "zh": "血法师萨尔诺斯",
+  "en": "Bloodmage Thalnos - NPC - Forever"
+ },
+ "4842": {
+  "zh": "唤地者哈穆加",
+  "en": "Earthcaller Halmgar - NPC - Forever"
+ },
+ "4851": {
+  "zh": "石窟嚼石者",
+  "en": "Stonevault Rockchewer - NPC - Forever"
+ },
+ "4853": {
+  "zh": "石窟地占师",
+  "en": "Stonevault Geomancer - NPC - Forever"
+ },
+ "4854": {
+  "zh": "格瑞姆洛克 &lt;石窟酋长&gt;",
+  "en": "Grimlok - NPC - Forever"
+ },
+ "4855": {
+  "zh": "石窟争斗者",
+  "en": "Stonevault Brawler - NPC - Forever"
+ },
+ "4863": {
+  "zh": "玉脊蜥蜴",
+  "en": "Jadespine Basilisk - NPC - Forever"
+ },
+ "5204": {
+  "zh": "药剂师金格 &lt;皇家药剂师学会&gt;",
+  "en": "Apothecary Zinge - NPC - Forever"
+ },
+ "5709": {
+  "zh": "伊兰尼库斯的阴影",
+  "en": "Shade of Eranikus - NPC - Forever"
+ },
+ "5710": {
+  "zh": "预言者迦玛兰",
+  "en": "Jammal'an the Prophet - NPC - Forever"
+ },
+ "5719": {
+  "zh": "摩弗拉斯",
+  "en": "Morphaz - NPC - Forever"
+ },
+ "5720": {
+  "zh": "德拉维沃尔",
+  "en": "Weaver - NPC - Forever"
+ },
+ "5721": {
+  "zh": "德姆塞卡尔",
+  "en": "Dreamscythe - NPC - Forever"
+ },
+ "5722": {
+  "zh": "哈扎斯",
+  "en": "Hazzas - NPC - Forever"
+ },
+ "6168": {
+  "zh": "鲁古格",
+  "en": "Roogug - NPC - Forever"
+ },
+ "6487": {
+  "zh": "奥法师杜安",
+  "en": "Arcanist Doan - NPC - Forever"
+ },
+ "6488": {
+  "zh": "死灵勇士",
+  "en": "Fallen Champion - NPC - Forever"
+ },
+ "6489": {
+  "zh": "铁脊死灵",
+  "en": "Ironspine - NPC - Forever"
+ },
+ "6490": {
+  "zh": "永醒的艾希尔",
+  "en": "Azshir the Sleepless - NPC - Forever"
+ },
+ "6575": {
+  "zh": "血色预备兵",
+  "en": "Scarlet Trainee - NPC - Forever"
+ },
+ "6906": {
+  "zh": "巴尔洛戈",
+  "en": "Baelog - NPC - Forever"
+ },
+ "6907": {
+  "zh": "埃瑞克",
+  "en": "Eric &quot;The Swift&quot; - NPC - Forever"
+ },
+ "6908": {
+  "zh": "奥拉夫",
+  "en": "Olaf - NPC - Forever"
+ },
+ "6910": {
+  "zh": "鲁维罗什",
+  "en": "Revelosh - NPC - Forever"
+ },
+ "7023": {
+  "zh": "黑曜石哨兵",
+  "en": "Obsidian Sentinel - NPC - Forever"
+ },
+ "7030": {
+  "zh": "暗炉地质学家",
+  "en": "Shadowforge Geologist - NPC - Forever"
+ },
+ "7206": {
+  "zh": "古代的石头看守者",
+  "en": "Ancient Stone Keeper - NPC - Forever"
+ },
+ "7209": {
+  "zh": "黑曜石碎片",
+  "en": "Obsidian Shard - NPC - Forever"
+ },
+ "7228": {
+  "zh": "艾隆纳亚",
+  "en": "Ironaya - NPC - Forever"
+ },
+ "7267": {
+  "zh": "乌克兹·沙顶",
+  "en": "Chief Ukorz Sandscalp - NPC - Forever"
+ },
+ "7271": {
+  "zh": "巫医祖穆拉恩",
+  "en": "Witch Doctor Zum'rah - NPC - Forever"
+ },
+ "7272": {
+  "zh": "殉教者塞卡",
+  "en": "Theka the Martyr - NPC - Forever"
+ },
+ "7273": {
+  "zh": "加兹瑞拉",
+  "en": "Gahz'rilla - NPC - Forever"
+ },
+ "7275": {
+  "zh": "暗影祭司塞瑟斯",
+  "en": "Shadowpriest Sezz'ziz - NPC - Forever"
+ },
+ "7291": {
+  "zh": "加加恩·火锤",
+  "en": "Galgann Firehammer - NPC - Forever"
+ },
+ "7354": {
+  "zh": "拉戈斯诺特",
+  "en": "Ragglesnout - NPC - Forever"
+ },
+ "7355": {
+  "zh": "图特卡什",
+  "en": "Tuten'kash - NPC - Forever"
+ },
+ "7356": {
+  "zh": "腐烂的普雷莫尔",
+  "en": "Plaguemaw the Rotting - NPC - Forever"
+ },
+ "7357": {
+  "zh": "火眼莫德雷斯",
+  "en": "Mordresh Fire Eye - NPC - Forever"
+ },
+ "7358": {
+  "zh": "寒冰之王亚门纳尔",
+  "en": "Amnennar the Coldbringer - NPC - Forever"
+ },
+ "7604": {
+  "zh": "布莱中士",
+  "en": "Sergeant Bly - NPC - Forever"
+ },
+ "7606": {
+  "zh": "欧罗·血眼",
+  "en": "Oro Eyegouge - NPC - Forever"
+ },
+ "7608": {
+  "zh": "穆尔塔",
+  "en": "Murta Grimgut - NPC - Forever"
+ },
+ "7795": {
+  "zh": "水占师维蕾萨",
+  "en": "Hydromancer Velratha - NPC - Forever"
+ },
+ "7796": {
+  "zh": "耐克鲁姆",
+  "en": "Nekrum Gutchewer - NPC - Forever"
+ },
+ "7797": {
+  "zh": "卢兹鲁",
+  "en": "Ruuzlu - NPC - Forever"
+ },
+ "8127": {
+  "zh": "安图苏尔 &lt;苏尔督军&gt;",
+  "en": "Antu'sul - NPC - Forever"
+ },
+ "8138": {
+  "zh": "苏利萨斯幼崽",
+  "en": "Sul'lithuz Broodling - NPC - Forever"
+ },
+ "8156": {
+  "zh": "安图苏尔的仆从",
+  "en": "Servant of Antu'sul - NPC - Forever"
+ },
+ "8438": {
+  "zh": "哈卡莱护血者",
+  "en": "Hakkari Bloodkeeper - NPC - Forever"
+ },
+ "8443": {
+  "zh": "哈卡的化身",
+  "en": "Avatar of Hakkar - NPC - Forever"
+ },
+ "8567": {
+  "zh": "暴食者",
+  "en": "Glutton - NPC - Forever"
+ },
+ "8923": {
+  "zh": "无敌的潘佐尔",
+  "en": "Panzor the Invincible - NPC - Forever"
+ },
+ "8929": {
+  "zh": "铁炉堡公主茉艾拉·铜须 &lt;铁炉堡公主&gt;",
+  "en": "Princess Moira Bronzebeard - NPC - Forever"
+ },
+ "8983": {
+  "zh": "傀儡统帅阿格曼奇",
+  "en": "Golem Lord Argelmach - NPC - Forever"
+ },
+ "9016": {
+  "zh": "贝尔加",
+  "en": "Bael'Gar - NPC - Forever"
+ },
+ "9017": {
+  "zh": "伊森迪奥斯",
+  "en": "Lord Incendius - NPC - Forever"
+ },
+ "9018": {
+  "zh": "审讯官格斯塔恩 &lt;暮光之锤审问者&gt;",
+  "en": "High Interrogator Gerstahn - NPC - Forever"
+ },
+ "9019": {
+  "zh": "达格兰·索瑞森大帝",
+  "en": "Emperor Dagran Thaurissan - NPC - Forever"
+ },
+ "9024": {
+  "zh": "控火师罗格雷恩",
+  "en": "Pyromancer Loregrain - NPC - Forever"
+ },
+ "9025": {
+  "zh": "洛考尔",
+  "en": "Lord Roccor - NPC - Forever"
+ },
+ "9027": {
+  "zh": "修行者高罗什",
+  "en": "Gorosh the Dervish - NPC - Forever"
+ },
+ "9028": {
+  "zh": "格里兹尔",
+  "en": "Grizzle - NPC - Forever"
+ },
+ "9029": {
+  "zh": "剜眼者",
+  "en": "Eviscerator - NPC - Forever"
+ },
+ "9030": {
+  "zh": "破坏者奥科索尔",
+  "en": "Ok'thor the Breaker - NPC - Forever"
+ },
+ "9031": {
+  "zh": "阿努希尔",
+  "en": "Anub'shiah - NPC - Forever"
+ },
+ "9032": {
+  "zh": "爬行者赫杜姆",
+  "en": "Hedrum the Creeper - NPC - Forever"
+ },
+ "9033": {
+  "zh": "安格弗将军",
+  "en": "General Angerforge - NPC - Forever"
+ },
+ "9041": {
+  "zh": "典狱官斯迪尔基斯",
+  "en": "Warder Stilgiss - NPC - Forever"
+ },
+ "9042": {
+  "zh": "维雷克",
+  "en": "Verek - NPC - Forever"
+ },
+ "9056": {
+  "zh": "弗诺斯·达克维尔 &lt;首席建筑师&gt;",
+  "en": "Fineous Darkvire - NPC - Forever"
+ },
+ "9078": {
+  "zh": "暗法师薇薇安·拉格雷 &lt;卡加斯远征军&gt;",
+  "en": "Shadowmage Vivian Lagrave - NPC - Forever"
+ },
+ "9156": {
+  "zh": "弗莱拉斯大使",
+  "en": "Ambassador Flamelash - NPC - Forever"
+ },
+ "9196": {
+  "zh": "欧莫克大王",
+  "en": "Highlord Omokk - NPC - Forever"
+ },
+ "9218": {
+  "zh": "尖石统帅",
+  "en": "Spirestone Battle Lord - NPC - Forever"
+ },
+ "9219": {
+  "zh": "尖石屠夫",
+  "en": "Spirestone Butcher - NPC - Forever"
+ },
+ "9236": {
+  "zh": "暗影猎手沃什加斯",
+  "en": "Shadow Hunter Vosh'gajin - NPC - Forever"
+ },
+ "9237": {
+  "zh": "指挥官沃恩",
+  "en": "War Master Voone - NPC - Forever"
+ },
+ "9240": {
+  "zh": "燃棘暗影牧师",
+  "en": "Smolderthorn Shadow Priest - NPC - Forever"
+ },
+ "9319": {
+  "zh": "驯犬者格雷布玛尔",
+  "en": "Houndmaster Grebmar - NPC - Forever"
+ },
+ "9499": {
+  "zh": "普拉格",
+  "en": "Plugger Spazzring - NPC - Forever"
+ },
+ "9502": {
+  "zh": "法拉克斯",
+  "en": "Phalanx - NPC - Forever"
+ },
+ "9503": {
+  "zh": "罗克诺特下士",
+  "en": "Private Rocknot - NPC - Forever"
+ },
+ "9568": {
+  "zh": "维姆萨拉克",
+  "en": "Overlord Wyrmthalak - NPC - Forever"
+ },
+ "9596": {
+  "zh": "班诺克·巨斧 &lt;火印军团勇士&gt;",
+  "en": "Bannok Grimaxe - NPC - Forever"
+ },
+ "9736": {
+  "zh": "军需官兹格雷斯 &lt;血斧军团&gt;",
+  "en": "Quartermaster Zigris - NPC - Forever"
+ },
+ "9938": {
+  "zh": "玛格姆斯",
+  "en": "Magmus - NPC - Forever"
+ },
+ "10082": {
+  "zh": "泽雷利斯",
+  "en": "Zerillis - NPC - Forever"
+ },
+ "10220": {
+  "zh": "哈雷肯",
+  "en": "Halycon - NPC - Forever"
+ },
+ "10259": {
+  "zh": "座狼幼崽",
+  "en": "Worg Pup - NPC - Forever"
+ },
+ "10268": {
+  "zh": "奴役者基兹鲁尔",
+  "en": "Gizrul the Slavener - NPC - Forever"
+ },
+ "10376": {
+  "zh": "水晶之牙",
+  "en": "Crystal Fang - NPC - Forever"
+ },
+ "10393": {
+  "zh": "斯库尔",
+  "en": "Skul - NPC - Forever"
+ },
+ "10399": {
+  "zh": "图萨丁侍僧",
+  "en": "Thuzadin Acolyte - NPC - Forever"
+ },
+ "10432": {
+  "zh": "维克图斯",
+  "en": "Vectus - NPC - Forever"
+ },
+ "10433": {
+  "zh": "马杜克·布莱克波尔",
+  "en": "Marduk Blackpool - NPC - Forever"
+ },
+ "10435": {
+  "zh": "巴瑟拉斯镇长",
+  "en": "Magistrate Barthilas - NPC - Forever"
+ },
+ "10436": {
+  "zh": "安娜丝塔丽男爵夫人",
+  "en": "Baroness Anastari - NPC - Forever"
+ },
+ "10437": {
+  "zh": "奈鲁布恩坎",
+  "en": "Nerub'enkan - NPC - Forever"
+ },
+ "10438": {
+  "zh": "苍白的玛勒基",
+  "en": "Maleki the Pallid - NPC - Forever"
+ },
+ "10439": {
+  "zh": "吞咽者拉姆斯登",
+  "en": "Ramstein the Gorger - NPC - Forever"
+ },
+ "10440": {
+  "zh": "瑞文戴尔男爵",
+  "en": "Baron Rivendare - NPC - Forever"
+ },
+ "10502": {
+  "zh": "伊露希亚·巴罗夫",
+  "en": "Lady Illucia Barov - NPC - Forever"
+ },
+ "10503": {
+  "zh": "詹迪斯·巴罗夫",
+  "en": "Jandice Barov - NPC - Forever"
+ },
+ "10504": {
+  "zh": "阿雷克斯·巴罗夫",
+  "en": "Lord Alexei Barov - NPC - Forever"
+ },
+ "10505": {
+  "zh": "讲师玛丽希亚",
+  "en": "Instructor Malicia - NPC - Forever"
+ },
+ "10506": {
+  "zh": "传令官基尔图诺斯",
+  "en": "Kirtonos the Herald - NPC - Forever"
+ },
+ "10507": {
+  "zh": "拉文尼亚",
+  "en": "The Ravenian - NPC - Forever"
+ },
+ "10508": {
+  "zh": "莱斯·霜语",
+  "en": "Ras Frostwhisper - NPC - Forever"
+ },
+ "10516": {
+  "zh": "不可宽恕者",
+  "en": "The Unforgiven - NPC - Forever"
+ },
+ "10558": {
+  "zh": "弗雷斯特恩",
+  "en": "Hearthsinger Forresten - NPC - Forever"
+ },
+ "10584": {
+  "zh": "乌洛克",
+  "en": "Urok Doomhowl - NPC - Forever"
+ },
+ "10586": {
+  "zh": "",
+  "en": ""
+ },
+ "10596": {
+  "zh": "烟网蛛后",
+  "en": "Mother Smolderweb - NPC - Forever"
+ },
+ "10808": {
+  "zh": "悲惨的提米",
+  "en": "Timmy the Cruel - NPC - Forever"
+ },
+ "10809": {
+  "zh": "石脊",
+  "en": "Stonespine - NPC - Forever"
+ },
+ "10811": {
+  "zh": "档案管理员加尔福特",
+  "en": "Archivist Galford - NPC - Forever"
+ },
+ "10812": {
+  "zh": "大十字军战士达索汉",
+  "en": "Grand Crusader Dathrohan - NPC - Forever"
+ },
+ "10813": {
+  "zh": "巴纳扎尔",
+  "en": "Balnazzar - NPC - Forever"
+ },
+ "10901": {
+  "zh": "博学者普克尔特",
+  "en": "Lorekeeper Polkelt - NPC - Forever"
+ },
+ "10997": {
+  "zh": "炮手威利",
+  "en": "Cannon Master Willey - NPC - Forever"
+ },
+ "11032": {
+  "zh": "狂热的玛洛尔",
+  "en": "Malor the Zealous - NPC - Forever"
+ },
+ "11058": {
+  "zh": "艾兹拉·格里姆",
+  "en": "Ezra Grimm - NPC - Forever"
+ },
+ "11082": {
+  "zh": "斯坦索姆信使",
+  "en": "Stratholme Courier - NPC - Forever"
+ },
+ "11121": {
+  "zh": "黑衣守卫铸剑师",
+  "en": "Black Guard Swordsmith - NPC - Forever"
+ },
+ "11142": {
+  "zh": "亡灵邮差",
+  "en": "Undead Postman - NPC - Forever"
+ },
+ "11143": {
+  "zh": "邮差马龙",
+  "en": "Postmaster Malown - NPC - Forever"
+ },
+ "11261": {
+  "zh": "瑟尔林·卡斯迪诺夫教授 &lt;屠夫&gt;",
+  "en": "Doctor Theolen Krastinov - NPC - Forever"
+ },
+ "11450": {
+  "zh": "戈多克掠夺者",
+  "en": "Gordok Reaver - NPC - Forever"
+ },
+ "11456": {
+  "zh": "荒野暗影行者",
+  "en": "Wildspawn Shadowstalker - NPC - Forever"
+ },
+ "11457": {
+  "zh": "荒野唤魔者",
+  "en": "Wildspawn Hellcaller - NPC - Forever"
+ },
+ "11467": {
+  "zh": "苏斯",
+  "en": "Tsu'zee - NPC - Forever"
+ },
+ "11486": {
+  "zh": "托塞德林王子",
+  "en": "Prince Tortheldrin - NPC - Forever"
+ },
+ "11487": {
+  "zh": "卡雷迪斯镇长",
+  "en": "Magister Kalendris - NPC - Forever"
+ },
+ "11488": {
+  "zh": "伊琳娜·暗木",
+  "en": "Illyanna Ravenoak - NPC - Forever"
+ },
+ "11489": {
+  "zh": "特迪斯·扭木",
+  "en": "Tendris Warpwood - NPC - Forever"
+ },
+ "11490": {
+  "zh": "瑟雷姆·刺蹄",
+  "en": "Zevrim Thornhoof - NPC - Forever"
+ },
+ "11492": {
+  "zh": "奥兹恩",
+  "en": "Alzzin the Wildshaper - NPC - Forever"
+ },
+ "11496": {
+  "zh": "伊莫塔尔",
+  "en": "Immol'thar - NPC - Forever"
+ },
+ "11501": {
+  "zh": "戈多克大王",
+  "en": "King Gordok - NPC - Forever"
+ },
+ "11622": {
+  "zh": "血骨傀儡",
+  "en": "Rattlegore - NPC - Forever"
+ },
+ "11783": {
+  "zh": "瑟莱德丝碎片",
+  "en": "Theradrim Shardling - NPC - Forever"
+ },
+ "11792": {
+  "zh": "腐烂巡影者",
+  "en": "Putridus Shadowstalker - NPC - Forever"
+ },
+ "12201": {
+  "zh": "瑟莱德丝公主",
+  "en": "Princess Theradras - NPC - Forever"
+ },
+ "12203": {
+  "zh": "兰斯利德",
+  "en": "Landslide - NPC - Forever"
+ },
+ "12206": {
+  "zh": "原始巨兽",
+  "en": "Primordial Behemoth - NPC - Forever"
+ },
+ "12223": {
+  "zh": "洞窟潜伏者",
+  "en": "Cavern Lurker - NPC - Forever"
+ },
+ "12224": {
+  "zh": "洞窟游荡者",
+  "en": "Cavern Shambler - NPC - Forever"
+ },
+ "12225": {
+  "zh": "被诅咒的塞雷布拉斯",
+  "en": "Celebras the Cursed - NPC - Forever"
+ },
+ "12236": {
+  "zh": "维利塔恩",
+  "en": "Lord Vyletongue - NPC - Forever"
+ },
+ "12237": {
+  "zh": "收割者麦什洛克",
+  "en": "Meshlok the Harvester - NPC - Forever"
+ },
+ "12258": {
+  "zh": "锐刺鞭笞者",
+  "en": "Razorlash - NPC - Forever"
+ },
+ "12944": {
+  "zh": "罗克图斯·暗契 &lt;瑟银兄弟会&gt;",
+  "en": "Lokhtos Darkbargainer - NPC - Forever"
+ },
+ "13276": {
+  "zh": "荒野小鬼",
+  "en": "Wildspawn Imp - NPC - Forever"
+ },
+ "13280": {
+  "zh": "海多斯博恩",
+  "en": "Hydrospawn - NPC - Forever"
+ },
+ "13282": {
+  "zh": "诺克赛恩",
+  "en": "Noxxion - NPC - Forever"
+ },
+ "13596": {
+  "zh": "洛特格里普",
+  "en": "Rotgrip - NPC - Forever"
+ },
+ "13601": {
+  "zh": "工匠吉兹洛克",
+  "en": "Tinkerer Gizlock - NPC - Forever"
+ },
+ "13743": {
+  "zh": "腐化的自然之力",
+  "en": "Corrupt Force of Nature - NPC - Forever"
+ },
+ "14308": {
+  "zh": "费拉",
+  "en": "Ferra - NPC - Forever"
+ },
+ "14321": {
+  "zh": "卫兵芬古斯",
+  "en": "Guard Fengus - NPC - Forever"
+ },
+ "14322": {
+  "zh": "践踏者克雷格 &lt;醉鬼&gt;",
+  "en": "Stomper Kreeg - NPC - Forever"
+ },
+ "14323": {
+  "zh": "卫兵斯里基克",
+  "en": "Guard Slip'kik - NPC - Forever"
+ },
+ "14324": {
+  "zh": "观察者克鲁什",
+  "en": "Cho'Rush the Observer - NPC - Forever"
+ },
+ "14325": {
+  "zh": "克罗卡斯",
+  "en": "Captain Kromcrush - NPC - Forever"
+ },
+ "14326": {
+  "zh": "卫兵摩尔达",
+  "en": "Guard Mol'dar - NPC - Forever"
+ },
+ "14327": {
+  "zh": "蕾瑟塔蒂丝",
+  "en": "Lethtendris - NPC - Forever"
+ },
+ "14349": {
+  "zh": "匹姆吉布",
+  "en": "Pimgib - NPC - Forever"
+ },
+ "14350": {
+  "zh": "水浪幼崽",
+  "en": "Hydroling - NPC - Forever"
+ },
+ "14354": {
+  "zh": "普希林",
+  "en": "Pusillin - NPC - Forever"
+ },
+ "14386": {
+  "zh": "游荡的基尔罗格之眼",
+  "en": "Wandering Eye of Kilrogg - NPC - Forever"
+ },
+ "14389": {
+  "zh": "虚无行者",
+  "en": "Netherwalker - NPC - Forever"
+ },
+ "14506": {
+  "zh": "赫尔努拉斯",
+  "en": "Lord Hel'nurath - NPC - Forever"
+ },
+ "14861": {
+  "zh": "基尔图诺斯的卫士",
+  "en": "Blood Steward of Kirtonos - NPC - Forever"
+ }
+}

@@ -1,0 +1,55 @@
+按 TOC 顺序加载...
+加载完成，运行专精模式探针...
+
+  [OK ] TierModule 导出 + tierPage 常驻帧
+  [OK ] 专精模式可用（G 非空）
+  [OK ] 专精模式覆盖 27 个专精（实际渲染）  [[27]]
+  [OK ] ★ 默认板块最大行数 <= ROW_MAX(120)（仅默认板块 changes，不代表峰值）  [[43/120 @DRUID/resto]]
+  [OK ] ★ 默认板块最大卡数 <= CARD_MAX(14)（仅默认板块 changes，不代表峰值）  [[1/14]]
+  [OK ] ★ 默认板块最大芯片数 <= CHIP_MAX(10)（仅默认板块 changes，不代表峰值）  [[0/10]]
+  [OK ] ★★ 默认板块零溢出降级（__overflow==0；真实峰值溢出见 PASS 1E）  [[0]]
+  [OK ] ★★ 任意时刻只有一张内容卡 IsShown（板块分页）  [[0]]
+  [OK ] ★★ 27 专精卡片 x 全落 OUTER_PAD（单列整幅，无第二个 x 取值）  [[0]]
+  [OK ] ★★ 卡宽全为 FULL_W（整幅，无第二档宽度）  [[0]]
+  [OK ] ★★ 无卡片越内容右缘  [[0]]
+  [OK ] ★★ 无卡片重叠  [[0]]
+  [OK ] ★★ child 高 = max(卡底)+SPEC_GAP（截断下仍自洽）  [[0]]
+  [OK ] ★★ 页签槽位数 == 该专精实际可用板块数（27 专精全对）  [[0]]
+  [OK ] ★★ 页签 key 集合 == 实际可用板块集合（无多余槽位）  [[0]]
+  [OK ] ★★ 每专精恰一个选中页签（选中唯一）  [[0]]
+  [OK ] ★★ 选中页签 key == 渲染板块 key（TM.curSec）== 持久化 db.sec  [[0]]
+  [OK ] ★ 存在 9 板块全有的专精（页签满槽用例）  [[9/9]]
+  [OK ] ★ FULL_W = 768（整幅卡宽）  [[768]]
+  [OK ] ★★ 段落/列表行宽 = 700（SEC_TEXT_W 真的落到行上）
+  [OK ] ★★ 表格/种族行宽 = 748（INNER_FULL_W 真的落到行上）
+  [OK ] ★★ 无行宽超出整幅内宽 748  [[0]]
+  [OK ] ★★ 满槽专精页签数 == 板块数（DRUID/balance）  [[9/9]]
+  [OK ] ★★ 页签总宽 <= RIGHT_W（9 槽不溢出内容右缘）  [[652/778]]
+  [OK ] ★★ 逐个点击板块：db.sec / curSec / 单卡 全跟随选中页签  [[0]]
+  [OK ] ★★ 逐板块切换内容卡高度随板块变化（>= 2 种高度）  [[7]]
+  [OK ] ★★ 切板块后选中页签仍唯一  [[1]]
+  [OK ] ★★ 切专精后 db.sec 回落：有 rotation 的专精先落 rotation（用例前提）
+  [OK ] ★★ 切到无 rotation 的专精：不报错且 db.sec/curSec 回落 keys[1]  [[changes/changes err=nil]]
+  [OK ] ★★ 连续切两次专精零新建帧（池化复用）  [[0]]
+  [OK ] ★★ 穷举覆盖 (专精 × 板块) 组合数 == 全量（>= 160）  [[169]]
+  [OK ] ★★ 穷举：每组合 curSec == 目标板块 key（真切过去，非回落）  [[0]]
+  [OK ] ★★ 穷举：每组合 db.sec == 目标板块 key（持久化跟随）  [[0]]
+  [OK ] ★★ 穷举：每组合恰 1 张内容卡 IsShown  [[0]]
+  [OK ] ★★ 穷举：每组合选中页签唯一且 __secKey == 目标 key  [[0]]
+  [OK ] ★★ 真·峰值行数 < ROW_MAX  [[ROGUE/sub/races => 49/120]]
+  [OK ] ★★ 真·峰值芯片数 < CHIP_MAX  [[WARRIOR/arms/races => 8/10]]
+  [OK ] ★★ 真·峰值卡数 <= CARD_MAX  [[1/14]]
+  [OK ] ★★★ 穷举全组合零溢出降级（__overflow == 0）  [[0]]
+  [OK ] ★★ 穷举全量渲染零新建帧（CreateFrame 计数 == 0）  [[0]]
+  [OK ] ★★ 穷举前后池对象身份不变（卡/行/芯片/页签无重建）
+  [OK ] ★ 强制溢出：渲染不抛异常（降级路径不崩）  [[nil]]
+  [OK ] ★ 强制溢出：__overflow 计数 > 0（截断被记账）  [[1]]
+  [OK ] ★ 强制溢出：仍零新建帧  [[0]]
+  [OK ] ★ 强制溢出：截断后卡片仍不越界/不重叠/child 高自洽/单卡  [[over=0 ovl=0 hbad=0 n=1]]
+  [OK ] ★ SEC_DROP 数值 pin：TT.SEC_DROP == 5（★ 专精内容区下移 5px 需求的回归保护；QA R1）  [[5]]
+  [OK ] ★ SEC_TOP 结构：== SEC_TAB_Y + SEC_TAB_H + SEC_DROP（SEC_DROP 真被消费）  [[143 vs 143]]
+  [OK ] ★★ 专精模式：TT.scroll 顶锚 = -SEC_TOP（spec 分支收口正确）  [[ok=true nav=spec topY=-143 -SEC_TOP=-143 err=nil]]
+  [OK ] ★★ 排行模式：TT.scroll 顶锚 = -BODY_TOP（rank 分支不受下移影响）  [[ok=true topY=-52 -BODY_TOP=-52 err=nil]]
+  [OK ] ★★ spec/rank 顶锚互异（SEC_TOP ~= BODY_TOP，分支不串）  [[143 vs 52]]
+
+通过 50 / 失败 0

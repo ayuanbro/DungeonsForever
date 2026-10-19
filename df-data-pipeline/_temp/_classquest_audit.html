@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>职业任务页 · UI 规则审计与修改方案</title>
+<style>
+  :root{
+    --L0:#0A0C10; --L1:#10131A; --L2:#161A22; --L3:#202532;
+    --L4:#2B3140; --L5:#38404F; --DIV:#1B2029;
+    --gold:#ffd100; --green:#40d959; --red:#e65959;
+    --text:#e0e0e0; --grey:#8c8c8c; --dim:#a1a1a1;
+    --bad:#e5233f; --warn:#d98600; --ok:#2f9e4f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:#eef0f3;color:#1c1f24;
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    padding:24px 16px 64px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1010px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 6px;letter-spacing:.4px}
+  .sub{font-size:13px;color:#5c636e;margin:0 0 16px;line-height:1.75}
+  .sub b{color:#1c1f24}
+  code{font-family:Consolas,"SF Mono",monospace;font-size:12px;background:#e3e7ec;border-radius:3px;padding:1px 4px;color:#2a3038}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+  .chip{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #dde1e7;border-radius:8px;padding:7px 12px;font-size:13px}
+  .chip b{font-size:15px}
+  .chip.b b{color:var(--bad)} .chip.w b{color:var(--warn)} .chip.o b{color:var(--ok)}
+  .dotc{width:8px;height:8px;border-radius:50%}
+  .b .dotc{background:var(--bad)} .w .dotc{background:var(--warn)} .o .dotc{background:var(--ok)}
+
+  .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:10px 12px;background:#fff;border:1px solid #dde1e7;border-radius:10px;font-size:13px}
+  .bar .lab{color:#7a828d;font-size:12px}
+  .seg{display:flex;border:1px solid #d6dbe2;border-radius:7px;overflow:hidden}
+  .seg button{border:0;background:#fff;color:#3d454f;font:inherit;font-size:13px;padding:6px 14px;cursor:pointer;border-right:1px solid #e6eaef}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:#1c1f24;color:var(--gold)}
+  .spacer{flex:1}
+
+  /* ============ 模拟窗 ============ */
+  .frame{
+    width:984px;margin:0 auto;padding:12px;border-radius:8px;
+    background:#f7f8fa;border:1px solid #cfd5dd;position:relative;
+    box-shadow:0 14px 34px rgba(20,26,34,.14);
+  }
+  .panel{
+    width:960px;height:566px;position:relative;border-radius:4px;overflow:hidden;
+    background:linear-gradient(180deg,#14161b 0%,#0f1115 100%);
+    color:var(--text);font-size:14px;
+  }
+  .topcard{
+    position:absolute;left:184px;top:16px;width:764px;height:92px;
+    background:var(--L1);border:1px solid rgba(255,255,255,.10);border-radius:6px;
+  }
+  .topcard .cicon{
+    position:absolute;left:8px;top:8px;width:56px;height:56px;border-radius:6px;
+    background:linear-gradient(160deg,#5a3a2a,#2a1c14);border:1px solid rgba(255,255,255,.10);
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:#c9a06a;letter-spacing:.5px;
+  }
+  .topcard .cname{position:absolute;left:74px;top:9px;font-size:16px;color:var(--gold)}
+  .topcard .cmeta{position:absolute;left:74px;top:31px;font-size:12px;color:var(--grey)}
+  .specs{position:absolute;left:74px;top:52px;display:flex;gap:8px}
+  .specs .s{width:52px;height:20px;border-radius:4px;background:var(--L3);border:1px solid rgba(255,255,255,.10);font-size:11px;color:var(--dim);display:flex;align-items:center;justify-content:center}
+  .specs .s.on{background:var(--L4);color:var(--gold);border-color:rgba(255,215,0,.45)}
+  .modes{position:absolute;left:8px;top:76px;display:flex;gap:8px}
+  .modes .m{width:181px;height:24px;border-radius:6px;background:var(--L2);border:1px solid rgba(255,255,255,.10);font-size:14px;color:var(--dim);display:flex;align-items:center;justify-content:center}
+  .modes .m.on{background:var(--L3);color:var(--gold);border-color:rgba(255,215,0,.40)}
+
+  .cardcontent{position:absolute;left:184px;top:116px;right:12px;bottom:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:6px}
+  .cardL{position:absolute;left:8px;top:8px;width:262px;bottom:8px;background:var(--L2);border:1px solid rgba(255,255,255,.10);border-radius:6px}
+  .cardR{position:absolute;right:8px;top:8px;width:478px;bottom:8px;background:var(--L2);border:1px solid rgba(255,255,255,.10);border-radius:6px}
+  .track{position:absolute;width:7px;border-radius:4px;background:var(--L2);border:1px solid rgba(255,255,255,.07)}
+  .track .th{position:absolute;left:1px;width:5px;top:1px;border-radius:3px;background:var(--L4)}
+
+  .fbar{position:absolute;left:8px;top:8px;display:flex}
+  .fbar .d{height:22px;background:var(--L3);border:1px solid rgba(255,255,255,.10);border-radius:5px;font-size:12px;color:var(--text);display:flex;align-items:center;justify-content:center;position:relative;white-space:nowrap}
+  .after .fbar .d{height:24px;font-size:14px;border-radius:6px}
+  .fbar .d .fic{width:12px;height:12px;margin-right:4px;flex:0 0 12px}
+  .after .fbar .d .fic{width:16px;height:16px;margin-right:5px;flex:0 0 16px}
+
+  .list{position:absolute;left:8px;top:36px;width:246px}
+  .after .list{top:40px}
+  .head{height:26px;border-radius:6px;background:var(--L3);border:1px solid rgba(255,255,255,.10);position:relative;margin-bottom:3px;width:232px}
+  .after .head{width:246px}
+  .head .arw{position:absolute;left:9px;width:10px;text-align:center;font-size:13px;color:var(--grey);line-height:24px}
+  .after .head .arw{font-size:14px}
+  .head .dt{position:absolute;left:21px;top:8px;width:10px;height:10px;border-radius:50%}
+  .head .nm{position:absolute;left:34px;top:0;font-size:13px;line-height:24px;color:var(--text)}
+  .after .head .nm{font-size:14px}
+  .head .mt{position:absolute;right:6px;top:0;font-size:11px;line-height:24px;color:#a1a1a1}
+  .after .head .mt{font-size:14px;color:var(--grey)}
+  .head.sel .nm{color:var(--gold)}
+
+  .row{height:22px;border-radius:6px;background:var(--L1);border:1px solid rgba(255,255,255,.10);margin-bottom:1px;margin-left:12px;width:220px;position:relative}
+  .after .row{background:var(--L3);width:234px}
+  .row .stem{position:absolute;left:-3px;top:-1px;bottom:-1px;width:1px;background:rgba(255,255,255,.12)}
+  .row .dt{position:absolute;left:5px;top:7px;width:8px;height:8px;border-radius:50%}
+  .row .nm{position:absolute;left:18px;top:0;font-size:12px;color:var(--text);line-height:20px}
+  .after .row .nm{font-size:14px}
+  .row .lv{position:absolute;right:6px;top:0;font-size:11px;color:var(--dim);line-height:20px}
+  .after .row .lv{font-size:14px}
+
+  .det{position:absolute;left:8px;top:8px;width:448px}
+  .after .det{width:462px}
+  .det .t{font-size:16px;color:var(--gold);line-height:18px}
+  .det .s{font-size:14px;color:var(--grey);margin-top:8px;line-height:18px}
+  .npc{position:relative;height:24px;margin-top:12px}
+  .npc .txt{font-size:14px;line-height:20px;color:var(--text);white-space:nowrap;width:300px}
+  .after .npc .txt{overflow:hidden;text-overflow:ellipsis;width:340px}
+  .npc .btn{position:absolute;top:0;width:62px;height:20px;border-radius:5px;background:var(--L3);border:1px solid rgba(255,215,0,.85);font-size:14px;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:4px}
+  .before .npc .btn{left:226px}
+  .after .npc .btn{right:0;height:24px;border-color:rgba(255,255,255,.10);color:var(--text);border-radius:6px}
+  .npc .btn .pin{width:12px;height:12px;border-radius:50%;background:currentColor;opacity:.85}
+  .after .npc .btn .pin{width:16px;height:16px}
+
+  .node{position:relative;height:38px;border-radius:6px;background:var(--L2);border:1px solid rgba(255,255,255,.10);margin-top:6px}
+  .after .node{background:var(--L3)}
+  .node .nn{position:absolute;left:8px;top:3px;font-size:14px;color:var(--text)}
+  .node .ns{position:absolute;left:8px;top:21px;font-size:14px;color:var(--grey)}
+  .node .st{position:absolute;right:28px;top:3px;font-size:14px;color:var(--grey)}
+  .node .ok{position:absolute;right:8px;top:12px;width:14px;height:14px;border-radius:50%;background:var(--L4);border:1px solid rgba(255,255,255,.14)}
+
+  .hatch{position:absolute;background:repeating-linear-gradient(45deg,rgba(229,35,63,.28) 0 3px,transparent 3px 6px);border-left:1px dashed rgba(229,35,63,.55);border-right:1px dashed rgba(229,35,63,.55)}
+  .callout{position:absolute;font-size:11px;line-height:1.5;color:#f08a99;background:rgba(229,35,63,.10);border:1px solid rgba(229,35,63,.35);border-radius:5px;padding:4px 7px}
+  .callout b{color:#ffb3bf}
+  .callout.g{color:#8fd6a4;background:rgba(64,217,89,.10);border-color:rgba(64,217,89,.35)}
+  .callout.g b{color:#b6ecc5}
+
+  .note-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0 6px}
+  .note{background:#fff;border:1px solid #dde1e7;border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.65}
+  .note .h{display:flex;gap:7px;align-items:center;margin-bottom:4px}
+  .note .n{width:18px;height:18px;border-radius:50%;background:var(--bad);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 18px}
+  .note.w .n{background:var(--warn)}
+  .note .h b{font-size:13px}
+  .note .k{color:#7a828d;font-size:11.5px}
+  .note .v{color:#2a3038}
+  .note .arrowline{color:var(--bad);font-weight:700}
+
+  h2.sec{font-size:15px;margin:30px 0 10px;padding-left:9px;border-left:3px solid #1c1f24}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #dde1e7;border-radius:9px;overflow:hidden;font-size:12.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #eef1f4;vertical-align:top}
+  th{background:#f6f8fa;font-weight:600;color:#3d454f;font-size:12px;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  td.c{white-space:nowrap}
+  .tag{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .tag.b{background:#fdeaed;color:#b3172c} .tag.w{background:#fdf3e2;color:#9a6400} .tag.o{background:#e9f6ed;color:#1f7a3a}
+  .num{font-weight:700;color:#5c636e}
+
+  .legend{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0 6px}
+  .lg{border-radius:8px;border:1px solid rgba(255,255,255,.10);padding:10px;color:#e0e0e0;font-size:12px;height:76px;position:relative}
+  .lg b{display:block;font-size:13px;margin-bottom:3px}
+  .lg span{font-size:11px;color:#a1a1a1;line-height:1.4;display:block}
+  .lg .use{position:absolute;bottom:8px;left:10px;right:10px;font-size:11px;color:#c8ccd4}
+
+  .ladder{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .ladder .lrow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #dde1e7;border-radius:9px;padding:9px 12px;font-size:12.5px}
+  .ladder .sw{width:34px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.16);flex:0 0 34px}
+  .ladder .txt{flex:1;line-height:1.6}
+  .ladder .st{font-weight:700;font-size:12px;white-space:nowrap}
+  .ladder .st.bad{color:var(--bad)} .ladder .st.ok{color:var(--ok)}
+
+  .batch{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 4px}
+  .bcard{background:#fff;border:1px solid #dde1e7;border-radius:9px;padding:12px;font-size:12.5px;line-height:1.7}
+  .bcard h4{margin:0 0 6px;font-size:13px;display:flex;align-items:center;gap:6px}
+  .bcard .p{font-size:11px;padding:1px 7px;border-radius:20px;background:#eef1f4;color:#4a525d;font-weight:700}
+  .bcard ul{margin:0;padding-left:16px}
+  .bcard li{margin-bottom:3px}
+  .foot{margin-top:22px;font-size:12px;color:#7a828d;line-height:1.8}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>职业任务页 · UI 规则合规审计与修改方案</h1>
+  <p class="sub">
+    审计对象 <code>Core/ClassQuestUI.lua</code>（1597 行）· 判据 <code>.workbuddy/UI_RULES.md</code> §1–§7<br>
+    下图按页面真实几何 1:1 复刻：<b>960 内容宽 · 左卡 262 · 间距 8 · 右卡 478 · 内卡贴栅格 20</b>，色值直接取自 <code>ns.hui.layer</code>，行宽按 <code>RowW()</code> / <code>DetRowW()</code> 实算。
+  </p>
+
+  <div class="chips">
+    <div class="chip b"><span class="dotc"></span>违规 <b>12</b> 处</div>
+    <div class="chip w"><span class="dotc"></span>建议 <b>6</b> 项</div>
+    <div class="chip o"><span class="dotc"></span>合规 <b>8</b> 项</div>
+    <div class="chip"><span class="dotc" style="background:#7a828d"></span>零注释门禁不受影响</div>
+  </div>
+
+  <div class="bar">
+    <span class="lab">预览</span>
+    <div class="seg" id="segView">
+      <button data-v="before" class="on">改前（现状）</button>
+      <button data-v="after">改后（合规）</button>
+    </div>
+    <div class="spacer"></div>
+    <span class="lab">红色斜纹 = 违规点　绿色提示 = 修正结果</span>
+  </div>
+
+  <!-- ==================== 改前 ==================== -->
+  <div class="frame stage before" data-stage="before">
+    <div class="panel">
+      <div class="topcard">
+        <div class="cicon">CLASS</div>
+        <div class="cname">战士</div>
+        <div class="cmeta">泰坦重铸 · 时光服</div>
+        <div class="specs"><div class="s on">武器</div><div class="s">狂怒</div><div class="s">防护</div></div>
+        <div class="modes">
+          <div class="m">输出循环</div><div class="m">宏命令</div>
+          <div class="m on">职业任务</div><div class="m">文本指南</div>
+        </div>
+      </div>
+
+      <div class="cardcontent">
+        <div class="cardL">
+          <div class="fbar">
+            <div class="d" style="width:82px">全部任务</div>
+            <div class="d" style="width:82px">
+              <svg class="fic" viewBox="0 0 64 64"><path d="M32 4 L54 14 V34 C54 48 44 57 32 61 C20 57 10 48 10 34 V14 Z" fill="#c81f2c"/><path d="M32 16 C24 22 22 30 26 38 C30 44 38 42 38 34 C38 27 33 24 32 16 Z" fill="#7a1019"/></svg>
+              部落
+            </div>
+            <div class="d" style="width:82px">全部种族</div>
+          </div>
+
+          <div class="list">
+            <div class="head sel">
+              <span class="arw">−</span><span class="dt" style="background:var(--gold)"></span>
+              <span class="nm">防御姿态</span><span class="mt">0/4</span>
+            </div>
+            <div class="row"><span class="stem"></span><span class="dt" style="background:var(--gold)"></span><span class="nm">战士的训练</span><span class="lv">10</span></div>
+            <div class="row"><span class="stem"></span><span class="dt" style="background:var(--gold)"></span><span class="nm">醉鬼巴特莱比</span><span class="lv">10</span></div>
+            <div class="row"><span class="stem"></span><span class="dt" style="background:var(--gold)"></span><span class="nm">击败巴特莱比</span><span class="lv">10</span></div>
+            <div class="row"><span class="stem"></span><span class="dt" style="background:var(--gold)"></span><span class="nm">巴特莱比的酒杯</span><span class="lv">10</span></div>
+            <div style="height:4px"></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#9499a1"></span><span class="nm">野蛮护甲</span><span class="mt">0/4</span></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#9499a1"></span><span class="nm">野蛮锁甲</span><span class="mt">0/1</span></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#40d959"></span><span class="nm">野蛮护手</span><span class="mt">3/3</span></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#9499a1"></span><span class="nm">旋风武器</span><span class="mt">0/4</span></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#9499a1"></span><span class="nm">战士之情</span><span class="mt">0/4</span></div>
+          </div>
+
+          <div class="track" style="left:254px;top:8px;bottom:8px"><div class="th" style="height:120px"></div></div>
+          <div class="hatch" style="left:240px;top:36px;width:14px;height:316px"></div>
+          <div class="callout" style="left:8px;top:366px;width:230px">
+            <b>行右缘空档 14px</b><br>左内衬 8 / 右内衬 22，轨道本该零压行
+          </div>
+        </div>
+
+        <div class="cardR">
+          <div class="det">
+            <div class="t">防御姿态</div>
+            <div class="s">战士 · 4 个任务 · 0/4 已完成</div>
+            <div class="npc">
+              <div class="txt"><span style="color:var(--grey)">起始</span> · 洛古斯·杰特(灰谷-佐拉姆加前哨站 11,33)</div>
+              <div class="btn"><span class="pin"></span>地图</div>
+            </div>
+            <div class="node">
+              <div class="nn">战士的训练</div><div class="ns">奥格瑞玛 · 迪林格尔</div>
+              <div class="st">已接取</div><div class="ok"></div>
+            </div>
+            <div class="node">
+              <div class="nn">醉鬼巴特莱比</div><div class="ns">杜隆塔尔 · 巴特莱比</div>
+              <div class="st">未接取</div><div class="ok"></div>
+            </div>
+            <div class="node">
+              <div class="nn">击败巴特莱比</div><div class="ns">杜隆塔尔 · 巴特莱比</div>
+              <div class="st">未接取</div><div class="ok"></div>
+            </div>
+            <div class="node">
+              <div class="nn">巴特莱比的酒杯</div><div class="ns">杜隆塔尔 · 巴特莱比</div>
+              <div class="st">未接取</div><div class="ok"></div>
+            </div>
+          </div>
+          <div class="track" style="left:470px;top:8px;bottom:8px"><div class="th" style="height:150px"></div></div>
+          <div class="hatch" style="left:456px;top:8px;width:14px;height:268px"></div>
+          <div class="callout" style="left:8px;top:296px;width:436px">
+            <b>① 长 NPC 名未限宽</b>：文字直接顶到「地图」按钮下方（五人本同位置有 <code>detW−76</code> 截断兜底）<br>
+            <b>② 按钮常显金框</b>：<code>MakeOutline</code> 违反「金描边仅限按钮选中态」· 高 20 也低于 §7 的 24
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 改后 ==================== -->
+  <div class="frame stage after" data-stage="after" hidden>
+    <div class="panel">
+      <div class="topcard">
+        <div class="cicon">CLASS</div>
+        <div class="cname">战士</div>
+        <div class="cmeta">泰坦重铸 · 时光服</div>
+        <div class="specs"><div class="s on">武器</div><div class="s">狂怒</div><div class="s">防护</div></div>
+        <div class="modes">
+          <div class="m">输出循环</div><div class="m">宏命令</div>
+          <div class="m on">职业任务</div><div class="m">文本指南</div>
+        </div>
+      </div>
+
+      <div class="cardcontent">
+        <div class="cardL">
+          <div class="fbar">
+            <div class="d" style="width:76px">全部任务</div>
+            <div class="d" style="width:76px;margin-left:8px">
+              <svg class="fic" viewBox="0 0 64 64"><path d="M32 4 L54 14 V34 C54 48 44 57 32 61 C20 57 10 48 10 34 V14 Z" fill="#c81f2c"/><path d="M32 16 C24 22 22 30 26 38 C30 44 38 42 38 34 C38 27 33 24 32 16 Z" fill="#7a1019"/></svg>
+              部落
+            </div>
+            <div class="d" style="width:78px;margin-left:8px">全部种族</div>
+          </div>
+
+          <div class="list">
+            <div class="head sel">
+              <span class="arw">−</span><span class="dt" style="background:var(--gold)"></span>
+              <span class="nm">防御姿态</span><span class="mt">0/4</span>
+            </div>
+            <div class="row"><span class="stem"></span><span class="dt" style="background:var(--gold)"></span><span class="nm">战士的训练</span><span class="lv">10</span></div>
+            <div class="row"><span class="stem"></span><span class="dt" style="background:var(--gold)"></span><span class="nm">醉鬼巴特莱比</span><span class="lv">10</span></div>
+            <div class="row"><span class="stem"></span><span class="dt" style="background:var(--gold)"></span><span class="nm">击败巴特莱比</span><span class="lv">10</span></div>
+            <div class="row"><span class="stem"></span><span class="dt" style="background:var(--gold)"></span><span class="nm">巴特莱比的酒杯</span><span class="lv">10</span></div>
+            <div style="height:4px"></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#9499a1"></span><span class="nm">野蛮护甲</span><span class="mt">0/4</span></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#9499a1"></span><span class="nm">野蛮锁甲</span><span class="mt">0/1</span></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#40d959"></span><span class="nm">野蛮护手</span><span class="mt">3/3</span></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#9499a1"></span><span class="nm">旋风武器</span><span class="mt">0/4</span></div>
+            <div class="head"><span class="arw">+</span><span class="dt" style="background:#9499a1"></span><span class="nm">战士之情</span><span class="mt">0/4</span></div>
+          </div>
+
+          <div class="track" style="left:254px;top:8px;bottom:8px"><div class="th" style="height:120px"></div></div>
+          <div class="callout g" style="left:8px;top:370px;width:230px">
+            <b>右缘贴合轨道</b><br>行宽 232→246，左右内衬同为 8；行底 L1→L3，不再暗于卡底
+          </div>
+        </div>
+
+        <div class="cardR">
+          <div class="det">
+            <div class="t">防御姿态</div>
+            <div class="s">战士 · 4 个任务 · 0/4 已完成</div>
+            <div class="npc">
+              <div class="txt"><span style="color:var(--grey)">起始</span> · 洛古斯·杰特(灰谷-佐拉姆加前哨站 11,33)</div>
+              <div class="btn"><span class="pin"></span>地图</div>
+            </div>
+            <div class="node">
+              <div class="nn">战士的训练</div><div class="ns">奥格瑞玛 · 迪林格尔</div>
+              <div class="st">已接取</div><div class="ok"></div>
+            </div>
+            <div class="node">
+              <div class="nn">醉鬼巴特莱比</div><div class="ns">杜隆塔尔 · 巴特莱比</div>
+              <div class="st">未接取</div><div class="ok"></div>
+            </div>
+            <div class="node">
+              <div class="nn">击败巴特莱比</div><div class="ns">杜隆塔尔 · 巴特莱比</div>
+              <div class="st">未接取</div><div class="ok"></div>
+            </div>
+            <div class="node">
+              <div class="nn">巴特莱比的酒杯</div><div class="ns">杜隆塔尔 · 巴特莱比</div>
+              <div class="st">未接取</div><div class="ok"></div>
+            </div>
+          </div>
+          <div class="track" style="left:470px;top:8px;bottom:8px"><div class="th" style="height:150px"></div></div>
+          <div class="callout g" style="left:8px;top:296px;width:450px">
+            <b>① 文字限宽 + 按钮右锚行右缘</b>：<code>fs:SetWidth(DetRowW−btnW−8)</code>，长名省略号收尾<br>
+            <b>② 按钮 62×24、去金框、图标 16 圆裁</b>；节点卡 L2→L3，与卡底拉开一档
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 说明 -->
+  <div class="note-grid">
+    <div class="note"><div class="h"><span class="n">1</span><b>筛选下拉尺寸</b></div>
+      <div class="k">§7 按钮标准 · L349 / L369 / L376</div>
+      <div class="v">现状 高 22 / 字号 12　<span class="arrowline">→</span> 高 24 / 字号 14</div></div>
+    <div class="note"><div class="h"><span class="n">2</span><b>下拉之间 0 间距</b></div>
+      <div class="k">§3 按钮↔按钮 = 8 · L378–380</div>
+      <div class="v">现状紧贴　<span class="arrowline">→</span> 间距 8，宽 <code>floor((246−16)/3)</code></div></div>
+    <div class="note"><div class="h"><span class="n">3</span><b>链头字号</b></div>
+      <div class="k">§7 只许 14/16 · L528 / L537 / L540</div>
+      <div class="v">箭头 13 / 名称 13 / 进度 11　<span class="arrowline">→</span> 全 14</div></div>
+    <div class="note"><div class="h"><span class="n">4</span><b>子行字号</b></div>
+      <div class="k">§7 只许 14/16 · L575 / L578</div>
+      <div class="v">名称 12 / 等级 11　<span class="arrowline">→</span> 全 14</div></div>
+    <div class="note"><div class="h"><span class="n">5</span><b>行底色倒挂</b></div>
+      <div class="k">§2 内卡须亮一档 · L562 <code>HuiCardFX(fr,5,1)</code></div>
+      <div class="v">行 L1 比卡 L2 更暗　<span class="arrowline">→</span> baseN 3（L3）</div></div>
+    <div class="note"><div class="h"><span class="n">6</span><b>行右缘 14px 空档</b></div>
+      <div class="k">§3.1 同侧边缘一线 · L92 / L94</div>
+      <div class="v">左右内衬 8 / 22　<span class="arrowline">→</span> 删 <code>BAR_W</code> 扣减</div></div>
+    <div class="note"><div class="h"><span class="n">7</span><b>地图按钮金框</b></div>
+      <div class="k">§6 金描边仅限按钮选中态 · L814</div>
+      <div class="v">常显 <code>MakeOutline(mb,1,.82,0)</code>　<span class="arrowline">→</span> 删除；高 20→24</div></div>
+    <div class="note"><div class="h"><span class="n">8</span><b>NPC 文字未限宽</b></div>
+      <div class="k">五人本同位置有 <code>detW−76</code></div>
+      <div class="v">长名顶到按钮　<span class="arrowline">→</span> 限宽 + 按钮右锚</div></div>
+    <div class="note"><div class="h"><span class="n">9</span><b>节点卡与卡同级</b></div>
+      <div class="k">§2 不许同级 · L729 <code>HuiCardFX(r,5,2)</code></div>
+      <div class="v">L2 = 卡 L2　<span class="arrowline">→</span> baseN 3（L3）</div></div>
+    <div class="note w"><div class="h"><span class="n">+</span><b>下拉底 ↔ 列表顶</b></div>
+      <div class="k">§3 其余全部 8 · L40 / L1358</div>
+      <div class="v"><code>FB_GAP 6</code>　<span class="arrowline">→</span> 8（顶链 8+24+8 = 40）</div></div>
+    <div class="note w"><div class="h"><span class="n">+</span><b>阵营图标 12px</b></div>
+      <div class="k">§11 筛选图标 16×16 + RoundIcon</div>
+      <div class="v">12×12 方角　<span class="arrowline">→</span> 16×16 圆裁</div></div>
+    <div class="note w"><div class="h"><span class="n">+</span><b>轨道上下未让 2</b></div>
+      <div class="k">§4.1 轨道上下各让 2 · L1368</div>
+      <div class="v">现状 0　<span class="arrowline">→</span> 上下各内缩 2</div></div>
+  </div>
+
+  <h2 class="sec">一 · 色阶层级（§1 / §2）</h2>
+  <div class="legend">
+    <div class="lg" style="background:#0A0C10"><b>L0</b><span>#0A0C10</span><span class="use">主窗底 / 模型视口</span></div>
+    <div class="lg" style="background:#10131A"><b>L1</b><span>#10131A</span><span class="use">容器卡 contentCard</span></div>
+    <div class="lg" style="background:#161A22"><b>L2</b><span>#161A22</span><span class="use">内卡 cardL / cardR</span></div>
+    <div class="lg" style="background:#202532"><b>L3</b><span>#202532</span><span class="use">L2 卡的内件（行 / 节点）</span></div>
+    <div class="lg" style="background:#2B3140"><b>L4</b><span>#2B3140</span><span class="use">悬停胶囊 / 滚动滑块</span></div>
+    <div class="lg" style="background:#38404F"><b>L5</b><span>#38404F</span><span class="use">L3 底悬停封顶 / 弹层行悬停</span></div>
+  </div>
+
+  <div class="ladder">
+    <div class="lrow"><span class="sw" style="background:#10131A"></span>
+      <span class="txt"><b>contentCard = L1</b> → <b>cardL / cardR = L2</b>　提亮一档。</span><span class="st ok">✓ 合规</span></div>
+    <div class="lrow"><span class="sw" style="background:#161A22;box-shadow:inset 0 0 0 2px #10131A"></span>
+      <span class="txt"><b>列表行 = L1</b> 浮在 <b>cardL = L2</b> 之上　行比容器更暗，属倒挂（§2 明令禁止）。</span><span class="st bad">✗ 改 L3</span></div>
+    <div class="lrow"><span class="sw" style="background:#161A22;box-shadow:inset 0 0 0 2px #202532"></span>
+      <span class="txt"><b>详情节点行 = L2</b> 放在 <b>cardR = L2</b> 里　同级，没有分离感（§2 不许同级）。</span><span class="st bad">✗ 改 L3</span></div>
+    <div class="lrow"><span class="sw" style="background:#202532"></span>
+      <span class="txt"><b>链头 = L3</b> 已合规。改后与子行同为 L3，层级改由<b>缩进 12px + 金色选中 + 字号</b>表达 —— §6 也禁止用强调条表达层级。</span><span class="st ok">✓ 合规</span></div>
+  </div>
+
+  <h2 class="sec">二 · 违规清单（须改）</h2>
+  <table>
+    <thead><tr><th>#</th><th>条款</th><th>位置</th><th>现状</th><th>判定</th><th>修改方案</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="c">§7 字号</td><td>列表链头 <code>arrow / name</code>　L528 / L537</td><td>13 号</td><td><span class="tag b">违规</span></td><td>13 → 14</td></tr>
+      <tr><td class="num">2</td><td class="c">§7 字号</td><td>链头完成进度 <code>meta</code>　L540</td><td>11 号</td><td><span class="tag b">违规</span></td><td>11 → 14（11/12 已废除）</td></tr>
+      <tr><td class="num">3</td><td class="c">§7 字号</td><td>子行任务名 <code>name</code>　L575</td><td>12 号</td><td><span class="tag b">违规</span></td><td>12 → 14（12 仅限行内小卡）</td></tr>
+      <tr><td class="num">4</td><td class="c">§7 字号</td><td>子行任务等级 <code>lv</code>　L578</td><td>11 号</td><td><span class="tag b">违规</span></td><td>11 → 14</td></tr>
+      <tr><td class="num">5</td><td class="c">§7 按钮</td><td>筛选三下拉　<code>FB_H</code> L40 / L376</td><td>高 22 / 字号 12</td><td><span class="tag b">违规</span></td><td>高 24 / 字号 14</td></tr>
+      <tr><td class="num">6</td><td class="c">§3 间距</td><td>下拉之间　L378–380</td><td>间距 0（<code>LEFT … RIGHT, 0</code>）</td><td><span class="tag b">违规</span></td><td>间距 8；宽 <code>floor((ViewW−2×8)/3)</code></td></tr>
+      <tr><td class="num">7</td><td class="c">§3 间距</td><td>下拉底 ↔ 列表顶　<code>FB_GAP</code> L40</td><td>6</td><td><span class="tag b">违规</span></td><td>6 → 8；滚区顶 <code>PAD+24+8 = 40</code></td></tr>
+      <tr><td class="num">8</td><td class="c">§2 卡中卡</td><td>列表行底　L562 <code>HuiCardFX(fr,5,1)</code></td><td>行 L1 <b>比卡 L2 暗</b></td><td><span class="tag b">倒挂</span></td><td><code>baseN 1 → 3</code>（L3）</td></tr>
+      <tr><td class="num">9</td><td class="c">§2 卡中卡</td><td>详情节点行　L729 <code>HuiCardFX(r,5,2)</code></td><td>L2 与卡同级</td><td><span class="tag b">同级</span></td><td><code>baseN 2 → 3</code>（L3）</td></tr>
+      <tr><td class="num">10</td><td class="c">§6 强调条</td><td>详情「地图」按钮　L814</td><td><code>MakeOutline(mb,1,.82,0)</code> 常显金框</td><td><span class="tag b">违规</span></td><td>删除该行（金描边仅限按钮选中态）</td></tr>
+      <tr><td class="num">11</td><td class="c">§3.1 / §4.1</td><td>行右缘　<code>RowW / DetRowW</code> L92 / L94</td><td>多扣 <code>BAR_W 14</code> ⇒ 左 8 / 右 22</td><td><span class="tag b">违规</span></td><td>删 <code>BAR_W</code> 扣减；行右缘 = 滚区右缘（轨道零压行）</td></tr>
+      <tr><td class="num">12</td><td class="c">—（缺陷）</td><td>详情 NPC 行文字　L809–810</td><td><code>f.fs</code> 无 SetWidth，长名压按钮</td><td><span class="tag b">缺陷</span></td><td>限宽 <code>DetRowW−btnW−8</code>；按钮右锚行右缘</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="sec">三 · 建议项（规则未强制，需拍板）</h2>
+  <table>
+    <thead><tr><th>#</th><th>条款</th><th>位置</th><th>现状</th><th>建议</th><th>风险</th></tr></thead>
+    <tbody>
+      <tr><td class="num">S1</td><td class="c">§7 按钮</td><td>「地图」按钮 L812–813</td><td>62×20，图标 12 方角</td><td>高 24、宽按 enUS 反算、图标 16 + <code>RoundIcon</code></td><td>五人本 L6691 同款存量，<b>建议两页一起改</b>，否则两页不一致</td></tr>
+      <tr><td class="num">S2</td><td class="c">§3.2 精神</td><td><code>LIST_W = 262</code> L31</td><td>写死列宽</td><td><code>floor(FULL_W × 0.35)</code> = 261，或登记「主从面板」豁免</td><td>改宽牵动行宽与截断，收益 &lt; 1px</td></tr>
+      <tr><td class="num">S3</td><td class="c">行高</td><td><code>ROW_H = 22</code> L34</td><td>14 号字上行高 22 偏紧</td><td>26（与 <code>HEAD_H</code> 一致）</td><td>列表变长，可视条目减少约 15%</td></tr>
+      <tr><td class="num">S4</td><td class="c">§11</td><td>阵营下拉图标 L419–428</td><td>12×12 未圆裁</td><td>16×16 + <code>RoundIcon</code>（同五人本筛选钮）</td><td>按钮宽需同步 +4px 文字位</td></tr>
+      <tr><td class="num">S5</td><td class="c">§4.1</td><td>详情轨道 L1368–1369</td><td>上下未让 2</td><td><code>TOPRIGHT 7,-2 / BOTTOMRIGHT 7,2</code>，<code>trackH</code> 同步</td><td>无</td></tr>
+      <tr><td class="num">S6</td><td class="c">§1</td><td>子行树状竖线 <code>stem</code> L565</td><td>白 α0.12</td><td>改 <code>ns.hui.layer.DIV</code></td><td>无（离线回落分支保留）</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="sec">四 · 已合规（保持不动）</h2>
+  <table>
+    <thead><tr><th>条款</th><th>项</th><th>实测</th></tr></thead>
+    <tbody>
+      <tr><td class="c">§1 / §2</td><td>卡中卡主链</td><td>contentCard L1 → cardL / cardR L2，提亮一档 <span class="tag o">✓</span></td></tr>
+      <tr><td class="c">§2.1</td><td>三个下拉弹层</td><td>走 <code>ns.hui.ShowMenu</code>，内置 L3 底 + L5 行悬停 <span class="tag o">✓</span></td></tr>
+      <tr><td class="c">§3.3</td><td>页级外缘</td><td><code>TT.EDGE(12) + TT.INSET(8) = 20</code>，左 / 右 / 底三处同值（内卡口径） <span class="tag o">✓</span></td></tr>
+      <tr><td class="c">§4.1</td><td>详情自绘滚动条</td><td>轨道宽 7 / 滑块宽 5 / 最小高 24 / level +14 / 卡边留 1px <span class="tag o">✓</span></td></tr>
+      <tr><td class="c">§4</td><td>圆角体系</td><td>全页走 <code>HuiCardFX</code> 6 圆角 + 白 10% 细边，无独立角贴图 <span class="tag o">✓</span></td></tr>
+      <tr><td class="c">§5</td><td>层级</td><td>fbar <code>sl+4</code> / 详情滚区 <code>sl+2</code> / 轨道 <code>sl+14</code>，固定件均高于滚动内容 <span class="tag o">✓</span></td></tr>
+      <tr><td class="c">§6</td><td>强调条</td><td>列表与详情均无左色条，状态用三态圆点图标表达 <span class="tag o">✓</span></td></tr>
+      <tr><td class="c">§7</td><td>标题与正文</td><td>详情标题 16 号金 / 正文 <code>DET_FS 14</code> <span class="tag o">✓</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="sec">五 · 实施分批</h2>
+  <div class="batch">
+    <div class="bcard"><h4><span class="p">P0</span>纯展示层 · 零几何风险</h4>
+      <ul>
+        <li>字号 9 处 → 14（#1–#4）</li>
+        <li>行底 baseN → 3（#8）</li>
+        <li>节点卡 baseN → 3（#9）</li>
+        <li>删「地图」按钮金框（#10）</li>
+        <li>stem 改 DIV（S6）</li>
+      </ul></div>
+    <div class="bcard"><h4><span class="p">P1</span>几何 · 需实机量</h4>
+      <ul>
+        <li>下拉 22→24 / 字 12→14（#5）</li>
+        <li>下拉间距 0→8（#6）</li>
+        <li>FB_GAP 6→8，滚区顶 36→40（#7）</li>
+        <li>删 BAR_W 14，行右缘贴合（#11）</li>
+        <li>NPC 行限宽 + 按钮右锚（#12）</li>
+      </ul></div>
+    <div class="bcard"><h4><span class="p">P2</span>需拍板</h4>
+      <ul>
+        <li>地图按钮 24 高 + 图标 16（S1，牵五人本）</li>
+        <li>LIST_W 反算化（S2）</li>
+        <li>ROW_H 22→26（S3）</li>
+        <li>阵营图标 16 + 圆裁（S4）</li>
+        <li>轨道上下让 2（S5）</li>
+      </ul></div>
+  </div>
+
+  <p class="foot">
+    P0 + P1 全部落在 <code>Core/ClassQuestUI.lua</code> 单文件，改完按 §9 走：<code>lua51_check</code> → 行尾核对 → deploy → <code>run_all_checks</code> → 实机 reload 验收。
+    本次不新增任何注释，零注释门禁不受影响。
+  </p>
+</div>
+
+<script>
+  var stages = document.querySelectorAll('[data-stage]');
+  function pick(v) {
+    [].forEach.call(stages, function (s) { s.hidden = s.getAttribute('data-stage') !== v; });
+    [].forEach.call(document.querySelectorAll('#segView button'), function (x) {
+      x.classList.toggle('on', x.getAttribute('data-v') === v);
+    });
+  }
+  var m = /[?&]v=(\w+)/.exec(location.search);
+  if (m) pick(m[1]);
+  document.getElementById('segView').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    [].forEach.call(this.querySelectorAll('button'), function (x) { x.classList.toggle('on', x === b); });
+    var v = b.getAttribute('data-v');
+    [].forEach.call(stages, function (s) { s.hidden = s.getAttribute('data-stage') !== v; });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# Local implementation snapshots remain available without entering Git.
+/.implementation-backup/
+
+# Python runtime and test caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Data pipeline: retain scripts and canonical inputs; ignore fetched/generated copies.
+/df-prof-pipeline-v1.0/_temp/_fc/cache/
+/df-prof-pipeline-v1.0/_temp/_fc/reports/
+/df-prof-pipeline-v1.0/_temp/_fc/i18n/batch_*.txt
+/df-prof-pipeline-v1.0/_temp/_fc/i18n/zh_*.txt
+/df-prof-pipeline-v1.0/_temp/_fc/i18n/todo.json
+/df-prof-pipeline-v1.0/Core/Data/
+
+# Full data pipeline: retain scripts, manual inputs and baseline data snapshots.
+/df-data-pipeline/_temp/_fc/cache*/
+/df-data-pipeline/_temp/_fc/reports/
+/df-data-pipeline/_temp/_fc/i18n/batch_*.txt
+/df-data-pipeline/_temp/_fc/i18n/zh_*.txt
+/df-data-pipeline/_temp/_fc/i18n/todo.json
+
+# Browser profiles and session state.
+/df-data-pipeline/_temp/_qqb_profile*/
+/df-data-pipeline/_temp/_waf_cookie.json
+
+# Historical backups, logs and generated comparison reports.
+/df-data-pipeline/_temp/_bak*
+/df-data-pipeline/**/*.bak
+/df-data-pipeline/**/*.log
+/df-data-pipeline/_temp/*_report*.json
+/df-data-pipeline/_temp/*_pre*.txt
+/df-data-pipeline/_temp/*_post*.txt
+
+# Confirmed fetched pages; keep HTML tools such as _route_plan/tune.html.
+/df-data-pipeline/_temp/wh*.html
+/df-data-pipeline/_temp/_bis_*.html
+/df-data-pipeline/_temp/_bm_page.html
+/df-data-pipeline/_temp/_cat2.html
+/df-data-pipeline/_temp/_cdp_test.html
+
+# Disposable debug output directories.
+/df-data-pipeline/_temp/_gearvend/
+/df-data-pipeline/_temp/_mapbake/
+/df-data-pipeline/_temp/_mapcheck/
+/df-data-pipeline/_temp/live/
+/df-data-pipeline/_temp/screenshots/
+/df-data-pipeline/_temp/_screenshots/
+/df-data-pipeline/_temp/_shots/
+
+# Editor and operating-system temporary files.
+*.swp
+*~
+Thumbs.db
+Desktop.ini
+
+# Shareable addon archives produced by package_addon.bat.
+/DungeonsForever-*.zip
+/.DungeonsForever-package-*.tmp

@@ -1,0 +1,200 @@
+Excavation Site Dungeon Overview Guide: Quests, Location, Strategy & Rewards - WoW Forever - Wowhead
+Skip to Main Content
+This site makes extensive use of JavaScript.
+Please enable JavaScript in your browser.
+Guide Contents
+Patch 1.60.1
+Excavation Site Dungeon Overview Guide: Quests, Location, Strategy & Rewards - WoW Forever
+By Riyani
+Updated:
+2026/10/02
+Excavation Site: Wetlands
+is located in the Wetlands, Eastern Kingdoms. This guide provides tips and strategies for completing Excavation Site, including everything you need before and during the dungeon, quests to complete inside, boss strategies, loot, and more.
+WoW: Forever is currently still in Beta. As such, some of this guide may be incomplete or inaccurate. As dungeons become available to test, this guide is being checked. Currently unavailable dungeons have data taken from Classic WoW or the Wowhead Database.
+If you are new to WoW: Forever, please look out for this symbol throughout the guide for additional, beginner-friendly tips.
+Excavation Site Overview in World of Warcraft: Forever
+The Explorer's League, a band of archeologists researching the origins of the Dwarven race, has long had a presence in the mountainous regions of the Wetlands with Whelgar's Excavation Site, a camp overrun with raptors, serving as its main hub. Strange activity was noted to the southeast of the site, and a new camp was set up to explore the newly uncovered titan activity.
+The recommended level for Excavation Site is between 24 and 30.
+Location of Excavation Site in World of Warcraft: Forever
+Excavation Site is located in
+Wetlands
+and is a new installment in WoW: Forever. In previous Classic iterations, this area was inaccessible. But with newly constructed roads, you can now find the entrance to the new dungeon at the top of the hill. The
+Entrance to Excavation Site
+Meeting Stone and Entry
+Alliance
+can easily access the dungeon from Menethil Harbor, which now has a boat connection with Stormwind through Auberdine, or you can run on foot through Loch Modan. Most players will have started their questing journey in the Wetlands at this point and will likely have a flight path in the zone already.
+Horde
+will have a slightly longer trek, as they have to go through Hillsbrad Foothills and Arathi Highlands on foot to reach Wetlands. Make sure to pick up flight paths in Tarren Mill and Hammerfall during your walk to make your future experience slightly more pleasant.
+As with many World of Warcraft: Forever Dungeons, wiping (the entire group dying) in Excavation Site can be a frustrating time due to the long run-back. Any player who has made the infamous run from Teldrassil to Ironforge will know this graveyard very well, as it's the only one in the zone. If your group fully wipes, you'll have to run across half the Wetlands map before reentering the dungeon.
+Ideally, if the entire group is not dead, you should be able to get a rez (resurrection). This is a spell someone casts on you to bring your character back to life with a small amount of health and mana. Priests, Druids, and Shamans learn this early; Paladins need to complete a quest to learn resurrection and may not have it.
+If you can't get a rez, click to release your spirit, then run back to the dungeon from the Spirit Healer (marked on the map below) as a ghost. You collect your body when you enter the instance.
+Excavation Site: Wetlands Dungeon Map
+While Classic Dungeons do not traditionally have maps, World of Warcraft Cartographer Santiago Reyes has created the map below and given us permission to use it. You can browse Santiago Reyes other work by
+clicking here.
+Map created by
+Santiago Reyes.
+Every Quest in Excavation Site in World of Warcraft: Forever
+Hard
+: Level 22 |
+Medium
+: Level 24 |
+At Level
+: Level 26 |
+Easy
+: Level 29
+Quick Reference Table
+This section will be updated as we get more information through the beta.
+Quest
+Level
+Side
+Effort
+Share?
+Starts
+Changing Tastes
+24
+-
+Elder Knowledge
+24
+Pre
+Loot
+Titan Relic
+from
+Relic Guardian
+This section will be updated as we get more information through the beta.
+Quest
+Level
+Side
+Effort
+Share?
+Starts
+Highland Hides
+24
+Pre
+Wetlands
+, Menethil Harbor -
+James Halloran
+/way 8 55 must complete
+Daily Delivery
+first
+Songblade Search
+24
+Redridge Mountains
+,
+Dorin Songblade
+/way 25.6 46.6.
+Horrors in the Highland
+24
+Wetlands
+,
+Rethiel the Greenwarden
+/way 56.2 40.6.
+Lost in the Thicket Things
+24
+Pre
+Starts with
+Seeking Caitlin
+in Ashenvale from
+Llana
+, /way 35.0 48.6
+Reed-woven Heart
+starts Quest
+24
+Pre
+Follow-up From
+Lost in the Thicket Things
+Lost Relic Carry
+24
+Pre
+Loot
+Titan Relic
+from
+Relic Guardian
+Lost Relic Carry Follow Up
+24
+Pre
+Follow-up From
+Lost Relic Carry
+Noteworthy Excavation Site Trash Mobs in World of Warcraft: Forever
+There is currently no trash mob of note in Excavation Site, but this section will be updated to reflect some particularly frustrating mobs you may encounter in this dungeon.
+Excavation Site Bosses in World of Warcraft: Forever
+Strategy
+Saltspine
+Mechanics are currently unknown and will be updated once we have enough information from the beta following the raised level cap.
+Abilities
+-
+Strategy
+Shadetooth
+mechanics are currently unknown and will be updated once we have enough information from the beta following the raised level cap.
+Abilities
+-
+Strategy
+Relic Guardian
+mechanics are currently unknown and will be updated once we have enough information from the beta following the raised level cap.
+Abilities
+-
+Excavation Site Loot in World of Warcraft: Forever
+Type
+Item
+Cloth Armor
+Glinteye Slippers
+Mail Armor
+Saltscale Girdle
+Type
+Item
+Mail Armor
+Raptorclaw Greaves
+-
+-
+-
+-
+Type
+Item
+Quest Item
+Titan Relic
+Ring
+Ring of Power Regulation
+Contribute
+Please keep the following in mind when posting a comment:
+Your comment must be in English or it will be removed.
+Unsure how to post? Check out our
+handy guide
+!
+You might want to proof-read your comments before posting them.
+Please post questions on our
+forums
+for quicker reply.
+Post a Comment
+You are not logged in. Please
+log in
+or
+register an account
+to add your comment.
+Simply browse for your screenshot using the form below.
+Screenshots containing UI elements are generally declined on sight, the same goes for screenshots from the modelviewer or character selection screen.
+The higher the quality the better!
+Please review our
+Screenshot Guidelines
+before submitting!
+You are not logged in. Please
+log in
+to submit a screenshot.
+Simply type the URL of the video in the form below.
+URL:
+Supported: YouTube only
+Title:
+Optional, up to 200 characters
+Note: Your video will need to be approved before appearing on the site.
+The
+Wowhead Client
+is a little application we use to keep our database up to date, and to provide you with some nifty extra functionality on the website!
+It serves 2 main purposes:
+It maintains a WoW addon called the
+Wowhead Looter
+, which collects data as you play the game!
+It uploads the
+collected data
+to Wowhead in order to keep the database up-to-date!
+You can also use it to keep track of your completed quests, recipes, mounts, companion pets, and titles!
+So, what are you waiting for?
+Download the client
+and get started.

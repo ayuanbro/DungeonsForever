@@ -1,0 +1,28 @@
+==============================================================================
+第七轮 B · gen_enus_data 产物收口证明   exit=0
+==============================================================================
+--- gen_enus_data stdout ---
+   Data_BIS.lua                 转换 2167 处
+   Data_ClassTier.lua           转换   78 处
+   Data_DungeonEntry.lua        转换   27 处
+   Data_DungeonGuide.lua        转换   27 处
+   Data_DungeonLoot.lua         转换  464 处
+   Data_DungeonQuests.lua       转换 2483 处
+   Data_Dungeons.lua            转换   70 处
+   Data_Explore.lua             转换   48 处
+   Data_NPCLoc.lua              转换  241 处
+   Data_ProfGathering.lua       转换    0 处
+   Data_ProfLeveling.lua        转换   76 处
+   Data_ProfRecipes.lua         转换 3709 处
+   Data_Professions.lua         转换  397 处
+   跳过（不由本生成器产出）：Data_ClassGuide.lua、Data_LootFilter.lua
+   共 13 个文件、9787 条字符串转为英文 → Core/Data/enUS/
+   注释精简：收尾清理 13 个文件（仅 enUS 数据副本）
+
+--- 跑前/跑后 enUS/*.lua 变更集 ---
+内容变化 0 个：（无）
+
+  Data_LootFilter.lua      before=579b526e194d after=579b526e194d  字节不变 ✓
+  Data_ClassGuide.lua      before=014da1e187f7 after=014da1e187f7  字节不变 ✓
+
+判定：PASS（占位/权威件未被改写，其余幂等）

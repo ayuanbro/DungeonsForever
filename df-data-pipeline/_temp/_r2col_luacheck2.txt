@@ -1,0 +1,5 @@
+Checking Core/PvPUI.lua                           1 error
+
+    Core/PvPUI.lua:1007:50: invalid escape sequence '\P'
+
+Total: 0 warnings / 1 error in 1 file

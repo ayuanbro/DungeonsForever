@@ -1,0 +1,1935 @@
+{
+ "blackfathom_deeps": {
+  "Blackfathom Deeps Quests": {
+   "text": "There are 9 total quests associated with Blackfathom Deeps. 4 for the Alliance, 4 for the Horde, and one neutral quest. Take a look at our Blackfathom Deeps Quests Guide for a walkthrough of all Blackfathom Deeps quests for both factions, as well as all quest rewards. How To Get To Blackfathom Deeps Entrance to Blackfathom Deeps Situated along the Zoram Strand of , can be accessible to Alliance who fly in to Astranaar can head north west along the main path to find themselves headed towards the entrance. For Horde players, you could fly in to Sun Rock Retreat in the , head up through the Talondeep Path into , then follow the main path northwest until you hit the Zoram Strand, to find the entrance of . Blackfathom Deeps Recommended Classes Dungeons are usually completed with five players, comprising the following roles: A tank to hold threat, absorb damage, and prevent the enemy mobs from killing the DPS and healer. Usually a Tank Warrior equipping a shield and using proper threat-generatig abilities like «S11597» and «S23925». Check out our Tank Warrior Rotation Advice if you would like to tank a dungeon for your party and familiarize yourself with important abilities. Three DPS : All classes can deal DPS, but the most popular DPS while leveling is Mage , Warrior , Rogue , Warlock , and Hunter . Hybrids can DPS, but they will usually end up healing. A healer to keep the party alive, and resurrect dead players. Usually a Healing Priest due to their versatile healing kit and buffs like «S1243», but Druids , Paladins , and Shaman can also heal. is not super demanding to have specific party members, although crowd control is always good to have because there are several large packs you'll have to pull. A couple available at this level are: - «S11297» - «S12825» In addition, many packs will contain a caster. Be sure to have someone who can stun, fear or interrupt the spell casting. Noteworthy Trash Mobs Despite BFD being one of the longer lower level dungeons, there are no noteworthy trash mobs that deserve special recognition. As with all dungeon runs, simply make sure to pull slowly and methodically, CC extra trash mobs in larger packs, and keep an eye on the healer's mana. Bosses",
+   "spells": []
+  },
+  "Ghamoo-Ra": {
+   "text": "«N4887» is a simple tank and spank with a catch - the boss has a tremendous amount of armor and takes significantly reduced damage. Every so often, he will cast his primary ability, so make sure to stay spread out. This is a simple encounter with very little explanation required.",
+   "spells": [
+    5568
+   ]
+  },
+  "Lady Sarevess": {
+   "text": "«N4831» patrols the area with 2 other Naga. Make sure to clear out the cave before pulling her and her 2 bodyguards. Make sure to CC at least one of the bodyguards before engaging her. Focus the add down and switch to Sarevess.",
+   "spells": [
+    8435,
+    865,
+    6660,
+    246
+   ]
+  },
+  "Gelihast": {
+   "text": "«N6243» is a straightforward encounter with a small twist - his room is packed with Murlocs. While the fight with Geli requires no explanation, you must be very careful when pulling the adds around the room prior to pulling the boss. Gelihast has a nasty net ability which can leave your tank in an awkward position to subsequently pull additional mobs, so it is crucial that you clear his room first before you pull him. Once he's dead, click on the altar behind him for a small buff.",
+   "spells": [
+    6533
+   ]
+  },
+  "Twilight Lord Kelris": {
+   "text": "«N4832» is not a particularly dangerous boss, although his sleep ability may catch your healer off guard. Make sure to keep the tank topped off in the event the healer is slept, and have all hybrid classes heal the tank if such an event happens.",
+   "spells": [
+    15587,
+    8399
+   ]
+  },
+  "Fire of Aku’Mai Event": {
+   "text": "Strategy : The Fire of Aku'mai event is a small event after Lord Kelris that is required to open the door to the final boss of BFD, Aku'Mai. At the base of the Azshara statue where Kelris channels his magic, there are four braziers positioned in each corner of the statue's pedestal. Once Kelris is dead and the room is clear, have your tank click on one brazier, activating a single wave of the event. Each wave spawns a series of mobs that need to be killed. The first wave, the turtle wave, is the most difficult. The turtles deal heavy damage and an offtank needs to pick one of them up, otherwise your tank will die. Hunter/Warlock pets and Rogue Evasion tanks are very useful here. All 4 braziers/waves must be conquered before the door to Aku'Mai's lair opens.",
+   "spells": []
+  },
+  "Old Serra’kis": {
+   "text": "«N4830» is an optional loot pinata with no real abilities. The only thing you should be mindful of is your breath meter while under water. Remember, in Classic WoW, the breath meter lasts far less time.",
+   "spells": []
+  },
+  "Aku’mai": {
+   "text": "«N4829» is a tank and spank with massive single target damage due to his frenzy ability. Make sure to stay away from his poison cloud so the healer can focus heals on the tank. Hybrid classes should offer healing assistance here if possible, and the tank should use a health pot if he has one. Overall, this is a very simple fight.",
+   "spells": [
+    1715,
+    2974,
+    3490,
+    3815
+   ]
+  }
+ },
+ "gnomeregan": {
+  "Dungeon Entrances": {
+   "text": "is located in western , and has two dungeon entrances located in the Train Depot (the area that Horde players teleport into that is also near the elevator area). The front entrance leads to The Clockwerk Run near «N7079», and the backdoor entrance leads to the Engineering Labs containing «N6229». The backdoor entrance requires either the or a with at least 150 . Gnomeregan Front Entrance Located on the western side of the Train Depot. Gnomeregan Backdoor Entrance Located on the northern side of the Train Depot.",
+   "spells": []
+  },
+  "Instance Map": {
+   "text": "The instance map below denotes the location of each boss in . The front entrance is northeast of «N7079» (2), and the backdoor entrance is east of «N6229» (4). 1: «N7361» (Spawns during the cave encounter) 2: «N7079» (Bottom floor of the Hall of Gears) 3: «N6235» (Center of the upper area in the Launch Bay) 4: «N6229» (Upper area of the Engineering Labs) 5: «N6228» (Rare spawn in the last tunnel) 6: «N7800» (Center of the Tinkers' Court)",
+   "spells": []
+  },
+  "Lore": {
+   "text": "Located in Dun Morogh, the technological wonder known as Gnomeregan has been the gnomes' capital city for generations. Recently, a hostile race of mutant troggs infested several regions of Dun Morogh - including the great gnome city. In a desperate attempt to destroy the invading troggs, High Tinker Mekkatorque ordered the emergency venting of the city's radioactive waste tanks. Several gnomes sought shelter from the airborne pollutants as they waited for the troggs to die or flee. Unfortunately, though the troggs became irradiated from the toxic assault - their siege continued, unabated. Those gnomes who were not killed by noxious seepage were forced to flee, seeking refuge in the nearby dwarven city of Ironforge. There, High Tinker Mekkatorque set out to enlist brave souls to help his people reclaim their beloved city. It is rumored that Mekkatorque's once-trusted advisor, Mekgineer Thermaplugg, betrayed his people by allowing the invasion to happen. Now, his sanity shattered, Thermaplugg remains in Gnomeregan - furthering his dark schemes and acting as the city's new techno-overlord. Gnomeregan Recommended Classes Dungeons are usually completed with five players, comprising the following roles: A Tank to hold threat, absorb damage, and prevent the enemy mobs from killing the DPS and healer. A Tank Warrior with a shield using proper threat-generatig abilities like «S11597» and «S23925» is a popular choice for tanking. Check out our Tank Warrior Rotation Advice to familiarize yourself with important abilities before tanking a dungeon. Three DPS to deal the majority of damage to enemies and bosses. All classes can deal damage, but the most popular DPS classes while leveling are Mage , Warrior , Rogue , Warlock , and Hunter . Hybrids can DPS, but they will usually end up healing. A Healer to keep the party alive and resurrect dead players. A Healing Priest is a popular option for healing due to their versatile toolkit and buffs like «S1243», but Druids , Paladins , and Shaman can also heal. For , having a versatile group will prove to be useful. Some fights contain large pulls of non-elite enemies mixed in with a few elites. AoE and cleaving will be extremely helpful in those situations. Most of the mobs are Troggs, Diseased Gnomes and Mechs . Bosses",
+   "spells": []
+  },
+  "Grubbis": {
+   "text": "«N7361» is located near the instance entrance in the cave area connected to the Hall of Gears. To start the event to spawn «N7361», speak to «N7998». Once the event has started, mobs will spawn from the cave before Emi triggers explosives to close it off. «N7361» will spawn from the second cave before the explosives go off.",
+   "spells": []
+  },
+  "Viscous Fallout": {
+   "text": "«N7079» is located in the Hall of Gears on the irradiated ground level. It is recommended to clear out the trash mobs around them so they can be pulled without any adds.",
+   "spells": []
+  },
+  "Electrocutioner 6000": {
+   "text": "«N6235» is located in the Launch Bay on the elevated launch pad, suspended above the circular walkway at the center of the room. This boss drops .",
+   "spells": [
+    11085,
+    11082,
+    11084
+   ]
+  },
+  "Crowd Pummeler 9-60": {
+   "text": "«N6229» is located in the Engineering Labs and can be found on the upper southern ledge.",
+   "spells": [
+    8374,
+    10887,
+    5568
+   ]
+  },
+  "Dark Iron Ambassador (Rare)": {
+   "text": "«N6228» is located near the end of the instance leading up to the Tinkers' Court. Given their rare nature, they may not always spawn. If they do spawn, they tend to patrol on the north side of the tunnel leading to «N7800».",
+   "spells": [
+    184,
+    9053,
+    10870
+   ]
+  },
+  "Mekgineer Thermaplugg": {
+   "text": "«N7800» is located at the end of the instance in the Tinkers' Court. During the encounter, «N7915»s will spawn from the six bomb dispensers. Groups can either kill the bombs before they reach the group, or designate a player to shut down the bomb dispensers by pressing the button on the right-hand side of each dispenser.",
+   "spells": [
+    7915,
+    11130
+   ]
+  },
+  "Miscellaneous Loot": {
+   "text": "The can contain various materials, such as , , , , , , , , and . These boxes can be found in the following locations: 1: Located in the upper center area in the Hall of Gears. 2: Located in the cave area by «N7998». 3: Located in one of the bunkers in the Dormitory area. A can be found in the following locations: 1: Located in the upper center area in the Hall of Gears. 2: Located in the upper east area in the Engineering Labs. 3: Located in one of the bunkers in the Dormitory area. \", \"guide-body\", {\"allow\":30,\"disabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false}}); WH.Page.Guide.initStyling(); </script> <div id=\"authorembed\"></div> <div id=\"reviewerembed\"></div> <noscript>This guide provides tips and strategies for completing the <a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a> dungeon in WoW Classic. The guide covers everything you need before and during the dungeon, including quests to complete inside, boss strategies, and loot associated with <a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a>. <br /><br />Looking for more <a href=\"https://www.wowhead.com/classic/guides/dungeons\"><b>Classic Dungeon Guides</b></a>? Check out more guides in <i>Guide Navigation</i> section!<br /><br /><h2 class=\"heading-size-2\">Dungeon Overview</h2><br /><br /><a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a> is a level 29-38 dungeon in WoW Classic located in <a href=\"/classic/cn/zone=1/丹莫罗\">丹莫罗</a>, and the former <a href=\"/classic/cn/race=7/侏儒\">侏儒</a> capital city. On average players will enter <a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a> in the low 30's, although it can be done in the late 20's as well. Despite being in Alliance territory, Horde players can navigate to the dungeon by either traveling to <a href=\"/classic/cn/zone=1/丹莫罗\">丹莫罗</a> or completing a short questline ending in Booty Bay that will allow them to teleport to Gnomeregan.<br /><br /> <h2 class=\"heading-size-2\">Gnomeregan Quests</h2><br /><br />There are 12 total quests associated with Gnomeregan: 7 for the Alliance, 2 for the Horde, and 3 neutral quests. Take a look at our <b>Gnomeregan Quests Guide</b> for a walkthrough of all Gnomeregan quests for both factions, as well as all quest rewards.<br /><br /><h2 class=\"heading-size-2\">How To Get To Gnomeregan</h2><br /><br />Entrance to Gnomeregan<br /><br />For many players, <a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a> is considered one of the more difficult instances to navigate, alongside <a href=\"/classic/cn/zone=1337/奥达曼\">奥达曼</a> and <a href=\"/classic/cn/zone=2100/玛拉顿\">玛拉顿</a>. While the instance is quite large and has a number of alternative paths, the information below should be beneficial in locating and traversing the instance.<br /><br />For <b>Alliance</b>, simply travel West along the road in <a href=\"/classic/cn/zone=1/丹莫罗\">丹莫罗</a>, once you exit <a href=\"/classic/cn/zone=1537/铁炉堡\">铁炉堡</a>.<br /><br /><a href=\"/classic/cn/npc=3413/索维克\">索维克</a><br /><br />For <b>Horde</b> to get to <a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a>, they can actually teleport through a short quest chain. Head to the <a href=\"/classic/cn/skill=202/工程学\">工程学</a> shop in <a href=\"/classic/cn/zone=1637/奥格瑞玛\">奥格瑞玛</a> and speak to <a href=\"/classic/cn/npc=3413/索维克\">索维克</a> to get <a href=\"/classic/cn/quest=2842/主工程师斯库提\">主工程师斯库提</a> (available at level 20). Take the boat from Ratchet to Booty Bay and you'll find <a href=\"/classic/cn/npc=7853/斯库提\">斯库提</a> along the docks, on the lower floor close to the inn.<br /><br /><a href=\"/classic/cn/npc=7853/斯库提\">斯库提</a><br /><br /><a href=\"/classic/cn/npc=7853/斯库提\">斯库提</a> <br /><br />Speak to <a href=\"/classic/cn/npc=7853/斯库提\">斯库提</a> and complete the quest and <a href=\"/classic/cn/quest=2843/出发-诺莫瑞根\">出发！诺莫瑞根！</a> and you'll get <b><i>beamed</i></b> up into <a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a> with the help of <a href=\"/classic/cn/item=9173/地精传送器\">地精传送器</a>.<br /><br /><h3 class=\"heading-size-3\">Dungeon Entrances</h3><br /><a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a> is located in western <a href=\"/classic/cn/zone=1/丹莫罗\">丹莫罗</a>, and has two dungeon entrances located in the Train Depot (the area that Horde players teleport into that is also near the elevator area). The front entrance leads to The Clockwerk Run near <a href=\"/classic/cn/npc=7079/粘性辐射尘\">粘性辐射尘</a>, and the backdoor entrance leads to the Engineering Labs containing <a href=\"/classic/cn/npc=6229/群体打击者9-60\">群体打击者9-60</a>. The backdoor entrance requires either the <a href=\"/classic/cn/item=6893/车间钥匙\">车间钥匙</a> or a <a href=\"/classic/cn/class=4/潜行者\">潜行者</a> with at least 150 <a href=\"/classic/cn/skill=633/开锁\">开锁</a>.<br /><br /><b>Gnomeregan Front Entrance</b>Located on the western side of the Train Depot.<br /><b>Gnomeregan Backdoor Entrance</b>Located on the northern side of the Train Depot.<br /><br /><h3 class=\"heading-size-3\">Instance Map</h3><br />The instance map below denotes the location of each boss in <a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a>. The front entrance is northeast of <a href=\"/classic/cn/npc=7079/粘性辐射尘\">粘性辐射尘</a> (2), and the backdoor entrance is east of <a href=\"/classic/cn/npc=6229/群体打击者9-60\">群体打击者9-60</a> (4).<br /><div class=\"quote-box\" data-type=\"box\"><div class=\"quote-header\"></div><div class=\"quote-body\"><b>1:</b> <a href=\"/classic/cn/npc=7361/格鲁比斯\">格鲁比斯</a> (Spawns during the cave encounter)<br /><b>2:</b> <a href=\"/classic/cn/npc=7079/粘性辐射尘\">粘性辐射尘</a> (Bottom floor of the Hall of Gears)<br /><b>3:</b> <a href=\"/classic/cn/npc=6235/电刑器6000型\">电刑器6000型</a> (Center of the upper area in the Launch Bay)<br /><b>4:</b> <a href=\"/classic/cn/npc=6229/群体打击者9-60\">群体打击者9-60</a> (Upper area of the Engineering Labs)<br /><b>5:</b> <a href=\"/classic/cn/npc=6228/黑铁大师\">黑铁大师</a> (Rare spawn in the last tunnel)<br /><b>6:</b> <a href=\"/classic/cn/npc=7800/机械师瑟玛普拉格\">机械师瑟玛普拉格</a> (Center of the Tinkers' Court)</div></div><br /><br /><h3 class=\"heading-size-3\">Lore</h3><br /><div class=\"quote-box\" data-type=\"box\"><div class=\"quote-header\"></div><div class=\"quote-body\"><i>Located in Dun Morogh, the technological wonder known as Gnomeregan has been the gnomes' capital city for generations. Recently, a hostile race of mutant troggs infested several regions of Dun Morogh - including the great gnome city. In a desperate attempt to destroy the invading troggs, High Tinker Mekkatorque ordered the emergency venting of the city's radioactive waste tanks. Several gnomes sought shelter from the airborne pollutants as they waited for the troggs to die or flee. Unfortunately, though the troggs became irradiated from the toxic assault - their siege continued, unabated. Those gnomes who were not killed by noxious seepage were forced to flee, seeking refuge in the nearby dwarven city of Ironforge. There, High Tinker Mekkatorque set out to enlist brave souls to help his people reclaim their beloved city. It is rumored that Mekkatorque's once-trusted advisor, Mekgineer Thermaplugg, betrayed his people by allowing the invasion to happen. Now, his sanity shattered, Thermaplugg remains in Gnomeregan - furthering his dark schemes and acting as the city's new techno-overlord.</i></div></div><br /><br /><h2 class=\"heading-size-2\">Gnomeregan Recommended Classes</h2><br />Dungeons are usually completed with five players, comprising the following roles:<br /><ul><li>A <b>Tank</b> to hold threat, absorb damage, and prevent the enemy mobs from killing the DPS and healer. A Tank Warrior with a <a href=\"https://www.wowhead.com/classic/shields\">shield</a> using proper threat-generatig abilities like <a href=\"/classic/cn/spell=11597/破甲攻击\">破甲攻击</a> and <a href=\"/classic/cn/spell=23925/盾牌猛击\">盾牌猛击</a> is a popular choice for tanking. Check out our Tank Warrior Rotation Advice to familiarize yourself with important abilities before tanking a dungeon.</li><li>Three <b>DPS</b> to deal the majority of damage to enemies and bosses. All classes can deal damage, but the most popular DPS classes while leveling are Mage, Warrior, Rogue, Warlock, and Hunter. Hybrids can DPS, but they will usually end up healing.</li><li>A <b>Healer</b> to keep the party alive and resurrect dead players. A Healing Priest is a popular option for healing due to their versatile toolkit and buffs like <a href=\"/classic/cn/spell=1243/真言术-韧\">真言术：韧</a>, but Druids, Paladins, and Shaman can also heal.</li></ul><br /><br />For <a href=\"/classic/cn/zone=721/诺莫瑞根\">诺莫瑞根</a>, having a versatile group will prove to be useful. Some fights contain large pulls of non-elite enemies mixed in with a few elites. AoE and cleaving will be extremely helpful in those situations. Most of the mobs are <b>Troggs, Diseased Gnomes</b> and <b>Mechs</b>.<br /><br /><h2 class=\"heading-size-2\">Bosses</h2><br /><br /><h3 class=\"heading-size-3\">Grubbis</h3><br /><br /><a href=\"/classic/cn/npc=7361/格鲁比斯\">格鲁比斯</a> is located near the instance entrance in the cave area connected to the Hall of Gears. To start the event to spawn <a href=\"/classic/cn/npc=7361/格鲁比斯\">格鲁比斯</a>, speak to <a href=\"/classic/cn/npc=7998/爆破专家艾米-短线\">爆破专家艾米·短线</a>. Once the event has started, mobs will spawn from the cave before Emi triggers explosives to close it off. <a href=\"/classic/cn/npc=7361/格鲁比斯\">格鲁比斯</a> will spawn from the second cave before the explosives go off. <br /><br /><h3 class=\"heading-size-3\">Viscous Fallout</h3><br /><br /><a href=\"/classic/cn/npc=7079/粘性辐射尘\">粘性辐射尘</a> is located in the Hall of Gears on the irradiated ground level. It is recommended to clear out the trash mobs around them so they can be pulled without any adds.<br /><br /><h3 class=\"heading-size-3\">Electrocutioner 6000</h3><br /><br /><a href=\"/classic/cn/npc=6235/电刑器6000型\">电刑器6000型</a> is located in the Launch Bay on the elevated launch pad, suspended above the circular walkway at the center of the room. This boss drops <a href=\"/classic/cn/item=6893/车间钥匙\">车间钥匙</a>.<br /><table><tr><td><b>Abilities</b></td></tr><br /><tr><td> <a href=\"/classic/cn/spell=11085/闪电链\">闪电链</a> <a href=\"/classic/cn/spell=11082/百万伏特\">百万伏特</a> <a href=\"/classic/cn/spell=11084/震击\">震击</a> </td></tr> <br /></table><br /><br /><h3 class=\"heading-size-3\">Crowd Pummeler 9-60</h3><br /><br /><a href=\"/classic/cn/npc=6229/群体打击者9-60\">群体打击者9-60</a> is located in the Engineering Labs and can be found on the upper southern ledge.<br /><table><tr><td><b>Abilities</b></td></tr><br /><tr><td> <a href=\"/classic/cn/spell=8374/圆弧斩\">圆弧斩</a> <a href=\"/classic/cn/spell=10887/群体打击\">群体打击</a> <a href=\"/classic/cn/spell=5568/践踏\">践踏</a> </td></tr> <br /></table><br /><br /><h3 class=\"heading-size-3\">Dark Iron Ambassador (Rare)</h3><br /><br /><a href=\"/classic/cn/npc=6228/黑铁大师\">黑铁大师</a> is located near the end of the instance leading up to the Tinkers' Court. Given their rare nature, they may not always spawn. If they do spawn, they tend to patrol on the north side of the tunnel leading to <a href=\"/classic/cn/npc=7800/机械师瑟玛普拉格\">机械师瑟玛普拉格</a>.<br /><table><tr><td><b>Abilities</b></td></tr><br /><tr><td> <a href=\"/classic/cn/spell=184/火焰之盾-ii\">火焰之盾 II</a> <a href=\"/classic/cn/spell=9053/火球术\">火球术</a> <a href=\"/classic/cn/spell=10870/召唤燃烧仆从\">召唤燃烧仆从</a> </td></tr> <br /></table><br /><br /><h3 class=\"heading-size-3\">Mekgineer Thermaplugg</h3><br /><br /><a href=\"/classic/cn/npc=7800/机械师瑟玛普拉格\">机械师瑟玛普拉格</a> is located at the end of the instance in the Tinkers' Court. During the encounter, <a href=\"/classic/cn/npc=7915/步行炸弹\">步行炸弹</a>s will spawn from the six bomb dispensers. Groups can either kill the bombs before they reach the group, or designate a player to shut down the bomb dispensers by pressing the button on the right-hand side of each dispenser.<br /><table><tr><td><b>Abilities</b></td></tr><br /><tr><td> Summon <a href=\"/classic/cn/spell=7915/召唤海龟\">召唤海龟</a> <a href=\"/classic/cn/spell=11130/击退\">击退</a> </td></tr> <br /></table><br /><br /><h2 class=\"heading-size-2\">Gnomeregan Loot</h2><br /><br /><h3 class=\"heading-size-3\">Boss Drops</h3><br /><table><br /><tr><td><b>Type</b></td><td><b>Item</b></td><td><b>Boss</b></td></tr><br /><tr><td>Mail Hands</td> <td><a href=\"/classic/cn/item=9445/格鲁比斯的爪子\">格鲁比斯的爪子</a></td> <td>Grubbis</td></tr><br /><tr><td>Cloth Boots</td> <td><a href=\"/classic/cn/item=9454/酸性长靴\">酸性长靴</a></td> <td>Viscous Fallout</td></tr><br /><tr><td>Two-Hand Staff</td> <td><a href=\"/classic/cn/item=9452/水藤\">水藤</a></td> <td>Viscous Fallout</td></tr><br /><tr><td>One-Hand Dagger</td> <td><a href=\"/classic/cn/item=9453/剧毒复仇者\">剧毒复仇者</a></td> <td>Viscous Fallout</td></tr><br /><tr><td>Finger</td> <td><a href=\"/classic/cn/item=9447/电刑器腿杆\">电刑器腿杆</a></td> <td>Electrocutioner 6000</td></tr><br /><tr><td>Main Hand Sword</td> <td><a href=\"/classic/cn/item=9446/电刑器的腿\">电刑器的腿</a></td> <td>Electrocutioner 6000</td></tr><br /><tr><td>Cloth Wrist</td> <td><a href=\"/classic/cn/item=9448/蜘蛛坦克油布\">蜘蛛坦克油布</a></td> <td>Electrocutioner 6000</td></tr><br /><tr><td>Two-Hand Mace</td> <td><a href=\"/classic/cn/item=9449/手动惩戒器\">手动惩戒器</a></td> <td>Crowd Pummeler 9-60</td></tr><br /><tr><td>Leather Feet</td> <td><a href=\"/classic/cn/item=9450/侏儒机械人操作靴\">侏儒机械人操作靴</a></td> <td>Crowd Pummeler 9-60</td></tr><br /><tr><td>Gun</td> <td><a href=\"/classic/cn/item=9456/玻璃枪\">玻璃枪</a></td> <td>Dark Iron Ambassador</td></tr><br /><tr><td>One-Hand Mace</td> <td><a href=\"/classic/cn/item=9457/皇家外交官节杖\">皇家外交官节杖</a></td> <td>Dark Iron Ambassador</td></tr><br /><tr><td>Leather Wrist</td> <td><a href=\"/classic/cn/item=9455/使者腕轮\">使者腕轮</a></td> <td>Dark Iron Ambassador</td></tr><br /><tr><td>Shield</td> <td><a href=\"/classic/cn/item=9458/瑟玛普拉格的中央模组\">瑟玛普拉格的中央模组</a></td> <td>Mekgineer Thermaplugg</td></tr><br /><tr><td>Two-Hand Axe</td> <td><a href=\"/classic/cn/item=9459/瑟玛普拉格的左臂\">瑟玛普拉格的左臂</a></td> <td>Mekgineer Thermaplugg</td></tr><br /><tr><td>Finger</td> <td><a href=\"/classic/cn/item=9461/充能齿轮\">充能齿轮</a></td> <td>Mekgineer Thermaplugg</td></tr><br /><tr><td>Cloth Head</td> <td><a href=\"/classic/cn/item=9492/电磁熔合激活器\">电磁熔合激活器</a></td> <td>Mekgineer Thermaplugg</td></tr><br /></table><br /><br /><h3 class=\"heading-size-3\">Miscellaneous Loot</h3><br /><br />The <a href=\"/classic/cn/object=19020/一箱整理过的零件\">一箱整理过的零件</a> can contain various <a href=\"/classic/cn/skill=202/工程学\">工程学</a> materials, such as <a href=\"/classic/cn/item=4382/青铜框架\">青铜框架</a>, <a href=\"/classic/cn/item=4371/青铜管\">青铜管</a>, <a href=\"/classic/cn/item=4364/粗制火药粉\">粗制火药粉</a>, <a href=\"/classic/cn/item=4363/铜质调节器\">铜质调节器</a>, <a href=\"/classic/cn/item=4361/铜管\">铜管</a>, <a href=\"/classic/cn/item=4405/粗制瞄准镜\">粗制瞄准镜</a>, <a href=\"/classic/cn/item=4359/一把螺栓\">一把螺栓</a>, <a href=\"/classic/cn/item=4377/烈性火药\">烈性火药</a>, and <a href=\"/classic/cn/item=4406/普通瞄准镜\">普通瞄准镜</a>. These boxes can be found in the following locations:<br /><div class=\"quote-box\" data-type=\"box\"><div class=\"quote-header\"></div><div class=\"quote-body\"><br /><b>1:</b> Located in the upper center area in the Hall of Gears.<br /><b>2:</b> Located in the cave area by <a href=\"/classic/cn/npc=7998/爆破专家艾米-短线\">爆破专家艾米·短线</a>.<br /><b>3:</b> Located in one of the bunkers in the Dormitory area.</div></div><br /><br />A <a href=\"/classic/cn/object=74448/坚固的大箱子\">坚固的大箱子</a> can be found in the following locations:<br /><div class=\"quote-box\" data-type=\"box\"><div class=\"quote-header\"></div><div class=\"quote-body\"><br /><b>1:</b> Located in the upper center area in the Hall of Gears.<br /><b>2:</b> Located in the upper east area in the Engineering Labs.<br /><b>3:</b> Located in one of the bunkers in the Dormitory area.</div></div><br /></noscript> </div> </div> </div> <script> WH.Page.Guide.initBody(); WH.SocialLinks && new WH.SocialLinks(WH.ge('guide-author-social-links')); </script> <div class=\"guide-utilities\"><div id=\"news-dynamic-ad\" data-zaf-dynamic=\"unit\" data-units-dynamic=\"unit\"></div> <div id=\"jkbfksdbl4\"></div> <div id=\"lkljbjkb574\" class=\"listview\"></div> <script> var tabsRelated = new Tabs({ parent: WH.ge('jkbfksdbl4'), trackable: \"Guide\", }); </script> <script> var lv_comments4 = []; var _ = g_users; _[\"Ankhira\"]={\"border\":0,\"roles\":0,\"joined\":\"2016-05-21T06:40:41-05:00\",\"posts\":15,\"gold\":4,\"silver\":17,\"reputation\":9179,\"copper\":50,\"tierClass\":null,\"tierTitle\":null};_[\"Nekitoss\"]={\"border\":1,\"roles\":0,\"joined\":\"2007-12-11T05:43:08-06:00\",\"posts\":1,\"gold\":1,\"silver\":23,\"reputation\":10030,\"copper\":28,\"tierClass\":null,\"tierTitle\":null,\"avatar\":1,\"avatarmore\":\"spell_shadow_metamorphosis\"};_[\"Berylin\"]={\"border\":0,\"roles\":0,\"joined\":\"2019-03-27T11:00:04-05:00\",\"posts\":0,\"gold\":0,\"silver\":0,\"reputation\":1305,\"copper\":10,\"tierClass\":null,\"tierTitle\":null};_[\"osoviejo\"]={\"border\":0,\"roles\":0,\"joined\":\"2008-10-21T16:49:24-05:00\",\"posts\":0,\"gold\":3,\"silver\":22,\"reputation\":7269,\"copper\":25,\"tierClass\":null,\"tierTitle\":null,\"avatar\":1,\"avatarmore\":\"inv_misc_beer_02\"};_[\"zz0dzz\"]={\"border\":0,\"roles\":0,\"joined\":\"2019-10-02T18:43:03-05:00\",\"posts\":1,\"gold\":0,\"silver\":1,\"reputation\":1277,\"copper\":12,\"tierClass\":null,\"tierTitle\":null};_[\"propyro\"]={\"border\":0,\"roles\":0,\"joined\":\"2009-01-23T09:37:10-06:00\",\"posts\":0,\"gold\":0,\"silver\":16,\"reputation\":4826,\"copper\":38,\"tierClass\":null,\"tierTitle\":null,\"avatar\":1,\"avatarmore\":\"inv_ingot_eternium\"};_[\"Terraaa\"]={\"border\":0,\"roles\":0,\"joined\":\"2021-12-14T10:49:58-06:00\",\"posts\":0,\"gold\":0,\"silver\":6,\"reputation\":1971,\"copper\":4,\"tierClass\":null,\"tierTitle\":null,\"avatar\":1,\"avatarmore\":\"ability_vehicle_electrocharge\",\"sig\":\" \"};_[\"itsuchur\"]={\"border\":0,\"roles\":272,\"joined\":\"2012-07-10T03:47:49-05:00\",\"posts\":364,\"gold\":8,\"silver\":39,\"reputation\":48493,\"copper\":199,\"tierClass\":\"premium-tier-rare\",\"tierTitle\":\"[稀有 Premium User]\",\"title\":\"Witness of Pandamonium\",\"avatar\":2,\"avatarmore\":\"4497\"}; var _ = g_users; _[\"Tomon\"]={\"border\":0,\"roles\":0,\"joined\":\"2015-05-07T08:36:45-05:00\",\"posts\":26,\"gold\":3,\"silver\":20,\"reputation\":14631,\"copper\":70,\"tierClass\":null,\"tierTitle\":null};_[\"marth354\"]={\"border\":0,\"roles\":0,\"joined\":\"2011-12-22T12:49:51-06:00\",\"posts\":156,\"gold\":4,\"silver\":23,\"reputation\":8853,\"copper\":113,\"tierClass\":null,\"tierTitle\":null};_[\"Ragor\"]={\"border\":4,\"roles\":256,\"joined\":\"2008-12-24T23:38:59-06:00\",\"posts\":15,\"gold\":2,\"silver\":23,\"reputation\":25191,\"copper\":30,\"tierClass\":\"premium-tier-rare\",\"tierTitle\":\"[稀有 Premium User]\",\"avatar\":2,\"avatarmore\":\"6315\"};_[\"osoviejo\"]={\"border\":0,\"roles\":0,\"joined\":\"2008-10-21T16:49:24-05:00\",\"posts\":0,\"gold\":3,\"silver\":22,\"reputation\":7269,\"copper\":25,\"tierClass\":null,\"tierTitle\":null,\"avatar\":1,\"avatarmore\":\"inv_misc_beer_02\"}; WH.Gatherer.addData(3, 4, {\"14639\":{\"name_enus\":\"Schematic: Minor Recombobulator\",\"quality\":1,\"icon\":\"inv_scroll_03\",\"screenshot\":{},\"jsonequip\":{\"avgbuyout\":15184,\"buyprice\":1500,\"reqskill\":202,\"reqskillrank\":140,\"sellprice\":375},\"attainable\":0,\"flags2\":24580,\"flags5\":0,\"displayName\":\"\",\"qualityTier\":0,\"qualityTierTexture\":\"\"},\"4413\":{\"name_enus\":\"Schematic: Discombobulator Ray\",\"quality\":2,\"icon\":\"inv_scroll_06\",\"screenshot\":{},\"jsonequip\":{\"avgbuyout\":3490000,\"reqskill\":202,\"reqskillrank\":160,\"sellprice\":450},\"attainable\":0,\"flags2\":24580,\"flags5\":0,\"displayName\":\"\",\"qualityTier\":0,\"qualityTierTexture\":\"\"}}); var lv_comments0 = [{\"commentv2\":1,\"number\":0,\"id\":3152213,\"nreplies\":2,\"sticky\":0,\"user\":\"Ankhira\",\"body\":\"Thanks for all the guides! They're really helping me out finding quests and such! Though, I had one request, would it perhaps be possible to maybe put an estimate amount of time you'll spend in the dungeon? :) That way people can maybe plan it depending on how much time they have!\",\"date\":\"2019-09-04T15:01:53-05:00\",\"rating\":8,\"indent\":0,\"roles\":0,\"deleted\":0,\"outofdate\":0,\"userRating\":0,\"replies\":[{\"body\":\"Agreed on the good job. But the time estimate would be very problematic. How do you want to compare one group that clears everything via aoe and almost never stop to other who are picking mob by mob and going through the instance carefully :)\",\"creationdate\":\"2019-09-08T06:25:45-05:00\",\"id\":1326715,\"rating\":-1,\"commentid\":3152213,\"dataTree\":4,\"roles\":0,\"username\":\"Tomon\",\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false},\"downvotedByUser\":false,\"reportedByUser\":false,\"votedByUser\":false},{\"body\":\"You simply put an aoe farm time and a normal time for doing a dungeon normally...\",\"creationdate\":\"2019-09-09T11:52:39-05:00\",\"id\":1326934,\"rating\":2,\"commentid\":3152213,\"dataTree\":4,\"roles\":0,\"username\":\"marth354\",\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false},\"downvotedByUser\":false,\"reportedByUser\":false,\"votedByUser\":false}],\"dataTree\":4,\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false}},{\"commentv2\":1,\"number\":1,\"id\":3161869,\"nreplies\":0,\"sticky\":0,\"user\":\"Nekitoss\",\"body\":\"What about noticeable trash? There is some at least in tunnel before last boss\",\"date\":\"2019-10-06T03:16:15-05:00\",\"rating\":2,\"indent\":0,\"roles\":0,\"deleted\":0,\"outofdate\":0,\"userRating\":0,\"replies\":[],\"dataTree\":4,\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false}},{\"commentv2\":1,\"number\":2,\"id\":3173404,\"nreplies\":0,\"sticky\":0,\"user\":\"Berylin\",\"body\":\"The general map is very helpful, but marking the front and back entrances would be even MORE helpful.\",\"date\":\"2019-11-24T16:03:45-06:00\",\"rating\":3,\"indent\":0,\"roles\":0,\"deleted\":0,\"outofdate\":0,\"userRating\":0,\"replies\":[],\"dataTree\":4,\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false}},{\"commentv2\":1,\"number\":3,\"id\":3180586,\"nreplies\":2,\"sticky\":0,\"user\":\"osoviejo\",\"body\":\"The requirements listed in the guide for the two engineering schematics , and are reversed.\",\"date\":\"2020-01-08T23:11:31-06:00\",\"rating\":3,\"indent\":0,\"roles\":0,\"deleted\":0,\"outofdate\":0,\"userRating\":0,\"replies\":[{\"body\":\"Looks like you're right, I went ahead and fixed this. Thank you!\",\"creationdate\":\"2020-01-09T01:36:04-06:00\",\"id\":1346643,\"rating\":0,\"commentid\":3180586,\"dataTree\":4,\"roles\":256,\"username\":\"Ragor\",\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false},\"downvotedByUser\":false,\"reportedByUser\":false,\"votedByUser\":false},{\"body\":\"Still not quite right. The description of the punch cards and engineering skill required for the two schematics are still reversed. It's Delta and 160 for Discombobulator, and Yellow and 140 for Minor Recombobulator. The Punchograph locations are correct as stated.\",\"creationdate\":\"2020-01-10T23:46:39-06:00\",\"id\":1346908,\"rating\":0,\"commentid\":3180586,\"dataTree\":4,\"roles\":0,\"username\":\"osoviejo\",\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false},\"downvotedByUser\":false,\"reportedByUser\":false,\"votedByUser\":false}],\"dataTree\":4,\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false},\"lastEdit\":[\"2020-01-08T23:12:25-06:00\",2,\"osoviejo\"]},{\"commentv2\":1,\"number\":4,\"id\":3188354,\"nreplies\":0,\"sticky\":0,\"user\":\"zz0dzz\",\"body\":\"In order to pick up the quest from sovik you must first start \"rig wars\" on the guy next to him.\",\"date\":\"2020-02-04T17:26:48-06:00\",\"rating\":1,\"indent\":0,\"roles\":0,\"deleted\":0,\"outofdate\":0,\"userRating\":0,\"replies\":[],\"dataTree\":4,\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false}},{\"commentv2\":1,\"number\":5,\"id\":5157194,\"nreplies\":0,\"sticky\":0,\"user\":\"propyro\",\"body\":\"There's a minor error in this guide. Under the notable engineering schematics at the top, it lists the Dormitory Zone as being the location for the Punchograph 3005-D so you can turn in for the Discombobulator Schematic. This is incorrect, 3005-B is in the Dormitory, 3005-D is in the workshop, below Crowd Pummeler 90-C.\",\"date\":\"2021-04-20T14:43:06-05:00\",\"rating\":2,\"indent\":0,\"roles\":0,\"deleted\":0,\"outofdate\":0,\"userRating\":0,\"replies\":[],\"dataTree\":4,\"markupDisabledEnvironments\":{\"ptr\":true,\"ptr2\":true,\"beta\":false,\"d4ptr\":false,\"d4beta\":false,\"classicptr\":false}}]; </script> <noscript><div id=\"user-comments\"><h2 class=\"heading-size-2\">评论</h2><div class=\"user-post-\"><h3 class=\"heading-size-3\">评论来自 <b>Ankhira</b></h3>Thanks for all the guides! They're really helping me out finding quests and such! <br /><br />Though, I had one request, would it perhaps be possible to maybe put an estimate amount of time you'll spend in the dungeon? :) That way people can maybe plan it depending on how much time they have!</div> <div class=\"user-post-\"><h3 class=\"heading-size-3\">评论来自 <b>Nekitoss</b></h3>What about noticeable trash? There is some at least in tunnel before last boss</div> <div class=\"user-post-\"><h3 class=\"heading-size-3\">评论来自 <b>Berylin</b></h3>The general map is very helpful, but marking the front and back entrances would be even MORE helpful.</div> <div class=\"user-post-\"><h3 class=\"heading-size-3\">评论来自 <b>osoviejo</b></h3>The requirements listed in the guide for the two engineering schematics <a href=\"/classic/cn/item=14639/结构图-自动净化装置\">结构图：自动净化装置</a>, and <a href=\"/classic/cn/item=4413/结构图-退化射线\">结构图：退化射线</a> are reversed.</div> <div class=\"user-post-\"><h3 class=\"heading-size-3\">评论来自 <b>zz0dzz</b></h3>In order to pick up the quest from sovik you must first start \"rig wars\" on the guy next to him.</div> <div class=\"user-post-\"><h3 class=\"heading-size-3\">评论来自 <b>propyro</b></h3>There's a minor error in this guide. Under the notable engineering schematics at the top, it lists the Dormitory Zone as being the location for the Punchograph 3005-D so you can turn in for the Discombobulator Schematic. This is incorrect, 3005-B is in the Dormitory, 3005-D is in the workshop, below Crowd Pummeler 90-C.</div> </div> </noscript> <script type=\"text/javascript\"> new Listview({ data: lv_comments4, id: 'comments', name: WH.TERMS.comments, parent: lkljbjkb574, tabOpts: {className: 'ugc-tab ugc-tab-comments'}, tabs: tabsRelated, template: 'comment', });if (lv_comments0 && lv_comments0.length) { new Listview({ data: lv_comments0, id: 'english-comments', name: WH.TERMS.englishcomments, parent: lkljbjkb574, tabOpts: {className: 'ugc-tab ugc-tab-comments'}, tabs: tabsRelated, template: 'comment', }); } tabsRelated.flush(); </script> <h2 class=\"heading-size-2 wh-heading-responsive contribute-heading\" data-text-style=\"heading-2-medium\">贡献</h2><div id=\"lkgljhkv456\" class=\"comment-tabs\"></div> <div class=\"text comment-tabs-body individual-tab\"> <div class=\"tabbed-contents\" role=\"tabpanel\" style=\"clear:none\"> <div id=\"tab-add-your-comment\" style=\"display:none\"> 在发表评论前，请留心以下提示：<ul> <li><div>您的评论必须为简体中文，否则将会被删除。</div></li> <li><div>不知道如何发评论？参考我们的 <a href=\"/classic/cn/help=commenting-and-you\" target=\"_blank\">格式指南</a>！</div></li> <li><div>发表前最好先自行校对一次。</div></li> <li><div>有问题可以访问我们的 <a href=\"/classic/cn/forums\">论坛</a> 来寻求帮助。</div></li> </ul> <div id=\"comment\" class=\"add-comment-form\"> <section class=\"comments-post-header\"> <div class=\"imitation-heading heading-size-3 wh-heading-responsive contribute-heading-interior\" data-text-style=\"heading-3\">发表评论</div> </section> <form> <div class=\"comment-edit-body\"> <textarea class=\"comment-editbox\" rows=\"10\" cols=\"40\" name=\"commentbody\" disabled=\"disabled\"></textarea> </div> <small>你没有登录。 <a href=\"/classic/cn/account=signin\">请登录</a>或者<a href=\"/classic/cn/auth/register\">注册账号</a>来添加你的评论。</small> </form> </div> </div> <div id=\"tab-submit-a-screenshot\" style=\"display:none\"> 使用下面的表格浏览您的截屏。 <ul> <li><div>[Screenshots containing UI elements are generally declined on sight, the same goes for screenshots from the modelviewer or character selection screen.]</div></li> <li><div>质量越高越好！</div></li> <li><div>[Please review our <a href=\"/classic/cn/help=screenshot-guidelines\" target=\"_blank\">Screenshot Guidelines</a> before submitting!]</div></li> </ul> <form action=\"\" method=\"post\"> <input type=\"file\" name=\"screenshotfile\" disabled=\"disabled\"><br> <small>您没有登录。请<a href=\"/classic/cn/account=signin\">登录</a> 后提交截屏。</small> </form> </div> <div id=\"tab-suggest-a-video\" style=\"display:none\"> 将视频URL输入下列表格即可。 <div class=\"pad2\"></div> <form action=\"/classic/cn/video=add&100.8049\" method=\"post\" enctype=\"multipart/form-data\" onsubmit=\"return vi_validateForm(this)\"> URL：<input type=\"text\" name=\"videourl\" style=\"width:35%\"> <small>支持：仅限 YouTube</small> <div class=\"pad\"></div> <input type=\"submit\" value=\"提交\"> <div class=\"pad3\"></div> <small class=\"q0\">说明：您的视频需通过审核才能在站点上显示。</small> </form> </div> <div id=\"tab-submit-your-data\" style=\"display: none\"> <p>我们用 <b>Wowhead 客户端</b>保证数据库的及时更新，向您提供额外的有趣的功能！ </p> <div class=\"pad2\"></div> <p>两大目的： </p> <ol> <li><div>它还维护WoW的一个插件<b>Wowhead Looter</b>, 在您游戏时采集数据！ </div></li> <li><div>它将<b>采集所得数据</b> 上传至Wowhead，保证数据库时刻掌握最新信息！ </div></li> </ol> <p>您可以用它追踪完成的任务、配方、坐骑、伙伴宠物以及头衔！ </p> <div class=\"pad2\"></div> <p>您还在等什么？立即 <a href=\"/classic/cn/client\">下载客户端</a> 整装待发吧。 </p> </div> </div> </div> <script> var tabsContribute = new Tabs({parent: WH.ge('lkgljhkv456')}); tabsContribute.add(WH.TERMS.addyourcomment_stc, {id: 'add-your-comment'});tabsContribute.flush(); </script></div></div> <div class=\"sidebar-wrapper\" data-position=\"right\"> <div class=\"rail-track\"> <div class=\"zaf-block\" id=\"zaf-right-rail-1\" data-zaf-slot=\"true\"></div> </div> <div class=\"rail-track\"> <div class=\"zaf-block\" id=\"zaf-right-rail-2\" data-zaf-slot=\"true\"></div> </div> </div> </div></div> <div class=\"skin-wrapper\" data-position=\"right\"></div> </div><footer class=\"footer\" data-cls-hack=\"true\"></footer></div> <script> WH.Layout.Footer.init([[1,\"所有新闻文章\",\"/news/rss/all\"],[2,\"经典怀旧服系列 WoW 新闻\",\"/news/rss/classic-series\"],[3,\"正式服新闻\",\"/news/rss/retail\"],[4,\"开发中的魔兽新闻\",\"/news/rss/in-dev\"],[5,\"其他暴雪游戏新闻\",\"/news/rss/other-blizzard-games\"],[6,\"暗黑破坏神新闻\",\"/news/rss/diablo\"],[7,\"魔兽世界经典怀旧服新闻\",\"/news/rss/classic\"],[26,\"[WoW Classic Era news]\",\"/news/rss/classic-era\"],[27,\"[WoW Classic Seasonal news]\",\"/news/rss/classic-seasonal\"],[8,\"TBC WoW 新闻\",\"/news/rss/burning-crusade-classic\"],[22,\"[Wrath WoW news]\",\"/news/rss/wotlk-classic\"],[24,\"[Cataclysm WoW news]\",\"/news/rss/cata-classic\"],[25,\"[Mists WoW news]\",\"/news/rss/mists-classic\"],[9,\"暗黑破坏神 II：狱火重生新闻\",\"/news/rss/diablo-2\"],[10,\"暗黑破坏神：不朽新闻\",\"/news/rss/diablo-immortal\"],[11,\"暗黑破坏神 IV 新闻\",\"/news/rss/diablo-4\"],[12,\"[All WoW news]\",\"/news/rss/all-wow\"],[13,\"[WoW PTR news]\",\"/news/rss/wow-ptr\"],[14,\"[WoW Beta news]\",\"/news/rss/wow-beta\"],[15,\"[WoW Live news]\",\"/news/rss/wow-live\"],[17,\"[Hearthstone news]\",\"/news/rss/hearthstone\"],[18,\"[Overwatch news]\",\"/news/rss/overwatch\"],[19,\"[Heroes of the Storm news]\",\"/news/rss/heroes\"],[20,\"[Warcraft III news]\",\"/news/rss/wc3\"],[21,\"[Starcraft news]\",\"/news/rss/starcraft\"],[23,\"[Warcraft Rumble news]\",\"/news/rss/rumble\"],[28,\"[Forever WoW news]\",\"/news/rss/forever\"]]); </script> <script> qcdata = {} || qcdata; (function(){ var elem = document.createElement('script'); elem.src = (document.location.protocol === \"https:\" ? \"https://secure\" : \"http://pixel\") + \".quantserve.com/aquant.js?a=p-80xBzMhbKolFI\"; elem.async = true; elem.type = \"text/javascript\"; var scpt = document.getElementsByTagName('script')[0]; scpt.parentNode.insertBefore(elem,scpt); }()); var qcdata = {qacct: 'p-80xBzMhbKolFI', labels: ''}; </script> <noscript> <img src=\"//pixel.quantserve.com/pixel/p-80xBzMhbKolFI.gif?labels=_fp.event.Default\" style=\"display: none;\" border=\"0\" height=\"1\" width=\"1\" alt=\"Quantcast\"/> </noscript> </body></html>",
+   "spells": []
+  }
+ },
+ "hall_of_thanes": {
+  "[quest=98423]": {
+   "text": "Good To Know This quest item, is located in one of the vaults in the final room, the Reliquary of Kings.",
+   "spells": []
+  },
+  "Dark Iron Looter and Dark Iron Engineer": {
+   "text": "The intro mobs are not too serious, and the trash only gets challenging once you get to the Dark Iron side. The «N263396»s deal rapid auto attacks with their daggers, and pulling too many at once can really drain your tank's health fast! The «N263397» will throw bombs at their target location.",
+   "spells": []
+  },
+  "Dark Iron Summoner and Fiery Assistant": {
+   "text": "«N263438» is a caster-type mob that casts Fireballs and will summon a «S1291218»",
+   "spells": []
+  },
+  "Lesser Stone Golem": {
+   "text": "These «N263466»s deal intense damage and have increased movement speed.",
+   "spells": []
+  },
+  "Faldrim Anvilmar": {
+   "text": "«N261306» patrols the center of Anvilmar's Rest and is a simple tank-and-spank fight. The main concern from this is accidentally pulling the boss with any trash should it patrol too close to your party. Clear out a section of the room, wait for him to patrol to your side, then pull. He will auto-attack and cast Mind Blast , and will apply a 10-minute Curse of Anvilmar to the tank.",
+   "spells": [
+    26048,
+    1292602
+   ]
+  },
+  "Magmatus": {
+   "text": "«N261316» is accompanied by a «N263438» and has a couple of abilities that really put a focus on healing. On pull, the tank should pull the boss away from the rest of the party, focusing down the Summoner, as the boss will cast a Fire Nova -like ability every so often. After the Summoner is taken down, focus the boss down. Magmatus will also cast Combust on a random player",
+   "spells": [
+    1293228
+   ]
+  },
+  "Plunder": {
+   "text": "«N261311» patrols his hallway and only has one ability: a Knockback . All you need to do is pull this boss into a safe area where you won't get knocked into any other mobs. Have everyone positioned against a wall or corner to add additional mitigation to this mechanic.",
+   "spells": [
+    10101
+   ]
+  },
+  "Dirgen Dirgehammer": {
+   "text": "«N261319» is the final encounter here. This boss is accompanied by two «N263466»s, with «N263396»s around the edge of the room. Before starting this encounter, take out all the looters, as the boss has an AoE Fear and a Rend. This is heavy damage on your tank, so take out each golem one by one and use stuns and fears to mitigate damage.",
+   "spells": [
+    26070,
+    12054
+   ]
+  }
+ },
+ "ragefire_chasm": {
+  "Oggleflint": {
+   "text": "«N11517» is flanked by 2 troggs in his room. Make sure to CC at least one trogg before engaging him. Allow your tank to pick up the remaining add and face Oggleflint away from the group (cleave). All dps should work to nuke down the add first as before switching to Oggleflint. Make sure to kill the CC'ed add once the boss and the first add are dead.",
+   "spells": [
+    15496
+   ]
+  },
+  "Taragaman the Hungerer": {
+   "text": "«N11520» is stationed in the middle of a platform surrounded by lava. Have your tank pull him away from the edges of the platform so that «S18072» does not knock him off the platform. Make sure your range is at max range so «S11970» inflicts minimal damage. The rest of the fight is a basic tank-and-spank.",
+   "spells": [
+    11970,
+    18072
+   ]
+  },
+  "Jergosh the Invoker": {
+   "text": "Like Oggleflint, «N11518» is flanked by two mobs. One of the mobs should be CC'ed while the other is focused down before transitioning to Jergosh. He casts «S20800» and «S18267» which can be a problem for tanks trying to gain threat and intense on healers, but overall this is a simple and straightforward fight.",
+   "spells": [
+    18267,
+    20800
+   ]
+  },
+  "Bazzalan": {
+   "text": "«N11519» also has 2 adds, but the mob on the right (his left) can be pulled without engaging the boss, greatly reducing the difficulty of the fight. The other mob should be CC'ed while the group focuses on the boss as he deals significant single-target damage and should be killed ASAP. Other than that, another tank-and-spank.",
+   "spells": [
+    14873,
+    2818
+   ]
+  }
+ },
+ "ruins_of_lordaeron": {
+  "The \"Spider Wing\"": {
+   "text": "The intro mobs are not too serious, and these spider mobs, «N250735», «N250484», «N250488», are just grouped in packs and can patrol the area.",
+   "spells": []
+  },
+  "Skeletal Soldiers and Banshees": {
+   "text": "«N250626» are physical undead soldiers that patrol the area near The Baron, along with «N250617»s near the area",
+   "spells": []
+  },
+  "Flesh Golem": {
+   "text": "These «N255109»s deal intense damage and have a threat-reducing Knock Away ability.",
+   "spells": []
+  },
+  "Ghouls and Ragged Ghouls": {
+   "text": "«N250483» patrols King's Alley and is a simple tank-and-spank fight. They're accompanied by two spider mobs, and those should be taken down asap. Use stuns to make this fight easier and cleanse the Leech Poison debuff off of the tank when applied.",
+   "spells": [
+    3358,
+    17307,
+    1220855,
+    1266011,
+    1301635,
+    1279983
+   ]
+  },
+  "Witherfang": {
+   "text": "«N250483» patrols King's Alley and is a simple tank-and-spank fight. They're accompanied by two spider mobs, and those should be taken down asap. Use stuns to make this fight easier and cleanse the Leech Poison debuff off of the tank when applied.",
+   "spells": [
+    3358
+   ]
+  },
+  "The Baron": {
+   "text": "«N250660» is a hard-hitting boss with one main ability, Knockout . This deals high instant damage and has a threat drop in it. If your tank is not at full HP, this ability can kill the tank. Use stuns to keep the boss from casting this.",
+   "spells": [
+    17307
+   ]
+  },
+  "Viktor The Vile": {
+   "text": "«N256035» is found when players activate the fire in the chimney located in the building to the southwest in Lordamere Overlook by the Lordaeron Graveyard. Players must clear 5 waves of adds before fighting Viktor. He only has powerful melee swings and the same Leech Poison ability as Witherfang, so make sure you let the tank get aggro first",
+   "spells": [
+    3358
+   ]
+  },
+  "The Abandoned": {
+   "text": "«N250631» will be found as soon as you enter Market Street from Lordamere Overlook. The statue in this area will trigger 3 waves of adds before The Abandoned comes out. He will Frost Nova players, apply a chill effect to those who physically hit him, and cast Drain Life on the tank.",
+   "spells": [
+    1220855,
+    1266011
+   ]
+  },
+  "Bjork": {
+   "text": "«N256097» only has one ability: a very short Anti-Magic Shield . It goes away pretty fast, so this boss is a very quick tank and spank.",
+   "spells": [
+    1301635
+   ]
+  },
+  "Rath'Mael": {
+   "text": "«N250657» has one ability: Flamestrike . Move out of it as soon as he channels the cast, as it's always cast where the tank was when the cast started. You can also stun him to prevent him from casting it altogether.",
+   "spells": [
+    1279983
+   ]
+  }
+ },
+ "shadowfang_keep": {
+  "Shadowfang Moonwalker": {
+   "text": "The «N3853» is a Worgen-like mob located primarily in the courtyard of Shadowfang Keep. They have one notable ability, «S24021», which makes them immune to all magical spells for 10 seconds.",
+   "spells": []
+  },
+  "Wailing Guardsman": {
+   "text": "«N3877» is a ghostly humanoid mob that can be found on the upper levels of Shadowfang Keep. They have one primary ability, «S7074», which silences all players within 5 yards for 5 seconds.",
+   "spells": []
+  },
+  "Rethilgore": {
+   "text": "«N3914» is a tank and spank in the truest sense of the word. His only ability, Soul Drain, is negligable. He also has a moderately low health pool and a Loot table comparable to his difficulty. The only thing you should be aware of are the mobs surrounding him, 2 of which should be pulled prior to engaging the boss. The one mob that will remain, a Bleak Worg, should be polymorphed or burned down first prior to switching DPS to Rethilgore.",
+   "spells": [
+    7295
+   ]
+  },
+  "Fel Steeds / Shadow Charger": {
+   "text": "The «N3864» and «N3865» deal an incredibly high amount of damage and pulling one of them will pull all three, regardless of how carefully you pull the first mob. Make sure to polymorph at least one of the horses and have a hunter or warlock pet tank the second while your main tank and DPS is focused on the third before cycling to the next mob. Your healer should be aware of the massive amount of damage that will be incoming during this encounter.",
+   "spells": [
+    7139
+   ]
+  },
+  "Razorclaw the Butcher": {
+   "text": "«N3886» is a simple tank and spank. Make sure to clear the room before you pull him, as well as the surrounding patrols. His Abilities are negligible, and no further explanation is required.",
+   "spells": [
+    7485
+   ]
+  },
+  "Baron Silverlaine": {
+   "text": "What makes «N3887» challenging is his higher level (24) and his primary ability, Veil of Shadow. This ability reduces healing effects on a target by 75%, effectively serving as a beefed up mortal strike. Make sure your hybrid classes are assisting the healer here with tank healing as the tank will go down quickly otherwise. Aside from that, the fight is a tank and spank.",
+   "spells": [
+    7068
+   ]
+  },
+  "Commander Springvale": {
+   "text": "«N4278» is flanked by two mobs that will pull with him. The first is a Haunted Servitor, which should be burned down quickly. The second is a Wailing Guardsman, which would pulled by either a hunter or warlock pet away from the group as it can cast an AOE silence that can potentially wipe the party. Make sure to prioritize Springvale after the Servitor is killed, and interrupt his healing spells. Once he's down, take out the guardsman who again should be tanked off to the side by either a pet or possibly a Warrior/Druid offtank.",
+   "spells": [
+    5588,
+    1026
+   ]
+  },
+  "Odo the Blindwatcher": {
+   "text": "«N4279» is flanked by 2 «N3866» which will pull with him once engaged. These bats have a disarm and a cleave ability, so they should be faced away from the group while being tanked. One of the bats may be polymorphed if you have a mage. Make sure to let the tank generate some threat before going ham on the boss as the disarm can be quite annoying to deal. Kill the bats first before switching over to Odo, and you should be fine.",
+   "spells": [
+    7481
+   ]
+  },
+  "Deathsworn Captain (Rare)": {
+   "text": "«N3872» is a rare elite that should be tanked away from the group as his cleave ability can do a severe amount of damage. If you will him with any wailing guardsmen, make sure to tank him at least 10 yards away from the guardsman to avoid the AOE silence. Aside from that, the fight is a tank and spank.",
+   "spells": [
+    15496,
+    9080
+   ]
+  },
+  "Fenrus the Devourer": {
+   "text": "«N4274» is an easy enough boss, with their only notable ability being a DoT. This encounter is a straightforward tank and spank.",
+   "spells": [
+    7125
+   ]
+  },
+  "Wolf Master Nandos": {
+   "text": "Four Worgs circle «N3927» in a barn-like room, make sure to kill all Worgs before engaging him. If you pull the Worgs alongside him, make sure to kill them first before transitioning back to Nandos. He will summon Worgs periodically throughout the fight. Make sure to kill them instantly before switching back to Nandos. This fight is all about prioritizing adds first so if you can do that you will be fine.",
+   "spells": [
+    7487,
+    7489,
+    7488
+   ]
+  },
+  "Archmage Arugal": {
+   "text": "Arugal is by far the hardest boss in the dungeon. His Void Bolts hit for a massive amount of damage, and his teleport makes him difficult to lock down. To make this as easy as possible, have your ranged DPS stand on the platform as soon as you enter his room. They should be able to DPS Arugal down from that point no matter where he teleports. Have your melee DPS stand there as well and wait for Argual's teleport to their location, so they don't end up lining the healer while trying to chase him down.",
+   "spells": [
+    7621,
+    7587,
+    7803,
+    22709
+   ]
+  },
+  "Noteworthy BoE Drops": {
+   "text": "Shadowfang Keep drops some particularly strong items that includes several powerful and visually attractive weapons for both casters and melee. These are highly valued as level 19 twink gear and have low drop chances from trash mobs within the dungeon.",
+   "spells": []
+  }
+ },
+ "the_deadmines": {
+  "Goblin Engineer and Craftsman": {
+   "text": "«N1731» and «N622» are two of the most vicious mobs in all of The Deadmines. They can be found in the Goblin Foundry before engaging with Gilnid. They are most notable for their «S3605» ability, which summons a deadly miniature robot to attack players once cast.",
+   "spells": []
+  },
+  "Defias Squallshaper": {
+   "text": "«N1732» is a caster-type mob that is located in the Dreadnaught room of The Deadmines. They are noteworthy due to their «S122» ability, which can be frustrating for tanks and melee.",
+   "spells": []
+  },
+  "Dungeon Patrols": {
+   "text": "There are many different dungeon patrols in The Deadmines. They often catch groups off guard after boss kills, as most groups will drop their guard while looting, rolling, and eating/drinking.",
+   "spells": []
+  },
+  "Rhahk'zor": {
+   "text": "«N644» is flanked by 2 «N1725» in his room. Both of them can be pulled without pulling Rhahk'Zor himself. If you are unable to pull them cleanly, make sure to CC at least one archer once to limit the incoming damage your group will be taking. Also, beware of any patrolling elites that might aggro after the pull. Aside from that, this fight is a simple tank-and-spank as Rhahk'Zor is little more than a pseudo-boss and warmup for the dungeon.",
+   "spells": [
+    6304
+   ]
+  },
+  "Miner Johnson (Rare)": {
+   "text": "«N3586» is the epitome of a tank-and-spank. He has one single target ability that reduces the tanks armor, so aside from the fight requiring intensive tank healing, it is a straightforward encounter. The only problem is that he is surrounded by numerous «N598». However, they are non-elites with small health pools. Try to pick as many of them off as possible before pulling Johnson. I recommend that if you happen to have a hybrid DPS class in your group, have the hybrid also heal the tank when the «S12097» debuff is up to guarantee the kill.",
+   "spells": [
+    12097
+   ]
+  },
+  "Sneed’s Shredder": {
+   "text": "The «N642» fight begins before pulling the boss. Due to the Shredder's «S7399» ability, the entire room must be cleared of all «N641». Otherwise, players might be feared into them and cause a wipe. Aside from clearing the room, the boss is a very straightforward tank-and-spank. Once the Shredder has been defeated, «N643» will hop out of the machine and continue the fight himself. He has a disarm ability that can be annoying for tanks trying to pick up aggro, so give the tank ample time to acquire threat before going ham on the boss. Overall, this is a simple boss encounter.",
+   "spells": [
+    3603,
+    7399,
+    6713
+   ]
+  },
+  "Gilnid": {
+   "text": "«N1763» like many of the bosses in this dungeon, is mostly a simple tank-and-spank. He is flanked by a «N622» that will pull once Gilnid has been engaged. Make sure to CC the engineer as he may cast «S3605», which summons a mechanical robot that is immune to most abilities. If the robot does get summoned, focus the engineer that summoned it as the robot will despawn once its summoner is dead. You can avoid this headache by simply CCing the add before the pull.",
+   "spells": [
+    3605,
+    5213
+   ]
+  },
+  "Mr. Smite": {
+   "text": "«N646» and two invisible «N636» engage automatically as you approach the plank leading up to him. Smite casts «S6432» at 66% and 33% health, stunning the group for 10 seconds, so the Blackguards need to be killed before the boss reaches 66%. During these stuns, the boss will run to a chest and pick up a weapon and adding new abilities. After 33%, make sure the tank is topped up to avoid sudden death during a «S6435». Aside from the adds and stuns, this is a straightforward encounter.",
+   "spells": [
+    674,
+    6264,
+    6435,
+    6432,
+    3391
+   ]
+  },
+  "Captain Greenskin": {
+   "text": "Be sure to CC one of the adds next to «N647» before the pull. I recommend that you CC the «N1732» as their frost nova ability can be quite annoying. Once you've engaged the boss, begin by killing the «N3450» first as it is non-elite and will die quickly. After that, kill the remaining «N657» and then swap to Greenskin while keeping your CC on the Squallshaper. Make sure to face Greenskin away from the group as his cleave can be quite nasty. When he dies, finish off the Squallshaper and loot his corpse.",
+   "spells": [
+    15496,
+    5208
+   ]
+  },
+  "Edwin VanCleef": {
+   "text": "When you engage «N639», two «N636» will break stealth and attack you as well. Like Mr. Smite, make sure to deal with these mobs first. CC one and 'skull' mark the other and burn it down quickly, as Van Cleef does a tremendous amount of single-target damage and can shred your tank. Once both of the adds are dealt with, focus back on VC. Once he hits 50% health, he will summon 2 more adds for you to deal with. It remains quite heal-intensive so the healers and hybrids in your group should be on their toes and provide spot-healing as it is needed. will drop the first time you kill VanCleef.",
+   "spells": [
+    674,
+    853,
+    3391
+   ]
+  },
+  "Cookie": {
+   "text": "The most challenging part about «N645» is the leap off the ship to engage him. The bottom deck of the ship is packed with elites that can easily aggro if a jump is not timed correctly. Assuming you've timed the jump correctly, pull Cookie off the ship towards the exit of the dungeon. The fight is a simple tank-and-spank. Make sure to interrupt the «S5174» spell as it heals Cookie for a fair chunk. The rest is easy.",
+   "spells": [
+    6306,
+    5174
+   ]
+  }
+ },
+ "the_stockade": {
+  "Defias Prisoner": {
+   "text": "«N1706» is one of the most tedious mobs in the entire Stockade, with their «S6713» making it difficult for tanks to generate threat. Whenever you're going up against a group of multiple Prisoners, DPS should give the tank adequate time to build threat before attacking, and CC if they can.",
+   "spells": []
+  },
+  "Targorr the Dread": {
+   "text": "A few Defias surround «N1696» in his room. Make sure to CC at least one Defias before engaging him. Allow your tank to pick up the remaining add and Targorr and station him away from the CC'ed add. All DPS should work to nuke down the add first as before switching to Targorr. Make sure to kill the CC'ed add once the boss and the first add are dead.",
+   "spells": [
+    674,
+    8599,
+    3391
+   ]
+  },
+  "Kam Deepfury": {
+   "text": "Like Targorr and many of the other bosses in this dungeon, «N1666» is surrounded by a few Defias in his room. Make sure to CC at least one Defias before engaging him. Allow your tank to pick up the remaining add and Kam and station him away from the CC'ed add. All DPS should work to nuke down the add first as before switching to Kam. Make sure to kill the CC'ed add once the boss and the first add are dead.",
+   "spells": [
+    7164,
+    3419,
+    8242
+   ]
+  },
+  "Hamhock": {
+   "text": "Two Defias flank «N1717». Make sure to CC at least one Defias before engaging him. Allow your tank to pick up the remaining add and Hamhock and station him away from the CC'ed add. All DPS should work to nuke down the add first as before switching to Hamhock. Be wary of his «S421» ability, which can be nasty in melee heavy groups. Make sure to spread out as much as possible to reduce its damage.",
+   "spells": [
+    6742,
+    421
+   ]
+  },
+  "Bazil Thredd": {
+   "text": "«N1716» is a simple tank and spank in theory, but his high level and «S7964» make him difficult for some groups. Make sure to keep the tank topped off, so he/she does not die during a smoke bomb stun. Bazil deals a high amount of single target damage, so if you have any hybrid DPS in your group, make sure to have them support the healer and spot-heal the tank when needed.",
+   "spells": [
+    9128,
+    674,
+    7964
+   ]
+  },
+  "Dextren Ward": {
+   "text": "«N1663» is one of the most challenging bosses in this dungeon due to his «S5246». Make sure to clear all of the adds in the surrounding corridors, so no one in your group mistakenly pulls additional adds during the fear duration. If you pull extra Defias mobs with Dextren, make sure to CC them as best you can and focus down Dextren first, as his fear can be tremendously punishing. If you have done a good job with clearing the adds and the rooms around him, this fight should be no problem at all.",
+   "spells": [
+    7165,
+    5246,
+    11976
+   ]
+  },
+  "Bruegal Ironknuckle (Rare)": {
+   "text": "«N1720» is simple, straightforward, and drops the best loot the dungeon has to offer. However, because he is a rare spawn, you are unlikely to find him during your run. Make sure to clear the adds around him before engaging. He is the literal definition of a tank and spank.",
+   "spells": [
+    13496
+   ]
+  },
+  "Boss Drops": {
+   "text": "While bosses in this dungeon have a chance to drop Uncommon Items , only the rare «N1720» reliably drops valuable gear.",
+   "spells": []
+  }
+ },
+ "wailing_caverns": {
+  "Druid of the Fang": {
+   "text": "«N3840» is the first and only notable trash mob you will come across in the Wailing Caverns. They are hard-hitting casters with some abilities to be watchful. The first ability, «S8040», will put an enemy target to sleep for up to 15 seconds. The problem with this ability is that it can also target healers, effectively neutralizing them for 15 seconds.",
+   "spells": []
+  },
+  "Kresh": {
+   "text": "«N3653» is a straightforward tank and spank, featuring only one ability that occasionally dazes its target. Kresh has a large amount of armor and base damage, and if you have a melee-heavy group, this fight can drag on and be a slight nuisance for your healer. Overall, this is not a challenging encounter.",
+   "spells": [
+    13496
+   ]
+  },
+  "Lady Andacondra": {
+   "text": "«N3671» is likely to be the first of the Druid bosses you will encounter in the Wailing Caverns. Like all of the druids, she has four abilities, 2 of which are shared by her contemporaries («S9532» and «S700»). Her most threatening ability is 'Sleep,' which can be applied to anyone in your party, including the Tank or Healer. To deal with this ability, make sure to interrupt it immediately. If you happen to pull another Druid of the Fang during the encounter, make sure to CC it right away as one 'Sleep' can be dealt with, but 2 or more will result in a wipe. If your interrupts are on point and you've pulled carefully, this fight should be easy.",
+   "spells": [
+    5187,
+    9532,
+    700,
+    8148
+   ]
+  },
+  "Lord Cobrahn": {
+   "text": "Before the pull, «N3669» will be surrounded by 3 «N8886». They are between levels 18 and 19, and are non-elites, making them easy to AOE down. Prioritize these pythons before switching to Cobrahn. Like all of the Druids in the Wailing Caverns, Cobrahn may cast the dangerous Sleep ability, which should be interrupted immediately, especially if the target is your healer. At some point during the encounter, Cobrahn will transform into a serpent, increasing his damage by 50 and attack speed by 43%.",
+   "spells": [
+    5187,
+    9532,
+    8040,
+    7965
+   ]
+  },
+  "Deviate Faerie Dragon (Rare)": {
+   "text": "«N5912» is a low armor, high damage mob that possesses no significant abilities. The challenge in this encounter comes from the fact that this is a 4-mob pull, all of which are elites. Two Druids of the Fang are also included in this pull, meaning that «S8040» is likely to go off in this fight. Your strategy should be to CC one of the Druids while burning the other one down and interrupting its 'Sleep' whenever possible. Your tank will be taking damage from 3 different elites here, so if you have any hybrid classes in your group aside from the healer, make sure that they weave in some support heals during their rotation. This fight will test your group's ability to focus down a single target, so if you're coordinated and all on the same page, it should be a breeze.",
+   "spells": []
+  },
+  "Lord Pythas": {
+   "text": "«N3670», like his fellow Druid counterparts, is most dangerous due to his 'Sleep' ability. Additionally, he is flanked by one additional Druid of the Fang and a «N5761». Make sure to CC the Druid and interrupt Pythas whenever he casts Sleep. Prioritize the Shambler and burn it down before switching to Pythas, but make sure either your tank or one melee DPS stays focused on Pythas, so the Sleep is interrupted.",
+   "spells": [
+    5187,
+    9532,
+    700,
+    8147
+   ]
+  },
+  "Skum": {
+   "text": "«N3674» is a simple tank-and-spank boss with only one significant ability; Chained Bolt. This is a chain lightning-style spell that will strike three melee units if they are close together. Make sure your melee spread out around the boss to avoid the damage. Spreading out is not a hard requirement, as the ability itself deals minimal damage. Skum is entirely optional, but his loot makes him worthwhile.",
+   "spells": [
+    6254
+   ]
+  },
+  "Lord Serpentis": {
+   "text": "«N3673» is the last of the 4 Druids of the Fang. He shares abilities with his counterparts and is only dangerous due to his Sleep ability. As with the other Druids, interrupt Sleep, and the fight is a cakewalk. Unlike the other Druids, Serptenis can be pulled without any additional trash, making this encounter easier than the rest.",
+   "spells": [
+    5187,
+    9532,
+    700
+   ]
+  },
+  "Verdan the Everliving": {
+   "text": "«N5775» has one significant ability, which roots all targets within 10 yards for 10 seconds and knocks them down for 2 seconds. The ability does damage as well, so healers should keep their eye on the group's health pools. Ranged DPS should stand at max range to avoid the root. Aside from that, Verdan is a tank-and-spank and should always be killed to unlock the waterfall shortcut behind him.",
+   "spells": [
+    8142
+   ]
+  },
+  "Naralax Event Mutanus the Devourer": {
+   "text": "The first part of the event is simple; escort the Disciple through the Wailing Caverns towards the ritual stone. To escort him, will require you to clear out any remaining adds on the way to the rock, most of which should already be cleared by progressing through the dungeon. Once the Disciple reaches Naralex and begins his final ritual, waves of adds will approach the Disciple to kill him. Burn down the adds while keeping your AOE DPS alive. After the 2nd wave of adds, Mutanus will appear to kill your group and the Disciple. He is very challenging, as he possesses two forms of crowd control that can be used against your group. Additionally, his «S8150» ability does a massive amount of damage to nearby targets, making this fight a nightmare for your melee DPS. Mutanus is a group composition check - make sure to have a healthy set of ranged DPS and at least one hybrid healing class aside from your main healer to assist with the thunderclap damage. There are no special tricks for this fight - stay at max range while healing up the group and try to stay alive. This fight is worth the trouble, as the loot is quite good.",
+   "spells": [
+    8150,
+    7399,
+    7967
+   ]
+  }
+ },
+ "razorfen_kraul": {
+  "Roogug": {
+   "text": "«N6168» is optional and tied to the Shaman- and Warrior-exclusive class quests. Roogug is a simple encounter with one notable exception: the surrounding mobs. Before engaging Roogug, make sure to clear the area and CC whatever mobs you can prior to engagement. If you have a Warlock with Banish, make sure to use it on the elemental at his side to reduce incoming damage onto the tank.",
+   "spells": [
+    9532,
+    8270
+   ]
+  },
+  "Aggem Thorncurse": {
+   "text": "«N4424» is a simple tank and spank with the ability to summon a boar guardian to aide him in battle. When he summons the boar, prioritize it and kill it before switching back to Aggem.",
+   "spells": [
+    8286
+   ]
+  },
+  "Death Speaker Jargba": {
+   "text": "«N4428» pulls with two caster mobs, making this fight quite tough. With his «S14515» ability, Jargba can turn the tides of battle by MCing one of your party members. Additionally, the caster allies do massive amounts of damage. In order to survive this engagement, you must CC at least 1 of the mobs beside Jargba, ideally both. Take the boss out quickly to get rid of the MC threat, and then finish off the casters to ensure victory.",
+   "spells": [
+    14515,
+    9613
+   ]
+  },
+  "Overlord Ramtusk": {
+   "text": "«N4420» is a vivaciously strong boss with high single target damage. He is also flanked by 2 «N4438», whose «S8259» ability makes them particularly lethal. In order to prevent your tank from getting decimated, make sure to CC both of the spearhides if you can. From there, focus down Ramtusk for an easy kill.",
+   "spells": [
+    8259,
+    15548
+   ]
+  },
+  "Agathelos the Raging": {
+   "text": "«N4422» is a straightforward encounter, though this boss deals massive single-target damage. Most of this fight's difficulty is keeping the tank alive, which will fall on the healer and any hybrid DPS your group might have.",
+   "spells": [
+    8260,
+    8269
+   ]
+  },
+  "Blind Hunter": {
+   "text": "«N4425» is a simple fight that takes place inside the Bat Cave in RFK. Make sure your casters stop casting when he begins casting his «S8281» (Sonic Boom), which is an AOE silence ability. Aside from that, the fight is a simple tank and spank with fantastic loot. This Rare can be tamed by Hunters and is a sought-after pet.",
+   "spells": [
+    8281,
+    3242
+   ]
+  },
+  "Earthcaller Halmgar": {
+   "text": "If you have a Warlock with Banish, use it on the elemental and kill «N4842». Otherwise, clear the platform, prioritize his totems, and burst the elemental down quickly before switching to Halmgar.",
+   "spells": [
+    2484,
+    9532,
+    8270
+   ]
+  },
+  "Charlga Razorflank": {
+   "text": "«N4421» is a caster that deals quite a bit of damage but has low armor. Pull the boss down from her hut and tank her on the platform below. Make sure to interrupt her casts and have your group spread out to avoid extra damage. Every so often, Charlga will go immune to all abilities and also has a healing spell, extending the duration of the fight. Compared to Ramtusk and Jargba, this should be a piece of cake.",
+   "spells": [
+    8292,
+    8361,
+    6077
+   ]
+  }
+ },
+ "razorfen_downs": {
+  "Tuten'kash": {
+   "text": "«N7355» is summoned through the spider gong event in RFD. Before you engage him, you will first have to clear a few waves of spiders. After each wave is finished, ring the gong again to summon the next wave. The waves are simple and straightforward, as is Tuten'kash. The tank should face him away from the group to avoid unnecessary web spray, but his other abilities are negligible.",
+   "spells": [
+    12255,
+    12254,
+    12252
+   ]
+  },
+  "Mordresh Fire Eye": {
+   "text": "«N7357» is a low-armor cast boss that can be bursted down easily by melee dps. Before you engage him, make sure to clear all of the skeletons dancing beside the bone pile. The last pack of skeletons will pull the boss, so make sure to AOE them down quickly to prevent a wipe. Interrupt Mordresh's hard-hitting fireball when you can and this should be an easy win.",
+   "spells": [
+    12470,
+    12466
+   ]
+  },
+  "Glutton": {
+   "text": "«N8567» is a simple tank and spank. Make sure to stay out of his Disease Clouds and be prepared to heal the tank through significant amounts of damage when the boss casts Enrage.",
+   "spells": [
+    12627,
+    12795
+   ]
+  },
+  "Ragglesnout": {
+   "text": "«N7354»'s «S7645» is by far the most important ability in this encounter. If your tank or healer get MCed, make sure to have your hybrids fill in where needed. Interrupt his heal to prevent a longer encounter and his Shadow Bolts to minimize incoming damage.",
+   "spells": [
+    7645,
+    10892,
+    11659,
+    12039
+   ]
+  },
+  "Amnennar the Coldbringer": {
+   "text": "«N7358» is a challenging dungeon boss that should be tanked facing the tent where he stands to neutralize «S13009». Have your group stack on the tank to reduce the severity of «S15531», and switch to the spirit that he summons as soon as it spawns. Interrupt «S15530» and prioritize proper positioning.",
+   "spells": [
+    13009,
+    15531,
+    15530,
+    12642
+   ]
+  },
+  "Plaguemaw the Rotting": {
+   "text": "«N7356» is the final boss of an optional escort event. When Belnistrasz begins his ritual, focus down mobs that spawn one at a time, preferably with an offtank pulling adds off Belnistrasz. Plaguemaw is a straightforward tank and spank.",
+   "spells": [
+    12946,
+    12947
+   ]
+  }
+ },
+ "uldaman": {
+  "Baelog": {
+   "text": "«N6906» (level 41 elite), «N6907» (level 40 elite) and «N6908» (level 40 elite) make up The Lost Dwarves. They are friendly to Alliance players but hostile to the Horde. Most groups crowd control «N6906», have the tank pick up «N6908», and burst down «N6907» as he can cast «S20252» on party members, which results in a pesky stun. Once «N6907» is done for, move on to «N6908» while keeping «N6906» CC'd. As long as the room is clear, you shouldn't have much trouble. Don't forget to loot the chest behind The Lost Dwarves.",
+   "spells": [
+    20252,
+    8242
+   ]
+  },
+  "Revelosh": {
+   "text": "«N6910» is a level 40 elite trogg. Revelosh is linked with two «N4851», so when you pull him, they will also join the battle. You could try to CC one of the «N4851» if you've got it. Otherwise, try to burn down «N6910» as quickly as possible. His «S16033» can deal a lot of damage to your party, so take priority in interrupting whenever he gets ready to cast it.",
+   "spells": [
+    16033,
+    9532
+   ]
+  },
+  "Ironaya": {
+   "text": "«N7228» is a level 40 giant. To summon her, you need to combine the item from the chest behind The Lost Dwarves with a drop from «N6910», then place the combined item in the model of a city-looking keystone within the next room. She has high armor, lots of HP, is immune to damage-over-time (DoT) effects and can knock players back. Have your tank pick her up and face her away from the rest of the group to avoid her «S8374». Ranged, spread out. Keeping her abilities in mind, it's a fairly straightforward tank & spank type fight.",
+   "spells": [
+    8374,
+    45,
+    18670
+   ]
+  },
+  "Obsidian Sentinel": {
+   "text": "«N7023» is a level 44 elite golem found right by the Back Entrance. He's got high armor, high HP, and DoT immunity. At 66% and 33% health, he will spawn two non-elite «N7209». Groups typically kill the two «N7209» first, then return back to the boss.",
+   "spells": [
+    10072,
+    10061
+   ]
+  },
+  "Ancient Stone Keeper": {
+   "text": "«N7206» is a level 44 elite golem. Like the golem mobs you fought along your way, he's also got high armor, high HP, DoT immunity and a nasty AoE slow & silence ability: «S10094».",
+   "spells": [
+    10094
+   ]
+  },
+  "Galgann Firehammer": {
+   "text": "«N7291» awaits you with two «N7030» by his side. Between these 3 NPCs, there's a lot of AoE magic damage flying around. Tanks, pick up «N7291» and separate him from the group, keeping him faced away. CC one «N7030», kill the other one, then kill the one that was CC'd. Once both are dead, focus on «N7291». His range of fire attacks can be devastating. If able to, dispel any of his fire buffs that he'll cast on your party as they will amplify his fire damage.",
+   "spells": [
+    15039,
+    9482,
+    3356,
+    11970
+   ]
+  },
+  "Grimlok": {
+   "text": "«N4854» comes with a «N4853», «N4855» and a «N4863» all grouped up together. Many groups will opt to burn down «N4854» as quickly as possible, while CCing one of the adds. Killing «N4854» quickly can result in him dying before being able to cast his group «S7289». After he dies, focus on the «N4853» next, and then finish off the remaining 2 adds.",
+   "spells": [
+    7289,
+    9532,
+    8292,
+    6742
+   ]
+  },
+  "Archaedas": {
+   "text": "«N2748» has a lot of HP and summons non-elite adds throughout the encounter. Make sure your group burns the adds down as quickly as possible. At 20%, he will summon 4 elite adds, who die when he dies. At this point in the fight, many groups opt to burn «N2748» down as quickly as possible. This is a long fight and will require the entire group to perform in order to defeat. Remember to use potions, bandages, cooldowns, and everything you've got!",
+   "spells": [
+    6524,
+    10252,
+    10258
+   ]
+  }
+ },
+ "zul_farrak": {
+  "Antu'sul": {
+   "text": "«N8127» is a level 48 elite Sandfury Troll. Antu'sul is a difficult boss due to his ability to summon «N8138» and «N8156» during the encounter. When this happens, all dps should immediately AOE down the additional mobs and prioritize them over the boss. The tank should be ready to interrupt the healing abilities, and melee dps should prioritize totems as soon as they're up. This boss is quite mechanically intensive for a dungeon boss in Vanilla, and requires all parties fulfilling their roles for a successful attempt.",
+   "spells": [
+    8376,
+    11899,
+    11894,
+    11895
+   ]
+  },
+  "Theka the Martyr": {
+   "text": "«N7272» is a level 46 elite Sandfury Troll, a quest-related mini-boss found in the Scarab room of ZF. At 30%, he becomes immune to physical damage and shadow damage for 30 seconds, making Mages a valuable asset in the dungeon. He is a simple tank and spank, but once he goes immune, he will begin aggroing nearby scarabs to aide him in battle. Focus down Theka first before finishing off the scarabs.",
+   "spells": [
+    8600,
+    11089
+   ]
+  },
+  "Witch Doctor Zum'rah": {
+   "text": "«N7271» is a level 46 elite Sandfury Troll. Zum'rah is a challenging boss that is quite intensive on the healers. Interrupts are paramount during this fight in order to prevent unnecessary damage from his shadow bolt volley. Throughout the engagement, Zum'rah will summon zombies from nearby graves to attack your group. Make sure to switch over to the zombies immediately as they are summoned and burn them down fast. Whenever Zum'rah spawns a totem, prioritize it as well. This is a chaotic fight but if the totem and adds are prioritized, it shouldn't be too difficult.",
+   "spells": [
+    12491,
+    12739,
+    15245,
+    11086
+   ]
+  },
+  "Nekrum Gutchewer": {
+   "text": "«N7796» and «N7275» are level 46 and 47 elite Sandfury Trolls who spawn as the last wave of the stairs event in Zul'Farrak. The best strategy to deal with these two is to burn down Nekrum first. He has fewer abilities and is lower level, meaning less chance to dodge/miss/resist spells. Make sure one of your melee interrupts Sezz'ziz's heal in the meantime.",
+   "spells": [
+    12039,
+    13704,
+    8362,
+    15537
+   ]
+  },
+  "Shadowpriest Sezz'ziz": {
+   "text": "«N7796» and «N7275» spawn as the last wave of the stairs event in Zul'Farrak. Burn down Nekrum first; he has fewer abilities and is lower level. In the meantime, keep one of your melee on interrupt duty for Sezz'ziz's heal, and switch to Sezz'ziz once his partner is down.",
+   "spells": [
+    12039,
+    13704,
+    8362,
+    15537
+   ]
+  },
+  "Sergeant Bly": {
+   "text": "«N7604» is a level 45 elite human who is engaged after the stairs event in Zul'Farrak. He is accompanied by several other elite mobs, namely «N7606» and «N7608». Between Oro's AOE and Murta's healing, this fight can be quite challenging. Prioritize Oro and Murta before switching to Bly.",
+   "spells": [
+    12170,
+    11972
+   ]
+  },
+  "Hydromancer Velratha": {
+   "text": "«N7795» is a level 46 elite Sandfury Troll located near the end of Zul'Farrak. Velratha is a simple tank and spank, but tests a group's situational awareness. Velratha patrols around the room, which is riddled with elite Sandfury. Make sure that you pull her ALONE, otherwise a wipe is likely. Once you've pulled her safely, interrupt her casts and you should be fine.",
+   "spells": [
+    12491,
+    12739,
+    15245,
+    11086
+   ]
+  },
+  "Gahz'rilla": {
+   "text": "«N7273» is a level 46 elite Hydra located at the end of Zul'Farrak. He is summoned by using the Mallet on the gong near the aqueduct. Make sure to clear out the room where Gahz'rilla is summoned from. Tank him with the tank's back against a wall and stack on the tank to prevent being thrown up into the air. The rest of the fight is a tank and spank.",
+   "spells": [
+    11836,
+    11902,
+    11131
+   ]
+  },
+  "Chief Ukorz Sandscalp": {
+   "text": "«N7267» is a level 48 elite Sandfury Troll, and is accompanied by a level 46 elite «N7797». Make sure to face these two away from the group. Melee should stay behind them to avoid the cleave. Kill Ruuzlu first.",
+   "spells": [
+    11837,
+    15496,
+    7366
+   ]
+  },
+  "Zerillis": {
+   "text": "«N10082» is a level 45 rare-elite Sandfury Troll that patrols throughout Zul'Farrak. Pull him into melee range immediately (you might need to LoS). Simple tank and spank.",
+   "spells": [
+    12551,
+    6533,
+    15547
+   ]
+  }
+ },
+ "maraudon": {
+  "Lord Vyletongue": {
+   "text": "«N12236» is a level 49 elite accompanied by two stealthed «N11792» guards. If the entire group stacks on «N12236», you negate his ability to use Auto Shot & «S14443», so have everyone stack close together on the tank. He'll use «S1953» to get away, so make sure you are quick to stack up again whenever he does so. Most groups DPS «N12236» down first since he is mobile and can move around the room. Once he's down, finish off his two guards.",
+   "spells": [
+    14443,
+    7964,
+    1953
+   ]
+  },
+  "Noxxion": {
+   "text": "«N13282» is a level 48 elite and the first boss found in the Ambershard Side. He has an AoE «S21687» ability as well as a knockback called «S18072». After a little while, «N13282» will split into smaller versions of himself. Once they're all defeated, «N13282» will reform, and the fight will continue. Some groups opt to pull him out of the pool, to make killing the adds easier.",
+   "spells": [
+    21687,
+    18072
+   ]
+  },
+  "Razorlash": {
+   "text": "Continue down Foulspore Cavern and you'll run into «N12258». Some groups opt to skip this boss encounter, as it isn't mandatory to kill him to advance forward. «N12258» is a level 48 elite and the second boss found in the Ambershard Side. His «S15976» causes a painful DoT (damage over time) tick for 10 seconds, and an AoE «S15284» ability for those in melee range. Therefore, casters should stand at max range while burning him down.",
+   "spells": [
+    15284,
+    15976
+   ]
+  },
+  "Meshlok the Harvester": {
+   "text": "«N12237» is a level 48 elite, rare spawn inside Poison Falls who patrols the waters near the beginning and looks very similar to either a «N12223» or «N12224», so make sure you hover your mouse or use a /tar Meshlok macro to check to see if he is spawned. If he is not, «N12224» will patrol in his place. He isn't very challenging. Tanks, tank him away from the group. Ranged, spread out if possible to avoid his «S11876», and healers, be aware that he can interrupt your spell casting with «S15501».",
+   "spells": [
+    11876,
+    15501,
+    13446
+   ]
+  },
+  "Celebras the Cursed": {
+   "text": "«N12225» is a level 49 elite found at the end of Poison Falls. He summons non-elite «N13743» to constantly spawn during the encounter. He will most often use his «S9739» spell, which can be interrupted, so make sure it's getting interrupted as often as possible. If one of his «N13743» falls, he will summon another one. Focus down «N12225» first, then polish off the remaining «N13743».",
+   "spells": [
+    9739,
+    6913,
+    12747,
+    21793
+   ]
+  },
+  "Landslide": {
+   "text": "«N12203» is a level 50 elite Behemoth found in Poison Falls. He has many similar abilities to the «N12206» that you fought on the way to his alcove. Keep him near the area in which he stands. Tanks, tank him with your back to a wall. Ranged, stay at max distance to avoid any knockback or stun from the «N11783», who despawn once «N12203» dies.",
+   "spells": [
+    5568,
+    10101
+   ]
+  },
+  "Rotgrip": {
+   "text": "«N13596» is a giant level 50 white crocolisk elite found in Poison Falls. He patrols in the water of Zaetar's Cave — the area in which you just defeated «N12201». Drop down into the water to engage him. Be sure the surrounding area is clear, as there are also lingering Hydras in the water. He hits hard! Make sure your tank has proper aggro before everyone else engages. Healers, try your best to keep your tank and other party members topped off. «N13596» can dish out devastating damage quickly using his two abilities: «S15976», a physical damage-over-time, and «S16495».",
+   "spells": [
+    15976,
+    16495
+   ]
+  },
+  "Tinkerer Gizlock": {
+   "text": "«N13601» is a level 50 elite goblin found in Poison Falls. Tanks, face him away from the group to prevent group damage from his «S13183». Everyone else — stack close together in melee range. This will prevent «N13601» from being able to use his ranged abilities. With this strategy in mind, he shouldn't be difficult to burn down.",
+   "spells": [
+    13183,
+    6660,
+    8858
+   ]
+  },
+  "Princess Theradras": {
+   "text": "Although considered the final boss, most groups will head to «N12201» after killing «N12203», and then jump down to kill «N13596» and «N13601» after. You'll fight more groups of «N12206» before encountering «N12201», this time in packs of 2 — focus down one at a time. «N12201» is a level 51 elite found in Poison Falls. She is not an easy fight, so understanding her mechanics is vital. Groups tend to engage her towards the back of her cavern to allow for more space. She has a group of Fear called «S21869»; «S6346», «S18499» & «S8143» are all spells to help with this effect. She also has a pesky group knockback ability, «S21868», which not only pushes you back but damages as well — at max range, non-melee players should be able to avoid this. Also, be aware that there are non-aggressive turtles in the area around her cavern: if they get hit with a spell, they will aggro on you, so be mindful of your surroundings.",
+   "spells": [
+    21868,
+    21869,
+    9483,
+    6346,
+    18499,
+    8143
+   ]
+  }
+ },
+ "sm_graveyard": {
+  "Interrogator Vishas": {
+   "text": "«N3983» doesn't involve much strategy. He's usually pulled with one additional humanoid, but as long as no additional mobs are aggro'd during the encounter, it's a straightforward tank and spank fight. Watch out for his DoT abilities. Abilities: «S9034»",
+   "spells": [
+    9034
+   ]
+  },
+  "Azshir the Sleepless": {
+   "text": "«N6490» has several magic abilities, including a fear. Make sure the area is clear before engaging him, as the fear can lead someone into additional mobs. Be wary of his «S5137», which can inflict damage even after his death. Abilities: «S5137» «S9373» «S7399»",
+   "spells": [
+    5137,
+    9373,
+    7399
+   ]
+  },
+  "Fallen Champion": {
+   "text": "The «N6488» encounter is straightforward, consisting of cleaving melee attacks. All DPS should stand behind him to avoid his «S7369». Abilities: «S7366» «S15496»",
+   "spells": [
+    7369,
+    7366,
+    15496
+   ]
+  },
+  "Ironspine": {
+   "text": "«N6489» is a simple tank and spank encounter. Healers, keep an eye on your party's health when Ironspine casts «S3815», as it can deal quite a bit of damage. Abilities: «S21007» «S3815»",
+   "spells": [
+    3815,
+    21007
+   ]
+  },
+  "Bloodmage Thalnos": {
+   "text": "«N4543» mostly casts spells, so it will be a heavy magic damage fight. He casts several AoE magic abilities in his close proximity, so ranged should keep their distance and healers should keep a close eye on the tank and melee. Abilities: «S9613» «S8814» «S12470»",
+   "spells": [
+    9613,
+    8814,
+    12470
+   ]
+  }
+ },
+ "sm_library": {
+  "Houndmaster Loksey": {
+   "text": "«N3974», the first boss you'll encounter, is accompanied by 3 elite «N4304». The hounds can be crowd controlled with anything that works on beasts, such as «S12824». A general strategy: crowd control one of the hounds, have the tank keep «N3974» busy while the DPS kill the hounds, then focus down «N3974». Be aware that he will «S6742» at low health. Abilities: «S4304» «S11549» «S6742»",
+   "spells": [
+    12824,
+    6742,
+    4304,
+    11549
+   ]
+  },
+  "Arcanist Doan": {
+   "text": "Tank Arcanist Doan in the middle of the room with the ranged spread to the edges. When he casts «S9435», everyone must run as close to the edges as possible. Healers, keep up heals on the group when he casts «S1449» and be wary of his «S30225». Some groups opt to bring «N6487» into the center of the previous hall and use the pillars to LoS his «S9435». Don't forget to pick up the key from the chest in his chamber after you kill him — it's required to access the Armory and the Cathedral. Abilities: «S9438» «S9433» «S9435» «S13323» «S8988»",
+   "spells": [
+    9435,
+    1449,
+    30225,
+    9438,
+    9433,
+    13323,
+    8988
+   ]
+  }
+ },
+ "sm_armory": {
+  "Herod": {
+   "text": "The tank should keep him in the center of the room while the ranged spread out up the stairs. When he casts «S1680», he'll start to whirlwind, shout \"Blades of Light!\" and become immune to magic. Anyone near the center should run out to avoid devastating damage — do not try to tank this. When «N3975» dies, have everyone group up, because more than 20 non-elite «N6575» will run into the room and can easily be AoE'd down. Abilities: «S22540» «S8269» «S8260» «S8989»",
+   "spells": [
+    1680,
+    22540,
+    8269,
+    8260,
+    8989
+   ]
+  }
+ },
+ "sm_cathedral": {
+  "High Inquisitor Fairbanks": {
+   "text": "Not a particularly challenging fight; he is found lying on the ground until you engage him. He casts «S16098» on a party member that can be dispelled. Watch out for him also casting «S6213» and «S700» on party members, as well as «S17» on himself. Interrupt his «S6064» and you've got him. Abilities: «S8282» «S12039» «S11647» «S8399»",
+   "spells": [
+    16098,
+    6213,
+    700,
+    17,
+    6064,
+    8282,
+    12039,
+    11647,
+    8399
+   ]
+  },
+  "Scarlet Commander Mograine": {
+   "text": "He's your typical paladin-type boss. Watch out for his «S853» and his ability to «S642». After you defeat him, «N3977» will run out from behind the altar and that fight will begin. Abilities: «S8990» «S853» «S14518» «S9257» «S642»",
+   "spells": [
+    853,
+    642,
+    8990,
+    14518,
+    9257
+   ]
+  },
+  "High Inquisitor Whitemane": {
+   "text": "«N3977» mainly casts «S25054» as her primary attack. After you get her health down to a certain point, she'll cast an unavoidable group «S700» on your party, allowing her to cast «S9232» on «N3976» and heal both back to full health. Have your tank pick up «N3976», burn down «N3977», then finish off «N3976». Some groups may kill her before she uses «S9232», but then the party will be unable to loot «N3976». Abilities: «S9481» «S12039» «S9256» «S22187» «S9232»",
+   "spells": [
+    25054,
+    700,
+    9232,
+    2054,
+    9481,
+    12039,
+    9256,
+    22187
+   ]
+  }
+ },
+ "scholomance": {
+  "Blood Steward of Kirtonos": {
+   "text": "«N14861» is a level 57 elite located in the Reliquary. She has a few curses that can be dispelled. Watch out for her «S3609» as it stuns the target for 8 seconds. With those two things in mind, DPS her down! Abilities: «S22371» «S11708» «S3609»",
+   "spells": [
+    22371,
+    11708,
+    3609
+   ]
+  },
+  "Kirtonos the Herald": {
+   "text": "«N10506» is a level 60 elite located out on the porch; he can only be summoned if someone in your group has the summoning item. Tank, grab aggro and keep your back to a wall to prevent knockback. In human form, «N10506» uses his caster abilities — have someone dispel the curse, especially if it's on your healer. Once «N10506» transforms into his gargoyle form, it becomes a tank and spank fight so long as your tank maintains aggro. Abilities: «S22371» «S11708» «S3609»",
+   "spells": [
+    22371,
+    11708,
+    3609
+   ]
+  },
+  "Jandice Barov": {
+   "text": "«N10503» is a level 61 elite who is found by using a torch on the south wall. «N10503» will create several copies of herself that spread throughout the room. You can't AoE them down, so you must target them down individually. Some parties opt to ignore the adds and just focus down Jandice herself. Remember to have someone dispel her «S8282». Abilities: «S8282» «S18647»",
+   "spells": [
+    8282,
+    18647
+   ]
+  },
+  "Rattlegore": {
+   "text": "«N11622» is a level 61 elite located in the Great Ossuary's Basement. Pull «N11622» once your surrounding area is clear. His abilities are melee focused, and he hits like a truck! Ranged, keep back as far as possible. Tank, face «N11622» away from the group. Armor reducing abilities such as «S11597» or «S11198» can help your team take him down quicker. Abilities: «S18945» «S15580» «S11876» «S11597» «S11198»",
+   "spells": [
+    18945,
+    15580,
+    11876,
+    11597,
+    11198
+   ]
+  },
+  "Marduk Blackpool": {
+   "text": "«N10433» is a level 58 elite located in the Viewing Room. Tanks should hold «N10433» in place while ranged stand back, ensuring they are not affected by his «S17695». Melee, watch out for his «S12040» — it deals damage each time you attack him as long as it's active. Other than those two factors, he's pretty easy to burn down. Abilities: «S11609» «S17695» «S12040»",
+   "spells": [
+    11609,
+    17695,
+    12040
+   ]
+  },
+  "Vectus": {
+   "text": "«N10432» is a level 60 elite located in the Viewing Room. «N10432» is a pretty squishy target with fire-based spells. Watch out for his AoE abilities: don't stand in the fire and you'll DPS him down pretty quickly. Abilities: «S13021» «S10216»",
+   "spells": [
+    13021,
+    10216
+   ]
+  },
+  "Ras Frostwhisper": {
+   "text": "«N10508» is a level 60 elite located along the passage through the Viewing Room. Make sure the entire area surrounding «N10508» is clear before engaging. He has several frost-type magic spells and abilities. Tank, face him away from the group, watch out for his «S6215» and plan an interrupt rotation to minimize his spell casting. Abilities: «S18099» «S18100» «S6215» «S16350» «S8398»",
+   "spells": [
+    18099,
+    18100,
+    6215,
+    16350,
+    8398
+   ]
+  },
+  "Instructor Malicia": {
+   "text": "«N10505» is a level 60 elite located in the southern room on the upper floor. «N10505» has a few heals at her disposal, so be sure to sort out an interrupt rotation to minimize her casting. Have someone dispel her «S5137» curse and DPS her down. Abilities: «S5137» «S25311» «S6064» «S25315» «S6146»",
+   "spells": [
+    5137,
+    25311,
+    6064,
+    25315,
+    6146
+   ]
+  },
+  "Doctor Theolen Krastinov": {
+   "text": "«N11261» is a level 60 elite located in the eastern room on the upper level (The Hall of the Damned). Have your tank pull «N11261» and keep their back to a wall. At 50% health, his attack speed will dramatically increase — a great time to use defensive and healing cooldowns. He has melee-only abilities, so keep the tank alive and burn him down! Abilities: «S11130» «S11574»",
+   "spells": [
+    11130,
+    11574
+   ]
+  },
+  "Lorekeeper Polkelt": {
+   "text": "«N10901» is a level 60 elite located in the northern room on the upper level. «N10901» has several toxic AoE abilities that are damaging when nearby. One strategy to keep him at max range: have someone in your party pull «N10901» and jump off the upper-level railing, and as «N10901» runs around the stairs, your tank picks him up on the lower level. The rest of the party, remaining on the upper level, can attack him safely without worrying about his AoE abilities. If anyone is infected with his «S3586», make sure they spread out from the group. Abilities: «S8245» «S5413» «S3586»",
+   "spells": [
+    8245,
+    5413,
+    3586
+   ]
+  },
+  "The Ravenian": {
+   "text": "«N10507» is a level 60 elite located in the southern room on the lower level (The Barov Family Vault). «N10507» should be tanked against a wall, facing away from the rest of the group. It's a melee-centric fight, and he hits pretty hard and fast. Watch out for his AoE abilities and make sure the tank has generated enough threat before engaging. Abilities: «S20569» «S11130» «S25174» «S5568»",
+   "spells": [
+    20569,
+    11130,
+    25174,
+    5568
+   ]
+  },
+  "Lord Alexei Barov": {
+   "text": "«N10504» is a level 60 elite located in the eastern portion of the lower level (The Barov Family Vault) and is considered one of the toughest bosses in Scholomance. Two skeletal bodyguards accompany him; they hit pretty hard but can be CC'd with «S10955» or «S10326». The room he's in has toxic green liquid on the floor that you must not stand in. His AoE aura «S28340» constantly ticks damage to anyone in range, so tanks must pull Alexei back at max range so the aura doesn't afflict the rest of the group. His «S17820» can be very hard on the group if not cleansed: if you can't cleanse the curse, healers, keep the tank topped off as best you can — when «S17820» strikes, you'll have a lot of difficulty healing your tank for 15 seconds. Abilities: «S25309» «S28340» «S17820» «S10955» «S10326»",
+   "spells": [
+    25309,
+    28340,
+    17820,
+    10955,
+    10326
+   ]
+  },
+  "Lady Illucia Barov": {
+   "text": "«N10502» is a level 60 elite located in the northern room of the lower level (The Barov Family Vault). The biggest concern with fighting «N10502» is her ability to «S14515», a mind control mechanic. Be sure to stun or CC whoever is afflicted with «S14515». She can also cast an AoE «S12528» and «S6215», so make sure her entire area is clear before engaging. Abilities: «S11713» «S14515» «S6215» «S12528» «S17289»",
+   "spells": [
+    11713,
+    14515,
+    6215,
+    12528,
+    17289
+   ]
+  },
+  "Darkmaster Gandling": {
+   "text": "«N1853» is a level 61 elite located in the center of The Barov Family Vault, and spawns once you kill the last of the previous six bosses — so don't stand in the center and prematurely aggro him. Many tanks keep «N1853» in the center where he spawns while the ranged stay atop the stairs. He'll periodically teleport a player to an adjacent room, where they are locked in until they defeat the enemies inside — be prepared in case your tank or healer gets teleported. An interrupt order works nicely for «S25346». Have someone dispel «S17802» as quickly as possible. Other than that, he has a lot of HP, so execute the mechanics properly and you'll be rewarded! Abilities: «S25346» «S18702» «S12040» «S17802»",
+   "spells": [
+    25346,
+    18702,
+    12040,
+    17802
+   ]
+  }
+ },
+ "sunken_temple": {
+  "Avatar of Hakkar": {
+   "text": "Head to the west side of the Pit of Sacrifice and you’ll enter the Sanctum of the Fallen God . Clear the trash along the way and to prepare for the encounter. «N8443», a level 48 elite, cannot be summoned unless someone in your group has from the quest OR, has already completed the aforementioned quest and has , which allows the player to summon «N8438» without the egg. Kill the adds until a «N8438» spawns. Kill it and grab the from the corpse. Groups usually keep Free-for-All loot on in this encounter so one designated person can loot the bloods. (Don't forget to switch it back after Hakkar spawns!) Using the blood, you can extinguish one of the four braziers in the room. Proceed until another «N8438» spawns, and all of the braziers are extinguished. If everyone moves close to a wall before extinguishing the final brazier, you can drop combat before engaging the «N8443». The fight itself is pretty straightforward. He'll cast «S12888» on a random player. The best strategy is to stun or CC that player until they're returned to normal. If possible, Dispel «S10896», too. Otherwise, DPS him down and prepare for victory!",
+   "spells": [
+    12888,
+    12889,
+    25852,
+    10896
+   ]
+  },
+  "Jammal'an the Prophet": {
+   "text": "Now that all 6 Atal'ai Defenders are dead, the way to «N5710» is now open. Head on back towards the start of the instance and head left.",
+   "spells": []
+  },
+  "Ogom the Wretched": {
+   "text": "Now that all 6 Atal'ai Defenders are dead, the way to «N5710» is now open. Head on back towards the start of the instance and head left.",
+   "spells": []
+  },
+  "Dreamscythe": {
+   "text": "After «N5710» has fallen, the two drakes «N5720» & «N5721» will spawn in the Pit of Sacrifice . They’re relatively easy to burn down. Tanks should tank with their backs to a wall, keeping the drakes facing away from the party to avoid their frontal cone and knockback abilities.",
+   "spells": [
+    12533,
+    12882
+   ]
+  },
+  "Weaver": {
+   "text": "After «N5710» has fallen, the two drakes «N5720» & «N5721» will spawn in the Pit of Sacrifice . They’re relatively easy to burn down. Tanks should tank with their backs to a wall, keeping the drakes facing away from the party to avoid their frontal cone and knockback abilities.",
+   "spells": [
+    12533,
+    12882
+   ]
+  },
+  "Hazzas": {
+   "text": "After killing «N5720» & «N5721», two more drakes, «N5722» & «N5719», will spawn in the hallway right outside the Chamber of the Dreamer . Fighting Hazzas and Morphaz is the same strategy as the previous two drakes. Try not to pull both at the same time and avoid any trash in the area. These are the last two big kills before «N5709».",
+   "spells": [
+    12533,
+    12882
+   ]
+  },
+  "Morphaz": {
+   "text": "After killing «N5720» & «N5721», two more drakes, «N5722» & «N5719», will spawn in the hallway right outside the Chamber of the Dreamer . Fighting Hazzas and Morphaz is the same strategy as the previous two drakes. Try not to pull both at the same time and avoid any trash in the area. These are the last two big kills before «N5709».",
+   "spells": [
+    12533,
+    12882
+   ]
+  },
+  "Shade of Eranikus": {
+   "text": "«N5709», a level 55 elite, will summon any leftover dragonkin in the instance to his side, so it’s important to make sure you’ve cleared them all before pulling the boss. Ranged, stay out of melee range to avoid his AoE stun ability, «S16740». The target with the highest threat will get afflicted with «S12890». Players can use anti-aggro abilities such as «S10941», «S1038» and «S11303» to help control who gets afflicted with «S12890». Melee, never stand in front of the boss and be wary of his «S16740» ability. DPS him down following the mechanics and you’ll be fine. It’s a long fight so healers, be sure to keep an eye on your mana pool!",
+   "spells": [
+    16740,
+    12890,
+    3391,
+    12533,
+    10941,
+    1038,
+    11303
+   ]
+  }
+ },
+ "blackrock_depths": {
+  "Lord Roccor": {
+   "text": "Arguably, «N9025» is one of the easiest bosses in . Level 60 druids are able to solo this boss, which indicates just how easily he can be defeated. «N9025» is incredibly easy. There is nothing really to look out for. «S13728» can interrupt casting, which is about the only real concern on this boss.",
+   "spells": [
+    13728,
+    13729
+   ]
+  },
+  "High Interrogator Gerstahn": {
+   "text": "«N9018» is the first boss many will face their first time in ! She is not exceedingly difficult overall, but can cause problems if you don't compensate for some of her mechanics. Killing her is necessary to obtain the , which is used to complete quests in the Detention Block . Overall, the approach to beating her is fairly simple. Her use of «S13704» is the most challenging part of the encounter as it can lead to other packs being pulled. For Horde Shamans, use tremor to deal with the fear. For Alliance Dwarf Priests, use fear ward. Further, warrior tanks can attempt «S18499», but the inability to effectively time and predict the fear makes utilizing this more about luck than timing. As for other tank/healer combinations and for DPS, attempt to wedge yourself deeply in a corner to attempt to mitigate some of the fear effects. Apart from the fear, dispel «S14032» and interrupt the «S14033».",
+   "spells": [
+    13704,
+    18499,
+    14032,
+    14033,
+    12040
+   ]
+  },
+  "Houndmaster Grebmar": {
+   "text": "«N9319» is another fairly easy boss fight. He shouldn't cause issues as long as he is handled appropriate to his patrol path. «N9319» pats around the room between two packs of hounds. Kill the pack of hounds opposite of his patrol path. Then, when he pats back, kill the other pack. Once both packs are dead.",
+   "spells": [
+    21049,
+    13730,
+    15615
+   ]
+  },
+  "Ring of Law: Gorosh the Dervish": {
+   "text": "«N9027» is like a warrior with «S15589» and «S15708». Maximize healing output outside of the «S15708» debuff. It is an easy fight as long as healer can sustain through the use «S15708».",
+   "spells": [
+    15589,
+    15708,
+    21049
+   ]
+  },
+  "Ring of Law: Grizzle": {
+   "text": "«N9028» is incredibly easy. There is nothing really to look out for. «S13728» can interrupt casting, which is about the only real concern on this boss.",
+   "spells": [
+    13728,
+    6524,
+    8269
+   ]
+  },
+  "Ring of Law: Eviscerator": {
+   "text": "«N9029» is more annoying than difficult. «S28599» can be rather annoying, but it shouldn't kill the group. That said, priests can utilize «S16874» to their advantage here. The additional shadow resistance makes the fight trivial.",
+   "spells": [
+    28599,
+    16874,
+    7121,
+    16095
+   ]
+  },
+  "Ring of Law: Ok'thor the Breaker": {
+   "text": "«N9030» is the most difficult boss within Ring of the Law because of the number of abilities. He plays like a mage, and bad «S14621» luck could lead to a wipe. The key is to dispel the «S14621» and have as many members stay at range as possible to minimize the effect of «S26192»",
+   "spells": [
+    14621,
+    26192,
+    25055,
+    13747
+   ]
+  },
+  "Ring of Law: Anub'shiah": {
+   "text": "«N9031» is almost as difficult as «N9030». «S15470» and «S15471» both need an immediate dispel. These are the difficult mechanics. The rest aren't too tricky. No real strategy needed other than the dispels.",
+   "spells": [
+    15470,
+    15471,
+    15472,
+    12493,
+    13787
+   ]
+  },
+  "Ring of Law: Hedrum the Creeper": {
+   "text": "«N9032» is a fairly straightforward boss. No real strategy is present outside of cleansing the poisons and dispel the Immobilize.",
+   "spells": [
+    15475,
+    3609,
+    15474
+   ]
+  },
+  "Pyromancer Loregrain": {
+   "text": "«N9024» is an optional boss that spawns near the Shrine. It is an incredibly easy fight. Skipped unless farming . «N9024» does not really warrant discussion of strategy outside of destroying to totem. Incredibly easy boss to kill.",
+   "spells": [
+    15038,
+    15095,
+    15616,
+    15041
+   ]
+  },
+  "Warder Stilgiss": {
+   "text": "«N9041» spawns with «N9042». The fight is not difficult for a five man group. Just kill «N9041» first and then «N9042» next.",
+   "spells": [
+    12675,
+    15044,
+    12674,
+    12556
+   ]
+  },
+  "Verek": {
+   "text": "«N9041» spawns with «N9042». The fight is not difficult for a five man group. Just kill «N9041» first and then «N9042» next.",
+   "spells": [
+    12675,
+    15044,
+    12674,
+    12556
+   ]
+  },
+  "Fineous Darkvire": {
+   "text": "«N9056» is an optional boss once you complete the quest required to kill him. As such, many groups opt to avoid him because it is a pain trying to clear all of the adds to reach him. «N9056» is a rather straightforward boss. He hits incredibly hard and has a healing mechanic. As such, it is important to interrupt the heal and for healers to pre-cast heals to keep up with the damage output. Further, when poorly geared, it is important to make sure all the adds along the pathway are killed to avoid an accidental aggro causing a wipe.",
+   "spells": [
+    8258,
+    15493,
+    13953,
+    11978,
+    15346
+   ]
+  },
+  "Lord Incendius": {
+   "text": "«N9017» is an optional boss, but most groups (even those doing Lava Runs ) tend to grab him as he is an easy kill. He is also located by the Black Anvil, needed by Blacksmiths . «N9017» is not difficult, but tanks and group members need to make sure they don't get knocked off the platform because there is no getting back up outside of dying.",
+   "spells": [
+    26977,
+    13900,
+    13899,
+    14099
+   ]
+  },
+  "Bael'Gar": {
+   "text": "«N9016» is an optional boss that most groups skip because he is not important to the advancement of the dungeon. «N9016» spawns adds, which needs to be kill. Also, tanks need to face «N9016» away from the group «S13880» is not a major concern if that is done. Outside of the tank taking a lot of damage, this fight is fairly easy.",
+   "spells": [
+    13880,
+    13895
+   ]
+  },
+  "General Angerforge": {
+   "text": "«N9033» is an optional boss, but a lot of players will want to farm it for and . Overall, the fight is fairly difficult because of the adds. If your group is lacking on AoE damage, the fight is harder than it would otherwise be. «N9033» is straightforward. He behaves like a warrior, and then calls adds during the encounter. Just burn him and AoE the adds when they come. They have fairly low health, so they die fairly easily.",
+   "spells": [
+    15572
+   ]
+  },
+  "Golem Lord Argelmach": {
+   "text": "«N8983» is an another optional boss that most avoid after the first few runs. It is one of the more challenging fights in , which is one reason why many avoid the fight all together. The primary reason to enter this room is for the , which is near «N8983». Every raid will want an engineer who is able to craft this item, so be prepared to visit a lot. «N8983» is a difficult fight because of «S15305». It is an unrelenting amount of damage if you're group is stacked too close together. As such, the real key to this fight is remaining spread out so that «S15305» doesn't freely bounce from target to target, which is the major killing mechanic on this fight.",
+   "spells": [
+    15305,
+    15507,
+    15605
+   ]
+  },
+  "Guzzler": {
+   "text": "There are a series of encounters in The Grim Guzzler that are covered in the Blackrock Depths Quest Guide , so I won't spend a great deal of time covering the minor encounters, such as and . However, «N9502» will be discussed as it is the primary encounter within The Grim Guzzler. The Grim Guzzler is a bar in Blackrock Depths featuring neutral patrons as well as the vendors «N9499» and «N12944». However, you may want to get into barfights with the patrons to complete quests or kill bosses.",
+   "spells": []
+  },
+  "Phalanx": {
+   "text": "To get through the room quickly just buy 6 from «N9499» to give to «N9503». After three turn-ins of to «N9503», he will start to rage. This action causes «N9502» to activate to stop «N9503». The door to the remainder of the dungeon is smashed open during the scuffle. «N9502» hit fairly hard with «S14099», but this does not warrant a lengthy strategy discussion. The group may be tempted to throw these bottles at patrons as the tool tip explains, but refrain from doing this as they will become angry. The other method to reach the next room past the Grim Guzzler is not as easy. This involves doing , which allows Nagmara to seduce Rocknot.",
+   "spells": [
+    14099,
+    15588,
+    15285
+   ]
+  },
+  "Ambassador Flamelash": {
+   "text": "«N9156» is a DPS race is some sense. There are adds that spawn which rush to the boss. If they reach the boss, he gets a buff. However, these adds can easily be killed before reaching him. As such, the way to beat him is to kill the adds before they reach him and increase his damage beyond which the healer is able to heal. «N9156» summons adds continually throughout the encounter, which give him a buff if they reach him. As such, these adds need to be killed away from the boss. Keep his stacks low, and this is an incredibly easy fight.",
+   "spells": [
+    13489,
+    14744
+   ]
+  },
+  "Panzor the Invincible": {
+   "text": "«N8923» is a rare boss spawn within The Mold Foundry. He is fairly annoying to casters because of «S9941», but outside of that, he is a fairly easy encounter. «N8923» is not a mob that will be encountered often. However, when encountered, the biggest thing is for casters to watch out for «S9941». other than that, it is an easy encounter.",
+   "spells": [
+    9941
+   ]
+  },
+  "Chest of The Seven": {
+   "text": "is another fairly easy fight. This is a multistage encounter against 7 waves of dwarven spirits. Each spirit reflects a particular class (e.g., priest, warlock, and rogue); however, it isn't worth offering unique strategy for each. They are all quite easy to kill. The only concern is killing them too slowly, which might mean you get an additional dwarf before you've completely killed the one you're focusing as they are released on a set timer. No real strategy other than killing each quickly. They will possess one or two abilities of their specific class, but in a weakened state. Try to kill them quickly to avoid fighting two or more at a time. The names of the seven dwarves are: Hate'rel Anger'rel Vile'rel Gloom'rel Seeth'rel Doom'rel Dope'rel",
+   "spells": []
+  },
+  "Magmus": {
+   "text": "«N9938» is a tricky fight because of the fires coming from each side throughout the chamber. «N9938» stands at the end of a long chamber. WIthin the chamber, there are two rows of fire belching golems. This fire is brutal and will kill you rapidly. As such, it is on the tank to put «N9938» in a good position, so that the flames aren't an issue. Outside of the flames from the sides of the chamber, the fight is fairly easy. This fight is all about positioning the boss correctly.",
+   "spells": [
+    13900,
+    24375
+   ]
+  },
+  "Princess Moira Bronzebeard": {
+   "text": "This is the final boss encounter within BRD. Groups can proceed in one of two directions. Either they can choose to save «N8929» and kill «N9019», or they can choose to kill both. Most groups will save «N8929» to complete the quest and then kill her each time afterwards because she had good drops.",
+   "spells": []
+  },
+  "Emperor Dagran Thaurissan": {
+   "text": "This is, unquestionably, the most difficult encounter of the dungeon, so be prepared for a fun fight. However, if you're a warrior tank or dps, get super comfortable, you'll live here while working on obtaining . If you are choosing to save «N8929», then your strategy is to keep her occupied with an off-tank, or someone who can interrupt her casts. because she can be fairly squishy. Further, she assists «N9019» within the fight, so you can't allow her to simply free cast the entire encounter. As soon as «N9019» dies, she breaks free from the mind control she was under to become friendly. However, if your intention is to kill «N8929», then you burn her before killing «N9019». Make sure you have some form of interrupt because she can do a fair amount of damage, which can be hard to heal through coupled with the damage output of «N9019». Looting «N8929» can be buggy; make sure your group has completed the / chain first.",
+   "spells": [
+    17492,
+    15636,
+    15642
+   ]
+  }
+ },
+ "lower_blackrock_spire": {
+  "Spirestone Butcher": {
+   "text": "«N9219» is a level 57 elite ogre.",
+   "spells": []
+  },
+  "Highlord Omokk": {
+   "text": "«N9196» is a level 59 elite ogre located in Lower . «N9196» is accompanied by two other Ogres. Most groups tend to CC one of the adds, while the tank picks up «N9196», keeping him away from the group, with their back against a wall due to Omokk's «S18945». Decide within your group how to handle the adds. Either CC both if possible and kill «N9196» first, or keep one add CC'd the entire time, kill the other, then Omokk. The choice is yours, but be sure crowd control is involved because it will make this encounter a lot easier. «N9196» himself hits pretty hard, so healers, be sure to keep an eye on the tank's health, especially if it gets low. With his «S8269», he could dish out devastating damage, quickly.",
+   "spells": [
+    5532,
+    8269,
+    18945
+   ]
+  },
+  "Spirestone Battle Lord": {
+   "text": "«N9218» is accompanied by two casters. Most groups opt to burn down the casters first and then move on to «N9218», but you can also use CC here if you'd like. He's a typical melee mob, so make sure the tank has aggro before burning him down.",
+   "spells": []
+  },
+  "Shadow Hunter Vosh'gajin": {
+   "text": "«N9236» is a level 59 elite troll located in Lower . «N9236» is accompanied by two «N9240»s. Similar to «N9196», groups typically will CC one of the mobs, and pull «N9236» away from the group. This is due to her «S22566», which can affect multiple group members at a time. Kill her both «N9240»s first, then focus down «N9236». If you have a or in the group, have them cleanse her «S8282».",
+   "spells": [
+    8282,
+    22566
+   ]
+  },
+  "War Master Voone": {
+   "text": "«N9237» is a level 59 elite troll located in Lower . «N9237» is not accompanied by any guards, but he hits really hard. Do not engage in the fight until you're certain tank has generated enough threat to maintain aggro. Tanks - pull him close to a wall and keep your back to the wall. If «N9237» switches targets, stop DPS until the tank gets him back.",
+   "spells": [
+    5532
+   ]
+  },
+  "Bannok Grimaxe": {
+   "text": "«N9596» is a highly sought-after rare spawn in Lower , because he has a chance to drop . He spawns in the room before «N10596», among packs of orcs, by a cluster of tents. Be sure to use /tar Bannok to see if he's spawned. If he is, he's either sitting or sleeping in a corner.",
+   "spells": []
+  },
+  "Mother Smolderweb": {
+   "text": "«N10596» is a level 59 elite spider boss found within Lower . «N10596»'s «S16104» is an AoE frontal cone stun. So naturally, have your tank face her away from the group. She will periodically cast Mother's Milk , a poison that stuns her target and anyone within close proximity of them. Being attentive to these 2 abilities, you can burn her down relatively easy.",
+   "spells": [
+    16104,
+    16468
+   ]
+  },
+  "Crystal Fang": {
+   "text": "«N10376» is a rare spawn found in the area around «N10586»'s lair, in Lower .",
+   "spells": []
+  },
+  "Urok Doomhowl": {
+   "text": "«N10584» is a level 60 elite summoned boss found within Lower . When «N10584»'s encounter begins, many waves of elite ogres will appear first, before Urok himself. The key is to utilize the pike that you placed in the Tribute Pile. Every 30 seconds, you can click on the pike while targeting an ogre to insta-kill single ogre from a wave. This will help manage the number of mobs you fight at once per wave. Don't forget to also utilize CC in addition to clicking the pike, as these waves can get overwhelming over time. After you kill about 10 or so, «N10584» will finally appear. He's has warrior type abilities, including his «S16508» fear. Make sure your tank has proper aggro before unleashing DPS on him.",
+   "spells": [
+    16508,
+    13443,
+    13446
+   ]
+  },
+  "Quartermaster Zigris": {
+   "text": "«N9736» is an elite boss found within Lower .",
+   "spells": []
+  },
+  "Halycon": {
+   "text": "«N10220» is an elite worg boss found within Lower . «N10220» comes with a group of «N10259». Tanks, pick up «N10220» while the group kills the pup adds. Once the adds are done for, focus down «N10220». With her melee abilities, «S13443» and «S3391», she shouldn't be too challenging to take down. As soon as «N10220» falls, replenish your health and mana ASAP, because «N10268» will soon come running into battle!",
+   "spells": [
+    13443,
+    3391
+   ]
+  },
+  "Gizrul the Slavener": {
+   "text": "«N10268» is an elite worg boss found within Lower . «N10268» hits pretty hard and combined with his abilities, can dish out devastating damage with «S20539», which will heal himself, and «S16128», a nature DoT. As usual, have your tank pick him up and generate enough threat before you unleash your DPS on him.",
+   "spells": [
+    8269,
+    20539,
+    16128
+   ]
+  },
+  "Overlord Wyrmthalak": {
+   "text": "«N9568» is the final boss of Lower . Tanks, face «N9568» away from your party, with your back against a wall while generating your initial threat. He will summon adds during the fight when he reaches 50% health. Most groups will opt to CC the adds and burn «N9568» down as quickly as possible, then move on to the adds once he's down.",
+   "spells": [
+    19983,
+    23511,
+    25322
+   ]
+  }
+ },
+ "upper_blackrock_spire": {
+  "Pyroguard Emberseer": {
+   "text": "This room is straightforward. Click the Altar to aggro all of the Incarcerators to release the bind on Pyroguard Emberseer . Once released, kill Pyroguard to advance into The Rookery. Click the Blackrock Altar to start the fight. The Incarcerators have low health, so killing them is quite easy. Just AoE them down with mages and locks. As for Pyroguard, tanks should keep him away from the group to avoid multiple people getting hit with the fire nova. Outside of that, this fight is quite easy. Boss should die fairly quickly.",
+   "spells": []
+  },
+  "Solakar Flamewreath": {
+   "text": "This room is a major wipe risk because of the eggs on the ground. Most groups avoid the Father Flame event in this room and continue around the West wall to reach the upper landing overlooking The Rookery . However, some groups opt to do the event, which is quite difficult. To start the encounter, reach Father Flame by hugging the Northern wall tightly as a raid and walking down to the far end. It is wise to clear out a few of the eggs before starting the encounter, but be aware that they will respawn fairly quickly. As such, some groups avoid focusing on this because it is seen as a futile effort. Clear out the dragonspawn before beginning the event. Then, click Father Flame and loot the item. During the event, multiple waves of mobs will come at your raid. The first is the Rookery Hatcher. They will break the eggs, so it is critical to kill these mobs immediately. Have your mages and warlocks deal with the released whelps. The second mob type of the Rookery Guardian. Have your tanks grab these mobs and tank them back against the Eastern wall. The targets have lower priority than the Hatchers. After a few minutes, Solakar will come, which is a simple encounter. Have your tank grab Solakar and position him along the wall. Finish off the remaining whelps, and then have your group focus on Solakar. Have your raid stay at range. He has a war stomp, which can stun the whole raid. Once killed, your raid should hug the wall again and work your way back around the edge of the room and up the landing. AoE whelps as they spawn, but it is possible to avoid cracking multiple eggs by hugging the corner. Rage Talon Dragonspawn Fixate Enrage Sunder Armor Rage Talon Flamescale Fireball Volley Fire Nova Flamestrike Rookery Hatcher Heroic Strike Sunder Armor Rookery Guardian Heroic Strike Sunder Armor Rookery Whelp Fireball",
+   "spells": []
+  },
+  "Jed Runewatcher": {
+   "text": "Just as with Goraluk , this fight is quite easy. Tank him back against the wall with raid group at range, which should lead to a straightforward kill. Charge Shield Bash Heroic Strike Note : Some groups will do a /tar Jed Runewatcher before beginning the run. This is where the origin of the chat message \"LFM UBRS doing Jed/Rend\" runs comes from.",
+   "spells": []
+  },
+  "Goraluk Anvilcrack": {
+   "text": "This room is straightforward. The boss in this room is Goraluk Anvilcrack, but the optional boss Jed Runewatcher might also present within the Hall. Clear all the mobs then kill Goraluk Anvilcrack and Jed if present. Some groups skip this room as both are optional bosses. This fight is a basic encounter. Tank him against the wall apart from your group. Backhand Head Crack Heroic Strike",
+   "spells": []
+  },
+  "Gyth": {
+   "text": "Complete the gauntlet to beckon Rend and Gyth. The gauntlet consists of numerous waves of orcs and dragonspawn. Once completed, the Southern Gateway will open allowing passage into The Furnace. After seven to eight waves, Rend will appear riding on Gyth’s back. To combat Gyth , the MT should face Gyth away from the raid to protect them from the breath. At 20%, Rend will be knocked off Gyth’s back. The raid should kill Gyth before switching to Rend. Freeze Corrosive Acid Breath Flame Breath Your OT should immediately grab Rend as soon as he is knocked off Gyth , and position him to the side of the room. Once Gyth is slain, the raid will switch to Rend . Melee should attempt to avoid his whirlwind and cleave mechanics. He hits quite hard, so healing here is the biggest issue with killing Warchief Rend Blackhand as mana is already low going into this portion of the encounter. Whirlwind Thunderclap Cleave",
+   "spells": []
+  },
+  "Warchief Rend Blackhand": {
+   "text": "Complete the gauntlet to beckon Rend and Gyth. The gauntlet consists of numerous waves of orcs and dragonspawn. Once completed, the Southern Gateway will open allowing passage into The Furnace. After seven to eight waves, Rend will appear riding on Gyth’s back. To combat Gyth , the MT should face Gyth away from the raid to protect them from the breath. At 20%, Rend will be knocked off Gyth’s back. The raid should kill Gyth before switching to Rend. Freeze Corrosive Acid Breath Flame Breath Your OT should immediately grab Rend as soon as he is knocked off Gyth , and position him to the side of the room. Once Gyth is slain, the raid will switch to Rend . Melee should attempt to avoid his whirlwind and cleave mechanics. He hits quite hard, so healing here is the biggest issue with killing Warchief Rend Blackhand as mana is already low going into this portion of the encounter. Whirlwind Thunderclap Cleave",
+   "spells": []
+  },
+  "The Beast": {
+   "text": "The goal here within The Furnace is to kill The Beast . Berserker Charge Immolate Flamebreak Fear The Beast is a decently difficult fight because of a few mechanics. The first is a charge that can’t be avoided. As soon as the charge happens, he will return to the top aggroed target. The MT should always have the most aggro to ensure it returns properly. The second mechanic that will cause issues is the fear. Raid groups should be at max range and spread out from The Beast to avoid this mechanic. Finally, there is a fire nova ability called Flamebreak that will do fire damage and cause a knockback. Tanks should have their back to a wall to avoid being knocked back. Everyone else should attempt to back at max range to avoid taking too much AoE damage.",
+   "spells": []
+  },
+  "General Drakkisath": {
+   "text": "This is the final room within Upper Blackrock Spire . General Drakkisath , the final boss, is located here. There are a few patrols within this room as well as stationed mobs. Kill General Drakkisath to complete the raid. Cleave Conflagration Flame Breath Thunderclap General Drakkisath is the most difficult by far. The most common approach is the kite method, which many groups with hunters will use. It is significantly easier than the other method. In the kiting method, the hunter will pull General Drakkisath and kite him back through into the Beast’s room. Once there, the Hunter with feign death returning Drakkisath to the raid. While this is going on, each tank will grab a Chromatic Elite Guard and burn it down. The MT will then be prepared to grab General Drakkisath . Face him away from the raid to account for the flame breath. General Drakkisath is easy on his own apart from the guards, which is why this method is favored amongst raid groups. The second strategy is similar, but without the kite. Your group can tank both the adds and General Drakkisath at the starting position. The goal is to AoE Cleave the Chromatic Elite Guards down quickly. A possible assist here is to chain fear one of the guards with a warlock, which lessens the healing burden. Either way, this method is significantly harder at lower gear levels because of the damage output between the guards and General Drakkisath . Once the guards are dead, just as with the kiting method, General Drakkisath is fairly easy on his own.",
+   "spells": []
+  },
+  "Darkstone Tablet": {
+   "text": "Faction: Horde Level Required: 57 Rewards: or 8,300 experience reputation with - begins with «N5204» in , who gives you : «N5204» She asks you to find «N9078», in Kargath, : «N9078» «N9078» will follow up with, , asking you to bring him . This is found inside Upper , inside The Rookery, with all of the eggs. (the Leeroy Jenkins room)",
+   "spells": []
+  }
+ },
+ "dire_maul_east": {
+  "Pusillin": {
+   "text": "Once you engage «N14354», he will summon four (4) «N13276» to his side. Once your tank grabs aggro on «N14354», your group can AoE down the imps. «N14354» casts a variety of Fire spells - «S1769», «S2139» and other interrupts can prevent his casts from going off. Casters: watch out for his «S22735», which is a self-buff increasing his size, melee haste by 20% and chance to reflect spells by 50%.",
+   "spells": [
+    17145,
+    14145,
+    15242,
+    22735,
+    1769,
+    2139
+   ]
+  },
+  "Zevrim Thornhoof": {
+   "text": "«N11490» will periodically teleport a party member to his ritual alter and cast «S22651». Healers: whoever is targeted by this will need BIG heals! His other spell, «S22478» is like an AoE «S10894» that can be dispelled. Ranged, stand max distance to avoid this. If you have a in your group, one tactic is to enslave a «N11457» or «N11456» and use them to attack «N11490».",
+   "spells": [
+    22478,
+    22651,
+    10894
+   ]
+  },
+  "Hydrospawn": {
+   "text": "«N13280» could be approached in 2 ways. Burn him down & ignore the «N14350» that he spawns, or AoE down the «N14350» then switch over to «N13280». The «N14350» do tend to cause more damage than «N13280» himself, so if you choose to just burn him down quickly, keep an eye on your healers and interrupt spells when you can.",
+   "spells": [
+    22419,
+    22420,
+    22421,
+    22714,
+    22715
+   ]
+  },
+  "Lethtendris": {
+   "text": "«N14327» has a plethora of -related spells. Her «S22709» is a 4-second cast and should be interrupted, as should most of the spells you see casting. She afflicts a couple of curses, so if you have a or , be sure to have them decurse the group. Her imp, «N14349» also casts a variety of fires pells. He has about 1/3 of her HP, so focus down the imp first then move on to «N14327».",
+   "spells": [
+    22709,
+    14887,
+    20787,
+    13338,
+    16247,
+    22710
+   ]
+  },
+  "Alzzin the Wildshaper": {
+   "text": "«N11492» will shape-shift into different forms. When he shape-shifts, make sure your tank reestablishes aggro before DPSing. In his initial, Satyr Form, be sure to cleanse the poison «S22661» right away as it acts as a periodic mana drain. Be sure to cleanse the disease spell, «S22662», as well. Both can be interrupted, so watch out for his spell casting. When he shifts into treant form, his armor increases by a lot, so using like «S11599» and «S11198» will help you get through this phase. He can also shape-shift into a Dire Wolf, casting abilities similar to a feral in «S768». At 35% health, the wall will crumble behind him and a group of non-elite adds will come running out. They're pretty easy to AoE down and finish burning down «N11492».",
+   "spells": [
+    22661,
+    22662,
+    22128,
+    22691,
+    10101,
+    7948,
+    22660,
+    22689,
+    19319,
+    11599,
+    11198,
+    768
+   ]
+  }
+ },
+ "dire_maul_north": {
+  "Guard Mol'dar": {
+   "text": "«N14326» is a named ogre guarding the approach to Dire Maul North. He uses only melee-focused abilities, so the fight is not too challenging as long as your tank picks up aggro quickly and the ranged stay back to avoid «S10101» and «S15749». On a tribute run, do not kill him — hug the northern wall and sneak past instead.",
+   "spells": [
+    8269,
+    10101,
+    11972,
+    15749,
+    15580
+   ]
+  },
+  "Stomper Kreeg": {
+   "text": "«N14322» is the drunken ogre chef dancing along the northern ramp — hard to miss. His «S22833» hits the whole party, getting everyone drunk and reducing their chance to hit by 75%. Other than that it is a straightforward tank-and-spank melee fight. On a tribute run, do not kill him — wait for him to fall asleep and sneak past.",
+   "spells": [
+    22833,
+    22835,
+    8269,
+    16740,
+    15577
+   ]
+  },
+  "Guard Fengus": {
+   "text": "«N14321» patrols the center of the Courtyard. Like «N14326», he is all melee — keep the tank on him and let the ranged stay back to avoid «S10101» and «S15749». On a tribute run, do not kill him: stealth classes can wait for him to patrol away and loot the chest in the middle, or a class with a movement speed ability can dash in and grab it.",
+   "spells": [
+    8269,
+    10101,
+    11972,
+    15749,
+    15580
+   ]
+  },
+  "Guard Slip'kik": {
+   "text": "«N14323» patrols the winding hallway into the Halls of Destruction. On the way, kill the «N14386» on sight or it will summon two «N14389». Like the other guards, «N14323» is melee-focused — tank him up close and keep the ranged away from «S10101» and «S15749». On a tribute run, do not kill him — set a freeze trap on the broken trap on the ground so he gets caught when he patrols back.",
+   "spells": [
+    8269,
+    10101,
+    11972,
+    15749,
+    15580
+   ]
+  },
+  "Captain Kromcrush": {
+   "text": "«N14325» hits very hard and can fear party members with «S19134». At around 50% health he will summon two «N11450» to his side — be ready to control the adds and keep the tank's aggro on «N14325». Casters should stay at max range, as with the other guards. On a tribute run you can skip this fight entirely by wearing the Gordok disguise and talking your way past him.",
+   "spells": [
+    22860,
+    8599,
+    19134,
+    22859,
+    22857
+   ]
+  },
+  "Cho'Rush the Observer": {
+   "text": "«N14324» is King Gordok's caster attendant. In a normal run, burn him down first — he supports «N11501», so keep his casting interrupted. On a tribute run he must survive: once «N11501» falls, «N14324» becomes friendly and stops attacking.",
+   "spells": [
+    17194,
+    22884,
+    17139,
+    11642
+   ]
+  },
+  "King Gordok": {
+   "text": "«N11501» is the final fight of Dire Maul North and the target of the tribute run. Deal with «N14324» first in a normal run (see his entry), then burn the king down. On a tribute run, killing «N11501» while keeping «N14324» alive yields the Gordok Tribute.",
+   "spells": [
+    22886,
+    15708,
+    15572,
+    16727
+   ]
+  }
+ },
+ "dire_maul_west": {
+  "Tendris Warpwood": {
+   "text": "Clear all of the ancients in the area before pulling «N11489», otherwise they will all aggro together. Watch out for his AoE melee knockdown «S5568» — ranged should stand well back. «S22994» is a root effect that can be dispelled. Wait for the tank to build threat, then burn him down.",
+   "spells": [
+    22994,
+    22924,
+    5568,
+    22916
+   ]
+  },
+  "Illyanna Ravenoak": {
+   "text": "«N11488» fights just like a hunter, accompanied by her pet bear «N14308». All of her abilities except «S22910» can be negated by standing in melee range of her. Most groups burn down «N11488» first, then kill «N14308».",
+   "spells": [
+    20904,
+    22914,
+    22910,
+    22908
+   ]
+  },
+  "Magister Kalendris": {
+   "text": "«N11487» is a shadow priest-type caster. Interrupt his spells, dispel any magic off the party, and burn him down; extra shadow resistance helps a lot.",
+   "spells": [
+    7645,
+    15587,
+    22919,
+    15654,
+    22917
+   ]
+  },
+  "Tsu'zee": {
+   "text": "«N11467» is a rogue-type silver elite found near the ramps in the Court of the Highborne, in Dire Maul West. Fighting «N11467» is like encountering a rogue, and she hits pretty hard — make sure your tank gains aggro before attacking. Dispel «S21060» from your party if able, then burn her down.",
+   "spells": [
+    15657,
+    21060,
+    12540,
+    15667
+   ]
+  },
+  "Immol'thar": {
+   "text": "«N11496» will summon eyes around the room — assign someone, preferably a ranged attacker, to dispose of them. He will cast «S8269» at 50% health, so healers should be ready with big heals on the tank. He also randomly teleports players to the middle of the room — if it is the tank, let them run back and re-establish aggro. Clear all the mana pylons first so his shield drops.",
+   "spells": [
+    8269,
+    22899,
+    16128,
+    22950,
+    5568
+   ]
+  },
+  "Prince Tortheldrin": {
+   "text": "«N11486» hits hard and fast. Tank him in the corner to avoid his knockback «S22920». After casting «S22920» his aggro resets — cease DPS until the tank gets him back, then burn him down quickly.",
+   "spells": [
+    22920,
+    20537,
+    22995,
+    15589
+   ]
+  },
+  "Lord Hel'nurath": {
+   "text": "«N14506» is a special boss in Dire Maul West that can only be summoned by warlocks carrying the three summoning items from their epic mount quest line. The ritual takes place at the altar where «N11496» originally stood, after that boss is dead. The group must survive many waves of demons while the warlock keeps all three ritual items active; «N14506» himself is then a straightforward kill.",
+   "spells": [
+    20812,
+    22665
+   ]
+  }
+ },
+ "stratholme_main": {
+  "Skul": {
+   "text": "«N10393» is a rare spawn you may encounter just before «N11058», with another spawn point on the east side of the dungeon. His mechanics are very simple — he just casts spells, which you should interrupt to reduce damage.",
+   "spells": [
+    15230,
+    15499,
+    16799
+   ]
+  },
+  "Hearthsinger Forresten": {
+   "text": "«N10558» is another rare spawn, appearing north up the lane from «N11058», or east past «N10516» along Market Row. He casts an 8-second sleep on a random player, and his multi-shot «S14443» can be countered by spreading out a little.",
+   "spells": [
+    16798,
+    14443
+   ]
+  },
+  "The Unforgiven": {
+   "text": "«N10516» spawns in the corridor labeled 4 on the map, together with a few non-elite adds, so do not engage while already fighting other mobs or at low health and mana. He has no real mechanics beyond the adds and a shadow spell that also slows.",
+   "spells": []
+  },
+  "Postmaster Malown": {
+   "text": "«N11082» mobs throughout the instance drop keys that open their associated mailboxes. Opening the third mailbox spawns «N11143» along with three elite «N11142» that use «S7713» — the stacking curse gives tanks and healers a hard time, so crowd control the adds or have a mage or the healer dispel it off the tank. Make sure the area is clear before engaging, as his fear could send you running into extra mobs.",
+   "spells": [
+    7713,
+    6253,
+    13338,
+    12741,
+    12542
+   ]
+  },
+  "Timmy the Cruel": {
+   "text": "«N10808» is the first boss you may encounter if you head straight for the Scarlet side. He is a reference to South Park and yells \"TIMMY!\" on engage. He has no mechanics — a simple tank and spank.",
+   "spells": [
+    17470,
+    8599
+   ]
+  },
+  "Malor the Zealous": {
+   "text": "«N11032» has no notable mechanics apart from «S17233». He is located in his own room at number 7 on the map; the chest behind him contains the item for the related quest, plus some gold and random items.",
+   "spells": [
+    17233
+   ]
+  },
+  "Crimson Hammersmith": {
+   "text": "Summoned by clicking the blacksmithing plans on the floor at number 8 on the map. A simple tank and spank; he only drops plans for blacksmiths with the Armorsmithing specialization.",
+   "spells": []
+  },
+  "Cannon Master Willey": {
+   "text": "«N10997» spawns at number 9 on the map. He summons several ranged adds during the fight — either switch to them, or grab a cannon ball near «N10997» and load it into one of the cannons to shoot them down. He has an interrupt, but apart from that the fight is simple as long as the adds are handled.",
+   "spells": []
+  },
+  "Archivist Galford": {
+   "text": "«N10811» spawns at number 11 on the map, in a room tied to two quests — loot what you need before burning down the room. He has a DoT «S17293» and an AoE ability, which makes the fight harder on healers; if the DoT lands on the tank, be ready for heavy damage.",
+   "spells": [
+    17293,
+    17366
+   ]
+  },
+  "Balnazzar": {
+   "text": "«N10812» is the final boss of the dungeon at number 11 on the map, and turns into «N10813» halfway through the fight. In human form he does little, but around half health he gains «S17405», «S13704», «S15587», «S17399» and «S15970». Crowd control the player he mind controls, stand at max range to avoid the fear if you are a caster, and dispel the sleep off your allies when you can.",
+   "spells": [
+    17405,
+    13704,
+    15587,
+    17399,
+    15970
+   ]
+  }
+ },
+ "stratholme_service": {
+  "Magistrate Barthilas": {
+   "text": "«N10435» can spawn at the church near the start, or — if alerted — run to his second spot near the end of the instance at number 12 on the map. The key ability to watch for is «S14099»: it knocks the tank back several yards, potentially into more mobs. Simply face your back to a wall so you get knocked straight up instead of backward.",
+   "spells": [
+    16793,
+    10887,
+    16791,
+    14099
+   ]
+  },
+  "Stonespine": {
+   "text": "«N10809» is a rare spawn that appears at 14 on the map and paths up and down that section. He has no notable mechanics apart from «S14331», though he does drop some decent gear.",
+   "spells": [
+    14331
+   ]
+  },
+  "Baroness Anastari": {
+   "text": "«N10436» spawns at number 15 on the map. She does not hit hard, but her kit is annoying: she casts «S17244» on players throughout the fight — the possessed player is freed by being brought to 50% health — silences casters, and curses players to reduce their hit chance. After she dies, clear the room behind her full of «N10399», as this unlocks a gate later in the dungeon.",
+   "spells": [
+    16867,
+    16868,
+    17244,
+    18327
+   ]
+  },
+  "Black Guard Swordsmith": {
+   "text": "«N11121» is a mini boss summoned by clicking the blacksmithing plans on the ground to the right of «N10436». He has no mechanics and no unique loot apart from a plan for blacksmiths.",
+   "spells": []
+  },
+  "Nerub'enkan": {
+   "text": "«N10437» spawns at number 16 on the map, northwest of the gauntlet entrance, and is usually the first boss you make your way to. As DPS, cleave down the extra mobs he spawns — they do little damage, and you may pull aggro anyway because the tank is snared or under pressure. Healers and tanks should watch for «S6016» and coordinate defensives and focused healing. After he dies, clear the room behind him full of «N10399» to unlock a gate later on.",
+   "spells": [
+    16418,
+    4962,
+    6016,
+    17235
+   ]
+  },
+  "Maleki the Pallid": {
+   "text": "«N10438» is down the path north of «N10436», at 17 on the map. He will generally entomb the tank in «S16869», which lasts 6 seconds — during that time healers and DPS should watch their threat. That is the only mechanic worth worrying about. After he dies, clear the room behind him full of «N10399» to unlock a gate later on.",
+   "spells": [
+    17620,
+    13322,
+    16869
+   ]
+  },
+  "Ramstein the Gorger": {
+   "text": "«N10439» spawns at number 18 on the map after you kill all the patchwork mobs in the room. The gate into the room locks once you start pulling, so let your group know, and pull the patchworks one at a time — they hit hard and can spawn extra mobs. «N10439» himself is basically a tank and spank with aggro swaps: he casts «S17307» on the tank and swaps aggro, using «S5568» along the way, so healers should keep some heals ready for the DPS.",
+   "spells": [
+    17687,
+    17307,
+    5568
+   ]
+  },
+  "Baron Rivendare": {
+   "text": "«N10440» is the final boss of the undead side. His kit reduces healing on the tank and deals consistent AoE damage with his aura and cleave, and he summons skeletons throughout the fight — cleave them down quickly or they will wreak havoc. A proven strategy: buff up outside and run in together, as the door closes on pull. The tank runs right and pulls him to the right side of the room with the melee; ranged DPS and the healer stand on the bone piles on the left to avoid «S17467». Melee should stay behind the boss to avoid his cleave. When skeletons spawn, switching to them is the DPS priority — they die quickly and the tank does not need to pick them all up. Keep your distance from the aura and the fight becomes much easier.",
+   "spells": [
+    15496,
+    16856,
+    17393,
+    17467
+   ]
+  }
+ },
+ "excavation_wetlands": {
+  "Saltspine": {
+   "text": "A very simple fight as long as you clear out the nearby mobs first. Saltspine casts Thunder Clap (3604) on the tank — a heavy slow that does not change how you play — and periodically Dust Storm (1316382) on everyone within 10 yards, reducing attacks' chance to hit by 25%; casters should stay out of melee range.",
+   "spells": [
+    3604,
+    1316382
+   ]
+  },
+  "Shadetooth": {
+   "text": "Shadetooth is joined by two Thicket Hunters (260801); fighting all three at once is very difficult unless overleveled — either CC the adds for the whole fight, or CC one and kill the other first. Dispel the Hunters' poison quickly. Once only the boss remains: Tendon Rip (12054) hits the tank moderately, and Terrifying Roar (14100) is a 5-second undispellable fear — easy to get feared into grass-spawned raptors or uncleared adds. Clear the crocodile cove to the left and fight there; the Hunters cannot swim, so dragging the boss back into the previous boss area resets it. The boss can be slowed and stunned, which is especially useful during Frenzy (18501) below 30%.",
+   "spells": [
+    12054,
+    14100,
+    18501
+   ]
+  },
+  "Highland Horror": {
+   "text": "Wowhead's guide has no dedicated strategy box for this fight. It is the target of the Alliance quest \"Horrors in the Highland\" — kill it inside the dungeon and bring the root core back to Rethiel the Greenwarden.",
+   "spells": []
+  },
+  "Relic Guardian": {
+   "text": "The encounter starts by pressing the Archival Panel on the right side of the inactive boss. This is a gear and level check: the difficulty comes from high tank damage and a large health pool. The boss casts Thunder Clap (15588) on everyone within 10 yards — a heavy movement/attack-speed slow plus moderate damage. The tank is periodically knocked back and sometimes stunned for 5 seconds. The boss can be stunned and slowed: use CC liberally and kite between the nearby structures.",
+   "spells": [
+    15588
+   ]
+  }
+ },
+ "city_of_dalaran": {
+  "Hand in and accept next quest": {
+   "text": "Alliance players can access the dungeon through the sewers in Dalaran. The first time you visit the city, you will have to run from Hillsbrad Foothills to get to the city, which is a bit of a hike. Horde players have to enter through a special tunnel where the «N269127» grants us special access to help defend the city. To unlock the gate, at least one player needs to have access to . You can easily reach the dungeon by swimming from . Once you land in The Sepulcher, it only takes a few minutes to reach the dungeon on foot. As with many World of Warcraft: Forever Dungeons, wiping (the entire group dying) in City of Dalaran can be a frustrating time due to the long run-back. Ideally, if the entire group is not dead, you should be able to get a rez (resurrection). This is a spell someone casts on you to bring your character back to life with a small amount of health and mana. Priests, Druids, and Shamans learn this early; Paladins need to complete a quest to learn resurrection and may not have it. If you can't get a rez, click to release your spirit, then run back to the dungeon from the Spirit Healer (marked on the map below) as a ghost. You collect your body when you enter the instance. Every Quest in City of Dalaran in World of Warcraft: Forever Hard : Level 26 | Medium : Level 29 | At Level : Level 31 | Easy : Level 34",
+   "spells": []
+  },
+  "Quick Reference Table": {
+   "text": "This section will be updated as we get more information through the beta.",
+   "spells": []
+  },
+  "Best Quest Rewards": {
+   "text": "Step 2: Travel to Ambermill Exit Shadowfang Keep and run over to the Dalaran-controlled town of Ambermill in . In the keep, you will find the Ambermill Leyline Focus, and if you interact with while you're next to it, it will turn the Black Tome into Entrance to City of Dalaran Step 3: Enter the City of Dalaran At this point, you have all you need to summon «N247032». Clear the first boss «N247126», then continue through the sewer. Instead of heading right to get to the surface, continue straight forward into the tunnel leading to a purple rune on the ground. Interact with , and Lyn will appear after a short RP entrance with a nod to «N11502». Too soon, you have awakened him too soon . You will encounter «N247126» very early in the dungeon, and as a consequence, he's a very easy tank-and-spank style boss. His primary mechanic is summoning Skeletons, non-elite mobs, that need to be killed. They don't have any time-sensitive mechanics, and the only way you die during this encounter is if you use heavy AOE before the tank has established threat, so be careful. This boss is essentially designed to test the strength of your tank with abilities like «S1303264», «S3391», and «S12057». Make sure to put on a shield for this encounter. The boss will also periodically use «S6713» on the tank.",
+   "spells": [
+    6713,
+    1303266,
+    1303264,
+    3391,
+    12057,
+    1241501,
+    15230,
+    1240869,
+    1224125,
+    1304455,
+    1241329,
+    1240750,
+    1240738,
+    22994,
+    1240706,
+    1044,
+    20589,
+    17228,
+    1304473,
+    1303598,
+    1303599,
+    28450,
+    1241515
+   ]
+  },
+  "Atrexis the Grave Knight": {
+   "text": "You will encounter «N247126» very early in the dungeon, and as a consequence, he's a very easy tank-and-spank style boss. His primary mechanic is summoning Skeletons, non-elite mobs, that need to be killed. They don't have any time-sensitive mechanics, and the only way you die during this encounter is if you use heavy AOE before the tank has established threat, so be careful. This boss is essentially designed to test the strength of your tank with abilities like «S1303264», «S3391», and «S12057». Make sure to put on a shield for this encounter. The boss will also periodically use «S6713» on the tank.",
+   "spells": [
+    6713,
+    1303266,
+    1303264,
+    3391,
+    12057
+   ]
+  },
+  "Arcane Anomaly": {
+   "text": "«N245999» is one of the bosses you can kill after exiting the sewers and has a core defining mechanic that will kill you if mishandled. «S1241501» is an arcane slicer that cuts across the room and rotates counterclockwise. This is a mechanic many raiders will be familiar with if they played WoW before picking up Forever and can be seen in bosses like C'thun, Halion, and Norushen. Make sure to avoid this ability, or you will die. Another thing to keep in mind is that the boss spawns small adds at the edge of the room when you engage it, so make sure to stay within the circle on the platform to avoid pulling them into the boss. The boss will periodically cast «S15230» in addition to its normal melee attacks.",
+   "spells": [
+    1241501,
+    15230
+   ]
+  },
+  "Arcanic Enigma": {
+   "text": "«N246016» has 2x «N269475» accompanying him as you begin the fight. These should be burned down quickly, as they have a Mana Burn that is very taxing on whoever is targeted. «S1240869» will occasionally CC a group member for 8 seconds and needs to be dispelled by someone with the ability to dispel Magic. Speaking of dispelling Magic, it may be a good idea for your healer to stand far away from the rest of your group, as the boss will cast an AOE «S1224125» on targets close to the boss. The boss will continuously spawn small «N246893» throughout the fight, and they need to be cleaved down. These are not as much of a priority as «N269475», but the boss will not spawn additional Mana Phantoms during the encounter.",
+   "spells": [
+    1240869,
+    1224125,
+    1304455
+   ]
+  },
+  "Unstable Sentinel": {
+   "text": "«N246017» has one defining mechanic, and that is «S1241329». Malfunction will have a short wind-up before unleashing heavy AOE damage to anyone within 25 yards. Ranged players should stay at max range for the entire fight, and melee players should run out whenever you see the wind-up. Depending on your level and group composition, you could likely stay in as a melee, but being kind to the healer should be the baseline. Note: Non-elite enemies called «N254856» will spawn from the buildings as you approach the boss. Kill these before engaging the fight to make things a little bit easier.",
+   "spells": [
+    1241329
+   ]
+  },
+  "Mana Devourer": {
+   "text": "«N246008» resides by the entrance to Violet Hold and can be deceptively difficult. The boss will periodically cast «S1240750», which deals damage to everyone within 45 yards and drains 200 mana. Additionally, the boss will cast «S1240738» on the current target, dealing arcane damage on impact and over a 10-second duration. This boss is essentially a rush against time, as the group will sooner or later run out of mana unless you defeat the boss quickly enough. The boss is also immune to arcane spells. Note: Make sure to clear out all the trash in the boss area. They will join the fight after engaging the boss if they are still alive.",
+   "spells": [
+    1240738,
+    1240750
+   ]
+  },
+  "Fel Ancient": {
+   "text": "«N246003» has two mechanics that are quite unforgiving. «S22994» will occasionally root 2 targets and deal damage over time. This is not a big deal on its own, but when combined with his other mechanic «S1240706», it can be quite deadly. Fel Timbers leaves a green pool on the ground that deals damage to anyone standing in it. If Entangle and Fel Timbers overlap, make sure to use effects like «S1044» or «S20589» to clear it. Note: «N246003» is only unlocked once surrounding bosses are defeated and the mana barrier protecting him is broken.",
+   "spells": [
+    22994,
+    1240706
+   ]
+  },
+  "Lyn the Ignored": {
+   "text": "«N247032» is a secret boss hiding away in the sewers. After summoning him, you'll have to deal with a surprisingly punishing encounter. «S17228» will be cast periodically and deals a surprising amount of shadow damage. On its own, it's not too difficult to handle, but when combined with damage from «S1304473», things can get scary. This ability gives your attacks a chance to cause damage to yourself, which is bad news for melee classes, particularly Rogues. This is a curse, so make sure to dispel it if possible. The boss will also cast «S1303266», which summons two non-elite skeletons, similar to «N247126».",
+   "spells": [
+    17228,
+    1304473,
+    1303266
+   ]
+  },
+  "Shade of the Archmage": {
+   "text": "«N246020» is the final boss of the dungeon. The Archmage uses his mana pool to use his abilities, and once that mana pool is drained, he will use «S1303598» and «S1303599» to regenerate his mana to full. His primary damage ability on the tank is «S15230», which deals high steady damage. He'll also periodically use «S28450», which deals moderate damage to anyone within 20 yards. Occasionally, the Archmage will cast «S1241515», which deals high damage to anyone hit. This will target one individual player with an arcane boomerang projectile, and anyone standing in the projectile will take damage. Stay spread out to avoid spreading the damage from Bounding Mana, and casters stay at max range to avoid taking damage from Arcane Explosion. Casters who are looking to squeeze a bit more damage or healing out of the fight can hide behind the wall whenever the boss casts Mass Polymorph, but be careful, as if the boss leaves his room, he will fully reset.",
+   "spells": [
+    1303598,
+    1303599,
+    15230,
+    28450,
+    1241515
+   ]
+  }
+ },
+ "the_drowned_city": {},
+ "kroldok_stronghold": {},
+ "alcaz_prison": {},
+ "blackmaw_hold": {},
+ "shapers_terrace": {},
+ "onyxias_lair": {
+  "Onyxia": {
+   "text": "Onyxia's Lair raid strategy (wowhead onyxia-onyxias-lair-strategy). Abilities referenced inline in the strategy guide: Tail Sweep, Wing Buffet, Fireball, Breath (Deep Breath), Bellowing Roar (client id 14100).",
+   "spells": [
+    15847,
+    18500,
+    18392,
+    17086,
+    14100
+   ]
+  }
+ }
+}

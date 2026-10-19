@@ -1,0 +1,273 @@
+== WARRIOR / Arms ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== WARRIOR / Fury ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== WARRIOR / Protection ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== PALADIN / Holy ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== PALADIN / Protection ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== PALADIN / Retribution ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== HUNTER / Beast Mastery ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== HUNTER / Marksmanship ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== HUNTER / Survival ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== ROGUE / Assassination ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== ROGUE / Combat ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== ROGUE / Subtlety ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== PRIEST / Discipline ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== PRIEST / Holy ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== PRIEST / Shadow ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== SHAMAN / Elemental ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== SHAMAN / Enhancement ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== SHAMAN / Restoration ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== MAGE / Arcane ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== MAGE / Fire ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== MAGE / Frost ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== WARLOCK / Affliction ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== WARLOCK / Demonology ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== WARLOCK / Destruction ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== DRUID / Balance ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== DRUID / Feral Combat (Bear) ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== DRUID / Feral Combat (Cat) ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+== DRUID / Restoration ==
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None
+  None | None

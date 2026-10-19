@@ -3090,8 +3090,8 @@ function DG.ApplyDetailChrome(cur)
     for i = 1, #(U.dungeonFilterBtns or {}) do
         local bt = U.dungeonFilterBtns[i]
         if bt and bt.__em then
-            if isQuest and (i == 1 or i == 2) then
-                local tex = DG.Q_FAC_ICON[(i == 1) and "A" or "H"]
+            if isQuest and (i == 2 or i == 3) then
+                local tex = DG.Q_FAC_ICON[(i == 2) and "A" or "H"]
                 if tex then
                     bt.__em:SetTexture(tex)
                     bt.__em:Show()
@@ -3109,10 +3109,13 @@ function DG.ApplyDetailChrome(cur)
             local bt = U.dungeonFilterBtns[i]
             if bt then
                 local bx = DG.Q_PAD
-                for k = 1, i - 1 do bx = bx + ((k <= 2) and 92 or 50) end
+                for k = 1, i - 1 do
+                    local prev = U.dungeonFilterBtns[k]
+                    bx = bx + (prev.__questWidth or ((k <= 3) and 84 or 42)) + 8
+                end
                 bt:ClearAllPoints()
                 bt:SetPoint("TOPLEFT", plateL, "TOPLEFT", bx, -DG.Q_PAD)
-                bt:SetWidth((i <= 2) and 84 or 42)
+                bt:SetWidth(bt.__questWidth or ((i <= 3) and 84 or 42))
                 bt:SetFrameLevel(plateL:GetFrameLevel() + 5)
             end
         end
@@ -3132,7 +3135,7 @@ function DG.ApplyDetailChrome(cur)
         if isQuest and U.dungeonQPlateL then
             local plateL = U.dungeonQPlateL
             tg:ClearAllPoints()
-            tg:SetPoint("TOPRIGHT", plateL, "TOPRIGHT", -DG.Q_PAD, -DG.Q_PAD - 2)
+            tg:SetPoint("TOPRIGHT", plateL, "TOPRIGHT", -DG.Q_PAD, -(DG.Q_PAD + 24 + 8))
             tg:SetFrameLevel(plateL:GetFrameLevel() + 5)
             tg:Show()
         else
@@ -3229,7 +3232,7 @@ function DG.BuildDetailFilterRow()
             if bt.__mode == "loot" and bt.__key == "__typeMenu" then
                 DG.OpenLootTypeMenu(bt)
             elseif bt.__mode == "quest" then
-                if bt.__key == "A" or bt.__key == "H" then
+                if bt.__key == "all" or bt.__key == "A" or bt.__key == "H" then
                     U:SetQuestSide(bt.__key)
                 elseif bt.__key == "qov" then
                     U.dungeonQView = "overview"
@@ -3271,11 +3274,11 @@ function DG.BuildDetailFilterRow()
         tg.label:SetPoint("RIGHT", tg, "LEFT", -6, 0)
         tg.label:SetText(L["地图图钉"])
         tg:SetHitRectInsets(-((tg.label:GetStringWidth() or 60) + 6), 0, 0, 0)
-        tg:SetChecked(DB().mapQuestPins ~= false)
+        tg:SetChecked(DB().mapQuestPins and true or false)
         tg:SetScript("OnClick", function(self)
             local s = DB()
             s.mapQuestPins = self:GetChecked() and true or false
-            self:SetChecked(s.mapQuestPins ~= false)
+            self:SetChecked(s.mapQuestPins and true or false)
             if ns.MapModule and ns.MapModule.SyncPins then ns.MapModule.SyncPins() end
             if ns.MapModule and ns.MapModule.SyncWorldQuestPins then ns.MapModule.SyncWorldQuestPins() end
         end)
@@ -3651,23 +3654,87 @@ function DG.HarvestTipName(id)
     local cache = DG.__tipName
     local hit = cache and cache[id]
     if hit then
-        if hit[2] then DG.__tipColor = { hit[2], hit[3], hit[4] } end
+        DG.__tipColor = hit[2] and { hit[2], hit[3], hit[4] } or nil
         return hit[1]
     end
-    if DG.__tipDead and DG.__tipDead[id] then return nil end
-    if DungeonsForeverDB and DungeonsForeverDB.dfNoTipWarm then return nil end
     local fn = GetItemInfo or (C_Item and C_Item.GetItemInfo)
-    local nm, _, _, q
-    if fn then nm, _, _, q = fn(id) end
+    local nm, q
+    if type(fn) == "function" then
+        local ok, name, _, quality = pcall(fn, id)
+        if ok then nm, q = name, quality end
+    end
     if type(nm) == "string" and nm ~= "" then
         local r, g, b
         if type(q) == "number" and GetItemQualityColor then r, g, b = GetItemQualityColor(q) end
         if not cache then cache = {} DG.__tipName = cache end
         cache[id] = { nm, r, g, b }
-        if r then DG.__tipColor = { r, g, b } end
+        if DG.__tipDead then DG.__tipDead[id] = nil end
+        if DG.__tipFails then DG.__tipFails[id] = nil end
+        DG.__tipColor = r and { r, g, b } or nil
         return nm
     end
-    if not (DG.__asked and DG.__asked[id]) then DG.RequestItem(id) end
+    nm = nil
+    if DG.__tipDead and DG.__tipDead[id] then return nil end
+    if DungeonsForeverDB and DungeonsForeverDB.dfNoTipWarm then return nil end
+    if not (DG.__asked and DG.__asked[id]) then
+        DG.RequestItem(id)
+        local got = DG.__tipName and DG.__tipName[id]
+        if got then
+            DG.__tipColor = got[2] and { got[2], got[3], got[4] } or nil
+            return got[1]
+        end
+        return nil
+    end
+    -- Tooltip setters can synchronously deliver item events. Keep rendering
+    -- bounded and non-reentrant; RefreshItemCards still owns batched updates.
+    if DG.__tipBusy then return nil end
+    local bucket = (GetTime and math.floor(GetTime() * 4)) or 0
+    if DG.__warmBk ~= bucket then DG.__warmBk = bucket DG.__warmN = 0 end
+    if (DG.__warmN or 0) >= 40 then return nil end
+    if not DG.__warmTip and not DG.__warmTried then
+        DG.__warmTried = true
+        local ok, tip = pcall(CreateFrame, "GameTooltip", "TFItemWarmTip", UIParent, "GameTooltipTemplate")
+        if ok then DG.__warmTip = tip end
+        if DG.__warmTip then pcall(DG.__warmTip.SetAlpha, DG.__warmTip, 0) end
+    end
+    local tip = DG.__warmTip
+    if not tip then return nil end
+    DG.__warmN = (DG.__warmN or 0) + 1
+    DG.__tipBusy = true
+    local color
+    local ok = pcall(function()
+        tip:SetOwner(UIParent, "ANCHOR_NONE")
+        tip:SetHyperlink("item:" .. tostring(id))
+        tip:Show()
+        if tip:NumLines() > 0 then
+            local fs = _G["TFItemWarmTipTextLeft1"]
+            local text = fs and fs.GetText and fs:GetText()
+            if type(text) == "string" and #text >= 2 then
+                nm = text
+                if fs.GetTextColor then
+                    local r, g, b = fs:GetTextColor()
+                    if type(r) == "number" then color = { r, g, b } end
+                end
+            end
+        end
+    end)
+    pcall(tip.Hide, tip)
+    DG.__tipBusy = nil
+    if ok and nm then
+        cache = DG.__tipName
+        if not cache then cache = {} DG.__tipName = cache end
+        cache[id] = { nm, color and color[1], color and color[2], color and color[3] }
+        DG.__tipColor = color
+        if DG.__tipFails then DG.__tipFails[id] = nil end
+        return nm
+    end
+    local fails = DG.__tipFails
+    if not fails then fails = {} DG.__tipFails = fails end
+    fails[id] = (fails[id] or 0) + 1
+    if fails[id] >= 3 then
+        if not DG.__tipDead then DG.__tipDead = {} end
+        DG.__tipDead[id] = true
+    end
     return nil
 end
 
@@ -3907,7 +3974,9 @@ function DG.RequestItem(id, force)
         pcall(C_Item.RequestLoadItemDataByID, id)
     end
     local fn = GetItemInfo or (C_Item and C_Item.GetItemInfo)
-    if type(fn) == "function" then pcall(fn, id) end
+    local ok, name
+    if type(fn) == "function" then ok, name = pcall(fn, id) end
+    if not ok or type(name) ~= "string" or name == "" then DG.HarvestTipName(id) end
     DG.ContinueOnItemLoad(id, function() DG.RefreshItemCards(id) end)
 end
 
@@ -3920,11 +3989,13 @@ function DG.EnsureItemListener()
     ev:SetScript("OnEvent", function(_, event, itemID, success)
         if event == "PLAYER_ENTERING_WORLD" then
             DG.__tipDead = nil
+            DG.__tipFails = nil
             return
         end
         if success == false then return end
         if not (itemID and DG.__asked[itemID]) then return end
         if DG.__tipDead then DG.__tipDead[itemID] = nil end
+        if DG.__tipFails then DG.__tipFails[itemID] = nil end
         C_Timer.After(0, function()
             local r = U.dungeonDetailHover
             if r and r.__it and r.__it[1] == itemID and r:IsMouseOver()
@@ -4284,10 +4355,24 @@ function U:SetQuestShowDone(on)
 end
 
 function U:SetQuestSide(key)
-    local k = (key == "A" or key == "H") and key or nil
+    local k = (key == "A" or key == "H") and key or "all"
     U.dungeonQSide = k
+    DB().dungeonQSide = k
     U:RenderDungeonQuests()
     ns.PlaySound(1)
+end
+
+function DG.QuestSideFor(counts)
+    local saved = DB().dungeonQSide
+    local side = U.dungeonQSide
+    if side ~= "all" and side ~= "A" and side ~= "H" then side = saved end
+    if side ~= "all" and side ~= "A" and side ~= "H" then
+        local player = DG.PlayerSide()
+        side = (player and (counts[player] or 0) > 0) and player or "all"
+    end
+    U.dungeonQSide = side
+    DB().dungeonQSide = side
+    return side
 end
 
 function U:ShowDungeonDetail(d)
@@ -5675,7 +5760,7 @@ DG.Q_FS_HDR = 16
 DG.Q_HDR_H = 26
 DG.Q_GRP_GAP = 8
 DG.Q_SUM_H = 28
-DG.Q_HEAD_H = DG.Q_PAD + 24 + DG.Q_PAD
+DG.Q_HEAD_H = DG.Q_PAD + 24 + 8 + 20 + DG.Q_PAD
 DG.Q_STATUS_TAG = { done = L["已完成"], active = L["进行中"], todo = L["未完成"] }
 DG.QFILTERS = { "all", "todo", "done" }
 DG.QFILTER_LABEL = { all = L["全部"], todo = L["未完成"], done = L["已完成"] }
@@ -6042,39 +6127,39 @@ function U:RenderDungeonQuests()
     local view = U.dungeonQView
     if view ~= "overview" then view = "list" end
     U.dungeonQView = view
-    local side = U.dungeonQSide
-    if side ~= "A" and side ~= "H" then
-        local ps = DG.PlayerSide()
-        side = (ps == "A" or ps == "H") and ps or "A"
-    end
-    U.dungeonQSide = side
+    local side = DG.QuestSideFor(cnt)
     local status = U.dungeonQFilter or "all"
 
     for i = 1, #(U.dungeonFilterBtns or {}) do
         local bt = U.dungeonFilterBtns[i]
-        if bt and i > 4 then
+        if bt and i > 5 then
             bt.__mode, bt.__key = "quest", nil
             bt:Hide()
             if bt.__em then bt.__em:Hide() end
         elseif bt then
             local key, label, n, tex
             if i == 1 then
-                key, label, n, tex = "A", DG.QSIDE_LABEL.A, cnt.A, DG.Q_FAC_ICON.A
+                key, label, n = "all", DG.QSIDE_LABEL.all, cnt.all
             elseif i == 2 then
-                key, label, n, tex = "H", DG.QSIDE_LABEL.H, cnt.H, DG.Q_FAC_ICON.H
+                key, label, n, tex = "A", DG.QSIDE_LABEL.A, cnt.A, DG.Q_FAC_ICON.A
             elseif i == 3 then
+                key, label, n, tex = "H", DG.QSIDE_LABEL.H, cnt.H, DG.Q_FAC_ICON.H
+            elseif i == 4 then
                 key, label = "qov", L["总览"]
             else
                 key, label = "qlist", L["列表"]
             end
             bt.__mode, bt.__key = "quest", key
-            bt:SetWidth((i <= 2) and 84 or 42)
+            bt:SetWidth((i <= 3) and 84 or 42)
             if n then
                 bt:SetText(label .. " " .. n)
             else
                 bt:SetText(label)
             end
             local bfs = bt:GetFontString()
+            local textW = bfs and bfs:GetStringWidth() or 0
+            bt.__questWidth = math.max((i <= 3) and 84 or 42, math.ceil(textW) + (tex and 30 or 16))
+            bt:SetWidth(bt.__questWidth)
             if bfs then
                 bfs:ClearAllPoints()
                 if tex then
@@ -6092,15 +6177,15 @@ function U:RenderDungeonQuests()
                 bt.__em:Hide()
             end
             bt:SetShown(true)
-            local sel = (i == 3 and view == "overview") or (i == 4 and view == "list")
-                or (i == 1 and side == "A") or (i == 2 and side == "H")
+            local sel = (i == 4 and view == "overview") or (i == 5 and view == "list")
+                or (i <= 3 and side == key)
             SetOutline(bt, sel, 1, 0.82, 0)
             if bfs then
                 if sel then
                     bfs:SetTextColor(Unpack(C_GOLD))
-                elseif i == 1 then
-                    bfs:SetTextColor(0.40, 0.62, 1.00, 1)
                 elseif i == 2 then
+                    bfs:SetTextColor(0.40, 0.62, 1.00, 1)
+                elseif i == 3 then
                     bfs:SetTextColor(1.00, 0.36, 0.26, 1)
                 else
                     bfs:SetTextColor(Unpack(C_GREY))
@@ -6109,6 +6194,7 @@ function U:RenderDungeonQuests()
         end
     end
 
+    DG.ApplyDetailChrome("quest")
     if DG.__chromeOnly then return end
 
     if view == "overview" then
@@ -6133,13 +6219,16 @@ function U:RenderDungeonQuests()
     local nVis, doneVis = 0, 0
     for i = 1, nAll do
         local q = list[i]
-        if q[2] == side or not q[2] then
+        if side == "all" or q[2] == side or not q[2] then
             nVis = nVis + 1
             if DG.QuestDone(q[1]) then doneVis = doneVis + 1 end
         end
     end
     local seg = ""
-    if side == DG.PlayerSide() then
+    if side == "all" then
+        local player = DG.PlayerSide()
+        if player and nAll > 0 and cnt[player] == 0 then seg = L["（含对方阵营的任务）"] end
+    elseif side == DG.PlayerSide() then
         seg = L["（已按你的阵营筛选）"]
     else
         seg = format(L["（只看%s阵营任务）"], DG.QSIDE_LABEL[side] or side)
@@ -6153,7 +6242,7 @@ function U:RenderDungeonQuests()
     local groups = { { inside = false, rows = {} }, { inside = true, rows = {} } }
     for i = 1, nAll do
         local q = list[i]
-        if q[2] == side or not q[2] then
+        if side == "all" or q[2] == side or not q[2] then
             local key = q[8] and 2 or 1
             local st = DG.QuestState(q[1])
             local hit = true
@@ -6429,6 +6518,13 @@ local function MapUsable(mapID)
     return ok and info ~= nil
 end
 
+local function CanWaypointOnMap(mapID)
+    local fn = C_Map and C_Map.CanSetUserWaypointOnMap
+    if type(fn) ~= "function" then return true end
+    local ok, allowed = pcall(fn, mapID)
+    return ok and allowed and true or false
+end
+
 function DG.MarkNPC(npcID, locOverride)
     local ver = select(4, GetBuildInfo()) or 0
     if ver < 16000 or ver > 16999 then
@@ -6452,7 +6548,7 @@ function DG.MarkNPC(npcID, locOverride)
         return
     end
     if UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint
-        and (not C_Map.CanSetUserWaypointOnMap or pcall(C_Map.CanSetUserWaypointOnMap, mapID)) then
+        and CanWaypointOnMap(mapID) then
         local ok, pt = pcall(UiMapPoint.CreateFromCoordinates, mapID, loc[2] / 100, loc[3] / 100)
         if ok and pt then
             pcall(C_Map.SetUserWaypoint, pt)
@@ -6504,7 +6600,7 @@ function DG.MarkEntrance(dungeonID)
         return
     end
     if UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint
-        and (not C_Map.CanSetUserWaypointOnMap or pcall(C_Map.CanSetUserWaypointOnMap, mapID)) then
+        and CanWaypointOnMap(mapID) then
         local ok, pt = pcall(UiMapPoint.CreateFromCoordinates, mapID, loc[2] / 100, loc[3] / 100)
         if ok and pt then pcall(C_Map.SetUserWaypoint, pt) end
         if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
@@ -6578,7 +6674,7 @@ function DG.MarkEntranceAt(dungeonID, idx)
         return
     end
     if UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint
-        and (not C_Map.CanSetUserWaypointOnMap or pcall(C_Map.CanSetUserWaypointOnMap, p.mapID)) then
+        and CanWaypointOnMap(p.mapID) then
         local ok, wp = pcall(UiMapPoint.CreateFromCoordinates, p.mapID, p.x / 100, p.y / 100)
         if ok and wp then pcall(C_Map.SetUserWaypoint, wp) end
         if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then

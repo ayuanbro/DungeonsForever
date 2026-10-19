@@ -1,0 +1,876 @@
+{
+ "razorfen_kraul": [
+  {
+   "en": "Aggem Thorncurse",
+   "zh": "阿格姆"
+  },
+  {
+   "en": "Death Speaker Jargba",
+   "zh": "亡语者贾格巴"
+  },
+  {
+   "en": "Roogug",
+   "zh": "鲁古格"
+  },
+  {
+   "en": "Overlord Ramtusk",
+   "zh": "主宰拉姆塔斯"
+  },
+  {
+   "en": "Razorfen Spearhide",
+   "zh": "剃刀沼泽刺鬃守卫"
+  },
+  {
+   "en": "Agathelos the Raging",
+   "zh": "暴怒的阿迦赛罗斯"
+  },
+  {
+   "en": "Blind Hunter",
+   "zh": "盲眼猎手"
+  },
+  {
+   "en": "Charlga Razorflank",
+   "zh": "卡尔加·刺肋"
+  },
+  {
+   "en": "Earthcaller Halmgar",
+   "zh": "唤地者哈穆加"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "razorfen_downs": [
+  {
+   "en": "Tuten'kash",
+   "zh": "图特卡什"
+  },
+  {
+   "en": "Mordresh Fire Eye",
+   "zh": "火眼莫德雷斯"
+  },
+  {
+   "en": "Glutton",
+   "zh": "暴食者"
+  },
+  {
+   "en": "Ragglesnout",
+   "zh": "拉戈斯诺特"
+  },
+  {
+   "en": "Amnennar the Coldbringer",
+   "zh": "寒冰之王亚门纳尔"
+  },
+  {
+   "en": "Plaguemaw the Rotting",
+   "zh": "腐烂的普雷莫尔"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  },
+  {
+   "en": "Henry Stern",
+   "zh": "亨利·斯特恩"
+  }
+ ],
+ "uldaman": [
+  {
+   "en": "Baelog",
+   "zh": "巴尔洛戈"
+  },
+  {
+   "en": "Olaf",
+   "zh": "奥拉夫"
+  },
+  {
+   "en": "Revelosh",
+   "zh": "鲁维罗什"
+  },
+  {
+   "en": "Ironaya",
+   "zh": "艾隆纳亚"
+  },
+  {
+   "en": "Obsidian Sentinel",
+   "zh": "黑曜石哨兵"
+  },
+  {
+   "en": "Ancient Stone Keeper",
+   "zh": "古代的石头看守者"
+  },
+  {
+   "en": "Galgann Firehammer",
+   "zh": "加加恩·火锤"
+  },
+  {
+   "en": "Grimlok",
+   "zh": "格瑞姆洛克"
+  },
+  {
+   "en": "Archaedas",
+   "zh": "阿扎达斯"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  },
+  {
+   "en": "Baelog's Chest",
+   "zh": "巴尔洛戈的箱子"
+  },
+  {
+   "en": "Conspicuous Urn",
+   "zh": "显眼的骨灰罐"
+  },
+  {
+   "en": "Shadowforge Cache",
+   "zh": "暗炉宝箱"
+  },
+  {
+   "en": "Tablet of Will",
+   "zh": "意志石板"
+  }
+ ],
+ "zul_farrak": [
+  {
+   "en": "Antu'sul",
+   "zh": "安图苏尔"
+  },
+  {
+   "en": "Theka the Martyr",
+   "zh": "殉教者塞卡"
+  },
+  {
+   "en": "Sandarr Dunereaver",
+   "zh": "杉达尔·沙掠者"
+  },
+  {
+   "en": "Witch Doctor Zum'rah",
+   "zh": "巫医祖穆拉恩"
+  },
+  {
+   "en": "Nekrum Gutchewer",
+   "zh": "耐克鲁姆"
+  },
+  {
+   "en": "Shadowpriest Sezz'ziz",
+   "zh": "暗影祭司塞瑟斯"
+  },
+  {
+   "en": "Dustwraith",
+   "zh": "灰尘怨灵"
+  },
+  {
+   "en": "Sandfury Executioner",
+   "zh": "沙怒刽子手"
+  },
+  {
+   "en": "Sergeant Bly",
+   "zh": "布莱中士"
+  },
+  {
+   "en": "Hydromancer Velratha",
+   "zh": "水占师维蕾萨"
+  },
+  {
+   "en": "Gahz'rilla",
+   "zh": "加兹瑞拉"
+  },
+  {
+   "en": "Chief Ukorz Sandscalp",
+   "zh": "乌克兹·沙顶"
+  },
+  {
+   "en": "Zerillis",
+   "zh": "泽雷利斯"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "maraudon": [
+  {
+   "en": "Veng",
+   "zh": "温格"
+  },
+  {
+   "en": "Noxxion",
+   "zh": "诺克赛恩"
+  },
+  {
+   "en": "Razorlash",
+   "zh": "锐刺鞭笞者"
+  },
+  {
+   "en": "Maraudos",
+   "zh": "玛拉多斯"
+  },
+  {
+   "en": "Lord Vyletongue",
+   "zh": "维利塔恩"
+  },
+  {
+   "en": "Meshlok the Harvester",
+   "zh": "收割者麦什洛克"
+  },
+  {
+   "en": "Celebras the Cursed",
+   "zh": "被诅咒的塞雷布拉斯"
+  },
+  {
+   "en": "Landslide",
+   "zh": "兰斯利德"
+  },
+  {
+   "en": "Tinkerer Gizlock",
+   "zh": "工匠吉兹洛克"
+  },
+  {
+   "en": "Rotgrip",
+   "zh": "洛特格里普"
+  },
+  {
+   "en": "Princess Theradras",
+   "zh": "瑟莱德丝公主"
+  },
+  {
+   "en": "The Nameless Prophet",
+   "zh": "无名先知"
+  },
+  {
+   "en": "Kolk",
+   "zh": "库尔克"
+  },
+  {
+   "en": "Gelk",
+   "zh": "盖尔克"
+  },
+  {
+   "en": "Magra",
+   "zh": "玛格拉"
+  }
+ ],
+ "sm_graveyard": [
+  {
+   "en": "Interrogator Vishas",
+   "zh": "审讯员韦沙斯"
+  },
+  {
+   "en": "Azshir the Sleepless",
+   "zh": "永醒的艾希尔"
+  },
+  {
+   "en": "Fallen Champion",
+   "zh": "死灵勇士"
+  },
+  {
+   "en": "Ironspine",
+   "zh": "铁脊死灵"
+  },
+  {
+   "en": "Bloodmage Thalnos",
+   "zh": "血法师萨尔诺斯"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "sm_library": [
+  {
+   "en": "Houndmaster Loksey",
+   "zh": "驯犬者洛克希"
+  },
+  {
+   "en": "Arcanist Doan",
+   "zh": "奥法师杜安"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  },
+  {
+   "en": "Doan's Strongbox",
+   "zh": "杜安的保险箱"
+  }
+ ],
+ "sm_armory": [
+  {
+   "en": "Herod",
+   "zh": "赫洛德"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "sm_cathedral": [
+  {
+   "en": "High Inquisitor Fairbanks",
+   "zh": "大检察官法尔班克斯"
+  },
+  {
+   "en": "Scarlet Commander Mograine",
+   "zh": "血色十字军指挥官莫格莱尼"
+  },
+  {
+   "en": "High Inquisitor Whitemane",
+   "zh": "大检察官怀特迈恩"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "scholomance": [
+  {
+   "en": "Blood Steward of Kirtonos",
+   "zh": "基尔图诺斯的卫士"
+  },
+  {
+   "en": "Kirtonos the Herald",
+   "zh": "传令官基尔图诺斯"
+  },
+  {
+   "en": "Jandice Barov",
+   "zh": "詹迪斯·巴罗夫"
+  },
+  {
+   "en": "Rattlegore",
+   "zh": "血骨傀儡"
+  },
+  {
+   "en": "Death Knight Darkreaver",
+   "zh": "死亡骑士达克雷尔"
+  },
+  {
+   "en": "Marduk Blackpool",
+   "zh": "马杜克·布莱克波尔"
+  },
+  {
+   "en": "Vectus",
+   "zh": "维克图斯"
+  },
+  {
+   "en": "Ras Frostwhisper",
+   "zh": "莱斯·霜语"
+  },
+  {
+   "en": "Instructor Malicia",
+   "zh": "讲师玛丽希亚"
+  },
+  {
+   "en": "Doctor Theolen Krastinov",
+   "zh": "瑟尔林·卡斯迪诺夫教授"
+  },
+  {
+   "en": "Lorekeeper Polkelt",
+   "zh": "博学者普克尔特"
+  },
+  {
+   "en": "The Ravenian",
+   "zh": "拉文尼亚"
+  },
+  {
+   "en": "Lord Alexei Barov",
+   "zh": "阿雷克斯·巴罗夫"
+  },
+  {
+   "en": "Lady Illucia Barov",
+   "zh": "伊露希亚·巴罗夫"
+  },
+  {
+   "en": "Darkmaster Gandling",
+   "zh": "黑暗院长加丁"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "sunken_temple": [
+  {
+   "en": "Balcony Minibosses",
+   "zh": "阳台的小头目"
+  },
+  {
+   "en": "Atal'alarion",
+   "zh": "阿塔拉利恩"
+  },
+  {
+   "en": "Spawn of Hakkar",
+   "zh": "哈卡的后代"
+  },
+  {
+   "en": "Avatar of Hakkar",
+   "zh": "哈卡的化身"
+  },
+  {
+   "en": "Jammal'an the Prophet",
+   "zh": "预言者迦玛兰"
+  },
+  {
+   "en": "Ogom the Wretched",
+   "zh": "可悲的奥戈姆"
+  },
+  {
+   "en": "Dreamscythe",
+   "zh": "德姆塞卡尔"
+  },
+  {
+   "en": "Weaver",
+   "zh": "德拉维沃尔"
+  },
+  {
+   "en": "Hazzas",
+   "zh": "哈扎斯"
+  },
+  {
+   "en": "Morphaz",
+   "zh": "摩弗拉斯"
+  },
+  {
+   "en": "Shade of Eranikus",
+   "zh": "伊兰尼库斯的阴影"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "blackrock_depths": [
+  {
+   "en": "Lord Roccor",
+   "zh": "洛考尔"
+  },
+  {
+   "en": "High Interrogator Gerstahn",
+   "zh": "审讯官格斯塔恩"
+  },
+  {
+   "en": "Houndmaster Grebmar",
+   "zh": "驯犬者格雷布玛尔"
+  },
+  {
+   "en": "Ring of Law: Gorosh the Dervish",
+   "zh": "竞技场：修行者高罗什"
+  },
+  {
+   "en": "Ring of Law: Grizzle",
+   "zh": "竞技场：格里兹尔"
+  },
+  {
+   "en": "Ring of Law: Eviscerator",
+   "zh": "竞技场：腕眼者"
+  },
+  {
+   "en": "Ring of Law: Ok'thor the Breaker",
+   "zh": "竞技场：破坏者奥科索尔"
+  },
+  {
+   "en": "Ring of Law: Anub'shiah",
+   "zh": "竞技场：阿努希尔"
+  },
+  {
+   "en": "Ring of Law: Hedrum the Creeper",
+   "zh": "竞技场：爬行者赫杜姆"
+  },
+  {
+   "en": "Pyromancer Loregrain",
+   "zh": "控火师罗格雷恩"
+  },
+  {
+   "en": "Dark Coffer",
+   "zh": "黑暗宝箱"
+  },
+  {
+   "en": "Warder Stilgiss",
+   "zh": "典狱官斯迪尔基斯"
+  },
+  {
+   "en": "Verek",
+   "zh": "维雷克"
+  },
+  {
+   "en": "Watchman Doomgrip",
+   "zh": "卫兵杜格瑞普"
+  },
+  {
+   "en": "Fineous Darkvire",
+   "zh": "弗诺斯·达克维尔"
+  },
+  {
+   "en": "Lord Incendius",
+   "zh": "伊森迪奥斯"
+  },
+  {
+   "en": "Bael'Gar",
+   "zh": "贝尔加"
+  },
+  {
+   "en": "General Angerforge",
+   "zh": "安格弗将军"
+  },
+  {
+   "en": "Golem Lord Argelmach",
+   "zh": "傀儡统帅阿格曼奇"
+  },
+  {
+   "en": "Guzzler",
+   "zh": "黑铁酒吧"
+  },
+  {
+   "en": "Phalanx",
+   "zh": "法拉克斯"
+  },
+  {
+   "en": "Ambassador Flamelash",
+   "zh": "弗莱拉斯大使"
+  },
+  {
+   "en": "Panzor the Invincible",
+   "zh": "无敌的潘佐尔"
+  },
+  {
+   "en": "Chest of The Seven",
+   "zh": "七贤之箱"
+  },
+  {
+   "en": "Magmus",
+   "zh": "玛格姆斯"
+  },
+  {
+   "en": "Princess Moira Bronzebeard",
+   "zh": "铁炉堡公主茉艾拉·铜须"
+  },
+  {
+   "en": "Emperor Dagran Thaurissan",
+   "zh": "达格兰·索瑞森大帝"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  },
+  {
+   "en": "Plans",
+   "zh": "图纸"
+  }
+ ],
+ "lower_blackrock_spire": [
+  {
+   "en": "Burning Felguard",
+   "zh": "燃烧地狱卫士"
+  },
+  {
+   "en": "Spirestone Butcher",
+   "zh": "尖石屠夫"
+  },
+  {
+   "en": "Highlord Omokk",
+   "zh": "欧莫克大王"
+  },
+  {
+   "en": "Spirestone Battle Lord",
+   "zh": "尖石统帅"
+  },
+  {
+   "en": "Spirestone Lord Magus",
+   "zh": "尖石首席法师"
+  },
+  {
+   "en": "Shadow Hunter Vosh'gajin",
+   "zh": "暗影猎手沃什加斯"
+  },
+  {
+   "en": "War Master Voone",
+   "zh": "指挥官沃恩"
+  },
+  {
+   "en": "Bannok Grimaxe",
+   "zh": "班诺克·巨斧"
+  },
+  {
+   "en": "Mother Smolderweb",
+   "zh": "烟网蛛后"
+  },
+  {
+   "en": "Crystal Fang",
+   "zh": "水晶之牙"
+  },
+  {
+   "en": "Urok Doomhowl",
+   "zh": "乌洛克"
+  },
+  {
+   "en": "Quartermaster Zigris",
+   "zh": "军需官兹格雷斯"
+  },
+  {
+   "en": "Halycon",
+   "zh": "哈雷肯"
+  },
+  {
+   "en": "Gizrul the Slavener",
+   "zh": "奴役者基兹鲁尔"
+  },
+  {
+   "en": "Ghok Bashguud",
+   "zh": "霍克·巴什古德"
+  },
+  {
+   "en": "Overlord Wyrmthalak",
+   "zh": "维姆萨拉克"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "upper_blackrock_spire": [
+  {
+   "en": "Pyroguard Emberseer",
+   "zh": "烈焰卫士艾博希尔"
+  },
+  {
+   "en": "Solakar Flamewreath",
+   "zh": "索拉卡·火冠"
+  },
+  {
+   "en": "Jed Runewatcher",
+   "zh": "杰德"
+  },
+  {
+   "en": "Goraluk Anvilcrack",
+   "zh": "古拉鲁克"
+  },
+  {
+   "en": "Gyth",
+   "zh": "盖斯"
+  },
+  {
+   "en": "Warchief Rend Blackhand",
+   "zh": "大酋长雷德·黑手"
+  },
+  {
+   "en": "The Beast",
+   "zh": "比斯巨兽"
+  },
+  {
+   "en": "General Drakkisath",
+   "zh": "达基萨斯将军"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  },
+  {
+   "en": "Darkstone Tablet",
+   "zh": "黑暗石板"
+  }
+ ],
+ "dire_maul_east": [
+  {
+   "en": "Pusillin",
+   "zh": "普希林"
+  },
+  {
+   "en": "Zevrim Thornhoof",
+   "zh": "瑟雷姆·刺蹄"
+  },
+  {
+   "en": "Hydrospawn",
+   "zh": "海多斯博恩"
+  },
+  {
+   "en": "Lethtendris",
+   "zh": "蕾瑟塔蒂丝"
+  },
+  {
+   "en": "Alzzin the Wildshaper",
+   "zh": "奥兹恩"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "dire_maul_north": [
+  {
+   "en": "Guard Mol'dar",
+   "zh": "卫兵摩尔达"
+  },
+  {
+   "en": "Stomper Kreeg",
+   "zh": "践踏者克雷格"
+  },
+  {
+   "en": "Guard Fengus",
+   "zh": "卫兵芬古斯"
+  },
+  {
+   "en": "Guard Slip'kik",
+   "zh": "卫兵斯里基克"
+  },
+  {
+   "en": "Knot Thimblejack's Cache",
+   "zh": "诺特·希姆加克的储物箱"
+  },
+  {
+   "en": "Captain Kromcrush",
+   "zh": "克罗卡斯"
+  },
+  {
+   "en": "Cho'Rush the Observer",
+   "zh": "观察者克鲁什"
+  },
+  {
+   "en": "King Gordok",
+   "zh": "戈多克大王"
+  },
+  {
+   "en": "Tribute",
+   "zh": "贡品"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  }
+ ],
+ "dire_maul_west": [
+  {
+   "en": "Tendris Warpwood",
+   "zh": "特迪斯·扭木"
+  },
+  {
+   "en": "Illyanna Ravenoak",
+   "zh": "伊琳娜·暗木"
+  },
+  {
+   "en": "Magister Kalendris",
+   "zh": "卡雷迪斯镇长"
+  },
+  {
+   "en": "Tsu'zee",
+   "zh": "苏斯"
+  },
+  {
+   "en": "Immol'thar",
+   "zh": "伊莫塔尔"
+  },
+  {
+   "en": "Prince Tortheldrin",
+   "zh": "托塞德林王子"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  },
+  {
+   "en": "Shen'dralar Provisioner",
+   "zh": "辛德拉圣职者"
+  },
+  {
+   "en": "Lord Hel'nurath",
+   "zh": "赫尔努拉斯"
+  }
+ ],
+ "stratholme_main": [
+  {
+   "en": "Skul",
+   "zh": "斯库尔"
+  },
+  {
+   "en": "Stratholme Courier",
+   "zh": "斯坦索姆信使"
+  },
+  {
+   "en": "Hearthsinger Forresten",
+   "zh": "弗雷斯特恩"
+  },
+  {
+   "en": "The Unforgiven",
+   "zh": "不可宽恕者"
+  },
+  {
+   "en": "Postmaster Malown",
+   "zh": "邮差马龙"
+  },
+  {
+   "en": "Timmy the Cruel",
+   "zh": "悲惨的提米"
+  },
+  {
+   "en": "Malor the Zealous",
+   "zh": "狂热的玛洛尔"
+  },
+  {
+   "en": "Crimson Hammersmith",
+   "zh": "红衣铸锤师"
+  },
+  {
+   "en": "Cannon Master Willey",
+   "zh": "炮手威利"
+  },
+  {
+   "en": "Archivist Galford",
+   "zh": "档案管理员加尔福特"
+  },
+  {
+   "en": "Balnazzar",
+   "zh": "巴纳扎尔"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  },
+  {
+   "en": "Plans",
+   "zh": "图纸"
+  }
+ ],
+ "stratholme_service": [
+  {
+   "en": "Magistrate Barthilas",
+   "zh": "巴瑟拉斯镇长"
+  },
+  {
+   "en": "Stonespine",
+   "zh": "石脊"
+  },
+  {
+   "en": "Baroness Anastari",
+   "zh": "安娜丝塔丽男爵夫人"
+  },
+  {
+   "en": "Black Guard Swordsmith",
+   "zh": "黑衣守卫铸剑师"
+  },
+  {
+   "en": "Nerub'enkan",
+   "zh": "奈鲁布恩坎"
+  },
+  {
+   "en": "Maleki the Pallid",
+   "zh": "苍白的玛勒基"
+  },
+  {
+   "en": "Ramstein the Gorger",
+   "zh": "吞咽者拉姆斯登"
+  },
+  {
+   "en": "Baron Rivendare",
+   "zh": "瑞文戴尔男爵"
+  },
+  {
+   "en": "Trash mobs",
+   "zh": "小怪"
+  },
+  {
+   "en": "Plans",
+   "zh": "图纸"
+  }
+ ]
+}

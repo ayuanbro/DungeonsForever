@@ -1,0 +1,77 @@
+cache: html=282  gatherer-block=86  zh-entry=948  en-entry=461
+table: ids=426 (custom>1e6=6)  SpellTips=370  orphan-tips=[5246, 7165, 11976]
+
+A 有名字+有描述 : 367
+B 有名字+描述空  : 47
+C 中文页缺条目   : 12
+
+== B 清单（wowhead 也无描述）==
+   2818      致命毒药                     tips=-
+   6432      重拳先生践踏                   tips=-
+   7481      嚎叫之怒                     tips=-
+   7485      屠夫吸取                     tips=-
+   7587      暗影传送                     tips=-
+   7915      召唤海龟                     tips=-
+   8599      狂怒                       tips=-
+   9232      血色复活                     tips=-
+   9257      圣疗术                      tips=-
+   9435      自爆                       tips=-
+   9438      奥术气泡                     tips=-
+   10061     召唤黑曜石碎片                  tips=-
+   10072     黑曜石破碎                    tips=-
+   10252     唤醒地灵守护者                  tips=-
+   10258     唤醒地灵宝库守卫                 tips=-
+   10896     暗言术：痛                    tips=-
+   11089     塞卡变形                     tips=-
+   11599     破甲攻击                     tips=-
+   11894     安图苏尔的爪牙                  tips=-
+   12254     Virulent Poison Proc     tips=-
+   12556     霜甲术                      tips=-
+   12627     疾病之云                     tips=-
+   12642     召唤冰霜亡魂                   tips=-
+   12795     狂怒                       tips=-
+   13880     熔岩喷溅                     tips=-
+   15577     旋风斩效果                    tips=-
+   15589     旋风斩效果                    tips=-
+   16791     狂暴怒火                     tips=-
+   17235     复活亡灵甲虫                   tips=-
+   17687     乱舞                       tips=-
+   21868     灰尘力场                     tips=-
+   22419     激流                       tips=-
+   22421     巨型喷泉                     tips=-
+   22651     牺牲                       tips=-
+   22660     暗灰狼形态                    tips=-
+   22661     弱化                       tips=-
+   22662     寒冬                       tips=-
+   22710     巨化术                      tips=-
+   22714     召唤水浪幼崽                   tips=-
+   22735     洛恩塔姆之魂                   tips=-
+   22833     喷酒                       tips=-
+   22835     醉酒怒气                     tips=-
+   22860     召唤劫掠者                    tips=-
+   22899     伊莫塔尔之眼                   tips=-
+   22950     伊莫塔尔传送门                  tips=-
+   22995     召唤                       tips=-
+   26977     元素领主的诅咒                  tips=-
+
+== C 清单（英文页状态）==
+   9941      en=Spell Reflection       enDesc=空
+   13489     en=Burning Spirit         enDesc=空
+   14744     en=Burning Spirit         enDesc=有
+   15285     en=Fireball Volley        enDesc=有
+   15305     en=Chain Lightning        enDesc=有
+   15507     en=Lightning Shield       enDesc=有
+   15588     en=Thunderclap            enDesc=有
+   15605     en=Shock                  enDesc=有
+   15636     en=Avatar of Flame        enDesc=有
+   15642     en=Ironfoe                enDesc=空
+   17492     en=Hand of Thaurissan     enDesc=有
+   24375     en=War Stomp              enDesc=有
+
+== 自定义法术（>1e6）==
+   1220855   冰霜新星             desc=有
+   1266011   生命吸取             desc=有
+   1279983   烈焰风暴             desc=有
+   1292602   安威玛尔的诅咒          desc=有
+   1293228   自燃               desc=有
+   1301635   反魔法护盾            desc=有

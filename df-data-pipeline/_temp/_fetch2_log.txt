@@ -1,0 +1,114 @@
+residual=295  quests=0  npc-join quests=166  hand=197
+npc 米尔斯迪普议员 ← q377/270 → Councilman Millstipe
+npc 菲兹尔·铜栓 ← q1106/4454 → Fizzle Brassbolts
+npc 流放者马特克 ← q1108/4618 → Martek the Exiled
+npc 多恩·平原行者 ← q1149/2986 → Dorn Plainstalker
+npc 布劳格·幽魂 ← q1154/4489 → Braug Dimspirit
+npc 普兹克 ← q1190/4630 → Pozzik
+npc 拉普索迪·铁铲 ← q1452/5634 → Rhapsody Shindigger
+npc 图加·符文图腾 ← q1489/3448 → Tonga Runetotem
+npc 大德鲁伊哈缪尔·符文图腾 ← q1490/5769 → Archdruid Hamuul Runetotem
+npc 资深探险家麦格拉斯 ← q2439/5387 → High Explorer Magellas
+  ERR https://www.wowhead.com/quest=2843 Failed to perform, curl: (28) Connection timed out after 20011 milliseconds. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.
+npc 克拉兹克 ← q2864/773 → Krazek
+npc 巫医尤克里 ← q3380/8115 → Witch Doctor Uzer'i
+npc 皇家历史学家阿克瑟努斯 ← q3702/8879 → Royal Historian Archesonus
+npc 阿古斯·夜语 ← q3765/4984 → Argos Nightwhisper
+npc 穆尔金 ← q4141/9119 → Muigin
+npc 雷明顿·瑞治维尔伯爵 ← q4766/2285 → Count Remington Ridgewell
+npc 菲诺克 ← q4809/10468 → Felnok Steelspring
+npc 护理者奥林 ← q5281/11038 → Caretaker Alen
+npc 提里奥·弗丁 ← q5542/1855 → Tirion Fordring
+npc 克罗雷修士 ← q6141/12336 → Brother Crowley
+  403 https://www.wowhead.com/cn/quest=6582 → sleep 15s
+  403 https://www.wowhead.com/cn/quest=6582 → sleep 25s
+  403 https://www.wowhead.com/cn/quest=6582 → sleep 35s
+  403 https://www.wowhead.com/cn/quest=6582 → sleep 45s
+  403 https://www.wowhead.com/quest=6582 → sleep 15s
+  403 https://www.wowhead.com/quest=6582 → sleep 25s
+npc 先知科鲁拉克 ← q7481/14373 → Sage Korolusk
+npc 预言者巴萨扎德 ← q7492/10879 → Harbinger Balthazad
+npc 公告员古德曼 ← q7494/2198 → Crier Goodman
+npc 格雷森·沙东布瑞克公爵 ← q8415/928 → Lord Grayson Shadowbreaker
+npc 凯夫·重锤 ← q8417/5113 → Kelv Sternhammer
+npc 穆克斯·玛纳斯卡波 ← q8924/16014 → Mux Manascrambler
+npc 伊思达·哈尔蒙 ← q8946/16031 → Ysida Harmon
+npc 阿纳克洛斯 ← q9251/15192 → Anachronos
+  403 https://www.wowhead.com/cn/quest=92751 → sleep 15s
+written: D:\workspace\DungeonsForever\_temp\enus_data_names2.py
+hand list: D:\workspace\DungeonsForever\_temp\_enus_hand.txt 197
+unresolved npc names:
+  '上古圣马之魂' ← qids [7644]
+  '乔拉齐·拉文霍德公爵' ← qids [8234]
+  '伊普斯' ← qids [8421]
+  '伯瓦尔·弗塔根公爵' ← qids [4185, 4186, 6501]
+  '侍卫玛特拉克' ← qids [3463]
+  '凯夫·重锤' ← qids [1698]
+  '加克希姆·尘链' ← qids [2931]
+  '博拉姆·逐星' ← qids [8410]
+  '卡兰·巨锤' ← qids [4342, 4361]
+  '哨兵塞尔瑞德' ← qids [1200]
+  '埃博斯塔夫' ← qids [6582, 6583, 6584, 6585, 6601]
+  '塞朵拉·穆瓦丹尼' ← qids [4061, 4062]
+  '大法师克希雷姆' ← qids [8235, 8251, 8252]
+  '大法师提尔斯' ← qids [1950]
+  '奥松·格鲁尔' ← qids [1947, 1953]
+  '奥汀克' ← qids [8153, 8231, 8255, 8256]
+  '威拉罗克·温布雷' ← qids [3441, 3442, 3443, 3452, 3453, 3454, 3462]
+  '孤儿监护员奈丁加尔' ← qids [95161]
+  '安东修士' ← qids [1052]
+  '尤尔巴·斯库比格特' ← qids [4324]
+  '弗斯塔德·蛮锤' ← qids [1450]
+  '德莉亚娜' ← qids [8922, 8926, 8929]
+  '德莉娜' ← qids [8960]
+  '恩诺哈尔·雷酒' ← qids [4128]
+  '戈瑟奇·邪眼' ← qids [7623]
+  '所罗门镇长' ← qids [4184, 4223]
+  '托姆·狂暴图腾' ← qids [1823, 8417]
+  '托尔瓦·寻路者' ← qids [9051, 9052]
+  '拉比恩·萨图纳' ← qids [5527]
+  '拉瑞安' ← qids [4145, 4147]
+  '指挥官哥沙克' ← qids [3982, 4001]
+  '指挥官阿什拉姆·瓦罗菲斯特' ← qids [8414]
+  '捕风者巴斯拉' ← qids [8412]
+  '斯库提' ← qids [2843]
+  '斯普莱特' ← qids [92749, 92750, 92752]
+  '未完成的憎恶' ← qids [97290]
+  '格瑞曼德·艾尔默' ← qids [7642]
+  '格雷森·沙东布瑞克公爵' ← qids [7637, 7640, 7641, 7643, 7646]
+  '毒液瓶' ← qids [2933]
+  '法拉尼尔' ← qids [1109]
+  '犹鲁斯·麦酒' ← qids [1699, 1702]
+  '狮鹫管理员沙拉克·鹰斧' ← qids [1451, 2988, 2989, 2990]
+  '玛希尔' ← qids [2925]
+  '瑞兹尔的计划' ← qids [1194]
+  '皇家历史学家阿克瑟努斯' ← qids [3701]
+  '破碎的项链' ← qids [2198]
+  '科劳莫特·钢尺' ← qids [2924]
+  '穆克斯·玛纳斯卡波' ← qids [8921]
+  '米奈希尔的礼物' ← qids [5464]
+  '索恩格瑞姆·火眼' ← qids [1838]
+  '索维克' ← qids [2842]
+  '罗卡鲁' ← qids [6602]
+  '艾瑞斯·哈文法' ← qids [7621]
+  '苏纳曼' ← qids [6562]
+  '药剂师林度恩' ← qids [2934, 2935]
+  '药剂师金格' ← qids [4133, 4769]
+  '莫苏尔·召血者' ← qids [7563, 7564]
+  '萨尔努修士' ← qids [2923]
+  '萨格尼' ← qids [7667]
+  '贾斯伯·菲尔' ← qids [92751]
+  '达索瑞恩·拉尔' ← qids [1650, 1653]
+  '达芙妮·斯迪威尔' ← qids [1651, 1652]
+  '通缉' ← qids [4081, 4082]
+  '部落英雄的灵魂' ← qids [8423, 8424]
+  '闪亮的金戒指' ← qids [2947, 2949]
+  '雷克斯洛特' ← qids [4122]
+  '雷吉纳德·温德索尔' ← qids [6403]
+  '高图斯' ← qids [4903]
+  '高阶牧师洛汉' ← qids [7639, 8254]
+  '高阶牧师赛尔丹尼斯' ← qids [8416]
+  '魔王贝恩霍勒' ← qids [7624, 7625]
+  '鲁迦·狂暴图腾' ← qids [1824, 1825]
+  '麦克斯韦尔' ← qids [5081]
+  '黑龙的财宝' ← qids [3481]

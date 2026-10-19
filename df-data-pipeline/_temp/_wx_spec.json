@@ -1,0 +1,2817 @@
+{
+ "schema": 1,
+ "doc": "客户端版本追踪的规格（pipeline/build_diff.py 读取，并原样发布为 data/changes/spec.json）。每类实体写明从哪个文件取记录、实体键「类型:ID」、追踪哪些字段（中文名、比法、分类、重要度）。比对、亮点挑选、页面的改动说明与 MCP 文本都只认这里列出的字段：不在规格里的字段（展示用的、派生的、计数、时间戳、渲染素材路径、站点手写说明）不算改动。数据里原有的 new（1.60 新增 = 内容年代）不是追踪字段；「首次出现在某个客户端版本」由账本（data/builds.json + data/changes/*.json 的 added 事件）推出，两者不要混用。",
+ "categories": {
+  "content": "内容",
+  "numeric": "数值",
+  "text": "文本",
+  "internal": "内部"
+ },
+ "importance": {
+  "0": "内部：字段变了但玩家看不到（图标文件、内部 ID、标记位）",
+  "1": "次要",
+  "2": "值得注意",
+  "3": "头条"
+ },
+ "field_keys": {
+  "key_label": "table：显示键时的前缀（如效果 #1）",
+  "key_labels": "table：键的显示名来自哪个数据文件（如属性类型 → stat_names.json）",
+  "column_labels": "table：值的各列的中文名",
+  "enum": "枚举名（见 enums）：before / after 是原始值，显示时查这里",
+  "via": "spell：这个字段由所引用的法术派生（物品使用效果、配方材料 …）；法术本身有改动时，这个字段的改动记在一条带 via 的间接事件里",
+  "path": "取值路径（a.b、列表用 []）；没有时就是 field 本身"
+ },
+ "eras": {
+  "doc": "ID 年代，中文标注用：汉化回退、恢复中文、未汉化的事件带 era:new / era:old 标签，data/changes/zh_last.json 的条目带 era。每类实体的 era 规则：id_min（实体 ID ≥ 阈值）；path + min（记录里这个路径上的 ID ≥ 阈值，路径带 [] 时任一个即可）；flag（数据里的 new 标记，由生成脚本按 ID 推出）；value（整类都是 1.60 新内容）。阈值与生成数据时标 new（1.60 新增）用的相同：法术 ≥ 1200000、物品 ≥ 230000、配方 / 露营设施按所学法术、天赋按各等级的法术、副本 Map ≥ 2700、种族 ID > 8、套装 ItemSet ≥ 2098（build_data.py 的 1.60 新 T1 / 新增小套从这里开始）。没有 era 规则的类型（外观、专业）不标。",
+  "new": "1.60 新内容",
+  "old": "原版内容"
+ },
+ "kinds": {
+  "added": "新增：新版本有、旧版本没有（起点版本不产生 added）",
+  "removed": "删除：旧版本有、新版本没有",
+  "changed": "改动：追踪字段有变化",
+  "decrypted": "解密：旧版本只有占位（名称在加密段 / 未公开），新版本可读",
+  "renamed": "改名：名称字段变了（同时列出其它变动的字段）"
+ },
+ "compare": {
+  "text": "文本：去掉首尾空白、连续空白当作一个空格后比较；before / after 为文本",
+  "number": "数值：数字或定长数字数组，按 6 位有效数字比较（1 与 1.0 相同，浮点格式差异不算改动）；before / after 为数值",
+  "ref": "引用：比较所指实体的 ID；before / after 写成「类型:ID」",
+  "set": "集合：不计顺序与重复；before / after 为排好序的完整列表，delta 给出 added / removed",
+  "multiset": "按 ID 的多重集合：[ID, 数量] 对或按 element 列出的签名计数；before / after 为排好序的 [元素, 数量] 列表，delta 给出 added / removed / changed",
+  "table": "键值表：按键逐项比较值（值为一组列）；before / after 为完整的键 → 值表，delta 给出 added / removed / changed"
+ },
+ "enums": {
+  "quality": {
+   "0": "粗糙",
+   "1": "普通",
+   "2": "优秀",
+   "3": "精良",
+   "4": "史诗",
+   "5": "传说",
+   "6": "神器",
+   "7": "传家宝"
+  },
+  "bind": {
+   "1": "拾取后绑定",
+   "2": "装备后绑定",
+   "3": "使用后绑定",
+   "4": "任务物品"
+  },
+  "source_type": {
+   "1": "首领掉落",
+   "2": "任务",
+   "3": "商人",
+   "4": "世界掉落",
+   "5": "隐藏直到收集",
+   "6": "不可收集",
+   "7": "成就",
+   "8": "专业制造",
+   "9": "不可幻化",
+   "10": "贸易站"
+  },
+  "acquire": {
+   "0": "未指定",
+   "1": "学会专业时获得",
+   "2": "训练师 / 配方"
+  },
+  "sex": {
+   "0": "男",
+   "1": "女"
+  }
+ },
+ "types": {
+  "recipe": {
+   "label": "配方",
+   "page": "/recipe/{id}",
+   "source": {
+    "file": "recipes.json",
+    "records": "[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "SkillLineAbility"
+    }
+   ],
+   "placeholder": {
+    "name_prefix": "未命名配方 #"
+   },
+   "refs": {
+    "spell": [
+     "spell"
+    ],
+    "item": [
+     "reagents[].0",
+     "products[].0"
+    ]
+   },
+   "added": {
+    "importance": 3
+   },
+   "removed": {
+    "importance": 3
+   },
+   "era": {
+    "path": "spell",
+    "min": 1200000
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2,
+     "via": "spell"
+    },
+    {
+     "field": "skill",
+     "label": "专业",
+     "compare": "ref",
+     "ref": "profession",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "reagents",
+     "label": "材料",
+     "compare": "multiset",
+     "ref": "item",
+     "category": "content",
+     "importance": 3,
+     "via": "spell"
+    },
+    {
+     "field": "products",
+     "label": "产物",
+     "compare": "multiset",
+     "ref": "item",
+     "category": "content",
+     "importance": 3,
+     "via": "spell"
+    },
+    {
+     "field": "trivial",
+     "label": "技能区间（变黄 / 变灰）",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "rank",
+     "label": "学习所需技能",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "acquire",
+     "label": "获得方式",
+     "compare": "number",
+     "category": "content",
+     "importance": 1,
+     "enum": "acquire"
+    },
+    {
+     "field": "cat",
+     "label": "分类",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "desc",
+     "label": "说明",
+     "compare": "text",
+     "category": "text",
+     "importance": 1,
+     "via": "spell"
+    },
+    {
+     "field": "spell",
+     "label": "法术",
+     "compare": "ref",
+     "ref": "spell",
+     "category": "internal",
+     "importance": 1
+    },
+    {
+     "field": "supersedes",
+     "label": "取代的法术",
+     "compare": "ref",
+     "ref": "spell",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "item": {
+   "label": "物品",
+   "page": "/item/{id}",
+   "source": {
+    "file": "items.json",
+    "records": "*",
+    "member_of": {
+     "epic": "epics.json"
+    }
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "ItemSparse"
+    },
+    {
+     "table": "Item"
+    }
+   ],
+   "placeholder": {
+    "field": "hidden",
+    "equals": true
+   },
+   "refs": {
+    "spell": [
+     {
+      "raw_join": [
+       {
+        "table": "ItemXItemEffect",
+        "by": "ItemID",
+        "take": "ItemEffectID"
+       },
+       {
+        "table": "ItemEffect",
+        "by": "ID",
+        "take": "SpellID"
+       }
+      ]
+     }
+    ],
+    "set": [
+     "set"
+    ],
+    "recipe": [
+     "teaches"
+    ]
+   },
+   "added": {
+    "importance": 2,
+    "placeholder": 1
+   },
+   "removed": {
+    "importance": 2,
+    "placeholder": 1
+   },
+   "era": {
+    "id_min": 230000
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "q",
+     "label": "品质",
+     "compare": "number",
+     "category": "content",
+     "importance": 2,
+     "enum": "quality"
+    },
+    {
+     "field": "ilvl",
+     "label": "物品等级",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "req",
+     "label": "需要等级",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "stats",
+     "label": "属性",
+     "compare": "table",
+     "key": 0,
+     "columns": [
+      1
+     ],
+     "key_labels": "stat_names.json",
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "armor",
+     "label": "护甲",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "dmg",
+     "label": "武器伤害",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 2,
+     "column_labels": {
+      "min": "最小",
+      "max": "最大",
+      "speed": "速度",
+      "dps": "每秒伤害"
+     }
+    },
+    {
+     "field": "use",
+     "label": "使用 / 装备效果",
+     "compare": "text",
+     "category": "text",
+     "importance": 2,
+     "via": "spell"
+    },
+    {
+     "field": "src",
+     "label": "来源类型",
+     "compare": "number",
+     "category": "content",
+     "importance": 2,
+     "enum": "source_type"
+    },
+    {
+     "field": "slot",
+     "label": "部位",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "cls",
+     "label": "物品类别",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "sub",
+     "label": "物品子类别",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "armor_type",
+     "label": "护甲类型",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "weapon_type",
+     "label": "武器类型",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "desc",
+     "label": "描述",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "bind",
+     "label": "绑定",
+     "compare": "number",
+     "category": "content",
+     "importance": 1,
+     "enum": "bind"
+    },
+    {
+     "field": "classes",
+     "label": "职业限制",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "set",
+     "label": "所属套装",
+     "compare": "ref",
+     "ref": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "teaches",
+     "label": "教授配方",
+     "compare": "ref",
+     "ref": "recipe",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "rep",
+     "label": "声望需求",
+     "compare": "table",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "epic",
+     "label": "史诗装备菜单",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "sell",
+     "label": "售价（铜）",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "stack",
+     "label": "堆叠",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "set": {
+   "label": "套装",
+   "page": "/set/{id}",
+   "source": {
+    "file": "itemsets.json",
+    "records": "*"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "ItemSet"
+    }
+   ],
+   "refs": {
+    "spell": [
+     "bonuses[].spell"
+    ],
+    "item": [
+     "pieces[]"
+    ]
+   },
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "id_min": 2098
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "pieces",
+     "label": "部件",
+     "compare": "set",
+     "ref": "item",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "bonuses",
+     "label": "套装效果",
+     "compare": "table",
+     "key": "n",
+     "columns": [
+      "spell",
+      "text"
+     ],
+     "category": "content",
+     "importance": 3,
+     "via": "spell"
+    }
+   ]
+  },
+  "achievement": {
+   "label": "成就",
+   "page": "/achievement/{id}",
+   "source": {
+    "file": "achievements.json",
+    "records": "achievements[]"
+   },
+   "name": "title",
+   "raw": [
+    {
+     "table": "Achievement"
+    }
+   ],
+   "refs": {
+    "item": [
+     "reward_item"
+    ],
+    "achievement": [
+     "supersedes"
+    ]
+   },
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "flag": "new"
+   },
+   "fields": [
+    {
+     "field": "title",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "desc",
+     "label": "说明",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "criteria",
+     "label": "条件",
+     "compare": "multiset",
+     "element": [
+      "kind",
+      "text",
+      "amount",
+      "target"
+     ],
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "reward",
+     "label": "奖励",
+     "compare": "text",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "reward_item",
+     "label": "奖励物品",
+     "compare": "ref",
+     "ref": "item",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "points",
+     "label": "点数",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "need",
+     "label": "需完成条件数",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "faction",
+     "label": "阵营",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "category",
+     "label": "分类",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "supersedes",
+     "label": "前置成就",
+     "compare": "ref",
+     "ref": "achievement",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "flags",
+     "label": "标记",
+     "compare": "table",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "order",
+     "label": "排序",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "quest": {
+   "label": "任务",
+   "page": "/quest/{id}",
+   "source": {
+    "file": "quests.json",
+    "records": "quests[]"
+   },
+   "name": [
+    "title",
+    "hint"
+   ],
+   "raw": [
+    {
+     "table": "QuestV2"
+    }
+   ],
+   "refs": {
+    "spell": [
+     "complete_spells[].id"
+    ],
+    "item": [
+     "start_items[].id"
+    ],
+    "achievement": [
+     "achievements[].id"
+    ]
+   },
+   "added": {
+    "importance": 1
+   },
+   "removed": {
+    "importance": 1
+   },
+   "era": {
+    "flag": "new"
+   },
+   "fields": [
+    {
+     "field": "title",
+     "label": "标题",
+     "compare": "text",
+     "category": "text",
+     "importance": 3
+    },
+    {
+     "field": "hint",
+     "label": "名称线索",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "hint_src",
+     "label": "线索来源",
+     "compare": "text",
+     "category": "internal",
+     "importance": 1
+    },
+    {
+     "field": "line",
+     "label": "任务线",
+     "path": "line.id",
+     "compare": "ref",
+     "ref": "questline",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "line_order",
+     "label": "任务线中的顺序",
+     "path": "line.order",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "start_items",
+     "label": "起始物品",
+     "path": "start_items[].id",
+     "compare": "set",
+     "ref": "item",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "complete_spells",
+     "label": "完成法术",
+     "path": "complete_spells[].id",
+     "compare": "set",
+     "ref": "spell",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "achievements",
+     "label": "关联成就",
+     "path": "achievements[].id",
+     "compare": "set",
+     "ref": "achievement",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "criteria",
+     "label": "成就条件",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "poi",
+     "label": "地图标记",
+     "path": "poi.points[]",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "complete_spells_internal",
+     "label": "完成法术（内部名）",
+     "path": "complete_spells_internal[].id",
+     "compare": "set",
+     "ref": "spell",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "labels",
+     "label": "标签",
+     "compare": "set",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "questline": {
+   "label": "任务线",
+   "page": "/quests?line={name}",
+   "source": {
+    "file": "questlines.json",
+    "records": "lines[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "QuestLine"
+    }
+   ],
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "flag": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "desc",
+     "label": "说明",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "quests",
+     "label": "任务",
+     "compare": "set",
+     "ref": "quest",
+     "category": "content",
+     "importance": 2
+    }
+   ]
+  },
+  "npc": {
+   "label": "NPC / 首领",
+   "page": "/npc/{id}",
+   "source": {
+    "file": "npcs.json",
+    "records": "npcs[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "Creature"
+    },
+    {
+     "table": "DungeonEncounter",
+     "offset": 900000
+    }
+   ],
+   "refs": {
+    "spell": [
+     "spell.id"
+    ],
+    "item": [
+     "item.id"
+    ]
+   },
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "flag": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "sub",
+     "label": "称号",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "display",
+     "label": "模型（CreatureDisplayInfo）",
+     "compare": "number",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "zone",
+     "label": "所属副本 / 区域",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "order",
+     "label": "首领顺序",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "difficulty",
+     "label": "难度",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "type",
+     "label": "生物类型",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "cls",
+     "label": "分类",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "level",
+     "label": "等级",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "spell",
+     "label": "召唤法术",
+     "path": "spell.id",
+     "compare": "ref",
+     "ref": "spell",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "item",
+     "label": "获得物品",
+     "path": "item.id",
+     "compare": "ref",
+     "ref": "item",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "map",
+     "label": "地图 ID",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "look": {
+   "label": "NPC 外观",
+   "page": "/looks/{id}",
+   "source": {
+    "file": "looks.json",
+    "records": "rows[]",
+    "id": "cdi"
+   },
+   "name": null,
+   "raw": [
+    {
+     "table": "CreatureDisplayInfo"
+    }
+   ],
+   "added": {
+    "importance": 1
+   },
+   "removed": {
+    "importance": 1
+   },
+   "era": {
+    "value": "new"
+   },
+   "fields": [
+    {
+     "field": "race",
+     "label": "种族",
+     "compare": "number",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "sex",
+     "label": "性别",
+     "compare": "number",
+     "category": "content",
+     "importance": 2,
+     "enum": "sex"
+    },
+    {
+     "field": "equipment",
+     "label": "装备",
+     "compare": "table",
+     "key": "slot",
+     "columns": [
+      "item_display_id",
+      "item_name",
+      "file_hint"
+     ],
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "scale",
+     "label": "模型缩放",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "effects",
+     "label": "特效",
+     "compare": "table",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "customization",
+     "label": "自定义外观",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "cdie",
+     "label": "外观记录（CDIE）",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "cdi_all",
+     "label": "同一外观的 CDI",
+     "compare": "set",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "bake",
+     "label": "烘焙贴图",
+     "path": "bake.fdid",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "transmogset": {
+   "label": "幻化套装",
+   "page": "/appearances/set/{id}",
+   "source": {
+    "file": "transmog.json",
+    "records": "sets[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "TransmogSet"
+    }
+   ],
+   "refs": {
+    "item": [
+     "pieces[].item"
+    ]
+   },
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "flag": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "label",
+     "label": "颜色标签",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "pieces",
+     "label": "部件",
+     "compare": "table",
+     "key": "ima",
+     "columns": [
+      "item",
+      "appearance",
+      "primary"
+     ],
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "group",
+     "label": "分组",
+     "path": "group.id",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "parent",
+     "label": "基础套装",
+     "compare": "ref",
+     "ref": "transmogset",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "classes",
+     "label": "职业",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "quality",
+     "label": "品质",
+     "compare": "number",
+     "category": "content",
+     "importance": 1,
+     "enum": "quality"
+    },
+    {
+     "field": "expansion",
+     "label": "资料片",
+     "path": "expansion.id",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "patch",
+     "label": "补丁",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "tracking_quest",
+     "label": "追踪任务",
+     "path": "tracking_quest.id",
+     "compare": "ref",
+     "ref": "quest",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "flags",
+     "label": "标记",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "appearance": {
+   "label": "外观",
+   "page": "/appearances",
+   "source": {
+    "extract": "appearances"
+   },
+   "name": null,
+   "raw": [
+    {
+     "table": "ItemAppearance"
+    }
+   ],
+   "refs": {
+    "item": [
+     "items[]"
+    ]
+   },
+   "added": {
+    "importance": 1
+   },
+   "removed": {
+    "importance": 1
+   },
+   "fields": [
+    {
+     "field": "display",
+     "label": "模型（ItemDisplayInfo）",
+     "compare": "number",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "items",
+     "label": "物品",
+     "compare": "set",
+     "ref": "item",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "zones",
+     "label": "出售区域",
+     "compare": "set",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "vendors",
+     "label": "商人（生物 ID）",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "sets",
+     "label": "幻化套装",
+     "compare": "set",
+     "ref": "transmogset",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "sources",
+     "label": "来源记录",
+     "compare": "set",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "instance": {
+   "label": "副本",
+   "page": "/instance/{id}",
+   "source": {
+    "file": "instances.json",
+    "records": "[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "Map"
+    }
+   ],
+   "added": {
+    "importance": 3
+   },
+   "removed": {
+    "importance": 3
+   },
+   "era": {
+    "id_min": 2700
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "kind",
+     "label": "类型",
+     "compare": "text",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "bosses",
+     "label": "首领",
+     "compare": "table",
+     "key": "id",
+     "columns": [
+      "name",
+      "order"
+     ],
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "players",
+     "label": "人数",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "difficulties",
+     "label": "难度",
+     "compare": "table",
+     "key": "id",
+     "columns": [
+      "name",
+      "players",
+      "reset",
+      "message"
+     ],
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "level",
+     "label": "等级（进入 / 上限 / 目标）",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 2,
+     "column_labels": {
+      "min": "进入",
+      "max": "上限",
+      "target": "目标"
+     }
+    },
+    {
+     "field": "zone",
+     "label": "所在区域",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "expansion",
+     "label": "资料片",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "description",
+     "label": "说明",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "variants",
+     "label": "其他难度的首领",
+     "compare": "table",
+     "key": "difficulty",
+     "columns": [
+      "name",
+      "players",
+      "bosses"
+     ],
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "entrance",
+     "label": "入口位置",
+     "compare": "table",
+     "columns": [
+      "source",
+      "map_id",
+      "zone",
+      "world"
+     ],
+     "category": "content",
+     "importance": 1
+    }
+   ]
+  },
+  "map": {
+   "label": "地图",
+   "page": "/atlas/{id}",
+   "source": {
+    "file": "atlas.json",
+    "records": "maps[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "UiMap"
+    }
+   ],
+   "refs": {
+    "map": [
+     "parent",
+     "continent",
+     "children[]"
+    ]
+   },
+   "added": {
+    "importance": 3
+   },
+   "removed": {
+    "importance": 3
+   },
+   "era": {
+    "flag": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "kind",
+     "label": "类型",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "level",
+     "label": "区域等级",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 2,
+     "column_labels": {
+      "min": "最低",
+      "max": "最高"
+     }
+    },
+    {
+     "field": "areas",
+     "label": "子区域",
+     "compare": "table",
+     "key": "id",
+     "columns": [
+      "name",
+      "level"
+     ],
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "instances",
+     "label": "副本入口",
+     "compare": "table",
+     "key": "id",
+     "columns": [
+      "name",
+      "source"
+     ],
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "taxi",
+     "label": "飞行点",
+     "compare": "table",
+     "key": "id",
+     "columns": [
+      "name",
+      "faction"
+     ],
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "parent",
+     "label": "上级地图",
+     "compare": "ref",
+     "ref": "map",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "continent",
+     "label": "所属大陆",
+     "compare": "ref",
+     "ref": "map",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "children",
+     "label": "下级地图",
+     "compare": "set",
+     "ref": "map",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "quests",
+     "label": "任务标记",
+     "path": "quests[].id",
+     "compare": "set",
+     "ref": "quest",
+     "category": "content",
+     "importance": 0
+    },
+    {
+     "field": "map_id",
+     "label": "Map ID",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "area_id",
+     "label": "AreaTable ID",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "title": {
+   "label": "称号",
+   "page": "/titles#t{id}",
+   "source": {
+    "file": "titles.json",
+    "records": "titles[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "CharTitles"
+    }
+   ],
+   "refs": {
+    "spell": [
+     "source.spells[].id"
+    ],
+    "achievement": [
+     "source.achievements[].id"
+    ],
+    "item": [
+     "source.items[].id"
+    ]
+   },
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "flag": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "name_female",
+     "label": "女性名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "template",
+     "label": "显示模板",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "kind",
+     "label": "类型",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "side",
+     "label": "阵营",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "rank",
+     "label": "军衔等级",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "rank_points",
+     "label": "军衔点数",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "source_achievements",
+     "label": "来源成就",
+     "path": "source.achievements[].id",
+     "compare": "set",
+     "ref": "achievement",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "source_spells",
+     "label": "来源法术",
+     "path": "source.spells[].id",
+     "compare": "set",
+     "ref": "spell",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "source_items",
+     "label": "来源物品",
+     "path": "source.items[].id",
+     "compare": "set",
+     "ref": "item",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "source_quests",
+     "label": "来源任务",
+     "path": "source.quests[].id",
+     "compare": "set",
+     "ref": "quest",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "source_faction",
+     "label": "来源声望",
+     "path": "source.faction.id",
+     "compare": "ref",
+     "ref": "faction",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "mask",
+     "label": "掩码",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "flags",
+     "label": "标记",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "faction": {
+   "label": "声望",
+   "page": "/faction/{id}",
+   "source": {
+    "file": "factions.json",
+    "records": "factions[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "Faction"
+    }
+   ],
+   "refs": {
+    "item": [
+     "rewards[].item_id"
+    ],
+    "achievement": [
+     "achievements[].id"
+    ],
+    "title": [
+     "titles[].id"
+    ],
+    "spell": [
+     "spells[].id"
+    ]
+   },
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "flag": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "desc",
+     "label": "说明",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "rewards",
+     "label": "奖励",
+     "compare": "table",
+     "key": "item_id",
+     "columns": [
+      "standing"
+     ],
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "side",
+     "label": "阵营",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "parent",
+     "label": "上级阵营",
+     "compare": "ref",
+     "ref": "faction",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "listed",
+     "label": "在声望面板中",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "base",
+     "label": "起始声望",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "max",
+     "label": "声望上限",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "groups",
+     "label": "各种族 / 职业组的起始与上限",
+     "compare": "table",
+     "key": "who",
+     "columns": [
+      "base",
+      "max"
+     ],
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "achievements",
+     "label": "相关成就",
+     "path": "achievements[].id",
+     "compare": "set",
+     "ref": "achievement",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "titles",
+     "label": "称号",
+     "path": "titles[].id",
+     "compare": "set",
+     "ref": "title",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "spells",
+     "label": "声望法术",
+     "path": "spells[].id",
+     "compare": "set",
+     "ref": "spell",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "flags",
+     "label": "标记",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "race": {
+   "label": "种族",
+   "page": "/race/{id}",
+   "source": {
+    "file": "races.json",
+    "records": "[]"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "ChrRaces"
+    }
+   ],
+   "refs": {
+    "spell": [
+     "abilities[].spell",
+     "abilities[].variants[].spell"
+    ]
+   },
+   "added": {
+    "importance": 3
+   },
+   "removed": {
+    "importance": 3
+   },
+   "era": {
+    "id_min": 9
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "faction",
+     "label": "阵营",
+     "compare": "text",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "classes",
+     "label": "可选职业",
+     "compare": "set",
+     "category": "content",
+     "importance": 3
+    },
+    {
+     "field": "abilities",
+     "label": "种族天赋",
+     "compare": "table",
+     "key": "spell",
+     "columns": [
+      "name",
+      "desc",
+      "short",
+      "passive"
+     ],
+     "category": "content",
+     "importance": 2,
+     "via": "spell"
+    },
+    {
+     "field": "lore",
+     "label": "背景",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "en",
+     "label": "英文名",
+     "compare": "text",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "talent": {
+   "label": "天赋",
+   "page": "/talents/{class}",
+   "source": {
+    "extract": "talents"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "Talent"
+    }
+   ],
+   "refs": {
+    "spell": [
+     "ranks[].spell"
+    ]
+   },
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "path": "ranks[].spell",
+    "min": 1200000
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "class_name",
+     "label": "职业",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "tree",
+     "label": "天赋树",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "max_rank",
+     "label": "最大等级",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "ranks",
+     "label": "各等级",
+     "compare": "table",
+     "key": "rank",
+     "columns": [
+      "spell",
+      "desc"
+     ],
+     "category": "text",
+     "importance": 2,
+     "via": "spell"
+    },
+    {
+     "field": "tier",
+     "label": "层",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "col",
+     "label": "列",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "prereq",
+     "label": "前置天赋",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "spell": {
+   "label": "法术",
+   "page": "/id/spell:{id}",
+   "source": {
+    "extract": "spells",
+    "universe": "refs",
+    "raw": [
+     {
+      "table": "SpellName",
+      "by": "ID",
+      "fields": {
+       "name": "Name_lang"
+      }
+     },
+     {
+      "table": "Spell",
+      "by": "ID",
+      "fields": {
+       "subtext": "NameSubtext_lang",
+       "desc": "Description_lang",
+       "aura": "AuraDescription_lang"
+      }
+     },
+     {
+      "table": "SpellMisc",
+      "by": "SpellID",
+      "where": {
+       "DifficultyID": "0"
+      },
+      "fields": {
+       "school": "SchoolMask",
+       "icon": "SpellIconFileDataID",
+       "attributes": "Attributes"
+      },
+      "lookups": {
+       "cast": [
+        "CastingTimeIndex",
+        "SpellCastTimes",
+        "Base"
+       ],
+       "duration": [
+        "DurationIndex",
+        "SpellDuration",
+        "Duration"
+       ],
+       "range": [
+        "RangeIndex",
+        "SpellRange",
+        "RangeMax"
+       ]
+      }
+     },
+     {
+      "table": "SpellEffect",
+      "by": "SpellID",
+      "where": {
+       "DifficultyID": "0"
+      },
+      "rows": "effects",
+      "row_key": "EffectIndex",
+      "columns": [
+       "Effect",
+       "EffectAura",
+       "EffectBasePointsF",
+       "EffectMiscValue",
+       "EffectItemType",
+       "EffectTriggerSpell",
+       "EffectAuraPeriod",
+       "EffectChainTargets",
+       "EffectRadiusIndex"
+      ]
+     },
+     {
+      "table": "SpellReagents",
+      "by": "SpellID",
+      "multiset": "reagents",
+      "ids": "Reagent",
+      "counts": "ReagentCount"
+     },
+     {
+      "table": "SpellPower",
+      "by": "SpellID",
+      "rows": "cost",
+      "row_key": "OrderIndex",
+      "columns": [
+       "PowerType",
+       "ManaCost",
+       "PowerCostPct"
+      ]
+     },
+     {
+      "table": "SpellCooldowns",
+      "by": "SpellID",
+      "where": {
+       "DifficultyID": "0"
+      },
+      "group": "cooldown",
+      "columns": [
+       "RecoveryTime",
+       "CategoryRecoveryTime",
+       "StartRecoveryTime"
+      ]
+     },
+     {
+      "table": "SpellLevels",
+      "by": "SpellID",
+      "where": {
+       "DifficultyID": "0"
+      },
+      "group": "levels",
+      "columns": [
+       "BaseLevel",
+       "SpellLevel",
+       "MaxLevel"
+      ]
+     },
+     {
+      "table": "SpellAuraOptions",
+      "by": "SpellID",
+      "where": {
+       "DifficultyID": "0"
+      },
+      "group": "procs",
+      "columns": [
+       "ProcChance",
+       "ProcCharges",
+       "CumulativeAura",
+       "ProcCategoryRecovery"
+      ]
+     }
+    ],
+    "spellbook": "spellbook.json"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "SpellName"
+    }
+   ],
+   "placeholder": {
+    "field": "name",
+    "empty": true
+   },
+   "added": {
+    "importance": 1,
+    "if": {
+     "book": 2
+    }
+   },
+   "removed": {
+    "importance": 1,
+    "if": {
+     "book": 2
+    }
+   },
+   "era": {
+    "id_min": 1200000
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "desc",
+     "label": "说明（模板）",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "effects",
+     "label": "效果",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 2,
+     "key_label": "#",
+     "column_labels": {
+      "Effect": "效果类型",
+      "EffectAura": "光环类型",
+      "EffectBasePointsF": "基础值",
+      "EffectMiscValue": "参数",
+      "EffectItemType": "物品",
+      "EffectTriggerSpell": "触发法术",
+      "EffectAuraPeriod": "周期（毫秒）",
+      "EffectChainTargets": "连锁目标数",
+      "EffectRadiusIndex": "半径索引"
+     }
+    },
+    {
+     "field": "reagents",
+     "label": "施法材料",
+     "compare": "multiset",
+     "ref": "item",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "book",
+     "label": "技能书（职业 / 技能线）",
+     "compare": "set",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "subtext",
+     "label": "等级 / 副标题",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "aura",
+     "label": "光环说明（模板）",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "cost",
+     "label": "消耗",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 1,
+     "key_label": "#",
+     "column_labels": {
+      "PowerType": "能量类型",
+      "ManaCost": "消耗",
+      "PowerCostPct": "基础值的百分比"
+     }
+    },
+    {
+     "field": "cooldown",
+     "label": "冷却（毫秒）",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 1,
+     "column_labels": {
+      "RecoveryTime": "冷却",
+      "CategoryRecoveryTime": "类别冷却",
+      "StartRecoveryTime": "公共冷却"
+     }
+    },
+    {
+     "field": "levels",
+     "label": "等级",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 1,
+     "column_labels": {
+      "BaseLevel": "基础等级",
+      "SpellLevel": "法术等级",
+      "MaxLevel": "最高等级"
+     }
+    },
+    {
+     "field": "procs",
+     "label": "触发",
+     "compare": "table",
+     "category": "numeric",
+     "importance": 1,
+     "column_labels": {
+      "ProcChance": "触发几率",
+      "ProcCharges": "触发次数",
+      "CumulativeAura": "可叠加层数",
+      "ProcCategoryRecovery": "触发冷却（毫秒）"
+     }
+    },
+    {
+     "field": "cast",
+     "label": "施法时间（毫秒）",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "duration",
+     "label": "持续时间（毫秒）",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "range",
+     "label": "距离（码）",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "school",
+     "label": "学派",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "attributes",
+     "label": "属性标记",
+     "compare": "text",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "legacy": {
+   "label": "传承树节点",
+   "page": "/legacy",
+   "source": {
+    "extract": "legacy_nodes"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "TraitNode"
+    }
+   ],
+   "refs": {
+    "spell": [
+     "entries[].spell"
+    ]
+   },
+   "added": {
+    "importance": 3
+   },
+   "removed": {
+    "importance": 3
+   },
+   "era": {
+    "value": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "tree",
+     "label": "所属树",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "future",
+     "label": "「将在未来的更新中加入」占位",
+     "compare": "number",
+     "category": "content",
+     "importance": 3
+    },
+    {
+     "field": "maxrank",
+     "label": "最大等级",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "ranks",
+     "label": "各级说明",
+     "compare": "table",
+     "key": "rank",
+     "columns": [
+      "desc"
+     ],
+     "category": "text",
+     "importance": 2,
+     "via": "spell"
+    },
+    {
+     "field": "entries",
+     "label": "选项",
+     "compare": "table",
+     "key": "entry",
+     "columns": [
+      "name",
+      "spell",
+      "maxrank"
+     ],
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "kind",
+     "label": "节点类型",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "cost",
+     "label": "每级点数",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "gate",
+     "label": "门槛（本树投入点数）",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "parents",
+     "label": "前置节点",
+     "compare": "set",
+     "ref": "legacy",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "conds",
+     "label": "条件",
+     "path": "conds[].text",
+     "compare": "set",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "pos",
+     "label": "位置",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "legacytree": {
+   "label": "传承树",
+   "page": "/legacy",
+   "source": {
+    "extract": "legacy_trees"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "TraitTree"
+    }
+   ],
+   "added": {
+    "importance": 3
+   },
+   "removed": {
+    "importance": 3
+   },
+   "era": {
+    "value": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "title",
+     "label": "标题",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "desc",
+     "label": "说明",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "total_ranks",
+     "label": "总等级数",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "cost",
+     "label": "每级点数",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 1
+    },
+    {
+     "field": "gates",
+     "label": "门槛",
+     "compare": "table",
+     "key": "points",
+     "columns": [
+      "nodes"
+     ],
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "currency_max",
+     "label": "点数上限（三树共用）",
+     "path": "currency.max",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 3
+    },
+    {
+     "field": "sources",
+     "label": "点数来源",
+     "compare": "multiset",
+     "element": [
+      "group",
+      "req",
+      "amount"
+     ],
+     "category": "content",
+     "importance": 2
+    }
+   ]
+  },
+  "camping": {
+   "label": "露营设施",
+   "page": "/camping",
+   "source": {
+    "file": "camping.json",
+    "records": "recipes[]",
+    "id": "recipe_id"
+   },
+   "name": "name",
+   "raw": [],
+   "refs": {
+    "recipe": [
+     "recipe_id"
+    ],
+    "spell": [
+     "spell"
+    ]
+   },
+   "added": {
+    "importance": 3
+   },
+   "removed": {
+    "importance": 3
+   },
+   "era": {
+    "path": "spell",
+    "min": 1200000
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "kind",
+     "label": "设施类型",
+     "compare": "text",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "effect",
+     "label": "效果",
+     "compare": "text",
+     "category": "text",
+     "importance": 2,
+     "via": "spell"
+    },
+    {
+     "field": "capacity",
+     "label": "可额外放置的设施数",
+     "compare": "number",
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "needs_campfire",
+     "label": "需要营火",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "inherits",
+     "label": "继承的增益",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "faction",
+     "label": "阵营",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "profession",
+     "label": "专业",
+     "compare": "ref",
+     "ref": "profession",
+     "category": "content",
+     "importance": 1
+    }
+   ]
+  },
+  "bundle": {
+   "label": "天裔礼包物品",
+   "page": "/bundle#b{id}",
+   "source": {
+    "extract": "bundle_items"
+   },
+   "name": "name",
+   "raw": [],
+   "refs": {
+    "item": [
+     "related_items[]",
+     "pieces[].id"
+    ],
+    "spell": [
+     "spell"
+    ]
+   },
+   "added": {
+    "importance": 2
+   },
+   "removed": {
+    "importance": 2
+   },
+   "era": {
+    "value": "new"
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "group",
+     "label": "分组",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "quality",
+     "label": "品质",
+     "compare": "number",
+     "category": "content",
+     "importance": 1,
+     "enum": "quality"
+    },
+    {
+     "field": "desc",
+     "label": "使用说明",
+     "compare": "text",
+     "category": "text",
+     "importance": 1,
+     "via": "spell"
+    },
+    {
+     "field": "pieces",
+     "label": "部件",
+     "path": "pieces[].id",
+     "compare": "set",
+     "ref": "item",
+     "category": "content",
+     "importance": 2
+    },
+    {
+     "field": "related_items",
+     "label": "相关物品",
+     "compare": "set",
+     "ref": "item",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "transmog_set",
+     "label": "幻化套装",
+     "compare": "ref",
+     "ref": "transmogset",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "creature_display",
+     "label": "模型（CreatureDisplayInfo）",
+     "compare": "number",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "spell",
+     "label": "法术",
+     "compare": "ref",
+     "ref": "spell",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "mount_id",
+     "label": "坐骑 ID",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  },
+  "profession": {
+   "label": "专业",
+   "page": "/profession/{id}",
+   "source": {
+    "extract": "professions"
+   },
+   "name": "name",
+   "raw": [
+    {
+     "table": "SkillLine"
+    }
+   ],
+   "added": {
+    "importance": 3
+   },
+   "removed": {
+    "importance": 3
+   },
+   "fields": [
+    {
+     "field": "name",
+     "label": "名称",
+     "compare": "text",
+     "category": "text",
+     "importance": 2
+    },
+    {
+     "field": "kind",
+     "label": "主要 / 辅助",
+     "compare": "text",
+     "category": "content",
+     "importance": 1
+    },
+    {
+     "field": "desc",
+     "label": "说明",
+     "compare": "text",
+     "category": "text",
+     "importance": 1
+    },
+    {
+     "field": "tiers",
+     "label": "等级档（技能范围 / 训练要求）",
+     "compare": "table",
+     "key": "index",
+     "columns": [
+      "name",
+      "min_skill",
+      "max_skill",
+      "train_at_skill",
+      "required_level"
+     ],
+     "category": "numeric",
+     "importance": 2
+    },
+    {
+     "field": "rank_up_spells",
+     "label": "训练法术",
+     "path": "rank_up_spells[].spell",
+     "compare": "set",
+     "ref": "spell",
+     "category": "internal",
+     "importance": 0
+    },
+    {
+     "field": "icon",
+     "label": "图标",
+     "compare": "number",
+     "category": "internal",
+     "importance": 0
+    }
+   ]
+  }
+ }
+}

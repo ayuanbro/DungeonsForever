@@ -1,0 +1,464 @@
+########## ① Skyborne EN<->CN 逐条 ##########
+[druid_balance / stats #0 t=ul]
+   EN: is a caster's bread and butter, providing a flat damage increase to our spells. Most damaging spells gain a certain amount of extra base damage based on the caster's Spell Damage. This is known as the spell's spell power
+   CN: 法术伤害 法系的立身之本，为法术提供固定伤害加成。多数伤害法术会按施法者的法术强度获得额外基础伤害（即法术强度系数）。《无限》更看重武器法强，看到武器升级别错过！ 命中 降低法术被抗住概率的关键属性。比施法者高 3 级的敌人（如顶级团本首领）有 17% 的基础法术抵抗，可以压到 1%，即命中上限为 16%。 暴击 提高施法打出暴击的概率。 天赋在打出暴击时提升伤害，因此暴击是很有价值的属性。 急速 缩短施法时间。套装加成、 与天裔种族天
+[druid_balance / races #1 t=races]
+   EN: Night Elf alliance tick Tauren horde tick
+   CN: 暗夜精灵 alliance tick 牛头人 horde tick 天裔 both star
+[druid_balance / races #3 t=p]
+   EN: As a Druid, you now have two race options per faction. If you are looking to min-max, the difference in each of these racials is negligible. Both Tauren and Night Elf Druids pack a punch harder than the Skyborne options,
+   CN: 作为德鲁伊，你现在每个阵营都有两个种族可选。从极限收益角度说，各种族天赋的差异可以忽略：牛头人和暗夜精灵的德鲁伊都比天裔更能打，而高阶天裔的法力续航略好一些。
+[druid_balance / races #4 t=p]
+   EN: Windshaper Skyborne / High Order Skyborne are the new race in Forever; Skyborne deal extra damage to elemental enemiesand gain a small amount of passive haste. Unlike the Alliance Skyborne who get mana and health regen t
+   CN: 掠风天裔（部落）/ 高阶天裔（联盟）是《无限》的新种族：天裔对元素敌人造成额外伤害（），并获得少量被动急速（）。联盟天裔通过 获得法力与生命回复，部落则通过 获得 10% 移动速度爆发；两者都能用 滑翔。
+[druid_feral / races #0 t=p]
+   EN: There's only one new option for Druids in Forever, which is the new race Skyborne. The other races have been reworked, adding new racials.
+   CN: 《无限》中德鲁伊只有一个新种族可选，那就是新种族：天裔。德鲁伊可选的其他种族也已重做，新增了种族特长。
+[druid_feral / races #3 t=p]
+   EN: For Feral Druid DPS, there aren't a lot of choices, making it quite obvious which race is stronger, or at least for Alliance, where Night Elf is the clear option due to. For Horde, however, both Tauren and Skyborne are s
+   CN: 对于野性德鲁伊输出而言，选择并不多，哪个种族更强一目了然，或者说至少在联盟这边非常明显——暗夜精灵凭借无疑是最佳选择。对于部落而言，牛头人和天裔相差不大，而牛头人只要你能从其命中加成中获益，就是略胜一筹的选择。时不再为你提供固定数量的能量。
+[druid_feral / races #4 t=p]
+   EN: Alliance / HordeSkyborne
+   CN: 联盟 / 部落天裔
+[druid_feral / races #5 t=p]
+   EN: Skyborne Druids are available to both Alliance and Horde factions. Both factions will have a 1% haste buff fromand be able to avoid fall damage mechanics with. Alliance and Horde differ on their unique active abilitiesan
+   CN: 天裔德鲁伊对联盟和部落双方阵营均开放。两个阵营都能获得1%急速增益，来源是，并可通过规避坠落伤害机制。联盟和部落各有其独特的主动技能和，但这些主动技能对野性德鲁伊的DPS而言并没有实质作用，因为我们并不在意法力值，而且的移速加成无法与叠加。1%急速加成虽然不错，但不会影响我们的能量回复，实际上只能略微提升自动攻击伤害，并使触发频率略有提高。
+[druid_restoration / races #0 t=p]
+   EN: WoW Forever introduces the Skyborne race behind a paywall. If you can afford the upgrade, you'll have an option to choose. Otherwise, you will maintain the Classic experience of being locked to Night Elf or Tauren. Allia
+   CN: 《魔兽世界：无限》中加入了天裔种族，并设为付费内容。如果你可以购买升级，就能选择该种族；否则将保持原版的经典体验，只能选择夜精灵或牛头人。联盟的天裔与夜精灵为治疗提供了最强的收益，这使得联盟的恢复德鲁伊相比部落方更有优势。随着测试推进，预计官方会通过平衡补丁来缩小这些差距。
+[druid_restoration / races #3 t=p]
+   EN: Alliance / HordeSkyborne
+   CN: 联盟 / 部落天裔
+[druid_restoration / races #4 t=p]
+   EN: Skyborne Druids are available to both Alliance and Horde factions. Both factions will have a 1% haste buff fromand be able to avoid fall damage mechanics with. Alliance and Horde differ on their unique active abilitiesan
+   CN: 天裔德鲁伊对联盟和部落阵营均可使用。两个阵营都能获得1%急速的并可通过规避坠落伤害机制。和联盟与部落的独特主动技能分别为是恢复德鲁伊的更优选择。配合后，这是一段强力的法力值回复爆发技能。不同阵营种族特长之间的强度差异表明，未来的平衡补丁可能会对这些效果进行平滑调整。
+[hunter_beast-mastery / races #0 t=p]
+   EN: Races have received a lot of changes to their racials in a bid to make them all equally good. For now, some seem to be better in general, while others might excel for one specific playstyle. In Forever, Humans can now be
+   CN: 各个种族在种族特长方面进行了大量改动，旨在让所有种族同样强力。目前来看，一些种族整体表现更优，而另一些则可能在某一特定玩法中大放异彩。在无限服中，人类现在也可以选择猎人，同时新增了天裔这一可选种族。
+[hunter_beast-mastery / races #3 t=p]
+   EN: Skyborne If there is any Elemental present, Skyborne will for sure take the top spot with theirracial passive. While Blizzard has attempted to give all races competitive racial abilities, they haven't stepped off the spe
+   CN: 天裔只要队伍里有元素法系存在，天裔凭借其种族被动技能几乎稳居榜首。虽然暴雪试图让所有种族的种族能力都具有竞争力，但他们并没有取消针对特定怪物类型的种族特长。另一个能显著提升你 DPS 的种族被动是。在经典服中急速属性十分稀有，因此这可能比你想象的更强。
+[hunter_marksmanship / races #0 t=p]
+   EN: Races have received a lot of changes to their racials in a bid to make them all equally good. For now, some seem to be better in general, while others might excel for one specific playstyle. In Forever, Humans can now be
+   CN: 各族的种族特长都经历了大量改动，力求让它们同样优秀。目前来看，有些整体上更强，而另一些可能在特定的玩法中更为出色。在无限服中，人类现在可以成为猎人，同时还有新加入的天裔。
+[hunter_marksmanship / races #3 t=p]
+   EN: Skyborne If there is any Elemental present, Skyborne will for sure take the top spot with theirracial passive. While Blizzard has attempted to give all races competitive racial abilities, they haven't stepped off the spe
+   CN: 天裔只要有元素存在，天裔必定凭借其种族被动占据榜首。虽然暴雪曾试图让所有种族都拥有具竞争力的种族特长，但他们并未摆脱针对特定怪物类型的那些。另一个能显著提升你DPS的种族被动是。急速在经典旧世中尤为难得，所以这可能比你想象的更强。
+[hunter_survival / races #0 t=p]
+   EN: Races have received a lot of changes to their racials in a bid to make them all equally good. For now, some seem to be better in general, while others might excel for one specific playstyle. In Forever, Humans can now be
+   CN: 为了让所有种族特长都同样出色，各种族的种族特长都经历了不少改动。就目前而言，有些种族总体上似乎更强，而另一些则可能在某种特定玩法中大放异彩。在无限服中，人类现在可以成为猎人，还可以选择新增的天裔种族。
+[hunter_survival / races #3 t=p]
+   EN: Skyborne If there is any Elemental present, Skyborne will for sure take the top spot with theirracial passive. While Blizzard has attempted to give all races competitive racial abilities, they haven't stepped off the spe
+   CN: 天裔如果战斗中存在任何元素生物，天裔的种族天赋必定能让他们占据榜首位置。虽然暴雪试图让所有种族的种族天赋具备竞争力，但他们仍未放弃针对特定怪物类型的专属加成。另一个能为你的 DPS 提供可观加成的，是. 急速在经典服中非常稀有，因此这个效果可能比你想象中更强。
+[mage_arcane / races #0 t=p]
+   EN: Aside from the old class/race combinations, Mages can now also be Orcs on the Horde side, and Skyborne Elves on the Alliance side. Although interesting, these don't overshadow the old combinations since all racials have 
+   CN: 除了旧的种族-职业组合外,法师现在在部落方还可以选择兽人,在联盟方还可以选择天裔精灵。虽然这很有趣,但并不会盖过旧的组合,因为所有种族特长都已被重做。目前还很难判断哪种在终局更优,因为有太多尚未确定的因素。在测试服中,每个种族都有各自有趣的优势,所以暂时不必过于担心选择问题,先挑自己觉得有趣或主题喜欢的就好。
+[mage_arcane / races #10 t=p]
+   EN: High Order Skyborne
+   CN: 高阶天裔
+[mage_fire / races #0 t=p]
+   EN: Aside from the old class/race combinations, Mages can now also be Orcs on the Horde side, and Skyborne Elves on the Alliance side. Although interesting, these don't overshadow the old combinations since all racials have 
+   CN: 除了原有的种族与职业组合之外，法师现在还可以是部落方的兽人，以及联盟方的天裔精灵。虽然这两个组合很有意思，但它们并不会盖过原有组合，因为所有种族特长都经过了重做。目前还很难判断哪种组合在满级强更出色，因为有太多未知因素。在测试服中，每个组合都有各自的优势，所以现在不用太纠结选择；不如先挑一个你觉得在外观或主题上有趣的组合。
+[mage_fire / races #10 t=p]
+   EN: High Order Skyborne
+   CN: 高阶天裔
+[mage_frost / races #0 t=p]
+   EN: Mages can be 6 race options in WoW: Forever: Human, Gnome, Skyborne (Alliance), Orc, Undead, and Troll.
+   CN: 法师在《魔兽世界：无限》中有6个种族可选：人类、侏儒、天裔（联盟），以及兽人、亡灵和巨魔。
+[mage_frost / races #3 t=p]
+   EN: This is obviously very early in beta to understand the racial changes properly; these are just some early opinions. Mages can be 6 race options in WoW: Forever: Human, Gnome, Skyborne (Alliance), Orc, Undead, and Troll. 
+   CN: 显然，现在还处于测试服早期，无法正确理解种族改动；以下只是一些初步看法。法师在《魔兽世界：无限》中有6个种族可选：人类、侏儒、天裔（联盟），以及兽人、亡灵和巨魔。天裔法师在练级时非常强力；依靠这个种族特长我大量减少了喝水次数，尤其是在他们出生地几乎一直保持激活。巨魔和兽人感觉都是快速输出的强力候选；同样，其他选项也并非明显不好。值得一提的是，由于部分种族对特定敌人类型有明确的5%伤害加成，因此也会自然存在一个针对该战斗的“最佳种族”。下
+[mage_frost / races #5 t=p]
+   EN: Human- Human's are a little redundant for Mages as we can remove stuns with Blink and Perception isn't as useful for us because we can fish for invis enemies with Arcane Explosion.Gnome- Escape Artist also has some r
+   CN: 人类- 人类对法师来说略显多余，因为我们可以用闪现解除昏迷，而且警觉对我们来说也没那么有用——我们可以用魔爆术来探查隐身敌人。侏儒- 逃脱高手与闪现术也有一定功能重叠，但工程学技能可以在关键时刻避免施法失败。高阶天裔- 滑翔与缓落术同样存在功能重叠，不过它不需要材料。在天裔区域练级时，奔逸之纹非常实用，但在此之后作用就不大了。
+[rogue_assassination / races #0 t=p]
+   EN: The only addition to race options for the Rogue is the new Skyborne, which does seem largely underwhelming at this point.
+   CN: 盗贼可选种族新增了天裔,目前看来这个种族特长相当平庸。
+[rogue_assassination / races #6 t=p]
+   EN: Skyborne - Skyborne can be Horde or Alliance with a specific active racial ability depending on the faction chosen.
+   CN: 天裔——根据所选阵营不同，天裔拥有对应的联盟或部落专属主动种族技能。
+[rogue_combat / races #0 t=p]
+   EN: The only addition to the race list for the Rogue is the new Skyborne, which does seem largely underwhelming at this point.
+   CN: 盗贼的种族列表中唯一新增的是全新的天裔，就目前来看它给人的感觉相当乏善可陈。
+[rogue_combat / races #6 t=p]
+   EN: Skyborne - Skyborne can be Horde or Alliance with a specific active racial ability depending on the faction chosen.
+   CN: 天裔——根据所选阵营，天裔可加入部落或联盟，并拥有特定的主动种族技能。
+[rogue_subtlety / races #0 t=p]
+   EN: The only addition to the race list for the Rogue is the new Skyborne, which does seem largely underwhelming at this point.
+   CN: - 盗贼可选种族名单中唯一的新增内容是新种族天裔，就目前来看，这个种族的表现相当平淡。
+[rogue_subtlety / races #6 t=p]
+   EN: Skyborne - Skyborne can be Horde or Alliance with a specific active racial ability depending on the faction chosen.
+   CN: 天裔 - 天裔可根据所选阵营加入部落或联盟，其主动种族技能也会随之不同。
+[shaman_elemental / races #6 t=p]
+   EN: Orc- Orc's racialincreases Attack and Spell Power by 10% for 15 sec on a 2-minute cooldown while using an Axe and grants 1% Critical Strike Chance thanks to. Blood Fury is exceptionally strong on its own, averaging out
+   CN: 兽人- 兽人的种族特长在使用斧类武器时于 2 分钟冷却时间内使攻击强度与法术强度提高 10%，并因获得 1% 暴击几率。血性狂暴本身极强，平均下来相当于 2 分钟内提升 1.25%。巨魔- 巨魔的种族特长在 3 分钟冷却时间内使攻击与施法速度提高 10%，持续 10 秒。这明显弱于经典旧世时期根据已损失生命值获得更高加成的版本。仅在特定情况下有用。和对于喜欢练级与单刷的玩家来说极为强力。- 牛头人的种族特长现在还使你的命中几
+[shaman_enhancement / races #6 t=p]
+   EN: Horde has a plethora of choices in terms of races that can be a Shaman in Forever. The newest addition is the , having a 5% bonus against Elementals withand 1% free haste from. These racials are not quite as situational 
+   CN: 在《无限》中，部落方可选的萨满种族非常丰富。最新的成员是和带来的 1% 急速加成。这些种族特长没有其他那些那么依赖场景，但收益依然不高。天裔的真正优势在于通过种族特长提供的大量移动能力，使你的（坐骑）移动速度提高10%，持续30秒，并且赋予你10秒免费的缓落术。也有一些改动加入到《无限》中，另外一些种族特长则保持不变。保持不变，而现在还会额外提高1%命中以及5%总生命值。两个全新加入的种族特长是，在移动时缓慢提高你的行走速度，最高达到3
+[shaman_restoration / races #6 t=p]
+   EN: Orc- Orc's racialincreases Attack and Spell Power by 10% for 15 sec on a 2-minute cooldown while using an Axe and grants 1% Critical Strike Chance thanks to. Blood Fury is a strong cooldown which should be used to powe
+   CN: 兽人战士- 兽人的种族特长在使用斧类武器时，可使攻击强度和法术强度提高 10%，持续 15 秒，冷却时间为 2 分钟，并且因. 血性狂怒是一个强力的冷却技能，应在战斗中治疗需求最高的时刻使用，以增强你的治疗量。巨魔- 巨魔的种族特长使攻击速度和施法速度提高10%，持续10秒，冷却时间3分钟。这比经典旧世中的同款技能弱得多，旧版初始为10%提速，生命值极低时最高可达30%。对治疗来说基本没有用处，其他的自我治疗加成也只有些许价值，
+[warrior_arms / races #5 t=p]
+   EN: Skyborne Warrior Skyborne is the new race released with Forever and is available for both Alliance and Horde. Unfortunately, Skyborne racials focus more on improving the leveling experience, making it a bit weaker for pe
+   CN: 天裔战士是随《无限》一同推出的新种族，联盟和部落均可选择。可惜的是，天裔的种族特长更侧重于改善升级体验，对于追求最强终局表现的玩家来说会稍显逊色。天裔可以使用，让他们能够从高处跳下、在空中快速移动，并在空中改变方向。天裔还可以在主题区域使用，在元素汇聚点附近使用可获得持续 15 分钟的 10% 移动速度加成；否则只能持续 30 秒。天裔拥有两项伤害类种族特长和。他们还拥有一个名为的自疗种族特长.
+[warrior_fury / races #0 t=p]
+   EN: On First look, the races for Warrior seem to be quite competitive, with Orc pulling into the lead significantly but closely trailed by Troll, Night Elf, and Undead. However, this could change with future tuning. The new 
+   CN: 乍看之下，战士的可选种族竞争相当激烈，兽人显著领跑，但巨魔、暗夜精灵和亡灵紧随其后。不过，随着未来的数值调整，这一格局可能会发生变化。新种族天裔双方阵营均可选择战士。
+[warrior_fury / races #4 t=p]
+   EN: Night Elf seems like the dominant choice for Alliance Fury Warriors, with a powerful on-use critical strike increase and bonus movement speed. Gnome also seems like a solid option, with its new racial able to be combined
+   CN: 对联盟的狂怒战士来说，暗夜精灵似乎是首选，其种族特长提供强力的主动暴击提升和额外移动速度。侏儒看起来也是个稳妥的选择，其新种族特长可以与我们的爆发技能搭配，打出高额的伤害爆发，还附带一些脱离控制的实用功能。人类和天裔或许各有小众用途，但似乎弱于其他选项。矮人则看起来完全不占优势。
+[warrior_fury / races #6 t=p]
+   EN: Orc seems to be the best overall race for Fury Warrior, possessing two powerful damage increase racials, as well as a stun duration reduction and a powerful magical defense. Both Troll and Undead also seem to be quite st
+   CN: 兽人似乎是狂怒战士整体最强的种族，拥有两种强大的伤害增益种族特长，还有昏迷时间缩短和强力的魔法防御。巨魔和亡灵同样相当强力，他们都拥有强力的种族特长，可能不如兽人那样全面，但能在其他方面有所补足。天裔在以急速为核心价值的首领战中可能会有用武之地，取决于急速的价值。牛头人的命中加成相对较弱，其昏迷技能在PvP中可能有用武之地。
+
+########## ① CN 侧 Skyborne 各写法计数 ##########
+  天裔           x37
+  高阶天裔         x5
+
+########## ② CN 含拉丁字母（去 |sID|/白名单后仍有 >=2 连续字母）##########
+命中元素数 = 115
+[druid_balance / races #1 t=races]  latin=['alliance tick', 'horde tick', 'both star']
+   EN: Night Elf alliance tick Tauren horde tick
+   CN: 暗夜精灵 alliance tick 牛头人 horde tick 天裔 both star
+[druid_feral / races #1 t=races]  latin=['alliance tick', 'horde tick']
+   EN: Night Elf alliance tick Tauren horde tick
+   CN: 暗夜精灵 alliance tick 牛头人 horde tick
+[druid_feral / races #5 t=p]  latin=['DPS']
+   EN: Skyborne Druids are available to both Alliance and Horde factions. Both factions will have a 1% haste buff fromand be able to avoid fall damage mechanics with. Alliance and Horde differ on their uniqu
+   CN: 天裔德鲁伊对联盟和部落双方阵营均开放。两个阵营都能获得1%急速增益，来源是，并可通过规避坠落伤害机制。联盟和部落各有其独特的主动技能和，但这些主动技能对野性德鲁伊的DPS而言并没有实质作用，因为我们并不在意法力值，而且的移速加成无法与叠加。1%急速加成虽然不错，但不会影响我们的能量回复，实际上只能略微提升自动攻击伤害，并使触发频率略有提高。
+[druid_feral / races #9 t=p]  latin=['DPS']
+   EN: Taurens get some interesting buffs. The buff toto provide 1% Hit Chance is the only damage-increasing ability for Feral Druid DPS from Tauren; it affects all our abilities and melee hits, making it ve
+   CN: 牛头人获得了一些有趣的增益。对的加成可为野性德鲁伊提供1%的命中加成，这是牛头人唯一能提升DPS的种族特长；它影响我们的所有技能和近战攻击，因此只要命中不会因此超出命中上限，就是非常强力的天赋。也是个强力的爆发技能，现在可以在所有形态下使用，但由于怪物普遍具有昏迷免疫，团战中常常派不上用场。新的被动效果升级初期可能有用，但在满级时对野性德鲁伊毫无用处，因为无法叠加时不再为你提供固定数量的能量。
+[druid_restoration / changes #2 t=tb]  latin=['DPS']
+   EN: Spell Description The famous multi-target HoT is back with a new twist. Instead of spreading to nearby targets, it is now locked to the target's party.now more closely matchesfrom the Priest class. Du
+   CN: 这个著名的多目标周期性治疗技能回归后有了新机制：不再向周围目标扩散，而是锁定作用于目标的小队成员。现在更接近牧师职业的。 地下城治疗者们欢呼雀跃。我们将在《魔兽世界：无限》中获得一个战斗外复活技能，帮助我们在治疗之旅中更顺畅。虽然有些人觉得单靠一个加上30分钟冷却的紧张感为小队内容提供了趣味,但我们其余的人会乐于享受这样的安心感——手快的DPS不再让我们的冒险陷入险境。 将我们的、和的公共冷却时间
+[druid_restoration / viability #0 t=p]  latin=['PvE', 'HoT']
+   EN: Restoration Druid will continue to be a strong healing class in PvE content. From what has been released, we see incredible efficiency, strong single-target throughput, high raid-wide HoT healing capa
+   CN: 恢复德鲁伊在PvE内容中依然是强力的治疗职业。从目前已公开的信息来看，我们拥有极高的效率、强大的单体治疗量、出色的全团HoT治疗覆盖，以及经典和帮助团队冲过终点。
+[druid_restoration / viability #1 t=p]  latin=['HoT', 'HoT']
+   EN: Where Restoration Druids sit in rankings for meta raid compositions will depend on how the other classes are balanced and raid fights are designed. HoT healing is the first to struggle in low raid dam
+   CN: 恢复德鲁伊在副本主流配置中的排名位置，将取决于其他职业的平衡以及首领战的设计。HoT治疗在团队承伤较低的场合会首先感到吃力，需要有压倒性的伤害让HoT自然跳动，而不被其他职业的直接治疗抢走生效。
+[druid_restoration / sw #1 t=tb]  latin=['HoT']
+   EN: Strengths Weaknesses Single-target Throughput,, andare all strong single-target heals.Raid-wide HoTs,, andon one second cooldowns means lots of healing coverage in raids.Mana EfficiencyBuffs t
+   CN: 单体治疗量、和都是强力的单体治疗技能。 全团HoT、和仅一秒的冷却时间意味着副本中可提供大量治疗覆盖。 法力值效率对……的强化、和意味着强力的战斗中回复能力，可以应对长时间的战斗。 和团队副本中驱散覆盖的关键组成部分。 防御性实用技能和提供强力的实用性，在逆境中维持团队稳定。 无法驱散魔法/疾病少数缺乏此类实用技能的职业之一。 操作难度较高通过周期性治疗进行恢复需要时间
+[druid_restoration / beginner #0 t=p]  latin=['HoT']
+   EN: Restoration Druid is not the most straightforward healing spec for new players. The spec shines in providing efficient healing through HoTs, which need to be applied proactively to handle healing situ
+   CN: 恢复德鲁伊并不是最适合新手治疗的专精。这个专精的亮点在于通过周期性治疗（HoT）提供高效治疗，需要提前预读来应对治疗时机。这要求你对每个团本战斗可能造成的伤害有所了解，并在没有明显伤害时也能凭直觉选择需要预读HoT的目标。
+[druid_restoration / beginner #1 t=p]  latin=['HoT']
+   EN: New players would be more comfortable in a reactive healing playstyle, where you see damage being taken and push a button to heal it up. Restoration Druids do have these buttons to push as well, but w
+   CN: 新手玩家会更习惯反应式的治疗风格——看到受到伤害再按技能治疗。恢复德鲁伊当然也有这类即时治疗技能，但恢复德鲁伊的真正魅力在于通过熟练的预读HoT，同时维持大团血线。
+[druid_restoration / beginner #2 t=p]  latin=['HoT']
+   EN: That said, Restoration Druid is one of the most versatile healers and one of the most fun healing playstyles. The class is worth the learning curve of figuring out how to heal with HoTs effectively.
+   CN: 话虽如此，恢复德鲁伊是最全能的、也是最有趣的治疗专精之一。为了掌握HoT治疗所付出的学习成本是完全值得的。
+[druid_restoration / races #1 t=races]  latin=['alliance tick', 'horde tick']
+   EN: Night Elf alliance tick Tauren horde tick
+   CN: 暗夜精灵 alliance tick 牛头人 horde tick
+[druid_restoration / prof #6 t=p]  latin=['PvE']
+   EN: Gathering professions (//) do not have a strong PvE impact, but do have a strong wallet impact and can help you afford various raid consumes and expenses that are difficult for a healer to afford. or 
+   CN: 采集类专业（//）对PvE影响不大，但对钱包的影响很大，可以帮助你负担各种团队副本消耗品和开销，这对治疗者来说往往难以承受。或是不错的选择，因为它们分别提供魔抗和生命值加成，以提升生存能力。
+[hunter_beast-mastery / sw #0 t=tb]  latin=['PvE', 'PvP']
+   EN: Strengths Weaknesses High burst- Beast Mastery Hunters are expected to have high burst during theirwindow.Strong kiting power- Both in PvE scenarios and PvP scenarios, you can easily kite mobs or
+   CN: 高爆发- 兽王猎人在其爆发窗口期间应当具备较高的爆发伤害。 强大的风筝能力- 无论是在 PvE 还是 PvP 场景中,只要目标没有远程控制或突进技能,你都可以轻松风筝小怪或玩家。 拥有功能的宠物随着新宠物技能的加入，让所有宠物都有机会大放异彩，猎人能够根据当时的需求灵活调整。在PvE中很强，在PvP中能压制治疗，在盗贼偷袭你时能反制他们，等等。 无团队辅助能力- 猎人目前无法为小队
+[hunter_beast-mastery / beginner #0 t=p]  latin=['PvP', 'PvP']
+   EN: Hunters are easy to pick up for any player, and out of the three specs in Forever, Beast Mastery will most likely be the easiest to play. This does not mean Beast Mastery doesn't require some thought 
+   CN: 猎人上手简单，适合任何玩家，而在《无限》的三个专精中，兽王大概率是最容易上手的。但这并不意味着兽王完全不需要思考。正确地保持两层持续刷新且不过早重新施加，是成为优秀兽王猎人的关键。猎人的一大乐趣在于其极高的操作上限，尤其是在单人内容和PvP中。如果你足够熟练地掌握穿插近战（即进出近战范围使用近战技能的操作），你会发现总伤害有所提升。对陷阱和钉刺的良好控制会让你在PvP中很强。最后，良好的宠物和环境
+[hunter_beast-mastery / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick', 'horde tick']
+   EN: Dwarf alliance tick Night Elf alliance tick Orc horde tick Tauren horde tick Troll horde tick
+   CN: 矮人 alliance tick 暗夜精灵 alliance tick 兽人 horde tick 牛头人 horde tick 巨魔 horde tick
+[hunter_beast-mastery / races #7 t=p]  latin=['PvE', 'PvP']
+   EN: Currently, the only benefit a Dwarf has in PvE situations is, and that is when you are fighting a Beast.is a good racial ability for PvP, though, so if you are interested in being a menace to Rogues, 
+   CN: 目前，矮人在PvE场合唯一的收益是，而且仅在你与野兽作战时才有效。则是相当不错的PvP种族特长，所以如果你想成为盗贼的克星，不妨选择矮人。
+[hunter_beast-mastery / races #9 t=p]  latin=['PvP', 'PvP']
+   EN: Humans currently have little to provide to Ranged Hunters, due toonly working on your melee attacks and abilities. Pets do still get increased crit though, as they copy the Hunter's Melee and Spell cr
+   CN: 目前，人类对远程猎人几乎没有助益，因为只对你的近战攻击和技能生效。不过宠物依然能获得暴击提升，因为它们会复制猎人的近战和法术暴击几率。这也确实意味着人类能为使用剑的生存猎人提供不错的增益。而在PvP中，人类则拥有一个强力技能：其作用基本上和大家熟悉的PvP饰品相同。
+[hunter_beast-mastery / races #12 t=p]  latin=['PvE', 'PvP', 'PvP']
+   EN: Orcs are probably by far the best Horde race in both PvE and PvP.provides a strong boost in Attack Power, which in turn also slightly buffs your pet. It is instant cast now and also only has a 2-minut
+   CN: 兽人大概无论PvE还是PvP都远是部落最好的种族。提供强力的攻击强度加成，同时也能小幅强化你的宠物。它现在是瞬发，并且冷却时间只有2分钟，而大多数其他种族特长的冷却时间都是3分钟。生存猎人可以额外获得装备斧时的加成。在PvP中，你还有来降低昏迷的效果，以及来反制任何施法者（尤其是术士）。
+[hunter_beast-mastery / races #14 t=p]  latin=['PvE']
+   EN: Just like Dwarves, Trolls gain extra damage to Beasts through their racial passive. Trolls do have a very strong active ability for PvE, though, in the form of. This ability does not scale off missing
+   CN: 和矮人一样，巨魔通过种族被动获得对野兽的额外伤害。不过巨魔确实有一个非常强力的PvE主动技能，那就是。该技能不再根据已损失生命值提升效果，因此比经典旧世时更弱，但仍然提供相当不错的攻击速度加成。
+[hunter_marksmanship / viability #1 t=p]  latin=['PvP', 'PvP']
+   EN: In PvP, it also remains questionable if Marksmanship Hunter would prove to be any good. The removal of the cast time onis very powerful in a PvP scenario, but it is very hard to get anyorcast off. If 
+   CN: 在PvP中，射击猎人是否能够表现出色也仍然值得怀疑。移除了的施法时间在PvP场景中非常强大，但很难施放任何或。不过，如果无人关注且被放任不管，射击猎人将极其致命。
+[hunter_marksmanship / sw #0 t=tb]  latin=['PvE', 'PvP']
+   EN: Strengths Weaknesses High burst- Marksmanship Hunters are expected to have high burst through their long cast-time abilities. Especially with.Strong kiting power- Both in PvE scenarios and PvP sc
+   CN: 高爆发- 射击猎人在长施法时间技能下能打出高爆发。特别是配合。 强大的风筝能力- 无论是在PvE还是PvP场景中，只要目标没有远程控制或突进技能，你就可以轻松地风筝怪物或玩家。 没有团队增益- 缺少上的近战攻击强度加成，以及没有宠物，会让你不受欢迎，除非你能提供足够高的伤害。 近战盲区- 任何进入你8码范围内的怪物或玩家都无法被你的远程伤害技能命中。作为射击猎人，这一点尤其致命。
+[hunter_marksmanship / beginner #0 t=p]  latin=['PvP', 'PvP']
+   EN: Hunters are easy to pick up for any player, but out of the three specs in Forever, Marksmanship will most likely be the hardest to play. This does not mean Marksmanship is a hard spec at all, especial
+   CN: 猎人是任何玩家都能轻松上手的职业，但在《无限》中，射击很可能是三个专精中最难操作的。这并不意味着射击是一个非常难的专精，至少在团队内容中不是。猎人的乐趣在于上限很高，尤其是在单人和PvP中。如果你足够熟练地掌握走位（在近战范围内来回移动以使用近战技能），你会发现自己的总伤害会提高。良好的陷阱和钉刺控制能力会让你在PvP中更加强大。最后，良好的宠物和环境控制能力让你在单人内容中非常强力，并允许你完成
+[hunter_marksmanship / systems #4 t=p]  latin=['PvE', 'PvP']
+   EN: Pets have received some notable changes in Forever. All pet families now have at least one unique ability, some of which are very useful in PvE scenarios, others which are great for PvP. Hunter pets w
+   CN: 宠物在无限服中经历了一些显著改动。现在所有宠物种类都至少拥有一个独特技能，有些在PvE场合非常实用，有些则在PvP中表现出色。猎人宠物现在也会随我们的属性成长，具体如下：
+[hunter_marksmanship / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick', 'horde tick']
+   EN: Dwarf alliance tick Night Elf alliance tick Orc horde tick Tauren horde tick Troll horde tick
+   CN: 矮人 alliance tick 暗夜精灵 alliance tick 兽人 horde tick 牛头人 horde tick 巨魔 horde tick
+[hunter_marksmanship / races #3 t=p]  latin=['DPS']
+   EN: Skyborne If there is any Elemental present, Skyborne will for sure take the top spot with theirracial passive. While Blizzard has attempted to give all races competitive racial abilities, they haven't
+   CN: 天裔只要有元素存在，天裔必定凭借其种族被动占据榜首。虽然暴雪曾试图让所有种族都拥有具竞争力的种族特长，但他们并未摆脱针对特定怪物类型的那些。另一个能显著提升你DPS的种族被动是。急速在经典旧世中尤为难得，所以这可能比你想象的更强。
+[hunter_marksmanship / races #7 t=p]  latin=['PvE', 'PvP']
+   EN: Currently, the only benefit a Dwarf has in PvE situations is, and that is when you are fighting a Beast.is a good racial ability for PvP, though, so if you are interested in being a menace to Rogues, 
+   CN: 目前，矮人在PvE场景下唯一的优势在于，且仅在对抗野兽时有效果。是一个不错的PvP种族技能，所以如果你想成为盗贼的克星，可以考虑选择矮人。
+[hunter_marksmanship / races #9 t=p]  latin=['PvP', 'PvP']
+   EN: Humans currently have little to provide to Ranged Hunters, due toonly working on your melee attacks and abilities. Pets do still get increased crit though, as they copy the Hunter's Melee and Spell cr
+   CN: 人类当前对远程猎人几乎没有增益，因为只作用于你的近战攻击和技能。不过宠物仍会获得暴击加成，因为它们继承猎人的近战和法术暴击率。这也意味着人类能为使用剑的生存猎人提供不错的增益。而在PvP中，人类则拥有一个强力技能，其效果与大家熟悉的PvP饰品基本相同。
+[hunter_marksmanship / races #12 t=p]  latin=['PVP', 'PvE', 'PvP']
+   EN: Orcs are probably by far the best Horde race in both PvE and PvP.provides a strong boost in Attack Power, which in turn also slightly buffs your pet. It is instant cast now and also only has a 2-minut
+   CN: 兽人可能是无论PVP（还是PvE）中最好的部落种族。提供强力的攻击强度加成，这反过来也会略微增强你的宠物。它现在是瞬发技能，冷却时间只有2分钟，而大多数其他种族特长的冷却时间是3分钟。生存猎人会获得额外的加成，，当装备斧类武器时。并且在PvP中，你拥有来降低昏迷效果，以及来对抗任何施法者（特别是术士）。
+[hunter_marksmanship / races #14 t=p]  latin=['PvE']
+   EN: Just like Dwarves, Trolls gain extra damage to Beasts through their racial passive. Trolls do have a very strong active ability for PvE, though, in the form of. This ability does not scale off missing
+   CN: 就像矮人一样，巨魔通过其种族被动技能对野兽造成额外伤害，。不过，巨魔在PvE中确实拥有一个非常强力的主动技能，形式为。该技能不再根据缺失的生命值缩放，因此在经典版本中效果较弱，但仍能提供可观的攻击速度加成。
+[hunter_survival / viability #1 t=p]  latin=['PvP', 'PvP']
+   EN: In PvP, Survival Hunter could have some potential as long as our pets don't fall over to the slightest bit of damage. A couple of pet families did get some strong PvP abilities.is a very good addition
+   CN: 在PvP中，生存猎或许有一定的潜力，只要我们的宠物不会一碰就倒。有几个宠物家族获得了一些强力的PvP技能。是一个对技能组合很好的补充，尤其是它的移速加成效果，而且一些以陷阱为核心的天命也变得更强了。
+[hunter_survival / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick', 'horde tick']
+   EN: Dwarf alliance tick Night Elf alliance tick Orc horde tick Tauren horde tick Troll horde tick
+   CN: 矮人 alliance tick 暗夜精灵 alliance tick 兽人 horde tick 牛头人 horde tick 巨魔 horde tick
+[hunter_survival / races #7 t=p]  latin=['PvP', 'PvP']
+   EN: Humans provide a decent buff to sword-wielding Survival Hunters and, in turn, also buff your pet with increased critical strike chance. In PvP, Humans gain a strong ability in, which basically works t
+   CN: 人类为使用剑的生存猎人提供了不错的增益，同时也会提升你的宠物暴击率。在PvP中，人类获得了强力技能，其效果基本与大家熟悉的PvP饰品相同。
+[hunter_survival / races #9 t=p]  latin=['PvE', 'PvP']
+   EN: Currently, the only benefit a Dwarf has in PvE situations is, and that is when you are fighting a Beast.is a good racial ability for PvP, though, so if you are interested in being a menace to Rogues, 
+   CN: 目前，矮人在PvE场景中唯一的好处就是，而且这仅在面对野兽类型敌人时才会生效。是一个不错的PvP种族技能,所以如果你想成为盗贼的克星,可以选择矮人。
+[hunter_survival / races #12 t=p]  latin=['PvE', 'PvP', 'PvP']
+   EN: Orcs are probably by far the best Horde race in both PvE and PvP.provides a strong boost in Attack Power, which in turn also slightly buffs your pet. It is instant cast now and also only has a 2-minut
+   CN: 兽人可能是部落在PvE和PvP中最强的种族。能提供强力的攻击强度加成,这也会略微增强你的宠物。它现在是瞬发技能,冷却时间也仅为2分钟,而大多数其他种族技能的冷却时间为3分钟。生存猎人在使用时还能获得斧专精加成。而在PvP中,你拥有以降低昏迷效果来应对那些施法者(尤其是术士)。
+[hunter_survival / races #14 t=p]  latin=['PvE']
+   EN: Just like Dwarves, Trolls gain extra damage to Beasts through their racial passive. Trolls do have a very strong active ability for PvE, though, in the form of. This ability does not scale off missing
+   CN: 和矮人一样,巨魔通过种族被动技能对野兽造成额外伤害。不过巨魔在PvE中拥有一个非常强力的主动技能,也就是。该技能不再根据已损失生命值提升威力,比经典旧世版本更弱,但仍然能提供不错的攻击速度加成。
+[mage_arcane / beginner #0 t=p]  latin=['Boss']
+   EN: Akin to the other Mage specializations in Classic WoW, this "new" specialization in Forever feels very simple initially; whether or not it gets more complicated, it's hard to know - it could be as sim
+   CN: 与经典怀旧服中的其他法师专精类似，《无限》里的这个所谓新专精起初玩起来非常简单；至于之后会不会变得更复杂，目前还很难说——可能简单到只需用奥术冲击叠到4层，再用强化后的奥术飞弹清掉层数，也可能需要在触发运气不佳时中间插入某个法术来移除层数。此外，它很可能还需要根据Boss击杀时间调整输出循环，改变每次愿意叠加的奥术冲击层数，以最大化法力值的利用，让你最关键的法术保持更高的整体覆盖率。
+[mage_arcane / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Gnome alliance tick Undead horde tick Troll horde tick
+   CN: 人类 alliance tick 侏儒 alliance tick 亡灵 horde tick 巨魔 horde tick
+[mage_arcane / races #8 t=p]  latin=['PvP']
+   EN: is a strong PvP racial that allows a Mage to break stun effects besides just having to Blink.now benefits mages by increasing our Crit chance by 2% if we have a sword equipped. Spirit is pretty releva
+   CN: 是一个强力的PvP种族特长，让法师除了闪现术之外还能解除昏迷效果。现在也能让法师受益，装备剑类武器时暴击几率提高2%。精神无论是练级阶段，还是随着游戏推进获得法师护甲和奥术冥想天赋之后，都相当重要；即使在战斗和施法状态下，它也能提高你的法力值回复速度。能侦测潜行。比较看情况，但有时能帮你赢下决斗。
+[mage_arcane / races #16 t=p]  latin=['PvP']
+   EN: is also new and gives the caster Spell Power.reduces the duration of stuns. Rogues hate it.is another great PvP on-use cooldown that removes curses and banes, which is pretty irrelevant for mages sinc
+   CN: 也是新增的，为施法者提供法术强度。缩短昏迷效果的持续时间。盗贼恨死它了。另一项优秀的PvP主动冷却类饰品，能移除诅咒和巫毒，但对法师来说基本没用，因为我们自己有相应技能，但它还能在接下来的8秒内降低受到的魔法伤害。毫无用处，因为很遗憾，法师无法使用斧类武器。
+[mage_arcane / races #22 t=p]  latin=['PvP', 'PvP']
+   EN: now restores mana as well as health, improving its already great downtime reduction while questing.doesn't really add value. However, the strongest racial for Mage PvP is usually, which lets you break
+   CN: 现在除了生命值外还能回复法力值，进一步改善了任务过程中的续航体验。带来的提升相当有限。然而，法师PvP中最强的种族特长通常是，它能解除或免疫魅惑、恐惧和睡眠效果。这相当于PvP中多了一个免费的饰品位。随等级恢复，基于耐力值，会随装备成长。对 PvE 中的输出职业，以及 PvP 中那些"一点血量都关乎生死"的时刻都很有影响。
+[mage_arcane / prof #1 t=tb]  latin=['TBC']
+   EN: Profession What it gives you Cloth embroidery - Spell Power, Attack Power, or Stamina, 5 tiers. Extra cloth off humanoids. Ring enchants - Spell Power, Attack Power, or Stamina, 5 tiers. No stat b
+   CN: 布甲刺绣——法术强度、攻击强度或耐力，5 个等级。对人型生物额外掉落布料。 戒指附魔——法术强度、攻击强度或耐力，5 个等级。 无属性加成，但拥有各种小装置、工程道具和炸弹。 炼金术：持续时间更长、效果更强的药剂和合剂。可升级的术士之石。 天生特质：对所有魔法系别拥有抗性，随技能等级提升。 对野兽与龙类伤害+5%。 总生命值+5%。 护腕附魔（法伤/攻击/耐力）、坐骑鞍具最多+5%移动速度、各类背
+[mage_fire / beginner #2 t=p]  latin=['Beta']
+   EN: We don't yet know what impact Frostfire Bolt will have within the spec since the interactions of the spell or its potential damage are unknown due to not being available in the Beta.
+   CN: 目前还无法得知霜火箭在该天赋专精中的影响，因为该法术的交互效果及潜在伤害尚未明确，Beta测试中也暂不可用。
+[mage_fire / beginner #6 t=p]  latin=['AoE', 'AoE']
+   EN: While doing dungeons, the AoE feels great as usual, especially now that paladin tanks are an option, allowing you to AoE in dungeons starting from very low-level dungeons. It did require some adaptati
+   CN: 在副本中，群体伤害一如既往地出色，特别是现在还能用圣骑士作为坦克，让你在很低的等级副本中就能开始使用AoE技能。这需要一定的适应，才能保证在副本中法力值始终充裕；具体做法是：预读炎爆术后频繁使用法术技能，并利用前一个怪物死亡时触发的觉醒之火效果，把法力值留给更值得的AoE场合——先用火焰冲击配合冲击再施法术。
+[mage_fire / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Gnome alliance tick Undead horde tick Troll horde tick
+   CN: 人类 alliance tick 侏儒 alliance tick 亡灵 horde tick 巨魔 horde tick
+[mage_fire / races #16 t=p]  latin=['PvP']
+   EN: is also new and gives the caster Spell Power.reduces the duration of stuns. Rogues hate it.is another great PvP on-use cooldown that removes curses and banes, which is pretty irrelevant for mages sinc
+   CN: 也是新增的，可以为施法者提供法术强度。减少昏迷效果的持续时间。盗贼对此很头疼。是另一个强大的PvP主动爆发技能，可以解除诅咒和有害效果，对法师来说基本没什么用，因为我们自己有，不过它还能在接下来的8秒内减少受到的魔法伤害。毫无用处，因为我们很遗憾不能用斧头。
+[mage_fire / races #22 t=p]  latin=['PvP', 'PvP', 'PvE', 'DPS', 'PvP']
+   EN: now restores mana as well as health, improving its already great downtime reduction while questing.doesn't really add value. However, the strongest racial for Mage PvP is usually, which lets you break
+   CN: 现在恢复法力的同时也恢复生命值，进一步提升了它在任务时本就不错的减少坐地板时间的能力。其实没多大价值。不过法师PvP最强的种族特长通常是，它能解除或免疫魅惑、恐惧和睡眠效果。这在PvP中相当于白送一个饰品栏位。随耐力提升，因此会随装备成长。在PvE中对DPS有影响，在PvP中则在那些“差1点血就决定生死”的时刻发挥作用。
+[mage_fire / prof #0 t=p]  latin=['DPS', 'PvP', 'Beta', 'WotLK', 'TBC', 'WotLK']
+   EN: The professions in Forever Beta are currently all buffed quite a bit, making them quite a bit closer to each other - even professions that in the past did nothing for mage are now somewhat relevant. T
+   CN: 无限测试服中的专业目前都被大幅增强，使它们之间的差距缩小了不少——就连过去对法师毫无帮助的专业现在也有了一定相关性。这并不意味着它们都一样强，但考虑到未来的法术/互动/成长，甚至尚未完成的平衡性调整，现在判断哪个表现最好还为时过早。不过这并不妨碍我们对火焰法师可能有用的选择做出有根据的推测（同时清楚未来可能变化）：工程学目前相当有趣，因为它现在拥有像硝基推进器这样的工匠装置，仅凭这些就已经让
+[mage_fire / prof #1 t=tb]  latin=['TBC']
+   EN: Profession What it gives you Cloth embroidery - Spell Power, Attack Power, or Stamina, 5 tiers. Extra cloth off humanoids. Ring enchants - Spell Power, Attack Power, or Stamina, 5 tiers. No stat b
+   CN: 布料刺绣——法术强度、攻击强度或耐力，共5个等级。可从人形生物身上获取额外布料。 戒指附魔 - 法术强度、攻击强度或耐力，共5个等级。 没有属性加成，但有各种装置、工匠和炸弹。 药剂学：药剂和混合药剂的持续时间更长、效果更强。点金石可以升级。 天生特质：抵抗所有魔法系，强度随技能提升。 对野兽和龙类敌人造成的伤害提高5%。 +5%总生命值。 护腕护甲片（法术强度/攻击强度/耐力）、最高提供+5%坐
+[mage_frost / changes #1 t=tb]  latin=['PvE']
+   EN: Spell Description Ice Lance Deals Frost damage to an enemy target. Deals 300% increased damage to Frozen targets. This spell has been ported from another timeline of WoW and is a welcome addition to o
+   CN: 冰枪术 对一名敌方目标造成冰霜伤害。对被冻结的目标造成的伤害提高300%。这个法术是从魔兽世界的另一条时间线移植而来的，是对我们技能组的可喜补充，它很可能是你输出循环中的主要反应点，用来利用冻结效果及其收益。 寒冰指 使你的冰冷效果有15%的几率赋予你寒冰指效果，将你的下1次施法视同目标已被冻结。持续15秒。这将是你PvE中的主要触发来源，使你能够使用冰枪术，或对那些本无法被冻结的敌人（大多数首领
+[mage_frost / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Gnome alliance tick Undead horde tick Troll horde tick
+   CN: 人类 alliance tick 侏儒 alliance tick 亡灵 horde tick 巨魔 horde tick
+[paladin_holy / races #1 t=races]  latin=['alliance tick', 'alliance tick']
+   EN: Human alliance tick Dwarf alliance tick
+   CN: 人类 alliance tick 矮人 alliance tick
+[paladin_protection / changes #3 t=p]  latin=['AOE', 'AOE']
+   EN: While there are a plethora of changes to the Protection Paladin, one important spell to highlight is the change to. This iconic spell has been the reason why Protection Paladins have been such potent 
+   CN: 虽然防护圣骑士的改动很多，但有一个重要的技能需要特别说明，那就是的改动。这个标志性技能是防护圣骑士成为强力AOE坦克的原因所在，虽然现在依然如此，但效果会大打折扣。该技能现在对效果范围内的所有目标只造成极低的伤害，但有一个加成效果，会提高对进入区域的前4个目标的伤害。这将使该技能更接近防护战士和野性德鲁伊那种目标数限制在3-4的AOE。
+[paladin_protection / races #1 t=races]  latin=['alliance tick', 'alliance tick']
+   EN: Human alliance tick Dwarf alliance tick
+   CN: 人类 alliance tick 矮人 alliance tick
+[paladin_retribution / viability #0 t=p]  latin=['PvE']
+   EN: One goal for Forever is to make every class and specialization viable. While we currently do not have that much information on what sort of viability Retribution will have at max level, we can make so
+   CN: 《无限》的目标之一是让每个职业和专精都有一席之地。虽然目前关于惩戒在满级时的表现我们掌握的信息不多，但可以做出一些合理推测。与经典怀旧服的其他许多分支类似，乍看之下，惩戒在PvE内容中将拥有中等的伤害输出能力，同时为团队和队伍成员提供强大的支援与功能增益，并且可以轻松以副专精或在紧急情况下担任坦克或治疗。
+[paladin_retribution / viability #1 t=p]  latin=['PvP']
+   EN: For PvP content, it seems likely that Retribution will continue to be a front-loaded damage-dealer with moderate mobility and strong support & utility buffs, but a lack of major damage-dealing cooldow
+   CN: 在PvP内容中，惩戒很可能延续其爆发前置的输出定位，拥有中等的机动性和强大的支援与功能增益，但缺乏主要的伤害爆发技能。
+[paladin_retribution / sw #0 t=p]  latin=['DPS']
+   EN: The main role of the Retribution Paladin is a damage-dealer that can do moderate DPS while supporting the raid with blessings, auras, and utility spells - and our strengths & weaknesses are going to r
+   CN: 惩戒圣骑士的主要定位是一名输出者，能在打出中等DPS的同时，用祝福、光环和功能法术支援团队——我们的优劣势也将围绕这一主要定位展开。遗憾的是，我们的主要职责并不是登顶伤害统计，因为我们缺乏能实现这一点的强力伤害爆发技能。
+[paladin_retribution / races #1 t=races]  latin=['alliance tick', 'alliance tick']
+   EN: Human alliance tick Dwarf alliance tick
+   CN: 人类 alliance tick 矮人 alliance tick
+[priest_discipline / races #1 t=races]  latin=['alliance tick', 'horde tick']
+   EN: Night Elf alliance tick Tauren horde tick
+   CN: 暗夜精灵 alliance tick 牛头人 horde tick
+[priest_discipline / races #2 t=ul]  latin=['PvP', 'PvE']
+   EN: is a big mana saver, and a reasonable throughput cooldown on a not-unreasonable cooldown. is a life-saver on an admittedly long cooldown. For a racial ability, it is very strong. , andround out the ra
+   CN: 是一个非常节省法力值的选择,并且在合理的冷却时间内提供了不错的伤害爆发。 是救命神技,尽管冷却时间确实较长。作为种族特长来说,它非常强大。 和完善了种族技能组合。前者是通用的法力值提升手段,后者在PvP中表现卓越,在PvE中也偶有用武之地。
+[priest_discipline / races #4 t=p]  latin=['Beta']
+   EN: While it is still early to say which Race options are the best for Discipline Priest for sure, here are some of the frontrunners at this stage in Beta:
+   CN: 虽然现在下定论戒律牧师最佳种族选项还为时过早,但以下是Beta测试阶段的几个热门候选:
+[priest_discipline / prof #1 t=h4]  latin=['false']
+   EN: false
+   CN: false
+[priest_discipline / prof #4 t=h4]  latin=['false']
+   EN: false
+   CN: false
+[priest_holy / viability #0 t=p]  latin=['PvE']
+   EN: Holy Priest remains one of the strongest PvE healers available. The new Holy talents add coverage for split damage and a Mana refund for swapping heals. The spec is still cloth, still mostly stationar
+   CN: 神圣牧师依然是PvE中最强的治疗者之一。新的神圣天赋补充了对分散伤害的应对，以及切换治疗技能时的法力值返还。该专精依旧是布甲、依旧以站桩为主，依旧依赖法力值。
+[priest_holy / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'alliance tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Dwarf alliance tick Night Elf alliance tick Undead horde tick Troll horde tick
+   CN: 人类 alliance tick 矮人 alliance tick 暗夜精灵 alliance tick 亡灵 horde tick 巨魔 horde tick
+[priest_holy / races #3 t=p]  latin=['PvP', 'PvP']
+   EN: HordeHorde players have the option of choosing between Undead and Troll. While both options have their strengths,Undeadhas an excellent combination of baseline and Priest Racial abilities that pro
+   CN: 部落部落玩家可以选择亡灵或巨魔。两者各有优势，亡灵的基础属性与牧师种族特长组合非常出色，在升级、团本小队玩法中都能提供价值，以及PvP内容中同样适用。是升级过程中（尤其是早期）维持生命值与法力值的优秀能力，而法术伤害则能提供稳定的被动伤害与生存能力。是一项有趣且独特的法力值回复手段，而仍然是PvP战斗中的常备技能，尽管它已不再提供免疫效果。
+[priest_shadow / changes #0 t=p]  latin=['PvP']
+   EN: One of the most ambitious stated goals of the World of Warcraft: Forever development team was to provide new tools to elevate traditionally underpowered specializations. With the changes coming in For
+   CN: 《魔兽世界：无限》开发团队最雄心勃勃的目标之一，就是为传统的弱势专精提供新的增强手段。从无限版本的改动中可以看出，暗影牧师正是在这一理念下迎来重大变革的专精之一。在经典版本中，尽管暗影牧师凭借单挑能力在PvP玩家中颇受欢迎，但在团队副本中却一直是最弱的输出职业之一，通常只是为了给术士提供增益才会带一位。
+[priest_shadow / changes #1 t=p]  latin=['PvE']
+   EN: While much of the game still has yet to be discovered, it is apparent that the development team has added a variety of changes directly aimed at improving Shadow Priest's viability as a damage dealer 
+   CN: 尽管游戏中仍有大量内容有待探索,但开发团队显然已经加入了一系列改动,直接着眼于提升暗影牧师在终极PvE里作为伤害输出者的可用性,同时保留了暗影的核心定位。
+[priest_shadow / changes #5 t=tb]  latin=['PvE']
+   EN: Spell Change Devouring Plague is now a baseline spell for Priest on a shorter one-minute cooldown. Previously, Devouring Plague was a three-minute cooldown available only to Undead Priests. Shadowform
+   CN: 吞噬瘟疫现在是牧师的基础法术，冷却时间缩短至1分钟。此前，吞噬瘟疫只有亡灵牧师才能使用，冷却时间为3分钟。 暗影形态基本上被彻底重做了：暗影形态现在仅提高10%的暗影伤害（原为15%），但同时使暗影法术的法力值消耗降低50%，并将暗影法术的暴击伤害加成提高100%。此外，只有治疗法术无法在暗影形态下施放，也就是说你可以在保持暗影形态的同时施放神圣系的伤害和辅助法术。受到物理伤害降低15%的效果保持
+[priest_shadow / viability #0 t=p]  latin=['PvE']
+   EN: While it's clear that the Forever development team has made changes to Shadow Priest aimed directly at improving its endgame PvE viability, it remains to be seen exactly how that will shake out in pra
+   CN: 虽然无限开发团队对暗影牧师所做的改动显然是为了直接改善其在游戏末期PvE中的表现，但其实际效果仍有待观察。
+[priest_shadow / sw #1 t=tb]  latin=['PvP', 'PvP']
+   EN: Strengths Weaknesses Strong solo PvP presence- Shadow Priest has a toolkit particularly well-suited for one-on-one PvP and this is unlikely to change in Forever.Brand new Mana recovery tools- Sha
+   CN: 强大的单挑PvP能力暗影牧师的技能组合特别适合一对一的PvP，这在无限服中不太可能改变。 全新的法力值回复手段暗影牧师历来法力值消耗极大，而《无限》中针对暗影的诸多改动都旨在改善该专精的法力值经济。 拥有斩杀阶段伤害暗言术：死的加入以及配套天赋早逝为暗影牧师提供了一个针对生命值低于20%敌人的快速击杀伤害定位。 游戏末期团本表现尚不明朗针对暗影牧师的改动移除了其原有的团本定位，转而
+[priest_shadow / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'alliance tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Dwarf alliance tick Night Elf alliance tick Undead horde tick Troll horde tick
+   CN: 人类 alliance tick 矮人 alliance tick 暗夜精灵 alliance tick 亡灵 horde tick 巨魔 horde tick
+[priest_shadow / races #7 t=p]  latin=['PvP', 'PvP']
+   EN: Horde players have the option of choosing between Undead and Troll. While both options have their strengths,Undeadhas an excellent combination of baseline and Priest Racial abilities that provide va
+   CN: 部落玩家可以在亡灵和巨魔之间进行选择。虽然两种选项都有各自的优势，亡灵的基础种族技能和牧师职业种族技能组合非常出色，在练级、满级团队副本和PvP内容中都能提供价值。是一个在练级过程中、尤其是初期阶段维持生命值和法力值的优秀能力，而则同时提供可观的被动伤害和生存能力。是一个有趣且独特的工具，可提供额外的法力值回复，而尽管不再提供免疫窗口期，但仍然是PvP战斗中的常用技能。
+[rogue_assassination / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'alliance tick', 'alliance tick', 'horde tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Dwarf alliance tick Night Elf alliance tick Gnome alliance tick Orc horde tick Undead horde tick Troll horde tick
+   CN: 人类 alliance tick 矮人 alliance tick 暗夜精灵 alliance tick 侏儒 alliance tick 兽人 horde tick 亡灵 horde tick 巨魔 horde tick
+[rogue_combat / sw #1 t=tb]  latin=['DPS']
+   EN: Strengths Weaknesses Auto Attack Focused Spec- Lack of reliance on Poisons and Bleeds means your toolkit will never be hindered.Strong Cleave- The only Rogue spec with considerable cleave damage.
+   CN: 以自动攻击为核心的天赋- 不依赖毒药和持续伤害意味着你的技能组合不会受到任何限制。 顺劈能力强- 唯一拥有可观群体伤害能力的盗贼天赋。 不错的爆发能力- 通过，，以及激活的种族特长，战斗盗贼可以提前倾泻伤害，或将其保留用于特定的DPS爆发阶段。 生存能力- 我们拥有一些不错的生存技能，例如，，以及造成的伤害。 没有团队增益- 随着战士与持平，我们在伤害和脚踢之外缺乏实质性的团队
+[rogue_combat / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'alliance tick', 'alliance tick', 'horde tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Dwarf alliance tick Night Elf alliance tick Gnome alliance tick Orc horde tick Undead horde tick Troll horde tick
+   CN: 人类 alliance tick 矮人 alliance tick 暗夜精灵 alliance tick 侏儒 alliance tick 兽人 horde tick 亡灵 horde tick 巨魔 horde tick
+[rogue_subtlety / changes #1 t=p]  latin=['PvP']
+   EN: Subtlety receives a couple of new talents likeandwhich serve to separate it from its historical "PvP only" centered focus. A lot of the data is up in the air, and we unfortunately won't have a good id
+   CN: 敏锐获得了一些新天赋，比如和这些天赋旨在让敏锐摆脱长期以来以PvP为核心的形象。目前很多数据仍不确定，很遗憾在等级上限30级的情况下，我们还无法很好地判断敏锐在测试服中的输出表现。
+[rogue_subtlety / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'alliance tick', 'alliance tick', 'horde tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Dwarf alliance tick Night Elf alliance tick Gnome alliance tick Orc horde tick Undead horde tick Troll horde tick
+   CN: 人类 alliance tick 矮人 alliance tick 暗夜精灵 alliance tick 侏儒 alliance tick 兽人 horde tick 亡灵 horde tick 巨魔 horde tick
+[shaman_elemental / races #1 t=races]  latin=['horde tick', 'horde tick', 'horde tick']
+   EN: Orc horde tick Tauren horde tick Troll horde tick
+   CN: 兽人 horde tick 牛头人 horde tick 巨魔 horde tick
+[shaman_elemental / races #6 t=p]  latin=['PvP']
+   EN: Orc- Orc's racialincreases Attack and Spell Power by 10% for 15 sec on a 2-minute cooldown while using an Axe and grants 1% Critical Strike Chance thanks to. Blood Fury is exceptionally strong on it
+   CN: 兽人- 兽人的种族特长在使用斧类武器时于 2 分钟冷却时间内使攻击强度与法术强度提高 10%，并因获得 1% 暴击几率。血性狂暴本身极强，平均下来相当于 2 分钟内提升 1.25%。巨魔- 巨魔的种族特长在 3 分钟冷却时间内使攻击与施法速度提高 10%，持续 10 秒。这明显弱于经典旧世时期根据已损失生命值获得更高加成的版本。仅在特定情况下有用。和对于喜欢练级与单刷的玩家来说极为强力。
+[shaman_enhancement / races #1 t=races]  latin=['horde tick', 'horde tick', 'horde tick']
+   EN: Orc horde tick Tauren horde tick Troll horde tick
+   CN: 兽人 horde tick 牛头人 horde tick 巨魔 horde tick
+[shaman_enhancement / races #7 t=p]  latin=['PvE', 'PvP']
+   EN: Overall, Orc is turning out to be the strongest choice for PvE and PVP if you are playing on Horde, but the other 3 possible Races also offer their own unique utility depending on what you are looking
+   CN: 总体而言，如果你是部落玩家，兽人正在成为PvE和PvP中最强的选择，但其他三个可选种族也根据你的需求提供各自独特的增益。不幸的是，联盟的选择非常匮乏，矮人目前更多是针对特定情况的选择，但这不应阻止你选择矮人萨满祭司。
+[shaman_enhancement / prof #0 t=p]  latin=['Beta']
+   EN: During the Beta, crafting professions likeandlooked very strong, since they gave you very easy-to-obtain item upgrades with good stats. Especially early weapon upgrades feel incredibly strong. Once yo
+   CN: 在Beta测试期间，制造类专业，例如和看起来非常强力，因为它们可以让你通过简单方式获得属性不错的装备升级。尤其是早期的武器升级感觉提升巨大。当你能够获得副本奖励后，的价值可能会下降，但总体而言，它们似乎能够很好地填补你装备上的空缺。在升级过程中同样看起来非常强力，为你提供大量强力的增益，这些增益应该也能很好地延续到游戏后期。
+[shaman_restoration / changes #1 t=tb]  latin=['Boss']
+   EN: Spell Description Spell - Given to Shaman baseline, this spell inflicts fire damage to enemies within 10 yd of your active Fire totem. This replaces Fire Nova Totem. Its damage is exceptionally high. 
+   CN: 法术 - 该法术为萨满基础技能，可对当前火焰图腾周围10码范围内的敌人造成火焰伤害，并取代火焰新星图腾。其伤害数值极高。 恢复天赋/技能 - 为友方目标恢复一定生命值，并附加一个持续15秒的强力持续治疗效果。同时使你对该目标施放的法术的治疗效果提高25%。 恢复天赋 - 3点 - 施法时可继续分别恢复17%/33%/50%的法力值。这是一项强力的法力值回复手段，使精神属性对萨满的价值远超经典旧世版
+[shaman_restoration / races #1 t=races]  latin=['horde tick', 'horde tick', 'horde tick']
+   EN: Orc horde tick Tauren horde tick Troll horde tick
+   CN: 兽人 horde tick 牛头人 horde tick 巨魔 horde tick
+[shaman_restoration / races #6 t=p]  latin=['PVP']
+   EN: Orc- Orc's racialincreases Attack and Spell Power by 10% for 15 sec on a 2-minute cooldown while using an Axe and grants 1% Critical Strike Chance thanks to. Blood Fury is a strong cooldown which sh
+   CN: 兽人战士- 兽人的种族特长在使用斧类武器时，可使攻击强度和法术强度提高 10%，持续 15 秒，冷却时间为 2 分钟，并且因. 血性狂怒是一个强力的冷却技能，应在战斗中治疗需求最高的时刻使用，以增强你的治疗量。巨魔- 巨魔的种族特长使攻击速度和施法速度提高10%，持续10秒，冷却时间3分钟。这比经典旧世中的同款技能弱得多，旧版初始为10%提速，生命值极低时最高可达30%。对治疗来说基本没有
+[warlock_affliction / changes #2 t=ul]  latin=['arrow-right']
+   EN: arrow-right Check theDemonology OvervieworDestruction Overviewguide for more details on the other new specialization abilities and talents.
+   CN: arrow-right 的伤害来为其他专精提供增益。恶魔学奇术对战或毁灭对战指南中了解其他专精技能与天赋的详细信息。
+[warlock_affliction / viability #0 t=p]  latin=['PvP']
+   EN: Affliction is in a great place for raids. Curses no longer exclude you from usingor. At the same time,no longer gets consumed by other casters. On top of that, Affliction's self-healing will help a lo
+   CN: 痛苦在团队副本中表现出色。诅咒不再限制你使用或。与此同时，不再被其他施法者消耗。除此之外，痛苦的自愈能力在PvP中大有帮助，使旧的吸取生命/灵魂链接流派（+）更为强大。
+[warlock_affliction / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Gnome alliance tick Orc horde tick Undead horde tick
+   CN: 人类 alliance tick 侏儒 alliance tick 兽人 horde tick 亡灵 horde tick
+[warlock_affliction / races #8 t=p]  latin=['PvP']
+   EN: is a strong PvP racial that allows a Warlock to break stun effects.now benefits warlocks by increasing our Crit chance by 2% if we have a sword equipped. Spirit doesn't significantly affect us, aside 
+   CN: 是一个强大的PvP种族特长，能让术士解除眩晕效果。现在对术士也有益，装备剑时能提高2%的暴击几率。精神对我们影响不大，除了略微提升，这使得优势更小。侦测潜行。虽然要看情况，但能赢下决斗。
+[warlock_affliction / races #12 t=p]  latin=['PvP']
+   EN: now works like in later expansions and also gives the caster Spell Power.reduces the duration of stuns. Rogues hate it.is another great PvP on-use cooldown that removes curses and banes, makes us immu
+   CN: 现在的作用与后续资料片一致，并且还会给施法者提供法术强度。缩短昏迷持续时间。盗贼对此深恶痛绝。是另一个很棒的PvP主动使用冷却技能，能移除诅咒和灾厄，并使我们免疫这些效果，同时在接下来8秒内降低受到的魔法伤害。毫无用处，因为遗憾的是我们无法使用斧。
+[warlock_affliction / races #15 t=p]  latin=['Boss']
+   EN: Trolls are new!finally gives Warlocks faster casting. Sadly, it doesn't affect damage-over-time effects or channels, reducing its damage potential.increases damage dealt by 5% against beasts. It is on
+   CN: 巨魔是新种族！终于让术士的施法速度更快了。遗憾的是，它不影响周期性伤害效果或引导法术，降低了其伤害潜力。对野兽造成的伤害提高5%。它是那种确保巨魔在野兽Boss战中的输出排名始终名列前茅的种族特长之一。是绷带的强化版；它必须引导且容易被打断。如同对于亡灵来说，这极大地减少了术士在任务或地下城中的休整时间；恢复至满法力值，使用再生，继续前进。
+[warlock_affliction / races #18 t=p]  latin=['PvP', 'PvP', 'PvE', 'DPS', 'PvP']
+   EN: now restores mana as well as health, improving its already great downtime reduction while questing.doesn't really add value for Warlocks, since they already have access to. However, the strongest raci
+   CN: 现在同时恢复法力和生命值，进一步提升了其在任务过程中本就不错的减少休整时间的能力。对术士来说并没有太大意义，因为他们已经能获取。不过术士PvP最强的种族特长是，可以解除或免疫魅惑、恐惧和沉睡效果，等于在PvP中免费多了一个饰品栏位。随耐力成长，因此会随着装备提升而增强。在PvE中提升DPS，在PvP中那些"一丝血也是生与死"的时刻也很有用。
+[warlock_affliction / prof #0 t=p]  latin=['Beta', 'Beta']
+   EN: It's early days. Beta just opened, and the recipe lists aren't out for any profession, so we don't know what's best yet. Treat all of this as subject to change until closer to launch. All professions 
+   CN: 目前为时尚早。Beta测试刚刚开启，所有专业的配方表都尚未公布，所以我们还不知道什么最强。在正式上线前，所有内容都可能变动。所有专业都已随《无限》重做。每个专业现在都会提供一项收益，例如魔法抗性或额外生命值。配合可获得最高的预期伤害潜力，因为有炸弹和裁缝刺绣加成。另一方面，配合也很不错，因为你 可以分解自己制作的物品。由于仍处于Beta阶段，请随意尝试所有专业，找到最适合自己的。
+[warlock_affliction / prof #1 t=tb]  latin=['TBC']
+   EN: Profession What it gives you Cloth embroidery - Spell Power, Attack Power, or Stamina, 5 tiers. Extra cloth off humanoids. Ring enchants - Spell Power, Attack Power, or Stamina, 5 tiers. No stat b
+   CN: 裁缝刺绣——法术强度、攻击强度或耐力，共5级。击杀人形生物额外掉落布料。 戒指附魔——法术强度、攻击强度或耐力，共5级。 没有属性加成，但提供各种装置和炸弹。 炼金加成：延长并强化合剂和药剂的效果。可升级的炼金师之石。 自然天赋：对所有魔法系别提供抗性，随技能等级提升。 对野兽和龙类敌人伤害+5%。 总生命值+5%。 护腕附魔（法术强度/攻击强度/耐力），坐骑速度最高提升5%，还有背包。 腰带扣，
+[warlock_demonology / changes #3 t=ul]  latin=['arrow-right']
+   EN: arrow-right Check theAffliction OvervieworDestruction Overviewguide for more details on the other new specialization abilities and talents.
+   CN: arrow-right 查看痛苦系概览或毁灭 概述指南，了解其他新专精技能和天赋的更多详情。
+[warlock_demonology / viability #0 t=p]  latin=['SL', 'SL']
+   EN: Demonology is in a great place for raids.lets you sacrifice a pet and summon another to deal damage. Stacked talents can put you around 30% bonus damage on one magic school at a time - shadow or fire.
+   CN: 恶魔学识在团本中表现非常出色。让你可以献祭一只宠物，召唤另一只宠物造成伤害。叠加天赋后，你可以在某一系魔法伤害（暗影或火焰）上获得约 30% 的加成。在生命值低于 35% 时触发，使你施放的不消耗灵魂碎片，施法速度更快且冷却时间缩短。恶魔学识强大的减伤能力在 PvP 中非常实用，使传统的 SL/SL 配装（+) 更强的效果。
+[warlock_demonology / viability #1 t=p]  latin=['Beta']
+   EN: A curious talent is, which is a debuff you apply to enemies using. This causes your pet's attacks to generate extra threat and do more damage. By using this and weavingbetween, your pet will likely be
+   CN: 一个有趣的天赋是，这是你通过对敌人施加的一个减益效果。它会使你的宠物攻击产生额外威胁值并造成更高伤害。通过使用此天赋并在，你的宠物很可能成为主要的伤害来源。具体测试将在Beta中进行，以查看它产生的威胁值大小，以及在长期提升宠物伤害方面的可行性。之间穿插
+[warlock_demonology / sw #0 t=p]  latin=['DPS']
+   EN: Demonology theoretically offers the highest single-target DPS because of its many damage bonuses and the extra damage from your buffed Demon. You also gain damage as the fight nears its end due to. Yo
+   CN: 恶魔学识在理论上提供最高的单体DPS，因为它拥有大量的伤害加成以及你被强化的恶魔带来的额外伤害。随着战斗接近尾声，由于，你也会获得额外的伤害。相比其他法系，你更加耐打，因为和提供了约64%的额外有效生命值。你很大一部分伤害来自你的恶魔。这也意味着如果它们不像它们的主人那样跑出火圈，它们就会死亡。
+[warlock_demonology / beginner #0 t=p]  latin=['PvP']
+   EN: Demonology gives you strong pets and great survivability; it is a very friendly build for leveling and PvP. In PvE content, you need to keep your pet alive to maximize throughput. This means positioni
+   CN: 恶魔学识能为你提供强力的宠物与出色的生存能力；它是一个非常友好的练级与PvP天赋。在 PvE 内容中，你需要保持宠物存活以最大化输出。这意味着要妥善安排宠物站位，让它避开伤害类机制，这并非总是易事。除此之外，输出循环很简单：保持你的持续伤害法术不断，保持作用于主目标，用填充，在生效时施放。
+[warlock_demonology / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Gnome alliance tick Orc horde tick Undead horde tick
+   CN: 人类 alliance tick 侏儒 alliance tick 兽人 horde tick 亡灵 horde tick
+[warlock_demonology / races #12 t=p]  latin=['PvP']
+   EN: now works like in later expansions and also gives the caster Spell Power.reduces the duration of stuns. Rogues hate it.is another great PvP on-use cooldown that removes curses and banes, makes you imm
+   CN: 现在和后续资料片中的一样，同时给予施法者法术强度。缩短昏迷效果的持续时间，盗贼对此非常头疼。是另一个PvP中强力的主动爆发技能，可以驱散诅咒与祸害效果，并使你在接下来的8秒内免疫此类效果，同时减少受到的魔法伤害。没有用，因为我们很不幸地无法使用斧头。
+[warlock_destruction / changes #2 t=ul]  latin=['arrow-right']
+   EN: arrow-right Check theAffliction OvervieworDemonology Overviewor guide for more details on the other new specialization abilities and talents.
+   CN: arrow-right 查阅痛苦概述或恶魔学识概述指南，了解其他新专精技能和天赋的更多细节。
+[warlock_destruction / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Gnome alliance tick Orc horde tick Undead horde tick
+   CN: 人类 alliance tick 侏儒 alliance tick 兽人 horde tick 亡灵 horde tick
+[warlock_destruction / races #5 t=p]  latin=['PvP']
+   EN: is the new on-use damage-increasing cooldown Gnomes get.breaks roots and slows. You'll use it every time you PvP. Additionally,increases mana directly instead of Intellect.no longer gives additional l
+   CN: 是侏儒获得的新增主动增伤冷却技能。可以解除定身和减速效果。在PvP中你会每次都使用它。此外，直接提升法力值，而非智力。不再提供额外的等级加成；而是提高工程学小装置的效果。
+[warlock_destruction / races #8 t=p]  latin=['PvP']
+   EN: is a strong PvP racial that allows a Warlock to break stun effects.now benefits warlocks by increasing our Crit chance by 2% if we have a sword equipped. Spirit doesn't significantly affect us, aside 
+   CN: 强力PvP种族特长，可让术士解除昏迷效果。现在可使术士受益，装备单手剑时暴击几率提高2%。精神属性对我们影响不大，仅略微提升，导致的优势减弱。侦测潜行。属于特定场景技能，但能赢得决斗。
+[warlock_destruction / races #12 t=p]  latin=['PvP']
+   EN: now works like in later expansions and also gives the caster Spell Power.reduces the duration of stuns. Rogues hate it.is another great PvP on-use cooldown that removes curses and banes, makes us immu
+   CN: 效果与后续资料片一致，还能为施法者提供法术强度。缩短昏迷效果的持续时间。盗贼非常讨厌这个效果。是另一个强力的PvP主动爆发技能，可以移除诅咒与毒咒，使我们免疫这些效果，并在接下来的8秒内降低受到的魔法伤害。没什么用，因为我们很不幸无法使用斧头。
+[warlock_destruction / races #15 t=p]  latin=['Boss']
+   EN: Trolls are new!finally gives Warlocks faster casting. Sadly, it doesn't affect damage-over-time effects or channels, reducing its damage potential.increases damage dealt by 5% against beasts. It is on
+   CN: 巨魔是新的！终于让术士获得了更快的施法速度。可惜的是，它不影响周期性伤害或引导效果，削弱了它的伤害潜力。对野兽造成的伤害提高5%。在兽王Boss战中，这是让巨魔始终占据伤害榜首的种族特长之一。是绷带的强化版；必须引导施法，而且很容易被打断。就像对亡灵来说，术士在任务或副本中的停顿时间大幅减少；法力值回满，激活再生，继续推进。
+[warrior_arms / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'alliance tick', 'alliance tick', 'horde tick', 'horde tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Dwarf alliance tick Night Elf alliance tick Gnome alliance tick Orc horde tick Undead horde tick Tauren horde tick Troll horde tick
+   CN: 人类 alliance tick 矮人 alliance tick 暗夜精灵 alliance tick 侏儒 alliance tick 兽人 horde tick 亡灵 horde tick 牛头人 horde tick 巨魔 horde tick
+[warrior_arms / races #12 t=p]  latin=['PVE', 'PVP']
+   EN: Orc Warrior Orc is generally the best option for Horde. It offers, which is great for both PVE and PVP. It has, which increases its Critical Strike chance by 1% with Axes. On top of this, it also has,
+   CN: 兽人战士 兽人通常是部落的最佳选择。它提供，这在PVE和PVP中都非常出色。它还有，使斧类武器的暴击几率提高1%。除此之外，它还有，使昏迷持续时间缩短20%，以及，使你对诅咒和灾祸免疫，并使受到的魔法伤害降低15%，持续8秒。
+[warrior_arms / races #15 t=p]  latin=['PvE', 'PvP']
+   EN: Undead Warrior Undead is arguably one of the poorer choices for Warriors. Offering no real PVE or PVP benefit.is nice, but Warriors already have a fear immunity called. Undead also have access toand, 
+   CN: 亡灵战士 亡灵可以说是战士较差的选择之一，对PvE或PvP都没有实际增益。还不错，但战士已经有了名为的恐惧免疫技能。亡灵还可以使用和，练级时很实用。他们还有一个新天赋
+[warrior_arms / races #18 t=p]  latin=['PvE', 'PvP']
+   EN: Engineering for Arms Warriors Engineering has generally been the best Profession for endgame PVE and PVP in Classic, and this doesn't change in Forever. In endgame, Engineering offers huge utility and
+   CN: 工程学对于武器战而言在经典旧世版本中，工程学通常是终局PvE和PvP的最佳专业选择，这一点在无限版中并未改变。在终局内容里，工程学凭借各种小道具和炸弹能带来巨大的实用性和伤害加成。不过我不建议在升级过程中选择它，因为它的营火增益效果价值有限，而且炸弹若经常使用成本也不低。升级时我更倾向于选择下面提到的另外两个专业，待满级后再放弃其中一个转而学习工程学。
+[warrior_fury / races #1 t=races]  latin=['alliance tick', 'alliance tick', 'alliance tick', 'alliance tick', 'horde tick', 'horde tick', 'horde tick', 'horde tick']
+   EN: Human alliance tick Dwarf alliance tick Night Elf alliance tick Gnome alliance tick Orc horde tick Undead horde tick Tauren horde tick Troll horde tick
+   CN: 人类 alliance tick 矮人 alliance tick 暗夜精灵 alliance tick 侏儒 alliance tick 兽人 horde tick 亡灵 horde tick 牛头人 horde tick 巨魔 horde tick
+[warrior_fury / races #6 t=p]  latin=['PvP']
+   EN: Orc seems to be the best overall race for Fury Warrior, possessing two powerful damage increase racials, as well as a stun duration reduction and a powerful magical defense. Both Troll and Undead also
+   CN: 兽人似乎是狂怒战士整体最强的种族，拥有两种强大的伤害增益种族特长，还有昏迷时间缩短和强力的魔法防御。巨魔和亡灵同样相当强力，他们都拥有强力的种族特长，可能不如兽人那样全面，但能在其他方面有所补足。天裔在以急速为核心价值的首领战中可能会有用武之地，取决于急速的价值。牛头人的命中加成相对较弱，其昏迷技能在PvP中可能有用武之地。
+[warrior_protection / changes #6 t=ul]  latin=['PvP']
+   EN: Alliance: Dwarf grants a decent amount of damage through, which is quite potent for us. It also has great utility, as you can useto remove Curses or Magic effects that you can't remove normally. Ston
+   CN: 联盟：矮人通过提供可观的伤害，对我们而言相当强力。此外它也拥有强大的功能性，你可以使用来移除通常无法解除的诅咒或魔法效果。石像形态还能提供10%的物理伤害减免。若使用得当，这在史诗钥钥地下城、部分团本战斗以及PvP中都相当实用。 部落：牛头人同样通过提供伤害加成。它也通过以下方式带来出色的实用价值：，这是个很实用的眩晕技能，在大秘境乃至某些团队副本战斗中都能用来控制小怪。提供少量耐力加成，在生存

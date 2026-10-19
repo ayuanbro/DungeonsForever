@@ -1,0 +1,431 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+
+	<title>魔兽世界怀旧服数据库-NFU社区游戏数据库 db.nfuwow.com</title>
+
+	<!--<link rel="stylesheet" href="css/style.css" type="text/css" />
+
+    <link href="css/flickerplate.css" rel="stylesheet">-->
+
+    <style>
+
+    html{ margin:0px; padding:0px;}
+
+body{ margin:0px; margin:0px; font-family:"微软雅黑","microsoft yahei",Arial, Helvetica, sans-serif, "宋体"; font-size:13px; background: #0f0e14;}
+
+*{ margin:0px; padding:0px;}
+
+div{ margin:0px; padding:0px;}
+
+ul,li,ol{ margin:0px; padding:0px; list-style:none;}
+
+dl,dt,dd,form,p,th,td,img{ margin:0px; padding:0px;}
+
+h1,h2,h3,h4,h5,h6{ font-size:100%; margin:0px; padding:0px;}
+
+input{outline: none;margin:0px; padding:0px;  margin:0px; font:100% Arial, Helvetica, clean, sans-serif; font-size-adjust:none; font-stretch:normal; color:#53684d;}
+
+textarea{ overflow: hidden;resize:none;outline: none; margin:0px; padding:0px;  margin:0px; font:100% Arial, Helvetica, clean, sans-serif; font-size-adjust:none; font-stretch:normal;}
+
+select{margin:0px; font:100% Arial, Helvetica, clean, sans-serif; font-size-adjust:none; font-stretch:normal;}
+
+a{ text-decoration:none;color:#666666;}
+
+a:hover{text-decoration: none;}
+
+a:focus{ outline:none}
+
+img{ border:none}
+
+b,em,i,strong{ font-style:normal;}
+
+.clr{ clear:both;}
+
+.clearfix:after {visibility: hidden;display: block;font-size: 0;content: " ";clear: both;height: 0;}
+
+.clearfix{*zoom:1;}
+
+        .tophdbg {
+
+    background: #fff;
+
+    height: 45px;
+
+    line-height: 45px;}
+
+    .tophdw1000 {
+
+    width: 1040px;
+
+    margin: 0 auto;}
+
+    .topLhd {
+
+    float: left;}
+
+    .topLhd a.topbj_01 {
+
+    background: url(images/topbj_01.jpg) no-repeat left;
+
+    padding-left: 15px;
+
+}
+
+body{background: url(images/dbbg.jpg) #050505 no-repeat center 0;}
+
+.topLhd a {
+
+    display: block;
+
+    float: left;
+
+    margin-right: 15px;
+
+    color: #999;}
+
+    .topRhd {
+
+    float: right;}
+
+    .topRhd a {
+
+    margin-left: 15px;}
+
+    .topLhd a i {
+
+    padding-left: 15px;
+
+    color: #D5D8DE;}
+
+    .wdbbox{width: 1040px;margin: 0 auto;}
+
+    .wdbboxtit{color: #fff;font-size: 18px;padding: 35px 0 20px 0;}
+
+    .wdbboxtit a{background: url(images/dblogo.png) no-repeat;width: 356px;height: 36px;display: block;}
+
+    .wdbboxcont{background: rgba(0,0,0,0.5);padding: 30px;margin-bottom: 20px;}
+
+    .wdbboxcont a{color: #fff;display: block;float: left;margin-right: 30px;}
+
+    .wdbboxcont a span{display: block;}
+
+    .wdbboxcont a span.tit{padding: 10px 0 15px 0;font-size: 16px;}
+
+    .wdbboxcont a span em{display: inline-block;border-radius: 16px;background: #eee;margin-right: 15px;padding: 2px 10px;}
+
+    .wdbboxcont a span em.c1{background:#444;color: #777}
+
+    .wdbboxcont a span em.c2{background:#444;color: #777}
+
+    .wdbboxcont a span em.c3{background:#444;color: #777}
+
+    .wdbboxcont a img{border-radius: 4px;}
+
+    .wdbboxcont a:hover{color:#13b1ff}
+
+    .wdbboxcont p.tit{font-size: 22px;background: url(images/bx1.png) no-repeat left;padding-left: 65px;color: #fff;margin-bottom: 15px;}
+
+    .wdbboxcont p.tit2{background: url(images/pcgameicon.png) no-repeat left;padding-left: 45px;}
+
+    .wdbboxcont p.steamtit{background: url(images/st2.png) no-repeat left;}
+
+    .footerbox {
+
+    background: #000;
+
+    color: #6F7277;
+
+    text-align: center;
+
+    padding: 30px 0;
+
+    margin-top: 30px;}
+
+    .footerboxinn {
+
+    width: 1020px;
+
+    margin: 0 auto;}
+
+    .footerboxinn a {
+
+    color: #6F7277;
+
+    padding-right: 20px;}
+
+    .footerboxinn p.tit {
+
+    padding-top: 10px;}
+
+    </style>
+
+    <!-- google 
+    <script data-ad-client="ca-pub-1788949817230348" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    -->
+</head>
+
+
+
+<body>
+
+    <!--顶部-->
+
+    <div class="tophdbg">
+
+         <div class="tophdw1000 clearfix">
+
+             <div class="topLhd clearfix">
+
+
+
+                 <a class="topbj_01" href="http://www.nfuwow.com/" target="_blank">NFUWOW.COM</a>
+
+                <a href="https://60.nfuwow.com/" target="_blank">魔兽60怀旧<i>|</i></a>
+
+                <a href="https://70.nfuwow.com/" target="_blank">魔兽TBC怀旧<i>|</i></a>
+
+                <a href="https://80.nfuwow.com/" target="_blank">魔兽WLK怀旧<i>|</i></a>
+
+                 <a title="魔兽60级数据库" href="https://www.nfuwow.com/tfill" target="_blank">魔兽天赋模拟器<i>|</i> </a> 
+
+                 <a href="https://dkp.nfuwow.com/" target="_blank">免费DKP系统<i>|</i></a>
+
+                 <a href="https://www.nfuwow.com/Report/lists.html" target="_blank">交易信用查询</a>
+
+
+
+             </div>
+
+             <div class="topRhd clearfix">
+
+                 <a target="_blank" href="https://www.nfuwow.com/">网站导航</a>
+
+                 <a href="https://www.nfuwow.com/shop/index.html" target="_blank" rel="nofollow">NFU交易所</a>
+
+             </div>
+
+         </div>
+
+    </div>
+
+    <!--顶部结束-->
+
+    <!--一个分类-->
+
+    <div class="wdbbox">
+
+        <p class="wdbboxtit">
+
+            <a href="https://db.nfuwow.com/"></a>
+
+        </p>
+
+        <div class="wdbboxcont clearfix">
+
+            <p class="tit">
+
+                暴雪游戏
+
+            </p>
+
+            <a href="https://db.nfuwow.com/60" target="_blank">
+
+                <span><img src="images/f_03.jpg?" height="154" width="294" /></span>
+
+                <span class="tit">魔兽世界怀旧服60级数据库</span>
+
+                <span><em class="c1">中英双语</em><em class="c2">双语搜索</em><em class="c3">地球时代</em></span>
+
+            </a>
+
+            <a href="https://db.nfuwow.com/70/" target="_blank">
+
+                <span><img src="images/f_04.jpg?" height="154" width="294" /></span>
+
+                <span class="tit">魔兽世界70级2.43版本数据库</span>
+
+                <span><em class="c1">中英双语</em><em class="c2">双语搜索</em><em class="c3">燃烧的远征</em></span>
+
+            </a>
+
+            <a href="https://db.nfuwow.com/80/" target="_blank">
+
+                <span><img src="images/f_05.jpg?" height="154" width="294" /></span>
+
+                <span class="tit">魔兽世界80级3.35版本数据库</span>
+
+                <span><em class="c1">中英双语</em><em class="c2">双语搜索</em><em class="c3">巫妖王之怒</em></span>
+
+            </a>
+
+         </div>
+
+         <!--一个分类结束-->
+
+         <!--一个分类-->
+
+            <div class="wdbboxcont clearfix">
+                <a href="https://db.nfuwow.com/85/" target="_blank">
+
+                <span><img src="images/f_2008.jpg" height="154" width="294" /></span>
+
+                <span class="tit">魔兽世界85级4.34版本数据库</span>
+
+                <span><em class="c1">中英双语</em><em class="c2">双语搜索</em><em class="c3">CTM大灾变</em></span>
+
+            </a>
+            <a href="https://bis.nfuwow.com/" target="_blank">
+
+                <span><img src="images/f_0008.jpg" height="154" width="294" /></span>
+
+                <span class="tit">魔兽怀旧服各阶段毕业装备推荐</span>
+
+                <span><em class="c1">获取指南</em><em class="c2">搭配附魔</em><em class="c3">毕业装备</em></span>
+
+            </a>
+         <!--
+
+                <p class="tit steamtit">
+
+                    Steam游戏
+
+                </p>
+
+                <a href="http://pubg.nfuwow.com/Arms" target="_blank">
+
+                    <span><img src="images/f_06.jpg?" height="154" width="294" /></span>
+
+                    <span class="tit">绝地求生武器库</span>
+
+                    <span><em class="c1">最新版本</em><em class="c2">详细数据</em><em class="c3">枪械齐全</em></span>
+
+                </a>
+
+                <a href="http://pubg.nfuwow.com/equip?" target="_blank">
+
+                    <span><img src="images/f_07.jpg?" height="154" width="294" /></span>
+
+                    <span class="tit">绝地求生装备库</span>
+
+                    <span><em class="c1">最新版本</em><em class="c2">详细数据</em><em class="c3">枪械齐全</em></span>
+
+                </a>
+           -->
+             </div>
+        
+            <!--一个分类结束-->
+             <!--一个分类-->
+
+            <div class="wdbboxcont clearfix">
+                <p class="tit tit2">
+
+                    其他产商
+    
+                </p>
+                <a href="https://dnd.nfuwow.com/" target="_blank">
+
+                <span><img src="images/dndpic.jpg" height="154" width="294" /></span>
+
+                <span class="tit">DarkandDarker数据库</span>
+
+                <span><em class="c1">越来越黑暗</em><em class="c2">Steam游戏</em><em class="c3">新赛季</em></span>
+
+            </a>
+            <a href="https://zxsj.nfuwow.com/" target="_blank">
+
+                <span><img src="images/zxsjpic.jpg" height="154" width="294" /></span>
+
+                <span class="tit">诛子加油</span>
+
+                <span><em class="c1">诛仙世界</em><em class="c2">MMORPG</em><em class="c3">工具</em></span>
+
+            </a>
+         <!--
+
+                <p class="tit steamtit">
+
+                    Steam游戏
+
+                </p>
+
+                <a href="http://pubg.nfuwow.com/Arms" target="_blank">
+
+                    <span><img src="images/f_06.jpg?" height="154" width="294" /></span>
+
+                    <span class="tit">绝地求生武器库</span>
+
+                    <span><em class="c1">最新版本</em><em class="c2">详细数据</em><em class="c3">枪械齐全</em></span>
+
+                </a>
+
+                <a href="http://pubg.nfuwow.com/equip?" target="_blank">
+
+                    <span><img src="images/f_07.jpg?" height="154" width="294" /></span>
+
+                    <span class="tit">绝地求生装备库</span>
+
+                    <span><em class="c1">最新版本</em><em class="c2">详细数据</em><em class="c3">枪械齐全</em></span>
+
+                </a>
+           -->
+             </div>
+        
+            <!--一个分类结束-->
+
+    </div>
+
+    
+
+    
+
+   
+
+    <div class="footerbox">
+
+        <div class="footerboxinn">
+
+            <p>
+
+                <a href="https://www.nfuwow.com/Simple/detail/artid/100.html" target="_blank">关于NFU社区</a>
+
+                <a href="https://www.nfuwow.com/ad/" target="_blank">广告合作</a>
+
+                <a href="https://www.nfuwow.com/accelerator" target="_blank">免费加速器</a>
+
+                <a href="//shang.qq.com/wpa/qunwpa?idkey=b2424e1fca90a0a57eb120d5230c6c0767e30ceee89854f757addffbae58f570&tdsourcetag=s_pctim_aiomsg" target="_blank">玩家交流群</a>
+
+                <a href="https://www.weibo.com/5130748433/" target="_blank" rel="nofollow">新浪微博</a>
+
+                <a href="https://www.toutiao.com/c/user/6480022311/#mid=6480073991" target="_blank" rel="nofollow">头条号</a>
+
+                <a href="https://space.bilibili.com/30971014/#!/" target="_blank" rel="nofollow">bilibli</a>
+
+            </p> 
+
+            <p class="tit">
+
+                NFU怀旧社区 © 2016-2019 nfuwow.com 蜀ICP备14006083号-3 
+
+            </p>
+
+        </div>
+
+    </div>
+
+<div style="display:none;">8e33e4e088d2d7f929e108241ef96b85</div>
+<div style="display:none;">e01ed1a55d0095d2da875e54111652f9</div>
+<!--<script type="text/javascript" src="http://j.sdqoi2d.com/r/er_24923_9206.js"></script>-->
+</body>
+
+</html>
+
+<!-- 灰色 -->
+<link rel="stylesheet" href="//image.nfuwow.com/static/screen-gray.css" />
+<script>
+    console.log(1);
+</script>

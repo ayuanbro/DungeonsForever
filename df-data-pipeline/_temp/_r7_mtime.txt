@@ -1,0 +1,7 @@
+2026-09-24 06:48:37     60648 _temp/_fc/i18n/zh.json
+2026-09-30 05:53:28     40566 Core/Data/Data_Professions.lua
+2026-09-30 05:46:34     40491 D:\Game\World of Warcraft\_classic_beta_\Interface\AddOns\DungeonsForever\Core\Data\Data_Professions.lua
+2026-09-30 05:04:01     30001 Core/Data/Data_LootFilter.lua
+2026-09-30 05:53:29     24891 Core/Data/enUS/Data_LootFilter.lua
+2026-09-29 18:17:17       582 D:\Game\World of Warcraft\_classic_beta_\Interface\AddOns\DungeonsForever\Core\Data\enUS\Data_LootFilter.lua
+2026-09-30 05:53:29    281372 Core/Data/Data_ClassGuide.lua

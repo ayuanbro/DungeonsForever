@@ -1,0 +1,10 @@
+543:     for i = 1, PV.CARD_MAX do
+544:         PV.cards[i] = PV.NewCard(child)
+545:         PV.cards[i]:Hide()
+546:     end
+547: 
+548:     -- ★★ 军衔行（两列布局左卡）：徽章贴图 + 按阵营单军衔名（去 nameA/slash/nameH
+549:     --   三件套）+ 点数/累计 + 独立奖励列（芯片由 RenderRanks 锚到行右侧，行内只留
+550:     --   +N 记数）。行宽 476 于 500 卡内 12px 内边距；行高 34 × 14 行 = 530 恰好一屏。
+551:     for i = 1, 14 do
+552:         local r = CreateFrame("Button", nil, child)

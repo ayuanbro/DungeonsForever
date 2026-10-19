@@ -1,0 +1,21 @@
+﻿== *lupa* files ==
+C:\Users\Administrator\.catpawai\extensions\catpaw.catpawpyright-1.0.0-universal\dist\typeshed-fallback\stubs\lupa
+C:\Users\Administrator\.catpawai\extensions\catpaw.catpawpyright-1.0.0-universal\dist\typeshed-fallback\stubs\lupa\lupa
+C:\Users\Administrator\.trae-cn\extensions\detachhead.basedpyright-1.40.1-universal\dist\typeshed-fallback\stubs\lupa
+C:\Users\Administrator\.trae-cn\extensions\detachhead.basedpyright-1.40.1-universal\dist\typeshed-fallback\stubs\lupa\lupa
+C:\Users\Administrator\.vscode\extensions\ms-python.vscode-pylance-2026.2.1\dist\typeshed-fallback\stubs\lupa
+C:\Users\Administrator\.vscode\extensions\ms-python.vscode-pylance-2026.2.1\dist\typeshed-fallback\stubs\lupa\lupa
+C:\Users\Administrator\.vscode\extensions\ms-python.vscode-pylance-2026.3.1\dist\typeshed-fallback\stubs\lupa
+C:\Users\Administrator\.vscode\extensions\ms-python.vscode-pylance-2026.3.1\dist\typeshed-fallback\stubs\lupa\lupa
+C:\Users\Administrator\.workbuddy\binaries\python\envs\default\Lib\site-packages\lupa
+C:\Users\Administrator\.workbuddy\binaries\python\envs\default\Lib\site-packages\lupa-2.8.dist-info
+C:\Users\Administrator\.workbuddy\workspace\sessions\202f2057-09db-4c02-ae68-f698aef24161\.modify_backup_meta\7b28de12.run_itemlastseen_lupa.py
+C:\Users\Administrator\.workbuddy\workspace\sessions\202f2057-09db-4c02-ae68-f698aef24161\modify_backup\1.m.7b28de12.run_itemlastseen_lupa.py
+C:\Users\Administrator\.workbuddy\workspace\sessions\2f1f549e-c89d-4e6d-90e2-6a1852bb5e58\.modify_backup_meta\9a38226c.bench_hope_picker_lupa.py
+C:\Users\Administrator\.workbuddy\workspace\sessions\2f1f549e-c89d-4e6d-90e2-6a1852bb5e58\modify_backup\1.a.9a38226c.bench_hope_picker_lupa.py
+C:\Users\Administrator\.workbuddy\workspace\sessions\2f696d64-9065-4672-953d-95282cd29181\.modify_backup_meta\7b28de12.run_itemlastseen_lupa.py
+C:\Users\Administrator\.workbuddy\workspace\sessions\2f696d64-9065-4672-953d-95282cd29181\.modify_backup_meta\bebf2dcd.run_bidinfo_lupa.py
+C:\Users\Administrator\.workbuddy\workspace\sessions\2f696d64-9065-4672-953d-95282cd29181\modify_backup\13.m.7b28de12.run_itemlastseen_lupa.py
+C:\Users\Administrator\.workbuddy\workspace\sessions\2f696d64-9065-4672-953d-95282cd29181\modify_backup\18.m.bebf2dcd.run_bidinfo_lupa.py
+C:\Users\Administrator\.workbuddy\workspace\sessions\2f696d64-9065-4672-953d-95282cd29181\modify_backup\9.m.bebf2dcd.run_bidinfo_lupa.py
+DONE

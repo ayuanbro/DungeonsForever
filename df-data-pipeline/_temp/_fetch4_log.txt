@@ -1,0 +1,112 @@
+D:\workspace\DungeonsForever\_temp\enus_fetch4.py:5: SyntaxWarning: invalid escape sequence '\/'
+  页面是 JS 转义 BBCode：\\uXXXX + [url=\/classic\/cn\/npc=1182]安东修士[\/url]
+名字类残余: 98
+ok   上古圣马之魂 ← npc14566 → Ancient Equine Spirit
+ok   乔拉齐·拉文霍德公爵 ← npc6768 → Lord Jorach Ravenholdt
+ok   伊思达·哈尔蒙 ← npc16031 → Ysida Harmon
+ok   伊普斯 ← npc14470 → Impsy
+ok   伯瓦尔·弗塔根公爵 ← npc1748 → Highlord Bolvar Fordragon
+ok   侍卫玛特拉克 ← npc8509 → Squire Maltrake
+ok   先知科鲁拉克 ← npc14373 → Sage Korolusk
+ok   克拉兹克 ← npc773 → Krazek
+ok   克罗雷修士 ← npc12336 → Brother Crowley
+ok   公告员古德曼 ← npc2198 → Crier Goodman
+ok   凯夫·重锤 ← npc5113 → Kelv Sternhammer
+ok   加克希姆·尘链 ← npc4077 → Gaxim Rustfizzle
+ok   博拉姆·逐星 ← npc3032 → Beram Skychaser
+ok   卡兰·巨锤 ← npc9021 → Kharan Mighthammer
+ok   图加·符文图腾 ← npc3448 → Tonga Runetotem
+ok   埃博斯塔夫 ← npc10321 → Emberstrife
+ok   塞朵拉·穆瓦丹尼 ← npc9079 → Hierophant Theodora Mulvadania
+ok   多恩·平原行者 ← npc2986 → Dorn Plainstalker
+ok   大德鲁伊哈缪尔·符文图腾 ← npc5769 → Archdruid Hamuul Runetotem
+ok   大法师克希雷姆 ← npc8379 → Archmage Xylem
+ok   大法师提尔斯 ← npc6548 → Magus Tirth
+ok   奥松·格鲁尔 ← npc3048 → Ursyn Ghull
+ok   奥汀克 ← npc8405 → Ogtinc
+ok   威拉罗克·温布雷 ← npc8479 → Velarok Windblade
+ok   安东修士 ← npc1182 → Brother Anton
+ok   尤尔巴·斯库比格特 ← npc9706 → Yorba Screwspigot
+ok   巫医尤克里 ← npc8115 → Witch Doctor Uzer'i
+ok   布劳格·幽魂 ← npc4489 → Braug Dimspirit
+ok   弗斯塔德·蛮锤 ← npc5635 → Falstad Wildhammer
+ok   德莉亚娜 ← npc16013 → Deliana
+ok   恩诺哈尔·雷酒 ← npc9540 → Enohar Thunderbrew
+ok   戈瑟奇·邪眼 ← npc14437 → Gorzeeki Wildeyes
+ok   所罗门镇长 ← npc344 → Magistrate Solomon
+ok   托姆·狂暴图腾 ← npc3041 → Torm Ragetotem
+ok   托尔瓦·寻路者 ← npc9619 → Torwa Pathfinder
+ok   护理者奥林 ← npc11038 → Caretaker Alen
+ok   拉普索迪·铁铲 ← npc5634 → Rhapsody Shindigger
+ok   拉比恩·萨图纳 ← npc11801 → Rabine Saturna
+ok   拉瑞安 ← npc9118 → Larion
+ok   指挥官哥沙克 ← npc9020 → Commander Gor'shak
+ok   指挥官阿什拉姆·瓦罗菲斯特 ← npc10838 → Commander Ashlam Valorfist
+ok   捕风者巴斯拉 ← npc6176 → Bath'rah the Windwatcher
+ok   提里奥·弗丁 ← npc1855 → Tirion Fordring
+ok   斯库提 ← npc7853 → Scooty
+ok   普兹克 ← npc4630 → Pozzik
+ok   格瑞曼德·艾尔默 ← npc1416 → Grimand Elmore
+ok   格雷森·沙东布瑞克公爵 ← npc928 → Lord Grayson Shadowbreaker
+ok   流放者马特克 ← npc4618 → Martek the Exiled
+ok   犹鲁斯·麦酒 ← npc6166 → Yorus Barleybrew
+ok   狮鹫管理员沙拉克·鹰斧 ← npc5636 → Gryphon Master Talonaxe
+  403 sleep 15
+  403 sleep 25
+  403 sleep 35
+ok   玛希尔 ← npc6142 → Mathiel
+ok   皇家历史学家阿克瑟努斯 ← npc8879 → Royal Historian Archesonus
+ok   穆克斯·玛纳斯卡波 ← npc16014 → Mux Manascrambler
+ok   穆尔金 ← npc9119 → Muigin
+ok   米尔斯迪普议员 ← npc270 → Councilman Millstipe
+ok   索恩格瑞姆·火眼 ← npc5878 → Thun'grim Firegaze
+ok   索维克 ← npc3413 → Sovik
+ok   艾瑞斯·哈文法 ← npc14494 → Eris Havenfire
+ok   苏纳曼 ← npc11862 → Tsunaman
+ok   药剂师林度恩 ← npc2216 → Apothecary Lydon
+ok   药剂师金格 ← npc5204 → Apothecary Zinge
+ok   莫苏尔·召血者 ← npc14436 → Mor'zul Bloodbringer
+ok   菲兹尔·铜栓 ← npc4454 → Fizzle Brassbolts
+ok   菲诺克 ← npc10468 → Felnok Steelspring
+ok   萨尔努修士 ← npc7917 → Brother Sarno
+ok   萨格尼 ← npc13417 → Sagorne Creststrider
+ok   资深探险家麦格拉斯 ← npc5387 → High Explorer Magellas
+  403 sleep 15
+  403 sleep 25
+  403 sleep 35
+  403 sleep 45
+  403 sleep 15
+  403 sleep 25
+ok   达索瑞恩·拉尔 ← npc6171 → Duthorian Rall
+ok   达芙妮·斯迪威尔 ← npc6182 → Daphne Stilwell
+ok   部落英雄的灵魂 ← npc7572 → Fallen Hero of the Horde
+ok   阿古斯·夜语 ← npc4984 → Argos Nightwhisper
+ok   阿纳克洛斯 ← npc15192 → Anachronos
+ok   雷克斯洛特 ← npc9080 → Lexlort
+ok   雷吉纳德·温德索尔 ← npc12580 → Reginald Windsor
+ok   雷明顿·瑞治维尔伯爵 ← npc2285 → Count Remington Ridgewell
+ok   预言者巴萨扎德 ← npc10879 → Harbinger Balthazad
+ok   高阶牧师洛汉 ← npc11406 → High Priest Rohan
+ok   高阶牧师赛尔丹尼斯 ← npc1854 → High Priest Thel'danis
+ok   魔王贝恩霍勒 ← npc9516 → Lord Banehollow
+ok   鲁迦·狂暴图腾 ← npc6394 → Ruga Ragetotem
+written: D:\workspace\DungeonsForever\_temp\enus_data_names2.py N= 93
+仍需人工: 18
+   '哨兵塞尔瑞德'
+   '孤儿监护员奈丁加尔'
+   '德莉娜'
+   '斯普莱特'
+   '未完成的憎恶'
+   '毒液瓶'
+   '法拉尼尔'
+   '瑞兹尔的计划'
+   '破碎的项链'
+   '科劳莫特·钢尺'
+   '米奈希尔的礼物'
+   '罗卡鲁'
+   '贾斯伯·菲尔'
+   '通缉'
+   '闪亮的金戒指'
+   '高图斯'
+   '麦克斯韦尔'
+   '黑龙的财宝'

@@ -1,0 +1,241 @@
+########## 全库「未翻译散文」单元格扫描 ##########
+未翻译散文单元格总数 = 238
+  1. [druid_balance>races>1>races>v>0>side] alliance
+  2. [druid_balance>races>1>races>v>0>mark] tick
+  3. [druid_balance>races>1>races>v>1>side] horde
+  4. [druid_balance>races>1>races>v>1>mark] tick
+  5. [druid_balance>races>1>races>v>2>side] both
+  6. [druid_balance>races>1>races>v>2>mark] star
+  7. [druid_feral>races>1>races>v>0>side] alliance
+  8. [druid_feral>races>1>races>v>0>mark] tick
+  9. [druid_feral>races>1>races>v>1>side] horde
+ 10. [druid_feral>races>1>races>v>1>mark] tick
+ 11. [druid_restoration>changes>2>tb>v>3>1] A 5% buff to our HoTs at max level. An easy pick-up for any talent build since it's in the first tier of Balance talents.
+ 12. [druid_restoration>changes>2>tb>v>4>1] An extra 4% crit to our heals at max rank. All our HoTs can now crit, so this talent is a great pickup to improve our healing throughput.
+ 13. [druid_restoration>changes>3>p>v] There are many changes to our existing abilities and talents. We are seeing fresh updates on familiar effects that change how we think about their healing impac
+ 14. [druid_restoration>changes>4>tb>v>0>1] Now scales the returned damage by the caster's Spell Power.
+ 15. [druid_restoration>changes>4>tb>v>1>1] Significantly cheaper, and the HoT portion can now crit.
+ 16. [druid_restoration>races>1>races>v>0>side] alliance
+ 17. [druid_restoration>races>1>races>v>0>mark] tick
+ 18. [druid_restoration>races>1>races>v>1>side] horde
+ 19. [druid_restoration>races>1>races>v>1>mark] tick
+ 20. [hunter_beast-mastery>systems>2>h4>v] Pets
+ 21. [hunter_beast-mastery>races>1>races>v>0>side] alliance
+ 22. [hunter_beast-mastery>races>1>races>v>0>mark] tick
+ 23. [hunter_beast-mastery>races>1>races>v>1>side] alliance
+ 24. [hunter_beast-mastery>races>1>races>v>1>mark] tick
+ 25. [hunter_beast-mastery>races>1>races>v>2>side] horde
+ 26. [hunter_beast-mastery>races>1>races>v>2>mark] tick
+ 27. [hunter_beast-mastery>races>1>races>v>3>side] horde
+ 28. [hunter_beast-mastery>races>1>races>v>3>mark] tick
+ 29. [hunter_beast-mastery>races>1>races>v>4>side] horde
+ 30. [hunter_beast-mastery>races>1>races>v>4>mark] tick
+ 31. [hunter_marksmanship>races>1>races>v>0>side] alliance
+ 32. [hunter_marksmanship>races>1>races>v>0>mark] tick
+ 33. [hunter_marksmanship>races>1>races>v>1>side] alliance
+ 34. [hunter_marksmanship>races>1>races>v>1>mark] tick
+ 35. [hunter_marksmanship>races>1>races>v>2>side] horde
+ 36. [hunter_marksmanship>races>1>races>v>2>mark] tick
+ 37. [hunter_marksmanship>races>1>races>v>3>side] horde
+ 38. [hunter_marksmanship>races>1>races>v>3>mark] tick
+ 39. [hunter_marksmanship>races>1>races>v>4>side] horde
+ 40. [hunter_marksmanship>races>1>races>v>4>mark] tick
+ 41. [hunter_survival>races>1>races>v>0>side] alliance
+ 42. [hunter_survival>races>1>races>v>0>mark] tick
+ 43. [hunter_survival>races>1>races>v>1>side] alliance
+ 44. [hunter_survival>races>1>races>v>1>mark] tick
+ 45. [hunter_survival>races>1>races>v>2>side] horde
+ 46. [hunter_survival>races>1>races>v>2>mark] tick
+ 47. [hunter_survival>races>1>races>v>3>side] horde
+ 48. [hunter_survival>races>1>races>v>3>mark] tick
+ 49. [hunter_survival>races>1>races>v>4>side] horde
+ 50. [hunter_survival>races>1>races>v>4>mark] tick
+ 51. [mage_arcane>races>1>races>v>0>side] alliance
+ 52. [mage_arcane>races>1>races>v>0>mark] tick
+ 53. [mage_arcane>races>1>races>v>1>side] alliance
+ 54. [mage_arcane>races>1>races>v>1>mark] tick
+ 55. [mage_arcane>races>1>races>v>2>side] horde
+ 56. [mage_arcane>races>1>races>v>2>mark] tick
+ 57. [mage_arcane>races>1>races>v>3>side] horde
+ 58. [mage_arcane>races>1>races>v>3>mark] tick
+ 59. [mage_arcane>races>10>p>v] High Order Skyborne
+ 60. [mage_fire>races>1>races>v>0>side] alliance
+ 61. [mage_fire>races>1>races>v>0>mark] tick
+ 62. [mage_fire>races>1>races>v>1>side] alliance
+ 63. [mage_fire>races>1>races>v>1>mark] tick
+ 64. [mage_fire>races>1>races>v>2>side] horde
+ 65. [mage_fire>races>1>races>v>2>mark] tick
+ 66. [mage_fire>races>1>races>v>3>side] horde
+ 67. [mage_fire>races>1>races>v>3>mark] tick
+ 68. [mage_frost>races>1>races>v>0>side] alliance
+ 69. [mage_frost>races>1>races>v>0>mark] tick
+ 70. [mage_frost>races>1>races>v>1>side] alliance
+ 71. [mage_frost>races>1>races>v>1>mark] tick
+ 72. [mage_frost>races>1>races>v>2>side] horde
+ 73. [mage_frost>races>1>races>v>2>mark] tick
+ 74. [mage_frost>races>1>races>v>3>side] horde
+ 75. [mage_frost>races>1>races>v>3>mark] tick
+ 76. [paladin_holy>races>1>races>v>0>side] alliance
+ 77. [paladin_holy>races>1>races>v>0>mark] tick
+ 78. [paladin_holy>races>1>races>v>1>side] alliance
+ 79. [paladin_holy>races>1>races>v>1>mark] tick
+ 80. [paladin_protection>races>1>races>v>0>side] alliance
+ 81. [paladin_protection>races>1>races>v>0>mark] tick
+ 82. [paladin_protection>races>1>races>v>1>side] alliance
+ 83. [paladin_protection>races>1>races>v>1>mark] tick
+ 84. [paladin_retribution>races>1>races>v>0>side] alliance
+ 85. [paladin_retribution>races>1>races>v>0>mark] tick
+ 86. [paladin_retribution>races>1>races>v>1>side] alliance
+ 87. [paladin_retribution>races>1>races>v>1>mark] tick
+ 88. [priest_discipline>races>1>races>v>0>side] alliance
+ 89. [priest_discipline>races>1>races>v>0>mark] tick
+ 90. [priest_discipline>races>1>races>v>1>side] horde
+ 91. [priest_discipline>races>1>races>v>1>mark] tick
+ 92. [priest_discipline>prof>1>h4>v] false
+ 93. [priest_discipline>prof>4>h4>v] false
+ 94. [priest_holy>races>1>races>v>0>side] alliance
+ 95. [priest_holy>races>1>races>v>0>mark] tick
+ 96. [priest_holy>races>1>races>v>1>side] alliance
+ 97. [priest_holy>races>1>races>v>1>mark] tick
+ 98. [priest_holy>races>1>races>v>2>side] alliance
+ 99. [priest_holy>races>1>races>v>2>mark] tick
+100. [priest_holy>races>1>races>v>3>side] horde
+101. [priest_holy>races>1>races>v>3>mark] tick
+102. [priest_holy>races>1>races>v>4>side] horde
+103. [priest_holy>races>1>races>v>4>mark] tick
+104. [priest_shadow>races>1>races>v>0>side] alliance
+105. [priest_shadow>races>1>races>v>0>mark] tick
+106. [priest_shadow>races>1>races>v>1>side] alliance
+107. [priest_shadow>races>1>races>v>1>mark] tick
+108. [priest_shadow>races>1>races>v>2>side] alliance
+109. [priest_shadow>races>1>races>v>2>mark] tick
+110. [priest_shadow>races>1>races>v>3>side] horde
+111. [priest_shadow>races>1>races>v>3>mark] tick
+112. [priest_shadow>races>1>races>v>4>side] horde
+113. [priest_shadow>races>1>races>v>4>mark] tick
+114. [rogue_assassination>races>1>races>v>0>side] alliance
+115. [rogue_assassination>races>1>races>v>0>mark] tick
+116. [rogue_assassination>races>1>races>v>1>side] alliance
+117. [rogue_assassination>races>1>races>v>1>mark] tick
+118. [rogue_assassination>races>1>races>v>2>side] alliance
+119. [rogue_assassination>races>1>races>v>2>mark] tick
+120. [rogue_assassination>races>1>races>v>3>side] alliance
+121. [rogue_assassination>races>1>races>v>3>mark] tick
+122. [rogue_assassination>races>1>races>v>4>side] horde
+123. [rogue_assassination>races>1>races>v>4>mark] tick
+124. [rogue_assassination>races>1>races>v>5>side] horde
+125. [rogue_assassination>races>1>races>v>5>mark] tick
+126. [rogue_assassination>races>1>races>v>6>side] horde
+127. [rogue_assassination>races>1>races>v>6>mark] tick
+128. [rogue_combat>races>1>races>v>0>side] alliance
+129. [rogue_combat>races>1>races>v>0>mark] tick
+130. [rogue_combat>races>1>races>v>1>side] alliance
+131. [rogue_combat>races>1>races>v>1>mark] tick
+132. [rogue_combat>races>1>races>v>2>side] alliance
+133. [rogue_combat>races>1>races>v>2>mark] tick
+134. [rogue_combat>races>1>races>v>3>side] alliance
+135. [rogue_combat>races>1>races>v>3>mark] tick
+136. [rogue_combat>races>1>races>v>4>side] horde
+137. [rogue_combat>races>1>races>v>4>mark] tick
+138. [rogue_combat>races>1>races>v>5>side] horde
+139. [rogue_combat>races>1>races>v>5>mark] tick
+140. [rogue_combat>races>1>races>v>6>side] horde
+141. [rogue_combat>races>1>races>v>6>mark] tick
+142. [rogue_subtlety>races>1>races>v>0>side] alliance
+143. [rogue_subtlety>races>1>races>v>0>mark] tick
+144. [rogue_subtlety>races>1>races>v>1>side] alliance
+145. [rogue_subtlety>races>1>races>v>1>mark] tick
+146. [rogue_subtlety>races>1>races>v>2>side] alliance
+147. [rogue_subtlety>races>1>races>v>2>mark] tick
+148. [rogue_subtlety>races>1>races>v>3>side] alliance
+149. [rogue_subtlety>races>1>races>v>3>mark] tick
+150. [rogue_subtlety>races>1>races>v>4>side] horde
+151. [rogue_subtlety>races>1>races>v>4>mark] tick
+152. [rogue_subtlety>races>1>races>v>5>side] horde
+153. [rogue_subtlety>races>1>races>v>5>mark] tick
+154. [rogue_subtlety>races>1>races>v>6>side] horde
+155. [rogue_subtlety>races>1>races>v>6>mark] tick
+156. [rogue_subtlety>races>10>p>v] Dwarf
+157. [rogue_subtlety>races>11>p>v] Horde
+158. [rogue_subtlety>races>13>p>v] Orc
+159. [rogue_subtlety>races>14>p>v] Undead
+160. [rogue_subtlety>races>15>p>v] Troll
+161. [shaman_elemental>races>1>races>v>0>side] horde
+162. [shaman_elemental>races>1>races>v>0>mark] tick
+163. [shaman_elemental>races>1>races>v>1>side] horde
+164. [shaman_elemental>races>1>races>v>1>mark] tick
+165. [shaman_elemental>races>1>races>v>2>side] horde
+166. [shaman_elemental>races>1>races>v>2>mark] tick
+167. [shaman_enhancement>races>1>races>v>0>side] horde
+168. [shaman_enhancement>races>1>races>v>0>mark] tick
+169. [shaman_enhancement>races>1>races>v>1>side] horde
+170. [shaman_enhancement>races>1>races>v>1>mark] tick
+171. [shaman_enhancement>races>1>races>v>2>side] horde
+172. [shaman_enhancement>races>1>races>v>2>mark] tick
+173. [shaman_restoration>races>1>races>v>0>side] horde
+174. [shaman_restoration>races>1>races>v>0>mark] tick
+175. [shaman_restoration>races>1>races>v>1>side] horde
+176. [shaman_restoration>races>1>races>v>1>mark] tick
+177. [shaman_restoration>races>1>races>v>2>side] horde
+178. [shaman_restoration>races>1>races>v>2>mark] tick
+179. [warlock_affliction>changes>2>ul>v>0>icon] arrow-right
+180. [warlock_affliction>races>1>races>v>0>side] alliance
+181. [warlock_affliction>races>1>races>v>0>mark] tick
+182. [warlock_affliction>races>1>races>v>1>side] alliance
+183. [warlock_affliction>races>1>races>v>1>mark] tick
+184. [warlock_affliction>races>1>races>v>2>side] horde
+185. [warlock_affliction>races>1>races>v>2>mark] tick
+186. [warlock_affliction>races>1>races>v>3>side] horde
+187. [warlock_affliction>races>1>races>v>3>mark] tick
+188. [warlock_demonology>changes>3>ul>v>0>icon] arrow-right
+189. [warlock_demonology>races>1>races>v>0>side] alliance
+190. [warlock_demonology>races>1>races>v>0>mark] tick
+191. [warlock_demonology>races>1>races>v>1>side] alliance
+192. [warlock_demonology>races>1>races>v>1>mark] tick
+193. [warlock_demonology>races>1>races>v>2>side] horde
+194. [warlock_demonology>races>1>races>v>2>mark] tick
+195. [warlock_demonology>races>1>races>v>3>side] horde
+196. [warlock_demonology>races>1>races>v>3>mark] tick
+197. [warlock_demonology>prof>1>tb>v>5>1] +5% damage to Beasts and Dragonkin.
+198. [warlock_destruction>changes>2>ul>v>0>icon] arrow-right
+199. [warlock_destruction>races>1>races>v>0>side] alliance
+200. [warlock_destruction>races>1>races>v>0>mark] tick
+201. [warlock_destruction>races>1>races>v>1>side] alliance
+202. [warlock_destruction>races>1>races>v>1>mark] tick
+203. [warlock_destruction>races>1>races>v>2>side] horde
+204. [warlock_destruction>races>1>races>v>2>mark] tick
+205. [warlock_destruction>races>1>races>v>3>side] horde
+206. [warlock_destruction>races>1>races>v>3>mark] tick
+207. [warrior_arms>races>1>races>v>0>side] alliance
+208. [warrior_arms>races>1>races>v>0>mark] tick
+209. [warrior_arms>races>1>races>v>1>side] alliance
+210. [warrior_arms>races>1>races>v>1>mark] tick
+211. [warrior_arms>races>1>races>v>2>side] alliance
+212. [warrior_arms>races>1>races>v>2>mark] tick
+213. [warrior_arms>races>1>races>v>3>side] alliance
+214. [warrior_arms>races>1>races>v>3>mark] tick
+215. [warrior_arms>races>1>races>v>4>side] horde
+216. [warrior_arms>races>1>races>v>4>mark] tick
+217. [warrior_arms>races>1>races>v>5>side] horde
+218. [warrior_arms>races>1>races>v>5>mark] tick
+219. [warrior_arms>races>1>races>v>6>side] horde
+220. [warrior_arms>races>1>races>v>6>mark] tick
+221. [warrior_arms>races>1>races>v>7>side] horde
+222. [warrior_arms>races>1>races>v>7>mark] tick
+223. [warrior_fury>races>1>races>v>0>side] alliance
+224. [warrior_fury>races>1>races>v>0>mark] tick
+225. [warrior_fury>races>1>races>v>1>side] alliance
+226. [warrior_fury>races>1>races>v>1>mark] tick
+227. [warrior_fury>races>1>races>v>2>side] alliance
+228. [warrior_fury>races>1>races>v>2>mark] tick
+229. [warrior_fury>races>1>races>v>3>side] alliance
+230. [warrior_fury>races>1>races>v>3>mark] tick
+231. [warrior_fury>races>1>races>v>4>side] horde
+232. [warrior_fury>races>1>races>v>4>mark] tick
+233. [warrior_fury>races>1>races>v>5>side] horde
+234. [warrior_fury>races>1>races>v>5>mark] tick
+235. [warrior_fury>races>1>races>v>6>side] horde
+236. [warrior_fury>races>1>races>v>6>mark] tick
+237. [warrior_fury>races>1>races>v>7>side] horde
+238. [warrior_fury>races>1>races>v>7>mark] tick
+exit=0

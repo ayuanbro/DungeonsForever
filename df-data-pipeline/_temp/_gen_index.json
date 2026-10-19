@@ -1,0 +1,1846 @@
+[
+ {
+  "file": "_build_collection_pets.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "CollectionPets"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_build_pets_src.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "CollectionPets"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_comments_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "cn.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_en_npc.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_forever_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_item_zh.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [
+   "nether.wowhead.com",
+   "urllib.request.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_npc_zh.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [
+   "nether.wowhead.com",
+   "urllib.request.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_qname_wx.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [
+   "wuxianwow.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_qname_zh.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [
+   "nether.wowhead.com",
+   "urllib.request.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_qname_zh2.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [
+   "nether.wowhead.com",
+   "urllib.request.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_refetch_one.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_wxdb.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [
+   "wuxianwow.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_cq_wxdb2.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [
+   "re.com",
+   "wuxianwow.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_align.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_export_zh.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_guide_gen.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonGuide",
+   "DungeonLoot"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_guide_parse.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_guide_scrape.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_names2.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_spell_desc.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com",
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_spell_icons.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com",
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_df_wh_spell_names.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_chunk_probe.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_compare.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossPos",
+   "BossSkills",
+   "DungeonLoot"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_dg_fetch_all.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_fights_parse.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_full_check_1007.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossPos",
+   "DungeonLoot",
+   "DungeonQuests",
+   "Dungeons",
+   "MapPins"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_itemname.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_loot_apply_1007.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_loot_apply_1007b.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_loot_compare.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_loot_diff.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_loot_diff2.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_loot_fill.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_pins_rsc.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_rare_names.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_fc_sets_apply.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "RaidSets"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_route_build_all.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossPos",
+   "Dungeons"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_route_faction.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonQuests"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_route_gen.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossPos"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_route_preview_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_route_qicons.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonQuests",
+   "MapPins",
+   "NPCLoc"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_route_write_pins.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "MapPins"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_compare.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossPos",
+   "BossSkills",
+   "DungeonGuide",
+   "DungeonLoot"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_dbg.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_edge_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_mount_pages_parse.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_mounts_items.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_npcid_verify.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_npcid_verify2.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_parse_1007.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_pet_display.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com",
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_q_comments_all_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_q_comments_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_qb_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "_wh_qend_batch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonQuests"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "clean_comments_20261010.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "BIS",
+   "BossSkills",
+   "ClassGuide",
+   "ClassTier",
+   "CollectionMounts",
+   "CollectionPets",
+   "DungeonEntry",
+   "DungeonLoot",
+   "DungeonQuests",
+   "Dungeons",
+   "Explore",
+   "ExploreBanner",
+   "ExplorePets",
+   "ExploreToys",
+   "LootFilter",
+   "MapPins",
+   "NPCLoc",
+   "NameOverrides",
+   "ProfGathering",
+   "ProfLeveling",
+   "ProfRecipes",
+   "ProfVendors",
+   "Professions",
+   "PvPHonor",
+   "PvPRanks",
+   "PvPSets",
+   "RaidSets",
+   "VendorPrices"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "explore_gen.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "Explore"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "fc_battlemage_ids.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_bis.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BIS",
+   "DungeonLoot",
+   "Dungeons"
+  ],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_bis_zh.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "nether.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_dungeon_compare.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot"
+  ],
+  "urls": [
+   "foreverchanges.pro",
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_dungeon_compare2.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonLoot",
+   "DungeonQuests"
+  ],
+  "urls": [
+   "foreverchanges.pro",
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_fields.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfGathering",
+   "ProfLeveling",
+   "ProfRecipes",
+   "Professions"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "fc_gen.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "ProfGathering",
+   "ProfLeveling",
+   "ProfRecipes",
+   "ProfVendors",
+   "Professions"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_guide.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassGuide"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_pins.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "MapPins"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_quest_gap_classify.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonQuests"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "fc_quest_side_verify.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonQuests"
+  ],
+  "urls": [
+   "foreverchanges.pro",
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_side_cross.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonQuests"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_tier.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassTier"
+  ],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_vendor_side.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_vendors.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfVendors"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "fc_vendors_resolve.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_zh_sync.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "fc_zones.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "wago.tools"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_area_map.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap"
+  ],
+  "urls": [
+   "wago.tools"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_boss_model.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossModel"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_boss_pos.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossPos"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_boss_skills.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossSkills",
+   "DungeonLoot"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_check_glyphs.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "zlib.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_class_combat.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassCombat"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_class_quest.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassQuest"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_crate_nav_icon.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "zlib.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_crates_data.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "Crates"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_dungeon_entry.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonEntry",
+   "Dungeons",
+   "NPCLoc"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_enus_data.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BIS",
+   "ClassCombat",
+   "ClassGuide",
+   "ClassTier",
+   "DungeonQuests",
+   "Gear",
+   "LootFilter",
+   "MapPins",
+   "RaidSets"
+  ],
+  "urls": [
+   "prof.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_ext_info.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonQuests"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_faction_icons.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "zlib.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_faction_qm.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "FactionQM"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_factions_data.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "Factions"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_gear_pack.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "Gear"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_gear_rare.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "Gear",
+   "GearRareSpawns"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_gear_scrape.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "Gear"
+  ],
+  "urls": [
+   "foreverchanges.pro",
+   "urllib.request.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_gear_src.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "DungeonLoot",
+   "Dungeons",
+   "Gear",
+   "PvPSets"
+  ],
+  "urls": [
+   "wago.tools"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_gear_vendors.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "Gear",
+   "GearVendors"
+  ],
+  "urls": [
+   "www.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_locales.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_plunder_data.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "Plunder"
+  ],
+  "urls": [
+   "wuxianwow.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_prof_trainers.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfTrainers"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_pvp_arrow_variants.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "zlib.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_pvp_data.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "PvPRanks",
+   "PvPSets"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_pvp_honor.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "PvPHonor"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_pvp_parse.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_pvp_rank_arrow.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "zlib.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_qlv_from_quests.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BIS",
+   "DungeonQuests",
+   "Gear"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_quest_end_npc.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "DungeonQuests",
+   "NPCLoc",
+   "QuestEndNpc"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_quest_share.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "DungeonQuests"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_quest_start_loc.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "DungeonQuests",
+   "NPCLoc",
+   "QuestStartLoc"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_quest_start_npc.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "AreaMap",
+   "DungeonEntry",
+   "DungeonQuests",
+   "NPCLoc",
+   "QuestStartNpc"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_raidsets.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "GearSets",
+   "RaidSets"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_rot_wowhead.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_route_lua.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "Route"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "gen_sort_icon.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "zlib.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_spells_from_book.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "SpellBook"
+  ],
+  "urls": [
+   "foreverchanges.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_tpl_strip.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "comments.com",
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_zhtw.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "gen_zhtw_data.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ClassGuide"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "patch_check_search.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "ns.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_harness_pvp.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "PvPRanks",
+   "PvPSets"
+  ],
+  "urls": [
+   "ns.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_hud_misstog_label.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "ns.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_hud_routemode.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "ns.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_hud_shoponlymissing.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "dungeonsforeverdb.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_mappins_harness.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "BossPos",
+   "MapPins"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "patch_mkcheck_sync.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "NPCLoc"
+  ],
+  "urls": [
+   "compile.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_mkmut_sync.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "NPCLoc"
+  ],
+  "urls": [
+   "compile.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_prof_layout_harness.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "dg.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_prof_merge4in1.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "d.pro",
+   "dg.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_prof_merge4in1_harness.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "dg.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_prof_perf17.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfRecipes"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "patch_prof_perf7.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "dg.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_prof_quest_remove.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "compile.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_prof_search.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "pd.tools"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_pvp_refactor_a.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "PvPHonor"
+  ],
+  "urls": [],
+  "has_doc": false
+ },
+ {
+  "file": "patch_pvp_ui_polish.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "patch_snap_npc.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "ns.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_drop_loc.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_probe.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfGathering",
+   "ProfLeveling",
+   "ProfRecipes",
+   "Professions"
+  ],
+  "urls": [
+   "ds.pro",
+   "ns.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_split.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfRecipes"
+  ],
+  "urls": [
+   "ns.pro"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_src_patch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfRecipes"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_loc_inject.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfTrainers"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_npc_clean.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfTrainers"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_npcid.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfTrainers"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_zh_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "cn.wowhead.com",
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_zh_inject.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfTrainers"
+  ],
+  "urls": [
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_zh_refetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "cn.wowhead.com",
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_zone_fetch.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "cn.wowhead.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_zone_search.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [],
+  "urls": [
+   "cn.wowhead.com",
+   "re.com"
+  ],
+  "has_doc": false
+ },
+ {
+  "file": "prof_trainer_zone_zh.py",
+  "reads": [],
+  "writes": [],
+  "usage": [],
+  "tables": [
+   "ProfTrainers"
+  ],
+  "urls": [],
+  "has_doc": false
+ }
+]

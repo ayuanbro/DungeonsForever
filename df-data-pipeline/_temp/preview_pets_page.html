@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>无限副本手册 · 探索 / 小动物 —— 落图交互原型</title>
+<style>
+:root{
+  --bg:#12141a; --panel:#1b1e25; --card:#212530; --card2:#1a1d24;
+  --bd:rgba(255,255,255,.09); --bd2:rgba(255,255,255,.16);
+  --tx:#e9e7e4; --dim:#98a0aa; --dim2:#6e7681;
+  --gold:#ffd100; --gold2:#f0c040; --link:#8cc7ff;
+  --a:#74aef7; --h:#f27f72; --party:#e06b6b; --solo:#61cc80;
+  --map:#2a2b26;
+}
+html[data-theme="light"]{
+  --bg:#f4f3ef; --panel:#ffffff; --card:#ffffff; --card2:#f7f6f2;
+  --bd:rgba(0,0,0,.10); --bd2:rgba(0,0,0,.18);
+  --tx:#1f1f1e; --dim:#5c5c58; --dim2:#8a8a84;
+  --gold:#a06a00; --gold2:#8a5c00; --link:#1257a0;
+  --a:#1a5fb4; --h:#b02418; --party:#b02418; --solo:#2f7a1e;
+  --map:#e7e4d8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font-family:"Segoe UI","Microsoft YaHei",system-ui,-apple-system,sans-serif;font-size:13px}
+header{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--bd);background:var(--panel)}
+header .t{font-size:14px;font-weight:600}
+header .s{font-size:12px;color:var(--dim)}
+header .sp{flex:1}
+button{font:inherit;font-size:12px;color:var(--tx);background:transparent;border:1px solid var(--bd2);
+  border-radius:7px;padding:4px 10px;cursor:pointer}
+button:hover{border-color:var(--gold);color:var(--gold)}
+.grid{display:grid;grid-template-columns:136px minmax(0,1fr) 336px;gap:14px;padding:14px 18px 22px;align-items:start}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+
+nav .g{font-size:11px;color:var(--dim2);margin:14px 0 5px 2px;letter-spacing:.5px}
+nav .g:first-child{margin-top:0}
+nav .i{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);padding:5px 7px;border-radius:7px;margin-bottom:3px}
+nav .i .ic{width:16px;height:16px;border-radius:4px;background:var(--card2);border:1px solid var(--bd);flex:0 0 16px}
+nav .i.on{background:var(--card);color:var(--gold);font-weight:600;box-shadow:inset 3px 0 0 var(--gold)}
+
+.body{min-width:0}
+.hd{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:9px;flex-wrap:wrap}
+.hd b{font-size:13.5px}
+.hd span{font-size:11px;color:var(--dim)}
+
+.pc{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 13px 11px;margin-bottom:8px}
+.pt{display:flex;gap:10px;align-items:flex-start}
+.pi{width:42px;height:42px;border-radius:7px;flex:0 0 42px;background:var(--card2);border:1px solid var(--bd2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;line-height:1.25;color:var(--dim2);text-align:center}
+.pm{flex:1;min-width:0}
+.nm{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pil{font-size:11px;font-weight:400;border:1px solid currentColor;border-radius:9px;padding:0 8px;line-height:17px;opacity:.95}
+.zr{font-size:11.5px;color:var(--dim);margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.chip{font-size:11.5px;border:1px solid var(--bd2);border-radius:5px;padding:0 8px;line-height:18px;
+  background:var(--card2);cursor:pointer;user-select:none}
+.chip:hover{border-color:var(--gold);color:var(--gold)}
+.hot{color:var(--link);border-bottom:1px dashed currentColor;cursor:pointer}
+.hot:hover{color:var(--gold)}
+.sep{height:1px;background:var(--bd);margin:8px 0 7px}
+.st{font-size:12.5px;line-height:1.85;display:flex;gap:6px}
+.st .n{color:var(--gold);flex:0 0 14px;font-weight:600}
+.st.un .n{color:var(--gold2)}
+.st .n u{text-decoration:none;color:var(--gold)}
+
+.right{display:flex;flex-direction:column;gap:12px;min-width:0}
+.mapwrap{background:var(--panel);border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+.mapbar{display:flex;align-items:center;gap:8px;padding:7px 11px;border-bottom:1px solid var(--bd);font-size:12px}
+.mapbar b{font-weight:600}
+.mapbar .c{color:var(--tapgold,var(--gold));font-variant-numeric:tabular-nums}
+.mapbar .sp{flex:1}
+.map{position:relative;aspect-ratio:1/1;background:var(--map);overflow:hidden}
+.map .land{position:absolute;border-radius:50%;background:var(--bd2);opacity:.5}
+.map .grid{position:absolute;inset:0;
+  background-image:linear-gradient(var(--bd) 1px,transparent 1px),linear-gradient(90deg,var(--bd) 1px,transparent 1px);
+  background-size:10% 10%}
+.map .cross{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--bd);opacity:.7}
+.map .cross.h{left:0;right:0;top:50%;bottom:auto;width:auto;height:1px}
+.map .zlabel{position:absolute;left:9px;bottom:7px;font-size:11px;color:var(--dim2)}
+.map .hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:11.5px;color:var(--dim2);text-align:center;line-height:1.6;padding:0 30px}
+.pin{position:absolute;width:0;height:0}
+.pin i{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;
+  background:var(--gold);border:2px solid rgba(0,0,0,.55);box-shadow:0 0 0 4px rgba(255,209,0,.22);
+  animation:pulse 1.4s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 3px rgba(255,209,0,.35)}100%{box-shadow:0 0 0 14px rgba(255,209,0,0)}}
+.pin b{position:absolute;left:14px;top:-11px;white-space:nowrap;font-size:11px;font-weight:600;
+  background:rgba(0,0,0,.72);color:#ffd100;border-radius:5px;padding:1px 6px}
+html[data-theme="light"] .pin b{background:rgba(255,255,255,.9);color:#8a5c00;border:1px solid rgba(0,0,0,.12)}
+.pin b.hi{background:var(--gold);color:#241a00}
+.tip{position:absolute;pointer-events:none;left:0;top:0;max-width:250px;background:rgba(12,13,17,.94);
+  border:1px solid var(--bd2);border-radius:7px;padding:6px 9px;font-size:11.5px;line-height:1.6;
+  color:#e9e7e4;display:none;z-index:9}
+.tip .l1{color:#fff;font-weight:600}
+.tip .l2{color:#b9c0c9;font-variant-numeric:tabular-nums}
+.tip .l3{color:#8cc7ff}
+
+.console{background:var(--panel);border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+.console .bar{display:flex;align-items:center;gap:8px;padding:7px 11px;border-bottom:1px solid var(--bd);font-size:12px;font-weight:600}
+.console .bar .sp{flex:1}
+#log{padding:8px 11px 11px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:11.5px;
+  line-height:1.75;max-height:326px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+#log .h{color:var(--gold);font-weight:600}
+#log .a{color:var(--dim)}
+#log .k{color:var(--link)}
+#log .e{color:var(--h)}
+.legend{padding:0 18px 24px;font-size:11.5px;color:var(--dim);line-height:1.85}
+.legend b{color:var(--tx)}
+</style>
+</head>
+<body>
+<header>
+  <div class="t">无限副本手册 · 探索 / 小动物</div>
+  <div class="s">方案 A 落地稿 · 交互原型</div>
+  <div class="sp"></div>
+  <button id="tbtn">切到浅色</button>
+  <button id="clr">清除标记</button>
+</header>
+
+<div class="grid">
+  <nav>
+    <div class="g">收集</div>
+    <div class="i"><i class="ic"></i>40本书</div>
+    <div class="i"><i class="ic"></i>睡袋</div>
+    <div class="i"><i class="ic"></i>战斗法师</div>
+    <div class="g">宠物</div>
+    <div class="i on"><i class="ic" style="border-color:currentColor"></i>小动物</div>
+  </nav>
+
+  <div class="body">
+    <div class="hd">
+      <b>宠物获取 · 共 3 只</b>
+      <span>点宠物名 / 区域名 / 坐标 → 世界地图（wowhead 没标坐标的只开区域地图）</span>
+    </div>
+    <div id="cards"></div>
+  </div>
+
+  <div class="right">
+    <div class="mapwrap">
+      <div class="mapbar">
+        <b id="maptitle">世界地图</b>
+        <span class="c" id="mapcoord"></span>
+        <div class="sp"></div>
+        <button id="mclear">清标记</button>
+      </div>
+      <div class="map" id="map">
+        <div class="grid"></div>
+        <div class="cross"></div><div class="cross h"></div>
+        <div class="land" style="left:18%;top:24%;width:34%;height:30%;border-radius:44% 56% 60% 40%"></div>
+        <div class="land" style="left:34%;top:48%;width:40%;height:26%;border-radius:52% 48% 38% 62%"></div>
+        <div class="land" style="left:56%;top:20%;width:26%;height:22%;border-radius:60% 40% 50% 50%"></div>
+        <div class="zlabel" id="zlabel">未选中地图</div>
+        <div class="hint" id="maphint">点左侧任意一个<br>蓝色虚线字 / 区域名 / 坐标芯片，<br>就在这里落点</div>
+        <div class="tip" id="tip"></div>
+      </div>
+    </div>
+
+    <div class="console">
+      <div class="bar">调用链 <div class="sp"></div><span class="a" id="cnt" style="font-weight:400;color:var(--dim)">0 次</span></div>
+      <div id="log"><span class="a">等待点击…（每次点击都会打一遍真实落图链路）</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <b>热点三类</b>：① 步骤句里被 <code>m</code> 切出来的名段（点商人「波伊尔」也算）&nbsp;·&nbsp;② 区域名那一段&nbsp;·&nbsp;③ 坐标芯片 —— 三类走同一条路径。<br>
+  <b>坐标纪律</b>：只有在 wowhead 那一页明确写出坐标（正文 <code>/way x y</code> 或地图 <code>[pin x= y=]</code>）时才落航点；没标就写 <code>false</code>，点它<b>只打开该区域地图、一个点都不落</b>。原型里暴风城 / 幽暗城两条就是这种（卡片不显示坐标芯片）。<br>
+  <b>图标口径</b>：卡上的图标 / 名字都按 <code>item</code> 问客户端取；客户端给不出时，图标才回落到数据里的 wowhead slug，名字回落成「物品 #id」占位。<br>
+  <b>帧数纪律</b>：所有帧在页面 Build 阶段一次建全（3 张卡 × 14 个段池），渲染期只改位置与显隐，不新建帧。
+</div>
+
+<script>
+var PETS = [
+  { item:282047, slug:"inv_pet_babycrocodile_toothy", fac:"A", diff:"party",
+    area:1519, zone:"暴风城", x:null, y:null, src:"运河 · 巡逻精英掉落",
+    steps:[
+      { t:"击杀运河里巡逻的精英「下水道鳄鱼」", m:[{k:"下水道鳄鱼"}] },
+      { t:"它有几率掉落「鳄鱼宝宝」；血量厚，建议组队前往" }
+    ] },
+  { item:275682, slug:"inv_maldraxxusslime", fac:"H", diff:"solo",
+    area:1497, zone:"幽暗城", x:null, y:null, src:"运河 · 互动获取",
+    steps:[
+      { t:"向商人「波伊尔」买一份「营养丰富的泥浆怪淤泥」",
+        m:[{k:"波伊尔",x:56.2,y:64.6},{k:"营养丰富的泥浆怪淤泥",x:56.2,y:64.6}] },
+      { t:"跳进运河，找到正在巡逻的「活泼软泥怪」", m:[{k:"活泼软泥怪"}] },
+      { t:"反复对它 /dance，直到它回舞并给出任务" },
+      { t:"把淤泥交给它 → 获得「活泼软泥怪」。之后对它 /dance 宠物也会跳" }
+    ] },
+  { item:268109, slug:"inv_frog2_blue", fac:null, diff:"easy",
+    area:16593, zone:"泽弗拉斯岛", x:51.8, y:71.7, src:"瀑布顶圆木 · 互动获取",
+    steps:[
+      { t:"沿路向南穿过草地，跳到瀑布顶的圆木上" },
+      { t:"选中「音乐跃风蛙」使用 /sing，蛙群随即消失", m:[{k:"音乐跃风蛙",x:51.8,y:71.7}] },
+      { t:"点击圆木上出现的青蛙 → 获得「音乐跃风蛙」" }
+    ] }
+];
+var FAC  = { A:["联盟限定","var(--a)"], H:["部落限定","var(--h)"] };
+var DIFF = { party:["难度·组队","var(--party)"], solo:["难度·单人","var(--solo)"], easy:["难度·简单","var(--solo)"] };
+var NUM  = ["①","②","③","④","⑤"];
+var nMark = 0;
+
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+// 无坐标（wowhead 没标）= null：dataset 出空串而不是 "null"；读回来也还原成 null。
+function A(v){ return (v===null||v===undefined) ? '' : v; }
+function num(v){ return (v===''||v===undefined||v===null) ? null : +v; }
+
+function PetSplit(t, marks){
+  var segs=[], pos=0;
+  (marks||[]).forEach(function(mk){
+    var s=t.indexOf(mk.k, pos);
+    if(s>=0){
+      if(s>pos) segs.push({tx:t.slice(pos,s)});
+      segs.push({tx:t.substr(s,mk.k.length), mk:mk});
+      pos=s+mk.k.length;
+    }
+  });
+  if(pos<t.length) segs.push({tx:t.slice(pos)});
+  return segs;
+}
+
+function render(){
+  var html='';
+  PETS.forEach(function(p){
+    var f=FAC[p.fac], d=DIFF[p.diff], fTxt=f?f[0]:"双阵营", fCol=f?f[1]:"var(--dim)";
+    html+='<div class="pc"><div class="pt">'
+      + '<div class="pi">物品<br>'+p.item+'</div><div class="pm">'
+      + '<div class="nm">'+esc(p.zone==="暴风城"?"鳄鱼宝宝":p.zone==="幽暗城"?"活泼软泥怪":"音乐跃风蛙")
+      + ' <span class="pil" style="color:'+fCol+'">'+fTxt+'</span>'
+      + ' <span class="pil" style="color:'+d[1]+'">'+d[0]+'</span>'
+      + (p.x===null ? '' :
+         '<span class="chip" style="margin-left:auto" data-area="'+p.area+'" data-x="'+p.x+'" data-y="'+p.y+'" data-lab="'+esc(p.zone)+'">'
+         + p.x.toFixed(1)+', '+p.y.toFixed(1)+'</span>')
+      + '</div>'
+      + '<div class="zr"><span class="hot" data-area="'+p.area+'" data-x="'+A(p.x)+'" data-y="'+A(p.y)+'" data-lab="'+esc(p.zone)+'">'+esc(p.zone)+'</span>'
+      + '<span>· '+esc(p.src)+'</span></div>'
+      + '</div></div><div class="sep"></div>';
+    p.steps.forEach(function(st,i){
+      html+='<div class="st"><span class="n">'+(NUM[i]||(i+1))+'</span><span>';
+      PetSplit(st.t, st.m).forEach(function(sg){
+        if(sg.mk) html+='<span class="hot" data-area="'+p.area+'" data-x="'+A(sg.mk.x)+'" data-y="'+A(sg.mk.y)+'" data-lab="'+esc(sg.tx)+'">'+esc(sg.tx)+'</span>';
+        else html+=esc(sg.tx);
+      });
+      html+='</span></div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById('cards').innerHTML=html;
+}
+
+function log(area,x,y,zone,mapid){
+  nMark++;
+  document.getElementById('cnt').textContent=nMark+' 次';
+  if(nMark===1) document.getElementById('log').innerHTML='';
+  var l=document.getElementById('log');
+  var has=(x!==null&&y!==null);
+  var s='<div><span class="h">EG.MarkPoint('+area+', '+(has?x.toFixed(1)+', '+y.toFixed(1):'false, false')+')</span>\n'
+    + '  <span class="a">├</span> mapID = <span class="k">ns.AreaMap['+area+']</span> = '+mapid
+    + ' <span class="a">（'+esc(zone)+'）</span>\n';
+  if(has){
+    s+= '  <span class="a">├</span> type(x)=="number" <span class="a">→ 落航点</span>\n'
+      + '  <span class="a">├</span> <span class="k">UiMapPoint.CreateFromCoordinates</span>('+mapid+', '+(x/100).toFixed(3)+', '+(y/100).toFixed(3)+')\n'
+      + '  <span class="a">├</span> <span class="k">C_Map.SetUserWaypoint</span>(pt)\n'
+      + '  <span class="a">├</span> <span class="k">C_SuperTrack.SetSuperTrackedUserWaypoint</span>(false)\n'
+      + '  <span class="a">└</span> <span class="k">C_Map.OpenWorldMap</span>('+mapid+')</div>';
+  } else {
+    s+= '  <span class="a">├</span> x/y = false <span class="a">→ 不落航点</span> <span class="k">（wowhead 没标坐标）</span>\n'
+      + '  <span class="a">└</span> <span class="k">C_Map.OpenWorldMap</span>('+mapid+') <span class="a">只打开区域地图</span></div>';
+  }
+  l.insertAdjacentHTML('beforeend', s);
+  l.scrollTop=l.scrollHeight;
+}
+
+// 原型里用真机静态表的值（ns.AreaMap = wago UiMapAssignment，数据侧已落盘）
+var MAPID={1519:1453,1497:1458,16593:2521};
+
+function mark(area,x,y,lab){
+  var m=document.getElementById('map');
+  Array.prototype.forEach.call(m.querySelectorAll('.pin'),function(n){ n.remove(); });
+  document.getElementById('maphint').style.display='none';
+  var zone=PETS.filter(function(p){ return p.area===area; })[0];
+  var has=(x!==null&&y!==null);
+  if(has){
+    var pin=document.createElement('div');
+    pin.className='pin';
+    pin.style.left=x+'%'; pin.style.top=y+'%';
+    pin.innerHTML='<i></i><b>'+esc(lab)+'</b>';
+    m.appendChild(pin);
+  }
+  document.getElementById('maptitle').textContent=(zone?zone.zone:'区域 #'+area)+(has?'':'（仅打开地图）');
+  document.getElementById('mapcoord').textContent=has?(x.toFixed(1)+', '+y.toFixed(1)):'无标注坐标';
+  document.getElementById('zlabel').textContent=(zone?zone.zone:'区域 #'+area)+'  ·  '+area;
+  log(area,x,y,zone?zone.zone:('区域 #'+area), MAPID[area]||'mapID');
+}
+function clearAll(){
+  Array.prototype.forEach.call(document.querySelectorAll('#map .pin'),function(n){ n.remove(); });
+  document.getElementById('maphint').style.display='';
+  document.getElementById('maptitle').textContent='世界地图';
+  document.getElementById('mapcoord').textContent='';
+  document.getElementById('zlabel').textContent='未选中地图';
+  nMark=0; document.getElementById('cnt').textContent='0 次';
+  document.getElementById('log').innerHTML='<span class="a">等待点击…（每次点击都会打一遍真实落图链路）</span>';
+}
+
+render();
+document.getElementById('clr').onclick=clearAll;
+document.getElementById('mclear').onclick=clearAll;
+document.getElementById('tbtn').onclick=function(){
+  var h=document.documentElement, l=h.getAttribute('data-theme')==='light';
+  h.setAttribute('data-theme', l?'dark':'light');
+  this.textContent = l?'切到浅色':'切到深色（HUI）';
+};
+
+var tip=document.getElementById('tip');
+document.addEventListener('mouseover',function(e){
+  var t=e.target.closest?e.target.closest('.hot,.chip'):null;
+  if(!t) return;
+  var px=num(t.dataset.x), py=num(t.dataset.y);
+  tip.innerHTML='<div class="l1">'+esc(t.dataset.lab)+'</div><div class="l2">'
+    + (PETS.filter(function(p){return p.area==+t.dataset.area;})[0]||{}).zone
+    + (px===null?'':' '+px.toFixed(1)+', '+py.toFixed(1))+'</div>'
+    + '<div class="l3">'+(px===null?'点击打开该区域地图':'点击在世界地图标记')+'</div>';
+  tip.style.display='block';
+  var r=t.getBoundingClientRect(), mr=document.getElementById('map').getBoundingClientRect();
+  tip.style.left=Math.max(4,Math.min(r.left-mr.left, mr.width-258))+'px';
+  tip.style.top=Math.max(4,r.bottom-mr.top+4)+'px';
+});
+document.addEventListener('mouseout',function(e){
+  if(e.target.closest&&e.target.closest('.hot,.chip')) tip.style.display='none';
+});
+document.addEventListener('click',function(e){
+  var t=e.target.closest?e.target.closest('.hot,.chip'):null;
+  if(!t) return;
+  tip.style.display='none';
+  mark(+t.dataset.area,num(t.dataset.x),num(t.dataset.y),t.dataset.lab);
+});
+</script>
+</body>
+</html>

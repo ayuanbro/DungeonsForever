@@ -1,0 +1,12 @@
+=== HEAD steps_note ===
+284:            steps_note = "训练师与供应商的坐标均为无限服实测点位；其余为客户端自身的文本。",
+371:            steps_note = "大约 5 级时，任务「户外生活」会让你在营火旁坐下，然后指引你去找烹饪训练师学习「基础营火」；训练师出售简易木柴和燧石与火绒。此后你学会的每个专业都会获得一个任务，交给对应训练师即可学会该专业的第一个营地物件。（出自 Wowhead 的营地总览；客户端中没有这些任务。）",
+=== HEAD enUS steps_note ===
+279:            steps_note = "Trainer and vendor coordinates are field-tested on the Forever realms; the rest is the client's own text.",
+366:            steps_note = "Around level 5, the quest \"Outdoor Living\" has you sit by a campfire, then sends you to a cooking trainer to learn \"Basic Campfire\"; the trainer sells Simple Wood and Flint and Tinder. Afterwards every profession you learn grants a quest — turn it in to that profession's trainer to learn its first camp object. (From Wowhead's camp overview; these quests do not exist in the client.)",
+=== HEAD has enUS/Data_LootFilter? ===
+fatal: path 'Core/Data/enUS/Data_LootFilter.lua' exists on disk, but not in 'HEAD'
+NO
+=== HEAD has Data_ClassGuide? ===
+fatal: path 'Core/Data/Data_ClassGuide.lua' exists on disk, but not in 'HEAD'
+NO

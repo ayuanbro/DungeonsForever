@@ -1,0 +1,115 @@
+"""Integration boundaries between upstream pages and the installed profession package."""
+import re
+import unittest
+
+from test_prof_runtime import LuaRuntime, MOCKS, ROOT
+
+
+def toc_entries():
+    return [line.strip() for line in (ROOT / "DungeonsForever.toc").read_text(
+        encoding="utf-8-sig").splitlines() if line.strip() and not line.startswith("##")]
+
+
+class MergedProfessionTests(unittest.TestCase):
+    def runtime(self, locale):
+        lua = LuaRuntime(unpack_returned_tuples=True)
+        lua.execute(MOCKS)
+        lua.globals().testLocale = locale
+        lua.execute("""
+          GetLocale=function() return testLocale end
+          ns.DB=function()
+            DungeonsForeverDB=DungeonsForeverDB or {prof={}}
+            return DungeonsForeverDB
+          end
+        """)
+        load = lua.eval("function(p) assert(loadfile(p))('DungeonsForever',ns) end")
+        for lang in ("zhCN", "zhTW", "enUS"):
+            load(str(ROOT / "Locales" / (lang + ".lua")))
+        return lua, load
+
+    def test_toc_keeps_upstream_pages_and_loads_extensions_after_locale_catalogues(self):
+        entries = toc_entries()
+        paths = [entry.split(" [", 1)[0].replace("\\", "/") for entry in entries]
+        retained = (
+            "Core/Data/Data_Route.lua", "Core/Data/Data_QuestStartNpc.lua",
+            "Core/Data/Data_QuestStartLoc.lua", "Core/Data/Data_QuestEndNpc.lua",
+            "Core/Data/Data_ClassCombat.lua", "Core/Data/Data_ClassQuest.lua",
+            "Core/Data/enUS/Data_ClassCombat.lua", "Core/Data/zhTW/Data_ClassCombat.lua",
+            "Core/ClassCombatUI.lua", "Core/ClassQuestUI.lua",
+        )
+        for path in retained:
+            self.assertEqual(paths.count(path), 1, path)
+        extensions = ["Core/Data/" + name + ".lua" for name in (
+            "Data_ProfVendorOffers", "Data_ProfFormulaSources", "Data_ProfMining",
+            "Data_ProfFishingRoutes")]
+        last_overlay = max(i for i, path in enumerate(paths)
+                           if path.startswith(("Core/Data/enUS/", "Core/Data/zhTW/")))
+        positions = [paths.index(path) for path in extensions]
+        self.assertTrue(all(i > last_overlay for i in positions))
+        modules = ["Core/" + name + ".lua" for name in (
+            "ProfEconomy", "ProfFishing", "ProfRouteSolver", "ProfRouteAuto",
+            "ProfessionUI", "AuctionatorBridge", "ProfFollow", "VendorPriceDB")]
+        module_positions = [paths.index(path) for path in modules]
+        self.assertEqual(module_positions, sorted(module_positions))
+        self.assertLess(max(positions), min(module_positions))
+        toc = (ROOT / "DungeonsForever.toc").read_text(encoding="utf-8-sig")
+        self.assertRegex(toc, r"(?m)^## OptionalDeps:.*\bAuctionator\b")
+
+    def test_locales_keep_upstream_words_and_add_profession_translations(self):
+        expected = {
+            "zhCN": {"副本内": "副本内", "结束：": "结束："},
+            "zhTW": {"副本内": "副本內", "等级范围": "等級範圍",
+                     "职业任务": "職業任務", "输出循环": "輸出循環"},
+            "enUS": {"副本内": "In dungeon", "等级范围": "Level range",
+                     "职业任务": "Class quest", "输出循环": "Rotation"},
+        }
+        for locale, words in expected.items():
+            with self.subTest(locale=locale):
+                lua, _ = self.runtime(locale)
+                for key, value in words.items():
+                    self.assertEqual(lua.globals().ns.L[key], value)
+                for key in ("搭配专业", "当前限制下没有可行路线", "已比较 %d 个状态",
+                            "NPC价格未知（暂无实测或可靠参考报价）"):
+                    self.assertIsNotNone(lua.eval("rawget")(lua.globals().ns.L, key), key)
+
+    def test_real_localized_catalogues_produce_complete_fishing_procurement(self):
+        for locale in ("zhCN", "zhTW", "enUS"):
+            with self.subTest(locale=locale):
+                lua, load = self.runtime(locale)
+                for entry in toc_entries():
+                    path = entry.split(" [", 1)[0].replace("\\", "/")
+                    if not path.startswith("Core/Data/") or "/Data_Prof" not in path:
+                        continue
+                    match = re.search(r"\[AllowLoadTextLocale (\w+)\]", entry)
+                    if match and match.group(1) != locale:
+                        continue
+                    load(str(ROOT / path))
+                for name in ("ProfEconomy", "ProfFishing", "ProfRouteSolver",
+                             "ProfRouteAuto", "VendorPriceDB"):
+                    load(str(ROOT / "Core" / (name + ".lua")))
+                lua.execute("""
+                  assert(#ns.ProfRecipes.mining.rows==15,'locale erased mining extension')
+                  assert(ns.ProfFormulaMeta[4597].source.questOnly)
+                  assert(ns.ProfVendorOffers[2320] and ns.ProfFishingRoutes)
+                  for _,faction in ipairs({'Alliance','Horde'}) do
+                    UnitFactionGroup=function() return faction end
+                    local r=ns.ProfFishing.Compute({start=1,target=300})
+                    assert(r.targetReached and r.feasible and #r.steps==5,
+                      testLocale..' '..faction..' '..tostring(r.status))
+                    assert(#r.formulas==5 and r.vendorTotal>0 and r.ahTotal==0)
+                    assert(r.total==r.formulasTotal and r.matTotal==0)
+                    for _,f in ipairs(r.formulas) do
+                      assert(f.vendor and f.unlimited and not f.blocked)
+                    end
+                    for _,fish in ipairs(r.fishMaterials) do
+                      assert(fish.source=='fishing' and fish.count>0 and #fish.areas>0)
+                    end
+                    local total=0
+                    for _,step in ipairs(r.steps) do total=total+step.cost end
+                    assert(total==r.total,'formula procurement cost counted twice')
+                  end
+                """)
+
+
+if __name__ == "__main__":
+    unittest.main()

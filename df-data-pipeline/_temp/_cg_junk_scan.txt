@@ -1,0 +1,12 @@
+=== JUNK 值（t 为标量字符串的 p/h4 等）命中 2 处 ===
+  priest_discipline          [prof] idx=1  t=h4   v='false'
+  priest_discipline          [prof] idx=4  t=h4   v='false'
+
+=== 空串值元素 命中 0 处 ===
+
+=== tb/ul/good/bad 内嵌垃圾 命中 0 处 ===
+
+=== 全量 t 类型分布 ===
+{'p': 572, 'tb': 89, 'races': 26, 'ul': 22, 'h4': 9}
+
+汇总: JUNK=2  EMPTY=0  NESTED=0

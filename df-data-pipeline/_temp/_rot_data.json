@@ -1,0 +1,1568 @@
+[
+ {
+  "title": "Rotation for Level 20 Arms Warrior in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "prose",
+    "items": [],
+    "note": "This is a priority list of the spells you ought to use based on how important they are. 雷霆一击 is prioritized so highly due to its massive Attack Speed reduction, as it lets you keep higher uptime when leveling and saves your tank in dungeons. 英勇打击 is often overused, especially at low levels when you have poor Rage generation. The reason for this is that Heroic Strike doesn't generate rage upon your next swing, on top of the fact that it costs rage to cast."
+   },
+   {
+    "name": "Single Target Priority",
+    "kind": "list",
+    "items": [
+     "Cast 战斗怒吼 before engaging, and maintain it throughout the fight.",
+     "Cast 撕裂 and maintaing it throughout the fight",
+     "Cast 猛击 if you just swung; if you are about to swing, skip to the next priority.",
+     "Cast 雷霆一击 to maintain the debuff.",
+     "Cast 乘胜追击.",
+     "Cast 英勇打击 if Rage allows for it."
+    ],
+    "note": ""
+   },
+   {
+    "name": "AOE Priority",
+    "kind": "list",
+    "items": [
+     "Cast 战斗怒吼 before engaging, and maintain it throughout the fight.",
+     "Cast 撕裂 and maintain it on all targets.",
+     "Cast 猛击 if you just swung; if you are about to swing, skip to the next priority.",
+     "Cast 雷霆一击 to maintain the debuff.",
+     "Cast 顺劈斩",
+     "Cast 乘胜追击."
+    ],
+    "note": ""
+   }
+  ],
+  "key": "warrior_arms_l20",
+  "cls": "warrior",
+  "spec": "arms",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "战士",
+  "spec_zh": "武器"
+ },
+ {
+  "title": "Rotation for Level 30 Arms Warrior in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "prose",
+    "items": [],
+    "note": "This is a priority list of the spells you ought to use based on how important they are. Spells like 雷霆一击 are prioritized so highly on single-target due to their massive Attack Speed reduction, as they let you keep higher uptime when leveling. It's important in AoE Encounters to pool rage when the cooldown of 横扫攻击 is coming up, so you effectively get all the hits out within the buff window."
+   },
+   {
+    "name": "Single Target Priority",
+    "kind": "list",
+    "items": [
+     "Cast 战斗怒吼 before engaging, and maintain it throughout the fight.",
+     "Cast 撕裂 and maintaing it throughout the fight",
+     "Cast 压制.",
+     "Cast 雷霆一击 to maintain the debuff.",
+     "Cast 破甲攻击 and maintain 5 stacks on the target.",
+     "Cast 穿刺打击.",
+     "Cast 猛击 if you just swung and you are not tanking the mob.",
+     "Cast 乘胜追击.",
+     "Cast 英勇打击 if Rage allows for it."
+    ],
+    "note": ""
+   },
+   {
+    "name": "AOE Priority",
+    "kind": "list",
+    "items": [
+     "Cast 战斗怒吼 before engaging, and maintain it throughout the fight.",
+     "Cast 撕裂 and maintain it on all targets.",
+     "Cast 雷霆一击.",
+     "Cast 横扫攻击 once you have 压制 ready.",
+     "Cast 压制.",
+     "Cast 破甲攻击 and maintain 5 stacks on the target.",
+     "Cast 顺劈斩 if rage allows for it.",
+     "Cast 乘胜追击."
+    ],
+    "note": ""
+   }
+  ],
+  "key": "warrior_arms_l30",
+  "cls": "warrior",
+  "spec": "arms",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "战士",
+  "spec_zh": "武器"
+ },
+ {
+  "title": "Rotation for Level 20 Fury Warriors in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Use 撕裂 if the target will live for the full duration",
+     "Use 压制",
+     "Use 破甲攻击 if the target is above 70% HP",
+     "Use 英勇打击 or 顺劈斩"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "warrior_fury_l20",
+  "cls": "warrior",
+  "spec": "fury",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "战士",
+  "spec_zh": "狂暴"
+ },
+ {
+  "title": "Rotation for Level 30 Fury Warriors in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Use 压制",
+     "Use 破甲攻击 if the target is above 70% HP",
+     "Use 斩杀",
+     "Use 英勇打击 or 顺劈斩",
+     "Use 斩杀"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "warrior_fury_l30",
+  "cls": "warrior",
+  "spec": "fury",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "战士",
+  "spec_zh": "狂暴"
+ },
+ {
+  "title": "Rotation for Level 20 Protection Warrior in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "prose",
+    "items": [],
+    "note": "This is a priority list of the spells you ought to use based on how important they are. As tanks, however, our rotation is based on what is currently happening, and no rotation will be set in stone. Use this priority loosely. If you're the only Warrior in your group, prioritize maintaining 战斗怒吼."
+   },
+   {
+    "name": "Single Target Priority",
+    "kind": "list",
+    "items": [
+     "Cast 冲锋 as you engage.",
+     "Cast 血性狂暴",
+     "Cast 盾牌格挡",
+     "Cast 复仇",
+     "Cast 雷霆一击",
+     "Cast 挫志怒吼",
+     "Cast 破甲攻击 if in a group environment. Maintain 5 stacks on bosses.",
+     "Cast 撕裂 if you're already high on threat.",
+     "Cast 英勇打击 if you have spare rage and the boss has 5 Sunder Armor stacks."
+    ],
+    "note": ""
+   },
+   {
+    "name": "AOE Priority",
+    "kind": "list",
+    "items": [
+     "Cast 冲锋 as you engage.",
+     "Cast 血性狂暴",
+     "Cast 雷霆一击",
+     "Cast 盾牌格挡",
+     "Cast 复仇",
+     "Cast 挫志怒吼",
+     "Cast 英勇打击 with excess rage."
+    ],
+    "note": "Note: Don't forget about 反击风暴. It's an incredibly high-damage cooldown when used against several enemies. Swapping to a 2-hander during its duration will significantly increase its damage."
+   }
+  ],
+  "key": "warrior_protection_l20",
+  "cls": "warrior",
+  "spec": "protection",
+  "lv": 20,
+  "role": "tank",
+  "cls_zh": "战士",
+  "spec_zh": "防护"
+ },
+ {
+  "title": "Rotation for Level 30 Protection Warrior in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "prose",
+    "items": [],
+    "note": "This is a priority list of the spells you ought to use based on how important they are. As tanks, however, our rotation is based on what is currently happening, and no rotation will be set in stone. Use this priority loosely. If you're the only Warrior in your group, prioritize maintaining 战斗怒吼."
+   },
+   {
+    "name": "Single Target Priority",
+    "kind": "list",
+    "items": [
+     "Cast 冲锋 as you engage.",
+     "Cast 血性狂暴",
+     "Cast 盾牌格挡",
+     "Cast 复仇",
+     "Cast 雷霆一击",
+     "Cast 挫志怒吼",
+     "Cast 破甲攻击 if in a group environment. Maintain 5 stacks on bosses.",
+     "Cast 撕裂 if you're already high on threat.",
+     "Cast 英勇打击 if you have spare rage and the boss has 5 Sunder Armor stacks."
+    ],
+    "note": "Note: As the target reaches 20% health, your highest damage dealing ability will be 斩杀. However, be mindful that you have to leave Defensive Stance to use it. Don't swap stances while your rage values are high or if you're concerned with high incoming damage."
+   },
+   {
+    "name": "AOE Priority",
+    "kind": "list",
+    "items": [
+     "Cast 冲锋 as you engage.",
+     "Cast 血性狂暴",
+     "Cast 雷霆一击",
+     "Cast 盾牌格挡",
+     "Cast 复仇",
+     "Cast 挫志怒吼",
+     "Cast 撕裂 on different targets.",
+     "Cast 顺劈斩 with excess rage."
+    ],
+    "note": "Note: Don't forget about 反击风暴. It's an incredibly high-damage cooldown when used against several enemies. Swapping to a 2-hander during its duration will significantly increase its damage."
+   }
+  ],
+  "key": "warrior_protection_l30",
+  "cls": "warrior",
+  "spec": "protection",
+  "lv": 30,
+  "role": "tank",
+  "cls_zh": "战士",
+  "spec_zh": "防护"
+ },
+ {
+  "title": "Rotation for Level 20 Holy Paladin in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "prose",
+    "items": [],
+    "note": "Remember to have your aura active, either 虔诚光环 or 惩罚光环, at all times. Also don't forget to buff yourself and your party members with 力量祝福."
+   },
+   {
+    "name": "Damage",
+    "kind": "list",
+    "items": [
+     "Maintain 正义圣印.",
+     "Use 审判 on cooldown.",
+     "Use 神圣打击 on cooldown.",
+     "Cast 奉献."
+    ],
+    "note": ""
+   },
+   {
+    "name": "Healing",
+    "kind": "steps",
+    "items": [
+     "Your only healing ability for the first 19 levels will be 圣光术, which is expensive, and you won't be able to cast it very often. Once you reach level 20, you will learn 圣光闪现, and this will become your most-used healing ability."
+    ],
+    "note": ""
+   }
+  ],
+  "key": "paladin_holy_l20",
+  "cls": "paladin",
+  "spec": "holy",
+  "lv": 20,
+  "role": "healer",
+  "cls_zh": "圣骑士",
+  "spec_zh": "神圣"
+ },
+ {
+  "title": "Rotation for Level 30 Holy Paladins in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "prose",
+    "items": [],
+    "note": "Remember to have your aura active, either 虔诚光环 or 惩罚光环, at all times. Also don't forget to buff yourself and your party members with 力量祝福 or 智慧祝福."
+   },
+   {
+    "name": "Damage",
+    "kind": "list",
+    "items": [
+     "Maintain 正义圣印.",
+     "Use 审判.",
+     "Use 神圣打击.",
+     "If the enemy is an undead or demon, use 驱邪术.",
+     "Use 神圣震击.",
+     "Cast 奉献."
+    ],
+    "note": ""
+   },
+   {
+    "name": "Healing",
+    "kind": "list",
+    "items": [
+     "Use 审判 with 光明圣印 to apply Judgment of Light on an enemy. You can replace your Seal afterward to do more damage, but remember that using 审判 will replace the currently active one.",
+     "Use 神圣震击.",
+     "Cast 圣光闪现 to quickly and cheaply heal someone, or use 圣光术 for a slower, more expensive heal that heals for much more, depending on the situation."
+    ],
+    "note": ""
+   }
+  ],
+  "key": "paladin_holy_l30",
+  "cls": "paladin",
+  "spec": "holy",
+  "lv": 30,
+  "role": "healer",
+  "cls_zh": "圣骑士",
+  "spec_zh": "神圣"
+ },
+ {
+  "title": "Rotation for Level 20 Protection Paladin in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "prose",
+    "items": [],
+    "note": "This is a priority list of the spells you ought to use based on how important they are. As Tanks, however, our rotation is based on what is currently happening, and no rotation will be set in stone. Use this priority loosely. Make sure you apply buffs like 正义之怒 and 惩罚光环 before engaging enemies. In these low levels, applying seal buffs is generally not worth it, but when fighting Undeads or Demons, you can use 十字军圣印 for your first 审判."
+   },
+   {
+    "name": "Single Target Priority",
+    "kind": "list",
+    "items": [
+     "Cast 愤怒圣印 before engaging, and maintain it throughout the fight.",
+     "Cast 审判",
+     "Cast 驱邪术 if Undead or Demon.",
+     "Cast 神圣打击",
+     "Cast 奉献 if mana allows for it."
+    ],
+    "note": ""
+   },
+   {
+    "name": "AOE Priority",
+    "kind": "list",
+    "items": [
+     "Cast 愤怒圣印 before engaging, and maintain it throughout the fight.",
+     "Cast 奉献",
+     "Cast 审判",
+     "Cast 驱邪术 if Undead or Demon.",
+     "Cast 神圣打击"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "paladin_protection_l20",
+  "cls": "paladin",
+  "spec": "protection",
+  "lv": 20,
+  "role": "tank",
+  "cls_zh": "圣骑士",
+  "spec_zh": "防护"
+ },
+ {
+  "title": "Rotation for Level 30 Protection Paladin in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "prose",
+    "items": [],
+    "note": "This is a priority list of the spells you ought to use based on how important they are. As Tanks, however, our rotation is based on what is currently happening, and no rotation will be set in stone. Use this priority loosely. Make sure you apply buffs like 正义之怒 and 惩罚光环 before engaging enemies. At these low levels, applying seal buffs is generally not worth it, but when fighting Undeads or Demons, you can use 十字军圣印 for your first 审判."
+   },
+   {
+    "name": "Single Target Priority",
+    "kind": "list",
+    "items": [
+     "Cast 愤怒圣印 before engaging, and maintain it throughout the fight.",
+     "Cast 审判",
+     "Cast 驱邪术 if Undead or Demon.",
+     "Cast 神圣打击",
+     "Cast 奉献 if mana allows for it."
+    ],
+    "note": ""
+   },
+   {
+    "name": "AOE Priority",
+    "kind": "list",
+    "items": [
+     "Cast 愤怒圣印 before engaging, and maintain it throughout the fight.",
+     "Cast 奉献",
+     "Cast 审判",
+     "Cast 驱邪术 if Undead or Demon.",
+     "Cast 神圣打击"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "paladin_protection_l30",
+  "cls": "paladin",
+  "spec": "protection",
+  "lv": 30,
+  "role": "tank",
+  "cls_zh": "圣骑士",
+  "spec_zh": "防护"
+ },
+ {
+  "title": "Rotation for Level 20 Retribution Paladins in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Optional: If the mob will survive moderately long, be sure to apply 十字军审判 with your first 审判 to increase Holy damage.",
+     "Activate your primary seal - 正义圣印 or 命令圣印 - and refresh when it expires.",
+     "审判 on cooldown. This can be macro'd together with 神圣打击.",
+     "神圣打击 on cooldown.",
+     "For multiple enemies: Drop a 奉献 on the ground; not worth using against a single enemy generally due to mana constraints.",
+     "Cast 驱邪术 on cooldown if the enemy is Undead or Demon.",
+     "制裁之锤 any particularly dangerous enemies."
+    ],
+    "note": "We are talking about level 20 here, so the rotation is going to be extremely simple and quite obvious - primarily just using our abilities on cooldown."
+   }
+  ],
+  "key": "paladin_retribution_l20",
+  "cls": "paladin",
+  "spec": "retribution",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "圣骑士",
+  "spec_zh": "惩戒"
+ },
+ {
+  "title": "Rotation for Level 30 Retribution Paladin in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Optional: If the mob will survive moderately long, be sure to apply 十字军审判 with your first 审判 to increase Holy damage.",
+     "Activate your primary seal - and refresh when it expires. Use 命令圣印 for slower 2-handed weapons, generally at least 3.0 speed or slower, and use 正义圣印 for everything else.",
+     "审判 on cooldown. This can be macro'd together with 神圣打击.",
+     "神圣打击 on cooldown.",
+     "For multiple enemies: Drop a 奉献 on the ground; not worth using against a single enemy generally due to mana constraints.",
+     "Cast 驱邪术 on cooldown if the enemy is Undead or Demon.",
+     "制裁之锤 any particularly dangerous enemies."
+    ],
+    "note": "We are talking about level 30 here, so the rotation is going to be extremely simple and quite obvious - primarily just using our abilities on cooldown."
+   }
+  ],
+  "key": "paladin_retribution_l30",
+  "cls": "paladin",
+  "spec": "retribution",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "圣骑士",
+  "spec_zh": "惩戒"
+ },
+ {
+  "title": "Rotation for Level 20 Beast Mastery Hunters in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Put 猎人印记 on your target if you have the time for it.",
+     "Use 毒蛇钉刺 and refresh when needed.",
+     "Use 召唤雄鹰.",
+     "Use 瞄准射击 (single target) or 多重射击 (multi-target).",
+     "Use 召唤雄鹰.",
+     "Use 瞄准射击 (single target) or 多重射击 (multi-target).",
+     "Use 奥术射击.",
+     "Use 瞄准射击 (single target) or 多重射击 (multi-target).",
+     "Repeat"
+    ],
+    "note": "Until you have 召唤雄鹰, use 瞄准射击 (single target) or 多重射击 (multi-target), and 奥术射击 on cooldown. Basic Rotation once you have 召唤雄鹰:"
+   }
+  ],
+  "key": "hunter_beast-mastery_l20",
+  "cls": "hunter",
+  "spec": "beast-mastery",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "猎人",
+  "spec_zh": "兽王"
+ },
+ {
+  "title": "Rotation for Level 30 Beast Mastery Hunters in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Put 猎人印记 on your target if you have the time for it.",
+     "Use 毒蛇钉刺 and refresh when needed.",
+     "Use 召唤雄鹰.",
+     "Use 瞄准射击 (single target) or 多重射击 (multi-target).",
+     "Use 召唤雄鹰.",
+     "Use 瞄准射击 (single target) or 多重射击 (multi-target).",
+     "Use 奥术射击.",
+     "Use 瞄准射击 (single target) or 多重射击 (multi-target).",
+     "Repeat"
+    ],
+    "note": "Until you have 召唤雄鹰, use 瞄准射击 (single target) or 多重射击 (multi-target), and 奥术射击 on cooldown. Basic Rotation once you have 召唤雄鹰:"
+   }
+  ],
+  "key": "hunter_beast-mastery_l30",
+  "cls": "hunter",
+  "spec": "beast-mastery",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "猎人",
+  "spec_zh": "兽王"
+ },
+ {
+  "title": "Rotation for Level 20 Marksmanship Hunters in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Put 猎人印记 on your target if you have the time for it.",
+     "Use 毒蛇钉刺"
+    ],
+    "note": "After that, use 奥术射击 and 瞄准射击 (single target) or 多重射击 (multi-target) on cooldown."
+   }
+  ],
+  "key": "hunter_marksmanship_l20",
+  "cls": "hunter",
+  "spec": "marksmanship",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "猎人",
+  "spec_zh": "射击"
+ },
+ {
+  "title": "Rotation for Level 30 Marksmanship Hunters in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Put 猎人印记 on your target if you have the time for it.",
+     "Use 毒蛇钉刺"
+    ],
+    "note": "After that, use 奥术射击 and 瞄准射击 (single target) or 多重射击 (multi-target) on cooldown."
+   }
+  ],
+  "key": "hunter_marksmanship_l30",
+  "cls": "hunter",
+  "spec": "marksmanship",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "猎人",
+  "spec_zh": "射击"
+ },
+ {
+  "title": "Rotation for Level 20 Survival Hunters in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Put 猎人印记 on your target if you have the time for it.",
+     "Use 毒蛇钉刺."
+    ],
+    "note": "Just use 猛禽一击 whenever you run in Melee range and try to run out and in to mix Ranged and Melee abilities."
+   }
+  ],
+  "key": "hunter_survival_l20",
+  "cls": "hunter",
+  "spec": "survival",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "猎人",
+  "spec_zh": "生存"
+ },
+ {
+  "title": "Rotation for Level 30 Survival Hunters in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Put 猎人印记 on your target",
+     "Use 毒蛇钉刺."
+    ],
+    "note": "Always queue 猛禽一击 whenever you are in Melee range. 猫鼬撕咬 > 陆行鸟踢击 > 反击 whenever you are in Melee range. Use 陆行鸟踢击 movement speed to run out of Melee range if you want to weave Ranged attacks in (Arcane shot, Serpent sting, Aimed shot). Do this until your 猛禽一击 and 猫鼬撕咬 cooldowns are (close) to back up."
+   }
+  ],
+  "key": "hunter_survival_l30",
+  "cls": "hunter",
+  "spec": "survival",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "猎人",
+  "spec_zh": "生存"
+ },
+ {
+  "title": "Rotation for Level 20 Assassination Rogues in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "背刺",
+     "切割",
+     "破甲 If your group is physically heavy and the mob will live long enough to benefit from the debuff",
+     "Else, just keep spamming Backstabs while refreshing Slice and Dice as close to .1s remaining as possible"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "rogue_assassination_l20",
+  "cls": "rogue",
+  "spec": "assassination",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "潜行者",
+  "spec_zh": "刺杀"
+ },
+ {
+  "title": "Rotation for Level 30 Assassination Rogues in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Use 毁伤 as your builder when you are at or below 3 Combo Points. You never want to cast a 毁伤 at 4+ Combo Points.",
+     "Maintain 切割",
+     "破甲 if your group is physical heavy and the mob will live long enough to benefit from the debuff",
+     "Use any excess Combo Points on 刺骨 on low armor enemies and 割裂 on high armor enemies",
+     "Else, just keep spamming your builder while refreshing Slice and Dice as close to .1s remaining as possible"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "rogue_assassination_l30",
+  "cls": "rogue",
+  "spec": "assassination",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "潜行者",
+  "spec_zh": "刺杀"
+ },
+ {
+  "title": "Rotation for Level 20 Combat Rogues in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "邪恶攻击 / 背刺 (depending on what build you've opted to take)",
+     "切割",
+     "破甲 if your group is physical heavy and the mob will live long enough to benefit from the debuff",
+     "Else, just keep spamming your builder while refreshing Slice and Dice as close to .1s remaining as possible"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "rogue_combat_l20",
+  "cls": "rogue",
+  "spec": "combat",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "潜行者",
+  "spec_zh": "战斗"
+ },
+ {
+  "title": "Rotation for Level 30 Combat Rogues in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Use 背刺 for dagger builds and 邪恶攻击 for non-dagger builds",
+     "Maintain 切割",
+     "破甲 if your group is physical heavy and the mob will live long enough to benefit from the debuff",
+     "Use 剑刃乱舞 with high Energy any time multiple enemies are present or when fighting a boss",
+     "Use any excess Combo Points on 刺骨 on low armor enemies or 割裂 on high armor enemies",
+     "Else, just keep spamming your builder while refreshing Slice and Dice as close to .1s remaining as possible"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "rogue_combat_l30",
+  "cls": "rogue",
+  "spec": "combat",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "潜行者",
+  "spec_zh": "战斗"
+ },
+ {
+  "title": "Rotation for Level 20 Subtlety Rogues in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "背刺",
+     "切割",
+     "破甲 If your group is physically heavy and the mob will live long enough to benefit from the debuff",
+     "Else, just keep spamming Backstabs while refreshing Slice and Dice as close to .1s remaining as possible"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "rogue_subtlety_l20",
+  "cls": "rogue",
+  "spec": "subtlety",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "潜行者",
+  "spec_zh": "敏锐"
+ },
+ {
+  "title": "Rotation for Level 30 Subtlety Rogues in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Always use 绞喉 from Stealth",
+     "Maintain 切割",
+     "Utilize both 消失 and 伺机待发 to reapply your 绞喉 after it has fully run its course",
+     "破甲 if your group is physical heavy and the mob will live long enough to benefit from the debuff",
+     "Use any excess Combo Points on 刺骨 on low armor enemies and 割裂 on high armor enemies",
+     "Else, just keep spamming your builder while refreshing Slice and Dice as close to .1s remaining as possible"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "rogue_subtlety_l30",
+  "cls": "rogue",
+  "spec": "subtlety",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "潜行者",
+  "spec_zh": "敏锐"
+ },
+ {
+  "title": "Rotation for Level 20 Discipline Priests in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Keep major buffs active ( 真言术：韧 and 心灵之火).",
+     "Before combat, cast 真言术：盾.",
+     "Begin combat by casting 神圣之火 (if you are level 20), or 惩击 otherwise.",
+     "Cast 心灵震爆, then 暗言术：痛.",
+     "Use Wand attacks until the enemy is defeated. If they have a lot of health, then you can cast 心灵震爆 again as it comes back off cooldown.",
+     "If worried about your health, keep a 恢复 active.",
+     "Shield the Tank before the pull. Skip this if they are a rage-based tank like Warrior or Druid since the absorb might hurt their rage generation (this is very prone to change through Beta).",
+     "Keep 恢复 on the Tank.",
+     "Use 治疗术 as your primary heal.",
+     "Use 快速治疗 if someone is in imminent danger.",
+     "When the party is healthy, Wand trash to buy yourself time to regenerate mana. Recall the \"five second rule\" we discussed earlier, and try to give yourself a clear window to regain mana.",
+     "Drink between pulls if you are not near full mana."
+    ],
+    "note": "In the open world, your rotation at level 20 as a Discipline Priest is quite simple:In dungeons, you will have multiple health bars to manage, though you should spend most of your focus on the tank since AoE damage is rare in early dungeons:"
+   }
+  ],
+  "key": "priest_discipline_l20",
+  "cls": "priest",
+  "spec": "discipline",
+  "lv": 20,
+  "role": "healer",
+  "cls_zh": "牧师",
+  "spec_zh": "戒律"
+ },
+ {
+  "title": "Rotation for Level 30 Discipline Priests in Forever",
+  "blocks": [
+   {
+    "name": "Questing Rotation",
+    "kind": "list",
+    "items": [
+     "Keep major buffs active ( 真言术：韧 and 心灵之火).",
+     "Before combat, cast 真言术：盾.",
+     "Begin combat by casting 神圣之火 (if you are level 20), or 惩击 otherwise.",
+     "Cast 心灵震爆, then 暗言术：痛.",
+     "Use Wand attacks until the enemy is defeated. If they have a lot of health, then you can cast 心灵震爆 again as it comes back off cooldown.",
+     "If worried about your health, keep a 恢复 active.",
+     "Keep major buffs active ( 真言术：韧 and 心灵之火).",
+     "Before combat, cast 真言术：盾.",
+     "Begin combat by casting 惩击; otherwise.",
+     "Cast 苦修, then 暗言术：痛.",
+     "Use Wand attacks until the enemy is defeated. If they have a lot of health, then you can cast 心灵震爆 too.",
+     "If worried about your health, keep a 恢复 active."
+    ],
+    "note": "In the open world, your rotation at level 30 as a Discipline Priest is fairly straightforward, though it looks very different at early levels compared to higher ones, so pick the bracket that you're currently in: Level 20+ Level 1 - 19"
+   },
+   {
+    "name": "Dungeon Rotation",
+    "kind": "list",
+    "items": [
+     "Shield the Tank before the pull. Skip this if they are a rage-based tank like Warrior or Druid since the absorb might hurt their rage generation (this is very prone to change through Beta).",
+     "Keep 恢复 on the Tank.",
+     "Use 治疗术 as your primary heal.",
+     "Use 快速治疗 if someone is in imminent danger.",
+     "When the party is healthy, Wand trash to buy yourself time to regenerate mana. （法术​#371806） the \"five second rule\" we discussed earlier, and try to give yourself a clear window to regain mana.",
+     "Drink between pulls if you are not near full mana."
+    ],
+    "note": "In dungeons, you will have multiple health bars to manage, though you should spend most of your focus on the tank since AoE damage is rare in early dungeons:"
+   }
+  ],
+  "key": "priest_discipline_l30",
+  "cls": "priest",
+  "spec": "discipline",
+  "lv": 30,
+  "role": "healer",
+  "cls_zh": "牧师",
+  "spec_zh": "戒律"
+ },
+ {
+  "title": "Rotation for Level 20 Holy Priests in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Make sure your major buffs are active, like 真言术：韧 and 心灵之火.",
+     "Before combat, cast 真言术：盾.",
+     "(Optional, Undead only) Before combat, cast 虚弱之触 to reduce your damage taken from melee enemies.",
+     "Begin combat by casting 神圣之火 if unlocked, or 惩击 if not.",
+     "Cast 心灵震爆.",
+     "Cast 暗言术：痛.",
+     "Finish off the enemy with Wand attacks.",
+     "Shield the Tank before the pull.",
+     "Keep 恢复 on the Tank.",
+     "Use 治疗术 as the main heal.",
+     "Use 快速治疗 when someone is about to die.",
+     "Wand trash when the group is stable so you recover Mana."
+    ],
+    "note": "Your basic open-world rotation at level 20 as a Holy Priest is relatively straightforward:In dungeons, the priority changes:"
+   }
+  ],
+  "key": "priest_holy_l20",
+  "cls": "priest",
+  "spec": "holy",
+  "lv": 20,
+  "role": "healer",
+  "cls_zh": "牧师",
+  "spec_zh": "神圣"
+ },
+ {
+  "title": "Rotation for Level 30 Holy Priests in Forever",
+  "blocks": [
+   {
+    "name": "Questing Rotation",
+    "kind": "list",
+    "items": [
+     "Keep 真言术：韧 and 心灵之火 up.",
+     "Before combat, cast 真言术：盾.",
+     "Open with 神圣之火.",
+     "Cast 心灵震爆, then 暗言术：痛.",
+     "Wand until the mob dies. Recast 心灵震爆 if it comes back up and the mob still has a lot of health.",
+     "Keep 恢复 on yourself if the mob is hitting hard.",
+     "Keep 真言术：韧 and 心灵之火 up.",
+     "Before combat, cast 真言术：盾.",
+     "Open with 惩击.",
+     "Cast 心灵震爆 once you have it, then 暗言术：痛.",
+     "Wand until the mob dies.",
+     "Keep 恢复 on yourself if the mob is hitting hard."
+    ],
+    "note": "The open-world rotation is simple, but it changes once Holy Fire is trained, so use the bracket you are actually in: Level 20+ Level 1 - 19"
+   },
+   {
+    "name": "Dungeon Rotation",
+    "kind": "list",
+    "items": [
+     "Shield the Tank before the pull. Skip this on a Warrior or Druid. The absorb can starve them of rage, though that may change through Beta.",
+     "Keep 恢复 on the Tank.",
+     "治疗术 is the heal you live on.",
+     "快速治疗 if someone is about to die.",
+     "联结治疗 When you and the Tank are both hurt.",
+     "治疗祷言 Only when most of the party is low. It is a 3-second cast, and it dumps mana.",
+     "When the party is healthy, wand trash so the five-second rule can tick. Casting resets it.",
+     "Drink between pulls if you are not near full mana."
+    ],
+    "note": "Most of your attention goes on the Tank. AoE damage is rare in these dungeons."
+   }
+  ],
+  "key": "priest_holy_l30",
+  "cls": "priest",
+  "spec": "holy",
+  "lv": 30,
+  "role": "healer",
+  "cls_zh": "牧师",
+  "spec_zh": "神圣"
+ },
+ {
+  "title": "Rotation for Level 20 Shadow Priests in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Make sure your major buffs are active, like 真言术：韧 and 心灵之火.",
+     "Before combat, cast 真言术：盾.",
+     "(Optional, Undead only) Before combat, cast 虚弱之触 to reduce your damage taken from melee enemies.",
+     "(Optional) Begin combat by casting 神圣之火 if unlocked, or 惩击 if not.",
+     "Cast 心灵震爆.",
+     "Cast 暗言术：痛.",
+     "Finish off the enemy with Wand attacks."
+    ],
+    "note": "Your basic damaging rotation at level 20 as a Shadow Priest is relatively straightforward:In dungeons, make sure to reapply 暗言术：痛 as needed, and consider casting 暗言术：痛 on multiple enemy targets if Mana is not a concern."
+   }
+  ],
+  "key": "priest_shadow_l20",
+  "cls": "priest",
+  "spec": "shadow",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "牧师",
+  "spec_zh": "暗影"
+ },
+ {
+  "title": "Rotation for Level 30 Shadow Priests in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Make sure your major buffs are active, like 真言术：韧 and 心灵之火. Undead players should also maintain 虚弱之触.",
+     "(Optional) Before combat, cast 真言术：盾.",
+     "Begin combat by casting 心灵震爆.",
+     "Cast 暗言术：痛.",
+     "Cast 噬灵瘟疫, if available.",
+     "(Optional) Cast 精神鞭笞",
+     "Finish off the enemy with Wand attacks."
+    ],
+    "note": "Your basic damaging rotation at level 30 as a Shadow Priest is relatively straightforward: 噬灵瘟疫 is quite Mana-hungry before talenting into 噬灵传染, so you may want to skip casting this if enemies are otherwise dying quickly. Similarly, as discussed earlier, 精神鞭笞 likely does not deal significantly more damage than your Wand attacks at this level, but does reset the 5-Second Rule. Additionally, unlike Wand attacks, Mind Flay is a channeled spell that is affected by spell pushback from enemy attacks. That said, feel free to cast Mind Flay instead of using your Wand if Mana is not an issue. In dungeons, cast 暗言术：痛 on all enemies whenever possible, and make sure to reapply 暗言术：痛 as needed. Ideally, you also want to cast 心灵震爆 on cooldown, but be warned that you may run into issues with both Mana and Threat at this level, depending on your specific circumstances."
+   }
+  ],
+  "key": "priest_shadow_l30",
+  "cls": "priest",
+  "spec": "shadow",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "牧师",
+  "spec_zh": "暗影"
+ },
+ {
+  "title": "Rotation for Level 20 Elemental Shamans in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Drop 大地之力图腾 for your group",
+     "If you really want to play as a caster, use 闪电箭 on a single target; otherwise, alternate between 烈焰震击 and 地震术",
+     "Drop 灼热图腾 and use 火焰新星 on cooldown until low on mana against multiple targets",
+     "Melee to pool mana"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "shaman_elemental_l20",
+  "cls": "shaman",
+  "spec": "elemental",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "萨满",
+  "spec_zh": "元素"
+ },
+ {
+  "title": "Rotation for Level 30 Elemental Shamans in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Drop 大地之力图腾 for your group",
+     "Use 闪电箭 to attack targets at range",
+     "Drop 灼热图腾 against a single target or 熔岩图腾 against multiple targets",
+     "Use 节能施法 procs on 火焰新星 as much as possible, as it costs a significant amount of Mana but is also our hardest-hitting spell",
+     "Use 火焰新星 against multiple targets",
+     "Alternate between 烈焰震击 and 地震术",
+     "Melee to pool mana"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "shaman_elemental_l30",
+  "cls": "shaman",
+  "spec": "elemental",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "萨满",
+  "spec_zh": "元素"
+ },
+ {
+  "title": "Rotation for Level 20 Enhancement Shamans in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "steps",
+    "items": [
+     "Enhancement Shamans are mostly reliant on their auto attacks. You will be using your shocks or 闪电箭 to pull enemies to you and then usually preserve mana by not casting anything. You should keep your 闪电之盾 up between pulls, just to optimize your passive damage while also still using some leftover mana.",
+     "When you are in dungeons or fighting multiple enemies, you should focus on dropping your 灼热图腾 and using 火焰新星 as much as possible, until you either risk pulling threat or run out of mana."
+    ],
+    "note": ""
+   }
+  ],
+  "key": "shaman_enhancement_l20",
+  "cls": "shaman",
+  "spec": "enhancement",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "萨满",
+  "spec_zh": "增强"
+ },
+ {
+  "title": "Rotation for Level 30 Enhancement Shamans in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "steps",
+    "items": [
+     "Enhancement Shamans are mostly reliant on their auto attacks. You will be using your shocks or 闪电箭 to pull enemies to you and then usually preserve mana by not casting anything besides an occasional 风暴打击 to fish for 强化风暴打击 procs. You should keep your 闪电之盾 up between pulls, just to optimize your passive damage while also still using some leftover mana.",
+     "When you are in dungeons or fighting multiple enemies, you should focus on dropping your 灼热图腾 and using 火焰新星 as much as possible, until you either risk pulling threat or run out of mana."
+    ],
+    "note": ""
+   }
+  ],
+  "key": "shaman_enhancement_l30",
+  "cls": "shaman",
+  "spec": "enhancement",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "萨满",
+  "spec_zh": "增强"
+ },
+ {
+  "title": "Rotation for Level 20 Restoration Shamans in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Drop support totems, such as 大地之力图腾 (with 元素的召唤 if dropping 2+ Totems at once or in a pre-pull situation) for your group",
+     "Heal deeply injured targets with 治疗波, especially the tank!",
+     "Drop 灼热图腾 and use 火焰新星 on cooldown until low on mana against multiple targets if there isn't significant incoming damage",
+     "Melee to pool mana"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "shaman_restoration_l20",
+  "cls": "shaman",
+  "spec": "restoration",
+  "lv": 20,
+  "role": "healer",
+  "cls_zh": "萨满",
+  "spec_zh": "恢复"
+ },
+ {
+  "title": "Rotation for Level 30 Restoration Shamans in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Drop support totems, such as 大地之力图腾 (with 元素的召唤 if dropping 2+ Totems at once or in a pre-pull situation) for your group",
+     "Heal deeply injured targets with 治疗波, especially the tank!",
+     "Drop 灼热图腾 and use 火焰新星 on cooldown until low on mana against multiple targets if there isn't significant incoming damage",
+     "Melee to pool mana"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "shaman_restoration_l30",
+  "cls": "shaman",
+  "spec": "restoration",
+  "lv": 30,
+  "role": "healer",
+  "cls_zh": "萨满",
+  "spec_zh": "恢复"
+ },
+ {
+  "title": "Rotation for Level 20 Arcane Mages in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Arcane Blast until 4 Stacks",
+     "Use Arcane Missiles",
+     "Arcane Blast until 2-3 Stacks (more stacks = more mana)",
+     "Use Arcane Missiles",
+     "Just spamming your Wand is pretty competitive DPS, allowing you to regenerate mana for more relevant pulls.",
+     "Pre-Cast Flamestrike (high mana cost option)",
+     "Spam Arcane Explosion"
+    ],
+    "note": "In terms of rotations it's very basic: You can either: At the cost of nearly your entire mana pool after two cycles of this. Or alternatively, you can:This reduces your mana spent by a ton, allowing you to continue through dungeons and questing without being frequently out of mana. Given that we're so level, Wanding actually nearly matches the same DPS you'd get by just spamming Arcane Missiles by itself, and more DPS than Arcane Blast standalone (ignoring the fact that the spell after said Arcane Missiles would get buffed). What this means is that:For AoE:"
+   }
+  ],
+  "key": "mage_arcane_l20",
+  "cls": "mage",
+  "spec": "arcane",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "法师",
+  "spec_zh": "奥术"
+ },
+ {
+  "title": "Rotation for Level 30 Arcane Mages in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Arcane Blast (never above 2 stacks unless it's a boss)",
+     "Use Arcane Missiles if Missile Barrage proc'ed",
+     "If you didn't get Missile Barrage after 2-3 Arcane Blasts, Fire Blast instead to reset the stacks.",
+     "Pre-Cast Flamestrike (high mana cost option)",
+     "Spam Arcane Explosion"
+    ],
+    "note": "In terms of rotations , it's very basic: For Single Target:For AoE:"
+   }
+  ],
+  "key": "mage_arcane_l30",
+  "cls": "mage",
+  "spec": "arcane",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "法师",
+  "spec_zh": "奥术"
+ },
+ {
+  "title": "Rotation for Level 20 Fire Mages in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Pre-Cast Pyroblast",
+     "Use Fireball",
+     "Pre-Cast Pyroblast",
+     "Use Fireball",
+     "Cast Pyroblast at 3 Hot Streak Stacks",
+     "Just spamming your Wand is pretty competitive DPS, allowing you to regenerate mana for more relevant pulls.",
+     "Pre-Cast Flamestrike",
+     "Spam Arcane Explosion"
+    ],
+    "note": "In terms of rotations it's very basic: In the future with more talent points it's likely to look like something along the lines of:If you use the Wand Specialization talent, it actually isn't super behind the DPS you'd get by casting spells at this early level. What this means is that:For AoE:"
+   }
+  ],
+  "key": "mage_fire_l20",
+  "cls": "mage",
+  "spec": "fire",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "法师",
+  "spec_zh": "火焰"
+ },
+ {
+  "title": "Rotation for Level 30 Fire Mages in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "灼烧 x5 if it's a high health target;",
+     "Cast 火球术;",
+     "Once 热力迸发 is stacked, cast Pyroblast.",
+     "Pre-Cast 烈焰风暴 (high mana cost option)",
+     "Spam 魔爆术"
+    ],
+    "note": "In terms of rotations, it's very basic: For Single Target:For AoE:"
+   }
+  ],
+  "key": "mage_fire_l30",
+  "cls": "mage",
+  "spec": "fire",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "法师",
+  "spec_zh": "火焰"
+ },
+ {
+  "title": "Rotation for Level 20 Frost Mages in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Blizzard in AOE (3+ enemies).",
+     "Use Arcane Explosion in AOE (3+ enemies) if things are not going to last the Blizzard channel time or if you need to move.",
+     "Use Frost Nova liberally to reduce the amount of hits you take if things are attacking you.",
+     "Ice Lance if your enemy is frozen.",
+     "Frostbolt until the enemy is almost dead, then use Fire Blast to finish it off.",
+     "- If the enemy is hitting you, attacking with your wand is usually better than casting Frostbolt.",
+     "Wand, it's really good!"
+    ],
+    "note": "When Mana is not low: When Mana is low:"
+   }
+  ],
+  "key": "mage_frost_l20",
+  "cls": "mage",
+  "spec": "frost",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "法师",
+  "spec_zh": "冰霜"
+ },
+ {
+  "title": "Rotation for Level 30 Frost Mages in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Frostbolt;",
+     "When Fingers of Frost procs, Cast Ice Lance",
+     "Pre-Cast Flamestrike (high mana cost option)",
+     "If the mobs are already grouped up and won't die before the cast is done, cast Blizzard",
+     "Otherwise spam Arcane Explosion"
+    ],
+    "note": "In terms of rotations , it's very basic: For Single Target: For AoE:"
+   }
+  ],
+  "key": "mage_frost_l30",
+  "cls": "mage",
+  "spec": "frost",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "法师",
+  "spec_zh": "冰霜"
+ },
+ {
+  "title": "Rotation for Level 20 Affliction Warlocks in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Send in 魅魔",
+     "痛苦灾祸",
+     "腐蚀术",
+     "献祭",
+     "Wand"
+    ],
+    "note": "At this level, your damage comes from DoTs plus a wand. You don't have the talents to make 吸取生命 worth casting at 20. Wand instead. 痛苦灾祸 first: it deals the least upfront damage, so it's the least threat and requires time to build up to full damage. 献祭 last; its initial Hit generates direct threat, so it's the worst opener."
+   }
+  ],
+  "key": "warlock_affliction_l20",
+  "cls": "warlock",
+  "spec": "affliction",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "术士",
+  "spec_zh": "痛苦"
+ },
+ {
+  "title": "Rotation for Level 30 Affliction Warlocks in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Send in 魅魔.",
+     "腐蚀术 and 痛苦灾祸.",
+     "吸取生命 until the mob dies.",
+     "First mob: 腐蚀术, 痛苦灾祸 and 生命虹吸, then 恐惧术 it.",
+     "Second mob: send in 魅魔 and apply the same DoTs.",
+     "吸取生命 the second mob. Re-Fear the first whenever Fear ends.",
+     "Once the second mob is down, drain the first.",
+     "Low on mana: cast 生命分流 instead of Drain Life. Drain Life heals the health back.",
+     "Full health, or the mob is below about 20%: switch to your wand so you don't waste mana on a drain."
+    ],
+    "note": "At this level, your damage comes from DoTs plus 吸取生命. With your Affliction talents, Drain Life hits harder than your wand and heals back what your Life Taps cost. Your Succubus does the damage while the mob hits you, and Drain Life keeps you topped up. DoTs go first, since they need time to tick. Single pulls Fear juggling Pull two mobs at once. This is the fastest way to level Affliction at 30. In both cases:"
+   }
+  ],
+  "key": "warlock_affliction_l30",
+  "cls": "warlock",
+  "spec": "affliction",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "术士",
+  "spec_zh": "痛苦"
+ },
+ {
+  "title": "Rotation for Level 20 Demonology Warlocks in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Send in 魅魔",
+     "痛苦灾祸",
+     "腐蚀术",
+     "献祭",
+     "Wand"
+    ],
+    "note": "At this level, your damage comes from DoTs plus a wand. You don't have the talents to make 暗影箭 worth casting at 20. Wand instead. 痛苦灾祸 first: it deals the least upfront damage, so it's the least threat and requires time to build up to full damage. 献祭 last; its initial Hit generates direct threat, so it's the worst opener."
+   }
+  ],
+  "key": "warlock_demonology_l20",
+  "cls": "warlock",
+  "spec": "demonology",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "术士",
+  "spec_zh": "恶魔"
+ },
+ {
+  "title": "Rotation for Level 30 Demonology Warlocks in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Send in 魅魔.",
+     "腐蚀术, + 痛苦灾祸 the mob has a lot of health.",
+     "灼热之痛 to brand the mob.",
+     "吸取生命 for the rest of the fight.",
+     "Recast Searing Pain whenever the brand drops, roughly every 6 seconds.",
+     "Low on mana: cast 生命分流 instead of Drain Life.",
+     "Mob below about 20%: switch to your wand so you don't waste mana on a drain."
+    ],
+    "note": "At this level, your Succubus does most of your damage and, with 恶魔印记, holds the mob for the entire fight. Your job is to keep the brand up and fill the gaps with 吸取生命, which heals back what your Life Taps cost. During the fightBefore you have Demonic Brand, the Succubus can't hold the mob on her own. Apply 腐蚀术 and 痛苦灾祸, then Drain Life, and expect the mob to spend part of the fight on you."
+   }
+  ],
+  "key": "warlock_demonology_l30",
+  "cls": "warlock",
+  "spec": "demonology",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "术士",
+  "spec_zh": "恶魔"
+ },
+ {
+  "title": "Rotation for Level 20 Destruction Warlocks in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Send in 魅魔",
+     "痛苦灾祸",
+     "腐蚀术",
+     "献祭",
+     "暗影箭 or Wand"
+    ],
+    "note": "At this level, your damage comes from DoTs plus a 暗影箭; wanding is an equally good option but not really Destruction-oriented. 痛苦灾祸 first: it deals the least upfront damage, so it's the least threat and requires time to build up to full damage. 献祭 last; its initial Hit generates direct threat, so it's the worst opener."
+   }
+  ],
+  "key": "warlock_destruction_l20",
+  "cls": "warlock",
+  "spec": "destruction",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "术士",
+  "spec_zh": "毁灭"
+ },
+ {
+  "title": "Rotation for Level 30 Destruction Warlocks in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Send in your pet so it takes aggro.",
+     "痛苦灾祸, 腐蚀术 and 献祭. The DoTs let your pet keep aggro while you set up.",
+     "暗影箭 until the mob turns to you.",
+     "Filler for the rest of the fight.",
+     "暗影箭 followed by 献祭 while the mob runs to you.",
+     "Once it reaches melee, switch to instant casts so you don't suffer pushback: 痛苦灾祸, plus 腐蚀术 if you have 5/5 强化腐蚀术.",
+     "Filler for the rest of the fight.",
+     "燃烧 just before Immolate runs out, so you lose as little of the DoT as possible.",
+     "暗影灼烧 as the killing blow, once the mob is at or below one Shadowburn hit."
+    ],
+    "note": "At this level, your damage comes from DoTs plus a filler. There are two ways to open a pull. Both deal about the same damage by the time the mob is low enough for Shadowburn; which one you use depends on how far away the mob is. Close range Ranged pull Your default when mobs are close. Good when you need to kite toward the next few mobs. Finishing the pullFiller Use your wand by default, and 暗影箭 when you have spare mana. 吸取生命 is also a good choice while questing, especially if you don't have a great wand: the health it drains back covers what your Life Taps cost, so together they effectively turn health into free mana."
+   }
+  ],
+  "key": "warlock_destruction_l30",
+  "cls": "warlock",
+  "spec": "destruction",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "术士",
+  "spec_zh": "毁灭"
+ },
+ {
+  "title": "Rotation for Level 20 Balance Druids in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Open with 愤怒 from max range.",
+     "Apply 月火术.",
+     "Cast 纠缠根须 to hold the target at range.",
+     "Cast 愤怒 until the target dies, recasting Entangling Roots if it breaks free, and heal yourself as needed.",
+     "Pull up to three or four enemies with 月火术. (If you will naturally pull more, there is no need to cast 月火术 on all targets; it's better to get more hots onto yourself before going into 熊形态)",
+     "Cast 回春术 (or 愈合 if you have time) on yourself while they run to you.",
+     "Shift into 熊形态.",
+     "Cast 挫志咆哮 to reduce their damage.",
+     "横扫 until everything is dead.",
+     "Cast 精灵之火 to increase your damage on some enemies",
+     "Use 狂怒 to generate extra rage for more 横扫, particularly at the start of a pull when your rage is low."
+    ],
+    "note": "Hard Casting RotationSpellbear Rotation"
+   }
+  ],
+  "key": "druid_balance_l20",
+  "cls": "druid",
+  "spec": "balance",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "德鲁伊",
+  "spec_zh": "平衡"
+ },
+ {
+  "title": "Rotation for Level 30 Balance Druids in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "steps",
+    "items": [
+     "Hard-Casting Rotation",
+     "Pull with 愤怒.",
+     "Cast 纠缠根须 to hold the enemy at range.",
+     "Cast 星火术 twice.",
+     "Cast 愤怒, then follow with two more 星火术.",
+     "Repeat the 愤怒 and 星火术 cycle until the enemy dies.",
+     "Opening with 愤怒 banks 日月之蚀 charges, so each pair of 星火术 that follows casts faster. If the enemy breaks free of 纠缠根须, stop your current cast and reapply 纠缠根须 before continuing. A 星火术 pushed back by melee hits costs you more time than the recast."
+    ],
+    "note": ""
+   },
+   {
+    "name": "Damage Over Time Rotation",
+    "kind": "steps",
+    "items": [
+     "Pull with 虫群.",
+     "Apply 月火术.",
+     "Spread both dots to any additional enemies you want in the pull.",
+     "Cast 回春术 on yourself as they close in.",
+     "Let the pack hit you, cleaving them with 荆棘术 while you keep your dots and 回春术 running.",
+     "If your weapon swings faster than 1.5 seconds, weave melee attacks between your dot refreshes."
+    ],
+    "note": ""
+   },
+   {
+    "name": "Spellbear Rotation",
+    "kind": "steps",
+    "items": [
+     "Pull up to three or four enemies with 月火术. (If you will naturally pull more, there is no need to cast 月火术 on all targets; it's better to get more hots onto yourself before going into 熊形态)",
+     "Cast 回春术 (or 愈合 if you have time) on yourself while they run to you.",
+     "Shift into 熊形态.",
+     "Cast 挫志咆哮 to reduce their damage.",
+     "横扫 until everything is dead.",
+     "Use 狂怒 to generate extra rage for more 横扫, particularly at the start of a pull when your rage is low."
+    ],
+    "note": ""
+   }
+  ],
+  "key": "druid_balance_l30",
+  "cls": "druid",
+  "spec": "balance",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "德鲁伊",
+  "spec_zh": "平衡"
+ },
+ {
+  "title": "Rotation for Level 20 Feral Druid DPS in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "With 4/5 combo points and target living for at least 6 seconds: 撕扯",
+     "Otherwise: 爪击"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "druid_feral_l20",
+  "cls": "druid",
+  "spec": "feral",
+  "lv": 20,
+  "role": "dps",
+  "cls_zh": "德鲁伊",
+  "spec_zh": "野性"
+ },
+ {
+  "title": "Rotation for Level 30 Feral Druid DPS in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "变形之力 if you will not waste any Energy, should always be under 50 Energy when used, and 节能施法 is not active.",
+     "撕扯 if you have 4/5 combo-points and the target will live for 6 seconds or longer. Never apply if it's already active. Prioritize 5 combo-points if the target lives long enough.",
+     "扫击 if the target will live for 6 seconds or longer. Never apply if it's already active",
+     "精灵之火 if it's not active and you won't waste Energy.",
+     "撕碎 as long as it doesn't affect the uptime of the previous abilities.",
+     "爪击 if you can not 撕碎 due to positional requirement.",
+     "精灵之火 if you can't press anything else to get a chance of a 节能施法 proc."
+    ],
+    "note": "Feral Druid DPS rotation is about maximizing your Bleed uptime while also making sure 变形之力 is used on cooldown."
+   }
+  ],
+  "key": "druid_feral_l30",
+  "cls": "druid",
+  "spec": "feral",
+  "lv": 30,
+  "role": "dps",
+  "cls_zh": "德鲁伊",
+  "spec_zh": "野性"
+ },
+ {
+  "title": "Rotation for Level 20 Restoration Druids in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Keep 荆棘术 on the tank. It now scales with Spell Power and can provide some much needed threat.",
+     "Keep 回春术 up on the tank while fighting.",
+     "Wait. The best thing to do in dungeons when there is no healing to be done is to stop casting and let your passive mana regeneration start to tick.",
+     "When the tank dips low enough to need a direct heal, cast 愈合. If they already have a 愈合 HoT active, cast 治疗之触.",
+     "Run into melee and auto-attack mobs to trigger 清晰预兆 more often.",
+     "Spend 清晰预兆 procs on a max rank 愈合 or 治疗之触.",
+     "If DPS need healing, give them a rank of 回春术 that will heal them just to 100%. If they die, it's their fault.",
+     "When it isn't the DPS player's fault that they're dying, also give them a low rank 治疗之触 to pull them out of the danger zone.",
+     "If a pull gets dangerous, CC one mob with 纠缠根须. It can now be used indoors and is a lot more difficult to break.",
+     "When mana is not a concern, join in with the DPS: 月火术 -> 愤怒 rotation on the main target."
+    ],
+    "note": "Restoration Druid Healing is very versatile, and many different rotations succeed at effectively healing group content. Take a crack at playing around with different ranks of your direct heals or refraining from maintaining different HoTs, and see what feels good to you."
+   }
+  ],
+  "key": "druid_restoration_l20",
+  "cls": "druid",
+  "spec": "restoration",
+  "lv": 20,
+  "role": "healer",
+  "cls_zh": "德鲁伊",
+  "spec_zh": "恢复"
+ },
+ {
+  "title": "Rotation for Level 30 Restoration Druids in Forever",
+  "blocks": [
+   {
+    "name": "",
+    "kind": "list",
+    "items": [
+     "Keep 荆棘术 up on the tank.",
+     "Keep 回春术 up on the tank and anyone you expect to take damage.",
+     "Pause casting to regenerate mana, or join in on the DPS when mana is comfortable.",
+     "DPS for Deep Balance: 虫群 everything, 纠缠根须 a few mobs away from the tank",
+     "DPS for Deep Restoration: Spam 愤怒 or shift to 猎豹形态 for better mana regen.",
+     "When a direct heal is needed, start with 愈合 to get the HoT up. Then use low ranks of 治疗之触 to fill the gaps",
+     "If a life is in danger, use 迅捷治愈 to pick them up. Even if a HoT is not up yet, 回春术 -> 迅捷治愈 is a 1.0s save.",
+     "If 迅捷治愈 is on cooldown or we do not have 1.0s to spare, cast 自然迅捷 with a max rank 治疗之触",
+     "When the emergency is party-wide, like too many enemies were pulled and threat is a mess, cast 宁静 to keep everyone alive"
+    ],
+    "note": ""
+   }
+  ],
+  "key": "druid_restoration_l30",
+  "cls": "druid",
+  "spec": "restoration",
+  "lv": 30,
+  "role": "healer",
+  "cls_zh": "德鲁伊",
+  "spec_zh": "恢复"
+ }
+]

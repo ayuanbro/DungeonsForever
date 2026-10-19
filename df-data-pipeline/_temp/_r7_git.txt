@@ -1,0 +1,30 @@
+--- git rev-parse ---
+true
+--- status (affected) ---
+ M Core/Core.lua
+ M Core/Data/Data_DungeonLoot.lua
+ M Core/Data/Data_Dungeons.lua
+ M Core/Data/Data_Explore.lua
+ M Core/Data/Data_Professions.lua
+ M Core/Data/enUS/Data_DungeonLoot.lua
+ M Core/Data/enUS/Data_Dungeons.lua
+ M Core/Data/enUS/Data_Explore.lua
+ M Core/Data/enUS/Data_Professions.lua
+ M Core/Data/zhTW/Data_DungeonLoot.lua
+ M Core/Data/zhTW/Data_Dungeons.lua
+ M Core/Data/zhTW/Data_Explore.lua
+ M Core/Data/zhTW/Data_Professions.lua
+ M Core/DungeonUI.lua
+ M Core/ExploreUI.lua
+ M Core/MainFrame.lua
+ M Core/ProfessionUI.lua
+ M Core/TierUI.lua
+?? Core/Data/Data_ClassGuide.lua
+?? Core/Data/Data_LootFilter.lua
+?? Core/Data/enUS/Data_ClassGuide.lua
+?? Core/Data/enUS/Data_LootFilter.lua
+?? Core/Data/zhTW/Data_ClassGuide.lua
+?? Core/Data/zhTW/Data_LootFilter.lua
+?? Core/LootFilter.lua
+?? Core/LootFilterUI.lua
+--- rc=0 ---

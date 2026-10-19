@@ -1,0 +1,18 @@
+=== sync_beta 段 ===
+### sync_beta --apply
+D:\workspace\DungeonsForever  →  D:\Game\World of Warcraft\_classic_beta_\Interface\AddOns\DungeonsForever
+源文件数 = 94  副本文件数 = 96
+仅源有 : 无
+仅副本有: ['.wbapp_gUExwl4soXBdG2xW0K1eL3.genie', 'CurseForge_Description_EN.md']
+内容不同: 无
+复制后再次比对 → 差异: 零漂移
+复制后文件数 = 96
+
+##### TF_BUILD=16001 (无限服) #####
+  [OK ] ★★ ㉑ 关于页入口「?」（关闭钮左侧同规格：-40 偏移 / 层级 510 / 点击切换）
+  [OK ] ★★ ㉑ 关于页 = 主窗口内覆盖层（SetAllPoints 盖全窗 / 层级 505 内容上按钮下 / 点击任意处关闭）
+=== 汇总 ===
+966:通过 939 项 / 失败 0 项
+968:EXIT_16001=0
+1711:通过 724 项 / 失败 0 项
+1713:EXIT_38002=0

@@ -1,0 +1,1345 @@
+{
+"npcs": {
+"5130": {
+"zh": "乔多·钢眉",
+"zh2": "公会注册员"
+},
+"5108": {
+"zh": "莱纳·火锤",
+"zh2": "轻甲商"
+},
+"315": {
+"zh": "斯塔文·密斯特曼托"
+},
+"256108": {
+"zh": "影风尖啸者"
+},
+"6124": {
+"zh": "贝尔德队长",
+"zh2": "黑铁上尉"
+},
+"263396": {
+"zh": "黑铁强夺者"
+},
+"1116": {
+"zh": "石腭伏击者"
+},
+"1353": {
+"zh": "萨尔图斯"
+},
+"2461": {
+"zh": "拜雷·石衣",
+"zh2": "银行职员"
+},
+"1274": {
+"zh": "参议员巴林·红石"
+},
+"271530": {
+"zh": "雪怪长者"
+},
+"7386": {
+"zh": "白猫"
+},
+"590": {
+"zh": "迪菲亚强夺者",
+"zh2": "迪菲亚强夺者",
+"en": "Defias Looter"
+},
+"3381": {
+"zh": "南海歹徒",
+"zh2": "南海歹徒"
+},
+"5132": {
+"zh": "皮斯维克",
+"zh2": "背包商人"
+},
+"5929": {
+"zh": "熔岩图腾"
+},
+"3158": {
+"zh": "多克纳",
+"zh2": "杂货商"
+},
+"3903": {
+"zh": "灼热图腾 III"
+},
+"263466": {
+"zh": "次级石头傀儡",
+"zh2": "fff?"
+},
+"687": {
+"zh": "丛林捕猎者"
+},
+"3382": {
+"zh": "南海炮兵",
+"zh2": "南海炮兵"
+},
+"271334": {
+"zh": "疯狂的腐爪"
+},
+"6123": {
+"zh": "黑铁间谍"
+},
+"274935": {
+"zh": "铁炉堡卫士"
+},
+"261306": {
+"zh": "法德林·安威玛尔",
+"en": "Faldrim Anvilmar"
+},
+"250657": {
+"zh": "拉斯玛尔"
+},
+"268840": {
+"zh": "鬼灵熊崽"
+},
+"7559": {
+"zh": "极地野兔"
+},
+"5950": {
+"zh": "火舌图腾"
+},
+"5887": {
+"zh": "坎纳甘·地鸣"
+},
+"276003": {
+"zh": "小型冰元素"
+},
+"8720": {
+"zh": "拍卖师雷姆斯"
+},
+"1131": {
+"zh": "冬狼"
+},
+"1961": {
+"zh": "癞爪"
+},
+"11518": {
+"zh": "祈求者耶戈什"
+},
+"5110": {
+"zh": "巴瑞姆·贾根斯塔德",
+"zh2": "施法材料商"
+},
+"10877": {
+"zh": "信使考雷·落锤",
+"en": "Courier Hammerfall"
+},
+"5049": {
+"zh": "利莎·钢眉",
+"zh2": "公会徽章商人"
+},
+"185317": {
+"zh": "夜魔",
+"en": "Incubus"
+},
+"2630": {
+"zh": "地缚图腾",
+"en": "Earthbind Totem"
+},
+"165189": {
+"zh": "Generic Hunter Pet",
+"en": "Generic Hunter Pet"
+},
+"705": {
+"zh": "蓬毛幼狼"
+},
+"274334": {
+"zh": "陆行鸟幼崽"
+},
+"257597": {
+"zh": "布鲁格斯·燃生",
+"en": "Bruegs Kindleborn"
+},
+"8879": {
+"zh": "皇家历史学家阿克瑟努斯"
+},
+"271368": {
+"zh": "影风松鼠"
+},
+"271486": {
+"zh": "雪怪萨满祭司"
+},
+"5951": {
+"zh": "野兔"
+},
+"707": {
+"zh": "石腭穴居人"
+},
+"13843": {
+"zh": "洛泰姆中尉",
+"zh2": "雷矛卫兵招募处"
+},
+"7387": {
+"zh": "绿翼鹦鹉",
+"en": "Green Wing Macaw"
+},
+"271913": {
+"zh": "瘟疫蟑螂"
+},
+"5925": {
+"zh": "根基图腾"
+},
+"1194": {
+"zh": "山鹫",
+"en": "Mountain Buzzard"
+},
+"3911": {
+"zh": "石爪图腾 II",
+"en": "Stoneclaw Totem II"
+},
+"268707": {
+"zh": "草原狼幼崽"
+},
+"259023": {
+"zh": "维里克·雷锤"
+},
+"1008": {
+"zh": "混血藓皮豺狼人"
+},
+"7467": {
+"zh": "自然抗性图腾"
+},
+"3124": {
+"zh": "蝎子"
+},
+"15119": {
+"zh": "巴鲁斯",
+"zh2": "钓鱼大赛宣传员"
+},
+"5873": {
+"zh": "石肤图腾",
+"en": "Stoneskin Totem"
+},
+"604": {
+"zh": "瘟疫食尸鬼"
+},
+"1121": {
+"zh": "霜鬃雪行者"
+},
+"1132": {
+"zh": "狂暴的冬狼"
+},
+"5107": {
+"zh": "曼高恩·火锤",
+"zh2": "重甲商"
+},
+"5595": {
+"zh": "铁炉堡守卫",
+"en": "Ironforge Guard"
+},
+"3153": {
+"zh": "弗朗恩",
+"zh2": "战士训练师"
+},
+"6221": {
+"zh": "混乱的麻疯侏儒"
+},
+"570": {
+"zh": "食脑者"
+},
+"1135": {
+"zh": "雪怪"
+},
+"1117": {
+"zh": "石腭断骨者"
+},
+"5111": {
+"zh": "旅店老板洛雷·火酒",
+"zh2": "旅店老板"
+},
+"259842": {
+"zh": "音乐跃风蛙"
+},
+"263470": {
+"zh": "血犬幼崽",
+"en": "Bloodhound Runt"
+},
+"1201": {
+"zh": "雪豹"
+},
+"9099": {
+"zh": "斯拉兹",
+"zh2": "馅饼商人",
+"en": "Sraaz",
+"en2": "Pie Vendor"
+},
+"263390": {
+"zh": "被折磨的幽魂",
+"zh2": "被折磨的幽魂",
+"en": "Tormented Soul"
+},
+"14367": {
+"zh": "抓贼者尼恩·雷酒",
+"en": "Thief Catcher Thunderbrew"
+},
+"256807": {
+"zh": "滩行蟹"
+},
+"9859": {
+"zh": "拍卖师林姆克"
+},
+"2044": {
+"zh": "弃灵"
+},
+"624": {
+"zh": "亡灵挖掘者"
+},
+"3157": {
+"zh": "史克里克",
+"zh2": "萨满祭司训练师"
+},
+"3145": {
+"zh": "祖雷萨"
+},
+"10676": {
+"zh": "狼骑兵希亚什"
+},
+"9796": {
+"zh": "戈加尔",
+"zh2": "D&"
+},
+"246016": {
+"zh": "奥术之谜",
+"zh2": "<A"
+},
+"442": {
+"zh": "狼蛛"
+},
+"3266": {
+"zh": "钢鬃防御者"
+},
+"271914": {
+"zh": "幽暗城蟑螂"
+},
+"6867": {
+"zh": "寻迹犬"
+},
+"267329": {
+"zh": "佐拉",
+"zh2": "初级草药学训练师"
+},
+"721": {
+"zh": "兔子"
+},
+"3906": {
+"zh": "治疗之泉图腾 II"
+},
+"5109": {
+"zh": "米拉·泰恩加德",
+"zh2": "面包商"
+},
+"260801": {
+"zh": "灌木林猎人",
+"zh2": "3,"
+},
+"2460": {
+"zh": "巴纳姆·石衣",
+"zh2": "银行职员"
+},
+"6213": {
+"zh": "辐射入侵者"
+},
+"708": {
+"zh": "小型峭壁野猪"
+},
+"5874": {
+"zh": "大地之力图腾",
+"en": "Strength of Earth Totem"
+},
+"3678": {
+"zh": "纳拉雷克斯的信徒",
+"en": "Disciple of Naralex"
+},
+"247001": {
+"zh": "饱和残渣",
+"zh2": "ffF@"
+},
+"5101": {
+"zh": "布莱利亚·铁印",
+"zh2": "杂货商"
+},
+"511": {
+"zh": "疯狂的食尸鬼"
+},
+"3143": {
+"zh": "高内克"
+},
+"7380": {
+"zh": "黑尾白猫",
+"en": "Siamese"
+},
+"10682": {
+"zh": "狼骑兵科尔"
+},
+"5100": {
+"zh": "菲留斯·旋翼",
+"zh2": "商人"
+},
+"3581": {
+"zh": "下水道鳄鱼"
+},
+"3882": {
+"zh": "兹拉克",
+"zh2": "屠夫"
+},
+"11319": {
+"zh": "怒焰萨满祭司",
+"zh2": "Z-"
+},
+"6210": {
+"zh": "洞窟抢劫者"
+},
+"417": {
+"zh": "地狱猎犬"
+},
+"274781": {
+"zh": "铁炉堡王家卫士",
+"zh2": "铁炉堡王家卫士"
+},
+"416": {
+"zh": "小鬼",
+"en": "Imp"
+},
+"1211": {
+"zh": "麻风侏儒"
+},
+"266025": {
+"zh": "老鼠魔宠"
+},
+"268047": {
+"zh": "塞拉摩大使"
+},
+"1689": {
+"zh": "有伤疤的峭壁野猪"
+},
+"3098": {
+"zh": "杂斑野猪"
+},
+"4512": {
+"zh": "腐烂的阿迦玛"
+},
+"1125": {
+"zh": "峭壁野猪"
+},
+"260157": {
+"zh": "老年雪豹"
+},
+"704": {
+"zh": "蓬毛森林狼"
+},
+"3902": {
+"zh": "灼热图腾 II",
+"en": "Searing Totem II"
+},
+"123": {
+"zh": "混血河爪豺狼人",
+"en": "Riverpaw Mongrel"
+},
+"1388": {
+"zh": "瓦加什"
+},
+"589": {
+"zh": "迪菲亚抢劫者",
+"zh2": "迪菲亚抢劫者",
+"en": "Defias Pillager"
+},
+"15214": {
+"zh": "隐形的潜伏者",
+"zh2": "K<"
+},
+"5920": {
+"zh": "石肤图腾 III"
+},
+"1860": {
+"zh": "虚空行者",
+"en": "Voidwalker"
+},
+"10184": {
+"zh": "奥妮克希亚",
+"zh2": "z!"
+},
+"14343": {
+"zh": "智者奥尔姆"
+},
+"264943": {
+"zh": "阿法德拉·顿沃尔",
+"zh2": "铁炉堡博学者"
+},
+"3268": {
+"zh": "钢鬃织棘者"
+},
+"3267": {
+"zh": "钢鬃寻水者"
+},
+"7389": {
+"zh": "金翼鹦鹉"
+},
+"7560": {
+"zh": "黄纹兔"
+},
+"7292": {
+"zh": "丁尼塔·石衣",
+"zh2": "宝库管理员"
+},
+"706": {
+"zh": "霜鬃巨魔幼崽"
+},
+"3579": {
+"zh": "石爪图腾",
+"en": "Stoneclaw Totem"
+},
+"247126": {
+"zh": "墓穴骑士阿特雷克斯"
+},
+"6113": {
+"zh": "维吉雷克"
+},
+"3269": {
+"zh": "钢鬃地卜师"
+},
+"1123": {
+"zh": "霜鬃猎头者"
+},
+"8503": {
+"zh": "吉波维特",
+"zh2": "7!"
+},
+"1199": {
+"zh": "雪豹幼崽"
+},
+"5927": {
+"zh": "抗火图腾"
+},
+"1126": {
+"zh": "大峭壁野猪"
+},
+"3573": {
+"zh": "法力之泉图腾"
+},
+"230319": {
+"zh": "德莉亚娜"
+},
+"273391": {
+"zh": "鳄鱼宝宝"
+},
+"1863": {
+"zh": "魅魔",
+"en": "Succubus"
+},
+"10176": {
+"zh": "卡尔图克"
+},
+"251115": {
+"zh": "乌萨娜",
+"zh2": "兽穴之母"
+},
+"11378": {
+"zh": "工头塔兹利尔",
+"zh2": "r,"
+},
+"3265": {
+"zh": "钢鬃猎手"
+},
+"3527": {
+"zh": "治疗之泉图腾",
+"en": "Healing Stream Totem"
+},
+"1023": {
+"zh": "杂斑刺喉龙"
+},
+"2784": {
+"zh": "国王麦格尼·铜须",
+"zh2": "铁炉堡国王"
+},
+"1118": {
+"zh": "石腭碎脊者"
+},
+"267322": {
+"zh": "瑟尔达"
+},
+"1127": {
+"zh": "老峭壁野猪"
+},
+"5102": {
+"zh": "杜尔曼·钢怒",
+"zh2": "武器商"
+},
+"1130": {
+"zh": "游荡的冰爪熊"
+},
+"269075": {
+"zh": "雪豹潜伏者"
+},
+"724": {
+"zh": "壮实的石腭怪"
+},
+"246600": {
+"zh": "法力回响"
+},
+"6175": {
+"zh": "约翰·特纳"
+},
+"11943": {
+"zh": "玛卡尔"
+},
+"5765": {
+"zh": "鲁赞"
+},
+"3707": {
+"zh": "肯杰",
+"zh2": "牧师训练师"
+},
+"5952": {
+"zh": "兽穴步兵",
+"zh2": "兽穴步兵"
+},
+"11318": {
+"zh": "怒焰穴居人",
+"zh2": "Y-"
+},
+"14365": {
+"zh": "抓贼者扎克·远山"
+},
+"5099": {
+"zh": "索雷尔·石衣",
+"zh2": "银行职员"
+},
+"2529": {
+"zh": "阿鲁高之子"
+},
+"5923": {
+"zh": "清毒图腾"
+},
+"1196": {
+"zh": "冰爪熊"
+},
+"1718": {
+"zh": "石腭袭击者"
+},
+"14363": {
+"zh": "抓贼者格雷·铁钻"
+},
+"3281": {
+"zh": "萨科斯"
+},
+"5103": {
+"zh": "格雷尼尔·钢怒",
+"zh2": "武器商"
+},
+"265003": {
+"zh": "汤姆·费尔奇"
+},
+"273956": {
+"zh": "秃鹫雏鸟"
+},
+"3300": {
+"zh": "蝰蛇"
+},
+"263389": {
+"zh": "被激怒的幽灵",
+"zh2": "被激怒的幽灵",
+"en": "Enraged Apparition"
+},
+"1397": {
+"zh": "霜鬃先知"
+},
+"277037": {
+"zh": "Donovan Steelbeard",
+"zh2": "Barber"
+},
+"808": {
+"zh": "冷酷的格瑞克尼尔"
+},
+"1124": {
+"zh": "霜鬃暗法师"
+},
+"5921": {
+"zh": "大地之力图腾 II"
+},
+"8671": {
+"zh": "拍卖师巴克尔"
+},
+"7381": {
+"zh": "黑斑白猫"
+},
+"7392": {
+"zh": "农场小鸡",
+"en": "Prairie Chicken"
+},
+"10556": {
+"zh": "懒惰的苦工"
+},
+"5913": {
+"zh": "战栗图腾",
+"en": "Tremor Totem"
+},
+"3101": {
+"zh": "邪灵劣魔"
+},
+"5106": {
+"zh": "波洛米尔·奥姆森",
+"zh2": "重甲商"
+},
+"1128": {
+"zh": "黑熊幼崽"
+},
+"247003": {
+"zh": "探求残渣"
+},
+"271993": {
+"zh": "棕兔"
+},
+"5919": {
+"zh": "石肤图腾 II",
+"en": "Stoneskin Totem II"
+},
+"1115": {
+"zh": "石腭击颅者"
+},
+"480": {
+"zh": "生锈的麦田傀儡"
+},
+"5884": {
+"zh": "迈安",
+"zh2": "法师训练师"
+},
+"1138": {
+"zh": "雪狼"
+},
+"1122": {
+"zh": "霜鬃剥皮者"
+},
+"3154": {
+"zh": "基沙",
+"zh2": "猎人训练师"
+},
+"2523": {
+"zh": "灼热图腾",
+"en": "Searing Totem"
+},
+"1134": {
+"zh": "雪怪幼崽"
+},
+"250937": {
+"zh": "乌萨拉食腐者"
+},
+"2671": {
+"zh": "机械松鼠"
+},
+"11519": {
+"zh": "巴扎兰"
+},
+"5174": {
+"en": "Springspindle Fizzlegear",
+"en2": "Artisan Engineer"
+},
+"11065": {
+"en": "Thonys Pillarstone",
+"en2": "9+"
+},
+"5637": {
+"en": "Roetten Stonehammer",
+"en2": "Reclaimers Inc."
+},
+"1356": {
+"en": "Prospector Stormpike"
+},
+"4259": {
+"en": "Thurgrum Deepforge",
+"en2": "Blacksmithing Supplies"
+},
+"10276": {
+"en": "Rotgath Stonebeard",
+"en2": "Expert Blacksmith"
+},
+"5387": {
+"en": "High Explorer Magellas",
+"en2": "Explorers' League"
+},
+"5169": {
+"en": "Tynnus Venomsprout",
+"en2": "Shady Dealer"
+},
+"9616": {
+"en": "Laris Geardawdle"
+},
+"11028": {
+"en": "Jemma Quikswitch",
+"en2": "K)"
+},
+"4256": {
+"en": "Golnir Bouldertoe",
+"en2": "Mining Supplier"
+},
+"3979": {
+"en": "Librarian Mae Paledust",
+"en2": "Explorers' League"
+},
+"5175": {
+"en": "Gearcutter Cogspinner",
+"en2": "Engineering Supplies"
+},
+"5160": {
+"en": "Emrul Riknussun",
+"en2": "Cooking Supplier"
+},
+"5158": {
+"en": "Tilli Thistlefuzz",
+"en2": "Enchanting Supplies"
+},
+"7936": {
+"en": "Lyon Mountainheart"
+},
+"8256": {
+"en": "Curator Thorius"
+},
+"5159": {
+"en": "Daryl Riknussun",
+"en2": "Cooking Trainer"
+},
+"5150": {
+"en": "Nissa Firestone",
+"en2": "First Aid Trainer"
+},
+"2918": {
+"en": "Advisor Belgrum"
+},
+"2916": {
+"en": "Historian Karnik"
+},
+"5165": {
+"en": "Hulfdan Blackbeard",
+"en2": "Rogue Trainer"
+},
+"6294": {
+"en": "Krom Stoutarm"
+},
+"5166": {
+"en": "Ormyr Flinteye",
+"en2": "Rogue Trainer"
+},
+"11029": {
+"en": "Trixie Quikswitch",
+"en2": "Expert Engineer"
+},
+"6169": {
+"en": "Klockmort Spannerspan"
+},
+"5157": {
+"en": "Gimble Thistlefuzz",
+"en2": "Expert Enchanter"
+},
+"6392": {
+"en": "Holdout Medic"
+}
+},
+"quests": {
+"1487": {
+"zh": " 清除变异者哀嚎洞穴的厄布鲁要求你杀掉7只变异破坏者、7只剧毒飞蛇、7只变异蹒跚者和7只变异尖牙风蛇。纳拉雷克斯有着一个崇高的目标。$b$b我们这位伟大的领袖一直想要进入翡翠梦境，将那片如今已经变得一片荒芜的土地变回过去那样茂密的森林，但似乎有一些可怕的事发生了。$b$b纳拉雷克斯的梦境不知为什么突然转化成了一场恶梦，同时，大量的堕落生物出现在了洞穴之中。$b$b一些纳拉雷克斯的信徒正在想办法来唤醒我们的领袖，而我此时的职责就是清除洞穴中的那些邪恶生物。$b$b去吧，$n，勇敢地把那些变异的生物都清除干净。"
+},
+"851": {
+"zh": " 狂热的维罗戈把维罗戈的头颅交给十字路口的雷戈萨·死门。有一个被称作狂热的维罗戈的半人马在贫瘠之地四处游荡，通常很难找到他，不过他的营地就在东南方的死水绿洲附近，你应该可以在那里把他给引诱出来。$B$B到死水绿洲附近的半人马营地去，斩杀那里的半人马。虽然这会让你处于很危险的境地，不过如果你能杀死足够多的半人马，他们就会发出警报，之后维罗戈就会现身。$B$B把他的头带给我，我要把它和巴拉克·科多班恩的头颅放在一起。"
+},
+"5728": {
+"zh": " 隐藏的敌人杀死巴扎兰和祈求者耶戈什，然后回到奥格瑞玛的萨尔那里。嗯，灼刃氏族的首领……这可是件至关重要的事。如果他们是尼尔鲁的干将，那他们就是我们的首要目标。这个萨特……巴扎兰，以及另一个尼尔鲁提及的家伙——他是干什么的来着，是个术士？——必须被除掉。$B$B回到怒焰裂谷去，$n。找到灼刃氏族的两名首领，杀死他们。但是别让尼尔鲁知道是你干的。你必须继续伪装成他的忠实追随者，不要暴露身份。",
+"en": " Hidden EnemiesKill Bazzalan and Jergosh the Invoker before returning to Thrall in Orgrimmar.Hmm, leaders of the Searing Blade... this concerns me most. If they are the ones of value to Neeru, then those are who we must target first. This satyr... Bazzalan, and the other Neeru mentioned--what was he, a warlock?--must be slain.$B$BReturn to the Cleft of Shadow and enter Ragefire Chasm, $n. Find these two leaders of the Searing Blade, and kill them. But be careful not to let Neeru know it was you who did this. You must retain your identity as one of his $gbrothers:sisters; in arms."
+},
+"214": {
+"zh": " 红色丝质面罩给哨兵岭哨塔的哨兵瑞尔带回10条红色丝质面罩。迪菲亚兄弟会的人都会戴着一种红色的面罩，这显然已经是个尽人皆知的秘密了。但我们又了解到，这个面罩的材料是他们的成员在帮会内部地位的象征。$b$b既然如此，那么我希望你出马杀死一些兄弟会的高阶成员。他们的最高阶成员无疑都躲在范克里夫的秘密藏身处附近。作为证据，你要给我带回10条红色丝质面罩来，这样我才能给你奖励。祝你好运，$n。",
+"en": "p@",
+"en2": " Red Silk BandanasScout Riell at the Sentinel Hill Tower wants you to bring her 10 Red Silk Bandanas.It's no secret that the trademark of the Defias Gang is their Red Bandanas.  But we've learned that the material from which these bandanas are made signifies the member's rank.$b$bThat being said, I want you to eliminate as many high ranking Defias members as you can.  The highest ranking members will undoubtedly be found in VanCleef's secret hideout.  When you're done bring me 10 Red Silk Bandanas as proof of their deaths and I will reward you.  Good luck, $n."
+},
+"181": {
+"zh": " 仰望星空在暮色森林南部的食人魔土丘上找到扎克乌尔，把他的单片眼镜带回夜色镇交给维克托。根据考格的设计图，现在我们还需要一种透镜来完成整个装置。我知道什么地方有合适的透镜，不过很难拿到。$b$b有个叫扎克乌尔的食人魔住在暮色森林南部的土丘上，如果可以的话，你去把他的单片眼镜拿来吧，我可以用它做透镜。"
+},
+"116": {
+"zh": " 旱季湖畔镇的酒吧老板丹尼尔需要一桶雷霆啤酒，一桶葡萄酒，一瓶月光酒，还有一袋蜂蜜酒。我最近真是感觉有点没劲，$n。这些酒瓶子都快空了，运酒的船也很久没来了，这都怪那些该死的兽人。$b$b也许你帮我一个小忙？$b$b我希望你能从住在西部荒野的葛瑞姆·雷酒那里搞一桶雷霆啤酒，从暴风城搞一桶葡萄酒，从夜色镇搞一瓶月光酒，还有还有，再从闪金镇搞一袋蜂蜜酒来。把这些好酒都给我弄来，我会重重谢你的。",
+"en": " Dry TimesBarkeep Daniels of Lakeshire needs a keg of Thunderbrew Lager, a cask of Merlot, a bottle of Moonshine and a skin of Sweet Rum.I find myself in quite a pinch here, $n.  The bottles are close to running dry.  The latest booze shipment is long overdue.  The orc invasion has been hell.$b$bPerhaps you can go to work for me?$b$bI need you to pick up a keg of Thunderbrew Lager from Grimbooze Thunderbrew in the Westfall hills, a cask of Merlot from Stormwind, a bottle of Moonshine from Darkshire and a skin of Sweet Rum from Goldshire.  Bring those back to me and I will see to it you are rewarded."
+},
+"863": {
+"zh": " 逃跑保护维兹克兰克以及他偷来的地精伐木机返回棘齿城的斯布特瓦夫那里。我想我要好好学学才行……应该不会很难。就这些按钮，一个操纵杆和两个……对了，你准备好要出发了吗？护送维兹克兰克离开风险投资公司钻井工地"
+},
+"2206": {
+"zh": " 连偷带抢找到迪菲亚码头主管，从他那里为马迪亚斯·肖尔拿到迪菲亚船运时间表。我们派在外面的探子回报说，迪菲亚兄弟会在闪金镇南部的活动相当频繁。报告中还说道，迪菲亚兄弟会控制了杰罗德码头，并利用它将大量的违禁品从赤脊山走私到西部荒野去。$B$B我要你想办法到码头旁的屋子里去一趟，把里面的船运时间表给我偷出来，那东西应该就在码头主管的衣服口袋里。$B$B……还有，$n，如果你的行动被发现了的话，暴风城军情七处将不会承认你的存在。"
+},
+"871": {
+"zh": " 野猪人的袭击在钢鬃野猪人的营地里杀掉8个寻水者、8个织棘者和3个猎手，然后向十字路口的索克复命。所有的野猪人都是我们的敌人，而其中有些家伙特别让人讨厌。$B$B对我们而言，目前最大的麻烦就是钢鬃野猪人部族不停地对我们与杜隆塔尔之间的补给线发起攻击。我的探子一直在寻找这些袭击事件的指挥者，但是在找到真正的幕后主使之前，我们总得想些办法来对那些可恶的野猪人进行打击才行。$B$B从这里的东北方向开始搜寻，你应该很容易就能找到他们的巢穴，野猪人的巢穴都好像是破土而出的带刺藤蔓一样的建筑物。去找到他们，把这些肮脏的家伙彻底干掉。"
+},
+"881": {
+"zh": "W(",
+"zh2": " 埃其亚基把埃其亚基的皮交给十字路口的瑟格拉·黑棘。白雾，也就是我们所说的埃其亚基，是草原狮的首领。它在捕食猎物时悄无声息地行动，就像大地上浮起的一层薄薄的白雾。它的每次出击都是一击毙命，它的猎物甚至来不及恐惧和痛苦就已魂飞魄散。$B$B你会体会到的，因为我要让你去猎杀埃其亚基。它的巢穴就在十字路口的东北边，在那些巨大的科多兽骨附近。$B$B去吧，当你走到它的巢穴附近时，就吹响这个号角，它正在等着你呢。"
+},
+"169": {
+"zh": " 通缉：加塞尔佐格杀死加塞尔佐格并把他的头颅割下，向湖畔镇的所罗门镇长复命。悬赏！加塞尔佐格是黑石氏族袭击石堡和多次劫掠湖畔镇等行动的领导者。$b$b他是个十分危险的家伙。根据线报，他最近就躲藏在刚刚被他们攻陷的要塞中，谋划着黑石氏族的下一次劫掠行动。我们必须不惜一切代价把这些在我们的国土上横行的兽人镇压下去。如果谁能把加塞尔佐格的头带到所罗门镇长面前的话，他将会得到重赏。",
+"en": " WANTED: Gath'IlzoggKill Gath'Ilzogg and bring his head to Magistrate Solomon in Lakeshire for the reward.Wanted! Gath'Ilzogg, Leader of the Blackrock attacks on Stonewatch Keep and raids against the township of Lakeshire. $b$bGath'Ilzogg is extremely dangerous.  He is reportedly holed up in the recently conquered keep plotting the Blackrock clan's further crimes against humanity.  The orc infestation must be quelled at all costs.  A gracious reward will be given to whatever brave soul can deliver the head of Gath'Ilzogg to Magistrate Solomon."
+},
+"55": {
+"zh": " 摩本特·费尔对摩本特·费尔使用摩本特的克星，杀掉他，然后把摩本特的克星交给斯温。摩本特·费尔的老巢就在一个可以俯视乌鸦岭墓地的山顶上。他的日子就快要到头了……$B$B杀掉他，让我们不被他的邪恶所侵害。为我复仇吧，也为了夜色镇的人民！"
+},
+"848": {
+"zh": " 菌类孢子收集4个菌类孢子，把它们交给十字路口的药剂师赫布瑞姆。贫瘠之地的绿洲里隐藏着一个谜。生命的能量从绿洲之水中涌出，给那些汲取水分的动植物带来了勃勃生机。$B$B与此同时，这种能量也在慢慢地改变这些动植物。$B$B在绿洲附近生长着一种蘑菇，我们这些洛丹伦的药剂师都认为这种蘑菇的孢子中包含有一些特殊的物质，它对我们非常有用。$B$B帮我带一些孢子回来，我们会非常感谢你的。"
+},
+"819": {
+"zh": " 老陈的空酒桶找到对老陈的空酒桶有所了解的人。张贴在酒桶一角的纸条上写着：“老陈 - $B$B祝汝精神得提升，祝汝精神永提升。”"
+},
+"62": {
+"zh": " 法戈第矿洞调查法戈第矿洞，然后回到闪金镇去见治安官杜汉。出问题的还不止北郡的矿洞！我接到报告说艾尔文森林的法戈第矿洞已经成了狗头人的天堂。$B$B去那里查看一下这些报告是否属实，然后回来告诉我。法戈第矿洞就在闪金镇的正南方，斯通菲尔德农场和马科伦农场之间。侦察法戈第矿洞",
+"en": " The Fargodeep MineExplore the Fargodeep Mine, then return to Marshal Dughan in Goldshire.The mine in Northshire isn't the only one with problems!  I have reports that the Fargodeep Mine in Elwynn has also become a haven for Kobolds.$B$BExplore the mine and confirm these reports, then return to me.  The mine is almost due south of Goldshire, between the Stonefield and Maclure homesteads.Scout through the Fargodeep Mine"
+},
+"255": {
+"zh": " 雇佣兵塞尔萨玛的镇长埃罗恩·钝鼻雇你去杀掉4个莫格罗什食人魔、4个莫格罗什蛮兵和4个莫格罗什执行者。我等了两个月才得到了从铁炉堡传来的消息，说是会有少量士兵来帮助我们防守塞尔萨玛，不过他们还得再等两个月才能到这儿来！我们的镇子没人守卫已经够糟了，但是我们的挖掘场和水坝——这些地方都随时面临着被袭击的危险！$b$b看来我已经没有选择了，必须临时征召一点士兵才行。$b$b你怎么样？你看上去挺合适的，$c。有一群食人魔在洛克湖的东北方安营扎寨，你能不能帮忙再召集点人，去把那些家伙赶走？"
+},
+"373": {
+"zh": " 未寄出的信将艾德温·范克里夫的信交给巴隆斯·阿历克斯顿。搜查艾德温·范克里夫的尸体时，你从一堆杂乱的物品中找到了一封还未来得及发出的信。地址一栏上写着巴隆斯·阿历克斯顿，暴风城石工协会，城市大厅，教堂广场。$B$B这显然是最近刚刚写好并封上的。",
+"en": " The Unsent LetterDeliver the Letter to the City Architect to Baros Alexston in Stormwind.Searching Edwin VanCleef's person, you discover, among other things, an unsent letter. It is addressed to Baros Alexston, the City Architect of Stormwind, City Hall, Cathedral Square.$B$BIt appears to be recently written and sealed."
+},
+"249": {
+"zh": " 莫甘斯击败莫甘斯。$B$B将他的阴影坠饰带给塞欧克瑞图斯，他就在艾尔文森林内的阿祖拉之塔中。在长期的侦察监视之后，我终于发现了莫甘斯的计划。$B$B他正在寻找月神镰刀……而且，他甚至可能已经找到了。如果他有了那东西，整个赤脊山脉地区，甚至是整个暴风王国都会被他的黑暗力量所征服。$B$B我还没有想到对付莫甘斯的办法，但我怕如果现在不行动的话，也许以后就没有机会了。所以我希望你能杀进伊尔加拉之塔与莫甘斯交战。$B$B战胜他，然后把他的暗影坠饰带回来给我。如果你成功了的话，整个王国都将以你为傲。"
+},
+"867": {
+"zh": " 鹰身强盗收集8只巫翼鹰身人的爪子。$B$B把它们交给十字路口的达索克·快刀。这些该死的鹰身人长期以来不停地攻击和掠夺我们的补给商队。现在我们要给她们一点颜色看看了：我们要割断她们的喉咙，削减她们的数量。$B$B我一直在她们的巢穴附近细心观察，而且已经确定了谁是她们的领导者。我们应该首先以削弱她们的基础作战力量为目标，这样才能彻底击败她们。$B$B慢慢来，先去干掉那些在西北方出没的巫翼鹰身人和巫翼游荡者，然后给我带8只巫翼鹰身人的爪子回来吧。这应该是一个不错的开始……"
+},
+"1525": {
+"zh": " 火焰的召唤找到1个火焰焦油和1个试剂袋，把它们交给杜隆塔尔的泰尔夫·祖拉姆。你该不是到这儿来上历史课的吧？你是要得到永恒之火和你的火焰图腾。$B$B首先，你要制造一个灵契，并将你和它连接起来。$B$B只要你给我找来两样东西，我就可以为你制造火焰灵契。第一件是火焰焦油，这个相对而言比较简单，钢鬃野猪人的施法者通常会带着这种东西。$B$B另一件则比较危险：从火刃氏族的祭司身上找一个试剂袋。你可以在奥格瑞玛东部找到他们。"
+},
+"895": {
+"zh": " 通缉：巴隆·朗绍尔把巴隆·朗绍尔的头颅交给棘齿城的加兹鲁维。通缉令！$b$b巴隆·朗绍尔，破浪号的船长$b$b吉尔尼斯的朗绍尔船长统领南海海盗横行海上，现因海盗罪名指控被通缉。领取奖赏者必须提供足以证明自己杀掉了巴隆·郎绍尔的证据！$b$b——加兹鲁维"
+},
+"1654": {
+"zh": " 正义试炼按照乔丹的武器材料单上的说明去寻找一些白石橡木、精炼矿石、乔丹的铁锤和一块科尔宝石，然后回到铁炉堡去见乔丹·斯迪威尔。如果你愿意接受奖赏的话，我会给你奖赏的。请不要误会，我的慷慨取决于你能给我多少帮助，不过这样的同盟关系对你我都有好处。$B$B我可以为你制作一把配得上你的成就的武器，一把象征着圣骑士的精神和圣光的武器，不过首先，你要给我找到制作这把武器所需的材料。我已经列出了所需的材料，现在得有一个勇敢能干的人去找到它们。你愿意去完成这个任务吗，$n？",
+"en": " The Test of RighteousnessUsing Jordan's Weapon Notes, find some Whitestone Oak Lumber, Bailor's Refined Ore Shipment, Jordan's Smithing Hammer, and a Kor Gem, and return them to Jordan Stilwell in Ironforge.I'd like to reward you if you'd be willing to accept such a thing? Don't misunderstand me, my generosity is dependent on how much help you can be, but I see us both benefiting greatly from such an alliance.$B$BI will craft for you a weapon worthy of what you've accomplished, a symbol of paladinhood and the Light, but you must gather the items I need to craft it. I've already started taking notes on the items, it just requires someone brave and skilled enough to recover them. What do you say, $c?"
+},
+"256": {
+"zh": " 通缉令：卓克苏尔杀了卓克苏尔，把他的头颅带给塞尔萨玛的镇长埃罗恩·钝鼻。以塞尔萨玛镇长之令：$b$b卓克苏尔，袭击塞尔萨玛镇、巨石水坝及挖掘场的食人魔的领导者和组织者。现要求不惜采用一切手段杀死卓克苏尔。$b$b若有人呈上杀死卓克苏尔的证明，镇长将给予巨额奖金。$b$b卓克苏尔最后一次出现是在洛克莫丹东北部的食人魔营地里。"
+},
+"5723": {
+"zh": "6,",
+"zh2": " 试探敌人在奥格瑞玛找到怒焰裂谷，杀掉8个怒焰穴居人和8个怒焰萨满祭司，然后向雷霆崖的拉哈罗复命。在奥格瑞玛城的地下，那些被称为穴居人的生物正在从充满岩浆的管道深处源源不断地涌出来。玛加萨心怀仁爱，试图与这些生物和平相处，但是他们却对她派出的外交官大开杀戒。她绝不允许牛头人受到这样的待遇，现在她将穴居人看作是整个部落的威胁。$B$B她希望你在穴居人毁灭部落之前消灭他们——找到怒焰裂谷，把他们全都杀掉。",
+"en": "6,",
+"en2": " Testing an Enemy's StrengthSearch Orgrimmar for Ragefire Chasm, then kill 8 Ragefire Troggs and 8 Ragefire Shaman before returning to Rahauro in Thunder Bluff.Beneath the city of Orgrimmar, stout creatures known as troggs started coming to the surface from deep below the lava filled tunnels. In her ever-benevolence, Magatha sought to make peace with the creatures, but they turned on her diplomats, killing them. She will not allow such treatment of the tauren people and now consider the creatures a threat to all of the Horde.$B$BShe asks that you put an end to this trogg threat before it overwhelms the Horde from below. Find Ragefire Chasm and destroy them all."
+},
+"248": {
+"zh": " 监视爬上石堡要塞一旁的哨塔。$B$B为阿祖拉的铭文饰品找一个合适的容器。我监视伊尔加拉之塔已经很久了，并且我发现，莫甘斯与占据了石堡要塞的兽人之间起了矛盾。我不知道他们之前产生纷争的原因是什么，但你可以帮我揭开谜底。$B$B带上阿祖拉的铭文饰品，然后到那个能监视石堡要塞的岗哨顶部去。$B$B找一个合适的地方，把铭文饰品放进去，一个盒子或者罐子之类的东西都可以，只要铭文饰品不会被注意到就行，那样我的目的就达到了。"
+},
+"2359": {
+"zh": " 克拉文之塔偷取迪菲亚塔楼钥匙，进入迪菲亚塔楼，看看暮色森林的箱子里到底有什么东西，然后向暴风城的马迪亚斯·肖尔汇报。我为如何进入这座塔的问题头痛好久了，$n。最近从暮色森林来了一船货物，同时还来了不少守卫。$B$B他们是谁？我也有着和你一样的疑问。我所知道的是——他们不是人类。$B$B不管怎么样，这批货物中有一只特殊的箱子——我想这就是那些亡灵在守护的东西。带着狼牙棒的那个家伙手里有那座塔的钥匙。$B$B拿到钥匙，进入塔里，看看箱子中到底有什么，然后去向马迪亚斯报告。"
+},
+"91": {
+"zh": " 所罗门的律法给湖畔镇大厅的拜里弗·科纳彻尔带回10个暗皮坠饰。暴风城的一群死敌在赤脊山的东侧的山脚下建立起一片营地，这些邪恶的暴徒一直在我们的小镇中传播着恐惧。莫甘斯是这群恶徒的头领。$b$b他已经控制了暗皮豺狼人氏族，让那些邪恶的野兽为他卖力。根据湖畔镇的法律规定，协犯最高可以被判处死刑。$b$b这些肮脏的豺狼人一定要被处死！$b$b给我带回10个暗皮坠饰来，你就可以得到我们的奖励。"
+},
+"303": {
+"zh": " 黑铁战争丹莫德的莫特雷·加玛森要求你杀死15名黑铁矮人、5名黑铁隧道工、5名黑铁破坏者和5名黑铁爆破手。战火在家园内外同时燃烧。英勇的矮人士兵远赴异地，为联盟献出生命，我们自己的土地却沦为黑铁矮人作恶的猎场。他们摧毁了萨多尔大桥，丹莫德不久后也随之陷落。$b$b我们需要你集结力量，将战线推回去。杀死15名黑铁矮人、5名黑铁隧道工、5名黑铁破坏者和5名黑铁爆破手，预备队或许还能及时赶到，完成最后的反攻。$b$b快去！"
+},
+"1486": {
+"zh": " 变异皮革哀嚎洞穴的纳尔帕克想要20张变异皮革。由于纳拉雷克斯彻底陷入了他的恶梦之中，有一种此前没有见过的野兽突然侵入了哀嚎洞穴。$b$b这些邪恶的生物有着某种奇怪的、不属于这个世界的特性。在我看来，虽然它们本性邪恶，但它们的存在对卡利姆多的居民也并不是完全没有价值的。我相信它们的皮革在制皮业中可能会非常有用。$b$b如果你愿意接下这个任务的话，那就到洞穴深处去，想办法帮我找一些变异皮革吧。"
+},
+"152": {
+"zh": " 清理海岸杀死7只鱼人潮行者、7只鱼人战士、7只鱼人智者，还有7只鱼人滩行者，然后向西部荒野灯塔中的葛瑞森船长复命。你或许已经注意到了，海岸线上有许多船只的残骸。无尽之海确实是非常凶险，我们必须确保西部荒野海岸线上没有那些该死的鱼人到处徘徊，只有这样水手们才能安全地找到靠港的路线。$b$b去杀死7只鱼人潮行者、7只鱼人战士、7只鱼人智者，还有7只鱼人滩行者，完成任务之后到我这里来领取奖赏。"
+},
+"80001": {
+"zh": " 重燃薪火",
+"en": " Rekindle"
+},
+"13": {
+"zh": " 西部荒野人民军哨兵岭的格里安·斯托曼要求你消灭15名迪菲亚抢劫者和15名迪菲亚强夺者，然后回去向他报告。有人看见一群凶残的迪菲亚抢劫者洗劫了金海岸矿洞和月溪镇，我们人民军绝不能对这样的事袖手旁观。马上就出发吧，$n，让圣光重新照耀西部荒野。$b$b金海岸矿洞就在哨塔西边的海岸附近，作为训练的第二部分，我希望你能消灭15名迪菲亚抢劫者和15名迪菲亚强夺者。",
+"en": " The People's MilitiaGryan Stoutmantle wants you to kill 15 Defias Pillagers and 15 Defias Looters and return to him on Sentinel Hill.A band of vicious Defias Pillagers has been seen plundering the Gold Coast Quarry, Moonbrook and the Alexston Farmstead.  The People's Militia will not stand for such behavior.  Dispatch immediately, $n, and make the Light's presence known in Westfall.$b$bThe Gold Coast Quarry is near the shore, to the West of the tower.  As the next step of your training, I want you to kill 15 of those foul Defias Pillagers and 15 Defias Looters."
+},
+"858": {
+"zh": " 打火钥匙取得打火钥匙，把它交给维兹克兰克。你该不会是斯布特瓦夫派来的吧？我被困在这儿了。我在不知道需要钥匙才能启动伐木机的情况下就贸然跳了进来。更蠢的是，当另一台伐木机的操作员问我是否一切正常的时候，我居然慌了神！我没有告诉他我手里没钥匙，而只是说机器有些问题。$b$b我们要赶紧离开这里！到起重机上的控制室去，那里的管理员应该有这台伐木机的钥匙。$b$b帮我离开这儿！"
+},
+"95204": {
+"zh": " 洛丹伦纹章将洛丹伦纹章交给幽暗城的奥兰·斯内克威瑟。<这是一枚历经风霜的纹章，上面印刻着洛丹伦的图腾。王国倾覆后，此类遗物已如凤毛麟角。在幽暗城中，定会有人对它垂涎三尺。>",
+"en": " Crest of LordaeronBring the Crest of Lordaeron to Oran Snakewrithe in Undercity.<A weathered crest depicting the mark of Lordaeron. With so few relics left after the kingdom's fall, someone in the Undercity would be very keen to get their hands on this.>"
+},
+"924": {
+"zh": " 恶魔之种取一块有瑕疵的能量石。在能量石失去魔法之前把它带到火焰祭坛去，然后向雅克塞罗斯复命。恶魔之种是燃烧军团使用的一种强大工具，它生长在鬼雾峰洞穴里的恶魔火坛上。$B$B我已经准备好了能量石，只要把它放在恶魔之种附近，就可以切断它与燃烧军团的联系。$B$B从石台上取一块能量石，把它带到鬼雾峰上的火焰祭坛去。从这里一直往西走，然后在交叉路口向北转，鬼雾峰就在你的左边。从鬼雾峰北坡爬上去应该是最安全的路线。$B$B动作快点——石头的魔力在很短的时间内就会耗尽。"
+},
+"228": {
+"zh": " 摩拉迪姆杀掉摩拉迪姆，把他的头骨交给夜色镇的指挥官阿尔泰娅·埃伯洛克。我的探子说摩拉迪姆沿着一条穿过墓地的弯曲怪异的小路，在暮色森林中四处游荡。我们曾把他的尸体埋在山上那座小屋的后面，你知道在哪儿吧？$b$b除了祝你好运之外，我没什么能帮你的了。"
+},
+"274": {
+"zh": " 水坝危机阿什兰·暗石要你回去见主工程师辛德维尔七世，把有关这种炸药的新发现告诉他。这不是一般的炸药粉末。看看这些银色的小晶体。还有这股特别的味道！不用说这就是爆盐粉末了！爆盐本身没什么危害，不过一旦它沾上水，那威力，啧啧！足够把整个铁炉堡给炸上天！$b$b要想阻止这种东西爆炸就需要四种东西：潜伏者的毒液，莫格罗什水晶，一滴鳄鱼的眼泪和一些拆弹胶质。现在你得赶紧把我的话告诉辛德维尔，否则就来不及了！"
+},
+"794": {
+"zh": " 火刃奖章给大兽穴外的祖雷萨带回火刃奖章。我通过预言术发现在火刃集会所的深处藏有一件蕴涵着强大力量的物品，它被一些猛兽和黑暗的魔法守卫着。$B$B那件物品叫作火刃奖章，你的下一个任务就是找到它，把它从集会所里偷出来。$B$B不过你可得小心，因为奖章的所有者可能是一个火刃部落中的强者，他也许要比你以前对付过的那些家伙要强上许多倍。$B$B现在就出发吧，$n，那个洞穴就在这里的西北方。"
+},
+"5722": {
+"zh": " 寻找背包在怒焰裂谷搜寻玛尔·恐怖图腾的尸体以及他留下的东西。穴居人并不是怒焰裂谷中唯一令玛加萨感兴趣的东西。她已经得到消息说她的仆从——玛尔·恐怖图腾在怒焰裂谷找到了某种奇特的东西，但是他没能活着把它拿出来。她希望能找到玛尔的遗体——如果他还有遗体的话——以及他在试图与穴居人交谈的过程中发现的东西。$B$B如果你能将玛加萨感兴趣的东西交给她，我敢肯定她会慷慨地奖赏你。$B那么，到奥格瑞玛最黑暗的区域去找寻怒焰裂谷吧。",
+"en": "33C@",
+"en2": " Searching for the Lost SatchelSearch Ragefire Chasm for Maur Grimtotem's corpse and search it for any items of interest.The troggs are not the only thing that interested Magatha in Ragefire Chasm. She has heard word that one of her servants, a Maur Grimtotem, found something peculiar while in the Chasm, but he never made it out to show her what. She'd like Maur's body found--if it still exists--and any signs of what he found while attempting to speak to the troggs.$B$BReturn to Magatha any items of interest, and I'm sure she would be very generous in her reward.$B$BAgain, seek the Chasm in the darkest areas of Orgrimmar."
+},
+"94": {
+"zh": " 法师的眼线把阿祖拉的铭文饰品放置到赤脊山伊尔加拉之塔旁边的狮子雕像身上。我的对手莫甘斯是个强大而邪恶的法师，他就住在赤脊山的伊尔加拉之塔里。我已经找到了一种监视他的方法，只要通过阿祖拉之眼，就可以在很远的地方看到他的一举一动。$B$B不过要研究他的思想……我还需要进一步的帮助。$B$B如果你愿意的话，就带着这个铭文饰品到伊尔加拉之塔去，把它放置在塔旁边的狮子雕像身上。$B$B完成之后，阿祖拉的铭文饰品就会告诉我们，莫甘斯又在准备什么邪恶的计划。"
+},
+"79192": {
+"zh": " 垫脚石你扯下了木板上的纸条，读着那七扭八歪的字迹。纸条上写着，“任务说他们都在给新瘟送货。我看这都是简单的药剂事故。如果想找个安全的地方和我谈谈，就到贫瘠之地和凄凉之地接壤的群山中，找到我那舒适的歇脚处。”",
+"en": " Stepping StonesYou tear the note from the plank and read the scrawled writing.The note begins, \"Mission said they were both making deliveries for New Plague. Looks like simple apothecary accidents to me. Find my cozy spot in the mountains between The Barrens and Desolace if you want a safe place to talk.\""
+},
+"869": {
+"zh": " 偷钱的迅猛龙收集12颗迅猛龙的头颅，把它们交给十字路口的加兹罗格。不久前，我们警戒塔中的一箱银币被偷走了。那是十字路口警卫的薪水，当然我们必须找回这箱银币。$B$B奇怪的是……被窃那天，我们逮住了那群小偷中的一个。它……它居然是一只迅猛龙！简直难以置信！$B$B我不知道迅猛龙要这些银币做什么，不过我也不关心这个——我只关心能不能取回我的银币。杀掉那些迅猛龙，这样它们就不会再偷我们的东西了！$B$B在贫瘠之地猎杀这些迅猛龙，把它们的头颅给我拿回来。"
+},
+"125": {
+"zh": " 丢失的工具湖畔镇的工头奥斯洛希望你帮他找回沉入止水湖底的工具箱。我本来可以在这儿大干一场的, $n。可是，我的工具还没到货，由于镇子被包围了，我们很难得到外面来的补给。我本来托人从闪金镇把工具用马车运过来，可是桥被砸断了，他们只好改用船运，结果那船又被兽人的投石车给打沉了。不过，算是不幸中的万幸吧，我的工具箱没坏，它只是沉进了湖底。$b$b帮我把工具箱找回来吧，$n，我会付给你不错的酬劳的。",
+"en": " The Lost ToolsForeman Oslow of Lakeshire wants you to retrieve his toolbox from the bottom of Lake Everstill.I could really use a hand here, $n.  With the town under siege, it's been hard to get supplies.  My tools were being delivered from Goldshire by wagon but the bridge was blown out.  We put the tools in a boat but the orcs hit it with a catapult.  Just my luck, my toolbox sank right to the bottom of the lake.$b$bRetrieve my toolbox, $n, and I'll make it worth your while."
+},
+"855": {
+"zh": " 半人马护腕收集15个半人马护腕，把他们交给十字路口的雷戈萨·死门。在与科卡尔半人马的战斗中，你已经证明了自己。不过，他们仍然是个威胁。这些半人马的首领的死对我们来说是非常好的消息，不过你必须继续削减他们军队的人数。$B$B为此我会交给你一项赏金任务。$B$B到科卡尔半人马的领地去，干掉他们的士兵，收集他们的半人马护腕。当你能带回足够多的护腕的时候，部落会奖赏你的。"
+},
+"2929": {
+"zh": " 大叛徒到诺莫瑞根去杀掉机械师瑟玛普拉格。完成任务之后向大工匠梅卡托克报告。我以前曾经非常信任瑟玛普拉格，$r。我从未想过他会背叛我和所有侏儒同胞。他为什么要背叛我们？为了权力？为了金钱？这些东西只要加以时日他都可以拥有。现在我们背井离乡，那个疯子掌握了政权，成了个什么都没有的国王……$B$B我们要夺回诺莫瑞根，$n。在夺回自己的城市之前，我们决不停止努力。如果你想加入我们，就先去完成一个简单的任务：杀了那个叛徒，机械师瑟玛普拉格。"
+},
+"4021": {
+"zh": " 人马无双！将克罗姆扎军旗的碎片交给十字路口西边的雷戈萨·死门。部落对你战胜科卡尔部族的功绩感到非常高兴，但是科卡尔部族却为此发了狂。有报告称科卡尔部族的一支从凄凉之地来到了贫瘠之地，准备进行报复。到目前为止，我得到的最新消息是：他们已经在从西面往这里进发了！$B$B去迎战科卡尔部族的入侵者吧，彻底结束他们对贫瘠之地的威胁！杀死那些该死的半人马，直到他们的首领——督军克罗姆扎出现在你面前，干掉他，把他的旗帜撕下一片作为证据。$B$B我们都指望你了，$n。"
+},
+"790": {
+"zh": " 萨科斯杀死萨科斯并将它的爪子带回去交给哈纳祖。$C！我差点就神不知鬼不觉地死在这鬼地方了！我在谷里捕猎蝎子的时候，突然看到一只看上去特别凶恶的蝎子。当时我就决定以它为猎物，打算在它那硕大的钳子钳住我的腿以前，先重重地给它来上那么一下子。$b$b但我忘记了它还有根毒刺，毒刺猛扎了下来，一下子就刺进我的胸口。拜托，你一定得替我报仇！只有这样才能留存我的名誉！我是在南边的高地上碰上它的。"
+},
+"821": {
+"zh": " 老陈的空酒桶收集5颗草原狮的獠牙、5个平原陆行鸟的肾脏和1根雷霆蜥蜴的角，把它们交给棘齿城的酿酒师德罗恩。你想尝尝老陈的雷霆佳酿吗？哈哈，这东西可是很带劲的哦。老陈把酿酒术教给了我师傅，我师傅又传给了我。去帮我找一些酿酒的材料，然后你就会得到物有所值的回报！$B$B帮我带5颗草原狮的獠牙、5个平原陆行鸟的肾脏和1根雷霆蜥蜴的角回来，然后我就可以酿酒了。$B$B这些东西都可以在贫瘠之地找到。"
+},
+"962": {
+"zh": " 毒蛇花为雷霆崖的药剂师扎玛收集10朵毒蛇花。幽暗城的皇家药剂师学会派我来这儿完成一个特殊的任务，$n。我想你会愿意帮助我的，因为黑暗女王领导下的被遗忘者将会通过我的任务得到进一步的加强。$b$b近来我在研究一种罕见的植物，它的名字叫毒蛇花，我相信这种药草有着巨大的能量。$b$b不幸的是，它只生长在哀嚎洞穴的最深处，那是贫瘠之地最危险的洞穴之一。"
+},
+"353": {
+"zh": " 雷矛的包裹把给卡尔·雷矛的包裹交给洛克莫丹北部哨塔里的巡山人卡尔·雷矛。雷矛部族是一个倍受尊敬的矮人部族，他们向来以独具慧眼著称——所以远在铁炉堡的巡山人才会托人不远千里地让人传信，委托我给他们打制一把武器，哈哈！$B$B这把武器已经完成了，但是巡山人卡尔·雷矛住在洛克莫丹，离这里实在是太远了。如果你正好要到那边去的话，就替我把这个包裹带给他吧。$B$B巡山人卡尔·雷矛最后一次和我联络的时候，他说他在洛克莫丹北部的哨塔里。",
+"en": " Stormpike's DeliveryDeliver the Package for Stormpike to Mountaineer Stormpike in Loch Modan.The Stormpikes are a respected dwarven clan, and are well known for their fine and discerning tastes.  So it's no wonder that Gringer Stormpike, a Mountaineer of Ironforge, commissioned me to craft him a weapon.$B$BThe weapon is finished, but... Mountaineer Stormpike is far away, in distant Loch Modan.  If you plan on traveling to the north, can you deliver this package to him?$B$BMy last message from Mountaineer Stormpike said he's stationed at the northern guard tower in Loch Modan."
+},
+"4641": {
+"zh": " 起点与高内克谈一谈。卡尔图克在你的地图上标出了他的位置，并告诉你高内克居住在西边的大兽穴中。你终于长大啦，$n……你可以以部落的名义参加战斗了，为酋长的荣誉而战吧！$B$B嗯……$B$B<卡尔图克打量了你一番。>$B$B你会很出色的。$B$B毫无疑问，你的目标是找到一条巨龙或是一个恶魔，然后赤手空拳地打败它，但是从比较弱的对手开始可能是个比较明智的选择。$B$B<卡尔图克笑了起来。>$B$B去向高内克报告吧，他可以为你这样的年轻$c指派一项适合你的任务。你可以在西边的大兽穴中找到高内克。"
+},
+"959": {
+"zh": " 港口的麻烦棘齿城的起重机操作员比戈弗兹让你从疯狂的马格利什那儿取回一瓶99年波尔多陈酿，疯狂的马格利什就藏在哀嚎洞穴里。啊呀！$b$b你也看到了，最近有点背运！早间从藏宝海湾过来了一支大型的运货船队，我是说大型的！我从没有见过那么多的箱子。我想加快点速度，所以卸货卸得稍微快了点。$b$b结果呢，还没等我弄清楚是怎么回事儿，我看到那个可恶的家伙——疯狂的马格利什——手拿一瓶99年波尔多陈酿跑了出来。我一路追他到了哀嚎洞穴，但是我可不想进到那个可怕的地方去。$b$b嗯……你够不够胆量去把他给我找出来？"
+},
+"845": {
+"zh": " 斑马的威胁杀死快步斑马并收集4只斑马蹄，把它们交给十字路口的瑟格拉·黑棘。斑马虽然并非贫瘠之地上最凶猛的野兽，但也比平原陆行鸟强悍了许多。不要担心，我们总有一天会派你去挑战比斑马更强大的敌人，但现在你最好用它们练练手。$B$B去猎杀北边和南边的斑马，并且收集它们的蹄子。完成这个任务之后，也许你就可以去见识见识真正的猛兽了。"
+},
+"4402": {
+"zh": " 戈加尔的清凉果收集10个仙人掌果，把它们交给戈加尔。你记得他说可以在仙人掌上收集到这种果子。试炼谷这里实在太热了。$B$B<戈加尔擦了擦额头。>$B$B要是有些仙人掌果，我就能做出自己拿手的清凉果！这种美味只要吃上一份，再没有什么能让人更快凉快下来。$B$B这样吧，$n。你若能带回10颗仙人掌果，我就做几份清凉果给你带着冒险，再免费送你一本训练手册。要是感兴趣，这附近的仙人掌旁就长着仙人掌果。"
+},
+"872": {
+"zh": " 野猪人的头目杀掉8个钢鬃地卜师、8个钢鬃防御者和他们的头目克里尼格·糟鼻。$B$B把克里尼格·糟鼻的獠牙交给十字路口的索克。$n，我的探子目击了一次针对杜隆塔尔商队的袭击，又是那群该死的钢鬃野猪人干的。其中有一个家伙是这次袭击事件的策划者和组织者：克里尼格·糟鼻。有人在这里的东北方见到过他，就在通往杜隆塔尔的大路的正南方。如果我们要结束这一切威胁，就必须杀了克里尼格·糟鼻。$B$B我们一定要终止这没完没了的袭击，要让他们吃吃苦头。完成任务之后，带上克里尼格·糟鼻的獠牙回来见我。"
+},
+"1516": {
+"zh": " 大地的召唤给试炼谷的坎纳甘·地鸣带去2只地狱捕猎者的蹄子。是时候了，年轻的$c。你的肉体已经足够强壮，而你的精神也已如大地一般坚韧。你选择了遵循萨满之道，这代表着你拥有无可置疑的睿智。$B$b让大地来指引你的命运，让它成为你的一部分吧。但你必须自己去面对大地的力量，如果你已经准备妥当，你就会看见一些只有萨满祭司才能理解的事物。$B$B去北边去搜寻那些地狱捕猎者，给我带一对它们的蹄子回来，然后我们再来好谈谈你的未来。"
+},
+"118": {
+"zh": " 马掌把弗纳的便笺交给闪金镇的铁匠阿古斯。我把所有的铁都用来打造暴风城卫兵的装备，结果没有剩余的铁来打马掌了！$B$B把这封信带给闪金镇的铁匠阿古斯，信上说明了我现在的情况并要求他运一批马掌过来。",
+"en": " The Price of ShoesTake Verner's Note to Smith Argus in Goldshire.I've been using so much iron keeping the Stormwind Guards outfitted, I don't have enough to supply the stable's horses with shoes!$B$BTake this note to Blacksmith Argus in Goldshire.  It explains to him my problem and requests a shipment of horseshoes."
+},
+"79536": {
+"zh": " 图书馆良友"
+},
+"792": {
+"zh": " 邪灵劣魔杀死12只邪灵劣魔，然后向大兽穴外的祖雷萨复命。我相信你会在试炼谷学到很多东西，年轻的$c。$B$B我本是被派到这处谷地里来指引和教育你们的，但我却在这里发现了一些不洁之物……$B$B一群自称为火刃氏族的兽人潜入了试炼谷，他们躲进了东北方的一处洞穴里，而他们的邪灵劣魔则肆虐着周边的一大片地区。$B$B作为你对抗火刃氏族的第一个任务，我命令你消灭这些劣魔。尽可能地多杀一些，如果杀完了它们之后你还活着的话，就回来向我复命。"
+},
+"78150": {
+"zh": " 图书馆之友"
+},
+"896": {
+"zh": " 矿工的宝贝从风险投资公司的某个监督或者执行者那里夺取猫眼翡翠，然后把它交给棘齿城的码头管理员迪兹维格。作为像棘齿城这么繁忙的码头的管理者，我始终关注着每一条有利可图的消息。我知道这里与藏宝海湾的所有物品和货币的交易情况。$b$b最近我听到了一些消息，是关于风险投资公司在淤泥沼泽东北的石矿洞的。有个矿工挖出了一枚足有拳头大小的翡翠石。我知道有一些买主肯掏钱买那么大的一块宝石，如果你帮我搞到那块宝石的话，那么我愿意和你五五分成，你看怎么样？"
+},
+"870": {
+"zh": " 遗忘之池向图加·符文图腾报告你的发现。很久以前，贫瘠之地曾是个郁郁葱葱、生机盎然的地方。但是战争与灾难接二连三地降临在这片土地上，最后就剩下了这一片干燥荒芜的不毛之地。事实就是这样，真让我伤心。$B$B不过，在过去的几年里，贫瘠之地出现了新的绿洲，生机又在这片土地上重现。我们德鲁伊感觉到了在很深的地下有一股试图冲出地面的力量。$B$B我们必须找到这股力量的源泉，请到十字路口西北边的遗忘之池去一趟，在那里的湖水中搜寻力量的源泉，然后回到这里来。探索遗忘之池"
+},
+"474": {
+"zh": " 击败纳克罗什杀死纳克罗什酋长。$B$B将纳克罗什酋长的头颅交给斯托菲队长。现在所有的投石车都被烧掉了，找到纳克罗什酋长，把他干掉。"
+},
+"788": {
+"zh": " 小试身手杀掉10只杂斑野猪，然后向大兽穴里的高内克报告。第一项任务将在力量方面对你进行考验。我本来可以把你派去贫瘠之地猎杀科多兽，不过呢，照实说，你活着比死了对我们来说更有用。$b$b我相信你更合适和那些杂斑野猪斗一斗，往北边走就可以找到它们。"
+},
+"98": {
+"zh": " 斯塔文的传说干掉斯塔文·密斯特曼托，把他的家族戒指带给伊瓦夫人看看。斯塔文·密斯特曼托是个恶贯满盈的罪犯，很多无辜的人都死在他手中。毫无疑问，他犯下了无数宗罪案，给夜色镇带来了又一个威胁。天知道这个恶棍又在策划什么邪恶的行动。斯塔文的家就在小镇北边，$C，你去把他就地处死吧。$b$b完事以后把他的家族戒指带给伊瓦夫人作为证明，毕竟是她的预感导致我们揭露了这个可怕的凶手，她为夜色镇立了一功。"
+},
+"685": {
+"zh": " 通缉：奥图和法库雷斯特把法库雷斯特和奥图的头颅交给避难谷地的尼艾丝队长。激流堡民兵团重金悬赏法库雷斯特公爵和他的保镖奥图的头颅。法库雷斯特是辛迪加在阿拉希地区的主要领导者，他的死将使该组织在这一地区的活动陷入瘫痪。$B$B他的保镖奥图不是我们的战略目标，但他生性凶残，已经杀死了许多激流堡的士兵。$B$B赏金请到尼艾丝队长处领取。"
+},
+"121": {
+"zh": " 送往暴风城的信将暴风城的马库斯·乔纳森将军的回信带给湖畔镇的所罗门镇长。在我等待着国王陛下的回应时，希望你能把这封信交给所罗门镇长。$b$b快去吧，$c！",
+"en": " Messenger to StormwindTake General Marcus Jonathan's letter of response to Magistrate Solomon in Lakeshire.While I wait for a response from the King I want you to carry this letter to Magistrate Solomon. $b$bDismissed, $c!"
+},
+"901": {
+"zh": " 什么什么平衡器从工匠斯尼格斯那里拿到能打开控制台的钥匙。关闭设备后就可以开启控制面板，从控制台中移出主动式负载平衡器。一切准备就绪，现在你需要做的就是取得可以打开控制台的钥匙。"
+},
+"877": {
+"zh": " 死水绿洲调查死水绿洲，然后返回十字路口向图加·符文图腾报告。你在遗忘之池找到的地缝也许在贫瘠之地的其它绿洲中也存在。如果是这样的话，那么这些地缝就有可能是绿洲的生命之源。$B$B我们应该验证一下。$B$B带上这些种子，它们已经失去生命的活力。把它们带到东南方的死水绿洲去，如果那里有地缝的话，就把这些种子放在里面……然后仔细地观察一下。"
+},
+"92415": {
+"zh": " 记住我爱你将染血的信交给暴风城的孤儿监护员奈丁加尔。<在这片满是亡灵足迹的墓地中，一卷残破不堪、沾满污渍的羊皮纸侥幸留存了下来。上面提到了织心家族一个失踪的孩子。暴风城的孤儿院院长或许能提供些线索。>",
+"en": "p@",
+"en2": " Remember That I Love YouBring the Blood-Stained Letter to Orphan Matron Nightingale in Stormwind City.<A torn and stained bundle of parchment has barely survived the undead trodden grounds of the graveyard. It mentions a missing child of the Heartweaver family. Perhaps the orphan matron in Stormwind City will know more.>"
+},
+"253": {
+"zh": " 藏尸者的妻子找到伊莉莎的坟墓，从她的身上取回藏尸者的心脏，把它交给艾尔罗·埃伯洛克。藏尸者是个我们经常用来吓唬孩子的故事里的人物。他曾是个善良的炼金师，但因为妻子伊莉莎的死而变得疯狂。为了让妻子复活，藏尸者用黑暗的魔法将自己的心脏放入了亡妻的胸膛里。$B$B伊莉莎复活了……不过她也受到了诅咒，开始疯狂地吞食人类的血肉，藏尸者不得不将他的妻子埋了起来。$B$B他的心脏就是他全部的力量，找到他妻子的坟墓，把他那颗仍在跳动着的心脏拿回来，就可以打破他的力量。"
+},
+"92": {
+"zh": " 赤脊山炖肉湖畔镇的厨师布雷纳想要5块硬秃鹫肉，5个巨型血牙野猪头和5份香脆蜘蛛肉。没什么能比烹制赤脊山炖肉更让我高兴的事了，但是现在有个小问题。自从兽人们出现之后，我就得没日没夜地忙着给暴风城军队的整整一个旅供应食物，我的食品柜早已是空空如也了。如果你能给我找来一些材料的话，我很乐意给你做点好吃的。$b$b只要给我带来5块硬秃鹫肉，5个巨型血牙野猪头和5份香脆蜘蛛肉就行了。",
+"en": " Redridge GoulashChef Breanna of Lakeshire wants five pieces of Tough Condor Meat, five Great Goretusk Snouts and five helpings of Crisp Spider Meat.Nothing would please me more than to make you some Redridge Goulash. But there's a slight problem. During the recent orc uprising I fed the entire brigade of Stormwind troops. My cupboard is now bare. But if you can provide me with the ingredients, I'd be happy to oblige.$b$bJust bring me five pieces of Tough Condor Meat, five Great Goretusk Snouts and five helpings of Crisp Spider Meat."
+},
+"180": {
+"zh": " 通缉：范高雷中尉杀死范高雷并将他的手掌割下，向湖畔镇的所罗门镇长复命。悬赏：范高雷$b$b恶行累累的豺狼人头目范高雷在湖畔镇及王国的敌人莫甘斯的指使下，带着暗皮豺狼人氏族到处为非作歹。镇长所罗门下了命令，悬赏杀死这个万恶的东西。将他的手掌割下来拿给镇长，以此证明他的死亡。",
+"en": " WANTED: Lieutenant FangoreKill Lieutenant Fangore and return to Magistrate Solomon in Lakeshire with his paw.Wanted: Lieutenant Fangore$b$bKnown leader of the Shadowhide Gnoll Clan, working under the enemy of the Township and Kingdom, Morganth.  By mandate of Magistrate Solomon, this vile betrayer of Stormwind is wanted dead.  Show his paw to the Magistrate as proof of his death."
+},
+"789": {
+"zh": " 工蝎的尾巴给大兽穴中的高内克带回10根工蝎的尾巴。无论是强大的战士还是笨拙的新手，都有可能会倒在蝎尾上的毒针之下。在这里的西北方有大量蝎子在活动，给我带10条蝎尾回来，以此来证明你的战斗能力吧。$b$b事实上，它们尾巴上的毒针正是制作解毒剂的重要材料，解毒剂便是从毒针中提取的。我们需要长期备有大量的解毒剂，以防止像你这样的新手被蝎毒所害……$b$b但我肯定你是不会需要这种玩意的，对吧？"
+},
+"278": {
+"zh": " 水坝危机主工程师辛德维尔七世要你收集一份潜伏者的毒液，一块莫格罗什水晶和一滴鳄鱼的眼泪。你必须立刻去收集拆弹用的原料，$n。潜伏者的毒液在洛克莫丹的蜘蛛身上可以找到，鳄鱼的眼泪在洛克湖一带的鳄鱼身上也有。不过莫格罗什水晶很难找到。东北边矿井里的食人魔开采这种水晶，不过即使在那里，莫格罗什水晶也不常见。$b$b我们必须要作好准备才能粉碎黑铁矮人的计划！你找齐了这些材料之后就立刻回来找我，我会把它们做成拆弹剂。"
+},
+"271": {
+"zh": " 维林的报复杀掉奥尔苏迪，把它的头颅带给旅行者营地里的达瑞尔。你没被达瑞尔气得昏头昏脑吧？虽然我不愿意承认，但达瑞尔还是有点能耐的。$b$b一年前，整个旅行者营地里的猎人都在捕猎一只巨熊，不过没有一个人能解决掉它。后来，达瑞尔也去试了试，结果他的脸上就留下一道了丑陋的伤疤。$b$b如果你能杀了那只熊，就算是达瑞尔也会哑口无言的。$b$b那只名叫奥尔苏迪的熊就住在塞尔萨玛附近的山上。"
+},
+"92819": {
+"zh": " 爆破死亡矿井使用起爆器。我们马上就大功告成了。按下起爆器，结束这一切吧。",
+"en": " Destruction in DeadminesUse the detonator.We are almost finished. Use the detonator, and end this."
+},
+"6981": {
+"zh": " 发光的碎片寻找更多有关这块噩梦碎片的信息。这块碎片透出异样的绿色光芒，虽然它完全是一块固体，但是却让人感觉好像有一股烟从碎片中冒出来。你情不自禁地注视着这块水晶的深处，这时你突然觉得这其中必定包含着许多曲折的故事。$B$B也许你应该去棘齿城看看那里有没有人知道这块碎片的来历。找人谈谈噩梦碎片的事情"
+},
+"504": {
+"zh": " 破碎岭好战者杀死15个破碎岭好战者，然后回南海镇向治安官雷德帕斯报告。你已经和破碎岭食人魔打过交道了，现在我要你去好好教训教训他们……$B$B到奥特兰克遗迹去猎杀那些破碎岭好战者。我希望你多干掉一些——只有这样才能让这帮畜生离联盟的领土远一点。"
+},
+"197": {
+"zh": " 猎龙赫米特·奈辛瓦里要求你杀死荆棘谷中最危险最狡猾的迅猛龙泰希斯。你已经证明了自己在这片丛林里的每次捕猎都不会空手而归，总能带回我们要求的猎物，因此我决定告诉你有关那只我从来也没能猎到的、最凶暴最残忍的迅猛龙的事情，艾耶克把那只迅猛龙叫作泰希斯。$b$b如果你想证明自己真的是个捕猎专家的话，就把泰希斯杀掉，把它的爪子给我带回来，这可是其他王牌猎人都从没完成过的壮举。"
+},
+"5761": {
+"zh": " 饥饿者塔拉加曼进入怒焰裂谷，杀死饥饿者塔拉加曼，然后把他的心脏交给奥格瑞玛的尼尔鲁·火刃。我们伟大的酋长交给我的首要任务就是搜寻那些利用恶魔的力量破坏城市的敌人。火刃氏族是个威胁，但是这里还存在着其它的威胁，比如在怒焰裂谷安家的燃刃氏族，他们暗地里计划着袭击部落的无辜民众。$B$B要想阻止他们，就必须杀死他们的领袖——那个被称作饥饿者塔拉加曼的恶魔守卫。$B$B杀死他，萨尔看到他的心脏之后一定会安心很多，这点我可以确信。",
+"en": " Slaying the BeastEnter Ragefire Chasm and slay Taragaman the Hungerer, then bring his heart back to Neeru Fireblade in Orgrimmar.The primary task set upon me by our great Warchief is to root out the creatures responsible for infesting our lord's great city with demonic influence. The Burning Blade is one threat, but there are others; the Searing Blade for instance, who make their home in Ragefire Chasm, secretly attempting to subvert innocent members of the Horde.$B$BIf they are to be stopped, then their leader must be slain--a Felguard named Taragaman the Hungerer.$B$BKill him, and his heart will appease Thrall, of this I'm sure."
+},
+"102": {
+"zh": " 西部荒野的豺狼人给哨兵岭的丹努文队长带回8只豺狼人的爪子。暴风城已经把我们给遗弃了。一股腐朽与堕落的狂风正肆虐在西部荒野的平原之上。这里是我的故乡，我绝对不会背叛那些和我一样坚持留在这里的民众们。我们这些农夫必须站出来，为自己赢得生存的空间。$b$b若你愿意接受我们派给你的任务，就去巡视西部荒野的草原吧。找到那些可恶的豺狼人，把它们干掉，似乎这些家伙与死亡矿井里的小贼们有些联系。给我带回八只豺狼人的爪子来，我会奖励你的英勇行为的。",
+"en": " Patrolling WestfallBring 8 Gnoll Paws to Captain Danuvin on Sentinel Hill.Stormwind has abandoned us.  A foul wind of depravity rustles through the plains of Westfall.  This was my homeland and I will not turn my back on the citizens who choose to remain here.  We, the former farmers, shall make our stand.$b$bYour task, should you choose to accept, is to patrol the grasslands of Westfall.  Track down and slay the vile Gnolls that seem to be working in conjunction with the Deadmines thieves. Bring me eight Gnoll Paws and I will reward your bravery."
+},
+"98423": {
+"zh": " 谅解条约将这块《谅解条约》亲手交予铁炉堡的麦格尼·铜须。在金库内部，你找到了一块石板，上面详细记载了铜须与蛮锤两大矮人部族缔结和平条约的具体条款。从年代来看，这似乎是三锤之战刚刚平息时的产物，这绝对是矮人历史上不可多得的重磅史料。如果把这宝贝送给铁炉堡的国王，他绝对会非常感兴趣。",
+"en": "serC ",
+"en2": " The Treaty of UnderstandingDeliver the Treaty of Understanding to Magni Bronzebeard in Ironforge.Inside of the vault you find a tablet detailing the terms of a peace treaty between the Bronzebeard and Wildhammer dwarf clans. It appears to date back to time period just after of the War of the Three Hammers, and is very likely a notable piece of dwarven history. The king of Ironforge would no doubt be interested in this artifact."
+},
+"900": {
+"zh": " 什么什么平衡器关闭燃油控制阀、调节阀和主控制阀，然后再使用控制台。三个控制阀门都处于打开状态。根据控制面板上的指示说明，在拆卸零件之前必须要把这三个阀门关闭。"
+},
+"883": {
+"zh": " 拉克塔曼尼把拉克塔曼尼的蹄子交给陶拉祖营地的乔恩。拉克塔曼尼的蹄子是科多兽力量的象征。"
+},
+"887": {
+"zh": " 南海海盗帮棘齿城的加兹鲁维杀死12个南海歹徒和6个南海炮兵。我当然希望格雷兹里克中将能够保护我们在这片海域上来来往往的商船。贸易巨头们向商船舰队里砸了这么多的金子进来，而这些海盗却在胡作非为，袭击我的船只，还偷走了我的货物！$b$b我听说南海海盗就在南方的海岸边扎营，他们可以说是我的眼中钉肉中刺，假如格雷兹里克搞不定他们，也许你能帮我除掉他们。"
+},
+"631": {
+"zh": " 萨多尔大桥拉格·加玛森要求你找到老伊本瑟。一声惊天动地的爆炸响彻群山。那场面太可怕了！$b$b许多优秀的士兵为保卫萨多尔大桥而牺牲。长须说，在一切结束前，我们一定会向黑铁矮人讨还血债。$b$b可我们现在麻烦大了，连援军的影子都看不见。长须派老拉斯洛克去侦察东侧桥梁，看看能不能把它守住。$b$b那已经是几天前的事了。丹莫德正遭围攻，我们抽不出人手去找他。$b$b也许你能找到他……"
+},
+"304": {
+"zh": " 艰巨的任务杀死邪恶的巴尔加拉斯，把他的耳朵带给丹莫德外的布莱德·长须。我手下的大部分士兵都在丹莫德的战役中死去了，我的亲兄弟也在萨多尔峡谷上的西桥被毁的时候不幸牺牲。唉，黑铁矮人真是个像恶魔一般邪恶的族群。根据罗戈收集到的情报，这群在湿地四处肆虐的暴徒的领袖是一个名叫巴尔加拉斯的术士。他是个十分胆小谨慎的家伙，在把手下的士兵送上战场执行命令的时候，他自己往往却躲藏在某个不为人知的地方，躲避着任何可能面临的危险。$b$b如果你能找到这个懦夫，杀了他，把他的耳朵拿来给我，我会给你支付可观的酬劳的，$c。"
+},
+"126": {
+"zh": " 群山中的嚎叫将犹勒的爪子带回给湖畔镇的弗纳·奥斯古。$n，那些豺狼人居然还没死绝！我还能听见他们在湖畔镇周围的山区里打猎时发出的嚎叫声。其中有一个声音喊得最响——那是犹勒，他们的头儿。$B$B干掉犹勒，把他的手下都给轰走！把这个混蛋的爪子给我带回来。$B$B不过你得小心点，这家伙能当上他们的头儿自然是有两把刷子的。犹勒可不是个低能的混血豺狼人，他是纯种的……"
+},
+"19": {
+"zh": " 萨瑞尔祖恩将萨瑞尔祖恩的头颅带给湖畔镇的治安官马瑞斯。黑石前锋和黑石叛节者经常在这里和石堡要塞之间伏击我们，这群前锋的指挥官是个名叫萨瑞尔祖恩的兽人。把他的头给我带来。"
+},
+"1526": {
+"zh": " 火焰的召唤击败火焰之魂，将余烬放在恒焰圣殿屋顶的火盆里。火焰灵契已经做好了，现在你必须面对火焰元素的灵魂。在圣殿中使用灵契，然后去挑战山顶上的火焰之魂。他不会在你没有准备好的时候就攻击你，不过他知道你能看见他。$B$B你必须迅速打倒他，$n，拖得越久他的力量就会越强大。在击败他之后，将他的余烬放在火盆里，然后点燃火炬。"
+},
+"5725": {
+"zh": "Y<",
+"zh2": "Z<",
+"en": "33C@",
+"en2": "Y<"
+},
+"127": {
+"zh": " 卖鱼给湖畔镇的码头管理员巴伦带去10条斑点太阳鱼。止水湖的斑点太阳鱼是天下闻名的美味。它们总是供不应求……可我这里的存货已经不够了！$B$B给我带回10条鱼来，我会好好酬谢你的。哦，如果你不会捕鱼的话……可以从鱼人那里抢来！",
+"en": " Selling FishBring 10 Spotted Sunfish to Dockmaster Baren in Lakeshire.Lake Everstill is famous for its spotted sunfish.  There's always demand for them...and I'm running low!$B$BBring me a batch of 10 and I'll barter well for them.  If you can't fish yourself, then...maybe you can get them off the murlocs!"
+},
+"704": {
+"zh": " 阿戈莫德的命运收集4个雕纹石罐，把它们交给洛克莫丹的勘察员基恩萨·铁环。阿戈莫德送来的最后一份报告让我感到十分困惑，现在他死了，我就更难受了！他提到挖掘队在奥达曼附近的挖掘场找到了一些“远古的石罐”。我担心是他找到的罐子影响了石腭怪，就像这里发现的小石像一样。$B$B我要你去找到那些罐子，把它们拿回来以供研究。到奥达曼挖掘场去收集那些罐子吧，完成之后再回到我这里来。"
+},
+"914": {
+"zh": " 尖牙德鲁伊将考布莱恩宝石、安娜科德拉宝石、皮萨斯宝石和瑟芬迪斯宝石交给雷霆崖的纳拉·蛮鬃。哀嚎洞穴中的那些尖牙德鲁伊，曾经是一些高尚的德鲁伊，他们的目标是治愈贫瘠之地的创伤。然而，现在他们却想把这片土地据为己有——曾经高贵的理想变成了扭曲的妄想，我们决不能让他们得逞。$B$B尖牙德鲁伊组织共有四个首领，我在梦中见过他们，即便是现在，他们的面孔仍然萦绕在我的脑海中。打败他们，把他们的宝石给我拿来。$B$B去吧，$n。他们就潜伏在哀嚎洞穴的深处。"
+},
+"95772": {
+"zh": "\\A"
+},
+"95809": {
+"zh": "\\A"
+},
+"6394": {
+"zh": " 塔兹利尔的镐将塔兹利尔的镐还给塔兹利尔。$n，你是个值得信赖的$r。我能把另一个任务也托付给你吗？$B$B不久前，我在北边的一个洞穴中挖掘矿石的时候不小心弄丢了我最喜欢的镐。后来当我回去找它的时候，却发现洞穴中住满了邪恶的野兽！到那个被称作火刃集会所的洞穴中去帮我取回我的镐，行吗？$B$B我把它放在一个有瀑布的大厅里了。我的镐附有魔法，你在黑暗中也能看见它，所以你不必担心找不到它……只要小心那些守护它的野兽就是了！"
+},
+"167": {
+"zh": " 啊，兄弟……将工头希斯耐特的探险者协会徽章交给暴风城的维尔德·蓟草。那时我们正在一个大矿洞中工作，就是那个隐藏在西部荒野月溪镇中的谷仓下面的矿洞……没人知道当时到底是怎么回事，总之矿道突然坍塌了，我逃了出来……可其他人就没那么好运了……我是说，从那以后我就再没听到过其他人的消息了。$b$b看上去你的运气可能会比我们好一点。如果你能帮我找到弟弟的话，我会非常感谢你的。他总是戴着一块探险者协会徽章，所以如果你找不到他的话，至少那块徽章能给我带来一些安慰……",
+"en": " Oh Brother...Bring Foreman Thistlenettle's Explorers' League Badge to Wilder Thistlenettle in Stormwind.We were deep in a vast mine in Westfall, hidden beneath a barn in Moonbrook. No clue where these stinkin' thieving types came from. Anyway, the mine tunnel collapsed on us. I got out but the others... well... the others haven't been heard from.$b$bYou look like you might have better luck in there. If you could look for my brother, I'd be thankful.  He always carried his Explorers' League Badge. If you can't find him, that badge would at least give me some peace of mind."
+},
+"4921": {
+"zh": " 在战斗中失踪找到曼科里克的妻子，然后回到十字路口找他。我们在一个小小的牛头人营地里作战，然后就被冲散了——她独自与三个刺背野猪人交战。形势越来越不妙，我引开了一些敌人，结果她又很快被新赶到的敌人包围了。在狂怒之下，我冲向敌人，但是他们人多势众，很轻松地就把我打倒了。$B$B我醒来的时候，一位牛头人德鲁伊正在照料我的伤口，他是在黄金之路上找到我的。$B$B$c，请你帮我寻找我妻子的音讯。"
+},
+"844": {
+"zh": " 平原陆行鸟的威胁收集7个陆行鸟的喙，把它们交给十字路口的瑟格拉·黑棘。你的第一个任务是非常简单的。$B$B东边的平原陆行鸟总是对我们的食物补给心怀鬼胎，它们已经成了十字路口的一大祸害。$B$B杀掉那些平原陆行鸟，把它们的鸟喙给我带回来。"
+},
+"166": {
+"zh": " 迪菲亚兄弟会杀死艾德温·范克里夫，把他的头交给格里安·斯托曼。这里恐怕还有最后一个任务需要你来完成。我们必须派人去除掉艾德温·范克里夫。说实话，就这样对一个活生生的人宣判死刑，这实在令我非常痛心，但为了西部荒野人民的利益，我不得不让范克里夫永远安息。把范克里夫干掉之后，提他的头来见我。",
+"en": "p@",
+"en2": " The Defias BrotherhoodKill Edwin VanCleef and bring his head to Gryan Stoutmantle.There is but one task left for you to complete.  Edwin VanCleef must be assassinated.  While it saddens me to condemn any man to a death sentence, it is for the greater good of the people of Westfall that VanCleef is laid to rest once and for all.  Bring me the villain's head once the deed is done."
+},
+"168": {
+"zh": " 收集记忆给暴风城的维尔德·蓟草带回4张矿业工会会员卡。在那个可怕的日子，我的许多朋友都被埋在了矿洞里。如果你在冒险中正好路过月溪镇的那处矿洞的话，请帮忙留意一下有没有什么可以辨认他们身份的标志物品。如果你能找到他们的矿业工会会员卡的话，请一定要带给我，我好知道他们的结局，并与他们的家人谈谈如何为这次恐怖的事故善后。",
+"en": " Collecting MemoriesRetrieve 4 Miners' Union Cards and return them to Wilder Thistlenettle in Stormwind.Many of my friends perished that horrible day when the mine tunnel caved in.  If your adventures happen to bring you into that wing of the mine in Moonbrook, please keep an eye out for any sign which might identify them.  If you come across any of their Miners' Union Cards, bring them back to me and I'll make sure their families get some resolution from this horrible accident."
+},
+"314": {
+"zh": "5)",
+"zh2": " 保护牲畜山羊农场的鲁德拉·冻石要你杀了瓦加什，并且把它的牙齿给她带回去。午夜的时候，我们听到了吵闹的声音。今天早上我才发现羊圈里少了两只羊，那头名叫瓦加什的野兽袭击了我们的牲畜。由于国王麦格尼的军队大都在遥远的战场上与联盟其他的种族并肩作战，所以没有人能对付得了瓦加什。$b$b也许你有勇气找到这只猛兽并杀了它。把它的一颗牙齿交给我作为证明，我会奖赏你的。瓦加什就躲在这里的农场附近，小心点，它非常凶残。"
+},
+"1491": {
+"zh": " 智慧饮料收集6份哀嚎香精，把它们交给棘齿城的麦伯克·米希瑞克斯。好吧，这些角似乎不太有用。不过没关系——万事开头难嘛！我想我已经找到另一种原料，可以让我制造出更好的智慧饮料！$B$B有一种叫做哀嚎香精的物质，我想这种东西就是造成贫瘠之地出现各种奇特动植物的原因。帮我找到这种物质，我要把它加入我的饮料里试试看！$B$B我听说这种物质可以在西边的哀嚎洞穴里的那些怪物身上找到，去猎捕这种生物，帮我收集哀嚎香精吧。"
+},
+"905": {
+"zh": " 狂暴的镰爪龙杀死赤鳞迅猛龙并收集它们的羽毛，把这些羽毛放在3个赤鳞镰爪龙的巢穴里，然后返回十字路口的瑟格拉·黑棘那里。$n，你要做的下一步事情是打败你的猎物，并找到它们的巢穴。$B$B去猎杀南边的赤鳞迅猛龙，然后拿走它们戴着的羽毛。把羽毛放在死水绿洲西南边的赤镰龙巢穴里，让它们知道你无所畏惧！"
+},
+"79980": {
+"zh": " 翻山越岭探寻接下来的遭遇。“还不错吧？既然你读到了这张字条，就说明我的储藏还在。朝正北走一百步，下陡坡时可别摔断脚踝。那里的东西应该足够你继续上路。”",
+"en": " ScrambleFind what awaits you.\"Not so bad, eh? Since you're reading this, it means my stash is still there. Take a hundred paces due north and don't break your ankles going down the steep cliffside. There should be enough to keep you going.\""
+},
+"888": {
+"zh": " 被窃的货物帮棘齿城的加兹鲁维取回一箱靴子以及一块望远镜片。我希望取回所有丢失的货物，但我想那不太可能。不过，有些货物是我必须要取回的！$b$b正如你所见的，我的天文台马上就要建好了，现在只差两块镜片中较小的一块。第一块已由杜隆塔尔的商队运到，第二块运上了船，但现在还没有到。对了，我还没有收到藏宝海湾的崔斯里克给我发来的靴子！$b$b到海盗营地去一趟，看看能不能找到这些货物吧。"
+},
+"2040": {
+"zh": " 地底突袭从死亡矿井中带回小型高能发动机，将其带给暴风城矮人区中的沉默的舒尼。诺莫瑞根已经被那群卑鄙懦弱的穴居人们完全占据了！情况很紧急，或许你能帮上我们的忙，$n。$B$B在死亡矿井深处有一台功能强大的地精伐木机，找到这台伐木机并带回它的能源供应机件。有了这台伐木机的能源供应机件，我们就能给高速钻孔挖掘机供应足够的能量，用它来钻透这里与诺莫瑞根之间的岩石。钻开一条路，给他们来一次侏儒式的突袭！",
+"en": "p@",
+"en2": " Underground AssaultRetrieve the Gnoam Sprecklesprocket from the Deadmines and return it to Shoni the Shilent in Stormwind.Gnomeregan has fallen under the control of those dastardly troggs! The situation is grave but perhaps you can help, $n.$B$BDeep in the Deadmines is a functional goblin shredder. Find that shredder and bring back the intact power supply. With the shredder's power supply, we can give our gyrodrillmatic excavationators the power they need to break through the rocky underground borders of Gnomeregan, opening the way for a gnomish assault!"
+},
+"880": {
+"zh": " 变异的生物收集8块变异的钳嘴龟壳，把它们交给十字路口的图加。$n，你的发现真让人难以置信。这些绿洲拥有一些特殊的力量，谁也不知道这些力量是怎样来的。$B$B我想知道这几片绿洲是如何影响那些饮用过绿洲里的水的动物的。$B$B去捕获一些在甜水绿洲和死亡绿洲活动的绿洲钳嘴龟，把它们的龟壳给我带过来，我得好好研究一下。"
+},
+"434": {
+"zh": " 伏击！等待葛瑞格·莱斯科瓦公爵和沉默之刃马尔松在花园里的对话结束，杀死他们两个，之后向暴风城的提亚斯回报。等我做好间谍机器人的伪装，他会进去和莱斯科瓦谈话。守卫会让他进去的。$B$B在你帮我准备材料的同时，我会暗示马尔松，让他再次和莱斯科瓦会面，我甚至会给他一点假消息，好让他对此深信不疑。$B$B接下来，莱斯科瓦就会让他的卫兵解散，然后在花园里等马尔松。等你听到他们谈起迪菲亚兄弟会的时候就采取行动。你要把他们两个都干掉。听懂了吗？$B$B当你完成任务之后，尽快向提亚斯回报。窃听莱斯科瓦和马尔松的对话"
+},
+"193": {
+"zh": " 猎豹奈辛瓦里远征队的埃尔加丁爵士要求你杀死巴尔瑟拉，并带回它的牙。你几乎已经证明自己是一位优秀的猎豹能手了。有一只名叫巴尔瑟拉的豹子目前正潜伏在这片森林里，我们一直都没能找到它。去试试猎杀巴尔瑟拉吧，记得用上你所掌握的全部技巧。$b$b将巴尔瑟拉的牙齿带回来给我，如果你成功了，你就将赢得我的尊敬！"
+},
+"850": {
+"zh": " 科卡尔首领把巴拉克的头颅交给十字路口的雷戈萨·死门。半人马的问题困扰着牛头人已经很多年了，最近，贫瘠之地的科卡尔半人马开始形成真正的威胁。通常他们散居在这片土地上，不过他们当中已经产生了新的首领，他把一盘散沙的半人马集合在一起。$B$B为了保护我们的家园，这些半人马领袖就必须要除掉。$B$B帮我带回巴拉克·科多班恩的头颅，他在北方的遗忘之池附近驻营。$B$B除掉他，然后再回到我这里。"
+},
+"38": {
+"zh": " 杂味炖肉萨尔玛·萨丁需要3块秃鹫肉条、3只血牙野猪的头、3颗鱼人的眼睛和3棵秋葵。来帮我完成这道最华丽的西部荒野杂味炖肉吧！拜托啦，帮我找到以下这些材料：$b$b3块秃鹫肉条$b3只血牙野猪的头$b3只鱼人的眼睛$b3棵秋葵",
+"en": " Westfall StewSalma Saldean wants 3 Stringy Vulture Meat, 3 Goretusk Snouts, 3 Murloc Eyes, 3 Okra.Help me make some Westfall Stew!  Come back with the following ingredients: $b $b 3 Stringy Vulture Meat $b 3 Goretusk Snouts $b 3 Murloc Eyes $b 3 Okra"
+},
+"5441": {
+"zh": " 懒惰的苦工在懒惰的苦工睡觉时，用工头的木棒敲他们。敲醒5个苦工，然后把工头的木棒还给试炼谷的工头塔兹利尔。该死的苦工！我叫他们在山谷里伐木，但他们总是见缝插针地打盹！我需要找个人帮我去叫醒他们。$B$B你看上去挺适合这差事的。给你，拿着这根棍子，看到偷懒睡觉的苦工就打醒他。只要狠狠地敲他们一下就能让他们乖乖回去工作了！别忘了把棍子还给我。$B$B这些该死的懒汉……"
+},
+"208": {
+"zh": " 王牌猎人赫米特·奈辛瓦里要求你将虎王邦加拉什的头带回来给他。$n，你现在已经成为了一位够格进入我们狩猎队的猎手了。无论是洛丹伦的战场还是危机四伏的丛林，我在哪里都没有见过有谁能像你这样拥有如此强大的战斗能力。$b$b你成功地杀死了凶残的辛达尔，狡猾的巴尔瑟拉和强悍的泰希斯。但对于这片丛林中的猎人们来说，虎王邦加拉什的头才代表着至高无上的荣耀。这只白虎正是我来这里的原因，我注意它已经很久了。如果你能杀死虎王邦加拉什，那么你无疑是这里最优秀的猎人。"
+},
+"5041": {
+"zh": " 十字路口的补给品找到十字路口的补给箱，把它还给贫瘠之地的索克。那次被野猪人剪了径的商队运载着我们急需的物资。$B$B就你对钢鬃野猪人的作战记录来说，你真的是勇气十足，我希望你再接再厉，不过这一次，我想知道我是否能请你睁大眼睛，帮我们寻找一些丢失的供给物资。你可以在野猪人的营地里四下找找，那些家伙做了那一票之后明显胖了许多。$B$B十字路口的居民欠你的人情。"
+},
+"903": {
+"zh": " 草原上的徘徊者帮十字路口的瑟格拉·黑棘收集7只徘徊者的爪子。现在是该让你迎接一些真正的挑战了。贫瘠之地的徘徊者是一种很强悍的动物，而且非常致命。你可以在草丛里找到这些野兽，它们一般都在十字路口的西南边。$B$B猎杀它们的时候要多加小心，$N，不然的话，你很快就会发现自己的角色不再是捕猎者，而是猎物。"
+},
+"1712": {
+"zh": " 塞克隆尼亚把巴斯拉的羊皮纸上列出的东西交给奥特兰克的捕风者巴斯拉。我几十年来都在关注着这个地方。我关注着，希望有一天能看到强大的塞克隆尼亚被人击败。但迄今为止，我还没有找到一个能打败风之王的勇士。$B$B也许你就是那个勇士。$B$B证明给我看吧，给我找来召唤塞克隆尼亚所需的东西，这样你就能证明自己是一个伟大的勇士。也许你能打败他并夺得他的旋风之心。$B$B这样的话，我将把这颗心的力量注入一把武器里，供你在今后的冒险旅程中使用。$B$B这张羊皮纸上写着我需要的东西。"
+},
+"684": {
+"zh": " 通缉：玛雷兹·考尔把玛雷兹的头颅交给避难谷地的尼艾丝队长。重金悬赏玛雷兹·考尔的项上人头。这个兽人是辛迪加组织的高级顾问和技工，人们最后一次看见她是在激流堡内的辛迪加控制区。$B$B赏金请到尼艾丝队长处领取。$B$B请注意：玛雷兹是一个强大而狡猾的术士，她和恶魔有着非常密切的联系。追杀她时务必非常小心。"
+},
+"347": {
+"zh": " 瑞斯班矿石收集5袋瑞斯班矿石，把它们带给北郡图书馆的帕克斯顿修士。瑞斯班矿石是根据第一个发现他的人——巴尔特·瑞斯班——的名字来命名的。这种矿石在冶炼之后虽然没有铁那么坚硬，但它有一种纯正的黑色，许多抄写员都用它来制作墨水或染料。在北边的瑞斯班矿洞里就可以找到这种矿石。$B$B我们通常会有一些存货，但最近大家都忙于抵抗兽人的进攻，没空去采集这种矿石。此外……这段时间以来，赤脊豺狼人占据了瑞斯班矿洞，而且他们的苦工也正在采集这些矿石。$B$B所以如果你需要的话，就得自己去那里找了。"
+},
+"3281": {
+"zh": "M.",
+"zh2": " 被偷走的银币把被偷走的银币交给十字路口的加兹罗格。你杀了迅猛龙，很好，但是它们偷走的那些银币必须要找回来！我接到报告说有大量的迅猛龙聚集在棘齿城南面，那里现在被称为迅猛龙平原，它们八成是把银币藏在那里了。$B$B到那个迅猛龙平原去找到被偷走的银币，然后把银币送还到我这里来。"
+},
+"613": {
+"zh": " 玛雷的腿把玛雷的钥匙带给藏宝海湾的“海狼”马克基雷。该死！那见鬼的玛雷居然在他的假腿上安了一个锁，我还死活都打不开！他的宝贝，还有他欠我的钱，都藏在那条假腿里！$B$B我们得想办法找到钥匙才行。玛雷这家伙过去因为喜欢和住在东北边食人魔山上的莫什奥格食人魔赌博而出名，而且他告诉过我——我是说当他还活着的时候——他每次赢了一票大的之后都会去一趟那里，所以，或许那边的食人魔会有他的钥匙。$B$B要真是如此的话，你八成得大开杀戒才能搞到钥匙……"
+},
+"852": {
+"zh": " 赫兹鲁尔·血印把赫兹鲁尔的头颅交给十字路口的雷戈萨·死门。赫兹鲁尔·血印是贫瘠之地的科卡尔半人马的首领。他凶猛、残忍，诡计多端。消灭他就可以瓦解半人马部落，从而极大地削弱他们对我们的威胁。$B$B去杀了他。就像对付巴拉克和维罗戈那样，带回赫兹鲁尔的头颅。$B$B他和他的手下驻扎就在西南方的甜水绿洲一带。"
+},
+"115": {
+"zh": " 暗影魔法给湖畔镇的治安官马瑞斯带回3颗午夜宝珠。黑石氏族的兽人在赤脊山脉的侵略行动得到了暗影法师的支援，他们带来了一种具有强大黑暗力量的器具——午夜宝珠。这些宝珠给赤脊山脉的保卫者们造成了巨大的伤亡，并迫使我们放弃所有在战斗中被这种宝珠污染了的器物,因为它们已经沾染了恶魔的力量。$B$B猎杀这些黑石暗影法师，并给我带回他们的午夜宝珠来。我将会把这些东西妥善地处理掉，还这世界一片清净！"
+},
+"739": {
+"zh": " 莫达洛克干掉杀害阿戈莫德的凶手：莫达洛克。$B$B顺便杀掉12个石窟断骨者。$B$B然后向洛克莫丹的勘察员基恩萨·铁环报告。阿戈莫德留下的足迹表明他是从西边走过来的。从沙石上的斑斑血迹不难看出，矮人阿戈莫德爬行了好一段距离。$B$B爬到这里的时候，他终于被死神带走了。$B$B经过仔细察看，你在旁边的沙石中发现了几个潦草写下的字迹：“莫达洛克”。$B$B字迹就在阿戈莫德的手边。"
+},
+"128": {
+"zh": " 悬赏：黑石氏族杀死15名黑石勇士，并向湖畔镇的卫兵豪维复命。我们一定得清剿黑石氏族。这群强盗入侵了我们的国家，占据了本应属于暴风王国的群山。根据线报说，在他们的氏族中，每支分队的领袖都被称为“勇士”，你很容易就能找到他们。他们的营地大致在北方，就在通向燃烧平原的道路西边。$b$b所罗门镇长希望有人能把这群卑鄙邪恶的家伙都消灭光。如果你有意帮助我们的话，杀死15名黑石勇士，然后向我复命。"
+},
+"132": {
+"zh": " 迪菲亚兄弟会将威利的便笺交给西部荒野的格里安·斯托曼。我现在可是冒着生命危险在和你说话。迪菲亚那帮人也是听命于某个神秘人士的，我上次听说他们与许多种族都有过合作，豺狼人，狗头人，甚至还有地精。$b$b把这张便笺交给斯托曼。上面写着我所知道的关于迪菲亚兄弟会的一切。",
+"en": " The Defias BrotherhoodTake Wiley's Note to Gryan Stoutmantle in Westfall.What I am about to tell you could cost me my life.  The Defias gang is up to something big.  Last I heard they were working in conjunction with various gnolls, kobolds and even goblins.$b$bTake this note to Stoutmantle.  It explains as much as I know on the subject."
+},
+"98372": {
+"zh": " 不幸的结局"
+},
+"5724": {
+"zh": "-8",
+"zh2": "-8",
+"en": "33C@",
+"en2": "-8"
+},
+"104": {
+"zh": " 海岸上的威胁将老瞎眼的鳞片交给西部荒野灯塔旁的葛瑞森船长。当我的生命终结在了那片岩石上之后，我根本不知道死后的世界会是怎样的。那天晚上的灯塔一片漆黑，因为老瞎眼吓跑了管理员全家。他们本已经逃跑了，但那天晚上他们又回来想要点亮灯塔，结果老瞎眼带着一群野蛮的鱼人突袭了灯塔。这一次，管理员的全家都在我面前无助地死去了……$b$b如果你在海岸边看到老瞎眼的话，就杀死它，把它的鳞片给我带回来，我会奖励你的。"
+},
+"875": {
+"zh": " 鹰身人首领从巫翼杀戮者那里收集6枚鹰身人首领之戒，把它们交给十字路口的达索克·快刀。哈哈哈，$n，你还想接下一单任务？好呀，我真是太高兴了。$B$B这次的任务是剿灭无水岭的鹰身人首领。只有巫翼杀戮者才能成为鹰身人首领，这一点你可以从她们携带的戒指上判断出来。她们其实就是一伙乌合之众，在无水岭一带应该就有不少。只要杀死6个首领就足以对她们的这个母系氏族造成毁灭性的打击了。$B$B$n，你一定要让她们死得很惨，我要让那些下贱的鹰身人知道和部落作对是多么愚蠢的事。"
+},
+"1050": {
+"zh": " 泰坦神话从修道院拿回《泰坦神话》，把它交给铁炉堡的图书馆员麦伊·苍尘。未来是已经命中注定了的！我们的命运就像雨点落入大海一样无可改变。$b$b不过研究过去也许可以让我们预见未来，并提前做好一些准备。$b$b在灾难降临在洛丹伦之前，提瑞斯法林地中有一处藏有许多书籍的地方——老修道院的图书馆，据说有一本《泰坦神话》就收藏在哪里。$b$b把它给我拿回来，也许我们可以一起揭开过去的秘密。"
+},
+"98815": {
+"zh": "\\A"
+},
+"82208": {
+"zh": " 图书馆良友"
+},
+"95195": {
+"zh": " 血污徽章收集$1oa枚血污徽章，并把它们交给暴风城的马库斯·乔纳森将军。<这枚陈旧的联盟徽记，想必属于昔日洛丹伦的某位将士。这片废墟中恐怕还散落着许多同类的勋章，若能将其物归原主，烈士的遗属定会感激涕零。>",
+"en": " Bloodied InsigniaCollect $1oa Bloodied Insignias and take them to General Marcus Jonathan in Stormwind City.<The old Alliance insignia appears to have belonged to a soldier of Lordaeron. These ruins are likely filled with similar medals that living relatives would be grateful to have returned to them.>"
+},
+"865": {
+"zh": " 迅猛龙角从赤鳞镰爪龙身上收集5根完整的迅猛龙角，把它们交给棘齿城的米希瑞克斯。贫瘠之地的迅猛龙比其它地区的更加聪明狡猾，我想它们的智慧就来自它们的角！如果是这样的话，我可以将它们的角磨成粉末，制成“智慧饮料”，然后就能卖个大价钱！！！$B$B我想你应该能帮我的忙……从赤鳞镰爪龙身上弄一些完整的迅猛龙角来，它们就栖息在贫瘠之地的南部以及靠近灰谷森林边界的贫瘠之地北部。"
+},
+"95189": {
+"en": "p@"
+},
+"96403": {
+"en": "serC "
+},
+"2928": {
+"en": "ff&@"
+},
+"96395": {
+"en": "serC "
+},
+"1653": {
+"en": " The Test of RighteousnessSpeak to Jordan Stilwell in IronforgeActually, I have no doubt that Jordan himself would like to thank you, and seeing as I need a messenger to send word that his wife is safe, I think you'd be a perfect choice.$B$BJordan was to be a paladin of the Light before his dedication to his father's craft took him on another path--he's intimately familiar with our way of life and is considered among our most faithful.$B$BHe should still be in Ironforge--he likes to work outside the gates during the day, something about the cool mountain air."
+},
+"155": {
+"en": " The Defias BrotherhoodEscort the Defias Traitor to the secret hideout of the Defias Brotherhood.  Once the Defias Traitor shows you where VanCleef and his men are hiding out, return to Gryan Stoutmantle with the information.So Stoutmantle sends a scrawny $r like you to protect me?  Guess you'll have to do.  Better bring some friends too. $b$bYou know the deal, right?  You watch my back and I'll take you to the Defias hideout.  But you better be close by my side.  The Defias gang wants my head now.  If they see me with you, they'll try to kill me.$b$bLet me know when you and any friends you can round up are ready to go.Escort The Defias Traitor to discover where VanCleef is hiding"
+},
+"391": {
+"en": " The Stockade RiotsKill Bazil Thredd and bring his head back to Warden Thelwater at the Stockade.Let's get one thing straight, $n: I don't trust you. But, with the situation as it is, you probably won't make a difference.$B$BSo here's how it's going to be: go down there and have your talk with Thredd. If you're really on our side, then kill him and bring me his head when the job's done. And if it turns out you're on his side, and don't come out... when we find you, you'll die along with the rest of the maggots."
+},
+"1701": {
+"en": " Fire Hardened MailGather the materials Furen Longbeard requires, and bring them to him in Stormwind.So I gave you a nice shield, but we don't have to stop there.  I know the secrets to make extremely hard mail armor.  It's not easy and it takes very rare materials, but if you're willing to do the legwork then I'll make a piece for you.$B$BWhat do you say, $n?  If you're up for the challenge, then I'll give you a list of what to get and where to get them."
+},
+"96391": {
+"en": "serC "
+},
+"92752": {
+"en": " Explosive ConsultationReturn to Alba Fairmoon in Westfall.That's it - the bomb's ready to go! Careful with that detonator, now."
+},
+"92745": {
+"en": "t "
+},
+"92753": {
+"en": "t,"
+},
+"141": {
+"en": " The Defias BrotherhoodTake Shaw's report to Gryan Stoutmantle in Westfall.The Stonemasons' Guild was run by a man named Edwin VanCleef.  VanCleef was responsible for rebuilding Stormwind after the orcs razed it in the First War.  Apparently, VanCleef and his men were unhappy with their treatment by the King after the reconstruction was complete.  That just might explain a thing or two.$b$bI have written a more detailed account for your Master in Westfall.  Take this to him at once!"
+},
+"96393": {
+"en": "serC "
+},
+"95250": {
+"en": "p@"
+}
+}
+}

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>五人本页 · 卡中卡提亮方案</title>
+<style>
+  :root{
+    --L0:#0A0C10; --L1:#10131A; --L2:#161A22; --L3:#202532; --L4:#2B3140; --L5:#38404F; --DIV:#1B2029;
+    --bd:rgba(255,255,255,.10); --bd2:rgba(255,255,255,.18);
+    --gold:#F0C75E; --green:#5ED48A; --red:#FF6B5E;
+    --text:#DDE3EA; --sub:#8A93A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:#F4F5F7;color:#1c2330;padding:28px 34px;max-width:1180px;margin:0 auto}
+  h1{font-size:21px;margin-bottom:4px}
+  .lead{color:#5a6472;font-size:13px;margin-bottom:22px}
+  h2{font-size:15px;margin:26px 0 10px;padding-left:10px;border-left:4px solid #2f6fd6}
+  .rule{background:#fff;border:1px solid #e2e6ec;border-radius:10px;padding:14px 18px;font-size:13.5px;line-height:1.7}
+  .rule b{color:#2f6fd6}
+
+  /* ── 审计表 ── */
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;font-size:13px;border:1px solid #e2e6ec}
+  th{background:#eef1f5;text-align:left;padding:8px 12px;font-weight:600;color:#3a4454}
+  td{padding:8px 12px;border-top:1px solid #eef0f4;vertical-align:middle}
+  .tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11.5px;font-weight:600}
+  .bad{background:#FDE9E7;color:#C0392B}
+  .ok{background:#E4F5EB;color:#1E8E4E}
+  .lvl{display:inline-block;min-width:30px;text-align:center;padding:1px 7px;border-radius:5px;background:var(--L1);color:#cfd6df;font-family:Consolas,monospace;font-size:11.5px;border:1px solid var(--bd)}
+  .lvl.l2{background:var(--L2)} .lvl.l4{background:var(--L4)} .lvl.l1{background:var(--L1)}
+  .arrow{color:#98a1ad;margin:0 4px}
+
+  /* ── 对比 mockup ── */
+  .cmp{display:flex;gap:18px;flex-wrap:wrap}
+  .panel{flex:1;min-width:460px;background:#fff;border:1px solid #e2e6ec;border-radius:10px;padding:14px 16px}
+  .panel h3{font-size:13.5px;margin-bottom:10px;color:#3a4454}
+  .win{background:linear-gradient(180deg,#141822 0%,var(--L1) 22%,var(--L1) 100%);
+       border:1px solid var(--bd);border-radius:8px;padding:14px 16px 18px;box-shadow:0 6px 18px rgba(10,14,24,.25)}
+  .win .cap{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .win .cap span{color:var(--text);font-size:13px;font-weight:600}
+  .win .cap em{color:var(--sub);font-size:11px;font-style:normal}
+  .cols{display:flex;gap:14px}
+  .plate{flex:1;background:var(--L1);border:1px solid var(--bd);border-radius:6px;padding:9px 8px;position:relative}
+  .plate .pl{font-size:10.5px;color:var(--sub);margin:0 2px 7px;letter-spacing:.5px}
+  .qrow{border:1px solid var(--bd);border-radius:5px;padding:6px 9px;margin-bottom:6px;font-size:11.5px;color:var(--text);display:flex;justify-content:space-between;align-items:center;position:relative}
+  .qrow small{color:var(--sub);font-size:10px}
+  .qrow .st{font-size:10px}
+  .qrow.sel{border-color:rgba(240,199,94,.55)}
+  .qrow.sel::before{content:"";position:absolute;left:-1px;top:-1px;bottom:-1px;width:3px;border-radius:3px 0 0 3px;background:var(--gold)}
+  .node{border:1px solid var(--bd);border-radius:5px;padding:6px 9px;margin-bottom:6px}
+  .node b{display:block;font-size:11.5px;color:var(--text);font-weight:600}
+  .node small{color:var(--sub);font-size:10px}
+  .hoverlab{position:absolute;right:8px;top:-7px;font-size:9.5px;padding:1px 7px;border-radius:99px;background:#3d4657;color:#e7ecf3}
+  /* before：行 = L1（与底板同档） */
+  .before .qrow,.before .node{background:var(--L1)}
+  /* after：行 = L2，悬停 = L4 */
+  .after .qrow,.after .node{background:var(--L2)}
+  .after .qrow.hov,.after .node.hov{background:var(--L4);border-color:var(--bd2)}
+  .qrow.done .st{color:var(--green)} .qrow.act .st{color:var(--gold)} .qrow.wait .st{color:var(--sub)}
+  .badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;letter-spacing:.4px}
+  .b-before{background:#FDE9E7;color:#C0392B}
+  .b-after{background:#E4F5EB;color:#1E8E4E}
+
+  /* ── 色阶条 ── */
+  .ladder{display:flex;border-radius:8px;overflow:hidden;border:1px solid #d6dae1;margin-top:6px}
+  .ladder div{flex:1;padding:9px 0 26px;text-align:center;color:#c9d0da;font-family:Consolas,monospace;font-size:11px;position:relative}
+  .ladder div i{position:absolute;left:0;right:0;bottom:7px;font-style:normal;font-size:9.5px;color:#9aa3b0}
+
+  /* ── 方案卡 ── */
+  .opts{display:flex;gap:16px;flex-wrap:wrap}
+  .opt{flex:1;min-width:420px;background:#fff;border:1px solid #e2e6ec;border-radius:10px;padding:16px 18px;position:relative}
+  .opt.rec{border:2px solid #2f6fd6}
+  .opt h3{font-size:14px;margin-bottom:8px}
+  .opt p{font-size:12.5px;color:#5a6472;line-height:1.75}
+  .opt .rec-tag{position:absolute;top:-11px;right:14px;background:#2f6fd6;color:#fff;font-size:11px;padding:2px 12px;border-radius:99px}
+  .opt ul{margin:8px 0 0 18px;font-size:12.5px;color:#3a4454;line-height:1.9}
+  .scope{font-size:12px;color:#5a6472;background:#eef3fb;border:1px solid #d4e2f5;border-radius:8px;padding:10px 14px;margin-top:18px;line-height:1.8}
+</style>
+</head>
+<body>
+
+<h1>五人本页 · 「卡中卡」提亮方案</h1>
+<div class="lead">规则：卡片套卡片时，内卡必须比外层卡亮一档 · 审计范围 = 五人本详情页（掉落 / 任务 / 攻略 / 地图）</div>
+
+<div class="rule">
+  <b>嵌套判定规则</b>：外层是<b>可见容器卡</b>（有底色的 plate / 卡），里面的行若也是「卡」（有底色），就必须提亮一档；
+  页面直铺的一层卡（下面直接是窗口底）不算嵌套，维持 L1；卡内<b>扁平无底行</b>（flat 定式）不是卡，不算嵌套。
+</div>
+
+<h2>① 五人本页嵌套审计结果</h2>
+<table>
+  <tr><th style="width:26%">位置</th><th style="width:30%">结构</th><th style="width:20%">现状</th><th>判定</th></tr>
+  <tr>
+    <td>任务页 · 左栏</td>
+    <td>左底板 <span class="lvl l1">L1</span> → 任务行 <span class="lvl l1">L1</span></td>
+    <td>同级，行与底板融在一起</td>
+    <td><span class="tag bad">✗ 违规 · 需提亮</span></td>
+  </tr>
+  <tr>
+    <td>任务页 · 右栏</td>
+    <td>右底板 <span class="lvl l1">L1</span> → NPC 节点行 <span class="lvl l1">L1</span></td>
+    <td>同级，行与底板融在一起</td>
+    <td><span class="tag bad">✗ 违规 · 需提亮</span></td>
+  </tr>
+  <tr>
+    <td>掉落页 · 卡片视图</td>
+    <td>boss 卡 <span class="lvl l1">L1</span> → 物品行（扁平无底）</td>
+    <td>行不套小卡，悬停才浮淡底</td>
+    <td><span class="tag ok">✓ 合规（扁平定式）</span></td>
+  </tr>
+  <tr>
+    <td>掉落页 · 列表视图 / 攻略四卡 / 地图分组卡 / 卡墙</td>
+    <td>单层卡，直接铺在窗口底上</td>
+    <td>页面提亮一档，无嵌套</td>
+    <td><span class="tag ok">✓ 合规</span></td>
+  </tr>
+</table>
+
+<h2>② 违规点修复对比（任务页）</h2>
+<div class="cmp">
+  <div class="panel">
+    <h3><span class="badge b-before">现状</span>　行 = L1，与底板同档（问题所在）</h3>
+    <div class="win before">
+      <div class="cap"><span>任务</span><em>已完成 3 / 8</em></div>
+      <div class="cols">
+        <div class="plate">
+          <div class="pl">左 · 任务列表（底板 L1）</div>
+          <div class="qrow done"><span>萨尔的部署</span><span class="st">已完成</span></div>
+          <div class="qrow act"><span>黑铁的阴谋</span><span class="st">进行中</span></div>
+          <div class="qrow wait"><span>深渊之声</span><span class="st">未接</span></div>
+          <div class="qrow wait"><span>熔火之心</span><span class="st">未接</span></div>
+        </div>
+        <div class="plate">
+          <div class="pl">右 · 任务详情（底板 L1）</div>
+          <div class="node"><b>○ 接取：指挥官沃恩</b><small>副本内 · 第二个Boss旁</small></div>
+          <div class="node hov"><span class="hoverlab">悬停态</span><b>○ 交付：萨尔</b><small>副本内 · 入口大厅</small></div>
+          <div class="node"><b>○ 接取： fringe</b><small>进本前 · 燃烧平原</small></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#8a6a66;margin-top:10px">行底 = L1 与底板完全同色，只靠 10% 白边勉强撑出轮廓 → 看起来「行没有底」。</p>
+  </div>
+  <div class="panel">
+    <h3><span class="badge b-after">提案</span>　内卡 = L2 底，悬停 = L4 胶囊</h3>
+    <div class="win after">
+      <div class="cap"><span>任务</span><em>已完成 3 / 8</em></div>
+      <div class="cols">
+        <div class="plate">
+          <div class="pl">左 · 任务列表（底板 L1 不动）</div>
+          <div class="qrow done"><span>萨尔的部署</span><span class="st">已完成</span></div>
+          <div class="qrow act"><span>黑铁的阴谋</span><span class="st">进行中</span></div>
+          <div class="qrow wait hov"><span class="hoverlab">悬停/选中</span><span>深渊之声</span><span class="st">未接</span></div>
+          <div class="qrow wait"><span>熔火之心</span><span class="st">未接</span></div>
+        </div>
+        <div class="plate">
+          <div class="pl">右 · 任务详情（底板 L1 不动）</div>
+          <div class="node"><b>○ 接取：指挥官沃恩</b><small>副本内 · 第二个Boss旁</small></div>
+          <div class="node"><b>○ 交付：萨尔</b><small>副本内 · 入口大厅</small></div>
+          <div class="node hov"><span class="hoverlab">悬停态</span><b>○ 接取：fringe</b><small>进本前 · 燃烧平原</small></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#3d5a45;margin-top:10px">内卡 L2（#161A22）比底板 L1（#10131A）亮一档，层次清晰；悬停/选中胶囊升到 L4，与「底→悬停 = +2 档」的现行惯例一致。</p>
+  </div>
+</div>
+
+<div style="margin-top:18px">
+  <div style="font-size:12.5px;color:#5a6472;margin-bottom:4px">色阶参照（当前蓝黑主题）</div>
+  <div class="ladder">
+    <div style="background:var(--L0)">0A0C10<i>L0</i></div>
+    <div style="background:var(--L1)">10131A<i>L1 · 窗口/外卡</i></div>
+    <div style="background:var(--L2)">161A22<i>L2 · 内卡(新)</i></div>
+    <div style="background:var(--L3)">202532<i>L3 · 旧悬停</i></div>
+    <div style="background:var(--L4)">2B3140<i>L4 · 新悬停</i></div>
+    <div style="background:var(--L5)">38404F<i>L5</i></div>
+  </div>
+</div>
+
+<h2>③ 改动范围与实现方式</h2>
+<div class="opts">
+  <div class="opt rec">
+    <span class="rec-tag">推荐</span>
+    <h3>方案 A · 内卡提亮（最小改）</h3>
+    <p>只动两处违规点：任务行、NPC 节点行。</p>
+    <ul>
+      <li>任务行 / NPC 节点行：L1 → <b>L2 底</b> + 白 10% 边</li>
+      <li>两者悬停胶囊：L3 → <b>L4</b>（保持 +2 档惯例）</li>
+      <li>任务行「选中」= 胶囊常显，同步升 L4</li>
+      <li>实现：<code>HuiCardFX</code> 加一个底色档位参数，其他调用方不传=默认 L1，零波及</li>
+      <li>外底板、掉落页、攻略卡、地图卡：<b>一律不动</b></li>
+    </ul>
+  </div>
+  <div class="opt">
+    <h3>方案 B · 级联全亮（不推荐）</h3>
+    <p>把主窗口也算「外卡」：页面直铺的卡全部 L1 → L2，内卡 → L3。</p>
+    <ul>
+      <li>波及卡墙、掉落列表、攻略四卡、地图分组卡等已验收页面</li>
+      <li>整体观感上移，窗口底与卡的对比反而变小</li>
+      <li>检查断言与变异锚点需大面积重锚</li>
+    </ul>
+  </div>
+</div>
+
+<div class="scope">
+  <b>改动清单（方案 A）</b>：Core/DungeonUI.lua 两处（任务行 takeRow、NPC 节点行 takeNode 的 HuiCardFX 调用）＋ Hui.lua 助手加档位参数；
+  同步升级 df_dungeon_check 对应断言 + df_mut_check 重锚（预计 4–6 条）。改动完成后照例跑五项检查。
+</div>
+
+</body>
+</html>
