@@ -17,7 +17,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PIPELINE = ROOT / "df-prof-pipeline-v1.0/_temp"
 CHILDREN = (
     "fc_fetch.py", "fc_parse.py", "fc_zones.py", "fc_fields.py",
-    "fc_i18n.py", "fc_gen.py", "fc_prof_items.py", "strip_lua_comments.py",
+    "fc_i18n.py", "fc_gen.py", "fc_prof_items.py", "fc_prof_specializations.py",
+    "strip_lua_comments.py",
+    "fc_refresh_specializations.py",
 )
 STUB = '''import json
 import os
@@ -73,7 +75,8 @@ class ProfItemsIntegrationTests(unittest.TestCase):
         self.assert_ok(result)
         names = [call["script"] for call in calls]
         self.assertEqual(names, ["fc_fetch.py", "fc_parse.py", "fc_zones.py", "fc_fields.py",
-                                 "fc_i18n.py", "fc_gen.py", "fc_prof_items.py", "fc_fields.py"])
+                                 "fc_i18n.py", "fc_gen.py", "fc_prof_items.py",
+                                 "fc_prof_specializations.py", "fc_fields.py"])
         imported = calls[6]["argv"]
         self.assertIn("--dry-run", imported)
         for option, value in inputs.items():
@@ -85,6 +88,7 @@ class ProfItemsIntegrationTests(unittest.TestCase):
         self.assertIn("--dry-run", calls[5]["argv"])
         self.assertIn("--offline", calls[0]["argv"])
         self.assertIn("--offline", calls[2]["argv"])
+        self.assertEqual(calls[7]["argv"], ["--offline", "--dry-run"])
         self.assertTrue(all(Path(call["cwd"]) == self.scripts for call in calls))
 
     def test_apply_runs_post_import_audit_then_comment_cleanup(self):
@@ -92,17 +96,19 @@ class ProfItemsIntegrationTests(unittest.TestCase):
         result, calls = self.run_pipeline("--apply", "--offline", "--prices-csv", str(absolute))
         self.assert_ok(result)
         self.assertTrue(all("--dry-run" not in call["argv"] for call in calls))
-        self.assertEqual([call["script"] for call in calls][-3:],
-                         ["fc_prof_items.py", "fc_fields.py", "strip_lua_comments.py"])
+        self.assertEqual([call["script"] for call in calls][-4:],
+                         ["fc_prof_items.py", "fc_prof_specializations.py",
+                          "fc_fields.py", "strip_lua_comments.py"])
         self.assertEqual(calls[-1]["argv"], ["--apply"])
-        imported = calls[-3]["argv"]
+        imported = calls[-4]["argv"]
         self.assertEqual(imported[imported.index("--prices-csv") + 1], str(absolute))
 
     def test_default_mode_checks_without_comment_cleanup(self):
         result, calls = self.run_pipeline("--offline")
         self.assert_ok(result)
         self.assertEqual(calls[-1]["script"], "fc_fields.py")
-        self.assertEqual(calls[-2]["argv"], ["--dry-run"])
+        self.assertEqual(calls[-2]["script"], "fc_prof_specializations.py")
+        self.assertEqual(calls[-2]["argv"], ["--offline", "--dry-run"])
         self.assertFalse(any(call["script"] == "strip_lua_comments.py" for call in calls))
 
     def test_apply_and_check_are_mutually_exclusive_before_running_children(self):
@@ -111,7 +117,7 @@ class ProfItemsIntegrationTests(unittest.TestCase):
         self.assertEqual(calls, [])
 
     def test_child_failure_stops_before_later_steps_or_cleanup(self):
-        for failed in ("fc_gen.py", "fc_prof_items.py"):
+        for failed in ("fc_gen.py", "fc_prof_items.py", "fc_prof_specializations.py"):
             with self.subTest(failed=failed):
                 if self.log.exists():
                     self.log.unlink()
@@ -121,6 +127,45 @@ class ProfItemsIntegrationTests(unittest.TestCase):
                 self.assertIn("[FAIL]", result.stdout)
                 self.assertEqual(sum(call["script"] == "fc_fields.py" for call in calls), 1)
                 self.assertFalse(any(call["script"] == "strip_lua_comments.py" for call in calls))
+
+    def test_specialization_options_only_reach_specialization_step(self):
+        paths = {
+            "--recipe-items-csv": ("--recipe-items-csv", "inputs/recipe items.csv"),
+            "--trainer-csv": ("--trainer-csv", "输入/trainers.csv"),
+            "--specialization-cache-dir": ("--cache-dir", "../specialization cache"),
+            "--specialization-output-lua": ("--output-lua", "output/specializations.lua"),
+        }
+        arguments = ["--check", "--refresh-trainers", "--specialization-build", "1.60.1.70450"]
+        for option, (_, value) in paths.items():
+            arguments.extend((option, value))
+        result, calls = self.run_pipeline(*arguments)
+        self.assert_ok(result)
+        specialized = next(call for call in calls if call["script"] == "fc_prof_specializations.py")
+        actual = specialized["argv"]
+        self.assertIn("--dry-run", actual)
+        self.assertIn("--refresh-trainers", actual)
+        self.assertNotIn("--offline", actual)
+        self.assertNotIn("--force", actual)
+        self.assertEqual(actual[actual.index("--build") + 1], "1.60.1.70450")
+        for public_option, (child_option, value) in paths.items():
+            self.assertEqual(actual[actual.index(child_option) + 1],
+                             os.path.abspath(self.caller / value))
+            for call in calls:
+                if call is not specialized:
+                    self.assertNotIn(child_option, call["argv"])
+                    self.assertNotIn(public_option, call["argv"])
+        for call in calls:
+            if call is not specialized:
+                self.assertNotIn("--refresh-trainers", call["argv"])
+                self.assertNotIn("--build", call["argv"])
+        self.assertIn("--force", calls[0]["argv"])
+
+    def test_online_default_does_not_force_specialization_cache_refresh(self):
+        result, calls = self.run_pipeline("--check")
+        self.assert_ok(result)
+        specialized = next(call for call in calls if call["script"] == "fc_prof_specializations.py")
+        self.assertEqual(specialized["argv"], ["--dry-run"])
+        self.assertIn("--force", calls[0]["argv"])
 
     def test_main_clears_failure_from_an_earlier_invocation(self):
         spec = importlib.util.spec_from_file_location("df_pipeline_repeat_test", PIPELINE / "fc_update.py")
@@ -134,6 +179,28 @@ class ProfItemsIntegrationTests(unittest.TestCase):
             run.return_value.returncode = 0
             self.assertEqual(update.main(["--offline", "--check"]), 0)
             self.assertEqual(update.FAILED, [])
+
+    def test_specializations_only_delegates_one_batch_and_forwards_options(self):
+        result, calls = self.run_pipeline(
+            "--specializations-only", "--apply", "--offline",
+            "--tool-directory", "tools/wtl", "--db2-dir", "snapshot",
+            "--specialization-cache-root", "cache", "--skip-recipe-catalog",
+            "--specialization-cache-dir", "pages", "--item-csv", "item.csv")
+        self.assert_ok(result)
+        self.assertEqual([call["script"] for call in calls], ["fc_refresh_specializations.py"])
+        actual = calls[0]["argv"]
+        for flag in ("--apply", "--offline", "--skip-catalog"):
+            self.assertIn(flag, actual)
+        for flag, relative in (("--tool-directory", "tools/wtl"), ("--db2-dir", "snapshot"),
+                               ("--cache-root", "cache"), ("--wowhead-cache-dir", "pages"),
+                               ("--item-csv", "item.csv")):
+            self.assertEqual(actual[actual.index(flag) + 1], os.path.abspath(self.caller / relative))
+
+    def test_specializations_only_defaults_to_check_and_propagates_failure(self):
+        result, calls = self.run_pipeline("--specializations-only", fail="fc_refresh_specializations.py")
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["argv"], ["--check"])
 
 
 class ProfGeneratorDryRunTests(unittest.TestCase):

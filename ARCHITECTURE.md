@@ -108,7 +108,10 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 - DG.RequestItem → 客户端请求/Item 续接 → 事件回调 → RefreshItemCards；监听器只处理本插件请求过的 ID。任务同样依赖任务数据与任务状态事件补刷新。
 - 不能将首次 API 返回 nil 当作永久无数据，也不能在每个全局物品事件中重扫全部页面。
 - 多份数据曾由 `_temp` 脚本生成。专业 `fc_gen.py` 等工具已完整保存在 `df-prof-pipeline-v1.0/_temp/`，工具内 `Core/Data/` 为独立样例输出，不能直接覆盖正式资料。装备等其他生成脚本仍未提供。更新前核对输出位置、三语覆盖和手工扩展；此次合并未运行生成。
-- `scripts/export_buyprice/export-item-buy-prices.ps1` 在 Windows PowerShell 5.1 下调用本机 wow.tools.local，下载并验证匹配当前 Forever build 的最新 Hotfix，串行导出三语 ItemSparse，并只读取一次 Item。输出 `output/item-buy-prices.csv`（enUS/zhTW/zhCN 名称、原始基础组价、组数、零价/缺价和版本）及 `output/item.csv`（Item 全字段，供 `scripts/gen_vendors.py` 按 ClassID/SubclassID 筛配方）。不生成或导入 Lua，两个 CSV 全部验证后共同发布，失败回滚旧输出。旧试验导入脚本、缺失生成文件的 TOC 引用及三份无消费者的 `Data_VendorPrices.lua` 已移除。内置 NPC 采购资料仍由 `Data_ProfVendorOffers` 和 `Data_ProfFormulaSources` 提供。
+- `scripts/export_buyprice/export-item-buy-prices.ps1` 在 Windows PowerShell 5.1 下调用本机 wow.tools.local，下载并验证匹配当前 Forever build 的最新 Hotfix，串行导出三语 ItemSparse，并只读取一次 Item。输出 `output/item-buy-prices.csv`（enUS/zhTW/zhCN 名称、原始基础组价、组数、零价/缺价和版本）及 `output/item.csv`（Item 全字段，供 `scripts/gen_vendors.py` 按 ClassID/SubclassID 筛配方）。导出器不生成或导入 Lua；连同图纸学习条件 CSV，三份输出全部验证后共同发布，失败回滚旧输出。旧试验导入脚本、缺失生成文件的 TOC 引用及三份无消费者的 `Data_VendorPrices.lua` 已移除。内置 NPC 采购资料仍由 `Data_ProfVendorOffers` 和 `Data_ProfFormulaSources` 提供。
+
+- 专业学习专精数据独立生成：价格导出器另输出 `recipe-item-specializations.csv`，仅把图纸物品的 `RequiredAbility` 沿明确教学关系关联至配方法术。`_temp/fc_prof_specializations.py` 合并图纸与 Wowhead Forever 的训练师证据，写入 `_temp/_fc/data/trainer-recipe-specializations.csv` 和管线包 `Core/Data/Data_ProfSpecializations.lua`；`fc_update.py` 已接入该步骤。`ns.ProfSpecializations[spellID]` 保留独立学习途径与来源，缺证据为 `pending`，不同途径不自动合为统一限制。目标客户端 build 与网页来源版本分开记录；跨来源 patch/build 的旧证据保留但不作为目标版本的已确认要求。网页抓取采用缓存、串行间隔、跨进程互斥和持久冷却，在线失败不发布两份最终产物。这份 Lua 目前仅为管线数据，没有接入正式插件 TOC、UI 或求解器。
+- 专精的重复更新入口为 `_temp/fc_refresh_specializations.py`，也可由 `fc_update.py --specializations-only` 调用。默认检查，`--apply` 才发布；在线模式通过导出器可选 `-LearningSnapshotPath` 保留九张 DB2 表和 Build／Hotfix／内容哈希，按内容归档并记录成功快照指针。冻结输入后生成三个客户端 CSV、训练师 CSV、Lua 及三个审计文件，校验通过才同批发布，失败补偿回滚；无变化的正式文件不改写。离线模式复核已发布快照哈希。审计动态比较前后未关联集合，不固定物品数；书籍子类不直接排除，wuxianwow 目录匹配不充当教学或专精证据。网页和外部目录默认复用七天有效缓存，检查或失败运行可保留缓存与日志，但不替换正式产物。
 
 ## 7. 存档
 
