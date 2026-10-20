@@ -410,7 +410,10 @@ local function syncActions(s, steps, res)
         local i = s.step or 1
         local seg = steps[i]
         local complete
-        if seg.checkpoint or seg[3] == 0 then
+        if seg.kind == "specialization_quest" then
+            local E = ns.ProfEconomy
+            complete = E and E.SpecializationKnown and E.SpecializationKnown(questGoal(seg).abilityID) == true
+        elseif seg.checkpoint or seg[3] == 0 then
             local cur = skillOf(seg.profession or s.slug)
             complete = cur and cur >= seg[2]
         else
@@ -466,7 +469,7 @@ function PF.Sync()
         -- Bind freezes a durable execution snapshot. Search publication/revision
         -- changes never replace its segment counters or current position.
         local run, reason = xp.GetRun(s.slug)
-        if run or res.feasible == true then run, reason = xp.Bind(s.slug, res) end
+        if run or (res.feasible == true and res.status ~= "searching") then run, reason = xp.Bind(s.slug, res) end
         if run then
             run = xp.Sync(s.slug) or run
             local plan = xp.GetPlan(s.slug) or res
@@ -1086,6 +1089,11 @@ local function MakeLine(parent, fs, color)
     return t
 end
 
+local function lineHeight(line, minimum)
+    local height = line.GetStringHeight and line:GetStringHeight()
+    return math.max(minimum, math.ceil(tonumber(height) or minimum))
+end
+
 function PF.Build()
     if f then return end
 
@@ -1333,6 +1341,10 @@ function PF.Build()
             local extra = {{format(L["需要：%d"], entry.need or 0)}}
             if PD and PD.AuctionSupplyLines then
                 for _, line in ipairs(PD.AuctionSupplyLines(entry)) do extra[#extra + 1] = line end
+            end
+            if not entry.formula and (entry.vendor or entry.source=="vendor" or entry.source=="npc")
+                and PD and PD.MaterialVendorLines then
+                for _,line in ipairs(PD.MaterialVendorLines(entry)) do extra[#extra+1]=line end
             end
             DG.ShowItemTip(self, {entry.id}, extra)
         end)
@@ -1662,20 +1674,6 @@ function PF.Paint()
                 progressLines[#progressLines + 1] = format(L["追加需求：预计再制作%d次。"], progress.extraCrafts)
             end
         end
-        local progressCount = math.min(#f.card.progress, #progressLines)
-        for i, line in ipairs(f.card.progress) do
-            line:SetShown(i <= progressCount)
-            if i <= progressCount then
-                line:SetText(progressLines[i])
-                line:ClearAllPoints()
-                line:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -(54 + (i - 1) * 18))
-                line:SetWidth(W - 2 * PAD - 16)
-            end
-        end
-        card.matOffset = progressCount * 18
-        local nMat, pend = paintMats(seg, rm, w - 8, remaining, progress and progress.extraCrafts)
-        pending = pending or pend
-
         -- 右上角：已学习（绿）/ 来源（灰）——替代原「当前」角标与底部来源行
         local src, detail
         if PDm and PDm.LevelSrc then
@@ -1699,13 +1697,11 @@ function PF.Paint()
         if detail and not learned then tagText = tagText .. " · " .. detail end
         card.srcTag:SetText(tagText)
         card.srcTag:SetTextColor(Unpack(learned and C_OK or C_GREY))
-        local tagW = 90
+        local tagW = #tagText * 7
         if PDm and PDm.TextW then
             local okW, tw = pcall(PDm.TextW, tagText, 14)
             if okW and type(tw) == "number" then tagW = math.ceil(tw) end
         end
-        card.srcTag:SetWidth(tagW)
-
         -- 区间挪到配方名右侧（同行）；第二行只留次数信息
         local rangeText = format(L["%d – %d"], seg[1], seg[2])
         card.range:SetText(rangeText)
@@ -1730,21 +1726,64 @@ function PF.Paint()
         end
         card.crafts:SetText(craftText)
 
-        local rangeW, nameW = 40, 90
+        local rangeW, nameW = #rangeText * 7, #nmText * 8
         if PDm and PDm.TextW then
             local okW, tw = pcall(PDm.TextW, rangeText, 14)
             if okW and type(tw) == "number" then rangeW = math.ceil(tw) end
             local okW2, tw2 = pcall(PDm.TextW, nmText, 16)
             if okW2 and type(tw2) == "number" then nameW = math.ceil(tw2) end
         end
-        local avail = math.max(60, w - 42 - tagW - 10 - rangeW - 10)
-        local nameX = math.min(nameW, avail)
-        card.name:SetWidth(avail)
+        -- Long quest names and role/source labels cannot share the title row.
+        -- Give overflowing metadata a separate row and measure wrapped lines
+        -- before positioning progress/materials, including localized quest text.
+        local cardW = W - 2 * PAD
+        local inline = 42 + nameW + 10 + rangeW + 10 + tagW <= cardW - 8
+        local craftTop, progressTop, craftX = 33, 54, 42
+        card.name:ClearAllPoints()
+        card.name:SetPoint("TOPLEFT", card, "TOPLEFT", 42, -9)
         card.range:ClearAllPoints()
-        card.range:SetPoint("TOPLEFT", f.card, "TOPLEFT", 42 + nameX + 10, -12)
-        card.range:SetWidth(rangeW + 6)
-
-        local cardH = nMat * 26 + 60 + card.matOffset
+        card.srcTag:ClearAllPoints()
+        card.name:SetWordWrap(not inline)
+        card.srcTag:SetWordWrap(not inline)
+        if inline then
+            card.name:SetWidth(nameW)
+            card.range:SetPoint("TOPLEFT", card, "TOPLEFT", 42 + nameW + 10, -12)
+            card.srcTag:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
+            card.srcTag:SetWidth(tagW)
+        else
+            card.name:SetWidth(cardW - 50)
+            local metaTop = 8 + math.max(26, lineHeight(card.name, 16)) + 4
+            rangeW = math.min(rangeW, w / 2)
+            card.range:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -metaTop)
+            card.srcTag:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -metaTop)
+            card.srcTag:SetJustifyH("LEFT")
+            card.srcTag:SetWidth(math.max(1, w - rangeW - 10))
+            craftTop = metaTop + math.max(14, lineHeight(card.srcTag, 14)) + 6
+            craftX = 8
+        end
+        if inline then card.srcTag:SetJustifyH("RIGHT") end
+        card.range:SetWidth(rangeW)
+        card.crafts:ClearAllPoints()
+        card.crafts:SetPoint("TOPLEFT", card, "TOPLEFT", craftX, -craftTop)
+        card.crafts:SetWordWrap(true)
+        card.crafts:SetWidth(cardW - craftX - 8)
+        progressTop = math.max(progressTop, craftTop + lineHeight(card.crafts, 14) + 7)
+        local progressCount = math.min(#card.progress, #progressLines)
+        for i, line in ipairs(card.progress) do
+            line:SetShown(i <= progressCount)
+            if i <= progressCount then
+                line:SetText(progressLines[i])
+                line:SetWordWrap(true)
+                line:SetWidth(w)
+                line:ClearAllPoints()
+                line:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -progressTop)
+                progressTop = progressTop + lineHeight(line, 13) + 5
+            end
+        end
+        card.matOffset = progressTop - 54
+        local nMat, pend = paintMats(seg, rm, w - 8, remaining, progress and progress.extraCrafts)
+        pending = pending or pend
+        local cardH = math.max(nMat * 26 + 60, 56 + lineHeight(card.matHead, 14) + 8) + card.matOffset
         card:ClearAllPoints()
         card:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
         card:SetSize(W - 2 * PAD, cardH)

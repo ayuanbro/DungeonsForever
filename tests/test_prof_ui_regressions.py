@@ -64,7 +64,7 @@ class ProfessionUIRegressions(unittest.TestCase):
           local spec=PD.RecipeSpec(row)
           assert(spec._mats[1][1]==11 and spec._mats[1][2]==3)
           assert(spec.mats~='客户端数据待读取')
-          assert(spec.right2:find('参考资料',1,true))
+          assert(spec.right2=='训练师')
           assert(PD.RawHit(row,'item11'))
           local crafted={101,10,2,1,10,15,20,{{11,3}}}
           assert(PD.CraftedSpec(crafted)._mats[1][1]==11)
@@ -143,7 +143,7 @@ class ProfessionUIRegressions(unittest.TestCase):
           ns.ProfRecipeRuntime={[101]={mats={{12,4}},item=13}}
           local spec=PD.RecipeSpec(row)
           assert(spec._mats[1][1]==12 and spec.row[2]==13 and spec.row[3]==2)
-          assert(spec.right2:find('客户端与参考资料',1,true))
+          assert(spec.right2=='训练师')
         ''')
 
     def test_malformed_catalogue_can_still_use_client_materials(self):

@@ -587,7 +587,11 @@ function XP.PrepareRecalculate(slug)
 end
 function XP.PlanRecalculated(slug,result)
     local c=db();local p=c.preparing[slug]
-    if p and p.hadActive and ready(result) then return XP.Bind(slug,result,{executionInventory=p.inventory}) end
+    -- The first published prefix is a preview, not the completed replacement.
+    -- Freezing it here hid every later extension of the same calculation.
+    if p and p.hadActive and ready(result) and result.status~="searching" then
+        return XP.Bind(slug,result,{executionInventory=p.inventory})
+    end
     return XP.GetRun(slug)
 end
 local function formatPattern(fmt)

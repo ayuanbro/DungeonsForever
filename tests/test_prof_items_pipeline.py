@@ -236,7 +236,7 @@ class ProfItemsPipelineTests(unittest.TestCase):
     def test_join_keeps_npc_name_separate_from_item_names_and_whole_pack_price(self):
         self.run_cli()
         rows = self.rows()
-        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(rows), 2, 'NPC quotation plus independent client base quote')
         row = rows[0]
         self.assertEqual(list(row), OUTPUT_FIELDS)
         self.assertEqual(row["name_en"], "NPC English")
@@ -249,7 +249,7 @@ class ProfItemsPipelineTests(unittest.TestCase):
         self.assertEqual(row["price_source"], "client")
         ns = self.load_lua(self.items_lua)
         item = ns.ProfItems[100]
-        self.assertEqual(set(item.keys()), set(ITEM_FIELDS))
+        self.assertEqual(set(item.keys()), set(ITEM_FIELDS) | {'cost_copper', 'cost_text', 'price_source'})
         self.assertEqual(item.item_id, 100)
         self.assertEqual(item.Name_enUS, "Recipe English")
         self.assertEqual(item.Name_zhCN, "图纸名称")

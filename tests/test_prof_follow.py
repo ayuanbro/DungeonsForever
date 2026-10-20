@@ -331,7 +331,7 @@ class FixedShoppingPriceTests(unittest.TestCase):
           ns.ProfLeveling.alchemy={steps={{1,2,101,1}},sold={10}}
           ns.ProfRecipes.alchemy.rows[1][12]={{10,3}}
           ns.ProfItemsMeta={schemaVersion=2,sources={csv={sha256='current-npc-quotes'}}}
-          ns.ProfItems={[10]={item_id=10,VendorStackCount=5,offers={
+          ns.ProfItems={[10]={item_id=10,VendorStackCount=5,cost_copper=10,price_source='client',offers={
             [77]={npc_id=77,cost_copper=10,stock=-1,price_source='client'}}}}
           auctionUnit=1
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)
@@ -371,7 +371,7 @@ class FixedShoppingPriceTests(unittest.TestCase):
             copper=copper+purchase.cost
             if purchase.source=='vendor' then
               npc=npc+purchase.need
-              assert(purchase.vendor and purchase.npcID==77 and purchase.cost==20)
+              assert(purchase.vendor and purchase.npcID==nil and purchase.cost==20)
               assert(purchase.bundleSize==5 and purchase.priceSource=='client')
             elseif purchase.source=='ah' then
               ah=ah+purchase.need;assert(not purchase.vendor and purchase.cost==6)

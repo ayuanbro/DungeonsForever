@@ -9,211 +9,211 @@
   "CacheSources": [
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\09da50ece0f60f00b0c0646aeb641625bd283aca8c5c97d4f614e8e00c2621bb.json",
-      "CacheFileSHA256": "c7639dc61cd653635134fb087a5f9adfddbc507e8a0ba72435d507093bf381c0",
+      "CacheFileSHA256": "dff2b4be92a20ae625d638bc24159ca6071d0dc4ad3a2f9c8c53589dca4066ba",
       "EntityID": 186,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:15:03.482191Z",
-      "SourceFetchedAt": "2026-10-20T15:15:03.482178Z",
+      "SourceCheckedAt": "2026-10-20T18:56:30.984468Z",
+      "SourceFetchedAt": "2026-10-20T18:56:30.984456Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "32af588de8b6214310d7be3e9d14750feafb2295152254fd293a552dcd38e1d5",
+      "SourceSHA256": "4856c82f1a4c715074d908716ebd1038346cc86e11614dd173435f917c46cbdf",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D186/mining",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\09e6950a18e80b72015c18d55b2344a1e441acece5e43590bf2aaf67c9303c2c.json",
-      "CacheFileSHA256": "4272b5a94ead1b901493251514d79172faa6ab5a4b014b0c8a4a435d43b96b4f",
+      "CacheFileSHA256": "789ca74f61470dc3fe3ba72870a6525f696d07b6b1785cab1e85a21f33055269",
       "EntityID": 165,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:37.266917Z",
-      "SourceFetchedAt": "2026-10-20T15:14:37.266898Z",
+      "SourceCheckedAt": "2026-10-20T18:56:02.536140Z",
+      "SourceFetchedAt": "2026-10-20T18:56:02.536124Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "ab75e93e76718ed4a23cecd145235b4af45184001cd6bd1485fc50d9a6b71af5",
+      "SourceSHA256": "86fc312438db055c03a1c91757a148db3dd0108f04a3eb00be25d94eb74fafed",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D165/leatherworking",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\1439d99fbf702ba046e9f156d7f90c1f8bb4c0ee3edda9f8cd47a683cdfab52a.json",
-      "CacheFileSHA256": "f38d3a162f8cad9e56eb4549d797683a2fb4ea07dd2c431a29c53b3efe06f361",
+      "CacheFileSHA256": "0c67ccb229674ccd27918fb04484487da297b409125ef3aac93465740f5890e6",
       "EntityID": 10003,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:13:41.631180Z",
-      "SourceFetchedAt": "2026-10-20T15:13:41.631169Z",
+      "SourceCheckedAt": "2026-10-20T18:55:07.600227Z",
+      "SourceFetchedAt": "2026-10-20T18:55:07.600210Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "327df6fbe740d633b8d847b09ad210c563e8c5b812f7598d6c3f724a12357737",
+      "SourceSHA256": "75f3eacb538923e9f6d8e17604379055c1af22ee681436cfa9591c020dab9358",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D10003/the-shatterer",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\197c68c8e3adc4b02145ce99a10bb769998c8c7715490fff03e23375431c12ef.json",
-      "CacheFileSHA256": "fecc202c09081edc62909d8c83d64144121c99c6434d6cf470785cf1f267c05c",
+      "CacheFileSHA256": "73b020c94a5d9845db5dec7d6444116d6553c6b9c1a2d074edeea5afff5b0689",
       "EntityID": 461733,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:13:59.841834Z",
-      "SourceFetchedAt": "2026-10-20T15:13:59.841822Z",
+      "SourceCheckedAt": "2026-10-20T18:55:25.078875Z",
+      "SourceFetchedAt": "2026-10-20T18:55:25.078861Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "c2d54d17b93dd9b74ebbb11197a4635d92a811946db578ed2ff598f6f6da15c8",
+      "SourceSHA256": "5316fd4765ab23c9db6ff9706148307c903408c8e92c42f54803335a948be502",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D461733/finely-enchanted-battlehammer",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\30ba258b4b2203c08ee7b3266e5e440833f4cfeb0b0f9fcbc7585622b8b86dad.json",
-      "CacheFileSHA256": "2e2b2ea25dcea2bd3362d7c6c763710d6a0473a0dbbe0e0634510239ad922777",
+      "CacheFileSHA256": "ee41ecf1a64fa28b3cf2ff113054a04913be0b3a2273d9b3c0177da6dc4d80cb",
       "EntityID": 10015,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:13:50.538501Z",
-      "SourceFetchedAt": "2026-10-20T15:13:50.538490Z",
+      "SourceCheckedAt": "2026-10-20T18:55:18.439799Z",
+      "SourceFetchedAt": "2026-10-20T18:55:18.439787Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "f6467c176ebbbca5296a5560b9f6da9bac82b2bcf1bffcbf0b6eb2cea687f975",
+      "SourceSHA256": "e08bcdd27edf4b1e4d98c1b9b88ec6a923dc77e1aa488f83aef3dd43d39a956d",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D10015/truesilver-champion",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\30f102baa8f0b9f09319e04df00b2f4cbbd9e26dac6abfa49768376d2372e43a.json",
-      "CacheFileSHA256": "381f66f3c53112977f30f5677b7beef682baec4de3110133e5413c3a8fce523e",
+      "CacheFileSHA256": "af283637d486c71e67bee4062e9b6d89a7f2964c714c9ae7bd7b78b7f8948ca5",
       "EntityID": 15633,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:18.534448Z",
-      "SourceFetchedAt": "2026-10-20T15:14:18.534435Z",
+      "SourceCheckedAt": "2026-10-20T18:55:44.471122Z",
+      "SourceFetchedAt": "2026-10-20T18:55:44.471109Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "e82dd6ac307d4bdbae9f46960a933aae5e89464a11ea2c95193ff1e02a5920ee",
+      "SourceSHA256": "7f80252e04ea0a1246026a1b998ec51523e1da8f941176071cdadfb1aa46a8ac",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D15633/lil-smoky",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\3460dbfc488c024cd001ed91798ac5189be78fb0fb885659241569e87dcef5d7.json",
-      "CacheFileSHA256": "65cccb9fae7bf2fef29bc57037f06cd66246ccbeac231c037445b06b7925e992",
+      "CacheFileSHA256": "d6cc09fa2c9072f13ba07e12449d81ed2ee25a1c2f7ec5d9a73f0df7110fb725",
       "EntityID": 197,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:15:11.965784Z",
-      "SourceFetchedAt": "2026-10-20T15:15:11.965770Z",
+      "SourceCheckedAt": "2026-10-20T18:56:40.807249Z",
+      "SourceFetchedAt": "2026-10-20T18:56:40.807234Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "309024299fc9dcdd0f573f52dabaa596831c4305e2d9094c529243a2bfb3d3c2",
+      "SourceSHA256": "500d3f8b89bf765f7e9e495902f6ed6d1493bd35d9b4362460956e36e49133e2",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D197/tailoring",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\357d5c3256ebb0ec6213ec9e871903cc825a6e7f18de019723c8c99bc90b5a5f.json",
-      "CacheFileSHA256": "a9b2af3bc4ee1fc1f37e9eb369d998c0c627b596675ec8b310c174e26ee33c52",
+      "CacheFileSHA256": "ab6f1ecc48655d5e99d073dd4008af7c04910eed5fa0ab9e9fdb2a814008554d",
       "EntityID": 461649,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:59.104689Z",
-      "SourceFetchedAt": "2026-10-20T15:14:59.104678Z",
+      "SourceCheckedAt": "2026-10-20T18:56:27.011443Z",
+      "SourceFetchedAt": "2026-10-20T18:56:27.011431Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "37b86ae9eb449cba60b13c914beee6c1da1ac7d2961844eb67929fecc99e8edc",
+      "SourceSHA256": "8b789a1d5428531558e375446baa99926f809bbcc45acdc01854b69604d425e0",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D461649/living-green-dragonscale-leggings",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\3768290e618d4ae90f5faaeb865f9411d6dec1c2c4f41c0ec8ef82336f70e716.json",
-      "CacheFileSHA256": "6a924d0292a04dfd9bae1ffd3d3df406b727af6f0f1b9583e9b5db79f68fdc9a",
+      "CacheFileSHA256": "f6167783d6cab85eb1ef863cd02486bf6e8010c5e0e386f0af3617517d3f6cd6",
       "EntityID": 10630,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:44.017252Z",
-      "SourceFetchedAt": "2026-10-20T15:14:44.017240Z",
+      "SourceCheckedAt": "2026-10-20T18:56:07.693919Z",
+      "SourceFetchedAt": "2026-10-20T18:56:07.693907Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "582c99d8903dc2b2a97a68223d095034846d0b544a4b43c2065275488a3779ba",
+      "SourceSHA256": "593cc28ff0ccc82fe4acefc8bbec7fc3ba50da99dc8ff8d72cef683f63bf7980",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D10630/gauntlets-of-the-sea",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\378942efadf0f04605cc42d502f88ad35c066ad1bd84a02a754e9ea1aeddb299.json",
-      "CacheFileSHA256": "363a2be42c5e7d8b16da535bf35e813012efd15756520bdec810234ee5e17bd4",
+      "CacheFileSHA256": "f015b296d5e0b6aa9a980e556109cc7042d6a9160432a112fc5256f8f01c72bf",
       "EntityID": 10007,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:13:43.797164Z",
-      "SourceFetchedAt": "2026-10-20T15:13:43.797152Z",
+      "SourceCheckedAt": "2026-10-20T18:55:11.137390Z",
+      "SourceFetchedAt": "2026-10-20T18:55:11.137376Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "60cdcc0e45b9309966a5239ab0995cd2977570a6356dadc9cd54e79fe315fcf8",
+      "SourceSHA256": "7ff9726becee3f3b6d388447baad433ab6f453abe42796237cbfa2010f33bc4a",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D10007/phantom-blade",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\3ec92aef51d13bfb97f301963896104129552298ee31880c844abcab903d2fad.json",
-      "CacheFileSHA256": "f93bef997e7d38ca89f2a38a3456bb3a61e5daa440dab1d06ad92e840117bbb7",
+      "CacheFileSHA256": "6c41b2e9320c2431f445cf5abda3df7fbe3f33a76ea66644f70aae0e5b140e03",
       "EntityID": 23486,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:31.164759Z",
-      "SourceFetchedAt": "2026-10-20T15:14:31.164747Z",
+      "SourceCheckedAt": "2026-10-20T18:55:54.287625Z",
+      "SourceFetchedAt": "2026-10-20T18:55:54.287612Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "abae7c4374c962b320fcc9fee9d93d99177caa1317ff2a5dcff75696d287fa6d",
+      "SourceSHA256": "4a9afff544bde1369e480c6c1c7b4f31b8321a217264a7784b4e715fc8a9f848",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D23486/dimensional-ripper-everlook",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\41f9553384ea05fe8fff2126d8b4a85aab53de5cbafe451d9f090be6fba98bfb.json",
-      "CacheFileSHA256": "202372000229ebfdfd0ab151bb832ddeb6b78b5ebbf29f16abe57ecf1b9afc82",
+      "CacheFileSHA256": "964ca802f639b60b25c84359953db2edb0d62774e385491d1a72bebaea910694",
       "EntityID": 461651,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:13:55.407993Z",
-      "SourceFetchedAt": "2026-10-20T15:13:55.407981Z",
+      "SourceCheckedAt": "2026-10-20T18:55:22.162211Z",
+      "SourceFetchedAt": "2026-10-20T18:55:22.162199Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "60c35a51f81b5c2ed6a176eb75388c08fa55a3020071c9c55a091e4690af3aa3",
+      "SourceSHA256": "3878d3269fd400b46d451c6b3f96bbc2d055d2268478982f9c5de5b7aef26f81",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D461651/fiery-plate-gauntlets-of-the-hidden-technique",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\4363a3b625a4121ba175b75e77ea40db6395adefc195259a15778f9fa6efbd35.json",
-      "CacheFileSHA256": "354464878b3ff39af8130f81055c755f1e5154394bca341b2322d683f5f3e83c",
+      "CacheFileSHA256": "0d2a211c8263ba9ad1fb0bf1b396d38a4052ecb459f662ed6fe3864463b3fe27",
       "EntityID": 356,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:15:23.619829Z",
-      "SourceFetchedAt": "2026-10-20T15:15:23.619817Z",
+      "SourceCheckedAt": "2026-10-20T18:56:51.237188Z",
+      "SourceFetchedAt": "2026-10-20T18:56:51.237175Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "d79b57cd65c4b26796bd72849147183cb1723796e1a2eb74d7ebec0c93b3dec2",
+      "SourceSHA256": "4257c67eeb4da53436e7aeb709db12de4d8edf121e30801c5f6f43e6b61c87ff",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D356/fishing",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\479d2160eb749cb0459ad678e660fa9fa54d1f91cda48ff1925da93f46991f0a.json",
-      "CacheFileSHA256": "3391b1455c119c8945c69c8259b20927902ee69b90e9db56b920f16fe07108fe",
+      "CacheFileSHA256": "801523237589d28bf91d6b88b797f79ed2f56e77c35c5abded1c3bd8aa0c7032",
       "EntityID": 129,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:15:19.042207Z",
-      "SourceFetchedAt": "2026-10-20T15:15:19.042195Z",
+      "SourceCheckedAt": "2026-10-20T18:56:46.861521Z",
+      "SourceFetchedAt": "2026-10-20T18:56:46.861504Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "1580121dda972154b80afe2f504de6196db56f0c256451c9f359ef4ac88bf878",
+      "SourceSHA256": "d6195bda030a9349987d0d973f0d4f12560d4e76e2e438abf9bc7ec36c51379f",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D129/first-aid",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\5c50c9c76aae51d56e53fd10cbbedc27e2dcaa9b809a64382e27406c09c2c937.json",
-      "CacheFileSHA256": "2da48d824bf02cc4dbe5bd04d570adb81bb6e192c7d7f7f7a4dda3b61fe70839",
+      "CacheFileSHA256": "6a627c4e01f0ba7cc18096232703e412e1fad3aaaf467c968129b28508df586d",
       "EntityID": 23489,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:25.251498Z",
-      "SourceFetchedAt": "2026-10-20T15:14:25.251487Z",
+      "SourceCheckedAt": "2026-10-20T18:55:50.440425Z",
+      "SourceFetchedAt": "2026-10-20T18:55:50.440412Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "24233f26f136033b458f4588004bafc14076287ef4ba1547c70f3d0e2ae040d4",
+      "SourceSHA256": "5c34127f2c1317bb9f92fc8a3c45df556e7f63d764c07700efbb4b56ef810b8f",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D23489/ultrasafe-transporter-gadgetzan",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
@@ -233,211 +233,211 @@
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\6f5b545267639e6d6353602d88c55a57ecfab80e1e42a0d5ddef0498ea4dc0cb.json",
-      "CacheFileSHA256": "61338f6ebe7dcb02c15fd6caeb2bd69c5fce6bbd6338b12618732ea7dfe8e4cf",
+      "CacheFileSHA256": "412b27002004f651108343c71dca155ae972c806fed4e1b0ca0c722bb6fe49d7",
       "EntityID": 15628,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:21.728394Z",
-      "SourceFetchedAt": "2026-10-20T15:14:21.728382Z",
+      "SourceCheckedAt": "2026-10-20T18:55:47.559685Z",
+      "SourceFetchedAt": "2026-10-20T18:55:47.559673Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "9701a33b8396cb549eeea943a2b0ba2763f1e1071c4276a29fd61d6da39a7ced",
+      "SourceSHA256": "6697b5316b54f759b0e31c318b9a6fd72c60711a702ffdac5c088a958ee1cc5d",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D15628/pet-bombling",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\73500fcab14f2d50380b0b10444821ce4eb51763fb108eecbc54807538999e48.json",
-      "CacheFileSHA256": "f6fbb381dbbe8433f0db2b7fefa1b6474990690d140a72e6335fc594a7b777a4",
+      "CacheFileSHA256": "fd6950128c92a35231c0f9c67e35431b0ea4b29311fceedf9d7ea378d2ea14d0",
       "EntityID": 202,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:07.581087Z",
-      "SourceFetchedAt": "2026-10-20T15:14:07.581074Z",
+      "SourceCheckedAt": "2026-10-20T18:55:33.445974Z",
+      "SourceFetchedAt": "2026-10-20T18:55:33.445957Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "69e3746153fdc527e3b059dc7d0cc051c0764452578f6766b5b661113217e70c",
+      "SourceSHA256": "df20262e3f626025a58f270e263d5dc0be9a4b65da4745ef65192fb616bf0e24",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D202/engineering",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\78894476ba730cc0742f18e432ac566165ed51149730b4ee076c3510c63db962.json",
-      "CacheFileSHA256": "605d607befb8e3f03b8b36cdf3c1747ff0e0f235bc73a02dd061ddbf57d34672",
+      "CacheFileSHA256": "2de08ba7715f41253071c6c3d58cb4ba5ee40f93365516170776d43fc485ee7f",
       "EntityID": 13240,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:13.657555Z",
-      "SourceFetchedAt": "2026-10-20T15:14:13.657543Z",
+      "SourceCheckedAt": "2026-10-20T18:55:39.998127Z",
+      "SourceFetchedAt": "2026-10-20T18:55:39.998114Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "06c38143d5a4ed60014a4bb4d3f7b5e380f1913bfe33db7977059b6c3f3ed3bd",
+      "SourceSHA256": "f11c4087259f3eb0eecfa4e603c5a41a77356d5ca343ab31ce945f6633a456a1",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D13240/the-mortar-reloaded",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\903aa50329e2cf8b57ad0e33f4d96f985765d3d43e1db8abfa746ba1c2ae5b33.json",
-      "CacheFileSHA256": "d51d4f47cdc3becd9a757bbb4975836cf8000e604c37d840acfaed18ecbff4b9",
+      "CacheFileSHA256": "4004f80549da3203bffa07b48feffaf5430b212e8f39949a0dedd56c7ca2b0d7",
       "EntityID": 182,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:33.096323Z",
-      "SourceFetchedAt": "2026-10-20T15:14:33.096311Z",
+      "SourceCheckedAt": "2026-10-20T18:55:58.079624Z",
+      "SourceFetchedAt": "2026-10-20T18:55:58.079612Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "61b685558468dc2eb01a79c346e0bbbc98ec9083a0ef76f7f3973023cce1ceb4",
+      "SourceSHA256": "76bd6f2c6b8b5e3e6374dde828232c78640db2a94d2dfd3d5572099a5a7fca30",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D182/herbalism",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\974fedad58ac8610fe0173df649e8d4e265651bc5c31c29f3a4489ead028a566.json",
-      "CacheFileSHA256": "1957f00a61cd2c97383e1a4e03ec6ade36fdd6f07b9567326d78bfe7a7537a89",
+      "CacheFileSHA256": "a152ecbc579812cceb59d1db3ba63e1abd3593ea5c98d5d642a37c2933f84e35",
       "EntityID": 393,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:15:06.992649Z",
-      "SourceFetchedAt": "2026-10-20T15:15:06.992637Z",
+      "SourceCheckedAt": "2026-10-20T18:56:35.227983Z",
+      "SourceFetchedAt": "2026-10-20T18:56:35.227966Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "2e073687637fcf8bd6c96ef63aa11c0bafa42f9ab874b4f88d48204c3f370fee",
+      "SourceSHA256": "508b99594558941d818648bb19880fa3f035a20573ea91135950ca7b356cc449",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D393/skinning",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\9af2672f911bb3147658e4ecc14bd1e5ea9f5b2cc03d700fb67ac2cc2b03137a.json",
-      "CacheFileSHA256": "422c97a6312dca6f8562ea05ceab5466ed538ea7fad925d0875b2eb7e1d47b02",
+      "CacheFileSHA256": "e80591f41352ac615fd643f3cefed31f127a48c11aa6b7c44f59aa4c2fe96225",
       "EntityID": 333,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:02.974279Z",
-      "SourceFetchedAt": "2026-10-20T15:14:02.974266Z",
+      "SourceCheckedAt": "2026-10-20T18:55:29.197834Z",
+      "SourceFetchedAt": "2026-10-20T18:55:29.197813Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "52fbba09beb68eeb81a1053c004488cbe6af7c67230cf482dcc8ae2aeeefec53",
+      "SourceSHA256": "d1448a7d0ced81b142a0040a662370f50c1bcd247c55f707d33e916c2052ea10",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D333/enchanting",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\9ccbf35df9e63a42864d7af70e489c83e659528fa9bb786c79531ad6688ed159.json",
-      "CacheFileSHA256": "4ca065c6c8c1a557e73ca1ce602cdbb2d8905aa007bd18b5f5e91f0925adc3ba",
+      "CacheFileSHA256": "38ec35113c32dd5aa141f901d207427f57e7b481167066783916884423ef6952",
       "EntityID": 164,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:13:37.618837Z",
-      "SourceFetchedAt": "2026-10-20T15:13:37.618821Z",
+      "SourceCheckedAt": "2026-10-20T18:55:06.337210Z",
+      "SourceFetchedAt": "2026-10-20T18:55:06.337193Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "1ff687b4a5abffe5a2021145c7f0366f5c7a2dee4023eead7b9a84ec36ba1cbe",
+      "SourceSHA256": "4b27686130767f308655e7da5c907968203ac157665770b923b35c60ce9d35b1",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D164/blacksmithing",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\a7f0fde15e43a8aeae4fc1092320662920452f12ae67bdbf975cf05a1fbe49ed.json",
-      "CacheFileSHA256": "876d8d6f010f2f9aee4848560452760e03f47fd3ece4621e49f39abe5eb4e1d0",
+      "CacheFileSHA256": "d18aac909b279316a718dc1e355e97f0760ce07f19ee027bd11e61d982b55e01",
       "EntityID": 461677,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:55.352743Z",
-      "SourceFetchedAt": "2026-10-20T15:14:55.352731Z",
+      "SourceCheckedAt": "2026-10-20T18:56:23.644887Z",
+      "SourceFetchedAt": "2026-10-20T18:56:23.644876Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "110f2040b55d3232414a2a4113def05a6cc755019d569a3734028c429c8dccb7",
+      "SourceSHA256": "b25d1ef9b059f7da146e56ac51ccedc0231503a6962304228f4704150b0edec2",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D461677/living-green-dragonscale-gauntlets",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\b36ae1112c03e106d82a23312fbc3255918fe2fbcdf87fec657cb34fcb879e48.json",
-      "CacheFileSHA256": "0ef091d97f77f74d43e656910cb1f383d5f03edd9880df84cfacb2f3505938f4",
+      "CacheFileSHA256": "55fecd4b88bc81cf2173b98932e6a07935aef4813ef810280f654319c8b12d98",
       "EntityID": 10621,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:39.977770Z",
-      "SourceFetchedAt": "2026-10-20T15:14:39.977755Z",
+      "SourceCheckedAt": "2026-10-20T18:56:03.896302Z",
+      "SourceFetchedAt": "2026-10-20T18:56:03.896284Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "7d008c3e6c783e5fce7aa04a1ce0109cfedb83b681e8f3c7fe04de8634e9d4f1",
+      "SourceSHA256": "63cd8eaadb9d32b5769dc77e153ca7754e8b49eb7b70b837468ac967fcb99855",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D10621/wolfshead-helm",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\baf254fbf00cdb6b519e014bd55fb9018a765f4c05c21ab8ba05484b06f3e080.json",
-      "CacheFileSHA256": "2a6bc505e4ecda462b9af01d93dea2b177e052ced04e246f0955442b1830c597",
+      "CacheFileSHA256": "d96e678f944ecbdcfb2bd4097befce269e5cae80459b1b4f738ecfb05b147c0a",
       "EntityID": 171,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:13:32.954108Z",
-      "SourceFetchedAt": "2026-10-20T15:13:32.954079Z",
+      "SourceCheckedAt": "2026-10-20T18:55:01.593667Z",
+      "SourceFetchedAt": "2026-10-20T18:55:01.593646Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "91f3d3a87f75f4207181106fd993ea1345086a582b5fe755d9a300ebbdd3927a",
+      "SourceSHA256": "714d1303aaa3cf6c3ca37b7a301773cb821f29171251b248433d94459658aa85",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D171/alchemy",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\bf5d1d1b29153da6676fd02321b08182d83cc36aa281a35b1a1cfd03a49992ac.json",
-      "CacheFileSHA256": "303f5da50d9dc72cd502babbd3a1a2cc6c0a899b570c421558ab05e7ef724032",
+      "CacheFileSHA256": "00ab5ef3b1a1c0397264cfcce980fdad714f55c00db1d35c3de8730fd740b90c",
       "EntityID": 10011,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:13:47.548608Z",
-      "SourceFetchedAt": "2026-10-20T15:13:47.548596Z",
+      "SourceCheckedAt": "2026-10-20T18:55:14.485617Z",
+      "SourceFetchedAt": "2026-10-20T18:55:14.485605Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "64a97dd953392c8b091c17b84d4e76afbeb5bb1c60b8a348c6efbdb4089ef4ee",
+      "SourceSHA256": "699abd84220ed1725185be1aeed6cc3c599496f87c700fb9c840bc213781ca56",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D10011/blight",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\cb1cf3b99d49efb2e333c0370e10223cc6253bdb16aa41ae2f5ccda143b61ef5.json",
-      "CacheFileSHA256": "0fea1f9662e3eaa4a095a3edba7f2d63df44746a3d340053d91c85b88bea887c",
+      "CacheFileSHA256": "7aaacebcb5a8b0c79a654b070cdec54ca26fab11e7259f098b0be840756b40ea",
       "EntityID": 12716,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:10.833019Z",
-      "SourceFetchedAt": "2026-10-20T15:14:10.833008Z",
+      "SourceCheckedAt": "2026-10-20T18:55:36.216683Z",
+      "SourceFetchedAt": "2026-10-20T18:55:36.216662Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "736aa3e1b957f1452203be2b7382f91c5239aa07f1e6d878e1a6b4aaaa9142d7",
+      "SourceSHA256": "aa0c1a5d37641cee85ac95b962acfc7d33c78ee0015cfbe82e675422725f21f5",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D12716/goblin-mortar",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\dacc70946c7fb2c2fa0cdac7e6561537f9210a06825eff5b61e6f66fb2b5e736.json",
-      "CacheFileSHA256": "f4c4490b7f4e31fd7b9270d0dc8f2558fd4b7092819eaa39142d3eb5cfba0bf6",
+      "CacheFileSHA256": "d567db36ed2b1b2393a70f05995393222050a38ade1c3586fa7031f002dc1025",
       "EntityID": 185,
       "Kind": "skill",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:15:14.902081Z",
-      "SourceFetchedAt": "2026-10-20T15:15:14.902068Z",
+      "SourceCheckedAt": "2026-10-20T18:56:43.124530Z",
+      "SourceFetchedAt": "2026-10-20T18:56:43.124515Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "d113d3363a1781d9ee234ad1f92ed7c8cdc1b6c36d2ddcbc27acbf267f3104b3",
+      "SourceSHA256": "a856bad2ebe7176ae297e6e6aad69d5a2dcb4a6f94f6a9e04a084f33440d0a7a",
       "SourceURL": "https://www.wowhead.com/forever/skill%3D185/cooking",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\e6c4986513f1e59db95d36c299b2a03b4c00a5ac69b1b7e1703ce8a3ea399cd6.json",
-      "CacheFileSHA256": "b7403db2fe603a3de7f3f9e7024f035cb8b5b94ff2d25c98882fc674b0ee0b17",
+      "CacheFileSHA256": "c3fafaf49b26336aff6c575834e68a006be49f9e0a9be45418b6f17e36bde4c0",
       "EntityID": 10647,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:51.536020Z",
-      "SourceFetchedAt": "2026-10-20T15:14:51.536008Z",
+      "SourceCheckedAt": "2026-10-20T18:56:18.510618Z",
+      "SourceFetchedAt": "2026-10-20T18:56:18.510606Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "511065074c1de3a7fbd321988073de6d525f772943135ab604f8b5ec57855259",
+      "SourceSHA256": "9db509224cf4abf6f86bdc53adfc45c68a16996c066a6155ffc211c69e3a14f3",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D10647/feathered-breastplate",
       "Validation": "sha256_and_forever_page_identity_passed"
     },
     {
       "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\f3df63ab01c4df201effb488df567e1bff4e9b31e9732ef84d53a5f5b830efd9.json",
-      "CacheFileSHA256": "b79d8f5f90998bfc2fea61871c9654ba22bf4520f515e8c6135104df605e4161",
+      "CacheFileSHA256": "cf1d47428593dcf68fdfbb990845489806c39d272284a066fcec3c4e2bf84555",
       "EntityID": 10632,
       "Kind": "spell",
       "SourceBuild": "",
       "SourceBuildStatus": "unknown",
-      "SourceCheckedAt": "2026-10-20T15:14:47.893332Z",
-      "SourceFetchedAt": "2026-10-20T15:14:47.893321Z",
+      "SourceCheckedAt": "2026-10-20T18:56:17.471478Z",
+      "SourceFetchedAt": "2026-10-20T18:56:17.471467Z",
       "SourcePatch": "1.60.1",
-      "SourceSHA256": "8aa2fae0114e3294cc04c3ad371faefea3271a303905f9e68eae60b9788f9420",
+      "SourceSHA256": "833481d775016ac26d266da24325a4cc7354ebfa45d7fd0875f935e2d97e7d34",
       "SourceURL": "https://www.wowhead.com/forever/spell%3D10632/helm-of-fire",
       "Validation": "sha256_and_forever_page_identity_passed"
     }
@@ -454,7 +454,7 @@
     "Scope": "current_unmapped_items_and_available_validated_caches"
   },
   "CurrentCSV": {
-    "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\scripts\\export_buyprice\\output\\recipe-item-specializations.csv",
+    "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\inputs\\client\\recipe-item-specializations.csv",
     "RecipeItemCount": 2974,
     "SHA256": "54bc36be2d32511c9111d8e1e6307fff333ad5b115debcf53c8c2f87f1cdec77",
     "UnmappedRecipeItemCount": 925
@@ -1434,15 +1434,15 @@
         "RecipeSpellID": 461733,
         "Source": {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\197c68c8e3adc4b02145ce99a10bb769998c8c7715490fff03e23375431c12ef.json",
-          "CacheFileSHA256": "fecc202c09081edc62909d8c83d64144121c99c6434d6cf470785cf1f267c05c",
+          "CacheFileSHA256": "73b020c94a5d9845db5dec7d6444116d6553c6b9c1a2d074edeea5afff5b0689",
           "EntityID": 461733,
           "Kind": "spell",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:13:59.841834Z",
-          "SourceFetchedAt": "2026-10-20T15:13:59.841822Z",
+          "SourceCheckedAt": "2026-10-20T18:55:25.078875Z",
+          "SourceFetchedAt": "2026-10-20T18:55:25.078861Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "c2d54d17b93dd9b74ebbb11197a4635d92a811946db578ed2ff598f6f6da15c8",
+          "SourceSHA256": "5316fd4765ab23c9db6ff9706148307c903408c8e92c42f54803335a948be502",
           "SourceURL": "https://www.wowhead.com/forever/spell%3D461733/finely-enchanted-battlehammer",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -1454,15 +1454,15 @@
         "RecipeSpellID": 15633,
         "Source": {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\30f102baa8f0b9f09319e04df00b2f4cbbd9e26dac6abfa49768376d2372e43a.json",
-          "CacheFileSHA256": "381f66f3c53112977f30f5677b7beef682baec4de3110133e5413c3a8fce523e",
+          "CacheFileSHA256": "af283637d486c71e67bee4062e9b6d89a7f2964c714c9ae7bd7b78b7f8948ca5",
           "EntityID": 15633,
           "Kind": "spell",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:14:18.534448Z",
-          "SourceFetchedAt": "2026-10-20T15:14:18.534435Z",
+          "SourceCheckedAt": "2026-10-20T18:55:44.471122Z",
+          "SourceFetchedAt": "2026-10-20T18:55:44.471109Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "e82dd6ac307d4bdbae9f46960a933aae5e89464a11ea2c95193ff1e02a5920ee",
+          "SourceSHA256": "7f80252e04ea0a1246026a1b998ec51523e1da8f941176071cdadfb1aa46a8ac",
           "SourceURL": "https://www.wowhead.com/forever/spell%3D15633/lil-smoky",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -1474,15 +1474,15 @@
         "RecipeSpellID": 461649,
         "Source": {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\357d5c3256ebb0ec6213ec9e871903cc825a6e7f18de019723c8c99bc90b5a5f.json",
-          "CacheFileSHA256": "a9b2af3bc4ee1fc1f37e9eb369d998c0c627b596675ec8b310c174e26ee33c52",
+          "CacheFileSHA256": "ab6f1ecc48655d5e99d073dd4008af7c04910eed5fa0ab9e9fdb2a814008554d",
           "EntityID": 461649,
           "Kind": "spell",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:14:59.104689Z",
-          "SourceFetchedAt": "2026-10-20T15:14:59.104678Z",
+          "SourceCheckedAt": "2026-10-20T18:56:27.011443Z",
+          "SourceFetchedAt": "2026-10-20T18:56:27.011431Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "37b86ae9eb449cba60b13c914beee6c1da1ac7d2961844eb67929fecc99e8edc",
+          "SourceSHA256": "8b789a1d5428531558e375446baa99926f809bbcc45acdc01854b69604d425e0",
           "SourceURL": "https://www.wowhead.com/forever/spell%3D461649/living-green-dragonscale-leggings",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -1494,15 +1494,15 @@
         "RecipeSpellID": 461651,
         "Source": {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\41f9553384ea05fe8fff2126d8b4a85aab53de5cbafe451d9f090be6fba98bfb.json",
-          "CacheFileSHA256": "202372000229ebfdfd0ab151bb832ddeb6b78b5ebbf29f16abe57ecf1b9afc82",
+          "CacheFileSHA256": "964ca802f639b60b25c84359953db2edb0d62774e385491d1a72bebaea910694",
           "EntityID": 461651,
           "Kind": "spell",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:13:55.407993Z",
-          "SourceFetchedAt": "2026-10-20T15:13:55.407981Z",
+          "SourceCheckedAt": "2026-10-20T18:55:22.162211Z",
+          "SourceFetchedAt": "2026-10-20T18:55:22.162199Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "60c35a51f81b5c2ed6a176eb75388c08fa55a3020071c9c55a091e4690af3aa3",
+          "SourceSHA256": "3878d3269fd400b46d451c6b3f96bbc2d055d2268478982f9c5de5b7aef26f81",
           "SourceURL": "https://www.wowhead.com/forever/spell%3D461651/fiery-plate-gauntlets-of-the-hidden-technique",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -1514,15 +1514,15 @@
         "RecipeSpellID": 15628,
         "Source": {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\6f5b545267639e6d6353602d88c55a57ecfab80e1e42a0d5ddef0498ea4dc0cb.json",
-          "CacheFileSHA256": "61338f6ebe7dcb02c15fd6caeb2bd69c5fce6bbd6338b12618732ea7dfe8e4cf",
+          "CacheFileSHA256": "412b27002004f651108343c71dca155ae972c806fed4e1b0ca0c722bb6fe49d7",
           "EntityID": 15628,
           "Kind": "spell",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:14:21.728394Z",
-          "SourceFetchedAt": "2026-10-20T15:14:21.728382Z",
+          "SourceCheckedAt": "2026-10-20T18:55:47.559685Z",
+          "SourceFetchedAt": "2026-10-20T18:55:47.559673Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "9701a33b8396cb549eeea943a2b0ba2763f1e1071c4276a29fd61d6da39a7ced",
+          "SourceSHA256": "6697b5316b54f759b0e31c318b9a6fd72c60711a702ffdac5c088a958ee1cc5d",
           "SourceURL": "https://www.wowhead.com/forever/spell%3D15628/pet-bombling",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -1534,15 +1534,15 @@
         "RecipeSpellID": 461677,
         "Source": {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\a7f0fde15e43a8aeae4fc1092320662920452f12ae67bdbf975cf05a1fbe49ed.json",
-          "CacheFileSHA256": "876d8d6f010f2f9aee4848560452760e03f47fd3ece4621e49f39abe5eb4e1d0",
+          "CacheFileSHA256": "d18aac909b279316a718dc1e355e97f0760ce07f19ee027bd11e61d982b55e01",
           "EntityID": 461677,
           "Kind": "spell",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:14:55.352743Z",
-          "SourceFetchedAt": "2026-10-20T15:14:55.352731Z",
+          "SourceCheckedAt": "2026-10-20T18:56:23.644887Z",
+          "SourceFetchedAt": "2026-10-20T18:56:23.644876Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "110f2040b55d3232414a2a4113def05a6cc755019d569a3734028c429c8dccb7",
+          "SourceSHA256": "b25d1ef9b059f7da146e56ac51ccedc0231503a6962304228f4704150b0edec2",
           "SourceURL": "https://www.wowhead.com/forever/spell%3D461677/living-green-dragonscale-gauntlets",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -1601,68 +1601,68 @@
       "SHA256": "23b6c4a882d68229f23f7a42c1e7a86a63f36671536e490dd66974870660bf42"
     },
     {
-      "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\scripts\\export_buyprice\\output\\recipe-item-specializations.csv",
+      "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\inputs\\client\\recipe-item-specializations.csv",
       "SHA256": "54bc36be2d32511c9111d8e1e6307fff333ad5b115debcf53c8c2f87f1cdec77"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\09da50ece0f60f00b0c0646aeb641625bd283aca8c5c97d4f614e8e00c2621bb.json",
-      "SHA256": "c7639dc61cd653635134fb087a5f9adfddbc507e8a0ba72435d507093bf381c0"
+      "SHA256": "dff2b4be92a20ae625d638bc24159ca6071d0dc4ad3a2f9c8c53589dca4066ba"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\09e6950a18e80b72015c18d55b2344a1e441acece5e43590bf2aaf67c9303c2c.json",
-      "SHA256": "4272b5a94ead1b901493251514d79172faa6ab5a4b014b0c8a4a435d43b96b4f"
+      "SHA256": "789ca74f61470dc3fe3ba72870a6525f696d07b6b1785cab1e85a21f33055269"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\1439d99fbf702ba046e9f156d7f90c1f8bb4c0ee3edda9f8cd47a683cdfab52a.json",
-      "SHA256": "f38d3a162f8cad9e56eb4549d797683a2fb4ea07dd2c431a29c53b3efe06f361"
+      "SHA256": "0c67ccb229674ccd27918fb04484487da297b409125ef3aac93465740f5890e6"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\197c68c8e3adc4b02145ce99a10bb769998c8c7715490fff03e23375431c12ef.json",
-      "SHA256": "fecc202c09081edc62909d8c83d64144121c99c6434d6cf470785cf1f267c05c"
+      "SHA256": "73b020c94a5d9845db5dec7d6444116d6553c6b9c1a2d074edeea5afff5b0689"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\30ba258b4b2203c08ee7b3266e5e440833f4cfeb0b0f9fcbc7585622b8b86dad.json",
-      "SHA256": "2e2b2ea25dcea2bd3362d7c6c763710d6a0473a0dbbe0e0634510239ad922777"
+      "SHA256": "ee41ecf1a64fa28b3cf2ff113054a04913be0b3a2273d9b3c0177da6dc4d80cb"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\30f102baa8f0b9f09319e04df00b2f4cbbd9e26dac6abfa49768376d2372e43a.json",
-      "SHA256": "381f66f3c53112977f30f5677b7beef682baec4de3110133e5413c3a8fce523e"
+      "SHA256": "af283637d486c71e67bee4062e9b6d89a7f2964c714c9ae7bd7b78b7f8948ca5"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\3460dbfc488c024cd001ed91798ac5189be78fb0fb885659241569e87dcef5d7.json",
-      "SHA256": "65cccb9fae7bf2fef29bc57037f06cd66246ccbeac231c037445b06b7925e992"
+      "SHA256": "d6cc09fa2c9072f13ba07e12449d81ed2ee25a1c2f7ec5d9a73f0df7110fb725"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\357d5c3256ebb0ec6213ec9e871903cc825a6e7f18de019723c8c99bc90b5a5f.json",
-      "SHA256": "a9b2af3bc4ee1fc1f37e9eb369d998c0c627b596675ec8b310c174e26ee33c52"
+      "SHA256": "ab6f1ecc48655d5e99d073dd4008af7c04910eed5fa0ab9e9fdb2a814008554d"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\3768290e618d4ae90f5faaeb865f9411d6dec1c2c4f41c0ec8ef82336f70e716.json",
-      "SHA256": "6a924d0292a04dfd9bae1ffd3d3df406b727af6f0f1b9583e9b5db79f68fdc9a"
+      "SHA256": "f6167783d6cab85eb1ef863cd02486bf6e8010c5e0e386f0af3617517d3f6cd6"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\378942efadf0f04605cc42d502f88ad35c066ad1bd84a02a754e9ea1aeddb299.json",
-      "SHA256": "363a2be42c5e7d8b16da535bf35e813012efd15756520bdec810234ee5e17bd4"
+      "SHA256": "f015b296d5e0b6aa9a980e556109cc7042d6a9160432a112fc5256f8f01c72bf"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\3ec92aef51d13bfb97f301963896104129552298ee31880c844abcab903d2fad.json",
-      "SHA256": "f93bef997e7d38ca89f2a38a3456bb3a61e5daa440dab1d06ad92e840117bbb7"
+      "SHA256": "6c41b2e9320c2431f445cf5abda3df7fbe3f33a76ea66644f70aae0e5b140e03"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\41f9553384ea05fe8fff2126d8b4a85aab53de5cbafe451d9f090be6fba98bfb.json",
-      "SHA256": "202372000229ebfdfd0ab151bb832ddeb6b78b5ebbf29f16abe57ecf1b9afc82"
+      "SHA256": "964ca802f639b60b25c84359953db2edb0d62774e385491d1a72bebaea910694"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\4363a3b625a4121ba175b75e77ea40db6395adefc195259a15778f9fa6efbd35.json",
-      "SHA256": "354464878b3ff39af8130f81055c755f1e5154394bca341b2322d683f5f3e83c"
+      "SHA256": "0d2a211c8263ba9ad1fb0bf1b396d38a4052ecb459f662ed6fe3864463b3fe27"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\479d2160eb749cb0459ad678e660fa9fa54d1f91cda48ff1925da93f46991f0a.json",
-      "SHA256": "3391b1455c119c8945c69c8259b20927902ee69b90e9db56b920f16fe07108fe"
+      "SHA256": "801523237589d28bf91d6b88b797f79ed2f56e77c35c5abded1c3bd8aa0c7032"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\5c50c9c76aae51d56e53fd10cbbedc27e2dcaa9b809a64382e27406c09c2c937.json",
-      "SHA256": "2da48d824bf02cc4dbe5bd04d570adb81bb6e192c7d7f7f7a4dda3b61fe70839"
+      "SHA256": "6a627c4e01f0ba7cc18096232703e412e1fad3aaaf467c968129b28508df586d"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\5d226e766875986170d080f24e1a2084b3f88b53e3fe3aefa8455ce00463d7d1.json",
@@ -1670,63 +1670,63 @@
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\6f5b545267639e6d6353602d88c55a57ecfab80e1e42a0d5ddef0498ea4dc0cb.json",
-      "SHA256": "61338f6ebe7dcb02c15fd6caeb2bd69c5fce6bbd6338b12618732ea7dfe8e4cf"
+      "SHA256": "412b27002004f651108343c71dca155ae972c806fed4e1b0ca0c722bb6fe49d7"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\73500fcab14f2d50380b0b10444821ce4eb51763fb108eecbc54807538999e48.json",
-      "SHA256": "f6fbb381dbbe8433f0db2b7fefa1b6474990690d140a72e6335fc594a7b777a4"
+      "SHA256": "fd6950128c92a35231c0f9c67e35431b0ea4b29311fceedf9d7ea378d2ea14d0"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\78894476ba730cc0742f18e432ac566165ed51149730b4ee076c3510c63db962.json",
-      "SHA256": "605d607befb8e3f03b8b36cdf3c1747ff0e0f235bc73a02dd061ddbf57d34672"
+      "SHA256": "2de08ba7715f41253071c6c3d58cb4ba5ee40f93365516170776d43fc485ee7f"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\903aa50329e2cf8b57ad0e33f4d96f985765d3d43e1db8abfa746ba1c2ae5b33.json",
-      "SHA256": "d51d4f47cdc3becd9a757bbb4975836cf8000e604c37d840acfaed18ecbff4b9"
+      "SHA256": "4004f80549da3203bffa07b48feffaf5430b212e8f39949a0dedd56c7ca2b0d7"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\974fedad58ac8610fe0173df649e8d4e265651bc5c31c29f3a4489ead028a566.json",
-      "SHA256": "1957f00a61cd2c97383e1a4e03ec6ade36fdd6f07b9567326d78bfe7a7537a89"
+      "SHA256": "a152ecbc579812cceb59d1db3ba63e1abd3593ea5c98d5d642a37c2933f84e35"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\9af2672f911bb3147658e4ecc14bd1e5ea9f5b2cc03d700fb67ac2cc2b03137a.json",
-      "SHA256": "422c97a6312dca6f8562ea05ceab5466ed538ea7fad925d0875b2eb7e1d47b02"
+      "SHA256": "e80591f41352ac615fd643f3cefed31f127a48c11aa6b7c44f59aa4c2fe96225"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\9ccbf35df9e63a42864d7af70e489c83e659528fa9bb786c79531ad6688ed159.json",
-      "SHA256": "4ca065c6c8c1a557e73ca1ce602cdbb2d8905aa007bd18b5f5e91f0925adc3ba"
+      "SHA256": "38ec35113c32dd5aa141f901d207427f57e7b481167066783916884423ef6952"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\a7f0fde15e43a8aeae4fc1092320662920452f12ae67bdbf975cf05a1fbe49ed.json",
-      "SHA256": "876d8d6f010f2f9aee4848560452760e03f47fd3ece4621e49f39abe5eb4e1d0"
+      "SHA256": "d18aac909b279316a718dc1e355e97f0760ce07f19ee027bd11e61d982b55e01"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\b36ae1112c03e106d82a23312fbc3255918fe2fbcdf87fec657cb34fcb879e48.json",
-      "SHA256": "0ef091d97f77f74d43e656910cb1f383d5f03edd9880df84cfacb2f3505938f4"
+      "SHA256": "55fecd4b88bc81cf2173b98932e6a07935aef4813ef810280f654319c8b12d98"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\baf254fbf00cdb6b519e014bd55fb9018a765f4c05c21ab8ba05484b06f3e080.json",
-      "SHA256": "2a6bc505e4ecda462b9af01d93dea2b177e052ced04e246f0955442b1830c597"
+      "SHA256": "d96e678f944ecbdcfb2bd4097befce269e5cae80459b1b4f738ecfb05b147c0a"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\bf5d1d1b29153da6676fd02321b08182d83cc36aa281a35b1a1cfd03a49992ac.json",
-      "SHA256": "303f5da50d9dc72cd502babbd3a1a2cc6c0a899b570c421558ab05e7ef724032"
+      "SHA256": "00ab5ef3b1a1c0397264cfcce980fdad714f55c00db1d35c3de8730fd740b90c"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\cb1cf3b99d49efb2e333c0370e10223cc6253bdb16aa41ae2f5ccda143b61ef5.json",
-      "SHA256": "0fea1f9662e3eaa4a095a3edba7f2d63df44746a3d340053d91c85b88bea887c"
+      "SHA256": "7aaacebcb5a8b0c79a654b070cdec54ca26fab11e7259f098b0be840756b40ea"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\dacc70946c7fb2c2fa0cdac7e6561537f9210a06825eff5b61e6f66fb2b5e736.json",
-      "SHA256": "f4c4490b7f4e31fd7b9270d0dc8f2558fd4b7092819eaa39142d3eb5cfba0bf6"
+      "SHA256": "d567db36ed2b1b2393a70f05995393222050a38ade1c3586fa7031f002dc1025"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\e6c4986513f1e59db95d36c299b2a03b4c00a5ac69b1b7e1703ce8a3ea399cd6.json",
-      "SHA256": "b7403db2fe603a3de7f3f9e7024f035cb8b5b94ff2d25c98882fc674b0ee0b17"
+      "SHA256": "c3fafaf49b26336aff6c575834e68a006be49f9e0a9be45418b6f17e36bde4c0"
     },
     {
       "Path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\f3df63ab01c4df201effb488df567e1bff4e9b31e9732ef84d53a5f5b830efd9.json",
-      "SHA256": "b79d8f5f90998bfc2fea61871c9654ba22bf4520f515e8c6135104df605e4161"
+      "SHA256": "cf1d47428593dcf68fdfbb990845489806c39d272284a066fcec3c4e2bf84555"
     }
   ],
   "Items": [
@@ -23089,15 +23089,15 @@
       "RecipeItemsListSources": [
         {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\dacc70946c7fb2c2fa0cdac7e6561537f9210a06825eff5b61e6f66fb2b5e736.json",
-          "CacheFileSHA256": "f4c4490b7f4e31fd7b9270d0dc8f2558fd4b7092819eaa39142d3eb5cfba0bf6",
+          "CacheFileSHA256": "d567db36ed2b1b2393a70f05995393222050a38ade1c3586fa7031f002dc1025",
           "EntityID": 185,
           "Kind": "skill",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:15:14.902081Z",
-          "SourceFetchedAt": "2026-10-20T15:15:14.902068Z",
+          "SourceCheckedAt": "2026-10-20T18:56:43.124530Z",
+          "SourceFetchedAt": "2026-10-20T18:56:43.124515Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "d113d3363a1781d9ee234ad1f92ed7c8cdc1b6c36d2ddcbc27acbf267f3104b3",
+          "SourceSHA256": "a856bad2ebe7176ae297e6e6aad69d5a2dcb4a6f94f6a9e04a084f33440d0a7a",
           "SourceURL": "https://www.wowhead.com/forever/skill%3D185/cooking",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -23200,15 +23200,15 @@
       "RecipeItemsListSources": [
         {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\4363a3b625a4121ba175b75e77ea40db6395adefc195259a15778f9fa6efbd35.json",
-          "CacheFileSHA256": "354464878b3ff39af8130f81055c755f1e5154394bca341b2322d683f5f3e83c",
+          "CacheFileSHA256": "0d2a211c8263ba9ad1fb0bf1b396d38a4052ecb459f662ed6fe3864463b3fe27",
           "EntityID": 356,
           "Kind": "skill",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:15:23.619829Z",
-          "SourceFetchedAt": "2026-10-20T15:15:23.619817Z",
+          "SourceCheckedAt": "2026-10-20T18:56:51.237188Z",
+          "SourceFetchedAt": "2026-10-20T18:56:51.237175Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "d79b57cd65c4b26796bd72849147183cb1723796e1a2eb74d7ebec0c93b3dec2",
+          "SourceSHA256": "4257c67eeb4da53436e7aeb709db12de4d8edf121e30801c5f6f43e6b61c87ff",
           "SourceURL": "https://www.wowhead.com/forever/skill%3D356/fishing",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -23247,15 +23247,15 @@
       "RecipeItemsListSources": [
         {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\479d2160eb749cb0459ad678e660fa9fa54d1f91cda48ff1925da93f46991f0a.json",
-          "CacheFileSHA256": "3391b1455c119c8945c69c8259b20927902ee69b90e9db56b920f16fe07108fe",
+          "CacheFileSHA256": "801523237589d28bf91d6b88b797f79ed2f56e77c35c5abded1c3bd8aa0c7032",
           "EntityID": 129,
           "Kind": "skill",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:15:19.042207Z",
-          "SourceFetchedAt": "2026-10-20T15:15:19.042195Z",
+          "SourceCheckedAt": "2026-10-20T18:56:46.861521Z",
+          "SourceFetchedAt": "2026-10-20T18:56:46.861504Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "1580121dda972154b80afe2f504de6196db56f0c256451c9f359ef4ac88bf878",
+          "SourceSHA256": "d6195bda030a9349987d0d973f0d4f12560d4e76e2e438abf9bc7ec36c51379f",
           "SourceURL": "https://www.wowhead.com/forever/skill%3D129/first-aid",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -26672,15 +26672,15 @@
       "RecipeItemsListSources": [
         {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\baf254fbf00cdb6b519e014bd55fb9018a765f4c05c21ab8ba05484b06f3e080.json",
-          "CacheFileSHA256": "2a6bc505e4ecda462b9af01d93dea2b177e052ced04e246f0955442b1830c597",
+          "CacheFileSHA256": "d96e678f944ecbdcfb2bd4097befce269e5cae80459b1b4f738ecfb05b147c0a",
           "EntityID": 171,
           "Kind": "skill",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:13:32.954108Z",
-          "SourceFetchedAt": "2026-10-20T15:13:32.954079Z",
+          "SourceCheckedAt": "2026-10-20T18:55:01.593667Z",
+          "SourceFetchedAt": "2026-10-20T18:55:01.593646Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "91f3d3a87f75f4207181106fd993ea1345086a582b5fe755d9a300ebbdd3927a",
+          "SourceSHA256": "714d1303aaa3cf6c3ca37b7a301773cb821f29171251b248433d94459658aa85",
           "SourceURL": "https://www.wowhead.com/forever/skill%3D171/alchemy",
           "Validation": "sha256_and_forever_page_identity_passed"
         }
@@ -26727,15 +26727,15 @@
       "RecipeItemsListSources": [
         {
           "CacheFile": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wowhead-forever\\9ccbf35df9e63a42864d7af70e489c83e659528fa9bb786c79531ad6688ed159.json",
-          "CacheFileSHA256": "4ca065c6c8c1a557e73ca1ce602cdbb2d8905aa007bd18b5f5e91f0925adc3ba",
+          "CacheFileSHA256": "38ec35113c32dd5aa141f901d207427f57e7b481167066783916884423ef6952",
           "EntityID": 164,
           "Kind": "skill",
           "SourceBuild": "",
           "SourceBuildStatus": "unknown",
-          "SourceCheckedAt": "2026-10-20T15:13:37.618837Z",
-          "SourceFetchedAt": "2026-10-20T15:13:37.618821Z",
+          "SourceCheckedAt": "2026-10-20T18:55:06.337210Z",
+          "SourceFetchedAt": "2026-10-20T18:55:06.337193Z",
           "SourcePatch": "1.60.1",
-          "SourceSHA256": "1ff687b4a5abffe5a2021145c7f0366f5c7a2dee4023eead7b9a84ec36ba1cbe",
+          "SourceSHA256": "4b27686130767f308655e7da5c907968203ac157665770b923b35c60ce9d35b1",
           "SourceURL": "https://www.wowhead.com/forever/skill%3D164/blacksmithing",
           "Validation": "sha256_and_forever_page_identity_passed"
         }

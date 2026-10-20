@@ -1863,7 +1863,10 @@ function PD.BindRow(r, spec, h)
     end
     -- 右下角那格拆两半：前缀留在 r.d，恒居末位的「商人：X」搬到 r.dv ——
     --   热区只盖「商人」半段（用户：「鼠标在商人上面」）；两半用锚点链相接，不量宽。
-    if spec.dval and h > PD.ROW_H1 then
+    if spec.sourceSegments and h > PD.ROW_H1 then
+        r.d:SetText("")
+        PD.PaintRecipeSources(r, spec.sourceSegments)
+    elseif spec.dval and h > PD.ROW_H1 then
         r.d:SetText(spec.dpre or "")
         r.dv:SetText(spec.dval)
         r.dv:SetTextColor(Unpack(C_GREY))
@@ -2795,6 +2798,8 @@ function PD.Build(page)
         tf.label:SetPoint("TOPLEFT", tf, "TOPLEFT", 10, -6)
         tf.val = MakeFS(tf, 14, C_WHITE, "LEFT")
         tf.val:SetPoint("BOTTOMLEFT", tf, "BOTTOMLEFT", 10, 6)
+        tf.val:SetPoint("BOTTOMRIGHT", tf, "BOTTOMRIGHT", -10, 6)
+        tf.val:SetWordWrap(false)
         tf:EnableMouseWheel(true)
         tf:SetScript("OnMouseWheel", function(self, delta)
             DG.WheelScroll(PD.scroll, PD.child, delta)
@@ -3682,7 +3687,7 @@ function PD.PaintLvTiles()
             PD.PaintTileBorder(tiles.mode, { 1, 1, 1, 0.10 })
         end
         local modeLines = {
-            { fishRoute and L["鱼类自行钓取；其他材料只使用不限量商人货物。"]
+            { fishRoute and L["鱼类自行钓取；其他材料按物品购买价计算。"]
                    or auto and L["自动计算：比较采购、自制与配方依赖"]
                    or L["固定路线：按资料整理的分段练法逐段冲技能"], 1, 0.82, 0 },
             { fishRoute and L["点击返回普通路线"] or L["点击在固定 / 自动之间切换"], 0.7, 0.7, 0.7 },
@@ -3716,7 +3721,7 @@ function PD.PaintLvTiles()
     if fishRoute then
         schemeLines = {
             {L["1–225 参考烹饪指南；之后优先容易钓取的鱼。"], 1, 0.82, 0},
-            {L["鱼类自行钓取；其他材料只使用不限量商人货物。"], 0.7, 0.7, 0.7},
+            {L["鱼类自行钓取；其他材料按物品购买价计算。"], 0.7, 0.7, 0.7},
             {L["鱼类不计金币成本；图纸仍按实际采购来源计费。"], 0.7, 0.7, 0.7},
         }
     elseif s.auto and s.scheme and sch ~= s.scheme then
@@ -3825,6 +3830,10 @@ function PD.PaintLvTiles()
         x = x + tf:GetWidth() + PD.LV_TILE_GAP
         tf:Show()
     end
+    -- The optimization status can be a full sentence. Fit after the cards have
+    -- their final widths; its tooltip above retains the complete explanation.
+    local statusText=atxt or PD.AuctionatorStatusText()
+    tiles.snap.val:SetText(PD.Fit(statusText,14,math.max(0,tiles.snap:GetWidth()-20)))
     return PD.LV_TILE_H + 8
 end
 
@@ -4377,6 +4386,7 @@ function PD.WireTipZone(z, r)
     z:SetScript("OnEnter", function(self)
         PD.SetRowHover(r, true)
         local lines = self.__tipLines
+        if type(lines) == "function" then lines = lines() end
         if lines then
             -- 文字提示框通道（商人热区）：与行级提示框同一套写法（同样吃本插件主题）
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -4458,6 +4468,7 @@ end
 
 -- 收干净：行池跨专业/跨子页签复用 —— 不清就会留一串透明热区在旧位置吞鼠标（本相册老坑）。
 function PD.ClearMatSegs(r)
+    PD.ClearRecipeSources(r)
     if r.f then r.f:SetText("") end
     -- ★ 2026-10-09 残留真凶：遍历必须用 pairs，不能用 `for j = 2, #r.mn`。
     --   r.mn **永远缺 index 1**（第 1 段材料走 r.f，分段从 mn[2] 起存），
@@ -4484,6 +4495,46 @@ function PD.ClearMatSegs(r)
     --   会带着上一页文本活下来的字串 —— 只要将来有任何一条路径把它 Show 出来
     --   而没先 SetText，露出的就是上一页的商人名。清掉是零成本保险。
     if r.dv then r.dv:SetText(""); r.dv:Hide() end
+end
+
+-- Independent source labels share the row pool, but never its item/name hotspot.
+function PD.ClearRecipeSources(r)
+    for _, part in ipairs(r.__recipeSources or {}) do
+        part.text:SetText("")
+        part.text:Hide()
+        part.zone:Hide()
+        part.zone.__tipLines, part.zone.__act, part.zone.__it, part.zone.__tipExtra = nil, nil, nil, nil
+    end
+end
+
+function PD.PaintRecipeSources(r, segments)
+    PD.ClearRecipeSources(r)
+    r.__recipeSources = r.__recipeSources or {}
+    local nextText
+    for i = #segments, 1, -1 do
+        local part = r.__recipeSources[i]
+        if not part then
+            part = {text = MakeFS(r, 11, C_GREY, "RIGHT"), zone = CreateFrame("Button", nil, r)}
+            part.text:SetWordWrap(false)
+            part.zone:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+            PD.WireTipZone(part.zone, r)
+            r.__recipeSources[i] = part
+        end
+        part.text:SetText(segments[i].text or "")
+        part.text:ClearAllPoints()
+        if nextText then
+            part.text:SetPoint("RIGHT", nextText, "LEFT", -6, 0)
+        else
+            part.text:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -6, 4)
+        end
+        part.text:Show()
+        part.zone.__tipLines, part.zone.__act, part.zone.__it = segments[i].lines, segments[i].act, segments[i].it
+        part.zone:ClearAllPoints()
+        part.zone:SetPoint("TOPLEFT", part.text, "TOPLEFT", 0, 1)
+        part.zone:SetPoint("BOTTOMRIGHT", part.text, "BOTTOMRIGHT", 0, -1)
+        part.zone:Show()
+        nextText = part.text
+    end
 end
 
 -- 摆材料分段链：每段一个字串（第 1 段 = r.f，左锚 PD.MAT_X），每段一格热区压在字串上。
@@ -4898,7 +4949,7 @@ function PD.SourceParts(s)
     if not s then return out end
     if s.skill then out[#out + 1] = { text = format(L["技能 %s"], tostring(s.skill)) } end
     if s.drops and #s.drops > 0 then
-        out[#out + 1] = { text = format(L["掉落 %d 处"], #s.drops) }
+        out[#out + 1] = { text = format(L["掉落 %d 处"], #s.drops), drop = true }
     end
     if s.vendors and #s.vendors > 0 then
         local vs = PD.VendorListOf(s)
@@ -5026,8 +5077,11 @@ function PD.DropLines(s)
         if dd and (dd.npc or dd.zone) then
             local nm = format(L["掉落：%s"], tostring(dd.npc or "?"))
             if dd.zone and dd.zone ~= "" then nm = nm .. " · " .. tostring(dd.zone) end
-            if dd.chance then
-                nm = nm .. format(L[" · %d%%"], math.floor(dd.chance * 100 + 0.5))
+            -- The generated source stores percentage points (0.1 through 100),
+            -- not a probability fraction. Keep fractional percentages intact.
+            local chance = tonumber(dd.chance)
+            if chance and chance >= 0 and chance <= 100 then
+                nm = nm .. format(" · %g%%", chance)
             end
             out[#out + 1] = { nm, 0.75, 0.75, 0.75 }
         end
@@ -5190,13 +5244,145 @@ end
 
 function PD.RecipeSourceLines(lines, r)
     lines = lines or {}
-    lines[#lines + 1] = {PD.RecipeSourceText(r), 0.65, 0.75, 0.85}
     if r and r.clientUnavailable then
+        lines[#lines + 1] = {L["客户端已确认不可用"], 0.65, 0.75, 0.85}
         lines[#lines + 1] = {L["此记录仅供查阅，不参与自动路线。"], 0.95, 0.75, 0.4}
     end
     local output = PD.RecipeOutputText(r)
     if output then lines[#lines + 1] = {output, 0.65, 0.75, 0.85} end
     return lines
+end
+
+-- Source tooltips bypass the page's negative item memo so another hover can
+-- resolve data that arrived since the row was painted.
+function PD.FormulaItemDisplay(id)
+    if not id then return L["未知图纸"], FALLBACK_ICON end
+    local name, ready = DG.ItemName(id)
+    if not ready then
+        local item = ns.ProfItems and ns.ProfItems[id]
+        local locale = GetLocale and GetLocale() or "enUS"
+        name = item and item["Name_" .. locale]
+        if type(name) ~= "string" or name == "" then name = format(L["物品 #%d"], id) end
+        if DG.RequestItem then DG.RequestItem(id) end
+    end
+    return name, DG.ItemIcon and DG.ItemIcon(id) or FALLBACK_ICON
+end
+
+function PD.FormulaTexture(icon)
+    icon = icon or FALLBACK_ICON
+    if type(icon) == "string" and not icon:find("\\", 1, true) and not icon:find("/", 1, true) then
+        icon = "Interface\\Icons\\" .. icon
+    end
+    return format("|T%s:14:14|t", tostring(icon))
+end
+
+function PD.FormulaCostText(offer)
+    local parts = {}
+    local copper = offer.costCopper
+    local extended = offer.hasExtendedCost or offer.currencyKind ~= nil or offer.currencyID ~= nil or offer.currencyAmount ~= nil
+    if type(copper) == "number" and copper >= 0 and copper < math.huge
+        and (not extended or copper > 0) then
+        parts[#parts + 1] = RA.MoneyStr(copper, "copper")
+    end
+    if extended then
+        local id, name, icon = tonumber(offer.currencyID)
+        if id and id > 0 and id == math.floor(id) then
+            if offer.currencyKind == "item" then
+                name, icon = PD.FormulaItemDisplay(id)
+            elseif offer.currencyKind == "currency" then
+                if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
+                    local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, id)
+                    if ok and type(info) == "table" then name, icon = info.name, info.iconFileID or info.icon end
+                end
+                if (not name or name == "" or not icon) and type(GetCurrencyInfo) == "function" then
+                    local ok, legacyName, _, legacyIcon = pcall(GetCurrencyInfo, id)
+                    if ok then
+                        if not name or name == "" then name = legacyName end
+                        icon = icon or legacyIcon
+                    end
+                end
+                if not name or name == "" then name = format(L["通货 #%d"], id) end
+            end
+        end
+        if name then
+            local amount = tonumber(offer.currencyAmount)
+            parts[#parts + 1] = PD.FormulaTexture(icon) .. name .. " ×" .. tostring(amount or "?")
+        elseif type(offer.costText) == "string" and offer.costText ~= "" then
+            parts[#parts + 1] = offer.costText
+        else
+            parts[#parts + 1] = L["价格未知"]
+        end
+    end
+    local text = #parts > 0 and table.concat(parts, " + ") or L["价格未知"]
+    local quantity = tonumber(offer.quantity)
+    if quantity and quantity > 0 and quantity == math.floor(quantity) then
+        text = text .. " · " .. format(L["每组 %d 件"], quantity)
+    end
+    return text
+end
+
+function PD.FormulaVendorSource(fid, src)
+    local prices = ns.ProfItemPrices
+    local offers = prices and prices.GetFormulaDisplayOffers and prices.GetFormulaDisplayOffers(fid, nil, src)
+    if not offers or not fid then
+        offers = {}
+        for _, vendor in ipairs(PD.VendorListOf(src)) do
+            offers[#offers + 1] = {npcID=vendor.id, name=vendor.name, zone=vendor.zone,
+                faction=vendor.side == "a" and "A" or vendor.side == "h" and "H" or vendor.side == "n" and "N" or nil}
+        end
+    end
+    local display = {vendors={}}
+    for _, offer in ipairs(offers) do
+        display.vendors[#display.vendors + 1] = {id=offer.npcID, name=offer.name,
+            zone=PD.CampZoneName(offer.areaID, offer.zone),
+            side=offer.faction == "A" and "a" or offer.faction == "H" and "h" or nil}
+    end
+    return display, offers
+end
+
+function PD.FormulaSourceLines(fid, src, kind, clickable)
+    local name = PD.FormulaItemDisplay(fid)
+    local lines = {{format(L["图纸：%s"], name), 1, 0.82, 0.35}}
+    local ah = fid and RA.AHPriceOf and RA.AHPriceOf(fid)
+    lines[#lines + 1] = {type(ah) == "number" and ah > 0
+        and format(L["拍卖行：%s"], RA.MoneyStr(ah, "copper")) or L["暂无拍卖行价格"]}
+    if kind == "drop" then
+        for _, line in ipairs(PD.DropLines(src)) do
+            if clickable or line[1] ~= L["点击：在地图上标记该 NPC"] then lines[#lines + 1] = line end
+        end
+    elseif kind == "vendor" then
+        local display, offers = PD.FormulaVendorSource(fid, src)
+        for _, offer in ipairs(offers) do
+            local faction = ({A=L["联盟"], H=L["部落"], N=L["中立"]})[offer.faction] or L["阵营未知"]
+            lines[#lines + 1] = {format(L["商人：%s"], offer.name or "?"), 0.85, 0.85, 0.85}
+            if offer.npcNameUntranslated and offer.npcNameCanonical then
+                lines[#lines + 1] = {format(L["原文名称：%s"], offer.npcNameCanonical), 0.65, 0.65, 0.65}
+            end
+            lines[#lines + 1] = {format(L["阵营：%s"], faction) .. " · "
+                .. format(L["地区：%s"], PD.CampZoneName(offer.areaID, offer.zone) or L["地区未知"]), 0.75, 0.75, 0.75}
+            lines[#lines + 1] = {format(L["价格：%s"], PD.FormulaCostText(offer)), 0.95, 0.82, 0.5}
+        end
+        if #PD.VendorEntries(display) > 0 then
+            lines[#lines + 1] = {L["点击：在地图上标记该 NPC"], 1, 0.82, 0}
+        end
+    end
+    return lines
+end
+
+function PD.FormulaSourceSegments(fid, src, dropAct)
+    local parts = {}
+    if src and src.drops and #src.drops > 0 then
+        parts[#parts + 1] = {text=L["图纸.掉落"],
+            lines=function() return PD.FormulaSourceLines(fid, src, "drop", dropAct ~= nil) end,
+            act=dropAct, it=fid and {fid} or nil}
+    end
+    local vendors = PD.FormulaVendorSource(fid, src)
+    if #vendors.vendors > 0 then
+        parts[#parts + 1] = {text=L["图纸.商人"],
+            lines=function() return PD.FormulaSourceLines(fid, src, "vendor") end,
+            act=PD.VendorAct(vendors)}
+    end
+    return #parts > 0 and parts or nil
 end
 
 function PD.RecipeVisible(spell, slug)
@@ -5243,19 +5429,13 @@ function PD.EnchantSpec(en)
     local hasVendor = #vsEn > 0
     local drEn = (en[10] and en[10].drops) or {}
     local base = en[10] and L["图纸"] or L["训练师"]
-    local dpre, dval, dact, vlines
+    local fid = tonumber(resolved.formula or (en[10] and en[10].formulaID))
+    local sourceSegments = PD.FormulaSourceSegments(fid, en[10], #drEn > 0 and PD.DropAct(en[10]) or nil)
+    local dact, vlines
     if hasVendor then
-        dpre = base
-        if #vsEn > 1 then
-            dval = format(L["商人：%s 等 %d 人"], tostring(vsEn[1] and vsEn[1].name or "?"), #vsEn)
-        else
-            dval = format(L["商人：%s"], tostring(vsEn[1] and vsEn[1].name or "?"))
-        end
         dact = PD.VendorAct(en[10])
         vlines = PD.VendorLines(en[10])
     elseif #drEn > 0 then
-        dpre = base
-        dval = format(L["掉落 %d 处"], #drEn)
         dact = PD.DropAct(en[10])
         vlines = PD.DropLines(en[10])
     end
@@ -5281,12 +5461,9 @@ function PD.EnchantSpec(en)
         right = not (en[5] or en[6] or en[7] or en[8])
                 and format("%s · %s", format(L["学 %s"], tostring(en[5])),
                            PD.TierText(en[6], en[7], en[8])) or nil,
-        right2 = clientPending and L["客户端数据待读取"] or ((not dval) and (base .. " · " .. PD.RecipeSourceText(resolved, true)) or nil),
+        right2 = not sourceSegments and base or nil,
+        sourceSegments = sourceSegments,
         src = en[10],
-        dpre = dpre,
-        dval = dval,
-        dact = dact,
-        vlines = vlines,
         costStr = costStr,
         ahStr = ahStr,
         pct = PD.AhPct(ah, total),
@@ -5555,20 +5732,9 @@ function PD.RecipeSpec(r)
     -- 2026-10-10 用户：商人按玩家阵营过滤后显示（多人时「X 等 N 人」）
     local vs = (r[14] and PD.VendorListOf(r[14])) or {}
     local hasVendor = #vs > 0
-    -- 2026-10-09 20:45 终版（b0272ae）：右下来源行简化 —— 前缀只有「图纸/训练师」，
-    --   有商人时 dval="商人：X"（BindRow 锚链 + r.dv 热区照旧）；
-    --   删掉旧版 SourceParts 拼接（技能/掉落前缀与色条、base 串叠印）。
-    local base = clientPending and L["客户端数据待读取"] or (r[13] and L["图纸"] or L["训练师"])
-    base = base .. " · " .. PD.RecipeSourceText(resolved, true)
-    local dpre, dval
-    if hasVendor then
-        dpre = base
-        if #vs > 1 then
-            dval = format(L["商人：%s 等 %d 人"], tostring(vs[1] and vs[1].name or "?"), #vs)
-        else
-            dval = format(L["商人：%s"], tostring(vs[1] and vs[1].name or "?"))
-        end
-    end
+    local base = r[13] and L["图纸"] or L["训练师"]
+    local fid = tonumber(resolved.formula or (r[13] and r[13][1]))
+    local sourceSegments = PD.FormulaSourceSegments(fid, r[14])
     -- 2026-10-10 用户：「制作成本」列（铜级精度；口径与提示框成本行一致）
     local costStr, total, unpriced, ah
     if r[12] and #r[12] > 0 then
@@ -5612,11 +5778,9 @@ function PD.RecipeSpec(r)
         right = not ((r[7] or r[8] or r[9] or r[10]))
                 and format("%s · %s", format(L["学 %s"], tostring(r[7])),
                            PD.TierText(r[8], r[9], r[10])) or nil,
-        -- 20:45 终版：右下 = 图纸/训练师（有商人时进 dpre，dval=商人：X 走锚链）
-        right2 = (not dval) and base or nil,
+        right2 = not sourceSegments and base or nil,
+        sourceSegments = sourceSegments,
         src = r[14],
-        dpre = dpre,
-        dval = dval,
         costStr = costStr,
         ahStr = ahStr,
         pct = PD.AhPct(ah, total),
@@ -5684,6 +5848,7 @@ function PD.CraftedSpec(c)
             end
         end
     end
+    local sourceSegments = PD.FormulaSourceSegments(fid, resolved.source)
     local costStr, total, unpriced, ah
     if c[8] and #c[8] > 0 then
         total, unpriced = RA.MatListCost(c[8])
@@ -5707,7 +5872,8 @@ function PD.CraftedSpec(c)
         right = not (c[4] or c[5] or green or c[7])
                 and format("%s · %s", format(L["学 %s"], tostring(c[4])),
                            PD.TierText(c[5], green, c[7])) or nil,
-        right2 = clientPending and L["客户端数据待读取"] or ((base and base .. " · " or "") .. PD.RecipeSourceText(resolved, true)),
+        right2 = not sourceSegments and base or nil,
+        sourceSegments = sourceSegments,
         costStr = costStr,
         ahStr = ahStr,
         pct = PD.AhPct(ah, total),
@@ -6482,7 +6648,8 @@ function PD.PlanStatusText(plan)
     end
     if plan.status=="recalculate_required" then
         for _,diagnostic in ipairs(plan.diagnostics or {}) do
-            if (diagnostic.code=="vendorQuoteChanged" or diagnostic.code=="specializationChanged")
+            if (diagnostic.code=="vendorQuoteChanged" or diagnostic.code=="specializationChanged"
+                or diagnostic.code=="professionChanged")
                and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
                 return ns.ProfEconomy.DiagnosticText(diagnostic)
             end
@@ -6494,12 +6661,18 @@ function PD.PlanStatusText(plan)
         if search.status=="stopped" or search.status=="paused" then return L["优化已停止"] end
         if search.status=="interrupted" then return L["优化已中断；执行计划已保存，可重新计算。"] end
         if search.status=="error" then return L["计算发生错误，请重新计算。"] end
-        if search.status=="complete" then
+        if not plan.partial and plan.targetReached==false and search.budgetLimited then
+            return L["本轮计算已结束，尚未找到完整路线。"]
+        end
+        if search.status=="incomplete" and plan.targetReached==true then
+            return L["路线已到目标；采购资料尚未全部核实。"]
+        end
+        if search.status=="complete" and not plan.partial then
             return search.budgetLimited and L["已完成本轮计算，当前结果尚未证明最优。"]
                 or L["后台优化已结束，继续执行已保存计划。"]
         end
-        if search.status=="incomplete" then return L["资料或价格不完整"] end
-        if search.status=="infeasible" then return L["当前限制下没有可行路线"] end
+        if search.status=="incomplete" and not plan.partial then return L["资料或价格不完整"] end
+        if search.status=="infeasible" and not plan.partial then return L["当前限制下没有可行路线"] end
     end
     if plan.scheme == "fishing" and not plan.partial and plan.status == "complete" then return L["纯钓鱼路线已生成"] end
     if plan.optimal and plan.supplyComplete ~= false then return L["当前价格与期望模型内最优"] end
@@ -6510,6 +6683,8 @@ function PD.PlanStatusText(plan)
     if plan.feasible == false and PD.PlanHasSteps(plan) then
         return L["可先完成已计算步骤；后续路线待补全"]
     end
+    if plan.targetReached==false and plan.budgetLimited then return L["本轮计算已结束，尚未找到完整路线。"] end
+    if plan.status=="incomplete" and plan.targetReached==true then return L["路线已到目标；采购资料尚未全部核实。"] end
     local status = {
         searching = L["后台优化中"], paused = L["优化已停止"],
         stopped = L["优化已停止"], infeasible = L["当前限制下没有可行路线"],
@@ -7155,7 +7330,7 @@ function PD.RowsLeveling(rows)
     }
     PD.CopyPlanSummary(res)
     if fishRoute then
-        PushText(rows, L["鱼类自行钓取；其他材料只使用不限量商人货物。"], 11, C_GREY)
+        PushText(rows, L["鱼类自行钓取；其他材料按物品购买价计算。"], 11, C_GREY)
         PushText(rows, L["鱼类不计金币成本；图纸仍按实际采购来源计费。"], 11, C_GREY)
         PushText(rows, L["鱼类为待钓数量；未达区域门槛时，先提升钓鱼技能或使用加成。"], 11, C_GREY)
         PushText(rows, L["钓鱼区域和概率为经典服指南参考；Forever 客户端能读取的配方字段优先。"], 11, C_GREY)
@@ -7400,6 +7575,24 @@ function PD.VendorPriceSourceText(source)
     if source == "wowhead" then return L["购买价格来源：Wowhead"] end
 end
 
+function PD.MaterialVendorLines(entry)
+    local lines={{L["NPC购买"],0.42,0.94,0.62}}
+    local bundle=tonumber(entry.bundleSize or entry.quantity)
+    if bundle and bundle>0 then
+        local text=format(L["每组 %d 件"],bundle)
+        local price=entry.bundlePrice
+        if type(price)~="number" and type(entry.unit)=="number" then price=entry.unit*bundle end
+        if type(price)=="number" then text=text .. " · " .. RA.MoneyStr(price,"copper") end
+        lines[#lines+1]={text,0.7,0.7,0.7}
+    end
+    local source=PD.VendorPriceSourceText(entry.priceSource or entry.quoteSource)
+    if source then lines[#lines+1]={source,0.7,0.7,0.7} end
+    if entry.reference and entry.verifiedAt then
+        lines[#lines+1]={format(L["报价核验：%s"],tostring(entry.verifiedAt)),0.7,0.7,0.7}
+    end
+    return lines
+end
+
 function PD.FormulaStockText(entry)
     if entry.unlimited and entry.limited then return L["商人库存：固定售卖及限量刷新"] end
     if entry.unlimited then return L["商人库存：固定售卖（不限量）"] end
@@ -7408,6 +7601,44 @@ function PD.FormulaStockText(entry)
        or (entry.sources and #(entry.sources.vendors or {}) > 0) then
         return L["商人库存：性质尚未核实"]
     end
+end
+
+function PD.LocalizedVendorName(npcID,name)
+    local localized=type(name)=="string" and L[name] or name
+    local locale=type(GetLocale)=="function" and GetLocale()
+    if (locale=="zhCN" or locale=="zhTW") and npcID then
+        local fallback=format(L["商人 NPC #%d"],npcID)
+        if localized==fallback or type(localized)~="string" or not localized:find("[\128-\255]") then
+            return fallback,true
+        end
+    end
+    return localized
+end
+
+function PD.FormulaDisplaySource(entry)
+    local src=entry.sources or (entry.recipe and entry.recipe.source) or {}
+    local names={}
+    for _,recipe in ipairs(entry.recipes or {}) do
+        for _,vendor in ipairs(recipe.source and recipe.source.vendors or {}) do
+            if vendor.id and vendor.name then names[vendor.id]=vendor.name end
+        end
+    end
+    -- The normalized recipe keeps the original localized catalogue source,
+    -- including on saved plans created before quote names were localized.
+    for _,vendor in ipairs(entry.recipe and entry.recipe.source and entry.recipe.source.vendors or {}) do
+        if vendor.id and vendor.name then names[vendor.id]=vendor.name end
+    end
+    local display={}
+    for key,value in pairs(src) do display[key]=value end
+    display.vendors={}
+    for _,vendor in ipairs(src.vendors or {}) do
+        local copy={}
+        for key,value in pairs(vendor) do copy[key]=value end
+        local name=names[vendor.id] or vendor.name
+        copy.name=PD.LocalizedVendorName(vendor.id,name)
+        display.vendors[#display.vendors+1]=copy
+    end
+    return display
 end
 
 -- 图纸继续使用配方页的 NPC 过滤、位置表和地图选择器。
@@ -7428,7 +7659,7 @@ function PD.RowsFormulaShop(rows, data)
     end
     for _, entry in ipairs(formulas) do
         local id, count = entry.id, entry.count or 1
-        local src = entry.sources or (entry.recipe and entry.recipe.source) or {}
+        local src = PD.FormulaDisplaySource(entry)
         local recipes, names = entry.recipes or {entry}, {}
         for _, recipe in ipairs(recipes) do
             local slug = recipe.profession or entry.profession or PD.cur
@@ -7451,28 +7682,41 @@ function PD.RowsFormulaShop(rows, data)
         for _, offer in ipairs(entry.vendorOffers or {}) do
             local quantity = offer.quantity or offer.bundleSize or 1
             local unit = offer.unit or (type(offer.price) == "number" and offer.price / quantity)
-            local name = offer.name or offer.npcName
-            if not name then
-                for _, vendor in ipairs(PD.VendorListOf(src)) do
-                    if vendor.id == offer.npcID then name = vendor.name; break end
-                end
+            local name
+            for _, vendor in ipairs(PD.VendorListOf(src)) do
+                if vendor.id == offer.npcID then name = vendor.name; break end
             end
+            name = name or offer.name or offer.npcName
+            local untranslated
+            name,untranslated=PD.LocalizedVendorName(offer.npcID,name)
             name = name or (offer.npcID and format(L["商人 NPC #%d"], offer.npcID)) or L["商人"]
             local limited=offer.limited or offer.unlimited==false or offer.stockStatus=="limited"
                 or type(offer.stock)=="number" and offer.stock>=0
             local stockText = offer.unlimited and L["固定售卖（不限量）"]
                 or (limited and L["限量刷新"] or L["库存性质尚未核实"])
             lines[#lines + 1] = {format(L["%s：%s · %s"], name, money(unit), stockText), 0.7, 0.7, 0.7}
+            if untranslated or offer.npcNameUntranslated then
+                local canonical=offer.npcNameCanonical or offer.name or offer.npcName
+                if canonical and canonical~=name then
+                    lines[#lines+1]={format(L["原文名称：%s"],canonical),0.6,0.6,0.6}
+                end
+            end
             local priceSource = PD.VendorPriceSourceText(offer.priceSource)
             if priceSource then lines[#lines + 1] = {priceSource, 0.7, 0.7, 0.7} end
         end
         local selected = entry.source or entry.sourceType
         local tag = selected == "vendor" and L["NPC购买"]
             or ((selected == "ah" or selected == "auction") and L["拍卖行"] or L["尚无购买来源"])
+        if entry.limited then tag=tag .. " · " .. L["限量刷新"] end
+        local quantityText=format("×%d",count)
+        -- Name, stock/source badge and purchase quantity share the top line.
+        -- Reserve their actual widths, including the badge padding and gaps.
+        local nameWidth=math.max(0,(PD.splitLW or PD.COL_LW)-60-PD.TextW(tag,10)-PD.TextW(quantityText,12))
+        local itemName=id and DG.ItemName(id) or L["未知图纸"]
         rows[#rows + 1] = {kind = "row", h = PD.ROW_H, col = 1, it = id and {id} or nil,
-            text = PD.Fit(id and DG.ItemName(id) or L["未知图纸"], 13, (PD.splitLW or PD.COL_LW) - 130),
+            text = nameWidth>=13 and PD.Fit(itemName,13,nameWidth) or "",
             sub = format(L["用于配方：%s"], table.concat(names, " / ")),
-            tag = {text = tag}, right = format("×%d", count),
+            tag = {text = tag}, right = quantityText,
             right2 = (entry.unpriced or type(entry.cost) ~= "number") and L["价格未知"] or money(entry.cost),
             lines = lines, tipExtra = function() return lines end}
         PushText(rows, priceLine, 11, C_GREY, 1)
@@ -7481,7 +7725,7 @@ function PD.RowsFormulaShop(rows, data)
         local parts = PD.SourceParts(src)
         local hasSource = false
         for _, part in ipairs(parts) do
-            if not part.vendor then
+            if not part.vendor and not part.drop then
                 sourceRow(part.text, {{part.text}})
                 hasSource = true
             end
@@ -7561,6 +7805,7 @@ function PD.RowsAutoShop(rows, data)
     local firstAt = data.firstAt or {}
     for _, e in ipairs(mats) do
         local id, n = e.id or e[1], e.count or e[2]
+        local vendor=e.vendor or e.source=="vendor" or e.source=="npc"
         local fa = firstAt[id]
         local seg
         if fa then
@@ -7582,17 +7827,12 @@ function PD.RowsAutoShop(rows, data)
         end
         local tip = { { format(L["需要：%d"], e.need or n or 0) },
                       e.unpriced
-                          and { e.vendor and L["NPC购买价格尚未配置。"] or L["价格未知（Auctionator 无记录）"], 0.95, 0.75, 0.4 }
+                          and { vendor and L["NPC购买价格尚未配置。"] or L["价格未知（Auctionator 无记录）"], 0.95, 0.75, 0.4 }
                           or { format(L["约 %s"], RA.MoneyStr(e.cost, "copper")), 1, 0.82, 0 },
                       { sub or "", 0.7, 0.7, 0.7 } }
         for _, line in ipairs(PD.AuctionSupplyLines(e)) do tip[#tip + 1] = line end
-        if e.vendor then
-            tip[#tip + 1] = { L["商人直售（军需官处直购，无需拍卖行）"], 0.42, 0.94, 0.62 }
-            if e.npcID then tip[#tip + 1] = { format(L["商人 NPC #%d"], e.npcID), 0.7, 0.7, 0.7 } end
-            if e.bundleSize then tip[#tip + 1] = { format(L["每组 %d 件"], e.bundleSize), 0.7, 0.7, 0.7 } end
-            local priceSource = PD.VendorPriceSourceText(e.priceSource or e.quoteSource)
-            if priceSource then tip[#tip + 1] = { priceSource, 0.7, 0.7, 0.7 } end
-            if e.reference and e.verifiedAt then tip[#tip + 1] = { format(L["报价核验：%s"], tostring(e.verifiedAt)), 0.7, 0.7, 0.7 } end
+        if vendor then
+            for _,line in ipairs(PD.MaterialVendorLines(e)) do tip[#tip+1]=line end
         end
         rows[#rows + 1] = {
             kind = "row", h = PD.ROW_H, col = 1, it = { id },

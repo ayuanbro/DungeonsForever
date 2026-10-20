@@ -1,6 +1,7 @@
 # 数据表索引：每张表是谁生成的、数据从哪来
 
 专业统一入口与外部输入见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)，70450候选安装包的检查结果见 [CSV_CHECK_REPORT.md](CSV_CHECK_REPORT.md)。
+70450正式发布与最新安装包见 [PUBLISH_70450.md](PUBLISH_70450.md)。
 人工维护记录及新增相对位置见 [MANUAL_MAINTENANCE.md](MANUAL_MAINTENANCE.md)。
 
 `Core/Data/` 下 46 张表全部由 `_temp/` 里的 Python 生成或维护，**禁止手改**。

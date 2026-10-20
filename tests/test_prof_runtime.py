@@ -179,7 +179,7 @@ class RuntimeTests(unittest.TestCase):
     def install_synthetic_vendor_quote_fixture(self):
         self.lua.execute('''
           ns.ProfItemsMeta={schemaVersion=2,sources={csv={sha256='quotes-a'}}}
-          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,offers={
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,cost_copper=3,price_source='wowhead',offers={
             [77]={npc_id=77,cost_copper=3,cost_text='3c',stock=-1,price_source='wowhead'}}}}
         ''')
         self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
@@ -477,7 +477,7 @@ class RuntimeTests(unittest.TestCase):
           assert(r.cached and r.status=='infeasible')
         """)
 
-    def test_capture_tracks_verified_vendor_supply_separately_from_known_price(self):
+    def test_capture_uses_material_item_price_without_inspecting_suppliers(self):
         self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.lua.execute("""
           ns.ProfEconomy.Professions=function() return {alchemy={cur=1,max=75,primary=true}} end
@@ -486,11 +486,12 @@ class RuntimeTests(unittest.TestCase):
           UnitFactionGroup=function() return 'Alliance' end
           UnitLevel=function() return 30 end
           ns.ProfItems={
-            [11]={item_id=11,VendorStackCount=1,offers={
-              [123]={npc_id=123,cost_copper=3,stock=-1,side='a',price_source='client'}}},
+            [11]={item_id=11,VendorStackCount=1,cost_copper=3,price_source='client',offers={
+              [123]={npc_id=123,cost_copper=999,stock=0,side='h',price_source='client'}}},
             [10]={item_id=10,VendorStackCount=1,offers={
               [456]={npc_id=456,cost_copper=4,stock=1,side='a',price_source='client'}}}}
           local getOffers=ns.ProfItemPrices.GetOffers
+          ns.ProfItemPrices.GetSuppliers=function()error('material capture inspected NPC suppliers')end
           ns.ProfItemPrices.GetOffers=function(id,ctx)
             assert(ctx.allowVendorCache==nil and ctx.requireObservedPrice==nil)
             assert(ctx.character=='Test-Realm' and ctx.faction=='A' and ctx.level==30 and ctx.professions.alchemy.cur==1)
@@ -498,8 +499,9 @@ class RuntimeTests(unittest.TestCase):
           end
           local s=ns.ProfEconomy.Capture('alchemy',{})
           assert(s.vendorItems[11] and not s.vendorItems[10])
-          assert(s.vendorSuppliers[11][1].npcID==123 and s.offers[11][1].source=='client')
-          assert(s.vendorSuppliers[11][1].availabilityVerified and s.offers[11][1].verifiedAt==nil)
+          assert(next(s.vendorSuppliers)==nil and s.offers[11][1].source=='client')
+          assert(s.offers[11][1].price==3 and s.offers[11][1].npcID==nil)
+          assert(s.offers[11][1].availabilityVerified==nil and s.offers[11][1].verifiedAt==nil)
         """)
 
     def test_missing_prof_items_has_no_suppliers_and_uses_ah(self):
@@ -1000,7 +1002,7 @@ class RuntimeTests(unittest.TestCase):
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,3}}}}}}
           ns.EnsureProfRecipes=function() return ns.ProfRecipes end
           ns.ProfLeveling={alchemy={}}
-          ns.ProfItems={[11]={item_id=11,VendorStackCount=5,offers={
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=5,cost_copper=18,price_source='wowhead',offers={
             [1313]={npc_id=1313,cost_copper=18,stock=-1,price_source='wowhead'}}}}
           local steps={{1,2,101,1,cost=999},{2,3,101,1,cost=999}}
           local sum=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
@@ -1009,9 +1011,9 @@ class RuntimeTests(unittest.TestCase):
           local mat=sum.mats[1]
           assert(#sum.mats==1 and mat.id==11 and mat.count==10 and mat[2]==10 and mat.need==6)
           assert(mat.unit==18/5 and mat.bundleSize==5 and mat.bundlePrice==18 and mat.cost==36)
-          assert(mat.vendor and mat.source=='vendor' and mat.npcID==1313 and mat.reference)
+          assert(mat.vendor and mat.source=='vendor' and mat.npcID==nil and mat.reference)
           assert(mat.quoteSource=='wowhead' and mat.priceBasis=='Data_ProfItems')
-          assert(mat.verifiedAt==nil and mat.url=='https://www.wowhead.com/forever/npc=1313' and not mat.estimated)
+          assert(mat.verifiedAt==nil and mat.url==nil and not mat.estimated)
           assert(steps[1].cost==18 and steps[2].cost==18)
           assert(steps[1][3]==101 and steps[2][3]==101 and steps[1][4]==1 and steps[2][4]==1)
           assert(not steps[1].unpriced and #sum.formulas==0 and sum.formulasTotal==0)
@@ -1021,15 +1023,15 @@ class RuntimeTests(unittest.TestCase):
           assert(steps[1].cost==18 and steps[2].cost==0,'reused pack was charged twice')
         """)
 
-    def test_fixed_route_chooses_lowest_prof_items_npc_bundle_price(self):
+    def test_fixed_route_uses_item_bundle_price_instead_of_specific_npc_prices(self):
         self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.lua.execute("""
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,6}}}}}}
           ns.EnsureProfRecipes=function() return ns.ProfRecipes end
           ns.ProfLeveling={alchemy={}}
-          ns.ProfItems={[11]={item_id=11,VendorStackCount=5,offers={
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=5,cost_copper=15,price_source='client',offers={
             [1]={npc_id=1,cost_copper=40,stock=-1,price_source='client'},
-            [2]={npc_id=2,cost_copper=15,stock=-1,price_source='client'}}}}
+            [2]={npc_id=2,cost_copper=1,stock=-1,price_source='client'}}}}
           local materialAuctionReads=0
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)
             if id==11 then materialAuctionReads=materialAuctionReads+1;return 100 end
@@ -1039,7 +1041,7 @@ class RuntimeTests(unittest.TestCase):
           assert(materialAuctionReads>=1,'NPC quotation prevented an AH price comparison')
           assert(sum.total==30 and sum.vendorTotal==30 and sum.ahTotal==0)
           local mat=sum.mats[1]
-          assert(mat.npcID==2 and mat.count==10 and mat.need==6 and mat.unit==3)
+          assert(mat.npcID==nil and mat.count==10 and mat.need==6 and mat.unit==3)
           assert(mat.quoteSource=='client' and mat.reference and sum.completeCost)
         """)
 
@@ -1070,7 +1072,7 @@ class RuntimeTests(unittest.TestCase):
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,3},{12,2}}}}}}
           ns.EnsureProfRecipes=function() return ns.ProfRecipes end
           ns.ProfLeveling={alchemy={}}
-          ns.ProfItems={[11]={item_id=11,VendorStackCount=4,offers={
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=4,cost_copper=0,price_source='client',offers={
             [1313]={npc_id=1313,cost_copper=0,stock=-1,price_source='client'}}}}
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id) return id==12 and 7 or 1 end}}}
           local steps={{1,2,101,1},{2,3,101,1}}
@@ -1089,7 +1091,7 @@ class RuntimeTests(unittest.TestCase):
             {101,20,1,'','','',1,20,30,40,false,{{11,1}}},
             {102,21,1,'','','',1,20,30,40,false,{{12,1}}}}}}
           ns.EnsureProfRecipes=function()return ns.ProfRecipes end
-          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,offers={
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,cost_copper=10,price_source='client',offers={
             [7]={npc_id=7,stock=-1,cost_copper=10,price_source='client'}}}}
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)return ({[11]=1,[12]=5})[id]end}}}
           ns.AuctionBridge={GetAuctionSupply=function(id)if id==11 then return {quantity=1,complete=true}end end}
@@ -1108,7 +1110,7 @@ class RuntimeTests(unittest.TestCase):
         self.lua.execute("""
           ns.ProfRecipes={alchemy={rows={{101,20,1,'','','',1,20,30,40,false,{{11,6}}}}}}
           ns.EnsureProfRecipes=function()return ns.ProfRecipes end
-          ns.ProfItems={[11]={item_id=11,VendorStackCount=4,offers={
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=4,cost_copper=37,price_source='client',offers={
             [7]={npc_id=7,stock=-1,cost_copper=37,price_source='client'}}}}
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)if id==11 then return 10 end end}}}
           for _,limit in ipairs({0,1,2,10})do
@@ -1127,7 +1129,7 @@ class RuntimeTests(unittest.TestCase):
         self.lua.execute("""
           ns.ProfRecipes={alchemy={rows={{101,20,1,'','','',1,20,30,40,false,{{11,2}},{11},{}}}}}
           ns.EnsureProfRecipes=function()return ns.ProfRecipes end
-          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,offers={
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,cost_copper=10,price_source='client',offers={
             [7]={npc_id=7,stock=-1,cost_copper=10,price_source='client'}}}}
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)if id==11 then return 1 end end}}}
           ns.AuctionBridge={GetAuctionSupply=function(id)if id==11 then return {quantity=2,complete=true}end end}

@@ -696,7 +696,7 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     if type(ah)=="number" and ah>0 and not (context.nonAuctionable and context.nonAuctionable[id]) then entry.ahPrice=ah end
     local offers=id and context.formulaOffers and context.formulaOffers[id]
     if not offers and id and ns.ProfItemPrices and ns.ProfItemPrices.GetFormulaOffers then
-        offers=ns.ProfItemPrices.GetFormulaOffers(id,context)
+        offers=ns.ProfItemPrices.GetFormulaOffers(id,context,r.source)
     end
     if not offers and id and context.offers then offers=context.offers[id] end
     entry.vendorOffers=offers or {}
@@ -882,22 +882,10 @@ function E.Capture(slug,opts,tick)
         s.priceObservedAt[id]=quoteMetadata(nil,id,"priceObservedAt","GetAuctionPriceObservedAt")
         local vendor=ns.ProfItemPrices
         if vendor then
-            if vendor.GetSuppliers then
-                local suppliers=vendor.GetSuppliers(id,vendorContext)
-                local verified={}
-                for _,supplier in ipairs(type(suppliers)=="table" and suppliers or {}) do
-                    if supplier.unlimited==true and supplier.available~=false
-                        and supplier.availabilityVerified==true and supplier.source
-                        and not supplier.hasExtendedCost and (not supplier.currencyID or supplier.currencyID==0) then
-                        verified[#verified+1]=supplier
-                    end
-                end
-                if #verified>0 then s.vendorSuppliers[id]=verified end
-            end
             if vendor.GetOffers then
                 s.offers[id]=vendor.GetOffers(id,vendorContext)
-                -- Knowing a supplier is not a usable gold quotation. Missing
-                -- copper prices and exchange offers must not block AH buying.
+                -- Ordinary materials use only the item purchase price/bundle.
+                -- Formula merchants are captured independently below.
                 if s.offers[id] and #s.offers[id]>0 then s.vendorItems[id]=true end
             end
         end
@@ -1193,6 +1181,7 @@ function E.DiagnosticText(d)
         professionMissing="角色尚未学习所需专业。",skillRequired="另一专业技能不足，可开启联合升级或购买材料。",
         secondaryRequired="请先选择联合升级的另一个专业。",
         pairingChanged="搭配专业已更改，点击重新计算应用。",
+        professionChanged="专业学习状态或旧路线规则已变化，请重新计算路线。",
         formulaUnavailable="未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。",
         formulaPriceUnknown="图纸购买价格尚未核实。",
         formulaStockUnknown="图纸为限量或未核实库存，不能保证商人现货。",

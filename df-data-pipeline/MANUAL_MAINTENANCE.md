@@ -1,6 +1,6 @@
 # 人工维护记录与新增位置索引
 
-核对日期：2026-10-21。本文由当前revision2维护输入与冻结的旧输入、70450新输入、目标模型只读对照整理。没有重新生成或发布数据，也没有修改安装ZIP。
+核对日期：2026-10-21。本文由当前revision2维护输入与冻结的旧输入、70450新输入、目标模型对照整理。该70450批次现已发布到当前仓库，后续验收见 [PUBLISH_70450.md](PUBLISH_70450.md)。
 
 这里的“人工维护”是为保留当前正式数据而迁移的维护差异；来源证据是正式Lua基线及输入哈希，不能据此认定每一项都有独立人工编辑日志。2,329项是操作数，不是配方数量。
 
@@ -11,7 +11,7 @@
 - 精确删除授权：[approved_removals](_temp/_fc/maintenance/professions.json#L84288)，目前仅1251750/250952。
 - 三份冻结模型：[旧输入](_temp/_fc/maintenance/source/rebase-2-70450/previous-input-model.json)、[最新输入](_temp/_fc/maintenance/source/rebase-2-70450/incoming-input-model.json)、[候选目标](_temp/_fc/maintenance/source/rebase-2-70450/target-model.json)。它们是审计证据，不是日常额外维护入口。
 - 人工翻译另在[locales.json](_temp/_fc/maintenance/locales.json)；中文词表另在[zh.json](_temp/_fc/i18n/zh.json)。
-- 不应在生成的`Core/Data/*.lua`中修改规则。下列序号是70450候选批次的逻辑数组序号，不是JSON/Lua文件行号；正式Core/Data仍未发布。
+- 不应在生成的`Core/Data/*.lua`中修改规则。下列序号是已发布70450批次的逻辑数组序号，不是JSON/Lua文件行号。
 
 ## 20条逐条补入的配方与附魔
 

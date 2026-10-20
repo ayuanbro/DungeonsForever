@@ -23,6 +23,8 @@
 
 如果以后外部工具生成新CSV，可明确传入那份CSV。生产程序的存在、参数和运行状态都不是本流水线依赖。客户端三CSV必须属于同一已验证DB2批次；不能仅凭相同Build把不同热修复数据混合使用。
 
+普通材料采购只采用客户端 CSV 的有效基础整组价与组数，不要求商人记录。生成器为每个客户端物品保留独立无 NPC 的报价行，使固定19列 DataProfItems.csv 可以完整重建根价格。材料根报价与图纸 NPC 报价分开：图纸仍严格要求显式商人记录，并保留阵营、库存性质、兑换条件和具体来源；普通材料报价不会建立图纸供货资格。
+
 ## 各脚本实际读取的文件
 
 表中“缓存”均为仓库内文件，不是游戏目录。上游来源是证据属性，不代表运行时要连接旧导出服务。
@@ -40,7 +42,7 @@
 | `fc_i18n.py` | 本轮归一化JSON、`T\_fc\i18n\zh.json`；`--add/--batch`时另读取人工提供的词表内容/批次文件 | `--audit`只对账，缺译不自动联网翻译 |
 | `fc_gen.py` | `index.json`、`prof_*.json`、`enchant_ids.json`、`vendor_loc.json`、可选 `vendor_side.json`、`drop_loc.json`、`zone_ids.json`、`zone_zh.json`；`zh.json`；`T\questie\questie_forever.json`；`T\_wago_AreaTable_zh.csv`；专业维护输入 | 支持文件优先取冻结暂存目录，否则取本包默认路径；无游戏/旧专业目录回退 |
 | `fc_maintenance.py` | `T\_fc\maintenance\professions.json`及其版本化维护记录/源文件 | 三方冲突检查、人工新增、阈值/来源修订、字段及分片省略、顺序与计数；一次性迁移参数 `--migrate-from` 才读取显式旧Lua目录 |
-| `fc_prof_items.py` | `vendors.csv`、`npcs.csv`、`item-buy-prices.csv`；本轮生成的Data_ProfVendors.lua | 在内存合并，统一链使用同轮商人数据；`--from-csv`只读指定19列DataProfItems.csv，跳过三表合并 |
+| `fc_prof_items.py` | `vendors.csv`、`npcs.csv`、`item-buy-prices.csv`；本轮生成的Data_ProfVendors.lua | 在内存合并，统一链使用同轮商人数据，并单独保留客户端物品基础整组价格；`--from-csv`只读指定19列DataProfItems.csv，跳过三表合并 |
 | `fc_refresh_specializations.py` | 客户端3份CSV；有效专业目录；训练师旧CSV；专精current指针/显式DB2目录；网页缓存 | 在线只刷新独立网页证据；客户端3份CSV与DB2在线/离线均为只读输入。训练师CSV是本轮派生产物，`--apply`才同批发布 |
 | `fc_prof_specializations.py` | 图纸CSV、训练师CSV、`prof_*.json`、`enchant_ids.json`及Wowhead规范缓存 | 合并学习途径/证据；缺证据保留pending，不把0当无限制 |
 | `fc_specialization_fetch.py` | `T\_fc\cache\specializations\wowhead-forever\<URL哈希>.json`；`.network-state`锁、请求时钟、冷却 | 在线低频请求Wowhead Forever专业页及所需法术页；尊重缓存、robots与冷却，离线不请求 |
@@ -76,7 +78,7 @@
 ```powershell
 python -B df-data-pipeline/_temp/fc_update.py --check --offline `
   --stage-dir .pipeline-runtime/review/validated-batch `
-  --package-zip dist/DungeonsForever-1.8.31-data-70450-preview.zip
+  --package-zip dist/DungeonsForever-1.8.33-data-70450-preview.zip
 ```
 
 去掉 `--offline` 时只允许网页联网更新，CSV与DB2仍是只读现成输入。`--stage-dir`保留规范JSON、有效目录、CSV、审计与20份Lua候选及输入哈希；ZIP使用这些新Lua，其他运行模块保持原字节。两者都不能与 `--apply` 合用。

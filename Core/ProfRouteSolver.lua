@@ -630,10 +630,14 @@ function S.NewJob(slug,opts)
         return t
     end
     local function quest(s,goal,emit)
-        -- Search the whole material combination, including shared packs/leftovers,
-        -- even during the quick route seed. Each reagent is reserved immediately.
+        -- The first route needs one feasible ledger, just like ordinary leveling.
+        -- Enumerating every buy/craft split here can consume the entire search
+        -- budget before the first quest transition is ever emitted. The later
+        -- frontier still compares complete combinations and shared leftovers.
         local wasSeeding,wasDirect,deadline=j.seeding,j.directSeed,j.seedDeadline
-        j.seeding=false;j.directSeed=false;j.seedDeadline=nil
+        if not j.directSeed or opts.specializationRecipeScore then
+            j.seeding=false;j.directSeed=false
+        end
         local function reagents(t,i)
             local m=goal.inputs[i]
             if not m then emit(finishGoal(t,goal));return end
@@ -705,6 +709,10 @@ function S.NewJob(slug,opts)
                 -- A failed lookup through a cycle is path-dependent. Do not
                 -- memoize that failure and hide a valid alternative entry.
                 if best<math.huge or not cyclic then quoteCache[key]=best end
+                if best==math.huge and j.collectFailures and not j.seedAborted then
+                    fail(auctionPriced and auctionRemaining(s,id)<missing
+                        and "auctionSupplyLimited" or "materialUnavailable",nil,id)
+                end
                 return best,cyclic
             end
             for _,r in ipairs(j.snap.byProfession[p] or {}) do
@@ -1038,7 +1046,8 @@ function S.NewJob(slug,opts)
                         or completedGoals(t)>completedGoals(current))
                         and better(t,nextState) then nextState=t end
                 end,true)
-                if not nextState then
+                if not nextState and not j.seedAborted
+                    and (not j.blockedSkill or current.skill[slug]>=j.blockedSkill) then
                     j.blockers={}
                     j.blockedSkill=current.skill[slug]
                     for _,d in pairs(j.collectFailures) do j.blockers[#j.blockers+1]=d end

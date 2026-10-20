@@ -1,4 +1,4 @@
-"""Pure schema-2 NPC quotation boundaries, without legacy merchant catalogues."""
+"""Item material prices and formula NPC quotations ignore legacy catalogues."""
 import sys
 import unittest
 from pathlib import Path
@@ -33,6 +33,8 @@ function put(item,values,quantity)
         cost_copper=21,cost_text='21c',stock=-1,price_source='client'}
     for key,value in pairs(values or {})do raw[key]=value end
     local record={item_id=item,VendorStackCount=quantity or 5,offers={[raw.npc_id]=raw}}
+    for _,key in ipairs({'cost_copper','cost_text','price_source',
+      'currency_kind','currency_id','currency_amount'})do record[key]=raw[key] end
     ns.ProfItems[item]=record
     return raw,record
 end
@@ -65,7 +67,7 @@ class VendorOffers(unittest.TestCase):
           assert(q.price==21 and q.quantity==5 and q.bundleSize==5 and q.unit==21/5)
           assert(q.source=='client' and q.priceSource=='client' and q.priceBasis=='Data_ProfItems')
           assert(q.reference and not q.estimated and q.verifiedAt==nil and q.priceVerified==nil)
-          assert(q.npcID==7 and q.npcName=='Schema Seller')
+          assert(q.npcID==nil and q.npcName==nil and q.materialPrice)
           assert(ns.ProfItemPrices.GetPrice(999002)==21/5)
         ''')
 
@@ -80,10 +82,12 @@ class VendorOffers(unittest.TestCase):
     def test_invalid_cost_or_missing_noninteger_bundle_cannot_price_goods(self):
         self.lua.execute('''
           local raw,item=put(999004)
-          for _,value in ipairs({-1,'21',math.huge,0/0})do
-            raw.cost_copper=value;assert(#ns.ProfItemPrices.GetOffers(999004)==0)
+          for _,value in ipairs({-1,1.5,'21',math.huge,0/0})do
+            raw.cost_copper=value;item.cost_copper=value
+            assert(#ns.ProfItemPrices.GetOffers(999004)==0)
+            assert(ns.ProfItemPrices.GetFormulaOffers(999004)[1].price==nil)
           end
-          raw.cost_copper=21
+          raw.cost_copper=21;item.cost_copper=21
           for _,value in ipairs({0,-1,1.5,'5',math.huge,0/0})do
             item.VendorStackCount=value;assert(#ns.ProfItemPrices.GetOffers(999004)==0)
           end
@@ -95,8 +99,9 @@ class VendorOffers(unittest.TestCase):
 
     def test_page_text_without_copper_remains_unpriced(self):
         self.lua.execute('''
-          local raw=put(999005);raw.cost_copper=nil;raw.cost_text='99 tokens'
-          assert(#ns.ProfItemPrices.GetSuppliers(999005)==1)
+          local raw,item=put(999005);raw.cost_copper=nil;raw.cost_text='99 tokens'
+          item.cost_copper=nil;item.cost_text='99 tokens'
+          assert(#ns.ProfItemPrices.GetSuppliers(999005)==0)
           assert(#ns.ProfItemPrices.GetOffers(999005)==0 and ns.ProfItemPrices.GetPrice(999005)==nil)
           local f=ns.ProfItemPrices.GetFormulaOffers(999005)
           assert(#f==1 and f[1].price==nil and not f[1].priceUsable)
@@ -149,18 +154,20 @@ class VendorOffers(unittest.TestCase):
           assert(ns.ProfItemPrices.GetBasePurchasePrice==nil and ns.ProfItemPrices.OnChanged==nil)
         ''')
 
-    def test_side_and_explicit_npc_access_are_the_new_access_fields(self):
+    def test_side_and_explicit_npc_access_restrict_formulas_without_gating_materials(self):
         self.lua.execute('''
           local raw=put(999010,{side='a'})
-          assert(#ns.ProfItemPrices.GetOffers(999010,{faction='Horde'})==0)
+          assert(#ns.ProfItemPrices.GetOffers(999010,{faction='Horde'})==1)
           assert(#ns.ProfItemPrices.GetOffers(999010,{faction='Alliance'})==1)
           assert(#ns.ProfItemPrices.GetFormulaOffers(999010,{faction='H'})==0)
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999010,{faction='A'})==1)
           for _,side in ipairs({'n','N','Neutral'})do
             raw.side=side;assert(#ns.ProfItemPrices.GetOffers(999010,{faction='H'})==1)
+            assert(#ns.ProfItemPrices.GetFormulaOffers(999010,{faction='H'})==1)
           end
           raw.side=nil
-          assert(#ns.ProfItemPrices.GetOffers(999010,{npcAccess={[7]=false}})==0)
-          assert(#ns.ProfItemPrices.GetSuppliers(999010,{npcAccess={[7]=false}})==0)
+          assert(#ns.ProfItemPrices.GetOffers(999010,{npcAccess={[7]=false}})==1)
+          assert(#ns.ProfItemPrices.GetSuppliers(999010,{npcAccess={[7]=false}})==1)
           assert(#ns.ProfItemPrices.GetFormulaOffers(999010,{npcAccess={[7]=false}})==0)
         ''')
 
@@ -176,17 +183,22 @@ class VendorOffers(unittest.TestCase):
           end
           put(999011,{currency_kind=' \t ',currency_id='',currency_amount='  '})
           assert(#ns.ProfItemPrices.GetOffers(999011)==1)
+          local raw,item=put(999011,{currency_kind='item',currency_id=77,currency_amount=3})
+          item.currency_kind=nil;item.currency_id=nil;item.currency_amount=nil
+          assert(#ns.ProfItemPrices.GetOffers(999011)==1,
+            'a formula seller exchange overrode the independent material base price')
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999011)==0)
         ''')
 
-    def test_only_stock_minus_one_prices_unlimited_reagents(self):
+    def test_formula_stock_limits_do_not_restrict_anonymous_material_quotes(self):
         self.lua.execute('''
           local raw=put(999012,{stock=2})
-          assert(#ns.ProfItemPrices.GetOffers(999012)==0 and #ns.ProfItemPrices.GetSuppliers(999012)==0)
+          assert(#ns.ProfItemPrices.GetOffers(999012)==1 and #ns.ProfItemPrices.GetSuppliers(999012)==1)
           local f=ns.ProfItemPrices.GetFormulaOffers(999012)
           assert(#f==1 and f[1].limited and f[1].maxStock==2 and f[1].stock==nil and f[1].priceUsable)
           raw.stock=nil;f=ns.ProfItemPrices.GetFormulaOffers(999012)
           assert(#f==1 and f[1].stockUnknown and f[1].stock==nil)
-          assert(#ns.ProfItemPrices.GetOffers(999012)==0)
+          assert(#ns.ProfItemPrices.GetOffers(999012)==1)
           raw.stock=-1
           assert(#ns.ProfItemPrices.GetOffers(999012)==1 and #ns.ProfItemPrices.GetSuppliers(999012)==1)
         ''')
@@ -197,16 +209,18 @@ class VendorOffers(unittest.TestCase):
           local f=ns.ProfItemPrices.GetFormulaOffers(999013)
           assert(#f==1 and f[1].price==21 and f[1].maxStock==0)
           assert(f[1].limited and f[1].stock==nil and not f[1].priceUsable and not f[1].available)
-          assert(#ns.ProfItemPrices.GetOffers(999013)==0)
+          local material=ns.ProfItemPrices.GetOffers(999013)[1]
+          assert(material and material.price==21 and material.npcID==nil and material.maxStock==nil)
         ''')
 
-    def test_root_cost_without_npc_never_establishes_a_supplier(self):
+    def test_root_cost_without_npc_establishes_material_price_but_no_formula_seller(self):
         self.lua.execute('''
           ns.ProfItems[999014]={item_id=999014,VendorStackCount=5,cost_copper=21,
             cost_text='21c',price_source='client',stock=-1,offers={}}
           ns.ProfVendors[7]={12,1429,10,20}
-          assert(ns.ProfItemPrices.GetPrice(999014)==nil)
-          assert(#ns.ProfItemPrices.GetSuppliers(999014)==0 and #ns.ProfItemPrices.GetOffers(999014)==0)
+          assert(ns.ProfItemPrices.GetPrice(999014)==21/5)
+          assert(#ns.ProfItemPrices.GetSuppliers(999014)==1 and #ns.ProfItemPrices.GetOffers(999014)==1)
+          assert(ns.ProfItemPrices.GetSuppliers(999014)[1].npcID==nil)
           assert(#ns.ProfItemPrices.GetFormulaOffers(999014,nil,{vendors={{id=7}}})==0)
         ''')
 
@@ -229,22 +243,26 @@ class VendorOffers(unittest.TestCase):
           assert(raw.price==nil and raw.unit==nil and ns.ProfItemPrices.GetPrice(999016)==21/5)
         ''')
 
-    def test_invalid_or_conflicting_npc_ids_do_not_create_offers(self):
+    def test_invalid_or_conflicting_npc_ids_do_not_create_formula_offers(self):
         self.lua.execute('''
           local raw=put(999017)
           raw.npc_id=8
-          assert(#ns.ProfItemPrices.GetOffers(999017)==0)
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999017)==0)
+          assert(ns.ProfItemPrices.GetPrice(999017)==21/5)
           raw.npc_id=7;ns.ProfItems[999017].offers={[0]=raw}
-          assert(#ns.ProfItemPrices.GetOffers(999017)==0)
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999017)==0)
+          assert(ns.ProfItemPrices.GetPrice(999017)==21/5)
         ''')
 
-    def test_quotes_sort_by_unit_price_without_merging_npc_rows(self):
+    def test_formula_quotes_sort_by_unit_price_without_changing_material_price(self):
         self.lua.execute('''
           local raw,item=put(999018)
           item.offers[8]={npc_id=8,cost_copper=10,stock=-1,side='n',price_source='wowhead'}
-          local q=ns.ProfItemPrices.GetOffers(999018)
+          local q=ns.ProfItemPrices.GetFormulaOffers(999018)
           assert(#q==2 and q[1].npcID==8 and q[1].unit==2 and q[2].npcID==7)
           assert(raw.cost_copper==21 and item.offers[8].cost_copper==10)
+          local material=ns.ProfItemPrices.GetOffers(999018)
+          assert(#material==1 and material[1].npcID==nil and material[1].unit==21/5)
         ''')
 
 

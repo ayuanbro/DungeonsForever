@@ -99,7 +99,7 @@ local function AHPrice(id)
 end
 
 local function VendorPrice(id)
-    -- 缺失的 NPC 采购价保持未知；拍卖行价格和卖店收益均不能替代。
+    -- 材料只读物品购买价及组数；缺价不拿拍卖价或卖店收益冒充。
     if ns.ProfItemPrices then
         local ok, p = pcall(ns.ProfItemPrices.GetPrice, id)
         if ok and type(p) == "number" and p >= 0 then return p end
@@ -1496,13 +1496,27 @@ do
             if not j.opts.snapshot then updateSearchState(j.slug,res) end
             for _,fn in ipairs(watchers) do pcall(fn,j.slug,res) end
         end
+        local function releaseJob(j)
+            -- A queued callback may outlive replacement/completion. Drop its
+            -- suspended coroutine now so its frontier and input snapshot can be
+            -- collected even before the idle queue reaches that callback.
+            for k in pairs(j) do j[k]=nil end
+            j.invalid=true; j.finished=true; j.scheduled=false
+        end
         local function schedule(j)
             if j.scheduled then return end; j.scheduled=true
             local function step()
                 if j.invalid then j.scheduled=false; return true end
                 local before=j.result; local done=S.Run(j,2)
                 if j.result and (j.result~=j.published or j.result~=before) then publish(j,j.result) end
-                if done then j.scheduled=false; return true end
+                if done then
+                    j.scheduled=false
+                    if j.finished or j.status=="error" or coroutine.status(j.co)=="dead" then
+                        if slots[j.key]==j then slots[j.key]=nil end
+                        releaseJob(j)
+                    end
+                    return true
+                end
                 return false
             end
             j.pump=step
@@ -1521,7 +1535,8 @@ do
             return not result.targetUnlearned
         end
         local function incompatibility(result,opts)
-            return RA.SpecializationPlanChanged(result,opts.profession,opts) and "specializationChanged" or "pairingChanged"
+            if RA.SpecializationPlanChanged(result,opts.profession,opts) then return "specializationChanged" end
+            return (opts.allowSecondaryLeveling or result.secondaryProfession) and "pairingChanged" or "professionChanged"
         end
         local function sameRouteKind(result,opts)
             return (result.scheme=="fishing")== (opts.scheme=="fishing")
@@ -1532,9 +1547,10 @@ do
             local char=E.CharacterKey()
             for key,j in pairs(slots) do
                 if j.slug==slug and j.char==char and (opts.partnerRequired or not compatible(j.published or {},opts)) then
-                    j.invalid=true; slots[key]=nil
+                    slots[key]=nil
                     if results[key] and results[key].status=="searching" then results[key]=nil end
                     if active[j.scope]==key then active[j.scope]=nil end
+                    releaseJob(j)
                 end
             end
             local view={planVersion=2,scheme=opts.scheme,status=status,start=opts.start or 1,target=opts.target,
@@ -1707,7 +1723,7 @@ do
             end
             local key,scope,savedKey,_,char=identities(slug,opts)
             oldInvalidate()
-            for k,j in pairs(slots) do if j.slug==slug and j.char==char then j.invalid=true; slots[k]=nil end end
+            for k,j in pairs(slots) do if j.slug==slug and j.char==char then slots[k]=nil; releaseJob(j) end end
             for k in pairs(results) do
                 if k:sub(1,#(char.."|"..slug.."|"))==char.."|"..slug.."|" then results[k]=nil end
             end

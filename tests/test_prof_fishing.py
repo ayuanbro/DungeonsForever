@@ -225,15 +225,48 @@ class FishingCookingTests(unittest.TestCase):
           end
         ''')
 
-    def test_actual_item_base_spice_price_without_npc_offer_cannot_fund_fishing(self):
+    def test_actual_item_base_spice_price_funds_fishing_without_npc_offer(self):
         self.lua.execute('''
-          local item=ns.ProfItems[2678]
+          -- Ordinary materials deliberately need only the item bundle price.
+          local item={}
+          for key,value in pairs(ns.ProfItems[2678])do item[key]=value end
+          item.offers={};item.cost_copper=10;item.price_source='client'
+          ns.ProfItems[2678]=item
           assert(item.cost_copper==10 and next(item.offers)==nil)
           local offers=ns.ProfItemPrices.GetOffers(2678)
-          assert(#offers==0,'an item base price invented a merchant quotation')
+          assert(#offers==1 and offers[1].npcID==nil and offers[1].price==10)
           local recipe=fishRecipe(7751,{{6291,1},{2678,1}})
           local r=fishSolve(fishSnapshot({recipe},{[2678]=1},{[2678]=offers}),1,4)
-          assert(not r.targetReached and #r.steps==0 and #r.mats==0 and r.total==0)
+          assert(r.targetReached and #r.steps==1 and #r.mats==1 and r.total==10)
+          assert(r.mats[1].count==5 and r.mats[1].npcID==nil)
+          item.cost_copper=nil
+          offers=ns.ProfItemPrices.GetOffers(2678)
+          r=fishSolve(fishSnapshot({recipe},{[2678]=1},{[2678]=offers}),1,4)
+          assert(#offers==0 and not r.targetReached and #r.mats==0 and r.total==0,
+            'missing item base price was replaced with an auction or NPC price')
+        ''')
+
+    def test_actual_spice_item_price_ignores_npc_access_and_faction(self):
+        self.lua.execute('''
+          local recipe=fishRecipe(7751,{{6291,2},{2678,3}})
+          local item=ns.ProfItems[2678]
+          assert(item.cost_copper==10 and item.VendorStackCount==5 and item.price_source=='client')
+          for _,faction in ipairs({'A','H'})do
+            local offers=ns.ProfItemPrices.GetOffers(2678,{faction=faction})
+            assert(#offers==1 and offers[1].npcID==nil,'anonymous material quote missing for '..faction)
+            local snapshot=fishSnapshot({recipe},{[2678]=999},{[2678]=offers})
+            snapshot.faction=faction
+            local r=fishSolve(snapshot,1,4)
+            assert(r.targetReached and r.feasible and fishCount(r,6291)==6)
+            assert(#r.mats==1 and r.mats[1].id==2678 and r.mats[1].count==10)
+            assert(r.matTotal==20 and r.vendorTotal==20 and r.total==20 and r.ahTotal==0)
+            assertFishingSources(r)
+            local denied={}
+            for npc in pairs(item.offers or {})do denied[npc]=false end
+            local unrestricted=ns.ProfItemPrices.GetOffers(2678,{faction=faction,npcAccess=denied})
+            assert(#unrestricted==1 and unrestricted[1].price==10 and unrestricted[1].npcID==nil,
+              'NPC access gated an ordinary material item price')
+          end
         ''')
 
     def test_client_material_override_to_meat_is_rejected_even_with_price(self):

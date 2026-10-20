@@ -70,6 +70,10 @@ class SchemeUITests(unittest.TestCase):
         ):
             a = source.index(start)
             self.lua.execute(source[a:source.index(end, a + len(start))])
+        # Use the production UTF-8/inline-icon width model for the status card.
+        hui=(fixture.ROOT/'Core/Hui.lua').read_text(encoding='utf-8-sig')
+        self.lua.execute(hui[:hui.index('ns.hui.CharStep = HCharStep')], 'Test', self.lua.globals().ns)
+        self.lua.execute('PD.Fit=ns.hui.Fit')
 
     def test_repeated_clicks_redraw_selected_scheme_without_replacing_cached_route(self):
         self.lua.execute('''
@@ -102,7 +106,8 @@ class SchemeUITests(unittest.TestCase):
           assert(PD.lvTiles.cost.val.text=='321')
           assert(PD.lvTiles.cost.val.color[1]==C_GREY[1])
           assert(hasLine(PD.lvTiles.cost.lines,optimisticText))
-          assert(PD.lvTiles.snap.val.text=='乐观计数 · 不依赖价格插件')
+          assert(hasLine(PD.lvTiles.snap.lines,'乐观计数 · 不依赖价格插件'))
+          assert(ns.hui.TextW(PD.lvTiles.snap.val.text,14)<=PD.lvTiles.snap:GetWidth()-20)
           assert(hasLine(PD.lvTiles.scheme.lines,pendingText),
             'legacy cached route does not explain that the new selection needs recalculation')
           assert(PD.lvSummary.scheme=='optim' and PD.lvSummary.total==321)
@@ -141,6 +146,25 @@ class SchemeUITests(unittest.TestCase):
           PD.CycleRouteScheme()
           assert(config.autoScheme=='crafts' and config.cookingRoute=='fishing')
           assert(invalidates==0 and renders==0 and sounds==0)
+        ''')
+
+    def test_long_status_fits_final_card_width_and_tooltip_keeps_full_explanation(self):
+        self.lua.execute('''
+          for _,width in ipairs({900,760,540})do
+            for _,text in ipairs({'已完成本轮计算，当前结果尚未证明最优。',
+              'This calculation is complete; the current route is not proven optimal.',
+              '本輪計算已完成，目前結果尚未證明為最優。'})do
+              PD.RIGHT_W=width
+              PD.PlanStatusText=function()return text end
+              PD.lvSummary={auto=true,autoSetting=true,ahOK=true,scheme='cheapest',
+                total=50,priced=true,target=225,planVersion=2,status='complete',budgetLimited=true}
+              PD.PaintLvTiles()
+              local tile=PD.lvTiles.snap
+              assert(ns.hui.TextW(tile.val.text,14)<=tile:GetWidth()-20,
+                'status sentence escaped the optimization card')
+              assert(hasLine(tile.lines,text),'full status explanation lost from tooltip')
+            end
+          end
         ''')
 
 

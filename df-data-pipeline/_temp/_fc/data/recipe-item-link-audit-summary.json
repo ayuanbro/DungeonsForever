@@ -154,6 +154,7 @@
       251426
     ],
     "source": {
+      "checkedAt": "2026-10-20T18:55:03.447634Z",
       "fetchedAt": "2026-10-20T15:31:24.863603+00:00",
       "headers": {
         "Access-Control-Allow-Headers": "content-type, accept, mcp-session-id, mcp-protocol-version",
@@ -235,18 +236,18 @@
     },
     {
       "path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\cache\\specializations\\wuxianwow\\source.json",
-      "sha256": "727aa93808b5e4cfd865c11b71f0a225d13c4b2317d307eedea9f878485335da"
+      "sha256": "b587bdac94fe3007158b18893e184c7e5c62b8ff573d2f21323f256961dfdcd8"
     },
     {
-      "path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\scripts\\export_buyprice\\output\\item.csv",
+      "path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\inputs\\client\\item.csv",
       "sha256": "e3d96deb190e6d7807f690ae71c6f67ab0ea35044cec402a0cb5ccb990e1868a"
     },
     {
-      "path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\scripts\\export_buyprice\\output\\item-buy-prices.csv",
+      "path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\inputs\\client\\item-buy-prices.csv",
       "sha256": "b489082f3bab36c4dc0c87dc24b5eaf78097ce29802d38df829d24e8fa8062dd"
     },
     {
-      "path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\scripts\\export_buyprice\\output\\recipe-item-specializations.csv",
+      "path": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\df-data-pipeline\\_temp\\_fc\\inputs\\client\\recipe-item-specializations.csv",
       "sha256": "54bc36be2d32511c9111d8e1e6307fff333ad5b115debcf53c8c2f87f1cdec77"
     }
   ],

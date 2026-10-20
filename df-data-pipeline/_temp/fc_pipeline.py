@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 import fc_pipeline_common as common
 from fc_pipeline_paths import CSV_INPUTS
@@ -591,8 +592,20 @@ def retain_preview(destination, outputs, expected, report):
             target.write_bytes(content)
             manifest['files'][relative.as_posix()] = {'sha256': common.sha(content), 'bytes': len(content)}
         (stage / 'preview-manifest.json').write_bytes(common.json_bytes(manifest))
-        common.ensure_unchanged(expected)
-        stage.rename(destination)
+        # Windows scanners may briefly retain a handle after validating a large
+        # staged Lua tree. Retry only this final rename, without publishing a
+        # partial preview or replacing a destination created by another writer.
+        for attempt in range(5):
+            common.ensure_unchanged(expected)
+            if destination.exists():
+                raise common.PipelineError('preview directory already exists: %s' % destination)
+            try:
+                stage.rename(destination)
+                break
+            except PermissionError:
+                if os.name != 'nt' or attempt == 4:
+                    raise
+                time.sleep(.025 * (attempt + 1))
     report['previewDirectory'] = destination.relative_to(REPO).as_posix()
 
 

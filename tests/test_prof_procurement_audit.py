@@ -61,14 +61,15 @@ function auditReceipt(result)
         assert(type(m.cost)=='number' and m.cost>=0 and not m.unpriced)
         if m.source=='vendor' or m.vendor then
             local item=assert(ns.ProfItems[id],'NPC receipt has no new item data')
-            local raw=assert(item.offers[m.npcID],'NPC receipt has no matching new supplier')
-            assert(raw.stock==-1 and raw.cost_copper~=nil)
+            assert(m.npcID==nil,'ordinary material purchase acquired a supplier identity')
+            assert(item.cost_copper~=nil,'material receipt has no item-level purchase price')
             for _,key in ipairs({'currency_kind','currency_id','currency_amount'})do
-                assert(not auditNonempty(raw[key]),'exchange was priced as gold')
+                assert(not auditNonempty(item[key]),'exchange was priced as gold')
             end
             local packs=count/item.VendorStackCount
-            assert(packs==math.floor(packs) and m.cost==packs*raw.cost_copper)
-            assert(m.quoteSource==raw.price_source)
+            assert(packs==math.floor(packs) and m.cost==packs*item.cost_copper)
+            assert(m.bundleSize==item.VendorStackCount and m.unit==item.cost_copper/item.VendorStackCount)
+            assert(m.quoteSource==(item.price_source or 'Data_ProfItems'))
             vendor=vendor+m.cost
         else
             assert(m.source=='ah' and m.cost==auditPrice(id)*count,'AH receipt is not an actual AH purchase')
@@ -159,7 +160,7 @@ class ProfessionProcurementAudit(unittest.TestCase):
                     with self.subTest(locale=locale, profession=slug, scheme=scheme):
                         lua.globals().auditSmallRoute(slug, recipe, scheme)
 
-    def test_all_real_npc_rows_are_filtered_against_their_new_table_in_all_locales(self):
+    def test_real_material_quotes_use_item_price_while_formula_quotes_keep_npc_rules(self):
         for locale in ("zhCN", "zhTW", "enUS"):
             with self.subTest(locale=locale):
                 lua = actual_runtime(locale)
@@ -170,15 +171,11 @@ class ProfessionProcurementAudit(unittest.TestCase):
                     for _,faction in ipairs({'A','H'})do
                       local context={faction=faction}
                       for _,q in ipairs(ns.ProfItemPrices.GetOffers(id,context))do
-                        local raw=assert(item.offers[q.npcID])
-                        assert(q.price==raw.cost_copper and q.quantity==item.VendorStackCount and raw.stock==-1)
-                        assert(q.source==raw.price_source and q.verifiedAt==nil)
-                        assert(not auditNonempty(raw.currency_kind) and not auditNonempty(raw.currency_id)
-                          and not auditNonempty(raw.currency_amount))
-                        if auditNonempty(raw.side)then
-                          local side=raw.side:lower()
-                          assert(side=='n' or side=='neutral' or side==faction:lower())
-                        end
+                        assert(q.npcID==nil and q.name==nil and q.areaID==nil and q.stockStatus==nil)
+                        assert(q.materialPrice and q.price==item.cost_copper and q.quantity==item.VendorStackCount)
+                        assert(q.source==(item.price_source or 'Data_ProfItems') and q.verifiedAt==nil)
+                        assert(not auditNonempty(item.currency_kind) and not auditNonempty(item.currency_id)
+                          and not auditNonempty(item.currency_amount))
                         priced=priced+1
                       end
                       for _,q in ipairs(ns.ProfItemPrices.GetFormulaOffers(id,context))do
@@ -190,7 +187,6 @@ class ProfessionProcurementAudit(unittest.TestCase):
                       end
                     end
                     if not next(item.offers)then
-                      assert(#ns.ProfItemPrices.GetOffers(id)==0 and #ns.ProfItemPrices.GetSuppliers(id)==0)
                       assert(#ns.ProfItemPrices.GetFormulaOffers(id)==0,'root base price fabricated an NPC')
                     end
                   end

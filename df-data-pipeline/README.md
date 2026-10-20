@@ -4,7 +4,7 @@
 `df-prof-pipeline-v1.0` 已留档停用，不是默认输入或缓存来源。
 各脚本要读取的位置和文件见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)，旧专业包功能及249份原件的覆盖核对见 [LEGACY_PARITY.md](LEGACY_PARITY.md)。
 人工维护的记录、字段差异和新增项前后位置见 [MANUAL_MAINTENANCE.md](MANUAL_MAINTENANCE.md)。
-2026-10-21最新检查与安装包结果见 [CSV_CHECK_REPORT.md](CSV_CHECK_REPORT.md)：883项测试通过，70450候选批次已生成，正式数据未发布。
+2026-10-21已将70450数据发布到当前仓库，使用当前1.8.33代码及材料价格规则；发布验收与最新安装包见 [PUBLISH_70450.md](PUBLISH_70450.md)。此前仅检查的记录保留在 [CSV_CHECK_REPORT.md](CSV_CHECK_REPORT.md)。
 
 ## 使用
 
@@ -27,7 +27,7 @@ python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/
 ```powershell
 python -B df-data-pipeline/_temp/fc_update.py --check --offline `
   --stage-dir .pipeline-runtime/review/validated-batch `
-  --package-zip dist/DungeonsForever-1.8.31-data-70450-preview.zip
+  --package-zip dist/DungeonsForever-1.8.33-data-70450-preview.zip
 ```
 
 两个目标都必须不存在。ZIP将本轮20份专业Lua覆盖进安装包，其余运行文件保持原字节；工具、报告及缓存不打包。`--stage-dir/--package-zip`不能与`--apply`合用，不改游戏安装目录。
@@ -58,9 +58,9 @@ python -B tests/run_tests.py
 
 ## 当前数据与维护输入
 
-旧原始规范JSON为70245，当前正式专业数据还包含70338的新增、修订与显式省略规则；本轮默认网页缓存已刷新至70450，检查时解析到暂存区，不提前覆盖正式规范JSON。`_temp/_fc/maintenance/professions.json` 将人工维护保存为稳定身份的原值/修订值/来源差异，涵盖配方、附魔、毒药与理解、阈值、来源、顺序及手工训练师/区域输入。日常生成不读取旧Lua回捞手工段。
+当前正式专业总表与规范JSON均为70450（网页资料日期2026-10-16），保留70338基线中的新增、修订与显式省略规则；旧70245输入另在版本化冻结模型中保留，用于精确旧批次重放。`_temp/_fc/maintenance/professions.json` 将维护差异保存为稳定身份的原值/修订值/来源，涵盖配方、附魔、毒药与理解、阈值、来源、顺序及手工训练师/区域输入。日常生成不读取旧Lua回捞手工段。
 
-2026-10-21新增revision2接通最新网页70450（站点日期2026-10-16），10项维护冲突经逐项rebase处理；revision1只对精确旧输入使用归档词表继续复现70338。64项已被上游追平的人工字段仍保留第三值守卫。炼金配方1251750/250952按用户确认跟随上游删除，授权记录精确限定；其余人工增补、阈值、来源、省略及相对顺序保留，计数按实际记录重算。版本化源文件与审计在 `_fc/maintenance/source/rebase-2-70450/`。本轮检查/ZIP不等于正式目录已发布。
+2026-10-21新增revision2接通最新网页70450（站点日期2026-10-16），10项维护冲突经逐项rebase处理；revision1只对精确旧输入使用归档词表继续复现70338。64项已被上游追平的人工字段仍保留第三值守卫。炼金配方1251750/250952按用户确认跟随上游删除，授权记录精确限定；其余人工增补、阈值、来源、省略及相对顺序保留，计数按实际记录重算。版本化源文件与审计在 `_fc/maintenance/source/rebase-2-70450/`。用户确认发布后，已通过统一入口离线事务写入正式目录。
 
 `locales.json` 保存专业人工译文、原文哈希和历史源文版本。附魔以原始名称识别，BIS按职业/专精识别，避免名单移位套错译文。本轮补齐2项新增缺译、审订7处源文的14份英繁译文；既有29项缺译仍单独报告。其他原文变化继续阻止生成，已有记录缺失也会阻止发布，唯一例外是维护文件记录的精确用户批准删除。
 

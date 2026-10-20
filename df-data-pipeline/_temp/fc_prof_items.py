@@ -177,8 +177,9 @@ def merge_rows(vendor_fields, vendors, prices, verified_at=''):
         row['item_id'], row['npc_id'] = str(item), str(npc)
         result.append(complete(row, price_map.get(item), True))
     for item, price in sorted(price_map.items()):
-        if item in found:
-            continue
+        # Keep the independent client base quote even when vendor rows carry
+        # reputation discounts, barter costs or limited recipe stock. This root
+        # row makes the fixed 19-column CSV sufficient for exact reconstruction.
         row = dict.fromkeys(fields, '')
         row['item_id'] = str(item)
         result.append(complete(row, price, False))
@@ -187,6 +188,7 @@ def merge_rows(vendor_fields, vendors, prices, verified_at=''):
              and any(clean(row[field]) for field in COST_FIELDS[2:])]
     return CSV_FIELDS, result, {'vendorRows': len(vendors), 'clientItems': len(price_map),
                                'filledPrices': filled, 'appendedItems': len(price_map.keys() - found),
+                               'clientPriceRows': len(price_map),
                                'csvRows': len(result), 'mixedCostRows': len(mixed),
                                'mixedCostItems': len({row['item_id'] for row in mixed})}
 
@@ -259,8 +261,8 @@ def build_items(rows, metadata):
         if npc is not None:
             items[item]['offers'][npc] = offer
         else:
-            # A client-only row still has a price, but does not identify a seller.
-            # Keep it on the item rather than inventing an NPC or a base price.
+            # The independent client base quote belongs to the item. NPC recipe
+            # quotations retain their own costs, currency and stock in offers.
             items[item].update(offer)
     metadata = dict(metadata, schemaVersion=2, csvFields=list(CSV_FIELDS))
     lines = ['local _, ns = ...', '', 'ns.ProfItemsMeta = ' + lua(metadata), '', 'ns.ProfItems = {']

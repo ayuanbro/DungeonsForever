@@ -17,6 +17,7 @@ class FormulaUITests(unittest.TestCase):
         self.lua.execute('''
           D={pro={alchemy={name='Alchemy'}}};PD.COL_LW=400;PD.ROW_H=34;PD.ROW_H1=22
           PD.Fit=function(s)return s end;PD.StepName=function(s)return 'Spell'..s[3]end
+          PD.TextW=function(s,fs)return #s*fs end
           PD.DropEntries=function()return{}end;PD.DropLines=function()return{}end
           PD.VendorLines=function()return{}end
           PD.HideVendorPick=function()end
@@ -87,6 +88,133 @@ class FormulaUITests(unittest.TestCase):
             if r.text=='任务：Quest · 暂无坐标' then quest=true;assert(not r.act)end
           end
           assert(unknown and quest)
+        ''')
+
+    def test_drop_summary_is_only_shown_once_and_retains_source_tooltip(self):
+        source=(ROOT/'Core/ProfessionUI.lua').read_text(encoding='utf-8-sig')
+        begin=source.index('function PD.SourceParts(')
+        self.lua.execute(source[begin:source.index('function PD.SourceText(',begin)])
+        self.lua.execute('''
+          PD.DropLines=function()return{{'Caretaker Weston · 30%'}}end
+          local rows={};PD.RowsFormulaShop(rows,{formulas={{id=99,spell=101,profession='alchemy',
+            source='ah',cost=20,ahPrice=20,sources={skill=190,drops={{id=1},{id=2},{id=3}}}}}})
+          local drops,skills=0,0
+          for _,row in ipairs(rows)do
+            if row.text and row.text:find('掉落 3 处',1,true)then
+              drops=drops+1
+              assert(row.text=='掉落 3 处 · 暂无坐标')
+              assert(row.lines[1][1]=='Caretaker Weston · 30%')
+            end
+            if row.text=='技能 190' then skills=skills+1 end
+          end
+          assert(drops==1 and skills==1,'shopping source rows duplicated or lost')
+        ''')
+
+    def test_limited_formula_has_visible_tag_even_when_bought_at_auction(self):
+        self.lua.execute('''
+          for _,selected in ipairs({'vendor','ah'})do
+            local rows={};PD.RowsFormulaShop(rows,{formulas={{id=99,spell=101,
+              profession='alchemy',cost=7,source=selected,limited=true,sources={}}}})
+            local found=false
+            for _,row in ipairs(rows)do if row.it then
+              assert(row.tag.text:find('限量刷新',1,true),'limited formula has no visible stock tag')
+              found=true
+            end end
+            assert(found)
+          end
+        ''')
+
+    def test_long_formula_name_keeps_limited_badge_and_quantity_inside_row(self):
+        hui=(ROOT/'Core/Hui.lua').read_text(encoding='utf-8-sig')
+        self.lua.execute(hui[:hui.index('ns.hui.CharStep = HCharStep')],'Test',self.lua.globals().ns)
+        self.lua.execute('''
+          PD.TextW=ns.hui.TextW;PD.Fit=ns.hui.Fit
+          DG.ItemName=function()return string.rep('A very long recipe name ',8)end
+          for _,labels in ipairs({{'NPC购买','限量刷新'},{'NPC purchase','Limited, restocking'}})do
+            L['NPC购买']=labels[1];L['限量刷新']=labels[2]
+            for _,width in ipairs({280,340,440})do
+              PD.splitLW=width
+              local rows={};PD.RowsFormulaShop(rows,{formulas={{id=99,spell=101,
+                profession='alchemy',cost=7,count=12,source='vendor',limited=true,sources={}}}})
+              for _,row in ipairs(rows)do if row.it then
+                local used=32+PD.TextW(row.text,13)+14+PD.TextW(row.tag.text,10)
+                  +8+PD.TextW(row.right,12)+6
+                assert(used<=width,'formula name overlaps limited badge or purchase quantity')
+                assert(row.right=='×12' and row.tag.text:find(labels[2],1,true))
+              end end
+            end
+          end
+        ''')
+
+    def test_partial_route_progress_remains_visible_after_search_finishes(self):
+        self.lua.execute('''
+          for _,status in ipairs({'complete','incomplete','infeasible'})do
+            local plan={planVersion=2,partial=true,start=151,target=225,plannedTo=152,
+              status='incomplete',searchState={status=status,budgetLimited=true}}
+            assert(PD.PlanStatusText(plan)=='已计算至 152；后续路线待补全',
+              'terminal optimization status hid incomplete saved route')
+            plan.searchState.status='searching'
+            assert(PD.PlanStatusText(plan)=='后台优化中')
+          end
+        ''')
+
+    def test_non_joint_legacy_plan_does_not_report_changed_partner(self):
+        self.lua.execute('''
+          local text=PD.PlanStatusText({status='recalculate_required',
+            diagnostics={{code='professionChanged'}}})
+          assert(text=='专业学习状态或旧路线规则已变化，请重新计算路线。')
+          assert(not text:find('搭配专业',1,true))
+        ''')
+
+    def test_budget_exhaustion_and_purchase_uncertainty_do_not_claim_missing_route_data(self):
+        self.lua.execute('''
+          for _,nested in ipairs({true,false})do
+            local plan={status='incomplete',targetReached=false,budgetLimited=true}
+            if nested then plan.searchState={status='incomplete',budgetLimited=true}end
+            assert(PD.PlanStatusText(plan)=='本轮计算已结束，尚未找到完整路线。')
+            plan.targetReached=true
+            assert(PD.PlanStatusText(plan)=='路线已到目标；采购资料尚未全部核实。')
+            plan.targetReached=false;plan.budgetLimited=false;plan.searchState=nil
+            assert(PD.PlanStatusText(plan)=='资料或价格不完整')
+          end
+        ''')
+
+    def test_saved_english_quote_uses_matching_localized_recipe_vendor_name(self):
+        self.lua.execute('''
+          local old={vendors={{id=7,name='Schema Seller'},{id=8,name='Untranslated Seller'}}}
+          local original={vendors={{id=7,name='配方商人'},{id=999,name='其他商人'}}}
+          local rows={};PD.RowsFormulaShop(rows,{formulas={{id=99,spell=101,profession='alchemy',
+            count=1,cost=7,source='vendor',unlimited=true,sources=old,recipe={source=original},
+            vendorOffers={{npcID=7,name='Schema Seller',price=7,quantity=1,unlimited=true}}}}})
+          local name=false
+          for _,row in ipairs(rows)do if row.it then
+            for _,line in ipairs(row.lines)do
+              if line[1]=='配方商人：7 · 固定售卖（不限量）' then name=true end
+              assert(not line[1]:find('Schema Seller',1,true))
+            end
+          end end
+          assert(name,'saved quote tooltip kept English despite matching localized NPC ID')
+          local display=PD.FormulaDisplaySource({sources=old,recipe={source=original}})
+          assert(#display.vendors==2 and display.vendors[1].name=='配方商人')
+          assert(display.vendors[2].name=='Untranslated Seller')
+          assert(old.vendors[1].name=='Schema Seller','display mutated frozen source data')
+        ''')
+
+    def test_untranslated_vendor_uses_npc_number_and_preserves_original_name_in_tooltip(self):
+        self.lua.execute('''
+          GetLocale=function()return 'zhCN' end
+          local rows={};PD.RowsFormulaShop(rows,{formulas={{id=99,spell=101,profession='alchemy',
+            count=1,cost=7,source='vendor',unlimited=true,
+            sources={vendors={{id=7,name='No verified locale name'}}},
+            vendorOffers={{npcID=7,name='No verified locale name',price=7,quantity=1,unlimited=true}}}}})
+          local compact,canonical=false,false
+          for _,row in ipairs(rows)do if row.it then
+            for _,line in ipairs(row.lines)do
+              if line[1]=='商人 NPC #7：7 · 固定售卖（不限量）' then compact=true end
+              if line[1]=='原文名称：No verified locale name' then canonical=true end
+            end
+          end end
+          assert(compact and canonical,'unverified translation was invented or original name was lost')
         ''')
 
     def test_formula_import_only_contains_selected_auction_purchases(self):
