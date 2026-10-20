@@ -1112,6 +1112,8 @@ def main():
                 print('      %s' % s[:100])
             if len(loc.missed) > 20:
                 print('      … 共 %d 条' % len(loc.missed))
+    if not args.dry_run:
+        _strip_comments_after_gen()
     return 0
 
 
@@ -1148,6 +1150,4 @@ def _strip_comments_after_gen():
 
 
 if __name__ == '__main__':
-    _rc = main()
-    _strip_comments_after_gen()
-    sys.exit(_rc)
+    sys.exit(main())

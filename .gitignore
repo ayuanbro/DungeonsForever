@@ -11,10 +11,6 @@ venv/
 # Data pipeline: retain scripts and canonical inputs; ignore fetched/generated copies.
 /df-prof-pipeline-v1.0/_temp/_fc/cache/
 /df-prof-pipeline-v1.0/_temp/_fc/reports/
-/df-prof-pipeline-v1.0/_temp/_fc/i18n/batch_*.txt
-/df-prof-pipeline-v1.0/_temp/_fc/i18n/zh_*.txt
-/df-prof-pipeline-v1.0/_temp/_fc/i18n/todo.json
-/df-prof-pipeline-v1.0/Core/Data/
 
 # Full data pipeline: retain scripts, manual inputs and baseline data snapshots.
 /df-data-pipeline/_temp/_fc/cache*/
