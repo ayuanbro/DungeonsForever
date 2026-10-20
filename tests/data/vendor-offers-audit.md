@@ -6,7 +6,7 @@
 
 `Core/ProfItemPrices.lua` 只从正式插件的 `Core/Data/Data_ProfItems.lua` 读取 schema 2 数据：物品根保存 `VendorStackCount` 等公共字段，`offers[npc_id]` 保存显式 NPC 记录和 `cost_copper`。金额来源按 `price_source` 保留 `client/wowhead`；不添加价格核验日期或沿用旧货架的认证字段。
 
-生成流程在 `df-prof-pipeline-v1.0/_temp/fc_prof_items.py`：合并商人、NPC 和客户端价格三表，生成固定 19 列 `DataProfItems.csv`，再用同一份序列化 CSV 内容生成 Lua。`--from-csv` 可只重建物品 Lua。工具包内输出和正式插件数据是独立目录；所有修改限于 Downloads Git checkout，不部署到游戏安装目录。
+生成流程在 `df-data-pipeline/_temp/fc_prof_items.py`：合并商人、NPC 和客户端价格三表，生成固定 19 列 `DataProfItems.csv`，再用同一份序列化 CSV 内容生成 Lua。`--from-csv` 可只重建物品 Lua。独立生成器默认工具样例输出，统一入口将六专业三语、物品与专精同批发布到正式目录；所有修改限于 Downloads Git checkout，不部署到游戏安装目录。
 
 旧 `Data_ProfVendorOffers.lua`、`Data_ProfFormulaSources.lua` 和钓鱼文件末尾的旧货架已经删除。运行时不读取旧 catalog、商人事件、玩家历史买价或 Auctionator 商人缓存。
 

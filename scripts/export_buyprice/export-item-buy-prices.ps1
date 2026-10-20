@@ -10,7 +10,7 @@ quotes or evidence that a vendor sells an item. No Python dependency is needed.
 #>
 [CmdletBinding()]
 param(
-    [string]$ToolDirectory = 'C:\Users\yewei\Downloads\Release-win-x64',
+    [string]$ToolDirectory = '',
     [string]$BaseUrl = 'http://127.0.0.1:5000',
     [string]$OutputPath = 'output\item-buy-prices.csv',
     [string]$ItemOutputPath = 'output\item.csv',
@@ -21,6 +21,7 @@ param(
 )
 
 $script:ItemPriceScriptDirectory = $PSScriptRoot
+$script:ItemPriceRepositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $script:ItemPriceRunLog = $null
 
 function Write-ItemPriceLog {
@@ -40,6 +41,17 @@ function Resolve-ItemPricePath {
         $Path = Join-Path $script:ItemPriceScriptDirectory $Path
     }
     return [IO.Path]::GetFullPath($Path)
+}
+
+function Assert-WtlRepositoryPath {
+    param([string]$Path)
+    $root = (Get-WtlOutputIdentity $script:ItemPriceRepositoryRoot).Path.TrimEnd([char[]]@('\', '/'))
+    $resolved = (Get-WtlOutputIdentity $Path).Path
+    if (-not [string]::Equals($resolved, $root, [StringComparison]::OrdinalIgnoreCase) -and
+        -not $resolved.StartsWith($root + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        throw ('Path must stay inside the current repository: {0}' -f $resolved)
+    }
+    return $resolved
 }
 
 # The final path resolves directory junctions as well as lexical aliases. File
@@ -651,7 +663,7 @@ function Publish-WtlCsvPair {
 function Invoke-ItemBuyPriceExport {
     [CmdletBinding()]
     param(
-        [string]$ToolDirectory = 'C:\Users\yewei\Downloads\Release-win-x64',
+        [string]$ToolDirectory = '',
         [string]$BaseUrl = 'http://127.0.0.1:5000',
         [string]$OutputPath = 'output\item-buy-prices.csv',
         [string]$ItemOutputPath = 'output\item.csv',
@@ -662,6 +674,9 @@ function Invoke-ItemBuyPriceExport {
     )
     Set-StrictMode -Version 2
     $ErrorActionPreference = 'Stop'
+    if ([string]::IsNullOrWhiteSpace($ToolDirectory)) {
+        $ToolDirectory = Join-Path $script:ItemPriceRepositoryRoot '.pipeline-runtime\wow.tools.local'
+    }
     $toolPath = Resolve-ItemPricePath $ToolDirectory
     if ($toolPath.Length -gt [IO.Path]::GetPathRoot($toolPath).Length) {
         $toolPath = $toolPath.TrimEnd([char[]]@('\', '/'))
@@ -669,6 +684,17 @@ function Invoke-ItemBuyPriceExport {
     $outputFile = Resolve-ItemPricePath $OutputPath
     $itemOutputFile = Resolve-ItemPricePath $ItemOutputPath
     $recipeOutputFile = Resolve-ItemPricePath $RecipeItemOutputPath
+    $null = Assert-WtlRepositoryPath $toolPath
+    foreach ($candidate in @($outputFile, $itemOutputFile, $recipeOutputFile,
+                            (Join-Path $toolPath 'cache'), (Join-Path $toolPath 'caches'))) {
+        $null = Assert-WtlRepositoryPath $candidate
+    }
+    if ($LearningSnapshotPath -ne '') {
+        $null = Assert-WtlRepositoryPath (Resolve-ItemPricePath $LearningSnapshotPath)
+    }
+    foreach ($entry in @(Get-ChildItem -LiteralPath $toolPath -Force -Recurse -ErrorAction Stop)) {
+        $null = Assert-WtlRepositoryPath $entry.FullName
+    }
     $executable = Join-Path $toolPath 'wow.tools.local.exe'
     if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw ('Cannot find {0}' -f $executable) }
     if ([IO.Path]::GetExtension($outputFile) -ne '.csv') { throw 'OutputPath must end in .csv.' }

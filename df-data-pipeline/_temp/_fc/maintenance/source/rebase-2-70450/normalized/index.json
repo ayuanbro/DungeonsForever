@@ -1,0 +1,4618 @@
+{
+  "build": "1.60.1.70450",
+  "gathering": {
+    "fishing": [
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Dun Morogh"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Durotar"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Elwynn Forest"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Mulgore"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Teldrassil"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Tirisfal Glades"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Blackfathom Deeps"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Darkshore"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Darnassus"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Ironforge"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Loch Modan"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Orgrimmar"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Silverpine Forest"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Stormwind City"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "The Barrens"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "The Deadmines"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Thunder Bluff"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Undercity"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Wailing Caverns"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Westfall"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Ashenvale"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Duskwood"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Hillsbrad Foothills"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Redridge Mountains"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Stonetalon Mountains"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Wetlands"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Alterac Mountains"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Arathi Highlands"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Desolace"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Dustwallow Marsh"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Scarlet Monastery"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Stranglethorn Vale"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Swamp of Sorrows"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Thousand Needles"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Azshara"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Felwood"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Feralas"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Jaguero Isle"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Maraudon"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Moonglade"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Sunken Temple"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Tanaris"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "The Hinterlands"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Un'Goro Crater"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Western Plaguelands"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Bay of Storms"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Burning Steppes"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Deadwind Pass"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Eastern Plaguelands"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Hetaera's Clutch"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Jademir Lake"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Scalebeard's Cave"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Scholomance"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Silithus"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Stratholme"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Winterspring"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Zul'Gurub"
+      }
+    ],
+    "herbalism": [
+      {
+        "items": [
+          2447
+        ],
+        "skill": 1,
+        "zones": [
+          [
+            "The Barrens",
+            99
+          ],
+          [
+            "Durotar",
+            67
+          ],
+          [
+            "Mulgore",
+            62
+          ],
+          [
+            "Tirisfal Glades",
+            62
+          ],
+          [
+            "Dun Morogh",
+            54
+          ],
+          [
+            "Elwynn Forest",
+            47
+          ]
+        ]
+      },
+      {
+        "items": [
+          765,
+          5056
+        ],
+        "skill": 1,
+        "zones": [
+          [
+            "Durotar",
+            167
+          ],
+          [
+            "The Barrens",
+            118
+          ],
+          [
+            "Mulgore",
+            85
+          ],
+          [
+            "Loch Modan",
+            83
+          ],
+          [
+            "Elwynn Forest",
+            82
+          ],
+          [
+            "Tirisfal Glades",
+            73
+          ]
+        ]
+      },
+      {
+        "items": [
+          2449,
+          5056
+        ],
+        "skill": 15,
+        "zones": [
+          [
+            "The Barrens",
+            163
+          ],
+          [
+            "Durotar",
+            43
+          ],
+          [
+            "Tirisfal Glades",
+            40
+          ],
+          [
+            "Dun Morogh",
+            39
+          ],
+          [
+            "Elwynn Forest",
+            37
+          ],
+          [
+            "Redridge Mountains",
+            33
+          ]
+        ]
+      },
+      {
+        "items": [
+          785,
+          5056,
+          2452
+        ],
+        "skill": 50,
+        "zones": [
+          [
+            "The Barrens",
+            261
+          ],
+          [
+            "Ashenvale",
+            70
+          ],
+          [
+            "Darkshore",
+            64
+          ],
+          [
+            "Westfall",
+            55
+          ],
+          [
+            "Silverpine Forest",
+            38
+          ],
+          [
+            "Redridge Mountains",
+            31
+          ]
+        ]
+      },
+      {
+        "items": [
+          2450,
+          2452,
+          5056
+        ],
+        "skill": 70,
+        "zones": [
+          [
+            "The Barrens",
+            121
+          ],
+          [
+            "Duskwood",
+            106
+          ],
+          [
+            "Ashenvale",
+            70
+          ],
+          [
+            "Westfall",
+            59
+          ],
+          [
+            "Darkshore",
+            56
+          ],
+          [
+            "Wetlands",
+            39
+          ]
+        ]
+      },
+      {
+        "items": [
+          3820
+        ],
+        "skill": 85,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            89
+          ],
+          [
+            "Wetlands",
+            79
+          ],
+          [
+            "Ashenvale",
+            76
+          ],
+          [
+            "Darkshore",
+            58
+          ],
+          [
+            "The Barrens",
+            55
+          ],
+          [
+            "Hillsbrad Foothills",
+            48
+          ]
+        ]
+      },
+      {
+        "items": [
+          2453
+        ],
+        "skill": 100,
+        "zones": [
+          [
+            "Stonetalon Mountains",
+            138
+          ],
+          [
+            "The Barrens",
+            123
+          ],
+          [
+            "Hillsbrad Foothills",
+            109
+          ],
+          [
+            "Wetlands",
+            107
+          ],
+          [
+            "Ashenvale",
+            105
+          ],
+          [
+            "Redridge Mountains",
+            104
+          ]
+        ]
+      },
+      {
+        "items": [
+          3355
+        ],
+        "skill": 115,
+        "zones": [
+          [
+            "Arathi Highlands",
+            139
+          ],
+          [
+            "Stonetalon Mountains",
+            96
+          ],
+          [
+            "Stranglethorn Vale",
+            53
+          ],
+          [
+            "Wetlands",
+            49
+          ],
+          [
+            "Thousand Needles",
+            42
+          ],
+          [
+            "The Barrens",
+            34
+          ]
+        ]
+      },
+      {
+        "items": [
+          3369
+        ],
+        "skill": 120,
+        "zones": [
+          [
+            "Duskwood",
+            41
+          ],
+          [
+            "Desolace",
+            23
+          ],
+          [
+            "Wetlands",
+            18
+          ],
+          [
+            "Arathi Highlands",
+            8
+          ],
+          [
+            "Alterac Mountains",
+            7
+          ],
+          [
+            "The Barrens",
+            4
+          ]
+        ]
+      },
+      {
+        "items": [
+          3356
+        ],
+        "skill": 125,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            67
+          ],
+          [
+            "Wetlands",
+            35
+          ],
+          [
+            "Ashenvale",
+            35
+          ],
+          [
+            "Hillsbrad Foothills",
+            33
+          ],
+          [
+            "The Barrens",
+            33
+          ],
+          [
+            "Duskwood",
+            31
+          ]
+        ]
+      },
+      {
+        "items": [
+          3357
+        ],
+        "skill": 150,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            64
+          ],
+          [
+            "Wetlands",
+            62
+          ],
+          [
+            "Arathi Highlands",
+            53
+          ],
+          [
+            "Alterac Mountains",
+            50
+          ],
+          [
+            "Feralas",
+            31
+          ],
+          [
+            "Dustwallow Marsh",
+            27
+          ]
+        ]
+      },
+      {
+        "items": [
+          3818
+        ],
+        "skill": 160,
+        "zones": [
+          [
+            "Arathi Highlands",
+            58
+          ],
+          [
+            "Swamp of Sorrows",
+            49
+          ],
+          [
+            "Alterac Mountains",
+            45
+          ],
+          [
+            "Stranglethorn Vale",
+            41
+          ],
+          [
+            "The Hinterlands",
+            30
+          ],
+          [
+            "Badlands",
+            26
+          ]
+        ]
+      },
+      {
+        "items": [
+          3821
+        ],
+        "skill": 170,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            205
+          ],
+          [
+            "Arathi Highlands",
+            132
+          ],
+          [
+            "Swamp of Sorrows",
+            98
+          ],
+          [
+            "Alterac Mountains",
+            82
+          ],
+          [
+            "The Hinterlands",
+            59
+          ],
+          [
+            "Feralas",
+            47
+          ]
+        ]
+      },
+      {
+        "items": [
+          3358
+        ],
+        "skill": 185,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            194
+          ],
+          [
+            "Arathi Highlands",
+            79
+          ],
+          [
+            "Swamp of Sorrows",
+            62
+          ],
+          [
+            "Alterac Mountains",
+            37
+          ],
+          [
+            "Feralas",
+            31
+          ],
+          [
+            "The Hinterlands",
+            29
+          ]
+        ]
+      },
+      {
+        "items": [
+          3819
+        ],
+        "skill": 195,
+        "zones": [
+          [
+            "Alterac Mountains",
+            34
+          ]
+        ]
+      },
+      {
+        "items": [
+          4625
+        ],
+        "skill": 205,
+        "zones": [
+          [
+            "Tanaris",
+            72
+          ],
+          [
+            "Searing Gorge",
+            62
+          ],
+          [
+            "Badlands",
+            21
+          ]
+        ]
+      },
+      {
+        "items": [
+          8831,
+          8153
+        ],
+        "skill": 210,
+        "zones": [
+          [
+            "Azshara",
+            128
+          ],
+          [
+            "The Hinterlands",
+            47
+          ],
+          [
+            "Tanaris",
+            44
+          ],
+          [
+            "Feralas",
+            32
+          ],
+          [
+            "Stranglethorn Vale",
+            25
+          ],
+          [
+            "Ashenvale",
+            15
+          ]
+        ]
+      },
+      {
+        "items": [
+          8836
+        ],
+        "skill": 220,
+        "zones": [
+          [
+            "Western Plaguelands",
+            65
+          ],
+          [
+            "Eastern Plaguelands",
+            37
+          ],
+          [
+            "Felwood",
+            27
+          ]
+        ]
+      },
+      {
+        "items": [
+          8838
+        ],
+        "skill": 230,
+        "zones": [
+          [
+            "Azshara",
+            98
+          ],
+          [
+            "The Hinterlands",
+            90
+          ],
+          [
+            "Feralas",
+            53
+          ],
+          [
+            "Eastern Plaguelands",
+            46
+          ],
+          [
+            "Un'Goro Crater",
+            26
+          ],
+          [
+            "Burning Steppes",
+            21
+          ]
+        ]
+      },
+      {
+        "items": [
+          8839
+        ],
+        "skill": 235,
+        "zones": [
+          [
+            "Swamp of Sorrows",
+            161
+          ],
+          [
+            "Un'Goro Crater",
+            16
+          ]
+        ]
+      },
+      {
+        "items": [
+          8845
+        ],
+        "skill": 245,
+        "zones": [
+          [
+            "The Hinterlands",
+            21
+          ],
+          [
+            "Desolace",
+            13
+          ]
+        ]
+      },
+      {
+        "items": [
+          8846
+        ],
+        "skill": 250,
+        "zones": [
+          [
+            "Felwood",
+            63
+          ],
+          [
+            "Desolace",
+            15
+          ]
+        ]
+      },
+      {
+        "items": [
+          13464
+        ],
+        "skill": 260,
+        "zones": [
+          [
+            "Un'Goro Crater",
+            99
+          ],
+          [
+            "Azshara",
+            95
+          ],
+          [
+            "Eastern Plaguelands",
+            52
+          ],
+          [
+            "Felwood",
+            34
+          ],
+          [
+            "The Hinterlands",
+            32
+          ],
+          [
+            "Burning Steppes",
+            30
+          ]
+        ]
+      },
+      {
+        "items": [
+          13463
+        ],
+        "skill": 270,
+        "zones": [
+          [
+            "Azshara",
+            132
+          ],
+          [
+            "Eastern Plaguelands",
+            96
+          ],
+          [
+            "Un'Goro Crater",
+            87
+          ],
+          [
+            "Felwood",
+            61
+          ],
+          [
+            "Burning Steppes",
+            57
+          ],
+          [
+            "Western Plaguelands",
+            40
+          ]
+        ]
+      },
+      {
+        "items": [
+          13465
+        ],
+        "skill": 280,
+        "zones": [
+          [
+            "Winterspring",
+            101
+          ],
+          [
+            "Un'Goro Crater",
+            71
+          ],
+          [
+            "Azshara",
+            57
+          ],
+          [
+            "Burning Steppes",
+            28
+          ],
+          [
+            "Eastern Plaguelands",
+            22
+          ],
+          [
+            "Western Plaguelands",
+            12
+          ]
+        ]
+      },
+      {
+        "items": [
+          13466
+        ],
+        "skill": 285,
+        "zones": [
+          [
+            "Eastern Plaguelands",
+            191
+          ],
+          [
+            "Western Plaguelands",
+            45
+          ]
+        ]
+      },
+      {
+        "items": [
+          13467
+        ],
+        "skill": 290,
+        "zones": [
+          [
+            "Winterspring",
+            182
+          ]
+        ]
+      },
+      {
+        "items": [
+          13468
+        ],
+        "skill": 300,
+        "zones": [
+          [
+            "Burning Steppes",
+            32
+          ],
+          [
+            "Winterspring",
+            24
+          ],
+          [
+            "Eastern Plaguelands",
+            20
+          ],
+          [
+            "Silithus",
+            16
+          ]
+        ]
+      }
+    ],
+    "mining": [
+      {
+        "items": [
+          2770,
+          2835,
+          2798
+        ],
+        "skill": 1,
+        "zones": [
+          [
+            "Durotar",
+            171
+          ],
+          [
+            "Westfall",
+            147
+          ],
+          [
+            "Duskwood",
+            118
+          ],
+          [
+            "Silverpine Forest",
+            118
+          ],
+          [
+            "Loch Modan",
+            116
+          ],
+          [
+            "Redridge Mountains",
+            110
+          ]
+        ]
+      },
+      {
+        "items": [
+          2771,
+          2836,
+          2798
+        ],
+        "skill": 65,
+        "zones": [
+          [
+            "Wetlands",
+            131
+          ],
+          [
+            "Duskwood",
+            118
+          ],
+          [
+            "Silverpine Forest",
+            118
+          ],
+          [
+            "Loch Modan",
+            116
+          ],
+          [
+            "Redridge Mountains",
+            110
+          ],
+          [
+            "Hillsbrad Foothills",
+            85
+          ]
+        ]
+      },
+      {
+        "items": [
+          2775
+        ],
+        "skill": 75,
+        "zones": [
+          [
+            "Arathi Highlands",
+            270
+          ],
+          [
+            "Alterac Mountains",
+            167
+          ],
+          [
+            "Stranglethorn Vale",
+            134
+          ],
+          [
+            "Wetlands",
+            132
+          ],
+          [
+            "Duskwood",
+            118
+          ],
+          [
+            "Silverpine Forest",
+            118
+          ]
+        ]
+      },
+      {
+        "items": [
+          2772,
+          2838
+        ],
+        "skill": 125,
+        "zones": [
+          [
+            "Arathi Highlands",
+            254
+          ],
+          [
+            "Alterac Mountains",
+            176
+          ],
+          [
+            "Stranglethorn Vale",
+            134
+          ],
+          [
+            "Duskwood",
+            118
+          ],
+          [
+            "Thousand Needles",
+            108
+          ],
+          [
+            "Desolace",
+            91
+          ]
+        ]
+      },
+      {
+        "items": [
+          2776
+        ],
+        "skill": 155,
+        "zones": [
+          [
+            "Arathi Highlands",
+            273
+          ],
+          [
+            "Alterac Mountains",
+            176
+          ],
+          [
+            "Stranglethorn Vale",
+            134
+          ],
+          [
+            "Duskwood",
+            118
+          ],
+          [
+            "The Hinterlands",
+            112
+          ],
+          [
+            "Badlands",
+            111
+          ]
+        ]
+      },
+      {
+        "items": [
+          3858,
+          7912
+        ],
+        "skill": 175,
+        "zones": [
+          [
+            "Badlands",
+            111
+          ],
+          [
+            "The Hinterlands",
+            108
+          ],
+          [
+            "Alterac Mountains",
+            96
+          ],
+          [
+            "Searing Gorge",
+            86
+          ],
+          [
+            "Tanaris",
+            54
+          ],
+          [
+            "Azshara",
+            39
+          ]
+        ]
+      },
+      {
+        "items": [
+          11370
+        ],
+        "skill": 230,
+        "zones": [
+          [
+            "Searing Gorge",
+            85
+          ]
+        ]
+      },
+      {
+        "items": [
+          7911
+        ],
+        "skill": 230,
+        "zones": [
+          [
+            "Badlands",
+            112
+          ],
+          [
+            "The Hinterlands",
+            108
+          ],
+          [
+            "Alterac Mountains",
+            96
+          ],
+          [
+            "Searing Gorge",
+            53
+          ],
+          [
+            "Tanaris",
+            23
+          ],
+          [
+            "Azshara",
+            14
+          ]
+        ]
+      },
+      {
+        "items": [
+          10620,
+          12365,
+          12363
+        ],
+        "skill": 245,
+        "zones": [
+          [
+            "Winterspring",
+            28
+          ],
+          [
+            "Swamp of Sorrows",
+            7
+          ],
+          [
+            "Blasted Lands",
+            5
+          ]
+        ]
+      },
+      {
+        "items": [
+          10620,
+          12365,
+          12363
+        ],
+        "skill": 275,
+        "zones": [
+          [
+            "Winterspring",
+            47
+          ],
+          [
+            "Azshara",
+            25
+          ]
+        ]
+      }
+    ],
+    "skinning": [
+      {
+        "items": [
+          2934,
+          2318,
+          783,
+          2592
+        ],
+        "levels": [
+          1,
+          10
+        ],
+        "zones": [
+          [
+            "Mulgore",
+            1003
+          ],
+          [
+            "Durotar",
+            776
+          ],
+          [
+            "Dun Morogh",
+            689
+          ],
+          [
+            "Elwynn Forest",
+            636
+          ],
+          [
+            "Tirisfal Glades",
+            603
+          ],
+          [
+            "Teldrassil",
+            259
+          ]
+        ]
+      },
+      {
+        "items": [
+          2318,
+          2934,
+          2319,
+          17057
+        ],
+        "levels": [
+          11,
+          20
+        ],
+        "zones": [
+          [
+            "The Barrens",
+            1548
+          ],
+          [
+            "Darkshore",
+            619
+          ],
+          [
+            "Silverpine Forest",
+            302
+          ],
+          [
+            "Loch Modan",
+            195
+          ],
+          [
+            "Ashenvale",
+            160
+          ],
+          [
+            "Westfall",
+            136
+          ]
+        ]
+      },
+      {
+        "items": [
+          2319,
+          2318,
+          4234,
+          4235
+        ],
+        "levels": [
+          21,
+          30
+        ],
+        "zones": [
+          [
+            "Wetlands",
+            398
+          ],
+          [
+            "Ashenvale",
+            386
+          ],
+          [
+            "Hillsbrad Foothills",
+            273
+          ],
+          [
+            "Thousand Needles",
+            246
+          ],
+          [
+            "Duskwood",
+            219
+          ],
+          [
+            "The Barrens",
+            143
+          ]
+        ]
+      },
+      {
+        "items": [
+          4234,
+          4304,
+          2319,
+          8167
+        ],
+        "levels": [
+          31,
+          40
+        ],
+        "zones": [
+          [
+            "Dustwallow Marsh",
+            453
+          ],
+          [
+            "Desolace",
+            423
+          ],
+          [
+            "Stranglethorn Vale",
+            294
+          ],
+          [
+            "Badlands",
+            226
+          ],
+          [
+            "Thousand Needles",
+            137
+          ],
+          [
+            "Arathi Highlands",
+            129
+          ]
+        ]
+      },
+      {
+        "items": [
+          4304,
+          4234,
+          8170,
+          8167
+        ],
+        "levels": [
+          41,
+          50
+        ],
+        "zones": [
+          [
+            "Tanaris",
+            885
+          ],
+          [
+            "Feralas",
+            450
+          ],
+          [
+            "The Hinterlands",
+            237
+          ],
+          [
+            "Felwood",
+            200
+          ],
+          [
+            "Dustwallow Marsh",
+            179
+          ],
+          [
+            "Un'Goro Crater",
+            129
+          ]
+        ]
+      },
+      {
+        "items": [
+          8170,
+          4304,
+          15408,
+          8171
+        ],
+        "levels": [
+          51,
+          60
+        ],
+        "zones": [
+          [
+            "Winterspring",
+            571
+          ],
+          [
+            "Azshara",
+            423
+          ],
+          [
+            "Silithus",
+            417
+          ],
+          [
+            "Eastern Plaguelands",
+            383
+          ],
+          [
+            "Un'Goro Crater",
+            226
+          ],
+          [
+            "Burning Steppes",
+            171
+          ]
+        ]
+      }
+    ]
+  },
+  "kind": "index",
+  "nav": [
+    {
+      "icon": "trade_alchemy",
+      "kind": "primary",
+      "name": "Alchemy",
+      "slug": "alchemy"
+    },
+    {
+      "icon": "trade_blacksmithing",
+      "kind": "primary",
+      "name": "Blacksmithing",
+      "slug": "blacksmithing"
+    },
+    {
+      "icon": "trade_engraving",
+      "kind": "primary",
+      "name": "Enchanting",
+      "slug": "enchanting"
+    },
+    {
+      "icon": "trade_engineering",
+      "kind": "primary",
+      "name": "Engineering",
+      "slug": "engineering"
+    },
+    {
+      "icon": "trade_leatherworking",
+      "kind": "primary",
+      "name": "Leatherworking",
+      "slug": "leatherworking"
+    },
+    {
+      "icon": "trade_tailoring",
+      "kind": "primary",
+      "name": "Tailoring",
+      "slug": "tailoring"
+    },
+    {
+      "icon": "trade_mining",
+      "kind": "primary",
+      "name": "Mining",
+      "slug": "mining"
+    },
+    {
+      "icon": "trade_herbalism",
+      "kind": "primary",
+      "name": "Herbalism",
+      "slug": "herbalism"
+    },
+    {
+      "icon": "inv_misc_pelt_wolf_01",
+      "kind": "primary",
+      "name": "Skinning",
+      "slug": "skinning"
+    },
+    {
+      "icon": "inv_misc_food_15",
+      "kind": "secondary",
+      "name": "Cooking",
+      "slug": "cooking"
+    },
+    {
+      "icon": "trade_fishing",
+      "kind": "secondary",
+      "name": "Fishing",
+      "slug": "fishing"
+    },
+    {
+      "icon": "spell_holy_sealofsacrifice",
+      "kind": "secondary",
+      "name": "First Aid",
+      "slug": "first-aid"
+    },
+    {
+      "icon": "spell_fire_fire",
+      "kind": "system",
+      "name": "Camping",
+      "slug": "camping"
+    }
+  ],
+  "professions": [
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "29 Mana every 5 sec to everyone sitting nearby, like Blessing of Wisdom (at level 60, scaling with level)",
+        "name": "Mana Well",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "29 Mana every 5 sec",
+          "capacity": "",
+          "effect": "29 Mana every 5 sec to everyone sitting nearby, like Blessing of Wisdom (at level 60, scaling with level)",
+          "exclusive": "Blessing of Wisdom",
+          "icon": "spell_arcane_manatap",
+          "id": 279956,
+          "name": "Mana Well",
+          "reagents": [
+            [
+              2447,
+              1
+            ],
+            [
+              3371,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "29 Mana every 5 sec to everyone sitting nearby, like Blessing of Wisdom",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273085,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Makes certain Alchemy reagents, and gives the Mana Well buff",
+          "exclusive": "",
+          "icon": "inv_alchemy_90_cauldron",
+          "id": 279970,
+          "name": "Fermenter",
+          "reagents": [
+            [
+              3372,
+              1
+            ],
+            [
+              3356,
+              1
+            ],
+            [
+              2452,
+              1
+            ]
+          ],
+          "replaces": "Mana Well",
+          "role": "Makes certain Alchemy reagents",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273112,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Needed for the most advanced Alchemy recipes, and gives the Mana Well buff",
+          "exclusive": "",
+          "icon": "10prof_portabletable_alchemy01",
+          "id": 279990,
+          "name": "Alchemy Laboratory",
+          "reagents": [
+            [
+              273125,
+              1
+            ],
+            [
+              8925,
+              1
+            ],
+            [
+              13463,
+              2
+            ]
+          ],
+          "replaces": "Mana Well",
+          "role": "Needed for the most advanced Alchemy recipes",
+          "skill": 300
+        }
+      ],
+      "certification": {
+        "icon": "inv_scroll_15",
+        "id": 271621,
+        "name": "Alchemy Certification",
+        "skill": 300,
+        "title": "the Alchemist"
+      },
+      "description": "",
+      "fishing": null,
+      "guide": "crafting",
+      "icon": "trade_alchemy",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [
+        {
+          "name": "Journeyman Alchemist",
+          "points": 1,
+          "skill": 150
+        },
+        {
+          "name": "Expert Alchemist",
+          "points": 1,
+          "skill": 225
+        },
+        {
+          "name": "Artisan Alchemist",
+          "points": 1,
+          "skill": 300
+        }
+      ],
+      "name": "Alchemy",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 58,
+      "recipe_kinds": {
+        "Blueprint": 2,
+        "Recipe": 56
+      },
+      "recipe_sub": 6,
+      "section": "crafting",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "alchemy",
+      "specific_perks": [
+        {
+          "effect": "You have a 5 / 10 / 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "icon": "racial_dwarf_findtreasure",
+          "id": "legacy-perk-performance-bonus",
+          "max_rank": 3,
+          "name": "Performance Bonus",
+          "rank_texts": [
+            "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 10% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics."
+          ],
+          "status": "client_data",
+          "text": "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "direct_visual_reviewed",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Alchemists bring a Mana Well to camp at skill 20, then a Fermenter and an Alchemy Laboratory. The beta client carries their new recipes and a Certification that unlocks the title the Alchemist. No Alchemy bonus has been shown.",
+      "tips": [
+        "Recipes, trainers and complete leveling routes are still unconfirmed.",
+        "Dedicated Study improves your lowest eligible skill, so check your other professions before expecting it to advance this trade."
+      ],
+      "title": "",
+      "unknowns": [
+        "Other profession milestones, recipes, trainers and leveling routes."
+      ],
+      "verify": [
+        "Recipes, ingredients, skill-up colours and crafting output counts",
+        "Trainers, books, specialisations and required character levels",
+        "Milestone details for this profession",
+        "Crafted gear strength, supply-crate requirements and best pairings"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "34 Strength to everyone sitting nearby, like Strength of Earth Totem (at level 60, scaling with level)",
+        "name": "Sharpening Wheel",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "34 Strength",
+          "capacity": "",
+          "effect": "34 Strength to everyone sitting nearby, like Strength of Earth Totem (at level 60, scaling with level)",
+          "exclusive": "Strength of Earth Totem",
+          "icon": "inv_stone_grindingstone_01",
+          "id": 279944,
+          "name": "Sharpening Wheel",
+          "reagents": [
+            [
+              2835,
+              1
+            ],
+            [
+              2840,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "34 Strength to everyone sitting nearby, like Strength of Earth Totem",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273086,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "An anvil at camp, and gives the Sharpening Wheel buff",
+          "exclusive": "",
+          "icon": "inv_blacksmith_anvil",
+          "id": 279988,
+          "name": "Anvil",
+          "reagents": [
+            [
+              2841,
+              5
+            ],
+            [
+              3478,
+              2
+            ],
+            [
+              2319,
+              2
+            ]
+          ],
+          "replaces": "Sharpening Wheel",
+          "role": "An anvil at camp",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273113,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Needed for the most advanced Blacksmithing recipes, and gives the Sharpening Wheel buff",
+          "exclusive": "",
+          "icon": "inv_mace_1h_blacksmithing_b_01_black",
+          "id": 279955,
+          "name": "Master Forge",
+          "reagents": [
+            [
+              273127,
+              1
+            ],
+            [
+              12359,
+              5
+            ],
+            [
+              8170,
+              2
+            ]
+          ],
+          "replaces": "Sharpening Wheel",
+          "role": "Needed for the most advanced Blacksmithing recipes",
+          "skill": 300
+        }
+      ],
+      "certification": {
+        "icon": "inv_scroll_15",
+        "id": 271622,
+        "name": "Blacksmithing Certification",
+        "skill": 300,
+        "title": "the Blacksmith"
+      },
+      "description": "",
+      "fishing": null,
+      "guide": "crafting",
+      "icon": "trade_blacksmithing",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [
+        {
+          "name": "Journeyman Blacksmith",
+          "points": 1,
+          "skill": 150
+        },
+        {
+          "name": "Expert Blacksmith",
+          "points": 1,
+          "skill": 225
+        },
+        {
+          "name": "Artisan Blacksmith",
+          "points": 1,
+          "skill": 300
+        }
+      ],
+      "name": "Blacksmithing",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 180,
+      "recipe_kinds": {
+        "Blueprint": 2,
+        "Plans": 178
+      },
+      "recipe_sub": 4,
+      "section": "crafting",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "blacksmithing",
+      "specific_perks": [
+        {
+          "effect": "You have a 5 / 10 / 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "icon": "racial_dwarf_findtreasure",
+          "id": "legacy-perk-performance-bonus",
+          "max_rank": 3,
+          "name": "Performance Bonus",
+          "rank_texts": [
+            "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 10% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics."
+          ],
+          "status": "client_data",
+          "text": "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "direct_visual_reviewed",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Blacksmiths bring a Sharpening Wheel to camp at skill 20, which raises Strength in the beta client (the Deep Dive said Attack Power), then an Anvil and a Master Forge. No Blacksmithing bonus has been shown.",
+      "tips": [
+        "Recipes, trainers and complete leveling routes are still unconfirmed.",
+        "Dedicated Study improves your lowest eligible skill, so check your other professions before expecting it to advance this trade."
+      ],
+      "title": "",
+      "unknowns": [
+        "Other profession milestones, recipes, trainers and leveling routes."
+      ],
+      "verify": [
+        "Recipes, ingredients, skill-up colours and crafting output counts",
+        "Trainers, books, specialisations and required character levels",
+        "Milestone details for this profession",
+        "Crafted gear strength, supply-crate requirements and best pairings"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "Armor, stats and resistances to everyone sitting nearby, like Mark of the Wild (at level 60, scaling with level)",
+        "name": "Enchanted Lute",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "308 Armor, 13 to all stats and 22 to all resistances",
+          "capacity": "",
+          "effect": "Armor, stats and resistances to everyone sitting nearby, like Mark of the Wild (at level 60, scaling with level)",
+          "exclusive": "Mark of the Wild",
+          "icon": "inv_10_enchanting2_magicswirl_bronze",
+          "id": 279976,
+          "name": "Enchanted Lute",
+          "reagents": [
+            [
+              4470,
+              1
+            ],
+            [
+              10940,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "Armor, stats and resistances to everyone sitting nearby, like Mark of the Wild",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273103,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Disenchants more efficiently, and gives the Enchanted Lute buff",
+          "exclusive": "",
+          "icon": "inv_eng_bottledelements",
+          "id": 279985,
+          "name": "Arcane Salvager",
+          "reagents": [
+            [
+              11137,
+              2
+            ],
+            [
+              11174,
+              1
+            ]
+          ],
+          "replaces": "Enchanted Lute",
+          "role": "Disenchants more efficiently",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273116,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Needed for the most advanced Enchanting recipes, and gives the Enchanted Lute buff",
+          "exclusive": "",
+          "icon": "inv_enchanting_modifiedcraftingreagent_indigo",
+          "id": 279987,
+          "name": "Arcane Forge",
+          "reagents": [
+            [
+              273128,
+              1
+            ],
+            [
+              14344,
+              2
+            ],
+            [
+              16203,
+              4
+            ]
+          ],
+          "replaces": "Enchanted Lute",
+          "role": "Needed for the most advanced Enchanting recipes",
+          "skill": 300
+        }
+      ],
+      "certification": {
+        "icon": "inv_scroll_15",
+        "id": 271624,
+        "name": "Enchanting Certification",
+        "skill": 300,
+        "title": "the Enchanter"
+      },
+      "description": "",
+      "fishing": null,
+      "guide": "crafting",
+      "icon": "trade_engraving",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [
+        {
+          "name": "Journeyman Enchanter",
+          "points": 1,
+          "skill": 150
+        },
+        {
+          "name": "Expert Enchanter",
+          "points": 1,
+          "skill": 225
+        },
+        {
+          "name": "Artisan Enchanter",
+          "points": 1,
+          "skill": 300
+        }
+      ],
+      "name": "Enchanting",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 67,
+      "recipe_kinds": {
+        "Blueprint": 2,
+        "Formula": 65
+      },
+      "recipe_sub": 8,
+      "section": "crafting",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "enchanting",
+      "specific_perks": [
+        {
+          "effect": "You have a 5 / 10 / 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "icon": "racial_dwarf_findtreasure",
+          "id": "legacy-perk-performance-bonus",
+          "max_rank": 3,
+          "name": "Performance Bonus",
+          "rank_texts": [
+            "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 10% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics."
+          ],
+          "status": "client_data",
+          "text": "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "direct_visual_reviewed",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Enchanters bring an Enchanted Lute to camp at skill 20, then an Arcane Salvager and an Arcane Forge. The beta client carries new formulas, including necklace, off-hand and two-handed weapon enchants, and a Certification that unlocks the title the Enchanter.",
+      "tips": [
+        "Recipes, trainers and complete leveling routes are still unconfirmed.",
+        "Dedicated Study improves your lowest eligible skill, so check your other professions before expecting it to advance this trade."
+      ],
+      "title": "",
+      "unknowns": [
+        "Other profession milestones, recipes, trainers and leveling routes."
+      ],
+      "verify": [
+        "Recipes, ingredients, skill-up colours and crafting output counts",
+        "Trainers, books, specialisations and required character levels",
+        "Milestone details for this profession",
+        "Crafted gear strength, supply-crate requirements and best pairings"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "Sells reagents to everyone at camp",
+        "name": "Reagent Bot",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "Sells reagents",
+          "capacity": "",
+          "effect": "Sells reagents to everyone at camp",
+          "exclusive": "",
+          "icon": "inv_misc_enggizmos_13",
+          "id": 279950,
+          "name": "Reagent Bot",
+          "reagents": [
+            [
+              4359,
+              1
+            ],
+            [
+              4361,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "Sells reagents to everyone at camp",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273092,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Sells reagents and repairs gear",
+          "exclusive": "",
+          "icon": "inv_robotpet",
+          "id": 279949,
+          "name": "Repair Bot",
+          "reagents": [
+            [
+              4375,
+              2
+            ],
+            [
+              4371,
+              1
+            ],
+            [
+              4234,
+              1
+            ]
+          ],
+          "replaces": "Reagent Bot",
+          "role": "Sells reagents and repairs gear",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273117,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Needed for the most advanced Engineering recipes",
+          "exclusive": "",
+          "icon": "inv_10_specialization_professionbook_engineering_color1",
+          "id": 279989,
+          "name": "Anarchist's Workbench",
+          "reagents": [
+            [
+              273129,
+              1
+            ],
+            [
+              15994,
+              2
+            ]
+          ],
+          "replaces": "",
+          "role": "Needed for the most advanced Engineering recipes",
+          "skill": 300
+        }
+      ],
+      "certification": {
+        "icon": "inv_scroll_15",
+        "id": 271625,
+        "name": "Engineering Certification",
+        "skill": 300,
+        "title": "the Engineer"
+      },
+      "description": "",
+      "fishing": null,
+      "guide": "crafting",
+      "icon": "trade_engineering",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [
+        {
+          "name": "Journeyman Engineer",
+          "points": 1,
+          "skill": 150
+        },
+        {
+          "name": "Expert Engineer",
+          "points": 1,
+          "skill": 225
+        },
+        {
+          "name": "Artisan Engineer",
+          "points": 1,
+          "skill": 300
+        }
+      ],
+      "name": "Engineering",
+      "racials": [
+        {
+          "id": "racial-gnome-engineering-specialization",
+          "note": "Reported device reliability benefit; exact failure rates are unknown.",
+          "prof": "Engineering"
+        }
+      ],
+      "ranks": [],
+      "recipe_count": 78,
+      "recipe_kinds": {
+        "Blueprint": 2,
+        "Schematic": 76
+      },
+      "recipe_sub": 3,
+      "section": "crafting",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "engineering",
+      "specific_perks": [
+        {
+          "effect": "You have a 5 / 10 / 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "icon": "racial_dwarf_findtreasure",
+          "id": "legacy-perk-performance-bonus",
+          "max_rank": 3,
+          "name": "Performance Bonus",
+          "rank_texts": [
+            "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 10% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics."
+          ],
+          "status": "client_data",
+          "text": "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "direct_visual_reviewed",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Engineers bring a Reagent Bot to camp at skill 20, then a Repair Bot and an Anarchist's Workbench. The beta client carries new schematics and a Certification that unlocks the title the Engineer.",
+      "tips": [
+        "Recipes, trainers and complete leveling routes are still unconfirmed.",
+        "Dedicated Study improves your lowest eligible skill, so check your other professions before expecting it to advance this trade."
+      ],
+      "title": "",
+      "unknowns": [
+        "Other profession milestones, recipes, trainers and leveling routes."
+      ],
+      "verify": [
+        "Recipes, ingredients, skill-up colours and crafting output counts",
+        "Trainers, books, specialisations and required character levels",
+        "Milestone details for this profession",
+        "Crafted gear strength, supply-crate requirements and best pairings"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "Rested experience up to 5% of a level for everyone sitting nearby",
+        "name": "Camp Tent",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "Rested experience up to 5% of a level",
+          "capacity": "",
+          "effect": "Rested experience up to 5% of a level for everyone sitting nearby",
+          "exclusive": "",
+          "icon": "inv_misc_leatherscrap_01",
+          "id": 279978,
+          "name": "Camp Tent",
+          "reagents": [
+            [
+              2318,
+              5
+            ]
+          ],
+          "replaces": "",
+          "role": "Rested experience up to 5% of a level for everyone sitting nearby",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273096,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Makes certain Leatherworking reagents, and gives the Camp Tent bonus",
+          "exclusive": "",
+          "icon": "inv_10_skinning_leather_rarehide_color1",
+          "id": 279941,
+          "name": "Tanning Rack",
+          "reagents": [
+            [
+              2319,
+              5
+            ],
+            [
+              2321,
+              3
+            ],
+            [
+              4470,
+              2
+            ]
+          ],
+          "replaces": "Camp Tent",
+          "role": "Makes certain Leatherworking reagents",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273121,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Needed for the most advanced Leatherworking recipes, and gives the Camp Tent bonus",
+          "exclusive": "",
+          "icon": "inv_tailoring_modifiedcraftingreagent_orange",
+          "id": 279945,
+          "name": "Sewing Machine",
+          "reagents": [
+            [
+              273130,
+              1
+            ],
+            [
+              8170,
+              5
+            ],
+            [
+              14341,
+              1
+            ]
+          ],
+          "replaces": "Camp Tent",
+          "role": "Needed for the most advanced Leatherworking recipes",
+          "skill": 300
+        }
+      ],
+      "certification": {
+        "icon": "inv_scroll_15",
+        "id": 271626,
+        "name": "Leatherworking Certification",
+        "skill": 300,
+        "title": "the Leatherworker"
+      },
+      "description": "",
+      "fishing": null,
+      "guide": "crafting",
+      "icon": "trade_leatherworking",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [
+        {
+          "name": "Journeyman Leatherworker",
+          "points": 1,
+          "skill": 150
+        },
+        {
+          "name": "Expert Leatherworker",
+          "points": 1,
+          "skill": 225
+        },
+        {
+          "name": "Artisan Leatherworker",
+          "points": 1,
+          "skill": 300
+        }
+      ],
+      "name": "Leatherworking",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 269,
+      "recipe_kinds": {
+        "Blueprint": 2,
+        "Pattern": 261,
+        "Plans": 6
+      },
+      "recipe_sub": 1,
+      "section": "crafting",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "leatherworking",
+      "specific_perks": [
+        {
+          "effect": "You have a 5 / 10 / 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "icon": "racial_dwarf_findtreasure",
+          "id": "legacy-perk-performance-bonus",
+          "max_rank": 3,
+          "name": "Performance Bonus",
+          "rank_texts": [
+            "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 10% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics."
+          ],
+          "status": "client_data",
+          "text": "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "direct_visual_reviewed",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Leatherworkers bring a Camp Tent to camp at skill 20, then a Tanning Rack and a Sewing Machine. The beta client carries their new patterns and a Certification that unlocks the title the Leatherworker.",
+      "tips": [
+        "Recipes, trainers and complete leveling routes are still unconfirmed.",
+        "Dedicated Study improves your lowest eligible skill, so check your other professions before expecting it to advance this trade."
+      ],
+      "title": "",
+      "unknowns": [
+        "Other profession milestones, recipes, trainers and leveling routes."
+      ],
+      "verify": [
+        "Recipes, ingredients, skill-up colours and crafting output counts",
+        "Trainers, books, specialisations and required character levels",
+        "Milestone details for this profession",
+        "Crafted gear strength, supply-crate requirements and best pairings"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "32 Spirit to everyone of your faction sitting nearby, like Divine Spirit (at level 60, scaling with level)",
+        "name": "Faction Banner",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "32 Spirit, for your own faction only",
+          "capacity": "",
+          "effect": "32 Spirit to everyone of your faction sitting nearby, like Divine Spirit (at level 60, scaling with level)",
+          "exclusive": "Divine Spirit",
+          "icon": "inv_banner_03",
+          "id": 279972,
+          "name": "Faction Banner",
+          "reagents": [
+            [
+              2996,
+              1
+            ],
+            [
+              2320,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "32 Spirit to everyone of your faction sitting nearby, like Divine Spirit",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273099,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Makes certain Tailoring reagents, and gives the Faction Banner buff",
+          "exclusive": "",
+          "icon": "10prof_table_tailoring01",
+          "id": 279943,
+          "name": "Spinning Wheel",
+          "reagents": [
+            [
+              4470,
+              2
+            ],
+            [
+              4305,
+              5
+            ],
+            [
+              2321,
+              3
+            ]
+          ],
+          "replaces": "Faction Banner",
+          "role": "Makes certain Tailoring reagents",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273124,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Needed for the most advanced Tailoring recipes, and gives the Faction Banner buff",
+          "exclusive": "",
+          "icon": "inv_tailoring_80_tidespraylinen",
+          "id": 279959,
+          "name": "Loom",
+          "reagents": [
+            [
+              273131,
+              1
+            ],
+            [
+              14048,
+              4
+            ],
+            [
+              4470,
+              4
+            ]
+          ],
+          "replaces": "Faction Banner",
+          "role": "Needed for the most advanced Tailoring recipes",
+          "skill": 300
+        }
+      ],
+      "certification": {
+        "icon": "inv_scroll_15",
+        "id": 271627,
+        "name": "Tailoring Certification",
+        "skill": 300,
+        "title": "the Tailor"
+      },
+      "description": "",
+      "fishing": null,
+      "guide": "crafting",
+      "icon": "trade_tailoring",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [
+        {
+          "name": "Journeyman Tailor",
+          "points": 1,
+          "skill": 150
+        },
+        {
+          "name": "Expert Tailor",
+          "points": 1,
+          "skill": 225
+        },
+        {
+          "name": "Artisan Tailor",
+          "points": 1,
+          "skill": 300
+        }
+      ],
+      "name": "Tailoring",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 192,
+      "recipe_kinds": {
+        "Blueprint": 2,
+        "Pattern": 190
+      },
+      "recipe_sub": 2,
+      "section": "crafting",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "tailoring",
+      "specific_perks": [
+        {
+          "effect": "You have a 5 / 10 / 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "icon": "racial_dwarf_findtreasure",
+          "id": "legacy-perk-performance-bonus",
+          "max_rank": 3,
+          "name": "Performance Bonus",
+          "rank_texts": [
+            "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 10% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+            "You have a 15% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics."
+          ],
+          "status": "client_data",
+          "text": "You have a 5% chance to receive 100% increased Merchant's Favor when you turn in a crate to the Azeroth Commerce Authority or Durotar Supply and Logistics.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "direct_visual_reviewed",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Tailors bring a Faction Banner to camp at skill 20, which raises Spirit, then a Spinning Wheel and a Loom. The beta client carries their new patterns and a Certification that unlocks the title the Tailor. No Tailoring bonus has been shown.",
+      "tips": [
+        "Recipes, trainers and complete leveling routes are still unconfirmed.",
+        "Dedicated Study improves your lowest eligible skill, so check your other professions before expecting it to advance this trade."
+      ],
+      "title": "",
+      "unknowns": [
+        "Other profession milestones, recipes, trainers and leveling routes."
+      ],
+      "verify": [
+        "Recipes, ingredients, skill-up colours and crafting output counts",
+        "Trainers, books, specialisations and required character levels",
+        "Milestone details for this profession",
+        "Crafted gear strength, supply-crate requirements and best pairings"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "90 melee Attack Power to everyone sitting nearby, like Blessing of Might (at level 60, scaling with level)",
+        "name": "Lodestone",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "90 melee Attack Power",
+          "capacity": "",
+          "effect": "90 melee Attack Power to everyone sitting nearby, like Blessing of Might (at level 60, scaling with level)",
+          "exclusive": "Blessing of Might",
+          "icon": "inv_misc_rune_06",
+          "id": 279960,
+          "name": "Lodestone",
+          "reagents": [
+            [
+              2835,
+              1
+            ],
+            [
+              2840,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "90 melee Attack Power to everyone sitting nearby, like Blessing of Might",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273097,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Spawns a common mining node over time, and gives the Lodestone buff",
+          "exclusive": "",
+          "icon": "inv_misc_powder_iron",
+          "id": 279948,
+          "name": "Rock Garden",
+          "reagents": [
+            [
+              2838,
+              2
+            ],
+            [
+              2772,
+              1
+            ],
+            [
+              2842,
+              1
+            ]
+          ],
+          "replaces": "Lodestone",
+          "role": "Spawns a common mining node over time",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273122,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Needed for recipes that require it, and gives the Lodestone buff",
+          "exclusive": "",
+          "icon": "inv_blacksmithingalloys_red",
+          "id": 279952,
+          "name": "Molten Foundry",
+          "reagents": [
+            [
+              12359,
+              5
+            ],
+            [
+              12365,
+              2
+            ],
+            [
+              6037,
+              1
+            ]
+          ],
+          "replaces": "Lodestone",
+          "role": "Needed for recipes that require it",
+          "skill": 300
+        }
+      ],
+      "certification": null,
+      "description": "",
+      "fishing": null,
+      "guide": "mining",
+      "icon": "trade_mining",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [],
+      "name": "Mining",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 0,
+      "recipe_kinds": {},
+      "recipe_sub": null,
+      "section": "gathering",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "mining",
+      "specific_perks": [
+        {
+          "effect": "You discover 20 / 40 / 60 / 80 / 100% more Scarce materials from Mining, Herbalism, and Skinning.",
+          "icon": "inv_misc_bag_18",
+          "id": "legacy-perk-bountiful-harvest",
+          "max_rank": 5,
+          "name": "Bountiful Harvest",
+          "rank_texts": [
+            "You discover 20% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 40% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 60% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 80% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 100% more Scarce materials from Mining, Herbalism, and Skinning."
+          ],
+          "status": "client_data",
+          "text": "You discover 20% more Scarce materials from Mining, Herbalism, and Skinning.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "linked_legacy_effect",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Miners bring a Lodestone to camp at skill 20, which raises melee Attack Power, then a Rock Garden that spawns ore and a Molten Foundry. The Bountiful Harvest Legacy perk adds 20% more Scarce materials per rank, up to 100% at rank 5.",
+      "tips": [
+        "Bountiful Harvest is the perk to look at for Scarce materials. Working Overtime helps with skill gains instead.",
+        "Dedicated Study only advances the lowest eligible tradeskill, so check your other skills before using it.",
+        "Forever ore tables, trainers and leveling routes are still unconfirmed."
+      ],
+      "title": "",
+      "unknowns": [
+        "Eligible Scarce materials, node locations, drop tables and respawns."
+      ],
+      "verify": [
+        "Forever ore and Scarce-material lists",
+        "Node locations, respawn rules and gathering thresholds",
+        "Trainers, tools, smelting recipes and leveling route",
+        "Profession pairings and actual gold returns"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "25 Intellect to everyone sitting nearby, like Arcane Intellect (at level 60, scaling with level)",
+        "name": "Incense Candle",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "25 Intellect",
+          "capacity": "",
+          "effect": "25 Intellect to everyone sitting nearby, like Arcane Intellect (at level 60, scaling with level)",
+          "exclusive": "Arcane Intellect",
+          "icon": "inv_misc_candle_02",
+          "id": 279962,
+          "name": "Incense Candle",
+          "reagents": [
+            [
+              2447,
+              1
+            ],
+            [
+              765,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "25 Intellect to everyone sitting nearby, like Arcane Intellect",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273106,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Grows herbs over time from planted seeds, and gives the Incense Candle buff",
+          "exclusive": "",
+          "icon": "inv_misc_herb_08",
+          "id": 279964,
+          "name": "Greenhouse",
+          "reagents": [
+            [
+              4470,
+              2
+            ],
+            [
+              8836,
+              1
+            ],
+            [
+              8831,
+              1
+            ]
+          ],
+          "replaces": "Incense Candle",
+          "role": "Grows herbs over time from planted seeds",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273120,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Multiplies seeds or combines them into rarer tiers, and gives the Incense Candle buff",
+          "exclusive": "",
+          "icon": "inv_farm_herbseed",
+          "id": 279947,
+          "name": "Seed Hybridizer",
+          "reagents": [
+            [
+              13465,
+              4
+            ],
+            [
+              8925,
+              1
+            ],
+            [
+              14047,
+              2
+            ]
+          ],
+          "replaces": "Incense Candle",
+          "role": "Multiplies seeds or combines them into rarer tiers",
+          "skill": 300
+        }
+      ],
+      "certification": null,
+      "description": "",
+      "fishing": null,
+      "guide": "herbalism",
+      "icon": "trade_herbalism",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [],
+      "name": "Herbalism",
+      "racials": [
+        {
+          "id": "racial-tauren-cultivation",
+          "note": "Reported ability to grow herbs without learning Herbalism.",
+          "prof": "Herbalism"
+        }
+      ],
+      "ranks": [],
+      "recipe_count": 0,
+      "recipe_kinds": {},
+      "recipe_sub": null,
+      "section": "gathering",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "herbalism",
+      "specific_perks": [
+        {
+          "effect": "You discover 20 / 40 / 60 / 80 / 100% more Scarce materials from Mining, Herbalism, and Skinning.",
+          "icon": "inv_misc_bag_18",
+          "id": "legacy-perk-bountiful-harvest",
+          "max_rank": 5,
+          "name": "Bountiful Harvest",
+          "rank_texts": [
+            "You discover 20% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 40% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 60% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 80% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 100% more Scarce materials from Mining, Herbalism, and Skinning."
+          ],
+          "status": "client_data",
+          "text": "You discover 20% more Scarce materials from Mining, Herbalism, and Skinning.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "linked_legacy_effect",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Herbalists bring an Incense Candle to camp at skill 20, which raises Intellect, then a Greenhouse that grows herbs and a Seed Hybridizer. Tauren are reported to grow herbs without the skill.",
+      "tips": [
+        "Bountiful Harvest is the perk to look at for Scarce materials. Working Overtime helps with skill gains instead.",
+        "Dedicated Study only advances the lowest eligible tradeskill, so check your other skills before using it.",
+        "Forever herb tables, trainers and leveling routes are still unconfirmed."
+      ],
+      "title": "",
+      "unknowns": [
+        "Eligible Scarce materials, node locations, drop tables and respawns."
+      ],
+      "verify": [
+        "Forever herbs and the definition of Scarce materials",
+        "Zones, node locations, respawns and required skill",
+        "Trainers, tracking behaviour and leveling route",
+        "Verified crafting uses and profession pairings"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "2% critical strike chance with spells and attacks to everyone sitting nearby, like Moonkin Aura",
+        "name": "Camp Chair",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "2% critical strike chance",
+          "capacity": "",
+          "effect": "2% critical strike chance with spells and attacks to everyone sitting nearby, like Moonkin Aura",
+          "exclusive": "Moonkin Aura",
+          "icon": "inv_crate_01",
+          "id": 279979,
+          "name": "Camp Chair",
+          "reagents": [
+            [
+              2318,
+              3
+            ],
+            [
+              4470,
+              2
+            ]
+          ],
+          "replaces": "",
+          "role": "2% critical strike chance with spells and attacks to everyone sitting nearby, like Moonkin Aura",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273098,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Grants Track Beasts to whoever reads it, and gives the Camp Chair buff",
+          "exclusive": "",
+          "icon": "inv_misc_book_03",
+          "id": 279969,
+          "name": "Field Guide",
+          "reagents": [
+            [
+              2319,
+              3
+            ],
+            [
+              5784,
+              2
+            ],
+            [
+              2321,
+              1
+            ]
+          ],
+          "replaces": "Camp Chair",
+          "role": "Grants Track Beasts to whoever reads it",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273109,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Holds one trap, and gives the Camp Chair buff",
+          "exclusive": "",
+          "icon": "inv_misc_kobysstools_knifetrap_color3",
+          "id": 279938,
+          "name": "Trapper's Workbench",
+          "reagents": [
+            [
+              4470,
+              2
+            ],
+            [
+              4234,
+              4
+            ],
+            [
+              3575,
+              1
+            ]
+          ],
+          "replaces": "Camp Chair",
+          "role": "Holds one trap",
+          "skill": 300
+        }
+      ],
+      "certification": null,
+      "description": "",
+      "fishing": null,
+      "guide": "skinning",
+      "icon": "inv_misc_pelt_wolf_01",
+      "kind": "primary",
+      "lede": "",
+      "milestones": [],
+      "name": "Skinning",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 0,
+      "recipe_kinds": {},
+      "recipe_sub": null,
+      "section": "gathering",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "skinning",
+      "specific_perks": [
+        {
+          "effect": "You discover 20 / 40 / 60 / 80 / 100% more Scarce materials from Mining, Herbalism, and Skinning.",
+          "icon": "inv_misc_bag_18",
+          "id": "legacy-perk-bountiful-harvest",
+          "max_rank": 5,
+          "name": "Bountiful Harvest",
+          "rank_texts": [
+            "You discover 20% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 40% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 60% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 80% more Scarce materials from Mining, Herbalism, and Skinning.",
+            "You discover 100% more Scarce materials from Mining, Herbalism, and Skinning."
+          ],
+          "status": "client_data",
+          "text": "You discover 20% more Scarce materials from Mining, Herbalism, and Skinning.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "linked_legacy_effect",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Skinners bring a Camp Chair to camp at skill 20, which raises critical strike chance, then a Field Guide that grants Track Beasts and a Trapper's Workbench. The rest comes from the shared gathering Legacy perks.",
+      "tips": [
+        "Bountiful Harvest is the perk to look at for Scarce materials. Working Overtime helps with skill gains instead.",
+        "Dedicated Study only advances the lowest eligible tradeskill, so check your other skills before using it.",
+        "Forever leather tables, trainers and leveling routes are still unconfirmed."
+      ],
+      "title": "",
+      "unknowns": [
+        "Eligible Scarce materials, node locations, drop tables and respawns."
+      ],
+      "verify": [
+        "Skinnable creatures and skill requirements",
+        "Leather, hide and Scarce-material tables",
+        "Trainer and tool requirements",
+        "Leveling routes and current crafting demand"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "A campfire for cooking, with room for 3 camp objects",
+        "name": "Basic Campfire Kit",
+        "skill": 1
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "",
+          "capacity": "3",
+          "effect": "A campfire for cooking, with room for 3 camp objects",
+          "exclusive": "",
+          "icon": "inv_camelot_camping_welcomingcampfire",
+          "id": 279981,
+          "name": "Basic Campfire Kit",
+          "reagents": [
+            [
+              4470,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "A campfire for cooking, with room for 3 camp objects",
+          "skill": 1
+        },
+        {
+          "blueprint": [
+            273102,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Stamina food for everyone at camp",
+          "exclusive": "",
+          "icon": "inv_cooking_80_majorfeast",
+          "id": 279957,
+          "name": "Cookie's Feast",
+          "reagents": [
+            [
+              12037,
+              2
+            ],
+            [
+              12204,
+              1
+            ],
+            [
+              3713,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "Stamina food for everyone at camp",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273087,
+            0
+          ],
+          "buff": "",
+          "capacity": "5",
+          "effect": "A campfire with room for 5 camp objects",
+          "exclusive": "",
+          "icon": "inv_camelot_camping_welcomingcampfire",
+          "id": 279961,
+          "name": "Journeyman Campfire Kit",
+          "reagents": [
+            [
+              11291,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "A campfire with room for 5 camp objects",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273101,
+            0
+          ],
+          "buff": "",
+          "capacity": "10",
+          "effect": "A campfire with room for 10 camp objects",
+          "exclusive": "",
+          "icon": "inv_camelot_camping_welcomingcampfire",
+          "id": 279974,
+          "name": "Expert Campfire Kit",
+          "reagents": [
+            [
+              272941,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "A campfire with room for 10 camp objects",
+          "skill": 220
+        },
+        {
+          "blueprint": [
+            273115,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Needed for the most advanced Cooking recipes",
+          "exclusive": "",
+          "icon": "achievement_cooking_masteroftheoven",
+          "id": 279982,
+          "name": "Iron Oven",
+          "reagents": [
+            [
+              10284,
+              10
+            ],
+            [
+              159,
+              5
+            ],
+            [
+              3713,
+              4
+            ]
+          ],
+          "replaces": "",
+          "role": "Needed for the most advanced Cooking recipes",
+          "skill": 300
+        }
+      ],
+      "certification": null,
+      "description": "",
+      "fishing": null,
+      "guide": "cooking",
+      "icon": "inv_misc_food_15",
+      "kind": "secondary",
+      "lede": "",
+      "milestones": [],
+      "name": "Cooking",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 40,
+      "recipe_kinds": {
+        "Blueprint": 4,
+        "Recipe": 36
+      },
+      "recipe_sub": 5,
+      "section": "cooking",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "cooking",
+      "specific_perks": [
+        {
+          "effect": "Your cooking recipes have a 10 / 20 / 30 / 40 / 50% chance to create an extra result.",
+          "icon": "achievement_profession_chefhat",
+          "id": "legacy-perk-master-chef",
+          "max_rank": 5,
+          "name": "Master Chef",
+          "rank_texts": [
+            "Your cooking recipes have a 10% chance to create an extra result.",
+            "Your cooking recipes have a 20% chance to create an extra result.",
+            "Your cooking recipes have a 30% chance to create an extra result.",
+            "Your cooking recipes have a 40% chance to create an extra result.",
+            "Your cooking recipes have a 50% chance to create an extra result."
+          ],
+          "status": "client_data",
+          "text": "Your cooking recipes have a 10% chance to create an extra result.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases the duration of beneficial effects from eating food by 33 / 67 / 100%.",
+          "icon": "inv_misc_food_64",
+          "id": "legacy-perk-gourmand",
+          "max_rank": 3,
+          "name": "Gourmand",
+          "rank_texts": [
+            "Increases the duration of beneficial effects from eating food by 33%.",
+            "Increases the duration of beneficial effects from eating food by 67%.",
+            "Increases the duration of beneficial effects from eating food by 100%."
+          ],
+          "status": "client_data",
+          "text": "Increases the duration of beneficial effects from eating food by 33%.",
+          "tree": "Resourcefulness",
+          "uncertain": []
+        }
+      ],
+      "status": "mixed_capture_and_report",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "Cooks build the campfire itself: the basic kit holds 3 camp objects, the Journeyman kit 5 and the Expert kit 10, with Cookie's Feast and an Iron Oven on top. Almost every dish that makes you well fed also raises experience from kills by 5%, from the first recipes at Cooking 1. Legacy perks give recipes a chance at an extra result and make food buffs last longer.",
+      "tips": [
+        "Look at Gourmand if you want food benefits to last longer. It affects the person eating the food.",
+        "Plan supplies around a recipe's normal yield. Master Chef's extra result is a chance, not a guarantee.",
+        "Food recipes, campsite contributions and higher-rank effects are still unverified."
+      ],
+      "title": "",
+      "unknowns": [
+        "Recipes, output quantities and later-rank effects."
+      ],
+      "verify": [
+        "Master Chef's recipe-specific behaviour",
+        "Food recipes, ingredients, trainers and buff values",
+        "Cooking's named campsite contributions",
+        "Food, camp and Legacy duration stacking"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": {
+        "effect": "8% to all stats for everyone sitting nearby, like Blessing of Kings",
+        "name": "Fish Bowl",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "8% to all stats",
+          "capacity": "",
+          "effect": "8% to all stats for everyone sitting nearby, like Blessing of Kings",
+          "exclusive": "Blessing of Kings",
+          "icon": "inv_magicalfishpet",
+          "id": 279967,
+          "name": "Fish Bowl",
+          "reagents": [
+            [
+              6291,
+              1
+            ],
+            [
+              3371,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "8% to all stats for everyone sitting nearby, like Blessing of Kings",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273141,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Uncommon fish for 1 hr and Fishing Skill lures, and gives the Fish Bowl buff",
+          "exclusive": "",
+          "icon": "inv_misc_2h_draenorfishingpole_a_01",
+          "id": 279965,
+          "name": "Fishing Rack",
+          "reagents": [
+            [
+              4470,
+              2
+            ],
+            [
+              8925,
+              1
+            ],
+            [
+              8365,
+              2
+            ]
+          ],
+          "replaces": "Fish Bowl",
+          "role": "Uncommon fish for 1 hr and Fishing Skill lures",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273119,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Rare fish for 1 hr and Fishing Skill lures, and gives the Fish Bowl buff",
+          "exclusive": "",
+          "icon": "inv_fishingchair",
+          "id": 279966,
+          "name": "Fishing Hut",
+          "reagents": [
+            [
+              4470,
+              5
+            ],
+            [
+              14048,
+              2
+            ],
+            [
+              273295,
+              1
+            ]
+          ],
+          "replaces": "Fish Bowl",
+          "role": "Rare fish for 1 hr and Fishing Skill lures",
+          "skill": 300
+        }
+      ],
+      "certification": null,
+      "description": "How to fish in WoW Forever: learn Fishing from a trainer, equip a pole and cast into water. Plus the lures, skill ranks, Find Fish and the Fish Bowl for camp.",
+      "fishing": {
+        "food": [
+          {
+            "bonus": 3,
+            "hat": false,
+            "icon": "inv_potion_01",
+            "id": 6316,
+            "is_new": false,
+            "level": 5,
+            "minutes": 15,
+            "name": "Loch Frenzy Delight",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 5,
+            "hat": false,
+            "icon": "inv_misc_fish_05",
+            "id": 5476,
+            "is_new": false,
+            "level": 5,
+            "minutes": 15,
+            "name": "Fillet of Frenzy",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 8,
+            "hat": false,
+            "icon": "inv_misc_fish_30",
+            "id": 4593,
+            "is_new": false,
+            "level": 15,
+            "minutes": 15,
+            "name": "Bristle Whisker Catfish",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 12,
+            "hat": false,
+            "icon": "inv_misc_fish_04",
+            "id": 4594,
+            "is_new": false,
+            "level": 25,
+            "minutes": 15,
+            "name": "Rockscale Cod",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 18,
+            "hat": false,
+            "icon": "inv_misc_fish_06",
+            "id": 13930,
+            "is_new": false,
+            "level": 35,
+            "minutes": 15,
+            "name": "Filet of Redgill",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 18,
+            "hat": false,
+            "icon": "inv_misc_fish_22",
+            "id": 8957,
+            "is_new": false,
+            "level": 45,
+            "minutes": 15,
+            "name": "Spinefin Halibut",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": ""
+          }
+        ],
+        "items": [
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "ability_hunter_pet_worm",
+            "id": 276275,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Bitter Baitling",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "Pet",
+            "text": "Summons a Bitter Baitling."
+          },
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "inv_box_petcarrier_01",
+            "id": 211272,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Empty Bait Cage",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "Junk",
+            "text": "Catch a critter to be used as bait."
+          },
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "inv_misc_enchantedscroll",
+            "id": 273495,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Enchant Gloves - Fishing",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "Permanent",
+            "text": "Permanently enchant gloves to grant +2 fishing skill."
+          },
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "inv_helmet_50",
+            "id": 276272,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Master Angler's Fishing Hat",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "Cosmetic",
+            "text": ""
+          },
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "inv_spear_06",
+            "id": 276203,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Primitive Fishing Pole",
+            "on_learn": false,
+            "req": [
+              "level 40",
+              "Honored with Powderfuse"
+            ],
+            "skill": null,
+            "sub": "Polearm",
+            "text": ""
+          },
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "inv_fishingpole_02",
+            "id": 285094,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Ravaged Fishing Pole",
+            "on_learn": false,
+            "req": [
+              "level 20"
+            ],
+            "skill": null,
+            "sub": "Fishing Pole",
+            "text": ""
+          },
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "inv_10_fishing_bait_color1",
+            "id": 268880,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "\"Secret\" Bait",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "Other",
+            "text": "When applied to your fishing pole, increases Fishing by 25 for 10 min."
+          },
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "inv_helm_armor_buckledhat_b_01_black",
+            "id": 259846,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Wide-Brimmed Fishing Hat",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "Cloth",
+            "text": "Attach a lure to your equipped fishing pole, increasing Fishing by 25 for 10 min."
+          }
+        ],
+        "lures": [
+          {
+            "bonus": 25,
+            "hat": false,
+            "icon": "inv_10_fishing_bait_color1",
+            "id": 268880,
+            "is_new": true,
+            "level": null,
+            "minutes": 10,
+            "name": "\"Secret\" Bait",
+            "on_learn": false,
+            "req": [],
+            "skill": 0,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 25,
+            "hat": false,
+            "icon": "inv_misc_orb_03",
+            "id": 6529,
+            "is_new": false,
+            "level": null,
+            "minutes": 10,
+            "name": "Shiny Bauble",
+            "on_learn": false,
+            "req": [],
+            "skill": 0,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 25,
+            "hat": true,
+            "icon": "inv_helm_armor_buckledhat_b_01_black",
+            "id": 259846,
+            "is_new": true,
+            "level": null,
+            "minutes": 10,
+            "name": "Wide-Brimmed Fishing Hat",
+            "on_learn": false,
+            "req": [],
+            "skill": 1,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 50,
+            "hat": false,
+            "icon": "inv_misc_spyglass_01",
+            "id": 6811,
+            "is_new": false,
+            "level": null,
+            "minutes": 10,
+            "name": "Aquadynamic Fish Lens",
+            "on_learn": false,
+            "req": [],
+            "skill": 50,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 50,
+            "hat": false,
+            "icon": "inv_misc_monstertail_03",
+            "id": 6530,
+            "is_new": false,
+            "level": null,
+            "minutes": 10,
+            "name": "Nightcrawlers",
+            "on_learn": false,
+            "req": [],
+            "skill": 50,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 75,
+            "hat": false,
+            "icon": "inv_misc_gem_variety_02",
+            "id": 6532,
+            "is_new": false,
+            "level": null,
+            "minutes": 10,
+            "name": "Bright Baubles",
+            "on_learn": false,
+            "req": [],
+            "skill": 100,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 75,
+            "hat": false,
+            "icon": "inv_misc_monstertail_03",
+            "id": 7307,
+            "is_new": false,
+            "level": null,
+            "minutes": 10,
+            "name": "Flesh Eating Worm",
+            "on_learn": false,
+            "req": [],
+            "skill": 100,
+            "sub": "",
+            "text": ""
+          },
+          {
+            "bonus": 100,
+            "hat": false,
+            "icon": "inv_misc_food_26",
+            "id": 6533,
+            "is_new": false,
+            "level": null,
+            "minutes": 5,
+            "name": "Aquadynamic Fish Attractor",
+            "on_learn": false,
+            "req": [],
+            "skill": 100,
+            "sub": "",
+            "text": ""
+          }
+        ],
+        "spells": [
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "",
+            "id": 43308,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Find Fish",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": "Nearby fishing nodes appear on the minimap."
+          },
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "",
+            "id": 1278067,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Bait and Tackle",
+            "on_learn": true,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": "Allows the fisher to add features to a wilderness camp."
+          }
+        ],
+        "titles": [
+          {
+            "bonus": null,
+            "hat": false,
+            "icon": "",
+            "id": 1313,
+            "is_new": false,
+            "level": null,
+            "minutes": null,
+            "name": "Master Angler",
+            "on_learn": false,
+            "req": [],
+            "skill": null,
+            "sub": "",
+            "text": ""
+          }
+        ]
+      },
+      "guide": "fishing",
+      "icon": "trade_fishing",
+      "kind": "secondary",
+      "lede": "",
+      "milestones": [],
+      "name": "Fishing",
+      "racials": [],
+      "ranks": [
+        [
+          "Apprentice",
+          "75",
+          "From a fishing trainer.",
+          null
+        ],
+        [
+          "Journeyman",
+          "150",
+          "From a fishing trainer.",
+          null
+        ],
+        [
+          "Expert",
+          "225",
+          "From the book {book}, at level 20 and Fishing 125. In Classic it is sold in Booty Bay.",
+          16083
+        ],
+        [
+          "Artisan",
+          "300",
+          "In Classic, from a quest given by Nat Pagle in Dustwallow Marsh, once you reach Fishing 225.",
+          null
+        ]
+      ],
+      "recipe_count": 0,
+      "recipe_kinds": {},
+      "recipe_sub": null,
+      "section": "fishing",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "fishing",
+      "specific_perks": [
+        {
+          "effect": "While fishing with a Lure active, you have a 25 / 50% chance to catch an extra fish.",
+          "icon": "inv_misc_basket_04",
+          "id": "legacy-perk-luremaster",
+          "max_rank": 2,
+          "name": "Luremaster",
+          "rank_texts": [
+            "While fishing with a Lure active, you have a 25% chance to catch an extra fish.",
+            "While fishing with a Lure active, you have a 50% chance to catch an extra fish."
+          ],
+          "status": "client_data",
+          "text": "While fishing with a Lure active, you have a 25% chance to catch an extra fish.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "status": "linked_legacy_effect",
+      "steps": [
+        [
+          "Learn Fishing",
+          "Ask a fishing trainer. There is one in each capital city, and one by the pond in Valanaar, the Skyborne city. Learning it also teaches Bait and Tackle, for placing Fishing objects at a camp."
+        ],
+        [
+          "Equip a fishing pole",
+          "Buy a Fishing Pole from the fishing supplier near the trainer and equip it from your bags. It takes both hands, and Fishing does nothing without it."
+        ],
+        [
+          "Cast into water",
+          "Face open water and cast Fishing from your spellbook. When the bobber splashes, right-click it to catch the fish."
+        ],
+        [
+          "Start in low-level water",
+          "Higher skill makes you more likely to land fish in higher-level zones. If your fish keep getting away, move to a lower-level zone or put a lure on your pole."
+        ]
+      ],
+      "steps_note": "The trainers and suppliers come from Wowhead's Forever database, and the one in Valanaar from a beta player on the official forums; the rest is the client's own text.",
+      "steps_title": "How to fish",
+      "summary": "Anglers bring a Fish Bowl to camp at skill 20, which raises all stats by 8%, then a Fishing Rack and a Fishing Hut that open uncommon and rare catches. Luremaster gives a chance to catch an extra fish while a lure is active.",
+      "tips": [
+        "A Fish Bowl takes a Raw Brilliant Smallfish, which in Classic bites in the fresh water of the starting zones, and an Empty Vial from a vendor.",
+        "A Fishing Rack or Fishing Hut goes over your Fish Bowl and keeps its 8% to all stats.",
+        "Keep an eye on your lure. Luremaster's extra-catch chance needs it to be active.",
+        "Check your lowest tradeskill before using Dedicated Study if you want the point to go to Fishing.",
+        "The points below are still unconfirmed."
+      ],
+      "title": "How to fish in WoW Forever",
+      "unknowns": [
+        "Eligible catches and second-rank effect."
+      ],
+      "verify": [
+        "Trainer and supplier locations in game (Wowhead's database)",
+        "Catch tables and the skill each zone needs",
+        "What the Fishing Rack and Fishing Hut add to your catches",
+        "Where the Blueprints drop, and how Find Fish is learned",
+        "Luremaster's eligible catches"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [
+        {
+          "icon": "inv_misc_bag_10_blue",
+          "kind": "craft",
+          "name": "First Aid Kit",
+          "text": "A Camping contribution. Grants a buff equivalent to Power Word: Fortitude. Made from Linen Bandage and Refreshing Spring Water."
+        },
+        {
+          "icon": "inv_drink_milk_05",
+          "kind": "craft",
+          "name": "Curatives",
+          "text": "Woolen Tourniquet cures Bleed, Simple Poultice cures Disease, Anti-Venom handles Poison."
+        },
+        {
+          "icon": "inv_potion_51",
+          "kind": "craft",
+          "name": "Healing potions",
+          "text": "Healing potions are craftable with First Aid. Whether Alchemy keeps them too is unknown."
+        }
+      ],
+      "camp": {
+        "effect": "56 Stamina to everyone sitting nearby, like Power Word: Fortitude (at level 60, scaling with level)",
+        "name": "First Aid Kit",
+        "skill": 20
+      },
+      "camp_objects": [
+        {
+          "blueprint": null,
+          "buff": "56 Stamina",
+          "capacity": "",
+          "effect": "56 Stamina to everyone sitting nearby, like Power Word: Fortitude (at level 60, scaling with level)",
+          "exclusive": "Power Word: Fortitude",
+          "icon": "inv_misc_bandage_11",
+          "id": 279968,
+          "name": "First Aid Kit",
+          "reagents": [
+            [
+              1251,
+              3
+            ],
+            [
+              159,
+              1
+            ]
+          ],
+          "replaces": "",
+          "role": "56 Stamina to everyone sitting nearby, like Power Word: Fortitude",
+          "skill": 20
+        },
+        {
+          "blueprint": [
+            273105,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Holds healing potions and anti-venom, and gives the First Aid Kit buff",
+          "exclusive": "",
+          "icon": "inv_misc_potiona3",
+          "id": 279940,
+          "name": "Toxin Study",
+          "reagents": [
+            [
+              6452,
+              1
+            ],
+            [
+              8544,
+              2
+            ],
+            [
+              4470,
+              2
+            ]
+          ],
+          "replaces": "First Aid Kit",
+          "role": "Holds healing potions and anti-venom",
+          "skill": 140
+        },
+        {
+          "blueprint": [
+            273118,
+            0
+          ],
+          "buff": "",
+          "capacity": "",
+          "effect": "Holds healing potions and poultices, and gives the First Aid Kit buff",
+          "exclusive": "",
+          "icon": "inv_10_alchemy_incenseholder_color1",
+          "id": 279951,
+          "name": "Plague Doctor's Laboratory",
+          "reagents": [
+            [
+              4470,
+              2
+            ],
+            [
+              6453,
+              2
+            ],
+            [
+              14530,
+              5
+            ]
+          ],
+          "replaces": "First Aid Kit",
+          "role": "Holds healing potions and poultices",
+          "skill": 300
+        }
+      ],
+      "certification": null,
+      "description": "",
+      "fishing": null,
+      "guide": "bandages",
+      "icon": "spell_holy_sealofsacrifice",
+      "kind": "secondary",
+      "lede": "",
+      "milestones": [],
+      "name": "First Aid",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 11,
+      "recipe_kinds": {
+        "Blueprint": 2,
+        "Manual": 9
+      },
+      "recipe_sub": 7,
+      "section": "first-aid",
+      "shared_perks": [
+        {
+          "effect": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4 / 8 / 12 / 16 / 20%.",
+          "icon": "inv_misc_pocketwatch_03",
+          "id": "legacy-perk-working-overtime",
+          "max_rank": 5,
+          "name": "Working Overtime",
+          "rank_texts": [
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 8%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 12%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 16%.",
+            "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 20%."
+          ],
+          "status": "client_data",
+          "text": "Increases your chance to gain a skill increase from using any primary, secondary, or class-based tradeskill by 4%.",
+          "tree": "Professions",
+          "uncertain": []
+        },
+        {
+          "effect": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "icon": "inv_misc_book_08",
+          "id": "legacy-perk-dedicated-study",
+          "max_rank": 1,
+          "name": "Dedicated Study",
+          "rank_texts": [
+            "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence."
+          ],
+          "status": "client_data",
+          "text": "Increases your skill by 1 in your lowest tradeskill among your Primary and Secondary tradeskills. If you have already reached 300 skill in your two current Primary Tradeskills and all three Secondary Tradeskills, you will gain 2 to 4 of a random Elemental Essence.",
+          "tree": "Professions",
+          "uncertain": []
+        }
+      ],
+      "slug": "first-aid",
+      "specific_perks": [
+        {
+          "effect": "Reduces the duration of the Recently Bandaged effect by 5 / 10 sec when you use a bandage. Ineffective in dungeons, raids, and battlegrounds.",
+          "icon": "inv_misc_bandage_05",
+          "id": "legacy-perk-field-medicine",
+          "max_rank": 2,
+          "name": "Field Medicine",
+          "rank_texts": [
+            "Reduces the duration of the Recently Bandaged effect by 5 sec when you use a bandage. Ineffective in dungeons, raids, and battlegrounds.",
+            "Reduces the duration of the Recently Bandaged effect by 10 sec when you use a bandage. Ineffective in dungeons, raids, and battlegrounds."
+          ],
+          "status": "client_data",
+          "text": "Reduces the duration of the Recently Bandaged effect by 5 sec when you use a bandage. Ineffective in dungeons, raids, and battlegrounds.",
+          "tree": "Adventure",
+          "uncertain": []
+        }
+      ],
+      "status": "linked_legacy_effect",
+      "steps": [],
+      "steps_note": "",
+      "steps_title": "",
+      "summary": "First Aid grows well beyond bandages: a First Aid Kit for Camping, curatives for bleeds, diseases and poisons, and craftable healing potions.",
+      "tips": [
+        "Keep Field Medicine out of dungeon, raid and battleground plans. Its tooltip excludes those settings.",
+        "The perk shortens Recently Bandaged. It does not say it changes healing or channel time.",
+        "First Aid recipes and trainers are still unconfirmed."
+      ],
+      "title": "",
+      "unknowns": [
+        "Bandage recipes and later-rank effects."
+      ],
+      "verify": [
+        "First Aid trainers, recipes, cloth requirements and skill thresholds",
+        "Baseline Recently Bandaged duration",
+        "Changes to bandage healing, channel time or interruption rules"
+      ],
+      "word": ""
+    },
+    {
+      "bonuses": [],
+      "camp": null,
+      "camp_objects": [],
+      "certification": null,
+      "description": "How camping works in WoW Forever: the three campfires, what each profession brings at skill 20, 140 and 300, the buffs, their reagents and rested XP.",
+      "fishing": null,
+      "guide": "camping",
+      "icon": "spell_fire_fire",
+      "kind": "system",
+      "lede": "",
+      "milestones": [],
+      "name": "Camping",
+      "racials": [],
+      "ranks": [],
+      "recipe_count": 0,
+      "recipe_kinds": {},
+      "recipe_sub": null,
+      "section": "camping",
+      "shared_perks": [],
+      "slug": "camping",
+      "specific_perks": [
+        {
+          "effect": "Reduces your cooldown on adding Camp features by 8 / 17 / 25%",
+          "icon": "inv_fishingchair",
+          "id": "legacy-perk-field-guide",
+          "max_rank": 3,
+          "name": "Field Guide",
+          "rank_texts": [
+            "Reduces your cooldown on adding Camp features by 8%",
+            "Reduces your cooldown on adding Camp features by 17%",
+            "Reduces your cooldown on adding Camp features by 25%"
+          ],
+          "status": "client_data",
+          "text": "Reduces your cooldown on adding Camp features by 8%",
+          "tree": "Adventure",
+          "uncertain": []
+        },
+        {
+          "effect": "Your class abilities which grant long-duration stat or attribute benefits to all party or raid members last 50 / 100% longer, and the benefits you gain from resting at a camp last 50 / 100% longer.",
+          "icon": "spell_misc_emotionhappy",
+          "id": "legacy-perk-permanence",
+          "max_rank": 2,
+          "name": "Permanence",
+          "rank_texts": [
+            "Your class abilities which grant long-duration stat or attribute benefits to all party or raid members last 50% longer, and the benefits you gain from resting at a camp last 50% longer.",
+            "Your class abilities which grant long-duration stat or attribute benefits to all party or raid members last 100% longer, and the benefits you gain from resting at a camp last 100% longer."
+          ],
+          "status": "client_data",
+          "text": "Your class abilities which grant long-duration stat or attribute benefits to all party or raid members last 50% longer, and the benefits you gain from resting at a camp last 50% longer.",
+          "tree": "Resourcefulness",
+          "uncertain": []
+        },
+        {
+          "effect": "Your class abilities no longer require reagents purchaseable from vendors.",
+          "icon": "inv_misc_candle_02",
+          "id": "legacy-perk-reagent-economy",
+          "max_rank": 1,
+          "name": "Reagent Economy",
+          "rank_texts": [
+            "Your class abilities no longer require reagents purchaseable from vendors."
+          ],
+          "status": "client_data",
+          "text": "Your class abilities no longer require reagents purchaseable from vendors.",
+          "tree": "Resourcefulness",
+          "uncertain": []
+        }
+      ],
+      "status": "officially_described_system",
+      "steps": [
+        [
+          "Build a campfire",
+          "A cook crafts a Basic Campfire Kit from one Simple Wood, with Flint and Tinder in the bags, and places it. It burns for 15 minutes, and no other campfire can stand within 100 yards."
+        ],
+        [
+          "Add your object",
+          "From skill 20 in a profession, you place its object by the fire; the others come from other players. Your camp objects share a one-hour cooldown."
+        ],
+        [
+          "Sit down for a minute",
+          "Anyone sitting or crafting by the fire for a minute gets the buffs of the objects around it. They last an hour, so you can leave once you have them."
+        ]
+      ],
+      "steps_note": "Around level 5, the quest The Great Outdoors has you sit at a campfire, then sends you to a cooking trainer to learn the Basic Campfire; the trainer sells the Simple Wood and the Flint and Tinder. Each profession you know then gets a quest, handed in to its trainer, that teaches its first camp object. (Wowhead's Camping overview; the client has no quests.)",
+      "steps_title": "How Camping works",
+      "summary": "A new Forever system. A cook builds a campfire, other players add objects from their professions, and anyone who sits by the fire for a minute gets their buffs for an hour. Each profession has three objects, the first at skill 20.",
+      "tips": [
+        "A camp buff does not stack with the class buff it copies, such as the Fish Bowl with Blessing of Kings: you keep one or the other.",
+        "Only Leatherworking's Camp Tent, and the Tanning Rack and Sewing Machine that replace it, give rested experience. Thirty seconds by the tent raises yours to 5% of a level, once an hour, and does nothing if you already have more.",
+        "Most dishes a cook makes also give 5% more experience from kills (not from quests) while you are well fed. The Cooking page lists which ones.",
+        "The Faction Banner only buffs players of your own faction.",
+        "Camp objects can be traded, but placing one needs the profession skill it shows.",
+        "Add camp features often? Look at Field Guide and Reagent Economy. For longer benefits between stops, look at Permanence.",
+        "Check a feature's tier before counting on free reagents. Reagent Economy only names Tier 1.",
+        "The points below are still unconfirmed."
+      ],
+      "title": "Camping in WoW Forever: campfires and buffs",
+      "unknowns": [
+        "Blueprint drop sources."
+      ],
+      "verify": [
+        "Where each Blueprint drops",
+        "How many objects a craft makes: one in the client, two according to Wowhead",
+        "Whether camps work in cities and instances",
+        "Whether you need to be grouped to get another player's camp buffs"
+      ],
+      "word": ""
+    }
+  ],
+  "updated": "2026-10-16"
+}

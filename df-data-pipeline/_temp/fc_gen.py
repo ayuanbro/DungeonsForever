@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """专业页数据 · 第 3 步：归一化 JSON → Core/Data/Data_Prof*.lua。
 
-四个产物（按「什么时候会变」拆，便于 diff 时一眼看出动了哪块）：
+六个产物（保留已维护数据，按变化来源拆开）：
 
     Data_Professions.lua   13 个专业的元信息 / 营地物件 / Legacy 特权 / 待核实文案
     Data_ProfRecipes.lua   配方行 + 附魔 + 附魔材料 + 商人兑换 + 分类
     Data_ProfLeveling.lua  1→300 升级路线 + 购物单 + 营地与商贩坐标
     Data_ProfGathering.lua 采集节点表（采矿 / 采药 / 剥皮 / 钓鱼）
     Data_ProfVendors.lua   商人定位表（NPCID → 坐标，配方来源点图用）
+    Data_ProfTrainers.lua  版本化维护输入中的训练师基线
 
 ★ 物品名 / 图标 / 品质 / 区域名一律不落盘：只存 ID，显示时由客户端给中文（用户 2026-09-23 定，
   2026-09-24 起采集页的区域名与节点名也照此办理）。这条是本方案体积能从 2.5MB 压到 1MB 的关键，
@@ -17,12 +18,12 @@
   生成时会写进 Lua 头注释；两处永远一致，改序只改这里。
 
 用法：
-    python fc_gen.py            生成 4 个 Lua
+    python fc_gen.py            在工具包目录生成 6 个 Lua
     python fc_gen.py --dry-run  只统计体积，不写盘
 """
 import argparse
 import copy
-import glob
+from contextvars import ContextVar
 import hashlib
 import json
 import os
@@ -34,6 +35,31 @@ DF = os.path.dirname(HERE)
 DATA = os.path.join(HERE, '_fc', 'data')
 OUT = os.path.join(DF, 'Core', 'Data')
 ZH_PATH = os.path.join(HERE, '_fc', 'i18n', 'zh.json')
+_RENDER = ContextVar('fc_generation_inputs', default=None)
+
+
+def _data_path(name):
+    context = _RENDER.get()
+    return os.path.join(context['data_dir'] if context else DATA, name)
+
+
+def _read_json(path):
+    with open(path, encoding='utf-8') as stream:
+        return json.load(stream)
+
+
+def _support_path(name):
+    context = _RENDER.get()
+    if context:
+        frozen = os.path.join(context['data_dir'], name)
+        if os.path.isfile(frozen):
+            return frozen
+    return os.path.join(HERE, name)
+
+
+def _camp_areas():
+    context = _RENDER.get()
+    return context['camp_area'] if context else CAMP_AREA
 
 sys.path.insert(0, HERE)
 from fc_i18n import kind_tokens  # noqa: E402  「部位, level N」的拆词实现与白名单同一份
@@ -142,113 +168,6 @@ def tlist(items, fields, indent='            '):
 def field_doc(fields, note=''):
     return '--   %s%s' % (' / '.join('[%d]%s' % (i + 1, f) for i, f in enumerate(fields)),
                           ('   ' + note if note else ''))
-
-
-# ── 手工段防冲（2026-10-12）：fc 重生成会整文件覆盖，poisons/comprehension 等手工段
-#    曾被冲掉（harness 毒药 6 红实锤）。写盘前自动从磁盘旧文件回捞缺失段。
-#    每条：宿主表头正则（段插到该表配平收尾前）+ [(段名, 段键缩进), …]
-HAND_SEGMENTS = {
-    'Data_Professions.lua': (r'^    pro = \{', [('poisons', 8), ('comprehension', 8)]),
-    'Data_ProfLeveling.lua': (r'^ns\.ProfLeveling = \{', [('poisons', 4)]),
-    'Data_ProfRecipes.lua': (r'^local HAND = \{', [('poisons', 4), ('comprehension', 4)]),
-}
-# order 行也是手工维护（毒药/理解插在 first-aid 后）：旧文件 order 含新文件缺的项时整行替换。
-HAND_ORDER = ('Data_Professions.lua', r'^    order')
-
-
-def _brace_end(src, j):
-    depth, k = 0, j
-    while k < len(src):
-        c = src[k]
-        if c == '{':
-            depth += 1
-        elif c == '}':
-            depth -= 1
-            if depth == 0:
-                break
-        k += 1
-    return k
-
-
-def _extract_seg(src, name, indent):
-    m = re.search(r'\n\s{%d}\["%s"\] = \{' % (indent, name), src)
-    if m:
-        start = m.start() + 1
-        k = _brace_end(src, src.index('{', start))
-        return src[start:src.index('\n', k) + 1]
-    m = re.search(r'\nPARTS\["%s"\] = function\(\) return \{' % name, src)
-    if m:
-        j = src.index('{', m.end() - 1)
-        k = _brace_end(src, j)
-        return '    ["%s"] = {%s},\n' % (name, src[j + 1:k])
-    return None
-
-
-def _table_tail(src, header_pat):
-    m = re.search(header_pat, src, re.M)
-    if not m:
-        return None
-    j = src.index('{', m.start())
-    depth, k = 0, j
-    while k < len(src):
-        c = src[k]
-        if c == '{':
-            depth += 1
-        elif c == '}':
-            depth -= 1
-            if depth == 0:
-                break
-        k += 1
-    return k
-
-
-def merge_hand_segments(path, new_text):
-    """写盘前把磁盘旧文件里的手工段 / order 键回插到新文本。"""
-    base = os.path.basename(path)
-    if not os.path.exists(path) or base not in HAND_SEGMENTS:
-        return new_text
-    old = open(path, encoding='utf-8').read()
-    host_pat, segs = HAND_SEGMENTS[base]
-    ins = []
-    for name, indent in segs:
-        if re.search(r'\n\s{%d}\["%s"\] = \{' % (indent, name), new_text):
-            continue
-        if re.search(r'\nPARTS\["%s"\] = function\(\) return \{' % name, new_text):
-            continue
-        seg = _extract_seg(old, name, indent)
-        if seg:
-            ins.append(seg)
-            print('    ♻ 手工段回插: [%s]' % name)
-    if ins:
-        i = _table_tail(new_text, host_pat)
-        if i is None:
-            sys.exit('fc_gen: merge_hand_segments 找不到宿主表 %s' % host_pat)
-        new_text = new_text[:i] + ''.join(ins) + new_text[i:]
-    if base == HAND_ORDER[0]:
-        m_old = re.search(HAND_ORDER[1] + r' = \{.*?\},\s*$', old, re.M | re.S)
-        m_new = re.search(HAND_ORDER[1] + r' = \{.*?\},\s*$', new_text, re.M | re.S)
-        if m_old and m_new and m_old.group(0) != m_new.group(0):
-            missing = [k for k in re.findall(r'"([^"]+)"', m_old.group(0))
-                       if '"%s"' % k not in m_new.group(0)]
-            if missing:
-                new_text = new_text[:m_new.start()] + m_old.group(0) + new_text[m_new.end():]
-                print('    ♻ order 行回插（旧多新少: %s）' % ', '.join(missing))
-    return new_text
-
-
-def write(path, head, body, dry=False):
-    text = merge_hand_segments(path, head + '\n' + body)
-    raw = text.encode('utf-8')
-    h = hashlib.sha256(raw).hexdigest()
-    old = None
-    if os.path.exists(path):
-        old = hashlib.sha256(open(path, 'rb').read()).hexdigest()
-    tag = 'NEW' if old is None else ('SAME' if old == h else 'UPDATED')
-    print('  %-30s %8.0f KB  %s  %s' % (os.path.basename(path), len(raw) / 1024.0, tag, h[:12]))
-    if not dry:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        open(path, 'wb').write(raw)
-    return len(raw)
 
 
 HEAD_COMMON = '''-- =============================================================================
@@ -528,7 +447,7 @@ def build_leveling(index, details):
             # 军需官 NPC 就站在本侧营地 → 沿用本侧营地的区域（数据源两处坐标互证一致）。
             area = {}
             for side in ('a', 'h'):
-                area[side] = (CAMP_AREA.get(slug) or {}).get(side)
+                area[side] = (_camp_areas().get(slug) or {}).get(side)
             if d['camps']:
                 lines.append('        -- 营地：a=联盟 h=部落 {阵营, 区域, 地点, x, y, 区域AreaID}')
                 lines.append('        camps = { a=%s, h=%s },'
@@ -583,42 +502,45 @@ def collect_camp_area(details_raw):
                     sys.exit('fc_gen: 营地区域名 %r 没有 AreaTable ID —— 补跑 fc_zones.py 再生成'
                              % (cp['zone'],))
                 ent[side] = zmap[cp['zone']]
-        CAMP_AREA[slug] = ent
+        _camp_areas()[slug] = ent
 
 
 def zone_map():
     """英文区域名 → AreaTable ID（fc_zones.py 的产物）。"""
-    p = os.path.join(DATA, 'zone_ids.json')
+    p = _data_path('zone_ids.json')
     if not os.path.exists(p):
         sys.exit('fc_gen: 缺 %s —— 先跑 `python fc_zones.py`'
                  % os.path.relpath(p, os.path.dirname(HERE)))
-    return json.load(open(p, encoding='utf-8'))
+    return _read_json(p)
 
 
 def vendor_loc_map():
     """商人英文名 → {id, x, y, areaID, mapID}（fc_vendors.py 的产物）。缺文件视为空表。"""
-    p = os.path.join(DATA, 'vendor_loc.json')
+    p = _data_path('vendor_loc.json')
     if not os.path.exists(p):
         return {}
-    return json.load(open(p, encoding='utf-8'))
+    return _read_json(p)
 
 
 def vendor_side_map():
     """商人英文名 → 'a'|'h'（fc_vendor_side.py 的产物；缺 = 中立/未知，双方可见）。"""
-    p = os.path.join(DATA, 'vendor_side.json')
+    p = _data_path('vendor_side.json')
     if not os.path.exists(p):
         return {}
-    return json.load(open(p, encoding='utf-8'))
+    return _read_json(p)
 
 
 def drop_loc_map():
-    p = os.path.join(DATA, 'drop_loc.json')
+    p = _data_path('drop_loc.json')
     if not os.path.exists(p):
         return {}
-    return json.load(open(p, encoding='utf-8'))
+    return _read_json(p)
 
 
 def area_map_ids():
+    context = _RENDER.get()
+    if context is not None:
+        return dict(context['area_map'])
     p = os.path.join(OUT, 'Data_AreaMap.lua')
     if not os.path.exists(p):
         return {}
@@ -630,10 +552,10 @@ def area_map_ids():
 
 def zone_zh_map():
     """英文区域名 → 中文区域名（fc_zh_sync.py 对齐站点 zh-cn 页的产物）。缺文件视为空表。"""
-    p = os.path.join(DATA, 'zone_zh.json')
+    p = _data_path('zone_zh.json')
     if not os.path.exists(p):
         return {}
-    return json.load(open(p, encoding='utf-8'))
+    return _read_json(p)
 
 
 def localize_source_geo(details):
@@ -668,10 +590,10 @@ def inject_enchant_ids(details):
     键 = 英文名（enchant_ids.json = fc_enchant_ids.py 对 Skillwright Recipes.lua
     [333] 段的行尾英文名注释 join 产物）。必须在 localize 之前跑 —— localize 会把
     name 套成中文，之后就没键可查了。"""
-    p = os.path.join(DATA, 'enchant_ids.json')
+    p = _data_path('enchant_ids.json')
     if not os.path.exists(p):
         sys.exit('fc_gen: 缺 %s —— 先跑 `python fc_enchant_ids.py`' % p)
-    jmap = json.load(open(p, encoding='utf-8'))
+    jmap = _read_json(p)
     for d in details.values():
         if not d:
             continue
@@ -723,16 +645,16 @@ def inject_drop_ids(details):
 
 def questie_json():
     """QuestieDB-Forever 提取产物（questie_extract.py 产物）。缺文件视为空表。"""
-    p = os.path.join(HERE, 'questie', 'questie_forever.json')
+    p = _support_path('questie/questie_forever.json')
     if not os.path.exists(p):
         return {}
-    return json.load(open(p, encoding='utf-8'))
+    return _read_json(p)
 
 
 def area_zh_by_id():
     """areaID → 中文区名（_temp/_wago_AreaTable_zh.csv 的 ID/AreaName_lang 列）。"""
     out = {}
-    p = os.path.join(HERE, '_wago_AreaTable_zh.csv')
+    p = _support_path('_wago_AreaTable_zh.csv')
     if not os.path.exists(p):
         return out
     with open(p, encoding='utf-8') as f:
@@ -756,7 +678,8 @@ def inject_questie_sources(details):
     """
     qj = questie_json()
     if not qj:
-        print('  QuestieDB 来源补全：缺 questie_forever.json，跳过')
+        if _RENDER.get() is None:
+            print('  QuestieDB 来源补全：缺 questie_forever.json，跳过')
         return details
     ndrops = qj.get('item_npcDrops') or {}
     nvend = qj.get('item_vendors') or {}
@@ -805,7 +728,8 @@ def inject_questie_sources(details):
                             })
                         src['vendors'] = arr
                         added_v += 1
-    print('  QuestieDB 来源补全：掉落 +%d 配方、商人 +%d 配方' % (added_d, added_v))
+    if _RENDER.get() is None:
+        print('  QuestieDB 来源补全：掉落 +%d 配方、商人 +%d 配方' % (added_d, added_v))
     return details
 
 
@@ -826,7 +750,8 @@ def inject_vendor_side(details):
                     if isinstance(v, dict) and v.get('name') in vside:
                         v['side'] = vside[v['name']]
                         n += 1
-    print('  商人 side 注入：%d 处' % n)
+    if _RENDER.get() is None:
+        print('  商人 side 注入：%d 处' % n)
     return details
 
 
@@ -1061,93 +986,197 @@ def localize(index, details, loc):
     return index, details
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--dry-run', action='store_true')
-    ap.add_argument('--no-i18n', action='store_true',
-                    help='不套中文（产出英文原文，用于对照排查）')
-    args = ap.parse_args()
+def render_unmaintained(data_dir, area_map=None, no_i18n=False, i18n_seed=None):
+    """Pure legacy builders over an explicit JSON snapshot, before maintenance."""
+    from pathlib import Path
+    context = {'data_dir': str(Path(data_dir).resolve()), 'area_map': area_map or {},
+               'camp_area': {}}
+    token = _RENDER.set(context)
+    try:
+        index = _read_json(_data_path('index.json'))
+        details = {path.stem[len('prof_'):]: json.loads(path.read_text(encoding='utf-8'))
+                   for path in sorted(Path(context['data_dir']).glob('prof_*.json'))}
+        inject_enchant_ids(details)
+        inject_vendor_ids(details)
+        inject_drop_ids(details)
+        inject_questie_sources(details)
+        inject_vendor_side(details)
+        collect_camp_area(details)
+        if not no_i18n:
+            if i18n_seed is None:
+                zh_path = Path(context['data_dir']) / 'zh.json'
+                if not zh_path.exists():
+                    zh_path = Path(ZH_PATH)
+                zh = json.loads(zh_path.read_text(encoding='utf-8'))
+            else:
+                zh = i18n_seed
+            index, details = localize(index, details, Loc(zh))
+        localize_source_geo(details)
+        outputs = {}
+        for name, builder in (
+                ('Data_Professions.lua', build_professions),
+                ('Data_ProfRecipes.lua', build_recipes),
+                ('Data_ProfLeveling.lua', build_leveling),
+                ('Data_ProfGathering.lua', build_gathering),
+                ('Data_ProfVendors.lua', build_vendors)):
+            head, body = builder(index, details)
+            outputs[name] = (head + '\n' + body).encode('utf-8')
+        return outputs
+    except SystemExit as error:
+        from fc_maintenance import MaintenanceError
+        raise MaintenanceError(str(error)) from error
+    finally:
+        _RENDER.reset(token)
 
-    index = json.load(open(os.path.join(DATA, 'index.json'), encoding='utf-8'))
-    details = {}
-    for f in glob.glob(os.path.join(DATA, 'prof_*.json')):
-        slug = os.path.basename(f)[len('prof_'):-len('.json')]
-        details[slug] = json.load(open(f, encoding='utf-8'))
 
-    zh = {}
-    loc = Loc({})
-    inject_enchant_ids(details)  # 附魔 spell/created（Skillwright 第四源，localize 前按英文名 join）
-    inject_vendor_ids(details)   # 商人 NPCID：键是英文原名，必须在 localize 前
-    inject_drop_ids(details)     # 掉落 NPCID：键是英文原名，必须在 localize 前
-    inject_questie_sources(details)  # QuestieDB 补配方来源（localize 前，英文 NPC 名）
-    inject_vendor_side(details)  # 商人阵营 side（fc_vendor_side.py 产物），同样在 localize 前
-    CAMP_AREA.clear()
-    collect_camp_area(details)          # ★ 汉化前先算好营地 AreaTable（英文区域名查表）
-    if not args.no_i18n:
-        if not os.path.exists(ZH_PATH):
-            sys.exit('fc_gen: 找不到 %s（先跑 fc_i18n.py --audit 补译）' % ZH_PATH)
-        zh = json.load(open(ZH_PATH, encoding='utf-8'))
-        loc = Loc(zh)
-        index, details = localize(index, details, loc)
-    localize_source_geo(details)          # 来源里的区域中文名 + 商人 NPCID（与 i18n 无关，恒跑）
+def revision_inputs(data_dir, maintenance_path=None):
+    """Select exact historical inputs before localization, otherwise use current rules."""
+    from fc_maintenance import read_manifest, unpack, prepared_input_sha, select_revision
+    manifest = read_manifest(maintenance_path)
+    if manifest.get('accepted_revisions'):
+        prepared = render_unmaintained(data_dir, area_map=unpack(manifest['area_map']), no_i18n=True)
+        active = select_revision(manifest, prepared_input_sha(prepared))
+    else:
+        active = manifest
+    sources = render_unmaintained(data_dir, area_map=unpack(active['area_map']),
+                                  i18n_seed=active.get('historical_i18n_seed'))
+    return sources, active
 
-    total = 0
-    for name, fn in (('Data_Professions.lua', build_professions),
-                     ('Data_ProfRecipes.lua', build_recipes),
-                     ('Data_ProfLeveling.lua', build_leveling),
-                     ('Data_ProfGathering.lua', build_gathering),
-                     ('Data_ProfVendors.lua', build_vendors)):
-        head, body = fn(index, details)
-        total += write(os.path.join(OUT, name), head, body, args.dry_run)
-    print('  合计 %.0f KB（%s）' % (total / 1024.0, '未写盘' if args.dry_run else '已写盘'))
 
-    if not args.no_i18n:
-        print('  文案：对照表 %d 条 · 命中 %d 条 · 回落英文 %d 条'
-              % (len(zh), len(loc.used), len(loc.missed)))
-        if loc.missed:
-            # 走到这里说明 collect() 收了、localize() 也套了、但对照表里没有 —— 即
-            # `fc_i18n.py --audit` 会报的「未译」，只是这里从**生成侧**再兜一次网。
-            print('  ⚠️ 以下原文没译文（回落英文，跑 fc_i18n.py --audit 补）：')
-            for s in sorted(loc.missed)[:20]:
-                print('      %s' % s[:100])
-            if len(loc.missed) > 20:
-                print('      … 共 %d 条' % len(loc.missed))
+def render_data(data_dir, reference_dir=None, maintenance_path=None):
+    """Return six maintained Lua files as bytes without reading previous outputs.
+
+    reference_dir is accepted for migration compatibility; normal generation
+    deliberately uses the versioned area map and trainer seed in maintenance.
+    """
+    from fc_maintenance import maintained_model, render_model
+    raw, active = revision_inputs(data_dir, maintenance_path)
+    return render_model(maintained_model(raw, active))
+
+
+def render_catalog(data_dir, maintenance_path=None):
+    """Return an additive evidence catalogue, independently of UI suppressions.
+
+    Original profession JSON is never filtered or rewritten on disk. This view
+    retains all original evidence and adds the maintained recipe partitions and
+    explicit identity evidence required by the specialization audit.
+    """
+    from pathlib import Path
+    from fc_maintenance import maintained_model, normalize, stable_key
+    directory = Path(data_dir)
+    raw, manifest = revision_inputs(directory, maintenance_path)
+    model = normalize(maintained_model(raw, manifest))
+    recipes = model['Data_ProfRecipes.lua']['ProfRecipes']
+    catalog = {path.stem[len('prof_'):]: json.loads(path.read_text(encoding='utf-8'))
+               for path in sorted(directory.glob('prof_*.json'))}
+    enchant_path = directory / 'enchant_ids.json'
+    enchants = json.loads(enchant_path.read_text(encoding='utf-8')) if enchant_path.exists() else {}
+    maintained_ids = {(entry['collection'], entry['name']): entry
+                      for entry in manifest.get('catalog_id_evidence', [])}
+
+    def positive(value):
+        return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+    def json_value(value):
+        if isinstance(value, dict):
+            if value and set(value) == set(range(1, len(value) + 1)):
+                return [json_value(value[i]) for i in range(1, len(value) + 1)]
+            return {str(key): json_value(item) for key, item in value.items()}
+        return value
+
+    def source_row(row):
+        result = {key: json_value(value) for key, value in row.items() if key != '$extra'}
+        for key in ('reagents', 'formula', 'was', 'bis'):
+            if result.get(key) == {}:
+                result[key] = []
+        for key in ('drops', 'vendors'):
+            if isinstance(result.get('source'), dict) and result['source'].get(key) == {}:
+                result['source'][key] = []
+        return result
+
+    for slug, data in recipes.items():
+        if slug not in catalog:
+            # A maintained partition is not evidence from the latest webpage.
+            # Its captured source version remains independent of the target
+            # addon build; unknown sources must stay unknown.
+            provenance = copy.deepcopy(manifest.get('supplemental_catalog_sources', {}).get(slug, {}))
+            catalog[slug] = {'kind': 'detail', 'slug': slug,
+                             'build': provenance.get('source_build', ''),
+                             'source_provenance': provenance}
+        target = catalog[slug]
+        for collection in ('rows', 'enchants', 'crafted'):
+            existing = target.setdefault(collection, [])
+            identities = {stable_key(collection, row): row for row in existing}
+            grouped = data.get(collection, {'$rows': {}, '$order': {}})
+            for position in sorted(grouped['$order']):
+                key = grouped['$order'][position]
+                row = grouped['$rows'][key]
+                if key not in identities:
+                    existing.append(source_row(row))
+                    identities[key] = existing[-1]
+                current = identities[key]
+                # Evidence input wins whenever it already has a valid identity.
+                for field in ('spell', 'id', 'created'):
+                    if not positive(current.get(field)) and positive(row.get(field)):
+                        current[field] = row[field]
+            if collection == 'enchants':
+                for current in existing:
+                    evidence = enchants.get(current.get('name')) or maintained_ids.get(
+                        (collection, current.get('name'))) or {}
+                    for field in ('spell', 'created'):
+                        if not positive(current.get(field)) and positive(evidence.get(field)):
+                            current[field] = evidence[field]
+    outputs = {'prof_%s.json' % slug: (json.dumps(value, ensure_ascii=False, separators=(',', ':'))
+                                      + '\n').encode('utf-8') for slug, value in sorted(catalog.items())}
+    if enchant_path.exists():
+        outputs['enchant_ids.json'] = enchant_path.read_bytes()
+    return outputs
+
+
+def generation_input_paths(data_dir=None, maintenance_path=None):
+    """Files consumed by render_data, keyed by their frozen snapshot locations."""
+    from pathlib import Path
+    from fc_maintenance import DEFAULT_PATH
+    directory = Path(data_dir or DATA)
+    inputs = {path.name: path for path in sorted(directory.glob('prof_*.json'))}
+    for name in ('index.json', 'enchant_ids.json', 'vendor_loc.json', 'vendor_side.json',
+                 'drop_loc.json', 'zone_ids.json', 'zone_zh.json'):
+        path = directory / name
+        if path.exists():
+            inputs[name] = path
+    for name, fallback in (
+            ('zh.json', Path(ZH_PATH)),
+            ('questie/questie_forever.json', Path(HERE) / 'questie/questie_forever.json'),
+            ('_wago_AreaTable_zh.csv', Path(HERE) / '_wago_AreaTable_zh.csv')):
+        path = directory / name
+        if not path.is_file():
+            path = fallback
+        if path.is_file():
+            inputs[name] = path
+    inputs['maintenance/professions.json'] = Path(maintenance_path or DEFAULT_PATH)
+    return inputs
+
+
+def main(argv=None):
+    from pathlib import Path
+    from fc_pipeline_common import publish_batch, require_repo_path
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--no-i18n', action='store_true', help='legacy English diagnostic output')
+    parser.add_argument('--data-dir', type=Path, default=Path(DATA))
+    parser.add_argument('--maintenance', type=Path)
+    options = parser.parse_args(argv)
+    if options.no_i18n:
+        outputs = render_unmaintained(options.data_dir, no_i18n=True)
+    else:
+        outputs = render_data(options.data_dir, maintenance_path=options.maintenance)
+    destinations = {require_repo_path(Path(OUT) / name): content for name, content in outputs.items()}
+    for path, content in destinations.items():
+        print('%s: %d bytes sha256=%s' % (path.name, len(content), hashlib.sha256(content).hexdigest()))
+    if not options.dry_run:
+        publish_batch(destinations)
     return 0
 
 
-
-
-def _strip_comments_after_gen():
-    """注释精简：**只清理本生成器写出的文件**（Core/Data/Data_Professions.lua 等 4 个）。
-
-    ★ 2026-09-29 收口（第七轮）：旧实现无条件重扫整个 Core/，会剥掉并行会话手改
-      文件（LootFilterUI / MainFrame / Core / LootFilter）以及其它生成器产物
-      （enUS / zhTW 副本）的注释。现限定为本生成器 4 个产物白名单，杜绝外溢。
-      注释口径本身不变：每个 Lua 只留文件头注释块（逻辑仍在 _temp/strip_comments.py）。
-    """
-    import os as _os
-    import sys as _sys
-    _here = _os.path.dirname(_os.path.abspath(__file__))
-    if _here not in _sys.path:
-        _sys.path.insert(0, _here)
-    import strip_comments as _S
-    n = 0
-    _prod = [_os.path.join(OUT, _n) for _n in (
-        'Data_Professions.lua', 'Data_ProfRecipes.lua',
-        'Data_ProfLeveling.lua', 'Data_ProfGathering.lua',
-        'Data_ProfVendors.lua')]
-    for _p in _S.walk([_q for _q in _prod if _os.path.exists(_q)]):
-        _raw = open(_p, 'rb').read()
-        _txt = _raw.decode('utf-8')
-        _new, _c, _t = _S.strip_all_text(_txt)
-        if _new != _txt:
-            open(_p, 'wb').write(_new.encode('utf-8'))
-            n += 1
-    if n:
-        print('注释精简：收尾清理 %d 个文件' % n)
-
-
 if __name__ == '__main__':
-    _rc = main()
-    _strip_comments_after_gen()
-    sys.exit(_rc)
+    sys.exit(main())

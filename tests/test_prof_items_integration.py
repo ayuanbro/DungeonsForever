@@ -1,240 +1,219 @@
-"""Check importer orchestration and generator read-only behavior in isolation."""
+"""Unified entrypoint boundaries: one transaction after every generation step."""
+import argparse
 import contextlib
-import importlib.util
+import importlib
 import io
-import json
 import os
 from pathlib import Path
-import shutil
-import subprocess
 import sys
 import tempfile
 import unittest
 from unittest import mock
 
-
 ROOT = Path(__file__).resolve().parents[1]
-PIPELINE = ROOT / "df-prof-pipeline-v1.0/_temp"
-CHILDREN = (
-    "fc_fetch.py", "fc_parse.py", "fc_zones.py", "fc_fields.py",
-    "fc_i18n.py", "fc_gen.py", "fc_prof_items.py", "fc_prof_specializations.py",
-    "strip_lua_comments.py",
-    "fc_refresh_specializations.py",
-)
-STUB = '''import json
-import os
-from pathlib import Path
-import sys
-
-name = Path(__file__).name
-with open(os.environ["DF_PIPELINE_TEST_LOG"], "a", encoding="utf-8") as stream:
-    stream.write(json.dumps({"script": name, "argv": sys.argv[1:], "cwd": os.getcwd()}) + "\\n")
-sys.exit(7 if name == os.environ.get("DF_PIPELINE_TEST_FAIL") else 0)
-'''
+sys.path.insert(0, str(ROOT / 'df-data-pipeline/_temp'))
+import fc_pipeline as pipeline
+import fc_pipeline_common as common
+import fc_gen
+import fc_locales
+import fc_prof_items as items
+import fc_refresh_specializations as refresh
 
 
-class ProfItemsIntegrationTests(unittest.TestCase):
+class UnifiedIntegrationTests(unittest.TestCase):
     def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory(prefix="df-prof-integration-")
-        self.addCleanup(self.temporary.cleanup)
-        self.directory = Path(self.temporary.name)
-        self.scripts = self.directory / "package/_temp"
-        self.scripts.mkdir(parents=True)
-        shutil.copyfile(PIPELINE / "fc_update.py", self.scripts / "fc_update.py")
-        for name in CHILDREN:
-            (self.scripts / name).write_text(STUB, encoding="utf-8")
-        self.caller = self.directory / "caller with spaces"
-        self.caller.mkdir()
-        self.log = self.directory / "calls.jsonl"
-
-    def run_pipeline(self, *arguments, fail=""):
-        environment = os.environ.copy()
-        environment.update(DF_PIPELINE_TEST_LOG=str(self.log),
-                           DF_PIPELINE_TEST_FAIL=fail, PYTHONIOENCODING="utf-8",
-                           PYTHONDONTWRITEBYTECODE="1")
-        result = subprocess.run(
-            [sys.executable, "-B", str(self.scripts / "fc_update.py"), *arguments],
-            cwd=self.caller, env=environment, capture_output=True,
-            text=True, encoding="utf-8", errors="replace", timeout=30,
-        )
-        calls = [json.loads(line) for line in self.log.read_text(encoding="utf-8").splitlines()] \
-            if self.log.exists() else []
-        return result, calls
-
-    def assert_ok(self, result):
-        self.assertEqual(result.returncode, 0, result.stdout + "\n" + result.stderr)
-
-    def test_check_orders_import_after_generation_and_forwards_absolute_inputs(self):
-        arguments = ["--check", "--offline"]
-        inputs = {"--vendors-csv": "inputs/vendors.csv", "--npcs-csv": "输入/npcs.csv",
-                  "--prices-csv": "../prices.csv"}
-        for option, value in inputs.items():
-            arguments.extend((option, value))
-        arguments.extend(("--verified-at", "2026-10-20"))
-        result, calls = self.run_pipeline(*arguments)
-        self.assert_ok(result)
-        names = [call["script"] for call in calls]
-        self.assertEqual(names, ["fc_fetch.py", "fc_parse.py", "fc_zones.py", "fc_fields.py",
-                                 "fc_i18n.py", "fc_gen.py", "fc_prof_items.py",
-                                 "fc_prof_specializations.py", "fc_fields.py"])
-        imported = calls[6]["argv"]
-        self.assertIn("--dry-run", imported)
-        for option, value in inputs.items():
-            actual = imported[imported.index(option) + 1]
-            self.assertEqual(actual, os.path.abspath(self.caller / value))
-            self.assertTrue(os.path.isabs(actual))
-            self.assertTrue(all(option not in call["argv"] for call in calls if call is not calls[6]))
-        self.assertEqual(imported[imported.index("--verified-at") + 1], "2026-10-20")
-        self.assertIn("--dry-run", calls[5]["argv"])
-        self.assertIn("--offline", calls[0]["argv"])
-        self.assertIn("--offline", calls[2]["argv"])
-        self.assertEqual(calls[7]["argv"], ["--offline", "--dry-run"])
-        self.assertTrue(all(Path(call["cwd"]) == self.scripts for call in calls))
-
-    def test_apply_runs_post_import_audit_then_comment_cleanup(self):
-        absolute = self.caller / "prices.csv"
-        result, calls = self.run_pipeline("--apply", "--offline", "--prices-csv", str(absolute))
-        self.assert_ok(result)
-        self.assertTrue(all("--dry-run" not in call["argv"] for call in calls))
-        self.assertEqual([call["script"] for call in calls][-4:],
-                         ["fc_prof_items.py", "fc_prof_specializations.py",
-                          "fc_fields.py", "strip_lua_comments.py"])
-        self.assertEqual(calls[-1]["argv"], ["--apply"])
-        imported = calls[-4]["argv"]
-        self.assertEqual(imported[imported.index("--prices-csv") + 1], str(absolute))
-
-    def test_default_mode_checks_without_comment_cleanup(self):
-        result, calls = self.run_pipeline("--offline")
-        self.assert_ok(result)
-        self.assertEqual(calls[-1]["script"], "fc_fields.py")
-        self.assertEqual(calls[-2]["script"], "fc_prof_specializations.py")
-        self.assertEqual(calls[-2]["argv"], ["--offline", "--dry-run"])
-        self.assertFalse(any(call["script"] == "strip_lua_comments.py" for call in calls))
-
-    def test_apply_and_check_are_mutually_exclusive_before_running_children(self):
-        result, calls = self.run_pipeline("--apply", "--check")
-        self.assertEqual(result.returncode, 2)
-        self.assertEqual(calls, [])
-
-    def test_child_failure_stops_before_later_steps_or_cleanup(self):
-        for failed in ("fc_gen.py", "fc_prof_items.py", "fc_prof_specializations.py"):
-            with self.subTest(failed=failed):
-                if self.log.exists():
-                    self.log.unlink()
-                result, calls = self.run_pipeline("--apply", "--offline", fail=failed)
-                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-                self.assertEqual(calls[-1]["script"], failed)
-                self.assertIn("[FAIL]", result.stdout)
-                self.assertEqual(sum(call["script"] == "fc_fields.py" for call in calls), 1)
-                self.assertFalse(any(call["script"] == "strip_lua_comments.py" for call in calls))
-
-    def test_specialization_options_only_reach_specialization_step(self):
-        paths = {
-            "--recipe-items-csv": ("--recipe-items-csv", "inputs/recipe items.csv"),
-            "--trainer-csv": ("--trainer-csv", "输入/trainers.csv"),
-            "--specialization-cache-dir": ("--cache-dir", "../specialization cache"),
-            "--specialization-output-lua": ("--output-lua", "output/specializations.lua"),
+        temporary_root = ROOT / '.pipeline-runtime/tmp'
+        temporary_root.mkdir(parents=True, exist_ok=True)
+        temporary = tempfile.TemporaryDirectory(prefix='unified-中文 ', dir=temporary_root)
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.here = self.root / 'df-data-pipeline/_temp'
+        self.data = self.here / '_fc/data'
+        self.official = self.root / 'Core/Data'
+        for path in (self.data, self.official, self.here / '_fc/i18n', self.here / '_fc/maintenance'):
+            path.mkdir(parents=True, exist_ok=True)
+        self.addCleanup(mock.patch.stopall)
+        for module, values in (
+            (common, {'REPO': self.root, 'LOCK_PATH': self.here / '_fc/cache/.pipeline-state/update.lock'}),
+            (pipeline, {'REPO': self.root, 'PACKAGE': self.here.parent, 'HERE': self.here,
+                        'OFFICIAL': self.official, 'DATA_DIR': self.data}),
+        ):
+            for name, value in values.items():
+                mock.patch.object(module, name, value).start()
+        for name in pipeline.BASE_FILES:
+            (self.official / name).write_bytes(b'local _,ns=...\nns.Existing={ [1]=true }\n')
+        self.marker = self.here / '_fc/cache/.pipeline-state/current.json'
+        self.marker.parent.mkdir(parents=True)
+        self.marker.write_bytes(b'old marker')
+        self.inputs = {
+            'index.json': b'{"build":"fixture"}', 'prof_engineering.json': b'{"rows":[]}',
+            'zone_ids.json': b'{}', 'recipe-item-link-audit-summary.json': b'{"audit":"old"}',
         }
-        arguments = ["--check", "--refresh-trainers", "--specialization-build", "1.60.1.70450"]
-        for option, (_, value) in paths.items():
-            arguments.extend((option, value))
-        result, calls = self.run_pipeline(*arguments)
-        self.assert_ok(result)
-        specialized = next(call for call in calls if call["script"] == "fc_prof_specializations.py")
-        actual = specialized["argv"]
-        self.assertIn("--dry-run", actual)
-        self.assertIn("--refresh-trainers", actual)
-        self.assertNotIn("--offline", actual)
-        self.assertNotIn("--force", actual)
-        self.assertEqual(actual[actual.index("--build") + 1], "1.60.1.70450")
-        for public_option, (child_option, value) in paths.items():
-            self.assertEqual(actual[actual.index(child_option) + 1],
-                             os.path.abspath(self.caller / value))
-            for call in calls:
-                if call is not specialized:
-                    self.assertNotIn(child_option, call["argv"])
-                    self.assertNotIn(public_option, call["argv"])
-        for call in calls:
-            if call is not specialized:
-                self.assertNotIn("--refresh-trainers", call["argv"])
-                self.assertNotIn("--build", call["argv"])
-        self.assertIn("--force", calls[0]["argv"])
+        for name, content in self.inputs.items():
+            (self.data / name).write_bytes(content)
+        (self.here / '_fc/i18n/zh.json').write_bytes(b'{}')
+        for name in ('professions.json', 'locales.json'):
+            (self.here / '_fc/maintenance' / name).write_bytes(b'{"schema":1}')
+        inputs = {}
+        for name in ('vendors_csv', 'npcs_csv', 'prices_csv', 'item_csv', 'recipe_items_csv'):
+            source = self.here / '_fc/inputs' / (name + '.csv')
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_bytes(b'fixture\n')
+            inputs[name] = source
+        mock.patch.object(pipeline, 'CSV_INPUTS', inputs).start()
+        self.steps = []
+        self.failure = None
+        mock.patch.object(pipeline, 'run_step', side_effect=self.step).start()
+        mock.patch.object(fc_gen, 'render_data', side_effect=self.base).start()
+        mock.patch.object(fc_gen, 'render_catalog', return_value={'prof_engineering.json': b'{"rows":[]}',
+                                                                 'enchant_ids.json': b'{}'}).start()
+        mock.patch.object(fc_locales, 'render_locales', side_effect=self.languages).start()
+        mock.patch.object(refresh, 'prepare_batch', side_effect=self.specializations).start()
+        mock.patch.object(items, 'build_batch', side_effect=self.items).start()
+        mock.patch.object(pipeline, 'validate_batch', side_effect=self.validate).start()
+        self.before = self.snapshot()
 
-    def test_online_default_does_not_force_specialization_cache_refresh(self):
-        result, calls = self.run_pipeline("--check")
-        self.assert_ok(result)
-        specialized = next(call for call in calls if call["script"] == "fc_prof_specializations.py")
-        self.assertEqual(specialized["argv"], ["--dry-run"])
-        self.assertIn("--force", calls[0]["argv"])
+    def snapshot(self):
+        return {str(p.relative_to(self.root)): p.read_bytes() for p in self.root.rglob('*')
+                if p.is_file() and '/cache/' not in p.as_posix() and '/reports/' not in p.as_posix()}
 
-    def test_main_clears_failure_from_an_earlier_invocation(self):
-        spec = importlib.util.spec_from_file_location("df_pipeline_repeat_test", PIPELINE / "fc_update.py")
-        update = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(update)
-        with mock.patch.object(update.subprocess, "run") as run, \
-                contextlib.redirect_stdout(io.StringIO()):
-            run.return_value.returncode = 7
-            self.assertEqual(update.main(["--offline", "--check"]), 1)
-            self.assertTrue(update.FAILED)
-            run.return_value.returncode = 0
-            self.assertEqual(update.main(["--offline", "--check"]), 0)
-            self.assertEqual(update.FAILED, [])
+    def point(self, name):
+        self.steps.append(name)
+        if self.failure == name:
+            raise common.PipelineError('injected ' + name)
 
-    def test_specializations_only_delegates_one_batch_and_forwards_options(self):
-        result, calls = self.run_pipeline(
-            "--specializations-only", "--apply", "--offline",
-            "--tool-directory", "tools/wtl", "--db2-dir", "snapshot",
-            "--specialization-cache-root", "cache", "--skip-recipe-catalog",
-            "--specialization-cache-dir", "pages", "--item-csv", "item.csv")
-        self.assert_ok(result)
-        self.assertEqual([call["script"] for call in calls], ["fc_refresh_specializations.py"])
-        actual = calls[0]["argv"]
-        for flag in ("--apply", "--offline", "--skip-catalog"):
-            self.assertIn(flag, actual)
-        for flag, relative in (("--tool-directory", "tools/wtl"), ("--db2-dir", "snapshot"),
-                               ("--cache-root", "cache"), ("--wowhead-cache-dir", "pages"),
-                               ("--item-csv", "item.csv")):
-            self.assertEqual(actual[actual.index(flag) + 1], os.path.abspath(self.caller / relative))
+    def step(self, script, arguments, environment):
+        self.point(script)
+        if script == 'fc_parse.py':
+            # A staged old audit must never overwrite the newly prepared audit.
+            self.assertTrue(Path(environment['DF_PIPELINE_DATA_DIR']).is_relative_to(self.root))
+        self.assertTrue(Path(environment['DF_PIPELINE_REPORT_DIR']).is_relative_to(self.root))
 
-    def test_specializations_only_defaults_to_check_and_propagates_failure(self):
-        result, calls = self.run_pipeline("--specializations-only", fail="fc_refresh_specializations.py")
-        self.assertEqual(result.returncode, 1)
-        self.assertEqual(len(calls), 1)
-        self.assertEqual(calls[0]["argv"], ["--check"])
+    def base(self, data, **kwargs):
+        self.point('base')
+        return {name: (self.official / name).read_bytes() for name in pipeline.BASE_FILES}
+
+    def specializations(self, args, report):
+        self.point('specializations')
+        return {self.data / 'recipe-item-link-audit-summary.json': b'{"audit":"new"}'}, {}
+
+    def items(self, args):
+        self.point('items')
+        if not args.from_csv:
+            self.assertIn(self.official / 'Data_ProfVendors.lua', args.input_overrides)
+        return {args.items_lua: b'local _,ns=...\nns.ProfItems={ [1]={item_id=1} }\n'}, {}
+
+    def languages(self, base, baseline, **kwargs):
+        self.point('languages')
+        self.assertEqual(set(base), set(pipeline.BASE_FILES))
+        return {locale + '/' + name: b'local _,ns=...\nns.Locale={ [1]=true }\n'
+                for locale in ('enUS', 'zhTW') for name in pipeline.BASE_FILES}
+
+    def validate(self, outputs, before, report, full=True, approved_removals=(), catalog_identities=None):
+        self.point('validate')
+        self.assertEqual(outputs.get(self.data / 'recipe-item-link-audit-summary.json', b'{"audit":"new"}'),
+                         b'{"audit":"new"}')
+
+    def invoke(self, *flags):
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            return pipeline.main(['--offline', *flags])
+
+    def test_check_runs_every_step_and_does_not_publish(self):
+        with mock.patch.object(common, 'publish_batch') as publish:
+            self.assertEqual(self.invoke('--check'), 0)
+        publish.assert_not_called()
+        self.assertEqual(self.steps, ['fc_fetch.py', 'fc_parse.py', 'fc_zones.py', 'fc_fields.py',
+                                     'fc_i18n.py', 'base', 'specializations', 'items', 'languages', 'validate'])
+        self.assertEqual(self.snapshot(), self.before)
+        self.assertEqual(self.marker.read_bytes(), b'old marker')
+
+    def test_apply_publishes_only_after_validation_and_keeps_new_audit(self):
+        real = common.publish_batch
+        def publish(outputs, expected):
+            self.assertEqual(self.steps[-1], 'validate')
+            return real(outputs, expected)
+        with mock.patch.object(common, 'publish_batch', side_effect=publish) as committed:
+            self.assertEqual(self.invoke('--apply'), 0)
+        self.assertEqual(committed.call_count, 1)
+        self.assertEqual((self.data / 'recipe-item-link-audit-summary.json').read_bytes(), b'{"audit":"new"}')
+        self.assertTrue((self.official / 'enUS/Data_ProfRecipes.lua').exists())
+        self.assertNotEqual(self.marker.read_bytes(), b'old marker')
+
+    def test_every_failure_before_commit_keeps_the_old_batch(self):
+        for name in ('fc_fetch.py', 'fc_parse.py', 'fc_zones.py', 'fc_fields.py', 'fc_i18n.py',
+                     'base', 'specializations', 'items', 'languages', 'validate'):
+            with self.subTest(name=name), mock.patch.object(common, 'publish_batch') as publish:
+                self.failure = name
+                self.assertEqual(self.invoke('--apply'), 1)
+                publish.assert_not_called()
+                self.assertEqual(self.snapshot(), self.before)
+
+    def test_marker_modified_during_generation_is_not_overwritten(self):
+        original = self.validate
+        def changed(*args, **kwargs):
+            original(*args, **kwargs)
+            self.marker.write_bytes(b'external change')
+        with mock.patch.object(pipeline, 'validate_batch', side_effect=changed):
+            self.assertEqual(self.invoke('--apply'), 1)
+        self.assertEqual(self.marker.read_bytes(), b'external change')
+        self.assertEqual(self.snapshot(), self.before)
+
+    def test_new_output_created_during_generation_is_not_adopted(self):
+        original = self.languages
+        path = self.official / 'enUS/Data_ProfRecipes.lua'
+        def changed(*args, **kwargs):
+            outputs = original(*args, **kwargs)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b'external output')
+            return outputs
+        with mock.patch.object(fc_locales, 'render_locales', side_effect=changed):
+            self.assertEqual(self.invoke('--apply'), 1)
+        self.assertEqual(path.read_bytes(), b'external output')
+
+    def test_csv_mode_does_not_enter_network_base_or_language_steps(self):
+        source = self.data / 'DataProfItems.csv'
+        source.write_bytes(b'fixture')
+        self.assertEqual(self.invoke('--check', '--from-csv', str(source)), 0)
+        self.assertEqual(self.steps, ['items', 'validate'])
+
+    def test_specializations_only_keeps_its_existing_scope(self):
+        self.assertEqual(self.invoke('--check', '--specializations-only'), 0)
+        self.assertEqual(self.steps, ['specializations', 'validate'])
+
+    def test_check_can_retain_validated_outputs_without_publishing(self):
+        preview = self.root / '.pipeline-runtime/preview'
+        with mock.patch.object(common, 'publish_batch') as publish:
+            self.assertEqual(self.invoke('--check', '--stage-dir', str(preview)), 0)
+        publish.assert_not_called()
+        self.assertTrue((preview / 'preview-manifest.json').is_file())
+        self.assertEqual((preview / 'Core/Data/Data_ProfItems.lua').read_bytes(),
+                         b'local _,ns=...\nns.ProfItems={ [1]={item_id=1} }\n')
+        self.assertEqual(self.marker.read_bytes(), b'old marker')
+        self.assertEqual((self.data / 'recipe-item-link-audit-summary.json').read_bytes(), b'{"audit":"old"}')
+
+    def test_invalid_paths_and_colliding_destinations_fail_before_steps(self):
+        for options in [('--cache-dir', str(self.root.parent / 'outside')),
+                        ('--items-lua', str(self.marker)),
+                        ('--from-csv', str(self.data / 'fixture.csv'), '--items-lua', str(self.root / 'Core/ProfEconomy.lua')),
+                        ('--from-csv', str(self.data / 'fixture.csv'), '--items-lua', str(self.official / 'Data_ProfSpecializations.lua')),
+                        ('--from-csv', str(self.data / 'fixture.csv'), '--items-lua', str(self.here.parent / 'Core/Data/Data_Professions.lua')),
+                        ('--prices-csv', str(self.data / 'collision.csv'), '--trainer-csv', str(self.data / 'collision.csv'))]:
+            with self.subTest(options=options):
+                self.assertEqual(self.invoke('--check', *options), 1)
+                self.assertFalse(self.steps)
 
 
-class ProfGeneratorDryRunTests(unittest.TestCase):
-    def test_actual_generator_dry_run_preserves_existing_outputs_including_comments(self):
-        with tempfile.TemporaryDirectory(prefix="df-prof-gen-dry-run-") as directory:
-            package = Path(directory) / "package"
-            scripts = package / "_temp"
-            data = scripts / "_fc/data"
-            translations = scripts / "_fc/i18n"
-            output = package / "Core/Data"
-            for path in (data, translations, output):
-                path.mkdir(parents=True)
-            for name in ("fc_gen.py", "fc_i18n.py", "strip_comments.py"):
-                shutil.copyfile(PIPELINE / name, scripts / name)
-            index = {"professions": [], "nav": [], "build": "fixture", "updated": "2026-10-20"}
-            (data / "index.json").write_text(json.dumps(index), encoding="utf-8")
-            (data / "zone_ids.json").write_text("{}", encoding="utf-8")
-            (data / "enchant_ids.json").write_text("{}", encoding="utf-8")
-            (translations / "zh.json").write_text("{}", encoding="utf-8")
-            before = {}
-            for name in ("Data_Professions.lua", "Data_ProfRecipes.lua", "Data_ProfLeveling.lua",
-                         "Data_ProfGathering.lua", "Data_ProfVendors.lua"):
-                path = output / name
-                before[path] = b"-- existing header\r\nlocal preserved = 42 -- keep this comment\r\n"
-                path.write_bytes(before[path])
-            result = subprocess.run(
-                [sys.executable, "-B", str(scripts / "fc_gen.py"), "--dry-run"],
-                cwd=directory, capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=30,
-                env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONDONTWRITEBYTECODE="1"),
-            )
-            self.assertEqual(result.returncode, 0, result.stdout + "\n" + result.stderr)
-            self.assertEqual({path: path.read_bytes() for path in output.iterdir()}, before)
+class PreservationTests(unittest.TestCase):
+    def test_sparse_lua_tuple_can_be_filled_without_record_loss(self):
+        self.assertEqual(pipeline.missing_records({2: 1453, 3: 53, 4: 74.2}, [1519, 1453, 53, 74.2]), [])
+
+    def test_missing_stable_recipe_is_reported(self):
+        self.assertTrue(pipeline.missing_records([[100, 20], [101, 21]], [[100, 20]]))
+
+    def test_bad_lua_is_an_actionable_validation_error(self):
+        with self.assertRaisesRegex(ValueError, 'Lua validation failed'):
+            common.raw_namespace([('broken.lua', b'local = broken')])
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

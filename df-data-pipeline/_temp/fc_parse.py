@@ -21,11 +21,12 @@ import json
 import os
 import re
 import sys
+from fc_pipeline_common import configured_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = os.path.join(HERE, '_fc', 'cache')
-DATA = os.path.join(HERE, '_fc', 'data')
-REPORTS = os.path.join(HERE, '_fc', 'reports')
+CACHE = configured_path('DF_PIPELINE_CACHE_DIR', os.path.join(HERE, '_fc', 'cache'))
+DATA = configured_path('DF_PIPELINE_DATA_DIR', os.path.join(HERE, '_fc', 'data'))
+REPORTS = configured_path('DF_PIPELINE_REPORT_DIR', os.path.join(HERE, '_fc', 'reports'))
 
 # 站点页面 → 数据键。采集类没有配方表，附魔走 enchants/crafted。
 DROP = object()          # 白名单哨兵：显式声明「这个源字段有意丢弃」

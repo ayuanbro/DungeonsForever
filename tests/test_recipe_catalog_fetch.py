@@ -6,13 +6,16 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import sys
 import unittest
 from unittest import mock
 import urllib.error
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "df-prof-pipeline-v1.0/_temp/fc_recipe_catalog_fetch.py"
+SCRIPT = ROOT / "df-data-pipeline/_temp/fc_recipe_catalog_fetch.py"
+sys.path.insert(0, str(SCRIPT.parent))
+import fc_pipeline_common as common
 SPEC = importlib.util.spec_from_file_location("fc_recipe_catalog_fetch", SCRIPT)
 fetch = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(fetch)
@@ -44,6 +47,7 @@ class RecipeCatalogFetchTests(unittest.TestCase):
         self.policy = self.directory / "policy"
         self.clock = STAMP
         for patcher in (
+            mock.patch.object(common, 'REPO', self.directory),
             mock.patch.object(fetch, "POLICY_DIR", self.policy),
             mock.patch.object(fetch, "_now", side_effect=lambda: self.clock),
             mock.patch.object(fetch.time, "sleep", side_effect=self.sleep),
@@ -61,6 +65,13 @@ class RecipeCatalogFetchTests(unittest.TestCase):
 
     def collect(self, **kwargs):
         return fetch.collect_catalog(self.cache, **kwargs)
+
+    def test_cache_outside_repository_is_rejected_before_network(self):
+        outside = self.directory.parent / (self.directory.name + '-outside')
+        with self.assertRaises(ValueError):
+            fetch.collect_catalog(outside)
+        self.transport.assert_not_called()
+        self.assertFalse(outside.exists())
 
     def cache_files(self):
         return [self.cache / name for name in ("recipes.json", "source.json")]

@@ -19,10 +19,11 @@ import re
 import subprocess
 import sys
 import time
+from fc_pipeline_common import configured_path
 
 BASE = 'https://foreverchanges.pro'
 HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = os.path.join(HERE, '_fc', 'cache')
+CACHE = configured_path('DF_PIPELINE_CACHE_DIR', os.path.join(HERE, '_fc', 'cache'))
 
 # 抓取纪律：站点是个人自建站，不并发、不猛拉。
 # 实测单页 100~800KB，14 页合计约 3.9MB，全程 < 30s。

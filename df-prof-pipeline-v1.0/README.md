@@ -1,3 +1,12 @@
+# 已归档，入口停用
+
+此目录仅保留历史资料。`run.bat` 和 `_temp/fc_update.py` 拒绝执行，不转发、不生成或发布。
+唯一维护入口为 `../df-data-pipeline/_temp/fc_update.py`，使用说明见 `../df-data-pipeline/README.md`。
+新增实现、规范输入和经过哈希校验的离线缓存已经迁入综合包；此目录不再作为默认读取来源。
+以下内容仅是历史说明，其中的命令、路径和旧版本数据不代表当前可执行流程。
+
+---
+
 # 无限副本手册 · 专业页数据流水线
 
 把 **foreverchanges.pro** 的专业页抓下来，归一化成 JSON，再生成插件用的 `Data_Prof*.lua`。

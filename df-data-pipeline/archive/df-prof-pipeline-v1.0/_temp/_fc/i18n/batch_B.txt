@@ -1,0 +1,14 @@
+  1  A cook crafts a Basic Campfire Kit from one Simple Wood, with Flint and Tinder in the bags, and places it. It burns for 15 minutes, and no other campfire can stand within 100 yards.
+  2  Add your object
+  3  Anyone sitting or crafting by the fire for a minute gets the buffs of the objects around it. They last an hour, so you can leave once you have them.
+  4  Ask a fishing trainer. There is one in each capital city, and one by the pond in Valanaar, the Skyborne city. Learning it also teaches Bait and Tackle, for placing Fishing objects at a camp.
+  5  Build a campfire
+  6  Buy a Fishing Pole from the fishing supplier near the trainer and equip it from your bags. It takes both hands, and Fishing does nothing without it.
+  7  Cast into water
+  8  Equip a fishing pole
+  9  Face open water and cast Fishing from your spellbook. When the bobber splashes, right-click it to catch the fish.
+ 10  From skill 20 in a profession, you place its object by the fire; the others come from other players. Your camp objects share a one-hour cooldown.
+ 11  Higher skill makes you more likely to land fish in higher-level zones. If your fish keep getting away, move to a lower-level zone or put a lure on your pole.
+ 12  Learn Fishing
+ 13  Sit down for a minute
+ 14  Start in low-level water

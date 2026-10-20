@@ -8,6 +8,8 @@ import sys
 import tempfile
 import unittest
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / '.pipeline-runtime/lib'))
+from lupa.lua51 import LuaRuntime as _LocalLuaRuntime
 from test_prof_vendor import LuaRuntime, MOCKS, ROOT, runtime
 
 
@@ -415,13 +417,17 @@ class ProfItemPrices(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="df-prof-runtime-preserved-") as directory:
             repository = Path(directory)
-            package = repository / "df-prof-pipeline-v1.0"
+            package = repository / "df-data-pipeline"
             scripts = package / "_temp"
             output = package / "Core/Data"
             scripts.mkdir(parents=True)
             output.mkdir(parents=True)
-            shutil.copyfile(ROOT / "df-prof-pipeline-v1.0/_temp/fc_prof_items.py",
+            shutil.copyfile(ROOT / "df-data-pipeline/_temp/fc_prof_items.py",
                             scripts / "fc_prof_items.py")
+            shutil.copyfile(ROOT / "df-data-pipeline/_temp/fc_pipeline_common.py",
+                            scripts / "fc_pipeline_common.py")
+            shutil.copyfile(ROOT / "df-data-pipeline/_temp/fc_pipeline_paths.py",
+                            scripts / "fc_pipeline_paths.py")
             runtime_path = package / "Core/ProfItemPrices.lua"
             shutil.copyfile(ROOT / "Core/ProfItemPrices.lua", runtime_path)
             shutil.copyfile(ROOT / "DungeonsForever.toc", package / "DungeonsForever.toc")
@@ -429,9 +435,9 @@ class ProfItemPrices(unittest.TestCase):
             vendors_lua = output / "Data_ProfVendors.lua"
             vendors_lua.write_text(VENDORS_LUA, encoding="utf-8")
             for relative, fields, rows in (
-                ("scripts/out/vendors.csv", VENDOR_FIELDS, [vendor()]),
-                ("scripts/out/npcs.csv", NPC_FIELDS, [npc()]),
-                ("scripts/export_buyprice/output/item-buy-prices.csv", PRICE_FIELDS, [price()]),
+                ("df-data-pipeline/_temp/_fc/inputs/vendors/vendors.csv", VENDOR_FIELDS, [vendor()]),
+                ("df-data-pipeline/_temp/_fc/inputs/vendors/npcs.csv", NPC_FIELDS, [npc()]),
+                ("df-data-pipeline/_temp/_fc/inputs/client/item-buy-prices.csv", PRICE_FIELDS, [price()]),
             ):
                 path = repository / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -448,7 +454,8 @@ class ProfItemPrices(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + "\n" + result.stderr)
             items_lua = output / "Data_ProfItems.lua"
             merged_csv = scripts / "_fc/data/DataProfItems.csv"
-            self.assertEqual({path for path in repository.rglob("*") if path.is_file()},
+            self.assertEqual({path for path in repository.rglob("*") if path.is_file()
+                              and not path.is_relative_to(repository / '.implementation-backup')},
                              set(before) | {items_lua, merged_csv})
             for path, contents in before.items():
                 if path != vendors_lua:

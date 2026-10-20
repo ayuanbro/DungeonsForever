@@ -1,0 +1,235 @@
+DungeonsForever 许可协议
+Copyright © 2026 圆圆 (Yuanyuan)
+保留所有权利 · All Rights Reserved
+
+本插件 DungeonsForever（中文名「无限副本手册」，下称"本插件"）除第三方资源外的全部原创内容
+——包括源代码、数据、文档与注释文本、界面设计、美术资源——版权均归作者所有，保留所有权利。
+
+本许可声明须随本插件的所有副本一并提供。
+
+
+==============================================================================
+一、授予你的权利
+==============================================================================
+
+1. 安装与使用
+   你可以免费下载、安装本插件，并在《魔兽世界》客户端中运行它，无需取得额外许可。
+
+2. 私有修改
+   你可以为本插件制作修改版本，但仅限于个人私有使用。修改版本不得公开、发布、上传、
+   分发，或以任何形式提供给他人。如需公开你的修改，须事先取得作者的明确书面许可。
+
+3. 原样分发
+   你可以免费地将本插件的完整原始版本（未经任何修改）分享或分发到任意平台，
+   条件是：必须随附本许可声明的完整副本，且不得以任何形式收取费用。
+
+
+==============================================================================
+二、限制
+==============================================================================
+
+未经作者事先书面许可，你不得：
+
+1. 更改本插件的名称
+   包括插件名称（Title）、插件文件夹名、文件名，以及插件内显示的标题、图标与作者署名；
+   也不得把本插件改名、换用他人名义后重新发布或分发。
+
+2. 公开传播修改版本
+   见上文「私有修改」——修改版仅供自用，公开即需授权。
+
+3. 并入其他作品
+   不得将本插件的代码、数据、界面设计或美术资源，以复制、摘取、改编等形式并入其他插件
+   或作品中，无论是否标注作者、是否致谢。仅标注作者或致谢均不构成许可。
+
+4. 移除或篡改声明
+   不得删除、隐藏或修改本许可声明、源文件中保留的版权头，以及插件界面上的数据来源标注。
+
+5. 商业使用
+   不得将本插件及其任何内容用于出售、出租、付费捆绑、付费订阅，或任何需要付费才能获得
+   的渠道。
+
+6. 再许可
+   不得将本插件的原创内容再许可给他人，或以其他许可协议重新发布。
+
+
+==============================================================================
+三、第三方资源
+==============================================================================
+
+本插件附带、调用或展示的第三方内容不属于本许可协议的范围，各归其权利人所有，并分别适用
+其自身的版权与许可条款：
+
+- Libs/ 目录下的第三方库（LibStub、CallbackHandler-1.0、LibDataBroker-1.1、LibDBIcon-1.0、
+  LibHUI、LibUIDropDownMenu 及其衍生版本、UTF8 库等），其源文件中的版权头与署名应予原样
+  保留，不得删除；
+- 《魔兽世界》客户端本身的资源（模型、纹理、图标、物品与法术信息等），其权利归暴雪娱乐
+  及其关联方所有；
+- 插件内展示的游戏数据整理自 wowhead，相关内容的权利归其权利人所有。
+
+除上述第三方内容外，Media/ 目录下由作者自绘的纹理与图标，以及本插件的全部代码与数据，
+均属本插件原创内容，适用本协议。
+
+
+==============================================================================
+四、所有权
+==============================================================================
+
+本插件及其全部著作权、所有权和知识产权均归作者所有。本许可协议不向你转让任何所有权。
+
+
+==============================================================================
+五、免责声明
+==============================================================================
+
+本插件按"现状"提供，不作任何明示或默示的保证，包括但不限于适销性、特定用途适用性、
+不中断运行、准确性及不侵权保证。使用本插件所产生的一切风险由你自行承担。
+
+
+==============================================================================
+六、责任限制
+==============================================================================
+
+在法律允许的最大范围内，作者不对因使用、无法使用或依赖本插件而产生的任何直接、间接、
+附带、特殊、惩罚性或后果性损害承担责任。
+
+
+==============================================================================
+七、协议终止
+==============================================================================
+
+你一旦违反本协议的任何条款，本许可即自动终止。终止后，你应立即停止使用本插件，
+并销毁你所持有的全部副本及其修改版本。
+
+
+==============================================================================
+八、其他
+==============================================================================
+
+本协议未明确授予的一切权利，均由作者保留。作者保留修订本许可协议的权利，修订后的条款
+适用于修订之后发布的版本。
+
+
+==============================================================================
+English Version
+==============================================================================
+
+Copyright © 2026 Yuanyuan (圆圆)
+All Rights Reserved.
+
+The contents of this addon — including its source code, data, documentation and comments,
+interface design and artwork — excluding third-party resources, are copyrighted to the
+author with all rights reserved.
+
+This license notice shall be included in all copies of this addon.
+
+
+------------------------------------------------------------------------------
+1. RIGHTS GRANTED
+------------------------------------------------------------------------------
+
+1.1 Installation and use.
+    You may download, install and run this addon in the World of Warcraft client free of
+    charge, without any further permission.
+
+1.2 Private modification.
+    You may modify this addon for private, personal use only. Modified versions may not be
+    published, distributed, uploaded, or otherwise made available to anyone. Making a
+    modified version public requires the prior explicit written permission of the author.
+
+1.3 Unmodified redistribution.
+    You may share and redistribute the complete, unmodified original version of this addon
+    on any platform free of charge, provided that this license notice is included in full
+    and that no fee of any kind is charged.
+
+
+------------------------------------------------------------------------------
+2. RESTRICTIONS
+------------------------------------------------------------------------------
+
+Without the prior written permission of the author, you may not:
+
+a. Change the name of this addon — including the addon title, the addon folder name, file
+   names, and any title, icon or author credit shown in the interface — nor republish or
+   distribute it under a different name or a different author's name.
+
+b. Publicly release, publish or distribute a modified version of this addon.
+
+c. Copy, extract, adapt or incorporate the source code, data, interface design or artwork
+   of this addon into any other addon or project, with or without attribution.
+   Attribution or acknowledgement alone does not constitute permission.
+
+d. Remove, hide or alter this license notice, any copyright header retained in the source
+   files, or the data-source credit shown in the interface.
+
+e. Use this addon or any of its contents for sale, rental, paid bundling, paid
+   subscription, or any channel that requires payment.
+
+f. Sublicense the original contents of this addon, or redistribute them under any other
+   license.
+
+
+------------------------------------------------------------------------------
+3. THIRD-PARTY RESOURCES
+------------------------------------------------------------------------------
+
+Third-party content bundled with, called by, or presented in this addon is outside the
+scope of this license and remains the property of its respective owners, subject to their
+own copyright notices and license terms:
+
+- The third-party libraries under Libs/ (LibStub, CallbackHandler-1.0, LibDataBroker-1.1,
+  LibDBIcon-1.0, LibHUI, LibUIDropDownMenu and its derivatives, the UTF8 library, etc.).
+  Their copyright headers and credits must be retained as-is.
+- Resources belonging to the World of Warcraft client (models, textures, icons, item and
+  spell information, etc.), which remain the property of Blizzard Entertainment and its
+  affiliates.
+- Game data presented in the addon is compiled from wowhead and remains the property of
+  its respective rights holders.
+
+Apart from the third-party content listed above, the textures and icons under Media/ that
+were drawn by the author, together with all code and data of this addon, are original
+content of this addon and are governed by this license.
+
+
+------------------------------------------------------------------------------
+4. OWNERSHIP
+------------------------------------------------------------------------------
+
+All copyright, title and intellectual property rights in this addon are vested in the
+author. This license transfers no ownership.
+
+
+------------------------------------------------------------------------------
+5. DISCLAIMER OF WARRANTY
+------------------------------------------------------------------------------
+
+This addon is provided "as is", without warranty of any kind, express or implied,
+including but not limited to the warranties of merchantability, fitness for a particular
+purpose, uninterrupted operation, accuracy and non-infringement. You assume all risk
+arising from the use of this addon.
+
+
+------------------------------------------------------------------------------
+6. LIMITATION OF LIABILITY
+------------------------------------------------------------------------------
+
+To the maximum extent permitted by law, the author shall not be liable for any direct,
+indirect, incidental, special, punitive or consequential damages arising from the use of,
+inability to use, or reliance on this addon.
+
+
+------------------------------------------------------------------------------
+7. TERMINATION
+------------------------------------------------------------------------------
+
+This license terminates automatically upon any breach of its terms. Upon termination, you
+must immediately stop using this addon and destroy all copies and modified versions in
+your possession.
+
+
+------------------------------------------------------------------------------
+8. MISCELLANEOUS
+------------------------------------------------------------------------------
+
+All rights not expressly granted in this license are reserved by the author. The author
+reserves the right to revise this license; the revised terms apply to versions released
+after the revision.

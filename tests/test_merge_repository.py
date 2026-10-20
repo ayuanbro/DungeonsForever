@@ -114,6 +114,24 @@ class GitIgnoreTests(unittest.TestCase):
         ]:
             self.assertTrue((pipeline / rel).is_file(), rel)
 
+    def test_canonical_pipeline_contains_maintenance_and_unified_steps(self):
+        pipeline = ROOT / 'df-data-pipeline'
+        for rel in ('_temp/fc_update.py', '_temp/fc_pipeline.py', '_temp/fc_pipeline_common.py',
+                    '_temp/fc_prof_items.py', '_temp/fc_refresh_specializations.py',
+                    '_temp/fc_locales.py', '_temp/_fc/maintenance/professions.json',
+                    '_temp/_fc/maintenance/locales.json', 'requirements.txt'):
+            self.assertTrue((pipeline / rel).is_file(), rel)
+
+    def test_archived_entrypoint_fails_without_touching_the_commit_marker(self):
+        marker = ROOT / 'df-data-pipeline/_temp/_fc/cache/.pipeline-state/current.json'
+        before = marker.read_bytes() if marker.exists() else None
+        result = subprocess.run([sys.executable, '-B', str(ROOT / 'df-prof-pipeline-v1.0/_temp/fc_update.py'),
+                                 '--apply', '--offline'], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('archived and disabled', result.stderr)
+        self.assertIn('df-data-pipeline', result.stderr)
+        self.assertEqual(marker.read_bytes() if marker.exists() else None, before)
+
 
 if __name__ == "__main__":
     unittest.main()

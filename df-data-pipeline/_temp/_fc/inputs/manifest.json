@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Read-only imported CSV inputs; external producer scripts are not pipeline dependencies.",
+  "files": {
+    "client/item-buy-prices.csv": {
+      "originalFile": "scripts/export_buyprice/output/item-buy-prices.csv",
+      "sha256": "b489082f3bab36c4dc0c87dc24b5eaf78097ce29802d38df829d24e8fa8062dd",
+      "bytes": 3379764
+    },
+    "client/item.csv": {
+      "originalFile": "scripts/export_buyprice/output/item.csv",
+      "sha256": "e3d96deb190e6d7807f690ae71c6f67ab0ea35044cec402a0cb5ccb990e1868a",
+      "bytes": 1466533
+    },
+    "client/recipe-item-specializations.csv": {
+      "originalFile": "scripts/export_buyprice/output/recipe-item-specializations.csv",
+      "sha256": "54bc36be2d32511c9111d8e1e6307fff333ad5b115debcf53c8c2f87f1cdec77",
+      "bytes": 1095391
+    },
+    "vendors/vendors.csv": {
+      "originalFile": "scripts/out/vendors.csv",
+      "sha256": "704c1a8121cd54cf732d06539e646850720ffea37a70fdbcbc967c58ade53802",
+      "bytes": 93756
+    },
+    "vendors/npcs.csv": {
+      "originalFile": "scripts/out/npcs.csv",
+      "sha256": "fe2cfba8f09f881c96e80212c3249f19e9d9ea570a5383b018b1e18ffc107e6b",
+      "bytes": 13784
+    }
+  }
+}

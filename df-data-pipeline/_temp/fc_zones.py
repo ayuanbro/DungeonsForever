@@ -28,17 +28,18 @@ import re
 import subprocess
 import sys
 import time
+from fc_pipeline_common import configured_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = os.path.join(HERE, '_fc', 'cache')
-DATA = os.path.join(HERE, '_fc', 'data')
+CACHE = configured_path('DF_PIPELINE_CACHE_DIR', os.path.join(HERE, '_fc', 'cache'))
+DATA = configured_path('DF_PIPELINE_DATA_DIR', os.path.join(HERE, '_fc', 'data'))
 
 CSV_NAME = 'areatable_classic.csv'
 BUILDS_API = 'https://wago.tools/api/builds'
 CSV_API = 'https://wago.tools/db2/AreaTable/csv?build=%s'
 # Classic 分支（1.13/1.14/1.15）—— 泰坦端是 3.80.2，但本表只服务无限服（ns.IsForever）
 CLASSIC_PREFIX = ('1.13.', '1.14.', '1.15.')
-PROXY = 'http://127.0.0.1:7897'
+PROXY = os.environ.get('DF_PIPELINE_PROXY', 'http://127.0.0.1:7897')
 
 # 抓取纪律：站点偶尔会抖，退避重试；失败不留半截文件（会被当成有效缓存）
 RETRY = 3

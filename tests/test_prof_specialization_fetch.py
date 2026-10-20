@@ -6,13 +6,16 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import sys
 import unittest
 from unittest import mock
 import urllib.error
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "df-prof-pipeline-v1.0/_temp/fc_specialization_fetch.py"
+SCRIPT = ROOT / "df-data-pipeline/_temp/fc_specialization_fetch.py"
+sys.path.insert(0, str(SCRIPT.parent))
+import fc_pipeline_common as common
 SPEC = importlib.util.spec_from_file_location("fc_specialization_fetch", SCRIPT)
 fetch = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(fetch)
@@ -79,6 +82,7 @@ class SpecializationFetchTests(unittest.TestCase):
         self.policy = self.directory / "policy"
         self.clock = STAMP
         for patcher in (
+            mock.patch.object(common, 'REPO', self.directory),
             mock.patch.object(fetch, "POLICY_DIR", self.policy),
             mock.patch.object(fetch, "_now", side_effect=lambda: self.clock),
             mock.patch.object(fetch.time, "sleep", side_effect=self.sleep),
@@ -96,6 +100,13 @@ class SpecializationFetchTests(unittest.TestCase):
 
     def collect(self, **kwargs):
         return fetch.collect_trainers(self.cache, skills=[202], **kwargs)
+
+    def test_cache_outside_repository_is_rejected_before_network(self):
+        outside = self.directory.parent / (self.directory.name + '-outside')
+        with self.assertRaises(ValueError):
+            fetch.collect_trainers(outside, skills=[202])
+        self.mock_transport.assert_not_called()
+        self.assertFalse(outside.exists())
 
     def cached(self, url, html, age_days=0, **changes):
         value = {

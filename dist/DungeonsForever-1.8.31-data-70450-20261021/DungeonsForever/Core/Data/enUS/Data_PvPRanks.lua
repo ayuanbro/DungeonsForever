@@ -1,0 +1,52 @@
+local _, ns = ...
+
+if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
+local _, ns = ...
+
+ns.PvPRankData = {
+    updated = "2026-10-11",
+    marks = {
+        { id = 275240, slot = "wrist", rank = 8 },
+        { id = 275244, slot = "waist", rank = 8 },
+        { id = 275243, slot = "feet", rank = 9 },
+        { id = 275239, slot = "hands", rank = 10 },
+        { id = 275242, slot = "legs", rank = 12 },
+        { id = 275229, slot = "shoulder", rank = 12 },
+        { id = 275238, slot = "chest", rank = 13 },
+        { id = 275241, slot = "head", rank = 13 },
+    },
+    ranks = {
+        [1] = { pts = 750, cum = 750, week = 1, a = { 272694 }, h = { 272449 }, s = {} },
+        [2] = { pts = 900, cum = 1650, week = 1, a = { 274445 }, h = { 274444 }, s = {} },
+        [3] = { pts = 1050, cum = 2700, week = 1, a = { 272698, 272699 }, h = { 272578, 272589 }, s = {} },
+        [4] = { pts = 1200, cum = 3900, week = 2, a = { 274969 }, h = { 274968 }, s = {} },
+        [5] = { pts = 1350, cum = 5250, week = 2, a = { 18839, 18841 }, h = { 18839, 18841 }, s = {} },
+        [6] = { pts = 1500, cum = 6750, week = 3, a = { 272695 }, h = { 272450 }, s = {} },
+        [7] = { pts = 1650, cum = 8400, week = 4, a = { 18606 }, h = { 18607 }, s = {} },
+        [8] = { pts = 1800, cum = 10200, week = 5, a = {}, h = {}, s = { 275240, 275244 } },
+        [9] = { pts = 1950, cum = 12150, week = 6, a = {}, h = {}, s = { 275243 } },
+        [10] = { pts = 2100, cum = 14250, week = 7, a = {}, h = {}, s = { 275239 } },
+        [11] = { pts = 2350, cum = 16600, week = 7, a = { 18241, 18242, 18243, 18244 }, h = { 18245, 18246, 18247, 18248 }, s = {} },
+        [12] = { pts = 2500, cum = 19100, week = 8, a = {}, h = {}, s = { 275242, 275229 } },
+        [13] = { pts = 2650, cum = 21750, week = 9, a = {}, h = {}, s = { 275238, 275241 } },
+        [14] = { pts = 3000, cum = 24750, week = 10, a = { 272693 }, h = { 272452 }, s = {} },
+    },
+    caps = {
+        [1] = { rank = 3, cum = 2700, inc = 2700 },
+        [2] = { rank = 5, cum = 5250, inc = 2550 },
+        [3] = { rank = 6, cum = 6750, inc = 1500 },
+        [4] = { rank = 7, cum = 8400, inc = 1650 },
+        [5] = { rank = 8, cum = 10200, inc = 1800 },
+        [6] = { rank = 9, cum = 12150, inc = 1950 },
+        [7] = { rank = 11, cum = 16600, inc = 4450 },
+        [8] = { rank = 12, cum = 19100, inc = 2500 },
+        [9] = { rank = 13, cum = 21750, inc = 2650 },
+        [10] = { rank = 14, cum = 24750, inc = 3000 },
+    },
+    battlefields = {
+        { key = "spear", minLevel = 30, maxLevel = 60, size = 15, cta = 1 },
+        { key = "ab",    minLevel = 20, maxLevel = 60, size = 15, cta = 2 },
+        { key = "wsg",   minLevel = 10, maxLevel = 60, size = 10, cta = 3 },
+        { key = "av",    minLevel = 51, maxLevel = 60, size = 40, cta = 0 },
+    },
+}

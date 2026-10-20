@@ -1,0 +1,1306 @@
+{
+  "build": "1.60.1.70450",
+  "camps": null,
+  "counts": null,
+  "crafted": [],
+  "enchants": [],
+  "favor": [],
+  "gathering": {
+    "fishing": [
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Dun Morogh"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Durotar"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Elwynn Forest"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Mulgore"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Teldrassil"
+      },
+      {
+        "raw": -70,
+        "skill": 0,
+        "zone": "Tirisfal Glades"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Blackfathom Deeps"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Darkshore"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Darnassus"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Ironforge"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Loch Modan"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Orgrimmar"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Silverpine Forest"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Stormwind City"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "The Barrens"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "The Deadmines"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Thunder Bluff"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Undercity"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Wailing Caverns"
+      },
+      {
+        "raw": -20,
+        "skill": 50,
+        "zone": "Westfall"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Ashenvale"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Duskwood"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Hillsbrad Foothills"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Redridge Mountains"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Stonetalon Mountains"
+      },
+      {
+        "raw": 55,
+        "skill": 125,
+        "zone": "Wetlands"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Alterac Mountains"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Arathi Highlands"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Desolace"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Dustwallow Marsh"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Scarlet Monastery"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Stranglethorn Vale"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Swamp of Sorrows"
+      },
+      {
+        "raw": 130,
+        "skill": 200,
+        "zone": "Thousand Needles"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Azshara"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Felwood"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Feralas"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Jaguero Isle"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Maraudon"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Moonglade"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Sunken Temple"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Tanaris"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "The Hinterlands"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Un'Goro Crater"
+      },
+      {
+        "raw": 205,
+        "skill": 275,
+        "zone": "Western Plaguelands"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Bay of Storms"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Burning Steppes"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Deadwind Pass"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Eastern Plaguelands"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Hetaera's Clutch"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Jademir Lake"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Scalebeard's Cave"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Scholomance"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Silithus"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Stratholme"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Winterspring"
+      },
+      {
+        "raw": 330,
+        "skill": 400,
+        "zone": "Zul'Gurub"
+      }
+    ],
+    "herbalism": [
+      {
+        "items": [
+          2447
+        ],
+        "skill": 1,
+        "zones": [
+          [
+            "The Barrens",
+            99
+          ],
+          [
+            "Durotar",
+            67
+          ],
+          [
+            "Mulgore",
+            62
+          ],
+          [
+            "Tirisfal Glades",
+            62
+          ],
+          [
+            "Dun Morogh",
+            54
+          ],
+          [
+            "Elwynn Forest",
+            47
+          ]
+        ]
+      },
+      {
+        "items": [
+          765,
+          5056
+        ],
+        "skill": 1,
+        "zones": [
+          [
+            "Durotar",
+            167
+          ],
+          [
+            "The Barrens",
+            118
+          ],
+          [
+            "Mulgore",
+            85
+          ],
+          [
+            "Loch Modan",
+            83
+          ],
+          [
+            "Elwynn Forest",
+            82
+          ],
+          [
+            "Tirisfal Glades",
+            73
+          ]
+        ]
+      },
+      {
+        "items": [
+          2449,
+          5056
+        ],
+        "skill": 15,
+        "zones": [
+          [
+            "The Barrens",
+            163
+          ],
+          [
+            "Durotar",
+            43
+          ],
+          [
+            "Tirisfal Glades",
+            40
+          ],
+          [
+            "Dun Morogh",
+            39
+          ],
+          [
+            "Elwynn Forest",
+            37
+          ],
+          [
+            "Redridge Mountains",
+            33
+          ]
+        ]
+      },
+      {
+        "items": [
+          785,
+          5056,
+          2452
+        ],
+        "skill": 50,
+        "zones": [
+          [
+            "The Barrens",
+            261
+          ],
+          [
+            "Ashenvale",
+            70
+          ],
+          [
+            "Darkshore",
+            64
+          ],
+          [
+            "Westfall",
+            55
+          ],
+          [
+            "Silverpine Forest",
+            38
+          ],
+          [
+            "Redridge Mountains",
+            31
+          ]
+        ]
+      },
+      {
+        "items": [
+          2450,
+          2452,
+          5056
+        ],
+        "skill": 70,
+        "zones": [
+          [
+            "The Barrens",
+            121
+          ],
+          [
+            "Duskwood",
+            106
+          ],
+          [
+            "Ashenvale",
+            70
+          ],
+          [
+            "Westfall",
+            59
+          ],
+          [
+            "Darkshore",
+            56
+          ],
+          [
+            "Wetlands",
+            39
+          ]
+        ]
+      },
+      {
+        "items": [
+          3820
+        ],
+        "skill": 85,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            89
+          ],
+          [
+            "Wetlands",
+            79
+          ],
+          [
+            "Ashenvale",
+            76
+          ],
+          [
+            "Darkshore",
+            58
+          ],
+          [
+            "The Barrens",
+            55
+          ],
+          [
+            "Hillsbrad Foothills",
+            48
+          ]
+        ]
+      },
+      {
+        "items": [
+          2453
+        ],
+        "skill": 100,
+        "zones": [
+          [
+            "Stonetalon Mountains",
+            138
+          ],
+          [
+            "The Barrens",
+            123
+          ],
+          [
+            "Hillsbrad Foothills",
+            109
+          ],
+          [
+            "Wetlands",
+            107
+          ],
+          [
+            "Ashenvale",
+            105
+          ],
+          [
+            "Redridge Mountains",
+            104
+          ]
+        ]
+      },
+      {
+        "items": [
+          3355
+        ],
+        "skill": 115,
+        "zones": [
+          [
+            "Arathi Highlands",
+            139
+          ],
+          [
+            "Stonetalon Mountains",
+            96
+          ],
+          [
+            "Stranglethorn Vale",
+            53
+          ],
+          [
+            "Wetlands",
+            49
+          ],
+          [
+            "Thousand Needles",
+            42
+          ],
+          [
+            "The Barrens",
+            34
+          ]
+        ]
+      },
+      {
+        "items": [
+          3369
+        ],
+        "skill": 120,
+        "zones": [
+          [
+            "Duskwood",
+            41
+          ],
+          [
+            "Desolace",
+            23
+          ],
+          [
+            "Wetlands",
+            18
+          ],
+          [
+            "Arathi Highlands",
+            8
+          ],
+          [
+            "Alterac Mountains",
+            7
+          ],
+          [
+            "The Barrens",
+            4
+          ]
+        ]
+      },
+      {
+        "items": [
+          3356
+        ],
+        "skill": 125,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            67
+          ],
+          [
+            "Wetlands",
+            35
+          ],
+          [
+            "Ashenvale",
+            35
+          ],
+          [
+            "Hillsbrad Foothills",
+            33
+          ],
+          [
+            "The Barrens",
+            33
+          ],
+          [
+            "Duskwood",
+            31
+          ]
+        ]
+      },
+      {
+        "items": [
+          3357
+        ],
+        "skill": 150,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            64
+          ],
+          [
+            "Wetlands",
+            62
+          ],
+          [
+            "Arathi Highlands",
+            53
+          ],
+          [
+            "Alterac Mountains",
+            50
+          ],
+          [
+            "Feralas",
+            31
+          ],
+          [
+            "Dustwallow Marsh",
+            27
+          ]
+        ]
+      },
+      {
+        "items": [
+          3818
+        ],
+        "skill": 160,
+        "zones": [
+          [
+            "Arathi Highlands",
+            58
+          ],
+          [
+            "Swamp of Sorrows",
+            49
+          ],
+          [
+            "Alterac Mountains",
+            45
+          ],
+          [
+            "Stranglethorn Vale",
+            41
+          ],
+          [
+            "The Hinterlands",
+            30
+          ],
+          [
+            "Badlands",
+            26
+          ]
+        ]
+      },
+      {
+        "items": [
+          3821
+        ],
+        "skill": 170,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            205
+          ],
+          [
+            "Arathi Highlands",
+            132
+          ],
+          [
+            "Swamp of Sorrows",
+            98
+          ],
+          [
+            "Alterac Mountains",
+            82
+          ],
+          [
+            "The Hinterlands",
+            59
+          ],
+          [
+            "Feralas",
+            47
+          ]
+        ]
+      },
+      {
+        "items": [
+          3358
+        ],
+        "skill": 185,
+        "zones": [
+          [
+            "Stranglethorn Vale",
+            194
+          ],
+          [
+            "Arathi Highlands",
+            79
+          ],
+          [
+            "Swamp of Sorrows",
+            62
+          ],
+          [
+            "Alterac Mountains",
+            37
+          ],
+          [
+            "Feralas",
+            31
+          ],
+          [
+            "The Hinterlands",
+            29
+          ]
+        ]
+      },
+      {
+        "items": [
+          3819
+        ],
+        "skill": 195,
+        "zones": [
+          [
+            "Alterac Mountains",
+            34
+          ]
+        ]
+      },
+      {
+        "items": [
+          4625
+        ],
+        "skill": 205,
+        "zones": [
+          [
+            "Tanaris",
+            72
+          ],
+          [
+            "Searing Gorge",
+            62
+          ],
+          [
+            "Badlands",
+            21
+          ]
+        ]
+      },
+      {
+        "items": [
+          8831,
+          8153
+        ],
+        "skill": 210,
+        "zones": [
+          [
+            "Azshara",
+            128
+          ],
+          [
+            "The Hinterlands",
+            47
+          ],
+          [
+            "Tanaris",
+            44
+          ],
+          [
+            "Feralas",
+            32
+          ],
+          [
+            "Stranglethorn Vale",
+            25
+          ],
+          [
+            "Ashenvale",
+            15
+          ]
+        ]
+      },
+      {
+        "items": [
+          8836
+        ],
+        "skill": 220,
+        "zones": [
+          [
+            "Western Plaguelands",
+            65
+          ],
+          [
+            "Eastern Plaguelands",
+            37
+          ],
+          [
+            "Felwood",
+            27
+          ]
+        ]
+      },
+      {
+        "items": [
+          8838
+        ],
+        "skill": 230,
+        "zones": [
+          [
+            "Azshara",
+            98
+          ],
+          [
+            "The Hinterlands",
+            90
+          ],
+          [
+            "Feralas",
+            53
+          ],
+          [
+            "Eastern Plaguelands",
+            46
+          ],
+          [
+            "Un'Goro Crater",
+            26
+          ],
+          [
+            "Burning Steppes",
+            21
+          ]
+        ]
+      },
+      {
+        "items": [
+          8839
+        ],
+        "skill": 235,
+        "zones": [
+          [
+            "Swamp of Sorrows",
+            161
+          ],
+          [
+            "Un'Goro Crater",
+            16
+          ]
+        ]
+      },
+      {
+        "items": [
+          8845
+        ],
+        "skill": 245,
+        "zones": [
+          [
+            "The Hinterlands",
+            21
+          ],
+          [
+            "Desolace",
+            13
+          ]
+        ]
+      },
+      {
+        "items": [
+          8846
+        ],
+        "skill": 250,
+        "zones": [
+          [
+            "Felwood",
+            63
+          ],
+          [
+            "Desolace",
+            15
+          ]
+        ]
+      },
+      {
+        "items": [
+          13464
+        ],
+        "skill": 260,
+        "zones": [
+          [
+            "Un'Goro Crater",
+            99
+          ],
+          [
+            "Azshara",
+            95
+          ],
+          [
+            "Eastern Plaguelands",
+            52
+          ],
+          [
+            "Felwood",
+            34
+          ],
+          [
+            "The Hinterlands",
+            32
+          ],
+          [
+            "Burning Steppes",
+            30
+          ]
+        ]
+      },
+      {
+        "items": [
+          13463
+        ],
+        "skill": 270,
+        "zones": [
+          [
+            "Azshara",
+            132
+          ],
+          [
+            "Eastern Plaguelands",
+            96
+          ],
+          [
+            "Un'Goro Crater",
+            87
+          ],
+          [
+            "Felwood",
+            61
+          ],
+          [
+            "Burning Steppes",
+            57
+          ],
+          [
+            "Western Plaguelands",
+            40
+          ]
+        ]
+      },
+      {
+        "items": [
+          13465
+        ],
+        "skill": 280,
+        "zones": [
+          [
+            "Winterspring",
+            101
+          ],
+          [
+            "Un'Goro Crater",
+            71
+          ],
+          [
+            "Azshara",
+            57
+          ],
+          [
+            "Burning Steppes",
+            28
+          ],
+          [
+            "Eastern Plaguelands",
+            22
+          ],
+          [
+            "Western Plaguelands",
+            12
+          ]
+        ]
+      },
+      {
+        "items": [
+          13466
+        ],
+        "skill": 285,
+        "zones": [
+          [
+            "Eastern Plaguelands",
+            191
+          ],
+          [
+            "Western Plaguelands",
+            45
+          ]
+        ]
+      },
+      {
+        "items": [
+          13467
+        ],
+        "skill": 290,
+        "zones": [
+          [
+            "Winterspring",
+            182
+          ]
+        ]
+      },
+      {
+        "items": [
+          13468
+        ],
+        "skill": 300,
+        "zones": [
+          [
+            "Burning Steppes",
+            32
+          ],
+          [
+            "Winterspring",
+            24
+          ],
+          [
+            "Eastern Plaguelands",
+            20
+          ],
+          [
+            "Silithus",
+            16
+          ]
+        ]
+      }
+    ],
+    "skinning": [
+      {
+        "items": [
+          2934,
+          2318,
+          783,
+          2592
+        ],
+        "levels": [
+          1,
+          10
+        ],
+        "zones": [
+          [
+            "Mulgore",
+            1003
+          ],
+          [
+            "Durotar",
+            776
+          ],
+          [
+            "Dun Morogh",
+            689
+          ],
+          [
+            "Elwynn Forest",
+            636
+          ],
+          [
+            "Tirisfal Glades",
+            603
+          ],
+          [
+            "Teldrassil",
+            259
+          ]
+        ]
+      },
+      {
+        "items": [
+          2318,
+          2934,
+          2319,
+          17057
+        ],
+        "levels": [
+          11,
+          20
+        ],
+        "zones": [
+          [
+            "The Barrens",
+            1548
+          ],
+          [
+            "Darkshore",
+            619
+          ],
+          [
+            "Silverpine Forest",
+            302
+          ],
+          [
+            "Loch Modan",
+            195
+          ],
+          [
+            "Ashenvale",
+            160
+          ],
+          [
+            "Westfall",
+            136
+          ]
+        ]
+      },
+      {
+        "items": [
+          2319,
+          2318,
+          4234,
+          4235
+        ],
+        "levels": [
+          21,
+          30
+        ],
+        "zones": [
+          [
+            "Wetlands",
+            398
+          ],
+          [
+            "Ashenvale",
+            386
+          ],
+          [
+            "Hillsbrad Foothills",
+            273
+          ],
+          [
+            "Thousand Needles",
+            246
+          ],
+          [
+            "Duskwood",
+            219
+          ],
+          [
+            "The Barrens",
+            143
+          ]
+        ]
+      },
+      {
+        "items": [
+          4234,
+          4304,
+          2319,
+          8167
+        ],
+        "levels": [
+          31,
+          40
+        ],
+        "zones": [
+          [
+            "Dustwallow Marsh",
+            453
+          ],
+          [
+            "Desolace",
+            423
+          ],
+          [
+            "Stranglethorn Vale",
+            294
+          ],
+          [
+            "Badlands",
+            226
+          ],
+          [
+            "Thousand Needles",
+            137
+          ],
+          [
+            "Arathi Highlands",
+            129
+          ]
+        ]
+      },
+      {
+        "items": [
+          4304,
+          4234,
+          8170,
+          8167
+        ],
+        "levels": [
+          41,
+          50
+        ],
+        "zones": [
+          [
+            "Tanaris",
+            885
+          ],
+          [
+            "Feralas",
+            450
+          ],
+          [
+            "The Hinterlands",
+            237
+          ],
+          [
+            "Felwood",
+            200
+          ],
+          [
+            "Dustwallow Marsh",
+            179
+          ],
+          [
+            "Un'Goro Crater",
+            129
+          ]
+        ]
+      },
+      {
+        "items": [
+          8170,
+          4304,
+          15408,
+          8171
+        ],
+        "levels": [
+          51,
+          60
+        ],
+        "zones": [
+          [
+            "Winterspring",
+            571
+          ],
+          [
+            "Azshara",
+            423
+          ],
+          [
+            "Silithus",
+            417
+          ],
+          [
+            "Eastern Plaguelands",
+            383
+          ],
+          [
+            "Un'Goro Crater",
+            226
+          ],
+          [
+            "Burning Steppes",
+            171
+          ]
+        ]
+      }
+    ]
+  },
+  "groups": [],
+  "kind": "detail",
+  "lede": "Every herb in the Forever beta client with the skill it asks, what you pick from it and the zones where it grows most; then which herbs to pick from 1 to 300, and where.",
+  "leveling": null,
+  "rows": [],
+  "slug": "herbalism",
+  "smelting": null,
+  "sod": [],
+  "vendor": null,
+  "word": ""
+}

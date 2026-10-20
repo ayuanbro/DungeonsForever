@@ -13,6 +13,7 @@
 import os
 import sys
 
+sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from gen_zhtw import to_tw  # noqa: E402  同一条词表 + opencc 管线
@@ -144,5 +145,5 @@ def _strip_comments_after_gen():
 
 
 if __name__ == '__main__':
-    main()
-    _strip_comments_after_gen()
+    from fc_locales import locale_cli
+    locale_cli('zhTW')

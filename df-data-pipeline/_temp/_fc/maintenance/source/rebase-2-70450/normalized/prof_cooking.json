@@ -1,0 +1,5992 @@
+{
+  "build": "1.60.1.70450",
+  "camps": {
+    "a": {
+      "faction": "Azeroth Commerce Authority",
+      "place": "Three Corners",
+      "x": 10.3,
+      "y": 72.5,
+      "zone": "Redridge Mountains"
+    },
+    "h": {
+      "faction": "Durotar Supply and Logistics",
+      "place": "outside the Crossroads",
+      "x": 49.7,
+      "y": 29.5,
+      "zone": "The Barrens"
+    }
+  },
+  "counts": {
+    "recipeItems": 109,
+    "sourced": 85,
+    "total": 123,
+    "unreadable": 9
+  },
+  "crafted": [],
+  "enchants": [],
+  "favor": [
+    {
+      "favor": 30,
+      "id": 249885,
+      "recipe": {
+        "makes": 249871,
+        "name": "Venomous Smoothie"
+      },
+      "skill": 25
+    },
+    {
+      "favor": 30,
+      "id": 249886,
+      "recipe": {
+        "makes": 249872,
+        "name": "Slimy Smoothie"
+      },
+      "skill": 100
+    },
+    {
+      "favor": 30,
+      "id": 249887,
+      "recipe": {
+        "makes": 249873,
+        "name": "Mrrggl Smrrthle"
+      },
+      "skill": 125
+    },
+    {
+      "favor": 60,
+      "id": 249888,
+      "recipe": {
+        "makes": 249874,
+        "name": "Calcified Smoothie"
+      },
+      "skill": 180
+    },
+    {
+      "favor": 60,
+      "id": 249889,
+      "recipe": {
+        "makes": 249875,
+        "name": "Spicy Smoothie"
+      },
+      "skill": 200
+    },
+    {
+      "favor": 90,
+      "id": 249890,
+      "recipe": {
+        "makes": 249876,
+        "name": "Wicked Smoothie"
+      },
+      "skill": 250
+    }
+  ],
+  "gathering": null,
+  "groups": [
+    {
+      "count": 22,
+      "icon": "inv_misc_food_60",
+      "key": "Stamina",
+      "label": "Stamina"
+    },
+    {
+      "count": 22,
+      "icon": "inv_misc_food_49",
+      "key": "Strength",
+      "label": "Strength and Attack Power"
+    },
+    {
+      "count": 14,
+      "icon": "inv_misc_food_65",
+      "key": "Agility",
+      "label": "Agility"
+    },
+    {
+      "count": 31,
+      "icon": "inv_drink_17",
+      "key": "Caster",
+      "label": "Intellect, spell power and mana"
+    },
+    {
+      "count": 6,
+      "icon": "inv_misc_food_12",
+      "key": "Spirit",
+      "label": "Spirit"
+    },
+    {
+      "count": 16,
+      "icon": "inv_misc_food_33",
+      "key": "Other buffs",
+      "label": "Other buffs"
+    },
+    {
+      "count": 7,
+      "icon": "inv_misc_food_11",
+      "key": "Plain",
+      "label": "Health and mana only"
+    },
+    {
+      "count": 5,
+      "icon": "inv_camelot_camping_welcomingcampfire",
+      "key": "Camp",
+      "label": "Camp objects"
+    }
+  ],
+  "kind": "detail",
+  "lede": "Every dish in the Forever beta client by the buff it gives, with its reagents, the skill and where the recipe comes from; then the cheapest way from 1 to 300.",
+  "leveling": {
+    "build": "1.60.1.70450",
+    "learn": [
+      2538,
+      2539,
+      2540,
+      2541,
+      2542,
+      2543,
+      2544,
+      2545,
+      2546,
+      2547,
+      2548,
+      2549,
+      2795,
+      3370,
+      3371,
+      3372,
+      3373,
+      3376,
+      3377,
+      3397,
+      3398,
+      3399,
+      3400,
+      4094,
+      6412,
+      6413,
+      6414,
+      6415,
+      6416,
+      6417,
+      6418,
+      6419,
+      6499,
+      6500,
+      6501,
+      7213,
+      7751,
+      7752,
+      7753,
+      7754,
+      7755,
+      7827,
+      7828,
+      8238,
+      8604,
+      8607,
+      9513,
+      13028,
+      15853,
+      15855,
+      15856,
+      15861,
+      15863,
+      15865,
+      15906,
+      15910,
+      15915,
+      15933,
+      15935,
+      18238,
+      18239,
+      18240,
+      18241,
+      18242,
+      18243,
+      18244,
+      18245,
+      18246,
+      18247,
+      20626,
+      20916,
+      21143,
+      21144,
+      21175,
+      22480,
+      22761,
+      24418,
+      24801,
+      25659,
+      25704,
+      25954,
+      1229737,
+      1247741,
+      1249957,
+      1249958,
+      1249959,
+      1249960,
+      1249961,
+      1249962,
+      1249963,
+      1249964,
+      1249965,
+      1249966,
+      1249967,
+      1249968,
+      1250142,
+      1250143,
+      1250144,
+      1250145,
+      1250146,
+      1250147,
+      1250148,
+      1250149,
+      1250150,
+      1250151,
+      1250152,
+      1250153,
+      1250154,
+      1250155,
+      1250156,
+      1250157,
+      1250158,
+      1252566,
+      1262978,
+      1263067,
+      1270633,
+      1270635,
+      1283400,
+      1291341,
+      1294014,
+      1295805,
+      1295834,
+      1319313
+    ],
+    "parts": [],
+    "quest": [
+      24801
+    ],
+    "recipes": {
+      "2540": {
+        "green": 65,
+        "grey": 85,
+        "learn": 1,
+        "makes": 2681,
+        "reagents": [
+          [
+            769,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 45
+      },
+      "7753": {
+        "green": 110,
+        "grey": 130,
+        "learn": 50,
+        "makes": 4592,
+        "reagents": [
+          [
+            6289,
+            1
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 90
+      },
+      "7755": {
+        "green": 160,
+        "grey": 180,
+        "learn": 100,
+        "makes": 4593,
+        "reagents": [
+          [
+            6308,
+            1
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 140
+      },
+      "15853": {
+        "green": 185,
+        "grey": 205,
+        "learn": 125,
+        "makes": 12209,
+        "reagents": [
+          [
+            1015,
+            1
+          ],
+          [
+            2678,
+            1
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 165
+      },
+      "18241": {
+        "green": 285,
+        "grey": 305,
+        "learn": 225,
+        "makes": 13930,
+        "reagents": [
+          [
+            13758,
+            1
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 265
+      },
+      "18244": {
+        "green": 310,
+        "grey": 330,
+        "learn": 250,
+        "makes": 13932,
+        "reagents": [
+          [
+            13760,
+            1
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 290
+      },
+      "20916": {
+        "green": 235,
+        "grey": 255,
+        "learn": 175,
+        "makes": 8364,
+        "reagents": [
+          [
+            8365,
+            1
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 215
+      }
+    },
+    "rods": null,
+    "shopping": [
+      {
+        "count": 68,
+        "id": 13758
+      },
+      {
+        "count": 52,
+        "id": 8365
+      },
+      {
+        "count": 17,
+        "id": 13760
+      },
+      {
+        "count": 63,
+        "id": 6308
+      },
+      {
+        "count": 20,
+        "id": 1015
+      },
+      {
+        "count": 52,
+        "id": 6289
+      },
+      {
+        "count": 50,
+        "id": 769
+      },
+      {
+        "count": 20,
+        "id": 2678
+      }
+    ],
+    "sold": [
+      2678
+    ],
+    "steps": [
+      {
+        "crafts": 50,
+        "from": 1,
+        "spell": 2540,
+        "to": 50
+      },
+      {
+        "crafts": 25,
+        "from": 50,
+        "spell": 7753,
+        "to": 75
+      },
+      {
+        "crafts": 27,
+        "from": 75,
+        "spell": 7753,
+        "to": 100
+      },
+      {
+        "crafts": 52,
+        "from": 100,
+        "spell": 7755,
+        "to": 150
+      },
+      {
+        "crafts": 11,
+        "from": 150,
+        "spell": 7755,
+        "to": 157
+      },
+      {
+        "crafts": 20,
+        "from": 157,
+        "spell": 15853,
+        "to": 175
+      },
+      {
+        "crafts": 52,
+        "from": 175,
+        "spell": 20916,
+        "to": 225
+      },
+      {
+        "crafts": 68,
+        "from": 225,
+        "spell": 18241,
+        "to": 285
+      },
+      {
+        "crafts": 17,
+        "from": 285,
+        "spell": 18244,
+        "to": 300
+      }
+    ]
+  },
+  "rows": [
+    {
+      "armor": "",
+      "cat": "Camp",
+      "count": 1,
+      "effect": "Builds a basic campfire that allows cooking and the placement of up to 3 additional camp features. Players sitting or crafting nearby for 1 min will gain benefits from other camp features.",
+      "formula": null,
+      "green": 3,
+      "grey": 5,
+      "id": 279981,
+      "is_new": true,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          4470,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1229737,
+      "was": [],
+      "yellow": 1
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 2 Attack Power",
+      "formula": [
+        6325,
+        1
+      ],
+      "green": 65,
+      "grey": 85,
+      "id": 6290,
+      "is_new": false,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          6291,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 1,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Catherine Leland",
+            "skill": null,
+            "zone": "Stormwind City"
+          },
+          {
+            "cost": "",
+            "name": "Sewa Mistrunner",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          },
+          {
+            "cost": "",
+            "name": "Gretta Ganter",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Tharynn Bouden",
+            "skill": null,
+            "zone": "Elwynn Forest"
+          },
+          {
+            "cost": "",
+            "name": "Khara Deepwater",
+            "skill": null,
+            "zone": "Loch Modan"
+          },
+          {
+            "cost": "",
+            "name": "Harn Longcast",
+            "skill": null,
+            "zone": "Mulgore"
+          },
+          {
+            "cost": "",
+            "name": "Nyoma",
+            "skill": null,
+            "zone": "Teldrassil"
+          },
+          {
+            "cost": "",
+            "name": "Lizbeth Cromwell",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Martine Tramblay",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          }
+        ]
+      },
+      "spell": 7751,
+      "was": [],
+      "yellow": 45
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 1 Intellect",
+      "formula": [
+        12226,
+        1
+      ],
+      "green": 65,
+      "grey": 85,
+      "id": 12224,
+      "is_new": false,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          12223,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 1,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Abigail Shiel",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          }
+        ]
+      },
+      "spell": 15935,
+      "was": [],
+      "yellow": 45
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 2 Stamina and Spirit",
+      "formula": [
+        17200,
+        1
+      ],
+      "green": 65,
+      "grey": 85,
+      "id": 17197,
+      "is_new": false,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          6889,
+          1
+        ],
+        [
+          17194,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 1,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Wulmort Jinglepocket",
+            "skill": null,
+            "zone": "Ironforge"
+          },
+          {
+            "cost": "",
+            "name": "Penney Copperpinch",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Khole Jinglepocket",
+            "skill": null,
+            "zone": "Stormwind City"
+          },
+          {
+            "cost": "",
+            "name": "Seersa Copperpinch",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          },
+          {
+            "cost": "",
+            "name": "Nardstrum Copperpinch",
+            "skill": null,
+            "zone": "Undercity"
+          }
+        ]
+      },
+      "spell": 21143,
+      "was": [],
+      "yellow": 45
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 6 Attack Power",
+      "formula": [
+        6326,
+        1
+      ],
+      "green": 65,
+      "grey": 85,
+      "id": 787,
+      "is_new": false,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          6303,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 1,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Tansy Puddlefizz",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Zansoa",
+            "skill": null,
+            "zone": "Durotar"
+          },
+          {
+            "cost": "",
+            "name": "Nessa Shadowsong",
+            "skill": null,
+            "zone": "Teldrassil"
+          },
+          {
+            "cost": "",
+            "name": "Martine Tramblay",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Kriggon Talsone",
+            "skill": null,
+            "zone": "Westfall"
+          }
+        ]
+      },
+      "spell": 7752,
+      "was": [],
+      "yellow": 45
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 1 Stamina",
+      "formula": [
+        5482,
+        1
+      ],
+      "green": 70,
+      "grey": 90,
+      "id": 5472,
+      "is_new": false,
+      "kind": "",
+      "learn": 10,
+      "reagents": [
+        [
+          5465,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 10,
+        "vendors": []
+      },
+      "spell": 6412,
+      "was": [],
+      "yellow": 50
+    },
+    {
+      "armor": "",
+      "cat": "Plain",
+      "count": 1,
+      "effect": "Heals 70 damage over 21 sec, assuming you don't bite down on a poison sac.",
+      "formula": [
+        5483,
+        1
+      ],
+      "green": 80,
+      "grey": 100,
+      "id": 5473,
+      "is_new": false,
+      "kind": "",
+      "learn": 20,
+      "reagents": [
+        [
+          5466,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 20,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Grimtak",
+            "skill": null,
+            "zone": "Durotar"
+          }
+        ]
+      },
+      "spell": 6413,
+      "was": [],
+      "yellow": 60
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 2 Healing Power",
+      "formula": [
+        249879,
+        1
+      ],
+      "green": 37,
+      "grey": 45,
+      "id": 249865,
+      "is_new": true,
+      "kind": "",
+      "learn": 25,
+      "reagents": [
+        [
+          159,
+          1
+        ],
+        [
+          2447,
+          2
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": null,
+            "lv": [],
+            "npc": "Frostmane Seer",
+            "zone": "Dun Morogh"
+          }
+        ],
+        "read": "wowhead",
+        "skill": 25,
+        "vendors": []
+      },
+      "spell": 1249957,
+      "was": [],
+      "yellow": 30
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 1 Stamina",
+      "formula": [
+        263511,
+        1
+      ],
+      "green": 37,
+      "grey": 45,
+      "id": 263509,
+      "is_new": true,
+      "kind": "level 5",
+      "learn": 25,
+      "reagents": [
+        [
+          6889,
+          2
+        ],
+        [
+          10284,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 25,
+        "vendors": []
+      },
+      "spell": 1270633,
+      "was": [],
+      "yellow": 30
+    },
+    {
+      "armor": "",
+      "cat": "Spirit",
+      "count": 1,
+      "effect": "Well fed: 1 Spirit",
+      "formula": [
+        249885,
+        1
+      ],
+      "green": 37,
+      "grey": 45,
+      "id": 249871,
+      "is_new": true,
+      "kind": "",
+      "learn": 25,
+      "reagents": [
+        [
+          159,
+          1
+        ],
+        [
+          2678,
+          1
+        ],
+        [
+          1475,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 25,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kalsey Sanden",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Aza'bek",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 1249963,
+      "was": [],
+      "yellow": 30
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 1 Intellect",
+      "formula": [
+        250187,
+        1
+      ],
+      "green": 55,
+      "grey": 75,
+      "id": 250079,
+      "is_new": true,
+      "kind": "",
+      "learn": 25,
+      "reagents": [
+        [
+          3685,
+          1
+        ],
+        [
+          2678,
+          4
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": null,
+            "lv": [],
+            "npc": "Sunscale Screecher",
+            "zone": "The Barrens"
+          }
+        ],
+        "read": "wowhead",
+        "skill": 25,
+        "vendors": []
+      },
+      "spell": 1250156,
+      "was": [],
+      "yellow": 35
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 1 Strength",
+      "formula": [
+        2889,
+        1
+      ],
+      "green": 80,
+      "grey": 100,
+      "id": 2888,
+      "is_new": false,
+      "kind": "",
+      "learn": 25,
+      "reagents": [
+        [
+          2886,
+          1
+        ],
+        [
+          2894,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 25,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 2795,
+      "was": [],
+      "yellow": 60
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 1 Intellect",
+      "formula": [
+        263513,
+        1
+      ],
+      "green": 47,
+      "grey": 55,
+      "id": 263512,
+      "is_new": true,
+      "kind": "level 5",
+      "learn": 35,
+      "reagents": [
+        [
+          2675,
+          1
+        ],
+        [
+          10284,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 35,
+        "vendors": []
+      },
+      "spell": 1270635,
+      "was": [],
+      "yellow": 40
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 2 Stamina and Spirit",
+      "formula": [
+        17201,
+        1
+      ],
+      "green": 95,
+      "grey": 115,
+      "id": 17198,
+      "is_new": false,
+      "kind": "",
+      "learn": 35,
+      "reagents": [
+        [
+          6889,
+          1
+        ],
+        [
+          1179,
+          1
+        ],
+        [
+          17196,
+          1
+        ],
+        [
+          17194,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 35,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Wulmort Jinglepocket",
+            "skill": null,
+            "zone": "Ironforge"
+          },
+          {
+            "cost": "",
+            "name": "Penney Copperpinch",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Khole Jinglepocket",
+            "skill": null,
+            "zone": "Stormwind City"
+          },
+          {
+            "cost": "",
+            "name": "Seersa Copperpinch",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          },
+          {
+            "cost": "",
+            "name": "Nardstrum Copperpinch",
+            "skill": null,
+            "zone": "Undercity"
+          }
+        ]
+      },
+      "spell": 21144,
+      "was": [],
+      "yellow": 75
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 2,
+      "effect": "Well fed: 1 Stamina",
+      "formula": [
+        5484,
+        1
+      ],
+      "green": 95,
+      "grey": 115,
+      "id": 5474,
+      "is_new": false,
+      "kind": "",
+      "learn": 35,
+      "reagents": [
+        [
+          5467,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 35,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Wunna Darkmane",
+            "skill": null,
+            "zone": "Mulgore"
+          }
+        ]
+      },
+      "spell": 6414,
+      "was": [],
+      "yellow": 75
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 1 Strength",
+      "formula": [
+        6892,
+        1
+      ],
+      "green": 100,
+      "grey": 120,
+      "id": 6890,
+      "is_new": false,
+      "kind": "",
+      "learn": 40,
+      "reagents": [
+        [
+          3173,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 40,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Drac Roughcut",
+            "skill": null,
+            "zone": "Loch Modan"
+          },
+          {
+            "cost": "",
+            "name": "Andrew Hilbert",
+            "skill": null,
+            "zone": "Silverpine Forest"
+          }
+        ]
+      },
+      "spell": 8607,
+      "was": [],
+      "yellow": 80
+    },
+    {
+      "armor": "",
+      "cat": "Plain",
+      "count": 1,
+      "effect": "Restores 17 health over 18 sec. Must remain seated while eating.",
+      "formula": null,
+      "green": 65,
+      "grey": 85,
+      "id": 2679,
+      "is_new": false,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          2672,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 2538,
+      "was": [],
+      "yellow": 45
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 1 Stamina",
+      "formula": null,
+      "green": 65,
+      "grey": 85,
+      "id": 6888,
+      "is_new": false,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          6889,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 8604,
+      "was": [],
+      "yellow": 45
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 1 Strength",
+      "formula": null,
+      "green": 65,
+      "grey": 85,
+      "id": 2681,
+      "is_new": false,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          769,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 2540,
+      "was": [],
+      "yellow": 45
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 1 Agility",
+      "formula": null,
+      "green": 70,
+      "grey": 90,
+      "id": 2680,
+      "is_new": false,
+      "kind": "",
+      "learn": 10,
+      "reagents": [
+        [
+          2672,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 2539,
+      "was": [],
+      "yellow": 50
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 2,
+      "effect": "Well fed: 5 Fishing Skill",
+      "formula": [
+        5485,
+        1
+      ],
+      "green": 110,
+      "grey": 130,
+      "id": 5476,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 50,
+      "reagents": [
+        [
+          5468,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 50,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Laird",
+            "skill": null,
+            "zone": "Darkshore"
+          }
+        ]
+      },
+      "spell": 6415,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 3 Strength",
+      "formula": [
+        2697,
+        1
+      ],
+      "green": 110,
+      "grey": 130,
+      "id": 724,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 50,
+      "reagents": [
+        [
+          723,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 50,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 2542,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 3 Fishing Skill",
+      "formula": [
+        6329,
+        1
+      ],
+      "green": 110,
+      "grey": 130,
+      "id": 6316,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 50,
+      "reagents": [
+        [
+          6317,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 50,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Khara Deepwater",
+            "skill": null,
+            "zone": "Loch Modan"
+          }
+        ]
+      },
+      "spell": 7754,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 10 Attack Power",
+      "formula": [
+        6328,
+        1
+      ],
+      "green": 110,
+      "grey": 130,
+      "id": 4592,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 50,
+      "reagents": [
+        [
+          6289,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 50,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Tansy Puddlefizz",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Naal Mistrunner",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          },
+          {
+            "cost": "",
+            "name": "Tharynn Bouden",
+            "skill": null,
+            "zone": "Elwynn Forest"
+          },
+          {
+            "cost": "",
+            "name": "Khara Deepwater",
+            "skill": null,
+            "zone": "Loch Modan"
+          },
+          {
+            "cost": "",
+            "name": "Harn Longcast",
+            "skill": null,
+            "zone": "Mulgore"
+          },
+          {
+            "cost": "",
+            "name": "Killian Sanatha",
+            "skill": null,
+            "zone": "Silverpine Forest"
+          },
+          {
+            "cost": "",
+            "name": "Nyoma",
+            "skill": null,
+            "zone": "Teldrassil"
+          },
+          {
+            "cost": "",
+            "name": "Lizbeth Cromwell",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          }
+        ]
+      },
+      "spell": 7753,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 1 Spell Damage",
+      "formula": [
+        6368,
+        1
+      ],
+      "green": 110,
+      "grey": 130,
+      "id": 5095,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 50,
+      "reagents": [
+        [
+          6361,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 50,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Catherine Leland",
+            "skill": null,
+            "zone": "Stormwind City"
+          },
+          {
+            "cost": "",
+            "name": "Shankys",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Heldan Galesong",
+            "skill": null,
+            "zone": "Darkshore"
+          },
+          {
+            "cost": "",
+            "name": "Zansoa",
+            "skill": null,
+            "zone": "Durotar"
+          },
+          {
+            "cost": "",
+            "name": "Killian Sanatha",
+            "skill": null,
+            "zone": "Silverpine Forest"
+          },
+          {
+            "cost": "",
+            "name": "Nessa Shadowsong",
+            "skill": null,
+            "zone": "Teldrassil"
+          },
+          {
+            "cost": "",
+            "name": "Ronald Burch",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Kriggon Talsone",
+            "skill": null,
+            "zone": "Westfall"
+          },
+          {
+            "cost": "",
+            "name": "Stuart Fleming",
+            "skill": null,
+            "zone": "Wetlands"
+          },
+          {
+            "cost": "",
+            "name": "Kilxx",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 7827,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 2,
+      "effect": "Well fed: 1 Intellect",
+      "formula": [
+        5486,
+        1
+      ],
+      "green": 110,
+      "grey": 130,
+      "id": 5477,
+      "is_new": false,
+      "kind": "",
+      "learn": 50,
+      "reagents": [
+        [
+          5469,
+          1
+        ],
+        [
+          4536,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 50,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Tari'qa",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 6416,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 2,
+      "effect": "Well fed: 3 Strength",
+      "formula": [
+        3679,
+        1
+      ],
+      "green": 120,
+      "grey": 140,
+      "id": 3220,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 60,
+      "reagents": [
+        [
+          3173,
+          1
+        ],
+        [
+          3172,
+          1
+        ],
+        [
+          3174,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 60,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 3371,
+      "was": [],
+      "yellow": 100
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Instantly restores 100 energy.",
+      "formula": [
+        7678,
+        1
+      ],
+      "green": 120,
+      "grey": 140,
+      "id": 7676,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 60,
+      "reagents": [
+        [
+          2452,
+          1
+        ],
+        [
+          159,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 9513,
+      "was": [],
+      "yellow": 100
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 3 Stamina",
+      "formula": [
+        250188,
+        1
+      ],
+      "green": 87,
+      "grey": 95,
+      "id": 250080,
+      "is_new": true,
+      "kind": "level 5",
+      "learn": 75,
+      "reagents": [
+        [
+          6889,
+          1
+        ],
+        [
+          2678,
+          4
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": null,
+            "lv": [],
+            "npc": "Dire Condor",
+            "zone": "Redridge Mountains"
+          }
+        ],
+        "read": "wowhead",
+        "skill": 75,
+        "vendors": []
+      },
+      "spell": 1250157,
+      "was": [],
+      "yellow": 80
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 3 Intellect",
+      "formula": [
+        250185,
+        1
+      ],
+      "green": 132,
+      "grey": 150,
+      "id": 250077,
+      "is_new": true,
+      "kind": "level 5",
+      "learn": 75,
+      "reagents": [
+        [
+          12184,
+          1
+        ],
+        [
+          2678,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250154,
+      "was": [],
+      "yellow": 115
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 15% movement speed while in Westfall",
+      "formula": [
+        728,
+        1
+      ],
+      "green": 135,
+      "grey": 155,
+      "id": 733,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 75,
+      "reagents": [
+        [
+          729,
+          1
+        ],
+        [
+          730,
+          1
+        ],
+        [
+          731,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 75,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 2543,
+      "was": [],
+      "yellow": 115
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 3 Agility",
+      "formula": [
+        3678,
+        1
+      ],
+      "green": 140,
+      "grey": 160,
+      "id": 3662,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 80,
+      "reagents": [
+        [
+          2924,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 80,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 3370,
+      "was": [],
+      "yellow": 120
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 4 Spell Damage",
+      "formula": [
+        21099,
+        1
+      ],
+      "green": 140,
+      "grey": 160,
+      "id": 21072,
+      "is_new": false,
+      "kind": "level 10",
+      "learn": 80,
+      "reagents": [
+        [
+          21071,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 80,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Fyldan",
+            "skill": null,
+            "zone": "Darnassus"
+          },
+          {
+            "cost": "",
+            "name": "Xen'to",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Erika Tate",
+            "skill": null,
+            "zone": "Stormwind City"
+          },
+          {
+            "cost": "",
+            "name": "Naal Mistrunner",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          },
+          {
+            "cost": "",
+            "name": "Wulan",
+            "skill": null,
+            "zone": "Desolace"
+          },
+          {
+            "cost": "",
+            "name": "Emrul Riknussun",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Derak Nightfall",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Micha Yance",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Gloria Femmel",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Nyoma",
+            "skill": null,
+            "zone": "Teldrassil"
+          },
+          {
+            "cost": "",
+            "name": "Tarban Hearthgrain",
+            "skill": null,
+            "zone": "The Barrens"
+          },
+          {
+            "cost": "",
+            "name": "Otho Moji'ko",
+            "skill": null,
+            "zone": "The Hinterlands"
+          },
+          {
+            "cost": "",
+            "name": "Ronald Burch",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Kelsey Yance",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 25704,
+      "was": [],
+      "yellow": 120
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 1 Intellect",
+      "formula": [
+        2698,
+        1
+      ],
+      "green": 145,
+      "grey": 165,
+      "id": 2682,
+      "is_new": false,
+      "kind": "",
+      "learn": 85,
+      "reagents": [
+        [
+          2675,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": 0.82,
+            "lv": [
+              15,
+              16
+            ],
+            "npc": "Lord Sinslayer",
+            "zone": "Darkshore"
+          },
+          {
+            "chance": 0.66,
+            "lv": [
+              14,
+              15
+            ],
+            "npc": "Reef Frenzy",
+            "zone": "Silverpine Forest"
+          },
+          {
+            "chance": 0.34,
+            "lv": [],
+            "npc": "Licillin",
+            "zone": "Darkshore"
+          }
+        ],
+        "read": "classic",
+        "skill": 85,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 2545,
+      "was": [],
+      "yellow": 125
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Eat me.",
+      "formula": [
+        6661,
+        2
+      ],
+      "green": 145,
+      "grey": 165,
+      "id": 6657,
+      "is_new": false,
+      "kind": "",
+      "learn": 85,
+      "reagents": [
+        [
+          6522,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": 0.1,
+            "lv": [],
+            "npc": "Brontus",
+            "zone": "The Barrens"
+          },
+          {
+            "chance": 0.1,
+            "lv": [],
+            "npc": "Captain Fairmount",
+            "zone": "The Barrens"
+          },
+          {
+            "chance": 0.1,
+            "lv": [],
+            "npc": "Foreman Grills",
+            "zone": "The Barrens"
+          }
+        ],
+        "read": "classic",
+        "skill": 85,
+        "vendors": []
+      },
+      "spell": 8238,
+      "was": [],
+      "yellow": 125
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Eat me.",
+      "formula": [
+        251526,
+        2
+      ],
+      "green": 145,
+      "grey": 165,
+      "id": 251525,
+      "is_new": true,
+      "kind": "",
+      "learn": 85,
+      "reagents": [
+        [
+          251524,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1252566,
+      "was": [],
+      "yellow": 125
+    },
+    {
+      "armor": "",
+      "cat": "Plain",
+      "count": 1,
+      "effect": "Restores 17 health over 18 sec. Must remain seated while eating.",
+      "formula": null,
+      "green": 110,
+      "grey": 130,
+      "id": 5525,
+      "is_new": false,
+      "kind": "",
+      "learn": 50,
+      "reagents": [
+        [
+          5503,
+          1
+        ],
+        [
+          159,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 6499,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 3 Agility",
+      "formula": null,
+      "green": 110,
+      "grey": 130,
+      "id": 2684,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 50,
+      "reagents": [
+        [
+          2673,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 2541,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Camp",
+      "count": 1,
+      "effect": "Builds a journeyman campfire that allows cooking and the placement of up to 5 additional camp features. Players sitting or crafting nearby for 1 min will gain benefits from other camp features.",
+      "formula": [
+        273087,
+        2
+      ],
+      "green": 100,
+      "grey": 105,
+      "id": 279961,
+      "is_new": true,
+      "kind": "",
+      "learn": 90,
+      "reagents": [
+        [
+          11291,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 90,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Happy Camper",
+            "skill": null,
+            "zone": "Dun Morogh"
+          }
+        ]
+      },
+      "spell": 1283400,
+      "was": [],
+      "yellow": 95
+    },
+    {
+      "armor": "",
+      "cat": "Plain",
+      "count": 1,
+      "effect": "Restores 58 health over 21 sec. Must remain seated while eating.",
+      "formula": [
+        5528,
+        1
+      ],
+      "green": 150,
+      "grey": 170,
+      "id": 5526,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 90,
+      "reagents": [
+        [
+          5503,
+          1
+        ],
+        [
+          1179,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 90,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Heldan Galesong",
+            "skill": null,
+            "zone": "Darkshore"
+          },
+          {
+            "cost": "",
+            "name": "Kriggon Talsone",
+            "skill": null,
+            "zone": "Westfall"
+          }
+        ]
+      },
+      "spell": 6501,
+      "was": [],
+      "yellow": 130
+    },
+    {
+      "armor": "",
+      "cat": "Plain",
+      "count": 2,
+      "effect": "Restores 115 health over 24 sec. Must remain seated while eating.",
+      "formula": [
+        5487,
+        1
+      ],
+      "green": 150,
+      "grey": 170,
+      "id": 5478,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 90,
+      "reagents": [
+        [
+          5051,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 90,
+        "vendors": []
+      },
+      "spell": 6417,
+      "was": [],
+      "yellow": 130
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 1 Stamina",
+      "formula": [
+        3680,
+        1
+      ],
+      "green": 150,
+      "grey": 170,
+      "id": 3663,
+      "is_new": false,
+      "kind": "",
+      "learn": 90,
+      "reagents": [
+        [
+          1468,
+          2
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 90,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 3372,
+      "was": [],
+      "yellow": 130
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 7 Healing Power",
+      "formula": [
+        249880,
+        1
+      ],
+      "green": 115,
+      "grey": 125,
+      "id": 249866,
+      "is_new": true,
+      "kind": "level 5",
+      "learn": 100,
+      "reagents": [
+        [
+          1179,
+          1
+        ],
+        [
+          785,
+          2
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": 0.05,
+            "lv": [
+              20,
+              21
+            ],
+            "npc": "Windshear Geomancer",
+            "zone": "Stonetalon Mountains"
+          }
+        ],
+        "read": "wowhead",
+        "skill": 100,
+        "vendors": []
+      },
+      "spell": 1249958,
+      "was": [],
+      "yellow": 105
+    },
+    {
+      "armor": "",
+      "cat": "Spirit",
+      "count": 1,
+      "effect": "Well fed: 3 Spirit",
+      "formula": [
+        249886,
+        1
+      ],
+      "green": 112,
+      "grey": 120,
+      "id": 249872,
+      "is_new": true,
+      "kind": "level 5",
+      "learn": 100,
+      "reagents": [
+        [
+          1179,
+          1
+        ],
+        [
+          2678,
+          2
+        ],
+        [
+          3174,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 100,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kalsey Sanden",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Aza'bek",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 1249964,
+      "was": [],
+      "yellow": 105
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 3 Intellect",
+      "formula": [
+        2699,
+        1
+      ],
+      "green": 155,
+      "grey": 175,
+      "id": 1082,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 100,
+      "reagents": [
+        [
+          1081,
+          1
+        ],
+        [
+          1080,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 100,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 2547,
+      "was": [],
+      "yellow": 135
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 8 Fishing Skill",
+      "formula": [
+        6330,
+        1
+      ],
+      "green": 160,
+      "grey": 180,
+      "id": 4593,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 100,
+      "reagents": [
+        [
+          6308,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 100,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Catherine Leland",
+            "skill": null,
+            "zone": "Stormwind City"
+          },
+          {
+            "cost": "",
+            "name": "Naal Mistrunner",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          },
+          {
+            "cost": "",
+            "name": "Sewa Mistrunner",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          },
+          {
+            "cost": "",
+            "name": "Derak Nightfall",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Lindea Rabonne",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Ronald Burch",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Kilxx",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 7755,
+      "was": [],
+      "yellow": 140
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 2,
+      "effect": "Well fed: 3 Stamina",
+      "formula": [
+        5488,
+        1
+      ],
+      "green": 160,
+      "grey": 180,
+      "id": 5479,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 100,
+      "reagents": [
+        [
+          5470,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 100,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Tari'qa",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 6418,
+      "was": [],
+      "yellow": 140
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 3,
+      "effect": "Well fed: 5 Agility",
+      "formula": [
+        2701,
+        1
+      ],
+      "green": 160,
+      "grey": 180,
+      "id": 1017,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 100,
+      "reagents": [
+        [
+          1015,
+          2
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 100,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 2549,
+      "was": [
+        [
+          1015,
+          2
+        ],
+        [
+          2665,
+          1
+        ]
+      ],
+      "yellow": 140
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 5 Strength",
+      "formula": [
+        2700,
+        1
+      ],
+      "green": 150,
+      "grey": 170,
+      "id": 2685,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 110,
+      "reagents": [
+        [
+          2677,
+          2
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": 0.84,
+            "lv": [],
+            "npc": "Shanda the Spinner",
+            "zone": "Loch Modan"
+          },
+          {
+            "chance": 0.78,
+            "lv": [
+              15,
+              16
+            ],
+            "npc": "Lord Condar",
+            "zone": "Loch Modan"
+          },
+          {
+            "chance": 0.54,
+            "lv": [],
+            "npc": "Snarlflare",
+            "zone": "Redridge Mountains"
+          }
+        ],
+        "read": "classic",
+        "skill": 110,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 2548,
+      "was": [],
+      "yellow": 130
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 3 Strength",
+      "formula": [
+        3734,
+        1
+      ],
+      "green": 170,
+      "grey": 190,
+      "id": 3726,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 110,
+      "reagents": [
+        [
+          3730,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 110,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Ulthaan",
+            "skill": null,
+            "zone": "Ashenvale"
+          }
+        ]
+      },
+      "spell": 3397,
+      "was": [],
+      "yellow": 150
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 5 Stamina",
+      "formula": [
+        3683,
+        1
+      ],
+      "green": 170,
+      "grey": 190,
+      "id": 3666,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 110,
+      "reagents": [
+        [
+          2251,
+          2
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 110,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 3377,
+      "was": [],
+      "yellow": 150
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 2,
+      "effect": "Well fed: 5 Strength",
+      "formula": [
+        5489,
+        1
+      ],
+      "green": 170,
+      "grey": 190,
+      "id": 5480,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 110,
+      "reagents": [
+        [
+          5471,
+          1
+        ],
+        [
+          2678,
+          4
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 110,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Ulthaan",
+            "skill": null,
+            "zone": "Ashenvale"
+          }
+        ]
+      },
+      "spell": 6419,
+      "was": [],
+      "yellow": 150
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 3 Intellect",
+      "formula": null,
+      "green": 135,
+      "grey": 155,
+      "id": 2683,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 75,
+      "reagents": [
+        [
+          2674,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 2544,
+      "was": [],
+      "yellow": 115
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 3 Strength",
+      "formula": null,
+      "green": 140,
+      "grey": 160,
+      "id": 2687,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 80,
+      "reagents": [
+        [
+          2677,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 2546,
+      "was": [],
+      "yellow": 120
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 5 Agility",
+      "formula": [
+        3681,
+        1
+      ],
+      "green": 180,
+      "grey": 200,
+      "id": 3664,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 120,
+      "reagents": [
+        [
+          3667,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 120,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          }
+        ]
+      },
+      "spell": 3373,
+      "was": [],
+      "yellow": 160
+    },
+    {
+      "armor": "",
+      "cat": "Spirit",
+      "count": 1,
+      "effect": "Well fed: 5 Spirit",
+      "formula": [
+        249887,
+        1
+      ],
+      "green": 140,
+      "grey": 145,
+      "id": 249873,
+      "is_new": true,
+      "kind": "level 15",
+      "learn": 125,
+      "reagents": [
+        [
+          1205,
+          1
+        ],
+        [
+          2692,
+          2
+        ],
+        [
+          1468,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 125,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kalsey Sanden",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Aza'bek",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 1249965,
+      "was": [],
+      "yellow": 135
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 11 Healing Power",
+      "formula": [
+        249881,
+        1
+      ],
+      "green": 170,
+      "grey": 185,
+      "id": 249867,
+      "is_new": true,
+      "kind": "level 15",
+      "learn": 125,
+      "reagents": [
+        [
+          1205,
+          1
+        ],
+        [
+          3357,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1249959,
+      "was": [],
+      "yellow": 155
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 5 Agility",
+      "formula": [
+        12227,
+        1
+      ],
+      "green": 185,
+      "grey": 205,
+      "id": 12209,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 125,
+      "reagents": [
+        [
+          1015,
+          1
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 125,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Super-Seller 680",
+            "skill": null,
+            "zone": "Desolace"
+          }
+        ]
+      },
+      "spell": 15853,
+      "was": [],
+      "yellow": 165
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 5 Agility",
+      "formula": [
+        3735,
+        1
+      ],
+      "green": 195,
+      "grey": 215,
+      "id": 3727,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 125,
+      "reagents": [
+        [
+          3731,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 125,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Zargh",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 3398,
+      "was": [],
+      "yellow": 175
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 5 Stamina",
+      "formula": [
+        3682,
+        1
+      ],
+      "green": 190,
+      "grey": 210,
+      "id": 3665,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 130,
+      "reagents": [
+        [
+          3685,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 130,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kendor Kabonka",
+            "skill": null,
+            "zone": "Stormwind City"
+          },
+          {
+            "cost": "",
+            "name": "Keena",
+            "skill": null,
+            "zone": "Arathi Highlands"
+          },
+          {
+            "cost": "",
+            "name": "Nerrist",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 3376,
+      "was": [],
+      "yellow": 170
+    },
+    {
+      "armor": "",
+      "cat": "Camp",
+      "count": 1,
+      "effect": "Lay out Cookie's Feast that contains Stamina-boosting food. Requires a Cooking Fire nearby. All camping features share a cooldown of 1 hr.",
+      "formula": [
+        273102,
+        2
+      ],
+      "green": 147,
+      "grey": 150,
+      "id": 279957,
+      "is_new": true,
+      "kind": "",
+      "learn": 140,
+      "reagents": [
+        [
+          12037,
+          2
+        ],
+        [
+          12204,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 140,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Happy Camper",
+            "skill": null,
+            "zone": "Dun Morogh"
+          }
+        ]
+      },
+      "spell": 1262978,
+      "was": [],
+      "yellow": 145
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 10 Agility",
+      "formula": [
+        20075,
+        1
+      ],
+      "green": 180,
+      "grey": 200,
+      "id": 20074,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 150,
+      "reagents": [
+        [
+          3667,
+          2
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 150,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Ogg'marr",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          }
+        ]
+      },
+      "spell": 24418,
+      "was": [],
+      "yellow": 160
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 10 Agility",
+      "formula": [
+        3736,
+        1
+      ],
+      "green": 210,
+      "grey": 230,
+      "id": 3728,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 150,
+      "reagents": [
+        [
+          3731,
+          2
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 150,
+        "vendors": []
+      },
+      "spell": 3399,
+      "was": [],
+      "yellow": 190
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 6 Stamina and Spirit",
+      "formula": null,
+      "green": 185,
+      "grey": 205,
+      "id": 5527,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 125,
+      "reagents": [
+        [
+          5504,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 6500,
+      "was": [],
+      "yellow": 165
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 12 Fishing Skill",
+      "formula": [
+        6369,
+        1
+      ],
+      "green": 210,
+      "grey": 230,
+      "id": 4594,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 175,
+      "reagents": [
+        [
+          6362,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Heldan Galesong",
+            "skill": null,
+            "zone": "Darkshore"
+          },
+          {
+            "cost": "",
+            "name": "Shankys",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Wik'Tar",
+            "skill": null,
+            "zone": "Ashenvale"
+          },
+          {
+            "cost": "",
+            "name": "Wulan",
+            "skill": null,
+            "zone": "Desolace"
+          },
+          {
+            "cost": "",
+            "name": "Tansy Puddlefizz",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Lindea Rabonne",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Lizbeth Cromwell",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Stuart Fleming",
+            "skill": null,
+            "zone": "Wetlands"
+          },
+          {
+            "cost": "",
+            "name": "Kelsey Yance",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 7828,
+      "was": [],
+      "yellow": 190
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 10 Stamina",
+      "formula": [
+        250186,
+        1
+      ],
+      "green": 207,
+      "grey": 220,
+      "id": 250078,
+      "is_new": true,
+      "kind": "level 25",
+      "learn": 175,
+      "reagents": [
+        [
+          12207,
+          2
+        ],
+        [
+          2692,
+          4
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": null,
+            "lv": [],
+            "npc": "Lost One Cook",
+            "zone": "Swamp of Sorrows"
+          }
+        ],
+        "read": "wowhead",
+        "skill": 175,
+        "vendors": []
+      },
+      "spell": 1250155,
+      "was": [],
+      "yellow": 195
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 10 Strength",
+      "formula": [
+        250182,
+        1
+      ],
+      "green": 210,
+      "grey": 220,
+      "id": 250074,
+      "is_new": true,
+      "kind": "level 25",
+      "learn": 175,
+      "reagents": [
+        [
+          3730,
+          2
+        ],
+        [
+          2692,
+          3
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": 0.15,
+            "lv": [
+              21,
+              22
+            ],
+            "npc": "Ashenvale Bear",
+            "zone": "Ashenvale"
+          }
+        ],
+        "read": "wowhead",
+        "skill": 175,
+        "vendors": []
+      },
+      "spell": 1250151,
+      "was": [],
+      "yellow": 200
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 10 Intellect",
+      "formula": [
+        4609,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 4457,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 175,
+      "reagents": [
+        [
+          3404,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Narj Deepslice",
+            "skill": null,
+            "zone": "Arathi Highlands"
+          }
+        ]
+      },
+      "spell": 4094,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 3 Stamina",
+      "formula": [
+        12232,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 12213,
+      "is_new": false,
+      "kind": "level 5",
+      "learn": 175,
+      "reagents": [
+        [
+          12037,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kireena",
+            "skill": null,
+            "zone": "Desolace"
+          },
+          {
+            "cost": "",
+            "name": "Ogg'marr",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          },
+          {
+            "cost": "",
+            "name": "Banalash",
+            "skill": null,
+            "zone": "Swamp of Sorrows"
+          }
+        ]
+      },
+      "spell": 15863,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 10 Stamina",
+      "formula": [
+        6039,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 6038,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 175,
+      "reagents": [
+        [
+          4655,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kelsey Yance",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 7213,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 10 Agility",
+      "formula": [
+        12229,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 13851,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 175,
+      "reagents": [
+        [
+          12203,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Vivianna",
+            "skill": null,
+            "zone": "Feralas"
+          },
+          {
+            "cost": "",
+            "name": "Sheendra Tallgrass",
+            "skill": null,
+            "zone": "Feralas"
+          }
+        ]
+      },
+      "spell": 15856,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 2,
+      "effect": "Well fed: 15 Agility",
+      "formula": [
+        12231,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 12212,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 175,
+      "reagents": [
+        [
+          12202,
+          1
+        ],
+        [
+          159,
+          1
+        ],
+        [
+          4536,
+          2
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Corporal Bluth",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          },
+          {
+            "cost": "",
+            "name": "Nerrist",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 15861,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 20 Attack Power",
+      "formula": [
+        17062,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 8364,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 175,
+      "reagents": [
+        [
+          8365,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Heldan Galesong",
+            "skill": null,
+            "zone": "Darkshore"
+          },
+          {
+            "cost": "",
+            "name": "Shankys",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Wik'Tar",
+            "skill": null,
+            "zone": "Ashenvale"
+          },
+          {
+            "cost": "",
+            "name": "Wulan",
+            "skill": null,
+            "zone": "Desolace"
+          },
+          {
+            "cost": "",
+            "name": "Tansy Puddlefizz",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Lindea Rabonne",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Lizbeth Cromwell",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Stuart Fleming",
+            "skill": null,
+            "zone": "Wetlands"
+          },
+          {
+            "cost": "",
+            "name": "Kelsey Yance",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 20916,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 5 Stamina",
+      "formula": [
+        12233,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 12214,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 175,
+      "reagents": [
+        [
+          12037,
+          1
+        ],
+        [
+          2596,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Janet Hommers",
+            "skill": null,
+            "zone": "Desolace"
+          },
+          {
+            "cost": "",
+            "name": "Helenia Olden",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          }
+        ]
+      },
+      "spell": 15865,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 5 Intellect",
+      "formula": [
+        12228,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 12210,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 175,
+      "reagents": [
+        [
+          12184,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Hammon Karwn",
+            "skill": null,
+            "zone": "Arathi Highlands"
+          },
+          {
+            "cost": "",
+            "name": "Keena",
+            "skill": null,
+            "zone": "Arathi Highlands"
+          },
+          {
+            "cost": "",
+            "name": "Helenia Olden",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          },
+          {
+            "cost": "",
+            "name": "Ogg'marr",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          },
+          {
+            "cost": "",
+            "name": "Corporal Bluth",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          },
+          {
+            "cost": "",
+            "name": "Nerrist",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 15855,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 7 Spell Damage",
+      "formula": [
+        21219,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 21217,
+      "is_new": false,
+      "kind": "level 30",
+      "learn": 175,
+      "reagents": [
+        [
+          21153,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Fyldan",
+            "skill": null,
+            "zone": "Darnassus"
+          },
+          {
+            "cost": "",
+            "name": "Xen'to",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Erika Tate",
+            "skill": null,
+            "zone": "Stormwind City"
+          },
+          {
+            "cost": "",
+            "name": "Naal Mistrunner",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          },
+          {
+            "cost": "",
+            "name": "Wulan",
+            "skill": null,
+            "zone": "Desolace"
+          },
+          {
+            "cost": "",
+            "name": "Emrul Riknussun",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Derak Nightfall",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Micha Yance",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Gloria Femmel",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Nyoma",
+            "skill": null,
+            "zone": "Teldrassil"
+          },
+          {
+            "cost": "",
+            "name": "Tarban Hearthgrain",
+            "skill": null,
+            "zone": "The Barrens"
+          },
+          {
+            "cost": "",
+            "name": "Otho Moji'ko",
+            "skill": null,
+            "zone": "The Hinterlands"
+          },
+          {
+            "cost": "",
+            "name": "Ronald Burch",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Kelsey Yance",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 25954,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 5 Stamina",
+      "formula": [
+        3737,
+        1
+      ],
+      "green": 235,
+      "grey": 255,
+      "id": 3729,
+      "is_new": false,
+      "kind": "level 15",
+      "learn": 175,
+      "reagents": [
+        [
+          3712,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 175,
+        "vendors": []
+      },
+      "spell": 3400,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Spirit",
+      "count": 1,
+      "effect": "Well fed: 10 Spirit",
+      "formula": [
+        249888,
+        1
+      ],
+      "green": 190,
+      "grey": 195,
+      "id": 249874,
+      "is_new": true,
+      "kind": "level 25",
+      "learn": 180,
+      "reagents": [
+        [
+          1708,
+          1
+        ],
+        [
+          2692,
+          3
+        ],
+        [
+          5637,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 180,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kalsey Sanden",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Aza'bek",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 1249966,
+      "was": [],
+      "yellow": 185
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 22 Healing Power",
+      "formula": [
+        249882,
+        1
+      ],
+      "green": 215,
+      "grey": 235,
+      "id": 249868,
+      "is_new": true,
+      "kind": "level 25",
+      "learn": 180,
+      "reagents": [
+        [
+          1708,
+          1
+        ],
+        [
+          3818,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1249960,
+      "was": [],
+      "yellow": 195
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 10 Intellect",
+      "formula": [
+        250181,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250073,
+      "is_new": true,
+      "kind": "level 25",
+      "learn": 180,
+      "reagents": [
+        [
+          12184,
+          2
+        ],
+        [
+          2692,
+          3
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250150,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 10 Strength",
+      "formula": [
+        274977,
+        1
+      ],
+      "green": 215,
+      "grey": 230,
+      "id": 274976,
+      "is_new": true,
+      "kind": "level 25",
+      "learn": 185,
+      "reagents": [
+        [
+          769,
+          2
+        ],
+        [
+          2678,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 185,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Martha Wellsworth",
+            "skill": null,
+            "zone": "Riverglades"
+          }
+        ]
+      },
+      "spell": 1295834,
+      "was": [],
+      "yellow": 200
+    },
+    {
+      "armor": "",
+      "cat": "Camp",
+      "count": 1,
+      "effect": "Builds an expert campfire that allows cooking and the placement of up to 10 additional camp features. Players sitting or crafting nearby for 1 min will gain benefits from other camp features.",
+      "formula": [
+        273101,
+        2
+      ],
+      "green": 212,
+      "grey": 220,
+      "id": 279974,
+      "is_new": true,
+      "kind": "",
+      "learn": 200,
+      "reagents": [
+        [
+          272941,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1291341,
+      "was": [],
+      "yellow": 205
+    },
+    {
+      "armor": "",
+      "cat": "Spirit",
+      "count": 1,
+      "effect": "Well fed: 15 Spirit",
+      "formula": [
+        249889,
+        1
+      ],
+      "green": 220,
+      "grey": 225,
+      "id": 249875,
+      "is_new": true,
+      "kind": "level 35",
+      "learn": 200,
+      "reagents": [
+        [
+          1645,
+          1
+        ],
+        [
+          3713,
+          3
+        ],
+        [
+          4402,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 200,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kalsey Sanden",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Aza'bek",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 1249967,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 14 Spell Damage",
+      "formula": [
+        274972,
+        1
+      ],
+      "green": 230,
+      "grey": 240,
+      "id": 274971,
+      "is_new": true,
+      "kind": "level 25",
+      "learn": 200,
+      "reagents": [
+        [
+          730,
+          2
+        ],
+        [
+          12206,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1295805,
+      "was": [],
+      "yellow": 220
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 33 Healing Power",
+      "formula": [
+        249883,
+        1
+      ],
+      "green": 235,
+      "grey": 250,
+      "id": 249869,
+      "is_new": true,
+      "kind": "level 35",
+      "learn": 200,
+      "reagents": [
+        [
+          1645,
+          1
+        ],
+        [
+          8838,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1249961,
+      "was": [],
+      "yellow": 220
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Occasionally belch flame at enemies struck in melee for the next 10 min.",
+      "formula": [
+        12239,
+        1
+      ],
+      "green": 260,
+      "grey": 280,
+      "id": 12217,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 200,
+      "reagents": [
+        [
+          12037,
+          1
+        ],
+        [
+          4402,
+          1
+        ],
+        [
+          2692,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 200,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Helenia Olden",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          },
+          {
+            "cost": "",
+            "name": "Ogg'marr",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          }
+        ]
+      },
+      "spell": 15906,
+      "was": [],
+      "yellow": 240
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 2,
+      "effect": "Well fed: 10 Stamina",
+      "formula": [
+        12240,
+        1
+      ],
+      "green": 260,
+      "grey": 280,
+      "id": 12215,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 200,
+      "reagents": [
+        [
+          12204,
+          2
+        ],
+        [
+          3713,
+          1
+        ],
+        [
+          159,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 200,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Janet Hommers",
+            "skill": null,
+            "zone": "Desolace"
+          },
+          {
+            "cost": "",
+            "name": "Kireena",
+            "skill": null,
+            "zone": "Desolace"
+          }
+        ]
+      },
+      "spell": 15910,
+      "was": [],
+      "yellow": 240
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 18 Fishing Skill",
+      "formula": null,
+      "green": 215,
+      "grey": 220,
+      "id": 8957,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 210,
+      "reagents": [
+        [
+          8959,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1247741,
+      "was": [],
+      "yellow": 210
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 4,
+      "effect": "Well fed: 15 Herbalism skill",
+      "formula": null,
+      "green": 235,
+      "grey": 255,
+      "id": 10841,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 175,
+      "reagents": [
+        [
+          3821,
+          1
+        ],
+        [
+          159,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 13028,
+      "was": [],
+      "yellow": 215
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 15 Intellect",
+      "formula": [
+        250184,
+        1
+      ],
+      "green": 237,
+      "grey": 245,
+      "id": 250076,
+      "is_new": true,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          12184,
+          2
+        ],
+        [
+          2692,
+          4
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250153,
+      "was": [],
+      "yellow": 230
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 15 Strength",
+      "formula": [
+        250173,
+        1
+      ],
+      "green": 237,
+      "grey": 245,
+      "id": 250065,
+      "is_new": true,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          5471,
+          2
+        ],
+        [
+          2692,
+          3
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250142,
+      "was": [],
+      "yellow": 230
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 150 Armor",
+      "formula": [
+        286153,
+        1
+      ],
+      "green": 250,
+      "grey": 255,
+      "id": 286152,
+      "is_new": true,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          13890,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1319313,
+      "was": [],
+      "yellow": 245
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 30 Attack Power",
+      "formula": [
+        13940,
+        1
+      ],
+      "green": 285,
+      "grey": 305,
+      "id": 13927,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          13754,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 225,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kelsey Yance",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 18239,
+      "was": [],
+      "yellow": 265
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 18 Fishing Skill",
+      "formula": [
+        13941,
+        1
+      ],
+      "green": 285,
+      "grey": 305,
+      "id": 13930,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          13758,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 225,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kelsey Yance",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 18241,
+      "was": [],
+      "yellow": 265
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 15 Stamina",
+      "formula": [
+        16110,
+        1
+      ],
+      "green": 285,
+      "grey": 305,
+      "id": 12218,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          12207,
+          1
+        ],
+        [
+          3713,
+          2
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 225,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Malygen",
+            "skill": null,
+            "zone": "Felwood"
+          },
+          {
+            "cost": "",
+            "name": "Bale",
+            "skill": null,
+            "zone": "Felwood"
+          },
+          {
+            "cost": "",
+            "name": "Himmik",
+            "skill": null,
+            "zone": "Winterspring"
+          }
+        ]
+      },
+      "spell": 15933,
+      "was": [],
+      "yellow": 265
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 10 Intellect",
+      "formula": [
+        16111,
+        1
+      ],
+      "green": 285,
+      "grey": 305,
+      "id": 12216,
+      "is_new": false,
+      "kind": "level 25",
+      "learn": 225,
+      "reagents": [
+        [
+          12206,
+          1
+        ],
+        [
+          2692,
+          2
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 225,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kriggon Talsone",
+            "skill": null,
+            "zone": "Westfall"
+          },
+          {
+            "cost": "",
+            "name": "Uthok",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          },
+          {
+            "cost": "",
+            "name": "Banalash",
+            "skill": null,
+            "zone": "Swamp of Sorrows"
+          }
+        ]
+      },
+      "spell": 15915,
+      "was": [],
+      "yellow": 265
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 22 Spell Damage",
+      "formula": [
+        13939,
+        1
+      ],
+      "green": 285,
+      "grey": 305,
+      "id": 6887,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          4603,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 225,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Gikkix",
+            "skill": null,
+            "zone": "Tanaris"
+          }
+        ]
+      },
+      "spell": 18238,
+      "was": [],
+      "yellow": 265
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 15 Agility",
+      "formula": [
+        18046,
+        1
+      ],
+      "green": 285,
+      "grey": 305,
+      "id": 18045,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          12208,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 225,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Truk Wildbeard",
+            "skill": null,
+            "zone": "The Hinterlands"
+          },
+          {
+            "cost": "",
+            "name": "Dirge Quikcleave",
+            "skill": null,
+            "zone": "Tanaris"
+          },
+          {
+            "cost": "",
+            "name": "Innkeeper Fizzgrimble",
+            "skill": null,
+            "zone": "Tanaris"
+          }
+        ]
+      },
+      "spell": 22480,
+      "was": [],
+      "yellow": 265
+    },
+    {
+      "armor": "",
+      "cat": "Plain",
+      "count": 2,
+      "effect": "Restores 232 health over 30 sec. Must remain seated while eating.",
+      "formula": [
+        16767,
+        1
+      ],
+      "green": 285,
+      "grey": 305,
+      "id": 16766,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 225,
+      "reagents": [
+        [
+          7974,
+          2
+        ],
+        [
+          2692,
+          1
+        ],
+        [
+          1179,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 225,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Jabbey",
+            "skill": null,
+            "zone": "Tanaris"
+          }
+        ]
+      },
+      "spell": 20626,
+      "was": [],
+      "yellow": 265
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 15 Stamina",
+      "formula": null,
+      "green": 260,
+      "grey": 280,
+      "id": 17222,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 200,
+      "reagents": [
+        [
+          12205,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 21175,
+      "was": [],
+      "yellow": 240
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 1% Critical Strike chance",
+      "formula": [
+        13942,
+        1
+      ],
+      "green": 300,
+      "grey": 320,
+      "id": 13928,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 240,
+      "reagents": [
+        [
+          13755,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 240,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Gikkix",
+            "skill": null,
+            "zone": "Tanaris"
+          }
+        ]
+      },
+      "spell": 18240,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 1% Critical Strike chance",
+      "formula": [
+        13943,
+        1
+      ],
+      "green": 300,
+      "grey": 320,
+      "id": 13929,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 240,
+      "reagents": [
+        [
+          13756,
+          1
+        ],
+        [
+          2692,
+          2
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 240,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kelsey Yance",
+            "skill": null,
+            "zone": "Stranglethorn Vale"
+          }
+        ]
+      },
+      "spell": 18242,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Spirit",
+      "count": 1,
+      "effect": "Well fed: 20 Spirit",
+      "formula": [
+        249890,
+        1
+      ],
+      "green": 262,
+      "grey": 270,
+      "id": 249876,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 250,
+      "reagents": [
+        [
+          8766,
+          1
+        ],
+        [
+          3713,
+          4
+        ],
+        [
+          8146,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": 250,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kalsey Sanden",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Aza'bek",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "spell": 1249968,
+      "was": [],
+      "yellow": 255
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 44 Healing Power",
+      "formula": [
+        249884,
+        1
+      ],
+      "green": 275,
+      "grey": 290,
+      "id": 249870,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 250,
+      "reagents": [
+        [
+          8766,
+          1
+        ],
+        [
+          13465,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1249962,
+      "was": [],
+      "yellow": 260
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 22 Spell Damage",
+      "formula": [
+        13945,
+        1
+      ],
+      "green": 310,
+      "grey": 330,
+      "id": 13931,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 250,
+      "reagents": [
+        [
+          13759,
+          1
+        ],
+        [
+          159,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 250,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Gikkix",
+            "skill": null,
+            "zone": "Tanaris"
+          }
+        ]
+      },
+      "spell": 18243,
+      "was": [],
+      "yellow": 290
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 40 Attack Power",
+      "formula": [
+        13946,
+        1
+      ],
+      "green": 310,
+      "grey": 330,
+      "id": 13932,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 250,
+      "reagents": [
+        [
+          13760,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 250,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Gikkix",
+            "skill": null,
+            "zone": "Tanaris"
+          }
+        ]
+      },
+      "spell": 18244,
+      "was": [],
+      "yellow": 290
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 20 Intellect",
+      "formula": [
+        250175,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250067,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          12223,
+          3
+        ],
+        [
+          3713,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250144,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 20 Strength",
+      "formula": [
+        250178,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250070,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          3730,
+          3
+        ],
+        [
+          3713,
+          3
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250147,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Plain",
+      "count": 1,
+      "effect": "Restores 358 health over 30 sec. Must remain seated while eating.",
+      "formula": [
+        250189,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250081,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          7974,
+          3
+        ],
+        [
+          3713,
+          4
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250158,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 20 Intellect",
+      "formula": [
+        250183,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250075,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          12184,
+          3
+        ],
+        [
+          3713,
+          4
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250152,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 1,
+      "effect": "Well fed: 20 Stamina",
+      "formula": [
+        250176,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250068,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          3712,
+          3
+        ],
+        [
+          3713,
+          3
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250145,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 20 Intellect",
+      "formula": [
+        250174,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250066,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          3404,
+          3
+        ],
+        [
+          3713,
+          3
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250143,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 20 Strength",
+      "formula": [
+        250179,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250071,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          5471,
+          3
+        ],
+        [
+          3713,
+          4
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250148,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Other buffs",
+      "count": 1,
+      "effect": "Well fed: 15% movement speed while in Hyjal",
+      "formula": [
+        274415,
+        1
+      ],
+      "green": 282,
+      "grey": 285,
+      "id": 267341,
+      "is_new": true,
+      "kind": "level 55",
+      "learn": 275,
+      "reagents": [
+        [
+          249796,
+          3
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1294014,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 20 Agility",
+      "formula": [
+        250180,
+        1
+      ],
+      "green": 295,
+      "grey": 310,
+      "id": 250072,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          12202,
+          3
+        ],
+        [
+          3713,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250149,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Agility",
+      "count": 1,
+      "effect": "Well fed: 20 Agility",
+      "formula": [
+        250177,
+        1
+      ],
+      "green": 300,
+      "grey": 315,
+      "id": 250069,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          12203,
+          3
+        ],
+        [
+          3713,
+          3
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1250146,
+      "was": [],
+      "yellow": 285
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 28 Spell Damage",
+      "formula": [
+        13949,
+        1
+      ],
+      "green": 335,
+      "grey": 355,
+      "id": 13935,
+      "is_new": false,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          13889,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 275,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Vivianna",
+            "skill": null,
+            "zone": "Feralas"
+          },
+          {
+            "cost": "",
+            "name": "Sheendra Tallgrass",
+            "skill": null,
+            "zone": "Feralas"
+          }
+        ]
+      },
+      "spell": 18247,
+      "was": [],
+      "yellow": 315
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 28 Spell Damage",
+      "formula": [
+        13947,
+        1
+      ],
+      "green": 335,
+      "grey": 355,
+      "id": 13933,
+      "is_new": false,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          13888,
+          1
+        ],
+        [
+          159,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 275,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Vivianna",
+            "skill": null,
+            "zone": "Feralas"
+          },
+          {
+            "cost": "",
+            "name": "Sheendra Tallgrass",
+            "skill": null,
+            "zone": "Feralas"
+          }
+        ]
+      },
+      "spell": 18245,
+      "was": [],
+      "yellow": 315
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 40 Attack Power",
+      "formula": [
+        13948,
+        1
+      ],
+      "green": 335,
+      "grey": 355,
+      "id": 13934,
+      "is_new": false,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          13893,
+          1
+        ],
+        [
+          2692,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 275,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Vivianna",
+            "skill": null,
+            "zone": "Feralas"
+          },
+          {
+            "cost": "",
+            "name": "Sheendra Tallgrass",
+            "skill": null,
+            "zone": "Feralas"
+          }
+        ]
+      },
+      "spell": 18246,
+      "was": [],
+      "yellow": 315
+    },
+    {
+      "armor": "",
+      "cat": "Caster",
+      "count": 1,
+      "effect": "Well fed: 15 Intellect",
+      "formula": [
+        18267,
+        2
+      ],
+      "green": 335,
+      "grey": 355,
+      "id": 18254,
+      "is_new": false,
+      "kind": "level 35",
+      "learn": 275,
+      "reagents": [
+        [
+          18255,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": 100,
+            "lv": [],
+            "npc": "Pusillin",
+            "zone": "Dire Maul"
+          }
+        ],
+        "read": "classic",
+        "skill": 275,
+        "vendors": []
+      },
+      "spell": 22761,
+      "was": [],
+      "yellow": 315
+    },
+    {
+      "armor": "",
+      "cat": "Camp",
+      "count": 1,
+      "effect": "Places an Iron Oven required for the most advanced cooking recipes. Requires a Cooking Fire nearby. All camping features share a cooldown of 1 hr.",
+      "formula": [
+        273115,
+        2
+      ],
+      "green": 300,
+      "grey": 300,
+      "id": 279982,
+      "is_new": true,
+      "kind": "",
+      "learn": 300,
+      "reagents": [
+        [
+          10284,
+          10
+        ],
+        [
+          159,
+          5
+        ],
+        [
+          3713,
+          4
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1263067,
+      "was": [],
+      "yellow": 300
+    },
+    {
+      "armor": "",
+      "cat": "Stamina",
+      "count": 5,
+      "effect": "Well fed: 25 Stamina",
+      "formula": [
+        21025,
+        4
+      ],
+      "green": 345,
+      "grey": 365,
+      "id": 21023,
+      "is_new": false,
+      "kind": "level 45",
+      "learn": 300,
+      "reagents": [
+        [
+          2692,
+          1
+        ],
+        [
+          9061,
+          1
+        ],
+        [
+          8150,
+          1
+        ],
+        [
+          21024,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": 300,
+        "vendors": []
+      },
+      "spell": 25659,
+      "was": [],
+      "yellow": 325
+    },
+    {
+      "armor": "",
+      "cat": "Strength",
+      "count": 1,
+      "effect": "Well fed: 20 Strength",
+      "formula": null,
+      "green": 345,
+      "grey": 365,
+      "id": 20452,
+      "is_new": false,
+      "kind": "level 45",
+      "learn": 300,
+      "reagents": [
+        [
+          20424,
+          1
+        ],
+        [
+          3713,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 24801,
+      "was": [],
+      "yellow": 325
+    }
+  ],
+  "slug": "cooking",
+  "smelting": null,
+  "sod": [],
+  "vendor": {
+    "a": {
+      "icon": "inv_misc_food_15",
+      "id": 256731,
+      "npc": "Kalsey Sanden",
+      "role": "quartermaster",
+      "x": 10.8,
+      "y": 72.4
+    },
+    "h": {
+      "icon": "inv_misc_food_15",
+      "id": 248198,
+      "npc": "Aza'bek",
+      "role": "quartermaster",
+      "x": 49.6,
+      "y": 29.2
+    }
+  },
+  "word": "Recipe"
+}

@@ -14,7 +14,7 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PIPELINE = ROOT / "df-prof-pipeline-v1.0/_temp"
+PIPELINE = ROOT / "df-data-pipeline/_temp"
 sys.path.insert(0, str(PIPELINE))
 try:
     SPEC = importlib.util.spec_from_file_location("df_recipe_item_audit_test", PIPELINE / "fc_recipe_item_audit.py")
@@ -30,6 +30,10 @@ class RecipeItemAuditTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix="df-recipe-audit-")
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
+        import fc_pipeline_common as common
+        patcher = mock.patch.object(common, 'REPO', self.root)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.db2 = self.root / "db2"
         self.db2.mkdir()
         self.recipes = self.root / "recipes.csv"
@@ -257,6 +261,7 @@ class RecipeItemAuditTests(unittest.TestCase):
         directory = cache_root / "db2" / BUILD / "new-hotfix-snapshot"
         shutil.copytree(self.db2, directory)
         pointer = {
+            "schemaVersion": 1,
             "targetBuild": BUILD,
             "outputs": {"recipe_items": {
                 "sha256": hashlib.sha256(self.recipes.read_bytes()).hexdigest()}},
@@ -276,6 +281,16 @@ class RecipeItemAuditTests(unittest.TestCase):
         with mock.patch.object(AUDIT, "HERE", scripts):
             self.assertEqual(AUDIT.select_db2_dir(self.recipes, {}), directory)
             result, stdout, stderr = self.run_audit("--dry-run", automatic=True)
+        self.assertEqual(result, 0, stdout + stderr)
+
+    def test_read_only_csv_input_pointer_selects_current_snapshot(self):
+        scripts, directory, pointer_path, pointer = self.pointer_fixture()
+        pointer['schemaVersion'] = 2
+        pointer['inputs'] = pointer.pop('outputs')
+        pointer_path.write_text(json.dumps(pointer), encoding='utf-8')
+        with mock.patch.object(AUDIT, 'HERE', scripts):
+            self.assertEqual(AUDIT.select_db2_dir(self.recipes, {}), directory)
+            result, stdout, stderr = self.run_audit('--dry-run', automatic=True)
         self.assertEqual(result, 0, stdout + stderr)
 
     def test_mismatched_current_pointer_requires_explicit_snapshot(self):

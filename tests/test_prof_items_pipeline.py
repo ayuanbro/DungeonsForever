@@ -1,16 +1,20 @@
 """Exercise the CSV-to-Lua profession importer through its public CLI only."""
 
 import csv
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "df-prof-pipeline-v1.0/_temp/fc_prof_items.py"
+SCRIPT = ROOT / "df-data-pipeline/_temp/fc_prof_items.py"
 VENDOR_FIELDS = [
     "item_id", "npc_id", "zone_id", "side", "name_en", "name_locale",
     "cost_copper", "cost_text", "currency_kind", "currency_id",
@@ -52,6 +56,7 @@ ns.ProfVendors = {
 """ + NPC_LOCS
 
 sys.path.insert(0, str(Path.home() / "AppData/Local/Temp/df-lua-runtime"))
+sys.path.insert(0, str(ROOT / '.pipeline-runtime/lib'))
 try:
     from lupa.lua51 import LuaRuntime
 except ImportError:
@@ -99,6 +104,11 @@ class ProfItemsPipelineTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="df-prof-items-")
         self.addCleanup(self.temp.cleanup)
         self.directory = Path(self.temp.name)
+        scripts = self.directory / 'df-data-pipeline/_temp'
+        scripts.mkdir(parents=True)
+        for name in ('fc_prof_items.py', 'fc_pipeline_common.py', 'fc_pipeline_paths.py'):
+            shutil.copyfile(SCRIPT.parent / name, scripts / name)
+        self.script = scripts / 'fc_prof_items.py'
         self.vendors = self.directory / "vendors.csv"
         self.npcs = self.directory / "npcs.csv"
         self.prices = self.directory / "prices.csv"
@@ -122,7 +132,7 @@ class ProfItemsPipelineTests(unittest.TestCase):
 
     def run_cli(self, *extra, success=True):
         result = subprocess.run(
-            [sys.executable, "-B", str(SCRIPT), "--vendors-csv", str(self.vendors),
+            [sys.executable, "-B", str(self.script), "--vendors-csv", str(self.vendors),
              "--npcs-csv", str(self.npcs), "--prices-csv", str(self.prices),
              "--output-csv", str(self.output), "--items-lua", str(self.items_lua),
              "--vendors-lua", str(self.vendors_lua), *extra],
@@ -168,6 +178,60 @@ class ProfItemsPipelineTests(unittest.TestCase):
     def assert_outputs_unchanged(self, expected):
         for path, content in expected.items():
             self.assertEqual(path.read_bytes(), content, str(path))
+
+    def test_prepare_uses_staged_price_and_vendor_inputs_without_publishing(self):
+        sys.path.insert(0, str(SCRIPT.parent))
+        self.addCleanup(lambda: sys.path.remove(str(SCRIPT.parent)))
+        import fc_pipeline_common as common
+        spec = importlib.util.spec_from_file_location('df_items_prepared_test', SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        old_price = self.prices.read_bytes()
+        self.inputs(prices=[price(BuyPriceCopper='23456')])
+        new_price = self.prices.read_bytes()
+        self.prices.write_bytes(old_price)
+        original_vendor = self.vendors_lua.read_bytes()
+        args = SimpleNamespace(
+            vendors_csv=self.vendors, npcs_csv=self.npcs, prices_csv=self.prices,
+            output_csv=self.output, items_lua=self.items_lua, vendors_lua=self.vendors_lua,
+            from_csv=None, verified_at='', input_overrides={
+                self.prices: new_price, self.vendors_lua: original_vendor + b'ns.Preserved = 123\n',
+            },
+        )
+        with mock.patch.object(common, 'REPO', self.directory):
+            outputs, expected = module.build_batch(args)
+        self.assertFalse(self.output.exists())
+        self.assertFalse(self.items_lua.exists())
+        self.assertEqual(self.prices.read_bytes(), old_price)
+        self.assertEqual(self.vendors_lua.read_bytes(), original_vendor)
+        rows = module.items_csv_rows(outputs[self.output])
+        self.assertEqual(rows[0]['cost_copper'], '23456')
+        self.assertIn(b'ns.Preserved = 123', outputs[self.vendors_lua])
+        self.assertEqual(expected[self.prices], module.sha(old_price))
+        self.assertFalse((self.directory / '.implementation-backup').exists())
+
+    def test_repeated_identical_generation_retains_bytes_and_mtimes(self):
+        self.run_cli()
+        paths = (self.output, self.items_lua, self.vendors_lua)
+        original = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in paths}
+        self.run_cli()
+        self.assertEqual({path: (path.read_bytes(), path.stat().st_mtime_ns) for path in paths}, original)
+
+    def test_source_replacement_between_observation_and_freeze_is_rejected(self):
+        sys.path.insert(0, str(SCRIPT.parent))
+        self.addCleanup(lambda: sys.path.remove(str(SCRIPT.parent)))
+        spec = importlib.util.spec_from_file_location('df_items_freeze_test', SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with mock.patch.object(module, 'fingerprint', return_value=module.sha(b'previous snapshot')):
+            with self.assertRaises(module.DataError):
+                module._snapshot(self.prices, {}, {})
+
+    def test_cli_refuses_output_outside_its_repository(self):
+        outside = self.directory.parent / (self.directory.name + '-outside.csv')
+        self.run_cli('--output-csv', str(outside), success=False)
+        self.assertFalse(outside.exists())
+        self.assertFalse(self.items_lua.exists())
 
     def test_join_keeps_npc_name_separate_from_item_names_and_whole_pack_price(self):
         self.run_cli()
@@ -370,6 +434,33 @@ class ProfItemsPipelineTests(unittest.TestCase):
         self.assertEqual([ns.ProfVendors[10][i] for i in range(1, 5)], [12, None, 0, 50])
         detail = ns.ProfVendorDetails[10].locations[1]
         self.assertEqual([detail[i] for i in range(1, 5)], [12, None, 0, 50])
+
+    def test_maintained_vendor_sparse_and_explicit_positions_are_preserved(self):
+        self.vendors_lua.write_text('''local _, ns = ...
+ns.ProfVendors = {
+    [1318] = {[1]=1519,[3]=62.6,[4]=70.8},
+    [999] = {[4]=66,[2]=900,[1]=9,[3]=55},
+    [998] = {[1]=9,[2]=nil,[4]=0},
+}
+ns.Preserved = 42
+''', encoding='utf-8')
+        self.inputs(npcs=[])
+        self.run_cli()
+        ns = self.load_lua(self.vendors_lua)
+        self.assertEqual([ns.ProfVendors[1318][i] for i in range(1, 5)], [1519, None, 62.6, 70.8])
+        self.assertEqual([ns.ProfVendors[999][i] for i in range(1, 5)], [9, 900, 55, 66])
+        self.assertEqual([ns.ProfVendors[998][i] for i in range(1, 5)], [9, None, None, 0])
+        self.assertEqual(ns.Preserved, 42)
+
+    def test_maintained_vendor_unknown_duplicate_or_mixed_positions_are_rejected(self):
+        for body in ('[1]=9,[5]=55', '[1]=9,[1]=10', '[1]=9,900,55,66',
+                     '[1]=9,[2]=900,[3]=function() end', 'name="unknown"'):
+            with self.subTest(body=body):
+                text = 'local _, ns = ...\nns.ProfVendors = {[999] = {' + body + '}}\n'
+                self.vendors_lua.write_text(text, encoding='utf-8')
+                self.inputs(npcs=[])
+                self.run_cli(success=False)
+                self.assertEqual(self.vendors_lua.read_text(encoding='utf-8'), text)
 
     def test_explicit_verification_date_does_not_add_properties_outside_csv_schema(self):
         self.run_cli("--verified-at", "2026-10-20")

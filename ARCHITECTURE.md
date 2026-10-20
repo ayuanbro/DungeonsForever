@@ -6,10 +6,10 @@
 ## 1. 项目边界
 
 - 原生 WoW Lua 插件，单窗口手册，固定 HUI 外观；无前端框架、服务端或独立构建流程。
-- 当前目录是内层 Git 仓库，分支 `codex/merge-installed-1.8.28`；以下载版 1.8.20 为基础迁入安装版 1.8.28。专业数据工具在 `df-prof-pipeline-v1.0/`，其脚本和样例生成目录独立于正式插件数据。`tests/` 包含 Lua 5.1 模拟测试与基准脚本，见 `tests/README.md`。
+- 当前目录是内层 Git 仓库，分支 `codex/merge-installed-1.8.28`；以下载版 1.8.20 为基础迁入安装版 1.8.28。专业统一入口在 `df-data-pipeline/_temp/fc_update.py`，默认检查，`--apply` 经完整三语校验后事务发布正式 `Core/Data`；旧 `df-prof-pipeline-v1.0/` 留档停用。`tests/` 包含 Lua 5.1 模拟测试与基准脚本，见 `tests/README.md`。
 - 所有源码、脚本、测试及数据修改只允许在 `C:\Users\yewei\Downloads\DungeonsForever\DungeonsForever`。游戏安装目录中的插件副本只能只读核对，禁止编辑、生成、部署或清理；当前会话的默认工作目录不能视为写入授权。
 - 顶层目录：`Core/` 业务与界面，`Core/Data/` 数据，`Locales/` 文案，`Libs/` 内嵌库，`Media/` 图片与地图等资源。
-- 当前共 29 个 Core 顶层 Lua 文件；数据文件共 121 个：基础 49 个、enUS 36 个、zhTW 36 个。
+- 当前共 29 个 Core 顶层 Lua 文件；数据文件共 123 个：基础 51 个、enUS 36 个、zhTW 36 个。
 - 版本显示从 `DungeonsForever.toc` 的 `## Version` 读取，不应在各页面重复写死。`addon_version.txt` 当前值为 `655404`，用途未确认，不作为插件显示版本。
 
 ## 2. 加载顺序与共享命名空间
@@ -107,14 +107,15 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 - 掉落/配方中的物品显示通常优先客户端名称、图标、品质、描述；不同数据集仍可能含静态名称/来源/覆盖项，不能笼统假设全部只存 ID。
 - DG.RequestItem → 客户端请求/Item 续接 → 事件回调 → RefreshItemCards；监听器只处理本插件请求过的 ID。任务同样依赖任务数据与任务状态事件补刷新。
 - 不能将首次 API 返回 nil 当作永久无数据，也不能在每个全局物品事件中重扫全部页面。
-- 多份数据曾由 `_temp` 脚本生成。专业 `fc_gen.py` 等工具已完整保存在 `df-prof-pipeline-v1.0/_temp/`，工具内 `Core/Data/` 为独立样例输出，不能直接覆盖正式资料。装备等其他生成脚本仍未提供。更新前核对输出位置、三语覆盖和手工扩展；此次合并未运行生成。
-- `scripts/export_buyprice/export-item-buy-prices.ps1` 在 Windows PowerShell 5.1 下调用本机 wow.tools.local，下载并验证匹配当前 Forever build 的最新 Hotfix，串行导出三语 ItemSparse，并只读取一次 Item。输出 `output/item-buy-prices.csv`（enUS/zhTW/zhCN 名称、原始基础组价、组数、零价/缺价和版本）及 `output/item.csv`（Item 全字段，供 `scripts/gen_vendors.py` 按 ClassID/SubclassID 筛配方）。导出器不生成 Lua；连同下述图纸学习条件 CSV，三份输出全部验证后共同发布，失败回滚旧输出。`df-prof-pipeline-v1.0/_temp/fc_prof_items.py` 再合并商人、NPC 和客户端价格三表，生成固定 19 列的 `DataProfItems.csv`，并由同一 CSV 内容生成 schema 2 的 `Data_ProfItems.lua`；`--from-csv` 可单独重建物品 Lua。工具包输出与正式插件数据仍是不同目录，正式运行加载 `Core/Data/Data_ProfItems.lua`。旧试验导入脚本和三份 `Data_VendorPrices.lua` 已移除。
+- 专业六表由 `df-data-pipeline/_temp/fc_update.py` 统一生成及三语发布。维护输入保留当前新增、修正、来源、顺序与省略规则，不从旧Lua回捞；原文与维护冲突或已有记录丢失时整批阻止发布。未接管的数据/业务代码/语言文件保持原样。其余历史工具和输入仍在综合包，不默认执行旧同步或部署脚本。
+- 客户端及商人/NPC五份CSV默认从流水线自己的 `_temp/_fc/inputs/` 只读快照输入，来源和SHA-256单列记录；统一入口不导入、调用或监控 `scripts/` 的生产代码，也不启动wow.tools.local。各脚本输入见 `df-data-pipeline/SCRIPT_INPUTS.md`，旧包249份原件与功能核对见 `LEGACY_PARITY.md`。`--stage-dir/--package-zip`可保留验证后的新批次并直接生成安装ZIP，正式`Core/Data`和成功指针保持不动。
+- `scripts/export_buyprice/export-item-buy-prices.ps1` 在 Windows PowerShell 5.1 下调用本机 wow.tools.local，下载并验证匹配当前 Forever build 的最新 Hotfix，串行导出三语 ItemSparse，并只读取一次 Item。输出 `output/item-buy-prices.csv`（enUS/zhTW/zhCN 名称、原始基础组价、组数、零价/缺价和版本）及 `output/item.csv`（Item 全字段，供 `scripts/gen_vendors.py` 按 ClassID/SubclassID 筛配方）。导出器不生成 Lua；连同下述图纸学习条件 CSV，三份输出全部验证后共同发布，失败回滚旧输出。`df-data-pipeline/_temp/fc_prof_items.py` 再合并商人、NPC 和客户端价格三表，生成固定 19 列的 `DataProfItems.csv`，并由同一 CSV 内容生成 schema 2 的 `Data_ProfItems.lua`；`--from-csv` 可单独重建物品 Lua。独立底层脚本默认仍输出工具样例；统一入口将本轮物品、商人、专精及三语同批发布正式目录。旧试验导入脚本和三份 `Data_VendorPrices.lua` 已移除。
 
 - 专业学习专精数据独立生成：价格导出器另输出 `recipe-item-specializations.csv`，仅把图纸物品的 `RequiredAbility` 沿明确教学关系关联至配方法术。`_temp/fc_prof_specializations.py` 合并图纸与 Wowhead Forever 的训练师证据，写入 `_temp/_fc/data/trainer-recipe-specializations.csv` 和 `Data_ProfSpecializations.lua`；`fc_update.py` 已接入该步骤，正式插件输出命令见管线 README。正式 TOC 在经济模块前加载 `Core/Data/Data_ProfSpecializations.lua` 与独立任务配置 `Data_ProfSpecializationQuests.lua`。`ns.ProfSpecializations[spellID]` 保留独立学习途径与来源，缺证据为 `pending`，不同途径不自动合为统一限制。目标客户端 build 与网页来源版本分开记录；跨来源 patch/build 的旧证据保留但不作为目标版本的已确认要求。网页抓取采用缓存、串行间隔、跨进程互斥和持久冷却，在线失败不发布最终产物。
 - `ProfEconomy` 统一读取实际已学专精、角色工程选择及配方学习资格。优先 `C_SpellBook.IsSpellKnown`，成功的 false 与接口缺失/异常分开；任务历史不能证明当前能力。已学配方免重复检查学习门槛，制作仍服从客户端可用状态。明确限制按具体学习途径判断，缺字段途径不能绕过其他已确认要求；普通未知配方继续参与，不增加待确认标签。
 - 工程选择默认不开启，已有能力自动可用。选择分支且目标至少 200 时，求解状态增加入门任务、已解锁能力和完成标记；低目标不提高。任务消费与升级共用库存、AH 数量、NPC 整包和图纸账本，递归任务制材限于工程。最省钱同时比较交付时机和升级；其他自动模式保留升级评分，在首个门槛节点优化任务采购。固定攻略过滤不可用配方并保留缺口提示。已交任务物品从可售产物及续接库存中扣除。
 - 执行段 `kind="specialization_quest"` 保存任务、NPC、交付物及产出分配。HUD 等待实际能力确认；正常解锁只推进计划，不清空制作记录。选择、规则版本及数据指纹变更使旧协程、冻结计划、补料和购物导入等待手动重算。只有工程作为升级目标时安排任务，辅助工程以及其他专业仅用角色已具备的专精。
-- 专精的重复更新入口为 `_temp/fc_refresh_specializations.py`，也可由 `fc_update.py --specializations-only` 调用。默认检查，`--apply` 才发布；在线模式通过导出器可选 `-LearningSnapshotPath` 保留九张 DB2 表和 Build／Hotfix／内容哈希，按内容归档并记录成功快照指针。冻结输入后生成三个客户端 CSV、训练师 CSV、Lua 及三个审计文件，校验通过才同批发布，失败补偿回滚；无变化的正式文件不改写。离线模式复核已发布快照哈希。审计动态比较前后未关联集合，不固定物品数；书籍子类不直接排除，wuxianwow 目录匹配不充当教学或专精证据。网页和外部目录默认复用七天有效缓存，检查或失败运行可保留缓存与日志，但不替换正式产物。
+- 专精的重复更新入口为 `_temp/fc_refresh_specializations.py`，也可由 `fc_update.py --specializations-only` 调用。默认检查，`--apply`才发布；在线和离线都只读已有客户端三CSV与九表DB2快照，核实Item原文、ItemSparse价格/名称/组数、RequiredAbility、ID覆盖及Build/Hotfix/内容哈希，不再调用外部导出器。在线只刷新网页。准备结果仅含训练师CSV、Lua、三个审计及schema2成功状态；客户端CSV作为inputs记录，绝不覆盖。原schema1状态仍可按哈希迁移。审计动态比较前后未关联集合，不固定物品数；书籍子类不直接排除，wuxianwow目录匹配不充当教学或专精证据。网页和外部目录默认复用七天有效缓存，检查或失败运行可保留缓存与日志，但不替换正式产物。
 
 ## 7. 存档
 

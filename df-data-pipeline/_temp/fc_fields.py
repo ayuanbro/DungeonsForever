@@ -19,9 +19,10 @@ import glob
 import json
 import os
 import sys
+from fc_pipeline_common import configured_path, lua_runtime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA = os.path.join(HERE, '_fc', 'data')
+DATA = configured_path('DF_PIPELINE_DATA_DIR', os.path.join(HERE, '_fc', 'data'))
 
 sys.path.insert(0, HERE)
 import fc_gen  # noqa: E402
@@ -90,17 +91,15 @@ def nonempty_keys(items):
 
 def _emitted_keys():
     """用 Lua 跑一遍生成的 4 个数据文件，取回每种结构的实际键集。"""
-    for TOOLS in (os.path.join(HERE, 'tools'),
-                  r'D:\Game\World of Warcraft\_classic_titan_\Interface\AddOns\BGLite\_temp\tools'):
+    for TOOLS in (os.path.join(HERE, 'tools'),):
         if os.path.isdir(TOOLS) and TOOLS not in sys.path:
             sys.path.insert(0, TOOLS)
-    from lupa import lua51          # 延迟导入：没装 lupa 也不该让静态审计整体崩
     import tf_dryrun as T
 
-    lua = lua51.LuaRuntime(unpack_returned_tuples=True)
+    lua = lua_runtime()
     lua.execute(T.STUB)
     lua.execute('TF_NS = {}')
-    root = os.path.join(os.path.dirname(HERE), 'Core', 'Data').replace('\\', '/')
+    root = configured_path('DF_PIPELINE_OUTPUT_DIR', os.path.join(os.path.dirname(HERE), 'Core', 'Data')).replace('\\', '/')
     ev = lua.eval('function(rel) local c = loadfile("%s/" .. rel) '
                   'return c("DungeonsForever", TF_NS) end' % root)
     for f in EMIT_FILES:
@@ -139,9 +138,8 @@ def emit_audit(SPEC, pools):
     print('=== 发射复检（源数据有内容 且 声明取用 vs 产物实际落地）===')
     try:
         emitted = _emitted_keys()
-    except Exception as e:                                  # noqa: BLE001
-        print('  ⚠️ 跳过：跑不起 Lua 产物（%s）' % str(e)[:120])
-        return []
+    except Exception as e:
+        raise ValueError('Lua emission validation failed: %s' % e) from e
 
     missing = []
     for scope in ('profession', 'detail', 'leveling'):
@@ -177,6 +175,8 @@ def audit(label, items, fields):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--strict', action='store_true')
+    ap.add_argument('--source-only', action='store_true',
+                    help='只审计源字段；统一入口随后校验维护修订后的完整 Lua 逻辑')
     args = ap.parse_args()
 
     index, details = load()
@@ -290,7 +290,7 @@ def main():
                 print('        ⚠️ %s 有内容了（%d 份），生成器尚未接入' % (k, len(nonempty)))
 
     print()
-    missing = emit_audit(SPEC, pools)
+    missing = [] if args.source_only else emit_audit(SPEC, pools)
     if missing:
         bad.append('发射复检：%d 个键声明取用但产物里没有' % len(missing))
         for m in missing:

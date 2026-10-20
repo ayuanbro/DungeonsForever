@@ -1,3 +1,5 @@
+> 当前约束：工具运行目录、缓存、日志及CSV/快照输出必须全部在本仓库；目录链接越界在服务请求前拒绝。统一更新请优先使用 `df-data-pipeline/_temp/fc_update.py`，默认检查，首次验收用 `--offline`。以下是底层导出器接口说明。
+
 # Forever 物品、三语基础购买价及图纸学习要求 CSV 导出
 
 从仓库根目录运行：
@@ -6,7 +8,7 @@
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\export_buyprice\export-item-buy-prices.ps1"
 ```
 
-从其他目录启动时使用脚本绝对路径。兼容 Windows PowerShell 5.1，无需安装 Python。默认使用 `C:\Users\yewei\Downloads\Release-win-x64\wow.tools.local.exe` 和 `http://127.0.0.1:5000`：服务已启动则复用，未启动则隐藏启动；结束时只关闭本次启动的进程。
+从其他目录启动时使用脚本绝对路径。兼容 Windows PowerShell 5.1，无需安装 Python。默认使用 `当前仓库 `.pipeline-runtime\wow.tools.local\wow.tools.local.exe`` 和 `http://127.0.0.1:5000`：服务已启动则复用，未启动则隐藏启动；结束时只关闭本次启动的进程。
 
 ## 输出
 
@@ -58,7 +60,7 @@ RecipeItemID,RecipeSpellID,RequiredAbility,Status,Reason,LearningPath,Build,Hotf
 
 ```powershell
 .\scripts\export_buyprice\export-item-buy-prices.ps1 `
-  -ToolDirectory 'C:\Users\yewei\Downloads\Release-win-x64' `
+  -ToolDirectory '.pipeline-runtime/wow.tools.local' `
   -BaseUrl 'http://127.0.0.1:5000' `
   -OutputPath 'output\item-buy-prices.csv' `
   -ItemOutputPath 'output\item.csv' `

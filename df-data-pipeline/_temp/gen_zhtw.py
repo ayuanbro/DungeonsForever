@@ -16,7 +16,6 @@ import os
 import re
 import sys
 
-from opencc import OpenCC
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DF = os.path.dirname(HERE)
@@ -74,15 +73,26 @@ GLOSSARY = {
     'BOSS': '首領',  # zhTW 惯用「首領」；只影响大写 BOSS 的键（如 " · BOSS %d"）
 }
 
-cc = OpenCC('s2t')
+cc = None
 GLOSS_RE = re.compile('|'.join(re.escape(k) for k in sorted(GLOSSARY, key=len, reverse=True)))
+
+
+def require_opencc():
+    global cc
+    if cc is None:
+        try:
+            from opencc import OpenCC
+        except ImportError as exc:
+            raise RuntimeError('OpenCC is required for zhTW conversion; install opencc-python-reimplemented') from exc
+        cc = OpenCC('s2t')
+    return cc
 
 
 def to_tw(s):
     s = GLOSS_RE.sub(lambda m: GLOSSARY[m.group(0)], s)
     # opencc 会把「为」转成异体「爲」；台湾惯用「為」，统一替换
     # opencc 同样会把「群」转成异体「羣」（QQ群 等）；台湾惯用「群」，统一替换
-    return cc.convert(s).replace('爲', '為').replace('羣', '群')
+    return require_opencc().convert(s).replace('爲', '為').replace('羣', '群')
 
 
 def main():

@@ -1,5 +1,8 @@
 # 数据表索引：每张表是谁生成的、数据从哪来
 
+专业统一入口与外部输入见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)，70450候选安装包的检查结果见 [CSV_CHECK_REPORT.md](CSV_CHECK_REPORT.md)。
+人工维护记录及新增相对位置见 [MANUAL_MAINTENANCE.md](MANUAL_MAINTENANCE.md)。
+
 `Core/Data/` 下 46 张表全部由 `_temp/` 里的 Python 生成或维护，**禁止手改**。
 
 - 「单一生成器」= 跑这一个脚本就能整表重建
@@ -36,7 +39,7 @@
 | `Data_GearRareSpawns.lua` | `gen_gear_rare.py` | CLIENT 稀有刷新点 |
 | `Data_RaidSets.lua` | `gen_raidsets.py` | FOREVERCHANGES 套装 |
 | `Data_BIS.lua` | `fc_bis.py` | FOREVERCHANGES |
-| `Data_ProfVendorOffers.lua` | 已核验的静态商人货架资料 | 仅 NPC/物品/不限量/购买组数及访问条件，无购买价格；旧价格种子与静态金额已移除，价格方法待重新设计 |
+| `Data_ProfItems.lua` | `fc_prof_items.py`，统一入口同批发布 | 商人/NPC/客户端CSV；替代已停用旧商人报价表 |
 | `Data_Plunder.lua` | `gen_plunder_data.py` | CLIENT 掠夺品 |
 | `Data_Crates.lua` | `gen_crates_data.py` | CLIENT 箱子 |
 | `Data_LootFilter.lua` | 多脚本增量维护 | 手工规则（分类/品质/职业） |
@@ -60,7 +63,9 @@
 | `Data_ClassCombat.lua` | `gen_class_combat.py` | CLIENT 法术书 + 手工循环 |
 | `Data_ClassTier.lua` | `fc_tier.py` | FOREVERCHANGES |
 
-## 六、专业
+## 六、专业（当前受管链）
+
+统一入口 `_temp/fc_update.py`；当前维护输入、输出、语言及事务说明见 `README.md`。每个活动脚本的文件输入见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)，旧包覆盖见 [LEGACY_PARITY.md](LEGACY_PARITY.md)。五份CSV默认读取本包`_temp/_fc/inputs/`，不调用外部生产脚本。下表原生成器保留，历史文本补丁不作为日常步骤。
 
 | 数据表 | 生成脚本 | 数据源 |
 |---|---|---|
@@ -70,6 +75,9 @@
 | `Data_ProfGathering.lua` | `fc_gen.py` | FOREVERCHANGES |
 | `Data_ProfVendors.lua` | `fc_vendors.py` → `fc_gen.py` | FOREVERCHANGES + CLIENT |
 | `Data_ProfTrainers.lua` | `gen_prof_trainers.py` + 4 个 `prof_trainer_*.py` 注入 | CLIENT 训练师 NPC |
+
+| `Data_ProfSpecializations.lua` | `fc_refresh_specializations.py` 准备后统一发布 | DB2图纸、有效配方目录、训练师网页及审计 |
+| 专业六表 zhTW/enUS | `fc_locales.py` | 同轮基础数据、术语表及人工语言维护输入 |
 
 ## 七、收藏 / 探索 / PvP / 杂项
 

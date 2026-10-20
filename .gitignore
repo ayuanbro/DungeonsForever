@@ -2,6 +2,7 @@
 /.implementation-backup/
 
 # Python runtime and test caches.
+/.pipeline-runtime/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -15,6 +16,7 @@ venv/
 # Full data pipeline: retain scripts, manual inputs and baseline data snapshots.
 /df-data-pipeline/_temp/_fc/cache*/
 /df-data-pipeline/_temp/_fc/reports/
+/df-data-pipeline/_temp/_fc/cache/
 /df-data-pipeline/_temp/_fc/i18n/batch_*.txt
 /df-data-pipeline/_temp/_fc/i18n/zh_*.txt
 /df-data-pipeline/_temp/_fc/i18n/todo.json
@@ -63,3 +65,4 @@ Desktop.ini
 # Shareable addon archives produced by package_addon.bat.
 /DungeonsForever-*.zip
 /.DungeonsForever-package-*.tmp
+/dist/DungeonsForever-*.zip

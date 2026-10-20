@@ -18,6 +18,7 @@ import os
 import re
 import sys
 
+sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
@@ -119,8 +120,8 @@ if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
 '''
 
 
-def translate(s):
-    fx = FILE_SPECIFIC.get(CUR_FILE)
+def translate(s, filename=None):
+    fx = FILE_SPECIFIC.get(filename if filename is not None else CUR_FILE)
     if fx and s in fx:
         return fx[s]
     if s in EXACT:
@@ -263,5 +264,5 @@ def _strip_comments_after_gen():
 
 
 if __name__ == '__main__':
-    main()
-    _strip_comments_after_gen()
+    from fc_locales import locale_cli
+    locale_cli('enUS')

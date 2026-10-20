@@ -101,6 +101,24 @@ function Invoke-WtlTextRequest {
 }
 '''
 
+    def test_repository_boundary_rejects_output_before_any_service_request(self):
+        escape = self.directory.parent / (self.directory.name + '-outside') / 'prices.csv'
+        code = '$script:ItemPriceRepositoryRoot=' + literal(self.directory) + ';'
+        code += 'try { $null=' + self.invocation(price=escape) + "; throw 'expected boundary rejection' } catch {"
+        code += "if($_.Exception.Message -notlike '*inside the current repository*'){throw};"
+        code += "if($script:FixtureRequests.Count -ne 0){throw 'network before boundary check'}; exit 23 }"
+        self.ps(code, expected=23)
+        self.assertFalse(escape.parent.exists())
+
+    def test_repository_boundary_rejects_external_tool_before_service_request(self):
+        scope = self.directory / 'limited-repository'
+        scope.mkdir()
+        code = '$script:ItemPriceRepositoryRoot=' + literal(scope) + ';'
+        code += 'try { $null=' + self.invocation() + "; throw 'expected boundary rejection' } catch {"
+        code += "if($_.Exception.Message -notlike '*inside the current repository*'){throw};"
+        code += "if($script:FixtureRequests.Count -ne 0){throw 'network before tool boundary check'}; exit 23 }"
+        self.ps(code, expected=23)
+
     def write_sparse(self, locale, name, price=20, pack=5):
         with (self.directory / (locale + ".csv")).open("w", encoding="utf-8", newline="") as stream:
             writer = csv.writer(stream)

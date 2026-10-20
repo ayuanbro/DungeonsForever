@@ -1,170 +1,94 @@
-# 无限副本手册 · 数据表获取全链路
+# 统一专业数据流水线
 
-`Core/Data/` 下 46 张数据表是怎么来的，这个包就装的是那套 Python。
+唯一维护入口为 `_temp/fc_update.py`，以当前仓库定位输入和正式 `Core/Data`，不依赖启动目录。
+`df-prof-pipeline-v1.0` 已留档停用，不是默认输入或缓存来源。
+各脚本要读取的位置和文件见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)，旧专业包功能及249份原件的覆盖核对见 [LEGACY_PARITY.md](LEGACY_PARITY.md)。
+人工维护的记录、字段差异和新增项前后位置见 [MANUAL_MAINTENANCE.md](MANUAL_MAINTENANCE.md)。
+2026-10-21最新检查与安装包结果见 [CSV_CHECK_REPORT.md](CSV_CHECK_REPORT.md)：883项测试通过，70450候选批次已生成，正式数据未发布。
 
-包含：`_temp/` 全部 **1165 个脚本**（原样）+ 可复用的抓取缓存 + 46 张表的产物样例
-+ `samples/ClassQuestsForever/`（职业任务生成器的输入样例）。
-脚本一个字节没改，路径也没改——所以它不是「开箱即跑」，而是「原样交接」。
-能不能跑取决于你本机的路径对不对，见下面「跑起来」。
+## 使用
 
----
+从仓库根目录运行：
 
-## 先看这张图：数据从哪来
-
-```
-                      ┌─────────────────────────┐
-   游戏客户端 ────────▶│  ClassQuestsForever     │  任务/链
-   (CLIENT)           │  Questie / BGLite / 自带 │  NPC 坐标、法术、物品
-                      └───────────┬─────────────┘
-                                  │
-                      ┌───────────▼─────────────┐
-   foreverchanges.pro ▶│  _fc/cache  (RSC 载荷) │  专业 / BIS / 职业指南
-   (专业与配装)        └───────────┬─────────────┘  套装 / PvP
-                                  │
-                      ┌───────────▼─────────────┐
-   wowhead  ─────────▶│  nether tooltip (JSON)  │  中英文名
-   (攻略与中文名)      │  CDP 真浏览器 (评论)     │  掉落 / 首领 / 评论
-                      └───────────┬─────────────┘
-                                  │
-                      ┌───────────▼─────────────┐
-   wuxianwow.com ────▶│  /data/page/quest/*.json│  中文名兜底
-   wago.tools    ────▶│  AreaTable              │  区域表
-                      └───────────┬─────────────┘
-                                  │
-                      ┌───────────▼─────────────┐
-   手工（路线编辑器） ▶│   _temp/*.json 缓存     │
-                      └───────────┬─────────────┘
-                                  ▼
-                        gen_*.py  /  fc_gen.py
-                                  ▼
-                        Core/Data/Data_*.lua   ← 禁止手改
+```powershell
+python -B df-data-pipeline/_temp/fc_update.py --check --offline
+python -B df-data-pipeline/_temp/fc_update.py --apply --offline
+python -B df-data-pipeline/_temp/fc_update.py --specializations-only --check --offline
+python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --check
 ```
 
-| 源代号 | 具体是什么 | 用在哪些表 |
-|---|---|---|
-| **CLIENT** | 游戏客户端的插件数据：`ClassQuestsForever/Data/{Quests,Chains}.lua`、`Questie`、`BGLite`、`TalentsForever` 等 | 副本结构、首领坐标、NPC 位置、任务链、职业战斗、训练师 |
-| **FOREVERCHANGES** | `foreverchanges.pro`，Next.js 站点，数据在 RSC 载荷里，curl 抓 14 页 | 专业 5 张表、BIS、职业指南、套装、PvP |
-| **WOWHEAD** | `nether.wowhead.com/tooltip/*`（纯 JSON，要代理）+ 浏览器 CDP 抓评论 | 中文名、掉落、首领技能、攻略注释 |
-| **WUXIANWOW** | `wuxianwow.com/data/page/quest/<id>.json` 与 `/quest/<id>` 页面 | 中文名兜底（窝窝头查不到时） |
-| **WAGO** | `wago.tools` 的 AreaTable 中文 CSV | 区域 → uiMapID |
-| **手工** | 路线编辑器 `_route_plan/tune.html`、坐标校准、稀有刷新点 | 路线、地图标记、部分坐标 |
+不带模式参数默认为检查；`--apply` 才发布。`--offline` 禁止网页、DB2 和热修复网络请求，缺缓存或成功快照就失败，不能偷偷改为联网。
+也可使用 `df-data-pipeline/run.bat` 传入相同参数。路径参数相对于调用目录；未指定参数的默认路径始终根据脚本定位。
 
-每张表对应哪个脚本、哪个源：见 **`INDEX.md`**。
+客户端与商人/NPC的五份旧CSV已按原字节导入 `_temp/_fc/inputs/`，路径常量集中在 `fc_pipeline_paths.py`；来源哈希在 `inputs/manifest.json`。默认运行不再依赖 `scripts/` 目录，不导入、监控或调用其中的程序，也不会启动 wow.tools.local。显式CSV参数仍可读取外部工具生成在仓库内的CSV。
 
----
+只生成经校验的新批次与安装ZIP，不发布正式数据：
 
-## 跑起来
-
-### 1. 环境
-
-```bash
-pip install playwright lupa requests
+```powershell
+python -B df-data-pipeline/_temp/fc_update.py --check --offline `
+  --stage-dir .pipeline-runtime/review/validated-batch `
+  --package-zip dist/DungeonsForever-1.8.31-data-70450-preview.zip
 ```
 
-只这三个。`playwright` 用来 `connect_over_cdp` 接管本机浏览器，**不需要** `playwright install`。
+两个目标都必须不存在。ZIP将本轮20份专业Lua覆盖进安装包，其余运行文件保持原字节；工具、报告及缓存不打包。`--stage-dir/--package-zip`不能与`--apply`合用，不改游戏安装目录。
 
-还需要：
-- **代理** `127.0.0.1:7897`（抓 wowhead 用，脚本里写死；不用的源可直连）
-- **Chromium 内核浏览器**（QQBrowser / Chrome / Edge 都行），用于抓评论
-- **游戏客户端**（读 CLIENT 类数据时）
-- **`wuxian.exe`**（可选，游戏内执行 + 截图的那套自动化）
+依赖是 Python 3.10+、`lupa.lua51` 和 OpenCC。可将 `requirements.txt` 安装到仓库忽略目录 `.pipeline-runtime/lib`；统一入口自动加载该目录。不同 Python 版本应安装对应的 Lupa wheel，不共用不匹配的二进制模块。
 
-### 2. 路径
-
-脚本里写死的是作者本机的绝对路径，共 477 个脚本含绝对路径。两种做法：
-
-**A. 把包放到作者的位置**（最省事，零改动）
-```
-D:\workspace\DungeonsForever\        ← 本包解压到这里
-D:\Game\World of Warcraft\_classic_beta_\Interface\AddOns\
+```powershell
+$env:PIP_CACHE_DIR = "$PWD/.pipeline-runtime/pip-cache"
+$env:TEMP = "$PWD/.pipeline-runtime/tmp"
+$env:TMP = $env:TEMP
+python -B -m pip install --target .pipeline-runtime/lib -r df-data-pipeline/requirements.txt
+python -B tests/run_tests.py
 ```
 
-**B. 批量改路径**
-```bash
-cd _temp
-python fix_paths.py            # 先看会改什么
-python fix_paths.py --apply    # 写回
+安装前创建上述仓库内临时目录。关键依赖缺失时退出，Lua 发射校验不会被跳过。
+
+## 生成链与发布范围
+
+冻结输入 → 网页抓取或离线重放 → 解析/区域映射/字段和文案审计 → 当前专业维护修订 → 基础数据 → 客户端与专精审计 → 物品 CSV/购买资料及商人定位 → zhTW/enUS → Lua/完整记录/TOC 校验 → 一次事务发布。
+
+- 基础六份：Professions、ProfRecipes、ProfLeveling、ProfGathering、ProfVendors、ProfTrainers。
+- 同步生成这六份的 zhTW 和 enUS 副本，保留语言守卫及现有人工翻译。
+- Items、Specializations 是共享文件，不作通用翻译。物品表保持三语原名、固定19列CSV与schema 2；专精继续保留学习途径、未知状态、目标与来源版本、网页冷却和审计。
+- 现有任务、采矿、钓鱼扩展及所有未接管文件不覆盖、不删除，不更改业务模块、UI文案、TOC顺序或存档。
+- 规范化输入、有效证据目录、合并CSV、审计、共享数据和三语Lua同批发布。仅数据确实改变才替换，重复运行不因生成时间更新文件。
+
+`--specializations-only` 保留独立专精更新范围。`--from-csv` 只重建物品Lua，不重写CSV、商人、专业或语言数据。原输入/刷新/版本/缓存选项由 `--help` 列出；所有写入位置必须在当前仓库。
+
+## 当前数据与维护输入
+
+旧原始规范JSON为70245，当前正式专业数据还包含70338的新增、修订与显式省略规则；本轮默认网页缓存已刷新至70450，检查时解析到暂存区，不提前覆盖正式规范JSON。`_temp/_fc/maintenance/professions.json` 将人工维护保存为稳定身份的原值/修订值/来源差异，涵盖配方、附魔、毒药与理解、阈值、来源、顺序及手工训练师/区域输入。日常生成不读取旧Lua回捞手工段。
+
+2026-10-21新增revision2接通最新网页70450（站点日期2026-10-16），10项维护冲突经逐项rebase处理；revision1只对精确旧输入使用归档词表继续复现70338。64项已被上游追平的人工字段仍保留第三值守卫。炼金配方1251750/250952按用户确认跟随上游删除，授权记录精确限定；其余人工增补、阈值、来源、省略及相对顺序保留，计数按实际记录重算。版本化源文件与审计在 `_fc/maintenance/source/rebase-2-70450/`。本轮检查/ZIP不等于正式目录已发布。
+
+`locales.json` 保存专业人工译文、原文哈希和历史源文版本。附魔以原始名称识别，BIS按职业/专精识别，避免名单移位套错译文。本轮补齐2项新增缺译、审订7处源文的14份英繁译文；既有29项缺译仍单独报告。其他原文变化继续阻止生成，已有记录缺失也会阻止发布，唯一例外是维护文件记录的精确用户批准删除。
+
+`_fc/data/catalog/` 是同批发布的有效专精证据目录：保留原始证据目录，追加维护后的新增配方与明确ID证据；UI省略不删除原始证据。无ID卷轴保持未确认。
+人工毒药/理解分片继续标记真实70338来源并绑定冻结维护文件哈希，不随本轮目标70450重标；未知来源版本留空。
+
+历史 wx/补丁资料仅作为迁移来源；一次性维护提取工具在 `fc_maintenance.py`，不应作为日常更新步骤。重新迁移会改变保留基线，必须检查差异及测试。
+
+## 缓存、事务与路径
+
+- 单一仓库锁串行更新；先生成到仓库内暂存区，最终复核全部输入与目标哈希再发布。冲突和任何步骤失败不发布正式批次。
+- 发布失败补偿回滚；恢复材料保留在 `.implementation-backup/pipeline-publish-*`，回滚失败信息会给出该目录。不会清理或部署到游戏安装目录。
+- 检查/失败运行可更新忽略的页面缓存、不可变DB2快照、冷却和报告，不发布规范输入/CSV/Lua/成功指针。
+- `fc_path_audit.py` 只读扫描固定路径引用，报告 `_fc/reports/path-audit.json`，区分活动链、历史工具、停用专业包和支持脚本；不执行历史同步/部署工具。
+- 正式输出、日志、缓存、DB2归档和链接解析后的目标全部限制仓库。拒绝覆盖非受管业务代码、维护输入及不同产物路径碰撞。
+
+在线模式只刷新网页，客户端三CSV和DB2仍复用同一已验证快照，不调用外部导出器。可用 `--db2-dir` 指定仓库内快照，否则按已有current及内容哈希选择；缺少或混批在请求网页前失败。已移除 `--tool-directory`、`--base-url`、`--powershell`。网页代理可用 `DF_PIPELINE_PROXY` 设置。
+
+```powershell
+python -B df-data-pipeline/_temp/fc_update.py --check
+python -B df-data-pipeline/_temp/fc_path_audit.py
+python -B df-data-pipeline/_temp/fc_legacy_audit.py
 ```
 
-`fix_paths.py` 只做字符串替换（项目根 / 客户端根 / ClassQuestsForever / 浏览器 / wuxian），
-不改逻辑。默认目标是 `D:\workspace\DungeonsForever`、包内 `samples/`、`_classic_beta_`：
+## 其他数据工具
 
-```bash
-python fix_paths.py --apply --root "D:/my/DF" --wow "D:/Games/WoW/World of Warcraft" \
-                    --cqf "D:/Games/WoW/Interface/AddOns/ClassQuestsForever/Data"
-```
+本次统一只接管专业六表与对应三语。职业任务、副本路线、装备、BIS、职业指南等工具和输入仍保留，索引见 `INDEX.md`。这些历史工具可能含旧路径或依赖，不属于统一入口，勿将历史 `sync_beta.py`、`mk_df_*` 或全目录语言通配生成串回当前流程。旧说明保存在 `HISTORICAL_README.md`。
 
-> 备份脚本（`_bak_*`）里也有路径，替换后它们指向你自己的目录——但这些脚本本来就别跑。
+## 首次迁移验收（历史）
 
-### 3. 三条典型链路
-
-**专业页（最快验证环境对不对）**
-```bash
-cd _temp
-python fc_update.py --offline    # 用包内缓存重放，不联网
-python fc_update.py --check      # 联网只检查
-python fc_update.py --apply      # 联网落盘
-```
-
-**职业任务（有评论抓取，最慢）**
-```bash
-cd _temp
-python gen_class_quest.py --stats   # 先确认能读客户端
-python _cq_list_ids.py              # 刷新 id 列表
-python _cq_comments_fetch.py        # 抓评论，628 个任务约 49 分钟
-python _cq_forever_fetch.py         # 补 forever 分区
-python _cq_comments_prep.py         # 清洗
-# 人工提炼 → _cq_notes.json
-python gen_class_quest.py --apply
-```
-
-**副本路线（纯本地，最快）**
-```bash
-cd _temp
-python gen_route_lua.py            # _route_plan/data/*.json → Data_Route.lua
-```
-
-### 4. 收尾（每次改完数据都要过）
-
-```bash
-python _temp/lua51_check.py        # Lua 5.1 语法
-python _temp/qa_lf_verify.py       # 行尾 LF
-python _temp/check_zero_comments.py # 零注释门禁
-python _temp/sync_beta.py --apply  # 同步到两个客户端
-```
-
----
-
-## 这个包不含什么
-
-| 没带 | 为什么 | 需要时怎么办 |
-|---|---|---|
-| `_qqb_profile*`（3.2 GB） | 浏览器 profile，含登录态 | 脚本会自己新建 `_temp/_qqb_profile` |
-| `_fc/cache_wh_vendors_waf`（156 MB） | 商家页 WAF 抓取缓存 | 重跑 `fc_vendor_resolve_waf.py` |
-| `_gearvend` `_mapbake` `_mapcheck` `live` | 一次性中间产物 | 用不到 |
-| 截图 / png | 调试产物 | 用不到 |
-| `*.psd` / 字体 | 美术资源 | 不在数据处理链路里 |
-| 大于 2 MB 的 json/csv | 体积 | 重抓或见 `INDEX.md` 对应脚本 |
-
-包内保留的缓存：`_fc/{cache,cache_zh,data,i18n}`、`_route_plan/{data,tune.html}`、
-`questie/questie_forever.json`、`_cq_*.json`、`_wago_AreaTable_zh.csv`，以及 600+ 个小 JSON。
-`samples/ClassQuestsForever/{Quests,Chains}.lua` 是客户端那份数据的快照，
-`fix_paths.py --apply` 会让 `gen_class_quest.py` 默认读它，不装游戏也能出表。
-
----
-
-## 几条踩过的坑
-
-1. **生成物禁手改**。改数据改脚本，再重跑；手改会在下次生成时被覆盖。
-2. **`dataEnv=1` 只返回零售版**。经典/无限服任务要按 `[8, 11, 4, 5, 3, 1]` 依次回退。
-3. **`cn.wowhead.com` 对 curl 返回 403**，评论只在页面 SSR 的 `window.lv_comments0` 里，
-   必须真浏览器 CDP。每 10 条落盘一次，断了重跑会自动续。
-4. **无限服专属任务在 `www.wowhead.com/forever/cn/quest=<id>`**，主站没有页面——
-   抓不到不是没数据，是地址不对。
-5. **`Data_ProfRecipes.lua` 是惰性建表**（`setmetatable` + `__index`），
-   用 `pairs` 遍历拿到空表，审计脚本要先调 `ns.EnsureProfRecipes()`。
-6. **路径已改的脚本别再 `fix_paths --apply`**：替换是幂等的，但会覆盖你手动调过的参数。
-
----
-
-数据快照：2026-10-19，46 张表 / 1164 个脚本。
+2026-10-21：完整842项测试通过，无跳过，含真实打包、事务回滚/恢复、锁与链接边界。统一入口在不同中文/空格工作目录成功离线发布，重复发布零变更且mtime不变；136份未接管运行文件哈希不变。独立专精与CSV检查通过。验收记录在仓库忽略目录 `.implementation-backup/20261021-unified-pipeline/acceptance.json`，本轮未联网刷新、未写游戏安装目录。

@@ -1,0 +1,1509 @@
+{
+  "build": "1.60.1.70450",
+  "camps": {
+    "a": {
+      "faction": "Azeroth Commerce Authority",
+      "place": "Three Corners",
+      "x": 10.3,
+      "y": 72.5,
+      "zone": "Redridge Mountains"
+    },
+    "h": {
+      "faction": "Durotar Supply and Logistics",
+      "place": "outside the Crossroads",
+      "x": 49.7,
+      "y": 29.5,
+      "zone": "The Barrens"
+    }
+  },
+  "counts": {
+    "recipeItems": 15,
+    "sourced": 6,
+    "total": 31,
+    "unreadable": 1
+  },
+  "crafted": [],
+  "enchants": [],
+  "favor": [],
+  "gathering": null,
+  "groups": [
+    {
+      "count": 11,
+      "icon": "inv_misc_bandage_15",
+      "key": "Bandages",
+      "label": "Bandages"
+    },
+    {
+      "count": 17,
+      "icon": "inv_potion_19",
+      "key": "Potions",
+      "label": "Anti-venoms and potions"
+    },
+    {
+      "count": 3,
+      "icon": "inv_misc_bandage_11",
+      "key": "Camp",
+      "label": "Camp objects"
+    }
+  ],
+  "kind": "detail",
+  "lede": "Every bandage, anti-venom and potion First Aid makes in the Forever beta client, with its reagents, the skill and where the manual comes from; then the way from 1 to 300.",
+  "leveling": {
+    "build": "1.60.1.70450",
+    "learn": [
+      3275,
+      3276,
+      3277,
+      3278,
+      7928,
+      7929,
+      7934,
+      7935,
+      10840,
+      10841,
+      18629,
+      18630,
+      23787,
+      30021,
+      1230117,
+      1244431,
+      1244432,
+      1244433,
+      1244434,
+      1244435,
+      1244436,
+      1259341,
+      1259342,
+      1259343,
+      1259344,
+      1259345,
+      1259347,
+      1259348,
+      1259349,
+      1262996,
+      1263001
+    ],
+    "parts": [],
+    "quest": [
+      30021
+    ],
+    "recipes": {
+      "3275": {
+        "green": 45,
+        "grey": 60,
+        "learn": 1,
+        "makes": 1251,
+        "reagents": [
+          [
+            2589,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 30
+      },
+      "3276": {
+        "green": 75,
+        "grey": 100,
+        "learn": 40,
+        "makes": 2581,
+        "reagents": [
+          [
+            2589,
+            2
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 50
+      },
+      "3277": {
+        "green": 115,
+        "grey": 150,
+        "learn": 80,
+        "makes": 3530,
+        "reagents": [
+          [
+            2592,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 80
+      },
+      "3278": {
+        "green": 150,
+        "grey": 185,
+        "learn": 115,
+        "makes": 3531,
+        "reagents": [
+          [
+            2592,
+            2
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 115
+      },
+      "7928": {
+        "green": 180,
+        "grey": 210,
+        "learn": 150,
+        "makes": 6450,
+        "reagents": [
+          [
+            4306,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 150
+      },
+      "7929": {
+        "green": 210,
+        "grey": 240,
+        "learn": 180,
+        "makes": 6451,
+        "reagents": [
+          [
+            4306,
+            2
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 180
+      },
+      "10840": {
+        "green": 240,
+        "grey": 270,
+        "learn": 210,
+        "makes": 8544,
+        "reagents": [
+          [
+            4338,
+            1
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 210
+      },
+      "10841": {
+        "green": 270,
+        "grey": 300,
+        "learn": 240,
+        "makes": 8545,
+        "reagents": [
+          [
+            4338,
+            2
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 240
+      },
+      "18629": {
+        "green": 290,
+        "grey": 320,
+        "learn": 260,
+        "makes": 14529,
+        "reagents": [
+          [
+            14047,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 260
+      },
+      "18630": {
+        "green": 320,
+        "grey": 350,
+        "learn": 290,
+        "makes": 14530,
+        "reagents": [
+          [
+            14047,
+            2
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 290
+      },
+      "1244431": {
+        "green": 75,
+        "grey": 95,
+        "learn": 55,
+        "makes": 118,
+        "reagents": [
+          [
+            3371,
+            1
+          ],
+          [
+            2678,
+            1
+          ],
+          [
+            2447,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 55
+      },
+      "1244432": {
+        "green": 105,
+        "grey": 125,
+        "learn": 85,
+        "makes": 858,
+        "reagents": [
+          [
+            3371,
+            1
+          ],
+          [
+            2678,
+            2
+          ],
+          [
+            2450,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 85
+      },
+      "1244433": {
+        "green": 155,
+        "grey": 175,
+        "learn": 135,
+        "makes": 929,
+        "reagents": [
+          [
+            3372,
+            1
+          ],
+          [
+            2692,
+            1
+          ],
+          [
+            2453,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 135
+      },
+      "1259342": {
+        "green": 125,
+        "grey": 160,
+        "learn": 90,
+        "makes": 255716,
+        "reagents": [
+          [
+            3174,
+            1
+          ],
+          [
+            2678,
+            1
+          ],
+          [
+            2723,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 90
+      }
+    },
+    "rods": null,
+    "shopping": [
+      {
+        "count": 64,
+        "id": 14047
+      },
+      {
+        "count": 92,
+        "id": 4338
+      },
+      {
+        "count": 126,
+        "id": 4306
+      },
+      {
+        "count": 73,
+        "id": 2589
+      },
+      {
+        "count": 59,
+        "id": 3174
+      },
+      {
+        "count": 19,
+        "id": 3372
+      },
+      {
+        "count": 59,
+        "id": 2723
+      },
+      {
+        "count": 20,
+        "id": 2592
+      },
+      {
+        "count": 19,
+        "id": 2453
+      },
+      {
+        "count": 40,
+        "id": 2447
+      },
+      {
+        "count": 111,
+        "id": 2678
+      },
+      {
+        "count": 46,
+        "id": 3371
+      },
+      {
+        "count": 19,
+        "id": 2692
+      },
+      {
+        "count": 6,
+        "id": 2450
+      }
+    ],
+    "sold": [
+      2678,
+      2692,
+      2723,
+      3371,
+      3372
+    ],
+    "steps": [
+      {
+        "crafts": 43,
+        "from": 1,
+        "spell": 3275,
+        "to": 41
+      },
+      {
+        "crafts": 15,
+        "from": 41,
+        "spell": 3276,
+        "to": 55
+      },
+      {
+        "crafts": 28,
+        "from": 55,
+        "spell": 1244431,
+        "to": 75
+      },
+      {
+        "crafts": 12,
+        "from": 75,
+        "spell": 1244431,
+        "to": 80
+      },
+      {
+        "crafts": 6,
+        "from": 80,
+        "spell": 3277,
+        "to": 85
+      },
+      {
+        "crafts": 6,
+        "from": 85,
+        "spell": 1244432,
+        "to": 90
+      },
+      {
+        "crafts": 59,
+        "from": 90,
+        "spell": 1259342,
+        "to": 130
+      },
+      {
+        "crafts": 7,
+        "from": 130,
+        "spell": 3278,
+        "to": 135
+      },
+      {
+        "crafts": 19,
+        "from": 135,
+        "spell": 1244433,
+        "to": 150
+      },
+      {
+        "crafts": 42,
+        "from": 150,
+        "spell": 7928,
+        "to": 180
+      },
+      {
+        "crafts": 42,
+        "from": 180,
+        "spell": 7929,
+        "to": 210
+      },
+      {
+        "crafts": 18,
+        "from": 210,
+        "spell": 10840,
+        "to": 225
+      },
+      {
+        "crafts": 24,
+        "from": 225,
+        "spell": 10840,
+        "to": 240
+      },
+      {
+        "crafts": 25,
+        "from": 240,
+        "spell": 10841,
+        "to": 260
+      },
+      {
+        "crafts": 42,
+        "from": 260,
+        "spell": 18629,
+        "to": 290
+      },
+      {
+        "crafts": 11,
+        "from": 290,
+        "spell": 18630,
+        "to": 300
+      }
+    ]
+  },
+  "rows": [
+    {
+      "armor": "",
+      "cat": "Camp",
+      "count": 1,
+      "effect": "Unpacks a first aid kit that allows you and others sitting nearby to gain 56 increased Stamina, mutually exclusive with Power Word: Fortitude. Requires a Campfire nearby. All camping features share a cooldown of 1 hr.",
+      "formula": null,
+      "green": 22,
+      "grey": 25,
+      "id": 279968,
+      "is_new": true,
+      "kind": "",
+      "learn": 20,
+      "reagents": [
+        [
+          1251,
+          3
+        ],
+        [
+          159,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1230117,
+      "was": [],
+      "yellow": 20
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 66 damage over 6 sec.",
+      "formula": null,
+      "green": 45,
+      "grey": 60,
+      "id": 1251,
+      "is_new": false,
+      "kind": "",
+      "learn": 1,
+      "reagents": [
+        [
+          2589,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 3275,
+      "was": [],
+      "yellow": 30
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 114 damage over 6 sec.",
+      "formula": null,
+      "green": 75,
+      "grey": 100,
+      "id": 2581,
+      "is_new": false,
+      "kind": "",
+      "learn": 40,
+      "reagents": [
+        [
+          2589,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 3276,
+      "was": [],
+      "yellow": 50
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Restores 70 to 90 health.",
+      "formula": null,
+      "green": 75,
+      "grey": 95,
+      "id": 118,
+      "is_new": true,
+      "kind": "",
+      "learn": 55,
+      "reagents": [
+        [
+          3371,
+          1
+        ],
+        [
+          2678,
+          1
+        ],
+        [
+          2447,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1244431,
+      "was": [],
+      "yellow": 55
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 3,
+      "effect": "Target is cured of poisons up to level 25.",
+      "formula": null,
+      "green": 115,
+      "grey": 150,
+      "id": 6452,
+      "is_new": false,
+      "kind": "",
+      "learn": 80,
+      "reagents": [
+        [
+          1475,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 7934,
+      "was": [],
+      "yellow": 80
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 161 damage over 7 sec.",
+      "formula": null,
+      "green": 115,
+      "grey": 150,
+      "id": 3530,
+      "is_new": false,
+      "kind": "",
+      "learn": 80,
+      "reagents": [
+        [
+          2592,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 3277,
+      "was": [],
+      "yellow": 80
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Restores 140 to 180 health.",
+      "formula": null,
+      "green": 105,
+      "grey": 125,
+      "id": 858,
+      "is_new": true,
+      "kind": "level 3",
+      "learn": 85,
+      "reagents": [
+        [
+          3371,
+          1
+        ],
+        [
+          2678,
+          2
+        ],
+        [
+          2450,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1244432,
+      "was": [],
+      "yellow": 85
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 3,
+      "effect": "Target is cured of diseases up to level 25. Not usable in combat.",
+      "formula": null,
+      "green": 125,
+      "grey": 160,
+      "id": 255716,
+      "is_new": true,
+      "kind": "",
+      "learn": 90,
+      "reagents": [
+        [
+          3174,
+          1
+        ],
+        [
+          2678,
+          1
+        ],
+        [
+          2723,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1259342,
+      "was": [],
+      "yellow": 90
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 301 damage over 7 sec.",
+      "formula": null,
+      "green": 150,
+      "grey": 185,
+      "id": 3531,
+      "is_new": false,
+      "kind": "",
+      "learn": 115,
+      "reagents": [
+        [
+          2592,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 3278,
+      "was": [],
+      "yellow": 115
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Target is cured of bleeds up to level 30. Not usable in combat.",
+      "formula": null,
+      "green": 155,
+      "grey": 190,
+      "id": 255720,
+      "is_new": true,
+      "kind": "",
+      "learn": 120,
+      "reagents": [
+        [
+          2592,
+          2
+        ],
+        [
+          2321,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1259347,
+      "was": [],
+      "yellow": 120
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 3,
+      "effect": "Target is cured of poisons up to level 35.",
+      "formula": [
+        6454,
+        2
+      ],
+      "green": 165,
+      "grey": 200,
+      "id": 6453,
+      "is_new": false,
+      "kind": "",
+      "learn": 130,
+      "reagents": [
+        [
+          1288,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [
+          {
+            "chance": 0.8,
+            "lv": [],
+            "npc": "Captain Halyndor",
+            "zone": "Wetlands"
+          },
+          {
+            "chance": 0.32,
+            "lv": [],
+            "npc": "Caverndeep Looter",
+            "zone": "Dun Morogh"
+          },
+          {
+            "chance": 0.1,
+            "lv": [],
+            "npc": "Lake Thresher",
+            "zone": "Redridge Mountains"
+          }
+        ],
+        "read": "classic",
+        "skill": null,
+        "vendors": []
+      },
+      "spell": 7935,
+      "was": [],
+      "yellow": 130
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Restores 280 to 360 health.",
+      "formula": null,
+      "green": 155,
+      "grey": 175,
+      "id": 929,
+      "is_new": true,
+      "kind": "level 12",
+      "learn": 135,
+      "reagents": [
+        [
+          3372,
+          1
+        ],
+        [
+          2692,
+          1
+        ],
+        [
+          2453,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1244433,
+      "was": [],
+      "yellow": 135
+    },
+    {
+      "armor": "",
+      "cat": "Camp",
+      "count": 1,
+      "effect": "Places a Toxin Study that contains healing potions and anti-venom, and provides all of the benefits of a First Aid Kit. Requires a Campfire nearby. May be placed over a First Aid Kit to replace it. All camping features share a cooldown of 1 hr.",
+      "formula": [
+        273105,
+        2
+      ],
+      "green": 142,
+      "grey": 145,
+      "id": 279940,
+      "is_new": true,
+      "kind": "",
+      "learn": 140,
+      "reagents": [
+        [
+          6452,
+          1
+        ],
+        [
+          8544,
+          2
+        ],
+        [
+          4470,
+          2
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Happy Camper",
+            "skill": null,
+            "zone": "Dun Morogh"
+          }
+        ]
+      },
+      "spell": 1262996,
+      "was": [],
+      "yellow": 140
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 3,
+      "effect": "Target is cured of diseases up to level 35. Not usable in combat.",
+      "formula": [
+        255724,
+        2
+      ],
+      "green": 190,
+      "grey": 220,
+      "id": 255717,
+      "is_new": true,
+      "kind": "",
+      "learn": 140,
+      "reagents": [
+        [
+          1468,
+          1
+        ],
+        [
+          3713,
+          1
+        ],
+        [
+          2686,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1259343,
+      "was": [],
+      "yellow": 160
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 400 damage over 8 sec.",
+      "formula": null,
+      "green": 180,
+      "grey": 210,
+      "id": 6450,
+      "is_new": false,
+      "kind": "",
+      "learn": 150,
+      "reagents": [
+        [
+          4306,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 7928,
+      "was": [],
+      "yellow": 150
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Restores 455 to 585 health.",
+      "formula": [
+        255723,
+        2
+      ],
+      "green": 195,
+      "grey": 215,
+      "id": 1710,
+      "is_new": true,
+      "kind": "level 21",
+      "learn": 155,
+      "reagents": [
+        [
+          3372,
+          1
+        ],
+        [
+          2692,
+          3
+        ],
+        [
+          3357,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1244434,
+      "was": [],
+      "yellow": 175
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 640 damage over 8 sec.",
+      "formula": [
+        16112,
+        1
+      ],
+      "green": 210,
+      "grey": 240,
+      "id": 6451,
+      "is_new": false,
+      "kind": "",
+      "learn": 180,
+      "reagents": [
+        [
+          4306,
+          2
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Deneb Walker",
+            "skill": null,
+            "zone": "Arathi Highlands"
+          },
+          {
+            "cost": "",
+            "name": "Balai Lok'Wein",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          }
+        ]
+      },
+      "spell": 7929,
+      "was": [],
+      "yellow": 180
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Target is cured of bleeds up to level 45. Not usable in combat.",
+      "formula": [
+        255726,
+        2
+      ],
+      "green": 250,
+      "grey": 280,
+      "id": 255721,
+      "is_new": true,
+      "kind": "",
+      "learn": 200,
+      "reagents": [
+        [
+          4304,
+          2
+        ],
+        [
+          4291,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1259348,
+      "was": [],
+      "yellow": 220
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 800 damage over 8 sec.",
+      "formula": [
+        16113,
+        1
+      ],
+      "green": 240,
+      "grey": 270,
+      "id": 8544,
+      "is_new": false,
+      "kind": "",
+      "learn": 210,
+      "reagents": [
+        [
+          4338,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Deneb Walker",
+            "skill": null,
+            "zone": "Arathi Highlands"
+          },
+          {
+            "cost": "",
+            "name": "Balai Lok'Wein",
+            "skill": null,
+            "zone": "Dustwallow Marsh"
+          }
+        ]
+      },
+      "spell": 10840,
+      "was": [],
+      "yellow": 210
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 3,
+      "effect": "Target is cured of diseases up to level 45. Not usable in combat.",
+      "formula": [
+        255727,
+        2
+      ],
+      "green": 255,
+      "grey": 285,
+      "id": 255718,
+      "is_new": true,
+      "kind": "",
+      "learn": 210,
+      "reagents": [
+        [
+          7070,
+          1
+        ],
+        [
+          2692,
+          1
+        ],
+        [
+          2596,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1259344,
+      "was": [],
+      "yellow": 225
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 3,
+      "effect": "Target is cured of poisons up to level 45.",
+      "formula": [
+        255728,
+        2
+      ],
+      "green": 260,
+      "grey": 290,
+      "id": 255715,
+      "is_new": true,
+      "kind": "",
+      "learn": 215,
+      "reagents": [
+        [
+          255645,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1259341,
+      "was": [],
+      "yellow": 230
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Restores 700 to 900 health.",
+      "formula": [
+        255725,
+        2
+      ],
+      "green": 250,
+      "grey": 270,
+      "id": 3928,
+      "is_new": true,
+      "kind": "level 35",
+      "learn": 215,
+      "reagents": [
+        [
+          8925,
+          1
+        ],
+        [
+          3713,
+          1
+        ],
+        [
+          8838,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1244435,
+      "was": [],
+      "yellow": 230
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 1104 damage over 8 sec.",
+      "formula": null,
+      "green": 270,
+      "grey": 300,
+      "id": 8545,
+      "is_new": false,
+      "kind": "",
+      "learn": 240,
+      "reagents": [
+        [
+          4338,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 10841,
+      "was": [],
+      "yellow": 240
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 1360 damage over 8 sec.",
+      "formula": null,
+      "green": 290,
+      "grey": 320,
+      "id": 14529,
+      "is_new": false,
+      "kind": "",
+      "learn": 260,
+      "reagents": [
+        [
+          14047,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 18629,
+      "was": [],
+      "yellow": 260
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Target is cured of bleeds up to level 65. Not usable in combat.",
+      "formula": [
+        255730,
+        2
+      ],
+      "green": 310,
+      "grey": 340,
+      "id": 255722,
+      "is_new": true,
+      "kind": "",
+      "learn": 265,
+      "reagents": [
+        [
+          8170,
+          2
+        ],
+        [
+          14047,
+          2
+        ],
+        [
+          8343,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1259349,
+      "was": [],
+      "yellow": 280
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 1,
+      "effect": "Restores 1050 to 1750 health.",
+      "formula": [
+        255729,
+        2
+      ],
+      "green": 310,
+      "grey": 330,
+      "id": 13446,
+      "is_new": true,
+      "kind": "level 45",
+      "learn": 275,
+      "reagents": [
+        [
+          8925,
+          1
+        ],
+        [
+          3713,
+          3
+        ],
+        [
+          13464,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Pexmit",
+            "skill": null,
+            "zone": "Mount Hyjal"
+          }
+        ]
+      },
+      "spell": 1244436,
+      "was": [],
+      "yellow": 290
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 3,
+      "effect": "Target is cured of diseases up to level 65. Not usable in combat.",
+      "formula": [
+        255731,
+        2
+      ],
+      "green": 325,
+      "grey": 355,
+      "id": 255719,
+      "is_new": true,
+      "kind": "",
+      "learn": 280,
+      "reagents": [
+        [
+          7080,
+          1
+        ],
+        [
+          2692,
+          1
+        ],
+        [
+          2594,
+          1
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1259345,
+      "was": [],
+      "yellow": 295
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 1,
+      "effect": "Heals 2000 damage over 8 sec.",
+      "formula": null,
+      "green": 320,
+      "grey": 350,
+      "id": 14530,
+      "is_new": false,
+      "kind": "",
+      "learn": 290,
+      "reagents": [
+        [
+          14047,
+          2
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 18630,
+      "was": [],
+      "yellow": 290
+    },
+    {
+      "armor": "",
+      "cat": "Bandages",
+      "count": 4,
+      "effect": "Heals 2500 damage over 10 sec.",
+      "formula": null,
+      "green": 330,
+      "grey": 360,
+      "id": 23684,
+      "is_new": false,
+      "kind": "",
+      "learn": 285,
+      "reagents": [
+        [
+          23567,
+          1
+        ],
+        [
+          14047,
+          10
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 30021,
+      "was": [],
+      "yellow": 300
+    },
+    {
+      "armor": "",
+      "cat": "Camp",
+      "count": 1,
+      "effect": "Places a Plague Doctor's Laboratory that contains healing potions and poultices, and provides all of the benefits of a First Aid Kit. Requires a Campfire nearby. May be placed over a First Aid Kit to replace it. All camping features share a cooldown of 1 hr.",
+      "formula": [
+        273118,
+        2
+      ],
+      "green": 300,
+      "grey": 300,
+      "id": 279951,
+      "is_new": true,
+      "kind": "",
+      "learn": 300,
+      "reagents": [
+        [
+          4470,
+          2
+        ],
+        [
+          6453,
+          2
+        ],
+        [
+          14530,
+          5
+        ]
+      ],
+      "set": "",
+      "source": null,
+      "spell": 1263001,
+      "was": [],
+      "yellow": 300
+    },
+    {
+      "armor": "",
+      "cat": "Potions",
+      "count": 3,
+      "effect": "Target is cured of poisons up to level 65.",
+      "formula": [
+        19442,
+        1
+      ],
+      "green": 330,
+      "grey": 360,
+      "id": 19440,
+      "is_new": false,
+      "kind": "",
+      "learn": 300,
+      "reagents": [
+        [
+          19441,
+          1
+        ]
+      ],
+      "set": "",
+      "source": {
+        "drops": [],
+        "read": "classic",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Quartermaster Miranda Breechlock",
+            "skill": null,
+            "zone": "Eastern Plaguelands"
+          },
+          {
+            "cost": "",
+            "name": "Argent Quartermaster Hasana",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Argent Quartermaster Lightspark",
+            "skill": null,
+            "zone": "Western Plaguelands"
+          }
+        ]
+      },
+      "spell": 23787,
+      "was": [],
+      "yellow": 300
+    }
+  ],
+  "slug": "first-aid",
+  "smelting": null,
+  "sod": [],
+  "vendor": null,
+  "word": "Manual"
+}

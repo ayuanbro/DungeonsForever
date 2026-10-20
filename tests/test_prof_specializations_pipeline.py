@@ -15,7 +15,7 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PIPELINE = ROOT / "df-prof-pipeline-v1.0/_temp"
+PIPELINE = ROOT / "df-data-pipeline/_temp"
 sys.path.insert(0, str(PIPELINE))
 try:
     SPEC = importlib.util.spec_from_file_location(
@@ -70,6 +70,10 @@ class SpecializationPipelineTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix="df-specializations-")
         self.addCleanup(temporary.cleanup)
         self.directory = Path(temporary.name)
+        import fc_pipeline_common as common
+        patcher = mock.patch.object(common, 'REPO', self.directory)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.data = self.directory / "data"
         self.data.mkdir()
         self.item_csv = self.directory / "recipe-items.csv"

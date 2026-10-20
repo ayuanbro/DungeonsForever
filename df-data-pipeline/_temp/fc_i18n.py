@@ -22,10 +22,11 @@ import json
 import os
 import sys
 from collections import Counter, defaultdict
+from fc_pipeline_common import configured_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA = os.path.join(HERE, '_fc', 'data')
-I18N = os.path.join(HERE, '_fc', 'i18n')
+DATA = configured_path('DF_PIPELINE_DATA_DIR', os.path.join(HERE, '_fc', 'data'))
+I18N = configured_path('DF_PIPELINE_I18N_DIR', os.path.join(HERE, '_fc', 'i18n'))
 ZH = os.path.join(I18N, 'zh.json')
 
 

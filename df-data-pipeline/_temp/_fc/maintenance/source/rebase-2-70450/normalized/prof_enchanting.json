@@ -1,0 +1,9620 @@
+{
+  "build": "1.60.1.70450",
+  "camps": {
+    "a": {
+      "faction": "Azeroth Commerce Authority",
+      "place": "Three Corners",
+      "x": 10.3,
+      "y": 72.5,
+      "zone": "Redridge Mountains"
+    },
+    "h": {
+      "faction": "Durotar Supply and Logistics",
+      "place": "outside the Crossroads",
+      "x": 49.7,
+      "y": 29.5,
+      "zone": "The Barrens"
+    }
+  },
+  "counts": null,
+  "crafted": [
+    {
+      "count": 1,
+      "green": null,
+      "grey": 10,
+      "id": 6218,
+      "is_new": false,
+      "learn": 5,
+      "reagents": [
+        [
+          6217,
+          1
+        ],
+        [
+          247786,
+          1
+        ]
+      ],
+      "spell": 7421,
+      "taught_by": "",
+      "yellow": 5
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 65,
+      "id": 20744,
+      "is_new": false,
+      "learn": 5,
+      "reagents": [
+        [
+          10940,
+          1
+        ],
+        [
+          17034,
+          1
+        ],
+        [
+          3371,
+          1
+        ]
+      ],
+      "spell": 25124,
+      "taught_by": "20758",
+      "yellow": 30
+    },
+    {
+      "count": 3,
+      "green": null,
+      "grey": 15,
+      "id": 247786,
+      "is_new": true,
+      "learn": 10,
+      "reagents": [
+        [
+          10940,
+          1
+        ]
+      ],
+      "spell": 1245320,
+      "taught_by": "",
+      "yellow": 10
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 15,
+      "id": 247789,
+      "is_new": true,
+      "learn": 10,
+      "reagents": [
+        [
+          4470,
+          1
+        ],
+        [
+          247786,
+          1
+        ]
+      ],
+      "spell": 1245321,
+      "taught_by": "",
+      "yellow": 10
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 25,
+      "id": 279976,
+      "is_new": true,
+      "learn": 20,
+      "reagents": [
+        [
+          4470,
+          1
+        ],
+        [
+          10940,
+          1
+        ]
+      ],
+      "spell": 1230643,
+      "taught_by": "",
+      "yellow": 20
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 115,
+      "id": 11287,
+      "is_new": false,
+      "learn": 75,
+      "reagents": [
+        [
+          4470,
+          1
+        ],
+        [
+          10938,
+          1
+        ]
+      ],
+      "spell": 14293,
+      "taught_by": "",
+      "yellow": 75
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 150,
+      "id": 11288,
+      "is_new": false,
+      "learn": 110,
+      "reagents": [
+        [
+          4470,
+          1
+        ],
+        [
+          10938,
+          2
+        ]
+      ],
+      "spell": 14807,
+      "taught_by": "",
+      "yellow": 110
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 170,
+      "id": 6339,
+      "is_new": false,
+      "learn": 130,
+      "reagents": [
+        [
+          6338,
+          1
+        ],
+        [
+          10940,
+          3
+        ],
+        [
+          10938,
+          4
+        ],
+        [
+          1210,
+          1
+        ]
+      ],
+      "spell": 7795,
+      "taught_by": "",
+      "yellow": 130
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 180,
+      "id": 249396,
+      "is_new": true,
+      "learn": 130,
+      "reagents": [
+        [
+          10978,
+          1
+        ],
+        [
+          10939,
+          2
+        ],
+        [
+          10940,
+          5
+        ],
+        [
+          4605,
+          1
+        ]
+      ],
+      "spell": 1248752,
+      "taught_by": "249476",
+      "yellow": 140
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 180,
+      "id": 249398,
+      "is_new": true,
+      "learn": 130,
+      "reagents": [
+        [
+          11084,
+          1
+        ],
+        [
+          10939,
+          2
+        ],
+        [
+          10940,
+          3
+        ],
+        [
+          4470,
+          1
+        ]
+      ],
+      "spell": 1248755,
+      "taught_by": "249478",
+      "yellow": 140
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 180,
+      "id": 249397,
+      "is_new": true,
+      "learn": 130,
+      "reagents": [
+        [
+          11084,
+          1
+        ],
+        [
+          10939,
+          1
+        ],
+        [
+          10940,
+          2
+        ],
+        [
+          3013,
+          5
+        ]
+      ],
+      "spell": 1248754,
+      "taught_by": "249477",
+      "yellow": 140
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 145,
+      "id": 279985,
+      "is_new": true,
+      "learn": 140,
+      "reagents": [
+        [
+          11137,
+          2
+        ],
+        [
+          11174,
+          1
+        ]
+      ],
+      "spell": 1263056,
+      "taught_by": "273103",
+      "yellow": 140
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 180,
+      "id": 249392,
+      "is_new": true,
+      "learn": 140,
+      "reagents": [
+        [
+          11084,
+          4
+        ],
+        [
+          10978,
+          2
+        ],
+        [
+          11291,
+          4
+        ],
+        [
+          11082,
+          1
+        ],
+        [
+          10940,
+          5
+        ],
+        [
+          249391,
+          3
+        ]
+      ],
+      "spell": 1248703,
+      "taught_by": "249482",
+      "yellow": 140
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 180,
+      "id": 249394,
+      "is_new": true,
+      "learn": 140,
+      "reagents": [
+        [
+          10978,
+          2
+        ],
+        [
+          11082,
+          2
+        ],
+        [
+          10940,
+          5
+        ]
+      ],
+      "spell": 1248745,
+      "taught_by": "249484",
+      "yellow": 140
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 180,
+      "id": 249395,
+      "is_new": true,
+      "learn": 140,
+      "reagents": [
+        [
+          10978,
+          2
+        ],
+        [
+          11082,
+          2
+        ],
+        [
+          11083,
+          2
+        ]
+      ],
+      "spell": 1248748,
+      "taught_by": "249485",
+      "yellow": 140
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 180,
+      "id": 249393,
+      "is_new": true,
+      "learn": 140,
+      "reagents": [
+        [
+          11084,
+          2
+        ],
+        [
+          10978,
+          1
+        ],
+        [
+          11291,
+          4
+        ],
+        [
+          11082,
+          1
+        ],
+        [
+          11083,
+          6
+        ],
+        [
+          1210,
+          2
+        ]
+      ],
+      "spell": 1248739,
+      "taught_by": "249483",
+      "yellow": 140
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 180,
+      "id": 20745,
+      "is_new": false,
+      "learn": 150,
+      "reagents": [
+        [
+          11083,
+          1
+        ],
+        [
+          17034,
+          2
+        ],
+        [
+          3372,
+          1
+        ]
+      ],
+      "spell": 25125,
+      "taught_by": "20752",
+      "yellow": 160
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 215,
+      "id": 11289,
+      "is_new": false,
+      "learn": 175,
+      "reagents": [
+        [
+          11291,
+          1
+        ],
+        [
+          11134,
+          1
+        ]
+      ],
+      "spell": 14809,
+      "taught_by": "",
+      "yellow": 175
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 215,
+      "id": 11130,
+      "is_new": false,
+      "learn": 175,
+      "reagents": [
+        [
+          11128,
+          1
+        ],
+        [
+          5500,
+          1
+        ],
+        [
+          11082,
+          1
+        ],
+        [
+          11083,
+          1
+        ]
+      ],
+      "spell": 13628,
+      "taught_by": "",
+      "yellow": 175
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 245,
+      "id": 249144,
+      "is_new": true,
+      "learn": 185,
+      "reagents": [
+        [
+          11174,
+          1
+        ],
+        [
+          11176,
+          1
+        ],
+        [
+          11291,
+          1
+        ]
+      ],
+      "spell": 1248461,
+      "taught_by": "249487",
+      "yellow": 205
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 230,
+      "id": 20746,
+      "is_new": false,
+      "learn": 200,
+      "reagents": [
+        [
+          11137,
+          1
+        ],
+        [
+          17035,
+          2
+        ],
+        [
+          3372,
+          1
+        ]
+      ],
+      "spell": 25126,
+      "taught_by": "20753",
+      "yellow": 210
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 265,
+      "id": 249442,
+      "is_new": true,
+      "learn": 210,
+      "reagents": [
+        [
+          11178,
+          3
+        ],
+        [
+          11175,
+          3
+        ],
+        [
+          11176,
+          4
+        ],
+        [
+          249430,
+          2
+        ],
+        [
+          249409,
+          1
+        ],
+        [
+          2289,
+          4
+        ]
+      ],
+      "spell": 1249006,
+      "taught_by": "249494",
+      "yellow": 225
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 265,
+      "id": 249441,
+      "is_new": true,
+      "learn": 210,
+      "reagents": [
+        [
+          11178,
+          2
+        ],
+        [
+          11175,
+          4
+        ],
+        [
+          11176,
+          6
+        ],
+        [
+          249430,
+          2
+        ],
+        [
+          249409,
+          1
+        ],
+        [
+          11291,
+          1
+        ]
+      ],
+      "spell": 1248974,
+      "taught_by": "249493",
+      "yellow": 225
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 265,
+      "id": 249443,
+      "is_new": true,
+      "learn": 210,
+      "reagents": [
+        [
+          11178,
+          4
+        ],
+        [
+          11175,
+          2
+        ],
+        [
+          11176,
+          2
+        ],
+        [
+          249432,
+          4
+        ],
+        [
+          249410,
+          2
+        ],
+        [
+          11291,
+          2
+        ]
+      ],
+      "spell": 1249015,
+      "taught_by": "249495",
+      "yellow": 225
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 275,
+      "id": 249234,
+      "is_new": true,
+      "learn": 215,
+      "reagents": [
+        [
+          11174,
+          2
+        ],
+        [
+          11137,
+          1
+        ],
+        [
+          11291,
+          1
+        ]
+      ],
+      "spell": 1248509,
+      "taught_by": "249512",
+      "yellow": 235
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 260,
+      "id": 11145,
+      "is_new": false,
+      "learn": 220,
+      "reagents": [
+        [
+          11144,
+          1
+        ],
+        [
+          7971,
+          1
+        ],
+        [
+          11135,
+          1
+        ],
+        [
+          11137,
+          1
+        ]
+      ],
+      "spell": 13702,
+      "taught_by": "",
+      "yellow": 220
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 265,
+      "id": 249454,
+      "is_new": true,
+      "learn": 220,
+      "reagents": [
+        [
+          11178,
+          4
+        ],
+        [
+          11177,
+          4
+        ],
+        [
+          11291,
+          4
+        ],
+        [
+          11175,
+          6
+        ],
+        [
+          11176,
+          8
+        ],
+        [
+          249409,
+          2
+        ],
+        [
+          249430,
+          4
+        ]
+      ],
+      "spell": 1249064,
+      "taught_by": "249507",
+      "yellow": 225
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 265,
+      "id": 249453,
+      "is_new": true,
+      "learn": 220,
+      "reagents": [
+        [
+          11178,
+          6
+        ],
+        [
+          11177,
+          2
+        ],
+        [
+          11291,
+          4
+        ],
+        [
+          11175,
+          4
+        ],
+        [
+          11176,
+          6
+        ],
+        [
+          249409,
+          2
+        ],
+        [
+          249430,
+          4
+        ]
+      ],
+      "spell": 1249061,
+      "taught_by": "249506",
+      "yellow": 225
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 265,
+      "id": 249455,
+      "is_new": true,
+      "learn": 220,
+      "reagents": [
+        [
+          11178,
+          3
+        ],
+        [
+          11177,
+          1
+        ],
+        [
+          11291,
+          2
+        ],
+        [
+          11175,
+          2
+        ],
+        [
+          11176,
+          3
+        ],
+        [
+          249409,
+          1
+        ],
+        [
+          249430,
+          2
+        ]
+      ],
+      "spell": 1249069,
+      "taught_by": "249508",
+      "yellow": 225
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 265,
+      "id": 249456,
+      "is_new": true,
+      "learn": 220,
+      "reagents": [
+        [
+          6037,
+          4
+        ],
+        [
+          11175,
+          12
+        ],
+        [
+          11135,
+          12
+        ],
+        [
+          249409,
+          1
+        ],
+        [
+          249430,
+          2
+        ]
+      ],
+      "spell": 1249070,
+      "taught_by": "249509",
+      "yellow": 225
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 305,
+      "id": 249232,
+      "is_new": true,
+      "learn": 245,
+      "reagents": [
+        [
+          16202,
+          1
+        ],
+        [
+          11176,
+          1
+        ],
+        [
+          11291,
+          1
+        ]
+      ],
+      "spell": 1248505,
+      "taught_by": "249515",
+      "yellow": 265
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 260,
+      "id": 12810,
+      "is_new": false,
+      "learn": 250,
+      "reagents": [
+        [
+          8170,
+          1
+        ],
+        [
+          16202,
+          1
+        ]
+      ],
+      "spell": 17181,
+      "taught_by": "",
+      "yellow": 250
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 260,
+      "id": 12655,
+      "is_new": false,
+      "learn": 250,
+      "reagents": [
+        [
+          12359,
+          1
+        ],
+        [
+          11176,
+          3
+        ]
+      ],
+      "spell": 17180,
+      "taught_by": "",
+      "yellow": 250
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 280,
+      "id": 20747,
+      "is_new": false,
+      "learn": 250,
+      "reagents": [
+        [
+          11176,
+          1
+        ],
+        [
+          8831,
+          1
+        ],
+        [
+          8925,
+          1
+        ]
+      ],
+      "spell": 25127,
+      "taught_by": "20754",
+      "yellow": 260
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 11811,
+      "is_new": false,
+      "learn": 265,
+      "reagents": [
+        [
+          11382,
+          1
+        ],
+        [
+          7078,
+          1
+        ],
+        [
+          14343,
+          3
+        ]
+      ],
+      "spell": 15596,
+      "taught_by": "11813",
+      "yellow": 285
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 305,
+      "id": 249237,
+      "is_new": true,
+      "learn": 275,
+      "reagents": [
+        [
+          16203,
+          2
+        ],
+        [
+          16204,
+          1
+        ],
+        [
+          11291,
+          1
+        ]
+      ],
+      "spell": 1248515,
+      "taught_by": "249522",
+      "yellow": 285
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 305,
+      "id": 20750,
+      "is_new": false,
+      "learn": 275,
+      "reagents": [
+        [
+          16204,
+          3
+        ],
+        [
+          4625,
+          2
+        ],
+        [
+          8925,
+          1
+        ]
+      ],
+      "spell": 25128,
+      "taught_by": "20755",
+      "yellow": 285
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 360,
+      "id": 249385,
+      "is_new": true,
+      "learn": 275,
+      "reagents": [
+        [
+          16203,
+          1
+        ],
+        [
+          16204,
+          3
+        ],
+        [
+          14344,
+          2
+        ],
+        [
+          11291,
+          1
+        ]
+      ],
+      "spell": 1248650,
+      "taught_by": "249537",
+      "yellow": 320
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 249473,
+      "is_new": true,
+      "learn": 285,
+      "reagents": [
+        [
+          11382,
+          1
+        ],
+        [
+          7080,
+          1
+        ],
+        [
+          14343,
+          3
+        ]
+      ],
+      "spell": 1249114,
+      "taught_by": "",
+      "yellow": 285
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 249469,
+      "is_new": true,
+      "learn": 285,
+      "reagents": [
+        [
+          11382,
+          1
+        ],
+        [
+          12808,
+          1
+        ],
+        [
+          14343,
+          3
+        ]
+      ],
+      "spell": 1249107,
+      "taught_by": "",
+      "yellow": 285
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 249470,
+      "is_new": true,
+      "learn": 285,
+      "reagents": [
+        [
+          11382,
+          1
+        ],
+        [
+          7076,
+          1
+        ],
+        [
+          14343,
+          3
+        ]
+      ],
+      "spell": 1249112,
+      "taught_by": "",
+      "yellow": 285
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 350,
+      "id": 16207,
+      "is_new": false,
+      "learn": 290,
+      "reagents": [
+        [
+          16206,
+          1
+        ],
+        [
+          13926,
+          1
+        ],
+        [
+          16204,
+          10
+        ],
+        [
+          16203,
+          4
+        ],
+        [
+          14343,
+          4
+        ],
+        [
+          14344,
+          2
+        ]
+      ],
+      "spell": 20051,
+      "taught_by": "16243",
+      "yellow": 310
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 300,
+      "id": 279987,
+      "is_new": true,
+      "learn": 300,
+      "reagents": [
+        [
+          273128,
+          1
+        ],
+        [
+          14344,
+          2
+        ],
+        [
+          16203,
+          4
+        ]
+      ],
+      "spell": 1263082,
+      "taught_by": "273116",
+      "yellow": 300
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 330,
+      "id": 20748,
+      "is_new": false,
+      "learn": 300,
+      "reagents": [
+        [
+          14344,
+          2
+        ],
+        [
+          8831,
+          3
+        ],
+        [
+          18256,
+          1
+        ]
+      ],
+      "spell": 25130,
+      "taught_by": "20757",
+      "yellow": 310
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 330,
+      "id": 20749,
+      "is_new": false,
+      "learn": 300,
+      "reagents": [
+        [
+          14344,
+          2
+        ],
+        [
+          4625,
+          3
+        ],
+        [
+          18256,
+          1
+        ]
+      ],
+      "spell": 25129,
+      "taught_by": "20756",
+      "yellow": 310
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 279250,
+      "is_new": true,
+      "learn": 300,
+      "reagents": [
+        [
+          274030,
+          1
+        ],
+        [
+          20725,
+          1
+        ],
+        [
+          16203,
+          2
+        ],
+        [
+          16204,
+          12
+        ]
+      ],
+      "spell": 1306524,
+      "taught_by": "279299",
+      "yellow": 310
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 279251,
+      "is_new": true,
+      "learn": 300,
+      "reagents": [
+        [
+          274030,
+          1
+        ],
+        [
+          20725,
+          1
+        ],
+        [
+          16203,
+          2
+        ],
+        [
+          16204,
+          12
+        ]
+      ],
+      "spell": 1306525,
+      "taught_by": "279300",
+      "yellow": 310
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 279248,
+      "is_new": true,
+      "learn": 300,
+      "reagents": [
+        [
+          274030,
+          1
+        ],
+        [
+          20725,
+          1
+        ],
+        [
+          16203,
+          2
+        ],
+        [
+          16204,
+          12
+        ]
+      ],
+      "spell": 1306522,
+      "taught_by": "279297",
+      "yellow": 310
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 279247,
+      "is_new": true,
+      "learn": 300,
+      "reagents": [
+        [
+          274030,
+          1
+        ],
+        [
+          20725,
+          1
+        ],
+        [
+          16203,
+          2
+        ],
+        [
+          16204,
+          12
+        ]
+      ],
+      "spell": 1306521,
+      "taught_by": "279296",
+      "yellow": 310
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 279246,
+      "is_new": true,
+      "learn": 300,
+      "reagents": [
+        [
+          274030,
+          2
+        ],
+        [
+          20725,
+          1
+        ],
+        [
+          14344,
+          6
+        ],
+        [
+          16202,
+          5
+        ]
+      ],
+      "spell": 1306520,
+      "taught_by": "279295",
+      "yellow": 310
+    },
+    {
+      "count": 1,
+      "green": null,
+      "grey": 325,
+      "id": 279249,
+      "is_new": true,
+      "learn": 300,
+      "reagents": [
+        [
+          274030,
+          1
+        ],
+        [
+          20725,
+          1
+        ],
+        [
+          16203,
+          2
+        ],
+        [
+          16204,
+          12
+        ]
+      ],
+      "spell": 1306523,
+      "taught_by": "279298",
+      "yellow": 310
+    }
+  ],
+  "enchants": [
+    {
+      "bis": [],
+      "green": 22,
+      "grey": 25,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 20,
+      "name": "Enchant Bracer - Inferior Stamina",
+      "reagents": [
+        [
+          247786,
+          1
+        ]
+      ],
+      "short": "Inferior Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +2",
+      "yellow": 20
+    },
+    {
+      "bis": [],
+      "green": 100,
+      "grey": 120,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 20,
+      "name": "Enchant Chest - Minor Intellect",
+      "reagents": [
+        [
+          10938,
+          1
+        ]
+      ],
+      "short": "Minor Intellect",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.07,
+            "lv": [],
+            "npc": "Carnivous the Breaker",
+            "zone": "Darkshore"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Vaean",
+            "skill": null,
+            "zone": "Darnassus"
+          },
+          {
+            "cost": "",
+            "name": "Tilli Thistlefuzz",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Kithas",
+            "skill": null,
+            "zone": "Orgrimmar"
+          }
+        ]
+      },
+      "text": "Intellect +2",
+      "yellow": 80
+    },
+    {
+      "bis": [],
+      "green": 125,
+      "grey": 145,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 60,
+      "name": "Enchant Bracer - Minor Spirit",
+      "reagents": [
+        [
+          10938,
+          1
+        ]
+      ],
+      "short": "Minor Spirit",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.56,
+            "lv": [],
+            "npc": "Mugglefin",
+            "zone": "Ashenvale"
+          },
+          {
+            "chance": 0.28,
+            "lv": [],
+            "npc": "Apothecary Berard",
+            "zone": "Silverpine Forest"
+          },
+          {
+            "chance": 0.22,
+            "lv": [],
+            "npc": "Brokespear",
+            "zone": "The Barrens"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Spirit +3",
+      "yellow": 105
+    },
+    {
+      "bis": [],
+      "green": 90,
+      "grey": 110,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 15,
+      "name": "Enchant Chest - Inferior Stamina",
+      "reagents": [
+        [
+          10940,
+          1
+        ]
+      ],
+      "short": "Inferior Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +2",
+      "yellow": 70
+    },
+    {
+      "bis": [],
+      "green": 130,
+      "grey": 150,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 70,
+      "name": "Enchant Bracer - Minor Intellect",
+      "reagents": [
+        [
+          10938,
+          1
+        ]
+      ],
+      "short": "Minor Intellect",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.09,
+            "lv": [],
+            "npc": "Vile Fin Tidehunter",
+            "zone": "Silverpine Forest"
+          }
+        ],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Intellect +3",
+      "yellow": 110
+    },
+    {
+      "bis": [],
+      "green": 100,
+      "grey": 120,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 20,
+      "name": "Enchant Bracer - Minor Deflect",
+      "reagents": [
+        [
+          10938,
+          1
+        ]
+      ],
+      "short": "Minor Deflect",
+      "sod": false,
+      "source": null,
+      "text": "Defense +3",
+      "yellow": 80
+    },
+    {
+      "bis": [],
+      "green": 135,
+      "grey": 155,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 80,
+      "name": "Enchant Bracer - Minor Strength",
+      "reagents": [
+        [
+          10940,
+          3
+        ]
+      ],
+      "short": "Minor Strength",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.99,
+            "lv": [
+              18,
+              19
+            ],
+            "npc": "Wild Buck",
+            "zone": "Ashenvale"
+          },
+          {
+            "chance": 0.18,
+            "lv": [],
+            "npc": "Cannoneer Whessan",
+            "zone": "The Barrens"
+          },
+          {
+            "chance": 0.17,
+            "lv": [],
+            "npc": "Captain Flat Tusk",
+            "zone": "Durotar"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Strength +3",
+      "yellow": 115
+    },
+    {
+      "bis": [],
+      "green": 135,
+      "grey": 155,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 80,
+      "name": "Enchant Chest - Lesser Intellect",
+      "reagents": [
+        [
+          10938,
+          2
+        ]
+      ],
+      "short": "Lesser Intellect",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kithas",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Lilly",
+            "skill": null,
+            "zone": "Silverpine Forest"
+          }
+        ]
+      },
+      "text": "Intellect +3",
+      "yellow": 115
+    },
+    {
+      "bis": [],
+      "green": 110,
+      "grey": 130,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 40,
+      "name": "Enchant Chest - Minor Absorption",
+      "reagents": [
+        [
+          10938,
+          1
+        ]
+      ],
+      "short": "Minor Absorption",
+      "sod": false,
+      "source": null,
+      "text": "Has a 2% chance per hit of giving you 10 points of damage absorption. Cannot occur more often than once every 5 sec.",
+      "yellow": 90
+    },
+    {
+      "bis": [],
+      "green": 130,
+      "grey": 150,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 90,
+      "name": "Enchant Cloak - Minor Protection",
+      "reagents": [
+        [
+          10940,
+          2
+        ]
+      ],
+      "short": "Minor Protection",
+      "sod": false,
+      "source": null,
+      "text": "Armor +10",
+      "yellow": 110
+    },
+    {
+      "bis": [],
+      "green": 140,
+      "grey": 160,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 90,
+      "name": "Enchant Bracer - Minor Healing Power",
+      "reagents": [
+        [
+          10938,
+          2
+        ]
+      ],
+      "short": "Minor Healing Power",
+      "sod": false,
+      "source": null,
+      "text": "Healing Spells +8, Damage Spells +3",
+      "yellow": 120
+    },
+    {
+      "bis": [],
+      "green": 140,
+      "grey": 160,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 90,
+      "name": "Enchant Weapon - Minor Beastslayer",
+      "reagents": [
+        [
+          10940,
+          2
+        ],
+        [
+          10939,
+          1
+        ]
+      ],
+      "short": "Minor Beastslayer",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.36,
+            "lv": [],
+            "npc": "Takk the Leaper",
+            "zone": "The Barrens"
+          },
+          {
+            "chance": 0.3,
+            "lv": [],
+            "npc": "Firecaller Radison",
+            "zone": "Darkshore"
+          },
+          {
+            "chance": 0.1,
+            "lv": [
+              19,
+              20
+            ],
+            "npc": "Barrens Kodo",
+            "zone": "The Barrens"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Beastslaying +2",
+      "yellow": 120
+    },
+    {
+      "bis": [],
+      "green": 115,
+      "grey": 135,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 45,
+      "name": "Enchant Cloak - Minor Resistance",
+      "reagents": [
+        [
+          10940,
+          1
+        ],
+        [
+          10938,
+          1
+        ]
+      ],
+      "short": "Minor Resistance",
+      "sod": false,
+      "source": null,
+      "text": "+2 All Resistances",
+      "yellow": 95
+    },
+    {
+      "bis": [],
+      "green": 120,
+      "grey": 140,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 50,
+      "name": "Enchant Bracer - Minor Stamina",
+      "reagents": [
+        [
+          10940,
+          2
+        ]
+      ],
+      "short": "Minor Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +3",
+      "yellow": 100
+    },
+    {
+      "bis": [
+        [
+          "hunter",
+          "pve",
+          "Marksmanship"
+        ],
+        [
+          "hunter",
+          "pvp",
+          "Survival"
+        ]
+      ],
+      "green": 150,
+      "grey": 170,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 100,
+      "name": "Enchant 2H Weapon - Lesser Intellect",
+      "reagents": [
+        [
+          10938,
+          4
+        ]
+      ],
+      "short": "Lesser Intellect",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Tilli Thistlefuzz",
+            "skill": null,
+            "zone": "Dun Morogh"
+          },
+          {
+            "cost": "",
+            "name": "Kithas",
+            "skill": null,
+            "zone": "Orgrimmar"
+          },
+          {
+            "cost": "",
+            "name": "Leo Sarn",
+            "skill": null,
+            "zone": "Silverpine Forest"
+          }
+        ]
+      },
+      "text": "Intellect +5",
+      "yellow": 130
+    },
+    {
+      "bis": [],
+      "green": 125,
+      "grey": 145,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 60,
+      "name": "Enchant Chest - Lesser Stamina",
+      "reagents": [
+        [
+          10940,
+          1
+        ],
+        [
+          10938,
+          1
+        ]
+      ],
+      "short": "Lesser Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +3",
+      "yellow": 105
+    },
+    {
+      "bis": [],
+      "green": 155,
+      "grey": 175,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 110,
+      "name": "Enchant 2H Weapon - Lesser Spirit",
+      "reagents": [
+        [
+          10998,
+          1
+        ],
+        [
+          10940,
+          3
+        ]
+      ],
+      "short": "Lesser Spirit",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.4,
+            "lv": [
+              15,
+              16
+            ],
+            "npc": "Lord Condar",
+            "zone": "Loch Modan"
+          },
+          {
+            "chance": 0.3,
+            "lv": [],
+            "npc": "Foreman Rigger",
+            "zone": "Stonetalon Mountains"
+          },
+          {
+            "chance": 0.16,
+            "lv": [],
+            "npc": "Lok Orcbane",
+            "zone": "The Barrens"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Spirit +5",
+      "yellow": 135
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution",
+          "Retribution"
+        ],
+        [
+          "paladin",
+          "retribution-pvp",
+          "Retribution"
+        ],
+        [
+          "warrior",
+          "pve",
+          "Arms"
+        ],
+        [
+          "warrior",
+          "pvp",
+          "Fury"
+        ],
+        [
+          "hunter",
+          "pve",
+          "Marksmanship"
+        ],
+        [
+          "hunter",
+          "pvp",
+          "Survival"
+        ],
+        [
+          "rogue",
+          "pve",
+          "Combat"
+        ],
+        [
+          "rogue",
+          "assassination",
+          "Assassination"
+        ],
+        [
+          "rogue",
+          "pvp",
+          "Subtlety"
+        ],
+        [
+          "rogue",
+          "pvp-hemo",
+          "Subtlety"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ],
+        [
+          "druid",
+          "feral",
+          "Feral"
+        ],
+        [
+          "druid",
+          "feral-pvp",
+          "Feral"
+        ]
+      ],
+      "green": 155,
+      "grey": 175,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 110,
+      "name": "Enchant Cloak - Minor Agility",
+      "reagents": [
+        [
+          10998,
+          1
+        ]
+      ],
+      "short": "Minor Agility",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.46,
+            "lv": [],
+            "npc": "Mist Howler",
+            "zone": "Ashenvale"
+          },
+          {
+            "chance": 0.28,
+            "lv": [],
+            "npc": "Taskmaster Whipfang",
+            "zone": "Stonetalon Mountains"
+          },
+          {
+            "chance": 0.2,
+            "lv": [
+              29,
+              30
+            ],
+            "npc": "Vengeful Ancient",
+            "zone": "Stonetalon Mountains"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Dalria",
+            "skill": null,
+            "zone": "Ashenvale"
+          },
+          {
+            "cost": "",
+            "name": "Kulwia",
+            "skill": null,
+            "zone": "Stonetalon Mountains"
+          }
+        ]
+      },
+      "text": "Agility +3",
+      "yellow": 135
+    },
+    {
+      "bis": [
+        [
+          "hunter",
+          "pve",
+          "Marksmanship"
+        ],
+        [
+          "rogue",
+          "pve",
+          "Combat"
+        ],
+        [
+          "rogue",
+          "assassination",
+          "Assassination"
+        ],
+        [
+          "druid",
+          "feral",
+          "Feral"
+        ]
+      ],
+      "green": 135,
+      "grey": 155,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 80,
+      "name": "Enchant Bracer - Minor Agility",
+      "reagents": [
+        [
+          10940,
+          1
+        ],
+        [
+          10938,
+          2
+        ]
+      ],
+      "short": "Minor Agility",
+      "sod": false,
+      "source": null,
+      "text": "Agility +3",
+      "yellow": 115
+    },
+    {
+      "bis": [],
+      "green": 160,
+      "grey": 180,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 115,
+      "name": "Enchant Shield - Lesser Protection",
+      "reagents": [
+        [
+          10940,
+          1
+        ],
+        [
+          10978,
+          1
+        ]
+      ],
+      "short": "Lesser Protection",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.36,
+            "lv": [],
+            "npc": "Lake Thresher",
+            "zone": "Redridge Mountains"
+          },
+          {
+            "chance": 0.18,
+            "lv": [],
+            "npc": "Apothecary Berard",
+            "zone": "Silverpine Forest"
+          },
+          {
+            "chance": 0.14,
+            "lv": [],
+            "npc": "Singe",
+            "zone": "Redridge Mountains"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Armor +30",
+      "yellow": 140
+    },
+    {
+      "bis": [],
+      "green": 140,
+      "grey": 160,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 90,
+      "name": "Enchant Weapon - Minor Striking",
+      "reagents": [
+        [
+          10940,
+          1
+        ],
+        [
+          10938,
+          1
+        ],
+        [
+          10978,
+          1
+        ]
+      ],
+      "short": "Minor Striking",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +1",
+      "yellow": 120
+    },
+    {
+      "bis": [],
+      "green": 165,
+      "grey": 185,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 120,
+      "name": "Enchant Bracer - Lesser Spirit",
+      "reagents": [
+        [
+          10998,
+          1
+        ]
+      ],
+      "short": "Lesser Spirit",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.16,
+            "lv": [],
+            "npc": "Azzere the Skyblade",
+            "zone": "The Barrens"
+          },
+          {
+            "chance": 0.16,
+            "lv": [],
+            "npc": "Gatekeeper Kordurus",
+            "zone": "Stonetalon Mountains"
+          },
+          {
+            "chance": 0.16,
+            "lv": [
+              19,
+              21
+            ],
+            "npc": "Gradok",
+            "zone": "Loch Modan"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Spirit +4",
+      "yellow": 145
+    },
+    {
+      "bis": [],
+      "green": 170,
+      "grey": 190,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 125,
+      "name": "Enchant Boots - Minor Agility",
+      "reagents": [
+        [
+          10940,
+          3
+        ],
+        [
+          10998,
+          1
+        ]
+      ],
+      "short": "Minor Agility",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Zixil",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "cost": "",
+            "name": "Nata Dawnstrider",
+            "skill": null,
+            "zone": "Thunder Bluff"
+          }
+        ]
+      },
+      "text": "Agility +3",
+      "yellow": 150
+    },
+    {
+      "bis": [],
+      "green": 170,
+      "grey": 190,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 125,
+      "name": "Enchant Boots - Minor Stamina",
+      "reagents": [
+        [
+          10940,
+          4
+        ]
+      ],
+      "short": "Minor Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +3",
+      "yellow": 150
+    },
+    {
+      "bis": [],
+      "green": 150,
+      "grey": 170,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 100,
+      "name": "Enchant 2H Weapon - Minor Impact",
+      "reagents": [
+        [
+          10940,
+          1
+        ],
+        [
+          10978,
+          1
+        ]
+      ],
+      "short": "Minor Impact",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +4",
+      "yellow": 130
+    },
+    {
+      "bis": [],
+      "green": 150,
+      "grey": 170,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 105,
+      "name": "Enchant Shield - Minor Stamina",
+      "reagents": [
+        [
+          10998,
+          1
+        ],
+        [
+          10940,
+          1
+        ]
+      ],
+      "short": "Minor Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +3",
+      "yellow": 130
+    },
+    {
+      "bis": [],
+      "green": 180,
+      "grey": 200,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 135,
+      "name": "Enchant Cloak - Lesser Shadow Resistance",
+      "reagents": [
+        [
+          10998,
+          1
+        ],
+        [
+          6048,
+          1
+        ]
+      ],
+      "short": "Lesser Shadow Resistance",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.26,
+            "lv": [],
+            "npc": "Sister Riven",
+            "zone": "Stonetalon Mountains"
+          },
+          {
+            "chance": 0.16,
+            "lv": [
+              29,
+              30
+            ],
+            "npc": "Holdout Warrior",
+            "zone": "Dun Morogh"
+          },
+          {
+            "chance": 0.1,
+            "lv": [],
+            "npc": "Captain Ironhill",
+            "zone": "Hillsbrad Foothills"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "+10 Shadow Resistance",
+      "yellow": 160
+    },
+    {
+      "bis": [],
+      "green": 160,
+      "grey": 180,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 115,
+      "name": "Enchant Cloak - Lesser Protection",
+      "reagents": [
+        [
+          10940,
+          3
+        ],
+        [
+          10978,
+          1
+        ]
+      ],
+      "short": "Lesser Protection",
+      "sod": false,
+      "source": null,
+      "text": "Armor +20",
+      "yellow": 140
+    },
+    {
+      "bis": [],
+      "green": 160,
+      "grey": 180,
+      "group": "Weapon",
+      "is_new": true,
+      "learn": 140,
+      "name": "Enchant Weapon - Insight",
+      "reagents": [
+        [
+          10940,
+          10
+        ],
+        [
+          11084,
+          4
+        ],
+        [
+          11082,
+          4
+        ],
+        [
+          249391,
+          4
+        ],
+        [
+          249399,
+          4
+        ]
+      ],
+      "short": "Insight",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "A chance to grant Insight when you cast a spell, increasing Spirit by 100% for 10 sec.",
+      "yellow": 140
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "tank",
+          "Protection"
+        ],
+        [
+          "warrior",
+          "tank",
+          "Protection"
+        ]
+      ],
+      "green": 160,
+      "grey": 180,
+      "group": "Weapon",
+      "is_new": true,
+      "learn": 140,
+      "name": "Enchant Weapon - Recovery",
+      "reagents": [
+        [
+          11083,
+          6
+        ],
+        [
+          11084,
+          4
+        ],
+        [
+          11082,
+          6
+        ],
+        [
+          249391,
+          4
+        ],
+        [
+          2775,
+          4
+        ]
+      ],
+      "short": "Recovery",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Trigger Recovery when you are Parried or Dodged, healing you for 5% of your maximum health. Cannot occur more often than once every 10 sec.",
+      "yellow": 140
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "holy",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "holy-pvp",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "shockadin",
+          "Shockadin"
+        ],
+        [
+          "priest",
+          "shadow",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "shadow-pvp",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "holy",
+          "Holy"
+        ],
+        [
+          "priest",
+          "discipline-pvp",
+          "Discipline"
+        ],
+        [
+          "mage",
+          "pve",
+          "Frost"
+        ],
+        [
+          "mage",
+          "pvp",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire",
+          "Fire"
+        ],
+        [
+          "mage",
+          "fire-pvp",
+          "Fire"
+        ],
+        [
+          "mage",
+          "arcane",
+          "Arcane"
+        ],
+        [
+          "warlock",
+          "pve",
+          "Affliction"
+        ],
+        [
+          "warlock",
+          "pvp",
+          "Demonology"
+        ],
+        [
+          "shaman",
+          "elemental",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "elemental-pvp",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "balance",
+          "Balance"
+        ],
+        [
+          "druid",
+          "balance-pvp",
+          "Balance"
+        ],
+        [
+          "druid",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "restoration-pvp",
+          "Restoration"
+        ]
+      ],
+      "green": 160,
+      "grey": 180,
+      "group": "Weapon",
+      "is_new": true,
+      "learn": 140,
+      "name": "Enchant Weapon - Revelation",
+      "reagents": [
+        [
+          11083,
+          8
+        ],
+        [
+          11084,
+          6
+        ],
+        [
+          11082,
+          2
+        ],
+        [
+          249409,
+          4
+        ],
+        [
+          249410,
+          4
+        ]
+      ],
+      "short": "Revelation",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "A chance to trigger Revelation when a non-periodic spell fails to critically strike. Revelation grants 100% increased critical strike chance to the next spell cast. Revelation's chance to trigger is diminished as your critical strike chance increases.",
+      "yellow": 140
+    },
+    {
+      "bis": [],
+      "green": 185,
+      "grey": 205,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 140,
+      "name": "Enchant Bracer - Lesser Agility",
+      "reagents": [
+        [
+          11134,
+          1
+        ]
+      ],
+      "short": "Lesser Agility",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Gorhak",
+            "skill": null,
+            "zone": "Desolace"
+          }
+        ]
+      },
+      "text": "Agility +4",
+      "yellow": 165
+    },
+    {
+      "bis": [],
+      "green": 185,
+      "grey": 205,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 140,
+      "name": "Enchant Bracer - Lesser Strength",
+      "reagents": [
+        [
+          11083,
+          1
+        ]
+      ],
+      "short": "Lesser Strength",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Dalria",
+            "skill": null,
+            "zone": "Ashenvale"
+          },
+          {
+            "cost": "",
+            "name": "Kulwia",
+            "skill": null,
+            "zone": "Stonetalon Mountains"
+          }
+        ]
+      },
+      "text": "Strength +4",
+      "yellow": 165
+    },
+    {
+      "bis": [],
+      "green": 165,
+      "grey": 185,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 120,
+      "name": "Enchant Chest - Stamina",
+      "reagents": [
+        [
+          10940,
+          2
+        ],
+        [
+          10998,
+          1
+        ]
+      ],
+      "short": "Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +4",
+      "yellow": 145
+    },
+    {
+      "bis": [],
+      "green": 190,
+      "grey": 210,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 145,
+      "name": "Enchant Gloves - Fishing",
+      "reagents": [
+        [
+          11083,
+          1
+        ],
+        [
+          6370,
+          1
+        ]
+      ],
+      "short": "Fishing",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 2.18,
+            "lv": [
+              28,
+              29
+            ],
+            "npc": "Torn Fin Muckdweller",
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "chance": 2.04,
+            "lv": [
+              30,
+              31
+            ],
+            "npc": "Torn Fin Oracle",
+            "zone": "Hillsbrad Foothills"
+          },
+          {
+            "chance": 2,
+            "lv": [
+              31,
+              32
+            ],
+            "npc": "Torn Fin Tidehunter",
+            "zone": "Hillsbrad Foothills"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Fishing +2",
+      "yellow": 170
+    },
+    {
+      "bis": [],
+      "green": 190,
+      "grey": 210,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 145,
+      "name": "Enchant Gloves - Herbalism",
+      "reagents": [
+        [
+          11083,
+          1
+        ],
+        [
+          3356,
+          1
+        ]
+      ],
+      "short": "Herbalism",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 2.44,
+            "lv": [
+              27,
+              28
+            ],
+            "npc": "Blackened Ancient",
+            "zone": "Stonetalon Mountains"
+          },
+          {
+            "chance": 2.16,
+            "lv": [
+              26,
+              27
+            ],
+            "npc": "Withered Ancient",
+            "zone": "Ashenvale"
+          },
+          {
+            "chance": 1.86,
+            "lv": [
+              25,
+              26
+            ],
+            "npc": "Charred Ancient",
+            "zone": "Stonetalon Mountains"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Herbalism +2",
+      "yellow": 170
+    },
+    {
+      "bis": [],
+      "green": 190,
+      "grey": 210,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 145,
+      "name": "Enchant Gloves - Mining",
+      "reagents": [
+        [
+          11083,
+          1
+        ],
+        [
+          2772,
+          1
+        ]
+      ],
+      "short": "Mining",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 2.5,
+            "lv": [
+              28,
+              29
+            ],
+            "npc": "Dark Iron Saboteur",
+            "zone": "Wetlands"
+          },
+          {
+            "chance": 2.44,
+            "lv": [
+              29,
+              30
+            ],
+            "npc": "Dark Iron Tunneler",
+            "zone": "Wetlands"
+          },
+          {
+            "chance": 2.34,
+            "lv": [
+              27,
+              28
+            ],
+            "npc": "Dark Iron Dwarf",
+            "zone": "Wetlands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Mining +2",
+      "yellow": 170
+    },
+    {
+      "bis": [],
+      "green": 170,
+      "grey": 190,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 125,
+      "name": "Enchant Cloak - Lesser Fire Resistance",
+      "reagents": [
+        [
+          6371,
+          1
+        ],
+        [
+          10998,
+          1
+        ]
+      ],
+      "short": "Lesser Fire Resistance",
+      "sod": false,
+      "source": null,
+      "text": "+10 Fire Resistance",
+      "yellow": 150
+    },
+    {
+      "bis": [],
+      "green": 175,
+      "grey": 195,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 130,
+      "name": "Enchant Bracer - Lesser Stamina",
+      "reagents": [
+        [
+          11083,
+          1
+        ]
+      ],
+      "short": "Lesser Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +4",
+      "yellow": 155
+    },
+    {
+      "bis": [],
+      "green": 175,
+      "grey": 195,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 130,
+      "name": "Enchant Shield - Lesser Spirit",
+      "reagents": [
+        [
+          10998,
+          1
+        ],
+        [
+          10940,
+          2
+        ]
+      ],
+      "short": "Lesser Spirit",
+      "sod": false,
+      "source": null,
+      "text": "Spirit +3",
+      "yellow": 155
+    },
+    {
+      "bis": [],
+      "green": 185,
+      "grey": 205,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 140,
+      "name": "Enchant Chest - Lesser Absorption",
+      "reagents": [
+        [
+          10940,
+          1
+        ],
+        [
+          10998,
+          1
+        ],
+        [
+          11084,
+          1
+        ]
+      ],
+      "short": "Lesser Absorption",
+      "sod": false,
+      "source": null,
+      "text": "Has a 5% chance per hit of giving you 25 points of damage absorption. Cannot occur more often than once every 5 sec.",
+      "yellow": 165
+    },
+    {
+      "bis": [],
+      "green": 185,
+      "grey": 205,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 140,
+      "name": "Enchant Weapon - Lesser Striking",
+      "reagents": [
+        [
+          11083,
+          1
+        ],
+        [
+          11084,
+          1
+        ]
+      ],
+      "short": "Lesser Striking",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +2",
+      "yellow": 165
+    },
+    {
+      "bis": [],
+      "green": 190,
+      "grey": 210,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 145,
+      "name": "Enchant 2H Weapon - Lesser Impact",
+      "reagents": [
+        [
+          11083,
+          1
+        ],
+        [
+          11084,
+          1
+        ]
+      ],
+      "short": "Lesser Impact",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +5",
+      "yellow": 170
+    },
+    {
+      "bis": [],
+      "green": 190,
+      "grey": 210,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 145,
+      "name": "Enchant Chest - Intellect",
+      "reagents": [
+        [
+          11082,
+          1
+        ]
+      ],
+      "short": "Intellect",
+      "sod": false,
+      "source": null,
+      "text": "Intellect +4",
+      "yellow": 170
+    },
+    {
+      "bis": [],
+      "green": 210,
+      "grey": 230,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 170,
+      "name": "Enchant Bracer - Lesser Deflection",
+      "reagents": [
+        [
+          11134,
+          1
+        ],
+        [
+          11083,
+          1
+        ]
+      ],
+      "short": "Lesser Deflection",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Keena",
+            "skill": null,
+            "zone": "Arathi Highlands"
+          },
+          {
+            "cost": "",
+            "name": "Micha Yance",
+            "skill": null,
+            "zone": "Hillsbrad Foothills"
+          }
+        ]
+      },
+      "text": "Defense +5",
+      "yellow": 190
+    },
+    {
+      "bis": [
+        [
+          "priest",
+          "shadow",
+          "Shadow"
+        ],
+        [
+          "mage",
+          "pve",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire",
+          "Fire"
+        ],
+        [
+          "mage",
+          "arcane",
+          "Arcane"
+        ],
+        [
+          "warlock",
+          "pve",
+          "Affliction"
+        ],
+        [
+          "shaman",
+          "elemental",
+          "Elemental"
+        ],
+        [
+          "druid",
+          "balance",
+          "Balance"
+        ]
+      ],
+      "green": 195,
+      "grey": 215,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 150,
+      "name": "Enchant Bracer - Lesser Intellect",
+      "reagents": [
+        [
+          11082,
+          1
+        ]
+      ],
+      "short": "Lesser Intellect",
+      "sod": false,
+      "source": null,
+      "text": "Intellect +3",
+      "yellow": 175
+    },
+    {
+      "bis": [],
+      "green": 195,
+      "grey": 215,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 150,
+      "name": "Enchant Chest - Minor Stats",
+      "reagents": [
+        [
+          10998,
+          1
+        ],
+        [
+          11083,
+          1
+        ],
+        [
+          11084,
+          1
+        ]
+      ],
+      "short": "Minor Stats",
+      "sod": false,
+      "source": null,
+      "text": "All Stats +1",
+      "yellow": 175
+    },
+    {
+      "bis": [],
+      "green": 195,
+      "grey": 215,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 155,
+      "name": "Enchant Cloak - Defense",
+      "reagents": [
+        [
+          11138,
+          1
+        ],
+        [
+          11083,
+          1
+        ]
+      ],
+      "short": "Defense",
+      "sod": false,
+      "source": null,
+      "text": "Armor +30",
+      "yellow": 175
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "holy",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "holy-pvp",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "shockadin",
+          "Shockadin"
+        ],
+        [
+          "shaman",
+          "elemental",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "elemental-pvp",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ]
+      ],
+      "green": 195,
+      "grey": 215,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 155,
+      "name": "Enchant Shield - Lesser Stamina",
+      "reagents": [
+        [
+          11134,
+          1
+        ]
+      ],
+      "short": "Lesser Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +5",
+      "yellow": 175
+    },
+    {
+      "bis": [],
+      "green": 215,
+      "grey": 235,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 175,
+      "name": "Enchant Weapon - Lesser Beastslayer",
+      "reagents": [
+        [
+          5637,
+          1
+        ],
+        [
+          11138,
+          1
+        ]
+      ],
+      "short": "Lesser Beastslayer",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.1,
+            "lv": [],
+            "npc": "Morbent Fel",
+            "zone": "Duskwood"
+          },
+          {
+            "chance": 0.1,
+            "lv": [],
+            "npc": "Taneel Darkwood",
+            "zone": "Ashenvale"
+          },
+          {
+            "chance": 0.06,
+            "lv": [
+              57,
+              58
+            ],
+            "npc": "Condemned Acolyte",
+            "zone": "Hillsbrad Foothills"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Beastslaying +6",
+      "yellow": 195
+    },
+    {
+      "bis": [],
+      "green": 215,
+      "grey": 235,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 175,
+      "name": "Enchant Weapon - Lesser Elemental Slayer",
+      "reagents": [
+        [
+          7067,
+          1
+        ],
+        [
+          11138,
+          1
+        ]
+      ],
+      "short": "Lesser Elemental Slayer",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.99,
+            "lv": [
+              35,
+              36
+            ],
+            "npc": "Noxious Flayer",
+            "zone": "Dustwallow Marsh"
+          },
+          {
+            "chance": 0.08,
+            "lv": [
+              29,
+              30
+            ],
+            "npc": "Horde Grunt",
+            "zone": "Ashenvale"
+          },
+          {
+            "chance": 0.06,
+            "lv": [
+              33,
+              34
+            ],
+            "npc": "Death's Head Cultist",
+            "zone": "The Barrens"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Elemental Slayer +6",
+      "yellow": 195
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution",
+          "Retribution"
+        ],
+        [
+          "warrior",
+          "pve",
+          "Arms"
+        ],
+        [
+          "hunter",
+          "pve",
+          "Marksmanship"
+        ],
+        [
+          "rogue",
+          "pve",
+          "Combat"
+        ],
+        [
+          "rogue",
+          "assassination",
+          "Assassination"
+        ]
+      ],
+      "green": 200,
+      "grey": 220,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 160,
+      "name": "Enchant Boots - Lesser Agility",
+      "reagents": [
+        [
+          11083,
+          1
+        ]
+      ],
+      "short": "Lesser Agility",
+      "sod": false,
+      "source": null,
+      "text": "Agility +4",
+      "yellow": 180
+    },
+    {
+      "bis": [],
+      "green": 200,
+      "grey": 220,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 160,
+      "name": "Enchant Chest - Greater Stamina",
+      "reagents": [
+        [
+          11083,
+          2
+        ]
+      ],
+      "short": "Greater Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +6",
+      "yellow": 180
+    },
+    {
+      "bis": [],
+      "green": 205,
+      "grey": 225,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 165,
+      "name": "Enchant Bracer - Spirit",
+      "reagents": [
+        [
+          11134,
+          1
+        ]
+      ],
+      "short": "Spirit",
+      "sod": false,
+      "source": null,
+      "text": "Spirit +5",
+      "yellow": 185
+    },
+    {
+      "bis": [],
+      "green": 210,
+      "grey": 230,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 170,
+      "name": "Enchant Boots - Lesser Stamina",
+      "reagents": [
+        [
+          11083,
+          2
+        ]
+      ],
+      "short": "Lesser Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +4",
+      "yellow": 190
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution-pvp",
+          "Retribution"
+        ],
+        [
+          "paladin",
+          "holy-pvp",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "tank",
+          "Protection"
+        ],
+        [
+          "warrior",
+          "tank",
+          "Protection"
+        ],
+        [
+          "hunter",
+          "pvp",
+          "Survival"
+        ],
+        [
+          "rogue",
+          "pvp",
+          "Subtlety"
+        ],
+        [
+          "rogue",
+          "pvp-hemo",
+          "Subtlety"
+        ],
+        [
+          "priest",
+          "shadow-pvp",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "discipline-pvp",
+          "Discipline"
+        ],
+        [
+          "mage",
+          "pvp",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire-pvp",
+          "Fire"
+        ],
+        [
+          "warlock",
+          "pvp",
+          "Demonology"
+        ],
+        [
+          "shaman",
+          "elemental-pvp",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ],
+        [
+          "druid",
+          "feral-pvp",
+          "Feral"
+        ],
+        [
+          "druid",
+          "tank",
+          "Feral"
+        ],
+        [
+          "druid",
+          "balance-pvp",
+          "Balance"
+        ],
+        [
+          "druid",
+          "restoration-pvp",
+          "Restoration"
+        ]
+      ],
+      "green": 210,
+      "grey": 230,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 170,
+      "name": "Enchant Bracer - Stamina",
+      "reagents": [
+        [
+          11083,
+          3
+        ]
+      ],
+      "short": "Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +5",
+      "yellow": 190
+    },
+    {
+      "bis": [],
+      "green": 230,
+      "grey": 250,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 190,
+      "name": "Enchant Boots - Lesser Spirit",
+      "reagents": [
+        [
+          11134,
+          2
+        ]
+      ],
+      "short": "Lesser Spirit",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.47,
+            "lv": [],
+            "npc": "Ruul Onestone",
+            "zone": "Arathi Highlands"
+          },
+          {
+            "chance": 0.16,
+            "lv": [],
+            "npc": "Khan Shaka",
+            "zone": "Desolace"
+          },
+          {
+            "chance": 0.12,
+            "lv": [],
+            "npc": "Ambassador Malcin",
+            "zone": "The Barrens"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Spirit +4",
+      "yellow": 210
+    },
+    {
+      "bis": [],
+      "green": 230,
+      "grey": 250,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 190,
+      "name": "Enchant Weapon - Winter's Might",
+      "reagents": [
+        [
+          11135,
+          1
+        ],
+        [
+          11137,
+          1
+        ],
+        [
+          11139,
+          1
+        ],
+        [
+          3819,
+          1
+        ]
+      ],
+      "short": "Winter's Might",
+      "sod": false,
+      "source": null,
+      "text": "Frost Spell Damage +15",
+      "yellow": 210
+    },
+    {
+      "bis": [],
+      "green": 245,
+      "grey": 265,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 190,
+      "name": "Enchant Bracer - Agility",
+      "reagents": [
+        [
+          11137,
+          1
+        ]
+      ],
+      "short": "Agility",
+      "sod": false,
+      "source": null,
+      "text": "Agility +5",
+      "yellow": 225
+    },
+    {
+      "bis": [],
+      "green": 215,
+      "grey": 235,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 175,
+      "name": "Enchant Cloak - Fire Resistance",
+      "reagents": [
+        [
+          11134,
+          1
+        ],
+        [
+          7068,
+          1
+        ]
+      ],
+      "short": "Fire Resistance",
+      "sod": false,
+      "source": null,
+      "text": "+12 Fire Resistance",
+      "yellow": 195
+    },
+    {
+      "bis": [],
+      "green": 235,
+      "grey": 255,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 195,
+      "name": "Enchant Shield - Lesser Block",
+      "reagents": [
+        [
+          11135,
+          1
+        ],
+        [
+          11137,
+          1
+        ],
+        [
+          11139,
+          1
+        ]
+      ],
+      "short": "Lesser Block",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.02,
+            "lv": [
+              34,
+              35
+            ],
+            "npc": "Bloodscalp Hunter",
+            "zone": "Stranglethorn Vale"
+          },
+          {
+            "chance": 0.02,
+            "lv": [
+              38,
+              39
+            ],
+            "npc": "Boulderfist Shaman",
+            "zone": "Arathi Highlands"
+          },
+          {
+            "chance": 0.02,
+            "lv": [],
+            "npc": "Broken Tooth",
+            "zone": "Badlands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Blocking +2%",
+      "yellow": 215
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution",
+          "Retribution"
+        ],
+        [
+          "warrior",
+          "pve",
+          "Arms"
+        ],
+        [
+          "warrior",
+          "pvp",
+          "Fury"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ]
+      ],
+      "green": 220,
+      "grey": 240,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 180,
+      "name": "Enchant Bracer - Strength",
+      "reagents": [
+        [
+          11137,
+          1
+        ]
+      ],
+      "short": "Strength",
+      "sod": false,
+      "source": null,
+      "text": "Strength +5",
+      "yellow": 200
+    },
+    {
+      "bis": [
+        [
+          "shaman",
+          "restoration",
+          "Restoration"
+        ]
+      ],
+      "green": 220,
+      "grey": 240,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 180,
+      "name": "Enchant Shield - Spirit",
+      "reagents": [
+        [
+          11134,
+          1
+        ],
+        [
+          11137,
+          1
+        ]
+      ],
+      "short": "Spirit",
+      "sod": false,
+      "source": null,
+      "text": "Spirit +5",
+      "yellow": 200
+    },
+    {
+      "bis": [],
+      "green": 240,
+      "grey": 260,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 200,
+      "name": "Enchant Gloves - Skinning",
+      "reagents": [
+        [
+          11137,
+          1
+        ],
+        [
+          7392,
+          1
+        ]
+      ],
+      "short": "Skinning",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 2.12,
+            "lv": [
+              34,
+              35
+            ],
+            "npc": "Witherbark Headhunter",
+            "zone": "Arathi Highlands"
+          },
+          {
+            "chance": 2.06,
+            "lv": [
+              35,
+              36
+            ],
+            "npc": "Witherbark Shadow Hunter",
+            "zone": "Arathi Highlands"
+          },
+          {
+            "chance": 2,
+            "lv": [],
+            "npc": "Zalas Witherbark",
+            "zone": "Arathi Highlands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Skinning +5",
+      "yellow": 220
+    },
+    {
+      "bis": [],
+      "green": 225,
+      "grey": 245,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 185,
+      "name": "Enchant Chest - Greater Intellect",
+      "reagents": [
+        [
+          11134,
+          1
+        ]
+      ],
+      "short": "Greater Intellect",
+      "sod": false,
+      "source": null,
+      "text": "Intellect +6",
+      "yellow": 205
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "holy",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "shockadin",
+          "Shockadin"
+        ],
+        [
+          "priest",
+          "holy",
+          "Holy"
+        ],
+        [
+          "shaman",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "restoration",
+          "Restoration"
+        ]
+      ],
+      "green": 245,
+      "grey": 265,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 205,
+      "name": "Enchant Bracer - Lesser Healing Power",
+      "reagents": [
+        [
+          11134,
+          2
+        ]
+      ],
+      "short": "Lesser Healing Power",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Gorhak",
+            "skill": null,
+            "zone": "Desolace"
+          }
+        ]
+      },
+      "text": "Healing Spells +16, Damage Spells +6",
+      "yellow": 225
+    },
+    {
+      "bis": [
+        [
+          "hunter",
+          "pve",
+          "Marksmanship"
+        ],
+        [
+          "hunter",
+          "pvp",
+          "Survival"
+        ],
+        [
+          "rogue",
+          "pve",
+          "Combat"
+        ],
+        [
+          "rogue",
+          "assassination",
+          "Assassination"
+        ],
+        [
+          "rogue",
+          "pvp",
+          "Subtlety"
+        ],
+        [
+          "rogue",
+          "pvp-hemo",
+          "Subtlety"
+        ],
+        [
+          "druid",
+          "feral",
+          "Feral"
+        ],
+        [
+          "druid",
+          "feral-pvp",
+          "Feral"
+        ]
+      ],
+      "green": 245,
+      "grey": 265,
+      "group": "Necklace",
+      "is_new": true,
+      "learn": 210,
+      "name": "Enchant Necklace - Agility",
+      "reagents": [
+        [
+          11175,
+          2
+        ],
+        [
+          11178,
+          8
+        ],
+        [
+          11176,
+          6
+        ],
+        [
+          249410,
+          4
+        ],
+        [
+          249430,
+          4
+        ]
+      ],
+      "short": "Agility",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Agility +5",
+      "yellow": 225
+    },
+    {
+      "bis": [
+        [
+          "warrior",
+          "tank",
+          "Protection"
+        ],
+        [
+          "druid",
+          "tank",
+          "Feral"
+        ]
+      ],
+      "green": 245,
+      "grey": 265,
+      "group": "Necklace",
+      "is_new": true,
+      "learn": 210,
+      "name": "Enchant Necklace - Deflection",
+      "reagents": [
+        [
+          11175,
+          8
+        ],
+        [
+          11178,
+          2
+        ],
+        [
+          11176,
+          2
+        ],
+        [
+          249409,
+          4
+        ],
+        [
+          249430,
+          4
+        ]
+      ],
+      "short": "Deflection",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Defense +5",
+      "yellow": 225
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "holy",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "holy-pvp",
+          "Holy"
+        ],
+        [
+          "priest",
+          "holy",
+          "Holy"
+        ],
+        [
+          "priest",
+          "discipline-pvp",
+          "Discipline"
+        ],
+        [
+          "shaman",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "restoration-pvp",
+          "Restoration"
+        ]
+      ],
+      "green": 245,
+      "grey": 265,
+      "group": "Necklace",
+      "is_new": true,
+      "learn": 210,
+      "name": "Enchant Necklace - Healing Power",
+      "reagents": [
+        [
+          11175,
+          3
+        ],
+        [
+          11178,
+          5
+        ],
+        [
+          11176,
+          4
+        ],
+        [
+          249391,
+          4
+        ],
+        [
+          249424,
+          4
+        ]
+      ],
+      "short": "Healing Power",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Healing Spells +11, Damage Spells +4",
+      "yellow": 225
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "shockadin",
+          "Shockadin"
+        ],
+        [
+          "paladin",
+          "tank",
+          "Protection"
+        ],
+        [
+          "priest",
+          "shadow",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "shadow-pvp",
+          "Shadow"
+        ],
+        [
+          "mage",
+          "pve",
+          "Frost"
+        ],
+        [
+          "mage",
+          "pvp",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire",
+          "Fire"
+        ],
+        [
+          "mage",
+          "fire-pvp",
+          "Fire"
+        ],
+        [
+          "mage",
+          "arcane",
+          "Arcane"
+        ],
+        [
+          "warlock",
+          "pve",
+          "Affliction"
+        ],
+        [
+          "warlock",
+          "pvp",
+          "Demonology"
+        ],
+        [
+          "shaman",
+          "elemental",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "elemental-pvp",
+          "Elemental"
+        ],
+        [
+          "druid",
+          "balance",
+          "Balance"
+        ],
+        [
+          "druid",
+          "balance-pvp",
+          "Balance"
+        ]
+      ],
+      "green": 245,
+      "grey": 265,
+      "group": "Necklace",
+      "is_new": true,
+      "learn": 210,
+      "name": "Enchant Necklace - Spell Power",
+      "reagents": [
+        [
+          11175,
+          5
+        ],
+        [
+          11178,
+          3
+        ],
+        [
+          11176,
+          8
+        ],
+        [
+          249409,
+          4
+        ],
+        [
+          249430,
+          4
+        ]
+      ],
+      "short": "Spell Power",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "+6 Spell Power",
+      "yellow": 225
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution",
+          "Retribution"
+        ],
+        [
+          "paladin",
+          "retribution-pvp",
+          "Retribution"
+        ],
+        [
+          "warrior",
+          "pve",
+          "Arms"
+        ],
+        [
+          "warrior",
+          "pvp",
+          "Fury"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ]
+      ],
+      "green": 245,
+      "grey": 265,
+      "group": "Necklace",
+      "is_new": true,
+      "learn": 210,
+      "name": "Enchant Necklace - Strength",
+      "reagents": [
+        [
+          11175,
+          4
+        ],
+        [
+          11178,
+          4
+        ],
+        [
+          11176,
+          10
+        ],
+        [
+          249410,
+          4
+        ],
+        [
+          249425,
+          4
+        ]
+      ],
+      "short": "Strength",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Strength +5",
+      "yellow": 225
+    },
+    {
+      "bis": [],
+      "green": 250,
+      "grey": 270,
+      "group": "2H Weapon",
+      "is_new": true,
+      "learn": 210,
+      "name": "Enchant 2H Weapon - Lesser Agility",
+      "reagents": [
+        [
+          11137,
+          2
+        ],
+        [
+          11139,
+          1
+        ],
+        [
+          11174,
+          1
+        ]
+      ],
+      "short": "Lesser Agility",
+      "sod": false,
+      "source": null,
+      "text": "Agility +15",
+      "yellow": 230
+    },
+    {
+      "bis": [],
+      "green": 250,
+      "grey": 270,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 210,
+      "name": "Enchant Shield - Stamina",
+      "reagents": [
+        [
+          11137,
+          2
+        ]
+      ],
+      "short": "Stamina",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.28,
+            "lv": [],
+            "npc": "Caretaker Alaric",
+            "zone": "Arathi Highlands"
+          },
+          {
+            "chance": 0.14,
+            "lv": [],
+            "npc": "Mosh'Ogg Lord",
+            "zone": "Stranglethorn Vale"
+          },
+          {
+            "chance": 0.14,
+            "lv": [
+              47,
+              48
+            ],
+            "npc": "Timbermaw Warrior",
+            "zone": "Azshara"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Stamina +7",
+      "yellow": 230
+    },
+    {
+      "bis": [
+        [
+          "rogue",
+          "pve",
+          "Combat"
+        ],
+        [
+          "rogue",
+          "assassination",
+          "Assassination"
+        ],
+        [
+          "rogue",
+          "pvp",
+          "Subtlety"
+        ],
+        [
+          "rogue",
+          "pvp-hemo",
+          "Subtlety"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ]
+      ],
+      "green": 235,
+      "grey": 255,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 195,
+      "name": "Enchant Weapon - Striking",
+      "reagents": [
+        [
+          11135,
+          1
+        ],
+        [
+          11139,
+          1
+        ]
+      ],
+      "short": "Striking",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +3",
+      "yellow": 215
+    },
+    {
+      "bis": [],
+      "green": 255,
+      "grey": 275,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 215,
+      "name": "Enchant Gloves - Advanced Mining",
+      "reagents": [
+        [
+          11137,
+          2
+        ],
+        [
+          6037,
+          1
+        ]
+      ],
+      "short": "Advanced Mining",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 4,
+            "lv": [
+              40,
+              41
+            ],
+            "npc": "Venture Co. Strip Miner",
+            "zone": "Stranglethorn Vale"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Mining +5",
+      "yellow": 235
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution",
+          "Retribution"
+        ],
+        [
+          "paladin",
+          "retribution-pvp",
+          "Retribution"
+        ],
+        [
+          "warrior",
+          "pve",
+          "Arms"
+        ],
+        [
+          "warrior",
+          "pvp",
+          "Fury"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ],
+        [
+          "druid",
+          "feral",
+          "Feral"
+        ],
+        [
+          "druid",
+          "feral-pvp",
+          "Feral"
+        ],
+        [
+          "druid",
+          "tank",
+          "Feral"
+        ]
+      ],
+      "green": 240,
+      "grey": 260,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 200,
+      "name": "Enchant 2H Weapon - Impact",
+      "reagents": [
+        [
+          11137,
+          2
+        ],
+        [
+          11139,
+          1
+        ]
+      ],
+      "short": "Impact",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +6",
+      "yellow": 220
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution",
+          "Retribution"
+        ],
+        [
+          "paladin",
+          "holy",
+          "Holy"
+        ],
+        [
+          "warrior",
+          "pve",
+          "Arms"
+        ],
+        [
+          "hunter",
+          "pve",
+          "Marksmanship"
+        ],
+        [
+          "rogue",
+          "pve",
+          "Combat"
+        ],
+        [
+          "rogue",
+          "assassination",
+          "Assassination"
+        ],
+        [
+          "priest",
+          "shadow",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "holy",
+          "Holy"
+        ],
+        [
+          "mage",
+          "pve",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire",
+          "Fire"
+        ],
+        [
+          "mage",
+          "arcane",
+          "Arcane"
+        ],
+        [
+          "warlock",
+          "pve",
+          "Affliction"
+        ],
+        [
+          "shaman",
+          "elemental",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "feral",
+          "Feral"
+        ],
+        [
+          "druid",
+          "balance",
+          "Balance"
+        ],
+        [
+          "druid",
+          "restoration",
+          "Restoration"
+        ]
+      ],
+      "green": 240,
+      "grey": 260,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 200,
+      "name": "Enchant Chest - Lesser Stats",
+      "reagents": [
+        [
+          11135,
+          1
+        ],
+        [
+          11137,
+          1
+        ],
+        [
+          11139,
+          1
+        ]
+      ],
+      "short": "Lesser Stats",
+      "sod": false,
+      "source": null,
+      "text": "All Stats +2",
+      "yellow": 220
+    },
+    {
+      "bis": [],
+      "green": 245,
+      "grey": 265,
+      "group": "Chest",
+      "is_new": true,
+      "learn": 220,
+      "name": "Enchant Chest - Absorption",
+      "reagents": [
+        [
+          11176,
+          10
+        ],
+        [
+          11175,
+          4
+        ],
+        [
+          11178,
+          2
+        ]
+      ],
+      "short": "Absorption",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Has a 25% chance per hit of giving you 50 points of damage absorption. Cannot occur more often than once every 5 sec.",
+      "yellow": 225
+    },
+    {
+      "bis": [],
+      "green": 260,
+      "grey": 280,
+      "group": "2H Weapon",
+      "is_new": true,
+      "learn": 220,
+      "name": "Enchant 2H Weapon - Lesser Strength",
+      "reagents": [
+        [
+          11137,
+          1
+        ],
+        [
+          11139,
+          1
+        ],
+        [
+          11174,
+          2
+        ]
+      ],
+      "short": "Lesser Strength",
+      "sod": false,
+      "source": null,
+      "text": "Strength +15",
+      "yellow": 240
+    },
+    {
+      "bis": [],
+      "green": 260,
+      "grey": 280,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 220,
+      "name": "Enchant Bracer - Greater Spirit",
+      "reagents": [
+        [
+          11174,
+          1
+        ],
+        [
+          11137,
+          1
+        ]
+      ],
+      "short": "Greater Spirit",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.16,
+            "lv": [
+              39,
+              40
+            ],
+            "npc": "Deepstrider Searcher",
+            "zone": "Desolace"
+          },
+          {
+            "chance": 0.12,
+            "lv": [],
+            "npc": "Ambassador Malcin",
+            "zone": "The Barrens"
+          },
+          {
+            "chance": 0.08,
+            "lv": [],
+            "npc": "Ironpatch",
+            "zone": "Stranglethorn Vale"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Spirit +7",
+      "yellow": 240
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "holy",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "holy-pvp",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "tank",
+          "Protection"
+        ],
+        [
+          "warrior",
+          "tank",
+          "Protection"
+        ],
+        [
+          "priest",
+          "shadow",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "shadow-pvp",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "holy",
+          "Holy"
+        ],
+        [
+          "priest",
+          "discipline-pvp",
+          "Discipline"
+        ],
+        [
+          "mage",
+          "pve",
+          "Frost"
+        ],
+        [
+          "mage",
+          "pvp",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire",
+          "Fire"
+        ],
+        [
+          "mage",
+          "fire-pvp",
+          "Fire"
+        ],
+        [
+          "mage",
+          "arcane",
+          "Arcane"
+        ],
+        [
+          "warlock",
+          "pve",
+          "Affliction"
+        ],
+        [
+          "warlock",
+          "pvp",
+          "Demonology"
+        ],
+        [
+          "shaman",
+          "elemental",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "elemental-pvp",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "tank",
+          "Feral"
+        ],
+        [
+          "druid",
+          "balance",
+          "Balance"
+        ],
+        [
+          "druid",
+          "balance-pvp",
+          "Balance"
+        ],
+        [
+          "druid",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "restoration-pvp",
+          "Restoration"
+        ]
+      ],
+      "green": 245,
+      "grey": 265,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 205,
+      "name": "Enchant Cloak - Greater Defense",
+      "reagents": [
+        [
+          11137,
+          1
+        ]
+      ],
+      "short": "Greater Defense",
+      "sod": false,
+      "source": null,
+      "text": "Armor +60",
+      "yellow": 225
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "shockadin",
+          "Shockadin"
+        ]
+      ],
+      "green": 245,
+      "grey": 265,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 205,
+      "name": "Enchant Cloak - Resistance",
+      "reagents": [
+        [
+          11174,
+          1
+        ]
+      ],
+      "short": "Resistance",
+      "sod": false,
+      "source": null,
+      "text": "+3 All Resistances",
+      "yellow": 225
+    },
+    {
+      "bis": [],
+      "green": 265,
+      "grey": 285,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 225,
+      "name": "Enchant Cloak - Lesser Agility",
+      "reagents": [
+        [
+          11174,
+          1
+        ]
+      ],
+      "short": "Lesser Agility",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 2,
+            "lv": [
+              38,
+              39
+            ],
+            "npc": "Syndicate Assassin",
+            "zone": "Alterac Mountains"
+          },
+          {
+            "chance": 1.98,
+            "lv": [
+              44,
+              45
+            ],
+            "npc": "Wastewander Assassin",
+            "zone": "Tanaris"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Agility +3",
+      "yellow": 245
+    },
+    {
+      "bis": [],
+      "green": 265,
+      "grey": 285,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 225,
+      "name": "Enchant Gloves - Advanced Herbalism",
+      "reagents": [
+        [
+          11137,
+          2
+        ],
+        [
+          8838,
+          1
+        ]
+      ],
+      "short": "Advanced Herbalism",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 2.08,
+            "lv": [
+              38,
+              39
+            ],
+            "npc": "Swampwalker",
+            "zone": "Swamp of Sorrows"
+          },
+          {
+            "chance": 1.9,
+            "lv": [],
+            "npc": "Molt Thorn",
+            "zone": "Swamp of Sorrows"
+          },
+          {
+            "chance": 1.84,
+            "lv": [
+              39,
+              40
+            ],
+            "npc": "Swampwalker Elder",
+            "zone": "Swamp of Sorrows"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Herbalism +5",
+      "yellow": 245
+    },
+    {
+      "bis": [],
+      "green": 250,
+      "grey": 270,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 210,
+      "name": "Enchant Bracer - Intellect",
+      "reagents": [
+        [
+          11174,
+          1
+        ]
+      ],
+      "short": "Intellect",
+      "sod": false,
+      "source": null,
+      "text": "Intellect +5",
+      "yellow": 230
+    },
+    {
+      "bis": [
+        [
+          "warrior",
+          "tank",
+          "Protection"
+        ],
+        [
+          "hunter",
+          "pve",
+          "Marksmanship"
+        ],
+        [
+          "hunter",
+          "pvp",
+          "Survival"
+        ],
+        [
+          "rogue",
+          "pve",
+          "Combat"
+        ],
+        [
+          "rogue",
+          "assassination",
+          "Assassination"
+        ],
+        [
+          "rogue",
+          "pvp",
+          "Subtlety"
+        ],
+        [
+          "rogue",
+          "pvp-hemo",
+          "Subtlety"
+        ],
+        [
+          "druid",
+          "feral",
+          "Feral"
+        ],
+        [
+          "druid",
+          "feral-pvp",
+          "Feral"
+        ],
+        [
+          "druid",
+          "tank",
+          "Feral"
+        ]
+      ],
+      "green": 250,
+      "grey": 270,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 210,
+      "name": "Enchant Gloves - Agility",
+      "reagents": [
+        [
+          11137,
+          1
+        ]
+      ],
+      "short": "Agility",
+      "sod": false,
+      "source": null,
+      "text": "Agility +7",
+      "yellow": 230
+    },
+    {
+      "bis": [],
+      "green": 270,
+      "grey": 290,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 230,
+      "name": "Enchant Weapon - Demonslaying",
+      "reagents": [
+        [
+          11177,
+          1
+        ],
+        [
+          11176,
+          1
+        ],
+        [
+          9224,
+          1
+        ]
+      ],
+      "short": "Demonslaying",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.24,
+            "lv": [
+              46,
+              47
+            ],
+            "npc": "Emerald Ooze",
+            "zone": "The Hinterlands"
+          },
+          {
+            "chance": 0.2,
+            "lv": [],
+            "npc": "Mok'rash",
+            "zone": "Stranglethorn Vale"
+          },
+          {
+            "chance": 0.12,
+            "lv": [
+              48,
+              49
+            ],
+            "npc": "Shore Strider",
+            "zone": "Feralas"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "A chance of stunning and doing heavy damage to demons.",
+      "yellow": 250
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution-pvp",
+          "Retribution"
+        ],
+        [
+          "paladin",
+          "tank",
+          "Protection"
+        ],
+        [
+          "warrior",
+          "tank",
+          "Protection"
+        ],
+        [
+          "mage",
+          "pve",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire",
+          "Fire"
+        ],
+        [
+          "mage",
+          "arcane",
+          "Arcane"
+        ],
+        [
+          "warlock",
+          "pve",
+          "Affliction"
+        ],
+        [
+          "druid",
+          "tank",
+          "Feral"
+        ]
+      ],
+      "green": 255,
+      "grey": 275,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 215,
+      "name": "Enchant Boots - Stamina",
+      "reagents": [
+        [
+          11137,
+          2
+        ]
+      ],
+      "short": "Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +5",
+      "yellow": 235
+    },
+    {
+      "bis": [],
+      "green": 275,
+      "grey": 295,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 235,
+      "name": "Enchant Bracer - Deflection",
+      "reagents": [
+        [
+          11174,
+          2
+        ],
+        [
+          11176,
+          1
+        ]
+      ],
+      "short": "Deflection",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Mythrin'dir",
+            "skill": null,
+            "zone": "Darnassus"
+          },
+          {
+            "cost": "",
+            "name": "Banalash",
+            "skill": null,
+            "zone": "Swamp of Sorrows"
+          }
+        ]
+      },
+      "text": "Defense +7",
+      "yellow": 255
+    },
+    {
+      "bis": [],
+      "green": 275,
+      "grey": 295,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 235,
+      "name": "Enchant Shield - Frost Resistance",
+      "reagents": [
+        [
+          11178,
+          1
+        ],
+        [
+          3829,
+          1
+        ]
+      ],
+      "short": "Frost Resistance",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.2,
+            "lv": [],
+            "npc": "Terrorspark",
+            "zone": "Burning Steppes"
+          },
+          {
+            "chance": 0.03,
+            "lv": [],
+            "npc": "Stinglasher",
+            "zone": "Feralas"
+          },
+          {
+            "chance": 0.02,
+            "lv": [
+              47,
+              48
+            ],
+            "npc": "Angerclaw Bear",
+            "zone": "Felwood"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "+8 Frost Resistance",
+      "yellow": 255
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution-pvp",
+          "Retribution"
+        ],
+        [
+          "paladin",
+          "holy-pvp",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "shockadin",
+          "Shockadin"
+        ],
+        [
+          "paladin",
+          "tank",
+          "Protection"
+        ],
+        [
+          "warrior",
+          "pvp",
+          "Fury"
+        ],
+        [
+          "warrior",
+          "tank",
+          "Protection"
+        ],
+        [
+          "hunter",
+          "pvp",
+          "Survival"
+        ],
+        [
+          "rogue",
+          "pvp",
+          "Subtlety"
+        ],
+        [
+          "rogue",
+          "pvp-hemo",
+          "Subtlety"
+        ],
+        [
+          "priest",
+          "shadow-pvp",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "discipline-pvp",
+          "Discipline"
+        ],
+        [
+          "mage",
+          "pvp",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire-pvp",
+          "Fire"
+        ],
+        [
+          "warlock",
+          "pvp",
+          "Demonology"
+        ],
+        [
+          "shaman",
+          "elemental-pvp",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ],
+        [
+          "druid",
+          "feral-pvp",
+          "Feral"
+        ],
+        [
+          "druid",
+          "tank",
+          "Feral"
+        ],
+        [
+          "druid",
+          "balance-pvp",
+          "Balance"
+        ],
+        [
+          "druid",
+          "restoration-pvp",
+          "Restoration"
+        ]
+      ],
+      "green": 260,
+      "grey": 280,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 220,
+      "name": "Enchant Chest - Superior Stamina",
+      "reagents": [
+        [
+          11137,
+          3
+        ]
+      ],
+      "short": "Superior Stamina",
+      "sod": false,
+      "source": null,
+      "text": "Stamina +8",
+      "yellow": 240
+    },
+    {
+      "bis": [],
+      "green": 280,
+      "grey": 300,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 240,
+      "name": "Enchant Bracer - Greater Agility",
+      "reagents": [
+        [
+          11176,
+          3
+        ],
+        [
+          11174,
+          1
+        ]
+      ],
+      "short": "Greater Agility",
+      "sod": false,
+      "source": null,
+      "text": "Agility +7",
+      "yellow": 260
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "holy",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "holy-pvp",
+          "Holy"
+        ],
+        [
+          "paladin",
+          "shockadin",
+          "Shockadin"
+        ],
+        [
+          "warrior",
+          "pvp",
+          "Fury"
+        ],
+        [
+          "hunter",
+          "pvp",
+          "Survival"
+        ],
+        [
+          "rogue",
+          "pvp",
+          "Subtlety"
+        ],
+        [
+          "rogue",
+          "pvp-hemo",
+          "Subtlety"
+        ],
+        [
+          "priest",
+          "shadow",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "shadow-pvp",
+          "Shadow"
+        ],
+        [
+          "priest",
+          "holy",
+          "Holy"
+        ],
+        [
+          "priest",
+          "discipline-pvp",
+          "Discipline"
+        ],
+        [
+          "mage",
+          "pvp",
+          "Frost"
+        ],
+        [
+          "mage",
+          "fire-pvp",
+          "Fire"
+        ],
+        [
+          "warlock",
+          "pvp",
+          "Demonology"
+        ],
+        [
+          "shaman",
+          "elemental",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "elemental-pvp",
+          "Elemental"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "feral",
+          "Feral"
+        ],
+        [
+          "druid",
+          "feral-pvp",
+          "Feral"
+        ],
+        [
+          "druid",
+          "balance",
+          "Balance"
+        ],
+        [
+          "druid",
+          "balance-pvp",
+          "Balance"
+        ],
+        [
+          "druid",
+          "restoration",
+          "Restoration"
+        ],
+        [
+          "druid",
+          "restoration-pvp",
+          "Restoration"
+        ]
+      ],
+      "green": 265,
+      "grey": 285,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 225,
+      "name": "Enchant Boots - Minor Speed",
+      "reagents": [
+        [
+          11177,
+          1
+        ],
+        [
+          7909,
+          1
+        ],
+        [
+          11174,
+          1
+        ]
+      ],
+      "short": "Minor Speed",
+      "sod": false,
+      "source": null,
+      "text": "Give a slight movement speed increase.",
+      "yellow": 245
+    },
+    {
+      "bis": [
+        [
+          "paladin",
+          "retribution",
+          "Retribution"
+        ],
+        [
+          "paladin",
+          "retribution-pvp",
+          "Retribution"
+        ],
+        [
+          "warrior",
+          "pve",
+          "Arms"
+        ],
+        [
+          "warrior",
+          "pvp",
+          "Fury"
+        ],
+        [
+          "shaman",
+          "enhancement",
+          "Enhancement"
+        ],
+        [
+          "shaman",
+          "enhancement-pvp",
+          "Enhancement"
+        ]
+      ],
+      "green": 265,
+      "grey": 285,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 225,
+      "name": "Enchant Gloves - Strength",
+      "reagents": [
+        [
+          11174,
+          1
+        ],
+        [
+          11137,
+          2
+        ]
+      ],
+      "short": "Strength",
+      "sod": false,
+      "source": null,
+      "text": "Strength +7",
+      "yellow": 245
+    },
+    {
+      "bis": [],
+      "green": 285,
+      "grey": 305,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 245,
+      "name": "Enchant Bracer - Greater Stamina",
+      "reagents": [
+        [
+          11176,
+          3
+        ]
+      ],
+      "short": "Greater Stamina",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 7.7,
+            "lv": [
+              46,
+              47
+            ],
+            "npc": "Enslaved Archaeologist",
+            "zone": "Searing Gorge"
+          },
+          {
+            "chance": 1.56,
+            "lv": [],
+            "npc": "Death Howl",
+            "zone": "Felwood"
+          },
+          {
+            "chance": 0.22,
+            "lv": [],
+            "npc": "Scalebeard",
+            "zone": "Azshara"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Stamina +7",
+      "yellow": 265
+    },
+    {
+      "bis": [],
+      "green": 270,
+      "grey": 290,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 230,
+      "name": "Enchant Chest - Superior Intellect",
+      "reagents": [
+        [
+          11175,
+          1
+        ]
+      ],
+      "short": "Superior Intellect",
+      "sod": false,
+      "source": null,
+      "text": "Intellect +8",
+      "yellow": 250
+    },
+    {
+      "bis": [],
+      "green": 270,
+      "grey": 290,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 230,
+      "name": "Enchant Shield - Greater Spirit",
+      "reagents": [
+        [
+          11174,
+          2
+        ],
+        [
+          11176,
+          1
+        ]
+      ],
+      "short": "Greater Spirit",
+      "sod": false,
+      "source": null,
+      "text": "Spirit +7",
+      "yellow": 250
+    },
+    {
+      "bis": [],
+      "green": 290,
+      "grey": 310,
+      "group": "Gloves",
+      "is_new": true,
+      "learn": 250,
+      "name": "Enchant Gloves - Advanced Skinning",
+      "reagents": [
+        [
+          11176,
+          2
+        ],
+        [
+          15407,
+          1
+        ]
+      ],
+      "short": "Advanced Skinning",
+      "sod": false,
+      "source": null,
+      "text": "Skinning +10",
+      "yellow": 270
+    },
+    {
+      "bis": [],
+      "green": 290,
+      "grey": 310,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 250,
+      "name": "Enchant Gloves - Riding Skill",
+      "reagents": [
+        [
+          11178,
+          1
+        ],
+        [
+          11176,
+          2
+        ]
+      ],
+      "short": "Riding Skill",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.02,
+            "lv": [
+              45,
+              47
+            ],
+            "npc": "Blazing Elemental",
+            "zone": "Searing Gorge"
+          },
+          {
+            "chance": 0.02,
+            "lv": [
+              43,
+              44
+            ],
+            "npc": "Bloodsail Swabby",
+            "zone": "Stranglethorn Vale"
+          },
+          {
+            "chance": 0.02,
+            "lv": [
+              55,
+              56
+            ],
+            "npc": "Deadwind Brute",
+            "zone": "Deadwind Pass"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Grant a minor movement bonus while mounted.",
+      "yellow": 270
+    },
+    {
+      "bis": [],
+      "green": 275,
+      "grey": 295,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 235,
+      "name": "Enchant Boots - Agility",
+      "reagents": [
+        [
+          11175,
+          1
+        ]
+      ],
+      "short": "Agility",
+      "sod": false,
+      "source": null,
+      "text": "Agility +5",
+      "yellow": 255
+    },
+    {
+      "bis": [],
+      "green": 295,
+      "grey": 315,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 255,
+      "name": "Enchant Bracer - Greater Intellect",
+      "reagents": [
+        [
+          16202,
+          2
+        ]
+      ],
+      "short": "Greater Intellect",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 1.96,
+            "lv": [
+              47,
+              48
+            ],
+            "npc": "Vilebranch Shadowcaster",
+            "zone": "The Hinterlands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Intellect +7",
+      "yellow": 275
+    },
+    {
+      "bis": [],
+      "green": 280,
+      "grey": 300,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 240,
+      "name": "Enchant 2H Weapon - Greater Impact",
+      "reagents": [
+        [
+          11178,
+          1
+        ],
+        [
+          11176,
+          1
+        ]
+      ],
+      "short": "Greater Impact",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +7",
+      "yellow": 260
+    },
+    {
+      "bis": [],
+      "green": 280,
+      "grey": 300,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 240,
+      "name": "Enchant Bracer - Greater Strength",
+      "reagents": [
+        [
+          11176,
+          1
+        ],
+        [
+          11174,
+          2
+        ]
+      ],
+      "short": "Greater Strength",
+      "sod": false,
+      "source": null,
+      "text": "Strength +7",
+      "yellow": 260
+    },
+    {
+      "bis": [],
+      "green": 300,
+      "grey": 320,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 260,
+      "name": "Enchant Boots - Greater Stamina",
+      "reagents": [
+        [
+          11176,
+          6
+        ]
+      ],
+      "short": "Greater Stamina",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 1.02,
+            "lv": [],
+            "npc": "Krellack",
+            "zone": "Silithus"
+          },
+          {
+            "chance": 0.28,
+            "lv": [
+              52,
+              53
+            ],
+            "npc": "Stegodon",
+            "zone": "Un'Goro Crater"
+          },
+          {
+            "chance": 0.16,
+            "lv": [],
+            "npc": "Manaclaw",
+            "zone": "Winterspring"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Stamina +7",
+      "yellow": 280
+    },
+    {
+      "bis": [],
+      "green": 285,
+      "grey": 305,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 245,
+      "name": "Enchant Chest - Stats",
+      "reagents": [
+        [
+          11178,
+          1
+        ],
+        [
+          11176,
+          1
+        ],
+        [
+          11175,
+          1
+        ]
+      ],
+      "short": "Stats",
+      "sod": false,
+      "source": null,
+      "text": "All Stats +3",
+      "yellow": 265
+    },
+    {
+      "bis": [],
+      "green": 285,
+      "grey": 305,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 245,
+      "name": "Enchant Weapon - Greater Striking",
+      "reagents": [
+        [
+          11178,
+          1
+        ],
+        [
+          11175,
+          1
+        ]
+      ],
+      "short": "Greater Striking",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +4",
+      "yellow": 265
+    },
+    {
+      "bis": [],
+      "green": 305,
+      "grey": 325,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 265,
+      "name": "Enchant Cloak - Greater Resistance",
+      "reagents": [
+        [
+          16202,
+          1
+        ],
+        [
+          7077,
+          1
+        ],
+        [
+          7075,
+          1
+        ],
+        [
+          7079,
+          1
+        ],
+        [
+          7081,
+          1
+        ],
+        [
+          7972,
+          1
+        ]
+      ],
+      "short": "Greater Resistance",
+      "sod": false,
+      "source": null,
+      "text": "+5 All Resistances",
+      "yellow": 285
+    },
+    {
+      "bis": [],
+      "green": 305,
+      "grey": 325,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 265,
+      "name": "Enchant Shield - Greater Stamina",
+      "reagents": [
+        [
+          11176,
+          6
+        ]
+      ],
+      "short": "Greater Stamina",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Mythrin'dir",
+            "skill": null,
+            "zone": "Darnassus"
+          },
+          {
+            "cost": "",
+            "name": "Daniel Bartlett",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          }
+        ]
+      },
+      "text": "Stamina +9",
+      "yellow": 285
+    },
+    {
+      "bis": [],
+      "green": 305,
+      "grey": 325,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 265,
+      "name": "Enchant Weapon - Fiery Weapon",
+      "reagents": [
+        [
+          11177,
+          2
+        ],
+        [
+          7078,
+          1
+        ]
+      ],
+      "short": "Fiery Weapon",
+      "sod": false,
+      "source": null,
+      "text": "Often strike for 40 additional fire damage.",
+      "yellow": 285
+    },
+    {
+      "bis": [],
+      "green": 290,
+      "grey": 310,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 250,
+      "name": "Enchant Gloves - Minor Haste",
+      "reagents": [
+        [
+          11178,
+          1
+        ],
+        [
+          8153,
+          1
+        ]
+      ],
+      "short": "Minor Haste",
+      "sod": false,
+      "source": null,
+      "text": "Haste +1%",
+      "yellow": 270
+    },
+    {
+      "bis": [],
+      "green": 310,
+      "grey": 330,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 270,
+      "name": "Enchant Bracer - Superior Spirit",
+      "reagents": [
+        [
+          16202,
+          2
+        ],
+        [
+          11176,
+          7
+        ]
+      ],
+      "short": "Superior Spirit",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.14,
+            "lv": [],
+            "npc": "Hitah'ya the Keeper",
+            "zone": "Arathi Highlands"
+          },
+          {
+            "chance": 0.12,
+            "lv": [
+              46,
+              47
+            ],
+            "npc": "Emerald Ooze",
+            "zone": "The Hinterlands"
+          },
+          {
+            "chance": 0.06,
+            "lv": [
+              54,
+              55
+            ],
+            "npc": "Gurubashi Warrior",
+            "zone": "Stranglethorn Vale"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Spirit +9",
+      "yellow": 290
+    },
+    {
+      "bis": [],
+      "green": 310,
+      "grey": 330,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 270,
+      "name": "Enchant Gloves - Greater Agility",
+      "reagents": [
+        [
+          16202,
+          2
+        ],
+        [
+          16204,
+          2
+        ]
+      ],
+      "short": "Greater Agility",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.9,
+            "lv": [
+              51,
+              53
+            ],
+            "npc": "Legashi Rogue",
+            "zone": "Azshara"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Agility +10",
+      "yellow": 290
+    },
+    {
+      "bis": [],
+      "green": 315,
+      "grey": 335,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 275,
+      "name": "Enchant Boots - Spirit",
+      "reagents": [
+        [
+          16203,
+          2
+        ],
+        [
+          16202,
+          1
+        ]
+      ],
+      "short": "Spirit",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.74,
+            "lv": [],
+            "npc": "Hematos",
+            "zone": "Burning Steppes"
+          },
+          {
+            "chance": 0.22,
+            "lv": [],
+            "npc": "Spellmaw",
+            "zone": "Winterspring"
+          },
+          {
+            "chance": 0.2,
+            "lv": [],
+            "npc": "Alshirr Banebreath",
+            "zone": "Felwood"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Spirit +5",
+      "yellow": 295
+    },
+    {
+      "bis": [],
+      "green": 315,
+      "grey": 335,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 275,
+      "name": "Enchant Chest - Major Stamina",
+      "reagents": [
+        [
+          16204,
+          6
+        ],
+        [
+          14343,
+          1
+        ]
+      ],
+      "short": "Major Stamina",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Qia",
+            "skill": null,
+            "zone": "Winterspring"
+          }
+        ]
+      },
+      "text": "+10 Stamina",
+      "yellow": 295
+    },
+    {
+      "bis": [],
+      "green": 320,
+      "grey": 340,
+      "group": "Shield",
+      "is_new": false,
+      "learn": 280,
+      "name": "Enchant Shield - Superior Spirit",
+      "reagents": [
+        [
+          16203,
+          2
+        ],
+        [
+          16204,
+          4
+        ]
+      ],
+      "short": "Superior Spirit",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.44,
+            "lv": [
+              53,
+              54
+            ],
+            "npc": "Scarlet Warder",
+            "zone": "Eastern Plaguelands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Spirit +9",
+      "yellow": 300
+    },
+    {
+      "bis": [],
+      "green": 325,
+      "grey": 345,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 285,
+      "name": "Enchant Cloak - Superior Defense",
+      "reagents": [
+        [
+          16204,
+          8
+        ]
+      ],
+      "short": "Superior Defense",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Lorelae Wintersong",
+            "skill": null,
+            "zone": "Moonglade"
+          }
+        ]
+      },
+      "text": "Armor +70",
+      "yellow": 305
+    },
+    {
+      "bis": [],
+      "green": 325,
+      "grey": 345,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 285,
+      "name": "Enchant Weapon - Icy Chill",
+      "reagents": [
+        [
+          14343,
+          4
+        ],
+        [
+          7080,
+          1
+        ],
+        [
+          7082,
+          1
+        ],
+        [
+          13467,
+          1
+        ]
+      ],
+      "short": "Icy Chill",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.92,
+            "lv": [
+              55,
+              56
+            ],
+            "npc": "Anguished Highborne",
+            "zone": "Winterspring"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Often chill the target reducing their movement and attack speed.",
+      "yellow": 305
+    },
+    {
+      "bis": [],
+      "green": 297,
+      "grey": 300,
+      "group": "2H Weapon",
+      "is_new": true,
+      "learn": 290,
+      "name": "Enchant 2H Weapon - Strength",
+      "reagents": [
+        [
+          14344,
+          8
+        ],
+        [
+          16203,
+          10
+        ],
+        [
+          16204,
+          8
+        ],
+        [
+          12363,
+          4
+        ]
+      ],
+      "short": "Strength",
+      "sod": false,
+      "source": null,
+      "text": "Strength +25",
+      "yellow": 295
+    },
+    {
+      "bis": [],
+      "green": 330,
+      "grey": 350,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 290,
+      "name": "Enchant 2H Weapon - Agility",
+      "reagents": [
+        [
+          14344,
+          10
+        ],
+        [
+          16203,
+          6
+        ],
+        [
+          16204,
+          14
+        ],
+        [
+          7082,
+          4
+        ]
+      ],
+      "short": "Agility",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Meilosh",
+            "skill": null,
+            "zone": "Felwood"
+          }
+        ]
+      },
+      "text": "Agility +25",
+      "yellow": 310
+    },
+    {
+      "bis": [],
+      "green": 330,
+      "grey": 350,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 290,
+      "name": "Enchant Bracer - Mana Regeneration",
+      "reagents": [
+        [
+          16204,
+          16
+        ],
+        [
+          16203,
+          4
+        ],
+        [
+          7080,
+          2
+        ]
+      ],
+      "short": "Mana Regeneration",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Quartermaster Miranda Breechlock",
+            "skill": null,
+            "zone": "Eastern Plaguelands"
+          },
+          {
+            "cost": "",
+            "name": "Argent Quartermaster Hasana",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Argent Quartermaster Lightspark",
+            "skill": null,
+            "zone": "Western Plaguelands"
+          }
+        ]
+      },
+      "text": "Mana Regen 4 per 5 sec.",
+      "yellow": 310
+    },
+    {
+      "bis": [],
+      "green": 330,
+      "grey": 350,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 290,
+      "name": "Enchant Chest - Major Intellect",
+      "reagents": [
+        [
+          16203,
+          3
+        ],
+        [
+          14343,
+          1
+        ]
+      ],
+      "short": "Major Intellect",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 1.02,
+            "lv": [
+              53,
+              55
+            ],
+            "npc": "Scarlet Enchanter",
+            "zone": "Eastern Plaguelands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Intellect +10",
+      "yellow": 310
+    },
+    {
+      "bis": [],
+      "green": 330,
+      "grey": 350,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 290,
+      "name": "Enchant Weapon - Agility",
+      "reagents": [
+        [
+          14344,
+          6
+        ],
+        [
+          16203,
+          6
+        ],
+        [
+          16204,
+          4
+        ],
+        [
+          7082,
+          2
+        ]
+      ],
+      "short": "Agility",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Meilosh",
+            "skill": null,
+            "zone": "Felwood"
+          }
+        ]
+      },
+      "text": "Agility +15",
+      "yellow": 310
+    },
+    {
+      "bis": [],
+      "green": 330,
+      "grey": 350,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 290,
+      "name": "Enchant Weapon - Strength",
+      "reagents": [
+        [
+          14344,
+          6
+        ],
+        [
+          16203,
+          6
+        ],
+        [
+          16204,
+          4
+        ],
+        [
+          7076,
+          2
+        ]
+      ],
+      "short": "Strength",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Lokhtos Darkbargainer",
+            "skill": null,
+            "zone": "Blackrock Depths"
+          }
+        ]
+      },
+      "text": "Strength +15",
+      "yellow": 310
+    },
+    {
+      "bis": [],
+      "green": 297,
+      "grey": 300,
+      "group": "Gloves",
+      "is_new": true,
+      "learn": 295,
+      "name": "Enchant Gloves - Lotus Claw",
+      "reagents": [
+        [
+          248822,
+          1
+        ],
+        [
+          14343,
+          2
+        ],
+        [
+          16204,
+          12
+        ],
+        [
+          16202,
+          4
+        ]
+      ],
+      "short": "Lotus Claw",
+      "sod": false,
+      "source": null,
+      "text": "Give a small chance to acquire Death Lotus when gathering any herb in Hyjal.",
+      "yellow": 295
+    },
+    {
+      "bis": [],
+      "green": 335,
+      "grey": 355,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 295,
+      "name": "Enchant 2H Weapon - Superior Impact",
+      "reagents": [
+        [
+          14344,
+          4
+        ],
+        [
+          16204,
+          10
+        ]
+      ],
+      "short": "Superior Impact",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +9",
+      "yellow": 315
+    },
+    {
+      "bis": [],
+      "green": 335,
+      "grey": 355,
+      "group": "Boots",
+      "is_new": false,
+      "learn": 295,
+      "name": "Enchant Boots - Greater Agility",
+      "reagents": [
+        [
+          16203,
+          8
+        ]
+      ],
+      "short": "Greater Agility",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.29,
+            "lv": [
+              59,
+              61
+            ],
+            "npc": "Strashaz Hydra",
+            "zone": "Dustwallow Marsh"
+          },
+          {
+            "chance": 0.24,
+            "lv": [],
+            "npc": "Verdantine Boughguard",
+            "zone": "The Hinterlands"
+          },
+          {
+            "chance": 0.14,
+            "lv": [],
+            "npc": "Teremus the Devourer",
+            "zone": "Blasted Lands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Agility +7",
+      "yellow": 315
+    },
+    {
+      "bis": [],
+      "green": 335,
+      "grey": 355,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 295,
+      "name": "Enchant Bracer - Superior Agility",
+      "reagents": [
+        [
+          16204,
+          3
+        ],
+        [
+          16203,
+          3
+        ],
+        [
+          14344,
+          1
+        ]
+      ],
+      "short": "Superior Agility",
+      "sod": false,
+      "source": null,
+      "text": "+9 Agility",
+      "yellow": 315
+    },
+    {
+      "bis": [],
+      "green": 335,
+      "grey": 355,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 295,
+      "name": "Enchant Bracer - Superior Strength",
+      "reagents": [
+        [
+          16204,
+          6
+        ],
+        [
+          16203,
+          6
+        ]
+      ],
+      "short": "Superior Strength",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.9,
+            "lv": [
+              57,
+              58
+            ],
+            "npc": "Deadwind Warlock",
+            "zone": "Blasted Lands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Strength +9",
+      "yellow": 315
+    },
+    {
+      "bis": [],
+      "green": 335,
+      "grey": 355,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 295,
+      "name": "Enchant Gloves - Greater Strength",
+      "reagents": [
+        [
+          16203,
+          4
+        ],
+        [
+          16204,
+          4
+        ]
+      ],
+      "short": "Greater Strength",
+      "sod": false,
+      "source": null,
+      "text": "Strength +10",
+      "yellow": 315
+    },
+    {
+      "bis": [],
+      "green": 335,
+      "grey": 355,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 295,
+      "name": "Enchant Weapon - Unholy Weapon",
+      "reagents": [
+        [
+          14344,
+          4
+        ],
+        [
+          12808,
+          4
+        ]
+      ],
+      "short": "Unholy Weapon",
+      "sod": false,
+      "source": null,
+      "text": "Often inflict a curse on the target reducing their melee damage.",
+      "yellow": 315
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant 2H Weapon - Major Intellect",
+      "reagents": [
+        [
+          16203,
+          12
+        ],
+        [
+          14344,
+          2
+        ]
+      ],
+      "short": "Major Intellect",
+      "sod": false,
+      "source": null,
+      "text": "Intellect +9",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "2H Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant 2H Weapon - Major Spirit",
+      "reagents": [
+        [
+          16203,
+          12
+        ],
+        [
+          14344,
+          2
+        ]
+      ],
+      "short": "Major Spirit",
+      "sod": false,
+      "source": null,
+      "text": "Spirit +9",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "2H Weapon",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant 2H Weapon - Mighty Healing Power",
+      "reagents": [
+        [
+          248819,
+          4
+        ],
+        [
+          16203,
+          6
+        ],
+        [
+          249726,
+          4
+        ],
+        [
+          249274,
+          4
+        ],
+        [
+          20725,
+          4
+        ],
+        [
+          248820,
+          4
+        ]
+      ],
+      "short": "Mighty Healing Power",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Healing Spells +100, Damage Spells +34",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "2H Weapon",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant 2H Weapon - Mighty Spell Power",
+      "reagents": [
+        [
+          248819,
+          4
+        ],
+        [
+          16203,
+          6
+        ],
+        [
+          7076,
+          4
+        ],
+        [
+          12808,
+          4
+        ],
+        [
+          20725,
+          4
+        ],
+        [
+          248820,
+          2
+        ]
+      ],
+      "short": "Mighty Spell Power",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Spell Power +55",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "2H Weapon",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant 2H Weapon - Spellblasting",
+      "reagents": [
+        [
+          20725,
+          3
+        ],
+        [
+          16204,
+          24
+        ],
+        [
+          12938,
+          1
+        ],
+        [
+          8831,
+          6
+        ]
+      ],
+      "short": "Spellblasting",
+      "sod": true,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "+65 Spell Power",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Bracer - Greater Spellpower",
+      "reagents": [
+        [
+          16203,
+          3
+        ],
+        [
+          16204,
+          9
+        ],
+        [
+          12808,
+          12
+        ],
+        [
+          8831,
+          2
+        ]
+      ],
+      "short": "Greater Spellpower",
+      "sod": true,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "+16 Spell Power",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Bracer - Healing Power",
+      "reagents": [
+        [
+          14344,
+          2
+        ],
+        [
+          16204,
+          20
+        ],
+        [
+          16203,
+          4
+        ],
+        [
+          12803,
+          6
+        ]
+      ],
+      "short": "Healing Power",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Quartermaster Miranda Breechlock",
+            "skill": null,
+            "zone": "Eastern Plaguelands"
+          },
+          {
+            "cost": "",
+            "name": "Argent Quartermaster Hasana",
+            "skill": null,
+            "zone": "Tirisfal Glades"
+          },
+          {
+            "cost": "",
+            "name": "Argent Quartermaster Lightspark",
+            "skill": null,
+            "zone": "Western Plaguelands"
+          }
+        ]
+      },
+      "text": "Healing Spells +24",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Bracer - Superior Deflection",
+      "reagents": [
+        [
+          14344,
+          3
+        ]
+      ],
+      "short": "Superior Deflection",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Defense +6",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Bracer",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Bracer - Superior Intellect",
+      "reagents": [
+        [
+          16203,
+          10
+        ]
+      ],
+      "short": "Superior Intellect",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Intellect +9",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Bracer",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Bracer - Superior Stamina",
+      "reagents": [
+        [
+          16204,
+          15
+        ]
+      ],
+      "short": "Superior Stamina",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 1.14,
+            "lv": [],
+            "npc": "Nathanos Blightcaller",
+            "zone": "Eastern Plaguelands"
+          },
+          {
+            "chance": 1.06,
+            "lv": [],
+            "npc": "Demetria",
+            "zone": "Eastern Plaguelands"
+          },
+          {
+            "chance": 0.66,
+            "lv": [],
+            "npc": "Lady Hederine",
+            "zone": "Winterspring"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Stamina +9",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Chest",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Chest - Greater Stats",
+      "reagents": [
+        [
+          14344,
+          4
+        ],
+        [
+          16204,
+          15
+        ],
+        [
+          16203,
+          10
+        ]
+      ],
+      "short": "Greater Stats",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.02,
+            "lv": [
+              59,
+              61
+            ],
+            "npc": "Hive'Regal Hive Lord",
+            "zone": "Silithus"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "All Stats +4",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Cloak",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Cloak - Agility",
+      "reagents": [
+        [
+          16203,
+          3
+        ],
+        [
+          16204,
+          9
+        ],
+        [
+          7078,
+          1
+        ]
+      ],
+      "short": "Agility",
+      "sod": true,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "+5 Agility",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Cloak - Dodge",
+      "reagents": [
+        [
+          20725,
+          3
+        ],
+        [
+          14344,
+          8
+        ],
+        [
+          12809,
+          8
+        ]
+      ],
+      "short": "Dodge",
+      "sod": false,
+      "source": null,
+      "text": "Dodge +1%",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Cloak - Greater Fire Resistance",
+      "reagents": [
+        [
+          20725,
+          3
+        ],
+        [
+          14344,
+          8
+        ],
+        [
+          7078,
+          4
+        ]
+      ],
+      "short": "Greater Fire Resistance",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kania",
+            "skill": null,
+            "zone": "Silithus"
+          }
+        ]
+      },
+      "text": "+15 Fire Resistance",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Cloak - Greater Nature Resistance",
+      "reagents": [
+        [
+          20725,
+          2
+        ],
+        [
+          14344,
+          8
+        ],
+        [
+          12803,
+          4
+        ]
+      ],
+      "short": "Greater Nature Resistance",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Kania",
+            "skill": null,
+            "zone": "Silithus"
+          }
+        ]
+      },
+      "text": "+15 Nature Resistance",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Cloak - Stealth",
+      "reagents": [
+        [
+          20725,
+          3
+        ],
+        [
+          14344,
+          8
+        ],
+        [
+          13468,
+          2
+        ]
+      ],
+      "short": "Stealth",
+      "sod": false,
+      "source": null,
+      "text": "Give an increase to your stealth as if you were 1 level higher.",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Cloak",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Cloak - Subtlety",
+      "reagents": [
+        [
+          20725,
+          4
+        ],
+        [
+          14344,
+          6
+        ],
+        [
+          11754,
+          2
+        ]
+      ],
+      "short": "Subtlety",
+      "sod": false,
+      "source": null,
+      "text": "Decrease threat caused by the wearer by 2%.",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Gloves - Arcane Power",
+      "reagents": [
+        [
+          20725,
+          2
+        ],
+        [
+          14344,
+          5
+        ],
+        [
+          12753,
+          2
+        ]
+      ],
+      "short": "Arcane Power",
+      "sod": true,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Arcane Damage +20",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Gloves - Fire Power",
+      "reagents": [
+        [
+          20725,
+          2
+        ],
+        [
+          14344,
+          10
+        ],
+        [
+          7078,
+          4
+        ]
+      ],
+      "short": "Fire Power",
+      "sod": false,
+      "source": null,
+      "text": "Fire Damage +20",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Gloves - Frost Power",
+      "reagents": [
+        [
+          20725,
+          3
+        ],
+        [
+          14344,
+          10
+        ],
+        [
+          7080,
+          4
+        ]
+      ],
+      "short": "Frost Power",
+      "sod": false,
+      "source": null,
+      "text": "Frost Damage +20",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Gloves - Healing Power",
+      "reagents": [
+        [
+          20725,
+          3
+        ],
+        [
+          14344,
+          8
+        ],
+        [
+          12811,
+          1
+        ]
+      ],
+      "short": "Healing Power",
+      "sod": false,
+      "source": null,
+      "text": "Healing Spells +35/Damage Spells +12",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Gloves - Holy Power",
+      "reagents": [
+        [
+          20725,
+          2
+        ],
+        [
+          14344,
+          5
+        ],
+        [
+          13180,
+          5
+        ],
+        [
+          12735,
+          2
+        ]
+      ],
+      "short": "Holy Power",
+      "sod": true,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Holy Damage +20",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Gloves - Natural Power",
+      "reagents": [
+        [
+          20725,
+          2
+        ],
+        [
+          14344,
+          5
+        ],
+        [
+          248822,
+          4
+        ]
+      ],
+      "short": "Natural Power",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Nature Damage +20",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Gloves - Shadow Power",
+      "reagents": [
+        [
+          20725,
+          3
+        ],
+        [
+          14344,
+          10
+        ],
+        [
+          12808,
+          6
+        ]
+      ],
+      "short": "Shadow Power",
+      "sod": false,
+      "source": null,
+      "text": "Shadow Damage +20",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Gloves - Superior Agility",
+      "reagents": [
+        [
+          20725,
+          3
+        ],
+        [
+          14344,
+          8
+        ],
+        [
+          7082,
+          4
+        ]
+      ],
+      "short": "Superior Agility",
+      "sod": false,
+      "source": null,
+      "text": "Agility +15",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Gloves - Superior Strength",
+      "reagents": [
+        [
+          20725,
+          4
+        ],
+        [
+          16203,
+          8
+        ],
+        [
+          7076,
+          4
+        ]
+      ],
+      "short": "Superior Strength",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "Strength +15",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Gloves",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Gloves - Threat",
+      "reagents": [
+        [
+          20725,
+          4
+        ],
+        [
+          14344,
+          6
+        ],
+        [
+          18512,
+          8
+        ]
+      ],
+      "short": "Threat",
+      "sod": false,
+      "source": null,
+      "text": "Threat +2%",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Off-Hand",
+      "is_new": true,
+      "learn": 300,
+      "name": "Enchant Off-Hand - Wisdom",
+      "reagents": [
+        [
+          14344,
+          6
+        ],
+        [
+          16204,
+          18
+        ],
+        [
+          7082,
+          1
+        ],
+        [
+          7080,
+          1
+        ]
+      ],
+      "short": "Wisdom",
+      "sod": true,
+      "source": {
+        "drops": [],
+        "read": "wowhead",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Alynsia",
+            "skill": null,
+            "zone": "Redridge Mountains"
+          },
+          {
+            "cost": "",
+            "name": "Beneris",
+            "skill": null,
+            "zone": "The Barrens"
+          }
+        ]
+      },
+      "text": "+6 Intellect and +5 Spirit",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Weapon - Crusader",
+      "reagents": [
+        [
+          14344,
+          4
+        ],
+        [
+          12811,
+          2
+        ]
+      ],
+      "short": "Crusader",
+      "sod": false,
+      "source": {
+        "drops": [
+          {
+            "chance": 0.75,
+            "lv": [
+              57,
+              58
+            ],
+            "npc": "Scarlet Spellbinder",
+            "zone": "Western Plaguelands"
+          }
+        ],
+        "read": "",
+        "skill": null,
+        "vendors": []
+      },
+      "text": "Often when attacking in melee it heals for 100 and increases Strength by 100 for 15 sec.",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Weapon - Healing Power",
+      "reagents": [
+        [
+          14344,
+          4
+        ],
+        [
+          16203,
+          8
+        ],
+        [
+          12803,
+          6
+        ],
+        [
+          7080,
+          6
+        ],
+        [
+          12811,
+          1
+        ]
+      ],
+      "short": "Healing Power",
+      "sod": false,
+      "source": null,
+      "text": "Healing Spells +55",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Weapon - Lifestealing",
+      "reagents": [
+        [
+          14344,
+          6
+        ],
+        [
+          12808,
+          6
+        ],
+        [
+          12803,
+          6
+        ]
+      ],
+      "short": "Lifestealing",
+      "sod": false,
+      "source": null,
+      "text": "Often steal life from the enemy and give it to the wielder.",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Weapon - Mighty Intellect",
+      "reagents": [
+        [
+          14344,
+          15
+        ],
+        [
+          16203,
+          12
+        ],
+        [
+          16204,
+          20
+        ]
+      ],
+      "short": "Mighty Intellect",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Lokhtos Darkbargainer",
+            "skill": null,
+            "zone": "Blackrock Depths"
+          }
+        ]
+      },
+      "text": "Intellect +22",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Weapon - Mighty Spirit",
+      "reagents": [
+        [
+          14344,
+          10
+        ],
+        [
+          16203,
+          8
+        ],
+        [
+          16204,
+          15
+        ]
+      ],
+      "short": "Mighty Spirit",
+      "sod": false,
+      "source": {
+        "drops": [],
+        "read": "",
+        "skill": null,
+        "vendors": [
+          {
+            "cost": "",
+            "name": "Lokhtos Darkbargainer",
+            "skill": null,
+            "zone": "Blackrock Depths"
+          }
+        ]
+      },
+      "text": "Spirit +22",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Weapon - Spell Power",
+      "reagents": [
+        [
+          14344,
+          4
+        ],
+        [
+          16203,
+          12
+        ],
+        [
+          7078,
+          4
+        ],
+        [
+          7080,
+          4
+        ],
+        [
+          7082,
+          4
+        ],
+        [
+          13926,
+          2
+        ]
+      ],
+      "short": "Spell Power",
+      "sod": false,
+      "source": null,
+      "text": "Spell Power +30",
+      "yellow": 320
+    },
+    {
+      "bis": [],
+      "green": 340,
+      "grey": 360,
+      "group": "Weapon",
+      "is_new": false,
+      "learn": 300,
+      "name": "Enchant Weapon - Superior Striking",
+      "reagents": [
+        [
+          14344,
+          2
+        ],
+        [
+          16203,
+          10
+        ]
+      ],
+      "short": "Superior Striking",
+      "sod": false,
+      "source": null,
+      "text": "Weapon Damage +5",
+      "yellow": 320
+    }
+  ],
+  "favor": [
+    {
+      "favor": 45,
+      "id": 249477,
+      "recipe": {
+        "makes": 249397,
+        "name": "Tenets of the Silver Hand"
+      },
+      "skill": 130
+    },
+    {
+      "favor": 45,
+      "id": 249478,
+      "recipe": {
+        "makes": 249398,
+        "name": "Polished Driftwood Icon"
+      },
+      "skill": 130
+    },
+    {
+      "favor": 45,
+      "id": 249476,
+      "recipe": {
+        "makes": 249396,
+        "name": "Mystic Mushroom"
+      },
+      "skill": 130
+    },
+    {
+      "favor": 45,
+      "id": 249483,
+      "recipe": {
+        "makes": 249393,
+        "name": "Soulstaff"
+      },
+      "skill": 140
+    },
+    {
+      "favor": 45,
+      "id": 249485,
+      "recipe": {
+        "makes": 249395,
+        "name": "Orb of Souls"
+      },
+      "skill": 140
+    },
+    {
+      "favor": 45,
+      "id": 249484,
+      "recipe": {
+        "makes": 249394,
+        "name": "Orb of Mystic Insight"
+      },
+      "skill": 140
+    },
+    {
+      "favor": 45,
+      "id": 249482,
+      "recipe": {
+        "makes": 249392,
+        "name": "Glimmering Staff"
+      },
+      "skill": 140
+    },
+    {
+      "favor": 45,
+      "id": 249479,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Weapon - Insight"
+      },
+      "skill": 140
+    },
+    {
+      "favor": 45,
+      "id": 249480,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Weapon - Recovery"
+      },
+      "skill": 140
+    },
+    {
+      "favor": 45,
+      "id": 249481,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Weapon - Revelation"
+      },
+      "skill": 140
+    },
+    {
+      "favor": 120,
+      "id": 249507,
+      "recipe": {
+        "makes": 249454,
+        "name": "Dreamstaff"
+      },
+      "skill": 220
+    },
+    {
+      "favor": 120,
+      "id": 249495,
+      "recipe": {
+        "makes": 249443,
+        "name": "Totem of Ancestral Protection"
+      },
+      "skill": 210
+    },
+    {
+      "favor": 120,
+      "id": 249493,
+      "recipe": {
+        "makes": 249441,
+        "name": "Talons of Wrath"
+      },
+      "skill": 210
+    },
+    {
+      "favor": 120,
+      "id": 249494,
+      "recipe": {
+        "makes": 249442,
+        "name": "Libram of Invocation"
+      },
+      "skill": 210
+    },
+    {
+      "favor": 120,
+      "id": 249496,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Necklace - Strength"
+      },
+      "skill": 210
+    },
+    {
+      "favor": 120,
+      "id": 249502,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Necklace - Spell Power"
+      },
+      "skill": 210
+    },
+    {
+      "favor": 120,
+      "id": 249503,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Necklace - Healing Power"
+      },
+      "skill": 210
+    },
+    {
+      "favor": 120,
+      "id": 249504,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Necklace - Agility"
+      },
+      "skill": 210
+    },
+    {
+      "favor": 120,
+      "id": 249505,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Necklace - Deflection"
+      },
+      "skill": 210
+    },
+    {
+      "favor": 120,
+      "id": 249509,
+      "recipe": {
+        "makes": 249456,
+        "name": "Twisting Essence Jar"
+      },
+      "skill": 220
+    },
+    {
+      "favor": 120,
+      "id": 249508,
+      "recipe": {
+        "makes": 249455,
+        "name": "Truesilver Conduit"
+      },
+      "skill": 220
+    },
+    {
+      "favor": 120,
+      "id": 249506,
+      "recipe": {
+        "makes": 249453,
+        "name": "Radiant Staff"
+      },
+      "skill": 220
+    },
+    {
+      "favor": 120,
+      "id": 249510,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Chest - Absorption"
+      },
+      "skill": 220
+    },
+    {
+      "favor": 180,
+      "id": 249537,
+      "recipe": {
+        "makes": 249385,
+        "name": "Brilliant Wand"
+      },
+      "skill": 275
+    },
+    {
+      "favor": 240,
+      "id": 249536,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Gloves - Holy Power"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249534,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Gloves - Arcane Power"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249538,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Bracer - Superior Intellect"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249539,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Bracer - Superior Deflection"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249525,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant 2H Weapon - Mighty Spell Power"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249526,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant 2H Weapon - Mighty Healing Power"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 274393,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Off-Hand - Wisdom"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 274398,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Gloves - Superior Strength"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 274399,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Cloak - Agility"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 274401,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Bracer - Greater Spellpower"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249535,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant Gloves - Natural Power"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249529,
+      "recipe": null,
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249530,
+      "recipe": null,
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 249532,
+      "recipe": null,
+      "skill": 300
+    },
+    {
+      "favor": 240,
+      "id": 274394,
+      "recipe": {
+        "makes": null,
+        "name": "Enchant 2H Weapon - Spellblasting"
+      },
+      "skill": 300
+    },
+    {
+      "favor": 1000,
+      "id": 271624,
+      "recipe": null,
+      "skill": 300
+    }
+  ],
+  "gathering": null,
+  "groups": [],
+  "kind": "detail",
+  "lede": "",
+  "leveling": {
+    "build": "1.60.1.70450",
+    "learn": [
+      7418,
+      7420,
+      7421,
+      7426,
+      7428,
+      7443,
+      7454,
+      7457,
+      7745,
+      7748,
+      7766,
+      7771,
+      7776,
+      7779,
+      7782,
+      7786,
+      7788,
+      7793,
+      7795,
+      7857,
+      7859,
+      7861,
+      7863,
+      7867,
+      13378,
+      13380,
+      13419,
+      13421,
+      13464,
+      13485,
+      13501,
+      13503,
+      13522,
+      13529,
+      13536,
+      13538,
+      13607,
+      13612,
+      13617,
+      13620,
+      13622,
+      13626,
+      13628,
+      13631,
+      13635,
+      13637,
+      13640,
+      13642,
+      13644,
+      13646,
+      13648,
+      13653,
+      13655,
+      13657,
+      13659,
+      13661,
+      13663,
+      13687,
+      13689,
+      13693,
+      13695,
+      13698,
+      13700,
+      13702,
+      13746,
+      13794,
+      13815,
+      13817,
+      13822,
+      13836,
+      13841,
+      13846,
+      13858,
+      13868,
+      13882,
+      13887,
+      13890,
+      13898,
+      13905,
+      13915,
+      13917,
+      13931,
+      13933,
+      13935,
+      13937,
+      13939,
+      13941,
+      13943,
+      13945,
+      13947,
+      13948,
+      14293,
+      14807,
+      14809,
+      15596,
+      17180,
+      17181,
+      20008,
+      20009,
+      20010,
+      20011,
+      20012,
+      20013,
+      20014,
+      20015,
+      20016,
+      20017,
+      20020,
+      20023,
+      20024,
+      20025,
+      20026,
+      20028,
+      20029,
+      20030,
+      20031,
+      20032,
+      20033,
+      20034,
+      20035,
+      20036,
+      20051,
+      21931,
+      22749,
+      22750,
+      23799,
+      23800,
+      23801,
+      23802,
+      23803,
+      23804,
+      25072,
+      25073,
+      25074,
+      25078,
+      25079,
+      25080,
+      25081,
+      25082,
+      25083,
+      25084,
+      25086,
+      25124,
+      25125,
+      25126,
+      25127,
+      25128,
+      25129,
+      25130,
+      27837,
+      1213622,
+      1213626,
+      1219579,
+      1219580,
+      1219587,
+      1220624,
+      1230643,
+      1245320,
+      1245321,
+      1248458,
+      1248459,
+      1248460,
+      1248461,
+      1248497,
+      1248498,
+      1248500,
+      1248505,
+      1248509,
+      1248510,
+      1248511,
+      1248515,
+      1248528,
+      1248599,
+      1248607,
+      1248636,
+      1248640,
+      1248645,
+      1248650,
+      1248661,
+      1248665,
+      1248668,
+      1248703,
+      1248739,
+      1248745,
+      1248748,
+      1248752,
+      1248754,
+      1248755,
+      1248757,
+      1248760,
+      1248805,
+      1248974,
+      1249006,
+      1249015,
+      1249019,
+      1249057,
+      1249058,
+      1249059,
+      1249060,
+      1249061,
+      1249064,
+      1249069,
+      1249070,
+      1249071,
+      1249107,
+      1249112,
+      1249114,
+      1263056,
+      1263082,
+      1294054,
+      1306520,
+      1306521,
+      1306522,
+      1306523,
+      1306524,
+      1306525
+    ],
+    "parts": [
+      247786
+    ],
+    "quest": [],
+    "recipes": {
+      "7418": {
+        "green": 22,
+        "grey": 25,
+        "learn": 1,
+        "makes": null,
+        "reagents": [
+          [
+            247786,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 20
+      },
+      "7420": {
+        "green": 90,
+        "grey": 110,
+        "learn": 15,
+        "makes": null,
+        "reagents": [
+          [
+            10940,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 70
+      },
+      "7421": {
+        "green": 7,
+        "grey": 10,
+        "learn": 1,
+        "makes": 6218,
+        "reagents": [
+          [
+            6217,
+            1
+          ],
+          [
+            247786,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 5
+      },
+      "7457": {
+        "green": 120,
+        "grey": 140,
+        "learn": 50,
+        "makes": null,
+        "reagents": [
+          [
+            10940,
+            2
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 100
+      },
+      "7795": {
+        "green": 150,
+        "grey": 170,
+        "learn": 100,
+        "makes": 6339,
+        "reagents": [
+          [
+            6338,
+            1
+          ],
+          [
+            10940,
+            3
+          ],
+          [
+            10938,
+            4
+          ],
+          [
+            1210,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 130
+      },
+      "13378": {
+        "green": 150,
+        "grey": 170,
+        "learn": 105,
+        "makes": null,
+        "reagents": [
+          [
+            10998,
+            1
+          ],
+          [
+            10940,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 130
+      },
+      "13501": {
+        "green": 175,
+        "grey": 195,
+        "learn": 130,
+        "makes": null,
+        "reagents": [
+          [
+            11083,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 155
+      },
+      "13628": {
+        "green": 195,
+        "grey": 215,
+        "learn": 150,
+        "makes": 11130,
+        "reagents": [
+          [
+            11128,
+            1
+          ],
+          [
+            5500,
+            1
+          ],
+          [
+            11082,
+            1
+          ],
+          [
+            11083,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 175
+      },
+      "13637": {
+        "green": 200,
+        "grey": 220,
+        "learn": 160,
+        "makes": null,
+        "reagents": [
+          [
+            11083,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 180
+      },
+      "13661": {
+        "green": 220,
+        "grey": 240,
+        "learn": 180,
+        "makes": null,
+        "reagents": [
+          [
+            11137,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 200
+      },
+      "13702": {
+        "green": 240,
+        "grey": 260,
+        "learn": 200,
+        "makes": 11145,
+        "reagents": [
+          [
+            11144,
+            1
+          ],
+          [
+            7971,
+            1
+          ],
+          [
+            11135,
+            1
+          ],
+          [
+            11137,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 220
+      },
+      "13815": {
+        "green": 250,
+        "grey": 270,
+        "learn": 210,
+        "makes": null,
+        "reagents": [
+          [
+            11137,
+            1
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 230
+      },
+      "13939": {
+        "green": 280,
+        "grey": 300,
+        "learn": 240,
+        "makes": null,
+        "reagents": [
+          [
+            11176,
+            1
+          ],
+          [
+            11174,
+            2
+          ]
+        ],
+        "source": "trainer",
+        "yellow": 260
+      },
+      "20017": {
+        "green": 305,
+        "grey": 325,
+        "learn": 265,
+        "makes": null,
+        "reagents": [
+          [
+            11176,
+            6
+          ]
+        ],
+        "source": "vendor",
+        "yellow": 285
+      }
+    },
+    "rods": {
+      "373": 6218,
+      "374": 6339,
+      "375": 11130,
+      "376": 11145,
+      "377": 16207
+    },
+    "shopping": [
+      {
+        "count": 182,
+        "id": 11176
+      },
+      {
+        "count": 106,
+        "id": 11137
+      },
+      {
+        "count": 40,
+        "id": 11174
+      },
+      {
+        "count": 165,
+        "id": 10940
+      },
+      {
+        "count": 74,
+        "id": 11083
+      },
+      {
+        "count": 9,
+        "id": 10998
+      },
+      {
+        "count": 1,
+        "id": 11144
+      },
+      {
+        "count": 1,
+        "id": 11128
+      },
+      {
+        "count": 1,
+        "id": 11135
+      },
+      {
+        "count": 1,
+        "id": 7971
+      },
+      {
+        "count": 1,
+        "id": 11082
+      },
+      {
+        "count": 1,
+        "id": 6338
+      },
+      {
+        "count": 4,
+        "id": 10938
+      },
+      {
+        "count": 32,
+        "id": 247786
+      },
+      {
+        "count": 1,
+        "id": 5500
+      },
+      {
+        "count": 1,
+        "id": 1210
+      },
+      {
+        "count": 1,
+        "id": 6217
+      }
+    ],
+    "sold": [
+      6217
+    ],
+    "steps": [
+      {
+        "crafts": 1,
+        "from": 1,
+        "spell": 7421,
+        "to": 1
+      },
+      {
+        "crafts": 31,
+        "from": 1,
+        "spell": 7418,
+        "to": 25
+      },
+      {
+        "crafts": 51,
+        "from": 25,
+        "spell": 7420,
+        "to": 75
+      },
+      {
+        "crafts": 24,
+        "from": 75,
+        "spell": 7420,
+        "to": 91
+      },
+      {
+        "crafts": 39,
+        "from": 91,
+        "spell": 7457,
+        "to": 121
+      },
+      {
+        "crafts": 9,
+        "from": 121,
+        "spell": 13378,
+        "to": 130
+      },
+      {
+        "crafts": 1,
+        "from": 130,
+        "spell": 7795,
+        "to": 130
+      },
+      {
+        "crafts": 20,
+        "from": 130,
+        "spell": 13501,
+        "to": 150
+      },
+      {
+        "crafts": 29,
+        "from": 150,
+        "spell": 13501,
+        "to": 173
+      },
+      {
+        "crafts": 1,
+        "from": 173,
+        "spell": 13628,
+        "to": 173
+      },
+      {
+        "crafts": 24,
+        "from": 173,
+        "spell": 13637,
+        "to": 194
+      },
+      {
+        "crafts": 30,
+        "from": 194,
+        "spell": 13661,
+        "to": 218
+      },
+      {
+        "crafts": 1,
+        "from": 218,
+        "spell": 13702,
+        "to": 218
+      },
+      {
+        "crafts": 7,
+        "from": 218,
+        "spell": 13815,
+        "to": 225
+      },
+      {
+        "crafts": 68,
+        "from": 225,
+        "spell": 13815,
+        "to": 262
+      },
+      {
+        "crafts": 20,
+        "from": 262,
+        "spell": 13939,
+        "to": 277
+      },
+      {
+        "crafts": 27,
+        "from": 277,
+        "spell": 20017,
+        "to": 300
+      }
+    ]
+  },
+  "rows": [],
+  "slug": "enchanting",
+  "smelting": null,
+  "sod": [
+    "Retricutioner",
+    "Dismantle",
+    "Excellent Spirit",
+    "Superior Intellect",
+    "Critical Strike",
+    "Excellent Stamina",
+    "Grand Arcanist",
+    "Grand Inquisitor",
+    "Grand Crusader",
+    "Grand Sorcerer",
+    "Spell Power",
+    "Law of Nature"
+  ],
+  "vendor": {
+    "a": {
+      "icon": "trade_engraving",
+      "id": 256732,
+      "npc": "Alynsia",
+      "role": "quartermaster",
+      "x": 11.2,
+      "y": 71.4
+    },
+    "h": {
+      "icon": "trade_engraving",
+      "id": 248199,
+      "npc": "Beneris",
+      "role": "quartermaster",
+      "x": 49.6,
+      "y": 29.8
+    }
+  },
+  "word": ""
+}
