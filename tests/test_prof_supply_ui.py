@@ -169,7 +169,9 @@ class PersistedSupplyUITests(unittest.TestCase):
 
     def test_new_observation_messages_load_in_all_three_locales(self):
         keys=['数量观测：%s','拍卖行价格观测：%s',
-              '已有可靠商人报价，点击重新计算更新路线。',
+              'NPC购买价格尚未配置。',
+              'NPC购买价格数据已移除，请重新计算路线。',
+              '请打开对应专业面板读取数据',
               '数量未知物品：%s。','数量未知物品：%s，另有 %d 种（详见购物清单）。',
               '数据较旧（超过两天）；仍按保存数量规划，请扫描后更新。',
               'Auctionator 当日最高数量：%d（仅供参考，不限制路线）',

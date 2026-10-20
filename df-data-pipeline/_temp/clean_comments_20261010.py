@@ -207,10 +207,6 @@ HEADERS = {
         "-- 无限副本手册 · 团本套装数据（ns.RaidSetData）",
         "-- 手写数据（id 对齐客户端 setID 体系）；一套 6 件、四项效果，职业名与职业色运行期取自客户端。",
     ],
-    "Core/Data/Data_VendorPrices.lua": [
-        "-- 无限副本手册 · 商人直售价 · 静态种子表（离线兜底层）",
-        "-- 单位：铜，[itemID] = 单件价；运行时动态采集（VendorPriceDB）优先于本表。",
-    ],
 }
 
 # (file, old, new) —— 全部为 \n 文本，写回时按文件行尾转换

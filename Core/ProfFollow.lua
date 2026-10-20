@@ -213,16 +213,28 @@ local function routeFor(slug, skill)
         if res and (res.status == "selection_required" or res.status == "recalculate_required") then
             return "auto", {}, res
         end
+        local xp, following = ns.ProfExecution, st()
+        if xp and xp.GetPlan and following and following.slug == slug then
+            res = xp.GetPlan(slug) or res
+        end
         if scheme == "cheapest" or scheme=="fishing" then
             return "auto", (res and (res.executionSteps or res.steps)) or {}, res
         end
-        if res and (res.priced or scheme == "optim") then return "auto", res.steps, res end
+        if res and (res.priced or scheme == "optim") then return "auto", res.executionSteps or res.steps, res end
     end
     local lv = LV[slug]
     -- ★ 固定路线必须按「目标等级」裁剪后再交给 HUD（2026-10-11 用户）。
     --   原先直接返回 lv.steps（全量 1–300）⇒ 专业页设了目标、HUD 却一路画到 300，
     --   段标分母 / 购物清单 / 完成判定全和专业页对不上。
-    return "fixed", clipFixedSteps(lv and lv.steps or nil, routeTarget(slug))
+    local fixed=clipFixedSteps(lv and lv.steps or nil, routeTarget(slug))
+    local xp=ns.ProfExecution
+    if xp and xp.NormalizePlan then
+        local frozen=xp.GetPlan(slug)
+        if frozen and frozen.mode=="fixed" then return "fixed",frozen.executionSteps,frozen end
+        local normalized=xp.NormalizePlan(slug,{mode="fixed",steps=fixed or {},target=routeTarget(slug),feasible=true,status="complete"})
+        if normalized then return "fixed",normalized.executionSteps,normalized end
+    end
+    return "fixed",fixed
 end
 
 -- 路线指纹：模式 + 段数 + 首末段（自动路线随价格 / 设置重算时用它决定要不要重推指针）
@@ -343,10 +355,19 @@ function PF.Following(slug)
 end
 
 local function actionKey(seg, i)
-    return seg.actionID or format("%d:%s:%s", i or 0, seg.profession or "", tostring(seg[3]))
+    return seg.segmentID or seg.actionID or format("%d:%s:%s", i or 0, seg.profession or "", tostring(seg[3]))
+end
+
+local function executionProgress(s, seg, i)
+    local xp = ns.ProfExecution
+    if xp and xp.Progress and xp.GetRun and xp.GetRun(s.slug) then
+        return xp.Progress(s.slug, seg.segmentID or i)
+    end
 end
 
 local function actionRemaining(s, seg, i)
+    local progress = executionProgress(s, seg, i)
+    if progress then return math.max(0, progress.remainingCrafts or 0) end
     return math.max(0, (seg[4] or 0) - ((s.actionDone and s.actionDone[actionKey(seg, i)]) or 0))
 end
 
@@ -377,6 +398,13 @@ end
 function PF.CraftSucceeded(unit, castGUID, spellID)
     if unit ~= "player" or type(spellID) ~= "number" then return end
     local s = st()
+    local xp = ns.ProfExecution
+    if s and xp and xp.GetRun and xp.GetRun(s.slug) then
+        xp.RecordAttempt(s.slug, spellID, castGUID)
+        PF.Sync()
+        return
+    end
+    if xp then return end -- Unmigrated snapshots cannot safely accept execution facts.
     if not (s and s.slug and PF.planRef and PF.planRef.planVersion == 2) then return end
     if castGUID and castGUID == PF.lastCastGUID then return end
     if castGUID then PF.lastCastGUID = castGUID end
@@ -394,6 +422,7 @@ end
 function PF.Sync()
     local s = st()
     if not (s and s.slug) then return end
+    PF.executionNotice = nil
     local cur = skillOf(s.slug)
     if cur and cur ~= s.skill then
         s.skill = cur
@@ -405,6 +434,27 @@ function PF.Sync()
     end
     -- 路线模式 / 路线内容变了（自动路线随价格、设置重算）：段落表整块换掉，指针按技能重推
     local mode, steps, res = routeFor(s.slug, s.skill or 0)
+    local xp = ns.ProfExecution
+    if res and (res.planVersion == 2 or res.executionVersion==1) and xp and xp.Bind and xp.Sync then
+        -- Bind freezes a durable execution snapshot. Search publication/revision
+        -- changes never replace its segment counters or current position.
+        local run, reason = xp.GetRun(s.slug)
+        if run or res.feasible == true then run, reason = xp.Bind(s.slug, res) end
+        if run then
+            run = xp.Sync(s.slug) or run
+            local plan = xp.GetPlan(s.slug) or res
+            PF.planRef, PF.planSlug = plan, s.slug
+            PF.planRevision = plan.planID
+            s.planID = plan.planID or run.planID
+            s.rkey = tostring(s.planID or "execution")
+            s.step = run.currentIndex or run.step or 1
+            return
+        end
+        if reason == "migration_required" then
+            PF.executionNotice = L["旧路线缺少执行信息，请重新计算后继续跟随。"]
+            return
+        end
+    end
     local key = routeKey(mode, steps, res)
     if res and res.planVersion == 2 then
         s.rkey = key
@@ -438,7 +488,7 @@ function PF.Toggle(slug)
     p.follow = p.follow or {}
     local k = charKey()
     local s = p.follow[k]
-    if s and s.slug ~= slug then s = nil end      -- 换专业：重开一份跟随
+    if s and s.slug ~= slug then s = nil end      -- 执行记录由 ProfExecution 逐专业保留。
     -- 已在跟随该专业且窗口可见 → 收窗（进度保留）
     if s and not s.hidden and PF.f and PF.f:IsShown() then
         s.hidden = true
@@ -480,6 +530,12 @@ function PF.Skip()
     PF.Paint()
 end
 
+function PF.ReturnToCurrent()
+    PF.Sync()
+    PF.view = 0
+    PF.Paint()
+end
+
 -- -------------------------------------------------------------------------
 -- 剩余制作次数估算（按配方橙/黄/绿/灰断点的升点概率模型）
 -- 经典概率口径：橙色必升（1次/点）；黄色段 1.0→0.5 线性；绿色段 0.5→0.05 线性；灰色不升
@@ -497,7 +553,7 @@ end
 
 -- 当前段还需制作次数：优先按难度断点逐点积分期望值；配方无断点数据或已灰时退回区间占比线性估算
 local function craftsLeft(seg, skill, rec)
-    if seg.actionID then
+    if seg.segmentID or seg.actionID then
         local s = st()
         return s and actionRemaining(s, seg, s.step) or (seg[4] or 0)
     end
@@ -521,8 +577,16 @@ end
 -- -------------------------------------------------------------------------
 -- 购物清单（从当前段累计材料采购量，不扣除角色库存）
 -- -------------------------------------------------------------------------
-local function shopList(s)
+local function shopList(s, kind)
     local _, steps, res = routeFor(s.slug, s.skill)
+    if kind == "supplement" then
+        local xp = ns.ProfExecution
+        res = xp and xp.GetSupplement and xp.GetSupplement(s.slug)
+        if not res then return {} end
+        -- Supplemental procurement is a separate, shared snapshot. It never
+        -- changes the original quantities or reuses its import list.
+        steps = res.executionSteps or res.steps
+    end
     local function purchaseSnapshot(entry, purchase)
         for _, key in ipairs({"availableCount", "supplyObserved", "supplyComplete", "supplyObservedAt",
                               "supplySource", "supplyOwnerExcluded", "supplyObservedPrice",
@@ -541,7 +605,7 @@ local function shopList(s)
         end
         return list
     end
-    if res and res.planVersion == 2 then
+    if res and (res.planVersion == 2 or kind == "supplement") then
         local list = {}
         if res.feasible ~= true then return list end
         for _, entry in ipairs(res.mats or {}) do
@@ -830,8 +894,9 @@ end
 -- 跟随中用真实指针；没跟随用临时态推导，不落盘、不动进度。
 -- 物品名没就绪（客户端物品库懒加载）先请求，1 秒后重试，最多 IMPORT_TRIES 次。
 local importTries = 0
-local function DoImport(slug, profName)
+local function DoImport(slug, profName, kind)
     if not (LV[slug] and LV[slug].steps) then return end
+    local baseName = profName
     local s0 = st()
     local tmp
     if s0 and s0.slug == slug then
@@ -841,11 +906,20 @@ local function DoImport(slug, profName)
         tmp = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1 }
     end
     local mode, _, result = routeFor(slug, tmp.skill)
+    if kind == "supplement" then
+        local xp = ns.ProfExecution
+        result = xp and xp.GetSupplement and xp.GetSupplement(slug)
+        if not result or result.inFlight or result.stale or result.feasible ~= true then
+            craftNotify(L["补料尚未计算完成"])
+            return
+        end
+        profName = profName .. " · " .. L["补料清单"]
+    end
     if mode == "auto" and (not result or (result.planVersion == 2 and result.feasible ~= true)) then
         craftNotify(routeNotice(result))
         return
     end
-    local list = shopList(tmp)
+    local list = shopList(tmp, kind)
     local items, missing = {}, 0
     for _, e in ipairs(list) do
         local isAH = not e.unpriced and (e.remainingOnly and not e.vendor and (e.source == "ah" or e.source == "auction")
@@ -866,7 +940,7 @@ local function DoImport(slug, profName)
     end
     if missing > 0 and importTries < IMPORT_TRIES then
         importTries = importTries + 1
-        C_Timer.After(1, function() DoImport(slug, profName) end)
+        C_Timer.After(1, function() DoImport(slug, baseName, kind) end)
         return
     end
     importTries = 0
@@ -885,6 +959,72 @@ local rowsMatIcon = {}          -- 材料行图标池（与 rowsMat 同索引）
 local rowsMatBadge = {}         -- 材料行数量角标池（挂图标右下角，显示单次用量）
 local rowsShopNum = {}          -- 采购数量列
 local rowsShopSourcePill, rowsShopTagPill = {}, {}   -- 采购来源和首次使用等级
+
+function PF.CalculateSupplement()
+    local s, xp = st(), ns.ProfExecution
+    if not (s and xp and xp.CalculateSupplement and xp.GetRun(s.slug)) then return end
+    PF.shopKind, PF.showShop, PF.shopScroll = "supplement", true, 0
+    xp.CalculateSupplement(s.slug, function()
+        PF.Sync()
+        if PF.f and PF.f:IsShown() then PF.Paint() end
+    end)
+    PF.Sync()
+    PF.Paint()
+end
+
+function PF.VerifyCurrentOutput(total)
+    local s, xp = st(), ns.ProfExecution
+    if not (s and xp and xp.GetPlan and xp.VerifyOutput) then return false end
+    local plan = xp.GetPlan(s.slug)
+    local steps = plan and (plan.executionSteps or plan.steps)
+    local seg = steps and steps[s.step or 1]
+    if not seg then return false end
+    local progress = executionProgress(s, seg, s.step)
+    local item = progress and progress.outputItem or seg.item or (seg.recipe and seg.recipe.item)
+    total = tonumber(total)
+    if not item or not total or total < 0 or total ~= math.floor(total) then return false end
+    local ok = xp.VerifyOutput(s.slug, seg.segmentID or s.step, item, total)
+    PF.ReturnToCurrent()
+    return ok ~= false
+end
+
+local function showOutputVerification()
+    local s, xp = st(), ns.ProfExecution
+    if not (s and xp and xp.GetPlan and StaticPopupDialogs and StaticPopup_Show) then return end
+    local plan = xp.GetPlan(s.slug)
+    local steps = plan and (plan.executionSteps or plan.steps)
+    local seg = steps and steps[s.step or 1]
+    if not seg then return end
+    local progress = executionProgress(s, seg, s.step)
+    local item = progress and progress.outputItem or seg.item or (seg.recipe and seg.recipe.item)
+    if not item then return end
+    -- Save identity in the dialog. A skill/event update while it is open must
+    -- never apply the player's correction to a different segment.
+    local data = {slug=s.slug, segmentID=seg.segmentID or s.step, item=item,
+        actual=progress and progress.actualOutputs or 0}
+    StaticPopupDialogs.DF_PROF_VERIFY_OUTPUT = {
+        text=L["填写本步骤累计实际产出件数（不是当前背包数量）。"],
+        button1=L["确认"], button2=L["取消"], hasEditBox=true,
+        timeout=0, whileDead=true, hideOnEscape=true, preferredIndex=3,
+        OnShow=function(self)
+            local edit = self.editBox or (self.GetEditBox and self:GetEditBox())
+            if edit then
+                edit:SetText(tostring((self.data and self.data.actual) or 0))
+                edit:SetFocus()
+                edit:HighlightText()
+            end
+        end,
+        OnAccept=function(self)
+            local d = self.data
+            local edit = self.editBox or (self.GetEditBox and self:GetEditBox())
+            local n = edit and tonumber(edit:GetText())
+            if not (d and n and n >= 0 and n == math.floor(n)) then return end
+            xp.VerifyOutput(d.slug, d.segmentID, d.item, n)
+            PF.ReturnToCurrent()
+        end,
+    }
+    StaticPopup_Show("DF_PROF_VERIFY_OUTPUT", nil, nil, data)
+end
 
 local function MakeLine(parent, fs, color)
     local t = MakeFS(parent, fs, color, "LEFT")
@@ -918,7 +1058,7 @@ function PF.Build()
         PF.Paint()
     end)
     f:SetScript("OnEvent", function(_, event, ...)
-        if event == "UNIT_SPELLCAST_SUCCEEDED" then
+        if event == "UNIT_SPELLCAST_SUCCEEDED" and not ns.ProfExecution then
             PF.CraftSucceeded(...)
         end
         if f:IsShown() then
@@ -1030,6 +1170,13 @@ function PF.Build()
     f.card.crafts = MakeFS(f.card, 14, C_GREY, "LEFT")
     f.card.crafts:SetWordWrap(false)
     f.card.crafts:SetPoint("TOPLEFT", f.card, "TOPLEFT", 42, -33)
+    f.card.progress = {}
+    for i = 1, 6 do
+        local line = MakeFS(f.card, 13, C_GREY, "LEFT")
+        line:SetWordWrap(false)
+        line:Hide()
+        f.card.progress[i] = line
+    end
 
     f.card.srcTag = MakeFS(f.card, 14, C_GREY, "RIGHT")
     f.card.srcTag:SetWordWrap(false)
@@ -1076,6 +1223,10 @@ function PF.Build()
     -- Material-only purchasing has no owned/missing toggle.
     f.shop.head:SetPoint("RIGHT", f.shop, "RIGHT", -86, 0)
     f.shop.head:SetWordWrap(false)
+    f.shop.summary = MakeFS(f.shop, 13, C_GREY, "LEFT")
+    f.shop.summary:SetWordWrap(false)
+    f.shop.summary:SetPoint("TOPLEFT", f.shop, "TOPLEFT", 8, -28)
+    f.shop.summary:Hide()
     f.shop.empty = MakeFS(f.shop, 14, C_GREY, "LEFT")
     f.shop.empty:SetPoint("TOPLEFT", f.shop, "TOPLEFT", 8, -30)
     f.shop.empty:Hide()
@@ -1146,7 +1297,7 @@ function PF.Build()
         local s0 = st()
         if not (s0 and s0.slug) then return end
         local nm = (D.pro and D.pro[s0.slug] and D.pro[s0.slug].name) or s0.slug
-        DoImport(s0.slug, nm)
+        DoImport(s0.slug, nm, PF.shopKind)
         ns.PlaySound(1)
     end)
     f.shopImp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -6, -4)
@@ -1170,15 +1321,30 @@ function PF.Build()
     f.finish = MakeFS(f, 14, C_OK, "LEFT")
     f.finish:SetWordWrap(false)
 
-    f.nowBtn = NewButton(f, L["回到当前"], 84, 22, 14)
+    -- Controls have their own higher frame, below the content cards. In the old
+    -- layout the card's mouse-enabled surface could cover the return button.
+    f.controls = CreateFrame("Frame", nil, f)
+    f.controls:SetFrameLevel((f:GetFrameLevel() or 1) + 20)
+    f.controls:EnableMouse(false)
+    f.nowBtn = NewButton(f.controls, L["回到当前"], 84, 22, 14)
     f.nowBtn:Hide()
-    f.nowBtn:SetScript("OnClick", function() PF.view = 0 PF.Paint() ns.PlaySound(1) end)
+    f.nowBtn:SetScript("OnClick", function() PF.ReturnToCurrent() ns.PlaySound(1) end)
+    f.suppBtn = NewButton(f.controls, L["计算补料"], 84, 22, 14)
+    f.suppBtn:SetScript("OnClick", function() PF.CalculateSupplement() ns.PlaySound(1) end)
+    TipOn(f.suppBtn, L["计算补料"], L["按当前实际进度展开追加材料的制作与采购需求。"])
+    f.verifyBtn = NewButton(f.controls, L["产出核对"], 84, 22, 14)
+    f.verifyBtn:SetScript("OnClick", function() showOutputVerification() ns.PlaySound(1) end)
+    TipOn(f.verifyBtn, L["产出核对"], L["记录本步骤累计实际产出；请勿填写背包现存数量。"])
 
     local labels = { L["购物清单"], L["上一步"], L["下一步"] }
-    local onclick = { function() PF.showShop = not PF.showShop PF.Paint() end, PF.Prev, PF.Skip }
+    local onclick = { function()
+        PF.showShop = PF.shopKind == "supplement" or not PF.showShop
+        PF.shopKind, PF.shopScroll = nil, 0
+        PF.Paint()
+    end, PF.Prev, PF.Skip }
     f.btns = {}
     for i = 1, 3 do
-        local bt = NewButton(f, labels[i], BTN_W[i], 22, 14)
+        local bt = NewButton(f.controls, labels[i], BTN_W[i], 22, 14)
         bt.__huiKeepTextColor = true
         bt:SetScript("OnClick", function() onclick[i]() ns.PlaySound(1) end)
         f.btns[i] = bt
@@ -1231,11 +1397,12 @@ end
 -- -------------------------------------------------------------------------
 -- 绘制（全部 SetText / 显隐 / 尺寸，零新建帧）
 -- -------------------------------------------------------------------------
-local function paintMats(seg, rm, sold, w, remaining)
+local function paintMats(seg, rm, sold, w, remaining, extraCrafts)
     local rec = rm[seg[3]]
     local mats = recMats(rec)
     local n = 0
     local pending = false
+    local offset = f.card.matOffset or 0
     if mats and #mats > 0 then
         f.card.matHead:Hide()
         for i, m in ipairs(mats) do
@@ -1247,15 +1414,18 @@ local function paintMats(seg, rm, sold, w, remaining)
             local line = rowsMat[i]
             line:SetTextColor(Unpack(C_TEXT))
             local txt = format("%s ×%d", nm, need)
+            if extraCrafts and extraCrafts > 0 then
+                txt = format(L["%s ×%d（追加%d）"], nm, need, per * extraCrafts)
+            end
             line:SetText(txt)
             line:ClearAllPoints()
-            line:SetPoint("TOPLEFT", f.card, "TOPLEFT", 36, -(61 + (i - 1) * 26))
+            line:SetPoint("TOPLEFT", f.card, "TOPLEFT", 36, -(61 + offset + (i - 1) * 26))
             line:SetWidth(w - 28)
             line:Show()
             local ic = rowsMatIcon[i]
             ic:SetTexture(DG.ItemIcon(m[1]) or Host.FALLBACK_ICON)
             ic:ClearAllPoints()
-            ic:SetPoint("TOPLEFT", f.card, "TOPLEFT", 8, -(56 + (i - 1) * 26))
+            ic:SetPoint("TOPLEFT", f.card, "TOPLEFT", 8, -(56 + offset + (i - 1) * 26))
             ic:Show()
             local bd = rowsMatBadge[i]
             bd:ClearAllPoints()
@@ -1269,7 +1439,7 @@ local function paintMats(seg, rm, sold, w, remaining)
             more:SetTextColor(Unpack(C_DIM))
             more:SetText(format(L["…共 %d 种材料，进购物清单看合计"], #mats))
             more:ClearAllPoints()
-            more:SetPoint("TOPLEFT", f.card, "TOPLEFT", 8, -(56 + n * 26))
+            more:SetPoint("TOPLEFT", f.card, "TOPLEFT", 8, -(56 + offset + n * 26))
             more:SetWidth(w)
             more:Show()
             rowsMatIcon[MAT_MAX + 1]:Hide()
@@ -1287,6 +1457,8 @@ local function paintMats(seg, rm, sold, w, remaining)
         f.card.matHead:SetText(L["材料未收录"])
         f.card.matHead:Show()
     end
+    f.card.matHead:ClearAllPoints()
+    f.card.matHead:SetPoint("TOPLEFT", f.card, "TOPLEFT", 8, -(56 + offset))
     for i = n + 1, MAT_MAX do
         rowsMat[i]:Hide()
         rowsMatIcon[i]:Hide()
@@ -1323,7 +1495,7 @@ function PF.Paint()
     f.bar:SetWidth(math.max(2, math.floor((W - 20) * ratio + 0.5)))
     f.bar:SetVertexColor(accent[1], accent[2], accent[3], 0.95)
 
-    local waiting = mode == "auto" and (not res or (res.planVersion == 2 and
+    local waiting = PF.executionNotice or mode == "auto" and (not res or (res.planVersion == 2 and
         (res.feasible ~= true or (res.partial and (s.step or 1)>#steps))))
     local finished = not waiting and (s.step or 1) > #steps
     local vi = math.max(1, math.min(#steps, (s.step or 1) + (PF.view or 0)))
@@ -1348,6 +1520,10 @@ function PF.Paint()
     f.card:SetShown(not finished and not waiting)
     f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished and not waiting)
     f.craftBtn:SetShown(PF.CRAFT_BTN and not finished and not waiting)
+    local xp = ns.ProfExecution
+    local run = xp and xp.GetRun and xp.GetRun(slug)
+    f.suppBtn:SetShown(run ~= nil and not finished and not waiting)
+    f.verifyBtn:SetShown(run ~= nil and not finished and not waiting)
 
     local y = -82                      -- 头部固定高（「已过摘要」行已按用户要求移除）
     local pending = false
@@ -1389,11 +1565,52 @@ function PF.Paint()
         -- 当前段还需制作次数（按升点概率估算；浏览预览段显示攻略全量）
         local crafts = seg[4] or 0
         local remaining = crafts
+        local progress = run and executionProgress(s, seg, vi)
+        if progress and not progress.outputItem then f.verifyBtn:Hide() end
         if vi == s.step then
             remaining = math.ceil(craftsLeft(seg, skillOf(stepSlug) or s.skill, rec))
             crafts = remaining
         end
-        local nMat, pend = paintMats(seg, rm, sold, w - 8, remaining)
+        local progressLines = {}
+        if progress then
+            if (progress.divertedOutputs or 0)>0 and (progress.remainingOutputs or 0)>0 then
+                progressLines[#progressLines + 1] = L["材料被额外制作消耗，仍需补足。"]
+            elseif progress.skillMet and (progress.remainingOutputs or 0) > 0 then
+                progressLines[#progressLines + 1] = L["技能已达标，仍需为后续准备材料。"]
+            end
+            if (progress.requiredOutputs or 0) > 0 then
+                progressLines[#progressLines + 1] = format(L["按最低产量需%d次，已制作%d次。"],
+                    progress.minCrafts or 0, progress.casts or 0)
+                progressLines[#progressLines + 1] = format(L["需%d份，已确认%d份，还需%d份。"],
+                    progress.requiredOutputs, progress.confirmedOutputs or 0, progress.remainingOutputs or 0)
+                if (progress.reusedOutputs or 0)>0 then
+                    progressLines[#progressLines+1]=format(L["复用本路线余量%d份。"],progress.reusedOutputs)
+                end
+            elseif progress.outputItem then
+                progressLines[#progressLines + 1] = format(L["已确认产出%d份。"], progress.confirmedOutputs or 0)
+            end
+            if (progress.pendingOutputs or 0) > 0 then
+                progressLines[#progressLines + 1] = format(L["最低保证%d份；%d次制作的产出待确认。"],
+                    progress.guaranteedOutputs or 0, progress.pendingOutputs)
+            elseif run.newPlanAvailable and #progressLines < 4 then
+                progressLines[#progressLines + 1] = L["有新方案，当前继续执行已保存计划。"]
+            end
+            if (progress.extraCrafts or 0) > 0 then
+                progressLines[#progressLines + 1] = format(L["追加需求：预计再制作%d次。"], progress.extraCrafts)
+            end
+        end
+        local progressCount = math.min(#f.card.progress, #progressLines)
+        for i, line in ipairs(f.card.progress) do
+            line:SetShown(i <= progressCount)
+            if i <= progressCount then
+                line:SetText(progressLines[i])
+                line:ClearAllPoints()
+                line:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -(54 + (i - 1) * 18))
+                line:SetWidth(W - 2 * PAD - 16)
+            end
+        end
+        card.matOffset = progressCount * 18
+        local nMat, pend = paintMats(seg, rm, sold, w - 8, remaining, progress and progress.extraCrafts)
         pending = pending or pend
 
         -- 右上角：已学习（绿）/ 来源（灰）——替代原「当前」角标与底部来源行
@@ -1424,6 +1641,9 @@ function PF.Paint()
         local rangeText = format(L["%d – %d"], seg[1], seg[2])
         card.range:SetText(rangeText)
         local craftText = format(L["大约还需制作%d次"], crafts)
+        if progress then
+            craftText = format(L["预计还需%d次 · 已制作%d次"], remaining, progress.casts or 0)
+        end
         if checkpoint then craftText = L["达到目标技能后重新计算"] end
         if seg.fishing and seg.fishing[1] then
             local areas={}
@@ -1448,8 +1668,7 @@ function PF.Paint()
         card.range:SetPoint("TOPLEFT", f.card, "TOPLEFT", 42 + nameX + 10, -12)
         card.range:SetWidth(rangeW + 6)
 
-        -- 浏览偏移非零时卡内右下角留出「回到当前」按钮位
-        local cardH = nMat * 26 + 60 + (((PF.view or 0) ~= 0) and 26 or 0)
+        local cardH = nMat * 26 + 60 + card.matOffset
         card:ClearAllPoints()
         card:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
         card:SetSize(W - 2 * PAD, cardH)
@@ -1458,9 +1677,33 @@ function PF.Paint()
 
     -- 购物清单（展开时）
     if PF.showShop and not finished and not waiting then
-        local list = shopList(s)
+        local isSupplement = PF.shopKind == "supplement"
+        local supplement = isSupplement and xp and xp.GetSupplement and xp.GetSupplement(slug)
+        local list = shopList(s, PF.shopKind)
         local shown = list
-        f.shop.head:SetText(L["购物清单"] .. format(L[" · 共%d种"], #shown))
+        f.shop.head:SetText((isSupplement and L["补料清单"] or L["购物清单"]) .. format(L[" · 共%d种"], #shown))
+        local rowTop = 30
+        f.shop.summary:SetShown(isSupplement)
+        if isSupplement then
+            local summary = L["补料尚未计算完成"]
+            if supplement then
+                if supplement.inFlight then
+                    summary = L["正在计算补料…"]
+                elseif supplement.stale then
+                    summary = L["进度已变化，请重新计算补料"]
+                elseif supplement.feasible == false then
+                    summary = L["当前限制下无法补齐材料"]
+                else
+                    local price = RA and RA.MoneyStr and RA.MoneyStr(supplement.total or 0, "copper") or tostring(supplement.total or 0)
+                    summary = format(L["追加采购费用：%s"], price)
+                    local count = #(supplement.executionSteps or supplement.steps or {})
+                    if count > 0 then summary = summary .. format(L[" · 制材%d步"], count) end
+                end
+            end
+            f.shop.summary:SetText(summary)
+            f.shop.summary:SetWidth(W - 2 * PAD - 16)
+            rowTop = 50
+        end
         -- 先计算采购数量、来源、等级各列宽度，再统一对齐。
         local function tw(txt)
             local PDm = ns.ProfModule
@@ -1514,7 +1757,7 @@ function PF.Paint()
         local n = 0
         for ri = scroll + 1, math.min(#rows, scroll + SHOP_MAX) do
             local row = rows[ri]
-            local ry = -(30 + n * 20)
+            local ry = -(rowTop + n * 20)
             -- 固定列：名字白 / 采购数量金 / 采购来源 / 等级丸(X+)贴右
             local nmFS = rowsShop[n + 1]
             local num = rowsShopNum[n + 1]
@@ -1561,7 +1804,7 @@ function PF.Paint()
             local sb = f.shop.sbarThumb
             sb:SetHeight(thumbH)
             sb:ClearAllPoints()
-            sb:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -3, -(28 + thumbOff))
+            sb:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -3, -(rowTop - 2 + thumbOff))
             sb:Show()
         else
             f.shop.sbarTrack:Hide()
@@ -1577,7 +1820,7 @@ function PF.Paint()
             rowsShopTagPill[i]:Hide()
         end
         if n > 0 then
-            local shopH = 30 + n * 20 + 10   -- 2026-10-08 晚：导入按钮挪到底部按钮排，页脚 26px 预留取消
+            local shopH = rowTop + n * 20 + 10
             f.shop.empty:Hide()
             f.shop:ClearAllPoints()
             f.shop:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
@@ -1585,9 +1828,11 @@ function PF.Paint()
             f.shop:Show()
             y = y - shopH - 8
         else
-            f.shop.empty:SetText(L["无材料"])
+            f.shop.empty:SetText(isSupplement and L["没有追加采购材料"] or L["无材料"])
+            f.shop.empty:ClearAllPoints()
+            f.shop.empty:SetPoint("TOPLEFT", f.shop, "TOPLEFT", 8, -rowTop)
             f.shop.empty:Show()
-            local shopH = 30 + 20 + 10
+            local shopH = rowTop + 20 + 10
             f.shop:ClearAllPoints()
             f.shop:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
             f.shop:SetSize(W - 2 * PAD, shopH)
@@ -1604,7 +1849,7 @@ function PF.Paint()
     if finished or waiting then
         local msg = format(L["%s跟随完成 · %s"], name, fmtTime(time() - (s.t0 or time())))
         if waiting then
-            msg = routeNotice(res)
+            msg = PF.executionNotice or routeNotice(res)
         end
         f.finish:SetText(msg)
         f.finish:ClearAllPoints()
@@ -1613,24 +1858,35 @@ function PF.Paint()
         y = y - 34
     end
 
-    -- 回到当前（浏览偏移非零时嵌在当前段卡右下角；SetShown 在上方统一做）
-    if (PF.view or 0) ~= 0 and not finished and not waiting then
-        f.nowBtn:ClearAllPoints()
-        f.nowBtn:SetPoint("BOTTOMRIGHT", f.card, "BOTTOMRIGHT", -6, 4)
-    end
-
-    -- 底部按钮排：购物清单(+跳转制造)靠左，上一步/下一步靠右
+    -- All footer buttons are children of a dedicated higher-level controls
+    -- frame. Rows wrap by available width, so neither a card nor another
+    -- button can intercept the return-to-current click.
     local by = y - 4
-    f.btns[1]:ClearAllPoints()
-    f.btns[1]:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, by)
-    f.craftBtn:ClearAllPoints()
-    f.craftBtn:SetPoint("TOPLEFT", f.btns[1], "TOPRIGHT", BTN_GAP, 0)
-    f.btns[3]:ClearAllPoints()
-    f.btns[3]:SetPoint("TOPRIGHT", f, "TOPRIGHT", -PAD, by)
-    f.btns[2]:ClearAllPoints()
-    f.btns[2]:SetPoint("TOPRIGHT", f.btns[3], "TOPLEFT", -BTN_GAP, 0)
-
-    f:SetHeight(-by + 30)
+    f.controls:ClearAllPoints()
+    f.controls:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, by)
+    f.controls:SetWidth(W - 2 * PAD)
+    local x, row = 0, 0
+    local controls = {
+        {f.btns[1], 92}, {f.craftBtn, 66}, {f.btns[2], 66}, {f.btns[3], 66},
+        {f.nowBtn, 84}, {f.suppBtn, 84}, {f.verifyBtn, 84},
+    }
+    for _, entry in ipairs(controls) do
+        local bt, bw = entry[1], entry[2]
+        if bt:IsShown() then
+            local pd=ns.ProfModule
+            if pd and pd.TextW and bt.GetText then
+                bw=math.min(W-2*PAD,math.max(bw,math.ceil(pd.TextW(bt:GetText() or "",14))+16))
+            end
+            bt:SetWidth(bw)
+            if x > 0 and x + bw > W - 2 * PAD then row, x = row + 1, 0 end
+            bt:ClearAllPoints()
+            bt:SetPoint("TOPLEFT", f.controls, "TOPLEFT", x, -row * 26)
+            x = x + bw + BTN_GAP
+        end
+    end
+    local controlsH = row * 26 + 22
+    f.controls:SetHeight(controlsH)
+    f:SetHeight(-by + controlsH + 8)
     sweepPaint(pending)
 end
 
@@ -1682,13 +1938,26 @@ end
 
 -- 价格/配方/设置触发新结果时更新当前 HUD，不等下一次技能提升。
 if RA and RA.OnPlanChanged then
-    RA.OnPlanChanged(function(slug)
+    RA.OnPlanChanged(function(slug, result)
         local s = st()
         if not (s and s.slug == slug) then return end
+        local xp = ns.ProfExecution
+        if xp and xp.GetRun and xp.GetRun(slug) and result and xp.Bind then
+            xp.Bind(slug, result)
+        end
         local function refresh()
             PF.Sync()
             if PF.f and PF.f:IsShown() then PF.Paint() end
         end
         if C_Timer and C_Timer.After then C_Timer.After(0, refresh) else refresh() end
+    end)
+end
+
+if ns.ProfExecution and ns.ProfExecution.OnChanged then
+    ns.ProfExecution.OnChanged(function(slug)
+        local s = st()
+        if not (s and s.slug == slug) then return end
+        PF.Sync()
+        if PF.f and PF.f:IsShown() then PF.Paint() end
     end)
 end

@@ -79,7 +79,8 @@ class SolverTests(unittest.TestCase):
             assert(not seen[key],'duplicate recipe row '..key); seen[key]=true
           end
           assert(#r.steps==2 and r.total==r.matTotal and r.matTotal==r.ahTotal+r.vendorTotal)
-          assert(#r.executionSteps==2)
+          assert(#r.executionSteps>=2)
+          local segments={};for _,step in ipairs(r.executionSteps) do assert(not segments[step.segmentID]);segments[step.segmentID]=true end
           assert(r.steps[1][3]==3922 and r.steps[1].role=='material' and r.steps[1].cost==4125)
           assert(r.steps[2][3]==3977 and r.steps[2].role=='level' and r.steps[2].cost==2610)
           assert(r.searchComplete and not r.budgetLimited and r.expanded<1000)
@@ -146,7 +147,7 @@ class SolverTests(unittest.TestCase):
           assert(found)
         ''')
 
-    def test_level_and_material_recipe_is_batched_once_before_dependents(self):
+    def test_level_and_material_recipe_preserves_chronological_segments(self):
         self.lua.execute('''
           local a=recipe('alchemy',101,10,1,{{11,1}},1,2); a.yellow=2; a.green=2
           local b=recipe('alchemy',102,12,1,{{10,1}},2,3); b.yellow=3; b.green=3
@@ -154,10 +155,10 @@ class SolverTests(unittest.TestCase):
           local s=snapshot({a,b,c},{[11]=4})
           local r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=4})
           assert(r.feasible and r.targetReached and r.total==8)
-          assert(#r.steps==3 and #r.executionSteps==3)
+          assert(#r.steps==3 and #r.executionSteps==4)
           assert(r.steps[1][3]==101 and r.steps[1][4]==2 and r.steps[1].role=='both')
-          assert(r.steps[1][1]==1 and r.steps[1][2]==2)
-          local expected={101,102,103}
+          assert(r.steps[1][1]==1 and r.steps[1][2]==3)
+          local expected={101,102,101,103}
           for i,spell in ipairs(expected) do assert(r.executionSteps[i][3]==spell) end
           local inv={}; local seen={}
           for _,a in ipairs(r.actions) do

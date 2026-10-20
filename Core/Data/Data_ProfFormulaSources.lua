@@ -19,13 +19,13 @@ Quest(7982,2755,"Joys of Omosh")
 
 -- NPC 1685, Wowhead Forever Sells shelf, checked 2026-10-18.
 -- maxStock describes the refresh cap, never current inventory or a promise
--- of immediate availability. Merchant API prices/stock override these records.
+-- of immediate availability. These records contain no purchase prices.
 ns.ProfFormulaOffers=ns.ProfFormulaOffers or {}
-local function Limited(item,price,cap)
+local function Limited(item,cap)
     ns.ProfFormulaOffers[item]={{itemID=item,npcID=1685,faction="A",quantity=1,
-        price=price,maxStock=cap,limited=true,unlimited=false,reference=true,
-        priceVerified=true,source="wowhead-forever",verifiedAt="2026-10-18",
-        url="https://www.wowhead.com/forever/npc=1685",priceBasis="npc-shelf"}}
+        maxStock=cap,limited=true,unlimited=false,catalogueOnly=true,
+        source="wowhead-forever",verifiedAt="2026-10-18",
+        url="https://www.wowhead.com/forever/npc=1685"}}
 end
-Limited(5640,100,2)
-Limited(6053,842,1)
+Limited(5640,2)
+Limited(6053,1)

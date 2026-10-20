@@ -654,8 +654,7 @@ function E.Capture(slug,opts,tick)
         for _,m in ipairs(r.mats) do items[m[1]]=true end
     end
     local ra=ns.ProfRouteAuto
-    local vendorContext={character=s.character,faction=s.faction,professions=s.professions,level=s.level,
-        allowVendorCache=true,requireObservedPrice=false}
+    local vendorContext={character=s.character,faction=s.faction,professions=s.professions,level=s.level}
     for id in pairs(items) do
         local info=(C_Item and C_Item.GetItemInfo) or GetItemInfo
         if type(info)=="function" then
@@ -955,8 +954,8 @@ function E.RefreshClientData(readRecipes,readTrainer)
 end
 function E.DiagnosticText(d)
     if type(d)=="string" then return d end
-    local messages={vendorEstimate="商人售价待读取，请打开对应商人窗口。",
-        vendorQuoteChanged="已有可靠商人报价，点击重新计算更新路线。",
+    local messages={vendorEstimate="NPC购买价格尚未配置。",
+        vendorQuoteChanged="NPC购买价格数据已移除，请重新计算路线。",
         cooldown="已排除有冷却的制作配方。",
         cooldownUnknown="制作冷却尚未核实，请打开对应专业面板。",outputConflict="制作产量待读取，请打开对应专业面板。",
         availabilityUnknown="配方学习条件尚未核实。",excluded="配方已按自定义规则排除。",notLearned="当前设置仅允许已学配方。",
@@ -971,12 +970,13 @@ function E.DiagnosticText(d)
         fishingRecipeGap="当前技能没有符合纯钓鱼条件的可用配方，请检查食谱、材料来源或排除设置。",
         materialUnavailable="材料没有可靠的购买或制作来源。",levelGap="当前技能区间没有可用升级配方。",
         clientDataPending="客户端数据待读取，请打开对应专业面板。",solverError="计算发生错误，请重新计算。",
-        vendorPending="部分商人价格尚未读取，当前结果仅比较已知价格。",
+        vendorPending="NPC购买价格尚未配置。",
         characterLevelRequired="角色等级不足，无法学习所需专业等级。",
-        vendorPriceUnknown="商人材料价格待读取，请打开对应商人窗口后重新计算。",
+        vendorPriceUnknown="NPC购买价格尚未配置。",
         materialPriceUnknown="拍卖行价格未知，先按已有资料显示路线。",
         batchDependency="合并制作所需的材料或学习等级尚未满足。",
-        batchSkillGap="合并制作后无法达到目标技能，请调整配方限制。"}
+        batchSkillGap="合并制作后无法达到目标技能，请调整配方限制。",
+        executionInvalid="制作顺序或材料用途无法验证，请调整限制后重新计算。"}
     local l=ns.L or {}; local text=l[messages[d.code] or "客户端数据待读取"] or messages[d.code] or d.code
     local spell=d.spell; local item=d.item
     if spell then

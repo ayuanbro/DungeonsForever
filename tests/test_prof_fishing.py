@@ -103,14 +103,30 @@ class FishingCookingTests(unittest.TestCase):
           assert(r.ahTotal==0 and #r.mats==0);assertFishingSources(r)
         ''')
 
-    def test_unlearned_factions_without_auctionator_can_buy_required_reference_recipes(self):
+    def test_unlearned_real_catalogue_has_no_npc_quotes_or_fake_free_recipes(self):
         self.lua.execute('''
           Auctionator=nil
           for _,faction in ipairs({'Alliance','Horde'})do
             UnitFactionGroup=function()return faction end
             local r=ns.ProfFishing.Compute({start=1,target=300})
+            assert(not r.targetReached and not r.feasible and #r.steps==0)
+            assert(r.vendorTotal==0 and r.total==0 and #r.formulas==0)
+            assert(#r.blockingDiagnostics>0,'missing recipe purchases were treated as free')
+          end
+        ''')
+
+    def test_synthetic_provider_prices_each_unlearned_recipe_once(self):
+        self.lua.execute('''
+          Auctionator=nil
+          ns.VendorPriceDB.GetFormulaOffers=function(id)
+            return {{itemID=id,npcID=9999,price=17,quantity=1,unlimited=true,
+              available=true,source='synthetic-provider'}}
+          end
+          for _,faction in ipairs({'Alliance','Horde'})do
+            UnitFactionGroup=function()return faction end
+            local r=ns.ProfFishing.Compute({start=1,target=300})
             assert(r.targetReached and r.feasible and #r.steps==5,faction..' '..r.status)
-            assert(#r.formulas==5 and r.ahTotal==0 and r.vendorTotal>0)
+            assert(#r.formulas==5 and r.ahTotal==0 and r.vendorTotal==5*17)
             assert(r.total==r.formulasTotal and r.matTotal==0)
             local total=0;for _,step in ipairs(r.steps)do total=total+step.cost end
             assert(total==r.total,'formula fees duplicated or not assigned to a step')

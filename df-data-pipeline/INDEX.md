@@ -36,7 +36,7 @@
 | `Data_GearRareSpawns.lua` | `gen_gear_rare.py` | CLIENT 稀有刷新点 |
 | `Data_RaidSets.lua` | `gen_raidsets.py` | FOREVERCHANGES 套装 |
 | `Data_BIS.lua` | `fc_bis.py` | FOREVERCHANGES |
-| `Data_VendorPrices.lua` | 多脚本增量维护 | CLIENT 售价 |
+| `Data_ProfVendorOffers.lua` | 已核验的静态商人货架资料 | 仅 NPC/物品/不限量/购买组数及访问条件，无购买价格；旧价格种子与静态金额已移除，价格方法待重新设计 |
 | `Data_Plunder.lua` | `gen_plunder_data.py` | CLIENT 掠夺品 |
 | `Data_Crates.lua` | `gen_crates_data.py` | CLIENT 箱子 |
 | `Data_LootFilter.lua` | 多脚本增量维护 | 手工规则（分类/品质/职业） |

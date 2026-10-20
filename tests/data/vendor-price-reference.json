@@ -1,10 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "verifiedAt": "2026-10-18",
   "source": "wowhead-forever",
-  "priceBasis": "wowhead-reference",
-  "currency": "copper",
-  "evidence": "Read the rendered Wowhead Forever NPC Sells tables. Cost spans moneygold/moneysilver/moneycopper give the purchase bundle total, not sell price. The icon data-type=number gives bundle quantity (absent means 1); data-type=quantity with parentheses means limited stock and is excluded. Empty Vial item 3371 Sold by table independently confirms stack 5 and NPC-specific costs 18/20/21 copper. These are reported vendor quotes, not a uniform undiscounted base price; actual character merchant API quotes take precedence.",
+  "evidence": "Rendered Wowhead Forever NPC Sells tables establish items and purchase bundle sizes. The icon data-type=number gives bundle quantity (absent means 1); data-type=quantity with parentheses means limited stock and is excluded. Empty Vial item 3371 Sold by independently confirms purchase bundles of 5. No purchase prices are retained.",
   "vialCrossCheckUrl": "https://www.wowhead.com/forever/item=3371/empty-vial",
   "shelves": {
     "1313": {
@@ -24,25 +22,21 @@
       "rows": [
         {
           "itemID": 3371,
-          "price": 18,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 3372,
-          "price": 200,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 8925,
-          "price": 2500,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 18256,
-          "price": 30000,
           "quantity": 5,
           "unlimited": true
         }
@@ -56,61 +50,51 @@
       "rows": [
         {
           "itemID": 2928,
-          "price": 20,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2930,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3371,
-          "price": 20,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 3372,
-          "price": 200,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 5060,
-          "price": 1500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 5140,
-          "price": 25,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 5173,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8923,
-          "price": 200,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8924,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8925,
-          "price": 2500,
           "quantity": 5,
           "unlimited": true
         }
@@ -128,103 +112,86 @@
       "rows": [
         {
           "itemID": 2320,
-          "price": 9,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2321,
-          "price": 90,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2324,
-          "price": 23,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2325,
-          "price": 1000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2604,
-          "price": 45,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2605,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4291,
-          "price": 450,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4340,
-          "price": 315,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4341,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4342,
-          "price": 2250,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6260,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6261,
-          "price": 900,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8343,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10290,
-          "price": 2500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 14341,
-          "price": 5000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 253665,
-          "price": 135,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 253668,
-          "price": 225,
           "quantity": 1,
           "unlimited": true
         }
@@ -238,115 +205,96 @@
       "rows": [
         {
           "itemID": 159,
-          "price": 24,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 1179,
-          "price": 113,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 1205,
-          "price": 450,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 1645,
-          "price": 2000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 1708,
-          "price": 900,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 2593,
-          "price": 135,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2594,
-          "price": 1350,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2595,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2596,
-          "price": 108,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2723,
-          "price": 45,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4540,
-          "price": 23,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 4541,
-          "price": 125,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 4542,
-          "price": 450,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 4544,
-          "price": 900,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 4595,
-          "price": 270,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4600,
-          "price": 306,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4601,
-          "price": 2000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 8766,
-          "price": 4000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 8950,
-          "price": 4000,
           "quantity": 5,
           "unlimited": true
         }
@@ -369,55 +317,46 @@
       "rows": [
         {
           "itemID": 2880,
-          "price": 94,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2901,
-          "price": 9,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3466,
-          "price": 1894,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3857,
-          "price": 473,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4399,
-          "price": 189,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4400,
-          "price": 1894,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 5956,
-          "price": 18,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10647,
-          "price": 1894,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10648,
-          "price": 473,
           "quantity": 1,
           "unlimited": true
         }
@@ -437,49 +376,41 @@
       "rows": [
         {
           "itemID": 4470,
-          "price": 40,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6217,
-          "price": 130,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 11291,
-          "price": 4736,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 20752,
-          "price": 3157,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 20753,
-          "price": 4000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 20758,
-          "price": 526,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 22307,
-          "price": 6315,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 247786,
-          "price": 10,
           "quantity": 1,
           "unlimited": true
         }
@@ -497,115 +428,96 @@
       "rows": [
         {
           "itemID": 2320,
-          "price": 10,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2321,
-          "price": 105,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2324,
-          "price": 25,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2325,
-          "price": 947,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2604,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2605,
-          "price": 105,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4291,
-          "price": 473,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4340,
-          "price": 331,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4341,
-          "price": 473,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4342,
-          "price": 2368,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6260,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6261,
-          "price": 947,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8343,
-          "price": 1894,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10290,
-          "price": 2368,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 14341,
-          "price": 4736,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 215369,
-          "price": 736,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 215370,
-          "price": 736,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 253665,
-          "price": 142,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 253668,
-          "price": 236,
           "quantity": 1,
           "unlimited": true
         }
@@ -624,49 +536,41 @@
       "rows": [
         {
           "itemID": 4470,
-          "price": 40,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6217,
-          "price": 130,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 11291,
-          "price": 4736,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 20752,
-          "price": 3157,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 20753,
-          "price": 3789,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 20758,
-          "price": 526,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 22307,
-          "price": 6315,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 247786,
-          "price": 9,
           "quantity": 1,
           "unlimited": true
         }
@@ -683,37 +587,31 @@
       "rows": [
         {
           "itemID": 2880,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2901,
-          "price": 10,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3466,
-          "price": 2000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3857,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 5956,
-          "price": 18,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 18567,
-          "price": 150000,
           "quantity": 1,
           "unlimited": true
         }
@@ -730,43 +628,36 @@
       "rows": [
         {
           "itemID": 3371,
-          "price": 20,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 3372,
-          "price": 200,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 8925,
-          "price": 2500,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 9303,
-          "price": 8000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 9304,
-          "price": 8000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 12958,
-          "price": 50000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 18256,
-          "price": 30000,
           "quantity": 5,
           "unlimited": true
         }
@@ -792,91 +683,76 @@
       "rows": [
         {
           "itemID": 159,
-          "price": 25,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 787,
-          "price": 25,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 1179,
-          "price": 125,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 1205,
-          "price": 500,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 1645,
-          "price": 2000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 1708,
-          "price": 1000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 4592,
-          "price": 20,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 4593,
-          "price": 500,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 4594,
-          "price": 1000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 8766,
-          "price": 4000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 8957,
-          "price": 4000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 21552,
-          "price": 2000,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 21815,
-          "price": 10,
           "quantity": 10,
           "unlimited": true
         },
         {
           "itemID": 21829,
-          "price": 105,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 21833,
-          "price": 105,
           "quantity": 1,
           "unlimited": true
         }
@@ -896,127 +772,106 @@
       "rows": [
         {
           "itemID": 2320,
-          "price": 10,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2321,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2325,
-          "price": 1000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2604,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2605,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4289,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4291,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4340,
-          "price": 350,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4341,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4342,
-          "price": 2500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6260,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6261,
-          "price": 1000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 7005,
-          "price": 10,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8343,
-          "price": 2000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10290,
-          "price": 2500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 14341,
-          "price": 5000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 252783,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 252784,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 252811,
-          "price": 2000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 252812,
-          "price": 2000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 252942,
-          "price": 5500,
           "quantity": 1,
           "unlimited": true
         }
@@ -1034,181 +889,151 @@
       "rows": [
         {
           "itemID": 2320,
-          "price": 10,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2321,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2324,
-          "price": 24,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2325,
-          "price": 1000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2604,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2678,
-          "price": 10,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 2692,
-          "price": 40,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2880,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2901,
-          "price": 9,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2928,
-          "price": 20,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3371,
-          "price": 20,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 3372,
-          "price": 200,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 3466,
-          "price": 2000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3713,
-          "price": 160,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3857,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4289,
-          "price": 50,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4291,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4340,
-          "price": 350,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4341,
-          "price": 500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4342,
-          "price": 2500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4399,
-          "price": 200,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4400,
-          "price": 2000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 5956,
-          "price": 17,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6217,
-          "price": 124,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6256,
-          "price": 23,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6530,
-          "price": 100,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6532,
-          "price": 250,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 7005,
-          "price": 9,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8343,
-          "price": 2000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8925,
-          "price": 2500,
           "quantity": 5,
           "unlimited": true
         }
@@ -1227,379 +1052,316 @@
       "rows": [
         {
           "itemID": 159,
-          "price": 23,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 2320,
-          "price": 9,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2321,
-          "price": 90,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2324,
-          "price": 23,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2325,
-          "price": 900,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2604,
-          "price": 45,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2605,
-          "price": 90,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2678,
-          "price": 9,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 2692,
-          "price": 36,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2880,
-          "price": 90,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 2901,
-          "price": 9,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3466,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3713,
-          "price": 144,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 3857,
-          "price": 450,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4289,
-          "price": 45,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4291,
-          "price": 450,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4340,
-          "price": 315,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4341,
-          "price": 450,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4342,
-          "price": 2250,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4399,
-          "price": 180,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4400,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4470,
-          "price": 35,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4471,
-          "price": 122,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 4536,
-          "price": 23,
           "quantity": 5,
           "unlimited": true
         },
         {
           "itemID": 5565,
-          "price": 4500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 5956,
-          "price": 17,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6256,
-          "price": 21,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6260,
-          "price": 45,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6261,
-          "price": 900,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6529,
-          "price": 45,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6530,
-          "price": 90,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 6532,
-          "price": 225,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 7005,
-          "price": 9,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 8343,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10284,
-          "price": 180,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10290,
-          "price": 2250,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10647,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 10648,
-          "price": 450,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 11291,
-          "price": 4050,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 14341,
-          "price": 4500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 16583,
-          "price": 9000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17020,
-          "price": 900,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17021,
-          "price": 630,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17026,
-          "price": 900,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17028,
-          "price": 630,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17029,
-          "price": 900,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17030,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17031,
-          "price": 900,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17032,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17033,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17034,
-          "price": 180,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17035,
-          "price": 360,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17036,
-          "price": 720,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17037,
-          "price": 1260,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 17038,
-          "price": 1800,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 18567,
-          "price": 135000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 21099,
-          "price": 450,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 21177,
-          "price": 2700,
           "quantity": 20,
           "unlimited": true
         },
         {
           "itemID": 21219,
-          "price": 4500,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 253665,
-          "price": 135,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 253668,
-          "price": 225,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 272941,
-          "price": 180000,
           "quantity": 1,
           "unlimited": true
         },
         {
           "itemID": 273636,
-          "price": 300,
           "quantity": 1,
           "unlimited": true
         }
@@ -1608,9 +1370,8 @@
     }
   },
   "notes": [
-    "The raw reference records include all unlimited Sells rows observed on these shelves, including tools and formula items. Runtime optimizer must still apply its material-only scope, faction, event, quest and summoned availability rules.",
-    "The existing catalogue intentionally leaves Elynna items 215369/215370 unverified for route learning; a visible shelf price does not establish character learning eligibility.",
-    "The Reagent Bot is summoned. Its visible unlimited stock does not establish access for a character. A static price must not by itself make that supplier available.",
-    "No uniform reputation discount was inferred. Reported prices differ by NPC and item. API readings replace reference quotes."
+    "Only NPC/item supply, purchase bundle size and unlimited-stock evidence are retained.",
+    "Items 215369/215370 remain unverified for route learning; a shelf entry does not establish character learning eligibility.",
+    "The summoned Reagent Bot requires explicit confirmed character access; unlimited stock alone does not prove access."
   ]
 }

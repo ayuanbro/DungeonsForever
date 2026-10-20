@@ -2753,26 +2753,20 @@ function PD.Build(page)
     -- 目标等级直接在卡内编辑（EditBox 常驻 target 卡，编辑态盖住数值文本）。
     PD.LV_TILE_H, PD.LV_TILE_GAP = 38, 8
 
-    -- 升级 HUD 入口（2026-10-10 用户：从顶部工具栏移到工具行右侧空档 —— 信息卡下方、
-    -- 与「路线/购物清单」工具行同一带、右对齐内容区右缘；名字随专业（如「制皮升级HUD」）。
-    -- 文本 / 宽度 / 描边由 ns.ProfFollow.PaintButton 在 PickTabs 里刷新；本页不持有 HUD。
-    -- 注意：必须在 LV_TILE_H 赋值之后创建 —— 锚点用到它（首次 Build 时前面取值是 nil）。
+    -- HUD 与导入入口由 PickTabs 刷新文本/显隐，再由 PaintTool 统一排版。
+    -- 它们实际占用的宽度必须与左侧动作共享，按钮增多时一起撑高工具区。
     local hudBtn = NewButton(page, "", 120, PD.SUB_H, 13)
     MakeOutline(hudBtn, 1, 0.82, 0)
     hudBtn.__huiKeepTextColor = true
     hudBtn:Hide()
-    hudBtn:SetPoint("TOPRIGHT", page, "TOPRIGHT",
-                    -(PD.CARD_INSET + PD.LIST_PAD), -(PD.BODY_TOP + PD.LV_TILE_H + 8))
     PD.hudBtn = hudBtn
     coroutine.yield()
 
-    -- 一键导入购物清单：升级 HUD 入口左边（锚 hudBtn TOPLEFT，hudBtn 宽度随专业名
-    -- 变化时自动跟随）。显隐 / 点击由 ns.ProfFollow.PaintImportBtn 在 PickTabs 里刷新。
+    -- 一键导入通常在 HUD 左侧；窄宽度或长文案时允许换行。
     local impBtn = NewButton(page, L["一键导入购物清单"], 110, PD.SUB_H, 13)
     MakeOutline(impBtn, 1, 0.82, 0)
     impBtn.__huiKeepTextColor = true
     impBtn:Hide()
-    impBtn:SetPoint("TOPRIGHT", hudBtn, "TOPLEFT", -8, 0)
     PD.impBtn = impBtn
     coroutine.yield()
     PD.lvTiles = {}
@@ -2827,7 +2821,7 @@ function PD.Build(page)
         PD.RequestRender()
         ns.PlaySound(1)
     end)
-    -- 路线方案卡（2026-10-10 用户）：点击循环切换方案，缓存随失效重算
+    -- 路线方案卡：点击循环选择方案，已有路线由「重新计算」应用。
     PD.lvTiles.scheme:SetScript("OnClick", PD.CycleRouteScheme)
     do
         local tf = PD.lvTiles.target
@@ -3386,6 +3380,47 @@ function PD.ToolSize(text)
     return w, shown
 end
 
+-- 返回每行留给左侧动作的宽度。先安放右侧入口，避免左侧按钮被独立锚定的入口遮住。
+function PD.PlaceToolActions(yoff)
+    yoff = yoff or 0
+    local width = math.max(1, PD.RIGHT_W - PD.LIST_PAD)
+    local limits, rows = {}, 0
+    if PD.tab == "leveling" and not PD.setOpen then
+        local row, used = 0, 0
+        for _, name in ipairs({"hudBtn", "impBtn"}) do
+            local bt = PD[name]
+            if bt and bt:IsShown() then
+                local text = bt:GetText() or ""
+                if text == bt.__toolFittedText then text = bt.__toolFullText or text end
+                bt.__toolFullText = text
+                local w = math.min(width, math.ceil(PD.TextW(text, 13)) + 22)
+                local gap = used > 0 and PD.TOOL_GAP or 0
+                if used > 0 and used + gap + w > width then
+                    row, used, gap = row + 1, 0, 0
+                end
+                local x = width - used - gap - w
+                local shown = PD.Fit(text, 13, math.max(1, w - 22))
+                local key = w .. "|" .. x .. "|" .. row .. "|" .. yoff .. "|" .. shown
+                if bt.__toolActionKey ~= key then
+                    bt.__toolActionKey = key
+                    bt:SetSize(w, PD.TOOL_H)
+                    bt:ClearAllPoints()
+                    bt:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X + x,
+                                -(PD.BODY_TOP + yoff + row * (PD.TOOL_H + PD.TOOL_GAP)))
+                end
+                -- PickTabs 的专业入口刷新会重新写入完整宽度/文本，不能只依赖落位签名。
+                if bt:GetWidth() ~= w then bt:SetWidth(w) end
+                if bt:GetText() ~= shown then bt:SetText(shown) end
+                bt.__toolFittedText = shown
+                used = width - x
+                limits[row + 1] = math.max(0, x - PD.TOOL_GAP)
+                rows = row + 1
+            end
+        end
+    end
+    return width, limits, rows
+end
+
 function PD.PaintTool(list, handler, yoff)
     PD.onTool = handler
     list = list or {}
@@ -3395,6 +3430,12 @@ function PD.PaintTool(list, handler, yoff)
     local _T0, _MK = PD.__pfT0, PD.__pfMark
     local _AD = PD.__pfAdd
     local n = math.min(#list, PD.TOOL_MAX)
+    local width, limits, actionRows = PD.PlaceToolActions(yoff)
+    local searchReserve = PD.SearchReserve()
+    if searchReserve > 0 then
+        limits[1] = math.max(0, (limits[1] or width) - searchReserve)
+        actionRows = math.max(actionRows, 1)
+    end
     local x, row = 0, 0
     for i = 1, PD.TOOL_MAX do
         local bt = PD.toolBtns[i]
@@ -3409,12 +3450,17 @@ function PD.PaintTool(list, handler, yoff)
             else
                 w, text = PD.ToolSize(def.text)
             end
-            local lim = PD.RIGHT_W - ((row == 0) and PD.SearchReserve() or 0)
-            if x > 0 and x + w > lim then row = row + 1; x = 0 end
+            -- 警告芯片在纯文字右侧，也属于本项宽度。长标题只能占一整行。
+            local warnW = def.plain and def.warn and def.warn[1] and width >= 29 and 28 or 0
+            w = math.min(w, math.max(1, width - warnW))
+            text = PD.Fit(text, 12, math.max(1, w - (def.plain and 6 or PD.TOOL_PADX)))
+            while x + w + warnW > (limits[row + 1] or width) do
+                row, x = row + 1, 0
+            end
             -- ★ 签名进「尺寸 + 落点 x + 行号 + 文案 + 选中」。落点 x 也必须进：
             --   前面任意一颗按钮变宽都会把后面所有按钮整体推挤一位。
-            local key = "1|" .. w .. "|" .. x .. "|" .. row .. "|"
-                        .. tostring(def.on) .. "|" .. text
+            local key = "1|" .. w .. "|" .. x .. "|" .. row .. "|" .. yoff .. "|"
+                        .. tostring(def.plain) .. "|" .. tostring(def.on) .. "|" .. text
             if bt.__ptk ~= key then
                 bt.__ptk = key
                 -- ★★ 第八刀（rev14）：把闸门切成四刀。实机 16 颗 = 21~26ms，
@@ -3455,7 +3501,7 @@ function PD.PaintTool(list, handler, yoff)
             -- 警告芯片逐帧管理（签名块外：warn 明细变化不重摆按钮）
             if def.plain then
                 local wz = PD.WarnChip(bt, true)
-                if def.warn and def.warn[1] then
+                if warnW > 0 then
                     wz:ClearAllPoints()
                     wz:SetPoint("LEFT", bt, "RIGHT", 2, 0)
                     wz.__tipLines = def.warn
@@ -3466,13 +3512,13 @@ function PD.PaintTool(list, handler, yoff)
             elseif bt.__warn then
                 bt.__warn:Hide(); bt.__warn.__tipLines = nil
             end
-            x = x + w + (def.gap or PD.TOOL_GAP)
+            x = x + w + warnW + (def.gap or PD.TOOL_GAP)
         else
             if bt.__ptk ~= "0" then bt.__ptk = "0"; bt:Hide() end
             bt.__key = nil
         end
     end
-    local rows = (n > 0) and (row + 1) or 0
+    local rows = math.max((n > 0) and (row + 1) or 0, actionRows)
     PD.toolRows = rows
     return (rows > 0) and (rows * (PD.TOOL_H + PD.TOOL_GAP) + PD.TOOL_BODY_GAP) or 0
 end
@@ -3647,8 +3693,8 @@ function PD.PaintLvTiles()
         end
         TipOn(tiles.mode, modeLines)
     end
-    -- 路线方案卡（2026-10-10 用户）：显示当前方案，tooltip 列全部方案（当前金色）
-    local sch = s.scheme or "cheapest"
+    -- 方案卡显示当前选择；s.scheme 保留已计算路线的方案，供费用和快照说明使用。
+    local sch = PD.SettingRaw("autoScheme") or "cheapest"
     tiles.scheme.label:SetText(fishRoute and L["路线方案"] or L["路线方案 · 点击切换"])
     tiles.scheme.val:SetText(fishRoute and L["鱼类路线"] or ((RA and RA.SchemeLabel) and RA.SchemeLabel(sch) or L["最省钱"]))
     tiles.scheme:SetScript("OnClick", (not fishRoute and not fixedOnly) and PD.CycleRouteScheme or nil)
@@ -3673,9 +3719,11 @@ function PD.PaintLvTiles()
             {L["鱼类自行钓取；其他材料只使用不限量商人货物。"], 0.7, 0.7, 0.7},
             {L["鱼类不计金币成本；图纸仍按实际采购来源计费。"], 0.7, 0.7, 0.7},
         }
+    elseif s.auto and s.scheme and sch ~= s.scheme then
+        schemeLines[#schemeLines + 1] = {L["已保存路线；数据或设置已变化，点击重新计算更新。"], 0.95, 0.75, 0.4}
     end
     TipOn(tiles.scheme, schemeLines)
-    tiles.cost.label:SetText(s.partial and format(L["%d → %d 已计算支出"], s.start or 1, s.plannedTo or 1)
+    tiles.cost.label:SetText(s.isSupplement and L["补料采购支出"] or s.partial and format(L["%d → %d 已计算支出"], s.start or 1, s.plannedTo or 1)
                               or format(L["1 → %d 预计总花费"], s.target or v))
     local costLines
     if s.status == "selection_required" or s.status == "recalculate_required" then
@@ -5544,7 +5592,7 @@ function PD.RecipeSpec(r)
         tipExtra = function()
             local lines = PD.RecipeSourceLines(PD.PriceTipLines(r[2], r[12]), resolved)
             if station then lines[#lines + 1] = { format(L["制作场地：%s"], station), 0.7, 0.7, 0.7 } end
-            if clientPending then lines[#lines + 1] = { L["请打开对应专业或商人面板读取数据"], 0.95, 0.75, 0.4 } end
+            if clientPending then lines[#lines + 1] = { L["请打开对应专业面板读取数据"], 0.95, 0.75, 0.4 } end
             if meta and meta.outputConflict and resolved.outputConflict and not (runtime and runtime.count) then
                 lines[#lines + 1] = { L["参考产量存在冲突；当前按目录值显示，客户端读取后覆盖。"], 0.95, 0.75, 0.4 }
                 lines[#lines + 1] = { format(L["目录产量 %d · 法术详情产量 %d"], meta.listedCount, meta.detailCount), 0.7, 0.7, 0.7 }
@@ -6420,6 +6468,19 @@ end
 
 function PD.PlanStatusText(plan)
     if not plan then return L["正在计算升级路线…"] end
+    local search=plan.searchState
+    if search then
+        if search.status=="searching" then return L["后台优化中"] end
+        if search.status=="stopped" or search.status=="paused" then return L["优化已停止"] end
+        if search.status=="interrupted" then return L["优化已中断；执行计划已保存，可重新计算。"] end
+        if search.status=="error" then return L["计算发生错误，请重新计算。"] end
+        if search.status=="complete" then
+            return search.budgetLimited and L["已完成本轮计算，当前结果尚未证明最优。"]
+                or L["后台优化已结束，继续执行已保存计划。"]
+        end
+        if search.status=="incomplete" then return L["资料或价格不完整"] end
+        if search.status=="infeasible" then return L["当前限制下没有可行路线"] end
+    end
     if plan.scheme == "fishing" and not plan.partial and plan.status == "complete" then return L["纯钓鱼路线已生成"] end
     if plan.optimal and plan.supplyComplete ~= false then return L["当前价格与期望模型内最优"] end
     if plan.partial then
@@ -6441,6 +6502,15 @@ function PD.PlanStatusText(plan)
 end
 
 function PD.PlanProgressText(plan)
+    local search=plan and plan.searchState
+    if search then
+        if search.expanded==nil then return nil end
+        if search.bestTotal~=nil then
+            return format(L["已比较 %d 个状态；后台当前最低支出 %s"],search.expanded,RA.MoneyStr(search.bestTotal))
+        end
+        if search.expanded>0 then return format(L["已比较 %d 个状态"],search.expanded) end
+        return nil
+    end
     if not plan or plan.expanded == nil then return nil end
     if plan.expanded == 0 and plan.initialTotal == nil then return nil end
     if plan.initialTotal == nil then return format(L["已比较 %d 个状态"], plan.expanded or 0) end
@@ -6586,7 +6656,7 @@ function PD.CopyPlanSummary(plan)
     local s = PD.lvSummary or {}
     for _, key in ipairs({"planVersion", "status", "optimal", "feasible", "completeCost",
                            "revision", "partial", "plannedTo", "targetReached", "start", "target",
-                           "expanded", "improvements", "initialTotal", "savings", "searchComplete", "budgetLimited",
+                           "expanded", "improvements", "initialTotal", "savings", "searchComplete", "budgetLimited", "searchState",
                            "stale", "cached", "settingsChanged", "referencePrices", "pricePending", "referenceRoute",
                            "auctionSupplyUnknown", "auctionSupplyObserved", "supplyComplete",
                            "formulasTotal", "formulaTotal", "formulaComplete", "formulaBlocked"}) do s[key] = plan[key] end
@@ -6658,9 +6728,6 @@ end
 function PD.PurchaseSource(entry)
     if entry.vendor or entry.source == "vendor" or entry.source == "npc" then return L["NPC购买"] end
     return L["拍卖行"]
-end
-function PD.PurchasePriceHint(entry)
-    if entry.reference then return L["Wowhead参考报价（实际报价可能因声望而异；客户端实测优先）"] end
 end
 function PD.StepName(st)
     return (st.checkpoint or st[3] == 0) and L["实地采矿"] or SpellName(st[3])
@@ -6903,6 +6970,25 @@ function PD.RowsLeveling(rows)
         PD.RowsExclusions(rows)
         return
     end
+    if PD.autoPage=="history" then
+        local execution=ns.ProfExecution
+        local history=execution and execution.GetHistory and execution.GetHistory(PD.cur) or {}
+        PD.lvSummary={target=target,auto=auto,autoSetting=fishRoute or PD.Setting("autoRoute"),scheme=res and res.scheme,ahOK=true}
+        PushHead(rows,L["制作记录"])
+        for i,run in ipairs(history) do
+            local label=run.status=="active" and L["当前执行计划"] or L["历史执行计划"]
+            PushText(rows,format(L["%s · 已成功制作%d次"],label,run.attemptsDone or 0),12,C_GREY)
+            for _,entry in ipairs(execution.GetRecipeTotals(PD.cur,run.planID)) do
+                if entry.casts>0 then
+                    local count=0;for _,n in pairs(entry.confirmedOutputs or {}) do count=count+n end
+                    rows[#rows+1]={kind="row",h=PD.ROW_H,col=1,text=PD.StepName({0,0,entry.spell,0,profession=entry.profession}),
+                        right=format(L["成功制作%d次"],entry.casts),sub=format(L["已确认产出%d件；%d次制作产出待确认。"],count,entry.pendingOutputs or 0)}
+                end
+            end
+            if i<#history then PushGap(rows,6) end
+        end
+        return
+    end
     if autoOn and (scheme == "cheapest" or fishRoute) and not PD.PlanHasSteps(res) then
         PD.lvSummary = {target = target, auto = true, autoSetting = true, scheme = scheme, ahOK = true,
                         total = res and res.total, priced = res and res.total ~= nil}
@@ -6915,6 +7001,39 @@ function PD.RowsLeveling(rows)
         local cached = PD.PlanCacheText(res)
         if cached then PushText(rows, cached, 11, {0.95, 0.75, 0.4}) end
         if res then PD.PlanDiagnostics(rows, res) end
+        return
+    end
+
+    local execution = ns.ProfExecution
+    local run = execution and execution.GetRun and execution.GetRun(PD.cur)
+    if run and not run.archived then
+        PushText(rows, format(L["制作记录：已成功制作 %d 次；进度按执行计划保存。"], run.attemptsDone or 0), 11, C_GREY)
+    elseif auto and res and res.executionVersion ~= 1 then
+        PushText(rows, L["此路线缺少执行记录信息，请重新计算后启用进度跟踪。"], 11, {0.95, 0.75, 0.4})
+    end
+
+    if PD.autoPage == "supplement" then
+        local data = execution and execution.GetSupplement and execution.GetSupplement(PD.cur)
+        PD.lvSummary = {target=target, auto=auto, autoSetting=fishRoute or PD.Setting("autoRoute"),
+            scheme=res and res.scheme, ahOK=true, isSupplement=true,
+            total=data and data.total, priced=data and data.total~=nil and data.feasible~=false}
+        if not data then
+            PushHead(rows, L["补料清单"])
+            PushText(rows, L["HUD会显示追加需求；点击「计算补料」生成递归制材及采购清单。"], 11, C_GREY)
+        elseif data.inFlight or data.status == "searching" then
+            PushText(rows, L["正在计算补料…"], 12, C_GREY)
+        elseif data.stale or data.status == "stale" then
+            PushText(rows, L["进度已变化，请重新计算补料"], 12, {0.95,0.75,0.4})
+        elseif data.feasible == false then
+            PushText(rows, L["当前限制下无法补齐材料"], 12, {0.95,0.75,0.4})
+            PD.PlanDiagnostics(rows, data)
+        else
+            local shop = {}
+            for key,value in pairs(data) do shop[key]=value end
+            shop.mode = "supplement"
+            PD.RowsAutoShop(rows, shop)
+            if data.feasible == false then PD.PlanDiagnostics(rows, data) end
+        end
         return
     end
 
@@ -7327,7 +7446,9 @@ function PD.RowsAutoShop(rows, data)
     local priced = (data.planVersion == 2 and data.total ~= nil and data.feasible ~= false) or (data.priced and true) or false
 
     local title
-    if mode == "auto" then
+    if mode == "supplement" then
+        title = L["补料清单"]
+    elseif mode == "auto" then
         title = L["购物清单（自动路线）"]
     else
         title = format(L["购物清单（固定路线 1–%d）"], data.target or 300)
@@ -7366,7 +7487,7 @@ function PD.RowsAutoShop(rows, data)
         end
         local tip = { { format(L["需要：%d"], e.need or n or 0) },
                       e.unpriced
-                          and { e.vendor and L["NPC价格未知（暂无实测或可靠参考报价）"] or L["价格未知（Auctionator 无记录）"], 0.95, 0.75, 0.4 }
+                          and { e.vendor and L["NPC购买价格尚未配置。"] or L["价格未知（Auctionator 无记录）"], 0.95, 0.75, 0.4 }
                           or { format(L["约 %s"], RA.MoneyStr(e.cost, "copper")), 1, 0.82, 0 },
                       { sub or "", 0.7, 0.7, 0.7 } }
         for _, line in ipairs(PD.AuctionSupplyLines(e)) do tip[#tip + 1] = line end
@@ -7374,8 +7495,6 @@ function PD.RowsAutoShop(rows, data)
             tip[#tip + 1] = { L["商人直售（军需官处直购，无需拍卖行）"], 0.42, 0.94, 0.62 }
             if e.npcID then tip[#tip + 1] = { format(L["商人 NPC #%d"], e.npcID), 0.7, 0.7, 0.7 } end
             if e.bundleSize then tip[#tip + 1] = { format(L["每组 %d 件"], e.bundleSize), 0.7, 0.7, 0.7 } end
-            local priceHint = PD.PurchasePriceHint(e)
-            if priceHint then tip[#tip + 1] = { priceHint, 0.95, 0.75, 0.4 } end
             if e.reference and e.verifiedAt then tip[#tip + 1] = { format(L["报价核验：%s"], tostring(e.verifiedAt)), 0.7, 0.7, 0.7 } end
         end
         rows[#rows + 1] = {
@@ -7422,7 +7541,6 @@ function PD.RowsAutoShop(rows, data)
             PushText(rows, L["图纸获取尚未全部确认；当前总额只包含已知支出。"], 11, {0.95, 0.75, 0.4}, 2)
         end
     end
-    if data.referencePrices then PushText(rows, L["含Wowhead商人参考报价，实际报价可能因声望而异。"], 11, C_GREY, 2) end
     local vendorOnly = #mats > 0 or #(data.formulas or {}) > 0
     for _, entry in ipairs(mats) do
         if not (entry.vendor or entry.source == "vendor" or entry.source == "npc") then vendorOnly = false; break end
@@ -7582,11 +7700,20 @@ function PD.LevelTool()
     local list = {
         -- 间距走默认 TOOL_GAP=8（2026-10-10 标准：按钮↔按钮/组↔组全 8，
         -- 对齐掉落页显示方式切换组 LOOT_VIEW_GAP 同款口径），不写死 2/14。
-        { key = "page_route", text = L["路线"],     on = PD.autoPage ~= "shop" },
+        { key = "page_route", text = L["路线"],     on = PD.autoPage ~= "shop" and PD.autoPage ~= "supplement" and PD.autoPage ~= "history" },
         { key = "page_shop",  text = L["购物清单"], on = PD.autoPage == "shop" },
         { key = "recalc",     text = L["重新计算"] },
     }
     if PD.policyDirty and PD.policyDirty[PD.cur] then list[3].text = L["重新计算（应用排除）"] end
+    local execution = ns.ProfExecution
+    local run = execution and execution.GetRun and execution.GetRun(PD.cur)
+    if run and not run.archived then
+        list[#list + 1] = {key="page_supplement", text=L["补料清单"], on=PD.autoPage=="supplement"}
+        list[#list + 1] = {key="calculate_supplement", text=L["计算补料"]}
+    end
+    if execution and execution.GetHistory and #execution.GetHistory(PD.cur)>0 then
+        list[#list+1]={key="page_history",text=L["制作记录"],on=PD.autoPage=="history"}
+    end
     if PD.cur == "cooking" then
         list[#list + 1] = {key = "cooking_fishing", text = fishRoute and L["普通路线"] or L["纯钓鱼"], on = fishRoute}
     end
@@ -7605,7 +7732,7 @@ function PD.LevelTool()
             list[#list + 1] = {key = "exclusions", text = PD.exclusionsOpen and L["返回路线"] or L["管理排除"], on = PD.exclusionsOpen}
             if PD.exclusionsOpen then list[#list + 1] = {key = "restore_all", text = L["全部恢复"]} end
             local plan = PD.autoSnapshotSlug == PD.cur and PD.autoSnapshot or nil
-            if plan and plan.status == "searching" then
+            if plan and (plan.searchState or plan).status == "searching" then
                 list[#list + 1] = {key = "stop_search", text = L["停止优化"]}
             end
         end
@@ -7619,6 +7746,20 @@ function PD.LevelTool()
             PD.autoPage = "route"
         elseif k == "page_shop" then
             PD.autoPage = "shop"
+        elseif k == "page_supplement" then
+            PD.autoPage = "supplement"
+            PD.exclusionsOpen=false
+        elseif k == "page_history" then
+            PD.autoPage = "history"
+            PD.exclusionsOpen=false
+        elseif k == "calculate_supplement" then
+            PD.exclusionsOpen=false
+            if execution and execution.CalculateSupplement then
+                execution.CalculateSupplement(PD.cur, function()
+                    if PD.cur then PD.RequestRender() end
+                end)
+            end
+            PD.autoPage = "supplement"
         elseif k == "recalc" then
             local E = ns.ProfEconomy
             if E and E.ApplyPolicies then E.ApplyPolicies(PD.cur)
@@ -8354,7 +8495,7 @@ function PD.Render()
         -- 路线子页单栏（2026-10-09 v2：旧右栏退役，材料/图纸全收进购物清单子页）。
         -- 购物清单子页（2026-10-09 三轮定稿 B 版）：经典两栏 —— 左列材料+图纸主表，
         -- 右列金币卡（金色底 + 20px 金字 + 三行分类合计）+ 半成品 + 商人直卖（HUD 直售徽标）。
-        if PD.autoPage == "shop" then
+        if PD.autoPage == "shop" or PD.autoPage == "supplement" then
             PD.lvSplit = true
             PD.splitLW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - PD.OV_GUT) * PD.SHOP_SPLIT)
             PD.splitRW = PD.RIGHT_W - 2 * PD.LIST_PAD - PD.OV_GUT - PD.splitLW
@@ -9524,6 +9665,14 @@ end
 if RA and RA.OnPricesChanged then
     RA.OnPricesChanged(function()
         if PD.built and ns.PageVisible(PD.page) then
+            PD.RequestRender()
+        end
+    end)
+end
+
+if ns.ProfExecution and ns.ProfExecution.OnChanged then
+    ns.ProfExecution.OnChanged(function(slug)
+        if slug==PD.cur and PD.built and PD.tab=="leveling" and ns.PageVisible(PD.page) then
             PD.RequestRender()
         end
     end)

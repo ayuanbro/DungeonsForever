@@ -243,7 +243,7 @@ class MissingQuoteTests(unittest.TestCase):
           assert(countCrafts(r,101)==2 and countCrafts(r,201)==3)
         ''')
 
-    def test_colored_material_crafting_gains_are_counted_once_and_batched(self):
+    def test_colored_material_crafting_gains_follow_dependency_order(self):
         self.lua.execute(r'''
           local producer=flatRecipe('alchemy',101,10,{{11,1}},1,5)
           local root=flatRecipe('alchemy',201,20,{{10,1},{12,1}},1,5)
@@ -253,10 +253,13 @@ class MissingQuoteTests(unittest.TestCase):
           assert(r.feasible and r.targetReached and r.total==20)
           noUnknownPurchases(r)
           assert(countCrafts(r,101)==2 and countCrafts(r,201)==2 and r.finalSkills.alchemy==5)
-          assert(#r.steps==2 and #r.executionSteps==2)
+          assert(#r.steps==2 and #r.executionSteps==4)
           assert(r.steps[1][3]==101 and r.steps[1].role=='both')
-          assert(r.steps[1][1]==1 and r.steps[1][2]==3)
-          assert(r.steps[2][3]==201 and r.steps[2][1]==3 and r.steps[2][2]==5)
+          local order={101,201,101,201}
+          for i,step in ipairs(r.executionSteps) do
+            assert(step[3]==order[i] and step[1]==i and step[2]==i+1)
+          end
+          assert(#r.steps[1].segments==2 and #r.steps[2].segments==2)
         ''')
 
     def test_not_yet_learnable_material_recipe_cannot_supply_missing_quote(self):

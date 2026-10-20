@@ -27,6 +27,13 @@ venv/
 /df-data-pipeline/_temp/_qqb_profile*/
 /df-data-pipeline/_temp/_waf_cookie.json
 
+# Vendor-locating pipeline (scripts/gen_vendors.py): fetched caches and outputs.
+/scripts/.cache/
+/scripts/out/
+/scripts/logs/
+/scripts/export_buyprice/out/
+/scripts/export_buyprice/output/
+
 # Historical backups, logs and generated comparison reports.
 /df-data-pipeline/_temp/_bak*
 /df-data-pipeline/**/*.bak

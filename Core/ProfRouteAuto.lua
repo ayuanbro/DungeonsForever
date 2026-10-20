@@ -98,12 +98,11 @@ local function AHPrice(id)
 end
 
 local function VendorPrice(id)
-    -- ① 插件自采商人价（VendorPriceDB，开过商人窗口就有，不依赖价格插件）
+    -- 缺失的 NPC 采购价保持未知；拍卖行价格和卖店收益均不能替代。
     if ns.VendorPriceDB then
         local ok, p = pcall(ns.VendorPriceDB.GetPrice, id)
         if ok and type(p) == "number" and p >= 0 then return p end
     end
-    -- Unqualified vendor caches cannot establish NPC stock, faction or discount.
     return nil
 end
 
@@ -769,7 +768,7 @@ end
 
 local function FixedPurchase(id, need)
     local db = ns.VendorPriceDB
-    local offers = db and db.GetOffers and db.GetOffers(id, {allowVendorCache=true}) or {}
+    local offers = db and db.GetOffers and db.GetOffers(id) or {}
     local vendorOnly = RA.VendorMaterialOf(id) or #offers > 0
     local best
     for _, offer in ipairs(offers) do
@@ -793,7 +792,7 @@ local function FixedPurchase(id, need)
     if vendorOnly then
         local suppliers = db and db.GetSuppliers and db.GetSuppliers(id) or {}
         local supplier = suppliers[1]
-        return {id, need, id=id, count=need, need=need, cost=0, unit=0, vendor=true,
+        return {id, need, id=id, count=need, need=need, cost=0, vendor=true,
             source="vendor", unpriced=true, npcID=supplier and supplier.npcID,
             url=supplier and supplier.url}
     end
@@ -876,12 +875,14 @@ local function SummarizeCore(steps, recOf, soldSet, slug)
             local id, need = mat[1], (mat[2] or 1) * (st[4] or 0)
             local entry = purchaseOf[id]
             if entry and need > 0 then
-                if entry.unpriced then st.unpriced = true end
-                local before = consumed[id] or 0; consumed[id] = before + need
-                if entry.vendor and entry.bundleSize then
-                    local packs = math.ceil(consumed[id] / entry.bundleSize) - math.ceil(before / entry.bundleSize)
-                    st.cost = st.cost + packs * entry.bundlePrice
-                else st.cost = st.cost + need * entry.unit end
+                if entry.unpriced then st.unpriced = true
+                else
+                    local before = consumed[id] or 0; consumed[id] = before + need
+                    if entry.vendor and entry.bundleSize then
+                        local packs = math.ceil(consumed[id] / entry.bundleSize) - math.ceil(before / entry.bundleSize)
+                        st.cost = st.cost + packs * entry.bundlePrice
+                    else st.cost = st.cost + need * entry.unit end
+                end
             end
         end
     end
@@ -1090,7 +1091,7 @@ do
         local revision=0
         local CACHE_VERSION=3
         local EMPTY_RESULT_REVISION=2
-        local VENDOR_QUOTE_REVISION=1
+        local VENDOR_QUOTE_REVISION=3
         local function stamp() return time and time() or 0 end
         local function serializable(value,seen)
             local kind=type(value)
@@ -1158,9 +1159,18 @@ do
             -- Live skill is an input snapshot, not a cache identity. Otherwise
             -- every skill gain/reopening would silently replace the saved route.
             local startMode=opts.fromCurrent==false and ("fixed:"..tostring(opts.start or 1)) or "current"
-            return table.concat({tostring(opts.scheme),tostring(opts.target),tostring(opts.learnedOnly or false),
+            local sig=table.concat({tostring(opts.scheme),tostring(opts.target),tostring(opts.learnedOnly or false),
                 tostring(opts.onlyAH or false),tostring(opts.allowSecondaryLeveling or false),startMode,
                 E.PolicyFingerprint(opts.exclusions),tostring(opts.targetUnlearned),tostring(opts.secondaryProfession or "")},"|")
+            if opts.executionSourcePlanID or next(opts.executionInventory or {}) then
+                local items={}
+                for id,n in pairs(opts.executionInventory or {}) do
+                    items[#items+1]=tostring(id)..":"..tostring(type(n)=="table" and n.count or n)
+                end
+                table.sort(items)
+                sig=sig.."|execution:"..tostring(opts.executionSourcePlanID or "")..":"..table.concat(items,",")
+            end
+            return sig
         end
         local function identities(slug,opts)
             local char=E.CharacterKey(); local sig=signature(opts)
@@ -1176,8 +1186,61 @@ do
                 result=serializable(res),savedAt=stamp()}
             db.active[j.slug]=j.savedKey
         end
+        local function updateSearchState(slug,result)
+            local execution=ns.ProfExecution
+            local frozen=execution and execution.GetPlan and execution.GetPlan(slug)
+            if not frozen then return end
+            local char=E.CharacterKey();local planID=frozen.planID
+            local job
+            for _,candidate in pairs(slots) do
+                if candidate.slug==slug and candidate.char==char and not candidate.invalid and candidate.planID==planID then job=candidate;break end
+            end
+            if frozen.scheme and frozen.scheme~="cheapest" and not job then frozen.searchState=nil;return end
+            -- Selected settings can restore another scheme's cache and change
+            -- active[scope]. Diagnostics belong to the frozen calculation ID.
+            local source=job and (job.published or job.result) or result and result.planID==planID and result
+            if not source then
+                for _,candidate in pairs(results) do if candidate.planID==planID then source=candidate;break end end
+            end
+            if not source then
+                for _,record in pairs(saved(char).routes) do
+                    if record.slug==slug and record.result and record.result.planID==planID then source=record.result;break end
+                end
+            end
+            source=source or frozen.searchState or frozen
+            local status=source.status
+            if job then
+                status=job.status or status
+                if job.finished and status=="searching" then status=source.status end
+            elseif status=="searching" then
+                -- A persisted execution snapshot is not a live coroutine.
+                status="interrupted"
+            end
+            -- Only diagnostics follow the optimizer. Recipes, purchases, goals,
+            -- segment identities and execution facts remain frozen.
+            frozen.searchState={status=status,expanded=job and job.expanded or source.expanded,
+                improvements=job and job.improvements or source.improvements,
+                initialTotal=source.initialTotal,bestTotal=source.bestTotal or (source.feasible~=false and source.total or nil),
+                savings=source.savings,budgetLimited=job and job.budgetLimited or source.budgetLimited,
+                searchComplete=source.searchComplete,revision=source.revision,
+                running=job~=nil and not job.finished and status=="searching" and coroutine.status(job.co)~="dead"}
+        end
         local function publish(j,res)
             if not res or j.invalid then return end
+            local execution=ns.ProfExecution
+            if execution and execution.NormalizePlan and res.planVersion~=2 then
+                res=execution.NormalizePlan(j.slug,res) or res
+            end
+            if not j.planID then
+                if j.opts.snapshot then j.planID="synthetic:"..j.key
+                else
+                    local db=saved(j.char)
+                    db.nextPlanID=(tonumber(db.nextPlanID) or 0)+1
+                    j.planID=j.char..":"..tostring(db.nextPlanID)
+                end
+            end
+            res.planID=j.planID
+            res.executionOptions=serializable(j.opts)
             revision=revision+1; res.revision=revision
             res.routeModel=CACHE_VERSION
             res.formulaRevision=1
@@ -1189,6 +1252,7 @@ do
             if j.stale then res.stale=true; res.staleReason=j.staleReason end
             j.published=res; results[j.key]=res; active[j.scope]=j.key
             remember(j,res)
+            if not j.opts.snapshot then updateSearchState(j.slug,res) end
             for _,fn in ipairs(watchers) do pcall(fn,j.slug,res) end
         end
         local function schedule(j)
@@ -1229,7 +1293,7 @@ do
                 end
             end
             return {planVersion=2,scheme=opts.scheme,status=status,start=opts.start or 1,target=opts.target,
-                steps={},executionSteps={},actions={},mats={},gaps={},total=0,matTotal=0,ahTotal=0,vendorTotal=0,crafts=0,
+                steps={},executionSteps={},actions={},mats={},formulas={},gaps={},total=0,matTotal=0,ahTotal=0,vendorTotal=0,crafts=0,
                 feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
                 diagnostics={{code=code}},professionPolicy=1,targetUnlearned=opts.targetUnlearned,
                 secondaryProfession=opts.secondaryProfession,revision=revision,stamp=stamp()}
@@ -1239,54 +1303,30 @@ do
             if opts.targetUnlearned then adjusted.learnedOnly=false end
             return adjusted
         end
-        local function restoreVendorDiagnostics(result,record)
-            if result.vendorQuoteRevision==VENDOR_QUOTE_REVISION then return end
-            local vendor=ns.VendorPriceDB
-            if not vendor or type(vendor.GetOffers)~="function" then return end
-            local selected={}
-            for _,m in ipairs(result.mats or {}) do
-                local id=m.id or m[1]
-                if id and (m.source=="vendor" or m.vendor) then selected[id]=true end
-            end
-            local checked,changed={},false
-            for _,d in ipairs(result.diagnostics or {}) do
-                if type(d)=="table" and d.code=="vendorEstimate" and selected[d.item] then
-                    if checked[d.item]==nil then
-                        local context={character=E.CharacterKey(),professions=E.Professions(),
-                            level=UnitLevel and UnitLevel("player"),allowVendorCache=false,requireObservedPrice=false}
-                        local ok,offers=pcall(vendor.GetOffers,d.item,context)
-                        checked[d.item]=false
-                        for _,offer in ipairs(ok and type(offers)=="table" and offers or {}) do
-                            local quantity=tonumber(offer.quantity or offer.bundleSize)
-                            local reliable=offer.source=="merchant" and not offer.estimated
-                                or offer.reference==true and offer.priceVerified==true
-                            if reliable and offer.unlimited==true and offer.available~=false
-                                and offer.purchasable~=false and not offer.hasExtendedCost
-                                and (not offer.currencyID or offer.currencyID==0)
-                                and type(offer.price)=="number" and offer.price>=0
-                                and quantity and quantity>=1 and quantity==math.floor(quantity) then
-                                checked[d.item]=true;break
-                            end
-                        end
-                    end
-                    if checked[d.item] then d.code="vendorQuoteChanged";changed=true end
+        local function hasVendorPurchases(result)
+            if (result.vendorTotal or 0)>0 or (result.formulaVendorTotal or 0)>0 then return true end
+            for _,entries in ipairs({result.mats or {},result.formulas or {},result.actions or {}}) do
+                for _,entry in ipairs(entries) do
+                    if entry.vendor or entry.source=="vendor" or entry.source=="npc" then return true end
                 end
             end
-            result.vendorQuoteRevision=VENDOR_QUOTE_REVISION
-            if changed then result.stale=true;result.staleReason="vendor-quotes" end
-            -- This is a diagnostic migration, not a new price calculation.
-            -- Keep the saved route's costs, steps and uncertainty unchanged.
-            record.result.vendorQuoteRevision=VENDOR_QUOTE_REVISION
-            if changed then
-                record.result.diagnostics=serializable(result.diagnostics)
-                record.result.stale=true;record.result.staleReason="vendor-quotes"
-            end
+            return false
         end
         local function restore(slug,record,key,scope,opts)
             if type(record)~="table" or type(record.result)~="table" or record.result.routeModel~=CACHE_VERSION then return end
             if not compatible(record.result,opts) then return end
             if record.result.formulaRevision~=1 then return end
             local old=record.result
+            if old.vendorQuoteRevision~=VENDOR_QUOTE_REVISION and hasVendorPurchases(old) then
+                -- Keep historical/frozen execution records intact, but never
+                -- publish a previous merchant/cache price as a current quote.
+                -- Replacing the purchase-price model requires explicit recalculation.
+                local result=gate(slug,opts,"recalculate_required","vendorQuoteChanged")
+                result.cached=true; result.stale=true; result.staleReason="vendor-quotes"
+                result.vendorQuoteRevision=VENDOR_QUOTE_REVISION
+                results[key]=result; active[scope]=key
+                return result
+            end
             if old.planVersion==2 then
                 local unpriced=old.pricePending or old.referenceRoute
                 for _,entry in ipairs(old.mats or {}) do if entry.unpriced then unpriced=true; break end end
@@ -1311,7 +1351,6 @@ do
             elseif E.AuctionSupplyChanged(result) then
                 result.stale=true;result.staleReason="supply"
             end
-            restoreVendorDiagnostics(result,record)
             revision=math.max(revision,result.revision or 0)
             results[key]=result; active[scope]=key
             return result
@@ -1346,7 +1385,7 @@ do
             if opts.scheme~="cheapest" then return oldCompute(slug,legacyOptions(opts)) end
             return S.Compute(slug,opts)
         end
-        function RA.Get(slug,opts)
+        local function getCandidate(slug,opts,preserveExecution)
             opts=options(slug,opts)
             if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
             local key,scope,savedKey=identities(slug,opts)
@@ -1371,10 +1410,40 @@ do
                 if not compatible(current,opts) then return gate(slug,opts,"recalculate_required","pairingChanged") end
                 current.stale=true; current.settingsChanged=true; current.staleReason="settings"; return current
             end
-            return start(slug,opts)
+            if not preserveExecution then return start(slug,opts) end
+        end
+        function RA.Get(slug,opts)
+            local execution=not (opts and opts.snapshot) and ns.ProfExecution or nil
+            local frozen=execution and execution.GetPlan and execution.GetPlan(slug)
+            local result=getCandidate(slug,opts,frozen~=nil)
+            if opts and opts.snapshot then return result end
+            if result and (result.status=="selection_required" or result.status=="recalculate_required") then return result end
+            if execution then
+                if execution.PlanRecalculated then execution.PlanRecalculated(slug,result) end
+                frozen=execution.GetPlan and execution.GetPlan(slug)
+                if frozen then
+                    local run=execution.GetRun and execution.GetRun(slug)
+                    if run and result and result.revision~=frozen.revision then
+                        run.newPlanAvailable=true;run.candidateRevision=result.revision
+                    end
+                    updateSearchState(slug,result)
+                    return frozen
+                end
+            end
+            return result
         end
         function RA.Recalculate(slug,opts)
             opts=options(slug,opts)
+            local execution=ns.ProfExecution
+            if not opts.snapshot and execution and execution.PrepareRecalculate then
+                local inventory,sourcePlanID=execution.PrepareRecalculate(slug)
+                if sourcePlanID then
+                    opts.executionInventory=inventory or {}
+                    opts.executionSourcePlanID=sourcePlanID
+                    opts.start=(E.Professions()[slug] or {}).cur or opts.start
+                    opts.fromCurrent=true
+                end
+            end
             local key,scope,savedKey,_,char=identities(slug,opts)
             oldInvalidate()
             for k,j in pairs(slots) do if j.slug==slug and j.char==char then j.invalid=true; slots[k]=nil end end
@@ -1386,7 +1455,9 @@ do
                 local db=saved(); db.routes[savedKey]=nil; db.active[slug]=nil
             end
             if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
-            return start(slug,opts)
+            local result=start(slug,opts)
+            if not opts.snapshot and execution and execution.PlanRecalculated then execution.PlanRecalculated(slug,result) end
+            return result
         end
         function RA.Cancel(slug)
             for _,j in pairs(slots) do if j.slug==slug and not j.finished and coroutine.status(j.co)~="dead" then

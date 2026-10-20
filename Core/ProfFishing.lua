@@ -172,7 +172,7 @@ function P.Compute(opts)
             out.firstAt[m[1]]=out.firstAt[m[1]] or step[1]
         end
     end
-    -- Share merchant pack leftovers across all steps, and charge each new pack
+    -- Share NPC purchase pack leftovers across all steps, and charge each new pack
     -- only at the step that first needs it.
     local materialComplete=true
     for id,entry in pairs(matOf) do

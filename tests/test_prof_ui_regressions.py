@@ -210,7 +210,7 @@ class ProfessionUIRegressions(unittest.TestCase):
           assert(row.b.text=='' and row.f.text=='')
         ''')
 
-    def test_vendor_reference_shows_source_hint_and_stays_out_of_auction_import(self):
+    def test_provider_npc_quotes_keep_metadata_without_removed_static_price_hints(self):
         source = (ROOT / "Core/ProfessionUI.lua").read_text(encoding="utf-8-sig")
         a = source.index('function PD.CopyPlanSummary(')
         b = source.index('function PD.StepRecipe(', a)
@@ -235,15 +235,15 @@ class ProfessionUIRegressions(unittest.TestCase):
               assert(row.right=='×5 · 3.6' and row.right2=='18')
               local hint,verified=false,false
               for _,line in ipairs(row.lines) do
-                if line[1]=='Wowhead参考报价（实际报价可能因声望而异；客户端实测优先）' then hint=true end
+                if line[1]=='插件内置NPC报价（实际价格可能因声望而异）' then hint=true end
                 if line[1]=='报价核验：2026-10-18' then verified=true end
               end
-              assert(hint and verified)
+              assert(not hint and verified)
             end
-            if row.text=='含Wowhead商人参考报价，实际报价可能因声望而异。' then sawSummary=true end
+            if row.text=='NPC购买价格使用插件内置数据。' then sawSummary=true end
           end
-          assert(sawMaterial and sawSummary)
-          assert(PD.PurchasePriceHint({source='vendor'})==nil)
+          assert(sawMaterial and not sawSummary)
+          assert(PD.PurchasePriceHint==nil)
           D={pro={alchemy={name='Alchemy'}}}
           ns.AuctionBridge={DoImport=function(_,items) imported=items end}
           data.mats[2]={id=12,count=2,source='ah'}
@@ -257,7 +257,7 @@ class ProfessionUIRegressions(unittest.TestCase):
             local unknown=false
             for _,line in ipairs(row.lines) do
               assert(line[1]~='价格未知（Auctionator 无记录）')
-              if line[1]=='NPC价格未知（暂无实测或可靠参考报价）' then unknown=true end
+              if line[1]=='NPC购买价格尚未配置。' then unknown=true end
             end
             assert(unknown)
           end end
@@ -266,9 +266,9 @@ class ProfessionUIRegressions(unittest.TestCase):
           local reference=false
           for _,row in ipairs(rows) do
             assert(row.text~='价格快照年龄未知（Auctionator）')
-            if row.text=='含Wowhead商人参考报价，实际报价可能因声望而异。' then reference=true end
+            if row.text=='NPC购买价格使用插件内置数据。' then reference=true end
           end
-          assert(reference,'vendor-only snapshot hid reference-price information')
+          assert(not reference,'removed static-price summary is still advertised')
           data.mats[2]={id=12,count=1,cost=0,unit=0,source='ah'}
           data.ahTotal=0; rows={}; PD.RowsAutoShop(rows,data)
           local auctionAge=false
@@ -409,6 +409,32 @@ class ProfessionUIRegressions(unittest.TestCase):
           assert(text=='已比较 100 个状态；较初始方案节省 0')
         ''')
 
+    def test_frozen_execution_uses_live_search_diagnostics_and_button_status(self):
+        source = (ROOT / 'Core/ProfessionUI.lua').read_text(encoding='utf-8-sig')
+        start = source.index('function PD.CopyPlanSummary(')
+        self.lua.execute(source[start:source.index('function PD.StepRecipe(', start)])
+        self.lua.execute(r'''
+          PD.Setting=function()return true end
+          PD.autoSnapshotSlug='alchemy'
+          local frozen={planVersion=2,status='complete',expanded=3,total=100,optimal=true,
+            searchState={status='searching',expanded=42,bestTotal=80,running=true}}
+          PD.autoSnapshot=frozen
+          assert(PD.PlanStatusText(frozen)=='后台优化中')
+          assert(PD.PlanProgressText(frozen)=='已比较 42 个状态；后台当前最低支出 80')
+          local buttons=PD.LevelTool();local stop=false
+          for _,b in ipairs(buttons)do if b.key=='stop_search'then stop=true end end
+          assert(stop)
+          frozen.status='searching';frozen.searchState.status='complete';frozen.searchState.running=false
+          buttons=PD.LevelTool()
+          for _,b in ipairs(buttons)do assert(b.key~='stop_search')end
+          assert(PD.PlanStatusText(frozen)=='后台优化已结束，继续执行已保存计划。')
+          PD.lvSummary={total=100};PD.CopyPlanSummary(frozen)
+          assert(PD.lvSummary.searchState==frozen.searchState and PD.lvSummary.total==100)
+          frozen.searchState.status='interrupted'
+          assert(PD.PlanStatusText(frozen)=='优化已中断；执行计划已保存，可重新计算。')
+          assert(frozen.expanded==3 and frozen.total==100)
+        ''')
+
     def test_auction_quantity_snapshots_distinguish_partial_zero_unknown_and_npc(self):
         self.lua.execute(r'''
           local e={source='ah',count=3,availableCount=5,supplyObserved=true,supplyComplete=true}
@@ -474,7 +500,7 @@ class ProfessionUIRegressions(unittest.TestCase):
             {code='materialUnavailable',item=10},{code='outputConflict',spell=102},
             {code='batchDependency',spell=103},{code='skillRequired',spell=104},
             {code='vendorPriceUnknown',detail=11}}})
-          assert(#rows==1 and rows[1].text:find('商人材料价格',1,true))
+          assert(#rows==1 and rows[1].text:find('NPC购买价格尚未配置',1,true))
         ''')
 
     def test_partial_route_only_reports_its_next_stage_blockers_once(self):
@@ -486,7 +512,7 @@ class ProfessionUIRegressions(unittest.TestCase):
             diagnostics={{code='materialUnavailable',item=10},price,blocker},
             blockingDiagnostics={blocker,{code='skillRequired',spell=104},price}})
           assert(#rows==2)
-          assert(rows[1].text:find('商人材料价格',1,true))
+          assert(rows[1].text:find('NPC购买价格尚未配置',1,true))
           assert(rows[2].text:find('另一专业技能不足',1,true))
           for _,row in ipairs(rows) do assert(not row.text:find('同类',1,true)) end
         ''')

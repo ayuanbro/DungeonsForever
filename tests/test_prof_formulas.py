@@ -227,17 +227,39 @@ class FormulaEconomyTests(unittest.TestCase):
 
 
 class FormulaVendorTests(unittest.TestCase):
+    def test_removed_npc_prices_leave_formula_sources_without_free_purchase(self):
+        lua=LuaRuntime(unpack_returned_tuples=True)
+        lua.execute(MOCKS)
+        for path in ('ProfEconomy.lua','Data/Data_ProfFormulaSources.lua','VendorPriceDB.lua'):
+            lua.execute((ROOT/'Core'/path).read_text(encoding='utf-8-sig'), 'Test', lua.globals().ns)
+        lua.execute('''
+          local r={profession='alchemy',spell=101,item=20,count=1,
+            learn=1,grey=20,mats={{11,1}},formula=5640,source={}}
+          local context={known={},prices={},faction='A'}
+          local f=ns.ProfEconomy.FormulaFor(r,context)
+          assert(f.unpriced and not f.usable and f.cost==nil and f.vendorPrice==nil)
+          assert(f.limited and #f.vendorOffers==1 and f.vendorOffers[1].npcID==1685)
+          assert(f.vendorOffers[1].maxStock==2 and f.sources.vendors[1].id==1685)
+          -- AH purchase pricing remains available for the same unlearned item.
+          context.prices[5640]=31
+          f=ns.ProfEconomy.FormulaFor(r,context)
+          assert(f.source=='ah' and f.ahPrice==31 and f.cost==31 and f.usable)
+          assert(f.vendorPrice==nil and not f.unpriced)
+        ''')
+
     def test_limited_price_is_retained_without_entering_material_quotes(self):
         lua=vendor_runtime()
         lua.execute('''
-          test.entries={{id=99,price=42,quantity=1,stock=2,purchasable=true,extended=false}}
-          ns.VendorPriceDB.Scan()
+          ns.ProfFormulaOffers={[99]={{itemID=99,npcID=7,price=42,quantity=1,
+            limited=true,unlimited=false,maxStock=2,reference=true,priceVerified=true,
+            source='wowhead-forever',verifiedAt='2026-10-20'}}}
           local f=ns.VendorPriceDB.GetFormulaOffers(99)
-          assert(#f==1 and f[1].price==42 and f[1].limited and f[1].stock==2 and f[1].priceUsable)
+          assert(#f==1 and f[1].price==42 and f[1].limited and f[1].maxStock==2 and f[1].priceUsable)
+          assert(f[1].stock==nil,'refresh cap became a claim about current merchant stock')
           assert(#ns.VendorPriceDB.GetOffers(99)==0 and #ns.VendorPriceDB.GetSuppliers(99)==0)
-          test.entries[1].stock=0;ns.VendorPriceDB.Scan()
+          ns.ProfFormulaOffers[99][1].available=false
           f=ns.VendorPriceDB.GetFormulaOffers(99)
-          assert(f[1].price==42 and not f[1].priceUsable and f[1].stock==0)
+          assert(f[1].price==42 and not f[1].priceUsable and f[1].stock==nil)
         ''')
 
     def test_unknown_catalogue_stock_stays_unknown_without_price(self):
@@ -247,32 +269,35 @@ class FormulaVendorTests(unittest.TestCase):
           assert(#f==1 and f[1].stockUnknown and not f[1].price and not f[1].priceUsable)
         ''')
 
-    def test_old_quote_without_purchase_pack_cannot_price_a_formula(self):
+    def test_old_player_quote_cannot_price_a_formula(self):
         lua=vendor_runtime()
         lua.execute('''
           db.profVendorOffers={[99]={old={itemID=99,npcID=7,character='Alice-Realm',
             source='merchant',verifiedAt=1,price=50,unlimited=true,available=true,
             reputationKey='72:4'}}}
           local f=ns.VendorPriceDB.GetFormulaOffers(99)
-          assert(#f==1 and not f[1].price and not f[1].priceUsable)
+          assert(#f==0)
         ''')
 
     def test_extended_currency_cannot_become_gold_formula_purchase(self):
         lua=vendor_runtime()
         lua.execute('''
-          test.entries={{id=99,price=42,quantity=1,stock=2,purchasable=true,extended=true}}
-          ns.VendorPriceDB.Scan()
+          ns.ProfFormulaOffers={[99]={{itemID=99,npcID=7,price=42,quantity=1,
+            limited=true,stock=2,hasExtendedCost=true,reference=true,priceVerified=true,
+            source='wowhead-forever',verifiedAt='2026-10-20'}}}
           assert(#ns.VendorPriceDB.GetFormulaOffers(99)==0)
         ''')
 
-    def test_currency_rejection_also_blocks_same_npc_reference_fallback(self):
+    def test_old_player_rejection_does_not_override_bundled_formula_quote(self):
         lua=vendor_runtime()
         lua.execute('''
           ns.ProfFormulaOffers={[99]={{npcID=12345,price=5,quantity=1,unlimited=true,
             reference=true,priceVerified=true,verifiedAt='2026-10-18',source='wowhead-forever'}}}
-          test.entries={{id=99,price=42,quantity=1,stock=2,purchasable=true,extended=true}}
-          ns.VendorPriceDB.Scan()
-          assert(#ns.VendorPriceDB.GetFormulaOffers(99)==0)
+          db.profVendorOffers={[99]={old={itemID=99,npcID=12345,character='Alice-Realm',
+            source='merchant',verifiedAt=1,price=42,quantity=1,stock=2,
+            hasExtendedCost=true,available=false}}}
+          local f=ns.VendorPriceDB.GetFormulaOffers(99)
+          assert(#f==1 and f[1].price==5 and f[1].priceUsable)
         ''')
 
 

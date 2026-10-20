@@ -1,14 +1,13 @@
 -- Verified Forever vendor shelves, inspected 2026-10-18.
--- Each row is { itemID, reported purchase-bundle price in copper, bundle size }.
+-- Each row is { itemID, purchase bundle size }; no purchase prices are stored.
 -- Wowhead NPC table: data-type="number" is the bundle size; parentheses in
 -- data-type="quantity" are limited stock and are excluded from this table.
--- These are NPC-specific reference quotes, not a uniform base price or a
--- character's reputation discount. Valid merchant API readings take priority.
+-- This catalogue establishes supply metadata only; pricing is not configured.
 -- Source evidence and rejected limited rows: tests/data/vendor-price-reference.json.
 local _, ns = ...
 
 ns.ProfVendorOffers = {}
-ns.ProfVendorOfferAudit = { verifiedAt = "2026-10-18", version = 2, sources = {} }
+ns.ProfVendorOfferAudit = { verifiedAt = "2026-10-18", version = 3, sources = {} }
 
 local function Shelf(npcID, name, faction, rows, limited, npcFactionID)
     local url = "https://www.wowhead.com/forever/npc=" .. npcID
@@ -24,11 +23,7 @@ local function Shelf(npcID, name, faction, rows, limited, npcFactionID)
             itemID = id, npcID = npcID, npcName = name, faction = faction,
             npcFactionID = npcFactionID, unlimited = true, available = true,
             source = "wowhead-forever", url = url, verifiedAt = "2026-10-18",
-            price = row[2], quantity = row[3], bundleSize = row[3],
-            reference = row[2] ~= nil or nil, priceVerified = row[2] ~= nil or nil,
-            estimated = row[2] ~= nil or nil,
-            priceBasis = row[2] ~= nil and "wowhead-reference" or nil,
-            catalogueOnly = row[2] == nil or nil,
+            quantity = row[2], bundleSize = row[2], catalogueOnly = true,
             areaID = loc and loc[1], mapID = loc and loc[2],
             x = loc and loc[3], y = loc and loc[4],
         }
@@ -38,96 +33,95 @@ end
 -- Neutral general supplies: neither limited patterns nor future gathered
 -- reagents are treated as an always-available purchasing source.
 Shelf(12022, "Lorelae Wintersong", "N", {
-    {2320, 10, 1}, {2321, 100, 1}, {2324, 24, 1}, {2325, 1000, 1}, {2604, 50, 1},
-    {2678, 10, 5}, {2692, 40, 1}, {2880, 100, 1}, {2901, 9, 1}, {2928, 20, 1},
-    {3371, 20, 5}, {3372, 200, 5}, {3466, 2000, 1}, {3713, 160, 1}, {3857, 500, 1},
-    {4289, 50, 1}, {4291, 500, 1}, {4340, 350, 1}, {4341, 500, 1}, {4342, 2500, 1},
-    {4399, 200, 1}, {4400, 2000, 1}, {5956, 17, 1}, {6217, 124, 1}, {6256, 23, 1},
-    {6530, 100, 1}, {6532, 250, 1}, {7005, 9, 1}, {8343, 2000, 1}, {8925, 2500, 5},
+    {2320, 1}, {2321, 1}, {2324, 1}, {2325, 1}, {2604, 1},
+    {2678, 5}, {2692, 1}, {2880, 1}, {2901, 1}, {2928, 1},
+    {3371, 5}, {3372, 5}, {3466, 1}, {3713, 1}, {3857, 1},
+    {4289, 1}, {4291, 1}, {4340, 1}, {4341, 1}, {4342, 1},
+    {4399, 1}, {4400, 1}, {5956, 1}, {6217, 1}, {6256, 1},
+    {6530, 1}, {6532, 1}, {7005, 1}, {8343, 1}, {8925, 5},
 }, {14483,16224,16243}, 609)
 
 Shelf(2670, "Xizk Goodstitch", "N", {
-    {2320, 9, 1}, {2321, 90, 1}, {2324, 23, 1}, {2325, 1000, 1}, {2604, 45, 1},
-    {2605, 100, 1}, {4291, 450, 1}, {4340, 315, 1}, {4341, 500, 1}, {4342, 2250, 1},
-    {6260, 50, 1}, {6261, 900, 1}, {8343, 1800, 1}, {10290, 2500, 1}, {14341, 5000, 1},
-    {253665, 135, 1}, {253668, 225, 1},
+    {2320, 1}, {2321, 1}, {2324, 1}, {2325, 1}, {2604, 1},
+    {2605, 1}, {4291, 1}, {4340, 1}, {4341, 1}, {4342, 1},
+    {6260, 1}, {6261, 1}, {8343, 1}, {10290, 1}, {14341, 1},
+    {253665, 1}, {253668, 1},
 }, {7087,14630,217258}, 21)
 
 -- Unlimited reagents; all eight herb rows and the alchemy formula are limited.
 Shelf(1313, "Maria Lumere", "A", {
-    {3371, 18, 5}, {3372, 200, 5}, {8925, 2500, 5}, {18256, 30000, 5},
+    {3371, 5}, {3372, 5}, {8925, 5}, {18256, 5},
 }, {765,785,2447,2449,2453,3355,3356,3357,9301}, 72)
 
 -- Unlimited dyes/threads. Limited old patterns are deliberately absent.
 Shelf(4168, "Elynna", "A", {
-    {2320, 10, 1}, {2321, 105, 1}, {2324, 25, 1}, {2325, 947, 1}, {2604, 50, 1},
-    {2605, 105, 1}, {4291, 473, 1}, {4340, 331, 1}, {4341, 473, 1}, {4342, 2368, 1},
-    {6260, 50, 1}, {6261, 947, 1}, {8343, 1894, 1}, {10290, 2368, 1}, {14341, 4736, 1},
-    {253665, 142, 1}, {253668, 236, 1},
+    {2320, 1}, {2321, 1}, {2324, 1}, {2325, 1}, {2604, 1},
+    {2605, 1}, {4291, 1}, {4340, 1}, {4341, 1}, {4342, 1},
+    {6260, 1}, {6261, 1}, {8343, 1}, {10290, 1}, {14341, 1},
+    {253665, 1}, {253668, 1},
 }, {6272,6275,10311}, 69)
 
 Shelf(3133, "Herble Baubbletump", "N", {
-    {2880, 94, 1}, {2901, 9, 1}, {3466, 1894, 1}, {3857, 473, 1}, {4399, 189, 1},
-    {4400, 1894, 1}, {5956, 18, 1}, {10647, 1894, 1}, {10648, 473, 1},
+    {2880, 1}, {2901, 1}, {3466, 1}, {3857, 1}, {4399, 1},
+    {4400, 1}, {5956, 1}, {10647, 1}, {10648, 1},
 }, {4357,4361,4363,4364,4371,4382,4389,4404})
 
 Shelf(7854, "Jangdor Swiftstrider", "H", {
-    {2320, 10, 1}, {2321, 100, 1}, {2325, 1000, 1}, {2604, 50, 1}, {2605, 100, 1},
-    {4289, 50, 1}, {4291, 500, 1}, {4340, 350, 1}, {4341, 500, 1}, {4342, 2500, 1},
-    {6260, 50, 1}, {6261, 1000, 1}, {7005, 10, 1}, {8343, 2000, 1}, {10290, 2500, 1},
-    {14341, 5000, 1}, {252783, 500, 1}, {252784, 500, 1}, {252811, 2000, 1},
-    {252812, 2000, 1}, {252942, 5500, 1},
+    {2320, 1}, {2321, 1}, {2325, 1}, {2604, 1}, {2605, 1},
+    {4289, 1}, {4291, 1}, {4340, 1}, {4341, 1}, {4342, 1},
+    {6260, 1}, {6261, 1}, {7005, 1}, {8343, 1}, {10290, 1},
+    {14341, 1}, {252783, 1}, {252784, 1}, {252811, 1},
+    {252812, 1}, {252942, 1},
 }, {7451,8385,8409,15734,217271}, 81)
 
 -- Dust and Lesser Magic Essence on both enchanting shelves are LIMITED.
 -- Mote of Magic is a distinct Forever reagent, not Strange Dust.
 Shelf(5158, "Tilli Thistlefuzz", "A", {
-    {4470, 40, 1}, {6217, 130, 1}, {11291, 4736, 1}, {20752, 3157, 1}, {20753, 3789, 1},
-    {20758, 526, 1}, {22307, 6315, 1}, {247786, 9, 1},
+    {4470, 1}, {6217, 1}, {11291, 1}, {20752, 1}, {20753, 1},
+    {20758, 1}, {22307, 1}, {247786, 1},
 }, {6342,6349,10938,10940}, 54)
 
 Shelf(3346, "Kithas", "H", {
-    {4470, 40, 1}, {6217, 130, 1}, {11291, 4736, 1}, {20752, 3157, 1}, {20753, 4000, 1},
-    {20758, 526, 1}, {22307, 6315, 1}, {247786, 10, 1},
+    {4470, 1}, {6217, 1}, {11291, 1}, {20752, 1}, {20753, 1},
+    {20758, 1}, {22307, 1}, {247786, 1},
 }, {6342,6346,6349,10938,10940}, 76)
 
 Shelf(5594, "Alchemist Pestlezugg", "N", {
-    {3371, 20, 5}, {3372, 200, 5}, {8925, 2500, 5}, {18256, 30000, 5},
-    {9303, 8000, 1}, {9304, 8000, 1}, {12958, 50000, 1},
+    {3371, 5}, {3372, 5}, {8925, 5}, {18256, 5},
+    {9303, 1}, {9304, 1}, {12958, 1},
 }, {6057,9305}, 369)
 
 -- Raw fish are limited even though the innkeeper's drinks are unlimited.
 Shelf(6807, "Innkeeper Skindle", "N", {
-    {159, 25, 5}, {1179, 125, 5}, {1205, 500, 5}, {1645, 2000, 5},
-    {1708, 1000, 5}, {8766, 4000, 5},
+    {159, 5}, {1179, 5}, {1205, 5}, {1645, 5},
+    {1708, 5}, {8766, 5},
 }, {4603,6289,6303,6308,6362,8959}, 21)
 
 -- Confirmed by the item's Sold by table (Stock infinity, stack 1).
-Shelf(2832, "Nixxrax Fillamug", "N", { {2596, 108, 1} }, {}, 21)
+Shelf(2832, "Nixxrax Fillamug", "N", { {2596, 1} }, {}, 21)
 ns.ProfVendorOffers[2596][1].url = "https://www.wowhead.com/forever/item=2596/skin-of-dwarven-stout"
 
 Shelf(2622, "Sly Garrett", "N", {
-    {2928, 20, 1}, {2930, 50, 1}, {3371, 20, 5}, {3372, 200, 5}, {5060, 1500, 1},
-    {5140, 25, 1}, {5173, 100, 1}, {8923, 200, 1}, {8924, 100, 1}, {8925, 2500, 5},
+    {2928, 1}, {2930, 1}, {3371, 5}, {3372, 5}, {5060, 1},
+    {5140, 1}, {5173, 1}, {8923, 1}, {8924, 1}, {8925, 5},
 }, {}, 21)
 
 -- Forever's summoned Reagent Bot, full 65-row shelf (two list pages).
 -- Availability of a summoned bot is not inferred from this catalogue: route
--- calculations require a character's actual merchant API observation or an
--- explicit confirmed access condition, even when a reference price is known.
+-- calculations require an explicit confirmed character access condition.
 Shelf(242498, "Reagent Bot", "N", {
-    {159, 23, 5}, {2320, 9, 1}, {2321, 90, 1}, {2324, 23, 1}, {2325, 900, 1}, {2604, 45, 1},
-    {2605, 90, 1}, {2678, 9, 5}, {2692, 36, 1}, {2880, 90, 1}, {2901, 9, 1}, {3466, 1800, 1},
-    {3713, 144, 1}, {3857, 450, 1}, {4289, 45, 1}, {4291, 450, 1}, {4340, 315, 1}, {4341, 450, 1},
-    {4342, 2250, 1}, {4399, 180, 1}, {4400, 1800, 1}, {4470, 35, 1}, {4471, 122, 1},
-    {4536, 23, 5}, {5565, 4500, 1}, {5956, 17, 1}, {6256, 21, 1}, {6260, 45, 1},
-    {6261, 900, 1}, {6529, 45, 1}, {6530, 90, 1}, {6532, 225, 1}, {7005, 9, 1}, {8343, 1800, 1},
-    {10284, 180, 1}, {10290, 2250, 1}, {10647, 1800, 1}, {10648, 450, 1}, {11291, 4050, 1},
-    {14341, 4500, 1}, {16583, 9000, 1}, {17020, 900, 1}, {17021, 630, 1}, {17026, 900, 1},
-    {17028, 630, 1}, {17029, 900, 1}, {17030, 1800, 1}, {17031, 900, 1}, {17032, 1800, 1},
-    {17033, 1800, 1}, {17034, 180, 1}, {17035, 360, 1}, {17036, 720, 1}, {17037, 1260, 1},
-    {17038, 1800, 1}, {18567, 135000, 1}, {21099, 450, 1}, {21177, 2700, 20},
-    {21219, 4500, 1}, {253665, 135, 1}, {253668, 225, 1}, {272941, 180000, 1}, {273636, 300, 1},
+    {159, 5}, {2320, 1}, {2321, 1}, {2324, 1}, {2325, 1}, {2604, 1},
+    {2605, 1}, {2678, 5}, {2692, 1}, {2880, 1}, {2901, 1}, {3466, 1},
+    {3713, 1}, {3857, 1}, {4289, 1}, {4291, 1}, {4340, 1}, {4341, 1},
+    {4342, 1}, {4399, 1}, {4400, 1}, {4470, 1}, {4471, 1},
+    {4536, 5}, {5565, 1}, {5956, 1}, {6256, 1}, {6260, 1},
+    {6261, 1}, {6529, 1}, {6530, 1}, {6532, 1}, {7005, 1}, {8343, 1},
+    {10284, 1}, {10290, 1}, {10647, 1}, {10648, 1}, {11291, 1},
+    {14341, 1}, {16583, 1}, {17020, 1}, {17021, 1}, {17026, 1},
+    {17028, 1}, {17029, 1}, {17030, 1}, {17031, 1}, {17032, 1},
+    {17033, 1}, {17034, 1}, {17035, 1}, {17036, 1}, {17037, 1},
+    {17038, 1}, {18567, 1}, {21099, 1}, {21177, 20},
+    {21219, 1}, {253665, 1}, {253668, 1}, {272941, 1}, {273636, 1},
 }, {4357,4364})
 for _, offers in pairs(ns.ProfVendorOffers) do
     for _, offer in ipairs(offers) do
@@ -137,16 +131,15 @@ end
 
 -- Permanent neutral alternative for elemental flux; item's Sold by table
 -- explicitly confirms unlimited stock and a one-item purchase bundle.
-Shelf(5411, "Krinkle Goodsteel", "N", { {18567, 150000, 1} }, {}, 369)
+Shelf(5411, "Krinkle Goodsteel", "N", { {18567, 1} }, {}, 369)
 for _, offer in ipairs(ns.ProfVendorOffers[18567]) do
     if offer.npcID == 5411 then offer.url = "https://www.wowhead.com/forever/item=18567/elemental-flux" end
 end
 
 ns.ProfVendorOfferAudit.unverifiedAvailability = { 215369, 215370 }
 ns.ProfVendorOfferAudit.notes = {
-    "Merchant API quotes take priority; verified NPC-specific Wowhead bundle prices are reference fallbacks.",
-    "Reference quotes may include different discounts; they are not assumed to be undiscounted base prices.",
-    "Summoned suppliers require confirmed character access before reference prices can be used.",
+    "This catalogue stores suppliers, purchase bundles and availability conditions, with no purchase prices.",
+    "Summoned suppliers require confirmed character access before they are available.",
     "NPC 263384 sells Gift of Galloping, not crafting reagents; not included.",
     "No unlimited-stock claim is inferred for herbs, raw fish or engineering parts.",
     "Unlisted reagent/vendor pairs are unknown, not proof that no vendor exists.",

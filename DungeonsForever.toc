@@ -7,7 +7,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.8.29
+## Version: 1.8.31
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
 ## OptionalDeps: Auctionator
@@ -63,7 +63,6 @@ Core\Data\Data_RaidSets.lua
 Core\Data\Data_PvPRanks.lua
 Core\Data\Data_PvPSets.lua
 Core\Data\Data_PvPHonor.lua
-Core\Data\Data_VendorPrices.lua
 Core\Data\zhTW\Data_Dungeons.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonLoot.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonQuests.lua [AllowLoadTextLocale zhTW]
@@ -85,7 +84,6 @@ Core\Data\zhTW\Data_ExploreToys.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_PvPHonor.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_PvPRanks.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_PvPSets.lua [AllowLoadTextLocale zhTW]
-Core\Data\zhTW\Data_VendorPrices.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_Factions.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ExploreBanner.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_CollectionMounts.lua [AllowLoadTextLocale zhTW]
@@ -126,7 +124,6 @@ Core\Data\enUS\Data_ExploreToys.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_PvPHonor.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_PvPRanks.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_PvPSets.lua [AllowLoadTextLocale enUS]
-Core\Data\enUS\Data_VendorPrices.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_Factions.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ExploreBanner.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_CollectionMounts.lua [AllowLoadTextLocale enUS]
@@ -153,6 +150,7 @@ Core\ProfEconomy.lua
 Core\ProfFishing.lua
 Core\ProfRouteSolver.lua
 Core\ProfRouteAuto.lua
+Core\ProfExecution.lua
 Core\ProfessionUI.lua
 Core\AuctionatorBridge.lua
 Core\ProfFollow.lua

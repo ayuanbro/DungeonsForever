@@ -72,7 +72,7 @@ class MergedProfessionTests(unittest.TestCase):
                             "NPC价格未知（暂无实测或可靠参考报价）"):
                     self.assertIsNotNone(lua.eval("rawget")(lua.globals().ns.L, key), key)
 
-    def test_real_localized_catalogues_produce_complete_fishing_procurement(self):
+    def test_real_localized_catalogues_preserve_fishing_and_unpriced_npc_sources(self):
         for locale in ("zhCN", "zhTW", "enUS"):
             with self.subTest(locale=locale):
                 lua, load = self.runtime(locale)
@@ -91,22 +91,48 @@ class MergedProfessionTests(unittest.TestCase):
                   assert(#ns.ProfRecipes.mining.rows==15,'locale erased mining extension')
                   assert(ns.ProfFormulaMeta[4597].source.questOnly)
                   assert(ns.ProfVendorOffers[2320] and ns.ProfFishingRoutes)
+                  local removed={'price','unit','unitPrice','vendorPrice','cost','priceVerified','priceBasis','estimated'}
+                  for _,catalogue in ipairs({ns.ProfVendorOffers,ns.ProfFormulaOffers}) do
+                    for _,offers in pairs(catalogue or {}) do for _,offer in ipairs(offers) do
+                      for _,key in ipairs(removed) do assert(offer[key]==nil,key..' survived in NPC catalogue') end
+                    end end
+                  end
                   for _,faction in ipairs({'Alliance','Horde'}) do
                     UnitFactionGroup=function() return faction end
+                    local e=ns.ProfEconomy
+                    local recipe=e.FindRecipe('cooking',7751)
+                    local formula=e.FormulaFor(recipe,{known={},prices={},faction=faction=='Alliance' and 'A' or 'H'})
+                    assert(formula and formula.cost==nil and formula.unpriced and not formula.usable,
+                      'an unpriced NPC formula became free')
+                    assert(#formula.vendorOffers>0,'supplier metadata disappeared')
+                    local mapped=false
+                    for _,offer in ipairs(formula.vendorOffers) do
+                      assert(offer.price==nil and not offer.priceUsable and offer.npcID and offer.url)
+                      if offer.unlimited then assert((offer.quantity or offer.bundleSize)==1) end
+                      local loc=ns.ProfVendors[offer.npcID]
+                      if loc and loc[2] then
+                        if offer.mapID then assert(offer.mapID==loc[2]) end
+                        mapped=true
+                      end
+                    end
+                    assert(mapped,'NPC location catalogue disappeared')
                     local r=ns.ProfFishing.Compute({start=1,target=300})
+                    assert(not r.targetReached and r.status=='incomplete','unknown formulas were treated as free')
+                    assert(r.vendorTotal==0 and r.formulaVendorTotal==0)
+                    -- Already learned recipes still support the geographical
+                    -- guide without inventing a formula purchase price.
+                    e.Known=function()return true end
+                    r=ns.ProfFishing.Compute({start=1,target=300})
                     assert(r.targetReached and r.feasible and #r.steps==5,
                       testLocale..' '..faction..' '..tostring(r.status))
-                    assert(#r.formulas==5 and r.vendorTotal>0 and r.ahTotal==0)
-                    assert(r.total==r.formulasTotal and r.matTotal==0)
-                    for _,f in ipairs(r.formulas) do
-                      assert(f.vendor and f.unlimited and not f.blocked)
-                    end
+                    assert(r.vendorTotal==0 and r.ahTotal==0 and r.formulasTotal==0 and r.matTotal==0)
                     for _,fish in ipairs(r.fishMaterials) do
                       assert(fish.source=='fishing' and fish.count>0 and #fish.areas>0)
                     end
                     local total=0
                     for _,step in ipairs(r.steps) do total=total+step.cost end
                     assert(total==r.total,'formula procurement cost counted twice')
+                    e.Known=function()return false end
                   end
                 """)
 

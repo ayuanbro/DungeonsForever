@@ -1,5 +1,5 @@
 -- Reference geography has no profession API equivalent. Recipe fields and
--- merchant observations still come from the client first. Verified 2026-10-19.
+-- availability still come from the client first. Verified 2026-10-19.
 local _,ns=...
 local locale=GetLocale and GetLocale() or "zhCN"
 local function text(cn,tw,en) return locale=="enUS" and en or locale=="zhTW" and tw or cn end
@@ -82,20 +82,21 @@ FR.fishingSteps={
 -- geographical catalogue, which still provides alternate locations.
 -- Blueprint shelves observed in the visible Forever NPC Sells tables. No
 -- parenthesized limited-stock marker on these entries; quantity per purchase 1.
-local function shelf(npc,faction,rows)
+-- This is supplier metadata only. NPC purchase pricing is pending redesign.
+local function shelf(npc,faction,items)
     ns.ProfFormulaOffers=ns.ProfFormulaOffers or {}
     local loc=ns.ProfVendors and ns.ProfVendors[npc]
-    for _,row in ipairs(rows) do
-        local id=row[1];local offers=ns.ProfFormulaOffers[id] or {};ns.ProfFormulaOffers[id]=offers
-        offers[#offers+1]={itemID=id,npcID=npc,faction=faction,price=row[2],quantity=1,bundleSize=1,
+    for _,id in ipairs(items) do
+        local offers=ns.ProfFormulaOffers[id] or {};ns.ProfFormulaOffers[id]=offers
+        offers[#offers+1]={itemID=id,npcID=npc,faction=faction,quantity=1,bundleSize=1,
             unlimited=true,available=true,source="wowhead-forever",url="https://www.wowhead.com/forever/cn/npc="..npc.."#sells",
-            verifiedAt="2026-10-19",reference=true,priceVerified=true,estimated=true,priceBasis="wowhead-reference",
+            verifiedAt="2026-10-19",catalogueOnly=true,
             areaID=loc and loc[1],mapID=loc and loc[2],x=loc and loc[3],y=loc and loc[4]}
     end
 end
-shelf(5494,"A",{{6325,42},{6330,1136},{6368,378}})
-shelf(5162,"A",{{6326,40},{6328,400},{6369,2200},{17062,2200}})
-shelf(3027,"H",{{6328,360},{6330,1080},{21099,450},{21219,4500}})
-shelf(3029,"H",{{6325,42},{6330,1263}})
-shelf(3333,"H",{{6368,400},{6369,2315},{17062,2315}})
-shelf(8137,"N",{{13939,14400},{13942,16000},{13945,20000},{13946,20000}})
+shelf(5494,"A",{6325,6330,6368})
+shelf(5162,"A",{6326,6328,6369,17062})
+shelf(3027,"H",{6328,6330,21099,21219})
+shelf(3029,"H",{6325,6330})
+shelf(3333,"H",{6368,6369,17062})
+shelf(8137,"N",{13939,13942,13945,13946})

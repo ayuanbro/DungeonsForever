@@ -1,8 +1,9 @@
 # Fishing-only cooking and preferred fishing waters
 
-Verified 2026-10-19. These are reference geography and NPC-specific quotations,
+Verified 2026-10-19. These are reference geography and NPC supplier records,
 not current-client catch-rate observations. The client still overrides recipe
-materials, yields, learned state, availability, learning level and merchant prices.
+materials, yields, learned state, availability and learning level. NPC purchase
+prices were removed on 2026-10-20 and await a separate pricing design.
 
 - [Forever cooking guide](https://www.wowhead.com/forever/cn/guide/professions/cooking/overview-leveling):
   four recipes through 225, spells 7751, 7753, 7755, 20916. Guide quantities
@@ -33,18 +34,19 @@ fishery API was assumed for information the client cannot provide.
 Read the visible Forever NPC `Sells` tables through the browser. These recipe
 rows had no parenthesized limited-stock marker, unlike limited fishing equipment
 on the same shelf; all are single-item purchases paid in gold/silver/copper.
-Numbers below are NPC-specific purchase copper, not uniform base prices or a
-guessed reputation formula. Client observations override them. These records
-are added only to `ProfFormulaOffers`, not unlimited reagent supplies.
+The records below retain supplier identity, faction, stock classification and
+one-item purchase quantities. They contain no purchase price, price validation
+or estimate. They are added only to `ProfFormulaOffers`, not unlimited reagent
+supplies; a known supplier does not turn a missing price into a free formula.
 
-| NPC / source | Formula items and observed copper |
+| NPC / source | Formula item IDs |
 |---|---|
-| [5494](https://www.wowhead.com/forever/cn/npc=5494#sells), Alliance | 6325: 42; 6330: 1136; 6368: 378 |
-| [5162](https://www.wowhead.com/forever/cn/npc=5162#sells), Alliance | 6326: 40; 6328: 400; 6369: 2200; 17062: 2200 |
-| [3027](https://www.wowhead.com/forever/cn/npc=3027#sells), Horde | 6328: 360; 6330: 1080; 21099: 450; 21219: 4500 |
-| [3029](https://www.wowhead.com/forever/cn/npc=3029#sells), Horde | 6325: 42; 6330: 1263 |
-| [3333](https://www.wowhead.com/forever/cn/npc=3333#sells), Horde | 6368: 400; 6369: 2315; 17062: 2315 |
-| [8137](https://www.wowhead.com/forever/cn/npc=8137#sells), Neutral | 13939: 14400; 13942: 16000; 13945: 20000; 13946: 20000 |
+| [5494](https://www.wowhead.com/forever/cn/npc=5494#sells), Alliance | 6325, 6330, 6368 |
+| [5162](https://www.wowhead.com/forever/cn/npc=5162#sells), Alliance | 6326, 6328, 6369, 17062 |
+| [3027](https://www.wowhead.com/forever/cn/npc=3027#sells), Horde | 6328, 6330, 21099, 21219 |
+| [3029](https://www.wowhead.com/forever/cn/npc=3029#sells), Horde | 6325, 6330 |
+| [3333](https://www.wowhead.com/forever/cn/npc=3333#sells), Horde | 6368, 6369, 17062 |
+| [8137](https://www.wowhead.com/forever/cn/npc=8137#sells), Neutral | 13939, 13942, 13945, 13946 |
 
 ## Validation boundary
 
