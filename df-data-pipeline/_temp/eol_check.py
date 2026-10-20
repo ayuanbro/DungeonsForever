@@ -1,5 +1,5 @@
 import sys
-files = ["Bridge","GearUI","Hui","ExploreMap","ExploreUI","Core","ProfFollow","VendorPriceDB","ProfRouteAuto","QuickBar","DungeonUI","MainFrame"]
+files = ["Bridge","GearUI","Hui","ExploreMap","ExploreUI","Core","ProfFollow","ProfItemPrices","ProfRouteAuto","QuickBar","DungeonUI","MainFrame"]
 for f in files:
     p = "Core/" + f + ".lua"
     d = open(p, "rb").read()

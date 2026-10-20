@@ -300,24 +300,24 @@ class MissingQuoteTests(unittest.TestCase):
           assert(#r.mats==1 and r.mats[1].vendor and r.mats[1].source=='vendor' and r.mats[1].count==5)
         ''')
 
-    def test_unknown_vendor_price_is_not_free_and_does_not_fall_back_to_auction(self):
+    def test_unknown_vendor_price_uses_real_auction_purchase_without_becoming_free(self):
         self.lua.execute(r'''
           local blocked=flatRecipe('alchemy',101,20,{{10,1}},1,4)
           local usable=flatRecipe('alchemy',102,21,{{11,1}},1,4)
           local s=snapshot({blocked,usable},{[10]=1,[11]=7})
           s.vendorItems={[10]=true}; s.vendorSuppliers={[10]={{npcID=1313}}}
           local r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=4,maxNodes=1})
-          assert(r.feasible and r.targetReached and r.total==21)
+          assert(r.feasible and r.targetReached and r.total==3)
           noUnknownPurchases(r)
-          assert(countCrafts(r,101)==0 and countCrafts(r,102)==3)
-          for _,m in ipairs(r.mats) do assert(m.id~=10) end
+          assert(countCrafts(r,101)==3 and countCrafts(r,102)==0)
+          assert(#r.mats==1 and r.mats[1].id==10 and r.mats[1].source=='ah' and r.mats[1].unit==1)
         ''')
 
     def test_unknown_vendor_price_can_use_fully_priced_own_material_recipe(self):
         self.lua.execute(r'''
           local producer=flatRecipe('alchemy',101,10,{{11,2}},1,1)
           local root=flatRecipe('alchemy',201,20,{{10,1}},1,4)
-          local s=snapshot({producer,root},{[10]=1,[11]=7})
+          local s=snapshot({producer,root},{[11]=7})
           s.vendorItems={[10]=true}; s.vendorSuppliers={[10]={{npcID=1313}}}
           local r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=4,maxNodes=1})
           assert(r.feasible and r.targetReached and r.total==42)

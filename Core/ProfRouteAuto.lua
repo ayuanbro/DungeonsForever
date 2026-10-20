@@ -14,6 +14,7 @@ local CALLER = "DungeonsForever"
 local CAP = 300                  -- 无限服 1.60.1 专业上限
 local MAX_STALE = 2              -- 价格快照年龄上限（天；价格插件 Age API 返回的就是「天」），超过视为无价
 local CACHE_TTL = 600            -- 结果缓存 10 分钟
+local VENDOR_QUOTE_REVISION = 4
 -- 期望收益插值端点（调参集中在这里）
 -- ★★ 语义 = 「单次制作的升点概率 P（点/次）」，不是收益系数 —— Simulate 里按 1/P 累计次数。
 --   端点须与 ProfFollow.expPerPoint（经典 1/P 口径）一致：
@@ -99,25 +100,135 @@ end
 
 local function VendorPrice(id)
     -- 缺失的 NPC 采购价保持未知；拍卖行价格和卖店收益均不能替代。
-    if ns.VendorPriceDB then
-        local ok, p = pcall(ns.VendorPriceDB.GetPrice, id)
+    if ns.ProfItemPrices then
+        local ok, p = pcall(ns.ProfItemPrices.GetPrice, id)
         if ok and type(p) == "number" and p >= 0 then return p end
     end
     return nil
 end
 
--- 材料价：商人直卖清单内强制商人价；否则取 min(AH, 商人)；都无 = nil
-local function MatPrice(id, soldSet)
+-- Compare actual AH purchasing with the configured NPC gold quotation.
+local function MatPrice(id)
     local v = VendorPrice(id)
-    local db=ns.VendorPriceDB
-    if db and db.GetSuppliers and #db.GetSuppliers(id)>0 then return v end
-    local a = AHPrice(id)
+    local economy=ns.ProfEconomy
+    local a = not (economy and economy.NonAuctionableItem and economy.NonAuctionableItem(id)) and AHPrice(id) or nil
     if a and v and v < a then return v end
     return a or v
 end
 function RA.VendorMaterialOf(id)
-    local db=ns.VendorPriceDB
-    return db and db.GetSuppliers and #db.GetSuppliers(id)>0 or false
+    local db=ns.ProfItemPrices
+    return db and db.GetOffers and #db.GetOffers(id)>0 or false
+end
+
+local function vendorQuoteData()
+    local meta=ns.ProfItemsMeta
+    local csv=meta and meta.sources and meta.sources.csv
+    return csv and csv.sha256 or nil
+end
+local function hasVendorPurchases(result)
+    if (result.vendorTotal or 0)>0 or (result.formulaVendorTotal or 0)>0 then return true end
+    for _,entries in ipairs({result.mats or {},result.formulas or {},result.actions or {}}) do
+        for _,entry in ipairs(entries) do
+            if entry.vendor or entry.source=="vendor" or entry.source=="npc" then return true end
+        end
+    end
+    return false
+end
+function RA.StampVendorQuotes(result)
+    if result then
+        result.vendorQuoteRevision=VENDOR_QUOTE_REVISION
+        result.vendorQuoteData=vendorQuoteData()
+    end
+    return result
+end
+function RA.VendorQuotesChanged(result)
+    return result and hasVendorPurchases(result) and
+        (result.vendorQuoteRevision~=VENDOR_QUOTE_REVISION or result.vendorQuoteData~=vendorQuoteData()) or false
+end
+function RA.ValidateVendorQuotes(result)
+    if not RA.VendorQuotesChanged(result) then return result end
+    -- Keep stored execution facts intact; the current purchasing view is empty
+    -- until a manual calculation uses this version's item/NPC quotations.
+    return RA.StampVendorQuotes({planVersion=2,mode=result.mode,scheme=result.scheme,
+        status="recalculate_required",start=result.start,target=result.target,
+        steps={},executionSteps={},actions={},mats={},formulas={},gaps={},
+        total=0,matTotal=0,ahTotal=0,vendorTotal=0,formulasTotal=0,crafts=0,
+        feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
+        cached=true,stale=true,staleReason="vendor-quotes",revision=result.revision,
+        diagnostics={{code="vendorQuoteChanged"}}})
+end
+
+-- Keep planned specialization learning separate from the character's current
+-- abilities. Acquiring a planned ability advances an existing frozen plan;
+-- changing its selection/data or losing an original ability invalidates it.
+local function specializationContext(slug,opts)
+    local economy=ns.ProfEconomy
+    if not (economy and economy.GetEngineeringSpecializationContext) then return end
+    local options={}; for key,value in pairs(opts or {}) do options[key]=value end
+    options.profession=slug or options.profession or "engineering"
+    if options.target==nil then
+        local saved=DungeonsForeverDB and DungeonsForeverDB.prof
+        options.target=tonumber(saved and saved.lvTarget and saved.lvTarget[options.profession]) or 300
+    end
+    return economy.GetEngineeringSpecializationContext(options)
+end
+function RA.StampSpecializations(result,slug,opts,snapshot)
+    if not result then return end
+    local economy=ns.ProfEconomy
+    local context=snapshot and snapshot.specializationContext or specializationContext(slug,opts)
+    if not context then return result end
+    local abilities={}
+    for id,known in pairs(snapshot and snapshot.specializationAbilities or context.abilities or {}) do
+        if known==true then abilities[id]=true end
+    end
+    result.specializationPolicy={revision=1,choice=context.choice or "none",
+        fingerprint=economy.SpecializationFingerprint(context),actualAbilities=abilities,
+        selectionConflict=context.selectionConflict==true,
+        profession=slug or (snapshot and snapshot.targetProfession)}
+    return result
+end
+function RA.SpecializationPlanChanged(result,slug,opts)
+    if not result then return false end
+    local context=specializationContext(slug or (result.specializationPolicy or {}).profession,opts)
+    if not context then return false end
+    local policy=result.specializationPolicy
+    if not policy then
+        return (ns.ProfSpecializations and next(ns.ProfSpecializations)~=nil)
+            or (context.choice and context.choice~="none") or false
+    end
+    if policy.revision~=1 or policy.fingerprint~=ns.ProfEconomy.SpecializationFingerprint(context) then return true end
+    for id in pairs(policy.actualAbilities or {}) do
+        if (context.abilities or {})[id]~=true then return true end
+    end
+    return context.profession=="engineering" and context.selectionConflict==true and not policy.selectionConflict
+end
+function RA.ValidateSpecializationPlan(result,slug,opts)
+    if not result or result.status=="recalculate_required" or not RA.SpecializationPlanChanged(result,slug,opts) then return result end
+    return {planVersion=2,mode=result.mode,scheme=result.scheme,status="recalculate_required",
+        start=result.start,target=result.target,steps={},executionSteps={},actions={},mats={},formulas={},gaps={},
+        total=0,matTotal=0,ahTotal=0,vendorTotal=0,formulasTotal=0,crafts=0,
+        feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
+        cached=true,stale=true,staleReason="specialization",revision=result.revision,
+        diagnostics={{code="specializationChanged"}}}
+end
+RA.ValidateSpecializations=RA.ValidateSpecializationPlan
+
+function RA.FilterFixedSpecializations(slug,steps,opts)
+    local economy=ns.ProfEconomy
+    if not (economy and economy.LearningEligibility) then return steps or {},{},false end
+    local context=specializationContext(slug,opts)
+    local snapshot={specializationContext=context,specializationAbilities=context and context.abilities or {},known={}}
+    local filtered,blocked={},{}
+    for _,step in ipairs(steps or {}) do
+        local spell=step[3] or step.spell
+        local recipe=step.recipe or (spell and economy.FindRecipe and economy.FindRecipe(step.profession or slug,spell))
+        if recipe and economy.Known(recipe.spell) then snapshot.known[recipe.key or recipe.spell]=true end
+        local allowed,reason=true
+        if recipe then allowed,reason=economy.LearningEligibility(recipe,snapshot) end
+        if allowed then filtered[#filtered+1]=step
+        else blocked[#blocked+1]={spell=spell,from=step[1],to=step[2],reason=reason or "specializationRequired"} end
+    end
+    return filtered,blocked,context and #(context.goals or {})>0 or false
 end
 
 -- 物品卖店价（直接卖给 NPC 的收益）：三通道依次尝试。
@@ -169,15 +280,14 @@ local function ClientKnown(id)
 end
 
 -- 材料清单成本（2026-10-10 配方页「制作成本」列/提示框「成本」行共用）：
--- mats = {{id, cnt}, ...}；逐项取 MatPrice（商人价优先/拍卖兜底），无价项计 0 并计数。
+-- mats = {{id, cnt}, ...}；逐项比较可用单价，无价项计数。
 -- 返回 total, unpriced（unpriced>0 = 部分材料没价，调用方加 ≈ 前缀）
-local MATSOLD_EMPTY = {}   -- MatPrice(id, soldSet) 的空表常量（提示框查价无「商人直卖」上下文）
 local function MatListCost(mats)
     if type(mats) ~= "table" or #mats == 0 then return nil, 0 end
     local total, unpriced = 0, 0
     for _, m in ipairs(mats) do
         local id, cnt = m[1] or m.id, (m[2] or m.cnt or 1)
-        local p = MatPrice(id, MATSOLD_EMPTY)
+        local p = MatPrice(id)
         if p then total = total + p * cnt else unpriced = unpriced + 1 end
     end
     return total, unpriced
@@ -300,6 +410,7 @@ end
 --   8 yellow / 9 green / 10 grey / 11 is_new / 12 reagents / 13 formula / 14 source
 
 local function LearnKnown(spell)
+    if ns.ProfEconomy and ns.ProfEconomy.Known then return ns.ProfEconomy.Known(spell) end
     if type(IsSpellKnown) == "function" then
         local ok, v = pcall(IsSpellKnown, spell)
         if ok and v then return true end
@@ -339,12 +450,9 @@ local function BuildCandidates(slug, opts)
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
     if not (Rg and (type(Rg.rows) == "table"
                     or (LV and type(LV.rinfo) == "table"))) then return nil end
-    local soldSet = {}
-    if LV and type(LV.sold) == "table" then
-        for _, id in ipairs(LV.sold) do soldSet[id] = true end
-    end
-
     local cands, recOf = {}, {}
+    local specContext=specializationContext(slug,opts)
+    local specSnapshot={specializationContext=specContext,specializationAbilities=specContext and specContext.abilities or {}}
     for _, seed in ipairs(Rg.rows or {}) do
         local rec=ClientRecipe(seed,nil,slug)
         local spell, learn, yellow, green, grey = rec[1], rec[7], rec[8], rec[9], rec[10]
@@ -354,7 +462,10 @@ local function BuildCandidates(slug, opts)
            and type(reagents) == "table" and #reagents > 0 then
             local ok = not rec.clientUnavailable
             local economy=ns.ProfEconomy
-            local formula=economy and economy.FormulaFor(economy.Normalize(rec,slug,"rows"))
+            local recipe=economy and economy.Normalize(rec,slug,"rows")
+            if recipe and economy.LearningEligibility and not economy.LearningEligibility(recipe,specSnapshot) then ok=false end
+            if recipe and (recipe.cooldown or recipe.cooldownUnknown or recipe.clientPending or recipe.outputConflict) then ok=false end
+            local formula=recipe and economy.FormulaFor(recipe)
             if formula and not formula.usable then ok=false end
             local policy=ns.ProfEconomy and ns.ProfEconomy.Policy(opts.exclusions or ns.ProfEconomy.GetPolicies(slug),{key=slug..":"..spell,spell=spell})
             if policy then ok=false end
@@ -366,7 +477,7 @@ local function BuildCandidates(slug, opts)
             if ok then
                 local cost, unpriced = 0, false
                 for _, m in ipairs(reagents) do
-                    local p = MatPrice(m[1], soldSet)
+                    local p = MatPrice(m[1])
                     if p then
                         cost = cost + p * (m[2] or 1)
                     else
@@ -413,12 +524,15 @@ local function BuildCandidates(slug, opts)
                 local ok = not ri.clientUnavailable and not (opts.learnedOnly and not LearnKnown(spell))
                 local economy=ns.ProfEconomy
                 local recipe=economy and economy.FindRecipe(slug,spell)
+                if recipe and economy.LearningEligibility and not economy.LearningEligibility(recipe,specSnapshot) then ok=false end
+                if recipe and (recipe.cooldown or recipe.cooldownUnknown or recipe.clientPending or recipe.outputConflict) then ok=false end
+                if economy and economy.Policy(opts.exclusions or economy.GetPolicies(slug),{key=slug..":"..spell,spell=spell}) then ok=false end
                 local formula=recipe and economy.FormulaFor(recipe)
                 if formula and not formula.usable then ok=false end
                 local cost, unpriced = 0, false
                 if ok then
                     for _, m in ipairs(ri.mats) do
-                        local p = MatPrice(m[1], soldSet)
+                        local p = MatPrice(m[1])
                         if p then
                             cost = cost + p * (m[2] or 1)
                         else
@@ -448,7 +562,7 @@ local function BuildCandidates(slug, opts)
             end
         end
     end
-    return cands, recOf, soldSet
+    return cands, recOf
 end
 
 -- ── 贪心逐技能点模拟 ────────────────────────────────────────────────────────
@@ -488,16 +602,15 @@ end
 
 -- The reference scoring modes retain their own priority, but consume the same
 -- observed finite auction budget across every attempted craft and formula.
+local FixedPurchase
 local function SimulateSupply(cands,start,cap,scheme)
     local economy=ns.ProfEconomy
     if not economy or not economy.AuctionSupplyOf then return end
     local caps,finite={},false
     for _,c in ipairs(cands) do
         for _,m in ipairs(c.mats) do
-            if not RA.VendorMaterialOf(m[1]) and not VendorPrice(m[1]) then
-                local supply=economy.AuctionSupplyOf(nil,m[1])
-                if supply then caps[m[1]]=supply.quantity;finite=true end
-            end
+            local supply=economy.AuctionSupplyOf(nil,m[1])
+            if supply then caps[m[1]]=supply.quantity;finite=true end
         end
         local f=c.formula
         if f and not f.known and f.source=="ah" then
@@ -505,40 +618,80 @@ local function SimulateSupply(cands,start,cap,scheme)
             if supply then caps[f.id]=supply.quantity;finite=true end
         end
     end
-    if not finite then return end
-    local steps,gaps,used,paid={},{},{},{}
+    local steps,gaps,demands,paid={},{},{},{}
+    local formulaUsed,formulaChoices,materialCosts={},{},{}
+    local materialTotal,priceCache=0,{}
+    local function quote(id,need,reserved)
+        if need==0 then return 0,true end
+        local limit=caps[id] and math.max(0,caps[id]-(reserved or 0)) or nil
+        local key=id..":"..need..":"..tostring(limit)
+        local known=priceCache[key]
+        if known then return known[1],known[2] end
+        local entries,possible=FixedPurchase(id,need,limit)
+        local cost=0
+        for _,entry in ipairs(entries) do
+            cost=cost+entry.cost
+            if entry.unpriced then possible=false end
+        end
+        priceCache[key]={cost,possible}
+        return cost,possible
+    end
     local cur,progress=math.max(1,start or 1),0
     local guard=0
     while cur<cap and guard<100000 do
         guard=guard+1
-        local best,score,bestNeed
+        local best,score,bestPlan
         for _,c in ipairs(cands) do
             if Usable(scheme,c,cur,false) then
-                local need={}
-                for _,m in ipairs(c.mats) do
-                    if caps[m[1]] then need[m[1]]=(need[m[1]] or 0)+m[2] end
-                end
                 local f=c.formula;local key=f and (f.id or f.recipeKey)
-                if f and not f.known and f.source=="ah" and not paid[key] and caps[f.id] then
-                    need[f.id]=(need[f.id] or 0)+1
+                local books={false}
+                if f and not f.known and not paid[key] then
+                    books={}
+                    local remaining=f.id and caps[f.id] and math.max(0,caps[f.id]-(formulaUsed[f.id] or 0)) or nil
+                    local context={nonAuctionable={}}
+                    if f.id and economy.NonAuctionableItem then context.nonAuctionable[f.id]=economy.NonAuctionableItem(f.id) end
+                    local chosen=economy.FormulaFor(f.recipe,context,remaining)
+                    if chosen and chosen.usable then books[#books+1]=chosen end
+                    if chosen and chosen.source=="ah" then
+                        local alternative=economy.FormulaFor(f.recipe,context,0)
+                        if alternative and alternative.usable and alternative.source=="vendor" then books[#books+1]=alternative end
+                    end
                 end
-                local enough=true
-                for id,n in pairs(need) do if (used[id] or 0)+n>caps[id] then enough=false;break end end
-                if enough then
+                for _,book in ipairs(books) do
+                    local added={}
+                    for _,m in ipairs(c.mats) do added[m[1]]=(added[m[1]] or 0)+m[2] end
+                    if book and book.source=="ah" then added[book.id]=added[book.id] or 0 end
+                    local nextCosts,nextTotal,enough={},materialTotal,true
+                    for id,n in pairs(added) do
+                        local reserve=(formulaUsed[id] or 0)+(book and book.source=="ah" and book.id==id and 1 or 0)
+                        local cost,possible=quote(id,(demands[id] or 0)+n,reserve)
+                        if not possible then enough=false;break end
+                        nextCosts[id]=cost
+                        nextTotal=nextTotal+cost-(materialCosts[id] or 0)
+                    end
                     local g=GainOf(scheme,c,cur)
-                    if g and g>0 then
-                        local metric=MetricOf(scheme,c,g,paid)
+                    if enough and g and g>0 then
+                        local incremental=nextTotal-materialTotal
+                        local metric=scheme=="crafts" and 1/g or scheme=="optim" and (c.base or 0)/g
+                            or incremental/g+(book and book.cost or 0)
                         if not best or metric<score-1e-9 or (math.abs(metric-score)<1e-9 and
-                            (c.cost<best.cost or c.cost==best.cost and c.spell<best.spell)) then
-                            best,score,bestNeed=c,metric,need
+                            (incremental<bestPlan.incremental or incremental==bestPlan.incremental and c.spell<best.spell)) then
+                            best,score,bestPlan=c,metric,{book=book,added=added,costs=nextCosts,total=nextTotal,incremental=incremental}
                         end
                     end
                 end
             end
         end
         if not best then gaps[#gaps+1]={cur,cap-1};break end
-        for id,n in pairs(bestNeed) do used[id]=(used[id] or 0)+n end
-        if best.formula then paid[best.formula.id or best.formula.recipeKey]=true end
+        for id,n in pairs(bestPlan.added) do demands[id]=(demands[id] or 0)+n end
+        for id,cost in pairs(bestPlan.costs) do materialCosts[id]=cost end
+        materialTotal=bestPlan.total
+        local book=bestPlan.book
+        if book then
+            local key=book.id or book.recipeKey
+            paid[key]=true;formulaChoices[key]=book
+            if book.source=="ah" then formulaUsed[book.id]=(formulaUsed[book.id] or 0)+1 end
+        end
         local from=cur
         local gain=GainOf(scheme,best,cur)
         progress=progress+gain;local whole=math.floor(progress+1e-7)
@@ -548,7 +701,7 @@ local function SimulateSupply(cands,start,cap,scheme)
         else steps[#steps+1]={from,cur,best.spell,1,item=best.item} end
     end
     if cur<cap and #gaps==0 then gaps[#gaps+1]={cur,cap-1} end
-    return steps,gaps,cur
+    return steps,gaps,cur,formulaChoices,finite
 end
 
 local function Simulate(cands, start, cap, allowUnpriced, scheme)
@@ -766,39 +919,71 @@ end
 -- Aggregate demand before choosing vendor bundles. Fixed guide steps retain
 -- their recipes/counts; purchase leftovers are shared across those steps.
 
-local function FixedPurchase(id, need)
-    local db = ns.VendorPriceDB
+FixedPurchase = function(id, need, auctionLimit)
+    local db = ns.ProfItemPrices
     local offers = db and db.GetOffers and db.GetOffers(id) or {}
-    local vendorOnly = RA.VendorMaterialOf(id) or #offers > 0
-    local best
+    local best, valid = nil, {}
+    local function vendorEntry(offer, count, demand)
+        local quantity = offer.quantity or offer.bundleSize
+        return {id, count, id=id, count=count, need=demand,
+            cost=count/quantity*offer.price, unit=offer.price/quantity,
+            vendor=true, source="vendor", npcID=offer.npcID,
+            url=offer.url, bundleSize=quantity, bundlePrice=offer.price,
+            reference=offer.reference, estimated=offer.estimated, quoteSource=offer.source,
+            priceSource=offer.priceSource, priceBasis=offer.priceBasis, verifiedAt=offer.verifiedAt}
+    end
+    local function auctionEntry(count, price)
+        return {id, count, id=id, count=count, need=count, cost=(price or 0)*count,
+            unit=price or 0, source="ah", vendor=false, unpriced=price == nil or nil}
+    end
     for _, offer in ipairs(offers) do
-        local quantity = tonumber(offer.quantity or offer.bundleSize)
+        local quantity = offer.quantity or offer.bundleSize
         if offer.unlimited == true and type(offer.price) == "number" and offer.price >= 0
-            and quantity and quantity >= 1 and quantity == math.floor(quantity)
+            and type(quantity) == "number" and quantity >= 1 and quantity == math.floor(quantity)
             and offer.available ~= false and offer.purchasable ~= false and not offer.hasExtendedCost
             and (not offer.currencyID or offer.currencyID == 0) then
             local count = math.ceil(need / quantity) * quantity
             local cost = count / quantity * offer.price
             if not best or cost < best.cost or cost == best.cost and count < best.count then
-                best = {id, count, id=id, count=count, need=need, cost=cost,
-                    unit=offer.price/quantity, vendor=true, source="vendor", npcID=offer.npcID,
-                    url=offer.url, bundleSize=quantity, bundlePrice=offer.price,
-                    reference=offer.reference, estimated=offer.estimated, quoteSource=offer.source,
-                    priceBasis=offer.priceBasis, verifiedAt=offer.verifiedAt}
+                best = vendorEntry(offer, count, need)
+            end
+            valid[#valid+1] = offer
+        end
+    end
+    if best and best.cost == 0 then return {best}, true end
+    local economy = ns.ProfEconomy
+    local price = not (economy and economy.NonAuctionableItem and economy.NonAuctionableItem(id)) and AHPrice(id) or nil
+    if auctionLimit == nil and economy and economy.AuctionSupplyOf then
+        local supply = economy.AuctionSupplyOf(nil, id)
+        auctionLimit = supply and supply.quantity
+    end
+    local limit = auctionLimit or math.huge
+    local entries = best and {best} or {auctionEntry(need, price)}
+    local cost, count = best and best.cost or math.huge, best and best.count or need
+    if price then
+        if need <= limit and price*need < cost then
+            entries, cost, count = {auctionEntry(need, price)}, price*need, need
+        end
+        -- Every NPC row for an item shares VendorStackCount. A cheaper pack
+        -- can supply the full groups while AH supplies only the remainder.
+        for _, offer in ipairs(valid) do
+            local quantity = offer.quantity or offer.bundleSize
+            local least = math.max(1, math.ceil((need-limit)/quantity))
+            local most = math.floor((need-1)/quantity)
+            for _, packs in ipairs({least, most}) do
+                local vendorCount = packs*quantity
+                local remainder = need-vendorCount
+                if packs <= most and remainder > 0 and remainder <= limit then
+                    local mixedCost = packs*offer.price+remainder*price
+                    if mixedCost < cost or mixedCost == cost and need < count then
+                        entries = {vendorEntry(offer, vendorCount, vendorCount), auctionEntry(remainder, price)}
+                        cost, count = mixedCost, need
+                    end
+                end
             end
         end
     end
-    if best then return best end
-    if vendorOnly then
-        local suppliers = db and db.GetSuppliers and db.GetSuppliers(id) or {}
-        local supplier = suppliers[1]
-        return {id, need, id=id, count=need, need=need, cost=0, vendor=true,
-            source="vendor", unpriced=true, npcID=supplier and supplier.npcID,
-            url=supplier and supplier.url}
-    end
-    local price = AHPrice(id)
-    return {id, need, id=id, count=need, need=need, cost=(price or 0)*need,
-        unit=price or 0, source="ah", vendor=false, unpriced=price == nil or nil}
+    return entries, best ~= nil or price ~= nil and need <= limit
 end
 
 local function SupplySummary(result)
@@ -807,7 +992,7 @@ local function SupplySummary(result)
     return result
 end
 
-local function SummarizeCore(steps, recOf, soldSet, slug)
+local function SummarizeCore(steps, recOf, slug, formulaChoices)
     local live={}
     for spell,rec in pairs(recOf) do live[spell]=ClientRecipe(rec,spell,slug) end
     recOf=live
@@ -846,14 +1031,33 @@ local function SummarizeCore(steps, recOf, soldSet, slug)
             end
         end
     end
+    local formulas,formulasTotal,formulaComplete={},0,true
+    local economy=ns.ProfEconomy
+    if economy and economy.CollectFormulas then formulas=economy.CollectFormulas(steps,slug) end
+    local reserved={}
+    for i,f in ipairs(formulas) do
+        local chosen=formulaChoices and formulaChoices[f.id or f.recipeKey]
+        if chosen then
+            local recipes=f.recipes
+            f=economy.Copy(chosen);f.recipes=recipes;formulas[i]=f
+        end
+        formulasTotal=formulasTotal+(f.cost or 0)
+        formulaComplete=formulaComplete and f.costComplete and f.usable
+        if f.source=="ah" then reserved[f.id]=(reserved[f.id] or 0)+(f.count or 1) end
+    end
     local list, purchaseOf = {}, {}
     for id, n in pairs(mats) do
         if n > 0 then
-            local entry = FixedPurchase(id, n)
-            list[#list + 1] = entry; purchaseOf[id] = entry
-            total = total + entry.cost
-            if entry.unpriced or entry.estimated and not entry.reference then completeCost=false end
-            referencePrices = referencePrices or entry.reference
+            local supply=economy and economy.AuctionSupplyOf and economy.AuctionSupplyOf(nil,id)
+            local limit=supply and math.max(0,supply.quantity-(reserved[id] or 0)) or nil
+            local entries = FixedPurchase(id, n, limit)
+            purchaseOf[id] = entries
+            for _, entry in ipairs(entries) do
+                list[#list + 1] = entry
+                total = total + entry.cost
+                if entry.unpriced or entry.estimated and not entry.reference then completeCost=false end
+                referencePrices = referencePrices or entry.reference
+            end
         end
     end
     table.sort(list, function(a, b)
@@ -873,22 +1077,21 @@ local function SummarizeCore(steps, recOf, soldSet, slug)
         local rec = recOf[st[3]]
         for _, mat in ipairs(rec and (rec[12] or rec.mats) or {}) do
             local id, need = mat[1], (mat[2] or 1) * (st[4] or 0)
-            local entry = purchaseOf[id]
-            if entry and need > 0 then
-                if entry.unpriced then st.unpriced = true
-                else
-                    local before = consumed[id] or 0; consumed[id] = before + need
-                    if entry.vendor and entry.bundleSize then
-                        local packs = math.ceil(consumed[id] / entry.bundleSize) - math.ceil(before / entry.bundleSize)
+            for _, entry in ipairs(purchaseOf[id] or {}) do
+                local before = consumed[entry] or 0
+                local used = math.min(need, entry.need-before)
+                if used > 0 then
+                    need = need-used
+                    consumed[entry] = before+used
+                    if entry.unpriced then st.unpriced = true
+                    elseif entry.vendor and entry.bundleSize then
+                        local packs = math.ceil(consumed[entry] / entry.bundleSize) - math.ceil(before / entry.bundleSize)
                         st.cost = st.cost + packs * entry.bundlePrice
-                    else st.cost = st.cost + need * entry.unit end
+                    else st.cost = st.cost + used * entry.unit end
                 end
             end
         end
     end
-    local formulas,formulasTotal,formulaComplete={},0,true
-    local economy=ns.ProfEconomy
-    if economy and economy.CollectFormulas then formulas,formulasTotal,formulaComplete=economy.CollectFormulas(steps,slug) end
     local formulaAH,formulaVendor=0,0
     for _,f in ipairs(formulas) do
         if f.source=="vendor" then formulaVendor=formulaVendor+(f.cost or 0)
@@ -911,15 +1114,13 @@ end
 -- 公开入口：固定路线复用同一套材料聚合/定价（steps = {起,止,spell,次数}）
 function RA.SummarizeSteps(steps, slug, opts)
     opts = opts or {}
+    local blocked,goalRequired
+    steps,blocked,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
     local _rf = ns.EnsureProfRecipes
     local Rg = _rf and _rf()[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
     if not (Rg and (type(Rg.rows) == "table"
                     or (LV and type(LV.rinfo) == "table"))) then return nil end
-    local soldSet = {}
-    if LV and type(LV.sold) == "table" then
-        for _, id in ipairs(LV.sold) do soldSet[id] = true end
-    end
     local recOf = {}
     for _, rec in ipairs(Rg.rows or {}) do recOf[rec[1]] = rec end
     if LV and type(LV.rinfo) == "table" then
@@ -929,8 +1130,8 @@ function RA.SummarizeSteps(steps, slug, opts)
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial, quoteInfo =
-        SummarizeCore(steps, recOf, soldSet, slug)
-    return SupplySummary({
+        SummarizeCore(steps, recOf, slug)
+    local result=RA.StampVendorQuotes(SupplySummary({
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
         total = total+formulasTotal, vendorTotal = vendorTotal+quoteInfo.formulaVendorTotal,
@@ -944,7 +1145,14 @@ function RA.SummarizeSteps(steps, slug, opts)
         snapshotAge = SnapshotSec(),
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
-    })
+    }))
+    result.specializationBlocked=blocked
+    result.specializationGoalRequired=goalRequired
+    if #blocked>0 or goalRequired then
+        result.feasible=false; result.targetReached=false
+        result.diagnostics={{code="specializationFixed"}}
+    end
+    return RA.StampSpecializations(result,slug,opts)
 end
 
 -- ── 对外入口 ────────────────────────────────────────────────────────────────
@@ -978,7 +1186,7 @@ end
 
 function RA.Compute(slug, opts)
     opts = opts or {}
-    local cands, recOf, soldSet = BuildCandidates(slug, opts)
+    local cands, recOf = BuildCandidates(slug, opts)
     if not cands then return nil end
     -- 「只用拍卖行可购材料」= 严格模拟（无价配方不参与）；产生的缺口随后放宽回填
     -- 方案（2026-10-10）：未传/非法 = 最省钱（产品默认；调用方不传也拿到新口径）
@@ -987,7 +1195,7 @@ function RA.Compute(slug, opts)
     -- 目标等级上限（2026-10-09 v2）：opts.target（如 200）→ 模拟与回填都 clamp 在内
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
-    local supplySteps,supplyGaps,plannedTo=SimulateSupply(cands,opts.start,cap,scheme)
+    local supplySteps,supplyGaps,plannedTo,formulaChoices,finiteSupply=SimulateSupply(cands,opts.start,cap,scheme)
     local steps,gaps
     if supplySteps then steps,gaps=supplySteps,supplyGaps
     else steps,gaps=Simulate(cands,opts.start,cap,allowUnpriced,scheme) end
@@ -1011,12 +1219,14 @@ function RA.Compute(slug, opts)
     local stepsOut = supplySteps or ToReached(steps)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial, quoteInfo =
-        SummarizeCore(stepsOut, recOf, soldSet, slug)
-    return SupplySummary({
+        SummarizeCore(stepsOut, recOf, slug,formulaChoices)
+    return RA.StampVendorQuotes(SupplySummary({
         scheme = scheme,
-        supplyConstrained=supplySteps~=nil,plannedTo=plannedTo,
+        supplyConstrained=finiteSupply==true,plannedTo=plannedTo,
         targetReached=supplySteps and plannedTo>=cap or nil,
-        partial=supplySteps and plannedTo<cap or nil,
+        partial=supplySteps and #stepsOut>0 and plannedTo<cap or nil,
+        feasible=#stepsOut>0 or plannedTo and plannedTo>=cap or false,
+        status=plannedTo and plannedTo<cap and (#stepsOut>0 and "incomplete" or "infeasible") or "complete",
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
         total = total+formulasTotal, matTotal = total,
         formulas = formulas, formulasTotal = formulasTotal,
@@ -1033,7 +1243,7 @@ function RA.Compute(slug, opts)
         snapshotAge = SnapshotSec(),         -- 秒：真实扫描时间戳（TimeOfLast*Scan）
         snapshotDays = priceCache.__minAge,  -- 天：价格插件库内最近数据日差（回退用）
         stamp = time and time() or 0,
-    })
+    }))
 end
 
 -- 缓存（失效：RA.Invalidate() / 设置变更 / 手动重算 / 超时）
@@ -1091,7 +1301,6 @@ do
         local revision=0
         local CACHE_VERSION=3
         local EMPTY_RESULT_REVISION=2
-        local VENDOR_QUOTE_REVISION=3
         local function stamp() return time and time() or 0 end
         local function serializable(value,seen)
             local kind=type(value)
@@ -1135,6 +1344,7 @@ do
                 target=target,scheme=scheme,onlyAH=setting("autoOnlyAH",false),
                 learnedOnly=setting("autoLearnedOnly",false),allowSecondaryLeveling=setting("autoSecondaryLeveling",false),
                 secondaryProfession=E.GetRoutePartner(slug),
+                engineeringSpecialization=E.GetEngineeringSpecialization and E.GetEngineeringSpecialization() or "none",
                 exclusions=E.Copy(E.GetPolicies(slug))}
         end
         function RA.OnPlanChanged(fn) if type(fn)=="function" then watchers[#watchers+1]=fn end end
@@ -1153,6 +1363,30 @@ do
             opts.targetUnlearned=context.unlearned
             opts.secondaryProfession=context.requiresPartner and context.partner or nil
             opts.partnerRequired=context.requiresPartner and not context.partnerValid or false
+            opts.profession=slug
+            if opts.engineeringSpecialization==nil then
+                opts.engineeringSpecialization=E.GetEngineeringSpecialization and E.GetEngineeringSpecialization() or "none"
+            end
+            local spec=specializationContext(slug,opts)
+            opts.specializationFingerprint=spec and E.SpecializationFingerprint(spec) or ""
+            -- Non-cost modes retain their per-step priorities. Only their
+            -- engineering task procurement uses the shared recursive ledger.
+            if spec and (#(spec.goals or {})>0 or slug=="engineering" and spec.selectionConflict and opts.target>=200)
+                and opts.scheme~="cheapest" and opts.scheme~="fishing" then
+                opts.specializationRecipeScore=function(recipe,state,snapshot,incremental)
+                    local gain=E.Gain(recipe,(state.skill or {})[recipe.profession] or 1)
+                    if gain<=0 then return math.huge end
+                    if opts.scheme=="crafts" then return 1/gain end
+                    if opts.scheme=="optim" then
+                        local base=0
+                        for _,material in ipairs(recipe.mats or {}) do
+                            base=base+(NPCSellPrice(material[1]) or 0)*material[2]
+                        end
+                        return base
+                    end
+                    return incremental/gain
+                end
+            end
             return opts
         end
         local function signature(opts)
@@ -1161,7 +1395,8 @@ do
             local startMode=opts.fromCurrent==false and ("fixed:"..tostring(opts.start or 1)) or "current"
             local sig=table.concat({tostring(opts.scheme),tostring(opts.target),tostring(opts.learnedOnly or false),
                 tostring(opts.onlyAH or false),tostring(opts.allowSecondaryLeveling or false),startMode,
-                E.PolicyFingerprint(opts.exclusions),tostring(opts.targetUnlearned),tostring(opts.secondaryProfession or "")},"|")
+                E.PolicyFingerprint(opts.exclusions),tostring(opts.targetUnlearned),tostring(opts.secondaryProfession or ""),
+                tostring(opts.specializationFingerprint or "")},"|")
             if opts.executionSourcePlanID or next(opts.executionInventory or {}) then
                 local items={}
                 for id,n in pairs(opts.executionInventory or {}) do
@@ -1245,8 +1480,14 @@ do
             res.routeModel=CACHE_VERSION
             res.formulaRevision=1
             res.vendorQuoteRevision=VENDOR_QUOTE_REVISION
+            res.vendorQuoteData=vendorQuoteData()
             res.professionPolicy=1; res.targetUnlearned=j.opts.targetUnlearned
             res.secondaryProfession=j.opts.secondaryProfession
+            RA.StampSpecializations(res,j.slug,j.opts,j.snap)
+            if not j.opts.snapshot and RA.SpecializationPlanChanged(res,j.slug) then
+                j.invalid=true; j.finished=true
+                res=RA.ValidateSpecializationPlan(res,j.slug)
+            end
             res.emptyResultRevision=EMPTY_RESULT_REVISION
             res.cacheSignature=j.signature; res.inputStart=res.start or j.opts.start
             if j.stale then res.stale=true; res.staleReason=j.staleReason end
@@ -1272,11 +1513,15 @@ do
             end
         end
         local function compatible(result,opts)
+            if RA.SpecializationPlanChanged(result,opts.profession,opts) then return false end
             if opts.targetUnlearned then
                 return result.professionPolicy==1 and result.targetUnlearned==true
                     and result.secondaryProfession==opts.secondaryProfession
             end
             return not result.targetUnlearned
+        end
+        local function incompatibility(result,opts)
+            return RA.SpecializationPlanChanged(result,opts.profession,opts) and "specializationChanged" or "pairingChanged"
         end
         local function sameRouteKind(result,opts)
             return (result.scheme=="fishing")== (opts.scheme=="fishing")
@@ -1292,38 +1537,43 @@ do
                     if active[j.scope]==key then active[j.scope]=nil end
                 end
             end
-            return {planVersion=2,scheme=opts.scheme,status=status,start=opts.start or 1,target=opts.target,
+            local view={planVersion=2,scheme=opts.scheme,status=status,start=opts.start or 1,target=opts.target,
                 steps={},executionSteps={},actions={},mats={},formulas={},gaps={},total=0,matTotal=0,ahTotal=0,vendorTotal=0,crafts=0,
                 feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
                 diagnostics={{code=code}},professionPolicy=1,targetUnlearned=opts.targetUnlearned,
                 secondaryProfession=opts.secondaryProfession,revision=revision,stamp=stamp()}
+            if code=="specializationChanged" then
+                -- Keep the manual recalculation gate after cancelling an in-flight
+                -- job; subsequent UI reads must not silently start a replacement.
+                local key,scope=identities(slug,opts)
+                RA.StampSpecializations(view,slug,opts)
+                results[key]=view; active[scope]=key
+            end
+            return view
         end
         local function legacyOptions(opts)
             local adjusted=E.Copy(opts)
             if opts.targetUnlearned then adjusted.learnedOnly=false end
             return adjusted
         end
-        local function hasVendorPurchases(result)
-            if (result.vendorTotal or 0)>0 or (result.formulaVendorTotal or 0)>0 then return true end
-            for _,entries in ipairs({result.mats or {},result.formulas or {},result.actions or {}}) do
-                for _,entry in ipairs(entries) do
-                    if entry.vendor or entry.source=="vendor" or entry.source=="npc" then return true end
-                end
-            end
-            return false
-        end
         local function restore(slug,record,key,scope,opts)
             if type(record)~="table" or type(record.result)~="table" or record.result.routeModel~=CACHE_VERSION then return end
             if not compatible(record.result,opts) then return end
             if record.result.formulaRevision~=1 then return end
             local old=record.result
-            if old.vendorQuoteRevision~=VENDOR_QUOTE_REVISION and hasVendorPurchases(old) then
+            local data=vendorQuoteData()
+            local dataChanged=old.vendorQuoteData~=data
+            local quoteChanged=old.vendorQuoteRevision~=VENDOR_QUOTE_REVISION or dataChanged
+            local emptyNeedsPrices=dataChanged and data and #(old.steps or {})==0
+                and not old.targetReached and (old.status=="incomplete" or old.status=="infeasible" or old.status=="error")
+            if quoteChanged and (hasVendorPurchases(old) or emptyNeedsPrices) then
                 -- Keep historical/frozen execution records intact, but never
                 -- publish a previous merchant/cache price as a current quote.
                 -- Replacing the purchase-price model requires explicit recalculation.
                 local result=gate(slug,opts,"recalculate_required","vendorQuoteChanged")
                 result.cached=true; result.stale=true; result.staleReason="vendor-quotes"
                 result.vendorQuoteRevision=VENDOR_QUOTE_REVISION
+                result.vendorQuoteData=data
                 results[key]=result; active[scope]=key
                 return result
             end
@@ -1342,6 +1592,11 @@ do
                 return
             end
             local result=serializable(record.result); result.cached=true
+            -- A pure AH plan remains executable. New NPC alternatives can change
+            -- its ranking, so keep it visible and request a manual recalculation.
+            if dataChanged and data then
+                result.stale=true; result.staleReason="vendor-quotes"
+            end
             -- Old uptime timestamps are not valid persisted observations. Keep
             -- the plan visible, but clear that old evidence rather than invent
             -- a Unix time. New plans retain matching saved quantities on reload.
@@ -1357,7 +1612,7 @@ do
         end
         local function start(slug,opts)
             local key,scope,savedKey,sig,char=identities(slug,opts)
-            if opts.scheme~="cheapest" then
+            if opts.scheme~="cheapest" and not opts.specializationRecipeScore then
                 local result
                 if opts.scheme=="fishing" and ns.ProfFishing then result=ns.ProfFishing.Compute(opts)
                 else result=oldCompute(slug,legacyOptions(opts)) end
@@ -1373,7 +1628,7 @@ do
             local j=S.NewJob(slug,opts)
             j.key=key; j.scope=scope; j.savedKey=savedKey; j.signature=sig; j.char=char
             slots[key]=j
-            j.published=S.Result(j,nil,"searching"); j.published.revision=revision
+            j.published=RA.StampSpecializations(S.Result(j,nil,"searching"),slug,opts); j.published.revision=revision
             results[key]=j.published; active[scope]=key
             schedule(j)
             return j.published
@@ -1381,15 +1636,19 @@ do
         function RA.Compute(slug,opts)
             opts=options(slug,opts)
             if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
-            if opts.scheme=="fishing" and ns.ProfFishing then return ns.ProfFishing.Compute(opts) end
-            if opts.scheme~="cheapest" then return oldCompute(slug,legacyOptions(opts)) end
-            return S.Compute(slug,opts)
+            if opts.scheme=="fishing" and ns.ProfFishing then return RA.StampSpecializations(RA.StampVendorQuotes(ns.ProfFishing.Compute(opts)),slug,opts) end
+            if opts.scheme~="cheapest" and not opts.specializationRecipeScore then return RA.StampSpecializations(RA.StampVendorQuotes(oldCompute(slug,legacyOptions(opts))),slug,opts) end
+            local result,job=S.Compute(slug,opts)
+            return RA.StampSpecializations(RA.StampVendorQuotes(result),slug,opts,job and job.snap)
         end
         local function getCandidate(slug,opts,preserveExecution)
             opts=options(slug,opts)
             if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
             local key,scope,savedKey=identities(slug,opts)
-            if results[key] then return results[key] end
+            if results[key] then
+                if not compatible(results[key],opts) then return gate(slug,opts,"recalculate_required",incompatibility(results[key],opts)) end
+                return results[key]
+            end
             if not opts.snapshot then
                 local db=saved(); local exact=db.routes[savedKey]
                 if exact then local restored=restore(slug,exact,key,scope,opts); if restored then return restored end end
@@ -1400,14 +1659,14 @@ do
                     if result and not compatible(result,opts) then result=nil end
                     result=result or restore(slug,previous,restoredKey,scope,opts)
                     if result then result.stale=true; result.settingsChanged=true; result.staleReason="settings"; return result end
-                    if not compatible(previous.result or {},opts) then return gate(slug,opts,"recalculate_required","pairingChanged") end
+                    if not compatible(previous.result or {},opts) then return gate(slug,opts,"recalculate_required",incompatibility(previous.result or {},opts)) end
                 end
             end
             -- A changed setting does not replace the visible in-flight or cached
             -- route. The Recalculate button is the sole application point.
             local current=not opts.snapshot and active[scope] and results[active[scope]]
             if current and sameRouteKind(current,opts) then
-                if not compatible(current,opts) then return gate(slug,opts,"recalculate_required","pairingChanged") end
+                if not compatible(current,opts) then return gate(slug,opts,"recalculate_required",incompatibility(current,opts)) end
                 current.stale=true; current.settingsChanged=true; current.staleReason="settings"; return current
             end
             if not preserveExecution then return start(slug,opts) end
@@ -1415,7 +1674,9 @@ do
         function RA.Get(slug,opts)
             local execution=not (opts and opts.snapshot) and ns.ProfExecution or nil
             local frozen=execution and execution.GetPlan and execution.GetPlan(slug)
-            local result=getCandidate(slug,opts,frozen~=nil)
+            if RA.SpecializationPlanChanged(frozen,slug,opts) then return RA.ValidateSpecializationPlan(frozen,slug,opts) end
+            if RA.VendorQuotesChanged(frozen) then return RA.ValidateVendorQuotes(frozen) end
+            local result=RA.ValidateVendorQuotes(getCandidate(slug,opts,frozen~=nil))
             if opts and opts.snapshot then return result end
             if result and (result.status=="selection_required" or result.status=="recalculate_required") then return result end
             if execution then
@@ -1427,7 +1688,7 @@ do
                         run.newPlanAvailable=true;run.candidateRevision=result.revision
                     end
                     updateSearchState(slug,result)
-                    return frozen
+                    return RA.ValidateSpecializationPlan(frozen,slug,opts)
                 end
             end
             return result

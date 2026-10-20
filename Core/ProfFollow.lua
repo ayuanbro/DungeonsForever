@@ -94,11 +94,18 @@ end
 -- 该制作法术是否已学会（段卡右上角显示「已学习」的依据）
 local function IsLearned(spellID)
     if not spellID then return false end
+    local E=ns.ProfEconomy
+    if E and E.Known then return E.Known(spellID)==true end
+    if C_SpellBook and C_SpellBook.IsSpellKnown then
+        local ok,r=pcall(C_SpellBook.IsSpellKnown,spellID)
+        if ok and type(r)=="boolean" then return r end
+    end
     if C_Spell and C_Spell.IsSpellKnown then
         local ok, r = pcall(C_Spell.IsSpellKnown, spellID)
         if ok and r then return true end
     end
-    for _, fn in ipairs({ IsSpellKnown, IsPlayerSpell }) do
+    for _, name in ipairs({ "IsSpellKnown", "IsPlayerSpell" }) do
+        local fn=_G[name]
         if type(fn) == "function" then
             local ok, r = pcall(fn, spellID)
             if ok and r then return true end
@@ -186,6 +193,25 @@ local function clipFixedSteps(steps, target)
     return out
 end
 
+local function validatePlan(result,slug)
+    if result and RA and RA.ValidateVendorQuotes then result=RA.ValidateVendorQuotes(result) end
+    if result and RA and RA.ValidateSpecializationPlan then result=RA.ValidateSpecializationPlan(result,slug) end
+    return result
+end
+local function questGoal(seg) return seg.quest or seg.specializationGoal or seg.goal or seg end
+local function questName(seg)
+    local ability=questGoal(seg).abilityID
+    return format(L["%s入门任务"],ability==20222 and L["地精工程学"] or L["侏儒工程学"])
+end
+local function questSource(seg)
+    local goal=questGoal(seg)
+    local place=goal.zone and L[goal.zone] or ""
+    if goal.x and goal.y then place=place..format(" (%.1f, %.1f)",goal.x,goal.y) end
+    local npc=goal.npcName and L[goal.npcName] or ("NPC #"..tostring(goal.npcID or "?"))
+    local quest=goal.questName and ("《"..L[goal.questName].."》 ") or ""
+    return npc..(place~="" and (" · "..place) or "").." · "..quest.."#"..tostring(goal.questID or "?")
+end
+
 -- 返回 mode("auto"/"fixed")、段落表及自动结果快照。
 local function routeFor(slug, skill)
     local PD = ns.ProfModule
@@ -217,6 +243,8 @@ local function routeFor(slug, skill)
         if xp and xp.GetPlan and following and following.slug == slug then
             res = xp.GetPlan(slug) or res
         end
+        res=validatePlan(res,slug)
+        if res and res.status=="recalculate_required" then return "auto",{},res end
         if scheme == "cheapest" or scheme=="fishing" then
             return "auto", (res and (res.executionSteps or res.steps)) or {}, res
         end
@@ -227,11 +255,24 @@ local function routeFor(slug, skill)
     --   原先直接返回 lv.steps（全量 1–300）⇒ 专业页设了目标、HUD 却一路画到 300，
     --   段标分母 / 购物清单 / 完成判定全和专业页对不上。
     local fixed=clipFixedSteps(lv and lv.steps or nil, routeTarget(slug))
+    if RA and RA.FilterFixedSpecializations then
+        local blocked,goalRequired
+        fixed,blocked,goalRequired=RA.FilterFixedSpecializations(slug,fixed or {},{target=routeTarget(slug)})
+        if goalRequired or (blocked and #blocked>0) then
+            return "auto",{},{planVersion=2,status="recalculate_required",feasible=false,specializationBlocked=true,
+                message=L["固定攻略存在专精缺口，请切换自动计算。"]}
+        end
+    end
     local xp=ns.ProfExecution
     if xp and xp.NormalizePlan then
         local frozen=xp.GetPlan(slug)
-        if frozen and frozen.mode=="fixed" then return "fixed",frozen.executionSteps,frozen end
+        if frozen and frozen.mode=="fixed" then
+            frozen=validatePlan(frozen,slug)
+            if frozen.status=="recalculate_required" then return "auto",{},frozen end
+            return "fixed",frozen.executionSteps,frozen
+        end
         local normalized=xp.NormalizePlan(slug,{mode="fixed",steps=fixed or {},target=routeTarget(slug),feasible=true,status="complete"})
+        if normalized and RA and RA.StampSpecializations then RA.StampSpecializations(normalized,slug,{target=routeTarget(slug)}) end
         if normalized then return "fixed",normalized.executionSteps,normalized end
     end
     return "fixed",fixed
@@ -319,20 +360,6 @@ local function stepRecipe(seg, res, slug)
     local rt = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[seg[3]]
     if rt then rec[12], rec.mats = rt.mats, rt.mats; rec[2] = rt.item or seg.item end
     return rec
-end
-
-local soldCache = {}
-local function soldSet(slug)
-    local s = soldCache[slug]
-    if not s then
-        s = {}
-        local lv = LV[slug]
-        if lv and lv.sold then
-            for _, id in ipairs(lv.sold) do s[id] = true end
-        end
-        soldCache[slug] = s
-    end
-    return s
 end
 
 local function fmtTime(sec)
@@ -452,6 +479,10 @@ function PF.Sync()
         end
         if reason == "migration_required" then
             PF.executionNotice = L["旧路线缺少执行信息，请重新计算后继续跟随。"]
+            return
+        end
+        if reason == "specializationChanged" then
+            PF.executionNotice = L["专精选择或学习条件已更改，请重新计算。"]
             return
         end
     end
@@ -583,6 +614,7 @@ local function shopList(s, kind)
         local xp = ns.ProfExecution
         res = xp and xp.GetSupplement and xp.GetSupplement(s.slug)
         if not res then return {} end
+        res=validatePlan(res,s.slug)
         -- Supplemental procurement is a separate, shared snapshot. It never
         -- changes the original quantities or reuses its import list.
         steps = res.executionSteps or res.steps
@@ -590,7 +622,9 @@ local function shopList(s, kind)
     local function purchaseSnapshot(entry, purchase)
         for _, key in ipairs({"availableCount", "supplyObserved", "supplyComplete", "supplyObservedAt",
                               "supplySource", "supplyOwnerExcluded", "supplyObservedPrice",
-                              "supplyHistoryQuantity", "supplyHistoryObservedAt", "priceObservedAt", "ahPrice"}) do
+                              "supplyHistoryQuantity", "supplyHistoryObservedAt", "priceObservedAt", "ahPrice",
+                              "cost", "unit", "bundleSize", "bundlePrice", "priceSource", "quoteSource",
+                              "priceBasis", "reference", "estimated", "url", "unpriced"}) do
             purchase[key] = entry[key]
         end
         return purchase
@@ -605,31 +639,34 @@ local function shopList(s, kind)
         end
         return list
     end
-    if res and (res.planVersion == 2 or kind == "supplement") then
+    local function purchases(snapshot)
         local list = {}
-        if res.feasible ~= true then return list end
-        for _, entry in ipairs(res.mats or {}) do
+        for _, entry in ipairs(snapshot.mats or {}) do
             local id = entry.id or entry[1]
             local need = entry.count or entry.need or entry[2] or 0
             if id and need > 0 then
                 list[#list + 1] = purchaseSnapshot(entry, {
                     id = id, need = need,
-                    at = entry.at or (res.firstAt and res.firstAt[id]) or 0,
+                    at = entry.at or (snapshot.firstAt and snapshot.firstAt[id]) or 0,
                     source = entry.source or (entry.vendor and "vendor" or "ah"),
                     vendor = entry.vendor, npcID = entry.npcID,
                     remainingOnly = true,
                 })
             end
         end
-        for _,entry in ipairs(res.fishMaterials or {}) do
+        for _,entry in ipairs(snapshot.fishMaterials or {}) do
             list[#list+1]={id=entry.id,need=entry.count or entry.need,source="fishing",remainingOnly=true,
-                areas=entry.areas,at=res.firstAt and res.firstAt[entry.id]}
+                areas=entry.areas,at=snapshot.firstAt and snapshot.firstAt[entry.id]}
         end
-        return addFormulas(list,res.formulas)
+        return addFormulas(list,snapshot.formulas)
+    end
+    if res and (res.planVersion == 2 or kind == "supplement") then
+        if res.feasible ~= true then return {} end
+        return purchases(res)
     end
     if not steps then return {} end
     local rm = recMap(s.slug)
-    local totals, order = {}, {}
+    local totals, order, remaining = {}, {}, {}
     for i = (s.step or 1), #steps do
         local seg = steps[i]
         local rec = rm[seg[3]]
@@ -639,6 +676,10 @@ local function shopList(s, kind)
             crafts = math.ceil(craftsLeft(seg, s.skill, rec))
         end
         if mats and crafts > 0 then
+            local step = {}
+            for key,value in pairs(seg) do step[key]=value end
+            step[4]=crafts
+            remaining[#remaining+1]=step
             for _, m in ipairs(mats) do
                 local e = totals[m[1]]
                 if not e then
@@ -650,18 +691,23 @@ local function shopList(s, kind)
             end
         end
     end
+    -- Fixed routes use the same selected procurement batches as the main
+    -- shopping page, after reducing only the current segment's craft count.
+    -- A known merchant does not make its quote preferable to an AH purchase.
+    if RA and RA.SummarizeSteps then
+        local summary=RA.SummarizeSteps(remaining,s.slug)
+        if summary then return purchases(summary) end
+    end
     -- 按攻略里材料的首次出现顺序输出（不按缺口大小排序）
     local list = {}
     for _, id in ipairs(order) do
         local e = totals[id]
-        e.vendor=RA and RA.VendorMaterialOf and RA.VendorMaterialOf(id) or false
-        e.source=e.vendor and "vendor" or "ah"
+        e.unpriced=true
         list[#list + 1] = e
     end
     local economy=ns.ProfEconomy
     local formulas=res and res.formulas
     if not formulas and economy and economy.CollectFormulas then
-        local remaining={};for i=s.step or 1,#steps do remaining[#remaining+1]=steps[i] end
         formulas=economy.CollectFormulas(remaining,s.slug)
     end
     addFormulas(list,formulas)
@@ -678,7 +724,15 @@ PF.GetPurchases = shopList
 local function routeNotice(res)
     if res and (res.message or res.blockedReason) then return res.message or res.blockedReason end
     if res and res.status == "selection_required" then return L["请选择搭配的主专业"] end
-    if res and res.status == "recalculate_required" then return L["搭配专业已更改，点击重新计算应用。"] end
+    if res and res.status == "recalculate_required" then
+        for _,d in ipairs(res.diagnostics or {}) do
+            if (d.code=="vendorQuoteChanged" or d.code=="specializationChanged")
+               and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
+                return ns.ProfEconomy.DiagnosticText(d)
+            end
+        end
+        return L["搭配专业已更改，点击重新计算应用。"]
+    end
     if res and res.partial then return format(L["已计算至 %d；后续路线待补全"],res.plannedTo or res.start or 1) end
     for _, d in ipairs((res and res.diagnostics) or {}) do
         if d.code == "clientDataPending" then return L["客户端数据待读取"] end
@@ -909,6 +963,7 @@ local function DoImport(slug, profName, kind)
     if kind == "supplement" then
         local xp = ns.ProfExecution
         result = xp and xp.GetSupplement and xp.GetSupplement(slug)
+        result=validatePlan(result,slug)
         if not result or result.inFlight or result.stale or result.feasible ~= true then
             craftNotify(L["补料尚未计算完成"])
             return
@@ -922,9 +977,7 @@ local function DoImport(slug, profName, kind)
     local list = shopList(tmp, kind)
     local items, missing = {}, 0
     for _, e in ipairs(list) do
-        local isAH = not e.unpriced and (e.remainingOnly and not e.vendor and (e.source == "ah" or e.source == "auction")
-            or (not e.remainingOnly and not soldSet(slug)[e.id])
-            )
+        local isAH = not e.unpriced and not e.vendor and (e.source == "ah" or e.source == "auction")
         local nm, got
         if isAH then nm, got = DG.ItemName(e.id) end
         if not isAH then
@@ -1397,7 +1450,7 @@ end
 -- -------------------------------------------------------------------------
 -- 绘制（全部 SetText / 显隐 / 尺寸，零新建帧）
 -- -------------------------------------------------------------------------
-local function paintMats(seg, rm, sold, w, remaining, extraCrafts)
+local function paintMats(seg, rm, w, remaining, extraCrafts)
     local rec = rm[seg[3]]
     local mats = recMats(rec)
     local n = 0
@@ -1530,10 +1583,11 @@ function PF.Paint()
 
     if not finished and not waiting then
         local seg = steps[vi]
+        local specializationQuest=seg.kind=="specialization_quest"
+        if specializationQuest then f.craftBtn:Hide(); f.suppBtn:Hide(); f.verifyBtn:Hide() end
         local stepSlug = seg.profession or slug
         local rm = recMap(stepSlug)
         if res and res.planVersion == 2 then rm = { [seg[3]] = stepRecipe(seg, res, stepSlug) } end
-        local sold = soldSet(stepSlug)
         local rec = rm[seg[3]]
         local card, w = f.card, W - 2 * PAD - 16
         local isCur = (vi == s.step)
@@ -1556,9 +1610,9 @@ function PF.Paint()
         card.__it = prodItem and { prodItem } or nil
         card.__mats = recMats(rec)
         local PDm = ns.ProfModule
-        local checkpoint = seg.checkpoint or seg[3] == 0
+        local checkpoint = not specializationQuest and (seg.checkpoint or seg[3] == 0)
         local stepProf = D.pro and D.pro[stepSlug]
-        local nmText = checkpoint and L["实地采矿"] or SpellName(seg[3])
+        local nmText = specializationQuest and questName(seg) or (checkpoint and L["实地采矿"] or SpellName(seg[3]))
         if stepSlug ~= slug then nmText = ((stepProf and stepProf.name) or stepSlug) .. " · " .. nmText end
         card.name:SetText(nmText)
 
@@ -1571,8 +1625,17 @@ function PF.Paint()
             remaining = math.ceil(craftsLeft(seg, skillOf(stepSlug) or s.skill, rec))
             crafts = remaining
         end
+        if specializationQuest then remaining=progress and progress.complete and 0 or 1 end
         local progressLines = {}
-        if progress then
+        if specializationQuest then
+            local goal=questGoal(seg)
+            progressLines[#progressLines+1]=questSource(seg)
+            progressLines[#progressLines+1]=format(L["需要工程学 %d、角色等级 %d"],goal.minSkill or 200,goal.minLevel or 30)
+            local prerequisites={}
+            for _,id in ipairs(goal.prerequisiteQuestIDs or {}) do prerequisites[#prerequisites+1]="#"..tostring(id) end
+            if #prerequisites>0 then progressLines[#progressLines+1]=format(L["先完成前置任务并与导师对话：%s"],table.concat(prerequisites,", ")) end
+            progressLines[#progressLines+1]=L["实际学会对应专精后才完成此步骤。"]
+        elseif progress then
             if (progress.divertedOutputs or 0)>0 and (progress.remainingOutputs or 0)>0 then
                 progressLines[#progressLines + 1] = L["材料被额外制作消耗，仍需补足。"]
             elseif progress.skillMet and (progress.remainingOutputs or 0) > 0 then
@@ -1610,7 +1673,7 @@ function PF.Paint()
             end
         end
         card.matOffset = progressCount * 18
-        local nMat, pend = paintMats(seg, rm, sold, w - 8, remaining, progress and progress.extraCrafts)
+        local nMat, pend = paintMats(seg, rm, w - 8, remaining, progress and progress.extraCrafts)
         pending = pending or pend
 
         -- 右上角：已学习（绿）/ 来源（灰）——替代原「当前」角标与底部来源行
@@ -1619,12 +1682,18 @@ function PF.Paint()
             src, detail = PDm.LevelSrc(rec)
         end
         local learned = IsLearned(seg[3])
+        if specializationQuest then
+            local E=ns.ProfEconomy
+            learned=E and E.SpecializationKnown and E.SpecializationKnown(questGoal(seg).abilityID)==true
+        end
         local tagText = learned and L["已学习"] or (src or L["向训练师学习"])
+        if specializationQuest then tagText=learned and L["已学习"] or L["待完成"] end
         if checkpoint then tagText = L["实地采矿"] end
         local tags = seg.tags or {}
         local material = tags.material or seg.role == "material" or seg.role == "both" or seg.reason == "material"
         local leveling = tags.leveling or seg.role == "level" or seg.role == "both" or not material
         local role = material and (leveling and L["升级&中间产物"] or L["中间产物"]) or L["升级"]
+        if specializationQuest then role=L["专精入门任务"] end
         if PDm and PDm.StepRole then role = PDm.StepRole(seg) end
         tagText = role .. " · " .. tagText
         if detail and not learned then tagText = tagText .. " · " .. detail end
@@ -1645,6 +1714,13 @@ function PF.Paint()
             craftText = format(L["预计还需%d次 · 已制作%d次"], remaining, progress.casts or 0)
         end
         if checkpoint then craftText = L["达到目标技能后重新计算"] end
+        if specializationQuest then
+            craftText=L["交付任务物品"].." · #"..tostring(questGoal(seg).questID or "?")
+            local E=ns.ProfEconomy
+            local questProgress=E and E.SpecializationQuestProgress and E.SpecializationQuestProgress(questGoal(seg))
+            if questProgress and questProgress.readyForTurnIn then craftText=craftText.." · "..L["任务可交付"]
+            elseif questProgress and questProgress.inLog then craftText=craftText.." · "..L["任务已接取"] end
+        end
         if seg.fishing and seg.fishing[1] then
             local areas={}
             for _,a in ipairs(seg.fishing[1].areas or {}) do
@@ -1724,8 +1800,7 @@ function PF.Paint()
                 purchase = e,
                 need = e.need,
                 fishing=e.source=="fishing",
-                sold = e.remainingOnly and (e.vendor or e.source == "vendor" or e.source == "npc")
-                    or (not e.remainingOnly and soldSet(slug)[e.id] and true or false),
+                sold = e.vendor or e.source == "vendor" or e.source == "npc",
                 at = e.at or 0,
             }
             local w1 = tw(row.nm)

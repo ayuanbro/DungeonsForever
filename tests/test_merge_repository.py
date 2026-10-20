@@ -74,7 +74,7 @@ class MergedDataTests(unittest.TestCase):
 
 class GitIgnoreTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("git") and (ROOT / ".git").exists(), "requires the Git checkout")
-    def test_only_reproducible_and_local_pipeline_files_are_ignored(self):
+    def test_pipeline_caches_are_ignored_and_sources_and_generated_data_are_retained(self):
         paths = [
             ".implementation-backup/20261017-professions/Core/ProfRouteAuto.lua",
             "tests/__pycache__/test_prof_runtime.cpython-312.pyc",
@@ -83,6 +83,9 @@ class GitIgnoreTests(unittest.TestCase):
             "df-prof-pipeline-v1.0/_temp/_fc/i18n/batch_A.txt",
             "df-prof-pipeline-v1.0/_temp/_fc/i18n/zh_A.txt",
             "df-prof-pipeline-v1.0/Core/Data/Data_ProfRecipes.lua",
+            "df-prof-pipeline-v1.0/Core/Data/Data_ProfItems.lua",
+            "df-prof-pipeline-v1.0/_temp/_fc/data/DataProfItems.csv",
+            "df-prof-pipeline-v1.0/_temp/fc_prof_items.py",
             "df-prof-pipeline-v1.0/_temp/fc_gen.py",
             "df-prof-pipeline-v1.0/_temp/_fc/data/vendor_loc.json",
             "df-prof-pipeline-v1.0/_temp/_fc/i18n/zh.json",
@@ -99,7 +102,7 @@ class GitIgnoreTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         ignored = set(result.stdout.decode("utf-8").rstrip("\0").split("\0"))
-        self.assertEqual(ignored, set(paths[:7]))
+        self.assertEqual(ignored, set(paths[:4]))
 
     def test_pipeline_keeps_scripts_and_required_inputs_in_its_own_root(self):
         pipeline = ROOT / "df-prof-pipeline-v1.0"

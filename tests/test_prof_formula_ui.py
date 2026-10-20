@@ -56,6 +56,26 @@ class FormulaUITests(unittest.TestCase):
           for _,r in ipairs(rows)do assert(r.text~='商人库存：固定售卖（不限量）')end
         ''')
 
+    def test_formula_tooltip_shows_each_generated_npc_price_source(self):
+        self.lua.execute('''
+          assert(PD.VendorPriceSourceText('client')=='购买价格来源：客户端')
+          assert(PD.VendorPriceSourceText('wowhead')=='购买价格来源：Wowhead')
+          assert(PD.VendorPriceSourceText(nil)==nil and PD.VendorPriceSourceText('unknown')==nil)
+          local rows={};PD.RowsFormulaShop(rows,{formulas={{id=99,spell=101,profession='alchemy',
+            count=1,cost=7,source='vendor',vendorPrice=7,unlimited=true,sources={},vendorOffers={
+              {npcID=7,price=7,quantity=1,unlimited=true,priceSource='client'},
+              {npcID=8,price=9,quantity=1,unlimited=true,priceSource='wowhead'}}}}})
+          local client,wowhead=false,false
+          for _,row in ipairs(rows) do if row.it then
+            for _,line in ipairs(row.lines) do
+              if line[1]=='购买价格来源：客户端' then client=true end
+              if line[1]=='购买价格来源：Wowhead' then wowhead=true end
+              assert(not line[1]:find('报价核验：',1,true),'unknown verification date was invented')
+            end
+          end end
+          assert(client and wowhead,'formula tooltip lost an NPC quote source')
+        ''')
+
     def test_unknown_formula_id_and_quest_coordinates_are_not_invented(self):
         self.lua.execute('''
           DG.ItemName=function(id)assert(id,'nil item lookup');return'Item'..id end

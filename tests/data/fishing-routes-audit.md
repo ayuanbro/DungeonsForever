@@ -1,9 +1,10 @@
 # Fishing-only cooking and preferred fishing waters
 
-Verified 2026-10-19. These are reference geography and NPC supplier records,
-not current-client catch-rate observations. The client still overrides recipe
-materials, yields, learned state, availability and learning level. NPC purchase
-prices were removed on 2026-10-20 and await a separate pricing design.
+Geography references collected 2026-10-19; procurement notes updated 2026-10-20.
+These are reference routes and geography, not current-client catch-rate
+observations. The client still overrides recipe materials, yields, learned
+state, availability and learning level. Old NPC shelves have been removed;
+NPC procurement now uses only the generated schema 2 item/NPC records.
 
 - [Forever cooking guide](https://www.wowhead.com/forever/cn/guide/professions/cooking/overview-leveling):
   four recipes through 225, spells 7751, 7753, 7755, 20916. Guide quantities
@@ -29,29 +30,28 @@ Map IDs reuse the addon's existing AreaMap entries. Locations without verified
 coordinates open the zone map and never fabricate a pin. No drop-table or
 fishery API was assumed for information the client cannot provide.
 
-## Blueprint shelves
+## Blueprint and ingredient procurement
 
-Read the visible Forever NPC `Sells` tables through the browser. These recipe
-rows had no parenthesized limited-stock marker, unlike limited fishing equipment
-on the same shelf; all are single-item purchases paid in gold/silver/copper.
-The records below retain supplier identity, faction, stock classification and
-one-item purchase quantities. They contain no purchase price, price validation
-or estimate. They are added only to `ProfFormulaOffers`, not unlimited reagent
-supplies; a known supplier does not turn a missing price into a free formula.
+`Data_ProfFishingRoutes.lua` contains route and fishery information, with no old
+blueprint shelf appended. `ProfFormulaOffers` and other old catalogue records
+are no longer procurement inputs. Ingredient and formula NPC purchases require
+an explicit `Data_ProfItems[item_id].offers[npc_id]` row, a finite nonnegative
+integer `cost_copper`, and a positive integer `VendorStackCount`.
 
-| NPC / source | Formula item IDs |
-|---|---|
-| [5494](https://www.wowhead.com/forever/cn/npc=5494#sells), Alliance | 6325, 6330, 6368 |
-| [5162](https://www.wowhead.com/forever/cn/npc=5162#sells), Alliance | 6326, 6328, 6369, 17062 |
-| [3027](https://www.wowhead.com/forever/cn/npc=3027#sells), Horde | 6328, 6330, 21099, 21219 |
-| [3029](https://www.wowhead.com/forever/cn/npc=3029#sells), Horde | 6325, 6330 |
-| [3333](https://www.wowhead.com/forever/cn/npc=3333#sells), Horde | 6368, 6369, 17062 |
-| [8137](https://www.wowhead.com/forever/cn/npc=8137#sells), Neutral | 13939, 13942, 13945, 13946 |
+Any nonempty `currency_kind`, `currency_id` or `currency_amount`, including zero,
+excludes a gold quotation. `stock=-1` is required for unlimited NPC ingredients;
+positive formula stock is a refresh cap, never a reading of current inventory.
+An item-level cost without an NPC row establishes no supplier. Map coordinates,
+the geography references above, and independent formula quest records cannot
+supply a missing purchase source or price. See the current
+[NPC procurement path](vendor-offers-audit.md) for bundle comparison and source
+rules. AH formula quotes and learned-recipe exemptions remain available.
 
 ## Validation boundary
 
-Lua 5.1 mocks validate source separation, actual catalogue coverage, quantities,
-recipe costs, persistence, imports and map actions. No live game fishing,
+Lua 5.1 regressions are intended to check source separation, fishery coverage,
+quantities, recipe costs, persistence, imports and map actions; the current full
+suite result is recorded separately in `tests/README.md`. No live game fishing,
 profession crafting, character bank/bag inspection or server catch-rate testing
 was performed. Fishing time has no gold purchase price in this special route;
 it never creates free fish supplies in the ordinary cheapest-route solver.

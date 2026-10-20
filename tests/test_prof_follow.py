@@ -188,6 +188,17 @@ class FollowIntegrationTests(unittest.TestCase):
           assert(#imported==1 and imported[1].name=='Item12' and imported[1].need==2)
         ''')
 
+    def test_unpriced_ah_snapshot_retains_its_flag_and_is_not_imported(self):
+        self.lua.execute('''
+          currentResult.mats={{id=10,count=3,source='ah',unpriced=true},
+            {id=12,count=2,cost=8,unit=4,source='ah'}}
+          local purchases=ns.ProfFollow.GetPurchases(followState)
+          assert(purchases[1].unpriced and purchases[2].cost==8 and purchases[2].unit==4)
+          ns.AuctionBridge.DoImport=function(_,items)imported=items end
+          local bt=makeFrame();ns.ProfFollow.PaintImportBtn(bt,'alchemy');bt.scripts.OnClick()
+          assert(#imported==1 and imported[1].name=='Item12' and imported[1].need==2)
+        ''')
+
     def test_legacy_shopping_quantities_ignore_large_owned_stock(self):
         self.lua.execute('''
           settings.autoRoute=false
@@ -307,6 +318,126 @@ class FollowIntegrationTests(unittest.TestCase):
           ns.ProfFollow.Paint()
           assert(ns.ProfFollow.f.finish.text=='已计算至 151；后续路线待补全')
           assert(not ns.ProfFollow.f.card.shown and not ns.ProfFollow.f.craftBtn.shown)
+        ''')
+
+
+class FixedShoppingPriceTests(unittest.TestCase):
+    def setUp(self):
+        self.lua = LuaRuntime(unpack_returned_tuples=True)
+        self.lua.execute(STUBS)
+        self.lua.execute('''
+          settings.autoRoute=false;skills.alchemy.cur=1
+          followState.skill=1;followState.step=1
+          ns.ProfLeveling.alchemy={steps={{1,2,101,1}},sold={10}}
+          ns.ProfRecipes.alchemy.rows[1][12]={{10,3}}
+          ns.ProfItemsMeta={schemaVersion=2,sources={csv={sha256='current-npc-quotes'}}}
+          ns.ProfItems={[10]={item_id=10,VendorStackCount=5,offers={
+            [77]={npc_id=77,cost_copper=10,stock=-1,price_source='client'}}}}
+          auctionUnit=1
+          Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)
+            if id==10 then return auctionUnit end
+          end}}}
+        ''')
+        self.load = self.lua.eval("function(path) assert(loadfile(path))('DungeonsForever',ns) end")
+        for name in ('ProfEconomy', 'ProfRouteSolver', 'ProfRouteAuto', 'ProfItemPrices',
+                     'AuctionatorBridge', 'ProfFollow'):
+            self.load(str(ROOT/'Core'/(name+'.lua')))
+        self.lua.execute('''
+          ns.AuctionBridge.DoImport=function(_,items)imported=items end
+          function importFixed()
+            local bt=makeFrame();ns.ProfFollow.PaintImportBtn(bt,'alchemy');bt.scripts.OnClick()
+          end
+        ''')
+
+    def test_fixed_hud_uses_cheaper_ah_despite_merchant_and_legacy_sold_tag(self):
+        self.lua.execute('''
+          local purchases=ns.ProfFollow.GetPurchases(followState)
+          assert(#purchases==1 and purchases[1].id==10 and purchases[1].need==3)
+          assert(purchases[1].source=='ah' and not purchases[1].vendor)
+          assert(purchases[1].cost==3 and purchases[1].unit==1)
+          importFixed()
+          assert(#imported==1 and imported[1].name=='Item10' and imported[1].need==3,
+            'an obsolete sold tag suppressed the selected AH purchase')
+        ''')
+
+    def test_fixed_hud_keeps_same_item_npc_and_ah_batches_and_imports_only_ah(self):
+        self.lua.execute('''
+          ns.ProfRecipes.alchemy.rows[1][12]={{10,12}};auctionUnit=3
+          local purchases=ns.ProfFollow.GetPurchases(followState)
+          assert(#purchases==2,'mixed purchasing collapsed to one supplier')
+          local copper,npc,ah=0,0,0
+          for _,purchase in ipairs(purchases) do
+            assert(purchase.id==10)
+            copper=copper+purchase.cost
+            if purchase.source=='vendor' then
+              npc=npc+purchase.need
+              assert(purchase.vendor and purchase.npcID==77 and purchase.cost==20)
+              assert(purchase.bundleSize==5 and purchase.priceSource=='client')
+            elseif purchase.source=='ah' then
+              ah=ah+purchase.need;assert(not purchase.vendor and purchase.cost==6)
+            else error('lost selected procurement source') end
+          end
+          assert(npc==10 and ah==2 and copper==26)
+          importFixed()
+          assert(#imported==1 and imported[1].name=='Item10' and imported[1].need==2,
+            'HUD exported NPC batches or the full material demand')
+        ''')
+
+    def test_fixed_hud_reprices_only_remaining_crafts_in_current_segment(self):
+        self.lua.execute('''
+          ns.ProfLeveling.alchemy.steps={{1,4,101,3}}
+          followState.skill=3;skills.alchemy.cur=3
+          local purchases=ns.ProfFollow.GetPurchases(followState)
+          assert(#purchases==1 and purchases[1].source=='ah' and purchases[1].need==3)
+          assert(purchases[1].cost==3,'completed crafts leaked back into fixed purchases')
+        ''')
+
+    def test_changed_frozen_npc_plan_cannot_replace_a_current_ah_view(self):
+        self.lua.execute('''
+          settings.autoRoute=true
+          local current={planVersion=2,executionVersion=1,feasible=true,status='complete',
+            steps={{1,2,101,1}},mats={{id=10,count=3,source='ah',cost=3}},formulas={}}
+          ns.ProfRouteAuto.StampVendorQuotes(current)
+          ns.ProfRouteAuto.Get=function()return current end
+          local frozen={planVersion=2,executionVersion=1,feasible=true,status='complete',
+            vendorQuoteRevision=2,vendorQuoteData='old-quotes',total=1,vendorTotal=1,
+            steps={{1,2,101,1}},mats={{id=10,count=3,source='vendor',vendor=true,cost=1}}}
+          ns.ProfExecution={GetPlan=function()return frozen end}
+          local _,steps,res=ns.ProfFollow.GetRoute('alchemy',1)
+          assert(#steps==0 and res.status=='recalculate_required')
+          assert(res.diagnostics[1].code=='vendorQuoteChanged')
+          assert(#ns.ProfFollow.GetPurchases(followState)==0)
+          importFixed();assert(imported==nil,'a stale frozen NPC purchase passed the gate')
+          assert(frozen.total==1 and frozen.vendorQuoteRevision==2 and #frozen.steps==1,
+            'validation rewrote the frozen execution record')
+          settings.autoRoute=false;frozen.mode='fixed'
+          ns.ProfExecution.NormalizePlan=function()error('a frozen plan should be validated directly')end
+          _,steps,res=ns.ProfFollow.GetRoute('alchemy',1)
+          assert(#steps==0 and res.status=='recalculate_required','fixed execution bypassed quote validation')
+          assert(#ns.ProfFollow.GetPurchases(followState)==0)
+          importFixed();assert(imported==nil)
+        ''')
+
+    def test_old_npc_base_plan_blocks_its_pure_ah_supplement_and_import_callback(self):
+        self.load(str(ROOT/'Core'/'ProfExecution.lua'))
+        self.lua.execute('''
+          ns.ProfEconomy.Professions=function()return skills end
+          auctionUnit=100
+          local base=ns.ProfRouteAuto.SummarizeSteps({{1,2,101,1}},'alchemy')
+          base.mode='fixed';base.target=2;base.feasible=true;base.status='complete'
+          local run=assert(ns.ProfExecution.Bind('alchemy',base))
+          run.plan.vendorQuoteRevision=2
+          local child={planVersion=2,feasible=true,status='complete',total=3,
+            mats={{id=10,count=3,cost=3,unit=1,source='ah'}}}
+          run.supplement=child
+          local view=ns.ProfExecution.GetSupplement('alchemy')
+          assert(view.status=='recalculate_required' and view.diagnostics[1].code=='vendorQuoteChanged')
+          assert(#ns.ProfFollow.GetPurchases(followState,'supplement')==0)
+          ns.ProfFollow.Build();ns.ProfFollow.shopKind='supplement'
+          ns.ProfFollow.f.shopImp.scripts.OnClick()
+          assert(imported==nil,'an old pure AH supplemental callback bypassed the base gate')
+          assert(run.supplement==child and child.total==3 and child.mats[1].source=='ah')
+          assert(run.plan.vendorQuoteRevision==2 and run.plan.total==10)
         ''')
 
 

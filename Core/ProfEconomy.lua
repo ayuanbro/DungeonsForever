@@ -81,7 +81,8 @@ local apiNames={"C_TradeSkillUI.GetRecipeInfo","C_TradeSkillUI.GetAllRecipeIDs",
     "C_TradeSkillUI.GetRecipeReagentInfo",
     "GetNumTradeSkills","GetTradeSkillInfo","GetNumCrafts","GetCraftInfo","GetNumTrainerServices",
     "GetTrainerServiceInfo","GetTrainerServiceItemLink","GetTrainerServiceSpellID",
-    "C_Trainer.GetServiceSpellID","GetProfessionInfo","GetProfessions"}
+    "C_Trainer.GetServiceSpellID","GetProfessionInfo","GetProfessions",
+    "C_SpellBook.IsSpellKnown","IsSpellKnown","IsPlayerSpell","C_QuestLog.IsQuestFlaggedCompleted"}
 local reads={}
 local function apiFunction(name)
     local parent,key=name:match("^([^.]+)%.(.+)$")
@@ -197,13 +198,216 @@ local function routeProfessions(slug,opts,professions)
     end
     return selected,context
 end
+function E.SpecializationKnown(spell)
+    -- A successful modern false is meaningful; missing/failed APIs are unknown.
+    if type(IsLoggedIn)=="function" then
+        local ok,ready=pcall(IsLoggedIn)
+        if ok and ready==false then return nil end
+    end
+    for _,name in ipairs({"C_SpellBook.IsSpellKnown","IsSpellKnown","IsPlayerSpell","C_Spell.IsSpellKnown"}) do
+        local ok,value=call(name,spell)
+        if ok and type(value)=="boolean" then return value end
+    end
+    return nil
+end
 function E.Known(spell)
     local rt=ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[spell]
     if rt and rt.learned==true then return true end
-    local fns={C_Spell and C_Spell.IsSpellKnown,IsSpellKnown,IsPlayerSpell}
-    for _,fn in pairs(fns) do if type(fn)=="function" then local ok,v=pcall(fn,spell); if ok and v then return true end end end
-    return false
+    return E.SpecializationKnown(spell)==true
 end
+local specializationIDs={9787,9788,10656,10658,10660,17039,17040,17041,20219,20222}
+local function engineeringChoice(value)
+    return value=="goblin" or value=="gnomish" or value=="none"
+end
+function E.GetEngineeringSpecialization()
+    local value=store().engineeringSpecialization
+    return engineeringChoice(value) and value or "none"
+end
+function E.SetEngineeringSpecialization(value)
+    if not engineeringChoice(value) then return false end
+    if E.GetEngineeringSpecialization()==value then return true end
+    store().engineeringSpecialization=value
+    if ns.ProfRouteAuto and ns.ProfRouteAuto.Invalidate then ns.ProfRouteAuto.Invalidate("specialization") end
+    return true
+end
+local function specializationDataIdentity()
+    local meta=ns.ProfSpecializationsMeta or {}
+    local sources=meta.sources or {}
+    local quests=ns.ProfSpecializationQuestMeta or {}
+    return table.concat({tostring(meta.schemaVersion or 0),tostring(meta.targetBuild or ""),
+        tostring((sources.recipeItems or {}).sha256 or ""),tostring((sources.trainers or {}).sha256 or ""),
+        tostring(quests.revision or 0),tostring(quests.sourceCommit or "")},":")
+end
+function E.SpecializationFingerprint(value)
+    value=value and (value.specializationContext or value) or {}
+    local choice=value.choice or value.engineeringSpecialization or E.GetEngineeringSpecialization()
+    return "1:"..tostring(choice)..":"..specializationDataIdentity()
+end
+function E.SpecializationAbilityFingerprint(value)
+    local abilities=value and (value.specializationAbilities or value.abilities or value) or {}
+    local parts={}
+    for _,id in ipairs(specializationIDs) do
+        parts[#parts+1]=id.."="..(abilities[id]==true and "1" or abilities[id]==false and "0" or "?")
+    end
+    return table.concat(parts,";")
+end
+local function factionCode(value)
+    if value=="Alliance" then return "A" elseif value=="Horde" then return "H" end
+    return value
+end
+local function cloneGoal(source,faction)
+    local goal=copy(source)
+    goal.inputs={}; for _,input in ipairs(source.inputs or {}) do goal.inputs[#goal.inputs+1]={input[1],input[2]} end
+    local variant=source.variants and source.variants[faction]
+    if variant then for key,value in pairs(variant) do goal[key]=value end
+    elseif source.variants then goal.blockedReason="specializationFactionUnknown" end
+    goal.variants=nil
+    goal.prerequisiteQuestIDs=copy(goal.prerequisiteQuestIDs)
+    goal.sourceURL=(ns.ProfSpecializationQuestMeta or {}).sourceURL
+    goal.sourceBuild=""
+    return goal
+end
+function E.SpecializationQuestProgress(goal)
+    local progress={}
+    if type(goal)~="table" or not goal.questID then return progress end
+    if type(IsLoggedIn)=="function" then
+        local ok,ready=pcall(IsLoggedIn)
+        if ok and ready==false then return progress end
+    end
+    for key,name in pairs({inLog="IsOnQuest",readyForTurnIn="ReadyForTurnIn",
+        completed="IsQuestFlaggedCompleted",disabled="IsQuestDisabledForSession"}) do
+        local ok,value=call("C_QuestLog."..name,goal.questID)
+        if ok and type(value)=="boolean" then progress[key]=value end
+    end
+    return progress
+end
+function E.GetEngineeringSpecializationContext(opts)
+    opts=opts or {}
+    local injected=opts.snapshot
+    local prior=injected and injected.specializationContext or {}
+    local choice=opts.engineeringSpecialization or prior.choice or
+        (injected and (injected.engineeringSpecialization or injected.choice)) or
+        (injected and "none" or E.GetEngineeringSpecialization())
+    if not engineeringChoice(choice) then choice="none" end
+    local abilities={}
+    local supplied=injected and (injected.specializationAbilities or prior.abilities or injected.abilities) or opts.specializationAbilities
+    for _,id in ipairs(specializationIDs) do
+        local value
+        if injected or supplied then value=supplied and supplied[id]
+        else value=E.SpecializationKnown(id) end
+        if type(value)=="boolean" then abilities[id]=value end
+    end
+    local actual="unknown"
+    if abilities[20219] and abilities[20222] then actual="conflict"
+    elseif abilities[20219] then actual="gnomish"
+    elseif abilities[20222] then actual="goblin"
+    elseif abilities[20219]==false and abilities[20222]==false then actual="none" end
+    local context={choice=choice,actual=actual,abilities=abilities,goals={},
+        profession=opts.profession or (injected and injected.targetProfession) or "engineering"}
+    context.selectionConflict=actual=="conflict" or
+        (choice~="none" and actual~="none" and actual~="unknown" and actual~=choice) or false
+    local faction=factionCode(opts.faction or (injected and injected.faction) or
+        (not injected and UnitFactionGroup and UnitFactionGroup("player")))
+    local level=opts.level or (injected and injected.level) or
+        (not injected and UnitLevel and UnitLevel("player"))
+    context.faction,context.level=faction,level
+    if context.selectionConflict then context.reason="specializationChoiceConflict" end
+    local target=opts.target or (injected and injected.target) or 0
+    if context.profession=="engineering" and choice~="none" and not context.selectionConflict
+        and type(target)=="number" and target>=200 and actual~=choice then
+        local source=ns.ProfSpecializationQuests and ns.ProfSpecializationQuests[choice]
+        if source then
+            local goal=cloneGoal(source,faction)
+            goal.abilityUnknown=abilities[goal.abilityID]==nil or nil
+            if type(level)=="number" and level<goal.minLevel then goal.blockedReason="specializationLevelRequired" end
+            goal.prerequisitesCompleted={}
+            if not injected and goal.questID then
+                goal.questProgress=E.SpecializationQuestProgress(goal)
+                goal.questCompleted=goal.questProgress.completed
+                if goal.questProgress.disabled==true then goal.blockedReason="specializationQuestDisabled" end
+                for _,id in ipairs(goal.prerequisiteQuestIDs) do
+                    local found,done=call("C_QuestLog.IsQuestFlaggedCompleted",id)
+                    if found and type(done)=="boolean" then goal.prerequisitesCompleted[id]=done end
+                end
+            end
+            -- A past quest completion never grants current specialization.
+            if goal.questCompleted and abilities[goal.abilityID]~=true then
+                goal.blockedReason="specializationQuestAlreadyCompleted"
+            end
+            context.goals[1]=goal
+        end
+    end
+    if injected and injected.specializationGoals then
+        context.goals={}
+        for _,goal in ipairs(injected.specializationGoals) do context.goals[#context.goals+1]=cloneGoal(goal,faction) end
+    elseif injected and prior.goals then
+        context.goals={}
+        for _,goal in ipairs(prior.goals) do context.goals[#context.goals+1]=cloneGoal(goal,faction) end
+    end
+    context.fingerprint=E.SpecializationFingerprint(context)
+    context.abilityFingerprint=E.SpecializationAbilityFingerprint(abilities)
+    return context
+end
+function E.CaptureSpecializations(snapshot,opts,slug)
+    opts=copy(opts); opts.profession=slug or opts.profession or snapshot.targetProfession
+    if opts.snapshot then opts.snapshot=snapshot end
+    opts.faction=opts.faction or snapshot.faction; opts.level=opts.level or snapshot.level
+    local context=E.GetEngineeringSpecializationContext(opts)
+    snapshot.targetProfession=opts.profession
+    snapshot.engineeringSpecialization=context.choice
+    snapshot.specializationContext=context
+    snapshot.specializationAbilities=context.abilities
+    snapshot.specializationGoals=context.goals
+    snapshot.specializationFingerprint=context.fingerprint
+    return snapshot
+end
+function E.LearningEligibility(recipe,snapshot,state)
+    if type(recipe)~="table" then return false,"clientDataPending" end
+    snapshot=snapshot and (snapshot.snapshot or snapshot)
+    if recipe.clientUnavailable then return false,"clientUnavailable" end
+    local spell=recipe.spell or recipe.spellID or recipe[1]
+    local key=recipe.key or (recipe.profession and recipe.profession..":"..tostring(spell))
+    local known=snapshot and snapshot.known
+    if (known and (known[key]==true or known[spell]==true)) or
+        (not known and E.Known(spell)) then return true,nil,{status="learned"} end
+    local evidence=ns.ProfSpecializations and ns.ProfSpecializations[spell]
+    if not evidence then return true,nil,{status="unknown"} end
+    local abilities=(state and state.specializationAbilities) or {}
+    local actual=snapshot and (snapshot.specializationAbilities or snapshot.abilities or
+        (snapshot.specializationContext and snapshot.specializationContext.abilities))
+    if not actual then actual=E.GetEngineeringSpecializationContext().abilities end
+    local selectedKind=recipe.learningRoute or (recipe.learnSource=="trainer" and "trainer") or
+        ((recipe.formula or recipe.formulaID) and "item")
+    local item=recipe.formula or recipe.formulaID
+    local candidates,all={},{}
+    local conflict=false
+    for _,route in ipairs(evidence.routes or {}) do
+        local id=tonumber(route.requiredAbility)
+        if route.status=="confirmed" and id and id>=0 then
+            all[#all+1]=route
+            if not selectedKind or (route.kind==selectedKind and
+                (selectedKind~="item" or not item or route.itemID==item)) then candidates[#candidates+1]=route end
+        elseif route.status=="conflict" then conflict=true end
+    end
+    -- A pending item route cannot erase a positive trainer requirement.
+    if #candidates==0 then candidates=all end
+    if #candidates==0 then
+        if conflict then return false,"specializationEvidenceConflict",{status="conflict"} end
+        return true,nil,{status="unknown",hasPending=true}
+    end
+    local required,seen={},{}
+    for _,route in ipairs(candidates) do
+        local id=route.requiredAbility
+        if id==0 or abilities[id]==true or actual[id]==true then
+            return true,nil,{status="allowed",route=route,hasPending=evidence.hasPending}
+        end
+        if not seen[id] then required[#required+1]=id;seen[id]=true end
+    end
+    table.sort(required)
+    return false,"specializationRequired",{status="blocked",requiredAbilities=required,
+        requiredAbility=#required==1 and required[1] or nil,hasPending=evidence.hasPending}
+end
+E.RecipeSpecializationAllowed=E.LearningEligibility
 function E.Gain(r, skill)
     if skill < r.learn or skill >= r.grey then return 0 end
     if skill < r.yellow then return 1 end
@@ -460,7 +664,7 @@ function E.SummarizeAuctionSupply(result,context)
     result.auctionSupplyRevision=2
     return result
 end
-function E.FormulaFor(r,context,auctionRemaining)
+function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     if type(r)~="table" then return end
     context=formulaContext(context)
     local id=tonumber(r.formula or r.formulaID)
@@ -471,6 +675,9 @@ function E.FormulaFor(r,context,auctionRemaining)
         for k,v in pairs(meta.source or {}) do sources[k]=v end
         for _,k in ipairs({"questOnly","quests","quest","url"}) do if meta[k]~=nil then sources[k]=meta[k] end end
     end
+    -- Procurement sources must be rebuilt from the new item/NPC records.
+    -- Recipe-catalogue vendor annotations cannot establish a supplier.
+    sources.vendors=nil
     local quest=questSource(sources)
     if not id or id<=0 then
         if not quest then return end
@@ -488,13 +695,12 @@ function E.FormulaFor(r,context,auctionRemaining)
     end
     if type(ah)=="number" and ah>0 and not (context.nonAuctionable and context.nonAuctionable[id]) then entry.ahPrice=ah end
     local offers=id and context.formulaOffers and context.formulaOffers[id]
-    if not offers and id and ns.VendorPriceDB and ns.VendorPriceDB.GetFormulaOffers then
-        offers=ns.VendorPriceDB.GetFormulaOffers(id,context,sources)
+    if not offers and id and ns.ProfItemPrices and ns.ProfItemPrices.GetFormulaOffers then
+        offers=ns.ProfItemPrices.GetFormulaOffers(id,context)
     end
     if not offers and id and context.offers then offers=context.offers[id] end
     entry.vendorOffers=offers or {}
     local vendors,seen={},{}
-    for _,v in ipairs(sources.vendors or {}) do vendors[#vendors+1]=v;if v.id then seen[v.id]=true end end
     for _,o in ipairs(entry.vendorOffers) do
         if o.npcID and not seen[o.npcID] then
             vendors[#vendors+1]={id=o.npcID,name=o.npcName or o.name or ("#"..o.npcID),zone=o.zone}
@@ -526,7 +732,7 @@ function E.FormulaFor(r,context,auctionRemaining)
             if (type(o.stock)~="number" or o.stock<0 or o.stock>=quantity) and (not bestCost or cost<bestCost) then best,bestCost=o,cost end
         end
     end
-    if bestCost~=nil and (not ahUsable or bestCost<=entry.ahPrice) then
+    if purchaseSource~="ah" and bestCost~=nil and (not ahUsable or bestCost<=entry.ahPrice) then
         entry.source="vendor";entry.cost=bestCost;entry.offer=best;entry.npcID=best.npcID
         local quantity=best.quantity or best.bundleSize or 1
         entry.bundleSize=positiveInteger(quantity) and quantity or 1;entry.count=entry.bundleSize
@@ -592,6 +798,12 @@ function E.Index(s)
     s.vendorItems=s.vendorItems or {}; s.vendorSuppliers=s.vendorSuppliers or {}
     return s
 end
+function E.NonAuctionableItem(id)
+    local info=(C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if type(info)~="function" then return false end
+    local fields={pcall(info,id)}
+    return fields[1] and (fields[15]==1 or fields[15]==4) or false
+end
 function E.Capture(slug,opts,tick)
     opts=opts or {}; tick=tick or function() end
     if opts.snapshot then
@@ -603,6 +815,7 @@ function E.Capture(slug,opts,tick)
                 if s.professions[r.profession] then s.recipes[#s.recipes+1]=r end
             end
         end
+        E.CaptureSpecializations(s,opts,slug)
         return E.Index(s)
     end
     runtime()
@@ -611,6 +824,7 @@ function E.Capture(slug,opts,tick)
     s.faction=UnitFactionGroup and UnitFactionGroup("player") or nil
     if s.faction=="Alliance" then s.faction="A" elseif s.faction=="Horde" then s.faction="H" end
     s.professions,s.routeContext=routeProfessions(slug,opts,s.professions)
+    E.CaptureSpecializations(s,opts,slug)
     local relevant={[slug]=true}
     for p,v in pairs(s.professions) do if v.primary then relevant[p]=true end end
     local keys={}; for p in pairs(relevant) do keys[#keys+1]=p end
@@ -648,6 +862,9 @@ function E.Capture(slug,opts,tick)
         end
     end
     local items={}
+    for _,goal in ipairs(s.specializationGoals or {}) do
+        for _,input in ipairs(goal.inputs or {}) do items[input[1]]=true end
+    end
     for _,r in ipairs(s.recipes) do
         if r.item then items[r.item]=true end
         if r.formula and not s.known[r.key] and not s.known[r.spell] then items[r.formula]=true end
@@ -656,36 +873,38 @@ function E.Capture(slug,opts,tick)
     local ra=ns.ProfRouteAuto
     local vendorContext={character=s.character,faction=s.faction,professions=s.professions,level=s.level}
     for id in pairs(items) do
-        local info=(C_Item and C_Item.GetItemInfo) or GetItemInfo
-        if type(info)=="function" then
-            local fields={pcall(info,id)}; local binding=fields[15]
-            if fields[1] and (binding==1 or binding==4) then s.nonAuctionable=s.nonAuctionable or {}; s.nonAuctionable[id]=true end
-        end
+        if E.NonAuctionableItem(id) then s.nonAuctionable=s.nonAuctionable or {};s.nonAuctionable[id]=true end
         if ra and ra.AHPriceOf then s.prices[id]=ra.AHPriceOf(id) end
         local supply=E.AuctionSupplyOf(nil,id)
         if supply then s.auctionSupply[id]=copy(supply) end
         local history=quoteMetadata(nil,id,"auctionSupplyHistory","GetAuctionSupplyHistory")
         if type(history)=="table" then s.auctionSupplyHistory[id]=copy(history) end
         s.priceObservedAt[id]=quoteMetadata(nil,id,"priceObservedAt","GetAuctionPriceObservedAt")
-        local vendor=ns.VendorPriceDB
+        local vendor=ns.ProfItemPrices
         if vendor then
             if vendor.GetSuppliers then
                 local suppliers=vendor.GetSuppliers(id,vendorContext)
                 local verified={}
                 for _,supplier in ipairs(type(suppliers)=="table" and suppliers or {}) do
-                    if supplier.unlimited==true and supplier.available~=false and supplier.verifiedAt and supplier.source
+                    if supplier.unlimited==true and supplier.available~=false
+                        and supplier.availabilityVerified==true and supplier.source
                         and not supplier.hasExtendedCost and (not supplier.currencyID or supplier.currencyID==0) then
                         verified[#verified+1]=supplier
                     end
                 end
-                if #verified>0 then s.vendorItems[id]=true; s.vendorSuppliers[id]=verified end
+                if #verified>0 then s.vendorSuppliers[id]=verified end
             end
-            if vendor.GetOffers then s.offers[id]=vendor.GetOffers(id,vendorContext) end
+            if vendor.GetOffers then
+                s.offers[id]=vendor.GetOffers(id,vendorContext)
+                -- Knowing a supplier is not a usable gold quotation. Missing
+                -- copper prices and exchange offers must not block AH buying.
+                if s.offers[id] and #s.offers[id]>0 then s.vendorItems[id]=true end
+            end
         end
         tick()
     end
     s.formulaOffers={}
-    if ns.VendorPriceDB and ns.VendorPriceDB.GetFormulaOffers then
+    if ns.ProfItemPrices and ns.ProfItemPrices.GetFormulaOffers then
         for _,r in ipairs(s.recipes) do if r.formula then
             local source=E.FormulaFor(r,s)
             s.formulaOffers[r.formula]=source and source.vendorOffers or {}
@@ -955,11 +1174,22 @@ end
 function E.DiagnosticText(d)
     if type(d)=="string" then return d end
     local messages={vendorEstimate="NPC购买价格尚未配置。",
-        vendorQuoteChanged="NPC购买价格数据已移除，请重新计算路线。",
+        vendorQuoteChanged="NPC购买价格资料已更新，请重新计算路线。",
         cooldown="已排除有冷却的制作配方。",
         cooldownUnknown="制作冷却尚未核实，请打开对应专业面板。",outputConflict="制作产量待读取，请打开对应专业面板。",
         availabilityUnknown="配方学习条件尚未核实。",excluded="配方已按自定义规则排除。",notLearned="当前设置仅允许已学配方。",
         clientUnavailable="客户端已确认此配方不可用。",
+        specializationRequired="尚未满足此配方的专业专精学习要求。",
+        specializationChanged="专精选择或学习条件已变化，请手动重新计算路线。",
+        specializationFixed="固定攻略包含尚不可用的专精配方或入门任务，请切换自动规划。",
+        specializationEvidenceConflict="此配方的专精学习资料存在冲突，需要确认。",
+        specializationChoiceConflict="当前已学专精与所选目标不同；本路线不处理转修专精。",
+        specializationFactionUnknown="尚未读取角色阵营，无法确定专精任务交付地点。",
+        specializationQuestAlreadyCompleted="入门任务已经完成，但当前未确认所需专精；请先核实转修条件。",
+        specializationUnknown="角色专精状态尚未读取，请登录角色并打开工程学面板后重试。",
+        specializationLevelRequired="角色等级不足 30，暂时无法完成工程专精入门任务。",
+        specializationLevelUnknown="尚未读取角色等级，无法确认工程专精任务资格。",
+        specializationQuestDisabled="客户端已确认此专精任务当前不可用。",
         professionMissing="角色尚未学习所需专业。",skillRequired="另一专业技能不足，可开启联合升级或购买材料。",
         secondaryRequired="请先选择联合升级的另一个专业。",
         pairingChanged="搭配专业已更改，点击重新计算应用。",

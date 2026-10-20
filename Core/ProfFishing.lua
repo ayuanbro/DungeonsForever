@@ -20,7 +20,7 @@ local function vendorOK(o,snap)
 end
 local function capture(opts)
     if opts.snapshot then return E.Index(clone(opts.snapshot)) end
-    local snap={recipes={},known={},prices={},offers={},formulaOffers={},professions=E.Professions(),auctionSupply={}}
+    local snap={recipes={},known={},prices={},offers={},formulaOffers={},professions=E.Professions(),auctionSupply={},nonAuctionable={}}
     local faction=UnitFactionGroup and UnitFactionGroup("player")
     snap.faction=faction=="Alliance" and "A" or faction=="Horde" and "H" or faction
     local all=ns.EnsureProfRecipes and ns.EnsureProfRecipes({"cooking"}) or ns.ProfRecipes or {}
@@ -42,8 +42,9 @@ local function capture(opts)
         for _,m in ipairs(r.mats or {}) do ids[m[1]]=true end
         if r.formula then ids[r.formula]=true end
     end
-    local db,ra=ns.VendorPriceDB,ns.ProfRouteAuto
+    local db,ra=ns.ProfItemPrices,ns.ProfRouteAuto
     for id in pairs(ids) do
+        if E.NonAuctionableItem and E.NonAuctionableItem(id) then snap.nonAuctionable[id]=true end
         if ra and ra.AHPriceOf then snap.prices[id]=ra.AHPriceOf(id) end
         if db and db.GetOffers then snap.offers[id]=db.GetOffers(id,snap) end
         if db and db.GetFormulaOffers then snap.formulaOffers[id]=db.GetFormulaOffers(id,snap) end
@@ -108,7 +109,7 @@ function P.Compute(opts)
             end
         end
     end
-    local cur=start;local groups={};local guide=data.cookingSteps or {};local guard=0
+    local cur=start;local guide=data.cookingSteps or {};local guard=0
     while cur<target and guard<1000 do
         guard=guard+1
         local preferred,stageTo
@@ -140,11 +141,11 @@ function P.Compute(opts)
             expected=expected+1/gain
         end
         local count=max(1,ceil(expected-1e-7))
-        local step=groups[r.key]
-        if not step then
+        local step=out.steps[#out.steps]
+        if not step or step[3]~=r.spell then
             step={cur,to,r.spell,count,profession="cooking",role="level",reason="level",recipe=clone(r),item=r.item,
                 cost=0,leveling=true,stepIndex=#out.steps+1,fishing={},fishMaterials={},fishingAreas={},actionIDs={}}
-            out.steps[#out.steps+1]=step;groups[r.key]=step
+            out.steps[#out.steps+1]=step
         else step[2]=to;step[4]=step[4]+count end
         out.crafts=out.crafts+count;cur=to
     end
@@ -236,5 +237,6 @@ function P.Compute(opts)
     table.sort(out.mats,function(a,b)return a.id<b.id end)
     table.sort(out.fishMaterials,function(a,b)return (out.firstAt[a.id] or 0)<(out.firstAt[b.id] or 0) end)
     E.SummarizeAuctionSupply(out,snap)
-    return out
+    local ra=ns.ProfRouteAuto
+    return ra and ra.StampVendorQuotes and ra.StampVendorQuotes(out) or out
 end

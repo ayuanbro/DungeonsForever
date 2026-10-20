@@ -235,6 +235,23 @@ python df-prof-pipeline-v1.0/_temp/fc_update.py --specializations-only --apply
 python df-prof-pipeline-v1.0/_temp/fc_update.py --specializations-only --apply --offline
 ```
 
+正式插件 TOC 现在加载仓库根目录的 `Core/Data/Data_ProfSpecializations.lua`。
+更新运行数据时，从仓库根目录显式指定该输出；生成器仍保留证据、校验和同批发布流程：
+
+```powershell
+python df-prof-pipeline-v1.0/_temp/fc_update.py --specializations-only --apply `
+  --specialization-output-lua Core/Data/Data_ProfSpecializations.lua
+
+# 有已发布快照时离线重放到同一正式路径
+python df-prof-pipeline-v1.0/_temp/fc_update.py --specializations-only --apply --offline `
+  --specialization-output-lua Core/Data/Data_ProfSpecializations.lua
+```
+
+不指定覆盖路径时仍输出工具包内的数据样例。不要手工修改生成 Lua。
+工程入门任务的任务、NPC、阵营和交付物配置独立保存在
+`Core/Data/Data_ProfSpecializationQuests.lua`，由固定版本 Questie Forever 数据核对。
+未知学习条件继续保存为 `pending`；运行时允许这类普通配方参与规划，不将其改成已确认通用。
+
 `--specializations-only` 只运行这条更新流程；未指定时，`fc_update.py` 仍执行原有
 专业管线。统一入口默认检查模式，只有 `--apply` 发布。在线模式需要可用的
 wow.tools.local 和现有 `prof_*.json` 专业目录；它不会刷新其他专业管线的数据源。
@@ -359,8 +376,9 @@ wuxianwow 目录下载也使用固定身份、robots 校验、七天有效缓存
 `--offline` 使用已有 CSV／缓存，缺失证据保留待确认，并报告确认、待确认及冲突数量。
 `--check`／`--dry-run` 不发布 CSV、Lua 或审计结果，但允许更新抓取缓存及请求冷却状态。
 
-产物仅写入管线包的 `Core/Data/`；没有接入正式插件 TOC、专业 UI 或求解器，
-也不会复制到游戏安装目录。
+默认产物写入管线包的 `Core/Data/`；正式插件已接入专精数据、UI 与求解器，
+运行数据通过前述 `--specialization-output-lua` 明确更新到仓库根目录。
+此流程不复制或部署到游戏安装目录。
 
 ### 未关联图纸审计
 

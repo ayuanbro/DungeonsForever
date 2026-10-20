@@ -1,5 +1,4 @@
-"""Supplier metadata and synthetic quotation regressions (Lua 5.1)."""
-import json
+"""Pure schema-2 NPC quotation boundaries, without legacy merchant catalogues."""
 import sys
 import unittest
 from pathlib import Path
@@ -8,39 +7,34 @@ sys.path.insert(0, str(Path.home() / "AppData/Local/Temp/df-lua-runtime"))
 from lupa.lua51 import LuaRuntime
 
 ROOT = Path(__file__).resolve().parents[1]
-
 MOCKS = r'''
-test = { name="Alice", realm="Realm", faction="Alliance", standing=4,
-    merchantReads=0, dbReads=0, entries={} }
-db = { vendorPrices = { [999900] = { p=1, t=99 } } }
-ns = { VendorPriceSeed = { [999901]=1 }, ProfVendors = {}, invalidations=0 }
-ns.DB = function()
+test={faction='Alliance',merchantReads=0,dbReads=0,frames=0}
+db={vendorPrices={[999900]={p=1,t=99}}}
+ns={ProfVendors={},ProfItems={}}
+ns.DB=function()
     test.dbReads=test.dbReads+1
-    if test.denyDB then error('NPC quotations accessed player SavedVariables') end
+    if test.denyDB then error('NPC prices must not read SavedVariables')end
     return db
 end
-ns.ProfRouteAuto = { Invalidate=function() ns.invalidations=ns.invalidations+1 end }
-function UnitFactionGroup() return test.faction end
-function UnitLevel() return test.level or 30 end
-function GetMerchantNumItems() test.merchantReads=test.merchantReads+1;error('merchant API called') end
-function GetMerchantItemInfo() test.merchantReads=test.merchantReads+1;error('merchant API called') end
+function UnitFactionGroup()return test.faction end
+function UnitLevel()return 30 end
+function GetMerchantNumItems()test.merchantReads=test.merchantReads+1;error('merchant API called')end
+function GetMerchantItemInfo()test.merchantReads=test.merchantReads+1;error('merchant API called')end
 C_MerchantFrame={GetItemInfo=GetMerchantItemInfo}
-C_Reputation = { GetFactionDataByID=function(id)
-    if id==72 then return {reaction=test.standing,atWarWith=test.atWar} end
-end }
 function CreateFrame()
-    vendorFrame={events={}}
-    function vendorFrame:RegisterEvent(event) self.events[event]=true end
-    function vendorFrame:SetScript(_, fn) self.handler=fn end
-    return vendorFrame
+    test.frames=test.frames+1
+    local f={events={}}
+    function f:RegisterEvent(event)self.events[event]=true end
+    function f:SetScript(_,fn)self.handler=fn end
+    return f
 end
-function put(item,values)
-    local offer={itemID=item,npcID=7,price=21,quantity=5,unlimited=true,
-        available=true,reference=true,priceVerified=true,source='wowhead-forever',
-        verifiedAt='2026-10-18',priceBasis='npc-shelf'}
-    for key,value in pairs(values or {}) do offer[key]=value end
-    ns.ProfVendorOffers[item]={offer}
-    return offer
+function put(item,values,quantity)
+    local raw={npc_id=7,name_en='Schema Seller',zone_id=12,side='n',
+        cost_copper=21,cost_text='21c',stock=-1,price_source='client'}
+    for key,value in pairs(values or {})do raw[key]=value end
+    local record={item_id=item,VendorStackCount=quantity or 5,offers={[raw.npc_id]=raw}}
+    ns.ProfItems[item]=record
+    return raw,record
 end
 '''
 
@@ -48,309 +42,211 @@ end
 def runtime():
     lua = LuaRuntime(unpack_returned_tuples=True)
     lua.execute(MOCKS)
-    ns = lua.globals().ns
-    for name in ("Core/Data/Data_ProfVendorOffers.lua", "Core/Data/Data_ProfFormulaSources.lua", "Core/VendorPriceDB.lua"):
-        lua.execute((ROOT / name).read_text(encoding="utf-8-sig"), "Test", ns)
+    lua.execute((ROOT / 'Core/ProfItemPrices.lua').read_text(encoding='utf-8-sig'), 'Test', lua.globals().ns)
     return lua
 
 
 class VendorOffers(unittest.TestCase):
-    def test_merchant_open_never_records_or_changes_quotes(self):
-        lua = runtime()
-        lua.execute('''
-          test.denyDB=true
-          local price=ns.VendorPriceDB.GetPrice(3371)
-          assert(not vendorFrame.events.MERCHANT_SHOW and not vendorFrame.events.MERCHANT_UPDATE)
-          vendorFrame.handler(vendorFrame,'MERCHANT_SHOW')
-          vendorFrame.handler(vendorFrame,'MERCHANT_UPDATE')
-          assert(ns.VendorPriceDB.GetPrice(3371)==price)
-          assert(test.merchantReads==0 and test.dbReads==0 and ns.invalidations==0)
-          assert(db.profVendorOffers==nil and db.vendorPrices[3371]==nil)
-          assert(ns.VendorPriceDB.Scan==nil and ns.VendorPriceDB.Count==nil)
-          assert(ns.VendorPriceDB.GetBasePurchasePrice==nil and ns.VendorPriceDB.OnChanged==nil)
+    def setUp(self):
+        self.lua = runtime()
+
+    def test_empty_data_has_no_price_supplier_or_formula(self):
+        self.lua.execute('''
+          assert(ns.ProfItemPrices.GetPrice(999001)==nil)
+          assert(#ns.ProfItemPrices.GetOffers(999001)==0)
+          assert(#ns.ProfItemPrices.GetSuppliers(999001)==0)
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999001)==0)
         ''')
 
-    def test_legacy_persisted_records_neither_add_quotes_nor_block_shelves(self):
-        lua = runtime()
-        lua.execute('''
-          local expected=ns.VendorPriceDB.GetPrice(3371)
-          db.profVendorOffers={
-            [3371]={old={npcID=1313,source='merchant',character='Alice-Realm',price=1,
-              quantity=5,unlimited=false,available=false,hasExtendedCost=true}},
-            [999900]={old={npcID=7,source='merchant',character='Alice-Realm',price=1,
-              quantity=1,unlimited=true,available=true,verifiedAt=1}},
-          }
-          db.formulaPrices={[999900]=1}
-          test.denyDB=true
-          assert(ns.VendorPriceDB.GetPrice(3371)==expected)
-          assert(ns.VendorPriceDB.GetPrice(999900)==nil)
-          assert(#ns.VendorPriceDB.GetSuppliers(999900)==0)
-          assert(#ns.VendorPriceDB.GetFormulaOffers(999900)==0)
-          assert(test.dbReads==0 and db.profVendorOffers[3371].old.price==1)
+    def test_raw_bundle_price_preserves_source_without_fabricated_audit_date(self):
+        self.lua.execute('''
+          put(999002)
+          local q=ns.ProfItemPrices.GetOffers(999002)[1]
+          assert(q.price==21 and q.quantity==5 and q.bundleSize==5 and q.unit==21/5)
+          assert(q.source=='client' and q.priceSource=='client' and q.priceBasis=='Data_ProfItems')
+          assert(q.reference and not q.estimated and q.verifiedAt==nil and q.priceVerified==nil)
+          assert(q.npcID==7 and q.npcName=='Schema Seller')
+          assert(ns.ProfItemPrices.GetPrice(999002)==21/5)
         ''')
 
-    def test_auctionator_vendor_cache_is_never_consulted(self):
-        lua = runtime()
-        lua.execute('''
-          Auctionator={API={v1={
-            GetVendorPriceByItemID=function() error('Auctionator vendor cache read') end,
-            GetVendorPrice=function() error('Auctionator vendor cache read') end}}}
-          local expected=ns.VendorPriceDB.GetPrice(3371)
-          assert(expected==nil)
-          assert(ns.VendorPriceDB.GetPrice(3371,{allowVendorCache=true})==expected)
-          assert(ns.VendorPriceDB.GetPrice(999900,{allowVendorCache=true})==nil)
-          assert(#ns.VendorPriceDB.GetFormulaOffers(999900)==0)
+    def test_wowhead_source_and_explicit_zero_cost_remain_known(self):
+        self.lua.execute('''
+          put(999003,{cost_copper=0,cost_text='0c',price_source='wowhead'})
+          local q=ns.ProfItemPrices.GetOffers(999003)[1]
+          assert(q.price==0 and q.unit==0 and q.source=='wowhead')
+          assert(ns.ProfItemPrices.GetPrice(999003)==0)
         ''')
 
-    def test_unqualified_seed_and_base_prices_do_not_imply_sold_items(self):
-        lua = runtime()
-        lua.execute('''
-          ns.ItemPurchasePrices={[999901]={10,5},[765]={5,1}}
-          assert(ns.VendorPriceDB.GetPrice(999901)==nil)
-          assert(ns.VendorPriceDB.GetPrice(765)==nil)
-          assert(#ns.VendorPriceDB.GetSuppliers(999901)==0)
-          assert(#ns.VendorPriceDB.GetOffers(765)==0)
-          assert(db.vendorPrices[999900].t==99)
-        ''')
-
-    def test_bundled_suppliers_preserve_bundles_without_prices(self):
-        lua = runtime()
-        lua.execute('''
-          local suppliers=ns.VendorPriceDB.GetSuppliers(3371)
-          assert(#suppliers>0 and suppliers[1].quantity==5)
-          assert(suppliers[1].bundleSize==5 and suppliers[1].source=='wowhead-forever')
-          for _,supplier in ipairs(suppliers) do
-            assert(supplier.price==nil and supplier.unit==nil and supplier.priceVerified==nil)
+    def test_invalid_cost_or_missing_noninteger_bundle_cannot_price_goods(self):
+        self.lua.execute('''
+          local raw,item=put(999004)
+          for _,value in ipairs({-1,'21',math.huge,0/0})do
+            raw.cost_copper=value;assert(#ns.ProfItemPrices.GetOffers(999004)==0)
           end
-          assert(#ns.VendorPriceDB.GetOffers(3371)==0 and ns.VendorPriceDB.GetPrice(3371)==nil)
-        ''')
-
-    def test_synthetic_integer_bundle_cost_without_auctionator_or_merchant_visit(self):
-        lua = runtime()
-        ns = lua.globals().ns
-        ns.LoadForeverPages = True
-        for filename in ("ProfEconomy.lua", "ProfRouteSolver.lua"):
-            lua.execute((ROOT / "Core" / filename).read_text(encoding="utf-8-sig"), "Test", ns)
-        lua.execute('''
-          put(999777,{price=37,quantity=4})
-          local snapshot={recipes={},professions={},known={},prices={[999777]=999},
-            vendorItems={[999777]=true},offers={[999777]=ns.VendorPriceDB.GetOffers(999777)}}
-          local r=ns.ProfRouteSolver.Procure(snapshot,999777,6)
-          assert(r.feasible and r.costComplete and r.total==74 and r.vendorTotal==74 and r.ahTotal==0)
-          assert(#r.mats==1 and r.mats[1].count==8 and r.mats[1].bundleSize==4)
-          assert(r.mats[1].npcID==7 and r.mats[1].reference)
-          assert(Auctionator==nil and test.merchantReads==0)
-        ''')
-
-    def test_catalogue_only_supplier_stays_unpriced(self):
-        lua = runtime()
-        lua.execute('''
-          local offer=put(999010)
-          offer.price=nil;offer.reference=nil;offer.priceVerified=nil
-          assert(#ns.VendorPriceDB.GetSuppliers(999010)==1)
-          assert(#ns.VendorPriceDB.GetOffers(999010)==0)
-          assert(ns.VendorPriceDB.GetPrice(999010)==nil)
-        ''')
-
-    def test_unverified_reference_fields_are_not_free_prices(self):
-        lua = runtime()
-        lua.execute('''
-          local offer=put(999011)
-          for _,field in ipairs({'reference','priceVerified','verifiedAt','source'}) do
-            local value=offer[field];offer[field]=nil
-            assert(#ns.VendorPriceDB.GetOffers(999011)==0,field)
-            offer[field]=value
+          raw.cost_copper=21
+          for _,value in ipairs({0,-1,1.5,'5',math.huge,0/0})do
+            item.VendorStackCount=value;assert(#ns.ProfItemPrices.GetOffers(999004)==0)
           end
-          assert(#ns.VendorPriceDB.GetOffers(999011)==1)
+          item.VendorStackCount=nil
+          assert(#ns.ProfItemPrices.GetOffers(999004)==0)
+          local f=ns.ProfItemPrices.GetFormulaOffers(999004)
+          assert(#f==1 and f[1].price==nil and not f[1].priceUsable)
         ''')
 
-    def test_invalid_prices_and_noninteger_bundles_are_rejected(self):
-        lua = runtime()
-        lua.execute('''
-          local offer=put(999012)
-          for _,value in ipairs({-1,'21',math.huge,0/0}) do
-            offer.price=value;assert(#ns.VendorPriceDB.GetOffers(999012)==0)
+    def test_page_text_without_copper_remains_unpriced(self):
+        self.lua.execute('''
+          local raw=put(999005);raw.cost_copper=nil;raw.cost_text='99 tokens'
+          assert(#ns.ProfItemPrices.GetSuppliers(999005)==1)
+          assert(#ns.ProfItemPrices.GetOffers(999005)==0 and ns.ProfItemPrices.GetPrice(999005)==nil)
+          local f=ns.ProfItemPrices.GetFormulaOffers(999005)
+          assert(#f==1 and f[1].price==nil and not f[1].priceUsable)
+        ''')
+
+    def test_old_namespaces_sources_seeds_and_locations_cannot_establish_supply(self):
+        self.lua.execute('''
+          local old={npcID=7,price=1,quantity=1,unlimited=true,reference=true,
+            priceVerified=true,verifiedAt='date',source='merchant'}
+          ns.ProfVendorOffers={[999006]={old}}
+          ns.ProfFormulaOffers={[999006]={old}}
+          ns.VendorPriceSeed={[999006]=1};ns.ItemPurchasePrices={[999006]={1,1}}
+          ns.ProfVendors[7]={12,1429,10,20}
+          local source={vendors={{id=7,name='Old source',price=1,quantity=1,unlimited=true}}}
+          assert(ns.ProfItemPrices.GetPrice(999006)==nil)
+          assert(#ns.ProfItemPrices.GetOffers(999006)==0 and #ns.ProfItemPrices.GetSuppliers(999006)==0)
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999006,nil,source)==0)
+        ''')
+
+    def test_old_price_and_conditions_cannot_override_new_rows(self):
+        self.lua.execute('''
+          put(999007)
+          local poison={npcID=7,price=999,quantity=1,unlimited=false,faction='H',
+            hasExtendedCost=true,requirements={unknown=true},available=false}
+          ns.ProfVendorOffers={[999007]={poison}};ns.ProfFormulaOffers={[999007]={poison}}
+          local source={vendors={{id=7,price=999,faction='H',requirements={level=999}}}}
+          assert(ns.ProfItemPrices.GetPrice(999007,{faction='A'})==21/5)
+          local f=ns.ProfItemPrices.GetFormulaOffers(999007,{faction='A'},source)
+          assert(#f==1 and f[1].price==21 and f[1].quantity==5 and f[1].priceUsable)
+          assert(poison.price==999 and poison.available==false)
+        ''')
+
+    def test_saved_merchant_and_auctionator_vendor_caches_are_never_read(self):
+        self.lua.execute('''
+          put(999008)
+          db.profVendorOffers={[999008]={old={npcID=7,price=1,quantity=1,unlimited=true}}}
+          Auctionator={API={v1={GetVendorPriceByItemID=function()error('old vendor cache read')end,
+            GetVendorPrice=function()error('old vendor cache read')end}}}
+          assert(ns.ProfItemPrices.GetPrice(999008,{allowVendorCache=true})==21/5)
+          assert(ns.ProfItemPrices.GetPrice(999900)==nil)
+          assert(test.dbReads==0 and db.profVendorOffers[999008].old.price==1)
+        ''')
+
+    def test_runtime_merchants_and_reputation_events_do_not_change_prices(self):
+        self.lua.execute('''
+          put(999009)
+          assert(ns.ProfItemPrices.GetPrice(999009)==21/5)
+          assert(test.merchantReads==0 and test.dbReads==0 and test.frames==0)
+          assert(ns.ProfItemPrices.Scan==nil and ns.ProfItemPrices.Count==nil)
+          assert(ns.ProfItemPrices.GetBasePurchasePrice==nil and ns.ProfItemPrices.OnChanged==nil)
+        ''')
+
+    def test_side_and_explicit_npc_access_are_the_new_access_fields(self):
+        self.lua.execute('''
+          local raw=put(999010,{side='a'})
+          assert(#ns.ProfItemPrices.GetOffers(999010,{faction='Horde'})==0)
+          assert(#ns.ProfItemPrices.GetOffers(999010,{faction='Alliance'})==1)
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999010,{faction='H'})==0)
+          for _,side in ipairs({'n','N','Neutral'})do
+            raw.side=side;assert(#ns.ProfItemPrices.GetOffers(999010,{faction='H'})==1)
           end
-          offer.price=21
-          for _,value in ipairs({0,-1,1.5,math.huge,0/0}) do
-            offer.quantity=value;assert(#ns.VendorPriceDB.GetOffers(999012)==0)
+          raw.side=nil
+          assert(#ns.ProfItemPrices.GetOffers(999010,{npcAccess={[7]=false}})==0)
+          assert(#ns.ProfItemPrices.GetSuppliers(999010,{npcAccess={[7]=false}})==0)
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999010,{npcAccess={[7]=false}})==0)
+        ''')
+
+    def test_currency_or_item_exchange_including_zero_placeholders_is_not_gold(self):
+        self.lua.execute('''
+          for _,values in ipairs({{currency_kind='currency'},{currency_kind='item'},
+            {currency_id=0},{currency_amount=0},{currency_kind='0'},
+            {currency_id=77,currency_amount=3}})do
+            put(999011,values)
+            assert(#ns.ProfItemPrices.GetOffers(999011)==0)
+            assert(#ns.ProfItemPrices.GetSuppliers(999011)==0)
+            assert(#ns.ProfItemPrices.GetFormulaOffers(999011)==0)
           end
-          offer.quantity=5;offer.price=0
-          assert(ns.VendorPriceDB.GetPrice(999012)==0)
+          put(999011,{currency_kind=' \t ',currency_id='',currency_amount='  '})
+          assert(#ns.ProfItemPrices.GetOffers(999011)==1)
         ''')
 
-    def test_limited_currency_unavailable_shelves_never_price_reagents(self):
-        lua = runtime()
-        lua.execute('''
-          for _,values in ipairs({{unlimited=false},{available=false},{purchasable=false},
-            {currencyID=7},{hasExtendedCost=true}}) do
-            put(999013,values)
-            assert(#ns.VendorPriceDB.GetOffers(999013)==0)
-            assert(#ns.VendorPriceDB.GetSuppliers(999013)==0)
-          end
+    def test_only_stock_minus_one_prices_unlimited_reagents(self):
+        self.lua.execute('''
+          local raw=put(999012,{stock=2})
+          assert(#ns.ProfItemPrices.GetOffers(999012)==0 and #ns.ProfItemPrices.GetSuppliers(999012)==0)
+          local f=ns.ProfItemPrices.GetFormulaOffers(999012)
+          assert(#f==1 and f[1].limited and f[1].maxStock==2 and f[1].stock==nil and f[1].priceUsable)
+          raw.stock=nil;f=ns.ProfItemPrices.GetFormulaOffers(999012)
+          assert(#f==1 and f[1].stockUnknown and f[1].stock==nil)
+          assert(#ns.ProfItemPrices.GetOffers(999012)==0)
+          raw.stock=-1
+          assert(#ns.ProfItemPrices.GetOffers(999012)==1 and #ns.ProfItemPrices.GetSuppliers(999012)==1)
         ''')
 
-    def test_faction_and_explicit_npc_access_are_respected(self):
-        lua = runtime()
-        lua.execute('''
-          put(999014,{faction='A'})
-          assert(#ns.VendorPriceDB.GetOffers(999014,{faction='H'})==0)
-          assert(#ns.VendorPriceDB.GetSuppliers(999014,{faction='H'})==0)
-          assert(#ns.VendorPriceDB.GetOffers(999014,{faction='Alliance'})==1)
-          assert(#ns.VendorPriceDB.GetOffers(999014,{npcAccess={[7]=false}})==0)
-          assert(#ns.VendorPriceDB.GetSuppliers(999014,{npcAccess={[7]=false}})==0)
+    def test_zero_refresh_cap_keeps_formula_quote_but_marks_it_unavailable(self):
+        self.lua.execute('''
+          put(999013,{stock=0})
+          local f=ns.ProfItemPrices.GetFormulaOffers(999013)
+          assert(#f==1 and f[1].price==21 and f[1].maxStock==0)
+          assert(f[1].limited and f[1].stock==nil and not f[1].priceUsable and not f[1].available)
+          assert(#ns.ProfItemPrices.GetOffers(999013)==0)
         ''')
 
-    def test_summoned_vendor_needs_explicit_access(self):
-        lua = runtime()
-        lua.execute('''
-          assert(#ns.VendorPriceDB.GetSuppliers(10284)==0)
-          assert(#ns.VendorPriceDB.GetOffers(10284)==0)
-          assert(#ns.VendorPriceDB.GetSuppliers(10284,{npcAccess={[242498]=true}})==1)
-          assert(#ns.VendorPriceDB.GetOffers(10284,{npcAccess={[242498]=true}})==0)
-          assert(#ns.VendorPriceDB.GetOffers(10284,{npcAccess={[242498]=false}})==0)
+    def test_root_cost_without_npc_never_establishes_a_supplier(self):
+        self.lua.execute('''
+          ns.ProfItems[999014]={item_id=999014,VendorStackCount=5,cost_copper=21,
+            cost_text='21c',price_source='client',stock=-1,offers={}}
+          ns.ProfVendors[7]={12,1429,10,20}
+          assert(ns.ProfItemPrices.GetPrice(999014)==nil)
+          assert(#ns.ProfItemPrices.GetSuppliers(999014)==0 and #ns.ProfItemPrices.GetOffers(999014)==0)
+          assert(#ns.ProfItemPrices.GetFormulaOffers(999014,nil,{vendors={{id=7}}})==0)
         ''')
 
-    def test_level_quest_reputation_and_profession_requirements(self):
-        lua = runtime()
-        lua.execute('''
-          local offer=put(999015,{requirements={level=30,questID=12,
-            reputationFactionID=72,minimumStanding=5,profession='alchemy',skill=150}})
-          local context={level=30,quests={[12]=true},reputations={[72]=5},professions={alchemy={cur=150}}}
-          assert(#ns.VendorPriceDB.GetOffers(999015,context)==1)
-          for field,missing in pairs({level=29,quests={[12]=false},reputations={[72]=4},professions={alchemy=149}}) do
-            local value=context[field];context[field]=missing
-            assert(#ns.VendorPriceDB.GetOffers(999015,context)==0,field)
-            context[field]=value
-          end
-          context.requirementsMet=function()return true end
-          assert(#ns.VendorPriceDB.GetOffers(999015,context)==1)
-          context.requirementsMet=function()error('unknown condition')end
-          assert(#ns.VendorPriceDB.GetOffers(999015,context)==0)
+    def test_non_schema_metadata_is_ignored_instead_of_becoming_compatibility_policy(self):
+        self.lua.execute('''
+          put(999015,{price=999,quantity=1,unlimited=false,available=false,purchasable=false,
+            faction='H',hasExtendedCost=true,currencyID=77,requirements={unknown=true},summoned=true})
+          local q=ns.ProfItemPrices.GetOffers(999015,{faction='A'})[1]
+          assert(q and q.price==21 and q.quantity==5 and q.available and q.purchasable)
+          assert(q.requirements==nil and q.summoned==nil and q.hasExtendedCost==nil)
         ''')
 
-    def test_unknown_or_hostile_requirements_are_filtered(self):
-        lua = runtime()
-        lua.execute('''
-          local offer=put(999016)
-          for _,field in ipairs({'unknown','event','currency','condition'}) do
-            offer.requirements={[field]=true}
-            assert(#ns.VendorPriceDB.GetOffers(999016)==0)
-          end
-          offer.requirements=nil;offer.npcFactionID=72;test.standing=2
-          assert(#ns.VendorPriceDB.GetOffers(999016)==0)
-          test.standing=5;test.atWar=true
-          assert(#ns.VendorPriceDB.GetSuppliers(999016)==0)
+    def test_returned_quotes_and_suppliers_do_not_mutate_raw_rows(self):
+        self.lua.execute('''
+          local raw,item=put(999016)
+          local q=ns.ProfItemPrices.GetOffers(999016)[1];q.price=999;q.npcID=888
+          local s=ns.ProfItemPrices.GetSuppliers(999016)[1];s.quantity=100
+          local f=ns.ProfItemPrices.GetFormulaOffers(999016)[1];f.price=900
+          assert(raw.cost_copper==21 and raw.npc_id==7 and raw.stock==-1 and item.VendorStackCount==5)
+          assert(raw.price==nil and raw.unit==nil and ns.ProfItemPrices.GetPrice(999016)==21/5)
         ''')
 
-    def test_reputation_events_invalidate_access_without_reading_merchants(self):
-        lua = runtime()
-        lua.execute('''
-          assert(vendorFrame.events.UPDATE_FACTION)
-          local price=ns.VendorPriceDB.GetPrice(3371)
-          vendorFrame.handler(vendorFrame,'UPDATE_FACTION')
-          assert(ns.invalidations==1 and test.merchantReads==0 and test.dbReads==0)
-          assert(ns.VendorPriceDB.GetPrice(3371)==price)
-          put(999017,{npcFactionID=72})
-          assert(#ns.VendorPriceDB.GetOffers(999017)==1)
-          test.standing=2;vendorFrame.handler(vendorFrame,'UPDATE_FACTION')
-          assert(#ns.VendorPriceDB.GetOffers(999017)==0 and ns.invalidations==2)
+    def test_invalid_or_conflicting_npc_ids_do_not_create_offers(self):
+        self.lua.execute('''
+          local raw=put(999017)
+          raw.npc_id=8
+          assert(#ns.ProfItemPrices.GetOffers(999017)==0)
+          raw.npc_id=7;ns.ProfItems[999017].offers={[0]=raw}
+          assert(#ns.ProfItemPrices.GetOffers(999017)==0)
         ''')
 
-    def test_returned_quote_and_supplier_tables_do_not_mutate_catalogue(self):
-        lua = runtime()
-        lua.execute('''
-          local offer=put(999018)
-          ns.VendorPriceDB.GetOffers(999018)[1].price=1000
-          ns.VendorPriceDB.GetSuppliers(999018)[1].npcID=9
-          assert(offer.price==21 and offer.npcID==7 and ns.VendorPriceDB.GetPrice(999018)==21/5)
-        ''')
-
-    def test_bundled_limited_formulas_keep_stock_metadata_without_prices(self):
-        lua = runtime()
-        lua.execute('''
-          local offers=ns.VendorPriceDB.GetFormulaOffers(5640)
-          assert(#offers==1 and offers[1].price==nil and offers[1].limited)
-          assert(offers[1].maxStock==2 and offers[1].stock==nil and not offers[1].priceUsable)
-          assert(offers[1].stockStatus=='limited' and not offers[1].stockUnknown)
-          assert(#ns.VendorPriceDB.GetOffers(5640)==0 and #ns.VendorPriceDB.GetSuppliers(5640)==0)
-          assert(#ns.VendorPriceDB.GetFormulaOffers(5640,{faction='H'})==0)
-        ''')
-
-    def test_formula_catalogue_keeps_unknown_stock_and_access_restrictions(self):
-        lua = runtime()
-        lua.execute('''
-          local source={vendors={{id=7,name='Seller',price=1,faction='A',requirements={questID=12}}}}
-          assert(#ns.VendorPriceDB.GetFormulaOffers(99,{quests={[12]=false}},source)==0)
-          assert(#ns.VendorPriceDB.GetFormulaOffers(99,{faction='H',quests={[12]=true}},source)==0)
-          local offers=ns.VendorPriceDB.GetFormulaOffers(99,{quests={[12]=true}},source)
-          assert(#offers==1 and offers[1].npcID==7 and offers[1].npcName=='Seller')
-          assert(offers[1].stockUnknown and offers[1].price==nil and not offers[1].priceUsable)
-        ''')
-
-    def test_audited_formula_source_prices_are_usable_with_bundle_and_conditions(self):
-        lua = runtime()
-        lua.execute('''
-          local source={vendors={{id=7,name='Seller',price=42,quantity=3,unlimited=true,
-            priceVerified=true,verifiedAt='2026-10-18',requirements={level=30}}}}
-          local offers=ns.VendorPriceDB.GetFormulaOffers(99,{level=30},source)
-          assert(#offers==1 and offers[1].priceUsable and offers[1].price==42 and offers[1].unit==14)
-          assert(#ns.VendorPriceDB.GetFormulaOffers(99,{level=29},source)==0)
-          source.vendors[1].currencyID=7
-          assert(#ns.VendorPriceDB.GetFormulaOffers(99,{level=30},source)==0)
-        ''')
-
-    def test_formula_offers_are_sorted_and_audited_npc_is_not_duplicated(self):
-        lua = runtime()
-        lua.execute('''
-          ns.ProfFormulaOffers={[99]={{npcID=7,price=10,quantity=1,unlimited=true,
-            reference=true,priceVerified=true,source='wowhead-forever',verifiedAt='2026-10-18'}}}
-          local source={vendors={{id=7,name='duplicate'}, {id=8,name='other'},
-            {id=9,name='cheap',price=5,quantity=1,priceVerified=true,verifiedAt='2026-10-18'}}}
-          local offers=ns.VendorPriceDB.GetFormulaOffers(99,nil,source)
-          assert(#offers==3 and offers[1].npcID==9 and offers[2].npcID==7 and offers[3].npcID==8)
-          assert(offers[3].price==nil and not offers[3].priceUsable)
-        ''')
-
-    def test_all_bundled_supplier_metadata_match_evidence_and_have_no_prices(self):
-        lua = runtime()
-        evidence = json.loads((ROOT / "tests/data/vendor-price-reference.json").read_text(encoding="utf-8-sig"))
-        count = 0
-        for item, offers in lua.globals().ns.ProfVendorOffers.items():
-            for _, offer in offers.items():
-                with self.subTest(item=item, npc=offer.npcID):
-                    shelf = evidence["shelves"][str(offer.npcID)]
-                    self.assertNotIn(item, shelf["excludedLimited"])
-                    rows = [r for r in shelf["rows"] if r["itemID"] == item]
-                    self.assertEqual(len(rows), 1)
-                    self.assertEqual(offer.quantity, rows[0]["quantity"])
-                    self.assertNotIn("price", rows[0])
-                    self.assertTrue(rows[0]["unlimited"] and offer.catalogueOnly)
-                    for field in ("price", "reference", "priceVerified", "estimated", "priceBasis"):
-                        self.assertIsNone(offer[field])
-                    self.assertEqual(offer.verifiedAt, evidence["verifiedAt"])
-                    count += 1
-        self.assertEqual(count, 202)
-
-    def test_loading_bundled_catalogues_never_produces_npc_prices(self):
-        lua = runtime()
-        lua.execute('''
-          local access={npcAccess={[242498]=true},faction='A'}
-          for id in pairs(ns.ProfVendorOffers) do
-            assert(#ns.VendorPriceDB.GetOffers(id,access)==0)
-            assert(ns.VendorPriceDB.GetPrice(id,access)==nil)
-          end
-          for id,offers in pairs(ns.ProfFormulaOffers) do
-            for _,offer in ipairs(offers) do
-              assert(offer.price==nil and offer.reference==nil and offer.priceVerified==nil)
-              assert(offer.estimated==nil and offer.priceBasis==nil)
-            end
-            for _,offer in ipairs(ns.VendorPriceDB.GetFormulaOffers(id,access)) do
-              assert(offer.price==nil and offer.unit==nil and not offer.priceUsable)
-            end
-          end
+    def test_quotes_sort_by_unit_price_without_merging_npc_rows(self):
+        self.lua.execute('''
+          local raw,item=put(999018)
+          item.offers[8]={npc_id=8,cost_copper=10,stock=-1,side='n',price_source='wowhead'}
+          local q=ns.ProfItemPrices.GetOffers(999018)
+          assert(#q==2 and q[1].npcID==8 and q[1].unit==2 and q[2].npcID==7)
+          assert(raw.cost_copper==21 and item.offers[8].cost_copper==10)
         ''')
 
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+if __name__ == '__main__':
+    unittest.main()

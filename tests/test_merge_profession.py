@@ -40,7 +40,7 @@ class MergedProfessionTests(unittest.TestCase):
         for path in retained:
             self.assertEqual(paths.count(path), 1, path)
         extensions = ["Core/Data/" + name + ".lua" for name in (
-            "Data_ProfVendorOffers", "Data_ProfFormulaSources", "Data_ProfMining",
+            "Data_ProfItems", "Data_ProfFormulaQuests", "Data_ProfMining",
             "Data_ProfFishingRoutes")]
         last_overlay = max(i for i, path in enumerate(paths)
                            if path.startswith(("Core/Data/enUS/", "Core/Data/zhTW/")))
@@ -48,7 +48,7 @@ class MergedProfessionTests(unittest.TestCase):
         self.assertTrue(all(i > last_overlay for i in positions))
         modules = ["Core/" + name + ".lua" for name in (
             "ProfEconomy", "ProfFishing", "ProfRouteSolver", "ProfRouteAuto",
-            "ProfessionUI", "AuctionatorBridge", "ProfFollow", "VendorPriceDB")]
+            "ProfessionUI", "AuctionatorBridge", "ProfFollow", "ProfItemPrices")]
         module_positions = [paths.index(path) for path in modules]
         self.assertEqual(module_positions, sorted(module_positions))
         self.assertLess(max(positions), min(module_positions))
@@ -69,10 +69,10 @@ class MergedProfessionTests(unittest.TestCase):
                 for key, value in words.items():
                     self.assertEqual(lua.globals().ns.L[key], value)
                 for key in ("搭配专业", "当前限制下没有可行路线", "已比较 %d 个状态",
-                            "NPC价格未知（暂无实测或可靠参考报价）"):
+                            "NPC购买价格尚未配置。"):
                     self.assertIsNotNone(lua.eval("rawget")(lua.globals().ns.L, key), key)
 
-    def test_real_localized_catalogues_preserve_fishing_and_unpriced_npc_sources(self):
+    def test_real_localized_catalogues_load_prof_items_prices_and_preserve_fishing_sources(self):
         for locale in ("zhCN", "zhTW", "enUS"):
             with self.subTest(locale=locale):
                 lua, load = self.runtime(locale)
@@ -85,29 +85,41 @@ class MergedProfessionTests(unittest.TestCase):
                         continue
                     load(str(ROOT / path))
                 for name in ("ProfEconomy", "ProfFishing", "ProfRouteSolver",
-                             "ProfRouteAuto", "VendorPriceDB"):
+                             "ProfRouteAuto", "ProfItemPrices"):
                     load(str(ROOT / "Core" / (name + ".lua")))
                 lua.execute("""
                   assert(#ns.ProfRecipes.mining.rows==15,'locale erased mining extension')
                   assert(ns.ProfFormulaMeta[4597].source.questOnly)
-                  assert(ns.ProfVendorOffers[2320] and ns.ProfFishingRoutes)
-                  local removed={'price','unit','unitPrice','vendorPrice','cost','priceVerified','priceBasis','estimated'}
-                  for _,catalogue in ipairs({ns.ProfVendorOffers,ns.ProfFormulaOffers}) do
-                    for _,offers in pairs(catalogue or {}) do for _,offer in ipairs(offers) do
-                      for _,key in ipairs(removed) do assert(offer[key]==nil,key..' survived in NPC catalogue') end
-                    end end
+                  assert(ns.ProfFishingRoutes)
+                  assert(ns.ProfVendorOffers==nil and ns.ProfFormulaOffers==nil,
+                    'obsolete merchant catalogues are still loaded')
+                  assert(ns.ProfItemsMeta.schemaVersion==2 and ns.ProfItemsMeta.sources.csv.sha256)
+                  assert(ns.ProfItems[6325].item_id==6325 and ns.ProfItems[6325].offers[66].cost_copper==40,
+                    'TOC did not load the generated schema2 NPC quotations')
+                  for _,meta in pairs(ns.ProfFormulaMeta) do
+                    assert(meta.source.questOnly and not meta.source.vendors,
+                      'independent quest metadata contains obsolete merchant sources')
                   end
                   for _,faction in ipairs({'Alliance','Horde'}) do
                     UnitFactionGroup=function() return faction end
                     local e=ns.ProfEconomy
                     local recipe=e.FindRecipe('cooking',7751)
                     local formula=e.FormulaFor(recipe,{known={},prices={},faction=faction=='Alliance' and 'A' or 'H'})
-                    assert(formula and formula.cost==nil and formula.unpriced and not formula.usable,
-                      'an unpriced NPC formula became free')
+                    local expected=faction=='Alliance' and 38 or 40
+                    assert(formula and formula.id==6325 and formula.source=='vendor' and formula.usable)
+                    assert(formula.cost==expected and not formula.unpriced,
+                      'formula did not use faction-appropriate cost_copper from ProfItems')
                     assert(#formula.vendorOffers>0,'supplier metadata disappeared')
-                    local mapped=false
+                    local mapped,linked=false,false
                     for _,offer in ipairs(formula.vendorOffers) do
-                      assert(offer.price==nil and not offer.priceUsable and offer.npcID and offer.url)
+                      assert(offer.npcID)
+                      if offer.priceUsable then
+                        local raw=ns.ProfItems[6325].offers[offer.npcID]
+                        assert(raw and offer.price==raw.cost_copper and not raw.currency_kind
+                          and not raw.currency_id and not raw.currency_amount,
+                          'formula offer did not come from a pure copper ProfItems row')
+                      end
+                      if offer.url then linked=true end
                       if offer.unlimited then assert((offer.quantity or offer.bundleSize)==1) end
                       local loc=ns.ProfVendors[offer.npcID]
                       if loc and loc[2] then
@@ -115,15 +127,19 @@ class MergedProfessionTests(unittest.TestCase):
                         mapped=true
                       end
                     end
-                    assert(mapped,'NPC location catalogue disappeared')
-                    local r=ns.ProfFishing.Compute({start=1,target=300})
-                    assert(not r.targetReached and r.status=='incomplete','unknown formulas were treated as free')
-                    assert(r.vendorTotal==0 and r.formulaVendorTotal==0)
+                    assert(mapped and linked,'NPC location or shelf evidence disappeared')
+                    local r=ns.ProfFishing.Compute({start=1,target=50})
+                    assert(r.targetReached and r.feasible and #r.steps==1)
+                    assert(r.total==expected and r.formulaVendorTotal==expected and r.formulasTotal==expected)
+                    assert(r.formulas[1].id==6325 and r.formulas[1].source=='vendor')
                     -- Already learned recipes still support the geographical
-                    -- guide without inventing a formula purchase price.
+                    -- guide without buying an already learned formula.
+                    e.Professions=function() return {
+                      cooking={cur=1,max=300,primary=false},
+                      fishing={cur=300,max=300,primary=false}} end
                     e.Known=function()return true end
-                    r=ns.ProfFishing.Compute({start=1,target=300})
-                    assert(r.targetReached and r.feasible and #r.steps==5,
+                    r=ns.ProfFishing.Compute({start=1,target=50})
+                    assert(r.targetReached and r.feasible and #r.steps==1,
                       testLocale..' '..faction..' '..tostring(r.status))
                     assert(r.vendorTotal==0 and r.ahTotal==0 and r.formulasTotal==0 and r.matTotal==0)
                     for _,fish in ipairs(r.fishMaterials) do

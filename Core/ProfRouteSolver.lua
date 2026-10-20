@@ -7,7 +7,7 @@ local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
 local function clock() return debugprofilestop and debugprofilestop() or (os and os.clock and os.clock()*1000) or 0 end
 local function available(s,id) return (s.inv[id] or 0)-(s.unusable[id] or 0) end
 local function clone(s)
-    return {inv=E.Copy(s.inv),unusable=E.Copy(s.unusable),produced=E.Copy(s.produced),skill=E.Copy(s.skill),progress=E.Copy(s.progress),cap=E.Copy(s.cap),learned=E.Copy(s.learned),formulaPaid=E.Copy(s.formulaPaid),ahUsed=E.Copy(s.ahUsed),diagnostics=E.Copy(s.diagnostics),money=s.money,log=s.log,switches=s.switches or 0,lastRecipe=s.lastRecipe}
+    return {inv=E.Copy(s.inv),unusable=E.Copy(s.unusable),produced=E.Copy(s.produced),skill=E.Copy(s.skill),progress=E.Copy(s.progress),cap=E.Copy(s.cap),learned=E.Copy(s.learned),formulaPaid=E.Copy(s.formulaPaid),ahUsed=E.Copy(s.ahUsed),specializationAbilities=E.Copy(s.specializationAbilities),completedSpecializationGoals=E.Copy(s.completedSpecializationGoals),diagnostics=E.Copy(s.diagnostics),money=s.money,log=s.log,switches=s.switches or 0,lastRecipe=s.lastRecipe}
 end
 local function consume(s,id,n)
     local stock=s.inv[id] or 0
@@ -30,7 +30,7 @@ local function better(a,b)
     return uncertainty(a)<uncertainty(b)
 end
 local function initial(snap,slug,opts)
-    local s={inv={},unusable={},produced={},skill={},progress={},cap={},learned=E.Copy(snap.known),formulaPaid={},ahUsed={},diagnostics={},money=0,switches=0}
+    local s={inv={},unusable={},produced={},skill={},progress={},cap={},learned=E.Copy(snap.known),formulaPaid={},ahUsed={},specializationAbilities=E.Copy(snap.specializationAbilities),completedSpecializationGoals={},diagnostics={},money=0,switches=0}
     for p,v in pairs(snap.professions) do s.skill[p]=v.cur or 1; s.cap[p]=v.max or 300 end
     s.skill[slug]=opts.start or s.skill[slug] or 1; s.cap[slug]=s.cap[slug] or 300
     -- Only the execution service may supply verified lots from this route.
@@ -60,18 +60,40 @@ local function stateKey(t,reusable)
     for id,n in pairs(t.inv) do if n>0 and (not reusable or reusable[id]) then parts[#parts+1]="i"..id.."="..n..":"..(t.unusable[id] or 0) end end
     for key in pairs(t.formulaPaid) do parts[#parts+1]="f"..tostring(key) end
     for id,n in pairs(t.ahUsed) do parts[#parts+1]="a"..id.."="..n end
+    for id,value in pairs(t.specializationAbilities or {}) do parts[#parts+1]="spec"..id.."="..tostring(value) end
+    for id in pairs(t.completedSpecializationGoals or {}) do parts[#parts+1]="quest"..id end
     parts[#parts+1]="last="..tostring(t.lastRecipe or "")
     for k in pairs(t.diagnostics) do parts[#parts+1]="d"..k end
     table.sort(parts); return table.concat(parts,";")
+end
+local function goalsComplete(job,state)
+    if not state or state.skill[job.slug]<job.target then return false end
+    for _,goal in ipairs(job.snap and job.snap.specializationGoals or {}) do
+        if not state.completedSpecializationGoals[goal.id] and not state.specializationAbilities[goal.abilityID] then return false end
+    end
+    return not (job.slug=="engineering" and job.target>=200 and job.snap and job.snap.specializationContext and job.snap.specializationContext.selectionConflict)
+end
+local function completedGoals(state)
+    local count=0
+    for _ in pairs(state and state.completedSpecializationGoals or {}) do count=count+1 end
+    return count
+end
+local function stampFreshResult(result)
+    local route=ns.ProfRouteAuto
+    if route and route.StampVendorQuotes then route.StampVendorQuotes(result) end
+    return result
 end
 function S.Result(job,state,status)
     -- A blocked future rank or missing quote must not hide the usable prefix.
     -- Keep the full-goal incumbent separate so it remains a valid pruning bound.
     local prefix=job.preview or (job.partial and job.partial.batched and job.partial)
-    local partial=not state and prefix and prefix.skill[job.slug]>(job.opts.start or 1)
-    if partial then state=prefix; partial=state.skill[job.slug]<job.target end
+    local partial=not state and prefix and (prefix.skill[job.slug]>(job.opts.start or 1) or completedGoals(prefix)>0)
+    if partial then state=prefix; partial=not goalsComplete(job,state) end
     local out={planVersion=2,executionVersion=1,scheme="cheapest",steps={},executionSteps={},actions={},mats={},firstAt={},gaps={},total=0,matTotal=0,vendorTotal=0,ahTotal=0,crafts=0,productAH=0,productNPC=0,productPartial=false,start=job.opts.start or 1,target=job.target,status=status or "searching",feasible=state~=nil,priced=true,optimal=false,diagnostics={},stamp=(time and time()) or 0,expanded=job.expanded or 0,improvements=job.improvements or 0,initialTotal=job.initialTotal,searchComplete=job.exhausted or false,budgetLimited=job.budgetLimited or false}
     out.seedInventory=E.Copy(job.opts.executionInventory or {})
+    out.scheme=job.opts.scheme or "cheapest"
+    out.specializationGoals=E.Copy(job.snap and job.snap.specializationGoals)
+    out.specializationContext=E.Copy(job.snap and job.snap.specializationContext)
     out.formulas={};out.formulasTotal=0;out.formulaAHTotal=0;out.formulaVendorTotal=0;out.formulaRevision=1;out.formulaComplete=true
     local context=job.snap and job.snap.routeContext
     out.professionPolicy=1
@@ -84,17 +106,19 @@ function S.Result(job,state,status)
     end
     out.savings=state and job.initialTotal and max(0,job.initialTotal-state.money) or 0
     out.partial=partial and true or false
-    out.targetReached=state~=nil and state.skill[job.slug]>=job.target
+    out.targetReached=goalsComplete(job,state)
     out.plannedTo=state and state.skill[job.slug] or out.start
     if not state then
         out.priced=false; out.costComplete=false; out.completeCost=false
         for _,d in pairs(job.failures or {}) do out.diagnostics[#out.diagnostics+1]=d end
         if job.opts.procurementDemands then out.procurement=true;out.demands=E.Copy(job.opts.procurementDemands);out.start=nil;out.target=nil;out.plannedTo=nil end
-        return out
+        return stampFreshResult(out)
     end
     local purchases={}; local crafted={}; local pendingCost=0; local pendingUnpriced=false
     local formulaEntries,formulaRecipes={},{}
     out.total=state.money; out.inventory=E.Copy(state.inv); out.finalSkills=E.Copy(state.skill)
+    out.completedSpecializationGoals=E.Copy(state.completedSpecializationGoals)
+    out.specializationAbilities=E.Copy(state.specializationAbilities)
     for _,d in pairs(state.diagnostics) do out.diagnostics[#out.diagnostics+1]=d end
     out.costComplete=#out.diagnostics==0
     out.completeCost=out.costComplete
@@ -148,7 +172,7 @@ function S.Result(job,state,status)
             if not a.owner then pendingCost=pendingCost+a.cost;pendingUnpriced=pendingUnpriced or a.unpriced end
             local key=tostring(a.item)..":"..a.source..":"..tostring(a.npcID or 0)
             local map=purchases; local e=map[key]
-            if not e then e={a.item,0,id=a.item,count=0,need=0,cost=0,unit=0,vendor=a.source=="vendor",source=a.source,npcID=a.npcID,url=a.url,spell=a.spell,reason=a.reason,bundleSize=a.bundleSize,quoteSource=a.quoteSource,priceBasis=a.priceBasis,verifiedAt=a.verifiedAt}; map[key]=e end
+            if not e then e={a.item,0,id=a.item,count=0,need=0,cost=0,unit=0,vendor=a.source=="vendor",source=a.source,npcID=a.npcID,url=a.url,spell=a.spell,reason=a.reason,bundleSize=a.bundleSize,quoteSource=a.quoteSource,priceSource=a.priceSource,priceBasis=a.priceBasis,verifiedAt=a.verifiedAt}; map[key]=e end
             e[2]=e[2]+a.count; e.count=e[2]; e.need=e.count; e.cost=e.cost+a.cost; e.unit=e.cost/e.count
             e.unpriced=e.unpriced or a.unpriced or nil
             out.pricePending=out.pricePending or a.unpriced or nil
@@ -156,6 +180,17 @@ function S.Result(job,state,status)
             out.referencePrices=out.referencePrices or a.reference or nil
             out.matTotal=out.matTotal+a.cost
             if a.source=="vendor" then out.vendorTotal=out.vendorTotal+a.cost else out.ahTotal=out.ahTotal+a.cost end
+        elseif a.type=="specialization_quest" then
+            local goal=E.Copy(a.quest)
+            local key="quest:"..goal.id
+            out.executionSteps[#out.executionSteps+1]={a.from,a.to,0,0,kind="specialization_quest",
+                profession=a.profession,quest=goal,goalID=goal.id,questID=goal.questID,abilityID=goal.abilityID,
+                inputs=E.Copy(a.inputs),requiredItems=E.Copy(a.inputs),reason="specialization",
+                actionID=a.id,actionIDs={a.id},cost=pendingCost+(cashByRecipe[key] or 0),
+                unpriced=pendingUnpriced or unpricedByRecipe[key] or nil,expectedGain=0,
+                recipe={profession=a.profession,spell=0,mats=E.Copy(a.inputs)}}
+            pendingCost=0;pendingUnpriced=false
+            for _,m in ipairs(a.inputs or {}) do if not out.firstAt[m[1]] then out.firstAt[m[1]]=a.from end end
         elseif a.type=="craft" or a.type=="gather" then
             local recipeKey=tostring(a.profession)..":"..tostring(a.spell)
             local f=job.formulaByRecipe and job.formulaByRecipe[recipeKey]
@@ -169,7 +204,7 @@ function S.Result(job,state,status)
             local stepCost=pendingCost+(cashByRecipe[key] or 0)*(a.count or 0)/max(1,countByRecipe[key] or 1)
             local stepUnpriced=pendingUnpriced or unpricedByRecipe[key] or nil
             local last=out.executionSteps[#out.executionSteps]
-            if a.type=="craft" and last and not last.checkpoint and last[3]==a.spell and last.profession==a.profession then
+            if a.type=="craft" and last and not last.kind and not last.checkpoint and last[3]==a.spell and last.profession==a.profession then
                 last[2]=a.to; last[4]=last[4]+a.count
                 last.cost=last.cost+stepCost
                 last.unpriced=last.unpriced or stepUnpriced
@@ -194,7 +229,7 @@ function S.Result(job,state,status)
     table.sort(out.mats,function(a,b) return a.id<b.id or (a.id==b.id and a.source<b.source) end)
     local occurrences,actionSegments={},{}
     for _,step in ipairs(out.executionSteps) do
-        local key=step.profession..":"..step[3]
+        local key=step.kind=="specialization_quest" and ("quest:"..step.goalID) or (step.profession..":"..step[3])
         occurrences[key]=(occurrences[key] or 0)+1
         step.segmentID="segment:"..key..":"..occurrences[key]
         step.expectedCrafts=step[4]
@@ -228,7 +263,7 @@ function S.Result(job,state,status)
     -- The page lists each recipe once; execution retains chronological segments.
     local grouped={}
     for _,step in ipairs(out.executionSteps) do
-        local key=step.checkpoint and step.actionID or (step.profession..":"..step[3])
+        local key=(step.checkpoint or step.kind=="specialization_quest") and step.actionID or (step.profession..":"..step[3])
         local row=grouped[key]
         if not row then
             row=E.Copy(step);row.requiredOutputs=E.Copy(step.requiredOutputs);row.allocations={}
@@ -279,7 +314,7 @@ function S.Result(job,state,status)
             if a.type=="craft" and a.profession=="__purchase" then out.dependencyGraph[a.id]=nil;table.remove(out.actions,i) end
         end
     end
-    return out
+    return stampFreshResult(out)
 end
 function S.NewJob(slug,opts)
     opts=opts or {}
@@ -316,6 +351,10 @@ function S.NewJob(slug,opts)
         return lower>j.best.money+1e-7 or (math.abs(lower-j.best.money)<1e-7 and (s.switches or 0)>=(j.best.switches or 0))
     end
     local function allowed(r,s,reason)
+        if E.RecipeSpecializationAllowed then
+            local ok,why=E.RecipeSpecializationAllowed(r,j.snap,s)
+            if not ok then fail(why or "specializationRequired",r);return false end
+        end
         local formula=j.formulaByRecipe and j.formulaByRecipe[r.key]
         if formula and not formula.usable then fail(formula.reason or "formulaUnavailable",r,formula.id);return false end
         if r.clientUnavailable then fail("clientUnavailable",r,r.item); return false end
@@ -338,7 +377,7 @@ function S.NewJob(slug,opts)
     end
     local function auctionQuote(id)
         local price=j.snap.prices[id]
-        return not (j.snap.vendorItems and j.snap.vendorItems[id]) and not j.snap.nonAuctionable[id]
+        return not j.snap.nonAuctionable[id]
             and type(price)=="number" and price>0
     end
     local function auctionRemaining(s,id)
@@ -365,7 +404,7 @@ function S.NewJob(slug,opts)
             t.ahUsed[id]=(t.ahUsed[id] or 0)+count
         end
         t.inv[id]=(t.inv[id] or 0)+count; t.money=t.money+cost
-        log(t,{type="buy",item=id,count=count,cost=cost,source=source,npcID=npc,reason=reason,url=url,bundleSize=bundle,owner=owner,unpriced=unpriced,estimated=estimated,reference=offer and offer.reference,quoteSource=offer and offer.source,priceBasis=offer and offer.priceBasis,verifiedAt=offer and offer.verifiedAt})
+        log(t,{type="buy",item=id,count=count,cost=cost,source=source,npcID=npc,reason=reason,url=url,bundleSize=bundle,owner=owner,unpriced=unpriced,estimated=estimated,reference=offer and offer.reference,quoteSource=offer and offer.source,priceSource=offer and offer.priceSource,priceBasis=offer and offer.priceBasis,verifiedAt=offer and offer.verifiedAt})
         -- A verified reference price is a known quote in the reference-price
         -- model. Unqualified vendor caches still make the cost incomplete.
         if estimated and not (offer and offer.reference) then diagnostic(t,"vendor:"..id..":"..tostring(npc),"vendorEstimate",id) end
@@ -414,6 +453,16 @@ function S.NewJob(slug,opts)
             -- decision made once for the whole recipe catalogue.
             local alternative=E.FormulaFor(r,j.snap,0)
             if alternative and alternative.usable and alternative.source=="vendor" then
+                local t=learnFormula(s,r,alternative)
+                if t then emit(t) end
+            end
+        end
+        if f and not f.known and f.source=="vendor" and f.availabilityUncertain
+            and f.ahPrice and auctionRemaining(s,f.id)>=1 and not s.formulaPaid[f.id or r.key] then
+            -- A limited shelf is a reference, while a quoted auction copy can
+            -- provide a complete route. Explore both before uncertainty pruning.
+            local alternative=E.FormulaFor(r,j.snap,auctionRemaining(s,f.id),"ah")
+            if alternative and alternative.usable and alternative.source=="ah" then
                 local t=learnFormula(s,r,alternative)
                 if t then emit(t) end
             end
@@ -520,7 +569,8 @@ function S.NewJob(slug,opts)
             for _,r in ipairs(j.snap.byItem[id] or {}) do
                 if j.seedAborted then return end
                 local materialProfession=opts.materialProfession or slug
-                local own=j.purchasePriced[id] or r.profession==materialProfession or materialProfession=="__purchase"
+                local own=path.ownProfessionOnly and r.profession==path.ownProfessionOnly
+                    or not path.ownProfessionOnly and (j.purchasePriced[id] or r.profession==materialProfession or materialProfession=="__purchase")
                 if own and not used[r.key] and allowed(r,s,"material") then
                     had=true; local u=E.Copy(used); u[r.key]=true
                     local limit=ceil(missing/r.count)
@@ -559,8 +609,57 @@ function S.NewJob(slug,opts)
         end
         return true
     end
+    local function goalBlocked(goal,s)
+        local context=j.snap.specializationContext or {}
+        local why=goal.blockedReason or (context.selectionConflict and "specializationChoiceConflict")
+        if not why and (context.reason=="specializationUnknown" or context.actual=="unknown" or goal.abilityUnknown) then why="specializationUnknown" end
+        local level=j.snap.playerLevel or j.snap.level or context.level
+        if not why and goal.minLevel and (not level or level<goal.minLevel) then
+            why=level and "specializationLevelRequired" or "specializationLevelUnknown"
+        end
+        if why then fail(why,{key=goal.id,profession=goal.profession,spell=goal.abilityID});return true end
+        return false
+    end
+    local function finishGoal(s,goal)
+        local t=clone(s)
+        t.specializationAbilities[goal.abilityID]=true
+        t.completedSpecializationGoals[goal.id]=true
+        local skill=t.skill[goal.profession]
+        log(t,{type="specialization_quest",profession=goal.profession,from=skill,to=skill,
+            quest=E.Copy(goal),inputs=E.Copy(goal.inputs),goalID=goal.id,questID=goal.questID,abilityID=goal.abilityID})
+        return t
+    end
+    local function quest(s,goal,emit)
+        -- Search the whole material combination, including shared packs/leftovers,
+        -- even during the quick route seed. Each reagent is reserved immediately.
+        local wasSeeding,wasDirect,deadline=j.seeding,j.directSeed,j.seedDeadline
+        j.seeding=false;j.directSeed=false;j.seedDeadline=nil
+        local function reagents(t,i)
+            local m=goal.inputs[i]
+            if not m then emit(finishGoal(t,goal));return end
+            acquire(t,m[1],m[2],"specialization",{owner="quest:"..goal.id,ownProfessionOnly=goal.profession},function(u)
+                u=clone(u);consume(u,m[1],m[2]);reagents(u,i+1)
+            end)
+        end
+        reagents(s,1)
+        j.seeding,j.directSeed,j.seedDeadline=wasSeeding,wasDirect,deadline
+    end
     local function expand(s,p,target,path,emit,greedy)
         if j.seedAborted then return end
+        if p==slug then
+            if j.specializationConflict and (s.skill[p] or 0)>=200 then
+                fail("specializationChoiceConflict",{key=p,profession=p});return
+            end
+            for _,goal in ipairs(j.snap.specializationGoals or {}) do
+                if not s.completedSpecializationGoals[goal.id] and not s.specializationAbilities[goal.abilityID]
+                    and (s.skill[p] or 0)>=(goal.minSkill or 0) then
+                    if goalBlocked(goal,s) then return end
+                    quest(s,goal,emit)
+                    if greedy or s.skill[p]>=target then return end
+                end
+            end
+            if s.skill[p]>=target then return end
+        end
         local any=false
         if greedy and j.seeding then
             local candidates={}
@@ -613,7 +712,8 @@ function S.NewJob(slug,opts)
                 if r.learn<=sk and sk<r.grey and allowed(r,s,"level")
                     and (not j.referenceSeed or not j.referenceRecipes[r.key] or s.lastRecipe==r.key) then
                     any=true
-                    local n=max(1,ceil((1-(s.progress[p] or 0))/max(.000001,E.Gain(r,sk))-1e-7))
+                    local n=opts.specializationRecipeScore and 1
+                        or max(1,ceil((1-(s.progress[p] or 0))/max(.000001,E.Gain(r,sk))-1e-7))
                     local estimate=0
                     local f=j.formulaByRecipe[r.key]
                     if f and not f.known and not s.formulaPaid[f.id or r.key] then estimate=f.cost or 0 end
@@ -632,7 +732,7 @@ function S.NewJob(slug,opts)
                 tick()
             end
             table.sort(candidates,function(a,b) return a.estimate<b.estimate or (a.estimate==b.estimate and a.recipe.spell<b.recipe.spell) end)
-            local selected
+            local selected,selectedScore
             for _,candidate in ipairs(candidates) do
                 if j.seedAborted then return end
                 if candidate.estimate<math.huge or not j.directSeed then
@@ -641,8 +741,11 @@ function S.NewJob(slug,opts)
                         if (t.skill[p]>s.skill[p] or t.skill[p]==s.skill[p] and (t.progress[p] or 0)>(s.progress[p] or 0))
                             and better(t,winner) then winner=t end
                     end)
-                    if winner and better(winner,selected) then selected=winner end
-                    if winner and j.directSeed then emit(winner); return end
+                    local score=winner and opts.specializationRecipeScore and opts.specializationRecipeScore(candidate.recipe,s,j.snap,winner.money-s.money)
+                    if winner and (score and (not selectedScore or score<selectedScore-1e-7
+                        or math.abs(score-selectedScore)<1e-7 and better(winner,selected))
+                        or not score and better(winner,selected)) then selected=winner;selectedScore=score end
+                    if winner and j.directSeed and not opts.specializationRecipeScore then emit(winner); return end
                 end
             end
             if selected then emit(selected); return end
@@ -709,6 +812,13 @@ function S.NewJob(slug,opts)
                 elseif a.type=="gather" then
                     local event=E.Copy(a);event.from=t.skill[a.profession];event.to=max(event.from,a.to)
                     t.skill[a.profession]=event.to;t.progress[a.profession]=0;log(t,event)
+                elseif a.type=="specialization_quest" then
+                    local goal=a.quest
+                    if not goal or t.completedSpecializationGoals[goal.id] or (t.skill[goal.profession] or 0)<(goal.minSkill or 0)
+                        or goalBlocked(goal,t) then return end
+                    for _,m in ipairs(goal.inputs) do if available(t,m[1])<m[2] then return end end
+                    for _,m in ipairs(goal.inputs) do consume(t,m[1],m[2]) end
+                    t=finishGoal(t,goal)
                 elseif a.type=="craft" then
                     local r=j.snap.byKey[a.profession..":"..a.spell]
                     if not r or not allowed(r,t,a.reason) or (t.skill[r.profession] or 0)<r.learn then return end
@@ -759,6 +869,11 @@ function S.NewJob(slug,opts)
                     if used then need[a.item]=max(0,(need[a.item] or 0)-(a.outputCount or 0)) end
                     for _,m in ipairs(a.inputs or {}) do need[m[1]]=(need[m[1]] or 0)+m[2];needOwner[m[1]]=a.profession..":"..a.spell end
                 else changed=true end
+            elseif a.type=="specialization_quest" then
+                keep[i]=true
+                for _,m in ipairs(a.inputs or {}) do
+                    need[m[1]]=(need[m[1]] or 0)+m[2];needOwner[m[1]]="quest:"..a.goalID
+                end
             elseif a.type=="buy" then
                 local wanted=min(a.count,need[a.item] or 0)
                 if wanted>0 then
@@ -777,7 +892,7 @@ function S.NewJob(slug,opts)
             selected[#selected+1]=event
         end end
         local t=replay(selected)
-        if not t or (requireGoal and t.skill[slug]<j.target) then fail("executionInvalid");return end
+        if not t or (requireGoal and not goalsComplete(j,t)) then fail("executionInvalid");return end
         if changed then j.restricted=true end
         t.batched=true
         return t
@@ -787,6 +902,8 @@ function S.NewJob(slug,opts)
         j.hasFiniteSupply=next(j.snap.auctionSupply)~=nil
         if not opts.start then opts.start=(j.snap.professions[slug] or {}).cur or 1 end
         local context=j.snap.routeContext or E.RouteContext(slug,opts,j.snap.professions)
+        j.specializationConflict=slug=="engineering" and j.target>=200 and
+            j.snap.specializationContext and j.snap.specializationContext.selectionConflict
         if context.requiresPartner and not context.partnerValid then
             fail("secondaryRequired"); j.exhausted=true; j.status="infeasible"; j.finished=true
             j.result=S.Result(j,nil,j.status)
@@ -841,6 +958,12 @@ function S.NewJob(slug,opts)
             elseif opts.allowSecondaryLeveling and r.profession~=slug then visit(r) end
             tick()
         end
+        for _,goal in ipairs(j.snap.specializationGoals or {}) do
+            for _,m in ipairs(goal.inputs) do
+                j.reusable[m[1]]=true
+                for _,r in ipairs(j.snap.byItem[m[1]] or {}) do if r.profession==goal.profession then visit(r) end end
+            end
+        end
         local ids={}; for id in pairs(j.reusable) do ids[#ids+1]=id; j.values[id]=0 end
         -- A feasible material-value potential gives an admissible remaining-cost
         -- bound. Unpriced leaves and cycles stay relaxed to zero, never guessed.
@@ -848,7 +971,7 @@ function S.NewJob(slug,opts)
             local changed=false
             for _,id in ipairs(ids) do
                 local value=j.snap.prices[id] or math.huge
-                if j.snap.vendorItems[id] then value=math.huge end
+                if j.snap.nonAuctionable[id] then value=math.huge end
                 for _,o in ipairs(j.snap.offers[id] or {}) do
                     if o.unlimited and o.price and not o.hasExtendedCost and o.purchasable~=false
                         and (not o.currencyID or o.currencyID==0) then
@@ -879,12 +1002,13 @@ function S.NewJob(slug,opts)
         local function rememberPrefix(t)
             local previous=j.partial
             if t and (not previous or t.skill[slug]>previous.skill[slug]
-                or (t.skill[slug]==previous.skill[slug] and better(t,previous))) then
+                or (t.skill[slug]==previous.skill[slug] and (completedGoals(t)>completedGoals(previous)
+                    or completedGoals(t)==completedGoals(previous) and better(t,previous)))) then
                 j.partial=t
             end
         end
         local function publishPrefix(t)
-            if not t or t.skill[slug]<=first.skill[slug] then return end
+            if not t or t.skill[slug]<=first.skill[slug] and completedGoals(t)==0 then return end
             -- Probe consolidation without turning an abandoned probe into a
             -- global failure or an optimality restriction on future routes.
             local failures,restricted=j.failures,j.restricted
@@ -892,7 +1016,8 @@ function S.NewJob(slug,opts)
             local preview=batchPlan(t,false)
             j.failures,j.restricted=failures,restricted
             if preview and (not j.preview or preview.skill[slug]>j.preview.skill[slug]
-                or (preview.skill[slug]==j.preview.skill[slug] and better(preview,j.preview))) then
+                or (preview.skill[slug]==j.preview.skill[slug] and (completedGoals(preview)>completedGoals(j.preview)
+                    or completedGoals(preview)==completedGoals(j.preview) and better(preview,j.preview)))) then
                 j.preview=preview; j.result=S.Result(j,nil,"searching"); coroutine.yield("publish")
             end
         end
@@ -902,14 +1027,16 @@ function S.NewJob(slug,opts)
             j.seedAborted=false
             -- Recursive material comparisons are a warm start. Reserve most
             -- of the shared CPU budget for actual frontier exploration.
-            j.seedDeadline=not direct and cpuTime()+250 or nil
+            j.seedDeadline=not direct and not opts.specializationRecipeScore and cpuTime()+250 or nil
             local checkpoint=first.skill[slug]
-            while current and current.skill[slug]<j.target do
+            while current and not goalsComplete(j,current) do
                 local nextState
                 j.collectFailures={}
                 expand(current,slug,j.target,{},function(t)
                     if (t.skill[slug]>current.skill[slug] or t.skill[slug]==current.skill[slug]
-                        and (t.progress[slug] or 0)>(current.progress[slug] or 0)) and better(t,nextState) then nextState=t end
+                        and (t.progress[slug] or 0)>(current.progress[slug] or 0)
+                        or completedGoals(t)>completedGoals(current))
+                        and better(t,nextState) then nextState=t end
                 end,true)
                 if not nextState then
                     j.blockers={}
@@ -929,10 +1056,16 @@ function S.NewJob(slug,opts)
             if direct then publishPrefix(current or j.partial) end
             return current
         end
-        local current=seed(true)
-        if current and current.skill[slug]>=j.target then current=batchPlan(current,true) end
+        local current=seed(not opts.specializationRecipeScore)
+        if current and goalsComplete(j,current) then current=batchPlan(current,true) end
         if current then
             j.best=current; j.initialTotal=current.money; j.result=S.Result(j,current,"searching"); coroutine.yield("publish")
+        end
+        if opts.specializationRecipeScore then
+            j.seeding=false;j.directSeed=false;j.restricted=true;j.exhausted=true
+            j.status=j.best and "complete" or (j.partial and "incomplete" or "infeasible")
+            if not j.best and j.partial then publishPrefix(j.partial) end
+            j.result=S.Result(j,j.best,j.status);j.finished=true;return "done"
         end
         if not current and opts.referenceFallback~=false then
             -- Try a sequence that never returns to an earlier leveling recipe.
@@ -943,19 +1076,19 @@ function S.NewJob(slug,opts)
             local reference=seed(true)
             if reference then publishPrefix(reference) end
             j.referenceSeed=false
-            if j.preview and j.preview.skill[slug]>=j.target and uncertainty(j.preview)==0 then
+            if j.preview and goalsComplete(j,j.preview) and uncertainty(j.preview)==0 then
                 j.best=j.preview; j.initialTotal=j.preview.money
                 j.result=S.Result(j,j.best,"searching"); coroutine.yield("publish")
             end
         end
         local refined=seed(false)
-        if refined and refined.skill[slug]>=j.target then refined=batchPlan(refined,true) end
-        if refined and refined.skill[slug]>=j.target and better(refined,j.best) then
+        if refined and goalsComplete(j,refined) then refined=batchPlan(refined,true) end
+        if refined and goalsComplete(j,refined) and better(refined,j.best) then
             current=refined; j.best=refined; j.improvements=(j.improvements or 0)+1
         elseif not current then current=refined end
         j.seeding=false; j.directSeed=false
-        if current and current.skill[slug]>=j.target then j.best=current; j.initialTotal=j.initialTotal or current.money; j.result=S.Result(j,current,"searching"); coroutine.yield("publish") end
-        if not current and j.partial and j.partial.skill[slug]>first.skill[slug] then
+        if current and goalsComplete(j,current) then j.best=current; j.initialTotal=j.initialTotal or current.money; j.result=S.Result(j,current,"searching"); coroutine.yield("publish") end
+        if not current and j.partial and (j.partial.skill[slug]>first.skill[slug] or completedGoals(j.partial)>0) then
             publishPrefix(j.partial)
             j.result=S.Result(j,nil,"searching"); coroutine.yield("publish")
         end
@@ -994,7 +1127,7 @@ function S.NewJob(slug,opts)
         push(first)
         while #heap>0 do
             local entry=pop(); local t=entry.state; j.expanded=j.expanded+1
-            if t.skill[slug]>=j.target then
+            if goalsComplete(j,t) then
                 local batched=batchPlan(t,true)
                 if batched and better(batched,j.best) then j.best=batched; j.improvements=(j.improvements or 0)+1; j.result=S.Result(j,batched,"searching"); coroutine.yield("publish") end
             elseif not pruned(t,true) then
@@ -1006,7 +1139,7 @@ function S.NewJob(slug,opts)
             if opts.maxNodes and j.expanded>=opts.maxNodes then j.budgetLimited=true; break end
             tick()
         end
-        j.exhausted=not j.budgetLimited; j.status=j.best and (uncertainty(j.best)==0 and "complete" or "incomplete") or (j.partial and j.partial.skill[slug]>first.skill[slug] and "incomplete" or "infeasible")
+        j.exhausted=not j.budgetLimited; j.status=j.best and (uncertainty(j.best)==0 and "complete" or "incomplete") or (j.partial and (j.partial.skill[slug]>first.skill[slug] or completedGoals(j.partial)>0) and "incomplete" or "infeasible")
         if not j.best and j.partial then publishPrefix(j.partial) end
         if not j.best then for _,d in pairs(j.failures) do if d.code=="clientDataPending" or d.code=="materialUnavailable" or d.code=="outputConflict" or d.code=="availabilityUnknown" then j.status="incomplete"; break end end end
         j.result=S.Result(j,j.best,j.status)
@@ -1042,6 +1175,9 @@ end
 -- all requested items. executionInventory is explicit verified route stock only.
 function S.NewProcurementJob(snapshot,demands,opts)
     opts=E.Copy(opts); opts.snapshot=E.Copy(snapshot); opts.snapshot.recipes={}
+    -- A top-up purchases its explicit demand only. It must retain actual
+    -- specialization gates, without trying to complete the parent route's quest.
+    opts.snapshot.specializationGoals={}
     if opts.referenceFallback==nil then opts.referenceFallback=false end
     for _,r in ipairs(snapshot.recipes or {}) do opts.snapshot.recipes[#opts.snapshot.recipes+1]=r end
     local totals={}

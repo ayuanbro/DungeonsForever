@@ -50,6 +50,7 @@ class ProfessionUIRegressions(unittest.TestCase):
             ("function PD.RoutePairContext()", "function PD.PlanDiagnostics("),
             ("function PD.PlanDiagnostics(", "function PD.RowsLeveling("),
             ("function PD.PlanStatusText(", "function PD.CopyPlanSummary("),
+            ("function PD.VendorPriceSourceText(", "function PD.FormulaStockText("),
             ("function PD.ShopImport(", "-- ── 升级页签工具行"),
             ("function PD.LevelTool(", "function PD.RowsSettings("),
             ("function PD.RowsSettings(", "function PD.PlaceSettingsToggles("),
@@ -226,24 +227,36 @@ class ProfessionUIRegressions(unittest.TestCase):
           CountUnpriced=function() return 0 end
           local data={planVersion=2,total=18,feasible=true,status='complete',referencePrices=true,
             vendorTotal=18,ahTotal=0,mats={{id=11,count=5,cost=18,unit=18/5,
-              vendor=true,source='vendor',npcID=1313,bundleSize=5,reference=true,verifiedAt='2026-10-18'}}}
+              vendor=true,source='vendor',npcID=1313,bundleSize=5,reference=true,
+              priceSource='client',verifiedAt='2026-10-18'}}}
           local rows={}; PD.RowsAutoShop(rows,data)
           local sawMaterial,sawSummary=false,false
           for _,row in ipairs(rows) do
             if row.it then
               sawMaterial=true; assert(row.tag.text=='NPC购买')
               assert(row.right=='×5 · 3.6' and row.right2=='18')
-              local hint,verified=false,false
+              local hint,verified,client=false,false,false
               for _,line in ipairs(row.lines) do
                 if line[1]=='插件内置NPC报价（实际价格可能因声望而异）' then hint=true end
                 if line[1]=='报价核验：2026-10-18' then verified=true end
+                if line[1]=='购买价格来源：客户端' then client=true end
+                assert(line[1]~='购买价格来源：Wowhead')
               end
-              assert(not hint and verified)
+              assert(not hint and verified and client)
             end
             if row.text=='NPC购买价格使用插件内置数据。' then sawSummary=true end
           end
           assert(sawMaterial and not sawSummary)
           assert(PD.PurchasePriceHint==nil)
+          data.mats[1].priceSource='wowhead';rows={};PD.RowsAutoShop(rows,data)
+          local wowhead=false
+          for _,row in ipairs(rows) do if row.it then
+            for _,line in ipairs(row.lines) do
+              if line[1]=='购买价格来源：Wowhead' then wowhead=true end
+              assert(line[1]~='购买价格来源：客户端')
+            end
+          end end
+          assert(wowhead,'NPC material tooltip omitted the generated price source')
           D={pro={alchemy={name='Alchemy'}}}
           ns.AuctionBridge={DoImport=function(_,items) imported=items end}
           data.mats[2]={id=12,count=2,source='ah'}
@@ -276,6 +289,58 @@ class ProfessionUIRegressions(unittest.TestCase):
             if row.text=='价格快照年龄未知（Auctionator）' then auctionAge=true end
           end
           assert(auctionAge,'zero-cost auction entry was misclassified as NPC-only')
+        ''')
+
+    def test_stale_npc_shopping_callbacks_are_gated_without_changing_history_or_ah(self):
+        self.lua.execute('''
+          CreateFrame=function()return {RegisterEvent=function()end,SetScript=function()end}end
+        ''')
+        self.lua.eval("function(p) assert(loadfile(p))('DungeonsForever',ns) end")(
+            str(ROOT/'Core/ProfRouteAuto.lua'))
+        source=(ROOT/'Core/ProfessionUI.lua').read_text(encoding='utf-8-sig')
+        start=source.index('function PD.RowsAutoShop(')
+        self.lua.execute(source[start:source.index('function PD.ShopImport(',start)])
+        self.lua.execute('''
+          RA=ns.ProfRouteAuto
+          ns.ProfItemsMeta={schemaVersion=2,sources={csv={sha256='current-quotes'}}}
+          PD.COL_LW=600;PD.SEC_GAP=8;PD.SEC_PAD=4;PD.Fit=function(s)return s end
+          PushHead=function(rows,text)rows[#rows+1]={text=text}end
+          PushGap=function()end;CountUnpriced=function()return 0 end
+          D={pro={alchemy={name='Alchemy'}}}
+          ns.AuctionBridge={DoImport=function(_,items)imported=items end}
+          local old={planVersion=2,total=7,vendorTotal=7,feasible=true,status='complete',
+            vendorQuoteRevision=2,vendorQuoteData='old-quotes',mats={
+              {id=11,count=5,need=5,cost=7,unit=7/5,source='vendor',vendor=true},
+              {id=12,count=2,need=2,cost=2,unit=1,source='ah'}}}
+          local rows={};PD.RowsAutoShop(rows,old)
+          local actionable=false
+          for _,row in ipairs(rows)do
+            assert(not row.it,'an old NPC shopping row was rendered')
+            if row.text and row.text:find('NPC购买价格资料已更新',1,true)then actionable=true end
+          end
+          assert(actionable,'quote migration was described as a profession-pair change')
+          PD.ShopImport(old);assert(imported==nil,'an old mixed plan callback imported AH rows')
+          assert(old.total==7 and old.vendorQuoteRevision==2 and #old.mats==2)
+          local ah={planVersion=2,total=2,feasible=true,status='complete',vendorQuoteRevision=2,
+            vendorQuoteData='old-quotes',mats={{id=12,count=2,cost=2,unit=1,source='ah'}}}
+          PD.ShopImport(ah)
+          assert(#imported==1 and imported[1].name=='Item12' and imported[1].need==2)
+          imported=nil;ah.mode='supplement';ah.stale=true
+          PD.ShopImport(ah);assert(imported==nil,'stale supplemental procurement was imported')
+          ah.stale=nil
+          local base=old
+          ns.ProfExecution={GetPlan=function()return base end}
+          PD.ShopImport(ah);assert(imported==nil,'a pure AH supplement bypassed its old NPC base plan')
+          rows={};PD.RowsAutoShop(rows,ah)
+          for _,row in ipairs(rows)do assert(not row.it,'an old base plan displayed its pure AH supplement')end
+          assert(ah.total==2 and ah.mats[1].source=='ah' and old.vendorQuoteRevision==2)
+          ah.mode=nil;PD.ShopImport(ah)
+          assert(#imported==1,'ordinary pure AH purchasing was blocked by an unrelated base plan')
+          ah.mode='supplement';imported=nil
+          base=RA.StampVendorQuotes({mats={{id=11,source='vendor'}},vendorTotal=7,status='complete'})
+          PD.ShopImport(ah);assert(#imported==1,'a current NPC base plan blocked its pure AH supplement')
+          base=nil;imported=nil;PD.ShopImport(ah)
+          assert(#imported==1,'an independent supplement fixture without an active run was blocked')
         ''')
 
     def test_route_rows_preserve_execution_order_and_actual_batch_costs(self):

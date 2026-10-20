@@ -20,13 +20,14 @@ class FishingCookingTests(unittest.TestCase):
         for path in (
             'Core/Data/Data_ProfRecipes.lua',
             'Core/Data/Data_ProfLeveling.lua',
-            'Core/Data/Data_ProfVendorOffers.lua',
+            'Core/Data/Data_ProfItems.lua',
+            'Core/Data/Data_ProfFormulaQuests.lua',
             'Core/Data/Data_ProfFishingRoutes.lua',
             'Core/ProfEconomy.lua',
             'Core/ProfRouteSolver.lua',
             'Core/ProfFishing.lua',
             'Core/ProfRouteAuto.lua',
-            'Core/VendorPriceDB.lua',
+            'Core/ProfItemPrices.lua',
         ):
             self.load(str(ROOT / path))
         self.lua.execute(r'''
@@ -78,6 +79,39 @@ class FishingCookingTests(unittest.TestCase):
           end
         ''')
 
+    def test_nonadjacent_repeated_recipe_keeps_three_execution_segments(self):
+        self.lua.execute('''
+          ns.ProfFishingRoutes.cookingSteps={{from=1,to=2,spell=101},
+            {from=2,to=3,spell=102},{from=3,to=4,spell=101}}
+          local a=fishRecipe(101,{{6291,1}},1,10)
+          local b=fishRecipe(102,{{6289,1}},1,10)
+          local r=fishSolve(fishSnapshot({a,b}),1,4)
+          assert(r.targetReached and #r.steps==3 and #r.executionSteps==3)
+          for i,spell in ipairs({101,102,101})do
+            assert(r.steps[i][3]==spell and r.steps[i][1]==i and r.steps[i][2]==i+1 and r.steps[i][4]==1)
+          end
+          assert(fishCount(r,6291)==2 and fishCount(r,6289)==1)
+        ''')
+
+    def test_capture_uses_shared_binding_rule_before_pricing_formula_on_ah(self):
+        self.lua.execute('''
+          ns.ProfRecipes={cooking={rows={{101,90001,1,'','','',1,10,10,10,false,{{6291,1}},{99999},{}}}}}
+          ns.EnsureProfRecipes=function()return ns.ProfRecipes end
+          ns.ProfEconomy.Professions=function()return {cooking={cur=1,max=300}}end
+          ns.ProfEconomy.Known=function()return false end
+          ns.ProfFishingRoutes.cookingSteps={{from=1,to=2,spell=101}}
+          ns.ProfItems={}
+          ns.ProfRouteAuto.AHPriceOf=function(id)if id==99999 then return 9 end end
+          C_Item={GetItemInfo=function()return 'Bound Formula',nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,1 end}
+          local snap=ns.ProfFishing.Capture({start=1,target=2})
+          assert(snap.nonAuctionable[99999] and snap.nonAuctionable[6291])
+          local r=ns.ProfFishing.Compute({start=1,target=2})
+          assert(not r.targetReached and #r.steps==0 and #r.formulas==0 and r.total==0)
+          C_Item.GetItemInfo=function()error('not yet loaded')end
+          r=ns.ProfFishing.Compute({start=1,target=2})
+          assert(r.targetReached and r.formulas[1].source=='ah' and r.total==9,'unknown binding was treated as prohibited')
+        ''')
+
     def test_actual_forever_catalogue_follows_fishing_guide_through_225(self):
         self.lua.execute('''
           local r=fishSolve(actualSnapshot(1),1,225)
@@ -103,24 +137,30 @@ class FishingCookingTests(unittest.TestCase):
           assert(r.ahTotal==0 and #r.mats==0);assertFishingSources(r)
         ''')
 
-    def test_unlearned_real_catalogue_has_no_npc_quotes_or_fake_free_recipes(self):
+    def test_unlearned_real_catalogue_prices_first_formula_from_prof_items(self):
         self.lua.execute('''
           Auctionator=nil
           for _,faction in ipairs({'Alliance','Horde'})do
             UnitFactionGroup=function()return faction end
-            local r=ns.ProfFishing.Compute({start=1,target=300})
-            assert(not r.targetReached and not r.feasible and #r.steps==0)
-            assert(r.vendorTotal==0 and r.total==0 and #r.formulas==0)
-            assert(#r.blockingDiagnostics>0,'missing recipe purchases were treated as free')
+            local r=ns.ProfFishing.Compute({start=1,target=50})
+            local expected=faction=='Alliance' and 38 or 40
+            assert(r.targetReached and r.feasible and #r.steps==1)
+            assert(r.vendorTotal==expected and r.total==expected and #r.formulas==1)
+            assert(r.formulas[1].id==6325 and r.formulas[1].source=='vendor')
           end
         ''')
 
     def test_synthetic_provider_prices_each_unlearned_recipe_once(self):
         self.lua.execute('''
           Auctionator=nil
-          ns.VendorPriceDB.GetFormulaOffers=function(id)
-            return {{itemID=id,npcID=9999,price=17,quantity=1,unlimited=true,
-              available=true,source='synthetic-provider'}}
+          ns.ProfItems={}
+          for _,row in ipairs(ns.EnsureProfRecipes({'cooking'}).cooking.rows) do
+            local recipe=ns.ProfEconomy.Normalize(row,'cooking','rows')
+            if recipe and recipe.formula then
+              local id=recipe.formula
+              ns.ProfItems[id]={item_id=id,VendorStackCount=1,offers={
+                [9999]={npc_id=9999,cost_copper=17,stock=-1,price_source='client'}}}
+            end
           end
           for _,faction in ipairs({'Alliance','Horde'})do
             UnitFactionGroup=function()return faction end
@@ -183,6 +223,17 @@ class FishingCookingTests(unittest.TestCase):
             local r=fishSolve(fishSnapshot({recipe},{[2678]=1},offers),1,4)
             assert(not r.targetReached and #r.steps==0 and #r.mats==0)
           end
+        ''')
+
+    def test_actual_item_base_spice_price_without_npc_offer_cannot_fund_fishing(self):
+        self.lua.execute('''
+          local item=ns.ProfItems[2678]
+          assert(item.cost_copper==10 and next(item.offers)==nil)
+          local offers=ns.ProfItemPrices.GetOffers(2678)
+          assert(#offers==0,'an item base price invented a merchant quotation')
+          local recipe=fishRecipe(7751,{{6291,1},{2678,1}})
+          local r=fishSolve(fishSnapshot({recipe},{[2678]=1},{[2678]=offers}),1,4)
+          assert(not r.targetReached and #r.steps==0 and #r.mats==0 and r.total==0)
         ''')
 
     def test_client_material_override_to_meat_is_rejected_even_with_price(self):

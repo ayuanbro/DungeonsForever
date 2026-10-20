@@ -135,8 +135,10 @@ Core\Data\enUS\Data_ClassGuide.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ClassCombat.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_LootFilter.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_RaidSets.lua [AllowLoadTextLocale enUS]
-Core\Data\Data_ProfVendorOffers.lua
-Core\Data\Data_ProfFormulaSources.lua
+Core\Data\Data_ProfItems.lua
+Core\Data\Data_ProfFormulaQuests.lua
+Core\Data\Data_ProfSpecializations.lua
+Core\Data\Data_ProfSpecializationQuests.lua
 Core\Data\Data_ProfMining.lua
 Core\Data\Data_ProfFishingRoutes.lua
 Core\LootFilter.lua
@@ -154,7 +156,7 @@ Core\ProfExecution.lua
 Core\ProfessionUI.lua
 Core\AuctionatorBridge.lua
 Core\ProfFollow.lua
-Core\VendorPriceDB.lua
+Core\ProfItemPrices.lua
 Core\ExploreUI.lua
 Core\ExploreMap.lua
 Core\CollectionUI.lua

@@ -160,13 +160,14 @@ class RuntimeTests(unittest.TestCase):
           captures=0
           ns.ProfEconomy.Capture=function()
             captures=captures+1
-            local s=fixture();s.vendorItems={[11]=true};s.vendorSuppliers={[11]={{npcID=77}}}
-            s.offers={[11]=ns.VendorPriceDB and ns.VendorPriceDB.GetOffers(11)
+            local s=fixture();s.prices[11]=70
+            s.vendorItems={[11]=true};s.vendorSuppliers={[11]={{npcID=77}}}
+            s.offers={[11]=ns.ProfItemPrices and ns.ProfItemPrices.GetOffers(11)
               or {{npcID=77,price=7,quantity=1,unlimited=true,reference=true,source='wowhead-forever'}}}
             return ns.ProfEconomy.Index(s)
           end
           local r=finish('alchemy',{start=1,target=2})
-          assert(r.vendorQuoteRevision==3 and r.total==7 and r.costComplete)
+          assert(r.vendorQuoteRevision==4 and r.total==7 and r.costComplete)
           local cache=DungeonsForeverDB.prof.routeCache['Test-Realm']
           oldVendorCache=cache.routes[cache.active.alchemy].result
           oldVendorCache.vendorQuoteRevision=2
@@ -177,11 +178,11 @@ class RuntimeTests(unittest.TestCase):
 
     def install_synthetic_vendor_quote_fixture(self):
         self.lua.execute('''
-          ns.ProfVendorOffers={[11]={{itemID=11,npcID=77,price=3,quantity=1,unlimited=true,
-            available=true,source='wowhead-forever',verifiedAt='2026-10-18',reference=true,
-            priceVerified=true,estimated=true,priceBasis='wowhead-reference'}}}
+          ns.ProfItemsMeta={schemaVersion=2,sources={csv={sha256='quotes-a'}}}
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,offers={
+            [77]={npc_id=77,cost_copper=3,cost_text='3c',stock=-1,price_source='wowhead'}}}}
         ''')
-        self.load(str(ROOT/'Core'/'VendorPriceDB.lua'))
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
 
     def test_old_npc_quotes_require_manual_recalculation_without_publishing_old_amounts(self):
         self.legacy_vendor_cache_fixture()
@@ -189,7 +190,7 @@ class RuntimeTests(unittest.TestCase):
         self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
         self.lua.execute('''
           local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
-          assert(r.cached and r.vendorQuoteRevision==3 and r.stale and r.staleReason=='vendor-quotes')
+          assert(r.cached and r.vendorQuoteRevision==4 and r.stale and r.staleReason=='vendor-quotes')
           assert(r.status=='recalculate_required' and not r.feasible and r.total==0 and r.vendorTotal==0)
           assert(#r.steps==0 and #r.actions==0 and #r.mats==0)
           assert(#r.diagnostics==1 and r.diagnostics[1].code=='vendorQuoteChanged')
@@ -200,33 +201,33 @@ class RuntimeTests(unittest.TestCase):
           ns.ProfRouteAuto.Recalculate('alchemy',{start=1,target=2})
           local fresh=finish('alchemy',{start=1,target=2})
           assert(fresh.total==3 and fresh.costComplete and fresh.referencePrices and #fresh.diagnostics==0)
-          assert(fresh.vendorQuoteRevision==3 and not fresh.stale and captures==2)
+          assert(fresh.vendorQuoteRevision==4 and fresh.vendorQuoteData=='quotes-a' and not fresh.stale and captures==2)
         ''')
 
     def test_old_npc_quotes_without_bundled_price_still_wait_for_manual_recalculation(self):
         self.legacy_vendor_cache_fixture()
-        self.load(str(ROOT/'Core'/'VendorPriceDB.lua'))
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
         self.lua.execute('''
           local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
-          assert(r.cached and r.total==0 and r.vendorQuoteRevision==3 and r.status=='recalculate_required')
+          assert(r.cached and r.total==0 and r.vendorQuoteRevision==4 and r.status=='recalculate_required')
           assert(#r.diagnostics==1 and r.diagnostics[1].code=='vendorQuoteChanged')
           assert(not r.costComplete and captures==1 and #queue==jobsBeforeVendorReload)
         ''')
 
     def test_rejected_bundled_offer_cannot_restore_an_old_npc_quote(self):
-        for rejection in ('unlimited=false', 'hasExtendedCost=true', 'currencyID=777'):
+        for rejection in ('stock=0', 'currency_kind="item"', 'currency_id=0'):
             with self.subTest(rejection=rejection):
                 self.setUp()
                 self.legacy_vendor_cache_fixture()
                 self.install_synthetic_vendor_quote_fixture()
                 self.lua.execute('''
-                  ns.ProfVendorOffers[11][1].'''+rejection+'''
+                  ns.ProfItems[11].offers[77].'''+rejection+'''
                 ''')
                 self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
                 self.lua.execute('''
                   local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
-                  assert(r.diagnostics[1].code=='vendorQuoteChanged' and r.total==0 and r.vendorQuoteRevision==3)
+                  assert(r.diagnostics[1].code=='vendorQuoteChanged' and r.total==0 and r.vendorQuoteRevision==4)
                   assert(r.status=='recalculate_required' and #r.mats==0)
                   assert(captures==1 and #queue==jobsBeforeVendorReload)
                 ''')
@@ -255,29 +256,110 @@ class RuntimeTests(unittest.TestCase):
         self.lua.execute('''
           local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
           assert(r.cached and r.diagnostics[1].code=='vendorQuoteChanged' and r.total==0)
-          assert(r.vendorQuoteRevision==3 and captures==1 and #queue==jobsBeforeVendorReload)
+          assert(r.vendorQuoteRevision==4 and captures==1 and #queue==jobsBeforeVendorReload)
         ''')
         self.install_synthetic_vendor_quote_fixture()
         self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
         self.lua.execute('''
           local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
-          assert(r.vendorQuoteRevision==3 and r.diagnostics[1].code=='vendorQuoteChanged' and r.total==0)
+          assert(r.vendorQuoteRevision==4 and r.diagnostics[1].code=='vendorQuoteChanged' and r.total==0)
           assert(captures==1 and #queue==jobsBeforeVendorReload)
         ''')
 
     def test_current_provider_npc_route_restores_without_recapturing(self):
         self.legacy_vendor_cache_fixture()
         self.lua.execute('''
-          oldVendorCache.vendorQuoteRevision=3
+          oldVendorCache.vendorQuoteRevision=4
           oldVendorCache.mats[1].quoteSource='wowhead-forever'
         ''')
         self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
         self.lua.execute('''
           local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
-          assert(r.cached and r.total==7 and r.costComplete and r.vendorQuoteRevision==3)
+          assert(r.cached and r.total==7 and r.costComplete and r.vendorQuoteRevision==4)
           assert(r.status=='complete' and #r.steps==1 and #r.diagnostics==0)
           assert(captures==1 and #queue==jobsBeforeVendorReload)
         ''')
+
+    def test_changed_prof_items_hash_gates_current_npc_plan_and_keeps_history(self):
+        self.legacy_vendor_cache_fixture()
+        self.install_synthetic_vendor_quote_fixture()
+        self.lua.execute('''
+          oldVendorCache.vendorQuoteRevision=4
+          oldVendorCache.vendorQuoteData='quotes-a'
+          ns.ProfItemsMeta.sources.csv.sha256='quotes-b'
+          DungeonsForeverDB.prof.execution={history={{result=oldVendorCache,craftsDone=2}}}
+        ''')
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+          assert(r.cached and r.vendorQuoteRevision==4 and r.vendorQuoteData=='quotes-b')
+          assert(r.status=='recalculate_required' and not r.feasible and r.total==0)
+          assert(r.stale and r.staleReason=='vendor-quotes' and #r.steps==0 and #r.mats==0)
+          assert(r.diagnostics[1].code=='vendorQuoteChanged')
+          assert(captures==1 and #queue==jobsBeforeVendorReload,'hash migration started a search')
+          assert(oldVendorCache.vendorQuoteData=='quotes-a' and oldVendorCache.total==7 and #oldVendorCache.steps==1)
+          local history=DungeonsForeverDB.prof.execution.history[1]
+          assert(history.result==oldVendorCache and history.craftsDone==2)
+          ns.ProfRouteAuto.Recalculate('alchemy',{start=1,target=2})
+          local fresh=finish('alchemy',{start=1,target=2})
+          assert(fresh.total==3 and fresh.vendorQuoteData=='quotes-b' and captures==2)
+        ''')
+
+    def test_changed_prof_items_hash_marks_pure_ah_plan_stale_without_gating(self):
+        self.lua.execute("ns.ProfItemsMeta={schemaVersion=2,sources={csv={sha256='quotes-a'}}}")
+        self.live_capture_fixture()
+        self.lua.execute('''
+          local r=finish('alchemy',{start=1,target=2})
+          assert(r.vendorQuoteRevision==4 and r.vendorQuoteData=='quotes-a' and r.ahTotal==7)
+          local cache=DungeonsForeverDB.prof.routeCache['Test-Realm']
+          oldAhCache=cache.routes[cache.active.alchemy].result
+          jobsBeforeHashReload=#queue
+          ns.ProfItemsMeta.sources.csv.sha256='quotes-b';livePrice=99
+        ''')
+        self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+          assert(r.cached and r.vendorQuoteRevision==4 and r.status=='complete' and r.feasible)
+          assert(r.total==7 and r.ahTotal==7 and r.vendorTotal==0 and #r.steps==1)
+          assert(r.stale and r.staleReason=='vendor-quotes' and #r.diagnostics==0)
+          assert(captures==1 and #queue==jobsBeforeHashReload)
+          assert(oldAhCache.vendorQuoteData=='quotes-a' and not oldAhCache.stale)
+          ns.ProfRouteAuto.Recalculate('alchemy',{start=1,target=2})
+          local fresh=finish('alchemy',{start=1,target=2})
+          assert(fresh.total==99 and fresh.vendorQuoteData=='quotes-b' and not fresh.stale and captures==2)
+        ''')
+
+    def test_changed_prof_items_hash_gates_empty_failure_until_manual_recalculation(self):
+        for status in ('incomplete', 'infeasible', 'error'):
+            with self.subTest(status=status):
+                self.setUp()
+                self.lua.execute("ns.ProfItemsMeta={schemaVersion=2,sources={csv={sha256='quotes-a'}}}")
+                self.live_capture_fixture()
+                self.lua.execute('''
+                  finish('alchemy',{start=1,target=2})
+                  local cache=DungeonsForeverDB.prof.routeCache['Test-Realm']
+                  oldEmptyCache=cache.routes[cache.active.alchemy].result
+                  oldEmptyCache.steps={};oldEmptyCache.executionSteps={};oldEmptyCache.actions={}
+                  oldEmptyCache.mats={};oldEmptyCache.formulas={};oldEmptyCache.total=0
+                  oldEmptyCache.vendorTotal=0;oldEmptyCache.ahTotal=0
+                  oldEmptyCache.feasible=false;oldEmptyCache.targetReached=false
+                  oldEmptyCache.emptyResultRevision=nil
+                  jobsBeforeHashReload=#queue
+                  ns.ProfItemsMeta.sources.csv.sha256='quotes-b'
+                ''')
+                self.lua.globals().oldEmptyCache.status = status
+                self.load(str(ROOT/'Core'/'ProfRouteAuto.lua'))
+                self.lua.execute('''
+                  local r=ns.ProfRouteAuto.Get('alchemy',{start=1,target=2})
+                  assert(r.cached and r.status=='recalculate_required' and r.total==0)
+                  assert(r.vendorQuoteRevision==4 and r.vendorQuoteData=='quotes-b')
+                  assert(r.diagnostics[1].code=='vendorQuoteChanged')
+                  assert(captures==1 and #queue==jobsBeforeHashReload,'empty failure auto-recalculated after hash change')
+                  assert(oldEmptyCache.vendorQuoteData=='quotes-a' and oldEmptyCache.emptyResultRevision==nil)
+                  ns.ProfRouteAuto.Recalculate('alchemy',{start=1,target=2})
+                  local fresh=finish('alchemy',{start=1,target=2})
+                  assert(fresh.feasible and fresh.total==7 and captures==2 and fresh.vendorQuoteData=='quotes-b')
+                ''')
 
     def test_old_npc_formula_quote_also_requires_manual_recalculation(self):
         self.legacy_vendor_cache_fixture()
@@ -396,33 +478,32 @@ class RuntimeTests(unittest.TestCase):
         """)
 
     def test_capture_tracks_verified_vendor_supply_separately_from_known_price(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.lua.execute("""
           ns.ProfEconomy.Professions=function() return {alchemy={cur=1,max=75,primary=true}} end
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,2}}}}}}
           ns.EnsureProfRecipes=function() return ns.ProfRecipes end
           UnitFactionGroup=function() return 'Alliance' end
           UnitLevel=function() return 30 end
-          local contexts={}
-          ns.VendorPriceDB={
-            GetSuppliers=function(id,ctx)
-              contexts[#contexts+1]=ctx
-              if id==11 then return {{npcID=123,unlimited=true,available=true,source='wowhead-forever',verifiedAt='date'}} end
-              return {{npcID=456,unlimited=false,source='wowhead-forever',verifiedAt='date'}}
-            end,
-            GetOffers=function(id,ctx)
-              assert(ctx.allowVendorCache==nil and ctx.requireObservedPrice==nil)
-              assert(ctx.character=='Test-Realm' and ctx.faction=='A' and ctx.level==30 and ctx.professions.alchemy.cur==1)
-              if id==11 then return {{price=3,quantity=1,reference=true,source='wowhead-forever',unlimited=true,npcID=123}} end
-              return {}
-            end}
+          ns.ProfItems={
+            [11]={item_id=11,VendorStackCount=1,offers={
+              [123]={npc_id=123,cost_copper=3,stock=-1,side='a',price_source='client'}}},
+            [10]={item_id=10,VendorStackCount=1,offers={
+              [456]={npc_id=456,cost_copper=4,stock=1,side='a',price_source='client'}}}}
+          local getOffers=ns.ProfItemPrices.GetOffers
+          ns.ProfItemPrices.GetOffers=function(id,ctx)
+            assert(ctx.allowVendorCache==nil and ctx.requireObservedPrice==nil)
+            assert(ctx.character=='Test-Realm' and ctx.faction=='A' and ctx.level==30 and ctx.professions.alchemy.cur==1)
+            return getOffers(id,ctx)
+          end
           local s=ns.ProfEconomy.Capture('alchemy',{})
           assert(s.vendorItems[11] and not s.vendorItems[10])
-          assert(s.vendorSuppliers[11][1].npcID==123 and s.offers[11][1].source=='wowhead-forever')
+          assert(s.vendorSuppliers[11][1].npcID==123 and s.offers[11][1].source=='client')
+          assert(s.vendorSuppliers[11][1].availabilityVerified and s.offers[11][1].verifiedAt==nil)
         """)
 
-    def test_real_catalogue_without_npc_prices_keeps_unknown_and_preserves_ah(self):
-        for path in ('Data/Data_ProfVendorOffers.lua','VendorPriceDB.lua'):
-            self.load(str(ROOT/'Core'/path))
+    def test_missing_prof_items_has_no_suppliers_and_uses_ah(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.lua.execute('''
           local function forbidden() error('runtime NPC purchase API was called') end
           GetMerchantItemInfo=forbidden;GetMerchantNumItems=forbidden;GetMerchantItemLink=forbidden
@@ -439,11 +520,14 @@ class RuntimeTests(unittest.TestCase):
           ns.ProfLeveling={alchemy={}}
           UnitFactionGroup=function() return 'Alliance' end
           local e=ns.ProfEconomy.Capture('alchemy',{})
-          assert(e.vendorItems[2320] and #e.offers[2320]==0 and e.prices[2320]==9)
-          assert(ns.VendorPriceDB.GetPrice(2320)==nil,'missing NPC price became zero')
+          assert(not e.vendorItems[2320] and #e.offers[2320]==0 and e.prices[2320]==9)
+          assert(not e.vendorSuppliers[2320],'missing ProfItems invented an NPC supplier')
+          assert(#ns.ProfItemPrices.GetSuppliers(2320)==0)
+          assert(ns.ProfItemPrices.GetPrice(2320)==nil,'missing NPC price became zero')
           local sum=ns.ProfRouteAuto.SummarizeSteps({{1,2,101,1}},'alchemy')
-          assert(not sum.completeCost and sum.ahTotal==0)
-          assert(sum.mats[1].vendor and sum.mats[1].unpriced and sum.mats[1].unit==nil)
+          assert(sum.completeCost and sum.total==27 and sum.ahTotal==27 and sum.vendorTotal==0)
+          assert(not sum.mats[1].vendor and sum.mats[1].source=='ah' and not sum.mats[1].unpriced)
+          assert(sum.mats[1].count==3 and sum.mats[1].unit==9)
           assert(sum.mats[1].quoteSource==nil,'AH or removed static quote became an NPC price')
           assert(ns.ProfRouteAuto.AHPriceOf(2320)==9,'AH market integration was removed')
           assert(sum.productNPC==2 and sum.productAH==9 and ns.ProfRouteAuto.NPCSellPriceOf(10)==2,
@@ -714,7 +798,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_complete_catalogues_use_reference_recipes_with_priced_materials_without_profession_api(self):
         for filename in ('Data/Data_ProfRecipes.lua','Data/Data_ProfLeveling.lua','Data/Data_ProfMining.lua',
-                         'Data/Data_ProfVendorOffers.lua','VendorPriceDB.lua'):
+                         'Data/Data_ProfItems.lua','Data/Data_ProfFormulaQuests.lua','ProfItemPrices.lua'):
             self.load(str(ROOT/'Core'/filename))
         self.lua.execute('''
           ns.DB=function() return DungeonsForeverDB end
@@ -865,7 +949,7 @@ class RuntimeTests(unittest.TestCase):
           d.rankRequirements={alchemy={[150]={level=99}}}
           local requested={}
           ns.ProfRouteAuto.AHPriceOf=function(id) requested[id]=true; return 7 end
-          ns.VendorPriceDB={GetOffers=function(id) return {} end}
+          ns.ProfItemPrices={GetOffers=function(id) return {} end}
           local s=e.Capture('alchemy',{})
           assert(next(s.inventory)==nil and not s.inventoryUnknown)
           assert(s.trainingCosts==nil and s.rankCosts==nil and s.rankRequirements==nil)
@@ -910,15 +994,14 @@ class RuntimeTests(unittest.TestCase):
           assert(ns.ProfRouteAuto.OptionsFor('alchemy').noFormula==nil)
         """)
 
-    def test_fixed_route_vendor_reference_rounds_shared_packs_and_keeps_source(self):
+    def test_fixed_route_prof_items_rounds_shared_packs_and_keeps_source(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.lua.execute("""
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,3}}}}}}
           ns.EnsureProfRecipes=function() return ns.ProfRecipes end
           ns.ProfLeveling={alchemy={}}
-          ns.VendorPriceDB={GetSuppliers=function(id) return id==11 and {{npcID=1313}} or {} end,
-            GetOffers=function(id) assert(id==11); return {{unlimited=true,price=18,quantity=5,
-              npcID=1313,source='wowhead-forever',reference=true,estimated=true,
-              priceBasis='wowhead-reference',verifiedAt='2026-10-18',url='npc=1313'}} end}
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=5,offers={
+            [1313]={npc_id=1313,cost_copper=18,stock=-1,price_source='wowhead'}}}}
           local steps={{1,2,101,1,cost=999},{2,3,101,1,cost=999}}
           local sum=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
           assert(sum.priced and sum.completeCost and sum.costComplete and sum.referencePrices)
@@ -927,8 +1010,8 @@ class RuntimeTests(unittest.TestCase):
           assert(#sum.mats==1 and mat.id==11 and mat.count==10 and mat[2]==10 and mat.need==6)
           assert(mat.unit==18/5 and mat.bundleSize==5 and mat.bundlePrice==18 and mat.cost==36)
           assert(mat.vendor and mat.source=='vendor' and mat.npcID==1313 and mat.reference)
-          assert(mat.quoteSource=='wowhead-forever' and mat.priceBasis=='wowhead-reference')
-          assert(mat.verifiedAt=='2026-10-18' and mat.url=='npc=1313' and mat.estimated)
+          assert(mat.quoteSource=='wowhead' and mat.priceBasis=='Data_ProfItems')
+          assert(mat.verifiedAt==nil and mat.url=='https://www.wowhead.com/forever/npc=1313' and not mat.estimated)
           assert(steps[1].cost==18 and steps[2].cost==18)
           assert(steps[1][3]==101 and steps[2][3]==101 and steps[1][4]==1 and steps[2][4]==1)
           assert(not steps[1].unpriced and #sum.formulas==0 and sum.formulasTotal==0)
@@ -938,50 +1021,57 @@ class RuntimeTests(unittest.TestCase):
           assert(steps[1].cost==18 and steps[2].cost==0,'reused pack was charged twice')
         """)
 
-    def test_fixed_route_chooses_lowest_pack_total_rather_than_lowest_unit_price(self):
+    def test_fixed_route_chooses_lowest_prof_items_npc_bundle_price(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.lua.execute("""
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,6}}}}}}
           ns.EnsureProfRecipes=function() return ns.ProfRecipes end
           ns.ProfLeveling={alchemy={}}
-          ns.VendorPriceDB={GetSuppliers=function(id) return id==11 and {{npcID=1},{npcID=2}} or {} end,
-            GetOffers=function(id) return {{unlimited=true,price=40,quantity=20,npcID=1,source='merchant'},
-              {unlimited=true,price=15,quantity=5,npcID=2,source='merchant'}} end}
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=5,offers={
+            [1]={npc_id=1,cost_copper=40,stock=-1,price_source='client'},
+            [2]={npc_id=2,cost_copper=15,stock=-1,price_source='client'}}}}
+          local materialAuctionReads=0
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)
-            assert(id~=11,'vendor material must not query auction pricing'); return 1
+            if id==11 then materialAuctionReads=materialAuctionReads+1;return 100 end
+            return 1
           end}}}
           local sum=ns.ProfRouteAuto.SummarizeSteps({{1,2,101,1}},'alchemy')
+          assert(materialAuctionReads>=1,'NPC quotation prevented an AH price comparison')
           assert(sum.total==30 and sum.vendorTotal==30 and sum.ahTotal==0)
           local mat=sum.mats[1]
           assert(mat.npcID==2 and mat.count==10 and mat.need==6 and mat.unit==3)
-          assert(mat.quoteSource=='merchant' and not mat.reference and sum.completeCost)
+          assert(mat.quoteSource=='client' and mat.reference and sum.completeCost)
         """)
 
-    def test_fixed_route_unknown_npc_price_is_not_replaced_with_auction_price(self):
+    def test_fixed_route_unpriced_supplier_metadata_does_not_block_auction_purchase(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.lua.execute("""
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,2}}}}}}
           ns.EnsureProfRecipes=function() return ns.ProfRecipes end
           ns.ProfLeveling={alchemy={}}
-          ns.VendorPriceDB={GetSuppliers=function(id) return id==11 and {{npcID=1313,url='npc=1313'}} or {} end,
-            GetOffers=function(id) return {} end}
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,offers={
+            [1313]={npc_id=1313,stock=-1,price_source='client'}}}}
+          local auctionQueries={}
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)
-            assert(id~=11,'unknown vendor material must not query auction pricing'); return 1
+            auctionQueries[id]=true; return id==11 and 9 or 1
           end}}}
           local steps={{1,2,101,1}}
           local sum=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
-          assert(sum.priced and not sum.completeCost and sum.total==0 and sum.ahTotal==0)
+          assert(sum.priced and sum.completeCost and sum.total==18 and sum.ahTotal==18 and sum.vendorTotal==0)
+          assert(auctionQueries[11],'supplier metadata blocked AH pricing without an NPC quotation')
           local mat=sum.mats[1]
-          assert(mat.vendor and mat.source=='vendor' and mat.npcID==1313 and mat.unpriced)
-          assert(mat.count==2 and mat.need==2 and mat.url=='npc=1313' and steps[1].unpriced)
+          assert(not mat.vendor and mat.source=='ah' and not mat.unpriced and mat.unit==9)
+          assert(mat.count==2 and mat.need==2 and steps[1].cost==18 and not steps[1].unpriced)
         """)
 
     def test_fixed_route_zero_cost_packs_and_auction_materials_share_consistent_totals(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
         self.lua.execute("""
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,20,30,40,false,{{11,3},{12,2}}}}}}
           ns.EnsureProfRecipes=function() return ns.ProfRecipes end
           ns.ProfLeveling={alchemy={}}
-          ns.VendorPriceDB={GetSuppliers=function(id) return id==11 and {{npcID=1313}} or {} end,
-            GetOffers=function(id) return id==11 and {{unlimited=true,price=0,quantity=4,
-              npcID=1313,source='merchant'}} or {} end}
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=4,offers={
+            [1313]={npc_id=1313,cost_copper=0,stock=-1,price_source='client'}}}}
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id) return id==12 and 7 or 1 end}}}
           local steps={{1,2,101,1},{2,3,101,1}}
           local sum=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
@@ -990,6 +1080,83 @@ class RuntimeTests(unittest.TestCase):
           local mat
           for _,m in ipairs(sum.mats) do if m.id==11 then mat=m end end
           assert(mat.count==8 and mat.need==6 and mat.cost==0 and not mat.unpriced)
+        """)
+
+    def test_legacy_schemes_do_not_overspend_finite_ah_when_npc_alternative_exists(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={
+            {101,20,1,'','','',1,20,30,40,false,{{11,1}}},
+            {102,21,1,'','','',1,20,30,40,false,{{12,1}}}}}}
+          ns.EnsureProfRecipes=function()return ns.ProfRecipes end
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,offers={
+            [7]={npc_id=7,stock=-1,cost_copper=10,price_source='client'}}}}
+          Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)return ({[11]=1,[12]=5})[id]end}}}
+          ns.AuctionBridge={GetAuctionSupply=function(id)if id==11 then return {quantity=1,complete=true}end end}
+          for _,scheme in ipairs({'matcost','crafts','optim'})do
+            local r=ns.ProfRouteAuto.Compute('alchemy',{start=1,target=4,scheme=scheme})
+            assert(r.targetReached and r.feasible and r.total==11,scheme)
+            local used=0;for _,m in ipairs(r.mats)do if m.id==11 and m.source=='ah'then used=used+m.count end end
+            assert(used==1 and r.supplyConstrained,scheme..' overspent auction quantity')
+            local cost=0;for _,step in ipairs(r.steps)do cost=cost+step.cost end
+            assert(cost==r.total and r.vendorQuoteRevision==4,scheme..' total/stamp mismatch')
+          end
+        """)
+
+    def test_fixed_route_uses_finite_ah_remainder_or_whole_npc_packs(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={{101,20,1,'','','',1,20,30,40,false,{{11,6}}}}}}
+          ns.EnsureProfRecipes=function()return ns.ProfRecipes end
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=4,offers={
+            [7]={npc_id=7,stock=-1,cost_copper=37,price_source='client'}}}}
+          Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)if id==11 then return 10 end end}}}
+          for _,limit in ipairs({0,1,2,10})do
+            ns.AuctionBridge={GetAuctionSupply=function(id)if id==11 then return {quantity=limit,complete=true}end end}
+            local steps={{1,2,101,1}}
+            local r=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
+            local bought=0;for _,m in ipairs(r.mats)do if m.source=='ah'then bought=bought+m.count end end
+            assert(bought<=limit and r.total==(limit<2 and 74 or 57),'invalid finite pack allocation')
+            assert(#steps==1 and steps[1][4]==1 and steps[1].cost==r.total,'fixed guide changed or costs diverged')
+            assert(r.supplyComplete and r.vendorQuoteRevision==4)
+          end
+        """)
+
+    def test_fixed_route_reserves_formula_ah_copy_before_material_purchase(self):
+        self.load(str(ROOT/'Core'/'ProfItemPrices.lua'))
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={{101,20,1,'','','',1,20,30,40,false,{{11,2}},{11},{}}}}}
+          ns.EnsureProfRecipes=function()return ns.ProfRecipes end
+          ns.ProfItems={[11]={item_id=11,VendorStackCount=1,offers={
+            [7]={npc_id=7,stock=-1,cost_copper=10,price_source='client'}}}}
+          Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)if id==11 then return 1 end end}}}
+          ns.AuctionBridge={GetAuctionSupply=function(id)if id==11 then return {quantity=2,complete=true}end end}
+          local steps={{1,2,101,1}}
+          local r=ns.ProfRouteAuto.SummarizeSteps(steps,'alchemy')
+          assert(r.total==12 and r.formulasTotal==1 and r.formulas[1].source=='ah')
+          local ah=r.formulas[1].count
+          for _,m in ipairs(r.mats)do if m.source=='ah'then ah=ah+m.count end end
+          assert(ah==2 and r.vendorTotal==10 and r.ahTotal==2 and r.supplyComplete)
+          assert(steps[1].cost==r.total)
+        """)
+
+    def test_legacy_schemes_reject_bound_auction_materials_and_rinfo_exclusions(self):
+        self.lua.execute("""
+          ns.ProfRecipes={alchemy={rows={{101,20,1,'','','',1,20,30,40,false,{{11,1}}}}}}
+          ns.EnsureProfRecipes=function()return ns.ProfRecipes end
+          Auctionator={API={v1={GetAuctionPriceByItemID=function()return 7 end}}}
+          C_Item={GetItemInfo=function()return 'Bound',nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,1 end}
+          for _,scheme in ipairs({'matcost','crafts','optim'})do
+            local r=ns.ProfRouteAuto.Compute('alchemy',{start=1,target=2,scheme=scheme})
+            assert(not r.targetReached and not r.feasible and #r.steps==0 and r.status=='infeasible',scheme)
+          end
+          C_Item=nil
+          ns.ProfRecipes.alchemy.rows={}
+          ns.ProfLeveling={alchemy={rinfo={[101]={makes=20,count=1,learn=1,yellow=20,green=30,grey=40,mats={{11,1}}}}}}
+          for _,scheme in ipairs({'matcost','crafts','optim'})do
+            local r=ns.ProfRouteAuto.Compute('alchemy',{start=1,target=2,scheme=scheme,exclusions={['alchemy:101']='ban'}})
+            assert(#r.steps==0 and not r.feasible,scheme..' ignored rinfo exclusion')
+          end
         """)
 
     def test_profession_api_preserves_primary_slots_and_handles_sparse_results(self):

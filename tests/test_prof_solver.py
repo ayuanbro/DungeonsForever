@@ -87,22 +87,30 @@ class SolverTests(unittest.TestCase):
           assert(r.initialTotal==9060 and r.savings==2325 and r.improvements>=1)
         ''')
 
-    def test_verified_vendor_material_uses_npc_pack_price_and_no_auction_purchase(self):
+    def test_npc_pack_price_and_auction_purchase_compete_by_total_spend(self):
         self.lua.execute('''
           local s=snapshot({recipe('alchemy',101,10,1,{{11,1}},1,10)},{[11]=1})
           s.vendorItems={[11]=true}; s.vendorSuppliers={[11]={{npcID=1313}}}
           s.offers={[11]={{unlimited=true,price=18,quantity=2,npcID=1313}}}
           local r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=4})
+          assert(r.feasible and r.total==3 and r.ahTotal==3 and r.vendorTotal==0)
+          assert(#r.mats==1 and r.mats[1].source=='ah' and r.mats[1].count==3)
+          s.prices[11]=100
+          r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=4})
           assert(r.feasible and r.total==36 and r.vendorTotal==36 and r.ahTotal==0)
           assert(#r.mats==1 and r.mats[1].source=='vendor' and r.mats[1].npcID==1313 and r.mats[1].count==4)
           for _,a in ipairs(r.actions) do if a.type=='buy' then assert(a.source=='vendor') end end
         ''')
 
-    def test_unknown_vendor_price_without_own_source_excludes_recipe_and_never_uses_auction_price(self):
+    def test_unknown_vendor_price_can_use_auction_but_never_a_free_purchase(self):
         self.lua.execute('''
           local s=snapshot({recipe('alchemy',101,10,1,{{11,1}},1,10)},{[11]=999})
           s.vendorItems={[11]=true}; s.vendorSuppliers={[11]={{npcID=1313}}}
           local r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=4})
+          assert(r.feasible and r.total==2997 and r.ahTotal==2997 and r.vendorTotal==0)
+          assert(#r.mats==1 and r.mats[1].source=='ah' and r.mats[1].count==3)
+          s.prices[11]=nil
+          r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=4})
           assert(not r.feasible and not r.costComplete and not r.optimal)
           assert(#r.steps==0 and #r.mats==0 and not r.pricePending)
           for _,a in ipairs(r.actions) do assert(a.type~='buy') end
@@ -110,7 +118,7 @@ class SolverTests(unittest.TestCase):
 
     def test_verified_vendor_reference_is_priced_and_keeps_quote_provenance(self):
         self.lua.execute('''
-          local s=snapshot({recipe('alchemy',101,10,1,{{11,1}},1,10)},{[11]=1})
+          local s=snapshot({recipe('alchemy',101,10,1,{{11,1}},1,10)},{[11]=100})
           s.vendorItems={[11]=true}; s.vendorSuppliers={[11]={{npcID=1313}}}
           s.offers={[11]={{unlimited=true,price=18,quantity=5,npcID=1313,
             source='wowhead-forever',priceBasis='wowhead-reference',reference=true,

@@ -71,9 +71,9 @@ HEADERS = {
         "-- 无限副本手册 · 职业指南页（界面层）",
         "-- 职业排行与专精指南的渲染层，数据来自 Data_ClassTier / Data_ClassGuide；只对无限服 / 正式服加载。",
     ],
-    "Core/VendorPriceDB.lua": [
-        "-- DungeonsForever · 商人直售价动态采集库",
-        "-- 打开商人窗口时自动记录货架售价，供升级路线取商人价兜底。",
+    "Core/ProfItemPrices.lua": [
+        "-- NPC procurement uses only the generated schema2 item/NPC records.",
+        "-- Location data is for map display; it never establishes stock or prices.",
     ],
     "Core/Data/Data_AreaMap.lua": [
         "-- 无限副本手册 · 区域 ID → 世界地图 ID（areaID → uiMapID）",

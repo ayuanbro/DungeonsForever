@@ -71,6 +71,125 @@ class ExecutionFacadeTests(unittest.TestCase):
           assert(ns.ProfExecution.GetRun('alchemy')==nil)
         ''')
 
+    def test_old_frozen_npc_plan_cannot_override_a_current_auction_candidate(self):
+        self.lua.execute('''
+          opts={start=1,target=2};candidate=finish('alchemy',opts)
+          local xp=ns.ProfExecution
+          frozenRun=assert(xp.Bind('alchemy',candidate));frozen=xp.GetPlan('alchemy')
+          frozen.mats[1].source='vendor';frozen.mats[1].vendor=true
+          frozen.vendorTotal=7;frozen.ahTotal=0;frozen.vendorQuoteRevision=2
+          local capturesBefore=captures;local queued=#queue
+          local view=ns.ProfRouteAuto.Get('alchemy',opts)
+          assert(view.status=='recalculate_required' and not view.feasible and #view.mats==0)
+          assert(view.diagnostics[1].code=='vendorQuoteChanged' and view.total==0)
+          assert(xp.GetPlan('alchemy')==frozen and xp.GetRun('alchemy')==frozenRun)
+          assert(frozen.total==7 and frozen.vendorQuoteRevision==2 and frozen.mats[1].vendor)
+          assert(candidate.mats[1].source=='ah' and captures==capturesBefore and #queue==queued)
+        ''')
+
+    def test_old_frozen_npc_plan_is_blocked_when_route_cache_is_missing(self):
+        self.lua.execute('''
+          opts={start=1,target=2};local candidate=finish('alchemy',opts)
+          local xp=ns.ProfExecution;xp.Bind('alchemy',candidate)
+          frozen=xp.GetPlan('alchemy');frozen.mats[1].source='vendor'
+          frozen.vendorQuoteRevision=2
+          DungeonsForeverDB.prof.routeCache=nil
+          capturesBefore=captures;queued=#queue
+        ''')
+        self.load(str(fixture.ROOT / 'Core' / 'ProfRouteAuto.lua'))
+        self.lua.execute('''
+          local view=ns.ProfRouteAuto.Get('alchemy',opts)
+          assert(view.status=='recalculate_required' and #view.steps==0 and #view.mats==0)
+          assert(captures==capturesBefore and #queue==queued)
+          assert(ns.ProfExecution.GetPlan('alchemy')==frozen and frozen.mats[1].source=='vendor')
+        ''')
+
+    def test_fresh_npc_execution_is_valid_until_the_csv_fingerprint_changes(self):
+        fixture.RuntimeTests.install_synthetic_vendor_quote_fixture(self)
+        self.lua.execute('''
+          ns.ProfEconomy.Capture=function()
+            local s=fixture();s.prices[11]=70
+            s.offers={[11]=ns.ProfItemPrices.GetOffers(11)}
+            return ns.ProfEconomy.Index(s)
+          end
+          opts={start=1,target=2};local candidate=finish('alchemy',opts)
+          assert(candidate.total==3 and candidate.vendorQuoteData=='quotes-a')
+          ns.ProfItemsMeta.sources.csv.sha256='quotes-b'
+          assert(ns.ProfRouteAuto.Get('alchemy',opts).status=='recalculate_required')
+          ns.ProfItemsMeta.sources.csv.sha256='quotes-a'
+          assert(ns.ProfRouteAuto.Get('alchemy',opts)==candidate)
+          local xp=ns.ProfExecution;assert(xp.Bind('alchemy',candidate))
+          local frozen=xp.GetPlan('alchemy');assert(ns.ProfRouteAuto.Get('alchemy',opts)==frozen)
+          ns.ProfItemsMeta.sources.csv.sha256='quotes-b'
+          local view=ns.ProfRouteAuto.Get('alchemy',opts)
+          assert(view.status=='recalculate_required' and view.total==0 and #view.mats==0)
+          assert(xp.GetPlan('alchemy')==frozen and frozen.vendorQuoteData=='quotes-a' and frozen.total==3)
+        ''')
+
+    def test_old_npc_supplement_and_binding_are_blocked_without_erasing_history(self):
+        self.lua.execute('''
+          local candidate=finish('alchemy',{start=1,target=2});local xp=ns.ProfExecution
+          local run=assert(xp.Bind('alchemy',candidate))
+          local old={feasible=true,total=13,mats={{id=11,count=1,source='vendor'}},vendorQuoteRevision=2}
+          run.supplement=old
+          local view=xp.GetSupplement('alchemy')
+          assert(view.status=='recalculate_required' and not view.feasible and #view.mats==0)
+          assert(run.supplement==old and old.total==13 and old.mats[1].source=='vendor')
+          local refused,reason=xp.Bind('alchemy',old,{force=true})
+          assert(not refused and reason=='vendorQuoteChanged' and xp.GetRun('alchemy')==run)
+          run.plan.mats[1].source='vendor';run.plan.vendorQuoteRevision=2
+          local auctionSupplement={feasible=true,total=3,mats={{id=11,count=3,source='ah'}}}
+          run.supplement=auctionSupplement
+          view=xp.GetSupplement('alchemy')
+          assert(view.status=='recalculate_required' and #view.mats==0)
+          assert(run.supplement==auctionSupplement and auctionSupplement.total==3)
+          local queued=#queue;local capturesBefore=captures
+          refused,reason=xp.CalculateSupplement('alchemy')
+          assert(not refused and reason=='vendorQuoteChanged')
+          assert(#queue==queued and captures==capturesBefore and xp.GetPlan('alchemy')==run.plan)
+        ''')
+
+    def test_pure_auction_execution_survives_npc_fingerprint_changes(self):
+        self.lua.execute('''
+          opts={start=1,target=2};local candidate=finish('alchemy',opts)
+          local xp=ns.ProfExecution;assert(xp.Bind('alchemy',candidate))
+          local frozen=xp.GetPlan('alchemy')
+          ns.ProfItemsMeta={sources={csv={sha256='new-data'}}}
+          assert(not ns.ProfRouteAuto.VendorQuotesChanged(frozen))
+          assert(ns.ProfRouteAuto.Get('alchemy',opts)==frozen)
+          assert(frozen.mats[1].source=='ah' and frozen.total==7)
+        ''')
+
+    def test_supplement_recaptures_inputs_instead_of_reusing_a_saved_snapshot(self):
+        self.lua.execute('''
+          local xp=ns.ProfExecution;local candidate=finish('alchemy',{start=1,target=2})
+          local run=assert(xp.Bind('alchemy',candidate))
+          run.plan.executionOptions={snapshot={prices={},offers={
+            [11]={{npcID=999,price=0,quantity=1,unlimited=true}}}}}
+          assert(xp.RecordAttempt('alchemy',101,'extra-test'))
+          assert(xp.Progress('alchemy').extraCrafts==1)
+          local capture=ns.ProfEconomy.Capture;local recaptured=false
+          ns.ProfEconomy.Capture=function(slug,opts,tick)
+            if slug=='__purchase' then
+              assert(opts.snapshot.prices[11]==7 and not opts.snapshot.offers[11])
+              return ns.ProfEconomy.Index(opts.snapshot)
+            end
+            assert(opts.snapshot==nil,'saved snapshot reached live procurement')
+            recaptured=true;return capture(slug,opts,tick)
+          end
+          assert(xp.CalculateSupplement('alchemy'))
+          for i=1,1000 do
+            if not xp.GetSupplement('alchemy').inFlight then break end
+            xp.Pump('alchemy')
+          end
+          local result=xp.GetSupplement('alchemy')
+          assert(recaptured and not result.inFlight and result.feasible and result.total==7,
+            tostring(result.status)..' total='..tostring(result.total)..' error='..
+              tostring(result.error or result.diagnostics and result.diagnostics[1] and result.diagnostics[1].detail))
+          assert(result.mats[1].source=='ah' and not result.mats[1].vendor)
+          assert(result.vendorQuoteRevision==4 and run.plan.executionOptions.snapshot.offers[11][1].price==0)
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

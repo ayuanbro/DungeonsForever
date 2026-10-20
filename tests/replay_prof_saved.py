@@ -49,8 +49,8 @@ def replay(profession="engineering", start=60, target=225):
     """)
     load=lua.eval("function(p) assert(loadfile(p))('DungeonsForever',ns) end")
     for path in ("Core/Data/Data_ProfRecipes.lua","Core/Data/Data_ProfLeveling.lua",
-                 "Core/Data/Data_ProfMining.lua","Core/Data/Data_ProfVendorOffers.lua","Core/Data/Data_ProfFormulaSources.lua",
-                 "Core/ProfEconomy.lua","Core/VendorPriceDB.lua","Core/ProfRouteSolver.lua"):
+                 "Core/Data/Data_ProfMining.lua","Core/Data/Data_ProfItems.lua","Core/Data/Data_ProfFormulaQuests.lua",
+                 "Core/ProfEconomy.lua","Core/ProfItemPrices.lua","Core/ProfRouteSolver.lua"):
         load(str(ROOT/path))
     lua.globals().replayPrices=lua.table_from(item_prices)
     lua.execute("""

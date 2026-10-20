@@ -6445,6 +6445,10 @@ end
 local function FixedShopData(target)
     local lv = LV[PD.cur]
     local steps, clipped = ClipFixedSteps(lv.steps or {}, target)
+    local blocked, goalRequired
+    if RA and RA.FilterFixedSpecializations then
+        steps, blocked, goalRequired = RA.FilterFixedSpecializations(PD.cur, steps, {target=target})
+    end
     if RA and RA.SummarizeSteps then
         local sum = RA.SummarizeSteps(steps, PD.cur,
                                       { learnedOnly = PD.Setting("autoLearnedOnly") })
@@ -6452,6 +6456,10 @@ local function FixedShopData(target)
             sum.mode = "fixed"
             sum.target = target
             sum.clipped = clipped
+            if goalRequired or (blocked and #blocked>0) then
+                sum.feasible, sum.specializationBlocked, sum.status = false, true, "recalculate_required"
+                sum.message = L["固定攻略存在专精缺口，请切换自动计算。"]
+            end
             return sum
         end
     end
@@ -6468,6 +6476,18 @@ end
 
 function PD.PlanStatusText(plan)
     if not plan then return L["正在计算升级路线…"] end
+    if plan.specializationBlocked==true or plan.specializationGoalRequired
+       or (type(plan.specializationBlocked)=="table" and #plan.specializationBlocked>0) then
+        return plan.message or L["固定攻略存在专精缺口，请切换自动计算。"]
+    end
+    if plan.status=="recalculate_required" then
+        for _,diagnostic in ipairs(plan.diagnostics or {}) do
+            if (diagnostic.code=="vendorQuoteChanged" or diagnostic.code=="specializationChanged")
+               and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
+                return ns.ProfEconomy.DiagnosticText(diagnostic)
+            end
+        end
+    end
     local search=plan.searchState
     if search then
         if search.status=="searching" then return L["后台优化中"] end
@@ -6708,7 +6728,34 @@ function PD.StepRecipe(st)
         return live
     end
 end
+function PD.IsSpecializationQuest(st) return st and st.kind=="specialization_quest" end
+function PD.SpecializationQuest(st) return st.quest or st.specializationGoal or st.goal or st end
+function PD.SpecializationQuestName(st)
+    local goal = PD.SpecializationQuest(st)
+    local name = goal.abilityID==20222 and L["地精工程学"] or L["侏儒工程学"]
+    return format(L["%s入门任务"], name)
+end
+function PD.SpecializationQuestSource(st)
+    local goal = PD.SpecializationQuest(st)
+    local npc = goal.npcName and L[goal.npcName] or ("NPC #" .. tostring(goal.npcID or "?"))
+    local place = goal.zone and L[goal.zone] or ""
+    if goal.x and goal.y then place = place .. format(" (%.1f, %.1f)", goal.x, goal.y) end
+    local quest = goal.questName and ("《" .. L[goal.questName] .. "》 ") or ""
+    return npc .. (place~="" and (" · " .. place) or "") .. " · " .. quest .. "#" .. tostring(goal.questID or "?")
+end
+function PD.SpecializationQuestPrerequisites(st)
+    local ids={}
+    for _,id in ipairs(PD.SpecializationQuest(st).prerequisiteQuestIDs or {}) do ids[#ids+1]="#"..tostring(id) end
+    if #ids>0 then return format(L["先完成前置任务并与导师对话：%s"],table.concat(ids,", ")) end
+end
+function PD.SpecializationQuestProgressText(st)
+    local E=ns.ProfEconomy
+    local progress=E and E.SpecializationQuestProgress and E.SpecializationQuestProgress(PD.SpecializationQuest(st))
+    if progress and progress.readyForTurnIn then return L["任务可交付"] end
+    if progress and progress.inLog then return L["任务已接取"] end
+end
 function PD.StepRole(st)
+    if PD.IsSpecializationQuest(st) then return L["专精入门任务"] end
     if st.checkpoint or st[3] == 0 then return L["实地采矿"] end
     local tags = st.tags or {}
     local leveling = tags.leveling or st.role == "level" or st.role == "both"
@@ -6730,6 +6777,7 @@ function PD.PurchaseSource(entry)
     return L["拍卖行"]
 end
 function PD.StepName(st)
+    if PD.IsSpecializationQuest(st) then return PD.SpecializationQuestName(st) end
     return (st.checkpoint or st[3] == 0) and L["实地采矿"] or SpellName(st[3])
 end
 
@@ -7074,6 +7122,16 @@ function PD.RowsLeveling(rows)
     else
         steps, clipped = ClipFixedSteps(lv.steps or {}, target)
     end
+    local fixedBlocked, fixedGoalRequired
+    if not auto and RA and RA.FilterFixedSpecializations then
+        steps, fixedBlocked, fixedGoalRequired = RA.FilterFixedSpecializations(PD.cur, steps, {target=target})
+        if fixedGoalRequired or (fixedBlocked and #fixedBlocked>0) then
+            PushText(rows, L["固定攻略存在专精缺口，请切换自动计算。"], 12, {0.95, 0.75, 0.4})
+            for _, gap in ipairs(fixedBlocked or {}) do
+                PushText(rows, format(L["专精缺口：%s – %s"], tostring(gap.from or "?"), tostring(gap.to or "?")), 11, C_GREY)
+            end
+        end
+    end
     -- 固定路线材料采购费用；无价时明确标记。
     local fixedSum = (not auto) and RA and RA.SummarizeSteps(steps, PD.cur,
                           { learnedOnly = PD.Setting("autoLearnedOnly") }) or nil
@@ -7136,7 +7194,8 @@ function PD.RowsLeveling(rows)
                    or ((st.est and "≈" or "") .. RA.MoneyStr(st.cost))
         end
         if clipped and st._clip then count = count .. format(L[" · 按目标 %d 折算"], target) end
-        if st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
+        if PD.IsSpecializationQuest(st) then count = L["交付任务物品"]
+        elseif st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
         cntOf[st], costOf[st] = count, cost
         rngW = math.max(rngW, PD.TextW(PD.StepRange(st), PD.LV_FS))
         cntW = math.max(cntW, PD.TextW(count, PD.LV_FS))
@@ -7148,7 +7207,14 @@ function PD.RowsLeveling(rows)
             {(pro and pro.name) or st.profession or "", 0.7, 0.7, 0.7}}}
         local output = PD.RecipeOutputText(riM or rec)
         if output then cd.lines[#cd.lines + 1] = {output, 0.65, 0.75, 0.85} end
-        if st.checkpoint or st[3] == 0 then
+        if PD.IsSpecializationQuest(st) then
+            cd.lines[#cd.lines+1] = {PD.SpecializationQuestSource(st)}
+            local prerequisites=PD.SpecializationQuestPrerequisites(st)
+            if prerequisites then cd.lines[#cd.lines+1] = {prerequisites} end
+            local progress=PD.SpecializationQuestProgressText(st)
+            if progress then cd.lines[#cd.lines+1] = {progress} end
+            cd.lines[#cd.lines+1] = {L["实际学会对应专精后才完成此步骤。"]}
+        elseif st.checkpoint or st[3] == 0 then
             cd.lines[#cd.lines+1] = {L["达到目标技能后重新计算"]}
         end
         cardOf[st] = cd
@@ -7247,20 +7313,26 @@ function PD.RowsLeveling(rows)
                 local pro = D.pro[st.profession]
                 src = (pro and pro.name or st.profession) .. " · " .. (st.reason == "secondary" and L["联合升级"] or L["制作材料"])
             elseif st.reason == "material" then src = L["制作材料"] end
-            if st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
+            if PD.IsSpecializationQuest(st) then src = PD.SpecializationQuestSource(st)
+            elseif st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
             if (rec and rec.clientPending) or (ri and ri.clientPending) then src = L["客户端数据待读取"] end
             local segLo = tonumber(st[1])
             local segHi = tonumber(st[2])
             local stepLv = _learned and _learned[st.profession or PD.cur]
             local actualLv = stepLv and stepLv.cur or curLv
             local over = (actualLv ~= nil and segHi ~= nil and segHi < actualLv) or nil
+            if PD.IsSpecializationQuest(st) then
+                local E = ns.ProfEconomy
+                over = (E and E.SpecializationKnown and E.SpecializationKnown(PD.SpecializationQuest(st).abilityID)==true) or nil
+            end
             local passed = (greyOn and over) or nil
             rows[#rows + 1] = {
                 kind = "row", h = PD.TBL_H, col = 1, lvstep = true,
                 passed = passed, over = over,
                 it = (rec and rec[2]) and { rec[2] }
                      or ((ri and ri.makes) and { ri.makes } or nil),
-                icon = ((not rec) and ri and not ri.makes) and SpellIcon(st[3]) or nil,
+                icon = PD.IsSpecializationQuest(st) and SpellIcon(PD.SpecializationQuest(st).abilityID)
+                    or (((not rec) and ri and not ri.makes) and SpellIcon(st[3]) or nil),
                 tipExtra = (rec and rec[2])
                            and function() return PD.PriceTipLines(rec[2], rec[12]) end
                            or ((ri and ri.makes and ri.mats)
@@ -7323,6 +7395,11 @@ end
 --   + 产物收益卡（产物丢拍卖行 / 直接卖给NPC / 净花费）。
 --   四轮：半成品 / 商人直卖两段退役（用户定稿）。
 -- data：auto → RA.Compute 结果；fixed → FixedShopData 聚合。无价格数据只显示数量。
+function PD.VendorPriceSourceText(source)
+    if source == "client" then return L["购买价格来源：客户端"] end
+    if source == "wowhead" then return L["购买价格来源：Wowhead"] end
+end
+
 function PD.FormulaStockText(entry)
     if entry.unlimited and entry.limited then return L["商人库存：固定售卖及限量刷新"] end
     if entry.unlimited then return L["商人库存：固定售卖（不限量）"] end
@@ -7386,6 +7463,8 @@ function PD.RowsFormulaShop(rows, data)
             local stockText = offer.unlimited and L["固定售卖（不限量）"]
                 or (limited and L["限量刷新"] or L["库存性质尚未核实"])
             lines[#lines + 1] = {format(L["%s：%s · %s"], name, money(unit), stockText), 0.7, 0.7, 0.7}
+            local priceSource = PD.VendorPriceSourceText(offer.priceSource)
+            if priceSource then lines[#lines + 1] = {priceSource, 0.7, 0.7, 0.7} end
         end
         local selected = entry.source or entry.sourceType
         local tag = selected == "vendor" and L["NPC购买"]
@@ -7440,6 +7519,22 @@ function PD.RowsFormulaShop(rows, data)
 end
 
 function PD.RowsAutoShop(rows, data)
+    if data.mode=="supplement" and RA and RA.ValidateVendorQuotes then
+        local execution=ns.ProfExecution
+        local base=execution and execution.GetPlan and execution.GetPlan(PD.cur)
+        if base then
+            local current=RA.ValidateVendorQuotes(base)
+            if RA.ValidateSpecializationPlan then current=RA.ValidateSpecializationPlan(current,PD.cur) end
+            if current.status=="recalculate_required" then data=current end
+        end
+    end
+    if RA and RA.ValidateVendorQuotes then data=RA.ValidateVendorQuotes(data) end
+    if RA and RA.ValidateSpecializationPlan then data=RA.ValidateSpecializationPlan(data,PD.cur) end
+    if data.status=="recalculate_required" then
+        PushText(rows,PD.PlanStatusText(data),12,{0.95,0.75,0.4})
+        PD.PlanDiagnostics(rows,data)
+        return
+    end
     local mode = data.mode or "auto"
     local mats = data.mats or {}
     local lw = PD.splitLW or PD.COL_LW
@@ -7495,6 +7590,8 @@ function PD.RowsAutoShop(rows, data)
             tip[#tip + 1] = { L["商人直售（军需官处直购，无需拍卖行）"], 0.42, 0.94, 0.62 }
             if e.npcID then tip[#tip + 1] = { format(L["商人 NPC #%d"], e.npcID), 0.7, 0.7, 0.7 } end
             if e.bundleSize then tip[#tip + 1] = { format(L["每组 %d 件"], e.bundleSize), 0.7, 0.7, 0.7 } end
+            local priceSource = PD.VendorPriceSourceText(e.priceSource or e.quoteSource)
+            if priceSource then tip[#tip + 1] = { priceSource, 0.7, 0.7, 0.7 } end
             if e.reference and e.verifiedAt then tip[#tip + 1] = { format(L["报价核验：%s"], tostring(e.verifiedAt)), 0.7, 0.7, 0.7 } end
         end
         rows[#rows + 1] = {
@@ -7664,6 +7761,16 @@ end
 
 -- 材料购物清单导入拍卖行插件（固定 / 自动共用）
 function PD.ShopImport(data)
+    if data and data.mode=="supplement" and RA and RA.ValidateVendorQuotes then
+        local execution=ns.ProfExecution
+        local base=execution and execution.GetPlan and execution.GetPlan(PD.cur)
+        if base and RA.ValidateVendorQuotes(base).status=="recalculate_required" then return end
+        if base and RA.ValidateSpecializationPlan and RA.ValidateSpecializationPlan(base,PD.cur).status=="recalculate_required" then return end
+    end
+    if RA and RA.ValidateVendorQuotes then data=RA.ValidateVendorQuotes(data) end
+    if data and RA and RA.ValidateSpecializationPlan then data=RA.ValidateSpecializationPlan(data,PD.cur) end
+    if not data or data.status=="selection_required" or data.status=="recalculate_required"
+        or data.feasible==false or data.inFlight or (data.mode=="supplement" and data.stale) then return end
     local AB = ns.AuctionBridge
     if not (AB and AB.DoImport) then return end
     if data.professionPolicy == 1 then
@@ -7797,6 +7904,33 @@ function PD.RowsSettings(rows)
     PushGap(rows, 2)
     PushText(rows, L["这里的开关只作用于「升级」页签里的制作路线（升级路线表），不影响其他页签。"], 11, C_GREY)
     PushGap(rows, 4)
+    if PD.cur=="engineering" then
+        local E=ns.ProfEconomy
+        if E and E.GetEngineeringSpecialization and E.SetEngineeringSpecialization then
+            PushHead(rows, L["工程专精计划（本角色）"])
+            PushText(rows, L["默认不计划专精；已学会的专精始终可用。目标达到 200 时，所选专精包含入门任务。"], 11, C_GREY)
+            local choice=E.GetEngineeringSpecialization()
+            local context=E.GetEngineeringSpecializationContext and E.GetEngineeringSpecializationContext()
+            if context and (context.actual=="goblin" or context.actual=="gnomish") then
+                local actual=context.actual=="goblin" and L["地精工程学"] or L["侏儒工程学"]
+                PushText(rows,format(L["当前专精：%s"],actual),11,C_GREY)
+            end
+            if context and context.selectionConflict then
+                PushText(rows,L["所选专精与已学专精不同；请调整选择后重新计算。"],11,{0.95,0.75,0.4})
+            end
+            for _, option in ipairs({{"none",L["不开启新专精"]},{"goblin",L["地精工程学"]},{"gnomish",L["侏儒工程学"]}}) do
+                local value=option[1]
+                rows[#rows+1]={kind="row",h=28,col=1,noTip=true,text=(choice==value and "● " or "○ ")..option[2],
+                    act=function()
+                        E.SetEngineeringSpecialization(value)
+                        PD.engineeringUIRevision=(PD.engineeringUIRevision or 0)+1
+                        PD.RequestRender()
+                    end}
+            end
+            PushText(rows,L["改变选择后请重新计算；不会替换正在执行的旧计划。"],11,C_GREY)
+            PushGap(rows,6)
+        end
+    end
     local defs = {
         { k = "greyPassed", name = L["已过段落灰显"],
           desc = L["上限低于当前技能的段落（如 42 级时的 1~15）整行灰显"],
@@ -8451,6 +8585,7 @@ function PD.Render()
         local pk = tostring(PD.cur) .. "|" .. tostring(PD.tab) .. "|"
                    .. tostring(PD.autoPage) .. "|" .. tostring(PD.setOpen) .. "|" .. tostring(PD.exclusionsOpen)
                    .. "|" .. tostring(PD.partnerPicker) .. "|" .. tostring(PD.partnerUIRevision)
+                   .. "|" .. tostring(PD.engineeringUIRevision)
         if pk ~= PD.__pageKey then
             PD.__pageKey = pk
             -- ★ 不只是 Hide：连**内容**一起抹掉（见 PD.WipeRow 的长注释）。

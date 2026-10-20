@@ -33,6 +33,18 @@ local function remember(set,order,key,limit)
     return false
 end
 local function steps(plan) return plan and (plan.executionSteps or plan.steps) or {} end
+function XP.IsSpecializationQuest(seg) return seg and seg.kind=="specialization_quest" end
+function XP.SpecializationQuest(seg) return seg and (seg.quest or seg.specializationGoal or seg.goal or seg) or {} end
+local function specializationChanged(plan,slug)
+    local ra=ns.ProfRouteAuto
+    return ra and ra.SpecializationPlanChanged and ra.SpecializationPlanChanged(plan,slug)
+end
+local function validatedPlan(plan,slug)
+    local ra=ns.ProfRouteAuto
+    if ra and ra.ValidateVendorQuotes then plan=ra.ValidateVendorQuotes(plan) end
+    if ra and ra.ValidateSpecializationPlan then plan=ra.ValidateSpecializationPlan(plan,slug) end
+    return plan
+end
 local function skill(slug)
     local all=E and E.Professions and E.Professions()
     if all and all[slug] then return all[slug].cur end
@@ -48,6 +60,7 @@ local function quotaMap(value)
     return out
 end
 local function recipe(seg,slug)
+    if XP.IsSpecializationQuest(seg) then return {mats=XP.SpecializationQuest(seg).inputs or {}} end
     return seg.recipe or (E and E.FindRecipe and E.FindRecipe(seg.profession or slug,seg[3])) or {}
 end
 local function segment(run,id)
@@ -73,7 +86,8 @@ local function changed(run)
             for item,n in pairs(entry.guaranteedOutputs) do ledger.guaranteed[item]=(ledger.guaranteed[item] or 0)+n end
         end
         for _,seg in ipairs(steps(run.plan)) do
-            local casts=progressRecord(run,seg).casts or 0
+            local record=progressRecord(run,seg)
+            local casts=XP.IsSpecializationQuest(seg) and (record.questCompleted and 1 or 0) or record.casts or 0
             for _,m in ipairs(recipe(seg,run.slug).mats or {}) do ledger.consumed[m[1]]=(ledger.consumed[m[1]] or 0)+m[2]*casts end
             for item,n in pairs(quotaMap(seg.requiredOutputs)) do ledger.allocated[item]=(ledger.allocated[item] or 0)+n end
         end
@@ -124,8 +138,21 @@ local function archive(c,slug,reason)
     return run
 end
 function XP.Bind(slug,result,opts)
+    local ra=ns.ProfRouteAuto
+    if ra and ra.VendorQuotesChanged and ra.VendorQuotesChanged(result) then return nil,"vendorQuoteChanged" end
+    if result and result.status=="recalculate_required" then
+        for _,diagnostic in ipairs(result.diagnostics or {}) do
+            if diagnostic.code=="specializationChanged" or diagnostic.code=="specializationFixed" then return nil,"specializationChanged" end
+        end
+        return nil,"pending"
+    end
+    if specializationChanged(result,slug) or (result and (result.specializationBlocked==true
+        or result.specializationGoalRequired or (type(result.specializationBlocked)=="table" and #result.specializationBlocked>0))) then
+        return nil,"specializationChanged"
+    end
     opts=opts or {};local c=db();local existing=XP.GetRun(slug)
     if existing and not opts.force then
+        if specializationChanged(existing.plan,slug) then return nil,"specializationChanged" end
         c.trackingSlug=slug
         if ready(result) and result~=existing.plan and result.revision~=existing.plan.revision then existing.newPlanAvailable=true;existing.candidateRevision=result.revision end
         return existing
@@ -189,11 +216,11 @@ end
 local function creditsFor(run,target)
     local cached=creditCaches[run]
     if cached and cached[target.segmentID] then
-        local o=cached[target.segmentID];return o.borrowed,o.borrowedActual,o.credited,o.actual,o.diverted
+        local o=cached[target.segmentID];return o.borrowed,o.borrowedActual,o.credited,o.actual,o.diverted,o.waived
     end
     local obligations,bySegment,events,stock={},{},{},{}
     for index,seg in ipairs(steps(run.plan)) do
-        local o={seg=seg,index=index,required=quotaMap(seg.requiredOutputs),credited={},actual={},borrowed={},borrowedActual={},destinations={},explicit={},diverted={}}
+        local o={seg=seg,index=index,required=quotaMap(seg.requiredOutputs),credited={},actual={},borrowed={},borrowedActual={},destinations={},explicit={},diverted={},waived={}}
         obligations[#obligations+1]=o;bySegment[seg.segmentID]=o
         for _,a in ipairs(seg.allocations or {}) do
             local item=a.itemID;local n=a.count or 0
@@ -203,6 +230,9 @@ local function creditsFor(run,target)
             end
         end
         local record=progressRecord(run,seg);local covered={}
+        if XP.IsSpecializationQuest(seg) and record.questCompleted and record.questSequence then
+            events[#events+1]={sequence=record.questSequence,owner=o,ordinal=1,quest=true}
+        end
         for item,value in pairs(record.manualOutputs) do
             if type(value)=="table" then
                 local entries={};for _,a in ipairs(record.attempts) do if a.item==item and a.sequence<=(value.throughSequence or 0) then entries[#entries+1]=a end end
@@ -225,7 +255,7 @@ local function creditsFor(run,target)
         local remaining=event.quantity;stock[item]=stock[item] or {}
         for _,candidate in ipairs(obligations) do
             if candidate.index>=o.index and (candidate.seg.profession or run.slug)==(o.seg.profession or run.slug) then
-                local n=min(remaining,max(0,(candidate.required[item] or 0)-(candidate.credited[item] or 0)))
+                local n=min(remaining,max(0,(candidate.required[item] or 0)-(candidate.credited[item] or 0)-(candidate.waived[item] or 0)))
                 if n>0 then
                     local actual=event.confirmed and n or 0;local borrowed=candidate~=o
                     candidate.credited[item]=(candidate.credited[item] or 0)+n;candidate.actual[item]=(candidate.actual[item] or 0)+actual
@@ -256,7 +286,7 @@ local function creditsFor(run,target)
             if o and o.explicit[item] then allowed=o.destinations[item][consumer.seg.segmentID] or 0
             elseif o and o.index<consumer.index then
                 local record=progressRecord(run,consumer.seg)
-                if event.ordinal<=ceil((consumer.seg.expectedCrafts or consumer.seg[4] or 0)+(record.supplementAllowance or 0)-1e-9) then allowed=quantity end
+                if event.quest or event.ordinal<=ceil((consumer.seg.expectedCrafts or consumer.seg[4] or 0)+(record.supplementAllowance or 0)-1e-9) then allowed=quantity end
             end
             local n=min(quantity,lot.count,allowed)
             if n>0 then
@@ -268,20 +298,58 @@ local function creditsFor(run,target)
         for _,lot in ipairs(lots) do if not lot.owner then local n=min(quantity,lot.count);if n>0 then take(lot,n,true) end;if quantity<=0 then return end end end
         for _,lot in ipairs(lots) do local n=min(quantity,lot.count);if n>0 then take(lot,n,false) end;if quantity<=0 then return end end
     end
+    local function releaseAllocation(consumer,item,quantity)
+        for _,o in ipairs(obligations) do
+            local destinations=o.destinations[item]
+            if destinations and destinations[consumer.seg.segmentID]~=nil then o.taskResolved=true end
+            local allocated=destinations and destinations[consumer.seg.segmentID] or 0
+            local released=min(quantity,allocated)
+            if released>0 then
+                destinations[consumer.seg.segmentID]=allocated-released
+                local unmet=max(0,(o.required[item] or 0)-(o.credited[item] or 0)-(o.waived[item] or 0))
+                o.waived[item]=(o.waived[item] or 0)+min(released,unmet)
+                quantity=quantity-released
+            end
+            if quantity<=0 then break end
+        end
+    end
     for _,event in ipairs(events) do
         for _,m in ipairs(recipe(event.owner.seg,run.slug).mats or {}) do consume(event,m[1],m[2]) end
-        produce(event)
+        if event.quest then
+            -- The player may have handed in items obtained outside this route.
+            -- Resolve only that task's remaining allocations, never fabricate
+            -- production receipts or consume future output.
+            for _,m in ipairs(recipe(event.owner.seg,run.slug).mats or {}) do releaseAllocation(event.owner,m[1],m[2]) end
+        else produce(event) end
+    end
+    -- Release unused input allocations of material-only producers whose demand
+    -- was removed by the task. Walk backwards through the production DAG so
+    -- task-only upstream materials are not crafted again either.
+    for index=#obligations,1,-1 do
+        local o=obligations[index];local seg=o.seg
+        if o.taskResolved and not XP.IsSpecializationQuest(seg) and not seg.checkpoint and (seg.expectedGain or 0)<=0 then
+            local rec=recipe(seg,run.slug);local record=progressRecord(run,seg)
+            local output=seg.item or rec.item;local per=seg.outputMin or rec.outputMin or rec.count or 1
+            local needed=0
+            for item,n in pairs(o.required) do
+                local left=max(0,n-(o.credited[item] or 0)-(o.waived[item] or 0))
+                if left>0 then needed=max(needed,item==output and per>0 and ceil(left/per) or math.huge) end
+            end
+            local funded=max(0,ceil((seg.expectedCrafts or seg[4] or 0)+(record.supplementAllowance or 0))-(record.casts or 0))
+            local unused=max(0,funded-needed)
+            if unused>0 then for _,m in ipairs(rec.mats or {}) do releaseAllocation(o,m[1],m[2]*unused) end end
+        end
     end
     creditCaches[run]=bySegment
     local o=bySegment[target.segmentID]
-    return o.borrowed,o.borrowedActual,o.credited,o.actual,o.diverted
+    return o.borrowed,o.borrowedActual,o.credited,o.actual,o.diverted,o.waived
 end
 function XP.GetRecipeTotals(slug,planID)
     local run=planID and db().runs[planID] or XP.GetRun(slug)
     if not run or run.slug~=slug then return {} end
     local list,byKey={},{ }
     for _,seg in ipairs(steps(run.plan)) do
-        if seg[3]~=0 then
+        if seg[3]~=0 and not XP.IsSpecializationQuest(seg) then
             local key=(seg.profession or slug)..":"..seg[3];local entry=byKey[key]
             if not entry then entry={profession=seg.profession or slug,spell=seg[3],casts=0,confirmedOutputs={},guaranteedOutputs={},pendingOutputs=0};byKey[key]=entry;list[#list+1]=entry end
             local confirmed,guaranteed,pending=outputFacts(run,seg)
@@ -296,10 +364,21 @@ function XP.Progress(slug,id)
     local run=XP.GetRun(slug);if not run then return nil end
     local seg,index=segment(run,id);if not seg then return {complete=true,skillDone=true,skillMet=true,materialDone=true,attemptsDone=0,casts=0,remainingCrafts=0,remainingOutputs=0,pendingOutputs=0} end
     local p=progressRecord(run,seg);local rec=recipe(seg,slug)
+    if XP.IsSpecializationQuest(seg) then
+        local goal=XP.SpecializationQuest(seg)
+        local done=p.questCompleted==true
+        local current=skill(seg.profession or slug)
+        local direct={}
+        for _,m in ipairs(goal.inputs or {}) do direct[#direct+1]={id=m[1],count=done and 0 or m[2],perCraft=m[2]} end
+        return {segmentID=seg.segmentID,index=index,kind=seg.kind,questID=goal.questID,abilityID=goal.abilityID,
+            complete=done,skillDone=done,skillMet=current and current>=(goal.minSkill or 200) or false,
+            materialDone=done,attemptsDone=0,casts=0,remainingCrafts=0,remainingOutputs=0,pendingOutputs=0,
+            extraCrafts=0,blocked=not done,directMaterials=direct}
+    end
     local confirmed,guaranteed,pending,output=outputFacts(run,seg)
-    local reused,reusedActual,fulfilled,_,diverted=creditsFor(run,seg)
+    local reused,reusedActual,fulfilled,_,diverted,waived=creditsFor(run,seg)
     local required=quotaMap(seg.requiredOutputs);local remaining={};local materialDone=true
-    for item,n in pairs(required) do remaining[item]=max(0,n-(fulfilled[item] or 0));if remaining[item]>0 then materialDone=false end end
+    for item,n in pairs(required) do remaining[item]=max(0,n-(fulfilled[item] or 0)-(waived[item] or 0));if remaining[item]>0 then materialDone=false end end
     local cur=skill(seg.profession or slug);local goal=seg.goalSkill or seg[2]
     local skillDone=not goal or (cur~=nil and cur>=goal) or (seg.expectedGain or 0)<=0 and not seg.checkpoint
     if seg.checkpoint or seg[3]==0 then skillDone=cur~=nil and goal~=nil and cur>=goal end
@@ -334,6 +413,7 @@ function XP.Progress(slug,id)
         outputItem=output,requiredOutputs=required[output] or 0,actualOutputs=confirmed[output] or 0,confirmedOutputs=confirmed[output] or 0,
         guaranteedOutputs=guaranteed[output] or 0,pendingOutputs=pending,remainingOutputs=remaining[output] or 0,
         reusedOutputs=reused[output] or 0,reusedConfirmedOutputs=reusedActual[output] or 0,
+        resolvedByQuestOutputs=waived[output] or 0,resolvedByQuestByItem=waived,
         divertedOutputs=diverted[output] or 0,
         fulfilledOutputs=fulfilled[output] or 0,divertedOutputs=max(0,min(required[output] or 0,(guaranteed[output] or 0)+(reused[output] or 0))-(fulfilled[output] or 0)),
         requiredByItem=required,confirmedByItem=confirmed,guaranteedByItem=guaranteed,remainingByItem=remaining,
@@ -344,9 +424,26 @@ function XP.Sync(slug,result)
     local run=XP.GetRun(slug)
     if not run and result then run=XP.Bind(slug,result) end
     if not run then return end
+    local observed=false
+    for _,seg in ipairs(steps(run.plan)) do
+        if XP.IsSpecializationQuest(seg) then
+            local goal=XP.SpecializationQuest(seg);local p=progressRecord(run,seg)
+            if not p.questCompleted and E and E.SpecializationKnown and E.SpecializationKnown(goal.abilityID)==true then
+                local c=db();c.nextAttempt=(c.nextAttempt or 0)+1
+                p.questCompleted=true;p.questSequence=c.nextAttempt;p.questCompletedAt=now()
+                local policy=run.plan.specializationPolicy
+                if policy then
+                    policy.actualAbilities=policy.actualAbilities or {}
+                    policy.actualAbilities[goal.abilityID]=true
+                end
+                observed=true;creditCaches[run]=nil
+            end
+        end
+    end
     local index=1
     while index<=#steps(run.plan) do local p=XP.Progress(slug,index);if not p.complete then break end;index=index+1 end
     run.currentIndex=index;run.step=index;run.finished=index>#steps(run.plan)
+    if observed then changed(run) end
     return run
 end
 local function matchingSegment(run,spell,id)
@@ -399,7 +496,7 @@ function XP.RecordOutput(data,source)
 end
 function XP.RecordAttempt(slug,spellID,castGUID,id)
     local run=XP.GetRun(slug);if not run or type(spellID)~="number" then return false end
-    local seg=matchingSegment(run,spellID,id);if not seg then return false end
+    local seg=matchingSegment(run,spellID,id);if not seg or XP.IsSpecializationQuest(seg) then return false end
     local c=db()
     if castGUID and remember(c.seenCasts,c.castOrder,tostring(castGUID),512) then return false,"duplicate" end
     c.nextAttempt=(c.nextAttempt or 0)+1
@@ -431,6 +528,7 @@ local function bagCount(item)
 end
 function XP.GetContinuation(slug)
     local run=XP.GetRun(slug);if not run then return {} end
+    XP.Sync(slug)
     local stock,intermediate,events,unconfirmed,unconfirmedUsed={},{},{},{},{}
     for item,value in pairs(run.inheritedInventory or {}) do
         local n=type(value)=="table" and value.count or value
@@ -440,6 +538,9 @@ function XP.GetContinuation(slug)
         local rec=recipe(seg,slug);local record=progressRecord(run,seg)
         for _,m in ipairs(rec.mats or {}) do intermediate[m[1]]=true end
         for _,a in ipairs(record.attempts) do events[#events+1]={sequence=a.sequence,attempt=a,recipe=rec} end
+        if XP.IsSpecializationQuest(seg) and record.questCompleted and record.questSequence then
+            events[#events+1]={sequence=record.questSequence,attempt={},recipe=rec}
+        end
         for item,manual in pairs(record.manualOutputs) do
             local through=type(manual)=="table" and manual.throughSequence or 0
             local total=type(manual)=="table" and manual.total or manual;local counted=0
@@ -519,7 +620,13 @@ function XP.RecordCreatedMessage(text,lineID)
     return false
 end
 function XP.GetSupplement(slug)
-    local run=XP.GetRun(slug);return run and run.supplement
+    local run=XP.GetRun(slug);local result=run and run.supplement
+    local ra=ns.ProfRouteAuto
+    if run and ra and ra.VendorQuotesChanged and ra.VendorQuotesChanged(run.plan) then
+        return ra.ValidateVendorQuotes(run.plan)
+    end
+    if run and specializationChanged(run.plan,slug) then return validatedPlan(run.plan,slug) end
+    return validatedPlan(result,slug)
 end
 local function appendSupplement(run,result,seg,extra)
     local plan=run.plan;local index
@@ -540,8 +647,12 @@ local function appendSupplement(run,result,seg,extra)
 end
 function XP.CalculateSupplement(slug,callback)
     local run=XP.GetRun(slug);if not run then return nil,"no_execution" end
+    local ra=ns.ProfRouteAuto
+    if ra and ra.VendorQuotesChanged and ra.VendorQuotesChanged(run.plan) then return nil,"vendorQuoteChanged" end
+    if specializationChanged(run.plan,slug) then return nil,"specializationChanged" end
     if jobs[run.planID] then return run.supplement end
     XP.Sync(slug);local seg=segment(run);local p=seg and XP.Progress(slug,seg.segmentID)
+    if XP.IsSpecializationQuest(seg) then return nil,"specialization_quest_pending" end
     if not p or p.complete then return nil,"complete" end
     if p.extraCrafts<=0 then return nil,"planned_attempts_remaining" end
     if p.blocked and not p.skillDone then return nil,"skill_gap" end
@@ -551,7 +662,8 @@ function XP.CalculateSupplement(slug,callback)
     run.supplement=state
     local task={run=run,version=version,state=state};jobs[run.planID]=task
     local co=coroutine.create(function()
-        local opts=copy(run.plan.executionOptions or {});opts.materialProfession=slug;opts.executionInventory=XP.GetContinuation(slug);opts.defer=true
+        local opts=copy(run.plan.executionOptions or {});opts.snapshot=nil
+        opts.materialProfession=slug;opts.executionInventory=XP.GetContinuation(slug);opts.defer=true
         local snap=E.Capture(slug,opts,function() coroutine.yield() end)
         snap.known=snap.known or {}
         for _,step in ipairs(steps(run.plan)) do
@@ -564,6 +676,7 @@ function XP.CalculateSupplement(slug,callback)
             local record=progressRecord(run,future)
             local allowance=(future.attemptLimit or future.expectedCrafts or future[4] or 0)+(record.supplementAllowance or 0)
             local remaining=max(0,allowance-(record.casts or 0))
+            if XP.IsSpecializationQuest(future) then remaining=record.questCompleted and 0 or 1 end
             for _,m in ipairs(recipe(future,slug).mats or {}) do reserved[m[1]]=(reserved[m[1]] or 0)+remaining*m[2] end
         end
         for item,n in pairs(opts.executionInventory) do opts.executionInventory[item]=max(0,n-(reserved[item] or 0)) end
@@ -578,7 +691,7 @@ function XP.CalculateSupplement(slug,callback)
         return result
     end)
     local function pump()
-        if XP.GetRun(slug)~=run or run.progressVersion~=version then
+        if XP.GetRun(slug)~=run or run.progressVersion~=version or specializationChanged(run.plan,slug) then
             state.status="stale";state.stale=true;state.feasible=false;state.inFlight=false;jobs[run.planID]=nil;if callback then pcall(callback,state) end;return true
         end
         local ok,result=coroutine.resume(co)
@@ -586,6 +699,8 @@ function XP.CalculateSupplement(slug,callback)
         if coroutine.status(co)~="dead" then return false end
         jobs[run.planID]=nil
         result=result or {status="infeasible",feasible=false,mats={},formulas={},total=0};result.inFlight=false
+        if ra and ra.StampVendorQuotes then ra.StampVendorQuotes(result) end
+        if ra and ra.StampSpecializations then ra.StampSpecializations(result,slug,run.plan.executionOptions) end
         if result.feasible and result.targetReached~=false then appendSupplement(run,result,seg,extra)
         else run.supplement=result;changed(run) end
         if callback then pcall(callback,result) end
@@ -612,10 +727,12 @@ local function initialize()
             local slug=db().trackingSlug;if slug then XP.RecordAttempt(slug,spell,guid) end
         elseif event=="TRADE_SKILL_ITEM_CRAFTED_RESULT" then XP.RecordOutput((...),"structured")
         elseif event=="CHAT_MSG_LOOT" then local args={...};XP.RecordCreatedMessage(args[1],args[11])
+        elseif event=="SPELLS_CHANGED" or event=="LEARNED_SPELL_IN_TAB" or event=="QUEST_TURNED_IN" then
+            for slug in pairs(db().active) do XP.Sync(slug) end
         elseif event=="SKILL_LINES_CHANGED" or event=="CHAT_MSG_SKILL" then
             local slug=db().trackingSlug;local run=slug and XP.GetRun(slug);if run then XP.Sync(slug);changed(run) end
         end
     end)
-    for _,event in ipairs({"UNIT_SPELLCAST_SUCCEEDED","TRADE_SKILL_ITEM_CRAFTED_RESULT","CHAT_MSG_LOOT","SKILL_LINES_CHANGED","CHAT_MSG_SKILL"}) do XP.capabilities[event]=pcall(f.RegisterEvent,f,event) end
+    for _,event in ipairs({"UNIT_SPELLCAST_SUCCEEDED","TRADE_SKILL_ITEM_CRAFTED_RESULT","CHAT_MSG_LOOT","SKILL_LINES_CHANGED","CHAT_MSG_SKILL","SPELLS_CHANGED","LEARNED_SPELL_IN_TAB","QUEST_TURNED_IN"}) do XP.capabilities[event]=pcall(f.RegisterEvent,f,event) end
 end
 if ns.Init then ns.Init(initialize) else initialize() end
