@@ -7,10 +7,9 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.8.22
+## Version: 1.8.23
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
-## OptionalDeps: Auctionator
 
 Locales\zhCN.lua
 Locales\zhTW.lua [AllowLoadTextLocale zhTW]
@@ -140,10 +139,6 @@ Core\Data\enUS\Data_ClassGuide.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ClassCombat.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_LootFilter.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_RaidSets.lua [AllowLoadTextLocale enUS]
-Core\Data\Data_ProfVendorOffers.lua
-Core\Data\Data_ProfFormulaSources.lua
-Core\Data\Data_ProfMining.lua
-Core\Data\Data_ProfFishingRoutes.lua
 Core\LootFilter.lua
 Core\DungeonUI.lua
 Core\PvPUI.lua
@@ -151,9 +146,6 @@ Core\FactionUI.lua
 Core\MapUI.lua
 Core\LootFilterUI.lua
 Core\RaidUI.lua
-Core\ProfEconomy.lua
-Core\ProfFishing.lua
-Core\ProfRouteSolver.lua
 Core\ProfRouteAuto.lua
 Core\ProfessionUI.lua
 Core\AuctionatorBridge.lua

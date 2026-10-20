@@ -56,6 +56,7 @@ local SWEEP_MAX = 5
 local IMPORT_TRIES = 5
 
 local C_OK   = { 0.27, 0.75, 0.45 }
+local C_BAD  = { 0.85, 0.30, 0.30 }
 local C_HEAD = { 0.95, 0.78, 0.35 }
 
 local function Accent()
@@ -94,13 +95,13 @@ local function IsLearned(spellID)
     return false
 end
 
-local function HaveForCraft(id)
+local function Have(id)
     if C_Item and C_Item.GetItemCount then
-        local ok, n = pcall(C_Item.GetItemCount, id, false)
+        local ok, n = pcall(C_Item.GetItemCount, id, true)
         if ok and type(n) == "number" then return n end
     end
     if type(GetItemCount) == "function" then
-        local ok, n = pcall(GetItemCount, id, false)
+        local ok, n = pcall(GetItemCount, id, true)
         if ok and type(n) == "number" then return n end
     end
     return 0
@@ -168,40 +169,24 @@ end
 local function routeFor(slug, skill)
     local PD = ns.ProfModule
     local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme") or "cheapest"
-    local fishRoute=slug=="cooking" and ((PD and PD.CookingFishingMode and PD.CookingFishingMode(slug))
-        or dbProf().cookingRoute=="fishing" or (PD and PD.SettingRaw and PD.SettingRaw("cookingRoute")=="fishing"))
-    if fishRoute then scheme="fishing" end
-    if PD and PD.Setting and (fishRoute or PD.Setting("autoRoute")) and RA
-       and (fishRoute or scheme == "cheapest" or scheme == "optim" or RA.Available()) then
-        local opts = RA.OptionsFor and RA.OptionsFor(slug, skill) or {
+    if PD and PD.Setting and PD.Setting("autoRoute") and RA
+       and (scheme == "optim" or RA.Available()) then
+        local opts = {
             start = (PD.Setting("autoFromCurrent") and skill) and math.max(1, skill) or 1,
             onlyAH = PD.Setting("autoOnlyAH"),
+            noFormula = PD.Setting("autoNoFormula"),
             learnedOnly = PD.Setting("autoLearnedOnly"),
             target = routeTarget(slug),
             scheme = scheme,
         }
-        opts.target = routeTarget(slug)
-        if scheme == "cheapest" or scheme=="fishing" then
-            opts.start = math.max(1, skill or skillOf(slug) or 1)
-            opts.follow = true
-        end
         local res = RA.Get(slug, opts)
-        if res and (res.status == "selection_required" or res.status == "recalculate_required") then
-            return "auto", {}, res
-        end
-        if scheme == "cheapest" or scheme=="fishing" then
-            return "auto", (res and (res.executionSteps or res.steps)) or {}, res
-        end
-        if res and (res.priced or scheme == "optim") then return "auto", res.steps, res end
+        if res and (res.priced or scheme == "optim") then return "auto", res.steps end
     end
     local lv = LV[slug]
     return "fixed", clipFixedSteps(lv and lv.steps or nil, routeTarget(slug))
 end
 
-local function routeKey(mode, steps, res)
-    if res and res.planVersion == 2 then
-        return tostring(mode) .. ":v2:" .. tostring(res.revision or res.stamp or "pending")
-    end
+local function routeKey(mode, steps)
     if not steps then return tostring(mode) .. ":0" end
     local a, b = steps[1], steps[#steps]
     return format("%s:%d:%s:%s:%s", tostring(mode), #steps,
@@ -209,9 +194,8 @@ local function routeKey(mode, steps, res)
 end
 
 local function derivedStep(slug, skill)
-    local _, steps, res = routeFor(slug, skill)
+    local _, steps = routeFor(slug, skill)
     if not steps then return nil end
-    if res and res.planVersion == 2 then return 1 end
     for i, s in ipairs(steps) do
         if skill < s[2] then return i end
     end
@@ -245,36 +229,6 @@ local function recMap(slug)
     return c
 end
 
-local function stepRecipe(seg, res, slug)
-    local base = recMap(seg.profession or slug)[seg[3]]
-    if not (res and res.planVersion == 2) then return base end
-    local rec = {}
-    for key, value in pairs(base or {}) do rec[key] = value end
-    if seg.recipe then
-        rec[2], rec.makes = seg.recipe.item, seg.recipe.item
-        rec[12], rec.mats = seg.recipe.mats, seg.recipe.mats
-        rec.count, rec.dataSource = seg.recipe.count, seg.recipe.dataSource
-        return rec
-    end
-    rec[2], rec.makes = seg.item, seg.item
-    rec[12], rec.mats = nil, nil
-    for _, action in ipairs(res.actions or {}) do
-        if action.type == "craft" and action.profession == (seg.profession or slug)
-            and action.spell == seg[3] and action.inputs then
-            local mats = {}
-            for _, mat in ipairs(action.inputs) do
-                mats[#mats + 1] = { mat[1], mat[2] / math.max(1, action.count or 1) }
-            end
-            rec[12], rec.mats = mats, mats
-            rec[2], rec.makes = action.item or seg.item, action.item or seg.item
-            return rec
-        end
-    end
-    local rt = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[seg[3]]
-    if rt then rec[12], rec.mats = rt.mats, rt.mats; rec[2] = rt.item or seg.item end
-    return rec
-end
-
 local soldCache = {}
 local function soldSet(slug)
     local s = soldCache[slug]
@@ -305,72 +259,19 @@ function PF.Following(slug)
     return (s and s.slug == slug) and true or false
 end
 
-local function actionKey(seg, i)
-    return seg.actionID or format("%d:%s:%s", i or 0, seg.profession or "", tostring(seg[3]))
-end
-
-local function actionRemaining(s, seg, i)
-    return math.max(0, (seg[4] or 0) - ((s.actionDone and s.actionDone[actionKey(seg, i)]) or 0))
-end
-
-local function syncActions(s, steps, res)
-    if PF.planRef ~= res or PF.planSlug ~= s.slug or PF.planRevision ~= res.revision then
-        PF.planRef, PF.planSlug, PF.planRevision = res, s.slug, res.revision
-        s.actionDone = {}
-        s.step = 1
-        PF.view = 0
-    end
-    while (s.step or 1) <= #steps do
-        local i = s.step or 1
-        local seg = steps[i]
-        local complete
-        if seg.checkpoint or seg[3] == 0 then
-            local cur = skillOf(seg.profession or s.slug)
-            complete = cur and cur >= seg[2]
-        else
-            complete = actionRemaining(s, seg, i) <= 0
-        end
-        if not complete then break end
-        s.step = i + 1
-    end
-end
-
-function PF.CraftSucceeded(unit, castGUID, spellID)
-    if unit ~= "player" or type(spellID) ~= "number" then return end
-    local s = st()
-    if not (s and s.slug and PF.planRef and PF.planRef.planVersion == 2) then return end
-    if castGUID and castGUID == PF.lastCastGUID then return end
-    if castGUID then PF.lastCastGUID = castGUID end
-    local res = PF.planRef
-    local steps = res.executionSteps or res.steps or {}
-    local i = s.step or 1
-    local seg = steps[i]
-    if not seg or seg.checkpoint or seg[3] ~= spellID then return end
-    s.actionDone = s.actionDone or {}
-    local key = actionKey(seg, i)
-    s.actionDone[key] = math.min(seg[4] or 0, (s.actionDone[key] or 0) + 1)
-    syncActions(s, steps, res)
-end
-
 function PF.Sync()
     local s = st()
     if not (s and s.slug) then return end
     local cur = skillOf(s.slug)
-    if cur and cur ~= s.skill then
+    if cur and cur > (s.skill or 0) then
         s.skill = cur
         local PD = ns.ProfModule
         if PD and PD.built and PD.cur == s.slug and PD.page and PD.page:IsVisible() then
             pcall(PD.Render, PD)
         end
     end
-    local mode, steps, res = routeFor(s.slug, s.skill or 0)
-    local key = routeKey(mode, steps, res)
-    if res and res.planVersion == 2 then
-        s.rkey = key
-        syncActions(s, steps, res)
-        return
-    end
-    PF.planRef, PF.planSlug, PF.planRevision = nil, nil, nil
+    local mode, steps = routeFor(s.slug, s.skill or 0)
+    local key = routeKey(mode, steps)
     if key ~= s.rkey then
         s.rkey = key
         s.step = derivedStep(s.slug, s.skill or 0) or 1
@@ -403,8 +304,8 @@ function PF.Toggle(slug)
     if not s then
         local cur = skillOf(slug) or 0
         s = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1, t0 = time() }
-        local _mode, _steps, _res = routeFor(slug, cur)
-        s.rkey = routeKey(_mode, _steps, _res)
+        local _mode, _steps = routeFor(slug, cur)
+        s.rkey = routeKey(_mode, _steps)
         p.follow[k] = s
     end
     s.hidden = nil
@@ -435,10 +336,6 @@ function PF.Skip()
 end
 
 local function expPerPoint(sk, o, y, g, gr)
-    if RA and RA.Gain then
-        local gain = RA.Gain(sk, o, y, g, gr)
-        return gain and gain > 0 and (1 / gain) or nil
-    end
     if sk < y then return 1 end
     if sk < g then return 1 / (1 - 0.5 * (sk - y) / (g - y)) end
     if sk < gr then return 1 / (0.5 - 0.45 * (sk - g) / (gr - g)) end
@@ -446,10 +343,6 @@ local function expPerPoint(sk, o, y, g, gr)
 end
 
 local function craftsLeft(seg, skill, rec)
-    if seg.actionID then
-        local s = st()
-        return s and actionRemaining(s, seg, s.step) or (seg[4] or 0)
-    end
     local from = math.max(skill or 0, seg[1])
     if from >= seg[2] then return 0 end
     local learn, y, g, gr = recBreaks(rec)
@@ -467,47 +360,7 @@ local function craftsLeft(seg, skill, rec)
 end
 
 local function shopList(s)
-    local _, steps, res = routeFor(s.slug, s.skill)
-    local function purchaseSnapshot(entry, purchase)
-        for _, key in ipairs({"availableCount", "supplyObserved", "supplyComplete", "supplyObservedAt",
-                              "supplySource", "supplyOwnerExcluded", "supplyObservedPrice",
-                              "supplyHistoryQuantity", "supplyHistoryObservedAt", "priceObservedAt", "ahPrice"}) do
-            purchase[key] = entry[key]
-        end
-        return purchase
-    end
-    local function addFormulas(list,formulas)
-        for _,entry in ipairs(formulas or {}) do
-            if entry.id and not entry.known and entry.usable~=false and not entry.blocked then
-                list[#list+1]=purchaseSnapshot(entry,{id=entry.id,need=entry.count or 1,formula=true,
-                    source=entry.source,vendor=entry.vendor or entry.source=="vendor" or entry.source=="npc",npcID=entry.npcID,
-                    unpriced=entry.unpriced,remainingOnly=true})
-            end
-        end
-        return list
-    end
-    if res and res.planVersion == 2 then
-        local list = {}
-        if res.feasible ~= true then return list end
-        for _, entry in ipairs(res.mats or {}) do
-            local id = entry.id or entry[1]
-            local need = entry.count or entry.need or entry[2] or 0
-            if id and need > 0 then
-                list[#list + 1] = purchaseSnapshot(entry, {
-                    id = id, need = need,
-                    at = entry.at or (res.firstAt and res.firstAt[id]) or 0,
-                    source = entry.source or (entry.vendor and "vendor" or "ah"),
-                    vendor = entry.vendor, npcID = entry.npcID,
-                    remainingOnly = true,
-                })
-            end
-        end
-        for _,entry in ipairs(res.fishMaterials or {}) do
-            list[#list+1]={id=entry.id,need=entry.count or entry.need,source="fishing",remainingOnly=true,
-                areas=entry.areas,at=res.firstAt and res.firstAt[entry.id]}
-        end
-        return addFormulas(list,res.formulas)
-    end
+    local _, steps = routeFor(s.slug, s.skill)
     if not steps then return {} end
     local rm = recMap(s.slug)
     local totals, order = {}, {}
@@ -534,41 +387,10 @@ local function shopList(s)
     local list = {}
     for _, id in ipairs(order) do
         local e = totals[id]
-        e.vendor=RA and RA.VendorMaterialOf and RA.VendorMaterialOf(id) or false
-        e.source=e.vendor and "vendor" or "ah"
+        e.have = Have(e.id)
         list[#list + 1] = e
     end
-    local economy=ns.ProfEconomy
-    local formulas=res and res.formulas
-    if not formulas and economy and economy.CollectFormulas then
-        local remaining={};for i=s.step or 1,#steps do remaining[#remaining+1]=steps[i] end
-        formulas=economy.CollectFormulas(remaining,s.slug)
-    end
-    addFormulas(list,formulas)
-    if economy and economy.SummarizeAuctionSupply then
-        economy.SummarizeAuctionSupply({mats=list})
-    end
     return list
-end
-
-PF.GetRoute = routeFor
-PF.GetPurchases = shopList
-
-local function routeNotice(res)
-    if res and (res.message or res.blockedReason) then return res.message or res.blockedReason end
-    if res and res.status == "selection_required" then return L["请选择搭配的主专业"] end
-    if res and res.status == "recalculate_required" then return L["搭配专业已更改，点击重新计算应用。"] end
-    if res and res.partial then
-        local PD = ns.ProfModule
-        if PD and PD.PlanStatusText then return PD.PlanStatusText(res) end
-    end
-    for _, d in ipairs((res and res.diagnostics) or {}) do
-        if d.code == "clientDataPending" then return L["客户端数据待读取"] end
-    end
-    if res and (res.status == "infeasible" or res.status == "blocked" or res.status == "error") then
-        return L["当前限制下没有可行路线"]
-    end
-    return L["正在计算升级路线…"]
 end
 
 local function TipOn(bt, title, body)
@@ -637,9 +459,17 @@ local function openProfPanel(s)
     if C_TradeSkillUI and C_TradeSkillUI.OpenTradeSkill and type(GetProfessionInfo) == "function" then
         for _, idx in ipairs(ids) do
             if idx then
-                local nm, _, _, _, _, _, skillLine = GetProfessionInfo(idx)
+                local nm, skillLine = GetProfessionInfo(idx)
                 if profName and nm == profName and skillLine
                     and pcall(C_TradeSkillUI.OpenTradeSkill, skillLine) then
+                    return true
+                end
+            end
+        end
+        for _, idx in ipairs(ids) do
+            if idx then
+                local skillLine = select(7, GetProfessionInfo(idx))
+                if skillLine and pcall(C_TradeSkillUI.OpenTradeSkill, skillLine) then
                     return true
                 end
             end
@@ -647,8 +477,7 @@ local function openProfPanel(s)
     end
     for _, idx in ipairs(ids) do
         if idx then
-            local nm = GetProfessionInfo and GetProfessionInfo(idx)
-            local sid = (nm == profName) and CraftingEntrySpellID(idx) or nil
+            local sid = CraftingEntrySpellID(idx)
             local nm = sid and SpellName(sid)
             if nm and CastSpellByName and pcall(CastSpellByName, nm) then return true end
             if sid and C_Spell and C_Spell.CastSpell and pcall(C_Spell.CastSpell, sid) then return true end
@@ -702,27 +531,25 @@ end
 local function jumpCraft()
     local s = st()
     if not (s and s.slug) then return end
-    local _, steps, res = routeFor(s.slug, s.skill)
+    local _, steps = routeFor(s.slug, s.skill)
     local seg = steps and steps[(s.step or 1)]
     if not seg then return end
-    if seg.checkpoint or seg[3] == 0 then return end
     local spellID = seg[3]
     if not IsLearned(spellID) then craftNotify(L["该配方还未学会，先找训练师学习"]) return end
-    local stepSlug = seg.profession or s.slug
-    local rec = stepRecipe(seg, res, stepSlug)
+    local rec = recMap(s.slug)[spellID]
     local mats = recMats(rec)
     if mats then
         for _, m in ipairs(mats) do
-            if (HaveForCraft(m[1]) or 0) < (m[2] or 1) then
+            if (Have(m[1]) or 0) < (m[2] or 1) then
                 craftNotify(L["材料不足，先按购物清单备齐再制造"]) return
             end
         end
     end
-    local count = math.max(1, math.ceil(craftsLeft(seg, skillOf(stepSlug) or s.skill, rec)))
+    local count = math.max(1, math.ceil(craftsLeft(seg, s.skill, rec)))
     local name = SpellName(spellID)
     if not name then craftNotify(L["配方数据未就绪，稍后再试"]) return end
     jumpEvtInit()
-    if openProfPanel({ slug = stepSlug }) then
+    if openProfPanel(s) then
         jumpPending = { spellID = spellID, count = count, name = name }
         craftNotify(format(L["正在打开专业面板并定位 %s（预填数量 %d）…"], name, count))
         if C_Timer and C_Timer.After then
@@ -757,26 +584,17 @@ local function DoImport(slug, profName)
         local cur = skillOf(slug) or 0
         tmp = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1 }
     end
-    local mode, _, result = routeFor(slug, tmp.skill)
-    if mode == "auto" and (not result or (result.planVersion == 2 and result.feasible ~= true)) then
-        craftNotify(routeNotice(result))
-        return
-    end
     local list = shopList(tmp)
     local items, missing = {}, 0
     for _, e in ipairs(list) do
-        local isAH = not e.unpriced and (e.remainingOnly and not e.vendor and (e.source == "ah" or e.source == "auction")
-            or (not e.remainingOnly and not soldSet(slug)[e.id])
-            )
-        local nm, got
-        if isAH then nm, got = DG.ItemName(e.id) end
-        if not isAH then
-        elseif not got then
+        local nm, got = DG.ItemName(e.id)
+        if not got then
             missing = missing + 1
             DG.RequestItem(e.id)
         else
-            if e.need > 0 then
-                items[#items + 1] = { name = nm, need = e.need }
+            local lack = e.need - e.have
+            if lack > 0 then
+                items[#items + 1] = { name = nm, need = lack }
             end
         end
     end
@@ -797,7 +615,7 @@ local rowsMat, rowsShop = {}, {}
 local rowsMatIcon = {}
 local rowsMatBadge = {}
 local rowsShopNum = {}
-local rowsShopSourcePill, rowsShopTagPill = {}, {}
+local rowsShopMissPill, rowsShopSoldPill, rowsShopTagPill = {}, {}, {}
 
 local function MakeLine(parent, fs, color)
     local t = MakeFS(parent, fs, color, "LEFT")
@@ -830,10 +648,7 @@ function PF.Build()
         PF.view = math.max(-(s.step - 1), math.min(#steps - s.step + 1, (PF.view or 0) - delta))
         PF.Paint()
     end)
-    f:SetScript("OnEvent", function(_, event, ...)
-        if event == "UNIT_SPELLCAST_SUCCEEDED" then
-            PF.CraftSucceeded(...)
-        end
+    f:SetScript("OnEvent", function()
         if f:IsShown() then
             C_Timer.After(0, function()
                 PF.Sync()
@@ -841,10 +656,8 @@ function PF.Build()
             end)
         end
     end)
-    for _, event in ipairs({ "BAG_UPDATE_DELAYED", "CHAT_MSG_SKILL", "UNIT_SPELLCAST_SUCCEEDED",
-                             "TRADE_SKILL_LIST_UPDATE", "SKILL_LINES_CHANGED", "PLAYERBANKSLOTS_CHANGED" }) do
-        pcall(f.RegisterEvent, f, event)
-    end
+    f:RegisterEvent("BAG_UPDATE_DELAYED")
+    f:RegisterEvent("CHAT_MSG_SKILL")
 
     f:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -1046,19 +859,8 @@ function PF.Build()
             p:Hide()
             return p
         end
-        rowsShopSourcePill[i] = MakePill(C_TEXT)
-        rowsShopSourcePill[i]:EnableMouse(true)
-        rowsShopSourcePill[i]:SetScript("OnEnter", function(self)
-            local entry = self.__purchase
-            if not entry then return end
-            local PD = ns.ProfModule
-            local extra = {{format(L["需要：%d"], entry.need or 0)}}
-            if PD and PD.AuctionSupplyLines then
-                for _, line in ipairs(PD.AuctionSupplyLines(entry)) do extra[#extra + 1] = line end
-            end
-            DG.ShowItemTip(self, {entry.id}, extra)
-        end)
-        rowsShopSourcePill[i]:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        rowsShopMissPill[i] = MakePill(C_TEXT)
+        rowsShopSoldPill[i] = MakePill(C_TEXT)
         rowsShopTagPill[i] = MakePill(C_DIM)
     end
 
@@ -1071,9 +873,9 @@ function PF.Build()
         DoImport(s0.slug, nm)
         ns.PlaySound(1)
     end)
-    f.shopImp:SetPoint("RIGHT", f.shop.missLab, "LEFT", -8, 0)
+    f.shopImp:SetPoint("RIGHT", f.shop.missTog, "LEFT", -(labW + 10), 0)
     TipOn(f.shopImp, L["一键导入到拍卖行"],
-          L["将路线选定的拍卖行采购数量导入 Auctionator，同名清单将被覆盖。"])
+          L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])
 
     f.craftBtn = NewButton(f, L["跳转制造"], 66, 22, 14)
     f.craftBtn.__huiKeepTextColor = true
@@ -1146,17 +948,28 @@ local function paintMats(seg, rm, sold, w, remaining)
     local mats = recMats(rec)
     local n = 0
     local pending = false
+    local canCraft
     if mats and #mats > 0 then
+        for _, m in ipairs(mats) do
+            local per = (m[2] or 1)
+            if per > 0 then
+                local c = math.floor(Have(m[1]) / per)
+                canCraft = (canCraft == nil) and c or math.min(canCraft, c)
+            end
+        end
         f.card.matHead:Hide()
         for i, m in ipairs(mats) do
             if i > MAT_MAX then break end
+            local have = Have(m[1])
             local per = (m[2] or 1)
             local need = per * math.max(0, remaining or 0)
+            local ok = have >= need
             local nm, got = DG.ItemName(m[1])
             if not got then DG.RequestItem(m[1]) pending = true end
             local line = rowsMat[i]
-            line:SetTextColor(Unpack(C_TEXT))
-            local txt = format("%s ×%d", nm, need)
+            line:SetTextColor(Unpack(ok and C_OK or C_BAD))
+            local txt = format("%s %d/%d", nm, have, need)
+            if sold[m[1]] then txt = txt .. " · " .. L["商人直卖"] end
             line:SetText(txt)
             line:ClearAllPoints()
             line:SetPoint("TOPLEFT", f.card, "TOPLEFT", 36, -(61 + (i - 1) * 26))
@@ -1206,7 +1019,7 @@ local function paintMats(seg, rm, sold, w, remaining)
         rowsMatIcon[MAT_MAX + 1]:Hide()
         rowsMatBadge[MAT_MAX + 1]:Hide()
     end
-    return n, pending
+    return n, pending, canCraft
 end
 
 function PF.Paint()
@@ -1217,7 +1030,7 @@ function PF.Paint()
     local s = st()
     if not (s and s.slug) then f:Hide() return end
     local slug = s.slug
-    local mode, steps, res = routeFor(slug, s.skill)
+    local mode, steps = routeFor(slug, s.skill)
     if not steps then f:Hide() return end
     local p = D.pro and D.pro[slug]
     local accent = Accent()
@@ -1232,12 +1045,10 @@ function PF.Paint()
     f.bar:SetWidth(math.max(2, math.floor((W - 20) * ratio + 0.5)))
     f.bar:SetVertexColor(accent[1], accent[2], accent[3], 0.95)
 
-    local waiting = mode == "auto" and (not res or (res.planVersion == 2 and
-        (res.feasible ~= true or (res.partial and (s.step or 1)>#steps))))
-    local finished = not waiting and (s.step or 1) > #steps
+    local finished = (s.step or 1) > #steps
     local vi = math.max(1, math.min(#steps, (s.step or 1) + (PF.view or 0)))
     f.seg:SetText(((mode == "auto") and L["自动计算"] or L["固定路线"]) .. " · "
-                  .. format(L["步骤 %d / %d"], vi, #steps))
+                  .. format(L["段落 %d / %d"], vi, #steps))
 
     local segCur = (not finished) and steps[math.min((s.step or 1), #steps)] or nil
     if segCur then
@@ -1252,20 +1063,18 @@ function PF.Paint()
         f.zone:Hide()
     end
 
-    f.finish:SetShown(finished or waiting)
-    f.card:SetShown(not finished and not waiting)
-    f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished and not waiting)
-    f.craftBtn:SetShown(PF.CRAFT_BTN and not finished and not waiting)
+    f.finish:SetShown(finished)
+    f.card:SetShown(not finished)
+    f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished)
+    f.craftBtn:SetShown(PF.CRAFT_BTN and not finished)
 
     local y = -82
     local pending = false
 
-    if not finished and not waiting then
+    if not finished then
         local seg = steps[vi]
-        local stepSlug = seg.profession or slug
-        local rm = recMap(stepSlug)
-        if res and res.planVersion == 2 then rm = { [seg[3]] = stepRecipe(seg, res, stepSlug) } end
-        local sold = soldSet(stepSlug)
+        local rm = recMap(slug)
+        local sold = soldSet(slug)
         local rec = rm[seg[3]]
         local card, w = f.card, W - 2 * PAD - 16
         local isCur = (vi == s.step)
@@ -1287,19 +1096,16 @@ function PF.Paint()
         card.__it = prodItem and { prodItem } or nil
         card.__mats = recMats(rec)
         local PDm = ns.ProfModule
-        local checkpoint = seg.checkpoint or seg[3] == 0
-        local stepProf = D.pro and D.pro[stepSlug]
-        local nmText = checkpoint and L["实地采矿"] or SpellName(seg[3])
-        if stepSlug ~= slug then nmText = ((stepProf and stepProf.name) or stepSlug) .. " · " .. nmText end
+        local nmText = SpellName(seg[3])
         card.name:SetText(nmText)
 
         local crafts = seg[4] or 0
         local remaining = crafts
         if vi == s.step then
-            remaining = math.ceil(craftsLeft(seg, skillOf(stepSlug) or s.skill, rec))
+            remaining = math.ceil(craftsLeft(seg, s.skill, rec))
             crafts = remaining
         end
-        local nMat, pend = paintMats(seg, rm, sold, w - 8, remaining)
+        local nMat, pend, canCraft = paintMats(seg, rm, sold, w - 8, remaining)
         pending = pending or pend
 
         local src, detail
@@ -1308,13 +1114,6 @@ function PF.Paint()
         end
         local learned = IsLearned(seg[3])
         local tagText = learned and L["已学习"] or (src or L["向训练师学习"])
-        if checkpoint then tagText = L["实地采矿"] end
-        local tags = seg.tags or {}
-        local material = tags.material or seg.role == "material" or seg.role == "both" or seg.reason == "material"
-        local leveling = tags.leveling or seg.role == "level" or seg.role == "both" or not material
-        local role = material and (leveling and L["升级&中间产物"] or L["中间产物"]) or L["升级"]
-        if PDm and PDm.StepRole then role = PDm.StepRole(seg) end
-        tagText = role .. " · " .. tagText
         if detail and not learned then tagText = tagText .. " · " .. detail end
         card.srcTag:SetText(tagText)
         card.srcTag:SetTextColor(Unpack(learned and C_OK or C_GREY))
@@ -1328,14 +1127,7 @@ function PF.Paint()
         local rangeText = format(L["%d – %d"], seg[1], seg[2])
         card.range:SetText(rangeText)
         local craftText = format(L["大约还需制作%d次"], crafts)
-        if checkpoint then craftText = L["达到目标技能后重新计算"] end
-        if seg.fishing and seg.fishing[1] then
-            local areas={}
-            for _,a in ipairs(seg.fishing[1].areas or {}) do
-                if #areas<2 then areas[#areas+1]=a.name or (DG.ZoneName and DG.ZoneName(a.zoneID)) or tostring(a.zoneID) end
-            end
-            if #areas>0 then craftText=craftText.." · "..table.concat(areas," / ") end
-        end
+        if canCraft then craftText = craftText .. " · " .. format(L["材料还可制作%d次"], canCraft) end
         card.crafts:SetText(craftText)
 
         local rangeW, nameW = 40, 90
@@ -1359,14 +1151,15 @@ function PF.Paint()
         y = y - cardH - 8
     end
 
-    if PF.showShop and not finished and not waiting then
+    if PF.showShop and not finished then
         local list = shopList(s)
         local shown = {}
         for _, e in ipairs(list) do
-            e.missing = (e.need or 0) - (HaveForCraft(e.id) or 0)
+            e.missing = e.need - e.have
             if (not onlyMissView()) or e.missing > 0 then shown[#shown + 1] = e end
         end
         f.shop.head:SetText(L["购物清单"] .. format(L[" · 共%d种"], #shown))
+        f.shop.missTog:SetChecked(onlyMissView())
         local function tw(txt)
             local PDm = ns.ProfModule
             if PDm and PDm.TextW then
@@ -1376,34 +1169,34 @@ function PF.Paint()
             return #txt * 5 + 16
         end
         local rows = {}
-        local nameW, numW, tagW, sourceW = 0, 0, 0, 0
+        local nameW, numW, missW, tagW, anySold = 0, 0, 0, 0, false
         for _, e in ipairs(shown) do
             local nm, got = DG.ItemName(e.id)
             if not got then DG.RequestItem(e.id) pending = true end
-            if e.formula then nm=L["图纸"].." · "..nm end
             local row = {
                 nm = nm,
-                purchase = e,
+                have = e.have,
                 need = e.need,
-                fishing=e.source=="fishing",
-                sold = e.remainingOnly and (e.vendor or e.source == "vendor" or e.source == "npc")
-                    or (not e.remainingOnly and soldSet(slug)[e.id] and true or false),
+                missing = e.need - e.have,
+                sold = soldSet(slug)[e.id] and true or false,
                 at = e.at or 0,
             }
             local w1 = tw(row.nm)
             if w1 > nameW then nameW = w1 end
-            local w2 = tw(format("×%d", row.need))
+            local w2 = tw(format("%d/%d", math.min(row.have, row.need), row.need))
             if w2 > numW then numW = w2 end
+            local w3 = tw(row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
+            if w3 > missW then missW = w3 end
             local w5 = tw(format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
-            row.source = row.fishing and L["自行钓取"] or row.sold and L["NPC购买"] or L["拍卖行"]
-            sourceW = math.max(sourceW, tw(row.source) + 10)
+            if row.sold then anySold = true end
             rows[#rows + 1] = row
         end
-        local soldW = sourceW
+        local soldW = anySold and (tw(L["直售"]) + 10) or 0
         local xName = 8
         local xNum = xName + nameW + 10
-        local xSold = xNum + numW + 10
+        local xMiss = xNum + numW + 10
+        local xSold = xMiss + missW + 8
         local maxScroll = math.max(0, #rows - SHOP_MAX)
         PF.shopScroll = math.max(0, math.min(PF.shopScroll or 0, maxScroll))
         local scroll = PF.shopScroll
@@ -1420,8 +1213,8 @@ function PF.Paint()
             local ry = -(30 + n * 20)
             local nmFS = rowsShop[n + 1]
             local num = rowsShopNum[n + 1]
-            local sp = rowsShopSourcePill[n + 1]
-            sp.__purchase = row.purchase
+            local mp = rowsShopMissPill[n + 1]
+            local sp = rowsShopSoldPill[n + 1]
             local function paintPill(p, txt, x0, wpx, cr, cg, cb, ca)
                 p:ClearAllPoints()
                 p:SetPoint("TOPLEFT", f.shop, "TOPLEFT", x0, ry + 1)
@@ -1432,14 +1225,24 @@ function PF.Paint()
                 p:Show()
             end
             nmFS:SetText(row.nm)
-            num:SetText(format("×%d", row.need))
+            num:SetText(format("%d/%d", math.min(row.have, row.need), row.need))
             nmFS:ClearAllPoints()
             nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
             nmFS:Show()
             num:ClearAllPoints()
             num:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xNum, ry)
             num:Show()
-            paintPill(sp, row.source, xSold, soldW, Unpack(row.sold and C_OK or C_GREY))
+            if row.missing > 0 then
+                paintPill(mp, format(L["缺%d"], row.missing), xMiss, missW, Unpack(C_BAD))
+            else
+                local okr, okg, okb = Unpack(C_OK)
+                paintPill(mp, L["已备齐"], xMiss, missW, okr, okg, okb, 0.5)
+            end
+            if row.sold then
+                paintPill(sp, L["直售"], xSold, soldW, Unpack(C_OK))
+            else
+                sp:Hide()
+            end
             local tp = rowsShopTagPill[n + 1]
             tp:ClearAllPoints()
             tp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -14, ry + 1)
@@ -1468,8 +1271,8 @@ function PF.Paint()
         for i = n + 1, #rowsShop do
             rowsShop[i]:Hide()
             rowsShopNum[i]:Hide()
-            rowsShopSourcePill[i]:Hide()
-            rowsShopSourcePill[i].__purchase = nil
+            rowsShopMissPill[i]:Hide()
+            rowsShopSoldPill[i]:Hide()
         end
         for i = n + 1, #rowsShopTagPill do
             rowsShopTagPill[i]:Hide()
@@ -1498,19 +1301,15 @@ function PF.Paint()
         PF.shopScroll = nil
     end
 
-    if finished or waiting then
-        local msg = format(L["%s跟随完成 · %s"], name, fmtTime(time() - (s.t0 or time())))
-        if waiting then
-            msg = routeNotice(res)
-        end
-        f.finish:SetText(msg)
+    if finished then
+        f.finish:SetText(format(L["%s跟随完成 · %s"], name, fmtTime(time() - (s.t0 or time()))))
         f.finish:ClearAllPoints()
         f.finish:SetPoint("TOPLEFT", f, "TOPLEFT", 10, y)
         f.finish:Show()
         y = y - 34
     end
 
-    if (PF.view or 0) ~= 0 and not finished and not waiting then
+    if (PF.view or 0) ~= 0 and not finished then
         f.nowBtn:ClearAllPoints()
         f.nowBtn:SetPoint("BOTTOMRIGHT", f.card, "BOTTOMRIGHT", -6, 4)
     end
@@ -1568,16 +1367,4 @@ function PF.PaintImportBtn(bt, slug)
     SetOutline(bt, false, 1, 0.82, 0)
     bt:GetFontString():SetTextColor(Unpack(C_GREY))
     bt:SetShown(true)
-end
-
-if RA and RA.OnPlanChanged then
-    RA.OnPlanChanged(function(slug)
-        local s = st()
-        if not (s and s.slug == slug) then return end
-        local function refresh()
-            PF.Sync()
-            if PF.f and PF.f:IsShown() then PF.Paint() end
-        end
-        if C_Timer and C_Timer.After then C_Timer.After(0, refresh) else refresh() end
-    end)
 end

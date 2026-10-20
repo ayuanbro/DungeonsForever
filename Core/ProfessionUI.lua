@@ -669,6 +669,7 @@ function PD.Row(i)
     r:SetScript("OnEnter", function(self)
         if not self.__noHover then PD.SetRowHover(self, true) end
         if self.__noTip then return end
+        PD.hoverRow = self
         if self.__lines == nil and self.__mkLines then
             self.__lines = self.__mkLines()
             self.__mkLines = nil
@@ -690,6 +691,7 @@ function PD.Row(i)
     end)
     r:SetScript("OnLeave", function(self)
         PD.SetRowHover(self, false)
+        if PD.hoverRow == self then PD.hoverRow = nil end
         GameTooltip:Hide()
     end)
     r:SetScript("OnClick", function(self, button)
@@ -4239,6 +4241,7 @@ function PD.WireTipZone(z, r)
     z:EnableMouseWheel(true)
     z:SetScript("OnEnter", function(self)
         if not self.__noHover then PD.SetRowHover(r, true) end
+        if self.__it then PD.hoverRow = self end
         local lines = self.__tipLines
         if lines then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -4257,6 +4260,7 @@ function PD.WireTipZone(z, r)
     end)
     z:SetScript("OnLeave", function(self)
         if not self.__noHover then PD.SetRowHover(r, false) end
+        if PD.hoverRow == self then PD.hoverRow = nil end
         GameTooltip:Hide()
     end)
     z:SetScript("OnClick", function(self, button)
@@ -8392,7 +8396,8 @@ function PD.Render()
         tostring(PD.tab), tostring(PD.cur), tostring(PD.exclusionsOpen),
         tostring(PD.exSub), tostring(PD.autoPage), tostring(PD.setOpen),
         tostring(PD.splitLW),
-        PD.searchBox and PD.searchBox:IsShown() and PD.searchBox:GetText() or "",
+        PD.searchBox and PD.searchBox:IsShown() and PD.searchBox.eb
+        and PD.searchBox.eb:GetText() or "",
     }, "|")
     local keepV = (PD.__scrollSig == sig) and PD.__scrollV or 0
     PD.__scrollSig = sig

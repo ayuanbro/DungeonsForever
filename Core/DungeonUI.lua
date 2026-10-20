@@ -3932,6 +3932,12 @@ function DG.EnsureItemListener()
                 r.__tipReshown = itemID
                 DG.ShowItemTip(r, r.__it)
             end
+            local pr = ns.ProfModule and ns.ProfModule.hoverRow
+            if pr and pr.__it and pr.__it[1] == itemID and pr:IsMouseOver()
+               and pr.__tipReshown ~= itemID then
+                pr.__tipReshown = itemID
+                DG.ShowItemTip(pr, pr.__it)
+            end
             DG.RefreshItemCards(itemID)
         end)
     end)
