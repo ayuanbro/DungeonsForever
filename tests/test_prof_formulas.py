@@ -138,6 +138,7 @@ class FormulaEconomyTests(unittest.TestCase):
     def test_limited_vendor_reference_is_not_guaranteed_stock(self):
         self.lua.execute('''
           local s=sample({book(101,20,11,99)},{[11]=2})
+          s.allowLimitedFormulas=true
           s.formulaOffers={[99]={{price=7,quantity=1,npcID=7,unlimited=false,limited=true,maxStock=1}}}
           local r=solve(s)
           assert(r.targetReached and r.total==15 and not r.completeCost and not r.optimal)

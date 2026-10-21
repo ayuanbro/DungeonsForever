@@ -30,6 +30,9 @@ nether 访问走 --proxy（Windows 默认 http://127.0.0.1:7897，无代理时�
 """
 import argparse
 import csv
+import hashlib
+import io
+import math
 import json
 import os
 import queue
@@ -38,6 +41,8 @@ import sys
 import threading
 import time
 import urllib.request
+from html import unescape
+from html.parser import HTMLParser
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -172,22 +177,15 @@ NPC_RE = re.compile(r'npc=(\d+)/[a-z0-9-]*"[^>]*data-wowhead="map"[^>]*>([^<]*)<
 ZONE_RE = re.compile(r'zone=(\d+)/[a-z0-9-]*"[^>]*>([^<]*)</a>')
 SIDE_RE = re.compile(r'<span class="q2?">([AH])</span>')
 
-# 成本：wowhead 金钱三段（金/银/铜 span），或只有铜
-MONEY_GSC_RE = re.compile(
-    r'<span class="moneygold">(\d+)</span>\s*'
-    r'<span class="moneysilver">(\d+)</span>\s*'
-    r'<span class="moneycopper">(\d+)</span>')
-MONEY_CU_RE = re.compile(r'<span class="moneycopper">(\d+)</span>')
+# 零面额会省略；金币、银币、铜币分别读取，只处理传入的成本单元格。
+MONEY_RE = re.compile(
+    r'''<span\b[^>]*\bclass=["'][^"']*\bmoney(gold|silver|copper)\b[^"']*["'][^>]*>\s*(\d+)\s*</span>''')
 
 
-def parse_cost(row):
-    m = MONEY_GSC_RE.search(row)
-    if m:
-        return int(m.group(1)) * 10000 + int(m.group(2)) * 100 + int(m.group(3))
-    m = MONEY_CU_RE.search(row)
-    if m:
-        return int(m.group(1))
-    return None
+def parse_cost(cost_cell):
+    parts = MONEY_RE.findall(cost_cell)
+    units = {'gold': 10000, 'silver': 100, 'copper': 1}
+    return sum(int(amount) * units[unit] for unit, amount in parts) if parts else None
 
 
 # 非金币价格：成本单元格里是 <a href="…/currency=3402/…">数量</a>（如商人青睐），
@@ -223,12 +221,207 @@ def parse_stock(row):
     return None
 
 
+def _js_value_end(text, start, delimiter):
+    """Find a top-level delimiter without evaluating JavaScript."""
+    stack, quote, escaped = [], None, False
+    i = start
+    while i < len(text):
+        char = text[i]
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == '\\':
+                escaped = True
+            elif char == quote:
+                quote = None
+        elif char in ('"', "'", '`'):
+            quote = char
+        elif text.startswith('//', i):
+            end = text.find('\n', i + 2)
+            i = len(text) if end < 0 else end
+            continue
+        elif text.startswith('/*', i):
+            end = text.find('*/', i + 2)
+            if end < 0:
+                raise ValueError('Unterminated comment in Listview options')
+            i = end + 2
+            continue
+        elif not stack and char == delimiter:
+            return i
+        elif char in '[{(':
+            stack.append(char)
+        elif char in ']})':
+            if not stack or '[{('.index(stack.pop()) != ']})'.index(char):
+                raise ValueError('Unbalanced Listview options')
+        i += 1
+    if stack or quote:
+        raise ValueError('Unterminated Listview options')
+    return len(text)
+
+
+def _next_listview(script, start):
+    call = re.compile(r'\bnew\s+Listview\s*\(\s*\{')
+    i = start
+    while i < len(script):
+        if script[i] in ('"', "'", '`'):
+            quote, escaped = script[i], False
+            i += 1
+            while i < len(script):
+                char = script[i]
+                i += 1
+                if escaped:
+                    escaped = False
+                elif char == '\\':
+                    escaped = True
+                elif char == quote:
+                    break
+        elif script.startswith('//', i):
+            end = script.find('\n', i + 2)
+            i = len(script) if end < 0 else end + 1
+        elif script.startswith('/*', i):
+            end = script.find('*/', i + 2)
+            i = len(script) if end < 0 else end + 2
+        else:
+            match = call.match(script, i)
+            if match:
+                return match
+            i += 1
+    return None
+
+
+def _sold_by_listview(html):
+    """Read only the sold-by NPC Listview's JSON data, including hidden tabs."""
+    found = None
+    key = re.compile(r'''\s*(?:([A-Za-z_]\w*)|["']([A-Za-z_]\w*)["'])\s*:\s*''')
+    for script in re.findall(r'<script\b[^>]*>(.*?)</script\s*>', html, re.S | re.I):
+        offset = 0
+        while True:
+            match = _next_listview(script, offset)
+            if not match:
+                break
+            end = _js_value_end(script, match.end(), '}')
+            if end == len(script):
+                raise ValueError('Unterminated Listview object')
+            body, fields = script[match.end():end], {}
+            position = 0
+            while position < len(body):
+                value_end = _js_value_end(body, position, ',')
+                part = body[position:value_end]
+                field = key.match(part)
+                if field:
+                    fields[field.group(1) or field.group(2)] = part[field.end():].strip()
+                position = value_end + 1
+            offset = end + 1
+            if not re.fullmatch(r'''["']npc["']''', fields.get('template', '')) \
+                    or not re.fullmatch(r'''["']sold-by["']''', fields.get('id', '')):
+                continue
+            if found is not None:
+                raise ValueError('Multiple sold-by NPC Listviews')
+            try:
+                found = json.loads(fields['data'])
+            except (KeyError, ValueError) as error:
+                raise ValueError('Invalid sold-by Listview JSON data') from error
+            if not isinstance(found, list):
+                raise ValueError('Sold-by Listview data must be an array')
+    return found
+
+
+def _source_cost(cost, npc):
+    unknown = (None, None, None, None)
+    if cost is None or cost == []:
+        return unknown
+
+    def valid(value, minimum):
+        return type(value) is int and value >= minimum
+
+    def unsupported():
+        raise ValueError('Unsupported sold-by cost for NPC %d: %r' % (npc, cost))
+
+    if not isinstance(cost, list) or len(cost) != 1 \
+            or not isinstance(cost[0], list) or len(cost[0]) > 3:
+        unsupported()
+    option = cost[0]
+    copper = option[0] if option else None
+    if copper is not None and not valid(copper, 0):
+        unsupported()
+    currencies = option[1] if len(option) > 1 else []
+    items = option[2] if len(option) > 2 else []
+    if not isinstance(currencies, list) or not isinstance(items, list) \
+            or len(currencies) + len(items) > 1:
+        unsupported()
+    tokens = currencies or items
+    if not tokens:
+        return copper, None, None, None
+    pair = tokens[0]
+    if not isinstance(pair, list) or len(pair) != 2 \
+            or not valid(pair[0], 1) or not valid(pair[1], 0):
+        unsupported()
+    # Zero copper in a token exchange is not a free gold purchase.
+    return copper or None, 'currency' if currencies else 'item', pair[0], pair[1]
+
+
+class _SoldByPanel(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.depth, self.parts, self.complete = 0, [], False
+
+    def handle_starttag(self, tag, attrs):
+        if self.complete:
+            return
+        if tag == 'div' and (self.depth or dict(attrs).get('id') == 'tab-sold-by'):
+            self.depth += 1
+        if self.depth:
+            self.parts.append(self.get_starttag_text())
+
+    def handle_endtag(self, tag):
+        if self.depth:
+            self.parts.append('</%s>' % tag)
+            if tag == 'div':
+                self.depth -= 1
+                self.complete = self.depth == 0
+
+    def handle_data(self, data):
+        if self.depth:
+            self.parts.append(data)
+
+    def handle_entityref(self, name):
+        self.handle_data('&%s;' % name)
+
+    def handle_charref(self, name):
+        self.handle_data('&#%s;' % name)
+
+
 def parse_sold_by(html):
-    """从物品页 HTML 解析 tab-sold-by：NPC id / 区域 / 阵营 / 英文名 / 成本 / 库存。"""
-    i = html.find('tab-sold-by')
-    if i < 0:
-        return []
-    seg = html[i:i + 120000]
+    """Read sold-by source JSON first; rendered HTML remains a scoped fallback."""
+    source = _sold_by_listview(html)
+    if source is not None:
+        rows = []
+        for raw in source:
+            if not isinstance(raw, dict) or type(raw.get('id')) is not int or raw['id'] <= 0:
+                raise ValueError('Invalid sold-by NPC record: %r' % raw)
+            npc = raw['id']
+            copper, kind, currency, amount = _source_cost(raw.get('cost'), npc)
+            locations = raw.get('location')
+            zone = locations[0] if isinstance(locations, list) and locations else None
+            zone = zone if type(zone) is int and zone > 0 else None
+            react = raw.get('react')
+            side = None
+            if isinstance(react, list) and len(react) == 2:
+                available = [type(value) in (int, float) and value >= 0 for value in react]
+                side = 'n' if all(available) else 'a' if available[0] else 'h' if available[1] else None
+            name = raw.get('name')
+            if not isinstance(name, str) or not name.strip():
+                name = raw.get('displayName')
+            stock = raw.get('stock')
+            rows.append({'npc': npc, 'name': unescape(name).strip() if isinstance(name, str) else '',
+                         'zone': zone, 'side': side, 'cost': copper,
+                         'currency_kind': kind, 'currency_id': currency,
+                         'currency_amount': amount,
+                         'stock': stock if type(stock) is int and stock >= -1 else None})
+        return rows
+    panel = _SoldByPanel()
+    panel.feed(html)
+    seg = ''.join(panel.parts)
     rows = []
     for m in ROW_RE.finditer(seg):
         row = m.group(1)
@@ -237,13 +430,15 @@ def parse_sold_by(html):
             continue
         zn = ZONE_RE.search(row)
         sd = SIDE_RE.search(row)
-        ckind, cid, camt = parse_currency(row)
+        cells = TD_RE.findall(row)
+        cost_cell = cells[5] if len(cells) > 5 else ''
+        ckind, cid, camt = parse_currency(cost_cell)
         rows.append({
             'npc': int(nm.group(1)),
             'name': nm.group(2).strip(),
             'zone': int(zn.group(1)) if zn else None,
             'side': sd.group(1).lower() if sd else None,
-            'cost': parse_cost(row),
+            'cost': parse_cost(cost_cell),
             'currency_kind': ckind,
             'currency_id': cid,
             'currency_amount': camt,
@@ -385,7 +580,7 @@ class SoldByWowhead:
                         state['pg'].wait_for_timeout(3500)
                         try:
                             state['pg'].evaluate(
-                                "var a=document.getElementById('tab-sold-by');"
+                                "var a=document.querySelector('[role=tab][data-href=\"#sold-by\"]');"
                                 "if(a){a.click();}")
                             state['pg'].wait_for_timeout(1200)
                         except Exception:
@@ -528,53 +723,362 @@ def make_soldby_provider(args):
 
 
 # ─────────────────────────── 3. NPC 信息层（可切换） ───────────────────────────
-# 契约：npc_provider.npc_info(npcs) -> {npcID: {'name': str, 'coords': [(zone,x,y),...]}}
+# 契约：npc_provider.npc_info(npcs) -> {npcID: {'name': str, 'coords': [(zone,x,y),...],
+# 'faction': 可选的明确所属组织证据}}。所属组织与出售行的 A/H/N side 独立。
+
+class _NpcTooltipRows(HTMLParser):
+    """Read tooltip row text and explicit faction links without evaluating HTML."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.rows, self.current, self.faction_links = [], None, []
+        self.anchor = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'tr':
+            self.current, self.faction_links, self.anchor = [], [], None
+        elif self.current is not None and tag == 'a':
+            href = dict(attrs).get('href') or ''
+            match = re.search(r'(?:/|[?&])faction[=/](\d+)(?:\D|$)', href)
+            if match and int(match.group(1)) > 0:
+                self.anchor = (int(match.group(1)), [])
+
+    def handle_data(self, data):
+        if self.current is not None:
+            self.current.append(data)
+        if self.anchor is not None:
+            self.anchor[1].append(data)
+
+    def handle_endtag(self, tag):
+        if tag == 'a' and self.anchor is not None:
+            fid, text = self.anchor
+            self.faction_links.append((fid, ' '.join(''.join(text).split())))
+            self.anchor = None
+        elif tag == 'tr' and self.current is not None:
+            self.rows.append((' '.join(''.join(self.current).split()), self.faction_links))
+            self.current, self.faction_links, self.anchor = None, [], None
+
+
+def parse_npc_faction(tooltip):
+    """Extract the explicit affiliation row, never from the NPC's name or react.
+
+    Nether puts an affiliation after the creature level/type row. A lone type
+    row such as ``Demon (Rare)`` supplies no affiliation.
+    """
+    parser = _NpcTooltipRows()
+    parser.feed(tooltip or '')
+    linked = {(fid, name) for _, links in parser.rows for fid, name in links}
+    if linked:
+        if len(linked) != 1:
+            raise ValueError('conflicting explicit NPC faction links')
+        fid, name = next(iter(linked))
+        if not name:
+            raise ValueError('explicit NPC faction link has no name')
+        return {'name': name, 'factionID': fid}
+    creature_line = re.compile(
+        r'^(?:Level\s+(?:\d+\b|\?+)|等级\s*(?:\d+\b|\?+)|等級\s*(?:\d+\b|\?+)|'
+        r'(?:Beast|Dragonkin|Demon|Elemental|Giant|Undead|Humanoid|Critter|Mechanical|'
+        r'Not specified|Totem|Non-combat Pet|Gas Cloud|Wild Pet|Aberration|'
+        r'野兽|野獸|龙类|龍類|恶魔|惡魔|元素生物|巨人|亡灵|不死族|人型生物|'
+        r'小动物|小動物|机械|機械|未指定|图腾|圖騰|非战斗宠物|非戰鬥寵物|畸变|畸變)'
+        r'(?:\s*[(（]|\s*$))')
+    if len(parser.rows) >= 3 and creature_line.search(parser.rows[-2][0]):
+        name = parser.rows[-1][0]
+        if name and not creature_line.search(name):
+            return {'name': name}
+    return None
+
+
+def load_faction_names(path):
+    """Index exact client Faction names; no NPC-name or fuzzy matching."""
+    if not path:
+        return {}, None
+    with open(path, 'rb') as stream:
+        content = stream.read()
+    reader = csv.DictReader(io.StringIO(content.decode('utf-8-sig'), newline=''))
+    by_name, by_id, ambiguous = {}, {}, set()
+    for row in reader:
+        value = row.get('ID') or row.get('FactionID') or ''
+        if not re.fullmatch(r'[1-9]\d*', value):
+            raise ValueError('Faction CSV has an invalid ID: %r' % value)
+        fid = int(value)
+        names = {locale: unescape(row.get('Name_' + locale) or '').strip()
+                 for locale in ('enUS', 'zhCN', 'zhTW')}
+        if not any(names.values()):
+            names['enUS'] = unescape(row.get('Name_lang') or row.get('Name') or '').strip()
+        names = {locale: name for locale, name in names.items() if name}
+        if not names or 'enUS' not in names:
+            raise ValueError('Faction CSV must provide an English name for ID %d' % fid)
+        record = {'factionID': fid, 'names': names}
+        if fid in by_id and by_id[fid] != record:
+            raise ValueError('Faction CSV has conflicting names for ID %d' % fid)
+        by_id[fid] = record
+        for name in names.values():
+            if name in by_name and by_name[name]['factionID'] != fid:
+                ambiguous.add(name)
+                by_name.pop(name)
+            if name not in ambiguous:
+                by_name[name] = record
+    return by_name, {'type': 'client-faction-csv', 'file': os.path.basename(path),
+                     'sha256': hashlib.sha256(content).hexdigest()}
+
+
+def _faction_evidence(value):
+    """Validate the collector's replayable affiliation shape, before English merge."""
+    if not isinstance(value, dict) or set(value) - {'factionID', 'names', 'sources'}:
+        raise ValueError('NPC faction evidence must contain names, sources and optional factionID')
+    names, sources = value.get('names'), value.get('sources')
+    if not isinstance(names, dict) or not names or set(names) - {'enUS', 'zhCN', 'zhTW'} \
+            or any(not isinstance(name, str) or not name.strip() for name in names.values()):
+        raise ValueError('NPC faction evidence has invalid localized names')
+    if not isinstance(sources, list) or not sources:
+        raise ValueError('NPC faction evidence has no sources')
+    for source in sources:
+        if not isinstance(source, dict) or not isinstance(source.get('type'), str) \
+                or not source['type'].strip() \
+                or not any(isinstance(source.get(key), str) and source[key].strip()
+                           for key in ('url', 'file')):
+            raise ValueError('NPC faction evidence has an invalid source')
+    result = {'names': {locale: name.strip() for locale, name in names.items()},
+              'sources': [dict(source) for source in sources]}
+    if 'factionID' in value:
+        fid = value['factionID']
+        if type(fid) is not int or fid <= 0:
+            raise ValueError('NPC factionID must be a positive integer')
+        result['factionID'] = fid
+    return result
+
+
+def merge_npc_faction_evidence(values):
+    """Merge language observations of one NPC; contradictory evidence fails closed."""
+    names, sources, fid = {}, [], None
+    for value in values:
+        record = _faction_evidence(value)
+        observed_id = record.get('factionID')
+        if fid is not None and observed_id is not None and fid != observed_id:
+            raise ValueError('conflicting explicit NPC faction IDs')
+        if observed_id is not None:
+            fid = observed_id
+        for locale, name in record['names'].items():
+            if locale in names and names[locale] != name:
+                raise ValueError('conflicting NPC faction names for locale %s' % locale)
+            names[locale] = name
+        for source in record['sources']:
+            if source not in sources:
+                sources.append(source)
+    if not names:
+        return None
+    result = {'names': names, 'sources': sources}
+    if fid is not None:
+        result['factionID'] = fid
+    return result
+
+
+def build_npc_factions(info, faction_names=None, client_source=None, diagnostics=None):
+    """Create optional affiliation metadata without changing CSV or A/H/N side."""
+    records, messages = {}, diagnostics if diagnostics is not None else []
+    for nid, npc in sorted(info.items()):
+        observations = ([npc['faction']] if npc.get('faction') else []) + list(npc.get('factions') or [])
+        if not observations:
+            continue
+        try:
+            faction = merge_npc_faction_evidence(observations)
+        except ValueError as error:
+            # Missing evidence is a reported coverage gap. Contradictory valid
+            # observations still raise rather than publishing one arbitrarily.
+            if any(isinstance(value, dict) and not value.get('sources') for value in observations):
+                messages.append({'npcID': nid, 'code': 'affiliation_missing_evidence',
+                                 'message': str(error), 'severity': 'warning'})
+                continue
+            raise ValueError('NPC %s: %s' % (nid, error)) from error
+        faction = faction or {}
+        names = faction.get('names') or {}
+        sources = faction.get('sources') or []
+        if not names or not sources:
+            continue
+        client_matches = {(faction_names or {})[name]['factionID']
+                          for name in names.values() if name in (faction_names or {})}
+        if len(client_matches) > 1:
+            raise ValueError('conflicting client faction names for NPC %s' % nid)
+        match = next(((faction_names or {})[name] for name in names.values()
+                      if name in (faction_names or {})), None)
+        fid = faction.get('factionID')
+        if match:
+            if fid is not None and fid != match['factionID']:
+                raise ValueError('tooltip/client faction ID conflict for NPC %s' % nid)
+            names, fid = dict(names, **match['names']), match['factionID']
+            sources = sources + ([client_source] if client_source else [])
+        # Non-English collection cannot be relabeled as an English fallback.
+        if not names.get('enUS'):
+            messages.append({'npcID': nid, 'code': 'affiliation_missing_english',
+                             'message': 'localized affiliation has no English comparison or client mapping',
+                             'severity': 'warning'})
+            continue
+        record = {'names': names, 'sources': sources}
+        if fid is not None:
+            record['factionID'] = fid
+        records[str(nid)] = record
+    result = {'schemaVersion': 1, 'npcs': records}
+    if diagnostics is None and messages:
+        result['diagnostics'] = messages
+    return result
 
 class NpcNether:
-    """nether.wowhead.com NPC tooltip：名称（默认英文，--locale 可切）+ map.zone + 首组坐标。"""
+    """NPC tooltip fields and explicit affiliation, independently of A/H/N.
 
-    def __init__(self, proxy=PROXY, refetch=False, locale=''):
-        self.cache_dir = os.path.join(CACHE, 'nether')
+    Every result has ``collectionStatus`` (ok/missing/error) and ``diagnostics``
+    objects with code/message/severity/locale. A valid payload with no faction
+    is ok; failed refreshes keep readable fields while reporting error. Cache
+    maximum age uses the cached file's mtime; cache_only never performs HTTP.
+    """
+
+    def __init__(self, proxy=PROXY, refetch=False, locale='', cache_only=False,
+                 max_age_days=0, cache_dir=None):
+        if locale not in ('', 'enUS', 'zhCN', 'zhTW'):
+            raise ValueError('unsupported NPC tooltip locale: %s' % locale)
+        if not isinstance(max_age_days, (int, float)) or not math.isfinite(max_age_days) \
+                or max_age_days < 0:
+            raise ValueError('NPC cache maximum age must be a finite nonnegative number')
+        if refetch and cache_only:
+            raise ValueError('NPC cache-only mode cannot force refetch')
+        self.cache_dir = cache_dir or os.path.join(CACHE, 'nether')
         self.refetch = refetch
         self.proxy = proxy
         self.locale = locale
+        self.cache_only = cache_only
+        self.max_age_days = max_age_days
+
+    def _read_info(self, nid, locale, cache_only=None):
+        cache_only = self.cache_only if cache_only is None else cache_only
+        diagnostics = []
+
+        def report(code, message, severity='warning'):
+            diagnostics.append({'code': code, 'message': str(message), 'severity': severity,
+                                'locale': locale or 'enUS'})
+
+        # 缓存按语言分开，避免 zhCN 与英文互相污染
+        suffix = '.' + locale if locale and locale != 'enUS' else ''
+        p = os.path.join(self.cache_dir, '%d%s.json' % (nid, suffix))
+        cached = load_cached(p, False)
+        url = NETHER_NPC_URL % nid
+        if locale:
+            url += '?locale=' + locale
+        stale = bool(cached is not None and self.max_age_days and os.path.isfile(p)
+                     and time.time() - os.path.getmtime(p) > self.max_age_days * 86400)
+        if stale:
+            report('cache_expired', 'NPC cache exceeds maximum age')
+        data, digest = None, None
+        if cached is not None:
+            try:
+                data = json.loads(cached)
+                if not isinstance(data, dict) or not isinstance(data.get('name'), str) or not data['name'].strip():
+                    raise ValueError('NPC payload has no nonempty name')
+                # Preserve the hash of exact cached bytes, including CRLF, for
+                # independently frozen source snapshots.
+                if os.path.isfile(p):
+                    with open(p, 'rb') as stream:
+                        raw = stream.read()
+                else:
+                    raw = cached.encode('utf-8')
+                normalized = raw.decode('utf-8').replace('\r\n', '\n').replace('\r', '\n')
+                if normalized != cached.replace('\r\n', '\n').replace('\r', '\n'):
+                    raise ValueError('NPC cache changed while reading source bytes')
+                digest = hashlib.sha256(raw).hexdigest()
+            except (ValueError, OSError) as error:
+                report('cache_invalid', error)
+                data = None
+        needs_fetch = data is None or stale or self.refetch
+        failed = False
+        if needs_fetch and not cache_only:
+            try:
+                fetched = http_json(url, proxy=self.proxy, timeout=25, retries=2)
+                if not isinstance(fetched, dict) or not isinstance(fetched.get('name'), str) \
+                        or not fetched['name'].strip():
+                    raise ValueError('NPC request did not return a valid named payload')
+                serialized = json.dumps(fetched, ensure_ascii=False)
+                data = fetched
+                digest = hashlib.sha256(serialized.encode('utf-8')).hexdigest()
+                try:
+                    save(p, serialized)
+                except OSError as error:
+                    report('cache_write_failed', error, 'error')
+                    failed = True
+                if diagnostics:
+                    report('request_recovered', 'valid NPC payload obtained after cache problem')
+            except (ValueError, OSError) as error:
+                report('request_failed', error, 'error')
+                failed = True
+        elif needs_fetch:
+            report('cache_only_unavailable', 'no valid fresh NPC cache; network disabled', 'error')
+            failed = True
+        if data is None:
+            return {'name': '', 'coords': [], 'diagnostics': diagnostics,
+                    'collectionStatus': 'missing' if cached is None and cache_only else 'error'}
+        result = {'name': data['name'].strip(), 'coords': [], 'diagnostics': diagnostics,
+                  'collectionStatus': 'error' if failed else 'ok'}
+        if failed:
+            report('cache_fallback', 'preserving readable NPC fields after collection failure')
+        m = data.get('map')
+        if m is not None and not isinstance(m, dict):
+            report('coordinates_invalid', 'NPC map is not an object')
+            m = {}
+        m = m or {}
+        try:
+            zone = m.get('zone')
+            if zone is not None:
+                if isinstance(zone, bool) or not re.fullmatch(r'[1-9]\d*', str(zone)):
+                    raise ValueError('invalid NPC map zone')
+                zone = int(zone)
+                cd = m.get('coords') or {}
+                if not isinstance(cd, dict):
+                    raise ValueError('NPC map coordinates are not an object')
+                for pairs in cd.values():
+                    if not isinstance(pairs, list) or not pairs:
+                        continue
+                    try:
+                        x, y = float(pairs[0][0]), float(pairs[0][1])
+                        if not all(math.isfinite(value) and 0 <= value <= 100 for value in (x, y)):
+                            raise ValueError('coordinates outside 0..100')
+                        result['coords'].append((zone, round(x, 1), round(y, 1)))
+                        break
+                    except (TypeError, ValueError, IndexError) as error:
+                        report('coordinates_invalid', error)
+        except (TypeError, ValueError) as error:
+            report('coordinates_invalid', error)
+        try:
+            faction = parse_npc_faction(data.get('tooltip'))
+            if faction:
+                affiliation = {'names': {locale or 'enUS': faction['name']},
+                               'sources': [{'type': 'wowhead-npc-tooltip', 'url': url,
+                                            'sha256': digest, 'locale': locale or 'enUS'}]}
+                if faction.get('factionID'):
+                    affiliation['factionID'] = faction['factionID']
+                result['faction'] = affiliation
+        except (TypeError, ValueError) as error:
+            report('affiliation_invalid', error, 'error')
+            result['collectionStatus'] = 'error'
+        return result
 
     def _info(self, nid):
-        # 缓存按语言分开，避免 zhCN 与英文互相污染
-        suffix = '.' + self.locale if self.locale else ''
-        p = os.path.join(self.cache_dir, '%d%s.json' % (nid, suffix))
-        cached = load_cached(p, self.refetch)
-        if cached is None:
-            url = NETHER_NPC_URL % nid
-            if self.locale:
-                url += '?locale=' + self.locale
-            data = http_json(url, proxy=self.proxy, timeout=25, retries=2)
-            if data:
-                cached = json.dumps(data, ensure_ascii=False)
-                save(p, cached)
-        if not cached:
-            return {'name': '', 'coords': []}
-        try:
-            d = json.loads(cached)
-            name = (d.get('name') or '').strip()
-            m = d.get('map') or {}
-            zone = m.get('zone')
-            coords = []
-            if zone:
-                try:
-                    zone = int(zone)
-                except (TypeError, ValueError):
-                    zone = None
-                cd = m.get('coords') or {}
-                for _k, pairs in cd.items():
-                    if isinstance(pairs, list) and pairs:
-                        x, y = float(pairs[0][0]), float(pairs[0][1])
-                        if zone is not None:
-                            coords.append((zone, round(x, 1), round(y, 1)))
-                        break
-            return {'name': name, 'coords': coords}
-        except Exception:
-            return {'name': '', 'coords': []}
+        result = self._read_info(nid, self.locale)
+        if self.locale not in ('', 'enUS') and result.get('faction'):
+            # A prior English observation can retain localized affiliations in
+            # an offline replay. Do not issue an extra request implicitly.
+            english_path = os.path.join(self.cache_dir, '%d.json' % nid)
+            if os.path.isfile(english_path):
+                english = self._read_info(nid, '', cache_only=True)
+                if english.get('faction') and english['collectionStatus'] == 'ok':
+                    try:
+                        result['faction'] = merge_npc_faction_evidence(
+                            [result['faction'], english['faction']])
+                    except ValueError as error:
+                        result.pop('faction', None)
+                        result['collectionStatus'] = 'error'
+                        result['diagnostics'].append({'code': 'affiliation_conflict',
+                                                      'message': str(error), 'severity': 'error'})
+                else:
+                    result['diagnostics'].extend(english['diagnostics'])
+        return result
 
     def npc_info(self, npcs):
         out = {}
@@ -608,17 +1112,66 @@ class NpcQuestie:
 
 
 class NpcJson:
-    """外部 JSON 导入：{npcID: {name, coords: [[zone,x,y],...]}}。"""
+    """Replay NPC observations or the schema-1 standalone affiliation JSON."""
 
     def __init__(self, path):
-        self.data = json.load(open(path, encoding='utf-8'))
+        with open(path, encoding='utf-8-sig') as stream:
+            self.data = json.load(stream)
+        if not isinstance(self.data, dict):
+            raise ValueError('NPC JSON must be an object')
+        self.factions_only = 'schemaVersion' in self.data
+        if self.factions_only:
+            if type(self.data.get('schemaVersion')) is not int or self.data['schemaVersion'] != 1 \
+                    or not isinstance(self.data.get('npcs'), dict):
+                raise ValueError('NPC affiliation JSON must use schemaVersion=1 with npcs object')
+            self.data = self.data['npcs']
 
     def npc_info(self, npcs):
         out = {}
         for nid in npcs:
             e = self.data.get(str(nid)) or self.data.get(nid) or {}
-            out[nid] = {'name': e.get('name') or '',
-                        'coords': [tuple(c) for c in (e.get('coords') or [])]}
+            record = {'name': '', 'coords': [], 'collectionStatus': 'ok' if e else 'missing',
+                      'diagnostics': []}
+            out[nid] = record
+            if not isinstance(e, dict):
+                record['collectionStatus'] = 'error'
+                record['diagnostics'].append({'code': 'json_invalid', 'message': 'NPC record is not an object',
+                                               'severity': 'error'})
+                continue
+            if isinstance(e.get('name'), str):
+                record['name'] = e['name'].strip()
+            coords = e.get('coords') or []
+            if not isinstance(coords, list):
+                record['diagnostics'].append({'code': 'coordinates_invalid',
+                                              'message': 'replayed NPC coordinates must be a list',
+                                              'severity': 'warning'})
+                coords = []
+            for point in coords:
+                try:
+                    if not isinstance(point, (list, tuple)) or len(point) != 3:
+                        raise ValueError('replayed NPC coordinate must contain zone,x,y')
+                    zone, x, y = point
+                    if isinstance(zone, bool) or not re.fullmatch(r'[1-9]\d*', str(zone)):
+                        raise ValueError('invalid replayed NPC zone')
+                    x, y = float(x), float(y)
+                    if not all(math.isfinite(value) and 0 <= value <= 100 for value in (x, y)):
+                        raise ValueError('replayed NPC coordinates outside 0..100')
+                    record['coords'].append((int(zone), x, y))
+                except (TypeError, ValueError) as error:
+                    record['diagnostics'].append({'code': 'coordinates_invalid', 'message': str(error),
+                                                  'severity': 'warning'})
+            faction = e if self.factions_only and e else e.get('faction')
+            if faction is not None:
+                try:
+                    record['faction'] = _faction_evidence(faction)
+                except ValueError as error:
+                    record['collectionStatus'] = 'error'
+                    record['diagnostics'].append({'code': 'affiliation_invalid', 'message': str(error),
+                                                  'severity': 'error'})
+            if e.get('collectionStatus') in ('error', 'missing'):
+                record['collectionStatus'] = e['collectionStatus']
+            if isinstance(e.get('diagnostics'), list):
+                record['diagnostics'].extend(e['diagnostics'])
         return out
 
 
@@ -631,7 +1184,9 @@ def make_npc_provider(args):
         if not args.npc_json:
             raise SystemExit('--npc-provider json 需要 --npc-json <file>')
         return NpcJson(args.npc_json)
-    return NpcNether(proxy=args.proxy, refetch=args.refetch, locale=args.locale)
+    return NpcNether(proxy=args.proxy, refetch=args.refetch, locale=args.locale,
+                     cache_only=getattr(args, 'npc_cache_only', False),
+                     max_age_days=getattr(args, 'npc_max_age', 0))
 
 
 # ─────────────────────────── 4. 区域映射与 CSV 产物 ───────────────────────────
@@ -825,7 +1380,15 @@ def main():
                     default='nether')
     ap.add_argument('--questie', help='questie_forever.json（坐标兜底）')
     ap.add_argument('--npc-json', help='npc-provider=json 时的导入文件')
-    ap.add_argument('--locale', default='',
+    ap.add_argument('--npc-factions-out', default='',
+                    help='可选：独立所属组织 JSON（不改写商人 CSV 或 A/H/N）')
+    ap.add_argument('--faction-names-csv',
+                    help='可选：客户端 Faction CSV 的精确 ID/三语名称映射')
+    ap.add_argument('--npc-cache-only', action='store_true',
+                    help='NPC 信息只读缓存，不发送请求；缺失/失效在诊断中报告')
+    ap.add_argument('--npc-max-age', type=float, default=0,
+                    help='NPC 缓存超过 N 天则刷新（0=永不；缓存模式仍报告失效）')
+    ap.add_argument('--locale', default='', choices=['', 'enUS', 'zhCN', 'zhTW'],
                     help='nether 名称语言：留空=英文（默认），zhCN=中文')
 
     ap.add_argument('--proxy', default=PROXY)
@@ -847,6 +1410,7 @@ def main():
     if args.selftest:
         selftest()
         return
+    faction_names, faction_source = load_faction_names(args.faction_names_csv)
 
     ids = []
     if args.ids:
@@ -916,12 +1480,31 @@ def main():
     log('NPC 名称 %d/%d · 无坐标 %d 个'
         % (sum(1 for v in npc_locale.values() if v), len(npcs), len(no_spawn)))
 
+    diagnostics = []
+    for nid, npc in sorted(info.items()):
+        for message in npc.get('diagnostics') or []:
+            diagnostics.append(dict(message, npcID=nid) if isinstance(message, dict)
+                               else {'npcID': nid, 'message': str(message)})
+    faction_output = (build_npc_factions(info, faction_names, faction_source, diagnostics)
+                      if args.npc_factions_out else None)
+    for message in diagnostics:
+        log('  [npc] %s %s: %s' % (message.get('npcID', '?'), message.get('code', 'diagnostic'),
+                                  message.get('message', '')))
+    if faction_output is not None and diagnostics:
+        faction_output['diagnostics'] = diagnostics
+    if args.npc_factions_out and any(message.get('code') in
+                                    ('affiliation_invalid', 'affiliation_conflict') for message in diagnostics):
+        raise SystemExit('NPC affiliation evidence conflicts; no CSV/JSON output was published')
+
     # ── 产物（只写 CSV，不写 Lua） ──
     if not args.dry:
         if args.csv_out:
             emit_csv_vendors(vendors, npc_locale, args.csv_out)
         if args.npcs_out:
             emit_csv_npcs(spawns, npc_en, npc_locale, args.npcs_out)
+        if args.npc_factions_out:
+            save(os.path.abspath(args.npc_factions_out),
+                 json.dumps(faction_output, ensure_ascii=False, indent=2) + '\n')
     else:
         log('--dry：跳过文件写入')
 

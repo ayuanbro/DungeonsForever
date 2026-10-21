@@ -60,16 +60,26 @@ function auditReceipt(result)
         assert(type(id)=='number' and type(count)=='number' and count>0 and count==math.floor(count))
         assert(type(m.cost)=='number' and m.cost>=0 and not m.unpriced)
         if m.source=='vendor' or m.vendor then
-            local item=assert(ns.ProfItems[id],'NPC receipt has no new item data')
             assert(m.npcID==nil,'ordinary material purchase acquired a supplier identity')
-            assert(item.cost_copper~=nil,'material receipt has no item-level purchase price')
-            for _,key in ipairs({'currency_kind','currency_id','currency_amount'})do
-                assert(not auditNonempty(item[key]),'exchange was priced as gold')
+            assert(ns.ProfMaterialSupplyMeta and ns.ProfMaterialSupplyMeta.schemaVersion==1,
+                'material purchase has no qualified supply schema')
+            local item=assert(ns.ProfMaterialSupply[id],'NPC receipt has no material supply evidence')
+            local matched=false
+            local roles={profession_supply=true,trade_supply=true,reagent_supply=true,
+                general_goods=true,cooking_supply=true,fishing_supply=true}
+            for _,offer in pairs(item.offers or {})do
+                local side=offer.side
+                local eligible=offer.eligible==true and offer.stockState=='unlimited'
+                    and offer.costKind=='gold' and offer.access=='unconditional' and roles[offer.role]
+                    and (side=='n' or side=='a' and UnitFactionGroup('player')=='Alliance'
+                        or side=='h' and UnitFactionGroup('player')=='Horde')
+                local packs=offer.quantity and count/offer.quantity
+                if eligible and offer.sourceURL and offer.verifiedAt and offer.evidenceHash
+                    and packs and packs==math.floor(packs) and m.cost==packs*offer.price
+                    and m.bundleSize==offer.quantity and m.unit==offer.price/offer.quantity
+                    and m.quoteSource==offer.priceSource then matched=true end
             end
-            local packs=count/item.VendorStackCount
-            assert(packs==math.floor(packs) and m.cost==packs*item.cost_copper)
-            assert(m.bundleSize==item.VendorStackCount and m.unit==item.cost_copper/item.VendorStackCount)
-            assert(m.quoteSource==(item.price_source or 'Data_ProfItems'))
+            assert(matched,'material receipt has no matching qualified unlimited gold supply')
             vendor=vendor+m.cost
         else
             assert(m.source=='ah' and m.cost==auditPrice(id)*count,'AH receipt is not an actual AH purchase')
@@ -160,7 +170,7 @@ class ProfessionProcurementAudit(unittest.TestCase):
                     with self.subTest(locale=locale, profession=slug, scheme=scheme):
                         lua.globals().auditSmallRoute(slug, recipe, scheme)
 
-    def test_real_material_quotes_use_item_price_while_formula_quotes_keep_npc_rules(self):
+    def test_real_material_quotes_require_supply_evidence_while_formula_quotes_keep_npc_rules(self):
         for locale in ("zhCN", "zhTW", "enUS"):
             with self.subTest(locale=locale):
                 lua = actual_runtime(locale)
@@ -172,11 +182,22 @@ class ProfessionProcurementAudit(unittest.TestCase):
                       local context={faction=faction}
                       for _,q in ipairs(ns.ProfItemPrices.GetOffers(id,context))do
                         assert(q.npcID==nil and q.name==nil and q.areaID==nil and q.stockStatus==nil)
-                        assert(q.materialPrice and q.price==item.cost_copper and q.quantity==item.VendorStackCount)
-                        assert(q.source==(item.price_source or 'Data_ProfItems') and q.verifiedAt==nil)
-                        assert(not auditNonempty(item.currency_kind) and not auditNonempty(item.currency_id)
-                          and not auditNonempty(item.currency_amount))
+                        assert(q.materialPrice and q.priceBasis=='Data_ProfMaterialSupply')
+                        local supply=assert(ns.ProfMaterialSupply[id],'root price fabricated material supply')
+                        local matched=false
+                        for _,raw in pairs(supply.offers or {})do
+                          if raw.eligible==true and raw.stockState=='unlimited' and raw.costKind=='gold'
+                            and raw.access=='unconditional' and raw.price==q.price and raw.quantity==q.quantity
+                            and raw.priceSource==q.source and raw.evidenceHash and raw.verifiedAt and raw.sourceURL
+                            and (raw.side=='n' or raw.side=='a' and faction=='A' or raw.side=='h' and faction=='H')then
+                            matched=true
+                          end
+                        end
+                        assert(matched,'material quote has no matching current supply evidence')
                         priced=priced+1
+                      end
+                      if not ns.ProfMaterialSupply[id]then
+                        assert(#ns.ProfItemPrices.GetOffers(id,context)==0,'root cost proved NPC availability')
                       end
                       for _,q in ipairs(ns.ProfItemPrices.GetFormulaOffers(id,context))do
                         local raw=assert(item.offers[q.npcID])
@@ -194,7 +215,7 @@ class ProfessionProcurementAudit(unittest.TestCase):
                   return rows,priced
                 ''')
                 self.assertGreater(rows, 1000)
-                self.assertGreater(priced, 100)
+                self.assertGreater(priced, 0)
 
     def test_gathering_and_unresolved_catalogues_do_not_fabricate_purchase_recipes(self):
         for locale in ("zhCN", "zhTW", "enUS"):

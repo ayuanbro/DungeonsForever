@@ -4,6 +4,8 @@ The game installation is only read. Identifiers stay in memory; output contains
 aggregate route diagnostics. This is a solver replay, not live game validation.
 """
 import argparse
+from functools import lru_cache
+import hashlib
 from importlib.machinery import EXTENSION_SUFFIXES
 import json
 from pathlib import Path
@@ -21,19 +23,30 @@ sys.path.insert(0, str(runtime))
 from lupa.lua51 import LuaRuntime
 
 
-def setup(game=GAME):
+@lru_cache(maxsize=2)
+def saved_inputs(game):
+    """Freeze one read-only observation batch in memory for all replay cases."""
     folder = max((f for f in (game / "WTF/Account").glob("*/SavedVariables")
                   if (f / "DungeonsForever.lua").is_file()),
                  key=lambda f: (f / "DungeonsForever.lua").stat().st_mtime)
+    paths = (game / "Interface/AddOns/Auctionator/Libs/LibCBOR/LibCBOR.lua",
+             folder / "Auctionator.lua", folder / "DungeonsForever.lua")
+    chunks = tuple(path.read_bytes() for path in paths)
+    fingerprint = hashlib.sha256(b''.join(hashlib.sha256(chunk).digest() for chunk in chunks)).hexdigest()
+    return chunks, fingerprint
+
+
+def setup(game=GAME, material_supply=None):
+    (cbor_source, auction_source, addon_source), _ = saved_inputs(game)
     auction = LuaRuntime(encoding=None, unpack_returned_tuples=True)
-    cbor = auction.execute((game / "Interface/AddOns/Auctionator/Libs/LibCBOR/LibCBOR.lua").read_bytes())
-    auction.execute((folder / "Auctionator.lua").read_bytes().removeprefix(b"\xef\xbb\xbf"))
+    cbor = auction.execute(cbor_source)
+    auction.execute(auction_source.removeprefix(b"\xef\xbb\xbf"))
     raw = auction.globals()[b"AUCTIONATOR_PRICE_DATABASE"][b"PvP"]
     prices = cbor[b"Deserialize"](cbor, raw) if isinstance(raw, bytes) else raw
     item_prices = {int(k): v[b"m"] for k, v in prices.items()
                    if isinstance(k, bytes) and k.isdigit() and v[b"m"] is not None}
     lua = LuaRuntime(unpack_returned_tuples=True)
-    lua.execute((folder / "DungeonsForever.lua").read_text(encoding="utf-8-sig"))
+    lua.execute(addon_source.decode("utf-8-sig"))
     lua.execute('''
       ns={LoadForeverPages=true,L=setmetatable({}, {__index=function(_,k)return k end})}
       local chosen,best,chosenKey
@@ -65,10 +78,12 @@ def setup(game=GAME):
     load = lua.eval("function(p) assert(loadfile(p))('DungeonsForever',ns) end")
     for path in ("Core/Data/Data_ProfRecipes.lua", "Core/Data/Data_ProfLeveling.lua",
                  "Core/Data/Data_ProfMining.lua", "Core/Data/Data_ProfItems.lua",
+                 "Core/Data/Data_ProfMaterialSupply.lua",
                  "Core/Data/Data_ProfFormulaQuests.lua", "Core/Data/Data_ProfSpecializations.lua",
                  "Core/Data/Data_ProfSpecializationQuests.lua", "Core/ProfEconomy.lua",
                  "Core/ProfItemPrices.lua", "Core/AuctionatorBridge.lua", "Core/ProfRouteSolver.lua"):
-        load(str(ROOT / path))
+        source = material_supply if path == "Core/Data/Data_ProfMaterialSupply.lua" and material_supply else ROOT / path
+        load(str(source))
     lua.globals().replayPrices = lua.table_from(item_prices)
     lua.execute('''
       ns.ProfEconomy.Professions=function() return {
@@ -79,8 +94,8 @@ def setup(game=GAME):
     return lua
 
 
-def replay(profession, start, choice="none", quantities=True, game=GAME):
-    lua = setup(game)
+def replay(profession, start, choice="none", quantities=True, game=GAME, material_supply=None):
+    lua = setup(game, material_supply)
     if not quantities:
         lua.execute("ns.AuctionBridge.GetAuctionSupply=function() return nil end")
     opts = lua.table_from({"start": start, "target": 225, "engineeringSpecialization": choice})
@@ -95,6 +110,8 @@ def replay(profession, start, choice="none", quantities=True, game=GAME):
             first_full = round((time.perf_counter() - begin) * 1000, 2)
     result = job.result
     return {"profession": profession, "start": start, "choice": choice,
+            "saved_input_sha256": saved_inputs(game)[1],
+            "material_supply_fingerprint": lua.globals().ns.ProfMaterialSupplyMeta.fingerprint,
             "quantities": quantities, "first_full_ms": first_full,
             "wall_ms": round((time.perf_counter() - begin) * 1000, 2),
             "error": str(job.error) if job.error else None, "expanded": job.expanded,
@@ -114,9 +131,11 @@ if __name__ == "__main__":
     parser.add_argument("--without-quantities", action="store_true")
     parser.add_argument("--game-dir", type=Path, default=GAME,
                         help="read-only game installation containing WTF and Interface/AddOns")
+    parser.add_argument("--material-supply", type=Path,
+                        help="read-only candidate supply Lua for diagnosing an unpublished batch")
     args = parser.parse_args()
     cases = [("engineering", 60), ("alchemy", 1), ("leatherworking", 1),
              ("tailoring", 1), ("blacksmithing", 151)] if args.profession == "all" else [(args.profession, args.start or 1)]
     for profession, start in cases:
         print(json.dumps(replay(profession, start, args.choice, not args.without_quantities,
-                                args.game_dir), ensure_ascii=True), flush=True)
+                                args.game_dir, args.material_supply), ensure_ascii=True), flush=True)

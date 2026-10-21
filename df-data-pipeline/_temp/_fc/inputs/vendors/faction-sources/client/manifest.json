@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "producer": "DungeonsForever.FactionNameDecoder",
+  "build": "1.60.1.70450",
+  "buildEvidence": "Declared build; validated schema family. Exact build is not embedded in WDC5.",
+  "input": {
+    "file": "C:\\Users\\yewei\\Downloads\\DungeonsForever\\DungeonsForever\\.pipeline-runtime\\wow.tools.local\\dbcs\\1.60.1.70450\\dbfilesclient\\faction.db2",
+    "rawFile": "raw/faction_enUS.db2",
+    "sha256": "d2cdb29ff8b2cf666642780bd12e29af7b5c71a4eabdf60ec371b1d6c4c54ee2",
+    "tableHash": "06F624D7",
+    "layoutHash": "6D443C38",
+    "schemaString": "wowstatic_camelot_1_60_1",
+    "localeMask": 1,
+    "locale": "enUS",
+    "localeVerified": true,
+    "readableRows": 253,
+    "encryptedRecordIDs": [],
+    "skippedEncryptedSections": [],
+    "unresolvedCopies": [],
+    "definition": "https://github.com/wowdev/WoWDBDefs/blob/master/definitions/Faction.dbd"
+  },
+  "output": {
+    "file": "factions.csv",
+    "sha256": "b0d14fdd02108af9db37bde3f70273921d98767a3c43740f40e6d3e833bdf9b4",
+    "rows": 253
+  },
+  "hotfix": {
+    "requested": false,
+    "reason": "Raw DB2 only; no hotfixes applied"
+  },
+  "limitations": [
+    "No NPC association or player A/H/N access is inferred.",
+    "Unreadable encrypted sections are reported, not fabricated."
+  ],
+  "files": {
+    "factions.csv": {
+      "sha256": "b0d14fdd02108af9db37bde3f70273921d98767a3c43740f40e6d3e833bdf9b4",
+      "bytes": 6214
+    },
+    "npc-factions.csv": {
+      "sha256": "1f03b2c349f9efc25ae6716a918764fe643bee54d739ec02a3908ba5a0b0c87c",
+      "bytes": 71
+    },
+    "raw/faction_enUS.db2": {
+      "sha256": "d2cdb29ff8b2cf666642780bd12e29af7b5c71a4eabdf60ec371b1d6c4c54ee2",
+      "bytes": 19642
+    }
+  }
+}

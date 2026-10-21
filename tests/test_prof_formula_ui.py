@@ -102,7 +102,7 @@ class FormulaUITests(unittest.TestCase):
           for _,row in ipairs(rows)do
             if row.text and row.text:find('掉落 3 处',1,true)then
               drops=drops+1
-              assert(row.text=='掉落 3 处 · 暂无坐标')
+              assert(row.text=='掉落 3 处 · 精确坐标未收录')
               assert(row.lines[1][1]=='Caretaker Weston · 30%')
             end
             if row.text=='技能 190' then skills=skills+1 end
@@ -122,6 +122,20 @@ class FormulaUITests(unittest.TestCase):
             end end
             assert(found)
           end
+        ''')
+
+    def test_drop_regions_are_visible_without_inventing_npc_coordinates(self):
+        self.lua.execute('''
+          local rows={};PD.RowsFormulaShop(rows,{formulas={{id=99,spell=101,profession='alchemy',
+            source='ah',cost=20,sources={drops={{npc='A',zone='千针石林'},
+              {npc='B',zone='阿拉希高地'},{npc='C',zone='千针石林'}}}}}})
+          local found=false
+          for _,row in ipairs(rows)do if row.text and row.text:find('掉落 3 处',1,true)then
+            found=true
+            assert(row.text=='掉落 3 处 · 千针石林 / 阿拉希高地 · 精确坐标未收录')
+            assert(not row.act,'region name was mistaken for NPC coordinates')
+          end end
+          assert(found)
         ''')
 
     def test_long_formula_name_keeps_limited_badge_and_quantity_inside_row(self):
@@ -200,21 +214,50 @@ class FormulaUITests(unittest.TestCase):
           assert(old.vendors[1].name=='Schema Seller','display mutated frozen source data')
         ''')
 
-    def test_untranslated_vendor_uses_npc_number_and_preserves_original_name_in_tooltip(self):
+    def test_untranslated_vendor_uses_its_real_name_without_duplicate_original_name(self):
         self.lua.execute('''
           GetLocale=function()return 'zhCN' end
           local rows={};PD.RowsFormulaShop(rows,{formulas={{id=99,spell=101,profession='alchemy',
             count=1,cost=7,source='vendor',unlimited=true,
             sources={vendors={{id=7,name='No verified locale name'}}},
-            vendorOffers={{npcID=7,name='No verified locale name',price=7,quantity=1,unlimited=true}}}}})
+            vendorOffers={{npcID=7,name='No verified locale name',npcNameCanonical='No verified locale name',
+              npcNameUntranslated=true,price=7,quantity=1,unlimited=true}}}}})
           local compact,canonical=false,false
           for _,row in ipairs(rows)do if row.it then
             for _,line in ipairs(row.lines)do
-              if line[1]=='商人 NPC #7：7 · 固定售卖（不限量）' then compact=true end
+              if line[1]=='No verified locale name：7 · 固定售卖（不限量）' then compact=true end
               if line[1]=='原文名称：No verified locale name' then canonical=true end
             end
           end end
-          assert(compact and canonical,'unverified translation was invented or original name was lost')
+          assert(compact and not canonical,'real vendor name was hidden or repeated')
+        ''')
+
+    def test_saved_numbered_vendor_recovers_canonical_name_for_tooltip_and_map_sources(self):
+        self.lua.execute('''
+          GetLocale=function()return 'zhCN'end
+          local entry={id=99,spell=101,profession='alchemy',count=1,cost=7,source='vendor',
+            unlimited=true,sources={vendors={{id=7,name='商人 NPC #7',zone='地区'}}},
+            vendorOffers={{npcID=7,name='商人 NPC #7',npcNameCanonical='Gorhak',
+              npcNameUntranslated=true,price=7,quantity=1,unlimited=true}}}
+          local display=PD.FormulaDisplaySource(entry)
+          assert(display.vendors[1].name=='Gorhak')
+          assert(entry.sources.vendors[1].name=='商人 NPC #7','display rewrote frozen source data')
+          local rows={};PD.RowsFormulaShop(rows,{formulas={entry}})
+          local found=false
+          for _,row in ipairs(rows)do if row.it then
+            for _,line in ipairs(row.lines)do
+              if line[1]=='Gorhak：7 · 固定售卖（不限量）'then found=true end
+              assert(not line[1]:find('商人 NPC #7',1,true))
+              assert(not line[1]:find('原文名称：Gorhak',1,true))
+            end
+          end end
+          assert(found)
+          assert(PD.LocalizedVendorName(7,'#7','Gorhak')=='Gorhak')
+          assert(PD.LocalizedVendorName(7,'Vendor NPC #7','Gorhak')=='Gorhak')
+          assert(PD.LocalizedVendorName(7,'  ','Gorhak')=='Gorhak')
+          L['Gorhak']='已有译名'
+          assert(PD.FormulaDisplaySource(entry).vendors[1].name=='已有译名')
+          assert(PD.LocalizedVendorName(7,nil)=='商人 NPC #7')
         ''')
 
     def test_formula_import_only_contains_selected_auction_purchases(self):

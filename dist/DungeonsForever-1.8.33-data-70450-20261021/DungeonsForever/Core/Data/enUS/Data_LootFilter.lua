@@ -1,3 +1,0 @@
-if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
-
-local _, ns = ...

@@ -12,10 +12,11 @@ ASSETS = {'.blp', '.tga', '.png', '.jpg', '.jpeg', '.dds', '.ttf', '.otf',
           '.ogg', '.mp3', '.wav', '.m2', '.skin', '.anim', '.wmo'}
 
 
-def runtime_files(root=None, snapshots=None):
+def runtime_files(root=None, snapshots=None, generated=None):
     root = require_repo_path(root or REPO)
     files = set()
     snapshots = {} if snapshots is None else snapshots
+    generated = set(generated or ())
 
     def resolve(reference, directory):
         relative = Path(reference.replace('\\', '/'))
@@ -23,18 +24,18 @@ def runtime_files(root=None, snapshots=None):
             raise PipelineError('absolute runtime reference: %s' % reference)
         for base in (directory, root):
             candidate = require_repo_path(base / relative, root)
-            if candidate.is_file():
+            if candidate.is_file() or candidate in generated:
                 return candidate
         raise PipelineError('missing runtime reference: %s' % reference)
 
     def add(path):
         path = require_repo_path(path, root)
-        if not path.is_file():
+        if not path.is_file() and path not in generated:
             raise PipelineError('missing package file: %s' % path)
         if path in files:
             return
         files.add(path)
-        snapshots[path] = path.read_bytes()
+        snapshots[path] = path.read_bytes() if path.is_file() else None
         if path.suffix.lower() == '.xml':
             for node in ET.fromstring(snapshots[path]).iter():
                 if node.tag.rsplit('}', 1)[-1] in ('Include', 'Script') and node.get('file'):
@@ -65,20 +66,21 @@ def build_install_zip(destination, overrides, expected=None):
     destination = require_repo_path(destination)
     if destination.suffix.lower() != '.zip' or destination.exists():
         raise PipelineError('ZIP destination must be a new .zip file: %s' % destination)
+    base = tuple('Data_%s.lua' % name for name in ('Professions', 'ProfRecipes', 'ProfLeveling',
+                                                 'ProfGathering', 'ProfVendors', 'ProfTrainers'))
+    allowed = {REPO / 'Core/Data' / name for name in base + ('Data_ProfItems.lua', 'Data_ProfSpecializations.lua',
+                                                            'Data_ProfMaterialSupply.lua')}
+    allowed.update(REPO / 'Core/Data' / locale / name for locale in ('enUS', 'zhTW') for name in base)
     snapshots = {}
-    files = runtime_files(snapshots=snapshots)
+    files = runtime_files(snapshots=snapshots, generated=allowed & overrides.keys())
     source_hashes = {}
     contents = {}
     for path in files:
         original = snapshots[path]
-        source_hashes[path] = sha(original)
+        source_hashes[path] = sha(original) if original is not None else None
         if expected is not None and path in expected and source_hashes[path] != expected[path]:
             raise PipelineError('runtime input changed before packaging: %s' % path)
         contents['DungeonsForever/' + path.relative_to(REPO).as_posix()] = overrides.get(path, original)
-    base = tuple('Data_%s.lua' % name for name in ('Professions', 'ProfRecipes', 'ProfLeveling',
-                                                 'ProfGathering', 'ProfVendors', 'ProfTrainers'))
-    allowed = {REPO / 'Core/Data' / name for name in base + ('Data_ProfItems.lua', 'Data_ProfSpecializations.lua')}
-    allowed.update(REPO / 'Core/Data' / locale / name for locale in ('enUS', 'zhTW') for name in base)
     invalid = sorted(set(overrides) & set(files) - allowed)
     if invalid:
         raise PipelineError('package override is outside profession data: %s' % invalid[0])

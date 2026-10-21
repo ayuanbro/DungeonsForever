@@ -196,6 +196,10 @@ end
 local function validatePlan(result,slug)
     if result and RA and RA.ValidateVendorQuotes then result=RA.ValidateVendorQuotes(result) end
     if result and RA and RA.ValidateSpecializationPlan then result=RA.ValidateSpecializationPlan(result,slug) end
+    if result and RA and RA.ValidateRecovery then
+        local db=dbProf()
+        result=RA.ValidateRecovery(result,{recoveryEnabled=db.recoveryEnabled~=false,recoveryFeePercent=db.recoveryFeePercent})
+    end
     return result
 end
 local function questGoal(seg) return seg.quest or seg.specializationGoal or seg.goal or seg end
@@ -271,7 +275,17 @@ local function routeFor(slug, skill)
             if frozen.status=="recalculate_required" then return "auto",{},frozen end
             return "fixed",frozen.executionSteps,frozen
         end
-        local normalized=xp.NormalizePlan(slug,{mode="fixed",steps=fixed or {},target=routeTarget(slug),feasible=true,status="complete"})
+        local reference
+        if RA and RA.FixedSummary then reference=RA.FixedSummary(slug,fixed or {},{target=routeTarget(slug)})
+        elseif RA and RA.SummarizeSteps then reference=RA.SummarizeSteps(fixed or {},slug) end
+        reference=reference or {}
+        reference.mode,reference.steps,reference.target="fixed",reference.steps or fixed or {},routeTarget(slug)
+        if reference.status=="selection_required" or reference.status=="recalculate_required" or reference.feasible==false then
+            return "auto",{},reference
+        end
+        if reference.feasible==nil then reference.feasible=true end
+        if reference.status==nil then reference.status="complete" end
+        local normalized=xp.NormalizePlan(slug,reference)
         if normalized and RA and RA.StampSpecializations then RA.StampSpecializations(normalized,slug,{target=routeTarget(slug)}) end
         if normalized then return "fixed",normalized.executionSteps,normalized end
     end
@@ -1183,6 +1197,19 @@ function PF.Build()
     f.bar:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -66)
     f.bar:SetSize(1, 5)
 
+    f.recovery = CreateFrame("Frame", nil, f)
+    f.recovery.text = MakeFS(f.recovery, 12, C_GREY, "LEFT")
+    f.recovery.text:SetWordWrap(true)
+    f.recovery.text:SetPoint("TOPLEFT", f.recovery, "TOPLEFT", 0, 0)
+    f.recovery:EnableMouse(true)
+    f.recovery:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        for _, line in ipairs(self.lines or {}) do GameTooltip:AddLine(line[1],line[2] or 1,line[3] or 1,line[4] or 1,true) end
+        GameTooltip:Show()
+    end)
+    f.recovery:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     -- 当前段卡（绿描边小面板）。卡中卡提亮：HUI 主题下主卡是 L2，内卡用 L3 实色；
     -- 非 HUI 沿用白 overlay。
     f.card = CreateFrame("Frame", nil, f, BackdropTemplateMixin and "BackdropTemplate" or nil)
@@ -1207,8 +1234,8 @@ function PF.Build()
         if not self.__it then return end
         local PD = ns.ProfModule
         local extra
-        if PD and PD.PriceTipLines then
-            extra = PD.PriceTipLines(self.__it[1], self.__mats)
+        if PD and PD.StepRecoveryLines and self.__step then
+            extra = PD.StepRecoveryLines(self.__step)
         end
         DG.ShowItemTip(self, self.__it, extra)
     end)
@@ -1593,6 +1620,22 @@ function PF.Paint()
     local y = -82                      -- 头部固定高（「已过摘要」行已按用户要求移除）
     local pending = false
 
+    local PDm = ns.ProfModule
+    local recoveryLines = PDm and PDm.RecoveryLines and PDm.RecoveryLines(res, true) or {}
+    f.recovery:SetShown(#recoveryLines > 0)
+    if #recoveryLines > 0 then
+        local texts = {}
+        for _, line in ipairs(recoveryLines) do texts[#texts + 1] = line[1] end
+        f.recovery.text:SetText(table.concat(texts, "\n"))
+        f.recovery.text:SetWidth(W - 2 * PAD)
+        f.recovery.lines = PDm.RecoveryLines(res)
+        f.recovery:ClearAllPoints()
+        f.recovery:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
+        local height = lineHeight(f.recovery.text, 12)
+        f.recovery:SetSize(W - 2 * PAD, height)
+        y = y - height - 8
+    end
+
     if not finished and not waiting then
         local seg = steps[vi]
         local specializationQuest=seg.kind=="specialization_quest"
@@ -1621,6 +1664,7 @@ function PF.Paint()
         -- 段卡悬停数据（OnEnter 用，见 Build）：产物 + 本段材料
         card.__it = prodItem and { prodItem } or nil
         card.__mats = recMats(rec)
+        card.__step = seg
         local PDm = ns.ProfModule
         local checkpoint = not specializationQuest and (seg.checkpoint or seg[3] == 0)
         local stepProf = D.pro and D.pro[stepSlug]

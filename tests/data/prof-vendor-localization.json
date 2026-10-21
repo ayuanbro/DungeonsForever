@@ -1,6 +1,6 @@
 {
   "checkedOn": "2026-10-21",
-  "policy": "NPC-ID names are display-only; no supplier, stock, access, or price authority. Existing locale catalogues are reused; missing names use the linked Forever tooltip.",
+  "policy": "NPC-ID names are display-only; no supplier, stock, access, or price authority. Existing verified names and earlier unavailable evidence retain their recorded sources. Recovered English identities are checked against cached sold-by Listview JSON; not_verified means no localized web lookup was performed. checkedOn records local audit maintenance, not a blanket network check.",
   "vendors": [
     {
       "npcID": 66,
@@ -13,6 +13,26 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 340,
+      "enUS": "Kendor Kabonka",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 728,
+        "file": "scripts/.cache/soldby/728.html",
+        "sha256": "1af7e58b31f46b4de85ab8e31a1c07a1ed96f6c377c7eb863bb3515e200fc718",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 734,
       "enUS": "Corporal Bluth",
       "zhCN": "布鲁斯下士",
@@ -21,6 +41,26 @@
       "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
       "zhCNStatus": "verified",
       "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 777,
+      "enUS": "Amy Davenport",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 5772,
+        "file": "scripts/.cache/soldby/5772.html",
+        "sha256": "6bc7123022de63ca22237ae2610dc77433edb745cc8e2397ed0b94b8a45e0280",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
     },
     {
       "npcID": 843,
@@ -403,6 +443,26 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 2683,
+      "enUS": "Namdo Bizzfizzle",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 14639,
+        "file": "scripts/.cache/soldby/14639.html",
+        "sha256": "66f90597938ee6a81a422ca545005c08537d745ca8be24f8e29113e5bfac75b8",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 2684,
       "enUS": "Rizz Loosebolt",
       "zhCN": "里兹·飞矢",
@@ -441,6 +501,26 @@
       "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
       "zhCNStatus": "verified",
       "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2697,
+      "enUS": "Clyde Ranthal",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 7289,
+        "file": "scripts/.cache/soldby/7289.html",
+        "sha256": "abbad6ed96f19d8c2129f22cfca183011cdecc8587882728659922d89b272948",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
     },
     {
       "npcID": 2698,
@@ -513,6 +593,66 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 2814,
+      "enUS": "Narj Deepslice",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 4609,
+        "file": "scripts/.cache/soldby/4609.html",
+        "sha256": "f90247c6582753f35be5b3c353ac5047a784453734d620aedece1404eb5a27fd",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 2816,
+      "enUS": "Androd Fadran",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 13288,
+        "file": "scripts/.cache/soldby/13288.html",
+        "sha256": "efe09c868525fc1686236d4bc2a6c5ef224550f423301c286185d7b294474783",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 2819,
+      "enUS": "Tunkk",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 13287,
+        "file": "scripts/.cache/soldby/13287.html",
+        "sha256": "86185689404dc9e915d9c54f2071a2a4c1f606b3d5246d59d0603f5c37528f63",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 2821,
       "enUS": "Keena",
       "zhCN": "基纳",
@@ -551,6 +691,26 @@
       "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
       "zhCNStatus": "verified",
       "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2846,
+      "enUS": "Blixrez Goodstitch",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 5788,
+        "file": "scripts/.cache/soldby/5788.html",
+        "sha256": "7978c891e36b33521cceb71065938923e66ab421a799418c303cea39a1c30200",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
     },
     {
       "npcID": 2848,
@@ -773,6 +933,26 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 3489,
+      "enUS": "Zargh",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 3735,
+        "file": "scripts/.cache/soldby/3735.html",
+        "sha256": "17b907ade67270a82bbcdf80dee88a6257063b116e53564c8c09619d39292da4",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 3490,
       "enUS": "Hula'mahi",
       "zhCN": "哈拉玛",
@@ -853,6 +1033,26 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 3683,
+      "enUS": "Kiknikle",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 5772,
+        "file": "scripts/.cache/soldby/5772.html",
+        "sha256": "6bc7123022de63ca22237ae2610dc77433edb745cc8e2397ed0b94b8a45e0280",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 3881,
       "enUS": "Grimtak",
       "zhCN": "格瑞姆塔克",
@@ -923,6 +1123,26 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 4086,
+      "enUS": "Veenix",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 7561,
+        "file": "scripts/.cache/soldby/7561.html",
+        "sha256": "25de4ad17dfe7c44f41674c2215b224a14aee552ad375a7dd24333e80e25c798",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 4168,
       "enUS": "Elynna",
       "zhCN": "艾琳娜",
@@ -931,6 +1151,26 @@
       "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
       "zhCNStatus": "verified",
       "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4186,
+      "enUS": "Mavralyn",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 5786,
+        "file": "scripts/.cache/soldby/5786.html",
+        "sha256": "3acd2a1354de493a6d2a70f243330a933becb1ce287146727220bbcc8693a37d",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
     },
     {
       "npcID": 4189,
@@ -1283,6 +1523,26 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 5695,
+      "enUS": "Vance Undergloom",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 6342,
+        "file": "scripts/.cache/soldby/6342.html",
+        "sha256": "fb0a5de78292fe83f6c87d1f85f1d8ccbbcff8f3cc6842a95f53e3de7dee6e1c",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 5748,
       "enUS": "Killian Sanatha",
       "zhCN": "基利恩·萨纳森",
@@ -1401,6 +1661,66 @@
       "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
       "zhCNStatus": "verified",
       "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 6731,
+      "enUS": "Harlown Darkweave",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 7361,
+        "file": "scripts/.cache/soldby/7361.html",
+        "sha256": "9c1f89201412275511f80d1dd4ec4a9b5cfb4a6a445c3bd477c70f91b95ff9c3",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 6777,
+      "enUS": "Zan Shivsproket",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 7742,
+        "file": "scripts/.cache/soldby/7742.html",
+        "sha256": "170d64a251dbd95aafde43f773bf68e55648f3b53312a15fb256ad2b7041a86e",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 6779,
+      "enUS": "Smudge Thunderwood",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 18160,
+        "file": "scripts/.cache/soldby/18160.html",
+        "sha256": "51a747fc502237baa63fc0fd2133f8586fd1f8913f66bf44db973f06c7c0344b",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
     },
     {
       "npcID": 7733,
@@ -2173,6 +2493,26 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 216672,
+      "enUS": "Namdo Bizzfizzle",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 14639,
+        "file": "scripts/.cache/soldby/14639.html",
+        "sha256": "66f90597938ee6a81a422ca545005c08537d745ca8be24f8e29113e5bfac75b8",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 216902,
       "enUS": "Wulmort Jinglepocket",
       "zhCN": "乌莫尔特",
@@ -2515,6 +2855,26 @@
       "zhTWStatus": "verified"
     },
     {
+      "npcID": 257004,
+      "enUS": "Eaysaa Brightgust",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 6342,
+        "file": "scripts/.cache/soldby/6342.html",
+        "sha256": "fb0a5de78292fe83f6c87d1f85f1d8ccbbcff8f3cc6842a95f53e3de7dee6e1c",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
       "npcID": 257006,
       "enUS": "Nyalah Brightfire",
       "zhCN": "妮雅拉·明火",
@@ -2734,6 +3094,26 @@
       "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/272646?locale=zhTW",
       "zhCNStatus": "unavailable",
       "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 277945,
+      "enUS": "Happy Camper",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 273085,
+        "file": "scripts/.cache/soldby/273085.html",
+        "sha256": "72bbdeb6fc1a47b21bf05d199486949193d9551119bfbfacd7aa630f1790cc7d",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
     }
   ]
 }

@@ -13,6 +13,7 @@ if os.environ.get("LOCALAPPDATA"):
     sys.path.insert(0, os.path.join(os.environ["LOCALAPPDATA"], "Temp", "df-lua-runtime"))
 sys.path.insert(0, str(Path.home() / "AppData" / "Local" / "Temp" / "df-lua-runtime"))
 from lupa.lua51 import LuaRuntime
+from material_supply_fixture import MATERIAL_FIXTURE
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -325,7 +326,9 @@ class FixedShoppingPriceTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute(STUBS)
+        self.lua.execute(MATERIAL_FIXTURE)
         self.lua.execute('''
+          material(10,{price=10,quantity=5},77)
           settings.autoRoute=false;skills.alchemy.cur=1
           followState.skill=1;followState.step=1
           ns.ProfLeveling.alchemy={steps={{1,2,101,1}},sold={10}}
@@ -372,7 +375,7 @@ class FixedShoppingPriceTests(unittest.TestCase):
             if purchase.source=='vendor' then
               npc=npc+purchase.need
               assert(purchase.vendor and purchase.npcID==nil and purchase.cost==20)
-              assert(purchase.bundleSize==5 and purchase.priceSource=='client')
+              assert(purchase.bundleSize==5 and purchase.priceSource=='client_base_bundle')
             elseif purchase.source=='ah' then
               ah=ah+purchase.need;assert(not purchase.vendor and purchase.cost==6)
             else error('lost selected procurement source') end

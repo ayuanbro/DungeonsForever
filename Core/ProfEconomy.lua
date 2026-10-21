@@ -241,7 +241,9 @@ end
 function E.SpecializationFingerprint(value)
     value=value and (value.specializationContext or value) or {}
     local choice=value.choice or value.engineeringSpecialization or E.GetEngineeringSpecialization()
-    return "1:"..tostring(choice)..":"..specializationDataIdentity()
+    -- Learning policy 2 prioritizes observed trainer teaching over item paths.
+    -- Existing route validation keeps old plans waiting for manual recalculation.
+    return "2:"..tostring(choice)..":"..specializationDataIdentity()
 end
 function E.SpecializationAbilityFingerprint(value)
     local abilities=value and (value.specializationAbilities or value.abilities or value) or {}
@@ -361,6 +363,22 @@ function E.CaptureSpecializations(snapshot,opts,slug)
     snapshot.specializationFingerprint=context.fingerprint
     return snapshot
 end
+-- A teaching item is an alternative learning path, not proof that it must be
+-- purchased. Positive trainer evidence takes priority for display/procurement;
+-- specialization and client availability are still checked separately.
+function E.LearningSource(recipe)
+    if type(recipe)~="table" then return end
+    if recipe.learnSource=="trainer" or recipe.trainerObserved==true then return "trainer" end
+    local spell=recipe.spell or recipe.spellID or recipe[1]
+    local observed=ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[spell]
+    if observed and observed.trainerObserved==true then return "trainer" end
+    local evidence=ns.ProfSpecializations and ns.ProfSpecializations[spell]
+    for _,route in ipairs(evidence and evidence.routes or {}) do
+        -- Pending specialization requirements do not erase observed teaching.
+        if route.kind=="trainer" and route.trainerObserved==true then return "trainer" end
+    end
+    return recipe.learnSource
+end
 function E.LearningEligibility(recipe,snapshot,state)
     if type(recipe)~="table" then return false,"clientDataPending" end
     snapshot=snapshot and (snapshot.snapshot or snapshot)
@@ -376,7 +394,7 @@ function E.LearningEligibility(recipe,snapshot,state)
     local actual=snapshot and (snapshot.specializationAbilities or snapshot.abilities or
         (snapshot.specializationContext and snapshot.specializationContext.abilities))
     if not actual then actual=E.GetEngineeringSpecializationContext().abilities end
-    local selectedKind=recipe.learningRoute or (recipe.learnSource=="trainer" and "trainer") or
+    local selectedKind=(E.LearningSource(recipe)=="trainer" and "trainer") or recipe.learningRoute or
         ((recipe.formula or recipe.formulaID) and "item")
     local item=recipe.formula or recipe.formulaID
     local candidates,all={},{}
@@ -489,6 +507,11 @@ function E.ResolveRecipe(seed,slug)
             r.availabilityUnknown=nil; r.verified=true
         end
     end
+    local prices=ns.ProfItemPrices
+    if not r.formula and prices and prices.GetFormulaItemID then
+        r.formula=prices.GetFormulaItemID(r.spell,r.source)
+    end
+    if E.LearningSource(r)=="trainer" then r.learnSource="trainer" end
     local roster=store().recipeRosters and store().recipeRosters[r.profession]
     if roster and roster.complete and not roster.ids[r.spell] and not (rt and rt.trainerObserved) then
         r.clientUnavailable=true; r.clientAvailable=nil; r.verified=false
@@ -554,6 +577,24 @@ end
 local function formulaContext(context)
     context=context or {}
     return context.snapshot or context
+end
+-- This is a purchase-source policy. Learned recipes and explicit trainer
+-- learning paths keep their existing eligibility regardless of the setting.
+function E.AllowLimitedFormulas(context)
+    if context and context.allowLimitedFormulas~=nil then return context.allowLimitedFormulas==true end
+    local snapshot=context and context.snapshot
+    if snapshot and snapshot.allowLimitedFormulas~=nil then return snapshot.allowLimitedFormulas==true end
+    local db=DungeonsForeverDB and DungeonsForeverDB.prof
+    return db and db.autoBuyLimitedFormulas==true or false
+end
+function E.LimitedFormulaOffer(offer)
+    if offer.unlimited==true then return false end
+    if offer.limited==true or offer.stockStatus=="limited"
+        or (type(offer.stock)=="number" and offer.stock>=0)
+        or (type(offer.maxStock)=="number" and offer.maxStock>=0) then return true end
+    -- Normalized offers also use unlimited=false for missing stock evidence.
+    if offer.stockUnknown or offer.stockStatus=="unknown" then return false end
+    return offer.unlimited==false
 end
 local function recipeKnown(r,context)
     if context.professions and context.professions[r.profession] and context.professions[r.profession].unlearned then return false end
@@ -683,8 +724,8 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
         if not quest then return end
         id=nil
     end
-    -- Positive trainer observation supersedes an old catalogue formula item.
-    if r.learnSource=="trainer" then return end
+    -- An observed trainer path does not require purchasing the teaching item.
+    if E.LearningSource(r)=="trainer" then return end
     local entry={id=id,count=1,need=1,spell=r.spell,profession=r.profession,recipeKey=r.key,
         known=known,sources=sources,recipe=r,recipes={{profession=r.profession,spell=r.spell,key=r.key,source=sources}},
         questOnly=quest and not hasEntries(sources.vendors) and not hasEntries(sources.drops) or false,
@@ -714,16 +755,19 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     local ahUsable=entry.ahPrice and (ahAvailable==nil or ahAvailable>=1)
     if supply then entry.availableCount=supply.quantity;entry.supplyObserved=true;entry.supplyComplete=supply.complete==true end
     local best,bestCost
+    local allowLimited=E.AllowLimitedFormulas(context)
     for _,o in ipairs(entry.vendorOffers) do
         if o.unlimited==true then entry.unlimited=true
-        elseif o.unlimited==false or o.limited==true or o.stockStatus=="limited" or (type(o.stock)=="number" and o.stock>=0) then entry.limited=true
+        elseif E.LimitedFormulaOffer(o) then entry.limited=true
         else entry.stockUnknown=true end
         if type(o.price)=="number" and o.price>=0 and not o.hasExtendedCost and (not o.currencyID or o.currencyID==0) then
             local unit=o.price/(o.quantity or o.bundleSize or 1)
             if not entry.vendorPrice or unit<entry.vendorPrice then entry.vendorPrice=unit end
         end
         local factionOK=not o.faction or not context.faction or o.faction==context.faction or o.faction=="N" or o.faction=="Neutral" or o.faction=="AH" or o.faction=="Both"
-        if o.available~=false and o.purchasable~=false and o.priceUsable~=false and factionOK
+        local limitedBlocked=not allowLimited and E.LimitedFormulaOffer(o)
+        if limitedBlocked then entry.limitedVendorDisabled=true end
+        if not limitedBlocked and o.available~=false and o.purchasable~=false and o.priceUsable~=false and factionOK
             and not o.hasExtendedCost and (not o.currencyID or o.currencyID==0)
             and type(o.price)=="number" and o.price>=0 and o.stock~=0 then
             local quantity=o.quantity or o.bundleSize or 1
@@ -747,7 +791,8 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     entry.sourceType=entry.source;entry.totalCost=entry.cost;entry.blocked=not entry.usable
     entry.vendor=entry.source=="vendor"
     if entry.blocked then
-        entry.reason=entry.ahPrice and ahAvailable~=nil and ahAvailable<1 and "auctionSupplyLimited" or "formulaUnavailable"
+        entry.reason=entry.ahPrice and ahAvailable~=nil and ahAvailable<1 and "auctionSupplyLimited"
+            or entry.limitedVendorDisabled and "limitedFormulaDisabled" or "formulaUnavailable"
     end
     return entry
 end
@@ -808,6 +853,7 @@ function E.Capture(slug,opts,tick)
     opts=opts or {}; tick=tick or function() end
     if opts.snapshot then
         local s=copy(opts.snapshot)
+        s.allowLimitedFormulas=E.AllowLimitedFormulas(opts)
         s.professions,s.routeContext=routeProfessions(slug,opts,s.professions or {})
         if s.routeContext.unlearned and slug~="__purchase" then
             s.recipes={}
@@ -816,10 +862,12 @@ function E.Capture(slug,opts,tick)
             end
         end
         E.CaptureSpecializations(s,opts,slug)
-        return E.Index(s)
+        s=E.Index(s)
+        if ns.ProfRecovery then ns.ProfRecovery.Capture(s,opts) end
+        return s
     end
     runtime()
-    local s={recipes={},professions=E.Professions(),known={},prices={},offers={},auctionSupply={},auctionSupplyHistory={},priceObservedAt={},vendorItems={},vendorSuppliers={},diagnostics={},coverageComplete=false,stamp=(time and time()) or 0,character=E.CharacterKey()}
+    local s={recipes={},professions=E.Professions(),known={},prices={},offers={},auctionSupply={},auctionSupplyHistory={},priceObservedAt={},vendorItems={},vendorSuppliers={},diagnostics={},coverageComplete=false,stamp=(time and time()) or 0,character=E.CharacterKey(),allowLimitedFormulas=E.AllowLimitedFormulas(opts)}
     s.level=UnitLevel and UnitLevel("player") or nil
     s.faction=UnitFactionGroup and UnitFactionGroup("player") or nil
     if s.faction=="Alliance" then s.faction="A" elseif s.faction=="Horde" then s.faction="H" end
@@ -867,7 +915,9 @@ function E.Capture(slug,opts,tick)
     end
     for _,r in ipairs(s.recipes) do
         if r.item then items[r.item]=true end
-        if r.formula and not s.known[r.key] and not s.known[r.spell] then items[r.formula]=true end
+        if r.formula and E.LearningSource(r)~="trainer" and not s.known[r.key] and not s.known[r.spell] then
+            items[r.formula]=true
+        end
         for _,m in ipairs(r.mats) do items[m[1]]=true end
     end
     local ra=ns.ProfRouteAuto
@@ -893,13 +943,15 @@ function E.Capture(slug,opts,tick)
     end
     s.formulaOffers={}
     if ns.ProfItemPrices and ns.ProfItemPrices.GetFormulaOffers then
-        for _,r in ipairs(s.recipes) do if r.formula then
+        for _,r in ipairs(s.recipes) do if r.formula and E.LearningSource(r)~="trainer" then
             local source=E.FormulaFor(r,s)
             s.formulaOffers[r.formula]=source and source.vendorOffers or {}
             tick()
         end end
     end
-    return E.Index(s)
+    s=E.Index(s)
+    if ns.ProfRecovery then ns.ProfRecovery.Capture(s,opts) end
+    return s
 end
 function E.ReadRecipe(spell)
     if not positiveInteger(spell) then return end
@@ -1183,6 +1235,8 @@ function E.DiagnosticText(d)
         pairingChanged="搭配专业已更改，点击重新计算应用。",
         professionChanged="专业学习状态或旧路线规则已变化，请重新计算路线。",
         formulaUnavailable="未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。",
+        limitedFormulaDisabled="当前设置不从 NPC 购买限量图纸；请取得拍卖行报价或先学会该配方。",
+        formulaPolicyChanged="限量图纸购买设置已变化，请重新计算路线。",
         formulaPriceUnknown="图纸购买价格尚未核实。",
         formulaStockUnknown="图纸为限量或未核实库存，不能保证商人现货。",
         auctionSupplyLimited="拍卖行可购数量不足，无法继续此配方；请查询更多货物或改用其他配方。",

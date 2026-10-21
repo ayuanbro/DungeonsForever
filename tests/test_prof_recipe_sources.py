@@ -74,6 +74,13 @@ class RecipeSourceTests(unittest.TestCase):
         self.lua.execute((ROOT / 'Core/ProfItemPrices.lua').read_text(encoding='utf-8-sig'),
                          'Test', self.lua.globals().ns)
 
+    def load_learning_cards(self):
+        source = (ROOT / 'Core/ProfessionUI.lua').read_text(encoding='utf-8-sig')
+        for start, end in (('local TRAINER_CARD =', 'function PD.RowBlk('),
+                           ('function PD.LevelSrc(', 'function PD.SourceParts(')):
+            begin = source.index(start)
+            self.lua.execute(source[begin:source.index(end, begin)])
+
     def test_dual_sources_have_independent_labels_tooltips_and_existing_actions(self):
         self.lua.execute('''
           schema(99)
@@ -144,8 +151,123 @@ class RecipeSourceTests(unittest.TestCase):
         self.lua.execute('''
           schema(99,{name_en='Dala Fairmaw'})
           local lines=PD.FormulaSourceLines(99,nil,'vendor')
-          assert(hasLine(lines,'商人 NPC #7'))
-          assert(hasLine(lines,'原文名称：Dala Fairmaw'))
+          assert(hasLine(lines,'商人：Dala Fairmaw'))
+          assert(not hasLine(lines,'商人 NPC #7'))
+          assert(not hasLine(lines,'原文名称：Dala Fairmaw'))
+        ''')
+
+    def test_vendor_affiliation_uses_client_name_before_access_side_and_keeps_unknown(self):
+        self.lua.execute('''
+          ns.ProfVendorFactions={[7]={factionID=93,names={zhCN='静态玛格拉姆半人马'}}}
+          C_Reputation={GetFactionDataByID=function(id)
+            assert(id==93)
+            return{name='客户端玛格拉姆半人马'}
+          end}
+          schema(99,{side='Alliance'})
+          local lines=PD.FormulaSourceLines(99,nil,'vendor')
+          assert(hasLine(lines,'阵营：客户端玛格拉姆半人马'))
+          assert(not hasLine(lines,'阵营：联盟') and not hasLine(lines,'阵营未知'))
+          ns.ProfVendorFactions=nil
+          assert(hasLine(PD.FormulaSourceLines(99,nil,'vendor'),'阵营：联盟'))
+          ns.ProfItems[99].offers[7].side=nil
+          assert(hasLine(PD.FormulaSourceLines(99,nil,'vendor'),'阵营未知'))
+          local original=ns.ProfItemPrices.GetFormulaDisplayOffers
+          ns.ProfItemPrices.GetFormulaDisplayOffers=function(...)
+            local offers=original(...)
+            offers[1].npcFactionName='   '
+            return offers
+          end
+          assert(hasLine(PD.FormulaSourceLines(99,nil,'vendor'),'阵营未知'))
+        ''')
+
+    def test_formal_clan_merchants_show_affiliation_without_inventing_unknown_npc_faction(self):
+        for name in ('Data_ProfItems.lua', 'Data_ProfVendors.lua'):
+            self.lua.execute((ROOT / 'Core/Data' / name).read_text(encoding='utf-8-sig'),
+                             'Test', self.lua.globals().ns)
+        self.lua.execute('''
+          -- Source-backed affiliation is independent of the missing A/H access field.
+          assert(ns.ProfVendorFactions[253139].factionID==93)
+          assert(ns.ProfVendorFactions[253140].factionID==92)
+          local offers=ns.ProfItemPrices.GetFormulaDisplayOffers(249486)
+          assert(#offers==2)
+          for _,offer in ipairs(offers)do
+            assert(offer.faction==nil,'missing access was converted to neutral')
+            assert(offer.npcFactionID==92 or offer.npcFactionID==93)
+          end
+          local lines=PD.FormulaSourceLines(249486,nil,'vendor')
+          assert(hasLine(lines,'商人：Gorhak') and hasLine(lines,'阵营：玛格拉姆半人马'))
+          assert(hasLine(lines,'商人：Molkar') and hasLine(lines,'阵营：吉尔吉斯半人马'))
+          assert(not hasLine(lines,'阵营未知') and not hasLine(lines,'阵营：中立'))
+          local pexmit=PD.FormulaSourceLines(251468,nil,'vendor')
+          assert(hasLine(pexmit,'商人：Pexmit') and hasLine(pexmit,'阵营未知'))
+        ''')
+
+    def test_screenshot_sellers_keep_real_names_in_sources_and_map_picker_entries(self):
+        source = (ROOT / 'Core/ProfessionUI.lua').read_text(encoding='utf-8-sig')
+        for start, end in (('function PD.VendorListOf(', 'function PD.CampZoneName('),
+                           ('function PD.VendorEntries(', 'function PD.DropEntries(')):
+            begin = source.index(start)
+            self.lua.execute(source[begin:source.index(end, begin)])
+        self.lua.execute('''
+          GetLocale=function()return 'zhCN'end
+          local sellers={{253139,'Gorhak'},{253140,'Molkar'},{266901,'Pexmit'}}
+          local src={vendors={}}
+          for _,seller in ipairs(sellers)do
+            schema(99,{name_en=seller[2]},1,seller[1])
+            ns.ProfVendors[seller[1]]={12,1415,50,60}
+            src.vendors[#src.vendors+1]={id=seller[1],name=seller[2],zone='地区'}
+          end
+          local lines=PD.FormulaSourceLines(99,src,'vendor')
+          local display=PD.FormulaVendorSource(99,src)
+          local entries=PD.VendorEntries(display)
+          assert(#entries==3)
+          for i,seller in ipairs(sellers)do
+            assert(hasLine(lines,'商人：'..seller[2]))
+            assert(not hasLine(lines,'原文名称：'..seller[2]))
+            assert(not hasLine(lines,'商人 NPC #'..seller[1]))
+            assert(entries[i].name==seller[2])
+          end
+          PD.VendorPickToggle=function(zone,ents)pickerZone=zone;pickerEntries=ents end
+          PD.VendorAct(display)('source-zone')
+          assert(pickerZone=='source-zone' and #pickerEntries==3 and pickerEntries[3].name=='Pexmit')
+          L['Gorhak']='已有译名'
+          assert(hasLine(PD.FormulaSourceLines(99,src,'vendor'),'商人：已有译名'))
+        ''')
+
+    def test_vendor_display_filters_player_faction_but_keeps_unknown_sides(self):
+        source = (ROOT / 'Core/ProfessionUI.lua').read_text(encoding='utf-8-sig')
+        begin = source.index('function PD.VendorListOf(')
+        self.lua.execute(source[begin:source.index('function PD.CampZoneName(', begin)])
+        self.lua.execute('''
+          local src={vendors={}}
+          local sides={'a','A','Alliance','h','H','Horde','n','N','Neutral','','unknown'}
+          for i,side in ipairs(sides)do
+            local id=i+6
+            src.vendors[#src.vendors+1]={id=id,name='Seller'..id,side=side~='' and side or nil}
+            schema(99,{name_en='Seller'..id,side=side},1,id)
+          end
+          local faction='Alliance'
+          UnitFactionGroup=function(unit)assert(unit=='player');return faction end
+          for _,case in ipairs({{'Alliance',7},{'Horde',10}})do
+            faction=case[1]
+            local ui=PD.VendorListOf(src)
+            local offers=ns.ProfItemPrices.GetFormulaDisplayOffers(99,nil,src)
+            assert(#ui==8 and #offers==8)
+            for i=1,3 do
+              assert(ui[i].id==case[2]+i-1 and offers[i].npcID==case[2]+i-1)
+            end
+            for i=4,8 do assert(ui[i].id==i+9 and offers[i].npcID==i+9)end
+            assert(offers[7].faction==nil and offers[8].faction==nil)
+            local context={npcAccess={[17]=false}}
+            local denied=ns.ProfItemPrices.GetFormulaDisplayOffers(99,context,src)
+            assert(#denied==7 and denied[#denied].npcID==16)
+            context.npcAccess[17]=true
+            assert(#ns.ProfItemPrices.GetFormulaDisplayOffers(99,context,src)==8)
+          end
+          faction=nil
+          assert(#PD.VendorListOf(src)==11)
+          assert(#ns.ProfItemPrices.GetFormulaDisplayOffers(99,nil,src)==11)
+          assert(src.vendors[10].side==nil and src.vendors[11].side=='unknown')
         ''')
 
     def test_unknown_vendor_details_and_currency_api_fallback_do_not_invent_values(self):
@@ -290,6 +412,124 @@ class RecipeSourceTests(unittest.TestCase):
           segments[1].act('zone')
           assert(markedCall and marked==nil)
           assert(#ns.ProfItemPrices.GetFormulaOffers(99)==0)
+        ''')
+
+    def test_formal_veteran_helm_and_leggings_keep_npc_exchange_instead_of_item_root_gold(self):
+        for name in ('Data_ProfItems.lua', 'Data_ProfVendors.lua', 'Data_ProfRecipes.lua'):
+            self.lua.execute((ROOT / 'Core/Data' / name).read_text(encoding='utf-8-sig'),
+                             'Test', self.lua.globals().ns)
+        self.lua.execute('''
+          PD.cur='blacksmithing'
+          C_CurrencyInfo={GetCurrencyInfo=function(id)
+            assert(id==3402,'wrong currency ID reached the client API')
+            return{name='本地客户端军需通货',iconFileID=543210}
+          end}
+          GetAreaInfo=function(id)return ({[44]='赤脊山',[17]='贫瘠之地'})[id]end
+          for _,case in ipairs({{251380,1252277,250528,2375},{251375,1252272,250523,3125}})do
+            local fid,spell,output,rootGold=unpack(case)
+            local row
+            for _,candidate in ipairs(ns.ProfRecipes.blacksmithing.rows)do
+              if candidate[1]==spell then row=candidate;break end
+            end
+            assert(row and row[13][1]==fid and row[2]==output,'recipe/formula identity changed')
+            assert(ns.ProfItems[fid].cost_copper==rootGold,'root-price sentinel changed')
+            for _,side in ipairs({{'Alliance','A',256730},{'Horde','H',248197}})do
+              UnitFactionGroup=function()return side[1]end
+              local offers=ns.ProfItemPrices.GetFormulaDisplayOffers(fid,nil,row[14])
+              assert(#offers==1,'formal formula source lost verified faction filtering')
+              local offer=offers[1]
+              assert(offer.npcID==side[3] and offer.faction==side[2])
+              assert(offer.currencyKind=='currency' and offer.currencyID==3402 and offer.currencyAmount==30,
+                'formal formula has no verified NPC exchange price')
+              assert(offer.costCopper==nil,'item root gold was substituted for the NPC exchange')
+              local spec=PD.RecipeSpec(row)
+              assert(#spec.sourceSegments==1 and spec.sourceSegments[1].text=='图纸.商人')
+              local part=spec.sourceSegments[1]
+              local lines=part.lines()
+              assert(hasLine(lines,'本地客户端军需通货') and hasLine(lines,'543210') and hasLine(lines,'×30'))
+              assert(not hasLine(lines,'价格未知') and not hasLine(lines,tostring(rootGold)))
+              part.act('source-zone')
+              assert(vendorClicked.vendors[1].id==side[3] and #vendorClicked.vendors==1)
+              assert(#ns.ProfItemPrices.GetFormulaOffers(fid)==0,
+                'an exchange-only formula became a copper procurement offer')
+            end
+          end
+        ''')
+
+    def test_formal_glowing_copper_boots_prefers_observed_trainer_and_preserves_formula_data(self):
+        self.load_learning_cards()
+        for name in ('Data_ProfItems.lua', 'Data_ProfRecipes.lua', 'Data_ProfLeveling.lua',
+                     'Data_ProfSpecializations.lua'):
+            self.lua.execute((ROOT / 'Core/Data' / name).read_text(encoding='utf-8-sig'),
+                             'Test', self.lua.globals().ns)
+        self.lua.execute('''
+          PD.cur='blacksmithing'
+          local row
+          for _,candidate in ipairs(ns.ProfRecipes.blacksmithing.rows)do
+            if candidate[1]==1252231 then row=candidate;break end
+          end
+          assert(row and row[2]==250482 and row[13][1]==251334)
+          local evidence=ns.ProfSpecializations[1252231].routes[1]
+          assert(evidence.kind=='trainer' and evidence.trainerObserved and evidence.status=='pending')
+          local spec=PD.RecipeSpec(row)
+          assert(spec.right2=='训练师' and not spec.sourceSegments and not spec.src and not spec.act)
+          assert(not hasLine(spec.mkLines(),'图纸') and not hasLine(spec.tipExtra(),'图纸'))
+          assert(row[13][1]==251334 and spec.row[13][1]==251334,'display erased original formula data')
+          local card=PD.CardOf(row)
+          assert(card.kind=='trainer' and card.text=='训练师' and not card.fid and not card.act)
+          assert(not hasLine(card.lines,'图纸') and PD.LevelSrc(row)=='向训练师学习')
+          local resolved=ns.ProfEconomy.FindRecipe('blacksmithing',1252231)
+          assert(resolved.learnSource=='trainer' and resolved.formula==251334)
+          assert(ns.ProfEconomy.FormulaFor(resolved,{known={},prices={}})==nil)
+          RGet=function(slug)return ns.ProfRecipes[slug]end
+          local live=PD.StepRecipe({35,36,1252231,1})
+          assert(live.learnSource=='trainer' and live[13][1]==251334)
+          assert(PD.LevelSrc(live)=='向训练师学习' and PD.CardOf(live).kind=='trainer')
+        ''')
+
+    def test_trainer_priority_suppresses_formula_sources_for_all_recipe_adapters(self):
+        self.load_learning_cards()
+        self.lua.execute('''
+          schema(99)
+          local src={formulaID=99,vendors={{id=7,name='配方商人',zone='地区'}},
+            drops={{id=70,npc='掉落怪物',zone='地区'}}}
+          local row={101,10,1,'','','',1,10,15,20,false,{{11,3}},{99},src}
+          local enchant={'name','display','slot','',1,10,15,20,{{11,3}},src,false,nil,nil,102,10}
+          local crafted={103,10,1,1,10,15,20,{{11,3}},99}
+          PD.VendorLines=function()return{{'图纸商人详情'}}end
+          PD.SourceText=function()return '图纸.商人' end
+          for _,static in ipairs({false,true})do
+            ns.ProfRecipeRuntime={};ns.ProfSpecializations={}
+            for _,spell in ipairs({101,102,103})do
+              if static then
+                ns.ProfSpecializations[spell]={routes={{kind='trainer',trainerObserved=true,
+                  status='pending',reason='trainer_specialization_missing'}}}
+              else ns.ProfRecipeRuntime[spell]={trainerObserved=true}end
+            end
+            for _,spec in ipairs({PD.RecipeSpec(row),PD.EnchantSpec(enchant),PD.CraftedSpec(crafted)})do
+              assert(spec.right2=='训练师' and not spec.sourceSegments and not spec.src and not spec.act)
+              assert(not hasLine(spec.lines or{},'图纸') and not hasLine(spec.tipExtra(),'图纸'))
+              assert(not spec.mkLines or not hasLine(spec.mkLines(),'图纸'))
+            end
+          end
+          assert(row[13][1]==99 and enchant[10].formulaID==99 and crafted[9]==99)
+          assert(PD.CardOf(nil,{spell=101,formula=99,learnSource='trainer'}).kind=='trainer')
+          assert(PD.LevelSrc({spell=101,formula=99,trainerObserved=true})=='向训练师学习')
+        ''')
+
+    def test_pending_specialization_without_trainer_observation_keeps_formula_behavior(self):
+        self.load_learning_cards()
+        self.lua.execute('''
+          schema(99)
+          local src={vendors={{id=7,name='配方商人'}},drops={{npc='怪物',zone='地区'}}}
+          ns.ProfSpecializations={[101]={routes={{kind='trainer',status='pending',trainerObserved=false}}}}
+          local row={101,10,1,'','','',1,10,15,20,false,{{11,3}},{99},src}
+          local spec=PD.RecipeSpec(row)
+          assert(#spec.sourceSegments==2 and spec.sourceSegments[1].text=='图纸.掉落'
+            and spec.sourceSegments[2].text=='图纸.商人' and spec.act)
+          local card=PD.CardOf(row)
+          assert(card.text=='图纸' and card.fid==99 and card.act)
+          assert(PD.LevelSrc(row)=='需图纸 · 商人出售')
         ''')
 
 

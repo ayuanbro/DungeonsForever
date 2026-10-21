@@ -14,7 +14,7 @@ local CALLER = "DungeonsForever"
 local CAP = 300                  -- 无限服 1.60.1 专业上限
 local MAX_STALE = 2              -- 价格快照年龄上限（天；价格插件 Age API 返回的就是「天」），超过视为无价
 local CACHE_TTL = 600            -- 结果缓存 10 分钟
-local VENDOR_QUOTE_REVISION = 4
+local VENDOR_QUOTE_REVISION = 5
 -- 期望收益插值端点（调参集中在这里）
 -- ★★ 语义 = 「单次制作的升点概率 P（点/次）」，不是收益系数 —— Simulate 里按 1/P 累计次数。
 --   端点须与 ProfFollow.expPerPoint（经典 1/P 口径）一致：
@@ -99,7 +99,7 @@ local function AHPrice(id)
 end
 
 local function VendorPrice(id)
-    -- 材料只读物品购买价及组数；缺价不拿拍卖价或卖店收益冒充。
+    -- 材料先验证不限量供货资格，再使用独立生成的组价。
     if ns.ProfItemPrices then
         local ok, p = pcall(ns.ProfItemPrices.GetPrice, id)
         if ok and type(p) == "number" and p >= 0 then return p end
@@ -123,29 +123,64 @@ end
 local function vendorQuoteData()
     local meta=ns.ProfItemsMeta
     local csv=meta and meta.sources and meta.sources.csv
-    return csv and csv.sha256 or nil
+    local material=ns.ProfMaterialSupplyMeta
+    return "material-supply-v1:"..tostring(material and material.fingerprint or "missing")
+        .."|formula:"..tostring(csv and csv.sha256 or "missing")
 end
-local function hasVendorPurchases(result)
-    if (result.vendorTotal or 0)>0 or (result.formulaVendorTotal or 0)>0 then return true end
-    for _,entries in ipairs({result.mats or {},result.formulas or {},result.actions or {}}) do
-        for _,entry in ipairs(entries) do
-            if entry.vendor or entry.source=="vendor" or entry.source=="npc" then return true end
-        end
+function RA.StampFormulaPolicy(result,opts)
+    if result and ns.ProfEconomy and type(ns.ProfEconomy.AllowLimitedFormulas)=="function" then
+        result.formulaPolicy={revision=1,allowLimited=ns.ProfEconomy.AllowLimitedFormulas(opts)}
     end
-    return false
+    return result
 end
-function RA.StampVendorQuotes(result)
+function RA.FormulaPolicyChanged(result,opts)
+    if not result or result.status=="selection_required" or result.status=="recalculate_required" then return false end
+    local economy=ns.ProfEconomy
+    -- The public quotation validator is also used without the route/economy
+    -- modules. Material fingerprints can still be checked in that context.
+    if not (economy and type(economy.AllowLimitedFormulas)=="function"
+        and type(economy.LimitedFormulaOffer)=="function") then return false end
+    local policy=result.formulaPolicy
+    if not policy then
+        -- Before this setting existed, every limited seller was eligible. A
+        -- retained plan only needs blocking if it actually relies on one.
+        if economy.AllowLimitedFormulas(opts) then return false end
+        for _,entry in ipairs(result.formulas or {}) do
+            if entry.source=="vendor" and not entry.known and
+                (entry.offer and economy.LimitedFormulaOffer(entry.offer)
+                    or not entry.offer and entry.limited) then return true end
+        end
+        return false
+    end
+    return policy.revision~=1 or policy.allowLimited~=economy.AllowLimitedFormulas(opts)
+end
+function RA.ValidateFormulaPolicy(result,opts)
+    if not RA.FormulaPolicyChanged(result,opts) then return result end
+    return {planVersion=2,mode=result.mode,scheme=result.scheme,status="recalculate_required",
+        start=result.start,target=result.target,steps={},executionSteps={},actions={},mats={},formulas={},gaps={},
+        total=0,matTotal=0,ahTotal=0,vendorTotal=0,formulasTotal=0,crafts=0,
+        feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
+        cached=true,stale=true,staleReason="formula-policy",revision=result.revision,
+        diagnostics={{code="formulaPolicyChanged"}}}
+end
+function RA.StampVendorQuotes(result,opts)
     if result then
         result.vendorQuoteRevision=VENDOR_QUOTE_REVISION
         result.vendorQuoteData=vendorQuoteData()
     end
-    return result
+    return RA.StampFormulaPolicy(result,opts)
 end
 function RA.VendorQuotesChanged(result)
-    return result and hasVendorPurchases(result) and
+    -- Selection/profession/specialization gates already expose no purchasing
+    -- view. Preserve their actionable diagnostic when UI validates it again.
+    if result and (result.status=="selection_required" or result.status=="recalculate_required")
+        and (result.total or 0)==0 and #(result.steps or {})==0 and #(result.actions or {})==0
+        and #(result.mats or {})==0 and #(result.formulas or {})==0 then return false end
+    return result and not result.inFlight and result.status~="searching" and
         (result.vendorQuoteRevision~=VENDOR_QUOTE_REVISION or result.vendorQuoteData~=vendorQuoteData()) or false
 end
-function RA.ValidateVendorQuotes(result)
+function RA.ValidateVendorQuotes(result,opts)
+    result=RA.ValidateFormulaPolicy(result,opts)
     if not RA.VendorQuotesChanged(result) then return result end
     -- Keep stored execution facts intact; the current purchasing view is empty
     -- until a manual calculation uses this version's item/NPC quotations.
@@ -245,7 +280,7 @@ local function NPCSellPrice(id)
         local vals = { pcall(C_Item.GetItemInfo, id) }
         if vals[1] then
             local sell = vals[12]   -- vals[1]=pcall ok，其后依次 GetItemInfo 返回值（第 11 项 = sellPrice）
-            if type(sell) == "number" and sell > 0 then p = sell end
+            if type(sell) == "number" and sell >= 0 then p = sell end
         end
     end
     -- ② 全局 GetItemInfo（老通道）
@@ -253,13 +288,13 @@ local function NPCSellPrice(id)
         local vals = { pcall(GetItemInfo, id) }
         if vals[1] then
             local sell = vals[12]
-            if type(sell) == "number" and sell > 0 then p = sell end
+            if type(sell) == "number" and sell >= 0 then p = sell end
         end
     end
     -- ③ C_Item.GetItemSellPrice（专用 API，直达）
     if not p and C_Item and C_Item.GetItemSellPrice then
         local ok, sell = pcall(C_Item.GetItemSellPrice, id)
-        if ok and type(sell) == "number" and sell > 0 then p = sell end
+        if ok and type(sell) == "number" and sell >= 0 then p = sell end
     end
     if p then sellCache[id] = p end
     return p
@@ -465,7 +500,7 @@ local function BuildCandidates(slug, opts)
             local recipe=economy and economy.Normalize(rec,slug,"rows")
             if recipe and economy.LearningEligibility and not economy.LearningEligibility(recipe,specSnapshot) then ok=false end
             if recipe and (recipe.cooldown or recipe.cooldownUnknown or recipe.clientPending or recipe.outputConflict) then ok=false end
-            local formula=recipe and economy.FormulaFor(recipe)
+            local formula=recipe and economy.FormulaFor(recipe,{allowLimitedFormulas=economy.AllowLimitedFormulas(opts)})
             if formula and not formula.usable then ok=false end
             local policy=ns.ProfEconomy and ns.ProfEconomy.Policy(opts.exclusions or ns.ProfEconomy.GetPolicies(slug),{key=slug..":"..spell,spell=spell})
             if policy then ok=false end
@@ -527,7 +562,7 @@ local function BuildCandidates(slug, opts)
                 if recipe and economy.LearningEligibility and not economy.LearningEligibility(recipe,specSnapshot) then ok=false end
                 if recipe and (recipe.cooldown or recipe.cooldownUnknown or recipe.clientPending or recipe.outputConflict) then ok=false end
                 if economy and economy.Policy(opts.exclusions or economy.GetPolicies(slug),{key=slug..":"..spell,spell=spell}) then ok=false end
-                local formula=recipe and economy.FormulaFor(recipe)
+                local formula=recipe and economy.FormulaFor(recipe,{allowLimitedFormulas=economy.AllowLimitedFormulas(opts)})
                 if formula and not formula.usable then ok=false end
                 local cost, unpriced = 0, false
                 if ok then
@@ -603,7 +638,7 @@ end
 -- The reference scoring modes retain their own priority, but consume the same
 -- observed finite auction budget across every attempted craft and formula.
 local FixedPurchase
-local function SimulateSupply(cands,start,cap,scheme)
+local function SimulateSupply(cands,start,cap,scheme,opts)
     local economy=ns.ProfEconomy
     if not economy or not economy.AuctionSupplyOf then return end
     local caps,finite={},false
@@ -648,7 +683,7 @@ local function SimulateSupply(cands,start,cap,scheme)
                 if f and not f.known and not paid[key] then
                     books={}
                     local remaining=f.id and caps[f.id] and math.max(0,caps[f.id]-(formulaUsed[f.id] or 0)) or nil
-                    local context={nonAuctionable={}}
+                    local context={nonAuctionable={},allowLimitedFormulas=economy.AllowLimitedFormulas(opts)}
                     if f.id and economy.NonAuctionableItem then context.nonAuctionable[f.id]=economy.NonAuctionableItem(f.id) end
                     local chosen=economy.FormulaFor(f.recipe,context,remaining)
                     if chosen and chosen.usable then books[#books+1]=chosen end
@@ -961,11 +996,11 @@ FixedPurchase = function(id, need, auctionLimit)
     local entries = best and {best} or {auctionEntry(need, price)}
     local cost, count = best and best.cost or math.huge, best and best.count or need
     if price then
-        if need <= limit and price*need < cost then
+        if need <= limit and (price*need < cost or price*need == cost and need < count) then
             entries, cost, count = {auctionEntry(need, price)}, price*need, need
         end
-        -- Every NPC row for an item shares VendorStackCount. A cheaper pack
-        -- can supply the full groups while AH supplies only the remainder.
+        -- Compare each quotation's full packs with an AH remainder. A mixed
+        -- purchase must contain at least one real NPC transaction.
         for _, offer in ipairs(valid) do
             local quantity = offer.quantity or offer.bundleSize
             local least = math.max(1, math.ceil((need-limit)/quantity))
@@ -973,7 +1008,7 @@ FixedPurchase = function(id, need, auctionLimit)
             for _, packs in ipairs({least, most}) do
                 local vendorCount = packs*quantity
                 local remainder = need-vendorCount
-                if packs <= most and remainder > 0 and remainder <= limit then
+                if packs >= least and packs <= most and remainder > 0 and remainder <= limit then
                     local mixedCost = packs*offer.price+remainder*price
                     if mixedCost < cost or mixedCost == cost and need < count then
                         entries = {vendorEntry(offer, vendorCount, vendorCount), auctionEntry(remainder, price)}
@@ -992,7 +1027,7 @@ local function SupplySummary(result)
     return result
 end
 
-local function SummarizeCore(steps, recOf, slug, formulaChoices)
+local function SummarizeCore(steps, recOf, slug, formulaChoices,opts)
     local live={}
     for spell,rec in pairs(recOf) do live[spell]=ClientRecipe(rec,spell,slug) end
     recOf=live
@@ -1033,7 +1068,9 @@ local function SummarizeCore(steps, recOf, slug, formulaChoices)
     end
     local formulas,formulasTotal,formulaComplete={},0,true
     local economy=ns.ProfEconomy
-    if economy and economy.CollectFormulas then formulas=economy.CollectFormulas(steps,slug) end
+    if economy and economy.CollectFormulas then
+        formulas=economy.CollectFormulas(steps,slug,{allowLimitedFormulas=economy.AllowLimitedFormulas(opts)})
+    end
     local reserved={}
     for i,f in ipairs(formulas) do
         local chosen=formulaChoices and formulaChoices[f.id or f.recipeKey]
@@ -1111,6 +1148,29 @@ local function SummarizeCore(steps, recOf, slug, formulaChoices)
             formulaAHTotal=formulaAH,formulaVendorTotal=formulaVendor}
 end
 
+-- Freeze sale evidence at calculation time, alongside procurement. Cached and
+-- executing plans retain this accounting until an explicit recalculation.
+function RA.ApplyRecovery(result,slug,opts,snapshot)
+    local recovery=ns.ProfRecovery
+    if not result or not recovery or result.recoveryRevision==1 then return result end
+    opts=ns.ProfEconomy.Copy(opts or {})
+    local db=DungeonsForeverDB and DungeonsForeverDB.prof
+    if opts.recoveryEnabled==nil then opts.recoveryEnabled=not db or db.recoveryEnabled~=false end
+    if opts.recoveryFeePercent==nil then opts.recoveryFeePercent=db and db.recoveryFeePercent or nil end
+    if not snapshot then snapshot=ns.ProfEconomy.Capture(slug,opts) end
+    if not snapshot.recovery then recovery.Capture(snapshot,opts) end
+    result.scheme=result.scheme or opts.scheme or "fixed"
+    return recovery.Apply(result,snapshot) or result
+end
+function RA.ValidateRecovery(result,opts)
+    local recovery=ns.ProfRecovery
+    if result and recovery and recovery.Changed(result,opts) then
+        result.stale=true;result.staleReason="recovery"
+        result.recoveryStale=true
+    end
+    return result
+end
+
 -- 公开入口：固定路线复用同一套材料聚合/定价（steps = {起,止,spell,次数}）
 function RA.SummarizeSteps(steps, slug, opts)
     opts = opts or {}
@@ -1130,7 +1190,7 @@ function RA.SummarizeSteps(steps, slug, opts)
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial, quoteInfo =
-        SummarizeCore(steps, recOf, slug)
+        SummarizeCore(steps, recOf, slug,nil,opts)
     local result=RA.StampVendorQuotes(SupplySummary({
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
@@ -1145,14 +1205,56 @@ function RA.SummarizeSteps(steps, slug, opts)
         snapshotAge = SnapshotSec(),
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
-    }))
+    }),opts)
     result.specializationBlocked=blocked
     result.specializationGoalRequired=goalRequired
     if #blocked>0 or goalRequired then
         result.feasible=false; result.targetReached=false
         result.diagnostics={{code="specializationFixed"}}
     end
-    return RA.StampSpecializations(result,slug,opts)
+    return RA.ApplyRecovery(RA.StampSpecializations(result,slug,opts),slug,opts)
+end
+
+-- Fixed guides share one retained quote across page, shopping list and HUD.
+-- The generic SummarizeSteps stays fresh for explicit top-ups/quantity changes.
+local function fixedCopy(value)
+    if type(value)~="table" then
+        if type(value)~="function" and type(value)~="userdata" then return value end
+        return
+    end
+    local out={};for key,item in pairs(value) do out[key]=fixedCopy(item) end;return out
+end
+local function fixedStore()
+    DungeonsForeverDB=DungeonsForeverDB or {}
+    local db=DungeonsForeverDB;db.prof=db.prof or {};db.prof.fixedRouteCache=db.prof.fixedRouteCache or {}
+    local character=ns.ProfEconomy.CharacterKey()
+    local store=db.prof.fixedRouteCache[character]
+    if type(store)~="table" then store={};db.prof.fixedRouteCache[character]=store end
+    return store
+end
+function RA.ClearFixedSummary(slug) fixedStore()[slug]=nil end
+function RA.FixedSummary(slug,steps,opts)
+    opts=opts or {}
+    local keys={}
+    for _,step in ipairs(steps or {}) do
+        keys[#keys+1]=table.concat({tostring(step.profession or slug),tostring(step[1]),
+            tostring(step[2]),tostring(step[3]),tostring(step[4])},":")
+    end
+    local signature=table.concat(keys,"|")
+    local store=fixedStore();local record=store[slug]
+    local result=record and record.signature==signature and record.result
+    if not result then
+        result=RA.SummarizeSteps(fixedCopy(steps),slug,opts)
+        if not result then return end
+        result.mode="fixed";result.scheme="fixed"
+        result.target=opts.target or steps and steps[#steps] and steps[#steps][2]
+        store[slug]={signature=signature,result=result}
+    end
+    local current=ns.ProfEconomy.Copy(opts)
+    local db=DungeonsForeverDB.prof
+    if current.recoveryEnabled==nil then current.recoveryEnabled=db.recoveryEnabled~=false end
+    if current.recoveryFeePercent==nil then current.recoveryFeePercent=db.recoveryFeePercent end
+    return RA.ValidateRecovery(RA.ValidateSpecializationPlan(RA.ValidateVendorQuotes(result,opts),slug,opts),current)
 end
 
 -- ── 对外入口 ────────────────────────────────────────────────────────────────
@@ -1195,7 +1297,7 @@ function RA.Compute(slug, opts)
     -- 目标等级上限（2026-10-09 v2）：opts.target（如 200）→ 模拟与回填都 clamp 在内
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
-    local supplySteps,supplyGaps,plannedTo,formulaChoices,finiteSupply=SimulateSupply(cands,opts.start,cap,scheme)
+    local supplySteps,supplyGaps,plannedTo,formulaChoices,finiteSupply=SimulateSupply(cands,opts.start,cap,scheme,opts)
     local steps,gaps
     if supplySteps then steps,gaps=supplySteps,supplyGaps
     else steps,gaps=Simulate(cands,opts.start,cap,allowUnpriced,scheme) end
@@ -1219,7 +1321,7 @@ function RA.Compute(slug, opts)
     local stepsOut = supplySteps or ToReached(steps)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial, quoteInfo =
-        SummarizeCore(stepsOut, recOf, slug,formulaChoices)
+        SummarizeCore(stepsOut, recOf, slug,formulaChoices,opts)
     return RA.StampVendorQuotes(SupplySummary({
         scheme = scheme,
         supplyConstrained=finiteSupply==true,plannedTo=plannedTo,
@@ -1243,13 +1345,14 @@ function RA.Compute(slug, opts)
         snapshotAge = SnapshotSec(),         -- 秒：真实扫描时间戳（TimeOfLast*Scan）
         snapshotDays = priceCache.__minAge,  -- 天：价格插件库内最近数据日差（回退用）
         stamp = time and time() or 0,
-    }))
+    }),opts)
 end
 
 -- 缓存（失效：RA.Invalidate() / 设置变更 / 手动重算 / 超时）
 local cache = {}
 
 function RA.Invalidate()
+    if ns.ProfRecovery and ns.ProfRecovery.Invalidate then ns.ProfRecovery.Invalidate() end
     for k in pairs(cache) do cache[k] = nil end
     for k in pairs(priceCache) do
         if k ~= "__any" then priceCache[k] = nil end
@@ -1272,11 +1375,11 @@ ahWatch:SetScript("OnEvent", function()
 end)
 
 local function Fingerprint(opts)
-    return string.format("%s|%s|%s|%s|%s",
+    return string.format("%s|%s|%s|%s|%s|%s",
         tostring(opts.start), tostring(opts.onlyAH),
         tostring(opts.learnedOnly),
         tostring(opts.target and math.floor(tonumber(opts.target) or CAP)),
-        tostring(opts.scheme))
+        tostring(opts.scheme),tostring(ns.ProfEconomy and ns.ProfEconomy.AllowLimitedFormulas(opts)))
 end
 
 -- Get(slug, opts) → result | nil（带缓存）
@@ -1343,6 +1446,8 @@ do
             return {start=fromCurrent and (start or current or 1) or 1,fromCurrent=fromCurrent,
                 target=target,scheme=scheme,onlyAH=setting("autoOnlyAH",false),
                 learnedOnly=setting("autoLearnedOnly",false),allowSecondaryLeveling=setting("autoSecondaryLeveling",false),
+                allowLimitedFormulas=setting("autoBuyLimitedFormulas",E.AllowLimitedFormulas()),
+                recoveryEnabled=setting("recoveryEnabled",true),recoveryFeePercent=setting("recoveryFeePercent",nil),
                 secondaryProfession=E.GetRoutePartner(slug),
                 engineeringSpecialization=E.GetEngineeringSpecialization and E.GetEngineeringSpecialization() or "none",
                 exclusions=E.Copy(E.GetPolicies(slug))}
@@ -1350,6 +1455,15 @@ do
         function RA.OnPlanChanged(fn) if type(fn)=="function" then watchers[#watchers+1]=fn end end
         local function options(slug,opts)
             opts=E.Copy(opts or RA.OptionsFor(slug))
+            opts.allowLimitedFormulas=E.AllowLimitedFormulas(opts)
+            if opts.recoveryEnabled==nil then
+                local db=DungeonsForeverDB and DungeonsForeverDB.prof
+                opts.recoveryEnabled=not db or db.recoveryEnabled~=false
+            end
+            if opts.recoveryFeePercent==nil then
+                local db=DungeonsForeverDB and DungeonsForeverDB.prof
+                opts.recoveryFeePercent=db and db.recoveryFeePercent or nil
+            end
             if opts.scheme==nil then opts.scheme="cheapest" end
             if opts.scheme=="fishing" then
                 if slug~="cooking" then opts.scheme="cheapest"
@@ -1396,7 +1510,8 @@ do
             local sig=table.concat({tostring(opts.scheme),tostring(opts.target),tostring(opts.learnedOnly or false),
                 tostring(opts.onlyAH or false),tostring(opts.allowSecondaryLeveling or false),startMode,
                 E.PolicyFingerprint(opts.exclusions),tostring(opts.targetUnlearned),tostring(opts.secondaryProfession or ""),
-                tostring(opts.specializationFingerprint or "")},"|")
+                tostring(opts.specializationFingerprint or ""),tostring(opts.recoveryEnabled~=false),
+                tostring(opts.recoveryFeePercent or "auto"),tostring(opts.allowLimitedFormulas)},"|")
             if opts.executionSourcePlanID or next(opts.executionInventory or {}) then
                 local items={}
                 for id,n in pairs(opts.executionInventory or {}) do
@@ -1456,8 +1571,11 @@ do
             frozen.searchState={status=status,expanded=job and job.expanded or source.expanded,
                 improvements=job and job.improvements or source.improvements,
                 initialTotal=source.initialTotal,bestTotal=source.bestTotal or (source.feasible~=false and source.total or nil),
+                initialNetTotal=source.initialNetTotal,bestNetTotal=source.bestNetTotal or source.netTotal,
+                netSavings=source.netSavings,recoveryOptimized=source.recoveryOptimized,
                 savings=source.savings,budgetLimited=job and job.budgetLimited or source.budgetLimited,
                 searchComplete=source.searchComplete,revision=source.revision,
+                searchTermination=source.searchTermination,searchCpuMs=source.searchCpuMs,searchCpuLimitMs=source.searchCpuLimitMs,
                 running=job~=nil and not job.finished and status=="searching" and coroutine.status(job.co)~="dead"}
         end
         local function publish(j,res)
@@ -1466,6 +1584,7 @@ do
             if execution and execution.NormalizePlan and res.planVersion~=2 then
                 res=execution.NormalizePlan(j.slug,res) or res
             end
+            if not res.recoveryRevision then res=RA.ApplyRecovery(res,j.slug,j.opts,j.snap) end
             if not j.planID then
                 if j.opts.snapshot then j.planID="synthetic:"..j.key
                 else
@@ -1481,9 +1600,14 @@ do
             res.formulaRevision=1
             res.vendorQuoteRevision=VENDOR_QUOTE_REVISION
             res.vendorQuoteData=vendorQuoteData()
+            RA.StampFormulaPolicy(res,j.opts)
             res.professionPolicy=1; res.targetUnlearned=j.opts.targetUnlearned
             res.secondaryProfession=j.opts.secondaryProfession
             RA.StampSpecializations(res,j.slug,j.opts,j.snap)
+            if not j.opts.snapshot and RA.FormulaPolicyChanged(res) then
+                j.invalid=true;j.finished=true
+                res=RA.ValidateFormulaPolicy(res)
+            end
             if not j.opts.snapshot and RA.SpecializationPlanChanged(res,j.slug) then
                 j.invalid=true; j.finished=true
                 res=RA.ValidateSpecializationPlan(res,j.slug)
@@ -1527,6 +1651,7 @@ do
             end
         end
         local function compatible(result,opts)
+            if RA.FormulaPolicyChanged(result,opts) then return false end
             if RA.SpecializationPlanChanged(result,opts.profession,opts) then return false end
             if opts.targetUnlearned then
                 return result.professionPolicy==1 and result.targetUnlearned==true
@@ -1535,6 +1660,7 @@ do
             return not result.targetUnlearned
         end
         local function incompatibility(result,opts)
+            if RA.FormulaPolicyChanged(result,opts) then return "formulaPolicyChanged" end
             if RA.SpecializationPlanChanged(result,opts.profession,opts) then return "specializationChanged" end
             return (opts.allowSecondaryLeveling or result.secondaryProfession) and "pairingChanged" or "professionChanged"
         end
@@ -1558,11 +1684,12 @@ do
                 feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
                 diagnostics={{code=code}},professionPolicy=1,targetUnlearned=opts.targetUnlearned,
                 secondaryProfession=opts.secondaryProfession,revision=revision,stamp=stamp()}
-            if code=="specializationChanged" then
+            if code=="specializationChanged" or code=="formulaPolicyChanged" then
                 -- Keep the manual recalculation gate after cancelling an in-flight
                 -- job; subsequent UI reads must not silently start a replacement.
                 local key,scope=identities(slug,opts)
                 RA.StampSpecializations(view,slug,opts)
+                RA.StampFormulaPolicy(view,opts)
                 results[key]=view; active[scope]=key
             end
             return view
@@ -1580,9 +1707,7 @@ do
             local data=vendorQuoteData()
             local dataChanged=old.vendorQuoteData~=data
             local quoteChanged=old.vendorQuoteRevision~=VENDOR_QUOTE_REVISION or dataChanged
-            local emptyNeedsPrices=dataChanged and data and #(old.steps or {})==0
-                and not old.targetReached and (old.status=="incomplete" or old.status=="infeasible" or old.status=="error")
-            if quoteChanged and (hasVendorPurchases(old) or emptyNeedsPrices) then
+            if quoteChanged then
                 -- Keep historical/frozen execution records intact, but never
                 -- publish a previous merchant/cache price as a current quote.
                 -- Replacing the purchase-price model requires explicit recalculation.
@@ -1608,11 +1733,7 @@ do
                 return
             end
             local result=serializable(record.result); result.cached=true
-            -- A pure AH plan remains executable. New NPC alternatives can change
-            -- its ranking, so keep it visible and request a manual recalculation.
-            if dataChanged and data then
-                result.stale=true; result.staleReason="vendor-quotes"
-            end
+            RA.ValidateRecovery(result,opts)
             -- Old uptime timestamps are not valid persisted observations. Keep
             -- the plan visible, but clear that old evidence rather than invent
             -- a Unix time. New plans retain matching saved quantities on reload.
@@ -1644,7 +1765,7 @@ do
             local j=S.NewJob(slug,opts)
             j.key=key; j.scope=scope; j.savedKey=savedKey; j.signature=sig; j.char=char
             slots[key]=j
-            j.published=RA.StampSpecializations(S.Result(j,nil,"searching"),slug,opts); j.published.revision=revision
+            j.published=RA.StampFormulaPolicy(RA.StampSpecializations(S.Result(j,nil,"searching"),slug,opts),opts); j.published.revision=revision
             results[key]=j.published; active[scope]=key
             schedule(j)
             return j.published
@@ -1652,10 +1773,10 @@ do
         function RA.Compute(slug,opts)
             opts=options(slug,opts)
             if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
-            if opts.scheme=="fishing" and ns.ProfFishing then return RA.StampSpecializations(RA.StampVendorQuotes(ns.ProfFishing.Compute(opts)),slug,opts) end
-            if opts.scheme~="cheapest" and not opts.specializationRecipeScore then return RA.StampSpecializations(RA.StampVendorQuotes(oldCompute(slug,legacyOptions(opts))),slug,opts) end
+            if opts.scheme=="fishing" and ns.ProfFishing then return RA.ApplyRecovery(RA.StampSpecializations(RA.StampVendorQuotes(ns.ProfFishing.Compute(opts),opts),slug,opts),slug,opts) end
+            if opts.scheme~="cheapest" and not opts.specializationRecipeScore then return RA.ApplyRecovery(RA.StampSpecializations(RA.StampVendorQuotes(oldCompute(slug,legacyOptions(opts)),opts),slug,opts),slug,opts) end
             local result,job=S.Compute(slug,opts)
-            return RA.StampSpecializations(RA.StampVendorQuotes(result),slug,opts,job and job.snap)
+            return RA.StampSpecializations(RA.StampVendorQuotes(result,opts),slug,opts,job and job.snap)
         end
         local function getCandidate(slug,opts,preserveExecution)
             opts=options(slug,opts)
@@ -1663,7 +1784,7 @@ do
             local key,scope,savedKey=identities(slug,opts)
             if results[key] then
                 if not compatible(results[key],opts) then return gate(slug,opts,"recalculate_required",incompatibility(results[key],opts)) end
-                return results[key]
+                return RA.ValidateRecovery(results[key],opts)
             end
             if not opts.snapshot then
                 local db=saved(); local exact=db.routes[savedKey]
@@ -1688,11 +1809,15 @@ do
             if not preserveExecution then return start(slug,opts) end
         end
         function RA.Get(slug,opts)
+            local recoveryOptions=options(slug,opts)
             local execution=not (opts and opts.snapshot) and ns.ProfExecution or nil
             local frozen=execution and execution.GetPlan and execution.GetPlan(slug)
             if RA.SpecializationPlanChanged(frozen,slug,opts) then return RA.ValidateSpecializationPlan(frozen,slug,opts) end
-            if RA.VendorQuotesChanged(frozen) then return RA.ValidateVendorQuotes(frozen) end
-            local result=RA.ValidateVendorQuotes(getCandidate(slug,opts,frozen~=nil))
+            if RA.FormulaPolicyChanged(frozen,recoveryOptions) then
+                return gate(slug,recoveryOptions,"recalculate_required","formulaPolicyChanged")
+            end
+            if RA.VendorQuotesChanged(frozen) then return RA.ValidateVendorQuotes(frozen,recoveryOptions) end
+            local result=RA.ValidateVendorQuotes(getCandidate(slug,opts,frozen~=nil),recoveryOptions)
             if opts and opts.snapshot then return result end
             if result and (result.status=="selection_required" or result.status=="recalculate_required") then return result end
             if execution then
@@ -1704,13 +1829,14 @@ do
                         run.newPlanAvailable=true;run.candidateRevision=result.revision
                     end
                     updateSearchState(slug,result)
-                    return RA.ValidateSpecializationPlan(frozen,slug,opts)
+                    return RA.ValidateRecovery(RA.ValidateSpecializationPlan(frozen,slug,opts),recoveryOptions)
                 end
             end
-            return result
+            return RA.ValidateRecovery(result,recoveryOptions)
         end
         function RA.Recalculate(slug,opts)
             opts=options(slug,opts)
+            RA.ClearFixedSummary(slug)
             local execution=ns.ProfExecution
             if not opts.snapshot and execution and execution.PrepareRecalculate then
                 local inventory,sourcePlanID=execution.PrepareRecalculate(slug)
@@ -1754,6 +1880,9 @@ do
         function RA.Invalidate(reason)
             oldInvalidate()
             reason=type(reason)=="string" and reason or "inputs"
+            for _,record in pairs(fixedStore()) do
+                if record.result then record.result.stale=true;record.result.staleReason=reason end
+            end
             for _,j in pairs(slots) do j.stale=true; j.staleReason=reason end
             local notified={}
             for key,result in pairs(results) do

@@ -16,7 +16,7 @@ from fc_pipeline_paths import CSV_INPUTS
 HERE, PACKAGE, REPO = common.HERE, common.PACKAGE, common.REPO
 BASE_FILES = tuple('Data_%s.lua' % n for n in (
     'Professions', 'ProfRecipes', 'ProfLeveling', 'ProfGathering', 'ProfVendors', 'ProfTrainers'))
-SHARED_FILES = ('Data_ProfItems.lua', 'Data_ProfSpecializations.lua')
+SHARED_FILES = ('Data_ProfItems.lua', 'Data_ProfSpecializations.lua', 'Data_ProfMaterialSupply.lua')
 DATA_DIR, OFFICIAL = HERE / '_fc/data', REPO / 'Core/Data'
 
 
@@ -30,6 +30,7 @@ def parser():
     p.add_argument('--package-zip', type=Path, help='build an installation ZIP from the validated preview without publishing')
     scope = p.add_mutually_exclusive_group()
     scope.add_argument('--specializations-only', action='store_true')
+    scope.add_argument('--materials-only', action='store_true', help='refresh only ordinary material supply evidence')
     scope.add_argument('--from-csv', type=Path, help='rebuild only items Lua from a 19-column CSV')
     for option, default in {
         'data-dir': DATA_DIR, 'cache-dir': HERE / '_fc/cache', 'i18n-dir': HERE / '_fc/i18n',
@@ -39,12 +40,22 @@ def parser():
         'output-csv': DATA_DIR / 'DataProfItems.csv', 'items-lua': OFFICIAL / SHARED_FILES[0],
         'specialization-output-lua': OFFICIAL / SHARED_FILES[1],
         'specialization-cache-root': HERE / '_fc/cache/specializations',
+        'material-config': HERE / '_fc/maintenance/material-vendors.json',
+        'material-snapshot': DATA_DIR / 'material-vendors.json',
+        'material-cache-root': HERE / '_fc/cache/material-vendors',
+        'material-output-lua': OFFICIAL / SHARED_FILES[2],
     }.items():
         p.add_argument('--' + option, type=Path, default=default)
-    for option in ('specialization-data-dir', 'specialization-cache-dir', 'db2-dir', 'baseline-csv'):
+    for option in ('specialization-data-dir', 'specialization-cache-dir', 'db2-dir', 'baseline-csv',
+                   'vendor-factions-json'):
         p.add_argument('--' + option, type=Path)
     p.add_argument('--specialization-build')
     p.add_argument('--verified-at', default='')
+    p.add_argument('--material-provider', choices=('auto', 'http', 'chrome'))
+    p.add_argument('--material-proxy')
+    p.add_argument('--material-chrome-profile', type=Path)
+    p.add_argument('--material-channel', choices=('chrome', 'msedge'))
+    p.add_argument('--material-headless', action=argparse.BooleanOptionalAction, default=None)
     for option in ('refresh-trainers', 'refresh-catalog', 'skip-recipe-catalog'):
         p.add_argument('--' + option, action='store_true')
     return p
@@ -57,51 +68,69 @@ def preflight(args):
     common.require_repo_path(OFFICIAL)
     common.require_repo_path(HERE)
     kinds = {'trainer_csv': '.csv', 'output_csv': '.csv', 'items_lua': '.lua',
-             'specialization_output_lua': '.lua'}
+             'specialization_output_lua': '.lua', 'material_snapshot': '.json',
+             'material_output_lua': '.lua'}
     if args.from_csv:
         kinds = {'items_lua': '.lua'}
     elif args.specializations_only:
-        kinds = {key: value for key, value in kinds.items() if key not in ('output_csv', 'items_lua')}
-    source_keys = ('from_csv',) if args.from_csv else ('prices_csv', 'item_csv', 'recipe_items_csv')
-    if not (args.from_csv or args.specializations_only):
+        kinds = {'trainer_csv': '.csv', 'specialization_output_lua': '.lua'}
+    elif args.materials_only:
+        kinds = {'material_snapshot': '.json', 'material_output_lua': '.lua'}
+    source_keys = ('from_csv',) if args.from_csv else ('prices_csv',) if args.materials_only else ('prices_csv', 'item_csv', 'recipe_items_csv')
+    if not (args.from_csv or args.specializations_only or args.materials_only):
         source_keys += ('vendors_csv', 'npcs_csv')
     sources = [getattr(args, key) for key in source_keys]
     for source in sources:
         if source.suffix.lower() != '.csv' or not source.is_file():
             raise common.PipelineError('CSV input is missing or not a CSV: %s' % source)
+    materials = not (args.from_csv or args.specializations_only)
+    if materials:
+        if args.material_config.suffix.lower() != '.json' or not args.material_config.is_file():
+            raise common.PipelineError('material maintenance config is missing or not JSON: %s' % args.material_config)
+        if args.offline and not args.material_snapshot.is_file():
+            raise common.PipelineError('offline material replay requires a normalized snapshot: %s' % args.material_snapshot)
+        protected_cache = (REPO / 'Core', REPO / 'Locales', REPO / 'Libs', REPO / 'Media', REPO / 'tests',
+                           REPO / 'scripts', REPO / 'df-prof-pipeline-v1.0', PACKAGE / 'Core/Data',
+                           HERE / '_fc/inputs', HERE / '_fc/maintenance', args.data_dir)
+        if any(args.material_cache_root.is_relative_to(root) for root in protected_cache):
+            raise common.PipelineError('material raw cache cannot be inside runtime data or inputs: %s' % args.material_cache_root)
+    owned_shared = tuple(OFFICIAL / name for name in SHARED_FILES)
     destinations = []
     for key, suffix in kinds.items():
         path = getattr(args, key)
         if path.suffix.lower() != suffix:
             raise common.PipelineError('%s must end in %s' % (key, suffix))
-        role = {'items_lua': SHARED_FILES[0], 'specialization_output_lua': SHARED_FILES[1]}.get(key)
+        role = {'items_lua': SHARED_FILES[0], 'specialization_output_lua': SHARED_FILES[1],
+                'material_output_lua': SHARED_FILES[2]}.get(key)
         if path.is_relative_to(OFFICIAL) and path != OFFICIAL / (role or '__not_owned__'):
             raise common.PipelineError('output belongs to another official dataset: %s' % path)
         if path.is_relative_to(PACKAGE / 'Core/Data') and path.name != role:
             raise common.PipelineError('output belongs to another sample dataset: %s' % path)
-        if path.is_relative_to(args.cache_dir) or path.is_relative_to(args.specialization_cache_root):
+        if any(path.is_relative_to(root) for root in (args.cache_dir, args.specialization_cache_root, args.material_cache_root)):
             raise common.PipelineError('final data output cannot overwrite cache/state: %s' % path)
         if path.is_relative_to(HERE / '_fc/maintenance'):
             raise common.PipelineError('output cannot overwrite maintenance inputs: %s' % path)
         protected = (REPO / 'Core', REPO / 'Locales', REPO / 'Libs', REPO / 'Media', REPO / 'tests',
                      REPO / 'df-prof-pipeline-v1.0')
-        if any(path.is_relative_to(root) for root in protected) and path not in (OFFICIAL / SHARED_FILES[0], OFFICIAL / SHARED_FILES[1]):
+        if any(path.is_relative_to(root) for root in protected) and path not in owned_shared:
             raise common.PipelineError('output would overwrite a non-owned runtime or archived file: %s' % path)
         if path.is_relative_to(PACKAGE) and not (path.is_relative_to(HERE / '_fc/data') or path.is_relative_to(PACKAGE / 'Core/Data')):
             raise common.PipelineError('output would overwrite a pipeline input or implementation: %s' % path)
-        if path.is_relative_to(OFFICIAL) and path not in (OFFICIAL / SHARED_FILES[0], OFFICIAL / SHARED_FILES[1]):
+        if path.is_relative_to(OFFICIAL) and path not in owned_shared:
             raise common.PipelineError('custom output would overwrite another official dataset: %s' % path)
         for other in destinations:
             if path == other or (path.exists() and other.exists() and os.path.samefile(path, other)):
                 raise common.PipelineError('final data outputs must be distinct: %s' % path)
         destinations.append(path)
-    for source in (*sources, args.maintenance):
+    for source in (*sources, args.maintenance, *((args.material_config,) if materials else ())):
         if source in destinations:
             raise common.PipelineError('output would overwrite an input: %s' % source)
     if args.apply and (args.stage_dir or args.package_zip):
         raise common.PipelineError('preview staging and packaging require check mode without --apply')
     if args.package_zip and (args.from_csv or args.specializations_only):
-        raise common.PipelineError('installation packaging requires a complete profession check')
+        raise common.PipelineError('installation packaging requires a complete profession or material supply check')
+    if args.package_zip and args.material_output_lua != OFFICIAL / SHARED_FILES[2]:
+        raise common.PipelineError('installation packaging requires material Lua at its official TOC path')
     for artifact in (args.stage_dir, args.package_zip):
         if artifact is None:
             continue
@@ -114,11 +143,12 @@ def preflight(args):
         raise common.PipelineError('--package-zip must end in .zip')
     if args.stage_dir and args.package_zip and args.package_zip.is_relative_to(args.stage_dir):
         raise common.PipelineError('ZIP output must be separate from the retained preview directory')
-    if not args.specializations_only and not args.from_csv:
-        if args.items_lua != OFFICIAL / SHARED_FILES[0] or args.specialization_output_lua != OFFICIAL / SHARED_FILES[1]:
+    if not args.specializations_only and not args.from_csv and not args.materials_only:
+        if (args.items_lua != OFFICIAL / SHARED_FILES[0] or args.specialization_output_lua != OFFICIAL / SHARED_FILES[1]
+                or args.material_output_lua != OFFICIAL / SHARED_FILES[2]):
             raise common.PipelineError('full update must publish shared Lua to official Core/Data')
     common.lua_runtime()
-    if not args.specializations_only and not args.from_csv:
+    if not args.specializations_only and not args.from_csv and not args.materials_only:
         try:
             from opencc import OpenCC
             OpenCC('s2t')
@@ -140,7 +170,8 @@ def watched_files(args):
         if path.is_file():
             files.add(path)
     for key in ('vendors_csv', 'npcs_csv', 'prices_csv', 'item_csv', 'recipe_items_csv',
-                'trainer_csv', 'from_csv', 'baseline_csv'):
+                'trainer_csv', 'from_csv', 'baseline_csv', 'vendor_factions_json',
+                'material_config', 'material_snapshot'):
         path = getattr(args, key, None)
         if path and path.is_file():
             files.add(path)
@@ -148,7 +179,8 @@ def watched_files(args):
     targets = [OFFICIAL / name for name in BASE_FILES + SHARED_FILES]
     targets += [OFFICIAL / locale / name for locale in ('enUS', 'zhTW') for name in BASE_FILES]
     targets += [getattr(args, key) for key in ('trainer_csv',
-                                              'output_csv', 'items_lua', 'specialization_output_lua')]
+                                              'output_csv', 'items_lua', 'specialization_output_lua',
+                                              'material_snapshot', 'material_output_lua')]
     targets += [HERE / '_fc/cache/.pipeline-state/current.json', args.specialization_cache_root / 'current.json']
     targets += [HERE / '_fc/data' / name for name in ('recipe-item-link-audit.csv', 'recipe-item-link-audit-summary.json',
                                                     'recipe-item-web-link-audit.json')]
@@ -218,7 +250,84 @@ def item_options(args, overrides=None):
     return argparse.Namespace(from_csv=args.from_csv, vendors_csv=args.vendors_csv, npcs_csv=args.npcs_csv,
                               prices_csv=args.prices_csv, output_csv=args.output_csv, items_lua=args.items_lua,
                               vendors_lua=OFFICIAL / 'Data_ProfVendors.lua', verified_at=args.verified_at,
+                              vendor_factions_json=getattr(args, 'vendor_factions_json', None),
                               dry_run=True, input_overrides=overrides or {})
+
+
+def prepare_materials(args, report, expected, stage, catalog=None):
+    """Freeze price/config/history inputs; only normalized evidence is published."""
+    import fc_material_vendors as materials
+    overrides = {}
+    for path in (args.material_config, args.prices_csv, args.material_snapshot):
+        content = path.read_bytes() if path.is_file() else None
+        digest = common.sha(content) if content is not None else None
+        expected.setdefault(path, digest)
+        if expected[path] != digest:
+            raise common.PipelineError('material input changed before freezing: %s' % path)
+        if content is not None:
+            overrides[path] = content
+    if catalog is None:
+        source = args.data_dir / 'catalog'
+        source = source if source.is_dir() else args.data_dir
+        catalog = stage / 'material-catalog'
+        freeze_directory(source, catalog, expected, '*.json')
+        provenance = {str(p): str(source / p.name) for p in catalog.glob('*.json')}
+    else:
+        final = args.specialization_data_dir or args.data_dir / 'catalog'
+        provenance = {str(p): str(final / p.name) for p in catalog.glob('*.json')}
+    options = argparse.Namespace(
+        material_config=args.material_config, material_snapshot=args.material_snapshot,
+        material_cache_root=args.material_cache_root, material_output_lua=args.material_output_lua,
+        material_provider=args.material_provider, material_proxy=args.material_proxy,
+        material_chrome_profile=args.material_chrome_profile, material_channel=args.material_channel,
+        material_headless=args.material_headless,
+        material_progress=lambda message: print('  ' + str(message), flush=True), prices_csv=args.prices_csv,
+        offline=args.offline, data_dir=catalog, input_overrides=overrides,
+        provenance_paths=provenance)
+    outputs, observations = materials.prepare_batch(options, report.setdefault('materials', {}))
+    owned = {args.material_snapshot, args.material_output_lua}
+    if set(outputs) != owned:
+        raise common.PipelineError('material collector violated the snapshot/Lua ownership manifest')
+    validate_material_batch(outputs, args.material_snapshot, args.material_output_lua)
+    seen = {}
+    records = observations.items() if isinstance(observations, dict) else (
+        (row['path'], row['sha256']) for row in observations)
+    for path, digest in records:
+        path = common.require_repo_path(path)
+        if digest is not None and (not isinstance(digest, str) or len(digest) != 64
+                                   or any(c not in '0123456789abcdef' for c in digest)):
+            raise common.PipelineError('invalid material input fingerprint: %s' % path)
+        if path in seen and seen[path] != digest:
+            raise common.PipelineError('material collector observed conflicting input versions: %s' % path)
+        seen[path] = digest
+    return outputs, seen
+
+
+def validate_material_batch(outputs, snapshot_path, lua_path):
+    """Bind normalized registry counts/fingerprint to numeric runtime lookup keys."""
+    snapshot = json.loads(outputs[snapshot_path])
+    _, ns = common.raw_namespace([(lua_path.name, outputs[lua_path])])
+    meta, supply = ns.ProfMaterialSupplyMeta, ns.ProfMaterialSupply
+    eligibility = snapshot.get('eligibility', {})
+    digest = eligibility.get('fingerprint')
+    if (snapshot.get('schemaVersion') != 1 or not isinstance(digest, str)
+            or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest)
+            or not hasattr(meta, 'items') or meta.schemaVersion != 1
+            or meta.gameFlavor != 'forever' or meta.fingerprint != digest
+            or not hasattr(supply, 'items')):
+        raise common.PipelineError('material snapshot and runtime metadata differ')
+    def numeric_id(value):
+        return type(value) in (int, float) and value > 0 and int(value) == value
+    count = 0
+    for item_id, item in supply.items():
+        if not numeric_id(item_id) or not hasattr(item, 'items') or not hasattr(item.offers, 'items'):
+            raise common.PipelineError('material supply items must have numeric IDs and NPC offers')
+        for npc_id, offer in item.offers.items():
+            if not numeric_id(npc_id) or not hasattr(offer, 'items'):
+                raise common.PipelineError('material supply offers must be keyed by numeric NPC IDs')
+            count += 1
+    if eligibility.get('items') != len(list(supply.items())) or eligibility.get('offers') != count:
+        raise common.PipelineError('material snapshot and runtime eligibility counts differ')
 
 
 def merge_batch(target, additions, expected, observations):
@@ -404,6 +513,8 @@ def validate_batch(outputs, before, report, full=True, approved_removals=(), cat
         if missing:
             report['missingRecords'] = missing
             raise common.PipelineError('existing records would disappear: ' + '; '.join(missing[:12]))
+        if OFFICIAL / SHARED_FILES[2] in outputs:
+            validate_toc(outputs, before, report)
         return
     base = [(name, outputs[OFFICIAL / name]) for name in BASE_FILES]
     old = common.load_namespace([(name, before[OFFICIAL / name]) for name in BASE_FILES])
@@ -412,7 +523,9 @@ def validate_batch(outputs, before, report, full=True, approved_removals=(), cat
     if missing:
         report['missingRecords'] = missing
         raise common.PipelineError('existing profession records would disappear: ' + '; '.join(missing[:12]))
-    for name, key in zip(SHARED_FILES, ('ProfItems', 'ProfSpecializations')):
+    # Supply evidence can become unavailable after a failed refresh; unlike the
+    # recipe catalog, retaining old supplier identities would preserve stale access.
+    for name, key in zip(SHARED_FILES[:2], ('ProfItems', 'ProfSpecializations')):
         path = OFFICIAL / name
         old_shared = common.load_namespace([(name, before[path])]).get(key, {})
         new_shared = common.load_namespace([(name, outputs[path])]).get(key, {})
@@ -424,6 +537,11 @@ def validate_batch(outputs, before, report, full=True, approved_removals=(), cat
         localized = common.load_namespace(base + [(locale + '/' + n, outputs[OFFICIAL / locale / n]) for n in BASE_FILES], locale)
         if numeric_structure(new) != numeric_structure(localized):
             raise common.PipelineError('%s profession structure differs from base data' % locale)
+    validate_toc(outputs, before, report)
+
+
+def validate_toc(outputs, before, report):
+    """Load the staged shared data in the addon's actual three-language order."""
     data_paths = []
     for line in (REPO / 'DungeonsForever.toc').read_text(encoding='utf-8-sig').splitlines():
         relative = line.split('[', 1)[0].strip().replace('\\', '/')
@@ -436,7 +554,8 @@ def validate_batch(outputs, before, report, full=True, approved_removals=(), cat
         if any(b is None for _, b in selected):
             raise common.PipelineError('TOC profession data is missing')
         ns = common.load_namespace(selected, locale)
-        for key in ('ProfRecipes', 'ProfItems', 'ProfSpecializations', 'ProfSpecializationQuests', 'ProfFishingRoutes'):
+        for key in ('ProfRecipes', 'ProfItems', 'ProfSpecializations', 'ProfSpecializationQuests', 'ProfFishingRoutes',
+                    'ProfMaterialSupply', 'ProfMaterialSupplyMeta'):
             if key not in ns:
                 raise common.PipelineError('%s missing after %s TOC load' % (key, locale))
     report['validatedLocales'] = ['zhCN', 'zhTW', 'enUS']
@@ -500,6 +619,8 @@ def prepare_full(args, report, expected, stage, before):
     merge_batch(outputs, prepared, expected, seen)
     prepared, seen = items.build_batch(item_options(args, outputs))
     merge_batch(outputs, prepared, expected, seen)
+    prepared, seen = prepare_materials(args, report, expected, stage, catalog)
+    merge_batch(outputs, prepared, expected, seen)
     baseline = stage / 'official-baseline'
     for path, content in before.items():
         if path.name in BASE_FILES:
@@ -533,6 +654,9 @@ def execute(args, report):
             import fc_refresh_specializations as refresh
             outputs, seen = refresh.prepare_batch(special_options(args), report.setdefault('specializations', {}))
             merge_batch({}, {}, expected, seen)
+        elif args.materials_only:
+            outputs, seen = prepare_materials(args, report, expected, stage)
+            merge_batch({}, {}, expected, seen)
         else:
             outputs = prepare_full(args, report, expected, stage, before)
         for path in outputs:
@@ -543,11 +667,11 @@ def execute(args, report):
         print('  Validate staged Lua, record preservation and three-language TOC order', flush=True)
         approvals = report.pop('_approved_removals', [])
         catalog_identities = report.pop('_catalog_identities', {})
-        validate_batch(outputs, before, report, not (args.from_csv or args.specializations_only), approvals, catalog_identities)
+        validate_batch(outputs, before, report, not (args.from_csv or args.specializations_only or args.materials_only), approvals, catalog_identities)
         common.ensure_unchanged(expected)
         changed = {p: b for p, b in outputs.items() if common.fingerprint(p) != common.sha(b)}
         report['changedFiles'] = [{'path': str(p.relative_to(REPO)).replace('\\', '/'), 'sha256': common.sha(b), 'bytes': len(b)} for p, b in changed.items()]
-        state = {'schemaVersion': 1, 'scope': 'items' if args.from_csv else 'specializations' if args.specializations_only else 'professions',
+        state = {'schemaVersion': 1, 'scope': 'items' if args.from_csv else 'specializations' if args.specializations_only else 'materials' if args.materials_only else 'professions',
                  'outputs': {str(p.relative_to(REPO)).replace('\\', '/'): common.sha(b) for p, b in outputs.items()}}
         if args.apply:
             marker = HERE / '_fc/cache/.pipeline-state/current.json'

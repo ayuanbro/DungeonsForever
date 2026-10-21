@@ -1,4 +1,4 @@
-"""Item-level material prices and explicit formula NPC quotes stay independent."""
+"""Verified material supply and explicit formula NPC quotes stay independent."""
 import csv
 import json
 from pathlib import Path
@@ -23,6 +23,9 @@ function schema(item, values, quantity)
     for _,key in ipairs({'cost_copper','cost_text','price_source',
       'currency_kind','currency_id','currency_amount'})do record[key]=raw[key] end
     ns.ProfItems[item]=record
+    material(item,{price=raw.cost_copper,quantity=quantity or 4,
+      priceSource=raw.price_source=='wowhead' and 'wowhead_npc_bundle' or 'client_base_bundle',
+      currency_kind=raw.currency_kind,currency_id=raw.currency_id,currency_amount=raw.currency_amount})
     return raw
 end
 '''
@@ -69,14 +72,14 @@ class ProfItemPrices(unittest.TestCase):
           end
         ''')
 
-    def test_raw_schema2_prices_are_used_without_legacy_audit_attributes(self):
+    def test_verified_supply_quotes_are_used_without_legacy_audit_attributes(self):
         self.lua.execute('''
           local raw=schema(999100)
           local offers=ns.ProfItemPrices.GetOffers(999100)
           assert(#offers==1 and offers[1].price==37 and offers[1].quantity==4)
           local q=offers[1]
           assert(q.npcID==nil and q.npcName==nil and q.faction==nil and q.bundleSize==4 and q.unit==37/4)
-          assert(q.source=='client' and q.priceSource=='client' and q.priceBasis=='Data_ProfItems')
+          assert(q.source=='client_base_bundle' and q.priceSource=='client_base_bundle' and q.priceBasis=='Data_ProfMaterialSupply')
           assert(q.reference and not q.estimated and q.priceVerified==nil and q.verifiedAt==nil)
           assert(ns.ProfItemPrices.GetPrice(999100)==37/4)
           assert(raw.price==nil and raw.unit==nil and raw.npcID==nil and raw.verifiedAt==nil)
@@ -84,77 +87,74 @@ class ProfItemPrices(unittest.TestCase):
           assert(#suppliers==1 and suppliers[1].unlimited and suppliers[1].npcID==nil)
         ''')
 
-    def test_material_item_price_needs_no_npc_but_formula_still_needs_explicit_seller(self):
+    def test_material_root_price_never_proves_supply_and_does_not_create_formula_seller(self):
         self.lua.execute('''
-          ns.ProfItems[999140]={item_id=999140,cost_copper=20,VendorStackCount=5}
-          local offers=ns.ProfItemPrices.GetOffers(999140,{faction='H',npcAccess={[7]=false}})
-          assert(#offers==1 and offers[1].price==20 and offers[1].unit==4)
-          local quote=offers[1]
-          assert(quote.materialPrice and quote.unlimited and quote.priceUsable)
-          for _,field in ipairs({'npcID','npcName','name','faction','areaID','mapID','x','y',
-            'stock','maxStock','stockStatus','availabilitySource','availabilityVerified'})do
-            assert(quote[field]==nil,'material quote exposed a merchant detail: '..field)
+          for _,id in ipairs({2589,2840,999140})do
+            ns.ProfItems[id]={item_id=id,cost_copper=20,VendorStackCount=5}
+            assert(#ns.ProfItemPrices.GetOffers(id)==0)
+            assert(#ns.ProfItemPrices.GetSuppliers(id)==0)
+            assert(ns.ProfItemPrices.GetPrice(id)==nil)
+            assert(#ns.ProfItemPrices.GetFormulaOffers(id)==0)
           end
-          assert(#ns.ProfItemPrices.GetSuppliers(999140)==1)
-          assert(ns.ProfItemPrices.GetSuppliers(999140)[1].npcID==nil)
-          assert(#ns.ProfItemPrices.GetFormulaOffers(999140)==0,
-            'root material price invented a formula seller')
         ''')
 
-    def test_material_price_ignores_all_npc_stock_faction_exchange_and_access_fields(self):
+    def test_material_evidence_is_independent_from_formula_npc_rows(self):
         self.lua.execute('''
           local raw=schema(999141,{side='h',stock=1,cost_copper=1})
-          ns.ProfItems[999141].cost_copper=80
+          local supply=material(999141,{price=80,quantity=4})
           for _,stock in ipairs({0,1,2,-1})do
             raw.stock=stock;raw.currency_kind='item';raw.currency_id=123;raw.currency_amount=9
-            local q=ns.ProfItemPrices.GetOffers(999141,{faction='A',npcAccess={[7]=false}})[1]
+            local q=ns.ProfItemPrices.GetOffers(999141,{faction='A'})[1]
             assert(q and q.price==80 and q.quantity==4 and q.npcID==nil)
             assert(#ns.ProfItemPrices.GetFormulaOffers(999141,{faction='A'})==0)
           end
-          ns.ProfItems[999141].offers=nil
+          ns.ProfItems[999141]=nil
           assert(ns.ProfItemPrices.GetPrice(999141)==20)
+          supply.stockState='limited'
+          assert(ns.ProfItemPrices.GetPrice(999141)==nil)
         ''')
 
-    def test_invalid_item_amounts_bundles_and_root_exchanges_never_become_material_quotes(self):
+    def test_invalid_supply_amounts_bundles_and_exchange_fields_never_become_quotes(self):
         self.lua.execute('''
           schema(999142)
-          local item=ns.ProfItems[999142]
+          local supply=ns.ProfMaterialSupply[999142].offers[7]
           for _,value in ipairs({false,-1,1.5,math.huge,'37',0/0})do
-            item.cost_copper=value;assert(#ns.ProfItemPrices.GetOffers(999142)==0)
+            supply.price=value;assert(#ns.ProfItemPrices.GetOffers(999142)==0)
           end
-          item.cost_copper=nil;assert(#ns.ProfItemPrices.GetOffers(999142)==0)
-          item.cost_copper=37
+          supply.price=nil;assert(#ns.ProfItemPrices.GetOffers(999142)==0)
+          supply.price=37
           for _,value in ipairs({false,0,-1,1.5,math.huge,'4',0/0})do
-            item.VendorStackCount=value;assert(#ns.ProfItemPrices.GetOffers(999142)==0)
+            supply.quantity=value;assert(#ns.ProfItemPrices.GetOffers(999142)==0)
           end
-          item.VendorStackCount=nil;assert(#ns.ProfItemPrices.GetOffers(999142)==0)
-          item.VendorStackCount=4
+          supply.quantity=nil;assert(#ns.ProfItemPrices.GetOffers(999142)==0)
+          supply.quantity=4
           for _,field in ipairs({'currency_kind','currency_id','currency_amount'})do
-            item[field]=0;assert(#ns.ProfItemPrices.GetOffers(999142)==0);item[field]=nil
+            supply[field]=0;assert(#ns.ProfItemPrices.GetOffers(999142)==0);supply[field]=nil
           end
-          item.cost_copper=0;item.price_source=nil
-          item.currency_kind='  ';item.currency_id='';item.currency_amount='\\t'
-          assert(ns.ProfItemPrices.GetPrice(999142)==0,'valid free item quote or blank exchange fields rejected')
+          supply.price=0
+          supply.currency_kind='  ';supply.currency_id='';supply.currency_amount='  '
+          assert(ns.ProfItemPrices.GetPrice(999142)==0)
         ''')
 
     def test_legacy_catalogue_amounts_and_runtime_caches_cannot_supply_a_price(self):
         self.lua.execute('''
-          local raw=schema(999101)
+          schema(999101)
           ns.ProfVendorOffers={[999101]={{npcID=7,price=1,quantity=1,unlimited=true}}}
           ns.ProfFormulaOffers={[999101]={{npcID=7,price=1,quantity=1,unlimited=true}}}
           db.profVendorOffers={[999101]={old={price=2,quantity=1,npcID=7,unlimited=true}}}
           Auctionator={API={v1={GetVendorPriceByItemID=function()error('merchant cache read')end}}}
           assert(ns.ProfItemPrices.GetPrice(999101)==37/4)
-          raw.cost_copper=nil;ns.ProfItems[999101].cost_copper=nil
+          ns.ProfMaterialSupply[999101]=nil
           assert(ns.ProfVendorOffers[999101][1].price==1 and #ns.ProfItemPrices.GetOffers(999101)==0)
           assert(ns.ProfItemPrices.GetPrice(999101)==nil)
         ''')
 
-    def test_dynamic_raw_amount_and_bundle_changes_are_not_hidden_by_price_cache(self):
+    def test_dynamic_supply_amount_and_bundle_changes_are_not_hidden_by_price_cache(self):
         self.lua.execute('''
           local raw=schema(999102)
           assert(ns.ProfItemPrices.GetPrice(999102)==37/4)
-          ns.ProfItems[999102].cost_copper=60; ns.ProfItems[999102].VendorStackCount=3
+          local supply=ns.ProfMaterialSupply[999102].offers[7]
+          supply.price=60;supply.quantity=3
           assert(ns.ProfItemPrices.GetPrice(999102)==20)
           assert(raw.cost_copper==37 and raw.stock==-1)
         ''')
@@ -293,27 +293,29 @@ class ProfItemPrices(unittest.TestCase):
           local raw=schema(999104)
           raw.cost_copper=nil;raw.cost_text='3 tokens or 99 points'
           ns.ProfItems[999104].cost_copper=nil;ns.ProfItems[999104].cost_text=raw.cost_text
+          ns.ProfMaterialSupply[999104].offers[7].price=nil
           assert(#ns.ProfItemPrices.GetOffers(999104)==0)
           local f=ns.ProfItemPrices.GetFormulaOffers(999104)
           assert(#f==1 and f[1].price==nil and not f[1].priceUsable)
           raw.cost_copper=37;ns.ProfItems[999104].cost_copper=37;ns.ProfItems[999104].VendorStackCount=nil
+          ns.ProfMaterialSupply[999104].offers[7].price=37;ns.ProfMaterialSupply[999104].offers[7].quantity=nil
           assert(#ns.ProfItemPrices.GetOffers(999104)==0)
           f=ns.ProfItemPrices.GetFormulaOffers(999104)
           assert(#f==1 and f[1].price==nil and not f[1].priceUsable)
         ''')
 
-    def test_faction_and_explicit_access_only_restrict_formula_npc_rows(self):
+    def test_independent_material_supply_uses_its_own_faction_and_access(self):
         self.lua.execute('''
           local raw=schema(999105,{side='a'})
           assert(#ns.ProfItemPrices.GetOffers(999105,{faction='Horde'})==1)
           assert(#ns.ProfItemPrices.GetFormulaOffers(999105,{faction='H'})==0)
           assert(#ns.ProfItemPrices.GetOffers(999105,{faction='Alliance'})==1)
-          assert(#ns.ProfItemPrices.GetOffers(999105,{npcAccess={[7]=false},faction='A'})==1)
+          assert(#ns.ProfItemPrices.GetOffers(999105,{npcAccess={[7]=false},faction='A'})==0)
           raw.side='n'
           assert(#ns.ProfItemPrices.GetOffers(999105,{faction='H'})==1)
           raw.side=nil
-          assert(#ns.ProfItemPrices.GetOffers(999105,{npcAccess={[7]=false}})==1)
-          assert(#ns.ProfItemPrices.GetSuppliers(999105,{npcAccess={[7]=false}})==1)
+          assert(#ns.ProfItemPrices.GetOffers(999105,{npcAccess={[7]=false}})==0)
+          assert(#ns.ProfItemPrices.GetSuppliers(999105,{npcAccess={[7]=false}})==0)
           assert(#ns.ProfItemPrices.GetFormulaOffers(999105,{npcAccess={[7]=false}})==0)
         ''')
 
@@ -347,10 +349,115 @@ class ProfItemPrices(unittest.TestCase):
           assert(plain[1].name=='Schema Seller','localized labels contaminated later quotes')
         ''')
 
-    def test_actual_supplier_names_have_verified_chinese_or_explicit_npc_fallback(self):
+    def test_npc_reputation_affiliation_is_localized_without_becoming_player_side(self):
+        self.lua.execute('''
+          local raw=schema(999151)
+          raw.side=nil
+          ns.ProfVendorFactions={[7]={factionID=93,
+            names={enUS='Magram Clan Centaur',zhCN='已保存的所属阵营'}}}
+          GetLocale=function()return 'zhCN' end
+          C_Reputation={GetFactionDataByID=function()error('not ready')end}
+          local p=ns.ProfItemPrices
+          local offer=p.GetFormulaDisplayOffers(999151,{faction='A'})[1]
+          assert(offer.npcFactionID==93 and offer.npcFactionName=='已保存的所属阵营')
+          assert(offer.faction==nil and raw.side==nil and offer.costCopper==37)
+          GetFactionInfoByID=function(id)assert(id==93);return '旧客户端阵营名' end
+          assert(p.GetFormulaDisplayOffers(999151,{faction='H'})[1].npcFactionName=='旧客户端阵营名')
+          C_Reputation.GetFactionDataByID=function(id)
+            assert(id==93);return {name='新客户端阵营名'}
+          end
+          local quote=p.GetFormulaOffers(999151,{faction='A'})[1]
+          assert(quote.npcFactionName=='新客户端阵营名' and quote.faction==nil and quote.price==37)
+          assert(ns.ProfVendorFactions[7].names.zhCN=='已保存的所属阵营')
+          raw.side='h'
+          assert(#p.GetFormulaDisplayOffers(999151,{faction='A'})==0)
+          assert(#p.GetFormulaOffers(999151,{faction='A'})==0)
+          assert(#p.GetFormulaDisplayOffers(999151,{faction='H'})==1)
+        ''')
+
+    def test_missing_or_unlocalized_npc_affiliation_remains_independent_of_access(self):
+        self.lua.execute('''
+          local raw=schema(999152)
+          GetLocale=function()return 'zhTW' end
+          ns.ProfVendorFactions={[7]={names={enUS='Explicit NPC Affiliation'}}}
+          C_Reputation=nil;GetFactionInfoByID=nil
+          local p=ns.ProfItemPrices
+          local offer=p.GetFormulaDisplayOffers(999152)[1]
+          assert(offer.npcFactionID==nil and offer.npcFactionName=='Explicit NPC Affiliation')
+          assert(offer.faction=='N' and raw.side=='n')
+          ns.ProfVendorFactions={}
+          offer=p.GetFormulaDisplayOffers(999152)[1]
+          assert(offer.npcFactionName==nil and offer.faction=='N')
+          ns.ProfVendorFactions=nil
+          assert(p.GetNPCFaction(7)==nil)
+        ''')
+
+    def test_known_source_names_survive_missing_translation_and_old_number_placeholders(self):
+        self.lua.execute('''
+          local raw=schema(999150)
+          GetLocale=function()return 'zhCN' end
+          ns.L=setmetatable({}, {__index=function(_,key)return key end})
+          local old={vendors={{id=7,name='商人 NPC #7'}}}
+          local p=ns.ProfItemPrices
+          local display=p.GetFormulaDisplayOffers(999150,nil,old)[1]
+          local quote=p.GetFormulaOffers(999150,nil,old)[1]
+          assert(display.name=='Schema Seller' and display.npcNameUntranslated)
+          assert(quote.name=='Schema Seller' and quote.npcNameUntranslated)
+          assert(display.npcNameCanonical==raw.name_en and quote.price==37)
+          ns.L['Schema Seller']='已加载的商人名称'
+          assert(p.GetFormulaDisplayOffers(999150)[1].name=='已加载的商人名称')
+          assert(not p.GetFormulaOffers(999150)[1].npcNameUntranslated)
+          raw.name_en=nil
+          display=p.GetFormulaDisplayOffers(999150,nil,old)[1]
+          assert(display.name=='商人 NPC #7' and display.npcNameUntranslated)
+          assert(old.vendors[1].name=='商人 NPC #7' and raw.cost_copper==37)
+          raw.name_en='   '
+          assert(p.GetFormulaOffers(999150)[1].name=='商人 NPC #7')
+        ''')
+
+    def test_screenshot_merchants_keep_their_real_names_in_all_three_locales(self):
+        for locale in ('zhCN','zhTW','enUS'):
+            with self.subTest(locale=locale):
+                lua=runtime();ns=lua.globals().ns
+                lua.globals().testLocale=locale
+                lua.execute('GetLocale=function()return testLocale end')
+                for name in ('zhCN',locale):
+                    lua.execute((ROOT/'Locales'/f'{name}.lua').read_text(encoding='utf-8-sig'),'Test',ns)
+                lua.execute((ROOT/'Core/Data/Data_ProfItems.lua').read_text(encoding='utf-8-sig'),'Test',ns)
+                lua.execute('''
+                  local p=ns.ProfItemPrices
+                  local names={[253139]='Gorhak',[253140]='Molkar',[266901]='Pexmit'}
+                  local centaur=p.GetFormulaDisplayOffers(250979,{faction='A'})
+                  assert(#centaur==2)
+                  for _,offer in ipairs(centaur)do
+                    assert(offer.name==names[offer.npcID] and offer.npcNameCanonical==offer.name)
+                    assert(offer.currencyKind=='item' and offer.currencyID==254432)
+                    assert(offer.currencyAmount==(offer.npcID==253139 and 15 or 60))
+                    assert(offer.faction==nil,'missing faction was invented as neutral')
+                  end
+                  local portal=p.GetFormulaDisplayOffers(251468,{faction='H'})
+                  assert(#portal==1 and portal[1].npcID==266901 and portal[1].name=='Pexmit')
+                  assert(portal[1].costCopper==100000 and portal[1].faction==nil)
+                  local quote=p.GetFormulaOffers(251468,{faction='A'})[1]
+                  assert(quote.name=='Pexmit' and quote.price==100000)
+                ''')
+
+    def test_actual_supplier_names_use_verified_chinese_or_the_preserved_source_name(self):
         audit=json.loads((ROOT/'tests/data/prof-vendor-localization.json').read_text(encoding='utf-8'))
         records={row['npcID']:row for row in audit['vendors']}
         self.assertEqual(len(records),len(audit['vendors']))
+        for row in records.values():
+            for locale in ('zhCN','zhTW'):
+                if row.get(locale+'Status')=='not_verified':
+                    self.assertIsNone(row.get(locale))
+                    self.assertTrue(row.get(locale+'Reason'))
+                    self.assertTrue(row.get(locale+'Source'))
+                    self.assertTrue(row.get('enUSSource'))
+                    proof=row['enUSEvidence']
+                    self.assertEqual(proof['kind'],'cached_sold_by_listview_json')
+                    self.assertGreater(proof['itemID'],0)
+                    self.assertTrue(proof['file'])
+                    self.assertRegex(proof['sha256'],r'^[0-9a-f]{64}$')
         for locale in ('zhCN','zhTW'):
             with self.subTest(locale=locale):
                 lua=runtime();ns=lua.globals().ns
@@ -369,14 +476,15 @@ class ProfItemPrices(unittest.TestCase):
                       local faction=raw.side=='h' and 'H' or 'A'
                       for _,offer in ipairs(ns.ProfItemPrices.GetFormulaOffers(id,{faction=faction}))do
                         if offer.npcID==npc then
-                          assert(offer.name:find('[\\128-\\255]'),'English merchant name escaped compact Chinese display')
                           assert(offer.npcNameCanonical==raw.name_en,'original name was lost')
                           if proof[testLocale]then
                             assert(offer.name==proof[testLocale],'verified name differs from quotation')
                             assert(not offer.npcNameUntranslated)
                           else
-                            assert(proof[testLocale..'Status']=='unavailable')
-                            assert(offer.name==string.format(ns.L['商人 NPC #%d'],npc) and offer.npcNameUntranslated)
+                            local status=proof[testLocale..'Status']
+                            assert(status=='unavailable' or status=='not_verified')
+                            assert(offer.name==raw.name_en and offer.npcNameUntranslated,
+                              'a known canonical name was replaced with an NPC number')
                           end
                           seen[npc]=true
                         end
@@ -461,7 +569,7 @@ class ProfItemPrices(unittest.TestCase):
           assert(r.feasible and r.costComplete and r.total==74 and r.vendorTotal==74 and r.ahTotal==0)
           assert(#r.mats==1 and r.mats[1].count==8)
           assert(r.mats[1].bundleSize==4 and r.mats[1].npcID==nil)
-          assert(r.mats[1].quoteSource=='client')
+          assert(r.mats[1].quoteSource=='client_base_bundle')
           assert(r.inventory[999108]==2,'bag inventory was subtracted or retained')
           assert(test.merchantReads==0 and test.dbReads==0)
         ''')
@@ -471,6 +579,7 @@ class ProfItemPrices(unittest.TestCase):
         self.lua.execute('''
           local raw=schema(999109);raw.cost_copper=nil;raw.cost_text=nil
           ns.ProfItems[999109].cost_copper=nil;ns.ProfItems[999109].cost_text=nil
+          ns.ProfMaterialSupply[999109].offers[7].price=nil
           ns.ProfEconomy.Professions=function()return {alchemy={cur=1,max=75,primary=true}}end
           ns.ProfRecipes={alchemy={rows={{101,20,1,'','','',1,20,30,40,false,{{999109,1}}}}}}
           ns.EnsureProfRecipes=function()return ns.ProfRecipes end
@@ -577,12 +686,12 @@ class ProfItemPrices(unittest.TestCase):
         self.lua.execute('''
           local s=formulaScenario(999122)
           local raw=ns.ProfItems[999122].offers[7];raw.cost_copper=8
-          ns.ProfItems[999122].cost_copper=nil -- isolate finite AH material supply from the separate formula seller
+          ns.ProfItems[999122].cost_copper=nil;ns.ProfMaterialSupply[999122]=nil -- isolate finite AH material supply from the separate formula seller
           s.recipes={s.recipes[1]};s.recipes[1].mats={{999122,1},{11,1}}
           s.formulaOffers[999122]=ns.ProfItemPrices.GetFormulaOffers(999122)
           s.offers={[999122]=ns.ProfItemPrices.GetOffers(999122)}
           s.auctionSupply={[999122]={quantity=1}}
-          local r,j=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=2})
+          local r,j=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=2,allowLimitedFormulas=true})
           assert(not j.error and r.feasible and r.targetReached and r.total==14)
           assert(r.vendorTotal==8 and r.ahTotal==6 and r.formulasTotal==8)
           assert(#r.formulas==1 and r.formulas[1].source=='vendor' and r.formulas[1].availabilityUncertain)
@@ -635,19 +744,15 @@ class ProfItemPrices(unittest.TestCase):
                   assert(found and found.price==raw.cost_copper and found.priceUsable)
                   assert(found.quantity==ns.ProfItems[5640].VendorStackCount and found.maxStock==raw.stock)
                   assert(found.source==raw.price_source and found.stock==nil and found.verifiedAt==nil)
-                  local item=ns.ProfItems[5640]
-                  local copper,quantity=item.cost_copper,item.VendorStackCount
-                  local expected
-                  if type(copper)=='number' and copper>=0 and copper<math.huge
-                    and copper==math.floor(copper) and type(quantity)=='number'
-                    and quantity>=1 and quantity<math.huge and quantity==math.floor(quantity) then
-                    expected=copper/quantity
-                  end
-                  assert(ns.ProfItemPrices.GetPrice(5640,{faction='A'})==expected,
-                    'material quote must use the valid item root price and never an NPC-only formula price')
+                  assert(ns.ProfItemPrices.GetPrice(5640,{faction='A'})==nil,
+                    'formula-only item root price invented unlimited material supply')
                 ''')
 
     def test_actual_importer_only_updates_data_and_retains_runtime_provider(self):
+        input_tools = str(ROOT / "df-data-pipeline/_temp")
+        sys.path.insert(0, input_tools)
+        self.addCleanup(lambda: sys.path.remove(input_tools))
+        from fc_pipeline_paths import CSV_INPUTS
         from test_prof_items_pipeline import (
             NPC_FIELDS, PRICE_FIELDS, VENDOR_FIELDS, VENDORS_LUA, npc, price, vendor,
         )
@@ -672,9 +777,9 @@ class ProfItemPrices(unittest.TestCase):
             vendors_lua = output / "Data_ProfVendors.lua"
             vendors_lua.write_text(VENDORS_LUA, encoding="utf-8")
             for relative, fields, rows in (
-                ("df-data-pipeline/_temp/_fc/inputs/vendors/vendors.csv", VENDOR_FIELDS, [vendor()]),
-                ("df-data-pipeline/_temp/_fc/inputs/vendors/npcs.csv", NPC_FIELDS, [npc()]),
-                ("df-data-pipeline/_temp/_fc/inputs/client/item-buy-prices.csv", PRICE_FIELDS, [price()]),
+                (CSV_INPUTS["vendors_csv"].relative_to(ROOT), VENDOR_FIELDS, [vendor()]),
+                (CSV_INPUTS["npcs_csv"].relative_to(ROOT), NPC_FIELDS, [npc()]),
+                (CSV_INPUTS["prices_csv"].relative_to(ROOT), PRICE_FIELDS, [price()]),
             ):
                 path = repository / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -703,7 +808,7 @@ class ProfItemPrices(unittest.TestCase):
             ns = lua.globals().ns
             lua.execute(items_lua.read_text(encoding="utf-8-sig"), "Test", ns)
             lua.execute(runtime_path.read_text(encoding="utf-8-sig"), "Test", ns)
-            lua.execute("assert(ns.ProfItemPrices.GetPrice(100,{faction='A'})==12345/5)")
+            lua.execute("assert(ns.ProfItemPrices.GetPrice(100,{faction='A'})==nil)")
 
 
 if __name__ == "__main__":

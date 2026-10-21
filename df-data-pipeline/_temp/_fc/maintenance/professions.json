@@ -84517,7 +84517,7 @@
       ]
     ]
   },
-  "baseline_semantic_sha256": "6b04b16596de1fa3472b7f9c6a5a2868ab39fc61882ed4db95ba1f14529babf9",
+  "baseline_semantic_sha256": "4561996c95cefcf5b24706ff4ac3f4695bc8077b8f9427cf15b1276bab585d9c",
   "catalog_id_evidence": [
     {
       "collection": "enchants",
@@ -107694,396 +107694,6 @@
             "name:Enchant Gloves - Riding Skill"
           ]
         ]
-      }
-    },
-    {
-      "base": 13695,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant 2H Weapon - Impact",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 7793,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant 2H Weapon - Lesser Intellect",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13637,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Boots - Lesser Agility",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13890,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Boots - Minor Speed",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13836,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Boots - Stamina",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 1248498,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Bracer - Lesser Healing Power",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13622,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Bracer - Lesser Intellect",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 7779,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Bracer - Minor Agility",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13648,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Bracer - Stamina",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13661,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Bracer - Strength",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13700,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Chest - Lesser Stats",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13858,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Chest - Superior Stamina",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13746,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Cloak - Greater Defense",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13419,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Cloak - Minor Agility",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13815,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Gloves - Agility",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13887,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Gloves - Strength",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 1249059,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Necklace - Agility",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 1249060,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Necklace - Deflection",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 1249058,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Necklace - Healing Power",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 1249057,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Necklace - Spell Power",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 1249019,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Necklace - Strength",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13631,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Shield - Lesser Stamina",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13659,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Shield - Spirit",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 1248760,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Weapon - Recovery",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 1248805,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Weapon - Revelation",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
-      }
-    },
-    {
-      "base": 13693,
-      "path": [
-        "Data_ProfRecipes.lua",
-        "ProfRecipes",
-        "enchanting",
-        "enchants",
-        "$rows",
-        "name:Enchant Weapon - Striking",
-        "spell"
-      ],
-      "value": {
-        "$absent": true
       }
     },
     {
@@ -157344,6 +156954,117 @@
   "input_semantic_sha256": "e73f25b89cc447d79f9e8cf68d0f7f15e9e86765eb43a5fa87323caaccce86ac",
   "provenance": {
     "description": "Current repository semantic baseline; no game installation input",
+    "enchant_identity_repair": {
+      "reason": "Retain explicit source spell IDs instead of deleting them during maintenance replay.",
+      "restored_spell_fields": [
+        {
+          "name": "Enchant 2H Weapon - Impact",
+          "spell": 13695
+        },
+        {
+          "name": "Enchant 2H Weapon - Lesser Intellect",
+          "spell": 7793
+        },
+        {
+          "name": "Enchant Boots - Lesser Agility",
+          "spell": 13637
+        },
+        {
+          "name": "Enchant Boots - Minor Speed",
+          "spell": 13890
+        },
+        {
+          "name": "Enchant Boots - Stamina",
+          "spell": 13836
+        },
+        {
+          "name": "Enchant Bracer - Lesser Healing Power",
+          "spell": 1248498
+        },
+        {
+          "name": "Enchant Bracer - Lesser Intellect",
+          "spell": 13622
+        },
+        {
+          "name": "Enchant Bracer - Minor Agility",
+          "spell": 7779
+        },
+        {
+          "name": "Enchant Bracer - Stamina",
+          "spell": 13648
+        },
+        {
+          "name": "Enchant Bracer - Strength",
+          "spell": 13661
+        },
+        {
+          "name": "Enchant Chest - Lesser Stats",
+          "spell": 13700
+        },
+        {
+          "name": "Enchant Chest - Superior Stamina",
+          "spell": 13858
+        },
+        {
+          "name": "Enchant Cloak - Greater Defense",
+          "spell": 13746
+        },
+        {
+          "name": "Enchant Cloak - Minor Agility",
+          "spell": 13419
+        },
+        {
+          "name": "Enchant Gloves - Agility",
+          "spell": 13815
+        },
+        {
+          "name": "Enchant Gloves - Strength",
+          "spell": 13887
+        },
+        {
+          "name": "Enchant Necklace - Agility",
+          "spell": 1249059
+        },
+        {
+          "name": "Enchant Necklace - Deflection",
+          "spell": 1249060
+        },
+        {
+          "name": "Enchant Necklace - Healing Power",
+          "spell": 1249058
+        },
+        {
+          "name": "Enchant Necklace - Spell Power",
+          "spell": 1249057
+        },
+        {
+          "name": "Enchant Necklace - Strength",
+          "spell": 1249019
+        },
+        {
+          "name": "Enchant Shield - Lesser Stamina",
+          "spell": 13631
+        },
+        {
+          "name": "Enchant Shield - Spirit",
+          "spell": 13659
+        },
+        {
+          "name": "Enchant Weapon - Recovery",
+          "spell": 1248760
+        },
+        {
+          "name": "Enchant Weapon - Revelation",
+          "spell": 1248805
+        },
+        {
+          "name": "Enchant Weapon - Striking",
+          "spell": 13693
+        }
+      ],
+      "source": "enchant_ids.json",
+      "source_sha256": "df6db832cb4eac98e5286e3306ab8a638e37b585ec2963a0ceba926cc9e61e8e"
+    },
     "generation_inputs": {
       "_wago_AreaTable_zh.csv": "7a27f3430aba6f0d8b6d7ef7d7cdf1eba9f6dcc3c6dcdd856563ef00f3a4aa08",
       "drop_loc.json": "0791be6a95c7590b7c4ef4062ba96bfa66c79d866ae9e4c356c4d770b7e834a7",

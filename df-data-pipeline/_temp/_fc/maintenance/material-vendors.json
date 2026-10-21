@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "gameFlavor": "forever",
+  "provider": "auto",
+  "requestDelaySeconds": 3,
+  "seedItemIDs": [2320, 2324, 2604, 2678, 2880, 3371, 4289, 4399, 6217],
+  "roleAliases": {
+    "profession_supply": ["Alchemy Supplies", "Alchemy Supplier", "Blacksmithing Supplies", "Blacksmithing Supplier", "Engineering Supplies", "Engineering Supplier", "Engineering & General Goods Supplier", "Enchanting Supplies", "Enchanting Supplier", "Leatherworking Supplies", "Leatherworking Supplier", "Tailoring Supplies", "Tailoring Supplier", "Leatherworking & Tailoring Supplies", "Mining Supplies", "Mining Supplier", "Herbalism Supplies", "Herbalism Supplier"],
+    "trade_supply": ["Trade Supplies", "Trade Supplier", "Trade Goods", "Trade Goods Supplies", "General Trade Goods Merchant", "General Trade Supplier", "General & Trade Supplies", "Tradesman", "Tradeswoman"],
+    "reagent_supply": ["Reagents", "Reagent Vendor", "Reagent Supplies", "Reagent Supplier", "Arcane Goods Vendor"],
+    "general_goods": ["General Goods", "General Supplies", "General Goods Merchant", "General Supplier"],
+    "cooking_supply": ["Cooking Supplies", "Cooking Supplier"],
+    "fishing_supply": ["Fishing Supplies", "Fishing Supplier"]
+  },
+  "npcs": {},
+  "notes": "Discover NPC IDs from these common shop materials, then refresh every registered NPC's full sells shelf each online run. This is bounded discovery, not a claim to include every Forever merchant. Manual entries may disable a vendor; explicit role overrides require a reason. Formulas use their independent existing pipeline."
+}

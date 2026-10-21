@@ -1,9 +1,9 @@
 # scripts/ —— 商人定位采集（gen_vendors.py）
 
-本机 Forever 表导出入口为 [`export_buyprice/export-item-buy-prices.ps1`](export_buyprice/README.md)：同次运行产生三语基础购买价 `export_buyprice/output/item-buy-prices.csv` 和完整物品表 `export_buyprice/output/item.csv`。本目录工具链只输出 CSV，不生成或导入 Lua，也不写游戏安装目录。插件中的旧 NPC 购买价格已删除，等待新的购买价格设计，不从商人窗口或历史缓存补价；AH 行情与数量保留。下文游戏 API 的“售价”专指卖店收益，与 NPC 购买价格不同。
+本机 Forever 表导出入口为 [`export_buyprice/export-item-buy-prices.ps1`](export_buyprice/README.md)：同次运行产生三语基础购买价 `export_buyprice/output/item-buy-prices.csv` 和完整物品表 `export_buyprice/output/item.csv`。本目录工具链输出 CSV 及可选的 NPC 所属组织 JSON，不生成或导入 Lua，也不写游戏安装目录。插件中的旧 NPC 购买价格已删除，新的基础购买价与图纸 NPC 供货由专业流水线分别导入，不从商人窗口或历史缓存补价；AH 行情与数量保留。下文游戏 API 的“售价”专指卖店收益，与 NPC 购买价格不同。
 
 为 **Item.csv（wow.tools 导出）里的每张图纸/配方** 找出：谁卖它（NPC）、在哪卖
-（区域 + 坐标 + 阵营），并解析出售行的**成本与库存**。只输出 CSV，不写 Lua，
+（区域 + 坐标 + 阵营），并解析出售行的**成本与库存**。输出 CSV 及可选所属组织 JSON，不写 Lua，
 不取售价（售价由游戏内 API 取得）。
 
 ## 链路
@@ -16,10 +16,10 @@ Wowhead Forever 物品页 Sold by（本机 Chrome，playwright 渠道 + 代理�
         │   缓存 .cache/soldby/<id>.html；每行解析 NPC/区域/阵营/英文名/成本/库存）
         ▼
 NPC 信息：nether.wowhead.com/forever/tooltip/npc/<id>
-        │（默认英文名，--locale zhCN 可切；map.zone + 首组坐标；缓存 .cache/nether/）
+        │（默认英文名，--locale zhCN 可切；map.zone + 首组坐标 + 明确所属组织；缓存 .cache/nether/）
         │  QuestieDB questie_forever.json 的 npc_spawns 兜底（--questie）
         ▼
-产物：scripts/out/vendors.csv + scripts/out/npcs.csv（不写任何 Lua）
+产物：scripts/out/vendors.csv + scripts/out/npcs.csv（可另存所属组织 JSON，不写任何 Lua）
 ```
 
 ## 运行
@@ -50,6 +50,10 @@ python scripts/gen_vendors.py --item-db2 "C:/Users/yewei/Downloads/item.csv" --s
 
 ## 产物 CSV 格式
 
+Sold by 优先解析页面内 `id: 'sold-by'` 的 Listview JSON，不依赖商人页签是否已展开；没有该结构时才读取商人表格。缓存页默认显示掉落列表时，也能保留特殊通货、数量、阵营和完整金币金额。结构化数据中无法用当前单通货 CSV 表达的多种通货或多个可选价格明确报错。
+
+`--soldby-provider cache` 只禁止 Sold by 层联网。需要完整离线重放时，另传 `--npc-provider json --npc-json <已保存的NPC资料.json>`，并使用显式 CSV 输出路径；它不会刷新或覆盖流水线保存的旧输入快照。
+
 `scripts/out/vendors.csv`（物品 → 商人，一行一个商人）：
 
 ```csv
@@ -79,14 +83,30 @@ npc_id,name_en,name_locale,zone_id,ui_map_id,x,y
 | Sold by | `--soldby-provider wowhead`（默认） | Chrome 抓取，缓存 `.cache/soldby/` |
 | | `--soldby-provider cache` | 只读缓存（离线重算） |
 | | `--soldby-provider json --soldby-json f` | 导入 `{item: [{npc,zone,side,name,cost,stock}]}`（如游戏内采集导出） |
-| NPC 信息 | `--npc-provider nether`（默认） | 名称 + 区域 + 坐标 |
+| NPC 信息 | `--npc-provider nether`（默认） | 名称 + 区域 + 坐标 + tooltip 中明确的所属组织 |
 | | `--npc-provider questie --questie f` | QuestieDB npc_spawns |
 | | `--npc-provider json --npc-json f` | 导入 `{npc: {name, coords:[[zone,x,y]]}}` |
 
 新增数据源：加一个类实现对应契约即可，主流程不用改：
 
 - sold-by provider：`sold_by(ids) -> {itemID: [{npc,name,zone,side,cost,stock}]}`
-- npc provider：`npc_info(npcs) -> {npcID: {name, coords:[(zone,x,y)]}}`
+- npc provider：`npc_info(npcs) -> {npcID: {name, coords:[(zone,x,y)], faction:可选所属组织证据}}`
+
+## NPC 所属组织补充
+
+使用独立入口 [`update_vendor_factions.py`](update_vendor_factions.py)，自动读取商人 CSV 中的全部 NPC，不维护 ID 名单。完整说明及客户端导出入口见 [VENDOR_FACTIONS.md](VENDOR_FACTIONS.md)。在仓库根执行：
+
+```powershell
+# 干净检出即可离线重放：只读随仓库保存的原始证据与哈希清单
+python -B scripts/update_vendor_factions.py --offline
+
+# 已有客户端导出后，刷新全部商人的过期/缺失网页证据，并安装JSON输入
+python -B scripts/update_vendor_factions.py --collect --proxy= --client-dir scripts/out/npc-faction-client --install-input
+```
+
+`--install-input` 只事务发布 JSON、审计和冻结证据，不生成 Lua。专业生成器默认读取 `_temp/_fc/inputs/vendors/npc-factions.json` 及同目录受版本管理的 `faction-sources/`；正常 `fc_prof_items.py` 或统一 `fc_update.py` 才生成 `ns.ProfVendorFactions`。旧 `npc-factions-20261021.json` 两 NPC 快照仅作历史证据。
+
+2026-10-21 全量结果为 289 名商人：242 名有明确 ID 及三语名，47 名仍未知，缺 payload/冲突/采集错误均为0。所属组织与 A/H/N `side` 独立；缺 `react` 不补中立，商品声望条件不反推 NPC 所属。原始五份 CSV、19列 `DataProfItems.csv`、报价、库存和坐标不变。底层 `gen_vendors.py --npc-factions-out` / `--faction-names-csv` 仍可单独使用，但不是完整冻结与导入入口。
 
 ## 其他接口
 

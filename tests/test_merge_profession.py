@@ -96,6 +96,11 @@ class MergedProfessionTests(unittest.TestCase):
                   assert(ns.ProfItemsMeta.schemaVersion==2 and ns.ProfItemsMeta.sources.csv.sha256)
                   assert(ns.ProfItems[6325].item_id==6325 and ns.ProfItems[6325].offers[66].cost_copper==40,
                     'TOC did not load the generated schema2 NPC quotations')
+                  -- Cached 6325 sold-by JSON: Nyalah Brightfire has react=[1,1]
+                  -- and cost=[[38]], so this explicit neutral seller serves both factions.
+                  local neutral=ns.ProfItems[6325].offers[257006]
+                  assert(neutral and neutral.side=='n' and neutral.cost_copper==38 and neutral.stock==-1,
+                    'neutral seller differs from the verified sold-by JSON snapshot')
                   for _,meta in pairs(ns.ProfFormulaMeta) do
                     assert(meta.source.questOnly and not meta.source.vendors,
                       'independent quest metadata contains obsolete merchant sources')
@@ -105,16 +110,18 @@ class MergedProfessionTests(unittest.TestCase):
                     local e=ns.ProfEconomy
                     local recipe=e.FindRecipe('cooking',7751)
                     local formula=e.FormulaFor(recipe,{known={},prices={},faction=faction=='Alliance' and 'A' or 'H'})
-                    local expected=faction=='Alliance' and 38 or 40
+                    local expected=38
                     assert(formula and formula.id==6325 and formula.source=='vendor' and formula.usable)
-                    assert(formula.cost==expected and not formula.unpriced,
+                    assert(formula.cost==expected and formula.npcID==257006 and not formula.unpriced,
                       'formula did not use faction-appropriate cost_copper from ProfItems')
                     assert(#formula.vendorOffers>0,'supplier metadata disappeared')
                     local mapped,linked=false,false
                     for _,offer in ipairs(formula.vendorOffers) do
                       assert(offer.npcID)
+                      local raw=ns.ProfItems[6325].offers[offer.npcID]
+                      assert(raw and (raw.side=='n' or raw.side==(faction=='Alliance' and 'a' or 'h')),
+                        'opposing-faction seller entered formula purchase candidates')
                       if offer.priceUsable then
-                        local raw=ns.ProfItems[6325].offers[offer.npcID]
                         assert(raw and offer.price==raw.cost_copper and not raw.currency_kind
                           and not raw.currency_id and not raw.currency_amount,
                           'formula offer did not come from a pure copper ProfItems row')

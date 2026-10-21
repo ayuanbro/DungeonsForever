@@ -291,7 +291,7 @@ class ProfessionUIRegressions(unittest.TestCase):
           assert(auctionAge,'zero-cost auction entry was misclassified as NPC-only')
         ''')
 
-    def test_stale_npc_shopping_callbacks_are_gated_without_changing_history_or_ah(self):
+    def test_stale_shopping_callbacks_are_gated_and_current_quotes_preserve_history(self):
         self.lua.execute('''
           CreateFrame=function()return {RegisterEvent=function()end,SetScript=function()end}end
         ''')
@@ -323,6 +323,11 @@ class ProfessionUIRegressions(unittest.TestCase):
           assert(old.total==7 and old.vendorQuoteRevision==2 and #old.mats==2)
           local ah={planVersion=2,total=2,feasible=true,status='complete',vendorQuoteRevision=2,
             vendorQuoteData='old-quotes',mats={{id=12,count=2,cost=2,unit=1,source='ah'}}}
+          PD.ShopImport(ah);assert(imported==nil,'an old pure AH callback bypassed quote recalculation')
+          rows={};PD.RowsAutoShop(rows,ah)
+          for _,row in ipairs(rows)do assert(not row.it,'an old pure AH shopping row was rendered')end
+          local historicalAH=ah
+          ah=RA.StampVendorQuotes(ns.ProfEconomy.Copy(historicalAH))
           PD.ShopImport(ah)
           assert(#imported==1 and imported[1].name=='Item12' and imported[1].need==2)
           imported=nil;ah.mode='supplement';ah.stale=true
@@ -341,6 +346,8 @@ class ProfessionUIRegressions(unittest.TestCase):
           PD.ShopImport(ah);assert(#imported==1,'a current NPC base plan blocked its pure AH supplement')
           base=nil;imported=nil;PD.ShopImport(ah)
           assert(#imported==1,'an independent supplement fixture without an active run was blocked')
+          assert(historicalAH.vendorQuoteRevision==2 and historicalAH.vendorQuoteData=='old-quotes'
+            and historicalAH.total==2 and historicalAH.mats[1].count==2,'historical AH plan was changed')
         ''')
 
     def test_route_rows_preserve_execution_order_and_actual_batch_costs(self):

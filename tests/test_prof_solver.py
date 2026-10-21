@@ -521,6 +521,70 @@ class SolverTests(unittest.TestCase):
           for _,e in ipairs(r.mats) do assert(e.npcID~=1) end
         ''')
 
+    def test_anonymous_vendor_bundles_retain_separate_receipts_after_replay(self):
+        self.lua.execute('''
+          local s=snapshot({}, {})
+          s.offers={[10]={
+            {unlimited=true,price=9,quantity=5,source='wowhead_npc_bundle',
+              priceSource='wowhead_npc_bundle',priceBasis='Data_ProfMaterialSupply'},
+            {unlimited=true,price=3,quantity=1,source='client_base_bundle',
+              priceSource='client_base_bundle',priceBasis='Data_ProfMaterialSupply'}}}
+          local r=ns.ProfRouteSolver.Procure(s,10,6)
+          assert(r.feasible and r.total==12 and r.vendorTotal==12 and #r.mats==2)
+          local receipts={}
+          for _,m in ipairs(r.mats)do
+            assert(m.id==10 and m.npcID==nil and m.source=='vendor')
+            assert(m.count%m.bundleSize==0 and m.cost==m.count/m.bundleSize*m.bundlePrice)
+            assert(m.unit==m.bundlePrice/m.bundleSize)
+            receipts[m.bundleSize]=m
+          end
+          assert(receipts[5].count==5 and receipts[5].bundlePrice==9 and receipts[5].unit==9/5)
+          assert(receipts[5].priceSource=='wowhead_npc_bundle')
+          assert(receipts[1].count==1 and receipts[1].bundlePrice==3 and receipts[1].unit==3)
+          assert(receipts[1].priceSource=='client_base_bundle')
+          for _,a in ipairs(r.actions)do if a.type=='buy'then
+            assert(a.bundlePrice and a.cost==a.count/a.bundleSize*a.bundlePrice)
+            assert(a.priceSource and a.priceBasis=='Data_ProfMaterialSupply')
+          end end
+        ''')
+
+    def test_receipts_combine_only_identical_vendor_transactions(self):
+        self.lua.execute('''
+          local s=snapshot({}, {})
+          s.offers={[10]={
+            {unlimited=true,price=9,quantity=5,source='wowhead_npc_bundle',
+              priceSource='wowhead_npc_bundle',priceBasis='Data_ProfMaterialSupply'},
+            {unlimited=true,price=3,quantity=1,source='client_base_bundle',
+              priceSource='client_base_bundle',priceBasis='Data_ProfMaterialSupply'}}}
+          local r,j=ns.ProfRouteSolver.Procure(s,10,6)
+          local state=ns.ProfEconomy.Copy(j.best)
+          local node=state.log
+          while node do
+            if node.action.type=='buy' then node.action.bundlePrice=nil end
+            node=node.prev
+          end
+          local function transaction(price,source)
+            state.log={prev=state.log,action={type='buy',item=10,source='vendor',
+              count=5,cost=price,bundleSize=5,bundlePrice=price,quoteSource=source,
+              priceSource=source,priceBasis='Data_ProfMaterialSupply'}}
+            state.money=state.money+price;state.inv[10]=(state.inv[10] or 0)+5
+          end
+          transaction(9,'wowhead_npc_bundle')
+          transaction(10,'wowhead_npc_bundle')
+          transaction(9,'client_base_bundle')
+          r=ns.ProfRouteSolver.Result(j,state,'complete')
+          assert(r.total==40 and r.vendorTotal==40 and #r.mats==4)
+          local cost,count=0,0
+          for _,m in ipairs(r.mats)do
+            cost=cost+m.cost;count=count+m.count
+            assert(m.cost==m.count/m.bundleSize*m.bundlePrice and m.unit==m.bundlePrice/m.bundleSize)
+            if m.bundleSize==5 and m.bundlePrice==9 and m.priceSource=='wowhead_npc_bundle' then
+              assert(m.count==10 and m.cost==18,'identical transactions failed to combine')
+            else assert(m.count==m.bundleSize,'distinct quotation merged with another receipt') end
+          end
+          assert(cost==r.total and count==21)
+        ''')
+
     def test_wrong_faction_extended_currency_and_unverified_vendor_are_ignored(self):
         self.lua.execute('''
           local s=snapshot({}, {[10]=5}); s.faction='Alliance'

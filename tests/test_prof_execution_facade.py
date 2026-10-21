@@ -113,7 +113,7 @@ class ExecutionFacadeTests(unittest.TestCase):
             return ns.ProfEconomy.Index(s)
           end
           opts={start=1,target=2};local candidate=finish('alchemy',opts)
-          assert(candidate.total==3 and candidate.vendorQuoteData=='quotes-a')
+          assert(candidate.total==3 and candidate.vendorQuoteData=='material-supply-v1:supply-a|formula:quotes-a')
           ns.ProfItemsMeta.sources.csv.sha256='quotes-b'
           assert(ns.ProfRouteAuto.Get('alchemy',opts).status=='recalculate_required')
           ns.ProfItemsMeta.sources.csv.sha256='quotes-a'
@@ -123,7 +123,7 @@ class ExecutionFacadeTests(unittest.TestCase):
           ns.ProfItemsMeta.sources.csv.sha256='quotes-b'
           local view=ns.ProfRouteAuto.Get('alchemy',opts)
           assert(view.status=='recalculate_required' and view.total==0 and #view.mats==0)
-          assert(xp.GetPlan('alchemy')==frozen and frozen.vendorQuoteData=='quotes-a' and frozen.total==3)
+          assert(xp.GetPlan('alchemy')==frozen and frozen.vendorQuoteData=='material-supply-v1:supply-a|formula:quotes-a' and frozen.total==3)
         ''')
 
     def test_old_npc_supplement_and_binding_are_blocked_without_erasing_history(self):
@@ -149,14 +149,15 @@ class ExecutionFacadeTests(unittest.TestCase):
           assert(#queue==queued and captures==capturesBefore and xp.GetPlan('alchemy')==run.plan)
         ''')
 
-    def test_pure_auction_execution_survives_npc_fingerprint_changes(self):
+    def test_pure_auction_execution_requires_recalculation_after_fingerprint_changes(self):
         self.lua.execute('''
           opts={start=1,target=2};local candidate=finish('alchemy',opts)
           local xp=ns.ProfExecution;assert(xp.Bind('alchemy',candidate))
           local frozen=xp.GetPlan('alchemy')
           ns.ProfItemsMeta={sources={csv={sha256='new-data'}}}
-          assert(not ns.ProfRouteAuto.VendorQuotesChanged(frozen))
-          assert(ns.ProfRouteAuto.Get('alchemy',opts)==frozen)
+          assert(ns.ProfRouteAuto.VendorQuotesChanged(frozen))
+          local view=ns.ProfRouteAuto.Get('alchemy',opts)
+          assert(view~=frozen and view.status=='recalculate_required' and #view.mats==0)
           assert(frozen.mats[1].source=='ah' and frozen.total==7)
         ''')
 
@@ -187,7 +188,7 @@ class ExecutionFacadeTests(unittest.TestCase):
             tostring(result.status)..' total='..tostring(result.total)..' error='..
               tostring(result.error or result.diagnostics and result.diagnostics[1] and result.diagnostics[1].detail))
           assert(result.mats[1].source=='ah' and not result.mats[1].vendor)
-          assert(result.vendorQuoteRevision==4 and run.plan.executionOptions.snapshot.offers[11][1].price==0)
+          assert(result.vendorQuoteRevision==5 and run.plan.executionOptions.snapshot.offers[11][1].price==0)
         ''')
 
 

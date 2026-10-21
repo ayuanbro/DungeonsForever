@@ -1,8 +1,0 @@
-<Ui xmlns="http://www.blizzard.com/wow/ui/">
-  <Script file="LibHUIConfig.lua"/>
-  <Script file="LibHUILocales.lua"/>
-  <Script file="LibHUITheme.lua"/>
-  <Script file="LibHUIWidgets.lua"/>
-  <Script file="LibHUIWidgetsScrollingEdit.lua"/>
-  <Script file="LibHUISettingsUI.lua"/>
-</Ui>

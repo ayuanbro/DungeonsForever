@@ -21,6 +21,7 @@ class FishingCookingTests(unittest.TestCase):
             'Core/Data/Data_ProfRecipes.lua',
             'Core/Data/Data_ProfLeveling.lua',
             'Core/Data/Data_ProfItems.lua',
+            'Core/Data/Data_ProfMaterialSupply.lua',
             'Core/Data/Data_ProfFormulaQuests.lua',
             'Core/Data/Data_ProfFishingRoutes.lua',
             'Core/ProfEconomy.lua',
@@ -140,13 +141,18 @@ class FishingCookingTests(unittest.TestCase):
     def test_unlearned_real_catalogue_prices_first_formula_from_prof_items(self):
         self.lua.execute('''
           Auctionator=nil
+          -- Frozen sold-by JSON for 6325: NPC257006 has react=[1,1],cost=[[38]].
+          local neutral=ns.ProfItems[6325].offers[257006]
+          assert(neutral and neutral.side=='n' and neutral.cost_copper==38 and neutral.stock==-1)
           for _,faction in ipairs({'Alliance','Horde'})do
             UnitFactionGroup=function()return faction end
             local r=ns.ProfFishing.Compute({start=1,target=50})
-            local expected=faction=='Alliance' and 38 or 40
+            local expected=38
             assert(r.targetReached and r.feasible and #r.steps==1)
             assert(r.vendorTotal==expected and r.total==expected and #r.formulas==1)
-            assert(r.formulas[1].id==6325 and r.formulas[1].source=='vendor')
+            assert(r.formulas[1].id==6325 and r.formulas[1].source=='vendor'
+              and r.formulas[1].npcID==257006 and r.formulas[1].cost==neutral.cost_copper)
+            assert(r.ahTotal==0 and r.formulaVendorTotal==expected and r.formulasTotal==expected)
           end
         ''')
 
@@ -225,47 +231,28 @@ class FishingCookingTests(unittest.TestCase):
           end
         ''')
 
-    def test_actual_item_base_spice_price_funds_fishing_without_npc_offer(self):
+    def test_spice_root_price_without_supply_evidence_does_not_fund_fishing(self):
         self.lua.execute('''
-          -- Ordinary materials deliberately need only the item bundle price.
-          local item={}
-          for key,value in pairs(ns.ProfItems[2678])do item[key]=value end
-          item.offers={};item.cost_copper=10;item.price_source='client'
-          ns.ProfItems[2678]=item
-          assert(item.cost_copper==10 and next(item.offers)==nil)
-          local offers=ns.ProfItemPrices.GetOffers(2678)
-          assert(#offers==1 and offers[1].npcID==nil and offers[1].price==10)
+          ns.ProfMaterialSupply[2678]=nil
+          ns.ProfItems[2678]={cost_copper=10,VendorStackCount=5,price_source='client'}
           local recipe=fishRecipe(7751,{{6291,1},{2678,1}})
+          local offers=ns.ProfItemPrices.GetOffers(2678)
           local r=fishSolve(fishSnapshot({recipe},{[2678]=1},{[2678]=offers}),1,4)
-          assert(r.targetReached and #r.steps==1 and #r.mats==1 and r.total==10)
-          assert(r.mats[1].count==5 and r.mats[1].npcID==nil)
-          item.cost_copper=nil
-          offers=ns.ProfItemPrices.GetOffers(2678)
-          r=fishSolve(fishSnapshot({recipe},{[2678]=1},{[2678]=offers}),1,4)
-          assert(#offers==0 and not r.targetReached and #r.mats==0 and r.total==0,
-            'missing item base price was replaced with an auction or NPC price')
+          assert(#offers==0 and not r.targetReached and #r.mats==0 and r.total==0)
         ''')
 
-    def test_actual_spice_item_price_ignores_npc_access_and_faction(self):
+    def test_verified_spice_supply_funds_fishing_and_respects_npc_access(self):
         self.lua.execute('''
+          ns.ProfMaterialSupply={};material(2678,{price=10,quantity=5},12022)
           local recipe=fishRecipe(7751,{{6291,2},{2678,3}})
-          local item=ns.ProfItems[2678]
-          assert(item.cost_copper==10 and item.VendorStackCount==5 and item.price_source=='client')
           for _,faction in ipairs({'A','H'})do
             local offers=ns.ProfItemPrices.GetOffers(2678,{faction=faction})
-            assert(#offers==1 and offers[1].npcID==nil,'anonymous material quote missing for '..faction)
-            local snapshot=fishSnapshot({recipe},{[2678]=999},{[2678]=offers})
-            snapshot.faction=faction
-            local r=fishSolve(snapshot,1,4)
+            assert(#offers==1 and offers[1].npcID==nil)
+            local r=fishSolve(fishSnapshot({recipe},{[2678]=999},{[2678]=offers}),1,4)
             assert(r.targetReached and r.feasible and fishCount(r,6291)==6)
-            assert(#r.mats==1 and r.mats[1].id==2678 and r.mats[1].count==10)
-            assert(r.matTotal==20 and r.vendorTotal==20 and r.total==20 and r.ahTotal==0)
+            assert(#r.mats==1 and r.mats[1].count==10 and r.total==20)
             assertFishingSources(r)
-            local denied={}
-            for npc in pairs(item.offers or {})do denied[npc]=false end
-            local unrestricted=ns.ProfItemPrices.GetOffers(2678,{faction=faction,npcAccess=denied})
-            assert(#unrestricted==1 and unrestricted[1].price==10 and unrestricted[1].npcID==nil,
-              'NPC access gated an ordinary material item price')
+            assert(#ns.ProfItemPrices.GetOffers(2678,{faction=faction,npcAccess={[12022]=false}})==0)
           end
         ''')
 

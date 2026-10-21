@@ -1,22 +1,26 @@
-# Local implementation snapshots remain available without entering Git.
+# Local implementation snapshots and dependency/test runtime.
 /.implementation-backup/
+/.pipeline-runtime/
 
 # Python runtime and test caches.
-/.pipeline-runtime/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
 venv/
 
-# Data pipeline: retain scripts and canonical inputs; ignore fetched/generated copies.
+# Keep Core/Data, generators, tests, _fc/data, _fc/inputs (including frozen
+# faction-sources/*.db2 and JSON), maintenance and translation dictionaries.
+# Do not ignore all _temp/ or all JSON/CSV/HTML/Lua/DB2 files.
+
+# Historical profession pipeline: cache/report outputs only.
 /df-prof-pipeline-v1.0/_temp/_fc/cache/
 /df-prof-pipeline-v1.0/_temp/_fc/reports/
 
-# Full data pipeline: retain scripts, manual inputs and baseline data snapshots.
-/df-data-pipeline/_temp/_fc/cache*/
-/df-data-pipeline/_temp/_fc/reports/
+# Full data pipeline: known cache directories and temporary translation batches.
 /df-data-pipeline/_temp/_fc/cache/
+/df-data-pipeline/_temp/_fc/cache_zh/
+/df-data-pipeline/_temp/_fc/reports/
 /df-data-pipeline/_temp/_fc/i18n/batch_*.txt
 /df-data-pipeline/_temp/_fc/i18n/zh_*.txt
 /df-data-pipeline/_temp/_fc/i18n/todo.json
@@ -31,6 +35,7 @@ venv/
 /scripts/logs/
 /scripts/export_buyprice/out/
 /scripts/export_buyprice/output/
+/scripts/export_npc_factions/output/
 
 # Historical backups, logs and generated comparison reports.
 /df-data-pipeline/_temp/_bak*
@@ -40,8 +45,10 @@ venv/
 /df-data-pipeline/_temp/*_pre*.txt
 /df-data-pipeline/_temp/*_post*.txt
 
-# Confirmed fetched pages; keep HTML tools such as _route_plan/tune.html.
-/df-data-pipeline/_temp/wh*.html
+# Known fetched-page prefixes; keep HTML tools such as _route_plan/tune.html.
+/df-data-pipeline/_temp/wh_*.html
+/df-data-pipeline/_temp/whb_*.html
+/df-data-pipeline/_temp/whn_*.html
 /df-data-pipeline/_temp/_bis_*.html
 /df-data-pipeline/_temp/_bm_page.html
 /df-data-pipeline/_temp/_cat2.html
@@ -61,8 +68,10 @@ venv/
 *~
 Thumbs.db
 Desktop.ini
+.DS_Store
 
-# Shareable addon archives produced by package_addon.bat.
+# Release ZIPs, checksums, extracted packages and staging copies are artifacts.
+/dist/
 /DungeonsForever-*.zip
+/DungeonsForever-*.zip.sha256
 /.DungeonsForever-package-*.tmp
-/dist/DungeonsForever-*.zip

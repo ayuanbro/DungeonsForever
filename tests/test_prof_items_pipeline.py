@@ -191,10 +191,12 @@ class ProfItemsPipelineTests(unittest.TestCase):
         new_price = self.prices.read_bytes()
         self.prices.write_bytes(old_price)
         original_vendor = self.vendors_lua.read_bytes()
+        faction_input = self.directory / 'npc-factions.json'
+        faction_input.write_text('{"schemaVersion":1,"npcs":{}}', encoding='utf-8')
         args = SimpleNamespace(
             vendors_csv=self.vendors, npcs_csv=self.npcs, prices_csv=self.prices,
             output_csv=self.output, items_lua=self.items_lua, vendors_lua=self.vendors_lua,
-            from_csv=None, verified_at='', input_overrides={
+            from_csv=None, verified_at='', vendor_factions_json=faction_input, input_overrides={
                 self.prices: new_price, self.vendors_lua: original_vendor + b'ns.Preserved = 123\n',
             },
         )
@@ -208,6 +210,7 @@ class ProfItemsPipelineTests(unittest.TestCase):
         self.assertEqual(rows[0]['cost_copper'], '23456')
         self.assertIn(b'ns.Preserved = 123', outputs[self.vendors_lua])
         self.assertEqual(expected[self.prices], module.sha(old_price))
+        self.assertEqual(expected[faction_input], module.sha(faction_input.read_bytes()))
         self.assertFalse((self.directory / '.implementation-backup').exists())
 
     def test_repeated_identical_generation_retains_bytes_and_mtimes(self):

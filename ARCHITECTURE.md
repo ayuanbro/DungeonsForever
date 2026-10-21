@@ -1,6 +1,6 @@
 # DungeonsForever 架构与修改导航
 
-核对日期：2026-10-21。依据当前下载仓库合并后的源码；当前 TOC 版本为 1.8.33。合并来源及取舍见 `MERGE_NOTES.md`。
+核对日期：2026-10-21。依据当前下载仓库合并后的源码；当前 TOC 版本为 1.8.36。合并来源及取舍见 `MERGE_NOTES.md`。
 本文记录实际实现，后续功能变更后应重新核对相应部分。
 
 ## 1. 项目边界
@@ -9,7 +9,7 @@
 - 当前目录是内层 Git 仓库，分支 `codex/merge-installed-1.8.28`；以下载版 1.8.20 为基础迁入安装版 1.8.28。专业统一入口在 `df-data-pipeline/_temp/fc_update.py`，默认检查，`--apply` 经完整三语校验后事务发布正式 `Core/Data`；旧 `df-prof-pipeline-v1.0/` 留档停用。`tests/` 包含 Lua 5.1 模拟测试与基准脚本，见 `tests/README.md`。
 - 所有源码、脚本、测试及数据修改只允许在 `C:\Users\yewei\Downloads\DungeonsForever\DungeonsForever`。游戏安装目录中的插件副本只能只读核对，禁止编辑、生成、部署或清理；当前会话的默认工作目录不能视为写入授权。
 - 顶层目录：`Core/` 业务与界面，`Core/Data/` 数据，`Locales/` 文案，`Libs/` 内嵌库，`Media/` 图片与地图等资源。
-- 当前共 29 个 Core 顶层 Lua 文件；数据文件共 123 个：基础 51 个、enUS 36 个、zhTW 36 个。
+- 当前共 30 个 Core 顶层 Lua 文件；数据文件共 124 个：基础 52 个、enUS 36 个、zhTW 36 个。
 - 版本显示从 `DungeonsForever.toc` 的 `## Version` 读取，不应在各页面重复写死。`addon_version.txt` 当前值为 `655404`，用途未确认，不作为插件显示版本。
 
 ## 2. 加载顺序与共享命名空间
@@ -27,10 +27,10 @@ DungeonsForever.toc
   → Core/Core.lua → Core/Hui.lua
   → 基础 Data_*（包含 Route、QuestStartNpc/Loc、QuestEndNpc、ClassCombat、ClassQuest）
   → 按语言加载 zhTW/enUS 数据覆盖
-  → Data_ProfItems / Data_ProfFormulaQuests / Data_ProfMining / Data_ProfFishingRoutes（语言覆盖之后的独立扩展）
+  → Data_ProfItems / Data_ProfMaterialSupply / Data_ProfFormulaQuests / Data_ProfMining / Data_ProfFishingRoutes（语言覆盖之后的独立扩展）
   → LootFilter.lua → DungeonUI.lua
   → PvPUI / FactionUI / MapUI / LootFilterUI / RaidUI
-  → ProfEconomy → ProfFishing → ProfRouteSolver → ProfRouteAuto → ProfExecution
+  → ProfEconomy → ProfRecovery → ProfFishing → ProfRouteSolver → ProfRouteAuto → ProfExecution
   → ProfessionUI → AuctionatorBridge → ProfFollow → ProfItemPrices
   → ExploreUI → ExploreMap → CollectionUI → BisUI → TierUI
   → ClassCombatUI → ClassQuestUI → GearUI
@@ -78,11 +78,12 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 | 团本时间线、列表、套装 | RaidUI / RaidModule | 文件内排期表、RaidSetData；团本详情复用副本详情能力 |
 | 专业总览、配方、采集、升级 | ProfessionUI / ProfModule | ProfData、ProfRecipes、ProfLeveling、ProfGathering、训练师/商人、CratesData/PlunderData |
 | 专业客户端输入与规则 | ProfEconomy | 角色/专业/配方/库存/学费读取、配方规范化、排除草稿与角色存档 |
+| 最终产物估值与成本归属 | ProfRecovery | 售价/手续费及可信数量快照、最终剩余产物收入、递归归属成本与净支出 |
 | 整数采购及路线搜索 | ProfRouteSolver | 共享库存账本、材料制购组合、另一专业制材/联合升级、分帧搜索 |
 | 自动专业升级路线门面 | ProfRouteAuto | 旧方案兼容；最省钱异步快照、缓存、发布通知、停止/继续 |
 | 制作执行及持久记录 | ProfExecution | 冻结执行计划、分段技能与材料义务、真实次数/产出、重算余量、按需补料 |
 | 专业跟随 HUD、购物清单 | ProfFollow | ProfModule、ProfRouteAuto、材料背包状态；AuctionBridge 导出清单 |
-| 物品采购报价 | ProfItemPrices | 普通材料只读物品根购买价及组数；图纸独立读取 NPC 报价、库存和来源；缺价不补零 |
+| 物品采购报价 | ProfItemPrices | 普通材料先检查独立不限量供货证据，再比较货架整组价与 AH；图纸独立读取原 NPC 报价、库存和来源 |
 | 拍卖行清单桥接 | AuctionatorBridge / AuctionBridge | 调用 Auctionator API；不可用时提供可复制导入串 |
 | 探索及相关收集活动 | ExploreUI / ExploreModule | ExploreBooks、奖励、宠物、玩具、旗帜等数据 |
 | 探索地图路线及追踪 | ExploreMap | 由 ExploreModule 驱动；世界地图钉/线池、路线、追踪条、航点 |
@@ -108,10 +109,14 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 - DG.RequestItem → 客户端请求/Item 续接 → 事件回调 → RefreshItemCards；监听器只处理本插件请求过的 ID。任务同样依赖任务数据与任务状态事件补刷新。
 - 不能将首次 API 返回 nil 当作永久无数据，也不能在每个全局物品事件中重扫全部页面。
 - 专业六表由 `df-data-pipeline/_temp/fc_update.py` 统一生成及三语发布。维护输入保留当前新增、修正、来源、顺序与省略规则，不从旧Lua回捞；原文与维护冲突或已有记录丢失时整批阻止发布。未接管的数据/业务代码/语言文件保持原样。其余历史工具和输入仍在综合包，不默认执行旧同步或部署脚本。
-- 2026-10-21已按用户确认离线发布70450：正式三语专业总表和规范JSON为1.60.1.70450/2026-10-16，毒药与理解仍保留70338真实来源；当前1.8.33材料根报价及运行功能保留。安装包直接取发布后正式文件，验收见 `df-data-pipeline/PUBLISH_70450.md`。
+- 2026-10-21已按用户确认离线发布70450：正式三语专业总表和规范JSON为1.60.1.70450/2026-10-16，毒药与理解仍保留70338真实来源；客户端根价数据保留，材料采购资格以独立供货表为准。安装包直接取发布后正式文件，验收见 `df-data-pipeline/PUBLISH_70450.md`。
 - 客户端及商人/NPC五份CSV默认从流水线自己的 `_temp/_fc/inputs/` 只读快照输入，来源和SHA-256单列记录；统一入口不导入、调用或监控 `scripts/` 的生产代码，也不启动wow.tools.local。各脚本输入见 `df-data-pipeline/SCRIPT_INPUTS.md`，旧包249份原件与功能核对见 `LEGACY_PARITY.md`。`--stage-dir/--package-zip`可保留验证后的新批次并直接生成安装ZIP，正式`Core/Data`和成功指针保持不动。
+- 图纸商人采集优先读取 Wowhead `sold-by` Listview 的内嵌 JSON，隐藏页签也能提取通货、数量、阵营及完整金币价；HTML 表格作为兼容入口。当前商人角色读取 `vendors-soldby-json-20261021.csv` 修复快照，原五份 CSV 保留原字节与修改时间；输入清单和同目录审计记录逐页哈希、原记录修正及新增商人行。兑换价格独立保留 `currency_kind/id/amount`；材料供货证据与价格另走独立材料链，不修改图纸输入。
+- 1.8.36：附魔来源缺 `formulaID` 时，`ProfItemPrices.GetFormulaItemID` 仅复用当前客户端 build 的明确且唯一教学关系；多图纸歧义或版本不匹配不猜测。维护输入移除 26 条错误删除附魔法术 ID 的操作，三语配方经生成器重建，每份仅恢复这 26 个字段。169 条附魔中 163 条有法术 ID、108 条有唯一图纸关联，其余缺项保留；恢复/启示的通货报价不转换为金币采购资格。
+- 配方学习来源统一由 `ProfEconomy.LearningSource` 读取明确训练师证据（客户端正观察、规范化来源或 `ProfSpecializations.routes` 的 `trainerObserved=true`），训练师优先于关联图纸。普通、附魔、crafted、升级来源与采购共用此规则；保留原始图纸但不强制购买，专精/明确不可用/用户排除仍独立限制。学习规则指纹升级到 2，旧路线等待手动重算；来源各层输入与缺口见 `df-data-pipeline/SCRIPT_INPUTS.md`。
+- 图纸商人名字优先已有本地化，缺译名时保留规范原名，确实无名才用 NPC 编号；旧保存记录的编号可由其原名恢复，不重复追加相同原文。提示、选择框及采购来源采用同一名字回退；默认随当前角色阵营过滤明确异方，中立与未知保留，阵营未知不改写为中立。
 - `scripts/export_buyprice/export-item-buy-prices.ps1` 在 Windows PowerShell 5.1 下调用本机 wow.tools.local，下载并验证匹配当前 Forever build 的最新 Hotfix，串行导出三语 ItemSparse，并只读取一次 Item。输出 `output/item-buy-prices.csv`（enUS/zhTW/zhCN 名称、原始基础组价、组数、零价/缺价和版本）及 `output/item.csv`（Item 全字段，供 `scripts/gen_vendors.py` 按 ClassID/SubclassID 筛配方）。导出器不生成 Lua；连同下述图纸学习条件 CSV，三份输出全部验证后共同发布，失败回滚旧输出。`df-data-pipeline/_temp/fc_prof_items.py` 再合并商人、NPC 和客户端价格三表，生成固定 19 列的 `DataProfItems.csv`，并由同一 CSV 内容生成 schema 2 的 `Data_ProfItems.lua`；`--from-csv` 可单独重建物品 Lua。独立底层脚本默认仍输出工具样例；统一入口将本轮物品、商人、专精及三语同批发布正式目录。旧试验导入脚本和三份 `Data_VendorPrices.lua` 已移除。
-- 用户 2026-10-21 最新口径：只关心配方图纸由谁售卖，其他物品只需购买价。生成 CSV 对每条客户端物品独立保留无 NPC 的根价格行，另保留图纸商人行；固定 19 列和 schema 2 不变。由同一 CSV 重建物品根 `cost_copper` 与 `VendorStackCount`，即使该物品另有 NPC 报价也保留客户端基础组价。此前材料供应补充文件及其流程已撤销，五份原始 CSV 不改写。
+- 材料购买资格与基础价格分开：固定19列 CSV 和 schema 2 继续完整保留客户端根 `cost_copper`、`VendorStackCount` 及图纸 NPC 报价，但根价不证明任何供货资格。材料链按维护的少量耗材种子发现常规供应商，再按 NPC 抓整张货架；只有明确不限量、纯金币、无未满足条件且阵营可购买的供货记录进入独立 `Data_ProfMaterialSupply.lua`。正常在线运行刷新 NPC、货架与价格；失败 NPC 本轮降级，不沿用历史资格，离线重放保留原状态与核验时间。维护与运行说明见 `df-data-pipeline/MATERIAL_VENDORS.md`。
 
 - 专业学习专精数据独立生成：价格导出器另输出 `recipe-item-specializations.csv`，仅把图纸物品的 `RequiredAbility` 沿明确教学关系关联至配方法术。`_temp/fc_prof_specializations.py` 合并图纸与 Wowhead Forever 的训练师证据，写入 `_temp/_fc/data/trainer-recipe-specializations.csv` 和 `Data_ProfSpecializations.lua`；`fc_update.py` 已接入该步骤，正式插件输出命令见管线 README。正式 TOC 在经济模块前加载 `Core/Data/Data_ProfSpecializations.lua` 与独立任务配置 `Data_ProfSpecializationQuests.lua`。`ns.ProfSpecializations[spellID]` 保留独立学习途径与来源，缺证据为 `pending`，不同途径不自动合为统一限制。目标客户端 build 与网页来源版本分开记录；跨来源 patch/build 的旧证据保留但不作为目标版本的已确认要求。网页抓取采用缓存、串行间隔、跨进程互斥和持久冷却，在线失败不发布最终产物。
 - `ProfEconomy` 统一读取实际已学专精、角色工程选择及配方学习资格。优先 `C_SpellBook.IsSpellKnown`，成功的 false 与接口缺失/异常分开；任务历史不能证明当前能力。已学配方免重复检查学习门槛，制作仍服从客户端可用状态。明确限制按具体学习途径判断，缺字段途径不能绕过其他已确认要求；普通未知配方继续参与，不增加待确认标签。
@@ -160,10 +165,10 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 - 用户 2026-10-17 修正：客户端能读到的值优先；接口缺失、未学专业或尚未返回时，配方材料和产量默认回退已有资料，不能把整页锁为待读取。`ProfEconomy.ResolveRecipe/Normalize` 逐字段合并并记录 `materialSource/outputSource/toolSource/dataSource`；页面、固定路线和自动路线使用同一规则。已有资料也缺失、客户端确认产量不确定时，仍明确标记，不能猜测。
 - `ProfEconomy` 优先读取现代 `GetRecipeSchematic`，按能力回落旧 `C_TradeSkillUI` 和全局 TradeSkill/Craft 接口。其他玩家的链接/公会专业界面不能覆盖本角色观测。训练师面板仅用于确认配方可学与技能要求，不再读取费用，不能代替专业书获取所有未学专业配方。
 - 2026-10-18 路线显示修正：不完整原理图按字段继续查询旧客户端接口，再回退已有 Wowhead 数据；空值、零数量占位和不匹配的配方 ID 不能覆盖有效资料。已有升级攻略 `rinfo` 提供技能阈值补充，解决附魔起步配方目录 20 与攻略 1 的冲突；实际客户端学习等级仍优先。目录中新配方无需仅因缺图纸物品 ID 而拒绝规划；客户端明确不可用、未确认开放元数据、冷却和自定义排除仍保留。
-- 旧商人采购资料和采价入口继续禁用。普通材料的 `GetOffers/GetPrice` 只读 `Data_ProfItems` 物品根价，不查具体 NPC、阵营、访问、库存或坐标；`E.Capture` 不再扫描材料供应商。图纸 `GetFormulaOffers` 继续从显式 `offers[npc_id]` 获取报价。任务来源独立保存在 `Data_ProfFormulaQuests.lua`，地图数据只作定位，均不补价。不读取商人窗口、历史报价存档或 Auctionator 商人缓存。
-- 两层纯金币报价均要求数值 `cost_copper` 为有限非负整数、根 `VendorStackCount` 为正整数，金额按整组计费；对应层任一 `currency_kind/currency_id/currency_amount` 非空（包括 `0`）均拒绝，`cost_text` 不解析成铜。材料不受 NPC 行条件影响，匿名报价的 `unlimited=true` 仅兼容现有整数采购算法，不代表核验过具体商人的现货。图纸继续区分不限量、限量刷新和库存未知；`maxStock` 不是当前现货，零库存不可购，阵营与显式访问拒绝仍生效。
-- 拍卖行价格、缓存、数量及导入功能保留。普通材料比较 AH 支出和物品基础整组支出，图纸比较 AH 和明确 NPC 的整组支出；某一层缺价不阻止 AH。完全无价时继续尝试本专业制材，不当作免费；产物卖给 NPC 的收益仍独立通过客户端 API 获取。价格出处按 `price_source` 显示，不伪造核验日期。旧报价路线手动重算，冻结执行记录不被报价更新改写。
-- `RA.StampVendorQuotes` 只标记新计算结果，`RA.ValidateVendorQuotes` 统一保护路线、冻结执行采购视图、补料及购物清单旧回调。旧 NPC 报价返回空采购和重算提示，历史计划及制作事实保留；纯 AH 计划不因 NPC 指纹变化被清空。补料必须重新捕获当前输入，不采用持久化执行选项中的旧 `snapshot`。
+- 旧商人采购资料和采价入口继续禁用。普通材料的 `GetOffers/GetPrice` 只接受 `ProfMaterialSupply` 中有来源、核验时间和证据哈希的有效不限量报价，并过滤角色阵营与显式 NPC 访问拒绝；根基础价不会在运行时自行生成采购资格。材料输出保持匿名，不展示 NPC 身份或地图。图纸 `GetFormulaOffers` 继续从原 `ProfItems.offers[npc_id]` 获取报价。任务来源和地图定位均不补价；不读取商人窗口、历史商人报价存档或 Auctionator 商人缓存。
+- 材料报价由生成器优先采用货架纯金币整组价与同源组数；金额缺失时，仅在纯金币、不限量资格已经确认且组数不冲突时采用客户端基础组价及组数。未知、限量、混合兑换及未确认条件不作为普通材料采购；数值必须是有限非负整数，组数为正整数。图纸仍按原层 `cost_copper`、根 `VendorStackCount`、通货和库存规则独立处理，`maxStock` 不冒充当前现货。
+- 拍卖行价格、缓存、数量及导入功能保留。普通材料比较 AH 支出与已证实供货的整组支出，图纸比较 AH 和原明确 NPC 支出；某一层缺价不阻止 AH。完全无价时继续尝试本专业制材，不当作免费；产物卖店收益仍由客户端 API 独立获取。网页材料报价属于带来源时间的参考，不臆算角色声望折扣。
+- `RA.StampVendorQuotes/ValidateVendorQuotes` 统一保护路线、冻结执行采购视图、补料及购物清单旧回调。指纹包含原图纸数据与独立材料供货/价格的语义指纹；变化后旧采购视图等待手动重算，历史制作事实保留。纯 AH 候选也须重新比较新的合法供货集合。补料重新捕获当前输入，不采用持久化执行选项中的旧 `snapshot`。
 - 固定 HUD 按当前段剩余次数调用同一个 `SummarizeSteps`，保留同物品 NPC/AH 的独立采购行，只导入实际 AH 数量；不再以旧 `ProfLeveling.sold` 标记采购来源。限量/未知库存的 NPC 图纸与可靠 AH 图纸均作为搜索候选，不能只因前者便宜而丢掉完整可执行的 AH 路线。
 - 配方目录来自生成的 Wowhead/经典资料，并非客户端扫描的完整清单。未核验记录标记为参考；稳定的现代完整专业目录（包含未学记录、匹配本角色当前专业）可证明该专业中某个目录记录不可用，此时隐藏并禁止自动制作。空列表、接口 nil、旧版仅已学列表不证明不存在；观测按客户端 build 隔离。
 - 采矿原始法术效果数量与创建物品目录曾有差异；默认使用创建物品目录数量（铜 1、青铜 2），客户端读取后覆盖，保留原差异来源。已验证的随机产量范围以 `outputMin/outputMax` 保存，整数账本按最小值 `count=outputMin` 计算；旧记录只有随机标记但没有范围时，回退已有资料产量并标记 `outputBasis=reference`。真正缺失或明确冲突的产量仍不猜测。
@@ -171,11 +176,19 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 
 ### 计算与结果
 
-- 最新成本规则：材料和必要图纸采购支出进入目标函数。每个方案从空材料账本开始，不读取或扣除角色背包、银行；仍不计训练师学费、专业升阶学费和工具要求。只复用本方案生成的中间产物与采购余量；父配方立即预留材料，避免嵌套制材重复消耗。剩余产物收入单列，不抵扣采购支出。
+- 最新成本规则：默认开启回血模式，仅最省钱以材料及必要图纸采购支出减去最终制作余量预计收入为目标，同净支出优先较低采购支出；关闭后恢复采购支出目标。其他自动方案、固定攻略及纯钓鱼保留原选择目标，同时展示预计回血。每个方案从空材料账本开始，不读取或扣除角色背包、银行；仍不计训练师学费、专业升阶学费和工具要求。只复用本方案生成的中间产物与采购余量；父配方立即预留材料，避免嵌套制材重复消耗。采购资金单列，未到账收入不抵扣采购数量或采购支出。
 - 1.8.24 图纸层：`E.FindRecipe/FormulaFor/CollectFormulas` 统一查询固定攻略、全部自动方案及制材依赖的图纸。已学配方与训练师直学免购；其他必要图纸按物品 ID 收费一次，`formulaPaid` 进入搜索状态。图纸昂贵时可以改选冲级配方或购买中间产物；逐步成本模式也考虑尚未支付的图纸费用。
 - 自动计算拒绝无可靠图纸购买报价的未学配方，包括仅任务来源且无 AH 报价的图纸；已学豁免。固定攻略保留来源与受阻提示。不能将空商人列表、`read=classic/wowhead` 或数字技能要求当作任务来源；`Data_ProfFormulaQuests` 独立保存可追溯任务来源，不参与 NPC 采购定价。
+- 1.8.34：`ProfRecovery.Capture` 冻结产物 NPC 卖价（有效零与未加载分开）、交易限制、AH 报价、数量证据及手续费。拍卖每件净价先向下取整到铜；仅当比 NPC 卖价高超过 100 铜，且两天内完整、排除本人的客户端结果至少 40 件时采用。按全部最终剩余制作产物估值，不以 40 件封顶；统一标明“假设全部成交”。无法估值的产物保留路线并提示缺失，不捏造无物品制作的收入。
+- 手续费可手动覆盖 0–100%；自动来源优先可靠客户端观察，缺失时读取已安装 Auctionator 的 `Constants.AfterAHCut` 并标参考。Forever 接口声明未提供手续费读取接口，不把押金接口当手续费；手续费未知时仅估 NPC 收入。按首轮全部成交，不预扣未知流拍损失，不计退回押金收入。
+- `ProfRecovery.Apply` 按真实制作时序重放采购与制作来源，只有最终未消耗的制作产物可产生收入；无法消费的辅助专业余量与续接种子单独保留。递归成本经实际消耗传入下游，同批供多个配方按数量分摊；图纸费仅一次，整包采购余料保留归属。`productionCost/transferredCost/attributedCostExact/attributedCost/recoveryTotal/netTotal` 为步骤经济账，`cost` 仍是原采购归属。精确分摊后累计处理铜币尾差，两个步骤列表的归属成本均与采购总额相等。
+- 补料的合成需求不显示为虚构制作步骤，但以 `consumedDemands` 在经济重放中消费一次；只给超出交付需求的自然余量估值。`demandAttribution/demandNonCraftCost` 分别记录交付成本与直接采购交付的成本，后者不虚构制作归属行。
+- 新结果保存 `recoveryRevision=1/recoverySnapshot/purchaseTotal/recoveryTotal/netTotal/saleOutputs`，搜索额外保存 `initialNetTotal/bestNetTotal/netSavings`，不把净支出降低冒充采购额节省。缺失售价或手续费不作完整回血模型最优证明。
+- 回血设置、报价、绑定及数量可信度变化仅标记快照过期，手动重算后应用。旧缓存不补盖回血优化标记，历史制作记录保持冻结。`RA.FixedSummary` 为固定攻略页面、购物清单及 HUD 保存同一角色报价快照，固定重算只刷新参考账目，不启动自动配方优化。普通补料数量变更仍可用无缓存的 `SummarizeSteps` 重新汇总。
 - `ProfItemPrices.GetFormulaOffers` 只返回新表中的显式 NPC 记录；无有效金币成本时 `priceUsable=false`，不得用配方来源中的旧商人记录补价或补供货。`maxStock` 仅是刷新上限，不能假装当前现货；不读取商人实时库存。图纸来源、任务和已有 NPC 坐标仍可单独显示，不因此取得购买资格。
 - 配方页来源改为独立的“图纸.掉落 / 图纸.商人”标签，同图纸双来源并列；行与提示框不再展示资料出处，仍保留缺资料和不可用提示。图纸行情、商人阵营/地区及购买成本在悬停时读取。`GetFormulaDisplayOffers` 单独合并目录与原始 NPC 的显示记录，含特殊通货和缺价来源，不进入金币采购；通货名称/图标优先客户端接口，缺数据时保留 ID 并在下次悬停重试。来源热区随行池清理，原地图点击及商人选择框复用。
+- NPC 所属组织独立保存在 `Data_ProfItems.lua` 的 `ns.ProfVendorFactions`，与 `side` 的A/H/N访问限制分开。`ProfItemPrices.GetNPCFaction` 优先客户端阵营名称API，再回退静态三语名；报价携带 `npcFactionID/npcFactionName`，图纸提示优先显示所属名字，缺失则沿用A/H/N或未知。`fc_prof_items.py` / 统一 `fc_update.py` 的 `--vendor-factions-json` 覆盖默认 `_fc/inputs/vendors/npc-factions.json`，同时验证 `faction-sources/` 冻结证据，不改固定19列CSV、价格、库存或坐标。
+- 全商人所属管线见 [`scripts/VENDOR_FACTIONS.md`](scripts/VENDOR_FACTIONS.md)：`update_vendor_factions.py` 从商人CSV动态发现全部NPC，`--offline`从随仓库保存的完整原始快照确定性重放，`--collect`刷新过期/缺失证据，`--install-input`只事务安装JSON/审计/快照，生成Lua另走专业流水线。2026-10-21为289名商人、242名ID及三语名、47名未知，0缺payload/冲突/采集错误。旧两NPC日期快照仅作历史。缺`react`不补中立，不由商品声望推所属；WoWDBDefs仅定义结构，70450名称解码不等于具备NPC关联。输入哈希/目标集合/ID冲突失败时保留旧结果，原五CSV和采购条件不变。
 - 图纸区同时列 AH/NPC 单价、推荐采购支出、固定不限量/限量刷新/性质未知、所属配方及来源定位；地图复用配方页商人/掉落 NPC 工具，未知坐标明确标记。HUD 与导入也包含所选 AH 图纸，NPC、已学及不可购图纸不导入。图纸不混入材料库存；一次性费用归入首次使用步骤。
 - 材料可以购买、自制或混用，按整数批次和购买组数计算；灰色配方可以制材但不涨点。冷却配方排除，尚未确认的转化冷却不当作无冷却。
 - 1.8.25 数量约束：`E.Capture` 保存 `auctionSupply[物品ID]={quantity,complete,observedAt,...}`。只接受实际读到的非负整数；无记录为未知，不能当作零。`ahUsed` 与技能、余量、图纸付款一同进入搜索状态，材料、递归制材、不同冲级配方及图纸共用有限拍卖数量；合批补购也不能突破。某配方的瓶颈材料耗尽后改用其他候选，或比较 NPC/自制补齐；绿色配方不足一个期望技能点时保留概率进度，由另一配方继续。图纸采购可选择较贵 NPC 来源，保留稀缺 AH 物品供后续制材。
@@ -198,12 +211,13 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 - 工程任务首个可行路线与普通升级一样先构建一套共享采购账本，后续搜索仍比较完整制购组合；不会在首次交付前枚举所有采购拆分。预搜索超时保留最远有效前段的真实阻断原因。达到目标与证明最优分开显示，终态搜索信息不能盖住执行前段的实际等级；完整路线的限量图纸/未完整扫描采购仍明确提示。
 - v2 结果包含 `steps/executionSteps/actions/dependencyGraph/mats/formulas`、来源与费用、`revision/status/feasible/completeCost/optimal`。`ahTotal + vendorTotal = matTotal + formulasTotal = total`；另有 `formulaAHTotal/formulaVendorTotal/formulaComplete`。仍无学费和工具费用。`formulaRevision=1` 使旧版不计图纸的结果自动更新一次，新结果继续缓存。
 - 无法立即完成全目标时保留可执行前段：`partial=true/plannedTo/targetReached=false`，金额和购物清单仅属于前段，后续限制单列。`steps[].recipe` 保存本次规范化配方快照，避免页面/HUD 重读变化中的输入。跳过候选的失败原因按类别压缩，不能淹没路线；图纸过滤不是用户自定义排除。
-- 先快速构建可行方案，再比较递归制购组合并执行 A* 搜索。材料价值势函数提供保守剩余费用下界，仅在完整状态应用；材料预留过程只按已发生费用剪枝。状态去重忽略不会再消耗的成品数量，保留可复用材料、技能与概率余量；同价优先较少配方切换。
+- 先快速构建可行方案，再比较递归制购组合并搜索。采购成本模式沿用材料价值势函数和已发生成本剪枝；回血模式停用不能证明安全的采购成本剪枝及下界，状态键保留全部影响出售的产物数量。仅制作升级和后续材料必需批次，不因盈利继续生产。预算耗尽保留当前最好方案，不作最优证明。
 - 每得到第一个或再推进约 15 点的有效前段即发布；首轮直接采购种子同时递归补齐本专业无价材料，按物品/需求缓存估价并优先找到可执行制作链。之后的制购组合预搜索只占约 250ms CPU，避免耗尽 5 秒却仍显示零状态。循环路径的失败估价不跨路径缓存。
 - 1.8.30 保留搜索的真实制作时序，仅合并相邻同配方。发布前向重放与反向用途检查删除零期望收益且产物无人使用的步骤，并裁剪采购、保持 NPC 整包与有限货源约束。保留小数涨点收益，清理后重新验证用途排除。`steps` 仍按配方汇总，`executionSteps` 可出现同配方多个独立 `segmentID`，带 `goalSkill/expectedGain/requiredOutputs/materialMinCrafts/allocations`；两种列表不能共享可变配额表。
 - `S.ProcureMany(snapshot,demands,opts)` 共用材料、整包余量及 AH 数量账本，为补料展开递归制作；`Procure` 为单物品兼容入口。只有明确的 `executionInventory` 可作为本路线制作余量输入，普通背包或 `snapshot.inventory` 继续忽略。
 - `ProfExecution` 在角色 `prof.execution[角色键]` 下保存逐专业活动计划映射及历史执行记录。`planID` 持久标识计算批次，执行快照冻结后不因搜索 revision、开关 HUD、切页或重载清空；后台新方案只提示。成功施法次数不受预计次数截断，实际产出由制作结果或本地化制造消息关联并去重，未确认产出与最低保证量分别保存。
-- 1.8.31 将冻结计划的 `searchState` 独立更新为后台任务的状态、已比较数量与当前候选费用；页面状态、费用说明和停止按钮共用它，路线内容及制作记录不被替换。重载后没有活动任务时不得把旧 `searching` 当作仍在优化，也不因打开已保存执行计划自动启动搜索。升级工具栏先预留可见 HUD/导入入口，再将动作按钮换行；列表位置包含全部工具行。
+- 冻结计划的 `searchState` 独立更新后台任务状态、已比较数量与当前候选费用，路线内容及制作记录不被替换；重载后不自动恢复搜索。1.8.36 增加 `searchTermination/searchCpuMs/searchCpuLimitMs`，明确区分 CPU 时限、状态上限及搜索穷尽，结束后不再称“后台当前”。达到节点上限但最后一个状态恰好已处理完时仍可确认穷尽；预算截止不宣称最优。
+- 1.8.36 升级工具栏分为页面导航和操作两组。路线、购物、补料、记录、配方排除为互斥页签，用金色下划线表示选中；重算、补料计算、HUD、导入为操作，回血/纯钓鱼用独立开关状态。HUD/导入只在操作行占位，宽度不足逐行换行；排除页单栏且不显示购物导入。配方名称和副行都有明确列宽与截断预算，完整附魔描述保留提示。购物掉落行显示去重地区，缺精确坐标时标“精确坐标未收录”，不因已知地区而伪造 NPC 点位。
 - 步骤同时检查实际技能与后续材料数量义务；技能达标但材料不足继续制作，实际多产可满足后续配额且不得重复分配。正常分配的消耗仍算完成生产义务，额外制作占用未来配额则要求补足；按真实制作顺序重放并在本次进度未变化时复用内存结果。HUD 追加需求不自动采购；点击计算补料才生成独立清单和费用，并校验计算期间进度是否变化。补做段插在当前消费者前，连续补料保留此前尚未使用的追加预算，原费用不改写。
 - 手动重算归档旧记录，从真实技能及已确认未消耗的本路线中间产物继续；复用量以随身数量为上限，不读取银行或抵扣普通旧材料。旧 v2 路线缺执行契约时保留参考并要求手动重算；历史实际产量不能从技能等级反推。固定/旧评分路线的纯升级步骤可通过执行适配器记录。
 - 普通 IdleJobs 每片约 2ms，累计 CPU 预算 5 秒；达到预算自动结束本轮并保留最好方案。`expanded/initialTotal/improvements/savings/searchComplete/budgetLimited` 提供真实比较状态数和节省金额，不能把没有变化当作已经更省。
@@ -213,18 +227,18 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 
 - 1.8.26：烹饪升级页新增独立“纯钓鱼”模式，`prof.cookingRoute=fishing/standard` 保留其他专业的全局自动模式和评分方案。`ProfFishing.Compute` 通过 `ProfRouteAuto` 的 `scheme=fishing` 发布 v2 快照，使用同一角色缓存、目标、排除规则、图纸采购及 HUD；与普通最省钱路线的缓存不会互相回退。没有 AH 插件也能预览，不要求选择联合升级的主专业；未学烹饪忽略仅已学过滤，已学烹饪仍遵守。
 - `Data_ProfFishingRoutes` 在语言覆盖之后加载：1–225 采用用户指定 Forever 指南的四个鱼配方（7751/7753/7755/20916），制作次数按当前起点、目标和共享涨点模型计算，参考用量不直接当作所有目标的数量。225–300 默认斑点黄尾鱼（18238），现有 Forever 阈值为 225/265/285/305；无季节或时段限制，指南对应海岸可钓率约 40%，鱼类门槛 205/300。失效/变灰时才按低门槛、高钓获率和涨点率选择其他合规鱼配方。时间/季节受限鱼不自动选取，白鳞鲑鱼门槛冲突显式提示并保守使用 330/425。
-- 纯钓鱼模式只接受已核验可钓鱼类；非鱼配料按有效物品购买价及组数计费，无需材料商人记录。客户端实际配方材料改为肉类或未知来源时不能沿用旧鱼材料冒充。鱼类放在 `fishMaterials`，来源为 `fishing`，不进入采购金额、AH 数量账本及导入。它们是待钓需求，不代表已有材料；主优化器没有新增任意免费采集来源。`steps[].fishing/fishingAreas` 显示每配方鱼类及内陆/海岸区域、最低钓鱼/不脱钩技能，区域点击打开地图，没坐标时不造航点。
-- 配料和食谱都读取 `Data_ProfItems`，但配料使用物品根价，食谱使用独立 NPC/AH 图纸报价，钓鱼文件不内置商人货架。必要图纸按物品计费一次，已学免购，缺价任务或 NPC 图纸不能免费使用。鱼的时间成本不折算金币。225 之后需先解锁大师级烹饪，蚌肉大餐的非鱼任务材料单独提示，不属于这条制作路线的鱼材料或采购成本。
+- 纯钓鱼模式只接受已核验可钓鱼类；非鱼配料只使用独立不限量材料供货报价，不把普通根价当作 NPC 资格。客户端实际配方材料改为肉类或未知来源时不能沿用旧鱼材料冒充。鱼类放在 `fishMaterials`，来源为 `fishing`，不进入采购金额、AH 数量账本及导入。它们是待钓需求，不代表已有材料；主优化器没有新增任意免费采集来源。`steps[].fishing/fishingAreas` 显示每配方鱼类及内陆/海岸区域、最低钓鱼/不脱钩技能，区域点击打开地图，没坐标时不造航点。
+- 配料读取 `Data_ProfMaterialSupply` 的有效报价，食谱沿用独立 NPC/AH 图纸报价，钓鱼文件不内置商人货架。必要图纸按物品计费一次，已学免购，缺价任务或 NPC 图纸不能免费使用。鱼的时间成本不折算金币。225 之后需先解锁大师级烹饪，蚌肉大餐的非鱼任务材料单独提示，不属于这条制作路线的鱼材料或采购成本。
 - 钓鱼升级路线改用同一指南的优先区域：出生地内陆水域、主城、尘泥沼泽内陆/海岸、塔纳利斯热砂港，保留原完整区域目录供浏览。不再声称每次下竿必涨点，也不要求达到阶段点就换区；显示实际技能定位与有效技能门槛，可留低级水域升级。位置与钓获概率是 Classic 指南参考，不冒充 Forever 实测。地理参考见 `tests/data/fishing-routes-audit.md`，新采购通路规则见 `tests/data/vendor-offers-audit.md`，两者不互相补出供货关系。
 
 - 采矿配方页有 15 条熔炼目录记录；采集页保留。熔炼参考路线包含 140–155、185–300 实地采矿阶段，奥金属于炼金，不能列作采矿熔炼。
 - 自动采矿只在配方本身没有涨点覆盖的区间插入采矿检查点；缺价、未加载或被排除的配方不会被偷偷替换成零价采矿。检查点不预支矿石产物，不计矿工锄、升阶或其他工具费用。
-- 排除键为 `专业:法术ID`，按角色及目标专业保存：`ban` 禁止一切制作但可购买产物；`level` 禁止主动冲级但允许按下游材料需求制作，并计入预计涨点。已删除需图纸配方的额外过滤设置；是否仅用已学配方仍由独立设置控制。
+- 排除键为 `专业:法术ID`，按角色及目标专业保存：`ban` 禁止一切制作但可购买产物；`level` 禁止主动冲级但允许按下游材料需求制作，并计入预计涨点。是否仅用已学配方由独立设置控制。`autoBuyLimitedFormulas` 默认关闭，仅禁用明确限量 NPC 的图纸采购来源；有可用 AH 报价且已读数量非零（或数量未知）仍可入选，已学/明确训练师/不限量商人不受影响。自动、递归制材、其他评分、纯钓鱼和固定汇总共用该政策；固定攻略保留参考步骤并标未取得图纸，不伪造购买。政策快照及设置变化要求手动重算，取消旧任务，保留制作事实与历史。
 - 路线右键排除、管理排除、单项/全部恢复均先改草稿，重新计算后应用。无解或客户端数据未齐时不回退到违反限制的固定路线。
 - 页面有步骤时优先显示步骤；拒绝候选的诊断不能冒充所选路线的错误，后续真正阻断由 `blockingDiagnostics` 单列。无初始完整方案时不显示“节省 0”统计。
 - 2026-10-18：同一专业/法术的升级与制材数量合成一个真实制作批次，按材料就绪和学习等级安排步骤，重新模拟整批的涨点。允许超过单纯冲级所需数量以供后续消耗；必要时购买中间材料修复合批依赖，费用计入。合批后未达目标的候选不作为完整路线发布；依赖修复或合批冲突不宣称模型最优。
 - 页面五列为“步骤、等级范围、配方、制作次数、成本”，按执行序号排列。`role=level/material/both` 根据真实技能收益及后续是否消耗产物生成“升级 / 中间产物 / 升级&中间产物”。`steps` 和 `executionSteps` 共享真实合批顺序，不能只压缩显示而保留多次执行。
 - 采购记录 `owner` 指向直接消耗该材料的配方，步骤成本为其新增采购合计；中间产物费用在制作该材料的步骤列一次，后续步骤不重复计费。所有步骤成本之和与采购总额一致。
-- 所选物品购买价材料保留购买来源标签，不导入 Auctionator；只使用新表物品根价及组数，不展示具体材料商人。材料采购仍比较 AH 和整组买入；两者都无法报价时，自动路线必须用本专业制作补齐，否则舍弃相关候选，固定攻略明确显示缺价。页面、HUD 和导入使用同一采购来源字段；图纸商人明细与材料计价分别处理。
+- 已选择的合格 NPC 材料保留购买来源标签，不导入 Auctionator，也不展示具体材料商人。材料采购比较 AH 和有证据的整组买入；两者都无法报价时，自动路线必须用本专业制作补齐，否则舍弃相关候选，固定攻略明确显示缺价。页面、HUD 和导入使用同一采购来源字段；图纸商人明细与材料计价分别处理。
 - HUD 按成功制作次数跟踪批次，采矿检查点等待实际技能；购物清单使用方案选定的完整采购数量，不扣已有物品。只有玩家点击实际制作按钮前检查背包材料，不参与路线成本。
 - Auctionator 通过 OptionalDeps 优先加载；`AuctionBridge.Status` 区分缺失、停用、初始化中、就绪。API 函数存在但价格库未初始化时禁止查询/负缓存；延迟登录回调及公开数据库更新回调使价格和路线失效。就绪但缺报价不能显示未安装。

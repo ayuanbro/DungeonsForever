@@ -11,19 +11,23 @@
 
 ## 外部生产的CSV：默认已保存为流水线自有快照
 
-下列五个默认输入按原字节从此前CSV导入，清单与完整SHA-256在 `T\_fc\inputs\manifest.json`。`originalFile` 只是迁移来源记录，运行时不会去该位置找脚本、刷新或回退输入。
+当前使用五个CSV输入角色及独立的 NPC 所属组织 JSON，清单与完整SHA-256在 `T\_fc\inputs\manifest.json`。最初导入的五份CSV保留原字节与修改时间；商人供货默认改为独立版本的修复快照。`originalFile` 只是迁移来源记录，运行时不会去该位置找脚本、刷新或回退输入。
 
 | 文件及实际默认读取位置 | 此前生产位置（只作来源说明） | 用途 | 显式覆盖参数 |
 | --- | --- | --- | --- |
 | `T\_fc\inputs\client\item-buy-prices.csv` | `R\scripts\export_buyprice\output\item-buy-prices.csv` | 三语物品原名、基础购买价、组数、Build/HotfixBuild | `--prices-csv` |
 | `T\_fc\inputs\client\item.csv` | `R\scripts\export_buyprice\output\item.csv` | 原始Item分类、ID集合及关联审计 | `--item-csv` |
 | `T\_fc\inputs\client\recipe-item-specializations.csv` | `R\scripts\export_buyprice\output\recipe-item-specializations.csv` | 物品教学链、RequiredAbility、版本证据 | `--recipe-items-csv` |
-| `T\_fc\inputs\vendors\vendors.csv` | `R\scripts\out\vendors.csv` | NPC供货、原成本、库存、阵营与条件 | `--vendors-csv` |
+| `T\_fc\inputs\vendors\vendors-soldby-json-20261021.csv` | 原 `vendors.csv` 及仓库内已缓存的 Wowhead sold-by 结构化数据 | NPC供货、原成本、库存、阵营与条件 | `--vendors-csv` |
 | `T\_fc\inputs\vendors\npcs.csv` | `R\scripts\out\npcs.csv` | NPC名称、区域、坐标 | `--npcs-csv` |
+| `T\_fc\inputs\vendors\npc-factions.json` | `scripts/update_vendor_factions.py` 对商人CSV全部NPC统一采集/重放 | NPC所属组织ID、三语名称与来源；独立于A/H/N | `--vendor-factions-json` |
+| `T\_fc\inputs\vendors\faction-sources\` | 同入口冻结的完整原始NPC payload、客户端CSV/DB2及manifest、既有语言目录 | 随仓库保存的离线证据；逐文件哈希校验 | 生产入口 `--snapshot-dir`；生成器按JSON的 `sourceBundle` 定位 |
 
 如果以后外部工具生成新CSV，可明确传入那份CSV。生产程序的存在、参数和运行状态都不是本流水线依赖。客户端三CSV必须属于同一已验证DB2批次；不能仅凭相同Build把不同热修复数据混合使用。
 
-普通材料采购只采用客户端 CSV 的有效基础整组价与组数，不要求商人记录。生成器为每个客户端物品保留独立无 NPC 的报价行，使固定19列 DataProfItems.csv 可以完整重建根价格。材料根报价与图纸 NPC 报价分开：图纸仍严格要求显式商人记录，并保留阵营、库存性质、兑换条件和具体来源；普通材料报价不会建立图纸供货资格。
+`vendors-soldby-json-20261021.csv` 重放现有图纸页面缓存中的 sold-by JSON，补回隐藏表格遗漏的供货记录、完整金币成本和通货条件；逐项修复及缓存源哈希保存在同目录的快照审计中。原 `vendors/vendors.csv` 和其余四份导入CSV继续作为只读历史证据，未改写。此修复只运行 `fc_prof_items.py` 合并现有商人、NPC与客户端价格输入，不发布完整目录或其他数据批次。
+
+普通材料采购必须先取得独立的常规材料商人不限量、纯金币、可访问证据。新增材料链维护种子、NPC目录和完整货架，优先使用货架整组价及组数，缺金额时只在证据与组数均满足条件时回退客户端基础组价；不能仅凭根价判断可购买。固定19列 DataProfItems.csv 和原图纸采购输入保持不变；材料的配置、快照、失败降级、独立Lua与更新命令见 [MATERIAL_VENDORS.md](MATERIAL_VENDORS.md)。
 
 ## 各脚本实际读取的文件
 
@@ -32,7 +36,7 @@
 | 脚本 | 读取位置和文件 | 外部访问/补充说明 |
 | --- | --- | --- |
 | `fc_update.py` | 本包 `fc_pipeline.py` | 唯一统一入口，默认检查，`--apply`才发布 |
-| `fc_pipeline.py` | 上述5份CSV；`T\_fc\data\*.json`；`T\_fc\i18n\*.json`；`T\_fc\maintenance\`下维护输入；当前 `R\Core\Data`、`R\Locales`、TOC作为保留及加载校验基线 | 只调本包Python步骤；无 `scripts/` 程序调用。`--offline`禁止网页请求 |
+| `fc_pipeline.py` | 上述5份CSV及NPC所属组织JSON；`T\_fc\data\*.json`；`T\_fc\i18n\*.json`；`T\_fc\maintenance\`下维护输入；当前 `R\Core\Data`、`R\Locales`、TOC作为保留及加载校验基线 | 只调本包Python步骤；无 `scripts/` 程序调用。`--offline`禁止网页请求 |
 | `fc_pipeline_paths.py` | 无额外文件；根据脚本目录计算CSV默认路径 | 统一路径常量，不探测游戏/旧专业包/外部工具 |
 | `fc_pipeline_common.py` | 当前Python可导入的 `lupa.lua51`（统一入口优先预载 `R\.pipeline-runtime\lib`）；待验证Lua/输入/输出；仓库锁与发布备份 | Lua 5.1必须可用。导入失败时仍有可选只读回退 `C:\Users\yewei\AppData\Local\Temp\df-lua-runtime`，不在该处安装或写文件。锁为 `T\_fc\cache\.pipeline-state\update.lock` |
 | `fc_fetch.py` | `T\_fc\cache\professions.html`、`professions_<slug>.html`、`_meta.json` | 在线串行请求 `https://foreverchanges.pro/professions`及13个子页；离线只读缓存 |
@@ -42,7 +46,7 @@
 | `fc_i18n.py` | 本轮归一化JSON、`T\_fc\i18n\zh.json`；`--add/--batch`时另读取人工提供的词表内容/批次文件 | `--audit`只对账，缺译不自动联网翻译 |
 | `fc_gen.py` | `index.json`、`prof_*.json`、`enchant_ids.json`、`vendor_loc.json`、可选 `vendor_side.json`、`drop_loc.json`、`zone_ids.json`、`zone_zh.json`；`zh.json`；`T\questie\questie_forever.json`；`T\_wago_AreaTable_zh.csv`；专业维护输入 | 支持文件优先取冻结暂存目录，否则取本包默认路径；无游戏/旧专业目录回退 |
 | `fc_maintenance.py` | `T\_fc\maintenance\professions.json`及其版本化维护记录/源文件 | 三方冲突检查、人工新增、阈值/来源修订、字段及分片省略、顺序与计数；一次性迁移参数 `--migrate-from` 才读取显式旧Lua目录 |
-| `fc_prof_items.py` | `vendors.csv`、`npcs.csv`、`item-buy-prices.csv`；本轮生成的Data_ProfVendors.lua | 在内存合并，统一链使用同轮商人数据，并单独保留客户端物品基础整组价格；`--from-csv`只读指定19列DataProfItems.csv，跳过三表合并 |
+| `fc_prof_items.py` | `vendors.csv`、`npcs.csv`、`item-buy-prices.csv`、默认NPC所属组织JSON；本轮生成的Data_ProfVendors.lua | 在内存合并，统一链使用同轮商人数据，并单独保留客户端物品基础整组价格；`--from-csv`只读指定19列DataProfItems.csv，跳过三表合并，所属JSON仍独立读取并生成 `ns.ProfVendorFactions` |
 | `fc_refresh_specializations.py` | 客户端3份CSV；有效专业目录；训练师旧CSV；专精current指针/显式DB2目录；网页缓存 | 在线只刷新独立网页证据；客户端3份CSV与DB2在线/离线均为只读输入。训练师CSV是本轮派生产物，`--apply`才同批发布 |
 | `fc_prof_specializations.py` | 图纸CSV、训练师CSV、`prof_*.json`、`enchant_ids.json`及Wowhead规范缓存 | 合并学习途径/证据；缺证据保留pending，不把0当无限制 |
 | `fc_specialization_fetch.py` | `T\_fc\cache\specializations\wowhead-forever\<URL哈希>.json`；`.network-state`锁、请求时钟、冷却 | 在线低频请求Wowhead Forever专业页及所需法术页；尊重缓存、robots与冷却，离线不请求 |
@@ -58,6 +62,36 @@
 | `fc_package.py` | `R\DungeonsForever.toc`递归XML引用、`LICENSE`、Media资源以及本轮验证后的20份专业Lua | 只生成安装ZIP；原运行文件按原字节收入，其余工具/缓存/报告不打包 |
 | `fc_path_audit.py` | 两流水线、相关工具、测试与说明中的脚本文本 | 静态读取路径，区分活动/历史/归档/外部支持工具；不会执行它们 |
 | `fc_legacy_audit.py` | `T\_fc\maintenance\legacy-coverage.json`指向的本包归档及缓存 | 不读取旧专业包目录；按原SHA-256验证249份历史原件，`--without-caches`可只验随源码保存的69份 |
+
+## 配方学习途径与图纸出处如何取得
+
+制作产物、制作法术、教授法术的图纸物品是三种不同身份。目录中存在 `formula` 只能说明关联了一张图纸；客户端教学链只能证明该物品可以教授该法术，两者都不能证明必须购买图纸，也不能排除训练师教授。
+
+| 信息 | 原始证据与处理方式 | 当前使用位置 |
+| --- | --- | --- |
+| 配方目录、图纸ID及部分掉落/商人文字 | `fc_fetch.py` 缓存 `foreverchanges.pro/professions` 及各专业子页；`fc_parse.py` 读取 RSC 中的 `formula`、`source.drops/vendors` | 主配方 `Data_ProfRecipes.lua` |
+| 训练师教授 | `fc_specialization_fetch.py` 读取 Wowhead Forever 技能页配方的 `source` 含 `6`；部分情况补查法术页 `taught-by-npc` | `Data_ProfSpecializations.lua` 的训练途径及 `trainerObserved` |
+| 图纸掉落/商人缺口 | `fc_gen.py` 按图纸ID查询保存的 QuestieDB-Forever `item_npcDrops/item_vendors`，只补缺失，不覆盖已有数据；没有掉率或价格时不补造 | 主配方 `source.drops/vendors` |
+| 图纸商人报价、通货、阵营、库存 | 独立 `scripts/gen_vendors.py` 采集 Wowhead 图纸物品页 Sold by JSON；统一入口只读已导入的版本化商人 CSV 与 NPC CSV | `fc_prof_items.py` 生成 `Data_ProfItems.lua` 的 NPC 报价；显示与金币采购接口分开 |
+| NPC所属组织 | 独立 `scripts/update_vendor_factions.py` 自动遍历商人CSV全部NPC，合并明确tooltip所属与客户端精确ID/名称；统一入口只读已安装的JSON及完整证据快照 | `Data_ProfItems.lua` 中 `ns.ProfVendorFactions`；显示所属，不改变A/H/N访问判定 |
+| 图纸教学关系和学习专精要求 | 独立客户端导出器根据 Item → ItemXItemEffect → ItemEffect 等明确教学链生成图纸 CSV；`RequiredAbility` 与教学来源分别记录 | `fc_prof_specializations.py` 合并为独立学习途径 |
+| 任务图纸 | `Data_ProfFormulaQuests.lua` 的九项明确任务配置，运行时合并；不是完整任务目录 | 图纸任务来源与采购限制 |
+| NPC 名称、区域、坐标 | 目录资料、保存的 Questie/NPC 定位输入及 `npcs.csv`；客户端与已核验语言资料用于显示回退 | 优先本地化名字，缺译名显示已有原名，确实无名才显示 NPC 编号；缺坐标不补造 |
+| 人工来源修订 | `_fc/maintenance/professions.json` 及版本化维护输入，经三方冲突核对后保留新增、修正、顺序和省略规则 | 主配方与语言发布 |
+| 辅助配方目录 | `fc_recipe_catalog_fetch.py` 缓存 `wuxianwow.com/data/recipes.json`，用于交叉核对、关联及未映射审计 | 辅助证据；不凭名称或目录命中推定训练师、唯一图纸途径或精确 Build |
+| 当前角色实际观测 | 客户端训练师接口的正观察保存为 `ProfRecipeRuntime[spell].trainerObserved`；已学、暂未加载及明确不可用分别处理 | 运行时解析及可用性检查 |
+
+当前 `ProfEconomy.LearningSource` 统一使用正证据：明确观察到训练师教授时，界面按训练师显示，采购不再强制购买关联图纸。训练师途径中专精条件仍为 `pending` 不会抹掉 `trainerObserved=true`；专精要求、客户端明确不可用及用户排除继续独立检查。原始图纸ID与出处不删除，仍可审计。
+
+无图纸字段不等于已有训练师证据；来源为空可能只是未记录。旧界面对无图纸条目的训练师兜底不能作为采集证据，`ProfLeveling.learn` 名单也不能据此推定训练师。来源覆盖并不完整，缺失训练师 NPC 名单、掉率、坐标、通货名称或精确来源 Build 时均不能补造。
+
+图纸/产物拍卖行情另由 Auctionator 集成读取，用于价格显示和采购比较；它不建立训练师教授或图纸掉落关系。
+
+图纸商人默认按 `UnitFactionGroup("player")` 的当前角色阵营过滤；明确异方专属的商人被隐藏，中立与阵营未知者保留。阵营未知仍显示未知，不当作已经证实中立；显式角色/访问上下文可进一步限制显示或采购。缺译名与阵营缺失是独立字段，名字回退不改变原价格、通货、库存或阵营。
+
+NPC所属组织的可重现操作见 [`scripts/VENDOR_FACTIONS.md`](../scripts/VENDOR_FACTIONS.md)。干净检出在仓库根执行 `python -B scripts/update_vendor_factions.py --offline`，不依赖浏览器、本机缓存或旧 `.pipeline-runtime`。联网更新使用 `--collect --proxy= --client-dir scripts/out/npc-faction-client`；加 `--install-input` 只事务安装 JSON、审计和证据，Lua仍经正常 `fc_prof_items.py` / `fc_update.py --apply` 发布。更新商人CSV后重新采集会自动包含新增NPC；离线目标集合不匹配或证据哈希/ID冲突明确失败，保持旧结果。
+
+2026-10-21 全量覆盖289名商人，242名有ID及三语名，47名无明确所属；缺payload、冲突和采集错误均为0。完整 `faction-sources/` 原始字节及manifest随仓库保存。默认不再使用只含Gorhak/Molkar的 `npc-factions-20261021.json` 或一次性脚本；它们仅作历史记录。SoldBy缺 `react` 不补中立，商品声望要求不反推NPC所属；固定19列CSV、价格、库存、坐标、`side`和原五份CSV不变。WoWDBDefs只说明结构，70450名称解码不证明存在NPC关联；运行时客户端阵营名称API仍优先。
 
 ## 必须保留的DB2证据目录
 

@@ -54,6 +54,8 @@ class UnifiedIntegrationTests(unittest.TestCase):
         (self.here / '_fc/i18n/zh.json').write_bytes(b'{}')
         for name in ('professions.json', 'locales.json'):
             (self.here / '_fc/maintenance' / name).write_bytes(b'{"schema":1}')
+        (self.here / '_fc/maintenance/material-vendors.json').write_bytes(b'{"schemaVersion":1}')
+        (self.data / 'material-vendors.json').write_bytes(b'{"schemaVersion":1,"items":{}}')
         inputs = {}
         for name in ('vendors_csv', 'npcs_csv', 'prices_csv', 'item_csv', 'recipe_items_csv'):
             source = self.here / '_fc/inputs' / (name + '.csv')
@@ -70,6 +72,8 @@ class UnifiedIntegrationTests(unittest.TestCase):
         mock.patch.object(fc_locales, 'render_locales', side_effect=self.languages).start()
         mock.patch.object(refresh, 'prepare_batch', side_effect=self.specializations).start()
         mock.patch.object(items, 'build_batch', side_effect=self.items).start()
+        self.material_patch = mock.patch.object(pipeline, 'prepare_materials', side_effect=self.materials)
+        self.material_patch.start()
         mock.patch.object(pipeline, 'validate_batch', side_effect=self.validate).start()
         self.before = self.snapshot()
 
@@ -109,6 +113,11 @@ class UnifiedIntegrationTests(unittest.TestCase):
         return {locale + '/' + name: b'local _,ns=...\nns.Locale={ [1]=true }\n'
                 for locale in ('enUS', 'zhTW') for name in pipeline.BASE_FILES}
 
+    def materials(self, args, report, expected, stage, catalog=None):
+        self.point('materials')
+        return {args.material_snapshot: b'{"schemaVersion":1,"items":{}}',
+                args.material_output_lua: b'local _,ns=...\nns.ProfMaterialSupply={}\n'}, {}
+
     def validate(self, outputs, before, report, full=True, approved_removals=(), catalog_identities=None):
         self.point('validate')
         self.assertEqual(outputs.get(self.data / 'recipe-item-link-audit-summary.json', b'{"audit":"new"}'),
@@ -123,7 +132,7 @@ class UnifiedIntegrationTests(unittest.TestCase):
             self.assertEqual(self.invoke('--check'), 0)
         publish.assert_not_called()
         self.assertEqual(self.steps, ['fc_fetch.py', 'fc_parse.py', 'fc_zones.py', 'fc_fields.py',
-                                     'fc_i18n.py', 'base', 'specializations', 'items', 'languages', 'validate'])
+                                     'fc_i18n.py', 'base', 'specializations', 'items', 'materials', 'languages', 'validate'])
         self.assertEqual(self.snapshot(), self.before)
         self.assertEqual(self.marker.read_bytes(), b'old marker')
 
@@ -141,7 +150,7 @@ class UnifiedIntegrationTests(unittest.TestCase):
 
     def test_every_failure_before_commit_keeps_the_old_batch(self):
         for name in ('fc_fetch.py', 'fc_parse.py', 'fc_zones.py', 'fc_fields.py', 'fc_i18n.py',
-                     'base', 'specializations', 'items', 'languages', 'validate'):
+                     'base', 'specializations', 'items', 'materials', 'languages', 'validate'):
             with self.subTest(name=name), mock.patch.object(common, 'publish_batch') as publish:
                 self.failure = name
                 self.assertEqual(self.invoke('--apply'), 1)
@@ -179,6 +188,10 @@ class UnifiedIntegrationTests(unittest.TestCase):
     def test_specializations_only_keeps_its_existing_scope(self):
         self.assertEqual(self.invoke('--check', '--specializations-only'), 0)
         self.assertEqual(self.steps, ['specializations', 'validate'])
+
+    def test_materials_only_does_not_enter_other_profession_steps(self):
+        self.assertEqual(self.invoke('--check', '--materials-only'), 0)
+        self.assertEqual(self.steps, ['materials', 'validate'])
 
     def test_check_can_retain_validated_outputs_without_publishing(self):
         preview = self.root / '.pipeline-runtime/preview'

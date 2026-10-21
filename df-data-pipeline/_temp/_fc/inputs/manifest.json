@@ -1,31 +1,63 @@
 {
-  "schemaVersion": 1,
-  "purpose": "Read-only imported CSV inputs; external producer scripts are not pipeline dependencies.",
   "files": {
     "client/item-buy-prices.csv": {
+      "bytes": 3379764,
       "originalFile": "scripts/export_buyprice/output/item-buy-prices.csv",
-      "sha256": "b489082f3bab36c4dc0c87dc24b5eaf78097ce29802d38df829d24e8fa8062dd",
-      "bytes": 3379764
+      "sha256": "b489082f3bab36c4dc0c87dc24b5eaf78097ce29802d38df829d24e8fa8062dd"
     },
     "client/item.csv": {
+      "bytes": 1466533,
       "originalFile": "scripts/export_buyprice/output/item.csv",
-      "sha256": "e3d96deb190e6d7807f690ae71c6f67ab0ea35044cec402a0cb5ccb990e1868a",
-      "bytes": 1466533
+      "sha256": "e3d96deb190e6d7807f690ae71c6f67ab0ea35044cec402a0cb5ccb990e1868a"
     },
     "client/recipe-item-specializations.csv": {
+      "bytes": 1095391,
       "originalFile": "scripts/export_buyprice/output/recipe-item-specializations.csv",
-      "sha256": "54bc36be2d32511c9111d8e1e6307fff333ad5b115debcf53c8c2f87f1cdec77",
-      "bytes": 1095391
+      "sha256": "54bc36be2d32511c9111d8e1e6307fff333ad5b115debcf53c8c2f87f1cdec77"
     },
-    "vendors/vendors.csv": {
-      "originalFile": "scripts/out/vendors.csv",
-      "sha256": "704c1a8121cd54cf732d06539e646850720ffea37a70fdbcbc967c58ade53802",
-      "bytes": 93756
+    "vendors/faction-sources/manifest.json": {
+      "bytes": 64556,
+      "kind": "npc-affiliation-reproducible",
+      "originalFile": ".pipeline-runtime/vendor-factions-general-20261021/replay-a/faction-sources/manifest.json",
+      "sha256": "bfc2d9223fd3d13d029465778cdf1200cff0ff0ed24f664973cecbe96bae8175"
+    },
+    "vendors/npc-factions-20261021.json": {
+      "bytes": 3880,
+      "kind": "npc-reputation-affiliation",
+      "originalFile": ".pipeline-runtime/vendor-factions-20261021/npc-factions.json",
+      "sha256": "0c7bd40a749368d01daaa515fca2dda50749c2bf52689f23fcbeb1caf3b2ecb7"
+    },
+    "vendors/npc-factions-audit.json": {
+      "bytes": 56809,
+      "kind": "npc-affiliation-reproducible",
+      "originalFile": ".pipeline-runtime/vendor-factions-general-20261021/replay-a/audit.json",
+      "sha256": "40e92bef1a1d6da6b60e0802c0a9dabfda6827f0005cb52490d7746bb05a3582"
+    },
+    "vendors/npc-factions.json": {
+      "bytes": 289024,
+      "kind": "npc-affiliation-reproducible",
+      "originalFile": ".pipeline-runtime/vendor-factions-general-20261021/replay-a/npc-factions.json",
+      "sha256": "a52247ad4cecc4f35cc91ccf07ea8041d15dd391dbbf52db96d0b0aa93f45bce"
     },
     "vendors/npcs.csv": {
+      "bytes": 13784,
       "originalFile": "scripts/out/npcs.csv",
-      "sha256": "fe2cfba8f09f881c96e80212c3249f19e9d9ea570a5383b018b1e18ffc107e6b",
-      "bytes": 13784
+      "sha256": "fe2cfba8f09f881c96e80212c3249f19e9d9ea570a5383b018b1e18ffc107e6b"
+    },
+    "vendors/vendors-soldby-json-20261021.csv": {
+      "bytes": 107811,
+      "evidenceFile": "vendors/soldby-json-20261021-audit.json",
+      "evidenceSha256": "e09152307491cc18aead4b514967b0355e0c1d3a31fd0fe67f86dd7c3942830a",
+      "originalFile": ".pipeline-runtime/vendor-soldby-recovery-20261021/vendors.csv",
+      "sha256": "9820cdca3f33a78ce7058eb9596eebf2465bf801afb86de38d5acb012e45f406",
+      "supersedes": "vendors/vendors.csv"
+    },
+    "vendors/vendors.csv": {
+      "bytes": 93756,
+      "originalFile": "scripts/out/vendors.csv",
+      "sha256": "704c1a8121cd54cf732d06539e646850720ffea37a70fdbcbc967c58ade53802"
     }
-  }
+  },
+  "purpose": "Read-only imported CSV inputs; external producer scripts are not pipeline dependencies.",
+  "schemaVersion": 1
 }

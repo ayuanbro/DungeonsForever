@@ -222,6 +222,27 @@ class ProfessionToolbarLayoutTests(unittest.TestCase):
           assert(PD.hudBtn:GetText()==fitted and PD.hudBtn:GetWidth()<=192)
         ''')
 
+    def test_navigation_rows_are_clear_of_operations_and_persistent_controls(self):
+        self.lua.execute('''
+          for _,width in ipairs({900,640,420,250,128})do
+            PD.RIGHT_W=width
+            for _,labels in ipairs({{'路线','购物清单','补料清单','制作记录','配方排除'},
+                {'Route','Shopping list','Supplies','Crafting history','Recipe exclusions'}})do
+              local list={}
+              for i,label in ipairs(labels)do
+                list[#list+1]={key='page'..i,text=label,role='tab',on=i==2}
+              end
+              list[#list+1]={key='recalc',text='Recalculate',role='action'}
+              list[#list+1]={key='recovery',text='Recovery mode · On',role='toggle',on=true}
+              paint(list)
+              local lastTabY=PD.toolBtns[5].points[1][5]
+              assert(PD.toolBtns[6].points[1][5]<lastTabY,'operation shares a navigation row')
+              assert(PD.hudBtn.points[1][5]<lastTabY,'HUD shares a navigation row')
+              assert(PD.impBtn.points[1][5]<lastTabY,'import shares a navigation row')
+            end
+          end
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

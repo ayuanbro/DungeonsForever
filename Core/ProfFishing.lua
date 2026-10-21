@@ -19,8 +19,13 @@ local function vendorOK(o,snap)
         and (o.quantity or o.bundleSize or 1)==floor(o.quantity or o.bundleSize or 1)
 end
 local function capture(opts)
-    if opts.snapshot then return E.Index(clone(opts.snapshot)) end
-    local snap={recipes={},known={},prices={},offers={},formulaOffers={},professions=E.Professions(),auctionSupply={},nonAuctionable={}}
+    if opts.snapshot then
+        local snapshot=E.Index(clone(opts.snapshot))
+        snapshot.allowLimitedFormulas=E.AllowLimitedFormulas(opts)
+        if ns.ProfRecovery then ns.ProfRecovery.Capture(snapshot,opts) end
+        return snapshot
+    end
+    local snap={recipes={},known={},prices={},offers={},formulaOffers={},professions=E.Professions(),auctionSupply={},nonAuctionable={},allowLimitedFormulas=E.AllowLimitedFormulas(opts)}
     local faction=UnitFactionGroup and UnitFactionGroup("player")
     snap.faction=faction=="Alliance" and "A" or faction=="Horde" and "H" or faction
     local all=ns.EnsureProfRecipes and ns.EnsureProfRecipes({"cooking"}) or ns.ProfRecipes or {}
@@ -39,6 +44,7 @@ local function capture(opts)
     if not snap.professions.cooking then snap.professions.cooking={cur=opts.start or 1,max=75,unlearned=true} end
     local ids={}
     for _,r in ipairs(snap.recipes) do
+        if r.item then ids[r.item]=true end
         for _,m in ipairs(r.mats or {}) do ids[m[1]]=true end
         if r.formula then ids[r.formula]=true end
     end
@@ -50,7 +56,9 @@ local function capture(opts)
         if db and db.GetFormulaOffers then snap.formulaOffers[id]=db.GetFormulaOffers(id,snap) end
         local supply=E.AuctionSupplyOf(nil,id);if supply then snap.auctionSupply[id]=supply end
     end
-    return E.Index(snap)
+    E.Index(snap)
+    if ns.ProfRecovery then ns.ProfRecovery.Capture(snap,opts) end
+    return snap
 end
 P.Capture=capture
 local function ease(fish)
@@ -237,6 +245,7 @@ function P.Compute(opts)
     table.sort(out.mats,function(a,b)return a.id<b.id end)
     table.sort(out.fishMaterials,function(a,b)return (out.firstAt[a.id] or 0)<(out.firstAt[b.id] or 0) end)
     E.SummarizeAuctionSupply(out,snap)
+    if ns.ProfRecovery then ns.ProfRecovery.Apply(out,snap) end
     local ra=ns.ProfRouteAuto
     return ra and ra.StampVendorQuotes and ra.StampVendorQuotes(out) or out
 end

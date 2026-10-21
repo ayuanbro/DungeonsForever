@@ -268,8 +268,19 @@ class PipelineMaintenanceTests(unittest.TestCase):
             self.assertEqual((recipe.mats[1][1], recipe.mats[1][2]), (11137, 1))
             row = next(row for _, row in ns.ProfRecipes['enchanting']['enchants'].items()
                        if row[1] == 'Enchant Cloak - Greater Defense')
-            self.assertIsNone(row[14])
+            self.assertEqual(row[14], 13746)
+            normalized = ns.ProfEconomy.Normalize(row, 'enchanting', 'enchants')
+            self.assertIsNotNone(normalized)
+            self.assertEqual(normalized.spell, 13746)
+            # A sparse legacy row must still resolve through the retained rinfo
+            # record; restoring a proven catalogue ID must not remove fallback.
+            row[14] = None
             self.assertIsNone(ns.ProfEconomy.Normalize(row, 'enchanting', 'enchants'))
+            fallback = ns.ProfEconomy.FindRecipe('enchanting', 13746)
+            self.assertIsNotNone(fallback)
+            self.assertEqual((fallback.learn, fallback.yellow, fallback.green, fallback.grey),
+                             (205, 225, 245, 265))
+            row[14] = 13746
         latest = maintenance.load_sources(outputs)
         steps = latest['Data_ProfLeveling.lua']['ProfLeveling']['enchanting']['steps'].values()
         self.assertEqual([step[3] for step in steps if (step[1], step[2]) == (218, 225)], [13815])

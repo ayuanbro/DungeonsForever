@@ -12,6 +12,6 @@ CSV_INPUTS = {
     'prices_csv': CLIENT_INPUTS / 'item-buy-prices.csv',
     'item_csv': CLIENT_INPUTS / 'item.csv',
     'recipe_items_csv': CLIENT_INPUTS / 'recipe-item-specializations.csv',
-    'vendors_csv': VENDOR_INPUTS / 'vendors.csv',
+    'vendors_csv': VENDOR_INPUTS / 'vendors-soldby-json-20261021.csv',
     'npcs_csv': VENDOR_INPUTS / 'npcs.csv',
 }

@@ -39,6 +39,7 @@ ITEM_FIELDS = ('item_id', 'Name_enUS', 'Name_zhTW', 'Name_zhCN', 'VendorStackCou
 OFFER_FIELDS = tuple(field for field in CSV_FIELDS if field not in ITEM_FIELDS)
 INTEGER_FIELDS = {'item_id': 1, 'npc_id': 1, 'zone_id': 1, 'cost_copper': 0,
                   'currency_id': 0, 'currency_amount': 0, 'stock': -1, 'VendorStackCount': 1}
+DEFAULT_VENDOR_FACTIONS = HERE / '_fc/inputs/vendors/npc-factions.json'
 
 
 class DataError(ValueError):
@@ -244,7 +245,76 @@ def csv_record(row, fields):
     return record
 
 
-def build_items(rows, metadata):
+def vendor_factions(content):
+    """Validate evidence-backed NPC affiliations, independently of A/H/N access.
+
+    This optional JSON is deliberately separate from the frozen price CSVs.
+    Missing evidence cannot establish a neutral vendor or an affiliation.
+    """
+    def object_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise DataError('vendor factions: duplicate key %s' % key)
+            result[key] = value
+        return result
+
+    def evidence_value(value):
+        if value is None or isinstance(value, (str, bool, int)):
+            return
+        if isinstance(value, float) and math.isfinite(value):
+            return
+        if isinstance(value, list):
+            for entry in value:
+                evidence_value(entry)
+            return
+        if isinstance(value, dict) and all(isinstance(key, str) for key in value):
+            for entry in value.values():
+                evidence_value(entry)
+            return
+        raise DataError('vendor factions: unsupported evidence value')
+
+    try:
+        data = json.loads(content.decode('utf-8-sig'), object_pairs_hook=object_pairs)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise DataError('vendor factions: invalid JSON: %s' % error)
+    if not isinstance(data, dict) or type(data.get('schemaVersion')) is not int \
+            or data['schemaVersion'] != 1 or not isinstance(data.get('npcs'), dict):
+        raise DataError('vendor factions: expected schemaVersion=1 and npcs object')
+    result = {}
+    for key, record in data['npcs'].items():
+        npc = required_id(key, 'vendor factions NPC ID')
+        if str(npc) != key or not isinstance(record, dict):
+            raise DataError('vendor factions: invalid NPC record %s' % key)
+        if set(record) - {'factionID', 'names', 'sources'}:
+            raise DataError('vendor factions: unsupported fields for NPC %s' % key)
+        names = record.get('names')
+        if not isinstance(names, dict) or not names or set(names) - {'enUS', 'zhCN', 'zhTW'} \
+                or not isinstance(names.get('enUS'), str) or not names['enUS'].strip() \
+                or any(not isinstance(value, str) or not value.strip() for value in names.values()):
+            raise DataError('vendor factions: invalid localized names for NPC %s' % key)
+        sources = record.get('sources')
+        if not isinstance(sources, list) or not sources:
+            raise DataError('vendor factions: missing evidence for NPC %s' % key)
+        for source in sources:
+            if not isinstance(source, dict) or not isinstance(source.get('type'), str) \
+                    or not source['type'].strip() \
+                    or not any(isinstance(source.get(field), str) and source[field].strip()
+                               for field in ('url', 'file')):
+                raise DataError('vendor factions: invalid evidence for NPC %s' % key)
+            evidence_value(source)
+        output = {'names': {locale: value.strip() for locale, value in names.items()},
+                  'sources': sources}
+        if 'factionID' in record:
+            faction = record['factionID']
+            if type(faction) is not int or faction <= 0:
+                raise DataError('vendor factions: factionID must be a positive integer')
+            output['factionID'] = faction
+        result[npc] = output
+    return result
+
+
+def build_items(rows, metadata, factions=None):
     items, pairs = {}, set()
     for row in rows:
         item = required_id(row['item_id'], 'item_id')
@@ -267,6 +337,10 @@ def build_items(rows, metadata):
     metadata = dict(metadata, schemaVersion=2, csvFields=list(CSV_FIELDS))
     lines = ['local _, ns = ...', '', 'ns.ProfItemsMeta = ' + lua(metadata), '', 'ns.ProfItems = {']
     lines.extend('    [%d] = %s,' % (item, lua(record)) for item, record in sorted(items.items()))
+    lines.append('}')
+    lines.extend(('', 'ns.ProfVendorFactions = {'))
+    lines.extend('    [%d] = %s,' % (npc, lua(record))
+                 for npc, record in sorted((factions or {}).items()))
     lines.append('}')
     return '\n'.join(lines) + '\n'
 
@@ -431,6 +505,68 @@ def _snapshot(path, expected, overrides):
     return content
 
 
+def _vendor_faction_bundle(faction_path, faction_content, factions, expected, overrides):
+    """Freeze and verify every declared file and every NPC evidence reference."""
+    bundle = json.loads(faction_content.decode('utf-8-sig')).get('sourceBundle')
+    if bundle is None:
+        return
+
+    def valid_hash(value):
+        return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{64}', value) is not None
+
+    def relative_file(value):
+        if not isinstance(value, str) or not value or any(char in value for char in ('\\', ':', '\0')) \
+                or any(part in ('', '.', '..') for part in value.split('/')):
+            raise DataError('vendor factions: evidence path must be canonical and relative')
+        return value
+
+    def object_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise DataError('vendor factions: duplicate source manifest key %s' % key)
+            result[key] = value
+        return result
+
+    if not isinstance(bundle, dict) or bundle.get('directory') != 'faction-sources' \
+            or not valid_hash(bundle.get('manifestSHA256')):
+        raise DataError('vendor factions: invalid source bundle')
+    bundle_root = require_repo_path(faction_path.parent / bundle['directory'])
+    manifest_path = bundle_root / 'manifest.json'
+    manifest_content = _snapshot(manifest_path, expected, overrides)
+    if sha(manifest_content) != bundle['manifestSHA256']:
+        raise DataError('vendor factions: source manifest hash mismatch')
+    try:
+        manifest = json.loads(manifest_content.decode('utf-8-sig'), object_pairs_hook=object_pairs)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise DataError('vendor factions: invalid source manifest JSON: %s' % error)
+    if not isinstance(manifest, dict) or type(manifest.get('schemaVersion')) is not int \
+            or manifest['schemaVersion'] != 1 or not isinstance(manifest.get('files'), dict):
+        raise DataError('vendor factions: invalid source manifest')
+    for relative, record in manifest['files'].items():
+        relative_file(relative)
+        if not isinstance(record, dict) or not valid_hash(record.get('sha256')) \
+                or type(record.get('bytes')) is not int or record['bytes'] < 0:
+            raise DataError('vendor factions: invalid source manifest file record: %s' % relative)
+        path = require_repo_path(bundle_root / relative)
+        if not path.is_relative_to(bundle_root) or path == manifest_path:
+            raise DataError('vendor factions: evidence path escapes source bundle')
+        content = _snapshot(path, expected, overrides)
+        if sha(content) != record['sha256'] or len(content) != record['bytes']:
+            raise DataError('vendor factions: evidence hash mismatch: %s' % relative)
+    for npc, affiliation in factions.items():
+        for source in affiliation['sources']:
+            name = relative_file(source.get('file'))
+            prefix = bundle['directory'] + '/'
+            if not name.startswith(prefix) or not valid_hash(source.get('sha256')):
+                raise DataError('vendor factions: NPC %s evidence must bind a bundled file and hash' % npc)
+            relative = name[len(prefix):]
+            record = manifest['files'].get(relative)
+            if record is None or source['sha256'] != record['sha256']:
+                raise DataError('vendor factions: NPC %s evidence is absent from or differs from manifest: %s'
+                                % (npc, name))
+
+
 def _csv_content(content, required, path):
     reader = csv.DictReader(io.StringIO(content.decode('utf-8-sig'), newline=''))
     fields = reader.fieldnames or []
@@ -445,16 +581,16 @@ def _csv_content(content, required, path):
     return fields, rows
 
 
-def _dated_items(rows, metadata, previous):
+def _dated_items(rows, metadata, previous, factions=None):
     # Repeated updates with identical inputs retain the existing generation time.
     text = previous.decode('utf-8-sig') if previous else ''
     match = re.search(r'ns\.ProfItemsMeta\s*=\s*\{generatedAt="([^"\r\n]+)"', text)
     if match:
         stable = dict(metadata, generatedAt=match[1])
-        candidate = build_items(rows, stable).encode('utf-8')
+        candidate = build_items(rows, stable, factions).encode('utf-8')
         if candidate == previous:
             return previous
-    return build_items(rows, metadata).encode('utf-8')
+    return build_items(rows, metadata, factions).encode('utf-8')
 
 
 def build_batch(args, report=None):
@@ -471,6 +607,20 @@ def build_batch(args, report=None):
     destination = require_repo_path(args.items_lua)
     expected[destination] = fingerprint(destination)
     previous = destination.read_bytes() if destination.is_file() else None
+    faction_path = getattr(args, 'vendor_factions_json', None)
+    faction_explicit = faction_path is not None
+    faction_path = Path(faction_path if faction_explicit else DEFAULT_VENDOR_FACTIONS).resolve()
+    factions, faction_source = {}, None
+    if faction_explicit or faction_path.is_file() or faction_path in overrides:
+        protected = {Path(getattr(args, field)).resolve() for field in
+                     ('items_lua', 'vendors_lua', 'output_csv')}
+        if faction_path in protected:
+            raise DataError('vendor factions input must not overlap output paths')
+        faction_content = _snapshot(faction_path, expected, overrides)
+        factions = vendor_factions(faction_content)
+        _vendor_faction_bundle(faction_path, faction_content, factions, expected, overrides)
+        faction_source = {'file': faction_path.name, 'sha256': sha(faction_content),
+                          'kind': 'npc_affiliation'}
     if getattr(args, 'from_csv', None) is not None:
         source = args.from_csv.resolve()
         protected = [source, args.vendors_csv.resolve(), args.npcs_csv.resolve(),
@@ -489,7 +639,9 @@ def build_batch(args, report=None):
         metadata = {'generatedAt': datetime.now(timezone.utc).isoformat(timespec='seconds'),
                     'sources': {'csv': {'file': source.name, 'sha256': sha(content)}},
                     'stats': stats}
-        outputs = {destination: _dated_items(rows, metadata, previous)}
+        if faction_source:
+            metadata['sources']['vendorFactions'] = faction_source
+        outputs = {destination: _dated_items(rows, metadata, previous, factions)}
     else:
         inputs = [args.vendors_csv.resolve(), args.npcs_csv.resolve(), args.prices_csv.resolve()]
         destinations = [require_repo_path(args.output_csv), destination, require_repo_path(args.vendors_lua)]
@@ -515,8 +667,10 @@ def build_batch(args, report=None):
                                     ('vendors', 'npcs', 'prices'), inputs, hashes,
                                     ('wowhead', 'wowhead', 'client'))}, 'stats': stats}
         metadata['sources']['csv'] = {'file': destinations[0].name, 'sha256': sha(csv_content)}
+        if faction_source:
+            metadata['sources']['vendorFactions'] = faction_source
         outputs = {destinations[0]: csv_content,
-                   destination: _dated_items(items_csv_rows(csv_content), metadata, previous),
+                   destination: _dated_items(items_csv_rows(csv_content), metadata, previous, factions),
                    vendor_path: vendor_output.encode('utf-8')}
     for path, digest in expected.items():
         if fingerprint(path) != digest:
@@ -546,6 +700,8 @@ def main(argv=None):
     parser.add_argument('--vendors-csv', type=Path, default=CSV_INPUTS['vendors_csv'])
     parser.add_argument('--npcs-csv', type=Path, default=CSV_INPUTS['npcs_csv'])
     parser.add_argument('--prices-csv', type=Path, default=CSV_INPUTS['prices_csv'])
+    parser.add_argument('--vendor-factions-json', type=Path,
+                        help='optional evidence-backed NPC affiliations; defaults to the bundled snapshot')
     parser.add_argument('--output-csv', type=Path, default=HERE / '_fc/data/DataProfItems.csv')
     parser.add_argument('--items-lua', type=Path, default=PACKAGE / 'Core/Data/Data_ProfItems.lua')
     parser.add_argument('--vendors-lua', type=Path, default=PACKAGE / 'Core/Data/Data_ProfVendors.lua')
