@@ -3707,6 +3707,8 @@ function DG.FlushItemCardsNow(itemID)
     if BM and BM.OnItemData then BM.OnItemData(itemID) end
     local CQM = ns.ClassQuestUI
     if CQM and CQM.OnItemData then CQM.OnItemData(itemID) end
+    local MM = ns.MapModule
+    if MM and MM.OnItemData then MM.OnItemData(itemID) end
     local pool = U.dungeonDetailPool and U.dungeonDetailPool.item
     if not pool then return end
     for i = 1, #pool do
@@ -3898,6 +3900,7 @@ function DG.LootTypeKey(id)
 end
 
 DG.__asked = {}
+DG.__qAsked = {}
 function DG.RequestItem(id, force)
     if type(id) ~= "number" or id < 1 or id > 2147483647 or id ~= math.floor(id) then return end
     if DG.__asked[id] and not force then return end
@@ -5181,6 +5184,14 @@ function DG.QuestName(id)
     if type(id) ~= "number" then return tostring(id), false end
     local n = DG.QLCall("GetTitleForQuestID", id)
     if type(n) == "string" and n ~= "" then return n, true end
+    if not DG.__qAsked[id] then
+        DG.__qAsked[id] = true
+        if C_QuestLog and C_QuestLog.RequestLoadQuestByID then
+            pcall(C_QuestLog.RequestLoadQuestByID, id)
+        end
+        n = DG.QLCall("GetTitleForQuestID", id)
+        if type(n) == "string" and n ~= "" then return n, true end
+    end
     local ex = ns.DungeonQuestExtInfo and ns.DungeonQuestExtInfo[id]
     if ex and type(ex.nm) == "string" and ex.nm ~= "" then return ex.nm, true end
     return format(L["任务 #%d"], id), false

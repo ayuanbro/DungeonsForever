@@ -694,7 +694,6 @@ do
         if thick <= 1 then
             local file = GLASS_RING_TEX .. snapR
             local q = snapR / 32
-            local ins = r - shift
             local function corner(point)
                 local t = p:CreateTexture(nil, layer or "BORDER")
                 t:SetTexture(file)
@@ -705,6 +704,10 @@ do
                         (point:find("TOP") and 1 or -1) * shift)
                 return tint(t)
             end
+            local cTL = arcTL and corner("TOPLEFT") or nil
+            local cTR = arcTR and corner("TOPRIGHT") or nil
+            local cBL = arcBL and corner("BOTTOMLEFT") or nil
+            local cBR = arcBR and corner("BOTTOMRIGHT") or nil
             local function edgeH(top)
                 local t = p:CreateTexture(nil, layer or "BORDER")
                 t:SetTexture(file)
@@ -712,8 +715,20 @@ do
                 local vp = top and "TOP" or "BOTTOM"
                 local v0 = top and 0 or (1 - q)
                 t:SetTexCoord(q, v0, q, v0 + q, 1 - q, v0, 1 - q, v0 + q)
-                t:SetPoint(vp .. "LEFT", f, vp .. "LEFT", (top and arcTL or arcBL) and ins or 0, (top and 1 or -1) * shift)
-                t:SetPoint(vp .. "RIGHT", f, vp .. "RIGHT", (top and arcTR or arcBR) and -ins or 0, (top and 1 or -1) * shift)
+                local hasL = top and arcTL or arcBL
+                local hasR = top and arcTR or arcBR
+                local cl = top and cTL or cBL
+                local cr = top and cTR or cBR
+                if hasL and cl then
+                    t:SetPoint(vp .. "LEFT", cl, vp .. "RIGHT", 0, 0)
+                else
+                    t:SetPoint(vp .. "LEFT", f, vp .. "LEFT", 0, (top and 1 or -1) * shift)
+                end
+                if hasR and cr then
+                    t:SetPoint(vp .. "RIGHT", cr, vp .. "LEFT", 0, 0)
+                else
+                    t:SetPoint(vp .. "RIGHT", f, vp .. "RIGHT", 0, (top and 1 or -1) * shift)
+                end
                 return tint(t)
             end
             local function edgeV(left)
@@ -723,14 +738,22 @@ do
                 local hp = left and "LEFT" or "RIGHT"
                 local u0 = left and 0 or (1 - q)
                 t:SetTexCoord(u0, q, u0, 1 - q, u0 + q, q, u0 + q, 1 - q)
-                t:SetPoint("TOP" .. hp, f, "TOP" .. hp, (left and -1 or 1) * shift, (left and arcTL or arcTR) and -ins or 0)
-                t:SetPoint("BOTTOM" .. hp, f, "BOTTOM" .. hp, (left and -1 or 1) * shift, (left and arcBL or arcBR) and ins or 0)
+                local hasT = left and arcTL or arcTR
+                local hasB = left and arcBL or arcBR
+                local ct = left and cTL or cTR
+                local cb = left and cBL or cBR
+                if hasT and ct then
+                    t:SetPoint("TOP" .. hp, ct, "BOTTOM" .. hp, 0, 0)
+                else
+                    t:SetPoint("TOP" .. hp, f, "TOP" .. hp, (left and -1 or 1) * shift, 0)
+                end
+                if hasB and cb then
+                    t:SetPoint("BOTTOM" .. hp, cb, "TOP" .. hp, 0, 0)
+                else
+                    t:SetPoint("BOTTOM" .. hp, f, "BOTTOM" .. hp, (left and -1 or 1) * shift, 0)
+                end
                 return tint(t)
             end
-            if arcTL then corner("TOPLEFT") end
-            if arcTR then corner("TOPRIGHT") end
-            if arcBL then corner("BOTTOMLEFT") end
-            if arcBR then corner("BOTTOMRIGHT") end
             edgeH(true)
             edgeH(false)
             if sL or arcTL or arcBL then edgeV(true) end
@@ -1746,6 +1769,28 @@ do
         return ok and link ~= nil
     end
 
+    local function CollectForeign(root)
+        local list = {}
+        local seen = { [root] = true }
+        local q = { root }
+        local i = 1
+        while i <= #q do
+            local f = q[i]
+            i = i + 1
+            for _, c in ipairs({ f:GetChildren() }) do
+                if not seen[c] then
+                    seen[c] = true
+                    q[#q + 1] = c
+                end
+            end
+            for _, r in ipairs({ f:GetRegions() }) do
+                if r.IsObjectType and r:IsObjectType("Texture") and not r.__huiPiece then
+                    list[#list + 1] = { r, r:IsShown() }
+                end
+            end
+        end
+        return list
+    end
     local tipApplying = false
     local function ApplyTooltipSkinBody(tt, on)
         local s = tooltipSkins[tt]
@@ -1760,12 +1805,15 @@ do
             end
         end
         for _, tex in ipairs(s.border) do tex:SetShown(on) end
-        if tt.NineSlice then
-            if on then
-                tt.NineSlice:SetAlpha(0)
-            elseif not (s.ownScoped and HasExternalTooltipSkin()) then
-                tt.NineSlice:SetAlpha(s.nineAlpha or 1)
+        if on then
+            s.nineTex = CollectForeign(tt)
+            for _, e in ipairs(s.nineTex) do
+                if e[2] then e[1]:SetShown(false) end
             end
+            if tt.NineSlice then tt.NineSlice:SetAlpha(0) end
+        elseif not (s.ownScoped and HasExternalTooltipSkin()) then
+            if tt.NineSlice then tt.NineSlice:SetAlpha(s.nineAlpha or 1) end
+            for _, e in ipairs(s.nineTex or {}) do e[1]:SetShown(e[2]) end
         end
     end
     local function ApplyTooltipSkin(tt, on)
@@ -1811,7 +1859,21 @@ do
             ownScoped = true,
         }
         s.nineAlpha = tt.NineSlice and tt.NineSlice:GetAlpha() or 1
+        s.nineTex = {}
+        for _, tex in ipairs(s.fill) do tex.__huiPiece = true end
+        for _, tex in ipairs(s.border) do tex.__huiPiece = true end
         tooltipSkins[tt] = s
+        tt:HookScript("OnUpdate", function(f)
+            local s2 = tooltipSkins[f]
+            if not (s2 and s2.on) then return end
+            local now = GetTime and GetTime() or 0
+            if now - (s2.scanT or 0) < 0.2 then return end
+            s2.scanT = now
+            for _, e in ipairs(CollectForeign(f)) do
+                if e[2] and e[1]:IsShown() then e[1]:SetShown(false) end
+            end
+            if f.NineSlice and f.NineSlice.GetAlpha and f.NineSlice:GetAlpha() ~= 0 then f.NineSlice:SetAlpha(0) end
+        end)
         tt:HookScript("OnShow", function()
             local on = ns.huiTheme == "hui"
             if on and s.ownScoped then

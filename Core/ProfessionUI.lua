@@ -119,6 +119,47 @@ function PD.CookingFishingMode(slug)
     return (slug or PD.cur) == "cooking" and ProfDB().cookingRoute == "fishing"
 end
 
+function PD.SetRouteScheme(key)
+    if PD.CookingFishingMode() then return end
+    if type(key) ~= "string" or key == "" then return end
+    if ProfDB().autoScheme == key then return end
+    ProfDB().autoScheme = key
+    if RA then
+        if RA.Recalculate and RA.OptionsFor then
+            local learned = PD.ProfLearned and PD.ProfLearned() or {}
+            local lv = learned[PD.cur] and learned[PD.cur].cur
+            RA.Recalculate(PD.cur, RA.OptionsFor(PD.cur, lv))
+        elseif RA.Invalidate then
+            RA.Invalidate()
+        end
+    end
+    PD.RequestRender()
+    ns.PlaySound(1)
+end
+
+function PD.ShowSchemeMenu(owner)
+    local order = (RA and RA.SchemeOrder and RA.SchemeOrder()) or {}
+    if #order == 0 then
+        PD.CycleRouteScheme()
+        return
+    end
+    if not (ns.hui and ns.hui.ShowMenu) then
+        PD.CycleRouteScheme()
+        return
+    end
+    local cur = PD.SettingRaw("autoScheme")
+    local items = {}
+    for _, sk in ipairs(order) do
+        items[#items + 1] = {
+            text = (RA.SchemeLabel and RA.SchemeLabel(sk)) or sk,
+            checked = (sk == cur),
+            color = (sk == cur) and { 1, 0.82, 0 } or nil,
+            func = function() PD.SetRouteScheme(sk) end,
+        }
+    end
+    ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
+end
+
 function PD.CycleRouteScheme()
     if PD.CookingFishingMode() then return end
     local order = (RA and RA.SchemeOrder and RA.SchemeOrder()) or {}
@@ -683,6 +724,7 @@ function PD.Row(i)
                 end
             end
             GameTooltip:Show()
+            PD.UnifyTipFont(13)
         elseif self.__it then
             local extra = self.__tipExtra
             if type(extra) == "function" then extra = extra() end
@@ -1212,6 +1254,13 @@ function PD.BindRow(r, spec, h)
             r.c:SetText("")
         end
         r.c2:SetText("")
+        if spec.suffix and spec.suffix ~= "" then
+            r.c2:SetTextColor(Unpack(C_GREY))
+            r.c2:SetText(spec.suffix)
+            r.c2:ClearAllPoints()
+            r.c2:SetWordWrap(false)
+            r.c2:SetPoint("LEFT", r.a, "RIGHT", 10, 0)
+        end
         if spec.segs and r.segBtns then
             local prev
             for k = 1, 4 do
@@ -1672,6 +1721,24 @@ function PD.BindRow(r, spec, h)
         r.e:SetWidth(PD.LV_NAME_W)
         r.c2:ClearAllPoints()
         r.c2:SetPoint("RIGHT", r, "RIGHT", -PD.LV_COST_R, 0)
+        local whyFs = r.__costWhy
+        if spec.costWhyShort then
+            if not whyFs then
+                whyFs = r:CreateFontString(nil, "OVERLAY")
+                whyFs:SetFont(ns.FONT, 12, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+                whyFs:SetJustifyH("RIGHT")
+                whyFs:SetWordWrap(false)
+                r.__costWhy = whyFs
+            end
+            whyFs:SetText(spec.costWhyShort)
+            whyFs:SetTextColor(0.72, 0.72, 0.72)
+            whyFs:ClearAllPoints()
+            whyFs:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -PD.LV_COST_R, 3)
+            whyFs:Show()
+            r.c2:SetPoint("TOPRIGHT", r, "TOPRIGHT", -PD.LV_COST_R, -5)
+        elseif whyFs then
+            whyFs:Hide()
+        end
         r.c:ClearAllPoints()
         r.c:SetPoint("RIGHT", r, "RIGHT", -PD.LV_COUNT_R, 0)
         r.icon:SetSize(PD.TBL_ICON, PD.TBL_ICON)
@@ -1699,6 +1766,9 @@ function PD.BindRow(r, spec, h)
         if costZone then
             costZone.__tipLines = {{L["成本"] .. ": " .. (spec.cost or "")},
                 {L["成本为本步骤新增采购；已在中间产物步骤计入的费用不重复计入。"], 0.7, 0.7, 0.7}}
+            if spec.costWhy then
+                costZone.__tipLines[#costZone.__tipLines + 1] = {spec.costWhy, 0.95, 0.75, 0.4}
+            end
             costZone.__it, costZone.__act = nil, nil
             costZone:ClearAllPoints()
             costZone:SetPoint("RIGHT", r, "RIGHT", -PD.LV_COST_R, 0)
@@ -1709,6 +1779,7 @@ function PD.BindRow(r, spec, h)
     end
 
     local padL = showIcon and ((iconName and not itemID) and 28 or 32) or 6
+    if r.__costWhy then r.__costWhy:Hide() end
     local ncol = spec.nameColor
     if not ncol and spec.qItem then
         local q = PD.QualCached(spec.qItem)
@@ -1859,6 +1930,7 @@ function PD.BuildBonusTable(parent)
         GameTooltip:AddLine(L["数值以 60 级为基准、随等级成长 —— 游戏内低等级看到的数字更小属正常缩放。"],
                             1, 1, 1, true)
         GameTooltip:Show()
+        PD.UnifyTipFont(13)
     end)
     tipBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     local rule = root:CreateTexture(nil, "ARTWORK")
@@ -1926,6 +1998,7 @@ function PD.BuildBonusTable(parent)
                     end
                 end
                 GameTooltip:Show()
+                PD.UnifyTipFont(13)
             end
         end)
         r:SetScript("OnLeave", function(self)
@@ -2225,6 +2298,7 @@ function PD.FillTrainerBoard()
                             end
                             GameTooltip:AddLine(L["点击：在地图上标记该 NPC"], 1, 0.82, 0)
                             GameTooltip:Show()
+                            PD.UnifyTipFont(13)
                         end)
                         c:SetScript("OnLeave", function(self)
                             if self.__huiCard then ns.hui.HuiCardState(self, "norm") end
@@ -2722,7 +2796,7 @@ function PD.Build(page)
         PD.RequestRender()
         ns.PlaySound(1)
     end)
-    PD.lvTiles.scheme:SetScript("OnClick", PD.CycleRouteScheme)
+    PD.lvTiles.scheme:SetScript("OnClick", function(self) PD.ShowSchemeMenu(self) end)
     do
         local tf = PD.lvTiles.target
         local eb = CreateFrame("EditBox", nil, tf, "BackdropTemplate")
@@ -3013,6 +3087,7 @@ function PD.Build(page)
                 end
             end
             GameTooltip:Show()
+            PD.UnifyTipFont(13)
         end)
         hp:SetScript("OnLeave", function() GameTooltip:Hide() end)
         hp:EnableMouseWheel(true)
@@ -3423,6 +3498,52 @@ function PD.PaintToolStale(text)
     end
 end
 
+function PD.UnifyTipFont(size)
+    local n = (GameTooltip.NumLines and GameTooltip:NumLines()) or 0
+    if n <= 0 then return end
+    local base = _G["GameTooltipTextLeft1"]
+    local path, sz, flags
+    if base and base.GetFont then path, sz, flags = base:GetFont() end
+    if not path then return end
+    local want = tonumber(size) or tonumber(sz) or 13
+    flags = flags or ""
+    local sum0 = 0
+    for i = 1, n do
+        local l = _G["GameTooltipTextLeft" .. i]
+        if l and l.GetStringHeight then sum0 = sum0 + (l:GetStringHeight() or 0) end
+    end
+    for i = 1, n do
+        local l = _G["GameTooltipTextLeft" .. i]
+        if l and l.SetFont then l:SetFont(path, want, flags) end
+        local rr = _G["GameTooltipTextRight" .. i]
+        if rr and rr.SetFont then rr:SetFont(path, want, flags) end
+    end
+    local maxW = 0
+    for i = 1, n do
+        local l = _G["GameTooltipTextLeft" .. i]
+        if l and l.SetText and l.SetWidth then
+            l:SetWidth(4000)
+            l:SetText(l:GetText())
+            maxW = math.max(maxW, l:GetStringWidth() or 0)
+        end
+    end
+    maxW = math.min(maxW, 460)
+    local sum1 = 0
+    for i = 1, n do
+        local l = _G["GameTooltipTextLeft" .. i]
+        if l then
+            l:SetWidth(maxW)
+            l:SetText(l:GetText())
+            sum1 = sum1 + (l:GetStringHeight() or 0)
+        end
+    end
+    if GameTooltip.SetWidth and GameTooltip.SetHeight and maxW > 0 then
+        local pad = (GameTooltip:GetHeight() or 0) - sum0
+        GameTooltip:SetWidth(maxW + 20)
+        GameTooltip:SetHeight(sum1 + pad)
+    end
+end
+
 function PD.TipTile(tf, lines)
     tf:SetScript("OnEnter", function()
         if tf.__hov then for _, t in ipairs(tf.__hov) do t:Show() end end
@@ -3434,6 +3555,7 @@ function PD.TipTile(tf, lines)
             end
         end
         GameTooltip:Show()
+        PD.UnifyTipFont(13)
     end)
     tf:SetScript("OnLeave", function()
         if tf.__hov then for _, t in ipairs(tf.__hov) do t:Hide() end end
@@ -3587,23 +3709,30 @@ function PD.PaintLvTiles()
         TipOn(tiles.mode, modeLines)
     end
     local sch = s.scheme or "cheapest"
-    tiles.scheme.label:SetText(fishRoute and L["路线方案"] or L["路线方案 · 点击切换"])
+    tiles.scheme.label:SetText(fishRoute and L["路线方案"] or L["路线方案 · 点击选择"])
     tiles.scheme.val:SetText(fishRoute and L["鱼类路线"] or ((RA and RA.SchemeLabel) and RA.SchemeLabel(sch) or L["最省钱"]))
-    tiles.scheme:SetScript("OnClick", (not fishRoute and not fixedOnly) and PD.CycleRouteScheme or nil)
+    if fishRoute or fixedOnly then
+        tiles.scheme:SetScript("OnClick", nil)
+    else
+        tiles.scheme:SetScript("OnClick", function() PD.ShowSchemeMenu(tiles.scheme) end)
+    end
     tiles.scheme.val:SetTextColor(Unpack(C_WHITE))
     local schemeDesc = {
-        cheapest = L["最省钱：比较材料采购、自制及未学图纸支出"],
-        matcost = L["材料成本：只按材料价选配方"],
-        crafts = L["次数最少：优先升点率高的配方，同分取便宜"],
-        optim = L["乐观计数：材料不看拍卖行市价，商人出售的按购买价、其余按卖店价值折算；次数固定按做一次涨一点统计、只是下限；快变黄前 25 点的配方也纳入可选；带冷却的转化配方和资料未收录的材料不进路线"],
+        cheapest = L["比较采购、自制与图纸支出"],
+        matcost = L["只按材料价选配方"],
+        crafts = L["升点率高优先，同分取便宜"],
+        optim = L["不查拍卖行，按商人价粗算"],
     }
     local schemeLines = {}
     local sorder = (RA and RA.SchemeOrder and RA.SchemeOrder()) or {}
     for _, sk in ipairs(sorder) do
         local curK = (sk == sch)
-        schemeLines[#schemeLines + 1] = { schemeDesc[sk] or sk,
-                                          curK and 1 or 0.62, curK and 0.82 or 0.62,
-                                          curK and 0 or 0.62 }
+        local nm = (RA and RA.SchemeLabel) and RA.SchemeLabel(sk) or sk
+        local head = curK and "|cffffd100" or "|cffffffff"
+        schemeLines[#schemeLines + 1] = {
+            head .. nm .. "|r|cff8f8f8f：|r|cffb3b3b3" .. (schemeDesc[sk] or "") .. "|r",
+            1, 1, 1,
+        }
     end
     if fishRoute then
         schemeLines = {
@@ -3611,6 +3740,8 @@ function PD.PaintLvTiles()
             {L["鱼类自行钓取；其他材料只使用不限量商人货物。"], 0.7, 0.7, 0.7},
             {L["鱼类不计金币成本；图纸仍按实际采购来源计费。"], 0.7, 0.7, 0.7},
         }
+    else
+        schemeLines[#schemeLines + 1] = { L["点击选择路线方案"], 0.7, 0.7, 0.7 }
     end
     TipOn(tiles.scheme, schemeLines)
     tiles.cost.label:SetText(s.partial and format(L["%d → %d 已计算支出"], s.start or 1, s.plannedTo or 1)
@@ -4165,6 +4296,7 @@ function PD.WarnChip(r, plainTip)
                     end
                 end
                 GameTooltip:Show()
+                PD.UnifyTipFont(13)
             end
         end)
         z:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -4239,6 +4371,10 @@ end
 
 function PD.WireTipZone(z, r)
     z:EnableMouseWheel(true)
+    if z.RegisterForClicks and not z.__clicksWired then
+        z.__clicksWired = true
+        z:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    end
     z:SetScript("OnEnter", function(self)
         if not self.__noHover then PD.SetRowHover(r, true) end
         if self.__it then PD.hoverRow = self end
@@ -4252,6 +4388,7 @@ function PD.WireTipZone(z, r)
                 end
             end
             GameTooltip:Show()
+            PD.UnifyTipFont(13)
         elseif self.__it and DG.ShowItemTip then
             local extra = self.__tipExtra
             if type(extra) == "function" then extra = extra() end
@@ -5641,7 +5778,7 @@ function PD.RecipeList(limit, q)
                 if #out >= cap then break end
             end
         end
-        if __ri % 32 == 0 and coroutine.running and coroutine.running() then coroutine.yield() end
+        if __ri % 8 == 0 and coroutine.running and coroutine.running() then coroutine.yield() end
     end
     return out
 end
@@ -6449,7 +6586,7 @@ function PD.ChangeRecipePolicy(profession, spell, forceBan, apply)
     local mode = PD.PolicyMode(profession, spell)
     local nextMode
     if forceBan or mode == nil then nextMode = "ban"
-    elseif mode == "ban" then nextMode = "level" end
+    elseif mode == "ban" then nextMode = nil end
     E.SetPolicy(PD.cur, profession, spell, nextMode, true)
     PD.policyDirty = PD.policyDirty or {}
     if apply then
@@ -6597,7 +6734,7 @@ function PD.RowsExclusions(rows)
     PD.exSub = PD.exSub or "recipe"
     local isMaterial = PD.exSub == "material"
     PushHead(rows, isMaterial and L["管理排除 · 材料"] or L["管理排除 · 图样"])
-    rows[#rows].right = isMaterial and L["左键切换允许或禁止；右键直接禁止"] or L["左键切换三态；右键直接禁止"]
+    rows[#rows].right = L["左键切换允许或禁止；右键直接禁止"]
     rows[#rows].h = 26
     rows[#rows].noHover = true
     local recipeList, materialList = PD.ExclusionEntries()
@@ -6633,7 +6770,7 @@ function PD.RowsExclusions(rows)
                 local tips = { { DG.ItemName(id), 1, 0.82, 0.4 },
                                { format(L["需要：%d"], e.need or n) } }
                 if e.unpriced then
-                    tips[#tips + 1] = { L["价格未知（Auctionator 无记录）"], 0.95, 0.75, 0.4 }
+                    tips[#tips + 1] = { PD.UnpriceWhy(e, id), 0.95, 0.75, 0.4 }
                 else
                     tips[#tips + 1] = { format(L["约 %s"], RA.MoneyStr(e.cost, "copper")), 1, 0.82, 0 }
                 end
@@ -6730,11 +6867,11 @@ function PD.RowsExclusions(rows)
             name = SpellName(spell),
             it = item,
             src = src,
-            modeText = mode == "ban" and L["禁止"] or (mode == "level" and L["仅冲级"] or L["允许"]),
-            color = (mode == "ban" and EX_BAD) or (mode == "level" and EX_WARN) or EX_OK,
+            modeText = mode == "ban" and L["禁止"] or L["允许"],
+            color = (mode == "ban" and EX_BAD) or EX_OK,
             tips = { { SpellName(spell), 1, 0.82, 0.4 },
                      { L["完全禁止制作：可用购买或其他配方替代产物。"] },
-                     { L["仅不用来冲级：只按后续材料需求制作，实际涨点仍计入。"], 0.7, 0.7, 0.7 } },
+                     { L["左键切换允许或禁止；右键直接禁止。"], 0.7, 0.7, 0.7 } },
             act = function(_, button)
                 PD.ChangeRecipePolicy(profession, spell, button == "RightButton", false)
             end,
@@ -6885,6 +7022,61 @@ function PD.LvRecalc()
     RA.Recalculate(PD.cur, RA.OptionsFor(PD.cur))
 end
 
+function PD.UnpriceHours(age)
+    local h = tonumber(age) or 0
+    if h <= 0 then return 0 end
+    return math.floor(h + 0.5)
+end
+
+function PD.UnpriceShort(entry)
+    local code = entry and (entry.unpricedReason or entry.reason)
+    local age = entry and (entry.unpricedAge or entry.age)
+    if code == "stale" then
+        return format(L["价格未知·超时%d小时"], PD.UnpriceHours(age))
+    elseif code == "norec" then
+        return L["价格未知·无扫描记录"]
+    elseif code == "novendor" then
+        return L["价格未知·无直售价"]
+    elseif code == "noapi" then
+        return L["价格未知·无价格源"]
+    end
+    return L["价格未知"]
+end
+
+function PD.UnpriceWhy(entry, itemID)
+    local code = entry and (entry.unpricedReason or entry.reason)
+    local age = entry and (entry.unpricedAge or entry.age)
+    local id = itemID or (entry and (entry.id or entry.unpricedMat))
+    local who = (id and DG.ItemName(id)) or "?"
+    local maxStale = (RA and RA.MaxStale) and RA.MaxStale() or 2
+    if code == "stale" then
+        return format(L["价格未知：%s 的拍卖行报价是 %d 小时前的数据，超过 %d 小时阈值，已按无价处理。"],
+            tostring(who), PD.UnpriceHours(age), maxStale)
+    elseif code == "norec" then
+        return format(L["价格未知：%s 在拍卖行没有任何扫描记录，也没有商人直售价。"], tostring(who))
+    elseif code == "novendor" then
+        return format(L["价格未知：%s 为商人直售，但目前没有可靠的直售报价。"], tostring(who))
+    elseif code == "noapi" then
+        return L["价格未知：没有可用的拍卖行价格数据源，无法取价。"]
+    end
+    return L["价格未知：该步骤有材料无法取价。"]
+end
+
+function PD.UnpriceWhyShort(entry)
+    local code = entry and (entry.unpricedReason or entry.reason)
+    local age = entry and (entry.unpricedAge or entry.age)
+    if code == "stale" then
+        return format(L["超时 %d 小时"], PD.UnpriceHours(age))
+    elseif code == "norec" then
+        return L["拍卖行无记录"]
+    elseif code == "novendor" then
+        return L["无商人直售价"]
+    elseif code == "noapi" then
+        return L["无价格数据源"]
+    end
+    return nil
+end
+
 function PD.RowsLeveling(rows)
     if PD.__lvRecalcPending then
         PD.__lvRecalcPending = nil
@@ -7022,7 +7214,7 @@ function PD.RowsLeveling(rows)
         if supply then PushText(rows, supply, 11, C_GREY) end
     end
 
-    local cntOf, costOf, cardOf = {}, {}, {}
+    local cntOf, costOf, cardOf, whyOf, whyLong = {}, {}, {}, {}, {}
     local rngW = PD.TextW(L["等级范围"], PD.LV_FS)
     local cntW = PD.TextW(L["制作次数"], PD.LV_FS)
     local costW = PD.TextW(L["成本"], PD.LV_FS)
@@ -7040,8 +7232,13 @@ function PD.RowsLeveling(rows)
                               or format(L["~%s 次制作"], tostring(st[4] or 0))
         local cost = ""
         if auto or fixedSum then
-            cost = (st.unpriced or st.cost == nil) and L["价格未知"]
-                   or ((st.est and "≈" or "") .. RA.MoneyStr(st.cost))
+            if st.unpriced or st.cost == nil then
+                cost = L["价格未知"]
+                whyOf[st] = PD.UnpriceWhyShort(st)
+                whyLong[st] = PD.UnpriceWhy(st)
+            else
+                cost = (st.est and "≈" or "") .. RA.MoneyStr(st.cost)
+            end
         end
         if clipped and st._clip then count = count .. format(L[" · 按目标 %d 折算"], target) end
         if st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
@@ -7088,8 +7285,7 @@ function PD.RowsLeveling(rows)
 
     if autoOn and not auto then
         PushHead(rows, L["自动路线不可用"])
-        PushText(rows, PD.AuctionatorStatusText(),
-                 12, C_GREY)
+        rows[#rows].suffix = PD.AuctionatorStatusText()
         PushGap(rows, 4)
     end
 
@@ -7192,6 +7388,8 @@ function PD.RowsLeveling(rows)
                 src = src,
                 cnt = cntOf[st] or format(L["~%s 次制作"], tostring(st[4])),
                 cost = costOf[st] or "",
+                costWhy = whyLong[st],
+                costWhyShort = whyOf[st],
                 role = PD.StepRole(st),
                 _mats = mats,
                 blocks = blocks, matCut = cut,
@@ -7292,7 +7490,7 @@ function PD.RowsFormulaShop(rows, data)
             text = PD.Fit(id and DG.ItemName(id) or L["未知图纸"], 13, (PD.splitLW or PD.COL_LW) - 130),
             sub = format(L["用于配方：%s"], table.concat(names, " / ")),
             tag = {text = tag}, right = format("×%d", count),
-            right2 = (entry.unpriced or type(entry.cost) ~= "number") and L["价格未知"] or money(entry.cost),
+            right2 = (entry.unpriced or type(entry.cost) ~= "number") and PD.UnpriceShort(entry) or money(entry.cost),
             lines = lines, tipExtra = function() return lines end}
         PushText(rows, priceLine, 11, C_GREY, 1)
         if stock then PushText(rows, stock, 11, C_GREY, 1) end
@@ -7377,11 +7575,11 @@ function PD.RowsAutoShop(rows, data)
             right2 = RA.MoneyStr(e.cost, "copper")
         else
             right = format("×%d", n or 0)
-            right2 = e.unpriced and L["价格未知"] or nil
+            right2 = e.unpriced and PD.UnpriceShort(e) or nil
         end
         local tip = { { format(L["需要：%d"], e.need or n or 0) },
                       e.unpriced
-                          and { e.vendor and L["NPC价格未知（暂无实测或可靠参考报价）"] or L["价格未知（Auctionator 无记录）"], 0.95, 0.75, 0.4 }
+                          and { PD.UnpriceWhy(e, id), 0.95, 0.75, 0.4 }
                           or { format(L["约 %s"], RA.MoneyStr(e.cost, "copper")), 1, 0.82, 0 },
                       { sub or "", 0.7, 0.7, 0.7 } }
         for _, line in ipairs(PD.AuctionSupplyLines(e)) do tip[#tip + 1] = line end
@@ -8436,6 +8634,7 @@ function PD.WarmNames()
         if DG.stepping then C_Timer.After(0, feed) return end
         local ok = pcall(function()
             local budget = PD_WARM_PER_FRAME
+            local t0 = debugprofilestop and debugprofilestop() or 0
             while i < n and budget > 0 do
                 i = i + 1
                 local r = all[i]
@@ -8447,6 +8646,7 @@ function PD.WarmNames()
                     end
                 end
                 budget = budget - 1
+                if debugprofilestop and (debugprofilestop() - t0) >= 6 then break end
             end
         end)
         if not ok then return end

@@ -746,7 +746,7 @@ end
 
 local function SweepNames()
     if not (C_Timer and C_Timer.After) then return end
-    for _, d in ipairs({ 0.5, 2, 5 }) do
+    for _, d in ipairs({ 0.5, 2, 5, 10, 20 }) do
         C_Timer.After(d, function()
             if CG.built and CG.needNames and ns.PageVisible(CG.page) then
                 CG.needNames = not ProbeNames()
@@ -768,7 +768,11 @@ function CG.OnItemData(itemID)
             hit = hit + 1
         end
     end
-    if hit > 0 then CG.needNames = false return end
+    if hit > 0 then
+        if not AllNamesKnown() then return end
+        CG.needNames = false
+        return
+    end
     if not CG.needNames or CG._itemRepaint then return end
     CG._itemRepaint = true
     if C_Timer and C_Timer.After then

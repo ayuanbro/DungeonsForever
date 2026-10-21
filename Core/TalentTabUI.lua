@@ -324,11 +324,30 @@ BuildRemainSeq = function()
     UI.remainSeq = nil
     UI.outOfPlan = nil
     UI.liveMode = false
+    UI.staticSeq = false
     local data = TD and UI.cls and TD[UI.cls]
     local alloc = UI.planAlloc
     if not (data and alloc) then return end
     local read = UI.liveBase
-    if not read then return end
+    if not read or UI.planViewMode == "plan" then
+        if UI.planSeq and #UI.planSeq > 0 then
+            local seq, seqk, k = {}, {}, 0
+            for _, pt in ipairs(UI.planSeq) do
+                local t, ni = pt[1], pt[2]
+                local tree = data.trees[t]
+                local nd = tree and tree.nodes[ni]
+                if nd and alloc[t] and alloc[t][ni] then
+                    local key = t * 100 + ni
+                    seqk[key] = (seqk[key] or 0) + 1
+                    k = k + 1
+                    seq[#seq + 1] = { t = t, ni = ni, nd = nd, rank = seqk[key], lv = 9 + k }
+                end
+            end
+            UI.remainSeq = seq
+            UI.staticSeq = #seq > 0 and true or false
+        end
+        return
+    end
     UI.liveMode = true
     local real = { {}, {}, {} }
     local st = { 0, 0, 0 }
@@ -371,6 +390,7 @@ BuildRemainSeq = function()
                         nd = nd,
                         rank = math.max(realRank, seqk[key]),
                         lv = math.max(curLv, baseSpent + k + 9),
+                        over = math.max(curLv, baseSpent + k + 9) > 60,
                     }
                 end
             end
@@ -418,6 +438,7 @@ BuildRemainSeq = function()
                             nd = it.nd,
                             rank = it.base + 1,
                             lv = math.max(curLv, baseSpent + k + 9),
+                        over = math.max(curLv, baseSpent + k + 9) > 60,
                         }
                         it.base = it.base + 1
                         st[t] = st[t] + 1
@@ -442,13 +463,15 @@ end
 
 local function BuildSeqMap()
     if not (UI.seqOnNow and UI.planAlloc) then return nil end
-    if UI.liveMode and UI.remainSeq then
+    if (UI.liveMode or UI.staticSeq) and UI.remainSeq then
         local maps = { {}, {}, {} }
         for _, it in ipairs(UI.remainSeq) do
-            local m = maps[it.t]
-            local list = m[it.ni]
-            if not list then list = {}; m[it.ni] = list end
-            list[#list + 1] = it.lv
+            if not it.over then
+                local m = maps[it.t]
+                local list = m[it.ni]
+                if not list then list = {}; m[it.ni] = list end
+                list[#list + 1] = it.lv
+            end
         end
         return maps
     end
@@ -593,18 +616,18 @@ OpenPlanPop = function()
     local y = 6
     for _, r in ipairs(rows) do
         local bt = CreateFrame("Button", nil, UI.planPop)
-        bt:SetSize(w - 8, 22)
+        bt:SetSize(w - 8, 24)
         bt:SetPoint("TOPLEFT", UI.planPop, "TOPLEFT", 4, -y)
         bt:SetHighlightTexture("Interface\\Buttons\\WHITE8x8", "ADD")
         local hl = bt:GetHighlightTexture()
         if hl then hl:SetAlpha(0.08) end
-        local lb = MakeFS(bt, 10, C_TEXT, "LEFT")
+        local lb = MakeFS(bt, 14, C_TEXT, "LEFT")
         lb:SetPoint("LEFT", bt, "LEFT", 3, 0)
-        lb:SetWidth(54)
+        lb:SetWidth(76)
         lb:SetJustifyH("LEFT")
         lb:SetText(r.label)
         local total = 0
-        local x = 60
+        local x = 120
         for t = 1, 3 do
             local tree = data.trees[t]
             local pts = 0
@@ -613,28 +636,28 @@ OpenPlanPop = function()
             if tree then
                 local ic = bt:CreateTexture(nil, "ARTWORK")
                 ic:SetSize(14, 14)
-                ic:SetPoint("TOPLEFT", bt, "TOPLEFT", x, -4)
+                ic:SetPoint("TOPLEFT", bt, "TOPLEFT", x, -5)
                 ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
                 ic:SetTexture("Interface\\Icons\\" .. tostring(tree.icon))
-                local nm = MakeFS(bt, 10, C_DIM, "LEFT")
-                nm:SetPoint("LEFT", bt, "LEFT", x + 16, 0)
-                nm:SetWidth(40)
-                nm:SetJustifyH("LEFT")
-                nm:SetText(tree.name)
-                local pv = MakeFS(bt, 11, C_GOLD, "LEFT")
-                pv:SetPoint("LEFT", bt, "LEFT", x + 56, 0)
+                local pv = MakeFS(bt, 14, C_GOLD, "LEFT")
+                pv:SetPoint("LEFT", bt, "LEFT", x + 16, 0)
                 pv:SetText(pts)
             end
-            x = x + 82
+            if t < 3 then
+                local sl = MakeFS(bt, 14, C_DIM, "LEFT")
+                sl:SetPoint("LEFT", bt, "LEFT", x + 30, 0)
+                sl:SetText("/")
+            end
+            x = x + 40
         end
-        local lv = MakeFS(bt, 10, C_DIM, "RIGHT")
+        local lv = MakeFS(bt, 14, C_DIM, "RIGHT")
         lv:SetPoint("RIGHT", bt, "RIGHT", -2, 0)
-        lv:SetText("Lv" .. (total + 9))
+        lv:SetText(format(L["需要等级 %d"], total + 9))
         local selIdx = r.sel
         if r.blIdx then
             local del = CreateFrame("Button", nil, bt)
             del:SetSize(18, 18)
-            del:SetPoint("RIGHT", bt, "RIGHT", -40, 0)
+            del:SetPoint("TOPLEFT", bt, "TOPLEFT", 98, -3)
             del:SetNormalFontObject(GameFontNormalSmall)
             del:SetText("X")
             del:GetFontString():SetTextColor(1, 0.4, 0.35, 1)
@@ -659,7 +682,7 @@ OpenPlanPop = function()
             end)
             local ren = CreateFrame("Button", nil, bt)
             ren:SetSize(18, 18)
-            ren:SetPoint("RIGHT", del, "LEFT", 0, 0)
+            ren:SetPoint("TOPLEFT", bt, "TOPLEFT", 80, -3)
             ren:SetNormalFontObject(GameFontNormalSmall)
             ren:SetText("改")
             ren:GetFontString():SetTextColor(0.6, 0.8, 1, 1)
@@ -707,7 +730,7 @@ OpenPlanPop = function()
             Rebuild()
             ns.PlaySound(1)
         end)
-        y = y + 24
+        y = y + 26
     end
     UI.planPop:SetSize(w, y + 4)
     UI.planPop:ClearAllPoints()
@@ -825,7 +848,10 @@ function UI.LiveApplyPlan()
         print("|cff46bf72[天赋]|r " .. L["拿不到天赋配置（先打开一次游戏内天赋界面）"])
         return
     end
+    local savedView = UI.planViewMode
+    UI.planViewMode = "live"
     BuildRemainSeq()
+    UI.planViewMode = savedView
     local remain = UI.liveMode and UI.remainSeq or nil
     if not remain or #remain <= 0 then
         print("|cff46bf72[天赋]|r " .. L["没有待学习的点（方案与当前天赋一致）"])
@@ -984,27 +1010,28 @@ local function TakePlanRow(parent)
     bt:SetHighlightTexture("Interface\\Buttons\\WHITE8x8", "ADD")
     local ht = bt:GetHighlightTexture()
     if ht then ht:SetVertexColor(1, 1, 1, 0.07) end
-    bt.num = MakeFS(bt, 12, C_DIM, "LEFT")
+    bt.num = MakeFS(bt, 14, C_DIM, "LEFT")
     bt.num:SetPoint("LEFT", bt, "LEFT", 4, 0)
     bt.num:SetWidth(24)
     bt.ic = bt:CreateTexture(nil, "ARTWORK")
     bt.ic:SetSize(16, 16)
     bt.ic:SetPoint("LEFT", bt, "LEFT", 30, 0)
     bt.ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    bt.nm = MakeFS(bt, 11, C_TEXT, "LEFT")
+    bt.nm = MakeFS(bt, 14, C_TEXT, "LEFT")
     bt.nm:SetPoint("LEFT", bt, "LEFT", 52, 0)
     bt.nm:SetJustifyH("LEFT")
-    bt.vv = MakeFS(bt, 11, C_WHITE, "RIGHT")
+    bt.vv = MakeFS(bt, 14, C_WHITE, "RIGHT")
     bt.vv:SetPoint("RIGHT", bt, "RIGHT", -4, 0)
     UI.planRowPool[#UI.planRowPool + 1] = bt
     return bt
 end
 
 local function BuildPlanRows(parent, w)
+    for _, b in ipairs(UI.planRowPool or {}) do b.__inUse = false; b:Hide() end
     for _, b in ipairs(UI.planRows or {}) do b.__inUse = false; b:Hide() end
     UI.planRows = {}
     w = w - 2 * PAD
-    if UI.liveMode and UI.remainSeq then
+    if (UI.liveMode or UI.staticSeq) and UI.remainSeq then
         local y = 0
         for _, op in ipairs(UI.outOfPlan or {}) do
             local bt = TakePlanRow(parent)
@@ -1013,9 +1040,13 @@ local function BuildPlanRows(parent, w)
             bt:SetSize(w - 4, ROW_H - 2)
             bt:ClearAllPoints()
             bt:SetPoint("TOPLEFT", parent, "TOPLEFT", 2, -(y))
-            bt.num:SetText("-")
+            bt.num:SetText("◇")
             bt.ic:SetTexture("Interface\\Icons\\" .. op.nd.icon)
             bt.ic:SetDesaturated(true)
+            bt.bg = bt.bg or bt:CreateTexture(nil, "BACKGROUND")
+            bt.bg:SetAllPoints()
+            bt.bg:SetColorTexture(1, 1, 1, 0.03)
+            bt.bg:Show()
             bt.nm:SetWidth(w - 52 - 40)
             bt.nm:SetText(op.nd.n)
             bt.nm:SetTextColor(0.55, 0.55, 0.55, 1)
@@ -1036,14 +1067,20 @@ local function BuildPlanRows(parent, w)
             bt:SetSize(w - 4, ROW_H - 2)
             bt:ClearAllPoints()
             bt:SetPoint("TOPLEFT", parent, "TOPLEFT", 2, -(y))
-            bt.num:SetText(tostring(it.lv))
+            bt.num:SetText(it.over and "-" or tostring(it.lv))
+            if bt.bg then bt.bg:Hide() end
             bt.ic:SetDesaturated(false)
             bt.ic:SetTexture("Interface\\Icons\\" .. nd.icon)
             bt.nm:SetWidth(w - 52 - 40)
             bt.nm:SetText(nd.n)
             bt.nm:SetTextColor(unpack(C_TEXT))
-            bt.vv:SetText(it.rank .. "/" .. nd.max)
-            bt.vv:SetTextColor(unpack(C_WHITE))
+            if it.over then
+                bt.vv:SetText(L["点不够"])
+                bt.vv:SetTextColor(1, 0.45, 0.4, 1)
+            else
+                bt.vv:SetText(it.rank .. "/" .. nd.max)
+                bt.vv:SetTextColor(unpack(C_WHITE))
+            end
             bt:SetScript("OnEnter", function()
                 bt.vv:SetTextColor(Unpack(C_GOLD))
                 local node = UI.nodeOf[it.t] and UI.nodeOf[it.t][it.ni]
@@ -1093,7 +1130,7 @@ local function BuildPlanRows(parent, w)
                     bt:SetHighlightTexture("Interface\\Buttons\\WHITE8x8", "ADD")
                     local ht = bt:GetHighlightTexture()
                     if ht then ht:SetVertexColor(1, 1, 1, 0.07) end
-                    local num = MakeFS(bt, 12, C_DIM, "LEFT")
+                    local num = MakeFS(bt, 14, C_DIM, "LEFT")
                     num:SetPoint("LEFT", bt, "LEFT", 4, 0)
                     num:SetWidth(24)
                     num:SetText(tostring(step + 9))
@@ -1102,12 +1139,12 @@ local function BuildPlanRows(parent, w)
                     ic:SetPoint("LEFT", bt, "LEFT", 30, 0)
                     ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
                     ic:SetTexture("Interface\\Icons\\" .. nd.icon)
-                    local nm = MakeFS(bt, 11, C_TEXT, "LEFT")
+                    local nm = MakeFS(bt, 14, C_TEXT, "LEFT")
                     nm:SetPoint("LEFT", bt, "LEFT", 52, 0)
                     nm:SetWidth(w - 52 - 40)
                     nm:SetJustifyH("LEFT")
                     nm:SetText(nd.n)
-                    local vv = MakeFS(bt, 11, C_WHITE, "RIGHT")
+                    local vv = MakeFS(bt, 14, C_WHITE, "RIGHT")
                     vv:SetPoint("RIGHT", bt, "RIGHT", -4, 0)
                     vv:SetText(k .. "/" .. nd.max)
                     bt:SetScript("OnEnter", function()
@@ -1171,6 +1208,25 @@ RelayoutPlan = function()
             row:Hide()
         end
     end
+    local track, thumb = UI.planTrack, UI.planThumb
+    if track and thumb then
+        track:ClearAllPoints()
+        track:SetPoint("TOPLEFT", UI.plates[4], "TOPRIGHT", -1, 0)
+        track:SetPoint("BOTTOMLEFT", UI.plates[4], "BOTTOMRIGHT", -1, 0)
+        local maxOff = PlanMaxOff()
+        if maxOff <= 0 then
+            track:Hide()
+        else
+            track:Show()
+            local trackH = track:GetHeight() - 2
+            local totalH = #(UI.planRows or {}) * ROW_H
+            local frac = math.min(1, math.max(0, off / maxOff))
+            local th = math.max(24, trackH * listH / math.max(1, totalH))
+            thumb:SetHeight(th)
+            thumb:ClearAllPoints()
+            thumb:SetPoint("TOP", track, "TOP", 0, -1 - frac * (trackH - th))
+        end
+    end
 end
 
 local function Ensure()
@@ -1203,14 +1259,14 @@ local function Ensure()
         ic:SetPoint("TOPLEFT", pl, "TOPLEFT", PAD, -6)
         ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
         UI.treeIcons[t] = ic
-        local nm = MakeFS(pl, 12, C_TEXT, "LEFT")
+        local nm = MakeFS(pl, 16, C_TEXT, "LEFT")
         nm:SetPoint("LEFT", ic, "RIGHT", 5, 0)
         UI.treeHeads[t] = nm
-        local sp = MakeFS(pl, 11, C_GOLD)
+        local sp = MakeFS(pl, 14, C_GOLD)
         sp:SetPoint("TOPRIGHT", pl, "TOPRIGHT", -PAD - 22, -8)
         UI.spentFs[t] = sp
-        local rb = NewButton(pl, nil, 16, 16, 12)
-        rb:SetPoint("TOPRIGHT", pl, "TOPRIGHT", -PAD, -6)
+        local rb = NewButton(pl, nil, 19, 19, 12)
+        rb:SetPoint("TOPRIGHT", pl, "TOPRIGHT", -PAD, -4)
         rb:SetNormalTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentReset")
         rb:SetHighlightTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentReset", "ADD")
         rb.__tree = t
@@ -1223,11 +1279,16 @@ local function Ensure()
     end
 
     local p4 = UI.plates[4]
-    local ph = MakeFS(p4, 13, C_TEXT, "LEFT")
+    local ph = MakeFS(p4, 16, C_TEXT, "LEFT")
     ph:SetPoint("TOPLEFT", p4, "TOPLEFT", PAD, -7)
     ph:SetText(L["加点计划"])
-    UI.totalFs = MakeFS(p4, 11, C_DIM, "RIGHT")
+    UI.totalFs = MakeFS(p4, 14, C_DIM, "RIGHT")
     UI.totalFs:SetPoint("TOPRIGHT", p4, "TOPRIGHT", -PAD, -9)
+    local dv = p4:CreateTexture(nil, "BORDER")
+    dv:SetHeight(1)
+    dv:SetPoint("TOPLEFT", p4, "TOPLEFT", PAD, -(HEADER_H - 4))
+    dv:SetPoint("TOPRIGHT", p4, "TOPRIGHT", -PAD, -(HEADER_H - 4))
+    dv:SetColorTexture(1, 1, 1, 0.10)
     UI.plist = CreateFrame("Frame", nil, p4)
     UI.plist:EnableMouseWheel(true)
     UI.plist:SetScript("OnMouseWheel", function(_, delta)
@@ -1242,6 +1303,75 @@ local function Ensure()
         RelayoutPlan()
     end)
 
+    local track = CreateFrame("Frame", nil, p4, "BackdropTemplate")
+    if ns.hui and ns.hui.BuildCapsule then
+        ns.hui.BuildCapsule(track, 3, ns.hui.layer.L2)
+    else
+        track:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = 1,
+        })
+        track:SetBackdropColor(0, 0, 0, 0.25)
+        track:SetBackdropBorderColor(1, 1, 1, 0.08)
+    end
+    track:SetWidth(9)
+    track:SetPoint("TOPLEFT", p4, "TOPRIGHT", -1, 0)
+    track:SetPoint("BOTTOMLEFT", p4, "BOTTOMRIGHT", -1, 0)
+    track:SetFrameLevel(sl + 15)
+    track:Hide()
+    local thumb = CreateFrame("Button", nil, track)
+    thumb:SetWidth(6)
+    thumb:EnableMouse(true)
+    local tp = nil
+    local tx = nil
+    if ns.hui and ns.hui.BuildCapsule then
+        tp = ns.hui.BuildCapsule(thumb, 2, ns.hui.layer.L4)
+    else
+        tx = thumb:CreateTexture(nil, "OVERLAY")
+        tx:SetAllPoints()
+        tx:SetColorTexture(1, 1, 1, 0.30)
+    end
+    thumb:SetScript("OnEnter", function()
+        if tp then
+            local L5 = ns.hui.layer.L5
+            for _, t in ipairs(tp) do t:SetVertexColor(L5[1], L5[2], L5[3]) end
+        elseif tx then
+            tx:SetColorTexture(1, 1, 1, 0.45)
+        end
+    end)
+    thumb:SetScript("OnLeave", function()
+        if tp then
+            local L4 = ns.hui.layer.L4
+            for _, t in ipairs(tp) do t:SetVertexColor(L4[1], L4[2], L4[3]) end
+        elseif tx then
+            tx:SetColorTexture(1, 1, 1, 0.30)
+        end
+    end)
+    thumb:SetPoint("TOP", track, "TOP", 0, -1)
+    thumb:SetScript("OnMouseDown", function(self, btn)
+        if btn ~= "LeftButton" then return end
+        local scale = UIParent and UIParent:GetEffectiveScale() or 1
+        local cy0 = select(2, GetCursorPosition()) / scale
+        local off0 = UI.planOff or 0
+        self:SetScript("OnUpdate", function()
+            local cy = select(2, GetCursorPosition()) / scale
+            local trackH = track:GetHeight() - 2
+            local span = trackH - thumb:GetHeight()
+            if span <= 0 then return end
+            local maxOff = PlanMaxOff()
+            UI.planOff = math.min(maxOff, math.max(0, off0 + (cy0 - cy) / span * maxOff))
+            RelayoutPlan()
+        end)
+    end)
+    thumb:SetScript("OnMouseUp", function(self)
+        self:SetScript("OnUpdate", nil)
+    end)
+    thumb:SetScript("OnHide", function(self)
+        self:SetScript("OnUpdate", nil)
+    end)
+    UI.planTrack, UI.planThumb = track, thumb
+
     UI.planPop = plate()
     UI.planPop:SetFrameLevel(sl + 15)
     UI.planPop:Hide()
@@ -1249,7 +1379,7 @@ local function Ensure()
     UI.presetBtns = nil
     UI.actBtns = {}
     local function actBtn(label, onClick, size)
-        local bt = NewButton(UI.navPlate, label, 60, 22, size or 14)
+        local bt = NewButton(UI.navPlate, label, 64, 24, size or 14)
         bt:SetScript("OnClick", onClick)
         bt:Hide()
         UI.actBtns[#UI.actBtns + 1] = bt
@@ -1260,9 +1390,24 @@ local function Ensure()
         Refresh()
         ns.PlaySound(1)
     end)
+    UI.viewBtn = NewButton(p4, L["实时"], 64, 24, 14)
+    UI.viewBtn:SetPoint("LEFT", ph, "RIGHT", 8, 0)
+    UI.viewBtn:SetScript("OnClick", function()
+        UI.planViewMode = UI.planViewMode == "plan" and "live" or "plan"
+        UI.planOff = 0
+        UI.viewBtn:SetText(UI.planViewMode == "plan" and L["计划"] or L["实时"])
+        local fs = UI.viewBtn:GetFontString()
+        if fs then UI.viewBtn:SetWidth(math.max(34, fs:GetStringWidth() + 14)) end
+        SetOutline(UI.viewBtn, UI.planViewMode == "plan", 0.35, 0.88, 0.45)
+        Refresh()
+    end)
     UI.seqBtn = actBtn("", function()
         local t = TalDB()
         t.seqOn = not SeqOn()
+        UI.seqBtn:SetText(SeqOn() and L["加点顺序显示:开"] or L["加点顺序显示:关"])
+        local fs = UI.seqBtn:GetFontString()
+        if fs then UI.seqBtn:SetWidth(math.max(34, fs:GetStringWidth() + 14)) end
+        SetOutline(UI.seqBtn, SeqOn(), 0.35, 0.88, 0.45)
         Refresh()
     end)
     local liveBtn = actBtn(L["一键加点"], function()
@@ -1472,7 +1617,7 @@ Rebuild = function()
             bt:ClearAllPoints()
             bt:SetPoint("TOPRIGHT", UI.navPlate, "TOPRIGHT", -x, -(NAV_H - 20) / 2)
             bt:Show()
-            x = x + w + 5
+            x = x + w + 8
         end
     end
     if liveBtn then
@@ -1489,10 +1634,16 @@ Rebuild = function()
         end
     end
     if UI.seqBtn then
-        UI.seqBtn:SetText(SeqOn() and L["序号:开"] or L["序号:关"])
+        UI.seqBtn:SetText(SeqOn() and L["加点顺序显示:开"] or L["加点顺序显示:关"])
         local fs = UI.seqBtn:GetFontString()
         if fs then UI.seqBtn:SetWidth(math.max(34, fs:GetStringWidth() + 14)) end
         SetOutline(UI.seqBtn, SeqOn(), 0.35, 0.88, 0.45)
+    end
+    if UI.viewBtn then
+        UI.viewBtn:SetText(UI.planViewMode == "plan" and L["计划"] or L["实时"])
+        local fs = UI.viewBtn:GetFontString()
+        if fs then UI.viewBtn:SetWidth(math.max(34, fs:GetStringWidth() + 14)) end
+        SetOutline(UI.viewBtn, UI.planViewMode == "plan", 0.35, 0.88, 0.45)
     end
     RenderNodes()
     UpdatePlanRows()
@@ -1508,12 +1659,16 @@ function UI.Render()
     TalDB()
     LayoutPlates()
     for i = 1, 4 do UI.plates[i]:Show() end
+    local myKey = (UnitClass and select(2, UnitClass("player"))) or nil
     if not UI.mock or UI.mockCls ~= cls then
         UI.mockCls = cls
         ApplyPreset(1)
-        UI.liveBase = ReadLiveTalents()
+        UI.liveBase = (cls == myKey) and ReadLiveTalents() or nil
         UI.hl = nil
         UI.planOff = 0
+    end
+    if UI.viewBtn then
+        UI.viewBtn:SetShown(cls == myKey)
     end
     Rebuild()
 end

@@ -217,6 +217,7 @@ local BM_BUNDLE = {
 }
 
 local EG = {}
+EG.__qAsked = {}
 ns.ExploreModule = EG
 EG.BM_TIERS = BM_TIERS
 EG.BM_BUNDLE = BM_BUNDLE
@@ -323,6 +324,10 @@ local function ToyQuestTitle(qid)
     if qid and type(C_QuestLog) == "table" and C_QuestLog.GetTitleForQuestID then
         local ok, t = pcall(C_QuestLog.GetTitleForQuestID, qid)
         if ok and type(t) == "string" and t ~= "" then return t end
+        if not EG.__qAsked[qid] then
+            EG.__qAsked[qid] = true
+            if C_QuestLog.RequestLoadQuestByID then pcall(C_QuestLog.RequestLoadQuestByID, qid) end
+        end
     end
     return nil
 end

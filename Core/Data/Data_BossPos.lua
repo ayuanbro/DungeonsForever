@@ -81,17 +81,17 @@ ns.BossPos = {
     ["hall_of_thanes"] = {
         ["Durgen Dirgehammer"] = { { 50.5, 23.1 } },
         ["Faldrim Anvilmar"] = { { 50.4, 63.6 } },
-        ["Magmatus"] = { { 62, 50.1 } },
+        ["Magmatus"] = { { 75.8, 49.3 } },
         ["Plunder"] = { { 50.5, 50.6 } },
     },
     ["ruins_of_lordaeron"] = {
-        ["Bjork"] = { { 34.7, 42.5 } },
+        ["Bjork"] = { { 36.5, 38.8 } },
         ["Lordaeron Captain"] = { { 38.5, 25 } },
-        ["Rath'mael"] = { { 41.3, 62.7 } },
-        ["The Abandoned"] = { { 36.5, 53.3 } },
+        ["Rath'mael"] = { { 42, 58.6 } },
+        ["The Abandoned"] = { { 36.7, 53.2 } },
         ["The Baron"] = { { 58.8, 69.8 } },
-        ["Viktor the Vile"] = { { 33.2, 64.8 } },
-        ["Witherfang"] = { { 66.8, 39.2 } },
+        ["Viktor the Vile"] = { { 33.3, 63.1 } },
+        ["Witherfang"] = { { 66.8, 34.6 } },
     },
     ["city_of_dalaran"] = {
         ["Arcane Anomaly"] = { { 60.9, 74.9 } },

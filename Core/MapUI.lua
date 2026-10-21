@@ -47,12 +47,18 @@ M.PIN_QUEST_READY_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinRead
 M.PIN_QUEST_LOCKED_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinLocked"
 M.PIN_QUEST_PRE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinPre"
 M.PIN_DOOR_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\MapDoor"
+M.PIN_NOTE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\NotePin"
+M.PIN_STAIR_UP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\StairsUp"
+M.PIN_STAIR_DN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\StairsDown"
 M.PIN_SIZE = 48
 M.PIN_MIN = 27
+M.NOTE_SIZE = 21
+M.STAIR_SIZE = 26
 M.ROUTE_STEP, M.ROUTE_DOT, M.ROUTE_DOT_EDGE = 1.6, 4.2, 8.0
 M.ROUTE_THIN_DOT, M.ROUTE_THIN_EDGE = 2.6, 5.0
+M.ROUTE_DASH_ON, M.ROUTE_DASH_OFF = 13, 9
 M.ROUTE_DOT_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_dot"
-M.MAX_ROUTE_DOTS = 1600
+M.MAX_ROUTE_DOTS = 2400
 M.ROUTE_PALETTES = {
     { id = "rainbow", stops = {
         { 0.00, 0.961, 0.278, 0.227 },
@@ -481,12 +487,18 @@ function M.QuestPinsOn()
     return s.mapQuestPins ~= false
 end
 
+function M.SideOK(sd)
+    if not sd then return true end
+    local ps = DG.PlayerSide and DG.PlayerSide() or nil
+    return (not ps) or ps == sd
+end
+
 function M.ExtraPinsFor(id, floor)
     local row = id and ns.MapPins and ns.MapPins[id]
     if type(row) ~= "table" then return nil end
     local qp = M.QuestPinsOn()
     local out
-    for _, kind in ipairs({ "entrance", "quest", "object", "rare" }) do
+    for _, kind in ipairs({ "entrance", "prev", "next", "quest", "object", "rare", "icon" }) do
         if kind == "quest" and not qp then
         else
             local arr = row[kind]
@@ -494,15 +506,50 @@ function M.ExtraPinsFor(id, floor)
                 for i = 1, #arr do
                     local p = arr[i]
                     if type(p) == "table" and p[1] and p[2] then
-                        local pf = p[(kind == "rare") and 5 or 4] or 1
-                        if floor == nil or pf == floor then
-                            out = out or {}
-                            out[#out + 1] = {
-                                kind = kind, left = p[1], top = p[2], id = p[3],
-                                name = (kind == "rare") and p[4] or nil,
-                            }
+                        if kind == "icon" or kind == "prev" or kind == "next" then
+                            local pf = p[3] or 1
+                            local sd = (p[5] == "A" or p[5] == "H") and p[5] or nil
+                            if (floor == nil or pf == floor) and M.SideOK(sd) then
+                                out = out or {}
+                                out[#out + 1] = {
+                                    kind = kind, left = p[1], top = p[2],
+                                    text = (type(p[4]) == "string") and p[4] or "",
+                                    side = sd,
+                                }
+                            end
+                        else
+                            local pf = p[(kind == "rare") and 5 or 4] or 1
+                            if floor == nil or pf == floor then
+                                out = out or {}
+                                out[#out + 1] = {
+                                    kind = kind, left = p[1], top = p[2], id = p[3],
+                                    name = (kind == "rare") and p[4] or nil,
+                                }
+                            end
                         end
                     end
+                end
+            end
+        end
+    end
+    return out
+end
+
+function M.NotePinsFor(id, floor)
+    if not M.RouteOn(id) then return nil end
+    local row = id and ns.DungeonRouteNote and ns.DungeonRouteNote[id]
+    if type(row) ~= "table" then return nil end
+    local out
+    for fl, arr in pairs(row) do
+        if type(arr) == "table" and (floor == nil or fl == floor) then
+            for i = 1, #arr do
+                local p = arr[i]
+                if type(p) == "table" and p[1] and p[2] then
+                    out = out or {}
+                    out[#out + 1] = {
+                        kind = "note", left = p[1], top = p[2],
+                        text = (type(p[3]) == "string") and p[3] or "",
+                    }
                 end
             end
         end
@@ -523,22 +570,39 @@ end
 function M.HasKindPins(id, want)
     if not id then return false end
     if not (M.LayersFor(id) or M.CustomFor(id)) then return false end
-    local n = 0
+    if want == "note" then
+        local nts = M.NotePinsFor(id, nil)
+        return (nts and #nts > 0) and true or false
+    end
     if want == "quest" then
+        local n = 0
         local ex = M.ExtraPinsFor(id, nil)
         if ex then
             for i = 1, #ex do
-                if ex[i].kind == "quest" then n = n + 1 end
+                local k = ex[i].kind
+                if k == "quest" or k == "icon" then n = n + 1 end
             end
         end
-    else
-        local list = M.PinsFor(id, nil)
-        if list then n = n + #list end
+        return (n > 0) and true or false
+    end
+    if want == "stairs" then
+        local n = 0
         local ex = M.ExtraPinsFor(id, nil)
         if ex then
             for i = 1, #ex do
-                if ex[i].kind == "rare" then n = n + 1 end
+                local k = ex[i].kind
+                if k == "prev" or k == "next" then n = n + 1 end
             end
+        end
+        return (n > 0) and true or false
+    end
+    local n = 0
+    local list = M.PinsFor(id, nil)
+    if list then n = n + #list end
+    local ex = M.ExtraPinsFor(id, nil)
+    if ex then
+        for i = 1, #ex do
+            if ex[i].kind == "rare" then n = n + 1 end
         end
     end
     return (n > 0) and true or false
@@ -1122,6 +1186,7 @@ function M.Build(detail, hero)
     local pinStore = DungeonsForeverDB and DungeonsForeverDB.dungeon
     M.hideBossPins = (pinStore and pinStore.mapBossHidden) and true or false
     M.hideQuestPins = (pinStore and pinStore.mapQuestHidden) and true or false
+    M.hideNotePins = (pinStore and pinStore.mapNoteHidden) and true or false
     M.frame = frame
     local queued = (type(DG) == "table" and type(DG.PushStep) == "function")
     if queued then
@@ -1265,7 +1330,7 @@ end
 
 M.routeHidden = {}
 
-M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true }
+M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns = true, hall_of_thanes = true, ruins_of_lordaeron = true }
 
 function M.RouteOn(id)
     return id ~= nil and M.ROUTE_ON[id] == true
@@ -1328,6 +1393,19 @@ end
 
 local routePool = {}
 
+local function smoothPts(src)
+    local n = #src
+    if n < 3 then return src end
+    local out = { { src[1][1], src[1][2] } }
+    for i = 1, n - 1 do
+        local p, q = src[i], src[i + 1]
+        out[#out + 1] = { 0.72 * p[1] + 0.28 * q[1], 0.72 * p[2] + 0.28 * q[2] }
+        out[#out + 1] = { 0.28 * p[1] + 0.72 * q[1], 0.28 * p[2] + 0.72 * q[2] }
+    end
+    out[#out + 1] = { src[n][1], src[n][2] }
+    return out
+end
+
 local function routeTex(host, i)
     local e = routePool[i]
     if not e then
@@ -1371,7 +1449,7 @@ function M.SyncRoute(id, floor, cw, ch)
     if type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0 and M.RouteOn(id) then
         local segs = floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
         if type(segs) == "table" and #segs > 0 then
-            local arr, total = {}, 0
+            local arr, total, dsh = {}, 0, {}
             for si = 1, #segs do
                 if M.routeHidden[M.RouteSegKey(id, floor, si)] then
                     arr[si] = nil
@@ -1381,33 +1459,53 @@ function M.SyncRoute(id, floor, cw, ch)
                     for i = 1, #src do
                         dst[i] = { (src[i][1] / 100) * cw, (src[i][2] / 100) * ch }
                     end
+                    dst = smoothPts(dst)
                     for i = 2, #dst do
                         total = total + math.sqrt((dst[i][1] - dst[i - 1][1]) ^ 2
                                                 + (dst[i][2] - dst[i - 1][2]) ^ 2)
                     end
                     arr[si] = dst
+                    if segs[si].dash then dsh[si] = true end
                 end
             end
             local step = M.ROUTE_STEP
+            local cap = M.MAX_ROUTE_DOTS * 0.95
+            if total > 0 and total / step > cap then
+                step = total / cap
+            end
             local acc = 0
+            local full = false
             for si = 1, #segs do
+                if full then break end
                 local pts = arr[si]
                 if pts then
+                    local dash = dsh[si]
+                    local period = M.ROUTE_DASH_ON + M.ROUTE_DASH_OFF
+                    local sd = 0
                     for i = 2, #pts do
+                        if full then break end
                         local a, b = pts[i - 1], pts[i]
                         local dx, dy = b[1] - a[1], b[2] - a[2]
                         local d = math.sqrt(dx * dx + dy * dy)
                         if d > 0.01 then
                             local k = math.max(1, math.ceil(d / step))
+                            local du = d / k
                             for j = 1, k do
+                                if n >= M.MAX_ROUTE_DOTS then
+                                    full = true
+                                    break
+                                end
                                 local u = (j - 0.5) / k
-                                n = n + 1
-                                if n > M.MAX_ROUTE_DOTS then break end
-                                local t = (total > 0) and ((acc + d * u) / total) or 0
-                                local cr, cg, cb = M.RouteColor(t)
-                                routeDot(routeTex(host, n), host,
-                                         a[1] + dx * u, a[2] + dy * u, cr, cg, cb)
+                                local ds = sd + du * (j - 0.5)
+                                if (not dash) or (ds % period < M.ROUTE_DASH_ON) then
+                                    n = n + 1
+                                    local t = (total > 0) and ((acc + d * u) / total) or 0
+                                    local cr, cg, cb = M.RouteColor(t)
+                                    routeDot(routeTex(host, n), host,
+                                             a[1] + dx * u, a[2] + dy * u, cr, cg, cb)
+                                end
                             end
+                            sd = sd + d
                         end
                         acc = acc + d
                     end
@@ -1514,14 +1612,22 @@ function M.SyncPins()
                 list[#list + 1] = ex[i]
             end
         end
+        local nts = M.NotePinsFor(M.curId, floor)
+        if nts then
+            for i = 1, #nts do
+                list = list or {}
+                list[#list + 1] = nts[i]
+            end
+        end
     end
-    if list and #list > 0 and (M.hideBossPins or M.hideQuestPins) then
+    if list and #list > 0 and (M.hideBossPins or M.hideQuestPins or M.hideNotePins) then
         local keep = {}
         for i = 1, #list do
             local p = list[i]
             local k = p.kind or "boss"
             local hide = (M.hideBossPins and (k == "boss" or k == "rare"))
-                      or (M.hideQuestPins and k == "quest")
+                      or (M.hideQuestPins and (k == "quest" or k == "icon"))
+                      or (M.hideNotePins and k == "note")
             if not hide then keep[#keep + 1] = p end
         end
         list = keep
@@ -1556,6 +1662,11 @@ function M.SyncPins()
             local skip = nil
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
+            if kind == "note" then
+                bt:SetFrameLevel(frame.pins:GetFrameLevel() + 2)
+            else
+                bt:SetFrameLevel(frame.pins:GetFrameLevel())
+            end
             bt.__qState, bt.__qPre, bt.__qPreOf = nil, nil, nil
             bt:ClearAllPoints()
             bt:SetPoint("CENTER", frame.pins, "TOPLEFT",
@@ -1567,12 +1678,21 @@ function M.SyncPins()
             elseif kind == "quest" then
                 nm = ""
                 cr, cg, cb = Unpack(C_GOLD)
+            elseif kind == "icon" then
+                nm = ""
+                cr, cg, cb = Unpack(C_GOLD)
+            elseif kind == "prev" or kind == "next" then
+                nm = ""
+                cr, cg, cb = Unpack(C_GOLD)
             elseif kind == "object" then
                 nm = DG.ItemName(p.id)
                 cr, cg, cb = Unpack(C_TEXT)
             elseif kind == "entrance" then
                 nm = L["副本入口"]
                 cr, cg, cb = Unpack(C_GOLD)
+            elseif kind == "note" then
+                nm = ""
+                cr, cg, cb = 1, 1, 1
             else
                 nm = p.name or ""
                 cr, cg, cb = 0.72, 0.76, 0.85
@@ -1603,6 +1723,16 @@ function M.SyncPins()
                 bt.dot:SetTexture(M.PIN_DOOR_TEX)
                 bt.dot:SetVertexColor(1, 1, 1)
                 bt.__av:Hide()
+            elseif kind == "icon" then
+                bt.dot:SetShown(true)
+                bt.dot:SetTexture(M.PIN_QUEST_READY_TEX)
+                bt.dot:SetVertexColor(1, 1, 1)
+                bt.__av:Hide()
+            elseif kind == "prev" or kind == "next" then
+                bt.dot:SetShown(true)
+                bt.dot:SetTexture((kind == "prev") and M.PIN_STAIR_UP_TEX or M.PIN_STAIR_DN_TEX)
+                bt.dot:SetVertexColor(1, 1, 1)
+                bt.__av:Hide()
             elseif kind == "object" then
                 bt.dot:SetShown(true)
                 bt.dot:SetTexture(DG.ItemIcon(p.id))
@@ -1612,6 +1742,11 @@ function M.SyncPins()
                 bt.dot:SetShown(true)
                 bt.dot:SetTexture(M.PIN_BOSS_TEX)
                 bt.dot:SetVertexColor(cr, cg, cb)
+                bt.__av:Hide()
+            elseif kind == "note" then
+                bt.dot:SetShown(true)
+                bt.dot:SetTexture(M.PIN_NOTE_TEX)
+                bt.dot:SetVertexColor(1, 1, 1)
                 bt.__av:Hide()
             else
                 bt.dot:Hide()
@@ -1628,7 +1763,20 @@ function M.SyncPins()
             bt.nm:SetTextColor(cr, cg, cb)
             bt.dot:ClearAllPoints()
             bt.dot:SetPoint("CENTER", bt, "CENTER", 0, 0)
-            bt.dot:SetSize(sel and M.PIN_SIZE or M.PIN_MIN, sel and M.PIN_SIZE or M.PIN_MIN)
+            local dsz
+            if kind == "note" then
+                dsz = M.NOTE_SIZE
+            elseif kind == "prev" or kind == "next" then
+                dsz = M.STAIR_SIZE
+            else
+                dsz = sel and M.PIN_SIZE or M.PIN_MIN
+            end
+            bt.dot:SetSize(dsz, dsz)
+            if kind == "note" then
+                bt:SetSize(M.NOTE_SIZE + 9, M.NOTE_SIZE + 9)
+            else
+                bt:SetSize(M.PIN_SIZE, M.PIN_SIZE)
+            end
             bt:SetScript("OnClick", M.PinOnClick)
             bt:SetScript("OnEnter", M.PinOnEnter)
             bt:SetScript("OnLeave", M.PinOnLeave)
@@ -1697,8 +1845,28 @@ function M.PinOnEnter(self)
         GameTooltip:AddLine(L["点击查看任务详情"], 0.7, 0.7, 0.7, true)
     elseif self.__kind == "entrance" then
         GameTooltip:AddLine(L["副本入口"], 1, 0.82, 0, true)
+    elseif self.__kind == "icon" then
+        GameTooltip:AddLine(L["任务"], 1, 0.82, 0, true)
+        if p.text and p.text ~= "" then
+            GameTooltip:AddLine(p.text, 1, 1, 1, true)
+        end
+    elseif self.__kind == "prev" then
+        GameTooltip:AddLine(L["上一层入口"], 1, 0.82, 0, true)
+        if p.text and p.text ~= "" then
+            GameTooltip:AddLine(p.text, 1, 1, 1, true)
+        end
+    elseif self.__kind == "next" then
+        GameTooltip:AddLine(L["下一层入口"], 1, 0.82, 0, true)
+        if p.text and p.text ~= "" then
+            GameTooltip:AddLine(p.text, 1, 1, 1, true)
+        end
     elseif self.__kind == "rare" then
         GameTooltip:AddLine(L["稀有"] .. "：" .. (p.name or ""), 0.72, 0.76, 0.85, true)
+    elseif self.__kind == "note" then
+        GameTooltip:AddLine(L["注释"], 1, 0.82, 0, true)
+        if p.text and p.text ~= "" then
+            GameTooltip:AddLine(p.text, 1, 1, 1, true)
+        end
     end
     GameTooltip:Show()
 end
@@ -1719,8 +1887,10 @@ function M.SyncPinBtns()
     local bb = frame.bossPinBtn
     if bb then
         local any = M.HasKindPins(M.curId, "boss") or M.HasKindPins(M.curId, "quest")
+            or M.HasKindPins(M.curId, "note") or M.HasKindPins(M.curId, "stairs")
         local dim = (M.hideBossPins and M.HasKindPins(M.curId, "boss"))
-            or (M.hideQuestPins and M.HasKindPins(M.curId, "quest")) or false
+            or (M.hideQuestPins and M.HasKindPins(M.curId, "quest"))
+            or (M.hideNotePins and M.HasKindPins(M.curId, "note")) or false
         bb:SetText(L["图钉显示"])
         Host.SetOutline(bb, dim, 1, 0.82, 0)
         local fs = bb:GetFontString()
@@ -1754,11 +1924,19 @@ function M.ToggleQuestPins()
     M.SyncPins()
 end
 
+function M.ToggleNotePins()
+    M.hideNotePins = not M.hideNotePins
+    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
+    if type(s) == "table" then s.mapNoteHidden = M.hideNotePins or nil end
+    M.SyncPins()
+end
+
 function M.ShowPinMenu(owner)
     local items = {}
     local kinds = {
         { key = "boss", label = L["首领图钉"], off = M.hideBossPins },
         { key = "quest", label = L["任务图钉"], off = M.hideQuestPins },
+        { key = "note", label = L["提示图钉"], off = M.hideNotePins },
     }
     for i = 1, #kinds do
         local kd = kinds[i]
@@ -1770,8 +1948,10 @@ function M.ShowPinMenu(owner)
             func = function()
                 if kd.key == "boss" then
                     M.ToggleBossPins()
-                else
+                elseif kd.key == "quest" then
                     M.ToggleQuestPins()
+                else
+                    M.ToggleNotePins()
                 end
                 M.SyncPinBtns()
                 M.ShowPinMenu(owner)
@@ -1922,6 +2102,12 @@ function M.SyncSide()
 
             local rowW = frame.detChildW or (frame.innerW - M.BLK_PAD * 2)
             local closed = M.CardClosed()
+
+            for _i = 1, #(items or {}) do
+                local iid = items[_i][1]
+                local _, ok = DG.ItemName(iid)
+                if not ok then DG.RequestItem(iid) end
+            end
 
             local nLoot = 0
             for _i = 1, #(items or {}) do
@@ -2103,6 +2289,34 @@ function M.ShowList()
     M.SyncSide()
 end
 
+function M.OnItemData(itemID)
+    local frame = M.frame
+    if not (frame and frame:IsShown() and frame.__listReady and frame.__blocksReady and frame.__rowsReady) then return end
+    if not (M.detailEn and M.curId) then return end
+    if type(itemID) ~= "number" then return end
+    local bosses = M.BossesFor(M.curId)
+    local hit
+    for i = 1, #(bosses or {}) do
+        if bosses[i].en == M.detailEn then
+            local its = bosses[i].items
+            for k = 1, #(its or {}) do
+                if its[k][1] == itemID then hit = true break end
+            end
+            break
+        end
+    end
+    if not hit then return end
+    if M.__oidT then return end
+    if type(C_Timer) ~= "table" or type(C_Timer.After) ~= "function" then
+        M.SyncSide()
+        return
+    end
+    M.__oidT = C_Timer.After(0.25, function()
+        M.__oidT = nil
+        if M.frame and M.frame:IsShown() and M.detailEn then M.SyncSide() end
+    end)
+end
+
 function M.Paint(d)
     local frame = M.frame
     if not frame then return end
@@ -2151,7 +2365,11 @@ function M.Paint(d)
             frame.empty:Show()
         end
         frame.pins:Hide()
-        frame.route:Hide()
+        if cpath then
+            M.SyncRoute(id, M.FloorNumAt(id, 1), cw, ch)
+        else
+            frame.route:Hide()
+        end
         M.SyncBar(nil, nil)
         M.SyncPins()
         M.SyncSide()

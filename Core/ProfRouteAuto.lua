@@ -40,6 +40,7 @@ end
 
 local priceCache = {}
 local NEG_TTL = 60
+local ahReason, ahAge = {}, {}
 
 local function AHPrice(id)
     local c = priceCache[id]
@@ -56,12 +57,20 @@ local function AHPrice(id)
         if p and type(Auctionator.API.v1.GetAuctionAgeByItemID) == "function" then
             local age = CallAPI(Auctionator.API.v1.GetAuctionAgeByItemID, id)
             if type(age) == "number" then
-                if age > MAX_STALE then p = nil end
+                if age > MAX_STALE then
+                    ahReason[id], ahAge[id] = "stale", age
+                    p = nil
+                end
                 if age < (priceCache.__minAge or math.huge) then
                     priceCache.__minAge = age
                 end
             end
         end
+    else
+        ahReason[id] = "noapi"
+    end
+    if not p and ahReason[id] ~= "stale" and ahReason[id] ~= "noapi" then
+        ahReason[id] = "norec"
     end
     priceCache[id] = p or false
     if not p then
@@ -91,6 +100,16 @@ local function MatPrice(id, soldSet)
     local a = AHPrice(id)
     if a and v and v < a then return v end
     return a or v
+end
+
+local function MatReason(id, soldSet)
+    if MatPrice(id, soldSet) then return nil end
+    if soldSet[id] then return "novendor" end
+    return ahReason[id] or "norec", ahAge[id]
+end
+
+function RA.MaxStale()
+    return MAX_STALE
 end
 
 local sellCache = {}
@@ -354,6 +373,17 @@ local function BuildCandidates(slug, opts)
             end
         end
     end
+    local Pol = ns.ProfEconomy
+    local pol = Pol and Pol.GetPolicies and Pol.GetPolicies(slug) or nil
+    if pol and next(pol) then
+        local kept = {}
+        for _, c in ipairs(cands) do
+            if pol[slug .. ":" .. tostring(c.spell)] ~= "ban" and pol[c.spell] ~= "ban" then
+                kept[#kept + 1] = c
+            end
+        end
+        cands = kept
+    end
     return cands, recOf, soldSet
 end
 
@@ -611,6 +641,19 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
             st.cost = sc
             st.unpriced = unpriced or nil
         end
+        if st.unpriced then
+            local code, age, mid, rank = nil, nil, nil, 9
+            for _, m in ipairs(ml or {}) do
+                local rc, ra = MatReason(m[1], soldSet)
+                if rc then
+                    local rk = (rc == "stale" and 1) or (rc == "norec" and 2) or (rc == "novendor" and 3) or 4
+                    if rk < rank or (rk == rank and (ra or 0) > (age or 0)) then
+                        rank, code, age, mid = rk, rc, ra, m[1]
+                    end
+                end
+            end
+            st.unpricedReason, st.unpricedAge, st.unpricedMat = code, age, mid
+        end
         total = total + (st.cost or 0)
         crafts = crafts + (st[4] or 0)
         local prod = rec and rec[2]
@@ -641,9 +684,12 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
     for id, n in pairs(mats) do
         local p = matPrice[id]
         if p == nil then p = MatPrice(id, soldSet) end
+        local rcode, rage
+        if p == nil then rcode, rage = MatReason(id, soldSet) end
         list[#list + 1] = { id, n, cost = (p or 0) * n, unit = p or 0,
                             vendor = soldSet[id] and true or false,
-                            unpriced = (p == nil) and true or false }
+                            unpriced = (p == nil) and true or false,
+                            reason = rcode, age = rage }
     end
     table.sort(list, function(a, b)
         local fa, fb = firstAt[a[1]] or math.huge, firstAt[b[1]] or math.huge
@@ -817,17 +863,20 @@ ahWatch:SetScript("OnEvent", function()
     end)
 end)
 
-local function Fingerprint(opts)
-    return string.format("%s|%s|%s|%s|%s|%s",
+local function Fingerprint(opts, slug)
+    local Pol = ns.ProfEconomy
+    local pol = Pol and Pol.GetPolicies and Pol.GetPolicies(slug) or nil
+    return string.format("%s|%s|%s|%s|%s|%s|%s",
         tostring(opts.start), tostring(opts.onlyAH),
         tostring(opts.noFormula), tostring(opts.learnedOnly),
         tostring(opts.target and math.floor(tonumber(opts.target) or CAP)),
-        tostring(opts.scheme))
+        tostring(opts.scheme),
+        pol and Pol.PolicyFingerprint(pol) or "")
 end
 
 function RA.Get(slug, opts)
     opts = opts or {}
-    local fp = Fingerprint(opts)
+    local fp = Fingerprint(opts, slug)
     local c = cache[slug]
     local now = (type(time) == "function") and time() or 0
     if c and c.fp == fp and (now - c.stamp) < CACHE_TTL then return c.res end
