@@ -158,6 +158,25 @@ class RecoveryDisplayTests(unittest.TestCase):
           assert(t:find('Item22 ×1 · 售价缺失，未计回血 · 净单价 价格未知',1,true))
         ''')
 
+    def test_cached_step_tooltip_summarizes_repeated_outputs_without_mutating_plan(self):
+        self.lua.execute("assert(loadfile(...))('DungeonsForever',ns)", str(ROOT / 'Core/ProfRecovery.lua'))
+        self.lua.execute(r'''
+          local step={productionCost=180,attributedCost=180,recoveryTotal=147,
+            saleCount=49,naturalRemainder=0,levelingRemainder=49,recoveryOutputs={}}
+          for i=1,45 do
+            step.recoveryOutputs[i]={id=20,count=1,source='npc',unit=3,revenue=3}
+          end
+          step.recoveryOutputs[46]={id=20,count=2,source='npc',unit=3,revenue=6}
+          step.recoveryOutputs[47]={id=20,count=2,source='npc',unit=3,revenue=6}
+          for i=1,2 do
+            local lines=PD.StepRecoveryLines(step)
+            assert(#lines==7,'tooltip grows with craft count instead of distinct outputs')
+            assert(lines[7][1]=='Item20 ×49 · 推荐卖给 NPC · 净单价 3 · 预计回血 147')
+          end
+          assert(#step.recoveryOutputs==47 and step.recoveryOutputs[1].count==1)
+          assert(step.recoveryOutputs[46].count==2 and step.recoveryTotal==147)
+        ''')
+
     def test_zero_cost_intermediate_still_reports_downstream_transfer(self):
         self.lua.execute(r'''
           local pure={productionCost=0,attributedCost=0,transferredCost=0,consumedCount=10,saleCount=0}

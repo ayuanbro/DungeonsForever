@@ -148,6 +148,54 @@ class RecoveryEconomicsTests(unittest.TestCase):
           assert(find(r.saleOutputs,10).count==2 and find(r.saleOutputs,20).count==1)
         ''')
 
+    def test_merged_craft_step_summarizes_sale_lots_without_changing_totals(self):
+        self.lua.execute(r'''
+          local s=snap();s.prices={};s.sellPrices[10]=3;capture(s)
+          local merged={1,46,1,45,profession='alchemy',actionIDs={}}
+          local execution={1,46,1,45,profession='alchemy',actionIDs={}}
+          local r={total=180,scheme='cheapest',steps={merged},executionSteps={execution},
+            actions={{type='buy',item=100,count=45,cost=180}}}
+          for i=1,45 do
+            local id='craft:'..i
+            merged.actionIDs[i]=id;execution.actionIDs[i]=id
+            r.actions[#r.actions+1]=craft(id,1,10,1,{{100,1}})
+          end
+          ns.ProfRecovery.Apply(r,s)
+          assert(r.purchaseTotal==180 and r.recoveryTotal==135 and r.netTotal==45)
+          for _,step in ipairs({merged,execution})do
+            assert(step.saleCount==45 and step.levelingRemainder==45)
+            assert(#step.recoveryOutputs==1,'one display line was retained per craft lot')
+            local output=step.recoveryOutputs[1]
+            assert(output.id==10 and output.count==45 and output.unit==3 and output.source=='npc')
+            assert(output.cost==180 and output.revenue==135)
+            assert(step.attributedCost==180 and step.recoveryTotal==135)
+          end
+          ns.ProfRecovery.Apply(r,s)
+          assert(#merged.recoveryOutputs==1 and merged.recoveryOutputs[1].count==45)
+          assert(merged.recoveryOutputs~=execution.recoveryOutputs)
+          assert(merged.recoveryOutputs[1]~=execution.recoveryOutputs[1])
+        ''')
+
+    def test_sale_summary_preserves_distinct_frozen_quotes_and_original_lots(self):
+        self.lua.execute(r'''
+          local lots={{id=10,count=1,cost=2,unit=3,source='npc',revenue=3},
+            {id=10,count=2,cost=4,unit=3,source='npc',revenue=6},
+            {id=10,count=1,cost=2,unit=4,source='npc',revenue=4},
+            {id=10,count=1,cost=2,unit=3,source='ah',revenue=3},
+            {id=20,count=1,cost=2,unit=0,source='unknown',revenue=0,missing=true},
+            {id=20,count=2,cost=4,unit=0,source='unknown',revenue=0,missing=true},
+            {id=20,count=1,cost=2,unit=0,source='unknown',revenue=0}}
+          local out=ns.ProfRecovery.GroupOutputs(lots)
+          assert(#out==5)
+          assert(out[1].count==3 and out[1].cost==6 and out[1].revenue==9)
+          assert(out[2].unit==4 and out[2].count==1)
+          assert(out[3].source=='ah' and out[3].count==1)
+          assert(out[4].missing and out[4].count==3 and out[4].cost==6)
+          assert(not out[5].missing and out[5].count==1)
+          assert(#lots==7 and lots[1].count==1 and lots[1].cost==2 and lots[1].revenue==3)
+          assert(out[1]~=lots[1] and #ns.ProfRecovery.GroupOutputs(out)==5)
+        ''')
+
     def test_purchased_identical_items_consumed_first_never_count_as_crafted_sales(self):
         self.lua.execute(r'''
           local s=snap();capture(s)

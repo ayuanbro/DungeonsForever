@@ -136,7 +136,10 @@ function R.StateRevenue(state,snapshot)
     local total=0
     for id,count in pairs(state and state.produced or {}) do
         local q=snapshot and snapshot.recovery and snapshot.recovery.quotes[id]
-        if q and amount(count) then total=total+count*(q.unit or 0) end
+        local retained=snapshot and snapshot.retainedToolItems and snapshot.retainedToolItems[id] or 0
+        local purchased=max(0,((state.inv or {})[id] or 0)-count)
+        local sale=max(0,count-max(0,retained-purchased))
+        if q and amount(count) then total=total+sale*(q.unit or 0) end
     end
     return total
 end
@@ -235,6 +238,25 @@ local function addAccounting(target,a)
     for _,key in ipairs(sumFields) do target[key]=(target[key] or 0)+(a[key] or 0) end
     for _,output in ipairs(a.recoveryOutputs or {}) do target.recoveryOutputs[#target.recoveryOutputs+1]=copy(output) end
 end
+-- Lots retain their original craft/cost ownership during replay. A displayed
+-- step can combine many such crafts; summarize only equivalent frozen quotes.
+-- This also accepts old saved steps without rewriting their accounting data.
+function R.GroupOutputs(outputs)
+    local grouped,index={},{}
+    for _,output in ipairs(outputs or {}) do
+        local key=table.concat({tostring(output.id),tostring(output.source or ""),
+            tostring(output.unit or 0),output.missing and "1" or "0"},"\031")
+        local entry=index[key]
+        if not entry then
+            entry=copy(output);entry.count=0;entry.cost=0;entry.revenue=0
+            index[key]=entry;grouped[#grouped+1]=entry
+        end
+        entry.count=entry.count+(output.count or 0)
+        entry.cost=entry.cost+(output.cost or 0)
+        entry.revenue=entry.revenue+(output.revenue or 0)
+    end
+    return grouped
+end
 function R.Apply(result,snapshot)
     if not result then return end
     snapshot=snapshot or {};local frozen=R.Capture(snapshot,{recoveryEnabled=result.recoveryEnabled})
@@ -320,6 +342,15 @@ function R.Apply(result,snapshot)
         result.demandCost=result.demandCost+cost
     end
     table.sort(result.demandAttribution,function(a,b)return a.id<b.id end)
+    -- Permanent tools remain with the player. A lower tool used as a reagent
+    -- has already left these pools and cannot be retained or sold twice.
+    result.retainedTools={}
+    local demandNonCraftCost=result.demandNonCraftCost
+    for id,n in pairs(snapshot.retainedToolItems or result.retainedToolItems or {}) do
+        local cost,retained=take(id,n,nil,true)
+        if retained>0 then result.retainedTools[#result.retainedTools+1]={id=id,count=retained,cost=cost} end
+    end
+    result.demandNonCraftCost=demandNonCraftCost
     local sold,missing={},{ }
     for id,pool in pairs(pools) do for _,lot in ipairs(pool) do if lot.count>0 then
         if lot.origin then
@@ -377,7 +408,7 @@ function R.Apply(result,snapshot)
         end
         for _,field in ipairs(sumFields) do step[field]=total[field] end
         step.attributedCostExact=nil
-        step.recoveryOutputs=total.recoveryOutputs;step.netTotal=step.attributedCost-step.recoveryTotal
+        step.recoveryOutputs=R.GroupOutputs(total.recoveryOutputs);step.netTotal=step.attributedCost-step.recoveryTotal
         step.costTransferred=step.saleCount==0 and step.transferredCost>0 or nil
         return step.attributedCost
     end

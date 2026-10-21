@@ -558,6 +558,51 @@ local function normalized(row,slug,kind)
     return r
 end
 E.Normalize=normalized
+function E.IsFixedOnly(slug) return slug=="poisons" or slug=="first-aid" end
+function E.ToolPlanningEnabled(opts)
+    if opts and opts.autoCraftTools~=nil then return opts.autoCraftTools~=false end
+    if opts and opts.snapshot and opts.snapshot.autoCraftTools~=nil then return opts.snapshot.autoCraftTools~=false end
+    local db=DungeonsForeverDB and DungeonsForeverDB.prof
+    return not db or db.autoCraftTools~=false
+end
+function E.ToolFingerprint(slug,opts)
+    local data=ns.ProfTools
+    if not data or not data[slug] then return "" end
+    local parts={tostring(data.revision or 1),tostring(E.ToolPlanningEnabled(opts))}
+    for _,tool in ipairs(data[slug]) do
+        parts[#parts+1]=table.concat({tool.spell,tool.item,tool.minSkill,tostring(tool.bindOnPickup==true)},":")
+    end
+    return table.concat(parts,"|")
+end
+function E.HasToolGoals(slug,opts)
+    if not E.ToolPlanningEnabled(opts) then return false end
+    local target=tonumber(opts and opts.target) or 300
+    for _,tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
+        if target>tool.minSkill then return true end
+    end
+    return false
+end
+function E.CaptureToolGoals(s,slug,opts)
+    s.autoCraftTools=E.ToolPlanningEnabled(opts)
+    s.toolGoals={};s.retainedToolItems={};s.toolCraftOnlyItems={};s.nonAuctionable=copy(s.nonAuctionable)
+    s.recipes=copy(s.recipes)
+    s.toolFingerprint=E.ToolFingerprint(slug,opts)
+    local target=tonumber(opts and opts.target) or 300
+    for _,tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
+        -- Binding is a property of the item even when automatic tools are off.
+        if tool.bindOnPickup then s.nonAuctionable[tool.item]=true;s.toolCraftOnlyItems[tool.item]=true end
+        if s.autoCraftTools and target>tool.minSkill and slug~="__purchase" then
+            local goal=copy(tool);goal.profession=slug;goal.id=slug..":"..tool.item
+            s.toolGoals[#s.toolGoals+1]=goal;s.retainedToolItems[tool.item]=1
+        end
+    end
+    for i,r in ipairs(s.recipes or {}) do
+        for _,goal in ipairs(s.toolGoals) do if r.profession==slug and r.spell==goal.spell then
+            r=copy(r);r.tool=true;r.toolItem=goal.item;s.recipes[i]=r
+        end end
+    end
+    return s
+end
 function E.FindRecipe(slug,spell)
     local tables=ns.EnsureProfRecipes and ns.EnsureProfRecipes({slug}) or ns.ProfRecipes or {}
     local data=tables[slug] or {}
@@ -570,6 +615,7 @@ function E.FindRecipe(slug,spell)
     local ri=guide and guide.rinfo and guide.rinfo[spell]
     if ri then
         local seed=copy(ri); seed.spell=spell; seed.item=seed.item or seed.makes; seed.count=seed.count or 1
+        seed.formula=seed.formula or seed.formulaID
         seed.profession=slug; seed.source=seed.source or {}; seed.cooldown=seed.cooldown or false
         return E.ResolveRecipe(seed,slug)
     end
@@ -862,6 +908,7 @@ function E.Capture(slug,opts,tick)
             end
         end
         E.CaptureSpecializations(s,opts,slug)
+        E.CaptureToolGoals(s,slug,opts)
         s=E.Index(s)
         if ns.ProfRecovery then ns.ProfRecovery.Capture(s,opts) end
         return s
@@ -899,9 +946,11 @@ function E.Capture(slug,opts,tick)
         for spell,ri in pairs(lv and lv.rinfo or {}) do
             local key=p..":"..spell
             if not seen[key] and type(ri.learn)=="number" and type(ri.grey)=="number" then
-                local row={spell,ri.makes,ri.count or 1,"","","",ri.learn,ri.yellow,ri.green,ri.grey,false,ri.mats or {},nil,{}}
+                local formula=ri.formula or ri.formulaID
+                local row={spell,ri.makes,ri.count or 1,"","","",ri.learn,ri.yellow,ri.green,ri.grey,false,ri.mats or {},formula and {formula,1} or nil,ri.source or {}}
                 local r=normalized(row,p,"rows")
                 if r then
+                    r.learnSource=ri.learnSource or (ri.trainer and "trainer") or r.learnSource
                     s.recipes[#s.recipes+1]=r; seen[key]=true
                     s.known[key]=not (s.professions[p] and s.professions[p].unlearned) and E.Known(spell) or false
                 end
@@ -910,6 +959,8 @@ function E.Capture(slug,opts,tick)
         end
     end
     local items={}
+    E.CaptureToolGoals(s,slug,opts)
+    for _,goal in ipairs(s.toolGoals) do items[goal.item]=true end
     for _,goal in ipairs(s.specializationGoals or {}) do
         for _,input in ipairs(goal.inputs or {}) do items[input[1]]=true end
     end
@@ -1215,6 +1266,8 @@ function E.DiagnosticText(d)
     if type(d)=="string" then return d end
     local messages={vendorEstimate="NPC购买价格尚未配置。",
         vendorQuoteChanged="NPC购买价格资料已更新，请重新计算路线。",
+        toolPolicyChanged="工具设置或工具列表已变化，请手动重新计算路线。",
+        fixedOnlyChanged="急救已改为固定路线，请重新计算。",
         cooldown="已排除有冷却的制作配方。",
         cooldownUnknown="制作冷却尚未核实，请打开对应专业面板。",outputConflict="制作产量待读取，请打开对应专业面板。",
         availabilityUnknown="配方学习条件尚未核实。",excluded="配方已按自定义规则排除。",notLearned="当前设置仅允许已学配方。",

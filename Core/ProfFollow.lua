@@ -114,9 +114,9 @@ local function IsLearned(spellID)
     return false
 end
 
--- Only the manual craft-button guard reads carried materials. Route and shopping
+-- Carried amounts are only readiness/progress checks. Route and shopping
 -- quantities deliberately ignore all pre-existing bag and bank items.
-local function HaveForCraft(id)
+local function CarriedCount(id)
     if C_Item and C_Item.GetItemCount then
         local ok, n = pcall(C_Item.GetItemCount, id, false)
         if ok and type(n) == "number" then return n end
@@ -224,7 +224,7 @@ local function routeFor(slug, skill)
         or dbProf().cookingRoute=="fishing" or (PD and PD.SettingRaw and PD.SettingRaw("cookingRoute")=="fishing"))
     if fishRoute then scheme="fishing" end
     -- 最省钱与乐观计数均不强制依赖拍卖行插件。
-    if PD and PD.Setting and (fishRoute or PD.Setting("autoRoute")) and RA
+    if slug~="poisons" and slug~="first-aid" and PD and PD.Setting and (fishRoute or PD.Setting("autoRoute")) and RA
        and (fishRoute or scheme == "cheapest" or scheme == "optim" or RA.Available()) then
         local opts = RA.OptionsFor and RA.OptionsFor(slug, skill) or {
             start = (PD.Setting("autoFromCurrent") and skill) and math.max(1, skill) or 1,
@@ -270,6 +270,10 @@ local function routeFor(slug, skill)
     local xp=ns.ProfExecution
     if xp and xp.NormalizePlan then
         local frozen=xp.GetPlan(slug)
+        if slug=="first-aid" and frozen and frozen.mode~="fixed" then
+            return "fixed",{},{planVersion=2,status="recalculate_required",feasible=false,fixedRouteChanged=true,
+                message=L["急救已改为固定路线，请重新计算。"]}
+        end
         if frozen and frozen.mode=="fixed" then
             frozen=validatePlan(frozen,slug)
             if frozen.status=="recalculate_required" then return "auto",{},frozen end
@@ -502,6 +506,14 @@ function PF.Sync()
             PF.executionNotice = L["专精选择或学习条件已更改，请重新计算。"]
             return
         end
+        if reason == "fixedOnlyChanged" then
+            PF.executionNotice = L["急救已改为固定路线，请重新计算。"]
+            return
+        end
+        if reason == "toolPolicyChanged" then
+            PF.executionNotice = L["工具设置或工具列表已变化，请手动重新计算路线。"]
+            return
+        end
     end
     local key = routeKey(mode, steps, res)
     if res and res.planVersion == 2 then
@@ -565,7 +577,7 @@ function PF.Prev()
     if not (s and s.slug) then return end
     local _, steps = routeFor(s.slug, s.skill)
     if not steps then return end
-    PF.view = math.max(-((s.step or 1) - 1), (PF.view or 0) - 1)
+    PF.view = math.max(PF.npcPurchasePending and 0 or -((s.step or 1) - 1), (PF.view or 0) - 1)
     PF.Paint()
 end
 
@@ -734,16 +746,69 @@ local function shopList(s, kind)
     return list
 end
 
+-- This preparation task is separate from the frozen procurement quantities.
+-- Once a carried stack reaches its full selected NPC quantity, remember that
+-- item as ready even after later crafts consume it. Keep tasks per profession
+-- and character so hiding/reloading/switching the HUD preserves completion.
+local function npcPurchaseTask(s, mode, steps, res)
+    if res and (res.feasible==false or res.status=="selection_required" or res.status=="recalculate_required") then return nil end
+    local key=table.concat({s.slug,tostring(mode),tostring(res and (res.planID or res.executionPlanID)
+        or routeKey(mode,steps,res)),tostring(res and res.target or routeTarget(s.slug))},":")
+    local p=dbProf()
+    p.npcPurchaseTasks=p.npcPurchaseTasks or {}
+    local character=charKey()
+    p.npcPurchaseTasks[character]=p.npcPurchaseTasks[character] or {}
+    local tasks=p.npcPurchaseTasks[character]
+    local task=tasks[s.slug]
+    if not task or task.key~=key then
+        task={key=key,rows={}}
+        local byID={}
+        for _,purchase in ipairs(shopList(s)) do
+            if not purchase.formula and not purchase.unpriced and (purchase.vendor
+                or purchase.source=="vendor" or purchase.source=="npc") then
+                local row=byID[purchase.id]
+                if not row then
+                    row={id=purchase.id,need=0};byID[purchase.id]=row
+                    task.rows[#task.rows+1]=row
+                end
+                row.need=row.need+math.max(0,tonumber(purchase.need) or 0)
+            end
+        end
+        -- Do not interrupt an existing execution with a new preparation stage
+        -- when this feature is first loaded into a plan already being crafted.
+        local xp=ns.ProfExecution
+        local run=xp and xp.GetRun and xp.GetRun(s.slug)
+        if run and (run.attemptsDone or 0)>0 then
+            for _,row in ipairs(task.rows) do row.complete=true end
+        end
+        tasks[s.slug]=task
+    end
+    if #task.rows==0 then return nil end
+    local ready,total,have,need=0,#task.rows,0,0
+    for _,row in ipairs(task.rows) do
+        local carried=math.max(0,CarriedCount(row.id))
+        if carried>=row.need then row.complete=true end
+        row.have=row.complete and row.need or math.min(carried,row.need)
+        ready=ready+(row.complete and 1 or 0)
+        have,need=have+row.have,need+row.need
+    end
+    task.ready,task.total,task.have,task.need=ready,total,have,need
+    task.complete=ready==total
+    return task
+end
+
 -- 与主界面导出复用同一采购快照，便于诊断及离线验收。
 PF.GetRoute = routeFor
 PF.GetPurchases = shopList
+PF.GetNPCPurchaseTask = npcPurchaseTask
 
 local function routeNotice(res)
     if res and (res.message or res.blockedReason) then return res.message or res.blockedReason end
     if res and res.status == "selection_required" then return L["请选择搭配的主专业"] end
     if res and res.status == "recalculate_required" then
         for _,d in ipairs(res.diagnostics or {}) do
-            if (d.code=="vendorQuoteChanged" or d.code=="specializationChanged")
+            if (d.code=="vendorQuoteChanged" or d.code=="specializationChanged"
+                or d.code=="toolPolicyChanged" or d.code=="fixedOnlyChanged")
                and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
                 return ns.ProfEconomy.DiagnosticText(d)
             end
@@ -928,7 +993,7 @@ local function jumpCraft()
     local mats = recMats(rec)
     if mats then
         for _, m in ipairs(mats) do
-            if (HaveForCraft(m[1]) or 0) < (m[2] or 1) then
+            if (CarriedCount(m[1]) or 0) < (m[2] or 1) then
                 craftNotify(L["材料不足，先按购物清单备齐再制造"]) return
             end
         end
@@ -1129,7 +1194,7 @@ function PF.Build()
         if not (s and s.slug) then return end
         local _, steps = routeFor(s.slug, s.skill)
         if not steps then return end
-        PF.view = math.max(-(s.step - 1), math.min(#steps - s.step + 1, (PF.view or 0) - delta))
+        PF.view = math.max(PF.npcPurchasePending and 0 or -(s.step - 1), math.min(#steps - s.step + 1, (PF.view or 0) - delta))
         PF.Paint()
     end)
     f:SetScript("OnEvent", function(_, event, ...)
@@ -1209,6 +1274,30 @@ function PF.Build()
         GameTooltip:Show()
     end)
     f.recovery:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    f.npcQuest=CreateFrame("Frame",nil,f,BackdropTemplateMixin and "BackdropTemplate" or nil)
+    f.npcQuest:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8x8",edgeFile="Interface\\Buttons\\WHITE8x8",edgeSize=1})
+    f.npcQuest:SetBackdropColor(1,1,1,0.06)
+    f.npcQuest:SetBackdropBorderColor(C_HEAD[1],C_HEAD[2],C_HEAD[3],0.9)
+    f.npcQuest.head=MakeFS(f.npcQuest,15,C_HEAD,"LEFT")
+    f.npcQuest.head:SetWordWrap(true)
+    f.npcQuest.summary=MakeFS(f.npcQuest,13,C_TEXT,"LEFT")
+    f.npcQuest.summary:SetWordWrap(true)
+    f.npcQuest.note=MakeFS(f.npcQuest,12,C_GREY,"LEFT")
+    f.npcQuest.note:SetWordWrap(true)
+    f.npcQuest.rows={}
+    for i=1,SHOP_MAX do
+        local row={name=MakeFS(f.npcQuest,14,C_TEXT,"LEFT"),count=MakeFS(f.npcQuest,13,C_GOLD,"RIGHT")}
+        row.name:SetWordWrap(true);row.count:SetWordWrap(false)
+        f.npcQuest.rows[i]=row
+    end
+    f.npcQuest:EnableMouse(true)
+    f.npcQuest:EnableMouseWheel(true)
+    f.npcQuest:SetScript("OnMouseWheel",function(_,delta)
+        PF.npcPurchaseScroll=math.max(0,(PF.npcPurchaseScroll or 0)-delta)
+        PF.Paint()
+    end)
+    f.npcQuest:Hide()
 
     -- 当前段卡（绿描边小面板）。卡中卡提亮：HUI 主题下主卡是 L2，内卡用 L3 实色；
     -- 非 HUI 沿用白 overlay。
@@ -1587,15 +1676,27 @@ function PF.Paint()
     f.bar:SetWidth(math.max(2, math.floor((W - 20) * ratio + 0.5)))
     f.bar:SetVertexColor(accent[1], accent[2], accent[3], 0.95)
 
-    local waiting = PF.executionNotice or mode == "auto" and (not res or (res.planVersion == 2 and
+    local waiting = PF.executionNotice or (res and (res.status=="selection_required" or res.status=="recalculate_required"))
+        or mode == "auto" and (not res or (res.planVersion == 2 and
         (res.feasible ~= true or (res.partial and (s.step or 1)>#steps))))
     local finished = not waiting and (s.step or 1) > #steps
-    local vi = math.max(1, math.min(#steps, (s.step or 1) + (PF.view or 0)))
+    local task=not waiting and not finished and npcPurchaseTask(s,mode,steps,res) or nil
+    if task and PF.npcPurchaseKey~=task.key then
+        PF.npcPurchaseKey=task.key
+        PF.npcPurchaseScroll=0
+        PF.view=0
+    end
+    local npcPending=task and not task.complete or false
+    if PF.npcPurchasePending and not npcPending then PF.view=0 end
+    PF.npcPurchasePending=npcPending
+    local showNPC=npcPending and (PF.view or 0)<=0
+    local vi = math.max(1, math.min(#steps, (s.step or 1) + (PF.view or 0)
+        - (npcPending and (PF.view or 0)>0 and 1 or 0)))
     f.seg:SetText(((mode == "auto") and L["自动计算"] or L["固定路线"]) .. " · "
-                  .. format(L["步骤 %d / %d"], vi, #steps))
+                  .. format(L["步骤 %d / %d"], showNPC and 1 or vi+(task and 1 or 0), #steps+(task and 1 or 0)))
 
     -- 黄色段 = 当前段落区间（真实指针段，与浏览偏移无关）
-    local segCur = (not finished) and steps[math.min((s.step or 1), #steps)] or nil
+    local segCur = (not finished and not showNPC) and steps[math.min((s.step or 1), #steps)] or nil
     if segCur then
         local x0 = math.floor((W - 20) * math.min(1, segCur[1] / 300) + 0.5)
         local x1 = math.floor((W - 20) * math.min(1, segCur[2] / 300) + 0.5)
@@ -1609,13 +1710,14 @@ function PF.Paint()
     end
 
     f.finish:SetShown(finished or waiting)
-    f.card:SetShown(not finished and not waiting)
+    f.card:SetShown(not finished and not waiting and not showNPC)
+    f.npcQuest:SetShown(showNPC)
     f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished and not waiting)
-    f.craftBtn:SetShown(PF.CRAFT_BTN and not finished and not waiting)
+    f.craftBtn:SetShown(PF.CRAFT_BTN and not finished and not waiting and not showNPC)
     local xp = ns.ProfExecution
     local run = xp and xp.GetRun and xp.GetRun(slug)
-    f.suppBtn:SetShown(run ~= nil and not finished and not waiting)
-    f.verifyBtn:SetShown(run ~= nil and not finished and not waiting)
+    f.suppBtn:SetShown(run ~= nil and not finished and not waiting and not showNPC)
+    f.verifyBtn:SetShown(run ~= nil and not finished and not waiting and not showNPC)
 
     local y = -82                      -- 头部固定高（「已过摘要」行已按用户要求移除）
     local pending = false
@@ -1636,7 +1738,54 @@ function PF.Paint()
         y = y - height - 8
     end
 
-    if not finished and not waiting then
+    if showNPC then
+        local card=f.npcQuest
+        local width=W-2*PAD-16
+        local offset=8
+        card.head:SetText(L["先向NPC购买材料"])
+        card.head:SetWidth(width)
+        card.head:ClearAllPoints();card.head:SetPoint("TOPLEFT",card,"TOPLEFT",8,-offset)
+        offset=offset+lineHeight(card.head,15)+7
+        card.summary:SetText(format(L["采购进度：%d/%d种 · %d/%d件"],task.ready,task.total,task.have,task.need))
+        card.summary:SetWidth(width)
+        card.summary:ClearAllPoints();card.summary:SetPoint("TOPLEFT",card,"TOPLEFT",8,-offset)
+        offset=offset+lineHeight(card.summary,13)+8
+        local scroll=math.min(PF.npcPurchaseScroll or 0,math.max(0,#task.rows-SHOP_MAX))
+        PF.npcPurchaseScroll=scroll
+        for i,row in ipairs(card.rows) do
+            local entry=task.rows[i+scroll]
+            row.name:SetShown(entry~=nil);row.count:SetShown(entry~=nil)
+            if entry then
+                local itemName,loaded=DG.ItemName(entry.id)
+                pending=pending or not loaded
+                row.name:SetText((entry.complete and "|cff45bf73[x]|r " or "[ ] ")..(itemName or ("#"..entry.id)))
+                local countText=format(L["随身 %d/%d"],entry.have,entry.need)
+                row.count:SetText(countText)
+                local countWidth=row.count.GetStringWidth and row.count:GetStringWidth()
+                if type(countWidth)~="number" and PDm and PDm.TextW then countWidth=PDm.TextW(countText,13) end
+                countWidth=math.max(108,math.ceil(tonumber(countWidth) or #countText*7))
+                local maxCountWidth=math.max(1,width-42)
+                row.count:SetWordWrap(countWidth>maxCountWidth)
+                countWidth=math.min(countWidth,maxCountWidth)
+                row.name:SetWidth(math.max(1,width-countWidth-8))
+                row.name:ClearAllPoints();row.name:SetPoint("TOPLEFT",card,"TOPLEFT",8,-offset)
+                row.count:SetWidth(countWidth)
+                row.count:ClearAllPoints();row.count:SetPoint("TOPRIGHT",card,"TOPRIGHT",-8,-offset)
+                row.count:SetTextColor(Unpack(entry.complete and C_OK or C_GOLD))
+                offset=offset+math.max(lineHeight(row.name,14),lineHeight(row.count,13))+7
+            end
+        end
+        card.note:SetText(L["按随身数量检查，采购计划数量保持不变。"]
+            ..(#task.rows>SHOP_MAX and ("\n"..L["滚轮查看更多采购材料。"]) or ""))
+        card.note:SetWidth(width)
+        card.note:ClearAllPoints();card.note:SetPoint("TOPLEFT",card,"TOPLEFT",8,-offset)
+        offset=offset+lineHeight(card.note,12)+8
+        card:ClearAllPoints();card:SetPoint("TOPLEFT",f,"TOPLEFT",PAD,y)
+        card:SetSize(W-2*PAD,offset)
+        y=y-offset-8
+    end
+
+    if not finished and not waiting and not showNPC then
         local seg = steps[vi]
         local specializationQuest=seg.kind=="specialization_quest"
         if specializationQuest then f.craftBtn:Hide(); f.suppBtn:Hide(); f.verifyBtn:Hide() end

@@ -19,6 +19,8 @@ class ProfessionPairAPITests(unittest.TestCase):
         self.lua.execute(source[begin:end])
 
     def test_only_first_aid_in_last_api_slot_is_recognized_as_learned(self):
+        self.lua.eval("function(p) assert(loadfile(p))('DungeonsForever',ns) end")(
+            str(ROOT / 'Core/Data/Data_ProfLeveling.lua'))
         self.lua.execute(r'''
           GetProfessions=function()return nil,nil,nil,nil,nil,6 end
           GetProfessionInfo=function(index)
@@ -38,9 +40,15 @@ class ProfessionPairAPITests(unittest.TestCase):
               count=1,learn=1,yellow=200,green=250,grey=300,mats={{11,1}},cooldown=false}},
               professions=api,known={},prices={[11]=7}},
             start=95,target=96,learnedOnly=true,allowSecondaryLeveling=true})
-          assert(not result.feasible,'learned First Aid ignored its learned-only setting')
-          assert(result.professionPolicy==1 and result.targetUnlearned==false)
-          for _,d in ipairs(result.diagnostics) do assert(d.code~='secondaryRequired') end
+          assert(result.mode=='fixed' and result.scheme=='fixed')
+          assert(result.status~='selection_required' and not result.secondaryProfession)
+          assert(#result.steps>0 and #result.mats>0)
+          assert(result.steps[1][3]==ns.ProfLeveling['first-aid'].steps[1][3])
+          assert(result.steps[#result.steps][2]==96)
+          for _,step in ipairs(result.steps) do
+            assert(step[3]~=101,'First Aid reused an automatic candidate instead of its fixed guide')
+          end
+          for _,d in ipairs(result.diagnostics or {}) do assert(d.code~='secondaryRequired') end
         ''')
 
     def test_sparse_api_preserves_primary_partner_and_secondary_identity(self):

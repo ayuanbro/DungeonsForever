@@ -37,7 +37,8 @@ function XP.IsSpecializationQuest(seg) return seg and seg.kind=="specialization_
 function XP.SpecializationQuest(seg) return seg and (seg.quest or seg.specializationGoal or seg.goal or seg) or {} end
 local function specializationChanged(plan,slug)
     local ra=ns.ProfRouteAuto
-    return ra and ra.SpecializationPlanChanged and ra.SpecializationPlanChanged(plan,slug)
+    return ra and (ra.SpecializationPlanChanged and ra.SpecializationPlanChanged(plan,slug)
+        or ra.ToolPolicyChanged and ra.ToolPolicyChanged(plan,slug))
 end
 local function validatedPlan(plan,slug)
     local ra=ns.ProfRouteAuto
@@ -109,6 +110,7 @@ function XP.GetHistory(slug)
     return list
 end
 function XP.NormalizePlan(slug,result)
+    if slug=="first-aid" and result and result.mode~="fixed" then return nil,"fixedOnlyChanged" end
     if type(result)~="table" then return nil,"pending" end
     if result.executionVersion==1 then return result end
     if result.planVersion==2 then return nil,"migration_required" end
@@ -139,6 +141,9 @@ local function archive(c,slug,reason)
 end
 function XP.Bind(slug,result,opts)
     local ra=ns.ProfRouteAuto
+    local active=XP.GetRun(slug)
+    if slug=="first-aid" and (result and result.mode~="fixed" or active and active.plan.mode~="fixed") then return nil,"fixedOnlyChanged" end
+    if ra and ra.ToolPolicyChanged and (ra.ToolPolicyChanged(result,slug) or active and ra.ToolPolicyChanged(active.plan,slug)) then return nil,"toolPolicyChanged" end
     if ra and ra.VendorQuotesChanged and ra.VendorQuotesChanged(result) then return nil,"vendorQuoteChanged" end
     if result and result.status=="recalculate_required" then
         for _,diagnostic in ipairs(result.diagnostics or {}) do

@@ -209,6 +209,7 @@ local function specializationContext(slug,opts)
 end
 function RA.StampSpecializations(result,slug,opts,snapshot)
     if not result then return end
+    RA.StampToolPolicy(result,slug,opts,snapshot)
     local economy=ns.ProfEconomy
     local context=snapshot and snapshot.specializationContext or specializationContext(slug,opts)
     if not context then return result end
@@ -221,6 +222,34 @@ function RA.StampSpecializations(result,slug,opts,snapshot)
         selectionConflict=context.selectionConflict==true,
         profession=slug or (snapshot and snapshot.targetProfession)}
     return result
+end
+function RA.StampToolPolicy(result,slug,opts,snapshot)
+    if not result then return end
+    local economy=ns.ProfEconomy
+    slug=slug or result.toolProfession or opts and opts.profession
+    if not slug or not economy or not economy.ToolFingerprint then return result end
+    result.toolProfession=slug
+    result.toolPolicy={revision=1,fingerprint=snapshot and snapshot.toolFingerprint or economy.ToolFingerprint(slug,opts)}
+    return result
+end
+function RA.ToolPolicyChanged(result,slug,opts)
+    if not result then return false end
+    local economy=ns.ProfEconomy
+    slug=slug or result.toolProfession or (result.specializationPolicy or {}).profession or opts and opts.profession
+    if not economy or not economy.ToolFingerprint or not slug then return false end
+    local expected=economy.ToolFingerprint(slug,opts)
+    if expected=="" then return false end
+    local policy=result.toolPolicy
+    return not policy or policy.revision~=1 or policy.fingerprint~=expected
+end
+function RA.ValidateToolPolicy(result,slug,opts)
+    if not RA.ToolPolicyChanged(result,slug,opts) then return result end
+    return {planVersion=2,mode=result.mode,scheme=result.scheme,status="recalculate_required",
+        start=result.start,target=result.target,steps={},executionSteps={},actions={},mats={},formulas={},gaps={},
+        total=0,matTotal=0,ahTotal=0,vendorTotal=0,formulasTotal=0,crafts=0,
+        feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
+        cached=true,stale=true,staleReason="tool-policy",revision=result.revision,
+        diagnostics={{code="toolPolicyChanged"}}}
 end
 function RA.SpecializationPlanChanged(result,slug,opts)
     if not result then return false end
@@ -238,6 +267,7 @@ function RA.SpecializationPlanChanged(result,slug,opts)
     return context.profession=="engineering" and context.selectionConflict==true and not policy.selectionConflict
 end
 function RA.ValidateSpecializationPlan(result,slug,opts)
+    result=RA.ValidateToolPolicy(result,slug,opts)
     if not result or result.status=="recalculate_required" or not RA.SpecializationPlanChanged(result,slug,opts) then return result end
     return {planVersion=2,mode=result.mode,scheme=result.scheme,status="recalculate_required",
         start=result.start,target=result.target,steps={},executionSteps={},actions={},mats={},formulas={},gaps={},
@@ -465,9 +495,12 @@ local function ClientRecipe(seed,spell,slug)
     local rec={}; for k,v in pairs(seed) do rec[k]=v end
     local canonical
     if rec.mats or rec.learn then
-        canonical={spell=spell or seed.spell or seed[1],item=rec.makes or rec.item,count=rec.count or 1,mats=rec.mats}
+        canonical={};for key,value in pairs(rec) do canonical[key]=value end
+        canonical.spell=spell or seed.spell or seed[1];canonical.item=rec.makes or rec.item
+        canonical.count=rec.count or 1;canonical.formula=rec.formula or rec.formulaID
     else
-        canonical={spell=spell or seed[1],item=rec[2],count=rec[3] or 1,mats=rec[12]}
+        canonical={spell=spell or seed[1],item=rec[2],count=rec[3] or 1,mats=rec[12],
+            formula=rec[13] and rec[13][1],source=rec[14]}
     end
     if ns.ProfEconomy and ns.ProfEconomy.ResolveRecipe then canonical=ns.ProfEconomy.ResolveRecipe(canonical,slug) end
     if rec.mats or rec.learn then rec.mats=canonical.mats; rec.count=canonical.count; rec.makes=canonical.item
@@ -481,10 +514,10 @@ end
 -- opts = { start=起点技能, onlyAH=bool, learnedOnly=bool }
 local function BuildCandidates(slug, opts)
     local _rf = ns.EnsureProfRecipes
-    local Rg = _rf and _rf()[slug]
+    local Rg = _rf and _rf()[slug] or ns.ProfRecipes and ns.ProfRecipes[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
-    if not (Rg and (type(Rg.rows) == "table"
-                    or (LV and type(LV.rinfo) == "table"))) then return nil end
+    if not (Rg and type(Rg.rows)=="table" or LV and type(LV.rinfo)=="table") then return nil end
+    Rg=Rg or {}
     local cands, recOf = {}, {}
     local specContext=specializationContext(slug,opts)
     local specSnapshot={specializationContext=specContext,specializationAbilities=specContext and specContext.abilities or {}}
@@ -1176,11 +1209,21 @@ function RA.SummarizeSteps(steps, slug, opts)
     opts = opts or {}
     local blocked,goalRequired
     steps,blocked,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
+    local economy,solver=ns.ProfEconomy,ns.ProfRouteSolver
+    if economy and solver and economy.HasToolGoals(slug,opts)
+        and not goalRequired and #blocked==0 then
+        local planned=economy.Copy(opts)
+        planned.fixedSteps=steps;planned.scheme="fixed";planned.start=steps[1] and steps[1][1] or opts.start or 1
+        planned.target=opts.target or steps[#steps] and steps[#steps][2] or 300
+        local result,job=solver.Compute(slug,planned)
+        result.mode="fixed";result.scheme="fixed"
+        return RA.StampSpecializations(RA.StampVendorQuotes(result,planned),slug,planned,job and job.snap)
+    end
     local _rf = ns.EnsureProfRecipes
-    local Rg = _rf and _rf()[slug]
+    local Rg = _rf and _rf()[slug] or ns.ProfRecipes and ns.ProfRecipes[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
-    if not (Rg and (type(Rg.rows) == "table"
-                    or (LV and type(LV.rinfo) == "table"))) then return nil end
+    if not (Rg and type(Rg.rows)=="table" or LV and type(LV.rinfo)=="table") then return nil end
+    Rg=Rg or {}
     local recOf = {}
     for _, rec in ipairs(Rg.rows or {}) do recOf[rec[1]] = rec end
     if LV and type(LV.rinfo) == "table" then
@@ -1233,6 +1276,24 @@ local function fixedStore()
     return store
 end
 function RA.ClearFixedSummary(slug) fixedStore()[slug]=nil end
+function RA.FixedOnlyResult(slug,opts)
+    opts=opts or {}
+    local guide=ns.ProfLeveling and ns.ProfLeveling[slug] or {}
+    local target=tonumber(opts.target) or 300
+    local selected={}
+    for _,step in ipairs(guide.steps or {}) do
+        if step[1]>=target then break end
+        local row=fixedCopy(step)
+        if row[2]>target then
+            row[4]=math.max(1,math.ceil(row[4]*(target-row[1])/(row[2]-row[1])-1e-9));row[2]=target
+        end
+        selected[#selected+1]=row
+    end
+    local result=RA.FixedSummary(slug,selected,opts)
+    if result then return result end
+    return {mode="fixed",scheme="fixed",target=target,start=1,steps=selected,mats={},formulas={},
+        gaps={},total=0,matTotal=0,ahTotal=0,vendorTotal=0,crafts=0,priced=false,clientPending=true}
+end
 function RA.FixedSummary(slug,steps,opts)
     opts=opts or {}
     local keys={}
@@ -1447,6 +1508,7 @@ do
                 target=target,scheme=scheme,onlyAH=setting("autoOnlyAH",false),
                 learnedOnly=setting("autoLearnedOnly",false),allowSecondaryLeveling=setting("autoSecondaryLeveling",false),
                 allowLimitedFormulas=setting("autoBuyLimitedFormulas",E.AllowLimitedFormulas()),
+                autoCraftTools=setting("autoCraftTools",true),
                 recoveryEnabled=setting("recoveryEnabled",true),recoveryFeePercent=setting("recoveryFeePercent",nil),
                 secondaryProfession=E.GetRoutePartner(slug),
                 engineeringSpecialization=E.GetEngineeringSpecialization and E.GetEngineeringSpecialization() or "none",
@@ -1456,6 +1518,7 @@ do
         local function options(slug,opts)
             opts=E.Copy(opts or RA.OptionsFor(slug))
             opts.allowLimitedFormulas=E.AllowLimitedFormulas(opts)
+            opts.autoCraftTools=E.ToolPlanningEnabled(opts)
             if opts.recoveryEnabled==nil then
                 local db=DungeonsForeverDB and DungeonsForeverDB.prof
                 opts.recoveryEnabled=not db or db.recoveryEnabled~=false
@@ -1485,7 +1548,8 @@ do
             opts.specializationFingerprint=spec and E.SpecializationFingerprint(spec) or ""
             -- Non-cost modes retain their per-step priorities. Only their
             -- engineering task procurement uses the shared recursive ledger.
-            if spec and (#(spec.goals or {})>0 or slug=="engineering" and spec.selectionConflict and opts.target>=200)
+            if (spec and (#(spec.goals or {})>0 or slug=="engineering" and spec.selectionConflict and opts.target>=200)
+                or E.HasToolGoals(slug,opts))
                 and opts.scheme~="cheapest" and opts.scheme~="fishing" then
                 opts.specializationRecipeScore=function(recipe,state,snapshot,incremental)
                     local gain=E.Gain(recipe,(state.skill or {})[recipe.profession] or 1)
@@ -1511,8 +1575,11 @@ do
                 tostring(opts.onlyAH or false),tostring(opts.allowSecondaryLeveling or false),startMode,
                 E.PolicyFingerprint(opts.exclusions),tostring(opts.targetUnlearned),tostring(opts.secondaryProfession or ""),
                 tostring(opts.specializationFingerprint or ""),tostring(opts.recoveryEnabled~=false),
-                tostring(opts.recoveryFeePercent or "auto"),tostring(opts.allowLimitedFormulas)},"|")
-            if opts.executionSourcePlanID or next(opts.executionInventory or {}) then
+                tostring(opts.recoveryFeePercent or "auto"),tostring(opts.allowLimitedFormulas),E.ToolFingerprint(opts.profession,opts)},"|")
+            -- Verified carry is a calculation input, like live skill. UI/HUD
+            -- reads supply the selected settings without this frozen seed.
+            -- Synthetic requests still distinguish their explicit input stock.
+            if opts.snapshot and (opts.executionSourcePlanID or next(opts.executionInventory or {})) then
                 local items={}
                 for id,n in pairs(opts.executionInventory or {}) do
                     items[#items+1]=tostring(id)..":"..tostring(type(n)=="table" and n.count or n)
@@ -1608,6 +1675,9 @@ do
                 j.invalid=true;j.finished=true
                 res=RA.ValidateFormulaPolicy(res)
             end
+            if not j.opts.snapshot and RA.ToolPolicyChanged(res,j.slug) then
+                j.invalid=true;j.finished=true;res=RA.ValidateToolPolicy(res,j.slug)
+            end
             if not j.opts.snapshot and RA.SpecializationPlanChanged(res,j.slug) then
                 j.invalid=true; j.finished=true
                 res=RA.ValidateSpecializationPlan(res,j.slug)
@@ -1651,6 +1721,7 @@ do
             end
         end
         local function compatible(result,opts)
+            if RA.ToolPolicyChanged(result,opts.profession,opts) then return false end
             if RA.FormulaPolicyChanged(result,opts) then return false end
             if RA.SpecializationPlanChanged(result,opts.profession,opts) then return false end
             if opts.targetUnlearned then
@@ -1660,6 +1731,7 @@ do
             return not result.targetUnlearned
         end
         local function incompatibility(result,opts)
+            if RA.ToolPolicyChanged(result,opts.profession,opts) then return "toolPolicyChanged" end
             if RA.FormulaPolicyChanged(result,opts) then return "formulaPolicyChanged" end
             if RA.SpecializationPlanChanged(result,opts.profession,opts) then return "specializationChanged" end
             return (opts.allowSecondaryLeveling or result.secondaryProfession) and "pairingChanged" or "professionChanged"
@@ -1684,7 +1756,7 @@ do
                 feasible=false,priced=false,costComplete=false,completeCost=false,targetReached=false,
                 diagnostics={{code=code}},professionPolicy=1,targetUnlearned=opts.targetUnlearned,
                 secondaryProfession=opts.secondaryProfession,revision=revision,stamp=stamp()}
-            if code=="specializationChanged" or code=="formulaPolicyChanged" then
+            if code=="specializationChanged" or code=="formulaPolicyChanged" or code=="toolPolicyChanged" then
                 -- Keep the manual recalculation gate after cancelling an in-flight
                 -- job; subsequent UI reads must not silently start a replacement.
                 local key,scope=identities(slug,opts)
@@ -1747,8 +1819,8 @@ do
             results[key]=result; active[scope]=key
             return result
         end
-        local function start(slug,opts)
-            local key,scope,savedKey,sig,char=identities(slug,opts)
+        local function start(slug,opts,identityOptions)
+            local key,scope,savedKey,sig,char=identities(slug,identityOptions or opts)
             if opts.scheme~="cheapest" and not opts.specializationRecipeScore then
                 local result
                 if opts.scheme=="fishing" and ns.ProfFishing then result=ns.ProfFishing.Compute(opts)
@@ -1771,6 +1843,7 @@ do
             return j.published
         end
         function RA.Compute(slug,opts)
+            if slug=="first-aid" then return RA.FixedOnlyResult(slug,opts) end
             opts=options(slug,opts)
             if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
             if opts.scheme=="fishing" and ns.ProfFishing then return RA.ApplyRecovery(RA.StampSpecializations(RA.StampVendorQuotes(ns.ProfFishing.Compute(opts),opts),slug,opts),slug,opts) end
@@ -1809,9 +1882,16 @@ do
             if not preserveExecution then return start(slug,opts) end
         end
         function RA.Get(slug,opts)
+            if slug=="first-aid" then
+                local execution=ns.ProfExecution
+                local frozen=execution and execution.GetPlan and execution.GetPlan(slug)
+                if frozen and frozen.mode~="fixed" then return {mode="fixed",scheme="fixed",status="recalculate_required",steps={},mats={},formulas={},gaps={},feasible=false,diagnostics={{code="fixedOnlyChanged"}}} end
+                return RA.FixedOnlyResult(slug,opts)
+            end
             local recoveryOptions=options(slug,opts)
             local execution=not (opts and opts.snapshot) and ns.ProfExecution or nil
             local frozen=execution and execution.GetPlan and execution.GetPlan(slug)
+            if RA.ToolPolicyChanged(frozen,slug,recoveryOptions) then return gate(slug,recoveryOptions,"recalculate_required","toolPolicyChanged") end
             if RA.SpecializationPlanChanged(frozen,slug,opts) then return RA.ValidateSpecializationPlan(frozen,slug,opts) end
             if RA.FormulaPolicyChanged(frozen,recoveryOptions) then
                 return gate(slug,recoveryOptions,"recalculate_required","formulaPolicyChanged")
@@ -1825,6 +1905,11 @@ do
                 frozen=execution.GetPlan and execution.GetPlan(slug)
                 if frozen then
                     local run=execution.GetRun and execution.GetRun(slug)
+                    local settingsChanged=type(frozen.cacheSignature)=="string"
+                        and frozen.cacheSignature~=signature(recoveryOptions)
+                    if settingsChanged or result and result.settingsChanged then
+                        frozen.stale=true;frozen.settingsChanged=true;frozen.staleReason="settings"
+                    end
                     if run and result and result.revision~=frozen.revision then
                         run.newPlanAvailable=true;run.candidateRevision=result.revision
                     end
@@ -1836,6 +1921,9 @@ do
         end
         function RA.Recalculate(slug,opts)
             opts=options(slug,opts)
+            -- Continuation starts at the actual skill, even when the selected
+            -- route mode starts at 1. Keep that input override out of identity.
+            local identityOptions=E.Copy(opts)
             RA.ClearFixedSummary(slug)
             local execution=ns.ProfExecution
             if not opts.snapshot and execution and execution.PrepareRecalculate then
@@ -1847,7 +1935,7 @@ do
                     opts.fromCurrent=true
                 end
             end
-            local key,scope,savedKey,_,char=identities(slug,opts)
+            local key,scope,savedKey,_,char=identities(slug,identityOptions)
             oldInvalidate()
             for k,j in pairs(slots) do if j.slug==slug and j.char==char then slots[k]=nil; releaseJob(j) end end
             for k in pairs(results) do
@@ -1857,8 +1945,13 @@ do
             if not opts.snapshot then
                 local db=saved(); db.routes[savedKey]=nil; db.active[slug]=nil
             end
+            if slug=="first-aid" then
+                local result=RA.FixedOnlyResult(slug,opts)
+                if not opts.snapshot and execution and execution.PlanRecalculated then execution.PlanRecalculated(slug,result) end
+                return result
+            end
             if opts.partnerRequired then return gate(slug,opts,"selection_required","secondaryRequired") end
-            local result=start(slug,opts)
+            local result=start(slug,opts,identityOptions)
             if not opts.snapshot and execution and execution.PlanRecalculated then execution.PlanRecalculated(slug,result) end
             return result
         end

@@ -93,6 +93,7 @@ PD.SETTING_DEF.autoRoute = false
 PD.SETTING_DEF.autoOnlyAH = true        -- 只用拍卖行/商人能买到价格的材料的配方
 PD.SETTING_DEF.autoLearnedOnly = false  -- 仅使用本角色已学的配方
 PD.SETTING_DEF.autoBuyLimitedFormulas = false
+PD.SETTING_DEF.autoCraftTools = true
 PD.SETTING_DEF.autoScheme = "cheapest"  -- 自动路线方案：最省钱/材料成本/次数最少/乐观计数
 PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.recoveryEnabled = true
@@ -101,7 +102,7 @@ PD.SETTING_DEF.recoveryEnabled = true
 PD.GATHER_SLUGS = { mining = true, herbalism = true, skinning = true, fishing = true }
 PD.SETTING_DEF.autoFromCurrent = true   -- 从当前技能开始算（关 = 从 1 全量）
 PD.SETTING_TOG_MAX = 4
-PD.SETTING_TOG_MAX = 10
+PD.SETTING_TOG_MAX = 11
 local function ProfDB()
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.prof = DungeonsForeverDB.prof or {}
@@ -181,7 +182,7 @@ function PD.CookingFishingMode(slug)
 end
 
 function PD.CycleRouteScheme()
-    if PD.CookingFishingMode() then return end
+    if PD.CookingFishingMode() or PD.cur == "poisons" or PD.cur == "first-aid" then return end
     local order = (RA and RA.SchemeOrder and RA.SchemeOrder()) or {}
     if #order == 0 then return end
     local current, nextIndex = PD.SettingRaw("autoScheme"), 1
@@ -2879,6 +2880,7 @@ function PD.Build(page)
         end
     end
     PD.lvTiles.mode:SetScript("OnClick", function()
+        if PD.cur == "poisons" or PD.cur == "first-aid" then return end
         local on = not PD.Setting("autoRoute")
         ProfDB().autoRoute = on
         PD.exclusionsOpen, PD.partnerPicker = false, nil
@@ -3742,7 +3744,7 @@ function PD.PaintLvTiles()
     local v = PD.LvTarget()
     local auto = s.auto and true or false
     local warnAuto = s.autoSetting and (not s.ahOK or s.feasible == false)
-    local fixedOnly = (PD.cur == "poisons")
+    local fixedOnly = (PD.cur == "poisons" or PD.cur == "first-aid")
     if fixedOnly then
         tiles.mode:SetScript("OnClick", nil)
     else
@@ -3892,7 +3894,7 @@ function PD.PaintLvTiles()
         local details = { { atxt, 0.7, 0.7, 0.7 } }
         local progress = PD.PlanProgressText(s)
         if progress then details[#details + 1] = {progress, 0.7, 0.7, 0.7} end
-        local cached = PD.PlanCacheText(s)
+        local cached = PD.PlanCacheText(s, atxt)
         if cached then details[#details + 1] = {cached, 0.95, 0.75, 0.4} end
         local limitText = PD.PlanSearchLimitText(s)
         if limitText then details[#details + 1] = {limitText, 0.95, 0.75, 0.4} end
@@ -6766,7 +6768,8 @@ function PD.PlanStatusText(plan)
     if plan.status=="recalculate_required" then
         for _,diagnostic in ipairs(plan.diagnostics or {}) do
             if (diagnostic.code=="vendorQuoteChanged" or diagnostic.code=="specializationChanged"
-                or diagnostic.code=="professionChanged" or diagnostic.code=="formulaPolicyChanged")
+                or diagnostic.code=="professionChanged" or diagnostic.code=="formulaPolicyChanged"
+                or diagnostic.code=="toolPolicyChanged")
                and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
                 return ns.ProfEconomy.DiagnosticText(diagnostic)
             end
@@ -6864,8 +6867,11 @@ function PD.PlanProgressText(plan)
     return format(L["已比较 %d 个状态；较初始方案节省 %s"], plan.expanded or 0, RA.MoneyStr(savings or 0))
 end
 
-function PD.PlanCacheText(plan)
-    if plan and plan.stale then return L["已保存路线；数据或设置已变化，点击重新计算更新。"] end
+function PD.PlanCacheText(plan, shownStatus)
+    if plan and plan.stale then
+        local text = L["已保存路线；数据或设置已变化，点击重新计算更新。"]
+        if text ~= shownStatus then return text end
+    end
 end
 
 function PD.PlanSupplyText(plan)
@@ -6996,7 +7002,7 @@ end
 
 -- All three surfaces render these frozen values; never reprice route outputs
 -- in the UI or assume that intermediate output can also be sold.
-function PD.RecoveryLines(plan, brief)
+function PD.RecoveryLines(plan, brief, statusShown)
     if not plan or plan.isSupplement or plan.mode == "supplement" then return {} end
     if plan.recoveryRevision ~= 1 then
         return {{L["旧路线尚无回血快照，请重新计算。"], 0.95, 0.75, 0.4}}
@@ -7024,7 +7030,9 @@ function PD.RecoveryLines(plan, brief)
     end
     lines[#lines + 1] = {L["按首轮全部成交估算，不扣未知流拍损失；退回押金不是收入。"], 0.7, 0.7, 0.7}
     lines[#lines + 1] = {L["拍卖净价须比卖店价高超过 100 铜，且两天内完整、排除本人的可靠数量至少 40；按全部剩余数量估值。"], 0.7, 0.7, 0.7}
-    if plan.stale then lines[#lines + 1] = {L["已保存路线；数据或设置已变化，点击重新计算更新。"], 0.95, 0.75, 0.4} end
+    -- Route and shopping pages show the cache notice with their search status.
+    -- Standalone cost/HUD tooltips still need the warning here.
+    if plan.stale and not statusShown then lines[#lines + 1] = {L["已保存路线；数据或设置已变化，点击重新计算更新。"], 0.95, 0.75, 0.4} end
     return lines
 end
 
@@ -7041,7 +7049,10 @@ function PD.StepRecoveryLines(step)
         lines[#lines + 1] = {format(L["最终可出售 %s 件：制材自然余量 %s；额外升级产物 %s。"],
             tostring(step.saleCount), tostring(step.naturalRemainder or 0), tostring(step.levelingRemainder or 0))}
     end
-    for _, output in ipairs(step.recoveryOutputs or {}) do
+    local recovery = ns.ProfRecovery
+    local outputs = recovery and recovery.GroupOutputs and recovery.GroupOutputs(step.recoveryOutputs)
+        or step.recoveryOutputs or {}
+    for _, output in ipairs(outputs) do
         local channel = output.missing and L["售价缺失，未计回血"]
             or output.source == "ah" and L["推荐拍卖（扣手续费）"] or L["推荐卖给 NPC"]
         lines[#lines + 1] = {format(L["%s ×%s · %s · 净单价 %s · 预计回血 %s"],
@@ -7155,6 +7166,7 @@ end
 function PD.StepRole(st)
     if PD.IsSpecializationQuest(st) then return L["专精入门任务"] end
     if st.checkpoint or st[3] == 0 then return L["实地采矿"] end
+    if st.tool or (st.tags and st.tags.tool) then return L["专业工具"] end
     local tags = st.tags or {}
     local leveling = tags.leveling or st.role == "level" or st.role == "both"
     local material = tags.material or st.role == "material" or st.role == "both"
@@ -7378,7 +7390,8 @@ function PD.RowsLeveling(rows)
     -- 乐观计数方案不依赖价格插件（2026-10-10）：其余方案仍要求 RA.Available()
     local fishRoute = PD.CookingFishingMode and PD.CookingFishingMode() or false
     local scheme = fishRoute and "fishing" or PD.SettingRaw("autoScheme")
-    local autoOn = (PD.cur ~= "poisons") and (fishRoute or PD.Setting("autoRoute")) and RA
+    local autoSetting = PD.cur ~= "poisons" and PD.cur ~= "first-aid" and (fishRoute or PD.Setting("autoRoute"))
+    local autoOn = autoSetting and RA
                     and (fishRoute or scheme == "cheapest" or scheme == "optim" or RA.Available()) and true or false
     local target = PD.LvTarget()
     local res
@@ -7411,7 +7424,7 @@ function PD.RowsLeveling(rows)
         return
     end
     if PD.exclusionsOpen and autoOn then
-        PD.lvSummary = {target = target, auto = autoOn, autoSetting = fishRoute or PD.Setting("autoRoute"), total = res and res.total}
+        PD.lvSummary = {target = target, auto = autoOn, autoSetting = autoSetting, total = res and res.total}
         PD.CopyPlanSummary(res)
         PD.RowsExclusions(rows)
         return
@@ -7419,7 +7432,7 @@ function PD.RowsLeveling(rows)
     if PD.autoPage=="history" then
         local execution=ns.ProfExecution
         local history=execution and execution.GetHistory and execution.GetHistory(PD.cur) or {}
-        PD.lvSummary={target=target,auto=auto,autoSetting=fishRoute or PD.Setting("autoRoute"),scheme=res and res.scheme,ahOK=true}
+        PD.lvSummary={target=target,auto=auto,autoSetting=autoSetting,scheme=res and res.scheme,ahOK=true}
         PushHead(rows,L["制作记录"])
         for i,run in ipairs(history) do
             local label=run.status=="active" and L["当前执行计划"] or L["历史执行计划"]
@@ -7439,12 +7452,13 @@ function PD.RowsLeveling(rows)
         PD.lvSummary = {target = target, auto = true, autoSetting = true, scheme = scheme, ahOK = true,
                         total = res and res.total, priced = res and res.total ~= nil}
         PD.CopyPlanSummary(res)
-        PushHead(rows, res and PD.PlanStatusText(res) or L["正在计算升级路线…"])
+        local status = PD.PlanStatusText(res)
+        PushHead(rows, status)
         local progress = PD.PlanProgressText(res)
         if progress then PushText(rows, progress, 11, C_GREY) end
         local supply = PD.PlanSupplyText(res)
         if supply then PushText(rows, supply, 11, C_GREY) end
-        local cached = PD.PlanCacheText(res)
+        local cached = PD.PlanCacheText(res, status)
         if cached then PushText(rows, cached, 11, {0.95, 0.75, 0.4}) end
         if res then PD.PlanDiagnostics(rows, res) end
         return
@@ -7460,7 +7474,7 @@ function PD.RowsLeveling(rows)
 
     if PD.autoPage == "supplement" then
         local data = execution and execution.GetSupplement and execution.GetSupplement(PD.cur)
-        PD.lvSummary = {target=target, auto=auto, autoSetting=fishRoute or PD.Setting("autoRoute"),
+        PD.lvSummary = {target=target, auto=auto, autoSetting=autoSetting,
             scheme=res and res.scheme, ahOK=true, isSupplement=true,
             total=data and data.total, priced=data and data.total~=nil and data.feasible~=false}
         if not data then
@@ -7489,7 +7503,7 @@ function PD.RowsLeveling(rows)
         PD.lvSummary = {
             target = target, auto = auto,
             scheme = auto and res.scheme or nil,
-            autoSetting = fishRoute or PD.Setting("autoRoute"),
+            autoSetting = autoSetting,
             ahOK = fishRoute or ((RA and RA.Available()) and true or false),
             priced = (data.priced and true) or false,
             total = data.total, snapshotAge = data.snapshotAge,
@@ -7542,7 +7556,7 @@ function PD.RowsLeveling(rows)
     PD.lvSummary = {
         target = target, auto = auto,
         scheme = auto and res.scheme or nil,
-        autoSetting = fishRoute or PD.Setting("autoRoute"),
+        autoSetting = autoSetting,
         ahOK = fishRoute or ((RA and RA.Available()) and true or false),
         priced = auto or ((fixedSum and fixedSum.priced) and true or false),
         total = auto and res.total or (fixedSum and fixedSum.total),
@@ -7556,7 +7570,7 @@ function PD.RowsLeveling(rows)
         np = auto and CountUnpriced(res) or (fixedSum and CountUnpriced(fixedSum)) or 0,
     }
     PD.CopyPlanSummary(auto and res or fixedSum)
-    for _, line in ipairs(PD.RecoveryLines(auto and res or fixedSum)) do
+    for _, line in ipairs(PD.RecoveryLines(auto and res or fixedSum, false, res and res.planVersion == 2)) do
         PushText(rows, line[1], 11, {line[2] or 0.7, line[3] or 0.7, line[4] or 0.7})
     end
     if fishRoute then
@@ -7567,12 +7581,13 @@ function PD.RowsLeveling(rows)
         if target>225 then PushText(rows, L["225 以上须先解锁大师级烹饪；蚌肉大餐任务另需非鱼材料，不属于本路线的制作材料。"], 11, C_GREY) end
     end
     if res and res.planVersion == 2 then
-        PushText(rows, PD.PlanStatusText(res), 11, C_GREY)
+        local status = PD.PlanStatusText(res)
+        PushText(rows, status, 11, C_GREY)
         local progress = PD.PlanProgressText(res)
         if progress then PushText(rows, progress, 11, C_GREY) end
         local supply = PD.PlanSupplyText(res)
         if supply then PushText(rows, supply, 11, C_GREY) end
-        local cached = PD.PlanCacheText(res)
+        local cached = PD.PlanCacheText(res, status)
         if cached then PushText(rows, cached, 11, {0.95, 0.75, 0.4}) end
         PushText(rows, L["点击配方管理排除；右键直接设为完全禁止制作，重新计算后应用。"], 11, C_GREY)
     end
@@ -8156,7 +8171,7 @@ function PD.RowsAutoShop(rows, data)
     if progress then PushText(rows, progress, 11, C_GREY, 2) end
     local supply = PD.PlanSupplyText(data)
     if supply then PushText(rows, supply, 11, C_GREY, 2) end
-    local cached = PD.PlanCacheText(data)
+    local cached = PD.PlanCacheText(data, atxt)
     if cached then PushText(rows, cached, 11, {0.95, 0.75, 0.4}, 2) end
     if priced then
         -- 材料与图纸采购分类合计：拍卖行 / 商人，相加 = 总共需要。
@@ -8204,7 +8219,7 @@ function PD.RowsAutoShop(rows, data)
         -- （PD.OV_GUT = SEC_GAP + 2*SEC_PAD 只用于跨列外槽；拿它当本处间距净距会变 10。）
         PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
         PushHead(rows, L["预计回血"], 2)
-        for _, line in ipairs(PD.RecoveryLines(data)) do
+        for _, line in ipairs(PD.RecoveryLines(data, false, true)) do
             PushText(rows, line[1], 11, {line[2] or 0.7, line[3] or 0.7, line[4] or 0.7}, 2)
         end
         for _, output in ipairs(data.saleOutputs or {}) do
@@ -8302,7 +8317,7 @@ function PD.LevelTool()
     if PD.cur == "cooking" then
         list[#list + 1] = {key = "cooking_fishing", text = fishRoute and L["普通路线"] or L["纯钓鱼"], on = fishRoute}
     end
-    if PD.cur ~= "poisons" then
+    if PD.cur ~= "poisons" and PD.cur ~= "first-aid" then
         if fishRoute or PD.Setting("autoRoute") then
             local pairContext = not fishRoute and PD.RoutePairContext() or nil
             if pairContext and pairContext.requiresPartner then
@@ -8372,10 +8387,10 @@ function PD.LevelTool()
             end
             PD.autoPage = "supplement"
         elseif k == "recalc" then
-            if not fishRoute and (PD.cur == "poisons" or not PD.Setting("autoRoute")) then
+            if not fishRoute and (PD.cur == "poisons" or PD.cur == "first-aid" or not PD.Setting("autoRoute")) then
                 if RA and RA.ClearFixedSummary then RA.ClearFixedSummary(PD.cur) end
                 local run=execution and execution.GetRun and execution.GetRun(PD.cur)
-                if run and run.plan and run.plan.mode=="fixed" and execution.PrepareRecalculate then
+                if run and run.plan and (run.plan.mode=="fixed" or PD.cur=="first-aid") and execution.PrepareRecalculate then
                     execution.PrepareRecalculate(PD.cur)
                 end
                 local reference=FixedShopData(PD.LvTarget())
@@ -8476,6 +8491,10 @@ function PD.RowsSettings(rows)
           desc = L["默认关闭；限量图纸仍可通过拍卖行购买。"],
           d1 = L["关闭：未学图纸须有可用拍卖行报价，或其他允许的购买来源。"],
           d2 = L["开启：允许使用限量商人报价，但不保证到访时有货；修改后请重新计算。"] },
+        { k = "autoCraftTools", name = L["制造专业工具"],
+          desc = L["默认开启；目标等级超过工具制作门槛时，将工具加入升级计划。"],
+          d1 = L["可交易工具比较自制与购买费用；拾取绑定工具只安排制作。"],
+          d2 = L["关闭后不额外规划工具；修改后请重新计算。"] },
         { k = "autoFromCurrent", name = L["从当前技能开始计算"],
           desc = L["开启 = 只算当前技能到 300 的路线；关闭 = 从 1 全量重算整条路线（预估全程花费）"],
           d1 = L["开启：适合练级中途打开手册直接照着做。"],
@@ -8485,7 +8504,7 @@ function PD.RowsSettings(rows)
           d1 = L["默认关闭：仍可使用另一主专业当前能制作的材料。"],
           d2 = L["开启后计入另一专业所需的材料费用，最高 300；查看未学专业时需先选择搭配主专业。"] },
     }
-    if PD.cur == "poisons" then
+    if PD.cur == "poisons" or PD.cur == "first-aid" then
         local keep = { greyPassed = true, hlCurrent = true, recoveryEnabled = true, autoBuyLimitedFormulas = true }
         local filt = {}
         for _, d in ipairs(defs) do

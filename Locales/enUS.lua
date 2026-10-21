@@ -3,6 +3,18 @@ local _, ns = ...
 if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
 
 local L = ns.L
+L["工具设置或工具列表已变化，请手动重新计算路线。"] = "Tool settings or the tool list changed. Please recalculate the route."
+L["急救已改为固定路线，请重新计算。"] = "First Aid now uses a fixed route. Please recalculate."
+L["先向NPC购买材料"] = "First, buy materials from NPCs"
+L["采购进度：%d/%d种 · %d/%d件"] = "Purchase progress: %d/%d types · %d/%d items"
+L["随身 %d/%d"] = "In bags %d/%d"
+L["按随身数量检查，采购计划数量保持不变。"] = "Bag counts track progress; planned purchase quantities stay unchanged."
+L["滚轮查看更多采购材料。"] = "Scroll to see more purchase materials."
+L["制造专业工具"] = "Plan profession tools"
+L["专业工具"] = "Profession tool"
+L["默认开启；目标等级超过工具制作门槛时，将工具加入升级计划。"] = "On by default. Add tools when the target skill exceeds their minimum crafting skill."
+L["可交易工具比较自制与购买费用；拾取绑定工具只安排制作。"] = "Compare crafting and purchase costs for tradable tools; craft bind-on-pickup tools."
+L["关闭后不额外规划工具；修改后请重新计算。"] = "Off: do not add tool requirements. Recalculate after changing."
 L["最终可出售 %s 件：制材自然余量 %s；额外升级产物 %s。"] = "Final sale quantity %s: %s natural batch leftovers; %s additional leveling outputs."
 L["%s ×%s · %s · 净单价 %s · 预计回血 %s"] = "%s ×%s · %s · Net unit %s · Estimated recovery %s"
 

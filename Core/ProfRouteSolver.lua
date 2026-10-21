@@ -7,7 +7,7 @@ local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
 local function clock() return debugprofilestop and debugprofilestop() or (os and os.clock and os.clock()*1000) or 0 end
 local function available(s,id) return (s.inv[id] or 0)-(s.unusable[id] or 0) end
 local function clone(s)
-    return {inv=E.Copy(s.inv),unusable=E.Copy(s.unusable),unusableSeed=E.Copy(s.unusableSeed),produced=E.Copy(s.produced),skill=E.Copy(s.skill),progress=E.Copy(s.progress),cap=E.Copy(s.cap),learned=E.Copy(s.learned),formulaPaid=E.Copy(s.formulaPaid),ahUsed=E.Copy(s.ahUsed),specializationAbilities=E.Copy(s.specializationAbilities),completedSpecializationGoals=E.Copy(s.completedSpecializationGoals),diagnostics=E.Copy(s.diagnostics),money=s.money,log=s.log,switches=s.switches or 0,lastRecipe=s.lastRecipe}
+    return {inv=E.Copy(s.inv),unusable=E.Copy(s.unusable),unusableSeed=E.Copy(s.unusableSeed),produced=E.Copy(s.produced),skill=E.Copy(s.skill),progress=E.Copy(s.progress),cap=E.Copy(s.cap),learned=E.Copy(s.learned),formulaPaid=E.Copy(s.formulaPaid),ahUsed=E.Copy(s.ahUsed),specializationAbilities=E.Copy(s.specializationAbilities),completedSpecializationGoals=E.Copy(s.completedSpecializationGoals),completedToolGoals=E.Copy(s.completedToolGoals),diagnostics=E.Copy(s.diagnostics),money=s.money,log=s.log,switches=s.switches or 0,lastRecipe=s.lastRecipe}
 end
 local function consume(s,id,n)
     local stock=s.inv[id] or 0
@@ -38,7 +38,7 @@ local function betterState(a,b,snapshot)
     return uncertainty(a)<uncertainty(b)
 end
 local function initial(snap,slug,opts)
-    local s={inv={},unusable={},unusableSeed={},produced={},skill={},progress={},cap={},learned=E.Copy(snap.known),formulaPaid={},ahUsed={},specializationAbilities=E.Copy(snap.specializationAbilities),completedSpecializationGoals={},diagnostics={},money=0,switches=0}
+    local s={inv={},unusable={},unusableSeed={},produced={},skill={},progress={},cap={},learned=E.Copy(snap.known),formulaPaid={},ahUsed={},specializationAbilities=E.Copy(snap.specializationAbilities),completedSpecializationGoals={},completedToolGoals={},diagnostics={},money=0,switches=0}
     for p,v in pairs(snap.professions) do s.skill[p]=v.cur or 1; s.cap[p]=v.max or 300 end
     s.skill[slug]=opts.start or s.skill[slug] or 1; s.cap[slug]=s.cap[slug] or 300
     -- Only the execution service may supply verified lots from this route.
@@ -74,6 +74,7 @@ local function stateKey(t,reusable,recovery)
     for id,n in pairs(t.ahUsed) do parts[#parts+1]="a"..id.."="..n end
     for id,value in pairs(t.specializationAbilities or {}) do parts[#parts+1]="spec"..id.."="..tostring(value) end
     for id in pairs(t.completedSpecializationGoals or {}) do parts[#parts+1]="quest"..id end
+    for id in pairs(t.completedToolGoals or {}) do parts[#parts+1]="tool"..id end
     parts[#parts+1]="last="..tostring(t.lastRecipe or "")
     for k in pairs(t.diagnostics) do parts[#parts+1]="d"..k end
     table.sort(parts); return table.concat(parts,";")
@@ -83,11 +84,15 @@ local function goalsComplete(job,state)
     for _,goal in ipairs(job.snap and job.snap.specializationGoals or {}) do
         if not state.completedSpecializationGoals[goal.id] and not state.specializationAbilities[goal.abilityID] then return false end
     end
+    for _,goal in ipairs(job.snap and job.snap.toolGoals or {}) do
+        if not state.completedToolGoals[goal.id] then return false end
+    end
     return not (job.slug=="engineering" and job.target>=200 and job.snap and job.snap.specializationContext and job.snap.specializationContext.selectionConflict)
 end
 local function completedGoals(state)
     local count=0
     for _ in pairs(state and state.completedSpecializationGoals or {}) do count=count+1 end
+    for _ in pairs(state and state.completedToolGoals or {}) do count=count+1 end
     return count
 end
 local function stampFreshResult(result,snapshot)
@@ -95,6 +100,7 @@ local function stampFreshResult(result,snapshot)
     if recovery and recovery.Apply and snapshot then recovery.Apply(result,snapshot) end
     local route=ns.ProfRouteAuto
     if route and route.StampVendorQuotes then route.StampVendorQuotes(result) end
+    if route and route.StampToolPolicy then route.StampToolPolicy(result,snapshot and snapshot.targetProfession,nil,snapshot) end
     return result
 end
 function S.Result(job,state,status)
@@ -109,6 +115,9 @@ function S.Result(job,state,status)
     out.searchCpuLimitMs=job.cpuLimitMs or 5000
     out.seedInventory=E.Copy(job.opts.executionInventory or {})
     out.scheme=job.opts.scheme or "cheapest"
+    out.toolGoals=E.Copy(job.snap and job.snap.toolGoals)
+    out.retainedToolItems=E.Copy(job.snap and job.snap.retainedToolItems)
+    out.toolFingerprint=job.snap and job.snap.toolFingerprint
     out.specializationGoals=E.Copy(job.snap and job.snap.specializationGoals)
     out.specializationContext=E.Copy(job.snap and job.snap.specializationContext)
     out.formulas={};out.formulasTotal=0;out.formulaAHTotal=0;out.formulaVendorTotal=0;out.formulaRevision=1;out.formulaComplete=true
@@ -142,6 +151,7 @@ function S.Result(job,state,status)
     local formulaEntries,formulaRecipes={},{}
     out.total=state.money; out.inventory=E.Copy(state.inv); out.finalSkills=E.Copy(state.skill)
     out.completedSpecializationGoals=E.Copy(state.completedSpecializationGoals)
+    out.completedToolGoals=E.Copy(state.completedToolGoals)
     out.specializationAbilities=E.Copy(state.specializationAbilities)
     for _,d in pairs(state.diagnostics) do out.diagnostics[#out.diagnostics+1]=d end
     out.costComplete=#out.diagnostics==0
@@ -152,6 +162,7 @@ function S.Result(job,state,status)
         out.blockingDiagnostics=E.Copy(job.blockedSkill==out.plannedTo and job.blockers or {})
         out.remainingUnknown=true
     end
+    local toolOrigins={}
     local provenance={}; local usedOutputs={}; local allocations={}; local cashByRecipe={}; local countByRecipe={}; local unpricedByRecipe={}
     for _,a in ipairs(actions(state)) do
         if (a.type=="buy" or a.type=="formula") and a.owner then
@@ -226,6 +237,13 @@ function S.Result(job,state,status)
             out.referencePrices=out.referencePrices or a.reference or nil
             out.matTotal=out.matTotal+a.cost
             if a.source=="vendor" then out.vendorTotal=out.vendorTotal+a.cost else out.ahTotal=out.ahTotal+a.cost end
+        elseif a.type=="tool_goal" then
+            pendingCost=pendingCost+(cashByRecipe["tool:"..a.goalID] or 0)
+            -- A tool is retained, not consumed. Its producer still has a real
+            -- output obligation, including when its recipe is already grey.
+            for _,origin in ipairs(provenance[a.item] or {}) do
+                if origin.count>0 and origin.crafted then toolOrigins[origin.id]=a.item;break end
+            end
         elseif a.type=="specialization_quest" then
             local goal=E.Copy(a.quest)
             local key="quest:"..goal.id
@@ -259,7 +277,7 @@ function S.Result(job,state,status)
                 last.toProgress=a.toProgress
             else
                 local recipe=job.snap.byKey and job.snap.byKey[tostring(a.profession)..":"..tostring(a.spell)]
-                out.executionSteps[#out.executionSteps+1]={a.from,a.to,a.spell or 0,a.count or 0,profession=a.profession,reason=a.reason,checkpoint=a.type=="gather",actionID=a.id,actionIDs={a.id},item=a.item,cost=stepCost,unpriced=stepUnpriced,recipe=recipe and E.Copy(recipe),expectedGain=a.expectedGain or (a.to-a.from),fromProgress=a.fromProgress or 0,toProgress=a.toProgress or 0}
+                out.executionSteps[#out.executionSteps+1]={a.from,a.to,a.spell or 0,a.count or 0,profession=a.profession,reason=a.reason,checkpoint=a.type=="gather",actionID=a.id,actionIDs={a.id},item=a.item,cost=stepCost,unpriced=stepUnpriced,recipe=recipe and E.Copy(recipe),tool=recipe and recipe.tool or nil,toolItem=recipe and recipe.toolItem or nil,expectedGain=a.expectedGain or (a.to-a.from),fromProgress=a.fromProgress or 0,toProgress=a.toProgress or 0}
             end
             pendingCost=0; pendingUnpriced=false
             if a.type=="gather" then out.gaps[#out.gaps+1]={a.from,a.to,manual=true,profession=a.profession}
@@ -269,6 +287,9 @@ function S.Result(job,state,status)
                 for _,m in ipairs(a.inputs or {}) do if not out.firstAt[m[1]] then out.firstAt[m[1]]=a.from end end
             end
         end
+    end
+    if pendingCost>0 and #out.executionSteps>0 then
+        local last=out.executionSteps[#out.executionSteps];last.cost=last.cost+pendingCost
     end
     for _,e in ipairs(purchases) do out.mats[#out.mats+1]=e end
     out.referenceRoute=out.pricePending or nil
@@ -294,6 +315,14 @@ function S.Result(job,state,status)
             step.requiredOutputs[allocation.itemID]=(step.requiredOutputs[allocation.itemID] or 0)+allocation.count
             step.allocations[#step.allocations+1]={consumerID=actionSegments[allocation.consumerID] or allocation.consumerID,itemID=allocation.itemID,count=allocation.count}
         end end
+        for _,id in ipairs(step.actionIDs) do
+            local item=toolOrigins[id]
+            if item then
+                step.requiredOutputs[item]=max(1,step.requiredOutputs[item] or 0)
+                step.tool=true;step.toolItem=item
+                if #step.allocations==0 then step.allocations[#step.allocations+1]={consumerID="tool:"..item,itemID=item,count=1} end
+            end
+        end
         step.materialMinCrafts=0
         for _,n in pairs(step.requiredOutputs) do step.materialMinCrafts=max(step.materialMinCrafts,ceil(n/max(1,step.outputMin))) end
         step.leveling=(step.expectedGain or 0)>1e-9
@@ -334,6 +363,9 @@ function S.Result(job,state,status)
     -- Only the crafted quantity still in inventory may be sold; own stock isn't revenue.
     for id,n in pairs(crafted) do
         local left=min(n,state.produced[id] or 0)
+        local retained=job.snap.retainedToolItems and job.snap.retainedToolItems[id] or 0
+        local purchased=max(0,(state.inv[id] or 0)-(state.produced[id] or 0))
+        left=max(0,left-max(0,retained-purchased))
         if left>0 then
             local ah=job.snap.prices[id]; local npc=ra and ra.NPCSellPriceOf and ra.NPCSellPriceOf(id)
             if ah then out.productAH=out.productAH+left*ah else out.productPartial=true end
@@ -584,7 +616,8 @@ function S.NewJob(slug,opts)
         if j.seeding then emit=function(t) if better(t,localBest) then localBest=t end end end
         local price=j.snap.prices[id]
         local had=false
-        local auctionPriced=auctionQuote(id)
+        local craftOnly=path.forceCraftItem==id or j.snap.toolCraftOnlyItems and j.snap.toolCraftOnlyItems[id]
+        local auctionPriced=not craftOnly and auctionQuote(id)
         local remaining=auctionRemaining(s,id)
         if auctionPriced then
             if remaining>=missing then had=true;emit(buy(s,id,missing,"ah",price,1,nil,reason,nil,nil,path.owner))
@@ -598,7 +631,7 @@ function S.NewJob(slug,opts)
             end
         end
         for _,o in ipairs(j.snap.offers[id] or {}) do
-            if vendorQuote(o) then
+            if not craftOnly and vendorQuote(o) then
                 local qty=o.quantity or o.bundleSize or 1; local p=o.price
                 if p and p>=0 then
                     had=true
@@ -704,9 +737,25 @@ function S.NewJob(slug,opts)
         reagents(s,1)
         j.seeding,j.directSeed,j.seedDeadline=wasSeeding,wasDirect,deadline
     end
+    local function finishTool(s,goal)
+        local t=clone(s);t.completedToolGoals[goal.id]=true
+        log(t,{type="tool_goal",item=goal.item,count=1,goalID=goal.id,profession=goal.profession,minSkill=goal.minSkill})
+        return t
+    end
+    local function procureTool(s,goal,emit)
+        local path={owner="tool:"..goal.id,ownProfessionOnly=goal.profession}
+        if goal.bindOnPickup then path.forceCraftItem=goal.item end
+        acquire(s,goal.item,1,"tool",path,function(t) emit(finishTool(t,goal)) end)
+    end
     local function expand(s,p,target,path,emit,greedy)
         if j.seedAborted then return end
         if p==slug then
+            for _,goal in ipairs(j.snap.toolGoals or {}) do
+                if not s.completedToolGoals[goal.id] and (s.skill[p] or 0)>=goal.minSkill then
+                    procureTool(s,goal,emit)
+                    return
+                end
+            end
             if j.specializationConflict and (s.skill[p] or 0)>=200 then
                 fail("specializationChoiceConflict",{key=p,profession=p});return
             end
@@ -876,6 +925,11 @@ function S.NewJob(slug,opts)
                 elseif a.type=="gather" then
                     local event=E.Copy(a);event.from=t.skill[a.profession];event.to=max(event.from,a.to)
                     t.skill[a.profession]=event.to;t.progress[a.profession]=0;log(t,event)
+                elseif a.type=="tool_goal" then
+                    local goal
+                    for _,candidate in ipairs(j.snap.toolGoals or {}) do if candidate.id==a.goalID then goal=candidate;break end end
+                    if not goal or available(t,goal.item)<1 or (t.skill[goal.profession] or 0)<goal.minSkill then return end
+                    t=finishTool(t,goal)
                 elseif a.type=="specialization_quest" then
                     local goal=a.quest
                     if not goal or t.completedSpecializationGoals[goal.id] or (t.skill[goal.profession] or 0)<(goal.minSkill or 0)
@@ -933,6 +987,9 @@ function S.NewJob(slug,opts)
                     if used then need[a.item]=max(0,(need[a.item] or 0)-(a.outputCount or 0)) end
                     for _,m in ipairs(a.inputs or {}) do need[m[1]]=(need[m[1]] or 0)+m[2];needOwner[m[1]]=a.profession..":"..a.spell end
                 else changed=true end
+            elseif a.type=="tool_goal" then
+                keep[i]=true
+                need[a.item]=max(1,need[a.item] or 0);needOwner[a.item]="tool:"..a.goalID
             elseif a.type=="specialization_quest" then
                 keep[i]=true
                 for _,m in ipairs(a.inputs or {}) do
@@ -1024,6 +1081,10 @@ function S.NewJob(slug,opts)
             elseif opts.allowSecondaryLeveling and r.profession~=slug then visit(r) end
             tick()
         end
+        for _,goal in ipairs(j.snap.toolGoals or {}) do
+            j.reusable[goal.item]=true
+            for _,r in ipairs(j.snap.byItem[goal.item] or {}) do if r.profession==goal.profession then visit(r) end end
+        end
         for _,goal in ipairs(j.snap.specializationGoals or {}) do
             for _,m in ipairs(goal.inputs) do
                 j.reusable[m[1]]=true
@@ -1086,6 +1147,54 @@ function S.NewJob(slug,opts)
                     or completedGoals(preview)==completedGoals(j.preview) and better(preview,j.preview)))) then
                 j.preview=preview; j.result=S.Result(j,nil,"searching"); coroutine.yield("publish")
             end
+        end
+        if opts.fixedSteps then
+            -- Preserve the guide's recipe choices while procuring all inputs
+            -- and tool goals through the same recursive, finite-supply ledger.
+            local current=first
+            local function toolsDue()
+                for _,goal in ipairs(j.snap.toolGoals or {}) do
+                    if not current.completedToolGoals[goal.id] and current.skill[slug]>=goal.minSkill then
+                        local winner
+                        procureTool(current,goal,function(t) if better(t,winner) then winner=t end end)
+                        if not winner then return false end
+                        current=winner
+                    end
+                end
+                return true
+            end
+            for _,step in ipairs(opts.fixedSteps) do
+                if not current or not toolsDue() then current=nil;break end
+                local r=j.snap.byKey[(step.profession or slug)..":"..step[3]]
+                if not r then fail("clientDataPending",{key=tostring(step[3]),spell=step[3]});current=nil;break end
+                local n=ceil(step[4] or 0)
+                local skillGoal=min(j.target,step[2] or 0)
+                local leveling=skillGoal>(step[1] or 0)
+                local attempts=0
+                while current and (leveling and current.skill[r.profession]<skillGoal or not leveling and attempts<n) do
+                    if not toolsDue() then current=nil;break end
+                    if leveling and current.skill[r.profession]>=skillGoal then break end
+                    if attempts>=10000 or leveling and E.Gain(r,current.skill[r.profession])<=0 then
+                        fail("levelGap",r);current=nil;break
+                    end
+                    local winner
+                    craft(current,r,1,leveling and "level" or "material",{},function(t) if better(t,winner) then winner=t end end)
+                    current=winner
+                    attempts=attempts+1
+                    if not current then break end
+                end
+                if not current then break end
+                rememberPrefix(current)
+            end
+            if current and not toolsDue() then current=nil end
+            if current then
+                local prepared=batchPlan(current,false)
+                if prepared then j.preview=prepared;if goalsComplete(j,prepared) then j.best=prepared end end
+            end
+            j.exhausted=true;j.restricted=true;j.finished=true;j.searchTermination="fixed"
+            j.status=j.best and "complete" or j.preview and "incomplete" or "infeasible"
+            j.result=S.Result(j,j.best,j.status)
+            return "done"
         end
         -- A quick feasible incumbent uses a complete procurement ledger at every step.
         local function seed(direct)
@@ -1256,6 +1365,7 @@ function S.NewProcurementJob(snapshot,demands,opts)
     -- A top-up purchases its explicit demand only. It must retain actual
     -- specialization gates, without trying to complete the parent route's quest.
     opts.snapshot.specializationGoals={}
+    opts.snapshot.toolGoals={}
     if opts.referenceFallback==nil then opts.referenceFallback=false end
     for _,r in ipairs(snapshot.recipes or {}) do opts.snapshot.recipes[#opts.snapshot.recipes+1]=r end
     local totals={}

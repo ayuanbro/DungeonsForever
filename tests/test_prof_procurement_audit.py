@@ -223,7 +223,7 @@ class ProfessionProcurementAudit(unittest.TestCase):
                 lua = actual_runtime(locale)
                 lua.execute('''
           local E=ns.ProfEconomy
-          for _,slug in ipairs({'herbalism','skinning','fishing','first-aid','camping'})do
+          for _,slug in ipairs({'herbalism','skinning','fishing','camping'})do
             E.Professions=function()return {[slug]={cur=1,max=300,primary=slug=='herbalism' or slug=='skinning'}}end
             local s=E.Capture(slug,{})
             assert(#s.recipes==0,slug..' unexpectedly gained authoritative crafting inputs')
@@ -243,6 +243,75 @@ class ProfessionProcurementAudit(unittest.TestCase):
           assert(fish.feasible and fish.targetReached and fish.total==0 and #fish.fishMaterials>0)
           assert(fish.vendorTotal==0 and fish.ahTotal==0 and fish.formulasTotal==0)
           for _,m in ipairs(fish.fishMaterials)do assert(m.source=='fishing' and m.count>0) end
+                ''')
+
+    def test_first_aid_fixed_only_guide_has_source_backed_material_and_formula_receipts(self):
+        for locale in ("zhCN", "zhTW", "enUS"):
+            with self.subTest(locale=locale):
+                lua = actual_runtime(locale)
+                lua.execute('''
+          local E,RA=ns.ProfEconomy,ns.ProfRouteAuto
+          E.Professions=function()return {['first-aid']={cur=1,max=300}}end
+          E.Known=function(spell)return spell~=7929 and spell~=10840 end
+          assert(ns.ProfRecipes['first-aid']==nil,'fixed metadata restored the hidden recipe catalogue')
+          local snapshot=E.Capture('first-aid',{})
+          assert(#snapshot.recipes==14,'fixed guide lost its reviewed recipe metadata')
+          local guide=ns.ProfLeveling['first-aid']
+          for _,recipe in ipairs(snapshot.recipes)do
+            local seed=assert(guide.rinfo[recipe.spell],'unreviewed First Aid craft entered the snapshot')
+            assert(recipe.item==seed.makes and recipe.count==seed.count)
+            assert(recipe.learn==seed.learn and recipe.yellow==seed.yellow
+                and recipe.green==seed.green and recipe.grey==seed.grey)
+            if recipe.spell==1259342 then assert(recipe.count==3,'multi-output remedy became a single item')end
+            if recipe.spell==7929 then assert(recipe.formula==16112)end
+            if recipe.spell==10840 then assert(recipe.formula==16113)end
+          end
+          -- These are the source guide's exact 1->225 reagent obligations.
+          -- Pack excess is paid for separately; ordinary inventory cannot reduce them.
+          local expected={[2589]=73,[3371]=46,[2678]=111,[2447]=40,[2592]=20,[2450]=6,
+              [3174]=59,[2723]=59,[3372]=19,[2692]=19,[2453]=19,[4306]=126,[4338]=18}
+          local first
+          for _,scheme in ipairs({'cheapest','matcost','crafts','optim','fixed'})do
+            local result=RA.Compute('first-aid',{start=1,target=225,scheme=scheme})
+            assert(result.mode=='fixed' and result.scheme=='fixed',
+                'requesting an automatic score restored automatic First Aid')
+            assert(result.completeCost and #result.steps==12 and #result.formulas==2)
+            local selected,demands={},{}
+            for _,step in ipairs(guide.steps)do
+              if step[1]>=225 then break end
+              selected[#selected+1]=step
+            end
+            for index,step in ipairs(result.steps)do
+              local source=selected[index]
+              assert(source and step[1]==source[1] and step[2]==source[2]
+                  and step[3]==source[3] and step[4]==source[4],
+                  'fixed First Aid was replaced by another craft or count')
+            end
+            for _,purchase in ipairs(result.mats)do
+              local id=purchase.id or purchase[1]
+              assert(expected[id],'fixed guide fabricated a material purchase')
+              local count=purchase.count or purchase[2]
+              local demand=purchase.need or count
+              demands[id]=(demands[id] or 0)+demand
+              assert(count>=demand)
+              if purchase.vendor then
+                assert(count-demand<purchase.bundleSize,'NPC pack excess was counted as route demand')
+              else assert(count==demand,'AH purchase exceeded its exact obligation')end
+            end
+            for id,count in pairs(expected)do
+              assert(demands[id]==count,'First Aid material obligation changed for item '..id)
+            end
+            local formulaCost,seen=0,{}
+            for _,formula in ipairs(result.formulas)do
+              assert(formula.id==16112 or formula.id==16113,'fixed guide fabricated a manual')
+              assert(not seen[formula.id] and (formula.count or 1)==1,'a repeated step charged its manual again')
+              seen[formula.id]=true;formulaCost=formulaCost+formula.cost
+            end
+            assert(seen[16112] and seen[16113] and result.formulasTotal==formulaCost)
+            auditReceipt(result)
+            if first then assert(result.total==first.total and result.crafts==first.crafts,
+                'automatic scheme changed the fixed guide procurement')else first=result end
+          end
                 ''')
 
 
