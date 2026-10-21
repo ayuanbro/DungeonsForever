@@ -31,6 +31,7 @@ ns.MapPins = {
     },
     ["the_deadmines"] = {
         entrance = { { 30.8, 15.7 } },
+        next = { { 65.4, 68.8, 1 }, { 84.3, 43, 2 } },
     },
     ["wailing_caverns"] = {
         entrance = { { 47.1, 60.3 } },

@@ -5770,6 +5770,7 @@ function PD.RecipeList(limit, q)
     end
     local fk = PD.EffKeyFilter(d)
     local __ri = 0
+    local __tGate = debugprofilestop and debugprofilestop() or 0
     for _, r in ipairs(d.rows or {}) do
         __ri = __ri + 1
         if (not fk) or r[4] == fk then
@@ -5778,7 +5779,11 @@ function PD.RecipeList(limit, q)
                 if #out >= cap then break end
             end
         end
-        if __ri % 8 == 0 and coroutine.running and coroutine.running() then coroutine.yield() end
+        if coroutine.running and coroutine.running()
+           and debugprofilestop and (debugprofilestop() - __tGate) >= 3 then
+            __tGate = debugprofilestop()
+            coroutine.yield()
+        end
     end
     return out
 end

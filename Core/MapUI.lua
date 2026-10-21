@@ -1330,7 +1330,7 @@ end
 
 M.routeHidden = {}
 
-M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns = true, hall_of_thanes = true, ruins_of_lordaeron = true }
+M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns = true, hall_of_thanes = true, ruins_of_lordaeron = true, the_deadmines = true }
 
 function M.RouteOn(id)
     return id ~= nil and M.ROUTE_ON[id] == true

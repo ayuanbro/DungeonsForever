@@ -198,7 +198,9 @@ local function SnapshotSec()
 end
 
 function RA.HasPriceData()
-    return priceCache.__any and true or false
+    if priceCache.__any then return true end
+    local supply = ns.ProfSupply
+    return (supply and supply.Ready and supply.Ready()) and true or false
 end
 
 function RA.SnapshotAge()

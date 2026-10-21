@@ -22,14 +22,14 @@ ns.BossPos = {
         ["Verdan the Everliving"] = { { 56.4, 47.4 } },
     },
     ["the_deadmines"] = {
-        ["Captain Greenskin"] = { { 61.7, 35.9, 2 } },
+        ["Captain Greenskin"] = { { 57.9, 38.7, 2 } },
         ["Cookie"] = { { 69.7, 42, 2 } },
         ["Edwin VanCleef"] = { { 60.6, 45.9, 2 } },
         ["Gilnid"] = { { 11.9, 73.1, 2 } },
         ["Miner Johnson"] = { { 52.7, 50.5 } },
         ["Mr. Smite"] = { { 56.1, 26.5, 2 } },
         ["Rhahk'Zor"] = { { 38.6, 60.9 } },
-        ["Sneed"] = { { 45, 88.9 } },
+        ["Sneed"] = { { 47.1, 87 } },
         ["Sneed's Shredder"] = { { 48.5, 92.4 } },
     },
     ["shadowfang_keep"] = {

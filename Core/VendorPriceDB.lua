@@ -181,6 +181,7 @@ end
 function VDB.GetOffers(itemID, context)
     if type(itemID) ~= "number" then return {} end
     context = context or {}
+    if ns.ProfSupply then ns.ProfSupply.Ensure() end
     local character = context.character or Character()
     local result, blockedNPC = {}, {}
     local records = DB().profVendorOffers[itemID]
