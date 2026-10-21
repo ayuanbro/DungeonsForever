@@ -79,8 +79,10 @@ try {
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
-    $output = Join-Path $root "$addon-$safeVersion-$stamp.zip"
-    $temporaryZip = Join-Path $root ('.DungeonsForever-package-' + [Guid]::NewGuid().ToString('N') + '.tmp')
+    $outputDirectory = Join-Path $root 'dist'
+    [void][IO.Directory]::CreateDirectory($outputDirectory)
+    $output = Join-Path $outputDirectory "$addon-$safeVersion-$stamp.zip"
+    $temporaryZip = Join-Path $outputDirectory ('.DungeonsForever-package-' + [Guid]::NewGuid().ToString('N') + '.tmp')
     $entryNames = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     $stream = $null
     $archive = $null

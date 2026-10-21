@@ -94,8 +94,10 @@ class PackageProfPricesTests(unittest.TestCase):
                 errors="replace", timeout=120,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            archives = list(checkout.glob("DungeonsForever-*.zip"))
+            archives = list((checkout / "dist").glob("DungeonsForever-*.zip"))
             self.assertEqual(len(archives), 1, result.stdout + result.stderr)
+            self.assertEqual(list(checkout.glob("*.zip")), [])
+            self.assertEqual(list((checkout / "dist").glob("*.tmp")), [])
             self.assertEqual(list(caller.glob("*.zip")), [])
             with zipfile.ZipFile(archives[0]) as archive:
                 names = archive.namelist()
