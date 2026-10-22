@@ -41,7 +41,7 @@ ns.BossPos = {
         ["Fenrus the Devourer"] = { { 55.7, 64.5, 6 } },
         ["Odo the Blindwatcher"] = { { 55.1, 77.1, 7 } },
         ["Razorclaw the Butcher"] = { { 48, 29, 2 } },
-        ["Rethilgore"] = { { 66.1, 71.1 } },
+        ["Rethilgore"] = { { 66, 71.7 } },
         ["Wolf Master Nandos"] = { { 59, 53.3, 6 } },
     },
     ["blackfathom_deeps"] = {

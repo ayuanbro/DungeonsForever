@@ -364,6 +364,15 @@ do
                     J.Add(function()
                         local mf = _G.DungeonsForever_MainFrame
                         if mf and mf.IsShown and mf:IsShown() then return false end
+                        if profKeys == nil then
+                            local PM = ns.ProfModule
+                            local learned = PM and PM.ProfLearned and PM.ProfLearned()
+                            local keys = {}
+                            if type(learned) == "table" then
+                                for slug in pairs(learned) do keys[#keys + 1] = slug end
+                            end
+                            profKeys = keys
+                        end
                         profEnsure(profKeys)
                         if DungeonsForeverDB and DungeonsForeverDB.dfMemProbe then
                             ns.MemMark("profData")

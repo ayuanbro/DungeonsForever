@@ -1743,15 +1743,6 @@ do
         return ok and loaded and true or false
     end
 
-    local function HasExternalTooltipSkin()
-        if AddonLoaded("NDui") then return true end
-        if not AddonLoaded("ElvUI") then return false end
-        local ok, E = pcall(unpack, ElvUI)
-        local skins = ok and E and E.private and E.private.skins
-        if not (skins and skins.blizzard) then return true end
-        return (skins.blizzard.enable and skins.blizzard.tooltip) and true or false
-    end
-
     local ttItemMark = {}
     function ns.hui.MarkTipItem(tt, on)
         if tt then ttItemMark[tt] = on and true or nil end
@@ -1806,12 +1797,11 @@ do
         end
         for _, tex in ipairs(s.border) do tex:SetShown(on) end
         if on then
-            s.nineTex = CollectForeign(tt)
             for _, e in ipairs(s.nineTex) do
                 if e[2] then e[1]:SetShown(false) end
             end
             if tt.NineSlice then tt.NineSlice:SetAlpha(0) end
-        elseif not (s.ownScoped and HasExternalTooltipSkin()) then
+        else
             if tt.NineSlice then tt.NineSlice:SetAlpha(s.nineAlpha or 1) end
             for _, e in ipairs(s.nineTex or {}) do e[1]:SetShown(e[2]) end
         end
@@ -1863,6 +1853,10 @@ do
         for _, tex in ipairs(s.fill) do tex.__huiPiece = true end
         for _, tex in ipairs(s.border) do tex.__huiPiece = true end
         tooltipSkins[tt] = s
+        hooksecurefunc(GameTooltip, "SetOwner", function(tt)
+            local s2 = tooltipSkins[tt]
+            if s2 and s2.on then ApplyTooltipSkin(tt, false) end
+        end)
         tt:HookScript("OnUpdate", function(f)
             local s2 = tooltipSkins[f]
             if not (s2 and s2.on) then return end
@@ -1870,11 +1864,18 @@ do
             if now - (s2.scanT or 0) < 0.2 then return end
             s2.scanT = now
             for _, e in ipairs(CollectForeign(f)) do
-                if e[2] and e[1]:IsShown() then e[1]:SetShown(false) end
+                if e[2] and e[1]:IsShown() then
+                    e[1]:SetShown(false)
+                    s2.nineTex[#s2.nineTex + 1] = e
+                end
             end
             if f.NineSlice and f.NineSlice.GetAlpha and f.NineSlice:GetAlpha() ~= 0 then f.NineSlice:SetAlpha(0) end
         end)
         tt:HookScript("OnShow", function()
+            if not s.snapDone then
+                s.snapDone = true
+                s.nineTex = CollectForeign(tt)
+            end
             local on = ns.huiTheme == "hui"
             if on and s.ownScoped then
                 on = TooltipOwnerIsMine(tt)

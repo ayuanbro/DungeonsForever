@@ -31,8 +31,7 @@ local D  = ns.ProfData
 local R
 local function RGet(k)
     if not R then
-        local fn = ns.EnsureProfRecipes
-        R = type(fn) == "function" and fn() or nil
+        R = ns.ProfRecipes
     end
     return R and R[k] or nil
 end

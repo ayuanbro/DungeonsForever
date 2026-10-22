@@ -271,9 +271,11 @@ function RA.SpellKnown(spell)
     return LearnKnown(spell)
 end
 
+local specBlocked = 0
 local function BuildCandidates(slug, opts)
-    local _rf = ns.EnsureProfRecipes
-    local Rg = _rf and _rf()[slug]
+    specBlocked = 0
+    local pr = ns.ProfRecipes
+    local Rg = pr and pr[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
     if not (Rg and (type(Rg.rows) == "table"
                     or (LV and type(LV.rinfo) == "table"))) then return nil end
@@ -386,7 +388,23 @@ local function BuildCandidates(slug, opts)
         end
         cands = kept
     end
-    return cands, recOf, soldSet
+    local G = ns.ProfGates
+    if G and not opts.ignoreSpecGate then
+        local kept, blocked = {}, 0
+        for _, c in ipairs(cands) do
+            local allowed, need = G.Allowed(slug, c.spell)
+            if allowed then
+                if G.TrainerTaught(c.spell) then c.fcost = 0; c.taughtByTrainer = true end
+                kept[#kept + 1] = c
+            else
+                blocked = blocked + 1
+                c.specBlocked = need
+            end
+        end
+        cands = kept
+        specBlocked = blocked
+    end
+    return cands, recOf, soldSet, specBlocked
 end
 
 local function Eligible(c, allowUnpriced)
@@ -626,6 +644,17 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
     for _, st in ipairs(steps) do
         local rec = recOf[st[3]]
         local ml = rec and (rec[12] or rec.mats) or nil
+        if st.mats == nil then st.mats = ml end
+        if st.item == nil and rec then
+            local prod = rec[2]
+            if type(prod) ~= "number" then prod = rec.makes end
+            st.item = prod
+        end
+        if st.out == nil and rec then
+            local n = rec[3]
+            if type(n) ~= "number" then n = rec.count end
+            st.out = n
+        end
         if st.cost == nil then
             local sc, unpriced = 0, false
             if ml then
@@ -730,8 +759,8 @@ end
 
 function RA.SummarizeSteps(steps, slug, opts)
     opts = opts or {}
-    local _rf = ns.EnsureProfRecipes
-    local Rg = _rf and _rf()[slug]
+    local pr = ns.ProfRecipes
+    local Rg = pr and pr[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
     if not (Rg and (type(Rg.rows) == "table"
                     or (LV and type(LV.rinfo) == "table"))) then return nil end
@@ -749,18 +778,91 @@ function RA.SummarizeSteps(steps, slug, opts)
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
         SummarizeCore(steps, recOf, soldSet, opts.learnedOnly)
-    return {
+    local res = {
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
         total = total + formulasTotal, vendorTotal = vendorTotal,
         ahTotal = total - vendorTotal,
         productAH = productAH, productNPC = productNPC, productPartial = productPartial,
         crafts = crafts,
+        scheme = opts.scheme or "fixed",
         priced = RA.HasPriceData(),
         snapshotAge = SnapshotSec(),
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
     }
+    return RA.ApplyRecovery(res, slug, opts, recOf)
+end
+
+local function RecoverySnapshot(slug, steps, recOf, toolItems)
+    local snap = {
+        slug = slug, stamp = (type(time) == "function") and time() or 0,
+        recipes = {}, byKey = {}, prices = {}, sellPrices = {},
+        auctionSupply = {}, nonAuctionable = {}, retainedToolItems = {},
+    }
+    for _, st in ipairs(steps or {}) do
+        local spell = st[3]
+        local rec = type(spell) == "number" and recOf and recOf[spell] or nil
+        if rec then
+            local key = slug .. ":" .. tostring(spell)
+            if not snap.byKey[key] then
+                local item = rec[2]
+                if type(item) ~= "number" then item = rec.makes end
+                local count = rec[3]
+                if type(count) ~= "number" then count = rec.count or 1 end
+                local mats = rec[12] or rec.mats or {}
+                local row = {
+                    profession = slug, spell = spell, key = key,
+                    item = (type(item) == "number" and item > 0) and item or nil,
+                    count = (type(count) == "number" and count > 0) and count or 1,
+                    mats = mats,
+                }
+                snap.recipes[#snap.recipes + 1] = row
+                snap.byKey[key] = row
+            end
+        end
+    end
+    for _, r in ipairs(snap.recipes) do
+        if r.item then
+            local p = AHPrice(r.item)
+            if type(p) == "number" and p > 0 then snap.prices[r.item] = p end
+            local sp = NPCSellPrice(r.item)
+            if sp then snap.sellPrices[r.item] = sp end
+        end
+    end
+    for _, id in ipairs(toolItems or {}) do
+        snap.retainedToolItems[id] = 1
+        snap.nonAuctionable[id] = true
+    end
+    return snap
+end
+
+local function RecoveryOptions(opts)
+    opts = opts or {}
+    local db = DungeonsForeverDB and DungeonsForeverDB.prof
+    local enabled = opts.recoveryEnabled
+    if enabled == nil then enabled = not (db and db.recoveryEnabled == false) end
+    local fee = opts.recoveryFeePercent
+    if fee == nil and db then fee = db.recoveryFeePercent end
+    return enabled, fee
+end
+
+function RA.ApplyRecovery(res, slug, opts, recOf)
+    local R = ns.ProfRecovery
+    if not res or not R or not R.Apply then return res end
+    local enabled, fee = RecoveryOptions(opts)
+    local snap = RecoverySnapshot(slug, res.steps, recOf, res.toolItems)
+    R.Capture(snap, { recoveryEnabled = enabled, recoveryFeePercent = fee })
+    res.scheme = res.scheme or (opts and opts.scheme) or "fixed"
+    R.Apply(res, snap)
+    res.recoveryOptimized = false
+    res.recoveryScheme = snap.recovery and snap.recovery.feePercent or nil
+    res.recoveryFeeSource = snap.recovery and snap.recovery.feeSource or nil
+    return res
+end
+
+function RA.RecoveryForSteps(res, slug, recOf, opts)
+    return RA.ApplyRecovery(res, slug, opts, recOf)
 end
 
 local function ToReached(steps)
@@ -775,29 +877,36 @@ local function ToReached(steps)
     return out
 end
 
-local ROD_TOOLS = { { 1, 7421 }, { 130, 7795 }, { 173, 13628 }, { 218, 13702 } }
-
-local function InjectTools(stepsOut, slug, cap, startLv)
-    if slug ~= "enchanting" then return end
+local function InjectTools(stepsOut, slug, cap, startLv, recOf)
+    local kept = {}
+    local G = ns.ProfGates
+    if not G or not G.AutoCraftTools() then return kept end
+    local goals = G.ToolGoals(slug, cap)
+    if #goals == 0 then return kept end
     local have = {}
     for _, st in ipairs(stepsOut) do have[st[3]] = true end
-    for _, rd in ipairs(ROD_TOOLS) do
-        local P, spell = rd[1], rd[2]
-        if P <= cap and P >= (startLv or 1) and not have[spell] then
+    local lo = tonumber(startLv) or 1
+    for _, goal in ipairs(goals) do
+        local P = goal.minSkill or 1
+        if P >= lo and not have[goal.spell] and recOf[goal.spell] then
             local at = #stepsOut + 1
             for i, st in ipairs(stepsOut) do
                 if (tonumber(st[2]) or 0) > P then at = i break end
             end
-            table.insert(stepsOut, at, { P, P, spell, 1 })
-            have[spell] = true
+            table.insert(stepsOut, at, { P, P, goal.spell, 1,
+                tool = true, toolItem = goal.item, toolSpell = goal.spell })
+            have[goal.spell] = true
+            kept[#kept + 1] = goal.item
         end
     end
+    return kept
 end
 
 function RA.Compute(slug, opts)
     opts = opts or {}
     local cands, recOf, soldSet = BuildCandidates(slug, opts)
     if not cands then return nil end
+    local blockedCount = specBlocked
     local scheme = opts.scheme
     if scheme == nil or not SCHEME_LABEL[scheme] then scheme = "cheapest" end
     local cap = tonumber(opts.target) or CAP
@@ -819,11 +928,11 @@ function RA.Compute(slug, opts)
         end
     end
     local stepsOut = ToReached(steps)
-    InjectTools(stepsOut, slug, cap, opts.start)
+    local kept = InjectTools(stepsOut, slug, cap, opts.start, recOf)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
         SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly)
-    return {
+    local res = {
         scheme = scheme,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
         total = total + formulasTotal, matTotal = total,
@@ -835,15 +944,22 @@ function RA.Compute(slug, opts)
         target = cap,
         priced = RA.HasPriceData(),
         filled = filled,
+        specBlocked = blockedCount,
+        toolItems = kept,
         snapshotAge = SnapshotSec(),
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
     }
+    return RA.ApplyRecovery(res, slug, opts, recOf)
 end
 
 local cache = {}
 
 function RA.Invalidate()
+    local R = ns.ProfRecovery
+    if R and R.Invalidate then R.Invalidate() end
+    local G = ns.ProfGates
+    if G and G.Invalidate then G.Invalidate() end
     for k in pairs(cache) do cache[k] = nil end
     for k in pairs(priceCache) do
         if k ~= "__any" then priceCache[k] = nil end
