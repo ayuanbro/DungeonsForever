@@ -188,6 +188,22 @@ function E.Index(s)
     s.specializationGoals = s.specializationGoals or {}
     s.specializationAbilities = s.specializationAbilities or {}
     s.inventory = {}
+    local AB = ns.AuctionBridge
+    if AB and AB.SupplyFresh then
+        local seen = {}
+        for _, r in ipairs(s.recipes) do
+            if type(r.item) == "number" and r.item > 0 then seen[r.item] = true end
+            for _, m in ipairs(r.mats or {}) do
+                if type(m[1]) == "number" then seen[m[1]] = true end
+            end
+        end
+        for id in pairs(seen) do
+            local rec = AB.SupplyFresh(id)
+            if rec then
+                s.auctionSupply[id] = rec
+            end
+        end
+    end
     return s
 end
 
@@ -277,9 +293,14 @@ function E.Capture(slug, opts, tick)
         local keptGoals = {}
         for _, goal in ipairs(s.toolGoals) do
             if goal.item and s.byKey[slug .. ":" .. tostring(goal.spell)] then
-                keptGoals[#keptGoals + 1] = goal
-                s.retainedToolItems[goal.item] = 1
-                s.nonAuctionable[goal.item] = true
+                if G.ToolOwned and G.ToolOwned(goal.item) then
+                    s.ownedToolItems = s.ownedToolItems or {}
+                    s.ownedToolItems[goal.item] = true
+                else
+                    keptGoals[#keptGoals + 1] = goal
+                    s.retainedToolItems[goal.item] = 1
+                    s.nonAuctionable[goal.item] = true
+                end
             end
         end
         s.toolGoals = keptGoals

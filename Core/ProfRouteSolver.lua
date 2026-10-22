@@ -96,6 +96,7 @@ local function stampFreshResult(result,snapshot)
     local route=ns.ProfRouteAuto
     if route and route.StampVendorQuotes then route.StampVendorQuotes(result) end
     if route and route.StampToolPolicy then route.StampToolPolicy(result,snapshot and snapshot.targetProfession,nil,snapshot) end
+    if route and route.StampSupply then route.StampSupply(result) end
     return result
 end
 local function mergeItemIDs(dst,src)

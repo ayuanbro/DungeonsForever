@@ -154,6 +154,18 @@ function G.ToolGoals(slug, target)
     return out
 end
 
+function G.ToolOwned(itemID)
+    if type(C_Item) == "table" and type(C_Item.GetItemCount) == "function" then
+        local ok, n = pcall(C_Item.GetItemCount, itemID, true)
+        if ok and type(n) == "number" and n > 0 then return true end
+    end
+    if type(GetItemCount) == "function" then
+        local ok, n = pcall(GetItemCount, itemID, true)
+        if ok and type(n) == "number" and n > 0 then return true end
+    end
+    return false
+end
+
 function G.AutoCraftTools()
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
     return not (db and db.autoCraftTools == false)

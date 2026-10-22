@@ -877,6 +877,14 @@ local function RecoverySnapshot(slug, steps, recOf, toolItems)
             if sp then snap.sellPrices[r.item] = sp end
         end
     end
+    local AB = ns.AuctionBridge
+    if AB and AB.GetAuctionSupply then
+        for _, r in ipairs(snap.recipes) do
+            if r.item and snap.auctionSupply[r.item] == nil then
+                snap.auctionSupply[r.item] = AB.GetAuctionSupply(r.item)
+            end
+        end
+    end
     for _, id in ipairs(toolItems or {}) do
         snap.retainedToolItems[id] = 1
         snap.nonAuctionable[id] = true
@@ -905,6 +913,7 @@ function RA.ApplyRecovery(res, slug, opts, recOf)
     res.recoveryOptimized = false
     res.recoveryScheme = snap.recovery and snap.recovery.feePercent or nil
     res.recoveryFeeSource = snap.recovery and snap.recovery.feeSource or nil
+    RA.StampSupply(res)
     return res
 end
 
@@ -935,18 +944,72 @@ local function InjectTools(stepsOut, slug, cap, startLv, recOf)
     local lo = tonumber(startLv) or 1
     for _, goal in ipairs(goals) do
         local P = goal.minSkill or 1
-        if P >= lo and not have[goal.spell] and recOf[goal.spell] then
+        if P >= lo and not have[goal.spell] and recOf[goal.spell] and not G.ToolOwned(goal.item) then
             local at = #stepsOut + 1
             for i, st in ipairs(stepsOut) do
                 if (tonumber(st[2]) or 0) > P then at = i break end
             end
             table.insert(stepsOut, at, { P, P, goal.spell, 1,
-                tool = true, toolItem = goal.item, toolSpell = goal.spell })
+                tool = true, toolItem = goal.item, toolSpell = goal.spell,
+                toolBop = goal.bindOnPickup or nil })
             have[goal.spell] = true
             kept[#kept + 1] = goal.item
         end
     end
     return kept
+end
+
+function RA.StampToolPolicy(result, targetProfession, unused, snapshot)
+    if type(result) ~= "table" then return result end
+    local goals = {}
+    local s = snapshot or (type(result) == "table" and result.recoverySnapshot) or nil
+    if type(s) == "table" then
+        for _, goal in ipairs(s.toolGoals or {}) do
+            if goal.item then goals[goal.item] = goal end
+        end
+    end
+    for _, listKey in ipairs({ "steps", "executionSteps" }) do
+        for _, st in ipairs(result[listKey] or {}) do
+            if st.tool and st.toolItem then
+                local goal = goals[st.toolItem]
+                st.toolBop = st.toolBop or (goal and goal.bindOnPickup) or nil
+            end
+        end
+    end
+    for _, m in ipairs(result.mats or {}) do
+        if m.id and goals[m.id] then m.tool = true end
+    end
+    return result
+end
+
+function RA.StampSupply(result)
+    if type(result) ~= "table" then return result end
+    local AB = ns.AuctionBridge
+    local unknown = 0
+    local now = (type(time) == "function") and time() or 0
+    for _, e in ipairs(result.mats or {}) do
+        local mid = e.id or e[1]
+        if mid and not e.vendor and (e.source == nil or e.source == "ah") then
+            local rec = AB and AB.GetAuctionSupply and AB.GetAuctionSupply(mid) or nil
+            if rec and rec.complete and rec.ownerExcluded and rec.source == "client-auction-results"
+                and type(rec.quantity) == "number" and rec.observedAt > 0
+                and now - rec.observedAt <= 172800 then
+                e.source = e.source or "ah"
+                e.availableCount = rec.quantity
+                e.supplyObserved = true
+                e.supplyObservedAt = rec.observedAt
+                e.supplySource = rec.source
+                e.supplyComplete = true
+                e.supplyOwnerExcluded = true
+                if type(rec.market) == "number" and rec.market > 0 then e.supplyObservedPrice = rec.market end
+            else
+                e.supplyObserved = false
+                unknown = unknown + 1
+            end
+        end
+    end
+    result.auctionSupplyUnknown = unknown > 0 and unknown or nil
+    return result
 end
 
 function RA.Compute(slug, opts)

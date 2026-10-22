@@ -145,6 +145,7 @@ function R.StateRevenue(state,snapshot)
         local retained=snapshot and snapshot.retainedToolItems and snapshot.retainedToolItems[id] or 0
         local purchased=max(0,((state.inv or {})[id] or 0)-count)
         local sale=max(0,count-max(0,retained-purchased))
+        if q and q.supplyReliable and amount(q.quantity) then sale=min(sale,q.quantity) end
         if q and amount(count) then total=total+sale*(q.unit or 0) end
     end
     return total
@@ -339,33 +340,61 @@ function R.Apply(result,snapshot)
     end
     result.demandNonCraftCost=demandNonCraftCost
     local sold,missing={},{ }
+    local quota={}
+    local function sellEntry(q,id,src,unit,miss)
+        local key=id..":"..src..":"..tostring(unit)
+        local entry=sold[key]
+        if not entry then
+            entry=copy(q);entry.id=id;entry.count=0;entry.cost=0;entry.revenue=0
+            entry.source=src;entry.unit=unit or 0;entry.missing=miss and true or nil
+            if src~="ah" then entry.quantity=nil end
+            sold[key]=entry
+        end
+        return entry
+    end
     for id,pool in pairs(pools) do for _,lot in ipairs(pool) do if lot.count>0 then
         if lot.origin then
-            local ac=lot.origin;ac.attributedCost=ac.attributedCost+lot.cost;ac.saleCount=ac.saleCount+lot.count
+            local ac=lot.origin;ac.attributedCost=ac.attributedCost+lot.cost
             local q=frozen.quotes[id] or {unit=0,source="unknown",missing=true}
-            local entry=sold[id]
-            if not entry then entry=copy(q);entry.id=id;entry.count=0;entry.cost=0;entry.revenue=0;sold[id]=entry end
-            local revenue=lot.count*(q.unit or 0)
-            entry.count=entry.count+lot.count;entry.cost=entry.cost+lot.cost;entry.revenue=entry.revenue+revenue
-            ac.recoveryTotal=ac.recoveryTotal+revenue
-            ac.recoveryOutputs[#ac.recoveryOutputs+1]={id=id,count=lot.count,cost=lot.cost,unit=q.unit or 0,source=q.source,revenue=revenue,missing=q.missing}
-            if q.missing then missing[id]=true end
+            local ahLeft=nil
+            if q.source=="ah" and q.supplyReliable and amount(q.quantity) then
+                ahLeft=quota[id] or q.quantity
+            end
+            local parts
+            if ahLeft==nil then
+                parts={{n=lot.count,src=q.source,unit=q.unit,miss=q.missing,assumed=q.source=="ah"}}
+            else
+                quota[id]=ahLeft
+                local ahN=min(lot.count,ahLeft)
+                quota[id]=ahLeft-ahN
+                parts={}
+                if ahN>0 then parts[#parts+1]={n=ahN,src="ah",unit=q.unit,miss=false,assumed=false} end
+                local rest=lot.count-ahN
+                if rest>0 then
+                    if q.npcUnit~=nil then parts[#parts+1]={n=rest,src="npc",unit=q.npcUnit,miss=false,assumed=false}
+                    else parts[#parts+1]={n=rest,src="unknown",unit=0,miss=true,assumed=false} end
+                end
+            end
+            for _,pt in ipairs(parts) do
+                local revenue=pt.n*(pt.unit or 0)
+                local cost=lot.cost*pt.n/lot.count
+                ac.saleCount=ac.saleCount+pt.n
+                local entry=sellEntry(q,id,pt.src,pt.unit,pt.miss)
+                entry.count=entry.count+pt.n;entry.cost=entry.cost+cost;entry.revenue=entry.revenue+revenue
+                if pt.assumed then entry.assumed=true end
+                ac.recoveryTotal=ac.recoveryTotal+revenue
+                ac.recoveryOutputs[#ac.recoveryOutputs+1]={id=id,count=pt.n,cost=cost,unit=pt.unit or 0,source=pt.src,revenue=revenue,missing=pt.miss and true or nil}
+                if pt.miss then missing[id]=true end
+            end
         else
             result.purchaseRemainders[#result.purchaseRemainders+1]={id=id,count=lot.count,cost=lot.cost,owner=lot.owner}
             local owner=lot.ownerAccount or lot.owner and byRecipe[lot.owner] and byRecipe[lot.owner][1]
             if owner then owner.attributedCost=owner.attributedCost+lot.cost end
         end
     end end end
-    for _,ac in pairs(accounts) do
-        local per=ac.count>0 and ac.producedCount/ac.count or 0
-        local required=ac.consumedCount+ac.demandCount
-        local material=per>0 and ceil(required/per) or 0
-        ac.naturalRemainder=min(ac.saleCount,max(0,material*per-required))
-        ac.levelingRemainder=ac.saleCount-ac.naturalRemainder
-    end
     for id,entry in pairs(sold) do
         result.saleOutputs[#result.saleOutputs+1]=entry;result.recoveryTotal=result.recoveryTotal+entry.revenue
-        if entry.source=="ah" then result.recoveryAssumesAllSold=true end
+        if entry.source=="ah" and entry.assumed then result.recoveryAssumesAllSold=true end
         if missing[id] then result.recoveryMissing=result.recoveryMissing+1;result.recoveryMissingItems[#result.recoveryMissingItems+1]=id end
     end
     table.sort(result.saleOutputs,function(a,b)return a.id<b.id end);table.sort(result.recoveryMissingItems)

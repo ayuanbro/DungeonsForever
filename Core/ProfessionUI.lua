@@ -2022,6 +2022,24 @@ function PD.BindRow(r, spec, h)
         end
         r.c:ClearAllPoints()
         r.c:SetPoint("RIGHT", r, "RIGHT", -PD.LV_COUNT_R, 0)
+        if spec.toolChip then
+            local cf = r.__toolChip
+            if not cf then
+                cf = r:CreateFontString(nil, "OVERLAY")
+                cf:SetFont(ns.FONT, 12, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+                cf:SetJustifyH("RIGHT")
+                cf:SetWordWrap(false)
+                r.__toolChip = cf
+            end
+            cf:SetText(spec.toolChip.text)
+            local cc = spec.toolChip.color
+            cf:SetTextColor(cc[1], cc[2], cc[3])
+            cf:ClearAllPoints()
+            cf:SetPoint("RIGHT", r, "RIGHT", PD.LV_MAT_RIGHT - PD.LV_ROW_W - 4, 0)
+            cf:Show()
+        elseif r.__toolChip then
+            r.__toolChip:Hide()
+        end
         r.icon:SetSize(PD.TBL_ICON, PD.TBL_ICON)
         r.icon:ClearAllPoints()
         r.icon:SetPoint("LEFT", r, "LEFT", PD.LV_ICON_X, 0)
@@ -2061,6 +2079,7 @@ function PD.BindRow(r, spec, h)
 
     local padL = showIcon and ((iconName and not itemID) and 28 or 32) or 6
     if r.__costWhy then r.__costWhy:Hide() end
+    if r.__toolChip then r.__toolChip:Hide() end
     local ncol = spec.nameColor
     if not ncol and spec.qItem then
         local q = PD.QualCached(spec.qItem)
@@ -8251,7 +8270,7 @@ function PD.RowsLeveling(rows)
         if supply then PushText(rows, supply, 11, C_GREY) end
     end
 
-    local cntOf, costOf, cardOf, whyOf, whyLong = {}, {}, {}, {}, {}
+    local cntOf, costOf, cardOf, whyOf, whyLong, chipOf = {}, {}, {}, {}, {}, {}
     local rngW = PD.TextW(L["等级范围"], PD.LV_FS)
     local cntW = PD.TextW(L["制作次数"], PD.LV_FS)
     local costW = PD.TextW(L["成本"], PD.LV_FS)
@@ -8292,6 +8311,17 @@ function PD.RowsLeveling(rows)
         local pro = D.pro[st.profession or PD.cur]
         local cd = {text=label,kind="trainer",lines={{label},
             {(pro and pro.name) or st.profession or "", 0.7, 0.7, 0.7}}}
+        if st.tool and st.toolItem then
+            local owned = PD.ToolOwned(st.toolItem)
+            chipOf[st] = owned and { text = L["已拥有"], color = { 0.55, 0.90, 0.62 } }
+                or st.toolBop and { text = L["BoP 制作"], color = { 0.98, 0.82, 0.45 } }
+                or { text = L["可购买"], color = { 0.58, 0.86, 1 } }
+            cd.lines[#cd.lines + 1] = {
+                owned and L["工具：已在背包或银行中，无需再次制作。"]
+                or st.toolBop and L["工具：拾取绑定，无法购买，须自行制作。"]
+                or L["工具：可购买或制作，制成后保留使用，不会消耗。"],
+                0.58, 0.86, 1 }
+        end
         local output = PD.RecipeOutputText(riM or rec)
         if output then cd.lines[#cd.lines + 1] = {output, 0.65, 0.75, 0.85} end
         if st.checkpoint or st[3] == 0 then
@@ -8433,6 +8463,7 @@ function PD.RowsLeveling(rows)
                 costWhy = whyLong[st],
                 costWhyShort = whyOf[st],
                 role = PD.StepRole(st),
+                toolChip = chipOf[st],
                 _mats = mats,
                 blocks = blocks, matCut = cut,
                 sbVals = (rec and (rec[7] or rec[8] or rec[9] or rec[10]))
@@ -8488,6 +8519,11 @@ function PD.FormulaStockText(entry)
        or (entry.sources and #(entry.sources.vendors or {}) > 0) then
         return L["商人库存：性质尚未核实"]
     end
+end
+
+function PD.ToolOwned(itemID)
+    local G = ns.ProfGates
+    return (G and G.ToolOwned and G.ToolOwned(itemID)) or false
 end
 
 function PD.FormulaStockChip(entry)
@@ -9020,7 +9056,7 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip)
         kind = "row", h = PD.ROW_H, col = 1, it = { id },
         text = PD.Fit(DG.ItemName(id), 13, lw - 130),
         sub = sub,
-        tag = { text = e.spec and L["专精任务"] or PD.PurchaseSource(e) },
+        tag = { text = e.tool and L["工具"] or e.spec and L["专精任务"] or PD.PurchaseSource(e) },
         right = right,
         right2 = right2,
         lines = tip,
@@ -9028,21 +9064,44 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip)
     if e.spec then
         tip[#tip + 1] = { L["这是专精任务要交的材料，只在到达门槛时消耗一次。"], 0.95, 0.75, 0.4 }
     end
+    if e.tool then
+        tip[#tip + 1] = { L["这是路线所需的工具，购买或制成后保留使用，不会消耗。"], 0.58, 0.86, 1 }
+    end
 end
 
 function PD.RowsRecoveryDetail(rows, src)
     local lw = PD.COL_LW
     local outs = (src and src.saleOutputs) or {}
+    PD.recDetailSrc = src
     local rec = tonumber(src and src.recoveryTotal) or 0
     local fee = src and src.recoverySnapshot and src.recoverySnapshot.feePercent or nil
     local net = src and (tonumber(src.netTotal) or ((src.purchaseTotal or src.total or 0) - rec)) or 0
     PushHead(rows, L["预计回血明细"], 1)
-    rows[#rows].segs = { { key = "rec_fee", text = format(L["手续费 %d%%"], fee or 5) } }
+    rows[#rows].segs = { { key = "rec_fee", text = format(L["手续费 %d%%"], fee or 5) },
+                         { key = "rec_scan", text = L["扫描数量"] } }
     PushText(rows, format(L["预计回血 %s · 净成本 %s"], PD.RecoveryMoney(rec), PD.RecoveryMoney(net)), 16, C_GOLD, 1)
     if fee then
-        PushText(rows, format(L["按 %d%% 手续费折算，剩余产物假设全部成交"], fee), 12, C_GREY, 1)
+        if src.recoveryAssumesAllSold then
+            PushText(rows, format(L["按 %d%% 手续费折算，剩余产物假设全部成交"], fee), 12, C_GREY, 1)
+        else
+            PushText(rows, format(L["按 %d%% 手续费折算，超出售数量的部分按卖店价计"], fee), 12, C_GREY, 1)
+        end
     else
         PushText(rows, L["手续费未知，售价按卖店价估算"], 12, C_GREY, 1)
+    end
+    do
+        local newest, nQuota = nil, 0
+        for _, q in pairs(src and src.recoverySnapshot and src.recoverySnapshot.quotes or {}) do
+            if q.supplyReliable and tonumber(q.quantity) then
+                nQuota = nQuota + 1
+                local t = tonumber(q.observedAt) or 0
+                if t > (newest or 0) then newest = t end
+            end
+        end
+        if newest and newest > 0 then
+            PushText(rows, format(L["数量观测于 %s（%d 种有可售上限）"],
+                PD.AuctionObservationText(newest), nQuota), 12, C_GREY, 1)
+        end
     end
     if #outs == 0 then
         PushGap(rows, 6, 1)
@@ -9086,6 +9145,11 @@ function PD.RowsRecoveryDetail(rows, src)
                         { format(L["收入 %s"], RA.MoneyStr(revenue, "copper")), 1, 0.82, 0 },
                     },
                 }
+                if ah and tonumber(o.quantity) then
+                    local tipLines = rows[#rows].lines
+                    table.insert(tipLines, #tipLines,
+                        { format(L["观测可售 %d 件（超出部分按卖店价）"], tonumber(o.quantity)), 0.7, 0.7, 0.7 })
+                end
             end
         end
     end
@@ -9395,6 +9459,24 @@ function PD.LevelTool()
             PD.FlushPolicies()
         elseif k == "rec_fee" then
             PD.ShowRecoveryFeeInput()
+        elseif k == "rec_scan" then
+            local AB = ns.AuctionBridge
+            local src2 = PD.recDetailSrc
+            local ids, seen = {}, {}
+            for _, o in ipairs(src2 and src2.saleOutputs or {}) do
+                if o.id and not seen[o.id] then seen[o.id] = true; ids[#ids + 1] = o.id end
+            end
+            for _, m in ipairs(src2 and src2.mats or {}) do
+                local mid = m.id or m[1]
+                if mid and not seen[mid] then seen[mid] = true; ids[#ids + 1] = mid end
+            end
+            if AB and AB.StartSupplyScan and AB.StartSupplyScan(ids, function()
+                local R = ns.ProfRecovery
+                if R and R.Invalidate then R.Invalidate() end
+                PD.RequestRender()
+            end) then
+                PD.RequestRender()
+            end
         elseif k == "shop_group" then
             PD.shopGroup = not PD.shopGroup
             if not PD.shopGroup then PD.ProcureClear() end
