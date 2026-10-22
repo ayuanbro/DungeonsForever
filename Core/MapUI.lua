@@ -461,20 +461,72 @@ function M.BossesFor(id)
     return out
 end
 
+local BOSS_ZH_ALL
+
+local function BossZhAll()
+    if BOSS_ZH_ALL then return BOSS_ZH_ALL end
+    BOSS_ZH_ALL = {}
+    local loot = ns.DungeonLoot
+    if type(loot) == "table" then
+        for _, list in pairs(loot) do
+            if type(list) == "table" then
+                for i = 1, #list do
+                    local s = list[i]
+                    if type(s) == "table" and type(s[1]) == "string"
+                       and type(s[2]) == "string" then
+                        BOSS_ZH_ALL[s[1]] = s[2]
+                    end
+                end
+            end
+        end
+    end
+    return BOSS_ZH_ALL
+end
+
 function M.PinsFor(id, floor)
     local bosses = M.BossesFor(id)
-    if not bosses then return nil end
     local out
-    for i = 1, #bosses do
-        local pts = M.PosFor(id, bosses[i].en, floor)
-        if pts then
-            for k = 1, #pts do
-                out = out or {}
-                out[#out + 1] = {
-                    en = bosses[i].en, zh = bosses[i].zh,
-                    npc = bosses[i].npc,
-                    left = pts[k][1], top = pts[k][2],
-                }
+    local have
+    if bosses then
+        have = {}
+        for i = 1, #bosses do
+            local b = bosses[i]
+            have[b.en] = true
+            local pts = M.PosFor(id, b.en, floor)
+            if pts then
+                for k = 1, #pts do
+                    out = out or {}
+                    out[#out + 1] = {
+                        en = b.en, zh = b.zh, npc = b.npc,
+                        left = pts[k][1], top = pts[k][2],
+                    }
+                end
+            end
+        end
+    end
+    local all = id and ns.BossPos and ns.BossPos[id]
+    if type(all) == "table" then
+        local extra
+        for en in pairs(all) do
+            if not (have and have[en]) then
+                extra = extra or {}
+                extra[#extra + 1] = en
+            end
+        end
+        if extra then
+            table.sort(extra)
+            local zhall = BossZhAll()
+            for i = 1, #extra do
+                local pts = M.PosFor(id, extra[i], floor)
+                if pts then
+                    for k = 1, #pts do
+                        out = out or {}
+                        out[#out + 1] = {
+                            en = extra[i], zh = zhall[extra[i]] or extra[i],
+                            npc = "", left = pts[k][1], top = pts[k][2],
+                        }
+                    end
+                end
             end
         end
     end
@@ -1330,7 +1382,8 @@ end
 
 M.routeHidden = {}
 
-M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns = true, hall_of_thanes = true, ruins_of_lordaeron = true, the_deadmines = true }
+M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns = true, hall_of_thanes = true, ruins_of_lordaeron = true, the_deadmines = true,
+               shadowfang_keep = true, the_stockade = true }
 
 function M.RouteOn(id)
     return id ~= nil and M.ROUTE_ON[id] == true

@@ -7669,16 +7669,19 @@ function U:SwitchSub(key)
     local isPvP = (k == "PvP")
     local isFac = (k == "Factions")
     local isGear = (k == "Gear")
-    if U.dungeonPage then U.dungeonPage:SetShown(isDun) end
-    if U.raidPage then U.raidPage:SetShown(isRaid) end
-    if U.profPage then U.profPage:SetShown(isProf) end
-    if U.explorePage then U.explorePage:SetShown(isExpl) end
-    if U.collectionPage then U.collectionPage:SetShown(isColl) end
-    if U.bisPage then U.bisPage:SetShown(isBis) end
-    if U.tierPage then U.tierPage:SetShown(isTier) end
-    if U.pvpPage then U.pvpPage:SetShown(isPvP) end
-    if U.factionPage then U.factionPage:SetShown(isFac) end
-    if U.gearPage then U.gearPage:SetShown(isGear) end
+    local function applyPages()
+        if U.dungeonPage then U.dungeonPage:SetShown(isDun) end
+        if U.raidPage then U.raidPage:SetShown(isRaid) end
+        if U.profPage then U.profPage:SetShown(isProf) end
+        if U.explorePage then U.explorePage:SetShown(isExpl) end
+        if U.collectionPage then U.collectionPage:SetShown(isColl) end
+        if U.bisPage then U.bisPage:SetShown(isBis) end
+        if U.tierPage then U.tierPage:SetShown(isTier) end
+        if U.pvpPage then U.pvpPage:SetShown(isPvP) end
+        if U.factionPage then U.factionPage:SetShown(isFac) end
+        if U.gearPage then U.gearPage:SetShown(isGear) end
+    end
+    applyPages()
     if isRaid then
         U:EnsureBuilt("Raids")
     elseif isDun then
@@ -7713,6 +7716,7 @@ function U:SwitchSub(key)
         U:EnsureBuilt("Gear")
         ns.GearModule.Open()
     end
+    applyPages()
     ns.OpenPerf.Mark("就绪")
     for _, tab in ipairs(U.subTabs or {}) do
         local selected = (tab.key == k)

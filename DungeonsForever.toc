@@ -7,7 +7,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.8.26
+## Version: 1.8.27
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
 
@@ -44,6 +44,8 @@ Core\Data\Data_ProfRecipes.lua
 Core\Data\Data_ProfLeveling.lua
 Core\Data\Data_ProfGathering.lua
 Core\Data\Data_ProfVendors.lua
+Core\Data\Data_ProfVendorNames.lua
+Core\Data\Data_ProfDropNpcs.lua
 Core\Data\Data_ProfTrainers.lua
 Core\Data\Data_ProfMaterialSupply.lua
 Core\Data\Data_ProfTools.lua
@@ -85,6 +87,8 @@ Core\Data\zhTW\Data_ProfRecipes.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ProfLeveling.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ProfGathering.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ProfVendors.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_ProfVendorNames.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_ProfDropNpcs.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_Explore.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ExplorePets.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ExploreToys.lua [AllowLoadTextLocale zhTW]
