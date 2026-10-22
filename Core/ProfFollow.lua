@@ -129,7 +129,7 @@ end
 local function skillOf(slug)
     local PD = ns.ProfModule
     if PD and PD.ProfLearned then
-        local learned = PD.ProfLearned()
+        local learned = PD.ProfLearned(true)
         local e = learned[slug]
         if e then return e.cur, e.max end
     end
@@ -165,7 +165,7 @@ local function clipFixedSteps(steps, target)
     return out
 end
 
-local function routeFor(slug, skill)
+local function routeForCalc(slug, skill)
     local PD = ns.ProfModule
     local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme") or "cheapest"
     if PD and PD.Setting and PD.Setting("autoRoute") and RA
@@ -183,6 +183,23 @@ local function routeFor(slug, skill)
     end
     local lv = LV[slug]
     return "fixed", clipFixedSteps(lv and lv.steps or nil, routeTarget(slug))
+end
+
+local rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT
+local ROUTE_MEMO_TTL = 10
+local function routeFor(slug, skill)
+    local now = GetTime and GetTime() or 0
+    if slug and rMemoSlug == slug and rMemoSkill == skill
+       and (now - (rMemoT or 0)) < ROUTE_MEMO_TTL then
+        return rMemoMode, rMemoSteps
+    end
+    local mode, steps = routeForCalc(slug, skill)
+    rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT = slug, skill, mode, steps, now
+    return mode, steps
+end
+
+function PF.InvalidateRoute()
+    rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT = nil, nil, nil, nil, nil
 end
 
 local function routeKey(mode, steps)
@@ -260,10 +277,12 @@ end
 
 function PF.Sync()
     local s = st()
-    if not (s and s.slug) then return end
+    if not (s and s.slug) then return false end
+    local changed = false
     local cur = skillOf(s.slug)
     if cur and cur > (s.skill or 0) then
         s.skill = cur
+        changed = true
         local PD = ns.ProfModule
         if PD and PD.built and PD.cur == s.slug and PD.page and PD.page:IsVisible() then
             pcall(PD.Render, PD)
@@ -275,15 +294,21 @@ function PF.Sync()
         s.rkey = key
         s.step = derivedStep(s.slug, s.skill or 0) or 1
         PF.view = 0
+        changed = true
     end
     local d = derivedStep(s.slug, s.skill or 0)
-    if d and d > (s.step or 1) then s.step = d end
+    if d and d > (s.step or 1) then
+        s.step = d
+        changed = true
+    end
+    return changed
 end
 
 function PF.RefreshRoute(slug)
     local s = st()
     if not (s and s.slug) then return end
     if slug and slug ~= s.slug then return end
+    PF.InvalidateRoute()
     PF.Sync()
     if PF.f and PF.f:IsShown() then pcall(PF.Paint) end
 end
@@ -308,6 +333,7 @@ function PF.Toggle(slug)
         p.follow[k] = s
     end
     s.hidden = nil
+    PF.InvalidateRoute()
     PF.Build()
     if not PF.f then return end
     PF.Sync()
@@ -608,13 +634,128 @@ local function DoImport(slug, profName)
     end
 end
 
+local PROC_FRAME_MS, PROC_SLICE_MS = 10, 3
+
+local function procureSig(slug, demands)
+    local ids = {}
+    for id in pairs(demands) do ids[#ids + 1] = id end
+    table.sort(ids)
+    local parts = {}
+    for i = 1, #ids do parts[i] = ids[i] .. ":" .. demands[ids[i]] end
+    return slug .. "|" .. table.concat(parts, ",")
+end
+
+function PF.ProcureBusy()
+    return PF.procureJob ~= nil
+end
+
+local function procureNotify(res)
+    if not res then
+        craftNotify(L["优化买法：未找到可行买法，部分材料没有可靠货源。"])
+        return
+    end
+    local RA = ns.ProfRouteAuto
+    local byNPC, ahN, vendorN = {}, 0, 0
+    for _, e in ipairs(res.mats or {}) do
+        if e.vendor then
+            vendorN = vendorN + 1
+            if e.npcID then byNPC[e.npcID] = (byNPC[e.npcID] or 0) + 1 end
+        else
+            ahN = ahN + 1
+        end
+    end
+    local VN = ns.ProfVendorNames
+    local parts = {}
+    for npcID, n in pairs(byNPC) do
+        local nm = (VN and VN[npcID]) or format(L["商人 NPC #%d"], npcID)
+        parts[#parts + 1] = format(L["%s（%d 种）"], nm, n)
+    end
+    local head = format(L["优化买法完成：%d 位商人 + 拍卖行 %d 种"], #parts, ahN)
+    if RA and RA.MoneyStr and res.total then
+        head = head .. " · " .. format(L["预计花费 %s"], RA.MoneyStr(res.total, "copper"))
+    end
+    if #parts > 0 then head = head .. "：" .. table.concat(parts, "、") end
+    craftNotify(head)
+end
+
+function PF.ProcureStart()
+    local s = st()
+    if not (s and s.slug) then return end
+    if PF.procureJob then return end
+    local E = ns.ProfEconomy
+    local S = ns.ProfRouteSolver
+    local J = ns.IdleJobs
+    if not (E and S and J and E.Capture and S.NewProcurementJob and S.Run) then
+        craftNotify(L["优化买法不可用：求解器组件未加载。"])
+        return
+    end
+    local list = shopList(s)
+    local demands, n = {}, 0
+    for _, e in ipairs(list) do
+        local lack = (e.need or 0) - (e.have or 0)
+        if lack > 0 and type(e.id) == "number" then
+            demands[e.id] = (demands[e.id] or 0) + lack
+            n = n + 1
+        end
+    end
+    if n <= 0 then
+        craftNotify(L["购物清单已全部备齐，无需采购。"])
+        return
+    end
+    local slug = s.slug
+    local opts = { target = 300 }
+    opts.professions = (E.Professions and E.Professions()) or {}
+    if not opts.professions[slug] then opts.professions[slug] = { cur = 1, max = 300 } end
+    PF.procureRes = nil
+    PF.procureSlug = slug
+    PF.procureSig = procureSig(slug, demands)
+    local job = { phase = "capture" }
+    PF.procureJob = job
+    job.co = coroutine.create(function()
+        local snap = E.Capture(slug, opts, function()
+            if debugprofilestop() > (job.deadline or 0) then coroutine.yield("work") end
+        end)
+        job.phase = "search"
+        return S.NewProcurementJob(snap, demands, { cpuLimitMs = 2000 })
+    end)
+    J.Add(function()
+        if PF.procureJob ~= job then return true end
+        job.deadline = debugprofilestop() + PROC_FRAME_MS
+        while true do
+            if job.job then
+                if S.Run(job.job, PROC_SLICE_MS) then
+                    local res = job.job.result
+                    if not res then res = S.Result(job.job, job.job.best, job.job.status) end
+                    PF.procureJob = nil
+                    PF.procureRes = (res and res.feasible and #(res.mats or {}) > 0) and res or nil
+                    if f and f:IsShown() then PF.Paint() end
+                    procureNotify(PF.procureRes)
+                    return true
+                end
+            else
+                local ok, out = coroutine.resume(job.co)
+                if not ok then
+                    PF.procureJob = nil
+                    if f and f:IsShown() then PF.Paint() end
+                    craftNotify(L["优化买法计算出错。"])
+                    return true
+                end
+                if coroutine.status(job.co) == "dead" then job.job = out end
+            end
+            if debugprofilestop() >= job.deadline then break end
+        end
+        if f and f:IsShown() then PF.Paint() end
+        return false
+    end)
+end
+
 local f
 
 local rowsMat, rowsShop = {}, {}
 local rowsMatIcon = {}
 local rowsMatBadge = {}
 local rowsShopNum = {}
-local rowsShopMissPill, rowsShopSoldPill, rowsShopTagPill = {}, {}, {}
+local rowsShopMissPill, rowsShopSoldPill, rowsShopTagPill, rowsShopSrcPill = {}, {}, {}, {}
 
 local function MakeLine(parent, fs, color)
     local t = MakeFS(parent, fs, color, "LEFT")
@@ -800,7 +941,7 @@ function PF.Build()
         end
     end
     local SHOP_TOG_W = labW + 48
-    f.shop.head:SetPoint("RIGHT", f.shop, "RIGHT", -(SHOP_TOG_W + 66 + 12), 0)
+    f.shop.head:SetPoint("RIGHT", f.shop, "RIGHT", -(SHOP_TOG_W + 66 + 66 + 10 + 12), 0)
     f.shop.head:SetWordWrap(false)
     f.shop.missTog = CreateFrame("CheckButton", nil, f.shop)
     f.shop.missTog:SetSize(36, 20)
@@ -861,6 +1002,7 @@ function PF.Build()
         rowsShopMissPill[i] = MakePill(C_TEXT)
         rowsShopSoldPill[i] = MakePill(C_TEXT)
         rowsShopTagPill[i] = MakePill(C_DIM)
+        rowsShopSrcPill[i] = MakePill(C_HEAD)
     end
 
     f.shopImp = NewButton(f.shop, L["一键导入"], 66, 20, 13)
@@ -875,6 +1017,28 @@ function PF.Build()
     f.shopImp:SetPoint("RIGHT", f.shop.missTog, "LEFT", -(labW + 10), 0)
     TipOn(f.shopImp, L["一键导入到拍卖行"],
           L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])
+
+    f.shopProc = NewButton(f.shop, L["优化买法"], 66, 20, 13)
+    f.shopProc.__huiKeepTextColor = true
+    f.shopProc:SetScript("OnClick", function()
+        PF.ProcureStart()
+        ns.PlaySound(1)
+    end)
+    f.shopProc:SetPoint("RIGHT", f.shopImp, "LEFT", -10, 0)
+    TipOn(f.shopProc, L["优化买法"],
+          L["对清单里还缺的材料比较商人与拍卖行，找出总支出最低的买法；完成后聊天栏给出摘要，悬停商人名可在地图标记。"])
+
+    f.shopStep = NewButton(f.shop, L["分步"], 48, 20, 13)
+    f.shopStep.__huiKeepTextColor = true
+    f.shopStep:SetScript("OnClick", function()
+        dbProf().shopStepView = not (dbProf().shopStepView and true or false)
+        PF.shopScroll = 0
+        PF.Paint()
+        ns.PlaySound(1)
+    end)
+    f.shopStep:SetPoint("RIGHT", f.shopProc, "LEFT", -10, 0)
+    TipOn(f.shopStep, L["分步 / 汇总"],
+          L["汇总：所有步骤的材料合并成一行。分步：按首次需要的步骤分组列出，便于分段采购。"])
 
     f.craftBtn = NewButton(f, L["跳转制造"], 66, 22, 14)
     f.craftBtn.__huiKeepTextColor = true
@@ -922,10 +1086,7 @@ function PF.Build()
 
     if C_Timer.NewTicker then
         C_Timer.NewTicker(1, function()
-            if f and f:IsShown() then
-                PF.Sync()
-                PF.Paint()
-            end
+            if f and f:IsShown() and PF.Sync() then PF.Paint() end
         end)
     end
 
@@ -1159,6 +1320,26 @@ function PF.Paint()
         end
         f.shop.head:SetText(L["购物清单"] .. format(L[" · 共%d种"], #shown))
         f.shop.missTog:SetChecked(onlyMissView())
+        if PF.ProcureBusy() then f.shopProc:SetText(L["优化中…"]) else f.shopProc:SetText(L["优化买法"]) end
+        local procure
+        if not PF.ProcureBusy() and PF.procureRes and PF.procureSlug == slug then
+            local cur = {}
+            for _, e in ipairs(list) do
+                local lack = (e.need or 0) - (e.have or 0)
+                if lack > 0 then cur[e.id] = (cur[e.id] or 0) + lack end
+            end
+            if procureSig(slug, cur) == PF.procureSig then procure = PF.procureRes end
+        end
+        local srcByID
+        if procure then
+            srcByID = {}
+            for _, e in ipairs(procure.mats or {}) do
+                local mid = e[1] or e.id
+                if mid and srcByID[mid] == nil then
+                    srcByID[mid] = e.vendor and { vendor = true, npcID = e.npcID } or { ah = true }
+                end
+            end
+        end
         local function tw(txt)
             local PDm = ns.ProfModule
             if PDm and PDm.TextW then
@@ -1168,8 +1349,10 @@ function PF.Paint()
             return #txt * 5 + 16
         end
         local rows = {}
-        local nameW, numW, missW, tagW, anySold = 0, 0, 0, 0, false
-        for _, e in ipairs(shown) do
+        local nameW, numW, missW, tagW, srcW, anySold = 0, 0, 0, 0, 0, false
+        local stepView = (dbProf().shopStepView) and true or false
+        f.shopStep:SetText(stepView and L["汇总"] or L["分步"])
+        local function pushRow(e)
             local nm, got = DG.ItemName(e.id)
             if not got then DG.RequestItem(e.id) pending = true end
             local row = {
@@ -1179,6 +1362,7 @@ function PF.Paint()
                 missing = e.need - e.have,
                 sold = soldSet(slug)[e.id] and true or false,
                 at = e.at or 0,
+                src = srcByID and srcByID[e.id] or nil,
             }
             local w1 = tw(row.nm)
             if w1 > nameW then nameW = w1 end
@@ -1188,18 +1372,42 @@ function PF.Paint()
             if w3 > missW then missW = w3 end
             local w5 = tw(format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
+            if row.src then
+                local stext = row.src.vendor and (ns.ProfVendorNames and ns.ProfVendorNames[row.src.npcID]
+                    or L["商人"]) or L["拍卖行"]
+                local w4 = tw(stext) + 10
+                if w4 > srcW then srcW = w4 end
+                row.srcText = stext
+            end
             if row.sold then anySold = true end
             rows[#rows + 1] = row
+        end
+        if stepView then
+            local lastAt = nil
+            for _, e in ipairs(shown) do
+                local at = e.at or 0
+                if at ~= lastAt then
+                    local htext = at > 0 and format(L["第 %d 步起"], at) or L["路线起点"]
+                    local w0 = tw(htext) + 10
+                    if w0 > nameW then nameW = w0 end
+                    rows[#rows + 1] = { head = true, nm = htext }
+                    lastAt = at
+                end
+                pushRow(e)
+            end
+        else
+            for _, e in ipairs(shown) do pushRow(e) end
         end
         local soldW = anySold and (tw(L["直售"]) + 10) or 0
         local xName = 8
         local xNum = xName + nameW + 10
         local xMiss = xNum + numW + 10
         local xSold = xMiss + missW + 8
+        local xSrc = xSold + soldW + 8
         local maxScroll = math.max(0, #rows - SHOP_MAX)
         PF.shopScroll = math.max(0, math.min(PF.shopScroll or 0, maxScroll))
         local scroll = PF.shopScroll
-        local needInner = xSold + soldW + 10 + tagW + 14
+        local needInner = xSrc + srcW + 10 + tagW + 14
         local baseInner = W_BASE - 2 * PAD - 16
         local newWide = (needInner > baseInner) and (needInner - baseInner) or nil
         if (newWide or 0) ~= (PF.wide or 0) then
@@ -1214,6 +1422,8 @@ function PF.Paint()
             local num = rowsShopNum[n + 1]
             local mp = rowsShopMissPill[n + 1]
             local sp = rowsShopSoldPill[n + 1]
+            local srcp = rowsShopSrcPill[n + 1]
+            local tp = rowsShopTagPill[n + 1]
             local function paintPill(p, txt, x0, wpx, cr, cg, cb, ca)
                 p:ClearAllPoints()
                 p:SetPoint("TOPLEFT", f.shop, "TOPLEFT", x0, ry + 1)
@@ -1223,33 +1433,53 @@ function PF.Paint()
                 p.fs:SetText(txt)
                 p:Show()
             end
-            nmFS:SetText(row.nm)
-            num:SetText(format("%d/%d", math.min(row.have, row.need), row.need))
-            nmFS:ClearAllPoints()
-            nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
-            nmFS:Show()
-            num:ClearAllPoints()
-            num:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xNum, ry)
-            num:Show()
-            if row.missing > 0 then
-                paintPill(mp, format(L["缺%d"], row.missing), xMiss, missW, Unpack(C_BAD))
-            else
-                local okr, okg, okb = Unpack(C_OK)
-                paintPill(mp, L["已备齐"], xMiss, missW, okr, okg, okb, 0.5)
-            end
-            if row.sold then
-                paintPill(sp, L["直售"], xSold, soldW, Unpack(C_OK))
-            else
+            if row.head then
+                nmFS:SetText(row.nm)
+                nmFS:SetTextColor(Unpack(C_HEAD))
+                nmFS:ClearAllPoints()
+                nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
+                nmFS:Show()
+                num:Hide()
+                mp:Hide()
                 sp:Hide()
+                srcp:Hide()
+                tp:Hide()
+                n = n + 1
+            else
+                nmFS:SetTextColor(Unpack(C_TEXT))
+                nmFS:SetText(row.nm)
+                num:SetText(format("%d/%d", math.min(row.have, row.need), row.need))
+                nmFS:ClearAllPoints()
+                nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
+                nmFS:Show()
+                num:ClearAllPoints()
+                num:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xNum, ry)
+                num:Show()
+                if row.missing > 0 then
+                    paintPill(mp, format(L["缺%d"], row.missing), xMiss, missW, Unpack(C_BAD))
+                else
+                    local okr, okg, okb = Unpack(C_OK)
+                    paintPill(mp, L["已备齐"], xMiss, missW, okr, okg, okb, 0.5)
+                end
+                if row.sold then
+                    paintPill(sp, L["直售"], xSold, soldW, Unpack(C_OK))
+                else
+                    sp:Hide()
+                end
+                if row.src and row.srcText then
+                    local kr, kg, kb = Unpack(C_HEAD)
+                    paintPill(srcp, row.srcText, xSrc, srcW, kr, kg, kb, 0.22)
+                else
+                    srcp:Hide()
+                end
+                tp:ClearAllPoints()
+                tp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -14, ry + 1)
+                tp:SetSize(math.max(tagW, 34), 17)
+                for _, t in ipairs(tp.__cols) do t:SetVertexColor(0.55, 0.55, 0.55, 0.22) end
+                tp.fs:SetText(format("%d+", row.at))
+                tp:Show()
+                n = n + 1
             end
-            local tp = rowsShopTagPill[n + 1]
-            tp:ClearAllPoints()
-            tp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -14, ry + 1)
-            tp:SetSize(math.max(tagW, 34), 17)
-            for _, t in ipairs(tp.__cols) do t:SetVertexColor(0.55, 0.55, 0.55, 0.22) end
-            tp.fs:SetText(format("%d+", row.at))
-            tp:Show()
-            n = n + 1
         end
         local total = #rows
         if total > SHOP_MAX then
@@ -1272,6 +1502,7 @@ function PF.Paint()
             rowsShopNum[i]:Hide()
             rowsShopMissPill[i]:Hide()
             rowsShopSoldPill[i]:Hide()
+            rowsShopSrcPill[i]:Hide()
         end
         for i = n + 1, #rowsShopTagPill do
             rowsShopTagPill[i]:Hide()

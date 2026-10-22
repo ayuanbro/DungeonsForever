@@ -572,10 +572,15 @@ function M.ExtraPinsFor(id, floor)
                         else
                             local pf = p[(kind == "rare") and 5 or 4] or 1
                             if floor == nil or pf == floor then
+                                local txt
+                                if kind == "quest" and type(p[5]) == "string" then
+                                    txt = p[5]
+                                end
                                 out = out or {}
                                 out[#out + 1] = {
                                     kind = kind, left = p[1], top = p[2], id = p[3],
                                     name = (kind == "rare") and p[4] or nil,
+                                    text = txt,
                                 }
                             end
                         end
@@ -1383,7 +1388,8 @@ end
 M.routeHidden = {}
 
 M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns = true, hall_of_thanes = true, ruins_of_lordaeron = true, the_deadmines = true,
-               shadowfang_keep = true, the_stockade = true }
+               shadowfang_keep = true, the_stockade = true,
+               gnomeregan = true, city_of_dalaran = true, excavation_wetlands = true }
 
 function M.RouteOn(id)
     return id ~= nil and M.ROUTE_ON[id] == true
@@ -1715,7 +1721,7 @@ function M.SyncPins()
             local skip = nil
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
-            if kind == "note" then
+            if kind == "note" or kind == "quest" or kind == "icon" then
                 bt:SetFrameLevel(frame.pins:GetFrameLevel() + 2)
             else
                 bt:SetFrameLevel(frame.pins:GetFrameLevel())
@@ -1894,6 +1900,9 @@ function M.PinOnEnter(self)
             GameTooltip:AddLine(format(L["完成本任务后解锁：%s"], DG.QuestName(self.__qPreOf) or ""), 1, 0.82, 0, true)
         else
             GameTooltip:AddLine(DG.QuestName(p.id) or L["任务"], 1, 0.82, 0, true)
+        end
+        if p.text and p.text ~= "" then
+            GameTooltip:AddLine(p.text, 0.88, 0.85, 0.78, true)
         end
         GameTooltip:AddLine(L["点击查看任务详情"], 0.7, 0.7, 0.7, true)
     elseif self.__kind == "entrance" then

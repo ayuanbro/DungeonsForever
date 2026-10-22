@@ -10,6 +10,7 @@ local CAP = 300
 local MAX_STALE = 2
 local MAX_PER_RECIPE = 3
 local CACHE_TTL = 600
+local CACHE_SLOTS = 4
 local G_YELLOW, G_GREEN = 0.5, 0.05
 
 local SCHEME_ORDER = { "cheapest", "matcost", "crafts", "optim" }
@@ -81,16 +82,23 @@ local function AHPrice(id)
     return p
 end
 
+local vendorCache = {}
 local function VendorPrice(id)
+    local hit = vendorCache[id]
+    if hit ~= nil then return hit or nil end
+    local p
     if ns.VendorPriceDB then
-        local ok, p = pcall(ns.VendorPriceDB.GetPrice, id)
-        if ok and type(p) == "number" and p > 0 then return p end
+        local ok, v = pcall(ns.VendorPriceDB.GetPrice, id)
+        if ok and type(v) == "number" and v > 0 then p = v end
     end
-    if not RA.Available() then return nil end
-    local fn = Auctionator.API.v1.GetVendorPriceByItemID
-    if type(fn) ~= "function" then return nil end
-    local p = CallAPI(fn, id)
-    if type(p) ~= "number" or p <= 0 then return nil end
+    if not p and RA.Available() then
+        local fn = Auctionator.API.v1.GetVendorPriceByItemID
+        if type(fn) == "function" then
+            local v = CallAPI(fn, id)
+            if type(v) == "number" and v > 0 then p = v end
+        end
+    end
+    vendorCache[id] = p or false
     return p
 end
 
@@ -114,21 +122,16 @@ end
 
 local sellCache = {}
 local function NPCSellPrice(id)
-    if sellCache[id] then return sellCache[id] end
+    local hit = sellCache[id]
+    if hit then return hit end
     local p
     if C_Item and C_Item.GetItemInfo then
-        local vals = { pcall(C_Item.GetItemInfo, id) }
-        if vals[1] then
-            local sell = vals[12]
-            if type(sell) == "number" and sell > 0 then p = sell end
-        end
+        local ok, a, b, c, d, e, f, g, h, i, j, sell = pcall(C_Item.GetItemInfo, id)
+        if ok and type(sell) == "number" and sell > 0 then p = sell end
     end
     if not p and type(GetItemInfo) == "function" then
-        local vals = { pcall(GetItemInfo, id) }
-        if vals[1] then
-            local sell = vals[12]
-            if type(sell) == "number" and sell > 0 then p = sell end
-        end
+        local ok, a, b, c, d, e, f, g, h, i, j, sell = pcall(GetItemInfo, id)
+        if ok and type(sell) == "number" and sell > 0 then p = sell end
     end
     if not p and C_Item and C_Item.GetItemSellPrice then
         local ok, sell = pcall(C_Item.GetItemSellPrice, id)
@@ -733,6 +736,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
         if e.vendor then vendorTotal = vendorTotal + (e.unit or 0) * e[2] end
     end
     local formulas, formulasTotal = {}, 0
+    local vdb = ns.VendorPriceDB
     for _, st in ipairs(steps) do
         local rec = recOf[st[3]]
         local f = rec and rec[13]
@@ -744,11 +748,35 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
             end
             if not dup then
                 local p = MatPrice(f[1], soldSet)
-                formulas[#formulas + 1] = {
+                local entry = {
                     id = f[1], spell = st[3], cost = p or 0,
                     vendor = soldSet[f[1]] and true or false,
                     unpriced = (p == nil) and true or false,
                 }
+                local raw = vdb and vdb.GetOffers and vdb.GetOffers(f[1]) or {}
+                local hasU, hasL, hasO = false, false, false
+                local offers = {}
+                for _, o in ipairs(raw) do
+                    if type(o) == "table" and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
+                        hasO = true
+                        if o.unlimited == true then hasU = true
+                        elseif o.limited or o.unlimited == false then hasL = true end
+                        offers[#offers + 1] = {
+                            npcID = o.npcID, price = o.price,
+                            quantity = o.quantity or o.bundleSize or 1,
+                            bundleSize = o.bundleSize or o.quantity or 1,
+                            unlimited = o.unlimited, limited = o.limited,
+                            stockUnknown = o.stockUnknown, estimated = o.estimated,
+                        }
+                    end
+                end
+                if hasO then
+                    entry.vendorOffers = offers
+                    entry.unlimited = hasU or nil
+                    entry.limited = hasL or nil
+                    entry.stockUnknown = (not hasU and not hasL) or nil
+                end
+                formulas[#formulas + 1] = entry
                 formulasTotal = formulasTotal + (p or 0)
             end
         end
@@ -965,6 +993,7 @@ function RA.Invalidate()
         if k ~= "__any" then priceCache[k] = nil end
     end
     priceCache.__any = nil
+    for k in pairs(vendorCache) do vendorCache[k] = nil end
 end
 
 local priceWatchers = {}
@@ -995,10 +1024,21 @@ end
 function RA.Get(slug, opts)
     opts = opts or {}
     local fp = Fingerprint(opts, slug)
-    local c = cache[slug]
+    local bucket = cache[slug]
+    if not bucket then
+        bucket = {}
+        cache[slug] = bucket
+    end
     local now = (type(time) == "function") and time() or 0
-    if c and c.fp == fp and (now - c.stamp) < CACHE_TTL then return c.res end
+    local e = bucket[fp]
+    if e and (now - e.stamp) < CACHE_TTL then return e.res end
     local res = RA.Compute(slug, opts)
-    cache[slug] = { fp = fp, res = res, stamp = now }
+    bucket[fp] = { res = res, stamp = now }
+    local n, oldK, oldT = 0, nil, nil
+    for k, v in pairs(bucket) do
+        n = n + 1
+        if k ~= fp and (not oldT or v.stamp < oldT) then oldK, oldT = k, v.stamp end
+    end
+    if n > CACHE_SLOTS and oldK then bucket[oldK] = nil end
     return res
 end

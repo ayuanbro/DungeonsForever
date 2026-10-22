@@ -113,21 +113,43 @@ function E.FormulaFor(r, context)
     local cost, source, unpriced
     local ah = ra and ra.AHPriceOf and ra.AHPriceOf(id)
     if type(ah) == "number" and ah > 0 then cost, source = ah, "ah" end
-    if not cost then
-        local vdb = ns.VendorPriceDB
-        local offers = vdb and vdb.GetOffers and vdb.GetOffers(id, context) or {}
-        for _, o in ipairs(offers) do
-            if vendorQuote(o) and (not cost or o.price < cost) then
-                cost, source = o.price, "vendor"
-            end
+    local offers, hasUnlimited, hasLimited, hasOffer = {}, false, false, false
+    local vdb = ns.VendorPriceDB
+    local raw = vdb and vdb.GetOffers and vdb.GetOffers(id, context) or {}
+    for _, o in ipairs(raw) do
+        if type(o) == "table" and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
+            hasOffer = true
+            if o.unlimited == true then hasUnlimited = true
+            elseif o.limited or o.unlimited == false then hasLimited = true end
+            offers[#offers + 1] = {
+                npcID = o.npcID, price = o.price, quantity = o.quantity or o.bundleSize or 1,
+                bundleSize = o.bundleSize or o.quantity or 1, unlimited = o.unlimited,
+                limited = o.limited, stockUnknown = o.stockUnknown, estimated = o.estimated,
+            }
+        end
+        if vendorQuote(o) and (not cost or source == "vendor" and o.price < cost) then
+            cost, source = o.price, "vendor"
         end
     end
     if not cost then unpriced = true end
+    local PDm = ns.ProfModule
+    local allowLimited = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas")) and true or false
+    if not allowLimited and not cost and hasOffer and not hasUnlimited then
+        return {
+            id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
+            recipeKey = r.key, known = false, sources = shallow(r.source),
+            vendorOffers = offers, source = "unknown", cost = nil,
+            usable = false, reason = "formulaLimited", unpriced = true,
+            limited = hasLimited, stockUnknown = hasOffer and not hasLimited or nil,
+        }
+    end
     return {
         id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
         recipeKey = r.key, known = false, sources = shallow(r.source),
-        vendorOffers = {}, source = source or "unknown", cost = cost,
+        vendorOffers = offers, source = source or "unknown", cost = cost,
         usable = true, unpriced = unpriced,
+        unlimited = hasUnlimited or nil, limited = hasLimited or nil,
+        stockUnknown = hasOffer and not hasUnlimited and not hasLimited or nil,
     }
 end
 

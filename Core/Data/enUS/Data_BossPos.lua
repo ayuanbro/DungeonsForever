@@ -68,7 +68,7 @@ ns.BossPos = {
         ["Electrocutioner 6000"] = { { 24.8, 67.9, 2 } },
         ["Grubbis"] = { { 81.9, 65.1 } },
         ["Mekgineer Thermaplugg"] = { { 31.3, 30, 4 } },
-        ["Viscous Fallout"] = { { 57.6, 56.6 } },
+        ["Viscous Fallout"] = { { 54.3, 46 } },
     },
     ["razorfen_kraul"] = {
         ["Agathelos the Raging"] = { { 11.2, 72.4 } },
@@ -104,13 +104,13 @@ ns.BossPos = {
         ["Lyn the Ignored"] = { { 64.1, 13, 2 } },
         ["Mana Devourer"] = { { 49.2, 68.5 } },
         ["Shade of the Archmage"] = { { 49.2, 25.4 } },
-        ["Unstable Sentinel"] = { { 56.6, 36.2 } },
+        ["Unstable Sentinel"] = { { 58.3, 34 } },
     },
     ["excavation_wetlands"] = {
         ["Highland Horror"] = { { 26.3, 56.2 } },
         ["Relic Guardian"] = { { 46.6, 74.1 } },
         ["Saltspine"] = { { 62, 47.1 } },
-        ["Shadetooth"] = { { 40.6, 53.6 } },
+        ["Shadetooth"] = { { 44.5, 63 } },
     },
     ["sm_graveyard"] = {
         ["Azshir the Sleepless"] = { { 41.6, 67.9 }, { 40.9, 46.6 }, { 36.7, 43.9 }, { 35.5, 66.4 } },
