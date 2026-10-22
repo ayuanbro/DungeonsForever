@@ -9854,27 +9854,64 @@ function PD.CrateRows(rows)
     PushText(rows, CrateSnapText(), 11, C_GREY, 2)
 end
 
-local function CraftAllMap()
-    if PD.craftAll and next(PD.craftAll) then return PD.craftAll end
-    if not R then RGet(nil) end
-    local ensure = ns.EnsureProfRecipes
-    if type(ensure) == "function" then ensure() end
-    local map = {}
-    for slug, d in pairs(R or {}) do
-        if type(d) == "table" and type(d.rows) == "table" then
-            for _, rec in ipairs(d.rows) do
-                local resolved = PD.RecipeData(rec, "rows", slug)
-                local iid = resolved.item
-                if not resolved.clientUnavailable and type(iid) == "number" and resolved.count and type(resolved.mats) == "table" and #resolved.mats > 0
-                   and not map[iid] then
-                    local live={}; for k,v in pairs(rec) do live[k]=v end
-                    live[2],live[3],live[12]=iid,resolved.count,resolved.mats
-                    map[iid] = { rec = live, slug = slug }
-                end
-            end
+local function CraftMapSlug(map, slug)
+    local d = R[slug]
+    if type(d) ~= "table" or type(d.rows) ~= "table" then return end
+    for _, rec in ipairs(d.rows) do
+        local resolved = PD.RecipeData(rec, "rows", slug)
+        local iid = resolved.item
+        if not resolved.clientUnavailable and type(iid) == "number" and resolved.count and type(resolved.mats) == "table" and #resolved.mats > 0
+           and not map[iid] then
+            local live = {}
+            for k, v in pairs(rec) do live[k] = v end
+            live[2], live[3], live[12] = iid, resolved.count, resolved.mats
+            map[iid] = { rec = live, slug = slug }
         end
     end
-    if next(map) then PD.craftAll = map end
+end
+
+local function CraftAllMap()
+    if PD.craftAllFull and PD.craftAll then return PD.craftAll end
+    if not R then RGet(nil) end
+    local map = PD.craftAll or {}
+    PD.craftAll = map
+    for slug in pairs(R) do CraftMapSlug(map, slug) end
+    local rest = {}
+    for _, slug in ipairs(ns.ProfRecipeKeys or {}) do
+        if rawget(R, slug) == nil then rest[#rest + 1] = slug end
+    end
+    if #rest == 0 then
+        PD.craftAllFull = true
+        return map
+    end
+    if not (C_Timer and C_Timer.After) then
+        for i = 1, #rest do
+            local _ = R[rest[i]]
+            CraftMapSlug(map, rest[i])
+        end
+        PD.craftAllFull = true
+        return map
+    end
+    if not PD.craftAllPend then
+        PD.craftAllPend = true
+        local function step()
+            local nextSlug
+            for _, slug in ipairs(ns.ProfRecipeKeys or {}) do
+                if rawget(R, slug) == nil then nextSlug = slug; break end
+            end
+            if not nextSlug then
+                PD.craftAllPend = nil
+                PD.craftAllFull = true
+                if PD.built and ns.PageVisible(PD.page) then PD.RequestRender() end
+                return
+            end
+            local _ = R[nextSlug]
+            local m = PD.craftAll
+            if m then CraftMapSlug(m, nextSlug) end
+            C_Timer.After(0, step)
+        end
+        C_Timer.After(0, step)
+    end
     return map
 end
 
@@ -10491,18 +10528,34 @@ local function HookTrack()
     end)
 end
 
+local RD_MIN_MS = 350
 function PD.RequestRender()
     HookTrack()
     if not PD.built then
         PD.wantOpen = true
         return
     end
-    if not (ns.PaintJob and ns.IdleJobs) then
-        PD.Render()
+    if ns.PaintJob and ns.IdleJobs and ns.PaintJob.Active("Profession") then
+        PD.__pend = true
         return
     end
-    if ns.PaintJob.Active("Profession") then
-        PD.__pend = true
+    local now = debugprofilestop and debugprofilestop() or nil
+    if now then
+        local wait = PD.__rdLast and (PD.__rdLast + RD_MIN_MS - now) or 0
+        if wait > 0 and C_Timer and C_Timer.After then
+            if not PD.__rdWait then
+                PD.__rdWait = true
+                C_Timer.After(wait / 1000, function()
+                    PD.__rdWait = nil
+                    PD.RequestRender()
+                end)
+            end
+            return
+        end
+        PD.__rdLast = now
+    end
+    if not (ns.PaintJob and ns.IdleJobs) then
+        PD.Render()
         return
     end
     ns.PaintJob.Run("Profession", function() PD.Render() end, function()
@@ -11317,7 +11370,8 @@ end
 
 if RA and RA.OnPlanChanged then
     RA.OnPlanChanged(function(slug, plan)
-        PD.craftAll=nil
+        PD.craftAll = nil
+        PD.craftAllFull = nil
         if type(slug) == "table" then plan = slug; slug = plan.slug end
         if slug == PD.cur and plan then PD.autoSnapshot = plan; PD.autoSnapshotSlug = slug end
         if PD.built and ns.PageVisible(PD.page)
