@@ -640,10 +640,10 @@ local function FillGaps(cands, steps, gaps, scheme)
     return MergeSteps(newSteps), newGaps
 end
 
-local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
+local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs)
     local total, crafts = 0, 0
     local productAH, productNPC, productPartial = 0, 0, false
-    local mats, firstAt, matPrice = {}, {}, {}
+    local mats, firstAt, matPrice, specSet = {}, {}, {}, {}
     for _, st in ipairs(steps) do
         local rec = recOf[st[3]]
         local ml = rec and (rec[12] or rec.mats) or nil
@@ -714,6 +714,17 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
             end
         end
     end
+    if specInputs then
+        for _, pair in ipairs(specInputs) do
+            local sid, sn = pair[1], tonumber(pair[2]) or 0
+            if type(sid) == "number" and sn > 0 then
+                mats[sid] = (mats[sid] or 0) + sn
+                specSet[sid] = true
+                if firstAt[sid] == nil then firstAt[sid] = 0 end
+                if matPrice[sid] == nil then matPrice[sid] = MatPrice(sid, soldSet) end
+            end
+        end
+    end
     local list = {}
     for id, n in pairs(mats) do
         local p = matPrice[id]
@@ -723,6 +734,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas)
         list[#list + 1] = { id, n, cost = (p or 0) * n, unit = p or 0,
                             vendor = soldSet[id] and true or false,
                             unpriced = (p == nil) and true or false,
+                            spec = specSet[id] or nil,
                             reason = rcode, age = rage }
     end
     table.sort(list, function(a, b)
@@ -803,9 +815,16 @@ function RA.SummarizeSteps(steps, slug, opts)
             if not recOf[spell] then recOf[spell] = ri end
         end
     end
+    local specInputs
+    do
+        local G = ns.ProfGates
+        local cap = tonumber(opts.target) or (steps[#steps] and steps[#steps][2]) or 300
+        local goal = G and G.SpecGoal and G.SpecGoal(slug, cap)
+        if goal and type(goal.inputs) == "table" then specInputs = goal.inputs end
+    end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly)
+        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, specInputs)
     local res = {
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,

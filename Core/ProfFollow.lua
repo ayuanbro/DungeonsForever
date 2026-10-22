@@ -409,6 +409,23 @@ local function shopList(s)
             end
         end
     end
+    local G = ns.ProfGates
+    local goal = G and G.SpecGoal and G.SpecGoal(s.slug, routeTarget(s.slug))
+    if goal and type(goal.inputs) == "table" then
+        for _, pair in ipairs(goal.inputs) do
+            local sid, sn = pair[1], tonumber(pair[2]) or 0
+            if type(sid) == "number" and sn > 0 then
+                local e = totals[sid]
+                if not e then
+                    e = { id = sid, need = 0, at = math.huge }
+                    totals[sid] = e
+                    order[#order + 1] = sid
+                end
+                e.spec = true
+                e.need = e.need + sn
+            end
+        end
+    end
     local list = {}
     for _, id in ipairs(order) do
         local e = totals[id]

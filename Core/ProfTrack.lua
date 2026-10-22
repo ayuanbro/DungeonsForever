@@ -7,6 +7,7 @@ ns.ProfTrack = T
 
 local floor = math.floor
 local max = math.max
+local min = math.min
 local EMPTY = {}
 local listeners = {}
 
@@ -117,6 +118,7 @@ function T.Extract(result)
     local out = {}
     for _, st in ipairs(src) do
         local spell = st[3]
+        if type(spell) ~= "number" then spell = st.spell end
         if type(spell) ~= "number" then return nil end
         local mats = {}
         for _, m in ipairs(st.mats or EMPTY) do
@@ -124,11 +126,14 @@ function T.Extract(result)
                 mats[#mats + 1] = { m[1], tonumber(m[2]) or 1 }
             end
         end
+        local from = tonumber(st[1]) or tonumber(st.from) or 0
+        local to = tonumber(st[2]) or tonumber(st.to) or 0
+        local crafts = tonumber(st[4]) or tonumber(st.crafts) or 0
         out[#out + 1] = {
-            from = tonumber(st[1]) or 0,
-            to = tonumber(st[2]) or 0,
+            from = from,
+            to = to,
             spell = spell,
-            crafts = tonumber(st[4]) or 0,
+            crafts = crafts,
             item = st.item,
             out = st.out,
             mats = mats,
@@ -152,6 +157,77 @@ function T.SamePlan(run, result)
         if not o or o.spell ~= st.spell or o.crafts ~= st.crafts or o.to ~= st.to then return false end
     end
     return true
+end
+
+local function planSig(steps)
+    local parts = {}
+    for i = 1, #steps do
+        local st = steps[i]
+        parts[i] = tostring(st.spell) .. ":" .. tostring(st.crafts or 0) .. ":" .. tostring(st.to or 0)
+    end
+    return table.concat(parts, "|")
+end
+
+function T.Rebase(run, steps)
+    if not (run and type(steps) == "table" and #steps > 0) then return false end
+    local fresh = T.Extract({ steps = steps })
+    if not fresh then return false end
+    local sig = planSig(fresh)
+    if run.planSig == sig then return true end
+    local old = run.steps or EMPTY
+    local oldBySpell, used, keep, matched = {}, {}, {}, 0
+    for i = 1, #old do
+        local sp = old[i].spell
+        local list = oldBySpell[sp]
+        if not list then list = {} oldBySpell[sp] = list end
+        list[#list + 1] = i
+    end
+    for ni = 1, #fresh do
+        local list = oldBySpell[fresh[ni].spell]
+        if list then
+            for k = 1, #list do
+                local oi = list[k]
+                if not used[oi] then
+                    keep[ni] = oi
+                    used[oi] = true
+                    matched = matched + 1
+                    break
+                end
+            end
+        end
+    end
+    if #old > 0 and matched * 3 < #old then return false end
+    local progress = {}
+    local kept = 0
+    for ni = 1, #fresh do
+        local oi = keep[ni]
+        if oi then
+            local p = run.progress and run.progress[oi]
+            if type(p) == "table" then
+                local attempts = {}
+                local src = p.attempts or EMPTY
+                for k = 1, #src do attempts[#attempts + 1] = src[k] end
+                local manual = p.manual
+                if type(manual) == "table" and manual.item ~= fresh[ni].item then manual = nil end
+                progress[ni] = {
+                    casts = min(p.casts or 0, fresh[ni].crafts or 0),
+                    attempts = attempts,
+                    manual = manual,
+                }
+                kept = kept + 1
+            end
+        end
+    end
+    run.steps = fresh
+    run.progress = progress
+    run.planSig = sig
+    run.rebasedAt = now()
+    run.rebasedCount = (run.rebasedCount or 0) + 1
+    T.Sync(run.slug)
+    run.updatedAt = now()
+    run.progressVersion = (run.progressVersion or 0) + 1
+    notify(run.slug, run)
+    return true, matched, kept
 end
 
 function T.Archive(slug, reason, run)
@@ -203,6 +279,7 @@ function T.Bind(slug, result, opts)
         priced = result.priced and true or nil,
         startSkill = skillOf(slug),
         steps = steps,
+        planSig = planSig(steps),
         progress = {},
         outputs = {},
         currentIndex = 1,

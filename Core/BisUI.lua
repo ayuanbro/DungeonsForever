@@ -1584,7 +1584,7 @@ local function PresetList()
     local out = {}
     local tsp = BG.tspec
     out[#out + 1] = { auto = "known", lv = AutoLevel(), type = L["已知内容"] }
-    out[#out + 1] = { auto = "all", lv = AutoLevel(), type = L["包含位置来源"] }
+    out[#out + 1] = { auto = "all", lv = AutoLevel(), type = L["包含未知来源"] }
     for i = #VOLS, 1, -1 do
         local v = VOLS[i]
         local c

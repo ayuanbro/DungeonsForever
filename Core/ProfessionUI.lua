@@ -231,7 +231,77 @@ function PD.ShowRecoveryFeeMenu(owner)
             func = function() PD.SetRecoveryFee(pct) end,
         }
     end
+    items[#items + 1] = {
+        text = L["自定义…"],
+        func = function() PD.ShowRecoveryFeeInput() end,
+    }
     ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
+end
+
+local feeForm
+
+local function BuildFeeForm()
+    local f = CreateFrame("Frame", "DungeonsForeverFeeForm", UIParent)
+    f:SetFrameStrata("FULLSCREEN_DIALOG")
+    f:SetToplevel(true)
+    f:SetClampedToScreen(true)
+    f:EnableMouse(true)
+    f:SetSize(300, 148)
+    f:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+    if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
+        ns.hui.BuildRoundedBG(f, 8, ns.hui.layer.L4, "both", true, 1)
+    end
+    local title = MakeFS(f, 14, { 1, 0.82, 0 })
+    title:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -14)
+    title:SetText(L["回血手续费"])
+    local hint = MakeFS(f, 12, { 0.7, 0.7, 0.7 }, "LEFT")
+    hint:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
+    hint:SetWidth(268)
+    hint:SetWordWrap(true)
+    hint:SetText(L["0–25 之间的整数，拍卖行卖出时扣掉的佣金比例"])
+    local eb = ns.CreateEditBox(f, 72)
+    eb:SetPoint("TOPLEFT", hint, "BOTTOMLEFT", 0, -10)
+    eb:SetNumeric(true)
+    eb:SetMaxLetters(2)
+    eb:SetJustifyH("CENTER")
+    eb:SetTextColor(1, 0.82, 0)
+    f.eb = eb
+    local okBtn = NewButton(f, L["确定"], 64, 22, 13)
+    okBtn:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -16, 14)
+    MakeOutline(okBtn, 1, 0.82, 0)
+    local cancelBtn = NewButton(f, L["取消"], 64, 22, 13)
+    cancelBtn:SetPoint("RIGHT", okBtn, "LEFT", -8, 0)
+    local function closeForm() f:Hide() end
+    local function submit()
+        local v = tonumber(eb:GetText())
+        closeForm()
+        if not v then return end
+        v = math.floor(v)
+        if v < 0 then v = 0 elseif v > 25 then v = 25 end
+        PD.SetRecoveryFee(v)
+        PD.RequestRender()
+    end
+    okBtn:SetScript("OnClick", function() submit() end)
+    cancelBtn:SetScript("OnClick", function() closeForm() end)
+    eb:SetScript("OnEnterPressed", function(self) self:ClearFocus() submit() end)
+    eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() closeForm() end)
+    if UISpecialFrames then
+        local listed = false
+        for i = 1, #UISpecialFrames do
+            if UISpecialFrames[i] == "DungeonsForeverFeeForm" then listed = true break end
+        end
+        if not listed then tinsert(UISpecialFrames, "DungeonsForeverFeeForm") end
+    end
+    return f
+end
+
+function PD.ShowRecoveryFeeInput()
+    if not feeForm then feeForm = BuildFeeForm() end
+    local eb = feeForm.eb
+    feeForm:Show()
+    eb:SetText(tostring(tonumber(PD.SettingRaw("recoveryFeePercent")) or 5))
+    eb:SetFocus()
+    eb:SetCursorPosition(#eb:GetText(), 0)
 end
 
 function PD.SetAutoCraftTools(on)
@@ -3111,14 +3181,9 @@ function PD.Build(page)
     PD.lvTiles.scheme:SetScript("OnClick", function(self) PD.ShowSchemeMenu(self) end)
     PD.lvTiles.solver:SetScript("OnClick", function()
         if PD.CookingFishingMode() then return end
-        local SR = ns.ProfSolverRun
-        local running = SR and SR.Running and SR.Running()
-        ProfDB().solverRoute = not running
-        ProfDB().autoRoute = true
-        if running then
-            if SR and SR.Stop then SR.Stop() end
-            PD.solverFrac = nil
-        end
+        local on = not PD.Setting("solverRoute")
+        ProfDB().solverRoute = on
+        if on then ProfDB().autoRoute = true end
         if PD.StopSolverRoute then PD.StopSolverRoute() end
         PD.solverKey = nil
         PD.solverPaintRes = nil
@@ -4271,11 +4336,19 @@ function PD.PaintLvTiles()
             sv = L["开"]
         end
         tiles.solver.val:SetText(sv)
-        tiles.solver.val:SetTextColor(Unpack((son or running) and C_GOLD or C_WHITE))
+        tiles.solver.val:SetTextColor(Unpack((son or running) and C_GOLD or C_GREY))
         PD.PaintTileBorder(tiles.solver, (son or running) and { 1, 0.82, 0, 0.55 } or { 1, 1, 1, 0.10 })
+        local hint
+        if running then
+            hint = L["正在计算，点击可关闭"]
+        elseif son then
+            hint = L["已开启，点击可关闭"]
+        else
+            hint = L["已关闭，点击可开启"]
+        end
         TipOn(tiles.solver, {
-            { running and L["精确方案正在计算，点击可取消"]
-                or L["精确方案：逐档比较配方组合，较慢但更省"], 1, 0.82, 0 },
+            { L["精确方案：逐档比较配方组合，较慢但更省"], 1, 0.82, 0 },
+            { hint, 0.7, 0.7, 0.7 },
             { L["开启后会自动切到自动计算模式"], 0.7, 0.7, 0.7 },
         })
     end
@@ -6960,7 +7033,7 @@ local function FixedShopData(target)
     local steps, clipped = ClipFixedSteps(lv.steps or {}, target)
     if RA and RA.SummarizeSteps then
         local sum = RA.SummarizeSteps(steps, PD.cur,
-                                      { learnedOnly = PD.Setting("autoLearnedOnly") })
+                                      { learnedOnly = PD.Setting("autoLearnedOnly"), target = target })
         if sum then
             sum.mode = "fixed"
             sum.target = target
@@ -7914,10 +7987,15 @@ local function TrackStepsFor(slug, steps)
     local run = TrackRunOf(slug)
     if not run then return nil end
     local mine = run.steps
-    if type(mine) ~= "table" or type(steps) ~= "table" or #steps == 0 or #mine ~= #steps then return nil end
-    for i = 1, #steps do
-        if steps[i][3] ~= mine[i].spell then return nil end
+    if type(mine) ~= "table" or type(steps) ~= "table" or #steps == 0 or #mine == 0 then return nil end
+    if #mine == #steps then
+        local same = true
+        for i = 1, #steps do
+            if steps[i][3] ~= mine[i].spell then same = false break end
+        end
+        if same then return run, T.ProgressAll(slug) end
     end
+    if not (T.Rebase and T.Rebase(run, steps)) then return nil end
     return run, T.ProgressAll(slug)
 end
 
@@ -8123,7 +8201,7 @@ function PD.RowsLeveling(rows)
         steps, clipped = ClipFixedSteps(lv.steps or {}, target)
     end
     local fixedSum = (not auto) and RA and RA.SummarizeSteps(steps, PD.cur,
-                          { learnedOnly = PD.Setting("autoLearnedOnly") }) or nil
+                          { learnedOnly = PD.Setting("autoLearnedOnly"), target = target }) or nil
     local trackRun, trackAll = TrackStepsFor(PD.cur, steps)
 
     PD.lvSummary = {
@@ -8143,6 +8221,10 @@ function PD.RowsLeveling(rows)
         np = auto and CountUnpriced(res) or (fixedSum and CountUnpriced(fixedSum)) or 0,
     }
     PD.CopyRecoverySummary(auto and res or fixedSum)
+    if PD.autoPage == "recovery" then
+        PD.RowsRecoveryDetail(rows, auto and res or fixedSum)
+        return
+    end
     PD.CopyPlanSummary(res)
     local recLine = PD.RecoverySummaryText(auto and res or fixedSum)
     if recLine then PushText(rows, recLine, 12, C_GREY) end
@@ -8938,11 +9020,96 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip)
         kind = "row", h = PD.ROW_H, col = 1, it = { id },
         text = PD.Fit(DG.ItemName(id), 13, lw - 130),
         sub = sub,
-        tag = { text = PD.PurchaseSource(e) },
+        tag = { text = e.spec and L["专精任务"] or PD.PurchaseSource(e) },
         right = right,
         right2 = right2,
         lines = tip,
     }
+    if e.spec then
+        tip[#tip + 1] = { L["这是专精任务要交的材料，只在到达门槛时消耗一次。"], 0.95, 0.75, 0.4 }
+    end
+end
+
+function PD.RowsRecoveryDetail(rows, src)
+    local lw = PD.COL_LW
+    local outs = (src and src.saleOutputs) or {}
+    local rec = tonumber(src and src.recoveryTotal) or 0
+    local fee = src and src.recoverySnapshot and src.recoverySnapshot.feePercent or nil
+    local net = src and (tonumber(src.netTotal) or ((src.purchaseTotal or src.total or 0) - rec)) or 0
+    PushHead(rows, L["预计回血明细"], 1)
+    rows[#rows].segs = { { key = "rec_fee", text = format(L["手续费 %d%%"], fee or 5) } }
+    PushText(rows, format(L["预计回血 %s · 净成本 %s"], PD.RecoveryMoney(rec), PD.RecoveryMoney(net)), 16, C_GOLD, 1)
+    if fee then
+        PushText(rows, format(L["按 %d%% 手续费折算，剩余产物假设全部成交"], fee), 12, C_GREY, 1)
+    else
+        PushText(rows, L["手续费未知，售价按卖店价估算"], 12, C_GREY, 1)
+    end
+    if #outs == 0 then
+        PushGap(rows, 6, 1)
+        PushText(rows, L["当前路线没有可出售的剩余产物。"], 12, C_GREY, 1)
+        return
+    end
+    local sell, unknown = {}, {}
+    for _, o in ipairs(outs) do
+        local unit = tonumber(o.unit) or 0
+        if o.missing or unit <= 0 then
+            unknown[#unknown + 1] = o
+        else
+            sell[#sell + 1] = o
+        end
+    end
+    table.sort(sell, function(a, b)
+        local ra, rb = tonumber(a.revenue) or 0, tonumber(b.revenue) or 0
+        if ra ~= rb then return ra > rb end
+        return (tonumber(b.count) or 0) > (tonumber(a.count) or 0)
+    end)
+    if #sell > 0 then
+        PushGap(rows, 8, 1)
+        PushHead(rows, format(L["可出售（%d 种）"], #sell), 1)
+        rows[#rows].foldKey = "rec_sell"
+        if not PD.FoldOn("rec_sell") then
+            for _, o in ipairs(sell) do
+                local unit = tonumber(o.unit) or 0
+                local n = tonumber(o.count) or 0
+                local revenue = tonumber(o.revenue) or 0
+                local ah = o.source == "ah"
+                rows[#rows + 1] = {
+                    kind = "row", h = PD.ROW_H, col = 1, it = { o.id },
+                    text = PD.Fit(DG.ItemName(o.id), 13, lw - 150),
+                    sub = format(L["×%d · 单价 %s"], n, RA.MoneyStr(unit, "copper")),
+                    tag = { text = ah and L["拍卖行"] or L["卖店"] },
+                    right = RA.MoneyStr(revenue, "copper"),
+                    lines = {
+                        { format(L["%d 件 · 单价 %s"], n, RA.MoneyStr(unit, "copper")) },
+                        ah and { L["按拍卖行净价估算（已扣手续费）"], 0.42, 0.94, 0.62 }
+                           or { L["按卖店价估算"], 0.7, 0.7, 0.7 },
+                        { format(L["收入 %s"], RA.MoneyStr(revenue, "copper")), 1, 0.82, 0 },
+                    },
+                }
+            end
+        end
+    end
+    if #unknown > 0 then
+        PushGap(rows, 6, 1)
+        PushHead(rows, format(L["售价未知（%d 种）"], #unknown), 1)
+        rows[#rows].foldKey = "rec_unknown"
+        if not PD.FoldOn("rec_unknown") then
+            for _, o in ipairs(unknown) do
+                local n = tonumber(o.count) or 0
+                rows[#rows + 1] = {
+                    kind = "row", h = PD.ROW_H, col = 1, it = { o.id },
+                    text = PD.Fit(DG.ItemName(o.id), 13, lw - 150),
+                    sub = format(L["×%d"], n),
+                    tag = { text = L["未知"] },
+                    right = L["—"],
+                    lines = {
+                        { format(L["%d 件"], n) },
+                        { L["查不到拍卖行价与卖店价，这部分没有计入预计回血。"], 0.95, 0.75, 0.4 },
+                    },
+                }
+            end
+        end
+    end
 end
 
 function PD.RowsAutoShop(rows, data)
@@ -9165,10 +9332,12 @@ end
 function PD.LevelTool()
     local fishRoute = PD.CookingFishingMode and PD.CookingFishingMode() or false
     local onLog = PD.autoPage == "log"
+    local onRec = PD.autoPage == "recovery"
     local list = {
-        { key = "page_route", text = L["路线"],     on = PD.autoPage ~= "shop" and not onLog },
+        { key = "page_route", text = L["路线"],     on = PD.autoPage ~= "shop" and not onLog and not onRec },
         { key = "page_shop",  text = L["购物清单"], on = PD.autoPage == "shop" },
         { key = "page_log",   text = L["制作记录"], on = onLog },
+        { key = "page_rec",   text = L["回血"],     on = onRec },
     }
     if PD.cur == "cooking" then
         list[#list + 1] = {key = "cooking_fishing", align = "right",
@@ -9220,6 +9389,12 @@ function PD.LevelTool()
             PD.autoPage = "log"
             PD.exclusionsOpen = false
             PD.FlushPolicies()
+        elseif k == "page_rec" then
+            PD.autoPage = "recovery"
+            PD.exclusionsOpen = false
+            PD.FlushPolicies()
+        elseif k == "rec_fee" then
+            PD.ShowRecoveryFeeInput()
         elseif k == "shop_group" then
             PD.shopGroup = not PD.shopGroup
             if not PD.shopGroup then PD.ProcureClear() end
@@ -9380,8 +9555,8 @@ function PD.RowsSettings(rows)
         act = function(row) PD.ShowRecoveryFeeMenu(row) end,
         help = { { L["回血手续费"], 1, 1, 1 },
                  { L["拍卖行卖出时扣掉的佣金比例，只影响预计回血与净成本，不影响采购价。"], 0.7, 0.7, 0.7 },
-                 { format(L["当前 %d%%；点这一行选择。"], fee), 0.7, 0.7, 0.7 },
-                 { L["默认 5%，可改 0% / 5% / 10% / 15% / 20%。"], 0.7, 0.7, 0.7 } },
+                 { format(L["当前 %d%%；点这一行选择或自定义。"], fee), 0.7, 0.7, 0.7 },
+                 { L["默认 5%，常用 0 / 5 / 10 / 15 / 20，也可输入 0–25 之间的整数。"], 0.7, 0.7, 0.7 } },
     }
     PushGap(rows, 6)
 end
