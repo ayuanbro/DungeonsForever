@@ -108,6 +108,7 @@ venv/
 Thumbs.db
 Desktop.ini
 .DS_Store
+.vscode/
 
 # Release ZIPs, checksums, extracted packages and staging copies are artifacts.
 /dist/
