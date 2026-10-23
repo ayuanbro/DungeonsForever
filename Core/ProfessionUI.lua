@@ -219,6 +219,38 @@ function PD.SetRecoveryFee(pct)
     PD.ProfRecalc()
 end
 
+function PD.EngChoiceLabel(value)
+    local key = value or "none"
+    if key == "goblin" then return L["地精工程学"] end
+    if key == "gnomish" then return L["侏儒工程学"] end
+    return L["不指定"]
+end
+
+function PD.SetEngChoice(value)
+    local G = ns.ProfGates
+    if not (G and G.SetPlannedChoice) then return end
+    if G.GetPlannedChoice() == value then return end
+    if not G.SetPlannedChoice(value) then return end
+    PD.ProfRecalc()
+end
+
+function PD.ShowEngChoiceMenu(owner)
+    local G = ns.ProfGates
+    if not (G and G.GetPlannedChoice and ns.hui and ns.hui.ShowMenu) then return end
+    local cur = G.GetPlannedChoice()
+    local items = {}
+    for _, opt in ipairs({ "none", "goblin", "gnomish" }) do
+        local checked = cur == opt
+        items[#items + 1] = {
+            text = PD.EngChoiceLabel(opt),
+            checked = checked,
+            color = checked and { 1, 0.82, 0 } or nil,
+            func = function() PD.SetEngChoice(opt) end,
+        }
+    end
+    ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
+end
+
 function PD.ShowRecoveryFeeMenu(owner)
     if not (ns.hui and ns.hui.ShowMenu) then return end
     local cur = tonumber(PD.SettingRaw("recoveryFeePercent")) or 5
@@ -8036,7 +8068,11 @@ function PD.RowsCraftLog(rows)
     end
     local stText, stColor
     if sum.stale then
-        stText, stColor = L["技能值变动，需重新开始追踪"], { 0.95, 0.55, 0.45 }
+        if sum.staleReason == "specialization" then
+            stText, stColor = L["专精计划已变化，需重新开始追踪"], { 0.95, 0.55, 0.45 }
+        else
+            stText, stColor = L["技能值变动，需重新开始追踪"], { 0.95, 0.55, 0.45 }
+        end
     elseif sum.finished or sum.status == "done" then
         stText, stColor = L["已完成"], { 0.49, 0.82, 0.63 }
     else
@@ -8248,8 +8284,28 @@ function PD.RowsLeveling(rows)
     PD.CopyPlanSummary(res)
     local recLine = PD.RecoverySummaryText(auto and res or fixedSum)
     if recLine then PushText(rows, recLine, 12, C_GREY) end
-    if res and (res.specBlocked or 0) > 0 then
-        PushText(rows, format(L["已按本角色专精过滤 %d 个无法学习的配方"], res.specBlocked), 12, C_GREY)
+    local shownSum = auto and res or fixedSum
+    if shownSum and (shownSum.specBlocked or 0) > 0 and not (shownSum.blockedSteps and #shownSum.blockedSteps > 0) then
+        PushText(rows, format(L["已按本角色专精过滤 %d 个无法学习的配方"], shownSum.specBlocked), 12, C_GREY)
+    end
+    if shownSum and shownSum.blockedSteps and #shownSum.blockedSteps > 0 then
+        local names, seen = {}, {}
+        for _, b in ipairs(shownSum.blockedSteps) do
+            local label = tostring(b.reason or "")
+            if label ~= "" and not seen[label] then
+                seen[label] = true
+                names[#names + 1] = label
+            end
+        end
+        if #names > 0 then
+            local ranges = {}
+            for i, b in ipairs(shownSum.blockedSteps) do
+                if i > 3 then break end
+                ranges[#ranges + 1] = format("%d–%d", b.from or 0, b.to or 0)
+            end
+            PushText(rows, format(L["有 %d 个步骤受专精限制（%s）：%s"], #shownSum.blockedSteps,
+                table.concat(names, " / "), table.concat(ranges, "、")), 12, { 0.95, 0.75, 0.4 })
+        end
     end
     do
         local G = ns.ProfGates
@@ -9642,6 +9698,28 @@ function PD.RowsSettings(rows)
                  { L["默认 5%，常用 0 / 5 / 10 / 15 / 20，也可输入 0–25 之间的整数。"], 0.7, 0.7, 0.7 } },
     }
     PushGap(rows, 6)
+    local G = ns.ProfGates
+    if PD.cur == "engineering" and G and G.GetPlannedChoice then
+        local planned = G.GetPlannedChoice()
+        local lines = {
+            { L["工程专精计划"], 1, 1, 1 },
+            { L["计划学习的工程专精分支，只影响路线编排，不会改变已学专精。"], 0.7, 0.7, 0.7 },
+            { L["选定分支后，路线会按该分支安排专精任务与所需材料。"], 0.7, 0.7, 0.7 },
+        }
+        local actual = G.EngineeringChoice()
+        if actual == "conflict" then
+            lines[#lines + 1] = { L["当前已同时学会地精与侏儒专精，需先重置其中一支。"], 0.88, 0.42, 0.38 }
+        elseif planned ~= "none" and actual ~= "unknown" and actual ~= "none" and actual ~= planned then
+            lines[#lines + 1] = { format(L["已学专精与计划不一致：已学%s。"], PD.EngChoiceLabel(actual)), 0.88, 0.42, 0.38 }
+        end
+        rows[#rows + 1] = {
+            kind = "row", h = 40, col = 1,
+            text = format(L["工程专精计划：%s"], PD.EngChoiceLabel(planned)),
+            act = function(row) PD.ShowEngChoiceMenu(row) end,
+            help = lines,
+        }
+        PushGap(rows, 6)
+    end
 end
 
 function PD.PlaceSettingsToggles(rows)

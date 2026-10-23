@@ -280,6 +280,7 @@ function T.Bind(slug, result, opts)
         startSkill = skillOf(slug),
         steps = steps,
         planSig = planSig(steps),
+        specSig = ns.ProfRouteAuto and ns.ProfRouteAuto.SpecSig and ns.ProfRouteAuto.SpecSig(slug) or nil,
         progress = {},
         outputs = {},
         currentIndex = 1,
@@ -328,6 +329,15 @@ function T.Sync(slug)
         db().active[slug] = nil
         notify(slug, run)
         return run
+    end
+    if run.specSig and ns.ProfRouteAuto and ns.ProfRouteAuto.SpecSig then
+        if run.specSig ~= ns.ProfRouteAuto.SpecSig(slug) then
+            run.status = "stale"
+            run.staleReason = "specialization"
+            db().active[slug] = nil
+            notify(slug, run)
+            return run
+        end
     end
     local i = 1
     local steps = run.steps or EMPTY
@@ -553,6 +563,7 @@ function T.Summary(slug)
         startSkill = run.startSkill,
         finished = run.finished and true or nil,
         stale = run.status == "stale" and true or nil,
+        staleReason = run.status == "stale" and run.staleReason or nil,
     }
 end
 

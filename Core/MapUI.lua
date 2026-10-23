@@ -1892,14 +1892,20 @@ function M.PinOnEnter(self)
     GameTooltip:ClearLines()
     if self.__kind == "quest" then
         local st = self.__qState
+        local nm, ok = DG.QuestName(p.id)
+        if not ok then DG.RequestQuest(p.id) end
         if st == "locked" then
-            GameTooltip:AddLine(DG.QuestName(p.id) or L["任务"], 0.72, 0.76, 0.85, true)
-            GameTooltip:AddLine(format(L["需先完成：%s"], DG.QuestName(self.__qPre) or L["前置任务"]), 1, 0.82, 0, true)
+            local preNm, preOk = DG.QuestName(self.__qPre)
+            if not preOk and self.__qPre then DG.RequestQuest(self.__qPre) end
+            GameTooltip:AddLine(nm or L["任务"], 0.72, 0.76, 0.85, true)
+            GameTooltip:AddLine(format(L["需先完成：%s"], preNm or L["前置任务"]), 1, 0.82, 0, true)
         elseif st == "pre" then
-            GameTooltip:AddLine(DG.QuestName(p.id) or L["任务"], 0.42, 0.62, 0.95, true)
-            GameTooltip:AddLine(format(L["完成本任务后解锁：%s"], DG.QuestName(self.__qPreOf) or ""), 1, 0.82, 0, true)
+            local blkNm, blkOk = DG.QuestName(self.__qPreOf)
+            if not blkOk and self.__qPreOf then DG.RequestQuest(self.__qPreOf) end
+            GameTooltip:AddLine(nm or L["任务"], 0.42, 0.62, 0.95, true)
+            GameTooltip:AddLine(format(L["完成本任务后解锁：%s"], blkNm or ""), 1, 0.82, 0, true)
         else
-            GameTooltip:AddLine(DG.QuestName(p.id) or L["任务"], 1, 0.82, 0, true)
+            GameTooltip:AddLine(nm or L["任务"], 1, 0.82, 0, true)
         end
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 0.88, 0.85, 0.78, true)
@@ -1935,6 +1941,17 @@ end
 
 function M.PinOnLeave()
     GameTooltip:Hide()
+end
+
+function M.OnQuestData(id)
+    local frame = M.frame
+    if not (frame and frame.IsShown and frame:IsShown()) then return end
+    local owner = GameTooltip and GameTooltip.GetOwner and GameTooltip:GetOwner()
+    if not (owner and owner.__kind == "quest" and owner.__p) then return end
+    local p = owner.__p
+    if p.id == id or owner.__qPre == id or owner.__qPreOf == id then
+        M.PinOnEnter(owner)
+    end
 end
 
 function M.FitPinBtn(bt)
@@ -2569,13 +2586,18 @@ local function wpPinAcquire(canvas)
             local st = wpStatic()
             for i = 1, #self.__qs do
                 local it = self.__qs[i]
-                local nm = DG.QuestName and DG.QuestName(it.qid) or tostring(it.qid)
+                local nm, nmOk
+                if DG.QuestName then nm, nmOk = DG.QuestName(it.qid) end
+                if not nmOk then DG.RequestQuest(it.qid) end
+                nm = nm or tostring(it.qid)
                 local tag, sub
                 if it.blocked then
                     tag = "|cffc8c8c8[" .. L["未解锁"] .. "]|r"
+                    DG.RequestQuest(it.pre)
                     sub = format(L["需先完成：%s"], tostring(DG.QuestName and DG.QuestName(it.pre) or it.pre))
                 elseif it.blocking then
                     tag = "|cff8ca6ff[" .. L["前置"] .. "]|r"
+                    DG.RequestQuest(it.blocking)
                     sub = format(L["完成后解锁：%s"], tostring(DG.QuestName and DG.QuestName(it.blocking) or it.blocking))
                 else
                     tag = "|cffffd100[" .. L["可接"] .. "]|r"

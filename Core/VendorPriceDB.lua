@@ -321,8 +321,10 @@ function VDB.GetFormulaOffers(itemID,context,source)
         end
     end
     if not context.requireObservedPrice then
-        for _,o in ipairs(ns.ProfFormulaOffers and ns.ProfFormulaOffers[itemID] or {}) do
-            if not seen[o.npcID] and o.reference and o.priceVerified then add(o,false) end
+        local S=ns.ProfSupply
+        local list=S and S.FormulaList and S.FormulaList(itemID) or nil
+        for _,o in ipairs(list or {}) do
+            if not seen[o.npcID] then add(o,false) end
         end
     end
     for _,v in ipairs(source.vendors or {}) do

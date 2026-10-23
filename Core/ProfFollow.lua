@@ -320,6 +320,11 @@ function PF.Toggle(slug)
     local k = charKey()
     local s = p.follow[k]
     if s and s.slug ~= slug then s = nil end
+    if s and not s.hidden and PF.building then
+        s.hidden = true
+        PF.onBuilt = nil
+        return
+    end
     if s and not s.hidden and PF.f and PF.f:IsShown() then
         s.hidden = true
         PF.f:Hide()
@@ -334,12 +339,22 @@ function PF.Toggle(slug)
     end
     s.hidden = nil
     PF.InvalidateRoute()
+    if PF.f then
+        PF.Sync()
+        PF.view = 0
+        PF.f:Show()
+        PF.Paint()
+        return
+    end
+    if PF.building then return end
+    PF.onBuilt = function()
+        if not PF.f then return end
+        PF.Sync()
+        PF.view = 0
+        PF.f:Show()
+        PF.Paint()
+    end
     PF.Build()
-    if not PF.f then return end
-    PF.Sync()
-    PF.view = 0
-    PF.f:Show()
-    PF.Paint()
 end
 
 function PF.Prev()
@@ -829,8 +844,35 @@ local function MakeLine(parent, fs, color)
     return t
 end
 
-function PF.Build()
+local buildSec = 0
+local buildSecTotal = 8
+local bgGate = 0
+local function BuildStep(n)
+    if n then
+        buildSec = n
+        if f and f.barBG and f.zone then
+            local frac = n / buildSecTotal
+            if frac > 1 then frac = 1 end
+            f.zone:ClearAllPoints()
+            f.zone:SetPoint("TOPLEFT", f.barBG, "TOPLEFT", 0, 0)
+            f.zone:SetWidth(math.max(1, math.floor((W - 20) * frac + 0.5)))
+            f.zone:SetVertexColor(0.27, 0.75, 0.45, 0.9)
+            f.zone:Show()
+        end
+    end
+    if not coroutine.running() then return end
+    if not debugprofilestop then return end
+    local now = debugprofilestop()
+    if now - bgGate >= 3 then
+        bgGate = now
+        coroutine.yield()
+    end
+end
+
+local function BuildBody()
     if f then return end
+    buildSec = 0
+    bgGate = 0
 
     f = CreateFrame("Frame", "DFProfFollowHUD", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
     f:SetSize(W, 10)
@@ -879,6 +921,7 @@ function PF.Build()
     end
     f.__round = RoundFrame(f, 6, { 1, 1, 1, 0.25 })
     if f.__round then f:SetBackdropBorderColor(0, 0, 0, 0) end
+    BuildStep(1)
 
     f.icon = f:CreateTexture(nil, "ARTWORK")
     f.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -910,6 +953,9 @@ function PF.Build()
     f.bar:SetColorTexture(1, 1, 1, 1)
     f.bar:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -66)
     f.bar:SetSize(1, 5)
+    f:SetHeight(90)
+    f:Show()
+    BuildStep(2)
 
     f.card = CreateFrame("Frame", nil, f, BackdropTemplateMixin and "BackdropTemplate" or nil)
     f.card:SetBackdrop({
@@ -962,8 +1008,10 @@ function PF.Build()
 
     f.card.matHead = MakeFS(f.card, 14, C_GREY, "LEFT")
     f.card.matHead:SetPoint("TOPLEFT", f.card, "TOPLEFT", 8, -56)
+    BuildStep(3)
 
     for i = 1, MAT_MAX + 1 do
+        BuildStep()
         rowsMat[i] = MakeLine(f.card, 14, C_TEXT)
         local ic = f.card:CreateTexture(nil, "ARTWORK")
         ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -979,6 +1027,7 @@ function PF.Build()
         bd:Hide()
         rowsMatBadge[i] = bd
     end
+    BuildStep(4)
 
     f.shop = CreateFrame("Frame", nil, f, BackdropTemplateMixin and "BackdropTemplate" or nil)
     f.shop:SetBackdrop({
@@ -1042,7 +1091,9 @@ function PF.Build()
     f.shop.sbarThumb = f.shop:CreateTexture(nil, "OVERLAY")
     f.shop.sbarThumb:SetColorTexture(1, 1, 1, 0.35)
     f.shop.sbarThumb:Hide()
+    BuildStep(5)
     for i = 1, SHOP_MAX + 1 do
+        BuildStep()
         rowsShop[i] = MakeLine(f.shop, 14, C_TEXT)
         rowsShopNum[i] = MakeLine(f.shop, 14, C_GOLD)
         local function MakePill(color)
@@ -1069,6 +1120,7 @@ function PF.Build()
         rowsShopTagPill[i] = MakePill(C_DIM)
         rowsShopSrcPill[i] = MakePill(C_HEAD)
     end
+    BuildStep(6)
 
     f.shopImp = NewButton(f.shop, L["一键导入"], 66, 20, 13)
     f.shopImp.__huiKeepTextColor = true
@@ -1144,6 +1196,7 @@ function PF.Build()
         if s then s.hidden = true end
         f:Hide()
     end)
+    BuildStep(7)
 
     local pos = dbProf().followPos
     f:ClearAllPoints()
@@ -1159,7 +1212,38 @@ function PF.Build()
         end)
     end
 
+    BuildStep(8)
     PF.f = f
+end
+
+function PF.Build()
+    if f or PF.building then return end
+    PF.building = true
+    local co = coroutine.create(BuildBody)
+    local function pump()
+        local ok, err = coroutine.resume(co)
+        if not ok then
+            PF.building = false
+            PF.onBuilt = nil
+            if f then
+                f:Hide()
+                f = nil
+            end
+            PF.f = nil
+            return
+        end
+        if coroutine.status(co) ~= "dead" then
+            C_Timer.After(0, pump)
+        else
+            PF.building = false
+            if PF.onBuilt then
+                local cb = PF.onBuilt
+                PF.onBuilt = nil
+                cb()
+            end
+        end
+    end
+    pump()
 end
 
 local sweep = 0

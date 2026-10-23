@@ -13,6 +13,17 @@ local function shallow(t)
     return o
 end
 
+local yGate = 0
+local function MaybeYield()
+    if not coroutine.running() then return end
+    if not debugprofilestop then return end
+    local now = debugprofilestop()
+    if now - yGate >= 3 then
+        yGate = now
+        coroutine.yield()
+    end
+end
+
 local function validMats(mats)
     if type(mats) ~= "table" or #mats == 0 then return false end
     for _, m in ipairs(mats) do
@@ -101,6 +112,7 @@ local function vendorQuote(o)
 end
 
 function E.FormulaFor(r, context)
+    MaybeYield()
     if type(r) ~= "table" then return end
     local id = tonumber(r.formula)
     if not id or id <= 0 then return nil end
@@ -115,25 +127,48 @@ function E.FormulaFor(r, context)
     if type(ah) == "number" and ah > 0 then cost, source = ah, "ah" end
     local offers, hasUnlimited, hasLimited, hasOffer = {}, false, false, false
     local vdb = ns.VendorPriceDB
-    local raw = vdb and vdb.GetOffers and vdb.GetOffers(id, context) or {}
+    local seenNpc = {}
+    local raw = {}
+    local flist = ns.ProfSupply and ns.ProfSupply.FormulaList and ns.ProfSupply.FormulaList(id) or nil
+    if type(flist) == "table" then
+        for _, o in ipairs(flist) do
+            raw[#raw + 1] = o
+            if o.npcID then seenNpc[o.npcID] = true end
+        end
+    end
+    local vlist = vdb and vdb.GetOffers and vdb.GetOffers(id, context) or {}
+    for _, o in ipairs(vlist) do
+        if not (o.npcID and seenNpc[o.npcID]) then raw[#raw + 1] = o end
+    end
+    local PDm = ns.ProfModule
+    local allowLimited = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas")) and true or false
+    local limitedCost
     for _, o in ipairs(raw) do
+        MaybeYield()
         if type(o) == "table" and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
             hasOffer = true
             if o.unlimited == true then hasUnlimited = true
             elseif o.limited or o.unlimited == false then hasLimited = true end
+            local pack = tonumber(o.quantity) or tonumber(o.bundleSize) or 1
+            if pack < 1 then pack = 1 end
             offers[#offers + 1] = {
-                npcID = o.npcID, price = o.price, quantity = o.quantity or o.bundleSize or 1,
-                bundleSize = o.bundleSize or o.quantity or 1, unlimited = o.unlimited,
+                npcID = o.npcID, price = o.price, quantity = pack,
+                bundleSize = pack, unlimited = o.unlimited,
                 limited = o.limited, stockUnknown = o.stockUnknown, estimated = o.estimated,
             }
         end
         if vendorQuote(o) and (not cost or source == "vendor" and o.price < cost) then
             cost, source = o.price, "vendor"
         end
+        if allowLimited and type(o) == "table" and o.unlimited ~= true
+            and type(o.price) == "number" and o.price >= 0
+            and not o.hasExtendedCost and (not o.currencyID or o.currencyID == 0)
+            and o.available ~= false and o.purchasable ~= false then
+            if not limitedCost or o.price < limitedCost then limitedCost = o.price end
+        end
     end
+    if not cost and limitedCost then cost, source = limitedCost, "vendor" end
     if not cost then unpriced = true end
-    local PDm = ns.ProfModule
-    local allowLimited = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas")) and true or false
     if not allowLimited and not cost and hasOffer and not hasUnlimited then
         return {
             id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
@@ -157,6 +192,7 @@ function E.Index(s)
     s.recipes = s.recipes or {}
     s.byItem, s.byProfession, s.byKey = {}, {}, {}
     for _, r in ipairs(s.recipes) do
+        MaybeYield()
         r.key = r.key or (r.profession .. ":" .. r.spell)
         r.count = r.count or 1
         r.mats = r.mats or {}
@@ -192,12 +228,14 @@ function E.Index(s)
     if AB and AB.SupplyFresh then
         local seen = {}
         for _, r in ipairs(s.recipes) do
+            MaybeYield()
             if type(r.item) == "number" and r.item > 0 then seen[r.item] = true end
             for _, m in ipairs(r.mats or {}) do
                 if type(m[1]) == "number" then seen[m[1]] = true end
             end
         end
         for id in pairs(seen) do
+            MaybeYield()
             local rec = AB.SupplyFresh(id)
             if rec then
                 s.auctionSupply[id] = rec
@@ -304,11 +342,32 @@ function E.Capture(slug, opts, tick)
             end
         end
         s.toolGoals = keptGoals
-        local specGoal = G.SpecGoal(slug, opts.target)
-        if specGoal then s.specializationGoals = { specGoal } end
-        local choice = G.EngineeringChoice()
-        s.specializationContext = { choice = choice, abilities = G.Abilities(),
-            selectionConflict = (choice == "conflict") or false }
+        local specTarget = tonumber(opts.target)
+        if not specTarget then
+            local db = DungeonsForeverDB and DungeonsForeverDB.prof
+            specTarget = tonumber(db and db.lvTarget and db.lvTarget[slug]) or 300
+        end
+        local specCtx = G.SpecializationContext and G.SpecializationContext {
+            profession = slug, target = specTarget, faction = s.faction, level = s.level,
+        } or nil
+        if specCtx then
+            s.targetProfession = slug
+            s.engineeringSpecialization = specCtx.choice
+            s.specializationContext = specCtx
+            s.specializationAbilities = specCtx.abilities
+            s.specializationFingerprint = specCtx.fingerprint
+            local keepGoals = {}
+            for _, goal in ipairs(specCtx.goals or {}) do
+                local reason = goal.blockedReason
+                if not reason or reason == "specializationLevelRequired" then
+                    keepGoals[#keepGoals + 1] = goal
+                end
+            end
+            s.specializationGoals = keepGoals
+        else
+            local specGoal = G.SpecGoal(slug, opts.target)
+            if specGoal then s.specializationGoals = { specGoal } end
+        end
     end
     if ns.ProfRecovery then ns.ProfRecovery.Capture(s, opts) end
     return E.Index(s)

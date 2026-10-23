@@ -285,9 +285,8 @@ local function RouteTick()
     end
 end
 
-local specBlocked = 0
 local function BuildCandidates(slug, opts)
-    specBlocked = 0
+    local specBlocked = 0
     local pr = ns.ProfRecipes
     local Rg = pr and pr[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
@@ -853,6 +852,11 @@ function RA.SummarizeSteps(steps, slug, opts)
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
     }
+    local blockedSteps = RA.MarkFixedSpecializations(slug, steps, opts)
+    if blockedSteps then
+        res.blockedSteps = blockedSteps
+        res.specBlocked = #blockedSteps
+    end
     return RA.ApplyRecovery(res, slug, opts, recOf)
 end
 
@@ -929,6 +933,7 @@ function RA.ApplyRecovery(res, slug, opts, recOf)
     res.recoveryScheme = snap.recovery and snap.recovery.feePercent or nil
     res.recoveryFeeSource = snap.recovery and snap.recovery.feeSource or nil
     RA.StampSupply(res)
+    RA.StampSpecializations(res, slug, opts, res.recoverySnapshot)
     return res
 end
 
@@ -995,6 +1000,105 @@ function RA.StampToolPolicy(result, targetProfession, unused, snapshot)
         if m.id and goals[m.id] then m.tool = true end
     end
     return result
+end
+
+local function SpecContext(slug, opts)
+    local G = ns.ProfGates
+    if not (G and G.SpecializationContext) then return nil end
+    local options = {}
+    for k, v in pairs(opts or {}) do options[k] = v end
+    options.profession = slug or options.profession or "engineering"
+    if options.target == nil then
+        local db = DungeonsForeverDB and DungeonsForeverDB.prof
+        options.target = tonumber(db and db.lvTarget and db.lvTarget[options.profession]) or 300
+    end
+    return G.SpecializationContext(options)
+end
+
+function RA.StampSpecializations(result, slug, opts, snapshot)
+    if type(result) ~= "table" then return result end
+    RA.StampToolPolicy(result, slug, opts, snapshot)
+    local G = ns.ProfGates
+    if not (G and G.SpecializationContext) then return result end
+    local ctx
+    if type(snapshot) == "table" then ctx = snapshot.specializationContext end
+    if not ctx then ctx = SpecContext(slug, opts) end
+    if not ctx then return result end
+    local abilities = {}
+    local source = ctx.abilities
+    if type(snapshot) == "table" and snapshot.specializationAbilities then
+        source = snapshot.specializationAbilities
+    end
+    for id, known in pairs(source or {}) do
+        if known == true then abilities[id] = true end
+    end
+    result.specializationPolicy = {
+        revision = 1,
+        profession = slug or (type(snapshot) == "table" and snapshot.targetProfession) or ctx.profession,
+        choice = ctx.choice or "none",
+        fingerprint = G.SpecFingerprint(ctx.choice),
+        actualAbilities = abilities,
+        selectionConflict = ctx.selectionConflict == true,
+    }
+    return result
+end
+
+function RA.SpecializationPlanChanged(result, slug, opts)
+    if type(result) ~= "table" then return false end
+    local G = ns.ProfGates
+    if not (G and G.SpecializationContext) then return false end
+    local policy = result.specializationPolicy
+    local prof = slug
+    if not prof and policy then prof = policy.profession end
+    local ctx = SpecContext(prof, opts)
+    if not ctx then return false end
+    if not policy then return ctx.choice ~= "none" end
+    if policy.revision ~= 1 or policy.fingerprint ~= G.SpecFingerprint(ctx.choice) then return true end
+    for id in pairs(policy.actualAbilities or {}) do
+        if (ctx.abilities or {})[id] ~= true then return true end
+    end
+    if ctx.profession == "engineering" and ctx.selectionConflict and not policy.selectionConflict then
+        return true
+    end
+    return false
+end
+
+function RA.FilterFixedSpecializations(slug, steps, opts)
+    local G = ns.ProfGates
+    local filtered, blocked = {}, {}
+    if not (G and G.LearningEligibility) then
+        for _, st in ipairs(steps or {}) do filtered[#filtered + 1] = st end
+        return filtered, blocked, false
+    end
+    local ctx = SpecContext(slug, opts)
+    for _, st in ipairs(steps or {}) do
+        local spell = st[3] or st.spell
+        local allowed, reason = true, nil
+        if spell then allowed, reason = G.LearningEligibility(spell) end
+        if allowed then
+            filtered[#filtered + 1] = st
+        else
+            blocked[#blocked + 1] = { spell = spell, from = st[1], to = st[2],
+                reason = reason or "specializationRequired" }
+        end
+    end
+    local goalRequired = false
+    if ctx and #(ctx.goals or {}) > 0 then goalRequired = true end
+    return filtered, blocked, goalRequired
+end
+
+function RA.MarkFixedSpecializations(slug, steps, opts)
+    local _, blocked = RA.FilterFixedSpecializations(slug, steps, opts)
+    if #blocked == 0 then return nil end
+    local bySpell = {}
+    for _, b in ipairs(blocked) do
+        if b.spell then bySpell[b.spell] = b.reason end
+    end
+    for _, st in ipairs(steps or {}) do
+        local reason = bySpell[st[3]]
+        if reason then st.specBlocked = reason end
+    end
+    return blocked
 end
 
 function RA.StampSupply(result)
@@ -1126,10 +1230,19 @@ function RA.QuoteSig()
     return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim)
 end
 
+function RA.SpecSig(slug)
+    local G = ns.ProfGates
+    if not (G and G.SpecFingerprint) then return "" end
+    local choice = "none"
+    if G.GetPlannedChoice then choice = G.GetPlannedChoice() end
+    return G.SpecFingerprint(choice)
+end
+
 function RA.Get(slug, opts)
     opts = opts or {}
     local fp = Fingerprint(opts, slug)
     local sig = RA.QuoteSig()
+    local specSig = RA.SpecSig(slug)
     local bucket = cache[slug]
     if not bucket then
         bucket = {}
@@ -1137,11 +1250,11 @@ function RA.Get(slug, opts)
     end
     local now = (type(time) == "function") and time() or 0
     local e = bucket[fp]
-    if e and e.sig == sig and (now - e.stamp) < CACHE_TTL then return e.res end
+    if e and e.sig == sig and e.specSig == specSig and (now - e.stamp) < CACHE_TTL then return e.res end
     local refreshed = e ~= nil and e.sig ~= sig
     local res = RA.Compute(slug, opts)
     if refreshed then res.quotesRefreshed = true end
-    bucket[fp] = { res = res, stamp = now, sig = sig }
+    bucket[fp] = { res = res, stamp = now, sig = sig, specSig = specSig }
     local n, oldK, oldT = 0, nil, nil
     for k, v in pairs(bucket) do
         n = n + 1

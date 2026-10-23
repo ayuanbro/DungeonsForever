@@ -5179,6 +5179,37 @@ if type(SlashCmdList) == "table" then
         end
     end
 end
+DG.__qWatch = {}
+function DG.OnQuestData(id)
+    local MM = ns.MapModule
+    if MM and MM.OnQuestData then MM.OnQuestData(id) end
+end
+function DG.RequestQuest(id)
+    if type(id) ~= "number" or id < 1 or id ~= math.floor(id) then return end
+    if not DG.__qAsked[id] then
+        DG.__qAsked[id] = true
+        if C_QuestLog and C_QuestLog.RequestLoadQuestByID then
+            pcall(C_QuestLog.RequestLoadQuestByID, id)
+        end
+        local n0 = DG.QLCall("GetTitleForQuestID", id)
+        if type(n0) == "string" and n0 ~= "" then
+            DG.OnQuestData(id)
+            return
+        end
+    end
+    if not (C_Timer and C_Timer.After) then return end
+    if DG.__qWatch[id] then return end
+    DG.__qWatch[id] = true
+    for _, d in ipairs({ 0.3, 0.8, 1.5, 3 }) do
+        C_Timer.After(d, function()
+            local n = DG.QLCall("GetTitleForQuestID", id)
+            if type(n) == "string" and n ~= "" then
+                DG.__qWatch[id] = nil
+                DG.OnQuestData(id)
+            end
+        end)
+    end
+end
 function DG.QuestName(id)
     if not id then return nil, false end
     if type(id) ~= "number" then return tostring(id), false end

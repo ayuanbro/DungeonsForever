@@ -7,7 +7,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.8.32
+## Version: 1.8.33
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
 
@@ -48,6 +48,7 @@ Core\Data\Data_ProfVendorNames.lua
 Core\Data\Data_ProfDropNpcs.lua
 Core\Data\Data_ProfTrainers.lua
 Core\Data\Data_ProfMaterialSupply.lua
+Core\Data\Data_ProfFormulaOffers.lua
 Core\Data\Data_ProfTools.lua
 Core\Data\Data_ProfSpecializations.lua
 Core\Data\Data_ProfSpecializationQuests.lua

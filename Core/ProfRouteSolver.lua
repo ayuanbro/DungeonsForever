@@ -4,10 +4,36 @@ local E=ns.ProfEconomy
 local S={}; ns.ProfRouteSolver=S
 local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
 local function clock() return debugprofilestop and debugprofilestop() or 0 end
-local function available(s,id) return (s.inv[id] or 0)-(s.unusable[id] or 0) end
-local function clone(s)
-    return {inv=E.Copy(s.inv),unusable=E.Copy(s.unusable),unusableSeed=E.Copy(s.unusableSeed),produced=E.Copy(s.produced),skill=E.Copy(s.skill),progress=E.Copy(s.progress),cap=E.Copy(s.cap),learned=E.Copy(s.learned),formulaPaid=E.Copy(s.formulaPaid),ahUsed=E.Copy(s.ahUsed),specializationAbilities=E.Copy(s.specializationAbilities),completedSpecializationGoals=E.Copy(s.completedSpecializationGoals),completedToolGoals=E.Copy(s.completedToolGoals),diagnostics=E.Copy(s.diagnostics),money=s.money,log=s.log,switches=s.switches or 0,lastRecipe=s.lastRecipe}
+
+local cgGate = 0
+local function CloneYield()
+    if not coroutine.running() then return end
+    if not debugprofilestop then return end
+    local now = debugprofilestop()
+    if now - cgGate >= 3 then
+        cgGate = now
+        coroutine.yield()
+    end
 end
+
+local function clone(s)
+    local inv=E.Copy(s.inv); CloneYield()
+    local unusable=E.Copy(s.unusable)
+    local unusableSeed=E.Copy(s.unusableSeed); CloneYield()
+    local produced=E.Copy(s.produced)
+    local skill=E.Copy(s.skill); CloneYield()
+    local progress=E.Copy(s.progress)
+    local cap=E.Copy(s.cap)
+    local learned=E.Copy(s.learned); CloneYield()
+    local formulaPaid=E.Copy(s.formulaPaid)
+    local ahUsed=E.Copy(s.ahUsed); CloneYield()
+    local specializationAbilities=E.Copy(s.specializationAbilities)
+    local completedSpecializationGoals=E.Copy(s.completedSpecializationGoals); CloneYield()
+    local completedToolGoals=E.Copy(s.completedToolGoals)
+    local diagnostics=E.Copy(s.diagnostics)
+    return {inv=inv,unusable=unusable,unusableSeed=unusableSeed,produced=produced,skill=skill,progress=progress,cap=cap,learned=learned,formulaPaid=formulaPaid,ahUsed=ahUsed,specializationAbilities=specializationAbilities,completedSpecializationGoals=completedSpecializationGoals,completedToolGoals=completedToolGoals,diagnostics=diagnostics,money=s.money,log=s.log,switches=s.switches or 0,lastRecipe=s.lastRecipe}
+end
+local function available(s,id) return (s.inv[id] or 0)-(s.unusable[id] or 0) end
 local function consume(s,id,n)
     local stock=s.inv[id] or 0
     assert(available(s,id)>=n,"reserved reagent became unavailable")
@@ -95,7 +121,11 @@ local function stampFreshResult(result,snapshot)
     if recovery and recovery.Apply and snapshot then recovery.Apply(result,snapshot) end
     local route=ns.ProfRouteAuto
     if route and route.StampVendorQuotes then route.StampVendorQuotes(result) end
-    if route and route.StampToolPolicy then route.StampToolPolicy(result,snapshot and snapshot.targetProfession,nil,snapshot) end
+    if route and route.StampSpecializations then
+        route.StampSpecializations(result, snapshot and snapshot.targetProfession, nil, snapshot)
+    elseif route and route.StampToolPolicy then
+        route.StampToolPolicy(result, snapshot and snapshot.targetProfession, nil, snapshot)
+    end
     if route and route.StampSupply then route.StampSupply(result) end
     return result
 end
@@ -110,8 +140,16 @@ local function mergeItemIDs(dst,src)
     return dst
 end
 function S.Result(job,state,status)
-    local yld=job and job.yieldIfDue or nil
-    local function st() if yld then yld() end end
+    local rgate=0
+    local function st()
+        if not coroutine.running() then return end
+        if not debugprofilestop then return end
+        local now=debugprofilestop()
+        if now-rgate>=3 then
+            rgate=now
+            coroutine.yield()
+        end
+    end
     local prefix=job.preview or (job.partial and job.partial.batched and job.partial)
     local partial=not state and prefix and (prefix.skill[job.slug]>(job.opts.start or 1) or completedGoals(prefix)>0)
     if partial then state=prefix; partial=not goalsComplete(job,state) end
@@ -120,12 +158,15 @@ function S.Result(job,state,status)
     out.searchCpuMs=job.cpuUsed or 0
     out.searchCpuLimitMs=job.cpuLimitMs or 5000
     out.seedInventory=E.Copy(job.opts.executionInventory or {})
+    st()
     out.scheme=job.opts.scheme or "cheapest"
     out.toolGoals=E.Copy(job.snap and job.snap.toolGoals)
     out.retainedToolItems=E.Copy(job.snap and job.snap.retainedToolItems)
+    st()
     out.toolFingerprint=job.snap and job.snap.toolFingerprint
     out.specializationGoals=E.Copy(job.snap and job.snap.specializationGoals)
     out.specializationContext=E.Copy(job.snap and job.snap.specializationContext)
+    st()
     out.formulas={};out.formulasTotal=0;out.formulaAHTotal=0;out.formulaVendorTotal=0;out.formulaRevision=1;out.formulaComplete=true
     local context=job.snap and job.snap.routeContext
     out.professionPolicy=1
@@ -190,6 +231,7 @@ function S.Result(job,state,status)
             local need=input[2]
             for pass=1,2 do
                 for _,origin in ipairs(provenance[input[1]] or {}) do
+                    st()
                     if origin.crafted==(pass==2) then
                         local n=min(need,origin.count); origin.count=origin.count-n; need=need-n
                         if n>0 and origin.id then
@@ -436,7 +478,7 @@ function S.NewJob(slug,opts)
             j.wantPublish=false
             j.result=S.Result(j,j.best,"searching")
         end
-        if ops>=1000 or (j.deadline and clock()>=j.deadline) then
+        if ops>=100 or (j.deadline and clock()>=j.deadline) then
             ops=0
             if coroutine.running() then coroutine.yield("work") end
         end
@@ -537,6 +579,7 @@ function S.NewJob(slug,opts)
         return t
     end
     local function prepare(r,s,reason,path,emit)
+        tick()
         if not allowed(r,s,reason) then return end
         local skill=s.skill[r.profession]
         if not skill then fail("professionMissing",r); return end

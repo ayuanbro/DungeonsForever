@@ -45,7 +45,10 @@ local function Allowed(side, mine)
 end
 
 local function Compare(a, b)
-    local ua, ub = a.price / a.quantity, b.price / b.quantity
+    local qa, qb = a.quantity, b.quantity
+    if type(qa) ~= "number" or qa < 1 then qa = 1 end
+    if type(qb) ~= "number" or qb < 1 then qb = 1 end
+    local ua, ub = a.price / qa, b.price / qb
     if ua ~= ub then return ua < ub end
     return (a.npcID or 0) < (b.npcID or 0)
 end
@@ -78,6 +81,44 @@ local function BuildList(itemID)
     return list
 end
 
+local FORMULA_STEP = 8
+
+local function BuildFormulaList(itemID)
+    local flat = ns.ProfFormulaOffers and ns.ProfFormulaOffers[itemID]
+    if type(flat) ~= "table" then return nil end
+    local total = #flat
+    if total < FORMULA_STEP or total % FORMULA_STEP ~= 0 then return nil end
+    local verifiedAt = M.formulaVerifiedAt
+    local list
+    for i = 1, total, FORMULA_STEP do
+        local npcID, cost, stock, side, qty, curID = flat[i], flat[i + 1], flat[i + 2], flat[i + 3], flat[i + 5], flat[i + 6]
+        local extended = Int(curID, 1)
+        if Int(npcID, 1) and not extended and Int(cost, 0) then
+            local unlimited = stock == -1
+            local limited = (type(stock) == "number" and stock >= 0) and stock or nil
+            local pack = Int(qty, 1) and qty or 1
+            local areaID = Int(flat[i + 4], 1) and flat[i + 4] or nil
+            list = list or {}
+            list[#list + 1] = {
+                npcID = npcID, price = cost,
+                quantity = pack, bundleSize = pack,
+                unlimited = unlimited, limited = limited,
+                maxStock = limited and stock or nil,
+                stockUnknown = not unlimited and limited == nil or nil,
+                available = stock ~= 0, purchasable = true,
+                hasExtendedCost = false, currencyID = 0,
+                reference = true, priceVerified = true, estimated = false,
+                source = "formula-offers", verifiedAt = verifiedAt,
+                faction = FactionOf(side),
+                areaID = areaID,
+            }
+        end
+    end
+    if not list then return nil end
+    table.sort(list, Compare)
+    return list
+end
+
 local function Count(supply)
     local items, offers = 0, 0
     for _, flat in pairs(supply) do
@@ -92,6 +133,10 @@ end
 function M.Ensure()
     if M.built then return end
     M.built = true
+    local fmeta = ns.ProfFormulaOffersMeta
+    if type(fmeta) == "table" and fmeta.schemaVersion == 1 then
+        M.formulaVerifiedAt = fmeta.source or "formula-offers"
+    end
     local meta = ns.ProfMaterialSupplyMeta
     local supply = ns.ProfMaterialSupply
     if type(meta) ~= "table" or meta.schemaVersion ~= 2 then return end
@@ -120,6 +165,17 @@ function M.Ensure()
             return list
         end,
     })
+end
+
+function M.FormulaList(itemID)
+    if not Int(itemID, 1) then return nil end
+    if not M.formulaVerifiedAt then
+        local fmeta = ns.ProfFormulaOffersMeta
+        if type(fmeta) == "table" and fmeta.schemaVersion == 1 then
+            M.formulaVerifiedAt = fmeta.source or "formula-offers"
+        end
+    end
+    return BuildFormulaList(itemID)
 end
 
 function M.Flush()
