@@ -486,6 +486,9 @@ end
 
 local function BumpWeights()
     BG.wGen = (BG.wGen or 0) + 1
+    if BG.built and BG.usingPlan == nil and BG.autoPlan then
+        BG.UseAutoPlan(BG.autoPlan)
+    end
 end
 
 local function EffWeights()
@@ -521,6 +524,7 @@ local function EnsureWeightDialog()
     popup:SetPoint("CENTER", host, "CENTER", 0, 0)
     popup:Hide()
     if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(popup, 8) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(popup) end
     local titleBar = CreateFrame("Frame", nil, popup)
     titleBar:SetPoint("TOPLEFT", popup, "TOPLEFT", 0, 0)
     titleBar:SetPoint("TOPRIGHT", popup, "TOPRIGHT", 0, 0)
@@ -691,6 +695,17 @@ local function ClassWear(cls, c, u)
     return true
 end
 
+local CLS_BIT = { warrior = 1, paladin = 2, hunter = 4, rogue = 8, priest = 16,
+                  dk = 32, deathknight = 32, shaman = 64, mage = 128,
+                  warlock = 256, monk = 512, druid = 1024 }
+local function ClsOK(id)
+    local m = ns.GearCls and ns.GearCls[id]
+    if not m then return true end
+    local b = CLS_BIT[BG.cls]
+    if not b then return true end
+    return bit.band(m, b) ~= 0
+end
+
 local catItems, catKey = nil, nil
 
 local function EnsureCatalog()
@@ -704,8 +719,9 @@ local function EnsureCatalog()
     return gm and gm.catalog or nil
 end
 
+local UsableCap
 local function CatRowsFor(rkey)
-    local cap = (BG.onlyUsable and tonumber(BG.filterLv)) or 60
+    local cap = UsableCap and UsableCap() or 60
     local key = rkey .. ":" .. tostring(cap) .. ":" .. BG.cls
     if catKey == key then return catItems end
     local slots = SLOT_GEAR[rkey]
@@ -714,7 +730,7 @@ local function CatRowsFor(rkey)
     if cat and slots then
         for i = 1, #cat do
             local r = cat[i]
-            if r.s and InList(slots, r.s) and ClassWear(BG.cls, r.c, r.u)
+            if r.s and InList(slots, r.s) and ClassWear(BG.cls, r.c, r.u) and ClsOK(r.id)
                 and (r.req or 0) <= cap then
                 out[#out + 1] = r
             end
@@ -909,6 +925,11 @@ end
 local function PlayerLevel()
     local ok, lv = pcall(UnitLevel, "player")
     return (ok and type(lv) == "number" and lv > 0) and lv or nil
+end
+
+UsableCap = function()
+    if not BG.onlyUsable then return 60 end
+    return tonumber(BG.filterLv) or PlayerLevel() or 60
 end
 
 local __pfac = nil
@@ -1135,7 +1156,7 @@ end
 
 local function EnchCap(lvOverride)
     if lvOverride then return tonumber(lvOverride) or nil end
-    if BG.onlyUsable then return tonumber(BG.filterLv) or 60 end
+    if BG.onlyUsable then return tonumber(BG.filterLv) or PlayerLevel() or 60 end
     return nil
 end
 
@@ -1531,10 +1552,11 @@ local function ComputeAutoPlan(mode, cap)
     local w = EffWeights()
     local mk = MainKey(sp)
     local buckets, cat = {}, EnsureCatalog()
+    local usedQ = {}
     if cat then
         for i = 1, #cat do
             local r = cat[i]
-            if r.s and ClassWear(BG.cls, r.c, r.u) and (r.req or 0) <= cap
+            if r.s and ClassWear(BG.cls, r.c, r.u) and ClsOK(r.id) and (r.req or 0) <= cap
                 and not (srcSet and not srcSet[CatKind(r.id)]) then
                 local b = buckets[r.s]
                 if not b then b = {} buckets[r.s] = b end
@@ -1552,7 +1574,7 @@ local function ComputeAutoPlan(mode, cap)
             local best, bestScore
             for _, sl in ipairs(SLOT_GEAR[rkey] or {}) do
                 for _, r in ipairs(buckets[sl] or {}) do
-                    if UsableAt(r.id, cap, r.req or 0) then
+                    if UsableAt(r.id, cap, r.req or 0) and not usedQ[r.id] then
                         local sc = ItemScore(r.id, w)
                         if sc and (bestScore == nil or sc > bestScore) then
                             best, bestScore = r.id, sc
@@ -1560,7 +1582,10 @@ local function ComputeAutoPlan(mode, cap)
                     end
                 end
             end
-            if best then cur[dk] = best end
+            if best then
+                cur[dk] = best
+                if CatKind(best) == "quest" or (ns.GearUni and ns.GearUni[best]) then usedQ[best] = true end
+            end
         end
     end
     return cur
@@ -1570,7 +1595,7 @@ local autoPlanCache = nil
 
 local function AutoPlanKey(mode, cap)
     return table.concat({ scoreKey or "", BG.cls or "", BG.spec or "", BG.tspec or "",
-        tostring(cap), tostring(mode) }, "|")
+        tostring(cap), tostring(mode), tostring(BG.wGen or 0) }, "|")
 end
 
 local function AutoPlanFor(mode, cap)
@@ -1580,17 +1605,11 @@ local function AutoPlanFor(mode, cap)
     return cur
 end
 
-local function AutoLevel()
-    local lv = PlayerLevel() or 60
-    if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
-    return lv
-end
-
 local function PresetList()
     local out = {}
     local tsp = BG.tspec
-    out[#out + 1] = { auto = "known", lv = AutoLevel(), type = L["已知内容"] }
-    out[#out + 1] = { auto = "all", lv = AutoLevel(), type = L["包含未知来源"] }
+    out[#out + 1] = { auto = "known", lv = UsableCap(), type = L["已知内容"] }
+    out[#out + 1] = { auto = "all", lv = UsableCap(), type = L["包含未知来源"] }
     for i = #VOLS, 1, -1 do
         local v = VOLS[i]
         local c
@@ -1815,6 +1834,23 @@ end
 local CHIP_WISH_BG = { 0.78, 0.60, 0.10, 1 }
 local CHIP_UP_BG = { 0.16, 0.52, 0.26, 1 }
 local CHIP_DOWN_BG = { 0.36, 0.39, 0.44, 1 }
+local CHIP_BOE_BG = { 0.18, 0.45, 0.66, 1 }
+
+local __boeCache = {}
+local function BindOnEquip(id)
+    if __boeCache[id] ~= nil then return __boeCache[id] end
+    local fn = GetItemInfo or (C_Item and C_Item.GetItemInfo)
+    if type(fn) ~= "function" then return nil end
+    if C_Item and type(C_Item.RequestLoadItemDataByID) == "function" then
+        pcall(C_Item.RequestLoadItemDataByID, id)
+    end
+    local ok, name = pcall(fn, id)
+    if not ok or name == nil then return nil end
+    local bind = select(15, pcall(fn, id))
+    if bind == nil then return nil end
+    __boeCache[id] = (bind == 2)
+    return __boeCache[id]
+end
 
 local function ChipSet(b, text, col, rightOf)
     b.lab:SetText(text)
@@ -1842,6 +1878,10 @@ function FillBwRow(r)
         r.sideTag:SetShown(false)
         r.chip:Hide()
         r.chip2:Hide()
+        r.chip3:Hide()
+        r.wishBt:Hide()
+        r.pinBt:Hide()
+        r.__pinNpc, r.__pinLoc = nil, nil
         r.__painted = true
         return
     end
@@ -1855,12 +1895,41 @@ function FillBwRow(r)
     r.name:SetText(nm)
     r.name:SetTextColor(Unpack(QColor(ItemQuality(sp, row.item, row.q))))
     local st = row.cat and CatSrcText(row.item) or SrcText(row.src)
+    r.__pinNpc, r.__pinLoc = nil, nil
+    local qid = nil
+    if row.src and row.src.t == "quest" and row.src.q then
+        qid = tonumber(row.src.q)
+    elseif row.cat and CatKind(row.item) == "quest" then
+        qid = ns.GearSrcQ and ns.GearSrcQ[row.item] or nil
+    end
+    if qid then
+        local qn, qok = DG.QuestName(qid)
+        if not qok then BG.needNames = true end
+        if row.cat and qok then st = L["任务奖励"] .. " · " .. qn end
+        local sn = DG.QuestStartNpc and DG.QuestStartNpc(qid) or nil
+        local npc = sn and sn[1] or nil
+        local sl = ns.DungeonQuestStartLoc and ns.DungeonQuestStartLoc[qid] or nil
+        local loc = nil
+        if sl and (not npc or tonumber(sl[1]) == tonumber(npc)) then
+            npc = sl[1]
+            if sl[3] and sl[4] and sl[5] then loc = { sl[3], sl[4], sl[5] } end
+        end
+        if not loc then
+            local gs = ns.GearQuestStart and ns.GearQuestStart[qid] or nil
+            if gs then
+                npc = gs[1]
+                loc = { gs[2], gs[3], gs[4] }
+            elseif sn and sn[3] and sn[4] and sn[5] then
+                loc = { sn[3], sn[4], sn[5] }
+            end
+        end
+        if npc and (loc or (ns.NPCLoc and ns.NPCLoc[npc])) then
+            r.__pinNpc, r.__pinLoc = npc, loc
+        end
+    end
+    r.pinBt:SetShown(r.__pinNpc ~= nil)
     r.src:SetText(st)
     r.src:SetTextColor(Unpack(C_GREY))
-    if row.src and row.src.t == "quest" and row.src.q then
-        local qid = tonumber(row.src.q)
-        if qid and not QuestTitle(qid) then BG.needNames = true end
-    end
     r.eqTag:SetShown(BG.bwEquipped == row.item)
     r.ownTag:SetShown(BG.owned ~= nil and BG.owned[row.item] ~= nil)
     r.sideTag:SetShown(row.side ~= nil)
@@ -1884,6 +1953,29 @@ function FillBwRow(r)
     else
         r.chip:Hide()
     end
+    local boe = BindOnEquip(row.item)
+    if boe == nil then
+        BG.needNames = true
+        DG.RequestItem(row.item)
+        r.chip3:Hide()
+    elseif boe then
+        local left = r.chip:IsShown() and r.chip or (scoreChip or nil)
+        ChipSet(r.chip3, L["装绑"], CHIP_BOE_BG, left)
+    else
+        r.chip3:Hide()
+    end
+    if gm and gm.WishIs then
+        local on = gm.WishIs(row.item)
+        r.wishBt.star:SetText(on and "★" or "☆")
+        if on then
+            r.wishBt.star:SetTextColor(1, 0.82, 0, 1)
+        else
+            r.wishBt.star:SetTextColor(Unpack(C_GREY))
+        end
+        r.wishBt:Show()
+    else
+        r.wishBt:Hide()
+    end
     r.__painted = true
 end
 
@@ -1900,7 +1992,7 @@ local function PaintBrowser()
     local list = {}
     if BG.sel and rkey then
         local w = EffWeights()
-        local lv = BG.onlyUsable and (BG.filterLv or 60) or nil
+        local lv = BG.onlyUsable and (BG.filterLv or PlayerLevel() or 60) or nil
         local dk = DataKey(sp, BG.sel)
         local baseId = BG.cur[dk]
         if not baseId and BG.usingPlan and BG.usingPlan.items then
@@ -2139,7 +2231,7 @@ function BG.Open()
     if not BG.built then return end
     BG._sweepFails = 0
     BG.__wantDefault = nil
-    if not BG.usingPlan then BG.UseAutoPlan("known") end
+    if not BG.usingPlan then BG.UseAutoPlan(BG.autoPlan or "known") end
     if BG.needNames or BG.needScores then BG.ScheduleSweep() end
     BG.RequestRender()
 end
@@ -2294,9 +2386,10 @@ end
 function BG.GeneratePlan()
     local sp = SpecRec()
     if not sp then return end
-    local lv = AutoLevel()
+    local lv = UsableCap()
     local w = EffWeights()
     local mk = MainKey(sp)
+    local usedQ = {}
     for _, key in ipairs(ALL_SLOT_KEYS) do
         local dk = DataKey(sp, key)
         if key == "off-hand" and mk == "two-hand" then
@@ -2307,7 +2400,7 @@ function BG.GeneratePlan()
             local best, bestScore
             for _, r in ipairs(CatRowsFor(rkey)) do
                 if not (next(BG.srcSet) ~= nil and not BG.srcSet[CatKind(r.id)]) then
-                    if UsableAt(r.id, lv, r.req or 0) then
+                    if UsableAt(r.id, lv, r.req or 0) and not usedQ[r.id] then
                         local sc = ItemScore(r.id, w)
                         if sc and (bestScore == nil or sc > bestScore) then
                             best, bestScore = r.id, sc
@@ -2315,7 +2408,10 @@ function BG.GeneratePlan()
                     end
                 end
             end
-            if best then BG.cur[dk] = best end
+            if best then
+                BG.cur[dk] = best
+                if CatKind(best) == "quest" or (ns.GearUni and ns.GearUni[best]) then usedQ[best] = true end
+            end
         end
     end
     BG.autoPlan = nil
@@ -2328,7 +2424,7 @@ function BG.UseAutoPlan(mode)
     BG.autoPlan = mode
     BG.usingPlan = nil
     BG.cur = {}
-    local src = AutoPlanFor(mode, AutoLevel())
+    local src = AutoPlanFor(mode, UsableCap())
     for k, v in pairs(src) do BG.cur[k] = v end
     BG.RequestRender()
 end
@@ -2380,14 +2476,19 @@ function BG.SelectClass(slug)
 end
 
 function BG.SelectSpec(id)
+    local ap = BG.autoPlan
     BG.spec = id
     BG.pkey = nil
     BG.side = nil
     BG.cur = {}
     BG.ench = {}
     BG.usingPlan = nil
-    BG.autoPlan = nil
-    BG.RequestRender()
+    BG.autoPlan = ap
+    if ap then
+        BG.UseAutoPlan(ap)
+    else
+        BG.RequestRender()
+    end
     if BG.settingPop and BG.settingPop:IsShown() and BG.SyncSettingPop then BG.SyncSettingPop() end
 end
 
@@ -2838,19 +2939,23 @@ local function BuildSpecRow(parent, yt)
             BG.ench = {}
             BG.usingPlan = nil
             if sr.role == "tank" then
+                BG.spec = "tank"
                 BG.wRole = nil
                 SaveWeightPrefs()
-                BG.spec = "tank"
             else
+                BG.spec = "pve"
                 if BG.wRole ~= sr.key then
                     BG.wRole = sr.key
                     SaveWeightPrefs()
                     BumpWeights()
                 end
-                BG.spec = "pve"
             end
             SyncSpecFromTspec()
-            BG.RequestRender()
+            if BG.usingPlan == nil and BG.autoPlan then
+                BG.UseAutoPlan(BG.autoPlan)
+            else
+                BG.RequestRender()
+            end
             if BG.settingPop and BG.settingPop:IsShown() and BG.SyncSettingPop then BG.SyncSettingPop() end
         end)
         BG.tspecBtns[i] = bt
@@ -3140,6 +3245,7 @@ local function BuildBrowser(parent)
         r.name:SetWordWrap(false)
         r.src = MakeFS(r, 14, C_GREY, "LEFT")
         r.src:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -24)
+        r.src:SetPoint("RIGHT", r, "RIGHT", -52, 0)
         r.src:SetWordWrap(false)
         r.eqTag = MakeFS(r, 14, C_GOLD, "LEFT")
         r.eqTag:SetPoint("LEFT", r.name, "RIGHT", 8, 0)
@@ -3155,9 +3261,55 @@ local function BuildBrowser(parent)
         r.chip:SetFrameLevel(r:GetFrameLevel() + 2)
         r.chip2 = DG.MakeBadge(r)
         r.chip2:SetFrameLevel(r:GetFrameLevel() + 2)
+        r.chip3 = DG.MakeBadge(r)
+        r.chip3:SetFrameLevel(r:GetFrameLevel() + 2)
         r.sideTag = MakeFS(r, 14, C_GREY, "RIGHT")
         r.sideTag:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -23)
         r.sideTag:SetWordWrap(false)
+        r.wishBt = CreateFrame("Button", nil, r)
+        r.wishBt:SetSize(22, 22)
+        r.wishBt:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -2, 2)
+        r.wishBt:EnableMouse(true)
+        r.wishBt.star = MakeFS(r.wishBt, 18, C_GREY, "CENTER")
+        r.wishBt.star:SetAllPoints()
+        r.wishBt:SetScript("OnClick", function(self)
+            local row = self:GetParent().__row
+            local gm = ns.GearModule
+            if not (row and row.item and gm and gm.WishToggle) then return end
+            gm.WishToggle(row.item)
+            ns.PlaySound(1)
+            BG.RequestRender()
+        end)
+        r.wishBt:SetScript("OnEnter", function(self)
+            local row = self:GetParent().__row
+            local gm = ns.GearModule
+            local on = gm and gm.WishIs and row and row.item and gm.WishIs(row.item)
+            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+            GameTooltip:SetText(on and L["移出心愿清单"] or L["加入心愿清单"], 1, 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        r.wishBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        r.pinBt = CreateFrame("Button", nil, r)
+        r.pinBt:SetSize(13.75, 13.75)
+        r.pinBt:SetPoint("BOTTOMRIGHT", r.wishBt, "BOTTOMLEFT", 2, 4.75)
+        r.pinBt:EnableMouse(true)
+        r.pinBt.tex = r.pinBt:CreateTexture(nil, "ARTWORK")
+        r.pinBt.tex:SetAllPoints()
+        r.pinBt.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\EntryPin")
+        r.pinBt:Hide()
+        r.pinBt:SetScript("OnClick", function(self)
+            local row = self:GetParent()
+            if not (row and row.__pinNpc) then return end
+            DG.MarkNPC(row.__pinNpc, row.__pinLoc)
+            ns.PlaySound(1)
+        end)
+        r.pinBt:SetScript("OnEnter", function(self)
+            local row = self:GetParent()
+            if row and row.__pinNpc and DG.ShowNpcTip then
+                DG.ShowNpcTip(self, row.__pinNpc, row.__pinLoc)
+            end
+        end)
+        r.pinBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
         r:SetScript("OnEnter", function(self)
             if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
             local row = self.__row
@@ -3213,11 +3365,12 @@ local function BuildBrowser(parent)
     pop:SetFrameLevel(baseLv + 31)
     pop:Hide()
     if ns.hui and ns.hui.BuildRoundedBG then
-        ns.hui.BuildRoundedBG(pop, 6, ns.hui.layer.L3, "both", true, 1)
+        ns.hui.BuildRoundedBG(pop, 6, ns.hui.layer.L0, "both", true, 1)
     else
         Cardify(pop, nil, 2)
     end
     pop:SetPoint("TOPRIGHT", parent, "TOPLEFT", -8, -40)
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(pop) end
     BG.filterPop = pop
 
     local ty = MakeFS(pop, 14, C_GOLD, "LEFT")
@@ -3234,6 +3387,14 @@ local function BuildBrowser(parent)
     end
     local lvBox = eb
     BG.filterLvBox = eb
+    local function FilterChanged()
+        autoPlanCache = nil
+        if BG.usingPlan == nil and BG.autoPlan then
+            BG.UseAutoPlan(BG.autoPlan)
+        else
+            BG.RequestRender()
+        end
+    end
     local function ApplyLvText(txt)
         local n = tonumber(string.match(txt or "", "^%s*(%d+)%s*$"))
         if n then
@@ -3242,7 +3403,7 @@ local function BuildBrowser(parent)
         end
         BG.filterLv = n
         SaveFilterPrefs()
-        BG.RequestRender()
+        FilterChanged()
     end
     if lvBox then
         lvBox:SetScript("OnEnterPressed", function(self)
@@ -3255,7 +3416,7 @@ local function BuildBrowser(parent)
         end)
         lvBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
     end
-    local nowBt = NewButton(pop, L["当前"], 56, 24, 14)
+    local nowBt = NewButton(pop, L["当前"], 44, 24, 14)
     nowBt:SetPoint("LEFT", lvBox or pop, "RIGHT", 6, 0)
     MakeOutline(nowBt, Unpack(C_TEXT))
     nowBt:SetScript("OnClick", function()
@@ -3263,6 +3424,14 @@ local function BuildBrowser(parent)
         if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
         if lvBox then lvBox:SetText(tostring(lv)) end
         ApplyLvText(tostring(lv))
+        ns.PlaySound(1)
+    end)
+    local maxBt = NewButton(pop, L["满级"], 44, 24, 14)
+    maxBt:SetPoint("LEFT", nowBt, "RIGHT", 6, 0)
+    MakeOutline(maxBt, Unpack(C_TEXT))
+    maxBt:SetScript("OnClick", function()
+        if lvBox then lvBox:SetText("60") end
+        ApplyLvText("60")
         ns.PlaySound(1)
     end)
 
@@ -3276,7 +3445,7 @@ local function BuildBrowser(parent)
         self:SetChecked(BG.onlyUsable)
         SaveFilterPrefs()
         ns.PlaySound(1)
-        BG.RequestRender()
+        FilterChanged()
     end)
     BG.usableTg = ug
     local ul = MakeFS(pop, 14, C_TEXT, "RIGHT")
@@ -3343,7 +3512,8 @@ local function BuildBrowser(parent)
         spop:SetSize(220, 600)
     end
     spop:Hide()
-    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(spop, 8) end
+    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(spop, 8, "both", ns.hui.layer.L0) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(spop) end
     BG.settingPop = spop
     ns.CloseBisSettings = BG.CloseSettingPop
     ns.GetBisSettingsPop = function() return BG.settingPop end
@@ -3702,7 +3872,18 @@ function BG.Build(page)
         local ev = CreateFrame("Frame")
         ns.EvtPool.bisTal = ev
         ev:RegisterEvent("CHARACTER_POINTS_CHANGED")
-        ev:SetScript("OnEvent", function()
+        ev:RegisterEvent("PLAYER_LEVEL_UP")
+        ev:SetScript("OnEvent", function(_, e)
+            if e == "PLAYER_LEVEL_UP" then
+                if BG.built then
+                    if BG.usingPlan == nil and BG.autoPlan then
+                        BG.UseAutoPlan(BG.autoPlan)
+                    else
+                        BG.RequestRender()
+                    end
+                end
+                return
+            end
             __tprofDirty = true
             if BG.built and not BG.wActive and not BG.wRole then
                 BumpWeights()

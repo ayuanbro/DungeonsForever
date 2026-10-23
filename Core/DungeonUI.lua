@@ -3709,6 +3709,8 @@ function DG.FlushItemCardsNow(itemID)
     if CQM and CQM.OnItemData then CQM.OnItemData(itemID) end
     local MM = ns.MapModule
     if MM and MM.OnItemData then MM.OnItemData(itemID) end
+    local PM = ns.ProfModule
+    if PM and PM.OnItemData then PM.OnItemData(itemID) end
     local pool = U.dungeonDetailPool and U.dungeonDetailPool.item
     if not pool then return end
     for i = 1, #pool do
@@ -4105,6 +4107,15 @@ function DG.TipAppendLines(lines)
     end
 end
 
+function DG.TipAppendMerged(a, b)
+    if not a then DG.TipAppendLines(b) return end
+    if not b then DG.TipAppendLines(a) return end
+    local m = {}
+    for _, ln in ipairs(a) do m[#m + 1] = ln end
+    for _, ln in ipairs(b) do m[#m + 1] = ln end
+    DG.TipAppendLines(m)
+end
+
 function DG.ShowItemTipBody(owner, it, extra, title)
     local id = it[1]
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
@@ -4129,7 +4140,8 @@ function DG.ShowItemTipBody(owner, it, extra, title)
 
     if native then
         if ns.hui and ns.hui.MarkTipItem then ns.hui.MarkTipItem(GameTooltip, true) end
-        if extra then DG.TipAppendLines(extra) end
+        local tl = ns.TipLines and ns.TipLines.Lines(id)
+        DG.TipAppendMerged(extra, tl)
         if title then
             local l1 = _G["GameTooltipTextLeft1"]
             if l1 then l1:SetText(title) end
@@ -4158,7 +4170,8 @@ function DG.ShowItemTipBody(owner, it, extra, title)
     else
         GameTooltip:AddLine(L["客户端未收录此物品"], 0.5, 0.5, 0.5, true)
     end
-    if extra then DG.TipAppendLines(extra) end
+    local tl = ns.TipLines and ns.TipLines.Lines(id)
+    DG.TipAppendMerged(extra, tl)
     GameTooltip:Show()
 end
 

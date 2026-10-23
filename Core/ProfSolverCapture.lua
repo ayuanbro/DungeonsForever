@@ -82,6 +82,7 @@ local DIAG_TEXT = {
     limitedFormulaDisabled = L["当前设置不从商人购买限量图纸；请取得拍卖行报价或先学会该配方。"],
     formulaPolicyChanged = L["限量图纸购买设置已变化，请重新计算路线。"],
     formulaPriceUnknown = L["图纸购买价格尚未核实。"],
+    formulaUnknownSource = L["图纸没有可核实的购买报价；可在设置关闭「不使用未知来源的图纸」。"],
     formulaStockUnknown = L["图纸为限量或未核实库存，不能保证商人现货。"],
     auctionSupplyLimited = L["拍卖行可购数量不足，无法继续此配方；请查询更多货物或改用其他配方。"],
     fishingRecipeGap = L["当前技能没有符合纯钓鱼条件的可用配方，请检查食谱、材料来源或排除设置。"],
@@ -386,6 +387,7 @@ function E.FormulaFor(r, context)
     end
     if not cost and limitedCost then cost, source = limitedCost, "vendor" end
     if not cost then unpriced = true end
+    local skipUnknown = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and true or false
     if not allowLimited and not cost and hasOffer and not hasUnlimited then
         return {
             id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
@@ -393,6 +395,16 @@ function E.FormulaFor(r, context)
             vendorOffers = offers, source = "unknown", cost = nil,
             usable = false, reason = "formulaLimited", unpriced = true,
             limited = hasLimited, stockUnknown = hasOffer and not hasLimited or nil,
+        }
+    end
+    if not cost and skipUnknown then
+        return {
+            id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
+            recipeKey = r.key, known = false, sources = shallow(r.source),
+            vendorOffers = offers, source = "unknown", cost = nil,
+            usable = false, reason = "formulaUnknownSource", unpriced = true,
+            unlimited = hasUnlimited or nil, limited = hasLimited or nil,
+            stockUnknown = hasOffer and not hasUnlimited and not hasLimited or nil,
         }
     end
     return {

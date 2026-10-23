@@ -313,7 +313,8 @@ function UI:EnsureConfig()
         popup:SetSize(220, 600)
     end
     popup:Hide()
-    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(popup, 8) end
+    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(popup, 8, "both", ns.hui.layer.L0) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(popup) end
 
     local title = MakeFS(popup, 16, C_WHITE, "LEFT")
     title:SetPoint("TOPLEFT", popup, "TOPLEFT", 16, -8)
@@ -705,6 +706,7 @@ function UI:EnsureDialog()
     popup:SetPoint("CENTER", host, "CENTER", 0, 0)
     popup:Hide()
     if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(popup, 8) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(popup) end
 
     local titleBar = CreateFrame("Frame", nil, popup)
     titleBar:SetPoint("TOPLEFT", popup, "TOPLEFT", 0, 0)

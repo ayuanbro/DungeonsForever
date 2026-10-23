@@ -30,6 +30,11 @@ local BT = BackdropTemplateMixin and "BackdropTemplate" or nil
 local C_LINK = { 0.55, 0.78, 1.0 }
 local C_ACCENT = { 0.27, 0.75, 0.45 }
 
+local RIDING_RANK = { [75] = L["初级骑术"], [150] = L["中级骑术"] }
+
+local ItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
+
+
 local SUB_MOUNT, SUB_PET = "mount", "pet"
 
 local SUB_TABS = {
@@ -150,6 +155,7 @@ local function MountIcon(rec)
         if type(tex) == "string" and tex ~= "" and tex ~= FALLBACK_ICON then return tex end
         if type(tex) == "number" then return tex end
     end
+    if type(rec[3]) == "number" then return rec[3] end
     if type(rec[3]) == "string" and rec[3] ~= "" then
         return "Interface\\Icons\\" .. rec[3]
     end
@@ -507,6 +513,7 @@ local function PaintDetail()
         d.desc:SetText("")
         HideSrcRow(d)
         for _, sg in pairs(d.segs) do sg:Hide() end
+        for _, ac in ipairs(d.attrCards or {}) do ac:Hide() end
         return
     end
     d.empty:SetShown(false)
@@ -596,6 +603,7 @@ local function PaintDetail()
         end
         if d.gotoBtn then d.gotoBtn:SetShown(inExplore) end
         HideSrcRow(d)
+        for _, ac in ipairs(d.attrCards or {}) do ac:Hide() end
     else
         d.name:SetText(MountName(rec))
         local g = rec[4]
@@ -608,6 +616,58 @@ local function PaintDetail()
         if d.zoneTx then d.zoneTx:Hide() end
         if d.zoneHit then d.zoneHit:Hide() end
         for _, sg in pairs(d.segs) do sg:Hide() end
+        local y = 8 + MODEL_H + 38
+        local vals = {}
+        if rec.riding and RIDING_RANK[rec.riding] then
+            vals[#vals + 1] = { L["骑术"], RIDING_RANK[rec.riding] }
+        end
+        if rec.speed then
+            vals[#vals + 1] = { L["速度"], "+" .. rec.speed .. "%" }
+        end
+        local t = rec.teach
+        local prev = nil
+        for k = 1, 2 do
+            local ac = d.attrCards[k]
+            local v = vals[k]
+            ac:SetShown(v ~= nil)
+            if v then
+                ac.lab:SetText(v[1])
+                ac.val:SetText(v[2])
+                ac:ClearAllPoints()
+                if prev then
+                    ac:SetPoint("TOPLEFT", prev, "TOPRIGHT", 8, 0)
+                else
+                    ac:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -y)
+                end
+                ac:SetWidth(math.max(ac.lab:GetStringWidth(), ac.val:GetStringWidth()) + 20)
+                prev = ac
+            end
+        end
+        local c3 = d.attrCards[3]
+        c3:SetShown(t ~= nil)
+        if t then
+            local iid = rec[1]
+            local nm, got = DG.ItemName(iid)
+            if not nm or nm == "" then nm = "#" .. iid end
+            if not got and DG.RequestItem then DG.RequestItem(iid) end
+            local ok, _, qlink = pcall(ItemInfo, iid)
+            c3.val:SetText((ok and type(qlink) == "string" and qlink) or nm)
+            local tex = DG.ItemIcon(iid)
+            if type(tex) ~= "string" and type(tex) ~= "number" then
+                tex = (type(rec[3]) == "string" and rec[3] ~= "") and ("Interface\\Icons\\" .. rec[3]) or FALLBACK_ICON
+            end
+            c3.icon:SetTexture(tex)
+            c3:ClearAllPoints()
+            if prev then
+                c3:SetPoint("TOPLEFT", prev, "TOPRIGHT", 8, 0)
+            else
+                c3:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -y)
+            end
+            local w = 8 + 20 + 6 + c3.val:GetStringWidth() + 8
+            c3:SetWidth(w + 6)
+            prev = c3
+        end
+        if prev then y = y + 34 + 8 end
         local txt = tostring(rec[5] or "")
         local segs = nil
         local npcs = type(rec.npcs) == "table" and rec.npcs or nil
@@ -628,11 +688,11 @@ local function PaintDetail()
             end
         end
         d.desc:ClearAllPoints()
-        d.desc:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -(8 + MODEL_H + 42))
-        d.desc:SetPoint("TOPRIGHT", d.panel, "TOPRIGHT", -PAD, -(8 + MODEL_H + 42))
+        d.desc:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -y)
+        d.desc:SetPoint("TOPRIGHT", d.panel, "TOPRIGHT", -PAD, -y)
         if segs then
             d.desc:Hide()
-            PaintMountSegs(d, segs, -(8 + MODEL_H + 42))
+            PaintMountSegs(d, segs, -y)
         else
             HideSrcRow(d)
             d.desc:Show()
@@ -1202,6 +1262,42 @@ local function BuildDetailPanel(page)
     pill2Txt:SetPoint("CENTER", pill2, "CENTER", 0, 0)
     pill2:Hide()
 
+    local attrCards = {}
+    for k = 1, 3 do
+        local c = CreateFrame("Frame", nil, p, "BackdropTemplate")
+        if ns.hui and ns.hui.BuildRoundedBG then
+            ns.hui.BuildRoundedBG(c, 6, ns.hui.layer.L2)
+        else
+            Cardify(c, 0.05, 0.10)
+        end
+        c:SetHeight(34)
+        local lab = MakeFS(c, 11, C_DIM, "LEFT")
+        lab:SetPoint("TOPLEFT", c, "TOPLEFT", 10, -6)
+        local val = MakeFS(c, 13, C_WHITE, "LEFT")
+        val:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 10, 6)
+        val:SetWordWrap(false)
+        c.lab, c.val = lab, val
+        c:Hide()
+        attrCards[k] = c
+    end
+    attrCards[3]:SetScript("OnEnter", function(self)
+        local rec = CG.sel
+        if not (rec and rec.teach and GameTooltip) then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetItemByID(rec[1])
+    end)
+    attrCards[3]:SetScript("OnLeave", TipOff)
+    do
+        local c = attrCards[3]
+        c.icon = c:CreateTexture(nil, "ARTWORK")
+        c.icon:SetSize(20, 20)
+        c.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        c.icon:SetPoint("LEFT", c, "LEFT", 8, 0)
+        c.val:ClearAllPoints()
+        c.val:SetPoint("LEFT", c.icon, "RIGHT", 6, 0)
+        c.lab:Hide()
+    end
+
     local zoneTx = MakeFS(p, 13, C_GREY, "LEFT")
     zoneTx:SetPoint("TOPLEFT", p, "TOPLEFT", PAD + 120, -(8 + MODEL_H + 42))
     zoneTx:SetPoint("TOPRIGHT", p, "TOPRIGHT", -110, -(8 + MODEL_H + 42))
@@ -1302,6 +1398,7 @@ local function BuildDetailPanel(page)
         panel = p, vp = vp, model = model, modelIcon = modelIcon,
         name = name, pill = pill, pillTxt = pillTxt,
         pill2 = pill2, pill2Txt = pill2Txt,
+        attrCards = attrCards,
         zoneTx = zoneTx, zoneHit = zoneHit,
         locChip = locChip, locChipTx = locChipTx,
         gotoBtn = gotoBtn,

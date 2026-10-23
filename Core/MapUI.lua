@@ -3093,7 +3093,8 @@ local function wpCreatePanel()
     f:SetScript("OnHide", function()
         if ns.SyncQuestPinIcon then pcall(ns.SyncQuestPinIcon) end
     end)
-    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(f, 8) end
+    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(f, 8, "both", ns.hui.layer.L0) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(f) end
     local title = wpSetFs(f, 16, WP_WHT)
     title:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -8)
     title:SetJustifyH("LEFT")

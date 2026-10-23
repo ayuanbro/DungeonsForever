@@ -349,6 +349,12 @@ local function BuildCandidates(slug, opts)
                 end
             end
             if ok and opts.learnedOnly and not LearnKnown(spell) then ok = false end
+            if ok and not LearnKnown(spell) and type(rec[13]) == "table"
+               and type(rec[13][1]) == "number" then
+                local PDm = ns.ProfModule
+                local skipUnknown = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and true or false
+                if skipUnknown and not MatPrice(rec[13][1], soldSet) then ok = false end
+            end
             if ok then
                 local cost, unpriced = 0, false
                 for _, m in ipairs(reagents) do
@@ -1431,7 +1437,8 @@ function RA.QuoteSig()
     local rev = AB and AB.SupplyRevision and AB.SupplyRevision() or 0
     local fee = PDm and PDm.SettingRaw and tonumber(PDm.SettingRaw("recoveryFeePercent")) or 5
     local lim = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas")) and 1 or 0
-    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim)
+    local unk = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and 1 or 0
+    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(unk)
 end
 
 function RA.SpecSig(slug)

@@ -843,7 +843,8 @@ local function createSettings()
         f:SetHeight(600)
     end
     f:Hide()
-    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(f, 8) end
+    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(f, 8, "both", ns.hui.layer.L0) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(f) end
 
     local title = setFs(f, 16, C_WHT)
     title:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -8)

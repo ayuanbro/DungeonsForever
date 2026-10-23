@@ -822,7 +822,7 @@ do
         return pieces, covers
     end
 
-    local GLASS_SHADOW_TEX = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIGlassShadow"
+    local GLASS_SHADOW_TEX = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIBoxShadow"
 
     local function GlassZoneColor(c, zone)
         local a = c[4] or 1
@@ -869,10 +869,13 @@ do
         return tex
     end
 
-    local function BuildCardShadow(f, spread, alpha, sub)
+    local function BuildCardShadow(f, spread, alpha, sub, cr)
         if not f or not f.CreateTexture then return nil end
-        spread = spread or 18
-        local corner = spread + 8
+        spread = spread or 16
+        cr = cr or 8
+        local corner = spread + cr
+        local fw, fh = f:GetWidth() or 0, f:GetHeight() or 0
+        if (fw > 0 and fw < corner * 2) or (fh > 0 and fh < corner * 2) then return {} end
         local cUV = 0.375
         local coords = {
             { 0, cUV, 0, cUV }, { cUV, 1 - cUV, 0, cUV }, { 1 - cUV, 1, 0, cUV },
@@ -1084,6 +1087,18 @@ do
         entry.Reassert()
     end
 
+    function ns.hui.SkinShadow(f, spread, alpha, cr)
+        if not f or not f.CreateTexture then return nil end
+        if f.__huiShadow then return f.__huiShadow end
+        local pieces = BuildCardShadow(f, spread or 16, alpha or 0.65, -8, cr or 8)
+        if not pieces then return nil end
+        f.__huiShadow = pieces
+        if ns.hui.RegisterMainAlphaSurface and ns.hui.IsMainUIFrame(f) then
+            ns.hui.RegisterMainAlphaSurface(f, pieces)
+        end
+        return pieces
+    end
+
     function ns.hui.SkinPopup(f, cr, rounding, color, borderThickness, noBorder, borderOutside, borderOutExtra, expand, noAlpha)
         if ns.huiTheme ~= "hui" or not f then return end
         color = color or ns.hui.layer.L1
@@ -1100,9 +1115,7 @@ do
         f.__huiBorderPieces = borderPieces
         local shadowPieces
         if f:GetParent() == UIParent then
-            shadowPieces = BuildCardShadow(f, 10, 0.6, -7)
-            local far = BuildCardShadow(f, 26, 0.35, -8)
-            for _, t in ipairs(far) do shadowPieces[#shadowPieces + 1] = t end
+            shadowPieces = ns.hui.SkinShadow(f, nil, nil, cr or 8)
         end
         local function repaintFill()
             for _, tex in ipairs(pieces) do
@@ -1209,14 +1222,16 @@ do
         popup:EnableMouse(true)
         menuPopup = popup
 
-        local rowH = 22
+        local rowH = 24
+        local fsSz = tonumber(opts.fs) or 14
+        if fsSz < 14 then fsSz = 14 end
         local padX = 12
         local iconSz = 18
         local iconGap = 6
         local chkSz = 16
         local chkGap = 7
         local measure = popup:CreateFontString(nil, "OVERLAY")
-        measure:SetFont(ns.FONT, 13, "")
+        measure:SetFont(ns.FONT, fsSz, "")
         local maxW = 0
         for i = 1, #items do
             local it = items[i]
@@ -1279,7 +1294,7 @@ do
             end
             local fs = row:CreateFontString(nil, "OVERLAY")
             fs:SetPoint("LEFT", row, "LEFT", tx, 0)
-            fs:SetFont(ns.FONT, 13, "")
+            fs:SetFont(ns.FONT, fsSz, "")
             fs:SetJustifyH("LEFT")
             fs:SetText(it.text or "")
             local cr, cg, cb, ca = MenuParseColor(it.color)
@@ -1298,7 +1313,7 @@ do
             end)
         end
 
-        ns.hui.SkinPopup(popup, 8, "both", ns.hui.layer.L3)
+        ns.hui.SkinPopup(popup, 8, "both", ns.hui.layer.L0)
 
         local scale = UIParent:GetEffectiveScale()
         if opts.anchor and opts.anchor.IsObjectType and opts.anchor:IsObjectType("Frame") then
@@ -1798,6 +1813,10 @@ do
             end
         end
         for _, tex in ipairs(s.border) do tex:SetShown(on) end
+        for _, tex in ipairs(s.shadow) do
+            tex:SetShown(on)
+            if on and s.shadowA then tex:SetAlpha(s.shadowA) end
+        end
         if on then
             for _, e in ipairs(s.nineTex) do
                 if e[2] then e[1]:SetShown(false) end
@@ -1848,8 +1867,15 @@ do
         local s = {
             fill = BuildRoundedBG(tt, 8, FILL, "both"),
             border = ns.hui.BuildRoundBorder(tt, 8, EDGE) or {},
+            shadow = BuildCardShadow(tt, 16, 0.6, -8, 8) or {},
+            shadowA = 0.6,
             ownScoped = true,
         }
+        for _, tex in ipairs(s.shadow) do
+            tex.__huiPiece = true
+            tex.__huiShadowPiece = true
+            tex:Hide()
+        end
         s.nineAlpha = tt.NineSlice and tt.NineSlice:GetAlpha() or 1
         s.nineTex = {}
         for _, tex in ipairs(s.fill) do tex.__huiPiece = true end
