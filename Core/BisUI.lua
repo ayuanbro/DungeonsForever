@@ -11,7 +11,7 @@ if not Host then return end
 local DG = Host.DG
 local MakeFS = Host.MakeFS
 local NewButton, MakeOutline = Host.NewButton, Host.MakeOutline
-local SetOutline, Unpack = Host.SetOutline, Host.Unpack
+local SetOutline, SetButtonSelected, Unpack = Host.SetOutline, Host.SetButtonSelected, Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
 local C_GREEN = Host.C_GREEN
@@ -338,34 +338,17 @@ local function StatBucket(key)
     return string.match(key, "ITEM_MOD_(.+)$")
 end
 
-local function ItemScore(id, w)
-    if not id then return nil end
-    local k = BG.cls .. ":" .. BG.spec .. ":" .. (BG.wGen or 0) .. ":" .. dpsGen
-    if scoreKey ~= k then
-        scoreCache, scoreKey = {}, k
-    end
-    local v = scoreCache[id]
-    if v ~= nil then return v end
-    local ok, st = true, nil
-    local fn = GetItemStats or (C_Item and C_Item.GetItemStats)
-    if type(fn) == "function" then
-        ok, st = pcall(fn, DG.ItemLink(id))
-    else
-        ok = false
-    end
-    if not (ok and type(st) == "table") then return nil end
-    statCache[id] = st
-    local sum = 0
-    for sk, sv in pairs(st) do
-        local b = StatBucket(sk)
-        local wv = b and w[b]
-        if wv and type(sv) == "number" and sv > 0 then sum = sum + sv * wv end
-    end
-    local dps = dpsCache[id]
-    if type(dps) == "number" then sum = sum + dps * (w.WEAPON_DPS or 0) end
-    scoreCache[id] = sum
-    return sum
-end
+local W_KEYS = {
+    { "STRENGTH", L["力量"] }, { "AGILITY", L["敏捷"] }, { "INTELLECT", L["智力"] },
+    { "SPIRIT", L["精神"] }, { "MANA_REGENERATION", L["5秒回蓝"] }, { "STAMINA", L["耐力"] },
+    { "ATTACK_POWER", L["攻击强度"] }, { "SPELL_POWER", L["法术强度"] },
+    { "CRIT_RATING", L["暴击等级"] }, { "HIT_RATING", L["命中等级"] },
+    { "HASTE_RATING", L["急速等级"] }, { "WEAPON_DPS", L["武器伤害"] },
+    { "DEFENSE_SKILL_RATING", L["防御技能"] },
+    { "DODGE_RATING", L["躲闪等级"] }, { "PARRY_RATING", L["招架等级"] },
+    { "BLOCK_RATING", L["格挡等级"] }, { "RESILIENCE_RATING", L["韧性"] },
+}
+local W_SCHEME_MAX = 6
 
 local function EnsureDpsTip()
     if BG.dpsTip then return BG.dpsTip end
@@ -408,8 +391,10 @@ local function ScanDps(itemID)
                 and (string.find(t, "每秒伤害", 1, true)
                     or string.find(t, "每秒傷害", 1, true)
                     or string.find(t, "per second", 1, true)) then
-                local v = tonumber(string.match(t, "(%d+%.?%d*)%s*%)%s*$"))
-                    or tonumber(string.match(t, "(%d+%.?%d*)%s*$"))
+                local v = tonumber(string.match(t, "伤害%s*([%d%.]+)"))
+                    or tonumber(string.match(t, "傷害%s*([%d%.]+)"))
+                    or tonumber(string.match(t, "([%d%.]+)%s*per second"))
+                    or tonumber(string.match(t, "([%d%.]+)%s*[%)）]%s*$"))
                 if v and v > 0 then dps = v end
             end
         end
@@ -417,7 +402,16 @@ local function ScanDps(itemID)
     end)
     BG.__dpsDepth = BG.__dpsDepth - 1
     if not okScan or dps == nil then
-        dpsMiss[itemID] = true
+        local pending = false
+        pcall(function()
+            local fs = _G["DFBisDpsTipTextLeft1"]
+            local t = (fs and fs.GetText) and fs:GetText() or nil
+            if type(t) == "string"
+                and (string.find(t, "正在获取", 1, true)
+                    or string.find(t, "正在載入", 1, true)
+                    or string.find(t, "RETRIEVING", 1, true)) then pending = true end
+        end)
+        if not pending then dpsMiss[itemID] = true end
         return nil
     end
     dpsCache[itemID] = dps
@@ -426,17 +420,119 @@ local function ScanDps(itemID)
     return dps
 end
 
-local W_KEYS = {
-    { "STRENGTH", L["力量"] }, { "AGILITY", L["敏捷"] }, { "INTELLECT", L["智力"] },
-    { "SPIRIT", L["精神"] }, { "MANA_REGENERATION", L["5秒回蓝"] }, { "STAMINA", L["耐力"] },
-    { "ATTACK_POWER", L["攻击强度"] }, { "SPELL_POWER", L["法术强度"] },
-    { "CRIT_RATING", L["暴击等级"] }, { "HIT_RATING", L["命中等级"] },
-    { "HASTE_RATING", L["急速等级"] }, { "WEAPON_DPS", L["武器伤害"] },
-    { "DEFENSE_SKILL_RATING", L["防御技能"] },
-    { "DODGE_RATING", L["躲闪等级"] }, { "PARRY_RATING", L["招架等级"] },
-    { "BLOCK_RATING", L["格挡等级"] }, { "RESILIENCE_RATING", L["韧性"] },
-}
-local W_SCHEME_MAX = 6
+local function MatchStatNum(t, name)
+    local esc = string.gsub(name, "([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+    return tonumber(string.match(t, "([%-%+]?[%d%.]+)%s*" .. esc))
+        or tonumber(string.match(t, esc .. "%s*([%-%+]?[%d%.]+)"))
+end
+
+local tipStatCache = {}
+
+local function ScanStatsTip(id)
+    if type(id) ~= "number" or BG.__dpsDead then return nil end
+    local c = tipStatCache[id]
+    if c ~= nil then return c end
+    if not DG.ItemInfo(id) then return nil end
+    if (BG.__dpsDepth or 0) > 0 then return nil end
+    local tip = EnsureDpsTip()
+    if not tip then return nil end
+    BG.__dpsDepth = (BG.__dpsDepth or 0) + 1
+    local out = {}
+    local okScan = pcall(function()
+        if tip.SetOwner and not pcall(tip.SetOwner, tip, UIParent, "ANCHOR_NONE") then return end
+        local set = false
+        if tip.SetHyperlink then set = pcall(tip.SetHyperlink, tip, "item:" .. tostring(id)) end
+        if not set then return end
+        pcall(tip.Show, tip)
+        local n = (tip.NumLines and tip:NumLines()) or 0
+        local allKey = L["所有属性"]
+        for i = 1, n do
+            local fs = _G["DFBisDpsTipTextLeft" .. i]
+            local t = (fs and fs.GetText) and fs:GetText() or nil
+            if type(t) == "string" and t ~= "" then
+                if type(allKey) == "string" and allKey ~= "" and string.find(t, allKey, 1, true) then
+                    local nv = MatchStatNum(t, allKey)
+                    if nv then
+                        for _, k in ipairs({ "STRENGTH", "AGILITY", "INTELLECT", "SPIRIT", "STAMINA" }) do
+                            out[k] = (out[k] or 0) + nv
+                        end
+                    end
+                end
+                for _, wk in ipairs(W_KEYS) do
+                    local k, nm = wk[1], wk[2]
+                    if k ~= "WEAPON_DPS" and type(nm) == "string" and nm ~= "" then
+                        local nv = MatchStatNum(t, nm)
+                        if nv and nv > 0 then out[k] = (out[k] or 0) + nv end
+                    end
+                end
+            end
+        end
+        pcall(tip.Hide, tip)
+    end)
+    BG.__dpsDepth = BG.__dpsDepth - 1
+    if not okScan then return nil end
+    if not next(out) then return nil end
+    tipStatCache[id] = out
+    return out
+end
+
+local function ItemStatsOf(id)
+    local link
+    if DG.ItemLink then
+        local ok, l = pcall(DG.ItemLink, id)
+        if ok then link = l end
+    end
+    local fn = GetItemStats or (C_Item and C_Item.GetItemStats)
+    if type(fn) == "function" and type(link) == "string" and link ~= "" then
+        local ok, st = pcall(fn, link)
+        if ok and type(st) == "table" then
+            local hit = false
+            for sk in pairs(st) do
+                if StatBucket(sk) then hit = true break end
+            end
+            if hit then
+                local out = {}
+                for sk, sv in pairs(st) do
+                    local b = StatBucket(sk)
+                    if b and type(sv) == "number" then out[b] = sv end
+                end
+                statCache[id] = out
+                return out
+            end
+        end
+    end
+    local out = ScanStatsTip(id)
+    if out then statCache[id] = out end
+    return out
+end
+
+local function ItemScore(id, w)
+    if not id then return nil end
+    local k = BG.cls .. ":" .. BG.spec .. ":" .. (BG.wGen or 0) .. ":" .. dpsGen
+    if scoreKey ~= k then
+        scoreCache, scoreKey = {}, k
+    end
+    local v = scoreCache[id]
+    if v ~= nil then return v end
+    local st = ItemStatsOf(id)
+    local sum = 0
+    if type(st) == "table" then
+        for bkt, sv in pairs(st) do
+            local wv = w[bkt]
+            if type(wv) == "number" and type(sv) == "number" and sv > 0 then sum = sum + sv * wv end
+        end
+    end
+    ScanDps(id)
+    local dps = dpsCache[id]
+    if type(dps) ~= "number" and type(st) == "table" and type(st.DAMAGE_PER_SECOND) == "number" then
+        dps = st.DAMAGE_PER_SECOND
+    end
+    if type(dps) == "number" then sum = sum + dps * (w.WEAPON_DPS or 0) end
+    if sum <= 0 then return nil end
+    scoreCache[id] = sum
+    return sum
+end
+
 local W_ICONS = {
     "Interface\\Icons\\Trade_Engineering", "Interface\\Icons\\INV_Misc_Gear_01",
     "Interface\\Icons\\INV_Misc_PocketWatch_01", "Interface\\Icons\\INV_Jewelry_Talisman_01",
@@ -1358,6 +1454,10 @@ local function EnchTip(owner, e)
 end
 
 local function LinkToChat(itemID)
+    if DG and DG.InsertItemLink then
+        DG.InsertItemLink(itemID)
+        return
+    end
     local _, link = DG.ItemInfo(itemID)
     if link and ChatFrame_InsertLink then
         ChatFrame_InsertLink(link)
@@ -1454,8 +1554,7 @@ local function PaintTopbar()
                 if bt.__icon then bt.__icon:SetTexture(sr.icon) end
                 local on = (sr.role == "tank" and BG.spec == "tank")
                     or (sr.role ~= "tank" and BG.spec ~= "tank" and BG.tspec == sr.key)
-                SetOutline(bt, on, Unpack(C_GOLD))
-                bt.lbl:SetTextColor(Unpack(on and C_GOLD or C_TEXT))
+                SetButtonSelected(bt, on)
             else
                 bt:SetShown(false)
             end
@@ -1881,7 +1980,7 @@ function FillBwRow(r)
         r.chip3:Hide()
         r.wishBt:Hide()
         r.pinBt:Hide()
-        r.__pinNpc, r.__pinLoc = nil, nil
+        r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
         r.__painted = true
         return
     end
@@ -1895,7 +1994,7 @@ function FillBwRow(r)
     r.name:SetText(nm)
     r.name:SetTextColor(Unpack(QColor(ItemQuality(sp, row.item, row.q))))
     local st = row.cat and CatSrcText(row.item) or SrcText(row.src)
-    r.__pinNpc, r.__pinLoc = nil, nil
+    r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
     local qid = nil
     if row.src and row.src.t == "quest" and row.src.q then
         qid = tonumber(row.src.q)
@@ -1926,8 +2025,18 @@ function FillBwRow(r)
         if npc and (loc or (ns.NPCLoc and ns.NPCLoc[npc])) then
             r.__pinNpc, r.__pinLoc = npc, loc
         end
+        r.__pinQid = qid
     end
-    r.pinBt:SetShown(r.__pinNpc ~= nil)
+    local showPin = r.__pinNpc ~= nil
+    if not showPin and r.__pinQid then
+        if ns.GearChainIndexOf and ns.GearChainIndexOf(r.__pinQid) then
+            showPin = true
+        else
+            local qloc = ns.GearQuestLocOf and ns.GearQuestLocOf(r.__pinQid) or nil
+            showPin = type(qloc) == "table" and qloc[1] ~= nil
+        end
+    end
+    r.pinBt:SetShown(showPin)
     r.src:SetText(st)
     r.src:SetTextColor(Unpack(C_GREY))
     r.eqTag:SetShown(BG.bwEquipped == row.item)
@@ -2246,8 +2355,7 @@ function BG.ToggleFilterPop()
     local show = not BG.filterPop:IsShown()
     BG.filterPop:SetShown(show)
     if BG.filterBtn then
-        SetOutline(BG.filterBtn, show, Unpack(C_GOLD))
-        BG.filterBtn.lbl:SetTextColor(Unpack(show and C_GOLD or C_TEXT))
+        SetButtonSelected(BG.filterBtn, show)
     end
     if show and BG.SyncFilterPop then BG.SyncFilterPop() end
 end
@@ -2277,8 +2385,7 @@ function BG.CloseSettingPop()
     if BG.settingPop and BG.settingPop:IsShown() then
         BG.settingPop:Hide()
         if BG.setBtn then
-            SetOutline(BG.setBtn, false)
-            BG.setBtn.lbl:SetTextColor(Unpack(C_TEXT))
+            SetButtonSelected(BG.setBtn, false)
             if BG.setBtn.__icon then
                 local c = ns.SET_ICON_IDLE
                 BG.setBtn.__icon:SetVertexColor(c[1], c[2], c[3])
@@ -2309,8 +2416,7 @@ function BG.ToggleSettingPop()
     end
     BG.settingPop:SetShown(show)
     if BG.setBtn then
-        SetOutline(BG.setBtn, show, Unpack(C_GOLD))
-        BG.setBtn.lbl:SetTextColor(Unpack(show and C_GOLD or C_TEXT))
+        SetButtonSelected(BG.setBtn, show)
         if BG.setBtn.__icon then
             local c = show and ns.SET_ICON_ACT or ns.SET_ICON_IDLE
             BG.setBtn.__icon:SetVertexColor(c[1], c[2], c[3])
@@ -2909,8 +3015,6 @@ local function BuildSpecRow(parent, yt)
     ic:SetPoint("LEFT", dd, "LEFT", 6, 0)
     ic:SetTexture(ClassIconPath(BG.cls))
     dd.__icon = ic
-    MakeOutline(dd, Unpack(C_GOLD))
-    dd.__huiKeepTextColor = true
     dd:SetScript("OnClick", function() BG.OpenClassMenu(dd) end)
     BG.ddBtn = dd
     x = x + 99
@@ -2925,7 +3029,7 @@ local function BuildSpecRow(parent, yt)
         bt.__icon:SetSize(14, 14)
         bt.__icon:SetPoint("LEFT", bt, "LEFT", 3, 0)
         bt.__icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        MakeOutline(bt, Unpack(C_GOLD))
+        SetButtonSelected(bt, false)
         bt:SetScript("OnClick", function()
             local sr = (SPEC_DIR[BG.cls] or {})[i]
             if not sr then return end
@@ -3191,14 +3295,13 @@ local function BuildBrowser(parent)
     local fb = NewButton(parent, L["过滤"], 60, 24, 14)
     fb:SetPoint("RIGHT", eb, "LEFT", -8, 0)
     fb.lbl = fb:GetFontString()
-    MakeOutline(fb, Unpack(C_GOLD))
+    SetButtonSelected(fb, false)
     fb:SetScript("OnClick", function() BG.ToggleFilterPop() end)
     BG.filterBtn = fb
 
     local stb = NewButton(parent, "", 24, 24, 14)
     stb:SetPoint("RIGHT", fb, "LEFT", -8, 0)
     stb.lbl = stb:GetFontString()
-    stb.__huiKeepTextColor = true
     stb.__icon = stb:CreateTexture(nil, "ARTWORK")
     stb.__icon:SetSize(16, 16)
     stb.__icon:SetPoint("CENTER", stb, "CENTER", 0, 0)
@@ -3299,15 +3402,37 @@ local function BuildBrowser(parent)
         r.pinBt:Hide()
         r.pinBt:SetScript("OnClick", function(self)
             local row = self:GetParent()
-            if not (row and row.__pinNpc) then return end
-            DG.MarkNPC(row.__pinNpc, row.__pinLoc)
-            ns.PlaySound(1)
+            if not row then return end
+            local qid = row.__pinQid
+            if qid and ns.GearMarkQuestSmart then
+                local hasChain = ns.GearChainIndexOf and ns.GearChainIndexOf(qid)
+                if hasChain or not row.__pinNpc then
+                    ns.PlaySound(1)
+                    ns.GearMarkQuestSmart(qid)
+                    return
+                end
+            end
+            if row.__pinNpc then
+                DG.MarkNPC(row.__pinNpc, row.__pinLoc)
+                ns.PlaySound(1)
+            end
         end)
         r.pinBt:SetScript("OnEnter", function(self)
             local row = self:GetParent()
             if row and row.__pinNpc and DG.ShowNpcTip then
                 DG.ShowNpcTip(self, row.__pinNpc, row.__pinLoc)
+                return
             end
+            local qid = row and row.__pinQid
+            if not (qid and ns.GearChainIndexOf) then return end
+            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+            GameTooltip:ClearLines()
+            if ns.GearChainIndexOf(qid) then
+                GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
+            else
+                GameTooltip:AddLine(L["点击：在地图上标记"], 1, 0.82, 0, true)
+            end
+            GameTooltip:Show()
         end)
         r.pinBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
         r:SetScript("OnEnter", function(self)
@@ -3418,7 +3543,6 @@ local function BuildBrowser(parent)
     end
     local nowBt = NewButton(pop, L["当前"], 44, 24, 14)
     nowBt:SetPoint("LEFT", lvBox or pop, "RIGHT", 6, 0)
-    MakeOutline(nowBt, Unpack(C_TEXT))
     nowBt:SetScript("OnClick", function()
         local lv = PlayerLevel() or 60
         if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
@@ -3428,7 +3552,6 @@ local function BuildBrowser(parent)
     end)
     local maxBt = NewButton(pop, L["满级"], 44, 24, 14)
     maxBt:SetPoint("LEFT", nowBt, "RIGHT", 6, 0)
-    MakeOutline(maxBt, Unpack(C_TEXT))
     maxBt:SetScript("OnClick", function()
         if lvBox then lvBox:SetText("60") end
         ApplyLvText("60")
@@ -3491,7 +3614,7 @@ local function BuildBrowser(parent)
     local gb = NewButton(pop, L["生成 BiS 方案"], 154, 24, 14)
     gb:SetPoint("TOPLEFT", pop, "TOPLEFT", 8, -296)
     gb.lbl = gb:GetFontString()
-    MakeOutline(gb, Unpack(C_GOLD))
+    SetButtonSelected(gb, false)
     gb:SetScript("OnClick", function()
         BG.GeneratePlan()
         BG.ToggleFilterPop()
@@ -3896,3 +4019,108 @@ function BG.Build(page)
     ns.OpenPerf.Mark("首绘")
     end))
 end
+
+local slotById, slotByIdKey
+local function CatalogSlotOf(id)
+    local cat = EnsureCatalog()
+    if type(cat) ~= "table" then return nil end
+    local key = tostring(BG.cls or "") .. ":" .. tostring(#cat)
+    if slotByIdKey ~= key or not slotById then
+        local map = {}
+        for i = 1, #cat do
+            local r = cat[i]
+            local rid = type(r) == "table" and (r.id or r[1]) or nil
+            if type(rid) == "number" then map[rid] = r.s or r[3] end
+        end
+        slotById, slotByIdKey = map, key
+    end
+    return slotById[id]
+end
+
+local INV_SLOT_NAME = {
+    back = "BackSlot", chest = "ChestSlot", feet = "FeetSlot",
+    finger = "Finger0Slot", finger2 = "Finger1Slot",
+    hands = "HandsSlot", head = "HeadSlot", held = "SecondaryHandSlot",
+    legs = "LegsSlot", ["main-hand"] = "MainHandSlot", neck = "NeckSlot",
+    ["off-hand"] = "SecondaryHandSlot", ranged = "RangedSlot", relic = "RangedSlot",
+    shield = "SecondaryHandSlot", shoulder = "ShoulderSlot",
+    trinket = "Trinket0Slot", trinket2 = "Trinket1Slot",
+    ["two-hand"] = "MainHandSlot", waist = "WaistSlot", wrist = "WristSlot",
+}
+local PAIR_SLOT = { finger = "finger2", finger2 = "finger", trinket = "trinket2", trinket2 = "trinket" }
+
+local function InvIdOf(name)
+    if type(name) ~= "string" or type(GetInventorySlotInfo) ~= "function" then return nil end
+    local ok, idx = pcall(GetInventorySlotInfo, name)
+    if not ok or type(idx) ~= "number" then return nil end
+    local ok2, eid = pcall(GetInventoryItemID, "player", idx)
+    if ok2 and type(eid) == "number" and eid > 0 then return eid end
+    return nil
+end
+
+local function EquippedInSlot(slot, exceptId)
+    if type(slot) ~= "string" then return nil end
+    local eid = InvIdOf(INV_SLOT_NAME[slot])
+    if eid and eid ~= exceptId then return eid end
+    local pair = PAIR_SLOT[slot]
+    if pair then
+        local pid = InvIdOf(INV_SLOT_NAME[pair])
+        if pid and pid ~= exceptId then return pid end
+    end
+    return nil
+end
+
+local INVTYPE_SLOT = {
+    INVTYPE_BACK = "back", INVTYPE_CLOAK = "back", INVTYPE_CHEST = "chest", INVTYPE_ROBE = "chest",
+    INVTYPE_FEET = "feet", INVTYPE_FINGER = "finger", INVTYPE_HAND = "hands",
+    INVTYPE_HEAD = "head", INVTYPE_LEGS = "legs", INVTYPE_NECK = "neck",
+    INVTYPE_RANGED = "ranged", INVTYPE_RANGEDRIGHT = "ranged",
+    INVTYPE_SHOULDER = "shoulder", INVTYPE_TRINKET = "trinket",
+    INVTYPE_2HWEAPON = "two-hand", INVTYPE_WAIST = "waist", INVTYPE_WRIST = "wrist",
+    INVTYPE_WEAPON = "main-hand", INVTYPE_WEAPONMAINHAND = "main-hand",
+    INVTYPE_WEAPONOFFHAND = "off-hand", INVTYPE_SHIELD = "shield",
+    INVTYPE_HOLDABLE = "held", INVTYPE_RELIC = "relic",
+}
+
+local CAT_SLOT_NORM = {
+    ["main hand"] = "main-hand", ["off hand"] = "off-hand",
+    ["held in off-hand"] = "held", ["one-hand"] = "main-hand",
+    ["thrown"] = "ranged",
+}
+
+local function SlotOfAny(id)
+    local s = CatalogSlotOf(id)
+    if type(s) == "string" then
+        s = string.lower(s)
+        return CAT_SLOT_NORM[s] or s
+    end
+    local fn = GetItemInfoInstant or (C_Item and C_Item.GetItemInfoInstant)
+    if type(fn) ~= "function" then return nil end
+    local ok, _, _, _, eq = pcall(fn, id)
+    if ok and type(eq) == "string" then return INVTYPE_SLOT[eq] end
+    return nil
+end
+
+local function ScoreVsBis(id)
+    if type(id) ~= "number" then return nil end
+    local slot = SlotOfAny(id)
+    if type(slot) ~= "string" then return nil end
+    local baseId = EquippedInSlot(slot, id)
+    if type(baseId) ~= "number" or baseId == id then return nil end
+    local w = EffWeights()
+    local bs = ItemScore(baseId, w)
+    local my = ItemScore(id, w)
+    if not my or my <= 0 then
+        local DG = ns.DungeonModule
+        if DG and DG.RequestItem then pcall(DG.RequestItem, id) end
+        return nil
+    end
+    if not bs or bs <= 0 then
+        local DG = ns.DungeonModule
+        if DG and DG.RequestItem then pcall(DG.RequestItem, baseId) end
+        return nil
+    end
+    return (my / bs - 1) * 100
+end
+
+BG.ScoreVsBis = ScoreVsBis

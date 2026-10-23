@@ -181,66 +181,6 @@ local function EnsureContent()
     U.panel = panel
     return panel
 end
-local SOURCE_POPUP = "DungeonsForever_SourceURL"
-local pendingSourceURL = "https://www.wowhead.com/forever"
-
-local function ShowSourceURL(url)
-    pendingSourceURL = url
-    if not StaticPopupDialogs[SOURCE_POPUP] then
-        StaticPopupDialogs[SOURCE_POPUP] = {
-            text = L["复制网址"],
-            button1 = L["关闭"],
-            timeout = 0,
-            whileDead = true,
-            hideOnEscape = true,
-            preferredIndex = 3,
-            hasEditBox = true,
-            editBoxWidth = 260,
-            OnShow = function(self)
-                local edit = self.EditBox or self.editBox
-                edit:SetText(pendingSourceURL)
-                edit:HighlightText()
-                edit:SetFocus()
-            end,
-            EditBoxOnEnterPressed = function(self)
-                self:GetParent():Hide()
-            end,
-            EditBoxOnEscapePressed = function(self)
-                self:GetParent():Hide()
-            end,
-        }
-    end
-    StaticPopup_Show(SOURCE_POPUP)
-end
-
-local function MakeSourceCredit(panel, label, url, prev)
-    local fs = MakeFS(panel, 14, C_GREY, "RIGHT")
-    if prev then
-        fs:SetPoint("RIGHT", prev, "LEFT", -18, 0)
-    else
-        fs:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -10, -4)
-    end
-    fs:SetText(label)
-    local btn = CreateFrame("Button", nil, panel)
-    btn:SetPoint("TOPLEFT", fs, "TOPLEFT", -4, 4)
-    btn:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 4, -4)
-    btn:SetHitRectInsets(0, 0, 0, 0)
-    btn:SetScript("OnEnter", function(self)
-        fs:SetTextColor(0.9, 0.9, 0.9)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:ClearLines()
-        GameTooltip:AddLine(L["点击复制数据来源网址"], 1, 1, 1, true)
-        GameTooltip:Show()
-    end)
-    btn:SetScript("OnLeave", function()
-        fs:SetTextColor(Unpack(C_GREY))
-        GameTooltip:Hide()
-    end)
-    btn:SetScript("OnClick", function() ShowSourceURL(url) end)
-    U.sourceCredits[#U.sourceCredits + 1] = { fs = fs, btn = btn, url = url, label = label }
-    return fs
-end
-
 local DG = {}
 ns.DungeonModule = DG
 
@@ -3163,9 +3103,7 @@ function DG.ApplyDetailChrome(cur)
     end
     for key, bt in pairs(U.dungeonTabBtns or {}) do
         local sel = (key == cur)
-        SetOutline(bt, sel, 1, 0.82, 0)
-        local fs = bt:GetFontString()
-        if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_GREY)) end
+        ns.hui.SetButtonSelected(bt, sel)
     end
 end
 
@@ -3178,8 +3116,6 @@ function DG.BuildDetailTabs()
         local bt = NewButton(detail, def.text, 70, 24, 14)
         bt:SetFrameLevel(hero:GetFrameLevel() + 1)
         bt:SetPoint("TOPRIGHT", detail, "TOPRIGHT", -8 - (i - 1) * 78, -(DG.HERO_META_Y - 12))
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt:SetScript("OnClick", function()
             U:SetDungeonTab(def.key)
         end)
@@ -3216,8 +3152,6 @@ function DG.BuildDetailFilterRow()
     for i = 1, DG.FILTER_MAX do
         local bt = NewButton(detail, "", 92, 24, 14)
         bt:SetPoint("TOPLEFT", detail, "TOPLEFT", DG.GUTTER + (i - 1) * 100, -DG.FILTER_Y)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt.__mode, bt.__key = "loot", "all"
         local em = bt:CreateTexture(nil, "OVERLAY")
         em:SetSize(16, 16)
@@ -3338,8 +3272,6 @@ function DG.BuildDetailLootView()
                              DG.LOOT_VIEW_W, 24, 14)
         bt:SetPoint("TOPLEFT", detail, "TOPLEFT",
                     DG.LOOT_VIEW_X + (vi - 1) * (DG.LOOT_VIEW_W + DG.LOOT_VIEW_GAP), -DG.FILTER_Y)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt.__lootView = vk
         bt.__mode = "lootview"
         bt:SetScript("OnClick", function() U:SetLootView(vk) end)
@@ -3348,8 +3280,6 @@ function DG.BuildDetailLootView()
     if not U.dungeonLootBossDd then
         local dd = NewButton(detail, "", DG.LOOT_BOSS_W, 24, 14)
         dd:SetPoint("TOPLEFT", detail, "TOPLEFT", DG.LOOT_BOSS_X, -DG.FILTER_Y)
-        MakeOutline(dd, 1, 0.82, 0)
-        dd.__huiKeepTextColor = true
         dd:SetScript("OnClick", function() DG.OpenLootBossMenu(dd) end)
         U.dungeonLootBossDd = dd
     end
@@ -4099,6 +4029,11 @@ end
 
 function DG.TipAppendLines(lines)
     if type(lines) ~= "table" or #lines == 0 then return end
+    local T = ns.TipLines
+    if T and T.Append then
+        T.Append(GameTooltip, lines)
+        return
+    end
     GameTooltip:AddLine(" ")
     for _, ln in ipairs(lines) do
         if type(ln) == "table" and type(ln[1]) == "string" then
@@ -4273,9 +4208,7 @@ function DG.ApplyLootDropdownChrome()
         bossDd:SetShown((U.dungeonTab or "loot") == "loot")
         local bossShown = bossSel == DG.LOOT_TRASH and DG.LOOT_TRASH_LABEL or bossSel
         bossDd:SetText(L["BOSS："] .. DG.FitText(bossShown or L["全部"], 14, 112))
-        SetOutline(bossDd, bossSel ~= nil, 1, 0.82, 0)
-        local bfs = bossDd:GetFontString()
-        if bfs then bfs:SetTextColor(Unpack(bossSel and C_GOLD or C_GREY)) end
+        ns.hui.SetButtonSelected(bossDd, bossSel ~= nil)
     end
     local bt1 = U.dungeonFilterBtns and U.dungeonFilterBtns[1]
     if bt1 and bt1.__mode == "loot" and bt1.__key == "__typeMenu" then
@@ -4286,9 +4219,7 @@ function DG.ApplyLootDropdownChrome()
         end
         bt1:SetWidth(DG.LOOT_BOSS_W)
         bt1:SetText(DG.FitText(L["类型："] .. lab, 14, DG.LOOT_DD_TEXT_W))
-        SetOutline(bt1, filter ~= "all", 1, 0.82, 0)
-        local fs = bt1:GetFontString()
-        if fs then fs:SetTextColor(Unpack((filter ~= "all") and C_GOLD or C_GREY)) end
+        ns.hui.SetButtonSelected(bt1, filter ~= "all")
     end
 end
 
@@ -4421,9 +4352,7 @@ function U:RenderDungeonLoot()
                 bt:SetShown(false)
                 sel = false
             end
-            SetOutline(bt, sel, 1, 0.82, 0)
-            local fs = bt:GetFontString()
-            if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_GREY)) end
+            ns.hui.SetButtonSelected(bt, sel)
         end
     end
     for i = #DG.FILTERS + 1, #(U.dungeonFilterBtns or {}) do
@@ -5052,9 +4981,7 @@ function U:RefreshLootViewBtns()
         local bt = U.dungeonLootViewBtns[i]
         if bt then
             local sel = (bt.__lootView == cur)
-            SetOutline(bt, sel, 1, 0.82, 0)
-            local fs = bt:GetFontString()
-            if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_GREY)) end
+            ns.hui.SetButtonSelected(bt, sel)
         end
     end
 end
@@ -5193,12 +5120,30 @@ if type(SlashCmdList) == "table" then
     end
 end
 DG.__qWatch = {}
+DG.__qDataHooks = {}
 function DG.OnQuestData(id)
     local MM = ns.MapModule
     if MM and MM.OnQuestData then MM.OnQuestData(id) end
+    local hl = DG.__qDataHooks
+    if hl then
+        for i = 1, #hl do
+            local fn = hl[i]
+            if type(fn) == "function" then pcall(fn, id) end
+        end
+    end
 end
 function DG.RequestQuest(id)
     if type(id) ~= "number" or id < 1 or id ~= math.floor(id) then return end
+    if not DG.__qEvt then
+        local ev = CreateFrame("Frame")
+        pcall(ev.RegisterEvent, ev, "QUEST_DATA_LOAD_RESULT")
+        ev:SetScript("OnEvent", function(_, _, qid)
+            if qid then
+                C_Timer.After(0, function() DG.OnQuestData(qid) end)
+            end
+        end)
+        DG.__qEvt = ev
+    end
     if not DG.__qAsked[id] then
         DG.__qAsked[id] = true
         if C_QuestLog and C_QuestLog.RequestLoadQuestByID then
@@ -6157,11 +6102,9 @@ function U:RenderDungeonQuests()
             bt:SetShown(true)
             local sel = (i == 3 and view == "overview") or (i == 4 and view == "list")
                 or (i == 1 and side == "A") or (i == 2 and side == "H")
-            SetOutline(bt, sel, 1, 0.82, 0)
-            if bfs then
-                if sel then
-                    bfs:SetTextColor(Unpack(C_GOLD))
-                elseif i == 1 then
+            ns.hui.SetButtonSelected(bt, sel)
+            if bfs and not sel then
+                if i == 1 then
                     bfs:SetTextColor(0.40, 0.62, 1.00, 1)
                 elseif i == 2 then
                     bfs:SetTextColor(1.00, 0.36, 0.26, 1)
@@ -7941,17 +7884,9 @@ function U:Build()
         local dt = DB().dungeonTab
         U.dungeonTab = (dt == "quest" or dt == "guide" or dt == "map") and dt or "loot"
     end
-    U.sourceCredits = {}
     U.subBuilt = {}
 
     BuildSubTabs()
-
-    local creditLift = CreateFrame("Frame", nil, panel)
-    creditLift:SetFrameLevel(panel.GetFrameLevel and (panel:GetFrameLevel() + 4) or 4)
-    creditLift:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 0, 0)
-    creditLift:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, 0)
-    creditLift:SetHeight(24)
-    MakeSourceCredit(creditLift, L["数据来源：wowhead"], "https://www.wowhead.com/forever")
 
     U:SwitchSub(U.curSub)
     U.building = false
@@ -8003,6 +7938,7 @@ ns.ProfHost = {
     MakeFS = MakeFS, NewButton = NewButton, MakeOutline = MakeOutline,
     AddBtnIcon = AddBtnIcon,
     SetOutline = SetOutline, SetTip = SetTip, Unpack = Unpack,
+    SetButtonSelected = ns.hui.SetButtonSelected,
     C_GOLD = C_GOLD, C_GREEN = C_GREEN, C_GREY = C_GREY,
     C_DIM = C_DIM, C_WHITE = C_WHITE, C_TEXT = C_TEXT,
     CONTENT_W = CONTENT_W, CONTENT_H = CONTENT_H,

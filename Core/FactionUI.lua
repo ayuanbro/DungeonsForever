@@ -11,7 +11,7 @@ if not Host then return end
 
 local MakeFS = Host.MakeFS
 local NewButton = Host.NewButton
-local MakeOutline, SetOutline = Host.MakeOutline, Host.SetOutline
+local SetButtonSelected = Host.SetButtonSelected
 local SetTip = Host.SetTip
 local Unpack = Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
@@ -399,11 +399,7 @@ FV.Build = function(page)
 
     local fb = NewButton(leftCard, "▽ " .. L["筛选"], 88, 24, 14)
     fb:SetPoint("TOPRIGHT", leftCard, "TOPRIGHT", -FV.PAD, -10)
-    if HUI and ns.hui.ACCENT then
-        MakeOutline(fb, Unpack(ns.hui.ACCENT))
-    else
-        MakeOutline(fb, 1, 0.82, 0)
-    end
+    SetButtonSelected(fb, false)
     fb:SetScript("OnClick", function()
         ns.PlaySound(1)
         FV:SetPopupShown(not FV.pop:IsShown())
@@ -844,7 +840,7 @@ function FV:PaintList()
                         r.__selBorder = ns.hui.BuildRoundBorder(r, 6, GOLD, r, "OVERLAY")
                     end
                 else
-                    MakeOutline(r, 1, 0.82, 0)
+                    SetButtonSelected(r, false)
                 end
             else
                 if r.__selBorder then

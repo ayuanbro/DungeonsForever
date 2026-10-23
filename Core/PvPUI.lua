@@ -10,7 +10,7 @@ if not Host then return end
 
 local MakeFS = Host.MakeFS
 local NewButton = Host.NewButton
-local MakeOutline, SetOutline = Host.MakeOutline, Host.SetOutline
+local SetButtonSelected = Host.SetButtonSelected
 local SetTip = Host.SetTip
 local Unpack = Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
@@ -536,8 +536,7 @@ function PV.Build(page)
     for i, def in ipairs(TAB_DEFS) do
         local bt = NewButton(headCard, def.text, PV.TAB_W, PV.TAB_H, 14)
         bt:SetPoint("TOPLEFT", headCard, "TOPLEFT", PV.HEAD_PAD + (i - 1) * PV.TAB_STEP, -PV.TAB_Y)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, def.key == (PV.cur or "ranks"))
         bt:SetScript("OnClick", function() PV.SetTab(def.key) end)
         PV.tabs[def.key] = bt
     end
@@ -757,7 +756,6 @@ function PV.Build(page)
             bt.bg:SetAllPoints(bt)
             bt.bg:SetColorTexture(1, 1, 1, 0.04)
         end
-        MakeOutline(bt, 1, 0.82, 0)
         bt.hover = bt:CreateTexture(nil, "OVERLAY")
         bt.hover:SetAllPoints(bt)
         bt.hover:SetColorTexture(1, 1, 1, 0.06)
@@ -853,8 +851,6 @@ function PV.Build(page)
 
     for i = 1, 2 do
         local bt = NewButton(headCard, i == 1 and L["联盟"] or L["部落"], PV.TAB_W, PV.TAB_H, 14)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         local bfs = bt:GetFontString()
         if bfs then
             if i == 1 then
@@ -883,8 +879,6 @@ function PV.Build(page)
 
     for i, rec in ipairs(RD.battlefields) do
         local bt = NewButton(child, FIELD_LABEL[rec.key] or rec.key, 148, 24, 12)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt.__bf = rec
         bt:SetScript("OnEnter", function(self)
             local d = self.__bf
@@ -903,8 +897,6 @@ function PV.Build(page)
 
     for i, def in ipairs(REP_DEFS) do
         local bt = NewButton(child, def.text, 120, 24, 12)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt.__rep = def.key
         bt:SetScript("OnClick", function(self)
             PV.selRep = self.__rep
@@ -916,8 +908,6 @@ function PV.Build(page)
 
     for i, bg in ipairs(BATTLE_BGS) do
         local bt = NewButton(child, bg.label, 120, 24, 12)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt.__rep = bg.key
         bt:SetScript("OnClick", function(self)
             PV.selRep = self.__rep
@@ -1060,7 +1050,6 @@ function PV.Build(page)
 
     for i = 1, 13 do
         local bt = NewButton(child, format("R%d", i + 1), 34, 22, 11)
-        MakeOutline(bt, 1, 0.82, 0)
         bt.__goal = i + 1
         bt:SetScript("OnClick", function(self)
             PV.goal = self.__goal
@@ -1071,7 +1060,6 @@ function PV.Build(page)
     coroutine.yield()
     for i = 1, 14 do
         local bt = NewButton(child, format("R%d", i), 34, 22, 11)
-        MakeOutline(bt, 1, 0.82, 0)
         bt.__sim = i
         bt:SetScript("OnClick", function(self)
             if PV.simRank == self.__sim then
@@ -1122,7 +1110,7 @@ function PV.SetTab(key)
     PV.cur = key
     for _, def in ipairs(TAB_DEFS) do
         local bt = PV.tabs[def.key]
-        if bt then SetOutline(bt, def.key == key, 1, 0.82, 0) end
+        if bt then SetButtonSelected(bt, def.key == key) end
     end
     PV.RequestRender()
 end
@@ -1213,8 +1201,8 @@ function PV.RenderRanks()
     PV.facBtn2:SetPoint("TOPRIGHT", PV.facBtn1, "TOPLEFT", -8, 0)
     PV.facBtn1:Show()
     PV.facBtn2:Show()
-    SetOutline(PV.facBtn1, PV.faction == "A", 1, 0.82, 0)
-    SetOutline(PV.facBtn2, PV.faction == "H", 1, 0.82, 0)
+    SetButtonSelected(PV.facBtn1, PV.faction == "A")
+    SetButtonSelected(PV.facBtn2, PV.faction == "H")
     local lv, lp = LiveState()
     if lv and lv >= 1 then
         PV.rankBadge:SetTexture(format("Interface\\PvPRankBadges\\PvPRank%02d", lv))
@@ -1333,7 +1321,7 @@ function PV.RenderSets()
         row:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 12,
             -(y + (i - 1) * (PV.ROW_H + PV.ROW_GAP)))
         row.name:SetTextColor(Unpack((PV.selSet == i) and C_GOLD or C_TEXT))
-        SetOutline(row, PV.selSet == i, 1, 0.82, 0)
+        SetButtonSelected(row, PV.selSet == i)
         row:Show()
         if i % 4 == 0 then PY() end
     end
@@ -1363,8 +1351,8 @@ function PV.RenderSets()
     PV.facBtn1:ClearAllPoints()
     PV.facBtn1:SetPoint("TOPRIGHT", PV.headCard, "TOPRIGHT", -PV.HEAD_PAD, -PV.TAB_Y)
     PV.facBtn1:Show()
-    SetOutline(PV.facBtn1, PV.faction == "A", 1, 0.82, 0)
-    SetOutline(PV.facBtn2, PV.faction == "H", 1, 0.82, 0)
+    SetButtonSelected(PV.facBtn1, PV.faction == "A")
+    SetButtonSelected(PV.facBtn2, PV.faction == "H")
 
     local selRec = SD.sets[PV.selSet] or SD.sets[1]
     local selRowY = PV.MARK_TOP + PV.MARK_IN_H + PV.CARD_GAP
@@ -1459,8 +1447,8 @@ function PV.RenderRep()
     PV.facBtn2:SetPoint("TOPRIGHT", PV.facBtn1, "TOPLEFT", -8, 0)
     PV.facBtn1:Show()
     PV.facBtn2:Show()
-    SetOutline(PV.facBtn1, PV.faction == "A", 1, 0.82, 0)
-    SetOutline(PV.facBtn2, PV.faction == "H", 1, 0.82, 0)
+    SetButtonSelected(PV.facBtn1, PV.faction == "A")
+    SetButtonSelected(PV.facBtn2, PV.faction == "H")
     local row = {
         { btn = PV.repBtns[1], key = "spear" },
     }
@@ -1470,7 +1458,7 @@ function PV.RenderRep()
     row[#row + 1] = { btn = PV.repBtns[2], key = "honor" }
     for i, d in ipairs(row) do
         d.btn:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 12 + (i - 1) * 126, -y)
-        SetOutline(d.btn, PV.selRep == d.key, 1, 0.82, 0)
+        SetButtonSelected(d.btn, PV.selRep == d.key)
         d.btn:Show()
     end
     y = y + 30
@@ -1711,7 +1699,7 @@ function PV.RenderWeek()
     for i = 1, 13 do
         local bt = PV.goalBtns[i]
         bt:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 122 + (i - 1) * 36, -y)
-        SetOutline(bt, PV.goal == i + 1, 1, 0.82, 0)
+        SetButtonSelected(bt, PV.goal == i + 1)
         bt:Show()
     end
     y = y + 30
@@ -1723,7 +1711,7 @@ function PV.RenderWeek()
     for i = 1, 14 do
         local bt = PV.simBtns[i]
         bt:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 122 + (i - 1) * 36, -y)
-        SetOutline(bt, PV.simRank == i, 1, 0.82, 0)
+        SetButtonSelected(bt, PV.simRank == i)
         bt:Show()
     end
     y = y + 32

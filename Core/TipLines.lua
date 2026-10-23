@@ -9,9 +9,14 @@ local C_SRC = { 1, 0.82, 0 }
 local C_WISH = { 1, 0.82, 0.4 }
 local C_BIS = { 0.47, 0.75, 0.45 }
 local C_QUEST = { 0.75, 0.78, 0.82 }
+local C_SC_UP = { 0.47, 0.85, 0.45 }
+local C_SC_DOWN = { 0.92, 0.42, 0.38 }
+
+local LOGO = "|TInterface\\AddOns\\DungeonsForever\\Media\\DF_Logo.tga:16:16:0:0:32:32:0:32:0:32|t "
+local LOGO_GAP = "|TInterface\\AddOns\\DungeonsForever\\Media\\DF_Blank.tga:16:16:0:0:32:32:0:32:0:32|t "
 
 local TIP_VER = 1
-local TIP_KEYS = { "src", "bis", "wish", "quest" }
+local TIP_KEYS = { "src", "bis", "bisScore", "wish", "quest" }
 
 local function Cfg()
     local db = ns.DB and ns.DB()
@@ -62,7 +67,7 @@ local function BuildSrc()
                         if type(id) == "number" then
                             local e = srcIdx[id]
                             if not e then e = {} srcIdx[id] = e end
-                            if #e < 8 then e[#e + 1] = { dn, boss } end
+                            if #e < 24 then e[#e + 1] = { dn, boss } end
                         end
                     end
                 end
@@ -70,6 +75,33 @@ local function BuildSrc()
         end
     end
     return srcIdx
+end
+
+local craftIdx
+local craftDone = false
+local function BuildCraft()
+    if craftDone then return craftIdx end
+    craftDone = true
+    if not ns.IsForever then return nil end
+    local keys = ns.ProfRecipeKeys
+    local pro = ns.ProfData and ns.ProfData.pro
+    if type(keys) ~= "table" or type(pro) ~= "table" then return nil end
+    local out = {}
+    for _, slug in ipairs(keys) do
+        local pd = pro[slug]
+        local nm = type(pd) == "table" and pd.name or nil
+        local v = type(ns.ProfRecipes) == "table" and ns.ProfRecipes[slug] or nil
+        if nm and type(v) == "table" and type(v.rows) == "table" then
+            for _, row in ipairs(v.rows) do
+                local iid = type(row) == "table" and row[2] or nil
+                if type(iid) == "number" and not out[iid] then
+                    out[iid] = nm
+                end
+            end
+        end
+    end
+    craftIdx = out
+    return out
 end
 
 local questIdx
@@ -209,21 +241,32 @@ local function QuestOf(id)
     return nm, #ids
 end
 
+local function ScoreLine(pct)
+    if type(pct) ~= "number" or (pct <= 0.5 and pct >= -0.5) then return nil end
+    local v = pct > 0 and math.floor(pct + 0.5) or math.ceil(pct - 0.5)
+    return format(L["BIS 评分 %+d%%"], v), pct > 0
+end
+
 function TL.Lines(id)
     if type(id) ~= "number" then return nil end
     local cfg = Cfg()
     local out
-    local function add(text, col)
+    local function add(text, col, cont, mark)
         if not out then out = {} end
-        out[#out + 1] = { text, col[1], col[2], col[3] }
+        out[#out + 1] = { text, col[1], col[2], col[3], cont, mark }
     end
     if cfg.src then
         local e = BuildSrc()[id]
         if e then
-            local s = e[1]
-            local text = s[1] .. " · " .. s[2]
-            if #e > 1 then text = text .. format(L["等 %d 个来源"], #e) end
-            add(text, C_SRC)
+            for i, s in ipairs(e) do
+                add(s[1] .. " · " .. s[2], C_SRC, i > 1)
+            end
+        else
+            local cn = BuildCraft()
+            local nm = cn and cn[id]
+            if nm then
+                add(format(L["专业制造（%s）"], nm), C_SRC)
+            end
         end
     end
     if cfg.wish then
@@ -242,6 +285,15 @@ function TL.Lines(id)
             end
         end
     end
+    if cfg.bisScore then
+        local BG = ns.BisModule
+        if BG and BG.ScoreVsBis then
+            local txt, up = ScoreLine(BG.ScoreVsBis(id))
+            if txt then
+                add(txt, up and C_SC_UP or C_SC_DOWN, nil, true)
+            end
+        end
+    end
     if cfg.quest then
         local nm, n = QuestOf(id)
         if nm then
@@ -255,15 +307,22 @@ function TL.Lines(id)
     return out
 end
 
-local function Append(tip, lines)
-    if type(lines) ~= "table" or #lines == 0 then return end
-    tip:AddLine(" ")
-    for _, ln in ipairs(lines) do
+local function Append(tip, lines, skipN)
+    if type(lines) ~= "table" then return end
+    local total = #lines
+    local from = skipN or 0
+    if from >= total then return end
+    if from == 0 then tip:AddLine(" ") end
+    local first = from == 0
+    for i = from + 1, total do
+        local ln = lines[i]
         if type(ln) == "table" and type(ln[1]) == "string" then
-            tip:AddLine(ln[1], ln[2] or 1, ln[3] or 1, ln[4] or 1, true)
+            tip:AddLine((first and LOGO or LOGO_GAP) .. ln[1], ln[2] or 1, ln[3] or 1, ln[4] or 1, true)
+            first = false
         end
     end
 end
+TL.Append = Append
 
 local EXCLUDE = {
     ShoppingTooltip1 = true, ShoppingTooltip2 = true,
@@ -271,6 +330,13 @@ local EXCLUDE = {
     TFItemScanTip = true,
 }
 local augStamp = {}
+
+local function TipItemID(tt)
+    if type(tt.GetItem) ~= "function" then return nil end
+    local ok, _, link = pcall(tt.GetItem, tt)
+    if ok and type(link) == "string" then return tonumber(link:match("item:(%d+)")) end
+    return nil
+end
 
 local function Augment(tt)
     if not tt then return end
@@ -280,26 +346,74 @@ local function Augment(tt)
     local nm = tt.GetName and tt:GetName()
     if nm and EXCLUDE[nm] then return end
     if not Cfg().global then return end
-    local id
-    if type(tt.GetItem) == "function" then
-        local ok, _, link = pcall(tt.GetItem, tt)
-        if ok and type(link) == "string" then id = tonumber(link:match("item:(%d+)")) end
-    end
+    local id = TipItemID(tt)
     if not id then return end
     if augStamp[tt] == id then return end
     augStamp[tt] = id
-    Append(tt, TL.Lines(id))
+    local lines = TL.Lines(id)
+    Append(tt, lines, 0)
+    local n = type(lines) == "table" and #lines or 0
+    tt.__dfAugN = n
+    for i = 1, n do
+        local ln = lines[i]
+        if type(ln) == "table" and ln[6] then
+            tt.__dfScoreShown = true
+            break
+        end
+    end
+    if Cfg().bisScore and C_Timer and C_Timer.After and not tt.__dfScoreShown then
+        tt.__dfAugTries = 3
+        local function Retry()
+            local DG2 = ns.DungeonModule
+            if tt.__dfOwn or augStamp[tt] ~= id then return end
+            if DG2 and DG2.__tipBusy then return end
+            if TipItemID(tt) ~= id then return end
+            local BG = ns.BisModule
+            local pct = BG and BG.ScoreVsBis and BG.ScoreVsBis(id)
+            if pct then
+                if (tt.__dfAugN or 0) == 0 then
+                    local ls = TL.Lines(id)
+                    Append(tt, ls, 0)
+                    tt.__dfAugN = type(ls) == "table" and #ls or 0
+                else
+                    local txt, up = ScoreLine(pct)
+                    if txt then
+                        tt:AddLine(LOGO_GAP .. txt,
+                            up and C_SC_UP[1] or C_SC_DOWN[1],
+                            up and C_SC_UP[2] or C_SC_DOWN[2],
+                            up and C_SC_UP[3] or C_SC_DOWN[3], true)
+                        tt.__dfAugN = (tt.__dfAugN or 0) + 1
+                    end
+                end
+                tt.__dfScoreShown = true
+            elseif tt.__dfAugTries > 0 then
+                tt.__dfAugTries = tt.__dfAugTries - 1
+                C_Timer.After(0.6, Retry)
+            end
+        end
+        C_Timer.After(0.6, Retry)
+    end
 end
 
 local function HookTip(tt)
     if not tt or tt.__dfAugHooked then return end
     if not tt.HookScript then return end
     tt.__dfAugHooked = true
-    pcall(tt.HookScript, tt, "OnTooltipCleared", function(self) augStamp[self] = nil end)
+    pcall(tt.HookScript, tt, "OnTooltipCleared", function(self)
+        augStamp[self] = nil
+        self.__dfAugN = nil
+        self.__dfAugTries = nil
+        self.__dfScoreShown = nil
+    end)
     pcall(tt.HookScript, tt, "OnTooltipSetItem", function() Augment(tt) end)
 end
 
-function TL.SampleItem()
+local SAMPLE_CAP_WISH = 64
+local SAMPLE_CAP_CUR = 64
+local SAMPLE_CAP_QUEST = 128
+local SAMPLE_CAP_SRC = 128
+
+local function SampleFallback()
     local idx = BuildSrc()
     local BG = ns.BisModule
     if BG and type(BG.cur) == "table" then
@@ -327,9 +441,73 @@ function TL.SampleItem()
     return nil
 end
 
+function TL.SampleItem()
+    local cfg = Cfg()
+    local GM = ns.GearModule
+    local BG = ns.BisModule
+    local srcIdx = BuildSrc()
+    local questIdx = BuildQuest()
+    local pools = {}
+    if GM and GM.WishIDs then
+        local w = GM.WishIDs()
+        for i = 1, math.min(#w, SAMPLE_CAP_WISH) do
+            pools[#pools + 1] = w[i]
+        end
+    end
+    if BG and type(BG.cur) == "table" then
+        local cs = {}
+        for _, v in pairs(BG.cur) do
+            if type(v) == "number" and v > 0 then cs[#cs + 1] = v end
+        end
+        table.sort(cs)
+        for i = 1, math.min(#cs, SAMPLE_CAP_CUR) do
+            pools[#pools + 1] = cs[i]
+        end
+    end
+    local qks = {}
+    for k in pairs(questIdx) do qks[#qks + 1] = k end
+    table.sort(qks)
+    for i = 1, math.min(#qks, SAMPLE_CAP_QUEST) do
+        pools[#pools + 1] = qks[i]
+    end
+    local sks = {}
+    for k in pairs(srcIdx) do sks[#sks + 1] = k end
+    table.sort(sks)
+    for i = 1, math.min(#sks, SAMPLE_CAP_SRC) do
+        pools[#pools + 1] = sks[i]
+    end
+    local bestId, bestScore
+    for _, id in ipairs(pools) do
+        local sc = 0
+        if cfg.wish and GM and GM.WishIs and GM.WishIs(id) then sc = sc + 2 end
+        if cfg.quest and QuestOf(id) then sc = sc + 2 end
+        if cfg.src and srcIdx[id] then sc = sc + 1 end
+        if cfg.src and not srcIdx[id] then
+            local cn = BuildCraft()
+            if cn and cn[id] then sc = sc + 2 end
+        end
+        if cfg.bis then
+            local _, has = BisHit(id)
+            if has then sc = sc + 2 end
+        end
+        if cfg.bisScore then
+            local BG = ns.BisModule
+            if BG and BG.ScoreVsBis and BG.ScoreVsBis(id) then sc = sc + 2 end
+        end
+        if sc > 0 and sc > (bestScore or 0) then
+            bestId = id
+            bestScore = sc
+        end
+    end
+    if bestId then return bestId end
+    return SampleFallback()
+end
+
 local PREVIEW_W = 340
 local previewTip
 local previewCard
+local previewOn = false
+local previewId
 
 function TL.EnsurePreview(card)
     if previewTip then return previewTip end
@@ -344,13 +522,34 @@ function TL.EnsurePreview(card)
         pcall(tip.SetFrameStrata, tip, card:GetFrameStrata())
     end
     tip:SetFrameLevel(card:GetFrameLevel() + 20)
+    pcall(tip.HookScript, tip, "OnTooltipCleared", function(self) augStamp[self] = nil end)
+    pcall(tip.HookScript, tip, "OnTooltipSetItem", function(self)
+        if not previewOn then return end
+        if augStamp[self] == previewId then return end
+        local id = previewId
+        if not id and type(self.GetItem) == "function" then
+            local ok2, _, link = pcall(self.GetItem, self)
+            if ok2 and type(link) == "string" then id = tonumber(link:match("item:(%d+)")) end
+        end
+        if not id then return end
+        augStamp[self] = id
+        Append(self, TL.Lines(id))
+    end)
     tip:Hide()
     return tip
 end
 
+function TL.ShowPreview(card)
+    local tip = TL.EnsurePreview(card)
+    if not tip then return false end
+    previewOn = true
+    TL.RefreshPreview()
+    return true
+end
+
 function TL.RefreshPreview()
     local tip = previewTip
-    if not tip or not tip:IsShown() then return end
+    if not tip or not previewOn then return end
     local card = previewCard
     if not card then return end
     tip:SetScale(1)
@@ -358,7 +557,9 @@ function TL.RefreshPreview()
     tip:ClearAllPoints()
     tip:SetPoint("TOPRIGHT", card, "TOPLEFT", -8, 40)
     local id = TL.SampleItem()
+    previewId = id
     if not id then
+        augStamp[tip] = nil
         tip:ClearLines()
         tip:AddLine(L["没有可预览的物品"], 0.6, 0.6, 0.6, true)
         tip:Show()
@@ -374,6 +575,7 @@ function TL.RefreshPreview()
         if ok and type(v) == "number" then n = v end
     end
     if not okh or n <= 1 then
+        augStamp[tip] = nil
         tip:ClearLines()
         local DG = ns.DungeonModule
         local nm, has
@@ -385,7 +587,10 @@ function TL.RefreshPreview()
             tip:AddLine(format(L["物品 #%d"], id), 0.6, 0.6, 0.6, true)
         end
     end
-    Append(tip, TL.Lines(id))
+    if augStamp[tip] ~= id then
+        augStamp[tip] = id
+        Append(tip, TL.Lines(id))
+    end
     tip:Show()
     local w = 0
     local ok, v = pcall(tip.GetWidth, tip)
@@ -394,6 +599,7 @@ function TL.RefreshPreview()
 end
 
 function TL.HidePreview()
+    previewOn = false
     if previewTip then previewTip:Hide() end
 end
 

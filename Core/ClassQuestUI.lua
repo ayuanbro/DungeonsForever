@@ -13,7 +13,7 @@ local TT = ns.TierModule
 if not TT then return end
 
 local MakeFS, NewButton = Host.MakeFS, Host.NewButton
-local MakeOutline = Host.MakeOutline
+local SetButtonSelected = Host.SetButtonSelected
 local C_GOLD, C_GREEN = Host.C_GOLD, Host.C_GREEN
 local C_GREY, C_DIM, C_TEXT, C_WHITE = Host.C_GREY, Host.C_DIM, Host.C_TEXT, Host.C_WHITE
 local C_DARKGREY = { 0.30, 0.30, 0.30 }
@@ -849,9 +849,8 @@ local function TakeNpc()
         f.fs:SetWidth(DetRowW() - 76)
         local mb = NewButton(f, L["地图"], 62, 20, DET_FS)
         if AddBtnIcon then AddBtnIcon(mb, "EntryPin", 12, 4) end
-        MakeOutline(mb, 1, 0.82, 0)
         if TT.RoundButtonFill then TT.RoundButtonFill(mb) end
-        mb.__huiKeepTextColor = true
+        SetButtonSelected(mb, false)
         mb:SetPoint("RIGHT", f.fs, "RIGHT", 74, 0)
         mb:SetScript("OnClick", function(self)
             local p = self:GetParent()

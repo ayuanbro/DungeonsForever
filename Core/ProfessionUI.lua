@@ -9,8 +9,7 @@ if not Host then return end
 
 local DG = Host.DG
 local MakeFS, NewButton = Host.MakeFS, Host.NewButton
-local MakeOutline = Host.MakeOutline
-local SetOutline, Unpack = Host.SetOutline, Host.Unpack
+local SetOutline, SetButtonSelected, Unpack = Host.SetOutline, Host.SetButtonSelected, Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
 local C_HELP = { 0.58, 0.64, 0.74 }
@@ -341,7 +340,7 @@ local function BuildFeeForm()
     f.eb = eb
     local okBtn = NewButton(f, L["确定"], 64, 24, 14)
     okBtn:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -16, 14)
-    MakeOutline(okBtn, 1, 0.82, 0)
+    SetButtonSelected(okBtn, false)
     local cancelBtn = NewButton(f, L["取消"], 64, 24, 14)
     cancelBtn:SetPoint("RIGHT", okBtn, "LEFT", -8, 0)
     local function closeForm() f:Hide() end
@@ -854,7 +853,7 @@ function PD.Row(i)
     r.segBtns = {}
     for k = 1, 4 do
         local sb = NewButton(r, "", 60, 20, 12)
-        MakeOutline(sb, 1, 0.82, 0)
+        SetButtonSelected(sb, false)
         sb:SetScript("OnClick", function(self)
             if self.__segKey and PD.onTool then PD.onTool(self.__segKey) end
             ns.PlaySound(1)
@@ -1675,8 +1674,8 @@ function PD.BindRow(r, spec, h)
                     bt:ClearAllPoints()
                     bt:SetPoint("LEFT", prev or r.a, "RIGHT", prev and 6 or 12, 0)
                     bt:SetText(seg.text)
-                    SetOutline(bt, seg.on and true or false, 1, 0.82, 0)
-                    bt:GetFontString():SetTextColor(Unpack(seg.on and C_GOLD or C_GREY))
+                    SetButtonSelected(bt, seg.on and true or false)
+                    bt:GetFontString():SetTextColor(Unpack(seg.on and C_WHITE or C_GREY))
                     bt.__segKey = seg.key
                     bt:Show()
                     prev = bt
@@ -3113,9 +3112,8 @@ function PD.Build(page)
         fs:ClearAllPoints()
         fs:SetPoint("LEFT", bt, "LEFT", 5 + PD.NAV_ICON + 5, 0)
         fs:SetJustifyH("LEFT")
-        MakeOutline(bt, 1, 0.82, 0)
-        SetOutline(bt, false, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false)
         bt.__name = text
         bt.__icon = bt:CreateTexture(nil, "ARTWORK")
         bt.__icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -3164,8 +3162,7 @@ function PD.Build(page)
     PD.subBtns = {}
     for _, def in ipairs(DG.PROF_SUBTABS) do
         local bt = NewButton(page, def.text, PD.SUB_W, PD.SUB_H, 13)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false)
         bt:Hide()
         bt:SetScript("OnClick", function() PD.SetTab(def.key) end)
         PD.subBtns[def.key] = bt
@@ -3176,8 +3173,8 @@ function PD.Build(page)
     for i = 1, 2 do
         local k = (i == 1) and "A" or "H"
         local bt = NewButton(page, k == "A" and L["联盟"] or L["部落"], 64, PD.SUB_H, 13)
-        MakeOutline(bt, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false)
         local bfs = bt:GetFontString()
         if bfs then
             bfs:ClearAllPoints()
@@ -3207,8 +3204,8 @@ function PD.Build(page)
     coroutine.yield()
 
     local gear = NewButton(page, "", PD.SUB_H, PD.SUB_H, 13)
-    MakeOutline(gear, 1, 0.82, 0)
     gear.__huiKeepTextColor = true
+    SetButtonSelected(gear, false)
     gear.__icon = gear:CreateTexture(nil, "ARTWORK")
     gear.__icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(gear.__icon) end
@@ -3230,8 +3227,8 @@ function PD.Build(page)
 
     for i = 1, PD.TOOL_MAX do
         local bt = NewButton(page, "", PD.TOOL_W, PD.TOOL_H, 14)
-        MakeOutline(bt, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false)
         bt:Hide()
         bt:SetScript("OnClick", function(self)
             if self.__key and PD.onTool then PD.onTool(self.__key) end
@@ -3247,15 +3244,13 @@ function PD.Build(page)
     PD.HUD_W, PD.IMP_W = 96, 110
 
     local hudBtn = NewButton(page, "", PD.HUD_W, PD.TOOL_H, 14)
-    MakeOutline(hudBtn, 1, 0.82, 0)
-    hudBtn.__huiKeepTextColor = true
+    SetButtonSelected(hudBtn, false)
     hudBtn:Hide()
     PD.hudBtn = hudBtn
     coroutine.yield()
 
     local impBtn = NewButton(page, L["一键导入购物清单"], PD.IMP_W, PD.TOOL_H, 14)
-    MakeOutline(impBtn, 1, 0.82, 0)
-    impBtn.__huiKeepTextColor = true
+    SetButtonSelected(impBtn, false)
     impBtn:Hide()
     PD.impBtn = impBtn
     coroutine.yield()
@@ -3287,6 +3282,9 @@ function PD.Build(page)
         tf:SetSize(90, PD.SET_CHIP_H)
         local _, bord = ns.hui.BuildRoundedBG(tf, 6, ns.hui.layer.L2, "both", true, 1)
         tf.__border = bord or {}
+        if ns.hui.BuildCapsule and ns.hui.GradNorm then
+            tf.__capFill = ns.hui.BuildCapsule(tf, 6, ns.hui.layer.L2, 0, 2, ns.hui.GradNorm)
+        end
         if ns.hui and ns.hui.BuildCapsule then
             tf.__hov = ns.hui.BuildCapsule(tf, 8, ns.hui.layer.L4, 1, 2) or {}
             for _, t in ipairs(tf.__hov) do t:Hide() end
@@ -3845,7 +3843,7 @@ function PD.PickNav()
         local key = (sel and "1" or "0") .. "|" .. (lv and (lv.cur .. "/" .. lv.max) or "")
         if bt.__pnKey == key then return end
         bt.__pnKey = key
-        SetOutline(bt, sel, 1, 0.82, 0)
+        SetButtonSelected(bt, sel)
         if lv then
             if sel then
                 bt:GetFontString():SetTextColor(Unpack(C_GOLD))
@@ -3916,8 +3914,15 @@ function PD.PickTabs()
                 bt:SetPoint("TOPLEFT", PD.page, "TOPLEFT",
                             PD.RIGHT_X + shown * PD.SUB_STEP, -PD.SUB_Y)
                 bt:SetText(def.text)
-                SetOutline(bt, sel, 1, 0.82, 0)
-                bt:GetFontString():SetTextColor(Unpack(sel and C_GOLD or C_GREY))
+                SetButtonSelected(bt, sel)
+                local sfs = bt:GetFontString()
+                if sfs then
+                    if sel then
+                        sfs:SetTextColor(1, 1, 1, 1)
+                    else
+                        sfs:SetTextColor(Unpack(C_GREY))
+                    end
+                end
             end
         end
         if on then shown = shown + 1 end
@@ -3929,7 +3934,7 @@ function PD.PickTabs()
             PD.setGear:SetShown(gon)
         end
         if gon then
-            SetOutline(PD.setGear, PD.setOpen and true or false, 1, 0.82, 0)
+            SetButtonSelected(PD.setGear, PD.setOpen and true or false)
             local gc = PD.setOpen and ns.SET_ICON_ON or ns.SET_ICON_IDLE
             PD.setGear.__icon:SetVertexColor(gc[1], gc[2], gc[3])
         end
@@ -3949,7 +3954,7 @@ function PD.PickTabs()
                     bt:SetPoint("TOPLEFT", PD.page, "TOPLEFT",
                                 PD.RIGHT_X + PD.RIGHT_W - PD.LIST_PAD - 64 - kx * 72,
                                 -PD.SUB_Y)
-                    SetOutline(bt, sel, 1, 0.82, 0)
+                    SetButtonSelected(bt, sel)
                     local bf = bt:GetFontString()
                     if bf then
                         if sel then
@@ -4074,19 +4079,16 @@ function PD.PaintTool(list, handler, yoff)
                     bt:GetFontString():SetTextColor(Unpack(def.color or C_WHITE))
                 else
                     bt:EnableMouse(true)
-                    local tr, tg, tb2 = 1, 0.82, 0
-                    if def.tone == "blue" then tr, tg, tb2 = 0.37, 0.66, 0.83 end
+                    SetOutline(bt, false, 1, 0.82, 0)
                     local hot = (def.on or def.primary) and true or false
-                    SetOutline(bt, hot, tr, tg, tb2)
-                    if hot and def.tone == "blue" then
-                        for _, tex in ipairs(bt.__bars or {}) do
-                            if tex.SetVertexColor then tex:SetVertexColor(tr, tg, tb2) end
-                        end
-                    end
+                    SetButtonSelected(bt, hot, "main")
+                    local bfs = bt:GetFontString()
                     if hot then
-                        bt:GetFontString():SetTextColor(tr, tg, tb2, 1)
+                        bfs:SetTextColor(1, 1, 1, 1)
+                    elseif def.tone == "blue" then
+                        bfs:SetTextColor(0.37, 0.66, 0.83, 1)
                     else
-                        bt:GetFontString():SetTextColor(Unpack(C_GREY))
+                        bfs:SetTextColor(Unpack(C_GREY))
                     end
                 end
                 if _MK then _MK("闸-文本", _m0) end

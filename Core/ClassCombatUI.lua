@@ -13,7 +13,7 @@ local TT = ns.TierModule
 if not TT then return end
 
 local MakeFS, NewButton = Host.MakeFS, Host.NewButton
-local MakeOutline, SetOutline = Host.MakeOutline, Host.SetOutline
+local SetButtonSelected = Host.SetButtonSelected
 local C_GREY, C_DIM, C_TEXT = Host.C_GREY, Host.C_DIM, Host.C_TEXT
 local FALLBACK_ICON = Host.FALLBACK_ICON
 
@@ -248,9 +248,6 @@ local function BuildCopy()
         local fs = close:GetFontString()
         close:SetWidth(math.max(84, math.floor((fs and fs:GetStringWidth() or 40) + 24)))
     end
-    MakeOutline(close, 1, 0.82, 0)
-    SetOutline(close, true, 1, 0.82, 0)
-    close.__huiKeepTextColor = true
     close:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -14, 12)
     close:SetScript("OnClick", function() f:Hide() end)
     f:Hide()
@@ -383,9 +380,8 @@ local function Ensure()
         name:SetPoint("TOPLEFT", fr, "TOPLEFT", CU.CARD_PAD + CU.CARD_ICON + 8, -(CU.CARD_PAD + 1))
         name:SetWordWrap(false)
         local det = NewButton(fr, L["详解"], CU.DET_W, CU.CARD_BTN_H, 14)
-        MakeOutline(det, 1, 0.82, 0)
         TT.RoundButtonFill(det)
-        det.__huiKeepTextColor = true
+        SetButtonSelected(det, false)
         det:SetPoint("TOPRIGHT", fr, "TOPRIGHT", -CU.CARD_PAD, -CU.CARD_PAD)
         local chip = DG.MakeBadge(fr, ns.hui and ns.hui.layer.L3)
         chip:EnableMouse(true)
@@ -409,14 +405,12 @@ local function Ensure()
         body:SetWordWrap(true)
         body:SetWidth(CARD_BODY_W)
         local mk = NewButton(fr, L["创建宏"], CU.MK_W, CU.CARD_BTN_H, 14)
-        MakeOutline(mk, 1, 0.82, 0)
         TT.RoundButtonFill(mk)
-        mk.__huiKeepTextColor = true
+        SetButtonSelected(mk, false)
         mk:SetPoint("BOTTOMLEFT", fr, "BOTTOMLEFT", CU.CARD_PAD, CU.CARD_PAD)
         local cp = NewButton(fr, L["复制"], CU.CP_W, CU.CARD_BTN_H, 14)
-        MakeOutline(cp, 1, 0.82, 0)
         TT.RoundButtonFill(cp)
-        cp.__huiKeepTextColor = true
+        SetButtonSelected(cp, false)
         cp:SetPoint("LEFT", mk, "RIGHT", 8, 0)
         det:SetScript("OnEnter", function(self)
             ShowExplain(self, self.__macroName, self.__macroBody, self.__explain)

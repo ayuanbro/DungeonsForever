@@ -1129,8 +1129,6 @@ function M.Build(detail, hero)
         local bt = Host.NewButton(bar, "", M.LAYER_W, M.BAR_H, 14)
         bt:SetFrameLevel(frame:GetFrameLevel() + 2)
         bt.__idx = i
-        Host.MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt:SetScript("OnClick", function(self) M.SetLayer(self.__idx) end)
         bt:Hide()
         btns[i] = bt
@@ -1138,15 +1136,13 @@ function M.Build(detail, hero)
 
     local bossPinBtn = Host.NewButton(frame, "", M.PIN_BTN_W, M.BAR_H, 14)
     bossPinBtn:SetFrameLevel(frame:GetFrameLevel() + 2)
-    Host.MakeOutline(bossPinBtn, 1, 0.82, 0)
-    bossPinBtn.__huiKeepTextColor = true
+    Host.SetButtonSelected(bossPinBtn, false)
     bossPinBtn:SetScript("OnClick", function() M.ShowPinMenu(bossPinBtn) end)
     bossPinBtn:Hide()
 
     local routePinBtn = Host.NewButton(frame, "", M.PIN_BTN_W, M.BAR_H, 14)
     routePinBtn:SetFrameLevel(frame:GetFrameLevel() + 2)
-    Host.MakeOutline(routePinBtn, 1, 0.82, 0)
-    routePinBtn.__huiKeepTextColor = true
+    Host.SetButtonSelected(routePinBtn, false)
     routePinBtn:SetScript("OnClick", function() M.ShowRouteMenu(routePinBtn) end)
     routePinBtn:Hide()
 
@@ -1346,9 +1342,7 @@ function M.SyncBar(layers, cur)
             bt:SetPoint("TOPRIGHT", frame.bar, "TOPRIGHT", -off, y)
             bt:SetWidth(ws[k])
             local sel = (k == cur)
-            Host.SetOutline(bt, sel, 1, 0.82, 0)
-            local fs = bt:GetFontString()
-            if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_GREY)) end
+            Host.SetButtonSelected(bt, sel)
             bt:Show()
             off = off + ws[k] + GAP
         end
@@ -1971,9 +1965,7 @@ function M.SyncPinBtns()
             or (M.hideQuestPins and M.HasKindPins(M.curId, "quest"))
             or (M.hideNotePins and M.HasKindPins(M.curId, "note")) or false
         bb:SetText(L["图钉显示"])
-        Host.SetOutline(bb, dim, 1, 0.82, 0)
-        local fs = bb:GetFontString()
-        if fs then fs:SetTextColor(Unpack(dim and C_GOLD or C_GREY)) end
+        Host.SetButtonSelected(bb, dim)
         M.FitPinBtn(bb)
         bb:SetShown(any)
     end
@@ -1981,9 +1973,7 @@ function M.SyncPinBtns()
     if rb then
         local vis, tot = M.RouteVisibleCount(M.curId, M.FloorNumAt(M.curId, M.curLayer or 1))
         rb:SetText(L["路线显示"])
-        Host.SetOutline(rb, vis < tot, 1, 0.82, 0)
-        local fs = rb:GetFontString()
-        if fs then fs:SetTextColor(Unpack((vis < tot) and C_GOLD or C_GREY)) end
+        Host.SetButtonSelected(rb, vis < tot)
         M.FitPinBtn(rb)
         rb:SetShown(M.HasRoute(M.curId))
     end

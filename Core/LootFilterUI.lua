@@ -82,7 +82,7 @@ local function NewBtn(parent, text, w, h)
 end
 
 local function MakeIconButton(parent, size)
-    local bt = CreateFrame("Button", nil, parent)
+    local bt = CreateFrame("Button", nil, parent, "BackdropTemplate")
     bt:SetSize(size, size)
     bt.tex = bt:CreateTexture(nil, "ARTWORK")
     bt.tex:SetAllPoints()
@@ -97,6 +97,7 @@ local function MakeIconButton(parent, size)
     bt.sel:SetPoint("BOTTOMLEFT", bt, "BOTTOMLEFT", 0, -2)
     bt.sel:SetPoint("BOTTOMRIGHT", bt, "BOTTOMRIGHT", 0, -2)
     bt.sel:Hide()
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
     return bt
 end
 
@@ -111,7 +112,7 @@ local function MakeToggle(parent)
 end
 
 local function MakePager(parent, right)
-    local bt = CreateFrame("Button", nil, parent)
+    local bt = CreateFrame("Button", nil, parent, "BackdropTemplate")
     bt:SetSize(14, 14)
     bt.tex = bt:CreateTexture(nil, "ARTWORK")
     bt.tex:SetAllPoints()
@@ -122,6 +123,7 @@ local function MakePager(parent, right)
         bt.tex:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
     end
     bt.tex:SetVertexColor(C_DIM[1], C_DIM[2], C_DIM[3])
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
     return bt
 end
 
@@ -172,7 +174,7 @@ function UI:EnsureBar()
     UI.bar = bar
     U.lootFilterBar = bar
 
-    local gear = CreateFrame("Button", nil, bar)
+    local gear = CreateFrame("Button", nil, bar, "BackdropTemplate")
     gear:SetSize(GEAR_SZ, GEAR_SZ)
     gear:SetPoint("RIGHT", bar, "RIGHT", 0, 0)
     local gt = gear:CreateTexture(nil, "ARTWORK")
@@ -191,9 +193,10 @@ function UI:EnsureBar()
         GameTooltip:Hide()
     end)
     gear:SetScript("OnClick", function() ns.PlaySound(1); UI:ToggleConfig() end)
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(gear) end
     UI.gear = gear
 
-    local plus = CreateFrame("Button", nil, bar)
+    local plus = CreateFrame("Button", nil, bar, "BackdropTemplate")
     plus:SetSize(PLUS_SZ, PLUS_SZ)
     plus:SetPoint("RIGHT", gear, "LEFT", -BTN_GAP, 0)
     plus.t = MakeFS(plus, 16, C_TEXT, "CENTER")
@@ -205,6 +208,7 @@ function UI:EnsureBar()
         ns.PlaySound(1)
         UI:OpenNewScheme()
     end)
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(plus) end
     UI.plus = plus
 
     UI.barIcons = {}

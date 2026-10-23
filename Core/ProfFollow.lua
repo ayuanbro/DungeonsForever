@@ -8,7 +8,7 @@ if not Host then return end
 local L = ns.L
 local DG = Host.DG
 local MakeFS, NewButton = Host.MakeFS, Host.NewButton
-local SetOutline = Host.SetOutline
+local SetButtonSelected = Host.SetButtonSelected
 
 local function ProfIconTex(name)
     if not name then return Host.FALLBACK_ICON end
@@ -1152,7 +1152,6 @@ local function BuildBody()
     BuildStep(6)
 
     f.shopImp = NewButton(f.shop, L["一键导入"], 66, 20, 13)
-    f.shopImp.__huiKeepTextColor = true
     f.shopImp:SetScript("OnClick", function()
         local s0 = st()
         if not (s0 and s0.slug) then return end
@@ -1165,7 +1164,6 @@ local function BuildBody()
           L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])
 
     f.shopProc = NewButton(f.shop, L["优化买法"], 66, 20, 13)
-    f.shopProc.__huiKeepTextColor = true
     f.shopProc:SetScript("OnClick", function()
         PF.ProcureStart()
         ns.PlaySound(1)
@@ -1175,7 +1173,6 @@ local function BuildBody()
           L["对清单里还缺的材料比较商人与拍卖行，找出总支出最低的买法；完成后聊天栏给出摘要，悬停商人名可在地图标记。"])
 
     f.shopStep = NewButton(f.shop, L["分步"], 48, 20, 13)
-    f.shopStep.__huiKeepTextColor = true
     f.shopStep:SetScript("OnClick", function()
         dbProf().shopStepView = not (dbProf().shopStepView and true or false)
         PF.shopScroll = 0
@@ -1187,7 +1184,6 @@ local function BuildBody()
           L["汇总：所有步骤的材料合并成一行。分步：按首次需要的步骤分组列出，便于分段采购。"])
 
     f.craftBtn = NewButton(f, L["跳转制造"], 66, 22, 14)
-    f.craftBtn.__huiKeepTextColor = true
     f.craftBtn:Hide()
     f.craftBtn:SetScript("OnClick", function()
         jumpCraft()
@@ -1212,13 +1208,11 @@ local function BuildBody()
     f.btns = {}
     for i = 1, 3 do
         local bt = NewButton(f, labels[i], BTN_W[i], 22, 14)
-        bt.__huiKeepTextColor = true
         bt:SetScript("OnClick", function() onclick[i]() ns.PlaySound(1) end)
         f.btns[i] = bt
     end
 
     f.xBtn = NewButton(f, "×", 24, 22, 14)
-    f.xBtn.__huiKeepTextColor = true
     f.xBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -8)
     f.xBtn:SetScript("OnClick", function()
         local s = st()
@@ -1761,8 +1755,7 @@ function PF.PaintButton(bt, slug)
     if PD and PD.TextW then bt:SetWidth(math.ceil(PD.TextW(text, 13)) + 22) end
     bt:SetScript("OnClick", function() PF.Toggle(slug) end)
     local accent = Accent()
-    SetOutline(bt, PF.IsActive(slug), accent[1], accent[2], accent[3])
-    bt:GetFontString():SetTextColor(Unpack(PF.Following(slug) and C_GOLD or C_GREY))
+    SetButtonSelected(bt, PF.IsActive(slug))
     bt:SetShown(true)
 end
 
@@ -1783,7 +1776,6 @@ function PF.PaintImportBtn(bt, slug)
         ns.PlaySound(1)
     end)
     TipOn(bt, text, L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])
-    SetOutline(bt, false, 1, 0.82, 0)
     bt:GetFontString():SetTextColor(Unpack(C_GREY))
     bt:SetShown(true)
 end

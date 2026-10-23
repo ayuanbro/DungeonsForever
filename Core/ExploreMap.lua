@@ -629,29 +629,21 @@ end
 updateTrackerFn = updateTracker
 
 local function mkBtn(parent, text, w)
-    local b = CreateFrame("Button", nil, parent)
+    local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
     b:SetSize(w or 46, 20)
     b:EnableMouse(true)
-    if ns.hui and ns.hui.BuildRoundedBG and ns.hui.BuildRoundBorder then
-        b.fills = ns.hui.BuildRoundedBG(b, 8, { 1, 1, 1, 0.06 }, "both", false, nil, true)
-        b.edges = ns.hui.BuildRoundBorder(b, 8, { 0.40, 0.43, 0.50 })
+    local fs = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    fs:SetAllPoints()
+    fs:SetText(text)
+    b:SetFontString(fs)
+    if ns.hui and ns.hui.SkinButton then
+        ns.hui.SkinButton(b)
+        fs:SetFont(ns.FONT, 13, "")
     else
         b.bg = b:CreateTexture(nil, "BACKGROUND")
         b.bg:SetAllPoints()
         b.bg:SetColorTexture(1, 1, 1, 0.06)
     end
-    local fs = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    fs:SetAllPoints()
-    fs:SetText(text)
-    b:SetFontString(fs)
-    b:SetScript("OnEnter", function(self)
-        for _, t in ipairs(self.fills or {}) do t:SetAlpha(0.14) end
-        if self.bg then self.bg:SetAlpha(0.14) end
-    end)
-    b:SetScript("OnLeave", function(self)
-        for _, t in ipairs(self.fills or {}) do t:SetAlpha(0.06) end
-        if self.bg then self.bg:SetAlpha(0.06) end
-    end)
     return b
 end
 

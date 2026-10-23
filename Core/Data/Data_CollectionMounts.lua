@@ -24,7 +24,7 @@ ns.CollectionMounts = {
     [11] = { 274933, "item", "inv_craneskyborneswiftmount_c60_blue", "rep",
              "商人：吉恩·费尔威瑟 · 售价 200金", 144247, npcs = { { 265756, "吉恩·费尔威瑟" } }, riding = 150, speed = 100, teach = { 60, 2000000 } },
     [12] = { 262766, "item", "ability_mount_kodo_03", "rep",
-             "商人：休伊·桑尼戴尔 · 奥卡玛什 · 售价 6000金", 145488, npcs = { { 256736, "休伊·桑尼戴尔" }, { 256400, "奥卡玛什" } }, riding = 150, speed = 100, teach = { 60 } },
+             "商人：休伊·桑尼戴尔（赤脊山） / 奥卡玛什（贫瘠之地） · 售价 6000 商人青睐", 145488, npcs = { { 256736, "休伊·桑尼戴尔" }, { 256400, "奥卡玛什" } }, riding = 150, speed = 100, teach = { 60 } },
     [13] = { 274706, "item", "ability_mount_jungletiger", "unknown",
              "获取方式暂未收录", 144509, riding = 75, speed = 60, teach = { 40, 200000, "A" } },
     [14] = { 276063, "item", "ability_mount_undeadhorse", "unknown",

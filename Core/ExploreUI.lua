@@ -9,7 +9,7 @@ if not Host then return end
 
 local DG = Host.DG
 local MakeFS = Host.MakeFS
-local NewButton, MakeOutline = Host.NewButton, Host.MakeOutline
+local NewButton, MakeOutline, SetButtonSelected = Host.NewButton, Host.MakeOutline, Host.SetButtonSelected
 local SetOutline, Unpack = Host.SetOutline, Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
@@ -979,21 +979,8 @@ function EG.ScheduleSweep()
     end)
 end
 
-local function TintOutline(bt, r, g, b)
-    if not bt.__outlineFrame then return end
-    for _, tex in ipairs(bt.__bars or {}) do
-        if tex.__huiBorderStrip then
-            tex:SetColorTexture(r, g, b, 1)
-        else
-            tex:SetVertexColor(r, g, b)
-        end
-    end
-end
-
 local function PaintFilter(bt, sel)
-    local r, g, b = sel and 1 or 0.55, sel and 0.82 or 0.55, sel and 0 or 0.58
-    SetOutline(bt, true, r, g, b)
-    TintOutline(bt, r, g, b)
+    SetButtonSelected(bt, sel)
     local fs = bt:GetFontString()
     if bt.__baseColor then
         local c = bt.__baseColor
@@ -1015,7 +1002,7 @@ local function PaintNav()
     local cur = CurSub()
     for key, bt in pairs(EG.navBtns or {}) do
         local sel = (key == "books" and (cur == "books" or cur == "rewards")) or (key == cur)
-        SetOutline(bt, sel, 1, 0.82, 0)
+        SetButtonSelected(bt, sel)
         local fs = bt.GetFontString and bt:GetFontString()
         if fs then fs:SetTextColor(Unpack(sel and C_WHITE or C_DIM)) end
     end
@@ -1030,19 +1017,17 @@ end
 
 local function PaintRwBtn()
     local on = CurSub() == "rewards"
-    SetOutline(EG.rwBtn, true, on and 0.85 or 0.64, on and 0.55 or 0.21, on and 0.98 or 0.93)
-    TintOutline(EG.rwBtn, on and 0.85 or 0.64, on and 0.55 or 0.21, on and 0.98 or 0.93)
+    SetButtonSelected(EG.rwBtn, on)
     local fs = EG.rwBtn.GetFontString and EG.rwBtn:GetFontString()
-    if fs then fs:SetTextColor(Unpack(on and C_RW_HI or C_RW)) end
+    if fs then fs:SetTextColor(Unpack(on and C_WHITE or C_RW)) end
 end
 
 local function PaintRouteBtn()
     local on = ns.ExploreMapOn and ns.ExploreMapOn() or false
     if not EG.routeBtn then return end
-    SetOutline(EG.routeBtn, true, on and 0.85 or 0.64, on and 0.55 or 0.21, on and 0.98 or 0.93)
-    TintOutline(EG.routeBtn, on and 0.85 or 0.64, on and 0.55 or 0.21, on and 0.98 or 0.93)
+    SetButtonSelected(EG.routeBtn, on)
     local fs = EG.routeBtn.GetFontString and EG.routeBtn:GetFontString()
-    if fs then fs:SetTextColor(Unpack(on and C_RW_HI or C_RW)) end
+    if fs then fs:SetTextColor(Unpack(on and C_WHITE or C_RW)) end
 end
 
 local QUALITY_COLORS = {
@@ -1503,11 +1488,9 @@ local function PaintBag()
     end
     for f, bt in pairs(EG.bagFacBtns or {}) do
         local sel = (f == fac)
-        local col = BAG_FAC_COL[f]
-        SetOutline(bt, sel, Unpack(col))
-        TintOutline(bt, Unpack(col))
+        SetButtonSelected(bt, sel)
         local fs = bt.GetFontString and bt:GetFontString()
-        if fs then fs:SetTextColor(Unpack(sel and col or C_GREY)) end
+        if fs then fs:SetTextColor(Unpack(sel and C_WHITE or C_GREY)) end
         if bt.__icon then bt.__icon:SetAlpha(sel and 1 or 0.55) end
     end
     local done = 0
@@ -1532,11 +1515,9 @@ local function PaintBag()
     local on = EG.bagMode == "total"
     local eb = EG.bagRwBtn
     if eb then
-        local col = on and C_GOLD or { 0.5, 0.5, 0.55 }
-        SetOutline(eb, true, Unpack(col))
-        TintOutline(eb, Unpack(col))
+        SetButtonSelected(eb, on)
         local fs = eb.GetFontString and eb:GetFontString()
-        if fs then fs:SetTextColor(Unpack(on and C_GOLD or C_DIM)) end
+        if fs then fs:SetTextColor(Unpack(on and C_WHITE or C_DIM)) end
     end
     if EG.bagDetail and EG.bagTotal then
         if on then PaintBagTotal() else PaintBagDetail(fac) end
@@ -1719,11 +1700,9 @@ local function PaintBMCodex(KeepName)
     local t = BM_TIERS[EG.bmTier] or BM_TIERS[1]
     for ti, bt in pairs(EG.bmTierBtns or {}) do
         local sel = (ti == EG.bmTier)
-        local col = sel and C_GOLD or { 0.5, 0.5, 0.55 }
-        SetOutline(bt, true, Unpack(col))
-        TintOutline(bt, Unpack(col))
+        SetButtonSelected(bt, sel)
         local fs = bt.GetFontString and bt:GetFontString()
-        if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_DIM)) end
+        if fs then fs:SetTextColor(Unpack(sel and C_WHITE or C_DIM)) end
     end
     local rows = {}
     for _, id in ipairs(t.unc) do
@@ -1810,11 +1789,9 @@ local function PaintBM()
     local tab = BMTab()
     for key, bt in pairs(EG.bmTabBtns or {}) do
         local sel = (key == tab)
-        local col = sel and C_GOLD or { 0.5, 0.5, 0.55 }
-        SetOutline(bt, true, Unpack(col))
-        TintOutline(bt, Unpack(col))
+        SetButtonSelected(bt, sel)
         local fs = bt.GetFontString and bt:GetFontString()
-        if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_DIM)) end
+        if fs then fs:SetTextColor(Unpack(sel and C_WHITE or C_DIM)) end
     end
     local isCodex = (tab == "codex")
     local isOv = (tab == "ov")
@@ -2514,8 +2491,6 @@ function EG.Build(page)
         fs:ClearAllPoints()
         fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
         fs:SetJustifyH("LEFT")
-        MakeOutline(bt, 1, 0.82, 0)
-        SetOutline(bt, true, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
         bt.__icon = bt:CreateTexture(nil, "ARTWORK")
         bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
@@ -2539,8 +2514,6 @@ function EG.Build(page)
         fs:ClearAllPoints()
         fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
         fs:SetJustifyH("LEFT")
-        MakeOutline(bt, 1, 0.82, 0)
-        SetOutline(bt, true, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
         bt.__icon = bt:CreateTexture(nil, "ARTWORK")
         bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
@@ -2561,8 +2534,6 @@ function EG.Build(page)
         fs:ClearAllPoints()
         fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
         fs:SetJustifyH("LEFT")
-        MakeOutline(bt, 1, 0.82, 0)
-        SetOutline(bt, true, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
         bt.__icon = bt:CreateTexture(nil, "ARTWORK")
         bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
@@ -2591,8 +2562,6 @@ function EG.Build(page)
         fs:ClearAllPoints()
         fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
         fs:SetJustifyH("LEFT")
-        MakeOutline(bt, 1, 0.82, 0)
-        SetOutline(bt, true, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
         bt.__icon = bt:CreateTexture(nil, "ARTWORK")
         bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
@@ -2621,8 +2590,6 @@ function EG.Build(page)
         fs:ClearAllPoints()
         fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
         fs:SetJustifyH("LEFT")
-        MakeOutline(bt, 1, 0.82, 0)
-        SetOutline(bt, true, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
         bt.__icon = bt:CreateTexture(nil, "ARTWORK")
         bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
@@ -2643,8 +2610,6 @@ function EG.Build(page)
         fs:ClearAllPoints()
         fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
         fs:SetJustifyH("LEFT")
-        MakeOutline(bt, 1, 0.82, 0)
-        SetOutline(bt, true, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
         bt.__icon = bt:CreateTexture(nil, "ARTWORK")
         bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
@@ -2699,12 +2664,14 @@ function EG.Build(page)
     }
     coroutine.yield()
     for fi, f in ipairs(EG.FILTERS) do
-        local bt = CreateFrame("Button", nil, page)
+        local bt = CreateFrame("Button", nil, page, "BackdropTemplate")
         bt:SetSize(EG.TOOL_W, EG.TOOL_H)
         bt:SetPoint("TOPLEFT", page, "TOPLEFT",
                     EG.X0 + EG.LIST_PAD + (fi - 1) * (EG.TOOL_W + EG.TOOL_GAP), -EG.TOOL_Y)
         bt.__key = f.key
         bt.__baseColor = FAC_COLOR[f.key]
+        bt.__huiKeepTextColor = true
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
         local tf
         if f.icon then
             local ic = bt:CreateTexture(nil, "ARTWORK")
@@ -2728,7 +2695,6 @@ function EG.Build(page)
             EG.RequestRender()
             ns.PlaySound(1)
         end)
-        MakeOutline(bt, 1, 0.82, 0)
         bt:SetScript("OnEnter", function(self)
             if self.__key ~= EG.view then
                 if self.__baseColor then
@@ -2737,7 +2703,6 @@ function EG.Build(page)
                 else
                     self:GetFontString():SetTextColor(Unpack(C_WHITE))
                 end
-                TintOutline(self, 0.75, 0.75, 0.78)
             end
         end)
         bt:SetScript("OnLeave", function(self) PaintFilter(self, self.__key == EG.view) end)
@@ -2746,22 +2711,21 @@ function EG.Build(page)
     end
 
     do
-        local rw = CreateFrame("Button", nil, page)
+        local rw = CreateFrame("Button", nil, page, "BackdropTemplate")
         rw:SetSize(EG.TOOL_W, EG.TOOL_H)
         rw:SetPoint("LEFT", EG.filterBtns.todo, "RIGHT", 8, 0)
         local rf = MakeFS(rw, 14, C_RW, "CENTER")
         rf:SetAllPoints()
         rf:SetText(L["奖励"] .. " ★")
         rw:SetFontString(rf)
-        MakeOutline(rw, 0.64, 0.21, 0.93)
         rw.__huiKeepTextColor = true
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(rw) end
         rw:SetScript("OnClick", function()
             SetSub(CurSub() == "rewards" and "books" or "rewards")
         end)
         rw:SetScript("OnEnter", function(self)
             if CurSub() ~= "rewards" then
                 self:GetFontString():SetTextColor(Unpack(C_RW_HI))
-                TintOutline(self, 0.85, 0.55, 0.98)
             end
         end)
         rw:SetScript("OnLeave", function() PaintRwBtn() end)
@@ -2769,22 +2733,22 @@ function EG.Build(page)
     end
 
     do
-        local rb = CreateFrame("Button", nil, page)
+        local rb = CreateFrame("Button", nil, page, "BackdropTemplate")
         rb:SetSize(EG.TOOL_W, EG.TOOL_H)
         rb:SetPoint("LEFT", EG.rwBtn, "RIGHT", 8, 0)
         local rf = MakeFS(rb, 14, C_RW, "CENTER")
         rf:SetAllPoints()
         rf:SetText(L["找书HUD"])
         rb:SetFontString(rf)
-        MakeOutline(rb, 0.64, 0.21, 0.93)
         rb.__huiKeepTextColor = true
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(rb) end
         rb:SetScript("OnClick", function()
             if ns.ExploreMapToggle then pcall(ns.ExploreMapToggle) end
             PaintRouteBtn()
         end)
                 coroutine.yield()
         rb:SetScript("OnEnter", function(self)
-            TintOutline(self, 0.85, 0.55, 0.98)
+            self:GetFontString():SetTextColor(Unpack(C_RW_HI))
         end)
         rb:SetScript("OnLeave", function() PaintRouteBtn() end)
         EG.routeBtn = rb
@@ -2792,9 +2756,10 @@ function EG.Build(page)
     end
 
     do
-        local gb = CreateFrame("Button", nil, page)
+        local gb = CreateFrame("Button", nil, page, "BackdropTemplate")
         gb:SetSize(EG.TOOL_H, EG.TOOL_H)
         gb:SetPoint("TOPRIGHT", page, "TOPRIGHT", -EG.EDGE, -EG.TOOL_Y)
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(gb) end
         gb.gear = gb:CreateTexture(nil, "ARTWORK")
         gb.gear:SetAllPoints()
         gb.gear:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\textures\\DF_Settings")
@@ -3163,7 +3128,6 @@ function EG.Build(page)
         for fi, f in ipairs({ "A", "H" }) do
             local bt = NewButton(fc, f == "A" and L["联盟领地"] or L["部落领地"], 88, 18, 14)
             bt:SetPoint("TOPLEFT", fc, "TOPLEFT", (fi - 1) * 90 + 2, 1)
-            MakeOutline(bt, 1, 0.82, 0)
             bt.__huiKeepTextColor = true
             local tf = bt:GetFontString()
             if tf then
@@ -3248,11 +3212,11 @@ function EG.Build(page)
             r:SetScript("OnLeave", function(self) self.__hl = false BagRowTint(self) end)
             EG.bagRows[i] = r
         end
-        local eb = CreateFrame("Button", nil, bag)
+        local eb = CreateFrame("Button", nil, bag, "BackdropTemplate")
         eb:SetSize(150, 24)
         eb:SetPoint("TOPRIGHT", bag, "TOPRIGHT", -8, -8)
-        ns.hui.SkinPopup(eb, 6, nil, ns.hui.layer.L2)
-        MakeOutline(eb, 1, 0.82, 0)
+        eb.__huiKeepTextColor = true
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(eb) end
         local ef = MakeFS(eb, 14, C_GOLD, "CENTER")
         ef:SetAllPoints()
         ef:SetText(L["任务线奖励总览"] .. " ›")
@@ -3512,14 +3476,17 @@ coroutine.yield()
         EG.bmTabBtns = {}
         local tx = 8
         for _, t in ipairs(BM_TABS) do
-            local bt = CreateFrame("Button", nil, bm)
+            local bt = CreateFrame("Button", nil, bm, "BackdropTemplate")
             bt:SetSize(96, 22)
             bt:SetPoint("TOPLEFT", bm, "TOPLEFT", tx, -32)
             local tf = MakeFS(bt, 14, C_DIM, "CENTER")
             tf:SetAllPoints()
             tf:SetText(t.text)
             bt:SetFontString(tf)
-            MakeOutline(bt, 1, 0.82, 0)
+            bt.__huiKeepTextColor = true
+            if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+            tf:SetAllPoints()
+            tf:SetFont(ns.FONT, 14, "")
             bt:SetScript("OnClick", function()
                 local db = ns.DB()
                 db.explore = db.explore or {}
@@ -3721,14 +3688,17 @@ coroutine.yield()
         EG.bmTierBtns = {}
         local cx = 8
         for ti, t in ipairs(BM_TIERS) do
-            local bt = CreateFrame("Button", nil, bm)
+            local bt = CreateFrame("Button", nil, bm, "BackdropTemplate")
             bt:SetSize(118, 20)
             bt:SetPoint("TOPLEFT", bm, "TOPLEFT", cx, -62)
             local tf = MakeFS(bt, 11, C_DIM, "CENTER")
             tf:SetAllPoints()
             tf:SetText(format(L["理解(%d) · %s"], t.req, t.tier))
             bt:SetFontString(tf)
-            MakeOutline(bt, 1, 0.82, 0)
+            bt.__huiKeepTextColor = true
+            if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+            tf:SetAllPoints()
+            tf:SetFont(ns.FONT, 11, "")
             bt:SetScript("OnClick", function()
                 EG.bmTier = ti
                 EG.RequestRender()

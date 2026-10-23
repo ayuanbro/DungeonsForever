@@ -12,7 +12,7 @@ local DG = Host.DG
 local MakeFS = Host.MakeFS
 local NewButton = Host.NewButton
 local MakeOutline = Host.MakeOutline
-local SetOutline, Unpack = Host.SetOutline, Host.Unpack
+local SetOutline, SetButtonSelected, Unpack = Host.SetOutline, Host.SetButtonSelected, Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
 local C_GREEN = Host.C_GREEN
@@ -72,6 +72,7 @@ local PET_DIFF_TXT = {
     quest = L["任务"],
     craft = L["制造"],
     pick = L["扒窃"],
+    world = L["互动"],
 }
 local PET_DIFF_COL = {
     party = { 0.88, 0.42, 0.42 },
@@ -84,6 +85,7 @@ local PET_DIFF_COL = {
     quest  = { 0.62, 0.55, 0.90 },
     craft  = { 0.38, 0.80, 0.75 },
     pick   = { 0.80, 0.62, 0.40 },
+    world  = { 0.62, 0.55, 0.90 },
 }
 
 local GROUP_TXT = {
@@ -512,6 +514,7 @@ local function PaintDetail()
         d.pill:Hide()
         d.desc:SetText("")
         HideSrcRow(d)
+        if d.costRow then d.costRow:Hide() end
         for _, sg in pairs(d.segs) do sg:Hide() end
         for _, ac in ipairs(d.attrCards or {}) do ac:Hide() end
         return
@@ -591,10 +594,95 @@ local function PaintDetail()
             end
         end
         if d.zoneHit then d.zoneHit:SetShown(type(area) == "number") end
+        local baseY = -(8 + MODEL_H + 70)
+        local cost = rec.cost
+        if d.costRow then
+            local okCost = (type(cost) == "number" and cost >= 0)
+                or (type(cost) == "table" and type(cost[1]) == "number" and (cost[2] == "c" or cost[2] == "i"))
+            d.costRow:SetShown(okCost)
+            if okCost then
+                baseY = -(8 + MODEL_H + 96)
+                for _, ck in ipairs({ "g", "s", "c" }) do
+                    d.coins[ck].tex:Hide()
+                    d.coins[ck].fs:Hide()
+                end
+                d.curIcon:Hide()
+                d.curTx:Hide()
+                if type(cost) == "number" then
+                    local COIN_TEX = {
+                        g = "Interface\\MoneyFrame\\UI-GoldIcon",
+                        s = "Interface\\MoneyFrame\\UI-SilverIcon",
+                        c = "Interface\\MoneyFrame\\UI-CopperIcon",
+                    }
+                    local parts = {
+                        { "g", math.floor(cost / 10000) },
+                        { "s", math.floor((cost % 10000) / 100) },
+                        { "c", cost % 100 },
+                    }
+                    local cx = 46
+                    local any = false
+                    for _, pr in ipairs(parts) do
+                        if pr[2] > 0 then
+                            any = true
+                            local coin = d.coins[pr[1]]
+                            coin.tex:SetTexture(COIN_TEX[pr[1]])
+                            coin.tex:ClearAllPoints()
+                            coin.tex:SetPoint("LEFT", d.costRow, "LEFT", cx, 0)
+                            coin.tex:Show()
+                            coin.fs:ClearAllPoints()
+                            coin.fs:SetPoint("LEFT", coin.tex, "RIGHT", 3, 0)
+                            coin.fs:SetText(pr[2])
+                            coin.fs:Show()
+                            cx = cx + 19 + coin.fs:GetStringWidth() + 8
+                        end
+                    end
+                    if not any then
+                        d.coins.c.tex:SetTexture(COIN_TEX.c)
+                        d.coins.c.tex:ClearAllPoints()
+                        d.coins.c.tex:SetPoint("LEFT", d.costRow, "LEFT", cx, 0)
+                        d.coins.c.tex:Show()
+                        d.coins.c.fs:ClearAllPoints()
+                        d.coins.c.fs:SetPoint("LEFT", d.coins.c.tex, "RIGHT", 3, 0)
+                        d.coins.c.fs:SetText(0)
+                        d.coins.c.fs:Show()
+                    end
+                else
+                    local amt, kind, id = cost[1], cost[2], cost[3]
+                    d.curIcon:ClearAllPoints()
+                    d.curIcon:SetPoint("LEFT", d.costRow, "LEFT", 46, 0)
+                    local okIcon = false
+                    if kind == "c" then
+                        local ci = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo
+                            and C_CurrencyInfo.GetCurrencyInfo(id)
+                        local fid = ci and ci.iconFileID
+                        if fid then
+                            d.curIcon:SetTexture(fid)
+                            okIcon = true
+                        end
+                    else
+                        local _, _, _, icon = ItemInfo(id)
+                        if icon then
+                            d.curIcon:SetTexture(icon)
+                            okIcon = true
+                        end
+                    end
+                    if not okIcon then
+                        if cost[4] then
+                            d.curIcon:SetTexture("Interface\\Icons\\" .. cost[4])
+                        else
+                            d.curIcon:SetTexture(FALLBACK_ICON)
+                        end
+                    end
+                    d.curIcon:Show()
+                    d.curTx:SetText(amt)
+                    d.curTx:Show()
+                end
+            end
+        end
         d.desc:ClearAllPoints()
-        d.desc:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -(8 + MODEL_H + 70))
-        d.desc:SetPoint("TOPRIGHT", d.panel, "TOPRIGHT", -PAD, -(8 + MODEL_H + 70))
-        PaintSteps(d, rec, -(8 + MODEL_H + 70), d.panel:GetWidth() - 2 * PAD)
+        d.desc:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, baseY)
+        d.desc:SetPoint("TOPRIGHT", d.panel, "TOPRIGHT", -PAD, baseY)
+        PaintSteps(d, rec, baseY, d.panel:GetWidth() - 2 * PAD)
         local inExplore = false
         if type(ns.ExplorePets) == "table" then
             for _, p in ipairs(ns.ExplorePets) do
@@ -613,6 +701,7 @@ local function PaintDetail()
         d.pill:Show()
         if d.pill2 then d.pill2:Hide() end
         if d.locChip then d.locChip:Hide() end
+        if d.costRow then d.costRow:Hide() end
         if d.zoneTx then d.zoneTx:Hide() end
         if d.zoneHit then d.zoneHit:Hide() end
         for _, sg in pairs(d.segs) do sg:Hide() end
@@ -791,7 +880,7 @@ local function Paint()
 
     if CG.subBtns then
         for id, bt in pairs(CG.subBtns) do
-            SetOutline(bt, id == CG.sub, Unpack(C_ACCENT))
+            SetButtonSelected(bt, id == CG.sub)
         end
     end
     if CG.count then
@@ -867,7 +956,7 @@ local function BuildListPanel(page)
         local bt = NewButton(p, t.label, 52, 20, 12)
         bt:SetPoint("TOPLEFT", p, "TOPLEFT", sx, -8)
         bt.lbl = bt:GetFontString()
-        MakeOutline(bt, Unpack(C_ACCENT))
+        SetButtonSelected(bt, false)
         bt:SetScript("OnClick", function()
             if CG.sub ~= t.id then
                 CG.sub = t.id
@@ -879,7 +968,7 @@ local function BuildListPanel(page)
                 ns.PlaySound(1)
             end
         end)
-        SetOutline(bt, t.id == "mount", Unpack(C_ACCENT))
+        SetButtonSelected(bt, t.id == "mount")
         CG.subBtns[t.id] = bt
         sx = sx + 60
     end
@@ -920,7 +1009,7 @@ local function BuildListPanel(page)
         local bt = NewButton(p, "", 45, 22, 12)
         bt:SetPoint("TOPLEFT", p, "TOPLEFT", PAD + (i - 1) * 53, -66)
         bt.lbl = bt:GetFontString()
-        MakeOutline(bt, Unpack(C_ACCENT))
+        SetButtonSelected(bt, false)
         bt:SetScript("OnClick", function()
             CG.filter = bt.__id
             CG.RequestRender()
@@ -973,11 +1062,11 @@ local function BuildListPanel(page)
         track:SetBackdropColor(0, 0, 0, 0.25)
         track:SetBackdropBorderColor(1, 1, 1, 0.08)
     end
-    track:SetWidth(6)
+    track:SetWidth(7)
     track:SetPoint("TOPRIGHT", p, "TOPRIGHT", -1, -96)
     track:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -1, PAD)
     local thumb = CreateFrame("Button", nil, track)
-    thumb:SetWidth(4)
+    thumb:SetWidth(5)
     thumb:EnableMouse(true)
     local tp = nil
     local tx = nil
@@ -1337,6 +1426,40 @@ local function BuildDetailPanel(page)
     end)
     coroutine.yield()
 
+    local costRow = CreateFrame("Frame", nil, p)
+    costRow:SetPoint("TOPLEFT", p, "TOPLEFT", PAD, -(8 + MODEL_H + 70))
+    costRow:SetPoint("TOPRIGHT", p, "TOPRIGHT", -PAD, -(8 + MODEL_H + 70))
+    costRow:SetHeight(18)
+    local costLab = MakeFS(costRow, 12, C_DIM, "LEFT")
+    costLab:SetText(L["价格"])
+    costLab:SetPoint("LEFT", costRow, "LEFT", 0, 0)
+    local coins = {}
+    for i, ck in ipairs({ "g", "s", "c" }) do
+        local tex = costRow:CreateTexture(nil, "OVERLAY")
+        tex:SetSize(16, 16)
+        local fs = MakeFS(costRow, 13, C_WHITE, "LEFT")
+        coins[ck] = { tex = tex, fs = fs }
+    end
+    local curIcon = costRow:CreateTexture(nil, "OVERLAY")
+    curIcon:SetSize(18, 18)
+    local curTx = MakeFS(costRow, 13, C_WHITE, "LEFT")
+    curTx:SetPoint("LEFT", curIcon, "RIGHT", 4, 0)
+    costRow:SetScript("OnEnter", function(self)
+        local rec = CG.sel
+        local cost = rec and rec.cost
+        if not GameTooltip or type(cost) ~= "table" then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        if cost[2] == "c" and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
+            GameTooltip:SetCurrencyByID(cost[3])
+        elseif cost[2] == "i" then
+            GameTooltip:SetItemByID(cost[3])
+        end
+    end)
+    costRow:EnableMouse(true)
+    costRow:SetScript("OnLeave", TipOff)
+    costRow:Hide()
+    coroutine.yield()
+
     local desc = MakeFS(p, 13, C_TEXT, "LEFT")
     desc:SetPoint("TOPLEFT", p, "TOPLEFT", PAD, -(8 + MODEL_H + 42))
     desc:SetPoint("TOPRIGHT", p, "TOPRIGHT", -PAD, -(8 + MODEL_H + 42))
@@ -1401,6 +1524,8 @@ local function BuildDetailPanel(page)
         attrCards = attrCards,
         zoneTx = zoneTx, zoneHit = zoneHit,
         locChip = locChip, locChipTx = locChipTx,
+        costRow = costRow, costLab = costLab, coins = coins,
+        curIcon = curIcon, curTx = curTx,
         gotoBtn = gotoBtn,
         desc = desc, empty = empty, hintTxt = hint,
         segs = {},

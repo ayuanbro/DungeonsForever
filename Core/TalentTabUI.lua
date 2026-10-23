@@ -10,7 +10,7 @@ local format = string.format
 local L = ns.L
 
 local MakeFS, NewButton = Host.MakeFS, Host.NewButton
-local MakeOutline, SetOutline, Unpack = Host.MakeOutline, Host.SetOutline, Host.Unpack
+local MakeOutline, SetOutline, SetButtonSelected, Unpack = Host.MakeOutline, Host.SetOutline, Host.SetButtonSelected, Host.Unpack
 local C_GOLD, C_GREY, C_DIM, C_TEXT, C_WHITE = Host.C_GOLD, Host.C_GREY, Host.C_DIM, Host.C_TEXT, Host.C_WHITE
 
 local TD = ns.TalentTrees
@@ -312,7 +312,7 @@ local function ResetNodes()
     for _, b in ipairs(UI.pool or {}) do
         b.__inUse = false
         b:Hide()
-        SetOutline(b, false)
+        SetButtonSelected(b, false)
     end
     for _, t in ipairs(UI.linePool or {}) do
         t.__inUse = false
@@ -569,7 +569,7 @@ Refresh = function()
                         btn.seqFrame:Hide()
                     end
                     local hl = UI.hl and UI.hl[1] == t and UI.hl[2] == i
-                    SetOutline(btn, hl, 1, 0.82, 0)
+                    SetButtonSelected(btn, hl)
                 end
             end
         end
@@ -1395,19 +1395,11 @@ local function Ensure()
     UI.viewBtn:SetScript("OnClick", function()
         UI.planViewMode = UI.planViewMode == "plan" and "live" or "plan"
         UI.planOff = 0
-        UI.viewBtn:SetText(UI.planViewMode == "plan" and L["计划"] or L["实时"])
-        local fs = UI.viewBtn:GetFontString()
-        if fs then UI.viewBtn:SetWidth(math.max(34, fs:GetStringWidth() + 14)) end
-        SetOutline(UI.viewBtn, UI.planViewMode == "plan", 0.35, 0.88, 0.45)
         Refresh()
     end)
     UI.seqBtn = actBtn("", function()
         local t = TalDB()
         t.seqOn = not SeqOn()
-        UI.seqBtn:SetText(SeqOn() and L["加点顺序显示:开"] or L["加点顺序显示:关"])
-        local fs = UI.seqBtn:GetFontString()
-        if fs then UI.seqBtn:SetWidth(math.max(34, fs:GetStringWidth() + 14)) end
-        SetOutline(UI.seqBtn, SeqOn(), 0.35, 0.88, 0.45)
         Refresh()
     end)
     local liveBtn = actBtn(L["一键加点"], function()
@@ -1598,6 +1590,22 @@ Rebuild = function()
         end
     end
     local plans = TP and TP[UI.cls] or {}
+    if UI.seqBtn then
+        UI.seqBtn:SetText(SeqOn() and L["加点顺序显示:开"] or L["加点顺序显示:关"])
+        SetButtonSelected(UI.seqBtn, SeqOn())
+        local sf = UI.seqBtn:GetFontString()
+        if sf then
+            if SeqOn() then sf:SetTextColor(1, 1, 1, 1) else sf:SetTextColor(Unpack(C_GREY)) end
+        end
+    end
+    if UI.viewBtn then
+        UI.viewBtn:SetText(UI.planViewMode == "plan" and L["计划"] or L["实时"])
+        SetButtonSelected(UI.viewBtn, UI.planViewMode == "plan")
+        local vf = UI.viewBtn:GetFontString()
+        if vf then
+            if UI.planViewMode == "plan" then vf:SetTextColor(1, 1, 1, 1) else vf:SetTextColor(Unpack(C_GREY)) end
+        end
+    end
     local myCls = (UnitClass and select(2, UnitClass("player"))) or nil
     local liveBtn
     local x = PAD
@@ -1611,7 +1619,7 @@ Rebuild = function()
             local w = 56
             local fs = bt:GetFontString()
             if fs and fs.GetStringWidth and label ~= "" then
-                w = math.max(34, fs:GetStringWidth() + 14)
+                w = math.max(34, fs:GetStringWidth() + 18)
             end
             bt:SetWidth(w)
             bt:ClearAllPoints()
@@ -1624,7 +1632,7 @@ Rebuild = function()
         if UI.cls == myCls then
             local fs = liveBtn:GetFontString()
             local w = 56
-            if fs and fs.GetStringWidth then w = math.max(34, fs:GetStringWidth() + 14) end
+            if fs and fs.GetStringWidth then w = math.max(34, fs:GetStringWidth() + 18) end
             liveBtn:SetWidth(w)
             liveBtn:ClearAllPoints()
             liveBtn:SetPoint("TOPLEFT", UI.navPlate, "TOPLEFT", PAD, -(NAV_H - 20) / 2)
@@ -1634,16 +1642,18 @@ Rebuild = function()
         end
     end
     if UI.seqBtn then
-        UI.seqBtn:SetText(SeqOn() and L["加点顺序显示:开"] or L["加点顺序显示:关"])
-        local fs = UI.seqBtn:GetFontString()
-        if fs then UI.seqBtn:SetWidth(math.max(34, fs:GetStringWidth() + 14)) end
-        SetOutline(UI.seqBtn, SeqOn(), 0.35, 0.88, 0.45)
+        SetButtonSelected(UI.seqBtn, SeqOn())
+        local sfs = UI.seqBtn:GetFontString()
+        if sfs then
+            if SeqOn() then sfs:SetTextColor(1, 1, 1, 1) else sfs:SetTextColor(Unpack(C_GREY)) end
+        end
     end
     if UI.viewBtn then
-        UI.viewBtn:SetText(UI.planViewMode == "plan" and L["计划"] or L["实时"])
-        local fs = UI.viewBtn:GetFontString()
-        if fs then UI.viewBtn:SetWidth(math.max(34, fs:GetStringWidth() + 14)) end
-        SetOutline(UI.viewBtn, UI.planViewMode == "plan", 0.35, 0.88, 0.45)
+        SetButtonSelected(UI.viewBtn, UI.planViewMode == "plan")
+        local vfs = UI.viewBtn:GetFontString()
+        if vfs then
+            if UI.planViewMode == "plan" then vfs:SetTextColor(1, 1, 1, 1) else vfs:SetTextColor(Unpack(C_GREY)) end
+        end
     end
     RenderNodes()
     UpdatePlanRows()
