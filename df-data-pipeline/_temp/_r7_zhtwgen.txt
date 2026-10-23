@@ -1,6 +1,0 @@
-=== gen_zhtw.py 是否存在 + 收尾钩 ===
-gen_zhtw.py
-=== gen_enus.py 收尾钩 ===
-=== 谁在写 Locales/zhTW.lua ===
-2:"""生成 DungeonsForever/Locales/zhTW.lua（繁体客户端文案 · 生成物）。
-23:DST = os.path.join(DF, 'Locales', 'zhTW.lua')

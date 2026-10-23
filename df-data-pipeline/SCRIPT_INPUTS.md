@@ -1,6 +1,6 @@
 # 专业流水线脚本与外部输入清单
 
-核对日期：2026-10-21。本文覆盖统一专业链、旧专业包全部17个Python脚本及新增支持脚本。综合包中职业任务、副本、装备等历史生成器不接入本链，它们的固定路径引用由 `fc_path_audit.py` 单独列为历史工具，不应批量执行。
+核对日期：2026-10-23。本文覆盖统一专业链及现用支持脚本。旧专业包和重复归档已删除，历史迁移来源可从 Git 查询。综合包中职业任务、副本、装备等历史生成器不接入本链，它们的固定路径引用由 `fc_path_audit.py` 单独列为历史工具，不应批量执行。
 
 ## 路径约定
 
@@ -8,6 +8,7 @@
 - 流水线根 `P = R\df-data-pipeline`；脚本根 `T = P\_temp`。
 - 下表均按这些根目录定位，与启动工作目录无关。显式相对路径参数则相对于调用目录。
 - 所有输出、缓存、暂存、日志和ZIP只能在当前仓库。输入文件是只读的；不会启动游戏、wow.tools.local、PowerShell导出器或 `scripts/` 中的程序。
+- 工具运行样例不再跟踪。`python -B df-data-pipeline/prepare_workspace.py` 从仓库根的正式运行文件创建工具工作副本，任一目标已存在则拒绝覆盖；它不修复历史生成器的固定 D 盘路径或外部依赖。
 
 ## 外部生产的CSV：默认已保存为流水线自有快照
 
@@ -35,6 +36,7 @@
 
 | 脚本 | 读取位置和文件 | 外部访问/补充说明 |
 | --- | --- | --- |
+| `P\prepare_workspace.py` | 仓库根现有正式运行文件 | 仅创建工具所需工作副本；目标已存在则拒绝，不覆盖正式数据 |
 | `fc_update.py` | 本包 `fc_pipeline.py` | 唯一统一入口，默认检查，`--apply`才发布 |
 | `fc_pipeline.py` | 上述5份CSV及NPC所属组织JSON；`T\_fc\data\*.json`；`T\_fc\i18n\*.json`；`T\_fc\maintenance\`下维护输入；当前 `R\Core\Data`、`R\Locales`、TOC作为保留及加载校验基线 | 只调本包Python步骤；无 `scripts/` 程序调用。`--offline`禁止网页请求 |
 | `fc_pipeline_paths.py` | 无额外文件；根据脚本目录计算CSV默认路径 | 统一路径常量，不探测游戏/旧专业包/外部工具 |
@@ -59,9 +61,8 @@
 | `gen_zhtw.py` | `R\.pipeline-runtime\lib`中的OpenCC，调用方传入文本 | 繁体转换辅助；缺OpenCC明确失败 |
 | `strip_comments.py` | 调用方传入Lua/样式文件 | 保留的去注释辅助；检查模式不改文件，不作为独立发布入口 |
 | `strip_lua_comments.py` | 命令行明确指定的Lua/目录；无参默认扫描 `P\Core` 与 `P\Locales` | 旧专业包去注释工具已完整保留，默认dry-run，`--apply`才写入；不接入统一链 |
-| `fc_package.py` | `R\DungeonsForever.toc`递归XML引用、`LICENSE`、Media资源以及本轮验证后的20份专业Lua | 只生成安装ZIP；原运行文件按原字节收入，其余工具/缓存/报告不打包 |
-| `fc_path_audit.py` | 两流水线、相关工具、测试与说明中的脚本文本 | 静态读取路径，区分活动/历史/归档/外部支持工具；不会执行它们 |
-| `fc_legacy_audit.py` | `T\_fc\maintenance\legacy-coverage.json`指向的本包归档及缓存 | 不读取旧专业包目录；按原SHA-256验证249份历史原件，`--without-caches`可只验随源码保存的69份 |
+| `fc_package.py` | `R\DungeonsForever.toc`递归XML引用、`LICENSE`、Media资源以及完整专业批次验证后的21份专业Lua | 只生成安装ZIP；原运行文件按原字节收入，其余工具/缓存/报告不打包 |
+| `fc_path_audit.py` | 当前流水线、相关工具、测试与说明中的脚本文本 | 静态读取路径，区分活动/历史/外部支持工具；不会执行它们 |
 
 ## 配方学习途径与图纸出处如何取得
 
@@ -115,12 +116,20 @@ python -B df-data-pipeline/_temp/fc_update.py --check --offline `
   --package-zip dist/DungeonsForever-1.8.33-data-70450-preview.zip
 ```
 
-去掉 `--offline` 时只允许网页联网更新，CSV与DB2仍是只读现成输入。`--stage-dir`保留规范JSON、有效目录、CSV、审计与20份Lua候选及输入哈希；ZIP使用这些新Lua，其他运行模块保持原字节。两者都不能与 `--apply` 合用。
+去掉 `--offline` 时只允许网页联网更新，CSV与DB2仍是只读现成输入。完整专业检查的 `--stage-dir` 保留规范JSON、有效目录、CSV、审计与21份Lua候选及输入哈希；ZIP使用这些新Lua，其他运行模块保持原字节。两者都不能与 `--apply` 合用。
 
 普通完整检查不加 `--stage-dir/--package-zip` 时只产生仓库内缓存、暂存和报告。规范JSON、派生CSV、Lua及成功指针要等明确执行 `--apply` 才事务发布；外部生产的5份输入CSV始终只读，发布也不覆盖它们。
 
-## 旧专业包覆盖核对
+## 工作副本与派生 CSV
 
-详见 [LEGACY_PARITY.md](LEGACY_PARITY.md)。249份非字节码原件已按SHA-256独立保存到本包（69份源码/数据/说明归档、180份缓存历史），9份可重建pyc明确排除。日常流水线不读取旧包或这些历史副本；旧入口仍退出并提示统一入口。
+`DataProfItems.csv` 是可重建的合并结果，不再随 Git 保存。首次需要时在仓库根依次执行：
 
-旧包中“自动启动外部服务导出客户端CSV”的编排已按本次要求移除，读取与校验已生成CSV的功能、物品/商人/专精/网页证据及审计功能均保留。其他综合包模块保持原实现与入口，未接入本次专业链。
+```powershell
+python -B df-data-pipeline/prepare_workspace.py
+python -B df-data-pipeline/_temp/fc_prof_items.py
+python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --check
+```
+
+第一步仅创建不存在的工具工作副本；已有工作副本时省略该步。第二步从冻结输入生成合并 CSV，并更新 `P\Core\Data` 下的物品与商人样例；第三步只检查物品 Lua，三步均不改 `R\Core\Data`。原始客户端与商人 CSV、维护 JSON、训练师证据及规范输入仍是需要保留的来源，不能按派生 CSV 一并删除。
+
+旧专业包、迁移归档及一次性迁移核对工具已移除，过去的原件核对结果仅属历史验收。当前读取与校验已生成客户端 CSV、物品/商人/专精/网页证据及审计功能均保留；外部自动导出服务仍不由统一入口启动。

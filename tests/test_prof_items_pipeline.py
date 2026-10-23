@@ -220,6 +220,34 @@ class ProfItemsPipelineTests(unittest.TestCase):
         self.run_cli()
         self.assertEqual({path: (path.read_bytes(), path.stat().st_mtime_ns) for path in paths}, original)
 
+    def test_repeated_generation_preserves_existing_lf_and_crlf_vendor_bytes(self):
+        self.run_cli()
+        canonical = self.vendors_lua.read_bytes().replace(b'\r\n', b'\n')
+        for newline in (b'\n', b'\r\n'):
+            with self.subTest(newline=newline):
+                expected = canonical.replace(b'\n', newline)
+                self.vendors_lua.write_bytes(expected)
+                mtime = self.vendors_lua.stat().st_mtime_ns
+                self.run_cli()
+                self.assertEqual(self.vendors_lua.read_bytes(), expected)
+                self.assertEqual(self.vendors_lua.stat().st_mtime_ns, mtime)
+
+    def test_vendor_location_update_and_appended_details_keep_source_line_endings(self):
+        for newline in (b'\n', b'\r\n'):
+            with self.subTest(newline=newline):
+                self.vendors_lua.write_bytes(VENDORS_LUA.encode('utf-8').replace(b'\n', newline))
+                self.run_cli()
+                updated = self.vendors_lua.read_bytes()
+                self.assertIn(NPC_LOCS.encode('utf-8').replace(b'\n', newline), updated)
+                if newline == b'\r\n':
+                    self.assertNotIn(b'\n', updated.replace(b'\r\n', b''))
+                else:
+                    self.assertNotIn(b'\r', updated)
+                namespace = self.load_lua(self.vendors_lua)
+                self.assertEqual([namespace.ProfVendors[10][index] for index in range(1, 5)],
+                                 [12, 1429, 41.8, 67])
+                self.assertEqual(namespace.ProfVendorDetails[10].name_en, 'Updated NPC')
+
     def test_source_replacement_between_observation_and_freeze_is_rejected(self):
         sys.path.insert(0, str(SCRIPT.parent))
         self.addCleanup(lambda: sys.path.remove(str(SCRIPT.parent)))

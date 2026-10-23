@@ -309,7 +309,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Packaging failed.' }
 | 团本套装、PvP 和声望 | `gen_raidsets.py`、`gen_pvp_data.py`、`gen_pvp_honor.py`、`gen_factions_data.py` 等 | 来源版本、数值和人工规则 |
 | 收藏、探索、NPC 定位及独立专业扩展 | 对应生成器、明确的维护配置及历史增量记录 | 新内容、坐标、任务条件和手工修订 |
 
-脚本通常位于 `df-data-pipeline/_temp/`。完整对应关系见[数据表索引](df-data-pipeline/INDEX.md)，代码、加载顺序和存档约定见[架构说明](ARCHITECTURE.md)。`df-prof-pipeline-v1.0/` 已停用；旧 `sync_beta.py`、`mk_df_*` 及历史补丁不属于日常更新步骤。
+脚本通常位于 `df-data-pipeline/_temp/`。完整对应关系见[数据表索引](df-data-pipeline/INDEX.md)，代码、加载顺序和存档约定见[架构说明](ARCHITECTURE.md)。旧专业包及重复归档已移除，历史可从 Git 查询；旧 `sync_beta.py`、`mk_df_*` 及历史补丁不属于日常更新步骤。
 
 <a id="focused-updates"></a>
 ## 只更新某一类数据
@@ -319,9 +319,18 @@ if ($LASTEXITCODE -ne 0) { throw 'Packaging failed.' }
 ```powershell
 python -B df-data-pipeline/_temp/fc_update.py --materials-only --check
 python -B df-data-pipeline/_temp/fc_update.py --specializations-only --check
-python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --check
 python -B df-data-pipeline/_temp/fc_update.py --check --offline
 ```
+
+合并 CSV 和工具运行样例不再跟踪。首次使用 `--from-csv` 时先准备工作副本并生成 CSV；这组命令不会修改正式 `Core/Data`：
+
+```powershell
+python -B df-data-pipeline/prepare_workspace.py
+python -B df-data-pipeline/_temp/fc_prof_items.py
+python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --check
+```
+
+准备脚本复制正式 `Core/Data` 到 `df-data-pipeline/Core/Data`；目标目录已存在则拒绝，已有工作副本时省略第一步。该操作不修复历史工具的固定路径，其他工具仍需按[流水线说明](df-data-pipeline/README.md)核对。
 
 | 命令范围 | 行为 |
 | --- | --- |

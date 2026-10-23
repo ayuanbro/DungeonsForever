@@ -1,6 +1,6 @@
 # 人工维护记录与新增位置索引
 
-核对日期：2026-10-21。本文由当前revision2维护输入与冻结的旧输入、70450新输入、目标模型对照整理。该70450批次现已发布到当前仓库，后续验收见 [PUBLISH_70450.md](PUBLISH_70450.md)。
+核对日期：2026-10-21；清理说明更新于2026-10-23。本文由revision2维护输入与当时冻结的旧输入、70450新输入、目标模型对照整理。该70450批次现已发布到当前仓库，后续验收见 [PUBLISH_70450.md](PUBLISH_70450.md)。
 
 这里的“人工维护”是为保留当前正式数据而迁移的维护差异；来源证据是正式Lua基线及输入哈希，不能据此认定每一项都有独立人工编辑日志。2,329项是操作数，不是配方数量。
 
@@ -9,7 +9,7 @@
 - 实际生效的维护输入：[professions.json当前changes](_temp/_fc/maintenance/professions.json#L84563)。每项用`path`定位，`base`记录上游原值，`value`记录保留值；`{"$absent": true}`表示缺省。文件前部的`accepted_revisions`是旧输入重放用的revision1，不能与当前changes混数。
 - 来源及本轮合并说明：[当前provenance](_temp/_fc/maintenance/professions.json#L157345)、[rebase审计](_temp/_fc/maintenance/source/rebase-2-70450/audit.json)。
 - 精确删除授权：[approved_removals](_temp/_fc/maintenance/professions.json#L84288)，目前仅1251750/250952。
-- 三份冻结模型：[旧输入](_temp/_fc/maintenance/source/rebase-2-70450/previous-input-model.json)、[最新输入](_temp/_fc/maintenance/source/rebase-2-70450/incoming-input-model.json)、[候选目标](_temp/_fc/maintenance/source/rebase-2-70450/target-model.json)。它们是审计证据，不是日常额外维护入口。
+- 保留的冻结模型：[旧输入](_temp/_fc/maintenance/source/rebase-2-70450/previous-input-model.json)、[最新输入](_temp/_fc/maintenance/source/rebase-2-70450/incoming-input-model.json)。它们是审计证据，不是日常额外维护入口。已完成 rebase 的 `build_rebase.py`、`old-i18n-seed.json`、`revision-2-manifest.json` 和 `target-model.json` 已清理，可从 Git 历史查阅；当前规则仍以生效的 `professions.json` 为准。
 - 人工翻译另在[locales.json](_temp/_fc/maintenance/locales.json)；中文词表另在[zh.json](_temp/_fc/i18n/zh.json)。
 - 不应在生成的`Core/Data/*.lua`中修改规则。下列序号是已发布70450批次的逻辑数组序号，不是JSON/Lua文件行号。
 
@@ -1074,7 +1074,9 @@
 | Data_Professions.lua/ProfData/pro/poisons | 缺省/删除 → {"icon":136242,"kind":"secondary","kinds":{"Recipe":26},"name":"毒药","recipes":26,"section":"crafting","status":"待实地核对","sub":1,"summary":"盗贼的辅助专业：技能越高能调制的毒药越强。材料向毒药商人与黑市贩子购买，调成腐蚀、削弱与消磨敌人的药剂，…（完整值见原规则） | [规则2264](_temp/_fc/maintenance/professions.json#L156383) |
 | Data_ProfLeveling.lua/ProfLeveling/enchanting/rinfo/13746 | 缺省/删除 → {"green":245,"grey":265,"learn":205,"mats":{"1":{"1":11137,"2":1}},"trainer":true,"yellow":225} | [规则2329](_temp/_fc/maintenance/professions.json#L157303) |
 
-## 本索引的输入指纹
+## 本索引编制时的输入指纹（历史）
+
+以下指纹记录2026-10-21编制时的输入，不表示文件始终保留在当前树中；候选目标模型已清理，其原件可从 Git 历史查询。
 
 | 文件 | SHA-256 |
 | --- | --- |

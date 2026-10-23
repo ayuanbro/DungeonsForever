@@ -1,8 +1,0 @@
-== file counts ==
-Core/*.lua          : 12
-Core/Data/*.lua     : 15
-Core/Data/enUS/*.lua: 15
-Core/Data/zhTW/*.lua: 15
-Locales/*.lua       : 3
-ALL Core+Locales recursive: 60
-exit=0

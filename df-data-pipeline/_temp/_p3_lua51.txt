@@ -1,5 +1,0 @@
-lua51 check: 3 file(s)
-  OK    D:\workspace\DungeonsForever\Core\LootFilter.lua
-  OK    D:\workspace\DungeonsForever\Core\LootFilterUI.lua
-  OK    D:\workspace\DungeonsForever\Core\Data\Data_LootFilter.lua
---- 0 failed / 3 total ---

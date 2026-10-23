@@ -401,14 +401,16 @@ def coordinate(value, label):
     return int(number) if number.is_integer() else number
 
 
-def replace_table(text, name, value):
+def replace_table(text, name, value, newline='\n'):
     span = table_span(text, name)
     if span is None:
-        return text.rstrip() + '\n\nns.%s = %s\n' % (name, value)
+        return text.rstrip() + newline * 2 + 'ns.%s = %s%s' % (name, value, newline)
     return text[:span[0]] + 'ns.%s = %s' % (name, value) + text[span[2]:]
 
 
 def update_vendors(text, npcs):
+    first_newline = re.search(r'\r?\n', text)
+    newline = first_newline.group() if first_newline else '\n'
     existing = {}
     span = table_span(text, 'ProfVendors')
     if span:
@@ -462,14 +464,14 @@ def update_vendors(text, npcs):
                 break
         else:
             unresolved += 1
-    value = '{\n' + ''.join('    [%d] = %s,\n' % (npc, lua(loc))
+    value = '{' + newline + ''.join('    [%d] = %s,%s' % (npc, lua(loc), newline)
                             for npc, loc in sorted(existing.items())) + '}'
     if not text:
         text = 'local _, ns = ...\n\nns.ProfNPCLocs = {}\n'
-    text = replace_table(text, 'ProfVendors', value)
-    detail = '{\n' + ''.join('    [%d] = %s,\n' % (npc, lua(ent))
+    text = replace_table(text, 'ProfVendors', value, newline)
+    detail = '{' + newline + ''.join('    [%d] = %s,%s' % (npc, lua(ent), newline)
                              for npc, ent in sorted(grouped.items())) + '}'
-    text = replace_table(text, 'ProfVendorDetails', detail)
+    text = replace_table(text, 'ProfVendorDetails', detail, newline)
     return text, {'npcRows': len(npcs), 'npcLocationsUpdated': updated,
                   'npcLocationsUnresolved': unresolved, 'vendorLocations': len(existing)}
 

@@ -4,11 +4,12 @@
 70450正式发布与最新安装包见 [PUBLISH_70450.md](PUBLISH_70450.md)。
 人工维护记录及新增相对位置见 [MANUAL_MAINTENANCE.md](MANUAL_MAINTENANCE.md)。
 
-`Core/Data/` 下 46 张表全部由 `_temp/` 里的 Python 生成或维护，**禁止手改**。
+下表记录工具包历史样例所覆盖的数据来源。正式插件数据位于仓库根 `Core/Data/`；工具包不再保存48份运行样例，需工作副本时在仓库根运行 `python -B df-data-pipeline/prepare_workspace.py`，任一目标已存在则拒绝覆盖。**生成数据应修改生成器或维护输入后重建，不应直接修改产物。**
 
 - 「单一生成器」= 跑这一个脚本就能整表重建
-- 「多脚本增量维护」= 没有一键重建，靠一串 `_apply_*` / `patch_*` 逐批改；重跑要按时间顺序挑
-- 源代号见 README 的「四类数据源」
+- 「多脚本增量维护」= 没有已验证的一键重建入口；表内列出的历史批次说明来源，不能作为自动更新顺序。
+- 已完成的补丁和修复脚本已清理，历史原件可从 Git 查询。准备工作副本不修复旧脚本的固定 D 盘路径，任何历史工具都应先核对路径和输入。
+- 源代号见 `HISTORICAL_README.md` 的「四类数据源」。
 
 ---
 
@@ -66,7 +67,7 @@
 
 ## 六、专业（当前受管链）
 
-统一入口 `_temp/fc_update.py`；当前维护输入、输出、语言及事务说明见 `README.md`。每个活动脚本的文件输入见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)，旧包覆盖见 [LEGACY_PARITY.md](LEGACY_PARITY.md)。五份CSV默认读取本包`_temp/_fc/inputs/`，不调用外部生产脚本。下表原生成器保留，历史文本补丁不作为日常步骤。
+统一入口 `_temp/fc_update.py`；当前维护输入、输出、语言及事务说明见 `README.md`。每个活动脚本的文件输入见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)。五份CSV默认读取本包`_temp/_fc/inputs/`，不调用外部生产脚本。当前六表由 `fc_gen.py` 合并版本化维护规则生成；下表的来源辅助脚本说明数据来历，不是统一入口之外的必跑步骤。
 
 | 数据表 | 生成脚本 | 数据源 |
 |---|---|---|
@@ -74,10 +75,10 @@
 | `Data_ProfRecipes.lua` | `fc_gen.py` | FOREVERCHANGES |
 | `Data_ProfLeveling.lua` | `fc_gen.py` | FOREVERCHANGES |
 | `Data_ProfGathering.lua` | `fc_gen.py` | FOREVERCHANGES |
-| `Data_ProfVendors.lua` | `fc_vendors.py` → `fc_gen.py` | FOREVERCHANGES + CLIENT |
-| `Data_ProfTrainers.lua` | `gen_prof_trainers.py` + 4 个 `prof_trainer_*.py` 注入 | CLIENT 训练师 NPC |
-
+| `Data_ProfVendors.lua` | `fc_gen.py` + 同轮 `fc_prof_items.py` | 维护规则、FOREVERCHANGES、冻结 NPC CSV |
+| `Data_ProfTrainers.lua` | `fc_gen.py` + 版本化训练师维护输入 | CLIENT 训练师 NPC 的已保存来源 |
 | `Data_ProfSpecializations.lua` | `fc_refresh_specializations.py` 准备后统一发布 | DB2图纸、有效配方目录、训练师网页及审计 |
+| `Data_ProfMaterialSupply.lua` | `fc_material_vendors.py`，统一入口同批发布 | 独立材料商人供货证据与货架价格 |
 | 专业六表 zhTW/enUS | `fc_locales.py` | 同轮基础数据、术语表及人工语言维护输入 |
 
 ## 七、收藏 / 探索 / PvP / 杂项
@@ -101,20 +102,15 @@
 
 ---
 
-## 脚本分类（1165 个）
+## 脚本分类与清理边界
 
-| 前缀 | 数量 | 用途 | 要不要跑 |
-|---|---|---|---|
-| `gen_*` | 51 | 各表的正式生成器 | ✅ 主链路 |
-| `fc_*` | 25 | 专业页流水线（抓 → 解析 → 审计 → 生成） | ✅ 主链路 |
-| `_cq_*` | 14 | 职业任务的中文化与评论抓取 | ✅ 主链路 |
-| `_route_*` | 20+ | 副本路线：抓点、分阵营、生成 Lua、调参页 | ✅ 主链路 |
-| `_wh_*` / `_df_wh_*` | 30+ | 窝窝头抓取与对齐 | ✅ 按需 |
-| `clean_*` / `explore_gen` / `_build_*` | 20+ | 一次性清洗与构建 | ⚠️ 重跑会覆盖 |
-| `patch_*` | 142 | 历史补丁（改 UI、改数据、修某批 id） | ❌ 一次性，已完成 |
-| `_apply_*` | 50+ | 把某一批抓取结果写进表 | ⚠️ 按时间顺序 |
-| `_fix_*` / `_bak_*` | 200+ | 修复脚本与备份快照 | ❌ 别跑 |
-| `qa_*` / `probe_*` / `_check*` | 120+ | 校验与探针，只读 | ✅ 只读安全 |
-| `strip_*` | 4 | 去注释 / 格式检查 | ✅ 收尾用 |
+2026-10-23移除141份已完成的 `patch_*`、31份已完成的 `fix_*` 和157份日志；`patch_mut_main_fix.py` 仍被工具引用而保留。旧专业包及重复归档从当前树移除，源文件历史仍由 Git 保存。
 
-完整名单：`_temp/` 下直接按前缀 `ls`。
+| 类别 | 当前使用方式 |
+| --- | --- |
+| 统一专业链 | 只按 `README.md`、`SCRIPT_INPUTS.md` 的入口运行 |
+| `gen_*`、`_cq_*`、`_route_*`、抓取及构建工具 | 根据上表定位；先核对输入、输出、固定路径和外部依赖 |
+| `_apply_*`、`_fix_*`、探针及历史校验工具 | 不属于日常自动链；名称不保证只读，执行前检查代码 |
+| `strip_*` | 检查其模式和目标；不能把写入模式用于正式数据的手工修订 |
+
+当前跟踪名单可运行 `git ls-files df-data-pipeline/_temp` 查看；历史目录文件总数不再作为完整性契约。

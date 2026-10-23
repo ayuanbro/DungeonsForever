@@ -1,6 +1,0 @@
-cwd drive /tmp -> D:\tmp
-D:/tmp/trans_snap5 exists: False
-D:/tmp/trans_snap5/rogue_assassination.json exists: False
-cur has 在无限服中，联盟盗贼: True
-cur has 怀旧服: False
-exit=0

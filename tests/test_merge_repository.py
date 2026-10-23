@@ -7,6 +7,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(os.environ.get("TEMP", "/tmp")) / "df-lua-runtime"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / '.pipeline-runtime/lib'))
 from lupa.lua51 import LuaRuntime
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,27 +75,40 @@ class MergedDataTests(unittest.TestCase):
 
 class GitIgnoreTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("git") and (ROOT / ".git").exists(), "requires the Git checkout")
-    def test_pipeline_caches_are_ignored_and_sources_and_generated_data_are_retained(self):
-        paths = [
+    def test_disposable_workspaces_are_ignored_and_current_sources_are_retained(self):
+        disposable = [
             ".implementation-backup/20261017-professions/Core/ProfRouteAuto.lua",
             "tests/__pycache__/test_prof_runtime.cpython-312.pyc",
             "df-prof-pipeline-v1.0/_temp/_fc/cache/index.html",
-            "df-prof-pipeline-v1.0/_temp/_fc/reports/audit.json",
-            "df-prof-pipeline-v1.0/_temp/_fc/i18n/batch_A.txt",
-            "df-prof-pipeline-v1.0/_temp/_fc/i18n/zh_A.txt",
             "df-prof-pipeline-v1.0/Core/Data/Data_ProfRecipes.lua",
-            "df-prof-pipeline-v1.0/Core/Data/Data_ProfItems.lua",
-            "df-prof-pipeline-v1.0/_temp/_fc/data/DataProfItems.csv",
-            "df-prof-pipeline-v1.0/_temp/fc_prof_items.py",
             "df-prof-pipeline-v1.0/_temp/fc_gen.py",
-            "df-prof-pipeline-v1.0/_temp/_fc/data/vendor_loc.json",
-            "df-prof-pipeline-v1.0/_temp/_fc/i18n/zh.json",
-            "df-prof-pipeline-v1.0/_temp/questie/questie_forever.json",
+            "df-data-pipeline/Core/Data/Data_ProfRecipes.lua",
+            "df-data-pipeline/Core/Data/enUS/Data_Gear.lua",
+            "df-data-pipeline/_temp/_fc/cache/professions.html",
+            "df-data-pipeline/_temp/_fc/reports/audit.json",
+            "df-data-pipeline/_temp/_p3_final.txt",
+            "df-data-pipeline/_temp/patch_prof_ui.py",
+            "df-data-pipeline/_temp/_fix_enus_data.py",
+        ]
+        retained = [
+            "df-data-pipeline/prepare_workspace.py",
+            "df-data-pipeline/_temp/fc_gen.py",
+            "df-data-pipeline/_temp/gen_gear_src.py",
+            "df-data-pipeline/_temp/patch_mut_main_fix.py",
+            "df-data-pipeline/_temp/_fc/data/vendor_loc.json",
+            "df-data-pipeline/_temp/_fc/i18n/zh.json",
+            "df-data-pipeline/_temp/_fc/maintenance/professions.json",
+            "df-data-pipeline/_temp/_fc/inputs/client/item-buy-prices.csv",
+            "df-data-pipeline/_temp/questie/questie_forever.json",
+            "df-data-pipeline/_temp/_fc_slugs.txt",
+            "df-data-pipeline/_temp/_r7_bproof.txt",
+            "df-data-pipeline/_temp/_route_plan/tune.html",
             "Core/Data/Data_ProfRecipes.lua",
             "Core/Data/Data_ClassQuest.lua",
             "Media/textures/route_dot.tga",
             "tests/test_prof_runtime.py",
         ]
+        paths = disposable + retained
         result = subprocess.run(
             ["git", "--no-optional-locks", "check-ignore", "--no-index", "-z", "--stdin"],
             input=("\0".join(paths) + "\0").encode("utf-8"), cwd=ROOT,
@@ -102,12 +116,12 @@ class GitIgnoreTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         ignored = set(result.stdout.decode("utf-8").rstrip("\0").split("\0"))
-        self.assertEqual(ignored, set(paths[:4]))
+        self.assertEqual(ignored, set(disposable))
 
     def test_pipeline_keeps_scripts_and_required_inputs_in_its_own_root(self):
-        pipeline = ROOT / "df-prof-pipeline-v1.0"
+        pipeline = ROOT / "df-data-pipeline"
         for rel in [
-            "README.md", "run.bat", "_temp/fc_update.py", "_temp/fc_gen.py",
+            "README.md", "run.bat", "prepare_workspace.py", "_temp/fc_update.py", "_temp/fc_gen.py",
             "_temp/tools/wow_stub.lua", "_temp/_fc/data/index.json",
             "_temp/_fc/data/vendor_loc.json", "_temp/_fc/i18n/zh.json",
             "_temp/questie/questie_forever.json", "_temp/_wago_AreaTable_zh.csv",
@@ -122,15 +136,9 @@ class GitIgnoreTests(unittest.TestCase):
                     '_temp/_fc/maintenance/locales.json', 'requirements.txt'):
             self.assertTrue((pipeline / rel).is_file(), rel)
 
-    def test_archived_entrypoint_fails_without_touching_the_commit_marker(self):
-        marker = ROOT / 'df-data-pipeline/_temp/_fc/cache/.pipeline-state/current.json'
-        before = marker.read_bytes() if marker.exists() else None
-        result = subprocess.run([sys.executable, '-B', str(ROOT / 'df-prof-pipeline-v1.0/_temp/fc_update.py'),
-                                 '--apply', '--offline'], cwd=ROOT, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 2)
-        self.assertIn('archived and disabled', result.stderr)
-        self.assertIn('df-data-pipeline', result.stderr)
-        self.assertEqual(marker.read_bytes() if marker.exists() else None, before)
+    def test_retired_pipeline_and_its_duplicate_archive_are_removed(self):
+        self.assertFalse((ROOT / 'df-prof-pipeline-v1.0').exists())
+        self.assertFalse((ROOT / 'df-data-pipeline/archive/df-prof-pipeline-v1.0').exists())
 
 
 if __name__ == "__main__":

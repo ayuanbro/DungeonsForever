@@ -1,5 +1,0 @@
-beta zhCN  bytes=147645 |l|=0 x05=0 x03=0 x04=0 h4_false=0
-beta enUS  bytes=296666 |l|=0 x05=0 x03=0 x04=0 h4_false=0
-beta zhTW  bytes=148071 |l|=0 x05=0 x03=0 x04=0 h4_false=0
-source zhCN h4_false= 0
-source enUS h4_false= 0

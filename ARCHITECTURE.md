@@ -1,12 +1,13 @@
 # DungeonsForever 架构与修改导航
 
-核对日期：2026-10-21。依据当前下载仓库合并后的源码；当前 TOC 版本为 1.8.37。合并来源及取舍见 `MERGE_NOTES.md`。
+核对日期：2026-10-23。依据当前下载仓库合并后的源码；当前 TOC 版本为 1.8.37。合并来源及取舍见 `MERGE_NOTES.md`。
 本文记录实际实现，后续功能变更后应重新核对相应部分。
 
 ## 1. 项目边界
 
 - 原生 WoW Lua 插件，单窗口手册，固定 HUI 外观；无前端框架、服务端或独立构建流程。
-- 当前目录是内层 Git 仓库，分支 `codex/merge-installed-1.8.28`；以下载版 1.8.20 为基础迁入安装版 1.8.28。专业统一入口在 `df-data-pipeline/_temp/fc_update.py`，默认检查，`--apply` 经完整三语校验后事务发布正式 `Core/Data`；旧 `df-prof-pipeline-v1.0/` 留档停用。`tests/` 包含 Lua 5.1 模拟测试与基准脚本，见 `tests/README.md`。
+- 当前目录是内层 Git 仓库，分支 `codex/merge-installed-1.8.28`；以下载版 1.8.20 为基础迁入安装版 1.8.28。专业统一入口在 `df-data-pipeline/_temp/fc_update.py`，默认检查，`--apply` 经完整三语校验后事务发布正式 `Core/Data`；旧 `df-prof-pipeline-v1.0/` 及迁移归档已移除，历史可从 Git 查询。`tests/` 包含 Lua 5.1 模拟测试与基准脚本，见 `tests/README.md`。
+- 工具包运行样例不再随 Git 保存，需要时在仓库根执行 `python -B df-data-pipeline/prepare_workspace.py`，从正式运行文件准备工具工作副本；任一目标已存在时拒绝覆盖。正式运行数据、有效生成器、冻结输入、维护规则和测试夹具继续跟踪；已完成的补丁、修复脚本及日志不作为更新入口。历史工具仍可能含固定 D 盘路径，准备工作副本不代表这些工具已完成迁移。
 - 所有源码、脚本、测试及数据修改只允许在 `C:\Users\yewei\Downloads\DungeonsForever\DungeonsForever`。游戏安装目录中的插件副本只能只读核对，禁止编辑、生成、部署或清理；当前会话的默认工作目录不能视为写入授权。
 - 顶层目录：`Core/` 业务与界面，`Core/Data/` 数据，`Locales/` 文案，`Libs/` 内嵌库，`Media/` 图片与地图等资源。
 - 当前共 30 个 Core 顶层 Lua 文件；数据文件共 125 个：基础 53 个、enUS 36 个、zhTW 36 个。
@@ -110,12 +111,12 @@ TOC 的 Interface 声明范围更广，不代表所有声明客户端都能通�
 - 不能将首次 API 返回 nil 当作永久无数据，也不能在每个全局物品事件中重扫全部页面。
 - 专业六表由 `df-data-pipeline/_temp/fc_update.py` 统一生成及三语发布。维护输入保留当前新增、修正、来源、顺序与省略规则，不从旧Lua回捞；原文与维护冲突或已有记录丢失时整批阻止发布。未接管的数据/业务代码/语言文件保持原样。其余历史工具和输入仍在综合包，不默认执行旧同步或部署脚本。
 - 2026-10-21已按用户确认离线发布70450：正式三语专业总表和规范JSON为1.60.1.70450/2026-10-16，毒药与理解仍保留70338真实来源；客户端根价数据保留，材料采购资格以独立供货表为准。安装包直接取发布后正式文件，验收见 `df-data-pipeline/PUBLISH_70450.md`。
-- 客户端及商人/NPC五份CSV默认从流水线自己的 `_temp/_fc/inputs/` 只读快照输入，来源和SHA-256单列记录；统一入口不导入、调用或监控 `scripts/` 的生产代码，也不启动wow.tools.local。各脚本输入见 `df-data-pipeline/SCRIPT_INPUTS.md`，旧包249份原件与功能核对见 `LEGACY_PARITY.md`。`--stage-dir/--package-zip`可保留验证后的新批次并直接生成安装ZIP，正式`Core/Data`和成功指针保持不动。
+- 客户端及商人/NPC五份CSV默认从流水线自己的 `_temp/_fc/inputs/` 只读快照输入，来源和SHA-256单列记录；统一入口不导入、调用或监控 `scripts/` 的生产代码，也不启动wow.tools.local。各脚本输入见 `df-data-pipeline/SCRIPT_INPUTS.md`。旧包原件核对属于已完成的迁移记录，不再要求工作区保留历史副本。`--stage-dir/--package-zip`可保留验证后的新批次并直接生成安装ZIP，正式`Core/Data`和成功指针保持不动。
 - 图纸商人采集优先读取 Wowhead `sold-by` Listview 的内嵌 JSON，隐藏页签也能提取通货、数量、阵营及完整金币价；HTML 表格作为兼容入口。当前商人角色读取 `vendors-soldby-json-20261021.csv` 修复快照，原五份 CSV 保留原字节与修改时间；输入清单和同目录审计记录逐页哈希、原记录修正及新增商人行。兑换价格独立保留 `currency_kind/id/amount`；材料供货证据与价格另走独立材料链，不修改图纸输入。
 - 1.8.36：附魔来源缺 `formulaID` 时，`ProfItemPrices.GetFormulaItemID` 仅复用当前客户端 build 的明确且唯一教学关系；多图纸歧义或版本不匹配不猜测。维护输入移除 26 条错误删除附魔法术 ID 的操作，三语配方经生成器重建，每份仅恢复这 26 个字段。169 条附魔中 163 条有法术 ID、108 条有唯一图纸关联，其余缺项保留；恢复/启示的通货报价不转换为金币采购资格。
 - 配方学习来源统一由 `ProfEconomy.LearningSource` 读取明确训练师证据（客户端正观察、规范化来源或 `ProfSpecializations.routes` 的 `trainerObserved=true`），训练师优先于关联图纸。普通、附魔、crafted、升级来源与采购共用此规则；保留原始图纸但不强制购买，专精/明确不可用/用户排除仍独立限制。学习规则指纹升级到 2，旧路线等待手动重算；来源各层输入与缺口见 `df-data-pipeline/SCRIPT_INPUTS.md`。
 - 图纸商人名字优先已有本地化，缺译名时保留规范原名，确实无名才用 NPC 编号；旧保存记录的编号可由其原名恢复，不重复追加相同原文。提示、选择框及采购来源采用同一名字回退；默认随当前角色阵营过滤明确异方，中立与未知保留，阵营未知不改写为中立。
-- `scripts/export_buyprice/export-item-buy-prices.ps1` 在 Windows PowerShell 5.1 下调用本机 wow.tools.local，下载并验证匹配当前 Forever build 的最新 Hotfix，串行导出三语 ItemSparse，并只读取一次 Item。输出 `output/item-buy-prices.csv`（enUS/zhTW/zhCN 名称、原始基础组价、组数、零价/缺价和版本）及 `output/item.csv`（Item 全字段，供 `scripts/gen_vendors.py` 按 ClassID/SubclassID 筛配方）。导出器不生成 Lua；连同下述图纸学习条件 CSV，三份输出全部验证后共同发布，失败回滚旧输出。`df-data-pipeline/_temp/fc_prof_items.py` 再合并商人、NPC 和客户端价格三表，生成固定 19 列的 `DataProfItems.csv`，并由同一 CSV 内容生成 schema 2 的 `Data_ProfItems.lua`；`--from-csv` 可单独重建物品 Lua。独立底层脚本默认仍输出工具样例；统一入口将本轮物品、商人、专精及三语同批发布正式目录。旧试验导入脚本和三份 `Data_VendorPrices.lua` 已移除。
+- `scripts/export_buyprice/export-item-buy-prices.ps1` 在 Windows PowerShell 5.1 下调用本机 wow.tools.local，下载并验证匹配当前 Forever build 的最新 Hotfix，串行导出三语 ItemSparse，并只读取一次 Item。输出 `output/item-buy-prices.csv`（enUS/zhTW/zhCN 名称、原始基础组价、组数、零价/缺价和版本）及 `output/item.csv`（Item 全字段，供 `scripts/gen_vendors.py` 按 ClassID/SubclassID 筛配方）。导出器不生成 Lua；连同下述图纸学习条件 CSV，三份输出全部验证后共同发布，失败回滚旧输出。`df-data-pipeline/_temp/fc_prof_items.py` 再合并商人、NPC 和客户端价格三表，生成固定 19 列的 `DataProfItems.csv`，并由同一 CSV 内容生成 schema 2 的 `Data_ProfItems.lua`；`--from-csv` 可单独重建物品 Lua。合并 CSV 不再跟踪，先准备工具工作副本并运行该脚本生成，再交给 `--from-csv`；命令见流水线 README。独立底层脚本默认输出工具工作副本；统一入口将本轮物品、商人、专精及三语同批发布正式目录。旧试验导入脚本和三份 `Data_VendorPrices.lua` 已移除。
 - 材料购买资格与基础价格分开：固定19列 CSV 和 schema 2 继续完整保留客户端根 `cost_copper`、`VendorStackCount` 及图纸 NPC 报价，但根价不证明任何供货资格。材料链按维护的少量耗材种子发现常规供应商，再按 NPC 抓整张货架；只有明确不限量、纯金币、无未满足条件且阵营可购买的供货记录进入独立 `Data_ProfMaterialSupply.lua`。正常在线运行刷新 NPC、货架与价格；失败 NPC 本轮降级，不沿用历史资格，离线重放保留原状态与核验时间。维护与运行说明见 `df-data-pipeline/MATERIAL_VENDORS.md`。
 
 - 专业学习专精数据独立生成：价格导出器另输出 `recipe-item-specializations.csv`，仅把图纸物品的 `RequiredAbility` 沿明确教学关系关联至配方法术。`_temp/fc_prof_specializations.py` 合并图纸与 Wowhead Forever 的训练师证据，写入 `_temp/_fc/data/trainer-recipe-specializations.csv` 和 `Data_ProfSpecializations.lua`；`fc_update.py` 已接入该步骤，正式插件输出命令见管线 README。正式 TOC 在经济模块前加载 `Core/Data/Data_ProfSpecializations.lua` 与独立任务配置 `Data_ProfSpecializationQuests.lua`。`ns.ProfSpecializations[spellID]` 保留独立学习途径与来源，缺证据为 `pending`，不同途径不自动合为统一限制。目标客户端 build 与网页来源版本分开记录；跨来源 patch/build 的旧证据保留但不作为目标版本的已确认要求。网页抓取采用缓存、串行间隔、跨进程互斥和持久冷却，在线失败不发布最终产物。

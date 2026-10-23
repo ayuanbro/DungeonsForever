@@ -38,14 +38,21 @@ python -B scripts/update_vendor_factions.py --collect --proxy= --client-dir scri
 
 ## 生成插件数据
 
-正常专业流水线默认读取新JSON及其完整证据快照。只重新发射物品Lua时可以使用：
+正常专业流水线默认读取新JSON及其完整证据快照。合并 CSV 和工具样例不再跟踪；首次使用 `--from-csv` 时先准备工具工作副本并从冻结的三份 CSV 生成合并结果：
+
+```powershell
+python -B df-data-pipeline/prepare_workspace.py
+python -B df-data-pipeline/_temp/fc_prof_items.py
+```
+
+准备脚本将正式 `Core/Data` 复制到工具包；目标目录已存在则拒绝，已有工作副本时省略准备命令。接着可只重建工具工作副本中的物品 Lua：
 
 ```powershell
 python -B df-data-pipeline/_temp/fc_prof_items.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --dry-run
 python -B df-data-pipeline/_temp/fc_prof_items.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv
 ```
 
-统一检查与发布继续使用 `fc_update.py --offline` / `fc_update.py --offline --apply`。两入口均支持 `--vendor-factions-json <仓库内JSON>`覆盖默认输入。`ns.ProfVendorFactions`是独立元数据，不向报价CSV增加列，也不把所属变成供货、声望门槛或中立访问资格。
+上述命令默认只写工具包中的样例和派生 CSV，不改仓库根的正式 `Core/Data`。统一检查与发布继续使用 `fc_update.py --offline` / `fc_update.py --offline --apply`。两入口均支持 `--vendor-factions-json <仓库内JSON>`覆盖默认输入。`ns.ProfVendorFactions`是独立元数据，不向报价CSV增加列，也不把所属变成供货、声望门槛或中立访问资格。
 
 ## 当前覆盖与证据边界
 

@@ -1,8 +1,0 @@
-  Core/Core.lua                            -  2 行（整行注释 2 / 行尾注释 0）
-  Core/LootFilter.lua                      -  0 行（整行注释 0 / 行尾注释 3）
-  Core/LootFilterUI.lua                    - 35 行（整行注释 35 / 行尾注释 4）
-  Core/MainFrame.lua                       -  2 行（整行注释 2 / 行尾注释 0）
-  Core/Data/Data_LootFilter.lua            - 38 行（整行注释 38 / 行尾注释 2）
-  Locales/zhTW.lua                         -  1 行（整行注释 0 / 行尾注释 0）
-------------------------------------------------------------------------------
-（dry-run 未落盘）：整行注释 77 行 + 行尾注释 9 处，共减少 78 行

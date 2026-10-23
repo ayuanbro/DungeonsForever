@@ -1,8 +1,8 @@
 # 统一专业数据流水线
 
 唯一维护入口为 `_temp/fc_update.py`，以当前仓库定位输入和正式 `Core/Data`，不依赖启动目录。
-`df-prof-pipeline-v1.0` 已留档停用，不是默认输入或缓存来源。
-各脚本要读取的位置和文件见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)，旧专业包功能及249份原件的覆盖核对见 [LEGACY_PARITY.md](LEGACY_PARITY.md)。
+旧专业包 `df-prof-pipeline-v1.0` 及本包中的迁移归档已删除，需要查阅原件时使用 Git 历史。
+各脚本要读取的位置和文件见 [SCRIPT_INPUTS.md](SCRIPT_INPUTS.md)。
 人工维护的记录、字段差异和新增项前后位置见 [MANUAL_MAINTENANCE.md](MANUAL_MAINTENANCE.md)。
 2026-10-21已将70450数据发布到当前仓库，使用当前1.8.33代码及材料价格规则；发布验收与最新安装包见 [PUBLISH_70450.md](PUBLISH_70450.md)。此前仅检查的记录保留在 [CSV_CHECK_REPORT.md](CSV_CHECK_REPORT.md)。
 
@@ -14,11 +14,20 @@
 python -B df-data-pipeline/_temp/fc_update.py --check --offline
 python -B df-data-pipeline/_temp/fc_update.py --apply --offline
 python -B df-data-pipeline/_temp/fc_update.py --specializations-only --check --offline
-python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --check
 ```
 
 不带模式参数默认为检查；`--apply` 才发布。`--offline` 禁止网页、DB2 和热修复网络请求，缺缓存或成功快照就失败，不能偷偷改为联网。
 也可使用 `df-data-pipeline/run.bat` 传入相同参数。路径参数相对于调用目录；未指定参数的默认路径始终根据脚本定位。
+
+工具工作副本和合并 CSV 不再随 Git 保存。首次需要样例生成或 `--from-csv` 时先运行：
+
+```powershell
+python -B df-data-pipeline/prepare_workspace.py
+python -B df-data-pipeline/_temp/fc_prof_items.py
+python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --check
+```
+
+准备脚本从当前正式运行文件复制工具所需工作副本；任一目标已存在时拒绝覆盖，已有工作副本可直接用于下一步。`fc_prof_items.py` 默认写入本包的 `Core/Data/Data_ProfItems.lua`、`Data_ProfVendors.lua` 和 `_temp/_fc/data/DataProfItems.csv`；最后一条只检查物品 Lua。这三步不改仓库根的正式 `Core/Data`。准备工作副本不会修复历史脚本的固定 D 盘路径，运行其他历史工具前仍需检查其路径和输入。
 
 客户端与商人/NPC的五份旧CSV已按原字节导入 `_temp/_fc/inputs/`，路径常量集中在 `fc_pipeline_paths.py`；来源哈希在 `inputs/manifest.json`。默认运行不再依赖 `scripts/` 目录，不导入、监控或调用其中的程序，也不会启动 wow.tools.local。显式CSV参数仍可读取外部工具生成在仓库内的CSV。
 
@@ -30,7 +39,7 @@ python -B df-data-pipeline/_temp/fc_update.py --check --offline `
   --package-zip dist/DungeonsForever-1.8.33-data-70450-preview.zip
 ```
 
-两个目标都必须不存在。ZIP将本轮20份专业Lua覆盖进安装包，其余运行文件保持原字节；工具、报告及缓存不打包。`--stage-dir/--package-zip`不能与`--apply`合用，不改游戏安装目录。
+两个目标都必须不存在。完整专业检查的 ZIP 将本轮21份专业Lua覆盖进安装包，其余运行文件保持原字节；工具、报告及缓存不打包。`--stage-dir/--package-zip`不能与`--apply`合用，不改游戏安装目录。
 
 依赖是 Python 3.10+、`lupa.lua51` 和 OpenCC。可将 `requirements.txt` 安装到仓库忽略目录 `.pipeline-runtime/lib`；统一入口自动加载该目录。不同 Python 版本应安装对应的 Lupa wheel，不共用不匹配的二进制模块。
 
@@ -50,7 +59,7 @@ python -B tests/run_tests.py
 
 - 基础六份：Professions、ProfRecipes、ProfLeveling、ProfGathering、ProfVendors、ProfTrainers。
 - 同步生成这六份的 zhTW 和 enUS 副本，保留语言守卫及现有人工翻译。
-- Items、Specializations 是共享文件，不作通用翻译。物品表保持三语原名、固定19列CSV与schema 2；专精继续保留学习途径、未知状态、目标与来源版本、网页冷却和审计。
+- Items、Specializations、MaterialSupply 是共享文件，不作通用翻译。物品表保持三语原名、固定19列CSV与schema 2；专精继续保留学习途径、未知状态、目标与来源版本、网页冷却和审计；材料供货使用独立证据。
 - 现有任务、采矿、钓鱼扩展及所有未接管文件不覆盖、不删除，不更改业务模块、UI文案、TOC顺序或存档。
 - 规范化输入、有效证据目录、合并CSV、审计、共享数据和三语Lua同批发布。仅数据确实改变才替换，重复运行不因生成时间更新文件。
 
@@ -74,7 +83,7 @@ python -B tests/run_tests.py
 - 单一仓库锁串行更新；先生成到仓库内暂存区，最终复核全部输入与目标哈希再发布。冲突和任何步骤失败不发布正式批次。
 - 发布失败补偿回滚；恢复材料保留在 `.implementation-backup/pipeline-publish-*`，回滚失败信息会给出该目录。不会清理或部署到游戏安装目录。
 - 检查/失败运行可更新忽略的页面缓存、不可变DB2快照、冷却和报告，不发布规范输入/CSV/Lua/成功指针。
-- `fc_path_audit.py` 只读扫描固定路径引用，报告 `_fc/reports/path-audit.json`，区分活动链、历史工具、停用专业包和支持脚本；不执行历史同步/部署工具。
+- `fc_path_audit.py` 只读扫描固定路径引用，报告 `_fc/reports/path-audit.json`，区分活动链、历史工具和支持脚本；不执行历史同步/部署工具。
 - 正式输出、日志、缓存、DB2归档和链接解析后的目标全部限制仓库。拒绝覆盖非受管业务代码、维护输入及不同产物路径碰撞。
 
 在线模式只刷新网页，客户端三CSV和DB2仍复用同一已验证快照，不调用外部导出器。可用 `--db2-dir` 指定仓库内快照，否则按已有current及内容哈希选择；缺少或混批在请求网页前失败。已移除 `--tool-directory`、`--base-url`、`--powershell`。网页代理可用 `DF_PIPELINE_PROXY` 设置。
@@ -82,12 +91,13 @@ python -B tests/run_tests.py
 ```powershell
 python -B df-data-pipeline/_temp/fc_update.py --check
 python -B df-data-pipeline/_temp/fc_path_audit.py
-python -B df-data-pipeline/_temp/fc_legacy_audit.py
 ```
 
 ## 其他数据工具
 
-本次统一只接管专业六表与对应三语。职业任务、副本路线、装备、BIS、职业指南等工具和输入仍保留，索引见 `INDEX.md`。这些历史工具可能含旧路径或依赖，不属于统一入口，勿将历史 `sync_beta.py`、`mk_df_*` 或全目录语言通配生成串回当前流程。旧说明保存在 `HISTORICAL_README.md`。
+统一入口接管专业六表与对应三语，以及三份共享扩展。职业任务、副本路线、装备、BIS、职业指南等工具和输入仍保留，索引见 `INDEX.md`。这些历史工具可能含旧路径或依赖，不属于统一入口，勿将历史 `sync_beta.py`、`mk_df_*` 或全目录语言通配生成串回当前流程。旧说明保存在 `HISTORICAL_README.md`。
+
+2026-10-23清理了旧专业包及重复归档、141份已完成的 `patch_*` 脚本（保留仍被工具引用的 `patch_mut_main_fix.py`）、31份已完成的 `fix_*` 脚本、157份日志和48份工具运行样例。四份已完成 rebase 的辅助文件和可重建合并 CSV 同样不再跟踪；正式数据、活动维护规则、冻结来源、翻译表和测试夹具保留。工作副本由 `prepare_workspace.py` 按需创建，旧内容可从 Git 历史查阅。
 
 ## 首次迁移验收（历史）
 

@@ -1,8 +1,0 @@
-﻿python.exe : [safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {"count":379,"threshold":50,"scope":"turn","targets":["D:
-\\Game\\World of Warcraft\\_classic_beta_\\Interface\\AddOns\\DungeonsForever\\_diag.txt"],"targetCount":1}
-所在位置 行:453 字符: 189
-+ ... _p3_rm.py"; & $py "D:\workspace\DungeonsForever\_temp\_p3_rm.py" 2>&1 ...
-+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ([safe-delete][S...targetCount":1}:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 

@@ -9,13 +9,75 @@ __pycache__/
 .venv/
 venv/
 
-# Keep Core/Data, generators, tests, _fc/data, _fc/inputs (including frozen
-# faction-sources/*.db2 and JSON), maintenance and translation dictionaries.
+# Keep runtime Core/Data, active generators/tests, required _fc/data inputs,
+# frozen _fc/inputs (including faction evidence), maintenance and translations.
 # Do not ignore all _temp/ or all JSON/CSV/HTML/Lua/DB2 files.
 
-# Historical profession pipeline: cache/report outputs only.
-/df-prof-pipeline-v1.0/_temp/_fc/cache/
-/df-prof-pipeline-v1.0/_temp/_fc/reports/
+# Retired profession pipelines and their one-time preservation checks.
+/df-prof-pipeline-v1.0/
+/df-data-pipeline/archive/df-prof-pipeline-v1.0/
+/df-data-pipeline/_temp/fc_legacy_audit.py
+/df-data-pipeline/_temp/_fc/maintenance/legacy-coverage.json
+/df-data-pipeline/LEGACY_PARITY.md
+/tests/test_pipeline_legacy_coverage.py
+
+# Recreate legacy tools' working data with prepare_workspace.py when needed.
+/df-data-pipeline/Core/Data/
+
+# Completed one-time patches; this post-generation patch is still required.
+/df-data-pipeline/_temp/patch_*.py
+!/df-data-pipeline/_temp/patch_mut_main_fix.py
+/df-data-pipeline/_temp/_fix_*.py
+
+# Historical logs. Keep the files still referenced by retained tools.
+/df-data-pipeline/_temp/_p3_*.txt
+/df-data-pipeline/_temp/_r[2-7]*.txt
+/df-data-pipeline/_temp/_qa*.txt
+/df-data-pipeline/_temp/_diag_*.txt
+/df-data-pipeline/_temp/_snap_*.txt
+/df-data-pipeline/_temp/_out_*.txt
+/df-data-pipeline/_temp/_run*.txt
+/df-data-pipeline/_temp/_cg_*check*.txt
+/df-data-pipeline/_temp/_cg_*verify*.txt
+/df-data-pipeline/_temp/_cg_*scan*.txt
+/df-data-pipeline/_temp/*_log*.txt
+/df-data-pipeline/_temp/pvpui_*.txt
+/df-data-pipeline/_temp/_enus_gap*.txt
+/df-data-pipeline/_temp/_luacheck*.txt
+/df-data-pipeline/_temp/_probe_*.txt
+!/df-data-pipeline/_temp/_r7_bproof.txt
+!/df-data-pipeline/_temp/_r7_diff_probe.txt
+!/df-data-pipeline/_temp/_r7_drift_report.txt
+!/df-data-pipeline/_temp/_r7_dump_report.txt
+!/df-data-pipeline/_temp/_r7_fix_diff.txt
+!/df-data-pipeline/_temp/_r7_junk_scan.txt
+!/df-data-pipeline/_temp/_r7_lua_scan.txt
+!/df-data-pipeline/_temp/_r7_mixed_report.txt
+!/df-data-pipeline/_temp/_r7_regress.txt
+!/df-data-pipeline/_temp/_r7_revert.txt
+!/df-data-pipeline/_temp/_r7_scan_report.txt
+!/df-data-pipeline/_temp/_r7_sens_report.txt
+!/df-data-pipeline/_temp/_r7_sky_deliver.txt
+!/df-data-pipeline/_temp/_r7_sky_final.txt
+!/df-data-pipeline/_temp/_r7_strip_proof.txt
+!/df-data-pipeline/_temp/_qa2_b_report.txt
+!/df-data-pipeline/_temp/_qa2_cli_report.txt
+!/df-data-pipeline/_temp/_qa2_heads.txt
+!/df-data-pipeline/_temp/_qa_sensitivity_report.txt
+!/df-data-pipeline/_temp/_run4_summary.txt
+!/df-data-pipeline/_temp/_run5_summary.txt
+!/df-data-pipeline/_temp/_run6_summary.txt
+
+# Rebuildable exports and completed rebase artifacts (not their source inputs).
+/df-data-pipeline/_temp/_fc/data/DataProfItems.csv
+/df-data-pipeline/_temp/_fc/data/recipe-item-link-audit.csv
+/df-data-pipeline/_temp/_fc/data/recipe-item-link-audit.md
+/df-data-pipeline/_temp/_fc/data/recipe-item-link-audit-summary.json
+/df-data-pipeline/_temp/_fc/data/recipe-item-web-link-audit.json
+/df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/build_rebase.py
+/df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/old-i18n-seed.json
+/df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/revision-2-manifest.json
+/df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/target-model.json
 
 # Full data pipeline: known cache directories and temporary translation batches.
 /df-data-pipeline/_temp/_fc/cache/

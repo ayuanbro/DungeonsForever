@@ -11,14 +11,14 @@ ACTIVE = {
     'gen_enus_data.py', 'gen_zhtw_data.py', 'gen_zhtw.py', 'strip_comments.py',
     'fc_prof_items.py', 'fc_prof_specializations.py', 'fc_refresh_specializations.py',
     'fc_specialization_fetch.py', 'fc_recipe_item_audit.py', 'fc_recipe_item_web_audit.py',
-    'fc_recipe_catalog_fetch.py', 'fc_path_audit.py', 'fc_pipeline_paths.py', 'fc_package.py', 'fc_legacy_audit.py',
+    'fc_recipe_catalog_fetch.py', 'fc_path_audit.py', 'fc_pipeline_paths.py', 'fc_package.py',
 }
 DRIVE = re.compile(r'(?<![A-Za-z0-9_])[A-Za-z]:[\\/][^\r\n\"\'<>]*')
 
 
 def inventory():
     findings = []
-    roots = [PACKAGE, REPO / 'df-prof-pipeline-v1.0', REPO / 'scripts', REPO / 'tests']
+    roots = [PACKAGE, REPO / 'scripts', REPO / 'tests']
     for root in roots:
         for path in sorted(root.rglob('*')):
             if path.suffix.lower() not in ('.py', '.ps1', '.bat', '.md') or not path.is_file():
@@ -26,8 +26,9 @@ def inventory():
             if any(part in ('__pycache__', 'cache', 'reports', '.implementation-backup') for part in path.parts):
                 continue
             relative = str(path.relative_to(REPO)).replace('\\', '/')
-            active = path.parent == HERE and path.name in ACTIVE
-            category = 'active' if active else 'archived' if 'df-prof-pipeline-v1.0' in relative else 'historical' if path.is_relative_to(PACKAGE) else 'support'
+            active = ((path.parent == HERE and path.name in ACTIVE)
+                      or path == PACKAGE / 'prepare_workspace.py')
+            category = 'active' if active else 'historical' if path.is_relative_to(PACKAGE) else 'support'
             for number, line in enumerate(path.read_text(encoding='utf-8-sig', errors='replace').splitlines(), 1):
                 for match in DRIVE.finditer(line):
                     comment = line.lstrip().startswith(('#', '--', '*', '"""', 'r"""'))

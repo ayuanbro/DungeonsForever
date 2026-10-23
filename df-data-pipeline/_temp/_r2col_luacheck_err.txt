@@ -1,3 +1,0 @@
-Checking Core/PvPUI.lua                           1 error
-    Core/PvPUI.lua:908:1: expected <eof> near 'end'
-Total: 79 warnings / 1 error in 3 files

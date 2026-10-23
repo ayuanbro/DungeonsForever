@@ -1,5 +1,0 @@
-== fix stdout ==
-changed files = 23  (apply=False)
-diff lines = 57  -> _r7_fix_diff.txt
-== mixed stdout ==
-report written: D:\workspace\DungeonsForever\_temp\_r7_mixed_report.txt  (hits=108)

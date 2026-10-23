@@ -1,0 +1,15 @@
+# Frozen evidence must retain the line endings recorded in its SHA-256 manifests.
+df-data-pipeline/_temp/_fc/inputs/** text eol=crlf
+df-data-pipeline/_temp/_fc/inputs/vendors/npc-factions.json text eol=lf
+df-data-pipeline/_temp/_fc/inputs/vendors/npc-factions-audit.json text eol=lf
+df-data-pipeline/_temp/_fc/inputs/vendors/faction-sources/manifest.json text eol=lf
+df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json text eol=lf
+df-data-pipeline/_temp/_fc/inputs/**/*.db2 -text
+
+df-data-pipeline/_temp/_fc/maintenance/locales.json text eol=lf
+df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/** text eol=lf
+df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/revision-1-manifest.json text eol=crlf
+df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/normalized/drop_loc.json text eol=crlf
+df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/normalized/vendor_loc.json text eol=crlf
+df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/normalized/zone_zh.json text eol=crlf
+df-data-pipeline/_temp/_wago_AreaTable_zh.csv text eol=lf

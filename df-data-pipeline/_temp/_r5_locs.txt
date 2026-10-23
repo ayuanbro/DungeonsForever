@@ -1,5 +1,0 @@
-113:     "v": "Pets"
-308:     "v": "High Order Skyborne"
-384:       "+5% damage to Beasts and Dragonkin."
-202:     "v": "false"
-214:     "v": "false"

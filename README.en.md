@@ -309,7 +309,7 @@ The following is maintenance navigation, **not a batch execution order**. Histor
 | Raid sets, PvP, and reputation | `gen_raidsets.py`, `gen_pvp_data.py`, `gen_pvp_honor.py`, `gen_factions_data.py`, and related tools | Source versions, values, and maintenance rules |
 | Collections, exploration, NPC locations, and independent profession extensions | Respective generators, explicit maintenance configuration, and historical increments | New content, coordinates, quest conditions, and maintenance changes |
 
-Scripts are generally under `df-data-pipeline/_temp/`. See the [dataset index](df-data-pipeline/INDEX.md) for the full mapping and [architecture guide](ARCHITECTURE.md) for code, loading order, and SavedVariables contracts. `df-prof-pipeline-v1.0/` is retired. Old `sync_beta.py`, `mk_df_*`, and historical patch scripts are not routine update steps.
+Scripts are generally under `df-data-pipeline/_temp/`. See the [dataset index](df-data-pipeline/INDEX.md) for the full mapping and [architecture guide](ARCHITECTURE.md) for code, loading order, and SavedVariables contracts. The retired profession package and duplicate archive have been removed; use Git history to inspect them. Old `sync_beta.py`, `mk_df_*`, and historical patch scripts are not routine update steps.
 
 <a id="focused-updates"></a>
 ## Focused updates
@@ -319,9 +319,18 @@ These are check commands. To publish after reviewing the result, replace `--chec
 ```powershell
 python -B df-data-pipeline/_temp/fc_update.py --materials-only --check
 python -B df-data-pipeline/_temp/fc_update.py --specializations-only --check
-python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --check
 python -B df-data-pipeline/_temp/fc_update.py --check --offline
 ```
+
+The merged CSV and tool samples are no longer tracked. Before the first `--from-csv` check, prepare a tool workspace and generate the CSV. These commands leave official `Core/Data` unchanged:
+
+```powershell
+python -B df-data-pipeline/prepare_workspace.py
+python -B df-data-pipeline/_temp/fc_prof_items.py
+python -B df-data-pipeline/_temp/fc_update.py --from-csv df-data-pipeline/_temp/_fc/data/DataProfItems.csv --check
+```
+
+Preparation copies official `Core/Data` to `df-data-pipeline/Core/Data` and refuses an existing destination directory. Skip the first command when a workspace already exists. Preparation does not repair fixed paths in historical tools; check the [pipeline instructions](df-data-pipeline/README.md) before using them.
 
 | Scope | Behavior |
 | --- | --- |

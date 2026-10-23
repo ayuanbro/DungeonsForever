@@ -83,14 +83,22 @@ class FirstAidFixedDataTests(unittest.TestCase):
 
     def test_base_and_locale_generation_replay_checked_in_bytes_without_writes(self):
         inputs = fc_gen.generation_input_paths()
-        before = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inputs.items()}
+        before = {name: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+                  for name, path in inputs.items()}
+        runtime_paths = [ROOT / 'Core/Data' / relative for relative in (
+            'Data_ProfLeveling.lua', 'enUS/Data_ProfLeveling.lua', 'zhTW/Data_ProfLeveling.lua')]
+        runtime_before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in runtime_paths}
         # Vendor output receives a separate NPC enrichment stage; this change
         # owns only the fixed-route file and its two translated overlays.
+        self.assertEqual(fc_gen.render_data(self.directory), self.outputs)
         self.assertEqual(maintenance.render_model(self.model), self.outputs)
-        self.assertEqual(self.outputs['Data_ProfLeveling.lua'], (ROOT / 'Core/Data/Data_ProfLeveling.lua').read_bytes())
+        # Git autocrlf may change checkout line endings. Compare generated LF
+        # content exactly, while checking original bytes and mtimes below.
+        self.assertEqual(self.outputs['Data_ProfLeveling.lua'],
+                         runtime_before[runtime_paths[0]][0].replace(b'\r\n', b'\n'))
         localized = fc_locales.render_locales({'Data_ProfLeveling.lua': self.outputs['Data_ProfLeveling.lua']}, ROOT / 'Core/Data')
         for relative, content in localized.items():
-            self.assertEqual(content, (ROOT / 'Core/Data' / relative).read_bytes(), relative)
+            self.assertEqual(content, runtime_before[ROOT / 'Core/Data' / relative][0].replace(b'\r\n', b'\n'), relative)
             runtime = maintenance.lua_runtime()
             runtime.eval('function(locale) GetLocale=function() return locale end end')(relative.split('/')[0])
             namespace = runtime.table()
@@ -102,7 +110,10 @@ class FirstAidFixedDataTests(unittest.TestCase):
                     self.assertEqual(actual.get(field), info.get(field), (relative, spell, field))
                 if not info['trainer']:
                     self.assertEqual({v['id'] for v in actual['source']['vendors'].values()}, {2805, 13476})
-        self.assertEqual(before, {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inputs.items()})
+        self.assertEqual(before, {name: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+                                  for name, path in inputs.items()})
+        self.assertEqual(runtime_before, {path: (path.read_bytes(), path.stat().st_mtime_ns)
+                                          for path in runtime_paths})
 
 
 if __name__ == '__main__':
