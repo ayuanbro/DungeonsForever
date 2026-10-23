@@ -211,6 +211,46 @@ local function SupplyWrite(id, qty, price)
     supplyRevision = supplyRevision + 1
 end
 
+function AB.GetAuctionSupplyHistory(id)
+    if type(id) ~= "number" or id <= 0 then return nil end
+    local A = Auctionator
+    if type(A) ~= "table" or type(A.Database) ~= "table" then return nil end
+    local db = A.Database
+    if type(db) ~= "table" or type(db.GetPriceHistory) ~= "function" then return nil end
+    local ok, rows = pcall(db.GetPriceHistory, db, tostring(id))
+    if not ok or type(rows) ~= "table" then return nil end
+    local best, newest
+    for _, row in ipairs(rows) do
+        if type(row) == "table" then
+            local day = tonumber(row.rawDay)
+            local avail = tonumber(row.available)
+            if avail and avail >= 0 and day and (newest == nil or day > newest) then
+                best, newest = row, day
+            end
+        end
+    end
+    if not best or newest == nil then return nil end
+    local day0 = type(A.Constants) == "table" and tonumber(A.Constants.SCAN_DAY_0) or nil
+    return {
+        quantity = tonumber(best.available),
+        observedAt = day0 and (newest * 86400 + day0) or 0,
+        complete = false,
+        source = "auctionator-history",
+    }
+end
+
+function AB.GetAuctionPriceObservedAt(id)
+    if type(id) ~= "number" or id <= 0 then return nil end
+    local store = SupplyStore()
+    local rec = store and store[id] or nil
+    if type(rec) == "table" and tonumber(rec.t) and rec.t > 0 then return tonumber(rec.t) end
+    local est = AB.SupplyEstimate(id)
+    if type(est) == "table" and tonumber(est.observedAt) and est.observedAt > 0 then
+        return tonumber(est.observedAt)
+    end
+    return nil
+end
+
 local function SupplyAbort(msg)
     if supplyTimer then supplyTimer:Cancel(); supplyTimer = nil end
     supplyQueue, supplyCur, supplyDone = nil, nil, nil
@@ -318,7 +358,9 @@ local function SupplyOnEvent(_, event, arg1)
         return
     end
     if not supplyCur then return end
-    if event == "AUCTION_HOUSE_SEARCH_RESULTS_UPDATED" then
+    if event == "AUCTION_HOUSE_SEARCH_RESULTS_UPDATED"
+        or event == "COMMODITY_SEARCH_RESULTS_UPDATED"
+        or event == "ITEM_SEARCH_RESULTS_UPDATED" then
         if supplyCur.commodity and arg1 == supplyCur.id then
             if not C_AuctionHouse.HasFullCommoditySearchResults(supplyCur.id) then
                 C_AuctionHouse.RequestMoreCommoditySearchResults(supplyCur.id)
@@ -372,8 +414,15 @@ function AB.StartSupplyScan(ids, onDone)
     supplyQueue = queue
     supplyDone = onDone
     supplyFrame:RegisterEvent("AUCTION_HOUSE_CLOSED")
-    supplyFrame:RegisterEvent("AUCTION_HOUSE_SEARCH_RESULTS_UPDATED")
-    supplyFrame:RegisterEvent("AUCTION_HOUSE_SEARCH_RESULTS_INCREMENTAL")
+    local evOk = C_EventUtils and C_EventUtils.IsEventValid or nil
+    local function RegEvent(ev)
+        if evOk and not evOk(ev) then return end
+        pcall(supplyFrame.RegisterEvent, supplyFrame, ev)
+    end
+    RegEvent("AUCTION_HOUSE_SEARCH_RESULTS_UPDATED")
+    RegEvent("AUCTION_HOUSE_SEARCH_RESULTS_INCREMENTAL")
+    RegEvent("COMMODITY_SEARCH_RESULTS_UPDATED")
+    RegEvent("ITEM_SEARCH_RESULTS_UPDATED")
     supplyCur = {}
     Say(format(L["开始扫描拍卖行数量（%d 种）…"], #queue))
     SupplyNext()

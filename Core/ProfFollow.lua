@@ -113,7 +113,9 @@ local function dbProf()
 end
 
 local function charKey()
-    return (UnitName("player") or "?") .. "-" .. (GetRealmName() or "?")
+    local name = type(UnitName) == "function" and UnitName("player") or nil
+    local realm = type(GetRealmName) == "function" and GetRealmName() or nil
+    return (name or "?") .. "-" .. (realm or "?")
 end
 
 local function onlyMissView()
@@ -447,17 +449,19 @@ local function craftsLeft(seg, skill, rec)
     return (seg[4] or 0) * math.min(1, (seg[2] - from) / span)
 end
 
-local function shopList(s)
+local function shopList(s, onlyStep)
     local _, steps = routeFor(s.slug, s.skill)
     if not steps then return {} end
     local rm = recMap(s.slug)
     local totals, order = {}, {}
-    for i = (s.step or 1), #steps do
+    local curStep = s.step or 1
+    for i = curStep, #steps do
+        if onlyStep and i > curStep then break end
         local seg = steps[i]
         local rec = rm[seg[3]]
         local mats = recMats(rec)
         local crafts = seg[4] or 0
-        if i == s.step then
+        if i == curStep then
             crafts = math.ceil(craftsLeft(seg, s.skill, rec))
         end
         if mats and crafts > 0 then
@@ -468,12 +472,14 @@ local function shopList(s)
                     totals[m[1]] = e
                     order[#order + 1] = m[1]
                 end
-                e.need = e.need + (m[2] or 1) * crafts
+                local qty = (m[2] or 1) * crafts
+                e.need = e.need + qty
+                if i == curStep then e.atStep = (e.atStep or 0) + qty end
             end
         end
     end
     local G = ns.ProfGates
-    local goal = G and G.SpecGoal and G.SpecGoal(s.slug, routeTarget(s.slug))
+    local goal = (not onlyStep) and G and G.SpecGoal and G.SpecGoal(s.slug, routeTarget(s.slug))
     if goal and type(goal.inputs) == "table" then
         for _, pair in ipairs(goal.inputs) do
             local sid, sn = pair[1], tonumber(pair[2]) or 0
@@ -496,6 +502,28 @@ local function shopList(s)
         list[#list + 1] = e
     end
     return list
+end
+
+function PF.SupplementNeeds(slug)
+    slug = slug or (st() and st().slug)
+    if not slug then return nil end
+    local s = st()
+    if not (s and s.slug == slug and s.step) then
+        local cur = skillOf(slug) or 0
+        s = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1 }
+    end
+    local list = shopList(s, true)
+    local items, kinds, qty = {}, 0, 0
+    for _, e in ipairs(list) do
+        local lack = (e.need or 0) - (e.have or 0)
+        if lack > 0 then
+            items[#items + 1] = { id = e.id, need = e.need, have = e.have, lack = lack }
+            kinds = kinds + 1
+            qty = qty + lack
+        end
+    end
+    if kinds == 0 then return nil end
+    return { items = items, kinds = kinds, qty = qty, step = s.step }
 end
 
 local function TipOn(bt, title, body)
@@ -646,7 +674,13 @@ local function jumpCraft()
     if mats then
         for _, m in ipairs(mats) do
             if (Have(m[1]) or 0) < (m[2] or 1) then
-                craftNotify(L["材料不足，先按购物清单备齐再制造"]) return
+                local sup = PF.SupplementNeeds(s.slug)
+                if sup then
+                    craftNotify(format(L["本步材料不足：缺 %d 种共 %d 件，先按购物清单补齐"], sup.kinds, sup.qty))
+                else
+                    craftNotify(L["材料不足，先按购物清单备齐再制造"])
+                end
+                return
             end
         end
     end
@@ -1044,8 +1078,6 @@ local function BuildBody()
     f.shop:SetBackdropBorderColor(1, 1, 1, 0.14)
     f.shop.__round = RoundFrame(f.shop, 6, { 1, 1, 1, 0.14 })
     if f.shop.__round then f.shop:SetBackdropBorderColor(0, 0, 0, 0) end
-    f.shop.head = MakeFS(f.shop, 14, C_HEAD, "LEFT")
-    f.shop.head:SetPoint("TOPLEFT", f.shop, "TOPLEFT", 8, -8)
     local labW = 70
     do
         local PDw = ns.ProfModule
@@ -1054,9 +1086,6 @@ local function BuildBody()
             if okw and type(wv) == "number" then labW = math.ceil(wv) end
         end
     end
-    local SHOP_TOG_W = labW + 48
-    f.shop.head:SetPoint("RIGHT", f.shop, "RIGHT", -(SHOP_TOG_W + 66 + 66 + 10 + 12), 0)
-    f.shop.head:SetWordWrap(false)
     f.shop.missTog = CreateFrame("CheckButton", nil, f.shop)
     f.shop.missTog:SetSize(36, 20)
     f.shop.missTog:EnableMouse(true)
@@ -1475,7 +1504,6 @@ function PF.Paint()
             e.missing = e.need - e.have
             if (not onlyMissView()) or e.missing > 0 then shown[#shown + 1] = e end
         end
-        f.shop.head:SetText(L["购物清单"] .. format(L[" · 共%d种"], #shown))
         f.shop.missTog:SetChecked(onlyMissView())
         if PF.ProcureBusy() then f.shopProc:SetText(L["优化中…"]) else f.shopProc:SetText(L["优化买法"]) end
         local procure

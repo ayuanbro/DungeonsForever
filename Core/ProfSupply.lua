@@ -45,10 +45,18 @@ local function Allowed(side, mine)
 end
 
 local function Compare(a, b)
-    local qa, qb = a.quantity, b.quantity
-    if type(qa) ~= "number" or qa < 1 then qa = 1 end
-    if type(qb) ~= "number" or qb < 1 then qb = 1 end
-    local ua, ub = a.price / qa, b.price / qb
+    local ca = (a.currencyID or 0) > 0 and 1 or 0
+    local cb = (b.currencyID or 0) > 0 and 1 or 0
+    if ca ~= cb then return ca < cb end
+    local ua, ub
+    if ca == 1 then
+        ua, ub = a.currencyAmount or 0, b.currencyAmount or 0
+    else
+        local qa, qb = a.quantity, b.quantity
+        if type(qa) ~= "number" or qa < 1 then qa = 1 end
+        if type(qb) ~= "number" or qb < 1 then qb = 1 end
+        ua, ub = (a.price or 0) / qa, (b.price or 0) / qb
+    end
     if ua ~= ub then return ua < ub end
     return (a.npcID or 0) < (b.npcID or 0)
 end
@@ -83,7 +91,7 @@ end
 
 local FORMULA_STEP = 8
 
-local function BuildFormulaList(itemID)
+local function BuildFormulaList(itemID, withCurrency)
     local flat = ns.ProfFormulaOffers and ns.ProfFormulaOffers[itemID]
     if type(flat) ~= "table" then return nil end
     local total = #flat
@@ -91,27 +99,41 @@ local function BuildFormulaList(itemID)
     local verifiedAt = M.formulaVerifiedAt
     local list
     for i = 1, total, FORMULA_STEP do
-        local npcID, cost, stock, side, qty, curID = flat[i], flat[i + 1], flat[i + 2], flat[i + 3], flat[i + 5], flat[i + 6]
-        local extended = Int(curID, 1)
-        if Int(npcID, 1) and not extended and Int(cost, 0) then
+        local npcID, cost, stock, side = flat[i], flat[i + 1], flat[i + 2], flat[i + 3]
+        local areaID, pack, curID, curAmt = flat[i + 4], flat[i + 5], flat[i + 6], flat[i + 7]
+        if Int(npcID, 1) then
             local unlimited = stock == -1
             local limited = (type(stock) == "number" and stock >= 0) and stock or nil
-            local pack = Int(qty, 1) and qty or 1
-            local areaID = Int(flat[i + 4], 1) and flat[i + 4] or nil
-            list = list or {}
-            list[#list + 1] = {
-                npcID = npcID, price = cost,
-                quantity = pack, bundleSize = pack,
+            local entry = {
+                npcID = npcID,
+                quantity = Int(pack, 1) and pack or 1,
                 unlimited = unlimited, limited = limited,
                 maxStock = limited and stock or nil,
-                stockUnknown = not unlimited and limited == nil or nil,
+                stockUnknown = (not unlimited and limited == nil) or nil,
                 available = stock ~= 0, purchasable = true,
-                hasExtendedCost = false, currencyID = 0,
                 reference = true, priceVerified = true, estimated = false,
                 source = "formula-offers", verifiedAt = verifiedAt,
                 faction = FactionOf(side),
-                areaID = areaID,
+                areaID = Int(areaID, 1) and areaID or nil,
+                hasExtendedCost = false, currencyID = 0, price = 0,
             }
+            entry.bundleSize = entry.quantity
+            if Int(curID, 1) then
+                if not withCurrency then entry = nil end
+                if entry then
+                    entry.currencyID = curID
+                    entry.currencyAmount = tonumber(curAmt) or 0
+                    entry.hasExtendedCost = true
+                end
+            elseif type(cost) == "number" then
+                entry.price = cost
+            else
+                entry = nil
+            end
+            if entry then
+                list = list or {}
+                list[#list + 1] = entry
+            end
         end
     end
     if not list then return nil end
@@ -178,11 +200,21 @@ function M.FormulaList(itemID)
     return BuildFormulaList(itemID)
 end
 
+function M.DisplayList(itemID)
+    if not Int(itemID, 1) then return nil end
+    if not M.formulaVerifiedAt then
+        local fmeta = ns.ProfFormulaOffersMeta
+        if type(fmeta) == "table" and fmeta.schemaVersion == 1 then
+            M.formulaVerifiedAt = fmeta.source or "formula-offers"
+        end
+    end
+    return BuildFormulaList(itemID, true)
+end
+
 function M.Flush()
     M.cache = nil
     M.stamp = nil
 end
-
 function M.Price(itemID)
     if not Int(itemID, 1) then return nil end
     M.Ensure()

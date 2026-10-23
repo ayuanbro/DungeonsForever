@@ -24,7 +24,7 @@ local function clone(s)
     local skill=E.Copy(s.skill); CloneYield()
     local progress=E.Copy(s.progress)
     local cap=E.Copy(s.cap)
-    local learned=E.Copy(s.learned); CloneYield()
+    local learned=s.learned
     local formulaPaid=E.Copy(s.formulaPaid)
     local ahUsed=E.Copy(s.ahUsed); CloneYield()
     local specializationAbilities=E.Copy(s.specializationAbilities)
@@ -63,7 +63,7 @@ local function betterState(a,b,snapshot)
     return uncertainty(a)<uncertainty(b)
 end
 local function initial(snap,slug,opts)
-    local s={inv={},unusable={},unusableSeed={},produced={},skill={},progress={},cap={},learned=E.Copy(snap.known),formulaPaid={},ahUsed={},specializationAbilities=E.Copy(snap.specializationAbilities),completedSpecializationGoals={},completedToolGoals={},diagnostics={},money=0,switches=0}
+    local s={inv={},unusable={},unusableSeed={},produced={},skill={},progress={},cap={},learned=snap.known,formulaPaid={},ahUsed={},specializationAbilities=E.Copy(snap.specializationAbilities),completedSpecializationGoals={},completedToolGoals={},diagnostics={},money=0,switches=0}
     for p,v in pairs(snap.professions) do s.skill[p]=v.cur or 1; s.cap[p]=v.max or 300 end
     s.skill[slug]=opts.start or s.skill[slug] or 1; s.cap[slug]=s.cap[slug] or 300
     local ids={}; for id in pairs(opts.executionInventory or {}) do if type(id)=="number" then ids[#ids+1]=id end end
@@ -126,7 +126,7 @@ local function stampFreshResult(result,snapshot)
     elseif route and route.StampToolPolicy then
         route.StampToolPolicy(result, snapshot and snapshot.targetProfession, nil, snapshot)
     end
-    if route and route.StampSupply then route.StampSupply(result) end
+    if route and route.StampSupply then route.StampSupply(result, snapshot) end
     return result
 end
 local function mergeItemIDs(dst,src)
@@ -1266,6 +1266,7 @@ function S.NewJob(slug,opts)
                 local nextState
                 j.collectFailures={}
                 expand(current,slug,j.target,{},function(t)
+                    j.expanded=j.expanded+1
                     if (t.skill[slug]>current.skill[slug] or t.skill[slug]==current.skill[slug]
                         and (t.progress[slug] or 0)>(current.progress[slug] or 0)
                         or completedGoals(t)>completedGoals(current))
@@ -1329,52 +1330,9 @@ function S.NewJob(slug,opts)
             publishPrefix(j.partial)
             j.result=S.Result(j,nil,"searching"); coroutine.yield("publish")
         end
-        local heap={}; local memo={}; local serial=0
-        local function less(a,b)
-            if math.abs(a.score-b.score)>1e-7 then return a.score<b.score end
-            local sa,sb=a.state,b.state
-            if sa.skill[slug]~=sb.skill[slug] then return sa.skill[slug]>sb.skill[slug] end
-            if sa.switches~=sb.switches then return sa.switches<sb.switches end
-            return a.serial<b.serial
-        end
-        local function push(t)
-            if pruned(t,true) then return end
-            local key=stateKey(t,j.reusable,j.recovery); local old=memo[key]
-            if old and (old.money<t.money-1e-7 or (math.abs(old.money-t.money)<1e-7 and old.switches<=t.switches)) then return end
-            memo[key]={money=t.money,switches=t.switches}
-            serial=serial+1; local entry={state=t,score=bound(t),serial=serial,key=key}; local i=#heap+1
-            while i>1 do local parent=floor(i/2); if not less(entry,heap[parent]) then break end; heap[i]=heap[parent]; i=parent end
-            heap[i]=entry
-        end
-        local function pop()
-            local top=heap[1]; local tail=table.remove(heap)
-            if #heap>0 then
-                local i=1
-                while i*2<=#heap do
-                    local child=i*2; if child<#heap and less(heap[child+1],heap[child]) then child=child+1 end
-                    if not less(heap[child],tail) then break end
-                    heap[i]=heap[child]; i=child
-                end
-                heap[i]=tail
-            end
-            return top
-        end
-        push(first)
-        while #heap>0 do
-            local entry=pop(); local t=entry.state; j.expanded=j.expanded+1
-            if goalsComplete(j,t) then
-                local batched=batchPlan(t,true)
-                if batched and better(batched,j.best) then j.best=batched; j.improvements=(j.improvements or 0)+1; j.result=S.Result(j,batched,"searching"); coroutine.yield("publish") end
-            elseif not pruned(t,true) then
-                local known=memo[entry.key]
-                if known and t.money<=known.money+1e-7 and t.switches<=known.switches then
-                    expand(t,slug,j.target,{},function(u) rememberPrefix(u); push(u) end,false)
-                end
-            end
-            if opts.maxNodes and j.expanded>=opts.maxNodes and #heap>0 then j.budgetLimited=true; break end
-            tick()
-        end
-        j.exhausted=not j.budgetLimited; j.searchTermination=j.budgetLimited and "node_limit" or "exhausted"
+        j.exhausted=false
+        j.budgetLimited=true
+        j.searchTermination="seed"
         j.status=j.best and (uncertainty(j.best)==0 and "complete" or "incomplete") or (j.partial and (j.partial.skill[slug]>first.skill[slug] or completedGoals(j.partial)>0) and "incomplete" or "infeasible")
         if not j.best and j.partial then publishPrefix(j.partial) end
         if not j.best then for _,d in pairs(j.failures) do if d.code=="clientDataPending" or d.code=="materialUnavailable" or d.code=="outputConflict" or d.code=="availabilityUnknown" then j.status="incomplete"; break end end end

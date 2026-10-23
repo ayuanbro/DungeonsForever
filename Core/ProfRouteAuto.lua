@@ -174,6 +174,41 @@ function RA.NPCSellPriceOf(itemID)
     return NPCSellPrice(itemID)
 end
 
+function RA.NPCBuyPriceOf(itemID)
+    if not itemID then return nil end
+    return VendorPrice(itemID)
+end
+
+function RA.NPCBuySupplierOf(itemID)
+    if not itemID then return nil end
+    local db = ns.VendorPriceDB
+    if not (db and db.GetOffers) then return nil end
+    local ok, offers = pcall(db.GetOffers, itemID)
+    if not ok or type(offers) ~= "table" then return nil end
+    local first = offers[1]
+    local npc = first and first.npcID
+    if not npc then return nil end
+    local name = ns.ProfVendorNames and ns.ProfVendorNames[npc] or nil
+    if type(name) ~= "string" or name == "" then return nil end
+    return name
+end
+
+function RA.Cancel(slug)
+    local SR = ns.ProfSolverRun
+    if not (SR and SR.Stop) then return false end
+    if slug and SR.Running and not SR.Running(slug) then return false end
+    SR.Stop()
+    local UIm = ns.ProfModule
+    local plan = UIm and UIm.autoSnapshot
+    if type(plan) == "table" and plan.status == "searching" then
+        plan.status = "stopped"
+        plan.searchComplete = true
+        plan.budgetLimited = true
+        UIm.solverFrac = nil
+    end
+    return true
+end
+
 function RA.MatListCost(mats)
     return MatListCost(mats)
 end
@@ -654,7 +689,7 @@ local function FillGaps(cands, steps, gaps, scheme)
     return MergeSteps(newSteps), newGaps
 end
 
-local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs)
+local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs, seedInv, skipMats)
     local total, crafts = 0, 0
     local productAH, productNPC, productPartial = 0, 0, false
     local mats, firstAt, matPrice, specSet = {}, {}, {}, {}
@@ -677,12 +712,14 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             if ml then
                 for _, m in ipairs(ml) do
                     local id = m[1]
-                    if matPrice[id] == nil then matPrice[id] = MatPrice(id, soldSet) end
-                    local p = matPrice[id]
-                    if p then
-                        sc = sc + p * (m[2] or 1) * (st[4] or 0)
-                    else
-                        unpriced = true
+                    if not (skipMats and skipMats[id]) then
+                        if matPrice[id] == nil then matPrice[id] = MatPrice(id, soldSet) end
+                        local p = matPrice[id]
+                        if p then
+                            sc = sc + p * (m[2] or 1) * (st[4] or 0)
+                        else
+                            unpriced = true
+                        end
                     end
                 end
             end
@@ -720,10 +757,12 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
         if ml then
             for _, m in ipairs(ml) do
                 local id = m[1]
-                mats[id] = (mats[id] or 0) + (m[2] or 1) * (st[4] or 0)
-                if not firstAt[id] or st[1] < firstAt[id] then firstAt[id] = st[1] end
-                if matPrice[id] == nil then
-                    matPrice[id] = MatPrice(id, soldSet)
+                if not (skipMats and skipMats[id]) then
+                    mats[id] = (mats[id] or 0) + (m[2] or 1) * (st[4] or 0)
+                    if not firstAt[id] or st[1] < firstAt[id] then firstAt[id] = st[1] end
+                    if matPrice[id] == nil then
+                        matPrice[id] = MatPrice(id, soldSet)
+                    end
                 end
             end
         end
@@ -739,13 +778,31 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             end
         end
     end
+    local covered, coveredCost = nil, 0
+    if type(seedInv) == "table" then
+        for id, have in pairs(seedInv) do
+            local need = mats[id]
+            if need and need > 0 and type(have) == "number" and have > 0 then
+                local use = math.min(need, have)
+                local p = matPrice[id]
+                if p == nil then p = MatPrice(id, soldSet) end
+                if p then coveredCost = coveredCost + p * use end
+                covered = covered or {}
+                covered[id] = use
+                mats[id] = need - use
+                if mats[id] <= 0 then mats[id] = nil end
+            end
+        end
+    end
     local list = {}
     for id, n in pairs(mats) do
         local p = matPrice[id]
         if p == nil then p = MatPrice(id, soldSet) end
         local rcode, rage
         if p == nil then rcode, rage = MatReason(id, soldSet) end
+        local have = covered and covered[id] or nil
         list[#list + 1] = { id, n, cost = (p or 0) * n, unit = p or 0,
+                            have = have, need = n + (have or 0),
                             vendor = soldSet[id] and true or false,
                             unpriced = (p == nil) and true or false,
                             spec = specSet[id] or nil,
@@ -807,6 +864,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             end
         end
     end
+    if coveredCost > 0 then total = math.max(0, total - coveredCost) end
     return total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
            productAH, productNPC, productPartial
 end
@@ -838,7 +896,7 @@ function RA.SummarizeSteps(steps, slug, opts)
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, specInputs)
+        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, specInputs, opts.executionInventory)
     local res = {
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
@@ -1101,15 +1159,25 @@ function RA.MarkFixedSpecializations(slug, steps, opts)
     return blocked
 end
 
-function RA.StampSupply(result)
+function RA.StampSupply(result, context)
     if type(result) ~= "table" then return result end
     local AB = ns.AuctionBridge
     local unknown = 0
     local now = (type(time) == "function") and time() or 0
+    local snapSupply = (type(context) == "table") and context.auctionSupply or nil
+    local snapHistory = (type(context) == "table") and context.auctionSupplyHistory or nil
+    local snapPriceAt = (type(context) == "table") and context.priceObservedAt or nil
+    local function SupplyOf(id)
+        local rec = snapSupply and snapSupply[id] or nil
+        if rec == nil and not snapSupply and AB and AB.GetAuctionSupply then
+            rec = AB.GetAuctionSupply(id)
+        end
+        return rec
+    end
     for _, e in ipairs(result.mats or {}) do
         local mid = e.id or e[1]
         if mid and not e.vendor and (e.source == nil or e.source == "ah") then
-            local rec = AB and AB.GetAuctionSupply and AB.GetAuctionSupply(mid) or nil
+            local rec = SupplyOf(mid)
             if rec and rec.complete and rec.ownerExcluded and rec.source == "client-auction-results"
                 and type(rec.quantity) == "number" and rec.observedAt > 0
                 and now - rec.observedAt <= 172800 then
@@ -1125,14 +1193,146 @@ function RA.StampSupply(result)
                 e.supplyObserved = false
                 unknown = unknown + 1
             end
+            local h = (snapHistory and snapHistory[mid])
+                or (not snapSupply and AB and AB.GetAuctionSupplyHistory and AB.GetAuctionSupplyHistory(mid))
+                or nil
+            if type(h) == "table" and tonumber(h.quantity) and h.quantity >= 0 then
+                e.supplyHistoryQuantity = h.quantity
+                e.supplyHistoryObservedAt = tonumber(h.observedAt) or 0
+            end
+            local pat = (snapPriceAt and snapPriceAt[mid])
+                or (not snapSupply and AB and AB.GetAuctionPriceObservedAt and AB.GetAuctionPriceObservedAt(mid))
+                or nil
+            if tonumber(pat) and pat > 0 then e.priceObservedAt = pat end
         end
     end
     result.auctionSupplyUnknown = unknown > 0 and unknown or nil
     return result
 end
 
+local function FishingCandidates(fishDB)
+    local soldSet = {}
+    local LV = ns.ProfLeveling and ns.ProfLeveling.cooking
+    if LV and type(LV.sold) == "table" then
+        for _, id in ipairs(LV.sold) do soldSet[id] = true end
+    end
+    local Rg = ns.ProfRecipes and ns.ProfRecipes.cooking
+    if not (Rg and type(Rg.rows) == "table") then return nil end
+    local cands, recOf, fishSet = {}, {}, {}
+    for _, rec in ipairs(Rg.rows) do
+        RouteTick()
+        local spell, learn, grey = rec[1], rec[7], rec[10]
+        local mats = rec[12]
+        if type(spell) == "number" and type(learn) == "number" and type(grey) == "number"
+           and grey > learn and type(mats) == "table" and #mats > 0 then
+            local ok, hasFish = true, false
+            for _, m in ipairs(mats) do
+                local f = fishDB[m[1]]
+                if f then
+                    if f.season or f.night then ok = false end
+                    hasFish = true
+                    fishSet[m[1]] = f
+                elseif not MatPrice(m[1], soldSet) then
+                    ok = false
+                end
+            end
+            if ok and hasFish then
+                local cY = (type(rec[8]) == "number") and rec[8] or learn
+                cands[#cands + 1] = {
+                    spell = spell, item = rec[2], learn = learn, yellow = cY,
+                    green = (type(rec[9]) == "number") and rec[9] or cY,
+                    grey = grey, mats = mats, cost = 0, fcost = 0, base = 0,
+                    learnO = learn,
+                }
+                recOf[spell] = rec
+            end
+        end
+    end
+    return cands, recOf, soldSet, fishSet
+end
+
+function RA.ComputeFishing(slug, opts)
+    opts = opts or {}
+    local F = ns.ProfFishingRoutes
+    local fishDB = F and F.fish
+    if not fishDB then return nil end
+    local cands, recOf, soldSet, fishSet = FishingCandidates(fishDB)
+    if not cands or #cands == 0 then return nil end
+    local cap = tonumber(opts.target) or CAP
+    cap = math.max(2, math.min(CAP, math.floor(cap)))
+    local start = math.max(1, math.min(cap - 1, opts.start or 1))
+    local steps, gaps = Simulate(cands, start, cap, true, "crafts")
+    if #steps == 0 then return nil end
+    local stepsOut = ToReached(steps)
+    local fishList, fishAt = {}, {}
+    for _, st in ipairs(stepsOut) do
+        RouteTick()
+        local rec = recOf[st[3]]
+        local ml = (rec and rec[12]) or {}
+        local cnt = st[4] or 0
+        local line = {}
+        for _, m in ipairs(ml) do
+            local f = fishDB[m[1]]
+            if f then
+                local need = (m[2] or 1) * cnt
+                local a1 = f.a and f.a[1]
+                local e = fishAt[m[1]]
+                if not e then
+                    e = { id = m[1], count = 0, need = 0, source = "fishing",
+                          areas = f.a, minSkill = a1 and a1.minSkill,
+                          noGetaway = a1 and a1.noGetaway, catchRate = f.rate, note = f.note }
+                    fishAt[m[1]] = e
+                    fishList[#fishList + 1] = e
+                end
+                e.count = e.count + need
+                e.need = e.count
+                line[#line + 1] = { id = m[1], count = need, need = need, source = "fishing", areas = f.a, note = f.note }
+            end
+        end
+        if #line > 0 then
+            local areas = {}
+            for _, e in ipairs(line) do
+                for _, a in ipairs(e.areas or {}) do areas[#areas + 1] = a end
+            end
+            st.fishing = line
+            st.fishMaterials = line
+            st.fishingAreas = areas
+            st.profession = "cooking"
+            st.role = "level"
+            st.reason = "level"
+        end
+    end
+    local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
+          productAH, productNPC, productPartial =
+        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory, fishSet)
+    local reached = stepsOut[#stepsOut] and stepsOut[#stepsOut][2] or start
+    local res = {
+        planVersion = 2, scheme = "fishing", fishingRoute = true,
+        steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
+        fishMaterials = fishList,
+        matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
+        total = total + formulasTotal, vendorTotal = vendorTotal,
+        ahTotal = total - vendorTotal,
+        productAH = productAH, productNPC = productNPC, productPartial = productPartial,
+        crafts = crafts,
+        start = start, target = cap, plannedTo = reached,
+        targetReached = reached >= cap, partial = reached < cap, feasible = true,
+        priced = RA.HasPriceData(),
+        snapshotAge = SnapshotSec(),
+        snapshotDays = priceCache.__minAge,
+        stamp = time and time() or 0,
+    }
+    res = RA.ApplyRecovery(res, "cooking", opts, recOf)
+    if res.targetReached then res.status = "complete" else res.status = "incomplete" end
+    return res
+end
+
 function RA.Compute(slug, opts)
     opts = opts or {}
+    if opts.scheme == "fishing" then
+        local fr = RA.ComputeFishing(slug, opts)
+        if fr then return fr end
+    end
     local cands, recOf, soldSet, blockedCount = BuildCandidates(slug, opts)
     if not cands then return nil end
     local scheme = opts.scheme
@@ -1159,7 +1359,7 @@ function RA.Compute(slug, opts)
     local kept = InjectTools(stepsOut, slug, cap, opts.start, recOf)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly)
+        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
     local res = {
         scheme = scheme,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
@@ -1213,11 +1413,15 @@ end)
 local function Fingerprint(opts, slug)
     local Pol = ns.ProfEconomy
     local pol = Pol and Pol.GetPolicies and Pol.GetPolicies(slug) or nil
-    return string.format("%s|%s|%s|%s|%s|%s|%s",
+    local partner = opts.secondaryProfession
+    if partner == nil and Pol and Pol.GetRoutePartner then partner = Pol.GetRoutePartner(slug) end
+    return string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s",
         tostring(opts.start), tostring(opts.onlyAH),
         tostring(opts.noFormula), tostring(opts.learnedOnly),
         tostring(opts.target and math.floor(tonumber(opts.target) or CAP)),
         tostring(opts.scheme),
+        tostring(opts.allowSecondaryLeveling),
+        tostring(partner),
         pol and Pol.PolicyFingerprint(pol) or "")
 end
 

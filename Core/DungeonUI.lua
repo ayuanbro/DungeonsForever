@@ -5701,6 +5701,8 @@ DG.Q_BADGE_PRE_BG = { 0.78, 0.60, 0.10, 1 }
 DG.Q_BADGE_SHARE_BG = { 0.16, 0.52, 0.26, 1 }
 DG.Q_BADGE_RACE_BG = { 0.78, 0.14, 0.12, 1 }
 DG.Q_BADGE_IN_BG = { 0.20, 0.45, 0.55, 1 }
+DG.Q_BADGE_BUY_BG = { 0.16, 0.38, 0.62, 1 }
+DG.Q_BADGE_MID_BG = { 0.42, 0.26, 0.60, 1 }
 DG.Q_RACE_TAG = { [1049] = { ok = { 2, 6, 8 }, label = "非亡灵" } }
 DG.Q_RACE_TAG_L = { ["非亡灵"] = L["非亡灵"] }
 function DG.QuestRaceTag(qid)

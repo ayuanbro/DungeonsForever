@@ -6,6 +6,7 @@ local E = ns.ProfEconomy
 if not E then return end
 
 local floor, min, max = math.floor, math.min, math.max
+local L = ns.L
 
 local function shallow(t)
     local o = {}
@@ -49,6 +50,63 @@ if not E.Policy then
     end
 end
 
+local DIAG_TEXT = {
+    vendorEstimate = L["NPC购买价格尚未配置。"],
+    vendorQuoteChanged = L["NPC购买价格资料已更新，请重新计算路线。"],
+    toolPolicyChanged = L["工具设置或工具列表已变化，请手动重新计算路线。"],
+    fixedOnlyChanged = L["急救已改为固定路线，请重新计算。"],
+    cooldown = L["已排除有冷却的制作配方。"],
+    cooldownUnknown = L["制作冷却尚未核实，请打开对应专业面板。"],
+    outputConflict = L["制作产量待读取，请打开对应专业面板。"],
+    availabilityUnknown = L["配方学习条件尚未核实。"],
+    excluded = L["配方已按自定义规则排除。"],
+    notLearned = L["当前设置仅允许已学配方。"],
+    clientUnavailable = L["客户端已确认此配方不可用。"],
+    specializationRequired = L["尚未满足此配方的专业专精学习要求。"],
+    specializationChanged = L["专精选择或学习条件已变化，请手动重新计算路线。"],
+    specializationFixed = L["固定攻略包含尚不可用的专精配方或入门任务，请切换自动规划。"],
+    specializationEvidenceConflict = L["此配方的专精学习资料存在冲突，需要确认。"],
+    specializationChoiceConflict = L["当前已学专精与所选目标不同；本路线不处理转修专精。"],
+    specializationFactionUnknown = L["尚未读取角色阵营，无法确定专精任务交付地点。"],
+    specializationQuestAlreadyCompleted = L["入门任务已经完成，但当前未确认所需专精；请先核实转修条件。"],
+    specializationUnknown = L["角色专精状态尚未读取，请登录角色并打开工程学面板后重试。"],
+    specializationLevelRequired = L["角色等级不足 30，暂时无法完成工程专精入门任务。"],
+    specializationLevelUnknown = L["尚未读取角色等级，无法确认工程专精任务资格。"],
+    specializationQuestDisabled = L["客户端已确认此专精任务当前不可用。"],
+    professionMissing = L["角色尚未学习所需专业。"],
+    skillRequired = L["另一专业技能不足，可开启联合升级或购买材料。"],
+    secondaryRequired = L["请先选择联合升级的另一个专业。"],
+    pairingChanged = L["搭配专业已更改，点击重新计算应用。"],
+    professionChanged = L["专业学习状态或旧路线规则已变化，请重新计算路线。"],
+    formulaUnavailable = L["未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。"],
+    limitedFormulaDisabled = L["当前设置不从商人购买限量图纸；请取得拍卖行报价或先学会该配方。"],
+    formulaPolicyChanged = L["限量图纸购买设置已变化，请重新计算路线。"],
+    formulaPriceUnknown = L["图纸购买价格尚未核实。"],
+    formulaStockUnknown = L["图纸为限量或未核实库存，不能保证商人现货。"],
+    auctionSupplyLimited = L["拍卖行可购数量不足，无法继续此配方；请查询更多货物或改用其他配方。"],
+    fishingRecipeGap = L["当前技能没有符合纯钓鱼条件的可用配方，请检查食谱、材料来源或排除设置。"],
+    materialUnavailable = L["材料没有可靠的购买或制作来源。"],
+    levelGap = L["当前技能区间没有可用升级配方。"],
+    clientDataPending = L["客户端数据待读取，请打开对应专业面板。"],
+    solverError = L["计算发生错误，请重新计算。"],
+    vendorPending = L["商人购买价格尚未配置。"],
+    characterLevelRequired = L["角色等级不足，无法学习所需专业等级。"],
+    vendorPriceUnknown = L["商人购买价格尚未核实。"],
+    materialPriceUnknown = L["拍卖行价格未知，先按已有资料显示路线。"],
+    batchDependency = L["合并制作所需的材料或学习等级尚未满足。"],
+    batchSkillGap = L["合并制作后无法达到目标技能，请调整配方限制。"],
+    executionInvalid = L["制作顺序或材料用途无法验证，请调整限制后重新计算。"],
+}
+
+function E.DiagnosticText(d)
+    if type(d) == "string" then return DIAG_TEXT[d] or d end
+    if type(d) ~= "table" then return nil end
+    if type(d.message) == "string" then return d.message end
+    local code = d.code
+    if type(code) ~= "string" then return nil end
+    return DIAG_TEXT[code] or code
+end
+
 function E.Gain(r, skill)
     if type(r) ~= "table" then return 0 end
     local learn, grey = r.learn, r.grey
@@ -82,9 +140,82 @@ function E.Known(spell)
     return false
 end
 
+local PRIMARY_FALLBACK = {
+    "alchemy", "blacksmithing", "enchanting", "engineering",
+    "leatherworking", "tailoring", "mining", "herbalism", "skinning",
+}
+
+local function partnerStore()
+    DungeonsForeverDB = DungeonsForeverDB or {}
+    local d = DungeonsForeverDB
+    d.prof = d.prof or {}
+    d.prof.routePartners = d.prof.routePartners or {}
+    return d.prof.routePartners
+end
+
+local function primaryOf(slug)
+    local data = ns.ProfData
+    local info = data and data.pro and data.pro[slug]
+    if info then return info.kind == "primary" end
+    for i = 1, #PRIMARY_FALLBACK do
+        if PRIMARY_FALLBACK[i] == slug then return true end
+    end
+    return false
+end
+
+function E.PartnerCandidates(slug)
+    local out, seen = {}, {}
+    local function add(p)
+        if p ~= slug and not seen[p] and primaryOf(p) then
+            seen[p] = true
+            out[#out + 1] = p
+        end
+    end
+    local data = ns.ProfData
+    local order = (data and data.order) or PRIMARY_FALLBACK
+    for i = 1, #order do add(order[i]) end
+    for i = 1, #PRIMARY_FALLBACK do add(PRIMARY_FALLBACK[i]) end
+    return out
+end
+
+function E.ValidPartner(slug, partner)
+    if type(partner) ~= "string" or partner == "" then return false end
+    local list = E.PartnerCandidates(slug)
+    for i = 1, #list do
+        if list[i] == partner then return true end
+    end
+    return false
+end
+
+function E.GetRoutePartner(slug)
+    local partner = partnerStore()[slug]
+    if E.ValidPartner(slug, partner) then return partner end
+end
+
+function E.SetRoutePartner(slug, partner)
+    if partner ~= nil and not E.ValidPartner(slug, partner) then return false end
+    local saved = partnerStore()
+    if saved[slug] == partner then return true end
+    saved[slug] = partner
+    local ra = ns.ProfRouteAuto
+    if ra and ra.Invalidate then ra.Invalidate() end
+    return true
+end
+
 function E.RouteContext(slug, opts, professions)
-    local p = professions and professions[slug]
-    local ctx = { requiresPartner = false, partnerValid = true, unlearned = (p == nil) }
+    opts = opts or {}
+    professions = professions or (opts.snapshot and opts.snapshot.professions) or E.Professions()
+    local target = professions[slug]
+    local unlearned = not target or target.unlearned == true
+    local partner = opts.secondaryProfession
+    if partner == nil then partner = E.GetRoutePartner(slug) end
+    local valid = E.ValidPartner(slug, partner)
+    local ctx = {
+        unlearned = unlearned,
+        requiresPartner = slug ~= "__purchase" and unlearned and opts.allowSecondaryLeveling == true,
+        partner = valid and partner or nil,
+        partnerValid = valid,
+    }
     local G = ns.ProfGates
     if G then
         local choice = G.EngineeringChoice()
@@ -94,15 +225,101 @@ function E.RouteContext(slug, opts, professions)
     return ctx
 end
 
-function E.NonAuctionableItem()
-    return false
+local function learnedCap(professions)
+    for _, v in pairs(professions or {}) do
+        if type(v) == "table" and type(v.max) == "number" and v.max > 0 and not v.unlearned then
+            return v.max
+        end
+    end
+    return 300
 end
 
-function E.AuctionSupplyOf()
+function E.RouteProfessions(slug, opts, professions)
+    opts = opts or {}
+    professions = professions or (opts.snapshot and opts.snapshot.professions) or E.Professions()
+    local context = E.RouteContext(slug, opts, professions)
+    if slug == "__purchase" then return professions, context end
+    if not context.unlearned then return professions, context end
+    local cap = learnedCap(professions)
+    local selected = {}
+    local target = professions[slug]
+    if target then
+        selected[slug] = shallow(target)
+    else
+        selected[slug] = { cur = tonumber(opts.start) or 1, max = cap, primary = true }
+    end
+    selected[slug].unlearned = true
+    if context.requiresPartner and context.partnerValid then
+        local partner = professions[context.partner]
+        if partner and not partner.unlearned then
+            selected[context.partner] = shallow(partner)
+        else
+            selected[context.partner] = { cur = 1, max = cap, primary = true, unlearned = true }
+        end
+    end
+    return selected, context
+end
+
+local SUPPLY_FIELDS = { "quantity", "observedAt", "source", "complete", "ownerExcluded", "market" }
+
+local function ValidSupply(entry)
+    return type(entry) == "table" and entry.source ~= "auctionator-daily-maximum"
+        and type(entry.quantity) == "number" and entry.quantity >= 0
+        and entry.quantity < math.huge and entry.quantity == math.floor(entry.quantity)
+end
+
+local function SupplyIdentity(entry)
+    if not entry then return false end
+    local out = {}
+    for i = 1, #SUPPLY_FIELDS do out[SUPPLY_FIELDS[i]] = entry[SUPPLY_FIELDS[i]] end
+    return out
+end
+
+function E.AuctionSupplyOf(context, id)
+    if type(id) ~= "number" or id <= 0 then return nil end
+    local entry
+    if context and context.auctionSupply then
+        entry = context.auctionSupply[id]
+    elseif not context or not context.prices then
+        local bridge = ns.AuctionBridge
+        if bridge and bridge.GetAuctionSupply then entry = bridge.GetAuctionSupply(id, true) end
+    end
+    if ValidSupply(entry) then return entry end
     return nil
 end
 
-function E.SummarizeAuctionSupply()
+function E.SummarizeAuctionSupply(result, context)
+    if type(result) ~= "table" then return result end
+    local ra = ns.ProfRouteAuto
+    if ra and ra.StampSupply then ra.StampSupply(result, context) end
+    local inputs, needed = {}, {}
+    for _, e in ipairs(result.mats or {}) do
+        local id = e.id or e[1]
+        if type(id) == "number" and id > 0 then
+            inputs[id] = SupplyIdentity(E.AuctionSupplyOf(context, id))
+            needed[id] = (needed[id] or 0) + (tonumber(e.count or e[2]) or 1)
+        end
+    end
+    result.auctionSupplyInputs = inputs
+    local complete = true
+    for _, e in ipairs(result.mats or {}) do
+        local id = e.id or e[1]
+        if type(id) == "number" and not e.vendor
+            and (e.source == nil or e.source == "ah" or e.source == "auction") then
+            local q = tonumber(e.availableCount)
+            if not q then
+                complete = false
+            else
+                if (needed[id] or 0) > q then
+                    e.supplyLimited = true
+                    complete = false
+                end
+                if e.supplyComplete ~= true then complete = false end
+            end
+        end
+    end
+    result.supplyComplete = complete and true or false
+    return result
 end
 
 local function vendorQuote(o)
@@ -240,6 +457,14 @@ function E.Index(s)
             if rec then
                 s.auctionSupply[id] = rec
             end
+            if AB.GetAuctionSupplyHistory then
+                local h = AB.GetAuctionSupplyHistory(id)
+                if h then s.auctionSupplyHistory[id] = h end
+            end
+            if AB.GetAuctionPriceObservedAt then
+                local pt = AB.GetAuctionPriceObservedAt(id)
+                if pt then s.priceObservedAt[id] = pt end
+            end
         end
     end
     return s
@@ -271,33 +496,43 @@ function E.Capture(slug, opts, tick)
         s.routeContext = s.routeContext or E.RouteContext(slug, opts, s.professions)
         return E.Index(s)
     end
+    local planProfs, routeCtx = E.RouteProfessions(slug, opts, opts.professions or E.Professions())
     local s = {
         recipes = {}, byKey = {}, known = {}, prices = {}, offers = {},
         auctionSupply = {}, auctionSupplyHistory = {}, priceObservedAt = {},
         vendorItems = {}, vendorSuppliers = {}, coverageComplete = true,
-        professions = opts.professions or E.Professions(),
+        professions = planProfs,
         stamp = (time and time()) or 0,
         character = ns.ProfEconomy.CharacterKey and ns.ProfEconomy.CharacterKey() or nil,
     }
     s.level = UnitLevel and UnitLevel("player") or nil
     local f = UnitFactionGroup and UnitFactionGroup("player") or nil
     s.faction = f == "Alliance" and "A" or (f == "Horde" and "H" or nil)
-    s.routeContext = E.RouteContext(slug, opts, s.professions)
-    if s.routeContext.unlearned then return E.Index(s) end
-    local tables = ns.ProfRecipes or {}
-    local d = tables[slug] or {}
-    for _, row in ipairs(d.rows or {}) do
-        local f13 = row[13]
-        addRecipe(s, slug, row[1], row[2], row[3], row[7], row[8], row[9], row[10],
-            row[12], type(f13) == "table" and f13[1] or nil, row[14], row[4])
-        tick()
+    s.routeContext = routeCtx
+    if routeCtx.unlearned and not (routeCtx.requiresPartner and routeCtx.partnerValid) then
+        return E.Index(s)
     end
-    local lv = ns.ProfLeveling and ns.ProfLeveling[slug]
-    for spell, ri in pairs(lv and lv.rinfo or {}) do
-        local formula = ri.formula or ri.formulaID
-        addRecipe(s, slug, spell, ri.makes, ri.count, ri.learn, ri.yellow, ri.green, ri.grey,
-            ri.mats, formula, ri.source, ri.category)
-        tick()
+    local tables = ns.ProfRecipes or {}
+    local loadList = { slug }
+    if routeCtx.requiresPartner and routeCtx.partnerValid then
+        loadList[#loadList + 1] = routeCtx.partner
+    end
+    for i = 1, #loadList do
+        local profSlug = loadList[i]
+        local d = tables[profSlug] or {}
+        for _, row in ipairs(d.rows or {}) do
+            local f13 = row[13]
+            addRecipe(s, profSlug, row[1], row[2], row[3], row[7], row[8], row[9], row[10],
+                row[12], type(f13) == "table" and f13[1] or nil, row[14], row[4])
+            tick()
+        end
+        local lv = ns.ProfLeveling and ns.ProfLeveling[profSlug]
+        for spell, ri in pairs(lv and lv.rinfo or {}) do
+            local formula = ri.formula or ri.formulaID
+            addRecipe(s, profSlug, spell, ri.makes, ri.count, ri.learn, ri.yellow, ri.green, ri.grey,
+                ri.mats, formula, ri.source, ri.category)
+            tick()
+        end
     end
     local items = {}
     for _, r in ipairs(s.recipes) do

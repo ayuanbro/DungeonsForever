@@ -869,7 +869,7 @@ do
         return tex
     end
 
-    local function BuildCardShadow(f, spread, alpha)
+    local function BuildCardShadow(f, spread, alpha, sub)
         if not f or not f.CreateTexture then return nil end
         spread = spread or 18
         local corner = spread + 8
@@ -881,7 +881,7 @@ do
         }
         local pieces = {}
         for i = 1, 9 do
-            local t = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+            local t = f:CreateTexture(nil, "BACKGROUND", nil, sub or -8)
             t:SetTexture(GLASS_SHADOW_TEX)
             t:SetTexCoord(unpack(coords[i]))
             t:SetVertexColor(0, 0, 0, 1)
@@ -1100,7 +1100,9 @@ do
         f.__huiBorderPieces = borderPieces
         local shadowPieces
         if f:GetParent() == UIParent then
-            shadowPieces = BuildCardShadow(f, 18, 0.75)
+            shadowPieces = BuildCardShadow(f, 10, 0.6, -7)
+            local far = BuildCardShadow(f, 26, 0.35, -8)
+            for _, t in ipairs(far) do shadowPieces[#shadowPieces + 1] = t end
         end
         local function repaintFill()
             for _, tex in ipairs(pieces) do

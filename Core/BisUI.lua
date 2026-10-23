@@ -879,13 +879,19 @@ local function LoadFilterPrefs()
     BG.onlyUsable = s.fOnlyUsable and true or false
     local lv = s.fFilterLv
     BG.filterLv = (type(lv) == "number" and lv >= 1 and lv <= 60) and math.floor(lv) or nil
-    if s.fSrcVer ~= 2 then
-        s.fSrcVer = 2
-        if s.fSrcSet and s.fSrcSet.vendor == nil then s.fSrcSet.vendor = true end
+    if s.fSrcVer ~= 3 then
+        s.fSrcVer = 3
+        local ss = s.fSrcSet
+        if ss == nil then
+            ss = {}
+            for _, f in ipairs(FILTERS) do ss[f.id] = true end
+        end
+        ss.other = nil
+        s.fSrcSet = ss
     end
     BG.srcSet = {}
     for _, f in ipairs(FILTERS) do
-        BG.srcSet[f.id] = (s.fSrcSet == nil) or (s.fSrcSet[f.id] == true)
+        BG.srcSet[f.id] = (s.fSrcSet[f.id] == true)
     end
 end
 

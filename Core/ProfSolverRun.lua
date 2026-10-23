@@ -11,6 +11,9 @@ ns.ProfSolverRun = M
 local FRAME_MS = 6
 local SLICE_MS = 2
 local NOTIFY_MS = 250
+local GC_SOFT_KB = 24576
+local GC_STEPS = 2
+local GC_STEP_KB = 512
 
 local live = nil
 local serial = 0
@@ -85,12 +88,16 @@ function M.Start(slug, opts, hooks)
     if not o.professions then
         local E = ns.ProfEconomy
         local list = (E and E.Professions and E.Professions()) or {}
-        if not list[slug] then list[slug] = { cur = 1, max = 300 } end
+        if not list[slug] then
+            list[slug] = { cur = 1, max = 300 }
+            if o.allowSecondaryLeveling then list[slug].unlearned = true end
+        end
         o.professions = list
     end
     serial = serial + 1
     local j = S.NewJob(slug, o)
     local a = { job = j, slug = slug, serial = serial, hooks = hooks or {}, notified = 0 }
+    if type(collectgarbage) == "function" then a.gcBase = collectgarbage("count") or 0 end
     live = a
     local function notify(done)
         local h = a.hooks.onProgress
@@ -99,6 +106,11 @@ function M.Start(slug, opts, hooks)
         if not done and a.notified ~= 0 and now - a.notified < NOTIFY_MS then return end
         a.notified = now
         h(j, M.State(j), done)
+    end
+    local function keepGC()
+        if not a.gcBase or a.gcBase <= 0 then return end
+        if collectgarbage("count") <= a.gcBase + GC_SOFT_KB then return end
+        for _ = 1, GC_STEPS do collectgarbage("step", GC_STEP_KB) end
     end
     ns.IdleJobs.Add(function()
         if live ~= a then return true end
@@ -109,6 +121,7 @@ function M.Start(slug, opts, hooks)
             if done then break end
             if debugprofilestop() - frameStart >= FRAME_MS then break end
         end
+        if not done then keepGC() end
         notify(done)
         if done then
             live = nil

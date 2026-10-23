@@ -230,6 +230,46 @@ function T.Rebase(run, steps)
     return true, matched, kept
 end
 
+local function carryProgress(old, steps)
+    if not (old and type(old.progress) == "table" and type(old.steps) == "table") then return nil end
+    local byOld, used = {}, {}
+    for i = 1, #old.steps do
+        local sp = old.steps[i].spell
+        local list = byOld[sp]
+        if not list then list = {} byOld[sp] = list end
+        list[#list + 1] = i
+    end
+    local progress, kept = {}, 0
+    for ni = 1, #steps do
+        local list = byOld[steps[ni].spell]
+        if list then
+            for k = 1, #list do
+                local oi = list[k]
+                if not used[oi] then
+                    used[oi] = true
+                    local p = old.progress[oi]
+                    if type(p) == "table" then
+                        local attempts = {}
+                        local src = p.attempts or EMPTY
+                        for q = 1, #src do attempts[q] = src[q] end
+                        local manual = p.manual
+                        if type(manual) == "table" and manual.item ~= steps[ni].item then manual = nil end
+                        progress[ni] = {
+                            casts = min(p.casts or 0, steps[ni].crafts or 0),
+                            attempts = attempts,
+                            manual = manual,
+                        }
+                        kept = kept + 1
+                    end
+                    break
+                end
+            end
+        end
+    end
+    if kept == 0 then return nil end
+    return progress
+end
+
 function T.Archive(slug, reason, run)
     run = run or T.GetRun(slug)
     if run then
@@ -262,9 +302,20 @@ function T.Bind(slug, result, opts)
     end
     local steps = T.Extract(result)
     if not steps then return nil, "no_steps" end
+    local carriedProgress, carriedOutputs
+    if old and opts.force then
+        carriedProgress = carryProgress(old, steps)
+        carriedOutputs = old.outputs
+    end
     if old then T.Archive(slug, opts.force and "replace" or "stale", old) end
     c.nextID = (c.nextID or 0) + 1
     local planID = charKey() .. ":track:" .. c.nextID
+    local outputs = {}
+    if type(carriedOutputs) == "table" then
+        for id, n in pairs(carriedOutputs) do
+            if integer(id) and integer(n) and id > 0 and n > 0 then outputs[id] = n end
+        end
+    end
     local run = {
         planID = planID,
         slug = slug,
@@ -281,8 +332,8 @@ function T.Bind(slug, result, opts)
         steps = steps,
         planSig = planSig(steps),
         specSig = ns.ProfRouteAuto and ns.ProfRouteAuto.SpecSig and ns.ProfRouteAuto.SpecSig(slug) or nil,
-        progress = {},
-        outputs = {},
+        progress = carriedProgress or {},
+        outputs = outputs,
         currentIndex = 1,
         step = 1,
         casts = 0,
@@ -630,6 +681,36 @@ local function onLootMessage(text)
     recordAll(function(slug)
         T.RecordOutput(slug, itemID, qty)
     end)
+end
+
+local function bagCount(id)
+    if C_Item and C_Item.GetItemCount then
+        local ok, n = pcall(C_Item.GetItemCount, id, false, false, false)
+        if ok and integer(n) then return n end
+    end
+    if type(GetItemCount) == "function" then
+        local ok, n = pcall(GetItemCount, id, false)
+        if ok and integer(n) then return n end
+    end
+    return 0
+end
+
+function T.ContinueInventory(slug)
+    local run = T.GetRun(slug)
+    if not run then return nil end
+    local ids, out, any = {}, {}, false
+    for _, st in ipairs(run.steps or EMPTY) do
+        for _, m in ipairs(st.mats or EMPTY) do
+            if type(m[1]) == "number" then ids[m[1]] = true end
+        end
+        if type(st.item) == "number" then ids[st.item] = true end
+    end
+    for id in pairs(ids) do
+        local n = bagCount(id)
+        if n > 0 then out[id] = n; any = true end
+    end
+    if not any then return nil end
+    return out
 end
 
 function T.RecordCreatedText(text)
