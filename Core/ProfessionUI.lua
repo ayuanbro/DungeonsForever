@@ -4467,6 +4467,7 @@ function PD.PaintLvTiles()
     local cached = PD.PlanCacheText(s)
     if cached then details[#details + 1] = { cached, 0.95, 0.75, 0.4 } end
     if s.budgetLimited then details[#details + 1] = { L["已完成本轮计算，当前结果尚未证明最优。"], 0.95, 0.75, 0.4 } end
+    if s.quotesRefreshed then details[#details + 1] = { L["数量或费率已更新，本轮数字已按最新价格重算。"], 0.7, 0.7, 0.7 } end
     for _, ln in ipairs(details) do costLines[#costLines + 1] = ln end
     TipOn(tiles.cost, costLines)
     if fixedOnly then tiles.scheme.__use = false end

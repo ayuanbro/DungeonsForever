@@ -365,8 +365,11 @@ function T.Progress(slug, index, run)
     if cur == nil then cur = skillOf(slug) end
     local done = (cur ~= nil) and cur >= (st.to or 0)
     local outputs = 0
-    for _, a in ipairs(p.attempts) do outputs = outputs + (tonumber(a.out) or 0) end
-    if type(p.manual) == "table" then outputs = outputs + (tonumber(p.manual.total) or 0) end
+    if type(p.manual) == "table" then
+        outputs = tonumber(p.manual.total) or 0
+    else
+        for _, a in ipairs(p.attempts) do outputs = outputs + (tonumber(a.out) or 0) end
+    end
     local planned = st.crafts or 0
     local casts = p.casts or 0
     return {
@@ -507,11 +510,12 @@ function T.RecipeTotals(slug)
         local p = (run.progress or {})[i]
         if p then
             entry.casts = entry.casts + (p.casts or 0)
-            for _, a in ipairs(p.attempts or EMPTY) do
-                entry.out = entry.out + (tonumber(a.out) or 0)
-            end
             if type(p.manual) == "table" then
                 entry.out = entry.out + (tonumber(p.manual.total) or 0)
+            else
+                for _, a in ipairs(p.attempts or EMPTY) do
+                    entry.out = entry.out + (tonumber(a.out) or 0)
+                end
             end
         end
     end

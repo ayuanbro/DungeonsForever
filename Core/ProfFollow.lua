@@ -360,6 +360,54 @@ function PF.Skip()
     PF.Paint()
 end
 
+function PF.VerifyCurrentOutput(total, ref)
+    local T = ns.ProfTrack
+    local s = st()
+    if not (s and s.slug and T and T.VerifyOutput and T.Progress) then return false end
+    local run = T.GetRun(s.slug)
+    local prog = run and T.Progress(s.slug, nil, run)
+    if not ref then ref = prog end
+    if not ref or not ref.item or ref.finished then return false end
+    total = tonumber(total)
+    if not total or total < 0 or total ~= math.floor(total) then return false end
+    local ok = T.VerifyOutput(s.slug, ref.index, ref.item, total)
+    PF.view = 0
+    PF.Paint()
+    return ok ~= false
+end
+
+local function verifyOutputDialog()
+    local T = ns.ProfTrack
+    local s = st()
+    if not (s and s.slug and T and T.GetRun and T.Progress) then return end
+    if not (StaticPopupDialogs and StaticPopup_Show) then return end
+    local run = T.GetRun(s.slug)
+    local prog = run and T.Progress(s.slug, nil, run)
+    if not prog or not prog.item or prog.finished then return end
+    local data = { slug = s.slug, index = prog.index, item = prog.item, total = prog.outputs or 0 }
+    StaticPopupDialogs.DF_PROF_VERIFY_OUTPUT = {
+        text = L["填写本步骤累计实际产出件数（不是当前背包数量）。"],
+        button1 = L["确认"], button2 = L["取消"], hasEditBox = true,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+        OnShow = function(self)
+            local edit = self.editBox or (self.GetEditBox and self:GetEditBox())
+            if edit then
+                edit:SetText(tostring((self.data and self.data.total) or 0))
+                edit:SetFocus()
+                edit:HighlightText()
+            end
+        end,
+        OnAccept = function(self)
+            local d = self.data
+            local edit = self.editBox or (self.GetEditBox and self:GetEditBox())
+            local n = edit and tonumber(edit:GetText())
+            if not (d and n and n >= 0 and n == math.floor(n)) then return end
+            PF.VerifyCurrentOutput(n, d)
+        end,
+    }
+    StaticPopup_Show("DF_PROF_VERIFY_OUTPUT", nil, nil, data)
+end
+
 local function expPerPoint(sk, o, y, g, gr)
     if sk < y then return 1 end
     if sk < g then return 1 / (1 - 0.5 * (sk - y) / (g - y)) end
@@ -1074,6 +1122,10 @@ function PF.Build()
     f.nowBtn:Hide()
     f.nowBtn:SetScript("OnClick", function() PF.view = 0 PF.Paint() ns.PlaySound(1) end)
 
+    f.verifyBtn = NewButton(f, L["校正产出"], 84, 22, 14)
+    f.verifyBtn:Hide()
+    f.verifyBtn:SetScript("OnClick", function() verifyOutputDialog() ns.PlaySound(1) end)
+
     local labels = { L["购物清单"], L["上一步"], L["下一步"] }
     local onclick = { function() PF.showShop = not PF.showShop PF.Paint() end, PF.Prev, PF.Skip }
     f.btns = {}
@@ -1243,6 +1295,10 @@ function PF.Paint()
     f.finish:SetShown(finished)
     f.card:SetShown(not finished)
     f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished)
+    local TK = ns.ProfTrack
+    local vRun = TK and TK.Active and TK.Active(slug)
+    local vProg = vRun and TK.Progress and TK.Progress(slug, nil, vRun)
+    f.verifyBtn:SetShown(not finished and vProg ~= nil and vProg.item ~= nil and not vProg.finished and not f.craftBtn:IsShown())
     f.craftBtn:SetShown(PF.CRAFT_BTN and not finished)
 
     local y = -82
@@ -1559,6 +1615,10 @@ function PF.Paint()
     if (PF.view or 0) ~= 0 and not finished then
         f.nowBtn:ClearAllPoints()
         f.nowBtn:SetPoint("BOTTOMRIGHT", f.card, "BOTTOMRIGHT", -6, 4)
+    end
+    if f.verifyBtn:IsShown() then
+        f.verifyBtn:ClearAllPoints()
+        f.verifyBtn:SetPoint("TOPRIGHT", f.btns[2], "TOPLEFT", -BTN_GAP, 0)
     end
 
     local by = y - 4

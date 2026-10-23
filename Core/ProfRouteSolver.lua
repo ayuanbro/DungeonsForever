@@ -110,6 +110,8 @@ local function mergeItemIDs(dst,src)
     return dst
 end
 function S.Result(job,state,status)
+    local yld=job and job.yieldIfDue or nil
+    local function st() if yld then yld() end end
     local prefix=job.preview or (job.partial and job.partial.batched and job.partial)
     local partial=not state and prefix and (prefix.skill[job.slug]>(job.opts.start or 1) or completedGoals(prefix)>0)
     if partial then state=prefix; partial=not goalsComplete(job,state) end
@@ -169,6 +171,7 @@ function S.Result(job,state,status)
     local toolOrigins={}
     local provenance={}; local usedOutputs={}; local allocations={}; local cashByRecipe={}; local countByRecipe={}; local unpricedByRecipe={}; local unpricedItemsByRecipe={}
     for _,a in ipairs(out.actions) do
+        st()
         if (a.type=="buy" or a.type=="formula") and a.owner then
             cashByRecipe[a.owner]=(cashByRecipe[a.owner] or 0)+a.cost
             unpricedByRecipe[a.owner]=unpricedByRecipe[a.owner] or a.unpriced
@@ -180,6 +183,7 @@ function S.Result(job,state,status)
         pool[#pool+1]={count=n,id=actionID,crafted=craftedOrigin and true or false}
     end
     for i,a in ipairs(out.actions) do
+        st()
         a.id=tostring(i)..":"..tostring(a.profession or "")..":"..tostring(a.spell or a.item or 0)
         local dependencies={}; local dependencySet={}
         for _,input in ipairs(a.inputs or {}) do
@@ -310,6 +314,7 @@ function S.Result(job,state,status)
     table.sort(out.mats,function(a,b) return a.id<b.id or (a.id==b.id and a.source<b.source) end)
     local occurrences,actionSegments={},{}
     for _,step in ipairs(out.executionSteps) do
+        st()
         local key=step.kind=="specialization_quest" and ("quest:"..step.goalID) or (step.profession..":"..step[3])
         occurrences[key]=(occurrences[key] or 0)+1
         step.segmentID="segment:"..key..":"..occurrences[key]
@@ -325,6 +330,7 @@ function S.Result(job,state,status)
         for _,id in ipairs(step.actionIDs) do actionSegments[id]=step.segmentID end
     end
     for _,step in ipairs(out.executionSteps) do
+        st()
         for _,id in ipairs(step.actionIDs) do for _,allocation in ipairs(allocations[id] or {}) do
             step.requiredOutputs[allocation.itemID]=(step.requiredOutputs[allocation.itemID] or 0)+allocation.count
             step.allocations[#step.allocations+1]={consumerID=actionSegments[allocation.consumerID] or allocation.consumerID,itemID=allocation.itemID,count=allocation.count}
@@ -351,6 +357,7 @@ function S.Result(job,state,status)
     end end
     local grouped={}
     for _,step in ipairs(out.executionSteps) do
+        st()
         local key=(step.checkpoint or step.kind=="specialization_quest") and step.actionID or (step.profession..":"..step[3])
         local row=grouped[key]
         if not row then
@@ -417,10 +424,22 @@ function S.NewJob(slug,opts)
     local function cpuTime()
         return j.cpuUsed+(j.sliceStart and max(0,clock()-j.sliceStart) or 0)
     end
+    local function yieldIfDue()
+        if not coroutine.running() then return end
+        if j.deadline and clock()>=j.deadline then coroutine.yield("work") end
+    end
+    j.yieldIfDue=yieldIfDue
     local function tick()
         ops=ops+1
         if j.seedDeadline and cpuTime()>=j.seedDeadline then j.seedAborted=true end
-        if ops>=1000 or (j.deadline and clock()>=j.deadline) then ops=0; coroutine.yield("work") end
+        if j.wantPublish and j.snap then
+            j.wantPublish=false
+            j.result=S.Result(j,j.best,"searching")
+        end
+        if ops>=1000 or (j.deadline and clock()>=j.deadline) then
+            ops=0
+            if coroutine.running() then coroutine.yield("work") end
+        end
     end
     j.tick=tick
     local function fail(code,r,id)
@@ -955,6 +974,7 @@ function S.NewJob(slug,opts)
         local trace=actions(first);local need,keep,quantities,owners,needOwner={},{},{},{},{}
         local changed=false
         for i=#trace,1,-1 do
+            tick()
             local a=trace[i]
             if a.type=="craft" then
                 local used=a.usableOutput~=false and a.item and (need[a.item] or 0)>0
@@ -987,12 +1007,15 @@ function S.NewJob(slug,opts)
             elseif a.type=="formula" or a.type=="gather" then keep[i]=true end
         end
         local selected={}
-        for i,a in ipairs(trace) do if keep[i] then
-            local event=E.Copy(a)
-            if quantities[i] then event.cost=event.cost*quantities[i]/event.count;event.count=quantities[i] end
-            if owners[i] then event.owner=owners[i] end
-            selected[#selected+1]=event
-        end end
+        for i,a in ipairs(trace) do
+            tick()
+            if keep[i] then
+                local event=E.Copy(a)
+                if quantities[i] then event.cost=event.cost*quantities[i]/event.count;event.count=quantities[i] end
+                if owners[i] then event.owner=owners[i] end
+                selected[#selected+1]=event
+            end
+        end
         local t=replay(selected)
         if not t or (requireGoal and not goalsComplete(j,t)) then fail("executionInvalid");return end
         if changed then j.restricted=true end
@@ -1337,7 +1360,7 @@ function S.Run(j,budget)
     if j.expanded>0 and coroutine.status(j.co)~="dead" then
         local mark=(j.improvements or 0)*100000+(j.expanded or 0)
         if mark~=j.pubMark and (not j.progressAt or clock()-j.progressAt>=1000) then
-            j.progressAt=clock(); j.pubMark=mark; j.result=S.Result(j,j.best,"searching")
+            j.progressAt=clock(); j.pubMark=mark; j.wantPublish=true
         end
     end
     return coroutine.status(j.co)=="dead"

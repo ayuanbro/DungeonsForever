@@ -274,6 +274,17 @@ function RA.SpellKnown(spell)
     return LearnKnown(spell)
 end
 
+local rtGate = 0
+local function RouteTick()
+    if not coroutine.running() then return end
+    if not debugprofilestop then return end
+    local now = debugprofilestop()
+    if now - rtGate >= 3 then
+        rtGate = now
+        coroutine.yield()
+    end
+end
+
 local specBlocked = 0
 local function BuildCandidates(slug, opts)
     specBlocked = 0
@@ -289,6 +300,7 @@ local function BuildCandidates(slug, opts)
 
     local cands, recOf = {}, {}
     for _, rec in ipairs(Rg.rows or {}) do
+        RouteTick()
         local spell, learn, yellow, green, grey = rec[1], rec[7], rec[8], rec[9], rec[10]
         local reagents = rec[12]
         if type(spell) == "number" and type(learn) == "number"
@@ -343,6 +355,7 @@ local function BuildCandidates(slug, opts)
     end
     if LV and type(LV.rinfo) == "table" then
         for spell, ri in pairs(LV.rinfo) do
+            RouteTick()
             if type(spell) == "number" and not recOf[spell]
                and type(ri.learn) == "number" and type(ri.grey) == "number"
                and ri.grey > ri.learn
@@ -445,6 +458,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
     local guard = 0
 
     while cur < cap do
+        RouteTick()
         guard = guard + 1
         if guard > 4000 then break end
 
@@ -523,6 +537,7 @@ local function SimulateRange(cands, a, b, scheme)
     local cur = a
     local guard = 0
     while cur <= b do
+        RouteTick()
         guard = guard + 1
         if guard > 1000 then break end
         local best, bestMetric
@@ -1014,9 +1029,8 @@ end
 
 function RA.Compute(slug, opts)
     opts = opts or {}
-    local cands, recOf, soldSet = BuildCandidates(slug, opts)
+    local cands, recOf, soldSet, blockedCount = BuildCandidates(slug, opts)
     if not cands then return nil end
-    local blockedCount = specBlocked
     local scheme = opts.scheme
     if scheme == nil or not SCHEME_LABEL[scheme] then scheme = "cheapest" end
     local cap = tonumber(opts.target) or CAP
@@ -1103,9 +1117,19 @@ local function Fingerprint(opts, slug)
         pol and Pol.PolicyFingerprint(pol) or "")
 end
 
+function RA.QuoteSig()
+    local AB = ns.AuctionBridge
+    local PDm = ns.ProfModule
+    local rev = AB and AB.SupplyRevision and AB.SupplyRevision() or 0
+    local fee = PDm and PDm.SettingRaw and tonumber(PDm.SettingRaw("recoveryFeePercent")) or 5
+    local lim = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas")) and 1 or 0
+    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim)
+end
+
 function RA.Get(slug, opts)
     opts = opts or {}
     local fp = Fingerprint(opts, slug)
+    local sig = RA.QuoteSig()
     local bucket = cache[slug]
     if not bucket then
         bucket = {}
@@ -1113,9 +1137,11 @@ function RA.Get(slug, opts)
     end
     local now = (type(time) == "function") and time() or 0
     local e = bucket[fp]
-    if e and (now - e.stamp) < CACHE_TTL then return e.res end
+    if e and e.sig == sig and (now - e.stamp) < CACHE_TTL then return e.res end
+    local refreshed = e ~= nil and e.sig ~= sig
     local res = RA.Compute(slug, opts)
-    bucket[fp] = { res = res, stamp = now }
+    if refreshed then res.quotesRefreshed = true end
+    bucket[fp] = { res = res, stamp = now, sig = sig }
     local n, oldK, oldT = 0, nil, nil
     for k, v in pairs(bucket) do
         n = n + 1
