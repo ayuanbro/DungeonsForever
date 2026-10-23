@@ -194,6 +194,93 @@ def bez(pts, step=8.0):
     return [[round(x, 2), round(y, 2)] for x, y in cur]
 
 
+def replay_amplitudes(floor, override):
+    """Replay saved raw paths without reading external FDR or boss-position files.
+
+    Keep the raw-path order and repeated segment numbers: the original generator
+    restarts numbering for every main path and applies the same amp to each one.
+    Verify the reconstructed baseline before using it instead of guessing when
+    a manually maintained floor no longer matches its saved source geometry.
+    """
+    segments = floor.get('segs') or []
+    manual = override.get('segs') or {}
+    amplitudes = {}
+    for number, value in (override.get('amp') or {}).items():
+        edit = manual.get(str(number)) or {}
+        if edit.get('del') or len(edit.get('pts') or []) >= 2:
+            continue
+        amplitude = float(value)
+        if not math.isfinite(amplitude):
+            raise ValueError('路线 amp 必须是有限数值')
+        amplitudes[str(number)] = amplitude
+    if not amplitudes:
+        return segments
+    if not set(amplitudes).issubset({str(s.get('n')) for s in segments}):
+        raise ValueError('路线 amp 引用了不存在的路段')
+
+    side_paths = [side['pts'] for side in floor.get('sides') or []]
+    rebuilt = []
+    for raw in floor.get('raw') or []:
+        if len(raw) < 2 or any(len(p) != 2 or not all(math.isfinite(v) for v in p) for p in raw):
+            raise ValueError('路线 amp 缺少有效原始坐标')
+        points = rdp(raw, 1.0)
+        # Consume side paths one at a time, preserving duplicate raw paths.
+        if points in side_paths:
+            side_paths.remove(points)
+            continue
+        cumulative = cumlen(points)
+        total = cumulative[-1]
+        if total <= 0:
+            raise ValueError('路线 amp 原始路径长度为零')
+        anchors = []
+        for stop in floor.get('stops') or []:
+            best = None
+            for pin in stop.get('pins') or []:
+                distance, _, _, position = project(points, cumulative, pin[0], pin[1])
+                if best is None or distance < best[0]:
+                    best = (distance, position, pin)
+            if best is not None and best[0] <= SNAP:
+                anchors.append((best[1], best[2], stop['cn']))
+        anchors.sort(key=lambda value: value[0])
+        previous_position, previous_pin = 0.0, None
+        for index, anchor in enumerate(anchors + [None]):
+            position = anchor[0] if anchor else total
+            end_pin = anchor[1] if anchor else points[-1]
+            number = str(index + 1)
+            baseline = build_seg(points, previous_position, position, cumulative,
+                                 previous_pin, end_pin, AMP, index * 1.11)
+            if len(baseline) >= 2 and (position - previous_position) > total * 0.012:
+                def finish(control):
+                    if previous_pin:
+                        control[0] = [round(v, 2) for v in previous_pin]
+                    control[-1] = [round(v, 2) for v in end_pin]
+                    return bez(control, 7.0)
+
+                baseline_points = finish(baseline)
+                output_points = baseline_points
+                if number in amplitudes:
+                    output_points = finish(build_seg(
+                        points, previous_position, position, cumulative,
+                        previous_pin, end_pin, amplitudes[number], index * 1.11))
+                rebuilt.append((index + 1, '入口' if index == 0 else anchors[index - 1][2],
+                                anchor[2] if anchor else '出口', baseline_points, output_points))
+            if anchor:
+                previous_position, previous_pin = position, end_pin
+    if side_paths or len(rebuilt) != len(segments):
+        raise ValueError('路线 amp 原始路径与现有路段不一致，请先核对路线基线')
+    result = []
+    for segment, generated in zip(segments, rebuilt):
+        if (segment.get('n'), segment.get('from'), segment.get('to')) != generated[:3]:
+            raise ValueError('路线 amp 路段顺序与原始路径不一致')
+        if not segment.get('ovr') and segment.get('pts') != generated[3]:
+            raise ValueError('路线 amp 基线几何与原始路径不一致')
+        row = dict(segment)
+        if str(segment['n']) in amplitudes:
+            row.update(pts=generated[4], ovr=False)
+        result.append(row)
+    return result
+
+
 def gen(fdr_key=None, dungeon_id=None, floor_uids=None, floor_key=None, out_path=None):
     fdr_key = fdr_key or DUNGEON
     dungeon_id = dungeon_id or DUNGEON_ID

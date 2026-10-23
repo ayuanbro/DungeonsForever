@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """组装 Data_CollectionPets.lua 的新增行（43 只分类页宠物）。
-输入：_companions_names.json / _companions_meta.json / _companions_meta_retry.json /
-      whb_companions_cat.html（图标）/ whb_<id>.html（来源区块标记）。
+输入：_companions_names.json / whb_companions_cat.html（图标）/
+      whb_<id>.html（来源区块标记）。
 输出：_companions_rows.lua 片段（人工审读后并入数据文件）。
 """
 import json
@@ -9,8 +9,6 @@ import re
 
 HERE = "_companions"
 NAMES = json.load(open("_companions_names.json", encoding="utf-8"))
-META1 = json.load(open("_companions_meta.json", encoding="utf-8"))
-META2 = json.load(open("_companions_meta_retry.json", encoding="utf-8"))
 KNOWN = {13582, 13583, 13584, 268109, 275682, 280456, 280614, 282047}
 
 # 分类页 id→图标 slug

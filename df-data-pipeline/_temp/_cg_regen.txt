@@ -1,3 +1,0 @@
--> D:\workspace\DungeonsForever\Core\Data\Data_ClassGuide.lua 147645 bytes
--> D:\workspace\DungeonsForever\Core\Data\enUS\Data_ClassGuide.lua 296666 bytes
-exit=0

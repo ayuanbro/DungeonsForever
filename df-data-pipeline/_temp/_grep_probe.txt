@@ -1,8 +1,0 @@
-zhCN-residual-en:
-0
-enUS-has-ProCon:
-0
-enUS-has-ShieldSlam-tip:
-0
-zhCN-has-ConNotChinese?
-0

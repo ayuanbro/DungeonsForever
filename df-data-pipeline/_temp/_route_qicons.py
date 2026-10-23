@@ -9,9 +9,10 @@ import json
 import os
 import re
 
-ROOT = 'D:/workspace/DungeonsForever'
-DATA = ROOT + '/_temp/_route_plan/data'
-OUT = DATA + '/qicons'
+from _route_paths import ROOT, PLAN, checked
+
+DATA = checked(PLAN + '/data')
+OUT = checked(DATA + '/qicons')
 
 ui = None
 
@@ -95,7 +96,7 @@ def main():
             icons.append(ent)
         if not icons:
             continue
-        io.open(OUT + '/%s.json' % did, 'w', encoding='utf-8', newline='\n').write(
+        io.open(checked(OUT + '/%s.json' % did), 'w', encoding='utf-8', newline='\n').write(
             json.dumps({'icons': icons}, ensure_ascii=False))
         n_unk = sum(1 for e in icons if e['unk'])
         total += len(icons)

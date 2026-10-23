@@ -295,7 +295,7 @@ Offline simulations and ZIP checks do not prove in-game APIs, live stock, actual
 <a id="other-modules"></a>
 ## Updating other modules
 
-The following is maintenance navigation, **not a batch execution order**. Historical tools may contain old absolute paths, one-time patches, or incremental writes. Before running them, check current inputs, outputs, dependencies, locale overlays, and official targets. Correct generated datasets through their inputs / generators rather than replacing a reproducible process with output edits.
+The following is maintenance navigation, **not a batch execution order**. Retained source tools may still contain old absolute paths, external input requirements, or incremental writes. Before running them, check current inputs, outputs, dependencies, locale overlays, and official targets. Correct generated datasets through their inputs / generators rather than replacing a reproducible process with output edits.
 
 | Module | Main entry points / references | What to verify |
 | --- | --- | --- |
@@ -309,7 +309,7 @@ The following is maintenance navigation, **not a batch execution order**. Histor
 | Raid sets, PvP, and reputation | `gen_raidsets.py`, `gen_pvp_data.py`, `gen_pvp_honor.py`, `gen_factions_data.py`, and related tools | Source versions, values, and maintenance rules |
 | Collections, exploration, NPC locations, and independent profession extensions | Respective generators, explicit maintenance configuration, and historical increments | New content, coordinates, quest conditions, and maintenance changes |
 
-Scripts are generally under `df-data-pipeline/_temp/`. See the [dataset index](df-data-pipeline/INDEX.md) for the full mapping and [architecture guide](ARCHITECTURE.md) for code, loading order, and SavedVariables contracts. The retired profession package and duplicate archive have been removed; use Git history to inspect them. Old `sync_beta.py`, `mk_df_*`, and historical patch scripts are not routine update steps.
+Scripts are generally under `df-data-pipeline/_temp/`. See the [dataset index](df-data-pipeline/INDEX.md) for the full mapping and [architecture guide](ARCHITECTURE.md) for code, loading order, and SavedVariables contracts. Completed migration, patch, debugging, probing, and deployment tools have been removed; use Git history to inspect them. Current entry points and dependencies, manual inputs, frozen evidence, and required offline inputs remain tracked. Old logs, UI samples, and reproducible intermediates are excluded. See the [maintenance file inventory](df-data-pipeline/MAINTENANCE_FILES.md) for exact paths and regeneration boundaries.
 
 <a id="focused-updates"></a>
 ## Focused updates
@@ -398,7 +398,7 @@ DungeonsForever/
 ├── Locales/                # Interface text
 ├── Libs/                   # Bundled libraries
 ├── Media/                  # Maps, images, and other runtime assets
-├── df-data-pipeline/       # Unified profession pipeline and historical module tools
+├── df-data-pipeline/       # Profession pipeline, module generators, and maintained inputs
 ├── scripts/                # Independent client / vendor / NPC data producers
 ├── tests/                  # Offline regressions and acceptance records
 ├── package_addon.bat       # Packager for current official runtime files
@@ -410,6 +410,7 @@ DungeonsForever/
 - [Unified profession pipeline](df-data-pipeline/README.md)
 - [Script and input mapping](df-data-pipeline/SCRIPT_INPUTS.md)
 - [Dataset and generator index](df-data-pipeline/INDEX.md)
+- [Maintenance file inventory and cleanup boundaries](df-data-pipeline/MAINTENANCE_FILES.md)
 - [Maintenance records](df-data-pipeline/MANUAL_MAINTENANCE.md)
 - [Ordinary material vendors and purchase eligibility](df-data-pipeline/MATERIAL_VENDORS.md)
 - [Recipe-item vendor collection](scripts/README.md)

@@ -1,6 +1,0 @@
-★ FOREVER 英文锚校验通过：英文含 Forever 的条目，中文均含「无限」且无「无限+杂词」。
--> D:\workspace\DungeonsForever\Core\Data\Data_ClassGuide.lua 147258 bytes
--> D:\workspace\DungeonsForever\Core\Data\enUS\Data_ClassGuide.lua 297976 bytes
-Core/Data/enUS/Data_ClassGuide.lua  no-op=True comments=0 tail=0
-Core/Data/Data_ClassGuide.lua  no-op=True comments=0 tail=0
-exit=0

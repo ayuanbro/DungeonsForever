@@ -4,14 +4,17 @@ import json
 import re
 import sys
 
-sys.path.insert(0, 'D:/workspace/DungeonsForever/_temp')
+from _route_paths import TEMP, PLAN, checked
+from _route_gen import replay_amplitudes
+
+sys.path.insert(0, TEMP)
 import _route_faction as FAC
 
-ROOT = 'D:/workspace/DungeonsForever/_temp/_route_plan'
-IDX = ROOT + '/data/index.json'
-OVRF = 'D:/workspace/DungeonsForever/_temp/_route_override.json'
-QTIPF = 'D:/workspace/DungeonsForever/_temp/_route_qtip_override.json'
-QHIDEF = 'D:/workspace/DungeonsForever/_temp/_route_qi_hide.json'
+ROOT = PLAN
+IDX = checked(ROOT + '/data/index.json')
+OVRF = checked(TEMP + '/_route_override.json')
+QTIPF = checked(TEMP + '/_route_qtip_override.json')
+QHIDEF = checked(TEMP + '/_route_qi_hide.json')
 
 data = json.load(io.open(IDX, encoding='utf-8'))
 
@@ -130,6 +133,8 @@ for row in data.get('dungeons') or []:
 for row in data.get('dungeons') or []:
     did = row.get('id')
     for fl in row.get('floors') or []:
+        floor_key = str(fl['ui']) if fl.get('ui') else 'L%d' % fl['n']
+        fl['segs'] = replay_amplitudes(fl, (raw.get(row.get('fdr') or did) or {}).get(floor_key) or {})
         for n in fl.get('notes') or []:
             if not n.get('side'):
                 sd = FAC.note_side(did, n.get('text'), n.get('raw') or '')
@@ -141,12 +146,12 @@ js2 = json.dumps(ov, ensure_ascii=False, separators=(',', ':'))
 
 qd = {}
 import os
-QDIR = ROOT + '/data/qicons'
+QDIR = checked(ROOT + '/data/qicons')
 if os.path.isdir(QDIR):
     for fn in os.listdir(QDIR):
         if fn.endswith('.json'):
             did = fn[:-5]
-            icons = json.load(io.open(QDIR + '/' + fn, encoding='utf-8')).get('icons') or []
+            icons = json.load(io.open(checked(QDIR + '/' + fn), encoding='utf-8')).get('icons') or []
             for e in icons:
                 sd = FAC.quest_side(did, e.get('qid'))
                 if sd:
@@ -162,7 +167,7 @@ except Exception:
     qhide = {}
 js5 = json.dumps(qhide, ensure_ascii=False, separators=(',', ':'))
 
-p = ROOT + '/tune.html'
+p = checked(ROOT + '/tune.html')
 html = io.open(p, encoding='utf-8').read()
 n0 = html.count('<script')
 html2 = re.sub(r'^const DATA = .*$', lambda m: 'const DATA = ' + js + ';', html, count=1, flags=re.M)

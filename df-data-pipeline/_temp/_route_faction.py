@@ -8,7 +8,7 @@
 import io
 import re
 
-ROOT = 'D:/workspace/DungeonsForever'
+from _route_paths import ROOT
 ZH = ROOT + '/Core/Data/Data_DungeonQuests.lua'
 EN = ROOT + '/Core/Data/enUS/Data_DungeonQuests.lua'
 

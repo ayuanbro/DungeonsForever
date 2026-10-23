@@ -2098,7 +2098,7 @@ async function probeSave(){
     if(!j || !j.serve) throw 0;
     saveLive = true;
     btn.textContent = '保存 override';
-    btn.title = '直接写入 _temp/_route_override.json 并重建路线';
+    btn.title = '将修改保存到当前仓库并刷新编辑页';
     saveMsg('保存按钮已连上本地服务，点一下就是直接落盘。');
     return;
   }catch(e){}
@@ -2119,7 +2119,7 @@ async function saveToFile(){
   btn.style.opacity = '.6';
   const old = btn.textContent;
   btn.textContent = '保存中…';
-  saveMsg('正在写入并重建路线…');
+  saveMsg('正在保存修改并刷新编辑页…');
 
   const body = JSON.stringify({dungeon:S.dungeon, fdr:fdrKey(), data:exportObj()});
   try{
@@ -2131,7 +2131,7 @@ async function saveToFile(){
       saveMsg('<b style="color:#8fbf6a">已保存</b> ' + (j.where || '') + '<br>' +
               '<span style="font-family:Consolas,monospace;font-size:10.5px;white-space:pre-wrap">' +
               txt.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</span>', '#9fb98a');
-      flash('已保存并重建：' + (j.brief || '完成'), true);
+      flash('已保存：' + (j.brief || '完成'), true);
     }else{
       saveMsg('<b style="color:#e08a5a">保存失败</b><br>' +
               '<span style="font-family:Consolas,monospace;font-size:10.5px;white-space:pre-wrap">' +

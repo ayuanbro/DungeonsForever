@@ -1,6 +1,0 @@
-===== Core/Data/Data_ClassGuide.lua 命中 0 段 =====
-
-===== Core/Data/zhTW/Data_ClassGuide.lua 命中 0 段 =====
-
-★ 两产物合计「中英夹杂」段数 = 0
-★ 判定：PASS（中英夹杂=0）

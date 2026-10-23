@@ -8,9 +8,10 @@ import json
 import os
 import re
 
-ROOT = 'D:/workspace/DungeonsForever'
-PINS = ROOT + '/Core/Data/Data_MapPins.lua'
-OVR = ROOT + '/_temp/_route_qicon_override.json'
+from _route_paths import ROOT, TEMP, checked
+
+PINS = checked(ROOT + '/Core/Data/Data_MapPins.lua')
+OVR = checked(TEMP + '/_route_qicon_override.json')
 
 
 def num(v):

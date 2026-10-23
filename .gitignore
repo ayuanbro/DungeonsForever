@@ -24,12 +24,11 @@ venv/
 # Recreate legacy tools' working data with prepare_workspace.py when needed.
 /df-data-pipeline/Core/Data/
 
-# Completed one-time patches; this post-generation patch is still required.
+# Completed one-time patches; current generators are maintained separately.
 /df-data-pipeline/_temp/patch_*.py
-!/df-data-pipeline/_temp/patch_mut_main_fix.py
 /df-data-pipeline/_temp/_fix_*.py
 
-# Historical logs. Keep the files still referenced by retained tools.
+# Historical logs from retired diagnostic and repair tools.
 /df-data-pipeline/_temp/_p3_*.txt
 /df-data-pipeline/_temp/_r[2-7]*.txt
 /df-data-pipeline/_temp/_qa*.txt
@@ -45,28 +44,6 @@ venv/
 /df-data-pipeline/_temp/_enus_gap*.txt
 /df-data-pipeline/_temp/_luacheck*.txt
 /df-data-pipeline/_temp/_probe_*.txt
-!/df-data-pipeline/_temp/_r7_bproof.txt
-!/df-data-pipeline/_temp/_r7_diff_probe.txt
-!/df-data-pipeline/_temp/_r7_drift_report.txt
-!/df-data-pipeline/_temp/_r7_dump_report.txt
-!/df-data-pipeline/_temp/_r7_fix_diff.txt
-!/df-data-pipeline/_temp/_r7_junk_scan.txt
-!/df-data-pipeline/_temp/_r7_lua_scan.txt
-!/df-data-pipeline/_temp/_r7_mixed_report.txt
-!/df-data-pipeline/_temp/_r7_regress.txt
-!/df-data-pipeline/_temp/_r7_revert.txt
-!/df-data-pipeline/_temp/_r7_scan_report.txt
-!/df-data-pipeline/_temp/_r7_sens_report.txt
-!/df-data-pipeline/_temp/_r7_sky_deliver.txt
-!/df-data-pipeline/_temp/_r7_sky_final.txt
-!/df-data-pipeline/_temp/_r7_strip_proof.txt
-!/df-data-pipeline/_temp/_qa2_b_report.txt
-!/df-data-pipeline/_temp/_qa2_cli_report.txt
-!/df-data-pipeline/_temp/_qa2_heads.txt
-!/df-data-pipeline/_temp/_qa_sensitivity_report.txt
-!/df-data-pipeline/_temp/_run4_summary.txt
-!/df-data-pipeline/_temp/_run5_summary.txt
-!/df-data-pipeline/_temp/_run6_summary.txt
 
 # Rebuildable exports and completed rebase artifacts (not their source inputs).
 /df-data-pipeline/_temp/_fc/data/DataProfItems.csv
@@ -137,3 +114,6 @@ Desktop.ini
 /DungeonsForever-*.zip
 /DungeonsForever-*.zip.sha256
 /.DungeonsForever-package-*.tmp
+
+# Retired handoff instructions; current maintenance is indexed in INDEX.md.
+/df-data-pipeline/HISTORICAL_README.md

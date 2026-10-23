@@ -2,26 +2,26 @@
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-ROOT = 'D:/workspace/DungeonsForever'
-TEMP = ROOT + '/_temp'
-PLAN = TEMP + '/_route_plan'
+from _route_paths import ROOT, TEMP, PLAN, checked, require_workspace
+from _route_gen import replay_amplitudes
+
 OVR = TEMP + '/_route_override.json'
 PORT = 8766
 
-PY = r'C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Scripts/python.exe'
-if not os.path.exists(PY):
-    PY = sys.executable
+PY = sys.executable
 
 SHIPPED = 'blackfathom_deeps'
 
 
 def run(args, timeout=240):
     try:
-        p = subprocess.run([PY] + args, cwd=TEMP, capture_output=True, timeout=timeout)
+        p = subprocess.run([PY, '-B'] + args, cwd=TEMP, capture_output=True, timeout=timeout,
+                           env=dict(os.environ, PYTHONIOENCODING='utf-8'))
         out = (p.stdout or b'').decode('utf-8', 'replace')
         err = (p.stderr or b'').decode('utf-8', 'replace')
         return p.returncode == 0, out, err
@@ -124,7 +124,7 @@ def dump_override(d):
 
 def summarize(dungeon):
     try:
-        d = json.load(io.open(PLAN + '/data/%s.json' % dungeon, encoding='utf-8'))
+        d = json.load(io.open(checked(PLAN + '/data/%s.json' % dungeon), encoding='utf-8'))
     except Exception:
         return '?'
     segs = sum(len(v.get('segs') or []) for v in d.values())
@@ -149,6 +149,13 @@ def do_save(body):
     data = j.get('data')
     if not dungeon or not isinstance(data, dict) or not data:
         return {'ok': False, 'err': '缺少副本或段数据'}
+    if not re.fullmatch(r'[a-z0-9_-]+', dungeon) or not re.fullmatch(r'[a-z0-9_-]+', fdr):
+        return {'ok': False, 'err': '副本标识格式错误'}
+    try:
+        require_workspace()
+        checked(OVR + '.bak')
+    except (OSError, ValueError) as error:
+        return {'ok': False, 'err': str(error)}
 
     floors = data.get('floors')
     if not isinstance(floors, dict):
@@ -156,6 +163,21 @@ def do_save(body):
     qicons = data.get('qicons') if isinstance(data.get('qicons'), dict) else {}
     qtips = data.get('qtips') if isinstance(data.get('qtips'), dict) else {}
     qhide = data.get('qhide') if isinstance(data.get('qhide'), dict) else {}
+
+    if any((floor or {}).get('amp') for floor in floors.values()):
+        try:
+            with io.open(checked(PLAN + '/data/%s.json' % dungeon), encoding='utf-8') as source:
+                baseline = json.load(source)
+            with io.open(checked(PLAN + '/data/index.json'), encoding='utf-8') as source:
+                index = json.load(source)
+            page = next((row for row in index['dungeons'] if row['id'] == dungeon), {})
+            page_floors = {str(row['ui']) if row.get('ui') else 'L%d' % row['n']: row
+                           for row in page.get('floors') or []}
+            for key, floor in floors.items():
+                replay_amplitudes(baseline.get(str(key)) or {}, floor or {})
+                replay_amplitudes(page_floors.get(str(key)) or {}, floor or {})
+        except (OSError, TypeError, ValueError) as error:
+            return {'ok': False, 'err': str(error)}
 
     try:
         cur = json.load(io.open(OVR, encoding='utf-8'))
@@ -239,7 +261,8 @@ def do_save(body):
     if qicons:
         steps.append(('写回图钉数据', ['_route_write_pins.py']))
         steps.append(('重算图标清单', ['_route_qicons.py']))
-    steps.append(('重建全部副本', ['_route_build_all.py']))
+    # Existing route JSON is the maintained baseline. Raw external route import
+    # remains an explicit operation, separate from saving editor overrides.
     steps.append(('刷新微调页', ['_route_make_tune.py']))
     if dungeon == SHIPPED:
         steps.append(('生成 Lua', ['gen_route_lua.py']))
@@ -253,10 +276,7 @@ def do_save(body):
             return {'ok': False, 'err': '\n'.join(log),
                     'where': '_temp/_route_override.json'}
 
-    ok3, o3, e3 = run(['sync_beta.py', '--apply'])
-    line = [x for x in (o3 or '').splitlines() if '同步完成' in x]
-    log.append(('[ok] ' if ok3 else '[warn] ') + '同步客户端  ' +
-               ((line[-1].strip() if line else '') or ('失败: ' + (e3 or o3)[-120:])))
+    log.append('[ok] 已保存到当前仓库；生成数据位于 df-data-pipeline/Core/Data')
 
     return {'ok': True, 'log': '\n'.join(log), 'brief': summarize(dungeon),
             'where': '_temp/_route_override.json'}

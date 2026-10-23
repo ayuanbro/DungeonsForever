@@ -49,20 +49,37 @@
 | `fc_gen.py` | `index.json`、`prof_*.json`、`enchant_ids.json`、`vendor_loc.json`、可选 `vendor_side.json`、`drop_loc.json`、`zone_ids.json`、`zone_zh.json`；`zh.json`；`T\questie\questie_forever.json`；`T\_wago_AreaTable_zh.csv`；专业维护输入 | 支持文件优先取冻结暂存目录，否则取本包默认路径；无游戏/旧专业目录回退 |
 | `fc_maintenance.py` | `T\_fc\maintenance\professions.json`及其版本化维护记录/源文件 | 三方冲突检查、人工新增、阈值/来源修订、字段及分片省略、顺序与计数；一次性迁移参数 `--migrate-from` 才读取显式旧Lua目录 |
 | `fc_prof_items.py` | `vendors.csv`、`npcs.csv`、`item-buy-prices.csv`、默认NPC所属组织JSON；本轮生成的Data_ProfVendors.lua | 在内存合并，统一链使用同轮商人数据，并单独保留客户端物品基础整组价格；`--from-csv`只读指定19列DataProfItems.csv，跳过三表合并，所属JSON仍独立读取并生成 `ns.ProfVendorFactions` |
-| `fc_refresh_specializations.py` | 客户端3份CSV；有效专业目录；训练师旧CSV；专精current指针/显式DB2目录；网页缓存 | 在线只刷新独立网页证据；客户端3份CSV与DB2在线/离线均为只读输入。训练师CSV是本轮派生产物，`--apply`才同批发布 |
+| `fc_refresh_specializations.py` | 客户端3份CSV；有效专业目录；训练师旧CSV；专精current指针/显式DB2目录；网页缓存 | 在线只刷新独立网页证据；客户端3份CSV与DB2在线/离线均为只读输入。训练师CSV合并已有证据，缓存未覆盖的NPC保留旧记录；`--apply`才同批发布，旧CSV不能按一次性产物删除 |
 | `fc_prof_specializations.py` | 图纸CSV、训练师CSV、`prof_*.json`、`enchant_ids.json`及Wowhead规范缓存 | 合并学习途径/证据；缺证据保留pending，不把0当无限制 |
 | `fc_specialization_fetch.py` | `T\_fc\cache\specializations\wowhead-forever\<URL哈希>.json`；`.network-state`锁、请求时钟、冷却 | 在线低频请求Wowhead Forever专业页及所需法术页；尊重缓存、robots与冷却，离线不请求 |
 | `fc_recipe_catalog_fetch.py` | `T\_fc\cache\specializations\wuxianwow\recipes.json`、`source.json`；独立请求时钟/冷却 | 在线条件请求 `https://wuxianwow.com/data/recipes.json`及其robots；不能据此虚构精确build |
 | `fc_recipe_item_audit.py` | 客户端3份CSV、DB2 manifest和表、可选旧图纸CSV基线、可选外部配方目录JSON | 只读关联与未映射分类审计，无网络；省略DB2路径时从本包已验证current选择 |
 | `fc_recipe_item_web_audit.py` | 图纸CSV、DB2快照、已有Wowhead规范缓存 | 只审计可用网页证据，不自行发起抓取 |
 | `fc_locales.py` | 本轮6份基础Lua、`T\_fc\maintenance\locales.json`及语言审计记录；既有6份各语言Lua作为格式基线 | 以稳定身份与源文哈希复用人工译文；原文不匹配阻止生成；只处理6份专业表 |
-| `gen_enus_data.py` | `--source-root`中6份基础专业Lua和人工语言维护输入 | 独立enUS包装入口，不通配处理共享/非专业文件 |
+| `gen_enus_data.py` | `--source-root`中6份基础专业Lua、人工语言维护输入及全部17份 `enus_data*` 词典 | 独立enUS包装入口；词典在模块导入时合并，不通配处理共享/非专业文件 |
 | `gen_zhtw_data.py` | 同上，另读取OpenCC配置 | 独立zhTW包装入口 |
 | `gen_zhtw.py` | `R\.pipeline-runtime\lib`中的OpenCC，调用方传入文本 | 繁体转换辅助；缺OpenCC明确失败 |
 | `strip_comments.py` | 调用方传入Lua/样式文件 | 保留的去注释辅助；检查模式不改文件，不作为独立发布入口 |
-| `strip_lua_comments.py` | 命令行明确指定的Lua/目录；无参默认扫描 `P\Core` 与 `P\Locales` | 旧专业包去注释工具已完整保留，默认dry-run，`--apply`才写入；不接入统一链 |
+| `fc_material_vendors.py` | 材料维护配置、有效 `catalog/`、已有 `data/material-vendors.json`、客户端价格CSV和材料网页缓存 | 当前独立材料证据采集与供货生成；离线需要已有规范快照 |
+| `fc_material_coverage.py` | 有效专业目录与材料供货结果 | 当前材料覆盖核查，被材料链调用 |
 | `fc_package.py` | `R\DungeonsForever.toc`递归XML引用、`LICENSE`、Media资源以及完整专业批次验证后的21份专业Lua | 只生成安装ZIP；原运行文件按原字节收入，其余工具/缓存/报告不打包 |
 | `fc_path_audit.py` | 当前流水线、相关工具、测试与说明中的脚本文本 | 静态读取路径，区分活动/历史/外部支持工具；不会执行它们 |
+
+`fc_fields.py` 的独立 Lua 字段审计明确优先导入 `T\tools\tf_dryrun.py` 及同目录 `wow_stub.lua`；旧的 `T\tf_dryrun.py` 不属于此依赖。可重建的 `data/catalog/` 仍被独立专精/材料模式直接读取，规范 `index.json`、`prof_*.json`、`item_ids.json` 也是 `fc_parse.py --diff` 的旧批次基线，均继续保留。
+
+以下保留为辅助采集能力，不是日常统一链步骤。部分程序仍有旧输入路径，运行前须核对；它们的候选结果应经审核迁入当前输入和维护规则，不能直接覆盖正式六表。
+
+| 辅助脚本 | 保留的维护用途 |
+| --- | --- |
+| `fc_enchant_ids.py` | 从明确的 Skillwright 配方来源导入必需的 `enchant_ids.json`；当前 CSV 导出器没有替代此英文名关联表 |
+| `fc_vendors.py`、`fc_vendors_resolve.py` | 合并和补充 `vendor_loc.json` 的NPC ID、定位及名称；`scripts/gen_vendors.py` 的 CSV 不替代此关联表 |
+| `fc_vendor_side.py` | 采集配方商人的A/H访问证据；与 `npc-factions.json` 的声望组织所属分别维护 |
+| `fc_zh_sync.py` | 对齐网站英中文来源，更新 `zone_zh.json` |
+| `gen_prof_trainers.py`、`prof_trainer_npcid.py`、`prof_trainer_zh_fetch.py`、`prof_trainer_zh_inject.py` | 采集训练师候选、匹配NPC与中文名；保留人工字典和增量翻译。正式训练师数据仍由 `maintenance/professions.json` 的 `trainer_seed` 生成 |
+| `prof_trainer_zone_zh.py`、`prof_trainer_zone_ids.py`、`prof_trainer_zone_search.py` | 依次提取待补地名、匹配区域ID、查询剩余地名；搜索前须已有前两步的 JSON |
+| `prof_trainer_zone_fetch.py`、`prof_trainer_loc_inject.py` | 前者读取已有 `_trainers_zone_zh.json` 并输出网页/匹配候选，不回写该 JSON；后者读取审核后的 `_trainers_zone_full.json` 形成定位译文候选 |
+
+固定57个脏NPC的 `prof_trainer_zh_refetch.py` 及其批次清单、已完成的训练师清洗脚本已删除；通用采集功能由保留的工具承担。
 
 ## 配方学习途径与图纸出处如何取得
 

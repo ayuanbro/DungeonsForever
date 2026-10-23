@@ -295,7 +295,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Packaging failed.' }
 <a id="other-modules"></a>
 ## 其他模块如何更新
 
-以下是维护导航，**不是可按表顺序批量运行的脚本列表**。历史工具可能仍包含旧绝对路径、一次性补丁或增量写入逻辑。运行前核对当前输入、输出、依赖、语言覆盖及正式目标；生成表应从来源 / 生成器修正，不以手改结果代替可重现流程。
+以下是维护导航，**不是可按表顺序批量运行的脚本列表**。保留的来源辅助工具可能仍包含旧绝对路径、外部输入或增量写入逻辑。运行前核对当前输入、输出、依赖、语言覆盖及正式目标；生成表应从来源 / 生成器修正，不以手改结果代替可重现流程。
 
 | 模块 | 主要维护入口 / 线索 | 本轮需要确认 |
 | --- | --- | --- |
@@ -309,7 +309,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Packaging failed.' }
 | 团本套装、PvP 和声望 | `gen_raidsets.py`、`gen_pvp_data.py`、`gen_pvp_honor.py`、`gen_factions_data.py` 等 | 来源版本、数值和人工规则 |
 | 收藏、探索、NPC 定位及独立专业扩展 | 对应生成器、明确的维护配置及历史增量记录 | 新内容、坐标、任务条件和手工修订 |
 
-脚本通常位于 `df-data-pipeline/_temp/`。完整对应关系见[数据表索引](df-data-pipeline/INDEX.md)，代码、加载顺序和存档约定见[架构说明](ARCHITECTURE.md)。旧专业包及重复归档已移除，历史可从 Git 查询；旧 `sync_beta.py`、`mk_df_*` 及历史补丁不属于日常更新步骤。
+脚本通常位于 `df-data-pipeline/_temp/`，完整对应关系见[数据表索引](df-data-pipeline/INDEX.md)，代码、加载顺序和存档约定见[架构说明](ARCHITECTURE.md)。已完成的迁移、补丁、调试、探测及部署工具已移除，历史可从 Git 查询。当前入口及其依赖、手工维护输入、冻结证据和必需离线输入继续跟踪；旧日志、UI 样页和可重建中间产物不再保存。完整路径与重建边界见[维护文件清单](df-data-pipeline/MAINTENANCE_FILES.md)。
 
 <a id="focused-updates"></a>
 ## 只更新某一类数据
@@ -398,7 +398,7 @@ DungeonsForever/
 ├── Locales/                # 界面文案
 ├── Libs/                   # 内嵌库
 ├── Media/                  # 地图、图片及其他运行资源
-├── df-data-pipeline/       # 统一专业链与其他模块历史工具
+├── df-data-pipeline/       # 统一专业入口、各模块生成器与维护输入
 ├── scripts/                # 独立客户端 / 商人 / NPC 数据生产工具
 ├── tests/                  # 离线回归与验收记录
 ├── package_addon.bat       # 当前正式运行文件的安装包生成器
@@ -410,6 +410,7 @@ DungeonsForever/
 - [专业统一流水线](df-data-pipeline/README.md)
 - [脚本与输入对应关系](df-data-pipeline/SCRIPT_INPUTS.md)
 - [所有数据表与生成器索引](df-data-pipeline/INDEX.md)
+- [维护文件清单与清理边界](df-data-pipeline/MAINTENANCE_FILES.md)
 - [人工维护记录](df-data-pipeline/MANUAL_MAINTENANCE.md)
 - [普通材料商人和采购资格](df-data-pipeline/MATERIAL_VENDORS.md)
 - [图纸商人采集](scripts/README.md)

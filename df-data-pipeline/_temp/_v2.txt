@@ -1,5 +1,0 @@
-=apply=
-changed files = 1  (apply=True)
-diff lines = 1  -> _r7_fix_diff.txt
-=mixed=
-########## ② 中英夹杂（CJK 相邻英文实词）命中元素数 = 0 ##########

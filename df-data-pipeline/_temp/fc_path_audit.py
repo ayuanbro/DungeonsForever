@@ -12,6 +12,7 @@ ACTIVE = {
     'fc_prof_items.py', 'fc_prof_specializations.py', 'fc_refresh_specializations.py',
     'fc_specialization_fetch.py', 'fc_recipe_item_audit.py', 'fc_recipe_item_web_audit.py',
     'fc_recipe_catalog_fetch.py', 'fc_path_audit.py', 'fc_pipeline_paths.py', 'fc_package.py',
+    'fc_material_vendors.py', 'fc_material_coverage.py',
 }
 DRIVE = re.compile(r'(?<![A-Za-z0-9_])[A-Za-z]:[\\/][^\r\n\"\'<>]*')
 

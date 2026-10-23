@@ -1,2 +1,0 @@
-changed files = 1  (apply=True)
-diff lines = 1  -> _r7_fix_diff.txt

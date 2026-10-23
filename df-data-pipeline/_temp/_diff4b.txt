@@ -1,4 +1,0 @@
-Files /tmp/Core_snap4/Data/Data_ClassGuide.lua and Core/Data/Data_ClassGuide.lua differ
-Files /tmp/Core_snap4/Data/enUS/Data_ClassGuide.lua and Core/Data/enUS/Data_ClassGuide.lua differ
-Files /tmp/Core_snap4/Data/zhTW/Data_ClassGuide.lua and Core/Data/zhTW/Data_ClassGuide.lua differ
-Files /tmp/Core_snap4/MainFrame.lua and Core/MainFrame.lua differ

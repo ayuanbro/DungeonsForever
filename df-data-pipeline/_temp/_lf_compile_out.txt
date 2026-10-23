@@ -1,9 +1,0 @@
-  Core/LootFilter.lua                        OK
-  Core/LootFilterUI.lua                      OK
-  Core/Data/Data_LootFilter.lua              OK
-  Core/DungeonUI.lua                         OK
-  Core/MainFrame.lua                         OK
-  Core/Data/zhTW/Data_LootFilter.lua         OK
-  Core/Data/enUS/Data_LootFilter.lua         OK
-
-=== 7/7 OK, 0 FAIL ===

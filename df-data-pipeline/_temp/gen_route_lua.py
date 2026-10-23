@@ -3,10 +3,12 @@ import io
 import json
 import os
 
-ROOT = 'D:/workspace/DungeonsForever'
-DATA = ROOT + '/_temp/_route_plan/data'
-DST = ROOT + '/Core/Data/Data_Route.lua'
-OVR = ROOT + '/_temp/_route_override.json'
+from _route_paths import ROOT, TEMP, PLAN, checked
+from _route_gen import replay_amplitudes
+
+DATA = checked(PLAN + '/data')
+DST = checked(ROOT + '/Core/Data/Data_Route.lua')
+OVR = checked(TEMP + '/_route_override.json')
 
 try:
     _ovr = json.load(io.open(OVR, encoding='utf-8'))
@@ -80,7 +82,8 @@ def main():
         for f in d['floors']:
             fl_key = str(f['ui']) if f.get('ui') else ('L%d' % f['n'])
             src = row.get(str(f['ui'])) or {}
-            segs = [s for s in (src.get('segs') or []) if len(s.get('pts') or []) >= 2]
+            floor_override = (_ovr.get(d.get('fdr') or did) or {}).get(fl_key) or {}
+            segs = [s for s in replay_amplitudes(src, floor_override) if len(s.get('pts') or []) >= 2]
             segs = apply_ovr(d.get('fdr') or did, fl_key, segs)
             if segs:
                 routes.setdefault(did, {})[f['n']] = segs
