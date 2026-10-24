@@ -94,7 +94,7 @@ TT.SEC_TAB_Y    = TT.SPEC_TOP + TT.SEC_TAB_GAP
 TT.SEC_DROP     = 16
 TT.SEC_TOP      = TT.SEC_TAB_Y + TT.SEC_TAB_H + TT.SEC_DROP
 TT.SEC_TEXT_W   = TT.FULL_W - 2 * TT.CARD_PAD
-TT.SEC_ORDER = { "changes", "viability", "sw", "beginner", "systems", "stats", "races", "prof" }
+TT.SEC_ORDER = { "changes", "viability", "sw", "beginner", "systems", "rotation", "stats", "races", "prof" }
 
 TT.CARD_RADIUS = 6
 TT.PAIR_GAP = 12
@@ -252,6 +252,28 @@ local function EnsureCG()
         G = (cg and type(cg.specs) == "table") and cg or nil
     end
     return G
+end
+
+function TT.MetadataText(meta, updated)
+    meta = meta or {}
+    return format(L["补丁 %s · 等级上限 %d · 已更新 %s"],
+        tostring(meta.patch or ""), tonumber(meta.level) or 0, tostring(updated or meta.updated or ""))
+end
+
+local function BindMetadataTip(frame)
+    frame:EnableMouse(true)
+    frame:HookScript("OnEnter", function(self)
+        local parent = self:GetParent()
+        local metadata = self.__metadata or (parent and parent.__metadata)
+        if not GameTooltip or not metadata then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(metadata, 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    frame:HookScript("OnLeave", function()
+        if GameTooltip then GameTooltip:Hide() end
+    end)
 end
 
 TT.CLASS_ORDER = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
@@ -507,6 +529,7 @@ local function BuildSubTabs(page)
         local bt = NewButton(page, TT.PAGE_NAME[p.key] or p.key, TT.SUB_W, TT.SUB_H, TT.TAB_FS)
         MakeOutline(bt, 1, 0.82, 0)
         bt.__huiKeepTextColor = true
+        BindMetadataTip(bt)
         bt:SetPoint("TOPLEFT", page, "TOPLEFT", TT.RIGHT_X + x, -TT.SUB_Y)
         bt:SetScript("OnClick", function()
             DB().tab = p.key
@@ -725,7 +748,15 @@ local function BuildSpecHero(page)
     hero:Hide()
     TT.hero = hero
 
+    local headerTip = CreateFrame("Frame", nil, hero)
+    headerTip:SetPoint("TOPLEFT", hero, "TOPLEFT", TT.SPEC_ICON + 10, 0)
+    headerTip:SetPoint("TOPRIGHT", hero, "TOPRIGHT", 0, 0)
+    headerTip:SetHeight(20)
+    BindMetadataTip(headerTip)
+    TT.headerTip = headerTip
+
     local iconFrame = CreateFrame("Frame", nil, hero)
+    BindMetadataTip(iconFrame)
     iconFrame:SetSize(TT.SPEC_ICON, TT.SPEC_ICON)
     iconFrame:SetPoint("TOPLEFT", hero, "TOPLEFT", 0, -(TT.HERO_H - TT.SPEC_ICON) / 2)
     local icon = iconFrame:CreateTexture(nil, "ARTWORK")
@@ -1208,6 +1239,7 @@ TT.PaintHeader = function()
     TT.specTitle:SetTextColor(cr, cg, cb)
     TT.specMeta:SetText("")
     TT.specMeta:Hide()
+    TT.hero.__metadata = TT.MetadataText(G.meta, data.updated)
     SetIcon(TT.heroIcon, spRec and spRec.icon)
     local gk, pk = SpecGrade(cls, spec)
     if gk then
@@ -1747,6 +1779,8 @@ function TT.RenderRank()
 
     TT.meta:SetText("")
     TT.meta:Hide()
+    local metadata = TT.MetadataText(T.meta)
+    for _, bt in pairs(TT.subBtns) do bt.__metadata = metadata end
     TT.intro:SetText(p.intro or "")
     local leadW = 100
     if TT.factorTitle and TT.factorTitle.GetStringWidth then

@@ -1,0 +1,5747 @@
+{
+ "Abomination": {
+  "id": 8545,
+  "spawns": [
+   [
+    139,
+    32.4,
+    43.1
+   ]
+  ]
+ },
+ "Adolescent Whelp": {
+  "id": 740,
+  "spawns": [
+   [
+    8,
+    16.2,
+    64.5
+   ]
+  ]
+ },
+ "Aean Swiftriver": {
+  "id": 5797,
+  "spawns": [
+   [
+    17,
+    46.0,
+    70.0
+   ]
+  ]
+ },
+ "Aku'mai": {
+  "id": 4829,
+  "spawns": [
+   [
+    719,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Alshirr Banebreath": {
+  "id": 14340,
+  "spawns": [
+   [
+    361,
+    40.2,
+    85.2
+   ]
+  ]
+ },
+ "Ambassador Malcin": {
+  "id": 12865,
+  "spawns": [
+   [
+    17,
+    46.2,
+    90.2
+   ]
+  ]
+ },
+ "Ambershard Crusher": {
+  "id": 11781,
+  "spawns": [
+   [
+    405,
+    32.2,
+    64.3
+   ]
+  ]
+ },
+ "Ambershard Destroyer": {
+  "id": 11782,
+  "spawns": [
+   [
+    405,
+    35.4,
+    61.4
+   ]
+  ]
+ },
+ "Anathemus": {
+  "id": 2754,
+  "spawns": [
+   [
+    3,
+    23.7,
+    74.2
+   ]
+  ]
+ },
+ "Ancient Core Hound": {
+  "id": 11673,
+  "spawns": [
+   [
+    2717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Andre Firebeard": {
+  "id": 7883,
+  "spawns": [
+   [
+    440,
+    73.4,
+    47.1
+   ]
+  ]
+ },
+ "Angerclaw Grizzly": {
+  "id": 8957,
+  "spawns": [
+   [
+    361,
+    56.4,
+    24.0
+   ]
+  ]
+ },
+ "Angerclaw Mauler": {
+  "id": 8958,
+  "spawns": [
+   [
+    361,
+    49.7,
+    16.3
+   ]
+  ]
+ },
+ "Anguished Highborne": {
+  "id": 7524,
+  "spawns": [
+   [
+    618,
+    51.1,
+    46.0
+   ]
+  ]
+ },
+ "Anubisath Defender": {
+  "id": 15277,
+  "spawns": [
+   [
+    3428,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Anubisath Guardian": {
+  "id": 15355,
+  "spawns": [
+   [
+    3429,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Anubisath Sentinel": {
+  "id": 15264,
+  "spawns": [
+   [
+    3428,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Anvilrage Captain": {
+  "id": 8903,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Anvilrage Marshal": {
+  "id": 8898,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Apothecary Berard": {
+  "id": 2106,
+  "spawns": [
+   [
+    130,
+    42.9,
+    73.4
+   ]
+  ]
+ },
+ "Araj the Summoner": {
+  "id": 1852,
+  "spawns": [
+   [
+    28,
+    45.3,
+    69.2
+   ]
+  ]
+ },
+ "Archmage Allistarj": {
+  "id": 7666,
+  "spawns": [
+   [
+    4,
+    66.7,
+    29.2
+   ]
+  ]
+ },
+ "Ardo Dirtpaw": {
+  "id": 711,
+  "spawns": [
+   [
+    44,
+    12.0,
+    17.4
+   ]
+  ]
+ },
+ "Arkkoran Oracle": {
+  "id": 6138,
+  "spawns": [
+   [
+    16,
+    77.5,
+    44.4
+   ]
+  ]
+ },
+ "Arkkoran Pincer": {
+  "id": 6137,
+  "spawns": [
+   [
+    16,
+    75.1,
+    44.0
+   ]
+  ]
+ },
+ "Axtroz": {
+  "id": 12899,
+  "spawns": [
+   [
+    11,
+    81.8,
+    48.2
+   ]
+  ]
+ },
+ "Azzere the Skyblade": {
+  "id": 5834,
+  "spawns": [
+   [
+    17,
+    44.8,
+    64.1
+   ]
+  ]
+ },
+ "Bael'dun Officer": {
+  "id": 3378,
+  "spawns": [
+   [
+    17,
+    49.2,
+    83.8
+   ]
+  ]
+ },
+ "Bannok Grimaxe": {
+  "id": 9596,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Baron Aquanis": {
+  "id": 12876,
+  "spawns": [
+   [
+    719,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Barrens Kodo": {
+  "id": 3236,
+  "spawns": [
+   [
+    17,
+    45.8,
+    67.8
+   ]
+  ]
+ },
+ "Bazil Thredd": {
+  "id": 1716,
+  "spawns": [
+   [
+    717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Bazzalan": {
+  "id": 11519,
+  "spawns": [
+   [
+    2437,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Berserk Owlbeast": {
+  "id": 7454,
+  "spawns": [
+   [
+    618,
+    63.6,
+    19.0
+   ]
+  ]
+ },
+ "Bhag'thera": {
+  "id": 728,
+  "spawns": [
+   [
+    33,
+    47.2,
+    28.4
+   ]
+  ]
+ },
+ "Black Broodling": {
+  "id": 7047,
+  "spawns": [
+   [
+    46,
+    86.9,
+    30.6
+   ]
+  ]
+ },
+ "Black Dragonspawn": {
+  "id": 7040,
+  "spawns": [
+   [
+    46,
+    85.4,
+    27.2
+   ]
+  ]
+ },
+ "Black Drake": {
+  "id": 7044,
+  "spawns": [
+   [
+    46,
+    89.9,
+    43.9
+   ]
+  ]
+ },
+ "Black Wyrmkin": {
+  "id": 7041,
+  "spawns": [
+   [
+    46,
+    88.4,
+    40.0
+   ]
+  ]
+ },
+ "Blackened Ancient": {
+  "id": 4029,
+  "spawns": [
+   [
+    406,
+    30.9,
+    64.7
+   ]
+  ]
+ },
+ "Blackhand Assassin": {
+  "id": 10318,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Blackhand Elite": {
+  "id": 10317,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Blackhand Iron Guard": {
+  "id": 10319,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Blackrock Battlemaster": {
+  "id": 7029,
+  "spawns": [
+   [
+    46,
+    41.1,
+    34.9
+   ]
+  ]
+ },
+ "Blackrock Gladiator": {
+  "id": 4464,
+  "spawns": [
+   [
+    44,
+    64.3,
+    56.3
+   ]
+  ]
+ },
+ "Blackrock Hunter": {
+  "id": 4462,
+  "spawns": [
+   [
+    44,
+    64.4,
+    54.0
+   ]
+  ]
+ },
+ "Blackrock Slayer": {
+  "id": 7027,
+  "spawns": [
+   [
+    46,
+    55.8,
+    54.4
+   ]
+  ]
+ },
+ "Blackrock Soldier": {
+  "id": 7025,
+  "spawns": [
+   [
+    46,
+    55.6,
+    54.1
+   ]
+  ]
+ },
+ "Blackrock Warlock": {
+  "id": 7028,
+  "spawns": [
+   [
+    46,
+    18.0,
+    29.3
+   ]
+  ]
+ },
+ "Blackrock Worg": {
+  "id": 7055,
+  "spawns": [
+   [
+    46,
+    48.7,
+    57.6
+   ]
+  ]
+ },
+ "Blackwater Deckhand": {
+  "id": 2636,
+  "spawns": [
+   [
+    45,
+    33.2,
+    81.5
+   ]
+  ]
+ },
+ "Blackwing Warlock": {
+  "id": 12459,
+  "spawns": [
+   [
+    2677,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Blazing Elemental": {
+  "id": 5850,
+  "spawns": [
+   [
+    51,
+    58.3,
+    77.0
+   ]
+  ]
+ },
+ "Bleakheart Hellcaller": {
+  "id": 3771,
+  "spawns": [
+   [
+    331,
+    82.4,
+    51.7
+   ]
+  ]
+ },
+ "Bleakheart Satyr": {
+  "id": 3765,
+  "spawns": [
+   [
+    331,
+    80.0,
+    50.2
+   ]
+  ]
+ },
+ "Blighted Horror": {
+  "id": 8521,
+  "spawns": [
+   [
+    139,
+    61.9,
+    25.4
+   ]
+  ]
+ },
+ "Blighted Zombie": {
+  "id": 4475,
+  "spawns": [
+   [
+    28,
+    45.8,
+    52.1
+   ]
+  ]
+ },
+ "Blighthound": {
+  "id": 11885,
+  "spawns": [
+   [
+    139,
+    22.2,
+    63.3
+   ]
+  ]
+ },
+ "Blind Hunter": {
+  "id": 4425,
+  "spawns": [
+   [
+    491,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Blood Elf Reclaimer": {
+  "id": 6199,
+  "spawns": [
+   [
+    16,
+    55.9,
+    26.2
+   ]
+  ]
+ },
+ "Bloodfeather Harpy": {
+  "id": 2015,
+  "spawns": [
+   [
+    141,
+    37.9,
+    43.7
+   ]
+  ]
+ },
+ "Bloodfen Raptor": {
+  "id": 4351,
+  "spawns": [
+   [
+    15,
+    49.1,
+    15.8
+   ]
+  ]
+ },
+ "Bloodfury Ripper": {
+  "id": 12579,
+  "spawns": [
+   [
+    406,
+    30.8,
+    61.9
+   ]
+  ]
+ },
+ "Bloodmage Thalnos": {
+  "id": 4543,
+  "spawns": [
+   [
+    796,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Bloodpetal Lasher": {
+  "id": 6509,
+  "spawns": [
+   [
+    490,
+    75.0,
+    44.7
+   ]
+  ]
+ },
+ "Bloodroar the Stalker": {
+  "id": 5346,
+  "spawns": [
+   [
+    357,
+    52.0,
+    60.9
+   ]
+  ]
+ },
+ "Bloodsail Elder Magus": {
+  "id": 1653,
+  "spawns": [
+   [
+    33,
+    31.9,
+    53.9
+   ]
+  ]
+ },
+ "Bloodsail Mage": {
+  "id": 1562,
+  "spawns": [
+   [
+    33,
+    32.0,
+    72.5
+   ]
+  ]
+ },
+ "Bloodsail Raider": {
+  "id": 1561,
+  "spawns": [
+   [
+    33,
+    32.3,
+    71.7
+   ]
+  ]
+ },
+ "Bloodsail Swabby": {
+  "id": 4506,
+  "spawns": [
+   [
+    33,
+    33.2,
+    88.1
+   ]
+  ]
+ },
+ "Bloodsail Warlock": {
+  "id": 1564,
+  "spawns": [
+   [
+    33,
+    22.8,
+    53.9
+   ]
+  ]
+ },
+ "Bloodscalp Axe Thrower": {
+  "id": 694,
+  "spawns": [
+   [
+    33,
+    29.7,
+    19.6
+   ]
+  ]
+ },
+ "Bloodscalp Berserker": {
+  "id": 597,
+  "spawns": [
+   [
+    33,
+    20.3,
+    12.2
+   ]
+  ]
+ },
+ "Bloodscalp Hunter": {
+  "id": 595,
+  "spawns": [
+   [
+    33,
+    22.7,
+    12.0
+   ]
+  ]
+ },
+ "Bloodscalp Scavenger": {
+  "id": 702,
+  "spawns": [
+   [
+    33,
+    31.2,
+    12.4
+   ]
+  ]
+ },
+ "Bloodscalp Shaman": {
+  "id": 697,
+  "spawns": [
+   [
+    33,
+    29.8,
+    19.5
+   ]
+  ]
+ },
+ "Boahn": {
+  "id": 3672,
+  "spawns": [
+   [
+    17,
+    49.1,
+    33.9
+   ]
+  ]
+ },
+ "Bony Construct": {
+  "id": 16167,
+  "spawns": [
+   [
+    3456,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Boulderfist Brute": {
+  "id": 2566,
+  "spawns": [
+   [
+    45,
+    54.7,
+    80.4
+   ]
+  ]
+ },
+ "Boulderfist Lord": {
+  "id": 2571,
+  "spawns": [
+   [
+    45,
+    18.6,
+    69.2
+   ]
+  ]
+ },
+ "Boulderfist Magus": {
+  "id": 2567,
+  "spawns": [
+   [
+    45,
+    54.6,
+    81.3
+   ]
+  ]
+ },
+ "Boulderfist Mauler": {
+  "id": 2569,
+  "spawns": [
+   [
+    45,
+    17.5,
+    68.4
+   ]
+  ]
+ },
+ "Boulderfist Shaman": {
+  "id": 2570,
+  "spawns": [
+   [
+    45,
+    18.7,
+    66.5
+   ]
+  ]
+ },
+ "Boulderheart": {
+  "id": 14273,
+  "spawns": [
+   [
+    44,
+    83.8,
+    66.8
+   ]
+  ]
+ },
+ "Brawler": {
+  "id": 1207,
+  "spawns": [
+   [
+    38,
+    34.6,
+    90.5
+   ]
+  ]
+ },
+ "Broken Tooth": {
+  "id": 2850,
+  "spawns": [
+   [
+    3,
+    59.7,
+    29.4
+   ]
+  ]
+ },
+ "Brokespear": {
+  "id": 5838,
+  "spawns": [
+   [
+    17,
+    57.1,
+    41.2
+   ]
+  ]
+ },
+ "Brontus": {
+  "id": 5827,
+  "spawns": [
+   [
+    17,
+    47.3,
+    73.2
+   ]
+  ]
+ },
+ "Brutus": {
+  "id": 2551,
+  "spawns": [
+   [
+    33,
+    32.9,
+    88.3
+   ]
+  ]
+ },
+ "Bubbling Swamp Ooze": {
+  "id": 4394,
+  "spawns": [
+   [
+    15,
+    49.4,
+    55.5
+   ]
+  ]
+ },
+ "Cannon Master Willey": {
+  "id": 10997,
+  "spawns": [
+   [
+    2017,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Cannoneer Whessan": {
+  "id": 3455,
+  "spawns": [
+   [
+    17,
+    60.4,
+    54.8
+   ]
+  ]
+ },
+ "Captain Fairmount": {
+  "id": 3393,
+  "spawns": [
+   [
+    17,
+    61.9,
+    54.6
+   ]
+  ]
+ },
+ "Captain Flat Tusk": {
+  "id": 5824,
+  "spawns": [
+   [
+    14,
+    42.6,
+    39.0
+   ]
+  ]
+ },
+ "Captain Gerogg Hammertoe": {
+  "id": 5851,
+  "spawns": [
+   [
+    17,
+    49.5,
+    83.9
+   ]
+  ]
+ },
+ "Captain Greenskin": {
+  "id": 647,
+  "spawns": [
+   [
+    1581,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Captain Halyndor": {
+  "id": 1160,
+  "spawns": [
+   [
+    11,
+    15.4,
+    23.6
+   ]
+  ]
+ },
+ "Captain Ironhill": {
+  "id": 2304,
+  "spawns": [
+   [
+    267,
+    71.5,
+    79.8
+   ]
+  ]
+ },
+ "Caravan Master Tset": {
+  "id": 8409,
+  "spawns": [
+   [
+    16,
+    43.8,
+    56.5
+   ]
+  ]
+ },
+ "Caretaker Alaric": {
+  "id": 2782,
+  "spawns": [
+   [
+    45,
+    29.0,
+    59.7
+   ]
+  ]
+ },
+ "Caretaker Nevlin": {
+  "id": 2780,
+  "spawns": [
+   [
+    45,
+    29.2,
+    59.5
+   ]
+  ]
+ },
+ "Caretaker Weston": {
+  "id": 2781,
+  "spawns": [
+   [
+    45,
+    29.1,
+    60.2
+   ]
+  ]
+ },
+ "Carnivous the Breaker": {
+  "id": 2186,
+  "spawns": [
+   [
+    148,
+    39.4,
+    53.5
+   ]
+  ]
+ },
+ "Carrion Spinner": {
+  "id": 15975,
+  "spawns": [
+   [
+    3456,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Cenarion Druid": {
+  "id": 4052,
+  "spawns": [
+   [
+    406,
+    28.3,
+    12.1
+   ]
+  ]
+ },
+ "Centipaar Worker": {
+  "id": 5458,
+  "spawns": [
+   [
+    440,
+    35.1,
+    43.8
+   ]
+  ]
+ },
+ "Charlga Razorflank": {
+  "id": 4421,
+  "spawns": [
+   [
+    491,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Charred Ancient": {
+  "id": 4028,
+  "spawns": [
+   [
+    406,
+    32.8,
+    63.5
+   ]
+  ]
+ },
+ "Chieftain Bloodmaw": {
+  "id": 9462,
+  "spawns": [
+   [
+    361,
+    62.8,
+    7.7
+   ]
+  ]
+ },
+ "Chillwind Ravager": {
+  "id": 7449,
+  "spawns": [
+   [
+    618,
+    60.4,
+    21.8
+   ]
+  ]
+ },
+ "Chimaera Matriarch": {
+  "id": 6167,
+  "spawns": [
+   [
+    406,
+    33.6,
+    74.7
+   ]
+  ]
+ },
+ "Chimaerok": {
+  "id": 12800,
+  "spawns": [
+   [
+    357,
+    31.2,
+    87.8
+   ]
+  ]
+ },
+ "Chimaerok Devourer": {
+  "id": 12802,
+  "spawns": [
+   [
+    357,
+    30.6,
+    75.8
+   ]
+  ]
+ },
+ "Clerk Horrace Whitesteed": {
+  "id": 2448,
+  "spawns": [
+   [
+    267,
+    29.5,
+    42.4
+   ]
+  ]
+ },
+ "Cliff Breaker": {
+  "id": 6146,
+  "spawns": [
+   [
+    16,
+    56.7,
+    79.8
+   ]
+  ]
+ },
+ "Clunk": {
+  "id": 8447,
+  "spawns": [
+   [
+    51,
+    34.7,
+    51.9
+   ]
+  ]
+ },
+ "Coast Crawl Snapclaw": {
+  "id": 5327,
+  "spawns": [
+   [
+    357,
+    35.9,
+    51.6
+   ]
+  ]
+ },
+ "Cobalt Mageweaver": {
+  "id": 7437,
+  "spawns": [
+   [
+    618,
+    59.7,
+    49.2
+   ]
+  ]
+ },
+ "Cobalt Scalebane": {
+  "id": 7436,
+  "spawns": [
+   [
+    618,
+    60.6,
+    53.6
+   ]
+  ]
+ },
+ "Colonel Kurzen": {
+  "id": 813,
+  "spawns": [
+   [
+    33,
+    49.9,
+    4.0
+   ]
+  ]
+ },
+ "Condemned Acolyte": {
+  "id": 7068,
+  "spawns": [
+   [
+    267,
+    18.3,
+    77.9
+   ]
+  ]
+ },
+ "Condemned Cleric": {
+  "id": 7070,
+  "spawns": [
+   [
+    267,
+    16.3,
+    80.9
+   ]
+  ]
+ },
+ "Cookie": {
+  "id": 645,
+  "spawns": [
+   [
+    1581,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Crimson Battle Mage": {
+  "id": 10425,
+  "spawns": [
+   [
+    2017,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Crimson Courier": {
+  "id": 12337,
+  "spawns": [
+   [
+    139,
+    51.4,
+    30.6
+   ]
+  ]
+ },
+ "Crimson Inquisitor": {
+  "id": 10426,
+  "spawns": [
+   [
+    2017,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Crowd Pummeler 9-60": {
+  "id": 6229,
+  "spawns": [
+   [
+    721,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Cyclone Warrior": {
+  "id": 11745,
+  "spawns": [
+   [
+    1377,
+    32.1,
+    83.2
+   ]
+  ]
+ },
+ "Dal Bloodclaw": {
+  "id": 3987,
+  "spawns": [
+   [
+    331,
+    39.6,
+    36.3
+   ]
+  ]
+ },
+ "Dalaran Brewmaster": {
+  "id": 3577,
+  "spawns": [
+   [
+    130,
+    62.6,
+    65.0
+   ]
+  ]
+ },
+ "Darbel Montrose": {
+  "id": 2598,
+  "spawns": [
+   [
+    45,
+    26.5,
+    60.7
+   ]
+  ]
+ },
+ "Dark Caster": {
+  "id": 8526,
+  "spawns": [
+   [
+    139,
+    50.5,
+    58.1
+   ]
+  ]
+ },
+ "Dark Iron Ambassador": {
+  "id": 6228,
+  "spawns": [
+   [
+    721,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Dark Iron Demolitionist": {
+  "id": 1054,
+  "spawns": [
+   [
+    11,
+    60.1,
+    24.4
+   ]
+  ]
+ },
+ "Dark Iron Dwarf": {
+  "id": 1051,
+  "spawns": [
+   [
+    11,
+    59.9,
+    23.0
+   ]
+  ]
+ },
+ "Dark Iron Rifleman": {
+  "id": 6523,
+  "spawns": [
+   [
+    11,
+    48.9,
+    16.0
+   ]
+  ]
+ },
+ "Dark Iron Saboteur": {
+  "id": 1052,
+  "spawns": [
+   [
+    11,
+    59.9,
+    24.5
+   ]
+  ]
+ },
+ "Dark Iron Shadowcaster": {
+  "id": 2577,
+  "spawns": [
+   [
+    45,
+    48.0,
+    87.2
+   ]
+  ]
+ },
+ "Dark Iron Slaver": {
+  "id": 5844,
+  "spawns": [
+   [
+    51,
+    44.4,
+    31.1
+   ]
+  ]
+ },
+ "Dark Iron Taskmaster": {
+  "id": 5846,
+  "spawns": [
+   [
+    51,
+    38.0,
+    31.9
+   ]
+  ]
+ },
+ "Dark Iron Tunneler": {
+  "id": 1053,
+  "spawns": [
+   [
+    11,
+    60.3,
+    24.3
+   ]
+  ]
+ },
+ "Dark Iron Watchman": {
+  "id": 8637,
+  "spawns": [
+   [
+    51,
+    63.1,
+    58.7
+   ]
+  ]
+ },
+ "Dark Strand Voidcaller": {
+  "id": 2337,
+  "spawns": [
+   [
+    148,
+    56.1,
+    26.0
+   ]
+  ]
+ },
+ "Dark Summoner": {
+  "id": 8551,
+  "spawns": [
+   [
+    139,
+    52.7,
+    60.1
+   ]
+  ]
+ },
+ "Darkmaster Gandling": {
+  "id": 1853,
+  "spawns": [
+   [
+    2057,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Darkslayer Mordenthal": {
+  "id": 3736,
+  "spawns": [
+   [
+    331,
+    75.6,
+    74.0
+   ]
+  ]
+ },
+ "Deadwind Brute": {
+  "id": 7369,
+  "spawns": [
+   [
+    41,
+    57.8,
+    59.6
+   ]
+  ]
+ },
+ "Deadwind Warlock": {
+  "id": 7372,
+  "spawns": [
+   [
+    41,
+    66.2,
+    77.7
+   ]
+  ]
+ },
+ "Deadwood Shaman": {
+  "id": 7158,
+  "spawns": [
+   [
+    361,
+    64.0,
+    6.8
+   ]
+  ]
+ },
+ "Death Cultist": {
+  "id": 8547,
+  "spawns": [
+   [
+    139,
+    33.8,
+    27.0
+   ]
+  ]
+ },
+ "Death Howl": {
+  "id": 14339,
+  "spawns": [
+   [
+    361,
+    50.0,
+    77.1
+   ]
+  ]
+ },
+ "Death Speaker Jargba": {
+  "id": 4428,
+  "spawns": [
+   [
+    491,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Death Talon Hatcher": {
+  "id": 12468,
+  "spawns": [
+   [
+    2677,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Death Talon Overseer": {
+  "id": 12461,
+  "spawns": [
+   [
+    2677,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Death Talon Wyrmkin": {
+  "id": 12465,
+  "spawns": [
+   [
+    2677,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Death's Head Cultist": {
+  "id": 7872,
+  "spawns": [
+   [
+    17,
+    48.6,
+    89.9
+   ],
+   [
+    400,
+    40.3,
+    30.0
+   ]
+  ]
+ },
+ "Deatheye": {
+  "id": 8302,
+  "spawns": [
+   [
+    4,
+    50.2,
+    20.7
+   ]
+  ]
+ },
+ "Decaying Horror": {
+  "id": 1813,
+  "spawns": [
+   [
+    28,
+    62.0,
+    33.8
+   ]
+  ]
+ },
+ "Deep Strider": {
+  "id": 5360,
+  "spawns": [
+   [
+    357,
+    36.1,
+    33.4
+   ]
+  ]
+ },
+ "Deepstrider Giant": {
+  "id": 4686,
+  "spawns": [
+   [
+    405,
+    66.3,
+    32.8
+   ]
+  ]
+ },
+ "Deepstrider Searcher": {
+  "id": 4687,
+  "spawns": [
+   [
+    405,
+    32.1,
+    24.7
+   ]
+  ]
+ },
+ "Defias Enchanter": {
+  "id": 910,
+  "spawns": [
+   [
+    10,
+    48.8,
+    77.5
+   ]
+  ]
+ },
+ "Defias Looter": {
+  "id": 590,
+  "spawns": [
+   [
+    40,
+    29.7,
+    47.1
+   ]
+  ]
+ },
+ "Defias Renegade Mage": {
+  "id": 450,
+  "spawns": [
+   [
+    40,
+    37.4,
+    75.2
+   ]
+  ]
+ },
+ "Demetria": {
+  "id": 12339,
+  "spawns": [
+   [
+    139,
+    63.3,
+    67.2
+   ]
+  ]
+ },
+ "Dessecus": {
+  "id": 7104,
+  "spawns": [
+   [
+    361,
+    57.8,
+    22.3
+   ]
+  ]
+ },
+ "Deviate Stinglash": {
+  "id": 3631,
+  "spawns": [
+   [
+    17,
+    47.4,
+    33.7
+   ]
+  ]
+ },
+ "Devilsaur": {
+  "id": 6498,
+  "spawns": [
+   [
+    490,
+    34.6,
+    22.4
+   ]
+  ]
+ },
+ "Dextren Ward": {
+  "id": 1663,
+  "spawns": [
+   [
+    717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Digger Flameforge": {
+  "id": 5849,
+  "spawns": [
+   [
+    17,
+    47.5,
+    85.5
+   ]
+  ]
+ },
+ "Dire Condor": {
+  "id": 428,
+  "spawns": [
+   [
+    44,
+    54.7,
+    76.1
+   ]
+  ]
+ },
+ "Doomforge Arcanasmith": {
+  "id": 8900,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Doomforge Craftsman": {
+  "id": 8897,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Doomguard Commander": {
+  "id": 12396,
+  "spawns": [
+   [
+    4,
+    38.0,
+    69.2
+   ]
+  ]
+ },
+ "Doomwarder": {
+  "id": 4677,
+  "spawns": [
+   [
+    405,
+    54.9,
+    77.7
+   ]
+  ]
+ },
+ "Dreadlord": {
+  "id": 8716,
+  "spawns": [
+   [
+    4,
+    39.2,
+    77.1
+   ]
+  ]
+ },
+ "Dreadmaul Ogre Mage": {
+  "id": 5975,
+  "spawns": [
+   [
+    4,
+    42.9,
+    12.6
+   ]
+  ]
+ },
+ "Dreaming Whelp": {
+  "id": 741,
+  "spawns": [
+   [
+    8,
+    14.5,
+    64.2
+   ]
+  ]
+ },
+ "Dreamroarer": {
+  "id": 12497,
+  "spawns": [
+   [
+    357,
+    51.3,
+    7.2
+   ]
+  ]
+ },
+ "Dreamstalker": {
+  "id": 12498,
+  "spawns": [
+   [
+    331,
+    94.0,
+    37.1
+   ]
+  ]
+ },
+ "Dreamtracker": {
+  "id": 12496,
+  "spawns": [
+   [
+    47,
+    62.9,
+    25.8
+   ]
+  ]
+ },
+ "Drulzegar Skraghook": {
+  "id": 12340,
+  "spawns": [
+   [
+    405,
+    23.3,
+    72.9
+   ]
+  ]
+ },
+ "Drywhisker Kobold": {
+  "id": 2572,
+  "spawns": [
+   [
+    45,
+    81.9,
+    37.2
+   ]
+  ]
+ },
+ "Dun Garok Mountaineer": {
+  "id": 2344,
+  "spawns": [
+   [
+    267,
+    69.0,
+    78.2
+   ]
+  ]
+ },
+ "Dying Kodo": {
+  "id": 4701,
+  "spawns": [
+   [
+    405,
+    51.5,
+    59.2
+   ]
+  ]
+ },
+ "Edwin VanCleef": {
+  "id": 639,
+  "spawns": [
+   [
+    1581,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Elder Murk Thresher": {
+  "id": 4390,
+  "spawns": [
+   [
+    15,
+    54.8,
+    43.8
+   ]
+  ]
+ },
+ "Elder Saltwater Crocolisk": {
+  "id": 2635,
+  "spawns": [
+   [
+    33,
+    33.4,
+    32.5
+   ]
+  ]
+ },
+ "Emerald Ooze": {
+  "id": 4469,
+  "spawns": [
+   [
+    47,
+    65.0,
+    66.0
+   ]
+  ]
+ },
+ "Emeraldon Oracle": {
+  "id": 12476,
+  "spawns": [
+   [
+    331,
+    91.5,
+    38.9
+   ]
+  ]
+ },
+ "Emeraldon Tree Warder": {
+  "id": 12475,
+  "spawns": [
+   [
+    331,
+    89.5,
+    39.6
+   ]
+  ]
+ },
+ "Enslaved Archaeologist": {
+  "id": 8402,
+  "spawns": [
+   [
+    51,
+    39.9,
+    26.8
+   ]
+  ]
+ },
+ "Fel Steed": {
+  "id": 3864,
+  "spawns": [
+   [
+    209,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Fen Lord": {
+  "id": 1041,
+  "spawns": [
+   [
+    11,
+    29.6,
+    28.2
+   ]
+  ]
+ },
+ "Feral Crag Coyote": {
+  "id": 2728,
+  "spawns": [
+   [
+    3,
+    56.4,
+    68.0
+   ]
+  ]
+ },
+ "Fey Dragon": {
+  "id": 4016,
+  "spawns": [
+   [
+    406,
+    39.8,
+    13.8
+   ]
+  ]
+ },
+ "Firebrand Grunt": {
+  "id": 9259,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Firebrand Invoker": {
+  "id": 9262,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Firebrand Legionnaire": {
+  "id": 9260,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Firebrand Pyromancer": {
+  "id": 9264,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Firecaller Radison": {
+  "id": 2192,
+  "spawns": [
+   [
+    148,
+    38.7,
+    87.6
+   ]
+  ]
+ },
+ "Firegut Brute": {
+  "id": 7035,
+  "spawns": [
+   [
+    46,
+    81.5,
+    39.4
+   ]
+  ]
+ },
+ "Flesh Golem": {
+  "id": 1805,
+  "spawns": [
+   [
+    28,
+    47.6,
+    69.3
+   ]
+  ]
+ },
+ "Flesh Hunter": {
+  "id": 15335,
+  "spawns": [
+   [
+    3429,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Foreman Grills": {
+  "id": 5835,
+  "spawns": [
+   [
+    17,
+    56.4,
+    8.2
+   ]
+  ]
+ },
+ "Foreman Jerris": {
+  "id": 1843,
+  "spawns": [
+   [
+    28,
+    45.6,
+    9.2
+   ]
+  ]
+ },
+ "Foreman Rigger": {
+  "id": 5931,
+  "spawns": [
+   [
+    406,
+    66.7,
+    52.3
+   ]
+  ]
+ },
+ "Foulbelly": {
+  "id": 2601,
+  "spawns": [
+   [
+    45,
+    20.4,
+    66.9
+   ]
+  ]
+ },
+ "Fozruk": {
+  "id": 2611,
+  "spawns": [
+   [
+    45,
+    63.9,
+    30.0
+   ]
+  ]
+ },
+ "Frostmaul Giant": {
+  "id": 7428,
+  "spawns": [
+   [
+    618,
+    65.7,
+    69.3
+   ]
+  ]
+ },
+ "Furious Stone Spirit": {
+  "id": 4035,
+  "spawns": [
+   [
+    406,
+    32.0,
+    73.3
+   ]
+  ]
+ },
+ "Galak Packhound": {
+  "id": 4250,
+  "spawns": [
+   [
+    400,
+    22.8,
+    37.4
+   ]
+  ]
+ },
+ "Gan'zulah": {
+  "id": 1061,
+  "spawns": [
+   [
+    33,
+    23.4,
+    8.1
+   ]
+  ]
+ },
+ "Gatekeeper Kordurus": {
+  "id": 4409,
+  "spawns": [
+   [
+    406,
+    29.4,
+    16.0
+   ]
+  ]
+ },
+ "Gath'Ilzogg": {
+  "id": 334,
+  "spawns": [
+   [
+    44,
+    64.5,
+    55.8
+   ]
+  ]
+ },
+ "Gazban": {
+  "id": 2624,
+  "spawns": [
+   [
+    33,
+    19.8,
+    22.5
+   ]
+  ]
+ },
+ "Gelihast": {
+  "id": 6243,
+  "spawns": [
+   [
+    719,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Geltharis": {
+  "id": 4619,
+  "spawns": [
+   [
+    331,
+    78.0,
+    42.4
+   ]
+  ]
+ },
+ "General Colbatann": {
+  "id": 10196,
+  "spawns": [
+   [
+    618,
+    55.3,
+    49.8
+   ]
+  ]
+ },
+ "General Drakkisath": {
+  "id": 10363,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "General Fangferror": {
+  "id": 6650,
+  "spawns": [
+   [
+    16,
+    41.3,
+    54.0
+   ]
+  ]
+ },
+ "General Twinbraid": {
+  "id": 3414,
+  "spawns": [
+   [
+    17,
+    49.2,
+    84.2
+   ]
+  ]
+ },
+ "Gesharahan": {
+  "id": 3398,
+  "spawns": [
+   [
+    17,
+    46.5,
+    39.5
+   ]
+  ]
+ },
+ "Ghamoo-ra": {
+  "id": 4887,
+  "spawns": [
+   [
+    719,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Ghoul Ravener": {
+  "id": 10406,
+  "spawns": [
+   [
+    2017,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Giant Darkfang Spider": {
+  "id": 4415,
+  "spawns": [
+   [
+    15,
+    56.0,
+    66.8
+   ]
+  ]
+ },
+ "Gilnid": {
+  "id": 1763,
+  "spawns": [
+   [
+    1581,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Glommus": {
+  "id": 2422,
+  "spawns": [
+   [
+    36,
+    39.5,
+    41.8
+   ]
+  ]
+ },
+ "Gnarlpine Gardener": {
+  "id": 2007,
+  "spawns": [
+   [
+    141,
+    65.3,
+    65.6
+   ]
+  ]
+ },
+ "Gnarlpine Mystic": {
+  "id": 7235,
+  "spawns": [
+   [
+    141,
+    68.6,
+    52.3
+   ]
+  ]
+ },
+ "Goraluk Anvilcrack": {
+  "id": 10899,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Gordok Enforcer": {
+  "id": 11440,
+  "spawns": [
+   [
+    357,
+    60.0,
+    46.6
+   ]
+  ]
+ },
+ "Gordok Reaver": {
+  "id": 11450,
+  "spawns": [
+   [
+    10022,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Gordok Warlock": {
+  "id": 11448,
+  "spawns": [
+   [
+    10022,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Gorlash": {
+  "id": 1492,
+  "spawns": [
+   [
+    33,
+    37.0,
+    69.7
+   ]
+  ]
+ },
+ "Gradok": {
+  "id": 2477,
+  "spawns": [
+   [
+    38,
+    55.5,
+    66.9
+   ]
+  ]
+ },
+ "Grandpa Vishas": {
+  "id": 3985,
+  "spawns": [
+   [
+    36,
+    32.3,
+    33.0
+   ]
+  ]
+ },
+ "Granistad": {
+  "id": 2473,
+  "spawns": [
+   [
+    267,
+    84.2,
+    32.8
+   ]
+  ]
+ },
+ "Grawmug": {
+  "id": 1205,
+  "spawns": [
+   [
+    38,
+    34.8,
+    90.5
+   ]
+  ]
+ },
+ "Grel'borg the Miser": {
+  "id": 2417,
+  "spawns": [
+   [
+    36,
+    35.6,
+    54.4
+   ]
+  ]
+ },
+ "Grimtotem Geomancer": {
+  "id": 10760,
+  "spawns": [
+   [
+    400,
+    34.0,
+    37.2
+   ]
+  ]
+ },
+ "Grimungous": {
+  "id": 8215,
+  "spawns": [
+   [
+    47,
+    70.2,
+    55.4
+   ]
+  ]
+ },
+ "Grizzle": {
+  "id": 9028,
+  "spawns": [
+   [
+    1584,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Grol the Destroyer": {
+  "id": 7665,
+  "spawns": [
+   [
+    4,
+    42.6,
+    13.0
+   ]
+  ]
+ },
+ "Gruklash": {
+  "id": 8979,
+  "spawns": [
+   [
+    46,
+    42.1,
+    54.8
+   ]
+  ]
+ },
+ "Gurubashi Bat Rider": {
+  "id": 14750,
+  "spawns": [
+   [
+    1977,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Gurubashi Berserker": {
+  "id": 11352,
+  "spawns": [
+   [
+    1977,
+    -1.0,
+    -1.0
+   ],
+   [
+    2597,
+    55.5,
+    68.8
+   ]
+  ]
+ },
+ "Gurubashi Warrior": {
+  "id": 11355,
+  "spawns": [
+   [
+    33,
+    51.3,
+    16.7
+   ]
+  ]
+ },
+ "Gyth": {
+  "id": 10339,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Hagg Taurenbane": {
+  "id": 5859,
+  "spawns": [
+   [
+    17,
+    43.2,
+    83.2
+   ]
+  ]
+ },
+ "Hakkari Oracle": {
+  "id": 11346,
+  "spawns": [
+   [
+    33,
+    51.6,
+    18.4
+   ]
+  ]
+ },
+ "Hakkari Shadow Hunter": {
+  "id": 11339,
+  "spawns": [
+   [
+    1977,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Hamhock": {
+  "id": 1717,
+  "spawns": [
+   [
+    717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Hammered Patron": {
+  "id": 9554,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Hannah Bladeleaf": {
+  "id": 5799,
+  "spawns": [
+   [
+    17,
+    48.5,
+    79.7
+   ]
+  ]
+ },
+ "Haren Swifthoof": {
+  "id": 2478,
+  "spawns": [
+   [
+    38,
+    55.5,
+    67.1
+   ]
+  ]
+ },
+ "Hazzali Stinger": {
+  "id": 5450,
+  "spawns": [
+   [
+    440,
+    51.4,
+    74.1
+   ]
+  ]
+ },
+ "Heartrazor": {
+  "id": 5934,
+  "spawns": [
+   [
+    400,
+    16.8,
+    41.5
+   ]
+  ]
+ },
+ "Heggin Stonewhisker": {
+  "id": 5847,
+  "spawns": [
+   [
+    17,
+    47.0,
+    84.0
+   ]
+  ]
+ },
+ "Hematos": {
+  "id": 8976,
+  "spawns": [
+   [
+    46,
+    22.4,
+    60.0
+   ]
+  ]
+ },
+ "High General Abbendis": {
+  "id": 10828,
+  "spawns": [
+   [
+    139,
+    78.0,
+    74.1
+   ]
+  ]
+ },
+ "High Priestess Hai'watna": {
+  "id": 11383,
+  "spawns": [
+   [
+    33,
+    50.7,
+    16.4
+   ]
+  ]
+ },
+ "Highlord Mastrogonde": {
+  "id": 8282,
+  "spawns": [
+   [
+    51,
+    14.5,
+    37.2
+   ]
+  ]
+ },
+ "Hillsbrad Tailor": {
+  "id": 2264,
+  "spawns": [
+   [
+    267,
+    36.8,
+    44.3
+   ]
+  ]
+ },
+ "Hitah'ya the Keeper": {
+  "id": 10802,
+  "spawns": [
+   [
+    47,
+    57.3,
+    86.6
+   ]
+  ]
+ },
+ "Hive'Ashi Sandstalker": {
+  "id": 11723,
+  "spawns": [
+   [
+    1377,
+    41.7,
+    22.3
+   ]
+  ]
+ },
+ "Hive'Regal Ambusher": {
+  "id": 11730,
+  "spawns": [
+   [
+    1377,
+    49.3,
+    80.1
+   ]
+  ]
+ },
+ "Hive'Regal Burrower": {
+  "id": 11731,
+  "spawns": [
+   [
+    1377,
+    64.9,
+    71.3
+   ]
+  ]
+ },
+ "Hive'Regal Hive Lord": {
+  "id": 11734,
+  "spawns": [
+   [
+    1377,
+    66.0,
+    73.7
+   ]
+  ]
+ },
+ "Hive'Zara Wasp": {
+  "id": 15325,
+  "spawns": [
+   [
+    3429,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Hive'Zora Reaver": {
+  "id": 11728,
+  "spawns": [
+   [
+    1377,
+    35.2,
+    62.2
+   ]
+  ]
+ },
+ "Hive'Zora Tunneler": {
+  "id": 11726,
+  "spawns": [
+   [
+    1377,
+    32.5,
+    64.2
+   ]
+  ]
+ },
+ "Hive'Zora Waywatcher": {
+  "id": 11725,
+  "spawns": [
+   [
+    1377,
+    22.2,
+    48.6
+   ]
+  ]
+ },
+ "Holdout Warrior": {
+  "id": 6391,
+  "spawns": [
+   [
+    1,
+    71.0,
+    38.0
+   ],
+   [
+    721,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Horde Grunt": {
+  "id": 11682,
+  "spawns": [
+   [
+    331,
+    72.9,
+    80.4
+   ]
+  ]
+ },
+ "Humar the Pridelord": {
+  "id": 5828,
+  "spawns": [
+   [
+    17,
+    62.0,
+    33.3
+   ]
+  ]
+ },
+ "Huntsman Radley": {
+  "id": 11613,
+  "spawns": [
+   [
+    28,
+    57.8,
+    36.1
+   ]
+  ]
+ },
+ "Immolatus": {
+  "id": 7137,
+  "spawns": [
+   [
+    361,
+    43.1,
+    41.4
+   ]
+  ]
+ },
+ "Interrogator Vishas": {
+  "id": 3983,
+  "spawns": [
+   [
+    796,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Ironeye the Invincible": {
+  "id": 5935,
+  "spawns": [
+   [
+    400,
+    87.2,
+    78.4
+   ]
+  ]
+ },
+ "Ironpatch": {
+  "id": 2547,
+  "spawns": [
+   [
+    33,
+    30.6,
+    90.4
+   ]
+  ]
+ },
+ "Jade Sludge": {
+  "id": 4468,
+  "spawns": [
+   [
+    47,
+    62.3,
+    76.8
+   ]
+  ]
+ },
+ "Jadefire Rogue": {
+  "id": 7106,
+  "spawns": [
+   [
+    361,
+    37.4,
+    66.1
+   ]
+  ]
+ },
+ "Jadefire Trickster": {
+  "id": 7107,
+  "spawns": [
+   [
+    361,
+    42.7,
+    15.9
+   ]
+  ]
+ },
+ "Jademir Boughguard": {
+  "id": 5320,
+  "spawns": [
+   [
+    357,
+    54.0,
+    10.5
+   ]
+  ]
+ },
+ "Jademir Oracle": {
+  "id": 5317,
+  "spawns": [
+   [
+    357,
+    54.4,
+    10.2
+   ]
+  ]
+ },
+ "Jademir Tree Warder": {
+  "id": 5319,
+  "spawns": [
+   [
+    357,
+    53.9,
+    10.5
+   ]
+  ]
+ },
+ "Jaedenar Cultist": {
+  "id": 7112,
+  "spawns": [
+   [
+    361,
+    38.1,
+    62.2
+   ]
+  ]
+ },
+ "Jalinde Summerdrake": {
+  "id": 8214,
+  "spawns": [
+   [
+    47,
+    30.2,
+    48.0
+   ]
+  ]
+ },
+ "Jergosh the Invoker": {
+  "id": 11518,
+  "spawns": [
+   [
+    2437,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Jimmy the Bleeder": {
+  "id": 14281,
+  "spawns": [
+   [
+    36,
+    58.6,
+    69.3
+   ]
+  ]
+ },
+ "Jin'Zallah the Sandbringer": {
+  "id": 8200,
+  "spawns": [
+   [
+    440,
+    36.6,
+    24.6
+   ]
+  ]
+ },
+ "Jugkar Grim'rod": {
+  "id": 5771,
+  "spawns": [
+   [
+    405,
+    55.9,
+    77.8
+   ]
+  ]
+ },
+ "Kam Deepfury": {
+  "id": 1666,
+  "spawns": [
+   [
+    717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Keeper Ordanus": {
+  "id": 4273,
+  "spawns": [
+   [
+    331,
+    62.0,
+    51.4
+   ]
+  ]
+ },
+ "Kegan Darkmar": {
+  "id": 2414,
+  "spawns": [
+   [
+    36,
+    17.8,
+    83.2
+   ]
+  ]
+ },
+ "Khan Dez'hepah": {
+  "id": 5600,
+  "spawns": [
+   [
+    405,
+    73.2,
+    41.8
+   ]
+  ]
+ },
+ "Khan Jehn": {
+  "id": 5601,
+  "spawns": [
+   [
+    405,
+    66.0,
+    80.4
+   ]
+  ]
+ },
+ "Khan Shaka": {
+  "id": 5602,
+  "spawns": [
+   [
+    405,
+    40.5,
+    95.5
+   ]
+  ]
+ },
+ "King Bangalash": {
+  "id": 731,
+  "spawns": [
+   [
+    33,
+    38.2,
+    35.6
+   ]
+  ]
+ },
+ "King Mosh": {
+  "id": 6584,
+  "spawns": [
+   [
+    490,
+    35.3,
+    36.0
+   ]
+  ]
+ },
+ "Klaven Mortwake": {
+  "id": 7053,
+  "spawns": [
+   [
+    40,
+    70.5,
+    74.0
+   ]
+  ]
+ },
+ "Kobold Geomancer": {
+  "id": 476,
+  "spawns": [
+   [
+    12,
+    64.8,
+    56.9
+   ]
+  ]
+ },
+ "Krellack": {
+  "id": 14476,
+  "spawns": [
+   [
+    1377,
+    63.2,
+    16.7
+   ]
+  ]
+ },
+ "Kul Tiras Sailor": {
+  "id": 3128,
+  "spawns": [
+   [
+    14,
+    61.0,
+    58.8
+   ]
+  ]
+ },
+ "Kurzen Commando": {
+  "id": 938,
+  "spawns": [
+   [
+    33,
+    44.1,
+    7.9
+   ]
+  ]
+ },
+ "Lady Hederine": {
+  "id": 10201,
+  "spawns": [
+   [
+    618,
+    65.0,
+    80.3
+   ]
+  ]
+ },
+ "Lady Sarevess": {
+  "id": 4831,
+  "spawns": [
+   [
+    719,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Lady Sevine": {
+  "id": 7667,
+  "spawns": [
+   [
+    4,
+    40.8,
+    30.0
+   ]
+  ]
+ },
+ "Lady Szallah": {
+  "id": 5343,
+  "spawns": [
+   [
+    357,
+    28.2,
+    67.6
+   ]
+  ]
+ },
+ "Lady Vespia": {
+  "id": 10559,
+  "spawns": [
+   [
+    331,
+    13.6,
+    24.7
+   ]
+  ]
+ },
+ "Lake Thresher": {
+  "id": 14357,
+  "spawns": [
+   [
+    44,
+    43.0,
+    55.3
+   ]
+  ]
+ },
+ "Lapress": {
+  "id": 14473,
+  "spawns": [
+   [
+    1377,
+    58.0,
+    79.4
+   ]
+  ]
+ },
+ "Lava Elemental": {
+  "id": 12076,
+  "spawns": [
+   [
+    2717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Lava Surger": {
+  "id": 12101,
+  "spawns": [
+   [
+    2717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Legashi Rogue": {
+  "id": 6201,
+  "spawns": [
+   [
+    16,
+    62.8,
+    25.5
+   ]
+  ]
+ },
+ "Lethlas": {
+  "id": 5312,
+  "spawns": [
+   [
+    357,
+    50.4,
+    12.2
+   ]
+  ]
+ },
+ "Licillin": {
+  "id": 2191,
+  "spawns": [
+   [
+    148,
+    45.7,
+    36.4
+   ]
+  ]
+ },
+ "Lieutenant Fangore": {
+  "id": 703,
+  "spawns": [
+   [
+    44,
+    75.1,
+    37.1
+   ]
+  ]
+ },
+ "Lieutenant Valorcall": {
+  "id": 2612,
+  "spawns": [
+   [
+    45,
+    33.5,
+    52.1
+   ]
+  ]
+ },
+ "Lingering Highborne": {
+  "id": 7864,
+  "spawns": [
+   [
+    16,
+    40.3,
+    46.1
+   ]
+  ]
+ },
+ "Lok Orcbane": {
+  "id": 3435,
+  "spawns": [
+   [
+    17,
+    40.1,
+    80.5
+   ]
+  ]
+ },
+ "Lord Aliden Perenolde": {
+  "id": 2423,
+  "spawns": [
+   [
+    36,
+    39.3,
+    14.6
+   ]
+  ]
+ },
+ "Lord Banehollow": {
+  "id": 9516,
+  "spawns": [
+   [
+    361,
+    35.9,
+    44.4
+   ]
+  ]
+ },
+ "Lord Cobrahn": {
+  "id": 3669,
+  "spawns": [
+   [
+    718,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Lord Condar": {
+  "id": 14268,
+  "spawns": [
+   [
+    38,
+    77.7,
+    74.9
+   ]
+  ]
+ },
+ "Lord Falconcrest": {
+  "id": 2597,
+  "spawns": [
+   [
+    45,
+    26.0,
+    65.7
+   ]
+  ]
+ },
+ "Lord Lakmaeran": {
+  "id": 12803,
+  "spawns": [
+   [
+    357,
+    29.3,
+    72.6
+   ]
+  ]
+ },
+ "Lord Pythas": {
+  "id": 3670,
+  "spawns": [
+   [
+    718,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Lord Sakrasis": {
+  "id": 2541,
+  "spawns": [
+   [
+    33,
+    28.3,
+    62.6
+   ]
+  ]
+ },
+ "Lord Sinslayer": {
+  "id": 7017,
+  "spawns": [
+   [
+    148,
+    56.6,
+    34.9
+   ]
+  ]
+ },
+ "Lorgus Jett": {
+  "id": 12902,
+  "spawns": [
+   [
+    719,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Mad Magglish": {
+  "id": 3655,
+  "spawns": [
+   [
+    17,
+    46.5,
+    35.5
+   ]
+  ]
+ },
+ "Mad Servant": {
+  "id": 15111,
+  "spawns": [
+   [
+    1977,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Magister Hawkhelm": {
+  "id": 6647,
+  "spawns": [
+   [
+    16,
+    58.5,
+    30.9
+   ]
+  ]
+ },
+ "Magister Kalendris": {
+  "id": 11487,
+  "spawns": [
+   [
+    10024,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Magram Pack Runner": {
+  "id": 4643,
+  "spawns": [
+   [
+    405,
+    70.4,
+    73.2
+   ]
+  ]
+ },
+ "Magregan Deepshadow": {
+  "id": 2932,
+  "spawns": [
+   [
+    3,
+    39.0,
+    19.7
+   ]
+  ]
+ },
+ "Mai'Zoth": {
+  "id": 818,
+  "spawns": [
+   [
+    33,
+    52.9,
+    27.6
+   ]
+  ]
+ },
+ "Makrinni Snapclaw": {
+  "id": 6372,
+  "spawns": [
+   [
+    16,
+    82.8,
+    9.6
+   ]
+  ]
+ },
+ "Maleki the Pallid": {
+  "id": 10438,
+  "spawns": [
+   [
+    2017,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Malfunctioning Reaver": {
+  "id": 8981,
+  "spawns": [
+   [
+    46,
+    79.2,
+    29.7
+   ]
+  ]
+ },
+ "Mana Eater": {
+  "id": 4678,
+  "spawns": [
+   [
+    405,
+    51.4,
+    68.0
+   ]
+  ]
+ },
+ "Manaclaw": {
+  "id": 10663,
+  "spawns": [
+   [
+    618,
+    53.2,
+    54.2
+   ]
+  ]
+ },
+ "Manahound": {
+  "id": 8718,
+  "spawns": [
+   [
+    4,
+    40.2,
+    64.6
+   ]
+  ]
+ },
+ "Maraudine Stormer": {
+  "id": 4658,
+  "spawns": [
+   [
+    405,
+    30.5,
+    50.6
+   ]
+  ]
+ },
+ "Marcel Dabyrie": {
+  "id": 4481,
+  "spawns": [
+   [
+    45,
+    54.2,
+    38.1
+   ]
+  ]
+ },
+ "Marcus Bel": {
+  "id": 5800,
+  "spawns": [
+   [
+    17,
+    48.5,
+    79.7
+   ]
+  ]
+ },
+ "Master Feardred": {
+  "id": 6652,
+  "spawns": [
+   [
+    16,
+    66.3,
+    16.7
+   ]
+  ]
+ },
+ "Mekgineer Thermaplugg": {
+  "id": 7800,
+  "spawns": [
+   [
+    721,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Mezzir the Howler": {
+  "id": 10197,
+  "spawns": [
+   [
+    618,
+    45.0,
+    37.4
+   ]
+  ]
+ },
+ "Miner Hackett": {
+  "id": 2450,
+  "spawns": [
+   [
+    267,
+    31.8,
+    52.7
+   ]
+  ]
+ },
+ "Mirelow": {
+  "id": 14424,
+  "spawns": [
+   [
+    11,
+    23.7,
+    29.4
+   ]
+  ]
+ },
+ "Mist Howler": {
+  "id": 10644,
+  "spawns": [
+   [
+    331,
+    26.8,
+    18.4
+   ]
+  ]
+ },
+ "Mith'rethis the Enchanter": {
+  "id": 8217,
+  "spawns": [
+   [
+    47,
+    63.9,
+    77.6
+   ]
+  ]
+ },
+ "Moam": {
+  "id": 15340,
+  "spawns": [
+   [
+    3429,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Mojo the Twisted": {
+  "id": 8296,
+  "spawns": [
+   [
+    4,
+    45.2,
+    16.0
+   ]
+  ]
+ },
+ "Mok'rash": {
+  "id": 1493,
+  "spawns": [
+   [
+    33,
+    23.2,
+    72.1
+   ]
+  ]
+ },
+ "Molt Thorn": {
+  "id": 14448,
+  "spawns": [
+   [
+    8,
+    34.5,
+    38.8
+   ]
+  ]
+ },
+ "Molten Destroyer": {
+  "id": 11659,
+  "spawns": [
+   [
+    2717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Morbent Fel": {
+  "id": 1200,
+  "spawns": [
+   [
+    10,
+    16.9,
+    33.4
+   ]
+  ]
+ },
+ "Mosh'Ogg Lord": {
+  "id": 680,
+  "spawns": [
+   [
+    33,
+    52.8,
+    27.7
+   ]
+  ]
+ },
+ "Mosh'Ogg Spellcrafter": {
+  "id": 710,
+  "spawns": [
+   [
+    33,
+    51.8,
+    27.4
+   ]
+  ]
+ },
+ "Mossflayer Shadowhunter": {
+  "id": 8561,
+  "spawns": [
+   [
+    139,
+    62.5,
+    8.1
+   ]
+  ]
+ },
+ "Muculent Ooze": {
+  "id": 6556,
+  "spawns": [
+   [
+    490,
+    61.8,
+    25.4
+   ]
+  ]
+ },
+ "Mudsnout Shaman": {
+  "id": 2373,
+  "spawns": [
+   [
+    267,
+    63.0,
+    63.7
+   ]
+  ]
+ },
+ "Mug'thol": {
+  "id": 2257,
+  "spawns": [
+   [
+    36,
+    35.7,
+    54.2
+   ]
+  ]
+ },
+ "Mugglefin": {
+  "id": 10643,
+  "spawns": [
+   [
+    331,
+    19.4,
+    42.7
+   ]
+  ]
+ },
+ "Murk Thresher": {
+  "id": 4389,
+  "spawns": [
+   [
+    15,
+    53.1,
+    39.3
+   ]
+  ]
+ },
+ "Murk Worm": {
+  "id": 5226,
+  "spawns": [
+   [
+    1477,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Murkgill Oracle": {
+  "id": 4459,
+  "spawns": [
+   [
+    33,
+    34.9,
+    23.1
+   ]
+  ]
+ },
+ "Mystlash Flayer": {
+  "id": 3722,
+  "spawns": [
+   [
+    331,
+    6.9,
+    24.4
+   ]
+  ]
+ },
+ "Nagaz": {
+  "id": 2320,
+  "spawns": [
+   [
+    36,
+    39.2,
+    14.3
+   ]
+  ]
+ },
+ "Nal'taszar": {
+  "id": 4066,
+  "spawns": [
+   [
+    406,
+    25.6,
+    11.5
+   ]
+  ]
+ },
+ "Nancy Vishas": {
+  "id": 3984,
+  "spawns": [
+   [
+    36,
+    32.3,
+    32.8
+   ]
+  ]
+ },
+ "Narillasanz": {
+  "id": 2447,
+  "spawns": [
+   [
+    36,
+    73.7,
+    65.3
+   ]
+  ]
+ },
+ "Nathanos Blightcaller": {
+  "id": 11878,
+  "spawns": [
+   [
+    139,
+    22.2,
+    63.5
+   ]
+  ]
+ },
+ "Necromancer": {
+  "id": 8553,
+  "spawns": [
+   [
+    139,
+    34.9,
+    30.6
+   ]
+  ]
+ },
+ "Nefaru": {
+  "id": 534,
+  "spawns": [
+   [
+    10,
+    63.5,
+    83.7
+   ]
+  ]
+ },
+ "Nethergarde Elite": {
+  "id": 7851,
+  "spawns": [
+   [
+    4,
+    63.5,
+    16.5
+   ]
+  ]
+ },
+ "Nethergarde Riftwatcher": {
+  "id": 6002,
+  "spawns": [
+   [
+    4,
+    67.2,
+    15.8
+   ]
+  ]
+ },
+ "Noboru the Cudgel": {
+  "id": 5477,
+  "spawns": [
+   [
+    8,
+    54.9,
+    34.1
+   ]
+  ]
+ },
+ "Noxious Flayer": {
+  "id": 4346,
+  "spawns": [
+   [
+    15,
+    52.8,
+    17.1
+   ]
+  ]
+ },
+ "Obsidian Golem": {
+  "id": 4872,
+  "spawns": [
+   [
+    38,
+    38.8,
+    94.2
+   ]
+  ]
+ },
+ "Obsidion": {
+  "id": 8400,
+  "spawns": [
+   [
+    51,
+    41.8,
+    24.3
+   ]
+  ]
+ },
+ "Old Murk-Eye": {
+  "id": 391,
+  "spawns": [
+   [
+    40,
+    29.3,
+    76.0
+   ]
+  ]
+ },
+ "Old Serra'kis": {
+  "id": 4830,
+  "spawns": [
+   [
+    719,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Omgorn the Lost": {
+  "id": 8201,
+  "spawns": [
+   [
+    440,
+    38.7,
+    55.6
+   ]
+  ]
+ },
+ "Oozeworm": {
+  "id": 14237,
+  "spawns": [
+   [
+    15,
+    36.0,
+    63.1
+   ]
+  ]
+ },
+ "Otto": {
+  "id": 2599,
+  "spawns": [
+   [
+    45,
+    26.2,
+    65.5
+   ]
+  ]
+ },
+ "Overlord Ramtusk": {
+  "id": 4420,
+  "spawns": [
+   [
+    491,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Overmaster Pyron": {
+  "id": 9026,
+  "spawns": [
+   [
+    10074,
+    46.8,
+    67.7
+   ]
+  ]
+ },
+ "Owatanka": {
+  "id": 3473,
+  "spawns": [
+   [
+    17,
+    44.2,
+    62.0
+   ]
+  ]
+ },
+ "Plugger Spazzring": {
+  "id": 9499,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Portal Seeker": {
+  "id": 5981,
+  "spawns": [
+   [
+    4,
+    55.2,
+    44.1
+   ]
+  ]
+ },
+ "Primal Ooze": {
+  "id": 6557,
+  "spawns": [
+   [
+    490,
+    43.5,
+    65.2
+   ]
+  ]
+ },
+ "Prince Galen Trollbane": {
+  "id": 2607,
+  "spawns": [
+   [
+    45,
+    28.4,
+    58.1
+   ]
+  ]
+ },
+ "Prince Raze": {
+  "id": 10647,
+  "spawns": [
+   [
+    331,
+    81.6,
+    48.5
+   ]
+  ]
+ },
+ "Princess Tempestria": {
+  "id": 14457,
+  "spawns": [
+   [
+    618,
+    55.0,
+    41.6
+   ]
+  ]
+ },
+ "Pusillin": {
+  "id": 14354,
+  "spawns": [
+   [
+    10026,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Pyrewood Leatherworker": {
+  "id": 3532,
+  "spawns": [
+   [
+    130,
+    44.0,
+    74.1
+   ]
+  ]
+ },
+ "Pyrewood Tailor": {
+  "id": 3530,
+  "spawns": [
+   [
+    130,
+    46.5,
+    72.4
+   ]
+  ]
+ },
+ "Quartermaster Zigris": {
+  "id": 9736,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Rabid Bonepaw": {
+  "id": 4690,
+  "spawns": [
+   [
+    405,
+    53.8,
+    45.4
+   ]
+  ]
+ },
+ "Rage Talon Captain": {
+  "id": 10371,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Raging Rot Hide": {
+  "id": 1943,
+  "spawns": [
+   [
+    130,
+    65.8,
+    23.4
+   ]
+  ]
+ },
+ "Rak'shiri": {
+  "id": 10200,
+  "spawns": [
+   [
+    618,
+    51.1,
+    10.8
+   ]
+  ]
+ },
+ "Ras Frostwhisper": {
+  "id": 10508,
+  "spawns": [
+   [
+    2057,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Ravage": {
+  "id": 8300,
+  "spawns": [
+   [
+    4,
+    58.6,
+    35.6
+   ]
+  ]
+ },
+ "Ravasaur Matriarch": {
+  "id": 6581,
+  "spawns": [
+   [
+    490,
+    62.4,
+    66.0
+   ]
+  ]
+ },
+ "Ravenclaw Regent": {
+  "id": 2283,
+  "spawns": [
+   [
+    130,
+    56.8,
+    70.2
+   ]
+  ]
+ },
+ "Razorfen Servitor": {
+  "id": 6132,
+  "spawns": [
+   [
+    17,
+    43.3,
+    90.3
+   ]
+  ]
+ },
+ "Razortalon": {
+  "id": 8210,
+  "spawns": [
+   [
+    47,
+    37.1,
+    45.3
+   ]
+  ]
+ },
+ "Razzashi Broodwidow": {
+  "id": 11370,
+  "spawns": [
+   [
+    1977,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Red Dragonspawn": {
+  "id": 1045,
+  "spawns": [
+   [
+    11,
+    79.5,
+    48.4
+   ]
+  ]
+ },
+ "Redridge Alpha": {
+  "id": 445,
+  "spawns": [
+   [
+    44,
+    12.2,
+    17.8
+   ]
+  ]
+ },
+ "Reef Frenzy": {
+  "id": 2173,
+  "spawns": [
+   [
+    130,
+    34.6,
+    36.0
+   ]
+  ]
+ },
+ "Rex Ashil": {
+  "id": 14475,
+  "spawns": [
+   [
+    1377,
+    45.8,
+    28.1
+   ]
+  ]
+ },
+ "Rhahk'Zor": {
+  "id": 644,
+  "spawns": [
+   [
+    1581,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Ribbly Screwspigot": {
+  "id": 9543,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Ribbly's Crony": {
+  "id": 10043,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Risen Deathknight": {
+  "id": 16154,
+  "spawns": [
+   [
+    3456,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Riverpaw Overseer": {
+  "id": 125,
+  "spawns": [
+   [
+    40,
+    60.9,
+    77.8
+   ]
+  ]
+ },
+ "Ro'Bark": {
+  "id": 14278,
+  "spawns": [
+   [
+    267,
+    65.7,
+    60.1
+   ]
+  ]
+ },
+ "Rock Borer": {
+  "id": 11787,
+  "spawns": [
+   [
+    405,
+    27.3,
+    54.9
+   ]
+  ]
+ },
+ "Rock Worm": {
+  "id": 11788,
+  "spawns": [
+   [
+    405,
+    28.6,
+    53.3
+   ]
+  ]
+ },
+ "Rocklance": {
+  "id": 5841,
+  "spawns": [
+   [
+    17,
+    56.5,
+    41.6
+   ]
+  ]
+ },
+ "Rok'Alim the Pounder": {
+  "id": 4499,
+  "spawns": [
+   [
+    400,
+    17.1,
+    38.1
+   ]
+  ]
+ },
+ "Rot Hide Bruiser": {
+  "id": 1944,
+  "spawns": [
+   [
+    130,
+    64.7,
+    23.1
+   ]
+  ]
+ },
+ "Rotting Behemoth": {
+  "id": 1812,
+  "spawns": [
+   [
+    28,
+    64.0,
+    34.4
+   ]
+  ]
+ },
+ "Ruul Onestone": {
+  "id": 2602,
+  "spawns": [
+   [
+    45,
+    18.1,
+    68.8
+   ]
+  ]
+ },
+ "Saltscale Forager": {
+  "id": 877,
+  "spawns": [
+   [
+    33,
+    23.2,
+    25.0
+   ]
+  ]
+ },
+ "Saltscale Oracle": {
+  "id": 873,
+  "spawns": [
+   [
+    33,
+    24.6,
+    24.0
+   ]
+  ]
+ },
+ "Saltscale Tide Lord": {
+  "id": 875,
+  "spawns": [
+   [
+    33,
+    25.0,
+    24.1
+   ]
+  ]
+ },
+ "Sarilus Foulborne": {
+  "id": 3986,
+  "spawns": [
+   [
+    17,
+    48.2,
+    19.1
+   ]
+  ]
+ },
+ "Sawtooth Crocolisk": {
+  "id": 1082,
+  "spawns": [
+   [
+    8,
+    53.6,
+    56.0
+   ]
+  ]
+ },
+ "Scalebeard": {
+  "id": 13896,
+  "spawns": [
+   [
+    16,
+    52.6,
+    47.4
+   ]
+  ]
+ },
+ "Scargil": {
+  "id": 14276,
+  "spawns": [
+   [
+    267,
+    29.1,
+    73.6
+   ]
+  ]
+ },
+ "Scarlet Cavalier": {
+  "id": 1836,
+  "spawns": [
+   [
+    28,
+    41.7,
+    15.4
+   ]
+  ]
+ },
+ "Scarlet Curate": {
+  "id": 9450,
+  "spawns": [
+   [
+    139,
+    76.4,
+    70.2
+   ]
+  ]
+ },
+ "Scarlet Executioner": {
+  "id": 1841,
+  "spawns": [
+   [
+    28,
+    45.7,
+    18.8
+   ]
+  ]
+ },
+ "Scarlet Interrogator": {
+  "id": 1838,
+  "spawns": [
+   [
+    28,
+    45.1,
+    15.3
+   ]
+  ]
+ },
+ "Scarlet Judge": {
+  "id": 1837,
+  "spawns": [
+   [
+    28,
+    42.2,
+    18.5
+   ]
+  ]
+ },
+ "Scarlet Smith": {
+  "id": 1885,
+  "spawns": [
+   [
+    28,
+    44.4,
+    13.5
+   ]
+  ]
+ },
+ "Scarlet Spellbinder": {
+  "id": 4494,
+  "spawns": [
+   [
+    28,
+    54.3,
+    35.5
+   ]
+  ]
+ },
+ "Scholomance Dark Summoner": {
+  "id": 11582,
+  "spawns": [
+   [
+    2057,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Scorpashi Lasher": {
+  "id": 4697,
+  "spawns": [
+   [
+    405,
+    64.1,
+    57.7
+   ]
+  ]
+ },
+ "Sentinel Amarassan": {
+  "id": 5916,
+  "spawns": [
+   [
+    406,
+    35.2,
+    15.0
+   ]
+  ]
+ },
+ "Sergeant Malthus": {
+  "id": 814,
+  "spawns": [
+   [
+    33,
+    47.3,
+    5.7
+   ]
+  ]
+ },
+ "Shade of Ambermoon": {
+  "id": 12199,
+  "spawns": [
+   [
+    1377,
+    62.7,
+    49.8
+   ]
+  ]
+ },
+ "Shadow Charger": {
+  "id": 3865,
+  "spawns": [
+   [
+    209,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Shanda the Spinner": {
+  "id": 14266,
+  "spawns": [
+   [
+    38,
+    78.1,
+    52.4
+   ]
+  ]
+ },
+ "Shore Strider": {
+  "id": 5359,
+  "spawns": [
+   [
+    357,
+    34.5,
+    34.0
+   ]
+  ]
+ },
+ "Silithid Harvester": {
+  "id": 3253,
+  "spawns": [
+   [
+    17,
+    42.0,
+    70.0
+   ]
+  ]
+ },
+ "Silithid Ravager": {
+  "id": 4132,
+  "spawns": [
+   [
+    400,
+    70.0,
+    86.2
+   ]
+  ]
+ },
+ "Singe": {
+  "id": 335,
+  "spawns": [
+   [
+    44,
+    64.7,
+    56.1
+   ]
+  ]
+ },
+ "Singer": {
+  "id": 2600,
+  "spawns": [
+   [
+    45,
+    32.3,
+    31.0
+   ]
+  ]
+ },
+ "Sister Riven": {
+  "id": 5930,
+  "spawns": [
+   [
+    406,
+    29.6,
+    69.4
+   ]
+  ]
+ },
+ "Skum": {
+  "id": 3674,
+  "spawns": [
+   [
+    718,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Slave Master Blackheart": {
+  "id": 8283,
+  "spawns": [
+   [
+    51,
+    42.4,
+    23.1
+   ]
+  ]
+ },
+ "Sleeby": {
+  "id": 2764,
+  "spawns": [
+   [
+    45,
+    67.7,
+    37.6
+   ]
+  ]
+ },
+ "Sludge Beast": {
+  "id": 3295,
+  "spawns": [
+   [
+    17,
+    56.7,
+    8.2
+   ]
+  ]
+ },
+ "Snarler": {
+  "id": 5356,
+  "spawns": [
+   [
+    357,
+    80.2,
+    39.6
+   ]
+  ]
+ },
+ "Snarlflare": {
+  "id": 14272,
+  "spawns": [
+   [
+    44,
+    37.4,
+    31.0
+   ]
+  ]
+ },
+ "Sneed": {
+  "id": 643,
+  "spawns": [
+   [
+    1581,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Solakar Flamewreath": {
+  "id": 10264,
+  "spawns": [
+   [
+    1583,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Son of Arkkoroc": {
+  "id": 6144,
+  "spawns": [
+   [
+    16,
+    56.7,
+    54.1
+   ]
+  ]
+ },
+ "Soulflayer": {
+  "id": 11359,
+  "spawns": [
+   [
+    1977,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Southsea Freebooter": {
+  "id": 7856,
+  "spawns": [
+   [
+    440,
+    72.5,
+    48.1
+   ]
+  ]
+ },
+ "Spectral Attendant": {
+  "id": 11873,
+  "spawns": [
+   [
+    28,
+    45.6,
+    69.2
+   ]
+  ]
+ },
+ "Spectral Citizen": {
+  "id": 10384,
+  "spawns": [
+   [
+    2017,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Spectral Researcher": {
+  "id": 10499,
+  "spawns": [
+   [
+    2057,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Spellmaw": {
+  "id": 10662,
+  "spawns": [
+   [
+    618,
+    58.8,
+    47.5
+   ]
+  ]
+ },
+ "Splinter Fist Firemonger": {
+  "id": 1251,
+  "spawns": [
+   [
+    10,
+    36.5,
+    77.4
+   ]
+  ]
+ },
+ "Squiddic": {
+  "id": 14270,
+  "spawns": [
+   [
+    44,
+    33.6,
+    56.3
+   ]
+  ]
+ },
+ "Stegodon": {
+  "id": 6501,
+  "spawns": [
+   [
+    490,
+    36.5,
+    72.3
+   ]
+  ]
+ },
+ "Stinglasher": {
+  "id": 14661,
+  "spawns": [
+   [
+    357,
+    75.6,
+    60.9
+   ]
+  ]
+ },
+ "Stonard Explorer": {
+  "id": 862,
+  "spawns": [
+   [
+    8,
+    80.0,
+    74.4
+   ]
+  ]
+ },
+ "Stonard Scout": {
+  "id": 861,
+  "spawns": [
+   [
+    8,
+    17.3,
+    50.4
+   ]
+  ]
+ },
+ "Stone Fury": {
+  "id": 2258,
+  "spawns": [
+   [
+    36,
+    64.7,
+    44.8
+   ]
+  ]
+ },
+ "Stonevault Basher": {
+  "id": 6733,
+  "spawns": [
+   [
+    3,
+    64.2,
+    42.5
+   ]
+  ]
+ },
+ "Stormscale Siren": {
+  "id": 2180,
+  "spawns": [
+   [
+    148,
+    55.2,
+    34.8
+   ]
+  ]
+ },
+ "Strashaz Hydra": {
+  "id": 4374,
+  "spawns": [
+   [
+    15,
+    69.3,
+    18.6
+   ]
+  ]
+ },
+ "Strashaz Myrmidon": {
+  "id": 4368,
+  "spawns": [
+   [
+    15,
+    77.1,
+    19.5
+   ]
+  ]
+ },
+ "Strashaz Serpent Guard": {
+  "id": 4366,
+  "spawns": [
+   [
+    15,
+    75.6,
+    22.0
+   ]
+  ]
+ },
+ "Strashaz Siren": {
+  "id": 4371,
+  "spawns": [
+   [
+    15,
+    74.3,
+    18.4
+   ]
+  ]
+ },
+ "Strashaz Warrior": {
+  "id": 4364,
+  "spawns": [
+   [
+    15,
+    74.8,
+    15.1
+   ]
+  ]
+ },
+ "Stromgarde Cavalryman": {
+  "id": 2738,
+  "spawns": [
+   [
+    45,
+    33.4,
+    52.0
+   ]
+  ]
+ },
+ "Swamp Talker": {
+  "id": 950,
+  "spawns": [
+   [
+    8,
+    60.4,
+    84.4
+   ]
+  ]
+ },
+ "Swampwalker": {
+  "id": 764,
+  "spawns": [
+   [
+    8,
+    46.9,
+    37.1
+   ]
+  ]
+ },
+ "Swampwalker Elder": {
+  "id": 765,
+  "spawns": [
+   [
+    8,
+    12.9,
+    32.5
+   ]
+  ]
+ },
+ "Swiftmane": {
+  "id": 5831,
+  "spawns": [
+   [
+    17,
+    61.2,
+    34.5
+   ]
+  ]
+ },
+ "Swinegart Spearhide": {
+  "id": 5864,
+  "spawns": [
+   [
+    17,
+    40.8,
+    45.2
+   ]
+  ]
+ },
+ "Syndicate Assassin": {
+  "id": 2246,
+  "spawns": [
+   [
+    36,
+    38.4,
+    14.6
+   ]
+  ]
+ },
+ "Syndicate Spy": {
+  "id": 2242,
+  "spawns": [
+   [
+    36,
+    64.2,
+    41.6
+   ]
+  ]
+ },
+ "Takk the Leaper": {
+  "id": 5842,
+  "spawns": [
+   [
+    17,
+    59.6,
+    8.3
+   ]
+  ]
+ },
+ "Taneel Darkwood": {
+  "id": 3940,
+  "spawns": [
+   [
+    331,
+    77.2,
+    74.0
+   ]
+  ]
+ },
+ "Targ": {
+  "id": 2420,
+  "spawns": [
+   [
+    36,
+    39.6,
+    52.9
+   ]
+  ]
+ },
+ "Targorr the Dread": {
+  "id": 1696,
+  "spawns": [
+   [
+    717,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Taskmaster Whipfang": {
+  "id": 5932,
+  "spawns": [
+   [
+    406,
+    64.5,
+    54.2
+   ]
+  ]
+ },
+ "Teremus the Devourer": {
+  "id": 7846,
+  "spawns": [
+   [
+    4,
+    51.2,
+    50.1
+   ]
+  ]
+ },
+ "Terrorspark": {
+  "id": 10078,
+  "spawns": [
+   [
+    46,
+    41.9,
+    46.5
+   ]
+  ]
+ },
+ "Terrowulf Packlord": {
+  "id": 3792,
+  "spawns": [
+   [
+    331,
+    49.8,
+    39.6
+   ]
+  ]
+ },
+ "Thaurissan Firewalker": {
+  "id": 7037,
+  "spawns": [
+   [
+    46,
+    63.9,
+    40.9
+   ]
+  ]
+ },
+ "The Nameless Prophet": {
+  "id": 13718,
+  "spawns": [
+   [
+    405,
+    28.1,
+    62.4
+   ]
+  ]
+ },
+ "The Prophet Skeram": {
+  "id": 15263,
+  "spawns": [
+   [
+    3428,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "The Windreaver": {
+  "id": 14454,
+  "spawns": [
+   [
+    1377,
+    28.7,
+    26.9
+   ]
+  ]
+ },
+ "Theramore Infiltrator": {
+  "id": 4834,
+  "spawns": [
+   [
+    15,
+    40.9,
+    25.5
+   ]
+  ]
+ },
+ "Theramore Preserver": {
+  "id": 3386,
+  "spawns": [
+   [
+    17,
+    61.4,
+    53.6
+   ]
+  ]
+ },
+ "Thora Feathermoon": {
+  "id": 5798,
+  "spawns": [
+   [
+    17,
+    48.5,
+    79.7
+   ]
+  ]
+ },
+ "Thragomm": {
+  "id": 7170,
+  "spawns": [
+   [
+    38,
+    55.3,
+    66.9
+   ]
+  ]
+ },
+ "Thule Ravenclaw": {
+  "id": 1947,
+  "spawns": [
+   [
+    130,
+    65.7,
+    23.7
+   ]
+  ]
+ },
+ "Thunderstomp Stegodon": {
+  "id": 6504,
+  "spawns": [
+   [
+    490,
+    28.8,
+    69.0
+   ]
+  ]
+ },
+ "Thuzadin Necromancer": {
+  "id": 10400,
+  "spawns": [
+   [
+    2017,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Tick": {
+  "id": 8198,
+  "spawns": [
+   [
+    440,
+    62.6,
+    49.4
+   ]
+  ]
+ },
+ "Timbermaw Warrior": {
+  "id": 6185,
+  "spawns": [
+   [
+    16,
+    33.0,
+    46.1
+   ]
+  ]
+ },
+ "Tomb Horror": {
+  "id": 15979,
+  "spawns": [
+   [
+    3456,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Tor'gan": {
+  "id": 2706,
+  "spawns": [
+   [
+    45,
+    74.7,
+    36.3
+   ]
+  ]
+ },
+ "Torn Fin Muckdweller": {
+  "id": 2374,
+  "spawns": [
+   [
+    267,
+    26.5,
+    74.1
+   ]
+  ]
+ },
+ "Torn Fin Oracle": {
+  "id": 2376,
+  "spawns": [
+   [
+    267,
+    38.0,
+    72.8
+   ]
+  ]
+ },
+ "Torn Fin Tidehunter": {
+  "id": 2377,
+  "spawns": [
+   [
+    267,
+    42.7,
+    70.7
+   ]
+  ]
+ },
+ "Trigore the Lasher": {
+  "id": 3652,
+  "spawns": [
+   [
+    17,
+    48.3,
+    33.1
+   ]
+  ]
+ },
+ "Twilight Fire Guard": {
+  "id": 5861,
+  "spawns": [
+   [
+    51,
+    19.6,
+    38.6
+   ]
+  ]
+ },
+ "Twilight Lord Kelris": {
+  "id": 4832,
+  "spawns": [
+   [
+    719,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Uhk'loc": {
+  "id": 6585,
+  "spawns": [
+   [
+    490,
+    68.5,
+    12.7
+   ]
+  ]
+ },
+ "Unseen Servant": {
+  "id": 8538,
+  "spawns": [
+   [
+    139,
+    52.2,
+    53.2
+   ]
+  ]
+ },
+ "Vekniss Guardian": {
+  "id": 15233,
+  "spawns": [
+   [
+    3428,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Vekniss Soldier": {
+  "id": 15229,
+  "spawns": [
+   [
+    3428,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Vengeful Ancient": {
+  "id": 4030,
+  "spawns": [
+   [
+    406,
+    30.4,
+    68.1
+   ]
+  ]
+ },
+ "Venom Belcher": {
+  "id": 10417,
+  "spawns": [
+   [
+    2017,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Venture Co. Foreman": {
+  "id": 675,
+  "spawns": [
+   [
+    33,
+    41.9,
+    42.6
+   ]
+  ]
+ },
+ "Venture Co. Strip Miner": {
+  "id": 674,
+  "spawns": [
+   [
+    33,
+    41.7,
+    43.9
+   ]
+  ]
+ },
+ "Verdan the Everliving": {
+  "id": 5775,
+  "spawns": [
+   [
+    718,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Verdantine Boughguard": {
+  "id": 12477,
+  "spawns": [
+   [
+    47,
+    65.4,
+    25.0
+   ]
+  ]
+ },
+ "Verdantine Tree Warder": {
+  "id": 12479,
+  "spawns": [
+   [
+    47,
+    65.4,
+    24.9
+   ]
+  ]
+ },
+ "Vile Fin Tidehunter": {
+  "id": 1768,
+  "spawns": [
+   [
+    130,
+    60.5,
+    17.5
+   ]
+  ]
+ },
+ "Vilebranch Hideskinner": {
+  "id": 2644,
+  "spawns": [
+   [
+    47,
+    67.5,
+    76.2
+   ]
+  ]
+ },
+ "Vilebranch Shadowcaster": {
+  "id": 2642,
+  "spawns": [
+   [
+    47,
+    65.8,
+    72.0
+   ]
+  ]
+ },
+ "Vilebranch Speaker": {
+  "id": 11391,
+  "spawns": [
+   [
+    1977,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Volchan": {
+  "id": 10119,
+  "spawns": [
+   [
+    46,
+    74.3,
+    37.8
+   ]
+  ]
+ },
+ "Wandering Protector": {
+  "id": 12836,
+  "spawns": [
+   [
+    331,
+    46.4,
+    64.9
+   ]
+  ]
+ },
+ "Warleader Krazzilak": {
+  "id": 8199,
+  "spawns": [
+   [
+    440,
+    38.8,
+    21.7
+   ]
+  ]
+ },
+ "Warlord Krellian": {
+  "id": 8408,
+  "spawns": [
+   [
+    16,
+    41.0,
+    53.0
+   ]
+  ]
+ },
+ "Warlord Thresh'jin": {
+  "id": 10822,
+  "spawns": [
+   [
+    139,
+    63.3,
+    8.8
+   ]
+  ]
+ },
+ "Warsong Shredder": {
+  "id": 11684,
+  "spawns": [
+   [
+    331,
+    83.1,
+    56.1
+   ]
+  ]
+ },
+ "Wastewander Assassin": {
+  "id": 5623,
+  "spawns": [
+   [
+    440,
+    65.5,
+    36.4
+   ]
+  ]
+ },
+ "Wastewander Bandit": {
+  "id": 5618,
+  "spawns": [
+   [
+    440,
+    59.4,
+    24.7
+   ]
+  ]
+ },
+ "Wastewander Rogue": {
+  "id": 5615,
+  "spawns": [
+   [
+    440,
+    60.8,
+    32.9
+   ]
+  ]
+ },
+ "Wastewander Shadow Mage": {
+  "id": 5617,
+  "spawns": [
+   [
+    440,
+    62.0,
+    35.5
+   ]
+  ]
+ },
+ "Wastewander Thief": {
+  "id": 5616,
+  "spawns": [
+   [
+    440,
+    63.6,
+    31.0
+   ]
+  ]
+ },
+ "Wave Strider": {
+  "id": 5361,
+  "spawns": [
+   [
+    357,
+    45.1,
+    62.0
+   ]
+  ]
+ },
+ "Weapon Technician": {
+  "id": 8920,
+  "spawns": [
+   [
+    1585,
+    -1.0,
+    -1.0
+   ]
+  ]
+ },
+ "Whirlwind Shredder": {
+  "id": 11578,
+  "spawns": [
+   [
+    405,
+    62.6,
+    79.2
+   ]
+  ]
+ },
+ "Windfury Wind Witch": {
+  "id": 2963,
+  "spawns": [
+   [
+    215,
+    35.7,
+    49.9
+   ]
+  ]
+ },
+ "Windshear Geomancer": {
+  "id": 4003,
+  "spawns": [
+   [
+    406,
+    74.4,
+    58.4
+   ]
+  ]
+ },
+ "Winterfall Den Watcher": {
+  "id": 7440,
+  "spawns": [
+   [
+    618,
+    68.0,
+    34.4
+   ]
+  ]
+ },
+ "Winterfall Totemic": {
+  "id": 7441,
+  "spawns": [
+   [
+    618,
+    39.4,
+    44.7
+   ]
+  ]
+ },
+ "Winterfall Ursa": {
+  "id": 7438,
+  "spawns": [
+   [
+    618,
+    65.2,
+    37.8
+   ]
+  ]
+ },
+ "Witchwing Windcaller": {
+  "id": 3280,
+  "spawns": [
+   [
+    17,
+    38.9,
+    12.4
+   ]
+  ]
+ },
+ "Witherbark Berserker": {
+  "id": 2558,
+  "spawns": [
+   [
+    45,
+    22.9,
+    65.1
+   ]
+  ]
+ },
+ "Witherbark Headhunter": {
+  "id": 2556,
+  "spawns": [
+   [
+    45,
+    69.8,
+    78.0
+   ]
+  ]
+ },
+ "Witherbark Shadow Hunter": {
+  "id": 2557,
+  "spawns": [
+   [
+    45,
+    69.4,
+    80.7
+   ]
+  ]
+ },
+ "Withered Ancient": {
+  "id": 3919,
+  "spawns": [
+   [
+    331,
+    59.3,
+    42.1
+   ]
+  ]
+ },
+ "Witherheart the Stalker": {
+  "id": 8218,
+  "spawns": [
+   [
+    47,
+    33.1,
+    70.3
+   ]
+  ]
+ },
+ "Withervine Rager": {
+  "id": 4385,
+  "spawns": [
+   [
+    15,
+    41.3,
+    17.7
+   ]
+  ]
+ },
+ "Wrathtail Sea Witch": {
+  "id": 3715,
+  "spawns": [
+   [
+    331,
+    9.5,
+    25.7
+   ]
+  ]
+ },
+ "Writhing Mage": {
+  "id": 7075,
+  "spawns": [
+   [
+    267,
+    15.5,
+    77.4
+   ]
+  ]
+ },
+ "Yenniku": {
+  "id": 2530,
+  "spawns": [
+   [
+    33,
+    39.0,
+    58.4
+   ]
+  ]
+ },
+ "Zalas Witherbark": {
+  "id": 2605,
+  "spawns": [
+   [
+    45,
+    64.8,
+    73.5
+   ]
+  ]
+ },
+ "Zaruk": {
+  "id": 2787,
+  "spawns": [
+   [
+    45,
+    74.5,
+    35.6
+   ]
+  ]
+ },
+ "Znort": {
+  "id": 2765,
+  "spawns": [
+   [
+    45,
+    67.8,
+    37.7
+   ]
+  ]
+ },
+ "Zora": {
+  "id": 14474,
+  "spawns": [
+   [
+    1377,
+    21.0,
+    61.3
+   ]
+  ]
+ },
+ "Zul'Brin Warpbranch": {
+  "id": 10823,
+  "spawns": [
+   [
+    139,
+    63.3,
+    11.4
+   ]
+  ]
+ }
+}

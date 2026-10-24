@@ -1,0 +1,36 @@
+{
+ "excavation_wetlands": {
+  "Shadetooth": [
+   [
+    40.6,
+    53.6
+   ]
+  ],
+  "Relic Guardian": [
+   [
+    46.6,
+    74.1
+   ]
+  ],
+  "Saltspine": [
+   [
+    62,
+    47.1
+   ]
+  ],
+  "Highland Horror": [
+   [
+    26.3,
+    56.2
+   ]
+  ]
+ },
+ "onyxias_lair": {
+  "Onyxia": [
+   [
+    67.2,
+    30.7
+   ]
+  ]
+ }
+}

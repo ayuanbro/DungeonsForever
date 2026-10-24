@@ -1,0 +1,120 @@
+# Local implementation snapshots and dependency/test runtime.
+/.implementation-backup/
+/.pipeline-runtime/
+
+# Python runtime and test caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Keep runtime Core/Data, active generators/tests, required _fc/data inputs,
+# frozen _fc/inputs (including faction evidence), maintenance and translations.
+# Do not ignore all _temp/ or all JSON/CSV/HTML/Lua/DB2 files.
+
+# Retired profession pipelines and their one-time preservation checks.
+/df-prof-pipeline-v1.0/
+/df-data-pipeline/archive/df-prof-pipeline-v1.0/
+/df-data-pipeline/_temp/fc_legacy_audit.py
+/df-data-pipeline/_temp/_fc/maintenance/legacy-coverage.json
+/df-data-pipeline/LEGACY_PARITY.md
+/tests/test_pipeline_legacy_coverage.py
+
+# Recreate legacy tools' working data with prepare_workspace.py when needed.
+/df-data-pipeline/Core/Data/
+
+# Completed one-time patches; current generators are maintained separately.
+/df-data-pipeline/_temp/patch_*.py
+/df-data-pipeline/_temp/_fix_*.py
+
+# Historical logs from retired diagnostic and repair tools.
+/df-data-pipeline/_temp/_p3_*.txt
+/df-data-pipeline/_temp/_r[2-7]*.txt
+/df-data-pipeline/_temp/_qa*.txt
+/df-data-pipeline/_temp/_diag_*.txt
+/df-data-pipeline/_temp/_snap_*.txt
+/df-data-pipeline/_temp/_out_*.txt
+/df-data-pipeline/_temp/_run*.txt
+/df-data-pipeline/_temp/_cg_*check*.txt
+/df-data-pipeline/_temp/_cg_*verify*.txt
+/df-data-pipeline/_temp/_cg_*scan*.txt
+/df-data-pipeline/_temp/*_log*.txt
+/df-data-pipeline/_temp/pvpui_*.txt
+/df-data-pipeline/_temp/_enus_gap*.txt
+/df-data-pipeline/_temp/_luacheck*.txt
+/df-data-pipeline/_temp/_probe_*.txt
+
+# Rebuildable exports and completed rebase artifacts (not their source inputs).
+/df-data-pipeline/_temp/_fc/data/DataProfItems.csv
+/df-data-pipeline/_temp/_fc/data/recipe-item-link-audit.csv
+/df-data-pipeline/_temp/_fc/data/recipe-item-link-audit.md
+/df-data-pipeline/_temp/_fc/data/recipe-item-link-audit-summary.json
+/df-data-pipeline/_temp/_fc/data/recipe-item-web-link-audit.json
+/df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/build_rebase.py
+/df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/old-i18n-seed.json
+/df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/revision-2-manifest.json
+/df-data-pipeline/_temp/_fc/maintenance/source/rebase-2-70450/target-model.json
+
+# Full data pipeline: known cache directories and temporary translation batches.
+/df-data-pipeline/_temp/_fc/cache/
+/df-data-pipeline/_temp/_fc/cache_zh/
+/df-data-pipeline/_temp/_fc/reports/
+/df-data-pipeline/_temp/_fc/i18n/batch_*.txt
+/df-data-pipeline/_temp/_fc/i18n/zh_*.txt
+/df-data-pipeline/_temp/_fc/i18n/todo.json
+
+# Browser profiles and session state.
+/df-data-pipeline/_temp/_qqb_profile*/
+/df-data-pipeline/_temp/_waf_cookie.json
+
+# Vendor-locating pipeline (scripts/gen_vendors.py): fetched caches and outputs.
+/scripts/.cache/
+/scripts/out/
+/scripts/logs/
+/scripts/export_buyprice/out/
+/scripts/export_buyprice/output/
+/scripts/export_npc_factions/output/
+
+# Historical backups, logs and generated comparison reports.
+/df-data-pipeline/_temp/_bak*
+/df-data-pipeline/**/*.bak
+/df-data-pipeline/**/*.log
+/df-data-pipeline/_temp/*_report*.json
+/df-data-pipeline/_temp/*_pre*.txt
+/df-data-pipeline/_temp/*_post*.txt
+
+# Known fetched-page prefixes; keep HTML tools such as _route_plan/tune.html.
+/df-data-pipeline/_temp/wh_*.html
+/df-data-pipeline/_temp/whb_*.html
+/df-data-pipeline/_temp/whn_*.html
+/df-data-pipeline/_temp/_bis_*.html
+/df-data-pipeline/_temp/_bm_page.html
+/df-data-pipeline/_temp/_cat2.html
+/df-data-pipeline/_temp/_cdp_test.html
+
+# Disposable debug output directories.
+/df-data-pipeline/_temp/_gearvend/
+/df-data-pipeline/_temp/_mapbake/
+/df-data-pipeline/_temp/_mapcheck/
+/df-data-pipeline/_temp/live/
+/df-data-pipeline/_temp/screenshots/
+/df-data-pipeline/_temp/_screenshots/
+/df-data-pipeline/_temp/_shots/
+
+# Editor and operating-system temporary files.
+*.swp
+*~
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+
+# Release ZIPs, checksums, extracted packages and staging copies are artifacts.
+/dist/
+/DungeonsForever-*.zip
+/DungeonsForever-*.zip.sha256
+/.DungeonsForever-package-*.tmp
+
+# Retired handoff instructions; current maintenance is indexed in INDEX.md.
+/df-data-pipeline/HISTORICAL_README.md

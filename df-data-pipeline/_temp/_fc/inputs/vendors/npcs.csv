@@ -1,0 +1,265 @@
+﻿npc_id,name_en,name_locale,zone_id,ui_map_id,x,y
+66,Tharynn Bouden,Tharynn Bouden,12,1429,41.8,67.0
+734,Corporal Bluth,Corporal Bluth,33,1434,38.0,3.0
+843,Gina MacGregor,Gina MacGregor,40,1436,57.4,54.0
+989,Banalash,Banalash,8,1435,44.4,57.0
+1146,Vharr,Vharr,33,1434,32.2,28.0
+1148,Nerrist,Nerrist,33,1434,32.6,29.2
+1149,Uthok,Uthok,33,1434,31.4,28.0
+1250,Drake Lindgren,Drake Lindgren,12,1429,83.0,66.4
+1304,Darian Singh,Darian Singh,1519,1453,29.4,67.8
+1313,Maria Lumere,Maria Lumere,1519,1453,46.4,78.8
+1318,Jessara Cordell,Jessara Cordell,1519,1453,43.0,64.2
+1347,Alexandra Bolero,Alexandra Bolero,1519,1453,43.4,74.0
+1454,Jennabink Powerseam,Jennabink Powerseam,11,1437,8.0,55.8
+1465,Drac Roughcut,Drac Roughcut,38,1432,35.4,48.8
+1471,Jannos Ironwill,Jannos Ironwill,45,1417,46.0,47.4
+1474,Rann Flamespinner,Rann Flamespinner,38,1432,36.0,46.0
+1669,Defias Profiteer,Defias Profiteer,40,1436,43.4,66.8
+1672,Lohgan Eva,Lohgan Eva,10,1431,75.6,44.6
+1684,Khara Deepwater,Khara Deepwater,38,1432,39.4,39.2
+1685,Xandar Goodbeard,Xandar Goodbeard,38,1432,82.4,63.4
+2118,Abigail Shiel,Abigail Shiel,85,1420,61.0,52.4
+2380,Nandar Branson,Nandar Branson,267,1424,50.8,57.0
+2381,Micha Yance,Micha Yance,267,1424,49.0,55.0
+2383,Lindea Rabonne,Lindea Rabonne,267,1424,50.0,62.6
+2393,Christoph Jeffcoat,Christoph Jeffcoat,267,1424,62.2,19.0
+2394,Mallen Swain,Mallen Swain,267,1424,62.0,21.0
+2397,Derak Nightfall,Derak Nightfall,267,1424,63.0,19.4
+2480,Bro'kin,Bro'kin,36,1416,38.4,38.8
+2481,Bliztik,Bliztik,10,1431,18.0,54.4
+2482,Zarena Cromwind,Zarena Cromwind,33,1434,28.4,75.4
+2483,Jaquilina Dramet,Jaquilina Dramet,33,1434,35.6,10.6
+2626,Old Man Heming,Old Man Heming,33,1434,27.4,77.0
+2663,Narkk,Narkk,33,1434,28.2,74.4
+2664,Kelsey Yance,Kelsey Yance,33,1434,28.2,74.4
+2668,Danielle Zipstitch,Danielle Zipstitch,10,1431,75.8,45.4
+2669,Sheri Zipstitch,Sheri Zipstitch,10,1431,75.6,45.4
+2670,Xizk Goodstitch,Xizk Goodstitch,33,1434,28.6,76.8
+2672,Cowardly Crosby,Cowardly Crosby,33,1434,27.0,82.4
+2679,Wenna Silkbeard,Wenna Silkbeard,11,1437,25.6,25.8
+2682,Fradd Swiftgear,Fradd Swiftgear,11,1437,26.4,25.8
+2684,Rizz Loosebolt,Rizz Loosebolt,36,1416,47.2,35.2
+2685,Mazk Snipeshot,Mazk Snipeshot,33,1434,28.4,75.0
+2687,Gnaz Blunderflame,Gnaz Blunderflame,33,1434,51.0,35.2
+2688,Ruppo Zipcoil,Ruppo Zipcoil,47,1425,34.2,37.8
+2698,George Candarte,George Candarte,267,1424,92.0,38.2
+2699,Rikqiz,Rikqiz,33,1434,28.4,76.0
+2803,Malygen,Malygen,361,1448,62.2,25.4
+2805,Deneb Walker,Deneb Walker,45,1417,27.0,58.8
+2806,Bale,Bale,361,1448,34.8,53.2
+2810,Hammon Karwn,Hammon Karwn,45,1417,46.4,47.4
+2812,Drovnar Strongbrew,Drovnar Strongbrew,45,1417,46.4,47.0
+2821,Keena,Keena,45,1417,74.0,32.4
+2838,Crazk Sparks,Crazk Sparks,33,1434,28.2,76.6
+2843,Jutak,Jutak,33,1434,27.4,77.4
+2848,Glyx Brewright,Glyx Brewright,33,1434,28.0,78.0
+3005,Mahu,Mahu,1638,1456,43.4,43.8
+3012,Nata Dawnstrider,Nata Dawnstrider,1638,1456,45.0,38.4
+3027,Naal Mistrunner,Naal Mistrunner,1638,1456,50.2,51.6
+3029,Sewa Mistrunner,Sewa Mistrunner,1638,1456,55.2,48.0
+3081,Wunna Darkmane,Wunna Darkmane,215,1412,45.4,61.8
+3085,Gloria Femmel,Gloria Femmel,44,1433,21.6,43.4
+3091,Franklin Hamar,Franklin Hamar,44,1433,22.0,45.4
+3096,Captured Servant of Azora,Captured Servant of Azora,44,1433,69.2,79.4
+3134,Kzixx,Kzixx,10,1431,81.4,19.8
+3178,Stuart Fleming,Stuart Fleming,11,1437,8.0,58.2
+3333,Shankys,Shankys,1637,1454,69.4,29.0
+3335,Hagrus,Hagrus,1637,1454,46.0,46.0
+3346,Kithas,Kithas,1637,1454,53.4,37.2
+3348,Kor'geld,Kor'geld,1637,1454,56.2,34.2
+3356,Sumi,Sumi,1637,1454,82.4,23.4
+3364,Borya,Borya,1637,1454,63.0,51.2
+3366,Tamar,Tamar,1637,1454,62.4,45.4
+3400,Xen'to,Xen'to,1637,1454,57.4,53.2
+3413,Sovik,Sovik,1637,1454,75.0,24.4
+3482,Tari'qa,Tari'qa,17,1413,51.6,30.0
+3485,Wrahk,Wrahk,17,1413,52.2,31.6
+3490,Hula'mahi,Hula'mahi,17,1413,51.4,30.2
+3495,Gagsprocket,Gagsprocket,17,1413,62.6,36.2
+3497,Kilxx,Kilxx,17,1413,62.8,38.2
+3499,Ranik,Ranik,17,1413,61.8,38.6
+3522,Constance Brisboise,Constance Brisboise,85,1420,52.4,55.6
+3537,Zixil,Zixil,267,1424,50.4,50.8
+3550,Martine Tramblay,Martine Tramblay,85,1420,65.8,59.4
+3556,Andrew Hilbert,Andrew Hilbert,130,1421,43.2,40.6
+3881,Grimtak,Grimtak,14,1411,51.2,42.4
+3954,Dalria,Dalria,331,1440,35.0,52.0
+3955,Shandrina,Shandrina,331,1440,49.4,67.0
+3956,Harklan Moongrove,Harklan Moongrove,331,1440,50.8,67.0
+3958,Lardan,Lardan,331,1440,34.8,49.8
+3960,Ulthaan,Ulthaan,331,1440,50.0,66.4
+4083,Jeeda,Jeeda,406,1442,47.4,61.8
+4168,Elynna,Elynna,1657,1457,64.2,21.4
+4189,Valdaron,Valdaron,148,1439,38.0,40.6
+4200,Laird,Laird,148,1439,36.8,44.2
+4223,Fyldan,Fyldan,1657,1457,48.4,21.4
+4225,Saenorion,Saenorion,1657,1457,63.2,22.6
+4226,Ulthir,Ulthir,1657,1457,55.4,23.2
+4228,Vaean,Vaean,1657,1457,58.4,14.4
+4229,Mythrin'dir,Mythrin'dir,1657,1457,61.0,17.4
+4265,Nyoma,Nyoma,141,1438,57.2,61.2
+4305,Kriggon Talsone,Kriggon Talsone,40,1436,36.2,90.0
+4307,Heldan Galesong,Heldan Galesong,148,1439,37.0,56.2
+4553,Ronald Burch,Ronald Burch,1497,1458,62.4,43.4
+4561,Daniel Bartlett,Daniel Bartlett,1497,1458,64.0,38.8
+4574,Lizbeth Cromwell,Lizbeth Cromwell,1497,1458,81.0,29.2
+4577,Millie Gregorian,Millie Gregorian,1497,1458,70.4,29.4
+4589,Joseph Moore,Joseph Moore,1497,1458,70.2,58.0
+4610,Algernon,Algernon,1497,1458,51.4,74.4
+4617,Thaddeus Webb,Thaddeus Webb,1497,1458,61.4,60.4
+4782,Truk Wildbeard,Truk Wildbeard,47,1425,14.4,42.4
+4877,Jandia,Jandia,400,1441,46.0,51.4
+4878,Montarr,Montarr,400,1441,45.0,50.4
+4879,Ogg'marr,Ogg'marr,15,1445,36.6,31.0
+4897,Helenia Olden,Helenia Olden,15,1445,66.4,51.4
+5128,Bombus Finespindle,Bombus Finespindle,1537,1455,39.2,33.2
+5154,Poranna Snowbraid,Poranna Snowbraid,1537,1455,43.2,28.4
+5158,Tilli Thistlefuzz,Tilli Thistlefuzz,1537,1455,60.4,44.2
+5160,Emrul Riknussun,Emrul Riknussun,1537,1455,58.8,37.2
+5162,Tansy Puddlefizz,Tansy Puddlefizz,1537,1455,47.8,6.4
+5175,Gearcutter Cogspinner,Gearcutter Cogspinner,1537,1455,67.8,43.0
+5178,Soolie Berryfizz,Soolie Berryfizz,1537,1455,66.4,54.4
+5411,Krinkle Goodsteel,Krinkle Goodsteel,440,1446,51.4,28.8
+5483,Erika Tate,Erika Tate,1519,1453,75.4,37.2
+5494,Catherine Leland,Catherine Leland,1519,1453,45.4,57.6
+5512,Kaita Deepforge,Kaita Deepforge,1519,1453,56.4,16.2
+5565,Jillian Tanner,Jillian Tanner,1519,1453,67.2,49.4
+5594,Alchemist Pestlezugg,Alchemist Pestlezugg,440,1446,50.8,27.0
+5748,Killian Sanatha,Killian Sanatha,130,1421,33.0,17.4
+5757,Lilly,Lilly,130,1421,43.0,50.8
+5758,Leo Sarn,Leo Sarn,130,1421,53.8,82.6
+5940,Harn Longcast,Harn Longcast,215,1412,46.6,59.2
+5942,Zansoa,Zansoa,14,1411,56.0,73.4
+5944,Yonada,Yonada,17,1413,45.0,59.2
+6567,Ghok'kah,Ghok'kah,15,1445,35.2,30.8
+6568,Vizzklick,Vizzklick,440,1446,51.0,27.4
+6574,Jun'ha,Jun'ha,45,1417,72.6,36.4
+6576,Brienna Starglow,Brienna Starglow,357,1444,89.0,45.8
+6730,Jinky Twizzlefixxit,Jinky Twizzlefixxit,400,1441,77.6,77.8
+7733,Innkeeper Fizzgrimble,Innkeeper Fizzgrimble,440,1446,52.4,27.8
+7852,Pratt McGrubben,Pratt McGrubben,357,1444,30.4,42.8
+7854,Jangdor Swiftstrider,Jangdor Swiftstrider,357,1444,74.4,42.8
+7940,Darnall,Darnall,493,1450,51.4,33.2
+7947,Vivianna,Vivianna,357,1444,31.2,43.4
+8125,Dirge Quikcleave,Dirge Quikcleave,440,1446,52.6,28.0
+8131,Blizrik Buckshot,Blizrik Buckshot,440,1446,50.8,27.4
+8137,Gikkix,Gikkix,440,1446,66.6,22.0
+8139,Jabbey,Jabbey,440,1446,67.0,22.0
+8145,Sheendra Tallgrass,Sheendra Tallgrass,357,1444,74.4,42.8
+8150,Janet Hommers,Janet Hommers,405,1443,66.2,6.6
+8157,Logannas,Logannas,357,1444,32.4,44.0
+8158,Bronk,Bronk,357,1444,76.0,43.4
+8160,Nioma,Nioma,47,1425,13.4,43.4
+8161,Harggan,Harggan,47,1425,13.4,44.0
+8176,Gharash,Gharash,8,1435,45.4,51.4
+8177,Rartar,Rartar,8,1435,45.4,57.0
+8178,Nina Lightbrew,Nina Lightbrew,4,1419,66.8,18.2
+8307,Tarban Hearthgrain,Tarban Hearthgrain,17,1413,55.0,32.0
+8508,Gretta Ganter,Gretta Ganter,1,1426,31.4,44.6
+8678,Jubie Gadgetspring,Jubie Gadgetspring,16,1447,45.2,90.8
+8679,Knaz Blunderflame,Knaz Blunderflame,33,1434,51.0,35.2
+8681,Outfitter Eric,Outfitter Eric,1537,1455,43.2,29.2
+8878,Muuran,Muuran,405,1443,55.6,56.4
+9179,Jazzrik,Jazzrik,3,1418,42.4,52.4
+9544,Yuka Screwspigot,Yuka Screwspigot,46,1428,66.0,22.0
+9636,Kireena,Kireena,405,1443,51.0,53.4
+10118,Nessa Shadowsong,Nessa Shadowsong,141,1438,56.2,92.4
+10856,Argent Quartermaster Hasana,Argent Quartermaster Hasana,85,1420,83.2,68.2
+10857,Argent Quartermaster Lightspark,Argent Quartermaster Lightspark,28,1422,42.8,83.8
+11185,Xizzer Fizzbolt,Xizzer Fizzbolt,618,1452,60.8,38.4
+11187,Himmik,Himmik,618,1452,61.2,39.0
+11189,Qia,Qia,618,1452,61.2,37.2
+11278,Magnus Frostwake,Magnus Frostwake,28,1422,68.0,77.4
+11536,Quartermaster Miranda Breechlock,Quartermaster Miranda Breechlock,139,1423,81.4,60.0
+11557,Meilosh,Meilosh,361,1448,65.4,2.8
+11874,Masat T'andr,Masat T'andr,8,1435,26.2,31.4
+12022,Lorelae Wintersong,Lorelae Wintersong,493,1450,48.4,40.0
+12033,Wulan,Wulan,405,1443,26.2,69.8
+12043,Kulwia,Kulwia,406,1442,45.4,59.4
+12245,Vendor-Tron 1000,Vendor-Tron 1000,405,1443,60.2,38.2
+12246,Super-Seller 680,Super-Seller 680,405,1443,40.4,79.2
+12941,Jase Farlane,Jase Farlane,139,1423,80.4,57.6
+12942,Leonard Porter,Leonard Porter,28,1422,43.0,84.2
+12943,Werg Thickblade,Werg Thickblade,85,1420,83.2,69.6
+12956,Zannok Hidepiercer,Zannok Hidepiercer,1377,1451,81.8,17.8
+12957,Blimo Gadgetspring,Blimo Gadgetspring,16,1447,45.2,90.8
+12958,Gigget Zipcoil,Gigget Zipcoil,47,1425,34.4,38.4
+12959,Nergal,Nergal,490,1449,43.2,7.8
+12962,Wik'Tar,Wik'Tar,331,1440,11.8,34.0
+13278,Duke Hydraxis,Duke Hydraxis,16,1447,79.2,73.4
+13420,Penney Copperpinch,Penney Copperpinch,1637,1454,52.8,66.6
+13429,Nardstrum Copperpinch,Nardstrum Copperpinch,1497,1458,67.2,38.4
+13432,Seersa Copperpinch,Seersa Copperpinch,1638,1456,43.4,57.8
+13433,Wulmort Jinglepocket,Wulmort Jinglepocket,1537,1455,33.4,65.4
+13435,Khole Jinglepocket,Khole Jinglepocket,1519,1453,55.0,59.2
+13476,Balai Lok'Wein,Balai Lok'Wein,15,1445,36.4,30.4
+14637,Zorbin Fandazzle,Zorbin Fandazzle,357,1444,44.8,43.4
+14738,Otho Moji'ko,Otho Moji'ko,47,1425,79.2,79.0
+14921,Rin'wosho the Trader,Rin'wosho the Trader,33,1434,15.0,16.0
+15176,Vargus,Vargus,1377,1451,51.2,38.8
+15179,Mishta,Mishta,1377,1451,49.8,36.4
+15419,Kania,Kania,1377,1451,52.0,39.4
+17068,Chief Expeditionary Requisitioner Enkles,Chief Expeditionary Requisitioner Enkles,1377,1451,33.2,51.0
+17070,Apothecary Quinard,Apothecary Quinard,1377,1451,50.8,69.4
+32287,Archmage Alvareaux,Archmage Alvareaux,36,1416,14.0,63.2
+213077,Elaine Compton,Elaine Compton,1519,1453,54.4,60.2
+214070,Jornah,Jornah,1637,1454,51.4,63.8
+214096,Dokimi,Dokimi,1638,1456,39.4,53.4
+214098,Gishah,Gishah,1497,1458,64.4,38.4
+214099,Tamelyn Aldridge,Tamelyn Aldridge,1537,1455,24.4,67.4
+214101,Marcy Baker,Marcy Baker,1657,1457,59.2,56.6
+216902,Wulmort Jinglepocket,Wulmort Jinglepocket,1537,1455,32.4,67.4
+222261,"Maximillian ""The Greaser""","Maximillian ""The Greaser""",400,1441,79.8,77.2
+227853,Pix Xizzix,Pix Xizzix,33,1434,28.4,75.8
+240604,Carrie Hearthfire,Carrie Hearthfire,139,1423,95.2,78.4
+242498,Reagent Bot,Reagent Bot,40,1436,31.6,43.6
+248196,Apothecary Durelle,Apothecary Durelle,17,1413,49.8,29.4
+248197,Gor'mak,Gor'mak,17,1413,49.8,29.6
+248198,Aza'bek,Aza'bek,17,1413,49.6,29.4
+248199,Beneris,Beneris,17,1413,49.6,29.8
+248200,Fizzlefuse,Fizzlefuse,17,1413,49.8,29.6
+248201,Pawani,Pawani,17,1413,49.6,29.6
+248202,Jim'bek,Jim'bek,17,1413,49.6,29.4
+251905,Zerril Softbreeze,Zerril Softbreeze,16593,2521,43.8,43.8
+251973,Dominique Stefano,Dominique Stefano,36,1416,17.6,60.2
+251991,Taleen Shimmerthread,Taleen Shimmerthread,16593,2521,44.8,44.2
+251997,Norvin Alderman,Norvin Alderman,36,1416,16.0,65.4
+252083,Derek Odds,Derek Odds,36,1416,12.4,66.0
+252380,Othesia Evengale,Othesia Evengale,16593,2521,64.4,81.0
+253139,Gorhak,Gorhak,405,1443,66.2,79.4
+253140,Molkar,Molkar,405,1443,35.6,92.0
+254151,Vayn Moongaze,Vayn Moongaze,16593,2521,63.7,38.0
+254695,Repair Bot,Repair Bot,11,1437,38.2,51.0
+255894,Innkeeper Zizplink,Innkeeper Zizplink,16591,2548,78.8,54.0
+255895,Grizzek,Grizzek,16591,2548,76.6,53.2
+256629,Dala Fairmaw,Dala Fairmaw,616,2482,21.0,78.6
+256729,Nina Surefire,Nina Surefire,44,1433,10.8,72.4
+256730,Stondry Darkhammer,Stondry Darkhammer,44,1433,10.4,74.4
+256731,Kalsey Sanden,Kalsey Sanden,44,1433,10.8,72.4
+256732,Alynsia,Alynsia,44,1433,11.2,71.4
+256733,Fritz Fizzle,Fritz Fizzle,44,1433,10.4,74.2
+256734,Daniel Stitchsong,Daniel Stitchsong,44,1433,10.0,72.4
+256735,Mivin Shadowweave,Mivin Shadowweave,44,1433,10.0,72.4
+257006,Nyalah Brightfire,Nyalah Brightfire,16593,2521,60.6,72.6
+257020,Nasalanna Windsinger,Nasalanna Windsinger,16593,2521,43.2,43.2
+258306,Granny Finespindle,Granny Finespindle,1537,1455,39.0,32.4
+258415,Angela Ward,Angela Ward,1497,1458,70.4,29.4
+258463,Darah,Darah,1637,1454,63.4,50.4
+258466,Boramu,Boramu,1638,1456,43.8,44.4
+258548,Ellie Stonebrow,Ellie Stonebrow,1537,1455,43.4,27.4
+258568,Antonio Bolero,Antonio Bolero,1519,1453,53.4,81.8
+258572,Dani'ill,Dani'ill,1657,1457,63.4,21.8
+259860,Martha Wellsworth,Martha Wellsworth,16591,2548,64.2,84.0
+259962,Fimbo Greasemitz,Fimbo Greasemitz,16591,2548,78.8,54.2
+260487,Gritta Chumwater,Gritta Chumwater,16591,2548,78.4,55.0
+260565,Kor'gar,Kor'gar,16591,2548,77.6,50.8
+260566,Fizzix Boomshot,Fizzix Boomshot,16591,2548,78.4,53.6
+260570,Stitch Pinwizzle,Stitch Pinwizzle,16591,2548,77.2,51.4
+261313,Naluk,Naluk,16591,2548,57.8,45.8
+264078,Sutara Plainstalker,Sutara Plainstalker,215,1412,34.4,22.8
+264797,Aisarra Nightmeadow,Aisarra Nightmeadow,616,2482,71.0,51.2
+266901,Pexmit,Pexmit,616,2482,58.8,41.8
+267000,Paige,Paige,36,1416,20.8,74.6
+270780,Qujo,Qujo,47,1425,77.8,78.0
+272646,Miranda Turner,Miranda Turner,16591,2548,63.4,82.4

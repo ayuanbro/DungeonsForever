@@ -1,0 +1,3119 @@
+{
+  "checkedOn": "2026-10-21",
+  "policy": "NPC-ID names are display-only; no supplier, stock, access, or price authority. Existing verified names and earlier unavailable evidence retain their recorded sources. Recovered English identities are checked against cached sold-by Listview JSON; not_verified means no localized web lookup was performed. checkedOn records local audit maintenance, not a blanket network check.",
+  "vendors": [
+    {
+      "npcID": 66,
+      "enUS": "Tharynn Bouden",
+      "zhCN": "萨瑞恩·博丁",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "薩瑞恩·博丁",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 340,
+      "enUS": "Kendor Kabonka",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 728,
+        "file": "scripts/.cache/soldby/728.html",
+        "sha256": "1af7e58b31f46b4de85ab8e31a1c07a1ed96f6c377c7eb863bb3515e200fc718",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 734,
+      "enUS": "Corporal Bluth",
+      "zhCN": "布鲁斯下士",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "布魯斯下士",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 777,
+      "enUS": "Amy Davenport",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 5772,
+        "file": "scripts/.cache/soldby/5772.html",
+        "sha256": "6bc7123022de63ca22237ae2610dc77433edb745cc8e2397ed0b94b8a45e0280",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 843,
+      "enUS": "Gina MacGregor",
+      "zhCN": "吉娜·马克葛瑞格",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "吉娜·馬克葛瑞格",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 989,
+      "enUS": "Banalash",
+      "zhCN": "巴纳拉什",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "巴納拉什",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1146,
+      "enUS": "Vharr",
+      "zhCN": "维哈尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "維哈爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1148,
+      "enUS": "Nerrist",
+      "zhCN": "耐里斯特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "耐里斯特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1149,
+      "enUS": "Uthok",
+      "zhCN": "尤索克",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "尤索克",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1250,
+      "enUS": "Drake Lindgren",
+      "zhCN": "德拉克·林格雷",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "德拉克·林格雷",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1304,
+      "enUS": "Darian Singh",
+      "zhCN": "达利安·辛格",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "達利安·辛格",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1313,
+      "enUS": "Maria Lumere",
+      "zhCN": "玛丽亚·卢米尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "瑪麗亞·盧米爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1318,
+      "enUS": "Jessara Cordell",
+      "zhCN": "杰萨拉·考迪尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "傑薩拉·考迪爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1347,
+      "enUS": "Alexandra Bolero",
+      "zhCN": "亚历山德拉·波利罗",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "亞歷山德拉·波利羅",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1454,
+      "enUS": "Jennabink Powerseam",
+      "zhCN": "吉娜比克·铁线",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "吉娜比克·鐵線",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1465,
+      "enUS": "Drac Roughcut",
+      "zhCN": "德拉克·卷刃",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "德拉克·捲刃",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1471,
+      "enUS": "Jannos Ironwill",
+      "zhCN": "加诺斯·铁心",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "加諾斯·鐵心",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1474,
+      "enUS": "Rann Flamespinner",
+      "zhCN": "拉恩·火翼",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "拉恩·火翼",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1669,
+      "enUS": "Defias Profiteer",
+      "zhCN": "迪菲亚奸商",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "迪菲亞奸商",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1672,
+      "enUS": "Lohgan Eva",
+      "zhCN": "洛尔甘·伊瓦",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "洛爾甘·伊瓦",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1684,
+      "enUS": "Khara Deepwater",
+      "zhCN": "卡拉·深水",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "卡拉·深水",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 1685,
+      "enUS": "Xandar Goodbeard",
+      "zhCN": "山达·细须",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "山達·細須",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2118,
+      "enUS": "Abigail Shiel",
+      "zhCN": "阿比盖尔·沙伊尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "阿比蓋爾·沙伊爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2380,
+      "enUS": "Nandar Branson",
+      "zhCN": "南达·布拉森",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "南達·布拉森",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2381,
+      "enUS": "Micha Yance",
+      "zhCN": "米莎·杨斯",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "米莎·楊斯",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2383,
+      "enUS": "Lindea Rabonne",
+      "zhCN": "林迪·拉波尼",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "林迪·拉波尼",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2393,
+      "enUS": "Christoph Jeffcoat",
+      "zhCN": "克里斯托弗·杰弗寇特",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "克里斯托弗·傑弗寇特",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2394,
+      "enUS": "Mallen Swain",
+      "zhCN": "玛林·斯万",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "瑪林·斯萬",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2397,
+      "enUS": "Derak Nightfall",
+      "zhCN": "德拉克·奈特弗",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "德拉克·奈特弗",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2480,
+      "enUS": "Bro'kin",
+      "zhCN": "布洛金",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "布洛金",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2481,
+      "enUS": "Bliztik",
+      "zhCN": "布里兹提克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "布里茲提克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2482,
+      "enUS": "Zarena Cromwind",
+      "zhCN": "萨瑞娜·克罗姆温德",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "薩瑞娜·克羅姆溫德",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2483,
+      "enUS": "Jaquilina Dramet",
+      "zhCN": "加奎琳娜·德拉米特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "加奎琳娜·德拉米特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2626,
+      "enUS": "Old Man Heming",
+      "zhCN": "老人海明威",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "老人海明威",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2663,
+      "enUS": "Narkk",
+      "zhCN": "纳尔克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "納爾克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2664,
+      "enUS": "Kelsey Yance",
+      "zhCN": "凯尔希·杨斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "凱爾希·楊斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2668,
+      "enUS": "Danielle Zipstitch",
+      "zhCN": "丹尼勒·希普斯迪",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "丹尼勒·希普斯迪",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2669,
+      "enUS": "Sheri Zipstitch",
+      "zhCN": "舍瑞·希普斯迪",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "舍瑞·希普斯迪",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2670,
+      "enUS": "Xizk Goodstitch",
+      "zhCN": "希兹克·古斯提",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "希茲克·古斯提",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2672,
+      "enUS": "Cowardly Crosby",
+      "zhCN": "怯懦的克罗斯比",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "怯懦的克羅斯比",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2679,
+      "enUS": "Wenna Silkbeard",
+      "zhCN": "温纳·银须",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "溫納·銀鬚",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2682,
+      "enUS": "Fradd Swiftgear",
+      "zhCN": "弗拉德",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "弗拉德",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2683,
+      "enUS": "Namdo Bizzfizzle",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 14639,
+        "file": "scripts/.cache/soldby/14639.html",
+        "sha256": "66f90597938ee6a81a422ca545005c08537d745ca8be24f8e29113e5bfac75b8",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 2684,
+      "enUS": "Rizz Loosebolt",
+      "zhCN": "里兹·飞矢",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "里茲·飛矢",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2685,
+      "enUS": "Mazk Snipeshot",
+      "zhCN": "玛兹克·斯奈普沙特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "瑪茲克·斯奈普沙特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2687,
+      "enUS": "Gnaz Blunderflame",
+      "zhCN": "格纳兹·枪焰",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "格納茲·槍焰",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2688,
+      "enUS": "Ruppo Zipcoil",
+      "zhCN": "鲁普·火油",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "魯普·火油",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2697,
+      "enUS": "Clyde Ranthal",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 7289,
+        "file": "scripts/.cache/soldby/7289.html",
+        "sha256": "abbad6ed96f19d8c2129f22cfca183011cdecc8587882728659922d89b272948",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 2698,
+      "enUS": "George Candarte",
+      "zhCN": "乔治·坎达特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "喬治·坎達特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2699,
+      "enUS": "Rikqiz",
+      "zhCN": "雷克奇兹",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "雷克奇茲",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2803,
+      "enUS": "Malygen",
+      "zhCN": "玛里甘",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "瑪裏甘",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2805,
+      "enUS": "Deneb Walker",
+      "zhCN": "德尼布·沃克",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/2805?locale=zhCN",
+      "zhTW": "德尼布·沃克",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/2805?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2806,
+      "enUS": "Bale",
+      "zhCN": "拜尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "拜爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2810,
+      "enUS": "Hammon Karwn",
+      "zhCN": "哈蒙·卡文",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "哈蒙·卡文",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2812,
+      "enUS": "Drovnar Strongbrew",
+      "zhCN": "德鲁纳·烈酒",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "德魯納·烈酒",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2814,
+      "enUS": "Narj Deepslice",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 4609,
+        "file": "scripts/.cache/soldby/4609.html",
+        "sha256": "f90247c6582753f35be5b3c353ac5047a784453734d620aedece1404eb5a27fd",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 2816,
+      "enUS": "Androd Fadran",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 13288,
+        "file": "scripts/.cache/soldby/13288.html",
+        "sha256": "efe09c868525fc1686236d4bc2a6c5ef224550f423301c286185d7b294474783",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 2819,
+      "enUS": "Tunkk",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 13287,
+        "file": "scripts/.cache/soldby/13287.html",
+        "sha256": "86185689404dc9e915d9c54f2071a2a4c1f606b3d5246d59d0603f5c37528f63",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 2821,
+      "enUS": "Keena",
+      "zhCN": "基纳",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "基納",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2832,
+      "enUS": "Nixxrax Fillamug",
+      "zhCN": "尼克拉克斯·菲拉莫格",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/2832?locale=zhCN",
+      "zhCNStatus": "verified",
+      "zhTW": "尼克拉克斯·菲拉莫格",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/2832?locale=zhTW",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2838,
+      "enUS": "Crazk Sparks",
+      "zhCN": "克拉赛·斯巴克斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "克拉賽·斯巴克斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2843,
+      "enUS": "Jutak",
+      "zhCN": "祖塔克",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "祖塔克",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 2846,
+      "enUS": "Blixrez Goodstitch",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 5788,
+        "file": "scripts/.cache/soldby/5788.html",
+        "sha256": "7978c891e36b33521cceb71065938923e66ab421a799418c303cea39a1c30200",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 2848,
+      "enUS": "Glyx Brewright",
+      "zhCN": "格里克斯·布鲁维特",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "格里克斯·布魯維特",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3005,
+      "enUS": "Mahu",
+      "zhCN": "曼胡",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "曼胡",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3012,
+      "enUS": "Nata Dawnstrider",
+      "zhCN": "纳塔·黎明行者",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "納塔·黎明行者",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3027,
+      "enUS": "Naal Mistrunner",
+      "zhCN": "纳尔·迷雾行者",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "納爾·迷霧行者",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3029,
+      "enUS": "Sewa Mistrunner",
+      "zhCN": "苏瓦·迷雾行者",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "蘇瓦·迷霧行者",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3081,
+      "enUS": "Wunna Darkmane",
+      "zhCN": "温纳·黑鬃",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "溫納·黑鬃",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3085,
+      "enUS": "Gloria Femmel",
+      "zhCN": "格劳瑞亚·菲米尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "格勞瑞亞·菲米爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3091,
+      "enUS": "Franklin Hamar",
+      "zhCN": "富兰克林·哈玛",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "富蘭克林·哈瑪",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3096,
+      "enUS": "Captured Servant of Azora",
+      "zhCN": "阿祖拉的仆从",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "阿祖拉的僕從",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3134,
+      "enUS": "Kzixx",
+      "zhCN": "卡兹克斯",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "卡茲克斯",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3178,
+      "enUS": "Stuart Fleming",
+      "zhCN": "斯图亚特·弗雷明",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "斯圖亞特·弗雷明",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3333,
+      "enUS": "Shankys",
+      "zhCN": "山吉斯",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "山吉斯",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3335,
+      "enUS": "Hagrus",
+      "zhCN": "哈格鲁斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "哈格魯斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3346,
+      "enUS": "Kithas",
+      "zhCN": "基萨斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "基薩斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3348,
+      "enUS": "Kor'geld",
+      "zhCN": "考吉尔德",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "考吉爾德",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3356,
+      "enUS": "Sumi",
+      "zhCN": "苏米",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "蘇米",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3364,
+      "enUS": "Borya",
+      "zhCN": "博亚",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "博亞",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3366,
+      "enUS": "Tamar",
+      "zhCN": "达玛尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "達瑪爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3400,
+      "enUS": "Xen'to",
+      "zhCN": "克森图",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "克森圖",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3413,
+      "enUS": "Sovik",
+      "zhCN": "索维克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "索維克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3482,
+      "enUS": "Tari'qa",
+      "zhCN": "塔里查",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "塔裏查",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3485,
+      "enUS": "Wrahk",
+      "zhCN": "瓦尔克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "瓦爾克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3489,
+      "enUS": "Zargh",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 3735,
+        "file": "scripts/.cache/soldby/3735.html",
+        "sha256": "17b907ade67270a82bbcdf80dee88a6257063b116e53564c8c09619d39292da4",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 3490,
+      "enUS": "Hula'mahi",
+      "zhCN": "哈拉玛",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "哈拉瑪",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3495,
+      "enUS": "Gagsprocket",
+      "zhCN": "加格斯普吉特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "加格斯普吉特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3497,
+      "enUS": "Kilxx",
+      "zhCN": "基尔克斯",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "基爾克斯",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3499,
+      "enUS": "Ranik",
+      "zhCN": "拉尼克",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "拉尼克",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3522,
+      "enUS": "Constance Brisboise",
+      "zhCN": "康斯坦茨·布里斯博埃斯",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "康斯坦茨·布里斯博埃斯",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3537,
+      "enUS": "Zixil",
+      "zhCN": "吉克希尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "吉克希爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3550,
+      "enUS": "Martine Tramblay",
+      "zhCN": "马丁·塔布雷",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "馬丁·塔布雷",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3556,
+      "enUS": "Andrew Hilbert",
+      "zhCN": "安德鲁·希尔伯特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "安德魯·希爾伯特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3683,
+      "enUS": "Kiknikle",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 5772,
+        "file": "scripts/.cache/soldby/5772.html",
+        "sha256": "6bc7123022de63ca22237ae2610dc77433edb745cc8e2397ed0b94b8a45e0280",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 3881,
+      "enUS": "Grimtak",
+      "zhCN": "格瑞姆塔克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "格瑞姆塔克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3954,
+      "enUS": "Dalria",
+      "zhCN": "达利亚",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "達利亞",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3955,
+      "enUS": "Shandrina",
+      "zhCN": "珊蒂瑞亚",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/3955?locale=zhCN",
+      "zhTW": "珊蒂瑞亞",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/3955?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3956,
+      "enUS": "Harklan Moongrove",
+      "zhCN": "哈克兰·月林",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "哈克蘭·月林",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3958,
+      "enUS": "Lardan",
+      "zhCN": "拉尔丹",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "拉爾丹",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 3960,
+      "enUS": "Ulthaan",
+      "zhCN": "尤萨恩",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "尤薩恩",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4083,
+      "enUS": "Jeeda",
+      "zhCN": "基达",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "基達",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4086,
+      "enUS": "Veenix",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 7561,
+        "file": "scripts/.cache/soldby/7561.html",
+        "sha256": "25de4ad17dfe7c44f41674c2215b224a14aee552ad375a7dd24333e80e25c798",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 4168,
+      "enUS": "Elynna",
+      "zhCN": "艾琳娜",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "艾琳娜",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4186,
+      "enUS": "Mavralyn",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 5786,
+        "file": "scripts/.cache/soldby/5786.html",
+        "sha256": "3acd2a1354de493a6d2a70f243330a933becb1ce287146727220bbcc8693a37d",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 4189,
+      "enUS": "Valdaron",
+      "zhCN": "瓦尔达隆",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "瓦爾達隆",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4200,
+      "enUS": "Laird",
+      "zhCN": "莱尔德",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "萊爾德",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4223,
+      "enUS": "Fyldan",
+      "zhCN": "菲尔丹",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "菲爾丹",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4225,
+      "enUS": "Saenorion",
+      "zhCN": "塞诺里奥",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "塞諾里奧",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4226,
+      "enUS": "Ulthir",
+      "zhCN": "尤希尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "尤希爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4228,
+      "enUS": "Vaean",
+      "zhCN": "维安",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "維安",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4229,
+      "enUS": "Mythrin'dir",
+      "zhCN": "迈斯林迪尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "邁斯林迪爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4265,
+      "enUS": "Nyoma",
+      "zhCN": "奈欧玛",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "奈歐瑪",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4305,
+      "enUS": "Kriggon Talsone",
+      "zhCN": "克雷贡·塔尔松",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "克雷貢·塔爾松",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4307,
+      "enUS": "Heldan Galesong",
+      "zhCN": "海尔丹·风歌",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "海爾丹·風歌",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4553,
+      "enUS": "Ronald Burch",
+      "zhCN": "罗纳德·伯奇",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "羅納德·伯奇",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4561,
+      "enUS": "Daniel Bartlett",
+      "zhCN": "丹尼尔·巴特莱特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "丹尼爾·巴特萊特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4574,
+      "enUS": "Lizbeth Cromwell",
+      "zhCN": "莉兹白·克伦威尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "莉茲白·克倫威爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4577,
+      "enUS": "Millie Gregorian",
+      "zhCN": "米利尔·格里高利",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "米利爾·格里高利",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4589,
+      "enUS": "Joseph Moore",
+      "zhCN": "约瑟夫·摩尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "約瑟夫·摩爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4610,
+      "enUS": "Algernon",
+      "zhCN": "奥格诺恩",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "奧格諾恩",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4617,
+      "enUS": "Thaddeus Webb",
+      "zhCN": "萨德乌斯·韦伯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "薩德烏斯·韋伯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4782,
+      "enUS": "Truk Wildbeard",
+      "zhCN": "特鲁克·蛮鬃",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "特魯克·蠻鬃",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4877,
+      "enUS": "Jandia",
+      "zhCN": "詹迪亚",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "詹迪亞",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4878,
+      "enUS": "Montarr",
+      "zhCN": "莫塔尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "莫塔爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4879,
+      "enUS": "Ogg'marr",
+      "zhCN": "奥克玛尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "奧克瑪爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 4897,
+      "enUS": "Helenia Olden",
+      "zhCN": "海伦妮亚·奥德恩",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "海倫妮亞·奧德恩",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5128,
+      "enUS": "Bombus Finespindle",
+      "zhCN": "伯布斯·钢轴",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "伯布斯·鋼軸",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5154,
+      "enUS": "Poranna Snowbraid",
+      "zhCN": "博兰纳·雪衣",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "博蘭納·雪衣",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5158,
+      "enUS": "Tilli Thistlefuzz",
+      "zhCN": "提尔利·草须",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "提爾利·草須",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5160,
+      "enUS": "Emrul Riknussun",
+      "zhCN": "埃姆鲁尔·里克努斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "埃姆魯爾·裏克努斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5162,
+      "enUS": "Tansy Puddlefizz",
+      "zhCN": "坦斯·泥泡",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "坦斯·泥泡",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5175,
+      "enUS": "Gearcutter Cogspinner",
+      "zhCN": "考格斯宾",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "考格斯賓",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5178,
+      "enUS": "Soolie Berryfizz",
+      "zhCN": "苏雷·浆泡",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "蘇雷·漿泡",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5411,
+      "enUS": "Krinkle Goodsteel",
+      "zhCN": "克林科·古德斯迪尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "克林科·古德斯迪爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5483,
+      "enUS": "Erika Tate",
+      "zhCN": "艾瑞卡·塔特",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "艾瑞卡·塔特",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5494,
+      "enUS": "Catherine Leland",
+      "zhCN": "凯瑟琳·利兰",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "凱瑟琳·利蘭",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5512,
+      "enUS": "Kaita Deepforge",
+      "zhCN": "凯塔·深炉",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "凱塔·深爐",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5565,
+      "enUS": "Jillian Tanner",
+      "zhCN": "基利安·坦纳尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "基利安·坦納爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5594,
+      "enUS": "Alchemist Pestlezugg",
+      "zhCN": "炼金师匹斯特苏格",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "鍊金師匹斯特蘇格",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5695,
+      "enUS": "Vance Undergloom",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 6342,
+        "file": "scripts/.cache/soldby/6342.html",
+        "sha256": "fb0a5de78292fe83f6c87d1f85f1d8ccbbcff8f3cc6842a95f53e3de7dee6e1c",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 5748,
+      "enUS": "Killian Sanatha",
+      "zhCN": "基利恩·萨纳森",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "基利恩·薩納森",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5757,
+      "enUS": "Lilly",
+      "zhCN": "莉蕾",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "莉蕾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5758,
+      "enUS": "Leo Sarn",
+      "zhCN": "雷欧·萨恩",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "雷歐·薩恩",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5783,
+      "enUS": "Kalldan Felmoon",
+      "zhCN": "卡尔丹·暗月",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "卡爾丹·暗月",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5940,
+      "enUS": "Harn Longcast",
+      "zhCN": "哈恩·长线",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "哈恩·長線",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5942,
+      "enUS": "Zansoa",
+      "zhCN": "詹苏尔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "詹蘇爾",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 5944,
+      "enUS": "Yonada",
+      "zhCN": "犹纳达",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "猶納達",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 6567,
+      "enUS": "Ghok'kah",
+      "zhCN": "格鲁克卡恩",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "格魯克卡恩",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 6568,
+      "enUS": "Vizzklick",
+      "zhCN": "维兹格里克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "維茲格里克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 6574,
+      "enUS": "Jun'ha",
+      "zhCN": "祖恩哈",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/6574?locale=zhCN",
+      "zhTW": "祖恩哈",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/6574?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 6576,
+      "enUS": "Brienna Starglow",
+      "zhCN": "布琳娜·星光",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "布琳娜·星光",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 6730,
+      "enUS": "Jinky Twizzlefixxit",
+      "zhCN": "金克·铁钩",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "金克·鐵鉤",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 6731,
+      "enUS": "Harlown Darkweave",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 7361,
+        "file": "scripts/.cache/soldby/7361.html",
+        "sha256": "9c1f89201412275511f80d1dd4ec4a9b5cfb4a6a445c3bd477c70f91b95ff9c3",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 6777,
+      "enUS": "Zan Shivsproket",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 7742,
+        "file": "scripts/.cache/soldby/7742.html",
+        "sha256": "170d64a251dbd95aafde43f773bf68e55648f3b53312a15fb256ad2b7041a86e",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 6779,
+      "enUS": "Smudge Thunderwood",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 18160,
+        "file": "scripts/.cache/soldby/18160.html",
+        "sha256": "51a747fc502237baa63fc0fd2133f8586fd1f8913f66bf44db973f06c7c0344b",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 7733,
+      "enUS": "Innkeeper Fizzgrimble",
+      "zhCN": "旅店老板菲兹格瑞博",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "旅店老闆菲茲格瑞博",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 7852,
+      "enUS": "Pratt McGrubben",
+      "zhCN": "普拉特·马克格鲁比",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "普拉特·馬克格魯比",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 7854,
+      "enUS": "Jangdor Swiftstrider",
+      "zhCN": "杉多尔·迅蹄",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "杉多爾·迅蹄",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 7940,
+      "enUS": "Darnall",
+      "zhCN": "旅店老板达纳尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "旅店老闆達納爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 7947,
+      "enUS": "Vivianna",
+      "zhCN": "薇薇安娜",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "薇薇安娜",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8125,
+      "enUS": "Dirge Quikcleave",
+      "zhCN": "迪尔格·奎克里弗",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "迪爾格·奎克里弗",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8131,
+      "enUS": "Blizrik Buckshot",
+      "zhCN": "布雷兹里克·巴克舒特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "佈雷茲裏克·巴克舒特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8137,
+      "enUS": "Gikkix",
+      "zhCN": "吉科希斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "吉科希斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8139,
+      "enUS": "Jabbey",
+      "zhCN": "加贝",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "加貝",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8145,
+      "enUS": "Sheendra Tallgrass",
+      "zhCN": "希恩德拉·深草",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "希恩德拉·深草",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8150,
+      "enUS": "Janet Hommers",
+      "zhCN": "詹奈特·霍莫斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "詹奈特·霍莫斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8157,
+      "enUS": "Logannas",
+      "zhCN": "洛加纳斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "洛加納斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8158,
+      "enUS": "Bronk",
+      "zhCN": "布隆克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "布隆克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8160,
+      "enUS": "Nioma",
+      "zhCN": "尼奥玛",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "尼奧瑪",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8161,
+      "enUS": "Harggan",
+      "zhCN": "哈尔甘",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "哈爾甘",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8176,
+      "enUS": "Gharash",
+      "zhCN": "卡尔拉什",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "卡爾拉什",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8177,
+      "enUS": "Rartar",
+      "zhCN": "拉尔塔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "拉爾塔",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8178,
+      "enUS": "Nina Lightbrew",
+      "zhCN": "妮娜·莱特布鲁",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "妮娜·萊特布魯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8307,
+      "enUS": "Tarban Hearthgrain",
+      "zhCN": "塔班·熟麦",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "塔班·熟麥",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8508,
+      "enUS": "Gretta Ganter",
+      "zhCN": "格雷塔·甘特",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "格雷塔·甘特",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8678,
+      "enUS": "Jubie Gadgetspring",
+      "zhCN": "朱比",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "朱比",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8679,
+      "enUS": "Knaz Blunderflame",
+      "zhCN": "克纳兹·枪焰",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "克納茲·槍焰",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8681,
+      "enUS": "Outfitter Eric",
+      "zhCN": "埃瑞克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "埃瑞克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 8878,
+      "enUS": "Muuran",
+      "zhCN": "穆尔兰",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "穆爾蘭",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 9179,
+      "enUS": "Jazzrik",
+      "zhCN": "加兹里克",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "加茲裏克",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 9499,
+      "enUS": "Plugger Spazzring",
+      "zhCN": "普拉格",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/9499?locale=zhCN",
+      "zhTW": "普拉格",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/9499?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 9544,
+      "enUS": "Yuka Screwspigot",
+      "zhCN": "尤卡·斯库比格特",
+      "zhCNSource": "Core/Data/Data_QuestEndNpc.lua",
+      "zhTW": "尤卡·斯庫比格特",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/9544?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 9636,
+      "enUS": "Kireena",
+      "zhCN": "基瑞娜",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "基瑞娜",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 10118,
+      "enUS": "Nessa Shadowsong",
+      "zhCN": "尼莎·影歌",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "尼莎·影歌",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 10856,
+      "enUS": "Argent Quartermaster Hasana",
+      "zhCN": "银色黎明军需官哈萨娜",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "銀色黎明軍需官哈薩娜",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 10857,
+      "enUS": "Argent Quartermaster Lightspark",
+      "zhCN": "银色黎明军需官莱斯巴克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "銀色黎明軍需官萊斯巴克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 11185,
+      "enUS": "Xizzer Fizzbolt",
+      "zhCN": "希兹尔·菲兹波特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "希茲爾·菲茲波特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 11187,
+      "enUS": "Himmik",
+      "zhCN": "西米克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "西米克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 11189,
+      "enUS": "Qia",
+      "zhCN": "琦亚",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "琦亞",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 11278,
+      "enUS": "Magnus Frostwake",
+      "zhCN": "玛格努斯·霜鸣",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "瑪格努斯·霜鳴",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 11536,
+      "enUS": "Quartermaster Miranda Breechlock",
+      "zhCN": "军需官米兰达·布利洛克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "軍需官米蘭達·布利洛克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 11557,
+      "enUS": "Meilosh",
+      "zhCN": "梅罗什",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "梅羅什",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 11874,
+      "enUS": "Masat T'andr",
+      "zhCN": "马萨特·坦德",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "馬薩特·坦德",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12022,
+      "enUS": "Lorelae Wintersong",
+      "zhCN": "罗莱尔·冬歌",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "羅萊爾·冬歌",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12033,
+      "enUS": "Wulan",
+      "zhCN": "乌兰",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "烏蘭",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12043,
+      "enUS": "Kulwia",
+      "zhCN": "库尔维亚",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "庫爾維亞",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12245,
+      "enUS": "Vendor-Tron 1000",
+      "zhCN": "贸易机器人1000型",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "貿易機器人1000型",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12246,
+      "enUS": "Super-Seller 680",
+      "zhCN": "超级商人680型",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "超級商人680型",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12941,
+      "enUS": "Jase Farlane",
+      "zhCN": "贾斯·法拉恩",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "賈斯·法拉恩",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12942,
+      "enUS": "Leonard Porter",
+      "zhCN": "莱纳德·波特",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "萊納德·波特",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12943,
+      "enUS": "Werg Thickblade",
+      "zhCN": "维尔格·厚刃",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "維爾格·厚刃",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12944,
+      "enUS": "Lokhtos Darkbargainer",
+      "zhCN": "罗克图斯·暗契",
+      "zhCNSource": "Core/Data/Data_QuestEndNpc.lua",
+      "zhTW": "羅克圖斯·暗契",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/12944?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12956,
+      "enUS": "Zannok Hidepiercer",
+      "zhCN": "扎诺克",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "扎諾克",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12957,
+      "enUS": "Blimo Gadgetspring",
+      "zhCN": "布里莫",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "布里莫",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12958,
+      "enUS": "Gigget Zipcoil",
+      "zhCN": "吉盖特·火油",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "吉蓋特·火油",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12959,
+      "enUS": "Nergal",
+      "zhCN": "奈尔加",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "奈爾加",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 12962,
+      "enUS": "Wik'Tar",
+      "zhCN": "维克塔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "維克塔",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 13278,
+      "enUS": "Duke Hydraxis",
+      "zhCN": "海达克西斯公爵",
+      "zhCNSource": "Core/Data/Data_QuestEndNpc.lua",
+      "zhTW": "海達克西斯公爵",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/13278?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 13420,
+      "enUS": "Penney Copperpinch",
+      "zhCN": "本尼·考伯宾奇",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "本尼·考伯賓奇",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 13429,
+      "enUS": "Nardstrum Copperpinch",
+      "zhCN": "纳斯塔姆·卡布彬",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "納斯塔姆·卡布彬",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 13432,
+      "enUS": "Seersa Copperpinch",
+      "zhCN": "希尔萨",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "希爾薩",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 13433,
+      "enUS": "Wulmort Jinglepocket",
+      "zhCN": "乌莫尔特",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/13433?locale=zhCN",
+      "zhTW": "烏爾莫特",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/13433?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 13435,
+      "enUS": "Khole Jinglepocket",
+      "zhCN": "霍勒",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "霍勒",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 13476,
+      "enUS": "Balai Lok'Wein",
+      "zhCN": "巴莱·洛克维",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/13476?locale=zhCN",
+      "zhTW": "巴萊·洛克維",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/13476?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 14371,
+      "enUS": "Shen'dralar Provisioner",
+      "zhCN": "辛德拉圣职者",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/14371?locale=zhCN",
+      "zhTW": "辛德拉聖職者",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/14371?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 14637,
+      "enUS": "Zorbin Fandazzle",
+      "zhCN": "索尔宾·范达瑟",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "索爾賓·範達瑟",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 14738,
+      "enUS": "Otho Moji'ko",
+      "zhCN": "奥索·莫吉克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "奧索·莫吉克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 14921,
+      "enUS": "Rin'wosho the Trader",
+      "zhCN": "商人林沃斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "商人林沃斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 15176,
+      "enUS": "Vargus",
+      "zhCN": "瓦古斯",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/15176?locale=zhCN",
+      "zhTW": "瓦古斯",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/15176?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 15179,
+      "enUS": "Mishta",
+      "zhCN": "米什塔",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "米什塔",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 15419,
+      "enUS": "Kania",
+      "zhCN": "卡妮亚",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "卡妮亞",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 15471,
+      "enUS": "Lieutenant General Andorov",
+      "zhCN": "安多洛夫中将",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/15471?locale=zhCN",
+      "zhTW": "安多洛夫中將",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/15471?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 17068,
+      "enUS": "Chief Expeditionary Requisitioner Enkles",
+      "zhCN": "远征军首席调度官恩克斯",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/17068?locale=zhCN",
+      "zhTW": "探險隊報名處隊長·英克斯",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/17068?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 17070,
+      "enUS": "Apothecary Quinard",
+      "zhCN": "药剂师奎因纳德",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/17070?locale=zhCN",
+      "zhTW": "藥劑師·奎那德",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/17070?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 32287,
+      "enUS": "Archmage Alvareaux",
+      "zhCN": "大法师艾瓦勒斯",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/32287?locale=zhTW",
+      "zhTW": "大法師艾瓦勒斯",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/32287?locale=zhTW",
+      "zhCNConvertedFrom": "zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 213077,
+      "enUS": "Elaine Compton",
+      "zhCN": "伊莱恩·康普顿",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/213077?dataEnv=4&locale=zhCN",
+      "zhTW": "艾蓮·康普頓",
+      "zhTWSource": "https://nether.wowhead.com/tooltip/npc/213077?dataEnv=4&locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/213077?dataEnv=4&locale=enUS",
+      "zhTWIdentitySource": "https://nether.wowhead.com/tooltip/npc/213077?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 214070,
+      "enUS": "Jornah",
+      "zhCN": "约尔娜",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/214070?dataEnv=4&locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/214070?locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/214070?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 214096,
+      "enUS": "Dokimi",
+      "zhCN": "多基米",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/214096?dataEnv=4&locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/214096?locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/214096?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 214098,
+      "enUS": "Gishah",
+      "zhCN": "基莎",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/214098?dataEnv=4&locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/214098?locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/214098?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 214099,
+      "enUS": "Tamelyn Aldridge",
+      "zhCN": "塔茉琳·阿尔德里奇",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/214099?dataEnv=4&locale=zhCN",
+      "zhTW": "坦林‧艾德里奇",
+      "zhTWSource": "https://nether.wowhead.com/tooltip/npc/214099?dataEnv=4&locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/214099?dataEnv=4&locale=enUS",
+      "zhTWIdentitySource": "https://nether.wowhead.com/tooltip/npc/214099?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 214101,
+      "enUS": "Marcy Baker",
+      "zhCN": "玛尔希·贝克",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/214101?dataEnv=4&locale=zhCN",
+      "zhTW": "瑪西‧貝克",
+      "zhTWSource": "https://nether.wowhead.com/tooltip/npc/214101?dataEnv=4&locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/214101?dataEnv=4&locale=enUS",
+      "zhTWIdentitySource": "https://nether.wowhead.com/tooltip/npc/214101?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 216672,
+      "enUS": "Namdo Bizzfizzle",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 14639,
+        "file": "scripts/.cache/soldby/14639.html",
+        "sha256": "66f90597938ee6a81a422ca545005c08537d745ca8be24f8e29113e5bfac75b8",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 216902,
+      "enUS": "Wulmort Jinglepocket",
+      "zhCN": "乌莫尔特",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/13433?locale=zhCN",
+      "zhTW": "烏爾莫特",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/13433?locale=zhTW",
+      "zhCNIdentityNPC": 13433,
+      "zhTWIdentityNPC": 13433,
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 217689,
+      "enUS": "Ziri \"The Wrench\" Littlesprocket",
+      "zhCN": "“扳手”兹里·微轮",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/217689?dataEnv=4&locale=zhCN",
+      "zhTW": "『扳手』茲里·小鏈",
+      "zhTWSource": "https://nether.wowhead.com/tooltip/npc/217689?dataEnv=4&locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/217689?dataEnv=4&locale=enUS",
+      "zhTWIdentitySource": "https://nether.wowhead.com/tooltip/npc/217689?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 222261,
+      "enUS": "Maximillian \"The Greaser\"",
+      "zhCN": "“机油佬”马克西米里安",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/222261?dataEnv=4&locale=zhCN",
+      "zhTW": "『潤滑工』瑪克西米利安",
+      "zhTWSource": "https://nether.wowhead.com/tooltip/npc/222261?dataEnv=4&locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/222261?dataEnv=4&locale=enUS",
+      "zhTWIdentitySource": "https://nether.wowhead.com/tooltip/npc/222261?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 227853,
+      "enUS": "Pix Xizzix",
+      "zhCN": "皮克斯‧希吉克斯",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/227853?locale=zhTW",
+      "zhTW": "皮克斯‧希吉克斯",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/227853?locale=zhTW",
+      "zhCNConvertedFrom": "zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 240604,
+      "enUS": "Carrie Hearthfire",
+      "zhCN": "卡丽·炉火",
+      "zhCNSource": "https://nether.wowhead.com/tooltip/npc/240604?dataEnv=4&locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/240604?locale=zhTW",
+      "zhCNIdentitySource": "https://nether.wowhead.com/tooltip/npc/240604?dataEnv=4&locale=enUS",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 242498,
+      "enUS": "Reagent Bot",
+      "zhCN": "试剂机器人",
+      "zhCNSource": "Core/Data/Data_GearVendors.lua",
+      "zhTW": "試劑機器人",
+      "zhTWSource": "Core/Data/zhTW/Data_GearVendors.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 248196,
+      "enUS": "Apothecary Durelle",
+      "zhCN": "药剂师杜蕾尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "藥劑師杜蕾爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 248197,
+      "enUS": "Gor'mak",
+      "zhCN": "戈尔马克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "戈爾馬克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 248198,
+      "enUS": "Aza'bek",
+      "zhCN": "阿扎贝克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "阿扎貝克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 248199,
+      "enUS": "Beneris",
+      "zhCN": "贝内里斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "貝內里斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 248200,
+      "enUS": "Fizzlefuse",
+      "zhCN": "菲兹法斯",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "菲茲法斯",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 248201,
+      "enUS": "Pawani",
+      "zhCN": "帕瓦妮",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "帕瓦妮",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 248202,
+      "enUS": "Jim'bek",
+      "zhCN": "吉姆贝克",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "吉姆貝克",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 251905,
+      "enUS": "Zerril Softbreeze",
+      "zhCN": "泽瑞尔·柔风",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/251905?locale=zhCN",
+      "zhTW": "哲里爾‧柔風",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/251905?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 251973,
+      "enUS": "Dominique Stefano",
+      "zhCN": "多明尼克‧史特凡诺",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/251973?locale=zhTW",
+      "zhTW": "多明尼克‧史特凡諾",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/251973?locale=zhTW",
+      "zhCNConvertedFrom": "zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 251991,
+      "enUS": "Taleen Shimmerthread",
+      "zhCN": "塔琳·闪线",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/251991?locale=zhCN",
+      "zhTW": "塔琳‧耀線",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/251991?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 251997,
+      "enUS": "Norvin Alderman",
+      "zhCN": "诺文‧埃德曼",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/251997?locale=zhTW",
+      "zhTW": "諾文‧埃德曼",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/251997?locale=zhTW",
+      "zhCNConvertedFrom": "zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 252083,
+      "enUS": "Derek Odds",
+      "zhCN": "德瑞克‧奥茨",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/252083?locale=zhTW",
+      "zhTW": "德瑞克‧奧茨",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/252083?locale=zhTW",
+      "zhCNConvertedFrom": "zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 252380,
+      "enUS": "Othesia Evengale",
+      "zhCN": "奥塞西亚·暮风",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/252380?locale=zhCN",
+      "zhTW": "歐瑟希雅‧和風",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/252380?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 253139,
+      "enUS": "Gorhak",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/253139?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/253139?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 253140,
+      "enUS": "Molkar",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/253140?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/253140?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 254151,
+      "enUS": "Vayn Moongaze",
+      "zhCN": "范恩‧莫嘉泽",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/254151?locale=zhTW",
+      "zhTW": "范恩‧莫嘉澤",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/254151?locale=zhTW",
+      "zhCNConvertedFrom": "zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 254695,
+      "enUS": "Repair Bot",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/254695?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/254695?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 255894,
+      "enUS": "Innkeeper Zizplink",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/255894?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/255894?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 255895,
+      "enUS": "Grizzek",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/255895?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/255895?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 256629,
+      "enUS": "Dala Fairmaw",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/256629?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/256629?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 256729,
+      "enUS": "Nina Surefire",
+      "zhCN": "妮娜·神火",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "妮娜·神火",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 256730,
+      "enUS": "Stondry Darkhammer",
+      "zhCN": "斯通德里·暗锤",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "斯通德里·暗錘",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 256731,
+      "enUS": "Kalsey Sanden",
+      "zhCN": "卡尔西·沙登",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "卡爾西·沙登",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 256732,
+      "enUS": "Alynsia",
+      "zhCN": "艾琳西娅",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "艾琳西婭",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 256733,
+      "enUS": "Fritz Fizzle",
+      "zhCN": "弗里茨·菲兹尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "弗裏茨·菲茲爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 256734,
+      "enUS": "Daniel Stitchsong",
+      "zhCN": "丹尼尔·缝歌",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "丹尼爾·縫歌",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 256735,
+      "enUS": "Mivin Shadowweave",
+      "zhCN": "米文·暗织",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "米文·暗織",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 257004,
+      "enUS": "Eaysaa Brightgust",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 6342,
+        "file": "scripts/.cache/soldby/6342.html",
+        "sha256": "fb0a5de78292fe83f6c87d1f85f1d8ccbbcff8f3cc6842a95f53e3de7dee6e1c",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    },
+    {
+      "npcID": 257006,
+      "enUS": "Nyalah Brightfire",
+      "zhCN": "妮雅拉·明火",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/257006?locale=zhCN",
+      "zhTW": "妮雅菈‧亮火",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/257006?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 257020,
+      "enUS": "Nasalanna Windsinger",
+      "zhCN": "娜萨兰娜·风歌",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/257020?locale=zhCN",
+      "zhTW": "娜莎蘭納‧風詠",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/257020?locale=zhTW",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 258306,
+      "enUS": "Granny Finespindle",
+      "zhCN": "钢轴奶奶",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "鋼軸奶奶",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 258415,
+      "enUS": "Angela Ward",
+      "zhCN": "安吉拉·沃德",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "安吉拉·沃德",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 258463,
+      "enUS": "Darah",
+      "zhCN": "达拉",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "達拉",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 258466,
+      "enUS": "Boramu",
+      "zhCN": "博拉姆",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "博拉姆",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 258548,
+      "enUS": "Ellie Stonebrow",
+      "zhCN": "艾莉·石眉",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "艾莉·石眉",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 258568,
+      "enUS": "Antonio Bolero",
+      "zhCN": "安东尼奥·波利罗",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "安東尼奧·波利羅",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 258572,
+      "enUS": "Dani'ill",
+      "zhCN": "丹尼伊尔",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "丹尼伊爾",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 259860,
+      "enUS": "Martha Wellsworth",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/259860?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/259860?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 259962,
+      "enUS": "Fimbo Greasemitz",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/259962?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/259962?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 260487,
+      "enUS": "Gritta Chumwater",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/260487?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/260487?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 260565,
+      "enUS": "Kor'gar",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/260565?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/260565?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 260566,
+      "enUS": "Fizzix Boomshot",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/260566?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/260566?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 260570,
+      "enUS": "Stitch Pinwizzle",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/260570?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/260570?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 261313,
+      "enUS": "Naluk",
+      "zhCN": "纳鲁克",
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/261313?locale=zhCN",
+      "zhTW": "納魯克",
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/261313?locale=zhCN",
+      "zhTWConvertedFrom": "zhCN",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 264078,
+      "enUS": "Sutara Plainstalker",
+      "zhCN": "苏塔拉·平原行者",
+      "zhCNSource": "Core/Data/Data_ProfRecipes.lua",
+      "zhTW": "蘇塔拉·平原行者",
+      "zhTWSource": "Core/Data/zhTW/Data_ProfRecipes.lua",
+      "zhCNStatus": "verified",
+      "zhTWStatus": "verified"
+    },
+    {
+      "npcID": 264797,
+      "enUS": "Aisarra Nightmeadow",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/264797?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/264797?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 266901,
+      "enUS": "Pexmit",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/266901?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/266901?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 267000,
+      "enUS": "Paige",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/267000?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/267000?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 270780,
+      "enUS": "Qujo",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/270780?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/270780?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 272646,
+      "enUS": "Miranda Turner",
+      "zhCN": null,
+      "zhCNSource": "https://nether.wowhead.com/forever/tooltip/npc/272646?locale=zhCN",
+      "zhTW": null,
+      "zhTWSource": "https://nether.wowhead.com/forever/tooltip/npc/272646?locale=zhTW",
+      "zhCNStatus": "unavailable",
+      "zhTWStatus": "unavailable"
+    },
+    {
+      "npcID": 277945,
+      "enUS": "Happy Camper",
+      "enUSSource": "df-data-pipeline/_temp/_fc/inputs/vendors/vendors-soldby-json-20261021.csv",
+      "enUSEvidence": {
+        "kind": "cached_sold_by_listview_json",
+        "itemID": 273085,
+        "file": "scripts/.cache/soldby/273085.html",
+        "sha256": "72bbdeb6fc1a47b21bf05d199486949193d9551119bfbfacd7aa630f1790cc7d",
+        "audit": "df-data-pipeline/_temp/_fc/inputs/vendors/soldby-json-20261021-audit.json"
+      },
+      "zhCN": null,
+      "zhCNSource": "Locales/zhCN.lua",
+      "zhCNStatus": "not_verified",
+      "zhCNReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC.",
+      "zhTW": null,
+      "zhTWSource": "Locales/zhTW.lua",
+      "zhTWStatus": "not_verified",
+      "zhTWReason": "No translation for this canonical English name exists in the loaded local locale catalogue. No localized web lookup was performed for this recovered NPC."
+    }
+  ]
+}

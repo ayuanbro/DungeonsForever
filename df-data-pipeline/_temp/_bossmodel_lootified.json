@@ -1,0 +1,311 @@
+{
+ "blackfathom_deeps": {
+  "Aku'mai": 2837,
+  "Baron Aquanis": 110,
+  "Gelihast": 1773,
+  "Ghamoo-ra": 5027,
+  "Lady Sarevess": 4979,
+  "Lorgus Jett": 12822,
+  "Old Serra'kis": 1816,
+  "Twilight Lord Kelris": 4939
+ },
+ "blackrock_depths": {
+  "Ambassador Flamelash": 8329,
+  "Bael'Gar": 12162,
+  "Emperor Dagran Thaurissan": 8807,
+  "Fineous Darkvire": 8704,
+  "General Angerforge": 8756,
+  "Golem Lord Argelmach": 8759,
+  "Guzzler": 8658,
+  "High Interrogator Gerstahn": 8761,
+  "Houndmaster Grebmar": 9212,
+  "Lord Incendius": 1204,
+  "Lord Roccor": 5781,
+  "Magmus": 12162,
+  "Panzor the Invincible": 8270,
+  "Phalanx": 8177,
+  "Princess Moira Bronzebeard": 8705,
+  "Pyromancer Loregrain": 8762,
+  "Ring of Law: Anub'shiah": 3004,
+  "Ring of Law: Eviscerator": 523,
+  "Ring of Law: Gorosh the Dervish": 8760,
+  "Ring of Law: Grizzle": 7873,
+  "Ring of Law: Hedrum the Creeper": 8271,
+  "Ring of Law: Ok'thor the Breaker": 11538,
+  "Verek": 9019,
+  "Warder Stilgiss": 9089,
+  "Watchman Doomgrip": 8655
+ },
+ "city_of_dalaran": {
+  "Arcane Anomaly": 129891,
+  "Atrexis the Grave Knight": 145787,
+  "Fel Ancient": 129894,
+  "Lyn the Ignored": 130235,
+  "Mana Devourer": 129895,
+  "Shade of the Archmage": 130061,
+  "Unstable Sentinel": 129954
+ },
+ "dire_maul_east": {
+  "Alzzin the Wildshaper": 14416,
+  "Hydrospawn": 5489,
+  "Lethtendris": 14378,
+  "Pusillin": 7552,
+  "Zevrim Thornhoof": 11335
+ },
+ "dire_maul_north": {
+  "Captain Kromcrush": 11564,
+  "Cho'Rush the Observer": 11537,
+  "Guard Fengus": 11561,
+  "Guard Mol'dar": 11561,
+  "Guard Slip'kik": 11561,
+  "King Gordok": 11583,
+  "Stomper Kreeg": 11545
+ },
+ "dire_maul_west": {
+  "Illyanna Ravenoak": 11270,
+  "Immol'thar": 14173,
+  "Lord Hel'nurath": 14556,
+  "Magister Kalendris": 14384,
+  "Prince Tortheldrin": 11256,
+  "Tendris Warpwood": 14383,
+  "Tsu'zee": 11250
+ },
+ "excavation_wetlands": {
+  "Highland Horror": 9010,
+  "Relic Guardian": 144224,
+  "Saltspine": 144209,
+  "Shadetooth": 144210
+ },
+ "gnomeregan": {
+  "Crowd Pummeler 9-60": 6774,
+  "Dark Iron Ambassador": 6669,
+  "Electrocutioner 6000": 6915,
+  "Grubbis": 144378,
+  "Mekgineer Thermaplugg": 6980,
+  "Techbot": 7288,
+  "Viscous Fallout": 5497
+ },
+ "hall_of_thanes": {
+  "Durgen Dirgehammer": 142837,
+  "Faldrim Anvilmar": 142826,
+  "Magmatus": 1070,
+  "Plunder": 142840
+ },
+ "lower_blackrock_spire": {
+  "Bannok Grimaxe": 9668,
+  "Burning Felguard": 5047,
+  "Crystal Fang": 9755,
+  "Ghok Bashguud": 11809,
+  "Gizrul the Slavener": 9564,
+  "Halycon": 9567,
+  "Highlord Omokk": 11565,
+  "Mother Smolderweb": 9929,
+  "Overlord Wyrmthalak": 8711,
+  "Quartermaster Zigris": 9738,
+  "Shadow Hunter Vosh'gajin": 9732,
+  "Spirestone Battle Lord": 11576,
+  "Spirestone Butcher": 11574,
+  "Spirestone Lord Magus": 11578,
+  "Urok Doomhowl": 11583,
+  "War Master Voone": 9733
+ },
+ "maraudon": {
+  "Celebras the Cursed": 12350,
+  "Landslide": 12293,
+  "Lord Vyletongue": 12334,
+  "Maraudos": 9441,
+  "Meshlok the Harvester": 9014,
+  "Noxxion": 11172,
+  "Princess Theradras": 12292,
+  "Razorlash": 12389,
+  "Rotgrip": 13589,
+  "Tinkerer Gizlock": 7125,
+  "Veng": 9418
+ },
+ "ragefire_chasm": {
+  "Bazzalan": 2007,
+  "Jergosh the Invoker": 11429,
+  "Oggleflint": 11611,
+  "Taragaman the Hungerer": 7970
+ },
+ "razorfen_downs": {
+  "Amnennar the Coldbringer": 7971,
+  "Glutton": 7864,
+  "Mordresh Fire Eye": 8055,
+  "Plaguemaw the Rotting": 6124,
+  "Ragglesnout": 11382,
+  "Tuten'kash": 7845
+ },
+ "razorfen_kraul": {
+  "Agathelos the Raging": 2450,
+  "Aggem Thorncurse": 6097,
+  "Blind Hunter": 4735,
+  "Charlga Razorflank": 4642,
+  "Death Speaker Jargba": 4644,
+  "Earthcaller Halmgar": 6102,
+  "Overlord Ramtusk": 4652,
+  "Razorfen Spearhide": 6078,
+  "Roogug": 6110
+ },
+ "ruins_of_lordaeron": {
+  "Bjork": 144170,
+  "Lordaeron Captain": 139050,
+  "Rath'mael": 144175,
+  "The Abandoned": 138667,
+  "The Baron": 144188,
+  "Viktor the Vile": 139455,
+  "Witherfang": 144189
+ },
+ "scholomance": {
+  "Blood Steward of Kirtonos": 10925,
+  "Darkmaster Gandling": 11070,
+  "Death Knight Darkreaver": 14591,
+  "Doctor Theolen Krastinov": 10901,
+  "Instructor Malicia": 11069,
+  "Jandice Barov": 11073,
+  "Kirtonos the Herald": 143673,
+  "Lady Illucia Barov": 11835,
+  "Lord Alexei Barov": 11072,
+  "Lorekeeper Polkelt": 11492,
+  "Marduk Blackpool": 10248,
+  "Ras Frostwhisper": 7919,
+  "Rattlegore": 12073,
+  "The Ravenian": 10433,
+  "Vectus": 2606
+ },
+ "shadowfang_keep": {
+  "Archmage Arugal": 2353,
+  "Arugal's Voidwalker": 1131,
+  "Baron Silverlaine": 3222,
+  "Commander Springvale": 3223,
+  "Deathsworn Captain": 3224,
+  "Fel Steed / Shadow Charger": 1951,
+  "Fenrus the Devourer": 2352,
+  "Odo the Blindwatcher": 522,
+  "Razorclaw the Butcher": 524,
+  "Rethilgore": 524,
+  "Wolf Master Nandos": 11179
+ },
+ "sm_armory": {
+  "Herod": 2041
+ },
+ "sm_cathedral": {
+  "High Inquisitor Fairbanks": 2605,
+  "High Inquisitor Whitemane": 2043,
+  "Scarlet Commander Mograine": 2042
+ },
+ "sm_graveyard": {
+  "Azshir the Sleepless": 5534,
+  "Bloodmage Thalnos": 11396,
+  "Fallen Champion": 5230,
+  "Interrogator Vishas": 2044,
+  "Ironspine": 5231
+ },
+ "sm_library": {
+  "Arcanist Doan": 5266,
+  "Houndmaster Loksey": 2040
+ },
+ "stratholme_main": {
+  "Archivist Galford": 10544,
+  "Balnazzar": 10691,
+  "Cannon Master Willey": 10674,
+  "Crimson Hammersmith": 10637,
+  "Hearthsinger Forresten": 10482,
+  "Malor the Zealous": 10458,
+  "Postmaster Malown": 10669,
+  "Skul": 2606,
+  "Stratholme Courier": 10547,
+  "The Unforgiven": 10771,
+  "Timmy the Cruel": 571
+ },
+ "stratholme_service": {
+  "Baron Rivendare": 10729,
+  "Baroness Anastari": 10698,
+  "Black Guard Swordsmith": 775,
+  "Magistrate Barthilas": 10433,
+  "Maleki the Pallid": 10546,
+  "Nerub'enkan": 9793,
+  "Ramstein the Gorger": 12818,
+  "Stonespine": 7856
+ },
+ "sunken_temple": {
+  "Atal'alarion": 7873,
+  "Avatar of Hakkar": 8053,
+  "Balcony Minibosses": 6701,
+  "Dreamscythe": 7553,
+  "Hazzas": 9584,
+  "Jammal'an the Prophet": 6708,
+  "Morphaz": 7975,
+  "Ogom the Wretched": 6709,
+  "Shade of Eranikus": 7806,
+  "Spawn of Hakkar": 4065,
+  "Weaver": 6375
+ },
+ "the_deadmines": {
+  "Captain Greenskin": 7113,
+  "Cookie": 1305,
+  "Edwin VanCleef": 2029,
+  "Gilnid": 7124,
+  "Miner Johnson": 556,
+  "Mr. Smite": 2026,
+  "Rhahk'Zor": 14403,
+  "Sneed": 7125,
+  "Sneed's Shredder": 1269
+ },
+ "the_stockade": {
+  "Bazil Thredd": 1621,
+  "Bruegal Ironknuckle": 2142,
+  "Dextren Ward": 2149,
+  "Hamhock": 3250,
+  "Kam Deepfury": 825,
+  "Targorr the Dread": 517
+ },
+ "uldaman": {
+  "Ancient Stone Keeper": 10798,
+  "Archaedas": 5988,
+  "Baelog": 5710,
+  "Eric \"The Swift\"": 5708,
+  "Galgann Firehammer": 6059,
+  "Grimlok": 11165,
+  "Ironaya": 6089,
+  "Obsidian Sentinel": 5285,
+  "Olaf": 5709,
+  "Revelosh": 5945
+ },
+ "upper_blackrock_spire": {
+  "General Drakkisath": 10115,
+  "Goraluk Anvilcrack": 10222,
+  "Gyth": 9806,
+  "Jed Runewatcher": 9686,
+  "Pyroguard Emberseer": 143803,
+  "Solakar Flamewreath": 9581,
+  "The Beast": 10193,
+  "Warchief Rend Blackhand": 9778
+ },
+ "wailing_caverns": {
+  "Deviate Faerie Dragon": 1267,
+  "Kresh": 5126,
+  "Lady Anacondra": 4313,
+  "Lord Cobrahn": 4213,
+  "Lord Pythas": 4214,
+  "Lord Serpentis": 4215,
+  "Mutanus the Devourer": 4088,
+  "Skum": 4203,
+  "Verdan the Everliving": 4256
+ },
+ "zul_farrak": {
+  "Antu'sul": 7353,
+  "Chief Ukorz Sandscalp": 6439,
+  "Dustwraith": 9292,
+  "Gahz'rilla": 7271,
+  "Hydromancer Velratha": 6685,
+  "Nekrum Gutchewer": 6690,
+  "Sandarr Dunereaver": 9291,
+  "Sandfury Executioner": 6440,
+  "Sergeant Bly": 6433,
+  "Shadowpriest Sezz'ziz": 6441,
+  "Theka the Martyr": 6696,
+  "Witch Doctor Zum'rah": 6434,
+  "Zerillis": 9293
+ }
+}

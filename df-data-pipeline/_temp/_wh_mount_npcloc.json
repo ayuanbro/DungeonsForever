@@ -1,0 +1,278 @@
+{
+ "384": {
+  "title": "凯蒂·亨特—NPC—[Forever]",
+  "loc": {
+   "map": 1429,
+   "x": 84,
+   "y": 65.4,
+   "zone": "艾尔文森林"
+  }
+ },
+ "1261": {
+  "title": "维隆·冻石—NPC—[Forever]",
+  "loc": {
+   "map": 1426,
+   "x": 63.4,
+   "y": 50.4,
+   "zone": "丹莫罗"
+  }
+ },
+ "1460": {
+  "title": "安格尔·斯塔特弗斯—NPC—[Forever]",
+  "loc": {
+   "map": 1437,
+   "x": 8.4,
+   "y": 54.4,
+   "zone": "湿地"
+  }
+ },
+ "2357": {
+  "title": "梅丽德丝·卡尔森—NPC—[Forever]",
+  "loc": {
+   "map": 1424,
+   "x": 52,
+   "y": 55.6,
+   "zone": "希尔斯布莱德丘陵"
+  }
+ },
+ "3362": {
+  "title": "奥古纳罗—NPC—[Forever]",
+  "loc": {
+   "map": 1454,
+   "x": 69.2,
+   "y": 12.6,
+   "zone": "奥格瑞玛"
+  }
+ },
+ "3685": {
+  "title": "哈布·爪蹄—NPC—[Forever]",
+  "loc": {
+   "map": 1412,
+   "x": 46.6,
+   "y": 62,
+   "zone": "莫高雷"
+  }
+ },
+ "4730": {
+  "title": "莱兰奈—NPC—[Forever]",
+  "loc": {
+   "map": 1457,
+   "x": 38.2,
+   "y": 15.4,
+   "zone": "达纳苏斯"
+  }
+ },
+ "4731": {
+  "title": "撒迦利亚·普斯特—NPC—[Forever]",
+  "loc": {
+   "map": 1420,
+   "x": 59.8,
+   "y": 52.6,
+   "zone": "提瑞斯法林地"
+  }
+ },
+ "4885": {
+  "title": "格瑞戈·玛克温斯—NPC—[Forever]",
+  "loc": {
+   "map": 1445,
+   "x": 65.2,
+   "y": 51.4,
+   "zone": "尘泥沼泽"
+  }
+ },
+ "7952": {
+  "title": "祖尼尔—NPC—[Forever]",
+  "loc": {
+   "map": 1411,
+   "x": 55.2,
+   "y": 75.4,
+   "zone": "杜隆塔尔"
+  }
+ },
+ "7955": {
+  "title": "米利·羽哨—NPC—[Forever]",
+  "loc": {
+   "map": 1426,
+   "x": 49.2,
+   "y": 48,
+   "zone": "丹莫罗"
+  }
+ },
+ "10618": {
+  "title": "雷沃·霜翼—NPC—[Forever]",
+  "loc": {
+   "map": 1452,
+   "x": 49.8,
+   "y": 9.8,
+   "zone": "冬泉谷"
+  }
+ },
+ "11382": {
+  "title": "血领主曼多基尔—NPC—[Forever]",
+  "loc": null
+ },
+ "12783": {
+  "title": "卡特尔中尉—NPC—[Forever]",
+  "loc": null
+ },
+ "12796": {
+  "title": "狼骑兵波尔克—NPC—[Forever]",
+  "loc": null
+ },
+ "13216": {
+  "title": "盖尔丁—NPC—[Forever]",
+  "loc": null
+ },
+ "13217": {
+  "title": "塔萨迪斯·雪光—NPC—[Forever]",
+  "loc": {
+   "map": 1416,
+   "x": 39.4,
+   "y": 81.4,
+   "zone": "奥特兰克山脉"
+  }
+ },
+ "13218": {
+  "title": "格伦达·狼心—NPC—[Forever]",
+  "loc": null
+ },
+ "13219": {
+  "title": "耶克里·弗兰迪—NPC—[Forever]",
+  "loc": {
+   "map": 1416,
+   "x": 62.8,
+   "y": 59.4,
+   "zone": "奥特兰克山脉"
+  }
+ },
+ "14509": {
+  "title": "高阶祭司塞卡尔—NPC—[Forever]",
+  "loc": null
+ },
+ "14753": {
+  "title": "艾蒂尔·月火—NPC—[Forever]",
+  "loc": {
+   "map": 1440,
+   "x": 61.4,
+   "y": 83.8,
+   "zone": "灰谷"
+  }
+ },
+ "14754": {
+  "title": "凯尔姆·哈古斯—NPC—[Forever]",
+  "loc": {
+   "map": 1413,
+   "x": 46.6,
+   "y": 8.4,
+   "zone": "贫瘠之地"
+  }
+ },
+ "14834": {
+  "title": "哈卡—NPC—[Forever]",
+  "loc": null
+ },
+ "15246": {
+  "title": "其拉斩灵者—NPC—[Forever]",
+  "loc": null
+ },
+ "15247": {
+  "title": "其拉洗脑者—NPC—[Forever]",
+  "loc": null
+ },
+ "15249": {
+  "title": "其拉怒刺蜂—NPC—[Forever]",
+  "loc": null
+ },
+ "15250": {
+  "title": "其拉执行者—NPC—[Forever]",
+  "loc": null
+ },
+ "15252": {
+  "title": "其拉勇士—NPC—[Forever]",
+  "loc": null
+ },
+ "15262": {
+  "title": "黑曜石清除者—NPC—[Forever]",
+  "loc": null
+ },
+ "15264": {
+  "title": "阿努比萨斯哨兵—NPC—[Forever]",
+  "loc": null
+ },
+ "15277": {
+  "title": "阿努比萨斯防御者—NPC—[Forever]",
+  "loc": null
+ },
+ "15311": {
+  "title": "阿努比萨斯守望者—NPC—[Forever]",
+  "loc": null
+ },
+ "15312": {
+  "title": "黑曜石终结者—NPC—[Forever]",
+  "loc": null
+ },
+ "218115": {
+  "title": "[Mai'zin]—NPC—[Forever]",
+  "loc": {
+   "map": 1434,
+   "x": 31.2,
+   "y": 48.4,
+   "zone": "荆棘谷"
+  }
+ },
+ "218537": {
+  "title": "[Mekgineer Thermaplugg]—NPC—[Forever]",
+  "loc": null
+ },
+ "222413": {
+  "title": "[Zalgo the Explorer]—NPC—[Forever]",
+  "loc": {
+   "map": 1434,
+   "x": 15.2,
+   "y": 15.6,
+   "zone": "荆棘谷"
+  }
+ },
+ "234762": {
+  "title": "[Qiraji Mindslayer]—NPC—[Forever]",
+  "loc": null
+ },
+ "234798": {
+  "title": "[Qiraji Champion]—NPC—[Forever]",
+  "loc": null
+ },
+ "234800": {
+  "title": "[Qiraji Slayer]—NPC—[Forever]",
+  "loc": null
+ },
+ "234814": {
+  "title": "[Qiraji Warlord]—NPC—[Forever]",
+  "loc": null
+ },
+ "234830": {
+  "title": "[Anubisath Defender]—NPC—[Forever]",
+  "loc": null
+ },
+ "256400": {
+  "title": "奥卡玛什—NPC—[Forever]",
+  "loc": {
+   "map": 1413,
+   "x": 49.6,
+   "y": 28.8,
+   "zone": "贫瘠之地"
+  }
+ },
+ "256736": {
+  "title": "[Huey Sunnydale]—NPC—[Forever]",
+  "loc": {
+   "map": 1433,
+   "x": 8.4,
+   "y": 72,
+   "zone": "赤脊山"
+  }
+ },
+ "265756": {
+  "title": "[Genn Fairweather]—NPC—[Forever]",
+  "loc": null
+ }
+}

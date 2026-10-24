@@ -1,0 +1,220 @@
+{
+ "ragefire_chasm": {
+  "Oggleflint": [
+   [
+    56.1,
+    38.0
+   ]
+  ],
+  "Taragaman the Hungerer": [
+   [
+    41.0,
+    57.7
+   ]
+  ],
+  "Jergosh the Invoker": [
+   [
+    33.0,
+    84.5
+   ]
+  ],
+  "Bazzalan": [
+   [
+    41.5,
+    86.2
+   ]
+  ]
+ },
+ "wailing_caverns": {
+  "Lord Cobrahn": [
+   [
+    15.6,
+    58.5
+   ]
+  ],
+  "Lady Anacondra": [
+   [
+    30.5,
+    43.2
+   ],
+   [
+    28.1,
+    31.8
+   ],
+   [
+    47.0,
+    45.6
+   ],
+   [
+    40.3,
+    27.4
+   ]
+  ],
+  "Kresh": [
+   [
+    25.8,
+    44.6
+   ]
+  ],
+  "Lord Serpentis": [
+   [
+    62.5,
+    53.3
+   ]
+  ],
+  "Verdan the Everliving": [
+   [
+    56.4,
+    47.4
+   ]
+  ],
+  "Mutanus the Devourer": [
+   [
+    34.2,
+    15.8
+   ]
+  ]
+ },
+ "the_deadmines": {
+  "Rhahk'Zor": [
+   [
+    38.6,
+    60.9
+   ]
+  ],
+  "Miner Johnson": [
+   [
+    52.7,
+    50.5
+   ]
+  ],
+  "Sneed": [
+   [
+    45.0,
+    88.9
+   ]
+  ],
+  "Sneed's Shredder": [
+   [
+    48.5,
+    92.4
+   ]
+  ]
+ },
+ "shadowfang_keep": {
+  "Rethilgore": [
+   [
+    66.1,
+    71.1
+   ]
+  ],
+  "Fel Steed / Shadow Charger": [
+   [
+    36.0,
+    62.9
+   ]
+  ],
+  "Commander Springvale": [
+   [
+    27.9,
+    59.3
+   ]
+  ],
+  "Jordan's Smithing Hammer": [
+   [
+    37.3,
+    53.8
+   ]
+  ]
+ },
+ "blackfathom_deeps": {
+  "Ghamoo-ra": [
+   [
+    32.9,
+    60.2
+   ]
+  ],
+  "Lady Sarevess": [
+   [
+    10.1,
+    36.0
+   ]
+  ],
+  "Gelihast": [
+   [
+    52.3,
+    55.1
+   ]
+  ]
+ },
+ "the_stockade": {
+  "Kam Deepfury": [
+   [
+    69.2,
+    30.9
+   ]
+  ],
+  "Bruegal Ironknuckle": [
+   [
+    38.1,
+    24.0
+   ],
+   [
+    29.5,
+    44.7
+   ],
+   [
+    61.6,
+    48.3
+   ],
+   [
+    61.5,
+    25.1
+   ]
+  ],
+  "Targorr the Dread": [
+   [
+    49.9,
+    24.2
+   ],
+   [
+    42.4,
+    46.4
+   ],
+   [
+    57.8,
+    55.2
+   ],
+   [
+    33.3,
+    37.5
+   ]
+  ],
+  "Hamhock": [
+   [
+    78.2,
+    45.7
+   ]
+  ],
+  "Bazil Thredd": [
+   [
+    85.7,
+    51.0
+   ]
+  ]
+ },
+ "gnomeregan": {
+  "Grubbis": [
+   [
+    81.9,
+    65.1
+   ]
+  ],
+  "Viscous Fallout": [
+   [
+    57.6,
+    56.6
+   ]
+  ]
+ }
+}

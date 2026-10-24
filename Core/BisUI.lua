@@ -1563,8 +1563,8 @@ end
 local autoPlanCache = nil
 
 local function AutoPlanKey(mode, cap)
-    return table.concat({ scoreKey or "", BG.cls or "", BG.spec or "", BG.tspec or "",
-        tostring(cap), tostring(mode) }, "|")
+    return table.concat({ BG.cls or "", BG.spec or "", BG.tspec or "",
+        tostring(BG.wGen or 0), tostring(dpsGen), tostring(cap), tostring(mode) }, "|")
 end
 
 local function AutoPlanFor(mode, cap)
@@ -2132,8 +2132,13 @@ end
 function BG.Open()
     if not BG.built then return end
     BG._sweepFails = 0
+    local useDefault = BG.__wantDefault
     BG.__wantDefault = nil
-    if not BG.usingPlan then BG.UseAutoPlan("known") end
+    if useDefault then
+        BG.UseAutoPlan("known")
+    elseif BG.autoPlan then
+        BG.UseAutoPlan(BG.autoPlan)
+    end
     if BG.needNames or BG.needScores then BG.ScheduleSweep() end
     BG.RequestRender()
 end
@@ -2288,7 +2293,7 @@ end
 function BG.GeneratePlan()
     local sp = SpecRec()
     if not sp then return end
-    local lv = AutoLevel()
+    local lv = BG.filterLv or 60
     local w = EffWeights()
     local mk = MainKey(sp)
     for _, key in ipairs(ALL_SLOT_KEYS) do
@@ -2309,16 +2314,18 @@ function BG.GeneratePlan()
                     end
                 end
             end
-            if best then BG.cur[dk] = best end
+            BG.cur[dk] = best
         end
     end
     BG.autoPlan = nil
+    BG.__wantDefault = nil
     BG.usingPlan = nil
     BG.RequestRender()
 end
 
 function BG.UseAutoPlan(mode)
     if not mode then return end
+    BG.__wantDefault = nil
     BG.autoPlan = mode
     BG.usingPlan = nil
     BG.cur = {}
@@ -2331,7 +2338,20 @@ function BG.SetSlot(slotKey, itemID)
     if not slotKey then return end
     local dk = DataKey(SpecRec(), slotKey)
     if itemID == nil then BG.cur[dk] = nil else BG.cur[dk] = itemID end
+    BG.autoPlan = nil
+    BG.__wantDefault = nil
     BG.RequestRender()
+end
+
+function BG.OnTalentChanged()
+    __tprofDirty = true
+    if not BG.built or BG.wActive or BG.wRole then return end
+    BumpWeights()
+    if BG.autoPlan then
+        BG.UseAutoPlan(BG.autoPlan)
+    else
+        BG.RequestRender()
+    end
 end
 
 function BG.SelectSlot(slotKey)
@@ -2340,6 +2360,7 @@ function BG.SelectSlot(slotKey)
 end
 
 function BG.SelectClass(slug)
+    BG.__wantDefault = nil
     BG.__clsPicked = true
     BG.cls = slug
     BG.cur = {}
@@ -2374,6 +2395,7 @@ function BG.SelectClass(slug)
 end
 
 function BG.SelectSpec(id)
+    BG.__wantDefault = nil
     BG.spec = id
     BG.pkey = nil
     BG.side = nil
@@ -2388,6 +2410,7 @@ end
 function BG.SavePlan()
     local sp = SpecRec()
     if not sp then return end
+    BG.__wantDefault = nil
     local plans = PlansFor(BG.cls)
     local items = {}
     for _, dk in ipairs(ALL_SLOT_KEYS) do
@@ -2415,6 +2438,7 @@ function BG.SavePlan()
 end
 
 function BG.UsePlan(plan)
+    BG.__wantDefault = nil
     BG.cur = {}
     BG.ench = {}
     BG.usingPlan = plan
@@ -2463,6 +2487,7 @@ end
 
 function BG.UsePreset(idx, specId, side, pageKey, tspec)
     if not VOLS[idx] then return end
+    BG.__wantDefault = nil
     BG.vol = idx
     if tspec then BG.tspec = tspec end
     if pageKey then BG.pkey = pageKey end
@@ -2476,6 +2501,7 @@ function BG.UsePreset(idx, specId, side, pageKey, tspec)
 end
 
 function BG.ResetToRec()
+    BG.__wantDefault = nil
     BG.cur = {}
     BG.ench = {}
     BG.usingPlan = nil
@@ -2831,6 +2857,8 @@ local function BuildSpecRow(parent, yt)
             BG.cur = {}
             BG.ench = {}
             BG.usingPlan = nil
+            BG.autoPlan = nil
+            BG.__wantDefault = nil
             if sr.role == "tank" then
                 BG.wRole = nil
                 SaveWeightPrefs()
@@ -3696,13 +3724,7 @@ function BG.Build(page)
         local ev = CreateFrame("Frame")
         ns.EvtPool.bisTal = ev
         ev:RegisterEvent("CHARACTER_POINTS_CHANGED")
-        ev:SetScript("OnEvent", function()
-            __tprofDirty = true
-            if BG.built and not BG.wActive and not BG.wRole then
-                BumpWeights()
-                BG.RequestRender()
-            end
-        end)
+        ev:SetScript("OnEvent", BG.OnTalentChanged)
     end
     BG.ScheduleSweep()
     BG.Render()

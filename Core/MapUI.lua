@@ -477,8 +477,7 @@ end
 
 function M.QuestPinsOn()
     local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
-    if not s then return true end
-    return s.mapQuestPins ~= false
+    return (s and s.mapQuestPins) and true or false
 end
 
 function M.ExtraPinsFor(id, floor)

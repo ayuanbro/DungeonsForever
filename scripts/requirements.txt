@@ -1,0 +1,2 @@
+# 服务器端依赖（配合 scripts/run_daily.sh）
+playwright>=1.40

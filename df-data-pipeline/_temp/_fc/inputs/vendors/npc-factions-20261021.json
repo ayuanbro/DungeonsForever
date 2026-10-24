@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "npcs": {
+    "253139": {
+      "names": {
+        "enUS": "Magram Clan Centaur",
+        "zhCN": "玛格拉姆半人马",
+        "zhTW": "瑪格拉姆半人馬"
+      },
+      "sources": [
+        {
+          "type": "wowhead-npc-tooltip",
+          "url": "https://nether.wowhead.com/forever/tooltip/npc/253139",
+          "sha256": "7d8156aa88dd1ed0baae3dee87f8596878ff4d4c6a5269470bf2b5b038451b79",
+          "file": "scripts/.cache/nether/253139.json"
+        },
+        {
+          "type": "client-faction-csv",
+          "file": ".pipeline-runtime/npc-factions-70450/Faction-names.csv",
+          "sha256": "3ef8e6c088098e637e73e6158718a1ed004b4d219788cddc1852267217b6b2f6",
+          "build": "1.60.1.70450",
+          "scope": "Faction IDs/names only; NPC affiliation comes from Wowhead evidence."
+        },
+        {
+          "type": "wowhead-npc-faction-link",
+          "url": "https://www.wowhead.com/forever/cn/npc=253139/gorhak",
+          "file": ".pipeline-runtime/npc-faction-web-20261021/wowhead-live-evidence.json",
+          "sha256": "ca475645a82a049b006d2929438bf893d120436ba1359a0f07f4f207393b448f",
+          "locale": "zhCN",
+          "sourcePatch": "1.60.1",
+          "sourceBuild": "",
+          "collectedAtUTC": "2026-10-21T01:09:44.198Z",
+          "factionLink": "https://www.wowhead.com/forever/cn/faction=93/%E7%8E%9B%E6%A0%BC%E6%8B%89%E5%A7%86%E5%8D%8A%E4%BA%BA%E9%A9%AC",
+          "notes": "Explicit NPC affiliation; not an Alliance/Horde access assertion."
+        },
+        {
+          "type": "existing-localized-faction-catalog",
+          "file": "Core/Data/zhTW/Data_Factions.lua",
+          "sha256": "f7192208e8f7abcb7e002eaca8b2185835b78fe2848a2485d343dac6f75c870a",
+          "locale": "zhTW",
+          "notes": "Existing static name fallback; live client faction API is preferred."
+        }
+      ],
+      "factionID": 93
+    },
+    "253140": {
+      "names": {
+        "enUS": "Gelkis Clan Centaur",
+        "zhCN": "吉尔吉斯半人马",
+        "zhTW": "吉爾吉斯半人馬"
+      },
+      "sources": [
+        {
+          "type": "wowhead-npc-tooltip",
+          "url": "https://nether.wowhead.com/forever/tooltip/npc/253140",
+          "sha256": "1dff34c3901ff7213f50d52dac7dd6e4b4f98609ab894a7c5cecfa6a1e7644af",
+          "file": "scripts/.cache/nether/253140.json"
+        },
+        {
+          "type": "client-faction-csv",
+          "file": ".pipeline-runtime/npc-factions-70450/Faction-names.csv",
+          "sha256": "3ef8e6c088098e637e73e6158718a1ed004b4d219788cddc1852267217b6b2f6",
+          "build": "1.60.1.70450",
+          "scope": "Faction IDs/names only; NPC affiliation comes from Wowhead evidence."
+        },
+        {
+          "type": "wowhead-npc-faction-link",
+          "url": "https://www.wowhead.com/forever/cn/npc=253140/molkar",
+          "file": ".pipeline-runtime/npc-faction-web-20261021/wowhead-live-evidence.json",
+          "sha256": "ca475645a82a049b006d2929438bf893d120436ba1359a0f07f4f207393b448f",
+          "locale": "zhCN",
+          "sourcePatch": "1.60.1",
+          "sourceBuild": "",
+          "collectedAtUTC": "2026-10-21T01:09:36.149Z",
+          "factionLink": "https://www.wowhead.com/forever/cn/faction=92/%E5%90%89%E5%B0%94%E5%90%89%E6%96%AF%E5%8D%8A%E4%BA%BA%E9%A9%AC",
+          "notes": "Explicit NPC affiliation; not an Alliance/Horde access assertion."
+        },
+        {
+          "type": "existing-localized-faction-catalog",
+          "file": "Core/Data/zhTW/Data_Factions.lua",
+          "sha256": "f7192208e8f7abcb7e002eaca8b2185835b78fe2848a2485d343dac6f75c870a",
+          "locale": "zhTW",
+          "notes": "Existing static name fallback; live client faction API is preferred."
+        }
+      ],
+      "factionID": 92
+    }
+  }
+}

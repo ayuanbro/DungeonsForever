@@ -7,9 +7,10 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.8.20
+## Version: 1.8.37
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
+## OptionalDeps: Auctionator
 
 Locales\zhCN.lua
 Locales\zhTW.lua [AllowLoadTextLocale zhTW]
@@ -62,7 +63,6 @@ Core\Data\Data_RaidSets.lua
 Core\Data\Data_PvPRanks.lua
 Core\Data\Data_PvPSets.lua
 Core\Data\Data_PvPHonor.lua
-Core\Data\Data_VendorPrices.lua
 Core\Data\zhTW\Data_Dungeons.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonLoot.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonQuests.lua [AllowLoadTextLocale zhTW]
@@ -84,7 +84,6 @@ Core\Data\zhTW\Data_ExploreToys.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_PvPHonor.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_PvPRanks.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_PvPSets.lua [AllowLoadTextLocale zhTW]
-Core\Data\zhTW\Data_VendorPrices.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_Factions.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ExploreBanner.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_CollectionMounts.lua [AllowLoadTextLocale zhTW]
@@ -125,7 +124,6 @@ Core\Data\enUS\Data_ExploreToys.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_PvPHonor.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_PvPRanks.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_PvPSets.lua [AllowLoadTextLocale enUS]
-Core\Data\enUS\Data_VendorPrices.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_Factions.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ExploreBanner.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_CollectionMounts.lua [AllowLoadTextLocale enUS]
@@ -137,6 +135,14 @@ Core\Data\enUS\Data_ClassGuide.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ClassCombat.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_LootFilter.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_RaidSets.lua [AllowLoadTextLocale enUS]
+Core\Data\Data_ProfItems.lua
+Core\Data\Data_ProfMaterialSupply.lua
+Core\Data\Data_ProfFormulaQuests.lua
+Core\Data\Data_ProfSpecializations.lua
+Core\Data\Data_ProfSpecializationQuests.lua
+Core\Data\Data_ProfTools.lua
+Core\Data\Data_ProfMining.lua
+Core\Data\Data_ProfFishingRoutes.lua
 Core\LootFilter.lua
 Core\DungeonUI.lua
 Core\PvPUI.lua
@@ -144,11 +150,16 @@ Core\FactionUI.lua
 Core\MapUI.lua
 Core\LootFilterUI.lua
 Core\RaidUI.lua
+Core\ProfEconomy.lua
+Core\ProfRecovery.lua
+Core\ProfFishing.lua
+Core\ProfRouteSolver.lua
 Core\ProfRouteAuto.lua
+Core\ProfExecution.lua
 Core\ProfessionUI.lua
 Core\AuctionatorBridge.lua
 Core\ProfFollow.lua
-Core\VendorPriceDB.lua
+Core\ProfItemPrices.lua
 Core\ExploreUI.lua
 Core\ExploreMap.lua
 Core\CollectionUI.lua

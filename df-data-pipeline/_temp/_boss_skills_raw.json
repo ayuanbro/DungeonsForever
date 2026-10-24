@@ -1,0 +1,2206 @@
+{
+ "ragefire_chasm": {
+  "Oggleflint": {
+   "zhCN": [
+    [
+     "顺劈斩",
+     "攻击目标和离目标最近的玩家。",
+     "ability_warrior_cleave"
+    ]
+   ],
+   "zhTW": [
+    [
+     "順劈斬",
+     "攻擊目標和離目標最近的玩家。",
+     "ability_warrior_cleave"
+    ]
+   ],
+   "enUS": [
+    [
+     "Cleave",
+     "Hits his target and the player nearest to it.",
+     "ability_warrior_cleave"
+    ]
+   ]
+  },
+  "Taragaman the Hungerer": {
+   "zhCN": [
+    [
+     "火焰新星",
+     "对他附近所有人造成火焰伤害，一场战斗好几次。治疗要把近战补满。",
+     "spell_fire_sealoffire"
+    ],
+    [
+     "上钩拳",
+     "重击并击退坦克。",
+     "inv_gauntlets_05"
+    ]
+   ],
+   "zhTW": [
+    [
+     "火焰新星",
+     "對他附近所有人造成火焰傷害，一場戰鬥好幾次。治療要把近戰補滿。",
+     "spell_fire_sealoffire"
+    ],
+    [
+     "上鉤拳",
+     "重擊並擊退坦克。",
+     "inv_gauntlets_05"
+    ]
+   ],
+   "enUS": [
+    [
+     "Fire Nova",
+     "Fire damage to everyone near him, several times a fight. Healers, keep the melee topped up.",
+     "spell_fire_sealoffire"
+    ],
+    [
+     "Uppercut",
+     "A heavy blow that knocks the tank back.",
+     "inv_gauntlets_05"
+    ]
+   ]
+  },
+  "Jergosh the Invoker": {
+   "zhCN": [
+    [
+     "献祭",
+     "灼烧一名玩家，之后21秒内每隔几秒造成火焰伤害。打断施法或驱散灼烧。",
+     "spell_fire_immolation"
+    ],
+    [
+     "虚弱诅咒",
+     "降低一名玩家的物理伤害，持续30秒。法师或德鲁伊可以解除。",
+     "spell_shadow_curseofmannoroth"
+    ]
+   ],
+   "zhTW": [
+    [
+     "獻祭",
+     "灼燒一名玩家，之後21秒內每隔幾秒造成火焰傷害。打斷施法或驅散灼燒。",
+     "spell_fire_immolation"
+    ],
+    [
+     "虛弱詛咒",
+     "降低一名玩家的物理傷害，持續30秒。法師或德魯伊可以解除。",
+     "spell_shadow_curseofmannoroth"
+    ]
+   ],
+   "enUS": [
+    [
+     "Immolate",
+     "Burns a player, then Fire damage every few seconds for 21 seconds. Interrupt the cast or dispel the burn.",
+     "spell_fire_immolation"
+    ],
+    [
+     "Curse of Weakness",
+     "Lowers a player's Physical damage for 30 seconds. A mage or a druid can remove it.",
+     "spell_shadow_curseofmannoroth"
+    ]
+   ]
+  },
+  "Bazzalan": {
+   "zhCN": [
+    [
+     "毒药",
+     "他的攻击会下毒：持续造成自然伤害。能解毒就解。",
+     "spell_nature_corrosivebreath"
+    ],
+    [
+     "邪恶攻击",
+     "每5到15秒对坦克造成额外伤害。",
+     "spell_shadow_ritualofsacrifice"
+    ]
+   ],
+   "zhTW": [
+    [
+     "毒藥",
+     "他的攻擊會下毒：持續造成自然傷害。能解毒就解。",
+     "spell_nature_corrosivebreath"
+    ],
+    [
+     "邪惡攻擊",
+     "每5到15秒對坦克造成額外傷害。",
+     "spell_shadow_ritualofsacrifice"
+    ]
+   ],
+   "enUS": [
+    [
+     "Poison",
+     "His blows poison: Nature damage over time. Cure it if you can.",
+     "spell_nature_corrosivebreath"
+    ],
+    [
+     "Sinister Strike",
+     "Extra damage on the tank every 5 to 15 seconds.",
+     "spell_shadow_ritualofsacrifice"
+    ]
+   ]
+  }
+ },
+ "wailing_caverns": {
+  "Lord Cobrahn": {
+   "zhCN": [
+    [
+     "闪电箭",
+     "他会保持距离施放。打断它。",
+     "spell_nature_lightning"
+    ],
+    [
+     "治疗之触",
+     "治疗自己或盟友（施法3秒）。打断它。",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "考布莱恩毒蛇形态",
+     "生命值剩30%时变成毒蛇：攻击变慢但更痛，并开始让玩家沉睡。",
+     "spell_nature_guardianward"
+    ]
+   ],
+   "zhTW": [
+    [
+     "閃電箭",
+     "他會保持距離施放。打斷它。",
+     "spell_nature_lightning"
+    ],
+    [
+     "治療之觸",
+     "治療自己或盟友（施法3秒）。打斷它。",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "考布萊恩毒蛇形態",
+     "生命值剩30%時變成毒蛇：攻擊變慢但更痛，並開始讓玩家沉睡。",
+     "spell_nature_guardianward"
+    ]
+   ],
+   "enUS": [
+    [
+     "Lightning Bolt",
+     "He keeps his distance to cast it. Interrupt it.",
+     "spell_nature_lightning"
+    ],
+    [
+     "Healing Touch",
+     "Heals himself or an ally (3-second cast). Interrupt it.",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "Cobrahn Serpent Form",
+     "At 30% health he turns into a serpent: slower but heavier blows, and he starts putting players to sleep.",
+     "spell_nature_guardianward"
+    ]
+   ]
+  },
+  "Lady Anacondra": {
+   "zhCN": [
+    [
+     "治疗之触",
+     "治疗自己或盟友。打断它。",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "催眠术",
+     "使一名玩家沉睡最多20秒。受到伤害会醒来，驱散魔法也能解除。",
+     "spell_nature_sleep"
+    ],
+    [
+     "荆棘光环",
+     "对近战攻击她的人造成自然伤害。",
+     "spell_nature_thorns"
+    ]
+   ],
+   "zhTW": [
+    [
+     "治療之觸",
+     "治療自己或盟友。打斷它。",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "催眠術",
+     "使一名玩家沉睡最多20秒。受到傷害會醒來，驅散魔法也能解除。",
+     "spell_nature_sleep"
+    ],
+    [
+     "荊棘光環",
+     "對近戰攻擊她的人造成自然傷害。",
+     "spell_nature_thorns"
+    ]
+   ],
+   "enUS": [
+    [
+     "Healing Touch",
+     "Heals herself or an ally. Interrupt it.",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "Sleep",
+     "Puts a player to sleep for up to 20 seconds. Damage wakes them, and a Magic dispel removes it.",
+     "spell_nature_sleep"
+    ],
+    [
+     "Thorns Aura",
+     "Nature damage to whoever hits her in melee.",
+     "spell_nature_thorns"
+    ]
+   ]
+  },
+  "Kresh": {
+   "zhCN": [
+    [
+     "甲壳护盾",
+     "12秒内受到的伤害降低60%，攻击变慢但更痛。",
+     "ability_hunter_pet_turtle"
+    ]
+   ],
+   "zhTW": [
+    [
+     "甲殼護盾",
+     "12秒內受到的傷害降低60%，攻擊變慢但更痛。",
+     "ability_hunter_pet_turtle"
+    ]
+   ],
+   "enUS": [
+    [
+     "Shell Shield",
+     "For 12 seconds he takes 60% less damage, and attacks slower but harder.",
+     "ability_hunter_pet_turtle"
+    ]
+   ]
+  },
+  "Lord Pythas": {
+   "zhCN": [
+    [
+     "雷霆一击",
+     "对他附近所有人造成自然伤害，接着10秒内攻击和移动变慢。",
+     "spell_nature_thunderclap"
+    ],
+    [
+     "治疗之触",
+     "治疗自己或盟友。打断它。",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "催眠术",
+     "使一名玩家沉睡最多20秒。",
+     "spell_nature_sleep"
+    ]
+   ],
+   "zhTW": [
+    [
+     "雷霆一擊",
+     "對他附近所有人造成自然傷害，接著10秒內攻擊和移動變慢。",
+     "spell_nature_thunderclap"
+    ],
+    [
+     "治療之觸",
+     "治療自己或盟友。打斷它。",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "催眠術",
+     "使一名玩家沉睡最多20秒。",
+     "spell_nature_sleep"
+    ]
+   ],
+   "enUS": [
+    [
+     "Thunderclap",
+     "Nature damage to everyone near him, then slower attacks and movement for 10 seconds.",
+     "spell_nature_thunderclap"
+    ],
+    [
+     "Healing Touch",
+     "Heals himself or an ally. Interrupt it.",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "Sleep",
+     "Puts a player to sleep for up to 20 seconds.",
+     "spell_nature_sleep"
+    ]
+   ]
+  },
+  "Skum": {
+   "zhCN": [
+    [
+     "闪电链",
+     "会跳到第二名玩家身上的闪电。打断它。",
+     "spell_nature_chainlightning"
+    ]
+   ],
+   "zhTW": [
+    [
+     "閃電鏈",
+     "會跳到第二名玩家身上的閃電。打斷它。",
+     "spell_nature_chainlightning"
+    ]
+   ],
+   "enUS": [
+    [
+     "Chained Bolt",
+     "A lightning bolt that jumps to a second player. Interrupt it.",
+     "spell_nature_chainlightning"
+    ]
+   ]
+  },
+  "Lord Serpentis": {
+   "zhCN": [
+    [
+     "治疗之触",
+     "对自己或盟友施放的慢速治疗（3.5秒）。打断它。",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "催眠术",
+     "使一名玩家沉睡最多20秒。",
+     "spell_nature_sleep"
+    ],
+    [
+     "闪电箭",
+     "他会保持距离施放。打断它。",
+     "spell_nature_lightning"
+    ]
+   ],
+   "zhTW": [
+    [
+     "治療之觸",
+     "對自己或盟友施放的慢速治療（3.5秒）。打斷它。",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "催眠術",
+     "使一名玩家沉睡最多20秒。",
+     "spell_nature_sleep"
+    ],
+    [
+     "閃電箭",
+     "他會保持距離施放。打斷它。",
+     "spell_nature_lightning"
+    ]
+   ],
+   "enUS": [
+    [
+     "Healing Touch",
+     "A slow heal (3.5 seconds) on himself or an ally. Interrupt it.",
+     "spell_nature_healingtouch"
+    ],
+    [
+     "Sleep",
+     "Puts a player to sleep for up to 20 seconds.",
+     "spell_nature_sleep"
+    ],
+    [
+     "Lightning Bolt",
+     "He keeps his distance to cast it. Interrupt it.",
+     "spell_nature_lightning"
+    ]
+   ]
+  },
+  "Verdan the Everliving": {
+   "zhCN": [
+    [
+     "缠绕之藤",
+     "目标靠近时，他会击倒并定身附近所有人10秒。远程保持距离。",
+     "spell_nature_earthquake"
+    ]
+   ],
+   "zhTW": [
+    [
+     "纏繞之藤",
+     "目標靠近時，他會擊倒並定身附近所有人10秒。遠程請保持距離。",
+     "spell_nature_earthquake"
+    ]
+   ],
+   "enUS": [
+    [
+     "Grasping Vines",
+     "When his target is close, he knocks down and roots everyone near him for 10 seconds. Ranged players, keep your distance.",
+     "spell_nature_earthquake"
+    ]
+   ]
+  },
+  "Mutanus the Devourer": {
+   "zhCN": [
+    [
+     "雷霆震裂",
+     "对他附近所有人造成自然伤害并昏迷2.5秒。",
+     "spell_nature_thunderclap"
+    ],
+    [
+     "纳拉雷克斯的梦魇",
+     "使一名玩家沉睡最多15秒。",
+     "spell_nature_sleep"
+    ],
+    [
+     "恐吓",
+     "使一名玩家恐惧逃跑4秒。",
+     "ability_physical_taunt"
+    ]
+   ],
+   "zhTW": [
+    [
+     "雷霆震裂",
+     "對他附近所有人造成自然傷害並昏迷2.5秒。",
+     "spell_nature_thunderclap"
+    ],
+    [
+     "納拉雷克斯的夢魘",
+     "使一名玩家沉睡最多15秒。",
+     "spell_nature_sleep"
+    ],
+    [
+     "恐嚇",
+     "使一名玩家恐懼逃跑4秒。",
+     "ability_physical_taunt"
+    ]
+   ],
+   "enUS": [
+    [
+     "Thundercrack",
+     "Nature damage to everyone near him and a 2.5-second stun.",
+     "spell_nature_thunderclap"
+    ],
+    [
+     "Naralex's Nightmare",
+     "Puts a player to sleep for up to 15 seconds.",
+     "spell_nature_sleep"
+    ],
+    [
+     "Terrify",
+     "Makes a player flee in fear for 4 seconds.",
+     "ability_physical_taunt"
+    ]
+   ]
+  }
+ },
+ "the_deadmines": {
+  "Rhahk'Zor": {
+   "zhCN": [
+    [
+     "拉克佐猛击",
+     "重击坦克并使其昏迷3秒。",
+     "inv_gauntlets_05"
+    ]
+   ],
+   "zhTW": [
+    [
+     "拉克佐猛擊",
+     "重擊坦克並使其昏迷3秒。",
+     "inv_gauntlets_05"
+    ]
+   ],
+   "enUS": [
+    [
+     "Rhahk'Zor Slam",
+     "Hits the tank hard and stuns them for 3 seconds.",
+     "inv_gauntlets_05"
+    ]
+   ]
+  },
+  "Miner Johnson": {
+   "zhCN": [
+    [
+     "刺穿护甲",
+     "坦克护甲降低75%，持续20秒。",
+     "spell_shadow_vampiricaura"
+    ],
+    [
+     "逃跑求援",
+     "生命值剩15%时会逃跑去找帮手。在他跑远之前解决他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "zhTW": [
+    [
+     "刺穿護甲",
+     "坦克護甲降低75%，持續20秒。",
+     "spell_shadow_vampiricaura"
+    ],
+    [
+     "逃跑求援",
+     "生命值剩15%時會逃跑去找幫手。在他跑遠之前解決他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "enUS": [
+    [
+     "Pierce Armor",
+     "Cuts the tank's armor by 75% for 20 seconds.",
+     "spell_shadow_vampiricaura"
+    ],
+    [
+     "Runs for help",
+     "At 15% health he runs off to bring help. Finish him before he gets away.",
+     "ability_rogue_sprint"
+    ]
+   ]
+  },
+  "Sneed": {
+   "zhCN": [
+    [
+     "缴械",
+     "缴械坦克6秒。",
+     "ability_warrior_disarm"
+    ]
+   ],
+   "zhTW": [
+    [
+     "繳械",
+     "繳械坦克6秒。",
+     "ability_warrior_disarm"
+    ]
+   ],
+   "enUS": [
+    [
+     "Disarm",
+     "Disarms the tank for 6 seconds.",
+     "ability_warrior_disarm"
+    ]
+   ]
+  },
+  "Sneed's Shredder": {
+   "zhCN": [
+    [
+     "恐吓",
+     "使一名玩家恐惧逃跑4秒。",
+     "ability_physical_taunt"
+    ],
+    [
+     "扰乱之痛",
+     "一名玩家施法速度降低35%，持续15秒。",
+     "ability_racial_cannibalize"
+    ]
+   ],
+   "zhTW": [
+    [
+     "恐嚇",
+     "使一名玩家恐懼逃跑4秒。",
+     "ability_physical_taunt"
+    ],
+    [
+     "擾亂之痛",
+     "一名玩家施法速度降低35%，持續15秒。",
+     "ability_racial_cannibalize"
+    ]
+   ],
+   "enUS": [
+    [
+     "Terrify",
+     "Makes a player flee in fear for 4 seconds.",
+     "ability_physical_taunt"
+    ],
+    [
+     "Distracting Pain",
+     "Slows a player's casting by 35% for 15 seconds.",
+     "ability_racial_cannibalize"
+    ]
+   ]
+  },
+  "Gilnid": {
+   "zhCN": [
+    [
+     "熔铁之水",
+     "15秒内每3秒造成火焰伤害，并使攻击和移动变慢。打断这个2秒的施法。",
+     "spell_fire_fireball"
+    ]
+   ],
+   "zhTW": [
+    [
+     "熔鐵之水",
+     "15秒內每3秒造成火焰傷害，並使攻擊和移動變慢。打斷這個2秒的施法。",
+     "spell_fire_fireball"
+    ]
+   ],
+   "enUS": [
+    [
+     "Molten Metal",
+     "Fire damage every 3 seconds for 15 seconds, with slower attacks and movement. Interrupt the 2-second cast.",
+     "spell_fire_fireball"
+    ]
+   ]
+  },
+  "Mr. Smite": {
+   "zhCN": [
+    [
+     "重拳先生践踏",
+     "生命值66%和33%时各一次：昏迷周围所有人，然后走到他的箱子旁换武器。",
+     "ability_warstomp"
+    ],
+    [
+     "痛击",
+     "66%后拿双斧：对坦克多出额外攻击。",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "重拳猛击",
+     "33%以下拿锤子：重击坦克并使其昏迷3秒。",
+     "inv_gauntlets_05"
+    ]
+   ],
+   "zhTW": [
+    [
+     "重拳先生踐踏",
+     "生命值66%和33%時各一次：昏迷周圍所有人，然後走到他的箱子旁換武器。",
+     "ability_warstomp"
+    ],
+    [
+     "痛擊",
+     "66%後拿雙斧：對坦克多出額外攻擊。",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "重拳猛擊",
+     "33%以下拿錘子：重擊坦克並使其昏迷3秒。",
+     "inv_gauntlets_05"
+    ]
+   ],
+   "enUS": [
+    [
+     "Smite Stomp",
+     "At 66% and again at 33% health he stuns everyone around him, then walks to his chest to change weapons.",
+     "ability_warstomp"
+    ],
+    [
+     "Thrash",
+     "With his two axes, from 66% health: extra attacks on the tank.",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "Smite Slam",
+     "With his hammer, below 33% health: a heavy blow that stuns the tank for 3 seconds.",
+     "inv_gauntlets_05"
+    ]
+   ]
+  },
+  "Captain Greenskin": {
+   "zhCN": [
+    [
+     "毒性鱼叉",
+     "施法2秒：一次攻击，接着一分钟的自然伤害。解掉这个毒。",
+     "ability_poisons"
+    ],
+    [
+     "顺劈斩",
+     "攻击目标和离目标最近的玩家。",
+     "ability_warrior_cleave"
+    ]
+   ],
+   "zhTW": [
+    [
+     "毒性魚叉",
+     "施法2秒：一次攻擊，接著一分鐘的自然傷害。解掉這個毒。",
+     "ability_poisons"
+    ],
+    [
+     "順劈斬",
+     "攻擊目標和離目標最近的玩家。",
+     "ability_warrior_cleave"
+    ]
+   ],
+   "enUS": [
+    [
+     "Poisoned Harpoon",
+     "A 2-second cast: a hit, then Nature damage for a minute. Cure the poison.",
+     "ability_poisons"
+    ],
+    [
+     "Cleave",
+     "Hits his target and the player nearest to it.",
+     "ability_warrior_cleave"
+    ]
+   ]
+  },
+  "Edwin VanCleef": {
+   "zhCN": [
+    [
+     "痛击",
+     "不时多出两次攻击：坦克会吃到重击。",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "范克里夫的盟友",
+     "生命值剩一半时召来两名迪菲亚黑衣卫兵。",
+     "ability_rogue_ambush"
+    ]
+   ],
+   "zhTW": [
+    [
+     "痛擊",
+     "不時多出兩次攻擊：坦克會吃到重擊。",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "范克里夫的盟友",
+     "生命值剩一半時召來兩名迪菲亞黑衣衛兵。",
+     "ability_rogue_ambush"
+    ]
+   ],
+   "enUS": [
+    [
+     "Thrash",
+     "Now and then two extra attacks: heavy hits on the tank.",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "VanCleef's Allies",
+     "At half health he calls two Defias Blackguards.",
+     "ability_rogue_ambush"
+    ]
+   ]
+  },
+  "Cookie": {
+   "zhCN": [
+    [
+     "酸液溅射",
+     "30秒内每5秒对他附近所有人造成自然伤害。",
+     "inv_drink_06"
+    ],
+    [
+     "烹制甜点",
+     "生命值低于一半时会治疗自己（施法2秒）。打断它。",
+     "spell_holy_heal"
+    ],
+    [
+     "逃跑求援",
+     "生命值剩15%时会逃跑去找帮手。在他跑远之前解决他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "zhTW": [
+    [
+     "酸液噴濺",
+     "30秒內每5秒對他附近所有人造成自然傷害。",
+     "inv_drink_06"
+    ],
+    [
+     "烹製甜點",
+     "生命值低於一半時會治療自己（施法2秒）。打斷它。",
+     "spell_holy_heal"
+    ],
+    [
+     "逃跑求援",
+     "生命值剩15%時會逃跑去找幫手。在他跑遠之前解決他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "enUS": [
+    [
+     "Acid Splash",
+     "Nature damage every 5 seconds for 30 seconds to everyone near him.",
+     "inv_drink_06"
+    ],
+    [
+     "Cookie's Cooking",
+     "Below half health he heals himself (2-second cast). Interrupt it.",
+     "spell_holy_heal"
+    ],
+    [
+     "Runs for help",
+     "At 15% health he runs off to bring help. Finish him before he gets away.",
+     "ability_rogue_sprint"
+    ]
+   ]
+  }
+ },
+ "shadowfang_keep": {
+  "Rethilgore": {
+   "zhCN": [
+    [
+     "灵魂消耗",
+     "定身一名玩家10秒，并吸取其生命给自己回血。打断这个2秒的施法或驱散它。",
+     "spell_shadow_lifedrain02"
+    ]
+   ],
+   "zhTW": [
+    [
+     "靈魂消耗",
+     "定身一名玩家10秒並吸取其生命。打斷這個2秒的施法或驅散它。",
+     "spell_shadow_lifedrain02"
+    ]
+   ],
+   "enUS": [
+    [
+     "Soul Drain",
+     "Roots a player for 10 seconds and drains their health into his. Interrupt the 2-second cast or dispel it.",
+     "spell_shadow_lifedrain02"
+    ]
+   ]
+  },
+  "Fel Steed / Shadow Charger": {
+   "zhCN": [
+    [
+     "恶魔践踏",
+     "地狱战马会使附近所有人昏迷3秒，并让他们受到更多物理伤害。暗影军马没有技能。",
+     "ability_warstomp"
+    ]
+   ],
+   "zhTW": [
+    [
+     "惡魔踐踏",
+     "地獄戰馬會昏迷附近所有人3秒，並讓他們受到更多物理傷害。暗影軍馬沒有技能。",
+     "ability_warstomp"
+    ]
+   ],
+   "enUS": [
+    [
+     "Fel Stomp",
+     "The Fel Steed stuns everyone near it for 3 seconds, and they take more Physical damage. The Shadow Charger has no ability.",
+     "ability_warstomp"
+    ]
+   ]
+  },
+  "Razorclaw the Butcher": {
+   "zhCN": [
+    [
+     "屠夫吸取",
+     "近战时从目标身上吸取350点法力：有蓝条的坦克会很难受。",
+     "spell_shadow_siphonmana"
+    ]
+   ],
+   "zhTW": [
+    [
+     "屠夫吸取",
+     "近戰時從目標身上吸取350點法力：用法力的坦克會有感覺。",
+     "spell_shadow_siphonmana"
+    ]
+   ],
+   "enUS": [
+    [
+     "Butcher Drain",
+     "Drains 350 mana from his target in melee: a tank with mana feels it.",
+     "spell_shadow_siphonmana"
+    ]
+   ]
+  },
+  "Baron Silverlaine": {
+   "zhCN": [
+    [
+     "暗影迷雾",
+     "诅咒一名玩家：受到的治疗降低75%，持续15秒。记得解除，尤其是坦克身上的。",
+     "spell_shadow_gathershadows"
+    ]
+   ],
+   "zhTW": [
+    [
+     "暗影迷霧",
+     "詛咒一名玩家：受到的治療降低75%，持續15秒。記得解除，尤其是坦克身上的。",
+     "spell_shadow_gathershadows"
+    ]
+   ],
+   "enUS": [
+    [
+     "Veil of Shadow",
+     "Curses a player: healing on them is 75% weaker for 15 seconds. Remove it, above all from the tank.",
+     "spell_shadow_gathershadows"
+    ]
+   ]
+  },
+  "Commander Springvale": {
+   "zhCN": [
+    [
+     "圣光术",
+     "治疗自己或盟友（施法2.5秒）。打断它。",
+     "spell_holy_holybolt"
+    ],
+    [
+     "圣盾术",
+     "使他10秒内免疫所有伤害和法术。",
+     "spell_holy_divineintervention"
+    ],
+    [
+     "制裁之锤",
+     "使一名玩家昏迷4秒。",
+     "spell_holy_sealofmight"
+    ]
+   ],
+   "zhTW": [
+    [
+     "聖光術",
+     "治療自己或盟友（施法2.5秒）。打斷它。",
+     "spell_holy_holybolt"
+    ],
+    [
+     "聖盾術",
+     "使他10秒內免疫所有傷害和法術。",
+     "spell_holy_divineintervention"
+    ],
+    [
+     "制裁之錘",
+     "使一名玩家昏迷4秒。",
+     "spell_holy_sealofmight"
+    ]
+   ],
+   "enUS": [
+    [
+     "Holy Light",
+     "Heals himself or an ally (2.5-second cast). Interrupt it.",
+     "spell_holy_holybolt"
+    ],
+    [
+     "Divine Shield",
+     "Makes him immune to all damage and spells for 10 seconds.",
+     "spell_holy_divineintervention"
+    ],
+    [
+     "Hammer of Justice",
+     "Stuns a player for 4 seconds.",
+     "spell_holy_sealofmight"
+    ]
+   ]
+  },
+  "Odo the Blindwatcher": {
+   "zhCN": [
+    [
+     "呼叫援军",
+     "开怪时他会叫来30码内的怪物。先清掉他周围的怪。",
+     "ability_warrior_rallyingcry"
+    ],
+    [
+     "嚎叫之怒",
+     "生命值60%、40%和20%时，攻击会变得更痛。",
+     "ability_bullrush"
+    ]
+   ],
+   "zhTW": [
+    [
+     "呼叫援軍",
+     "開怪時他會叫來30碼內的怪物。先清掉他周圍。",
+     "ability_warrior_rallyingcry"
+    ],
+    [
+     "嚎叫之怒",
+     "生命值60%、40%和20%時，攻擊會變得更痛。",
+     "ability_bullrush"
+    ]
+   ],
+   "enUS": [
+    [
+     "Calls for help",
+     "When pulled, he calls the creatures within 30 yards to join him. Clear around him first.",
+     "ability_warrior_rallyingcry"
+    ],
+    [
+     "Howling Rage",
+     "At 60%, 40% and 20% health his blows grow stronger.",
+     "ability_bullrush"
+    ]
+   ]
+  },
+  "Deathsworn Captain": {
+   "zhCN": [
+    [
+     "顺劈斩",
+     "攻击目标和离目标最近的玩家。",
+     "ability_warrior_cleave"
+    ],
+    [
+     "断筋",
+     "使目标移动速度变慢10秒。",
+     "ability_shockwave"
+    ]
+   ],
+   "zhTW": [
+    [
+     "順劈斬",
+     "攻擊目標和離目標最近的玩家。",
+     "ability_warrior_cleave"
+    ],
+    [
+     "斷筋",
+     "使目標移動速度變慢10秒。",
+     "ability_shockwave"
+    ]
+   ],
+   "enUS": [
+    [
+     "Cleave",
+     "Hits his target and the player nearest to it.",
+     "ability_warrior_cleave"
+    ],
+    [
+     "Hamstring",
+     "Slows his target's movement for 10 seconds.",
+     "ability_shockwave"
+    ]
+   ]
+  },
+  "Arugal's Voidwalker": {
+   "zhCN": [
+    [
+     "黑暗祭品",
+     "会治疗另一只虚空行者。一只一只集中打。",
+     "spell_shadow_haunting"
+    ]
+   ],
+   "zhTW": [
+    [
+     "黑暗祭品",
+     "會治療另一隻虛空行者。一隻一隻集中打。",
+     "spell_shadow_haunting"
+    ]
+   ],
+   "enUS": [
+    [
+     "Dark Offering",
+     "Heals another voidwalker. Bring them down one at a time.",
+     "spell_shadow_haunting"
+    ]
+   ]
+  },
+  "Fenrus the Devourer": {
+   "zhCN": [
+    [
+     "毒性唾液",
+     "2分钟内每6秒造成自然伤害并吸取法力。解掉这个毒。",
+     "spell_nature_corrosivebreath"
+    ]
+   ],
+   "zhTW": [
+    [
+     "毒性唾液",
+     "2分鐘內每6秒造成自然傷害並吸取法力。解掉這個毒。",
+     "spell_nature_corrosivebreath"
+    ]
+   ],
+   "enUS": [
+    [
+     "Toxic Saliva",
+     "Nature damage every 6 seconds and drained mana, for 2 minutes. Cure the poison.",
+     "spell_nature_corrosivebreath"
+    ]
+   ]
+  },
+  "Wolf Master Nandos": {
+   "zhCN": [
+    [
+     "座狼增援",
+     "战斗拖得越久，来帮他的座狼越多：30到45秒后一只灰色座狼，接着一只被奴役的座狼，然后一只暗牙恐狼。",
+     "ability_hunter_pet_wolf"
+    ]
+   ],
+   "zhTW": [
+    [
+     "座狼增援",
+     "戰鬥拖得越久，來幫他的座狼越多：30到45秒後一隻灰色座狼，接著一隻被奴役的座狼，然後一隻暗牙恐狼。",
+     "ability_hunter_pet_wolf"
+    ]
+   ],
+   "enUS": [
+    [
+     "More worgs",
+     "The longer the fight, the more worgs join him: a Bleak Worg after 30 to 45 seconds, then a Slavering Worg, then a Lupine Horror.",
+     "ability_hunter_pet_wolf"
+    ]
+   ]
+  },
+  "Archmage Arugal": {
+   "zhCN": [
+    [
+     "虚空箭",
+     "对坦克不断施放3秒的暗影箭。打断它。",
+     "spell_shadow_shadowbolt"
+    ],
+    [
+     "阿鲁高的诅咒",
+     "把坦克以外的一名玩家变成影牙暴食者，替他战斗10秒。解除这个诅咒。",
+     "spell_shadow_gathershadows"
+    ],
+    [
+     "暗影传送",
+     "他会在自己的平台、上层平台和楼梯之间传送。",
+     "spell_shadow_antishadow"
+    ],
+    [
+     "雷霆震荡",
+     "坦克靠近时：周围所有人受到自然伤害并昏迷5秒。",
+     "spell_lightning_lightningbolt01"
+    ]
+   ],
+   "zhTW": [
+    [
+     "虛空箭",
+     "對坦克不斷施放3秒的暗影箭。打斷它。",
+     "spell_shadow_shadowbolt"
+    ],
+    [
+     "阿魯高的詛咒",
+     "把坦克以外的一名玩家變成影牙暴食者，替他戰鬥10秒。解除這個詛咒。",
+     "spell_shadow_gathershadows"
+    ],
+    [
+     "暗影傳送",
+     "他會在自己的平台、上層平台和樓梯之間傳送。",
+     "spell_shadow_antishadow"
+    ],
+    [
+     "雷霆震盪",
+     "坦克靠近時：周圍造成自然傷害並昏迷5秒。",
+     "spell_lightning_lightningbolt01"
+    ]
+   ],
+   "enUS": [
+    [
+     "Void Bolt",
+     "A 3-second Shadow bolt on the tank, over and over. Interrupt it.",
+     "spell_shadow_shadowbolt"
+    ],
+    [
+     "Arugal's Curse",
+     "Turns a player other than the tank into a Shadowfang Glutton that fights for him for 10 seconds. Remove the curse.",
+     "spell_shadow_gathershadows"
+    ],
+    [
+     "Shadow Port",
+     "He teleports between his ledge, the upper ledge and the stairs.",
+     "spell_shadow_antishadow"
+    ],
+    [
+     "Thundershock",
+     "When the tank reaches him: Nature damage and a 5-second stun around him.",
+     "spell_lightning_lightningbolt01"
+    ]
+   ]
+  }
+ },
+ "blackfathom_deeps": {
+  "Ghamoo-ra": {
+   "zhCN": [
+    [
+     "践踏",
+     "攻击附近所有人。",
+     "spell_nature_natureswrath"
+    ]
+   ],
+   "zhTW": [
+    [
+     "踐踏",
+     "攻擊附近所有人。",
+     "spell_nature_natureswrath"
+    ]
+   ],
+   "enUS": [
+    [
+     "Trample",
+     "Hits everyone standing close.",
+     "spell_nature_natureswrath"
+    ]
+   ]
+  },
+  "Lady Sarevess": {
+   "zhCN": [
+    [
+     "叉状闪电",
+     "对她前方锥形范围造成自然伤害（施法2秒）。别站在锥形范围内。",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "冰霜新星",
+     "将她附近所有人冻结在原地最多8秒。",
+     "spell_frost_frostnova"
+    ],
+    [
+     "减速术",
+     "使一名玩家移动和攻击变慢10秒。",
+     "spell_nature_slow"
+    ]
+   ],
+   "zhTW": [
+    [
+     "叉狀閃電",
+     "對她前方錐形範圍造成自然傷害（施法2秒）。別站在錐形範圍內。",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "冰霜新星",
+     "將她附近所有人凍結在原地最多8秒。",
+     "spell_frost_frostnova"
+    ],
+    [
+     "減速術",
+     "使一名玩家移動和攻擊變慢10秒。",
+     "spell_nature_slow"
+    ]
+   ],
+   "enUS": [
+    [
+     "Forked Lightning",
+     "Nature damage in a cone in front of her (2-second cast). Stay out of the cone.",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "Frost Nova",
+     "Freezes everyone near her in place for up to 8 seconds.",
+     "spell_frost_frostnova"
+    ],
+    [
+     "Slow",
+     "Slows a player's movement and attacks for 10 seconds.",
+     "spell_nature_slow"
+    ]
+   ]
+  },
+  "Gelihast": {
+   "zhCN": [
+    [
+     "投网",
+     "将一名玩家定身10秒。",
+     "ability_ensnare"
+    ]
+   ],
+   "zhTW": [
+    [
+     "投網",
+     "將一名玩家定身10秒。",
+     "ability_ensnare"
+    ]
+   ],
+   "enUS": [
+    [
+     "Net",
+     "Roots a player in place for 10 seconds.",
+     "ability_ensnare"
+    ]
+   ]
+  },
+  "Lorgus Jett": {
+   "zhCN": [
+    [
+     "闪电之盾",
+     "攻击他的人会被闪电击中。牧师或萨满可以驱散。",
+     "spell_nature_lightningshield"
+    ],
+    [
+     "闪电箭",
+     "他会保持距离施放。打断它。",
+     "spell_nature_lightning"
+    ]
+   ],
+   "zhTW": [
+    [
+     "閃電之盾",
+     "攻擊他的人會被閃電擊中。牧師或薩滿可以驅散。",
+     "spell_nature_lightningshield"
+    ],
+    [
+     "閃電箭",
+     "他會保持距離施放。打斷它。",
+     "spell_nature_lightning"
+    ]
+   ],
+   "enUS": [
+    [
+     "Lightning Shield",
+     "Lightning strikes whoever hits him. A priest or a shaman can remove it.",
+     "spell_nature_lightningshield"
+    ],
+    [
+     "Lightning Bolt",
+     "He keeps his distance to cast it. Interrupt it.",
+     "spell_nature_lightning"
+    ]
+   ]
+  },
+  "Baron Aquanis": {
+   "zhCN": [
+    [
+     "寒冰箭",
+     "他会保持距离施放：冰霜伤害并减速。",
+     "spell_frost_frostbolt02"
+    ],
+    [
+     "冰霜新星",
+     "将他附近所有人定身最多8秒。",
+     "spell_frost_frostnova"
+    ]
+   ],
+   "zhTW": [
+    [
+     "寒冰箭",
+     "他會保持距離施放：冰霜傷害並減速。",
+     "spell_frost_frostbolt02"
+    ],
+    [
+     "冰霜新星",
+     "將他附近所有人定身最多8秒。",
+     "spell_frost_frostnova"
+    ]
+   ],
+   "enUS": [
+    [
+     "Frostbolt",
+     "He keeps his distance to cast it: Frost damage and a slow.",
+     "spell_frost_frostbolt02"
+    ],
+    [
+     "Frost Nova",
+     "Roots everyone near him for up to 8 seconds.",
+     "spell_frost_frostnova"
+    ]
+   ]
+  },
+  "Twilight Lord Kelris": {
+   "zhCN": [
+    [
+     "催眠术",
+     "使他附近所有人沉睡最多10秒。受到伤害就会醒来。",
+     "spell_nature_sleep"
+    ],
+    [
+     "心灵震爆",
+     "对一名玩家造成暗影伤害（施法1.5秒）。",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ],
+   "zhTW": [
+    [
+     "催眠術",
+     "使他附近所有人沉睡最多10秒。受到傷害就會醒來。",
+     "spell_nature_sleep"
+    ],
+    [
+     "心靈震爆",
+     "對一名玩家造成暗影傷害（施法1.5秒）。",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ],
+   "enUS": [
+    [
+     "Sleep",
+     "Puts everyone near him to sleep for up to 10 seconds. Damage wakes a sleeper.",
+     "spell_nature_sleep"
+    ],
+    [
+     "Mind Blast",
+     "Shadow damage on a player (1.5-second cast).",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ]
+  },
+  "Aku'mai": {
+   "zhCN": [
+    [
+     "毒云术",
+     "45秒内每5秒对附近所有人造成自然伤害。",
+     "spell_nature_regenerate"
+    ],
+    [
+     "狂暴怒气",
+     "生命值低于30%：攻击速度会反复加快75%。",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ],
+   "zhTW": [
+    [
+     "毒雲術",
+     "45秒內每5秒對附近所有人造成自然傷害。",
+     "spell_nature_regenerate"
+    ],
+    [
+     "狂暴怒氣",
+     "生命值低於30%：不斷出現攻擊速度加快75%的爆發。",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ],
+   "enUS": [
+    [
+     "Poison Cloud",
+     "Nature damage every 5 seconds for 45 seconds to everyone nearby.",
+     "spell_nature_regenerate"
+    ],
+    [
+     "Frenzied Rage",
+     "Below 30% health: bursts of attacks 75% faster, over and over.",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ]
+  }
+ },
+ "the_stockade": {
+  "Kam Deepfury": {
+   "zhCN": [
+    [
+     "盾牌猛击",
+     "攻击坦克并使其昏迷2秒。",
+     "ability_warrior_shieldbash"
+    ],
+    [
+     "逃跑求援",
+     "生命值剩15%时会逃跑去找帮手。在他跑远之前解决他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "zhTW": [
+    [
+     "盾牌猛擊",
+     "攻擊坦克並使其昏迷2秒。",
+     "ability_warrior_shieldbash"
+    ],
+    [
+     "逃跑求援",
+     "生命值剩15%時會逃跑去找幫手。在他跑遠之前解決他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "enUS": [
+    [
+     "Shield Slam",
+     "Hits the tank and stuns them for 2 seconds.",
+     "ability_warrior_shieldbash"
+    ],
+    [
+     "Runs for help",
+     "At 15% health he runs off to bring help. Finish him before he gets away.",
+     "ability_rogue_sprint"
+    ]
+   ]
+  },
+  "Bruegal Ironknuckle": {
+   "zhCN": [
+    [
+     "逃跑求援",
+     "生命值剩15%时会逃跑去找帮手。在他跑远之前解决他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "zhTW": [
+    [
+     "逃跑求援",
+     "生命值剩15%時會逃跑去找幫手。在他跑遠之前解決他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "enUS": [
+    [
+     "Runs for help",
+     "At 15% health he runs off to bring help. Finish him before he gets away.",
+     "ability_rogue_sprint"
+    ]
+   ]
+  },
+  "Targorr the Dread": {
+   "zhCN": [
+    [
+     "痛击",
+     "不时多出两次攻击：坦克会吃到重击。",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "狂怒",
+     "生命值剩30%时，之后的攻击速度加快30%。",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ],
+   "zhTW": [
+    [
+     "痛擊",
+     "不時多出兩次攻擊：坦克會吃到重擊。",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "狂怒",
+     "生命值剩30%時，之後的攻擊速度加快30%。",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ],
+   "enUS": [
+    [
+     "Thrash",
+     "Now and then two extra attacks: heavy hits on the tank.",
+     "ability_ghoulfrenzy"
+    ],
+    [
+     "Enrage",
+     "At 30% health he attacks 30% faster for the rest of the fight.",
+     "spell_shadow_unholyfrenzy"
+    ]
+   ]
+  },
+  "Hamhock": {
+   "zhCN": [
+    [
+     "闪电链",
+     "在玩家之间跳跃的闪电（施法2秒）。打断它。",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "嗜血术",
+     "使他自己或盟友的攻击速度加快30%，持续30秒。牧师或萨满可以驱散。",
+     "spell_nature_bloodlust"
+    ]
+   ],
+   "zhTW": [
+    [
+     "閃電鏈",
+     "在玩家之間跳躍的閃電（施法2秒）。打斷它。",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "嗜血術",
+     "使他自己或盟友的攻擊速度加快30%，持續30秒。牧師或薩滿可以驅散。",
+     "spell_nature_bloodlust"
+    ]
+   ],
+   "enUS": [
+    [
+     "Chain Lightning",
+     "Lightning that jumps from player to player (2-second cast). Interrupt it.",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "Bloodlust",
+     "Speeds up his or an ally's attacks by 30% for 30 seconds. A priest or a shaman can remove it.",
+     "spell_nature_bloodlust"
+    ]
+   ]
+  },
+  "Bazil Thredd": {
+   "zhCN": [
+    [
+     "烟雾弹",
+     "使他附近所有人昏迷4秒。",
+     "ability_hibernation"
+    ],
+    [
+     "战斗怒吼",
+     "他和盟友的攻击强度提高，持续2分钟。",
+     "ability_warrior_battleshout"
+    ],
+    [
+     "逃跑求援",
+     "生命值剩15%时会逃跑去找帮手。在他跑远之前解决他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "zhTW": [
+    [
+     "煙霧彈",
+     "使他附近所有人昏迷4秒。",
+     "ability_hibernation"
+    ],
+    [
+     "戰鬥怒吼",
+     "他和盟友的攻擊強度提高，持續2分鐘。",
+     "ability_warrior_battleshout"
+    ],
+    [
+     "逃跑求援",
+     "生命值剩15%時會逃跑去找幫手。在他跑遠之前解決他。",
+     "ability_rogue_sprint"
+    ]
+   ],
+   "enUS": [
+    [
+     "Smoke Bomb",
+     "Stuns everyone near him for 4 seconds.",
+     "ability_hibernation"
+    ],
+    [
+     "Battle Shout",
+     "More attack power for him and his allies for 2 minutes.",
+     "ability_warrior_battleshout"
+    ],
+    [
+     "Runs for help",
+     "At 15% health he runs off to bring help. Finish him before he gets away.",
+     "ability_rogue_sprint"
+    ]
+   ]
+  }
+ },
+ "gnomeregan": {
+  "Techbot": {
+   "zhCN": [
+    [
+     "战网",
+     "将附近所有人定身10秒。",
+     "ability_ensnare"
+    ],
+    [
+     "延迟",
+     "使一名玩家攻击和移动变慢10秒，还可能让他昏迷。",
+     "inv_gizmo_02"
+    ],
+    [
+     "召唤复制虫",
+     "召唤复制虫。它的修正补丁会杀掉这些虫并治疗自己。",
+     "spell_shadow_auraofdarkness"
+    ]
+   ],
+   "zhTW": [
+    [
+     "戰網",
+     "將附近所有人定身10秒。",
+     "ability_ensnare"
+    ],
+    [
+     "延遲",
+     "使一名玩家攻擊和移動變慢10秒，還可能讓他昏迷。",
+     "inv_gizmo_02"
+    ],
+    [
+     "召喚複製蟲",
+     "召喚複製蟲。它的更新檔會殺掉這些蟲並治療自己。",
+     "spell_shadow_auraofdarkness"
+    ]
+   ],
+   "enUS": [
+    [
+     "Battle Net",
+     "Roots everyone near it for 10 seconds.",
+     "ability_ensnare"
+    ],
+    [
+     "Lag",
+     "Slows a player's attacks and movement for 10 seconds, and can stun them.",
+     "inv_gizmo_02"
+    ],
+    [
+     "Summon Dupe Bug",
+     "Calls Dupe Bugs to its side. Its Patch kills them and heals it.",
+     "spell_shadow_auraofdarkness"
+    ]
+   ]
+  },
+  "Electrocutioner 6000": {
+   "zhCN": [
+    [
+     "百万伏特",
+     "对前方锥形范围造成自然伤害（施法2秒）。只有坦克站在前面。",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "闪电链",
+     "会跳到附近玩家身上的闪电（施法2.5秒）。打断它。",
+     "spell_nature_chainlightning"
+    ]
+   ],
+   "zhTW": [
+    [
+     "百萬伏特",
+     "對前方錐形範圍造成自然傷害（施法2秒）。只有坦克站在前面。",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "閃電鏈",
+     "會跳到附近玩家身上的閃電（施法2.5秒）。打斷它。",
+     "spell_nature_chainlightning"
+    ]
+   ],
+   "enUS": [
+    [
+     "Megavolt",
+     "Nature damage in a cone in front of it (2-second cast). Only the tank in front.",
+     "spell_nature_chainlightning"
+    ],
+    [
+     "Chain Bolt",
+     "Lightning that jumps to nearby players (2.5-second cast). Interrupt it.",
+     "spell_nature_chainlightning"
+    ]
+   ]
+  },
+  "Crowd Pummeler 9-60": {
+   "zhCN": [
+    [
+     "群体打击",
+     "攻击附近所有人并打断他们的法术。施法者和治疗请保持距离。",
+     "inv_gauntlets_04"
+    ],
+    [
+     "圆弧斩",
+     "攻击前方锥形范围内所有人。",
+     "ability_warrior_cleave"
+    ],
+    [
+     "践踏",
+     "攻击附近所有人。",
+     "spell_nature_natureswrath"
+    ]
+   ],
+   "zhTW": [
+    [
+     "群體打擊",
+     "攻擊附近所有人並打斷他們的法術。施法者和治療請保持距離。",
+     "inv_gauntlets_04"
+    ],
+    [
+     "圓弧斬",
+     "攻擊前方錐形範圍內所有人。",
+     "ability_warrior_cleave"
+    ],
+    [
+     "踐踏",
+     "攻擊附近所有人。",
+     "spell_nature_natureswrath"
+    ]
+   ],
+   "enUS": [
+    [
+     "Crowd Pummel",
+     "Hits everyone near it and interrupts their spells. Casters and healers, keep your distance.",
+     "inv_gauntlets_04"
+    ],
+    [
+     "Arcing Smash",
+     "Hits everyone in a cone in front of it.",
+     "ability_warrior_cleave"
+    ],
+    [
+     "Trample",
+     "Hits everyone standing close.",
+     "spell_nature_natureswrath"
+    ]
+   ]
+  },
+  "Dark Iron Ambassador": {
+   "zhCN": [
+    [
+     "召唤燃烧仆从",
+     "战斗开始时召唤两个燃烧仆从。",
+     "spell_fire_fire"
+    ],
+    [
+     "火球术",
+     "他会保持距离施放。打断它。",
+     "spell_fire_flamebolt"
+    ],
+    [
+     "火焰之盾 II",
+     "一分钟内对他附近所有人造成火焰伤害。牧师或萨满可以驱散。",
+     "spell_fire_immolation"
+    ]
+   ],
+   "zhTW": [
+    [
+     "召喚燃燒僕從",
+     "戰鬥開始時召喚兩個燃燒僕從。",
+     "spell_fire_fire"
+    ],
+    [
+     "火球術",
+     "他會保持距離施放。打斷它。",
+     "spell_fire_flamebolt"
+    ],
+    [
+     "火焰之盾 II",
+     "一分鐘內對他附近所有人造成火焰傷害。牧師或薩滿可以驅散。",
+     "spell_fire_immolation"
+    ]
+   ],
+   "enUS": [
+    [
+     "Summon Burning Servant",
+     "Calls two Burning Servants at the start of the fight.",
+     "spell_fire_fire"
+    ],
+    [
+     "Fireball",
+     "He keeps his distance to cast it. Interrupt it.",
+     "spell_fire_flamebolt"
+    ],
+    [
+     "Fire Shield II",
+     "Fire damage to everyone near him for a minute. A priest or a shaman can remove it.",
+     "spell_fire_immolation"
+    ]
+   ]
+  },
+  "Mekgineer Thermaplugg": {
+   "zhCN": [
+    [
+     "步行炸弹",
+     "他会逐一启动房间四周的侏儒头像，每个都会放出步行炸弹，碰到玩家就爆炸。头像旁的按钮可以关掉它。生命值低于一半时他启动得更快。",
+     "spell_fire_selfdestruct"
+    ],
+    [
+     "击退",
+     "击退坦克。生命值低于一半时会攻击周围所有人。",
+     "inv_gauntlets_05"
+    ]
+   ],
+   "zhTW": [
+    [
+     "步行炸彈",
+     "他會逐一啟動房間四周的地精頭像，每個都會放出步行炸彈，碰到玩家就爆炸。頭像旁的按鈕可以關掉它。生命值低於一半時他啟動得更快。",
+     "spell_fire_selfdestruct"
+    ],
+    [
+     "擊退",
+     "擊退坦克。生命值低於一半時會擊退周圍所有人。",
+     "inv_gauntlets_05"
+    ]
+   ],
+   "enUS": [
+    [
+     "Walking Bombs",
+     "He switches on the gnome faces around the room one by one, and each sends out Walking Bombs that explode when they reach a player. The button next to a face switches it off. Below half health he switches them on faster.",
+     "spell_fire_selfdestruct"
+    ],
+    [
+     "Knock Away",
+     "Knocks the tank back. Below half health it hits everyone around him.",
+     "inv_gauntlets_05"
+    ]
+   ]
+  }
+ },
+ "razorfen_kraul": {},
+ "razorfen_downs": {},
+ "sm_graveyard": {},
+ "sm_library": {},
+ "sm_armory": {},
+ "sm_cathedral": {},
+ "uldaman": {},
+ "zul_farrak": {},
+ "maraudon": {},
+ "sunken_temple": {},
+ "blackrock_depths": {},
+ "dire_maul_east": {},
+ "dire_maul_north": {},
+ "dire_maul_west": {},
+ "lower_blackrock_spire": {},
+ "upper_blackrock_spire": {},
+ "scholomance": {},
+ "stratholme_main": {},
+ "stratholme_service": {},
+ "hall_of_thanes": {
+  "Faldrim Anvilmar": {
+   "zhCN": [
+    [
+     "诅咒与疾病",
+     "有解诅咒或疾病的手段会很有用。不然就是场轻松的战斗：开怪前先清房间。",
+     "spell_shadow_curseofsargeras"
+    ]
+   ],
+   "zhTW": [
+    [
+     "詛咒與疾病",
+     "能解除詛咒或治療疾病會很有幫助。否則是場輕鬆的戰鬥：開怪前先清房間。",
+     "spell_shadow_curseofsargeras"
+    ]
+   ],
+   "enUS": [
+    [
+     "Curses and diseases",
+     "A way to remove a curse or cure a disease comes in handy. Otherwise an easy fight: clear the room before the pull.",
+     "spell_shadow_curseofsargeras"
+    ]
+   ]
+  },
+  "Magmatus": {
+   "zhCN": [
+    [
+     "召唤者",
+     "先杀召唤者：他会不停地召小怪。然后再打元素。",
+     "spell_shadow_summonimp"
+    ],
+    [
+     "四处是火",
+     "对全队的范围伤害，近战人数多时更严重。",
+     "spell_fire_fire"
+    ]
+   ],
+   "zhTW": [
+    [
+     "召喚者",
+     "先殺召喚者：他會不斷叫來援兵。然後再打元素。",
+     "spell_shadow_summonimp"
+    ],
+    [
+     "四處是火",
+     "對全隊的範圍傷害，近戰人數多時更嚴重。",
+     "spell_fire_fire"
+    ]
+   ],
+   "enUS": [
+    [
+     "The summoner",
+     "Kill the summoner first: he keeps bringing adds. Then turn on the elemental.",
+     "spell_shadow_summonimp"
+    ],
+    [
+     "Fire all around",
+     "Area damage on the group, worse when many of you fight in melee.",
+     "spell_fire_fire"
+    ]
+   ]
+  },
+  "Plunder": {
+   "zhCN": [
+    [
+     "被击飞大半个房间",
+     "他会把玩家击飞到房间各处。先清掉离他最近的几波怪，在隧道附近拉住他，免得有人落进别的怪群。",
+     "ability_warstomp"
+    ]
+   ],
+   "zhTW": [
+    [
+     "被擊飛過房間",
+     "他會把玩家擊飛到房間各處。先清最近的敵人，並在隧道附近坦他，讓沒人落進其他敵群。",
+     "ability_warstomp"
+    ]
+   ],
+   "enUS": [
+    [
+     "Knocked across the room",
+     "He punts people around the room. Clear the packs closest to him and tank him near the tunnel, so nobody lands in another pack.",
+     "ability_warstomp"
+    ]
+   ]
+  },
+  "Durgen Dirgehammer": {
+   "zhCN": [
+    [
+     "低血量时恐惧",
+     "血量变低时他会恐惧全队。准备解除手段，或事先清空房间，免得有人跑进更多敌人里。",
+     "spell_shadow_psychicscream"
+    ],
+    [
+     "上锁的宝库",
+     "战斗后打开房间里的宝库：大约24个 Dwarven Heirlooms（用于 Important Heirlooms），以及 The Treaty of Understanding 的石板。",
+     "inv_misc_key_03"
+    ]
+   ],
+   "zhTW": [
+    [
+     "低血量時恐懼",
+     "血量變低時他會恐懼全隊。準備解除手段，或事先清空房間，免得有人跑進更多敵人裡。",
+     "spell_shadow_psychicscream"
+    ],
+    [
+     "上鎖的寶庫",
+     "戰鬥後打開房間裡的寶庫：大約24個 Dwarven Heirlooms（用於 Important Heirlooms），以及 The Treaty of Understanding 的石板。",
+     "inv_misc_key_03"
+    ]
+   ],
+   "enUS": [
+    [
+     "Fear at low health",
+     "When his health gets low he fears the whole group. Bring a way to break it, or clear the room first so nobody runs into more enemies.",
+     "spell_shadow_psychicscream"
+    ],
+    [
+     "The locked vaults",
+     "After the fight, open the vaults of the room: about 24 Dwarven Heirlooms for Important Heirlooms, and the tablet of The Treaty of Understanding.",
+     "inv_misc_key_03"
+    ]
+   ]
+  }
+ },
+ "ruins_of_lordaeron": {
+  "The Baron": {
+   "zhCN": [
+    [
+     "被抛向空中",
+     "把坦克抛向空中并昏迷5秒。输出注意仇恨：坦克大约只有一半时间能拉住他。",
+     "ability_smash"
+    ],
+    [
+     "一支巡逻队",
+     "开怪前先清他的房间：会有巡逻队经过。他的头可拾取，用于任务 Abominable Creatures 和 Unending Torment。",
+     "ability_eyeoftheowl"
+    ]
+   ],
+   "zhTW": [
+    [
+     "被拋向空中",
+     "把坦克拋向空中並昏迷5秒。輸出注意仇恨：坦克大約只有一半時間能拉住他。",
+     "ability_smash"
+    ],
+    [
+     "一支巡邏隊",
+     "開怪前先清他的房間：會有巡邏隊經過。他的頭可拾取，用於任務 Abominable Creatures 和 Unending Torment。",
+     "ability_eyeoftheowl"
+    ]
+   ],
+   "enUS": [
+    [
+     "Hurled into the air",
+     "Throws the tank into the air and stuns him for 5 seconds. Damage dealers, watch your threat: the tank is on him only about half the fight.",
+     "ability_smash"
+    ],
+    [
+     "A patrol",
+     "Clear his room before the pull: a patrol walks by. His head is looted for the quests Abominable Creatures and Unending Torment.",
+     "ability_eyeoftheowl"
+    ]
+   ]
+  },
+  "Witherfang": {
+   "zhCN": [
+    [
+     "庭院的蜘蛛",
+     "首领本身没什么特别。先清掉庭院里的其他蜘蛛，否则它们会加入战斗。",
+     "inv_misc_monsterspidercarapace_01"
+    ]
+   ],
+   "zhTW": [
+    [
+     "庭院的蜘蛛",
+     "首領本身沒什麼特別。先清掉庭院裡的其他蜘蛛，否則牠們會加入戰鬥。",
+     "inv_misc_monsterspidercarapace_01"
+    ]
+   ],
+   "enUS": [
+    [
+     "Spiders of the courtyard",
+     "Nothing special on the boss itself. Clear the other spiders of the courtyard first, or they join the fight.",
+     "inv_misc_monsterspidercarapace_01"
+    ]
+   ]
+  },
+  "The Abandoned": {
+   "zhCN": [
+    [
+     "冰霜新星",
+     "对全队造成冰霜伤害。治疗控制好法力消耗，撑过几波敌人。",
+     "spell_frost_frostnova"
+    ]
+   ],
+   "zhTW": [
+    [
+     "冰霜新星",
+     "對全隊造成冰霜傷害。治療者要分配好法力撐過幾波敵人。",
+     "spell_frost_frostnova"
+    ]
+   ],
+   "enUS": [
+    [
+     "Frost Nova",
+     "Frost damage to the whole group. Healers, pace your mana through the waves.",
+     "spell_frost_frostnova"
+    ]
+   ]
+  },
+  "Bjork": {
+   "zhCN": [
+    [
+     "击退",
+     "他会击退你：先清掉他周围的敌人，否则你会落进其中一群。",
+     "ability_warstomp"
+    ],
+    [
+     "反魔法护盾",
+     "会暂时保护自己不受法术伤害。",
+     "spell_shadow_antimagicshell"
+    ],
+    [
+     "重击",
+     "他打得很痛：保持坦克满血。",
+     "ability_warrior_decisivestrike"
+    ]
+   ],
+   "zhTW": [
+    [
+     "擊退",
+     "他會擊退你：先清掉他周圍的敵人，否則你會落進其中一群。",
+     "ability_warstomp"
+    ],
+    [
+     "反魔法護盾",
+     "會暫時保護自己不受法術傷害。",
+     "spell_shadow_antimagicshell"
+    ],
+    [
+     "重擊",
+     "他打得很痛：保持坦克滿血。",
+     "ability_warrior_decisivestrike"
+    ]
+   ],
+   "enUS": [
+    [
+     "Knockback",
+     "Knocks you back: clear the packs around him first, or you land in one.",
+     "ability_warstomp"
+    ],
+    [
+     "Anti-Magic Shield",
+     "Shields himself against spells for a while.",
+     "spell_shadow_antimagicshell"
+    ],
+    [
+     "Heavy blows",
+     "He hits hard: keep the tank topped up.",
+     "ability_warrior_decisivestrike"
+    ]
+   ]
+  },
+  "Rath'mael": {
+   "zhCN": [
+    [
+     "烈焰风暴",
+     "他的主要法术。打断和昏迷都管用，提前安排好。",
+     "spell_fire_selfdestruct"
+    ],
+    [
+     "血量很多",
+     "地下城里最长的战斗。持续打断直到击倒他。",
+     "spell_holy_sealofmight"
+    ]
+   ],
+   "zhTW": [
+    [
+     "烈焰風暴",
+     "他的主要法術。他可以被打斷和昏迷：安排好打斷和昏迷。",
+     "spell_fire_selfdestruct"
+    ],
+    [
+     "血量很多",
+     "副本裡最長的戰鬥。持續打斷直到擊倒他。",
+     "spell_holy_sealofmight"
+    ]
+   ],
+   "enUS": [
+    [
+     "Flamestrike",
+     "His main spell. He can be interrupted and stunned: plan your kicks and stuns.",
+     "spell_fire_selfdestruct"
+    ],
+    [
+     "A large health pool",
+     "The longest fight of the dungeon. Keep the interrupts going and bring him down.",
+     "spell_holy_sealofmight"
+    ]
+   ]
+  },
+  "Viktor the Vile": {
+   "zhCN": [
+    [
+     "毒药",
+     "对目标施毒。注意血条。",
+     "ability_creature_poison_05"
+    ],
+    [
+     "重击",
+     "他打得很痛：保持坦克存活。为他之前的几波敌人准备法力药水。",
+     "ability_warrior_decisivestrike"
+    ]
+   ],
+   "zhTW": [
+    [
+     "毒藥",
+     "對目標施毒。注意血條。",
+     "ability_creature_poison_05"
+    ],
+    [
+     "重擊",
+     "他打得很痛：保持坦克存活。為他之前的幾波敵人準備法力藥水。",
+     "ability_warrior_decisivestrike"
+    ]
+   ],
+   "enUS": [
+    [
+     "Poison",
+     "Poisons his target. Watch the health bars.",
+     "ability_creature_poison_05"
+    ],
+    [
+     "Heavy blows",
+     "He hits hard: keep the tank healthy. Bring mana potions for the waves before him.",
+     "ability_warrior_decisivestrike"
+    ]
+   ]
+  }
+ }
+}

@@ -1,0 +1,835 @@
+{
+ "blackrock_depths": {
+  "1": [
+   {
+    "en": "Lord Roccor",
+    "x": 49.4,
+    "y": 56.7
+   },
+   {
+    "en": "High Interrogator Gerstahn",
+    "x": 47.5,
+    "y": 93.4
+   },
+   {
+    "en": "Houndmaster Grebmar",
+    "x": 49.5,
+    "y": 61.7
+   },
+   {
+    "en": "Fineous Darkvire",
+    "x": 61.3,
+    "y": 24.2
+   },
+   {
+    "en": "Lord Incendius",
+    "x": 56.1,
+    "y": 31.2
+   },
+   {
+    "en": "Bael'Gar",
+    "x": 24.0,
+    "y": 51.6
+   },
+   {
+    "en": "General Angerforge",
+    "x": 35.6,
+    "y": 57.0
+   }
+  ],
+  "2": [
+   {
+    "en": "Warder Stilgiss",
+    "x": 60.7,
+    "y": 67.3
+   },
+   {
+    "en": "Verek",
+    "x": 60.6,
+    "y": 67.5
+   },
+   {
+    "en": "General Angerforge",
+    "x": 36.6,
+    "y": 84.4
+   },
+   {
+    "en": "Golem Lord Argelmach",
+    "x": 36.9,
+    "y": 65.0
+   },
+   {
+    "en": "Phalanx",
+    "x": 53.2,
+    "y": 64.9
+   },
+   {
+    "en": "Ambassador Flamelash",
+    "x": 53.8,
+    "y": 48.8
+   },
+   {
+    "en": "Magmus",
+    "x": 81.7,
+    "y": 11.9
+   },
+   {
+    "en": "Princess Moira Bronzebeard",
+    "x": 93.1,
+    "y": 11.5
+   },
+   {
+    "en": "Emperor Dagran Thaurissan",
+    "x": 93.2,
+    "y": 11.9
+   },
+   {
+    "en": "Pyromancer Loregrain",
+    "x": 54.2,
+    "y": 96.5
+   },
+   {
+    "en": "Panzor the Invincible",
+    "x": 50.4,
+    "y": 32.5
+   }
+  ]
+ },
+ "dire_maul_east": {
+  "5": [
+   {
+    "en": "Pusillin",
+    "x": 12.2,
+    "y": 31.0
+   },
+   {
+    "en": "Lethtendris",
+    "x": 42.6,
+    "y": 48.2
+   }
+  ],
+  "6": [
+   {
+    "en": "Zevrim Thornhoof",
+    "x": 57.5,
+    "y": 74.6
+   },
+   {
+    "en": "Hydrospawn",
+    "x": 56.5,
+    "y": 68.5
+   },
+   {
+    "en": "Alzzin the Wildshaper",
+    "x": 55.4,
+    "y": 26.9
+   }
+  ]
+ },
+ "dire_maul_north": {
+  "1": [
+   {
+    "en": "Guard Mol'dar",
+    "x": 69.9,
+    "y": 75.2
+   },
+   {
+    "en": "Stomper Kreeg",
+    "x": 62.0,
+    "y": 65.7
+   },
+   {
+    "en": "Guard Fengus",
+    "x": 49.3,
+    "y": 81.6
+   },
+   {
+    "en": "Guard Slip'kik",
+    "x": 27.7,
+    "y": 58.8
+   },
+   {
+    "en": "Captain Kromcrush",
+    "x": 31.8,
+    "y": 49.7
+   },
+   {
+    "en": "Cho'Rush the Observer",
+    "x": 31.2,
+    "y": 25.4
+   },
+   {
+    "en": "King Gordok",
+    "x": 31.9,
+    "y": 25.9
+   }
+  ]
+ },
+ "dire_maul_west": {
+  "2": [
+   {
+    "en": "Tendris Warpwood",
+    "x": 33.2,
+    "y": 53.0
+   },
+   {
+    "en": "Illyanna Ravenoak",
+    "x": 28.2,
+    "y": 85.1
+   }
+  ],
+  "3": [
+   {
+    "en": "Magister Kalendris",
+    "x": 29.4,
+    "y": 43.6
+   },
+   {
+    "en": "Tsu'zee",
+    "x": 32.2,
+    "y": 14.3
+   }
+  ],
+  "4": [
+   {
+    "en": "Immol'thar",
+    "x": 35.0,
+    "y": 57.6
+   },
+   {
+    "en": "Prince Tortheldrin",
+    "x": 59.9,
+    "y": 23.5
+   }
+  ]
+ },
+ "lower_blackrock_spire": {
+  "1": [
+   {
+    "en": "War Master Voone",
+    "x": 52.9,
+    "y": 53.2
+   },
+   {
+    "en": "Bannok Grimaxe",
+    "x": 46.9,
+    "y": 64.1
+   },
+   {
+    "en": "Bannok Grimaxe",
+    "x": 49.5,
+    "y": 56.0
+   }
+  ],
+  "2": [
+   {
+    "en": "Shadow Hunter Vosh'gajin",
+    "x": 55.6,
+    "y": 72.0
+   },
+   {
+    "en": "Mother Smolderweb",
+    "x": 65.0,
+    "y": 74.4
+   },
+   {
+    "en": "Crystal Fang",
+    "x": 54.1,
+    "y": 74.9
+   }
+  ],
+  "3": [
+   {
+    "en": "Spirestone Butcher",
+    "x": 44.8,
+    "y": 57.8
+   },
+   {
+    "en": "Highlord Omokk",
+    "x": 35.1,
+    "y": 55.3
+   },
+   {
+    "en": "Spirestone Battle Lord",
+    "x": 35.8,
+    "y": 60.4
+   },
+   {
+    "en": "Spirestone Lord Magus",
+    "x": 37.4,
+    "y": 61.4
+   }
+  ],
+  "5": [
+   {
+    "en": "Quartermaster Zigris",
+    "x": 54.8,
+    "y": 83.8
+   },
+   {
+    "en": "Halycon",
+    "x": 39.3,
+    "y": 84.3
+   },
+   {
+    "en": "Ghok Bashguud",
+    "x": 34.8,
+    "y": 60.0
+   },
+   {
+    "en": "Ghok Bashguud",
+    "x": 39.5,
+    "y": 67.5
+   }
+  ],
+  "6": [
+   {
+    "en": "Overlord Wyrmthalak",
+    "x": 56.0,
+    "y": 55.3
+   }
+  ]
+ },
+ "maraudon": {
+  "1": [
+   {
+    "en": "Noxxion",
+    "x": 34.8,
+    "y": 10.7
+   },
+   {
+    "en": "Razorlash",
+    "x": 16.2,
+    "y": 34.0
+   },
+   {
+    "en": "Lord Vyletongue",
+    "x": 37.7,
+    "y": 69.4
+   },
+   {
+    "en": "Meshlok the Harvester",
+    "x": 24.6,
+    "y": 87.4
+   }
+  ],
+  "2": [
+   {
+    "en": "Celebras the Cursed",
+    "x": 24.5,
+    "y": 14.4
+   },
+   {
+    "en": "Landslide",
+    "x": 40.6,
+    "y": 48.2
+   },
+   {
+    "en": "Tinkerer Gizlock",
+    "x": 48.4,
+    "y": 68.6
+   },
+   {
+    "en": "Rotgrip",
+    "x": 33.3,
+    "y": 77.1
+   },
+   {
+    "en": "Princess Theradras",
+    "x": 24.2,
+    "y": 78.4
+   }
+  ]
+ },
+ "razorfen_downs": {
+  "1": [
+   {
+    "en": "Mordresh Fire Eye",
+    "x": 85.8,
+    "y": 45.7
+   },
+   {
+    "en": "Glutton",
+    "x": 38.5,
+    "y": 45.2
+   },
+   {
+    "en": "Ragglesnout",
+    "x": 52.9,
+    "y": 67.2
+   },
+   {
+    "en": "Amnennar the Coldbringer",
+    "x": 45.0,
+    "y": 59.1
+   }
+  ]
+ },
+ "scholomance": {
+  "1": [
+   {
+    "en": "Blood Steward of Kirtonos",
+    "x": 78.9,
+    "y": 71.6
+   }
+  ],
+  "2": [
+   {
+    "en": "Marduk Blackpool",
+    "x": 44.4,
+    "y": 63.9
+   },
+   {
+    "en": "Vectus",
+    "x": 48.2,
+    "y": 66.2
+   }
+  ],
+  "3": [
+   {
+    "en": "Jandice Barov",
+    "x": 54.3,
+    "y": 14.4
+   },
+   {
+    "en": "Rattlegore",
+    "x": 30.4,
+    "y": 62.4
+   },
+   {
+    "en": "Instructor Malicia",
+    "x": 72.8,
+    "y": 80.9
+   },
+   {
+    "en": "Doctor Theolen Krastinov",
+    "x": 95.6,
+    "y": 45.9
+   },
+   {
+    "en": "Lorekeeper Polkelt",
+    "x": 72.0,
+    "y": 12.0
+   }
+  ],
+  "4": [
+   {
+    "en": "Ras Frostwhisper",
+    "x": 40.6,
+    "y": 88.4
+   },
+   {
+    "en": "The Ravenian",
+    "x": 67.5,
+    "y": 52.1
+   },
+   {
+    "en": "Lord Alexei Barov",
+    "x": 84.4,
+    "y": 30.8
+   },
+   {
+    "en": "Lady Illucia Barov",
+    "x": 67.0,
+    "y": 6.1
+   }
+  ]
+ },
+ "sm_armory": {
+  "3": [
+   {
+    "en": "Herod",
+    "x": 78.6,
+    "y": 10.8
+   }
+  ]
+ },
+ "sm_cathedral": {
+  "4": [
+   {
+    "en": "High Inquisitor Fairbanks",
+    "x": 55.4,
+    "y": 26.1
+   },
+   {
+    "en": "Scarlet Commander Mograine",
+    "x": 49.1,
+    "y": 27.2
+   },
+   {
+    "en": "High Inquisitor Whitemane",
+    "x": 49.0,
+    "y": 16.9
+   }
+  ]
+ },
+ "sm_graveyard": {
+  "1": [
+   {
+    "en": "Interrogator Vishas",
+    "x": 71.5,
+    "y": 58.9
+   },
+   {
+    "en": "Azshir the Sleepless",
+    "x": 41.6,
+    "y": 67.9
+   },
+   {
+    "en": "Azshir the Sleepless",
+    "x": 40.9,
+    "y": 46.6
+   },
+   {
+    "en": "Azshir the Sleepless",
+    "x": 36.7,
+    "y": 43.9
+   },
+   {
+    "en": "Azshir the Sleepless",
+    "x": 35.5,
+    "y": 66.4
+   },
+   {
+    "en": "Fallen Champion",
+    "x": 41.6,
+    "y": 67.9
+   },
+   {
+    "en": "Fallen Champion",
+    "x": 40.9,
+    "y": 46.6
+   },
+   {
+    "en": "Fallen Champion",
+    "x": 36.7,
+    "y": 43.9
+   },
+   {
+    "en": "Fallen Champion",
+    "x": 35.5,
+    "y": 66.4
+   },
+   {
+    "en": "Ironspine",
+    "x": 41.6,
+    "y": 67.9
+   },
+   {
+    "en": "Ironspine",
+    "x": 40.9,
+    "y": 46.6
+   },
+   {
+    "en": "Ironspine",
+    "x": 36.7,
+    "y": 43.9
+   },
+   {
+    "en": "Ironspine",
+    "x": 35.5,
+    "y": 66.4
+   },
+   {
+    "en": "Bloodmage Thalnos",
+    "x": 24.4,
+    "y": 50.8
+   }
+  ]
+ },
+ "sm_library": {
+  "2": [
+   {
+    "en": "Houndmaster Loksey",
+    "x": 30.8,
+    "y": 87.8
+   },
+   {
+    "en": "Arcanist Doan",
+    "x": 83.2,
+    "y": 74.5
+   }
+  ]
+ },
+ "stratholme_main": {
+  "1": [
+   {
+    "en": "Skul",
+    "x": 81.5,
+    "y": 43.8
+   },
+   {
+    "en": "Skul",
+    "x": 57.5,
+    "y": 69.7
+   },
+   {
+    "en": "Stratholme Courier",
+    "x": 54.0,
+    "y": 71.0
+   },
+   {
+    "en": "Hearthsinger Forresten",
+    "x": 84.7,
+    "y": 45.4
+   },
+   {
+    "en": "Hearthsinger Forresten",
+    "x": 85.1,
+    "y": 27.5
+   },
+   {
+    "en": "Hearthsinger Forresten",
+    "x": 63.9,
+    "y": 24.8
+   },
+   {
+    "en": "Hearthsinger Forresten",
+    "x": 59.8,
+    "y": 26.7
+   },
+   {
+    "en": "The Unforgiven",
+    "x": 72.9,
+    "y": 19.3
+   },
+   {
+    "en": "Malor the Zealous",
+    "x": 30.4,
+    "y": 40.0
+   },
+   {
+    "en": "Cannon Master Willey",
+    "x": 3.6,
+    "y": 50.1
+   },
+   {
+    "en": "Archivist Galford",
+    "x": 27.1,
+    "y": 75.1
+   }
+  ]
+ },
+ "stratholme_service": {
+  "2": [
+   {
+    "en": "Magistrate Barthilas",
+    "x": 65.3,
+    "y": 75.5
+   },
+   {
+    "en": "Stonespine",
+    "x": 64.9,
+    "y": 48.9
+   },
+   {
+    "en": "Baroness Anastari",
+    "x": 75.0,
+    "y": 46.8
+   },
+   {
+    "en": "Nerub'enkan",
+    "x": 56.4,
+    "y": 46.9
+   },
+   {
+    "en": "Maleki the Pallid",
+    "x": 68.2,
+    "y": 19.9
+   },
+   {
+    "en": "Baron Rivendare",
+    "x": 37.2,
+    "y": 19.9
+   }
+  ]
+ },
+ "sunken_temple": {
+  "1": [
+   {
+    "en": "Spawn of Hakkar",
+    "x": 64.0,
+    "y": 45.9
+   },
+   {
+    "en": "Jammal'an the Prophet",
+    "x": 76.0,
+    "y": 37.0
+   },
+   {
+    "en": "Ogom the Wretched",
+    "x": 76.7,
+    "y": 36.1
+   },
+   {
+    "en": "Hazzas",
+    "x": 44.8,
+    "y": 85.1
+   },
+   {
+    "en": "Morphaz",
+    "x": 46.1,
+    "y": 84.5
+   },
+   {
+    "en": "Shade of Eranikus",
+    "x": 68.6,
+    "y": 87.4
+   }
+  ]
+ },
+ "uldaman": {
+  "1": [
+   {
+    "en": "Eric \"The Swift\"",
+    "x": 58.9,
+    "y": 94.4
+   },
+   {
+    "en": "Baelog",
+    "x": 59.1,
+    "y": 93.5
+   },
+   {
+    "en": "Olaf",
+    "x": 57.4,
+    "y": 94.2
+   },
+   {
+    "en": "Revelosh",
+    "x": 52.3,
+    "y": 72.6
+   },
+   {
+    "en": "Revelosh",
+    "x": 53.1,
+    "y": 73.5
+   },
+   {
+    "en": "Revelosh",
+    "x": 54.1,
+    "y": 72.2
+   },
+   {
+    "en": "Obsidian Sentinel",
+    "x": 28.8,
+    "y": 61.8
+   },
+   {
+    "en": "Ancient Stone Keeper",
+    "x": 47.4,
+    "y": 40.7
+   },
+   {
+    "en": "Galgann Firehammer",
+    "x": 25.8,
+    "y": 36.0
+   },
+   {
+    "en": "Grimlok",
+    "x": 21.2,
+    "y": 24.8
+   }
+  ],
+  "2": [
+   {
+    "en": "Archaedas",
+    "x": 55.4,
+    "y": 50.6
+   }
+  ]
+ },
+ "wailing_caverns": {
+  "1": [
+   {
+    "en": "Lord Pythas",
+    "x": 85.6,
+    "y": 28.4
+   },
+   {
+    "en": "Skum",
+    "x": 93.1,
+    "y": 79.7
+   },
+   {
+    "en": "Deviate Faerie Dragon",
+    "x": 65.1,
+    "y": 33.7
+   }
+  ]
+ },
+ "zul_farrak": {
+  "1": [
+   {
+    "en": "Antu'sul",
+    "x": 69.0,
+    "y": 25.6
+   },
+   {
+    "en": "Theka the Martyr",
+    "x": 55.4,
+    "y": 29.6
+   },
+   {
+    "en": "Witch Doctor Zum'rah",
+    "x": 44.0,
+    "y": 15.2
+   },
+   {
+    "en": "Sandarr Dunereaver",
+    "x": 46.3,
+    "y": 57.8
+   },
+   {
+    "en": "Sandarr Dunereaver",
+    "x": 52.4,
+    "y": 42.3
+   },
+   {
+    "en": "Dustwraith",
+    "x": 31.7,
+    "y": 46.0
+   },
+   {
+    "en": "Dustwraith",
+    "x": 49.3,
+    "y": 25.9
+   },
+   {
+    "en": "Dustwraith",
+    "x": 31.0,
+    "y": 15.2
+   },
+   {
+    "en": "Dustwraith",
+    "x": 44.2,
+    "y": 15.2
+   },
+   {
+    "en": "Sandfury Executioner",
+    "x": 24.2,
+    "y": 17.9
+   },
+   {
+    "en": "Sergeant Bly",
+    "x": 23.5,
+    "y": 18.3
+   },
+   {
+    "en": "Hydromancer Velratha",
+    "x": 28.9,
+    "y": 40.3
+   },
+   {
+    "en": "Chief Ukorz Sandscalp",
+    "x": 43.9,
+    "y": 35.3
+   },
+   {
+    "en": "Zerillis",
+    "x": 53.8,
+    "y": 37.3
+   }
+  ]
+ }
+}

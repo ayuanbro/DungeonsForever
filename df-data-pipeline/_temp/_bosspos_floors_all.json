@@ -1,0 +1,612 @@
+{
+ "ragefire_chasm": {
+  "1": [
+   {
+    "en": "Oggleflint",
+    "zh": "奥格弗林特",
+    "x": 56.1,
+    "y": 38
+   },
+   {
+    "en": "Taragaman the Hungerer",
+    "zh": "饥饿者塔拉加曼",
+    "x": 41,
+    "y": 57.7
+   },
+   {
+    "en": "Jergosh the Invoker",
+    "zh": "祈求者耶戈什",
+    "x": 33,
+    "y": 84.5
+   },
+   {
+    "en": "Bazzalan",
+    "zh": "巴扎兰",
+    "x": 41.5,
+    "y": 86.2
+   }
+  ]
+ },
+ "wailing_caverns": {
+  "1": [
+   {
+    "en": "Lord Cobrahn",
+    "zh": "考布莱恩",
+    "x": 15.6,
+    "y": 58.5
+   },
+   {
+    "en": "Lady Anacondra",
+    "zh": "安娜科德拉",
+    "x": 30.5,
+    "y": 43.2
+   },
+   {
+    "en": "Lady Anacondra",
+    "zh": "安娜科德拉",
+    "x": 28.1,
+    "y": 31.8
+   },
+   {
+    "en": "Lady Anacondra",
+    "zh": "安娜科德拉",
+    "x": 47,
+    "y": 45.6
+   },
+   {
+    "en": "Lady Anacondra",
+    "zh": "安娜科德拉",
+    "x": 40.3,
+    "y": 27.4
+   },
+   {
+    "en": "Kresh",
+    "zh": "克雷什",
+    "x": 25.8,
+    "y": 44.6
+   },
+   {
+    "en": "Lord Serpentis",
+    "zh": "瑟芬迪斯",
+    "x": 62.5,
+    "y": 53.3
+   },
+   {
+    "en": "Verdan the Everliving",
+    "zh": "永生者沃尔丹",
+    "x": 56.4,
+    "y": 47.4
+   },
+   {
+    "en": "Mutanus the Devourer",
+    "zh": "吞噬者穆坦努斯",
+    "x": 34.2,
+    "y": 15.8
+   }
+  ]
+ },
+ "the_deadmines": {
+  "1": [
+   {
+    "en": "Rhahk'Zor",
+    "zh": "拉克佐",
+    "x": 38.6,
+    "y": 60.9
+   },
+   {
+    "en": "Miner Johnson",
+    "zh": "矿工约翰森",
+    "x": 52.7,
+    "y": 50.5
+   },
+   {
+    "en": "Sneed",
+    "zh": "斯尼德",
+    "x": 45,
+    "y": 88.9
+   },
+   {
+    "en": "Sneed's Shredder",
+    "zh": "斯尼德的伐木机",
+    "x": 48.5,
+    "y": 92.4
+   }
+  ],
+  "2": [
+   {
+    "en": "Gilnid",
+    "zh": "基尔尼格",
+    "x": 11.9,
+    "y": 73.1
+   },
+   {
+    "en": "Mr. Smite",
+    "zh": "重拳先生",
+    "x": 56.1,
+    "y": 26.5
+   },
+   {
+    "en": "Captain Greenskin",
+    "zh": "绿皮船长",
+    "x": 61.7,
+    "y": 35.9
+   },
+   {
+    "en": "Edwin VanCleef",
+    "zh": "艾德温·范克里夫",
+    "x": 60.6,
+    "y": 45.9
+   },
+   {
+    "en": "Cookie",
+    "zh": "曲奇",
+    "x": 69.7,
+    "y": 42
+   }
+  ]
+ },
+ "shadowfang_keep": {
+  "1": [
+   {
+    "en": "Rethilgore",
+    "zh": "雷希戈尔",
+    "x": 66.1,
+    "y": 71.1
+   },
+   {
+    "en": "Fel Steed / Shadow Charger",
+    "zh": "邪恶战马 / 暗影战马",
+    "x": 33.1,
+    "y": 62.6
+   },
+   {
+    "en": "Commander Springvale",
+    "zh": "指挥官斯普林瓦尔",
+    "x": 25.5,
+    "y": 55.6
+   }
+  ],
+  "2": [
+   {
+    "en": "Razorclaw the Butcher",
+    "zh": "屠夫拉佐克劳",
+    "x": 48,
+    "y": 29
+   },
+   {
+    "en": "Baron Silverlaine",
+    "zh": "席瓦莱恩男爵",
+    "x": 29.5,
+    "y": 80.3
+   }
+  ],
+  "7": [
+   {
+    "en": "Odo the Blindwatcher",
+    "zh": "盲眼守卫奥杜",
+    "x": 55.1,
+    "y": 77.1
+   },
+   {
+    "en": "Deathsworn Captain",
+    "zh": "死亡之誓",
+    "x": 63,
+    "y": 52.5
+   }
+  ],
+  "6": [
+   {
+    "en": "Fenrus the Devourer",
+    "zh": "吞噬者芬鲁斯",
+    "x": 55.7,
+    "y": 64.5
+   },
+   {
+    "en": "Wolf Master Nandos",
+    "zh": "狼王南杜斯",
+    "x": 59,
+    "y": 53.3
+   },
+   {
+    "en": "Archmage Arugal",
+    "zh": "大法师阿鲁高",
+    "x": 63.9,
+    "y": 20
+   }
+  ]
+ },
+ "blackfathom_deeps": {
+  "1": [
+   {
+    "en": "Ghamoo-ra",
+    "zh": "加摩拉",
+    "x": 32.9,
+    "y": 60.2
+   },
+   {
+    "en": "Lady Sarevess",
+    "zh": "萨利维丝",
+    "x": 10.1,
+    "y": 36
+   },
+   {
+    "en": "Gelihast",
+    "zh": "格里哈斯特",
+    "x": 52.3,
+    "y": 55.1
+   }
+  ],
+  "2": [
+   {
+    "en": "Lorgus Jett",
+    "zh": "洛古斯·杰特",
+    "x": 38.8,
+    "y": 20
+   },
+   {
+    "en": "Lorgus Jett",
+    "zh": "洛古斯·杰特",
+    "x": 44.1,
+    "y": 23.4
+   },
+   {
+    "en": "Lorgus Jett",
+    "zh": "洛古斯·杰特",
+    "x": 35.4,
+    "y": 48.3
+   },
+   {
+    "en": "Lorgus Jett",
+    "zh": "洛古斯·杰特",
+    "x": 33.8,
+    "y": 72.3
+   },
+   {
+    "en": "Baron Aquanis",
+    "zh": "阿奎尼斯男爵",
+    "x": 41.5,
+    "y": 75.4
+   },
+   {
+    "en": "Twilight Lord Kelris",
+    "zh": "梦游者克尔里斯",
+    "x": 51.9,
+    "y": 81.6
+   },
+   {
+    "en": "Aku'mai",
+    "zh": "阿库麦尔",
+    "x": 85.6,
+    "y": 86.6
+   }
+  ],
+  "3": [
+   {
+    "en": "Old Serra'kis",
+    "zh": "瑟拉吉斯",
+    "x": 60.6,
+    "y": 31.2
+   }
+  ]
+ },
+ "the_stockade": {
+  "1": [
+   {
+    "en": "Targorr the Dread",
+    "zh": "可怕的塔格尔",
+    "x": 49.9,
+    "y": 24.2
+   },
+   {
+    "en": "Targorr the Dread",
+    "zh": "可怕的塔格尔",
+    "x": 42.4,
+    "y": 46.4
+   },
+   {
+    "en": "Targorr the Dread",
+    "zh": "可怕的塔格尔",
+    "x": 57.8,
+    "y": 55.2
+   },
+   {
+    "en": "Targorr the Dread",
+    "zh": "可怕的塔格尔",
+    "x": 33.3,
+    "y": 37.5
+   },
+   {
+    "en": "Kam Deepfury",
+    "zh": "卡姆·深怒",
+    "x": 69.2,
+    "y": 30.9
+   },
+   {
+    "en": "Hamhock",
+    "zh": "哈姆霍克",
+    "x": 78.2,
+    "y": 45.7
+   },
+   {
+    "en": "Dextren Ward",
+    "zh": "迪克斯特·瓦德",
+    "x": 14.6,
+    "y": 21.4
+   },
+   {
+    "en": "Dextren Ward",
+    "zh": "迪克斯特·瓦德",
+    "x": 25,
+    "y": 16.5
+   },
+   {
+    "en": "Dextren Ward",
+    "zh": "迪克斯特·瓦德",
+    "x": 17.5,
+    "y": 41.7
+   },
+   {
+    "en": "Bazil Thredd",
+    "zh": "巴基尔·斯瑞德",
+    "x": 85.7,
+    "y": 51
+   },
+   {
+    "en": "Bruegal Ironknuckle",
+    "zh": "布鲁高·铁拳",
+    "x": 38.1,
+    "y": 24
+   },
+   {
+    "en": "Bruegal Ironknuckle",
+    "zh": "布鲁高·铁拳",
+    "x": 29.5,
+    "y": 44.7
+   },
+   {
+    "en": "Bruegal Ironknuckle",
+    "zh": "布鲁高·铁拳",
+    "x": 61.6,
+    "y": 48.3
+   },
+   {
+    "en": "Bruegal Ironknuckle",
+    "zh": "布鲁高·铁拳",
+    "x": 61.5,
+    "y": 25.1
+   }
+  ]
+ },
+ "gnomeregan": {
+  "1": [
+   {
+    "en": "Grubbis",
+    "zh": "格鲁比斯",
+    "x": 81.9,
+    "y": 65.1
+   },
+   {
+    "en": "Viscous Fallout",
+    "zh": "粘性辐射尘",
+    "x": 57.6,
+    "y": 56.6
+   }
+  ],
+  "2": [
+   {
+    "en": "Electrocutioner 6000",
+    "zh": "电刑器6000型",
+    "x": 24.8,
+    "y": 67.9
+   }
+  ],
+  "3": [
+   {
+    "en": "Crowd Pummeler 9-60",
+    "zh": "群体打击者9-60",
+    "x": 43.8,
+    "y": 86.5
+   }
+  ],
+  "4": [
+   {
+    "en": "Dark Iron Ambassador",
+    "zh": "黑铁大师",
+    "x": 29.5,
+    "y": 54
+   },
+   {
+    "en": "Mekgineer Thermaplugg",
+    "zh": "机械师瑟玛普拉格",
+    "x": 31.3,
+    "y": 30
+   }
+  ]
+ },
+ "razorfen_kraul": {
+  "1": [
+   {
+    "en": "Aggem Thorncurse",
+    "zh": "阿格姆",
+    "x": 80.8,
+    "y": 54.5
+   },
+   {
+    "en": "Death Speaker Jargba",
+    "zh": "亡语者贾格巴",
+    "x": 87.9,
+    "y": 41.4
+   },
+   {
+    "en": "Roogug",
+    "zh": "鲁古格",
+    "x": 64.8,
+    "y": 42.1
+   },
+   {
+    "en": "Overlord Ramtusk",
+    "zh": "主宰拉姆塔斯",
+    "x": 56.9,
+    "y": 29.8
+   },
+   {
+    "en": "Razorfen Spearhide",
+    "zh": "剃刀沼泽刺鬃守卫",
+    "x": 53.4,
+    "y": 35.5
+   },
+   {
+    "en": "Agathelos the Raging",
+    "zh": "暴怒的阿迦赛罗斯",
+    "x": 11.2,
+    "y": 72.4
+   },
+   {
+    "en": "Blind Hunter",
+    "zh": "盲眼猎手",
+    "x": 11,
+    "y": 30.3
+   },
+   {
+    "en": "Charlga Razorflank",
+    "zh": "卡尔加·刺肋",
+    "x": 26.4,
+    "y": 32.4
+   },
+   {
+    "en": "Earthcaller Halmgar",
+    "zh": "唤地者哈穆加",
+    "x": 49.4,
+    "y": 47.1
+   }
+  ]
+ },
+ "hall_of_thanes": {
+  "1": [
+   {
+    "en": "Faldrim Anvilmar",
+    "zh": "法德林·安威玛尔",
+    "x": 50.9,
+    "y": 62.5
+   },
+   {
+    "en": "Magmatus",
+    "zh": "玛格玛图斯",
+    "x": 62.5,
+    "y": 49
+   },
+   {
+    "en": "Plunder",
+    "zh": "普兰德",
+    "x": 51,
+    "y": 49.5
+   },
+   {
+    "en": "Durgen Dirgehammer",
+    "zh": "杜根·挽锤",
+    "x": 51,
+    "y": 22
+   }
+  ]
+ },
+ "ruins_of_lordaeron": {
+  "1": [
+   {
+    "en": "The Baron",
+    "zh": "男爵",
+    "x": 58.8,
+    "y": 69.8
+   },
+   {
+    "en": "Witherfang",
+    "zh": "枯牙",
+    "x": 66.8,
+    "y": 39.2
+   },
+   {
+    "en": "The Abandoned",
+    "zh": "被遗弃者",
+    "x": 41,
+    "y": 53.3
+   },
+   {
+    "en": "Bjork",
+    "zh": "比约克",
+    "x": 39.2,
+    "y": 42.5
+   },
+   {
+    "en": "Rath'mael",
+    "zh": "拉斯玛尔",
+    "x": 45.8,
+    "y": 62.7
+   },
+   {
+    "en": "Viktor the Vile",
+    "zh": "邪恶的维克托",
+    "x": 37.7,
+    "y": 64.8
+   },
+   {
+    "en": "Lordaeron Captain",
+    "zh": "洛丹伦上尉",
+    "x": 38.5,
+    "y": 25
+   }
+  ]
+ },
+ "city_of_dalaran": {
+  "2": [
+   {
+    "en": "Atrexis the Grave Knight",
+    "zh": "墓穴骑士阿特雷克西斯",
+    "x": 54.8,
+    "y": 52.3
+   },
+   {
+    "en": "Lyn the Ignored",
+    "zh": "被无视的琳",
+    "x": 64.1,
+    "y": 13.0
+   }
+  ],
+  "1": [
+   {
+    "en": "Arcane Anomaly",
+    "zh": "奥术异常体",
+    "x": 60.9,
+    "y": 74.9
+   },
+   {
+    "en": "Arcanic Enigma",
+    "zh": "奥术谜团",
+    "x": 65.3,
+    "y": 38.9
+   },
+   {
+    "en": "Unstable Sentinel",
+    "zh": "不稳定的哨兵",
+    "x": 56.6,
+    "y": 36.2
+   },
+   {
+    "en": "Fel Ancient",
+    "zh": "邪能古树",
+    "x": 53.2,
+    "y": 51.4
+   },
+   {
+    "en": "Shade of the Archmage",
+    "zh": "大法师之影",
+    "x": 49.2,
+    "y": 25.4
+   },
+   {
+    "en": "Mana Devourer",
+    "zh": "法力吞噬者",
+    "x": 49.2,
+    "y": 68.5
+   }
+  ]
+ }
+}
