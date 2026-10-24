@@ -1,6 +1,8 @@
 local _, ns = ...
 
-ns.GearVendors = {
+ns.EnsureGearVendors = function()
+    if ns.GearVendors then return ns.GearVendors end
+    ns.GearVendors = {
     [85] = {{ 2113, 85, "h", "Archibald Kava", "阿基班德·卡瓦" }, { 4558, 1497, "h", "Lauren Newcomb", "劳伦·纽科布" }, { 3074, 215, "h", "Varia Hardhide", "瓦利亚·韧皮" }, { 3160, 14, "h", "Huklah", "哈克拉恩" } },
     [193] = {{ 2113, 85, "h", "Archibald Kava", "阿基班德·卡瓦" }, { 4558, 1497, "h", "Lauren Newcomb", "劳伦·纽科布" }, { 3160, 14, "h", "Huklah", "哈克拉恩" } },
     [194] = {{ 2113, 85, "h", "Archibald Kava", "阿基班德·卡瓦" }, { 4558, 1497, "h", "Lauren Newcomb", "劳伦·纽科布" }, { 3160, 14, "h", "Huklah", "哈克拉恩" } },
@@ -1483,3 +1485,5 @@ ns.GearVendorSpawns = {
     [275626] = {{ 36, 1416, 14.4, 71.4 } },
     [276067] = {{ 85, 1420, 21.2, 45.8 } },
 }
+    return ns.GearVendors
+end

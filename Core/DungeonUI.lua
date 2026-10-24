@@ -5858,24 +5858,36 @@ function DG.NodeLoc(qid, npcID, fb)
     return DG.ZoneShort(fb)
 end
 
+DG.BADGE_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\HUIPillCap"
+DG.BADGE_CAP_W = 8
+
 function DG.MakeBadge(parent, bg)
-    local b = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    local b = CreateFrame("Frame", nil, parent)
     b:SetSize(10, DG.Q_BADGE_H)
-    local painted = false
-    if IsHui() and ns.hui and ns.hui.BuildRoundedBG then
-        local fill, border = ns.hui.BuildRoundedBG(b, 4, bg or ns.hui.layer.L3, "both", true, 1)
-        b.__huiCard = { fill = fill, border = border }
-        painted = true
+    local col = bg
+    if not col then
+        col = (ns.hui and ns.hui.layer and ns.hui.layer.L3) or { 0.12, 0.12, 0.13, 1 }
     end
-    if not painted then
-        b:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8x8",
-            edgeFile = "Interface\\Buttons\\WHITE8x8",
-            edgeSize = 1,
-        })
-        b:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
-        b:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
-    end
+    local cw = DG.BADGE_CAP_W
+    b.capL = b:CreateTexture(nil, "BACKGROUND")
+    b.capL:SetTexture(DG.BADGE_CAP_TEX)
+    b.capL:SetTexCoord(0, 0.5, 0, 1)
+    b.capL:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
+    b.capL:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 0, 0)
+    b.capL:SetWidth(cw)
+    b.capR = b:CreateTexture(nil, "BACKGROUND")
+    b.capR:SetTexture(DG.BADGE_CAP_TEX)
+    b.capR:SetTexCoord(0.5, 1, 0, 1)
+    b.capR:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
+    b.capR:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
+    b.capR:SetWidth(cw)
+    b.mid = b:CreateTexture(nil, "BACKGROUND")
+    b.mid:SetColorTexture(1, 1, 1, 1)
+    b.mid:SetPoint("TOPLEFT", b.capL, "TOPRIGHT", 0, 0)
+    b.mid:SetPoint("BOTTOMRIGHT", b.capR, "BOTTOMLEFT", 0, 0)
+    b.capL.__huiGlass = { c = col }
+    b.__huiCard = { fill = { b.capL, b.mid, b.capR }, border = {} }
+    DG.BadgeTint(b, col)
     b.lab = MakeFS(b, DG.Q_BADGE_FS, C_WHITE, "CENTER")
     b.lab:SetPoint("CENTER", b, "CENTER", 0, 0)
     b:Hide()
@@ -5885,6 +5897,8 @@ end
 function DG.PlaceBadge(b, x, text, maxX)
     b.lab:SetText(text)
     local w = (b.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+    local minW = DG.BADGE_CAP_W * 2 + 2
+    if w < minW then w = minW end
     if maxX and x + w > maxX then
         b:Hide()
         return x
@@ -5898,6 +5912,16 @@ end
 
 function DG.BadgeTint(b, col)
     if not (b and col) then return end
+    local a = col[4] or 1
+    if b.mid then
+        b.mid:SetColorTexture(col[1], col[2], col[3], a)
+        if b.capL then
+            b.capL:SetVertexColor(col[1], col[2], col[3], a)
+            b.capL.__huiGlass = { c = col }
+        end
+        if b.capR then b.capR:SetVertexColor(col[1], col[2], col[3], a) end
+        return
+    end
     local hc = b.__huiCard
     local fill = type(hc) == "table" and hc.fill or nil
     if type(fill) == "table" then

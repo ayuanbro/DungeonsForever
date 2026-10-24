@@ -1,5 +1,7 @@
 local _, ns = ...
 ns.ProfMaterialSupplyMeta = {["complete"]=false,["fingerprint"]="98ca7883dc996ce29af09d4439ed7cf025758d128ac8028e68b970a91571836e",["gameFlavor"]="forever",["schemaVersion"]=2,["scope"]="seed_discovered_and_manually_registered_regular_suppliers",["verifiedAt"]="2026-10-21T02:20:47Z",["offerCount"]=2654,["itemCount"]=155}
+ns.EnsureProfMaterialSupply = function()
+    if ns.ProfMaterialSupply then return ns.ProfMaterialSupply end
 ns.ProfMaterialSupply = {
   [159]={1250,27,5,1,2,1448,24,5,1,1,2381,27,5,1,2,3027,24,5,2,4,3085,23,5,1,4,3400,25,5,2,4,4223,26,5,1,4,4265,26,5,1,4,4553,26,5,2,4,5160,24,5,1,4,5483,25,5,1,4,12033,25,5,2,4,14738,25,5,2,4,252083,26,5,1,4},
   [1179]={1448,125,5,1,1},
@@ -157,3 +159,5 @@ ns.ProfMaterialSupply = {
   [281043]={3005,10,1,2,1},
   [281044]={3027,10,1,2,4},
 }
+    return ns.ProfMaterialSupply
+end

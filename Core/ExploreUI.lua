@@ -564,8 +564,7 @@ local function SetRowHover(r, on)
 end
 
 function EG.SyncHover()
-    for i = 1, #(EG.rows or {}) do
-        local r = EG.rows[i]
+    for i, r in pairs(EG.rows or {}) do
         local over = (r.IsMouseOver and r:IsMouseOver()) and true or false
         if over ~= r.__hlOn then SetRowHover(r, over) end
     end
@@ -801,8 +800,8 @@ local function PaintCoords(r, rec)
     end
 end
 
-local function PaintRow(i, y, rec, zebra)
-    local r = Row(i)
+local function PaintRow(r, idx, y, rec, zebra)
+    r.__idx = idx
     r:ClearAllPoints()
     r:SetPoint("TOPLEFT", EG.child, "TOPLEFT", EG.LIST_PAD, -y)
     r:SetHeight(EG.ROW_H)
@@ -2277,6 +2276,98 @@ local function PY()
     if coroutine.running and coroutine.running() then coroutine.yield() end
 end
 
+EG.WIN_BUF = 3
+
+function EG.WindowRange(n)
+    local sc = EG.scroll
+    local v, viewH = 0, 0
+    if sc then
+        local okv, vv = pcall(sc.GetVerticalScroll, sc)
+        if okv and type(vv) == "number" then v = vv end
+        local okh, hh = pcall(sc.GetHeight, sc)
+        if okh and type(hh) == "number" then viewH = hh end
+    end
+    if viewH <= 0 then viewH = 520 end
+    local step = EG.ROW_H + EG.ROW_GAP
+    if step <= 0 then step = 1 end
+    local lo = math.floor((v - EG.LIST_PAD) / step) + 1 - EG.WIN_BUF
+    local hi = math.ceil((v + viewH - EG.LIST_PAD) / step) + 1 + EG.WIN_BUF
+    if lo < 1 then lo = 1 end
+    if n and n > 0 and lo > n then lo = n end
+    if n and hi > n then hi = n end
+    if hi < lo then hi = lo end
+    return lo, hi
+end
+
+function EG.NeedWindow()
+    local n = #(EG.pool or {})
+    if n == 0 then return end
+    local lo, hi = EG.WindowRange(n)
+    if lo ~= EG.__winLo or hi ~= EG.__winHi then EG.PaintList() end
+end
+
+function EG.PaintList()
+    local list = {}
+    for _, rec in ipairs(B or {}) do
+        local id = rec[1]
+        local terr = BookTerr(rec)
+        local pass = (EG.view == "all")
+            or (EG.view == "todo" and not IsFound(id))
+            or (EG.view == "ally" and terr == "A")
+            or (EG.view == "horde" and terr == "H")
+            or (EG.view == "contested" and terr == "C")
+        if pass then list[#list + 1] = rec end
+    end
+    EG.pool = list
+    local n = #list
+    local lo, hi = EG.WindowRange(n)
+    local rowH = EG.ROW_H + EG.ROW_GAP
+    local slots = hi - lo + 1
+    if slots < 1 then slots = 1 end
+
+    for k, rr in pairs(EG.rows or {}) do rr:Hide() end
+    local painted = 0
+    for k = 1, slots do
+        local idx = lo + k - 1
+        local rec = list[idx]
+        if rec then
+            local r = EG.rows[k]
+            if not r then r = Row(k) end
+            PaintRow(r, idx, EG.LIST_PAD + (idx - 1) * rowH, rec, ((idx - 1) % 2 == 1))
+            painted = painted + 1
+            if painted % 4 == 0 then PY() end
+        end
+    end
+
+    local y = EG.LIST_PAD + n * rowH
+    if n == 0 then
+        local r = EG.rows and EG.rows[1]
+        if not r then r = Row(1) end
+        r:ClearAllPoints()
+        r:SetPoint("TOPLEFT", EG.child, "TOPLEFT", EG.LIST_PAD, -y)
+        r:SetHeight(EG.ROW_H)
+        r:Show()
+        r.__z = false
+        SetRowHover(r, false)
+        r.a:SetText(L["这个筛选下没有条目 —— 40 本都找齐了？"])
+        r.b:SetText("")
+        r.c:SetText("")
+        r.d:SetText("")
+        r.chk:Hide()
+        r.icon:SetTexture("")
+        r.__it, r.__mark, r.__rec = nil, nil, nil
+        r.sep:Hide()
+        y = y + EG.ROW_H + EG.LIST_PAD
+    elseif EG.rows[1] then
+        EG.rows[1].sep:SetShown(not EG.rows[1].__huiCard)
+        y = y - EG.ROW_GAP + EG.LIST_PAD
+    end
+
+    EG.child:SetHeight(y)
+    if EG.UpdateVScroll then EG.UpdateVScroll() end
+    EG.__winLo, EG.__winHi = lo, hi
+end
+
 function EG.Render()
     if not EG.built then return end
     EG.found = Found()
@@ -2336,53 +2427,7 @@ function EG.Render()
     end
     if isBag or isBm or isCard then return end
 
-    local list = {}
-    for _, rec in ipairs(B) do
-        local id = rec[1]
-        local terr = BookTerr(rec)
-        local pass = (EG.view == "all")
-            or (EG.view == "todo" and not IsFound(id))
-            or (EG.view == "ally" and terr == "A")
-            or (EG.view == "horde" and terr == "H")
-            or (EG.view == "contested" and terr == "C")
-        if pass then list[#list + 1] = rec end
-    end
-    EG.pool = list
-
-    for i = 1, #(EG.rows or {}) do EG.rows[i]:Hide() end
-    local y = EG.LIST_PAD
-    local zc = false
-    for i, rec in ipairs(list) do
-        PaintRow(i, y, rec, zc)
-        zc = not zc
-        y = y + EG.ROW_H + EG.ROW_GAP
-        if i % 4 == 0 then PY() end
-    end
-
-    if #list == 0 and EG.rows and EG.rows[1] then
-        local r = EG.rows[1]
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", EG.child, "TOPLEFT", EG.LIST_PAD, -y)
-        r:SetHeight(EG.ROW_H)
-        r:Show()
-        r.__z = false
-        SetRowHover(r, false)
-        r.a:SetText(L["这个筛选下没有条目 —— 40 本都找齐了？"])
-        r.b:SetText("")
-        r.c:SetText("")
-        r.d:SetText("")
-        r.chk:Hide()
-        r.icon:SetTexture("")
-        r.__it, r.__mark, r.__rec = nil, nil, nil
-        r.sep:Hide()
-        y = y + EG.ROW_H + EG.LIST_PAD
-    else
-        EG.rows[1].sep:SetShown(not EG.rows[1].__huiCard)
-        y = y - EG.ROW_GAP + EG.LIST_PAD
-    end
-
-    EG.child:SetHeight(y)
-    if EG.UpdateVScroll then EG.UpdateVScroll() end
+    EG.PaintList()
     PaintProgress()
     if EG.needNames then EG.ScheduleSweep() end
     if ns.ExploreMapRefresh then pcall(ns.ExploreMapRefresh) end
@@ -2471,7 +2516,7 @@ end
 function EG.Build(page)
     if EG.built or EG.building then return end
     EG.building = true
-    ns.PhasedStart(65, coroutine.create(function()
+    ns.PhasedStart(56, coroutine.create(function()
     if EG.built then return end
     EG.found = Found()
     EG.view = View()
@@ -2911,7 +2956,10 @@ function EG.Build(page)
         thumb:ClearAllPoints()
         thumb:SetPoint("TOP", track, "TOP", 0, -1 - frac * (trackH - th))
     end
-    scroll:SetScript("OnVerticalScroll", function() EG.UpdateVScroll() end)
+    scroll:SetScript("OnVerticalScroll", function()
+        EG.UpdateVScroll()
+        if EG.NeedWindow then EG.NeedWindow() end
+    end)
     thumb:SetScript("OnMouseDown", function(self, btn)
         if btn ~= "LeftButton" then return end
         local scale = UIParent and UIParent:GetEffectiveScale() or 1
@@ -2925,6 +2973,7 @@ function EG.Build(page)
             if span <= 0 then return end
             local maxScroll = EG.child:GetHeight() - EG.scroll:GetHeight()
             EG.scroll:SetVerticalScroll(math.min(maxScroll, math.max(0, sc0 + (cy0 - cy) / span * maxScroll)))
+            if EG.NeedWindow then EG.NeedWindow() end
         end)
     end)
     thumb:SetScript("OnMouseUp", function(self)
@@ -2935,12 +2984,7 @@ function EG.Build(page)
     end)
     coroutine.yield()
 
-    coroutine.yield()
     EG.rows = {}
-    for i = 1, #B do
-        Row(i)
-        if i % 4 == 0 then coroutine.yield() end
-    end
 
     local rw = CreateFrame("Frame", nil, page)
     EG.rwFrame = rw

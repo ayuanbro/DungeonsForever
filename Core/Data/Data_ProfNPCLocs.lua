@@ -1,6 +1,8 @@
 local _, ns = ...
 
 ns.ProfNPCLocsMeta={schemaVersion=1,source="wowhead-npc",npcCount=1017}
+ns.EnsureProfNPCLocs = function()
+    if ns.ProfNPCLocs then return ns.ProfNPCLocs end
 ns.ProfNPCLocs={
 [46]={{0,1431,47.6,12.2}},
 [48]={{0,1431,77.0,72.2}},
@@ -1020,3 +1022,5 @@ ns.ProfNPCLocs={
 [276198]={{0,1411,59.8,91.0}},
 [277945]={{0,1426,51.4,40.0}},
 }
+    return ns.ProfNPCLocs
+end

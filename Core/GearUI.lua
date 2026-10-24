@@ -1828,7 +1828,8 @@ local function GearZoneName(aid)
 end
 
 local function GearVendorEnts(id)
-    local rows = ns.GearVendors and ns.GearVendors[id]
+    local GV = ns.EnsureGearVendors and ns.EnsureGearVendors() or ns.GearVendors
+    local rows = GV and GV[id]
     if type(rows) ~= "table" or #rows == 0 then return nil end
     local f
     if UnitFactionGroup then

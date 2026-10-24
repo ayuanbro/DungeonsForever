@@ -564,11 +564,13 @@ do
     end
 
     local function GradHover(base)
-        return Mul(base, 1.16), Mul(base, 0.79)
+        local c = ns.hui.layer.L4 or base
+        return Mul(c, 1.16), Mul(c, 0.79)
     end
 
     local function GradPress(base)
-        return Mul(base, 0.84), Mul(base, 0.57)
+        local c = ns.hui.layer.L5 or base
+        return Mul(c, 0.84), Mul(c, 0.57)
     end
 
     local function GradSel()

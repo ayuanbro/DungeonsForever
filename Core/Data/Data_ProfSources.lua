@@ -1,6 +1,8 @@
 local _, ns = ...
 
 ns.ProfSourcesMeta={schemaVersion=1,source="wowhead-forever",itemCount=1089,vendorRows=1393,dropRows=2646,dropCap=10}
+ns.EnsureProfSources = function()
+    if ns.ProfSources then return ns.ProfSources end
 ns.ProfSources={
 [728]={v={{id=340, name="肯多尔·卡邦卡", area=1519, side="a", price=189, stock=-1}}},
 [2406]={d={{npc="砂石斥候", id=2158, pct=0.04, area=148}, {npc="火刃侍僧", id=3380, pct=0.02, area=17}, {npc="月怒长者", id=1896, pct=0.02, area=130}, {npc="Theramore Preserver", id=3386, pct=0.014, area=17}, {npc="矿工约翰森", id=3586, pct=0.012, area=1581}, {npc="科卡尔风暴先知", id=9523, pct=0.01, area=17}, {npc="Oggleflint", id=11517, pct=0.009, area=2437}, {npc="腐皮秘法师", id=1773, pct=0.009, area=130}, {npc="火刃新兵", id=3196, pct=0.008, area=14}, {npc="堕落的巨齿鳄鱼", id=3231, pct=0.008, area=14}}},
@@ -1130,3 +1132,5 @@ ns.ProfZoneText={
 [16732]="挖掘场：湿地",
 [16919]="领主大厅",
 }
+    return ns.ProfSources
+end

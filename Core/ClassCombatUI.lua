@@ -65,7 +65,7 @@ local function FSHeight(fs)
 end
 
 local function Combat()
-    local d = ns.ClassCombat
+    local d = ns.EnsureClassCombat and ns.EnsureClassCombat() or ns.ClassCombat
     if type(d) ~= "table" then return nil end
     return d
 end

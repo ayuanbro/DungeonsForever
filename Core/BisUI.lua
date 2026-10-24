@@ -2217,12 +2217,84 @@ local function PaintPlans()
 end
 
 local FillBwRow
+
+BG.ROW_PITCH = ROW_H + 2
+BG.POOL_MAX = 120
+BG.POOL_MIN = 10
+
+function BG.BwVirtualOn()
+    local db = DB()
+    return not (type(db) == "table" and db.bisPool120)
+end
+
+function BG.BwPoolSize()
+    if not BG.BwVirtualOn() then return BG.POOL_MAX end
+    local sc = BG.bwScroll
+    local h = sc and sc.GetHeight and sc:GetHeight()
+    if type(h) ~= "number" or h <= 0 then h = 720 end
+    local n = math.ceil(h / BG.ROW_PITCH) + 3
+    if n < BG.POOL_MIN then n = BG.POOL_MIN end
+    if n > BG.POOL_MAX then n = BG.POOL_MAX end
+    return n
+end
+
+function BG.BindBwWindow(first)
+    local rows = BG.bwRows
+    local child = BG.bwChild
+    if not (rows and child) then return end
+    local list = BG.bwList or {}
+    local n = #rows
+    if first < 1 then first = 1 end
+    if #list > 0 then
+        local maxFirst = #list - n + 1
+        if maxFirst < 1 then maxFirst = 1 end
+        if first > maxFirst then first = maxFirst end
+    end
+    local pitch = BG.ROW_PITCH
+    for k = 1, n do
+        local r = rows[k]
+        local idx = first + k - 1
+        local row = list[idx]
+        if row then
+            if r.__idx ~= idx then r.__painted = false end
+            r.__active = true
+            r.__row = row
+            r.__idx = idx
+            r.__vtop = (idx - 1) * pitch
+            r.__vh = ROW_H
+            r:ClearAllPoints()
+            r:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -r.__vtop)
+            r:SetPoint("RIGHT", child, "RIGHT", 0, 0)
+        else
+            r.__active = false
+            r.__row = nil
+            r.__idx = nil
+            r.__painted = false
+            r:Hide()
+        end
+    end
+    if #list == 0 and BG.sel and rows[1] then
+        local r = rows[1]
+        r.__active = true
+        r.__row = nil
+        r.__idx = 0
+        r.__vtop = 0
+        r.__vh = ROW_H
+        r.__painted = false
+        r:ClearAllPoints()
+        r:SetPoint("TOPLEFT", child, "TOPLEFT", 0, 0)
+        r:SetPoint("RIGHT", child, "RIGHT", 0, 0)
+    end
+    BG.bwFirst = first
+end
+
 local function CullBwRows()
     local sc = BG.bwScroll
     if not (sc and sc.GetTop) then return end
     local gt = sc:GetTop()
     local viewH = sc.GetHeight and sc:GetHeight()
     if type(gt) ~= "number" or type(viewH) ~= "number" or viewH <= 0 then
+        if BG.BwVirtualOn() then BG.BindBwWindow(1) end
         for _, r in ipairs(BG.bwRows or {}) do
             if r.__active then
                 if not r.__painted then FillBwRow(r) end
@@ -2236,6 +2308,17 @@ local function CullBwRows()
     end
     local v = sc.GetVerticalScroll and sc:GetVerticalScroll() or 0
     if type(v) ~= "number" then v = 0 end
+    if BG.BwVirtualOn() then
+        local first = math.floor(v / BG.ROW_PITCH) + 1
+        if first < 1 then first = 1 end
+        local cnt = #(BG.bwList or {})
+        if cnt > 0 then
+            local maxFirst = cnt - #(BG.bwRows or {}) + 1
+            if maxFirst < 1 then maxFirst = 1 end
+            if first > maxFirst then first = maxFirst end
+        end
+        if first ~= BG.bwFirst then BG.BindBwWindow(first) end
+    end
     local vTop, vBot = v - viewH - 2, v + viewH * 2 + 2
     for _, r in ipairs(BG.bwRows or {}) do
         if not r.__active then
@@ -2538,34 +2621,18 @@ local function PaintBrowser()
     BG.owned = ScanOwned()
     local rows = BG.bwRows
     BG.bwEquipped = BG.sel and BG.cur[DataKey(sp, BG.sel)] or nil
-    local y = 0
+    local y = #list * BG.ROW_PITCH
     for i = 1, #rows do
         local rr = rows[i]
         rr:Hide()
         rr.__active = false
         rr.__painted = false
+        rr.__idx = nil
     end
-    for i, row in ipairs(list) do
-        if i > #rows then break end
-        local r = rows[i]
-        r.__active = true
-        r.__row = row
-        r.__vtop = y
-        r.__vh = ROW_H
-        r:SetPoint("TOPLEFT", BG.bwChild, "TOPLEFT", 0, -y)
-        r:SetPoint("RIGHT", BG.bwChild, "RIGHT", 0, 0)
-        y = y + ROW_H + 2
-    end
-    if BG.sel and #list == 0 and rows[1] then
-        local r = rows[1]
-        r.__active = true
-        r.__row = nil
-        r.__vtop = y
-        r.__vh = ROW_H
-        r:SetPoint("TOPLEFT", BG.bwChild, "TOPLEFT", 0, -y)
-        r:SetPoint("RIGHT", BG.bwChild, "RIGHT", 0, 0)
-        y = y + ROW_H
-    end
+    if BG.sel and #list == 0 then y = ROW_H end
+    BG.bwList = list
+    BG.bwFirst = nil
+    BG.BindBwWindow(1)
     BG.bwChild:SetHeight(y + LIST_PAD)
     if BG.bwBar then BG.bwBar.Update() end
     CullBwRows()
@@ -3709,7 +3776,9 @@ local function BuildBrowser(parent)
     BG.bwBar = BuildVBar(scroll, child, CullBwRows)
 
     BG.bwRows = {}
-    for i = 1, 120 do
+    local poolN = BG.BwPoolSize()
+    BG.bwPoolN = poolN
+    for i = 1, poolN do
         local r = CreateFrame("Button", nil, child, BT)
         r:SetHeight(ROW_H)
         local hfx = ns.hui and ns.hui.HuiCardFX or nil

@@ -101,10 +101,6 @@ local SPEC_LABEL = {
     feral = L["野性战斗"], balance = L["平衡"],
 }
 
-local FIELD_LABEL = {
-    spear = L["暗矛群岛"], ab = L["阿拉希盆地"], wsg = L["战歌峡谷"], av = L["奥特兰克山谷"],
-}
-
 local TASK_TEXTS = {
     L["完成 3 场战歌峡谷 / 阿拉希盆地 / 暗矛群岛战斗"],
     L["赢得一场任意战场战斗"],
@@ -378,7 +374,7 @@ function PV.NewCard(parent)
     f:SetSize(PV.CARD_W, PV.CARD_H)
     local layer = ns.hui and ns.hui.layer
     if ns.hui and ns.hui.BuildRoundedBG and layer then
-        ns.hui.BuildRoundedBG(f, 4, layer.L2, "both", true, 1)
+        ns.hui.BuildRoundedBG(f, 6, layer.L2, "both", true, 1)
     else
         f.edge = f:CreateTexture(nil, "BACKGROUND")
         f.edge:SetAllPoints(f)
@@ -398,7 +394,7 @@ function PV.NewCard(parent)
     f.name:SetPoint("TOPLEFT", f, "TOPLEFT", PV.CARD_TX, -4)
     f.name:SetWidth(PV.CARD_W - PV.CARD_TX - 7)
     f.name:SetWordWrap(false)
-    f.meta = MakeFS(f, 11, C_GREY, "LEFT")
+    f.meta = MakeFS(f, 14, C_GREY, "LEFT")
     f.meta:SetPoint("TOPLEFT", f, "TOPLEFT", PV.CARD_TX, -23)
     f.meta:SetWordWrap(false)
     f.hover = f:CreateTexture(nil, "OVERLAY")
@@ -473,7 +469,6 @@ function PV.Build(page)
     PV.rankRows = {}
     PV.capRows = {}
     PV.setRows = {}
-    PV.weekBf = {}
     PV.taskRows = {}
     PV.legacyRows = {}
     PV.markChips = {}
@@ -563,7 +558,7 @@ function PV.Build(page)
         local r1, g1, b1 = 0x10, 0x13, 0x1A
         if inner then r1, g1, b1 = 0x16, 0x1A, 0x22 end
         if ns.hui and ns.hui.BuildRoundedBG and layer then
-            ns.hui.BuildRoundedBG(f, 4, inner and layer.L2 or layer.L1, "both", true, 1)
+            ns.hui.BuildRoundedBG(f, 6, inner and layer.L2 or layer.L1, "both", true, 1)
         else
             f.edge = f:CreateTexture(nil, "BACKGROUND")
             f.edge:SetAllPoints(f)
@@ -656,20 +651,20 @@ function PV.Build(page)
     for i = 1, 10 do
         local r = CreateFrame("Frame", nil, child)
         r:SetSize(capColW, 30)
-        r.week = MakeFS(r, 12, C_TEXT, "LEFT")
+        r.week = MakeFS(r, 14, C_TEXT, "LEFT")
         r.week:SetPoint("TOPLEFT", r, "TOPLEFT", 4, -7)
-        r.rank = MakeFS(r, 12, C_GOLD, "LEFT")
+        r.rank = MakeFS(r, 14, C_GOLD, "LEFT")
         r.rank:SetPoint("TOPLEFT", r, "TOPLEFT", 64, -7)
         r.barBG = r:CreateTexture(nil, "BACKGROUND")
-        r.barBG:SetPoint("TOPLEFT", r, "TOPLEFT", 106, -9)
-        r.barBG:SetSize(120, 10)
+        r.barBG:SetPoint("TOPLEFT", r, "TOPLEFT", 116, -9)
+        r.barBG:SetSize(110, 10)
         r.bar = r:CreateTexture(nil, "ARTWORK")
         r.bar:SetPoint("TOPLEFT", r.barBG, "TOPLEFT", 0, 0)
         r.bar:SetHeight(10)
         r.bar:SetColorTexture(0.27, 0.75, 0.45, 0.85)
-        r.cum = MakeFS(r, 12, C_TEXT, "RIGHT")
-        r.cum:SetPoint("TOPRIGHT", r, "TOPLEFT", capColW - 36, -7)
-        r.inc = MakeFS(r, 12, C_GREY, "RIGHT")
+        r.cum = MakeFS(r, 14, C_TEXT, "RIGHT")
+        r.cum:SetPoint("TOPRIGHT", r, "TOPLEFT", capColW - 56, -7)
+        r.inc = MakeFS(r, 14, C_GREY, "RIGHT")
         r.inc:SetPoint("TOPRIGHT", r, "TOPLEFT", capColW - 4, -7)
         r.sep = r:CreateTexture(nil, "BACKGROUND")
         r.sep:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 2, 0)
@@ -740,7 +735,7 @@ function PV.Build(page)
         bt.name = MakeFS(bt, 14, C_TEXT, "LEFT")
         bt.name:SetPoint("TOPLEFT", bt, "TOPLEFT", 36, -6)
         bt.name:SetWordWrap(false)
-        bt.count = MakeFS(bt, 11, C_GREY, "RIGHT")
+        bt.count = MakeFS(bt, 14, C_GREY, "RIGHT")
         bt.count:SetPoint("TOPRIGHT", bt, "TOPRIGHT", -8, -8)
         local hlayer = ns.hui and ns.hui.layer
         if ns.hui and ns.hui.BuildRoundedBG and hlayer then
@@ -761,6 +756,7 @@ function PV.Build(page)
         bt.hover:SetColorTexture(1, 1, 1, 0.06)
         bt.hover:Hide()
         bt:SetScript("OnEnter", function(self)
+            if self.__sel then return end
             if self.__hov then
                 for _, t in ipairs(self.__hov) do t:Show() end
             elseif self.hover then
@@ -768,6 +764,10 @@ function PV.Build(page)
             end
         end)
         bt:SetScript("OnLeave", function(self)
+            if self.__sel then
+                if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, "norm") end
+                return
+            end
             if self.__hov then
                 for _, t in ipairs(self.__hov) do t:Hide() end
             elseif self.hover then
@@ -777,7 +777,7 @@ function PV.Build(page)
         bt.__idx = i
         bt:SetScript("OnClick", function(self)
             PV.selSet = self.__idx
-            PV.RenderSets()
+            PV.Render()
         end)
         ForwardWheel(bt)
         PV.setRows[i] = bt
@@ -863,6 +863,7 @@ function PV.Build(page)
             bfs:SetPoint("BOTTOMRIGHT", bt, "BOTTOMRIGHT", -2, 0)
             bfs:SetJustifyH("CENTER")
         end
+        bt.__huiKeepTextColor = true
         local bic = bt:CreateTexture(nil, "OVERLAY")
         bic:SetTexture(i == 1 and PV.FAC_ICON.a or PV.FAC_ICON.h)
         bic:SetSize(16, 16)
@@ -875,28 +876,27 @@ function PV.Build(page)
         end)
         PV["facBtn" .. i] = bt
     end
-    coroutine.yield()
-
-    for i, rec in ipairs(RD.battlefields) do
-        local bt = NewButton(child, FIELD_LABEL[rec.key] or rec.key, 148, 24, 12)
-        bt.__bf = rec
-        bt:SetScript("OnEnter", function(self)
-            local d = self.__bf
-            local cta = (d.cta > 0) and format(L["召唤轮换 %d"], d.cta) or L["不在轮换"]
-            if SetTip then
-                SetTip(self, format("%s · %s · %s",
-                    format(L["%d–%d 级"], d.minLevel, d.maxLevel),
-                    format(L["%d 对 %d"], d.size, d.size), cta))
+    function PV.PaintFac()
+        for i = 1, 2 do
+            local bt = PV["facBtn" .. i]
+            if bt then
+                local on = (i == 1 and PV.faction == "A") or (i == 2 and PV.faction == "H")
+                SetButtonSelected(bt, on)
+                local fs = bt:GetFontString()
+                if fs then
+                    if i == 1 then
+                        fs:SetTextColor(0.40, 0.62, 1.00)
+                    else
+                        fs:SetTextColor(1.00, 0.36, 0.26)
+                    end
+                end
             end
-        end)
-        bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        ForwardWheel(bt)
-        PV.weekBf[i] = bt
+        end
     end
     coroutine.yield()
 
     for i, def in ipairs(REP_DEFS) do
-        local bt = NewButton(child, def.text, 120, 24, 12)
+        local bt = NewButton(child, def.text, 120, 24, 14)
         bt.__rep = def.key
         bt:SetScript("OnClick", function(self)
             PV.selRep = self.__rep
@@ -907,7 +907,7 @@ function PV.Build(page)
     coroutine.yield()
 
     for i, bg in ipairs(BATTLE_BGS) do
-        local bt = NewButton(child, bg.label, 120, 24, 12)
+        local bt = NewButton(child, bg.label, 120, 24, 14)
         bt.__rep = bg.key
         bt:SetScript("OnClick", function(self)
             PV.selRep = self.__rep
@@ -945,20 +945,20 @@ function PV.Build(page)
 
     local secSpecs = {
         { key = "ranksHead", fs = 14, col = C_GOLD },
-        { key = "ranksFoot", fs = 11, col = C_GREY },
-        { key = "capsFoot",  fs = 11, col = C_GREY },
+        { key = "ranksFoot", fs = 14, col = C_GREY, wrap = true },
+        { key = "capsFoot",  fs = 14, col = C_GREY, wrap = true },
         { key = "weekCaps",  fs = 14, col = C_GOLD },
         { key = "setsMarks", fs = 14, col = C_GOLD },
         { key = "setsBlue",  fs = 14, col = C_GOLD },
         { key = "setsEpic",  fs = 14, col = C_GOLD },
-        { key = "setsNote",  fs = 11, col = C_GREY },
+        { key = "setsNote",  fs = 14, col = C_GREY, wrap = true },
         { key = "bfHead",    fs = 14, col = C_GOLD },
-        { key = "bfFoot",    fs = 11, col = C_GREY },
+        { key = "bfFoot",    fs = 14, col = C_GREY, wrap = true },
         { key = "taskHead",  fs = 14, col = C_GOLD },
         { key = "legHead",   fs = 14, col = C_GOLD },
         { key = "spHead",    fs = 14, col = C_GOLD },
         { key = "spRule",    fs = 14, col = C_TEXT },
-        { key = "spNote",    fs = 11, col = C_GREY },
+        { key = "spNote",    fs = 14, col = C_GREY, wrap = true },
         { key = "sprHead",   fs = 14, col = C_GOLD },
         { key = "sprState",  fs = 14, col = C_TEXT },
         { key = "sprMile",   fs = 14, col = C_GOLD },
@@ -967,7 +967,7 @@ function PV.Build(page)
         { key = "sprSim",    fs = 14, col = C_TEXT },
         { key = "sprPath1",  fs = 14, col = C_GOLD },
         { key = "sprPath2",  fs = 14, col = C_TEXT },
-        { key = "sprNote",   fs = 11, col = C_GREY },
+        { key = "sprNote",   fs = 14, col = C_GREY, wrap = true },
         { key = "setDetailName", fs = 16, col = C_WHITE },
         { key = "setDetailSpec", fs = 14, col = C_GREY },
     }
@@ -982,7 +982,7 @@ function PV.Build(page)
     end
     for _, sp in ipairs(secSpecs) do
         local fs = MakeFS(child, sp.fs, sp.col, "LEFT")
-        if sp.fs == 11 or sp.wrap then
+        if sp.wrap then
             fs:SetWordWrap(true)
             fs:SetWidth(PV.W - 32)
         end
@@ -992,6 +992,7 @@ function PV.Build(page)
 
     PV.cur = "ranks"
     PV.RenderRanks()
+    PV.PaintFac()
     coroutine.yield()
 
     for i = 1, PV.CARD_MAX do
@@ -1023,7 +1024,7 @@ function PV.Build(page)
     for i = 1, 4 do
         PV.mileTicks[i] = child:CreateTexture(nil, "OVERLAY")
         PV.mileTicks[i]:SetColorTexture(1, 1, 1, 0.35)
-        PV.mileLabels[i] = MakeFS(child, 11, C_GREY, "CENTER")
+        PV.mileLabels[i] = MakeFS(child, 14, C_GREY, "CENTER")
     end
     coroutine.yield()
 
@@ -1049,7 +1050,7 @@ function PV.Build(page)
     coroutine.yield()
 
     for i = 1, 13 do
-        local bt = NewButton(child, format("R%d", i + 1), 34, 22, 11)
+        local bt = NewButton(child, format("R%d", i + 1), 34, 24, 14)
         bt.__goal = i + 1
         bt:SetScript("OnClick", function(self)
             PV.goal = self.__goal
@@ -1059,7 +1060,7 @@ function PV.Build(page)
     end
     coroutine.yield()
     for i = 1, 14 do
-        local bt = NewButton(child, format("R%d", i), 34, 22, 11)
+        local bt = NewButton(child, format("R%d", i), 34, 24, 14)
         bt.__sim = i
         bt:SetScript("OnClick", function(self)
             if PV.simRank == self.__sim then
@@ -1140,7 +1141,6 @@ local function HideAll()
     for i = 1, #SD.sets do PV.setRows[i]:Hide() end
     for i = 1, 8 do PV.markChips[i]:Hide() end
     for i = 1, 7 do PV.markArrows[i]:Hide() end
-    for i = 1, #RD.battlefields do PV.weekBf[i]:Hide() end
     for i = 1, #REP_DEFS do PV.repBtns[i]:Hide() end
     for i = 1, #BATTLE_BGS do PV.battleBtns[i]:Hide() end
     for i = 1, #TASK_TEXTS do PV.taskRows[i]:Hide() end
@@ -1177,6 +1177,7 @@ function PV.Render()
     else
         PV.RenderRanks()
     end
+    PV.PaintFac()
 end
 
 function PV.RenderRanks()
@@ -1201,8 +1202,6 @@ function PV.RenderRanks()
     PV.facBtn2:SetPoint("TOPRIGHT", PV.facBtn1, "TOPLEFT", -8, 0)
     PV.facBtn1:Show()
     PV.facBtn2:Show()
-    SetButtonSelected(PV.facBtn1, PV.faction == "A")
-    SetButtonSelected(PV.facBtn2, PV.faction == "H")
     local lv, lp = LiveState()
     if lv and lv >= 1 then
         PV.rankBadge:SetTexture(format("Interface\\PvPRankBadges\\PvPRank%02d", lv))
@@ -1293,6 +1292,32 @@ function PV.RenderRanks()
     PV.child:SetHeight(532)
 end
 
+local function PaintSetRow(row)
+    local bp = row.__huiCard
+    if type(bp) ~= "table" or type(bp.fill) ~= "table" then return end
+    if not (ns.hui and ns.hui.GlassPaint and ns.hui.layer and ns.hui.ACCENT) then return end
+    if row.__tintOn == row.__sel then return end
+    row.__tintOn = row.__sel
+    local L2 = ns.hui.layer.L2
+    local ACC = ns.hui.ACCENT
+    local col = L2
+    if row.__sel then
+        col = {
+            L2[1] + (ACC[1] - L2[1]) * 0.28,
+            L2[2] + (ACC[2] - L2[2]) * 0.28,
+            L2[3] + (ACC[3] - L2[3]) * 0.28,
+            1,
+        }
+    end
+    for i = 1, #bp.fill do
+        local t = bp.fill[i]
+        if t and t.__huiGlass then
+            t.__huiGlass.c = col
+            ns.hui.GlassPaint(t)
+        end
+    end
+end
+
 function PV.RenderSets()
     local rx = PV.SETS_LIST_W + 12
     local rw = PV.W - rx
@@ -1320,8 +1345,16 @@ function PV.RenderSets()
         row.count:SetText(format("%d", #(rec.blue.A) + #(rec.epic.A)))
         row:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 12,
             -(y + (i - 1) * (PV.ROW_H + PV.ROW_GAP)))
-        row.name:SetTextColor(Unpack((PV.selSet == i) and C_GOLD or C_TEXT))
-        SetButtonSelected(row, PV.selSet == i)
+        row.name:SetTextColor(Unpack((PV.selSet == i) and C_WHITE or C_TEXT))
+        row.__sel = (PV.selSet == i)
+        PaintSetRow(row)
+        if ns.hui and ns.hui.PaintRowSelect then
+            ns.hui.PaintRowSelect(row, row.__sel)
+            if row.__huiRowSelTex then row.__huiRowSelTex:Hide() end
+        end
+        if ns.hui and ns.hui.HuiCardState then
+            ns.hui.HuiCardState(row, "norm")
+        end
         row:Show()
         if i % 4 == 0 then PY() end
     end
@@ -1351,8 +1384,6 @@ function PV.RenderSets()
     PV.facBtn1:ClearAllPoints()
     PV.facBtn1:SetPoint("TOPRIGHT", PV.headCard, "TOPRIGHT", -PV.HEAD_PAD, -PV.TAB_Y)
     PV.facBtn1:Show()
-    SetButtonSelected(PV.facBtn1, PV.faction == "A")
-    SetButtonSelected(PV.facBtn2, PV.faction == "H")
 
     local selRec = SD.sets[PV.selSet] or SD.sets[1]
     local selRowY = PV.MARK_TOP + PV.MARK_IN_H + PV.CARD_GAP
@@ -1401,11 +1432,11 @@ function PV.RenderSets()
     end
 
     local note = PV.labels.setsNote
-    local noteH = FSHeight(note, 14)
     note:SetPoint("TOPLEFT", PV.child, "TOPLEFT", detX, -(cy + 4))
     note:SetWidth(innerW - 8)
     note:SetText(L["印记门槛：手腕 / 腰部 R8 · 脚 R9 · 手 R10 · 腿 / 肩 R12 · 胸 / 头 R13；每套另有非套装的护腕与腰带"])
     note:Show()
+    local noteH = FSHeight(note, 14)
     local rightBottom = cy + 4 + noteH + 12
     PV.setsRightCard:SetHeight(math.max(rightBottom, PV.VIEW_H))
     PV.child:SetHeight(math.max(listBottom, rightBottom, PV.VIEW_H))
@@ -1447,8 +1478,6 @@ function PV.RenderRep()
     PV.facBtn2:SetPoint("TOPRIGHT", PV.facBtn1, "TOPLEFT", -8, 0)
     PV.facBtn1:Show()
     PV.facBtn2:Show()
-    SetButtonSelected(PV.facBtn1, PV.faction == "A")
-    SetButtonSelected(PV.facBtn2, PV.faction == "H")
     local row = {
         { btn = PV.repBtns[1], key = "spear" },
     }
@@ -1457,7 +1486,7 @@ function PV.RenderRep()
     end
     row[#row + 1] = { btn = PV.repBtns[2], key = "honor" }
     for i, d in ipairs(row) do
-        d.btn:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 12 + (i - 1) * 126, -y)
+        d.btn:SetPoint("TOPLEFT", PV.child, "TOPLEFT", 12 + (i - 1) * 128, -y)
         SetButtonSelected(d.btn, PV.selRep == d.key)
         d.btn:Show()
     end
@@ -1698,11 +1727,11 @@ function PV.RenderWeek()
     gl:Show()
     for i = 1, 13 do
         local bt = PV.goalBtns[i]
-        bt:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 122 + (i - 1) * 36, -y)
+        bt:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 122 + (i - 1) * 42, -y)
         SetButtonSelected(bt, PV.goal == i + 1)
         bt:Show()
     end
-    y = y + 30
+    y = y + 32
 
     local sl = PV.labels.sprSim
     sl:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 16, -(y + 4))
@@ -1710,7 +1739,7 @@ function PV.RenderWeek()
     sl:Show()
     for i = 1, 14 do
         local bt = PV.simBtns[i]
-        bt:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 122 + (i - 1) * 36, -y)
+        bt:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 122 + (i - 1) * 42, -y)
         SetButtonSelected(bt, PV.simRank == i)
         bt:Show()
     end
@@ -1765,7 +1794,7 @@ function PV.RenderWeek()
         local rowi = floor((i - 1) / 2)
         row.week:SetText(format(L["第 %d 周"], i))
         row.rank:SetText(format("R%d", rec.rank))
-        row.bar:SetWidth(floor(120 * rec.cum / maxCum))
+        row.bar:SetWidth(floor(110 * rec.cum / maxCum))
         row.cum:SetText(format("%d", rec.cum))
         row.inc:SetText(format("+%d", rec.inc))
         row:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 12 + col * (halfW + 32), -(y + rowi * 30))
@@ -1773,10 +1802,10 @@ function PV.RenderWeek()
     end
     y = y + 5 * 30
     local cfoot = PV.labels.capsFoot
-    local cfootH = FSHeight(cfoot, 14)
     cfoot:SetPoint("TOPLEFT", PV.child, "TOPLEFT", PV.WEEK_PAD + 16, -(y + 6))
     cfoot:SetText(L["等级 4 和 10 永远不是某周的上限；第 7 周一次跳两级（等级 11 与黑色战争坐骑）；上限按赛季累计点数计算，晚开始可直接冲级"])
     cfoot:Show()
+    local cfootH = FSHeight(cfoot, 14)
     local h2 = y + 6 + cfootH + 12 - card2Top
     h2 = math.max(h2, PV.VIEW_H - card2Top - PV.WEEK_PAD)
     PV.weekCard2:SetHeight(h2)

@@ -840,41 +840,37 @@ local function Paint()
         return format("%s · %d", GROUP_TXT[g] or g, n)
     end
 
-    local y = 0
-    local ri, si = 0, 0
+    local lay = {}
+    local hdr = {}
+    local si = 0
+    local top = 0
     for _, g in ipairs(order) do
         local arr = byG[g]
         if arr then
             si = si + 1
-            if si > 1 then y = y - 8 end
-            local hd = CG.secs[si]
-            if hd then
-                hd:ClearAllPoints()
-                hd:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, y)
-                hd.txt:SetText(SecLabel(g, #arr))
-                hd:Show()
-            end
-            y = y - SEC_H
+            if si > 1 then top = top + 8 end
+            hdr[#hdr + 1] = { g = g, n = #arr, top = top }
+            top = top + SEC_H
             for _, rec in ipairs(arr) do
-                ri = ri + 1
-                local r = CG.rows[ri]
-                PaintRow(r, rec)
-                if r then
-                    r:ClearAllPoints()
-                    r:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, y)
-                    r:SetPoint("RIGHT", CG.listChild, "RIGHT", 0, 0)
-                end
-                y = y - (ROW_H + 8)
-                if ri % 4 == 0 then PY() end
+                lay[#lay + 1] = { rec = rec, top = top }
+                top = top + CG.ROW_PITCH
             end
         end
     end
+
     for i = si + 1, #CG.secs do CG.secs[i]:Hide() end
-    for i = ri + 1, #CG.rows do
-        local r = CG.rows[i]
-        if r.__rec ~= nil then r.__rec = nil r:Hide() end
+    for k = 1, #hdr do
+        local hd = CG.secs[k]
+        if hd then
+            local he = hdr[k]
+            hd:ClearAllPoints()
+            hd:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, -he.top)
+            hd.txt:SetText(SecLabel(he.g, he.n))
+            hd:Show()
+        end
     end
-    CG.listChild:SetHeight(-y)
+
+    CG.listChild:SetHeight(top)
 
     if CG.lastListSub ~= CG.sub then
         CG.lastListSub = CG.sub
@@ -885,6 +881,43 @@ local function Paint()
             CG.listScroll:SetVerticalScroll(maxS)
         end
     end
+
+    local v = CG.listScroll:GetVerticalScroll() or 0
+    local viewH = CG.listScroll:GetHeight() or 0
+    if viewH <= 0 then viewH = 420 end
+    local ylo = v - CG.LIST_BUF * CG.ROW_PITCH
+    local yhi = v + viewH + CG.LIST_BUF * CG.ROW_PITCH
+    local lo, hi
+    for i = 1, #lay do
+        local t = lay[i].top
+        if t + ROW_H >= ylo and t <= yhi then
+            if not lo then lo = i end
+            hi = i
+        end
+    end
+
+    for k = 1, #CG.rows do
+        local r = CG.rows[k]
+        if r.__rec ~= nil then r.__rec = nil end
+        r:Hide()
+    end
+    if lo then
+        local slot = 0
+        for i = lo, hi do
+            slot = slot + 1
+            local r = CG.rows[slot]
+            if not r then
+                r = MakeRow(CG.listChild)
+                CG.rows[slot] = r
+            end
+            local e = lay[i]
+            PaintRow(r, e.rec)
+            r:ClearAllPoints()
+            r:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, -e.top)
+            r:SetPoint("RIGHT", CG.listChild, "RIGHT", 0, 0)
+        end
+    end
+
     if CG.UpdateListScroll then CG.UpdateListScroll() end
 
     if CG.subBtns then
@@ -945,6 +978,67 @@ function CG.OnItemData(itemID)
         CG._itemRepaint = false
     end
 end
+
+local function MakeRow(parent)
+    local r = CreateFrame("Button", nil, parent, BT)
+    r:SetHeight(ROW_H)
+    r:SetWidth(LIST_W - 2 * PAD)
+    if ns.hui and ns.hui.BuildRoundedBG then
+        local fill, border = ns.hui.BuildRoundedBG(r, 6, ns.hui.layer.L2, "both", true, 1)
+        r.__huiCard = { fill = fill, border = border }
+    else
+        Cardify(r)
+    end
+    r.__hover = nil
+    if ns.hui and ns.hui.BuildCapsule then
+        local hp = ns.hui.BuildCapsule(r, 6, ns.hui.layer.L4, 1, 2)
+        for _, t in ipairs(hp) do t:Hide() end
+        r.__hover = hp
+    else
+        r:SetHighlightTexture("Interface\\Buttons\\WHITE8x8")
+        local hl = r:GetHighlightTexture()
+        hl:SetColorTexture(1, 1, 1, 0.06)
+    end
+    r.icon = r:CreateTexture(nil, "ARTWORK")
+    r.icon:SetSize(30, 30)
+    r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(r.icon) end
+    r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
+    r.name = MakeFS(r, 14, C_TEXT, "LEFT")
+    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -4)
+    r.name:SetWidth(LIST_W - 2 * PAD - 44 - 4)
+    r.name:SetWordWrap(false)
+    r.src = MakeFS(r, 14, C_GREY, "LEFT")
+    r.src:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -5.5)
+    r.src:SetWordWrap(false)
+    MakeOutline(r, Unpack(C_ACCENT))
+    r:SetScript("OnEnter", function(self)
+        if self.__hover and not (self.__rec and self.__rec == CG.sel) then
+            for _, t in ipairs(self.__hover) do t:Show() end
+        end
+        local rec = self.__rec
+        if rec then DG.ShowItemTip(self, { rec[1] }) end
+    end)
+    r:SetScript("OnLeave", function()
+        if r.__hover then
+            for _, t in ipairs(r.__hover) do t:Hide() end
+        end
+        TipOff()
+    end)
+    r:SetScript("OnClick", function(self)
+        if self.__rec then
+            CG.sel = self.__rec
+            CG.RequestRender()
+            ns.PlaySound(1)
+        end
+    end)
+    r:Hide()
+    return r
+end
+
+CG.ROW_INIT = 16
+CG.LIST_BUF = 2
+CG.ROW_PITCH = ROW_H + 8
 
 local function BuildListPanel(page)
     local p = CreateFrame("Frame", nil, page, BT)
@@ -1164,66 +1258,8 @@ local function BuildListPanel(page)
     coroutine.yield()
 
     CG.rows = {}
-    local maxRows = #MOUNTS
-    do
-        local pets = CG.Pets()
-        if type(pets) == "table" and #pets > maxRows then maxRows = #pets end
-    end
-    for i = 1, maxRows do
-        local r = CreateFrame("Button", nil, child, BT)
-        r:SetHeight(ROW_H)
-        r:SetWidth(LIST_W - 2 * PAD)
-        if ns.hui and ns.hui.BuildRoundedBG then
-            local fill, border = ns.hui.BuildRoundedBG(r, 6, ns.hui.layer.L2, "both", true, 1)
-            r.__huiCard = { fill = fill, border = border }
-        else
-            Cardify(r)
-        end
-        r.__hover = nil
-        if ns.hui and ns.hui.BuildCapsule then
-            local hp = ns.hui.BuildCapsule(r, 6, ns.hui.layer.L4, 1, 2)
-            for _, t in ipairs(hp) do t:Hide() end
-            r.__hover = hp
-        else
-            r:SetHighlightTexture("Interface\\Buttons\\WHITE8x8")
-            local hl = r:GetHighlightTexture()
-            hl:SetColorTexture(1, 1, 1, 0.06)
-        end
-        r.icon = r:CreateTexture(nil, "ARTWORK")
-        r.icon:SetSize(30, 30)
-        r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(r.icon) end
-        r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
-        r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -4)
-        r.name:SetWidth(LIST_W - 2 * PAD - 44 - 4)
-        r.name:SetWordWrap(false)
-        r.src = MakeFS(r, 14, C_GREY, "LEFT")
-        r.src:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -5.5)
-        r.src:SetWordWrap(false)
-        MakeOutline(r, Unpack(C_ACCENT))
-        r:SetScript("OnEnter", function(self)
-            if self.__hover and not (self.__rec and self.__rec == CG.sel) then
-                for _, t in ipairs(self.__hover) do t:Show() end
-            end
-            local rec = self.__rec
-            if rec then DG.ShowItemTip(self, { rec[1] }) end
-        end)
-        r:SetScript("OnLeave", function()
-            if r.__hover then
-                for _, t in ipairs(r.__hover) do t:Hide() end
-            end
-            TipOff()
-        end)
-        r:SetScript("OnClick", function(self)
-            if self.__rec then
-                CG.sel = self.__rec
-                CG.RequestRender()
-                ns.PlaySound(1)
-            end
-        end)
-        r:Hide()
-        CG.rows[i] = r
+    for i = 1, CG.ROW_INIT do
+        CG.rows[i] = MakeRow(child)
         if i % 8 == 0 then coroutine.yield() end
     end
 end
@@ -1556,7 +1592,7 @@ end
 function CG.Build(page)
     if CG.built or CG.building then return end
     CG.building = true
-    ns.PhasedStart(71, coroutine.create(function()
+    ns.PhasedStart(28, coroutine.create(function()
     CG.page = page
     CG.sub = SUB_MOUNT
     CG.filter = "all"

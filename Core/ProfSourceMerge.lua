@@ -5,6 +5,7 @@ ns.ProfSourceMerge = M
 
 local function ZoneName(area)
     if type(area) ~= "number" or area <= 0 then return "" end
+    if ns.EnsureProfSources then ns.EnsureProfSources() end
     local txt = ns.ProfZoneText
     if type(txt) == "table" and txt[area] then return txt[area] end
     local am = ns.AreaMap
@@ -96,7 +97,7 @@ function M.Fill(row)
     if type(s) == "table" and s.__srcDone then return s end
     local f = row[13]
     local fid = type(f) == "table" and f[1] or nil
-    local src = fid and ns.ProfSources and ns.ProfSources[fid] or nil
+    local src = fid and ns.EnsureProfSources()[fid] or nil
     if type(src) ~= "table" then return s end
     if type(s) ~= "table" then
         s = {}
@@ -145,7 +146,7 @@ end
 
 function M.VendorsOf(fid)
     if type(fid) ~= "number" then return nil end
-    local src = ns.ProfSources and ns.ProfSources[fid]
+    local src = ns.EnsureProfSources()[fid]
     if type(src) ~= "table" then return nil end
     return src.v
 end

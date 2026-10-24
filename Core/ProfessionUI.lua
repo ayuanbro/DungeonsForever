@@ -494,7 +494,7 @@ PD.GR_LOC_X = 88
 PD.GR_ICON_W = 20
 
 PD.ROW_CAP = 300
-PD.ROW_POOL_CAP = 140
+PD.ROW_POOL_CAP = 32
 PD.TOOL_MAX = 20
 
 PD.TEXT_W = PD.RIGHT_W - 46
@@ -792,6 +792,53 @@ function PD.SyncHover()
     end
 end
 
+PD.PILL_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\HUIPillCap"
+PD.PILL_CAP_W = 5
+
+function PD.MakePill(parent, col, cr)
+    local f = CreateFrame("Frame", nil, parent)
+    col = col or ((ns.hui and ns.hui.layer and ns.hui.layer.L2) or { 0.11, 0.11, 0.12, 1 })
+    local a = col[4] or 1
+    local cw = cr or PD.PILL_CAP_W
+    f.capL = f:CreateTexture(nil, "BACKGROUND")
+    f.capL:SetTexture(PD.PILL_CAP_TEX)
+    f.capL:SetTexCoord(0, 0.5, 0, 1)
+    f.capL:SetVertexColor(col[1], col[2], col[3], a)
+    f.capL:SetWidth(cw)
+    f.capL:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    f.capL:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
+    f.capR = f:CreateTexture(nil, "BACKGROUND")
+    f.capR:SetTexture(PD.PILL_CAP_TEX)
+    f.capR:SetTexCoord(0.5, 1, 0, 1)
+    f.capR:SetVertexColor(col[1], col[2], col[3], a)
+    f.capR:SetWidth(cw)
+    f.capR:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    f.capR:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+    f.mid = f:CreateTexture(nil, "BACKGROUND")
+    f.mid:SetColorTexture(col[1], col[2], col[3], a)
+    f.mid:SetPoint("TOPLEFT", f.capL, "TOPRIGHT", 0, 0)
+    f.mid:SetPoint("BOTTOMRIGHT", f.capR, "BOTTOMLEFT", 0, 0)
+    return f
+end
+
+function PD.SegButtons(r)
+    local list = r.segBtns
+    if list then return list end
+    list = {}
+    for k = 1, 4 do
+        local sb = NewButton(r, "", 60, 20, 12)
+        SetButtonSelected(sb, false)
+        sb:SetScript("OnClick", function(self)
+            if self.__segKey and PD.onTool then PD.onTool(self.__segKey) end
+            ns.PlaySound(1)
+        end)
+        sb:Hide()
+        list[k] = sb
+    end
+    r.segBtns = list
+    return list
+end
+
 function PD.Row(i)
     local r = PD.rows[i]
     if r then return r end
@@ -845,17 +892,7 @@ function PD.Row(i)
         ns.PlaySound(1)
     end)
     r.hsGap:Hide()
-    r.segBtns = {}
-    for k = 1, 4 do
-        local sb = NewButton(r, "", 60, 20, 12)
-        SetButtonSelected(sb, false)
-        sb:SetScript("OnClick", function(self)
-            if self.__segKey and PD.onTool then PD.onTool(self.__segKey) end
-            ns.PlaySound(1)
-        end)
-        sb:Hide()
-        r.segBtns[k] = sb
-    end
+    r.segBtns = false
     r.gic = {}
     for k = 1, 6 do
         local g = r:CreateTexture(nil, "ARTWORK")
@@ -920,9 +957,8 @@ function PD.Row(i)
     r.__cardTx:SetWordWrap(false)
     r.__cardTx:Hide()
     for _, f in ipairs({ r.a, r.b, r.c, r.c2, r.d, r.e, r.f }) do f:SetWordWrap(false) end
-    r.tagChip = CreateFrame("Frame", nil, r)
+    r.tagChip = PD.MakePill(r, (ns.hui and ns.hui.layer and ns.hui.layer.L2) or nil, 4)
     r.tagChip:SetFrameLevel((r:GetFrameLevel() or 0) + 1)
-    ns.hui.BuildRoundedBG(r.tagChip, 4, ns.hui.layer.L2, "both", true, 1)
     r.tagChip:Hide()
     r.tagBg = r.tagChip
     r.tagFs = MakeFS(r.tagChip, 10, { 0.42, 0.94, 0.62 }, "CENTER")
@@ -1040,9 +1076,20 @@ PD.StealRowFrame = function(idx)
     local vh = sc:GetHeight()
     if type(v) ~= "number" or type(vh) ~= "number" or vh <= 0 then return nil end
     local vT, vB = v - 40, v + vh + 160
-    local cnt = 0
+    local cnt, staleJ = 0, nil
+    local nCur = PD.curN or 0
     for j = 1, PD.ROW_CAP do
-        if PD.rows[j] then cnt = cnt + 1 end
+        if PD.rows[j] then
+            cnt = cnt + 1
+            if not staleJ and j > nCur then staleJ = j end
+        end
+    end
+    if staleJ then
+        local rr = PD.rows[staleJ]
+        PD.rows[staleJ] = nil
+        PD.rows[idx] = rr
+        if PD.WipeRow then PD.WipeRow(rr) end
+        return rr
     end
     if cnt < (PD.ROW_POOL_CAP or 140) then return nil end
     local bestJ, bestD, nilJ
@@ -1537,7 +1584,7 @@ function PD.BindRow(r, spec, h)
     r.h1:Hide(); r.h2:Hide(); r.h3:Hide(); r.h4:Hide(); r.h5:Hide(); r.h6:Hide()
     if r.__toolBadge then r.__toolBadge:Hide() end
     if r.__roleBadge then r.__roleBadge:Hide() end
-    if r.segBtns then
+    if type(r.segBtns) == "table" then
         for _, sb in pairs(r.segBtns) do sb:Hide() end
     end
     PD.PaintDiffBar(r, nil)
@@ -1659,9 +1706,11 @@ function PD.BindRow(r, spec, h)
             r.c2:SetWordWrap(false)
             r.c2:SetPoint("LEFT", r.a, "RIGHT", 10, 0)
         end
-        if spec.segs and r.segBtns then            local prev
+        if spec.segs then
+            local segs = PD.SegButtons(r)
+            local prev
             for k = 1, 4 do
-                local bt = r.segBtns[k]
+                local bt = segs[k]
                 local seg = spec.segs[k]
                 if seg then
                     local w = select(1, PD.ToolSize(seg.text))
@@ -1678,8 +1727,8 @@ function PD.BindRow(r, spec, h)
                     bt:Hide()
                 end
             end
-        elseif r.segBtns then
-            for k = 1, 4 do r.segBtns[k]:Hide() end
+        elseif type(r.segBtns) == "table" then
+            for _, sb in pairs(r.segBtns) do sb:Hide() end
         end
         if spec.tag then
             PD.PaintTag(r, spec.tag)
@@ -2685,7 +2734,7 @@ end
 function PD.FillTrainerBoard()
     local root = PD.trainerBoard
     if not root then return 0 end
-    local d = ns.ProfTrainers and ns.ProfTrainers[PD.cur]
+    local d = ns.EnsureProfTrainers()[PD.cur]
     if not (d and d.list and #d.list > 0) then
         for _, c in ipairs(root.__chips) do c:Hide() end
         for _, f in pairs(root.__fs) do f:Hide() end
@@ -3073,7 +3122,7 @@ function PD.Build(page)
     PD.building = true
     PD.rows, PD.toolBtns, PD.setToggles = {}, {}, {}
     PD.perkOpen, PD.__pendRows = {}, {}
-    ns.PhasedStart(30, coroutine.create(function()
+    ns.PhasedStart(36, coroutine.create(function()
     PD.page = page
     if not PD.trFac then
         if UnitFactionGroup and UnitFactionGroup("player") == "Horde" then
@@ -3278,11 +3327,8 @@ function PD.Build(page)
         tf:SetSize(90, PD.SET_CHIP_H)
         local _, bord = ns.hui.BuildRoundedBG(tf, 6, ns.hui.layer.L2, "both", true, 1)
         tf.__border = bord or {}
-        if ns.hui.BuildCapsule and ns.hui.GradNorm then
-            tf.__capFill = ns.hui.BuildCapsule(tf, 6, ns.hui.layer.L2, 0, 2, ns.hui.GradNorm)
-        end
         if ns.hui and ns.hui.BuildCapsule then
-            tf.__hov = ns.hui.BuildCapsule(tf, 8, ns.hui.layer.L4, 1, 2) or {}
+            tf.__hov = ns.hui.BuildCapsule(tf, 6, ns.hui.layer.L4, 1, 2) or {}
             for _, t in ipairs(tf.__hov) do t:Hide() end
         end
         tf:Hide()
@@ -3877,7 +3923,7 @@ function PD.TabsFor(slug)
     local out = { "overview" }
     if slug == "poisons" then out = {} end
     if not p then return out end
-    local TRD = ns.ProfTrainers and ns.ProfTrainers[slug]
+    local TRD = ns.EnsureProfTrainers()[slug]
     if TRD and TRD.list and #TRD.list > 0 then out[#out + 1] = "trainer" end
     local r = RGet(slug)
     if r and ((r.rows and #r.rows > 0) or (r.enchants and #r.enchants > 0)
@@ -5942,28 +5988,14 @@ function PD.FormulaAuctionLine(fid)
     return { format(L["拍卖行：%s"], RAmod.MoneyStr(p, "copper")), 0.72, 0.72, 0.88 }
 end
 
-function PD.DropLines(s)
-    local out = {}
-    if not (s and s.drops and #s.drops > 0) then return out end
-    for i = 1, #s.drops do
-        local dd = s.drops[i]
-        if dd and (dd.npc or dd.zone) then
-            local nm = format(L["掉落：%s"], tostring(dd.npc or "?"))
-            if dd.zone and dd.zone ~= "" then nm = nm .. " · " .. tostring(dd.zone) end
-            out[#out + 1] = { nm, 0.75, 0.75, 0.75 }
-        end
-    end
-    return out
-end
-
 function PD.VendorEntries(s)
     local out = {}
     local vs = PD.VendorListOf(s)
     for i = 1, #vs do
         local v = vs[i]
         local loc = v.id and ns.ProfVendors and ns.ProfVendors[v.id] or nil
-        if not loc and v.id and ns.ProfNPCLocs then
-            local ls = ns.ProfNPCLocs[v.id]
+        if not loc and v.id then
+            local ls = ns.EnsureProfNPCLocs()[v.id]
             if type(ls) == "table" then loc = ls[1] end
         end
         if not loc and v.name then
@@ -6015,7 +6047,7 @@ function PD.DropEntries(s)
         local rec = dd.npc and ns.ProfDropNpcs and ns.ProfDropNpcs[dd.npc] or nil
         local ui, x, y = rec and rec[2], rec and rec[3], rec and rec[4]
         if not ui then
-            local locs = dd.id and ns.ProfNPCLocs and ns.ProfNPCLocs[dd.id] or nil
+            local locs = dd.id and ns.EnsureProfNPCLocs()[dd.id] or nil
             local l0 = locs and locs[1]
             if l0 then ui, x, y = l0[2] or l0[1], l0[3], l0[4] end
         end
@@ -6453,21 +6485,255 @@ function PD.PaintDiffBar(r, vals)
 end
 
 local TIP_RED = { 1, 0.3, 0.25 }
+PD.VENDOR_SHOW_MAX = 2
+
+function PD.VendorSideText(side)
+    if side == "A" or side == "a" then return L["联盟"] end
+    if side == "H" or side == "h" then return L["部落"] end
+    return L["中立"]
+end
+
+function PD.MyVendorSide()
+    local f = UnitFactionGroup and UnitFactionGroup("player")
+    if f == "Alliance" then return "a" end
+    if f == "Horde" then return "h" end
+    return nil
+end
+
+function PD.VendorSideOf(o)
+    if type(o) ~= "table" then return "n" end
+    local t = ns.ProfVendorSide
+    local s = type(t) == "table" and t[o.npcID] or nil
+    if type(s) ~= "string" or s == "" then s = o.side end
+    if type(s) ~= "string" then return "n" end
+    s = string.lower(s)
+    if s == "a" or s == "h" then return s end
+    return "n"
+end
+
+function PD.CurrencyOf(curID)
+    if type(curID) ~= "number" or curID <= 0 then return nil end
+    local cache = PD.__curCache
+    if not cache then cache = {} PD.__curCache = cache end
+    local hit = cache[curID]
+    if hit then
+        if hit == false then return nil end
+        return hit[1], hit[2]
+    end
+    local r = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(curID)
+    local nm = type(r) == "table" and r.name or nil
+    if type(nm) ~= "string" or nm == "" then
+        cache[curID] = false
+        return nil
+    end
+    local icon = type(r.iconFileID) == "number" and r.iconFileID > 0 and r.iconFileID or nil
+    cache[curID] = { nm, icon }
+    return nm, icon
+end
+
+function PD.VendorItemName(itemID)
+    if type(itemID) ~= "number" or itemID <= 0 then return nil end
+    if C_Item and C_Item.GetItemNameByID then
+        local ok, v = pcall(C_Item.GetItemNameByID, itemID)
+        if ok and type(v) == "string" and v ~= "" then return v end
+    end
+    if C_Item and C_Item.GetItemInfo then
+        local ok, v = pcall(C_Item.GetItemInfo, itemID)
+        if ok and type(v) == "string" and v ~= "" then return v end
+    end
+    local tbl = ns.ProfItemNames
+    local nm = type(tbl) == "table" and tbl[itemID] or nil
+    if type(nm) == "string" and nm ~= "" then return nm end
+    return nil
+end
+
+local VENDOR_SIDES = { "A", "H", "N" }
+
+function PD.VendorOffersOf(itemID)
+    if type(itemID) ~= "number" then return nil end
+    local out, seen = {}, {}
+    local function add(npcID, name, area, side, price, cur, amt, pack, stock)
+        if type(npcID) ~= "number" or seen[npcID] then return end
+        seen[npcID] = true
+        out[#out + 1] = { npcID = npcID, name = name, area = area, side = side,
+                          price = price, cur = cur, amt = amt, pack = pack, stock = stock }
+    end
+    local src = ns.EnsureProfSources()[itemID]
+    local vs = type(src) == "table" and src.v or nil
+    if type(vs) ~= "table" or #vs == 0 then
+        local fid = ns.ProfMakeSrc and ns.ProfMakeSrc[itemID]
+        local psrc = fid and ns.EnsureProfSources()[fid] or nil
+        vs = type(psrc) == "table" and psrc.v or nil
+    end
+    if type(vs) == "table" then
+        for i = 1, #vs do
+            local v = vs[i]
+            if type(v) == "table" and type(v.id) == "number" then
+                add(v.id, v.name, v.area, v.side, v.price, v.cur, v.amt, v.pack, v.stock)
+            end
+        end
+    end
+    local sup = ns.EnsureProfMaterialSupply()[itemID]
+    if type(sup) == "table" and #sup >= 8 then
+        for i = 1, #sup - 7, 8 do
+            local cost = sup[i + 1]
+            add(sup[i], nil, sup[i + 4], VENDOR_SIDES[sup[i + 3]] or "N",
+                type(cost) == "number" and cost or nil, sup[i + 6], sup[i + 7],
+                sup[i + 5], sup[i + 2])
+        end
+    end
+    if #out == 0 then return nil end
+    return out
+end
+
+function PD.VendorBlockLines(lines, itemID)
+    local C_NM, C_MT, C_PR = { 0.92, 0.94, 0.98 }, { 0.63, 0.65, 0.70 }, { 0.55, 0.85, 0.60 }
+    local list = PD.VendorOffersOf(itemID)
+    if not list then
+        lines[#lines + 1] = { format(L["商人：%s"], "—"), Unpack(C_MT) }
+        return
+    end
+    local mine = PD.MyVendorSide()
+    if mine then
+        local keep, other = {}, 0
+        for i = 1, #list do
+            local s = PD.VendorSideOf(list[i])
+            if s == "n" or s == mine then
+                keep[#keep + 1] = list[i]
+            else
+                other = other + 1
+            end
+        end
+        list = keep
+        if #list == 0 then
+            lines[#lines + 1] = { format(L["商人：%s"], other > 0 and L["对方阵营专属"] or "—"), Unpack(C_MT) }
+            return
+        end
+    end
+    local shown = math.min(#list, PD.VENDOR_SHOW_MAX or 2)
+    for i = 1, shown do
+        local o = list[i]
+        local nm = PD.VendorName(o)
+        if type(nm) ~= "string" or nm == "" or nm == "?" then nm = L["位置未收录的商人"] end
+        lines[#lines + 1] = { format(L["商人：%s"], nm), Unpack(C_NM) }
+        local zone = o.area and PD.CampZoneName(o.area) or nil
+        local stbl = ns.ProfVendorSide
+        local side = (type(stbl) == "table" and stbl[o.npcID]) or o.side
+        local head = PD.VendorSideText(side)
+        if type(zone) == "string" and zone ~= "" then head = head .. " · " .. zone end
+        lines[#lines + 1] = { head, Unpack(C_MT) }
+        local ptxt, isCur
+        if o.cur and o.amt then
+            local cnm, cicon = PD.CurrencyOf(o.cur)
+            if cnm then
+                isCur = true
+                ptxt = tostring(o.amt)
+                if cicon then
+                    ptxt = ptxt .. " |T" .. cicon .. ":12:12:0:0:64:64:4:60:4:60|t"
+                end
+                ptxt = ptxt .. " " .. cnm
+            else
+                local iname = PD.VendorItemName(o.cur)
+                if iname then ptxt = iname .. " ×" .. tostring(o.amt) end
+            end
+        end
+        if not ptxt and type(o.price) == "number" and o.price > 0 then
+            ptxt = RA.MoneyStr(o.price, "copper")
+        end
+        if ptxt then
+            if not isCur and type(o.pack) == "number" and o.pack > 1 then
+                ptxt = ptxt .. " · " .. format(L["每组 %d 件"], o.pack)
+            end
+            lines[#lines + 1] = { format(L["价格：%s"], ptxt), Unpack(C_PR) }
+        end
+    end
+    if #list > shown then
+        local names = {}
+        for i = shown + 1, math.min(#list, shown + 3) do
+            local nm = PD.VendorName(list[i])
+            if type(nm) == "string" and nm ~= "" and nm ~= "?" then names[#names + 1] = nm end
+        end
+        local txt = format(L["另有 %d 处"], #list - shown)
+        if #names > 0 then txt = txt .. " · " .. table.concat(names, "、") end
+        lines[#lines + 1] = { txt, Unpack(C_MT) }
+    end
+end
+
+function PD.DropPctText(pct)
+    if type(pct) ~= "number" or pct <= 0 then return nil end
+    local q = pct <= 1 and pct * 100 or pct
+    local ip = math.floor(q + 0.5)
+    if ip >= 1 then return format(L["%d%%"], ip) end
+    return L["<1%"]
+end
+
+function PD.DropNPCText(e)
+    local t = ns.ProfDropNames
+    local nm = type(t) == "table" and type(e.id) == "number" and t[e.id] or nil
+    if type(nm) ~= "string" or nm == "" then nm = e.npc end
+    if type(nm) ~= "string" or nm == "" then nm = L["未知怪物"] end
+    return nm
+end
+
+function PD.DropRowsOf(itemID)
+    local srcs = ns.EnsureProfSources()
+    local e = srcs[itemID]
+    local d = type(e) == "table" and e.d or nil
+    if type(d) ~= "table" or #d == 0 then
+        local fid = ns.ProfMakeSrc and ns.ProfMakeSrc[itemID]
+        local fe = fid and srcs[fid]
+        d = type(fe) == "table" and fe.d or nil
+    end
+    if type(d) ~= "table" or #d == 0 then return nil end
+    local out, seen = {}, {}
+    for i = 1, #d do
+        local dd = d[i]
+        if type(dd) == "table" and (dd.npc or dd.area) then
+            local nm = PD.DropNPCText(dd)
+            local key = nm .. "|" .. tostring(dd.area or "")
+            if not seen[key] then
+                seen[key] = true
+                out[#out + 1] = { name = nm, area = dd.area, pct = dd.pct }
+            end
+        end
+    end
+    if #out == 0 then return nil end
+    table.sort(out, function(a, b) return (a.pct or 0) > (b.pct or 0) end)
+    return out
+end
+
+function PD.DropBlockLines(lines, itemID)
+    local C_DR = { 0.72, 0.72, 0.76 }
+    local list = PD.DropRowsOf(itemID)
+    if not list then return end
+    local shown = math.min(#list, PD.DROP_SHOW_MAX or 2)
+    for i = 1, shown do
+        local o = list[i]
+        local txt = format(L["掉落：%s"], o.name)
+        local zone = o.area and PD.CampZoneName(o.area) or nil
+        if type(zone) == "string" and zone ~= "" then txt = txt .. " · " .. zone end
+        local pt = PD.DropPctText(o.pct)
+        if pt then txt = txt .. " · " .. pt end
+        lines[#lines + 1] = { txt, Unpack(C_DR) }
+    end
+    if #list > shown then
+        lines[#lines + 1] = { format(L["…等 %d 处"], #list - shown), Unpack(C_DR) }
+    end
+end
+
 function PD.PriceTipLines(itemID, mats)
     local lines = {}
     if not itemID then return lines end
     local ah = RA.AHPriceOf and RA.AHPriceOf(itemID) or nil
     local sell = RA.NPCSellPriceOf and RA.NPCSellPriceOf(itemID) or nil
-    local buy = RA.NPCBuyPriceOf and RA.NPCBuyPriceOf(itemID) or nil
-    local buyNPC = buy and RA.NPCBuySupplierOf and RA.NPCBuySupplierOf(itemID) or nil
     local cost, unpriced, nMats
     if mats and #mats > 0 then
         cost, unpriced = RA.MatListCost(mats)
         nMats = #mats
     end
     lines[#lines + 1] = { format(L["拍卖: %s"], ah and RA.MoneyStr(ah, "copper") or "—") }
-    lines[#lines + 1] = { format(L["商人: %s"], buy and RA.MoneyStr(buy, "copper") or "—")
-                          .. (buyNPC and (" · " .. buyNPC) or "") }
+    PD.VendorBlockLines(lines, itemID)
+    PD.DropBlockLines(lines, itemID)
     lines[#lines + 1] = { format(L["卖店: %s"], sell and RA.MoneyStr(sell, "copper") or "—") }
     local costTxt = "—"
     local approx = false
@@ -6834,7 +7100,7 @@ PD.__favorBuyMemo = {}
 function PD.RowIsFavorBuy(r)
     local fid = r[13] and r[13][1]
     if not fid then return false end
-    local flat = ns.ProfFormulaOffers and ns.ProfFormulaOffers[fid]
+    local flat = ns.EnsureProfFormulaOffers()[fid]
     if not flat then return false end
     for j = 1, #flat, 8 do
         if tonumber(flat[j + 6]) == 3402 then return true end

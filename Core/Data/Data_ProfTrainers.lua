@@ -1,5 +1,7 @@
 local _, ns = ...
 
+ns.EnsureProfTrainers = function()
+    if ns.ProfTrainers then return ns.ProfTrainers end
 ns.ProfTrainers = {
     ["alchemy"] = {
         ranks = {
@@ -719,3 +721,5 @@ ns.ProfTrainers = {
         },
     },
 }
+    return ns.ProfTrainers
+end

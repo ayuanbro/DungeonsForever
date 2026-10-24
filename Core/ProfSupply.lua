@@ -92,7 +92,7 @@ end
 local FORMULA_STEP = 8
 
 local function BuildFormulaList(itemID, withCurrency)
-    local flat = ns.ProfFormulaOffers and ns.ProfFormulaOffers[itemID]
+    local flat = ns.EnsureProfFormulaOffers()[itemID]
     if type(flat) ~= "table" then return nil end
     local total = #flat
     if total < FORMULA_STEP or total % FORMULA_STEP ~= 0 then return nil end
@@ -160,7 +160,7 @@ function M.Ensure()
         M.formulaVerifiedAt = fmeta.source or "formula-offers"
     end
     local meta = ns.ProfMaterialSupplyMeta
-    local supply = ns.ProfMaterialSupply
+    local supply = ns.EnsureProfMaterialSupply and ns.EnsureProfMaterialSupply() or nil
     if type(meta) ~= "table" or meta.schemaVersion ~= 2 then return end
     if not Text(meta.fingerprint) or not Text(meta.verifiedAt) or type(supply) ~= "table" then return end
     M.supply = supply
