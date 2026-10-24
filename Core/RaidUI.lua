@@ -9,7 +9,7 @@ if not Host then return end
 
 local MakeFS = Host.MakeFS
 local NewButton = Host.NewButton
-local MakeOutline, SetOutline = Host.MakeOutline, Host.SetOutline
+local MakeOutline, SetOutline, SetButtonSelected = Host.MakeOutline, Host.SetOutline, Host.SetButtonSelected
 local Unpack = Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
@@ -286,6 +286,7 @@ function RU.PaintCard(c, rec, ec, ea)
     c:SetShown(true)
 end
 
+RU.TAB_H, RU.TAB_W = 24, 76
 RU.SET_PAD      = 14
 RU.SET_ICON     = 24
 RU.SET_HEAD_Y   = 14
@@ -296,7 +297,7 @@ RU.SET_TEXT_X   = 16 + RU.SET_LABEL_W + 8
 RU.SET_BADGE_W, RU.SET_BADGE_H = 46, 20
 RU.SET_CHIP_H   = RU.TAB_H
 RU.SET_CHIP_W   = RU.TAB_W
-RU.SET_CHIP_GAP = 6
+RU.SET_CHIP_GAP = 8
 RU.SET_CHIP_FS  = 14
 RU.SET_RADIUS   = 6
 RU.SET_BATCH_Y  = 90
@@ -435,8 +436,7 @@ end
 
 function RU.NewSetRow(parent)
     local bt = NewButton(parent, "", RU.SET_LIST_W, RU.SET_ROW_H, 14)
-    MakeOutline(bt, 1, 0.82, 0)
-    bt.__huiKeepTextColor = true
+    SetButtonSelected(bt, false)
     local it = bt:CreateTexture(nil, "ARTWORK")
     it:SetSize(RU.SET_ROW_ICON, RU.SET_ROW_ICON)
     it:SetPoint("LEFT", bt, "LEFT", 6, 0)
@@ -747,9 +747,7 @@ function RU.PaintBatchChips()
         local item = RU.batchChips[i]
         if item and item.bt then
             local sel = (item.key == cur)
-            SetOutline(item.bt, sel, 1, 0.82, 0)
-            local fs = item.bt:GetFontString()
-            fs:SetTextColor(Unpack(sel and C_GOLD or C_TEXT))
+            SetButtonSelected(item.bt, sel)
             fs:SetAlpha(sel and 1 or 0.82)
         end
     end
@@ -767,8 +765,7 @@ function RU.PaintDropButton()
         fs:SetText(L["职业："] .. ClassNameOf(cur))
         fs:SetTextColor(ClassColorOf(cur))
     end
-    MakeOutline(RU.ddBtn, 1, 0.82, 0)
-    SetOutline(RU.ddBtn, cur ~= "ALL", 1, 0.82, 0)
+    SetButtonSelected(RU.ddBtn, cur ~= "ALL")
 end
 
 function RU.OpenClassMenu(owner)
@@ -858,7 +855,7 @@ function RU.RenderSets()
                     row.rec = rec
                     row:SetWidth(RU.SET_LIST_W)
                     row:SetPoint("TOPLEFT", RU.setChild, "TOPLEFT", 0, -y)
-                    SetOutline(row, sel ~= nil and rec == sel, 1, 0.82, 0)
+                    SetButtonSelected(row, sel ~= nil and rec == sel)
                     row:Show()
                 end
                 y = y + RU.SET_ROW_H + 2
@@ -930,8 +927,7 @@ function RU.BuildSets(page)
         local key = (i == 1) and SET_BATCH_ALL or batches[i - 1].key
         local label = (key == SET_BATCH_ALL) and L["全部"] or (L[batches[i - 1].label] or batches[i - 1].label)
         local bt = NewButton(sets, label, RU.SET_CHIP_W, RU.SET_CHIP_H, RU.SET_CHIP_FS)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false)
         bt:SetScript("OnClick", function() RU.SetBatch(key) end)
         texts[i] = TextW(bt:GetFontString(), label)
         RU.batchChips[i] = { key = key, bt = bt }
@@ -959,8 +955,7 @@ function RU.BuildSets(page)
     end
 
     local dd = NewButton(sets, L["职业："] .. L["全部职业"], RU.SET_DD_W, RU.SET_DD_H, RU.SET_CHIP_FS)
-    MakeOutline(dd, 1, 0.82, 0)
-    dd.__huiKeepTextColor = true
+    SetButtonSelected(dd, false)
     dd:SetPoint("TOPRIGHT", page, "TOPRIGHT", -(RU.X + 2), -RU.SET_BATCH_Y)
     dd:SetScript("OnClick", function() RU.OpenClassMenu(dd) end)
     RU.ddBtn = dd

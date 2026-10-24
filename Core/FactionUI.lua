@@ -11,7 +11,7 @@ if not Host then return end
 
 local MakeFS = Host.MakeFS
 local NewButton = Host.NewButton
-local MakeOutline, SetOutline = Host.MakeOutline, Host.SetOutline
+local SetButtonSelected = Host.SetButtonSelected
 local SetTip = Host.SetTip
 local Unpack = Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
@@ -354,10 +354,58 @@ local function PaintChip(f, text, color)
     end
 end
 
+FV.WIN_BUF = 3
+FV.ROW_PITCH = FV.ROW_H + FV.LIST_GAP
+FV.ROW_INIT = 8
+
+local function MakeRow(parent)
+    local r = CreateFrame("Button", nil, parent)
+    r:SetSize(FV.LROW_W, FV.ROW_H)
+    if HUI and ns.hui.HuiCardFX then
+        ns.hui.HuiCardFX(r, 6, 2)
+    end
+    r.name = MakeFS(r, 14, C_TEXT, "LEFT")
+    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -5)
+    r.name:SetWidth(FV.LROW_W - 60)
+    r.name:SetWordWrap(false)
+    r.sub = MakeFS(r, 14, C_GREY, "LEFT")
+    r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -22)
+    r.sub:SetWordWrap(false)
+    r.badge = MakeFS(r, 14, C_TEXT, "RIGHT")
+    r.badge:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -11)
+    r:EnableMouse(true)
+    r:SetScript("OnEnter", function(self)
+        if self.__huiCard and ns.hui.HuiCardState and not self.__selActive then
+            ns.hui.HuiCardState(self, "hover")
+            self.__hst = "hover"
+        end
+        if self.__tip and SetTip then SetTip(self, self.__tip) end
+    end)
+    r:SetScript("OnLeave", function(self)
+        if self.__huiCard and ns.hui.HuiCardState then
+            ns.hui.HuiCardState(self, "norm")
+            self.__hst = "norm"
+        end
+        GameTooltip:Hide()
+    end)
+    r:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        Cfg().sel = self.__fid
+        FV:PaintList()
+        FV:PaintDetail()
+    end)
+    r:SetScript("OnMouseWheel", function(_, delta)
+        WheelTo(FV.lScroll, FV.lChild, delta)
+        FV:CullLeft()
+    end)
+    r:Hide()
+    return r
+end
+
 FV.Build = function(page)
     if FV.built or FV.building then return end
     FV.building = true
-    ns.PhasedStart(34, coroutine.create(function()
+    ns.PhasedStart(25, coroutine.create(function()
     FV.page = page
 
     local leftCard = CreateFrame("Frame", nil, page)
@@ -399,11 +447,7 @@ FV.Build = function(page)
 
     local fb = NewButton(leftCard, "▽ " .. L["筛选"], 88, 24, 14)
     fb:SetPoint("TOPRIGHT", leftCard, "TOPRIGHT", -FV.PAD, -10)
-    if HUI and ns.hui.ACCENT then
-        MakeOutline(fb, Unpack(ns.hui.ACCENT))
-    else
-        MakeOutline(fb, 1, 0.82, 0)
-    end
+    SetButtonSelected(fb, false)
     fb:SetScript("OnClick", function()
         ns.PlaySound(1)
         FV:SetPopupShown(not FV.pop:IsShown())
@@ -545,7 +589,9 @@ FV.Build = function(page)
         vthumb:SetPoint("TOP", vbar, "TOP", 0, -1 - frac * (trackH - th))
     end
     FV.UpdateLeftBar = UpdateLeftBar
-    scroll:HookScript("OnVerticalScroll", function() UpdateLeftBar() end)
+    scroll:HookScript("OnVerticalScroll", function()
+        FV:PaintList()
+    end)
     vthumb:SetScript("OnMouseDown", function(self, btn)
         if btn ~= "LeftButton" then return end
         local scale = UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale() or 1
@@ -558,7 +604,7 @@ FV.Build = function(page)
             if span <= 0 then return end
             local maxScroll = FV.lChild:GetHeight() - FV.lScroll:GetHeight()
             FV.lScroll:SetVerticalScroll(min(maxScroll, max(0, sc0 + (cy0 - cy) / span * maxScroll)))
-            FV:CullLeft()
+            FV:PaintList()
         end)
     end)
     vthumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
@@ -566,49 +612,9 @@ FV.Build = function(page)
     coroutine.yield()
 
     FV.rows = {}
-    for i = 1, #FD do
-        local r = CreateFrame("Button", nil, child)
-        r:SetSize(FV.LROW_W, FV.ROW_H)
-        if HUI and ns.hui.HuiCardFX then
-            ns.hui.HuiCardFX(r, 6, 2)
-        end
-        r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -5)
-        r.name:SetWidth(FV.LROW_W - 60)
-        r.name:SetWordWrap(false)
-        r.sub = MakeFS(r, 14, C_GREY, "LEFT")
-        r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -22)
-        r.sub:SetWordWrap(false)
-        r.badge = MakeFS(r, 14, C_TEXT, "RIGHT")
-        r.badge:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -11)
-        r:EnableMouse(true)
-        r:SetScript("OnEnter", function(self)
-            if self.__huiCard and ns.hui.HuiCardState then
-                ns.hui.HuiCardState(self, "hover")
-                self.__hst = "hover"
-            end
-            if self.__tip and SetTip then SetTip(self, self.__tip) end
-        end)
-        r:SetScript("OnLeave", function(self)
-            if self.__huiCard and ns.hui.HuiCardState then
-                ns.hui.HuiCardState(self, "norm")
-                self.__hst = "norm"
-            end
-            GameTooltip:Hide()
-        end)
-        r:SetScript("OnClick", function(self)
-            ns.PlaySound(1)
-            Cfg().sel = self.__fid
-            FV:PaintList()
-            FV:PaintDetail()
-        end)
-        r:SetScript("OnMouseWheel", function(_, delta)
-            WheelTo(scroll, child, delta)
-            FV:CullLeft()
-        end)
-        r:Hide()
-        FV.rows[i] = r
-        if i % 14 == 0 then coroutine.yield() end
+    for i = 1, FV.ROW_INIT do
+        FV.rows[i] = MakeRow(child)
+        if i % 4 == 0 then coroutine.yield() end
     end
     coroutine.yield()
     FV:SyncPopup()
@@ -748,7 +754,7 @@ function FV:SyncHover()
     if not FV.dCull then return end
     for _, f in ipairs(FV.lCull) do
         if f.__active and f.__huiCard and f.__fid and f.IsShown and f:IsShown() then
-            local st = MouseOverSafe(f) and "hover" or "norm"
+            local st = (MouseOverSafe(f) and not f.__selActive) and "hover" or "norm"
             if f.__hst ~= st and ns.hui and ns.hui.HuiCardState then
                 ns.hui.HuiCardState(f, st)
                 f.__hst = st
@@ -809,13 +815,50 @@ function FV:PaintList()
     local c = Cfg()
     local pside = PlayerSide()
     FV.lCull = {}
-    local nRow = 0
-    local y = 0
+    local list = {}
     for _, x in ipairs(FD) do
-        if PassFilter(x, pside, c) then
-            nRow = nRow + 1
-            local r = FV.rows[nRow]
-            if not r then break end
+        if PassFilter(x, pside, c) then list[#list + 1] = x end
+    end
+    local pitch = FV.ROW_PITCH
+    local n = #list
+    local totalH = n * pitch
+    FV.lChild:SetHeight(max(10, totalH + 10))
+
+    local viewH = tonumber(FV.lScroll.GetHeight and FV.lScroll:GetHeight()) or 0
+    if viewH <= 0 then viewH = 420 end
+    local __mx = totalH + 10 - viewH
+    local __v = tonumber(FV.lScroll.GetVerticalScroll and FV.lScroll:GetVerticalScroll()) or 0
+    if __mx < 0 then __mx = 0 end
+    if __v > __mx then
+        __v = __mx
+        FV.lScroll:SetVerticalScroll(__mx)
+    end
+    if __v < 0 then __v = 0 end
+
+    local lo = math.floor(__v / pitch) + 1 - FV.WIN_BUF
+    local hi = math.ceil((__v + viewH) / pitch) + 1 + FV.WIN_BUF
+    if lo < 1 then lo = 1 end
+    if n > 0 and lo > n then lo = n end
+    if hi > n then hi = n end
+    if hi < lo then hi = lo end
+
+    for i = 1, #FV.rows do
+        local r = FV.rows[i]
+        r.__active = false
+        r:Hide()
+    end
+
+    if n > 0 then
+        local slot = 0
+        for idx = lo, hi do
+            slot = slot + 1
+            local r = FV.rows[slot]
+            if not r then
+                r = MakeRow(FV.lChild)
+                FV.rows[slot] = r
+            end
+            local x = list[idx]
+            local y = (idx - 1) * pitch
             r.__active = true
             r.__vtop = y
             r.__vh = FV.ROW_H
@@ -829,26 +872,14 @@ function FV:PaintList()
                 .. "/" .. NumStr(STANDINGS[__ti].span))
             r.badge:SetText(SideText(x.side))
             local sel = (c.sel == x.id)
+            r.__selActive = sel and true or nil
             if HUI and r.__huiCard and ns.hui.HuiCardState then
                 ns.hui.HuiCardState(r, "norm")
                 r.__hst = "norm"
             end
-            if sel then
-                if HUI and ns.hui.BuildRoundBorder then
-                    if r.__selBorder then
-                        for _, t in ipairs(r.__selBorder) do
-                            t:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
-                            t:Show()
-                        end
-                    else
-                        r.__selBorder = ns.hui.BuildRoundBorder(r, 6, GOLD, r, "OVERLAY")
-                    end
-                else
-                    MakeOutline(r, 1, 0.82, 0)
-                end
-            else
-                if r.__selBorder then
-                    for _, t in ipairs(r.__selBorder) do t:Hide() end
+            if not (HUI and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, sel)) then
+                if sel then
+                    SetButtonSelected(r, false)
                 end
             end
             r.__tip = FacName(x) .. "\n" .. SIDE_INFO[x.side].text .. " · " .. L["起始声望"] .. " " .. NumStr(x.start)
@@ -856,24 +887,13 @@ function FV:PaintList()
             r:SetPoint("TOPLEFT", FV.lChild, "TOPLEFT", 0, -y)
             r:Show()
             FV.lCull[#FV.lCull + 1] = r
-            y = y + FV.ROW_H + FV.LIST_GAP
-            if nRow % 4 == 0 then PY() end
+            if slot % 4 == 0 then PY() end
         end
     end
-    for i = nRow + 1, #FV.rows do
-        FV.rows[i].__active = false
-        FV.rows[i]:Hide()
-    end
+
     local selX = FacBySel(c.sel)
-    if nRow > 0 and not (selX and PassFilter(selX, pside, c)) then
-        c.sel = FV.rows[1].__fid
-    end
-    FV.lChild:SetHeight(max(10, y + 10))
-    local __v = tonumber(FV.lScroll.GetVerticalScroll and FV.lScroll:GetVerticalScroll())
-    local __mx = (tonumber(FV.lChild.GetHeight and FV.lChild:GetHeight()) or 0)
-        - (tonumber(FV.lScroll.GetHeight and FV.lScroll:GetHeight()) or 0)
-    if type(__v) == "number" and __mx >= 0 and __v > __mx then
-        FV.lScroll:SetVerticalScroll(__mx)
+    if n > 0 and not (selX and PassFilter(selX, pside, c)) then
+        c.sel = list[1].id
     end
     FV:CullLeft()
     if FV.UpdateLeftBar then FV.UpdateLeftBar() end

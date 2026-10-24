@@ -524,7 +524,152 @@ do
         tex:SetAlpha(color[4] or 1)
     end
 
-    local function BuildCapsule(f, cornerSize, color, inset, sub)
+    local function Mul(c, k)
+        return { math.min(1, c[1] * k), math.min(1, c[2] * k), math.min(1, c[3] * k), 1 }
+    end
+
+    local function Blend(a, b, t)
+        return { a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t, 1 }
+    end
+
+    local function GradCapsule(pieces, gradFn, base)
+        if not pieces or not gradFn then return end
+        local top, bot = gradFn(base or pieces.__huiBaseCap)
+        if not top or not bot then return end
+        local f = pieces.__huiFrame
+        local cs = pieces.__huiCorner or 6
+        local h = (f and f.GetHeight and f:GetHeight()) or 0
+        local k = (h > cs * 2) and (cs / h) or 0.25
+        for i = 1, 7 do
+            local tex = pieces[i]
+            if tex then
+                local y0, y1
+                if i == 3 or i == 4 or i == 6 then
+                    y0, y1 = 1 - k, 1
+                elseif i == 7 then
+                    y0, y1 = k, 1 - k
+                else
+                    y0, y1 = 0, k
+                end
+                local c0 = Blend(top, bot, y0)
+                local c1 = Blend(top, bot, y1)
+                tex:SetGradient("VERTICAL", CreateColor(c1[1], c1[2], c1[3]), CreateColor(c0[1], c0[2], c0[3]))
+                tex:SetAlpha(1)
+            end
+        end
+    end
+
+    local function GradNorm(base)
+        return Mul(base, 1.18), Mul(base, 0.77)
+    end
+
+    local function GradHover(base)
+        local c = ns.hui.layer.L4 or base
+        return Mul(c, 1.16), Mul(c, 0.79)
+    end
+
+    local function GradPress(base)
+        local c = ns.hui.layer.L5 or base
+        return Mul(c, 0.84), Mul(c, 0.57)
+    end
+
+    local function GradSel()
+        local mix = Blend(ns.hui.layer.L2, ns.hui.layer.ACCENT, 0.28)
+        return Mul(mix, 1.17), Mul(mix, 0.86)
+    end
+
+    local function ButtonBase(bt)
+        return ns.hui.layer[bt.__huiBaseLv or "L2"] or ns.hui.layer.L2
+    end
+
+    local function SetRing(bt, k)
+        local ring = bt.__ring
+        local cov = bt.__ringCover
+        if not ring and not cov then return end
+        local c = type(k) == "table" and k or Mul(C_CTRL_BORDER, k)
+        if ring then
+            for _, tex in ipairs(ring) do
+                tex:SetVertexColor(c[1], c[2], c[3])
+            end
+        end
+        if cov then
+            for _, tex in ipairs(cov) do
+                tex:SetVertexColor(c[1], c[2], c[3])
+            end
+        end
+    end
+
+    local function SetVeil(bt, on)
+        local veil = bt.__huiVeil
+        if not veil then return end
+        for _, tex in ipairs(veil) do tex:SetShown(on) end
+    end
+
+    local function ShiftContent(bt, dy)
+        if dy < 0 then
+            if bt.__huiPressShift then return end
+            local snap = {}
+            bt.__huiPressShift = snap
+            for _, r in ipairs({ bt:GetRegions() }) do
+                if not r.__huiPiece and not r.__huiCap and not r.__huiBorderStrip then
+                    local n = r:GetNumPoints() or 0
+                    if n > 0 and n < 2 and (r.GetObjectType and r:GetObjectType() ~= "FontString") then
+                        local p, rel, rp, x, y = r:GetPoint(1)
+                        snap[r] = { p, rel, rp, x, y }
+                        r:ClearAllPoints()
+                        r:SetPoint(p, rel, rp, x, y + dy)
+                    end
+                end
+            end
+        else
+            local snap = bt.__huiPressShift
+            if not snap then return end
+            for r, q in pairs(snap) do
+                r:ClearAllPoints()
+                r:SetPoint(q[1], q[2], q[3], q[4], q[5])
+            end
+            bt.__huiPressShift = nil
+        end
+    end
+
+    local function PaintState(bt)
+        if not bt or not bt.__huiAction or not bt.__huiCap or bt.__huiFrameless then return end
+        if not bt:IsEnabled() then
+            GradCapsule(bt.__huiCap, GradNorm, ButtonBase(bt))
+            SetRing(bt, 1.00)
+            SetVeil(bt, false)
+            return
+        end
+        if bt.__huiPress then
+            GradCapsule(bt.__huiCap, GradPress, ButtonBase(bt))
+            SetRing(bt, 1.50)
+            SetVeil(bt, true)
+            return
+        end
+        SetVeil(bt, false)
+        if bt.__huiSelected then
+            if bt.__huiKind == "ghost" then
+                GradCapsule(bt.__huiCap, GradNorm, ButtonBase(bt))
+                SetRing(bt, 1.25)
+            elseif bt.__huiKind == "tab" then
+                GradCapsule(bt.__huiCap, GradSel, ButtonBase(bt))
+                SetRing(bt, ns.hui.ACCENT)
+            else
+                GradCapsule(bt.__huiCap, GradSel, ButtonBase(bt))
+                SetRing(bt, ns.hui.ACCENT)
+            end
+            return
+        end
+        if bt.__huiHover then
+            GradCapsule(bt.__huiCap, GradHover, ButtonBase(bt))
+            SetRing(bt, 1.25)
+            return
+        end
+        GradCapsule(bt.__huiCap, GradNorm, ButtonBase(bt))
+        SetRing(bt, 1.00)
+    end
+
+    local function BuildCapsule(f, cornerSize, color, inset, sub, gradFn)
         local ins = inset or 0
         local sl = sub or 0
 
@@ -575,10 +720,26 @@ do
         mid:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -ins, cornerSize + ins)
 
         local pieces = {tl, tr, bl, br, top, bottom, mid}
+        if gradFn then
+            mid.__huiCap = true
+            pieces.__huiBaseCap = color
+            pieces.__huiGrad = gradFn
+            pieces.__huiFrame = f
+            pieces.__huiCorner = cornerSize
+            GradCapsule(pieces, gradFn)
+        end
         ns.hui.AddRepaint(f, function()
-            for _, tex in ipairs(pieces) do
-                tex:SetVertexColor(color[1], color[2], color[3])
-                tex:SetAlpha(color[4] or 1)
+            if pieces.__huiRepaint then
+                pieces.__huiRepaint()
+                return
+            end
+            if pieces.__huiGrad then
+                GradCapsule(pieces, pieces.__huiGrad)
+            else
+                for _, tex in ipairs(pieces) do
+                    tex:SetVertexColor(color[1], color[2], color[3])
+                    tex:SetAlpha(color[4] or 1)
+                end
             end
         end)
         return pieces
@@ -694,7 +855,6 @@ do
         if thick <= 1 then
             local file = GLASS_RING_TEX .. snapR
             local q = snapR / 32
-            local ins = r - shift
             local function corner(point)
                 local t = p:CreateTexture(nil, layer or "BORDER")
                 t:SetTexture(file)
@@ -705,6 +865,10 @@ do
                         (point:find("TOP") and 1 or -1) * shift)
                 return tint(t)
             end
+            local cTL = arcTL and corner("TOPLEFT") or nil
+            local cTR = arcTR and corner("TOPRIGHT") or nil
+            local cBL = arcBL and corner("BOTTOMLEFT") or nil
+            local cBR = arcBR and corner("BOTTOMRIGHT") or nil
             local function edgeH(top)
                 local t = p:CreateTexture(nil, layer or "BORDER")
                 t:SetTexture(file)
@@ -712,8 +876,20 @@ do
                 local vp = top and "TOP" or "BOTTOM"
                 local v0 = top and 0 or (1 - q)
                 t:SetTexCoord(q, v0, q, v0 + q, 1 - q, v0, 1 - q, v0 + q)
-                t:SetPoint(vp .. "LEFT", f, vp .. "LEFT", (top and arcTL or arcBL) and ins or 0, (top and 1 or -1) * shift)
-                t:SetPoint(vp .. "RIGHT", f, vp .. "RIGHT", (top and arcTR or arcBR) and -ins or 0, (top and 1 or -1) * shift)
+                local hasL = top and arcTL or arcBL
+                local hasR = top and arcTR or arcBR
+                local cl = top and cTL or cBL
+                local cr = top and cTR or cBR
+                if hasL and cl then
+                    t:SetPoint(vp .. "LEFT", cl, vp .. "RIGHT", 0, 0)
+                else
+                    t:SetPoint(vp .. "LEFT", f, vp .. "LEFT", 0, (top and 1 or -1) * shift)
+                end
+                if hasR and cr then
+                    t:SetPoint(vp .. "RIGHT", cr, vp .. "LEFT", 0, 0)
+                else
+                    t:SetPoint(vp .. "RIGHT", f, vp .. "RIGHT", 0, (top and 1 or -1) * shift)
+                end
                 return tint(t)
             end
             local function edgeV(left)
@@ -723,14 +899,22 @@ do
                 local hp = left and "LEFT" or "RIGHT"
                 local u0 = left and 0 or (1 - q)
                 t:SetTexCoord(u0, q, u0, 1 - q, u0 + q, q, u0 + q, 1 - q)
-                t:SetPoint("TOP" .. hp, f, "TOP" .. hp, (left and -1 or 1) * shift, (left and arcTL or arcTR) and -ins or 0)
-                t:SetPoint("BOTTOM" .. hp, f, "BOTTOM" .. hp, (left and -1 or 1) * shift, (left and arcBL or arcBR) and ins or 0)
+                local hasT = left and arcTL or arcTR
+                local hasB = left and arcBL or arcBR
+                local ct = left and cTL or cTR
+                local cb = left and cBL or cBR
+                if hasT and ct then
+                    t:SetPoint("TOP" .. hp, ct, "BOTTOM" .. hp, 0, 0)
+                else
+                    t:SetPoint("TOP" .. hp, f, "TOP" .. hp, (left and -1 or 1) * shift, 0)
+                end
+                if hasB and cb then
+                    t:SetPoint("BOTTOM" .. hp, cb, "TOP" .. hp, 0, 0)
+                else
+                    t:SetPoint("BOTTOM" .. hp, f, "BOTTOM" .. hp, (left and -1 or 1) * shift, 0)
+                end
                 return tint(t)
             end
-            if arcTL then corner("TOPLEFT") end
-            if arcTR then corner("TOPRIGHT") end
-            if arcBL then corner("BOTTOMLEFT") end
-            if arcBR then corner("BOTTOMRIGHT") end
             edgeH(true)
             edgeH(false)
             if sL or arcTL or arcBL then edgeV(true) end
@@ -799,7 +983,7 @@ do
         return pieces, covers
     end
 
-    local GLASS_SHADOW_TEX = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIGlassShadow"
+    local GLASS_SHADOW_TEX = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIBoxShadow"
 
     local function GlassZoneColor(c, zone)
         local a = c[4] or 1
@@ -846,10 +1030,13 @@ do
         return tex
     end
 
-    local function BuildCardShadow(f, spread, alpha)
+    local function BuildCardShadow(f, spread, alpha, sub, cr)
         if not f or not f.CreateTexture then return nil end
-        spread = spread or 18
-        local corner = spread + 8
+        spread = spread or 16
+        cr = cr or 8
+        local corner = spread + cr
+        local fw, fh = f:GetWidth() or 0, f:GetHeight() or 0
+        if (fw > 0 and fw < corner * 2) or (fh > 0 and fh < corner * 2) then return {} end
         local cUV = 0.375
         local coords = {
             { 0, cUV, 0, cUV }, { cUV, 1 - cUV, 0, cUV }, { 1 - cUV, 1, 0, cUV },
@@ -858,7 +1045,7 @@ do
         }
         local pieces = {}
         for i = 1, 9 do
-            local t = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+            local t = f:CreateTexture(nil, "BACKGROUND", nil, sub or -8)
             t:SetTexture(GLASS_SHADOW_TEX)
             t:SetTexCoord(unpack(coords[i]))
             t:SetVertexColor(0, 0, 0, 1)
@@ -968,6 +1155,36 @@ do
     ns.hui.BuildCapsule = BuildCapsule
     ns.hui.GlassPaint = GlassPaint
 
+    local ROW_SEL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGrad"
+
+    function ns.hui.PaintRowSelect(f, on)
+        if not f or not f.__huiCard then return false end
+        local t = f.__huiRowSelTex
+        if not t then
+            t = f:CreateTexture(nil, "BACKGROUND", nil, 7)
+            t:SetTexture(ROW_SEL_TEX)
+            t:SetAllPoints()
+            t:Hide()
+            f.__huiRowSelTex = t
+        end
+        on = on and true or false
+        t:SetShown(on)
+        if on then
+            local ac = ns.hui.ACCENT
+            t:SetVertexColor(ac[1], ac[2], ac[3], 1)
+        end
+        local bp = f.__huiCard
+        if bp.border then
+            local c = on and ns.hui.ACCENT or C_CARD_BORDER
+            local a = on and 0.95 or (C_CARD_BORDER[4] or 1)
+            for _, tex in ipairs(bp.border) do
+                tex:SetVertexColor(c[1], c[2], c[3])
+                tex:SetAlpha(a)
+            end
+        end
+        return true
+    end
+
     function ns.hui.GetMainAlpha()
         local v = tonumber(ns.options and ns.options.huiAlpha)
         if not v or v < 0 or v > 1 then v = 0.95 end
@@ -1061,6 +1278,18 @@ do
         entry.Reassert()
     end
 
+    function ns.hui.SkinShadow(f, spread, alpha, cr)
+        if not f or not f.CreateTexture then return nil end
+        if f.__huiShadow then return f.__huiShadow end
+        local pieces = BuildCardShadow(f, spread or 16, alpha or 0.65, -8, cr or 8)
+        if not pieces then return nil end
+        f.__huiShadow = pieces
+        if ns.hui.RegisterMainAlphaSurface and ns.hui.IsMainUIFrame(f) then
+            ns.hui.RegisterMainAlphaSurface(f, pieces)
+        end
+        return pieces
+    end
+
     function ns.hui.SkinPopup(f, cr, rounding, color, borderThickness, noBorder, borderOutside, borderOutExtra, expand, noAlpha)
         if ns.huiTheme ~= "hui" or not f then return end
         color = color or ns.hui.layer.L1
@@ -1077,7 +1306,7 @@ do
         f.__huiBorderPieces = borderPieces
         local shadowPieces
         if f:GetParent() == UIParent then
-            shadowPieces = BuildCardShadow(f, 18, 0.75)
+            shadowPieces = ns.hui.SkinShadow(f, nil, nil, cr or 8)
         end
         local function repaintFill()
             for _, tex in ipairs(pieces) do
@@ -1184,14 +1413,16 @@ do
         popup:EnableMouse(true)
         menuPopup = popup
 
-        local rowH = 22
+        local rowH = 24
+        local fsSz = tonumber(opts.fs) or 14
+        if fsSz < 14 then fsSz = 14 end
         local padX = 12
         local iconSz = 18
         local iconGap = 6
         local chkSz = 16
         local chkGap = 7
         local measure = popup:CreateFontString(nil, "OVERLAY")
-        measure:SetFont(ns.FONT, 13, "")
+        measure:SetFont(ns.FONT, fsSz, "")
         local maxW = 0
         for i = 1, #items do
             local it = items[i]
@@ -1254,7 +1485,7 @@ do
             end
             local fs = row:CreateFontString(nil, "OVERLAY")
             fs:SetPoint("LEFT", row, "LEFT", tx, 0)
-            fs:SetFont(ns.FONT, 13, "")
+            fs:SetFont(ns.FONT, fsSz, "")
             fs:SetJustifyH("LEFT")
             fs:SetText(it.text or "")
             local cr, cg, cb, ca = MenuParseColor(it.color)
@@ -1273,7 +1504,7 @@ do
             end)
         end
 
-        ns.hui.SkinPopup(popup, 8, "both", ns.hui.layer.L3)
+        ns.hui.SkinPopup(popup, 8, "both", ns.hui.layer.L0)
 
         local scale = UIParent:GetEffectiveScale()
         if opts.anchor and opts.anchor.IsObjectType and opts.anchor:IsObjectType("Frame") then
@@ -1477,7 +1708,7 @@ do
         local track = CreateFrame("Frame", nil, host)
         track:SetPoint("TOPLEFT", host, "TOPLEFT", -padX, padY)
         track:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", padX, -padY)
-        local trackPieces = BuildCapsule(track, trackH / 2, ns.hui.layer.L1)
+        local trackPieces = BuildCapsule(track, trackH / 2, ns.hui.layer.L1, nil, nil, GradNorm)
         if ns.hui.RegisterMainAlphaSurface and ns.hui.IsMainUIFrame(host) then
             ns.hui.RegisterMainAlphaSurface(track, trackPieces)
         end
@@ -1720,15 +1951,6 @@ do
         return ok and loaded and true or false
     end
 
-    local function HasExternalTooltipSkin()
-        if AddonLoaded("NDui") then return true end
-        if not AddonLoaded("ElvUI") then return false end
-        local ok, E = pcall(unpack, ElvUI)
-        local skins = ok and E and E.private and E.private.skins
-        if not (skins and skins.blizzard) then return true end
-        return (skins.blizzard.enable and skins.blizzard.tooltip) and true or false
-    end
-
     local ttItemMark = {}
     function ns.hui.MarkTipItem(tt, on)
         if tt then ttItemMark[tt] = on and true or nil end
@@ -1746,6 +1968,28 @@ do
         return ok and link ~= nil
     end
 
+    local function CollectForeign(root)
+        local list = {}
+        local seen = { [root] = true }
+        local q = { root }
+        local i = 1
+        while i <= #q do
+            local f = q[i]
+            i = i + 1
+            for _, c in ipairs({ f:GetChildren() }) do
+                if not seen[c] then
+                    seen[c] = true
+                    q[#q + 1] = c
+                end
+            end
+            for _, r in ipairs({ f:GetRegions() }) do
+                if r.IsObjectType and r:IsObjectType("Texture") and not r.__huiPiece then
+                    list[#list + 1] = { r, r:IsShown() }
+                end
+            end
+        end
+        return list
+    end
     local tipApplying = false
     local function ApplyTooltipSkinBody(tt, on)
         local s = tooltipSkins[tt]
@@ -1760,12 +2004,18 @@ do
             end
         end
         for _, tex in ipairs(s.border) do tex:SetShown(on) end
-        if tt.NineSlice then
-            if on then
-                tt.NineSlice:SetAlpha(0)
-            elseif not (s.ownScoped and HasExternalTooltipSkin()) then
-                tt.NineSlice:SetAlpha(s.nineAlpha or 1)
+        for _, tex in ipairs(s.shadow) do
+            tex:SetShown(on)
+            if on and s.shadowA then tex:SetAlpha(s.shadowA) end
+        end
+        if on then
+            for _, e in ipairs(s.nineTex) do
+                if e[2] then e[1]:SetShown(false) end
             end
+            if tt.NineSlice then tt.NineSlice:SetAlpha(0) end
+        else
+            if tt.NineSlice then tt.NineSlice:SetAlpha(s.nineAlpha or 1) end
+            for _, e in ipairs(s.nineTex or {}) do e[1]:SetShown(e[2]) end
         end
     end
     local function ApplyTooltipSkin(tt, on)
@@ -1808,11 +2058,43 @@ do
         local s = {
             fill = BuildRoundedBG(tt, 8, FILL, "both"),
             border = ns.hui.BuildRoundBorder(tt, 8, EDGE) or {},
+            shadow = BuildCardShadow(tt, 16, 0.6, -8, 8) or {},
+            shadowA = 0.6,
             ownScoped = true,
         }
+        for _, tex in ipairs(s.shadow) do
+            tex.__huiPiece = true
+            tex.__huiShadowPiece = true
+            tex:Hide()
+        end
         s.nineAlpha = tt.NineSlice and tt.NineSlice:GetAlpha() or 1
+        s.nineTex = {}
+        for _, tex in ipairs(s.fill) do tex.__huiPiece = true end
+        for _, tex in ipairs(s.border) do tex.__huiPiece = true end
         tooltipSkins[tt] = s
+        hooksecurefunc(GameTooltip, "SetOwner", function(tt)
+            local s2 = tooltipSkins[tt]
+            if s2 and s2.on then ApplyTooltipSkin(tt, false) end
+        end)
+        tt:HookScript("OnUpdate", function(f)
+            local s2 = tooltipSkins[f]
+            if not (s2 and s2.on) then return end
+            local now = GetTime and GetTime() or 0
+            if now - (s2.scanT or 0) < 0.2 then return end
+            s2.scanT = now
+            for _, e in ipairs(CollectForeign(f)) do
+                if e[2] and e[1]:IsShown() then
+                    e[1]:SetShown(false)
+                    s2.nineTex[#s2.nineTex + 1] = e
+                end
+            end
+            if f.NineSlice and f.NineSlice.GetAlpha and f.NineSlice:GetAlpha() ~= 0 then f.NineSlice:SetAlpha(0) end
+        end)
         tt:HookScript("OnShow", function()
+            if not s.snapDone then
+                s.snapDone = true
+                s.nineTex = CollectForeign(tt)
+            end
             local on = ns.huiTheme == "hui"
             if on and s.ownScoped then
                 on = TooltipOwnerIsMine(tt)
@@ -1957,10 +2239,12 @@ do
         dd:HookScript("OnLeave", function() Paint(NORMAL) end)
     end
 
-    function ns.hui.SkinButton(bt)
+    function ns.hui.SkinButton(bt, opts)
         if not bt or bt.__huiAction or not bt.SetBackdropBorderColor then return end
         if ns.huiTheme ~= "hui" then return end
         bt.__huiAction = true
+        local noFrame = (opts == true) or (type(opts) == "table" and opts.noFrame == true) or bt.__huiNoFrame == true
+        if noFrame then bt.__huiNoFrame = true end
         local C_BORDER = C_CTRL_BORDER
         local C_BG = {0x16 / 255, 0x1A / 255, 0x22 / 255}
         bt:SetBackdrop({
@@ -1972,7 +2256,7 @@ do
         local function ApplyBody(base)
             bt:SetBackdropColor(C_BG[1], C_BG[2], C_BG[3], base * bodyK)
         end
-        ApplyBody(0.5)
+        ApplyBody(0)
         bt:SetBackdropBorderColor(0, 0, 0, 0)
         if bt.bg then bt.bg:SetColorTexture(0, 0, 0, 0) end
         local fs = bt:GetFontString()
@@ -1980,40 +2264,51 @@ do
             fs:ClearAllPoints()
             fs:SetPoint("CENTER", 0, -1)
             fs:SetJustifyH("CENTER")
-            fs:SetTextColor(1, 1, 1)
-            fs:SetFont(ns.FONT, 15, "")
+            fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
+            fs:SetFont(ns.FONT, 14, "")
         end
 
-        local borderFrame, hoverFrame
+        local borderFrame
         local function BuildBorderFrame()
+            if noFrame then return end
             ns.hui.__skinBuilds = (ns.hui.__skinBuilds or 0) + 1
             if borderFrame then borderFrame:Hide(); borderFrame:SetParent(nil) end
             borderFrame = CreateFrame("Frame", nil, bt)
             borderFrame:SetAllPoints()
-            ns.hui.BuildRoundBorder(borderFrame, 6, C_BORDER)
-            if hoverFrame then hoverFrame:SetParent(borderFrame) end
+            local ring, covers = ns.hui.BuildRoundBorder(borderFrame, 6, C_BORDER)
+            bt.__ring = ring
+            bt.__ringCover = covers
+            if bt.__huiVeil then
+                for _, tex in ipairs(bt.__huiVeil) do tex:Hide() end
+            end
+            bt.__huiVeil = BuildCapsule(borderFrame, 6, {0, 0, 0, 0.28}, 0, 0)
+            for _, tex in ipairs(bt.__huiVeil) do tex:Hide() end
         end
-        local function BuildHoverFrame()
-            ns.hui.__skinBuilds = (ns.hui.__skinBuilds or 0) + 1
-            if hoverFrame then hoverFrame:Hide(); hoverFrame:SetParent(nil) end
-            hoverFrame = CreateFrame("Frame", nil, borderFrame or bt)
-            hoverFrame:SetAllPoints()
-            hoverFrame:Hide()
-            ns.hui.BuildRoundBorder(hoverFrame, 6, ns.hui.ACCENT)
+        local function BuildCapFrame()
+            if noFrame or bt.__huiCap then return end
+            local w, h = bt:GetWidth() or 0, bt:GetHeight() or 0
+            if w > 0 and h > 0 then
+                bt.__huiCap = BuildCapsule(bt, 6, ButtonBase(bt), 0, 4, GradNorm)
+                if bt.__huiCap then
+                    bt.__huiCap.__huiRepaint = function() PaintState(bt) end
+                end
+            end
         end
         local function TryBuild()
             ns.hui.__tryBuilds = (ns.hui.__tryBuilds or 0) + 1
-            if borderFrame then return end
+            if noFrame then return end
+            if borderFrame and bt.__huiCap then return end
             local w, h = bt:GetWidth() or 0, bt:GetHeight() or 0
             if w > 0 and h > 0 then
-                BuildBorderFrame()
-                BuildHoverFrame()
+                if not borderFrame then BuildBorderFrame() end
+                BuildCapFrame()
+                PaintState(bt)
             end
         end
         TryBuild()
-        if not borderFrame then
+        if not noFrame and not (borderFrame and bt.__huiCap) then
             local function tryBuildOnce()
-                if not borderFrame then TryBuild() end
+                if not (borderFrame and bt.__huiCap) then TryBuild() end
             end
             bt:HookScript("OnSizeChanged", tryBuildOnce)
             hooksecurefunc(bt, "SetSize", tryBuildOnce)
@@ -2023,12 +2318,37 @@ do
 
         local function huiOnEnter()
             if not bt:IsEnabled() then return end
-            if hoverFrame then hoverFrame:Show() end
+            bt.__huiHover = true
+            if fs and not bt.__huiKeepTextColor and not bt.__huiSelected then
+                fs:SetTextColor(C_TEXT[1][1], C_TEXT[1][2], C_TEXT[1][3])
+            end
+            PaintState(bt)
         end
         local function huiOnLeave()
-            ApplyBody(0.5)
-            if hoverFrame then hoverFrame:Hide() end
-            if fs and bt:IsEnabled() and not bt.__huiKeepTextColor then fs:SetTextColor(1, 1, 1) end
+            bt.__huiHover = nil
+            ShiftContent(bt, 1)
+            bt.__huiPress = nil
+            PaintState(bt)
+            if fs and bt:IsEnabled() and not bt.__huiKeepTextColor then
+                if bt.__huiSelected then
+                    fs:SetTextColor(1, 1, 1)
+                else
+                    fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
+                end
+            end
+        end
+        local function pressOn()
+            if not bt:IsEnabled() then return end
+            if bt.__huiPress then return end
+            bt.__huiPress = true
+            ShiftContent(bt, -1)
+            PaintState(bt)
+        end
+        local function pressOff()
+            if not bt.__huiPress then return end
+            bt.__huiPress = nil
+            ShiftContent(bt, 1)
+            PaintState(bt)
         end
         hooksecurefunc(bt, "SetScript", function(_, scriptType, ...)
             if scriptType == "OnEnter" then bt:HookScript("OnEnter", huiOnEnter) end
@@ -2036,25 +2356,91 @@ do
         end)
         bt:HookScript("OnEnter", huiOnEnter)
         bt:HookScript("OnLeave", huiOnLeave)
+        bt:HookScript("OnMouseDown", pressOn)
+        bt:HookScript("OnMouseUp", pressOff)
+        bt:HookScript("OnHide", pressOff)
         hooksecurefunc(bt, "SetEnabled", function(_, enabled)
-            ApplyBody(enabled and 0.5 or 0.25)
+            if not enabled then pressOff() end
             if fs then
                 if enabled then
-                    if not bt.__huiKeepTextColor then fs:SetTextColor(1, 1, 1) end
+                    if not bt.__huiKeepTextColor then
+                        if bt.__huiSelected then
+                            fs:SetTextColor(1, 1, 1)
+                        else
+                            fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
+                        end
+                    end
                 else
                     fs:SetTextColor(0.5, 0.5, 0.5)
                 end
             end
+            PaintState(bt)
         end)
         if ns.hui.IsMainUIFrame(bt) then
             ns.hui.RegisterMainAlphaMultiplier(bt, function(k)
                 bodyK = k
-                ApplyBody(bt:IsEnabled() and 0.5 or 0.25)
+                ApplyBody(0)
             end)
         end
         ns.hui.AddRepaint(bt, function()
-            if borderFrame then BuildHoverFrame() end
+            PaintState(bt)
         end)
+    end
+
+    function ns.hui.SetTabUnderline(bt, on)
+        if not bt or not bt.CreateTexture then return end
+        if not bt.__huiTabLine then
+            local ln = bt:CreateTexture(nil, "OVERLAY")
+            ln:SetColorTexture(ns.hui.ACCENT[1], ns.hui.ACCENT[2], ns.hui.ACCENT[3], 1)
+            ln:SetHeight(2)
+            ln:SetPoint("BOTTOMLEFT", bt, "BOTTOMLEFT", 3, 1)
+            ln:SetPoint("BOTTOMRIGHT", bt, "BOTTOMRIGHT", -3, 1)
+            ln:Hide()
+            bt.__huiTabLine = ln
+        end
+        bt.__huiTabLine:SetShown(on and true or false)
+    end
+
+    ns.hui.GradNorm = GradNorm
+
+    function ns.hui.SetButtonFrameless(bt, on)
+        if not bt or not bt.__huiAction then return end
+        local onv = on and true or false
+        if bt.__huiFrameless == onv then return end
+        bt.__huiFrameless = onv
+        bt.__huiNoFrame = onv
+        local function apply(pieces, show)
+            if not pieces then return end
+            for i = 1, #pieces do
+                local tex = pieces[i]
+                if tex and tex.SetShown then tex:SetShown(show) end
+            end
+        end
+        apply(bt.__ring, not onv)
+        apply(bt.__ringCover, not onv)
+        apply(bt.__huiCap, not onv)
+        if not onv then PaintState(bt) end
+    end
+
+    function ns.hui.SetButtonSelected(bt, on, kind, idleText)
+        if not bt then return end
+        local onv = on and true or false
+        local kv = kind or "main"
+        if bt.__huiSelected == onv and bt.__huiKind == kv then return end
+        bt.__huiSelected = onv
+        bt.__huiKind = kv
+        if idleText ~= nil then bt.__huiIdleText = idleText end
+        local fs = bt.GetFontString and bt:GetFontString()
+        if fs and not bt.__huiKeepTextColor then
+            if onv then
+                fs:SetTextColor(1, 1, 1)
+            else
+                if bt.__huiIdleText then fs:SetText(bt.__huiIdleText) end
+                fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
+            end
+        end
+        if bt.__huiTabLine then bt.__huiTabLine:Hide() end
+        PaintState(bt)
     end
 
     function ns.hui.MakeDangerButton(bt)
@@ -2064,7 +2450,7 @@ do
         bt.__huiDanger = true
         local texs = BuildCapsule(bt, 6, C_RED)
         for _, tex in ipairs(texs) do
-            tex:SetDrawLayer("BACKGROUND", -8)
+            tex:SetDrawLayer("BACKGROUND", 5)
         end
         local capsuleK = 1
         local function ApplyCapsule(base)
@@ -2090,7 +2476,7 @@ do
         bt.__huiAccent = true
         local texs = BuildCapsule(bt, 6, ns.hui.ACCENT)
         for _, tex in ipairs(texs) do
-            tex:SetDrawLayer("BACKGROUND", -8)
+            tex:SetDrawLayer("BACKGROUND", 5)
         end
         local capsuleK = 1
         local function ApplyCapsule(base)

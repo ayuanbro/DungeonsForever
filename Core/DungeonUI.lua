@@ -181,66 +181,6 @@ local function EnsureContent()
     U.panel = panel
     return panel
 end
-local SOURCE_POPUP = "DungeonsForever_SourceURL"
-local pendingSourceURL = "https://www.wowhead.com/forever"
-
-local function ShowSourceURL(url)
-    pendingSourceURL = url
-    if not StaticPopupDialogs[SOURCE_POPUP] then
-        StaticPopupDialogs[SOURCE_POPUP] = {
-            text = L["复制网址"],
-            button1 = L["关闭"],
-            timeout = 0,
-            whileDead = true,
-            hideOnEscape = true,
-            preferredIndex = 3,
-            hasEditBox = true,
-            editBoxWidth = 260,
-            OnShow = function(self)
-                local edit = self.EditBox or self.editBox
-                edit:SetText(pendingSourceURL)
-                edit:HighlightText()
-                edit:SetFocus()
-            end,
-            EditBoxOnEnterPressed = function(self)
-                self:GetParent():Hide()
-            end,
-            EditBoxOnEscapePressed = function(self)
-                self:GetParent():Hide()
-            end,
-        }
-    end
-    StaticPopup_Show(SOURCE_POPUP)
-end
-
-local function MakeSourceCredit(panel, label, url, prev)
-    local fs = MakeFS(panel, 14, C_GREY, "RIGHT")
-    if prev then
-        fs:SetPoint("RIGHT", prev, "LEFT", -18, 0)
-    else
-        fs:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -10, -4)
-    end
-    fs:SetText(label)
-    local btn = CreateFrame("Button", nil, panel)
-    btn:SetPoint("TOPLEFT", fs, "TOPLEFT", -4, 4)
-    btn:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 4, -4)
-    btn:SetHitRectInsets(0, 0, 0, 0)
-    btn:SetScript("OnEnter", function(self)
-        fs:SetTextColor(0.9, 0.9, 0.9)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:ClearLines()
-        GameTooltip:AddLine(L["点击复制数据来源网址"], 1, 1, 1, true)
-        GameTooltip:Show()
-    end)
-    btn:SetScript("OnLeave", function()
-        fs:SetTextColor(Unpack(C_GREY))
-        GameTooltip:Hide()
-    end)
-    btn:SetScript("OnClick", function() ShowSourceURL(url) end)
-    U.sourceCredits[#U.sourceCredits + 1] = { fs = fs, btn = btn, url = url, label = label }
-    return fs
-end
-
 local DG = {}
 ns.DungeonModule = DG
 
@@ -638,10 +578,10 @@ function DG.BuildList()
         pool.hdr[i].hit:Hide()
     end
     child:SetHeight(math.max(10, -y + 10))
-    DG.CullListRows()
+    DG.CullListRows(true)
 end
 
-function DG.CullListRows()
+function DG.CullListRows(force)
     local sc, pool = U.dungeonListScroll, U.dungeonListPool
     if not (sc and pool and sc:IsShown()) then return end
     local gt = sc.GetTop and sc:GetTop()
@@ -650,6 +590,8 @@ function DG.CullListRows()
     if type(viewH) ~= "number" then return end
     local v = sc.GetVerticalScroll and sc:GetVerticalScroll() or 0
     if type(v) ~= "number" then v = 0 end
+    local last = pool.__cullSig
+    if not force and last and last.gt == gt and last.h == viewH and last.v == v then return end
     local vTop, vBot = v - 2, v + viewH + 2
     for _, card in ipairs(pool.card) do
         if not card.__active then
@@ -686,6 +628,7 @@ function DG.CullListRows()
             end
         end
     end
+    pool.__cullSig = { gt = gt, h = viewH, v = v }
 end
 
 function DG.ListFadesVisible(vis)
@@ -799,8 +742,9 @@ function DG.BuildDungeons()
     if U.dungeonBuilt then return end
     local data = ns.DungeonData
     if not (data and data.dungeons and #data.dungeons > 0) then return end
-    U.dungeonBuilt = true
     local page = U.dungeonPage
+    if not page then return end
+    U.dungeonBuilt = true
 
     local CARD_TOP = DG.GUTTER
     local DETAIL_Y = DG.GUTTER
@@ -835,7 +779,8 @@ function DG.BuildDungeons()
         self:SetVerticalScroll(math.max(0, math.min(maxScroll, self:GetVerticalScroll() - delta * 48)))
         DG.CullListRows()
     end)
-    listScroll:HookScript("OnShow", function() DG.CullListRows() end)
+    listScroll:HookScript("OnShow", function() DG.CullListRows(true) end)
+    listScroll:HookScript("OnVerticalScroll", function() DG.CullListRows() end)
     U.dungeonListScroll = listScroll
 
     if IsHui() and ns.hui and ns.hui.layer and ns.hui.layer.L0 then
@@ -886,37 +831,35 @@ end
 DG.Loader = {
     budgetMs = 4,
     preset   = "normal",
-    budgetFactor = 0.4,
+    budgetFactor = 0.8,
+    capMin = 8,
+    capMax = 200,
 }
 DG.LOADER_PRESETS = { eco = 2, normal = 4, turbo = 8 }
 DG.LOADER_LABEL = { eco = L["省电"], normal = L["标准"], turbo = L["激进"] }
 
-DG.LOADER_FACTOR = { eco = 0.25, normal = 0.4, turbo = 0.6 }
+DG.LOADER_FACTOR = { eco = 0.6, normal = 0.8, turbo = 1.0 }
 
 function DG.Loader.CurCap(remaining)
     local L0 = DG.Loader
-    local base = L0.budgetMs or 4
-    local now = type(debugprofilestop) == "function" and debugprofilestop() or nil
-    local done = DG.Gate.done
-    if not (L0.__buildT0 and now and done and done >= 5 and remaining and remaining > 0) then
-        return L0.__cap or base
+    local dt = L0.__dt
+    if type(dt) ~= "number" or dt <= 0 then dt = 16 end
+    local cap = dt * (L0.budgetFactor or 0.8)
+    local lo = L0.capMin or 8
+    local hi = L0.capMax or 200
+    if dt > 400 then
+        local slow = dt * 0.5
+        if slow > 800 then slow = 800 end
+        if slow > hi then hi = slow end
     end
-    local rate = (now - L0.__buildT0) / done
-    local projT = remaining * rate / 1000
-    local cap = L0.__cap or base
-    if projT > 15 then
-        cap = math.min(cap * 1.8, 50)
-    elseif projT < 5 and cap > base then
-        cap = math.max(cap / 1.5, base)
-    end
-    if cap > 50 then cap = 50 end
-    L0.__cap = cap
+    if cap < lo then cap = lo end
+    if cap > hi then cap = hi end
     return cap
 end
 
 function DG.Loader.SetBudget(k)
     local v = DG.LOADER_PRESETS[k]
-    DG.Loader.budgetFactor = DG.LOADER_FACTOR[k] or 0.4
+    DG.Loader.budgetFactor = DG.LOADER_FACTOR[k] or 0.8
     if type(v) ~= "number" then return false end
     DG.Loader.budgetMs = v
     DG.Loader.preset = k
@@ -928,10 +871,12 @@ function DG.Loader.Init()
     local k = DB().loadBudget
     if DG.LOADER_PRESETS[k] then
         DG.Loader.budgetMs = DG.LOADER_PRESETS[k]
+        DG.Loader.budgetFactor = DG.LOADER_FACTOR[k] or 0.8
         DG.Loader.preset = k
     else
         DG.Loader.preset = "normal"
         DG.Loader.budgetMs = DG.LOADER_PRESETS.normal
+        DG.Loader.budgetFactor = DG.LOADER_FACTOR.normal
     end
 end
 
@@ -944,7 +889,7 @@ function DG.__nowMs()
     return nil
 end
 
-DG.Gate = { on = false, total = 0, done = 0, minSteps = 24, skipped = false, w = CONTENT_W }
+DG.Gate = { on = false, total = 0, done = 0, minSteps = 2, skipped = false, w = CONTENT_W }
 
 function DG.Gate.Ensure()
     if DG.Gate.bar then return true end
@@ -980,7 +925,7 @@ function DG.Gate.Ensure()
 
     local pill = CreateFrame("Frame", nil, panel, "BackdropTemplate")
     pill:SetFrameLevel(panel:GetFrameLevel() + 21)
-    pill:SetSize(200, 28)
+    pill:SetSize(240, 28)
     pill:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -10, 10)
     pill:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -1012,14 +957,29 @@ end
 function DG.Gate.Paint()
     local bar, pill = DG.Gate.bar, DG.Gate.pill
     local total = DG.Gate.total
-    local pct = 0
-    if total > 0 then pct = math.floor(DG.Gate.done / total * 100 + 0.5) end
-    if pct < 0 then pct = 0 elseif pct > 100 then pct = 100 end
+    local done = DG.Gate.done
+    if total <= 0 then total = 1 end
+    local pct = math.floor(done / total * 100 + 0.5)
+    if pct < 0 then pct = 0 end
+    local lim = (done < total) and 99 or 100
+    if pct > lim then pct = lim end
+    if DG.Gate.pctShow and pct < DG.Gate.pctShow then pct = DG.Gate.pctShow end
+    DG.Gate.pctShow = pct
     if bar then
         bar.fill:SetWidth(math.max(1, math.floor(DG.Gate.w * pct / 100)))
     end
     if pill and pill.text then
-        pill.text:SetText(L["正在载入…"] .. " " .. pct .. "%")
+        local eta = ""
+        local t0 = DG.Gate.t0
+        if t0 and done > 0 and type(debugprofilestop) == "function" then
+            local el = debugprofilestop() - t0
+            local left = total - done
+            if left > 0 and el > 400 then
+                local s = math.floor(el / done * left / 1000 + 0.5)
+                if s >= 0 and s < 600 then eta = " · " .. s .. "s" end
+            end
+        end
+        pill.text:SetText(L["正在载入…"] .. " " .. pct .. "%" .. eta)
     end
 end
 
@@ -1029,11 +989,14 @@ function DG.Gate.HideUI()
 end
 
 function DG.Gate.Begin(n)
-    DG.Gate.total = n or 0
+    DG.Gate.total = (type(n) == "number" and n > 0) and math.floor(n) or 1
     DG.Gate.done = 0
+    DG.Gate.pctShow = nil
+    DG.Gate.paintT = 0
     DG.Gate.skipped = false
     DG.Loader.__cap = nil
     DG.Loader.__buildT0 = type(debugprofilestop) == "function" and debugprofilestop() or nil
+    DG.Gate.t0 = DG.Loader.__buildT0
     if DG.Gate.total < DG.Gate.minSteps then return end
     DG.Gate.on = true
     if DG.Gate.Ensure() then
@@ -1101,7 +1064,18 @@ end
 
 function DG.Gate.Advance(k)
     DG.Gate.done = DG.Gate.done + (k or 1)
-    if DG.Gate.on then DG.Gate.Paint() end
+    if DG.Gate.done > DG.Gate.total then DG.Gate.total = DG.Gate.done end
+    if DG.Gate.on then
+        local now = type(GetTime) == "function" and GetTime() or nil
+        if now then
+            if now - (DG.Gate.paintT or 0) >= 0.035 then
+                DG.Gate.paintT = now
+                DG.Gate.Paint()
+            end
+        else
+            DG.Gate.Paint()
+        end
+    end
 end
 
 function DG.Gate.Skip()
@@ -1114,6 +1088,7 @@ end
 
 function DG.Gate.Finish()
     DG.Gate.done = DG.Gate.total
+    if DG.Gate.on then DG.Gate.Paint() end
     DG.Gate.on = false
     DG.Loader.__buildT0 = nil
     DG.Gate.HideUI()
@@ -1154,7 +1129,7 @@ if type(SlashCmdList) == "table" then
         if DG.LOADER_PRESETS[k] then
             DG.Loader.SetBudget(k)
             print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. " = "
-                  .. (DG.LOADER_LABEL[k] or k) .. "（" .. DG.LOADER_PRESETS[k] .. "ms/帧）")
+                  .. (DG.LOADER_LABEL[k] or k) .. "（" .. math.floor(DG.Loader.CurCap()) .. "ms/帧）")
             return
         end
         print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. "："
@@ -1193,7 +1168,7 @@ function DG.BuildPendRows()
         DG.Gate.Advance(1)
         left = left - 1
         local t1 = t0 and DG.__nowMs()
-        if t1 and (t1 - t0) >= DG.Loader.budgetMs then break end
+        if t1 and (t1 - t0) >= DG.Loader.CurCap() then break end
     end
     if #list > 0 then
         DG.PushStep(DG.BuildPendRows)
@@ -1220,7 +1195,7 @@ function DG.FlushPendingRows()
     DG.RunSteps()
 end
 
-DG.LOOT_ROW_FRAME_CAP = 16
+DG.LOOT_ROW_FRAME_CAP = 64
 
 DG.DEMO_SAVE = nil
 
@@ -1259,7 +1234,7 @@ function DG.Loader.EndDemo()
     DG.Gate.minSteps      = s.minSteps
     DG.ROW_SYNC_MAX       = s.syncMax
     DG.LOOT_ROW_FRAME_CAP = s.rowCap
-    DG.CARD_POOL_CAP      = s.cardCap or 6
+    DG.CARD_POOL_CAP      = s.cardCap or 24
 end
 
 if type(SlashCmdList) == "table" then
@@ -1283,7 +1258,7 @@ if type(SlashCmdList) == "table" then
         local pool = U.dungeonDetailPool
         local n = (pool and pool.item) and #pool.item or 0
         print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. " = "
-              .. (DG.LOADER_LABEL[DG.Loader.preset] or DG.Loader.preset) .. "（" .. DG.Loader.budgetMs .. "ms/帧）")
+              .. (DG.LOADER_LABEL[DG.Loader.preset] or DG.Loader.preset) .. "（" .. math.floor(DG.Loader.CurCap()) .. "ms/帧）")
         print("  " .. L["进度条"] .. " " .. DG.Gate.done .. "/" .. DG.Gate.total
               .. " · " .. L["待建行"] .. " " .. #DG.__pendRows
               .. " · " .. L["行池"] .. " " .. n)
@@ -1326,7 +1301,11 @@ function DG.RunSteps()
         f:SetFrameLevel(1)
         DG.__pumpFrame = f
     end
-    f:SetScript("OnUpdate", function(self)
+    f:SetScript("OnUpdate", function(self, el)
+        if type(el) == "number" and el > 0 and el < 5 then
+            local L0 = DG.Loader
+            L0.__dt = math.min(math.max((L0.__dt or 16) * 0.7 + el * 1000 * 0.3, 1), 5000)
+        end
         if #DG.pendingSteps == 0 then
             self:SetScript("OnUpdate", nil)
             finish()
@@ -1353,9 +1332,19 @@ function DG.RunSteps()
 end
 
 ns.PhasedStart = function(total, body, onFail)
-    pcall(collectgarbage, "stop")
+    if type(collectgarbage) == "function" then
+        pcall(collectgarbage, "setpause", 150)
+        pcall(collectgarbage, "setstepmul", 300)
+    end
     local co = type(body) == "thread" and body or coroutine.create(body)
     local __sliceN = 0
+    local function gcRestore()
+        if type(collectgarbage) == "function" then
+            pcall(collectgarbage, "restart")
+            pcall(collectgarbage, "setpause", 200)
+            pcall(collectgarbage, "setstepmul", 200)
+        end
+    end
     local function step()
         local done = false
         local ok, err = pcall(function()
@@ -1388,7 +1377,7 @@ ns.PhasedStart = function(total, body, onFail)
             end
         end)
         if not ok then
-            pcall(collectgarbage, "restart")
+            gcRestore()
             _G.DF_LAST_BUILD_ERR = tostring(err)
                 .. " || " .. (type(debugstack) == "function" and debugstack(co, 2, 1, 12) or "")
             DG.Gate.Finish()
@@ -1397,7 +1386,7 @@ ns.PhasedStart = function(total, body, onFail)
             return
         end
         if done then
-            pcall(collectgarbage, "restart")
+            gcRestore()
             if ns.IdleJobs then ns.IdleJobs.StepGC(60, 512) end
             return
         end
@@ -1486,7 +1475,7 @@ function DG.NewBossCard(dchild, arrow)
     return c
 end
 
-DG.CARD_POOL_CAP = 6
+DG.CARD_POOL_CAP = 24
 function DG.CardPoolReady()
     return (DG.__cardPoolI or 0) >= (DG.LOOT_CARD_MAX or 0)
 end
@@ -1510,7 +1499,7 @@ function DG.BuildCardPool()
         DG.Gate.Advance(1)
         left = left - 1
         local t1 = t0 and DG.__nowMs()
-        if t1 and (t1 - t0) >= DG.Loader.budgetMs then break end
+        if t1 and (t1 - t0) >= DG.Loader.CurCap() then break end
     end
     DG.__cardPoolI = i
     if i < n then
@@ -1809,7 +1798,7 @@ function DG.EnsureQuestLane()
     end)
 
     local zpill = CreateFrame("Frame", nil, card)
-    zpill:SetSize(116, 22)
+    zpill:SetSize(116, 24)
     zpill:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -6, 6)
     zpill:SetFrameLevel(sf:GetFrameLevel() + 10)
     zpill:EnableMouse(true)
@@ -1824,7 +1813,7 @@ function DG.EnsureQuestLane()
         sep:SetSize(1, 12)
         sep:SetPoint("LEFT", zpill, "LEFT", 28 + (i - 1) * 60, 0)
     end
-    local zlab = MakeFS(zpill, 11, { 0.92, 0.92, 0.92 }, "CENTER")
+    local zlab = MakeFS(zpill, 14, { 0.92, 0.92, 0.92 }, "CENTER")
     zlab:SetPoint("CENTER", zpill, "CENTER", 0, 0)
     zlab:SetText("125%")
     local function refreshZoomLabel()
@@ -1836,7 +1825,7 @@ function DG.EnsureQuestLane()
     end
     for i = 1, 2 do
         local bt = CreateFrame("Button", nil, zpill)
-        bt:SetSize(26, 22)
+        bt:SetSize(26, 24)
         if i == 1 then
             bt:SetPoint("LEFT", zpill, "LEFT", 1, 0)
         else
@@ -1844,7 +1833,7 @@ function DG.EnsureQuestLane()
         end
         bt:SetFrameLevel(zpill:GetFrameLevel() + 3)
         bt:EnableMouse(true)
-        local t = MakeFS(bt, 13, { 0.92, 0.92, 0.92 })
+        local t = MakeFS(bt, 14, { 0.92, 0.92, 0.92 })
         t:SetAllPoints()
         t:SetText(i == 1 and "-" or "+")
         bt:SetScript("OnClick", function()
@@ -1999,7 +1988,9 @@ DG.Q_OV_TODO = { 0.55, 0.55, 0.55, 1 }
 function DG.PaintQuestOverview(d)
     local ov, canvas, pool = U.dungeonQOverviewF, U.dungeonQOVCanvas, U.dungeonQOVPool
     if not (ov and canvas and pool and d) then return end
-    collectgarbage("stop")
+    local gcOn = type(collectgarbage) == "function"
+    if gcOn then pcall(collectgarbage, "stop") end
+    local qovOk, qovErr = pcall(function()
     local list = DG.QuestList(d)
     DG.PrefetchQuestData(list)
     local side = U.dungeonQSide
@@ -2286,7 +2277,7 @@ function DG.PaintQuestOverview(d)
         local nm = DG.QuestName(pid)
         DG.ClipTo(n.name, nm, nw - 8)
         n.name:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3], 1)
-        local exinfo = ns.DungeonQuestExtInfo and ns.DungeonQuestExtInfo[pid]
+        local exinfo = ns.EnsureDungeonQuestExtInfo()[pid]
         DG.QuestOverviewClsBadge(n, exinfo and exinfo.cls)
         n.sub:SetText("")
         n.stbar:Show()
@@ -2894,7 +2885,9 @@ function DG.PaintQuestOverview(d)
     if U.dungeonQOVSync then U.dungeonQOVSync() end
     if U.dungeonQOVClamp then U.dungeonQOVClamp() end
     for i = nNode + 1, #(pool.node) do pool.node[i]:Hide() end
-    collectgarbage("restart")
+    end)
+    if gcOn then pcall(collectgarbage, "restart") end
+    if not qovOk then _G.DF_QOV_ERR = tostring(qovErr) end
 end
 
 function DG.EnsureGuideLane()
@@ -3163,9 +3156,7 @@ function DG.ApplyDetailChrome(cur)
     end
     for key, bt in pairs(U.dungeonTabBtns or {}) do
         local sel = (key == cur)
-        SetOutline(bt, sel, 1, 0.82, 0)
-        local fs = bt:GetFontString()
-        if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_GREY)) end
+        ns.hui.SetButtonSelected(bt, sel)
     end
 end
 
@@ -3178,8 +3169,6 @@ function DG.BuildDetailTabs()
         local bt = NewButton(detail, def.text, 70, 24, 14)
         bt:SetFrameLevel(hero:GetFrameLevel() + 1)
         bt:SetPoint("TOPRIGHT", detail, "TOPRIGHT", -8 - (i - 1) * 78, -(DG.HERO_META_Y - 12))
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt:SetScript("OnClick", function()
             U:SetDungeonTab(def.key)
         end)
@@ -3193,8 +3182,8 @@ function DG.BuildDetailChips()
     if not (detail and hero) then return end
     if next(U.dungeonEntChips or {}) then return end
     for i = 1, 3 do
-        local chip = NewButton(detail, "", 70, 20, 14)
-        AddBtnIcon(chip, "EntryPin", 12, 4)
+        local chip = NewButton(detail, "", 76, 24, 14)
+        AddBtnIcon(chip, "EntryPin", 14, 5)
         chip:SetFrameLevel(hero:GetFrameLevel() + 1)
         chip.__entIdx = i
         chip:SetScript("OnClick", function(self)
@@ -3216,8 +3205,6 @@ function DG.BuildDetailFilterRow()
     for i = 1, DG.FILTER_MAX do
         local bt = NewButton(detail, "", 92, 24, 14)
         bt:SetPoint("TOPLEFT", detail, "TOPLEFT", DG.GUTTER + (i - 1) * 100, -DG.FILTER_Y)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt.__mode, bt.__key = "loot", "all"
         local em = bt:CreateTexture(nil, "OVERLAY")
         em:SetSize(16, 16)
@@ -3338,8 +3325,6 @@ function DG.BuildDetailLootView()
                              DG.LOOT_VIEW_W, 24, 14)
         bt:SetPoint("TOPLEFT", detail, "TOPLEFT",
                     DG.LOOT_VIEW_X + (vi - 1) * (DG.LOOT_VIEW_W + DG.LOOT_VIEW_GAP), -DG.FILTER_Y)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
         bt.__lootView = vk
         bt.__mode = "lootview"
         bt:SetScript("OnClick", function() U:SetLootView(vk) end)
@@ -3348,8 +3333,6 @@ function DG.BuildDetailLootView()
     if not U.dungeonLootBossDd then
         local dd = NewButton(detail, "", DG.LOOT_BOSS_W, 24, 14)
         dd:SetPoint("TOPLEFT", detail, "TOPLEFT", DG.LOOT_BOSS_X, -DG.FILTER_Y)
-        MakeOutline(dd, 1, 0.82, 0)
-        dd.__huiKeepTextColor = true
         dd:SetScript("OnClick", function() DG.OpenLootBossMenu(dd) end)
         U.dungeonLootBossDd = dd
     end
@@ -3643,6 +3626,7 @@ function DG.RefreshItemCards(itemID)
         DG.__rcQ = nil
         if not qq then return end
         for id in pairs(qq) do DG.FlushItemCards(id) end
+        if DG.__fcPending then DG.FlushPendingItems() end
     end)
 end
 
@@ -3664,6 +3648,12 @@ function DG.HarvestTipName(id)
         if type(q) == "number" and GetItemQualityColor then r, g, b = GetItemQualityColor(q) end
         if not cache then cache = {} DG.__tipName = cache end
         cache[id] = { nm, r, g, b }
+        DG.__tipCapN = (DG.__tipCapN or 0) + 1
+        if DG.__tipCapN > 3000 then
+            for k in pairs(cache) do cache[k] = nil end
+            DG.__tipCapN = 0
+            cache[id] = { nm, r, g, b }
+        end
         if r then DG.__tipColor = { r, g, b } end
         return nm
     end
@@ -3681,20 +3671,24 @@ function DG.FlushItemCards(itemID)
     local wait = waitMap[itemID] or 0
     if now and now - (last[itemID] or 0) < wait * 1000 then return end
     if now then last[itemID] = now end
-    DG.FlushItemCardsNow(itemID)
-    local _, hasName = DG.ItemName(itemID)
-    if hasName then
-        waitMap[itemID] = 1
-    else
-        waitMap[itemID] = math.min((wait > 1 and wait or 1) * 2, 60)
+    local pend = DG.__fcPending
+    if not pend then pend = {} DG.__fcPending = pend end
+    pend[itemID] = true
+    if not DG.__fcT then
+        DG.__fcT = true
+        if C_Timer and C_Timer.NewTimer then
+            C_Timer.NewTimer(0, function()
+                DG.__fcT = nil
+                DG.FlushPendingItems()
+            end)
+        else
+            DG.__fcT = nil
+            DG.FlushPendingItems()
+        end
     end
 end
 
-function DG.FlushItemCardsNow(itemID)
-    local LF = ns.LootFilter
-    if LF then LF.Invalidate(itemID) end
-    local RU = ns.RU
-    if RU and RU.OnItemData then RU.OnItemData(itemID) end
+function DG.BroadcastItemData(itemID)
     local PVM = ns.PvPModule
     if PVM and PVM.OnItemData then PVM.OnItemData(itemID) end
     local EGM = ns.ExploreModule
@@ -3707,27 +3701,46 @@ function DG.FlushItemCardsNow(itemID)
     if BM and BM.OnItemData then BM.OnItemData(itemID) end
     local CQM = ns.ClassQuestUI
     if CQM and CQM.OnItemData then CQM.OnItemData(itemID) end
+    local MM = ns.MapModule
+    if MM and MM.OnItemData then MM.OnItemData(itemID) end
+    local PM = ns.ProfModule
+    if PM and PM.OnItemData then PM.OnItemData(itemID) end
+end
+
+function DG.FlushPendingItems()
+    local pend = DG.__fcPending
+    DG.__fcPending = nil
+    if not pend then return end
+    local LF = ns.LootFilter
+    local waitMap = DG.__rcWait
+    for id in pairs(pend) do
+        if LF then LF.Invalidate(id) end
+        DG.BroadcastItemData(id)
+        if waitMap then
+            local _, hasName = DG.ItemName(id)
+            if hasName then
+                waitMap[id] = 1
+            else
+                local w = waitMap[id] or 1
+                waitMap[id] = math.min((w > 1 and w or 1) * 2, 60)
+            end
+        end
+    end
+    DG.PoolApplyItems(pend)
+end
+
+function DG.PoolApplyItems(ids)
+    local LF = ns.LootFilter
     local pool = U.dungeonDetailPool and U.dungeonDetailPool.item
-    if not pool then return end
-    for i = 1, #pool do
-        local c = pool[i]
-        local it = c and c.__it
-        if it and it[1] == itemID then
-            if c.name then
-                local nm, hasName = DG.ItemName(itemID)
-                c.name:SetText(nm)
-                if hasName then
-                    c.name:SetTextColor(DG.QColor(DG.QualOf(itemID)))
-                else
-                    c.name:SetTextColor(Unpack(C_GREY))
-                end
-                c.__named = hasName
+    if pool then
+        for i = 1, #pool do
+            local c = pool[i]
+            local it = c and c.__it
+            local iid = it and it[1]
+            if iid and ids[iid] then
+                DG.PaintItemRow(c, iid)
+                if LF and LF.Apply then LF.Apply(c) end
             end
-            if c.icon and c.icon.SetTexture then
-                c.icon:SetTexture(DG.ItemIcon(itemID))
-            end
-            if c.tp then c.tp:SetText(DG.ItemMeta(itemID)) end
-            if LF then LF.Apply(c) end
         end
     end
     local qpool = U.dungeonQDetPool and U.dungeonQDetPool.chip
@@ -3735,23 +3748,19 @@ function DG.FlushItemCardsNow(itemID)
         for i = 1, #qpool do
             local c = qpool[i]
             local it = c and c.__it
-            if it and it[1] == itemID and c.name then
-                local nm, hasName = DG.ItemName(itemID)
-                c.name:SetText(nm)
-                if hasName then
-                    local qr, qg, qb = DG.QColor(DG.QualOf(itemID))
-                    if qr then
-                        c.name:SetTextColor(qr, qg, qb)
-                    else
-                        c.name:SetTextColor(Unpack(C_TEXT))
-                    end
-                else
-                    c.name:SetTextColor(Unpack(C_GREY))
-                end
-                c.__named = hasName
+            local iid = it and it[1]
+            if iid and ids[iid] then
+                DG.PaintItemChip(c, iid)
             end
         end
     end
+end
+
+function DG.FlushItemCardsNow(itemID)
+    local LF = ns.LootFilter
+    if LF then LF.Invalidate(itemID) end
+    DG.BroadcastItemData(itemID)
+    DG.PoolApplyItems({ [itemID] = true })
 end
 
 function DG.PaintItemRow(c, itemID)
@@ -3898,10 +3907,17 @@ function DG.LootTypeKey(id)
 end
 
 DG.__asked = {}
+DG.__qAsked = {}
 function DG.RequestItem(id, force)
     if type(id) ~= "number" or id < 1 or id > 2147483647 or id ~= math.floor(id) then return end
     if DG.__asked[id] and not force then return end
     DG.__asked[id] = true
+    DG.__askedN = (DG.__askedN or 0) + 1
+    if DG.__askedN > 4000 then
+        for k in pairs(DG.__asked) do DG.__asked[k] = nil end
+        DG.__askedN = 0
+        DG.__asked[id] = true
+    end
     DG.EnsureItemListener()
     if C_Item and C_Item.RequestLoadItemDataByID then
         pcall(C_Item.RequestLoadItemDataByID, id)
@@ -3931,6 +3947,12 @@ function DG.EnsureItemListener()
                and r.__tipReshown ~= itemID then
                 r.__tipReshown = itemID
                 DG.ShowItemTip(r, r.__it)
+            end
+            local pr = ns.ProfModule and ns.ProfModule.hoverRow
+            if pr and pr.__it and pr.__it[1] == itemID and pr:IsMouseOver()
+               and pr.__tipReshown ~= itemID then
+                pr.__tipReshown = itemID
+                DG.ShowItemTip(pr, pr.__it)
             end
             DG.RefreshItemCards(itemID)
         end)
@@ -4088,12 +4110,26 @@ end
 
 function DG.TipAppendLines(lines)
     if type(lines) ~= "table" or #lines == 0 then return end
+    local T = ns.TipLines
+    if T and T.Append then
+        T.Append(GameTooltip, lines)
+        return
+    end
     GameTooltip:AddLine(" ")
     for _, ln in ipairs(lines) do
         if type(ln) == "table" and type(ln[1]) == "string" then
             GameTooltip:AddLine(ln[1], ln[2] or 1, ln[3] or 1, ln[4] or 1, true)
         end
     end
+end
+
+function DG.TipAppendMerged(a, b)
+    if not a then DG.TipAppendLines(b) return end
+    if not b then DG.TipAppendLines(a) return end
+    local m = {}
+    for _, ln in ipairs(a) do m[#m + 1] = ln end
+    for _, ln in ipairs(b) do m[#m + 1] = ln end
+    DG.TipAppendLines(m)
 end
 
 function DG.ShowItemTipBody(owner, it, extra, title)
@@ -4120,7 +4156,8 @@ function DG.ShowItemTipBody(owner, it, extra, title)
 
     if native then
         if ns.hui and ns.hui.MarkTipItem then ns.hui.MarkTipItem(GameTooltip, true) end
-        if extra then DG.TipAppendLines(extra) end
+        local tl = ns.TipLines and ns.TipLines.Lines(id)
+        DG.TipAppendMerged(extra, tl)
         if title then
             local l1 = _G["GameTooltipTextLeft1"]
             if l1 then l1:SetText(title) end
@@ -4149,7 +4186,8 @@ function DG.ShowItemTipBody(owner, it, extra, title)
     else
         GameTooltip:AddLine(L["客户端未收录此物品"], 0.5, 0.5, 0.5, true)
     end
-    if extra then DG.TipAppendLines(extra) end
+    local tl = ns.TipLines and ns.TipLines.Lines(id)
+    DG.TipAppendMerged(extra, tl)
     GameTooltip:Show()
 end
 
@@ -4251,9 +4289,7 @@ function DG.ApplyLootDropdownChrome()
         bossDd:SetShown((U.dungeonTab or "loot") == "loot")
         local bossShown = bossSel == DG.LOOT_TRASH and DG.LOOT_TRASH_LABEL or bossSel
         bossDd:SetText(L["BOSS："] .. DG.FitText(bossShown or L["全部"], 14, 112))
-        SetOutline(bossDd, bossSel ~= nil, 1, 0.82, 0)
-        local bfs = bossDd:GetFontString()
-        if bfs then bfs:SetTextColor(Unpack(bossSel and C_GOLD or C_GREY)) end
+        ns.hui.SetButtonSelected(bossDd, bossSel ~= nil)
     end
     local bt1 = U.dungeonFilterBtns and U.dungeonFilterBtns[1]
     if bt1 and bt1.__mode == "loot" and bt1.__key == "__typeMenu" then
@@ -4264,9 +4300,7 @@ function DG.ApplyLootDropdownChrome()
         end
         bt1:SetWidth(DG.LOOT_BOSS_W)
         bt1:SetText(DG.FitText(L["类型："] .. lab, 14, DG.LOOT_DD_TEXT_W))
-        SetOutline(bt1, filter ~= "all", 1, 0.82, 0)
-        local fs = bt1:GetFontString()
-        if fs then fs:SetTextColor(Unpack((filter ~= "all") and C_GOLD or C_GREY)) end
+        ns.hui.SetButtonSelected(bt1, filter ~= "all")
     end
 end
 
@@ -4399,9 +4433,7 @@ function U:RenderDungeonLoot()
                 bt:SetShown(false)
                 sel = false
             end
-            SetOutline(bt, sel, 1, 0.82, 0)
-            local fs = bt:GetFontString()
-            if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_GREY)) end
+            ns.hui.SetButtonSelected(bt, sel)
         end
     end
     for i = #DG.FILTERS + 1, #(U.dungeonFilterBtns or {}) do
@@ -5030,9 +5062,7 @@ function U:RefreshLootViewBtns()
         local bt = U.dungeonLootViewBtns[i]
         if bt then
             local sel = (bt.__lootView == cur)
-            SetOutline(bt, sel, 1, 0.82, 0)
-            local fs = bt:GetFontString()
-            if fs then fs:SetTextColor(Unpack(sel and C_GOLD or C_GREY)) end
+            ns.hui.SetButtonSelected(bt, sel)
         end
     end
 end
@@ -5170,12 +5200,69 @@ if type(SlashCmdList) == "table" then
         end
     end
 end
+DG.__qWatch = {}
+DG.__qDataHooks = {}
+function DG.OnQuestData(id)
+    local MM = ns.MapModule
+    if MM and MM.OnQuestData then MM.OnQuestData(id) end
+    local hl = DG.__qDataHooks
+    if hl then
+        for i = 1, #hl do
+            local fn = hl[i]
+            if type(fn) == "function" then pcall(fn, id) end
+        end
+    end
+end
+function DG.RequestQuest(id)
+    if type(id) ~= "number" or id < 1 or id ~= math.floor(id) then return end
+    if not DG.__qEvt then
+        local ev = CreateFrame("Frame")
+        pcall(ev.RegisterEvent, ev, "QUEST_DATA_LOAD_RESULT")
+        ev:SetScript("OnEvent", function(_, _, qid)
+            if qid then
+                C_Timer.After(0, function() DG.OnQuestData(qid) end)
+            end
+        end)
+        DG.__qEvt = ev
+    end
+    if not DG.__qAsked[id] then
+        DG.__qAsked[id] = true
+        if C_QuestLog and C_QuestLog.RequestLoadQuestByID then
+            pcall(C_QuestLog.RequestLoadQuestByID, id)
+        end
+        local n0 = DG.QLCall("GetTitleForQuestID", id)
+        if type(n0) == "string" and n0 ~= "" then
+            DG.OnQuestData(id)
+            return
+        end
+    end
+    if not (C_Timer and C_Timer.After) then return end
+    if DG.__qWatch[id] then return end
+    DG.__qWatch[id] = true
+    for _, d in ipairs({ 0.3, 0.8, 1.5, 3 }) do
+        C_Timer.After(d, function()
+            local n = DG.QLCall("GetTitleForQuestID", id)
+            if type(n) == "string" and n ~= "" then
+                DG.__qWatch[id] = nil
+                DG.OnQuestData(id)
+            end
+        end)
+    end
+end
 function DG.QuestName(id)
     if not id then return nil, false end
     if type(id) ~= "number" then return tostring(id), false end
     local n = DG.QLCall("GetTitleForQuestID", id)
     if type(n) == "string" and n ~= "" then return n, true end
-    local ex = ns.DungeonQuestExtInfo and ns.DungeonQuestExtInfo[id]
+    if not DG.__qAsked[id] then
+        DG.__qAsked[id] = true
+        if C_QuestLog and C_QuestLog.RequestLoadQuestByID then
+            pcall(C_QuestLog.RequestLoadQuestByID, id)
+        end
+        n = DG.QLCall("GetTitleForQuestID", id)
+        if type(n) == "string" and n ~= "" then return n, true end
+    end
+    local ex = ns.EnsureDungeonQuestExtInfo()[id]
     if ex and type(ex.nm) == "string" and ex.nm ~= "" then return ex.nm, true end
     return format(L["任务 #%d"], id), false
 end
@@ -5227,7 +5314,7 @@ function DG.DifficultyColor(level)
 end
 
 function DG.ExtQuestRow(pid)
-    local info = ns.DungeonQuestExtInfo and ns.DungeonQuestExtInfo[pid]
+    local info = ns.EnsureDungeonQuestExtInfo()[pid]
     if not info then return nil end
     local req
     if info.goals then
@@ -5653,6 +5740,8 @@ DG.Q_BADGE_PRE_BG = { 0.78, 0.60, 0.10, 1 }
 DG.Q_BADGE_SHARE_BG = { 0.16, 0.52, 0.26, 1 }
 DG.Q_BADGE_RACE_BG = { 0.78, 0.14, 0.12, 1 }
 DG.Q_BADGE_IN_BG = { 0.20, 0.45, 0.55, 1 }
+DG.Q_BADGE_BUY_BG = { 0.16, 0.38, 0.62, 1 }
+DG.Q_BADGE_MID_BG = { 0.42, 0.26, 0.60, 1 }
 DG.Q_RACE_TAG = { [1049] = { ok = { 2, 6, 8 }, label = "非亡灵" } }
 DG.Q_RACE_TAG_L = { ["非亡灵"] = L["非亡灵"] }
 function DG.QuestRaceTag(qid)
@@ -5787,24 +5876,36 @@ function DG.NodeLoc(qid, npcID, fb)
     return DG.ZoneShort(fb)
 end
 
+DG.BADGE_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\HUIPillCap"
+DG.BADGE_CAP_W = 8
+
 function DG.MakeBadge(parent, bg)
-    local b = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    local b = CreateFrame("Frame", nil, parent)
     b:SetSize(10, DG.Q_BADGE_H)
-    local painted = false
-    if IsHui() and ns.hui and ns.hui.BuildRoundedBG then
-        local fill, border = ns.hui.BuildRoundedBG(b, 4, bg or ns.hui.layer.L3, "both", true, 1)
-        b.__huiCard = { fill = fill, border = border }
-        painted = true
+    local col = bg
+    if not col then
+        col = (ns.hui and ns.hui.layer and ns.hui.layer.L3) or { 0.12, 0.12, 0.13, 1 }
     end
-    if not painted then
-        b:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8x8",
-            edgeFile = "Interface\\Buttons\\WHITE8x8",
-            edgeSize = 1,
-        })
-        b:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
-        b:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
-    end
+    local cw = DG.BADGE_CAP_W
+    b.capL = b:CreateTexture(nil, "BACKGROUND")
+    b.capL:SetTexture(DG.BADGE_CAP_TEX)
+    b.capL:SetTexCoord(0, 0.5, 0, 1)
+    b.capL:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
+    b.capL:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 0, 0)
+    b.capL:SetWidth(cw)
+    b.capR = b:CreateTexture(nil, "BACKGROUND")
+    b.capR:SetTexture(DG.BADGE_CAP_TEX)
+    b.capR:SetTexCoord(0.5, 1, 0, 1)
+    b.capR:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
+    b.capR:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
+    b.capR:SetWidth(cw)
+    b.mid = b:CreateTexture(nil, "BACKGROUND")
+    b.mid:SetColorTexture(1, 1, 1, 1)
+    b.mid:SetPoint("TOPLEFT", b.capL, "TOPRIGHT", 0, 0)
+    b.mid:SetPoint("BOTTOMRIGHT", b.capR, "BOTTOMLEFT", 0, 0)
+    b.capL.__huiGlass = { c = col }
+    b.__huiCard = { fill = { b.capL, b.mid, b.capR }, border = {} }
+    DG.BadgeTint(b, col)
     b.lab = MakeFS(b, DG.Q_BADGE_FS, C_WHITE, "CENTER")
     b.lab:SetPoint("CENTER", b, "CENTER", 0, 0)
     b:Hide()
@@ -5814,6 +5915,8 @@ end
 function DG.PlaceBadge(b, x, text, maxX)
     b.lab:SetText(text)
     local w = (b.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+    local minW = DG.BADGE_CAP_W * 2 + 2
+    if w < minW then w = minW end
     if maxX and x + w > maxX then
         b:Hide()
         return x
@@ -5827,6 +5930,16 @@ end
 
 function DG.BadgeTint(b, col)
     if not (b and col) then return end
+    local a = col[4] or 1
+    if b.mid then
+        b.mid:SetColorTexture(col[1], col[2], col[3], a)
+        if b.capL then
+            b.capL:SetVertexColor(col[1], col[2], col[3], a)
+            b.capL.__huiGlass = { c = col }
+        end
+        if b.capR then b.capR:SetVertexColor(col[1], col[2], col[3], a) end
+        return
+    end
     local hc = b.__huiCard
     local fill = type(hc) == "table" and hc.fill or nil
     if type(fill) == "table" then
@@ -5992,7 +6105,7 @@ function DG.QuestFollowers(id)
         for fid, pe in pairs(ns.DungeonQuestPreExtra or {}) do
             if type(pe) == "table" then add(pe[1], fid) end
         end
-        for fid, info in pairs(ns.DungeonQuestExtInfo or {}) do
+        for fid, info in pairs(ns.EnsureDungeonQuestExtInfo()) do
             if type(info) == "table" and type(info.pre) == "table" then
                 for _, p in ipairs(info.pre) do add(p, fid) end
             end
@@ -6094,11 +6207,9 @@ function U:RenderDungeonQuests()
             bt:SetShown(true)
             local sel = (i == 3 and view == "overview") or (i == 4 and view == "list")
                 or (i == 1 and side == "A") or (i == 2 and side == "H")
-            SetOutline(bt, sel, 1, 0.82, 0)
-            if bfs then
-                if sel then
-                    bfs:SetTextColor(Unpack(C_GOLD))
-                elseif i == 1 then
+            ns.hui.SetButtonSelected(bt, sel)
+            if bfs and not sel then
+                if i == 1 then
                     bfs:SetTextColor(0.40, 0.62, 1.00, 1)
                 elseif i == 2 then
                     bfs:SetTextColor(1.00, 0.36, 0.26, 1)
@@ -6688,9 +6799,9 @@ function U:RenderQuestDetail()
             f.fs:SetWidth(detW - 76)
             f.fs:SetWordWrap(false)
             f.fs:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-            local mb = NewButton(f, L["地图"], 62, 20, 14)
-            AddBtnIcon(mb, "EntryPin", 12, 4)
-            mb:SetPoint("RIGHT", f.fs, "RIGHT", 74, 0)
+            local mb = NewButton(f, L["地图"], 68, 24, 14)
+            AddBtnIcon(mb, "EntryPin", 14, 5)
+            mb:SetPoint("RIGHT", f.fs, "RIGHT", 80, 0)
             mb:SetScript("OnClick", function(self)
                 local p = self:GetParent()
                 if p.__npc then DG.MarkNPC(p.__npc, p.__loc) end
@@ -7652,16 +7763,19 @@ function U:SwitchSub(key)
     local isPvP = (k == "PvP")
     local isFac = (k == "Factions")
     local isGear = (k == "Gear")
-    if U.dungeonPage then U.dungeonPage:SetShown(isDun) end
-    if U.raidPage then U.raidPage:SetShown(isRaid) end
-    if U.profPage then U.profPage:SetShown(isProf) end
-    if U.explorePage then U.explorePage:SetShown(isExpl) end
-    if U.collectionPage then U.collectionPage:SetShown(isColl) end
-    if U.bisPage then U.bisPage:SetShown(isBis) end
-    if U.tierPage then U.tierPage:SetShown(isTier) end
-    if U.pvpPage then U.pvpPage:SetShown(isPvP) end
-    if U.factionPage then U.factionPage:SetShown(isFac) end
-    if U.gearPage then U.gearPage:SetShown(isGear) end
+    local function applyPages()
+        if U.dungeonPage then U.dungeonPage:SetShown(isDun) end
+        if U.raidPage then U.raidPage:SetShown(isRaid) end
+        if U.profPage then U.profPage:SetShown(isProf) end
+        if U.explorePage then U.explorePage:SetShown(isExpl) end
+        if U.collectionPage then U.collectionPage:SetShown(isColl) end
+        if U.bisPage then U.bisPage:SetShown(isBis) end
+        if U.tierPage then U.tierPage:SetShown(isTier) end
+        if U.pvpPage then U.pvpPage:SetShown(isPvP) end
+        if U.factionPage then U.factionPage:SetShown(isFac) end
+        if U.gearPage then U.gearPage:SetShown(isGear) end
+    end
+    applyPages()
     if isRaid then
         U:EnsureBuilt("Raids")
     elseif isDun then
@@ -7696,6 +7810,7 @@ function U:SwitchSub(key)
         U:EnsureBuilt("Gear")
         ns.GearModule.Open()
     end
+    applyPages()
     ns.OpenPerf.Mark("就绪")
     for _, tab in ipairs(U.subTabs or {}) do
         local selected = (tab.key == k)
@@ -7874,17 +7989,9 @@ function U:Build()
         local dt = DB().dungeonTab
         U.dungeonTab = (dt == "quest" or dt == "guide" or dt == "map") and dt or "loot"
     end
-    U.sourceCredits = {}
     U.subBuilt = {}
 
     BuildSubTabs()
-
-    local creditLift = CreateFrame("Frame", nil, panel)
-    creditLift:SetFrameLevel(panel.GetFrameLevel and (panel:GetFrameLevel() + 4) or 4)
-    creditLift:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 0, 0)
-    creditLift:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, 0)
-    creditLift:SetHeight(24)
-    MakeSourceCredit(creditLift, L["数据来源：wowhead"], "https://www.wowhead.com/forever")
 
     U:SwitchSub(U.curSub)
     U.building = false
@@ -7936,6 +8043,7 @@ ns.ProfHost = {
     MakeFS = MakeFS, NewButton = NewButton, MakeOutline = MakeOutline,
     AddBtnIcon = AddBtnIcon,
     SetOutline = SetOutline, SetTip = SetTip, Unpack = Unpack,
+    SetButtonSelected = ns.hui.SetButtonSelected,
     C_GOLD = C_GOLD, C_GREEN = C_GREEN, C_GREY = C_GREY,
     C_DIM = C_DIM, C_WHITE = C_WHITE, C_TEXT = C_TEXT,
     CONTENT_W = CONTENT_W, CONTENT_H = CONTENT_H,

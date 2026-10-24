@@ -12,7 +12,7 @@ local DG = Host.DG
 local MakeFS = Host.MakeFS
 local NewButton = Host.NewButton
 local MakeOutline = Host.MakeOutline
-local SetOutline, Unpack = Host.SetOutline, Host.Unpack
+local SetOutline, SetButtonSelected, Unpack = Host.SetOutline, Host.SetButtonSelected, Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
 local C_GREEN = Host.C_GREEN
@@ -29,6 +29,12 @@ local BT = BackdropTemplateMixin and "BackdropTemplate" or nil
 
 local C_LINK = { 0.55, 0.78, 1.0 }
 local C_ACCENT = { 0.27, 0.75, 0.45 }
+local C_SEL_NAME = { 0.62, 0.95, 0.72 }
+
+local RIDING_RANK = { [75] = L["初级骑术"], [150] = L["中级骑术"] }
+
+local ItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
+
 
 local SUB_MOUNT, SUB_PET = "mount", "pet"
 
@@ -67,6 +73,7 @@ local PET_DIFF_TXT = {
     quest = L["任务"],
     craft = L["制造"],
     pick = L["扒窃"],
+    world = L["互动"],
 }
 local PET_DIFF_COL = {
     party = { 0.88, 0.42, 0.42 },
@@ -79,6 +86,7 @@ local PET_DIFF_COL = {
     quest  = { 0.62, 0.55, 0.90 },
     craft  = { 0.38, 0.80, 0.75 },
     pick   = { 0.80, 0.62, 0.40 },
+    world  = { 0.62, 0.55, 0.90 },
 }
 
 local GROUP_TXT = {
@@ -128,10 +136,10 @@ local OVR = ns.NameOverrides
 
 local function MountName(rec)
     if rec[2] == "spell" then
-        local ok, nm = pcall(GetSpellInfo, rec[1])
-        if ok and type(nm) == "string" and nm ~= "" then return nm, true end
         local o = OVR and OVR.spell and OVR.spell[rec[1]]
         if o then return o, true end
+        local ok, nm = pcall(GetSpellInfo, rec[1])
+        if ok and type(nm) == "string" and nm ~= "" then return nm, true end
         return format(L["法术 #%d"], rec[1]), false
     end
     local nm, got = DG.ItemName(rec[1])
@@ -150,10 +158,23 @@ local function MountIcon(rec)
         if type(tex) == "string" and tex ~= "" and tex ~= FALLBACK_ICON then return tex end
         if type(tex) == "number" then return tex end
     end
+    if type(rec[3]) == "number" then return rec[3] end
     if type(rec[3]) == "string" and rec[3] ~= "" then
         return "Interface\\Icons\\" .. rec[3]
     end
     return FALLBACK_ICON
+end
+
+local function SpellTip(owner, spellID)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+    GameTooltip:ClearLines()
+    local ok = GameTooltip.SetSpellByID and pcall(GameTooltip.SetSpellByID, GameTooltip, spellID)
+    if not ok then
+        local o = OVR and OVR.spell and OVR.spell[spellID]
+        GameTooltip:AddLine(o or format(L["法术 #%d"], spellID), 1, 1, 1, true)
+    end
+    GameTooltip:Show()
 end
 
 local function RecName(rec, isPet)
@@ -459,7 +480,14 @@ local function PaintRow(r, rec)
             r.src:SetText(GROUP_TXT[g] or g)
             r.src:SetTextColor(Unpack(GROUP_COL[g] or C_GREY))
         end
-        SetOutline(r, CG.sel == rec, Unpack(C_ACCENT))
+        local selOn = (CG.sel == rec)
+        if not (ns.hui and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, selOn)) then
+            SetOutline(r, selOn, Unpack(C_ACCENT))
+        end
+        if r.__hover and selOn then
+            for _, t in ipairs(r.__hover) do t:Hide() end
+        end
+        r.name:SetTextColor(Unpack(selOn and C_SEL_NAME or C_TEXT))
     else
         r.__rec = nil
         r.__pet = nil
@@ -506,7 +534,9 @@ local function PaintDetail()
         d.pill:Hide()
         d.desc:SetText("")
         HideSrcRow(d)
+        if d.costRow then d.costRow:Hide() end
         for _, sg in pairs(d.segs) do sg:Hide() end
+        for _, ac in ipairs(d.attrCards or {}) do ac:Hide() end
         return
     end
     d.empty:SetShown(false)
@@ -584,10 +614,95 @@ local function PaintDetail()
             end
         end
         if d.zoneHit then d.zoneHit:SetShown(type(area) == "number") end
+        local baseY = -(8 + MODEL_H + 70)
+        local cost = rec.cost
+        if d.costRow then
+            local okCost = (type(cost) == "number" and cost >= 0)
+                or (type(cost) == "table" and type(cost[1]) == "number" and (cost[2] == "c" or cost[2] == "i"))
+            d.costRow:SetShown(okCost)
+            if okCost then
+                baseY = -(8 + MODEL_H + 96)
+                for _, ck in ipairs({ "g", "s", "c" }) do
+                    d.coins[ck].tex:Hide()
+                    d.coins[ck].fs:Hide()
+                end
+                d.curIcon:Hide()
+                d.curTx:Hide()
+                if type(cost) == "number" then
+                    local COIN_TEX = {
+                        g = "Interface\\MoneyFrame\\UI-GoldIcon",
+                        s = "Interface\\MoneyFrame\\UI-SilverIcon",
+                        c = "Interface\\MoneyFrame\\UI-CopperIcon",
+                    }
+                    local parts = {
+                        { "g", math.floor(cost / 10000) },
+                        { "s", math.floor((cost % 10000) / 100) },
+                        { "c", cost % 100 },
+                    }
+                    local cx = 46
+                    local any = false
+                    for _, pr in ipairs(parts) do
+                        if pr[2] > 0 then
+                            any = true
+                            local coin = d.coins[pr[1]]
+                            coin.tex:SetTexture(COIN_TEX[pr[1]])
+                            coin.tex:ClearAllPoints()
+                            coin.tex:SetPoint("LEFT", d.costRow, "LEFT", cx, 0)
+                            coin.tex:Show()
+                            coin.fs:ClearAllPoints()
+                            coin.fs:SetPoint("LEFT", coin.tex, "RIGHT", 3, 0)
+                            coin.fs:SetText(pr[2])
+                            coin.fs:Show()
+                            cx = cx + 19 + coin.fs:GetStringWidth() + 8
+                        end
+                    end
+                    if not any then
+                        d.coins.c.tex:SetTexture(COIN_TEX.c)
+                        d.coins.c.tex:ClearAllPoints()
+                        d.coins.c.tex:SetPoint("LEFT", d.costRow, "LEFT", cx, 0)
+                        d.coins.c.tex:Show()
+                        d.coins.c.fs:ClearAllPoints()
+                        d.coins.c.fs:SetPoint("LEFT", d.coins.c.tex, "RIGHT", 3, 0)
+                        d.coins.c.fs:SetText(0)
+                        d.coins.c.fs:Show()
+                    end
+                else
+                    local amt, kind, id = cost[1], cost[2], cost[3]
+                    d.curIcon:ClearAllPoints()
+                    d.curIcon:SetPoint("LEFT", d.costRow, "LEFT", 46, 0)
+                    local okIcon = false
+                    if kind == "c" then
+                        local ci = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo
+                            and C_CurrencyInfo.GetCurrencyInfo(id)
+                        local fid = ci and ci.iconFileID
+                        if fid then
+                            d.curIcon:SetTexture(fid)
+                            okIcon = true
+                        end
+                    else
+                        local _, _, _, icon = ItemInfo(id)
+                        if icon then
+                            d.curIcon:SetTexture(icon)
+                            okIcon = true
+                        end
+                    end
+                    if not okIcon then
+                        if cost[4] then
+                            d.curIcon:SetTexture("Interface\\Icons\\" .. cost[4])
+                        else
+                            d.curIcon:SetTexture(FALLBACK_ICON)
+                        end
+                    end
+                    d.curIcon:Show()
+                    d.curTx:SetText(amt)
+                    d.curTx:Show()
+                end
+            end
+        end
         d.desc:ClearAllPoints()
-        d.desc:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -(8 + MODEL_H + 70))
-        d.desc:SetPoint("TOPRIGHT", d.panel, "TOPRIGHT", -PAD, -(8 + MODEL_H + 70))
-        PaintSteps(d, rec, -(8 + MODEL_H + 70), d.panel:GetWidth() - 2 * PAD)
+        d.desc:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, baseY)
+        d.desc:SetPoint("TOPRIGHT", d.panel, "TOPRIGHT", -PAD, baseY)
+        PaintSteps(d, rec, baseY, d.panel:GetWidth() - 2 * PAD)
         local inExplore = false
         if type(ns.ExplorePets) == "table" then
             for _, p in ipairs(ns.ExplorePets) do
@@ -596,6 +711,7 @@ local function PaintDetail()
         end
         if d.gotoBtn then d.gotoBtn:SetShown(inExplore) end
         HideSrcRow(d)
+        for _, ac in ipairs(d.attrCards or {}) do ac:Hide() end
     else
         d.name:SetText(MountName(rec))
         local g = rec[4]
@@ -605,9 +721,62 @@ local function PaintDetail()
         d.pill:Show()
         if d.pill2 then d.pill2:Hide() end
         if d.locChip then d.locChip:Hide() end
+        if d.costRow then d.costRow:Hide() end
         if d.zoneTx then d.zoneTx:Hide() end
         if d.zoneHit then d.zoneHit:Hide() end
         for _, sg in pairs(d.segs) do sg:Hide() end
+        local y = 8 + MODEL_H + 38
+        local vals = {}
+        if rec.riding and RIDING_RANK[rec.riding] then
+            vals[#vals + 1] = { L["骑术"], RIDING_RANK[rec.riding] }
+        end
+        if rec.speed then
+            vals[#vals + 1] = { L["速度"], "+" .. rec.speed .. "%" }
+        end
+        local t = rec.teach
+        local prev = nil
+        for k = 1, 2 do
+            local ac = d.attrCards[k]
+            local v = vals[k]
+            ac:SetShown(v ~= nil)
+            if v then
+                ac.lab:SetText(v[1])
+                ac.val:SetText(v[2])
+                ac:ClearAllPoints()
+                if prev then
+                    ac:SetPoint("TOPLEFT", prev, "TOPRIGHT", 8, 0)
+                else
+                    ac:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -y)
+                end
+                ac:SetWidth(math.max(ac.lab:GetStringWidth(), ac.val:GetStringWidth()) + 20)
+                prev = ac
+            end
+        end
+        local c3 = d.attrCards[3]
+        c3:SetShown(t ~= nil)
+        if t then
+            local iid = rec[1]
+            local nm, got = DG.ItemName(iid)
+            if not nm or nm == "" then nm = "#" .. iid end
+            if not got and DG.RequestItem then DG.RequestItem(iid) end
+            local ok, _, qlink = pcall(ItemInfo, iid)
+            c3.val:SetText((ok and type(qlink) == "string" and qlink) or nm)
+            local tex = DG.ItemIcon(iid)
+            if type(tex) ~= "string" and type(tex) ~= "number" then
+                tex = (type(rec[3]) == "string" and rec[3] ~= "") and ("Interface\\Icons\\" .. rec[3]) or FALLBACK_ICON
+            end
+            c3.icon:SetTexture(tex)
+            c3:ClearAllPoints()
+            if prev then
+                c3:SetPoint("TOPLEFT", prev, "TOPRIGHT", 8, 0)
+            else
+                c3:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -y)
+            end
+            local w = 8 + 20 + 6 + c3.val:GetStringWidth() + 8
+            c3:SetWidth(w + 6)
+            prev = c3
+        end
+        if prev then y = y + 34 + 8 end
         local txt = tostring(rec[5] or "")
         local segs = nil
         local npcs = type(rec.npcs) == "table" and rec.npcs or nil
@@ -628,11 +797,11 @@ local function PaintDetail()
             end
         end
         d.desc:ClearAllPoints()
-        d.desc:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -(8 + MODEL_H + 42))
-        d.desc:SetPoint("TOPRIGHT", d.panel, "TOPRIGHT", -PAD, -(8 + MODEL_H + 42))
+        d.desc:SetPoint("TOPLEFT", d.panel, "TOPLEFT", PAD, -y)
+        d.desc:SetPoint("TOPRIGHT", d.panel, "TOPRIGHT", -PAD, -y)
         if segs then
             d.desc:Hide()
-            PaintMountSegs(d, segs, -(8 + MODEL_H + 42))
+            PaintMountSegs(d, segs, -y)
         else
             HideSrcRow(d)
             d.desc:Show()
@@ -649,6 +818,7 @@ end
 
 local function Paint()
     if not CG.built then return end
+    if CG.PaintFilters then CG.PaintFilters() end
     local list = VisibleList()
 
     local selOK = false
@@ -682,41 +852,37 @@ local function Paint()
         return format("%s · %d", GROUP_TXT[g] or g, n)
     end
 
-    local y = 0
-    local ri, si = 0, 0
+    local lay = {}
+    local hdr = {}
+    local si = 0
+    local top = 0
     for _, g in ipairs(order) do
         local arr = byG[g]
         if arr then
             si = si + 1
-            if si > 1 then y = y - 8 end
-            local hd = CG.secs[si]
-            if hd then
-                hd:ClearAllPoints()
-                hd:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, y)
-                hd.txt:SetText(SecLabel(g, #arr))
-                hd:Show()
-            end
-            y = y - SEC_H
+            if si > 1 then top = top + 8 end
+            hdr[#hdr + 1] = { g = g, n = #arr, top = top }
+            top = top + SEC_H
             for _, rec in ipairs(arr) do
-                ri = ri + 1
-                local r = CG.rows[ri]
-                PaintRow(r, rec)
-                if r then
-                    r:ClearAllPoints()
-                    r:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, y)
-                    r:SetPoint("RIGHT", CG.listChild, "RIGHT", 0, 0)
-                end
-                y = y - (ROW_H + 8)
-                if ri % 4 == 0 then PY() end
+                lay[#lay + 1] = { rec = rec, top = top }
+                top = top + CG.ROW_PITCH
             end
         end
     end
+
     for i = si + 1, #CG.secs do CG.secs[i]:Hide() end
-    for i = ri + 1, #CG.rows do
-        local r = CG.rows[i]
-        if r.__rec ~= nil then r.__rec = nil r:Hide() end
+    for k = 1, #hdr do
+        local hd = CG.secs[k]
+        if hd then
+            local he = hdr[k]
+            hd:ClearAllPoints()
+            hd:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, -he.top)
+            hd.txt:SetText(SecLabel(he.g, he.n))
+            hd:Show()
+        end
     end
-    CG.listChild:SetHeight(-y)
+
+    CG.listChild:SetHeight(top)
 
     if CG.lastListSub ~= CG.sub then
         CG.lastListSub = CG.sub
@@ -727,11 +893,48 @@ local function Paint()
             CG.listScroll:SetVerticalScroll(maxS)
         end
     end
+
+    local v = CG.listScroll:GetVerticalScroll() or 0
+    local viewH = CG.listScroll:GetHeight() or 0
+    if viewH <= 0 then viewH = 420 end
+    local ylo = v - CG.LIST_BUF * CG.ROW_PITCH
+    local yhi = v + viewH + CG.LIST_BUF * CG.ROW_PITCH
+    local lo, hi
+    for i = 1, #lay do
+        local t = lay[i].top
+        if t + ROW_H >= ylo and t <= yhi then
+            if not lo then lo = i end
+            hi = i
+        end
+    end
+
+    for k = 1, #CG.rows do
+        local r = CG.rows[k]
+        if r.__rec ~= nil then r.__rec = nil end
+        r:Hide()
+    end
+    if lo then
+        local slot = 0
+        for i = lo, hi do
+            slot = slot + 1
+            local r = CG.rows[slot]
+            if not r then
+                r = MakeRow(CG.listChild)
+                CG.rows[slot] = r
+            end
+            local e = lay[i]
+            PaintRow(r, e.rec)
+            r:ClearAllPoints()
+            r:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, -e.top)
+            r:SetPoint("RIGHT", CG.listChild, "RIGHT", 0, 0)
+        end
+    end
+
     if CG.UpdateListScroll then CG.UpdateListScroll() end
 
     if CG.subBtns then
         for id, bt in pairs(CG.subBtns) do
-            SetOutline(bt, id == CG.sub, Unpack(C_ACCENT))
+            SetButtonSelected(bt, id == CG.sub)
         end
     end
     if CG.count then
@@ -746,7 +949,7 @@ end
 
 local function SweepNames()
     if not (C_Timer and C_Timer.After) then return end
-    for _, d in ipairs({ 0.5, 2, 5 }) do
+    for _, d in ipairs({ 0.5, 2, 5, 10, 20 }) do
         C_Timer.After(d, function()
             if CG.built and CG.needNames and ns.PageVisible(CG.page) then
                 CG.needNames = not ProbeNames()
@@ -768,7 +971,11 @@ function CG.OnItemData(itemID)
             hit = hit + 1
         end
     end
-    if hit > 0 then CG.needNames = false return end
+    if hit > 0 then
+        if not AllNamesKnown() then return end
+        CG.needNames = false
+        return
+    end
     if not CG.needNames or CG._itemRepaint then return end
     CG._itemRepaint = true
     if C_Timer and C_Timer.After then
@@ -783,6 +990,73 @@ function CG.OnItemData(itemID)
         CG._itemRepaint = false
     end
 end
+
+local function MakeRow(parent)
+    local r = CreateFrame("Button", nil, parent, BT)
+    r:SetHeight(ROW_H)
+    r:SetWidth(LIST_W - 2 * PAD)
+    if ns.hui and ns.hui.BuildRoundedBG then
+        local fill, border = ns.hui.BuildRoundedBG(r, 6, ns.hui.layer.L2, "both", true, 1)
+        r.__huiCard = { fill = fill, border = border }
+    else
+        Cardify(r)
+    end
+    r.__hover = nil
+    if ns.hui and ns.hui.BuildCapsule then
+        local hp = ns.hui.BuildCapsule(r, 6, ns.hui.layer.L4, 1, 2)
+        for _, t in ipairs(hp) do t:Hide() end
+        r.__hover = hp
+    else
+        r:SetHighlightTexture("Interface\\Buttons\\WHITE8x8")
+        local hl = r:GetHighlightTexture()
+        hl:SetColorTexture(1, 1, 1, 0.06)
+    end
+    r.icon = r:CreateTexture(nil, "ARTWORK")
+    r.icon:SetSize(30, 30)
+    r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(r.icon) end
+    r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
+    r.name = MakeFS(r, 14, C_TEXT, "LEFT")
+    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -4)
+    r.name:SetWidth(LIST_W - 2 * PAD - 44 - 4)
+    r.name:SetWordWrap(false)
+    r.src = MakeFS(r, 14, C_GREY, "LEFT")
+    r.src:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -5.5)
+    r.src:SetWordWrap(false)
+    MakeOutline(r, Unpack(C_ACCENT))
+    r:SetScript("OnEnter", function(self)
+        if self.__hover and not (self.__rec and self.__rec == CG.sel) then
+            for _, t in ipairs(self.__hover) do t:Show() end
+        end
+        local rec = self.__rec
+        if rec then
+            if rec[2] == "spell" then
+                SpellTip(self, rec[1])
+            else
+                DG.ShowItemTip(self, { rec[1] })
+            end
+        end
+    end)
+    r:SetScript("OnLeave", function()
+        if r.__hover then
+            for _, t in ipairs(r.__hover) do t:Hide() end
+        end
+        TipOff()
+    end)
+    r:SetScript("OnClick", function(self)
+        if self.__rec then
+            CG.sel = self.__rec
+            CG.RequestRender()
+            ns.PlaySound(1)
+        end
+    end)
+    r:Hide()
+    return r
+end
+
+CG.ROW_INIT = 16
+CG.LIST_BUF = 2
+CG.ROW_PITCH = ROW_H + 8
 
 local function BuildListPanel(page)
     local p = CreateFrame("Frame", nil, page, BT)
@@ -800,10 +1074,10 @@ local function BuildListPanel(page)
     CG.subBtns = {}
     local sx = PAD
     for _, t in ipairs(SUB_TABS) do
-        local bt = NewButton(p, t.label, 52, 20, 12)
-        bt:SetPoint("TOPLEFT", p, "TOPLEFT", sx, -8)
+        local bt = NewButton(p, t.label, 52, 22, 14)
+        bt:SetPoint("TOPLEFT", p, "TOPLEFT", sx, -7)
         bt.lbl = bt:GetFontString()
-        MakeOutline(bt, Unpack(C_ACCENT))
+        SetButtonSelected(bt, false)
         bt:SetScript("OnClick", function()
             if CG.sub ~= t.id then
                 CG.sub = t.id
@@ -815,9 +1089,9 @@ local function BuildListPanel(page)
                 ns.PlaySound(1)
             end
         end)
-        SetOutline(bt, t.id == "mount", Unpack(C_ACCENT))
+        SetButtonSelected(bt, t.id == "mount")
         CG.subBtns[t.id] = bt
-        sx = sx + 60
+        sx = sx + 64
     end
 
     local sb = CreateFrame("Frame", nil, p, "BackdropTemplate")
@@ -853,10 +1127,10 @@ local function BuildListPanel(page)
 
     CG.filterBtns = {}
     for i = 1, #FILTERS do
-        local bt = NewButton(p, "", 45, 22, 12)
+        local bt = NewButton(p, "", 45, 22, 14)
         bt:SetPoint("TOPLEFT", p, "TOPLEFT", PAD + (i - 1) * 53, -66)
         bt.lbl = bt:GetFontString()
-        MakeOutline(bt, Unpack(C_ACCENT))
+        SetButtonSelected(bt, false)
         bt:SetScript("OnClick", function()
             CG.filter = bt.__id
             CG.RequestRender()
@@ -871,8 +1145,18 @@ local function BuildListPanel(page)
         for i, bt in ipairs(CG.filterBtns) do
             local f = list[i]
             if f then
+                local sel = (f.id == (CG.filter or "all"))
                 bt.__id = f.id
                 bt:SetText(f.label)
+                SetButtonSelected(bt, sel)
+                local fs = bt:GetFontString()
+                if fs then
+                    if sel then
+                        fs:SetTextColor(1, 1, 1, 1)
+                    else
+                        fs:SetTextColor(Unpack(C_GREY))
+                    end
+                end
                 bt:Show()
             else
                 bt.__id = nil
@@ -909,11 +1193,11 @@ local function BuildListPanel(page)
         track:SetBackdropColor(0, 0, 0, 0.25)
         track:SetBackdropBorderColor(1, 1, 1, 0.08)
     end
-    track:SetWidth(6)
+    track:SetWidth(7)
     track:SetPoint("TOPRIGHT", p, "TOPRIGHT", -1, -96)
     track:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -1, PAD)
     local thumb = CreateFrame("Button", nil, track)
-    thumb:SetWidth(4)
+    thumb:SetWidth(5)
     thumb:EnableMouse(true)
     local tp = nil
     local tx = nil
@@ -992,65 +1276,8 @@ local function BuildListPanel(page)
     coroutine.yield()
 
     CG.rows = {}
-    local maxRows = #MOUNTS
-    do
-        local pets = CG.Pets()
-        if type(pets) == "table" and #pets > maxRows then maxRows = #pets end
-    end
-    for i = 1, maxRows do
-        local r = CreateFrame("Button", nil, child, BT)
-        r:SetHeight(ROW_H)
-        r:SetWidth(LIST_W - 2 * PAD)
-        if ns.hui and ns.hui.BuildRoundedBG then
-            ns.hui.BuildRoundedBG(r, 6, ns.hui.layer.L2, "both", true, 1)
-        else
-            Cardify(r)
-        end
-        r.__hover = nil
-        if ns.hui and ns.hui.BuildCapsule then
-            local hp = ns.hui.BuildCapsule(r, 12, ns.hui.layer.L4, 1, 2)
-            for _, t in ipairs(hp) do t:Hide() end
-            r.__hover = hp
-        else
-            r:SetHighlightTexture("Interface\\Buttons\\WHITE8x8")
-            local hl = r:GetHighlightTexture()
-            hl:SetColorTexture(1, 1, 1, 0.06)
-        end
-        r.icon = r:CreateTexture(nil, "ARTWORK")
-        r.icon:SetSize(30, 30)
-        r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(r.icon) end
-        r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
-        r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -4)
-        r.name:SetWidth(LIST_W - 2 * PAD - 44 - 4)
-        r.name:SetWordWrap(false)
-        r.src = MakeFS(r, 11, C_GREY, "LEFT")
-        r.src:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 44, 5)
-        r.src:SetWordWrap(false)
-        MakeOutline(r, Unpack(C_ACCENT))
-        r:SetScript("OnEnter", function(self)
-            if self.__hover then
-                for _, t in ipairs(self.__hover) do t:Show() end
-            end
-            local rec = self.__rec
-            if rec then DG.ShowItemTip(self, { rec[1] }) end
-        end)
-        r:SetScript("OnLeave", function()
-            if r.__hover then
-                for _, t in ipairs(r.__hover) do t:Hide() end
-            end
-            TipOff()
-        end)
-        r:SetScript("OnClick", function(self)
-            if self.__rec then
-                CG.sel = self.__rec
-                CG.RequestRender()
-                ns.PlaySound(1)
-            end
-        end)
-        r:Hide()
-        CG.rows[i] = r
+    for i = 1, CG.ROW_INIT do
+        CG.rows[i] = MakeRow(child)
         if i % 8 == 0 then coroutine.yield() end
     end
 end
@@ -1198,6 +1425,46 @@ local function BuildDetailPanel(page)
     pill2Txt:SetPoint("CENTER", pill2, "CENTER", 0, 0)
     pill2:Hide()
 
+    local attrCards = {}
+    for k = 1, 3 do
+        local c = CreateFrame("Frame", nil, p, "BackdropTemplate")
+        if ns.hui and ns.hui.BuildRoundedBG then
+            ns.hui.BuildRoundedBG(c, 6, ns.hui.layer.L2)
+        else
+            Cardify(c, 0.05, 0.10)
+        end
+        c:SetHeight(34)
+        local lab = MakeFS(c, 11, C_DIM, "LEFT")
+        lab:SetPoint("TOPLEFT", c, "TOPLEFT", 10, -6)
+        local val = MakeFS(c, 13, C_WHITE, "LEFT")
+        val:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 10, 6)
+        val:SetWordWrap(false)
+        c.lab, c.val = lab, val
+        c:Hide()
+        attrCards[k] = c
+    end
+    attrCards[3]:SetScript("OnEnter", function(self)
+        local rec = CG.sel
+        if not (rec and rec.teach and GameTooltip) then return end
+        if rec[2] == "spell" then
+            SpellTip(self, rec[1])
+        else
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetItemByID(rec[1])
+        end
+    end)
+    attrCards[3]:SetScript("OnLeave", TipOff)
+    do
+        local c = attrCards[3]
+        c.icon = c:CreateTexture(nil, "ARTWORK")
+        c.icon:SetSize(20, 20)
+        c.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        c.icon:SetPoint("LEFT", c, "LEFT", 8, 0)
+        c.val:ClearAllPoints()
+        c.val:SetPoint("LEFT", c.icon, "RIGHT", 6, 0)
+        c.lab:Hide()
+    end
+
     local zoneTx = MakeFS(p, 13, C_GREY, "LEFT")
     zoneTx:SetPoint("TOPLEFT", p, "TOPLEFT", PAD + 120, -(8 + MODEL_H + 42))
     zoneTx:SetPoint("TOPRIGHT", p, "TOPRIGHT", -110, -(8 + MODEL_H + 42))
@@ -1235,6 +1502,40 @@ local function BuildDetailPanel(page)
     locChip:SetScript("OnClick", function(self)
         if self.__area then CG.MarkPoint(self.__area, self.__x, self.__y) end
     end)
+    coroutine.yield()
+
+    local costRow = CreateFrame("Frame", nil, p)
+    costRow:SetPoint("TOPLEFT", p, "TOPLEFT", PAD, -(8 + MODEL_H + 70))
+    costRow:SetPoint("TOPRIGHT", p, "TOPRIGHT", -PAD, -(8 + MODEL_H + 70))
+    costRow:SetHeight(18)
+    local costLab = MakeFS(costRow, 12, C_DIM, "LEFT")
+    costLab:SetText(L["价格"])
+    costLab:SetPoint("LEFT", costRow, "LEFT", 0, 0)
+    local coins = {}
+    for i, ck in ipairs({ "g", "s", "c" }) do
+        local tex = costRow:CreateTexture(nil, "OVERLAY")
+        tex:SetSize(16, 16)
+        local fs = MakeFS(costRow, 13, C_WHITE, "LEFT")
+        coins[ck] = { tex = tex, fs = fs }
+    end
+    local curIcon = costRow:CreateTexture(nil, "OVERLAY")
+    curIcon:SetSize(18, 18)
+    local curTx = MakeFS(costRow, 13, C_WHITE, "LEFT")
+    curTx:SetPoint("LEFT", curIcon, "RIGHT", 4, 0)
+    costRow:SetScript("OnEnter", function(self)
+        local rec = CG.sel
+        local cost = rec and rec.cost
+        if not GameTooltip or type(cost) ~= "table" then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        if cost[2] == "c" and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
+            GameTooltip:SetCurrencyByID(cost[3])
+        elseif cost[2] == "i" then
+            GameTooltip:SetItemByID(cost[3])
+        end
+    end)
+    costRow:EnableMouse(true)
+    costRow:SetScript("OnLeave", TipOff)
+    costRow:Hide()
     coroutine.yield()
 
     local desc = MakeFS(p, 13, C_TEXT, "LEFT")
@@ -1298,8 +1599,11 @@ local function BuildDetailPanel(page)
         panel = p, vp = vp, model = model, modelIcon = modelIcon,
         name = name, pill = pill, pillTxt = pillTxt,
         pill2 = pill2, pill2Txt = pill2Txt,
+        attrCards = attrCards,
         zoneTx = zoneTx, zoneHit = zoneHit,
         locChip = locChip, locChipTx = locChipTx,
+        costRow = costRow, costLab = costLab, coins = coins,
+        curIcon = curIcon, curTx = curTx,
         gotoBtn = gotoBtn,
         desc = desc, empty = empty, hintTxt = hint,
         segs = {},
@@ -1310,7 +1614,7 @@ end
 function CG.Build(page)
     if CG.built or CG.building then return end
     CG.building = true
-    ns.PhasedStart(34, coroutine.create(function()
+    ns.PhasedStart(28, coroutine.create(function()
     CG.page = page
     CG.sub = SUB_MOUNT
     CG.filter = "all"

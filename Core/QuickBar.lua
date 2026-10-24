@@ -54,23 +54,8 @@ local function Fs(parent, size, color)
 end
 
 local function Outline(bt, on)
-    local bars = bt.__bars
-    if not bars then
-        local H = ns.ProfHost
-        if H and H.SetOutline then H.SetOutline(bt, on, 1, 0.82, 0) end
-        return
-    end
-    local c = on and C_GOLD or C_EDGE
-    if bt.__outlineFrame then bt.__outlineFrame:SetShown(true) end
-    for _, t in ipairs(bars) do
-        t:SetAlpha(1)
-        if t.__huiBorderStrip then
-            t:SetColorTexture(c[1], c[2], c[3], 1)
-        else
-            t:SetShown(true)
-            t:SetVertexColor(c[1], c[2], c[3])
-        end
-    end
+    local H = ns.ProfHost
+    if H and H.SetButtonSelected then H.SetButtonSelected(bt, on) end
 end
 
 local FALLBACK_ICON = (ns.ProfHost and ns.ProfHost.FALLBACK_ICON)
@@ -88,22 +73,6 @@ local function SetIcon(tex, name)
     else
         tex:SetTexture(FALLBACK_ICON)
     end
-end
-
-local function PaintEdge(r, c)
-    r.edgeColor = c
-    for _, t in ipairs(r.edgePieces or {}) do
-        if t.__huiBorderStrip then
-            t:SetColorTexture(c[1], c[2], c[3], 1)
-        else
-            t:SetVertexColor(c[1], c[2], c[3])
-        end
-        t:SetAlpha(1)
-    end
-end
-
-local function PaintFill(r, a)
-    for _, t in ipairs(r.fillPieces or {}) do t:SetAlpha(a) end
 end
 
 local function Chars(s)
@@ -252,13 +221,10 @@ end
 function QB:RowAt(i)
     local r = self.pool[i]
     if r then return r end
-    r = CreateFrame("Button", nil, self.content)
+    r = CreateFrame("Button", nil, self.content, "BackdropTemplate")
     r:SetSize(self.CW, self.ROW_H)
     r:RegisterForClicks("LeftButtonUp")
-    r.fillPieces = ns.hui.BuildRoundedBG(r, self.RADIUS, { 1, 1, 1, self.FILL }, "both", false, nil, true)
-    r.edgePieces = ns.hui.BuildRoundBorder(r, self.RADIUS, C_EDGE)
-    PaintFill(r, self.FILL)
-    PaintEdge(r, C_EDGE)
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(r) end
 
     r.iconTile = CreateFrame("Frame", nil, r)
     r.iconTile:SetSize(self.ICON, self.ICON)
@@ -278,8 +244,6 @@ function QB:RowAt(i)
     r.name:SetWordWrap(false)
 
     r:SetScript("OnEnter", function(self)
-        PaintEdge(self, C_GOLD)
-        PaintFill(self, QB.FILL_HOT)
         if self.spec and self.spec.tip then
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
             GameTooltip:ClearLines()
@@ -288,8 +252,6 @@ function QB:RowAt(i)
         end
     end)
     r:SetScript("OnLeave", function(self)
-        PaintEdge(self, C_EDGE)
-        PaintFill(self, QB.FILL)
         GameTooltip:Hide()
     end)
     r:SetScript("OnClick", function(self) QB:Click(self.spec) end)
@@ -497,17 +459,19 @@ end
 local function Chip(parent, text, w, h)
     local bt = CreateFrame("Button", nil, parent, "BackdropTemplate")
     bt:SetSize(w, h)
-    local H = ns.ProfHost
-    if H and H.MakeOutline then H.MakeOutline(bt, 1, 0.82, 0) end
+    bt.__huiKeepTextColor = true
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
     bt.label = Fs(bt, 14, C_TEXT)
     bt.label:SetText(text)
     bt.label:SetPoint("CENTER", bt, "CENTER", 0, 0)
+    local H = ns.ProfHost
+    if H and H.SetButtonSelected then H.SetButtonSelected(bt, false) end
     return bt
 end
 
 local function PaintChip(bt, on)
     Outline(bt, on)
-    local c = on and C_GOLD or C_DIM
+    local c = on and C_TEXT or C_DIM
     bt.label:SetTextColor(c[1], c[2], c[3])
 end
 

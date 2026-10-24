@@ -27,7 +27,7 @@ local TITLE_ZONE = 0
 local CHIP_ZONE = 0
 local SORT_ZONE = 0
 local HEAD_ZONE = 20
-local PAGER_ZONE = 40
+local PAGER_ZONE = 42
 
 local QUALITY_ORDER = { 5, 4, 3, 2, 1, 0 }
 local BIND_LABEL = {
@@ -125,6 +125,7 @@ local SLOT_LABEL = {
 local CLS_LABEL, SUB_LABEL, SUB_OF = {}, {}, {}
 
 local GD, GD_ITEMS, GD_SRC, GD_SRC_Q, GD_WDLV, GD_SRC_LV, GD_QMAP, GD_SRC_RACE, INST_MIN, GD_SLOTS
+local GD_QLOC2, GD_CHAIN
 local __pfac = nil
 local function PlayerFac()
     if __pfac == nil then
@@ -166,6 +167,8 @@ local function EnsureGD()
         GD_WDLV = type(ns.GearWDLv) == "table" and ns.GearWDLv or nil
         GD_SRC_LV = type(ns.GearSrcQLv) == "table" and ns.GearSrcQLv or nil
         GD_QMAP = type(ns.GearQuestMap) == "table" and ns.GearQuestMap or nil
+        GD_QLOC2 = type(ns.GearQuestLoc2) == "table" and ns.GearQuestLoc2 or nil
+        GD_CHAIN = type(ns.GearQuestChain) == "table" and ns.GearQuestChain or nil
         GD_SRC_RACE = type(ns.GearQuestRace) == "table" and ns.GearQuestRace or nil
         GD_SLOTS = type(ns.GearSlots) == "table" and ns.GearSlots or nil
         for _, pair in ipairs(GD and GD.cls or {}) do
@@ -181,6 +184,14 @@ local function EnsureGD()
             end
             SUB_OF[pair[1]] = arr
         end
+    end
+    local gm = ns.GearModule
+    if gm and not gm.catalog and not gm.__building and type(gm.BuildCatalog) == "function" then
+        gm.__building = true
+        gm.__noYield = true
+        pcall(gm.BuildCatalog, gm)
+        gm.__noYield = nil
+        gm.__building = nil
     end
     return GD
 end
@@ -309,6 +320,16 @@ end
 
 local function WishIs(id) return WishTable()[id] ~= nil end
 
+local function WishIDs()
+    local t = WishTable()
+    local ids = {}
+    for k in pairs(t) do
+        if type(k) == "number" then ids[#ids + 1] = k end
+    end
+    table.sort(ids)
+    return ids
+end
+
 local function BumpView()
     G.__viewVer = (G.__viewVer or 0) + 1
 end
@@ -320,6 +341,8 @@ local function WishToggle(id)
 end
 
 function G.WishIs(id) return WishIs(id) end
+
+function G.WishIDs() return WishIDs() end
 
 function G.WishToggle(id) WishToggle(id) end
 
@@ -857,6 +880,29 @@ local function SrcLines(e)
     return "", ""
 end
 
+local function QuestLocOf(qid)
+    local l = GD_QMAP and GD_QMAP[qid]
+    if type(l) == "table" and l[1] then return l end
+    l = GD_QLOC2 and GD_QLOC2[qid]
+    if type(l) == "table" and l[1] then return l end
+    return nil
+end
+
+local function ChainIndexOf(qid)
+    if not GD_CHAIN or not qid then return nil end
+    local cache = G.__chainIdx
+    if not cache then
+        cache = {}
+        for ci, ch in ipairs(GD_CHAIN) do
+            for _, st in ipairs(ch) do
+                for _, q in ipairs(st) do cache[q] = ci end
+            end
+        end
+        G.__chainIdx = cache
+    end
+    return cache[qid]
+end
+
 local function ItemTip(owner, id)
     if not GameTooltip then return end
     local gif = GetItemInfo or (C_Item and C_Item.GetItemInfo)
@@ -867,11 +913,15 @@ local function ItemTip(owner, id)
         GameTooltip:SetHyperlink(DG.ItemLink(id))
         local qid = GD_SRC_Q and GD_SRC_Q[id]
         if qid then
-            local loc = GD_QMAP and GD_QMAP[qid]
-            if type(loc) == "table" and loc[1] and loc[2] then
-                GameTooltip:AddLine(L["点击：在地图上标记该任务"], 1, 0.82, 0, true)
-            elseif type(loc) == "table" and loc[1] then
-                GameTooltip:AddLine(L["点击：打开任务所在地图"], 1, 0.82, 0, true)
+            if ChainIndexOf(qid) then
+                GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
+            else
+                local loc = QuestLocOf(qid)
+                if type(loc) == "table" and loc[1] and loc[2] then
+                    GameTooltip:AddLine(L["点击：在地图上标记该任务"], 1, 0.82, 0, true)
+                elseif type(loc) == "table" and loc[1] then
+                    GameTooltip:AddLine(L["点击：打开任务所在地图"], 1, 0.82, 0, true)
+                end
             end
         end
         GameTooltip:Show()
@@ -911,11 +961,15 @@ local function ItemTip(owner, id)
     end
     local qid = GD_SRC_Q and GD_SRC_Q[id]
     if qid then
-        local loc = GD_QMAP and GD_QMAP[qid]
-        if type(loc) == "table" and loc[1] and loc[2] then
-            GameTooltip:AddLine(L["点击：在地图上标记该任务"], 1, 0.82, 0, true)
-        elseif type(loc) == "table" and loc[1] then
-            GameTooltip:AddLine(L["点击：打开任务所在地图"], 1, 0.82, 0, true)
+        if ChainIndexOf(qid) then
+            GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
+        else
+            local loc = QuestLocOf(qid)
+            if type(loc) == "table" and loc[1] and loc[2] then
+                GameTooltip:AddLine(L["点击：在地图上标记该任务"], 1, 0.82, 0, true)
+            elseif type(loc) == "table" and loc[1] then
+                GameTooltip:AddLine(L["点击：打开任务所在地图"], 1, 0.82, 0, true)
+            end
         end
     end
     GameTooltip:AddLine(L["正在向服务器查询物品数据…"], 0.5, 0.5, 0.5, true)
@@ -1272,6 +1326,458 @@ local function MarkQuest(qid, loc)
     end
 end
 
+local CQF = nil
+
+local function ChainHookSync()
+    local hl = DG.__qDataHooks
+    if not hl then return end
+    if CQF and CQF.IsShown and CQF:IsShown() then
+        if not hl.__gearChain then
+            hl.__gearChain = function(id)
+                if CQF and CQF.IsShown and CQF:IsShown()
+                        and CQF.__pending and CQF.__pending[id] then
+                    CQF.__pending[id] = nil
+                    if CQF.__render then CQF.__render() end
+                end
+            end
+            hl[#hl + 1] = hl.__gearChain
+        end
+    elseif hl.__gearChain then
+        for i = #hl, 1, -1 do
+            if hl[i] == hl.__gearChain then table.remove(hl, i) end
+        end
+        hl.__gearChain = nil
+    end
+end
+
+local function ChainQuestDone(qid)
+    if C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted then
+        local ok, r = pcall(C_QuestLog.IsQuestFlaggedCompleted, qid)
+        if ok and r then return true end
+    end
+    return false
+end
+
+local function ChainRender()
+    local qid0, ci = CQF.__qid, CQF.__ci
+    local ch = GD_CHAIN and GD_CHAIN[ci]
+    if not (qid0 and type(ch) == "table") then return end
+    CQF.__pending = CQF.__pending or {}
+    for k in pairs(CQF.__pending) do CQF.__pending[k] = nil end
+
+    local rows = {}
+    for si, st in ipairs(ch) do
+        for bi, q in ipairs(st) do
+            rows[#rows + 1] = { q = q, si = si, sub = #st > 1 }
+        end
+    end
+
+    local nm0, nm0ok
+    if DG.QuestName then nm0, nm0ok = DG.QuestName(qid0) end
+    if not nm0ok then
+        if DG.RequestQuest then DG.RequestQuest(qid0) end
+        CQF.__pending[qid0] = true
+        nm0 = "……"
+    end
+    CQF.__sub:SetText(L["装备奖励需要完成任务："] .. nm0)
+
+    local n = #rows
+    local avail = 760
+    local par = CQF:GetParent()
+    if par and par.GetHeight then
+        local ph = math.floor((par:GetHeight() or 800) - 40)
+        if ph > 200 and ph < avail then avail = ph end
+    end
+    local RH = 46
+    if 52 + n * 46 > avail then
+        RH = math.floor((avail - 52) / n)
+        if RH < 24 then RH = 24 end
+    end
+    local two = RH >= 40
+    local ROWW = CQF.__rowW
+    local child = CQF.__child
+    child:SetHeight(n * RH + 4)
+    CQF:SetHeight(52 + n * RH)
+
+    local firstTodo
+    for i, rr in ipairs(rows) do
+        if not ChainQuestDone(rr.q) then firstTodo = i break end
+    end
+
+    local pool = CQF.__rows
+    while #pool < n do
+        local rb = CreateFrame("Button", nil, child, "BackdropTemplate")
+        rb:SetSize(ROWW, RH)
+        if ns.hui and ns.hui.HuiCardFX then
+            ns.hui.HuiCardFX(rb, 6, 2)
+        end
+        if not rb.__huiCard then
+            rb.__plainCard = true
+            rb:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8",
+                edgeSize = 1,
+            })
+            rb:SetBackdropColor(1, 1, 1, 0.04)
+            rb:SetBackdropBorderColor(1, 1, 1, 0.08)
+        end
+        rb:SetHighlightTexture("Interface\\Buttons\\WHITE8x8")
+        rb:GetHighlightTexture():SetVertexColor(1, 1, 1, 0.07)
+        if ns.hui and ns.hui.BuildRoundBorder then
+            rb.__ring = ns.hui.BuildRoundBorder(rb, 6, { 1, 0.82, 0, 0.9 },
+                rb, "OVERLAY", "both", 1)
+            if rb.__ring then
+                for _, t in ipairs(rb.__ring) do t:SetShown(false) end
+            end
+        end
+        rb.nm = MakeFS(rb, 14, C_TEXT, "LEFT")
+        rb.nm:SetWordWrap(false)
+        rb.sub = MakeFS(rb, 12, C_GREY, "LEFT")
+        rb.sub:SetWordWrap(false)
+        rb.zone = MakeFS(rb, 12, C_GREY, "RIGHT")
+        rb.zone:SetWordWrap(false)
+        rb.tag = MakeFS(rb, 12, C_GOLD, "RIGHT")
+        rb.tag:SetWordWrap(false)
+        rb.tag:SetText(L["下一步"])
+        rb.disc = rb:CreateTexture(nil, "ARTWORK")
+        rb.disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+        rb.disc:SetSize(16, 16)
+        rb.discT = rb:CreateTexture(nil, "OVERLAY")
+        rb.discT:SetAllPoints(rb.disc)
+        rb:SetScript("OnEnter", function(self)
+            if not CardState(self, "hover") then
+                self:SetBackdropColor(1, 1, 1, 0.08)
+                if not self.__isCur then
+                    self:SetBackdropBorderColor(1, 1, 1, 0.22)
+                end
+            end
+            local t = self.__tip
+            if t and GameTooltip then
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:ClearLines()
+                GameTooltip:AddLine(t.nm, 1, 0.82, 0, true)
+                GameTooltip:AddLine(t.st, 0.75, 0.75, 0.75, true)
+                if t.locTxt and t.locTxt ~= "" then
+                    GameTooltip:AddLine(t.locTxt, 0.75, 0.75, 0.75, true)
+                end
+                GameTooltip:Show()
+            end
+        end)
+        rb:SetScript("OnLeave", function(self)
+            if not CardState(self, "norm") then
+                self:SetBackdropColor(1, 1, 1, 0.04)
+                if self.__isCur then
+                    self:SetBackdropBorderColor(1, 0.82, 0, 0.55)
+                else
+                    self:SetBackdropBorderColor(1, 1, 1, 0.08)
+                end
+            end
+            if GameTooltip then GameTooltip:Hide() end
+        end)
+        pool[#pool + 1] = rb
+    end
+
+    local GREEN = { 0.30, 0.74, 0.45 }
+    local INK = {
+        done = { 0.043, 0.239, 0.102 },
+        active = { 0.227, 0.165, 0 },
+        todo = { 0.102, 0.102, 0.102 },
+    }
+    for i = 1, #pool do
+        local rb = pool[i]
+        if i <= n then
+            local rr = rows[i]
+            local done = ChainQuestDone(rr.q)
+            local active = false
+            if not done and DG.QuestState then
+                active = DG.QuestState(rr.q) == "active"
+            end
+            local nm, nmOk
+            if DG.QuestName then nm, nmOk = DG.QuestName(rr.q) end
+            if not nmOk then
+                if DG.RequestQuest then DG.RequestQuest(rr.q) end
+                CQF.__pending[rr.q] = true
+                nm = "……"
+            end
+            local loc = QuestLocOf(rr.q)
+            local isCur = rr.q == qid0
+            local stTag
+            local stCol
+            if done then
+                stTag, stCol = L["已完成"], GREEN
+            elseif i == firstTodo then
+                stTag, stCol = L["下一步"], C_GOLD
+            elseif active then
+                stTag, stCol = L["进行中"], C_GOLD
+            else
+                stTag, stCol = L["可接"], C_GREY
+            end
+            local statHex = format("%02x%02x%02x",
+                stCol[1] * 255 + 0.5, stCol[2] * 255 + 0.5, stCol[3] * 255 + 0.5)
+            local locTxt = L["未收录位置"]
+            if loc then
+                local zname = ""
+                if C_Map and C_Map.GetMapInfo then
+                    local ok, mi = pcall(C_Map.GetMapInfo, loc[1])
+                    if ok and mi and mi.name then zname = mi.name end
+                end
+                locTxt = zname .. format("(%.1f, %.1f)", loc[2] or 0, loc[3] or 0)
+                if loc[4] and loc[4] > 0 then
+                    locTxt = locTxt .. " · " .. format(L["%d 级可接"], loc[4])
+                end
+            end
+            rb:ClearAllPoints()
+            rb:SetHeight(RH)
+            rb:SetWidth(ROWW)
+            rb:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -(i - 1) * RH)
+            rb.nm:SetText(nm)
+            rb.nm:ClearAllPoints()
+            rb.sub:ClearAllPoints()
+            rb.zone:ClearAllPoints()
+            rb.tag:ClearAllPoints()
+            rb.tag:SetPoint("CENTER", rb, "RIGHT", -45, 0)
+            local isNext = two and i == firstTodo and not done
+            if two then
+                if isNext then
+                    rb.nm:SetPoint("TOPLEFT", rb, "TOPLEFT", 12, -5)
+                    rb.nm:SetPoint("RIGHT", rb, "RIGHT", -76, 0)
+                    rb.sub:Show()
+                    rb.sub:SetPoint("TOPLEFT", rb, "TOPLEFT", 12, -25)
+                    rb.sub:SetPoint("RIGHT", rb, "RIGHT", -76, 0)
+                    rb.sub:SetText(locTxt)
+                    rb.tag:Show()
+                else
+                    rb.nm:SetPoint("TOPLEFT", rb, "TOPLEFT", 12, -5)
+                    rb.nm:SetPoint("RIGHT", rb, "RIGHT", -34, 0)
+                    rb.sub:Show()
+                    rb.sub:SetPoint("TOPLEFT", rb, "TOPLEFT", 12, -25)
+                    rb.sub:SetPoint("RIGHT", rb, "RIGHT", -34, 0)
+                    rb.sub:SetText("|cff" .. statHex .. stTag .. "|r " .. locTxt)
+                    rb.tag:Hide()
+                end
+                rb.zone:Hide()
+            else
+                rb.tag:Hide()
+                rb.nm:SetPoint("LEFT", rb, "LEFT", 12, 0)
+                rb.nm:SetPoint("RIGHT", rb, "RIGHT", -150, 0)
+                rb.sub:Hide()
+                rb.zone:Show()
+                rb.zone:SetPoint("RIGHT", rb, "RIGHT", -34, 0)
+                rb.zone:SetPoint("LEFT", rb, "RIGHT", -140, 0)
+                rb.zone:SetText(locTxt)
+            end
+            rb.disc:ClearAllPoints()
+            rb.disc:SetPoint("CENTER", rb, "RIGHT", -18, 0)
+            rb.disc:Show()
+            rb.discT:Show()
+            local sym, ink
+            if done then
+                sym = "Interface\\AddOns\\DungeonsForever\\Media\\CheckMark"
+                ink = INK.done
+            elseif active then
+                sym = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkAsk"
+                ink = INK.active
+            else
+                sym = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkExcl"
+                ink = INK.todo
+            end
+            rb.disc:SetVertexColor(stCol[1], stCol[2], stCol[3], 1)
+            rb.discT:SetTexture(sym)
+            rb.discT:SetVertexColor(ink[1], ink[2], ink[3], 1)
+            rb.__isCur = isCur
+            if rb.__ring then
+                for _, t in ipairs(rb.__ring) do t:SetShown(isCur) end
+            end
+            if not rb.__huiCard then
+                rb:SetBackdropColor(1, 1, 1, 0.04)
+                if isCur then
+                    rb:SetBackdropBorderColor(1, 0.82, 0, 0.55)
+                else
+                    rb:SetBackdropBorderColor(1, 1, 1, 0.08)
+                end
+            end
+            if isCur then
+                rb.nm:SetTextColor(Unpack(C_GOLD))
+            elseif done then
+                rb.nm:SetTextColor(Unpack(GREEN))
+            else
+                rb.nm:SetTextColor(Unpack(C_TEXT))
+            end
+            rb.__tip = { nm = nm, st = stTag, locTxt = locTxt }
+            if loc then
+                rb:SetScript("OnClick", function()
+                    ns.PlaySound(1)
+                    MarkQuest(rr.q, loc)
+                end)
+            else
+                rb:SetScript("OnClick", function() end)
+            end
+            rb:Show()
+        else
+            rb:Hide()
+        end
+    end
+end
+
+local POP_WATCH, POP_WATCH_EVT = {}, nil
+
+local function PopEscape(name)
+    if type(UISpecialFrames) ~= "table" then return end
+    for i = #UISpecialFrames, 1, -1 do
+        if UISpecialFrames[i] == name then table.remove(UISpecialFrames, i) end
+    end
+    table.insert(UISpecialFrames, 1, name)
+end
+
+local function PopWatch(pop, exempt)
+    for _, e in ipairs(POP_WATCH) do
+        if e.pop == pop then
+            e.exempt = exempt
+            return
+        end
+    end
+    POP_WATCH[#POP_WATCH + 1] = { pop = pop, exempt = exempt }
+    if POP_WATCH_EVT then return end
+    local ev = CreateFrame("Frame")
+    POP_WATCH_EVT = ev
+    ev:RegisterEvent("GLOBAL_MOUSE_DOWN")
+    ev:SetScript("OnEvent", function()
+        for i = #POP_WATCH, 1, -1 do
+            local e = POP_WATCH[i]
+            local p = e.pop
+            if p and p.IsShown and p:IsShown()
+                    and not (p.IsMouseOver and p:IsMouseOver()) then
+                local ex = e.exempt
+                if not (ex and ex()) then p:Hide() end
+            end
+        end
+    end)
+end
+
+local function PopFullMask(parent, lvl, onClick)
+    local m = CreateFrame("Frame", nil, parent)
+    m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, 0)
+    m:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", 0, 0)
+    m:SetFrameLevel(lvl)
+    m:EnableMouse(true)
+    m:SetScript("OnMouseDown", onClick)
+    m:Hide()
+    return m
+end
+
+local function ChainPopup(qid)
+    EnsureGD()
+    local ci = ChainIndexOf(qid)
+    if not ci then
+        MarkQuest(qid, QuestLocOf(qid))
+        return
+    end
+    if not CQF then
+        local page = G.pageFrame
+        if not page or (page.IsShown and not page:IsShown()) then
+            page = _G.DungeonsForever_MainFrame or UIParent
+        end
+        local baseLv = (page.GetFrameLevel and type(page:GetFrameLevel()) == "number")
+                       and page:GetFrameLevel() or 0
+        local mask = PopFullMask(page, baseLv + 40, function()
+            if CQF then CQF:Hide() end
+        end)
+        local pop = CreateFrame("Frame", "DFGearChainPop", page)
+        pop:SetSize(420, 380)
+        pop:SetFrameLevel(baseLv + 41)
+        pop:EnableMouse(true)
+        pop:Hide()
+        if ns.hui and ns.hui.BuildRoundedBG then
+            ns.hui.BuildRoundedBG(pop, 6, ns.hui.layer.L0, "both", true, 1)
+        else
+            Cardify(pop, nil, 2)
+        end
+        if ns.hui and ns.hui.SkinShadow then
+            ns.hui.SkinShadow(pop, 16, 0.65, 8)
+        end
+        local ty = MakeFS(pop, 16, C_GOLD, "LEFT")
+        ty:SetPoint("TOPLEFT", pop, "TOPLEFT", 14, -12)
+        ty:SetText(L["任务链"])
+        local sub = MakeFS(pop, 12, C_TEXT, "RIGHT")
+        sub:SetWordWrap(false)
+        sub:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -14, -15)
+        sub:SetPoint("LEFT", pop, "LEFT", 200, 0)
+        local hint = MakeFS(pop, 11, C_DIM, "LEFT")
+        hint:SetPoint("LEFT", ty, "RIGHT", 10, 1)
+        hint:SetPoint("RIGHT", sub, "LEFT", -12, 0)
+        hint:SetText(L["点击：在地图上标记"])
+        local child = CreateFrame("Frame", nil, pop)
+        child:SetSize(392, 10)
+        child:SetPoint("TOPLEFT", pop, "TOPLEFT", 14, -40)
+        child:SetPoint("BOTTOMRIGHT", pop, "BOTTOMRIGHT", -14, -12)
+        CQF = pop
+        CQF.__mask = mask
+        CQF.__child = child
+        CQF.__sub = sub
+        CQF.__rows = {}
+        CQF.__rowW = 392
+        CQF.__render = ChainRender
+        pop:SetScript("OnHide", function()
+            if CQF.__mask then CQF.__mask:Hide() end
+            ChainHookSync()
+        end)
+        pop:SetScript("OnShow", function()
+            if CQF.__mask then CQF.__mask:Show() end
+            ChainHookSync()
+        end)
+        if UISpecialFrames then
+            PopEscape("DFGearChainPop")
+        end
+        PopWatch(pop)
+    end
+    CQF.__qid = qid
+    CQF.__ci = ci
+    CQF:ClearAllPoints()
+    CQF:SetPoint("CENTER", CQF:GetParent(), "CENTER", 0, 0)
+    if UISpecialFrames then PopEscape("DFGearChainPop") end
+    CQF:Show()
+    ChainRender()
+end
+
+local function MarkQuestSmart(qid)
+    if ChainIndexOf(qid) then
+        ChainPopup(qid)
+        return
+    end
+    MarkQuest(qid, QuestLocOf(qid))
+end
+
+ns.GearChainIndexOf = function(qid)
+    EnsureGD()
+    return ChainIndexOf(qid)
+end
+
+ns.GearQuestLocOf = function(qid)
+    EnsureGD()
+    return QuestLocOf(qid)
+end
+
+ns.GearMarkQuestSmart = function(qid)
+    EnsureGD()
+    MarkQuestSmart(qid)
+end
+
+ns.GearDismissPopups = function()
+    if CQF and CQF.IsShown and CQF:IsShown() then
+        CQF:Hide()
+        return true
+    end
+    if G.vendorPick and G.vendorPick.IsShown and G.vendorPick:IsShown() then
+        G.VendorPickHide()
+        return true
+    end
+    if G.attrPop and G.attrPop.IsShown and G.attrPop:IsShown() then
+        G.SetAttrPop(false)
+        return true
+    end
+    return false
+end
+
 local function GearVendorMsg(msg)
     if UIErrorsFrame and UIErrorsFrame.AddMessage then
         pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.4, 0.4)
@@ -1322,7 +1828,8 @@ local function GearZoneName(aid)
 end
 
 local function GearVendorEnts(id)
-    local rows = ns.GearVendors and ns.GearVendors[id]
+    local GV = ns.EnsureGearVendors and ns.EnsureGearVendors() or ns.GearVendors
+    local rows = GV and GV[id]
     if type(rows) ~= "table" or #rows == 0 then return nil end
     local f
     if UnitFactionGroup then
@@ -1399,14 +1906,23 @@ function G.VendorPickShow(anchor, ents, title)
         return
     end
     if not pick then
-        pick = CreateFrame("Button", nil, G.pageFrame, "BackdropTemplate")
+        pick = CreateFrame("Button", "DFGearVendorPick", G.pageFrame,
+                           "BackdropTemplate")
         pick:EnableMouse(true)
         pick:SetFrameLevel(515)
-        local shield = CreateFrame("Frame", nil, G.pageFrame)
-        shield:EnableMouse(true)
-        shield:SetAllPoints(G.pageFrame)
-        shield:SetScript("OnMouseDown", function() G.VendorPickHide() end)
+        local shield = PopFullMask(G.pageFrame, 514, function()
+            G.VendorPickHide()
+        end)
         pick.__shield = shield
+        pick:SetScript("OnHide", function()
+            if pick.__shield then pick.__shield:Hide() end
+        end)
+        PopEscape("DFGearVendorPick")
+        PopWatch(pick, function()
+            local cur = G.vendorPick
+            local a = cur and cur.__anchor
+            return a and a.IsMouseOver and a:IsMouseOver()
+        end)
         ns.hui.BuildRoundedBG(pick, 6, ns.hui.layer.L3, "both", true, 1)
         pick.title = MakeFS(pick, 11, C_GOLD, "LEFT")
         pick.title:SetPoint("TOPLEFT", pick, "TOPLEFT", PICK_PAD + 4, -PICK_PAD)
@@ -1484,6 +2000,7 @@ function G.VendorPickShow(anchor, ents, title)
         pick.__shield:SetFrameLevel(pick:GetFrameLevel() - 1)
         pick.__shield:Show()
     end
+    if UISpecialFrames then PopEscape("DFGearVendorPick") end
     pick:Show()
 end
 
@@ -1509,7 +2026,7 @@ local function BuildRow(parent)
     r.newTag:SetSize(34, 16)
     r.newTag:SetPoint("LEFT", r.name, "RIGHT", 4, 0)
     if ns.hui and ns.hui.BuildRoundedBG then
-        ns.hui.BuildRoundedBG(r.newTag, 5, ns.hui.layer.L2, "both", true, 1)
+        ns.hui.BuildRoundedBG(r.newTag, 4, ns.hui.layer.L2, "both", true, 1)
     else
         Cardify(r.newTag, 3, 2)
     end
@@ -1603,7 +2120,7 @@ local function BuildRow(parent)
         if qid then
             ns.PlaySound(1)
             EnsureGD()
-            MarkQuest(qid, GD_QMAP and GD_QMAP[qid])
+            MarkQuestSmart(qid)
         end
     end
     r:SetScript("OnClick", RowClick)
@@ -1625,10 +2142,20 @@ local function BuildRow(parent)
         local e = r.entry
         if not e then return end
         local qid = e.id and GD_SRC_Q and GD_SRC_Q[e.id]
-        local loc = qid and GD_QMAP and GD_QMAP[qid]
+        local loc = qid and QuestLocOf(qid)
         GameTooltip:SetOwner(r.srcZone, "ANCHOR_RIGHT")
         GameTooltip:ClearLines()
-        if type(loc) == "table" and loc[1] and loc[2] then
+        if qid and ChainIndexOf(qid) then
+            GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
+            if type(loc) == "table" and loc[1] and loc[2] then
+                local mname = ""
+                if C_Map and C_Map.GetMapInfo then
+                    local ok, mi = pcall(C_Map.GetMapInfo, loc[1])
+                    if ok and mi and mi.name then mname = mi.name end
+                end
+                GameTooltip:AddLine(mname .. format(" (%.1f, %.1f)", loc[2], loc[3]), 1, 1, 1, true)
+            end
+        elseif type(loc) == "table" and loc[1] and loc[2] then
             GameTooltip:AddLine(L["点击：在地图上标记"], 1, 0.82, 0, true)
             local mname = ""
             if C_Map and C_Map.GetMapInfo then
@@ -1674,7 +2201,12 @@ local function BuildRow(parent)
         local e = r.entry
         if not e then return end
         local qid = e.id and GD_SRC_Q and GD_SRC_Q[e.id]
-        local loc = qid and GD_QMAP and GD_QMAP[qid]
+        if qid and ChainIndexOf(qid) then
+            ns.PlaySound(1)
+            ChainPopup(qid)
+            return
+        end
+        local loc = qid and QuestLocOf(qid)
         if type(loc) == "table" and loc[1] then
             ns.PlaySound(1)
             EnsureGD()
@@ -2151,7 +2683,7 @@ function G.SetCat(key)
 end
 
 function G.BuildChips(parent)
-    G.filterBtn = NewButton(parent, L["过滤器"], 50, 22, 13)
+    G.filterBtn = NewButton(parent, L["过滤器"], 50, 24, 14)
     G.filterBtn:GetFontString():SetTextColor(Unpack(C_TEXT))
     G.filterBtn:SetScript("OnClick", function()
         if G.attrPop and G.attrPop:IsShown() then
@@ -2286,6 +2818,7 @@ function G.SetAttrPop(on)
         G.attrPop:ClearAllPoints()
         G.attrPop:SetPoint("TOPRIGHT", G.filterBtn, "BOTTOMRIGHT", 0, -4)
         G.SyncFilterPop()
+        if UISpecialFrames then PopEscape("DFGearAttrPop") end
     end
 end
 
@@ -2293,31 +2826,18 @@ function G.BuildAttrPop()
     if G.attrPop or not G.pageFrame then return end
     local page = G.pageFrame
     local baseLv = (page.GetFrameLevel and type(page:GetFrameLevel()) == "number") and page:GetFrameLevel() or 0
-    local mask = CreateFrame("Frame", nil, page)
-    mask:SetAllPoints(page)
-    mask:SetFrameLevel(baseLv + 30)
-    mask:EnableMouse(true)
-    mask:SetScript("OnMouseDown", function() G.SetAttrPop(false) end)
-    mask:Hide()
+    local mask = PopFullMask(page, baseLv + 30, function()
+        G.SetAttrPop(false)
+    end)
     G.attrMask = mask
-    ns.EvtPool = ns.EvtPool or {}
-    if not ns.EvtPool.gearGmd then
-        local ev = CreateFrame("Frame")
-        ns.EvtPool.gearGmd = ev
-        ev:RegisterEvent("GLOBAL_MOUSE_DOWN")
-        ev:SetScript("OnEvent", function()
-            if not (G.attrPop and G.attrPop.IsShown and G.attrPop:IsShown()) then return end
-            if G.attrPop:IsMouseOver() then return end
-            if G.filterBtn and G.filterBtn.IsMouseOver
-                    and G.filterBtn:IsMouseOver() then return end
-            G.SetAttrPop(false)
-        end)
-    end
     local popH = 24 + 32 + 24 + #QUALITY_ORDER * 26 + 26 + 6 + 18 + #SRC_ORDER * 26 + 8
-    local pop = CreateFrame("Frame", nil, page)
+    local pop = CreateFrame("Frame", "DFGearAttrPop", page)
     pop:SetSize(170, popH)
     pop:EnableMouse(true)
     pop:SetFrameLevel(baseLv + 31)
+    pop:SetScript("OnHide", function()
+        if G.attrMask then G.attrMask:Hide() end
+    end)
     pop:Hide()
     if ns.hui and ns.hui.BuildRoundedBG then
         ns.hui.BuildRoundedBG(pop, 6, ns.hui.layer.L3, "both", true, 1)
@@ -2325,6 +2845,11 @@ function G.BuildAttrPop()
         Cardify(pop, nil, 2)
     end
     G.attrPop = pop
+    PopEscape("DFGearAttrPop")
+    PopWatch(pop, function()
+        return G.filterBtn and G.filterBtn.IsMouseOver
+               and G.filterBtn:IsMouseOver() or false
+    end)
     local ty = MakeFS(pop, 14, C_GOLD, "LEFT")
     ty:SetPoint("TOPLEFT", pop, "TOPLEFT", 10, -8)
     ty:SetText(L["等级范围"])
@@ -2338,23 +2863,11 @@ function G.BuildAttrPop()
     dash:SetPoint("LEFT", G.ilvlMinBox, "RIGHT", 0, 0)
     dash:SetPoint("RIGHT", G.ilvlMaxBox, "LEFT", 0, 0)
     dash:SetText("-")
-    local rb = CreateFrame("Button", nil, pop)
+    local rb = CreateFrame("Button", nil, pop, "BackdropTemplate")
     rb:SetSize(48, 20)
     rb:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -8, -7)
-    if ns.hui and ns.hui.BuildRoundedBG and ns.hui.BuildRoundBorder then
-        ns.hui.BuildRoundedBG(rb, 8, { 1, 1, 1, 0.06 }, "both", false, nil, true)
-        rb.edges = ns.hui.BuildRoundBorder(rb, 8, { 0.40, 0.43, 0.50 })
-        rb:SetScript("OnEnter", function()
-            for _, t in ipairs(rb.edges or {}) do
-                if t.SetVertexColor then t:SetVertexColor(1, 0.82, 0.4, 1) end
-            end
-        end)
-        rb:SetScript("OnLeave", function()
-            for _, t in ipairs(rb.edges or {}) do
-                if t.SetVertexColor then t:SetVertexColor(0.40, 0.43, 0.50, 1) end
-            end
-        end)
-    end
+    rb.__huiKeepTextColor = true
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(rb) end
     rb.label = MakeFS(rb, 14, C_TEXT, "CENTER")
     rb.label:SetAllPoints()
     rb.label:SetText(L["重置"])
@@ -2513,7 +3026,7 @@ function G.BuildAttrPop()
 end
 
 function G.BuildPager(parent)
-    G.pgPrev = NewButton(parent, L["上一页"], 62, 22, 14)
+    G.pgPrev = NewButton(parent, L["上一页"], 62, 24, 14)
     G.pgPrev:GetFontString():SetTextColor(Unpack(C_TEXT))
     G.pgPrev:SetScript("OnClick", function()
         if (G.page or 1) > 1 then
@@ -2522,7 +3035,7 @@ function G.BuildPager(parent)
             G.PaintList()
         end
     end)
-    G.pgNext = NewButton(parent, L["下一页"], 62, 22, 14)
+    G.pgNext = NewButton(parent, L["下一页"], 62, 24, 14)
     G.pgNext:GetFontString():SetTextColor(Unpack(C_TEXT))
     G.pgNext:SetScript("OnClick", function()
         if (G.page or 1) < (G.pages or 1) then
@@ -2533,7 +3046,7 @@ function G.BuildPager(parent)
     end)
     G.pgNums = {}
     for i = 1, 9 do
-        local b = NewButton(parent, tostring(i), 28, 22, 14)
+        local b = NewButton(parent, tostring(i), 28, 24, 14)
         b:SetScript("OnClick", function()
             if b.page then
                 G.page = b.page
@@ -2555,7 +3068,7 @@ function G.BuildPager(parent)
             G.PaintList()
         end
     end)
-    G.pgGo = NewButton(parent, L["确定"], 44, 22, 13)
+    G.pgGo = NewButton(parent, L["确定"], 44, 24, 14)
     G.pgGo:GetFontString():SetTextColor(Unpack(C_TEXT))
     G.pgGo:SetScript("OnClick", function()
         local v = tonumber(G.pgJump:GetText())
@@ -2592,7 +3105,7 @@ function G.PaintPager()
         local p = slots[i]
         if p then
             b:ClearAllPoints()
-            b:SetPoint("LEFT", prev, "RIGHT", 4, 0)
+            b:SetPoint("LEFT", prev, "RIGHT", 8, 0)
             prev = b
             if p == -1 then
                 b.page = nil
@@ -2612,7 +3125,7 @@ function G.PaintPager()
         end
     end
     G.pgNext:ClearAllPoints()
-    G.pgNext:SetPoint("LEFT", prev, "RIGHT", 4, 0)
+    G.pgNext:SetPoint("LEFT", prev, "RIGHT", 8, 0)
     if G.cat == "SETS" then
         local setN = RS and (RS.total or #(RS.sets or {})) or 0
         G.pgTotal:SetText(format(L["第 %d / %d 页 · 共 %d 套"], page, pages, setN))
@@ -3161,7 +3674,7 @@ function G.BuildCatalog()
         local it = GD_ITEMS[i]
         setmetatable(it, ROW_MT)
         recs[it[1]] = it
-        if i % 2000 == 0 and coroutine.running() then coroutine.yield() end
+        if not G.__noYield and i % 2000 == 0 and coroutine.running() then coroutine.yield() end
     end
     local srcOf = {}
     local order = {}
@@ -3240,7 +3753,7 @@ function G.Build(page)
     if not page or not page.SetParent then return end
     G.building = true
     ns.OpenPerf.Begin("装备库·首建")
-    ns.PhasedStart(10, function()
+    ns.PhasedStart(28, function()
     local cfg = GDB()
     G.cat = cfg.cat or "ALL"
     G.sort = (cfg.sort == "ilvl" or cfg.sort == "name") and cfg.sort or "req"
@@ -3334,7 +3847,7 @@ function G.Build(page)
     right:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", -PAGE_INSET, pb)
     coroutine.yield()
 
-    G.wishClear = NewButton(right, L["清空"], 52, 22, 13)
+    G.wishClear = NewButton(right, L["清空"], 52, 24, 14)
     G.wishClear:GetFontString():SetTextColor(Unpack(C_GREY))
     G.wishClear:SetPoint("TOPLEFT", left, "TOPLEFT", CARD_PAD + LEFT_W - 2 * CARD_PAD - 50, -(CARD_PAD))
     G.wishClear:SetScript("OnClick", function()
@@ -3434,9 +3947,9 @@ function G.Build(page)
     G.pgJump:ClearAllPoints()
     G.pgJump:SetPoint("LEFT", G.pgNext, "RIGHT", 8, 0)
     G.pgGo:ClearAllPoints()
-    G.pgGo:SetPoint("LEFT", G.pgJump, "RIGHT", 6, 0)
+    G.pgGo:SetPoint("LEFT", G.pgJump, "RIGHT", 8, 0)
     for i = 1, 5 do
-        G.pgNums[i]:SetPoint("LEFT", i == 1 and G.pgNext or G.pgNums[i - 1], "RIGHT", 6, 0)
+        G.pgNums[i]:SetPoint("LEFT", i == 1 and G.pgNext or G.pgNums[i - 1], "RIGHT", 8, 0)
     end
     coroutine.yield()
 

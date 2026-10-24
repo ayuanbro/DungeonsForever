@@ -10,8 +10,8 @@ if not Host then return end
 
 local DG = Host.DG
 local MakeFS = Host.MakeFS
-local NewButton, MakeOutline = Host.NewButton, Host.MakeOutline
-local SetOutline, Unpack = Host.SetOutline, Host.Unpack
+local NewButton, SetButtonSelected = Host.NewButton, Host.SetButtonSelected
+local Unpack = Host.Unpack
 local C_GOLD = Host.C_GOLD
 local C_GREY, C_DIM, C_WHITE, C_TEXT = Host.C_GREY, Host.C_DIM, Host.C_WHITE, Host.C_TEXT
 local PAGE_INSET, CONTENT_W = Host.PAGE_INSET, Host.CONTENT_W
@@ -54,7 +54,7 @@ TT.SPEC_BTN_GAP = 8
 TT.SPEC_BTN_PAD = 10
 TT.SPEC_BTN_Y   = TT.TOPCARD_TOP + TT.INSET + 20
 TT.SPEC_META_Y  = TT.TOPCARD_TOP + 10
-TT.MODE_KEYS    = { "rotation", "macro", "cq", "text" }
+TT.MODE_KEYS    = { "rotation", "macro", "talents", "cq", "text" }
 TT.MODE_H       = 24
 TT.MODE_GAP     = 8
 TT.MODE_Y       = TT.TOPCARD_TOP + TT.INSET + 52
@@ -140,7 +140,7 @@ local function DB()
     end
     if not s.tab then s.tab = T.pages[1].key end
     if s.nav ~= "spec" then s.nav = "rank" end
-    if s.mode ~= "rotation" and s.mode ~= "macro" and s.mode ~= "cq" then s.mode = "text" end
+    if s.mode ~= "rotation" and s.mode ~= "macro" and s.mode ~= "talents" and s.mode ~= "cq" then s.mode = "text" end
     return s
 end
 
@@ -287,6 +287,7 @@ TT.SEC_TITLE = {
 TT.MODE_TITLE = {
     rotation = L["输出循环"],
     macro = L["宏命令"],
+    talents = L["天赋"],
     cq = L["职业任务"],
     text = L["文字攻略"],
 }
@@ -361,23 +362,9 @@ local function RoundButtonFill(bt)
     bt:SetBackdrop({ edgeFile = "Interface/ChatFrame/ChatFrameBackground", edgeSize = 1 })
     bt:SetBackdropBorderColor(0, 0, 0, 0)
     if bt.SetBackdropColor then bt:SetBackdropColor(0, 0, 0, 0) end
-    bt.__roundFill = ns.hui.BuildRoundedBG(bt, 6, ns.hui.layer.L3, "both", false)
+    bt.__huiBaseLv = "L3"
 end
 TT.RoundButtonFill = RoundButtonFill
-
-local function SetClassBase(cb, on)
-    if cb.__base then
-        for _, t in ipairs(cb.__base) do t:SetShown(on) end
-    elseif cb.bg then
-        cb.bg:SetShown(on)
-    end
-end
-
-local function SetClassHover(cb, on)
-    if cb.__hovc then
-        for _, t in ipairs(cb.__hovc) do t:SetShown(on) end
-    end
-end
 
 local function PaintCell(cell, own, hover)
     if cell.__own or cell.__hov then
@@ -420,9 +407,7 @@ local function BuildNav(page)
 
     local bt = NewButton(page, L["职业排行"], TT.NAV_W, TT.NAV_ITEM_H, TT.NAV_FS)
     bt:SetPoint("TOPLEFT", page, "TOPLEFT", TT.NAV_X + TT.NAV_PAD, -TT.NAV_RANK_Y)
-    MakeOutline(bt, 1, 0.82, 0)
-    SetOutline(bt, true, 1, 0.82, 0)
-    bt.__huiKeepTextColor = true
+    SetButtonSelected(bt, false, "tab")
     bt.__name = L["职业排行"]
     local fs = bt:GetFontString()
     fs:ClearAllPoints()
@@ -457,37 +442,17 @@ local function BuildNav(page)
                 local hl = cb:GetHighlightTexture()
                 if hl then hl:SetAlpha(0.08) end
             end
-            MakeOutline(cb, 1, 0.82, 0)
-            SetOutline(cb, false, 1, 0.82, 0)
             cb.__huiKeepTextColor = true
+            SetButtonSelected(cb, false, "tab")
             local cfs = cb:GetFontString()
             cfs:ClearAllPoints()
             cfs:SetPoint("LEFT", cb, "LEFT", 5 + TT.NAV_ICON + 5, 0)
             cfs:SetJustifyH("LEFT")
-            if ns.hui and ns.hui.BuildCapsule then
-                cb.__base = ns.hui.BuildCapsule(cb, 8, ns.hui.layer.L2, 1, 2)
-                cb.__hovc = ns.hui.BuildCapsule(cb, 8, ns.hui.layer.L4, 1, 2)
-                for _, t in ipairs(cb.__base) do t:Hide() end
-                for _, t in ipairs(cb.__hovc) do t:Hide() end
-            else
-                cb.bg = cb:CreateTexture(nil, "BACKGROUND", nil, 2)
-                cb.bg:SetAllPoints()
-                cb.bg:SetColorTexture(1, 1, 1, 0.04)
-                cb.bg:Hide()
-            end
             local tile, ic = MakeIconTile(cb, TT.NAV_ICON)
             tile:SetPoint("LEFT", cb, "LEFT", 5, 0)
             SetIcon(ic, ClassIconPath(cls))
             cb:SetScript("OnClick", function()
                 TT.OpenSpec(cls)
-            end)
-            cb:SetScript("OnEnter", function(self)
-                SetClassHover(self, true)
-                if not self.__hovc and self.bg then self.bg:Show() end
-            end)
-            cb:SetScript("OnLeave", function(self)
-                SetClassHover(self, false)
-                if not self.__hovc and self.bg then self.bg:Hide() end
             end)
             cb.__cls = cls
             cb.__txt = cfs
@@ -505,8 +470,7 @@ local function BuildSubTabs(page)
     local x = 0
     for _, p in ipairs(T.pages) do
         local bt = NewButton(page, TT.PAGE_NAME[p.key] or p.key, TT.SUB_W, TT.SUB_H, TT.TAB_FS)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false, "tab")
         bt:SetPoint("TOPLEFT", page, "TOPLEFT", TT.RIGHT_X + x, -TT.SUB_Y)
         bt:SetScript("OnClick", function()
             DB().tab = p.key
@@ -523,9 +487,8 @@ local function BuildSubTabs(page)
     TT.specTabs = {}
     for i = 1, 3 do
         local bt = NewButton(page, "", TT.SPEC_BTN_W, TT.SUB_H, TT.TAB_FS)
-        MakeOutline(bt, 1, 0.82, 0)
         RoundButtonFill(bt)
-        bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false, "tab")
         bt:SetPoint("TOPLEFT", page, "TOPLEFT",
             TT.RIGHT_X + TT.SPEC_TITLE_X + (i - 1) * (TT.SPEC_BTN_W + TT.SPEC_BTN_GAP), -TT.SPEC_BTN_Y)
         bt:Hide()
@@ -549,9 +512,8 @@ local function BuildSubTabs(page)
         local w = mw
         if i == mcount then w = mavail - (mcount - 1) * (mw + TT.MODE_GAP) end
         local bt = NewButton(page, TT.MODE_TITLE[key], w, TT.MODE_H, TT.TAB_FS)
-        MakeOutline(bt, 1, 0.82, 0)
         RoundButtonFill(bt)
-        bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false, "tab")
         bt:SetPoint("TOPLEFT", page, "TOPLEFT", mx, -TT.MODE_Y)
         mx = mx + w + TT.MODE_GAP
         bt.__modeKey = key
@@ -573,8 +535,7 @@ local function BuildSecTabs(page)
     TT.secTabs = {}
     for i = 1, TT.SEC_TAB_MAX do
         local bt = NewButton(page, "", 60, TT.SEC_TAB_H, TT.TAB_FS)
-        MakeOutline(bt, 1, 0.82, 0)
-        bt.__huiKeepTextColor = true
+        SetButtonSelected(bt, false, "tab")
         bt:SetPoint("TOPLEFT", page, "TOPLEFT", TT.RIGHT_X + 8, -TT.SEC_TAB_Y)
         bt:SetScript("OnClick", function(self)
             if self.__secKey then
@@ -1060,8 +1021,7 @@ local function PaintSecTabs(data)
             x = x + w + TT.SEC_TAB_STEP
             bt.__secKey = key
             local on = (key == sel)
-            SetOutline(bt, on, 1, 0.82, 0)
-            bt:GetFontString():SetTextColor(Unpack(on and C_WHITE or C_DIM))
+            SetButtonSelected(bt, on, "tab")
             bt.__sel = on and true or false
             bt:Show()
         elseif bt then
@@ -1238,6 +1198,7 @@ end
 RenderSpec = function()
     TT.__renderGen = (TT.__renderGen or 0) + 1
     local cls, spec, data = TT.PaintHeader()
+    if ns.TalentTabUI then ns.TalentTabUI.Hide() end
     if not data then return end
     local db = DB()
 
@@ -1450,7 +1411,7 @@ function TT.Build(page)
     if TT.built or TT.building then return end
     ns.OpenPerf.Begin("职业指南")
     TT.building = true
-    ns.PhasedStart(15, coroutine.create(function()
+    ns.PhasedStart(10, coroutine.create(function()
     TT.page = page
 
     do
@@ -1550,16 +1511,14 @@ function TT.PaintNav()
     local db = DB()
     local specMode = (db.nav == "spec") and (EnsureCG() ~= nil) or false
     local rankSel = not specMode
-    SetOutline(TT.navBtn, rankSel, 1, 0.82, 0)
-    TT.navBtn:GetFontString():SetTextColor(Unpack(rankSel and C_WHITE or C_DIM))
+    SetButtonSelected(TT.navBtn, rankSel, "tab")
     if TT.classBtns then
         for cls, cb in pairs(TT.classBtns) do
             local sel = specMode and (cls == db.cls)
-            SetClassBase(cb, sel)
+            SetButtonSelected(cb, sel, "tab")
             local cr, cg, cbc = ClassColor(cls)
             cb.__txt:SetTextColor(cr, cg, cbc)
             cb.__txt:SetAlpha(sel and 1 or 0.82)
-            SetOutline(cb, sel, 1, 0.82, 0)
         end
     end
     for _, bt in pairs(TT.subBtns) do
@@ -1588,8 +1547,7 @@ function TT.PaintNav()
                         x = x + w + TT.SPEC_BTN_GAP
                         bt:Show()
                         local sel = (sp.key == db.spec)
-                        SetOutline(bt, sel, 1, 0.82, 0)
-                        bt:GetFontString():SetTextColor(Unpack(sel and C_WHITE or C_DIM))
+                        SetButtonSelected(bt, sel, "tab")
                     end
                 end
             end
@@ -1600,8 +1558,7 @@ function TT.PaintNav()
         if specMode then
             for _, bt in pairs(TT.modeBtns) do
                 local sel = (bt.__modeKey == db.mode)
-                SetOutline(bt, sel, 1, 0.82, 0)
-                bt:GetFontString():SetTextColor(Unpack(sel and C_WHITE or C_DIM))
+                SetButtonSelected(bt, sel, "tab")
                 bt:Show()
             end
         end
@@ -1682,6 +1639,7 @@ function TT.HideSpec()
     TT.HideSpecContent()
     if ns.ClassCombatUI then ns.ClassCombatUI.HideRows() end
     if ns.ClassQuestUI then ns.ClassQuestUI.Hide() end
+    if ns.TalentTabUI then ns.TalentTabUI.Hide() end
 end
 
 local function PY()
@@ -1700,6 +1658,8 @@ function TT.Render()
         local mode = DB().mode
         local CQUI = ns.ClassQuestUI
         if CQUI then CQUI.Hide() end
+        local TUI = ns.TalentTabUI
+        if TUI then TUI.Hide() end
         if mode == "rotation" and CU then
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()
@@ -1708,6 +1668,11 @@ function TT.Render()
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()
             CU.RenderMacro()
+        elseif mode == "talents" and ns.TalentTrees then
+            TT.PlaceScroll(TT.MODE_TOP)
+            TT.HideSpecContent()
+            if CU then CU.HideRows() end
+            if TUI then TUI.Render() end
         elseif mode == "cq" and CQUI then
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()
@@ -1741,8 +1706,7 @@ function TT.RenderRank()
 
     for k, bt in pairs(TT.subBtns) do
         local sel = (k == p.key)
-        SetOutline(bt, sel, 1, 0.82, 0)
-        bt:GetFontString():SetTextColor(Unpack(sel and C_WHITE or C_DIM))
+        SetButtonSelected(bt, sel, "tab")
     end
 
     TT.meta:SetText("")
