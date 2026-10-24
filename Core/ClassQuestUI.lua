@@ -113,7 +113,7 @@ local function StepIDs(chain)
 end
 
 local function Info(id)
-    local t = ns.ClassQuestInfo
+    local t = ns.EnsureClassQuestInfo()
     return t and t[id] or nil
 end
 

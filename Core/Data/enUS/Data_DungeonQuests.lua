@@ -809,7 +809,9 @@ ns.DungeonQuestShare = {
     [7481] = true, [7482] = true, [7483] = true, [7484] = true, [7485] = true, [7488] = true, [7489] = true, [7581] = true,
     [7877] = true, [8181] = true, [8418] = true, [8945] = true, [8949] = true, [8950] = true,
 }
-ns.DungeonQuestExtInfo = {
+function ns.EnsureDungeonQuestExtInfo()
+    if ns.DungeonQuestExtInfo then return ns.DungeonQuestExtInfo end
+    ns.DungeonQuestExtInfo = {
     [17] = { lv = 36, lvStd = 42, nm = "奥达曼的蘑菇", npc = "Ghak Healtouch", npcid = 1470, side = "A", zone = "Uldaman" },
     [65] = { lv = 14, lvStd = 18, nm = "Red Silk Bandanas", npc = "Marshal Gryan Stoutmantle", npcid = 234, side = "A", zone = "Westfall", gains = { xp = 1350, rep = { { 72, 100, "Stormwind City" } } }, obj = "格里安·斯托曼要求你去和湖畔镇的威利谈一谈。", text = "在西部荒野哨兵岭找格里安·斯托曼接取；去湖畔镇旅店与黑衣威利搭话，问出迪菲亚的下落。" },
     [132] = { lv = 14, lvStd = 18, nm = "Red Silk Bandanas", npc = "Wiley the Black", npcid = 266, side = "A", zone = "Westfall", goals = { { "i", 1327, 1 } }, gains = { xp = 680, rep = { { 72, 50, "Stormwind City" } } }, obj = "将威利的便笺交给西部荒野的格里安·斯托曼。", text = "从湖畔镇的黑衣威利拿到便笺，返回西部荒野哨兵岭交给格里安·斯托曼。" },
@@ -1267,3 +1269,5 @@ ns.DungeonQuestExtInfo = {
     [97291] = { lv = 16, lvStd = 21, nm = "无尽的折磨", npc = "Master Apothecary Faranell", npcid = 2055, zone = "Ruins of Lordaeron", goals = { { "i", 281246, 1 }, { "i", 281300, 1 }, { "i", 8923, 1 } }, gains = { xp = 1650, money = 1300 }, obj = "为幽暗城的大药剂师法拉尼尔收集药材：去贸易区找塔文·格瑞斯特拿一顶剧毒骨帽，在草药学训练师附近采点水疱草，最后去潜行者区找毒药商人买些苦楚精华。", text = "为法拉尼尔跑腿备料：贸易区找塔文·格瑞斯特拿剧毒骨帽、草药学训练师附近采水疱草、潜行者区毒药商人处买苦楚精华。" },
     [97292] = { lv = 16, lvStd = 21, nm = "无尽的折磨", npc = "Master Apothecary Faranell", npcid = 2055, zone = "Ruins of Lordaeron", goals = { { "i", 281327, 1 } }, gains = { xp = 1650, money = 1300 }, obj = "替大药剂师法拉尼尔将嘶嘶血清注入奥斯玛尔躯体上方的仪器中。", text = "把嘶嘶血清注入奥斯玛尔躯体上方的仪器，注意先清掉周围的干扰再操作。" },
 }
+    return ns.DungeonQuestExtInfo
+end

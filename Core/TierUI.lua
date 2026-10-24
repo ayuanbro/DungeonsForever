@@ -407,7 +407,7 @@ local function BuildNav(page)
 
     local bt = NewButton(page, L["职业排行"], TT.NAV_W, TT.NAV_ITEM_H, TT.NAV_FS)
     bt:SetPoint("TOPLEFT", page, "TOPLEFT", TT.NAV_X + TT.NAV_PAD, -TT.NAV_RANK_Y)
-    SetButtonSelected(bt, true, "tab")
+    SetButtonSelected(bt, false, "tab")
     bt.__name = L["职业排行"]
     local fs = bt:GetFontString()
     fs:ClearAllPoints()
@@ -470,7 +470,7 @@ local function BuildSubTabs(page)
     local x = 0
     for _, p in ipairs(T.pages) do
         local bt = NewButton(page, TT.PAGE_NAME[p.key] or p.key, TT.SUB_W, TT.SUB_H, TT.TAB_FS)
-        SetButtonSelected(bt, true, "tab")
+        SetButtonSelected(bt, false, "tab")
         bt:SetPoint("TOPLEFT", page, "TOPLEFT", TT.RIGHT_X + x, -TT.SUB_Y)
         bt:SetScript("OnClick", function()
             DB().tab = p.key
@@ -488,7 +488,7 @@ local function BuildSubTabs(page)
     for i = 1, 3 do
         local bt = NewButton(page, "", TT.SPEC_BTN_W, TT.SUB_H, TT.TAB_FS)
         RoundButtonFill(bt)
-        SetButtonSelected(bt, true, "tab")
+        SetButtonSelected(bt, false, "tab")
         bt:SetPoint("TOPLEFT", page, "TOPLEFT",
             TT.RIGHT_X + TT.SPEC_TITLE_X + (i - 1) * (TT.SPEC_BTN_W + TT.SPEC_BTN_GAP), -TT.SPEC_BTN_Y)
         bt:Hide()
@@ -513,7 +513,7 @@ local function BuildSubTabs(page)
         if i == mcount then w = mavail - (mcount - 1) * (mw + TT.MODE_GAP) end
         local bt = NewButton(page, TT.MODE_TITLE[key], w, TT.MODE_H, TT.TAB_FS)
         RoundButtonFill(bt)
-        SetButtonSelected(bt, true, "tab")
+        SetButtonSelected(bt, false, "tab")
         bt:SetPoint("TOPLEFT", page, "TOPLEFT", mx, -TT.MODE_Y)
         mx = mx + w + TT.MODE_GAP
         bt.__modeKey = key
@@ -535,7 +535,7 @@ local function BuildSecTabs(page)
     TT.secTabs = {}
     for i = 1, TT.SEC_TAB_MAX do
         local bt = NewButton(page, "", 60, TT.SEC_TAB_H, TT.TAB_FS)
-        SetButtonSelected(bt, true, "tab")
+        SetButtonSelected(bt, false, "tab")
         bt:SetPoint("TOPLEFT", page, "TOPLEFT", TT.RIGHT_X + 8, -TT.SEC_TAB_Y)
         bt:SetScript("OnClick", function(self)
             if self.__secKey then
@@ -1671,6 +1671,7 @@ function TT.Render()
         elseif mode == "talents" and ns.TalentTrees then
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()
+            if CU then CU.HideRows() end
             if TUI then TUI.Render() end
         elseif mode == "cq" and CQUI then
             TT.PlaceScroll(TT.MODE_TOP)

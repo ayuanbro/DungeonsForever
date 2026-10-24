@@ -1265,7 +1265,7 @@ local function Ensure()
         local sp = MakeFS(pl, 14, C_GOLD)
         sp:SetPoint("TOPRIGHT", pl, "TOPRIGHT", -PAD - 22, -8)
         UI.spentFs[t] = sp
-        local rb = NewButton(pl, nil, 19, 19, 12)
+        local rb = NewButton(pl, nil, 19, 19, 14)
         rb:SetPoint("TOPRIGHT", pl, "TOPRIGHT", -PAD, -4)
         rb:SetNormalTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentReset")
         rb:SetHighlightTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentReset", "ADD")
@@ -1406,7 +1406,6 @@ local function Ensure()
         UI.LiveApplyPlan()
     end, 14)
     liveBtn.__live = true
-    liveBtn:SetHeight(22)
     actBtn(L["保存方案"], function()
         local bl = BuildsOf()
         bl[#bl + 1] = { name = format(L["我的方案%d"], #bl + 1), alloc = CopyAlloc(UI.mock.pts) }

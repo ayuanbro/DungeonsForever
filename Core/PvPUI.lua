@@ -69,8 +69,6 @@ PV.MARK_IN_W = floor((PV.MARK_AVAIL - 7 * PV.MARK_STEP_GAP) / 8)
 PV.MARK_ARROW_DX = PV.MARK_IN_W + (PV.MARK_STEP_GAP - PV.MARK_ARROW) / 2
 PV.MARK_ARROW_DY = -(PV.MARK_IN_H / 2 - PV.MARK_ARROW / 2)
 PV.CARD_W = floor((PV.W - 24 - PV.CARD_GAP) / PV.CARD_COLS)
-PV.CHIP_MAX = 40
-PV.CARD_MAX = 100
 
 local CLASS_ICON_DIR = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\CLASS\\ClassIcon_"
 local CLASS_ICON_FILE = {
@@ -418,6 +416,17 @@ function PV.NewCard(parent)
     return f
 end
 
+function PV.TakeChip(idx)
+    local c = PV.chips[idx]
+    if not c then
+        c = PV.NewChip(PV.child)
+        c:Hide()
+        PV.chips[idx] = c
+        if idx > PV.nChip then PV.nChip = idx end
+    end
+    return c
+end
+
 function PV.PaintCard(f, id)
     f.__id = id
     local nm, ok
@@ -444,15 +453,26 @@ function PV.PaintCard(f, id)
     f.iconTex:SetTexture(ItemIcon(id))
 end
 
+function PV.TakeCard(idx)
+    local c = PV.cards[idx]
+    if not c then
+        c = PV.NewCard(PV.child)
+        c:Hide()
+        PV.cards[idx] = c
+        if idx > PV.nCard then PV.nCard = idx end
+    end
+    return c
+end
+
 function PV.OnItemData(itemID)
     if not PV.built then return end
-    for i = 1, PV.CHIP_MAX do
+    for i = 1, PV.nChip do
         local c = PV.chips[i]
         if c and c.__id == itemID and c:IsShown() then
             c.iconTex:SetTexture(ItemIcon(itemID))
         end
     end
-    for i = 1, PV.CARD_MAX do
+    for i = 1, PV.nCard do
         local f = PV.cards[i]
         if f and f.__id == itemID and f:IsShown() then PV.PaintCard(f, itemID) end
     end
@@ -461,11 +481,13 @@ end
 function PV.Build(page)
     if PV.built or PV.building then return end
     PV.building = true
-    ns.PhasedStart(64, coroutine.create(function()
+    ns.PhasedStart(57, coroutine.create(function()
     PV.page = page
     PV.tabs = {}
     PV.chips = {}
     PV.cards = {}
+    PV.nChip = 0
+    PV.nCard = 0
     PV.rankRows = {}
     PV.capRows = {}
     PV.setRows = {}
@@ -592,10 +614,6 @@ function PV.Build(page)
     PV.capUI = CreateFrame("Frame", nil, PV.capCard)
     PV.capUI:SetAllPoints(PV.capCard)
 
-    for i = 1, PV.CHIP_MAX do
-        PV.chips[i] = PV.NewChip(child)
-        PV.chips[i]:Hide()
-    end
     coroutine.yield()
 
     for i = 1, 14 do
@@ -995,11 +1013,6 @@ function PV.Build(page)
     PV.PaintFac()
     coroutine.yield()
 
-    for i = 1, PV.CARD_MAX do
-        PV.cards[i] = PV.NewCard(child)
-        PV.cards[i]:Hide()
-        if i % 14 == 0 then coroutine.yield() end
-    end
     coroutine.yield()
     PV.setDetailIcon = child:CreateTexture(nil, "ARTWORK")
     PV.setDetailIcon:SetSize(24, 24)
@@ -1125,8 +1138,8 @@ function PV.Refresh()
 end
 
 local function HideAll()
-    for i = 1, PV.CHIP_MAX do PV.chips[i]:Hide() end
-    for i = 1, PV.CARD_MAX do PV.cards[i]:Hide() end
+    for i = 1, PV.nChip do PV.chips[i]:Hide() end
+    for i = 1, PV.nCard do PV.cards[i]:Hide() end
     for i = 1, 14 do PV.rankRows[i]:Hide() end
     for i = 1, 10 do PV.capRows[i]:Hide() end
     for i = 1, 10 do PV.wkRows[i]:Hide() end
@@ -1243,7 +1256,7 @@ function PV.RenderRanks()
         for _, id in ipairs(rec.s) do all[#all + 1] = id end
         local shown = math.min(#all, 3)
         for k = 1, shown do
-            local chip = PV.chips[cursor]
+            local chip = PV.TakeChip(cursor)
             cursor = cursor + 1
             chip.__id = all[k]
             chip.iconTex:SetTexture(ItemIcon(all[k]))
@@ -1417,7 +1430,7 @@ function PV.RenderSets()
         lb:Show()
         cy = cy + 24
         for k = 1, 6 do
-            local card = PV.cards[g.offset + k]
+            local card = PV.TakeCard(g.offset + k)
             card:SetWidth(cardW)
             card.name:SetWidth(cardW - PV.CARD_TX - 7)
             card.name.__pw = cardW - PV.CARD_TX - 7
@@ -1545,7 +1558,7 @@ function PV.RenderBattleBody(y)
                 lb:Show()
                 y = y + 26
                 for k, id in ipairs(ids) do
-                    local card = PV.cards[cursor]
+                    local card = PV.TakeCard(cursor)
                     cursor = cursor + 1
                     card:SetWidth(cardW)
                     card.name:SetWidth(cardW - PV.CARD_TX - 7)
@@ -1598,7 +1611,7 @@ function PV.RenderSpearBody(y)
             lb:Show()
             y = y + 26
             for k, id in ipairs(ids) do
-                local card = PV.cards[cursor]
+                local card = PV.TakeCard(cursor)
                 cursor = cursor + 1
                 card:SetWidth(cardW)
                 card.name:SetWidth(cardW - PV.CARD_TX - 7)

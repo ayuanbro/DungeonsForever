@@ -1161,7 +1161,7 @@ do
         if not f or not f.__huiCard then return false end
         local t = f.__huiRowSelTex
         if not t then
-            t = f:CreateTexture(nil, "BACKGROUND", nil, 1)
+            t = f:CreateTexture(nil, "BACKGROUND", nil, 7)
             t:SetTexture(ROW_SEL_TEX)
             t:SetAllPoints()
             t:Hide()
@@ -2265,7 +2265,7 @@ do
             fs:SetPoint("CENTER", 0, -1)
             fs:SetJustifyH("CENTER")
             fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
-            fs:SetFont(ns.FONT, 15, "")
+            fs:SetFont(ns.FONT, 14, "")
         end
 
         local borderFrame

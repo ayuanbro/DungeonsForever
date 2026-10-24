@@ -67,7 +67,7 @@ PD.NAV_LV_FS = 14
 PD.CARD_NAV_R = PD.CARD_INSET + PD.NAV_W + 2 * PD.NAV_PAD
 PD.RIGHT_X = PD.CARD_NAV_R + (DG.GUTTER or 8) + 8
 PD.RIGHT_W = CONTENT_W - PD.RIGHT_X - PD.CARD_INSET
-PD.SUB_Y, PD.SUB_H, PD.SUB_W, PD.SUB_STEP = PD.CARD_TOP + 8, 22, 70, 78
+PD.SUB_Y, PD.SUB_H, PD.SUB_W, PD.SUB_STEP = PD.CARD_TOP + 8, 24, 76, 84
 PD.BODY_TOP = PD.SUB_Y + PD.SUB_H + 8
 PD.BODY_BOT = PD.CARD_INSET + 8
 PD.FAC_ICON = {
@@ -951,7 +951,7 @@ function PD.Row(i)
     PD.WireTipZone(r.__costZone, r)
     r.__cardBg = CreateFrame("Frame", nil, r)
     r.__cardBg:Hide()
-    r.__cardBg.__pieces = ns.hui.BuildRoundedBG(r.__cardBg, 4, { 1, 1, 1 }, "both", false, nil, true)
+    r.__cardBg.__pieces = ns.hui.BuildRoundedBG(r.__cardBg, 6, { 1, 1, 1 }, "both", false, nil, true)
     r.__cardTx = MakeFS(r.__cardBg, 10, C_TEXT, "LEFT")
     r.__cardTx:SetText("")
     r.__cardTx:SetWordWrap(false)
@@ -1597,13 +1597,13 @@ function PD.BindRow(r, spec, h)
         end
     end
     do
-        local auxFs = (spec.fs == 14) and 14 or nil
+        local auxFs = 14
         local fl = ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE"
         local _, bfs = r.b:GetFont()
-        local wb = auxFs or 11
+        local wb = auxFs
         if bfs ~= wb then r.b:SetFont(ns.FONT, wb, fl) end
         local _, cfs = r.c:GetFont()
-        local wc = auxFs or 12
+        local wc = auxFs
         if cfs ~= wc then r.c:SetFont(ns.FONT, wc, fl) end
     end
     PD.ClearMats(r)
@@ -2286,7 +2286,7 @@ function PD.BindRow(r, spec, h)
     r.c:SetTextColor(Unpack(spec.rightColor or C_GOLD))
     r.d:SetText(spec.right2 or "")
     if spec.right2 and spec.right2 ~= "" then
-        local dfsW = (spec.fs == 14) and 14 or 12
+        local dfsW = 14
         local _, dfs = r.d:GetFont()
         if dfs ~= dfsW then
             r.d:SetFont(ns.FONT, dfsW, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
@@ -3205,7 +3205,7 @@ function PD.Build(page)
 
     PD.subBtns = {}
     for _, def in ipairs(DG.PROF_SUBTABS) do
-        local bt = NewButton(page, def.text, PD.SUB_W, PD.SUB_H, 13)
+        local bt = NewButton(page, def.text, PD.SUB_W, PD.SUB_H, 14)
         SetButtonSelected(bt, false)
         bt:Hide()
         bt:SetScript("OnClick", function() PD.SetTab(def.key) end)
@@ -3216,7 +3216,7 @@ function PD.Build(page)
     PD.trFacBtns = {}
     for i = 1, 2 do
         local k = (i == 1) and "A" or "H"
-        local bt = NewButton(page, k == "A" and L["联盟"] or L["部落"], 64, PD.SUB_H, 13)
+        local bt = NewButton(page, k == "A" and L["联盟"] or L["部落"], 64, PD.SUB_H, 14)
         bt.__huiKeepTextColor = true
         SetButtonSelected(bt, false)
         local bfs = bt:GetFontString()
@@ -3247,7 +3247,7 @@ function PD.Build(page)
     end
     coroutine.yield()
 
-    local gear = NewButton(page, "", PD.SUB_H, PD.SUB_H, 13)
+    local gear = NewButton(page, "", PD.SUB_H, PD.SUB_H, 14)
     gear.__huiKeepTextColor = true
     SetButtonSelected(gear, false)
     gear.__icon = gear:CreateTexture(nil, "ARTWORK")

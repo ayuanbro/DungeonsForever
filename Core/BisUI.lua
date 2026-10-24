@@ -531,6 +531,11 @@ local function ScanStatsTip(id)
     if not okScan then return nil end
     if not next(out) then return nil end
     tipStatCache[id] = out
+    BG.__statCacheN = (BG.__statCacheN or 0) + 1
+    if BG.__statCacheN > 2500 then
+        for k in pairs(tipStatCache) do tipStatCache[k] = nil end
+        BG.__statCacheN = 0
+    end
     return out
 end
 
@@ -1835,7 +1840,7 @@ function BG.PaintAutoProg(frac)
         h:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -40)
         h:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -40)
         h:SetFrameLevel((host:GetFrameLevel() or 0) + 5)
-        h.fs = MakeFS(h, 12, C_GOLD, "LEFT")
+        h.fs = MakeFS(h, 14, C_GOLD, "LEFT")
         h.fs:SetPoint("TOPLEFT", h, "TOPLEFT", 0, 0)
         h.fs:SetWordWrap(false)
         local tr = CreateFrame("Frame", nil, h)
@@ -2409,7 +2414,13 @@ local function BindOnEquip(id)
     local bind = select(15, pcall(fn, id))
     if bind == nil then return nil end
     __boeCache[id] = (bind == 2)
-    return __boeCache[id]
+    local v = __boeCache[id]
+    BG.__boeCacheN = (BG.__boeCacheN or 0) + 1
+    if BG.__boeCacheN > 4000 then
+        for k in pairs(__boeCache) do __boeCache[k] = nil end
+        BG.__boeCacheN = 0
+    end
+    return v
 end
 
 local function ChipSet(b, text, col, rightOf)
@@ -3995,7 +4006,7 @@ local function BuildBrowser(parent)
         ns.PlaySound(1)
     end)
     local maxBt = NewButton(pop, L["满级"], 44, 24, 14)
-    maxBt:SetPoint("LEFT", nowBt, "RIGHT", 6, 0)
+    maxBt:SetPoint("LEFT", nowBt, "RIGHT", 8, 0)
     maxBt:SetScript("OnClick", function()
         if lvBox then lvBox:SetText("60") end
         ApplyLvText("60")

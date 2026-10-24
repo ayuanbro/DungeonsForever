@@ -742,8 +742,9 @@ function DG.BuildDungeons()
     if U.dungeonBuilt then return end
     local data = ns.DungeonData
     if not (data and data.dungeons and #data.dungeons > 0) then return end
-    U.dungeonBuilt = true
     local page = U.dungeonPage
+    if not page then return end
+    U.dungeonBuilt = true
 
     local CARD_TOP = DG.GUTTER
     local DETAIL_Y = DG.GUTTER
@@ -846,6 +847,11 @@ function DG.Loader.CurCap(remaining)
     local cap = dt * (L0.budgetFactor or 0.8)
     local lo = L0.capMin or 8
     local hi = L0.capMax or 200
+    if dt > 400 then
+        local slow = dt * 0.5
+        if slow > 800 then slow = 800 end
+        if slow > hi then hi = slow end
+    end
     if cap < lo then cap = lo end
     if cap > hi then cap = hi end
     return cap
@@ -1792,7 +1798,7 @@ function DG.EnsureQuestLane()
     end)
 
     local zpill = CreateFrame("Frame", nil, card)
-    zpill:SetSize(116, 22)
+    zpill:SetSize(116, 24)
     zpill:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -6, 6)
     zpill:SetFrameLevel(sf:GetFrameLevel() + 10)
     zpill:EnableMouse(true)
@@ -1807,7 +1813,7 @@ function DG.EnsureQuestLane()
         sep:SetSize(1, 12)
         sep:SetPoint("LEFT", zpill, "LEFT", 28 + (i - 1) * 60, 0)
     end
-    local zlab = MakeFS(zpill, 11, { 0.92, 0.92, 0.92 }, "CENTER")
+    local zlab = MakeFS(zpill, 14, { 0.92, 0.92, 0.92 }, "CENTER")
     zlab:SetPoint("CENTER", zpill, "CENTER", 0, 0)
     zlab:SetText("125%")
     local function refreshZoomLabel()
@@ -1819,7 +1825,7 @@ function DG.EnsureQuestLane()
     end
     for i = 1, 2 do
         local bt = CreateFrame("Button", nil, zpill)
-        bt:SetSize(26, 22)
+        bt:SetSize(26, 24)
         if i == 1 then
             bt:SetPoint("LEFT", zpill, "LEFT", 1, 0)
         else
@@ -1827,7 +1833,7 @@ function DG.EnsureQuestLane()
         end
         bt:SetFrameLevel(zpill:GetFrameLevel() + 3)
         bt:EnableMouse(true)
-        local t = MakeFS(bt, 13, { 0.92, 0.92, 0.92 })
+        local t = MakeFS(bt, 14, { 0.92, 0.92, 0.92 })
         t:SetAllPoints()
         t:SetText(i == 1 and "-" or "+")
         bt:SetScript("OnClick", function()
@@ -2271,7 +2277,7 @@ function DG.PaintQuestOverview(d)
         local nm = DG.QuestName(pid)
         DG.ClipTo(n.name, nm, nw - 8)
         n.name:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3], 1)
-        local exinfo = ns.DungeonQuestExtInfo and ns.DungeonQuestExtInfo[pid]
+        local exinfo = ns.EnsureDungeonQuestExtInfo()[pid]
         DG.QuestOverviewClsBadge(n, exinfo and exinfo.cls)
         n.sub:SetText("")
         n.stbar:Show()
@@ -3176,8 +3182,8 @@ function DG.BuildDetailChips()
     if not (detail and hero) then return end
     if next(U.dungeonEntChips or {}) then return end
     for i = 1, 3 do
-        local chip = NewButton(detail, "", 70, 20, 14)
-        AddBtnIcon(chip, "EntryPin", 12, 4)
+        local chip = NewButton(detail, "", 76, 24, 14)
+        AddBtnIcon(chip, "EntryPin", 14, 5)
         chip:SetFrameLevel(hero:GetFrameLevel() + 1)
         chip.__entIdx = i
         chip:SetScript("OnClick", function(self)
@@ -3642,6 +3648,12 @@ function DG.HarvestTipName(id)
         if type(q) == "number" and GetItemQualityColor then r, g, b = GetItemQualityColor(q) end
         if not cache then cache = {} DG.__tipName = cache end
         cache[id] = { nm, r, g, b }
+        DG.__tipCapN = (DG.__tipCapN or 0) + 1
+        if DG.__tipCapN > 3000 then
+            for k in pairs(cache) do cache[k] = nil end
+            DG.__tipCapN = 0
+            cache[id] = { nm, r, g, b }
+        end
         if r then DG.__tipColor = { r, g, b } end
         return nm
     end
@@ -3900,6 +3912,12 @@ function DG.RequestItem(id, force)
     if type(id) ~= "number" or id < 1 or id > 2147483647 or id ~= math.floor(id) then return end
     if DG.__asked[id] and not force then return end
     DG.__asked[id] = true
+    DG.__askedN = (DG.__askedN or 0) + 1
+    if DG.__askedN > 4000 then
+        for k in pairs(DG.__asked) do DG.__asked[k] = nil end
+        DG.__askedN = 0
+        DG.__asked[id] = true
+    end
     DG.EnsureItemListener()
     if C_Item and C_Item.RequestLoadItemDataByID then
         pcall(C_Item.RequestLoadItemDataByID, id)
@@ -5244,7 +5262,7 @@ function DG.QuestName(id)
         n = DG.QLCall("GetTitleForQuestID", id)
         if type(n) == "string" and n ~= "" then return n, true end
     end
-    local ex = ns.DungeonQuestExtInfo and ns.DungeonQuestExtInfo[id]
+    local ex = ns.EnsureDungeonQuestExtInfo()[id]
     if ex and type(ex.nm) == "string" and ex.nm ~= "" then return ex.nm, true end
     return format(L["任务 #%d"], id), false
 end
@@ -5296,7 +5314,7 @@ function DG.DifficultyColor(level)
 end
 
 function DG.ExtQuestRow(pid)
-    local info = ns.DungeonQuestExtInfo and ns.DungeonQuestExtInfo[pid]
+    local info = ns.EnsureDungeonQuestExtInfo()[pid]
     if not info then return nil end
     local req
     if info.goals then
@@ -6087,7 +6105,7 @@ function DG.QuestFollowers(id)
         for fid, pe in pairs(ns.DungeonQuestPreExtra or {}) do
             if type(pe) == "table" then add(pe[1], fid) end
         end
-        for fid, info in pairs(ns.DungeonQuestExtInfo or {}) do
+        for fid, info in pairs(ns.EnsureDungeonQuestExtInfo()) do
             if type(info) == "table" and type(info.pre) == "table" then
                 for _, p in ipairs(info.pre) do add(p, fid) end
             end
@@ -6781,9 +6799,9 @@ function U:RenderQuestDetail()
             f.fs:SetWidth(detW - 76)
             f.fs:SetWordWrap(false)
             f.fs:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-            local mb = NewButton(f, L["地图"], 62, 20, 14)
-            AddBtnIcon(mb, "EntryPin", 12, 4)
-            mb:SetPoint("RIGHT", f.fs, "RIGHT", 74, 0)
+            local mb = NewButton(f, L["地图"], 68, 24, 14)
+            AddBtnIcon(mb, "EntryPin", 14, 5)
+            mb:SetPoint("RIGHT", f.fs, "RIGHT", 80, 0)
             mb:SetScript("OnClick", function(self)
                 local p = self:GetParent()
                 if p.__npc then DG.MarkNPC(p.__npc, p.__loc) end

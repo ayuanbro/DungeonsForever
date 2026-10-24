@@ -27,7 +27,7 @@ local TITLE_ZONE = 0
 local CHIP_ZONE = 0
 local SORT_ZONE = 0
 local HEAD_ZONE = 20
-local PAGER_ZONE = 40
+local PAGER_ZONE = 42
 
 local QUALITY_ORDER = { 5, 4, 3, 2, 1, 0 }
 local BIND_LABEL = {
@@ -1688,7 +1688,7 @@ local function ChainPopup(qid)
         pop:EnableMouse(true)
         pop:Hide()
         if ns.hui and ns.hui.BuildRoundedBG then
-            ns.hui.BuildRoundedBG(pop, 8, ns.hui.layer.L0, "both", true, 1)
+            ns.hui.BuildRoundedBG(pop, 6, ns.hui.layer.L0, "both", true, 1)
         else
             Cardify(pop, nil, 2)
         end
@@ -2026,7 +2026,7 @@ local function BuildRow(parent)
     r.newTag:SetSize(34, 16)
     r.newTag:SetPoint("LEFT", r.name, "RIGHT", 4, 0)
     if ns.hui and ns.hui.BuildRoundedBG then
-        ns.hui.BuildRoundedBG(r.newTag, 5, ns.hui.layer.L2, "both", true, 1)
+        ns.hui.BuildRoundedBG(r.newTag, 4, ns.hui.layer.L2, "both", true, 1)
     else
         Cardify(r.newTag, 3, 2)
     end
@@ -2683,7 +2683,7 @@ function G.SetCat(key)
 end
 
 function G.BuildChips(parent)
-    G.filterBtn = NewButton(parent, L["过滤器"], 50, 22, 13)
+    G.filterBtn = NewButton(parent, L["过滤器"], 50, 24, 14)
     G.filterBtn:GetFontString():SetTextColor(Unpack(C_TEXT))
     G.filterBtn:SetScript("OnClick", function()
         if G.attrPop and G.attrPop:IsShown() then
@@ -3026,7 +3026,7 @@ function G.BuildAttrPop()
 end
 
 function G.BuildPager(parent)
-    G.pgPrev = NewButton(parent, L["上一页"], 62, 22, 14)
+    G.pgPrev = NewButton(parent, L["上一页"], 62, 24, 14)
     G.pgPrev:GetFontString():SetTextColor(Unpack(C_TEXT))
     G.pgPrev:SetScript("OnClick", function()
         if (G.page or 1) > 1 then
@@ -3035,7 +3035,7 @@ function G.BuildPager(parent)
             G.PaintList()
         end
     end)
-    G.pgNext = NewButton(parent, L["下一页"], 62, 22, 14)
+    G.pgNext = NewButton(parent, L["下一页"], 62, 24, 14)
     G.pgNext:GetFontString():SetTextColor(Unpack(C_TEXT))
     G.pgNext:SetScript("OnClick", function()
         if (G.page or 1) < (G.pages or 1) then
@@ -3046,7 +3046,7 @@ function G.BuildPager(parent)
     end)
     G.pgNums = {}
     for i = 1, 9 do
-        local b = NewButton(parent, tostring(i), 28, 22, 14)
+        local b = NewButton(parent, tostring(i), 28, 24, 14)
         b:SetScript("OnClick", function()
             if b.page then
                 G.page = b.page
@@ -3068,7 +3068,7 @@ function G.BuildPager(parent)
             G.PaintList()
         end
     end)
-    G.pgGo = NewButton(parent, L["确定"], 44, 22, 13)
+    G.pgGo = NewButton(parent, L["确定"], 44, 24, 14)
     G.pgGo:GetFontString():SetTextColor(Unpack(C_TEXT))
     G.pgGo:SetScript("OnClick", function()
         local v = tonumber(G.pgJump:GetText())
@@ -3105,7 +3105,7 @@ function G.PaintPager()
         local p = slots[i]
         if p then
             b:ClearAllPoints()
-            b:SetPoint("LEFT", prev, "RIGHT", 4, 0)
+            b:SetPoint("LEFT", prev, "RIGHT", 8, 0)
             prev = b
             if p == -1 then
                 b.page = nil
@@ -3125,7 +3125,7 @@ function G.PaintPager()
         end
     end
     G.pgNext:ClearAllPoints()
-    G.pgNext:SetPoint("LEFT", prev, "RIGHT", 4, 0)
+    G.pgNext:SetPoint("LEFT", prev, "RIGHT", 8, 0)
     if G.cat == "SETS" then
         local setN = RS and (RS.total or #(RS.sets or {})) or 0
         G.pgTotal:SetText(format(L["第 %d / %d 页 · 共 %d 套"], page, pages, setN))
@@ -3847,7 +3847,7 @@ function G.Build(page)
     right:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", -PAGE_INSET, pb)
     coroutine.yield()
 
-    G.wishClear = NewButton(right, L["清空"], 52, 22, 13)
+    G.wishClear = NewButton(right, L["清空"], 52, 24, 14)
     G.wishClear:GetFontString():SetTextColor(Unpack(C_GREY))
     G.wishClear:SetPoint("TOPLEFT", left, "TOPLEFT", CARD_PAD + LEFT_W - 2 * CARD_PAD - 50, -(CARD_PAD))
     G.wishClear:SetScript("OnClick", function()
@@ -3947,9 +3947,9 @@ function G.Build(page)
     G.pgJump:ClearAllPoints()
     G.pgJump:SetPoint("LEFT", G.pgNext, "RIGHT", 8, 0)
     G.pgGo:ClearAllPoints()
-    G.pgGo:SetPoint("LEFT", G.pgJump, "RIGHT", 6, 0)
+    G.pgGo:SetPoint("LEFT", G.pgJump, "RIGHT", 8, 0)
     for i = 1, 5 do
-        G.pgNums[i]:SetPoint("LEFT", i == 1 and G.pgNext or G.pgNums[i - 1], "RIGHT", 6, 0)
+        G.pgNums[i]:SetPoint("LEFT", i == 1 and G.pgNext or G.pgNums[i - 1], "RIGHT", 8, 0)
     end
     coroutine.yield()
 

@@ -286,6 +286,7 @@ function RU.PaintCard(c, rec, ec, ea)
     c:SetShown(true)
 end
 
+RU.TAB_H, RU.TAB_W = 24, 76
 RU.SET_PAD      = 14
 RU.SET_ICON     = 24
 RU.SET_HEAD_Y   = 14
@@ -296,7 +297,7 @@ RU.SET_TEXT_X   = 16 + RU.SET_LABEL_W + 8
 RU.SET_BADGE_W, RU.SET_BADGE_H = 46, 20
 RU.SET_CHIP_H   = RU.TAB_H
 RU.SET_CHIP_W   = RU.TAB_W
-RU.SET_CHIP_GAP = 6
+RU.SET_CHIP_GAP = 8
 RU.SET_CHIP_FS  = 14
 RU.SET_RADIUS   = 6
 RU.SET_BATCH_Y  = 90

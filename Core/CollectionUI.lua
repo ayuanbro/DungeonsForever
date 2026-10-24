@@ -136,10 +136,10 @@ local OVR = ns.NameOverrides
 
 local function MountName(rec)
     if rec[2] == "spell" then
-        local ok, nm = pcall(GetSpellInfo, rec[1])
-        if ok and type(nm) == "string" and nm ~= "" then return nm, true end
         local o = OVR and OVR.spell and OVR.spell[rec[1]]
         if o then return o, true end
+        local ok, nm = pcall(GetSpellInfo, rec[1])
+        if ok and type(nm) == "string" and nm ~= "" then return nm, true end
         return format(L["法术 #%d"], rec[1]), false
     end
     local nm, got = DG.ItemName(rec[1])
@@ -163,6 +163,18 @@ local function MountIcon(rec)
         return "Interface\\Icons\\" .. rec[3]
     end
     return FALLBACK_ICON
+end
+
+local function SpellTip(owner, spellID)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+    GameTooltip:ClearLines()
+    local ok = GameTooltip.SetSpellByID and pcall(GameTooltip.SetSpellByID, GameTooltip, spellID)
+    if not ok then
+        local o = OVR and OVR.spell and OVR.spell[spellID]
+        GameTooltip:AddLine(o or format(L["法术 #%d"], spellID), 1, 1, 1, true)
+    end
+    GameTooltip:Show()
 end
 
 local function RecName(rec, isPet)
@@ -1017,7 +1029,13 @@ local function MakeRow(parent)
             for _, t in ipairs(self.__hover) do t:Show() end
         end
         local rec = self.__rec
-        if rec then DG.ShowItemTip(self, { rec[1] }) end
+        if rec then
+            if rec[2] == "spell" then
+                SpellTip(self, rec[1])
+            else
+                DG.ShowItemTip(self, { rec[1] })
+            end
+        end
     end)
     r:SetScript("OnLeave", function()
         if r.__hover then
@@ -1428,8 +1446,12 @@ local function BuildDetailPanel(page)
     attrCards[3]:SetScript("OnEnter", function(self)
         local rec = CG.sel
         if not (rec and rec.teach and GameTooltip) then return end
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetItemByID(rec[1])
+        if rec[2] == "spell" then
+            SpellTip(self, rec[1])
+        else
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetItemByID(rec[1])
+        end
     end)
     attrCards[3]:SetScript("OnLeave", TipOff)
     do

@@ -490,6 +490,10 @@ local function PutRow(item, x, w, y)
     local fr = CU.rows[CU.used]
     if not fr then return y end
     if w then fr:SetWidth(w) end
+    local tw = (w or TT.FULL_W) - CU.PAD * 2 - CU.ICON - 8
+    if tw < 40 then tw = 40 end
+    if fr.__c.SetWidth then fr.__c:SetWidth(tw) end
+    if fr.__d.SetWidth then fr.__d:SetWidth(tw) end
     fr:ClearAllPoints()
     fr:SetPoint("TOPLEFT", TT.child, "TOPLEFT", x or 0, -y)
     fr.__a:SetText(item.a)

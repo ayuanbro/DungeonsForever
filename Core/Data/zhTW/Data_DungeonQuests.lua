@@ -809,7 +809,9 @@ ns.DungeonQuestShare = {
     [7481] = true, [7482] = true, [7483] = true, [7484] = true, [7485] = true, [7488] = true, [7489] = true, [7581] = true,
     [7877] = true, [8181] = true, [8418] = true, [8945] = true, [8949] = true, [8950] = true,
 }
-ns.DungeonQuestExtInfo = {
+function ns.EnsureDungeonQuestExtInfo()
+    if ns.DungeonQuestExtInfo then return ns.DungeonQuestExtInfo end
+    ns.DungeonQuestExtInfo = {
     [17] = { lv = 36, lvStd = 42, nm = "奧達曼的蘑菇", npc = "加克", npcid = 1470, side = "A", zone = "奧達曼" },
     [65] = { lv = 14, lvStd = 18, nm = "迪菲亞兄弟會", npc = "格里安·斯托曼", npcid = 234, side = "A", zone = "西部荒野", gains = { xp = 1350, rep = { { 72, 100, "暴風城" } } }, obj = "格里安·斯托曼要求你去和湖畔鎮的威利談一談。", text = "在西部荒野哨兵嶺找格里安·斯托曼接取；去湖畔鎮旅店與黑衣威利搭話，問出迪菲亞的下落。" },
     [132] = { lv = 14, lvStd = 18, nm = "迪菲亞兄弟會", npc = "黑衣威利", npcid = 266, side = "A", zone = "西部荒野", goals = { { "i", 1327, 1 } }, gains = { xp = 680, rep = { { 72, 50, "暴風城" } } }, obj = "將威利的便箋交給西部荒野的格里安·斯托曼。", text = "從湖畔鎮的黑衣威利拿到便箋，返回西部荒野哨兵嶺交給格里安·斯托曼。" },
@@ -1267,3 +1269,5 @@ ns.DungeonQuestExtInfo = {
     [97291] = { lv = 16, lvStd = 21, nm = "無盡的折磨", npc = "大藥劑師法拉尼爾", npcid = 2055, zone = "洛丹倫廢墟", goals = { { "i", 281246, 1 }, { "i", 281300, 1 }, { "i", 8923, 1 } }, gains = { xp = 1650, money = 1300 }, obj = "為幽暗城的大藥劑師法拉尼爾收集藥材：去貿易區找塔文·格瑞斯特拿一頂劇毒骨帽，在草藥學訓練師附近採點水皰草，最後去潛行者區找毒藥商人買些苦楚精華。", text = "為法拉尼爾跑腿備料：貿易區找塔文·格瑞斯特拿劇毒骨帽、草藥學訓練師附近採水皰草、潛行者區毒藥商人處買苦楚精華。" },
     [97292] = { lv = 16, lvStd = 21, nm = "無盡的折磨", npc = "大藥劑師法拉尼爾", npcid = 2055, zone = "洛丹倫廢墟", goals = { { "i", 281327, 1 } }, gains = { xp = 1650, money = 1300 }, obj = "替大藥劑師法拉尼爾將嘶嘶血清注入奧斯瑪爾軀體上方的儀器中。", text = "把嘶嘶血清注入奧斯瑪爾軀體上方的儀器，注意先清掉周圍的干擾再操作。" },
 }
+    return ns.DungeonQuestExtInfo
+end

@@ -235,7 +235,7 @@ EG.RIGHT_W = CONTENT_W - EG.X0 - EG.EDGE
 EG.TICK_Y = EG.TOP_EDGE + 8
 EG.BAR_H = 4
 EG.BAR_Y = EG.TICK_Y + 14 + 8
-EG.TOOL_Y, EG.TOOL_H, EG.TOOL_GAP, EG.TOOL_W = EG.BAR_Y + EG.BAR_H + 8, 20, 8, 96
+EG.TOOL_Y, EG.TOOL_H, EG.TOOL_GAP, EG.TOOL_W = EG.BAR_Y + EG.BAR_H + 8, 24, 8, 96
 EG.NOTE_Y = EG.TOOL_Y + EG.TOOL_H + 8
 EG.BODY_TOP = EG.NOTE_Y + 22
 EG.RW_TOP = EG.NOTE_Y
@@ -703,7 +703,7 @@ local function MakeTagPill(r, key)
             p:SetBackdropColor(0, 0, 0, 0.22)
             p:SetBackdropBorderColor(0.29, 0.27, 0.24, 0.9)
         end
-        local t = MakeFS(p, 11, nil, "CENTER")
+        local t = MakeFS(p, 12, nil, "CENTER")
         t:SetAllPoints()
         t:SetWordWrap(false)
         p.t = t
@@ -3024,10 +3024,10 @@ function EG.Build(page)
             hd.__tier = ti
             EG["rwHead" .. ti] = hd
             card.hd = hd
-            local lv = MakeFS(card, 11, C_GREY, "RIGHT")
+            local lv = MakeFS(card, 14, C_GREY, "RIGHT")
             lv:SetPoint("TOPRIGHT", card, "TOPRIGHT", -12, -12)
             card.lv = lv
-            local st = MakeFS(card, 11, C_GREY, "RIGHT")
+            local st = MakeFS(card, 14, C_GREY, "RIGHT")
             st:SetPoint("TOPRIGHT", card, "TOPRIGHT", -12, -12)
             card.state = st
             local sides = { "A", "H" }
@@ -3052,7 +3052,7 @@ function EG.Build(page)
                 row.name:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 9, -1)
                 row.name:SetPoint("RIGHT", row, "RIGHT", 0, 0)
                 row.name:SetWordWrap(false)
-                row.meta = MakeFS(row, 11, C_GREY, "LEFT")
+                row.meta = MakeFS(row, 14, C_GREY, "LEFT")
                 row.meta:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 9, 1)
                 row.meta:SetPoint("RIGHT", row, "RIGHT", 0, 0)
                 row.meta:SetWordWrap(false)
@@ -3114,14 +3114,14 @@ function EG.Build(page)
             sl:SetWordWrap(false)
             sl:SetText(st.t or "")
             EG.howSteps[si] = sl
-            local dl = MakeFS(card, 11, C_GREY, "LEFT")
+            local dl = MakeFS(card, 14, C_GREY, "LEFT")
             dl:SetPoint("TOPLEFT", card, "TOPLEFT", 13 + sx + 18, -cy - 20)
             dl:SetWidth(stepW - 18)
             dl:SetText(st.d or "")
             local sw = dl:GetStringWidth()
-            if type(sw) ~= "number" or sw <= 0 then sw = #(st.d or "") * 7 end
+            if type(sw) ~= "number" or sw <= 0 then sw = #(st.d or "") * 9 end
             local lines = math.max(1, math.ceil(sw / math.max(1, stepW - 18)))
-            local h = 20 + lines * 13 + 6
+            local h = 20 + lines * 17 + 6
             if h > maxStepH then maxStepH = h end
             coroutine.yield()
         end
@@ -3166,12 +3166,12 @@ function EG.Build(page)
 
         local fc = CreateFrame("Frame", nil, bag)
         coroutine.yield()
-        fc:SetSize(182, 20)
+        fc:SetSize(186, 24)
         fc:SetPoint("TOPLEFT", bag, "TOPLEFT", 86, -8)
         EG.bagFacBtns = {}
         for fi, f in ipairs({ "A", "H" }) do
-            local bt = NewButton(fc, f == "A" and L["联盟领地"] or L["部落领地"], 88, 18, 14)
-            bt:SetPoint("TOPLEFT", fc, "TOPLEFT", (fi - 1) * 90 + 2, 1)
+            local bt = NewButton(fc, f == "A" and L["联盟领地"] or L["部落领地"], 88, 24, 14)
+            bt:SetPoint("TOPLEFT", fc, "TOPLEFT", (fi - 1) * 96 + 2, 0)
             bt.__huiKeepTextColor = true
             local tf = bt:GetFontString()
             if tf then
@@ -3521,7 +3521,7 @@ coroutine.yield()
         local tx = 8
         for _, t in ipairs(BM_TABS) do
             local bt = CreateFrame("Button", nil, bm, "BackdropTemplate")
-            bt:SetSize(96, 22)
+            bt:SetSize(96, 24)
             bt:SetPoint("TOPLEFT", bm, "TOPLEFT", tx, -32)
             local tf = MakeFS(bt, 14, C_DIM, "CENTER")
             tf:SetAllPoints()
@@ -3569,7 +3569,7 @@ coroutine.yield()
             nd.t = MakeFS(nd, 14, C_TEXT, "LEFT")
             nd.t:SetPoint("TOPLEFT", nd, "TOPLEFT", 36, -6)
             nd.t:SetWordWrap(false)
-            nd.sub = MakeFS(nd, 11, C_GREY, "LEFT")
+            nd.sub = MakeFS(nd, 14, C_GREY, "LEFT")
             nd.sub:SetPoint("BOTTOMLEFT", nd, "BOTTOMLEFT", 8, 8)
             nd.sub:SetWordWrap(false)
             nd:SetScript("OnEnter", function(self)
@@ -3624,12 +3624,12 @@ coroutine.yield()
             st.t = MakeFS(st, 14, C_TEXT, "LEFT")
             st.t:SetPoint("TOPLEFT", st, "TOPLEFT", 26, -2)
             st.t:SetWordWrap(false)
-            st.sub = MakeFS(st, 11, C_GREY, "LEFT")
+            st.sub = MakeFS(st, 14, C_GREY, "LEFT")
             st.sub:SetPoint("LEFT", st.t, "RIGHT", 10, 0)
             st.sub:SetWordWrap(false)
             st.loc = CreateFrame("Button", nil, st)
             st.loc:SetHeight(18)
-            st.loc.fs = MakeFS(st.loc, 11, C_GOLD, "CENTER")
+            st.loc.fs = MakeFS(st.loc, 12, C_GOLD, "CENTER")
             st.loc.fs:SetAllPoints()
             st.loc:SetPoint("TOPRIGHT", st, "TOPRIGHT", 0, -2)
             st.loc:SetScript("OnClick", function(self)
@@ -3733,16 +3733,16 @@ coroutine.yield()
         local cx = 8
         for ti, t in ipairs(BM_TIERS) do
             local bt = CreateFrame("Button", nil, bm, "BackdropTemplate")
-            bt:SetSize(118, 20)
+            bt:SetSize(118, 24)
             bt:SetPoint("TOPLEFT", bm, "TOPLEFT", cx, -62)
-            local tf = MakeFS(bt, 11, C_DIM, "CENTER")
+            local tf = MakeFS(bt, 14, C_DIM, "CENTER")
             tf:SetAllPoints()
             tf:SetText(format(L["理解(%d) · %s"], t.req, t.tier))
             bt:SetFontString(tf)
             bt.__huiKeepTextColor = true
             if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
             tf:SetAllPoints()
-            tf:SetFont(ns.FONT, 11, "")
+            tf:SetFont(ns.FONT, 14, "")
             bt:SetScript("OnClick", function()
                 EG.bmTier = ti
                 EG.RequestRender()
@@ -3827,10 +3827,10 @@ coroutine.yield()
             rw2.nm = MakeFS(rw2, 14, C_TEXT, "LEFT")
             rw2.nm:SetPoint("TOPLEFT", rw2, "TOPLEFT", 36, -4)
             rw2.nm:SetWordWrap(false)
-            rw2.note = MakeFS(rw2, 11, C_GREY, "LEFT")
+            rw2.note = MakeFS(rw2, 14, C_GREY, "LEFT")
             rw2.note:SetPoint("BOTTOMLEFT", rw2, "BOTTOMLEFT", 36, 4)
             rw2.note:SetWordWrap(false)
-            rw2.badge = MakeFS(rw2, 11, C_GREY, "RIGHT")
+            rw2.badge = MakeFS(rw2, 14, C_GREY, "RIGHT")
             rw2.badge:SetPoint("TOPRIGHT", rw2, "TOPRIGHT", -8, -4)
             rw2.badge:SetWordWrap(false)
             rw2:EnableMouse(true)
