@@ -260,28 +260,64 @@ local function SpecWeights(cls, specId)
         STRENGTH = 0, AGILITY = 0, INTELLECT = phys and 0.42 or 1,
         SPIRIT = phys and 0.3 or 0.35,
         STAMINA = 0.1,
+        ARMOR = 0.004,
         ATTACK_POWER = phys and 0.48 or 0.05,
+        RANGED_ATTACK_POWER = 0,
         SPELL_POWER = phys and 0.4 or 1,
         CRIT_RATING = phys and 0.75 or 0.7,
         HIT_RATING = 1.1, HASTE_RATING = 0.5,
-        WEAPON_DPS = 0,
+        WEAPON_DPS = 0, RANGED_DPS = 0,
         MANA_REGENERATION = 0,
+        HEALTH_REGEN = 0, BLOCK_VALUE = 0, SPELL_PENETRATION = 0,
+        SPELL_DAMAGE_DONE = 0, SPELL_HEALING_DONE = 0,
+        ARCANE_DAMAGE_DONE = 0, FIRE_DAMAGE_DONE = 0, FROST_DAMAGE_DONE = 0,
+        NATURE_DAMAGE_DONE = 0, SHADOW_DAMAGE_DONE = 0, HOLY_DAMAGE_DONE = 0,
+        ARCANE_RESISTANCE = 0, FIRE_RESISTANCE = 0, FROST_RESISTANCE = 0,
+        NATURE_RESISTANCE = 0, SHADOW_RESISTANCE = 0,
     }
     if phys then
         w.AGILITY = (PRIM_STAT[cls] == "AGILITY") and 1 or 0.66
         w.STRENGTH = (PRIM_STAT[cls] == "STRENGTH") and 1 or 0.05
         w[PRIM_STAT[cls] or "STRENGTH"] = 1
-        w.WEAPON_DPS = (cls == "hunter") and 2.5 or 5.0
+        w.RANGED_ATTACK_POWER = w.ATTACK_POWER
+        w.SPELL_DAMAGE_DONE = 0.08
+        w.ARCANE_DAMAGE_DONE = 0.06
+        w.FIRE_DAMAGE_DONE = 0.06
+        w.FROST_DAMAGE_DONE = 0.06
+        w.NATURE_DAMAGE_DONE = 0.06
+        w.SHADOW_DAMAGE_DONE = 0.06
+        w.HEALTH_REGEN = 0.08
+        if cls == "hunter" then
+            w.RANGED_DPS = 2.5
+        else
+            w.WEAPON_DPS = 5.0
+        end
     elseif heal then
         w.INTELLECT = 0.5
         w.SPIRIT = 0.5
         w.MANA_REGENERATION = 1.5
         w.CRIT_RATING = 0.3
         w.HASTE_RATING = 0.3
+        w.SPELL_HEALING_DONE = 0.95
+        w.SPELL_DAMAGE_DONE = 0.05
+        w.ARCANE_DAMAGE_DONE = 0.05
+        w.FIRE_DAMAGE_DONE = 0.05
+        w.FROST_DAMAGE_DONE = 0.05
+        w.NATURE_DAMAGE_DONE = 0.05
+        w.SHADOW_DAMAGE_DONE = 0.05
+        w.HEALTH_REGEN = 0.04
     else
         w.SPIRIT = 0.35
         w.CRIT_RATING = 0.7
         w.HASTE_RATING = 0.55
+        w.SPELL_DAMAGE_DONE = 0.85
+        w.SPELL_HEALING_DONE = 0.05
+        w.ARCANE_DAMAGE_DONE = 0.7
+        w.FIRE_DAMAGE_DONE = 0.7
+        w.FROST_DAMAGE_DONE = 0.7
+        w.NATURE_DAMAGE_DONE = 0.7
+        w.SHADOW_DAMAGE_DONE = 0.7
+        w.HEALTH_REGEN = 0.03
     end
     if specId == "pvp" then
         w.STAMINA = 0.5
@@ -292,6 +328,9 @@ local function SpecWeights(cls, specId)
         w.DODGE_RATING = 0.7
         w.PARRY_RATING = 0.6
         w.BLOCK_RATING = 0.55
+        w.BLOCK_VALUE = 0.35
+        w.ARMOR = 0.008
+        w.HEALTH_REGEN = 0.15
         w.CRIT_RATING = 0.3
         w.HIT_RATING = 0.7
         w.HASTE_RATING = 0.3
@@ -324,11 +363,19 @@ local function SpecWeights(cls, specId)
         w.INTELLECT = 0
         w.SPIRIT = 0
         w.SPELL_POWER = 0
+        w.SPELL_DAMAGE_DONE = 0
+        w.SPELL_HEALING_DONE = 0
+        w.ARCANE_DAMAGE_DONE = 0
+        w.FIRE_DAMAGE_DONE = 0
+        w.FROST_DAMAGE_DONE = 0
+        w.NATURE_DAMAGE_DONE = 0
+        w.SHADOW_DAMAGE_DONE = 0
     end
     return w
 end
 
 local statCache, scoreCache, scoreKey = {}, {}, nil
+local statSeen = {}
 local askedItem = {}
 local dpsCache, dpsMiss, dpsGen = {}, {}, 0
 
@@ -340,13 +387,23 @@ end
 
 local W_KEYS = {
     { "STRENGTH", L["力量"] }, { "AGILITY", L["敏捷"] }, { "INTELLECT", L["智力"] },
-    { "SPIRIT", L["精神"] }, { "MANA_REGENERATION", L["5秒回蓝"] }, { "STAMINA", L["耐力"] },
-    { "ATTACK_POWER", L["攻击强度"] }, { "SPELL_POWER", L["法术强度"] },
+    { "SPIRIT", L["精神"] }, { "STAMINA", L["耐力"] },
+    { "MANA_REGENERATION", L["5秒回蓝"] }, { "HEALTH_REGEN", L["5秒回血"] },
+    { "ATTACK_POWER", L["攻击强度"] }, { "RANGED_ATTACK_POWER", L["远程攻强"] },
+    { "WEAPON_DPS", L["武器伤害"] }, { "RANGED_DPS", L["远程武器伤害"] },
+    { "SPELL_POWER", L["法术强度"] }, { "SPELL_DAMAGE_DONE", L["法术伤害"] },
+    { "SPELL_HEALING_DONE", L["治疗效果"] }, { "SPELL_PENETRATION", L["法术穿透"] },
+    { "ARCANE_DAMAGE_DONE", L["奥术伤害"] }, { "FIRE_DAMAGE_DONE", L["火焰伤害"] },
+    { "FROST_DAMAGE_DONE", L["冰霜伤害"] }, { "NATURE_DAMAGE_DONE", L["自然伤害"] },
+    { "SHADOW_DAMAGE_DONE", L["暗影伤害"] }, { "HOLY_DAMAGE_DONE", L["神圣伤害"] },
+    { "ARCANE_RESISTANCE", L["奥术抗性"] }, { "FIRE_RESISTANCE", L["火焰抗性"] },
+    { "FROST_RESISTANCE", L["冰霜抗性"] }, { "NATURE_RESISTANCE", L["自然抗性"] },
+    { "SHADOW_RESISTANCE", L["暗影抗性"] },
     { "CRIT_RATING", L["暴击等级"] }, { "HIT_RATING", L["命中等级"] },
-    { "HASTE_RATING", L["急速等级"] }, { "WEAPON_DPS", L["武器伤害"] },
-    { "DEFENSE_SKILL_RATING", L["防御技能"] },
+    { "HASTE_RATING", L["急速等级"] }, { "DEFENSE_SKILL_RATING", L["防御技能"] },
     { "DODGE_RATING", L["躲闪等级"] }, { "PARRY_RATING", L["招架等级"] },
-    { "BLOCK_RATING", L["格挡等级"] }, { "RESILIENCE_RATING", L["韧性"] },
+    { "BLOCK_RATING", L["格挡等级"] }, { "BLOCK_VALUE", L["格挡值"] },
+    { "ARMOR", L["护甲"] }, { "RESILIENCE_RATING", L["韧性"] },
 }
 local W_SCHEME_MAX = 6
 
@@ -486,16 +543,22 @@ local function ItemStatsOf(id)
     if type(fn) == "function" and type(link) == "string" and link ~= "" then
         local ok, st = pcall(fn, link)
         if ok and type(st) == "table" then
-            local hit = false
-            for sk in pairs(st) do
-                if StatBucket(sk) then hit = true break end
-            end
-            if hit then
-                local out = {}
-                for sk, sv in pairs(st) do
-                    local b = StatBucket(sk)
-                    if b and type(sv) == "number" then out[b] = sv end
+            statSeen[id] = true
+            local out = {}
+            local av = st.RESISTANCE0_NAME
+            if type(av) == "number" and av > 0 then out.ARMOR = av end
+            for sk, sv in pairs(st) do
+                local b = StatBucket(sk)
+                if b and type(sv) == "number" then out[b] = sv end
+                if type(sv) == "number" and sv > 0 then
+                    if sk == "RESISTANCE2_NAME" then out.FIRE_RESISTANCE = sv
+                    elseif sk == "RESISTANCE3_NAME" then out.NATURE_RESISTANCE = sv
+                    elseif sk == "RESISTANCE4_NAME" then out.FROST_RESISTANCE = sv
+                    elseif sk == "RESISTANCE5_NAME" then out.SHADOW_RESISTANCE = sv
+                    elseif sk == "RESISTANCE6_NAME" then out.ARCANE_RESISTANCE = sv end
                 end
+            end
+            if next(out) then
                 statCache[id] = out
                 return out
             end
@@ -517,6 +580,10 @@ local function ItemScore(id, w)
     local st = ItemStatsOf(id)
     local sum = 0
     if type(st) == "table" then
+        local av = st.ARMOR
+        if type(av) == "number" and av > 0 and type(w.ARMOR) == "number" then
+            sum = sum + av * w.ARMOR
+        end
         for bkt, sv in pairs(st) do
             local wv = w[bkt]
             if type(wv) == "number" and type(sv) == "number" and sv > 0 then sum = sum + sv * wv end
@@ -527,7 +594,17 @@ local function ItemScore(id, w)
     if type(dps) ~= "number" and type(st) == "table" and type(st.DAMAGE_PER_SECOND) == "number" then
         dps = st.DAMAGE_PER_SECOND
     end
-    if type(dps) == "number" then sum = sum + dps * (w.WEAPON_DPS or 0) end
+    if type(dps) == "number" then
+        local dw = w.WEAPON_DPS or 0
+        local fn = GetItemInfoInstant or (C_Item and C_Item.GetItemInfoInstant)
+        if type(fn) == "function" then
+            local ok, _, _, _, eq = pcall(fn, id)
+            if ok and (eq == "INVTYPE_RANGED" or eq == "INVTYPE_RANGEDRIGHT" or eq == "INVTYPE_THROWN") then
+                dw = w.RANGED_DPS or 0
+            end
+        end
+        if dw > 0 then sum = sum + dps * dw end
+    end
     if sum <= 0 then return nil end
     scoreCache[id] = sum
     return sum
@@ -589,7 +666,11 @@ end
 
 local function EffWeights()
     local sch = BG.wActive and BG.wSchemes and BG.wSchemes[BG.wActive] or nil
-    if sch and type(sch.w) == "table" then return sch.w end
+    if sch and type(sch.w) == "table" then
+        local w = SpecWeights(BG.cls, BG.spec)
+        for k, v in pairs(sch.w) do w[k] = v end
+        return w
+    end
     return SpecWeights(BG.cls, BG.spec)
 end
 
@@ -840,8 +921,8 @@ local function CatSrcOf(id)
     local gm = ns.GearModule
     local so = gm and gm.srcOf and gm.srcOf[id]
     if so and so.inst then return nil, so end
-    local gd = ns.EnsureGearData and ns.EnsureGearData()
-    local src = gd and gd.src and gd.src[id]
+    local gs = ns.EnsureGearSrc and ns.EnsureGearSrc()
+    local src = gs and gs[id]
     if type(src) == "string" and src ~= "" then return src end
     return ""
 end
@@ -3316,6 +3397,7 @@ local function BuildBrowser(parent)
     end)
     stb:SetScript("OnClick", function() BG.ToggleSettingPop() end)
     BG.setBtn = stb
+    if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(stb, true) end
 
     local scroll = CreateFrame("ScrollFrame", nil, parent)
     scroll:EnableMouseWheel(true)
@@ -3739,21 +3821,33 @@ local function BuildBrowser(parent)
         prev = bt
     end
 
+    local wscroll = CreateFrame("ScrollFrame", nil, spop)
+    wscroll:EnableMouseWheel(true)
+    local wchild = CreateFrame("Frame", nil, wscroll)
+    wchild:SetSize(204, #W_KEYS * 16 + 12)
+    wscroll:SetScrollChild(wchild)
+    wscroll:SetPoint("TOPLEFT", spop, "TOPLEFT", 8, -66)
+    wscroll:SetPoint("BOTTOMRIGHT", spop, "BOTTOMRIGHT", -10, 34)
+    wscroll:SetScript("OnMouseWheel", function(_, delta)
+        if DG.WheelScroll then DG.WheelScroll(wscroll, wchild, delta) end
+    end)
+    BG.wBar = BuildVBar(wscroll, wchild)
+
     BG.wRows = {}
     for i, wk in ipairs(W_KEYS) do
-        local y = -72 - (i - 1) * 22
-        local lab = MakeFS(spop, 14, C_TEXT, "LEFT")
-        lab:SetPoint("TOPLEFT", spop, "TOPLEFT", 8, y)
-        lab:SetWidth(64)
+        local y = -6 - (i - 1) * 16
+        local lab = MakeFS(wchild, 14, C_TEXT, "LEFT")
+        lab:SetPoint("TOPLEFT", wchild, "TOPLEFT", 0, y)
+        lab:SetWidth(140)
         lab:SetWordWrap(false)
         lab:SetText(wk[2])
-        local eb = ns.CreateEditBox and ns.CreateEditBox(spop, 50) or nil
+        local eb = ns.CreateEditBox and ns.CreateEditBox(wchild, 50) or nil
         if eb then
-            eb:SetSize(50, 20)
-            eb:SetPoint("TOPRIGHT", spop, "TOPRIGHT", -8, y + 1)
+            eb:SetSize(50, 14)
+            eb:SetPoint("TOPRIGHT", wchild, "TOPRIGHT", -5, y + 1)
         end
-        local ro = MakeFS(spop, 14, C_DIM, "RIGHT")
-        ro:SetPoint("TOPRIGHT", spop, "TOPRIGHT", -8, y + 3)
+        local ro = MakeFS(wchild, 14, C_DIM, "RIGHT")
+        ro:SetPoint("TOPRIGHT", wchild, "TOPRIGHT", -5, y + 2)
         ro:SetWordWrap(false)
         local row = { key = wk[1], lab = lab, eb = eb, ro = ro }
         local function WTone(txt)
@@ -3761,7 +3855,7 @@ local function BuildBrowser(parent)
             if not sch then return end
             local v = tonumber(string.match(txt or "", "^%s*(%d+%.?%d*)%s*$"))
             if v then
-                if v < 0 then v = 0 elseif v > 2 then v = 2 end
+                if v < 0 then v = 0 elseif v > 20 then v = 20 end
                 sch.w[row.key] = v
                 BumpWeights()
                 SaveWeightPrefs()
@@ -3787,7 +3881,7 @@ local function BuildBrowser(parent)
     end
 
     BG.wHint = MakeFS(spop, 14, C_DIM, "LEFT")
-    BG.wHint:SetPoint("TOPLEFT", spop, "TOPLEFT", 8, -458)
+    BG.wHint:SetPoint("BOTTOMLEFT", spop, "BOTTOMLEFT", 8, 12)
     BG.wHint:SetWordWrap(false)
     BG.wHint:SetText(L["默认只读，添加方案后可编辑"])
 end
@@ -4108,19 +4202,25 @@ local function ScoreVsBis(id)
     local baseId = EquippedInSlot(slot, id)
     if type(baseId) ~= "number" or baseId == id then return nil end
     local w = EffWeights()
-    local bs = ItemScore(baseId, w)
     local my = ItemScore(id, w)
     if not my or my <= 0 then
         local DG = ns.DungeonModule
         if DG and DG.RequestItem then pcall(DG.RequestItem, id) end
         return nil
     end
-    if not bs or bs <= 0 then
+    local bs = ItemScore(baseId, w)
+    if not (statSeen[baseId] or dpsCache[baseId]) then
         local DG = ns.DungeonModule
         if DG and DG.RequestItem then pcall(DG.RequestItem, baseId) end
         return nil
     end
-    return (my / bs - 1) * 100
+    local delta = my - (type(bs) == "number" and bs or 0)
+    local pct = nil
+    if type(bs) == "number" and bs > 0 then
+        local p = delta / bs * 100
+        pct = p < 0 and math.ceil(p - 0.5) or math.floor(p + 0.5)
+    end
+    return delta, pct
 end
 
 BG.ScoreVsBis = ScoreVsBis

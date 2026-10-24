@@ -29,6 +29,7 @@ local BT = BackdropTemplateMixin and "BackdropTemplate" or nil
 
 local C_LINK = { 0.55, 0.78, 1.0 }
 local C_ACCENT = { 0.27, 0.75, 0.45 }
+local C_SEL_NAME = { 0.62, 0.95, 0.72 }
 
 local RIDING_RANK = { [75] = L["初级骑术"], [150] = L["中级骑术"] }
 
@@ -467,7 +468,11 @@ local function PaintRow(r, rec)
             r.src:SetText(GROUP_TXT[g] or g)
             r.src:SetTextColor(Unpack(GROUP_COL[g] or C_GREY))
         end
-        SetOutline(r, CG.sel == rec, Unpack(C_ACCENT))
+        local selOn = (CG.sel == rec)
+        if not (ns.hui and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, selOn)) then
+            SetOutline(r, selOn, Unpack(C_ACCENT))
+        end
+        r.name:SetTextColor(Unpack(selOn and C_SEL_NAME or C_TEXT))
     else
         r.__rec = nil
         r.__pet = nil
@@ -798,6 +803,7 @@ end
 
 local function Paint()
     if not CG.built then return end
+    if CG.PaintFilters then CG.PaintFilters() end
     local list = VisibleList()
 
     local selOK = false
@@ -953,8 +959,8 @@ local function BuildListPanel(page)
     CG.subBtns = {}
     local sx = PAD
     for _, t in ipairs(SUB_TABS) do
-        local bt = NewButton(p, t.label, 52, 20, 12)
-        bt:SetPoint("TOPLEFT", p, "TOPLEFT", sx, -8)
+        local bt = NewButton(p, t.label, 52, 22, 14)
+        bt:SetPoint("TOPLEFT", p, "TOPLEFT", sx, -7)
         bt.lbl = bt:GetFontString()
         SetButtonSelected(bt, false)
         bt:SetScript("OnClick", function()
@@ -970,7 +976,7 @@ local function BuildListPanel(page)
         end)
         SetButtonSelected(bt, t.id == "mount")
         CG.subBtns[t.id] = bt
-        sx = sx + 60
+        sx = sx + 64
     end
 
     local sb = CreateFrame("Frame", nil, p, "BackdropTemplate")
@@ -1006,7 +1012,7 @@ local function BuildListPanel(page)
 
     CG.filterBtns = {}
     for i = 1, #FILTERS do
-        local bt = NewButton(p, "", 45, 22, 12)
+        local bt = NewButton(p, "", 45, 22, 14)
         bt:SetPoint("TOPLEFT", p, "TOPLEFT", PAD + (i - 1) * 53, -66)
         bt.lbl = bt:GetFontString()
         SetButtonSelected(bt, false)
@@ -1024,8 +1030,18 @@ local function BuildListPanel(page)
         for i, bt in ipairs(CG.filterBtns) do
             local f = list[i]
             if f then
+                local sel = (f.id == (CG.filter or "all"))
                 bt.__id = f.id
                 bt:SetText(f.label)
+                SetButtonSelected(bt, sel)
+                local fs = bt:GetFontString()
+                if fs then
+                    if sel then
+                        fs:SetTextColor(1, 1, 1, 1)
+                    else
+                        fs:SetTextColor(Unpack(C_GREY))
+                    end
+                end
                 bt:Show()
             else
                 bt.__id = nil
@@ -1155,7 +1171,8 @@ local function BuildListPanel(page)
         r:SetHeight(ROW_H)
         r:SetWidth(LIST_W - 2 * PAD)
         if ns.hui and ns.hui.BuildRoundedBG then
-            ns.hui.BuildRoundedBG(r, 6, ns.hui.layer.L2, "both", true, 1)
+            local fill, border = ns.hui.BuildRoundedBG(r, 6, ns.hui.layer.L2, "both", true, 1)
+            r.__huiCard = { fill = fill, border = border }
         else
             Cardify(r)
         end

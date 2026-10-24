@@ -342,6 +342,7 @@ local FLOOR_NAMES = {
     uldaman = {
         { "Hall of the Keepers", "守护者大厅", "守衛者大廳" },
         { "Khaz'Goroth's Seat", "卡兹格罗斯之座", "卡茲格羅斯的王座" },
+        { "Outside Uldaman", "奥达曼副本外地图", "奧達曼副本外地圖" },
     },
     maraudon = {
         { "Caverns of Maraudon", "玛拉顿的洞穴", "瑪拉頓的洞穴" },
@@ -356,8 +357,8 @@ local FLOOR_NAMES = {
         { "Capital Gardens", "中心花园", "中心花園" },
         { "Court of the Highborne", "上层精灵庭院", "精靈貴族庭院" },
         { "Prison of Immol'Thar", "伊莫塔尔的牢笼", "伊莫塔爾的牢籠" },
-        { "Warpwood Quarter", "扭木广场", "扭木廣場" },
-        { "The Shrine of Eldretharr", "艾德雷斯神殿", "艾德雷斯神殿" },
+        { "The Hidden Path", "密径", "密徑" },
+        { "Warpwood Quarter", "纽木广场", "紐木廣場" },
     },
     lower_blackrock_spire = {
         { "Tazz'Alor", "塔萨洛尔", "塔薩洛爾" },
@@ -375,7 +376,7 @@ local FLOOR_NAMES = {
     },
     stratholme = {
         { "Crusader's Square", "十字军广场", "十字軍廣場" },
-        { "The Gauntlet", "街巷", "街巷" },
+        { "Slaughter Square", "屠杀广场", "屠殺廣場" },
     },
 }
 
@@ -412,10 +413,34 @@ function M.CustomFloorFor(id, idx)
     return path, 1
 end
 
+local SHOW_FLOORS = {
+    dire_maul_north = { 1 },
+    dire_maul_east  = { 5, 6 },
+    dire_maul_west  = { 2, 3, 4 },
+    stratholme_main = { 1 },
+    stratholme_service = { 2 },
+}
+
+local LAYER_PICK = {}
+
 function M.LayersFor(id)
     local row = id and ART[id]
     if not row then return nil end
-    return row[2]
+    local pick = id and SHOW_FLOORS[id]
+    if type(pick) ~= "table" then return row[2] end
+    local c = LAYER_PICK[id]
+    if c then return c end
+    local out, n = {}, 0
+    for i = 1, #pick do
+        local lay = row[2][pick[i]]
+        if lay then
+            n = n + 1
+            out[n] = lay
+        end
+    end
+    if n == 0 then return row[2] end
+    LAYER_PICK[id] = out
+    return out
 end
 
 function M.PathFor(id)
@@ -1272,7 +1297,7 @@ function M.SyncBar(layers, cur)
     local frame = M.frame
     if not frame then return end
     local n = layers and #layers or 0
-    local multi = (n > 1)
+    local multi = (n > 1) or (n == 1 and SHOW_FLOORS[M.curId] ~= nil)
     frame.bar:SetShown(multi)
     if not multi then
         for i = 1, M.MAX_LAYERS do frame.btns[i]:Hide() end
@@ -1284,7 +1309,8 @@ function M.SyncBar(layers, cur)
     local ws = {}
     for i = 1, n do
         local bt = frame.btns[i]
-        bt:SetText(FloorName(id, i) or fmt:format(i))
+        local fn = SHOW_FLOORS[id] and M.FloorNumAt(id, i) or i
+        bt:SetText(FloorName(id, fn) or fmt:format(fn))
         local fs = bt:GetFontString()
         local tw = fs and fs:GetStringWidth() or 0
         ws[i] = math.max(M.LAYER_W, math.ceil(tw) + 24)
@@ -1383,7 +1409,13 @@ M.routeHidden = {}
 
 M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns = true, hall_of_thanes = true, ruins_of_lordaeron = true, the_deadmines = true,
                shadowfang_keep = true, the_stockade = true,
-               gnomeregan = true, city_of_dalaran = true, excavation_wetlands = true }
+               gnomeregan = true, city_of_dalaran = true, excavation_wetlands = true,
+               razorfen_kraul = true, razorfen_downs = true, uldaman = true,
+               sm_graveyard = true, sm_library = true, sm_armory = true, sm_cathedral = true,
+               blackrock_depths = true, lower_blackrock_spire = true, upper_blackrock_spire = true,
+               maraudon = true, zul_farrak = true, sunken_temple = true, scholomance = true,
+               stratholme_main = true, stratholme_service = true,
+               dire_maul_east = true, dire_maul_north = true, dire_maul_west = true }
 
 function M.RouteOn(id)
     return id ~= nil and M.ROUTE_ON[id] == true

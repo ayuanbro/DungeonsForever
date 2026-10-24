@@ -296,65 +296,10 @@ do
                     C_Timer.After(0.3, function()
                         local J = ns.IdleJobs
                         if not J then return end
-                        local probe = DungeonsForeverDB and DungeonsForeverDB.dfMemProbe
-                        local gear = ns.GearModule
-                        local ensure = ns.EnsureGearData
                         local tabs = (type(ns.QuickCfg) == "function") and ns.QuickCfg().tabs or {}
                         local wantProf = tabs["Professions"] ~= false
                         local wantBis = tabs["Bis"] ~= false
                         local wantGear = tabs["Gear"] ~= false
-                        if type(ensure) == "function" and (wantGear or wantBis) then
-                J.Add(function()
-                    if gear and gear.built then return true end
-                    ensure()
-                    if probe then ns.MemMark("gearData") end
-                    if gear and type(gear.BuildCatalog) == "function"
-                       and not gear.built and not gear.catalog then
-                        pcall(gear.BuildCatalog, gear)
-                    end
-                    if probe then ns.MemMark("catalog") end
-                    if gear and type(gear.StartTexWarm) == "function" then
-                        pcall(gear.StartTexWarm)
-                    end
-                    if gear and type(gear.StartIconWarm) == "function" then
-                        pcall(gear.StartIconWarm)
-                    end
-                    if gear and type(gear.StartGlyphWarm) == "function" then
-                        pcall(gear.StartGlyphWarm)
-                    end
-                    if gear and type(gear.StartDataWarm) == "function" then
-                        pcall(gear.StartDataWarm)
-                    end
-                    return true
-                end)
-                if wantGear then J.Add(function()
-                    if gear and gear.built then return true end
-                    local mf = _G.DungeonsForever_MainFrame
-                    if mf and mf.IsShown and mf:IsShown() then return false end
-                    if gear and type(gear.Build) == "function" then
-                        local UD = ns.DungeonUI
-                        local gp = UD and UD.gearPage or nil
-                        if gp and gp.SetParent then
-                            pcall(gear.Build, gear, gp)
-                            gear.__lastRefreshT = nil
-                            if type(gear.Refresh) == "function" then
-                                pcall(gear.Refresh, gear, true)
-                            end
-                            local pool = gear.rowPool
-                            if pool then
-                                for i = 1, #pool do
-                                    local r = pool[i]
-                                    if r and r.Hide then r:Hide() end
-                                end
-                            end
-                        end
-                    end
-                    if DungeonsForeverDB and DungeonsForeverDB.dfMemProbe then
-                        ns.MemMark("gearSkel")
-                    end
-                    return true
-                end) end
-                end
                 local profEnsure = ns.EnsureProfRecipes
                 local profKeys = nil
                 if not wantProf and wantBis then

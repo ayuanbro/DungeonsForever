@@ -576,6 +576,11 @@ do
         return Mul(mix, 1.17), Mul(mix, 0.86)
     end
 
+    local function GradRowSel()
+        local mix = Blend(ns.hui.layer.L2, ns.hui.layer.ACCENT, 0.55)
+        return Mul(mix, 1.35), Mul(mix, 0.55)
+    end
+
     local function ButtonBase(bt)
         return ns.hui.layer[bt.__huiBaseLv or "L2"] or ns.hui.layer.L2
     end
@@ -611,9 +616,10 @@ do
             for _, r in ipairs({ bt:GetRegions() }) do
                 if not r.__huiPiece and not r.__huiCap and not r.__huiBorderStrip then
                     local n = r:GetNumPoints() or 0
-                    if n > 0 and n < 2 then
+                    if n > 0 and n < 2 and (r.GetObjectType and r:GetObjectType() ~= "FontString") then
                         local p, rel, rp, x, y = r:GetPoint(1)
                         snap[r] = { p, rel, rp, x, y }
+                        r:ClearAllPoints()
                         r:SetPoint(p, rel, rp, x, y + dy)
                     end
                 end
@@ -622,6 +628,7 @@ do
             local snap = bt.__huiPressShift
             if not snap then return end
             for r, q in pairs(snap) do
+                r:ClearAllPoints()
                 r:SetPoint(q[1], q[2], q[3], q[4], q[5])
             end
             bt.__huiPressShift = nil
@@ -629,7 +636,7 @@ do
     end
 
     local function PaintState(bt)
-        if not bt or not bt.__huiAction or not bt.__huiCap then return end
+        if not bt or not bt.__huiAction or not bt.__huiCap or bt.__huiFrameless then return end
         if not bt:IsEnabled() then
             GradCapsule(bt.__huiCap, GradNorm, ButtonBase(bt))
             SetRing(bt, 1.00)
@@ -1150,6 +1157,29 @@ do
     ns.hui.BuildCardShadow = BuildCardShadow
     ns.hui.BuildCapsule = BuildCapsule
     ns.hui.GlassPaint = GlassPaint
+
+    function ns.hui.PaintRowSelect(f, on)
+        if not f or not f.__huiCard then return false end
+        local cap = f.__huiRowSelCap
+        if not cap then
+            cap = BuildCapsule(f, 6, ns.hui.layer.L2, 1, 1, GradRowSel)
+            f.__huiRowSelCap = cap
+            GradCapsule(cap, GradRowSel)
+            for _, t in ipairs(cap) do t:Hide() end
+        end
+        on = on and true or false
+        for _, t in ipairs(cap) do t:SetShown(on) end
+        local bp = f.__huiCard
+        if bp.border then
+            local c = on and ns.hui.ACCENT or C_CARD_BORDER
+            local a = on and 0.95 or (C_CARD_BORDER[4] or 1)
+            for _, tex in ipairs(bp.border) do
+                tex:SetVertexColor(c[1], c[2], c[3])
+                tex:SetAlpha(a)
+            end
+        end
+        return true
+    end
 
     function ns.hui.GetMainAlpha()
         local v = tonumber(ns.options and ns.options.huiAlpha)
@@ -2205,10 +2235,12 @@ do
         dd:HookScript("OnLeave", function() Paint(NORMAL) end)
     end
 
-    function ns.hui.SkinButton(bt)
+    function ns.hui.SkinButton(bt, opts)
         if not bt or bt.__huiAction or not bt.SetBackdropBorderColor then return end
         if ns.huiTheme ~= "hui" then return end
         bt.__huiAction = true
+        local noFrame = (opts == true) or (type(opts) == "table" and opts.noFrame == true) or bt.__huiNoFrame == true
+        if noFrame then bt.__huiNoFrame = true end
         local C_BORDER = C_CTRL_BORDER
         local C_BG = {0x16 / 255, 0x1A / 255, 0x22 / 255}
         bt:SetBackdrop({
@@ -2234,6 +2266,7 @@ do
 
         local borderFrame
         local function BuildBorderFrame()
+            if noFrame then return end
             ns.hui.__skinBuilds = (ns.hui.__skinBuilds or 0) + 1
             if borderFrame then borderFrame:Hide(); borderFrame:SetParent(nil) end
             borderFrame = CreateFrame("Frame", nil, bt)
@@ -2248,10 +2281,10 @@ do
             for _, tex in ipairs(bt.__huiVeil) do tex:Hide() end
         end
         local function BuildCapFrame()
-            if bt.__huiCap then return end
+            if noFrame or bt.__huiCap then return end
             local w, h = bt:GetWidth() or 0, bt:GetHeight() or 0
             if w > 0 and h > 0 then
-                bt.__huiCap = BuildCapsule(bt, 6, ButtonBase(bt), 0, -8, GradNorm)
+                bt.__huiCap = BuildCapsule(bt, 6, ButtonBase(bt), 0, 4, GradNorm)
                 if bt.__huiCap then
                     bt.__huiCap.__huiRepaint = function() PaintState(bt) end
                 end
@@ -2259,18 +2292,19 @@ do
         end
         local function TryBuild()
             ns.hui.__tryBuilds = (ns.hui.__tryBuilds or 0) + 1
-            if borderFrame then return end
+            if noFrame then return end
+            if borderFrame and bt.__huiCap then return end
             local w, h = bt:GetWidth() or 0, bt:GetHeight() or 0
             if w > 0 and h > 0 then
-                BuildBorderFrame()
+                if not borderFrame then BuildBorderFrame() end
                 BuildCapFrame()
                 PaintState(bt)
             end
         end
         TryBuild()
-        if not borderFrame then
+        if not noFrame and not (borderFrame and bt.__huiCap) then
             local function tryBuildOnce()
-                if not borderFrame then TryBuild() end
+                if not (borderFrame and bt.__huiCap) then TryBuild() end
             end
             bt:HookScript("OnSizeChanged", tryBuildOnce)
             hooksecurefunc(bt, "SetSize", tryBuildOnce)
@@ -2358,6 +2392,25 @@ do
 
     ns.hui.GradNorm = GradNorm
 
+    function ns.hui.SetButtonFrameless(bt, on)
+        if not bt or not bt.__huiAction then return end
+        local onv = on and true or false
+        if bt.__huiFrameless == onv then return end
+        bt.__huiFrameless = onv
+        bt.__huiNoFrame = onv
+        local function apply(pieces, show)
+            if not pieces then return end
+            for i = 1, #pieces do
+                local tex = pieces[i]
+                if tex and tex.SetShown then tex:SetShown(show) end
+            end
+        end
+        apply(bt.__ring, not onv)
+        apply(bt.__ringCover, not onv)
+        apply(bt.__huiCap, not onv)
+        if not onv then PaintState(bt) end
+    end
+
     function ns.hui.SetButtonSelected(bt, on, kind, idleText)
         if not bt then return end
         local onv = on and true or false
@@ -2388,7 +2441,7 @@ do
         bt.__huiDanger = true
         local texs = BuildCapsule(bt, 6, C_RED)
         for _, tex in ipairs(texs) do
-            tex:SetDrawLayer("BACKGROUND", -7)
+            tex:SetDrawLayer("BACKGROUND", 5)
         end
         local capsuleK = 1
         local function ApplyCapsule(base)
@@ -2414,7 +2467,7 @@ do
         bt.__huiAccent = true
         local texs = BuildCapsule(bt, 6, ns.hui.ACCENT)
         for _, tex in ipairs(texs) do
-            tex:SetDrawLayer("BACKGROUND", -8)
+            tex:SetDrawLayer("BACKGROUND", 5)
         end
         local capsuleK = 1
         local function ApplyCapsule(base)

@@ -83,61 +83,66 @@ local function BuildCraft()
     if craftDone then return craftIdx end
     craftDone = true
     if not ns.IsForever then return nil end
-    local keys = ns.ProfRecipeKeys
     local pro = ns.ProfData and ns.ProfData.pro
-    if type(keys) ~= "table" or type(pro) ~= "table" then return nil end
-    local out = {}
-    for _, slug in ipairs(keys) do
-        local pd = pro[slug]
-        local nm = type(pd) == "table" and pd.name or nil
-        local v = type(ns.ProfRecipes) == "table" and ns.ProfRecipes[slug] or nil
-        if nm and type(v) == "table" and type(v.rows) == "table" then
-            for _, row in ipairs(v.rows) do
-                local iid = type(row) == "table" and row[2] or nil
-                if type(iid) == "number" and not out[iid] then
-                    out[iid] = nm
-                end
-            end
-        end
-    end
-    craftIdx = out
-    return out
+    if type(pro) ~= "table" or type(ns.ProfCraftSlugOf) ~= "function" then return nil end
+    craftIdx = setmetatable({}, {
+        __index = function(t, id)
+            local slug = ns.ProfCraftSlugOf(id)
+            if not slug then return nil end
+            local pd = pro[slug]
+            local nm = type(pd) == "table" and pd.name or nil
+            if not nm then return nil end
+            rawset(t, id, nm)
+            return nm
+        end,
+    })
+    return craftIdx
 end
 
-local questIdx
-local function BuildQuest()
-    if questIdx then return questIdx end
-    questIdx = {}
-    local g = ns.GearSrcQ
-    if type(g) == "table" then
-        for item, qid in pairs(g) do
-            if type(item) == "number" and type(qid) == "number" then
-                local e = questIdx[item]
-                if not e then e = {} questIdx[item] = e end
-                e[qid] = true
+local function QuestQids(id)
+    local ids = {}
+    local gq = ns.GearSrcQ
+    if type(gq) == "table" and type(gq[id]) == "number" then
+        ids[#ids + 1] = gq[id]
+    end
+    local v = type(ns.GearRewardQ) == "table" and ns.GearRewardQ[id] or nil
+    if type(v) == "number" then
+        ids[#ids + 1] = v
+    elseif type(v) == "table" then
+        for _, qid in ipairs(v) do
+            if type(qid) == "number" then ids[#ids + 1] = qid end
+        end
+    end
+    return ids
+end
+
+local function QuestOf(id)
+    local ids = QuestQids(id)
+    if #ids > 1 then
+        local seen = {}
+        local out = {}
+        for _, qid in ipairs(ids) do
+            if not seen[qid] then
+                seen[qid] = true
+                out[#out + 1] = qid
+            end
+        end
+        ids = out
+    end
+    if #ids == 0 then return nil end
+    table.sort(ids)
+    local DG = ns.DungeonModule
+    local nm
+    for _, qid in ipairs(ids) do
+        if DG and DG.QuestName then
+            local t, ok = DG.QuestName(qid)
+            if ok and type(t) == "string" and t ~= "" then
+                nm = t
+                break
             end
         end
     end
-    local dq = ns.DungeonQuests or {}
-    for _, rows in pairs(dq) do
-        if type(rows) == "table" then
-            for _, q in ipairs(rows) do
-                if type(q) == "table" then
-                    local qid = q[1]
-                    local rewards = q[10]
-                    for _, it in ipairs(rewards or {}) do
-                        local iid = type(it) == "table" and it[1] or it
-                        if type(iid) == "number" and type(qid) == "number" then
-                            local e = questIdx[iid]
-                            if not e then e = {} questIdx[iid] = e end
-                            e[qid] = true
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return questIdx
+    return nm, #ids
 end
 
 local bisVols
@@ -220,31 +225,13 @@ local function BisHit(id)
     return nil
 end
 
-local function QuestOf(id)
-    local e = BuildQuest()[id]
-    if not e then return nil end
-    local ids = {}
-    for qid in pairs(e) do ids[#ids + 1] = qid end
-    if #ids == 0 then return nil end
-    table.sort(ids)
-    local DG = ns.DungeonModule
-    local nm
-    for _, qid in ipairs(ids) do
-        if DG and DG.QuestName then
-            local t, ok = DG.QuestName(qid)
-            if ok and type(t) == "string" and t ~= "" then
-                nm = t
-                break
-            end
-        end
-    end
-    return nm, #ids
-end
-
-local function ScoreLine(pct)
-    if type(pct) ~= "number" or (pct <= 0.5 and pct >= -0.5) then return nil end
-    local v = pct > 0 and math.floor(pct + 0.5) or math.ceil(pct - 0.5)
-    return format(L["BIS 评分 %+d%%"], v), pct > 0
+local function ScoreLineOf(id)
+    local BG = ns.BisModule
+    if not (BG and BG.ScoreVsBis) then return nil end
+    local _, pct = BG.ScoreVsBis(id)
+    if type(pct) ~= "number" or pct == 0 then return nil end
+    if pct > 999 then pct = 999 elseif pct < -999 then pct = -999 end
+    return format(L["BIS 评分 %+d%%"], pct), pct > 0
 end
 
 function TL.Lines(id)
@@ -286,12 +273,9 @@ function TL.Lines(id)
         end
     end
     if cfg.bisScore then
-        local BG = ns.BisModule
-        if BG and BG.ScoreVsBis then
-            local txt, up = ScoreLine(BG.ScoreVsBis(id))
-            if txt then
-                add(txt, up and C_SC_UP or C_SC_DOWN, nil, true)
-            end
+        local txt, up = ScoreLineOf(id)
+        if txt then
+            add(txt, up and C_SC_UP or C_SC_DOWN, nil, true)
         end
     end
     if cfg.quest then
@@ -368,22 +352,18 @@ local function Augment(tt)
             if tt.__dfOwn or augStamp[tt] ~= id then return end
             if DG2 and DG2.__tipBusy then return end
             if TipItemID(tt) ~= id then return end
-            local BG = ns.BisModule
-            local pct = BG and BG.ScoreVsBis and BG.ScoreVsBis(id)
-            if pct then
+            local txt, up = ScoreLineOf(id)
+            if txt then
                 if (tt.__dfAugN or 0) == 0 then
                     local ls = TL.Lines(id)
                     Append(tt, ls, 0)
                     tt.__dfAugN = type(ls) == "table" and #ls or 0
                 else
-                    local txt, up = ScoreLine(pct)
-                    if txt then
-                        tt:AddLine(LOGO_GAP .. txt,
-                            up and C_SC_UP[1] or C_SC_DOWN[1],
-                            up and C_SC_UP[2] or C_SC_DOWN[2],
-                            up and C_SC_UP[3] or C_SC_DOWN[3], true)
-                        tt.__dfAugN = (tt.__dfAugN or 0) + 1
-                    end
+                    tt:AddLine(LOGO_GAP .. txt,
+                        up and C_SC_UP[1] or C_SC_DOWN[1],
+                        up and C_SC_UP[2] or C_SC_DOWN[2],
+                        up and C_SC_UP[3] or C_SC_DOWN[3], true)
+                    tt.__dfAugN = (tt.__dfAugN or 0) + 1
                 end
                 tt.__dfScoreShown = true
             elseif tt.__dfAugTries > 0 then
@@ -446,7 +426,6 @@ function TL.SampleItem()
     local GM = ns.GearModule
     local BG = ns.BisModule
     local srcIdx = BuildSrc()
-    local questIdx = BuildQuest()
     local pools = {}
     if GM and GM.WishIDs then
         local w = GM.WishIDs()
@@ -465,7 +444,25 @@ function TL.SampleItem()
         end
     end
     local qks = {}
-    for k in pairs(questIdx) do qks[#qks + 1] = k end
+    local seenQ = {}
+    local gq = ns.GearSrcQ
+    if type(gq) == "table" then
+        for k in pairs(gq) do
+            if type(k) == "number" and not seenQ[k] then
+                seenQ[k] = true
+                qks[#qks + 1] = k
+            end
+        end
+    end
+    local rq = ns.GearRewardQ
+    if type(rq) == "table" then
+        for k in pairs(rq) do
+            if type(k) == "number" and not seenQ[k] then
+                seenQ[k] = true
+                qks[#qks + 1] = k
+            end
+        end
+    end
     table.sort(qks)
     for i = 1, math.min(#qks, SAMPLE_CAP_QUEST) do
         pools[#pools + 1] = qks[i]
@@ -492,7 +489,7 @@ function TL.SampleItem()
         end
         if cfg.bisScore then
             local BG = ns.BisModule
-            if BG and BG.ScoreVsBis and BG.ScoreVsBis(id) then sc = sc + 2 end
+            if BG and BG.ScoreVsBis and BG.ScoreVsBis(id) ~= nil then sc = sc + 2 end
         end
         if sc > 0 and sc > (bestScore or 0) then
             bestId = id

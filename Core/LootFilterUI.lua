@@ -98,6 +98,7 @@ local function MakeIconButton(parent, size)
     bt.sel:SetPoint("BOTTOMRIGHT", bt, "BOTTOMRIGHT", 0, -2)
     bt.sel:Hide()
     if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+    if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(bt, true) end
     return bt
 end
 
@@ -123,7 +124,7 @@ local function MakePager(parent, right)
         bt.tex:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
     end
     bt.tex:SetVertexColor(C_DIM[1], C_DIM[2], C_DIM[3])
-    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt, { noFrame = true }) end
     return bt
 end
 
@@ -193,7 +194,7 @@ function UI:EnsureBar()
         GameTooltip:Hide()
     end)
     gear:SetScript("OnClick", function() ns.PlaySound(1); UI:ToggleConfig() end)
-    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(gear) end
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(gear, { noFrame = true }) end
     UI.gear = gear
 
     local plus = CreateFrame("Button", nil, bar, "BackdropTemplate")
@@ -209,6 +210,7 @@ function UI:EnsureBar()
         UI:OpenNewScheme()
     end)
     if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(plus) end
+    if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(plus, true) end
     UI.plus = plus
 
     UI.barIcons = {}

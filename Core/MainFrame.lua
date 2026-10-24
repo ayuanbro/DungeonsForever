@@ -74,7 +74,7 @@ close:SetSize(32, 32)
 close:SetFrameLevel(510)
 close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4)
 close:SetHitRectInsets(-3, -3, -3, -3)
-if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(close) end
+if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(close, { noFrame = true }) end
 do
     local gray = 0xa0 / 255
     local it = close:CreateTexture(nil, "ARTWORK")
@@ -107,7 +107,7 @@ aboutBtn:SetSize(32, 32)
 aboutBtn:SetFrameLevel(510)
 aboutBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -34, -4)
 aboutBtn:SetHitRectInsets(-3, -3, -3, -3)
-if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(aboutBtn) end
+if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(aboutBtn, { noFrame = true }) end
 do
     local q = aboutBtn:CreateTexture(nil, "ARTWORK")
     q:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\HelpIcon")
@@ -210,7 +210,7 @@ settingsBtn:SetSize(32, 32)
 settingsBtn:SetFrameLevel(510)
 settingsBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -66, -4)
 settingsBtn:SetHitRectInsets(-3, -3, -3, -3)
-if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(settingsBtn) end
+if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(settingsBtn, { noFrame = true }) end
 do
     local g = settingsBtn:CreateTexture(nil, "ARTWORK")
     g:SetTexture(ns.SET_ICON)

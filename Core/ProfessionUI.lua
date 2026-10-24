@@ -3220,6 +3220,7 @@ function PD.Build(page)
         ns.PlaySound(1)
     end)
     PD.setGear = gear
+    if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(gear, true) end
     coroutine.yield()
 
     PD.setToggles = {}
@@ -3440,7 +3441,7 @@ function PD.Build(page)
         local eb = CreateFrame("EditBox", nil, tf, "BackdropTemplate")
         local _, ebBord = ns.hui.BuildRoundedBG(eb, 6, ns.hui.layer.L3, "both", true, 1)
         eb.__border = ebBord or {}
-        PD.PaintTileBorder(eb, { 1, 0.82, 0, 0.9 })
+        PD.PaintTileBorder(eb, { 1, 1, 1, 0.10 })
         eb:SetSize(60, 20)
         eb:SetPoint("CENTER", tf, "CENTER", 0, 0)
         eb:SetFont(ns.FONT, 14, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
@@ -4127,9 +4128,11 @@ function PD.PaintTool(list, handler, yoff)
                 ic:SetVertexColor(Unpack(def.iconColor or C_WHITE))
                 ic:Show()
                 bt.__tipLines = def.tip
+                if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(bt, true) end
             else
                 if bt.__icon then bt.__icon:Hide() end
                 bt.__tipLines = nil
+                if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(bt, false) end
             end
             if def.plain then
                 local wz = PD.WarnChip(bt, true)
@@ -4454,7 +4457,7 @@ function PD.PaintGatherTiles()
         { smelt and L["列表中绿色高亮行 = 当前技能可练的熔炼区间"]
             or L["列表中绿色高亮行 = 推荐当前采集的区间"], 0.7, 0.7, 0.7 },
     } or { { L["列表中绿色高亮行 = 推荐当前采集的区间"], 0.7, 0.7, 0.7 } })
-    PD.PaintTileBorder(tiles.scheme, (PD.cur == "mining") and { 1, 0.82, 0, 0.55 } or { 1, 1, 1, 0.10 })
+    PD.PaintTileBorder(tiles.scheme, { 1, 1, 1, 0.10 })
     tiles.cost.label:SetText(L["路线范围"])
     tiles.cost.val:SetText("1 - 300")
     tiles.cost.val:SetTextColor(Unpack(C_WHITE))
@@ -4512,12 +4515,8 @@ function PD.PaintLvTiles()
     else
         tiles.mode.label:SetText(L["模式"])
         tiles.mode.val:SetText(fishRoute and L["纯钓鱼"] or (auto and L["自动计算"] or L["固定路线"]))
-        tiles.mode.val:SetTextColor(Unpack(auto and C_GOLD or C_WHITE))
-        if warnAuto then
-            PD.PaintTileBorder(tiles.mode, { 0.95, 0.75, 0.4, 0.9 })
-        else
-            PD.PaintTileBorder(tiles.mode, { 1, 1, 1, 0.10 })
-        end
+        tiles.mode.val:SetTextColor(Unpack(C_WHITE))
+        PD.PaintTileBorder(tiles.mode, { 1, 1, 1, 0.10 })
         local modeLines = {
             { fishRoute and L["鱼类自行钓取；其他材料只使用不限量商人货物。"]
                    or auto and L["自动计算：比较采购、自制与配方依赖"]
@@ -4579,8 +4578,8 @@ function PD.PaintLvTiles()
             sv = L["开"]
         end
         tiles.solver.val:SetText(sv)
-        tiles.solver.val:SetTextColor(Unpack((son or running) and C_GOLD or C_GREY))
-        PD.PaintTileBorder(tiles.solver, (son or running) and { 1, 0.82, 0, 0.55 } or { 1, 1, 1, 0.10 })
+        tiles.solver.val:SetTextColor(Unpack((son or running) and C_WHITE or C_GREY))
+        PD.PaintTileBorder(tiles.solver, { 1, 1, 1, 0.10 })
         local hint
         if running then
             hint = L["正在计算，点击可关闭"]
@@ -4600,7 +4599,7 @@ function PD.PaintLvTiles()
         local nBan = banR + banM
         tiles.excl.val:SetText(nBan > 0 and format(L["%d 项"], nBan) or L["无"])
         tiles.excl.val:SetTextColor(Unpack(nBan > 0 and C_WHITE or C_GREY))
-        PD.PaintTileBorder(tiles.excl, nBan > 0 and { 0.88, 0.42, 0.38, 0.55 } or { 1, 1, 1, 0.10 })
+        PD.PaintTileBorder(tiles.excl, { 1, 1, 1, 0.10 })
         local lines = { { L["图样 / 材料使用管理"], 1, 0.82, 0 } }
         if banR > 0 then lines[#lines + 1] = { format(L["已禁用图样：%d"], banR), 0.88, 0.42, 0.38 } end
         if banM > 0 then lines[#lines + 1] = { format(L["已禁用材料：%d"], banM), 0.88, 0.42, 0.38 } end

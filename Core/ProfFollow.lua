@@ -26,6 +26,7 @@ local function RoundFrame(fr, radius, col)
 end
 local Unpack = Host.Unpack
 local C_GOLD, C_GREY, C_DIM, C_TEXT = Host.C_GOLD, Host.C_GREY, Host.C_DIM, Host.C_TEXT
+local C_WHITE = Host.C_WHITE
 
 local D  = ns.ProfData
 local R
@@ -269,7 +270,8 @@ end
 
 function PF.IsActive(slug)
     local s = st()
-    return (s and s.slug == slug and not s.hidden) and true or false
+    if not (s and s.slug == slug and not s.hidden) then return false end
+    return (PF.f and PF.f:IsShown()) and true or false
 end
 
 function PF.Following(slug)
@@ -1754,8 +1756,15 @@ function PF.PaintButton(bt, slug)
     local PD = ns.ProfModule
     if PD and PD.TextW then bt:SetWidth(math.ceil(PD.TextW(text, 13)) + 22) end
     bt:SetScript("OnClick", function() PF.Toggle(slug) end)
-    local accent = Accent()
-    SetButtonSelected(bt, PF.IsActive(slug))
+    local active = PF.IsActive(slug)
+    SetButtonSelected(bt, active)
+    local fs = bt.GetFontString and bt:GetFontString()
+    if fs then
+        fs:ClearAllPoints()
+        fs:SetPoint("CENTER", 0, -1)
+        fs:SetJustifyH("CENTER")
+        fs:SetTextColor(Unpack(active and C_WHITE or C_GREY))
+    end
     bt:SetShown(true)
 end
 
@@ -1776,6 +1785,12 @@ function PF.PaintImportBtn(bt, slug)
         ns.PlaySound(1)
     end)
     TipOn(bt, text, L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])
-    bt:GetFontString():SetTextColor(Unpack(C_GREY))
+    local ifs = bt.GetFontString and bt:GetFontString()
+    if ifs then
+        ifs:ClearAllPoints()
+        ifs:SetPoint("CENTER", 0, -1)
+        ifs:SetJustifyH("CENTER")
+        ifs:SetTextColor(Unpack(C_GREY))
+    end
     bt:SetShown(true)
 end

@@ -185,6 +185,14 @@ local function EnsureGD()
             SUB_OF[pair[1]] = arr
         end
     end
+    local gm = ns.GearModule
+    if gm and not gm.catalog and not gm.__building and type(gm.BuildCatalog) == "function" then
+        gm.__building = true
+        gm.__noYield = true
+        pcall(gm.BuildCatalog, gm)
+        gm.__noYield = nil
+        gm.__building = nil
+    end
     return GD
 end
 
@@ -3665,7 +3673,7 @@ function G.BuildCatalog()
         local it = GD_ITEMS[i]
         setmetatable(it, ROW_MT)
         recs[it[1]] = it
-        if i % 2000 == 0 and coroutine.running() then coroutine.yield() end
+        if not G.__noYield and i % 2000 == 0 and coroutine.running() then coroutine.yield() end
     end
     local srcOf = {}
     local order = {}
