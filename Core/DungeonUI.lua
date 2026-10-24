@@ -578,10 +578,10 @@ function DG.BuildList()
         pool.hdr[i].hit:Hide()
     end
     child:SetHeight(math.max(10, -y + 10))
-    DG.CullListRows()
+    DG.CullListRows(true)
 end
 
-function DG.CullListRows()
+function DG.CullListRows(force)
     local sc, pool = U.dungeonListScroll, U.dungeonListPool
     if not (sc and pool and sc:IsShown()) then return end
     local gt = sc.GetTop and sc:GetTop()
@@ -590,6 +590,8 @@ function DG.CullListRows()
     if type(viewH) ~= "number" then return end
     local v = sc.GetVerticalScroll and sc:GetVerticalScroll() or 0
     if type(v) ~= "number" then v = 0 end
+    local last = pool.__cullSig
+    if not force and last and last.gt == gt and last.h == viewH and last.v == v then return end
     local vTop, vBot = v - 2, v + viewH + 2
     for _, card in ipairs(pool.card) do
         if not card.__active then
@@ -626,6 +628,7 @@ function DG.CullListRows()
             end
         end
     end
+    pool.__cullSig = { gt = gt, h = viewH, v = v }
 end
 
 function DG.ListFadesVisible(vis)
@@ -775,7 +778,8 @@ function DG.BuildDungeons()
         self:SetVerticalScroll(math.max(0, math.min(maxScroll, self:GetVerticalScroll() - delta * 48)))
         DG.CullListRows()
     end)
-    listScroll:HookScript("OnShow", function() DG.CullListRows() end)
+    listScroll:HookScript("OnShow", function() DG.CullListRows(true) end)
+    listScroll:HookScript("OnVerticalScroll", function() DG.CullListRows() end)
     U.dungeonListScroll = listScroll
 
     if IsHui() and ns.hui and ns.hui.layer and ns.hui.layer.L0 then
@@ -3573,6 +3577,7 @@ function DG.RefreshItemCards(itemID)
         DG.__rcQ = nil
         if not qq then return end
         for id in pairs(qq) do DG.FlushItemCards(id) end
+        if DG.__fcPending then DG.FlushPendingItems() end
     end)
 end
 
@@ -3611,20 +3616,24 @@ function DG.FlushItemCards(itemID)
     local wait = waitMap[itemID] or 0
     if now and now - (last[itemID] or 0) < wait * 1000 then return end
     if now then last[itemID] = now end
-    DG.FlushItemCardsNow(itemID)
-    local _, hasName = DG.ItemName(itemID)
-    if hasName then
-        waitMap[itemID] = 1
-    else
-        waitMap[itemID] = math.min((wait > 1 and wait or 1) * 2, 60)
+    local pend = DG.__fcPending
+    if not pend then pend = {} DG.__fcPending = pend end
+    pend[itemID] = true
+    if not DG.__fcT then
+        DG.__fcT = true
+        if C_Timer and C_Timer.NewTimer then
+            C_Timer.NewTimer(0, function()
+                DG.__fcT = nil
+                DG.FlushPendingItems()
+            end)
+        else
+            DG.__fcT = nil
+            DG.FlushPendingItems()
+        end
     end
 end
 
-function DG.FlushItemCardsNow(itemID)
-    local LF = ns.LootFilter
-    if LF then LF.Invalidate(itemID) end
-    local RU = ns.RU
-    if RU and RU.OnItemData then RU.OnItemData(itemID) end
+function DG.BroadcastItemData(itemID)
     local PVM = ns.PvPModule
     if PVM and PVM.OnItemData then PVM.OnItemData(itemID) end
     local EGM = ns.ExploreModule
@@ -3641,27 +3650,42 @@ function DG.FlushItemCardsNow(itemID)
     if MM and MM.OnItemData then MM.OnItemData(itemID) end
     local PM = ns.ProfModule
     if PM and PM.OnItemData then PM.OnItemData(itemID) end
+end
+
+function DG.FlushPendingItems()
+    local pend = DG.__fcPending
+    DG.__fcPending = nil
+    if not pend then return end
+    local LF = ns.LootFilter
+    local waitMap = DG.__rcWait
+    for id in pairs(pend) do
+        if LF then LF.Invalidate(id) end
+        DG.BroadcastItemData(id)
+        if waitMap then
+            local _, hasName = DG.ItemName(id)
+            if hasName then
+                waitMap[id] = 1
+            else
+                local w = waitMap[id] or 1
+                waitMap[id] = math.min((w > 1 and w or 1) * 2, 60)
+            end
+        end
+    end
+    DG.PoolApplyItems(pend)
+end
+
+function DG.PoolApplyItems(ids)
+    local LF = ns.LootFilter
     local pool = U.dungeonDetailPool and U.dungeonDetailPool.item
-    if not pool then return end
-    for i = 1, #pool do
-        local c = pool[i]
-        local it = c and c.__it
-        if it and it[1] == itemID then
-            if c.name then
-                local nm, hasName = DG.ItemName(itemID)
-                c.name:SetText(nm)
-                if hasName then
-                    c.name:SetTextColor(DG.QColor(DG.QualOf(itemID)))
-                else
-                    c.name:SetTextColor(Unpack(C_GREY))
-                end
-                c.__named = hasName
+    if pool then
+        for i = 1, #pool do
+            local c = pool[i]
+            local it = c and c.__it
+            local iid = it and it[1]
+            if iid and ids[iid] then
+                DG.PaintItemRow(c, iid)
+                if LF and LF.Apply then LF.Apply(c) end
             end
-            if c.icon and c.icon.SetTexture then
-                c.icon:SetTexture(DG.ItemIcon(itemID))
-            end
-            if c.tp then c.tp:SetText(DG.ItemMeta(itemID)) end
-            if LF then LF.Apply(c) end
         end
     end
     local qpool = U.dungeonQDetPool and U.dungeonQDetPool.chip
@@ -3669,23 +3693,19 @@ function DG.FlushItemCardsNow(itemID)
         for i = 1, #qpool do
             local c = qpool[i]
             local it = c and c.__it
-            if it and it[1] == itemID and c.name then
-                local nm, hasName = DG.ItemName(itemID)
-                c.name:SetText(nm)
-                if hasName then
-                    local qr, qg, qb = DG.QColor(DG.QualOf(itemID))
-                    if qr then
-                        c.name:SetTextColor(qr, qg, qb)
-                    else
-                        c.name:SetTextColor(Unpack(C_TEXT))
-                    end
-                else
-                    c.name:SetTextColor(Unpack(C_GREY))
-                end
-                c.__named = hasName
+            local iid = it and it[1]
+            if iid and ids[iid] then
+                DG.PaintItemChip(c, iid)
             end
         end
     end
+end
+
+function DG.FlushItemCardsNow(itemID)
+    local LF = ns.LootFilter
+    if LF then LF.Invalidate(itemID) end
+    DG.BroadcastItemData(itemID)
+    DG.PoolApplyItems({ [itemID] = true })
 end
 
 function DG.PaintItemRow(c, itemID)

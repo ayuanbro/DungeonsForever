@@ -152,10 +152,7 @@ end
 function PD.SetRouteScheme(key)
     if type(key) ~= "string" or key == "" then return end
     local wasFishing = PD.CookingFishingMode()
-    if wasFishing then
-        ProfDB().cookingRoute = "standard"
-        PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
-    end
+    if wasFishing then ProfDB().cookingRoute = "standard" end
     if ProfDB().autoScheme == key and not wasFishing then return end
     ProfDB().autoScheme = key
     if RA then
@@ -237,8 +234,6 @@ function PD.ProfRecalc()
             RA.Invalidate()
         end
     end
-    PD.autoSnapshot = nil
-    PD.autoSnapshotSlug = nil
     PD.RequestRender()
     ns.PlaySound(1)
 end
@@ -4056,7 +4051,7 @@ function PD.PaintTool(list, handler, yoff)
             local key = "1|" .. w .. "|" .. x .. "|" .. row .. "|"
                         .. tostring(def.on) .. "|" .. tostring(def.primary) .. "|"
                         .. tostring(def.tone) .. "|" .. text .. "|" .. tostring(def.right)
-                        .. "|" .. tostring(def.icon)
+                        .. "|" .. tostring(def.icon) .. "|" .. tostring(def.glow)
             if bt.__ptk ~= key then
                 bt.__ptk = key
                 local _m0 = _T0 and _T0()
@@ -4071,6 +4066,28 @@ function PD.PaintTool(list, handler, yoff)
                 if _MK then _MK("闸-锚点", _m0) end
                 _m0 = _T0 and _T0()
                 bt:SetText(text)
+                if def.tip then
+                    bt.__tipLines = def.tip
+                    if not bt.__tipHooked then
+                        bt.__tipHooked = true
+                        bt:HookScript("OnEnter", function(self)
+                            local lines = self.__tipLines
+                            if not lines or #lines == 0 then return end
+                            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                            GameTooltip:ClearLines()
+                            for _, ln in ipairs(lines) do
+                                if ln[1] and ln[1] ~= "" then
+                                    GameTooltip:AddLine(ln[1], ln[2] or 1, ln[3] or 1, ln[4] or 1, true)
+                                end
+                            end
+                            GameTooltip:Show()
+                            PD.UnifyTipFont(14)
+                        end)
+                        bt:HookScript("OnLeave", function() GameTooltip:Hide() end)
+                    end
+                elseif not def.icon then
+                    bt.__tipLines = nil
+                end
                 if def.icon then
                     bt:EnableMouse(true)
                     SetOutline(bt, false, 1, 0.82, 0)
@@ -4091,6 +4108,11 @@ function PD.PaintTool(list, handler, yoff)
                     else
                         bfs:SetTextColor(Unpack(C_GREY))
                     end
+                end
+                if def.glow then
+                    PD.GlowBorder(bt)
+                elseif bt.__glowOn then
+                    PD.GlowBorder(bt, false)
                 end
                 if _MK then _MK("闸-文本", _m0) end
                 _m0 = _T0 and _T0()
@@ -8449,9 +8471,12 @@ end
 
 function PD.StopSolverRoute()
     local SR = ns.ProfSolverRun
+    local aborting = (SR and SR.Running and SR.Running() and not PD.solverDone) and true or false
+    if aborting then PD.autoExact = nil end
     if SR then SR.Stop() end
     PD.solverFrac = nil
     PD.solverSig = nil
+    PD.solverRetry = nil
     PD.solverDone = false
     PD.solverPaintRes = nil
     PD.solverPaintKey = nil
@@ -8499,18 +8524,29 @@ function PD.StartSolverRoute(opts, key)
         onDone = function(j)
             PD.solverDone = true
             PD.solverFrac = nil
-            local res = j.result or j.best
+            local res = j and (j.result or j.best) or nil
             local usable = res and res.planVersion == 2 and #(res.steps or {}) > 0
-            if usable and PD.solverSlug == PD.cur then
+            local mine = PD.solverSlug == PD.cur
+            if usable and mine then
+                res.exact = true
                 PD.autoSnapshot = res
                 PD.autoSnapshotSlug = PD.cur
+                PD.autoKey = PD.solverKey
+                PD.autoExact = true
+                if PD.exactFailed then PD.exactFailed[PD.solverKey or ""] = nil end
                 PD.solverFallback = nil
-            elseif PD.solverSlug == PD.cur and RA and RA.Get and PD.WindowShown() then
-                local r2 = RA.Get(PD.cur, opts)
-                if r2 then
-                    PD.autoSnapshot = r2
-                    PD.autoSnapshotSlug = PD.cur
-                    PD.solverFallback = true
+            elseif mine then
+                PD.exactFailed = PD.exactFailed or {}
+                PD.exactFailed[PD.solverKey or ""] = true
+                PD.autoExact = false
+                if RA and RA.Get and PD.WindowShown() then
+                    local r2 = RA.Get(PD.cur, opts)
+                    if r2 then
+                        PD.autoSnapshot = r2
+                        PD.autoSnapshotSlug = PD.cur
+                        PD.autoKey = PD.solverKey
+                        PD.solverFallback = true
+                    end
                 end
             end
             if PD.built and PD.page and PD.page:IsShown() then PD.RequestRender() end
@@ -8518,16 +8554,177 @@ function PD.StartSolverRoute(opts, key)
     })
 end
 
+function PD.BuildLvOpts(slug, current)
+    local fish = PD.CookingFishingMode(slug)
+    local pair = (not fish) and PD.RoutePairContext() or nil
+    local lv = tonumber(current)
+    return {
+        start = (PD.Setting("autoFromCurrent") and lv) and math.max(1, lv) or 1,
+        onlyAH = PD.Setting("autoOnlyAH"),
+        learnedOnly = PD.Setting("autoLearnedOnly"),
+        target = PD.LvTarget(),
+        scheme = fish and "fishing" or PD.SettingRaw("autoScheme"),
+        allowSecondaryLeveling = PD.Setting("autoSecondaryLeveling"),
+        secondaryProfession = pair and pair.partner or nil,
+        executionInventory = ns.ProfTrack and ns.ProfTrack.ContinueInventory
+            and ns.ProfTrack.ContinueInventory(slug) or nil,
+    }
+end
+
+function PD.PlanKeyOf(slug, opts)
+    slug = slug or PD.cur
+    if not (RA and RA.PlanSig) then return nil end
+    return tostring(slug) .. "@" .. RA.PlanSig(slug, opts or {})
+end
+
+function PD.ClearPlanCache()
+    PD.StopSolverRoute()
+    PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
+    PD.autoKey, PD.autoExact = nil, nil
+    if PD.exactFailed then
+        local n = 0
+        for _ in pairs(PD.exactFailed) do n = n + 1 end
+        if n > 8 then PD.exactFailed = {} end
+    end
+    PD.solverPaintRes, PD.solverFrac = nil, nil
+end
+
+function PD.RecalcNeeded()
+    local slug = PD.cur
+    if not slug or slug == "__index" or slug == "poisons" then return false end
+    if PD.GATHER_SLUGS and PD.GATHER_SLUGS[slug] then return false end
+    if PD.forceExact then return false end
+    local SR = ns.ProfSolverRun
+    if SR and SR.Running and SR.Running(PD.cur) then return false end
+    if not PD.Setting("autoRoute") and not PD.Setting("solverRoute") and not PD.autoSnapshot then return false end
+    local learned = PD.ProfLearned and PD.ProfLearned(true) or {}
+    local key = PD.PlanKeyOf(slug, PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur))
+    if not key then return false end
+    if PD.autoSnapshotSlug ~= slug or not PD.autoSnapshot then return true end
+    if PD.autoKey and PD.autoKey ~= key then return true end
+    return not PD.autoExact
+end
+
+local GLOW_PERIOD = 2.2
+local GLOW_STEPS = 30
+local GLOW_BORDER_MAX = 0.9
+local GLOW_BG_LO = 0.52
+local GLOW_BG_HI = 0.86
+
+local function GlowCapPaint(bt, k)
+    local cap = bt.__huiCap
+    if not cap or not cap[1] then return end
+    local layer = ns.hui and ns.hui.layer
+    local base = (layer and layer.L2) or { 0x16 / 255, 0x1A / 255, 0x22 / 255 }
+    local acc = (layer and layer.ACCENT) or { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
+    local cr = base[1] + (acc[1] - base[1]) * k
+    local cg = base[2] + (acc[2] - base[2]) * k
+    local cb = base[3] + (acc[3] - base[3]) * k
+    local tr = math.min(1, cr * 1.17)
+    local tg = math.min(1, cg * 1.17)
+    local tb = math.min(1, cb * 1.17)
+    local br = math.min(1, cr * 0.86)
+    local bg = math.min(1, cg * 0.86)
+    local bb = math.min(1, cb * 0.86)
+    local f = cap.__huiFrame
+    local cs = cap.__huiCorner or 6
+    local h = (f and f.GetHeight and f:GetHeight()) or 0
+    local kk = (h > cs * 2) and (cs / h) or 0.25
+    for i = 1, 7 do
+        local tex = cap[i]
+        if tex then
+            local y0, y1
+            if i == 3 or i == 4 or i == 6 then
+                y0, y1 = 1 - kk, 1
+            elseif i == 7 then
+                y0, y1 = kk, 1 - kk
+            else
+                y0, y1 = 0, kk
+            end
+            local r0 = tr + (br - tr) * y0
+            local g0 = tg + (bg - tg) * y0
+            local b0 = tb + (bb - tb) * y0
+            local r1 = tr + (br - tr) * y1
+            local g1 = tg + (bg - tg) * y1
+            local b1 = tb + (bb - tb) * y1
+            tex:SetGradient("VERTICAL", CreateColor(r1, g1, b1), CreateColor(r0, g0, b0))
+            tex:SetAlpha(1)
+        end
+    end
+end
+
+function PD.GlowBorder(bt, on)
+    if not bt then return end
+    local hui = ns.hui
+    local acc = (hui and hui.ACCENT) or { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
+    local dr = acc[1]
+    local dg = acc[2]
+    local db = acc[3]
+    local function paint(mix)
+        local r = dr + (1 - dr) * mix
+        local g = dg + (1 - dg) * mix
+        local b = db + (1 - db) * mix
+        local ring = bt.__ring
+        if ring then
+            for i = 1, #ring do ring[i]:SetVertexColor(r, g, b) end
+        end
+        local cov = bt.__ringCover
+        if cov then
+            for i = 1, #cov do cov[i]:SetVertexColor(r, g, b) end
+        end
+    end
+    local fs = bt:GetFontString()
+    if fs then
+        if on == false then
+            fs:SetShadowOffset(0, 0)
+            fs:SetShadowColor(0, 0, 0, 0)
+        else
+            fs:SetShadowOffset(1, -1)
+            fs:SetShadowColor(0, 0, 0, 0.85)
+        end
+    end
+    if on == false then
+        bt.__glowOn = nil
+        bt.__glowQ = nil
+        if bt.__huiSelected then paint(0) end
+        if bt.__huiCap and bt.__huiCap.__huiRepaint then bt.__huiCap.__huiRepaint() end
+        return
+    end
+    bt.__glowOn = true
+    bt.__glowQ = nil
+    if bt.__glowHook then return end
+    bt.__glowHook = true
+    bt.__glowT = 0
+    bt:HookScript("OnUpdate", function(self, el)
+        if not self.__glowOn then return end
+        local t = (self.__glowT or 0) + el
+        if t > GLOW_PERIOD then t = t - GLOW_PERIOD end
+        self.__glowT = t
+        local p = 0.5 - 0.5 * math.cos(t * 2 * math.pi / GLOW_PERIOD)
+        local q = math.floor(GLOW_STEPS * p + 0.5)
+        if q == self.__glowQ then return end
+        self.__glowQ = q
+        local f = q / GLOW_STEPS
+        paint(GLOW_BORDER_MAX * f)
+        if not self.__huiHover and not self.__huiPress then
+            GlowCapPaint(self, GLOW_BG_LO + (GLOW_BG_HI - GLOW_BG_LO) * f)
+        end
+    end)
+end
+
 function PD.LvRecalc()
     if not PD.cur or PD.cur == "__index" or PD.cur == "poisons" then return end
     if PD.GATHER_SLUGS and PD.GATHER_SLUGS[PD.cur] then return end
-    if RA and RA.Recalculate and RA.OptionsFor then
-        RA.Recalculate(PD.cur, RA.OptionsFor(PD.cur))
-        return
+    PD.ClearPlanCache()
+    if RA then
+        if RA.Recalculate then
+            local learned = PD.ProfLearned and PD.ProfLearned() or {}
+            local lv = learned[PD.cur] and learned[PD.cur].cur
+            RA.Recalculate(PD.cur, RA.OptionsFor and RA.OptionsFor(PD.cur, lv) or nil)
+        elseif RA.Invalidate then
+            RA.Invalidate()
+        end
     end
-    if RA and RA.Invalidate then RA.Invalidate() end
-    PD.solverSig = nil
-    PD.autoSnapshot = nil
     if PD.RequestRender then PD.RequestRender() end
 end
 
@@ -8719,10 +8916,6 @@ function PD.RowsCraftLog(rows)
 end
 
 function PD.RowsLeveling(rows)
-    if PD.__lvRecalcPending then
-        PD.__lvRecalcPending = nil
-        PD.LvRecalc()
-    end
     if PD.autoPage == "log" then
         PD.lvSummary, PD.lvRouteHead = nil, nil
         PD.RowsCraftLog(rows)
@@ -8759,41 +8952,51 @@ function PD.RowsLeveling(rows)
         if target > 225 then note(L["225 以上须先解锁大师级烹饪；蚌肉大餐任务另需非鱼材料，不属于本路线的制作材料。"]) end
     end
     local res
+    local planKey
     PD.lvOpts = nil
     if autoOn then
-        local opts = {
-            start = (PD.Setting("autoFromCurrent") and curLv) and math.max(1, curLv) or 1,
-            onlyAH = PD.Setting("autoOnlyAH"),
-            learnedOnly = PD.Setting("autoLearnedOnly"),
-            target = target,
-            scheme = scheme,
-            allowSecondaryLeveling = PD.Setting("autoSecondaryLeveling"),
-            secondaryProfession = pairContext and pairContext.partner or nil,
-            executionInventory = ns.ProfTrack and ns.ProfTrack.ContinueInventory and ns.ProfTrack.ContinueInventory(PD.cur) or nil,
-        }
-        if RA.OptionsFor then opts=RA.OptionsFor(PD.cur,curLv); opts.target=target end
+        local opts = PD.BuildLvOpts(PD.cur, curLv)
+        opts.target = target
         PD.lvOpts = opts
+        planKey = PD.PlanKeyOf(PD.cur, opts)
         local SR = ns.ProfSolverRun
-        if SR and not fishRoute and (PD.Setting("solverRoute") or needPartner) then
-            local key = table.concat({ tostring(target), tostring(scheme), tostring(opts.start),
-                tostring(opts.onlyAH), tostring(opts.learnedOnly),
-                tostring(opts.allowSecondaryLeveling), tostring(opts.secondaryProfession) }, "|")
-            if PD.solverSig ~= key then
-                PD.StartSolverRoute(opts, key)
-                res = SR.Result()
-            elseif SR.Running(PD.cur) then
-                res = SR.Result()
-            else
-                res = PD.autoSnapshot
+        local wantExact = (PD.Setting("solverRoute") or needPartner or PD.forceExact) and true or false
+        PD.forceExact = nil
+        if SR and not fishRoute and wantExact then
+            local running = SR.Running and SR.Running(PD.cur) or false
+            if running and PD.solverSig ~= planKey then
+                PD.StopSolverRoute()
+                running = false
             end
-            if not res and PD.autoSnapshotSlug == PD.cur then res = PD.autoSnapshot end
+            local exactOk = PD.autoExact and PD.autoSnapshot and planKey and PD.autoKey == planKey
+            if running then
+                res = SR.Result()
+                if res then res.exact = true end
+            elseif exactOk then
+                res = PD.autoSnapshot
+            elseif (not PD.autoSnapshot or PD.autoSnapshotSlug ~= PD.cur)
+                   and not (PD.exactFailed and PD.exactFailed[planKey]) then
+                PD.StartSolverRoute(opts, planKey)
+                res = SR.Result()
+                if res then res.exact = true end
+            else
+                res = RA.Get(PD.cur, opts)
+            end
         elseif not needPartner then
-            res = RA.Get(PD.cur, opts)
+            if PD.autoExact and PD.autoSnapshotSlug == PD.cur and planKey and PD.autoKey == planKey then
+                res = PD.autoSnapshot
+            else
+                res = RA.Get(PD.cur, opts)
+            end
         end
         if res and res.planVersion ~= 2 and not res.priced and scheme ~= "optim" then res = nil end
     end
     local auto = (autoOn and res) and true or false
-    if res then PD.autoSnapshot = res; PD.autoSnapshotSlug = PD.cur end
+    if res then
+        PD.autoSnapshot, PD.autoSnapshotSlug = res, PD.cur
+        PD.autoKey = planKey
+        PD.autoExact = res.exact == true
+    end
     PD.RowsRoutePartner(rows, pairContext)
     PD.RowsSpecQuest(rows)
     if pairContext and pairContext.requiresPartner and not pairContext.partnerValid then
@@ -10104,10 +10307,17 @@ function PD.LevelTool()
         end
     end
     if PD.cur ~= "poisons" then
-        list[#list + 1] = { key = "recalc", align = "right", primary = true, text = L["重新计算"] }
+        local need = PD.RecalcNeeded()
+        local rec = { key = "recalc", align = "right", primary = true, glow = need, text = L["重新计算"] }
         if PD.policyDirty and PD.policyDirty[PD.cur] then
-            list[#list].text = L["重新计算（应用排除）"]
+            rec.text = L["重新计算（应用排除）"]
         end
+        if need then
+            local why = (PD.autoSnapshot and PD.autoExact) and L["拍卖行价格或设置已更新，点击重新计算。"]
+                or L["当前为快速方案，点击按精确方案重新计算。"]
+            rec.tip = { { rec.text, 1, 0.82, 0 }, { why, 0.85, 0.85, 0.85 } }
+        end
+        list[#list + 1] = rec
     end
     return list, function(k)
         if k == "page_route" then
@@ -10185,18 +10395,15 @@ function PD.LevelTool()
             PD.RequestRender()
         elseif k == "recalc" then
             PD.exclusionsOpen = false
-            PD.StopSolverRoute()
             PD.ProcureClear()
+            PD.ClearPlanCache()
             local E = ns.ProfEconomy
-            if E and E.ApplyPolicies then E.ApplyPolicies(PD.cur)
-            elseif RA then RA.Invalidate() end
+            if E and E.ApplyPolicies then E.ApplyPolicies(PD.cur) end
+            if RA and RA.Invalidate then RA.Invalidate() end
             if PD.policyDirty then PD.policyDirty[PD.cur] = nil end
-            if RA and RA.Recalculate then
-                local learned = PD.ProfLearned and PD.ProfLearned() or {}
-                local current = learned[PD.cur] and learned[PD.cur].cur
-                local opts = RA.OptionsFor and RA.OptionsFor(PD.cur, current) or nil
-                RA.Recalculate(PD.cur, opts)
-            end
+            PD.forceExact = true
+            PD.RequestRender()
+            ns.PlaySound(1)
         elseif k == "exclusions" then
             PD.exclusionsOpen = not PD.exclusionsOpen
             PD.partnerPicker = nil
@@ -11211,7 +11418,7 @@ function PD.Show(slug)
     ns.OpenPerf.Begin("专业·" .. tostring(slug))
     PD.HideVendorPick()
     if slug ~= PD.cur then
-        PD.StopSolverRoute()
+        PD.ClearPlanCache()
         PD.cur = slug
         PD.toolKey = nil
         PD.campView = "a"
@@ -11219,8 +11426,6 @@ function PD.Show(slug)
         PD.setOpen = false
         PD.searchQ = nil
         if PD.searchBox then PD.searchBox.eb:SetText("") end
-    elseif PD.tab == "leveling" then
-        PD.__lvRecalcPending = true
     end
     if not PD.built then
         PD.wantOpen = true
@@ -11232,7 +11437,6 @@ function PD.SetTab(key)
     PD.setOpen = false
     if not (PD.avail and PD.avail[key]) then return end
     PD.tab = key
-    if key == "leveling" then PD.__lvRecalcPending = true end
     PD.RequestRender()
 end
 
@@ -11260,7 +11464,6 @@ function PD.EnsureCur()
         PD.toolKey = nil
         PD.tab = (type(db.lastTab) == "string") and db.lastTab or "overview"
         PD.setOpen = false
-        if PD.tab == "leveling" then PD.__lvRecalcPending = true end
     end
 end
 
@@ -12135,6 +12338,7 @@ if RA and RA.OnPricesChanged then
     RA.OnPricesChanged(function()
         local pf = ns.ProfFollow
         if pf and pf.InvalidateRoute then pcall(pf.InvalidateRoute) end
+        PD.ClearPlanCache()
         if PD.built and ns.PageVisible(PD.page) then
             PD.RequestRender()
         end

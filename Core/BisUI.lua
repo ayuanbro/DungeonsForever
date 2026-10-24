@@ -289,6 +289,7 @@ local function SpecWeights(cls, specId)
         w.HEALTH_REGEN = 0.08
         if cls == "hunter" then
             w.RANGED_DPS = 2.5
+            w.WEAPON_DPS = 1.0
         else
             w.WEAPON_DPS = 5.0
         end

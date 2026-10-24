@@ -172,6 +172,41 @@ local function ClassSlug()
     return nil
 end
 
+local bisIdx, bisIdxVol, bisIdxWant
+local function BisIndex(vol, wantId, wantT)
+    local want = tostring(wantId) .. "/" .. tostring(wantT)
+    if bisIdx and bisIdxVol == vol and bisIdxWant == want then return bisIdx end
+    local slug = ClassSlug()
+    local idx = {}
+    if slug then
+        for _, c in ipairs(vol.classes) do
+            if c.slug == slug then
+                for _, sp in ipairs(c.specs or {}) do
+                    local main = (wantId and sp.id == wantId) or (wantT and sp.tspec == wantT)
+                    local seen = {}
+                    for _, list in pairs(sp.slots or {}) do
+                        if type(list) == "table" then
+                            for _, row in ipairs(list) do
+                                local id = type(row) == "table" and row[1] or nil
+                                if type(id) == "number" and not seen[id] then
+                                    seen[id] = true
+                                    local e = idx[id]
+                                    if not e then e = {} idx[id] = e end
+                                    e.n = (e.n or 0) + 1
+                                    if not e.label then e.label = sp.label end
+                                    if main then e.main = sp.label end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    bisIdx, bisIdxVol, bisIdxWant = idx, vol, want
+    return idx
+end
+
 local function BisHit(id)
     local BG = ns.BisModule
     if BG and type(BG.cur) == "table" then
@@ -195,34 +230,11 @@ local function BisHit(id)
     vol = vol or vols[1]
     local wantId = BG and BG.spec or nil
     local wantT = BG and BG.tspec or nil
-    local labels = {}
-    for _, c in ipairs(vol.classes) do
-        if c.slug == slug then
-            for _, sp in ipairs(c.specs or {}) do
-                local hit = false
-                for _, list in pairs(sp.slots or {}) do
-                    if type(list) == "table" then
-                        for _, row in ipairs(list) do
-                            if type(row) == "table" and row[1] == id then
-                                hit = true
-                                break
-                            end
-                        end
-                    end
-                    if hit then break end
-                end
-                if hit then
-                    if (wantId and sp.id == wantId) or (wantT and sp.tspec == wantT) then
-                        return sp.label, true
-                    end
-                    labels[#labels + 1] = sp.label
-                end
-            end
-        end
-    end
-    if #labels == 1 then return labels[1], true end
-    if #labels > 1 then return nil, true end
-    return nil
+    local e = BisIndex(vol, wantId, wantT)[id]
+    if not e then return nil end
+    if e.main then return e.main, true end
+    if e.n == 1 then return e.label, true end
+    return nil, true
 end
 
 local function ScoreLineOf(id)
@@ -421,28 +433,11 @@ local function SampleFallback()
     return nil
 end
 
-function TL.SampleItem()
-    local cfg = Cfg()
-    local GM = ns.GearModule
-    local BG = ns.BisModule
-    local srcIdx = BuildSrc()
-    local pools = {}
-    if GM and GM.WishIDs then
-        local w = GM.WishIDs()
-        for i = 1, math.min(#w, SAMPLE_CAP_WISH) do
-            pools[#pools + 1] = w[i]
-        end
-    end
-    if BG and type(BG.cur) == "table" then
-        local cs = {}
-        for _, v in pairs(BG.cur) do
-            if type(v) == "number" and v > 0 then cs[#cs + 1] = v end
-        end
-        table.sort(cs)
-        for i = 1, math.min(#cs, SAMPLE_CAP_CUR) do
-            pools[#pools + 1] = cs[i]
-        end
-    end
+local qksCache
+local sksCache
+
+local function QuestKeys()
+    if qksCache then return qksCache end
     local qks = {}
     local seenQ = {}
     local gq = ns.GearSrcQ
@@ -464,12 +459,109 @@ function TL.SampleItem()
         end
     end
     table.sort(qks)
-    for i = 1, math.min(#qks, SAMPLE_CAP_QUEST) do
-        pools[#pools + 1] = qks[i]
-    end
+    qksCache = qks
+    return qks
+end
+
+local function SrcKeys(srcIdx)
+    if sksCache then return sksCache end
     local sks = {}
     for k in pairs(srcIdx) do sks[#sks + 1] = k end
     table.sort(sks)
+    sksCache = sks
+    return sks
+end
+
+local function QuestHit(id)
+    local gq = ns.GearSrcQ
+    if type(gq) == "table" and type(gq[id]) == "number" then return true end
+    local v = type(ns.GearRewardQ) == "table" and ns.GearRewardQ[id] or nil
+    if type(v) == "number" then return true end
+    if type(v) == "table" then
+        for _, qid in ipairs(v) do
+            if type(qid) == "number" then return true end
+        end
+    end
+    return false
+end
+
+local sampCacheId
+local sampCacheKey
+local svbHit = {}
+local svbN = 0
+local svbVer = nil
+local svbFrame = CreateFrame("Frame")
+svbFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+svbFrame:SetScript("OnEvent", function()
+    svbHit = {}
+    svbN = 0
+end)
+
+local function SvbVersion(BG)
+    return table.concat({ BG and BG.wGen or 0, BG and BG.cls or "", BG and BG.spec or "", BG and BG.tspec or "" }, "|")
+end
+
+local function SampleStamp(cfg)
+    local GM = ns.GearModule
+    return format("%d%d%d%d%d|%s|%d",
+        cfg.src and 1 or 0, cfg.bis and 1 or 0, cfg.bisScore and 1 or 0,
+        cfg.wish and 1 or 0, cfg.quest and 1 or 0,
+        tostring(GM and GM.__viewVer or 0),
+        math.floor(GetTime()))
+end
+
+function TL.SampleItem()
+    local cfg = Cfg()
+    local key = SampleStamp(cfg)
+    if sampCacheId and sampCacheKey == key then return sampCacheId end
+    local GM = ns.GearModule
+    local BG = ns.BisModule
+    local srcIdx = BuildSrc()
+    local curSet
+    if BG and type(BG.cur) == "table" then
+        curSet = {}
+        for _, v in pairs(BG.cur) do curSet[v] = true end
+    end
+    local bisIdxHit
+    if cfg.bis then
+        local vols = Vols()
+        if #vols > 0 and ClassSlug() then
+            local lv = 0
+            if type(UnitLevel) == "function" then
+                local ok, v = pcall(UnitLevel, "player")
+                if ok and type(v) == "number" then lv = v end
+            end
+            local vol
+            for _, v in ipairs(vols) do
+                if v.lv <= lv then vol = v end
+            end
+            vol = vol or vols[1]
+            bisIdxHit = BisIndex(vol, BG and BG.spec or nil, BG and BG.tspec or nil)
+        end
+    end
+    local doSvb = cfg.bisScore and BG and BG.ScoreVsBis and true or false
+    local pools = {}
+    if GM and GM.WishIDs then
+        local w = GM.WishIDs()
+        for i = 1, math.min(#w, SAMPLE_CAP_WISH) do
+            pools[#pools + 1] = w[i]
+        end
+    end
+    if BG and type(BG.cur) == "table" then
+        local cs = {}
+        for _, v in pairs(BG.cur) do
+            if type(v) == "number" and v > 0 then cs[#cs + 1] = v end
+        end
+        table.sort(cs)
+        for i = 1, math.min(#cs, SAMPLE_CAP_CUR) do
+            pools[#pools + 1] = cs[i]
+        end
+    end
+    local qks = QuestKeys()
+    for i = 1, math.min(#qks, SAMPLE_CAP_QUEST) do
+        pools[#pools + 1] = qks[i]
+    end
+    local sks = SrcKeys(srcIdx)
     for i = 1, math.min(#sks, SAMPLE_CAP_SRC) do
         pools[#pools + 1] = sks[i]
     end
@@ -477,27 +569,51 @@ function TL.SampleItem()
     for _, id in ipairs(pools) do
         local sc = 0
         if cfg.wish and GM and GM.WishIs and GM.WishIs(id) then sc = sc + 2 end
-        if cfg.quest and QuestOf(id) then sc = sc + 2 end
-        if cfg.src and srcIdx[id] then sc = sc + 1 end
+        if cfg.quest and QuestHit(id) then sc = sc + 2 end
+        if cfg.src then
+            if srcIdx[id] then sc = sc + 1 end
+        end
         if cfg.src and not srcIdx[id] then
             local cn = BuildCraft()
             if cn and cn[id] then sc = sc + 2 end
         end
-        if cfg.bis then
-            local _, has = BisHit(id)
-            if has then sc = sc + 2 end
-        end
-        if cfg.bisScore then
-            local BG = ns.BisModule
-            if BG and BG.ScoreVsBis and BG.ScoreVsBis(id) ~= nil then sc = sc + 2 end
+        if cfg.bis and (curSet and curSet[id] or bisIdxHit and bisIdxHit[id]) then sc = sc + 2 end
+        if doSvb then
+            local ver = SvbVersion(BG)
+            if svbVer ~= ver then
+                svbHit = {}
+                svbN = 0
+                svbVer = ver
+            end
+            local now = GetTime()
+            local e = svbHit[id]
+            if e ~= nil then
+                if e.b then
+                    if now - e.t > 300 then e = nil end
+                elseif now - e.t > 30 then
+                    e = nil
+                end
+            end
+            if e == nil then
+                local hit = BG.ScoreVsBis(id) ~= nil
+                e = { b = hit, t = now }
+                svbHit[id] = e
+                svbN = svbN + 1
+                if svbN > 4096 then
+                    svbHit = {}
+                    svbN = 0
+                end
+            end
+            if e.b then sc = sc + 2 end
         end
         if sc > 0 and sc > (bestScore or 0) then
             bestId = id
             bestScore = sc
         end
     end
-    if bestId then return bestId end
-    return SampleFallback()
+    if not bestId then bestId = SampleFallback() end
+    sampCacheId, sampCacheKey = bestId, key
+    return bestId
 end
 
 local PREVIEW_W = 340

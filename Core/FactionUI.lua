@@ -579,7 +579,7 @@ FV.Build = function(page)
         r.badge:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -11)
         r:EnableMouse(true)
         r:SetScript("OnEnter", function(self)
-            if self.__huiCard and ns.hui.HuiCardState then
+            if self.__huiCard and ns.hui.HuiCardState and not self.__selActive then
                 ns.hui.HuiCardState(self, "hover")
                 self.__hst = "hover"
             end
@@ -744,7 +744,7 @@ function FV:SyncHover()
     if not FV.dCull then return end
     for _, f in ipairs(FV.lCull) do
         if f.__active and f.__huiCard and f.__fid and f.IsShown and f:IsShown() then
-            local st = MouseOverSafe(f) and "hover" or "norm"
+            local st = (MouseOverSafe(f) and not f.__selActive) and "hover" or "norm"
             if f.__hst ~= st and ns.hui and ns.hui.HuiCardState then
                 ns.hui.HuiCardState(f, st)
                 f.__hst = st
@@ -825,26 +825,14 @@ function FV:PaintList()
                 .. "/" .. NumStr(STANDINGS[__ti].span))
             r.badge:SetText(SideText(x.side))
             local sel = (c.sel == x.id)
+            r.__selActive = sel and true or nil
             if HUI and r.__huiCard and ns.hui.HuiCardState then
                 ns.hui.HuiCardState(r, "norm")
                 r.__hst = "norm"
             end
-            if sel then
-                if HUI and ns.hui.BuildRoundBorder then
-                    if r.__selBorder then
-                        for _, t in ipairs(r.__selBorder) do
-                            t:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
-                            t:Show()
-                        end
-                    else
-                        r.__selBorder = ns.hui.BuildRoundBorder(r, 6, GOLD, r, "OVERLAY")
-                    end
-                else
+            if not (HUI and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, sel)) then
+                if sel then
                     SetButtonSelected(r, false)
-                end
-            else
-                if r.__selBorder then
-                    for _, t in ipairs(r.__selBorder) do t:Hide() end
                 end
             end
             r.__tip = FacName(x) .. "\n" .. SIDE_INFO[x.side].text .. " · " .. L["起始声望"] .. " " .. NumStr(x.start)

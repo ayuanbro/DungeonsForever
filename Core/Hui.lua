@@ -576,11 +576,6 @@ do
         return Mul(mix, 1.17), Mul(mix, 0.86)
     end
 
-    local function GradRowSel()
-        local mix = Blend(ns.hui.layer.L2, ns.hui.layer.ACCENT, 0.55)
-        return Mul(mix, 1.35), Mul(mix, 0.55)
-    end
-
     local function ButtonBase(bt)
         return ns.hui.layer[bt.__huiBaseLv or "L2"] or ns.hui.layer.L2
     end
@@ -1158,17 +1153,24 @@ do
     ns.hui.BuildCapsule = BuildCapsule
     ns.hui.GlassPaint = GlassPaint
 
+    local ROW_SEL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGrad"
+
     function ns.hui.PaintRowSelect(f, on)
         if not f or not f.__huiCard then return false end
-        local cap = f.__huiRowSelCap
-        if not cap then
-            cap = BuildCapsule(f, 6, ns.hui.layer.L2, 1, 1, GradRowSel)
-            f.__huiRowSelCap = cap
-            GradCapsule(cap, GradRowSel)
-            for _, t in ipairs(cap) do t:Hide() end
+        local t = f.__huiRowSelTex
+        if not t then
+            t = f:CreateTexture(nil, "BACKGROUND", nil, 1)
+            t:SetTexture(ROW_SEL_TEX)
+            t:SetAllPoints()
+            t:Hide()
+            f.__huiRowSelTex = t
         end
         on = on and true or false
-        for _, t in ipairs(cap) do t:SetShown(on) end
+        t:SetShown(on)
+        if on then
+            local ac = ns.hui.ACCENT
+            t:SetVertexColor(ac[1], ac[2], ac[3], 1)
+        end
         local bp = f.__huiCard
         if bp.border then
             local c = on and ns.hui.ACCENT or C_CARD_BORDER

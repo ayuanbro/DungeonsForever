@@ -472,6 +472,9 @@ local function PaintRow(r, rec)
         if not (ns.hui and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, selOn)) then
             SetOutline(r, selOn, Unpack(C_ACCENT))
         end
+        if r.__hover and selOn then
+            for _, t in ipairs(r.__hover) do t:Hide() end
+        end
         r.name:SetTextColor(Unpack(selOn and C_SEL_NAME or C_TEXT))
     else
         r.__rec = nil
@@ -1178,7 +1181,7 @@ local function BuildListPanel(page)
         end
         r.__hover = nil
         if ns.hui and ns.hui.BuildCapsule then
-            local hp = ns.hui.BuildCapsule(r, 12, ns.hui.layer.L4, 1, 2)
+            local hp = ns.hui.BuildCapsule(r, 6, ns.hui.layer.L4, 1, 2)
             for _, t in ipairs(hp) do t:Hide() end
             r.__hover = hp
         else
@@ -1200,7 +1203,7 @@ local function BuildListPanel(page)
         r.src:SetWordWrap(false)
         MakeOutline(r, Unpack(C_ACCENT))
         r:SetScript("OnEnter", function(self)
-            if self.__hover then
+            if self.__hover and not (self.__rec and self.__rec == CG.sel) then
                 for _, t in ipairs(self.__hover) do t:Show() end
             end
             local rec = self.__rec

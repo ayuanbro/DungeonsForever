@@ -1438,7 +1438,10 @@ function RA.QuoteSig()
     local fee = PDm and PDm.SettingRaw and tonumber(PDm.SettingRaw("recoveryFeePercent")) or 5
     local lim = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas")) and 1 or 0
     local unk = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and 1 or 0
+    local rec = (PDm and PDm.Setting and PDm.Setting("recoveryEnabled")) and 1 or 0
+    local tool = (PDm and PDm.Setting and PDm.Setting("autoCraftTools")) and 1 or 0
     return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(unk)
+        .. ":" .. tostring(rec) .. ":" .. tostring(tool)
 end
 
 function RA.SpecSig(slug)
@@ -1447,6 +1450,35 @@ function RA.SpecSig(slug)
     local choice = "none"
     if G.GetPlannedChoice then choice = G.GetPlannedChoice() end
     return G.SpecFingerprint(choice)
+end
+
+function RA.OptionsFor(slug, current)
+    local PDm = ns.ProfModule
+    if not (PDm and PDm.Setting) then return nil end
+    local fish = PDm.CookingFishingMode and PDm.CookingFishingMode(slug) or false
+    local pair = (not fish) and PDm.RoutePairContext and PDm.RoutePairContext() or nil
+    local target = PDm.LvTarget and PDm.LvTarget() or CAP
+    local lv = tonumber(current)
+    return {
+        start = (PDm.Setting("autoFromCurrent") and lv) and math.max(1, lv) or 1,
+        onlyAH = PDm.Setting("autoOnlyAH"),
+        learnedOnly = PDm.Setting("autoLearnedOnly"),
+        target = target,
+        scheme = fish and "fishing" or PDm.SettingRaw("autoScheme"),
+        allowSecondaryLeveling = PDm.Setting("autoSecondaryLeveling"),
+        secondaryProfession = pair and pair.partner or nil,
+        executionInventory = ns.ProfTrack and ns.ProfTrack.ContinueInventory
+            and ns.ProfTrack.ContinueInventory(slug) or nil,
+    }
+end
+
+function RA.Recalculate(slug, opts)
+    RA.Invalidate()
+    return true
+end
+
+function RA.PlanSig(slug, opts)
+    return Fingerprint(opts or {}, slug) .. "#" .. RA.QuoteSig() .. "#" .. RA.SpecSig(slug)
 end
 
 function RA.Get(slug, opts)
@@ -1464,7 +1496,8 @@ function RA.Get(slug, opts)
     if e and e.sig == sig and e.specSig == specSig and (now - e.stamp) < CACHE_TTL then return e.res end
     local refreshed = e ~= nil and e.sig ~= sig
     local res = RA.Compute(slug, opts)
-    if refreshed then res.quotesRefreshed = true end
+    if res then res.planSig = fp .. "#" .. sig .. "#" .. specSig end
+    if res and refreshed then res.quotesRefreshed = true end
     bucket[fp] = { res = res, stamp = now, sig = sig, specSig = specSig }
     local n, oldK, oldT = 0, nil, nil
     for k, v in pairs(bucket) do
