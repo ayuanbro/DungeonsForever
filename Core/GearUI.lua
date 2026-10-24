@@ -3752,7 +3752,7 @@ function G.Build(page)
     if not page or not page.SetParent then return end
     G.building = true
     ns.OpenPerf.Begin("装备库·首建")
-    ns.PhasedStart(10, function()
+    ns.PhasedStart(28, function()
     local cfg = GDB()
     G.cat = cfg.cat or "ALL"
     G.sort = (cfg.sort == "ilvl" or cfg.sort == "name") and cfg.sort or "req"

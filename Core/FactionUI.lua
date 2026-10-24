@@ -357,7 +357,7 @@ end
 FV.Build = function(page)
     if FV.built or FV.building then return end
     FV.building = true
-    ns.PhasedStart(34, coroutine.create(function()
+    ns.PhasedStart(25, coroutine.create(function()
     FV.page = page
 
     local leftCard = CreateFrame("Frame", nil, page)

@@ -830,37 +830,30 @@ end
 DG.Loader = {
     budgetMs = 4,
     preset   = "normal",
-    budgetFactor = 0.4,
+    budgetFactor = 0.8,
+    capMin = 8,
+    capMax = 200,
 }
 DG.LOADER_PRESETS = { eco = 2, normal = 4, turbo = 8 }
 DG.LOADER_LABEL = { eco = L["省电"], normal = L["标准"], turbo = L["激进"] }
 
-DG.LOADER_FACTOR = { eco = 0.25, normal = 0.4, turbo = 0.6 }
+DG.LOADER_FACTOR = { eco = 0.6, normal = 0.8, turbo = 1.0 }
 
 function DG.Loader.CurCap(remaining)
     local L0 = DG.Loader
-    local base = L0.budgetMs or 4
-    local now = type(debugprofilestop) == "function" and debugprofilestop() or nil
-    local done = DG.Gate.done
-    if not (L0.__buildT0 and now and done and done >= 5 and remaining and remaining > 0) then
-        return L0.__cap or base
-    end
-    local rate = (now - L0.__buildT0) / done
-    local projT = remaining * rate / 1000
-    local cap = L0.__cap or base
-    if projT > 15 then
-        cap = math.min(cap * 1.8, 50)
-    elseif projT < 5 and cap > base then
-        cap = math.max(cap / 1.5, base)
-    end
-    if cap > 50 then cap = 50 end
-    L0.__cap = cap
+    local dt = L0.__dt
+    if type(dt) ~= "number" or dt <= 0 then dt = 16 end
+    local cap = dt * (L0.budgetFactor or 0.8)
+    local lo = L0.capMin or 8
+    local hi = L0.capMax or 200
+    if cap < lo then cap = lo end
+    if cap > hi then cap = hi end
     return cap
 end
 
 function DG.Loader.SetBudget(k)
     local v = DG.LOADER_PRESETS[k]
-    DG.Loader.budgetFactor = DG.LOADER_FACTOR[k] or 0.4
+    DG.Loader.budgetFactor = DG.LOADER_FACTOR[k] or 0.8
     if type(v) ~= "number" then return false end
     DG.Loader.budgetMs = v
     DG.Loader.preset = k
@@ -872,10 +865,12 @@ function DG.Loader.Init()
     local k = DB().loadBudget
     if DG.LOADER_PRESETS[k] then
         DG.Loader.budgetMs = DG.LOADER_PRESETS[k]
+        DG.Loader.budgetFactor = DG.LOADER_FACTOR[k] or 0.8
         DG.Loader.preset = k
     else
         DG.Loader.preset = "normal"
         DG.Loader.budgetMs = DG.LOADER_PRESETS.normal
+        DG.Loader.budgetFactor = DG.LOADER_FACTOR.normal
     end
 end
 
@@ -888,7 +883,7 @@ function DG.__nowMs()
     return nil
 end
 
-DG.Gate = { on = false, total = 0, done = 0, minSteps = 24, skipped = false, w = CONTENT_W }
+DG.Gate = { on = false, total = 0, done = 0, minSteps = 2, skipped = false, w = CONTENT_W }
 
 function DG.Gate.Ensure()
     if DG.Gate.bar then return true end
@@ -924,7 +919,7 @@ function DG.Gate.Ensure()
 
     local pill = CreateFrame("Frame", nil, panel, "BackdropTemplate")
     pill:SetFrameLevel(panel:GetFrameLevel() + 21)
-    pill:SetSize(200, 28)
+    pill:SetSize(240, 28)
     pill:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -10, 10)
     pill:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -956,14 +951,29 @@ end
 function DG.Gate.Paint()
     local bar, pill = DG.Gate.bar, DG.Gate.pill
     local total = DG.Gate.total
-    local pct = 0
-    if total > 0 then pct = math.floor(DG.Gate.done / total * 100 + 0.5) end
-    if pct < 0 then pct = 0 elseif pct > 100 then pct = 100 end
+    local done = DG.Gate.done
+    if total <= 0 then total = 1 end
+    local pct = math.floor(done / total * 100 + 0.5)
+    if pct < 0 then pct = 0 end
+    local lim = (done < total) and 99 or 100
+    if pct > lim then pct = lim end
+    if DG.Gate.pctShow and pct < DG.Gate.pctShow then pct = DG.Gate.pctShow end
+    DG.Gate.pctShow = pct
     if bar then
         bar.fill:SetWidth(math.max(1, math.floor(DG.Gate.w * pct / 100)))
     end
     if pill and pill.text then
-        pill.text:SetText(L["正在载入…"] .. " " .. pct .. "%")
+        local eta = ""
+        local t0 = DG.Gate.t0
+        if t0 and done > 0 and type(debugprofilestop) == "function" then
+            local el = debugprofilestop() - t0
+            local left = total - done
+            if left > 0 and el > 400 then
+                local s = math.floor(el / done * left / 1000 + 0.5)
+                if s >= 0 and s < 600 then eta = " · " .. s .. "s" end
+            end
+        end
+        pill.text:SetText(L["正在载入…"] .. " " .. pct .. "%" .. eta)
     end
 end
 
@@ -973,11 +983,14 @@ function DG.Gate.HideUI()
 end
 
 function DG.Gate.Begin(n)
-    DG.Gate.total = n or 0
+    DG.Gate.total = (type(n) == "number" and n > 0) and math.floor(n) or 1
     DG.Gate.done = 0
+    DG.Gate.pctShow = nil
+    DG.Gate.paintT = 0
     DG.Gate.skipped = false
     DG.Loader.__cap = nil
     DG.Loader.__buildT0 = type(debugprofilestop) == "function" and debugprofilestop() or nil
+    DG.Gate.t0 = DG.Loader.__buildT0
     if DG.Gate.total < DG.Gate.minSteps then return end
     DG.Gate.on = true
     if DG.Gate.Ensure() then
@@ -1045,7 +1058,18 @@ end
 
 function DG.Gate.Advance(k)
     DG.Gate.done = DG.Gate.done + (k or 1)
-    if DG.Gate.on then DG.Gate.Paint() end
+    if DG.Gate.done > DG.Gate.total then DG.Gate.total = DG.Gate.done end
+    if DG.Gate.on then
+        local now = type(GetTime) == "function" and GetTime() or nil
+        if now then
+            if now - (DG.Gate.paintT or 0) >= 0.035 then
+                DG.Gate.paintT = now
+                DG.Gate.Paint()
+            end
+        else
+            DG.Gate.Paint()
+        end
+    end
 end
 
 function DG.Gate.Skip()
@@ -1058,6 +1082,7 @@ end
 
 function DG.Gate.Finish()
     DG.Gate.done = DG.Gate.total
+    if DG.Gate.on then DG.Gate.Paint() end
     DG.Gate.on = false
     DG.Loader.__buildT0 = nil
     DG.Gate.HideUI()
@@ -1098,7 +1123,7 @@ if type(SlashCmdList) == "table" then
         if DG.LOADER_PRESETS[k] then
             DG.Loader.SetBudget(k)
             print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. " = "
-                  .. (DG.LOADER_LABEL[k] or k) .. "（" .. DG.LOADER_PRESETS[k] .. "ms/帧）")
+                  .. (DG.LOADER_LABEL[k] or k) .. "（" .. math.floor(DG.Loader.CurCap()) .. "ms/帧）")
             return
         end
         print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. "："
@@ -1137,7 +1162,7 @@ function DG.BuildPendRows()
         DG.Gate.Advance(1)
         left = left - 1
         local t1 = t0 and DG.__nowMs()
-        if t1 and (t1 - t0) >= DG.Loader.budgetMs then break end
+        if t1 and (t1 - t0) >= DG.Loader.CurCap() then break end
     end
     if #list > 0 then
         DG.PushStep(DG.BuildPendRows)
@@ -1164,7 +1189,7 @@ function DG.FlushPendingRows()
     DG.RunSteps()
 end
 
-DG.LOOT_ROW_FRAME_CAP = 16
+DG.LOOT_ROW_FRAME_CAP = 64
 
 DG.DEMO_SAVE = nil
 
@@ -1203,7 +1228,7 @@ function DG.Loader.EndDemo()
     DG.Gate.minSteps      = s.minSteps
     DG.ROW_SYNC_MAX       = s.syncMax
     DG.LOOT_ROW_FRAME_CAP = s.rowCap
-    DG.CARD_POOL_CAP      = s.cardCap or 6
+    DG.CARD_POOL_CAP      = s.cardCap or 24
 end
 
 if type(SlashCmdList) == "table" then
@@ -1227,7 +1252,7 @@ if type(SlashCmdList) == "table" then
         local pool = U.dungeonDetailPool
         local n = (pool and pool.item) and #pool.item or 0
         print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. " = "
-              .. (DG.LOADER_LABEL[DG.Loader.preset] or DG.Loader.preset) .. "（" .. DG.Loader.budgetMs .. "ms/帧）")
+              .. (DG.LOADER_LABEL[DG.Loader.preset] or DG.Loader.preset) .. "（" .. math.floor(DG.Loader.CurCap()) .. "ms/帧）")
         print("  " .. L["进度条"] .. " " .. DG.Gate.done .. "/" .. DG.Gate.total
               .. " · " .. L["待建行"] .. " " .. #DG.__pendRows
               .. " · " .. L["行池"] .. " " .. n)
@@ -1270,7 +1295,11 @@ function DG.RunSteps()
         f:SetFrameLevel(1)
         DG.__pumpFrame = f
     end
-    f:SetScript("OnUpdate", function(self)
+    f:SetScript("OnUpdate", function(self, el)
+        if type(el) == "number" and el > 0 and el < 5 then
+            local L0 = DG.Loader
+            L0.__dt = math.min(math.max((L0.__dt or 16) * 0.7 + el * 1000 * 0.3, 1), 5000)
+        end
         if #DG.pendingSteps == 0 then
             self:SetScript("OnUpdate", nil)
             finish()
@@ -1297,9 +1326,19 @@ function DG.RunSteps()
 end
 
 ns.PhasedStart = function(total, body, onFail)
-    pcall(collectgarbage, "stop")
+    if type(collectgarbage) == "function" then
+        pcall(collectgarbage, "setpause", 150)
+        pcall(collectgarbage, "setstepmul", 300)
+    end
     local co = type(body) == "thread" and body or coroutine.create(body)
     local __sliceN = 0
+    local function gcRestore()
+        if type(collectgarbage) == "function" then
+            pcall(collectgarbage, "restart")
+            pcall(collectgarbage, "setpause", 200)
+            pcall(collectgarbage, "setstepmul", 200)
+        end
+    end
     local function step()
         local done = false
         local ok, err = pcall(function()
@@ -1332,7 +1371,7 @@ ns.PhasedStart = function(total, body, onFail)
             end
         end)
         if not ok then
-            pcall(collectgarbage, "restart")
+            gcRestore()
             _G.DF_LAST_BUILD_ERR = tostring(err)
                 .. " || " .. (type(debugstack) == "function" and debugstack(co, 2, 1, 12) or "")
             DG.Gate.Finish()
@@ -1341,7 +1380,7 @@ ns.PhasedStart = function(total, body, onFail)
             return
         end
         if done then
-            pcall(collectgarbage, "restart")
+            gcRestore()
             if ns.IdleJobs then ns.IdleJobs.StepGC(60, 512) end
             return
         end
@@ -1430,7 +1469,7 @@ function DG.NewBossCard(dchild, arrow)
     return c
 end
 
-DG.CARD_POOL_CAP = 6
+DG.CARD_POOL_CAP = 24
 function DG.CardPoolReady()
     return (DG.__cardPoolI or 0) >= (DG.LOOT_CARD_MAX or 0)
 end
@@ -1454,7 +1493,7 @@ function DG.BuildCardPool()
         DG.Gate.Advance(1)
         left = left - 1
         local t1 = t0 and DG.__nowMs()
-        if t1 and (t1 - t0) >= DG.Loader.budgetMs then break end
+        if t1 and (t1 - t0) >= DG.Loader.CurCap() then break end
     end
     DG.__cardPoolI = i
     if i < n then
@@ -1943,7 +1982,9 @@ DG.Q_OV_TODO = { 0.55, 0.55, 0.55, 1 }
 function DG.PaintQuestOverview(d)
     local ov, canvas, pool = U.dungeonQOverviewF, U.dungeonQOVCanvas, U.dungeonQOVPool
     if not (ov and canvas and pool and d) then return end
-    collectgarbage("stop")
+    local gcOn = type(collectgarbage) == "function"
+    if gcOn then pcall(collectgarbage, "stop") end
+    local qovOk, qovErr = pcall(function()
     local list = DG.QuestList(d)
     DG.PrefetchQuestData(list)
     local side = U.dungeonQSide
@@ -2838,7 +2879,9 @@ function DG.PaintQuestOverview(d)
     if U.dungeonQOVSync then U.dungeonQOVSync() end
     if U.dungeonQOVClamp then U.dungeonQOVClamp() end
     for i = nNode + 1, #(pool.node) do pool.node[i]:Hide() end
-    collectgarbage("restart")
+    end)
+    if gcOn then pcall(collectgarbage, "restart") end
+    if not qovOk then _G.DF_QOV_ERR = tostring(qovErr) end
 end
 
 function DG.EnsureGuideLane()

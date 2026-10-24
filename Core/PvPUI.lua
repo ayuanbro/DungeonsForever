@@ -465,7 +465,7 @@ end
 function PV.Build(page)
     if PV.built or PV.building then return end
     PV.building = true
-    ns.PhasedStart(60, coroutine.create(function()
+    ns.PhasedStart(64, coroutine.create(function()
     PV.page = page
     PV.tabs = {}
     PV.chips = {}

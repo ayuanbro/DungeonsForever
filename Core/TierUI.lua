@@ -1411,7 +1411,7 @@ function TT.Build(page)
     if TT.built or TT.building then return end
     ns.OpenPerf.Begin("职业指南")
     TT.building = true
-    ns.PhasedStart(15, coroutine.create(function()
+    ns.PhasedStart(10, coroutine.create(function()
     TT.page = page
 
     do

@@ -2262,7 +2262,7 @@ do
             fs:ClearAllPoints()
             fs:SetPoint("CENTER", 0, -1)
             fs:SetJustifyH("CENTER")
-            fs:SetTextColor(1, 1, 1)
+            fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
             fs:SetFont(ns.FONT, 15, "")
         end
 
@@ -2317,6 +2317,9 @@ do
         local function huiOnEnter()
             if not bt:IsEnabled() then return end
             bt.__huiHover = true
+            if fs and not bt.__huiKeepTextColor and not bt.__huiSelected then
+                fs:SetTextColor(C_TEXT[1][1], C_TEXT[1][2], C_TEXT[1][3])
+            end
             PaintState(bt)
         end
         local function huiOnLeave()
@@ -2327,10 +2330,8 @@ do
             if fs and bt:IsEnabled() and not bt.__huiKeepTextColor then
                 if bt.__huiSelected then
                     fs:SetTextColor(1, 1, 1)
-                elseif bt.__huiIdleText then
-                    fs:SetTextColor(ns.hui.TEXT[3][1], ns.hui.TEXT[3][2], ns.hui.TEXT[3][3])
                 else
-                    fs:SetTextColor(1, 1, 1)
+                    fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
                 end
             end
         end
@@ -2360,7 +2361,13 @@ do
             if not enabled then pressOff() end
             if fs then
                 if enabled then
-                    if not bt.__huiKeepTextColor then fs:SetTextColor(1, 1, 1) end
+                    if not bt.__huiKeepTextColor then
+                        if bt.__huiSelected then
+                            fs:SetTextColor(1, 1, 1)
+                        else
+                            fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
+                        end
+                    end
                 else
                     fs:SetTextColor(0.5, 0.5, 0.5)
                 end
@@ -2425,11 +2432,9 @@ do
         if fs and not bt.__huiKeepTextColor then
             if onv then
                 fs:SetTextColor(1, 1, 1)
-            elseif bt.__huiIdleText then
-                fs:SetText(bt.__huiIdleText)
-                fs:SetTextColor(ns.hui.TEXT[3][1], ns.hui.TEXT[3][2], ns.hui.TEXT[3][3])
-            elseif kv == "tab" then
-                fs:SetTextColor(ns.hui.TEXT[3][1], ns.hui.TEXT[3][2], ns.hui.TEXT[3][3])
+            else
+                if bt.__huiIdleText then fs:SetText(bt.__huiIdleText) end
+                fs:SetTextColor(C_TEXT[3][1], C_TEXT[3][2], C_TEXT[3][3])
             end
         end
         if bt.__huiTabLine then bt.__huiTabLine:Hide() end

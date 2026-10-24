@@ -1198,8 +1198,8 @@ local function BuildListPanel(page)
         r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -4)
         r.name:SetWidth(LIST_W - 2 * PAD - 44 - 4)
         r.name:SetWordWrap(false)
-        r.src = MakeFS(r, 11, C_GREY, "LEFT")
-        r.src:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 44, 5)
+        r.src = MakeFS(r, 14, C_GREY, "LEFT")
+        r.src:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -5.5)
         r.src:SetWordWrap(false)
         MakeOutline(r, Unpack(C_ACCENT))
         r:SetScript("OnEnter", function(self)
@@ -1556,7 +1556,7 @@ end
 function CG.Build(page)
     if CG.built or CG.building then return end
     CG.building = true
-    ns.PhasedStart(34, coroutine.create(function()
+    ns.PhasedStart(71, coroutine.create(function()
     CG.page = page
     CG.sub = SUB_MOUNT
     CG.filter = "all"

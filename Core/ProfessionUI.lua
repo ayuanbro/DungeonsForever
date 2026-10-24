@@ -3073,7 +3073,7 @@ function PD.Build(page)
     PD.building = true
     PD.rows, PD.toolBtns, PD.setToggles = {}, {}, {}
     PD.perkOpen, PD.__pendRows = {}, {}
-    ns.PhasedStart(26, coroutine.create(function()
+    ns.PhasedStart(30, coroutine.create(function()
     PD.page = page
     if not PD.trFac then
         if UnitFactionGroup and UnitFactionGroup("player") == "Horde" then

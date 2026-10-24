@@ -1723,74 +1723,370 @@ function BG.LayoutMid()
     p2:SetPoint("BOTTOMRIGHT", p3, "TOPLEFT", 224, 8)
 end
 
+do
 local AUTO_SRC_KNOWN = { craft = true, quest = true, boss = true, rare = true, vendor = true }
+local AUTO_SNAP_MAX = 6
+local AUTO_BUDGET_MS = 6
 
-local function ComputeAutoPlan(mode, cap)
-    local cur = {}
-    local sp = SpecRec()
-    if not sp then return cur end
-    local srcSet = (mode == "known") and AUTO_SRC_KNOWN or nil
-    local w = EffWeights()
-    local mk = MainKey(sp)
-    local buckets, cat = {}, EnsureCatalog()
-    local usedQ = {}
-    if cat then
-        for i = 1, #cat do
-            local r = cat[i]
-            if r.s and ClassWear(BG.cls, r.c, r.u) and ClsOK(r.id) and (r.req or 0) <= cap
-                and not (srcSet and not srcSet[CatKind(r.id)]) then
-                local b = buckets[r.s]
-                if not b then b = {} buckets[r.s] = b end
-                b[#b + 1] = r
-            end
+function BG.AutoLevel()
+    local lv = PlayerLevel() or 60
+    if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
+    return lv
+end
+
+local function CopyCur(src)
+    local out = {}
+    if type(src) == "table" then
+        for k, v in pairs(src) do out[k] = v end
+    end
+    return out
+end
+
+local autoVer
+
+local function AutoVer()
+    if autoVer then return autoVer end
+    local fn = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+    local v
+    if type(fn) == "function" then
+        local ok, r = pcall(fn, "DungeonsForever", "Version")
+        if ok and type(r) == "string" and r ~= "" then v = r end
+    end
+    if not v then v = tostring(ns.version or "0") end
+    autoVer = v
+    return autoVer
+end
+
+local function AutoSig(mode, cap)
+    return table.concat({ tostring(AutoVer()), tostring(BG.cls or ""),
+        tostring(BG.spec or ""), tostring(BG.tspec or ""), tostring(mode),
+        tostring(cap), tostring(BG.wGen or 0), tostring(BG.wActive or 0),
+        PlayerFac() or "" }, "|")
+end
+
+local autoSnaps, autoSnapsLoaded = {}, false
+
+local function NowSec()
+    local f = time
+    if type(f) ~= "function" then return 0 end
+    local ok, v = pcall(f)
+    if ok and type(v) == "number" then return v end
+    return 0
+end
+
+local function LoadAutoSnaps()
+    autoSnapsLoaded = true
+    autoSnaps = {}
+    local list = DB().autoSnaps
+    if type(list) ~= "table" then return end
+    for i = 1, #list do
+        local e = list[i]
+        if type(e) == "table" and type(e.sig) == "string" and type(e.items) == "table" then
+            autoSnaps[e.sig] = e
         end
     end
-    for _, key in ipairs(ALL_SLOT_KEYS) do
-        local dk = DataKey(sp, key)
-        if key == "off-hand" and mk == "two-hand" then
-            cur[dk] = nil
+end
+
+local function SaveAutoSnaps()
+    local list = {}
+    for _, e in pairs(autoSnaps) do list[#list + 1] = e end
+    table.sort(list, function(a, b) return (a.t or 0) > (b.t or 0) end)
+    while #list > AUTO_SNAP_MAX do table.remove(list) end
+    local keep = {}
+    for _, e in ipairs(list) do keep[e.sig] = e end
+    autoSnaps = keep
+    DB().autoSnaps = list
+end
+
+local function AutoStore(mode, cap, sig, items, cls)
+    if not autoSnapsLoaded then LoadAutoSnaps() end
+    autoSnaps[sig] = { sig = sig, mode = mode, cls = cls, lv = cap,
+                       t = NowSec(), items = CopyCur(items) }
+    SaveAutoSnaps()
+end
+
+local function AutoStale(mode)
+    if not autoSnapsLoaded then LoadAutoSnaps() end
+    local best, any
+    for _, e in pairs(autoSnaps) do
+        if e.cls == BG.cls then
+            if e.mode == mode and (not best or (e.t or 0) > (best.t or 0)) then best = e end
+            if not any or (e.t or 0) > (any.t or 0) then any = e end
+        end
+    end
+    return best or any
+end
+
+local autoJob, autoJobSeq = nil, 0
+
+function BG.PaintAutoProg(frac)
+    local host = BG.panels and BG.panels[2]
+    if not host then return end
+    local h = BG.autoProg
+    if frac == nil then
+        if h and h:IsShown() then h:Hide() end
+        if BG.saveBtn then BG.saveBtn:Show() end
+        if BG.resetBtn then BG.resetBtn:Show() end
+        return
+    end
+    if not h then
+        h = CreateFrame("Frame", nil, host)
+        h:SetHeight(24)
+        h:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -40)
+        h:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -40)
+        h:SetFrameLevel((host:GetFrameLevel() or 0) + 5)
+        h.fs = MakeFS(h, 12, C_GOLD, "LEFT")
+        h.fs:SetPoint("TOPLEFT", h, "TOPLEFT", 0, 0)
+        h.fs:SetWordWrap(false)
+        local tr = CreateFrame("Frame", nil, h)
+        tr:SetHeight(4)
+        tr:SetPoint("BOTTOMLEFT", h, "BOTTOMLEFT", 0, 0)
+        tr:SetPoint("BOTTOMRIGHT", h, "BOTTOMRIGHT", 0, 0)
+        if ns.hui and ns.hui.BuildCapsule then
+            ns.hui.BuildCapsule(tr, 2, ns.hui.layer.L2)
         else
-            local rkey = RowsKey(key)
-            if rkey == "main-hand" then rkey = mk end
-            local best, bestScore
-            for _, sl in ipairs(SLOT_GEAR[rkey] or {}) do
-                for _, r in ipairs(buckets[sl] or {}) do
-                    if UsableAt(r.id, cap, r.req or 0) and not usedQ[r.id] then
-                        local sc = ItemScore(r.id, w)
-                        if sc and (bestScore == nil or sc > bestScore) then
-                            best, bestScore = r.id, sc
+            local bt = tr:CreateTexture(nil, "BACKGROUND")
+            bt:SetAllPoints()
+            bt:SetColorTexture(0, 0, 0, 0.45)
+        end
+        local fill = CreateFrame("Frame", nil, tr)
+        fill:SetHeight(4)
+        fill:SetWidth(2)
+        fill:SetPoint("LEFT", tr, "LEFT", 0, 0)
+        if ns.hui and ns.hui.BuildCapsule then
+            ns.hui.BuildCapsule(fill, 2, { 0.93, 0.76, 0.32 })
+        else
+            local ft = fill:CreateTexture(nil, "ARTWORK")
+            ft:SetAllPoints()
+            ft:SetColorTexture(0.93, 0.76, 0.32, 1)
+        end
+        h.track, h.fill = tr, fill
+        BG.autoProg = h
+    end
+    if BG.saveBtn then BG.saveBtn:Hide() end
+    if BG.resetBtn then BG.resetBtn:Hide() end
+    h:Show()
+    if frac < 0 then frac = 0 elseif frac > 1 then frac = 1 end
+    local pct = math.floor(frac * 100 + 0.5)
+    if h.pct ~= pct then
+        h.pct = pct
+        h.fs:SetText(format(L["正在生成方案"] .. " %d%%", pct))
+    end
+    local w = h:GetWidth() or 0
+    if w < 2 then w = 192 end
+    local fw = math.floor(w * frac + 0.5)
+    if fw < 2 then fw = 2 end
+    h.fill:SetWidth(fw)
+end
+
+local function AutoJobCancel()
+    if not autoJob then return end
+    autoJobSeq = autoJobSeq + 1
+    autoJob = nil
+    BG.PaintAutoProg(nil)
+end
+BG.AutoJobCancel = AutoJobCancel
+
+local autoKind = {}
+
+local function AutoKind(id)
+    local v = autoKind[id]
+    if v == nil then
+        v = CatKind(id)
+        autoKind[id] = v
+    end
+    return v
+end
+
+local function AutoRawOK(id, cap)
+    local qlv = ns.GearSrcQLv and ns.GearSrcQLv[id]
+    if type(qlv) == "number" and qlv > 0 and qlv > cap then return false end
+    local qid = ns.GearSrcQ and ns.GearSrcQ[id]
+    local fac = qid and ns.GearQuestRace and ns.GearQuestRace[qid]
+    if fac and fac ~= PlayerFac() then return false end
+    return true
+end
+
+local function AutoBuckets(job)
+    local cat = job.cat
+    if not cat or job.total < 1 then return true end
+    local i = job.ci
+    while i < job.total do
+        i = i + 1
+        local r = cat[i]
+        if r.s and ClassWear(job.cls, r.c, r.u) and ClsOK(r.id) and (r.req or 0) <= job.cap
+            and AutoRawOK(r.id, job.cap)
+            and not (job.srcSet and not job.srcSet[AutoKind(r.id)]) then
+            local b = job.buckets[r.s]
+            if not b then
+                b = {}
+                job.buckets[r.s] = b
+            end
+            b[#b + 1] = r
+        end
+        if debugprofilestop() - job.t0 > AUTO_BUDGET_MS then break end
+    end
+    job.ci = i
+    return i >= job.total
+end
+
+local function AutoPick(job)
+    local keys = job.keys
+    while job.ki <= #keys do
+        if not job.curKey then
+            job.curKey = keys[job.ki]
+            job.dk = DataKey(job.sp, job.curKey)
+            if job.curKey == "off-hand" and job.mk == "two-hand" then
+                job.cur[job.dk] = nil
+                job.ki = job.ki + 1
+                job.curKey = nil
+            else
+                local rkey = RowsKey(job.curKey)
+                if rkey == "main-hand" then rkey = job.mk end
+                job.groups = SLOT_GEAR[rkey] or {}
+                job.gi, job.bi = 1, 1
+                job.best, job.bestScore = nil, nil
+            end
+        else
+            local g = job.groups[job.gi]
+            if not g then
+                if job.best then
+                    job.cur[job.dk] = job.best
+                    if AutoKind(job.best) == "quest" or (ns.GearUni and ns.GearUni[job.best]) then
+                        job.usedQ[job.best] = true
+                    end
+                end
+                job.ki = job.ki + 1
+                job.curKey = nil
+            else
+                local b = job.buckets[g]
+                local r = b and b[job.bi]
+                if not r then
+                    job.gi = job.gi + 1
+                    job.bi = 1
+                else
+                    job.bi = job.bi + 1
+                    if UsableAt(r.id, job.cap, r.req or 0) and not job.usedQ[r.id] then
+                        local sc = ItemScore(r.id, job.w)
+                        if sc and (job.bestScore == nil or sc > job.bestScore) then
+                            job.best, job.bestScore = r.id, sc
                         end
                     end
                 end
             end
-            if best then
-                cur[dk] = best
-                if CatKind(best) == "quest" or (ns.GearUni and ns.GearUni[best]) then usedQ[best] = true end
+        end
+        if debugprofilestop() - job.t0 > AUTO_BUDGET_MS then return false end
+    end
+    return true
+end
+
+local function AutoPump(jobId)
+    local job = autoJob
+    if not job or job.id ~= jobId then return end
+    if job.phase == 1 and job.cat == nil then
+        job.cat = EnsureCatalog()
+        job.total = job.cat and #job.cat or 0
+        if job.total < 1 then
+            job.retry = (job.retry or 0) + 1
+            if job.retry > 25 then
+                autoJob = nil
+                BG.PaintAutoProg(nil)
+                return
             end
+            job.cat = nil
+            BG.PaintAutoProg(0)
+            C_Timer.After(0.2, function() AutoPump(jobId) end)
+            return
         end
     end
-    return cur
+    job.t0 = debugprofilestop()
+    local done = false
+    if job.phase == 1 then
+        if AutoBuckets(job) then
+            job.phase = 2
+        else
+            done = false
+        end
+    end
+    if job.phase == 2 then done = AutoPick(job) end
+    if autoJob ~= job then return end
+    local frac
+    if job.phase == 1 then
+        frac = 0.4 * ((job.ci or 0) / math.max(1, job.total or 1))
+    else
+        local sub = 0
+        if job.curKey and job.groups and #job.groups > 0 then
+            sub = ((job.gi or 1) - 1) / #job.groups
+            if sub > 1 then sub = 1 end
+        end
+        frac = 0.4 + 0.6 * ((job.ki - 1 + sub) / math.max(1, #job.keys))
+    end
+    if done then
+        autoJob = nil
+        AutoStore(job.mode, job.cap, job.sig, job.cur, job.cls)
+        if BG.cls == job.cls and BG.autoPlan == job.mode and BG.usingPlan == nil then
+            BG.cur = CopyCur(job.cur)
+            BG.autoStale = nil
+            BG.RequestRender()
+        end
+        BG.PaintAutoProg(nil)
+        return
+    end
+    BG.PaintAutoProg(frac)
+    C_Timer.After(0, function() AutoPump(jobId) end)
 end
 
-local autoPlanCache = nil
-
-local function AutoPlanKey(mode, cap)
-    return table.concat({ scoreKey or "", BG.cls or "", BG.spec or "", BG.tspec or "",
-        tostring(cap), tostring(mode), tostring(BG.wGen or 0) }, "|")
+local function AutoJobStart(mode, cap, sig)
+    autoJobSeq = autoJobSeq + 1
+    local sp = SpecRec()
+    if not sp then return end
+    autoJob = {
+        id = autoJobSeq, mode = mode, cap = cap, sig = sig,
+        cls = BG.cls, sp = sp, mk = MainKey(sp), w = EffWeights(),
+        srcSet = (mode == "known") and AUTO_SRC_KNOWN or nil,
+        cat = nil, total = 0, ci = 0,
+        phase = 1, buckets = {}, cur = {}, usedQ = {},
+        keys = ALL_SLOT_KEYS, ki = 1,
+    }
+    BG.PaintAutoProg(0)
+    local id = autoJobSeq
+    C_Timer.After(0, function() AutoPump(id) end)
 end
 
-local function AutoPlanFor(mode, cap)
-    if autoPlanCache and autoPlanCache.key == AutoPlanKey(mode, cap) then return autoPlanCache.cur end
-    local cur = ComputeAutoPlan(mode, cap)
-    autoPlanCache = { key = AutoPlanKey(mode, cap), cur = cur }
-    return cur
+function BG.AutoJobState()
+    if not autoJob then return nil end
+    return autoJob.mode, autoJob.phase, autoJob.ki, autoJob.ci, autoJob.total
+end
+
+function BG.UseAutoPlan(mode)
+    if not mode then return end
+    BG.autoPlan = mode
+    BG.usingPlan = nil
+    AutoJobCancel()
+    if not autoSnapsLoaded then LoadAutoSnaps() end
+    local cap = BG.AutoLevel()
+    local sig = AutoSig(mode, cap)
+    local snap = autoSnaps[sig]
+    if snap then
+        snap.t = NowSec()
+        BG.autoStale = nil
+        BG.cur = CopyCur(snap.items)
+        BG.RequestRender()
+        return
+    end
+    local old = AutoStale(mode)
+    BG.cur = old and CopyCur(old.items) or {}
+    BG.autoStale = old and old.lv or nil
+    BG.RequestRender()
+    AutoJobStart(mode, cap, sig)
+end
 end
 
 local function PresetList()
     local out = {}
     local tsp = BG.tspec
-    out[#out + 1] = { auto = "known", lv = UsableCap(), type = L["已知内容"] }
-    out[#out + 1] = { auto = "all", lv = UsableCap(), type = L["包含未知来源"] }
+    out[#out + 1] = { auto = "known", lv = BG.AutoLevel(), type = L["已知内容"] }
+    out[#out + 1] = { auto = "all", lv = BG.AutoLevel(), type = L["包含未知来源"] }
     for i = #VOLS, 1, -1 do
         local v = VOLS[i]
         local c
@@ -2574,7 +2870,7 @@ end
 function BG.GeneratePlan()
     local sp = SpecRec()
     if not sp then return end
-    local lv = UsableCap()
+    local lv = BG.AutoLevel()
     local w = EffWeights()
     local mk = MainKey(sp)
     local usedQ = {}
@@ -2603,17 +2899,8 @@ function BG.GeneratePlan()
         end
     end
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.usingPlan = nil
-    BG.RequestRender()
-end
-
-function BG.UseAutoPlan(mode)
-    if not mode then return end
-    BG.autoPlan = mode
-    BG.usingPlan = nil
-    BG.cur = {}
-    local src = AutoPlanFor(mode, UsableCap())
-    for k, v in pairs(src) do BG.cur[k] = v end
     BG.RequestRender()
 end
 
@@ -2636,6 +2923,7 @@ function BG.SelectClass(slug)
     BG.ench = {}
     BG.usingPlan = nil
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.sel = nil
     BG.side = nil
     BG.pkey = nil
@@ -2706,6 +2994,7 @@ function BG.SavePlan()
     BG.ench = {}
     BG.usingPlan = p
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.RequestRender()
 end
 
@@ -2714,6 +3003,7 @@ function BG.UsePlan(plan)
     BG.ench = {}
     BG.usingPlan = plan
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.pkey = nil
     if plan then
         if plan.vol then
@@ -2767,6 +3057,7 @@ function BG.UsePreset(idx, specId, side, pageKey, tspec)
     BG.ench = {}
     BG.usingPlan = nil
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.RequestRender()
 end
 
@@ -2775,6 +3066,7 @@ function BG.ResetToRec()
     BG.ench = {}
     BG.usingPlan = nil
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.RequestRender()
 end
 
@@ -3315,6 +3607,7 @@ local function BuildMid(m1, m2)
     local reset = NewButton(m1, L["恢复推荐"], (w - 8) / 2, 24, 14)
     reset:SetPoint("TOPLEFT", m1, "TOPLEFT", x + (w - 8) / 2 + 8, -40)
     reset:SetScript("OnClick", function() BG.ResetToRec() end)
+    BG.saveBtn, BG.resetBtn = save, reset
 
     local pool = CreateFrame("ScrollFrame", nil, m1)
     pool:EnableMouseWheel(true)
@@ -3596,7 +3889,6 @@ local function BuildBrowser(parent)
     local lvBox = eb
     BG.filterLvBox = eb
     local function FilterChanged()
-        autoPlanCache = nil
         if BG.usingPlan == nil and BG.autoPlan then
             BG.UseAutoPlan(BG.autoPlan)
         else
@@ -4018,7 +4310,7 @@ function BG.Build(page)
     BG.building = true
     BG.__buildTag = 2
     ns.OpenPerf.Begin("BIS")
-    ns.PhasedStart(8, coroutine.create(function()
+    ns.PhasedStart(25, coroutine.create(function()
     EnsureBIS()
     if not BG.vol then BG.vol = DefaultVol() end
     MigratePlans()

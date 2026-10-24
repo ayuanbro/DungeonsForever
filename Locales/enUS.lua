@@ -1685,3 +1685,4 @@ L["：吃一口立即回 500 血、12 秒内再回 1050，并回复法力 / 50 �
 L["：躺满 1 分钟 +1% 经验、最多 3 层、持续 2 小时；铺开需原地站 15 秒、睡袋落地留 20 分钟，冷却 1 小时，队友可同躺"] = ": +1% XP per full minute rested, up to 3 stacks lasting 2 hours; deploying requires standing still for 15 sec, the bedroll stays on the ground for 20 min, 1 hr cooldown, party members can share it"
 L["拍卖行价格或设置已更新，点击重新计算。"] = "Auction prices or settings changed. Click recalculate."
 L["当前为快速方案，点击按精确方案重新计算。"] = "Showing a quick plan. Click to calculate the exact plan."
+L["正在生成方案"] = "Generating plan"

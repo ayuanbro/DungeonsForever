@@ -2471,7 +2471,7 @@ end
 function EG.Build(page)
     if EG.built or EG.building then return end
     EG.building = true
-    ns.PhasedStart(76, coroutine.create(function()
+    ns.PhasedStart(65, coroutine.create(function()
     if EG.built then return end
     EG.found = Found()
     EG.view = View()
