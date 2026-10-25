@@ -327,6 +327,8 @@ local EXCLUDE = {
 }
 local augStamp = {}
 
+local _shGuard = false
+
 local function TipItemID(tt)
     if type(tt.GetItem) ~= "function" then return nil end
     local ok, _, link = pcall(tt.GetItem, tt)
@@ -366,7 +368,11 @@ local function FixIlvlHeight(tt)
     if type(top) ~= "number" or type(bot) ~= "number" then return end
     local h = math.ceil(top - bot + pad)
     tt.__dfIlvlSetH = h
+    local cur = tt.GetHeight and tt:GetHeight()
+    if type(cur) == "number" and math.abs(cur - h) < 1 then return end
+    _shGuard = true
     tt:SetHeight(h)
+    _shGuard = false
 end
 
 local function InsertIlvl(tt, id)
@@ -505,6 +511,16 @@ local function HookTip(tt)
         if self.__dfIlvlFS then self.__dfIlvlFS:Hide() end
     end)
     pcall(tt.HookScript, tt, "OnTooltipSetItem", function() Augment(tt) end)
+    pcall(tt.HookScript, tt, "OnUpdate", function(t)
+        FixIlvlHeight(t)
+    end)
+    pcall(hooksecurefunc, tt, "SetHeight", function(t)
+        if _shGuard then return end
+        local fs = t.__dfIlvlFS
+        if not (fs and fs.IsShown and fs:IsShown()) then return end
+        if type(t.__dfIlvlPad) ~= "number" then return end
+        FixIlvlHeight(t)
+    end)
 end
 
 local SAMPLE_CAP_WISH = 64

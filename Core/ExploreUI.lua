@@ -10,6 +10,7 @@ if not Host then return end
 local DG = Host.DG
 local MakeFS = Host.MakeFS
 local NewButton, MakeOutline, SetButtonSelected = Host.NewButton, Host.MakeOutline, Host.SetButtonSelected
+local huiPaintRowSelect = ns.hui and ns.hui.PaintRowSelect or nil
 local SetOutline, Unpack = Host.SetOutline, Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
@@ -361,6 +362,7 @@ local function CurSub()
     if db.explore.subPage == "pets" then return "pets" end
     if db.explore.subPage == "torch" then return "torch" end
     if db.explore.subPage == "banner" then return "banner" end
+    if db.explore.subPage == "routes" then return "routes" end
     return "books"
 end
 
@@ -1567,6 +1569,310 @@ local function BagLayoutRows()
 end
 EG.BagLayoutRows = BagLayoutRows
 
+local ROUTES = ns.ExploreRoutes or { h = {}, a = {} }
+local RT_KIND_TXT = {
+    die = { L["送死"], { 0.78, 0.14, 0.12, 1 } },
+    grave = { L["复活"], { 0.16, 0.52, 0.26, 1 } },
+    fp = { L["飞行点"], { 0.78, 0.60, 0.10, 1 } },
+    travel = { L["位移"], { 0.18, 0.45, 0.66, 1 } },
+    item = { L["中转"], { 0.36, 0.39, 0.44, 1 } },
+}
+local RT_LIST_W = 300
+EG.RT_MAX_TARGETS, EG.RT_MAX_STEPS = 10, 14
+
+local function RtFac()
+    local id = "h"
+    if type(UnitFactionGroup) == "function" then
+        local ok, _, eng = pcall(UnitFactionGroup, "player")
+        if ok and eng == "Alliance" then id = "a" end
+    end
+    local db = ns.DB()
+    db.explore = db.explore or {}
+    local pick = db.explore.rtFac
+    if pick ~= "h" and pick ~= "a" then pick = id end
+    return pick
+end
+
+local function RtSel(fac)
+    local db = ns.DB()
+    db.explore = db.explore or {}
+    local list = ROUTES[fac] or {}
+    local n = db.explore.rtSel
+    if type(n) == "number" and n >= 1 and n <= #list then return n end
+    return 1
+end
+
+local function RtRace(fac, idx)
+    local db = ns.DB()
+    db.explore = db.explore or {}
+    local t = (ROUTES[fac] or {})[idx]
+    if not t then return 1 end
+    local j = db.explore.rtRace and db.explore.rtRace[fac .. ":" .. idx]
+    if type(j) == "number" and j >= 1 and j <= #t.races then return j end
+    return 1
+end
+
+local function RtPick(fac, n)
+    local db = ns.DB()
+    db.explore = db.explore or {}
+    db.explore.rtFac = fac
+    db.explore.rtSel = n
+    EG.RequestRender()
+    ns.PlaySound(1)
+end
+
+local function RtPickRace(fac, idx, j)
+    local db = ns.DB()
+    db.explore = db.explore or {}
+    db.explore.rtRace = db.explore.rtRace or {}
+    db.explore.rtRace[fac .. ":" .. idx] = j
+    EG.RequestRender()
+    ns.PlaySound(1)
+end
+
+local function RtGo(mapID, x, y)
+    if type(x) == "number" and type(y) == "number"
+       and UiMapPoint and UiMapPoint.CreateFromCoordinates
+       and C_Map and C_Map.SetUserWaypoint then
+        local pok, pt = pcall(UiMapPoint.CreateFromCoordinates, mapID, x / 100, y / 100)
+        if pok and pt then
+            pcall(C_Map.SetUserWaypoint, pt)
+            if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+                pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
+            end
+        end
+    end
+    if C_Map and C_Map.OpenWorldMap then
+        pcall(C_Map.OpenWorldMap, mapID)
+    elseif OpenWorldMap then
+        pcall(OpenWorldMap, mapID)
+    end
+    ns.PlaySound(1)
+end
+
+local function RtTip(self, on)
+    if not on then
+        if GameTooltip then pcall(GameTooltip.Hide, GameTooltip) end
+        return
+    end
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:ClearLines()
+    GameTooltip:AddLine(L["点击在世界地图上定位"], 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+end
+
+local function RtBadge(b, text, col)
+    b.lab:SetText(text)
+    local w = (b.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+    local minW = (DG.BADGE_CAP_W or 8) * 2 + 2
+    if w < minW then w = minW end
+    b:SetWidth(w)
+    if col then DG.BadgeTint(b, col) end
+    b:Show()
+    return w
+end
+
+local RT_SEL_MIX = nil
+local function RtRowSel(r, on)
+    if not (r and r.__huiCard) then return end
+    if r.__tintOn ~= on then
+        local hui = ns.hui
+        local base = hui.layer.L2
+        local acc = hui.ACCENT
+        if not RT_SEL_MIX then
+            RT_SEL_MIX = {
+                base[1] * 0.72 + acc[1] * 0.28,
+                base[2] * 0.72 + acc[2] * 0.28,
+                base[3] * 0.72 + acc[3] * 0.28,
+            }
+        end
+        local c = on and RT_SEL_MIX or base
+        for _, t in ipairs(r.__huiCard.fill or {}) do
+            local g = t.__huiGlass
+            if g then g.c = c end
+            if hui.GlassPaint then hui.GlassPaint(t) end
+        end
+        r.__tintOn = on
+    end
+    if huiPaintRowSelect then huiPaintRowSelect(r, on) end
+    if r.__huiRowSelTex then r.__huiRowSelTex:Hide() end
+    if on and r.__hov then
+        for _, t in ipairs(r.__hov) do t:SetShown(false) end
+    end
+end
+
+local function PaintRoutes()
+    local fac = RtFac()
+    local list = ROUTES[fac] or {}
+    if EG.rtListHead then
+        EG.rtListHead:SetText(format(L["地点 · 共 %d 条"], #list))
+    end
+    for i = 1, EG.RT_MAX_TARGETS do
+        local r = EG.rtRows and EG.rtRows[i]
+        if not r then break end
+        local t = list[i]
+        if not t then
+            r:Hide()
+        else
+            r:Show()
+            local sel = (i == RtSel(fac))
+            RtRowSel(r, sel)
+            r.name:SetText(t.name)
+            r.name:SetTextColor(Unpack(sel and C_WHITE or C_TEXT))
+            local x = 10
+            for j = 1, 3 do
+                local ch = r.bgs[j]
+                local rc = t.races[j]
+                if rc then
+                    local w = RtBadge(ch, rc.race, nil)
+                    ch:ClearAllPoints()
+                    ch:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", x, 6)
+                    x = x + w + DG.Q_BADGE_GAP
+                else
+                    ch:Hide()
+                end
+            end
+        end
+    end
+    for k, fb in pairs(EG.rtFacBtns or {}) do
+        local on = (k == fac)
+        SetButtonSelected(fb, on)
+        local fs = fb.GetFontString and fb:GetFontString()
+        if fs then
+            if k == "h" then
+                fs:SetTextColor(1.00, 0.36, 0.26)
+            else
+                fs:SetTextColor(0.40, 0.62, 1.00)
+            end
+        end
+    end
+    local t = list[RtSel(fac)]
+    if not t then
+        if EG.rtEmptyHost then EG.rtEmptyHost:Show() end
+        if EG.rtBody then EG.rtBody:Hide() end
+        return
+    end
+    if EG.rtEmptyHost then EG.rtEmptyHost:Hide() end
+    if EG.rtBody then EG.rtBody:Show() end
+    local j = RtRace(fac, RtSel(fac))
+    local race = t.races[j]
+    local bd = EG.rtBody
+    EG.rtTitle:SetText(t.name)
+    local zn = ""
+    if t.fp then
+        zn = string.match(t.fp, "^(.-)%s*·%s") or t.fp
+        zn = (zn:gsub("%s+$", ""))
+    end
+    local zw = RtBadge(EG.rtZone, zn, nil)
+    EG.rtZone:ClearAllPoints()
+    if zn ~= "" and zn ~= t.name and zw then
+        EG.rtZone:SetPoint("LEFT", EG.rtTitle, "RIGHT", 8, 0)
+    else
+        EG.rtZone:Hide()
+    end
+    EG.rtMech:SetText(race.mech or t.mech or "")
+    local multi = #t.races > 1
+    local x0 = 8
+    for k = 1, 5 do
+        local rb = EG.rtRaceBtns and EG.rtRaceBtns[k]
+        if rb then
+            local rc = t.races[k]
+            if rc and multi then
+                rb:Show()
+                rb:SetText(rc.race)
+                local fsr = rb:GetFontString()
+                local rw = (fsr and fsr.GetStringWidth and fsr:GetStringWidth() or 40) + 18
+                rb:SetWidth(rw)
+                rb:ClearAllPoints()
+                rb:SetPoint("TOPLEFT", bd, "TOPLEFT", x0, -40)
+                x0 = x0 + rw + 8
+                SetButtonSelected(rb, (k == j))
+            else
+                rb:Hide()
+            end
+        end
+    end
+    local mechY = 40 + (multi and 32 or 8)
+    EG.rtMechHost:ClearAllPoints()
+    EG.rtMechHost:SetPoint("TOPLEFT", bd, "TOPLEFT", 8, -mechY)
+    EG.rtMechHost:SetPoint("TOPRIGHT", bd, "TOPRIGHT", -8, -mechY)
+    local mh = EG.rtMech:GetStringHeight() or 17
+    mh = math.max(34, mh + 12)
+    EG.rtMechHost:SetHeight(mh)
+    if EG.rtScroll then
+        EG.rtScroll:ClearAllPoints()
+        EG.rtScroll:SetPoint("TOPLEFT", bd, "TOPLEFT", 8, -(mechY + mh + 8))
+        EG.rtScroll:SetPoint("BOTTOMRIGHT", bd, "BOTTOMRIGHT", -8, -8)
+    end
+    local sw = (EG.rtStepsHost and EG.rtStepsHost:GetWidth()) or (EG.RIGHT_W - RT_LIST_W - 44)
+    local y = 0
+    for i = 1, EG.RT_MAX_STEPS do
+        local st = EG.rtSteps and EG.rtSteps[i]
+        if not st then break end
+        local step = race.steps[i]
+        if not step then
+            st:Hide()
+        else
+            st:Show()
+            st.noTx:SetText(i)
+            st.act:SetText(step.t)
+            local aw = st.act:GetStringWidth() or 60
+            local coW = 0
+            local gmap = t.mapID
+            if type(step.m) == "table" and step.m[1] then gmap = step.m[1] end
+            if step.x and step.y then
+                st.coTx:SetText(format("%.1f, %.1f", step.x, step.y))
+                local tw = st.coTx:GetStringWidth() or 60
+                coW = math.max(tw + 26, 56)
+                st.co:SetWidth(coW)
+                st.co:Show()
+                st.__go = { gmap, step.x, step.y }
+            else
+                st.co:Hide()
+                st.__go = nil
+            end
+            local kd = RT_KIND_TXT[step.k]
+            if kd then
+                st.kind.lab:SetText(kd[1])
+                local kw = (st.kind.lab:GetStringWidth() or 30) + DG.Q_BADGE_PAD * 2
+                local minW = (DG.BADGE_CAP_W or 8) * 2 + 2
+                if kw < minW then kw = minW end
+                st.kind:SetWidth(kw)
+                if 36 + aw + 8 + kw <= sw - coW - 12 then
+                    DG.BadgeTint(st.kind, kd[2])
+                    st.kind:ClearAllPoints()
+                    st.kind:SetPoint("TOPLEFT", st.act, "TOPRIGHT", 8, 3)
+                    st.kind:Show()
+                else
+                    st.kind:Hide()
+                end
+            else
+                st.kind:Hide()
+            end
+            st.d:SetText(step.d)
+            st.d:SetWidth(math.max(120, sw - 44))
+            local dh = st.d:GetStringHeight() or 17
+            local h = 8 + 24 + 4 + dh + 8
+            st:ClearAllPoints()
+            st:SetPoint("TOPLEFT", EG.rtStepsHost, "TOPLEFT", 0, -y)
+            st:SetPoint("TOPRIGHT", EG.rtStepsHost, "TOPRIGHT", 0, -y)
+            st:SetHeight(h)
+            y = y + h + 8
+        end
+    end
+    if EG.rtStepsHost then
+        EG.rtStepsHost:SetHeight(math.max(y, 1))
+    end
+    if EG.rtDstBtn then
+        local has = t.dst and t.dst[2] and true or false
+        EG.rtDstBtn:SetEnabled(has)
+        EG.rtDstBtn.__go = has and { t.dst[1], t.dst[2], t.dst[3] } or nil
+    end
+    if EG.rtTime then EG.rtTime:SetText(race.time or t.time or "") end
+    if EG.RtScrollUpdate then EG.RtScrollUpdate() end
+end
+
 local BM_TAB_KEYS = { "ov", "saber", "witch", "codex" }
 
 local function BMTab()
@@ -2408,11 +2714,13 @@ function EG.Render()
     local isPets = sub == "pets"
     local isTorch = sub == "torch"
     local isBanner = sub == "banner"
+    local isRoutes = sub == "routes"
     local isCard = isPets or isTorch or isBanner
-    EG.scroll:SetShown(not isRw and not isBag and not isBm and not isCard)
+    local isFull = isRw or isBag or isBm or isCard or isRoutes
+    EG.scroll:SetShown(not isFull)
     if EG.UpdateVScroll then EG.UpdateVScroll() end
-    EG.note:SetShown(not isRw and not isBag and not isBm and not isCard)
-    local booksVis = not isBag and not isBm and not isCard
+    EG.note:SetShown(not isFull)
+    local booksVis = isRw or (not isFull)
     EG.prog:SetShown(booksVis)
     if EG.bar then EG.bar:SetShown(booksVis) end
     for _, lab in pairs(EG.tickLabs or {}) do lab:SetShown(booksVis) end
@@ -2420,6 +2728,7 @@ function EG.Render()
     if EG.rwBtn then EG.rwBtn:SetShown(booksVis) end
     if EG.routeBtn then EG.routeBtn:SetShown(booksVis) end
     if EG.mapSetBtn then EG.mapSetBtn:SetShown(booksVis) end
+    if EG.routeFrame then EG.routeFrame:SetShown(isRoutes) end
     PaintNav()
     if EG.rwBtn then PaintRwBtn() end
     if EG.routeBtn then PaintRouteBtn() end
@@ -2450,6 +2759,15 @@ function EG.Render()
         if isPets then PaintPets(PETS, false) return end
         if isTorch then PaintPets(TOYS, true) return end
         if isBanner then PaintPets(BANNER, true, true) return end
+    end
+    if EG.routeFrame then
+        EG.routeFrame:SetShown(isRoutes)
+        if isRoutes then
+            if EG.bagFrame then EG.bagFrame:Hide() end
+            if EG.bmFrame then EG.bmFrame:Hide() end
+            if EG.petFrame then EG.petFrame:Hide() end
+            PaintRoutes() return
+        end
     end
     if isBag or isBm or isCard then return end
 
@@ -2691,6 +3009,34 @@ function EG.Build(page)
         bt:SetScript("OnClick", function() SetSub("banner") end)
         EG.navBtns["banner"] = bt
         EG.navBanner = bt
+        navY = navY + EG.NAV_ITEM_H + EG.NAV_GAP
+    end
+
+    do
+        local glab = MakeFS(labelHost, 16, C_GREY, "LEFT")
+        glab:SetPoint("TOPLEFT", page, "TOPLEFT", EG.NAV_X + EG.NAV_PAD + 2, -(EG.NAV_TOP + navY))
+        coroutine.yield()
+        glab:SetText(L["速通"])
+        navY = navY + EG.NAV_GROUP_H
+    end
+    do
+        local bt = NewButton(page, L["跑图"], EG.NAV_W, EG.NAV_ITEM_H, 16)
+        bt:SetPoint("TOPLEFT", page, "TOPLEFT", EG.NAV_X + EG.NAV_PAD, -(EG.NAV_TOP + navY))
+        local fs = bt:GetFontString()
+        fs:ClearAllPoints()
+        fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
+        fs:SetJustifyH("LEFT")
+        bt.__huiKeepTextColor = true
+        bt.__icon = bt:CreateTexture(nil, "ARTWORK")
+        bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
+        bt.__icon:SetPoint("LEFT", bt, "LEFT", 5, 0)
+        bt.__icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.__icon) end
+        bt.__icon:SetTexture("Interface\\Icons\\Ability_Druid_FlightForm")
+        bt:SetScript("OnClick", function() SetSub("routes") end)
+        EG.navBtns["routes"] = bt
+        coroutine.yield()
+        EG.navRoutes = bt
         navY = navY + EG.NAV_ITEM_H + EG.NAV_GAP
     end
 
@@ -3888,6 +4234,327 @@ coroutine.yield()
     end
 
     BuildPets(page)
+
+    do
+        local root = CreateFrame("Frame", nil, page)
+        root:SetPoint("TOPLEFT", page, "TOPLEFT", EG.X0, -EG.TOP_EDGE)
+        root:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", -EG.EDGE, EG.EDGE)
+        EG.routeFrame = root
+        root:Hide()
+        coroutine.yield()
+
+        EG.rtFacBtns = {}
+        local FAC_BG = {
+            h = "icon\\FACTION\\FactionIcon_Horde",
+            a = "icon\\FACTION\\FactionIcon_Alliance",
+        }
+        for ki, fk in ipairs({ "h", "a" }) do
+            local bt = NewButton(root, fk == "h" and L["部落"] or L["联盟"], 76, 24, 14)
+            bt:SetPoint("TOPLEFT", root, "TOPLEFT", (ki - 1) * 84, -8)
+            local icon = bt:CreateTexture(nil, "OVERLAY")
+            icon:SetSize(16, 16)
+            icon:SetPoint("LEFT", bt, "LEFT", 7, 0)
+            icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\" .. FAC_BG[fk])
+            if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(icon) end
+            local bfs = bt:GetFontString()
+            bfs:ClearAllPoints()
+            bfs:SetPoint("TOPLEFT", bt, "TOPLEFT", 26, 0)
+            bfs:SetPoint("BOTTOMRIGHT", bt, "BOTTOMRIGHT", -2, 0)
+            bfs:SetJustifyH("CENTER")
+            bt.__huiKeepTextColor = true
+            local fk2 = fk
+            bt:SetScript("OnClick", function() RtPick(fk2, RtSel(fk2)) end)
+            EG.rtFacBtns[fk] = bt
+        end
+        coroutine.yield()
+
+        local lc = CreateFrame("Frame", nil, root)
+        lc:SetWidth(RT_LIST_W)
+        lc:SetPoint("TOPLEFT", root, "TOPLEFT", 0, -40)
+        lc:SetPoint("BOTTOMLEFT", root, "BOTTOMLEFT", 0, 0)
+        ns.hui.SkinPopup(lc, 6, nil, ns.hui.layer.L1)
+        EG.rtList = lc
+        EG.rtListHead = MakeFS(lc, 14, C_GREY, "LEFT")
+        EG.rtListHead:SetPoint("TOPLEFT", lc, "TOPLEFT", 8, -8)
+        coroutine.yield()
+
+        EG.rtRows = {}
+        for i = 1, EG.RT_MAX_TARGETS do
+            if i % 3 == 0 then coroutine.yield() end
+            local r = CreateFrame("Button", nil, lc, "BackdropTemplate")
+            r:SetHeight(44)
+            r:SetPoint("TOPLEFT", lc, "TOPLEFT", 8, -(32 + (i - 1) * 52))
+            r:SetPoint("TOPRIGHT", lc, "TOPRIGHT", -8, -(32 + (i - 1) * 52))
+            if ns.hui and ns.hui.BuildRoundedBG then
+                local fill, border = ns.hui.BuildRoundedBG(r, 6, ns.hui.layer.L2, "both", true, 1)
+                r.__huiCard = { fill = fill, border = border }
+            else
+                r:SetBackdrop({
+                    bgFile = "Interface\\Buttons\\WHITE8x8",
+                    edgeFile = "Interface\\Buttons\\WHITE8x8",
+                    edgeSize = 1,
+                })
+                r:SetBackdropColor(1, 1, 1, 0.04)
+                r:SetBackdropBorderColor(1, 1, 1, 0.10)
+            end
+            if ns.hui and ns.hui.BuildCapsule then
+                r.__hov = ns.hui.BuildCapsule(r, 6, ns.hui.layer.L4, 1, 2)
+                for _, t in ipairs(r.__hov) do t:Hide() end
+            end
+            r.name = MakeFS(r, 16, C_TEXT, "LEFT")
+            r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 10, -5)
+            r.name:SetWordWrap(false)
+            r.bgs = {}
+            for j = 1, 3 do
+                r.bgs[j] = DG.MakeBadge(r)
+            end
+            local i2 = i
+            r:SetScript("OnClick", function() RtPick(RtFac(), i2) end)
+            r:SetScript("OnEnter", function(self)
+                if not self.__tintOn and self.__hov then
+                    for _, t in ipairs(self.__hov) do t:SetShown(true) end
+                end
+            end)
+            r:SetScript("OnLeave", function(self)
+                if self.__hov then
+                    for _, t in ipairs(self.__hov) do t:SetShown(false) end
+                end
+            end)
+            r:Hide()
+            EG.rtRows[i] = r
+        end
+        coroutine.yield()
+
+        local bd = CreateFrame("Frame", nil, root)
+        bd:SetPoint("TOPLEFT", root, "TOPLEFT", RT_LIST_W + 12, -40)
+        bd:SetPoint("BOTTOMRIGHT", root, "BOTTOMRIGHT", 0, 0)
+        ns.hui.SkinPopup(bd, 6, nil, ns.hui.layer.L1)
+        EG.rtBody = bd
+
+        EG.rtTitle = MakeFS(bd, 16, C_TEXT, "LEFT")
+        EG.rtTitle:SetPoint("TOPLEFT", bd, "TOPLEFT", 8, -8)
+        EG.rtTitle:SetWordWrap(false)
+        EG.rtZone = DG.MakeBadge(bd)
+        EG.rtZone:Hide()
+        EG.rtTime = MakeFS(bd, 14, C_GREY, "RIGHT")
+        EG.rtTime:SetPoint("TOPRIGHT", bd, "TOPRIGHT", -8, -9)
+        EG.rtDstBtn = CreateFrame("Button", nil, bd, "BackdropTemplate")
+        EG.rtDstBtn:SetSize(24, 24)
+        EG.rtDstBtn:SetPoint("RIGHT", EG.rtTime, "LEFT", -8, -2)
+        EG.rtDstBtn:SetPushedTextOffset(0, 0)
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(EG.rtDstBtn) end
+        local pin = EG.rtDstBtn:CreateTexture(nil, "ARTWORK")
+        pin:SetSize(14, 14)
+        pin:SetPoint("CENTER", EG.rtDstBtn, "CENTER", 0, 0)
+        pin:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\EntryPin")
+        EG.rtDstBtn:SetScript("OnClick", function(self)
+            if self.__go then RtGo(self.__go[1], self.__go[2], self.__go[3]) end
+        end)
+        EG.rtDstBtn:SetScript("OnEnter", function(self)
+            RtTip(self, true)
+        end)
+        EG.rtDstBtn:SetScript("OnLeave", function(self)
+            RtTip(self, false)
+        end)
+        coroutine.yield()
+
+        EG.rtRaceBtns = {}
+        for k = 1, 5 do
+            local rb = NewButton(bd, "", 60, 24, 14)
+            rb:SetPushedTextOffset(0, 0)
+            local k2 = k
+            rb:SetScript("OnClick", function()
+                RtPickRace(RtFac(), RtSel(RtFac()), k2)
+            end)
+            rb:Hide()
+            EG.rtRaceBtns[k] = rb
+        end
+        coroutine.yield()
+
+        local mech = CreateFrame("Frame", nil, bd)
+        mech:SetHeight(40)
+        mech:SetPoint("TOPLEFT", bd, "TOPLEFT", 8, -40)
+        mech:SetPoint("TOPRIGHT", bd, "TOPRIGHT", -8, -40)
+        ns.hui.SkinPopup(mech, 6, nil, ns.hui.layer.L2)
+        EG.rtMechHost = mech
+        EG.rtMech = MakeFS(mech, 14, C_TEXT, "LEFT")
+        EG.rtMech:SetPoint("TOPLEFT", mech, "TOPLEFT", 8, -6)
+        EG.rtMech:SetPoint("BOTTOMRIGHT", mech, "BOTTOMRIGHT", -8, -6)
+        EG.rtMech:SetWordWrap(true)
+        coroutine.yield()
+
+        local sc = CreateFrame("ScrollFrame", nil, bd)
+        sc:EnableMouseWheel(true)
+        sc:SetPoint("TOPLEFT", bd, "TOPLEFT", 8, -88)
+        sc:SetPoint("BOTTOMRIGHT", bd, "BOTTOMRIGHT", -8, -8)
+        local child = CreateFrame("Frame", nil, sc)
+        child:SetWidth(math.max(EG.RIGHT_W - RT_LIST_W - 44, 200))
+        child:SetHeight(10)
+        sc:SetScrollChild(child)
+        sc:SetScript("OnMouseWheel", function(_, delta)
+            if DG.WheelScroll then DG.WheelScroll(sc, child, delta) end
+        end)
+        EG.rtScroll, EG.rtStepsHost = sc, child
+
+        local rtrack = CreateFrame("Frame", nil, bd, "BackdropTemplate")
+        if ns.hui and ns.hui.BuildCapsule then
+            ns.hui.BuildCapsule(rtrack, 3, ns.hui.layer.L2)
+        else
+            rtrack:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8",
+                edgeSize = 1,
+            })
+            rtrack:SetBackdropColor(0, 0, 0, 0.25)
+            rtrack:SetBackdropBorderColor(1, 1, 1, 0.08)
+        end
+        rtrack:SetWidth(7)
+        rtrack:SetPoint("TOPRIGHT", sc, "TOPRIGHT", 7, -2)
+        rtrack:SetPoint("BOTTOMRIGHT", sc, "BOTTOMRIGHT", 7, 2)
+        rtrack:SetFrameLevel((sc:GetFrameLevel() or 0) + 10)
+        rtrack:Hide()
+        local rthumb = CreateFrame("Button", nil, rtrack)
+        rthumb:SetWidth(5)
+        rthumb:SetPoint("LEFT", rtrack, "LEFT", 1, 0)
+        rthumb:SetPoint("RIGHT", rtrack, "RIGHT", -1, 0)
+        rthumb:EnableMouse(true)
+        local rtp, rtx = nil, nil
+        if ns.hui and ns.hui.BuildCapsule then
+            rtp = ns.hui.BuildCapsule(rthumb, 2, ns.hui.layer.L4)
+        else
+            rtx = rthumb:CreateTexture(nil, "OVERLAY")
+            rtx:SetAllPoints()
+            rtx:SetColorTexture(1, 1, 1, 0.30)
+        end
+        rthumb:SetScript("OnEnter", function()
+            if rtp then
+                local L5 = ns.hui.layer.L5
+                for _, t in ipairs(rtp) do t:SetVertexColor(L5[1], L5[2], L5[3]) end
+            elseif rtx then
+                rtx:SetColorTexture(1, 1, 1, 0.45)
+            end
+        end)
+        rthumb:SetScript("OnLeave", function()
+            if rtp then
+                local L4 = ns.hui.layer.L4
+                for _, t in ipairs(rtp) do t:SetVertexColor(L4[1], L4[2], L4[3]) end
+            elseif rtx then
+                rtx:SetColorTexture(1, 1, 1, 0.30)
+            end
+        end)
+        rthumb:SetPoint("TOP", rtrack, "TOP", 0, -1)
+        rthumb:SetScript("OnMouseDown", function(self, btn)
+            if btn ~= "LeftButton" then return end
+            local scale = UIParent and UIParent:GetEffectiveScale() or 1
+            local cy0 = select(2, GetCursorPosition()) / scale
+            local sc0 = sc:GetVerticalScroll()
+            if type(sc0) ~= "number" then sc0 = 0 end
+            self:SetScript("OnUpdate", function(self)
+                local cy = select(2, GetCursorPosition()) / scale
+                local trackH = rtrack:GetHeight() - 2
+                local span = trackH - rthumb:GetHeight()
+                if span <= 0 then return end
+                local maxScroll = child:GetHeight() - sc:GetHeight()
+                sc:SetVerticalScroll(math.min(maxScroll, math.max(0, sc0 + (cy0 - cy) / span * maxScroll)))
+            end)
+        end)
+        rthumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+        rthumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
+        sc:SetScript("OnVerticalScroll", function()
+            if EG.RtScrollUpdate then EG.RtScrollUpdate() end
+        end)
+        function EG.RtScrollUpdate()
+            if not (sc and child and sc:IsShown()) then rtrack:Hide() return end
+            local viewH = sc:GetHeight()
+            local contentH = child:GetHeight()
+            if contentH <= viewH + 2 or viewH <= 0 then rtrack:Hide() return end
+            rtrack:Show()
+            local trackH = rtrack:GetHeight() - 2
+            local maxScroll = contentH - viewH
+            local vpos = sc.GetVerticalScroll and sc:GetVerticalScroll() or 0
+            if type(vpos) ~= "number" then vpos = 0 end
+            local frac = math.min(1, math.max(0, vpos / maxScroll))
+            local th = math.max(24, trackH * viewH / contentH)
+            rthumb:SetHeight(th)
+            rthumb:ClearAllPoints()
+            rthumb:SetPoint("LEFT", rtrack, "LEFT", 1, 0)
+            rthumb:SetPoint("RIGHT", rtrack, "RIGHT", -1, 0)
+            rthumb:SetPoint("TOP", rtrack, "TOP", 0, -1 - frac * (trackH - th))
+        end
+        coroutine.yield()
+
+        EG.RT_STEP_H = 58
+        EG.rtSteps = {}
+        for i = 1, EG.RT_MAX_STEPS do
+            if i % 4 == 0 then coroutine.yield() end
+            local st = CreateFrame("Frame", nil, child, "BackdropTemplate")
+            st:SetHeight(EG.RT_STEP_H)
+            st:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -((i - 1) * (EG.RT_STEP_H + 8)))
+            st:SetPoint("TOPRIGHT", child, "TOPRIGHT", 0, -((i - 1) * (EG.RT_STEP_H + 8)))
+            if ns.hui and ns.hui.BuildRoundedBG then
+                local fill, border = ns.hui.BuildRoundedBG(st, 6, ns.hui.layer.L2, "both", true, 1)
+                st.__huiCard = { fill = fill, border = border }
+            end
+            st.no = CreateFrame("Frame", nil, st)
+            st.no:SetSize(20, 20)
+            st.no:SetPoint("TOPLEFT", st, "TOPLEFT", 8, -8)
+            if ns.hui and ns.hui.SkinPopup then
+                ns.hui.SkinPopup(st.no, 6, nil, ns.hui.layer.L3)
+            end
+            st.noTx = MakeFS(st.no, 14, C_DIM, "CENTER")
+            st.noTx:SetAllPoints()
+            st.act = MakeFS(st, 14, C_TEXT, "LEFT")
+            st.act:SetPoint("TOPLEFT", st, "TOPLEFT", 36, -9)
+            st.act:SetWordWrap(false)
+            st.kind = DG.MakeBadge(st)
+            st.kind:Hide()
+            st.co = CreateFrame("Button", nil, st, "BackdropTemplate")
+            st.co:SetSize(52, 24)
+            st.co:SetPushedTextOffset(0, 0)
+            st.co:SetPoint("TOPRIGHT", st, "TOPRIGHT", -8, -6)
+            st.coTx = MakeFS(st.co, 14, C_GOLD, "CENTER")
+            st.co:SetFontString(st.coTx)
+            if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(st.co) end
+            st.coTx:SetTextColor(C_GOLD[1], C_GOLD[2], C_GOLD[3])
+            st.co.__huiKeepTextColor = true
+            if DG.AddBtnIcon then DG.AddBtnIcon(st.co, "EntryPin", 12, 5) end
+            st.co:SetScript("OnClick", function(self)
+                local p = self:GetParent()
+                if p.__go then
+                    local g = p.__go
+                    RtGo(g[1], g[2], g[3])
+                end
+            end)
+            st.co:SetScript("OnEnter", function(self)
+                RtTip(self, true)
+            end)
+            st.co:SetScript("OnLeave", function(self)
+                RtTip(self, false)
+            end)
+            st.d = MakeFS(st, 14, C_TEXT, "LEFT")
+            st.d:SetPoint("TOPLEFT", st, "TOPLEFT", 36, -37)
+            st.d:SetWordWrap(true)
+            st.d:SetJustifyV("TOP")
+            st:Hide()
+            EG.rtSteps[i] = st
+        end
+
+        local eh = CreateFrame("Frame", nil, root)
+        eh:SetPoint("TOPLEFT", bd, "TOPLEFT", 0, 0)
+        eh:SetPoint("BOTTOMRIGHT", bd, "BOTTOMRIGHT", 0, 0)
+        ns.hui.SkinPopup(eh, 6, nil, ns.hui.layer.L1)
+        eh:Hide()
+        EG.rtEmptyHost = eh
+        local eic = eh:CreateTexture(nil, "ARTWORK")
+        eic:SetSize(28, 28)
+        eic:SetPoint("CENTER", eh, "CENTER", 0, 26)
+        eic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\NotePin")
+        eic:SetAlpha(0.35)
+        local etx = MakeFS(eh, 14, C_DIM, "CENTER")
+        etx:SetPoint("TOP", eic, "BOTTOM", 0, -8)
+        etx:SetText(L["跑图 · 联盟版待补充"])
+        eh:Hide()
+    end
 
     EG.page = page
     EG.LayoutBody()

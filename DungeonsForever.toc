@@ -7,7 +7,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.9.8
+## Version: 1.9.9
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
 
@@ -57,6 +57,7 @@ Core\Data\Data_Explore.lua
 Core\Data\Data_ExplorePets.lua
 Core\Data\Data_ExploreToys.lua
 Core\Data\Data_ExploreBanner.lua
+Core\Data\Data_ExploreRoutes.lua
 Core\Data\Data_CollectionMounts.lua
 Core\Data\Data_CollectionPets.lua
 Core\Data\Data_NameOverrides.lua
@@ -90,6 +91,7 @@ Core\Data\zhTW\Data_ExplorePets.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ExploreToys.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_Factions.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ExploreBanner.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_ExploreRoutes.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_CollectionMounts.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_CollectionPets.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_BIS.lua [AllowLoadTextLocale zhTW]
@@ -119,6 +121,7 @@ Core\Data\enUS\Data_ExplorePets.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ExploreToys.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_Factions.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ExploreBanner.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_ExploreRoutes.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_CollectionPets.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_BIS.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ClassTier.lua [AllowLoadTextLocale enUS]
