@@ -1157,15 +1157,19 @@ do
 
     local ROW_SEL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGrad"
 
-    function ns.hui.PaintRowSelect(f, on)
+    function ns.hui.PaintRowSelect(f, on, tex)
         if not f or not f.__huiCard then return false end
         local t = f.__huiRowSelTex
         if not t then
             t = f:CreateTexture(nil, "BACKGROUND", nil, 7)
-            t:SetTexture(ROW_SEL_TEX)
             t:SetAllPoints()
             t:Hide()
             f.__huiRowSelTex = t
+        end
+        local key = tex or ROW_SEL_TEX
+        if t.__texKey ~= key then
+            t:SetTexture(key)
+            t.__texKey = key
         end
         on = on and true or false
         t:SetShown(on)

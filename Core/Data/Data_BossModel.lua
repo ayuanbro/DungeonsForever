@@ -40,6 +40,7 @@ ns.BossModelDisplay = {
     },
     ["city_of_dalaran"] = {
         ["Arcane Anomaly"] = 129891,
+        ["Arcanic Enigma"] = 129900,
         ["Atrexis the Grave Knight"] = 145787,
         ["Fel Ancient"] = 129894,
         ["Lyn the Ignored"] = 130235,
@@ -123,6 +124,9 @@ ns.BossModelDisplay = {
         ["Rotgrip"] = 13589,
         ["Tinkerer Gizlock"] = 7125,
         ["Veng"] = 9418,
+    },
+    ["onyxias_lair"] = {
+        ["Onyxia"] = 8570,
     },
     ["ragefire_chasm"] = {
         ["Bazzalan"] = 2007,

@@ -1610,6 +1610,99 @@ function DG.EnsureQuestLane()
     qdet:HookScript("OnShow", function() DG.CullQuestRows() end)
     U.dungeonQDet = qdet
     U.dungeonQDetChild = qdchild
+
+    local qdTrack = CreateFrame("Frame", nil, detail)
+    qdTrack:SetFrameLevel(U.dungeonDetailBase + 11)
+    if ns.hui and ns.hui.BuildCapsule then
+        ns.hui.BuildCapsule(qdTrack, 3, ns.hui.layer.L2)
+    else
+        qdTrack:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = 1,
+        })
+        qdTrack:SetBackdropColor(0, 0, 0, 0.25)
+        qdTrack:SetBackdropBorderColor(1, 1, 1, 0.08)
+    end
+    qdTrack:SetWidth(7)
+    qdTrack:SetPoint("TOPRIGHT", qdet, "TOPRIGHT", 7, -2)
+    qdTrack:SetPoint("BOTTOMRIGHT", qdet, "BOTTOMRIGHT", 7, 2)
+    qdTrack:Hide()
+    U.dungeonQDetBar = qdTrack
+    local qdThumb = CreateFrame("Button", nil, qdTrack)
+    qdThumb:SetWidth(5)
+    qdThumb:EnableMouse(true)
+    local qdTP, qdTX = nil, nil
+    if ns.hui and ns.hui.BuildCapsule then
+        qdTP = ns.hui.BuildCapsule(qdThumb, 2, ns.hui.layer.L4)
+    else
+        qdTX = qdThumb:CreateTexture(nil, "OVERLAY")
+        qdTX:SetAllPoints()
+        qdTX:SetColorTexture(1, 1, 1, 0.30)
+    end
+    qdThumb:SetScript("OnEnter", function()
+        if qdTP then
+            local L5 = ns.hui.layer.L5
+            for _, t in ipairs(qdTP) do t:SetVertexColor(L5[1], L5[2], L5[3]) end
+        elseif qdTX then
+            qdTX:SetColorTexture(1, 1, 1, 0.45)
+        end
+    end)
+    qdThumb:SetScript("OnLeave", function()
+        if qdTP then
+            local L4 = ns.hui.layer.L4
+            for _, t in ipairs(qdTP) do t:SetVertexColor(L4[1], L4[2], L4[3]) end
+        elseif qdTX then
+            qdTX:SetColorTexture(1, 1, 1, 0.30)
+        end
+    end)
+    qdThumb:SetPoint("TOP", qdTrack, "TOP", 0, -1)
+    qdThumb:Hide()
+
+    function DG.UpdateQDetBar()
+        if not qdet:IsShown() then qdTrack:Hide() qdThumb:Hide() return end
+        local viewH = qdet:GetHeight()
+        local contentH = qdchild:GetHeight()
+        if type(viewH) ~= "number" or type(contentH) ~= "number"
+            or contentH <= viewH + 2 then
+            qdTrack:Hide()
+            qdThumb:Hide()
+            return
+        end
+        qdTrack:Show()
+        qdThumb:Show()
+        local vpos = qdet:GetVerticalScroll()
+        if type(vpos) ~= "number" then vpos = 0 end
+        local trackH = qdTrack:GetHeight() - 2
+        local maxScroll = contentH - viewH
+        local frac = math.min(1, math.max(0, vpos / maxScroll))
+        local th = math.max(24, trackH * viewH / contentH)
+        qdThumb:SetHeight(th)
+        qdThumb:ClearAllPoints()
+        qdThumb:SetPoint("TOP", qdTrack, "TOP", 0, -1 - frac * (trackH - th))
+    end
+    qdet:HookScript("OnVerticalScroll", function() DG.UpdateQDetBar() end)
+    qdThumb:SetScript("OnMouseDown", function(self, btn)
+        if btn ~= "LeftButton" then return end
+        local scale = UIParent and UIParent:GetEffectiveScale() or 1
+        local cy0 = select(2, GetCursorPosition()) / scale
+        local sc0 = qdet:GetVerticalScroll()
+        if type(sc0) ~= "number" then sc0 = 0 end
+        self:SetScript("OnUpdate", function(self)
+            local cy = select(2, GetCursorPosition()) / scale
+            local trackH = qdTrack:GetHeight() - 2
+            local span = trackH - qdThumb:GetHeight()
+            if span <= 0 then return end
+            local maxScroll = qdchild:GetHeight() - qdet:GetHeight()
+            qdet:SetVerticalScroll(math.min(maxScroll, math.max(0, sc0 + (cy0 - cy) / span * maxScroll)))
+        end)
+    end)
+    qdThumb:SetScript("OnMouseUp", function(self)
+        self:SetScript("OnUpdate", nil)
+    end)
+    qdThumb:SetScript("OnHide", function(self)
+        self:SetScript("OnUpdate", nil)
+    end)
     U.dungeonQDetPool = {
         lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {},
         fLab = {}, fTxt = {}, fLink = {}, fNum = {},
@@ -2120,6 +2213,40 @@ function DG.PaintQuestOverview(d)
 
     local nodes = {}
     local nNode = 0
+    local QOV_L2 = ns.hui and ns.hui.layer and ns.hui.layer.L2
+    local QOV_ACC = ns.hui and ns.hui.ACCENT
+    local function pQovNodeState(n, st)
+        local bp = n.__huiCard
+        if type(bp) ~= "table" or type(bp.fill) ~= "table" then return end
+        if not (ns.hui and ns.hui.GlassPaint and QOV_L2 and QOV_ACC) then return end
+        local function tintAlpha()
+            if n.tint and n.__tintC then
+                local a = (st == "norm") and 0.2 or 0.05
+                n.tint:SetVertexColor(n.__tintC[1], n.__tintC[2], n.__tintC[3], a)
+            end
+        end
+        if n.__qovSt == st then tintAlpha() return end
+        n.__qovSt = st
+        local col = QOV_L2
+        if st == "hover" then
+            col = (ns.hui.layer and ns.hui.layer.L4) or QOV_L2
+        elseif st == "sel" then
+            col = {
+                QOV_L2[1] + (QOV_ACC[1] - QOV_L2[1]) * 0.28,
+                QOV_L2[2] + (QOV_ACC[2] - QOV_L2[2]) * 0.28,
+                QOV_L2[3] + (QOV_ACC[3] - QOV_L2[3]) * 0.28,
+                1,
+            }
+        end
+        for i = 1, #bp.fill do
+            local t = bp.fill[i]
+            if t and t.__huiGlass then
+                t.__huiGlass.c = col
+                ns.hui.GlassPaint(t)
+            end
+        end
+        tintAlpha()
+    end
     local function takeNode()
         nNode = nNode + 1
         local n = pool.node[nNode]
@@ -2162,7 +2289,7 @@ function DG.PaintQuestOverview(d)
             n.okT:SetAllPoints(n.okD)
             n.okT:Hide()
             n:SetScript("OnEnter", function(self)
-                HuiCardState(self, "hover")
+                pQovNodeState(self, self.__selNow and "sel" or "hover")
                 if self.__q then
                     DG.ShowQuestTip(self, self.__q)
                 elseif self.__ext then
@@ -2171,7 +2298,7 @@ function DG.PaintQuestOverview(d)
                 end
             end)
             n:SetScript("OnLeave", function(self)
-                HuiCardState(self, "norm")
+                pQovNodeState(self, self.__selNow and "sel" or "norm")
                 GameTooltip:Hide()
             end)
             n:SetScript("OnClick", function(self)
@@ -2298,6 +2425,9 @@ function DG.PaintQuestOverview(d)
         n.sub:SetText("")
         applyState(n, nodeState(q))
         n.tint:Hide()
+        n.__tintC = nil
+        n.__selNow = (q[1] == U.dungeonQuestSel)
+        pQovNodeState(n, n.__selNow and "sel" or "norm")
         n:ClearAllPoints()
         n:SetPoint("TOPLEFT", canvas, "TOPLEFT", colX[c], -y)
         n.__ox = colX[c]
@@ -2329,6 +2459,9 @@ function DG.PaintQuestOverview(d)
         n.posB:Show()
         applyState(n, extState(pid))
         n.tint:Hide()
+        n.__tintC = nil
+        n.__selNow = (U.dungeonQDetExt ~= nil and pid == U.dungeonQDetExt)
+        pQovNodeState(n, n.__selNow and "sel" or "norm")
         n:ClearAllPoints()
         n:SetPoint("TOPLEFT", canvas, "TOPLEFT", colX[c], -y)
         n.__ox = colX[c]
@@ -2356,8 +2489,11 @@ function DG.PaintQuestOverview(d)
         if n.okD then n.okD:Hide() end
         if n.okT then n.okT:Hide() end
         nodeBorder(n, bC)
+        n.__tintC = tintC
+        n.__selNow = false
         n.tint:SetVertexColor(tintC[1], tintC[2], tintC[3], 0.2)
         n.tint:Show()
+        pQovNodeState(n, "norm")
         n:ClearAllPoints()
         n:SetPoint("TOPLEFT", canvas, "TOPLEFT", x, -y)
         n.__ox = x
@@ -2524,6 +2660,7 @@ function DG.PaintQuestOverview(d)
     end
     local startCX = math.max(8, (canvasW - nw) / 2)
     local maxRR = 0
+    if nCols == 0 and U.dungeonQOVFlowCard then U.dungeonQOVFlowCard:Hide() end
     if nCols > 0 then
         local minLv, maxLv = nil, nil
         for i = 1, #list do
@@ -5702,7 +5839,7 @@ function DG.ShowQuestTip(owner, q)
     GameTooltip:ClearLines()
     local link = DG.QuestLink(q[1], q[3])
     local native = false
-    if link and GameTooltip.SetHyperlink then
+    if link and GameTooltip.SetHyperlink and not string.find(link, "[?]", 1, true) then
         local ok = pcall(GameTooltip.SetHyperlink, GameTooltip, link)
         if ok then
             GameTooltip:Show()
@@ -5820,6 +5957,7 @@ DG.Q_MARK_INK = {
 DG.Q_FLOW_SEC_GAP = 6
 DG.Q_FLOW_ST_GAP = 4
 DG.Q_FLOW_IDEO = "\227\128\128" .. " "
+DG.Q_LINK_ITEM = { 1, 0.92, 0.72 }
 DG.Q_DET_ICON = 20
 DG.C_FAC_A = { 0.45, 0.65, 1 }
 DG.C_FAC_H = { 1, 0.40, 0.40 }
@@ -6195,6 +6333,60 @@ DG.Q_FAC_ICON = {
 }
 DG.Q_FAC_ICON_SZ = 18
 
+DG.QLIST_SEL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGrad496"
+
+function DG.PaintQListRow(r, st)
+    if not r then return end
+    local hui = ns.hui
+    local lv = hui and hui.layer
+    local sel = (st == "sel")
+    if r.__qlSt ~= st then
+        r.__qlSt = st
+        if hui and lv and hui.GlassPaint and r.__huiCard then
+            local col = (st == "hover") and lv.L4 or lv.L2
+            local bp = r.__huiCard
+            for i = 1, #bp.fill do
+                local t = bp.fill[i]
+                if t and t.__huiGlass then
+                    t.__huiGlass.c = col
+                    hui.GlassPaint(t)
+                end
+            end
+            if r.__hov then
+                for i = 1, #r.__hov do r.__hov[i]:Hide() end
+            end
+            if hui.PaintRowSelect then hui.PaintRowSelect(r, sel, DG.QLIST_SEL_TEX) end
+        elseif r.SetBackdropColor then
+            local ac = (hui and hui.ACCENT) or { 1, 1, 1 }
+            if sel then
+                r:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+                r:SetBackdropBorderColor(ac[1], ac[2], ac[3], 0.95)
+            elseif st == "hover" then
+                r:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+                r:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
+            else
+                r:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+                r:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+            end
+        end
+    end
+    if r.sub then
+        if sel then
+            r.sub:SetTextColor(1, 1, 1, 1)
+        else
+            r.sub:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3], 1)
+        end
+    end
+    if r.meta then
+        local mc = r.__metaCol
+        if sel and (mc == C_GREY or mc == C_DARKGREY) then
+            r.meta:SetTextColor(1, 1, 1, 1)
+        elseif mc then
+            r.meta:SetTextColor(mc[1], mc[2], mc[3], 1)
+        end
+    end
+end
+
 function U:RenderDungeonQuests()
     local d = U.dungeonDetailCur
     local child, pool = U.dungeonQuestChild, U.dungeonQuestPool
@@ -6314,6 +6506,7 @@ function U:RenderDungeonQuests()
         U.dungeonQListKey = nil
         DG.PaintQuestOverview(d)
         U:RenderQuestDetail()
+        DG.UpdateQDetBar()
         return
     end
     if U.dungeonQOverviewF then U.dungeonQOverviewF:SetShown(false) end
@@ -6390,21 +6583,8 @@ function U:RenderDungeonQuests()
             c.fac:Hide()
             c.name:SetPoint("LEFT", c, "LEFT", 12, 0)
         end
-        local parts = {}
-        for i = 1, #flow.sec do
-            parts[i] = tostring(flow.sec[i].hd) .. " " .. tostring(#(flow.sec[i].st or {}))
-        end
-        c.sub:SetText(table.concat(parts, " · "))
-        local sel = (U.dungeonQFlow == true)
-        if not HuiCardState(c, sel and "hover" or "norm") then
-            if sel then
-                c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
-                c:SetBackdropBorderColor(1, 0.82, 0, 0.9)
-            else
-                c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
-                c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
-            end
-        end
+        c.sub:SetText(L["点击查看详细副本任务流程"])
+        DG.PaintQListRow(c, (U.dungeonQFlow == true) and "sel" or "norm")
         c:Show()
         y = y - DG.Q_ROW_H - DG.Q_GAP_Y
     elseif U.dungeonQFlowCard then
@@ -6452,25 +6632,12 @@ function U:RenderDungeonQuests()
             r.meta:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -(DG.Q_ROW_H - DG.Q_FS_META) / 2 - 1)
             r:SetScript("OnEnter", function(self)
                 U.dungeonQuestHover = self
-                if self.__huiCard then
-                    HuiCardState(self, "hover")
-                else
-                    self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
-                    self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
-                end
+                DG.PaintQListRow(self, self.__selNow and "sel" or "hover")
                 if self.__q then DG.ShowQuestTip(self, self.__q) end
             end)
             r:SetScript("OnLeave", function(self)
                 if U.dungeonQuestHover == self then U.dungeonQuestHover = nil end
-                if self.__huiCard then
-                    HuiCardState(self, (self.__q and self.__q[1] == U.dungeonQuestSel) and "hover" or "norm")
-                elseif self.__q and self.__q[1] == U.dungeonQuestSel then
-                    self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
-                    self:SetBackdropBorderColor(1, 0.82, 0, 0.9)
-                else
-                    self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
-                    self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
-                end
+                DG.PaintQListRow(self, self.__selNow and "sel" or "norm")
                 GameTooltip:Hide()
             end)
             rows[nR] = r
@@ -6574,19 +6741,12 @@ function U:RenderDungeonQuests()
                     r.raceB:Hide()
                 end
                 r.meta:SetText(hasName and (DG.Q_STATUS_TAG[st] or "") or L["暂时没有客户端数据"])
-                r.meta:SetTextColor(Unpack(hasName and col or C_DARKGREY))
+                r.__metaCol = hasName and col or C_DARKGREY
+                r.meta:SetTextColor(Unpack(r.__metaCol))
                 r.meta:Show()
                 r.__q = q
-                local isSel = (q[1] == U.dungeonQuestSel)
-                if r.__huiCard then
-                    HuiCardState(r, isSel and "hover" or "norm")
-                elseif isSel then
-                    r:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
-                    r:SetBackdropBorderColor(1, 0.82, 0, 0.9)
-                else
-                    r:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
-                    r:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
-                end
+                r.__selNow = (q[1] == U.dungeonQuestSel)
+                DG.PaintQListRow(r, r.__selNow and "sel" or "norm")
                 r:ClearAllPoints()
                 r:SetPoint("TOPLEFT", child, "TOPLEFT", DG.Q_PAD + 4, y - (i - 1) * (DG.Q_ROW_H + DG.Q_GAP_Y))
                 r.__vtop, r.__vh, r.__vgen = -(y - (i - 1) * (DG.Q_ROW_H + DG.Q_GAP_Y)), DG.Q_ROW_H, DG.__vgen
@@ -6835,16 +6995,24 @@ function DG.QuestFlow(d)
     local t = ns.DungeonQuestFlow
     if not t or not d then return nil end
     local f = t[d.id]
-    if not f or type(f.sec) ~= "table" or #f.sec == 0 then return nil end
-    if f.side and f.side ~= DG.PlayerSide() then return nil end
-    return f
+    if not f then return nil end
+    if type(f.sec) == "table" and #f.sec > 0 then return f end
+    if type(f.secA) == "table" or type(f.secH) == "table" then return f end
+    return nil
 end
 
 function DG.CurQuestFlow(d)
     local f = DG.QuestFlow(d)
-    if not f or not f.side then return f end
+    if not f then return nil end
     local vs = U.dungeonQSide
     if vs ~= "A" and vs ~= "H" then vs = DG.PlayerSide() end
+    if vs ~= "A" and vs ~= "H" then vs = "A" end
+    local alt = f["sec" .. vs]
+    if type(alt) == "table" and #alt > 0 then
+        return { side = vs, sec = alt }
+    end
+    if f.secA or f.secH then return nil end
+    if not f.side then return f end
     if f.side ~= vs then return nil end
     return f
 end
@@ -6859,6 +7027,22 @@ function DG.FlowQuestRow(id)
         if list[i][1] == id then return list[i] end
     end
     return nil
+end
+
+function DG.FlowQuestStub(id)
+    if not id then return nil end
+    local ext = ns.EnsureDungeonQuestExtInfo and ns.EnsureDungeonQuestExtInfo()
+    local e = ext and ext[id]
+    local row = {}
+    row[1] = id
+    if e then
+        row[3] = e.lv
+        row[5] = e.npc
+        row[6] = e.zone
+        row[16] = e.npcid
+        row[17] = e.npc
+    end
+    return row
 end
 
 function DG.OpenQuest(id)
@@ -6948,7 +7132,9 @@ function DG.FlowTakeLink(child, pool)
             if self.__npc then
                 DG.ShowNpcTip(self, self.__npc)
             elseif self.__q then
-                DG.ShowQuestTip(self, DG.FlowQuestRow(self.__q))
+                DG.ShowQuestTip(self, DG.FlowQuestRow(self.__q) or DG.FlowQuestStub(self.__q))
+            elseif self.__item then
+                DG.ShowItemTip(self, { self.__item })
             end
         end)
         b:SetScript("OnLeave", function(self)
@@ -6977,6 +7163,7 @@ end
 function DG.FlowMark(b, st, col)
     if not b or not b.ic then return end
     if st and col then
+        b.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
         b.ic:SetVertexColor(col[1], col[2], col[3], 1)
         b.icT:SetTexture(DG.Q_MARK_SYM[st] or DG.Q_MARK_SYM.todo)
         local k = DG.Q_MARK_INK[st]
@@ -6994,23 +7181,40 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
     for k = 1, #seg do
         local tk = seg[k]
         local tw
-        if tk.n or tk.q then
+        if tk.n or tk.q or tk.i then
             local b = DG.FlowTakeLink(child, pool)
-            local col, txt, icx = C_LINK_NPC, nil, 0
+            local col, txt, icx, ob = C_LINK_NPC, nil, 0, nil
             if tk.n then
                 txt = tk.n
-                b.__npc, b.__q = tk.id, nil
+                b.__npc, b.__q, b.__item = tk.id, nil, nil
                 DG.FlowMark(b, nil)
+            elseif tk.i then
+                local inm, inHas = DG.ItemName(tk.id)
+                if not inHas or not inm or inm == "" then inm = tk.i end
+                local iq = DG.QualOf(tk.id)
+                if type(iq) == "number" and iq >= 2 then
+                    col = { DG.QColor(iq) }
+                else
+                    col = DG.Q_LINK_ITEM
+                end
+                b.__npc, b.__q, b.__item = nil, nil, tk.id
+                DG.FlowMark(b, nil)
+                b.ic:SetTexture(DG.ItemIcon(tk.id))
+                b.ic:SetVertexColor(1, 1, 1, 1)
+                b.ic:Show()
+                txt = format("「%s%s」", DG.Q_FLOW_IDEO, inm)
+                ob = "「"
             else
                 local nm, hasName = DG.QuestName(tk.id)
                 if not hasName or not nm or nm == "" then nm = tk.q end
                 col = C_LINK_Q
-                b.__npc, b.__q = nil, tk.id
+                b.__npc, b.__q, b.__item = nil, tk.id, nil
                 if hasName then
                     local st = DG.QuestState(tk.id)
                     local mc = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
                     DG.FlowMark(b, st, mc)
                     txt = format("《%s%s》", DG.Q_FLOW_IDEO, nm)
+                    ob = "《"
                 else
                     DG.FlowMark(b, nil)
                     txt = format("《%s》", nm)
@@ -7021,8 +7225,8 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
             b.fs:SetPoint("TOPLEFT", b, "TOPLEFT", 0, -3)
             b.fs:SetWidth(0)
             b.fs:SetWordWrap(false)
-            if b.ic:IsShown() then
-                b.fs:SetText("《")
+            if ob and b.ic:IsShown() then
+                b.fs:SetText(ob)
                 icx = b.fs:GetStringWidth() or 0
             end
             b.ic:ClearAllPoints()
@@ -7134,6 +7338,7 @@ function DG.RenderQuestFlow(child, pool, d, keep)
     end
     child:SetHeight(math.max(10, -y + 12))
     DG.ClampScroll(U.dungeonQDet, child, keep)
+    DG.UpdateQDetBar()
 end
 
 function DG.EnsureFlowCard(child)
@@ -7160,22 +7365,10 @@ function DG.EnsureFlowCard(child)
         if ns.PlaySound then ns.PlaySound(1) end
     end)
     c:SetScript("OnEnter", function(self)
-        if not HuiCardState(self, "hover") then
-            self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
-            self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
-        end
+        DG.PaintQListRow(self, (U.dungeonQFlow == true) and "sel" or "hover")
     end)
     c:SetScript("OnLeave", function(self)
-        local sel = (U.dungeonQFlow == true)
-        if not HuiCardState(self, sel and "hover" or "norm") then
-            if sel then
-                self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
-                self:SetBackdropBorderColor(1, 0.82, 0, 0.9)
-            else
-                self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
-                self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
-            end
-        end
+        DG.PaintQListRow(self, (U.dungeonQFlow == true) and "sel" or "norm")
     end)
     c.fac = c:CreateTexture(nil, "ARTWORK")
     c.fac:SetSize(DG.Q_FAC_ICON_SZ, DG.Q_FAC_ICON_SZ)
@@ -7192,18 +7385,65 @@ function DG.EnsureFlowCard(child)
     return c
 end
 
+function DG.PaintOVFlowCard(st)
+    local c = U.dungeonQOVFlowCard
+    if not c then return end
+    if c.__ovSt == st then return end
+    c.__ovSt = st
+    local hui = ns.hui
+    local lv = hui and hui.layer
+    if not (hui and lv and hui.GlassPaint and c.__huiCard) then
+        if st == "sel" then
+            c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+            c:SetBackdropBorderColor(1, 0.82, 0, 0.9)
+        else
+            c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+            c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+        end
+        return
+    end
+    local ACC = hui.ACCENT
+    local col
+    if st == "sel" then
+        col = {
+            lv.L2[1] + (ACC[1] - lv.L2[1]) * 0.28,
+            lv.L2[2] + (ACC[2] - lv.L2[2]) * 0.28,
+            lv.L2[3] + (ACC[3] - lv.L2[3]) * 0.28,
+            1,
+        }
+    elseif st == "hover" then
+        col = lv.L4
+    else
+        col = lv.L2
+    end
+    local bp = c.__huiCard
+    for i = 1, #bp.fill do
+        local t = bp.fill[i]
+        if t and t.__huiGlass then
+            t.__huiGlass.c = col
+            hui.GlassPaint(t)
+        end
+    end
+    if c.__hov then
+        for i = 1, #c.__hov do c.__hov[i]:Hide() end
+    end
+    if hui.PaintRowSelect then
+        hui.PaintRowSelect(c, st == "sel")
+        if c.__huiRowSelTex then c.__huiRowSelTex:Hide() end
+    end
+    if c.name then
+        if st == "sel" then
+            c.name:SetTextColor(1, 1, 1, 1)
+        else
+            c.name:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3], 1)
+        end
+    end
+end
+
 function DG.SyncOverviewFlowCard()
     local c = U.dungeonQOVFlowCard
     if not c or not c:IsShown() then return end
-    local sel = (U.dungeonQFlow == true)
-    if HuiCardState(c, sel and "hover" or "norm") then return end
-    if sel then
-        c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
-        c:SetBackdropBorderColor(1, 0.82, 0, 0.9)
-    else
-        c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
-        c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
-    end
+    DG.PaintOVFlowCard((U.dungeonQFlow == true) and "sel" or "norm")
 end
 
 function DG.EnsureOVFlowCard(canvas)
@@ -7226,13 +7466,11 @@ function DG.EnsureOVFlowCard(canvas)
         U.dungeonQuestSel = nil
         U.dungeonQDetExt = nil
         U:RenderQuestDetail()
+        DG.SyncOverviewFlowCard()
         if ns.PlaySound then ns.PlaySound(1) end
     end)
-    c:SetScript("OnEnter", function(self)
-        if not HuiCardState(self, "hover") then
-            self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
-            self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
-        end
+    c:SetScript("OnEnter", function()
+        DG.PaintOVFlowCard((U.dungeonQFlow == true) and "sel" or "hover")
     end)
     c:SetScript("OnLeave", function()
         DG.SyncOverviewFlowCard()
@@ -7272,14 +7510,10 @@ function DG.PaintOverviewFlow(d, canvas, x, w)
     c.name:SetPoint("TOPLEFT", c, "TOPLEFT", nx, -5)
     c.name:SetWidth(w - nx - 6)
     c.name:SetText(L["副本任务总览"])
-    local parts = {}
-    for i = 1, #flow.sec do
-        parts[i] = tostring(flow.sec[i].hd) .. " " .. tostring(#(flow.sec[i].st or {}))
-    end
     c.sub:ClearAllPoints()
     c.sub:SetPoint("TOPLEFT", c, "TOPLEFT", nx, -21)
     c.sub:SetWidth(w - nx - 6)
-    c.sub:SetText(table.concat(parts, " · "))
+    c.sub:SetText(L["点击查看详细副本任务流程"])
     c:Show()
     DG.SyncOverviewFlowCard()
 end
@@ -7935,6 +8169,7 @@ function U:RenderQuestDetail()
 
     child:SetHeight(math.max(10, -y + 12))
     DG.ClampScroll(U.dungeonQDet, child, keepDet)
+    DG.UpdateQDetBar()
 end
 
 function DG.GuideBossName(dungeonID, en)
@@ -8144,6 +8379,10 @@ function U:RenderDungeonTab()
     if not isMap and ns.MapModule and ns.MapModule.HideBossModel then ns.MapModule.HideBossModel() end
     if U.dungeonQuestScroll then U.dungeonQuestScroll:SetShown(isQuest and (U.dungeonQView ~= "overview")) end
     if U.dungeonQDet then U.dungeonQDet:SetShown(isQuest) end
+    if U.dungeonQDetBar then
+        U.dungeonQDetBar:SetShown(isQuest and DG.UpdateQDetBar ~= nil)
+        if isQuest then DG.UpdateQDetBar() end
+    end
     if U.dungeonQPlateL then U.dungeonQPlateL:SetShown(isQuest) end
     if U.dungeonQListCard then U.dungeonQListCard:SetShown(isQuest and U.dungeonQView ~= "overview") end
     if U.dungeonQPlateR then U.dungeonQPlateR:SetShown(isQuest) end
@@ -8554,6 +8793,8 @@ function U:Build()
     U.dungeonTabBtns = nil
     U.dungeonQDet = nil
     U.dungeonQDetChild = nil
+    U.dungeonQDetBar = nil
+    DG.UpdateQDetBar = nil
     U.dungeonQDetPool = nil
     U.dungeonQDetName = nil
     U.dungeonQDetSt = nil
