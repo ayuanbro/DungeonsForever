@@ -251,7 +251,10 @@ function ns.CreateEditBox(parent, size)
             end
         end
     end
-    eb:HookScript("OnEditFocusGained", function() Paint(EDIT_BORDER_FOCUS) end)
+    eb:HookScript("OnEditFocusGained", function()
+        local ac = (ns.hui and ns.hui.ACCENT) or EDIT_BORDER_FOCUS
+        Paint({ ac[1], ac[2], ac[3], 1 })
+    end)
     eb:HookScript("OnEditFocusLost", function() Paint(EDIT_BORDER) end)
     eb.RestoreBorder = function() Paint(EDIT_BORDER) end
     eb:HookScript("OnEscapePressed", function(self) self:ClearFocus() end)

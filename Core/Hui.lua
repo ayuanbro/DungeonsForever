@@ -112,6 +112,7 @@ do
 
     ns.hui.palette = {
         default        = { name = "灰",      deep = {0.63, 0.63, 0.63}, hue = 0,   sat = 0,    gray = true, order = 0 },
+        green          = { name = "绿",      deep = {0x46 / 255, 0xbf / 255, 0x72 / 255}, hue = 149, sat = 0.47, accent = {0x46 / 255, 0xbf / 255, 0x72 / 255}, order = 0.5 },
         pink           = { name = "暗粉",       deep = {0xDC / 255, 0xBC / 255, 0xC8 / 255}, hue = 338, sat = 0.38, lum = 1.5,  accent = {0xF0 / 255, 0xA8 / 255, 0xBC / 255}, order = 1 },
         orange         = { name = "橙",         deep = {0xDE / 255, 0xCB / 255, 0xBA / 255}, hue = 28,  sat = 0.42, lum = 1.3,  accent = {0xEE / 255, 0xA4 / 255, 0x63 / 255}, order = 2 },
         orangered      = { name = "橙红",       deep = {0xDD / 255, 0xC3 / 255, 0xBB / 255}, hue = 14,  sat = 0.40, lum = 1.3,  accent = {0xE9 / 255, 0x7E / 255, 0x5D / 255}, order = 3 },
@@ -173,6 +174,10 @@ do
         local tol = 0.004
         return math.abs((c[1] or 0) - g[1]) < tol and math.abs((c[2] or 0) - g[2]) < tol and math.abs((c[3] or 0) - g[3]) < tol
     end
+    function ns.hui.FullTintOn()
+        local v = ns.options and ns.options.fullTint
+        return v == 1 or v == true
+    end
     local function DeriveLayerColors(key)
         local p = key and ns.hui.palette[key]
         local out = {}
@@ -180,7 +185,7 @@ do
             local dst = ns.hui.layer and ns.hui.layer[name]
             out[name] = { rgb[1], rgb[2], rgb[3], dst and dst[4] or 1 }
         end
-        if not p then
+        if not p or not ns.hui.FullTintOn() then
             emit("L0", L0_GRAY)
             emit("L1", L1_GRAY)
             emit("L2", L2_GRAY)
@@ -219,6 +224,16 @@ do
         ns.hui.layer.ACCENT[1], ns.hui.layer.ACCENT[2], ns.hui.layer.ACCENT[3] = ac[1], ac[2], ac[3]
         HUI_ACCENT[1], HUI_ACCENT[2], HUI_ACCENT[3] = ac[1], ac[2], ac[3]
     end
+    ns.Init(function()
+        local key = DungeonsForeverDB and DungeonsForeverDB.libHUI and DungeonsForeverDB.libHUI.colorTheme
+        if not (key and ns.hui.palette[key]) then key = "green" end
+        ApplyLayerTheme(key)
+        if DungeonsForeverDB then
+            DungeonsForeverDB.libHUI = DungeonsForeverDB.libHUI or {}
+            DungeonsForeverDB.libHUI.colorTheme = key
+        end
+        if ns.hui.RefreshSkin then pcall(ns.hui.RefreshSkin) end
+    end)
     local __layerSnapshots = {}
     function ns.hui.LayerSnapshotOf(key)
         local ck = key or "_default"
@@ -250,16 +265,47 @@ do
         return { ac[1], ac[2], ac[3] }
     end
 
+    ns.hui.__themeCleanup = ns.hui.__themeCleanup or {}
+
+    function ns.hui.AddThemeCleanup(fn)
+        if type(fn) ~= "function" then return end
+        ns.hui.__themeCleanup = ns.hui.__themeCleanup or {}
+        tinsert(ns.hui.__themeCleanup, fn)
+    end
+
+    local function RunThemeHooks(list)
+        for _, fn in ipairs(list or {}) do pcall(fn) end
+    end
+
     function ns.hui.ApplyColorTheme(key)
+        if ns.hui.__themeSwitching then return false end
+        local prevKey = DungeonsForeverDB.libHUI and DungeonsForeverDB.libHUI.colorTheme or nil
         local prevAccentHex = ns.hui.TextHex(ns.g1 or "00FF00", "accent")
         local prevR, prevG, prevB = ns.hui.ACCENT[1], ns.hui.ACCENT[2], ns.hui.ACCENT[3]
-        ApplyLayerTheme(key)
-        if DungeonsForeverDB.libHUI then DungeonsForeverDB.libHUI.colorTheme = key end
-        ns.hui.RefreshSkin()
-        if ns.hui.RefreshFontObjects then ns.hui.RefreshFontObjects() end
-        for _, fn in ipairs(ns.hui.__themeListeners) do pcall(fn) end
-        local newAccentHex = ns.hui.TextHex(ns.g1 or "00FF00", "accent")
-        ns.hui.RecolorAllThemeText(prevAccentHex, newAccentHex, prevR, prevG, prevB)
+        ns.hui.__themeSwitching = true
+        local ok, err = pcall(function()
+            ApplyLayerTheme(key)
+            if DungeonsForeverDB.libHUI then DungeonsForeverDB.libHUI.colorTheme = key end
+            RunThemeHooks(ns.hui.__themeCleanup)
+            ns.hui.RefreshSkin()
+            if ns.hui.RefreshFontObjects then ns.hui.RefreshFontObjects() end
+            RunThemeHooks(ns.hui.__themeListeners)
+            local newAccentHex = ns.hui.TextHex(ns.g1 or "00FF00", "accent")
+            ns.hui.RecolorAllThemeText(prevAccentHex, newAccentHex, prevR, prevG, prevB)
+        end)
+        if not ok then
+            pcall(function()
+                ApplyLayerTheme(prevKey)
+                if DungeonsForeverDB.libHUI then DungeonsForeverDB.libHUI.colorTheme = prevKey end
+                RunThemeHooks(ns.hui.__themeCleanup)
+                ns.hui.RefreshSkin()
+                if ns.hui.RefreshFontObjects then ns.hui.RefreshFontObjects() end
+                RunThemeHooks(ns.hui.__themeListeners)
+            end)
+            print("|cffff6b6bDungeonsForever|r 主题切换失败，已还原：" .. tostring(err))
+        end
+        ns.hui.__themeSwitching = nil
+        return ok
     end
 
     ns.hui.__scopeAccentHex = ns.hui.__scopeAccentHex or {}
@@ -718,6 +764,7 @@ do
         mid:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -ins, cornerSize + ins)
 
         local pieces = {tl, tr, bl, br, top, bottom, mid}
+        for _, t in ipairs(pieces) do t.__huiPiece = true end
         if gradFn then
             mid.__huiCap = true
             pieces.__huiBaseCap = color
@@ -1164,6 +1211,24 @@ do
             t:Hide()
             f.__huiRowSelTex = t
         end
+        if not f.__huiRowSelRepaint then
+            f.__huiRowSelRepaint = true
+            ns.hui.AddRepaint(f, function()
+                local tx = f.__huiRowSelTex
+                local sel = tx and tx:IsShown()
+                local ac = ns.hui.ACCENT
+                if sel and tx then tx:SetVertexColor(ac[1], ac[2], ac[3], 1) end
+                local bpl = f.__huiCard
+                if bpl and bpl.border then
+                    local col = sel and ac or C_CARD_BORDER
+                    local al = sel and 0.95 or (C_CARD_BORDER[4] or 1)
+                    for _, btx in ipairs(bpl.border) do
+                        btx:SetVertexColor(col[1], col[2], col[3])
+                        btx:SetAlpha(al)
+                    end
+                end
+            end)
+        end
         local key = tex or ROW_SEL_TEX
         if t.__texKey ~= key then
             t:SetTexture(key)
@@ -1430,6 +1495,7 @@ do
             local it = items[i]
             measure:SetText(it.text or "")
             local w = measure:GetStringWidth() + padX * 2
+            if it.swatch then w = w + 14 + 7 end
             if it.icon then w = w + iconSz + iconGap end
             if it.checked ~= nil then w = w + chkSz + chkGap end
             if w > maxW then maxW = w end
@@ -1446,12 +1512,26 @@ do
             local hl = row:CreateTexture(nil, "BACKGROUND")
             hl:SetAllPoints()
             hl:SetColorTexture(0, 0, 0, 0)
-            row:SetScript("OnEnter", function()
-                hl:SetColorTexture(L5[1], L5[2], L5[3], 1)
-            end)
-            row:SetScript("OnLeave", function()
-                hl:SetColorTexture(0, 0, 0, 0)
-            end)
+            local hlCol = it.hlColor
+            local selected = it.selected and true or false
+            local function PaintHl(hot)
+                if hlCol then
+                    if hot then
+                        hl:SetColorTexture(hlCol[1], hlCol[2], hlCol[3], selected and 0.34 or 0.22)
+                    elseif selected then
+                        hl:SetColorTexture(hlCol[1], hlCol[2], hlCol[3], 0.16)
+                    else
+                        hl:SetColorTexture(0, 0, 0, 0)
+                    end
+                elseif hot then
+                    hl:SetColorTexture(L5[1], L5[2], L5[3], 1)
+                else
+                    hl:SetColorTexture(0, 0, 0, 0)
+                end
+            end
+            PaintHl(false)
+            row:SetScript("OnEnter", function() PaintHl(true) end)
+            row:SetScript("OnLeave", function() PaintHl(false) end)
             local tx = padX
             if it.checked ~= nil then
                 local on = it.checked and true or false
@@ -1477,6 +1557,15 @@ do
                     ring:SetVertexColor(0.42, 0.41, 0.38, 0.9)
                 end
                 tx = padX + chkSz + chkGap
+            end
+            if it.swatch then
+                local sw = row:CreateTexture(nil, "ARTWORK")
+                sw:SetSize(14, 14)
+                sw:SetPoint("LEFT", row, "LEFT", padX, 0)
+                sw:SetTexture("Interface\\Buttons\\White8x8")
+                sw:SetVertexColor(it.swatch[1], it.swatch[2], it.swatch[3])
+                if ns.hui.RoundIcon then ns.hui.RoundIcon(sw) end
+                tx = padX + 14 + 7
             end
             if it.icon then
                 local ic = row:CreateTexture(nil, "ARTWORK")
@@ -1511,7 +1600,11 @@ do
         local scale = UIParent:GetEffectiveScale()
         if opts.anchor and opts.anchor.IsObjectType and opts.anchor:IsObjectType("Frame") then
             popup:ClearAllPoints()
-            popup:SetPoint("TOPLEFT", opts.anchor, "BOTTOMLEFT", 0, -4)
+            if opts.up then
+                popup:SetPoint("BOTTOMLEFT", opts.anchor, "TOPLEFT", 0, 4)
+            else
+                popup:SetPoint("TOPLEFT", opts.anchor, "BOTTOMLEFT", 0, -4)
+            end
         else
             local cx, cy = GetCursorPosition()
             popup:ClearAllPoints()
@@ -1770,6 +1863,17 @@ do
         mid:SetPoint("BOTTOMRIGHT", capR, "BOTTOMLEFT", 0, 0)
         slider:Hide()
 
+        local pillTint = { capL, capR, mid }
+        local function PaintPill()
+            local ac = ns.hui.ACCENT
+            for i = 1, 3 do pillTint[i]:SetVertexColor(ac[1], ac[2], ac[3]) end
+        end
+        PaintPill()
+        ns.hui.AddRepaint(host, function()
+            if slider and slider:IsShown() then PaintPill() end
+        end)
+        host.__huiPillRepaint = PaintPill
+
         local ctrl = {buttons = {}, offsets = {}, slider = slider, shadow = shadow}
 
         function ctrl:AttachButtons(buttons)
@@ -1862,6 +1966,7 @@ do
     ns.hui.CARD_BORDER = C_CARD_BORDER
 
     function ns.hui.GetThemeBorderColor()
+        if not ns.hui.FullTintOn() then return C_CARD_BORDER end
         local key = DungeonsForeverDB.libHUI and DungeonsForeverDB.libHUI.colorTheme
         local p = key and ns.hui.palette and ns.hui.palette[key]
         if p and p.deep then
@@ -2569,10 +2674,17 @@ do
         local toX = ToggleKnobX(on, bt)
         if bt.__huiTrackTex then
             bt.__huiTrackTex:SetTexture(on and TOGGLE_ON_TEX or TOGGLE_OFF_TEX)
+            local ta = ns.hui.ACCENT
+            if on then
+                bt.__huiTrackTex:SetVertexColor(ta[1], ta[2], ta[3])
+            else
+                bt.__huiTrackTex:SetVertexColor(1, 1, 1)
+            end
         end
         if bt.__huiKnobTex then
+            local ka = ns.hui.ACCENT
             if on then
-                bt.__huiKnobTex:SetVertexColor(0x46/255, 0xbf/255, 0x72/255)
+                bt.__huiKnobTex:SetVertexColor(ka[1], ka[2], ka[3])
             else
                 bt.__huiKnobTex:SetVertexColor(0xC6/255, 0xCB/255, 0xD4/255)
             end

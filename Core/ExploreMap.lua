@@ -15,6 +15,20 @@ local UPDATE_TICK = 0.1
 local BOOK_ICON = "Interface\\Icons\\INV_Misc_Book_09"
 local DIAL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_dial"
 local DART_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_arrow"
+local GRAVE_TEX = "Interface\\RaidFrame\\Raid-Icon-Rez"
+local GRAVE_OWN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\SpiritPin"
+local GRAVE_DISC_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc"
+local GRAVE_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\CheckRing"
+local GRAVE_SIZE = 22
+local GRAVE_DOT = 0.38
+local GRAVE_DOT_IN = 0.30
+local SIDE_COL = {
+    [0] = { 1.00, 0.84, 0.08 },
+    [1] = { 0.16, 0.55, 1.00 },
+    [2] = { 0.94, 0.14, 0.10 },
+}
+local SIDE_TXT = { [0] = "共用", [1] = "联盟", [2] = "部落" }
+ns.SideColor = SIDE_COL
 
 local route, skipped, routeOn = {}, {}, false
 local manualOff = false
@@ -23,6 +37,7 @@ local tracker
 local updateTrackerFn
 local settingsFrame
 local pins, pinPool = {}, {}
+local graves, gravePool = {}, {}
 local lines, linePool = {}, {}
 local meLineLn
 
@@ -37,6 +52,8 @@ local DEF_CFG = {
     showPins = false,
     showLines = false,
     showMeLine = true,
+    showGrave = false,
+    graveStyle = "native",
     lineW = 2,
     showCompass = true,
     lockPos = false,
@@ -54,6 +71,8 @@ local function cfg()
     for k, v in pairs(DEF_CFG) do
         if s[k] == nil then s[k] = v end
     end
+    s.gravePx = nil
+    s.gravePinSize = nil
     return s
 end
 
@@ -460,6 +479,66 @@ local function releasePins()
     end
 end
 
+local function graveTip(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(L["灵魂医者"], 0.72, 0.92, 1)
+    if self.gzone and self.gzone ~= "" then
+        GameTooltip:AddLine(self.gzone, 0.7, 0.7, 0.7)
+    end
+    local col = SIDE_COL[self.gside or 0] or SIDE_COL[0]
+    GameTooltip:AddLine(L[SIDE_TXT[self.gside or 0]], col[1], col[2], col[3])
+    GameTooltip:Show()
+end
+
+local function graveAcquire(canvas)
+    local p = gravePool[#gravePool]
+    if p then gravePool[#gravePool] = nil else
+        p = CreateFrame("Button", nil, canvas)
+        p.__grave = true
+        p.disc = p:CreateTexture(nil, "OVERLAY")
+        p.disc:SetDrawLayer("OVERLAY", -2)
+        p.disc:SetAllPoints()
+        p.disc:SetTexture(GRAVE_DISC_TEX)
+        p.disc:SetVertexColor(0.05, 0.05, 0.06, 0.88)
+        p.disc:Hide()
+        p.ring = p:CreateTexture(nil, "OVERLAY")
+        p.ring:SetDrawLayer("OVERLAY", -1)
+        p.ring:SetAllPoints()
+        p.ring:SetTexture(GRAVE_RING_TEX)
+        p.ring:SetVertexColor(0.78, 0.74, 0.62, 0.9)
+        p.ring:Hide()
+        p.tex = p:CreateTexture(nil, "OVERLAY")
+        p.tex:SetDrawLayer("OVERLAY", 0)
+        p.tex:SetPoint("CENTER", p, "CENTER", 0, 0)
+        p.tex:SetSize(22, 22)
+        p.tex:SetTexture(GRAVE_TEX)
+        p.dotEdge = p:CreateTexture(nil, "OVERLAY")
+        p.dotEdge:SetDrawLayer("OVERLAY", 1)
+        p.dotEdge:SetTexture(GRAVE_DISC_TEX)
+        p.dotEdge:SetVertexColor(0.03, 0.03, 0.04, 0.92)
+        p.dot = p:CreateTexture(nil, "OVERLAY")
+        p.dot:SetDrawLayer("OVERLAY", 2)
+        p.dot:SetTexture(GRAVE_DISC_TEX)
+        p:RegisterForClicks("LeftButtonUp")
+        p:SetScript("OnEnter", graveTip)
+        p:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    end
+    p:SetParent(canvas)
+    p.tex:SetAlpha(1)
+    return p
+end
+
+local function releaseGraves()
+    for i = #graves, 1, -1 do
+        local p = graves[i]
+        p:Hide()
+        p:ClearAllPoints()
+        graves[i] = nil
+        gravePool[#gravePool + 1] = p
+    end
+end
+
 local function mapScale()
     local sc = WorldMapFrame.ScrollContainer
     if sc and sc.GetCanvasScale then
@@ -467,6 +546,17 @@ local function mapScale()
         if ok and type(v) == "number" and v > 0 then return v end
     end
     return 1
+end
+
+local graveFitMap = {}
+
+local function graveFit(disp, scale)
+    local v = graveFitMap[disp]
+    if not v or scale < v then
+        v = scale
+        graveFitMap[disp] = v
+    end
+    return v
 end
 
 function ns.ExploreMapRefresh()
@@ -478,6 +568,7 @@ function ns.ExploreMapRefresh()
         if tracker then updateTrackerFn() end
     end
     releasePins()
+    releaseGraves()
     releaseLines()
     local okID, disp = pcall(WorldMapFrame.GetMapID, WorldMapFrame)
     if not okID or not disp or not alive(disp) then return end
@@ -531,6 +622,52 @@ function ns.ExploreMapRefresh()
             end
         end
     end
+    end
+
+    if c.showGrave == true then
+        local flat = ns.GravePos[disp]
+        if type(flat) == "table" then
+            local fit = graveFit(disp, scale)
+            local zoom = scale / fit
+            if zoom > 2 then zoom = 2 end
+            local gsize = GRAVE_SIZE * zoom / scale
+            local zone
+            if C_Map and C_Map.GetMapInfo then
+                local okm, mi = pcall(C_Map.GetMapInfo, disp)
+                if okm and mi then zone = mi.name end
+            end
+            for i = 1, #flat - 2, 3 do
+                local p = graveAcquire(canvas)
+                p.gzone, p.gmap = zone, disp
+                local side = flat[i + 2] or 0
+                p.gside = side
+                p:SetSize(gsize, gsize)
+                local st = c.graveStyle
+                local circle = (st == "circle")
+                if circle or st == "custom" then
+                    p.tex:SetTexture(GRAVE_OWN_TEX)
+                else
+                    p.tex:SetTexture(GRAVE_TEX)
+                end
+                p.tex:SetSize(circle and gsize * 0.68 or gsize, circle and gsize * 0.68 or gsize)
+                p.disc:SetShown(circle)
+                p.ring:SetShown(circle)
+                local col = SIDE_COL[side] or SIDE_COL[0]
+                local ds = gsize * GRAVE_DOT
+                local di = ds * GRAVE_DOT_IN
+                p.dot:SetVertexColor(col[1], col[2], col[3], 1)
+                p.dot:SetSize(ds, ds)
+                p.dot:ClearAllPoints()
+                p.dot:SetPoint("CENTER", p, "TOPRIGHT", -di, -di)
+                p.dotEdge:SetSize(ds * 1.42, ds * 1.42)
+                p.dotEdge:ClearAllPoints()
+                p.dotEdge:SetPoint("CENTER", p, "TOPRIGHT", -di, -di)
+                p:SetPoint("CENTER", canvas, "TOPLEFT", flat[i] / 100 * w, -flat[i + 1] / 100 * h)
+                p:SetFrameLevel(canvas:GetFrameLevel() + 7005)
+                p:Show()
+                graves[#graves + 1] = p
+            end
+        end
     end
 
     if routeOn and c.showLines == true and c.showPins == true then
@@ -1256,6 +1393,33 @@ end
 
 function ns.ExploreMapOn()
     return routeOn
+end
+
+function ns.ExploreGraveOn()
+    return cfg().showGrave == true
+end
+
+function ns.ExploreGraveSet(v)
+    cfg().showGrave = v and true or false
+    ns.ExploreMapRefresh()
+    return cfg().showGrave
+end
+
+function ns.ExploreGraveToggle()
+    return ns.ExploreGraveSet(not cfg().showGrave)
+end
+
+function ns.ExploreGraveStyle()
+    local v = cfg().graveStyle
+    if v ~= "circle" and v ~= "custom" then v = "native" end
+    return v
+end
+
+function ns.ExploreGraveStyleSet(v)
+    if v ~= "circle" and v ~= "custom" then v = "native" end
+    cfg().graveStyle = v
+    ns.ExploreMapRefresh()
+    return v
 end
 
 function ns.ExploreMapTrackBook(rec)

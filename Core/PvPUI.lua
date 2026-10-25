@@ -679,7 +679,8 @@ function PV.Build(page)
         r.bar = r:CreateTexture(nil, "ARTWORK")
         r.bar:SetPoint("TOPLEFT", r.barBG, "TOPLEFT", 0, 0)
         r.bar:SetHeight(10)
-        r.bar:SetColorTexture(0.27, 0.75, 0.45, 0.85)
+        local acb = (ns.hui and ns.hui.ACCENT) or { 0.27, 0.75, 0.45 }
+        r.bar:SetColorTexture(acb[1], acb[2], acb[3], 0.85)
         r.cum = MakeFS(r, 14, C_TEXT, "RIGHT")
         r.cum:SetPoint("TOPRIGHT", r, "TOPLEFT", capColW - 56, -7)
         r.inc = MakeFS(r, 14, C_GREY, "RIGHT")
@@ -1331,6 +1332,17 @@ local function PaintSetRow(row)
     end
 end
 
+local function RepaintSetRows()
+    for i = 1, #(PV.setRows or {}) do
+        local row = PV.setRows[i]
+        if row then
+            row.__tintOn = nil
+            PaintSetRow(row)
+        end
+    end
+end
+if ns.hui and ns.hui.OnThemeChange then ns.hui.OnThemeChange(RepaintSetRows) end
+
 function PV.RenderSets()
     local rx = PV.SETS_LIST_W + 12
     local rw = PV.W - rx
@@ -1825,4 +1837,13 @@ function PV.RenderWeek()
     local bigH = math.max(card2Top + h2 + PV.WEEK_PAD, PV.VIEW_H)
     PV.weekBig:SetHeight(bigH)
     PV.child:SetHeight(bigH)
+end
+
+if ns.hui and ns.hui.OnThemeChange then
+    ns.hui.OnThemeChange(function()
+        local ac = (ns.hui and ns.hui.ACCENT) or { 0.27, 0.75, 0.45 }
+        for _, r in ipairs(PV.capRows or {}) do
+            if r and r.bar then r.bar:SetColorTexture(ac[1], ac[2], ac[3], 0.85) end
+        end
+    end)
 end

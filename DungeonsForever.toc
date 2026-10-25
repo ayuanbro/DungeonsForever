@@ -7,7 +7,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.9.9
+## Version: 1.9.10
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
 
@@ -24,6 +24,7 @@ Core\Data\Data_DungeonGuide.lua
 Core\Data\Data_BossPos.lua
 Core\Data\Data_BossModel.lua
 Core\Data\Data_MapPins.lua
+Core\Data\Data_GravePos.lua
 Core\Data\Data_Route.lua
 Core\Data\Data_BossSkills.lua
 Core\Data\Data_NPCLoc.lua
@@ -176,3 +177,5 @@ Core\TalentTabUI.lua
 Core\GearUI.lua
 Core\MainFrame.lua
 Core\QuickBar.lua
+Core\Data\Data_MapDetail.lua
+Core\Data\Data_RouteOvl.lua

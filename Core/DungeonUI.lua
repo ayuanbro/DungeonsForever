@@ -963,6 +963,18 @@ function DG.Gate.Ensure()
         pill.skip = sk
     end
     pill:Hide()
+    pill.__idle = 0
+    pill:SetScript("OnUpdate", function(self, el)
+        if DG.Gate.on then
+            self.__idle = 0
+            return
+        end
+        self.__idle = (self.__idle or 0) + (el or 0)
+        if self.__idle > 1.5 then
+            self.__idle = 0
+            DG.Gate.HideUI()
+        end
+    end)
     DG.Gate.pill = pill
     return true
 end
@@ -1010,7 +1022,10 @@ function DG.Gate.Begin(n)
     DG.Loader.__cap = nil
     DG.Loader.__buildT0 = type(debugprofilestop) == "function" and debugprofilestop() or nil
     DG.Gate.t0 = DG.Loader.__buildT0
-    if DG.Gate.total < DG.Gate.minSteps then return end
+    if DG.Gate.total < DG.Gate.minSteps then
+        if not DG.Gate.on then DG.Gate.HideUI() end
+        return
+    end
     DG.Gate.on = true
     if DG.Gate.Ensure() then
         DG.Gate.bar:Show()
@@ -1339,6 +1354,10 @@ function DG.RunSteps()
                 print("|cffff5040[无限副本手册] 分帧构建出错（已跳过该块）：|r" .. tostring(err))
             end
             if s1 and (s1 - t0) >= cap then break end
+        end
+        if #DG.pendingSteps == 0 then
+            self:SetScript("OnUpdate", nil)
+            finish()
         end
     end)
     f:Show()
@@ -3421,7 +3440,7 @@ function DG.BuildDetailFilterRow()
         if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
         tg.label = MakeFS(tg, 14, C_TEXT, "RIGHT")
         tg.label:SetPoint("RIGHT", tg, "LEFT", -6, 0)
-        tg.label:SetText(L["显示已完成"])
+        tg.label:SetText(L["已完成"])
         tg:SetHitRectInsets(-((tg.label:GetStringWidth() or 60) + 6), 0, 0, 0)
         tg:Hide()
         tg:SetScript("OnClick", function(self)
@@ -8586,6 +8605,7 @@ function U:SwitchSub(key)
     end
     U.curSub = k
     DB().subTab = k
+    DG.Gate.HideUI()
     ns.OpenPerf.Begin(({ Dungeons = "副本", Raids = "团本", Professions = "专业", Explore = "探索", Collections = "收藏", Factions = "阵营", Bis = "BIS", Tier = "职业指南", PvP = "PvP", Gear = "装备库" })[k] or k)
     local isDun, isRaid, isProf, isExpl, isColl, isBis, isTier = (k == "Dungeons"), (k == "Raids"), (k == "Professions"), (k == "Explore"), (k == "Collections"), (k == "Bis"), (k == "Tier")
     local isPvP = (k == "PvP")

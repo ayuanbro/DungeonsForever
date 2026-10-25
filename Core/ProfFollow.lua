@@ -892,7 +892,8 @@ local function BuildStep(n)
             f.zone:ClearAllPoints()
             f.zone:SetPoint("TOPLEFT", f.barBG, "TOPLEFT", 0, 0)
             f.zone:SetWidth(math.max(1, math.floor((W - 20) * frac + 0.5)))
-            f.zone:SetVertexColor(0.27, 0.75, 0.45, 0.9)
+            local ac = Accent()
+            f.zone:SetVertexColor(ac[1], ac[2], ac[3], 0.9)
             f.zone:Show()
         end
     end

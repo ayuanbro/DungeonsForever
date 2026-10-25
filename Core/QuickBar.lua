@@ -650,10 +650,23 @@ function QB:EnsureSettings()
         return at, bt2
     end
 
-    Header(L["快捷按钮栏"])
-    set.on = ToggleRow(L["显示快捷按钮栏"],
-        function() return ns.QuickCfg().on end,
-        function(v) ns.QuickCfg().on = v end)
+    do
+        local hfs = Fs(host, self.FS_AUX, C_DIM)
+        hfs:SetPoint("TOPLEFT", host, "TOPLEFT", SET_PAD - 6, hy)
+        hfs:SetText(L["快捷按钮栏"])
+        set.on = Toggle(host)
+        set.on:ClearAllPoints()
+        set.on:SetPoint("TOPRIGHT", host, "TOPRIGHT", 6 - SET_PAD, hy)
+        set.on:SetChecked(ns.QuickCfg().on and true or false)
+        set.on:SetScript("OnClick", function(self)
+            ns.PlaySound(1)
+            ns.QuickCfg().on = not (ns.QuickCfg().on and true)
+            self:SetChecked(ns.QuickCfg().on and true or false)
+            QB:SyncSettings()
+            QB:Apply()
+        end)
+        hy = hy - SET_HDR_H
+    end
 
     Header(L["显示分组"])
     do
@@ -694,17 +707,14 @@ function QB:EnsureSettings()
     end
 
     Header(L["探索子页"])
-    for i = 1, #EXPLORE_DEFS, 2 do
-        local m, n2 = EXPLORE_DEFS[i], EXPLORE_DEFS[i + 1]
-        local gm = function() return ns.QuickCfg().expl[m.key] end
-        local sm = function(v) ns.QuickCfg().expl[m.key] = v end
-        if n2 then
-            local gn = function() return ns.QuickCfg().expl[n2.key] end
-            local sn = function(v) ns.QuickCfg().expl[n2.key] = v end
-            set.expl[m.key], set.expl[n2.key] = ToggleRow2(m.text, gm, sm, n2.text, gn, sn)
-        else
-            set.expl[m.key] = ToggleRow(m.text, gm, sm)
-        end
+    do
+        local a = { key = "books", text = L["40本书"] }
+        local b = { key = "bag",   text = L["睡袋"] }
+        local ga = function() return ns.QuickCfg().expl[a.key] end
+        local sa = function(v) ns.QuickCfg().expl[a.key] = v end
+        local gb = function() return ns.QuickCfg().expl[b.key] end
+        local sb = function(v) ns.QuickCfg().expl[b.key] = v end
+        set.expl[a.key], set.expl[b.key] = ToggleRow2(a.text, ga, sa, b.text, gb, sb)
     end
 
     if self.cardBg then self.cardBg:SetHeight(8 - hy) end

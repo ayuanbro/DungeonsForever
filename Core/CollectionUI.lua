@@ -28,8 +28,16 @@ ns.CollectionModule = CG
 local BT = BackdropTemplateMixin and "BackdropTemplate" or nil
 
 local C_LINK = { 0.55, 0.78, 1.0 }
-local C_ACCENT = { 0.27, 0.75, 0.45 }
-local C_SEL_NAME = { 0.62, 0.95, 0.72 }
+local function ThemeAccent()
+    local ac = ns.hui and ns.hui.ACCENT
+    if ac then return ac[1], ac[2], ac[3] end
+    return 0.27, 0.75, 0.45
+end
+local function SelNameRGB()
+    local ac = ns.hui and ns.hui.ACCENT
+    if not ac then return 0.62, 0.95, 0.72 end
+    return ac[1] + (1 - ac[1]) * 0.42, ac[2] + (1 - ac[2]) * 0.42, ac[3] + (1 - ac[3]) * 0.42
+end
 
 local RIDING_RANK = { [75] = L["初级骑术"], [150] = L["中级骑术"] }
 
@@ -481,12 +489,16 @@ local function PaintRow(r, rec)
         end
         local selOn = (CG.sel == rec)
         if not (ns.hui and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, selOn, "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGradColl")) then
-            SetOutline(r, selOn, Unpack(C_ACCENT))
+            SetOutline(r, selOn, ThemeAccent())
         end
         if r.__hover and selOn then
             for _, t in ipairs(r.__hover) do t:Hide() end
         end
-        r.name:SetTextColor(Unpack(selOn and C_SEL_NAME or C_TEXT))
+        if selOn then
+            r.name:SetTextColor(SelNameRGB())
+        else
+            r.name:SetTextColor(Unpack(C_TEXT))
+        end
     else
         r.__rec = nil
         r.__pet = nil
@@ -1022,7 +1034,7 @@ local function MakeRow(parent)
     r.src = MakeFS(r, 14, C_GREY, "LEFT")
     r.src:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -5.5)
     r.src:SetWordWrap(false)
-    MakeOutline(r, Unpack(C_ACCENT))
+    MakeOutline(r, ThemeAccent())
     r:SetScript("OnEnter", function(self)
         if self.__hover and not (self.__rec and self.__rec == CG.sel) then
             for _, t in ipairs(self.__hover) do t:Show() end
@@ -1684,6 +1696,12 @@ function CG.RequestRender(sweep)
             CG.__pend = false
             CG.RequestRender()
         end
+    end)
+end
+
+if ns.hui and ns.hui.OnThemeChange then
+    ns.hui.OnThemeChange(function()
+        if CG.RequestRender then CG.RequestRender() end
     end)
 end
 
