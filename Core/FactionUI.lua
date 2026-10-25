@@ -877,7 +877,7 @@ function FV:PaintList()
                 ns.hui.HuiCardState(r, "norm")
                 r.__hst = "norm"
             end
-            if not (HUI and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, sel)) then
+            if not (HUI and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, sel, "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGradFac")) then
                 if sel then
                     SetButtonSelected(r, false)
                 end

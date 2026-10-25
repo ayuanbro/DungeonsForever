@@ -102,9 +102,7 @@ do
     end
     local HUI_CIRCLE = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUICircle"
     local C_TRACKOFF = {0x33 / 255, 0x3A / 255, 0x49 / 255}
-    local C_KNOB = {0x17 / 255, 0x18 / 255, 0x1c / 255}
     local C_CTRL_BORDER = {0x4A / 255, 0x52 / 255, 0x63 / 255}
-    local C_TOGGLE_BORDER = C_CTRL_BORDER
     local HUI_PILL_L = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIPillL"
     local HUI_PILL_R = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIPillR"
     local HUI_CORNER = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIRoundCornerFill"
@@ -1705,49 +1703,84 @@ do
         RegisterPixelStrip(bx, "h")
     end
 
+    local SEG_PILL_L = "Interface\\AddOns\\DungeonsForever\\Media\\DF_SegPillL"
+    local SEG_PILL_M = "Interface\\AddOns\\DungeonsForever\\Media\\DF_SegPillM"
+    local SEG_PILL_R = "Interface\\AddOns\\DungeonsForever\\Media\\DF_SegPillR"
+    local PILL_SH_L = "Interface\\AddOns\\DungeonsForever\\Media\\DF_PillShadowL"
+    local PILL_SH_M = "Interface\\AddOns\\DungeonsForever\\Media\\DF_PillShadowM"
+    local PILL_SH_R = "Interface\\AddOns\\DungeonsForever\\Media\\DF_PillShadowR"
+
     function ns.hui.CreateSegmentedControl(host)
         local padX, padY = 3, 2
         local trackH = host:GetHeight() + padY * 2
+        local parent = host:GetParent()
+        local baseLv = host:GetFrameLevel()
+        if parent then baseLv = math.max(baseLv, parent:GetFrameLevel()) end
+        host:SetFrameLevel(baseLv + 20)
 
         local track = CreateFrame("Frame", nil, host)
         track:SetPoint("TOPLEFT", host, "TOPLEFT", -padX, padY)
         track:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", padX, -padY)
         local trackPieces = BuildCapsule(track, trackH / 2, ns.hui.layer.L1, nil, nil, GradNorm)
+        if ns.hui.BuildRoundBorder then
+            ns.hui.BuildRoundBorder(track, trackH / 2, {1, 1, 1, 0.07})
+        end
         if ns.hui.RegisterMainAlphaSurface and ns.hui.IsMainUIFrame(host) then
             ns.hui.RegisterMainAlphaSurface(track, trackPieces)
         end
 
         local sliderH = host:GetHeight() + 2
         local sliderY = (sliderH - host:GetHeight()) / 2
+        local shadow = CreateFrame("Frame", nil, host)
+        shadow:SetHeight(sliderH + 6)
+        shadow:SetFrameLevel(host:GetFrameLevel() + 1)
+        local shCapW = sliderH / 2 + 3
+        local shL = shadow:CreateTexture(nil, "BACKGROUND")
+        shL:SetTexture(PILL_SH_L)
+        shL:SetWidth(shCapW)
+        shL:SetHeight(sliderH + 6)
+        shL:SetPoint("TOPLEFT", shadow, "TOPLEFT", 0, 0)
+        local shM = shadow:CreateTexture(nil, "BACKGROUND")
+        shM:SetTexture(PILL_SH_M)
+        shM:SetPoint("TOPLEFT", shL, "TOPRIGHT", 0, 0)
+        shM:SetPoint("BOTTOMRIGHT", shadow, "BOTTOMRIGHT", -shCapW, 0)
+        local shR = shadow:CreateTexture(nil, "BACKGROUND")
+        shR:SetTexture(PILL_SH_R)
+        shR:SetWidth(shCapW)
+        shR:SetHeight(sliderH + 6)
+        shR:SetPoint("TOPRIGHT", shadow, "TOPRIGHT", 0, 0)
+        shadow:Hide()
         local slider = CreateFrame("Frame", nil, host)
         slider:SetHeight(sliderH)
+        slider:SetFrameLevel(host:GetFrameLevel() + 2)
         local capW = sliderH / 2
         local capL = slider:CreateTexture(nil, "BORDER")
-        capL:SetTexture(HUI_PILL_L)
-        capL:SetSize(capW, sliderH)
+        capL:SetTexture(SEG_PILL_L)
+        capL:SetWidth(capW)
         capL:SetPoint("TOPLEFT")
-        Paint(capL, HUI_ACCENT)
+        capL:SetPoint("BOTTOMLEFT")
         local capR = slider:CreateTexture(nil, "BORDER")
-        capR:SetTexture(HUI_PILL_R)
-        capR:SetSize(capW, sliderH)
+        capR:SetTexture(SEG_PILL_R)
+        capR:SetWidth(capW)
         capR:SetPoint("TOPRIGHT")
-        Paint(capR, HUI_ACCENT)
+        capR:SetPoint("BOTTOMRIGHT")
         local mid = slider:CreateTexture(nil, "BORDER")
-        mid:SetTexture("Interface/Buttons/WHITE8X8")
-        Paint(mid, HUI_ACCENT)
+        mid:SetTexture(SEG_PILL_M, true)
         mid:SetPoint("TOPLEFT", capL, "TOPRIGHT", 0, 0)
         mid:SetPoint("BOTTOMRIGHT", capR, "BOTTOMLEFT", 0, 0)
         slider:Hide()
 
-        local ctrl = {buttons = {}, offsets = {}, slider = slider}
+        local ctrl = {buttons = {}, offsets = {}, slider = slider, shadow = shadow}
 
         function ctrl:AttachButtons(buttons)
             ctrl.buttonList = buttons
             local acc = 0
+            local textLv = slider:GetFrameLevel() + 1
             for _, bt in ipairs(buttons) do
                 ctrl.buttons[bt] = true
                 ctrl.offsets[bt] = acc
                 acc = acc + bt:GetWidth()
+                if bt.SetFrameLevel then bt:SetFrameLevel(textLv) end
             end
         end
 
@@ -1756,6 +1789,9 @@ do
             slider:ClearAllPoints()
             slider:SetPoint("TOPLEFT", host, "TOPLEFT", x, sliderY)
             slider:SetWidth(w)
+            shadow:ClearAllPoints()
+            shadow:SetPoint("TOPLEFT", host, "TOPLEFT", x - 3, sliderY + 2)
+            shadow:SetWidth(w + 6)
         end
 
         function ctrl:SetSelected(bt, animate)
@@ -1767,6 +1803,7 @@ do
             ctrl.x = toX
             ctrl.current = bt
             slider:Show()
+            shadow:Show()
             if animate and (fromX ~= toX or fromW ~= toW) then
                 ctrl.animFromX, ctrl.animFromW = fromX, fromW
                 ctrl.animToX, ctrl.animToW = toX, toW
@@ -1802,13 +1839,8 @@ do
             ctrl.vx, ctrl.vw = nil, nil
             slider:SetScript("OnUpdate", nil)
             slider:Hide()
+            shadow:Hide()
         end
-
-        ns.hui.AddRepaint(host, function()
-            Paint(capL, HUI_ACCENT)
-            Paint(capR, HUI_ACCENT)
-            Paint(mid, HUI_ACCENT)
-        end)
 
         return ctrl
     end
@@ -2524,36 +2556,38 @@ do
         local K = (bt and bt.__huiKnob) or 14
         return on and (W - K - 3) or 3
     end
-    local function PaintTrack(texs, c)
-        for _, tex in ipairs(texs) do
-            if tex.__isColor then
-                tex:SetColorTexture(c[1], c[2], c[3], 1)
-            else
-                tex:SetVertexColor(c[1], c[2], c[3])
-            end
-        end
-    end
+
+    local TOGGLE_ON_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_ToggleOn"
+    local TOGGLE_OFF_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_ToggleOff"
+    local KNOB_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_Knob"
+
     local function ApplyToggleState(bt, texs, knob, animate)
         animate = animate and true or false
         local on = bt.__huiOn
         if on == nil then on = bt:GetChecked() and true or false end
         bt.__huiOn = on
         local toX = ToggleKnobX(on, bt)
-        local toC = on and HUI_ACCENT or ns.hui.layer.L4
+        if bt.__huiTrackTex then
+            bt.__huiTrackTex:SetTexture(on and TOGGLE_ON_TEX or TOGGLE_OFF_TEX)
+        end
+        if bt.__huiKnobTex then
+            if on then
+                bt.__huiKnobTex:SetVertexColor(0x46/255, 0xbf/255, 0x72/255)
+            else
+                bt.__huiKnobTex:SetVertexColor(0xC6/255, 0xCB/255, 0xD4/255)
+            end
+        end
         bt.__huiAnim = false
         if not animate then
+            local ks = (bt.__huiKnob or 14) + 6
             knob:ClearAllPoints()
-            knob:SetPoint("LEFT", bt, "LEFT", toX, 0)
-            knob:SetSize(bt.__huiKnob or 14, bt.__huiKnob or 14)
-            PaintTrack(texs, toC)
+            knob:SetPoint("LEFT", bt, "LEFT", toX - 3, 0)
+            knob:SetSize(ks, ks)
             bt.__huiKnobX = toX
-            bt.__huiColor = toC
             return
         end
         bt.__huiAnimFromX = bt.__huiKnobX or toX
         bt.__huiAnimToX = toX
-        bt.__huiAnimFromC = bt.__huiColor or toC
-        bt.__huiAnimToC = toC
         bt.__huiAnimEl = 0
         bt.__huiAnimDur = 0.14
         bt.__huiAnim = true
@@ -2566,40 +2600,27 @@ do
         bt.__huiW, bt.__huiKnob = TW, KNOB
         bt.__huiToggle = true
         local ours = {}
-        local border = CreateFrame("Frame", nil, bt)
-        border:SetPoint("TOPLEFT", 1, -1)
-        border:SetPoint("BOTTOMRIGHT", -1, 1)
-        local borderTexs = BuildCapsule(border, KNOB / 2 + 1, C_TOGGLE_BORDER)
-        for _, t in ipairs(borderTexs) do
-            ours[t] = true
-        end
-        ours[border] = true
         local track = CreateFrame("Frame", nil, bt)
-        track:SetPoint("TOPLEFT", 2, -2)
-        track:SetPoint("BOTTOMRIGHT", -2, 2)
-        local texs = BuildCapsule(track, KNOB / 2 + 1, ns.hui.layer.L1)
-        for _, t in ipairs(texs) do
-            t:SetDrawLayer("BORDER")
-            ours[t] = true
-        end
+        track:SetAllPoints(bt)
+        local trackTex = track:CreateTexture(nil, "BORDER")
+        trackTex:SetTexture(TOGGLE_OFF_TEX)
+        trackTex:SetAllPoints(track)
+        ours[trackTex] = true
         ours[track] = true
+        bt.__huiTrackTex = trackTex
         local knob = CreateFrame("Frame", nil, bt)
-        knob:SetSize(KNOB, KNOB)
+        knob:SetSize(KNOB + 6, KNOB + 6)
         local knobTex = knob:CreateTexture(nil, "ARTWORK")
-        knobTex:SetTexture(HUI_CIRCLE)
+        knobTex:SetTexture(KNOB_TEX)
         knobTex:SetAllPoints()
-        local lum0 = (ns.hui.layer.L0[1] + ns.hui.layer.L0[2] + ns.hui.layer.L0[3]) / 3
-        local kc0 = lum0 > 0.5 and {1, 1, 1} or C_KNOB
-        knobTex:SetVertexColor(kc0[1], kc0[2], kc0[3])
+        knobTex:SetVertexColor(0xC6 / 255, 0xCB / 255, 0xD4 / 255)
+        bt.__huiKnobTex = knobTex
         ours[knobTex] = true
         ours[knob] = true
         ns.hui.__skinRegistry[track] = nil
         track.__huiRepaints = nil
         ns.hui.AddRepaint(bt, function()
-            ApplyToggleState(bt, texs, knob, false)
-            local lum = (ns.hui.layer.L0[1] + ns.hui.layer.L0[2] + ns.hui.layer.L0[3]) / 3
-            local kc = lum > 0.5 and {1, 1, 1} or C_KNOB
-            knobTex:SetVertexColor(kc[1], kc[2], kc[3])
+            ApplyToggleState(bt, nil, knob, false)
         end)
         local TEX_SETTERS = {
             "SetNormalTexture", "SetPushedTexture", "SetCheckedTexture",
@@ -2662,7 +2683,7 @@ do
             self.__huiOn = not not v
             origSetChecked(self, v)
             SafePurge()
-            ApplyToggleState(self, texs, knob, false)
+            ApplyToggleState(self, nil, knob, false)
         end
         local function ToggleOnUpdate(_, d)
             if not bt.__huiAnim then return end
@@ -2671,25 +2692,18 @@ do
             local e = 1 - (1 - t) * (1 - t)
             local x = bt.__huiAnimFromX + (bt.__huiAnimToX - bt.__huiAnimFromX) * e
             knob:ClearAllPoints()
-            knob:SetPoint("LEFT", bt, "LEFT", x, 0)
-            knob:SetSize(KNOB, KNOB)
-            local fc, tc = bt.__huiAnimFromC, bt.__huiAnimToC
-            PaintTrack(texs, {
-                fc[1] + (tc[1] - fc[1]) * e,
-                fc[2] + (tc[2] - fc[2]) * e,
-                fc[3] + (tc[3] - fc[3]) * e,
-            })
+            knob:SetPoint("LEFT", bt, "LEFT", x - 3, 0)
+            knob:SetSize(KNOB + 6, KNOB + 6)
             if t >= 1 then
                 bt.__huiAnim = false
                 bt.__huiKnobX = bt.__huiAnimToX
-                bt.__huiColor = bt.__huiAnimToC
             end
         end
         bt:HookScript("OnUpdate", ToggleOnUpdate)
         bt:HookScript("OnClick", function()
             SafePurge()
             bt.__huiOn = bt:GetChecked() and true or false
-            ApplyToggleState(bt, texs, knob, true)
+            ApplyToggleState(bt, nil, knob, true)
             if bt.__huiClickTimer then
                 pcall(bt.__huiClickTimer.Cancel, bt.__huiClickTimer)
             end
@@ -2697,7 +2711,7 @@ do
                 bt.__huiClickTimer = nil
                 if not bt:IsShown() then return end
                 bt.__huiOn = bt:GetChecked() and true or false
-                ApplyToggleState(bt, texs, knob, false)
+                ApplyToggleState(bt, nil, knob, false)
             end)
         end)
         local C_ACCENT_HOVER = { math.min(ns.hui.ACCENT[1] + 0.10, 1), math.min(ns.hui.ACCENT[2] + 0.10, 1), math.min(ns.hui.ACCENT[3] + 0.10, 1) }
@@ -2705,22 +2719,30 @@ do
             if not bt:IsEnabled() then return end
             bt.__huiAnim = false
             local c = bt.__huiOn and C_ACCENT_HOVER or ns.hui.layer.L5
-            PaintTrack(texs, c)
+            if bt.__huiTrackTex then
+                bt.__huiTrackTex:SetVertexColor(c[1], c[2], c[3])
+            end
             bt.__huiColor = c
         end)
         bt:HookScript("OnLeave", function()
-            ApplyToggleState(bt, texs, knob, true)
+            if bt.__huiTrackTex then
+                bt.__huiTrackTex:SetVertexColor(1, 1, 1)
+            end
+            ApplyToggleState(bt, nil, knob, true)
         end)
         local function SyncOnShow()
             SafePurge()
             bt.__huiOn = bt:GetChecked() and true or false
-            ApplyToggleState(bt, texs, knob, false)
+            if bt.__huiTrackTex then
+                bt.__huiTrackTex:SetVertexColor(1, 1, 1)
+            end
+            ApplyToggleState(bt, nil, knob, false)
         end
         bt:HookScript("OnShow", SyncOnShow)
         bt:HookScript("OnEnable", SyncOnShow)
         bt:HookScript("OnDisable", SyncOnShow)
         SafePurge()
-        ApplyToggleState(bt, texs, knob, false)
+        ApplyToggleState(bt, nil, knob, false)
     end
 
     function ns.hui.ReskinSlider(s, noWheel)
