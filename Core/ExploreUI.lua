@@ -224,7 +224,7 @@ EG.BM_BUNDLE = BM_BUNDLE
 
 EG.NAV_X, EG.NAV_W = PAGE_INSET, 148
 EG.NAV_GROUP_H = 24
-EG.NAV_ITEM_H, EG.NAV_GAP = 26, 8
+EG.NAV_ITEM_H, EG.NAV_GAP = 24, 8
 EG.NAV_ICON = 18
 EG.W = CONTENT_W - 2 * PAGE_INSET
 EG.EDGE = PAGE_INSET
@@ -324,10 +324,7 @@ local function ToyQuestTitle(qid)
     if qid and type(C_QuestLog) == "table" and C_QuestLog.GetTitleForQuestID then
         local ok, t = pcall(C_QuestLog.GetTitleForQuestID, qid)
         if ok and type(t) == "string" and t ~= "" then return t end
-        if not EG.__qAsked[qid] then
-            EG.__qAsked[qid] = true
-            if C_QuestLog.RequestLoadQuestByID then pcall(C_QuestLog.RequestLoadQuestByID, qid) end
-        end
+        if DG.RequestQuest then DG.RequestQuest(qid) end
     end
     return nil
 end
@@ -371,6 +368,7 @@ local function SetSub(key)
     local db = ns.DB()
     db.explore = db.explore or {}
     db.explore.subPage = key
+    EG._sweepFails = 0
     if EG.petFrame and EG.petFrame.scroll and EG.petFrame.scroll.SetVerticalScroll then
         pcall(EG.petFrame.scroll.SetVerticalScroll, EG.petFrame.scroll, 0)
     end
@@ -902,7 +900,7 @@ local function PaintRow(r, idx, y, rec, zebra)
 end
 
 function EG.SweepNames()
-    if not EG.built or not EG.needNames then EG._sweepQueued = false return end
+    if not EG.built then EG._sweepQueued = false return end
     EG.needNames = false
     local miss = 0
     local function Probe(id)
@@ -938,7 +936,8 @@ function EG.SweepNames()
     else
         EG._sweepFails = math.min((EG._sweepFails or 0) + 1, 6)
     end
-    if not prevMiss or miss < prevMiss then EG.RequestRender() end
+    local onScreen = ns.PageVisible(EG.page)
+    if not prevMiss or miss < prevMiss or (miss > 0 and onScreen) then EG.RequestRender() end
     if EG.needNames then
         EG.ScheduleSweep()
     else
@@ -964,6 +963,33 @@ function EG.OnItemData(itemID)
     end
 end
 
+function EG.OnQuestData(qid)
+    if not EG.built or not qid then return end
+    if not ns.PageVisible(EG.page) then return end
+    local cs = CurSub()
+    if cs ~= "bag" and cs ~= "pets" and cs ~= "torch" and cs ~= "banner" then return end
+    if EG.__qRepaint then return end
+    EG.__qRepaint = true
+    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+        C_Timer.After(0.05, function()
+            EG.__qRepaint = false
+            if not ns.PageVisible(EG.page) then return end
+            EG.RequestRender()
+        end)
+    else
+        EG.__qRepaint = false
+        EG.RequestRender()
+    end
+end
+
+do
+    local hl = DG.__qDataHooks
+    if hl and not hl.__exploreChain then
+        hl.__exploreChain = EG.OnQuestData
+        hl[#hl + 1] = hl.__exploreChain
+    end
+end
+
 function EG.ScheduleSweep()
     if EG._sweepQueued then return end
     if type(C_Timer) ~= "table" or type(C_Timer.After) ~= "function" then return end
@@ -971,7 +997,7 @@ function EG.ScheduleSweep()
     EG._sweepQueued = true
     local wait = 1.0
     for _ = 1, (EG._sweepFails or 0) do wait = wait * 2 end
-    if wait > 60 then wait = 60 end
+    if wait > 10 then wait = 10 end
     C_Timer.After(wait, function()
         EG._sweepQueued = false
         EG.SweepNames()

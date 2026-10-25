@@ -35,7 +35,6 @@ local RIDING_RANK = { [75] = L["初级骑术"], [150] = L["中级骑术"] }
 
 local ItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
 
-
 local SUB_MOUNT, SUB_PET = "mount", "pet"
 
 local SUB_TABS = {

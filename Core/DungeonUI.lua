@@ -28,6 +28,8 @@ local C_DIM = { 0.63, 0.63, 0.63 }
 local C_DARKGREY = { 0.30, 0.30, 0.30 }
 local C_WHITE = { 1, 1, 1 }
 local C_TEXT = { 0.88, 0.88, 0.88 }
+local C_LINK_Q = { 0.53, 0.81, 0.98 }
+local C_LINK_NPC = C_GOLD
 
 local function DB()
     DungeonsForeverDB = DungeonsForeverDB or {}
@@ -318,6 +320,17 @@ function DG.WheelScroll(scroll, child, delta)
     if scroll == U.dungeonQuestScroll then DG.CullQuestRows()
     elseif scroll == U.dungeonGuideScroll then DG.CullGuideCards()
     elseif scroll == U.dungeonDetailScroll then DG.CullLootCards() end
+end
+
+function DG.ClampScroll(sf, child, val)
+    if not (sf and child) then return end
+    local cw = tonumber(child.GetHeight and child:GetHeight()) or 0
+    local vw = tonumber(sf.GetHeight and sf:GetHeight()) or 0
+    local mx = math.max(0, cw - vw)
+    local v = tonumber(val) or 0
+    if v < 0 then v = 0 end
+    if v > mx then v = mx end
+    sf:SetVerticalScroll(v)
 end
 
 local function CardEdge(card, r, g, b, a)
@@ -1597,7 +1610,10 @@ function DG.EnsureQuestLane()
     qdet:HookScript("OnShow", function() DG.CullQuestRows() end)
     U.dungeonQDet = qdet
     U.dungeonQDetChild = qdchild
-    U.dungeonQDetPool = { lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {} }
+    U.dungeonQDetPool = {
+        lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {},
+        fLab = {}, fTxt = {}, fLink = {}, fNum = {},
+    }
     U.dungeonQDetName = MakeFS(qdchild, 16, C_GOLD, "LEFT")
     U.dungeonQDetName:SetWordWrap(false)
     U.dungeonQDetName:SetWidth(DG.Q_DET_W - 8)
@@ -1797,23 +1813,25 @@ function DG.EnsureQuestLane()
         ovDragStop()
     end)
 
-    local zpill = CreateFrame("Frame", nil, card)
-    zpill:SetSize(116, 24)
+    local zpill = CreateFrame("Frame", nil, card, "BackdropTemplate")
+    zpill:SetSize(96, 24)
     zpill:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -6, 6)
     zpill:SetFrameLevel(sf:GetFrameLevel() + 10)
     zpill:EnableMouse(true)
-    if IsHui() and ns.hui and ns.hui.BuildRoundedBG then
-        ns.hui.BuildRoundedBG(zpill, 12, ns.hui.layer.L3, "both", true, 1)
+    zpill:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
+    if IsHui() and ns.hui and ns.hui.layer and ns.hui.layer.L2 then
+        local c2 = ns.hui.layer.L2
+        zpill:SetBackdropColor(c2[1], c2[2], c2[3], 1)
+    else
+        zpill:SetBackdropColor(0x16 / 255, 0x1a / 255, 0x22 / 255, 1)
+    end
+    if IsHui() and ns.hui and ns.hui.BuildRoundBorder then
+        local zbf = CreateFrame("Frame", nil, zpill)
+        zbf:SetAllPoints()
+        ns.hui.BuildRoundBorder(zbf, 12, { 0x55 / 255, 0x58 / 255, 0x5e / 255 })
     end
     U.dungeonQOVPill = zpill
-    local edgeCol = ns.hui and ns.hui.layer and ns.hui.layer.L5 or { 1, 1, 1, 0.25 }
-    for i = 1, 2 do
-        local sep = zpill:CreateTexture(nil, "BACKGROUND", nil, 2)
-        sep:SetColorTexture(edgeCol[1], edgeCol[2], edgeCol[3], 0.35)
-        sep:SetSize(1, 12)
-        sep:SetPoint("LEFT", zpill, "LEFT", 28 + (i - 1) * 60, 0)
-    end
-    local zlab = MakeFS(zpill, 14, { 0.92, 0.92, 0.92 }, "CENTER")
+    local zlab = MakeFS(zpill, 14, { 0.91, 0.93, 0.94 }, "CENTER")
     zlab:SetPoint("CENTER", zpill, "CENTER", 0, 0)
     zlab:SetText("125%")
     local function refreshZoomLabel()
@@ -1823,19 +1841,41 @@ function DG.EnsureQuestLane()
         U.dungeonQOVZoomBy(dir)
         refreshZoomLabel()
     end
+    local Z_GLYPH = { 0.67, 0.70, 0.73 }
     for i = 1, 2 do
         local bt = CreateFrame("Button", nil, zpill)
-        bt:SetSize(26, 24)
+        bt:SetSize(24, 24)
         if i == 1 then
-            bt:SetPoint("LEFT", zpill, "LEFT", 1, 0)
+            bt:SetPoint("LEFT", zpill, "LEFT", 2, 0)
         else
-            bt:SetPoint("RIGHT", zpill, "RIGHT", -1, 0)
+            bt:SetPoint("RIGHT", zpill, "RIGHT", -2, 0)
         end
         bt:SetFrameLevel(zpill:GetFrameLevel() + 3)
         bt:EnableMouse(true)
-        local t = MakeFS(bt, 14, { 0.92, 0.92, 0.92 })
-        t:SetAllPoints()
+        if IsHui() and ns.hui and ns.hui.BuildCapsule then
+            bt.__hov = ns.hui.BuildCapsule(bt, 8, ns.hui.layer.L4, 1, 2)
+            for _, hv in ipairs(bt.__hov) do hv:Hide() end
+        end
+        local t = MakeFS(bt, 28, { Z_GLYPH[1], Z_GLYPH[2], Z_GLYPH[3] })
+        t:ClearAllPoints()
+        t:SetPoint("CENTER", 0, 1)
         t:SetText(i == 1 and "-" or "+")
+        bt:SetScript("OnEnter", function(self)
+            if self.__hov then
+                for _, hv in ipairs(self.__hov) do hv:Show() end
+            end
+            if ns.hui and ns.hui.ACCENT then
+                t:SetTextColor(ns.hui.ACCENT[1], ns.hui.ACCENT[2], ns.hui.ACCENT[3])
+            else
+                t:SetTextColor(1, 1, 1)
+            end
+        end)
+        bt:SetScript("OnLeave", function(self)
+            if self.__hov then
+                for _, hv in ipairs(self.__hov) do hv:Hide() end
+            end
+            t:SetTextColor(Z_GLYPH[1], Z_GLYPH[2], Z_GLYPH[3])
+        end)
         bt:SetScript("OnClick", function()
             zoomStep(i == 1 and -1 or 1)
         end)
@@ -2137,10 +2177,7 @@ function DG.PaintQuestOverview(d)
             n:SetScript("OnClick", function(self)
                 if U.__ovDragDist then return end
                 if self.__q then
-                    U.dungeonQuestSel = self.__q[1]
-                    U.dungeonQDetExt = nil
-                    U:RenderDungeonQuests()
-                    ns.PlaySound(1)
+                    DG.OpenQuest(self.__q[1])
                 elseif self.__ext then
                     U.dungeonQDetExt = self.__ext
                     U:RenderDungeonQuests()
@@ -2482,6 +2519,9 @@ function DG.PaintQuestOverview(d)
     end
 
     local canvasW = (nCols > 0) and (colX[nCols] + nw + 8) or math.max(DG.Q_LIST_W - 24, 200)
+    if nCols > 0 and DG.CurQuestFlow(d) then
+        canvasW = math.max(canvasW, nw * 5 + COL_GAP * 2 + 32)
+    end
     local startCX = math.max(8, (canvasW - nw) / 2)
     local maxRR = 0
     if nCols > 0 then
@@ -2497,6 +2537,8 @@ function DG.PaintQuestOverview(d)
         local dMax = (maxLv and DG.DifficultyColor(maxLv)) or { 1, 0.5, 0.25, 1 }
         local lvB = (maxLv and (UnitLevel("player") or 0) >= maxLv) and DG.Q_OV_DONE or nil
         placeMark(format(L["最低 %d 级"], minLv or 1), format(L["最高 %d 级"], maxLv or minLv or 1), dMin, startCX, 0, lvB, dMax)
+        local fw = nw * 2 + COL_GAP
+        DG.PaintOverviewFlow(d, canvas, canvasW - 8 - fw, fw)
 
         local nodeByQid, nodeByExt = {}, {}
         local extDone = {}
@@ -3204,6 +3246,7 @@ function DG.BuildDetailFilterRow()
     if next(U.dungeonFilterBtns or {}) then return end
     for i = 1, DG.FILTER_MAX do
         local bt = NewButton(detail, "", 92, 24, 14)
+        bt:SetPushedTextOffset(0, 0)
         bt:SetPoint("TOPLEFT", detail, "TOPLEFT", DG.GUTTER + (i - 1) * 100, -DG.FILTER_Y)
         bt.__mode, bt.__key = "loot", "all"
         local em = bt:CreateTexture(nil, "OVERLAY")
@@ -4163,6 +4206,9 @@ function DG.ShowItemTipBody(owner, it, extra, title)
             if l1 then l1:SetText(title) end
         end
         GameTooltip:Show()
+        if ns.TipLines and ns.TipLines.InsertIlvl then
+            pcall(ns.TipLines.InsertIlvl, GameTooltip, id)
+        end
         return
     end
 
@@ -4337,6 +4383,9 @@ function U:ShowDungeonDetail(d)
     local hero = U.dungeonDetailHero
     if hero then DG.PaintArt(hero.art, d, "hero") end
     U.dungeonDetailCur = d
+    U.dungeonQFlow = nil
+    U.dungeonQDetKey = nil
+    U.dungeonQListKey = nil
     if U.dungeonBack then U.dungeonBack:SetText(d.raid and L["‹ 团本"] or L["‹ 副本"]) end
     DG.PrewarmLoot(d)
 
@@ -5755,6 +5804,22 @@ function DG.QuestRaceTag(qid)
     return DG.Q_RACE_TAG_L[rt.label] or rt.label
 end
 DG.Q_FS_DET = 14
+DG.Q_FLOW_H = 20
+DG.Q_FLOW_DOT = 16
+DG.Q_FLOW_MARK = 13
+DG.Q_MARK_SYM = {
+    done = "Interface\\AddOns\\DungeonsForever\\Media\\CheckMark",
+    active = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkAsk",
+    todo = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkExcl",
+}
+DG.Q_MARK_INK = {
+    done = { 0.043, 0.239, 0.102 },
+    active = { 0.227, 0.165, 0 },
+    todo = { 0.102, 0.102, 0.102 },
+}
+DG.Q_FLOW_SEC_GAP = 6
+DG.Q_FLOW_ST_GAP = 4
+DG.Q_FLOW_IDEO = "\227\128\128" .. " "
 DG.Q_DET_ICON = 20
 DG.C_FAC_A = { 0.45, 0.65, 1 }
 DG.C_FAC_H = { 1, 0.40, 0.40 }
@@ -6163,6 +6228,11 @@ function U:RenderDungeonQuests()
     U.dungeonQSide = side
     local status = U.dungeonQFilter or "all"
 
+    local listKey = tostring(d.id) .. "|" .. tostring(side) .. "|" .. tostring(view) .. "|" .. tostring(status)
+    local keepList = (listKey == U.dungeonQListKey)
+        and (U.dungeonQuestScroll and U.dungeonQuestScroll:GetVerticalScroll() or 0) or 0
+    U.dungeonQListKey = listKey
+
     for i = 1, #(U.dungeonFilterBtns or {}) do
         local bt = U.dungeonFilterBtns[i]
         if bt and i > 4 then
@@ -6194,7 +6264,7 @@ function U:RenderDungeonQuests()
                     bfs:SetPoint("TOPLEFT", bt, "TOPLEFT", 26, 0)
                     bfs:SetPoint("BOTTOMRIGHT", bt, "BOTTOMRIGHT", -2, 0)
                 else
-                    bfs:SetAllPoints(bt)
+                    bfs:SetPoint("CENTER", bt, "CENTER", 0, 0)
                 end
                 bfs:SetJustifyH("CENTER")
             end
@@ -6217,6 +6287,16 @@ function U:RenderDungeonQuests()
                     bfs:SetTextColor(Unpack(C_GREY))
                 end
             end
+            if bfs then
+                bfs:ClearAllPoints()
+                if tex then
+                    bfs:SetPoint("TOPLEFT", bt, "TOPLEFT", 26, 0)
+                    bfs:SetPoint("BOTTOMRIGHT", bt, "BOTTOMRIGHT", -2, 0)
+                else
+                    bfs:SetPoint("CENTER", bt, "CENTER", 0, 0)
+                end
+                bfs:SetJustifyH("CENTER")
+            end
         end
     end
 
@@ -6231,12 +6311,14 @@ function U:RenderDungeonQuests()
         if U.dungeonQListCard then U.dungeonQListCard:SetShown(false) end
         if U.dungeonQOverviewF then U.dungeonQOverviewF:SetShown(true) end
         if U.dungeonQOVCard then U.dungeonQOVCard:SetShown(true) end
+        U.dungeonQListKey = nil
         DG.PaintQuestOverview(d)
         U:RenderQuestDetail()
         return
     end
     if U.dungeonQOverviewF then U.dungeonQOverviewF:SetShown(false) end
     if U.dungeonQOVCard then U.dungeonQOVCard:SetShown(false) end
+    if U.dungeonQOVFlowCard then U.dungeonQOVFlowCard:SetShown(false) end
     if U.dungeonQListCard then U.dungeonQListCard:SetShown(true) end
     U.dungeonQuestScroll:SetShown(true)
     U.dungeonQuestChild:SetShown(true)
@@ -6284,7 +6366,7 @@ function U:RenderDungeonQuests()
         end
         if selOk then break end
     end
-    if not selOk and not U.dungeonQDetExt then
+    if not selOk and not U.dungeonQDetExt and not U.dungeonQFlow then
         local first = groups[1].rows[1] or groups[2].rows[1]
         U.dungeonQuestSel = first and first[1] or nil
     end
@@ -6292,6 +6374,43 @@ function U:RenderDungeonQuests()
     DG.__vgen = (DG.__vgen or 0) + 1
     local hdr, rows = pool.hdr, pool.row
     local nH, nR, y = 0, 0, -4
+
+    local flow = DG.CurQuestFlow(d)
+    if flow then
+        local c = DG.EnsureFlowCard(child)
+        c:ClearAllPoints()
+        c:SetPoint("TOPLEFT", child, "TOPLEFT", DG.Q_PAD + 4, y)
+        c.name:SetText(L["副本任务总览"])
+        local ico = flow.side and DG.Q_FAC_ICON[flow.side]
+        if ico then
+            c.fac:SetTexture(ico)
+            c.fac:Show()
+            c.name:SetPoint("LEFT", c, "LEFT", 10 + DG.Q_FAC_ICON_SZ + 6, 0)
+        else
+            c.fac:Hide()
+            c.name:SetPoint("LEFT", c, "LEFT", 12, 0)
+        end
+        local parts = {}
+        for i = 1, #flow.sec do
+            parts[i] = tostring(flow.sec[i].hd) .. " " .. tostring(#(flow.sec[i].st or {}))
+        end
+        c.sub:SetText(table.concat(parts, " · "))
+        local sel = (U.dungeonQFlow == true)
+        if not HuiCardState(c, sel and "hover" or "norm") then
+            if sel then
+                c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+                c:SetBackdropBorderColor(1, 0.82, 0, 0.9)
+            else
+                c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+                c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+            end
+        end
+        c:Show()
+        y = y - DG.Q_ROW_H - DG.Q_GAP_Y
+    elseif U.dungeonQFlowCard then
+        U.dungeonQFlow = nil
+        U.dungeonQFlowCard:Hide()
+    end
 
     local function takeRow()
         nR = nR + 1
@@ -6311,11 +6430,7 @@ function U:RenderDungeonQuests()
                 DG.WheelScroll(U.dungeonQuestScroll, U.dungeonQuestChild, delta)
             end)
             r:SetScript("OnClick", function()
-                if r.__q then
-                    U.dungeonQuestSel = r.__q[1]
-                    U.dungeonQDetExt = nil
-                    U:RenderDungeonQuests()
-                end
+                if r.__q then DG.OpenQuest(r.__q[1]) end
             end)
             r.em = r:CreateTexture(nil, "ARTWORK")
             r.em:SetSize(DG.Q_FAC_ICON_SZ, DG.Q_FAC_ICON_SZ)
@@ -6500,7 +6615,7 @@ function U:RenderDungeonQuests()
     end
 
     child:SetHeight(math.max(10, -y + 4))
-    U.dungeonQuestScroll:SetVerticalScroll(0)
+    DG.ClampScroll(U.dungeonQuestScroll, child, keepList)
     DG.CullQuestRows()
     U:RenderQuestDetail()
 end
@@ -6716,11 +6831,487 @@ function DG.ShowEntrancePointTip(owner, idx)
     GameTooltip:Show()
 end
 
+function DG.QuestFlow(d)
+    local t = ns.DungeonQuestFlow
+    if not t or not d then return nil end
+    local f = t[d.id]
+    if not f or type(f.sec) ~= "table" or #f.sec == 0 then return nil end
+    if f.side and f.side ~= DG.PlayerSide() then return nil end
+    return f
+end
+
+function DG.CurQuestFlow(d)
+    local f = DG.QuestFlow(d)
+    if not f or not f.side then return f end
+    local vs = U.dungeonQSide
+    if vs ~= "A" and vs ~= "H" then vs = DG.PlayerSide() end
+    if f.side ~= vs then return nil end
+    return f
+end
+
+function DG.FlowQuestRow(id)
+    if not id then return nil end
+    DG.EnsureRowByID()
+    local r = DG.__rowByID and DG.__rowByID[id]
+    if r then return r end
+    local list = DG.QuestList(U.dungeonDetailCur)
+    for i = 1, #list do
+        if list[i][1] == id then return list[i] end
+    end
+    return nil
+end
+
+function DG.OpenQuest(id)
+    if not id then return end
+    local row = DG.FlowQuestRow(id)
+    U.dungeonQFlow = nil
+    U.dungeonQuestSel = nil
+    U.dungeonQDetExt = nil
+    if row then
+        U.dungeonQuestSel = id
+    else
+        local ext = ns.EnsureDungeonQuestExtInfo and ns.EnsureDungeonQuestExtInfo()
+        if ext and ext[id] then
+            U.dungeonQDetExt = id
+        else
+            U.dungeonQuestSel = id
+        end
+    end
+    U:RenderDungeonQuests()
+    if ns.PlaySound then ns.PlaySound(1) end
+end
+
+function DG.HideFlowRows(pool)
+    if not pool then return end
+    local i
+    for i = 1, #pool.fLab do pool.fLab[i]:Hide() end
+    for i = 1, #pool.fTxt do pool.fTxt[i]:Hide() end
+    for i = 1, #pool.fLink do pool.fLink[i]:Hide() end
+    for i = 1, #pool.fNum do
+        pool.fNum[i].ic:Hide()
+        pool.fNum[i].fs:Hide()
+    end
+    pool.nFLab, pool.nFTxt, pool.nFLink, pool.nFNum = 0, 0, 0, 0
+end
+
+function DG.HideDetailRows(pool)
+    if not pool then return end
+    local i
+    for i = 1, #pool.lab do pool.lab[i]:Hide() end
+    for i = 1, #pool.kv do pool.kv[i]:Hide() end
+    for i = 1, #pool.txt do pool.txt[i]:Hide() end
+    for i = 1, #pool.node do pool.node[i]:Hide() end
+    for i = 1, #pool.chip do pool.chip[i]:Hide() end
+    for i = 1, #pool.npc do pool.npc[i]:Hide() end
+    pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc = 0, 0, 0, 0, 0, 0
+    if U.dungeonQDetName then U.dungeonQDetName:Hide() end
+    if U.dungeonQDetSt then U.dungeonQDetSt:Hide() end
+end
+
+function DG.FlowTakeTxt(child, pool)
+    pool.nFTxt = pool.nFTxt + 1
+    local i = pool.nFTxt
+    local f = pool.fTxt[i]
+    if not f then
+        f = MakeFS(child, DG.Q_FS_DET, C_TEXT, "LEFT")
+        f:SetWordWrap(false)
+        pool.fTxt[i] = f
+    end
+    f:Show()
+    return f
+end
+
+function DG.FlowTakeLink(child, pool)
+    pool.nFLink = pool.nFLink + 1
+    local i = pool.nFLink
+    local b = pool.fLink[i]
+    if not b then
+        b = CreateFrame("Button", nil, child)
+        b:EnableMouse(true)
+        b:EnableMouseWheel(true)
+        b:SetScript("OnMouseWheel", function(_, delta)
+            DG.WheelScroll(U.dungeonQDet, U.dungeonQDetChild, delta)
+        end)
+        b.fs = MakeFS(b, DG.Q_FS_DET, C_TEXT, "LEFT")
+        b.fs:SetPoint("TOPLEFT", b, "TOPLEFT", 0, -3)
+        b.fs:SetWordWrap(false)
+        b.ic = b:CreateTexture(nil, "ARTWORK")
+        b.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+        b.ic:SetSize(DG.Q_FLOW_MARK, DG.Q_FLOW_MARK)
+        b.ic:SetPoint("LEFT", b, "LEFT", 0, 0)
+        b.ic:Hide()
+        b.icT = b:CreateTexture(nil, "OVERLAY")
+        b.icT:SetAllPoints(b.ic)
+        b.icT:Hide()
+        b:SetScript("OnEnter", function(self)
+            self.fs:SetTextColor(1, 1, 1, 1)
+            if self.__npc then
+                DG.ShowNpcTip(self, self.__npc)
+            elseif self.__q then
+                DG.ShowQuestTip(self, DG.FlowQuestRow(self.__q))
+            end
+        end)
+        b:SetScript("OnLeave", function(self)
+            local c = self.__col or C_TEXT
+            self.fs:SetTextColor(c[1], c[2], c[3], 1)
+            GameTooltip:Hide()
+        end)
+        b:SetScript("OnClick", function(self)
+            if self.__npc then
+                DG.MarkNPC(self.__npc)
+            elseif self.__q then
+                DG.OpenQuest(self.__q)
+            end
+        end)
+        pool.fLink[i] = b
+    end
+    b:Show()
+    return b
+end
+
+local function FlowWrapLines(fs, size)
+    local h = fs:GetStringHeight() or size
+    return math.max(1, math.ceil(h / size))
+end
+
+function DG.FlowMark(b, st, col)
+    if not b or not b.ic then return end
+    if st and col then
+        b.ic:SetVertexColor(col[1], col[2], col[3], 1)
+        b.icT:SetTexture(DG.Q_MARK_SYM[st] or DG.Q_MARK_SYM.todo)
+        local k = DG.Q_MARK_INK[st]
+        if k then b.icT:SetVertexColor(k[1], k[2], k[3], 1) else b.icT:SetVertexColor(1, 1, 1, 1) end
+        b.ic:Show()
+        b.icT:Show()
+    else
+        b.ic:Hide()
+        b.icT:Hide()
+    end
+end
+
+function DG.FlowLine(child, pool, seg, x0, xEnd, y)
+    local cx = x0
+    for k = 1, #seg do
+        local tk = seg[k]
+        local tw
+        if tk.n or tk.q then
+            local b = DG.FlowTakeLink(child, pool)
+            local col, txt, icx = C_LINK_NPC, nil, 0
+            if tk.n then
+                txt = tk.n
+                b.__npc, b.__q = tk.id, nil
+                DG.FlowMark(b, nil)
+            else
+                local nm, hasName = DG.QuestName(tk.id)
+                if not hasName or not nm or nm == "" then nm = tk.q end
+                col = C_LINK_Q
+                b.__npc, b.__q = nil, tk.id
+                if hasName then
+                    local st = DG.QuestState(tk.id)
+                    local mc = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
+                    DG.FlowMark(b, st, mc)
+                    txt = format("《%s%s》", DG.Q_FLOW_IDEO, nm)
+                else
+                    DG.FlowMark(b, nil)
+                    txt = format("《%s》", nm)
+                end
+            end
+            b.__col = col
+            b.fs:ClearAllPoints()
+            b.fs:SetPoint("TOPLEFT", b, "TOPLEFT", 0, -3)
+            b.fs:SetWidth(0)
+            b.fs:SetWordWrap(false)
+            if b.ic:IsShown() then
+                b.fs:SetText("《")
+                icx = b.fs:GetStringWidth() or 0
+            end
+            b.ic:ClearAllPoints()
+            b.ic:SetPoint("LEFT", b, "LEFT", icx, 0)
+            b.fs:SetText(txt)
+            b.fs:SetTextColor(Unpack(col))
+            tw = b.fs:GetStringWidth() or 0
+            if cx + tw > xEnd and cx > x0 then
+                y = y - DG.Q_FLOW_H
+                cx = x0
+            end
+            local avail = xEnd - cx
+            b:ClearAllPoints()
+            b:SetPoint("TOPLEFT", child, "TOPLEFT", cx, y)
+            if tw > avail then
+                local fw = avail
+                if fw < 10 then fw = 10 end
+                b.fs:SetWidth(fw)
+                b.fs:SetWordWrap(true)
+                local lns = FlowWrapLines(b.fs, DG.Q_FS_DET)
+                b:SetSize(avail, lns * DG.Q_FLOW_H)
+                y = y - (lns - 1) * DG.Q_FLOW_H
+                cx = xEnd
+            else
+                b:SetSize(tw, DG.Q_FLOW_H)
+                cx = cx + tw
+            end
+        else
+            local f = DG.FlowTakeTxt(child, pool)
+            f:SetWidth(0)
+            f:SetWordWrap(false)
+            f:SetText(tk.t or "")
+            tw = f:GetStringWidth() or 0
+            if cx + tw > xEnd and cx > x0 then
+                y = y - DG.Q_FLOW_H
+                cx = x0
+            end
+            local avail = xEnd - cx
+            f:ClearAllPoints()
+            f:SetPoint("TOPLEFT", child, "TOPLEFT", cx, y - 3)
+            if tw > avail then
+                f:SetWidth(avail)
+                f:SetWordWrap(true)
+                local lns = FlowWrapLines(f, DG.Q_FS_DET)
+                y = y - (lns - 1) * DG.Q_FLOW_H
+                cx = xEnd
+            else
+                cx = cx + tw
+            end
+        end
+    end
+    return y - DG.Q_FLOW_H
+end
+
+function DG.RenderQuestFlow(child, pool, d, keep)
+    local flow = DG.CurQuestFlow(d)
+    if not flow then return end
+    local xEnd = DG.Q_DET_W - 16
+    local y = -DG.Q_PAD
+    pool.nFLab, pool.nFTxt, pool.nFLink, pool.nFNum = 0, 0, 0, 0
+    for si = 1, #flow.sec do
+        local sec = flow.sec[si]
+        pool.nFLab = pool.nFLab + 1
+        local li = pool.nFLab
+        local lab = pool.fLab[li]
+        if not lab then
+            lab = MakeFS(child, DG.Q_FS_DET, C_GOLD, "LEFT")
+            lab:SetWordWrap(false)
+            pool.fLab[li] = lab
+        end
+        lab:SetText(sec.hd)
+        lab:ClearAllPoints()
+        lab:SetPoint("TOPLEFT", child, "TOPLEFT", 0, y)
+        lab:Show()
+        y = y - DG.Q_FLOW_H
+        for i = 1, #(sec.st or {}) do
+            pool.nFNum = pool.nFNum + 1
+            local ni = pool.nFNum
+            local num = pool.fNum[ni]
+            if not num then
+                num = {}
+                num.ic = child:CreateTexture(nil, "ARTWORK")
+                num.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+                num.ic:SetSize(DG.Q_FLOW_DOT, DG.Q_FLOW_DOT)
+                num.ic:SetVertexColor(0.22, 0.25, 0.30, 1)
+                num.fs = MakeFS(child, 12, C_GREY, "CENTER")
+                num.fs:SetSize(DG.Q_FLOW_DOT, DG.Q_FLOW_DOT)
+                pool.fNum[ni] = num
+            end
+            num.ic:ClearAllPoints()
+            num.ic:SetPoint("TOPLEFT", child, "TOPLEFT", 0, y - 2)
+            num.ic:Show()
+            num.fs:ClearAllPoints()
+            num.fs:SetPoint("CENTER", num.ic, "CENTER", 0, 0)
+            num.fs:SetText(tostring(i))
+            num.fs:Show()
+            y = DG.FlowLine(child, pool, sec.st[i], DG.Q_FLOW_DOT + 6, xEnd, y)
+            y = y - DG.Q_FLOW_ST_GAP
+        end
+        y = y - DG.Q_FLOW_SEC_GAP
+    end
+    local i
+    for i = pool.nFLab + 1, #pool.fLab do pool.fLab[i]:Hide() end
+    for i = pool.nFTxt + 1, #pool.fTxt do pool.fTxt[i]:Hide() end
+    for i = pool.nFLink + 1, #pool.fLink do pool.fLink[i]:Hide() end
+    for i = pool.nFNum + 1, #pool.fNum do
+        pool.fNum[i].ic:Hide()
+        pool.fNum[i].fs:Hide()
+    end
+    child:SetHeight(math.max(10, -y + 12))
+    DG.ClampScroll(U.dungeonQDet, child, keep)
+end
+
+function DG.EnsureFlowCard(child)
+    if U.dungeonQFlowCard then return U.dungeonQFlowCard end
+    local c = CreateFrame("Button", nil, child, "BackdropTemplate")
+    c:SetSize(DG.Q_LIST_W - DG.Q_PAD * 2 - 8, DG.Q_ROW_H)
+    c:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8x8",
+        edgeFile = "Interface\\Buttons\\WHITE8x8",
+        edgeSize = 1,
+    })
+    HuiCardFX(c, 12, 2)
+    c:EnableMouse(true)
+    c:EnableMouseWheel(true)
+    c:SetScript("OnMouseWheel", function(_, delta)
+        DG.WheelScroll(U.dungeonQuestScroll, U.dungeonQuestChild, delta)
+    end)
+    c:SetScript("OnClick", function()
+        U.dungeonQFlow = true
+        U.dungeonQuestSel = nil
+        U.dungeonQDetExt = nil
+        U.dungeonQView = "list"
+        U:RenderDungeonQuests()
+        if ns.PlaySound then ns.PlaySound(1) end
+    end)
+    c:SetScript("OnEnter", function(self)
+        if not HuiCardState(self, "hover") then
+            self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+            self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
+        end
+    end)
+    c:SetScript("OnLeave", function(self)
+        local sel = (U.dungeonQFlow == true)
+        if not HuiCardState(self, sel and "hover" or "norm") then
+            if sel then
+                self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+                self:SetBackdropBorderColor(1, 0.82, 0, 0.9)
+            else
+                self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+                self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+            end
+        end
+    end)
+    c.fac = c:CreateTexture(nil, "ARTWORK")
+    c.fac:SetSize(DG.Q_FAC_ICON_SZ, DG.Q_FAC_ICON_SZ)
+    c.fac:SetPoint("LEFT", c, "LEFT", 10, 0)
+    c.name = MakeFS(c, DG.Q_FS_NAME, C_TEXT, "LEFT")
+    c.name:SetPoint("LEFT", c, "LEFT", 12, 0)
+    c.name:SetWidth(200)
+    c.name:SetWordWrap(false)
+    c.sub = MakeFS(c, 12, C_GREY, "RIGHT")
+    c.sub:SetPoint("RIGHT", c, "RIGHT", -10, 0)
+    c.sub:SetWidth(240)
+    c.sub:SetWordWrap(false)
+    U.dungeonQFlowCard = c
+    return c
+end
+
+function DG.SyncOverviewFlowCard()
+    local c = U.dungeonQOVFlowCard
+    if not c or not c:IsShown() then return end
+    local sel = (U.dungeonQFlow == true)
+    if HuiCardState(c, sel and "hover" or "norm") then return end
+    if sel then
+        c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+        c:SetBackdropBorderColor(1, 0.82, 0, 0.9)
+    else
+        c:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+        c:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+    end
+end
+
+function DG.EnsureOVFlowCard(canvas)
+    if U.dungeonQOVFlowCard then return U.dungeonQOVFlowCard end
+    local c = CreateFrame("Button", nil, canvas, "BackdropTemplate")
+    c:SetSize(DG.Q_OV_W, DG.Q_OV_H)
+    c:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8x8",
+        edgeFile = "Interface\\Buttons\\WHITE8x8",
+        edgeSize = 1,
+    })
+    HuiCardFX(c, 12, 2)
+    c:EnableMouse(true)
+    c:EnableMouseWheel(true)
+    c:SetScript("OnMouseWheel", function(_, delta)
+        if U.dungeonQOVWheel then U.dungeonQOVWheel(delta) end
+    end)
+    c:SetScript("OnClick", function()
+        U.dungeonQFlow = true
+        U.dungeonQuestSel = nil
+        U.dungeonQDetExt = nil
+        U:RenderQuestDetail()
+        if ns.PlaySound then ns.PlaySound(1) end
+    end)
+    c:SetScript("OnEnter", function(self)
+        if not HuiCardState(self, "hover") then
+            self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+            self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
+        end
+    end)
+    c:SetScript("OnLeave", function()
+        DG.SyncOverviewFlowCard()
+    end)
+    c.fac = c:CreateTexture(nil, "ARTWORK")
+    c.fac:SetSize(DG.Q_FAC_ICON_SZ, DG.Q_FAC_ICON_SZ)
+    c.fac:SetPoint("LEFT", c, "LEFT", 6, 0)
+    c.name = MakeFS(c, DG.Q_FS_NAME, C_TEXT, "LEFT")
+    c.name:SetWordWrap(false)
+    c.sub = MakeFS(c, 12, C_GREY, "LEFT")
+    c.sub:SetWordWrap(false)
+    U.dungeonQOVFlowCard = c
+    return c
+end
+
+function DG.PaintOverviewFlow(d, canvas, x, w)
+    local flow = DG.CurQuestFlow(d)
+    local c = U.dungeonQOVFlowCard
+    if not flow then
+        if c then c:Hide() end
+        return
+    end
+    if not c then c = DG.EnsureOVFlowCard(canvas) end
+    c:ClearAllPoints()
+    c:SetPoint("TOPLEFT", canvas, "TOPLEFT", x, 0)
+    c:SetSize(w, DG.Q_OV_H)
+    local nx = 6
+    local ico = flow.side and DG.Q_FAC_ICON[flow.side]
+    if ico then
+        c.fac:SetTexture(ico)
+        c.fac:Show()
+        nx = nx + DG.Q_FAC_ICON_SZ + 4
+    else
+        c.fac:Hide()
+    end
+    c.name:ClearAllPoints()
+    c.name:SetPoint("TOPLEFT", c, "TOPLEFT", nx, -5)
+    c.name:SetWidth(w - nx - 6)
+    c.name:SetText(L["副本任务总览"])
+    local parts = {}
+    for i = 1, #flow.sec do
+        parts[i] = tostring(flow.sec[i].hd) .. " " .. tostring(#(flow.sec[i].st or {}))
+    end
+    c.sub:ClearAllPoints()
+    c.sub:SetPoint("TOPLEFT", c, "TOPLEFT", nx, -21)
+    c.sub:SetWidth(w - nx - 6)
+    c.sub:SetText(table.concat(parts, " · "))
+    c:Show()
+    DG.SyncOverviewFlowCard()
+end
+
 function U:RenderQuestDetail()
     local d = U.dungeonDetailCur
     local child, pool = U.dungeonQDetChild, U.dungeonQDetPool
     if not (d and child and pool) then return end
     local detW = DG.Q_DET_W
+
+    local flow = U.dungeonQFlow and DG.CurQuestFlow(d) or nil
+    local detKey
+    if flow then
+        detKey = "F:" .. tostring(d.id) .. ":" .. tostring(flow.side or "-")
+    elseif U.dungeonQDetExt then
+        detKey = "E:" .. tostring(U.dungeonQDetExt) .. ":" .. tostring(d.id)
+    else
+        detKey = "Q:" .. tostring(U.dungeonQuestSel) .. ":" .. tostring(d.id)
+    end
+    local keepDet = (detKey == U.dungeonQDetKey)
+        and (U.dungeonQDet and U.dungeonQDet:GetVerticalScroll() or 0) or 0
+    U.dungeonQDetKey = detKey
+
+    if flow then
+        DG.HideDetailRows(pool)
+        DG.RenderQuestFlow(child, pool, d, keepDet)
+        DG.SyncOverviewFlowCard()
+        return
+    end
+    U.dungeonQFlow = nil
+    DG.HideFlowRows(pool)
+    DG.SyncOverviewFlowCard()
 
     local q
     local qlist = DG.QuestList(d)
@@ -6733,16 +7324,8 @@ function U:RenderQuestDetail()
     pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc = 0, 0, 0, 0, 0, 0
     local y = -DG.Q_PAD
 
-    local MARK_SYM = {
-        done = "Interface\\AddOns\\DungeonsForever\\Media\\CheckMark",
-        active = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkAsk",
-        todo = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkExcl",
-    }
-    local MARK_SYM_INK = {
-        done = { 0.043, 0.239, 0.102 },
-        active = { 0.227, 0.165, 0 },
-        todo = { 0.102, 0.102, 0.102 },
-    }
+    local MARK_SYM = DG.Q_MARK_SYM
+    local MARK_SYM_INK = DG.Q_MARK_INK
     local function rowMark(r, st, col)
         if not r.ic then return end
         if st and col then
@@ -6801,7 +7384,7 @@ function U:RenderQuestDetail()
             f.fs:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
             local mb = NewButton(f, L["地图"], 68, 24, 14)
             AddBtnIcon(mb, "EntryPin", 14, 5)
-            mb:SetPoint("RIGHT", f.fs, "RIGHT", 80, 0)
+            mb:SetPoint("RIGHT", f.fs, "RIGHT", 74, 0)
             mb:SetScript("OnClick", function(self)
                 local p = self:GetParent()
                 if p.__npc then DG.MarkNPC(p.__npc, p.__loc) end
@@ -7351,7 +7934,7 @@ function U:RenderQuestDetail()
     for i = pool.nNpc + 1, #pool.npc do pool.npc[i]:Hide() end
 
     child:SetHeight(math.max(10, -y + 12))
-    U.dungeonQDet:SetVerticalScroll(0)
+    DG.ClampScroll(U.dungeonQDet, child, keepDet)
 end
 
 function DG.GuideBossName(dungeonID, en)
@@ -7531,6 +8114,8 @@ function U:SetDungeonTab(tab)
     if tab == "quest" then t = "quest" elseif tab == "guide" then t = "guide" elseif tab == "map" then t = "map" end
     U.dungeonTab = t
     DB().dungeonTab = t
+    U.dungeonQDetKey = nil
+    U.dungeonQListKey = nil
     U:RenderDungeonTab()
     ns.PlaySound(1)
 end
@@ -7564,6 +8149,10 @@ function U:RenderDungeonTab()
     if U.dungeonQPlateR then U.dungeonQPlateR:SetShown(isQuest) end
     if U.dungeonQOverviewF then U.dungeonQOverviewF:SetShown(isQuest and (U.dungeonQView == "overview")) end
     if U.dungeonQOVCard then U.dungeonQOVCard:SetShown(isQuest and (U.dungeonQView == "overview")) end
+    if U.dungeonQOVFlowCard then
+        U.dungeonQOVFlowCard:SetShown(isQuest and (U.dungeonQView == "overview")
+            and (DG.CurQuestFlow(U.dungeonDetailCur) ~= nil))
+    end
     if U.dungeonQMask then U.dungeonQMask:SetShown(isQuest) end
     if U.dungeonQTrackMask then U.dungeonQTrackMask:SetShown(isQuest) end
     if U.dungeonGMask then U.dungeonGMask:SetShown(isGuide) end
@@ -7970,6 +8559,11 @@ function U:Build()
     U.dungeonQDetSt = nil
     U.dungeonQuestSel = nil
     U.dungeonQDetExt = nil
+    U.dungeonQFlow = nil
+    U.dungeonQDetKey = nil
+    U.dungeonQListKey = nil
+    U.dungeonQFlowCard = nil
+    U.dungeonQOVFlowCard = nil
     U.dungeonQSide = nil
     U.dungeonQView = nil
     U.dungeonQMask = nil

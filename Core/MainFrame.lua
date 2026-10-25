@@ -277,7 +277,7 @@ do
     title:SetTextColor(0.95, 0.96, 0.98)
 end
 
-local TIP_CARD_H = 168
+local TIP_CARD_H = 192
 local C_TIP_TXT = { 0.88, 0.88, 0.88 }
 local C_TIP_DIM = { 0.62, 0.62, 0.62 }
 local tipCard
@@ -371,6 +371,7 @@ function BuildTipCard()
     TipToggle(-90, L["BIS 评分"], "bisScore")
     TipToggle(-114, L["心愿标记"], "wish")
     TipToggle(-138, L["任务来源"], "quest")
+    TipToggle(-162, L["物品等级"], "ilvl")
 
     local bt = CreateFrame("Button", nil, card, "BackdropTemplate")
     bt:SetSize(44, 24)
@@ -473,52 +474,47 @@ local function ScaleTooltip(self, title)
     GameTooltip:Show()
 end
 
-local C_PILL_BG = {0x26 / 255, 0x29 / 255, 0x2e / 255}
 local C_PILL_ED = {0x55 / 255, 0x58 / 255, 0x5e / 255}
 local C_GLYPH   = {0.67, 0.70, 0.73}
 local C_NUM     = {0.91, 0.93, 0.94}
-local PILL_H    = 22
+local PILL_H    = 24
 
 scaleGroup = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
 scaleGroup:SetFrameLevel(520)
-scaleGroup:SetSize(94, PILL_H)
+scaleGroup:SetSize(96, PILL_H)
 scaleGroup:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -12, -11)
 scaleGroup:SetBackdrop({ bgFile = "Interface/ChatFrame/ChatFrameBackground" })
-scaleGroup:SetBackdropColor(C_PILL_BG[1], C_PILL_BG[2], C_PILL_BG[3], 0.6)
+do
+    local c = ns.hui.layer.L2
+    scaleGroup:SetBackdropColor(c[1], c[2], c[3], 1)
+end
 do
     local border = CreateFrame("Frame", nil, scaleGroup)
     border:SetAllPoints()
-    ns.hui.BuildRoundBorder(border, 8, C_PILL_ED)
-    local hover = CreateFrame("Frame", nil, scaleGroup)
-    hover:SetAllPoints()
-    hover:Hide()
-    ns.hui.BuildRoundBorder(hover, 8, ns.hui.ACCENT)
-    scaleGroup.hover = hover
+    ns.hui.BuildRoundBorder(border, 12, C_PILL_ED)
 end
-
-local function AddDivider(x)
-    local d = scaleGroup:CreateTexture(nil, "OVERLAY")
-    d:SetColorTexture(C_PILL_ED[1], C_PILL_ED[2], C_PILL_ED[3], 0.7)
-    d:SetPoint("TOPLEFT", x, -5)
-    d:SetSize(1, PILL_H - 10)
-end
-AddDivider(24)
-AddDivider(69)
 
 local function MakeGlyphButton(width, label, anchor)
     local bt = CreateFrame("Button", nil, scaleGroup, "BackdropTemplate")
     bt:SetFrameLevel(521)
     bt:SetSize(width, PILL_H)
-    bt:SetPoint(anchor, scaleGroup, anchor, 0, 0)
+    local off = (anchor == "TOPLEFT") and 2 or -2
+    bt:SetPoint(anchor, scaleGroup, anchor, off, 0)
+    if ns.hui and ns.hui.BuildCapsule then
+        bt.__hov = ns.hui.BuildCapsule(bt, 8, ns.hui.layer.L4, 1, 2)
+        for _, hv in ipairs(bt.__hov) do hv:Hide() end
+    end
     local t = bt:CreateFontString(nil, "OVERLAY")
     bt:SetFontString(t)
-    t:SetFont(ns.FONT, 14, "")
+    t:SetFont(ns.FONT, 28, "")
     t:SetText(label)
     t:SetPoint("CENTER")
     t:SetTextColor(C_GLYPH[1], C_GLYPH[2], C_GLYPH[3])
     bt.__huiKeepTextColor = true
-    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
-    t:SetFont(ns.FONT, 14, "")
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt, { noFrame = true }) end
+    t:SetFont(ns.FONT, 28, "")
+    t:ClearAllPoints()
+    t:SetPoint("CENTER", 0, 1)
     t:SetTextColor(C_GLYPH[1], C_GLYPH[2], C_GLYPH[3])
     return bt
 end
@@ -529,7 +525,11 @@ scaleText = CreateFrame("Button", nil, scaleGroup, "BackdropTemplate")
 scaleText:SetFrameLevel(521)
 scaleText:SetSize(44, PILL_H)
 scaleText:SetPoint("TOPLEFT", minusBtn, "TOPRIGHT")
-if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(scaleText) end
+if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(scaleText, { noFrame = true }) end
+if ns.hui and ns.hui.BuildCapsule then
+    scaleText.__hov = ns.hui.BuildCapsule(scaleText, 8, ns.hui.layer.L4, 1, 2)
+    for _, hv in ipairs(scaleText.__hov) do hv:Hide() end
+end
 do
     local t = scaleText:CreateFontString(nil, "OVERLAY")
     t:SetFont(ns.FONT, 14, "")
@@ -539,12 +539,21 @@ do
     scaleText.text = t
 end
 
+local function HoverShow(bt)
+    if bt.__hov then
+        for _, hv in ipairs(bt.__hov) do hv:Show() end
+    end
+end
+local function HoverHide(bt)
+    if bt.__hov then
+        for _, hv in ipairs(bt.__hov) do hv:Hide() end
+    end
+end
+
 local function HoverOn(glyph)
-    if scaleGroup.hover then scaleGroup.hover:Show() end
     if glyph then glyph:SetTextColor(ns.hui.ACCENT[1], ns.hui.ACCENT[2], ns.hui.ACCENT[3]) end
 end
 local function HoverOff(glyph)
-    if scaleGroup.hover then scaleGroup.hover:Hide() end
     if glyph then glyph:SetTextColor(C_GLYPH[1], C_GLYPH[2], C_GLYPH[3]) end
 end
 
@@ -582,12 +591,13 @@ minusBtn:SetScript("OnMouseDown", function()
 end)
 minusBtn:SetScript("OnMouseUp", function() StopRepeat(minusBtn) end)
 
-plusBtn:SetScript("OnEnter", function(self) HoverOn(self:GetFontString()) ScaleTooltip(self, L["放大界面"]) end)
-plusBtn:SetScript("OnLeave", function(self) HoverOff(self:GetFontString()) GameTooltip:Hide() end)
-minusBtn:SetScript("OnEnter", function(self) HoverOn(self:GetFontString()) ScaleTooltip(self, L["缩小界面"]) end)
-minusBtn:SetScript("OnLeave", function(self) HoverOff(self:GetFontString()) GameTooltip:Hide() end)
+plusBtn:SetScript("OnEnter", function(self) HoverShow(self) HoverOn(self:GetFontString()) ScaleTooltip(self, L["放大界面"]) end)
+plusBtn:SetScript("OnLeave", function(self) HoverHide(self) HoverOff(self:GetFontString()) GameTooltip:Hide() end)
+minusBtn:SetScript("OnEnter", function(self) HoverShow(self) HoverOn(self:GetFontString()) ScaleTooltip(self, L["缩小界面"]) end)
+minusBtn:SetScript("OnLeave", function(self) HoverHide(self) HoverOff(self:GetFontString()) GameTooltip:Hide() end)
 
 scaleText:SetScript("OnEnter", function(self)
+    HoverShow(self)
     HoverOn()
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:ClearLines()
@@ -595,7 +605,7 @@ scaleText:SetScript("OnEnter", function(self)
     GameTooltip:AddLine(L["点击复位 100%"], 0.7, 0.75, 0.8, true)
     GameTooltip:Show()
 end)
-scaleText:SetScript("OnLeave", function(self) HoverOff() GameTooltip:Hide() end)
+scaleText:SetScript("OnLeave", function(self) HoverHide(self) HoverOff() GameTooltip:Hide() end)
 scaleText:SetScript("OnClick", function()
     ns.PlaySound(1)
     SetScaleValue(100)
@@ -858,4 +868,3 @@ SlashCmdList["DUNGEONSFOREVER"] = function(msg)
           .. "（" .. L["省电"] .. " / " .. L["标准"] .. " / " .. L["激进"] .. "）")
     print("  /dfgate — " .. L["进度条"] .. "（demo / off）")
 end
-

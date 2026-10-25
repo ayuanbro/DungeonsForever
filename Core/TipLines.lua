@@ -16,7 +16,7 @@ local LOGO = "|TInterface\\AddOns\\DungeonsForever\\Media\\DF_Logo.tga:16:16:0:0
 local LOGO_GAP = "|TInterface\\AddOns\\DungeonsForever\\Media\\DF_Blank.tga:16:16:0:0:32:32:0:32:0:32|t "
 
 local TIP_VER = 1
-local TIP_KEYS = { "src", "bis", "bisScore", "wish", "quest" }
+local TIP_KEYS = { "src", "bis", "bisScore", "wish", "quest", "ilvl" }
 
 local function Cfg()
     local db = ns.DB and ns.DB()
@@ -28,7 +28,7 @@ local function Cfg()
         ui.tip = t
     end
     for _, k in ipairs(TIP_KEYS) do
-        if t[k] == nil then t[k] = false end
+        if t[k] == nil then t[k] = (k == "ilvl") end
     end
     if t.global == nil then t.global = false end
     return t
@@ -364,10 +364,16 @@ local function FixIlvlHeight(tt)
     local top = tt.GetTop and tt:GetTop()
     local bot = LastLineBottom(tt)
     if type(top) ~= "number" or type(bot) ~= "number" then return end
-    tt:SetHeight(math.ceil(top - bot + pad))
+    local h = math.ceil(top - bot + pad)
+    tt.__dfIlvlSetH = h
+    tt:SetHeight(h)
 end
 
 local function InsertIlvl(tt, id)
+    if not Cfg().ilvl then
+        if tt.__dfIlvlFS then tt.__dfIlvlFS:Hide() end
+        return
+    end
     local nm = tt.GetName and tt:GetName()
     if type(nm) ~= "string" or nm == "" then return end
     local fs = tt.__dfIlvlFS
@@ -378,12 +384,15 @@ local function InsertIlvl(tt, id)
         if fs then fs:Hide() end
         return
     end
-    if not tt.__dfIlvlPad then
+    if type(tt.__dfIlvlPad) ~= "number" then
         local h0 = tt.GetHeight and tt:GetHeight()
         local top = tt.GetTop and tt:GetTop()
         local bot = LastLineBottom(tt)
         if type(h0) == "number" and type(top) == "number" and type(bot) == "number" then
-            tt.__dfIlvlPad = h0 - (top - bot)
+            local d = h0 - (top - bot)
+            if d >= 0 and d <= 40 then
+                tt.__dfIlvlPad = d
+            end
         end
     end
     if not fs then
@@ -420,8 +429,11 @@ local function InsertIlvl(tt, id)
         C_Timer.After(0, Apply)
         C_Timer.After(0.25, Apply)
         C_Timer.After(0.6, Apply)
+        C_Timer.After(1.0, Apply)
+        C_Timer.After(1.5, Apply)
     end
 end
+TL.InsertIlvl = InsertIlvl
 
 local function Augment(tt)
     if not tt then return end
@@ -490,7 +502,6 @@ local function HookTip(tt)
         self.__dfAugN = nil
         self.__dfAugTries = nil
         self.__dfScoreShown = nil
-        self.__dfIlvlPad = nil
         if self.__dfIlvlFS then self.__dfIlvlFS:Hide() end
     end)
     pcall(tt.HookScript, tt, "OnTooltipSetItem", function() Augment(tt) end)
@@ -733,7 +744,6 @@ function TL.EnsurePreview(card)
     tip:SetFrameLevel(card:GetFrameLevel() + 20)
     pcall(tip.HookScript, tip, "OnTooltipCleared", function(self)
         augStamp[self] = nil
-        self.__dfIlvlPad = nil
         if self.__dfIlvlFS then self.__dfIlvlFS:Hide() end
     end)
     pcall(tip.HookScript, tip, "OnTooltipSetItem", function(self)

@@ -332,7 +332,9 @@ do
                         "Collections", "Factions", "Bis", "Tier", "PvP" }
                     C_Timer.After(0.6, function()
                         pcall(function()
-                            if not UD.built and type(UD.Build) == "function" then
+                            local mf0 = _G.DungeonsForever_MainFrame
+                            if not UD.built and type(UD.Build) == "function"
+                               and mf0 and mf0.IsShown and mf0:IsShown() then
                                 UD:Build()
                             end
                         end)

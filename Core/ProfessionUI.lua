@@ -62,7 +62,7 @@ PD.NAV_PAD = 8
 PD.NAV_X, PD.NAV_TOP = PD.CARD_INSET + PD.NAV_PAD, PD.CARD_TOP + PD.NAV_PAD
 PD.NAV_W = ((type(GetLocale) == "function") and GetLocale() == "enUS") and 184 or 148
 PD.NAV_FS, PD.NAV_ICON = 16, 20
-PD.NAV_ITEM_H, PD.NAV_GROUP_H, PD.NAV_GAP = 26, 22, 3
+PD.NAV_ITEM_H, PD.NAV_GROUP_H, PD.NAV_GAP = 24, 26, 8
 PD.NAV_LV_FS = 14
 PD.CARD_NAV_R = PD.CARD_INSET + PD.NAV_W + 2 * PD.NAV_PAD
 PD.RIGHT_X = PD.CARD_NAV_R + (DG.GUTTER or 8) + 8
@@ -3186,8 +3186,7 @@ function PD.Build(page)
             if p and p.kind == g.kind then list[#list + 1] = slug end
         end
         if #list > 0 then
-            navY = navY + 4
-            local lab = MakeFS(PD.navLabelHost, 11, C_GREY, "LEFT")
+            local lab = MakeFS(PD.navLabelHost, 14, C_GREY, "LEFT")
             lab:SetPoint("TOPLEFT", page, "TOPLEFT", PD.NAV_X + 5,
                          -(PD.NAV_TOP + navY + 6))
             lab:SetText(g.label)
@@ -10663,6 +10662,7 @@ function PD.LevelTool()
             PD.exclusionsOpen = false
             PD.ProcureClear()
             PD.ClearPlanCache()
+            PD.exactFailed = {}
             local E = ns.ProfEconomy
             if E and E.ApplyPolicies then E.ApplyPolicies(PD.cur) end
             if RA and RA.Invalidate then RA.Invalidate() end
