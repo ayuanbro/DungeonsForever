@@ -54,23 +54,8 @@ local function Fs(parent, size, color)
 end
 
 local function Outline(bt, on)
-    local bars = bt.__bars
-    if not bars then
-        local H = ns.ProfHost
-        if H and H.SetOutline then H.SetOutline(bt, on, 1, 0.82, 0) end
-        return
-    end
-    local c = on and C_GOLD or C_EDGE
-    if bt.__outlineFrame then bt.__outlineFrame:SetShown(true) end
-    for _, t in ipairs(bars) do
-        t:SetAlpha(1)
-        if t.__huiBorderStrip then
-            t:SetColorTexture(c[1], c[2], c[3], 1)
-        else
-            t:SetShown(true)
-            t:SetVertexColor(c[1], c[2], c[3])
-        end
-    end
+    local H = ns.ProfHost
+    if H and H.SetButtonSelected then H.SetButtonSelected(bt, on) end
 end
 
 local FALLBACK_ICON = (ns.ProfHost and ns.ProfHost.FALLBACK_ICON)
@@ -88,22 +73,6 @@ local function SetIcon(tex, name)
     else
         tex:SetTexture(FALLBACK_ICON)
     end
-end
-
-local function PaintEdge(r, c)
-    r.edgeColor = c
-    for _, t in ipairs(r.edgePieces or {}) do
-        if t.__huiBorderStrip then
-            t:SetColorTexture(c[1], c[2], c[3], 1)
-        else
-            t:SetVertexColor(c[1], c[2], c[3])
-        end
-        t:SetAlpha(1)
-    end
-end
-
-local function PaintFill(r, a)
-    for _, t in ipairs(r.fillPieces or {}) do t:SetAlpha(a) end
 end
 
 local function Chars(s)
@@ -252,13 +221,10 @@ end
 function QB:RowAt(i)
     local r = self.pool[i]
     if r then return r end
-    r = CreateFrame("Button", nil, self.content)
+    r = CreateFrame("Button", nil, self.content, "BackdropTemplate")
     r:SetSize(self.CW, self.ROW_H)
     r:RegisterForClicks("LeftButtonUp")
-    r.fillPieces = ns.hui.BuildRoundedBG(r, self.RADIUS, { 1, 1, 1, self.FILL }, "both", false, nil, true)
-    r.edgePieces = ns.hui.BuildRoundBorder(r, self.RADIUS, C_EDGE)
-    PaintFill(r, self.FILL)
-    PaintEdge(r, C_EDGE)
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(r) end
 
     r.iconTile = CreateFrame("Frame", nil, r)
     r.iconTile:SetSize(self.ICON, self.ICON)
@@ -278,8 +244,6 @@ function QB:RowAt(i)
     r.name:SetWordWrap(false)
 
     r:SetScript("OnEnter", function(self)
-        PaintEdge(self, C_GOLD)
-        PaintFill(self, QB.FILL_HOT)
         if self.spec and self.spec.tip then
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
             GameTooltip:ClearLines()
@@ -288,8 +252,6 @@ function QB:RowAt(i)
         end
     end)
     r:SetScript("OnLeave", function(self)
-        PaintEdge(self, C_EDGE)
-        PaintFill(self, QB.FILL)
         GameTooltip:Hide()
     end)
     r:SetScript("OnClick", function(self) QB:Click(self.spec) end)
@@ -497,17 +459,19 @@ end
 local function Chip(parent, text, w, h)
     local bt = CreateFrame("Button", nil, parent, "BackdropTemplate")
     bt:SetSize(w, h)
-    local H = ns.ProfHost
-    if H and H.MakeOutline then H.MakeOutline(bt, 1, 0.82, 0) end
+    bt.__huiKeepTextColor = true
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
     bt.label = Fs(bt, 14, C_TEXT)
     bt.label:SetText(text)
     bt.label:SetPoint("CENTER", bt, "CENTER", 0, 0)
+    local H = ns.ProfHost
+    if H and H.SetButtonSelected then H.SetButtonSelected(bt, false) end
     return bt
 end
 
 local function PaintChip(bt, on)
     Outline(bt, on)
-    local c = on and C_GOLD or C_DIM
+    local c = on and C_TEXT or C_DIM
     bt.label:SetTextColor(c[1], c[2], c[3])
 end
 
@@ -686,10 +650,23 @@ function QB:EnsureSettings()
         return at, bt2
     end
 
-    Header(L["快捷按钮栏"])
-    set.on = ToggleRow(L["显示快捷按钮栏"],
-        function() return ns.QuickCfg().on end,
-        function(v) ns.QuickCfg().on = v end)
+    do
+        local hfs = Fs(host, self.FS_AUX, C_DIM)
+        hfs:SetPoint("TOPLEFT", host, "TOPLEFT", SET_PAD - 6, hy)
+        hfs:SetText(L["快捷按钮栏"])
+        set.on = Toggle(host)
+        set.on:ClearAllPoints()
+        set.on:SetPoint("TOPRIGHT", host, "TOPRIGHT", 6 - SET_PAD, hy)
+        set.on:SetChecked(ns.QuickCfg().on and true or false)
+        set.on:SetScript("OnClick", function(self)
+            ns.PlaySound(1)
+            ns.QuickCfg().on = not (ns.QuickCfg().on and true)
+            self:SetChecked(ns.QuickCfg().on and true or false)
+            QB:SyncSettings()
+            QB:Apply()
+        end)
+        hy = hy - SET_HDR_H
+    end
 
     Header(L["显示分组"])
     do
@@ -730,17 +707,14 @@ function QB:EnsureSettings()
     end
 
     Header(L["探索子页"])
-    for i = 1, #EXPLORE_DEFS, 2 do
-        local m, n2 = EXPLORE_DEFS[i], EXPLORE_DEFS[i + 1]
-        local gm = function() return ns.QuickCfg().expl[m.key] end
-        local sm = function(v) ns.QuickCfg().expl[m.key] = v end
-        if n2 then
-            local gn = function() return ns.QuickCfg().expl[n2.key] end
-            local sn = function(v) ns.QuickCfg().expl[n2.key] = v end
-            set.expl[m.key], set.expl[n2.key] = ToggleRow2(m.text, gm, sm, n2.text, gn, sn)
-        else
-            set.expl[m.key] = ToggleRow(m.text, gm, sm)
-        end
+    do
+        local a = { key = "books", text = L["40本书"] }
+        local b = { key = "bag",   text = L["睡袋"] }
+        local ga = function() return ns.QuickCfg().expl[a.key] end
+        local sa = function(v) ns.QuickCfg().expl[a.key] = v end
+        local gb = function() return ns.QuickCfg().expl[b.key] end
+        local sb = function(v) ns.QuickCfg().expl[b.key] = v end
+        set.expl[a.key], set.expl[b.key] = ToggleRow2(a.text, ga, sa, b.text, gb, sb)
     end
 
     if self.cardBg then self.cardBg:SetHeight(8 - hy) end

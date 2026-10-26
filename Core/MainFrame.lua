@@ -30,9 +30,12 @@ f:Hide()
 
 f:EnableKeyboard(true)
 f:SetScript("OnKeyDown", function(self, key)
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
     if key == "ESCAPE" and self:IsShown() then
         self:SetPropagateKeyboardInput(false)
-        self:Hide()
+        if not (ns.GearDismissPopups and ns.GearDismissPopups()) then
+            self:Hide()
+        end
     else
         self:SetPropagateKeyboardInput(true)
     end
@@ -67,11 +70,12 @@ subtitle:SetPoint("LEFT", title, "RIGHT", 10, 0)
 subtitle:SetText("DungeonsForever" .. (DF_VERSION and (" v" .. DF_VERSION) or ""))
 subtitle:SetTextColor(0.55, 0.62, 0.70)
 
-local close = CreateFrame("Button", nil, f)
+local close = CreateFrame("Button", nil, f, "BackdropTemplate")
 close:SetSize(32, 32)
 close:SetFrameLevel(510)
 close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4)
 close:SetHitRectInsets(-3, -3, -3, -3)
+if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(close, { noFrame = true }) end
 do
     local gray = 0xa0 / 255
     local it = close:CreateTexture(nil, "ARTWORK")
@@ -93,27 +97,28 @@ local about
 local function SyncAboutGlyph()
     if not aboutGlyph then return end
     if about and about:IsShown() then
-        aboutGlyph:SetTextColor(1, 1, 1)
+        aboutGlyph:SetVertexColor(1, 1, 1)
     else
-        local g = 0xa0 / 255
-        aboutGlyph:SetTextColor(g, g, g)
+        aboutGlyph:SetVertexColor(0.56, 0.63, 0.72)
     end
 end
 
-local aboutBtn = CreateFrame("Button", nil, f)
+local aboutBtn = CreateFrame("Button", nil, f, "BackdropTemplate")
 aboutBtn:SetSize(32, 32)
 aboutBtn:SetFrameLevel(510)
-aboutBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -40, -4)
+aboutBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -34, -4)
 aboutBtn:SetHitRectInsets(-3, -3, -3, -3)
+if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(aboutBtn, { noFrame = true }) end
 do
-    local q = aboutBtn:CreateFontString(nil, "ARTWORK")
-    q:SetFont(ns.FONT, 17, "")
-    q:SetText("?")
+    local q = aboutBtn:CreateTexture(nil, "ARTWORK")
+    q:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\HelpIcon")
+    q:SetSize(14, 14)
     q:SetPoint("CENTER")
+    q:SetVertexColor(0.56, 0.63, 0.72)
     aboutGlyph = q
 end
 aboutBtn:SetScript("OnEnter", function(self)
-    aboutGlyph:SetTextColor(1, 1, 1)
+    aboutGlyph:SetVertexColor(1, 1, 1)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:ClearLines()
     GameTooltip:AddLine(L["关于"], 1, 1, 1, true)
@@ -142,6 +147,7 @@ end)
 about:Hide()
 if ns.hui and ns.hui.SkinPopup then
     ns.hui.SkinPopup(about, 8)
+    if ns.hui.SkinShadow then ns.hui.SkinShadow(about) end
 else
     about:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
     about:SetBackdropColor(0x10 / 255, 0x13 / 255, 0x1A / 255, 1)
@@ -188,16 +194,52 @@ do
         ln:SetPoint("CENTER", about, "CENTER", 0, 6 - (i - 1) * 28)
         ln:SetTextColor(0.88, 0.90, 0.93)
     end
-
-    local credit = about:CreateFontString(nil, "OVERLAY")
-    credit:SetFont(ns.FONT, 14, "")
-    credit:SetText(L["数据来源：wowhead"])
-    credit:SetPoint("BOTTOM", about, "BOTTOM", 0, 22)
-    credit:SetTextColor(0.55, 0.62, 0.70)
 end
 
 local settingsGlyph
 local settingsPop
+local BuildTipCard
+local BuildAppearanceCard
+local appearanceCard
+local appearanceBtn
+local appearanceDot
+local appearanceArrow
+local THEME_CHOICES = {
+    "green", "youfeng", "zhangliangying", "orange", "orangered",
+    "red", "pink", "tonghang", "qq",
+}
+local C_THEME_FALLBACK = { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
+
+local function ThemeAccent(key)
+    local pal = ns.hui and ns.hui.palette and ns.hui.palette[key]
+    return (pal and pal.accent) or C_THEME_FALLBACK
+end
+
+local function ThemeName(key)
+    local pal = ns.hui and ns.hui.palette and ns.hui.palette[key]
+    return (pal and pal.name) or key
+end
+
+local function CurTheme()
+    local cur = DungeonsForeverDB.libHUI and DungeonsForeverDB.libHUI.colorTheme
+    if not cur or not (ns.hui and ns.hui.palette and ns.hui.palette[cur]) then cur = "green" end
+    return cur
+end
+
+local function PaintAppearance()
+    local key = CurTheme()
+    local ac = ThemeAccent(key)
+    if appearanceDot then appearanceDot:SetVertexColor(ac[1], ac[2], ac[3]) end
+    if appearanceArrow then appearanceArrow:SetTextColor(ac[1], ac[2], ac[3]) end
+    if appearanceBtn then
+        local fs = appearanceBtn:GetFontString()
+        if fs then
+            fs:SetText(ThemeName(key))
+            fs:SetTextColor(1, 1, 1)
+        end
+        ns.hui.SetButtonSelected(appearanceBtn, true)
+    end
+end
 
 local function SyncSettingsGlyph()
     if not settingsGlyph then return end
@@ -205,11 +247,12 @@ local function SyncSettingsGlyph()
     settingsGlyph:SetVertexColor(c[1], c[2], c[3])
 end
 
-local settingsBtn = CreateFrame("Button", nil, f)
+local settingsBtn = CreateFrame("Button", nil, f, "BackdropTemplate")
 settingsBtn:SetSize(32, 32)
 settingsBtn:SetFrameLevel(510)
-settingsBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -76, -4)
+settingsBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -66, -4)
 settingsBtn:SetHitRectInsets(-3, -3, -3, -3)
+if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(settingsBtn, { noFrame = true }) end
 do
     local g = settingsBtn:CreateTexture(nil, "ARTWORK")
     g:SetTexture(ns.SET_ICON)
@@ -240,6 +283,8 @@ settingsBtn:SetScript("OnClick", function()
         if ns.CloseBisSettings then ns.CloseBisSettings() end
     end
     if show and ns.QuickBar then ns.QuickBar:SyncSettings() end
+    if show then BuildTipCard() end
+    if show then BuildAppearanceCard() end
     settingsPop:SetShown(show)
     SyncSettingsGlyph()
 end)
@@ -254,6 +299,7 @@ settingsPop:SetScript("OnMouseWheel", function() end)
 settingsPop:Hide()
 if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
     ns.hui.SkinPopup(settingsPop, 8, nil, ns.hui.layer.L0)
+    if ns.hui.SkinShadow then ns.hui.SkinShadow(settingsPop) end
 else
     settingsPop:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
     settingsPop:SetBackdropColor(0x0A / 255, 0x0C / 255, 0x10 / 255, 1)
@@ -273,6 +319,232 @@ do
     title:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 16, -14)
     title:SetTextColor(0.95, 0.96, 0.98)
 end
+
+local TIP_CARD_H = 116
+local C_TIP_TXT = { 0.88, 0.88, 0.88 }
+local C_TIP_DIM = { 0.62, 0.62, 0.62 }
+local tipCard
+local tipPreviewBt
+local tipPreviewOn = false
+
+local function PaintTipPreview(on)
+    if tipPreviewBt and tipPreviewBt.lab then
+        if on then
+            tipPreviewBt.lab:SetTextColor(1, 0.82, 0)
+        else
+            tipPreviewBt.lab:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+        end
+    end
+end
+
+function BuildAppearanceCard()
+    if not (ns.hui and ns.hui.layer) then return end
+    if appearanceCard then PaintAppearance() return end
+    local card = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
+    if ns.hui.BuildRoundedBG then
+        ns.hui.BuildRoundedBG(card, 8, ns.hui.layer.L2, "both", true, 1)
+    else
+        card:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
+        card:SetBackdropColor(0x16 / 255, 0x1A / 255, 0x22 / 255, 1)
+        card:SetBackdropBorderColor(1, 1, 1, 0.1)
+    end
+    if tipCard then
+        card:SetPoint("TOPLEFT", tipCard, "BOTTOMLEFT", 0, -10)
+        card:SetPoint("TOPRIGHT", tipCard, "BOTTOMRIGHT", 0, -10)
+    else
+        card:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 6, -38)
+        card:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -6, -38)
+    end
+    card:SetHeight(64)
+    appearanceCard = card
+
+    local hd = card:CreateFontString(nil, "OVERLAY")
+    hd:SetFont(ns.FONT, 16, "")
+    hd:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -8)
+    hd:SetText(L["外观"])
+    hd:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
+
+    local bt = ns.CreateButton(card)
+    bt:SetSize(192, 24)
+    bt:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -30)
+    bt.__huiKeepTextColor = true
+    local fs = bt:GetFontString()
+    if fs then
+        fs:ClearAllPoints()
+        fs:SetPoint("LEFT", bt, "LEFT", 26, 0)
+        fs:SetPoint("RIGHT", bt, "RIGHT", -26, 0)
+        fs:SetJustifyH("LEFT")
+    end
+    local dot = bt:CreateTexture(nil, "ARTWORK")
+    dot:SetSize(12, 12)
+    dot:SetPoint("LEFT", bt, "LEFT", 9, 0)
+    dot:SetTexture("Interface\\Buttons\\WHITE8x8")
+    if ns.hui.RoundIcon then ns.hui.RoundIcon(dot) end
+    local arrow = bt:CreateFontString(nil, "OVERLAY")
+    arrow:SetFont(ns.FONT, 12, "")
+    arrow:SetPoint("RIGHT", bt, "RIGHT", -8, 0)
+    arrow:SetText("\226\150\188")
+    bt:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        if not (ns.hui and ns.hui.ShowMenu) then return end
+        local cur = CurTheme()
+        local items = {}
+        for _, key in ipairs(THEME_CHOICES) do
+            local ac = ThemeAccent(key)
+            items[#items + 1] = {
+                text = ThemeName(key),
+                swatch = ac,
+                hlColor = ac,
+                selected = (key == cur),
+                func = function()
+                    ns.hui.ApplyColorTheme(key)
+                    PaintAppearance()
+                end,
+            }
+        end
+        ns.hui.ShowMenu(items, { owner = self, anchor = self, up = true })
+    end)
+    appearanceBtn = bt
+    appearanceDot = dot
+    appearanceArrow = arrow
+    PaintAppearance()
+end
+ns.BuildAppearanceCard = BuildAppearanceCard
+ns.PaintAppearance = PaintAppearance
+
+function BuildTipCard()
+    if tipCard then return end
+    if not ns.TipLines then return end
+    local card = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
+    if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
+        ns.hui.BuildRoundedBG(card, 8, ns.hui.layer.L2, "both", true, 1)
+    else
+        card:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
+        card:SetBackdropColor(0x16 / 255, 0x1A / 255, 0x22 / 255, 1)
+        card:SetBackdropBorderColor(1, 1, 1, 0.1)
+    end
+    local qbCard = ns.QuickBar and ns.QuickBar.cardBg
+    if qbCard then
+        card:SetPoint("TOPLEFT", qbCard, "BOTTOMLEFT", 0, -10)
+        card:SetPoint("TOPRIGHT", qbCard, "BOTTOMRIGHT", 0, -10)
+    else
+        card:SetPoint("BOTTOMLEFT", settingsPop, "BOTTOMLEFT", 6, 12)
+        card:SetPoint("BOTTOMRIGHT", settingsPop, "BOTTOMRIGHT", -6, 12)
+    end
+    card:SetHeight(TIP_CARD_H)
+
+    local hd = card:CreateFontString(nil, "OVERLAY")
+    hd:SetFont(ns.FONT, 16, "")
+    hd:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -10)
+    hd:SetText(L["提示框内容"])
+    hd:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
+
+    local gsw = CreateFrame("CheckButton", nil, card)
+    gsw:SetSize(36, 20)
+    gsw:EnableMouse(true)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(gsw) end
+    gsw:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -8)
+    gsw:SetChecked(ns.TipCfg().global and true or false)
+    gsw:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(L["游戏内物品提示框"], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    gsw:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    gsw:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local c = ns.TipCfg()
+        c.global = not (c.global and true)
+        self:SetChecked(c.global and true or false)
+        if ns.TipLines.RefreshPreview then ns.TipLines.RefreshPreview() end
+    end)
+
+    local TIP_COL_W = 92
+    local function TipToggle(x, y, label, key, toggleFirst)
+        local tg = CreateFrame("CheckButton", nil, card)
+        tg:SetSize(36, 20)
+        tg:EnableMouse(true)
+        if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
+        local fs = card:CreateFontString(nil, "OVERLAY")
+        fs:SetFont(ns.FONT, 14, "")
+        fs:SetWordWrap(false)
+        fs:SetText(label)
+        fs:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+        if toggleFirst then
+            tg:SetPoint("TOPLEFT", card, "TOPLEFT", x, y + 2)
+            fs:SetPoint("LEFT", tg, "RIGHT", 6, 0)
+        else
+            tg:SetPoint("TOPRIGHT", card, "TOPLEFT", x + TIP_COL_W, y + 2)
+            fs:SetPoint("LEFT", tg, "LEFT", 36 - TIP_COL_W, 0)
+        end
+        local function get() return ns.TipCfg()[key] end
+        tg:SetChecked(get() and true or false)
+        tg:SetScript("OnClick", function(self)
+            ns.PlaySound(1)
+            ns.TipCfg()[key] = not (get() and true)
+            self:SetChecked(get() and true or false)
+            if ns.TipLines.RefreshPreview then ns.TipLines.RefreshPreview() end
+        end)
+        return tg
+    end
+
+    TipToggle(8, -34, L["掉落来源"], "src", true)
+    TipToggle(108, -34, L["BIS 推荐"], "bis")
+    TipToggle(8, -58, L["BIS 评分"], "bisScore", true)
+    TipToggle(108, -58, L["心愿标记"], "wish")
+    TipToggle(8, -82, L["任务来源"], "quest", true)
+    TipToggle(108, -82, L["物品等级"], "ilvl")
+
+    local bt = CreateFrame("Button", nil, card, "BackdropTemplate")
+    bt:SetSize(44, 24)
+    bt:EnableMouse(true)
+    bt:SetPoint("LEFT", hd, "RIGHT", 6, 0)
+    local pfs = bt:CreateFontString(nil, "OVERLAY")
+    pfs:SetFont(ns.FONT, 13, "")
+    pfs:SetPoint("CENTER")
+    pfs:SetText(L["预览"])
+    pfs:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+    bt:SetFontString(pfs)
+    bt.lab = pfs
+    bt.__huiKeepTextColor = true
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+    pfs:SetFont(ns.FONT, 13, "")
+    pfs:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+    bt:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(tipPreviewOn and L["关闭提示框预览"] or L["打开提示框预览"], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    bt:SetScript("OnLeave", function(self)
+        GameTooltip:Hide()
+    end)
+    bt:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        tipPreviewOn = not tipPreviewOn
+        PaintTipPreview(tipPreviewOn)
+        if tipPreviewOn then
+            if not (ns.TipLines.ShowPreview and ns.TipLines.ShowPreview(card)) then
+                tipPreviewOn = false
+                PaintTipPreview(false)
+            end
+        elseif ns.TipLines.HidePreview then
+            ns.TipLines.HidePreview()
+        end
+    end)
+
+    tipPreviewBt = bt
+    tipCard = card
+    settingsPop:HookScript("OnHide", function()
+        tipPreviewOn = false
+        PaintTipPreview(false)
+        if ns.TipLines.HidePreview then ns.TipLines.HidePreview() end
+    end)
+end
+ns.BuildTipCard = BuildTipCard
 
 local SCALE_MIN, SCALE_MAX, SCALE_STEP = 60, 140, 5
 
@@ -328,58 +600,62 @@ local function ScaleTooltip(self, title)
     GameTooltip:Show()
 end
 
-local C_PILL_BG = {0x26 / 255, 0x29 / 255, 0x2e / 255}
 local C_PILL_ED = {0x55 / 255, 0x58 / 255, 0x5e / 255}
 local C_GLYPH   = {0.67, 0.70, 0.73}
 local C_NUM     = {0.91, 0.93, 0.94}
-local PILL_H    = 22
+local PILL_H    = 24
 
 scaleGroup = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
 scaleGroup:SetFrameLevel(520)
-scaleGroup:SetSize(94, PILL_H)
+scaleGroup:SetSize(96, PILL_H)
 scaleGroup:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -12, -11)
 scaleGroup:SetBackdrop({ bgFile = "Interface/ChatFrame/ChatFrameBackground" })
-scaleGroup:SetBackdropColor(C_PILL_BG[1], C_PILL_BG[2], C_PILL_BG[3], 0.6)
+do
+    local c = ns.hui.layer.L2
+    scaleGroup:SetBackdropColor(c[1], c[2], c[3], 1)
+end
 do
     local border = CreateFrame("Frame", nil, scaleGroup)
     border:SetAllPoints()
-    ns.hui.BuildRoundBorder(border, 8, C_PILL_ED)
-    local hover = CreateFrame("Frame", nil, scaleGroup)
-    hover:SetAllPoints()
-    hover:Hide()
-    ns.hui.BuildRoundBorder(hover, 8, ns.hui.ACCENT)
-    scaleGroup.hover = hover
+    ns.hui.BuildRoundBorder(border, 12, C_PILL_ED)
 end
-
-local function AddDivider(x)
-    local d = scaleGroup:CreateTexture(nil, "OVERLAY")
-    d:SetColorTexture(C_PILL_ED[1], C_PILL_ED[2], C_PILL_ED[3], 0.7)
-    d:SetPoint("TOPLEFT", x, -5)
-    d:SetSize(1, PILL_H - 10)
-end
-AddDivider(24)
-AddDivider(69)
 
 local function MakeGlyphButton(width, label, anchor)
-    local bt = CreateFrame("Button", nil, scaleGroup)
+    local bt = CreateFrame("Button", nil, scaleGroup, "BackdropTemplate")
     bt:SetFrameLevel(521)
     bt:SetSize(width, PILL_H)
-    bt:SetPoint(anchor, scaleGroup, anchor, 0, 0)
+    local off = (anchor == "TOPLEFT") and 2 or -2
+    bt:SetPoint(anchor, scaleGroup, anchor, off, 0)
+    if ns.hui and ns.hui.BuildCapsule then
+        bt.__hov = ns.hui.BuildCapsule(bt, 8, ns.hui.layer.L4, 1, 2)
+        for _, hv in ipairs(bt.__hov) do hv:Hide() end
+    end
     local t = bt:CreateFontString(nil, "OVERLAY")
     bt:SetFontString(t)
-    t:SetFont(ns.FONT, 14, "")
+    t:SetFont(ns.FONT, 28, "")
     t:SetText(label)
     t:SetPoint("CENTER")
+    t:SetTextColor(C_GLYPH[1], C_GLYPH[2], C_GLYPH[3])
+    bt.__huiKeepTextColor = true
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt, { noFrame = true }) end
+    t:SetFont(ns.FONT, 28, "")
+    t:ClearAllPoints()
+    t:SetPoint("CENTER", 0, 1)
     t:SetTextColor(C_GLYPH[1], C_GLYPH[2], C_GLYPH[3])
     return bt
 end
 
 local minusBtn = MakeGlyphButton(24, "-", "TOPLEFT")
 local plusBtn  = MakeGlyphButton(24, "+", "TOPRIGHT")
-scaleText = CreateFrame("Button", nil, scaleGroup)
+scaleText = CreateFrame("Button", nil, scaleGroup, "BackdropTemplate")
 scaleText:SetFrameLevel(521)
 scaleText:SetSize(44, PILL_H)
 scaleText:SetPoint("TOPLEFT", minusBtn, "TOPRIGHT")
+if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(scaleText, { noFrame = true }) end
+if ns.hui and ns.hui.BuildCapsule then
+    scaleText.__hov = ns.hui.BuildCapsule(scaleText, 8, ns.hui.layer.L4, 1, 2)
+    for _, hv in ipairs(scaleText.__hov) do hv:Hide() end
+end
 do
     local t = scaleText:CreateFontString(nil, "OVERLAY")
     t:SetFont(ns.FONT, 14, "")
@@ -389,12 +665,21 @@ do
     scaleText.text = t
 end
 
+local function HoverShow(bt)
+    if bt.__hov then
+        for _, hv in ipairs(bt.__hov) do hv:Show() end
+    end
+end
+local function HoverHide(bt)
+    if bt.__hov then
+        for _, hv in ipairs(bt.__hov) do hv:Hide() end
+    end
+end
+
 local function HoverOn(glyph)
-    if scaleGroup.hover then scaleGroup.hover:Show() end
     if glyph then glyph:SetTextColor(ns.hui.ACCENT[1], ns.hui.ACCENT[2], ns.hui.ACCENT[3]) end
 end
 local function HoverOff(glyph)
-    if scaleGroup.hover then scaleGroup.hover:Hide() end
     if glyph then glyph:SetTextColor(C_GLYPH[1], C_GLYPH[2], C_GLYPH[3]) end
 end
 
@@ -432,12 +717,13 @@ minusBtn:SetScript("OnMouseDown", function()
 end)
 minusBtn:SetScript("OnMouseUp", function() StopRepeat(minusBtn) end)
 
-plusBtn:SetScript("OnEnter", function(self) HoverOn(self:GetFontString()) ScaleTooltip(self, L["放大界面"]) end)
-plusBtn:SetScript("OnLeave", function(self) HoverOff(self:GetFontString()) GameTooltip:Hide() end)
-minusBtn:SetScript("OnEnter", function(self) HoverOn(self:GetFontString()) ScaleTooltip(self, L["缩小界面"]) end)
-minusBtn:SetScript("OnLeave", function(self) HoverOff(self:GetFontString()) GameTooltip:Hide() end)
+plusBtn:SetScript("OnEnter", function(self) HoverShow(self) HoverOn(self:GetFontString()) ScaleTooltip(self, L["放大界面"]) end)
+plusBtn:SetScript("OnLeave", function(self) HoverHide(self) HoverOff(self:GetFontString()) GameTooltip:Hide() end)
+minusBtn:SetScript("OnEnter", function(self) HoverShow(self) HoverOn(self:GetFontString()) ScaleTooltip(self, L["缩小界面"]) end)
+minusBtn:SetScript("OnLeave", function(self) HoverHide(self) HoverOff(self:GetFontString()) GameTooltip:Hide() end)
 
 scaleText:SetScript("OnEnter", function(self)
+    HoverShow(self)
     HoverOn()
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:ClearLines()
@@ -445,7 +731,7 @@ scaleText:SetScript("OnEnter", function(self)
     GameTooltip:AddLine(L["点击复位 100%"], 0.7, 0.75, 0.8, true)
     GameTooltip:Show()
 end)
-scaleText:SetScript("OnLeave", function(self) HoverOff() GameTooltip:Hide() end)
+scaleText:SetScript("OnLeave", function(self) HoverHide(self) HoverOff() GameTooltip:Hide() end)
 scaleText:SetScript("OnClick", function()
     ns.PlaySound(1)
     SetScaleValue(100)
@@ -707,57 +993,4 @@ SlashCmdList["DUNGEONSFOREVER"] = function(msg)
     print("  /dfspeed — " .. L["载入速度"]
           .. "（" .. L["省电"] .. " / " .. L["标准"] .. " / " .. L["激进"] .. "）")
     print("  /dfgate — " .. L["进度条"] .. "（demo / off）")
-end
-
-local SUB_RELEASE = {
-    { "Raids", "raidPage", "RaidModule" },
-    { "Professions", "profPage", "ProfModule" },
-    { "Explore", "explorePage", "ExploreModule" },
-    { "Collections", "collectionPage", "CollectionModule" },
-    { "Factions", "factionPage", "FactionModule" },
-    { "Bis", "bisPage", "BisModule" },
-    { "Tier", "tierPage", "TierModule" },
-    { "PvP", "pvpPage", "PvPModule" },
-    { "Gear", "gearPage", "GearModule" },
-}
-local function HasFrameRef(v, depth)
-    local t = type(v)
-    if t == "userdata" then return true end
-    if t ~= "table" or depth > 3 then return false end
-    if type(v.GetObjectType) == "function" then return true end
-    for _, x in pairs(v) do
-        if HasFrameRef(x, depth + 1) then return true end
-    end
-    return false
-end
-function ns.ReleasePages()
-    local nsG = _G.DF_NS
-    local U = nsG and nsG.DungeonUI
-    if not U then return end
-    for _, e in ipairs(SUB_RELEASE) do
-        local M0 = nsG[e[3]]
-        if M0 and M0.building and not M0.built then
-            if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
-                C_Timer.After(2, function() ns.ReleasePages() end)
-            end
-            return
-        end
-    end
-    for _, e in ipairs(SUB_RELEASE) do
-        local M = nsG[e[3]]
-        local pg = U[e[2]]
-        if M and M.built and pg then
-            local kids = { pg:GetChildren() }
-            for i = 1, #kids do
-                kids[i]:Hide()
-                kids[i]:SetParent(nil)
-            end
-            for k, v in pairs(M) do
-                if HasFrameRef(v, 0) then M[k] = nil end
-            end
-            M.built = false
-            if U.subBuilt then U.subBuilt[e[1]] = nil end
-        end
-    end
-    collectgarbage("collect")
 end

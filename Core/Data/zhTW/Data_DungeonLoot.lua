@@ -541,22 +541,22 @@ ns.DungeonLoot = {
         } },
     },
     ["city_of_dalaran"] = {
-        { "Atrexis the Grave Knight", "墓穴騎士阿特雷克西斯", "29 級", "247126", {
+        { "Atrexis the Grave Knight", "墓穴騎士阿特雷克斯", "29 級", "247126", {
             { 273036, 27, true },
             { 273032, 42, true },
             { 273033, 30, true },
         } },
-        { "Lyn the Ignored", "被無視的琳", "31 級", "247032", {
+        { "Lyn the Ignored", "被無視的琳恩", "31 級", "247032", {
             { 273054, 32, true },
             { 273055, 54, true },
             { 273053, 14, true },
         } },
-        { "Arcane Anomaly", "奧術異常體", "30 級", "245999", {
+        { "Arcane Anomaly", "奧術畸體", "30 級", "245999", {
             { 273034, 34, true },
             { 273031, 31, true },
             { 273035, 35, true },
         } },
-        { "Arcanic Enigma", "奧術謎團", "30 級", "246016", {
+        { "Arcanic Enigma", "奧術之謎", "30 級", "246016", {
             { 273044, 39, true },
             { 273045, 32, true },
             { 273043, 29, true },

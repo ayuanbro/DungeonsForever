@@ -10,7 +10,7 @@ ns.CollectionPets = {
         },
     },
     [2] = {
-        8485, "inv_box_petcarrier_01", "A", "vendor",
+        8485, "inv_box_petcarrier_01", "A", "vendor", cost = 4210,
         12, 44.2, 53.2, "商人出售",
         __display = 5556,
         {
@@ -18,7 +18,7 @@ ns.CollectionPets = {
         },
     },
     [3] = {
-        8486, "inv_box_petcarrier_01", "A", "vendor",
+        8486, "inv_box_petcarrier_01", "A", "vendor", cost = 4210,
         12, 44.2, 53.2, "商人出售",
         __display = 5586,
         {
@@ -26,7 +26,7 @@ ns.CollectionPets = {
         },
     },
     [4] = {
-        8487, "inv_box_petcarrier_01", "A", "vendor",
+        8487, "inv_box_petcarrier_01", "A", "vendor", cost = 4210,
         12, 44.2, 53.2, "商人出售",
         __display = 5554,
         {
@@ -34,7 +34,7 @@ ns.CollectionPets = {
         },
     },
     [5] = {
-        8488, "inv_box_petcarrier_01", "A", "vendor",
+        8488, "inv_box_petcarrier_01", "A", "vendor", cost = 4210,
         12, 44.2, 53.2, "商人出售",
         __display = 5555,
         {
@@ -42,11 +42,12 @@ ns.CollectionPets = {
         },
     },
     [6] = {
-        8489, "inv_box_petcarrier_01", "A", "vendor",
+        8489, "inv_box_petcarrier_01", "A", "vendor", cost = 6000,
         1519, 50.4, 34.0, "商人出售",
         __display = 9989,
         {
             { t = "从利尔·迪米（暴风城运河）处购买", m = { { "利尔·迪米", 1519, 50.4, 34.0 } } },
+            { t = "从 Xaphod Bizznox（石爪山脉）处购买" },
         },
     },
     [7] = {
@@ -82,7 +83,7 @@ ns.CollectionPets = {
         },
     },
     [11] = {
-        8495, "spell_nature_forceofnature", nil, "vendor",
+        8495, "spell_nature_forceofnature", nil, "vendor", cost = 4000,
         33, 28.2, 74.4, "商人出售",
         __display = 6190,
         {
@@ -90,7 +91,7 @@ ns.CollectionPets = {
         },
     },
     [12] = {
-        8496, "spell_nature_forceofnature", nil, "vendor",
+        8496, "spell_nature_forceofnature", nil, "vendor", cost = 4000,
         33, 28.2, 74.4, "商人出售",
         __display = 6191,
         {
@@ -122,7 +123,7 @@ ns.CollectionPets = {
         },
     },
     [16] = {
-        8501, "ability_eyeoftheowl", "A", "vendor",
+        8501, "ability_eyeoftheowl", "A", "vendor", cost = 5000,
         1657, 69.4, 45.4, "商人出售",
         __display = 6299,
         {
@@ -130,7 +131,7 @@ ns.CollectionPets = {
         },
     },
     [17] = {
-        10394, "ability_hunter_beastcall", "H", "vendor",
+        10394, "ability_hunter_beastcall", "H", "vendor", cost = 5263,
         1638, 62.2, 58.4, "商人出售",
         __display = 1072,
         {
@@ -138,7 +139,7 @@ ns.CollectionPets = {
         },
     },
     [18] = {
-        11023, "inv_chicken2_black", nil, "vendor",
+        11023, "inv_chicken2_black", nil, "vendor", cost = 9500,
         400, 78.2, 75.8, "商人出售",
         __display = 147417,
         {
@@ -231,7 +232,7 @@ ns.CollectionPets = {
         __display = 1141,
     },
     [30] = {
-        276275, "ability_hunter_pet_worm", nil, "vendor",
+        276275, "ability_hunter_pet_worm", nil, "vendor", cost = { 1, "i", 274026, "inv_misc_coin_16" },
         33, 27.4, 76.8, "商人出售",
         __display = 145177,
         {
@@ -249,7 +250,7 @@ ns.CollectionPets = {
         __display = 11709,
     },
     [33] = {
-        277508, "inv_box_petcarrier_01", "H", "vendor",
+        277508, "inv_box_petcarrier_01", "H", "vendor", cost = 6315,
         1637, 36.6, 29.0, "商人出售",
         __display = 145568,
         {
@@ -266,11 +267,11 @@ ns.CollectionPets = {
         __display = 145638,
     },
     [36] = {
-        280347, "inv_squirrelflying_albino", nil, "vendor",
-        16593, false, false, "商人出售",
+        280347, "inv_squirrelflying_albino", nil, "vendor", cost = 5263,
+        2521, false, false, "商人出售", cost = 5263,
         __display = 146639,
         {
-            { t = "从 Vayn Moongaze（达拉然）处购买", m = { { "Vayn Moongaze", 16593, nil, nil } } },
+            { t = "声望崇敬后从 Vayn Moongaze（泽弗拉斯岛）处购买" },
         },
     },
     [37] = {
@@ -287,7 +288,7 @@ ns.CollectionPets = {
         __display = 144905,
     },
     [39] = {
-        280699, "spell_shadow_carrionswarm", "H", "vendor",
+        280699, "spell_shadow_carrionswarm", "H", "vendor", cost = 5263,
         1497, 67.4, 43.4, "商人出售",
         __display = 146860,
         {
@@ -295,7 +296,7 @@ ns.CollectionPets = {
         },
     },
     [40] = {
-        280703, "spell_nature_guardianward", "H", "vendor",
+        280703, "spell_nature_guardianward", "H", "vendor", cost = 5263,
         1637, 19.0, 59.4, "商人出售",
         __display = 2958,
         {
@@ -303,7 +304,7 @@ ns.CollectionPets = {
         },
     },
     [41] = {
-        280794, "ability_hunter_beastcall", "H", "vendor",
+        280794, "ability_hunter_beastcall", "H", "vendor", cost = 5263,
         1638, 62.2, 58.4, "商人出售",
         __display = 146884,
         {
@@ -311,7 +312,7 @@ ns.CollectionPets = {
         },
     },
     [42] = {
-        280795, "ability_hunter_beastcall", "H", "vendor",
+        280795, "ability_hunter_beastcall", "H", "vendor", cost = 5263,
         1638, 62.2, 58.4, "商人出售",
         __display = 146882,
         {
@@ -319,7 +320,7 @@ ns.CollectionPets = {
         },
     },
     [43] = {
-        280797, "inv_crate_02", "A", "vendor",
+        280797, "inv_crate_02", "A", "vendor", cost = 2105,
         1, 63.2, 50.2, "商人出售",
         __display = 328,
         {
@@ -327,7 +328,7 @@ ns.CollectionPets = {
         },
     },
     [44] = {
-        280803, "ability_eyeoftheowl", "A", "vendor",
+        280803, "ability_eyeoftheowl", "A", "vendor", cost = 5263,
         1657, 69.4, 45.4, "商人出售",
         __display = 6300,
         {
@@ -351,7 +352,7 @@ ns.CollectionPets = {
         },
     },
     [47] = {
-        284664, "inv_misc_food_54", nil, "vendor",
+        284664, "inv_misc_food_54", nil, "vendor", cost = { 1500, "c", 3402, "racial_dwarf_findtreasure" },
         17, 49.4, 29.4, "商人出售",
         __display = 147969,
         {
@@ -372,5 +373,83 @@ ns.CollectionPets = {
         229368, nil, nil, "unknown",
         false, false, false, "获取方式待补充",
         __display = 120330,
-    }
+    },
+    [51] = {
+        280697, "spell_shadow_carrionswarm", "H", "vendor",
+        1497, 67.4, 43.4, "商人出售", cost = 4736,
+        {
+            { t = "从杰雷米亚·派森（幽暗城）处购买", m = { { "杰雷米亚·派森", 1497, 67.4, 43.4 } } },
+        },
+    },
+    [52] = {
+        280801, "inv_crate_02", "A", "vendor",
+        1, 63.2, 50.2, "商人出售", cost = 1894,
+        {
+            { t = "从亚尔林·冻石（丹莫罗）处购买", m = { { "亚尔林·冻石", 1, 63.2, 50.2 } } },
+        },
+    },
+    [53] = {
+        282047, "inv_pet_babycrocodile_toothy", nil, "drop",
+        1519, 22.4, 51.0, "怪物掉落",
+        {
+            { t = "击杀下水道鳄鱼掉落（暴风城）", m = { { "下水道鳄鱼", 1519, 22.4, 51.0 } } },
+        },
+    },
+    [54] = {
+        275682, "inv_maldraxxusslime", "H", "quest",
+        false, false, false, "任务奖励",
+        {
+            { t = "完成幽暗城任务获得" },
+        },
+    },
+    [55] = {
+        280456, "inv_inscription_pigment_bug04", nil, "quest",
+        false, false, false, "任务奖励",
+        {
+            { t = "完成悲叹沼泽任务获得" },
+        },
+    },
+    [56] = {
+        268109, "inv_frog2_blue", nil, "world",
+        2521, 51.0, 72.0, "场景互动",
+        {
+            { t = "对泽弗拉斯岛（51, 72）的青蛙使用 /唱 表情，再与出现的青蛙互动" },
+        },
+    },
+    [57] = {
+        33154, "inv_misc_food_59", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
+    [58] = {
+        74610, "achievement_worldevent_lunar", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
+    [59] = {
+        74611, "achievement_worldevent_lunar", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
+    [60] = {
+        268502, "inv_misc_head_dragon_bronze", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
+    [61] = {
+        268503, "inv_misc_head_dragon_blue", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
+    [62] = {
+        268879, "inv_diablostone", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
+    [63] = {
+        269830, "ability_mount_whitedirewolf", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
+    [64] = {
+        274956, "inv_egg_02", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
+    [65] = {
+        284214, "spell_shadow_summoninfernal", nil, "unknown",
+        false, false, false, "获取方式待补充",
+    },
 }

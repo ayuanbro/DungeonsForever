@@ -11,7 +11,7 @@ if not Host then return end
 local DG = Host.DG
 local MakeFS = Host.MakeFS
 local NewButton, MakeOutline = Host.NewButton, Host.MakeOutline
-local SetOutline, Unpack = Host.SetOutline, Host.Unpack
+local SetOutline, SetButtonSelected, Unpack = Host.SetOutline, Host.SetButtonSelected, Host.Unpack
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
 local C_GREEN = Host.C_GREEN
@@ -260,28 +260,65 @@ local function SpecWeights(cls, specId)
         STRENGTH = 0, AGILITY = 0, INTELLECT = phys and 0.42 or 1,
         SPIRIT = phys and 0.3 or 0.35,
         STAMINA = 0.1,
+        ARMOR = 0.004,
         ATTACK_POWER = phys and 0.48 or 0.05,
+        RANGED_ATTACK_POWER = 0,
         SPELL_POWER = phys and 0.4 or 1,
         CRIT_RATING = phys and 0.75 or 0.7,
         HIT_RATING = 1.1, HASTE_RATING = 0.5,
-        WEAPON_DPS = 0,
+        WEAPON_DPS = 0, RANGED_DPS = 0,
         MANA_REGENERATION = 0,
+        HEALTH_REGEN = 0, BLOCK_VALUE = 0, SPELL_PENETRATION = 0,
+        SPELL_DAMAGE_DONE = 0, SPELL_HEALING_DONE = 0,
+        ARCANE_DAMAGE_DONE = 0, FIRE_DAMAGE_DONE = 0, FROST_DAMAGE_DONE = 0,
+        NATURE_DAMAGE_DONE = 0, SHADOW_DAMAGE_DONE = 0, HOLY_DAMAGE_DONE = 0,
+        ARCANE_RESISTANCE = 0, FIRE_RESISTANCE = 0, FROST_RESISTANCE = 0,
+        NATURE_RESISTANCE = 0, SHADOW_RESISTANCE = 0,
     }
     if phys then
         w.AGILITY = (PRIM_STAT[cls] == "AGILITY") and 1 or 0.66
         w.STRENGTH = (PRIM_STAT[cls] == "STRENGTH") and 1 or 0.05
         w[PRIM_STAT[cls] or "STRENGTH"] = 1
-        w.WEAPON_DPS = (cls == "hunter") and 2.5 or 5.0
+        w.RANGED_ATTACK_POWER = w.ATTACK_POWER
+        w.SPELL_DAMAGE_DONE = 0.08
+        w.ARCANE_DAMAGE_DONE = 0.06
+        w.FIRE_DAMAGE_DONE = 0.06
+        w.FROST_DAMAGE_DONE = 0.06
+        w.NATURE_DAMAGE_DONE = 0.06
+        w.SHADOW_DAMAGE_DONE = 0.06
+        w.HEALTH_REGEN = 0.08
+        if cls == "hunter" then
+            w.RANGED_DPS = 2.5
+            w.WEAPON_DPS = 1.0
+        else
+            w.WEAPON_DPS = 5.0
+        end
     elseif heal then
         w.INTELLECT = 0.5
         w.SPIRIT = 0.5
         w.MANA_REGENERATION = 1.5
         w.CRIT_RATING = 0.3
         w.HASTE_RATING = 0.3
+        w.SPELL_HEALING_DONE = 0.95
+        w.SPELL_DAMAGE_DONE = 0.05
+        w.ARCANE_DAMAGE_DONE = 0.05
+        w.FIRE_DAMAGE_DONE = 0.05
+        w.FROST_DAMAGE_DONE = 0.05
+        w.NATURE_DAMAGE_DONE = 0.05
+        w.SHADOW_DAMAGE_DONE = 0.05
+        w.HEALTH_REGEN = 0.04
     else
         w.SPIRIT = 0.35
         w.CRIT_RATING = 0.7
         w.HASTE_RATING = 0.55
+        w.SPELL_DAMAGE_DONE = 0.85
+        w.SPELL_HEALING_DONE = 0.05
+        w.ARCANE_DAMAGE_DONE = 0.7
+        w.FIRE_DAMAGE_DONE = 0.7
+        w.FROST_DAMAGE_DONE = 0.7
+        w.NATURE_DAMAGE_DONE = 0.7
+        w.SHADOW_DAMAGE_DONE = 0.7
+        w.HEALTH_REGEN = 0.03
     end
     if specId == "pvp" then
         w.STAMINA = 0.5
@@ -292,6 +329,9 @@ local function SpecWeights(cls, specId)
         w.DODGE_RATING = 0.7
         w.PARRY_RATING = 0.6
         w.BLOCK_RATING = 0.55
+        w.BLOCK_VALUE = 0.35
+        w.ARMOR = 0.008
+        w.HEALTH_REGEN = 0.15
         w.CRIT_RATING = 0.3
         w.HIT_RATING = 0.7
         w.HASTE_RATING = 0.3
@@ -324,11 +364,19 @@ local function SpecWeights(cls, specId)
         w.INTELLECT = 0
         w.SPIRIT = 0
         w.SPELL_POWER = 0
+        w.SPELL_DAMAGE_DONE = 0
+        w.SPELL_HEALING_DONE = 0
+        w.ARCANE_DAMAGE_DONE = 0
+        w.FIRE_DAMAGE_DONE = 0
+        w.FROST_DAMAGE_DONE = 0
+        w.NATURE_DAMAGE_DONE = 0
+        w.SHADOW_DAMAGE_DONE = 0
     end
     return w
 end
 
 local statCache, scoreCache, scoreKey = {}, {}, nil
+local statSeen = {}
 local askedItem = {}
 local dpsCache, dpsMiss, dpsGen = {}, {}, 0
 
@@ -338,34 +386,27 @@ local function StatBucket(key)
     return string.match(key, "ITEM_MOD_(.+)$")
 end
 
-local function ItemScore(id, w)
-    if not id then return nil end
-    local k = BG.cls .. ":" .. BG.spec .. ":" .. (BG.wGen or 0) .. ":" .. dpsGen
-    if scoreKey ~= k then
-        scoreCache, scoreKey = {}, k
-    end
-    local v = scoreCache[id]
-    if v ~= nil then return v end
-    local ok, st = true, nil
-    local fn = GetItemStats or (C_Item and C_Item.GetItemStats)
-    if type(fn) == "function" then
-        ok, st = pcall(fn, DG.ItemLink(id))
-    else
-        ok = false
-    end
-    if not (ok and type(st) == "table") then return nil end
-    statCache[id] = st
-    local sum = 0
-    for sk, sv in pairs(st) do
-        local b = StatBucket(sk)
-        local wv = b and w[b]
-        if wv and type(sv) == "number" and sv > 0 then sum = sum + sv * wv end
-    end
-    local dps = dpsCache[id]
-    if type(dps) == "number" then sum = sum + dps * (w.WEAPON_DPS or 0) end
-    scoreCache[id] = sum
-    return sum
-end
+local W_KEYS = {
+    { "STRENGTH", L["力量"] }, { "AGILITY", L["敏捷"] }, { "INTELLECT", L["智力"] },
+    { "SPIRIT", L["精神"] }, { "STAMINA", L["耐力"] },
+    { "MANA_REGENERATION", L["5秒回蓝"] }, { "HEALTH_REGEN", L["5秒回血"] },
+    { "ATTACK_POWER", L["攻击强度"] }, { "RANGED_ATTACK_POWER", L["远程攻强"] },
+    { "WEAPON_DPS", L["武器伤害"] }, { "RANGED_DPS", L["远程武器伤害"] },
+    { "SPELL_POWER", L["法术强度"] }, { "SPELL_DAMAGE_DONE", L["法术伤害"] },
+    { "SPELL_HEALING_DONE", L["治疗效果"] }, { "SPELL_PENETRATION", L["法术穿透"] },
+    { "ARCANE_DAMAGE_DONE", L["奥术伤害"] }, { "FIRE_DAMAGE_DONE", L["火焰伤害"] },
+    { "FROST_DAMAGE_DONE", L["冰霜伤害"] }, { "NATURE_DAMAGE_DONE", L["自然伤害"] },
+    { "SHADOW_DAMAGE_DONE", L["暗影伤害"] }, { "HOLY_DAMAGE_DONE", L["神圣伤害"] },
+    { "ARCANE_RESISTANCE", L["奥术抗性"] }, { "FIRE_RESISTANCE", L["火焰抗性"] },
+    { "FROST_RESISTANCE", L["冰霜抗性"] }, { "NATURE_RESISTANCE", L["自然抗性"] },
+    { "SHADOW_RESISTANCE", L["暗影抗性"] },
+    { "CRIT_RATING", L["暴击等级"] }, { "HIT_RATING", L["命中等级"] },
+    { "HASTE_RATING", L["急速等级"] }, { "DEFENSE_SKILL_RATING", L["防御技能"] },
+    { "DODGE_RATING", L["躲闪等级"] }, { "PARRY_RATING", L["招架等级"] },
+    { "BLOCK_RATING", L["格挡等级"] }, { "BLOCK_VALUE", L["格挡值"] },
+    { "ARMOR", L["护甲"] }, { "RESILIENCE_RATING", L["韧性"] },
+}
+local W_SCHEME_MAX = 6
 
 local function EnsureDpsTip()
     if BG.dpsTip then return BG.dpsTip end
@@ -408,8 +449,10 @@ local function ScanDps(itemID)
                 and (string.find(t, "每秒伤害", 1, true)
                     or string.find(t, "每秒傷害", 1, true)
                     or string.find(t, "per second", 1, true)) then
-                local v = tonumber(string.match(t, "(%d+%.?%d*)%s*%)%s*$"))
-                    or tonumber(string.match(t, "(%d+%.?%d*)%s*$"))
+                local v = tonumber(string.match(t, "伤害%s*([%d%.]+)"))
+                    or tonumber(string.match(t, "傷害%s*([%d%.]+)"))
+                    or tonumber(string.match(t, "([%d%.]+)%s*per second"))
+                    or tonumber(string.match(t, "([%d%.]+)%s*[%)）]%s*$"))
                 if v and v > 0 then dps = v end
             end
         end
@@ -417,7 +460,16 @@ local function ScanDps(itemID)
     end)
     BG.__dpsDepth = BG.__dpsDepth - 1
     if not okScan or dps == nil then
-        dpsMiss[itemID] = true
+        local pending = false
+        pcall(function()
+            local fs = _G["DFBisDpsTipTextLeft1"]
+            local t = (fs and fs.GetText) and fs:GetText() or nil
+            if type(t) == "string"
+                and (string.find(t, "正在获取", 1, true)
+                    or string.find(t, "正在載入", 1, true)
+                    or string.find(t, "RETRIEVING", 1, true)) then pending = true end
+        end)
+        if not pending then dpsMiss[itemID] = true end
         return nil
     end
     dpsCache[itemID] = dps
@@ -426,17 +478,144 @@ local function ScanDps(itemID)
     return dps
 end
 
-local W_KEYS = {
-    { "STRENGTH", L["力量"] }, { "AGILITY", L["敏捷"] }, { "INTELLECT", L["智力"] },
-    { "SPIRIT", L["精神"] }, { "MANA_REGENERATION", L["5秒回蓝"] }, { "STAMINA", L["耐力"] },
-    { "ATTACK_POWER", L["攻击强度"] }, { "SPELL_POWER", L["法术强度"] },
-    { "CRIT_RATING", L["暴击等级"] }, { "HIT_RATING", L["命中等级"] },
-    { "HASTE_RATING", L["急速等级"] }, { "WEAPON_DPS", L["武器伤害"] },
-    { "DEFENSE_SKILL_RATING", L["防御技能"] },
-    { "DODGE_RATING", L["躲闪等级"] }, { "PARRY_RATING", L["招架等级"] },
-    { "BLOCK_RATING", L["格挡等级"] }, { "RESILIENCE_RATING", L["韧性"] },
-}
-local W_SCHEME_MAX = 6
+local function MatchStatNum(t, name)
+    local esc = string.gsub(name, "([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+    return tonumber(string.match(t, "([%-%+]?[%d%.]+)%s*" .. esc))
+        or tonumber(string.match(t, esc .. "%s*([%-%+]?[%d%.]+)"))
+end
+
+local tipStatCache = {}
+
+local function ScanStatsTip(id)
+    if type(id) ~= "number" or BG.__dpsDead then return nil end
+    local c = tipStatCache[id]
+    if c ~= nil then return c end
+    if not DG.ItemInfo(id) then return nil end
+    if (BG.__dpsDepth or 0) > 0 then return nil end
+    local tip = EnsureDpsTip()
+    if not tip then return nil end
+    BG.__dpsDepth = (BG.__dpsDepth or 0) + 1
+    local out = {}
+    local okScan = pcall(function()
+        if tip.SetOwner and not pcall(tip.SetOwner, tip, UIParent, "ANCHOR_NONE") then return end
+        local set = false
+        if tip.SetHyperlink then set = pcall(tip.SetHyperlink, tip, "item:" .. tostring(id)) end
+        if not set then return end
+        pcall(tip.Show, tip)
+        local n = (tip.NumLines and tip:NumLines()) or 0
+        local allKey = L["所有属性"]
+        for i = 1, n do
+            local fs = _G["DFBisDpsTipTextLeft" .. i]
+            local t = (fs and fs.GetText) and fs:GetText() or nil
+            if type(t) == "string" and t ~= "" then
+                if type(allKey) == "string" and allKey ~= "" and string.find(t, allKey, 1, true) then
+                    local nv = MatchStatNum(t, allKey)
+                    if nv then
+                        for _, k in ipairs({ "STRENGTH", "AGILITY", "INTELLECT", "SPIRIT", "STAMINA" }) do
+                            out[k] = (out[k] or 0) + nv
+                        end
+                    end
+                end
+                for _, wk in ipairs(W_KEYS) do
+                    local k, nm = wk[1], wk[2]
+                    if k ~= "WEAPON_DPS" and type(nm) == "string" and nm ~= "" then
+                        local nv = MatchStatNum(t, nm)
+                        if nv and nv > 0 then out[k] = (out[k] or 0) + nv end
+                    end
+                end
+            end
+        end
+        pcall(tip.Hide, tip)
+    end)
+    BG.__dpsDepth = BG.__dpsDepth - 1
+    if not okScan then return nil end
+    if not next(out) then return nil end
+    tipStatCache[id] = out
+    BG.__statCacheN = (BG.__statCacheN or 0) + 1
+    if BG.__statCacheN > 2500 then
+        for k in pairs(tipStatCache) do tipStatCache[k] = nil end
+        BG.__statCacheN = 0
+    end
+    return out
+end
+
+local function ItemStatsOf(id)
+    local link
+    if DG.ItemLink then
+        local ok, l = pcall(DG.ItemLink, id)
+        if ok then link = l end
+    end
+    local fn = GetItemStats or (C_Item and C_Item.GetItemStats)
+    if type(fn) == "function" and type(link) == "string" and link ~= "" then
+        local ok, st = pcall(fn, link)
+        if ok and type(st) == "table" then
+            statSeen[id] = true
+            local out = {}
+            local av = st.RESISTANCE0_NAME
+            if type(av) == "number" and av > 0 then out.ARMOR = av end
+            for sk, sv in pairs(st) do
+                local b = StatBucket(sk)
+                if b and type(sv) == "number" then out[b] = sv end
+                if type(sv) == "number" and sv > 0 then
+                    if sk == "RESISTANCE2_NAME" then out.FIRE_RESISTANCE = sv
+                    elseif sk == "RESISTANCE3_NAME" then out.NATURE_RESISTANCE = sv
+                    elseif sk == "RESISTANCE4_NAME" then out.FROST_RESISTANCE = sv
+                    elseif sk == "RESISTANCE5_NAME" then out.SHADOW_RESISTANCE = sv
+                    elseif sk == "RESISTANCE6_NAME" then out.ARCANE_RESISTANCE = sv end
+                end
+            end
+            if next(out) then
+                statCache[id] = out
+                return out
+            end
+        end
+    end
+    local out = ScanStatsTip(id)
+    if out then statCache[id] = out end
+    return out
+end
+
+local function ItemScore(id, w)
+    if not id then return nil end
+    local k = BG.cls .. ":" .. BG.spec .. ":" .. (BG.wGen or 0) .. ":" .. dpsGen
+    if scoreKey ~= k then
+        scoreCache, scoreKey = {}, k
+    end
+    local v = scoreCache[id]
+    if v ~= nil then return v end
+    local st = ItemStatsOf(id)
+    local sum = 0
+    if type(st) == "table" then
+        local av = st.ARMOR
+        if type(av) == "number" and av > 0 and type(w.ARMOR) == "number" then
+            sum = sum + av * w.ARMOR
+        end
+        for bkt, sv in pairs(st) do
+            local wv = w[bkt]
+            if type(wv) == "number" and type(sv) == "number" and sv > 0 then sum = sum + sv * wv end
+        end
+    end
+    ScanDps(id)
+    local dps = dpsCache[id]
+    if type(dps) ~= "number" and type(st) == "table" and type(st.DAMAGE_PER_SECOND) == "number" then
+        dps = st.DAMAGE_PER_SECOND
+    end
+    if type(dps) == "number" then
+        local dw = w.WEAPON_DPS or 0
+        local fn = GetItemInfoInstant or (C_Item and C_Item.GetItemInfoInstant)
+        if type(fn) == "function" then
+            local ok, _, _, _, eq = pcall(fn, id)
+            if ok and (eq == "INVTYPE_RANGED" or eq == "INVTYPE_RANGEDRIGHT" or eq == "INVTYPE_THROWN") then
+                dw = w.RANGED_DPS or 0
+            end
+        end
+        if dw > 0 then sum = sum + dps * dw end
+    end
+    if sum <= 0 then return nil end
+    scoreCache[id] = sum
+    return sum
+end
+
 local W_ICONS = {
     "Interface\\Icons\\Trade_Engineering", "Interface\\Icons\\INV_Misc_Gear_01",
     "Interface\\Icons\\INV_Misc_PocketWatch_01", "Interface\\Icons\\INV_Jewelry_Talisman_01",
@@ -486,11 +665,18 @@ end
 
 local function BumpWeights()
     BG.wGen = (BG.wGen or 0) + 1
+    if BG.built and BG.usingPlan == nil and BG.autoPlan then
+        BG.UseAutoPlan(BG.autoPlan)
+    end
 end
 
 local function EffWeights()
     local sch = BG.wActive and BG.wSchemes and BG.wSchemes[BG.wActive] or nil
-    if sch and type(sch.w) == "table" then return sch.w end
+    if sch and type(sch.w) == "table" then
+        local w = SpecWeights(BG.cls, BG.spec)
+        for k, v in pairs(sch.w) do w[k] = v end
+        return w
+    end
     return SpecWeights(BG.cls, BG.spec)
 end
 
@@ -521,6 +707,7 @@ local function EnsureWeightDialog()
     popup:SetPoint("CENTER", host, "CENTER", 0, 0)
     popup:Hide()
     if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(popup, 8) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(popup) end
     local titleBar = CreateFrame("Frame", nil, popup)
     titleBar:SetPoint("TOPLEFT", popup, "TOPLEFT", 0, 0)
     titleBar:SetPoint("TOPRIGHT", popup, "TOPRIGHT", 0, 0)
@@ -691,6 +878,17 @@ local function ClassWear(cls, c, u)
     return true
 end
 
+local CLS_BIT = { warrior = 1, paladin = 2, hunter = 4, rogue = 8, priest = 16,
+                  dk = 32, deathknight = 32, shaman = 64, mage = 128,
+                  warlock = 256, monk = 512, druid = 1024 }
+local function ClsOK(id)
+    local m = ns.GearCls and ns.GearCls[id]
+    if not m then return true end
+    local b = CLS_BIT[BG.cls]
+    if not b then return true end
+    return bit.band(m, b) ~= 0
+end
+
 local catItems, catKey = nil, nil
 
 local function EnsureCatalog()
@@ -704,8 +902,9 @@ local function EnsureCatalog()
     return gm and gm.catalog or nil
 end
 
+local UsableCap
 local function CatRowsFor(rkey)
-    local cap = (BG.onlyUsable and tonumber(BG.filterLv)) or 60
+    local cap = UsableCap and UsableCap() or 60
     local key = rkey .. ":" .. tostring(cap) .. ":" .. BG.cls
     if catKey == key then return catItems end
     local slots = SLOT_GEAR[rkey]
@@ -714,7 +913,7 @@ local function CatRowsFor(rkey)
     if cat and slots then
         for i = 1, #cat do
             local r = cat[i]
-            if r.s and InList(slots, r.s) and ClassWear(BG.cls, r.c, r.u)
+            if r.s and InList(slots, r.s) and ClassWear(BG.cls, r.c, r.u) and ClsOK(r.id)
                 and (r.req or 0) <= cap then
                 out[#out + 1] = r
             end
@@ -728,8 +927,8 @@ local function CatSrcOf(id)
     local gm = ns.GearModule
     local so = gm and gm.srcOf and gm.srcOf[id]
     if so and so.inst then return nil, so end
-    local gd = ns.EnsureGearData and ns.EnsureGearData()
-    local src = gd and gd.src and gd.src[id]
+    local gs = ns.EnsureGearSrc and ns.EnsureGearSrc()
+    local src = gs and gs[id]
     if type(src) == "string" and src ~= "" then return src end
     return ""
 end
@@ -879,13 +1078,19 @@ local function LoadFilterPrefs()
     BG.onlyUsable = s.fOnlyUsable and true or false
     local lv = s.fFilterLv
     BG.filterLv = (type(lv) == "number" and lv >= 1 and lv <= 60) and math.floor(lv) or nil
-    if s.fSrcVer ~= 2 then
-        s.fSrcVer = 2
-        if s.fSrcSet and s.fSrcSet.vendor == nil then s.fSrcSet.vendor = true end
+    if s.fSrcVer ~= 3 then
+        s.fSrcVer = 3
+        local ss = s.fSrcSet
+        if ss == nil then
+            ss = {}
+            for _, f in ipairs(FILTERS) do ss[f.id] = true end
+        end
+        ss.other = nil
+        s.fSrcSet = ss
     end
     BG.srcSet = {}
     for _, f in ipairs(FILTERS) do
-        BG.srcSet[f.id] = (s.fSrcSet == nil) or (s.fSrcSet[f.id] == true)
+        BG.srcSet[f.id] = (s.fSrcSet[f.id] == true)
     end
 end
 
@@ -903,6 +1108,11 @@ end
 local function PlayerLevel()
     local ok, lv = pcall(UnitLevel, "player")
     return (ok and type(lv) == "number" and lv > 0) and lv or nil
+end
+
+UsableCap = function()
+    if not BG.onlyUsable then return 60 end
+    return tonumber(BG.filterLv) or PlayerLevel() or 60
 end
 
 local __pfac = nil
@@ -1129,7 +1339,7 @@ end
 
 local function EnchCap(lvOverride)
     if lvOverride then return tonumber(lvOverride) or nil end
-    if BG.onlyUsable then return tonumber(BG.filterLv) or 60 end
+    if BG.onlyUsable then return tonumber(BG.filterLv) or PlayerLevel() or 60 end
     return nil
 end
 
@@ -1331,6 +1541,10 @@ local function EnchTip(owner, e)
 end
 
 local function LinkToChat(itemID)
+    if DG and DG.InsertItemLink then
+        DG.InsertItemLink(itemID)
+        return
+    end
     local _, link = DG.ItemInfo(itemID)
     if link and ChatFrame_InsertLink then
         ChatFrame_InsertLink(link)
@@ -1427,8 +1641,7 @@ local function PaintTopbar()
                 if bt.__icon then bt.__icon:SetTexture(sr.icon) end
                 local on = (sr.role == "tank" and BG.spec == "tank")
                     or (sr.role ~= "tank" and BG.spec ~= "tank" and BG.tspec == sr.key)
-                SetOutline(bt, on, Unpack(C_GOLD))
-                bt.lbl:SetTextColor(Unpack(on and C_GOLD or C_TEXT))
+                SetButtonSelected(bt, on)
             else
                 bt:SetShown(false)
             end
@@ -1515,76 +1728,370 @@ function BG.LayoutMid()
     p2:SetPoint("BOTTOMRIGHT", p3, "TOPLEFT", 224, 8)
 end
 
+do
 local AUTO_SRC_KNOWN = { craft = true, quest = true, boss = true, rare = true, vendor = true }
+local AUTO_SNAP_MAX = 6
+local AUTO_BUDGET_MS = 6
 
-local function ComputeAutoPlan(mode, cap)
-    local cur = {}
-    local sp = SpecRec()
-    if not sp then return cur end
-    local srcSet = (mode == "known") and AUTO_SRC_KNOWN or nil
-    local w = EffWeights()
-    local mk = MainKey(sp)
-    local buckets, cat = {}, EnsureCatalog()
-    if cat then
-        for i = 1, #cat do
-            local r = cat[i]
-            if r.s and ClassWear(BG.cls, r.c, r.u) and (r.req or 0) <= cap
-                and not (srcSet and not srcSet[CatKind(r.id)]) then
-                local b = buckets[r.s]
-                if not b then b = {} buckets[r.s] = b end
-                b[#b + 1] = r
-            end
-        end
-    end
-    for _, key in ipairs(ALL_SLOT_KEYS) do
-        local dk = DataKey(sp, key)
-        if key == "off-hand" and mk == "two-hand" then
-            cur[dk] = nil
-        else
-            local rkey = RowsKey(key)
-            if rkey == "main-hand" then rkey = mk end
-            local best, bestScore
-            for _, sl in ipairs(SLOT_GEAR[rkey] or {}) do
-                for _, r in ipairs(buckets[sl] or {}) do
-                    if UsableAt(r.id, cap, r.req or 0) then
-                        local sc = ItemScore(r.id, w)
-                        if sc and (bestScore == nil or sc > bestScore) then
-                            best, bestScore = r.id, sc
-                        end
-                    end
-                end
-            end
-            if best then cur[dk] = best end
-        end
-    end
-    return cur
-end
-
-local autoPlanCache = nil
-
-local function AutoPlanKey(mode, cap)
-    return table.concat({ scoreKey or "", BG.cls or "", BG.spec or "", BG.tspec or "",
-        tostring(cap), tostring(mode) }, "|")
-end
-
-local function AutoPlanFor(mode, cap)
-    if autoPlanCache and autoPlanCache.key == AutoPlanKey(mode, cap) then return autoPlanCache.cur end
-    local cur = ComputeAutoPlan(mode, cap)
-    autoPlanCache = { key = AutoPlanKey(mode, cap), cur = cur }
-    return cur
-end
-
-local function AutoLevel()
+function BG.AutoLevel()
     local lv = PlayerLevel() or 60
     if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
     return lv
 end
 
+local function CopyCur(src)
+    local out = {}
+    if type(src) == "table" then
+        for k, v in pairs(src) do out[k] = v end
+    end
+    return out
+end
+
+local autoVer
+
+local function AutoVer()
+    if autoVer then return autoVer end
+    local fn = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+    local v
+    if type(fn) == "function" then
+        local ok, r = pcall(fn, "DungeonsForever", "Version")
+        if ok and type(r) == "string" and r ~= "" then v = r end
+    end
+    if not v then v = tostring(ns.version or "0") end
+    autoVer = v
+    return autoVer
+end
+
+local function AutoSig(mode, cap)
+    return table.concat({ tostring(AutoVer()), tostring(BG.cls or ""),
+        tostring(BG.spec or ""), tostring(BG.tspec or ""), tostring(mode),
+        tostring(cap), tostring(BG.wGen or 0), tostring(BG.wActive or 0),
+        PlayerFac() or "" }, "|")
+end
+
+local autoSnaps, autoSnapsLoaded = {}, false
+
+local function NowSec()
+    local f = time
+    if type(f) ~= "function" then return 0 end
+    local ok, v = pcall(f)
+    if ok and type(v) == "number" then return v end
+    return 0
+end
+
+local function LoadAutoSnaps()
+    autoSnapsLoaded = true
+    autoSnaps = {}
+    local list = DB().autoSnaps
+    if type(list) ~= "table" then return end
+    for i = 1, #list do
+        local e = list[i]
+        if type(e) == "table" and type(e.sig) == "string" and type(e.items) == "table" then
+            autoSnaps[e.sig] = e
+        end
+    end
+end
+
+local function SaveAutoSnaps()
+    local list = {}
+    for _, e in pairs(autoSnaps) do list[#list + 1] = e end
+    table.sort(list, function(a, b) return (a.t or 0) > (b.t or 0) end)
+    while #list > AUTO_SNAP_MAX do table.remove(list) end
+    local keep = {}
+    for _, e in ipairs(list) do keep[e.sig] = e end
+    autoSnaps = keep
+    DB().autoSnaps = list
+end
+
+local function AutoStore(mode, cap, sig, items, cls)
+    if not autoSnapsLoaded then LoadAutoSnaps() end
+    autoSnaps[sig] = { sig = sig, mode = mode, cls = cls, lv = cap,
+                       t = NowSec(), items = CopyCur(items) }
+    SaveAutoSnaps()
+end
+
+local function AutoStale(mode)
+    if not autoSnapsLoaded then LoadAutoSnaps() end
+    local best, any
+    for _, e in pairs(autoSnaps) do
+        if e.cls == BG.cls then
+            if e.mode == mode and (not best or (e.t or 0) > (best.t or 0)) then best = e end
+            if not any or (e.t or 0) > (any.t or 0) then any = e end
+        end
+    end
+    return best or any
+end
+
+local autoJob, autoJobSeq = nil, 0
+
+function BG.PaintAutoProg(frac)
+    local host = BG.panels and BG.panels[2]
+    if not host then return end
+    local h = BG.autoProg
+    if frac == nil then
+        if h and h:IsShown() then h:Hide() end
+        if BG.saveBtn then BG.saveBtn:Show() end
+        if BG.resetBtn then BG.resetBtn:Show() end
+        return
+    end
+    if not h then
+        h = CreateFrame("Frame", nil, host)
+        h:SetHeight(24)
+        h:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -40)
+        h:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -40)
+        h:SetFrameLevel((host:GetFrameLevel() or 0) + 5)
+        h.fs = MakeFS(h, 14, C_GOLD, "LEFT")
+        h.fs:SetPoint("TOPLEFT", h, "TOPLEFT", 0, 0)
+        h.fs:SetWordWrap(false)
+        local tr = CreateFrame("Frame", nil, h)
+        tr:SetHeight(4)
+        tr:SetPoint("BOTTOMLEFT", h, "BOTTOMLEFT", 0, 0)
+        tr:SetPoint("BOTTOMRIGHT", h, "BOTTOMRIGHT", 0, 0)
+        if ns.hui and ns.hui.BuildCapsule then
+            ns.hui.BuildCapsule(tr, 2, ns.hui.layer.L2)
+        else
+            local bt = tr:CreateTexture(nil, "BACKGROUND")
+            bt:SetAllPoints()
+            bt:SetColorTexture(0, 0, 0, 0.45)
+        end
+        local fill = CreateFrame("Frame", nil, tr)
+        fill:SetHeight(4)
+        fill:SetWidth(2)
+        fill:SetPoint("LEFT", tr, "LEFT", 0, 0)
+        if ns.hui and ns.hui.BuildCapsule then
+            ns.hui.BuildCapsule(fill, 2, { 0.93, 0.76, 0.32 })
+        else
+            local ft = fill:CreateTexture(nil, "ARTWORK")
+            ft:SetAllPoints()
+            ft:SetColorTexture(0.93, 0.76, 0.32, 1)
+        end
+        h.track, h.fill = tr, fill
+        BG.autoProg = h
+    end
+    if BG.saveBtn then BG.saveBtn:Hide() end
+    if BG.resetBtn then BG.resetBtn:Hide() end
+    h:Show()
+    if frac < 0 then frac = 0 elseif frac > 1 then frac = 1 end
+    local pct = math.floor(frac * 100 + 0.5)
+    if h.pct ~= pct then
+        h.pct = pct
+        h.fs:SetText(format(L["正在生成方案"] .. " %d%%", pct))
+    end
+    local w = h:GetWidth() or 0
+    if w < 2 then w = 192 end
+    local fw = math.floor(w * frac + 0.5)
+    if fw < 2 then fw = 2 end
+    h.fill:SetWidth(fw)
+end
+
+local function AutoJobCancel()
+    if not autoJob then return end
+    autoJobSeq = autoJobSeq + 1
+    autoJob = nil
+    BG.PaintAutoProg(nil)
+end
+BG.AutoJobCancel = AutoJobCancel
+
+local autoKind = {}
+
+local function AutoKind(id)
+    local v = autoKind[id]
+    if v == nil then
+        v = CatKind(id)
+        autoKind[id] = v
+    end
+    return v
+end
+
+local function AutoRawOK(id, cap)
+    local qlv = ns.GearSrcQLv and ns.GearSrcQLv[id]
+    if type(qlv) == "number" and qlv > 0 and qlv > cap then return false end
+    local qid = ns.GearSrcQ and ns.GearSrcQ[id]
+    local fac = qid and ns.GearQuestRace and ns.GearQuestRace[qid]
+    if fac and fac ~= PlayerFac() then return false end
+    return true
+end
+
+local function AutoBuckets(job)
+    local cat = job.cat
+    if not cat or job.total < 1 then return true end
+    local i = job.ci
+    while i < job.total do
+        i = i + 1
+        local r = cat[i]
+        if r.s and ClassWear(job.cls, r.c, r.u) and ClsOK(r.id) and (r.req or 0) <= job.cap
+            and AutoRawOK(r.id, job.cap)
+            and not (job.srcSet and not job.srcSet[AutoKind(r.id)]) then
+            local b = job.buckets[r.s]
+            if not b then
+                b = {}
+                job.buckets[r.s] = b
+            end
+            b[#b + 1] = r
+        end
+        if debugprofilestop() - job.t0 > AUTO_BUDGET_MS then break end
+    end
+    job.ci = i
+    return i >= job.total
+end
+
+local function AutoPick(job)
+    local keys = job.keys
+    while job.ki <= #keys do
+        if not job.curKey then
+            job.curKey = keys[job.ki]
+            job.dk = DataKey(job.sp, job.curKey)
+            if job.curKey == "off-hand" and job.mk == "two-hand" then
+                job.cur[job.dk] = nil
+                job.ki = job.ki + 1
+                job.curKey = nil
+            else
+                local rkey = RowsKey(job.curKey)
+                if rkey == "main-hand" then rkey = job.mk end
+                job.groups = SLOT_GEAR[rkey] or {}
+                job.gi, job.bi = 1, 1
+                job.best, job.bestScore = nil, nil
+            end
+        else
+            local g = job.groups[job.gi]
+            if not g then
+                if job.best then
+                    job.cur[job.dk] = job.best
+                    if AutoKind(job.best) == "quest" or (ns.GearUni and ns.GearUni[job.best]) then
+                        job.usedQ[job.best] = true
+                    end
+                end
+                job.ki = job.ki + 1
+                job.curKey = nil
+            else
+                local b = job.buckets[g]
+                local r = b and b[job.bi]
+                if not r then
+                    job.gi = job.gi + 1
+                    job.bi = 1
+                else
+                    job.bi = job.bi + 1
+                    if UsableAt(r.id, job.cap, r.req or 0) and not job.usedQ[r.id] then
+                        local sc = ItemScore(r.id, job.w)
+                        if sc and (job.bestScore == nil or sc > job.bestScore) then
+                            job.best, job.bestScore = r.id, sc
+                        end
+                    end
+                end
+            end
+        end
+        if debugprofilestop() - job.t0 > AUTO_BUDGET_MS then return false end
+    end
+    return true
+end
+
+local function AutoPump(jobId)
+    local job = autoJob
+    if not job or job.id ~= jobId then return end
+    if job.phase == 1 and job.cat == nil then
+        job.cat = EnsureCatalog()
+        job.total = job.cat and #job.cat or 0
+        if job.total < 1 then
+            job.retry = (job.retry or 0) + 1
+            if job.retry > 25 then
+                autoJob = nil
+                BG.PaintAutoProg(nil)
+                return
+            end
+            job.cat = nil
+            BG.PaintAutoProg(0)
+            C_Timer.After(0.2, function() AutoPump(jobId) end)
+            return
+        end
+    end
+    job.t0 = debugprofilestop()
+    local done = false
+    if job.phase == 1 then
+        if AutoBuckets(job) then
+            job.phase = 2
+        else
+            done = false
+        end
+    end
+    if job.phase == 2 then done = AutoPick(job) end
+    if autoJob ~= job then return end
+    local frac
+    if job.phase == 1 then
+        frac = 0.4 * ((job.ci or 0) / math.max(1, job.total or 1))
+    else
+        local sub = 0
+        if job.curKey and job.groups and #job.groups > 0 then
+            sub = ((job.gi or 1) - 1) / #job.groups
+            if sub > 1 then sub = 1 end
+        end
+        frac = 0.4 + 0.6 * ((job.ki - 1 + sub) / math.max(1, #job.keys))
+    end
+    if done then
+        autoJob = nil
+        AutoStore(job.mode, job.cap, job.sig, job.cur, job.cls)
+        if BG.cls == job.cls and BG.autoPlan == job.mode and BG.usingPlan == nil then
+            BG.cur = CopyCur(job.cur)
+            BG.autoStale = nil
+            BG.RequestRender()
+        end
+        BG.PaintAutoProg(nil)
+        return
+    end
+    BG.PaintAutoProg(frac)
+    C_Timer.After(0, function() AutoPump(jobId) end)
+end
+
+local function AutoJobStart(mode, cap, sig)
+    autoJobSeq = autoJobSeq + 1
+    local sp = SpecRec()
+    if not sp then return end
+    autoJob = {
+        id = autoJobSeq, mode = mode, cap = cap, sig = sig,
+        cls = BG.cls, sp = sp, mk = MainKey(sp), w = EffWeights(),
+        srcSet = (mode == "known") and AUTO_SRC_KNOWN or nil,
+        cat = nil, total = 0, ci = 0,
+        phase = 1, buckets = {}, cur = {}, usedQ = {},
+        keys = ALL_SLOT_KEYS, ki = 1,
+    }
+    BG.PaintAutoProg(0)
+    local id = autoJobSeq
+    C_Timer.After(0, function() AutoPump(id) end)
+end
+
+function BG.AutoJobState()
+    if not autoJob then return nil end
+    return autoJob.mode, autoJob.phase, autoJob.ki, autoJob.ci, autoJob.total
+end
+
+function BG.UseAutoPlan(mode)
+    if not mode then return end
+    BG.autoPlan = mode
+    BG.usingPlan = nil
+    AutoJobCancel()
+    if not autoSnapsLoaded then LoadAutoSnaps() end
+    local cap = BG.AutoLevel()
+    local sig = AutoSig(mode, cap)
+    local snap = autoSnaps[sig]
+    if snap then
+        snap.t = NowSec()
+        BG.autoStale = nil
+        BG.cur = CopyCur(snap.items)
+        BG.RequestRender()
+        return
+    end
+    local old = AutoStale(mode)
+    BG.cur = old and CopyCur(old.items) or {}
+    BG.autoStale = old and old.lv or nil
+    BG.RequestRender()
+    AutoJobStart(mode, cap, sig)
+end
+end
+
 local function PresetList()
     local out = {}
     local tsp = BG.tspec
-    out[#out + 1] = { auto = "known", lv = AutoLevel(), type = L["已知内容"] }
-    out[#out + 1] = { auto = "all", lv = AutoLevel(), type = L["包含位置来源"] }
+    out[#out + 1] = { auto = "known", lv = BG.AutoLevel(), type = L["已知内容"] }
+    out[#out + 1] = { auto = "all", lv = BG.AutoLevel(), type = L["包含未知来源"] }
     for i = #VOLS, 1, -1 do
         local v = VOLS[i]
         local c
@@ -1715,12 +2222,84 @@ local function PaintPlans()
 end
 
 local FillBwRow
+
+BG.ROW_PITCH = ROW_H + 2
+BG.POOL_MAX = 120
+BG.POOL_MIN = 10
+
+function BG.BwVirtualOn()
+    local db = DB()
+    return not (type(db) == "table" and db.bisPool120)
+end
+
+function BG.BwPoolSize()
+    if not BG.BwVirtualOn() then return BG.POOL_MAX end
+    local sc = BG.bwScroll
+    local h = sc and sc.GetHeight and sc:GetHeight()
+    if type(h) ~= "number" or h <= 0 then h = 720 end
+    local n = math.ceil(h / BG.ROW_PITCH) + 3
+    if n < BG.POOL_MIN then n = BG.POOL_MIN end
+    if n > BG.POOL_MAX then n = BG.POOL_MAX end
+    return n
+end
+
+function BG.BindBwWindow(first)
+    local rows = BG.bwRows
+    local child = BG.bwChild
+    if not (rows and child) then return end
+    local list = BG.bwList or {}
+    local n = #rows
+    if first < 1 then first = 1 end
+    if #list > 0 then
+        local maxFirst = #list - n + 1
+        if maxFirst < 1 then maxFirst = 1 end
+        if first > maxFirst then first = maxFirst end
+    end
+    local pitch = BG.ROW_PITCH
+    for k = 1, n do
+        local r = rows[k]
+        local idx = first + k - 1
+        local row = list[idx]
+        if row then
+            if r.__idx ~= idx then r.__painted = false end
+            r.__active = true
+            r.__row = row
+            r.__idx = idx
+            r.__vtop = (idx - 1) * pitch
+            r.__vh = ROW_H
+            r:ClearAllPoints()
+            r:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -r.__vtop)
+            r:SetPoint("RIGHT", child, "RIGHT", 0, 0)
+        else
+            r.__active = false
+            r.__row = nil
+            r.__idx = nil
+            r.__painted = false
+            r:Hide()
+        end
+    end
+    if #list == 0 and BG.sel and rows[1] then
+        local r = rows[1]
+        r.__active = true
+        r.__row = nil
+        r.__idx = 0
+        r.__vtop = 0
+        r.__vh = ROW_H
+        r.__painted = false
+        r:ClearAllPoints()
+        r:SetPoint("TOPLEFT", child, "TOPLEFT", 0, 0)
+        r:SetPoint("RIGHT", child, "RIGHT", 0, 0)
+    end
+    BG.bwFirst = first
+end
+
 local function CullBwRows()
     local sc = BG.bwScroll
     if not (sc and sc.GetTop) then return end
     local gt = sc:GetTop()
     local viewH = sc.GetHeight and sc:GetHeight()
     if type(gt) ~= "number" or type(viewH) ~= "number" or viewH <= 0 then
+        if BG.BwVirtualOn() then BG.BindBwWindow(1) end
         for _, r in ipairs(BG.bwRows or {}) do
             if r.__active then
                 if not r.__painted then FillBwRow(r) end
@@ -1734,6 +2313,17 @@ local function CullBwRows()
     end
     local v = sc.GetVerticalScroll and sc:GetVerticalScroll() or 0
     if type(v) ~= "number" then v = 0 end
+    if BG.BwVirtualOn() then
+        local first = math.floor(v / BG.ROW_PITCH) + 1
+        if first < 1 then first = 1 end
+        local cnt = #(BG.bwList or {})
+        if cnt > 0 then
+            local maxFirst = cnt - #(BG.bwRows or {}) + 1
+            if maxFirst < 1 then maxFirst = 1 end
+            if first > maxFirst then first = maxFirst end
+        end
+        if first ~= BG.bwFirst then BG.BindBwWindow(first) end
+    end
     local vTop, vBot = v - viewH - 2, v + viewH * 2 + 2
     for _, r in ipairs(BG.bwRows or {}) do
         if not r.__active then
@@ -1809,6 +2399,29 @@ end
 local CHIP_WISH_BG = { 0.78, 0.60, 0.10, 1 }
 local CHIP_UP_BG = { 0.16, 0.52, 0.26, 1 }
 local CHIP_DOWN_BG = { 0.36, 0.39, 0.44, 1 }
+local CHIP_BOE_BG = { 0.18, 0.45, 0.66, 1 }
+
+local __boeCache = {}
+local function BindOnEquip(id)
+    if __boeCache[id] ~= nil then return __boeCache[id] end
+    local fn = GetItemInfo or (C_Item and C_Item.GetItemInfo)
+    if type(fn) ~= "function" then return nil end
+    if C_Item and type(C_Item.RequestLoadItemDataByID) == "function" then
+        pcall(C_Item.RequestLoadItemDataByID, id)
+    end
+    local ok, name = pcall(fn, id)
+    if not ok or name == nil then return nil end
+    local bind = select(15, pcall(fn, id))
+    if bind == nil then return nil end
+    __boeCache[id] = (bind == 2)
+    local v = __boeCache[id]
+    BG.__boeCacheN = (BG.__boeCacheN or 0) + 1
+    if BG.__boeCacheN > 4000 then
+        for k in pairs(__boeCache) do __boeCache[k] = nil end
+        BG.__boeCacheN = 0
+    end
+    return v
+end
 
 local function ChipSet(b, text, col, rightOf)
     b.lab:SetText(text)
@@ -1836,6 +2449,10 @@ function FillBwRow(r)
         r.sideTag:SetShown(false)
         r.chip:Hide()
         r.chip2:Hide()
+        r.chip3:Hide()
+        r.wishBt:Hide()
+        r.pinBt:Hide()
+        r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
         r.__painted = true
         return
     end
@@ -1849,12 +2466,51 @@ function FillBwRow(r)
     r.name:SetText(nm)
     r.name:SetTextColor(Unpack(QColor(ItemQuality(sp, row.item, row.q))))
     local st = row.cat and CatSrcText(row.item) or SrcText(row.src)
+    r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
+    local qid = nil
+    if row.src and row.src.t == "quest" and row.src.q then
+        qid = tonumber(row.src.q)
+    elseif row.cat and CatKind(row.item) == "quest" then
+        qid = ns.GearSrcQ and ns.GearSrcQ[row.item] or nil
+    end
+    if qid then
+        local qn, qok = DG.QuestName(qid)
+        if not qok then BG.needNames = true end
+        if row.cat and qok then st = L["任务奖励"] .. " · " .. qn end
+        local sn = DG.QuestStartNpc and DG.QuestStartNpc(qid) or nil
+        local npc = sn and sn[1] or nil
+        local sl = ns.DungeonQuestStartLoc and ns.DungeonQuestStartLoc[qid] or nil
+        local loc = nil
+        if sl and (not npc or tonumber(sl[1]) == tonumber(npc)) then
+            npc = sl[1]
+            if sl[3] and sl[4] and sl[5] then loc = { sl[3], sl[4], sl[5] } end
+        end
+        if not loc then
+            local gs = ns.GearQuestStart and ns.GearQuestStart[qid] or nil
+            if gs then
+                npc = gs[1]
+                loc = { gs[2], gs[3], gs[4] }
+            elseif sn and sn[3] and sn[4] and sn[5] then
+                loc = { sn[3], sn[4], sn[5] }
+            end
+        end
+        if npc and (loc or (ns.NPCLoc and ns.NPCLoc[npc])) then
+            r.__pinNpc, r.__pinLoc = npc, loc
+        end
+        r.__pinQid = qid
+    end
+    local showPin = r.__pinNpc ~= nil
+    if not showPin and r.__pinQid then
+        if ns.GearChainIndexOf and ns.GearChainIndexOf(r.__pinQid) then
+            showPin = true
+        else
+            local qloc = ns.GearQuestLocOf and ns.GearQuestLocOf(r.__pinQid) or nil
+            showPin = type(qloc) == "table" and qloc[1] ~= nil
+        end
+    end
+    r.pinBt:SetShown(showPin)
     r.src:SetText(st)
     r.src:SetTextColor(Unpack(C_GREY))
-    if row.src and row.src.t == "quest" and row.src.q then
-        local qid = tonumber(row.src.q)
-        if qid and not QuestTitle(qid) then BG.needNames = true end
-    end
     r.eqTag:SetShown(BG.bwEquipped == row.item)
     r.ownTag:SetShown(BG.owned ~= nil and BG.owned[row.item] ~= nil)
     r.sideTag:SetShown(row.side ~= nil)
@@ -1878,6 +2534,29 @@ function FillBwRow(r)
     else
         r.chip:Hide()
     end
+    local boe = BindOnEquip(row.item)
+    if boe == nil then
+        BG.needNames = true
+        DG.RequestItem(row.item)
+        r.chip3:Hide()
+    elseif boe then
+        local left = r.chip:IsShown() and r.chip or (scoreChip or nil)
+        ChipSet(r.chip3, L["装绑"], CHIP_BOE_BG, left)
+    else
+        r.chip3:Hide()
+    end
+    if gm and gm.WishIs then
+        local on = gm.WishIs(row.item)
+        r.wishBt.star:SetText(on and "★" or "☆")
+        if on then
+            r.wishBt.star:SetTextColor(1, 0.82, 0, 1)
+        else
+            r.wishBt.star:SetTextColor(Unpack(C_GREY))
+        end
+        r.wishBt:Show()
+    else
+        r.wishBt:Hide()
+    end
     r.__painted = true
 end
 
@@ -1894,7 +2573,7 @@ local function PaintBrowser()
     local list = {}
     if BG.sel and rkey then
         local w = EffWeights()
-        local lv = BG.onlyUsable and (BG.filterLv or 60) or nil
+        local lv = BG.onlyUsable and (BG.filterLv or PlayerLevel() or 60) or nil
         local dk = DataKey(sp, BG.sel)
         local baseId = BG.cur[dk]
         if not baseId and BG.usingPlan and BG.usingPlan.items then
@@ -1953,34 +2632,18 @@ local function PaintBrowser()
     BG.owned = ScanOwned()
     local rows = BG.bwRows
     BG.bwEquipped = BG.sel and BG.cur[DataKey(sp, BG.sel)] or nil
-    local y = 0
+    local y = #list * BG.ROW_PITCH
     for i = 1, #rows do
         local rr = rows[i]
         rr:Hide()
         rr.__active = false
         rr.__painted = false
+        rr.__idx = nil
     end
-    for i, row in ipairs(list) do
-        if i > #rows then break end
-        local r = rows[i]
-        r.__active = true
-        r.__row = row
-        r.__vtop = y
-        r.__vh = ROW_H
-        r:SetPoint("TOPLEFT", BG.bwChild, "TOPLEFT", 0, -y)
-        r:SetPoint("RIGHT", BG.bwChild, "RIGHT", 0, 0)
-        y = y + ROW_H + 2
-    end
-    if BG.sel and #list == 0 and rows[1] then
-        local r = rows[1]
-        r.__active = true
-        r.__row = nil
-        r.__vtop = y
-        r.__vh = ROW_H
-        r:SetPoint("TOPLEFT", BG.bwChild, "TOPLEFT", 0, -y)
-        r:SetPoint("RIGHT", BG.bwChild, "RIGHT", 0, 0)
-        y = y + ROW_H
-    end
+    if BG.sel and #list == 0 then y = ROW_H end
+    BG.bwList = list
+    BG.bwFirst = nil
+    BG.BindBwWindow(1)
     BG.bwChild:SetHeight(y + LIST_PAD)
     if BG.bwBar then BG.bwBar.Update() end
     CullBwRows()
@@ -2133,7 +2796,7 @@ function BG.Open()
     if not BG.built then return end
     BG._sweepFails = 0
     BG.__wantDefault = nil
-    if not BG.usingPlan then BG.UseAutoPlan("known") end
+    if not BG.usingPlan then BG.UseAutoPlan(BG.autoPlan or "known") end
     if BG.needNames or BG.needScores then BG.ScheduleSweep() end
     BG.RequestRender()
 end
@@ -2148,8 +2811,7 @@ function BG.ToggleFilterPop()
     local show = not BG.filterPop:IsShown()
     BG.filterPop:SetShown(show)
     if BG.filterBtn then
-        SetOutline(BG.filterBtn, show, Unpack(C_GOLD))
-        BG.filterBtn.lbl:SetTextColor(Unpack(show and C_GOLD or C_TEXT))
+        SetButtonSelected(BG.filterBtn, show)
     end
     if show and BG.SyncFilterPop then BG.SyncFilterPop() end
 end
@@ -2179,8 +2841,7 @@ function BG.CloseSettingPop()
     if BG.settingPop and BG.settingPop:IsShown() then
         BG.settingPop:Hide()
         if BG.setBtn then
-            SetOutline(BG.setBtn, false)
-            BG.setBtn.lbl:SetTextColor(Unpack(C_TEXT))
+            SetButtonSelected(BG.setBtn, false)
             if BG.setBtn.__icon then
                 local c = ns.SET_ICON_IDLE
                 BG.setBtn.__icon:SetVertexColor(c[1], c[2], c[3])
@@ -2211,8 +2872,7 @@ function BG.ToggleSettingPop()
     end
     BG.settingPop:SetShown(show)
     if BG.setBtn then
-        SetOutline(BG.setBtn, show, Unpack(C_GOLD))
-        BG.setBtn.lbl:SetTextColor(Unpack(show and C_GOLD or C_TEXT))
+        SetButtonSelected(BG.setBtn, show)
         if BG.setBtn.__icon then
             local c = show and ns.SET_ICON_ACT or ns.SET_ICON_IDLE
             BG.setBtn.__icon:SetVertexColor(c[1], c[2], c[3])
@@ -2288,9 +2948,10 @@ end
 function BG.GeneratePlan()
     local sp = SpecRec()
     if not sp then return end
-    local lv = AutoLevel()
+    local lv = BG.AutoLevel()
     local w = EffWeights()
     local mk = MainKey(sp)
+    local usedQ = {}
     for _, key in ipairs(ALL_SLOT_KEYS) do
         local dk = DataKey(sp, key)
         if key == "off-hand" and mk == "two-hand" then
@@ -2301,7 +2962,7 @@ function BG.GeneratePlan()
             local best, bestScore
             for _, r in ipairs(CatRowsFor(rkey)) do
                 if not (next(BG.srcSet) ~= nil and not BG.srcSet[CatKind(r.id)]) then
-                    if UsableAt(r.id, lv, r.req or 0) then
+                    if UsableAt(r.id, lv, r.req or 0) and not usedQ[r.id] then
                         local sc = ItemScore(r.id, w)
                         if sc and (bestScore == nil or sc > bestScore) then
                             best, bestScore = r.id, sc
@@ -2309,21 +2970,15 @@ function BG.GeneratePlan()
                     end
                 end
             end
-            if best then BG.cur[dk] = best end
+            if best then
+                BG.cur[dk] = best
+                if CatKind(best) == "quest" or (ns.GearUni and ns.GearUni[best]) then usedQ[best] = true end
+            end
         end
     end
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.usingPlan = nil
-    BG.RequestRender()
-end
-
-function BG.UseAutoPlan(mode)
-    if not mode then return end
-    BG.autoPlan = mode
-    BG.usingPlan = nil
-    BG.cur = {}
-    local src = AutoPlanFor(mode, AutoLevel())
-    for k, v in pairs(src) do BG.cur[k] = v end
     BG.RequestRender()
 end
 
@@ -2346,6 +3001,7 @@ function BG.SelectClass(slug)
     BG.ench = {}
     BG.usingPlan = nil
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.sel = nil
     BG.side = nil
     BG.pkey = nil
@@ -2374,14 +3030,19 @@ function BG.SelectClass(slug)
 end
 
 function BG.SelectSpec(id)
+    local ap = BG.autoPlan
     BG.spec = id
     BG.pkey = nil
     BG.side = nil
     BG.cur = {}
     BG.ench = {}
     BG.usingPlan = nil
-    BG.autoPlan = nil
-    BG.RequestRender()
+    BG.autoPlan = ap
+    if ap then
+        BG.UseAutoPlan(ap)
+    else
+        BG.RequestRender()
+    end
     if BG.settingPop and BG.settingPop:IsShown() and BG.SyncSettingPop then BG.SyncSettingPop() end
 end
 
@@ -2411,6 +3072,7 @@ function BG.SavePlan()
     BG.ench = {}
     BG.usingPlan = p
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.RequestRender()
 end
 
@@ -2419,6 +3081,7 @@ function BG.UsePlan(plan)
     BG.ench = {}
     BG.usingPlan = plan
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.pkey = nil
     if plan then
         if plan.vol then
@@ -2472,6 +3135,7 @@ function BG.UsePreset(idx, specId, side, pageKey, tspec)
     BG.ench = {}
     BG.usingPlan = nil
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.RequestRender()
 end
 
@@ -2480,6 +3144,7 @@ function BG.ResetToRec()
     BG.ench = {}
     BG.usingPlan = nil
     BG.autoPlan = nil
+    BG.AutoJobCancel()
     BG.RequestRender()
 end
 
@@ -2802,8 +3467,6 @@ local function BuildSpecRow(parent, yt)
     ic:SetPoint("LEFT", dd, "LEFT", 6, 0)
     ic:SetTexture(ClassIconPath(BG.cls))
     dd.__icon = ic
-    MakeOutline(dd, Unpack(C_GOLD))
-    dd.__huiKeepTextColor = true
     dd:SetScript("OnClick", function() BG.OpenClassMenu(dd) end)
     BG.ddBtn = dd
     x = x + 99
@@ -2818,7 +3481,7 @@ local function BuildSpecRow(parent, yt)
         bt.__icon:SetSize(14, 14)
         bt.__icon:SetPoint("LEFT", bt, "LEFT", 3, 0)
         bt.__icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        MakeOutline(bt, Unpack(C_GOLD))
+        SetButtonSelected(bt, false)
         bt:SetScript("OnClick", function()
             local sr = (SPEC_DIR[BG.cls] or {})[i]
             if not sr then return end
@@ -2832,19 +3495,23 @@ local function BuildSpecRow(parent, yt)
             BG.ench = {}
             BG.usingPlan = nil
             if sr.role == "tank" then
+                BG.spec = "tank"
                 BG.wRole = nil
                 SaveWeightPrefs()
-                BG.spec = "tank"
             else
+                BG.spec = "pve"
                 if BG.wRole ~= sr.key then
                     BG.wRole = sr.key
                     SaveWeightPrefs()
                     BumpWeights()
                 end
-                BG.spec = "pve"
             end
             SyncSpecFromTspec()
-            BG.RequestRender()
+            if BG.usingPlan == nil and BG.autoPlan then
+                BG.UseAutoPlan(BG.autoPlan)
+            else
+                BG.RequestRender()
+            end
             if BG.settingPop and BG.settingPop:IsShown() and BG.SyncSettingPop then BG.SyncSettingPop() end
         end)
         BG.tspecBtns[i] = bt
@@ -3018,6 +3685,7 @@ local function BuildMid(m1, m2)
     local reset = NewButton(m1, L["恢复推荐"], (w - 8) / 2, 24, 14)
     reset:SetPoint("TOPLEFT", m1, "TOPLEFT", x + (w - 8) / 2 + 8, -40)
     reset:SetScript("OnClick", function() BG.ResetToRec() end)
+    BG.saveBtn, BG.resetBtn = save, reset
 
     local pool = CreateFrame("ScrollFrame", nil, m1)
     pool:EnableMouseWheel(true)
@@ -3080,14 +3748,13 @@ local function BuildBrowser(parent)
     local fb = NewButton(parent, L["过滤"], 60, 24, 14)
     fb:SetPoint("RIGHT", eb, "LEFT", -8, 0)
     fb.lbl = fb:GetFontString()
-    MakeOutline(fb, Unpack(C_GOLD))
+    SetButtonSelected(fb, false)
     fb:SetScript("OnClick", function() BG.ToggleFilterPop() end)
     BG.filterBtn = fb
 
     local stb = NewButton(parent, "", 24, 24, 14)
     stb:SetPoint("RIGHT", fb, "LEFT", -8, 0)
     stb.lbl = stb:GetFontString()
-    stb.__huiKeepTextColor = true
     stb.__icon = stb:CreateTexture(nil, "ARTWORK")
     stb.__icon:SetSize(16, 16)
     stb.__icon:SetPoint("CENTER", stb, "CENTER", 0, 0)
@@ -3102,6 +3769,7 @@ local function BuildBrowser(parent)
     end)
     stb:SetScript("OnClick", function() BG.ToggleSettingPop() end)
     BG.setBtn = stb
+    if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(stb, true) end
 
     local scroll = CreateFrame("ScrollFrame", nil, parent)
     scroll:EnableMouseWheel(true)
@@ -3119,7 +3787,9 @@ local function BuildBrowser(parent)
     BG.bwBar = BuildVBar(scroll, child, CullBwRows)
 
     BG.bwRows = {}
-    for i = 1, 120 do
+    local poolN = BG.BwPoolSize()
+    BG.bwPoolN = poolN
+    for i = 1, poolN do
         local r = CreateFrame("Button", nil, child, BT)
         r:SetHeight(ROW_H)
         local hfx = ns.hui and ns.hui.HuiCardFX or nil
@@ -3134,6 +3804,7 @@ local function BuildBrowser(parent)
         r.name:SetWordWrap(false)
         r.src = MakeFS(r, 14, C_GREY, "LEFT")
         r.src:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -24)
+        r.src:SetPoint("RIGHT", r, "RIGHT", -52, 0)
         r.src:SetWordWrap(false)
         r.eqTag = MakeFS(r, 14, C_GOLD, "LEFT")
         r.eqTag:SetPoint("LEFT", r.name, "RIGHT", 8, 0)
@@ -3149,9 +3820,77 @@ local function BuildBrowser(parent)
         r.chip:SetFrameLevel(r:GetFrameLevel() + 2)
         r.chip2 = DG.MakeBadge(r)
         r.chip2:SetFrameLevel(r:GetFrameLevel() + 2)
+        r.chip3 = DG.MakeBadge(r)
+        r.chip3:SetFrameLevel(r:GetFrameLevel() + 2)
         r.sideTag = MakeFS(r, 14, C_GREY, "RIGHT")
         r.sideTag:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -23)
         r.sideTag:SetWordWrap(false)
+        r.wishBt = CreateFrame("Button", nil, r)
+        r.wishBt:SetSize(22, 22)
+        r.wishBt:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -2, 2)
+        r.wishBt:EnableMouse(true)
+        r.wishBt.star = MakeFS(r.wishBt, 18, C_GREY, "CENTER")
+        r.wishBt.star:SetAllPoints()
+        r.wishBt:SetScript("OnClick", function(self)
+            local row = self:GetParent().__row
+            local gm = ns.GearModule
+            if not (row and row.item and gm and gm.WishToggle) then return end
+            gm.WishToggle(row.item)
+            ns.PlaySound(1)
+            BG.RequestRender()
+        end)
+        r.wishBt:SetScript("OnEnter", function(self)
+            local row = self:GetParent().__row
+            local gm = ns.GearModule
+            local on = gm and gm.WishIs and row and row.item and gm.WishIs(row.item)
+            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+            GameTooltip:SetText(on and L["移出心愿清单"] or L["加入心愿清单"], 1, 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        r.wishBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        r.pinBt = CreateFrame("Button", nil, r)
+        r.pinBt:SetSize(13.75, 13.75)
+        r.pinBt:SetPoint("BOTTOMRIGHT", r.wishBt, "BOTTOMLEFT", 2, 4.75)
+        r.pinBt:EnableMouse(true)
+        r.pinBt.tex = r.pinBt:CreateTexture(nil, "ARTWORK")
+        r.pinBt.tex:SetAllPoints()
+        r.pinBt.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\EntryPin")
+        r.pinBt:Hide()
+        r.pinBt:SetScript("OnClick", function(self)
+            local row = self:GetParent()
+            if not row then return end
+            local qid = row.__pinQid
+            if qid and ns.GearMarkQuestSmart then
+                local hasChain = ns.GearChainIndexOf and ns.GearChainIndexOf(qid)
+                if hasChain or not row.__pinNpc then
+                    ns.PlaySound(1)
+                    ns.GearMarkQuestSmart(qid)
+                    return
+                end
+            end
+            if row.__pinNpc then
+                DG.MarkNPC(row.__pinNpc, row.__pinLoc)
+                ns.PlaySound(1)
+            end
+        end)
+        r.pinBt:SetScript("OnEnter", function(self)
+            local row = self:GetParent()
+            if row and row.__pinNpc and DG.ShowNpcTip then
+                DG.ShowNpcTip(self, row.__pinNpc, row.__pinLoc)
+                return
+            end
+            local qid = row and row.__pinQid
+            if not (qid and ns.GearChainIndexOf) then return end
+            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+            GameTooltip:ClearLines()
+            if ns.GearChainIndexOf(qid) then
+                GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
+            else
+                GameTooltip:AddLine(L["点击：在地图上标记"], 1, 0.82, 0, true)
+            end
+            GameTooltip:Show()
+        end)
+        r.pinBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
         r:SetScript("OnEnter", function(self)
             if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
             local row = self.__row
@@ -3207,11 +3946,12 @@ local function BuildBrowser(parent)
     pop:SetFrameLevel(baseLv + 31)
     pop:Hide()
     if ns.hui and ns.hui.BuildRoundedBG then
-        ns.hui.BuildRoundedBG(pop, 6, ns.hui.layer.L3, "both", true, 1)
+        ns.hui.BuildRoundedBG(pop, 6, ns.hui.layer.L0, "both", true, 1)
     else
         Cardify(pop, nil, 2)
     end
     pop:SetPoint("TOPRIGHT", parent, "TOPLEFT", -8, -40)
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(pop) end
     BG.filterPop = pop
 
     local ty = MakeFS(pop, 14, C_GOLD, "LEFT")
@@ -3228,6 +3968,13 @@ local function BuildBrowser(parent)
     end
     local lvBox = eb
     BG.filterLvBox = eb
+    local function FilterChanged()
+        if BG.usingPlan == nil and BG.autoPlan then
+            BG.UseAutoPlan(BG.autoPlan)
+        else
+            BG.RequestRender()
+        end
+    end
     local function ApplyLvText(txt)
         local n = tonumber(string.match(txt or "", "^%s*(%d+)%s*$"))
         if n then
@@ -3236,7 +3983,7 @@ local function BuildBrowser(parent)
         end
         BG.filterLv = n
         SaveFilterPrefs()
-        BG.RequestRender()
+        FilterChanged()
     end
     if lvBox then
         lvBox:SetScript("OnEnterPressed", function(self)
@@ -3249,14 +3996,20 @@ local function BuildBrowser(parent)
         end)
         lvBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
     end
-    local nowBt = NewButton(pop, L["当前"], 56, 24, 14)
+    local nowBt = NewButton(pop, L["当前"], 44, 24, 14)
     nowBt:SetPoint("LEFT", lvBox or pop, "RIGHT", 6, 0)
-    MakeOutline(nowBt, Unpack(C_TEXT))
     nowBt:SetScript("OnClick", function()
         local lv = PlayerLevel() or 60
         if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
         if lvBox then lvBox:SetText(tostring(lv)) end
         ApplyLvText(tostring(lv))
+        ns.PlaySound(1)
+    end)
+    local maxBt = NewButton(pop, L["满级"], 44, 24, 14)
+    maxBt:SetPoint("LEFT", nowBt, "RIGHT", 8, 0)
+    maxBt:SetScript("OnClick", function()
+        if lvBox then lvBox:SetText("60") end
+        ApplyLvText("60")
         ns.PlaySound(1)
     end)
 
@@ -3270,7 +4023,7 @@ local function BuildBrowser(parent)
         self:SetChecked(BG.onlyUsable)
         SaveFilterPrefs()
         ns.PlaySound(1)
-        BG.RequestRender()
+        FilterChanged()
     end)
     BG.usableTg = ug
     local ul = MakeFS(pop, 14, C_TEXT, "RIGHT")
@@ -3316,7 +4069,7 @@ local function BuildBrowser(parent)
     local gb = NewButton(pop, L["生成 BiS 方案"], 154, 24, 14)
     gb:SetPoint("TOPLEFT", pop, "TOPLEFT", 8, -296)
     gb.lbl = gb:GetFontString()
-    MakeOutline(gb, Unpack(C_GOLD))
+    SetButtonSelected(gb, false)
     gb:SetScript("OnClick", function()
         BG.GeneratePlan()
         BG.ToggleFilterPop()
@@ -3337,7 +4090,8 @@ local function BuildBrowser(parent)
         spop:SetSize(220, 600)
     end
     spop:Hide()
-    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(spop, 8) end
+    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(spop, 8, "both", ns.hui.layer.L0) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(spop) end
     BG.settingPop = spop
     ns.CloseBisSettings = BG.CloseSettingPop
     ns.GetBisSettingsPop = function() return BG.settingPop end
@@ -3440,21 +4194,33 @@ local function BuildBrowser(parent)
         prev = bt
     end
 
+    local wscroll = CreateFrame("ScrollFrame", nil, spop)
+    wscroll:EnableMouseWheel(true)
+    local wchild = CreateFrame("Frame", nil, wscroll)
+    wchild:SetSize(204, #W_KEYS * 16 + 12)
+    wscroll:SetScrollChild(wchild)
+    wscroll:SetPoint("TOPLEFT", spop, "TOPLEFT", 8, -66)
+    wscroll:SetPoint("BOTTOMRIGHT", spop, "BOTTOMRIGHT", -10, 34)
+    wscroll:SetScript("OnMouseWheel", function(_, delta)
+        if DG.WheelScroll then DG.WheelScroll(wscroll, wchild, delta) end
+    end)
+    BG.wBar = BuildVBar(wscroll, wchild)
+
     BG.wRows = {}
     for i, wk in ipairs(W_KEYS) do
-        local y = -72 - (i - 1) * 22
-        local lab = MakeFS(spop, 14, C_TEXT, "LEFT")
-        lab:SetPoint("TOPLEFT", spop, "TOPLEFT", 8, y)
-        lab:SetWidth(64)
+        local y = -6 - (i - 1) * 16
+        local lab = MakeFS(wchild, 14, C_TEXT, "LEFT")
+        lab:SetPoint("TOPLEFT", wchild, "TOPLEFT", 0, y)
+        lab:SetWidth(140)
         lab:SetWordWrap(false)
         lab:SetText(wk[2])
-        local eb = ns.CreateEditBox and ns.CreateEditBox(spop, 50) or nil
+        local eb = ns.CreateEditBox and ns.CreateEditBox(wchild, 50) or nil
         if eb then
-            eb:SetSize(50, 20)
-            eb:SetPoint("TOPRIGHT", spop, "TOPRIGHT", -8, y + 1)
+            eb:SetSize(50, 14)
+            eb:SetPoint("TOPRIGHT", wchild, "TOPRIGHT", -5, y + 1)
         end
-        local ro = MakeFS(spop, 14, C_DIM, "RIGHT")
-        ro:SetPoint("TOPRIGHT", spop, "TOPRIGHT", -8, y + 3)
+        local ro = MakeFS(wchild, 14, C_DIM, "RIGHT")
+        ro:SetPoint("TOPRIGHT", wchild, "TOPRIGHT", -5, y + 2)
         ro:SetWordWrap(false)
         local row = { key = wk[1], lab = lab, eb = eb, ro = ro }
         local function WTone(txt)
@@ -3462,7 +4228,7 @@ local function BuildBrowser(parent)
             if not sch then return end
             local v = tonumber(string.match(txt or "", "^%s*(%d+%.?%d*)%s*$"))
             if v then
-                if v < 0 then v = 0 elseif v > 2 then v = 2 end
+                if v < 0 then v = 0 elseif v > 20 then v = 20 end
                 sch.w[row.key] = v
                 BumpWeights()
                 SaveWeightPrefs()
@@ -3488,7 +4254,7 @@ local function BuildBrowser(parent)
     end
 
     BG.wHint = MakeFS(spop, 14, C_DIM, "LEFT")
-    BG.wHint:SetPoint("TOPLEFT", spop, "TOPLEFT", 8, -458)
+    BG.wHint:SetPoint("BOTTOMLEFT", spop, "BOTTOMLEFT", 8, 12)
     BG.wHint:SetWordWrap(false)
     BG.wHint:SetText(L["默认只读，添加方案后可编辑"])
 end
@@ -3624,7 +4390,7 @@ function BG.Build(page)
     BG.building = true
     BG.__buildTag = 2
     ns.OpenPerf.Begin("BIS")
-    ns.PhasedStart(8, coroutine.create(function()
+    ns.PhasedStart(25, coroutine.create(function()
     EnsureBIS()
     if not BG.vol then BG.vol = DefaultVol() end
     MigratePlans()
@@ -3696,7 +4462,18 @@ function BG.Build(page)
         local ev = CreateFrame("Frame")
         ns.EvtPool.bisTal = ev
         ev:RegisterEvent("CHARACTER_POINTS_CHANGED")
-        ev:SetScript("OnEvent", function()
+        ev:RegisterEvent("PLAYER_LEVEL_UP")
+        ev:SetScript("OnEvent", function(_, e)
+            if e == "PLAYER_LEVEL_UP" then
+                if BG.built then
+                    if BG.usingPlan == nil and BG.autoPlan then
+                        BG.UseAutoPlan(BG.autoPlan)
+                    else
+                        BG.RequestRender()
+                    end
+                end
+                return
+            end
             __tprofDirty = true
             if BG.built and not BG.wActive and not BG.wRole then
                 BumpWeights()
@@ -3709,3 +4486,114 @@ function BG.Build(page)
     ns.OpenPerf.Mark("首绘")
     end))
 end
+
+local slotById, slotByIdKey
+local function CatalogSlotOf(id)
+    local cat = EnsureCatalog()
+    if type(cat) ~= "table" then return nil end
+    local key = tostring(BG.cls or "") .. ":" .. tostring(#cat)
+    if slotByIdKey ~= key or not slotById then
+        local map = {}
+        for i = 1, #cat do
+            local r = cat[i]
+            local rid = type(r) == "table" and (r.id or r[1]) or nil
+            if type(rid) == "number" then map[rid] = r.s or r[3] end
+        end
+        slotById, slotByIdKey = map, key
+    end
+    return slotById[id]
+end
+
+local INV_SLOT_NAME = {
+    back = "BackSlot", chest = "ChestSlot", feet = "FeetSlot",
+    finger = "Finger0Slot", finger2 = "Finger1Slot",
+    hands = "HandsSlot", head = "HeadSlot", held = "SecondaryHandSlot",
+    legs = "LegsSlot", ["main-hand"] = "MainHandSlot", neck = "NeckSlot",
+    ["off-hand"] = "SecondaryHandSlot", ranged = "RangedSlot", relic = "RangedSlot",
+    shield = "SecondaryHandSlot", shoulder = "ShoulderSlot",
+    trinket = "Trinket0Slot", trinket2 = "Trinket1Slot",
+    ["two-hand"] = "MainHandSlot", waist = "WaistSlot", wrist = "WristSlot",
+}
+local PAIR_SLOT = { finger = "finger2", finger2 = "finger", trinket = "trinket2", trinket2 = "trinket" }
+
+local function InvIdOf(name)
+    if type(name) ~= "string" or type(GetInventorySlotInfo) ~= "function" then return nil end
+    local ok, idx = pcall(GetInventorySlotInfo, name)
+    if not ok or type(idx) ~= "number" then return nil end
+    local ok2, eid = pcall(GetInventoryItemID, "player", idx)
+    if ok2 and type(eid) == "number" and eid > 0 then return eid end
+    return nil
+end
+
+local function EquippedInSlot(slot, exceptId)
+    if type(slot) ~= "string" then return nil end
+    local eid = InvIdOf(INV_SLOT_NAME[slot])
+    if eid and eid ~= exceptId then return eid end
+    local pair = PAIR_SLOT[slot]
+    if pair then
+        local pid = InvIdOf(INV_SLOT_NAME[pair])
+        if pid and pid ~= exceptId then return pid end
+    end
+    return nil
+end
+
+local INVTYPE_SLOT = {
+    INVTYPE_BACK = "back", INVTYPE_CLOAK = "back", INVTYPE_CHEST = "chest", INVTYPE_ROBE = "chest",
+    INVTYPE_FEET = "feet", INVTYPE_FINGER = "finger", INVTYPE_HAND = "hands",
+    INVTYPE_HEAD = "head", INVTYPE_LEGS = "legs", INVTYPE_NECK = "neck",
+    INVTYPE_RANGED = "ranged", INVTYPE_RANGEDRIGHT = "ranged",
+    INVTYPE_SHOULDER = "shoulder", INVTYPE_TRINKET = "trinket",
+    INVTYPE_2HWEAPON = "two-hand", INVTYPE_WAIST = "waist", INVTYPE_WRIST = "wrist",
+    INVTYPE_WEAPON = "main-hand", INVTYPE_WEAPONMAINHAND = "main-hand",
+    INVTYPE_WEAPONOFFHAND = "off-hand", INVTYPE_SHIELD = "shield",
+    INVTYPE_HOLDABLE = "held", INVTYPE_RELIC = "relic",
+}
+
+local CAT_SLOT_NORM = {
+    ["main hand"] = "main-hand", ["off hand"] = "off-hand",
+    ["held in off-hand"] = "held", ["one-hand"] = "main-hand",
+    ["thrown"] = "ranged",
+}
+
+local function SlotOfAny(id)
+    local s = CatalogSlotOf(id)
+    if type(s) == "string" then
+        s = string.lower(s)
+        return CAT_SLOT_NORM[s] or s
+    end
+    local fn = GetItemInfoInstant or (C_Item and C_Item.GetItemInfoInstant)
+    if type(fn) ~= "function" then return nil end
+    local ok, _, _, _, eq = pcall(fn, id)
+    if ok and type(eq) == "string" then return INVTYPE_SLOT[eq] end
+    return nil
+end
+
+local function ScoreVsBis(id)
+    if type(id) ~= "number" then return nil end
+    local slot = SlotOfAny(id)
+    if type(slot) ~= "string" then return nil end
+    local baseId = EquippedInSlot(slot, id)
+    if type(baseId) ~= "number" or baseId == id then return nil end
+    local w = EffWeights()
+    local my = ItemScore(id, w)
+    if not my or my <= 0 then
+        local DG = ns.DungeonModule
+        if DG and DG.RequestItem then pcall(DG.RequestItem, id) end
+        return nil
+    end
+    local bs = ItemScore(baseId, w)
+    if not (statSeen[baseId] or dpsCache[baseId]) then
+        local DG = ns.DungeonModule
+        if DG and DG.RequestItem then pcall(DG.RequestItem, baseId) end
+        return nil
+    end
+    local delta = my - (type(bs) == "number" and bs or 0)
+    local pct = nil
+    if type(bs) == "number" and bs > 0 then
+        local p = delta / bs * 100
+        pct = p < 0 and math.ceil(p - 0.5) or math.floor(p + 0.5)
+    end
+    return delta, pct
+end
+
+BG.ScoreVsBis = ScoreVsBis

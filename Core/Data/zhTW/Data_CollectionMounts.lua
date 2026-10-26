@@ -27,7 +27,7 @@ ns.CollectionMounts = {
     [11] = { 274933, "item", "inv_craneskyborneswiftmount_c60_blue", "rep",
              "商人：吉恩·費爾威瑟 · 售價 200金", 144247, npcs = { { 265756, "吉恩·費爾威瑟" } } },
     [12] = { 262766, "item", "ability_mount_kodo_03", "rep",
-             "商人：休伊·桑尼戴爾 · 奧卡瑪什 · 售價 6000金", 145488, npcs = { { 256736, "休伊·桑尼戴爾" }, { 256400, "奧卡瑪什" } } },
+             "商人：休伊·桑尼戴爾（赤脊山） / 奧卡瑪什（貧瘠之地） · 售價 6000 商人青睞", 145488, npcs = { { 256736, "休伊·桑尼戴爾" }, { 256400, "奧卡瑪什" } } },
     [13] = { 274706, "item", "ability_mount_jungletiger", "unknown",
              "wowhead 暫未收錄獲取方式", 144509 },
     [14] = { 276063, "item", "ability_mount_undeadhorse", "unknown",

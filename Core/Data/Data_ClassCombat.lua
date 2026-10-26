@@ -1,5 +1,7 @@
 local _, ns = ...
 
+ns.EnsureClassCombat = function()
+    if ns.ClassCombat then return ns.ClassCombat end
 ns.ClassCombat = {
     meta = { patch = "1.60.1", level = 60, ranks = "game-client" },
 
@@ -1894,3 +1896,5 @@ ns.ClassCombat = {
         },
     },
 }
+    return ns.ClassCombat
+end
