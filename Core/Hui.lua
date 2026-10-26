@@ -1954,6 +1954,100 @@ do
     end
     ns.hui.PixelStripSize = PixelStripSize
 
+    ns.hui.CHIP_S_H = 13.7
+    ns.hui.CHIP_S_H13 = 13.2
+    ns.hui.CHIP_S_FS = 11
+    ns.hui.CHIP_S_R = 6
+    ns.hui.CHIP_S_PAD = 5
+    ns.hui.CHIP_S_MIN_W = 24
+    ns.hui.CHIP_S_MIX = 0.5
+    ns.hui.CHIP_S_TOP = 1.12
+    ns.hui.CHIP_S_BOT = 0.86
+
+    local function ChipGrad(base)
+        return Mul(base, ns.hui.CHIP_S_TOP), Mul(base, ns.hui.CHIP_S_BOT)
+    end
+
+    function ns.hui.ChipH(fs)
+        if fs and fs <= 13 then return ns.hui.CHIP_S_H13 end
+        return ns.hui.CHIP_S_H
+    end
+
+    function ns.hui.ChipSolidBase(ink)
+        local l2 = ns.hui.layer.L2
+        local k = ns.hui.CHIP_S_MIX
+        local m = 1 - k
+        return { ink[1] * k + l2[1] * m,
+                 ink[2] * k + l2[2] * m,
+                 ink[3] * k + l2[3] * m }
+    end
+
+    function ns.hui.PaintSolidFill(pieces, base)
+        if not (pieces and base) then return end
+        pieces.__huiBaseCap = base
+        if pieces.__huiGrad and GradCapsule then
+            GradCapsule(pieces, pieces.__huiGrad, base)
+            return
+        end
+        for i = 1, #pieces do
+            local tex = pieces[i]
+            if tex then
+                tex:SetVertexColor(base[1], base[2], base[3])
+                tex:SetAlpha(1)
+            end
+        end
+    end
+
+    function ns.hui.BuildSolidFill(f, rad, base)
+        local pieces = BuildCapsule(f, rad, base, 0, 0, ChipGrad)
+        ns.hui.PaintSolidFill(pieces, base)
+        return pieces
+    end
+
+    function ns.hui.MakeSolidChip(parent, lvl, h)
+        local f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+        f:SetHeight(h or ns.hui.CHIP_S_H)
+        if f.SetBackdropColor then f:SetBackdropColor(0, 0, 0, 0) end
+        if f.SetBackdropBorderColor then f:SetBackdropBorderColor(0, 0, 0, 0) end
+        f.__chipFill = ns.hui.BuildSolidFill(f, ns.hui.CHIP_S_R, ns.hui.layer.L2)
+        f.__chipBorder = ns.hui.BuildRoundBorder(f, ns.hui.CHIP_S_R, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
+        f.t = f:CreateFontString(nil, "OVERLAY")
+        f.t:SetFont(ns.FONT, ns.hui.CHIP_S_FS, "")
+        f.t:SetPoint("CENTER", f, "CENTER", 0, 0.5)
+        f.t:SetWordWrap(false)
+        f.t:SetTextColor(1, 1, 1)
+        f.lab = f.t
+        if lvl then f:SetFrameLevel(lvl) end
+        f:Hide()
+        return f
+    end
+
+    function ns.hui.PaintSolidChip(f, text, ink, width)
+        if not (f and f.t) then return end
+        if not text or text == "" then
+            f:Hide()
+            return
+        end
+        ink = ink or ns.hui.layer.L2
+        f.t:SetText(text)
+        f.t:SetTextColor(1, 1, 1)
+        ns.hui.PaintSolidFill(f.__chipFill, ns.hui.ChipSolidBase(ink))
+        if f.__chipBorder then
+            for _, tex in ipairs(f.__chipBorder) do
+                tex:SetVertexColor(ink[1], ink[2], ink[3])
+                tex:SetAlpha(1)
+            end
+        end
+        local w = width
+        if not w then
+            local tw = f.t:GetStringWidth()
+            if type(tw) ~= "number" or tw <= 0 then tw = #text * ns.hui.CHIP_S_FS end
+            w = tw + ns.hui.CHIP_S_PAD * 2
+        end
+        f:SetSize(math.max(w, ns.hui.CHIP_S_MIN_W), f:GetHeight() or ns.hui.CHIP_S_H)
+        f:Show()
+    end
+
     local C_TEXT = {
         [1] = {0.95, 0.96, 0.98},
         [2] = {0xd4 / 255, 0xd4 / 255, 0xd4 / 255},

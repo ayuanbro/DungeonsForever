@@ -5935,12 +5935,13 @@ DG.Q_X_LOC = 288
 DG.Q_X_LV = 386
 DG.Q_W_NAME = 150
 DG.Q_W_LOC = 90
-DG.Q_BADGE_H = 14
+DG.Q_BADGE_H = (ns.hui and ns.hui.ChipH and ns.hui.ChipH(14)) or 13.7
 DG.Q_BADGE_GAP = 4
-DG.Q_BADGE_PAD = 3
-DG.Q_BADGE_DY = 2
-DG.Q_BADGE_FS = 12
-DG.Q_BADGE_CLS_BG = { 0.30, 0.30, 0.34, 1 }
+DG.Q_BADGE_PAD = 5
+DG.Q_BADGE_DY = 1.6
+DG.Q_BADGE_FS = 11
+DG.Q_BADGE_MIN_W = 24
+DG.Q_BADGE_CLS_BG = { 0.64, 0.61, 0.55, 1 }
 DG.Q_BADGE_PRE_BG = { 0.78, 0.60, 0.10, 1 }
 DG.Q_BADGE_SHARE_BG = { 0.16, 0.52, 0.26, 1 }
 DG.Q_BADGE_RACE_BG = { 0.78, 0.14, 0.12, 1 }
@@ -6044,10 +6045,15 @@ function DG.QuestOverviewClsBadge(n, cls)
     local lab = DG.QClassLabel(cls) or cls
     b.lab:SetText(lab)
     local bw = (b.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
-    b:SetWidth(bw)
+    if bw < DG.Q_BADGE_MIN_W then bw = DG.Q_BADGE_MIN_W end
+    if ns.hui and ns.hui.PaintSolidChip and b.__chipFill then
+        ns.hui.PaintSolidChip(b, lab, DG.QClassColor(cls), bw)
+    else
+        b:SetWidth(bw)
+        DG.BadgeTint(b, DG.QClassColor(cls))
+    end
     b:ClearAllPoints()
-    b:SetPoint("TOPLEFT", n.posB, "TOPRIGHT", 3, 0)
-    DG.BadgeTint(b, DG.QClassFill(cls))
+    b:SetPoint("TOPLEFT", n.posB, "TOPRIGHT", 3, -0.8)
     b:Show()
 end
 
@@ -6102,34 +6108,38 @@ DG.BADGE_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\HUIPillCap"
 DG.BADGE_CAP_W = 8
 
 function DG.MakeBadge(parent, bg)
-    local b = CreateFrame("Frame", nil, parent)
-    b:SetSize(10, DG.Q_BADGE_H)
+    local b
+    if ns.hui and ns.hui.MakeSolidChip then
+        b = ns.hui.MakeSolidChip(parent, nil, DG.Q_BADGE_H)
+    else
+        b = CreateFrame("Frame", nil, parent)
+        b:SetSize(10, DG.Q_BADGE_H)
+        local cw = DG.BADGE_CAP_W
+        b.capL = b:CreateTexture(nil, "BACKGROUND")
+        b.capL:SetTexture(DG.BADGE_CAP_TEX)
+        b.capL:SetTexCoord(0, 0.5, 0, 1)
+        b.capL:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
+        b.capL:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 0, 0)
+        b.capL:SetWidth(cw)
+        b.capR = b:CreateTexture(nil, "BACKGROUND")
+        b.capR:SetTexture(DG.BADGE_CAP_TEX)
+        b.capR:SetTexCoord(0.5, 1, 0, 1)
+        b.capR:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
+        b.capR:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
+        b.capR:SetWidth(cw)
+        b.mid = b:CreateTexture(nil, "BACKGROUND")
+        b.mid:SetColorTexture(1, 1, 1, 1)
+        b.mid:SetPoint("TOPLEFT", b.capL, "TOPRIGHT", 0, 0)
+        b.mid:SetPoint("BOTTOMRIGHT", b.capR, "BOTTOMLEFT", 0, 0)
+        b.lab = MakeFS(b, DG.Q_BADGE_FS, C_WHITE, "CENTER")
+        b.lab:SetPoint("CENTER", b, "CENTER", 0, 0.5)
+    end
     local col = bg
     if not col then
         col = (ns.hui and ns.hui.layer and ns.hui.layer.L3) or { 0.12, 0.12, 0.13, 1 }
     end
-    local cw = DG.BADGE_CAP_W
-    b.capL = b:CreateTexture(nil, "BACKGROUND")
-    b.capL:SetTexture(DG.BADGE_CAP_TEX)
-    b.capL:SetTexCoord(0, 0.5, 0, 1)
-    b.capL:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
-    b.capL:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 0, 0)
-    b.capL:SetWidth(cw)
-    b.capR = b:CreateTexture(nil, "BACKGROUND")
-    b.capR:SetTexture(DG.BADGE_CAP_TEX)
-    b.capR:SetTexCoord(0.5, 1, 0, 1)
-    b.capR:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
-    b.capR:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
-    b.capR:SetWidth(cw)
-    b.mid = b:CreateTexture(nil, "BACKGROUND")
-    b.mid:SetColorTexture(1, 1, 1, 1)
-    b.mid:SetPoint("TOPLEFT", b.capL, "TOPRIGHT", 0, 0)
-    b.mid:SetPoint("BOTTOMRIGHT", b.capR, "BOTTOMLEFT", 0, 0)
-    b.capL.__huiGlass = { c = col }
-    b.__huiCard = { fill = { b.capL, b.mid, b.capR }, border = {} }
+    b.__huiCard = { fill = b.__chipFill or { b.capL, b.mid, b.capR }, border = b.__chipBorder or {} }
     DG.BadgeTint(b, col)
-    b.lab = MakeFS(b, DG.Q_BADGE_FS, C_WHITE, "CENTER")
-    b.lab:SetPoint("CENTER", b, "CENTER", 0, 0)
     b:Hide()
     return b
 end
@@ -6137,13 +6147,17 @@ end
 function DG.PlaceBadge(b, x, text, maxX)
     b.lab:SetText(text)
     local w = (b.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
-    local minW = DG.BADGE_CAP_W * 2 + 2
+    local minW = DG.Q_BADGE_MIN_W
     if w < minW then w = minW end
     if maxX and x + w > maxX then
         b:Hide()
         return x
     end
-    b:SetWidth(w)
+    if ns.hui and ns.hui.PaintSolidChip and b.__chipFill then
+        ns.hui.PaintSolidChip(b, text, b.__chipCol, w)
+    else
+        b:SetWidth(w)
+    end
     b:ClearAllPoints()
     b:SetPoint("TOPLEFT", b:GetParent(), "TOPLEFT", x, -(DG.Q_ROW_H - DG.Q_BADGE_H) / 2 - DG.Q_BADGE_DY)
     b:Show()
@@ -6152,6 +6166,18 @@ end
 
 function DG.BadgeTint(b, col)
     if not (b and col) then return end
+    b.__chipCol = col
+    if b.__chipFill and ns.hui and ns.hui.PaintSolidFill and ns.hui.ChipSolidBase then
+        ns.hui.PaintSolidFill(b.__chipFill, ns.hui.ChipSolidBase(col))
+        if b.__chipBorder then
+            for _, tex in ipairs(b.__chipBorder) do
+                tex:SetVertexColor(col[1], col[2], col[3])
+                tex:SetAlpha(1)
+            end
+        end
+        if b.t then b.t:SetTextColor(1, 1, 1) end
+        return
+    end
     local a = col[4] or 1
     if b.mid then
         b.mid:SetColorTexture(col[1], col[2], col[3], a)
@@ -6730,7 +6756,7 @@ function U:RenderDungeonQuests()
                         if cnm then
                             ci = ci + 1
                             local cb = DG.ClsBadgeAt(r, ci)
-                            DG.BadgeTint(cb, DG.QClassFill(clsList[k]))
+                            DG.BadgeTint(cb, DG.QClassColor(clsList[k]))
                             bx = DG.PlaceBadge(cb, bx, cnm, bmax)
                         end
                     end
@@ -7011,7 +7037,7 @@ function DG.ShowEntrancePointTip(owner, idx)
 end
 
 function DG.QuestFlow(d)
-    local t = ns.DungeonQuestFlow
+    local t = ns.EnsureDungeonQuestFlow and ns.EnsureDungeonQuestFlow()
     if not t or not d then return nil end
     local f = t[d.id]
     if not f then return nil end

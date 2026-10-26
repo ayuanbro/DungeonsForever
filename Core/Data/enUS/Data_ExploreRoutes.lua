@@ -140,7 +140,7 @@ ns.ExploreRoutes = {
           dst = { 1454, 49.4, 50.4 },
           races = {
             { race = "Tauren", steps = {
-              { t = "First death", k = "die", d = "Charge east from the Crossroads into Durotar; after the river, die to the boars." },
+              { t = "First death", k = "die", m = { 1411 }, d = "Charge east from the Crossroads into Durotar; after the river, die to the boars." },
               { t = "Open flight path", k = "fp", d = "Resurrect at Razor Hill, run north to Orgrimmar and open the city flight path.",
                 m = { 1454, 49.4, 50.4 } },
             } },

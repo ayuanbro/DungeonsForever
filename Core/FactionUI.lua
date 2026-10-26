@@ -329,6 +329,12 @@ local function SideText(side)
 end
 
 local function MakeChip(parent)
+    if ns.hui and ns.hui.MakeSolidChip then
+        local f = ns.hui.MakeSolidChip(parent, nil, ns.hui.ChipH(14))
+        f.txt = f.t
+        f.__border = f.__chipBorder
+        return f
+    end
     local f = CreateFrame("Frame", nil, parent)
     f:SetHeight(20)
     local fill, border = RoundBG(f, 6, HUI and ns.hui.layer.L2 or nil)
@@ -343,7 +349,21 @@ local function PaintChip(f, text, color)
     f.txt:SetText(text)
     local tw = (f.txt.GetStringWidth and f.txt:GetStringWidth()) or TextW(text)
     if type(tw) ~= "number" or tw <= 0 then tw = TextW(text) end
-    f:SetWidth(16 + tw)
+    local pad = (ns.hui and ns.hui.CHIP_S_PAD) or 5
+    local minw = (ns.hui and ns.hui.CHIP_S_MIN_W) or 24
+    f:SetWidth(math.max(tw + pad * 2, minw))
+    if f.__chipFill and ns.hui and ns.hui.PaintSolidFill and ns.hui.ChipSolidBase then
+        local ink = color or { 0.64, 0.61, 0.55 }
+        ns.hui.PaintSolidFill(f.__chipFill, ns.hui.ChipSolidBase(ink))
+        if f.__chipBorder then
+            for _, t in ipairs(f.__chipBorder) do
+                t:SetVertexColor(ink[1], ink[2], ink[3])
+                t:SetAlpha(1)
+            end
+        end
+        f.txt:SetTextColor(1, 1, 1)
+        return
+    end
     if f.__border and color then
         for _, t in ipairs(f.__border) do t:SetVertexColor(color[1], color[2], color[3]) end
     end
@@ -1012,7 +1032,7 @@ function FV:PaintDetail()
     local barW = innerW - (barX - 14)
     local scale = (barW - INSET * 2) / VIS_TOTAL
     FV.barTrack:ClearAllPoints()
-    FV.barTrack:SetPoint("TOPLEFT", FV.dChild, "TOPLEFT", barX, -(y + 3))
+    FV.barTrack:SetPoint("TOPLEFT", FV.dChild, "TOPLEFT", barX, -(y - 0.2))
     FV.barTrack:SetWidth(barW)
     FV.barTrack.__active = true
     FV.barTrack.__vtop = y

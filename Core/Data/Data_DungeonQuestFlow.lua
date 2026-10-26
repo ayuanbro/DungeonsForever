@@ -1,6 +1,8 @@
 local _, ns = ...
 
-ns.DungeonQuestFlow = {
+function ns.EnsureDungeonQuestFlow()
+    if ns.DungeonQuestFlow then return ns.DungeonQuestFlow end
+    ns.DungeonQuestFlow = {
     ragefire_chasm = {
         side = "H",
         sec = {
@@ -1542,3 +1544,5 @@ ns.DungeonQuestFlow = {
         },
     },
 }
+    return ns.DungeonQuestFlow
+end

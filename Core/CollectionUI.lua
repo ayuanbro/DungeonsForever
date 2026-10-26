@@ -71,6 +71,21 @@ local PET_FAC_TXT = { A = L["联盟限定"], H = L["部落限定"] }
 local PET_FAC_COL = { A = { 0.45, 0.68, 0.98 }, H = { 0.95, 0.5, 0.45 } }
 local PET_FAC_DUAL = L["双阵营"]
 local PET_FAC_DUAL_COL = { 0.66, 0.70, 0.78 }
+
+local function PaintSolidPill(pill, fs, ink)
+    if not (pill and pill.__fillPieces and ns.hui and ns.hui.PaintSolidFill and ns.hui.ChipSolidBase) then
+        return false
+    end
+    fs:SetTextColor(1, 1, 1)
+    ns.hui.PaintSolidFill(pill.__fillPieces, ns.hui.ChipSolidBase(ink))
+    if pill.__chipBorder then
+        for _, t in ipairs(pill.__chipBorder) do
+            t:SetVertexColor(ink[1], ink[2], ink[3])
+            t:SetAlpha(1)
+        end
+    end
+    return true
+end
 local PET_DIFF_TXT = {
     party = L["难度·组队"], solo = L["难度·单人"], easy = L["难度·简单"],
     store = L["商城"],
@@ -598,12 +613,16 @@ local function PaintDetail()
         local fcol = (fac and PET_FAC_COL[fac]) or PET_FAC_DUAL_COL
         d.name:SetText(RecName(rec, true))
         d.pillTxt:SetText(ftxt)
-        d.pillTxt:SetTextColor(Unpack(fcol))
+        if not PaintSolidPill(d.pill, d.pillTxt, fcol) then
+            d.pillTxt:SetTextColor(Unpack(fcol))
+        end
         d.pill:Show()
         local dk = PET_DIFF_TXT[diff] and diff or "easy"
         if d.pill2 then
             d.pill2Txt:SetText(PET_DIFF_TXT[dk])
-            d.pill2Txt:SetTextColor(Unpack(PET_DIFF_COL[dk]))
+            if not PaintSolidPill(d.pill2, d.pill2Txt, PET_DIFF_COL[dk]) then
+                d.pill2Txt:SetTextColor(Unpack(PET_DIFF_COL[dk]))
+            end
             d.pill2:Show()
         end
         local area, px, py = rec[5], rec[6], rec[7]
@@ -728,7 +747,9 @@ local function PaintDetail()
         local g = rec[4]
         local c = GROUP_COL[g] or C_GREY
         d.pillTxt:SetText(GROUP_TXT[g] or g)
-        d.pillTxt:SetTextColor(Unpack(c))
+        if not PaintSolidPill(d.pill, d.pillTxt, c) then
+            d.pillTxt:SetTextColor(Unpack(c))
+        end
         d.pill:Show()
         if d.pill2 then d.pill2:Hide() end
         if d.locChip then d.locChip:Hide() end
@@ -1403,9 +1424,11 @@ local function BuildDetailPanel(page)
     name:SetPoint("TOPRIGHT", p, "TOPRIGHT", -200, -(8 + MODEL_H + 12))
     name:SetWordWrap(false)
 
+    local petH = (ns.hui and ns.hui.ChipH and ns.hui.ChipH(14)) or 14
     local pill = CreateFrame("Frame", nil, p, "BackdropTemplate")
-    if ns.hui and ns.hui.BuildCapsule then
-        ns.hui.BuildCapsule(pill, 11, ns.hui.layer.L3)
+    if ns.hui and ns.hui.BuildSolidFill then
+        pill.__fillPieces = ns.hui.BuildSolidFill(pill, 6, ns.hui.layer.L2)
+        pill.__chipBorder = ns.hui.BuildRoundBorder(pill, 6, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
     else
         pill:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -1414,14 +1437,15 @@ local function BuildDetailPanel(page)
         })
         pill:SetBackdropColor(0, 0, 0, 0.25)
     end
-    pill:SetPoint("TOPRIGHT", p, "TOPRIGHT", -PAD, -(8 + MODEL_H + 12))
-    pill:SetSize(74, 22)
-    local pillTxt = MakeFS(pill, 12, C_WHITE, "CENTER")
-    pillTxt:SetPoint("CENTER", pill, "CENTER", 0, 0)
+    pill:SetPoint("TOPRIGHT", p, "TOPRIGHT", -PAD, -(8 + MODEL_H + 12) + 4)
+    pill:SetSize(74, petH)
+    local pillTxt = MakeFS(pill, 11, C_WHITE, "CENTER")
+    pillTxt:SetPoint("CENTER", pill, "CENTER", 0, 0.5)
 
     local pill2 = CreateFrame("Frame", nil, p, "BackdropTemplate")
-    if ns.hui and ns.hui.BuildCapsule then
-        ns.hui.BuildCapsule(pill2, 11, ns.hui.layer.L3)
+    if ns.hui and ns.hui.BuildSolidFill then
+        pill2.__fillPieces = ns.hui.BuildSolidFill(pill2, 6, ns.hui.layer.L2)
+        pill2.__chipBorder = ns.hui.BuildRoundBorder(pill2, 6, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
     else
         pill2:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -1431,9 +1455,9 @@ local function BuildDetailPanel(page)
         pill2:SetBackdropColor(0, 0, 0, 0.25)
     end
     pill2:SetPoint("TOPRIGHT", pill, "TOPLEFT", -8, 0)
-    pill2:SetSize(74, 22)
-    local pill2Txt = MakeFS(pill2, 12, C_WHITE, "CENTER")
-    pill2Txt:SetPoint("CENTER", pill2, "CENTER", 0, 0)
+    pill2:SetSize(74, petH)
+    local pill2Txt = MakeFS(pill2, 11, C_WHITE, "CENTER")
+    pill2Txt:SetPoint("CENTER", pill2, "CENTER", 0, 0.5)
     pill2:Hide()
 
     local attrCards = {}
