@@ -341,12 +341,12 @@ local function BuildCandidates(slug, opts)
            and type(grey) == "number" and grey > learn
            and type(reagents) == "table" and #reagents > 0 then
             local ok = true
-            local skipFormula = opts.noFormula and opts.scheme ~= "cheapest"
-            if ok and skipFormula and rec[13] then
-                local src = rec[14]
-                if not (type(src) == "table" and type(src.vendors) == "table" and #src.vendors > 0) then
-                    ok = false
-                end
+            local skipFormula = opts.noFormula
+            if ok and skipFormula and type(rec[13]) == "table" and type(rec[13][1]) == "number" then
+                local SM = ns.ProfSourceMerge
+                local view = (SM and SM.SourceOf and SM.SourceOf(rec[13][1])) or rec[14]
+                local kind = (SM and SM.Primary) and SM.Primary(view) or nil
+                if kind ~= "vendor" then ok = false end
             end
             if ok and opts.learnedOnly and not LearnKnown(spell) then ok = false end
             if ok and not LearnKnown(spell) and type(rec[13]) == "table"
@@ -368,9 +368,10 @@ local function BuildCandidates(slug, opts)
                 if ok then
                     local itemID = rec[2]
                     local f = rec[13]
-                    local fcost = 0
+                    local fcost, funpriced = 0, false
                     if type(f) == "table" and type(f[1]) == "number" and not LearnKnown(spell) then
-                        fcost = MatPrice(f[1], soldSet) or 0
+                        local fp = MatPrice(f[1], soldSet)
+                        if fp then fcost = fp else funpriced = true end
                     end
                     local base, unknown = 0, false
                     for _, m in ipairs(reagents) do
@@ -384,7 +385,7 @@ local function BuildCandidates(slug, opts)
                         learn = learn, yellow = cY,
                         green = (type(green) == "number") and green or yellow or learn,
                         grey = grey, mats = reagents, cost = cost, unpriced = unpriced,
-                        fcost = fcost, base = base, cd = (rec[4] == "Transmutes") or nil,
+                        fcost = fcost, funpriced = funpriced or nil, base = base, cd = (rec[4] == "Transmutes") or nil,
                         unknown = unknown or nil,
                         learnO = math.max(1, math.min(learn, cY - 25)),
                     }
@@ -450,7 +451,7 @@ local function BuildCandidates(slug, opts)
         for _, c in ipairs(cands) do
             local allowed, need = G.Allowed(slug, c.spell)
             if allowed then
-                if G.TrainerTaught(c.spell) then c.fcost = 0; c.taughtByTrainer = true end
+                if G.TrainerTaught(c.spell) then c.fcost = 0; c.funpriced = nil; c.taughtByTrainer = true end
                 kept[#kept + 1] = c
             else
                 blocked = blocked + 1
@@ -464,7 +465,7 @@ local function BuildCandidates(slug, opts)
 end
 
 local function Eligible(c, allowUnpriced)
-    return allowUnpriced or not c.unpriced
+    return allowUnpriced or (not c.funpriced)
 end
 
 local function CanUse(scheme, c, cur)
@@ -571,7 +572,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
     return steps, gaps
 end
 
-local function SimulateRange(cands, a, b, scheme)
+local function SimulateRange(cands, a, b, scheme, allowUnpriced)
     local steps = {}
     local banned, segRun = {}, {}
     local cur = a
@@ -582,8 +583,7 @@ local function SimulateRange(cands, a, b, scheme)
         if guard > 1000 then break end
         local best, bestMetric
         for _, c in ipairs(cands) do
-            if not banned[c.spell] and CanUse(scheme, c, cur)
-               and not ((scheme == "optim") and (c.cd or c.unknown)) then
+            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
                     local metric = MetricOf(scheme, c, g)
@@ -597,7 +597,8 @@ local function SimulateRange(cands, a, b, scheme)
         if not best then
             local nxt
             for _, c in ipairs(cands) do
-                if not banned[c.spell] and not ((scheme == "optim") and (c.cd or c.unknown)) then
+                if not banned[c.spell] and Eligible(c, allowUnpriced)
+                   and not ((scheme == "optim") and (c.cd or c.unknown)) then
                     local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
                     if lo > cur and lo <= b and (not nxt or lo < nxt) then nxt = lo end
                 end
@@ -614,8 +615,8 @@ local function SimulateRange(cands, a, b, scheme)
                 cur = cur + 1
                 local stop = false
                 for _, c in ipairs(cands) do
-                    if c ~= best and not banned[c.spell] and CanUse(scheme, c, cur)
-                       and cur <= b and not ((scheme == "optim") and (c.cd or c.unknown)) then
+                    if c ~= best and not banned[c.spell] and cur <= b
+                       and Usable(scheme, c, cur, allowUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
                         if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
                             stop = true
@@ -668,7 +669,7 @@ local function MergeSteps(steps)
     return out
 end
 
-local function FillGaps(cands, steps, gaps, scheme)
+local function FillGaps(cands, steps, gaps, scheme, allowUnpriced)
     local out = {}
     local si = 1
     for _, g in ipairs(gaps) do
@@ -676,7 +677,7 @@ local function FillGaps(cands, steps, gaps, scheme)
             out[#out + 1] = steps[si]
             si = si + 1
         end
-        local fills, resid = SimulateRange(cands, g[1], g[2], scheme)
+        local fills, resid = SimulateRange(cands, g[1], g[2], scheme, allowUnpriced)
         for _, s in ipairs(fills) do out[#out + 1] = s end
         if resid then out[#out + 1] = { gap = resid } end
     end
@@ -836,17 +837,23 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
                 if x.id == f[1] then dup = true break end
             end
             if not dup then
+                local SM = ns.ProfSourceMerge
+                local psrc = (SM and SM.SourceOf) and SM.SourceOf(f[1]) or nil
+                local primary = (psrc and SM.Primary) and SM.Primary(psrc) or nil
+                local currencyOnly = (primary == "currency") or nil
                 local p = MatPrice(f[1], soldSet)
+                if currencyOnly then p = nil end
                 local entry = {
-                    id = f[1], spell = st[3], cost = p or 0,
+                    id = f[1], spell = st[3], cost = (not currencyOnly) and (p or 0) or nil,
                     vendor = soldSet[f[1]] and true or false,
-                    unpriced = (p == nil) and true or false,
+                    unpriced = (p == nil and not currencyOnly) and true or false,
+                    currency = currencyOnly,
                 }
                 local raw = vdb and vdb.GetOffers and vdb.GetOffers(f[1]) or {}
                 local hasU, hasL, hasO = false, false, false
                 local offers = {}
                 for _, o in ipairs(raw) do
-                    if type(o) == "table" and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
+                    if type(o) == "table" and o.npcID and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
                         hasO = true
                         if o.unlimited == true then hasU = true
                         elseif o.limited or o.unlimited == false then hasL = true end
@@ -1345,10 +1352,13 @@ function RA.Compute(slug, opts)
     if scheme == nil or not SCHEME_LABEL[scheme] then scheme = "cheapest" end
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
+    local PDm = ns.ProfModule
+    local allowUnpriced = false
+    if PDm and PDm.Setting then allowUnpriced = not PDm.Setting("autoSkipUnpricedFormulas") end
     local steps, gaps = Simulate(cands, opts.start, cap, allowUnpriced, scheme)
     local filled = false
-    if not allowUnpriced and #gaps > 0 then
-        steps, gaps = FillGaps(cands, steps, gaps, scheme)
+    if #gaps > 0 then
+        steps, gaps = FillGaps(cands, steps, gaps, scheme, allowUnpriced)
         for _, st in ipairs(steps) do
             if st.est then filled = true break end
         end
@@ -1462,6 +1472,7 @@ function RA.OptionsFor(slug, current)
     return {
         start = (PDm.Setting("autoFromCurrent") and lv) and math.max(1, lv) or 1,
         onlyAH = PDm.Setting("autoOnlyAH"),
+        noFormula = PDm.Setting("autoNoFormula"),
         learnedOnly = PDm.Setting("autoLearnedOnly"),
         target = target,
         scheme = fish and "fishing" or PDm.SettingRaw("autoScheme"),

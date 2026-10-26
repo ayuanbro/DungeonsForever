@@ -973,10 +973,148 @@ local PAGE_ALIASES = {
     bis = "Bis",        ["配装"] = "Bis",
     zn = "Tier",        ["指南"] = "Tier",
 }
+local chipCalib
+local chipCalibMain
+local chipCalibChip
+local chipCalibVal
+
+local function ChipCalibLineH()
+    return (ns.hui and ns.hui.ChipLineH and ns.hui.ChipLineH(14)) or 14
+end
+
+local function ChipCalibDy()
+    local k = (ns.hui and ns.hui.ChipK and ns.hui.ChipK()) or 0
+    return k * ChipCalibLineH()
+end
+
+local function ChipCalibRefresh()
+    if chipCalibChip and chipCalibMain then
+        chipCalibChip:ClearAllPoints()
+        chipCalibChip:SetPoint("LEFT", chipCalibMain, "RIGHT", 6, ChipCalibDy())
+        if ns.hui and ns.hui.PaintSolidChip then
+            ns.hui.PaintSolidChip(chipCalibChip, L["可共享"], { 0.45, 0.86, 0.55 })
+        end
+    end
+    if chipCalibVal then
+        chipCalibVal:SetText(format(L["当前偏移 %+.2f"], ChipCalibDy()))
+    end
+end
+
+local function ChipCalibStep(step)
+    local k = (ns.hui and ns.hui.ChipK and ns.hui.ChipK()) or 0
+    local lh = ChipCalibLineH()
+    local dy = k * lh + step
+    if ns.hui and ns.hui.SetChipK then ns.hui.SetChipK(dy / lh) end
+    ChipCalibRefresh()
+end
+
+local function ChipCalibReset()
+    if ns.hui and ns.hui.SetChipK then ns.hui.SetChipK(nil) end
+    ChipCalibRefresh()
+end
+
+function ns.OpenChipCalib()
+    if not chipCalib then
+        local p = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        p:SetSize(420, 214)
+        p:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+        p:SetFrameStrata("DIALOG")
+        p:EnableMouse(true)
+        p:SetMovable(true)
+        p:RegisterForDrag("LeftButton")
+        p:SetScript("OnDragStart", function(self) self:StartMoving() end)
+        p:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+        if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
+            ns.hui.SkinPopup(p, 8, nil, ns.hui.layer.L0)
+            if ns.hui.SkinShadow then ns.hui.SkinShadow(p) end
+        else
+            p:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8",
+                edgeSize = 1,
+            })
+            p:SetBackdropColor(0x0A / 255, 0x0C / 255, 0x10 / 255, 1)
+            p:SetBackdropBorderColor(1, 1, 1, 0.12)
+        end
+        chipCalib = p
+
+        local title = p:CreateFontString(nil, "OVERLAY")
+        title:SetFont(ns.FONT, 16, "")
+        title:SetText(L["卡片对齐校准"])
+        title:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -14)
+        title:SetTextColor(0.95, 0.96, 0.98)
+
+        local desc = p:CreateFontString(nil, "OVERLAY")
+        desc:SetFont(ns.FONT, 13, "")
+        desc:SetText(L["对照下面这行，把卡片调到与文字上下齐平。"])
+        desc:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -40)
+        desc:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
+
+        local host = CreateFrame("Frame", nil, p)
+        host:SetSize(388, 34)
+        host:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -64)
+        local main = host:CreateFontString(nil, "OVERLAY")
+        main:SetFont(ns.FONT, 14, "")
+        main:SetPoint("LEFT", host, "LEFT", 0, 0)
+        main:SetText(L["寻找背包"])
+        main:SetTextColor(0.95, 0.96, 0.98)
+        chipCalibMain = main
+        if ns.hui and ns.hui.MakeSolidChip then
+            chipCalibChip = ns.hui.MakeSolidChip(host, (host:GetFrameLevel() or 0) + 2,
+                (ns.hui.ChipH and ns.hui.ChipH(14)) or 14)
+        end
+
+        local val = p:CreateFontString(nil, "OVERLAY")
+        val:SetFont(ns.FONT, 13, "")
+        val:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -106)
+        val:SetTextColor(0.85, 0.93, 1.0)
+        chipCalibVal = val
+
+        local hint = p:CreateFontString(nil, "OVERLAY")
+        hint:SetFont(ns.FONT, 12, "")
+        hint:SetText(L["默认已对齐，一般不用动；只有换到字形差别很大的字体时才需微调。"])
+        hint:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -128)
+        hint:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
+
+        local function mkBtn(text, x, y, wpx, fn)
+            local bt = CreateFrame("Button", nil, p, "BackdropTemplate")
+            bt:SetSize(wpx, 24)
+            bt:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", x, y)
+            local bfs = bt:CreateFontString(nil, "OVERLAY")
+            bfs:SetFont(ns.FONT, 13, "")
+            bfs:SetPoint("CENTER")
+            bfs:SetText(text)
+            bt:SetFontString(bfs)
+            bt.__huiKeepTextColor = true
+            if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+            bfs:SetFont(ns.FONT, 13, "")
+            bfs:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+            bt:SetScript("OnClick", function()
+                if ns.PlaySound then ns.PlaySound(1) end
+                fn()
+            end)
+            return bt
+        end
+
+        mkBtn(L["下移 0.5"], 16, 44, 88, function() ChipCalibStep(-0.5) end)
+        mkBtn(L["下移 0.2"], 112, 44, 88, function() ChipCalibStep(-0.2) end)
+        mkBtn(L["上移 0.2"], 208, 44, 88, function() ChipCalibStep(0.2) end)
+        mkBtn(L["上移 0.5"], 304, 44, 88, function() ChipCalibStep(0.5) end)
+        mkBtn(L["重置"], 16, 12, 88, function() ChipCalibReset() end)
+        mkBtn(L["关闭"], 304, 12, 88, function() if chipCalib then chipCalib:Hide() end end)
+    end
+    ChipCalibRefresh()
+    chipCalib:Show()
+end
+
 SlashCmdList["DUNGEONSFOREVER"] = function(msg)
     local cmd = strtrim(msg or "")
     if cmd == "" then
         ns.Toggle()
+        return
+    end
+    if cmd == "对齐" or cmd == "卡片" or cmd:lower() == "chip" then
+        ns.OpenChipCalib()
         return
     end
     local key = PAGE_ALIASES[cmd:lower()]
@@ -993,4 +1131,5 @@ SlashCmdList["DUNGEONSFOREVER"] = function(msg)
     print("  /dfspeed — " .. L["载入速度"]
           .. "（" .. L["省电"] .. " / " .. L["标准"] .. " / " .. L["激进"] .. "）")
     print("  /dfgate — " .. L["进度条"] .. "（demo / off）")
+    print("  /df 对齐 — " .. L["卡片与文字对齐校准"])
 end

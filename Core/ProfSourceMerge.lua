@@ -144,6 +144,71 @@ function M.Fill(row)
     return s
 end
 
+local function VendorList(src)
+    if type(src) ~= "table" then return nil end
+    local vs = src.vendors or src.v
+    if type(vs) ~= "table" then return nil end
+    return vs
+end
+
+local function DropList(src)
+    if type(src) ~= "table" then return nil end
+    local ds = src.drops or src.d
+    if type(ds) ~= "table" then return nil end
+    return ds
+end
+
+function M.Primary(src)
+    if type(src) ~= "table" then return nil end
+    local vs = VendorList(src)
+    if vs then
+        local gold, currency = false, false
+        for i = 1, #vs do
+            local v = vs[i]
+            if type(v) == "table" then
+                local price = tonumber(v.price) or 0
+                local cur = tonumber(v.cur) or 0
+                if price > 0 then
+                    gold = true
+                elseif cur ~= 0 then
+                    currency = true
+                end
+            end
+        end
+        if gold then return "vendor" end
+        if currency then return "currency" end
+    end
+    local ds = DropList(src)
+    if ds and #ds > 0 then return "drop" end
+    local qs = src.quests
+    if type(qs) == "table" and #qs > 0 then return "quest" end
+    if src.questOnly then return "quest" end
+    return nil
+end
+
+function M.CurrencyCount(src)
+    local vs = VendorList(src)
+    local n = 0
+    if not vs then return n end
+    for i = 1, #vs do
+        local v = vs[i]
+        if type(v) == "table" and (tonumber(v.price) or 0) <= 0 and (tonumber(v.cur) or 0) ~= 0 then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+function M.SourceOf(fid)
+    if type(fid) ~= "number" then return nil end
+    local ensure = ns.EnsureProfSources
+    if type(ensure) ~= "function" then return nil end
+    local ok, all = pcall(ensure)
+    if not ok or type(all) ~= "table" then return nil end
+    local src = all[fid]
+    return type(src) == "table" and src or nil
+end
+
 function M.VendorsOf(fid)
     if type(fid) ~= "number" then return nil end
     local src = ns.EnsureProfSources()[fid]

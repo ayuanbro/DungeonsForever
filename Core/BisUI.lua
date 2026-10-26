@@ -58,7 +58,7 @@ local function EnsureBIS()
         end
         if n > maxPages then maxPages = n end
     end
-    N_PRESET = maxPages * 2 + 2
+    N_PRESET = maxPages * 2 + 3
     return BIS
 end
 local N_USER = 7
@@ -962,6 +962,8 @@ end
 
 local ROW_H = 46
 local PLAN_H = 28
+BG.PLAN_TALL = 40
+BG.CHIP_INK_PRESET = { 0.52, 0.68, 0.94 }
 local LIST_PAD = 8
 
 local BT = BackdropTemplateMixin and "BackdropTemplate" or nil
@@ -1124,7 +1126,15 @@ local function PlayerFac()
     return __pfac
 end
 
+local function GearSrcReady()
+    if type(ns.GearSrcQ) ~= "table" then
+        local fn = ns.EnsureGearData
+        if type(fn) == "function" then fn() end
+    end
+end
+
 local function UsableAt(id, lv, catReq)
+    GearSrcReady()
     local _, _, _, _, req = DG.ItemInfo(id)
     if type(req) == "number" and req > 0 and req > lv then return false end
     if type(catReq) == "number" and catReq > lv then return false end
@@ -1254,7 +1264,8 @@ local function CurItem(sp, slotKey)
     if id then return id end
     local pl = BG.usingPlan
     if pl and pl.items and pl.items[dk] then return pl.items[dk] end
-    return RecItem(sp, dk)
+    if BG.usingPlan == nil and BG.autoPlan == nil then return RecItem(sp, dk) end
+    return nil
 end
 
 local ENCH_SLOTS = {
@@ -1612,7 +1623,7 @@ local function SumStats()
         elseif key == "off-hand" then
             dk = (dkMain == "two-hand") and nil or dkOff
         end
-        local id = dk and (BG.cur[dk] or RecItem(sp, dk)) or nil
+        local id = dk and CurItem(sp, dk) or nil
         if id and not seen[id] then
             seen[id] = true
             local fn = GetItemStats or (C_Item and C_Item.GetItemStats)
@@ -1682,7 +1693,11 @@ local function PaintDoll()
         end
         local capLv = nil
         if BG.usingPlan then capLv = BG.usingPlan.vol end
-        cell.ench:SetText(EnchText(sp, CurEnch(sp, dkey, capLv)))
+        if empty then
+            cell.ench:SetText("")
+        else
+            cell.ench:SetText(EnchText(sp, CurEnch(sp, dkey, capLv)))
+        end
         local sel = BG.sel ~= nil and BG.sel == key
         cell.__sel = sel
         if cell.__huiCard then
@@ -1730,11 +1745,15 @@ end
 
 do
 local AUTO_SRC_KNOWN = { craft = true, quest = true, boss = true, rare = true, vendor = true }
+local AUTO_SRC_DQ = { boss = true, quest = true }
 local AUTO_SNAP_MAX = 6
 local AUTO_BUDGET_MS = 6
 
+BG.AUTO_SRC = { known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
+
 function BG.AutoLevel()
-    local lv = PlayerLevel() or 60
+    local lv = tonumber(BG.filterLv) or PlayerLevel() or 60
+    lv = math.floor(lv)
     if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
     return lv
 end
@@ -1745,6 +1764,44 @@ local function CopyCur(src)
         for k, v in pairs(src) do out[k] = v end
     end
     return out
+end
+
+local function ManualSlot(cls, tspec)
+    return tostring(cls or "") .. "|" .. tostring(tspec or "")
+end
+
+local function ManualGet()
+    local t = DB().manual
+    if type(t) ~= "table" then return nil end
+    local p = t[ManualSlot(BG.cls, BG.tspec)]
+    if type(p) == "table" and type(p.items) == "table" then return p end
+    return nil
+end
+BG.ManualPlan = ManualGet
+
+local function ManualPut(items, cls, tspec, lv, srcSet)
+    local s = DB()
+    local t = s.manual
+    if type(t) ~= "table" then
+        t = {}
+        s.manual = t
+    end
+    local key = ManualSlot(cls, tspec)
+    local p = t[key]
+    if type(p) ~= "table" then
+        p = {}
+        t[key] = p
+    end
+    p.manual = true
+    p.name = L["手动过滤生成的BIS结果"]
+    p.cls = cls
+    p.tspec = tspec
+    p.vol = lv
+    p.items = CopyCur(items)
+    local ss = {}
+    for k, v in pairs(srcSet or {}) do ss[k] = v end
+    p.srcSet = ss
+    return p
 end
 
 local autoVer
@@ -1871,6 +1928,8 @@ function BG.PaintAutoProg(frac)
     if BG.saveBtn then BG.saveBtn:Hide() end
     if BG.resetBtn then BG.resetBtn:Hide() end
     h:Show()
+    if h.track then h.track:SetAlpha(1) end
+    h.fs:SetTextColor(Unpack(C_GOLD))
     if frac < 0 then frac = 0 elseif frac > 1 then frac = 1 end
     local pct = math.floor(frac * 100 + 0.5)
     if h.pct ~= pct then
@@ -1882,6 +1941,35 @@ function BG.PaintAutoProg(frac)
     local fw = math.floor(w * frac + 0.5)
     if fw < 2 then fw = 2 end
     h.fill:SetWidth(fw)
+end
+
+function BG.WarnEmpty()
+    local names = {}
+    for _, f in ipairs(FILTERS) do
+        if BG.srcSet[f.id] then names[#names + 1] = f.label end
+    end
+    local src = (#names > 0) and table.concat(names, " · ") or L["未选来源"]
+    local msg = format(L["%d级 · "], BG.AutoLevel()) .. src .. " · " .. L["筛选范围内没有可用装备"]
+    if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, "|cffff7a66" .. msg .. "|r")
+    end
+    local host = BG.panels and BG.panels[2]
+    if not host then return end
+    BG.PaintAutoProg(0)
+    local h = BG.autoProg
+    if not h then return end
+    h.pct = nil
+    h.fs:SetTextColor(0.95, 0.45, 0.40)
+    h.fs:SetText(L["没有可用装备"])
+    if h.track then h.track:SetAlpha(0) end
+    BG.emptySeq = (BG.emptySeq or 0) + 1
+    local seq = BG.emptySeq
+    C_Timer.After(4, function()
+        if BG.emptySeq ~= seq then return end
+        if h.track then h.track:SetAlpha(1) end
+        h.fs:SetTextColor(Unpack(C_GOLD))
+        BG.PaintAutoProg(nil)
+    end)
 end
 
 local function AutoJobCancel()
@@ -1904,6 +1992,7 @@ local function AutoKind(id)
 end
 
 local function AutoRawOK(id, cap)
+    GearSrcReady()
     local qlv = ns.GearSrcQLv and ns.GearSrcQLv[id]
     if type(qlv) == "number" and qlv > 0 and qlv > cap then return false end
     local qid = ns.GearSrcQ and ns.GearSrcQ[id]
@@ -2028,6 +2117,22 @@ local function AutoPump(jobId)
     end
     if done then
         autoJob = nil
+        if job.mode == "manual" then
+            local p = ManualPut(job.cur, job.cls, job.tspec, job.cap, job.srcSet)
+            if BG.cls == job.cls and BG.tspec == job.tspec then
+                BG.usingPlan = p
+                BG.cur = {}
+                BG.autoStale = nil
+                BG.RequestRender()
+            end
+            BG.PaintAutoProg(nil)
+            local cnt = 0
+            for _ in pairs(p.items or {}) do cnt = cnt + 1 end
+            if cnt < 1 then
+                BG.WarnEmpty()
+            end
+            return
+        end
         AutoStore(job.mode, job.cap, job.sig, job.cur, job.cls)
         if BG.cls == job.cls and BG.autoPlan == job.mode and BG.usingPlan == nil then
             BG.cur = CopyCur(job.cur)
@@ -2041,18 +2146,20 @@ local function AutoPump(jobId)
     C_Timer.After(0, function() AutoPump(jobId) end)
 end
 
-local function AutoJobStart(mode, cap, sig)
+local function AutoJobStart(mode, cap, sig, srcSet)
     autoJobSeq = autoJobSeq + 1
     local sp = SpecRec()
     if not sp then return end
     autoJob = {
         id = autoJobSeq, mode = mode, cap = cap, sig = sig,
-        cls = BG.cls, sp = sp, mk = MainKey(sp), w = EffWeights(),
-        srcSet = (mode == "known") and AUTO_SRC_KNOWN or nil,
+        cls = BG.cls, tspec = BG.tspec, sp = sp, mk = MainKey(sp), w = EffWeights(),
+        srcSet = srcSet or ((mode == "known") and AUTO_SRC_KNOWN)
+            or ((mode == "dq") and AUTO_SRC_DQ) or nil,
         cat = nil, total = 0, ci = 0,
         phase = 1, buckets = {}, cur = {}, usedQ = {},
         keys = ALL_SLOT_KEYS, ki = 1,
     }
+    BG.emptySeq = (BG.emptySeq or 0) + 1
     BG.PaintAutoProg(0)
     local id = autoJobSeq
     C_Timer.After(0, function() AutoPump(id) end)
@@ -2085,13 +2192,47 @@ function BG.UseAutoPlan(mode)
     BG.RequestRender()
     AutoJobStart(mode, cap, sig)
 end
+
+function BG.UseManualPlan()
+    local p = ManualGet()
+    if not p then return end
+    if BG.usingPlan ~= p then
+        BG.cur = {}
+        BG.ench = {}
+    end
+    BG.usingPlan = p
+    BG.autoPlan = nil
+    if not (autoJob and autoJob.mode == "manual") then AutoJobCancel() end
+    BG.RequestRender()
+end
+
+function BG.StartManualGen()
+    if not SpecRec() then return end
+    local ss = {}
+    for k, v in pairs(BG.srcSet) do ss[k] = v end
+    local old = ManualGet()
+    AutoJobCancel()
+    BG.autoPlan = nil
+    BG.usingPlan = old
+    BG.cur = {}
+    BG.ench = {}
+    BG.RequestRender()
+    local cap = BG.AutoLevel()
+    AutoJobStart("manual", cap, AutoSig("manual", cap), ss)
+end
 end
 
 local function PresetList()
     local out = {}
     local tsp = BG.tspec
-    out[#out + 1] = { auto = "known", lv = BG.AutoLevel(), type = L["已知内容"] }
-    out[#out + 1] = { auto = "all", lv = BG.AutoLevel(), type = L["包含未知来源"] }
+    local src = BG.AUTO_SRC or {}
+    out[#out + 1] = { auto = "known", lv = BG.AutoLevel(), srcSet = src.known }
+    out[#out + 1] = { auto = "dq", lv = BG.AutoLevel(), srcSet = src.dq }
+    local mp = BG.ManualPlan()
+    if mp then
+        out[#out + 1] = { manual = true, type = L["手动过滤生成的BIS结果"],
+                          srcSet = mp.srcSet or BG.srcSet }
+    end
     for i = #VOLS, 1, -1 do
         local v = VOLS[i]
         local c
@@ -2129,12 +2270,144 @@ local function PresetList()
 end
 
 local function PresetText(pe)
-    if pe.auto then
-        return format(L["%d级 · "], pe.lv) .. pe.type, nil
-    end
+    if pe.manual then return pe.type end
+    if pe.auto then return format(L["%d级 自动方案"], pe.lv) end
     local lv = format(L["%d级 · "], VOLS[pe.vol].lv)
     local side = (pe.side == "a") and L["联盟"] or L["部落"]
     return lv .. pe.type .. " · " .. side, pe.talent and (lv .. pe.type .. " · " .. pe.talent .. " · " .. side) or nil
+end
+
+BG.CHIP_INK_SRC = {
+    craft = { 0.95, 0.70, 0.38 }, quest = { 0.50, 0.80, 0.98 },
+    boss = { 0.94, 0.52, 0.50 }, rare = { 0.76, 0.60, 0.96 },
+    vendor = { 0.50, 0.84, 0.62 }, other = { 0.70, 0.72, 0.76 },
+}
+
+function BG.PaintSrcChips(r, set)
+    local cs = r.__srcChips
+    if not cs then
+        cs = {}
+        r.__srcChips = cs
+    end
+    if not set then
+        for i = 1, 7 do
+            local c = cs[i]
+            if c and c:IsShown() then c:Hide() end
+        end
+        return
+    end
+    if not (ns.hui and ns.hui.MakeSolidChip and ns.hui.PaintSolidChip) then return end
+    local inks = BG.CHIP_INK_SRC
+    local used, ws = 0, {}
+    for _, f in ipairs(FILTERS) do
+        if set[f.id] then
+            used = used + 1
+            local c = cs[used]
+            if not c then
+                c = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 2, ns.hui.ChipH(13))
+                cs[used] = c
+            end
+            ns.hui.PaintSolidChip(c, f.label, inks[f.id] or inks.other)
+            ws[used] = c:GetWidth() or 24
+        end
+    end
+    local tail = cs[7]
+    local cut = used
+    local function span(k)
+        local t = 0
+        for i = 1, k do t = t + (ws[i] or 0) + ((i > 1) and 4 or 0) end
+        return t
+    end
+    if used > 0 and span(used) > 170 then
+        cut = used - 1
+        while cut > 0 do
+            if not tail then
+                tail = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 2, ns.hui.ChipH(13))
+                cs[7] = tail
+            end
+            ns.hui.PaintSolidChip(tail, format("+%d", used - cut), inks.other)
+            if span(cut) + 4 + (tail:GetWidth() or 24) <= 170 then break end
+            cut = cut - 1
+        end
+    end
+    local x = 0
+    for i = 1, 7 do
+        local c = cs[i]
+        if c and i ~= 7 then
+            if i <= cut then
+                c:ClearAllPoints()
+                c:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 8 + x, 5)
+                c:Show()
+                x = x + (ws[i] or 24) + 4
+            elseif c:IsShown() then
+                c:Hide()
+            end
+        end
+    end
+    if used == 0 then
+        if not tail then
+            tail = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 2, ns.hui.ChipH(13))
+            cs[7] = tail
+        end
+        ns.hui.PaintSolidChip(tail, L["未选来源"], inks.other)
+        tail:ClearAllPoints()
+        tail:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 8, 5)
+        tail:Show()
+    elseif cut < used then
+        tail:ClearAllPoints()
+        tail:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 8 + x, 5)
+        tail:Show()
+    elseif tail and tail:IsShown() then
+        tail:Hide()
+    end
+end
+
+local function PlanChip(r)
+    if r.chip then return r.chip end
+    local c
+    if ns.hui and ns.hui.MakeSolidChip and ns.hui.ChipH then
+        c = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 2, ns.hui.ChipH(14))
+        ns.hui.PaintSolidChip(c, L["预设"], BG.CHIP_INK_PRESET)
+    else
+        c = CreateFrame("Frame", nil, r)
+        c:SetSize(29, 14)
+        c.t = MakeFS(c, 14, C_WHITE, "CENTER")
+        c.t:SetAllPoints(c)
+        c.t:SetWordWrap(false)
+        c.t:SetText(L["预设"])
+    end
+    c:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -7)
+    r.chip = c
+    r.dot:ClearAllPoints()
+    r.dot:SetPoint("TOP", c, "BOTTOM", 0, -2)
+    return c
+end
+
+function BG.FitPlanRows()
+    local sc = BG.planScroll
+    if not sc then return end
+    local vh = sc:GetHeight()
+    if type(vh) ~= "number" or vh <= 0 then return end
+    local off = 0
+    if sc.GetVerticalScroll then
+        local ok, v = pcall(sc.GetVerticalScroll, sc)
+        if ok and type(v) == "number" then off = v end
+    end
+    for _, r in ipairs(BG.planRows) do
+        local full = r.__fillH
+        if full and r.__on then
+            local top = (r.__top or 0) - off
+            if top >= vh - 0.5 or top + full <= 0.5 then
+                if r:IsShown() then r:Hide() end
+            else
+                if not r:IsShown() then r:Show() end
+                local h = full
+                if top + h > vh then h = vh - top end
+                if h < 12 then h = 12 end
+                if math.abs((r:GetHeight() or 0) - h) > 0.5 then r:SetHeight(h) end
+            end
+        end
+    end
 end
 
 local function PaintPlans()
@@ -2153,15 +2426,40 @@ local function PaintPlans()
             local active
             if pe.auto then
                 active = (BG.usingPlan == nil and BG.autoPlan == pe.auto)
+            elseif pe.manual then
+                active = (BG.usingPlan ~= nil and BG.usingPlan.manual == true)
             else
                 active = (BG.usingPlan == nil and BG.autoPlan == nil and BG.vol == pe.vol
                     and curKey == pe.key and sideNow == pe.side)
+            end
+            local chip = (pe.auto or pe.manual) and true or false
+            local rh = chip and BG.PLAN_TALL or PLAN_H
+            if r.__chipOn ~= chip or r.__h ~= rh then
+                r.__chipOn = chip
+                r.__h = rh
+                r:SetHeight(rh)
+                r.title:ClearAllPoints()
+                if chip then
+                    local c = PlanChip(r)
+                    c:Show()
+                    r.title:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -4)
+                    r.title:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -(c:GetWidth() or 29) - 13, 22)
+                else
+                    if r.chip then r.chip:Hide() end
+                    r.title:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -2)
+                    r.title:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 8, 2)
+                    r.title:SetPoint("RIGHT", r, "RIGHT", -30, 0)
+                end
+                r.title:SetWordWrap(false)
+                r.title:SetJustifyH("LEFT")
+                r.title:SetJustifyV("MIDDLE")
             end
             local short, full = PresetText(pe)
             r.title:SetText(full or short)
             if full and (r.title:GetStringWidth() or 0) > 168 then
                 r.title:SetText(short)
             end
+            BG.PaintSrcChips(r, chip and pe.srcSet or nil)
             r.dot:SetShown(active)
             r.__plan = nil
             r.__vol = pe.vol
@@ -2170,18 +2468,24 @@ local function PaintPlans()
             r.__key = pe.key
             r.__side = pe.side
             r.__auto = pe.auto
+            r.__manual = pe.manual
             r.__sel = active
             if r.__huiCard then
                 ns.hui.HuiCardState(r, (active or r:IsMouseOver()) and "hover" or "norm")
             end
             r.title:SetTextColor(Unpack(active and C_GOLD or C_TEXT))
+            r.__on = true
+            r.__top = y
+            r.__fillH = rh
             r:SetPoint("TOPLEFT", BG.planChild, "TOPLEFT", 0, -y)
             r:SetPoint("RIGHT", BG.planChild, "RIGHT", 0, 0)
-            y = y + PLAN_H + 2
+            y = y + rh + 2
         else
             r:Hide()
+            r.__on = nil
             r.__key = nil
             r.__auto = nil
+            r.__manual = nil
         end
     end
     local shown = 0
@@ -2197,6 +2501,7 @@ local function PaintPlans()
             shown = shown + 1
             r:Show()
             r.title:SetText(p.name)
+            BG.PaintSrcChips(r, nil)
             local active = p == BG.usingPlan
             r.dot:SetShown(false)
             r.__sel = active
@@ -2207,17 +2512,26 @@ local function PaintPlans()
             r.__plan = p
             r.__vol = nil
             r.__key = nil
+            r.__on = true
+            r.__top = y
+            r.__fillH = PLAN_H
             r:SetPoint("TOPLEFT", BG.planChild, "TOPLEFT", 0, -y)
             r:SetPoint("RIGHT", BG.planChild, "RIGHT", 0, 0)
             y = y + PLAN_H + 2
         end
     end
-    local has = BG.usingPlan ~= nil
+    local has = BG.usingPlan ~= nil and BG.usingPlan.manual ~= true
     BG.renameBtn:SetEnabled(has)
     BG.deleteBtn:SetEnabled(has)
     BG.renameBtn.lbl:SetTextColor(Unpack(has and C_TEXT or C_DIM))
     BG.deleteBtn.lbl:SetTextColor(Unpack(has and C_TEXT or C_DIM))
     BG.planChild:SetHeight(y + 6)
+    if BG.planScroll and BG.planScroll.GetVerticalScroll then
+        local mx = math.max(0, y + 6 - (BG.planScroll:GetHeight() or 0))
+        local ok, v = pcall(BG.planScroll.GetVerticalScroll, BG.planScroll)
+        if ok and type(v) == "number" and v > mx then BG.planScroll:SetVerticalScroll(mx) end
+    end
+    BG.FitPlanRows()
     if BG.planBar then BG.planBar.Update() end
 end
 
@@ -2437,6 +2751,7 @@ local function ChipSet(b, text, col, rightOf)
 end
 
 function FillBwRow(r)
+    GearSrcReady()
     local row = r.__row
     if r.__huiCard then ns.hui.HuiCardState(r, "norm") end
     if not row then
@@ -2574,12 +2889,7 @@ local function PaintBrowser()
     if BG.sel and rkey then
         local w = EffWeights()
         local lv = BG.onlyUsable and (BG.filterLv or PlayerLevel() or 60) or nil
-        local dk = DataKey(sp, BG.sel)
-        local baseId = BG.cur[dk]
-        if not baseId and BG.usingPlan and BG.usingPlan.items then
-            baseId = BG.usingPlan.items[dk]
-        end
-        if not baseId then baseId = RecItem(sp, dk) end
+        local baseId = CurItem(sp, BG.sel)
         BG.baseScore = baseId and ItemScore(baseId, w) or nil
         BG.baseId = baseId
         local pool = {}
@@ -2946,40 +3256,7 @@ function BG.SyncSettingPop()
 end
 
 function BG.GeneratePlan()
-    local sp = SpecRec()
-    if not sp then return end
-    local lv = BG.AutoLevel()
-    local w = EffWeights()
-    local mk = MainKey(sp)
-    local usedQ = {}
-    for _, key in ipairs(ALL_SLOT_KEYS) do
-        local dk = DataKey(sp, key)
-        if key == "off-hand" and mk == "two-hand" then
-            BG.cur[dk] = nil
-        else
-            local rkey = RowsKey(key)
-            if rkey == "main-hand" then rkey = mk end
-            local best, bestScore
-            for _, r in ipairs(CatRowsFor(rkey)) do
-                if not (next(BG.srcSet) ~= nil and not BG.srcSet[CatKind(r.id)]) then
-                    if UsableAt(r.id, lv, r.req or 0) and not usedQ[r.id] then
-                        local sc = ItemScore(r.id, w)
-                        if sc and (bestScore == nil or sc > bestScore) then
-                            best, bestScore = r.id, sc
-                        end
-                    end
-                end
-            end
-            if best then
-                BG.cur[dk] = best
-                if CatKind(best) == "quest" or (ns.GearUni and ns.GearUni[best]) then usedQ[best] = true end
-            end
-        end
-    end
-    BG.autoPlan = nil
-    BG.AutoJobCancel()
-    BG.usingPlan = nil
-    BG.RequestRender()
+    BG.StartManualGen()
 end
 
 function BG.SetSlot(slotKey, itemID)
@@ -3050,23 +3327,25 @@ function BG.SavePlan()
     local sp = SpecRec()
     if not sp then return end
     local plans = PlansFor(BG.cls)
-    local items = {}
-    for _, dk in ipairs(ALL_SLOT_KEYS) do
-        local id = BG.cur[dk]
-        if not id and BG.usingPlan and BG.usingPlan.items then
-            id = BG.usingPlan.items[dk]
+    local items, seen = {}, {}
+    for _, key in ipairs(ALL_SLOT_KEYS) do
+        local dk = DataKey(sp, key)
+        if not seen[dk] then
+            seen[dk] = true
+            local id = CurItem(sp, dk)
+            if not id and BG.usingPlan == nil and BG.autoPlan == nil then id = RecItem(sp, dk) end
+            if id then items[dk] = id end
         end
-        if not id then id = RecItem(sp, dk) end
-        if id then items[dk] = id end
     end
     local enchs = {}
     for _, dk in ipairs(ALL_SLOT_KEYS) do
         local eid = CurEnch(sp, dk)
         if eid then enchs[dk] = eid end
     end
-    local p = { name = format(L["%d级 · %s · 我的方案 %d"], CurVol().lv, TSpecLabel(), #plans + 1),
+    local srcLv = (BG.usingPlan and BG.usingPlan.manual and BG.usingPlan.vol) or CurVol().lv
+    local p = { name = format(L["%d级 · %s · 我的方案 %d"], srcLv, TSpecLabel(), #plans + 1),
                 items = items, enchs = enchs, tspec = BG.tspec,
-                vol = CurVol().lv }
+                vol = srcLv }
     plans[#plans + 1] = p
     BG.cur = {}
     BG.ench = {}
@@ -3570,9 +3849,10 @@ local function MakePlanRow(parent)
     r.title:SetPoint("RIGHT", r, "RIGHT", -30, 0)
     r.meta = MakeFS(r, 14, C_GREY, "LEFT")
     r.meta:SetShown(false)
+    if r.SetClipsChildren then r:SetClipsChildren(true) end
     r.dot = CreateFrame("Frame", nil, r)
-    r.dot:SetSize(18, 18)
-    r.dot:SetPoint("RIGHT", r, "RIGHT", -8, 0)
+    r.dot:SetSize(14, 14)
+    r.dot:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -8, 7)
     r.dot.ring = r.dot:CreateTexture(nil, "BACKGROUND")
     r.dot.ring:SetAllPoints()
     r.dot.ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckRing")
@@ -3633,6 +3913,8 @@ local function MakePlanRow(parent)
             BG.UsePlan(self.__plan)
         elseif self.__auto then
             BG.UseAutoPlan(self.__auto)
+        elseif self.__manual then
+            BG.UseManualPlan()
         elseif self.__vol then
             BG.UsePreset(self.__vol, self.__spec, self.__side, self.__key, self.__tspec)
         else
@@ -3688,14 +3970,16 @@ local function BuildMid(m1, m2)
     BG.saveBtn, BG.resetBtn = save, reset
 
     local pool = CreateFrame("ScrollFrame", nil, m1)
+    if pool.SetClipsChildren then pool:SetClipsChildren(true) end
     pool:EnableMouseWheel(true)
     local child = CreateFrame("Frame", nil, pool)
     child:SetSize(w, 10)
     pool:SetScrollChild(child)
     pool:SetPoint("TOPLEFT", m1, "TOPLEFT", x, -72)
-    pool:SetPoint("BOTTOMRIGHT", m1, "BOTTOMRIGHT", -8, -8)
+    pool:SetPoint("BOTTOMRIGHT", m1, "BOTTOMRIGHT", -8, 8)
     pool:SetScript("OnMouseWheel", function(_, delta)
         DG.WheelScroll(pool, child, delta)
+        BG.FitPlanRows()
     end)
     BG.planScroll, BG.planChild = pool, child
     BG.planRows = {}
@@ -3703,7 +3987,7 @@ local function BuildMid(m1, m2)
         local r = MakePlanRow(child)
         BG.planRows[i] = r
     end
-    BG.planBar = BuildVBar(pool, child)
+    BG.planBar = BuildVBar(pool, child, function() BG.FitPlanRows() end)
 
     BG.statHead = MakeFS(m2, 16, C_WHITE, "LEFT")
     BG.statHead:SetPoint("TOPLEFT", m2, "TOPLEFT", x, -8)

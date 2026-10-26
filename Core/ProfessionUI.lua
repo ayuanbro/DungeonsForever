@@ -44,16 +44,115 @@ end
 local PD = {}
 ns.ProfModule = PD
 
-function PD.AuctionatorStatusText()
+local function AuctionatorAddonState()
+    if PD.__ahAddonState ~= nil then return PD.__ahAddonState end
+    local numFn = (C_AddOns and C_AddOns.GetNumAddOns) or GetNumAddOns
+    local infoFn = (C_AddOns and C_AddOns.GetAddOnInfo) or GetAddOnInfo
+    local loadedFn = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
+    local st = "missing"
+    local ok, total = pcall(numFn)
+    if ok and type(total) == "number" and type(infoFn) == "function" then
+        for i = 1, total do
+            local got, nm = pcall(infoFn, i)
+            if got and nm == "Auctionator" then
+                st = "disabled"
+                if type(loadedFn) == "function" then
+                    local okL, loaded = pcall(loadedFn, i)
+                    if okL and loaded then st = "loaded" end
+                end
+                break
+            end
+        end
+    end
+    PD.__ahAddonState = st
+    return st
+end
+
+function PD.AuctionatorState()
     local bridge = ns.AuctionBridge
     local status = bridge and bridge.Status and bridge.Status()
     local state = status and status.state
-    if state == "missing" then return L["未安装 Auctionator"] end
-    if state == "disabled" then return L["Auctionator 已安装但未启用，请启用后重载界面。"] end
-    if state == "loading" or (not state and not (RA and RA.Available and RA.Available())) then
-        return L["Auctionator 正在初始化"]
+    if state == "missing" or state == "disabled" or state == "loading" then return state end
+    local avail = (bridge and bridge.Available and bridge.Available())
+        or (RA and RA.Available and RA.Available())
+    if not avail then
+        local ad = AuctionatorAddonState()
+        if ad == "missing" then return "missing" end
+        if ad == "disabled" then return "disabled" end
+        return "loading"
     end
+    if not (RA and RA.HasPriceData and RA.HasPriceData()) then return "noprice" end
+    return "ok"
+end
+
+function PD.AuctionatorStatusText()
+    local st = PD.AuctionatorState()
+    if st == "missing" then return L["未安装 Auctionator"] end
+    if st == "disabled" then return L["Auctionator 已安装但未启用，请启用后重载界面。"] end
+    if st == "loading" then return L["Auctionator 正在初始化"] end
     return L["暂无有效拍卖行价格；请扫描或更新价格。"]
+end
+
+PD.SNAP_STALE_SEC = 48 * 3600
+
+local function SnapAgePhrase(sec)
+    sec = tonumber(sec)
+    if not sec then return nil end
+    if sec < 60 then return L["刚刚"] end
+    if sec < 90 * 60 then
+        return format(L["%d 分钟"], math.max(1, math.floor(sec / 60 + 0.5)))
+    end
+    if sec < 24 * 3600 then
+        return format(L["%d 小时"], math.max(1, math.floor(sec / 3600 + 0.5)))
+    end
+    return format(L["%d 天"], math.max(1, math.floor(sec / 86400)))
+end
+
+function PD.SnapshotBadgeState(s)
+    s = s or {}
+    if s.scheme == "optim" then return "optim" end
+    if s.planVersion == 2 and s.completeCost == false then return "incomplete" end
+    local st = PD.AuctionatorState()
+    if st == "missing" then return "missing" end
+    if st == "disabled" then return "disabled" end
+    if st == "loading" then return "loading" end
+    if st == "noprice" then return "noprice" end
+    local sec = tonumber(s.snapshotAge)
+    if not sec and (s.priced or s.planVersion == 2) and RA and RA.SnapshotAge then
+        sec = tonumber(RA.SnapshotAge())
+    end
+    if sec and sec >= PD.SNAP_STALE_SEC then return "stale", sec end
+    if s.planVersion == 2 then
+        if (s.np or 0) > 0 then return "unpriced" end
+        return "verified", sec
+    end
+    if s.priced then
+        if sec then return "frame", sec end
+        return "ageunknown"
+    end
+    return "noprice"
+end
+
+function PD.SnapshotBadgeText(s)
+    local st, sec = PD.SnapshotBadgeState(s)
+    if st == "optim" then return L["乐观计数"], 0.85, 0.82, 0.72 end
+    if st == "incomplete" then return L["资料不全"], 0.95, 0.75, 0.4 end
+    if st == "missing" then return L["需装 Auctionator 扫描价格"], 0.95, 0.75, 0.4 end
+    if st == "disabled" then return L["Auctionator 未启用"], 0.95, 0.75, 0.4 end
+    if st == "loading" then return L["拍卖行价格读取中…"], 0.95, 0.75, 0.4 end
+    if st == "stale" then return L["价格快照过期，影响模拟结果"], 0.9, 0.35, 0.35 end
+    if st == "noprice" then return L["缺少价格快照，请扫描拍卖行"], 0.9, 0.35, 0.35 end
+    if st == "unpriced" then return L["含无价材料"], 0.95, 0.75, 0.4 end
+    if st == "verified" then
+        local age = SnapAgePhrase(sec)
+        if age then return format(L["已核实 · 快照 %s"], age), 0.55, 0.85, 0.6 end
+        return L["已核实"], 0.55, 0.85, 0.6
+    end
+    if st == "frame" then
+        local age = SnapAgePhrase(sec)
+        if age then return L["价格快照"] .. " " .. age, 0.55, 0.85, 0.6 end
+    end
+    return L["价格快照"], 0.55, 0.85, 0.6
 end
 
 PD.CARD_INSET = PAGE_INSET
@@ -84,6 +183,7 @@ PD.SETTING_DEF.autoOnlyAH = true
 PD.SETTING_DEF.autoLearnedOnly = false
 PD.SETTING_DEF.autoBuyLimitedFormulas = false
 PD.SETTING_DEF.autoSkipUnpricedFormulas = true
+PD.SETTING_DEF.autoNoFormula = false
 PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.solverRoute = false
@@ -443,6 +543,24 @@ PD.IX_ICON = 24
 PD.IX_HEAD_H = 18
 PD.IX_ROWW_GAP = 8
 PD.IX_GROUP_GAP = 10
+
+PD.GC_COLS = 3
+PD.GC_GAP = 10
+PD.GC_COLW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - (PD.GC_COLS - 1) * PD.GC_GAP) / PD.GC_COLS)
+PD.GC_PAD = 9
+PD.GC_ICON = 38
+PD.GC_SUB = 16
+PD.GC_PLACE = 15
+PD.GC_MORE = 15
+PD.GC_TOP = 56
+PD.GC_HEAD = 50
+PD.GC_FS_NAME = 13
+PD.GC_FS_LV = 12
+PD.GC_FS_ZONE = 12
+PD.GC_FS_MORE = 11
+PD.GC_ZONE = { 0.42, 0.84, 0.95 }
+PD.GC_SHOW = 3
+PD.MAXPLACE = 6
 
 PD.MAT_FS = 13
 PD.MAT_ICON_PX = 16
@@ -951,20 +1069,30 @@ function PD.Row(i)
     PD.WireTipZone(r.__costZone, r)
     r.__cardBg = CreateFrame("Frame", nil, r)
     r.__cardBg:Hide()
-    r.__cardBg.__pieces = ns.hui.BuildRoundedBG(r.__cardBg, 6, { 1, 1, 1 }, "both", false, nil, true)
-    r.__cardTx = MakeFS(r.__cardBg, 10, C_TEXT, "LEFT")
+    if ns.hui and ns.hui.BuildSolidFill then
+        r.__cardBg.__pieces = ns.hui.BuildSolidFill(r.__cardBg, 6, ns.hui.layer.L2)
+        r.__cardBg.__border = ns.hui.BuildRoundBorder(r.__cardBg, 6, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
+    else
+        r.__cardBg.__pieces = ns.hui.BuildRoundedBG(r.__cardBg, 6, { 1, 1, 1 }, "both", false, nil, true)
+    end
+    r.__cardTx = MakeFS(r.__cardBg, 11, C_TEXT, "LEFT")
     r.__cardTx:SetText("")
     r.__cardTx:SetWordWrap(false)
     r.__cardTx:Hide()
     for _, f in ipairs({ r.a, r.b, r.c, r.c2, r.d, r.e, r.f }) do f:SetWordWrap(false) end
-    r.tagChip = PD.MakePill(r, (ns.hui and ns.hui.layer and ns.hui.layer.L2) or nil, 4)
-    r.tagChip:SetFrameLevel((r:GetFrameLevel() or 0) + 1)
-    r.tagChip:Hide()
+    if ns.hui and ns.hui.MakeSolidChip then
+        r.tagChip = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 1, ns.hui.ChipH(13))
+        r.tagFs = r.tagChip.t
+    else
+        r.tagChip = PD.MakePill(r, (ns.hui and ns.hui.layer and ns.hui.layer.L2) or nil, 4)
+        r.tagChip:SetFrameLevel((r:GetFrameLevel() or 0) + 1)
+        r.tagChip:Hide()
+        r.tagFs = MakeFS(r.tagChip, 11, { 0.42, 0.94, 0.62 }, "CENTER")
+        r.tagFs:SetText("")
+        r.tagFs:SetPoint("CENTER", r.tagChip, "CENTER", 0, (ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5)
+        r.tagFs:Hide()
+    end
     r.tagBg = r.tagChip
-    r.tagFs = MakeFS(r.tagChip, 10, { 0.42, 0.94, 0.62 }, "CENTER")
-    r.tagFs:SetText("")
-    r.tagFs:SetPoint("CENTER", r.tagChip, "CENTER", 0, 0)
-    r.tagFs:Hide()
     local arrowTex = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\arrow.tga"
     r.foldArrD = r:CreateTexture(nil, "ARTWORK")
     r.foldArrD:SetSize(10, 10)
@@ -1646,6 +1774,7 @@ function PD.BindRow(r, spec, h)
         for _, c in pairs(r.__ex) do c:Hide() end
     end
     if r.__pct then r.__pct:Hide() end
+    if r.__costWhy then r.__costWhy:Hide() end
     if showIcon then
         r.icon:SetSize(20, 20)
         r.icon:ClearAllPoints()
@@ -1803,20 +1932,6 @@ function PD.BindRow(r, spec, h)
         r.hsTot:SetWidth(48)
         r.hsTot.__act = _act("ah")
         r.hsTot:Show()
-        local onGap = PD.recipeSort == "gap"
-        _ic(r.icon4, onGap)
-        r.h6:SetText(L["差价"])
-        r.h6:ClearAllPoints()
-        r.h6:SetPoint("RIGHT", r, "RIGHT", X_ahR - 58, 0)
-        _hc(r.h6, onGap)
-        r.h6:Show()
-        r.icon4:SetPoint("RIGHT", r.h6, "LEFT", -2, 0)
-        r.hsGap:ClearAllPoints()
-        r.hsGap:SetPoint("TOPRIGHT", r, "TOPRIGHT", X_ahR - 58, 0)
-        r.hsGap:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", X_ahR - 58, 0)
-        r.hsGap:SetWidth(58)
-        r.hsGap.__act = _act("gap")
-        r.hsGap:Show()
         local onCost = PD.recipeSort == "cost"
         _ic(r.icon2, onCost)
         r.icon2:SetPoint("RIGHT", r.h4, "LEFT", -3, 0)
@@ -2199,15 +2314,21 @@ function PD.BindRow(r, spec, h)
                 DG.BadgeTint(bd, item.bg)
             end
             bd.lab:SetText(item.text)
-            local fs = cardStyle and 10 or DG.Q_BADGE_FS
+            local solidChip = bd.__chipFill and ns.hui and ns.hui.ChipH
+            local fs = solidChip and 11 or (cardStyle and 10 or DG.Q_BADGE_FS)
             if bd.__fs ~= fs then
-                bd.lab:SetFont(ns.FONT, fs, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+                local flags = (not solidChip and cardStyle)
+                    and (ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE") or ""
+                bd.lab:SetFont(ns.FONT, fs, flags)
                 bd.__fs = fs
             end
-            local pad = cardStyle and PD.CARD_PAD or DG.Q_BADGE_PAD
+            local pad = (solidChip and ns.hui.CHIP_S_PAD) or (cardStyle and PD.CARD_PAD or DG.Q_BADGE_PAD)
             local w = (bd.lab:GetStringWidth() or 16) + pad * 2
+            if solidChip and w < ns.hui.CHIP_S_MIN_W then w = ns.hui.CHIP_S_MIN_W end
             local bh
-            if cardStyle then
+            if solidChip then
+                bh = ns.hui.ChipH(13)
+            elseif cardStyle then
                 local th = bd.lab:GetStringHeight() or 0
                 if th <= 0 then th = 12 end
                 bh = 2 * (math.floor(th / 2) + 1)
@@ -2271,7 +2392,6 @@ function PD.BindRow(r, spec, h)
     end
 
     local padL = showIcon and ((iconName and not itemID) and 28 or 32) or 6
-    if r.__costWhy then r.__costWhy:Hide() end
     PD.HideSkillBar(r)
     PD.PaintCard(r, nil)
     local ncol = spec.nameColor
@@ -2379,13 +2499,26 @@ function PD.BindRow(r, spec, h)
     end
     if spec.chip and spec.chip.text and spec.chip.text ~= "" then
         local chip = PD.SkillChip(r)
+        local ink = spec.chip.color or { 0.64, 0.61, 0.55 }
+        local cfill = chip.__chipFill or chip.__fillPieces
         chip.fs:SetText(spec.chip.text)
-        chip.fs:SetTextColor(Unpack(spec.chip.color or { 0.80, 0.84, 0.90 }))
-        chip:SetHeight(16)
-        chip:SetWidth(chip.fs:GetStringWidth() + 8)
+        if ns.hui and ns.hui.PaintSolidFill and cfill then
+            chip.fs:SetTextColor(1, 1, 1)
+            ns.hui.PaintSolidFill(cfill, ns.hui.ChipSolidBase(ink))
+            if chip.__chipBorder then
+                for _, t in ipairs(chip.__chipBorder) do
+                    t:SetVertexColor(ink[1], ink[2], ink[3])
+                    t:SetAlpha(1)
+                end
+            end
+        else
+            chip.fs:SetTextColor(Unpack(ink))
+            chip:SetHeight(16)
+        end
+        chip:SetWidth(chip.fs:GetStringWidth() + ((ns.hui and ns.hui.CHIP_S_PAD) or 5) * 2)
         chip:ClearAllPoints()
         local anchor = (spec.tag and r.tagChip:IsShown()) and r.tagChip or r.a
-        chip:SetPoint("LEFT", anchor, "RIGHT", 6, 0)
+        chip:SetPoint("LEFT", anchor, "RIGHT", 6, (anchor == r.a) and -0.8 or 0)
         chip:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
         chip:Show()
     end
@@ -2406,10 +2539,23 @@ function PD.BindRow(r, spec, h)
                     z.__act = nil
                     z:EnableMouse(false)
                     local chip = PD.SubChip(z)
+                    local sink = lk.color or { 0.68, 0.72, 0.78 }
+                    local sfill = chip.__chipFill or chip.__fillPieces
                     chip.fs:SetText(lk.text)
-                    chip.fs:SetTextColor(Unpack(lk.color or { 0.68, 0.72, 0.78 }))
-                    chip:SetHeight(16)
-                    chip:SetWidth(chip.fs:GetStringWidth() + 8)
+                    if ns.hui and ns.hui.PaintSolidFill and sfill then
+                        chip.fs:SetTextColor(1, 1, 1)
+                        ns.hui.PaintSolidFill(sfill, ns.hui.ChipSolidBase(sink))
+                        if chip.__chipBorder then
+                            for _, t in ipairs(chip.__chipBorder) do
+                                t:SetVertexColor(sink[1], sink[2], sink[3])
+                                t:SetAlpha(1)
+                            end
+                        end
+                    else
+                        chip.fs:SetTextColor(Unpack(sink))
+                        chip:SetHeight(16)
+                    end
+                    chip:SetWidth(chip.fs:GetStringWidth() + ((ns.hui and ns.hui.CHIP_S_PAD) or 5) * 2)
                     chip:ClearAllPoints()
                     chip:SetPoint("LEFT", z, "LEFT", 0, 0)
                     chip:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
@@ -3415,12 +3561,21 @@ function PD.Build(page)
         ns.PlaySound(1)
     end)
     function PD.SetBadge(text, r, g, b)
-        local f = PD.lvTiles and PD.lvTiles.cost and PD.lvTiles.cost.badge
+        local card = PD.lvTiles and PD.lvTiles.cost
+        local f = card and card.badge
         if not f then return end
         if not text or text == "" then f:Hide() return end
+        local labelW = (card.label and card.label:GetStringWidth()) or 0
+        local maxW = (card:GetWidth() or 240) - 28 - labelW - 12
+        if maxW < 24 then maxW = 24 end
         f.fs:SetText(text)
         f.fs:SetTextColor(r or 0.95, g or 0.75, b or 0.4, 1)
-        f:SetWidth(math.max(30, math.ceil(f.fs:GetStringWidth() or 20) + 8))
+        local w = f.fs:GetStringWidth() or 0
+        if w > maxW then
+            f.fs:SetText(PD.Fit(text, 12, maxW))
+            w = f.fs:GetStringWidth() or w
+        end
+        f:SetWidth(math.max(30, math.ceil(w) + 8))
         f:Show()
     end
     function PD.SetSub(text)
@@ -4702,6 +4857,21 @@ function PD.PaintLvTiles()
         costLines[#costLines + 1] = { format(L["含无价材料 %d 种：花费为估算下限"], s.np),
                                       0.95, 0.75, 0.4 }
     end
+    local ahState
+    if s.scheme ~= "optim" then ahState = PD.SnapshotBadgeState(s) end
+    if ahState == "missing" then
+        costLines[#costLines + 1] = { L["未安装 Auctionator"], 0.95, 0.75, 0.4 }
+        costLines[#costLines + 1] = { L["安装 Auctionator 后在拍卖行扫描一次完整价格，再重新计算路线。"], 0.7, 0.7, 0.7 }
+    elseif ahState == "disabled" then
+        costLines[#costLines + 1] = { L["Auctionator 已安装但未启用，请启用后重载界面。"], 0.95, 0.75, 0.4 }
+    elseif ahState == "loading" then
+        costLines[#costLines + 1] = { L["拍卖行价格读取中…"], 0.7, 0.7, 0.7 }
+    elseif ahState == "stale" then
+        costLines[#costLines + 1] = { L["价格快照数据过期，距离上次扫描超过 2 天上限，需要重新扫描"], 0.9, 0.35, 0.35 }
+        costLines[#costLines + 1] = { L["请重新扫描价格后重新计算。"], 0.9, 0.35, 0.35 }
+    elseif ahState == "noprice" then
+        costLines[#costLines + 1] = { L["暂无有效拍卖行价格；请扫描或更新价格。"], 0.9, 0.35, 0.35 }
+    end
     if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local net = s.netTotal or ((s.total or 0) - s.recoveryTotal)
         costLines[#costLines + 1] = { format(L["预计回血 %s · 净成本 %s"],
@@ -4722,18 +4892,7 @@ function PD.PaintLvTiles()
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
-    local snapBadge, br, bg, bb
-    if s.planVersion == 2 then
-        if s.completeCost == false then snapBadge, br, bg, bb = L["资料不全"], 0.95, 0.75, 0.4
-        elseif (s.np or 0) > 0 then snapBadge, br, bg, bb = L["含无价材料"], 0.95, 0.75, 0.4
-        else snapBadge, br, bg, bb = L["已核实"], 0.55, 0.85, 0.6 end
-    elseif s.scheme == "optim" then
-        snapBadge, br, bg, bb = L["乐观计数"], 0.85, 0.82, 0.72
-    elseif s.priced then
-        snapBadge, br, bg, bb = L["价格快照"], 0.55, 0.85, 0.6
-    else
-        snapBadge, br, bg, bb = L["无价格"], 0.95, 0.75, 0.4
-    end
+    local snapBadge, br, bg, bb = PD.SnapshotBadgeText(s)
     PD.SetBadge(snapBadge, br, bg, bb)
     local atxt
     if s.planVersion == 2 then
@@ -4749,7 +4908,7 @@ function PD.PaintLvTiles()
         atxt = L["快照年龄未知Auctionator"]
     end
     local details = { { atxt or PD.AuctionatorStatusText(), 0.7, 0.7, 0.7 } }
-    if snapSec and snapDays then
+    if snapSec then
         details[#details + 1] = { format(L["上次扫描： %s"], PD.SnapshotSecText(snapSec)), 0.7, 0.7, 0.7 }
     end
     local progress = PD.PlanProgressText(s)
@@ -5263,26 +5422,47 @@ end
 
 function PD.PaintTag(r, tag)
     local chip, fs = r.tagChip, r.tagFs
-    fs:SetTextColor(Unpack(tag.color or { 0.42, 0.94, 0.62 }))
+    local ink = tag.color or { 0.42, 0.94, 0.62 }
+    local tfill = chip.__chipFill or chip.__fillPieces
     fs:SetText(tag.text or "")
-    chip:SetSize(fs:GetStringWidth() + 10, 15)
+    if ns.hui and ns.hui.PaintSolidFill and tfill then
+        fs:SetTextColor(1, 1, 1)
+        ns.hui.PaintSolidFill(tfill, ns.hui.ChipSolidBase(ink))
+        if chip.__chipBorder then
+            for _, t in ipairs(chip.__chipBorder) do
+                t:SetVertexColor(ink[1], ink[2], ink[3])
+                t:SetAlpha(1)
+            end
+        end
+    else
+        fs:SetTextColor(Unpack(ink))
+    end
+    local pad = (ns.hui and ns.hui.CHIP_S_PAD) or 5
+    local minw = (ns.hui and ns.hui.CHIP_S_MIN_W) or 24
+    chip:SetSize(math.max(fs:GetStringWidth() + pad * 2, minw), ns.hui and ns.hui.ChipH and ns.hui.ChipH(13) or 15)
     chip:ClearAllPoints()
-    chip:SetPoint("LEFT", r.a, "LEFT", r.a:GetStringWidth() + 8, 0)
+    chip:SetPoint("LEFT", r.a, "LEFT", r.a:GetStringWidth() + 8, (ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(13)) or -0.8)
     chip:Show()
     fs:Show()
 end
 
 function PD.SkillChip(r)
     if r.__skchip then return r.__skchip end
-    local f = CreateFrame("Frame", nil, r)
-    f:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
-    ns.hui.BuildRoundedBG(f, 4, ns.hui.layer.L2, "both", true, 1)
-    local fs = MakeFS(f, 10, C_TEXT, "CENTER")
-    fs:SetPoint("LEFT", f, "LEFT", 4, 0)
-    fs:SetPoint("RIGHT", f, "RIGHT", -4, 0)
-    fs:SetPoint("TOP", f, "TOP", 0, -2)
-    fs:SetPoint("BOTTOM", f, "BOTTOM", 0, 2)
-    f.fs = fs
+    local f
+    if ns.hui and ns.hui.MakeSolidChip then
+        f = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 2, ns.hui.ChipH(13))
+        f.fs = f.t
+    else
+        f = CreateFrame("Frame", nil, r)
+        f:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
+        ns.hui.BuildRoundedBG(f, 4, ns.hui.layer.L2, "both", true, 1)
+        local fs = MakeFS(f, 11, C_TEXT, "CENTER")
+        fs:SetPoint("LEFT", f, "LEFT", 4, 0)
+        fs:SetPoint("RIGHT", f, "RIGHT", -4, 0)
+        fs:SetPoint("TOP", f, "TOP", 0, -2)
+        fs:SetPoint("BOTTOM", f, "BOTTOM", 0, 2)
+        f.fs = fs
+    end
     f:Hide()
     r.__skchip = f
     return f
@@ -5290,14 +5470,20 @@ end
 
 function PD.SubChip(z)
     if z.__chip then return z.__chip end
-    local f = CreateFrame("Frame", nil, z)
-    ns.hui.BuildRoundedBG(f, 4, ns.hui.layer.L2, "both", true, 1)
-    local fs = MakeFS(f, 10, C_TEXT, "CENTER")
-    fs:SetPoint("LEFT", f, "LEFT", 4, 0)
-    fs:SetPoint("RIGHT", f, "RIGHT", -4, 0)
-    fs:SetPoint("TOP", f, "TOP", 0, -2)
-    fs:SetPoint("BOTTOM", f, "BOTTOM", 0, 2)
-    f.fs = fs
+    local f
+    if ns.hui and ns.hui.MakeSolidChip then
+        f = ns.hui.MakeSolidChip(z, (z:GetFrameLevel() or 0) + 2, ns.hui.ChipH(13))
+        f.fs = f.t
+    else
+        f = CreateFrame("Frame", nil, z)
+        ns.hui.BuildRoundedBG(f, 4, ns.hui.layer.L2, "both", true, 1)
+        local fs = MakeFS(f, 11, C_TEXT, "CENTER")
+        fs:SetPoint("LEFT", f, "LEFT", 4, 0)
+        fs:SetPoint("RIGHT", f, "RIGHT", -4, 0)
+        fs:SetPoint("TOP", f, "TOP", 0, -2)
+        fs:SetPoint("BOTTOM", f, "BOTTOM", 0, 2)
+        f.fs = fs
+    end
     f:Hide()
     z.__chip = f
     return f
@@ -5558,7 +5744,7 @@ PD.SB_H  = 12
 PD.SB_DY = -8
 PD.SB_FS = 11
 PD.SB_EDGE = 4
-PD.CARD_PAD, PD.CARD_GAP = 3, 6
+PD.CARD_PAD, PD.CARD_GAP = 5, 6
 PD.LV_CARD_FIXW = 44
 PD.SB_COL = {
     { 1.00, 0.50, 0.25 },
@@ -5579,11 +5765,30 @@ PD.CARD_COL = {
     both    = { 0.13, 0.44, 0.42 },
 }
 PD.CARD_INK = {
-    trainer = { 0.81, 0.85, 0.89 },
-    drop    = { 0.91, 0.86, 1.00 },
-    vendor  = { 1.00, 0.91, 0.66 },
-    both    = { 0.72, 0.97, 0.92 },
+    trainer = { 0.98, 0.84, 0.36 },
+    drop    = { 0.86, 0.70, 1.00 },
+    vendor  = { 0.40, 0.95, 0.78 },
+    both    = { 1.00, 0.58, 0.42 },
 }
+
+PD.TAG_INK = {
+    ah      = { 0.46, 0.72, 1.00 },
+    vendor  = { 1.00, 0.82, 0.36 },
+    shop    = { 0.92, 0.60, 0.40 },
+    tool    = { 0.55, 0.90, 0.90 },
+    spec    = { 0.80, 0.66, 1.00 },
+    unknown = { 0.62, 0.62, 0.68 },
+    none    = { 0.62, 0.62, 0.68 },
+}
+
+function PD.TagInkOf(e)
+    if not e then return PD.TAG_INK.unknown end
+    if e.tool then return PD.TAG_INK.tool end
+    if e.spec then return PD.TAG_INK.spec end
+    if e.vendor or e.source == "vendor" or e.source == "npc" then return PD.TAG_INK.vendor end
+    if e.source == "ah" or e.source == "auction" or e.source == nil then return PD.TAG_INK.ah end
+    return PD.TAG_INK.unknown
+end
 
 function PD.LvTier(skill, learn, yellow, green, grey)
     if not skill then return nil end
@@ -5667,22 +5872,39 @@ function PD.PaintCard(r, card)
         z.__tipLines, z.__act, z.__it = nil, nil, nil
         return
     end
-    local x, w = PD.LV_RNG_X or 6, PD.LV_CARD_FIXW
-    tx:ClearAllPoints()
-    tx:SetPoint("CENTER", r, "LEFT", x + w / 2, PD.SB_DY)
+    local x = PD.LV_RNG_X or 6
+    local w = math.max(PD.TextW(card.text or "", 11) + 2 * PD.CARD_PAD,
+        (ns.hui and ns.hui.CHIP_S_MIN_W) or 24)
+    local ink = PD.CARD_INK[card.kind] or PD.CARD_INK.trainer
     local col = PD.CARD_COL[card.kind] or PD.CARD_COL.trainer
-    tx:SetTextColor(Unpack(PD.CARD_INK[card.kind] or PD.CARD_INK.trainer))
+    local solid = ns.hui and ns.hui.PaintSolidFill and bg.__pieces and bg.__pieces.__huiBaseCap ~= nil
+    tx:ClearAllPoints()
+    tx:SetPoint("CENTER", r, "LEFT", x + w / 2, PD.SB_DY + (solid and ((ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5) or 0))
+    if solid then
+        tx:SetTextColor(1, 1, 1)
+    else
+        tx:SetTextColor(Unpack(ink))
+    end
     tx:SetText(card.text or "")
     tx:Show()
-    local th = tx:GetStringHeight()
-    if (th or 0) <= 0 then th = 12 end
-    local half = math.floor(th / 2) + 1
+    local chH = (ns.hui and ns.hui.ChipH and ns.hui.ChipH(13)) or (tx:GetStringHeight() or 12)
+    local half = chH / 2
     bg:ClearAllPoints()
     bg:SetPoint("TOPLEFT", r, "LEFT", x, PD.SB_DY + half)
     bg:SetPoint("BOTTOMRIGHT", r, "LEFT", x + w, PD.SB_DY - half)
-    for _, tex in ipairs(bg.__pieces or {}) do
-        tex:SetVertexColor(col[1], col[2], col[3])
-        tex:SetAlpha(1)
+    if solid then
+        ns.hui.PaintSolidFill(bg.__pieces, ns.hui.ChipSolidBase(ink))
+        if bg.__border then
+            for _, tex in ipairs(bg.__border) do
+                tex:SetVertexColor(ink[1], ink[2], ink[3])
+                tex:SetAlpha(1)
+            end
+        end
+    else
+        for _, tex in ipairs(bg.__pieces or {}) do
+            tex:SetVertexColor(col[1], col[2], col[3])
+            tex:SetAlpha(1)
+        end
     end
     bg:Show()
     z.__tipLines = card.lines
@@ -5703,10 +5925,10 @@ PD.CARD_FIXW = nil
 function PD.CardFixW()
     if not PD.CARD_FIXW then
         PD.CARD_FIXW = math.ceil(math.max(
-            PD.TextW(L["训练师"], 10),
-            PD.TextW(L["世界掉落图纸"], 10),
-            PD.TextW(L["商人出售图纸"], 10),
-            PD.TextW(L["掉落&商人图纸"], 10))) + 2 * PD.CARD_PAD
+            PD.TextW(L["训练师"], 11),
+            PD.TextW(L["世界掉落图纸"], 11),
+            PD.TextW(L["商人出售图纸"], 11),
+            PD.TextW(L["掉落&商人图纸"], 11))) + 2 * PD.CARD_PAD
     end
     return PD.CARD_FIXW
 end
@@ -5865,15 +6087,35 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
 end
 
 function PD.LevelSrc(rec)
-    if not rec then return nil, nil end
+    if not rec then return nil, nil, nil end
     local src = rec[14]
-    local fid = rec[13] and rec[13][1]
-    if not fid then return L["向训练师学习"], nil end
-    local detail
-    if src and src.drops and #src.drops > 0 then
-        detail = format(L["图纸：%s · 掉落 %d 处"], DG.ItemName(fid), #src.drops)
+    local f = rec[13]
+    local fid = f and f[1]
+    if type(fid) ~= "number" then return L["向训练师学习"], nil, nil end
+    local SM = ns.ProfSourceMerge
+    local raw = (SM and SM.SourceOf) and SM.SourceOf(fid) or nil
+    local view = raw or (type(src) == "table" and src or nil)
+    local kind = (SM and SM.Primary) and SM.Primary(view) or nil
+    if not kind then
+        view = type(src) == "table" and src or nil
+        kind = (SM and SM.Primary) and SM.Primary(view) or nil
     end
-    return L["需图纸 · 商人出售"], detail
+    local drops = view and (view.drops or view.d) or nil
+    local nDrop = (type(drops) == "table") and #drops or 0
+    local name = DG.ItemName(fid)
+    if kind == "vendor" then
+        local detail
+        if nDrop > 0 then detail = format(L["%s · 掉落 %d 处"], name, nDrop) end
+        return L["需图纸 · 商人出售"], detail, kind
+    elseif kind == "currency" then
+        local nCur = (SM and SM.CurrencyCount) and SM.CurrencyCount(view) or 0
+        return L["图纸 · 通货兑换"], format(L["%s · 兑换 %d 处"], name, nCur), kind
+    elseif kind == "drop" then
+        return L["图纸 · 掉落获取"], format(L["%s · 掉落 %d 处"], name, nDrop), kind
+    elseif kind == "quest" then
+        return L["图纸 · 任务获取"], nil, kind
+    end
+    return L["图纸 · 来源未知"], nil, kind
 end
 
 function PD.SourceParts(s)
@@ -7321,7 +7563,7 @@ function PD.RowsRecipe(rows)
         realN, maxW = #list, nil
     end
     if PD.recipeSort then
-        local kf = ({ ah = "ahVal", cost = "costVal", diff = "diffVal", gap = "gapVal" })[PD.recipeSort]
+        local kf = ({ ah = "ahVal", cost = "costVal", diff = "diffVal" })[PD.recipeSort]
         if kf then
             local desc = PD.recipeSortDesc
             table.sort(list, function(a, b)
@@ -8081,7 +8323,8 @@ end
 
 function PD.PlanCostText(plan)
     if plan.completeCost==false and (plan.total or 0)==0 then return L["材料价格待补全"] end
-    return (plan.completeCost==false and "≥" or "")..RA.MoneyStr(plan.total or 0,"copper")
+    local floor = (plan.completeCost==false) or ((plan.np or 0) > 0)
+    return (floor and "≥" or "")..RA.MoneyStr(plan.total or 0,"copper")
 end
 
 function PD.CopyPlanSummary(plan)
@@ -8149,6 +8392,7 @@ function PD.StepIsMaterial(st)
     return material and true or false
 end
 function PD.StepRole(st)
+    if st.kind == "specialization_quest" then return L["专精任务"] end
     if st.checkpoint or st[3] == 0 then return L["实地采矿"] end
     local tags = st.tags or {}
     local leveling = tags.leveling or st.role == "level" or st.role == "both"
@@ -8170,6 +8414,7 @@ function PD.PurchasePriceHint(entry)
     if entry.reference then return L["参考报价（实际报价可能因声望而异；客户端实测优先）"] end
 end
 function PD.StepName(st)
+    if st.kind == "specialization_quest" then return L["专精任务"] end
     return (st.checkpoint or st[3] == 0) and L["实地采矿"] or SpellName(st[3])
 end
 
@@ -8453,26 +8698,28 @@ function PD.RowsExclusions(rows)
         local rec, ri = info.rec, info.ri
         local item = spellItem(rec) or spellItem(ri)
         want(item)
-        local src
+        local src, srcDetail
         if profession ~= PD.cur then
             local pro = D.pro[profession]
             src = (pro and pro.name or profession) .. " · "
                   .. (info.reason == "secondary" and L["联合升级"] or L["制作材料"])
         elseif rec then
-            src = PD.LevelSrc(rec)
+            src, srcDetail = PD.LevelSrc(rec)
         elseif ri then
             src = ri.trainer and L["向训练师学习"] or nil
         end
-        if rec and rec.clientPending then src = L["客户端数据待读取"] end
+        if rec and rec.clientPending then src, srcDetail = L["客户端数据待读取"], nil end
+        local cardTips = { { SpellName(spell), 1, 0.82, 0.4 },
+                     { L["完全禁止制作：可用购买或其他配方替代产物。"] },
+                     { L["左键切换允许或禁止；右键直接禁止。"], 0.7, 0.7, 0.7 } }
+        if srcDetail then cardTips[#cardTips + 1] = { srcDetail, 0.72, 0.72, 0.72 } end
         cards[#cards + 1] = {
             name = SpellName(spell),
             it = item,
             src = src,
             modeText = mode == "ban" and L["禁止"] or L["允许"],
             color = (mode == "ban" and EX_BAD) or EX_OK,
-            tips = { { SpellName(spell), 1, 0.82, 0.4 },
-                     { L["完全禁止制作：可用购买或其他配方替代产物。"] },
-                     { L["左键切换允许或禁止；右键直接禁止。"], 0.7, 0.7, 0.7 } },
+            tips = cardTips,
             act = function(_, button)
                 PD.ChangeRecipePolicy(profession, spell, button == "RightButton", false)
             end,
@@ -8826,6 +9073,7 @@ function PD.BuildLvOpts(slug, current)
     return {
         start = (PD.Setting("autoFromCurrent") and lv) and math.max(1, lv) or 1,
         onlyAH = PD.Setting("autoOnlyAH"),
+        noFormula = PD.Setting("autoNoFormula"),
         learnedOnly = PD.Setting("autoLearnedOnly"),
         target = PD.LvTarget(),
         scheme = fish and "fishing" or PD.SettingRaw("autoScheme"),
@@ -9428,9 +9676,10 @@ function PD.RowsLeveling(rows)
             end
         end
         if clipped and st._clip then count = count .. format(L[" · 按目标 %d 折算"], target) end
-        if st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
+        if st.kind == "specialization_quest" then count, cost = L["专精任务"], ""
+        elseif st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
         local tp = trackAll and trackAll.steps[index]
-        if tp and tp.casts > 0 and not (st.checkpoint or st[3] == 0) then
+        if tp and tp.casts > 0 and not (st.checkpoint or st[3] == 0 or st.kind == "specialization_quest") then
             count = format("%d/%d", tp.casts, st[4] or 0)
         end
         cntOf[st], costOf[st] = count, cost
@@ -9447,7 +9696,7 @@ function PD.RowsLeveling(rows)
         end
         cardOf[st] = cd
         if cd then
-            cardNeed = math.max(cardNeed, PD.TextW(cd.text, 10) + 2 * PD.CARD_PAD)
+            cardNeed = math.max(cardNeed, PD.TextW(cd.text, 11) + 2 * PD.CARD_PAD)
         end
         if PD.StepIsMaterial(st) then
             roleChipOf[st] = { text = L["中间产物"], bg = DG.Q_BADGE_MID_BG }
@@ -9470,7 +9719,9 @@ function PD.RowsLeveling(rows)
         end
         local output = PD.RecipeOutputText(riM or rec)
         if output and cd then cd.lines[#cd.lines + 1] = {output, 0.65, 0.75, 0.85} end
-        if cd and (st.checkpoint or st[3] == 0) then
+        if cd and st.kind == "specialization_quest" then
+            cd.lines[#cd.lines+1] = {L["专精任务：找训练师开启该专精后继续。"]}
+        elseif cd and (st.checkpoint or st[3] == 0) then
             cd.lines[#cd.lines+1] = {L["达到目标技能后重新计算"]}
         end
     end
@@ -9575,7 +9826,8 @@ function PD.RowsLeveling(rows)
                 local pro = D.pro[st.profession]
                 src = (pro and pro.name or st.profession) .. " · " .. (st.reason == "secondary" and L["联合升级"] or L["制作材料"])
             elseif st.reason == "material" then src = L["制作材料"] end
-            if st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
+            if st.kind == "specialization_quest" then src = L["专精任务"]
+            elseif st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
             if (rec and rec.clientPending) or (ri and ri.clientPending) then src = L["客户端数据待读取"] end
             local segLo = tonumber(st[1])
             local segHi = tonumber(st[2])
@@ -9777,14 +10029,16 @@ function PD.RowsFormulaShop(rows, data, foldKey)
             lines[#lines + 1] = {format(L["%s：%s · %s"], name, priceText, stockText), 0.7, 0.7, 0.7}
         end
         local selected = entry.source or entry.sourceType
-        local tag = selected == "vendor" and L["NPC购买"]
-            or ((selected == "ah" or selected == "auction") and L["拍卖行"] or L["尚无购买来源"])
+        local tagKind = selected == "vendor" and "vendor"
+            or ((selected == "ah" or selected == "auction") and "ah" or "none")
+        local tag = tagKind == "vendor" and L["NPC购买"]
+            or (tagKind == "ah" and L["拍卖行"] or L["尚无购买来源"])
         local priced = not (entry.unpriced or type(entry.cost) ~= "number")
         rows[#rows + 1] = {kind = "row", h = PD.ROW_H, col = 1, it = id and {id} or nil,
             text = PD.Fit(id and DG.ItemName(id) or L["未知图纸"], 13, (PD.splitLW or PD.COL_LW) - 130),
             chip = chipText and {text = chipText} or nil,
             links = links,
-            tag = {text = tag}, right = format("×%d", count),
+            tag = {text = tag, color = PD.TAG_INK[tagKind]}, right = format("×%d", count),
             right2 = priced and money(entry.cost) or priceLine,
             lines = lines, tipExtra = function() return lines end}
         if stock and not stockInline then PushText(rows, stock, 11, C_GREY, 1) end
@@ -10090,7 +10344,7 @@ function PD.PushTripOptimized(rows, res, data)
             PD.ShopMatRow(rows, e, data or {}, true,
                 { { L["比价后从拍卖行购买更划算。"], 0.7, 0.7, 0.7 } })
             local row = rows[before + 1]
-            if row then row.tag = { text = L["拍卖行"] } end
+            if row then row.tag = { text = L["拍卖行"], color = PD.TAG_INK.ah } end
         end
     end
 end
@@ -10156,7 +10410,7 @@ function PD.PushTripGroups(rows, data)
             PD.ShopMatRow(rows, e, data, true,
                 { { L["没有商人直售货源，需要从拍卖行购买。"], 0.7, 0.7, 0.7 } })
             local row = rows[before + 1]
-            if row then row.tag = { text = L["拍卖行"] } end
+            if row then row.tag = { text = L["拍卖行"], color = PD.TAG_INK.ah } end
         end
     end
     return nil
@@ -10208,7 +10462,8 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip)
         kind = "row", h = PD.ROW_H, col = 1, it = { id },
         text = PD.Fit(DG.ItemName(id), 13, lw - 130),
         sub = sub,
-        tag = { text = e.tool and L["工具"] or e.spec and L["专精任务"] or PD.PurchaseSource(e) },
+        tag = { text = e.tool and L["工具"] or e.spec and L["专精任务"] or PD.PurchaseSource(e),
+                color = PD.TagInkOf(e) },
         right = right,
         right2 = right2,
         lines = tip,
@@ -10288,7 +10543,8 @@ function PD.RowsRecoveryDetail(rows, src)
                     kind = "row", h = PD.ROW_H, col = 1, it = { o.id },
                     text = PD.Fit(DG.ItemName(o.id), 13, lw - 150),
                     sub = format(L["×%d · 单价 %s"], n, RA.MoneyStr(unit, "copper")),
-                    tag = { text = ah and L["拍卖行"] or L["卖店"] },
+                    tag = { text = ah and L["拍卖行"] or L["卖店"],
+                            color = ah and PD.TAG_INK.ah or PD.TAG_INK.shop },
                     right = RA.MoneyStr(revenue, "copper"),
                     lines = {
                         { format(L["%d 件 · 单价 %s"], n, RA.MoneyStr(unit, "copper")) },
@@ -10316,7 +10572,7 @@ function PD.RowsRecoveryDetail(rows, src)
                     kind = "row", h = PD.ROW_H, col = 1, it = { o.id },
                     text = PD.Fit(DG.ItemName(o.id), 13, lw - 150),
                     sub = format(L["×%d"], n),
-                    tag = { text = L["未知"] },
+                    tag = { text = L["未知"], color = PD.TAG_INK.unknown },
                     right = L["—"],
                     lines = {
                         { format(L["%d 件"], n) },
@@ -10698,9 +10954,22 @@ function PD.LevelTool()
             PD.FlushPolicies()
         elseif k == "track" then
             local T = ns.ProfTrack
-            local res = PD.autoSnapshot
-            if T and res and PD.autoSnapshotSlug == PD.cur and T.Extract(res) then
-                T.Restart(PD.cur, res)
+            if T and T.Active and T.Active(PD.cur) then
+                T.Archive(PD.cur, "cancel")
+                PD.autoSnapshotSlug = nil
+            else
+                local res = PD.autoSnapshot
+                local ready = (T and res and PD.autoSnapshotSlug == PD.cur and T.Extract(res)) and true or false
+                if ready then
+                    T.Restart(PD.cur, res)
+                else
+                    local msg = L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
+                    if UIErrorsFrame and UIErrorsFrame.AddMessage then
+                        pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.82, 0.4)
+                    elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+                        pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, msg, 1, 0.82, 0.4)
+                    end
+                end
             end
         end
         PD.RequestRender()
@@ -10713,7 +10982,7 @@ PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
 PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
     { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling" }, 1 },
-    { L["采购与配方"], { "autoLearnedOnly", "autoOnlyAH", "autoBuyLimitedFormulas", "autoSkipUnpricedFormulas" }, 2 },
+    { L["采购与配方"], { "autoLearnedOnly", "autoOnlyAH", "autoBuyLimitedFormulas", "autoSkipUnpricedFormulas", "autoNoFormula" }, 2 },
     { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoCraftTools", "engChoice" }, 2 },
 }
 
@@ -10752,6 +11021,10 @@ function PD.RowsSettings(rows)
           desc = L["世界掉落图纸无拍卖行报价、商人图样无商人售价信息时，相应配方不参与升级路线。"],
           d1 = L["开启（默认）：来源价格无法核实的图纸不进路线，对应配方退回其他方案或固定参考路线。"],
           d2 = L["关闭：未知来源图纸照常参与计算，图纸费用按未知处理。"] },
+        { k = "autoNoFormula", name = L["只使用商人有定价的图纸"],
+          desc = L["未学配方的图纸必须在商人处以金币固定售卖，才按该价格参与路线比较。"],
+          d1 = L["开启：掉落、任务、通货兑换图纸的配方不参与路线，避免为一张图纸长跑或按 0 金计入。"],
+          d2 = L["关闭（默认）：各类来源的图纸照常参与，价格无法核实的按未知处理、不按 0 金计入。"] },
         { k = "autoFromCurrent", name = L["从当前技能开始计算"],
           desc = L["开启 = 只算当前技能到 300 的路线；关闭 = 从 1 全量重算整条路线（预估全程花费）"],
           d1 = L["开启：适合练级中途打开手册直接照着做。"],
@@ -11144,7 +11417,7 @@ local function WritBadge(cinfo, learned)
         return { text = L["已学"], color = { 1, 0.82, 0 } }
     end
     if learned[cinfo.slug] then
-        return { text = L["本专业"] }
+        return { text = L["本专业"], color = { 0.62, 0.86, 1.00 } }
     end
     local p = D.pro and D.pro[cinfo.slug]
     return { text = p and p.name or cinfo.slug, color = { 0.55, 0.57, 0.62 } }

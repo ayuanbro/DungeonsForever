@@ -1149,6 +1149,53 @@ if type(SlashCmdList) == "table" then
             DEFAULT_CHAT_FRAME:AddMessage("|cffff5040[dfdiag 执行出错]|r " .. tostring(err))
         end
     end
+    SLASH_DUNGEONSFOREVERCPU1 = "/dfcpu"
+    SlashCmdList["DUNGEONSFOREVERCPU"] = function()
+        if not (ResetCPUUsage and UpdateAddOnCPUUsage and GetAddOnCPUUsage and C_Timer) then
+            print("|cffff5040[无限副本手册]|r 本客户端不支持 CPU 采样")
+            return
+        end
+        local function NOW()
+            if type(debugprofilestop) == "function" then return debugprofilestop() end
+            return (GetTime() or 0) * 1000
+        end
+        local t0 = NOW()
+        ResetCPUUsage()
+        local PD = ns.ProfModule
+        local origRender = PD and PD.Render
+        local renders = 0
+        if origRender and not ns.__dfcpuBusy then
+            ns.__dfcpuBusy = true
+            PD.Render = function(...)
+                renders = renders + 1
+                return origRender(...)
+            end
+        end
+        print("|cff46bf72[无限副本手册]|r CPU 采样 5 秒，请停在当前页面不要操作")
+        C_Timer.After(5, function()
+            if origRender and ns.__dfcpuBusy then
+                PD.Render = origRender
+                ns.__dfcpuBusy = nil
+            end
+            UpdateAddOnCPUUsage()
+            local dt = (NOW() - t0) / 1000
+            if dt <= 0 then dt = 5 end
+            local me = GetAddOnCPUUsage("DungeonsForever") or 0
+            local top, topName = 0, "-"
+            if C_AddOns and C_AddOns.GetNumAddOns and C_AddOns.GetAddOnInfo then
+                for i = 1, C_AddOns.GetNumAddOns() do
+                    local nm = C_AddOns.GetAddOnInfo(i)
+                    if nm and nm ~= "DungeonsForever" then
+                        local v = GetAddOnCPUUsage(nm) or 0
+                        if v > top then top, topName = v, nm end
+                    end
+                end
+            end
+            print(string.format(
+                "|cff46bf72[无限副本手册]|r %.0f 秒内：本插件 %.1fms（%.2f%% 单核）｜专业页重绘 %d 次｜其他最高 %s %.1fms｜fps %.0f",
+                dt, me, me / dt / 10, renders, topName, top, GetFramerate and GetFramerate() or -1))
+        end)
+    end
 end
 if type(SlashCmdList) == "table" then
     SLASH_DUNGEONSFOREVERSPEED1 = "/dfspeed"
@@ -5938,7 +5985,6 @@ DG.Q_W_LOC = 90
 DG.Q_BADGE_H = (ns.hui and ns.hui.ChipH and ns.hui.ChipH(14)) or 13.7
 DG.Q_BADGE_GAP = 4
 DG.Q_BADGE_PAD = 5
-DG.Q_BADGE_DY = 1.6
 DG.Q_BADGE_FS = 11
 DG.Q_BADGE_MIN_W = 24
 DG.Q_BADGE_CLS_BG = { 0.64, 0.61, 0.55, 1 }
@@ -6053,7 +6099,7 @@ function DG.QuestOverviewClsBadge(n, cls)
         DG.BadgeTint(b, DG.QClassColor(cls))
     end
     b:ClearAllPoints()
-    b:SetPoint("TOPLEFT", n.posB, "TOPRIGHT", 3, -0.8)
+    b:SetPoint("TOPLEFT", n.posB, "TOPRIGHT", 3, 0)
     b:Show()
 end
 
@@ -6159,7 +6205,15 @@ function DG.PlaceBadge(b, x, text, maxX)
         b:SetWidth(w)
     end
     b:ClearAllPoints()
-    b:SetPoint("TOPLEFT", b:GetParent(), "TOPLEFT", x, -(DG.Q_ROW_H - DG.Q_BADGE_H) / 2 - DG.Q_BADGE_DY)
+    local host = b:GetParent()
+    local nm = host and host.name
+    local nh = nm and nm.GetStringHeight and nm:GetStringHeight() or 0
+    if nh <= 0 then nh = DG.Q_FS_NAME end
+    if nm then
+        b:SetPoint("TOPLEFT", nm, "TOPLEFT", x - DG.Q_X_NAME, -(nh - DG.Q_BADGE_H) / 2)
+    else
+        b:SetPoint("TOPLEFT", host, "TOPLEFT", x, -(DG.Q_ROW_H - DG.Q_BADGE_H) / 2)
+    end
     b:Show()
     return x + w + DG.Q_BADGE_GAP
 end

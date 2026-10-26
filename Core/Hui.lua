@@ -1964,13 +1964,86 @@ do
     ns.hui.CHIP_S_TOP = 1.12
     ns.hui.CHIP_S_BOT = 0.86
 
+    ns.hui.CHIP_LIFT = 1.0
+    ns.hui.CHIP_LABEL_RATIO = -0.771
+
+    local fhCache = {}
+
+    function ns.hui.ChipLineH(size)
+        size = tonumber(size) or 14
+        local cached = fhCache[size]
+        if cached then return cached end
+        if not ns.hui.__metricFs then
+            local host = CreateFrame("Frame", nil, UIParent)
+            host:Hide()
+            ns.hui.__metricFs = host:CreateFontString(nil, "OVERLAY")
+        end
+        local probe = ns.hui.__metricFs
+        probe:SetFont(ns.FONT, size, "")
+        probe:SetText("\228\184\128\229\155\189")
+        local h = probe:GetStringHeight()
+        if type(h) ~= "number" or h <= 0 then h = size end
+        fhCache[size] = h
+        return h
+    end
+
+    function ns.hui.ChipFontKey()
+        return tostring(ns.FONT)
+    end
+
+    function ns.hui.ChipCalibTable()
+        local db = DungeonsForeverDB
+        if type(db) ~= "table" then return nil end
+        if type(db.chipCalib) ~= "table" then db.chipCalib = {} end
+        return db.chipCalib
+    end
+
+    function ns.hui.ChipK()
+        local t = ns.hui.ChipCalibTable()
+        if t then
+            local key = ns.hui.ChipFontKey()
+            local k = t[key]
+            if type(k) == "number" then return k end
+            local pre = key .. "|"
+            for kk, vv in pairs(t) do
+                if type(kk) == "string" and type(vv) == "number" and string.sub(kk, 1, #pre) == pre then
+                    t[key] = vv
+                    t[kk] = nil
+                    return vv
+                end
+            end
+        end
+        local lh = ns.hui.ChipLineH(14)
+        if lh <= 0 then lh = 14 end
+        return ns.hui.CHIP_LIFT / lh
+    end
+
+    function ns.hui.SetChipK(k)
+        local t = ns.hui.ChipCalibTable()
+        if not t then return false end
+        local key = ns.hui.ChipFontKey()
+        if type(k) == "number" then
+            t[key] = k
+        else
+            t[key] = nil
+        end
+        return true
+    end
+
+    function ns.hui.ChipDY(size)
+        return ns.hui.ChipK() * ns.hui.ChipLineH(size)
+    end
+
+    function ns.hui.ChipLabelDY(size)
+        return ns.hui.ChipK() * ns.hui.CHIP_LABEL_RATIO * ns.hui.ChipLineH(size)
+    end
+
     local function ChipGrad(base)
         return Mul(base, ns.hui.CHIP_S_TOP), Mul(base, ns.hui.CHIP_S_BOT)
     end
 
     function ns.hui.ChipH(fs)
-        if fs and fs <= 13 then return ns.hui.CHIP_S_H13 end
-        return ns.hui.CHIP_S_H
+        return ns.hui.ChipLineH(tonumber(fs) or 14)
     end
 
     function ns.hui.ChipSolidBase(ink)
@@ -2013,7 +2086,8 @@ do
         f.__chipBorder = ns.hui.BuildRoundBorder(f, ns.hui.CHIP_S_R, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
         f.t = f:CreateFontString(nil, "OVERLAY")
         f.t:SetFont(ns.FONT, ns.hui.CHIP_S_FS, "")
-        f.t:SetPoint("CENTER", f, "CENTER", 0, 0.5)
+        f.t.__chipLy = ns.hui.ChipLabelDY(ns.hui.CHIP_S_FS)
+        f.t:SetPoint("CENTER", f, "CENTER", 0, f.t.__chipLy)
         f.t:SetWordWrap(false)
         f.t:SetTextColor(1, 1, 1)
         f.lab = f.t
@@ -2031,6 +2105,12 @@ do
         ink = ink or ns.hui.layer.L2
         f.t:SetText(text)
         f.t:SetTextColor(1, 1, 1)
+        local ly = ns.hui.ChipLabelDY(ns.hui.CHIP_S_FS)
+        if f.t.__chipLy ~= ly then
+            f.t.__chipLy = ly
+            f.t:ClearAllPoints()
+            f.t:SetPoint("CENTER", f, "CENTER", 0, ly)
+        end
         ns.hui.PaintSolidFill(f.__chipFill, ns.hui.ChipSolidBase(ink))
         if f.__chipBorder then
             for _, tex in ipairs(f.__chipBorder) do

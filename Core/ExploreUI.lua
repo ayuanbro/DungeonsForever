@@ -704,7 +704,7 @@ local function MakeTagPill(r, key)
             p:SetBackdropBorderColor(0.29, 0.27, 0.24, 0.9)
         end
         local t = MakeFS(p, 11, nil, "CENTER")
-        t:SetAllPoints()
+        t:SetPoint("CENTER", p, "CENTER", 0, (ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5)
         t:SetWordWrap(false)
         p.t = t
         p:Hide()
@@ -726,9 +726,9 @@ local function PaintPill(r, key, txt, show, tR, tG, tB, eR, eG, eB)
         local pk = PILL_PREV[key]
         local prev = pk and PillGet(r, pk) or nil
         if prev and prev.IsShown and prev:IsShown() then
-            p:SetPoint("LEFT", prev, "RIGHT", 4, -0.8)
+            p:SetPoint("LEFT", prev, "RIGHT", 4, 0)
         else
-            p:SetPoint("LEFT", r.a, "RIGHT", 6, -0.8)
+            p:SetPoint("LEFT", r.a, "RIGHT", 6, ns.hui.ChipDY(14))
         end
         p.t:SetText(txt)
         p.t:SetTextColor(1, 1, 1)
@@ -1915,36 +1915,22 @@ local function RtMapPaint(mapID, x, y)
     local opool = EG.rtOvlTex or {}
     for i = 1, #opool do opool[i]:Hide() end
     if ns.RouteOvl then
-        local seen, names = {}, {}
         local otg = EG.rtCurTgt
         local olist = otg and otg.ovl
+        local on = 0
         if type(olist) == "table" then
             for i = 1, #olist do
-                local nm = olist[i]
-                if type(nm) == "string" and not seen[nm] then
-                    seen[nm] = true
-                    names[#names + 1] = nm
+                local od = ns.RouteOvl[olist[i]]
+                if od and od[1] == mapID and od[3] and od[4] and opool[on + 1] then
+                    on = on + 1
+                    local ot = opool[on]
+                    ot:ClearAllPoints()
+                    ot:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
+                    ot:SetSize(dw, dh)
+                    ot:SetTexture(od[2])
+                    ot:SetTexCoord(0, od[5] / od[3], 0, od[6] / od[4])
+                    ot:Show()
                 end
-            end
-        end
-        for nm, od in pairs(ns.RouteOvl) do
-            if type(od) == "table" and od[1] == mapID and not seen[nm] then
-                seen[nm] = true
-                names[#names + 1] = nm
-            end
-        end
-        local on = 0
-        for i = 1, #names do
-            local od = ns.RouteOvl[names[i]]
-            if od and od[1] == mapID and od[3] and od[4] and opool[on + 1] then
-                on = on + 1
-                local ot = opool[on]
-                ot:ClearAllPoints()
-                ot:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
-                ot:SetSize(dw, dh)
-                ot:SetTexture(od[2])
-                ot:SetTexCoord(0, od[5] / od[3], 0, od[6] / od[4])
-                ot:Show()
             end
         end
     end
@@ -2222,7 +2208,7 @@ local function PaintRoutes()
                     end
                     st.kind:ClearAllPoints()
                     if solid then
-                        st.kind:SetPoint("LEFT", st.act, "RIGHT", 8, -0.8)
+                        st.kind:SetPoint("LEFT", st.act, "RIGHT", 8, ns.hui.ChipDY(14))
                     else
                         st.kind:SetPoint("TOPLEFT", st.act, "TOPRIGHT", 8, 0)
                     end
@@ -2270,9 +2256,14 @@ local function PaintRoutes()
     end
     if EG.rtTime then EG.rtTime:SetText(race.time or t.time or "") end
     local msd = EG.rtStepSel and race.steps[EG.rtStepSel]
-    if msd and msd.x and msd.y then
-        local mm = (type(msd.m) == "table" and msd.m[1]) or t.mapID
-        RtMapPaint(mm, msd.x, msd.y)
+    if msd and type(msd.m) == "table" and msd.m[1] then
+        if msd.x and msd.y then
+            RtMapPaint(msd.m[1], msd.x, msd.y)
+        else
+            RtMapPaint(msd.m[1])
+        end
+    elseif msd and msd.x and msd.y then
+        RtMapPaint(t.mapID, msd.x, msd.y)
     else
         RtMapPaint(t.mapID)
     end

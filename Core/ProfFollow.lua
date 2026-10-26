@@ -1129,20 +1129,32 @@ local function BuildBody()
         rowsShop[i] = MakeLine(f.shop, 14, C_TEXT)
         rowsShopNum[i] = MakeLine(f.shop, 14, C_GOLD)
         local function MakePill(color)
-            local p = CreateFrame("Frame", nil, f.shop)
-            p:SetHeight(17)
-            local cols
-            if ns.hui and ns.hui.BuildCapsule then
-                cols = ns.hui.BuildCapsule(p, 8, ns.hui.layer.L2)
+            local p = CreateFrame("Frame", nil, f.shop, "BackdropTemplate")
+            local solid = ns.hui and ns.hui.BuildSolidFill and true
+            if solid then
+                p:SetHeight((ns.hui.ChipH and ns.hui.ChipH(14)) or 13.7)
+                p.__chipFill = ns.hui.BuildSolidFill(p, ns.hui.CHIP_S_R, ns.hui.layer.L2)
+                p.__border = ns.hui.BuildRoundBorder(p, ns.hui.CHIP_S_R, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
+                p.fs = MakeFS(p, ns.hui.CHIP_S_FS, C_WHITE, "CENTER")
             else
-                local tx = p:CreateTexture(nil, "BACKGROUND")
-                tx:SetAllPoints()
-                tx:SetColorTexture(1, 1, 1, 1)
-                cols = { tx }
+                p:SetHeight(17)
+                local cols
+                if ns.hui and ns.hui.BuildCapsule then
+                    cols = ns.hui.BuildCapsule(p, 8, ns.hui.layer.L2)
+                else
+                    local tx = p:CreateTexture(nil, "BACKGROUND")
+                    tx:SetAllPoints()
+                    tx:SetColorTexture(1, 1, 1, 1)
+                    cols = { tx }
+                end
+                p.__cols = cols
+                p.fs = MakeFS(p, 14, color, "CENTER")
             end
-            p.__cols = cols
-            p.fs = MakeFS(p, 14, color, "CENTER")
-            p.fs:SetAllPoints(p)
+            if solid then
+                p.fs:SetPoint("CENTER", p, "CENTER", 0, (ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(ns.hui.CHIP_S_FS)) or 0.5)
+            else
+                p.fs:SetAllPoints(p)
+            end
             p.fs:SetWordWrap(false)
             p:Hide()
             return p
@@ -1546,13 +1558,17 @@ function PF.Paint()
                 at = e.at or 0,
                 src = srcByID and srcByID[e.id] or nil,
             }
+            if row.at == math.huge then
+                row.gate = true
+                row.at = 0
+            end
             local w1 = tw(row.nm)
             if w1 > nameW then nameW = w1 end
             local w2 = tw(format("%d/%d", math.min(row.have, row.need), row.need))
             if w2 > numW then numW = w2 end
             local w3 = tw(row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
             if w3 > missW then missW = w3 end
-            local w5 = tw(format("%d+", row.at)) + 10
+            local w5 = tw(row.gate and L["全程"] or format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
             if row.src then
                 local stext = row.src.vendor and (ns.ProfVendorNames and ns.ProfVendorNames[row.src.npcID]
@@ -1568,6 +1584,7 @@ function PF.Paint()
             local lastAt = nil
             for _, e in ipairs(shown) do
                 local at = e.at or 0
+                if at == math.huge then at = 0 end
                 if at ~= lastAt then
                     local htext = at > 0 and format(L["第 %d 步起"], at) or L["路线起点"]
                     local w0 = tw(htext) + 10
@@ -1608,10 +1625,18 @@ function PF.Paint()
             local tp = rowsShopTagPill[n + 1]
             local function paintPill(p, txt, x0, wpx, cr, cg, cb, ca)
                 p:ClearAllPoints()
-                p:SetPoint("TOPLEFT", f.shop, "TOPLEFT", x0, ry + 1)
-                p:SetSize(math.max(wpx, 34), 17)
-                local a2 = ca or 0.99
-                for _, t in ipairs(p.__cols) do t:SetVertexColor(cr, cg, cb, a2) end
+                p:SetPoint("TOPLEFT", f.shop, "TOPLEFT", x0, ry + ((ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(14)) or -0.8))
+                p:SetWidth(math.max(wpx, 34))
+                if p.__chipFill and ns.hui and ns.hui.PaintSolidFill then
+                    ns.hui.PaintSolidFill(p.__chipFill, ns.hui.ChipSolidBase({ cr, cg, cb }))
+                    if p.__border then
+                        for _, t in ipairs(p.__border) do t:SetVertexColor(cr, cg, cb, 1) end
+                    end
+                    p.fs:SetTextColor(1, 1, 1)
+                else
+                    local a2 = ca or 0.99
+                    for _, t in ipairs(p.__cols) do t:SetVertexColor(cr, cg, cb, a2) end
+                end
                 p.fs:SetText(txt)
                 p:Show()
             end
@@ -1655,10 +1680,18 @@ function PF.Paint()
                     srcp:Hide()
                 end
                 tp:ClearAllPoints()
-                tp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -14, ry + 1)
-                tp:SetSize(math.max(tagW, 34), 17)
-                for _, t in ipairs(tp.__cols) do t:SetVertexColor(0.55, 0.55, 0.55, 0.22) end
-                tp.fs:SetText(format("%d+", row.at))
+                tp:SetPoint("TOPRIGHT", f.shop, "TOPRIGHT", -14, ry + ((ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(14)) or -0.8))
+                tp:SetWidth(math.max(tagW, 34))
+                if tp.__chipFill and ns.hui and ns.hui.PaintSolidFill then
+                    ns.hui.PaintSolidFill(tp.__chipFill, ns.hui.ChipSolidBase({ 0.55, 0.55, 0.55 }))
+                    if tp.__border then
+                        for _, t in ipairs(tp.__border) do t:SetVertexColor(0.55, 0.55, 0.55, 1) end
+                    end
+                    tp.fs:SetTextColor(1, 1, 1)
+                else
+                    for _, t in ipairs(tp.__cols) do t:SetVertexColor(0.55, 0.55, 0.55, 0.22) end
+                end
+                tp.fs:SetText(row.gate and L["全程"] or format("%d+", row.at))
                 tp:Show()
                 n = n + 1
             end

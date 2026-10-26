@@ -162,7 +162,8 @@ local function EnsureGD()
         local fn = ns.EnsureGearData
         GD = type(fn) == "function" and fn() or nil
         GD_ITEMS = GD and GD.items or {}
-        GD_SRC = GD and GD.src or nil
+        local fsrc = ns.EnsureGearSrc
+        GD_SRC = (type(fsrc) == "function" and fsrc()) or (GD and GD.src) or nil
         GD_SRC_Q = type(ns.GearSrcQ) == "table" and ns.GearSrcQ or nil
         GD_WDLV = type(ns.GearWDLv) == "table" and ns.GearWDLv or nil
         GD_SRC_LV = type(ns.GearSrcQLv) == "table" and ns.GearSrcQLv or nil

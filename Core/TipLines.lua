@@ -99,9 +99,18 @@ local function BuildCraft()
     return craftIdx
 end
 
+local function GearSrcQ()
+    if type(ns.GearSrcQ) ~= "table" then
+        local fn = ns.EnsureGearData
+        if type(fn) == "function" then fn() end
+    end
+    local gq = ns.GearSrcQ
+    return type(gq) == "table" and gq or nil
+end
+
 local function QuestQids(id)
     local ids = {}
-    local gq = ns.GearSrcQ
+    local gq = GearSrcQ()
     if type(gq) == "table" and type(gq[id]) == "number" then
         ids[#ids + 1] = gq[id]
     end
@@ -327,8 +336,6 @@ local EXCLUDE = {
 }
 local augStamp = {}
 
-local _shGuard = false
-
 local function TipItemID(tt)
     if type(tt.GetItem) ~= "function" then return nil end
     local ok, _, link = pcall(tt.GetItem, tt)
@@ -344,100 +351,58 @@ local function IlvlOf(id)
     return nil
 end
 
-local function LastLineBottom(tt)
-    local nm = tt.GetName and tt:GetName()
-    local n = tt.NumLines and tt:NumLines() or 0
-    if type(nm) ~= "string" or type(n) ~= "number" then return nil end
-    for i = n, 1, -1 do
-        local f = _G[nm .. "TextLeft" .. i]
-        if f and f.IsShown and f:IsShown() then
-            local b = f.GetBottom and f:GetBottom()
-            if type(b) == "number" then return b end
-        end
-    end
-    return nil
-end
-
-local function FixIlvlHeight(tt)
-    local fs = tt.__dfIlvlFS
-    if not (fs and fs.IsShown and fs:IsShown()) then return end
-    local pad = tt.__dfIlvlPad
-    if type(pad) ~= "number" then return end
-    local top = tt.GetTop and tt:GetTop()
-    local bot = LastLineBottom(tt)
-    if type(top) ~= "number" or type(bot) ~= "number" then return end
-    local h = math.ceil(top - bot + pad)
-    tt.__dfIlvlSetH = h
-    local cur = tt.GetHeight and tt:GetHeight()
-    if type(cur) == "number" and math.abs(cur - h) < 1 then return end
-    _shGuard = true
-    tt:SetHeight(h)
-    _shGuard = false
-end
-
 local function InsertIlvl(tt, id)
-    if not Cfg().ilvl then
-        if tt.__dfIlvlFS then tt.__dfIlvlFS:Hide() end
-        return
-    end
     local nm = tt.GetName and tt:GetName()
     if type(nm) ~= "string" or nm == "" then return end
-    local fs = tt.__dfIlvlFS
-    local l1 = _G[nm .. "TextLeft1"]
-    local l2 = _G[nm .. "TextLeft2"]
+    if not Cfg().ilvl then return end
     local il = IlvlOf(id)
-    if not il or not l1 or not l2 or not l1:IsShown() then
-        if fs then fs:Hide() end
+    if not il then return end
+    local l2 = _G[nm .. "TextLeft2"]
+    if not l2 or not l2:IsShown() then return end
+    local txt = format(L["物品等级 %d"], il)
+    if l2:GetText() == txt then return end
+    local n = tt.NumLines and tt:NumLines() or 0
+    if n < 1 then return end
+    if n == 1 then
+        tt:AddLine(txt, C_SRC[1], C_SRC[2], C_SRC[3], true)
+        tt.__dfIlvlShiftN = 2
         return
     end
-    if type(tt.__dfIlvlPad) ~= "number" then
-        local h0 = tt.GetHeight and tt:GetHeight()
-        local top = tt.GetTop and tt:GetTop()
-        local bot = LastLineBottom(tt)
-        if type(h0) == "number" and type(top) == "number" and type(bot) == "number" then
-            local d = h0 - (top - bot)
-            if d >= 0 and d <= 40 then
-                tt.__dfIlvlPad = d
-            end
+    if tt.__dfIlvlShiftN and n >= tt.__dfIlvlShiftN then return end
+    local rows = {}
+    for i = 1, n do
+        local lf = _G[nm .. "TextLeft" .. i]
+        local rf = _G[nm .. "TextRight" .. i]
+        local r = {}
+        if lf and lf:IsShown() then
+            r.tl = lf:GetText()
+            r.lr, r.lg, r.lb = lf:GetTextColor()
+        end
+        if rf and rf:IsShown() then
+            r.tr = rf:GetText()
+            r.rr, r.rg, r.rb = rf:GetTextColor()
+        end
+        rows[i] = r
+    end
+    tt:AddLine(txt, C_SRC[1], C_SRC[2], C_SRC[3], true)
+    local m = tt:NumLines()
+    if type(m) ~= "number" or m <= n then return end
+    for i = m, 3, -1 do
+        local d = rows[i - 1] or {}
+        local lf = _G[nm .. "TextLeft" .. i]
+        local rf = _G[nm .. "TextRight" .. i]
+        if lf then
+            lf:SetText(d.tl)
+            if d.tl then lf:SetTextColor(d.lr or 1, d.lg or 1, d.lb or 1) end
+        end
+        if rf then
+            rf:SetText(d.tr)
+            if d.tr then rf:SetTextColor(d.rr or 1, d.rg or 1, d.rb or 1) end
         end
     end
-    if not fs then
-        fs = tt:CreateFontString(nil, "ARTWORK")
-        pcall(fs.SetFontObject, fs, "GameTooltipTextSmall")
-        tt.__dfIlvlFS = fs
-    end
-    fs:SetText(format(L["物品等级 %d"], il))
-    fs:SetTextColor(C_SRC[1], C_SRC[2], C_SRC[3])
-    fs:ClearAllPoints()
-    fs:SetPoint("TOPLEFT", l1, "BOTTOMLEFT", 0, -2)
-    fs:Show()
-    local fh = fs:GetHeight()
-    if type(fh) ~= "number" or fh <= 0 then return end
-    local x = 0
-    if l2.GetNumPoints and l2:GetNumPoints() >= 1 then
-        local _, _, _, px = l2:GetPoint(1)
-        if type(px) == "number" then x = px end
-    end
-    l2:SetPoint("TOPLEFT", fs, "BOTTOMLEFT", x, -2)
-    tt.__dfIlvlH = fh + 2
-    local function Apply()
-        if tt.__dfIlvlFS ~= fs then return end
-        if not tt.IsShown or not tt:IsShown() then return end
-        if TipItemID(tt) ~= id then return end
-        fs:ClearAllPoints()
-        fs:SetPoint("TOPLEFT", l1, "BOTTOMLEFT", 0, -2)
-        fs:Show()
-        l2:SetPoint("TOPLEFT", fs, "BOTTOMLEFT", x, -2)
-        FixIlvlHeight(tt)
-    end
-    Apply()
-    if C_Timer and C_Timer.After then
-        C_Timer.After(0, Apply)
-        C_Timer.After(0.25, Apply)
-        C_Timer.After(0.6, Apply)
-        C_Timer.After(1.0, Apply)
-        C_Timer.After(1.5, Apply)
-    end
+    l2:SetText(txt)
+    l2:SetTextColor(C_SRC[1], C_SRC[2], C_SRC[3])
+    tt.__dfIlvlShiftN = m
 end
 TL.InsertIlvl = InsertIlvl
 
@@ -489,7 +454,6 @@ local function Augment(tt)
                     tt.__dfAugN = (tt.__dfAugN or 0) + 1
                 end
                 tt.__dfScoreShown = true
-                FixIlvlHeight(tt)
             elseif tt.__dfAugTries > 0 then
                 tt.__dfAugTries = tt.__dfAugTries - 1
                 C_Timer.After(0.6, Retry)
@@ -508,19 +472,9 @@ local function HookTip(tt)
         self.__dfAugN = nil
         self.__dfAugTries = nil
         self.__dfScoreShown = nil
-        if self.__dfIlvlFS then self.__dfIlvlFS:Hide() end
+        self.__dfIlvlShiftN = nil
     end)
     pcall(tt.HookScript, tt, "OnTooltipSetItem", function() Augment(tt) end)
-    pcall(tt.HookScript, tt, "OnUpdate", function(t)
-        FixIlvlHeight(t)
-    end)
-    pcall(hooksecurefunc, tt, "SetHeight", function(t)
-        if _shGuard then return end
-        local fs = t.__dfIlvlFS
-        if not (fs and fs.IsShown and fs:IsShown()) then return end
-        if type(t.__dfIlvlPad) ~= "number" then return end
-        FixIlvlHeight(t)
-    end)
 end
 
 local SAMPLE_CAP_WISH = 64
@@ -563,7 +517,7 @@ local function QuestKeys()
     if qksCache then return qksCache end
     local qks = {}
     local seenQ = {}
-    local gq = ns.GearSrcQ
+    local gq = GearSrcQ()
     if type(gq) == "table" then
         for k in pairs(gq) do
             if type(k) == "number" and not seenQ[k] then
@@ -596,7 +550,7 @@ local function SrcKeys(srcIdx)
 end
 
 local function QuestHit(id)
-    local gq = ns.GearSrcQ
+    local gq = GearSrcQ()
     if type(gq) == "table" and type(gq[id]) == "number" then return true end
     local v = type(ns.GearRewardQ) == "table" and ns.GearRewardQ[id] or nil
     if type(v) == "number" then return true end
@@ -760,7 +714,7 @@ function TL.EnsurePreview(card)
     tip:SetFrameLevel(card:GetFrameLevel() + 20)
     pcall(tip.HookScript, tip, "OnTooltipCleared", function(self)
         augStamp[self] = nil
-        if self.__dfIlvlFS then self.__dfIlvlFS:Hide() end
+        self.__dfIlvlShiftN = nil
     end)
     pcall(tip.HookScript, tip, "OnTooltipSetItem", function(self)
         if not previewOn then return end
@@ -834,7 +788,6 @@ function TL.RefreshPreview()
         augStamp[tip] = id
         InsertIlvl(tip, id)
         Append(tip, TL.Lines(id))
-        FixIlvlHeight(tip)
     end
     tip:Show()
     local w = 0

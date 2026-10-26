@@ -363,7 +363,7 @@ function E.FormulaFor(r, context)
     local limitedCost
     for _, o in ipairs(raw) do
         MaybeYield()
-        if type(o) == "table" and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
+        if type(o) == "table" and o.npcID and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
             hasOffer = true
             if o.unlimited == true then hasUnlimited = true
             elseif o.limited or o.unlimited == false then hasLimited = true end
@@ -411,7 +411,8 @@ function E.FormulaFor(r, context)
         id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
         recipeKey = r.key, known = false, sources = shallow(r.source),
         vendorOffers = offers, source = source or "unknown", cost = cost,
-        usable = true, unpriced = unpriced,
+        usable = (cost ~= nil) or false, unpriced = unpriced,
+        reason = (cost == nil) and "formulaPriceUnknown" or nil,
         unlimited = hasUnlimited or nil, limited = hasLimited or nil,
         stockUnknown = hasOffer and not hasUnlimited and not hasLimited or nil,
     }

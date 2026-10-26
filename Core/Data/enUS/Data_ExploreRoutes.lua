@@ -138,6 +138,7 @@ ns.ExploreRoutes = {
         } },
         { name = "Orgrimmar", mapID = 1454, fp = "Orgrimmar · City flight path", time = "~3 min",
           dst = { 1454, 49.4, 50.4 },
+          ovl = { "奥格瑞玛复活点", "剃刀岭复活点", "试炼谷复活点", "森金村复活点" },
           races = {
             { race = "Tauren", steps = {
               { t = "First death", k = "die", m = { 1411 }, d = "Charge east from the Crossroads into Durotar; after the river, die to the boars." },

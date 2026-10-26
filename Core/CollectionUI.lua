@@ -1440,7 +1440,7 @@ local function BuildDetailPanel(page)
     pill:SetPoint("TOPRIGHT", p, "TOPRIGHT", -PAD, -(8 + MODEL_H + 12) + 4)
     pill:SetSize(74, petH)
     local pillTxt = MakeFS(pill, 11, C_WHITE, "CENTER")
-    pillTxt:SetPoint("CENTER", pill, "CENTER", 0, 0.5)
+    pillTxt:SetPoint("CENTER", pill, "CENTER", (ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5)
 
     local pill2 = CreateFrame("Frame", nil, p, "BackdropTemplate")
     if ns.hui and ns.hui.BuildSolidFill then
@@ -1457,7 +1457,7 @@ local function BuildDetailPanel(page)
     pill2:SetPoint("TOPRIGHT", pill, "TOPLEFT", -8, 0)
     pill2:SetSize(74, petH)
     local pill2Txt = MakeFS(pill2, 11, C_WHITE, "CENTER")
-    pill2Txt:SetPoint("CENTER", pill2, "CENTER", 0, 0.5)
+    pill2Txt:SetPoint("CENTER", pill2, "CENTER", (ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5)
     pill2:Hide()
 
     local attrCards = {}
