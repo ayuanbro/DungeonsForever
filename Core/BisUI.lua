@@ -103,6 +103,30 @@ local SLOT_NAMES = {
     ranged = L["远程"],
 }
 
+local SLOT_EMPTY = {
+    head = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Head",
+    neck = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Neck",
+    shoulder = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Shoulder",
+    back = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Back",
+    chest = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Chest",
+    shirt = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Shirt",
+    tabard = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Tabard",
+    wrist = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Wrist",
+    hands = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Hands",
+    waist = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Waist",
+    legs = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Legs",
+    feet = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Feet",
+    finger = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Finger",
+    finger2 = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Finger",
+    trinket = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Trinket",
+    trinket2 = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Trinket",
+    main = "Interface\\PaperDoll\\UI-PaperDoll-Slot-MainHand",
+    off = "Interface\\PaperDoll\\UI-PaperDoll-Slot-SecondaryHand",
+    ranged = "Interface\\PaperDoll\\UI-PaperDoll-Slot-Ranged",
+}
+
+local SLOT_EMPTY_CROP = 0.14
+
 local function RowsKey(slotKey)
     if slotKey == "finger2" then return "finger" end
     if slotKey == "trinket2" then return "trinket" end
@@ -1682,12 +1706,14 @@ local function PaintDoll()
         local empty = not id
         if key == "off" and mk == "two-hand" then empty = true end
         if empty then
-            cell.icon:SetTexture("")
+            cell.icon:SetTexture(SLOT_EMPTY[key] or "Interface\\PaperDoll\\UI-PaperDoll-Slot-Chest")
+            cell.icon:SetTexCoord(SLOT_EMPTY_CROP, 1 - SLOT_EMPTY_CROP, SLOT_EMPTY_CROP, 1 - SLOT_EMPTY_CROP)
             cell.name:SetText(key == "off" and mk == "two-hand"
-                and L["被双手武器占用"] or "—")
+                and L["被双手武器占用"] or cell.slotLabel)
             cell.name:SetTextColor(Unpack(C_DIM))
         else
             cell.icon:SetTexture(ItemIcon(id))
+            cell.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
             cell.name:SetText(DG.ItemName(id))
             cell.name:SetTextColor(Unpack(QColor(ItemQuality(sp, id, q))))
         end
@@ -1751,11 +1777,18 @@ local AUTO_BUDGET_MS = 6
 
 BG.AUTO_SRC = { known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
 
-function BG.AutoLevel()
-    local lv = tonumber(BG.filterLv) or PlayerLevel() or 60
-    lv = math.floor(lv)
-    if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
+local function ClampLv(lv)
+    lv = math.floor(tonumber(lv) or 60)
+    if lv < 1 then return 1 elseif lv > 60 then return 60 end
     return lv
+end
+
+function BG.AutoLevel()
+    return ClampLv(PlayerLevel() or 60)
+end
+
+function BG.GenLevel()
+    return ClampLv(tonumber(BG.filterLv) or PlayerLevel() or 60)
 end
 
 local function CopyCur(src)
@@ -1949,7 +1982,7 @@ function BG.WarnEmpty()
         if BG.srcSet[f.id] then names[#names + 1] = f.label end
     end
     local src = (#names > 0) and table.concat(names, " · ") or L["未选来源"]
-    local msg = format(L["%d级 · "], BG.AutoLevel()) .. src .. " · " .. L["筛选范围内没有可用装备"]
+    local msg = format(L["%d级 · "], BG.GenLevel()) .. src .. " · " .. L["筛选范围内没有可用装备"]
     if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
         pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, "|cffff7a66" .. msg .. "|r")
     end
@@ -2217,7 +2250,7 @@ function BG.StartManualGen()
     BG.cur = {}
     BG.ench = {}
     BG.RequestRender()
-    local cap = BG.AutoLevel()
+    local cap = BG.GenLevel()
     AutoJobStart("manual", cap, AutoSig("manual", cap), ss)
 end
 end
@@ -2378,6 +2411,7 @@ local function PlanChip(r)
     end
     c:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -7)
     r.chip = c
+    BG.chipW = c:GetWidth() or 29
     r.dot:ClearAllPoints()
     r.dot:SetPoint("TOP", c, "BOTTOM", 0, -2)
     return c
@@ -2446,6 +2480,8 @@ local function PaintPlans()
                     r.title:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -(c:GetWidth() or 29) - 13, 22)
                 else
                     if r.chip then r.chip:Hide() end
+                    r.dot:ClearAllPoints()
+                    r.dot:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -(8 + (BG.chipW or 29) / 2 - 7), 7)
                     r.title:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -2)
                     r.title:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 8, 2)
                     r.title:SetPoint("RIGHT", r, "RIGHT", -30, 0)
@@ -3555,33 +3591,29 @@ local function MakeCell(parent, w, slotLabel, mirror)
     local hfx = ns.hui and ns.hui.HuiCardFX or nil
     if not (hfx and hfx(c, 6, 2)) then Cardify(c) end
     c.icon = c:CreateTexture(nil, "ARTWORK")
-    c.icon:SetSize(26, 26)
+    c.icon:SetSize(32, 32)
     c.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(c.icon) end
-    c.slot = MakeFS(c, 14, C_GREY, "LEFT")
-    c.slot:SetWordWrap(false)
-    c.slot:SetText(slotLabel)
+    c.slotLabel = slotLabel
     c.name = MakeFS(c, 14, C_TEXT, "LEFT")
-    c.name:SetWidth(w - 42)
+    c.name:SetWidth(w - 46 - 6)
     c.name:SetWordWrap(false)
-    c.ench = MakeFS(c, 14, C_GREEN, "LEFT")
+    c.ench = MakeFS(c, 12, C_GREEN, "LEFT")
     c.ench:SetWordWrap(false)
     c.dot = c:CreateTexture(nil, "OVERLAY")
     c.dot:SetSize(5, 5)
     c.dot:SetColorTexture(0.94, 0.71, 0.24, 1)
     c.dot:SetShown(false)
     if not mirror then
-        c.slot:SetPoint("TOPLEFT", c, "TOPLEFT", 6, -3)
-        c.ench:SetPoint("TOPRIGHT", c, "TOPRIGHT", -6, -3)
-        c.icon:SetPoint("TOPLEFT", c, "TOPLEFT", 6, -16)
-        c.name:SetPoint("LEFT", c.icon, "RIGHT", 6, 0)
+        c.icon:SetPoint("LEFT", c, "LEFT", 6, 0)
+        c.name:SetPoint("TOPLEFT", c, "TOPLEFT", 46, -6)
+        c.ench:SetPoint("TOPLEFT", c, "TOPLEFT", 46, -26)
     else
-        c.slot:SetPoint("TOPRIGHT", c, "TOPRIGHT", -6, -3)
-        c.slot:SetJustifyH("RIGHT")
-        c.ench:SetPoint("TOPLEFT", c, "TOPLEFT", 6, -3)
-        c.icon:SetPoint("TOPRIGHT", c, "TOPRIGHT", -6, -16)
-        c.name:SetPoint("RIGHT", c.icon, "LEFT", -6, 0)
+        c.icon:SetPoint("RIGHT", c, "RIGHT", -6, 0)
+        c.name:SetPoint("TOPRIGHT", c, "TOPRIGHT", -46, -6)
         c.name:SetJustifyH("RIGHT")
+        c.ench:SetPoint("TOPRIGHT", c, "TOPRIGHT", -46, -26)
+        c.ench:SetJustifyH("RIGHT")
     end
     c:SetScript("OnEnter", function(self)
         if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
@@ -4079,15 +4111,15 @@ local function BuildBrowser(parent)
         local hfx = ns.hui and ns.hui.HuiCardFX or nil
         if not (hfx and hfx(r, 6, 2)) then Cardify(r) end
         r.icon = r:CreateTexture(nil, "ARTWORK")
-        r.icon:SetSize(30, 30)
+        r.icon:SetSize(32, 32)
         r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(r.icon) end
         r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
         r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -5)
+        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 46, -7)
         r.name:SetWordWrap(false)
-        r.src = MakeFS(r, 14, C_GREY, "LEFT")
-        r.src:SetPoint("TOPLEFT", r, "TOPLEFT", 44, -24)
+        r.src = MakeFS(r, 12, C_GREY, "LEFT")
+        r.src:SetPoint("TOPLEFT", r, "TOPLEFT", 46, -27)
         r.src:SetPoint("RIGHT", r, "RIGHT", -52, 0)
         r.src:SetWordWrap(false)
         r.eqTag = MakeFS(r, 14, C_GOLD, "LEFT")
@@ -4106,8 +4138,8 @@ local function BuildBrowser(parent)
         r.chip2:SetFrameLevel(r:GetFrameLevel() + 2)
         r.chip3 = DG.MakeBadge(r)
         r.chip3:SetFrameLevel(r:GetFrameLevel() + 2)
-        r.sideTag = MakeFS(r, 14, C_GREY, "RIGHT")
-        r.sideTag:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -23)
+        r.sideTag = MakeFS(r, 12, C_GREY, "RIGHT")
+        r.sideTag:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -27)
         r.sideTag:SetWordWrap(false)
         r.wishBt = CreateFrame("Button", nil, r)
         r.wishBt:SetSize(22, 22)
@@ -4627,13 +4659,13 @@ local function BuildEnchCard(parent)
         local hfx = ns.hui and ns.hui.HuiCardFX or nil
         if not (hfx and hfx(r, 6, 2)) then Cardify(r) end
         r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -3)
+        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -2)
         r.name:SetWordWrap(false)
         r.lvl = MakeFS(r, 14, C_GREY, "RIGHT")
         r.lvl:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -4)
         r.lvl:SetWordWrap(false)
-        r.note = MakeFS(r, 14, C_GREY, "LEFT")
-        r.note:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -21)
+        r.note = MakeFS(r, 12, C_GREY, "LEFT")
+        r.note:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -22)
         r.note:SetWidth(230)
         r.note:SetWordWrap(false)
         r:SetScript("OnEnter", function(self)

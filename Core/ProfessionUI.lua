@@ -562,19 +562,19 @@ PD.GC_AVAIL_W = PD.RIGHT_W - PD.LIST_PAD
 PD.GC_COLW = math.floor((PD.GC_AVAIL_W - (PD.GC_COLS - 1) * PD.GC_GAP) / PD.GC_COLS)
 PD.GC_ROWW = PD.GC_COLS * PD.GC_COLW + (PD.GC_COLS - 1) * PD.GC_GAP
 PD.GC_PAD = 8
-PD.GC_ICON = 38
+PD.GC_ICON = 32
 PD.GC_RICON = 38
 PD.GC_RGAP = 4
-PD.GC_SUB = 16
+PD.GC_SUB = 12
 PD.GC_PLACE = 18
 PD.GC_MORE = 18
-PD.GC_TOP = 56
+PD.GC_TOP = 52
 PD.GC_ROUTE_TOP = 74
-PD.GC_HEAD = 52
+PD.GC_HEAD = 48
 PD.GC_RHEAD = 68
-PD.GC_NAME_DY = -10
-PD.GC_LV_DY = -11
-PD.GC_SUB_DY = -32
+PD.GC_NAME_DY = -8
+PD.GC_LV_DY = -9
+PD.GC_SUB_DY = -28
 PD.GC_RICON_DY = -28
 PD.GC_FS_NAME = 14
 PD.GC_FS_LV = 14
@@ -1117,11 +1117,11 @@ function PD.Row(i)
     r.tagBg = r.tagChip
     local arrowTex = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\arrow.tga"
     r.foldArrD = r:CreateTexture(nil, "ARTWORK")
-    r.foldArrD:SetSize(10, 10)
+    r.foldArrD:SetSize(14, 14)
     r.foldArrD:SetTexture(arrowTex)
     r.foldArrD:SetRotation(math.pi)
     r.foldArrU = r:CreateTexture(nil, "ARTWORK")
-    r.foldArrU:SetSize(10, 10)
+    r.foldArrU:SetSize(14, 14)
     r.foldArrU:SetTexture(arrowTex)
     r.foldArrD:Hide()
     r.foldArrU:Hide()
@@ -1791,6 +1791,7 @@ function PD.BindRow(r, spec, h)
 
     local iconName = spec.icon
     local itemID = spec.it and spec.it[1]
+    local factionIcon = not itemID and (iconName == PD.FAC_ICON.a or iconName == PD.FAC_ICON.h)
     local showIcon = (spec.kind == "row" or spec.kind == "head") and (itemID or iconName) and true or false
     r.icon:SetShown(showIcon)
     if r.__iconZone then r.__iconZone:Hide() end
@@ -1804,9 +1805,10 @@ function PD.BindRow(r, spec, h)
     if r.__pct then r.__pct:Hide() end
     if r.__costWhy then r.__costWhy:Hide() end
     if showIcon then
-        r.icon:SetSize(20, 20)
+        local iconSize = factionIcon and 16 or 20
+        r.icon:SetSize(iconSize, iconSize)
         r.icon:ClearAllPoints()
-        r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - 20) / 2))
+        r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - iconSize) / 2))
         SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
     end
 
@@ -1838,7 +1840,7 @@ function PD.BindRow(r, spec, h)
             r.foldArrD:SetShown(open)
             r.foldArrU:SetShown(not open)
             r.a:ClearAllPoints()
-            r.a:SetPoint("LEFT", r, "LEFT", ax + 14, 0)
+            r.a:SetPoint("LEFT", r, "LEFT", ax + 18, 0)
             r.foldZone.__key = key
             r.foldZone:ClearAllPoints()
             r.foldZone:SetPoint("TOPLEFT", r, "TOPLEFT", ax - 4, 2)
@@ -2419,7 +2421,7 @@ function PD.BindRow(r, spec, h)
         return
     end
 
-    local padL = showIcon and ((iconName and not itemID) and 28 or 32) or 6
+    local padL = showIcon and (factionIcon and 28 or ((iconName and not itemID) and 28 or 32)) or 6
     PD.HideSkillBar(r)
     PD.PaintCard(r, nil)
     local ncol = spec.nameColor
@@ -2947,9 +2949,9 @@ function PD.FillTrainerBoard()
         h1:Show()
         fsN = fsN + 1
         local h2 = root.__fs[fsN]
-        if not h2 then h2 = MakeFS(root, 13, C_GREY, "LEFT"); root.__fs[fsN] = h2 end
+        if not h2 then h2 = MakeFS(root, 12, C_GREY, "LEFT"); root.__fs[fsN] = h2 end
         h2:ClearAllPoints()
-        h2:SetPoint("TOPLEFT", root, "TOPLEFT", x0, -22)
+        h2:SetPoint("TOPLEFT", root, "TOPLEFT", x0, -20)
         if rk and (rk.sk or rk.lv) then
             h2:SetText(format("%s %s · %s %s", L["进阶"],
                 rk.sk and tostring(rk.sk) or "-", L["角色等级"],
@@ -2992,19 +2994,19 @@ function PD.FillTrainerBoard()
                             root.__chips[chipN] = c
                             if ns.hui.HuiCardFX then ns.hui.HuiCardFX(c, 6, 3) end
                             c.n = MakeFS(c, 14, { 1, 1, 1 }, "LEFT")
-                            c.l = MakeFS(c, 13, C_GREY, "LEFT")
-                            c.xy = MakeFS(c, 13, { 0.71, 0.83, 0.96 }, "RIGHT")
+                            c.l = MakeFS(c, 12, C_GREY, "LEFT")
+                            c.xy = MakeFS(c, 12, { 0.71, 0.83, 0.96 }, "RIGHT")
                         end
                         if c.__huiCard then ns.hui.HuiCardState(c, "norm") end
                         c:SetSize(COL_W, 34)
                         c:ClearAllPoints()
                         c:SetPoint("TOPLEFT", root, "TOPLEFT", x0, yCur)
                         c.n:ClearAllPoints()
-                        c.n:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -4)
+                        c.n:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -1)
                         c.n:SetText(TrNameOf(t))
                         c.n:Show()
                         c.l:ClearAllPoints()
-                        c.l:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -20)
+                        c.l:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -21)
                         c.l:SetText(TrLocOf(t) or "")
                         c.l:Show()
                         c.xy:ClearAllPoints()
@@ -3167,11 +3169,11 @@ function PD.BuildIndexGrid(parent)
             SetIcon(c.icon, p.icon)
             c.name = MakeFS(c, 16, C_TEXT, "LEFT")
             c.name:SetWordWrap(false)
-            c.name:SetPoint("TOPLEFT", c, "TOPLEFT", PD.IX_ICON + 13, -4)
+            c.name:SetPoint("TOPLEFT", c, "TOPLEFT", PD.IX_ICON + 13, -6)
             c.name:SetText(p.name or slug)
-            c.sub = MakeFS(c, 14, C_GREY, "LEFT")
+            c.sub = MakeFS(c, 12, C_GREY, "LEFT")
             c.sub:SetWordWrap(false)
-            c.sub:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", PD.IX_ICON + 13, 3)
+            c.sub:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", PD.IX_ICON + 13, 6)
             c.sub:SetText(ixCardSub(slug, p))
             c.__slug = slug
             c.lv = MakeFS(c, 12, C_TEXT, "RIGHT")
@@ -6014,13 +6016,13 @@ function PD.ExCard(r, k)
     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(ic) end
     local nm = MakeFS(c, 14, C_TEXT, "LEFT")
     nm:SetWordWrap(false)
-    nm:SetPoint("TOPLEFT", c, "TOPLEFT", 38, -4)
+    nm:SetPoint("TOPLEFT", c, "TOPLEFT", 38, -6)
     nm:SetPoint("RIGHT", c, "RIGHT", -76, 0)
     local st = MakeFS(c, 14, C_GREY, "RIGHT")
-    st:SetPoint("TOPRIGHT", c, "TOPRIGHT", -7, -4)
-    local src = MakeFS(c, 14, C_GREY, "LEFT")
+    st:SetPoint("TOPRIGHT", c, "TOPRIGHT", -7, -6)
+    local src = MakeFS(c, 12, C_GREY, "LEFT")
     src:SetWordWrap(false)
-    src:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 38, 4)
+    src:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 38, 6)
     src:SetPoint("RIGHT", c, "RIGHT", -8, 0)
     local z = CreateFrame("Button", nil, c)
     z:SetFrameLevel(base + 3)

@@ -37,14 +37,14 @@ CU.CODE = { 0.62, 0.88, 0.70 }
 CU.CARD_COLS = 3
 CU.CARD_GAP = 8
 CU.CARD_PAD = 12
-CU.CARD_ICON = 36
+CU.CARD_ICON = 32
 CU.CARD_BTN_H = 24
 CU.DET_W = 76
 CU.MK_W = 114
 CU.CP_W = 60
 CU.MACRO_SUFFIX = " DF"
 CU.CHIP_PAD = 3
-CU.CHIP_Y = CU.CARD_PAD + 24
+CU.CHIP_Y = CU.CARD_PAD + 20
 CU.WHAT_Y = CU.CHIP_Y + 14 + 8
 
 local TEXT_W = TT.FULL_W - CU.PAD * 2 - CU.ICON - 8
@@ -377,7 +377,7 @@ local function Ensure()
         tex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(tex) end
         local name = MakeFS(fr, 14, C_TEXT, "LEFT")
-        name:SetPoint("TOPLEFT", fr, "TOPLEFT", CU.CARD_PAD + CU.CARD_ICON + 8, -(CU.CARD_PAD + 1))
+        name:SetPoint("TOPLEFT", fr, "TOPLEFT", CU.CARD_PAD + CU.CARD_ICON + 8, -CU.CARD_PAD)
         name:SetWordWrap(false)
         local det = NewButton(fr, L["详解"], CU.DET_W, CU.CARD_BTN_H, 14)
         TT.RoundButtonFill(det)

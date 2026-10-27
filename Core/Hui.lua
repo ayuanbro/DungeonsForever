@@ -1496,7 +1496,7 @@ do
             measure:SetText(it.text or "")
             local w = measure:GetStringWidth() + padX * 2
             if it.swatch then w = w + 14 + 7 end
-            if it.icon then w = w + iconSz + iconGap end
+            if it.icon then w = w + (it.iconSize or iconSz) + iconGap end
             if it.checked ~= nil then w = w + chkSz + chkGap end
             if w > maxW then maxW = w end
         end
@@ -1568,11 +1568,12 @@ do
                 tx = padX + 14 + 7
             end
             if it.icon then
+                local size = it.iconSize or iconSz
                 local ic = row:CreateTexture(nil, "ARTWORK")
-                ic:SetSize(iconSz, iconSz)
+                ic:SetSize(size, size)
                 ic:SetPoint("LEFT", row, "LEFT", padX, 0)
                 ic:SetTexture(it.icon)
-                tx = padX + iconSz + iconGap
+                tx = padX + size + iconGap
             end
             local fs = row:CreateFontString(nil, "OVERLAY")
             fs:SetPoint("LEFT", row, "LEFT", tx, 0)
@@ -2517,7 +2518,7 @@ do
         local arrow = dd.__huiArrow
         if not arrow then
             arrow = dd:CreateTexture(nil, "OVERLAY")
-            arrow:SetSize(12, 12)
+            arrow:SetSize(14, 14)
             arrow:SetPoint("RIGHT", dd, "RIGHT", -8, 0)
             arrow:SetTexture("Interface/AddOns/DungeonsForever/Media/textures/arrow.tga")
             arrow:SetRotation(math.pi)
