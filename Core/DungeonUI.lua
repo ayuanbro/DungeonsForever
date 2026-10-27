@@ -844,9 +844,9 @@ end
 DG.Loader = {
     budgetMs = 4,
     preset   = "normal",
-    budgetFactor = 0.8,
-    capMin = 8,
-    capMax = 200,
+    budgetFactor = 0.05,
+    capMin = 1,
+    capMax = 2,
 }
 DG.LOADER_PRESETS = { eco = 2, normal = 4, turbo = 8 }
 DG.LOADER_LABEL = { eco = L["省电"], normal = L["标准"], turbo = L["激进"] }
@@ -857,9 +857,9 @@ function DG.Loader.CurCap(remaining)
     local L0 = DG.Loader
     local dt = L0.__dt
     if type(dt) ~= "number" or dt <= 0 then dt = 16 end
-    local cap = dt * (L0.budgetFactor or 0.8)
-    local lo = L0.capMin or 8
-    local hi = L0.capMax or 200
+    local cap = dt * (L0.budgetFactor or 0.05)
+    local lo = L0.capMin or 1
+    local hi = L0.capMax or 2
     if dt > 400 then
         local slow = dt * 0.5
         if slow > 800 then slow = 800 end

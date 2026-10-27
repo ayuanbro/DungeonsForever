@@ -546,7 +546,7 @@ do
         end
         local urgent = #qUrg > 0
         if not urgent and inCombat() then return end
-        local budget = urgent and 12 or 6
+        local budget = urgent and 4 or 4
         local t0 = debugprofilestop()
         local dUrg, dNorm = {}, {}
         pump(qUrg, t0, budget, dUrg)

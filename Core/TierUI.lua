@@ -434,7 +434,10 @@ local function BuildNav(page)
 
     TT.classBtns = {}
     local y = TT.NAV_FIRST_Y
+    local _ncls = 0
     for _, cls in ipairs(TT.CLASS_ORDER) do
+        _ncls = _ncls + 1
+        if _ncls % 2 == 0 then coroutine.yield() end
         if G.specs[cls] then
             local cb = NewButton(page, ClassName(cls), TT.NAV_W, TT.NAV_ITEM_H, TT.NAV_FS)
             if not (ns.hui and ns.hui.BuildCapsule) then
@@ -725,6 +728,7 @@ local function BuildSpecPool(parent)
 
     TT.scCards = {}
     for i = 1, TT.CARD_MAX do
+        if i % 2 == 0 then coroutine.yield() end
         local fr = CreateFrame("Frame", nil, child)
         fr:SetWidth(TT.FULL_W)
         fr:Hide()
@@ -739,6 +743,7 @@ local function BuildSpecPool(parent)
 
     TT.rowPool = {}
     for i = 1, TT.ROW_MAX do
+        if i % 4 == 0 then coroutine.yield() end
         local fs = MakeFS(TT.rowHost, 14, C_TEXT, "LEFT")
         fs:SetWordWrap(true)
         fs:Hide()
@@ -1437,6 +1442,7 @@ function TT.Build(page)
     coroutine.yield()
 
     BuildNav(page)
+    coroutine.yield()
     BuildSubTabs(page)
     coroutine.yield()
     BuildScroll(page)
@@ -1461,7 +1467,9 @@ function TT.Build(page)
     BuildNotes(TT.rowHost)
     coroutine.yield()
     BuildSpecHero(page)
+    coroutine.yield()
     BuildSecTabs(page)
+    coroutine.yield()
     BuildSpecPool(child)
     coroutine.yield()
 
@@ -1503,7 +1511,7 @@ function TT.Build(page)
     end
     coroutine.yield()
 
-    TT.Render()
+    if TT.RequestRender then TT.RequestRender() else TT.Render() end
     end))
 end
 

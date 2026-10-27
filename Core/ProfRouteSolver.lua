@@ -145,7 +145,7 @@ function S.Result(job,state,status)
         if not coroutine.running() then return end
         if not debugprofilestop then return end
         local now=debugprofilestop()
-        if now-rgate>=3 then
+        if now-rgate>=1 then
             rgate=now
             coroutine.yield()
         end

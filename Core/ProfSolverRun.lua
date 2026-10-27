@@ -8,12 +8,13 @@ if not S then return end
 local M = {}
 ns.ProfSolverRun = M
 
-local FRAME_MS = 6
-local SLICE_MS = 2
+local FRAME_MS = 3
+local SLICE_MS = 1
 local NOTIFY_MS = 250
 local GC_SOFT_KB = 24576
-local GC_STEPS = 2
-local GC_STEP_KB = 512
+local GC_STEPS = 1
+local GC_STEP_KB = 256
+local GC_EVERY = 4
 
 local live = nil
 local serial = 0
@@ -107,17 +108,43 @@ function M.Start(slug, opts, hooks)
         a.notified = now
         h(j, M.State(j), done)
     end
+    local gcTick = 0
     local function keepGC()
         if not a.gcBase or a.gcBase <= 0 then return end
+        gcTick = (gcTick or 0) + 1
+        if gcTick % GC_EVERY ~= 0 then return end
         if collectgarbage("count") <= a.gcBase + GC_SOFT_KB then return end
         for _ = 1, GC_STEPS do collectgarbage("step", GC_STEP_KB) end
+    end
+    local runnerDead = false
+    local runner = coroutine.create(function()
+        local budget = SLICE_MS
+        while true do
+            if S.Run(j, budget) then return true end
+            budget = coroutine.yield(false)
+            if type(budget) ~= "number" then budget = SLICE_MS end
+        end
+    end)
+    coroutine.resume(runner)
+    local function advance(ms)
+        if runnerDead then return true end
+        local ok, res = coroutine.resume(runner, ms or SLICE_MS)
+        if not ok then
+            j.status = "error"
+            j.searchTermination = "error"
+            j.failures.error = { code = "solverError", detail = tostring(res) }
+            runnerDead = true
+            return true
+        end
+        if coroutine.status(runner) == "dead" then runnerDead = true return true end
+        return res == true
     end
     ns.IdleJobs.Add(function()
         if live ~= a then return true end
         local frameStart = debugprofilestop()
         local done = false
         while true do
-            done = S.Run(j, SLICE_MS)
+            done = advance(SLICE_MS)
             if done then break end
             if debugprofilestop() - frameStart >= FRAME_MS then break end
         end

@@ -4094,6 +4094,7 @@ local function BuildMid(m1, m2)
     BG.planScroll, BG.planChild = pool, child
     BG.planRows = {}
     for i = 1, N_PRESET + N_USER do
+        if i % 2 == 0 then coroutine.yield() end
         local r = MakePlanRow(child)
         BG.planRows[i] = r
     end
@@ -4104,6 +4105,7 @@ local function BuildMid(m1, m2)
     BG.statHead:SetText(L["属性汇总"])
     BG.statRows = {}
     for i, sr in ipairs(STAT_ROWS) do
+        if i % 3 == 0 then coroutine.yield() end
         local ry = 32 + (i - 1) * 24
         local lab = MakeFS(m2, 14, C_GREY, "LEFT")
         lab:SetPoint("TOPLEFT", m2, "TOPLEFT", x, -ry)
@@ -4184,6 +4186,7 @@ local function BuildBrowser(parent)
     local poolN = BG.BwPoolSize()
     BG.bwPoolN = poolN
     for i = 1, poolN do
+        if i % 2 == 0 then coroutine.yield() end
         local r = CreateFrame("Button", nil, child, BT)
         r:SetHeight(ROW_H)
         local hfx = ns.hui and ns.hui.HuiCardFX or nil
@@ -4731,6 +4734,7 @@ local function BuildEnchCard(parent)
     BG.enchBar = BuildVBar(escroll, echild, CullEnchRows)
     BG.enchRows = {}
     for i = 1, 40 do
+        if i % 2 == 0 then coroutine.yield() end
         local r = CreateFrame("Button", nil, echild, BT)
         r:SetHeight(36)
         r:RegisterForClicks("LeftButtonUp")

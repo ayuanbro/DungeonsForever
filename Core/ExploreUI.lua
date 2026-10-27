@@ -1846,6 +1846,8 @@ local function RtFullName(t)
     return t.name or ""
 end
 
+local OVL_TINT = { [1] = { 0.47, 0.71, 1.00 }, [2] = { 1.00, 0.50, 0.44 } }
+
 local function RtOvlSide()
     local db = ns.DB()
     local v = db.explore and db.explore.ovlSide
@@ -1965,6 +1967,8 @@ local function RtMapPaint(mapID, x, y)
                 ot:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
                 ot:SetSize(dw, dh)
                 ot:SetTexture(od[2])
+                local tc = OVL_TINT[side] or OVL_TINT[1]
+                ot:SetVertexColor(tc[1], tc[2], tc[3])
                 ot:SetTexCoord(0, od[5] / od[3], 0, od[6] / od[4])
                 ot:Show()
             end

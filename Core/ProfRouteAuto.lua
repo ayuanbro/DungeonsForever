@@ -314,7 +314,7 @@ local function RouteTick()
     if not coroutine.running() then return end
     if not debugprofilestop then return end
     local now = debugprofilestop()
-    if now - rtGate >= 3 then
+    if now - rtGate >= 1 then
         rtGate = now
         coroutine.yield()
     end
@@ -1490,6 +1490,45 @@ end
 
 function RA.PlanSig(slug, opts)
     return Fingerprint(opts or {}, slug) .. "#" .. RA.QuoteSig() .. "#" .. RA.SpecSig(slug)
+end
+
+function RA.Peek(slug, opts)
+    opts = opts or {}
+    local bucket = cache[slug]
+    if not bucket then return nil end
+    local e = bucket[Fingerprint(opts, slug)]
+    if not e then return nil end
+    if e.sig ~= RA.QuoteSig() or e.specSig ~= RA.SpecSig(slug) then return nil end
+    local now = (type(time) == "function") and time() or 0
+    if (now - e.stamp) >= CACHE_TTL then return nil end
+    return e.res
+end
+
+local asyncBusy = {}
+
+function RA.GetAsync(slug, opts, onDone)
+    local key = tostring(slug) .. "|" .. tostring((opts or {}).start) .. "|" .. tostring((opts or {}).target)
+    if asyncBusy[key] then return false end
+    local ticket = {}
+    asyncBusy[key] = ticket
+    local co = coroutine.create(function() return RA.Get(slug, opts) end)
+    local function finish(res, err)
+        if asyncBusy[key] ~= ticket then return end
+        asyncBusy[key] = nil
+        if type(onDone) == "function" then onDone(res, err) end
+    end
+    local function job()
+        if asyncBusy[key] ~= ticket then return true end
+        local t0 = debugprofilestop and debugprofilestop() or 0
+        while true do
+            local ok, res = coroutine.resume(co)
+            if not ok then finish(nil, res) return true end
+            if coroutine.status(co) == "dead" then finish(res) return true end
+            if debugprofilestop and (debugprofilestop() - t0) >= 3 then return false end
+        end
+    end
+    if ns.IdleJobs then ns.IdleJobs.Add(job) else job() end
+    return true
 end
 
 function RA.Get(slug, opts)

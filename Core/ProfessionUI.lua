@@ -10567,6 +10567,29 @@ function PD.StartSolverRoute(opts, key)
     })
 end
 
+function PD.PlanRes(slug, opts)
+    local R2 = RA
+    if R2 and R2.Peek then
+        local hit = R2.Peek(slug, opts)
+        if hit then
+            PD.__planShown = hit
+            PD.__planPending = nil
+            return hit
+        end
+    end
+    local key = tostring(slug) .. "|" .. tostring(opts and opts.start) .. "|" .. tostring(opts and opts.target)
+    if PD.__planPending ~= key and R2 and R2.GetAsync then
+        PD.__planPending = key
+        R2.GetAsync(slug, opts, function(res)
+            if PD.__planPending ~= key then return end
+            PD.__planPending = nil
+            if res then PD.__planShown = res end
+            if PD.built and PD.RequestRender then PD.RequestRender() end
+        end)
+    end
+    return PD.__planShown
+end
+
 function PD.BuildLvOpts(slug, current)
     local fish = PD.CookingFishingMode(slug)
     local pair = (not fish) and PD.RoutePairContext() or nil
@@ -10994,13 +11017,13 @@ function PD.RowsLeveling(rows)
                 res = SR.Result()
                 if res then res.exact = true end
             else
-                res = RA.Get(PD.cur, opts)
+                res = PD.PlanRes(PD.cur, opts)
             end
         elseif not needPartner then
             if PD.autoExact and PD.autoSnapshotSlug == PD.cur and planKey and PD.autoKey == planKey then
                 res = PD.autoSnapshot
             else
-                res = RA.Get(PD.cur, opts)
+                res = PD.PlanRes(PD.cur, opts)
             end
         end
         if res and res.planVersion ~= 2 and not res.priced and scheme ~= "optim" then res = nil end
@@ -13480,6 +13503,8 @@ function PD.Show(slug)
     ns.OpenPerf.Begin("专业·" .. tostring(slug))
     PD.HideVendorPick()
     if slug ~= PD.cur then
+        PD.__planShown = nil
+        PD.__planPending = nil
         PD.ClearPlanCache()
         PD.cur = slug
         PD.toolKey = nil
