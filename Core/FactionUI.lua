@@ -385,10 +385,10 @@ local function MakeRow(parent)
         ns.hui.HuiCardFX(r, 6, 2)
     end
     r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -5)
+    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -2)
     r.name:SetWidth(FV.LROW_W - 60)
     r.name:SetWordWrap(false)
-    r.sub = MakeFS(r, 14, C_GREY, "LEFT")
+    r.sub = MakeFS(r, 12, C_GREY, "LEFT")
     r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -22)
     r.sub:SetWordWrap(false)
     r.badge = MakeFS(r, 14, C_TEXT, "RIGHT")
@@ -657,7 +657,7 @@ FV.Build = function(page)
     coroutine.yield()
 
     FV.dIcon = dChild:CreateTexture(nil, "ARTWORK")
-    FV.dIcon:SetSize(20, 20)
+    FV.dIcon:SetSize(16, 16)
     FV.dTitle = MakeFS(dChild, 16, C_WHITE, "LEFT")
     FV.dDesc = MakeFS(dChild, 14, C_GREY, "LEFT")
 
@@ -942,6 +942,10 @@ function FV:PaintRewardCard(f, id)
     if DG and DG.ItemIcon then
         f.iconTex:SetTexture(DG.ItemIcon(id))
     end
+    if ns.hui and ns.hui.SetIconRing then
+        local qq = (DG and DG.QualOf) and DG.QualOf(id) or nil
+        ns.hui.SetIconRing(f.iconTex, qq and { ns.hui.QColor(qq) } or nil)
+    end
 end
 
 function FV.OnItemData(itemID)
@@ -982,11 +986,11 @@ function FV:PaintDetail()
     FV.dIcon:SetPoint("TOPLEFT", FV.dChild, "TOPLEFT", 14, -y)
     FV.dIcon.__active = true
     FV.dIcon.__vtop = y
-    FV.dIcon.__vh = 20
+    FV.dIcon.__vh = 16
     FV.dCull[#FV.dCull + 1] = FV.dIcon
 
     FV.dTitle:ClearAllPoints()
-    FV.dTitle:SetPoint("TOPLEFT", FV.dChild, "TOPLEFT", (info.icon and 42 or 14), -(y - 1))
+    FV.dTitle:SetPoint("TOPLEFT", FV.dChild, "TOPLEFT", (info.icon and 38 or 14), -(y - 1))
     FV.dTitle:SetText(FacName(x))
     FV.dTitle.__active = true
     FV.dTitle.__vtop = y - 1
@@ -1108,13 +1112,13 @@ function FV:PaintDetail()
                     cd.iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
                     if HUI and ns.hui.RoundIcon then ns.hui.RoundIcon(cd.iconTex) end
                     cd.name = MakeFS(cd, 14, C_TEXT, "LEFT")
-                    cd.name:SetPoint("TOPLEFT", cd, "TOPLEFT", 43, -4)
-                    cd.name:SetWidth(cardW - 50)
+                    cd.name:SetPoint("TOPLEFT", cd, "TOPLEFT", 46, -6)
+                    cd.name:SetWidth(cardW - 53)
                     cd.name:SetWordWrap(false)
-                    cd.meta = MakeFS(cd, 14, C_GREY, "LEFT")
-                    cd.meta:SetPoint("TOPLEFT", cd, "TOPLEFT", 43, -23)
+                    cd.meta = MakeFS(cd, 12, C_GREY, "LEFT")
+                    cd.meta:SetPoint("TOPLEFT", cd, "TOPLEFT", 46, -26)
                     cd.meta:SetWordWrap(false)
-                    cd.__nameW = cardW - 50
+                    cd.__nameW = cardW - 53
                     cd:EnableMouse(true)
                     cd:SetScript("OnEnter", function(self)
                         if self.__huiCard and ns.hui.HuiCardState then

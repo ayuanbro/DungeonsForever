@@ -155,6 +155,7 @@ end
 
 local function Accessible(offer, context, character)
     if type(offer) ~= "table" or offer.unlimited ~= true or offer.available == false
+        or offer.priceOnly == true
         or offer.hasExtendedCost or offer.currencyID and offer.currencyID ~= 0
         or type(offer.price) ~= "number" or offer.price < 0
         or not offer.verifiedAt or not offer.source then return false end
@@ -234,7 +235,8 @@ function VDB.GetOffers(itemID, context)
         local p = type(seed) == "table" and tonumber(seed[itemID]) or nil
         if p and p > 0 then
             result[#result + 1] = Copy({ source = "seed", price = p, quantity = 1, bundleSize = 1,
-                unit = p, unlimited = true, purchasable = true, currencyID = 0, priceBasis = "catalogue" })
+                unit = p, purchasable = false, currencyID = 0, priceBasis = "catalogue",
+                priceOnly = true })
         end
     end
     table.sort(result, function(a, b)

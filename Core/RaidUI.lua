@@ -478,11 +478,11 @@ function RU.NewPieceCard(parent)
     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(it) end
     f.iconTex = it
     f.name = MakeFS(f, 14, C_TEXT, "LEFT")
-    f.name:SetPoint("TOPLEFT", f, "TOPLEFT", RU.SET_PIECE_TX, -4)
+    f.name:SetPoint("TOPLEFT", f, "TOPLEFT", RU.SET_PIECE_TX, -6)
     f.name:SetWidth(RU.SET_PIECE_W - RU.SET_PIECE_TX - RU.SET_PIECE_NAME_R)
     f.name:SetWordWrap(false)
-    f.meta = MakeFS(f, 14, C_GREY, "LEFT")
-    f.meta:SetPoint("TOPLEFT", f, "TOPLEFT", RU.SET_PIECE_TX, -23)
+    f.meta = MakeFS(f, 12, C_GREY, "LEFT")
+    f.meta:SetPoint("TOPLEFT", f, "TOPLEFT", RU.SET_PIECE_TX, -26)
     f.meta:SetWordWrap(false)
     f.hover = f:CreateTexture(nil, "OVERLAY")
     f.hover:SetAllPoints(f)
@@ -569,6 +569,7 @@ local function SetIconForRec(tex, rec)
         tex:SetTexture(t)
     end
     tex:SetAlpha(1)
+    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(tex, nil) end
 end
 
 function RU.PaintSetRow(row, rec)
@@ -607,6 +608,10 @@ function RU.PaintPieceCard(f, id)
     local tex = Host.FALLBACK_ICON
     if Host.DG and Host.DG.ItemIcon then tex = Host.DG.ItemIcon(id) end
     f.iconTex:SetTexture(tex)
+    if ns.hui and ns.hui.SetIconRing then
+        local pq = (Host.DG and Host.DG.QualOf) and Host.DG.QualOf(id) or nil
+        ns.hui.SetIconRing(f.iconTex, pq and { ns.hui.QColor(pq) } or nil)
+    end
 end
 
 function RU.OnItemData(itemID)

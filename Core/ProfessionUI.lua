@@ -44,16 +44,115 @@ end
 local PD = {}
 ns.ProfModule = PD
 
-function PD.AuctionatorStatusText()
+local function AuctionatorAddonState()
+    if PD.__ahAddonState ~= nil then return PD.__ahAddonState end
+    local numFn = (C_AddOns and C_AddOns.GetNumAddOns) or GetNumAddOns
+    local infoFn = (C_AddOns and C_AddOns.GetAddOnInfo) or GetAddOnInfo
+    local loadedFn = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
+    local st = "missing"
+    local ok, total = pcall(numFn)
+    if ok and type(total) == "number" and type(infoFn) == "function" then
+        for i = 1, total do
+            local got, nm = pcall(infoFn, i)
+            if got and nm == "Auctionator" then
+                st = "disabled"
+                if type(loadedFn) == "function" then
+                    local okL, loaded = pcall(loadedFn, i)
+                    if okL and loaded then st = "loaded" end
+                end
+                break
+            end
+        end
+    end
+    PD.__ahAddonState = st
+    return st
+end
+
+function PD.AuctionatorState()
     local bridge = ns.AuctionBridge
     local status = bridge and bridge.Status and bridge.Status()
     local state = status and status.state
-    if state == "missing" then return L["未安装 Auctionator"] end
-    if state == "disabled" then return L["Auctionator 已安装但未启用，请启用后重载界面。"] end
-    if state == "loading" or (not state and not (RA and RA.Available and RA.Available())) then
-        return L["Auctionator 正在初始化"]
+    if state == "missing" or state == "disabled" or state == "loading" then return state end
+    local avail = (bridge and bridge.Available and bridge.Available())
+        or (RA and RA.Available and RA.Available())
+    if not avail then
+        local ad = AuctionatorAddonState()
+        if ad == "missing" then return "missing" end
+        if ad == "disabled" then return "disabled" end
+        return "loading"
     end
+    if not (RA and RA.HasPriceData and RA.HasPriceData()) then return "noprice" end
+    return "ok"
+end
+
+function PD.AuctionatorStatusText()
+    local st = PD.AuctionatorState()
+    if st == "missing" then return L["未安装 Auctionator"] end
+    if st == "disabled" then return L["Auctionator 已安装但未启用，请启用后重载界面。"] end
+    if st == "loading" then return L["Auctionator 正在初始化"] end
     return L["暂无有效拍卖行价格；请扫描或更新价格。"]
+end
+
+PD.SNAP_STALE_SEC = 48 * 3600
+
+local function SnapAgePhrase(sec)
+    sec = tonumber(sec)
+    if not sec then return nil end
+    if sec < 60 then return L["刚刚"] end
+    if sec < 90 * 60 then
+        return format(L["%d 分钟"], math.max(1, math.floor(sec / 60 + 0.5)))
+    end
+    if sec < 24 * 3600 then
+        return format(L["%d 小时"], math.max(1, math.floor(sec / 3600 + 0.5)))
+    end
+    return format(L["%d 天"], math.max(1, math.floor(sec / 86400)))
+end
+
+function PD.SnapshotBadgeState(s)
+    s = s or {}
+    if s.scheme == "optim" then return "optim" end
+    if s.planVersion == 2 and s.completeCost == false then return "incomplete" end
+    local st = PD.AuctionatorState()
+    if st == "missing" then return "missing" end
+    if st == "disabled" then return "disabled" end
+    if st == "loading" then return "loading" end
+    if st == "noprice" then return "noprice" end
+    local sec = tonumber(s.snapshotAge)
+    if not sec and (s.priced or s.planVersion == 2) and RA and RA.SnapshotAge then
+        sec = tonumber(RA.SnapshotAge())
+    end
+    if sec and sec >= PD.SNAP_STALE_SEC then return "stale", sec end
+    if s.planVersion == 2 then
+        if (s.np or 0) > 0 then return "unpriced" end
+        return "verified", sec
+    end
+    if s.priced then
+        if sec then return "frame", sec end
+        return "ageunknown"
+    end
+    return "noprice"
+end
+
+function PD.SnapshotBadgeText(s)
+    local st, sec = PD.SnapshotBadgeState(s)
+    if st == "optim" then return L["乐观计数"], 0.85, 0.82, 0.72 end
+    if st == "incomplete" then return L["资料不全"], 0.95, 0.75, 0.4 end
+    if st == "missing" then return L["需装 Auctionator 扫描价格"], 0.95, 0.75, 0.4 end
+    if st == "disabled" then return L["Auctionator 未启用"], 0.95, 0.75, 0.4 end
+    if st == "loading" then return L["拍卖行价格读取中…"], 0.95, 0.75, 0.4 end
+    if st == "stale" then return L["价格快照过期，影响模拟结果"], 0.9, 0.35, 0.35 end
+    if st == "noprice" then return L["缺少价格快照，请扫描拍卖行"], 0.9, 0.35, 0.35 end
+    if st == "unpriced" then return L["含无价材料"], 0.95, 0.75, 0.4 end
+    if st == "verified" then
+        local age = SnapAgePhrase(sec)
+        if age then return format(L["已核实 · 快照 %s"], age), 0.55, 0.85, 0.6 end
+        return L["已核实"], 0.55, 0.85, 0.6
+    end
+    if st == "frame" then
+        local age = SnapAgePhrase(sec)
+        if age then return L["价格快照"] .. " " .. age, 0.55, 0.85, 0.6 end
+    end
+    return L["价格快照"], 0.55, 0.85, 0.6
 end
 
 PD.CARD_INSET = PAGE_INSET
@@ -84,6 +183,7 @@ PD.SETTING_DEF.autoOnlyAH = true
 PD.SETTING_DEF.autoLearnedOnly = false
 PD.SETTING_DEF.autoBuyLimitedFormulas = false
 PD.SETTING_DEF.autoSkipUnpricedFormulas = true
+PD.SETTING_DEF.autoNoFormula = false
 PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.solverRoute = false
@@ -197,6 +297,18 @@ function PD.ShowSchemeMenu(owner)
             checked = on,
             color = on and { 1, 0.82, 0 } or nil,
             func = function() PD.SetRouteScheme(sk) end,
+        }
+    end
+    if PD.cur == "mining" then
+        local smelt = PD.GatherMode("mining") == "smelt"
+        items[#items + 1] = {
+            text = L["采集路线"],
+            checked = not smelt,
+            color = (not smelt) and { 1, 0.82, 0 } or nil,
+            func = function()
+                ProfDB().gatherMode = "gather"
+                PD.RequestRender()
+            end,
         }
     end
     ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
@@ -443,6 +555,34 @@ PD.IX_ICON = 24
 PD.IX_HEAD_H = 18
 PD.IX_ROWW_GAP = 8
 PD.IX_GROUP_GAP = 10
+
+PD.GC_COLS = 3
+PD.GC_GAP = 8
+PD.GC_AVAIL_W = PD.RIGHT_W - PD.LIST_PAD
+PD.GC_COLW = math.floor((PD.GC_AVAIL_W - (PD.GC_COLS - 1) * PD.GC_GAP) / PD.GC_COLS)
+PD.GC_ROWW = PD.GC_COLS * PD.GC_COLW + (PD.GC_COLS - 1) * PD.GC_GAP
+PD.GC_PAD = 8
+PD.GC_ICON = 32
+PD.GC_RICON = 38
+PD.GC_RGAP = 4
+PD.GC_SUB = 12
+PD.GC_PLACE = 18
+PD.GC_MORE = 18
+PD.GC_TOP = 52
+PD.GC_ROUTE_TOP = 74
+PD.GC_HEAD = 48
+PD.GC_RHEAD = 68
+PD.GC_NAME_DY = -8
+PD.GC_LV_DY = -9
+PD.GC_SUB_DY = -28
+PD.GC_RICON_DY = -28
+PD.GC_FS_NAME = 14
+PD.GC_FS_LV = 14
+PD.GC_FS_ZONE = 14
+PD.GC_FS_MORE = 14
+PD.GC_ZONE = { 0.42, 0.84, 0.95 }
+PD.GC_SHOW = 3
+PD.MAXPLACE = 6
 
 PD.MAT_FS = 13
 PD.MAT_ICON_PX = 16
@@ -951,27 +1091,37 @@ function PD.Row(i)
     PD.WireTipZone(r.__costZone, r)
     r.__cardBg = CreateFrame("Frame", nil, r)
     r.__cardBg:Hide()
-    r.__cardBg.__pieces = ns.hui.BuildRoundedBG(r.__cardBg, 6, { 1, 1, 1 }, "both", false, nil, true)
-    r.__cardTx = MakeFS(r.__cardBg, 10, C_TEXT, "LEFT")
+    if ns.hui and ns.hui.BuildSolidFill then
+        r.__cardBg.__pieces = ns.hui.BuildSolidFill(r.__cardBg, 6, ns.hui.layer.L2)
+        r.__cardBg.__border = ns.hui.BuildRoundBorder(r.__cardBg, 6, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
+    else
+        r.__cardBg.__pieces = ns.hui.BuildRoundedBG(r.__cardBg, 6, { 1, 1, 1 }, "both", false, nil, true)
+    end
+    r.__cardTx = MakeFS(r.__cardBg, 11, C_TEXT, "LEFT")
     r.__cardTx:SetText("")
     r.__cardTx:SetWordWrap(false)
     r.__cardTx:Hide()
     for _, f in ipairs({ r.a, r.b, r.c, r.c2, r.d, r.e, r.f }) do f:SetWordWrap(false) end
-    r.tagChip = PD.MakePill(r, (ns.hui and ns.hui.layer and ns.hui.layer.L2) or nil, 4)
-    r.tagChip:SetFrameLevel((r:GetFrameLevel() or 0) + 1)
-    r.tagChip:Hide()
+    if ns.hui and ns.hui.MakeSolidChip then
+        r.tagChip = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 1, ns.hui.ChipH(13))
+        r.tagFs = r.tagChip.t
+    else
+        r.tagChip = PD.MakePill(r, (ns.hui and ns.hui.layer and ns.hui.layer.L2) or nil, 4)
+        r.tagChip:SetFrameLevel((r:GetFrameLevel() or 0) + 1)
+        r.tagChip:Hide()
+        r.tagFs = MakeFS(r.tagChip, 11, { 0.42, 0.94, 0.62 }, "CENTER")
+        r.tagFs:SetText("")
+        r.tagFs:SetPoint("CENTER", r.tagChip, "CENTER", 0, (ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5)
+        r.tagFs:Hide()
+    end
     r.tagBg = r.tagChip
-    r.tagFs = MakeFS(r.tagChip, 10, { 0.42, 0.94, 0.62 }, "CENTER")
-    r.tagFs:SetText("")
-    r.tagFs:SetPoint("CENTER", r.tagChip, "CENTER", 0, 0)
-    r.tagFs:Hide()
     local arrowTex = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\arrow.tga"
     r.foldArrD = r:CreateTexture(nil, "ARTWORK")
-    r.foldArrD:SetSize(10, 10)
+    r.foldArrD:SetSize(14, 14)
     r.foldArrD:SetTexture(arrowTex)
     r.foldArrD:SetRotation(math.pi)
     r.foldArrU = r:CreateTexture(nil, "ARTWORK")
-    r.foldArrU:SetSize(10, 10)
+    r.foldArrU:SetSize(14, 14)
     r.foldArrU:SetTexture(arrowTex)
     r.foldArrD:Hide()
     r.foldArrU:Hide()
@@ -1519,6 +1669,12 @@ function PD.PaintRows(rows)
     elseif PD.ixRoot then
         PD.ixRoot:Hide()
     end
+    if PD.wantGCards and PD.gcRoot then
+        local gpad = PD.gcTopPad or 0
+        h1 = h1 + gpad + PD.placeGCards(h1 + gpad) + 8
+    elseif PD.gcRoot and PD.gcRoot:IsShown() then
+        PD.gcRoot:Hide()
+    end
     if PD.wantBonusTable and PD.bonusTable then
         PD.placeBonusTable(h1)
         if PD.bonusTitleNote then
@@ -1635,8 +1791,10 @@ function PD.BindRow(r, spec, h)
 
     local iconName = spec.icon
     local itemID = spec.it and spec.it[1]
+    local factionIcon = not itemID and (iconName == PD.FAC_ICON.a or iconName == PD.FAC_ICON.h)
     local showIcon = (spec.kind == "row" or spec.kind == "head") and (itemID or iconName) and true or false
     r.icon:SetShown(showIcon)
+    if not showIcon and ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
     if r.__iconZone then r.__iconZone:Hide() end
     if r.__vs then
         for _, c in ipairs(r.__vs.cards) do c:Hide() end
@@ -1646,11 +1804,18 @@ function PD.BindRow(r, spec, h)
         for _, c in pairs(r.__ex) do c:Hide() end
     end
     if r.__pct then r.__pct:Hide() end
+    if r.__costWhy then r.__costWhy:Hide() end
     if showIcon then
-        r.icon:SetSize(20, 20)
+        local iconSize = factionIcon and 16 or 20
+        r.icon:SetSize(iconSize, iconSize)
         r.icon:ClearAllPoints()
-        r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - 20) / 2))
+        r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - iconSize) / 2))
         SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+        if ns.hui and ns.hui.SetIconRing then
+            local qq = nil
+            if itemID and not iconName then qq = PD.QualCached(itemID) end
+            ns.hui.SetIconRing(r.icon, qq and { ns.hui.QColor(qq) } or nil)
+        end
     end
 
     if spec.kind == "head" then
@@ -1662,6 +1827,11 @@ function PD.BindRow(r, spec, h)
             r.icon:ClearAllPoints()
             r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
             SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+            if ns.hui and ns.hui.SetIconRing then
+                local qq2 = nil
+                if itemID and not iconName then qq2 = PD.QualCached(itemID) end
+                ns.hui.SetIconRing(r.icon, qq2 and { ns.hui.QColor(qq2) } or nil)
+            end
             r.a:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
         else
             r.a:SetPoint("LEFT", r, "LEFT", 6, 0)
@@ -1681,7 +1851,7 @@ function PD.BindRow(r, spec, h)
             r.foldArrD:SetShown(open)
             r.foldArrU:SetShown(not open)
             r.a:ClearAllPoints()
-            r.a:SetPoint("LEFT", r, "LEFT", ax + 14, 0)
+            r.a:SetPoint("LEFT", r, "LEFT", ax + 18, 0)
             r.foldZone.__key = key
             r.foldZone:ClearAllPoints()
             r.foldZone:SetPoint("TOPLEFT", r, "TOPLEFT", ax - 4, 2)
@@ -1803,20 +1973,6 @@ function PD.BindRow(r, spec, h)
         r.hsTot:SetWidth(48)
         r.hsTot.__act = _act("ah")
         r.hsTot:Show()
-        local onGap = PD.recipeSort == "gap"
-        _ic(r.icon4, onGap)
-        r.h6:SetText(L["差价"])
-        r.h6:ClearAllPoints()
-        r.h6:SetPoint("RIGHT", r, "RIGHT", X_ahR - 58, 0)
-        _hc(r.h6, onGap)
-        r.h6:Show()
-        r.icon4:SetPoint("RIGHT", r.h6, "LEFT", -2, 0)
-        r.hsGap:ClearAllPoints()
-        r.hsGap:SetPoint("TOPRIGHT", r, "TOPRIGHT", X_ahR - 58, 0)
-        r.hsGap:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", X_ahR - 58, 0)
-        r.hsGap:SetWidth(58)
-        r.hsGap.__act = _act("gap")
-        r.hsGap:Show()
         local onCost = PD.recipeSort == "cost"
         _ic(r.icon2, onCost)
         r.icon2:SetPoint("RIGHT", r.h4, "LEFT", -3, 0)
@@ -2013,9 +2169,14 @@ function PD.BindRow(r, spec, h)
                 if d.it then
                     c.ic:SetSize(22, 22)
                     SetIcon(c.ic, DG.ItemIcon(d.it))
+                    if ns.hui and ns.hui.SetIconRing then
+                        local vq = PD.QualCached(d.it)
+                        ns.hui.SetIconRing(c.ic, vq and { ns.hui.QColor(vq) } or nil)
+                    end
                     c.ic:Show()
                 else
                     c.ic:Hide()
+                    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(c.ic, nil) end
                 end
                 if d.win then
                     c.badgeFs:SetText(L["最省"])
@@ -2062,8 +2223,13 @@ function PD.BindRow(r, spec, h)
                 c.ic:Show()
                 c.ic:SetSize(24, 24)
                 SetIcon(c.ic, DG.ItemIcon(d.it))
+                if ns.hui and ns.hui.SetIconRing then
+                    local vq2 = PD.QualCached(d.it)
+                    ns.hui.SetIconRing(c.ic, vq2 and { ns.hui.QColor(vq2) } or nil)
+                end
             else
                 c.ic:Hide()
+                if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(c.ic, nil) end
             end
             c.nm:SetText(d.name or "")
             c.st:SetText(d.modeText or "")
@@ -2081,6 +2247,7 @@ function PD.BindRow(r, spec, h)
         r.a:SetText(""); r.b:SetText(""); r.c:SetText(""); r.c2:SetText(""); r.d:SetText(""); r.e:SetText(""); r.f:SetText("")
         r.dv:SetText(""); r.dv:Hide()
         if r.icon then r.icon:Hide() end
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         PD.HideSkillBar(r)
         PD.PaintCard(r, nil)
         return
@@ -2105,6 +2272,7 @@ function PD.BindRow(r, spec, h)
         if spec.icons then
             r.e:SetText("")
             r.icon:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
             for k = 1, #r.gic do
                 local g, id = r.gic[k], spec.icons[k]
                 if id then
@@ -2116,8 +2284,13 @@ function PD.BindRow(r, spec, h)
                         g:SetPoint("RIGHT", r.gic[k - 1], "LEFT", -4, 0)
                     end
                     SetIcon(g, DG.ItemIcon(id))
+                    if ns.hui and ns.hui.SetIconRing then
+                        local gq2 = PD.QualCached(id)
+                        ns.hui.SetIconRing(g, gq2 and { ns.hui.QColor(gq2) } or nil)
+                    end
                 else
                     g:Hide()
+                    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(g, nil) end
                 end
             end
         else
@@ -2129,6 +2302,11 @@ function PD.BindRow(r, spec, h)
             r.icon:ClearAllPoints()
             r.icon:SetPoint("RIGHT", r.e, "LEFT", -6, 0)
             SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+            if ns.hui and ns.hui.SetIconRing then
+                local rq = nil
+                if itemID and not iconName then rq = PD.QualCached(itemID) end
+                ns.hui.SetIconRing(r.icon, rq and { ns.hui.QColor(rq) } or nil)
+            end
         end
         PD.HideSkillBar(r)
         PD.PaintCard(r, nil)
@@ -2199,15 +2377,21 @@ function PD.BindRow(r, spec, h)
                 DG.BadgeTint(bd, item.bg)
             end
             bd.lab:SetText(item.text)
-            local fs = cardStyle and 10 or DG.Q_BADGE_FS
+            local solidChip = bd.__chipFill and ns.hui and ns.hui.ChipH
+            local fs = solidChip and 11 or (cardStyle and 10 or DG.Q_BADGE_FS)
             if bd.__fs ~= fs then
-                bd.lab:SetFont(ns.FONT, fs, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+                local flags = (not solidChip and cardStyle)
+                    and (ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE") or ""
+                bd.lab:SetFont(ns.FONT, fs, flags)
                 bd.__fs = fs
             end
-            local pad = cardStyle and PD.CARD_PAD or DG.Q_BADGE_PAD
+            local pad = (solidChip and ns.hui.CHIP_S_PAD) or (cardStyle and PD.CARD_PAD or DG.Q_BADGE_PAD)
             local w = (bd.lab:GetStringWidth() or 16) + pad * 2
+            if solidChip and w < ns.hui.CHIP_S_MIN_W then w = ns.hui.CHIP_S_MIN_W end
             local bh
-            if cardStyle then
+            if solidChip then
+                bh = ns.hui.ChipH(13)
+            elseif cardStyle then
                 local th = bd.lab:GetStringHeight() or 0
                 if th <= 0 then th = 12 end
                 bh = 2 * (math.floor(th / 2) + 1)
@@ -2270,8 +2454,7 @@ function PD.BindRow(r, spec, h)
         return
     end
 
-    local padL = showIcon and ((iconName and not itemID) and 28 or 32) or 6
-    if r.__costWhy then r.__costWhy:Hide() end
+    local padL = showIcon and (factionIcon and 28 or ((iconName and not itemID) and 28 or 32)) or 6
     PD.HideSkillBar(r)
     PD.PaintCard(r, nil)
     local ncol = spec.nameColor
@@ -2379,13 +2562,26 @@ function PD.BindRow(r, spec, h)
     end
     if spec.chip and spec.chip.text and spec.chip.text ~= "" then
         local chip = PD.SkillChip(r)
+        local ink = spec.chip.color or { 0.64, 0.61, 0.55 }
+        local cfill = chip.__chipFill or chip.__fillPieces
         chip.fs:SetText(spec.chip.text)
-        chip.fs:SetTextColor(Unpack(spec.chip.color or { 0.80, 0.84, 0.90 }))
-        chip:SetHeight(16)
-        chip:SetWidth(chip.fs:GetStringWidth() + 8)
+        if ns.hui and ns.hui.PaintSolidFill and cfill then
+            chip.fs:SetTextColor(1, 1, 1)
+            ns.hui.PaintSolidFill(cfill, ns.hui.ChipSolidBase(ink))
+            if chip.__chipBorder then
+                for _, t in ipairs(chip.__chipBorder) do
+                    t:SetVertexColor(ink[1], ink[2], ink[3])
+                    t:SetAlpha(1)
+                end
+            end
+        else
+            chip.fs:SetTextColor(Unpack(ink))
+            chip:SetHeight(16)
+        end
+        chip:SetWidth(chip.fs:GetStringWidth() + ((ns.hui and ns.hui.CHIP_S_PAD) or 5) * 2)
         chip:ClearAllPoints()
         local anchor = (spec.tag and r.tagChip:IsShown()) and r.tagChip or r.a
-        chip:SetPoint("LEFT", anchor, "RIGHT", 6, 0)
+        chip:SetPoint("LEFT", anchor, "RIGHT", 6, (anchor == r.a) and -0.8 or 0)
         chip:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
         chip:Show()
     end
@@ -2406,10 +2602,23 @@ function PD.BindRow(r, spec, h)
                     z.__act = nil
                     z:EnableMouse(false)
                     local chip = PD.SubChip(z)
+                    local sink = lk.color or { 0.68, 0.72, 0.78 }
+                    local sfill = chip.__chipFill or chip.__fillPieces
                     chip.fs:SetText(lk.text)
-                    chip.fs:SetTextColor(Unpack(lk.color or { 0.68, 0.72, 0.78 }))
-                    chip:SetHeight(16)
-                    chip:SetWidth(chip.fs:GetStringWidth() + 8)
+                    if ns.hui and ns.hui.PaintSolidFill and sfill then
+                        chip.fs:SetTextColor(1, 1, 1)
+                        ns.hui.PaintSolidFill(sfill, ns.hui.ChipSolidBase(sink))
+                        if chip.__chipBorder then
+                            for _, t in ipairs(chip.__chipBorder) do
+                                t:SetVertexColor(sink[1], sink[2], sink[3])
+                                t:SetAlpha(1)
+                            end
+                        end
+                    else
+                        chip.fs:SetTextColor(Unpack(sink))
+                        chip:SetHeight(16)
+                    end
+                    chip:SetWidth(chip.fs:GetStringWidth() + ((ns.hui and ns.hui.CHIP_S_PAD) or 5) * 2)
                     chip:ClearAllPoints()
                     chip:SetPoint("LEFT", z, "LEFT", 0, 0)
                     chip:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
@@ -2773,9 +2982,9 @@ function PD.FillTrainerBoard()
         h1:Show()
         fsN = fsN + 1
         local h2 = root.__fs[fsN]
-        if not h2 then h2 = MakeFS(root, 13, C_GREY, "LEFT"); root.__fs[fsN] = h2 end
+        if not h2 then h2 = MakeFS(root, 12, C_GREY, "LEFT"); root.__fs[fsN] = h2 end
         h2:ClearAllPoints()
-        h2:SetPoint("TOPLEFT", root, "TOPLEFT", x0, -22)
+        h2:SetPoint("TOPLEFT", root, "TOPLEFT", x0, -20)
         if rk and (rk.sk or rk.lv) then
             h2:SetText(format("%s %s · %s %s", L["进阶"],
                 rk.sk and tostring(rk.sk) or "-", L["角色等级"],
@@ -2818,19 +3027,19 @@ function PD.FillTrainerBoard()
                             root.__chips[chipN] = c
                             if ns.hui.HuiCardFX then ns.hui.HuiCardFX(c, 6, 3) end
                             c.n = MakeFS(c, 14, { 1, 1, 1 }, "LEFT")
-                            c.l = MakeFS(c, 13, C_GREY, "LEFT")
-                            c.xy = MakeFS(c, 13, { 0.71, 0.83, 0.96 }, "RIGHT")
+                            c.l = MakeFS(c, 12, C_GREY, "LEFT")
+                            c.xy = MakeFS(c, 12, { 0.71, 0.83, 0.96 }, "RIGHT")
                         end
                         if c.__huiCard then ns.hui.HuiCardState(c, "norm") end
                         c:SetSize(COL_W, 34)
                         c:ClearAllPoints()
                         c:SetPoint("TOPLEFT", root, "TOPLEFT", x0, yCur)
                         c.n:ClearAllPoints()
-                        c.n:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -4)
+                        c.n:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -1)
                         c.n:SetText(TrNameOf(t))
                         c.n:Show()
                         c.l:ClearAllPoints()
-                        c.l:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -20)
+                        c.l:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -21)
                         c.l:SetText(TrLocOf(t) or "")
                         c.l:Show()
                         c.xy:ClearAllPoints()
@@ -2993,11 +3202,11 @@ function PD.BuildIndexGrid(parent)
             SetIcon(c.icon, p.icon)
             c.name = MakeFS(c, 16, C_TEXT, "LEFT")
             c.name:SetWordWrap(false)
-            c.name:SetPoint("TOPLEFT", c, "TOPLEFT", PD.IX_ICON + 13, -4)
+            c.name:SetPoint("TOPLEFT", c, "TOPLEFT", PD.IX_ICON + 13, -6)
             c.name:SetText(p.name or slug)
-            c.sub = MakeFS(c, 14, C_GREY, "LEFT")
+            c.sub = MakeFS(c, 12, C_GREY, "LEFT")
             c.sub:SetWordWrap(false)
-            c.sub:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", PD.IX_ICON + 13, 3)
+            c.sub:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", PD.IX_ICON + 13, 6)
             c.sub:SetText(ixCardSub(slug, p))
             c.__slug = slug
             c.lv = MakeFS(c, 12, C_TEXT, "RIGHT")
@@ -3059,6 +3268,370 @@ function PD.placeIndexGrid(y)
     PD.ixRoot:SetHeight(PD.ixGridH or 10)
     PD.ixRoot:Show()
     PD.PaintIndexCards()
+end
+
+function PD.OpenZoneMap(zoneID)
+    local mapID = zoneID and ns.AreaMap and ns.AreaMap[zoneID] or nil
+    if not mapID then return end
+    if C_Map and C_Map.OpenWorldMap then
+        pcall(C_Map.OpenWorldMap, mapID)
+    elseif OpenWorldMap then
+        pcall(OpenWorldMap, mapID)
+    end
+end
+
+function PD.GCEnsure(i)
+    PD.gcCards = PD.gcCards or {}
+    local c = PD.gcCards[i]
+    if c then return c end
+    if i > 64 or not PD.gcRoot then return nil end
+    c = CreateFrame("Frame", nil, PD.gcRoot)
+    if ns.hui and ns.hui.layer and ns.hui.BuildRoundedBG then
+        ns.hui.BuildRoundedBG(c, 6, ns.hui.layer.L2, "both", true, 1)
+    else
+        c:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = 1,
+        })
+        c:SetBackdropColor(0, 0, 0, 0.25)
+        c:SetBackdropBorderColor(1, 1, 1, 0.08)
+    end
+    c.icon = c:CreateTexture(nil, "ARTWORK")
+    c.icon:SetSize(PD.GC_ICON, PD.GC_ICON)
+    c.icon:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD, -PD.GC_PAD)
+    c.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(c.icon) end
+    c.nm = MakeFS(c, PD.GC_FS_NAME, C_TEXT, "LEFT")
+    c.nm:SetWordWrap(false)
+    c.lv = MakeFS(c, PD.GC_FS_LV, C_GOLD, "RIGHT")
+    c.lv:SetWordWrap(false)
+    c.subs = {}
+    for k = 1, 3 do
+        local t = c:CreateTexture(nil, "ARTWORK")
+        t:SetSize(PD.GC_SUB, PD.GC_SUB)
+        t:SetPoint("TOPLEFT", c, "TOPLEFT",
+                   PD.GC_PAD + PD.GC_ICON + 9 + (k - 1) * (PD.GC_SUB + 4),
+                   PD.GC_SUB_DY)
+        t:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.IconRing then ns.hui.IconRing(t) end
+        t:Hide()
+        c.subs[k] = t
+    end
+    c.ricos = {}
+    for k = 1, 4 do
+        local t = c:CreateTexture(nil, "ARTWORK")
+        t:SetSize(PD.GC_RICON, PD.GC_RICON)
+        t:SetPoint("TOPLEFT", c, "TOPLEFT",
+                   PD.GC_PAD + (k - 1) * (PD.GC_RICON + PD.GC_RGAP), PD.GC_RICON_DY)
+        t:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(t) end
+        t:Hide()
+        c.ricos[k] = t
+    end
+    c.sep = c:CreateTexture(nil, "ARTWORK")
+    c.sep:SetColorTexture(1, 1, 1, 0.10)
+    c.sep:SetHeight(1)
+    c.sep:SetPoint("LEFT", c, "LEFT", PD.GC_PAD, 0)
+    c.sep:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
+    c.itBtn = {}
+    for k = 1, 4 do
+        local b = CreateFrame("Button", nil, c)
+        b:SetScript("OnEnter", function(self)
+            if self.__it and DG.ShowItemTip then
+                DG.ShowItemTip(self, { self.__it })
+            end
+        end)
+        b:SetScript("OnLeave", function()
+            if GameTooltip then GameTooltip:Hide() end
+        end)
+        b:Hide()
+        c.itBtn[k] = b
+    end
+    c.places = {}
+    for k = 1, PD.MAXPLACE do
+        local b = CreateFrame("Button", nil, c)
+        b:SetHeight(PD.GC_PLACE)
+        b:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
+        b.zn = MakeFS(b, PD.GC_FS_ZONE, PD.GC_ZONE, "LEFT")
+        b.zn:SetWordWrap(false)
+        b.zn:SetJustifyH("LEFT")
+        b.zn:SetPoint("LEFT", b, "LEFT", 0, 0)
+        b.zl = MakeFS(b, PD.GC_FS_ZONE - 1, C_GREY, "RIGHT")
+        b.zl:SetWordWrap(false)
+        b.zl:SetPoint("RIGHT", b, "RIGHT", 0, 0)
+        b:SetScript("OnEnter", function(self)
+            self.zn:SetTextColor(1, 1, 1)
+        end)
+        b:SetScript("OnLeave", function(self)
+            self.zn:SetTextColor(PD.GC_ZONE[1], PD.GC_ZONE[2], PD.GC_ZONE[3])
+        end)
+        b:SetScript("OnClick", function(self)
+            if self.__zid then
+                ns.PlaySound(1)
+                PD.OpenZoneMap(self.__zid)
+            end
+        end)
+        b:Hide()
+        c.places[k] = b
+    end
+    c.more = CreateFrame("Button", nil, c)
+    c.more:SetHeight(PD.GC_MORE)
+    c.more:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
+    c.more.txt = MakeFS(c.more, PD.GC_FS_MORE, C_GREY, "LEFT")
+    c.more.txt:SetJustifyH("LEFT")
+    c.more.txt:SetPoint("LEFT", c.more, "LEFT", 0, 0)
+    c.more:SetScript("OnEnter", function(self)
+        self.txt:SetTextColor(0.85, 0.85, 0.85)
+    end)
+    c.more:SetScript("OnLeave", function(self)
+        self.txt:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3])
+    end)
+    c.more:SetScript("OnClick", function(self)
+        local key = self.__key
+        if not key then return end
+        PD.gcOpen = PD.gcOpen or {}
+        if PD.gcOpen[key] then PD.gcOpen[key] = nil else PD.gcOpen[key] = true end
+        PD.RequestRender()
+    end)
+    c.more:Hide()
+    if ns.hui and ns.hui.BuildRoundBorder then
+        c.__ring = ns.hui.BuildRoundBorder(c, 6, { 0.46, 0.82, 0.36, 1 }, nil, "OVERLAY", "both", 1)
+        if c.__ring then
+            for _, t in ipairs(c.__ring) do t:Hide() end
+        end
+    end
+    c:Hide()
+    PD.gcCards[i] = c
+    return c
+end
+
+function PD.GCOpen(d)
+    return (PD.gcOpen and PD.gcOpen[d.key]) and true or false
+end
+
+function PD.GCTop(d)
+    return (d.kind == "route") and PD.GC_ROUTE_TOP or PD.GC_TOP
+end
+
+function PD.GCHeadY(d)
+    return (d.kind == "route") and PD.GC_RHEAD or PD.GC_HEAD
+end
+
+function PD.GCShown(d)
+    local n = #(d.places or {})
+    local cap = math.min(n, PD.MAXPLACE)
+    if not d.fold then return cap end
+    if PD.GCOpen(d) then return cap end
+    return math.min(cap, PD.GC_SHOW)
+end
+
+function PD.GCHeight(d)
+    local n = #(d.places or {})
+    local h = PD.GCTop(d) + PD.GCShown(d) * PD.GC_PLACE + PD.GC_PAD
+    if d.fold and n > PD.GC_SHOW then h = h + PD.GC_MORE end
+    return h
+end
+
+function PD.GCFill(c, d)
+    c.__key = d.key
+    local route = d.kind == "route"
+    local top = PD.GCTop(d)
+    c.sep:ClearAllPoints()
+    c.sep:SetPoint("LEFT", c, "LEFT", PD.GC_PAD, 0)
+    c.sep:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
+    c.sep:SetPoint("TOP", c, "TOP", 0, -(PD.GCHeadY(d) - 1))
+    if route then
+        c.icon:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(c.icon, nil) end
+        c.nm:ClearAllPoints()
+        c.nm:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD, -6)
+        c.nm:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
+        c.nm:SetTextColor(C_GOLD[1], C_GOLD[2], C_GOLD[3])
+        for k = 1, 3 do c.subs[k]:Hide() end
+        local ic = d.icons or {}
+        for k = 1, 4 do
+            local t = c.ricos[k]
+            local id = ic[k]
+            if id then
+                SetIcon(t, PD.ItemIcon(id))
+                local dim = d.dims and d.dims[k]
+                if dim then t:SetAlpha(0.3) else t:SetAlpha(1) end
+                if ns.hui and ns.hui.SetIconRing then
+                    local tq = PD.QualCached(id)
+                    ns.hui.SetIconRing(t, tq and { ns.hui.QColor(tq) } or nil)
+                end
+                t:Show()
+            else
+                t:Hide()
+                if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(t, nil) end
+            end
+            local b = c.itBtn[k]
+            if id then
+                b.__it = id
+                b:ClearAllPoints()
+                b:SetSize(PD.GC_RICON, PD.GC_RICON)
+                b:SetPoint("TOPLEFT", c, "TOPLEFT",
+                           PD.GC_PAD + (k - 1) * (PD.GC_RICON + PD.GC_RGAP), PD.GC_RICON_DY)
+                b:Show()
+            else
+                b.__it = nil
+                b:Hide()
+            end
+        end
+    else
+        c.icon:Show()
+        c.nm:ClearAllPoints()
+        c.nm:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD + PD.GC_ICON + 9, PD.GC_NAME_DY)
+        c.nm:SetPoint("RIGHT", c.lv, "LEFT", -6, 0)
+        c.nm:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
+        for k = 1, 4 do
+            c.ricos[k]:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(c.ricos[k], nil) end
+        end
+        local subN = 0
+        for k = 1, 3 do
+            local t = c.subs[k]
+            local id = d.subs and d.subs[k]
+            if id then
+                SetIcon(t, PD.ItemIcon(id))
+                if ns.hui and ns.hui.SetIconRing then
+                    local sq = PD.QualCached(id)
+                    ns.hui.SetIconRing(t, sq and { ns.hui.QColor(sq) } or nil)
+                end
+                t:Show()
+                subN = subN + 1
+                local b = c.itBtn[subN + 1]
+                b.__it = id
+                b:ClearAllPoints()
+                b:SetSize(PD.GC_SUB, PD.GC_SUB)
+                b:SetPoint("TOPLEFT", c, "TOPLEFT",
+                           PD.GC_PAD + PD.GC_ICON + 9 + (subN - 1) * (PD.GC_SUB + 4),
+                           PD.GC_SUB_DY)
+                b:Show()
+            else
+                t:Hide()
+                if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(t, nil) end
+            end
+        end
+        for k = subN + 2, 4 do
+            c.itBtn[k].__it = nil
+            c.itBtn[k]:Hide()
+        end
+        SetIcon(c.icon, PD.ItemIcon(d.main))
+        if ns.hui and ns.hui.SetIconRing then
+            local mq = d.main and PD.QualCached(d.main) or nil
+            ns.hui.SetIconRing(c.icon, mq and { ns.hui.QColor(mq) } or nil)
+        end
+        local b0 = c.itBtn[1]
+        b0.__it = d.main
+        b0:ClearAllPoints()
+        b0:SetSize(PD.GC_ICON, PD.GC_ICON)
+        b0:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD, -PD.GC_PAD)
+        if d.main then b0:Show() else b0:Hide() end
+    end
+    c.nm:SetText(d.name or "")
+    c.lv:SetText(route and "" or (d.lvText or ""))
+    c.lv:ClearAllPoints()
+    if route then
+        c.lv:Hide()
+    else
+        c.lv:Show()
+        c.lv:SetPoint("TOPRIGHT", c, "TOPRIGHT", -PD.GC_PAD, PD.GC_LV_DY)
+    end
+    if c.__ring then
+        local on = d.active and true or false
+        for _, t in ipairs(c.__ring) do t:SetShown(on) end
+    end
+    local n = #(d.places or {})
+    local shown = PD.GCShown(d)
+    for k = 1, PD.MAXPLACE do
+        local b = c.places[k]
+        local pl = (k <= shown) and d.places[k] or nil
+        if pl then
+            b.__zid = pl.zone
+            b.zn:SetText(pl.name or "")
+            b.zn:SetTextColor(PD.GC_ZONE[1], PD.GC_ZONE[2], PD.GC_ZONE[3])
+            b.zl:SetText(pl.lv or "")
+            b:ClearAllPoints()
+            b:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD, -(top + (k - 1) * PD.GC_PLACE))
+            b:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
+            b:Show()
+        else
+            b.__zid = nil
+            b:Hide()
+        end
+    end
+    if d.fold and n > PD.GC_SHOW then
+        c.more.__key = d.key
+        c.more.txt:SetText(PD.GCOpen(d) and L["收起"] or format(L["另有 %d 处"], n - PD.GC_SHOW))
+        c.more:ClearAllPoints()
+        c.more:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD, -(top + shown * PD.GC_PLACE))
+        c.more:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
+        c.more:Show()
+    else
+        c.more.__key = nil
+        c.more:Hide()
+    end
+end
+
+function PD.placeGCards(y)
+    local cards = PD.gcSpec or {}
+    local root = PD.gcRoot
+    if not root then return 0 end
+    if #cards == 0 then
+        root:Hide()
+        PD.gcH = 0
+        return 0
+    end
+    root:ClearAllPoints()
+    root:SetPoint("TOPLEFT", PD.child, "TOPLEFT", 0, -y)
+    local rowsN = math.ceil(#cards / PD.GC_COLS)
+    local cy = 0
+    for r = 1, rowsN do
+        local rowH = 0
+        for k = 1, PD.GC_COLS do
+            local d = cards[(r - 1) * PD.GC_COLS + k]
+            if d then
+                local h = PD.GCHeight(d)
+                if h > rowH then rowH = h end
+            end
+        end
+        if rowH < 60 then rowH = 60 end
+        for k = 1, PD.GC_COLS do
+            local idx = (r - 1) * PD.GC_COLS + k
+            local d = cards[idx]
+            local c = PD.GCEnsure(idx)
+            if c then
+                if d then
+                    c:ClearAllPoints()
+                    c:SetPoint("TOPLEFT", root, "TOPLEFT",
+                               (k - 1) * (PD.GC_COLW + PD.GC_GAP), -cy)
+                    c:SetSize(PD.GC_COLW, rowH)
+                    PD.GCFill(c, d)
+                    c:Show()
+                else
+                    c:Hide()
+                end
+            end
+        end
+        cy = cy + rowH + PD.GC_GAP
+    end
+    for i = #cards + 1, #(PD.gcCards or {}) do
+        PD.gcCards[i]:Hide()
+    end
+    PD.gcH = cy - PD.GC_GAP
+    root:SetHeight(PD.gcH)
+    root:Show()
+    return PD.gcH
+end
+
+function PD.BuildGCards(parent)
+    local root = CreateFrame("Frame", nil, parent)
+    root:SetSize(PD.GC_ROWW, 10)
+    root:Hide()
+    PD.gcRoot = root
+    PD.gcCards = {}
 end
 
 local IX_EDGE_NORM_A = 0.10
@@ -3415,12 +3988,21 @@ function PD.Build(page)
         ns.PlaySound(1)
     end)
     function PD.SetBadge(text, r, g, b)
-        local f = PD.lvTiles and PD.lvTiles.cost and PD.lvTiles.cost.badge
+        local card = PD.lvTiles and PD.lvTiles.cost
+        local f = card and card.badge
         if not f then return end
         if not text or text == "" then f:Hide() return end
+        local labelW = (card.label and card.label:GetStringWidth()) or 0
+        local maxW = (card:GetWidth() or 240) - 28 - labelW - 12
+        if maxW < 24 then maxW = 24 end
         f.fs:SetText(text)
         f.fs:SetTextColor(r or 0.95, g or 0.75, b or 0.4, 1)
-        f:SetWidth(math.max(30, math.ceil(f.fs:GetStringWidth() or 20) + 8))
+        local w = f.fs:GetStringWidth() or 0
+        if w > maxW then
+            f.fs:SetText(PD.Fit(text, 12, maxW))
+            w = f.fs:GetStringWidth() or w
+        end
+        f:SetWidth(math.max(30, math.ceil(w) + 8))
         f:Show()
     end
     function PD.SetSub(text)
@@ -3804,6 +4386,9 @@ function PD.Build(page)
     coroutine.yield()
 
     PD.BuildIndexGrid(child)
+    coroutine.yield()
+
+    PD.BuildGCards(child)
     coroutine.yield()
 
     PD.secCards = {}
@@ -4454,6 +5039,32 @@ function PD.TipTile(tf, lines)
     end)
 end
 
+function PD.ShowGatherRouteMenu(owner)
+    if not (owner and ns.hui and ns.hui.ShowMenu) then return end
+    local smelt = PD.GatherMode("mining") == "smelt"
+    local items = {
+        {
+            text = L["采集路线"],
+            checked = not smelt,
+            color = (not smelt) and { 1, 0.82, 0 } or nil,
+            func = function()
+                ProfDB().gatherMode = "gather"
+                PD.RequestRender()
+            end,
+        },
+        {
+            text = L["熔炼路线"],
+            checked = smelt,
+            color = smelt and { 1, 0.82, 0 } or nil,
+            func = function()
+                ProfDB().gatherMode = "smelt"
+                PD.RequestRender()
+            end,
+        },
+    }
+    ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
+end
+
 function PD.PaintGatherTiles()
     local tiles = PD.lvTiles
     if PD.tab ~= "leveling" or PD.setOpen then
@@ -4509,18 +5120,17 @@ function PD.PaintGatherTiles()
     tiles.scheme.label:SetText(L["路线进度"])
     local smelt = PD.GatherMode("mining") == "smelt"
     tiles.scheme.val:SetText((PD.cur == "mining") and
-        ((smelt and L["熔炼"] or L["采集"]) .. " " .. prog) or prog)
+        ((smelt and L["熔炼路线"] or L["采集路线"]) .. " " .. prog) or prog)
     if PD.cur == "mining" then
         tiles.scheme:SetScript("OnClick", function()
-            ProfDB().gatherMode = smelt and "gather" or "smelt"
-            PD.RequestRender()
+            PD.ShowGatherRouteMenu(tiles.scheme)
             ns.PlaySound(1)
         end)
     else
         tiles.scheme:SetScript("OnClick", nil)
     end
     PD.TipTile(tiles.scheme, (PD.cur == "mining") and {
-        { L["点击切换：采集 ⇄ 熔炼"], 0.9, 0.78, 0.35 },
+        { L["点击选择采集路线或熔炼路线"], 0.9, 0.78, 0.35 },
         { smelt and L["列表中绿色高亮行 = 当前技能可练的熔炼区间"]
             or L["列表中绿色高亮行 = 推荐当前采集的区间"], 0.7, 0.7, 0.7 },
     } or { { L["列表中绿色高亮行 = 推荐当前采集的区间"], 0.7, 0.7, 0.7 } })
@@ -4552,7 +5162,7 @@ function PD.PaintLvTiles()
     local s = PD.lvSummary or {}
     local fishRoute = PD.CookingFishingMode()
     local v = PD.LvTarget()
-    local auto = s.auto and true or false
+    local auto = PD.Setting("autoRoute")
     local warnAuto = s.autoSetting and (not s.ahOK or s.feasible == false)
     local fixedOnly = (PD.cur == "poisons")
     tiles.solver.__use = ((not fishRoute) and (not fixedOnly) and ns.ProfSolverRun) and true or false
@@ -4702,6 +5312,21 @@ function PD.PaintLvTiles()
         costLines[#costLines + 1] = { format(L["含无价材料 %d 种：花费为估算下限"], s.np),
                                       0.95, 0.75, 0.4 }
     end
+    local ahState
+    if s.scheme ~= "optim" then ahState = PD.SnapshotBadgeState(s) end
+    if ahState == "missing" then
+        costLines[#costLines + 1] = { L["未安装 Auctionator"], 0.95, 0.75, 0.4 }
+        costLines[#costLines + 1] = { L["安装 Auctionator 后在拍卖行扫描一次完整价格，再重新计算路线。"], 0.7, 0.7, 0.7 }
+    elseif ahState == "disabled" then
+        costLines[#costLines + 1] = { L["Auctionator 已安装但未启用，请启用后重载界面。"], 0.95, 0.75, 0.4 }
+    elseif ahState == "loading" then
+        costLines[#costLines + 1] = { L["拍卖行价格读取中…"], 0.7, 0.7, 0.7 }
+    elseif ahState == "stale" then
+        costLines[#costLines + 1] = { L["价格快照数据过期，距离上次扫描超过 2 天上限，需要重新扫描"], 0.9, 0.35, 0.35 }
+        costLines[#costLines + 1] = { L["请重新扫描价格后重新计算。"], 0.9, 0.35, 0.35 }
+    elseif ahState == "noprice" then
+        costLines[#costLines + 1] = { L["暂无有效拍卖行价格；请扫描或更新价格。"], 0.9, 0.35, 0.35 }
+    end
     if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local net = s.netTotal or ((s.total or 0) - s.recoveryTotal)
         costLines[#costLines + 1] = { format(L["预计回血 %s · 净成本 %s"],
@@ -4722,18 +5347,7 @@ function PD.PaintLvTiles()
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
-    local snapBadge, br, bg, bb
-    if s.planVersion == 2 then
-        if s.completeCost == false then snapBadge, br, bg, bb = L["资料不全"], 0.95, 0.75, 0.4
-        elseif (s.np or 0) > 0 then snapBadge, br, bg, bb = L["含无价材料"], 0.95, 0.75, 0.4
-        else snapBadge, br, bg, bb = L["已核实"], 0.55, 0.85, 0.6 end
-    elseif s.scheme == "optim" then
-        snapBadge, br, bg, bb = L["乐观计数"], 0.85, 0.82, 0.72
-    elseif s.priced then
-        snapBadge, br, bg, bb = L["价格快照"], 0.55, 0.85, 0.6
-    else
-        snapBadge, br, bg, bb = L["无价格"], 0.95, 0.75, 0.4
-    end
+    local snapBadge, br, bg, bb = PD.SnapshotBadgeText(s)
     PD.SetBadge(snapBadge, br, bg, bb)
     local atxt
     if s.planVersion == 2 then
@@ -4749,7 +5363,7 @@ function PD.PaintLvTiles()
         atxt = L["快照年龄未知Auctionator"]
     end
     local details = { { atxt or PD.AuctionatorStatusText(), 0.7, 0.7, 0.7 } }
-    if snapSec and snapDays then
+    if snapSec then
         details[#details + 1] = { format(L["上次扫描： %s"], PD.SnapshotSecText(snapSec)), 0.7, 0.7, 0.7 }
     end
     local progress = PD.PlanProgressText(s)
@@ -5263,26 +5877,47 @@ end
 
 function PD.PaintTag(r, tag)
     local chip, fs = r.tagChip, r.tagFs
-    fs:SetTextColor(Unpack(tag.color or { 0.42, 0.94, 0.62 }))
+    local ink = tag.color or { 0.42, 0.94, 0.62 }
+    local tfill = chip.__chipFill or chip.__fillPieces
     fs:SetText(tag.text or "")
-    chip:SetSize(fs:GetStringWidth() + 10, 15)
+    if ns.hui and ns.hui.PaintSolidFill and tfill then
+        fs:SetTextColor(1, 1, 1)
+        ns.hui.PaintSolidFill(tfill, ns.hui.ChipSolidBase(ink))
+        if chip.__chipBorder then
+            for _, t in ipairs(chip.__chipBorder) do
+                t:SetVertexColor(ink[1], ink[2], ink[3])
+                t:SetAlpha(1)
+            end
+        end
+    else
+        fs:SetTextColor(Unpack(ink))
+    end
+    local pad = (ns.hui and ns.hui.CHIP_S_PAD) or 5
+    local minw = (ns.hui and ns.hui.CHIP_S_MIN_W) or 24
+    chip:SetSize(math.max(fs:GetStringWidth() + pad * 2, minw), ns.hui and ns.hui.ChipH and ns.hui.ChipH(13) or 15)
     chip:ClearAllPoints()
-    chip:SetPoint("LEFT", r.a, "LEFT", r.a:GetStringWidth() + 8, 0)
+    chip:SetPoint("LEFT", r.a, "LEFT", r.a:GetStringWidth() + 8, (ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(13)) or -0.8)
     chip:Show()
     fs:Show()
 end
 
 function PD.SkillChip(r)
     if r.__skchip then return r.__skchip end
-    local f = CreateFrame("Frame", nil, r)
-    f:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
-    ns.hui.BuildRoundedBG(f, 4, ns.hui.layer.L2, "both", true, 1)
-    local fs = MakeFS(f, 10, C_TEXT, "CENTER")
-    fs:SetPoint("LEFT", f, "LEFT", 4, 0)
-    fs:SetPoint("RIGHT", f, "RIGHT", -4, 0)
-    fs:SetPoint("TOP", f, "TOP", 0, -2)
-    fs:SetPoint("BOTTOM", f, "BOTTOM", 0, 2)
-    f.fs = fs
+    local f
+    if ns.hui and ns.hui.MakeSolidChip then
+        f = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 2, ns.hui.ChipH(13))
+        f.fs = f.t
+    else
+        f = CreateFrame("Frame", nil, r)
+        f:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
+        ns.hui.BuildRoundedBG(f, 4, ns.hui.layer.L2, "both", true, 1)
+        local fs = MakeFS(f, 11, C_TEXT, "CENTER")
+        fs:SetPoint("LEFT", f, "LEFT", 4, 0)
+        fs:SetPoint("RIGHT", f, "RIGHT", -4, 0)
+        fs:SetPoint("TOP", f, "TOP", 0, -2)
+        fs:SetPoint("BOTTOM", f, "BOTTOM", 0, 2)
+        f.fs = fs
+    end
     f:Hide()
     r.__skchip = f
     return f
@@ -5290,14 +5925,20 @@ end
 
 function PD.SubChip(z)
     if z.__chip then return z.__chip end
-    local f = CreateFrame("Frame", nil, z)
-    ns.hui.BuildRoundedBG(f, 4, ns.hui.layer.L2, "both", true, 1)
-    local fs = MakeFS(f, 10, C_TEXT, "CENTER")
-    fs:SetPoint("LEFT", f, "LEFT", 4, 0)
-    fs:SetPoint("RIGHT", f, "RIGHT", -4, 0)
-    fs:SetPoint("TOP", f, "TOP", 0, -2)
-    fs:SetPoint("BOTTOM", f, "BOTTOM", 0, 2)
-    f.fs = fs
+    local f
+    if ns.hui and ns.hui.MakeSolidChip then
+        f = ns.hui.MakeSolidChip(z, (z:GetFrameLevel() or 0) + 2, ns.hui.ChipH(13))
+        f.fs = f.t
+    else
+        f = CreateFrame("Frame", nil, z)
+        ns.hui.BuildRoundedBG(f, 4, ns.hui.layer.L2, "both", true, 1)
+        local fs = MakeFS(f, 11, C_TEXT, "CENTER")
+        fs:SetPoint("LEFT", f, "LEFT", 4, 0)
+        fs:SetPoint("RIGHT", f, "RIGHT", -4, 0)
+        fs:SetPoint("TOP", f, "TOP", 0, -2)
+        fs:SetPoint("BOTTOM", f, "BOTTOM", 0, 2)
+        f.fs = fs
+    end
     f:Hide()
     z.__chip = f
     return f
@@ -5342,6 +5983,7 @@ function PD.VsBlock(r)
         local ic = host:CreateTexture(nil, "OVERLAY", nil, 2)
         ic:SetSize(22, 22)
         ic:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 8, 6)
+        if ns.hui and ns.hui.IconRing then ns.hui.IconRing(ic) end
         ic:Hide()
         local nm = MakeFS(host, 12, C_TEXT, "LEFT")
         nm:SetWordWrap(false)
@@ -5427,13 +6069,13 @@ function PD.ExCard(r, k)
     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(ic) end
     local nm = MakeFS(c, 14, C_TEXT, "LEFT")
     nm:SetWordWrap(false)
-    nm:SetPoint("TOPLEFT", c, "TOPLEFT", 38, -4)
+    nm:SetPoint("TOPLEFT", c, "TOPLEFT", 38, -6)
     nm:SetPoint("RIGHT", c, "RIGHT", -76, 0)
     local st = MakeFS(c, 14, C_GREY, "RIGHT")
-    st:SetPoint("TOPRIGHT", c, "TOPRIGHT", -7, -4)
-    local src = MakeFS(c, 14, C_GREY, "LEFT")
+    st:SetPoint("TOPRIGHT", c, "TOPRIGHT", -7, -6)
+    local src = MakeFS(c, 12, C_GREY, "LEFT")
     src:SetWordWrap(false)
-    src:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 38, 4)
+    src:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 38, 6)
     src:SetPoint("RIGHT", c, "RIGHT", -8, 0)
     local z = CreateFrame("Button", nil, c)
     z:SetFrameLevel(base + 3)
@@ -5558,7 +6200,7 @@ PD.SB_H  = 12
 PD.SB_DY = -8
 PD.SB_FS = 11
 PD.SB_EDGE = 4
-PD.CARD_PAD, PD.CARD_GAP = 3, 6
+PD.CARD_PAD, PD.CARD_GAP = 5, 6
 PD.LV_CARD_FIXW = 44
 PD.SB_COL = {
     { 1.00, 0.50, 0.25 },
@@ -5579,11 +6221,30 @@ PD.CARD_COL = {
     both    = { 0.13, 0.44, 0.42 },
 }
 PD.CARD_INK = {
-    trainer = { 0.81, 0.85, 0.89 },
-    drop    = { 0.91, 0.86, 1.00 },
-    vendor  = { 1.00, 0.91, 0.66 },
-    both    = { 0.72, 0.97, 0.92 },
+    trainer = { 0.98, 0.84, 0.36 },
+    drop    = { 0.86, 0.70, 1.00 },
+    vendor  = { 0.40, 0.95, 0.78 },
+    both    = { 1.00, 0.58, 0.42 },
 }
+
+PD.TAG_INK = {
+    ah      = { 0.46, 0.72, 1.00 },
+    vendor  = { 1.00, 0.82, 0.36 },
+    shop    = { 0.92, 0.60, 0.40 },
+    tool    = { 0.55, 0.90, 0.90 },
+    spec    = { 0.80, 0.66, 1.00 },
+    unknown = { 0.62, 0.62, 0.68 },
+    none    = { 0.62, 0.62, 0.68 },
+}
+
+function PD.TagInkOf(e)
+    if not e then return PD.TAG_INK.unknown end
+    if e.tool then return PD.TAG_INK.tool end
+    if e.spec then return PD.TAG_INK.spec end
+    if e.vendor or e.source == "vendor" or e.source == "npc" then return PD.TAG_INK.vendor end
+    if e.source == "ah" or e.source == "auction" or e.source == nil then return PD.TAG_INK.ah end
+    return PD.TAG_INK.unknown
+end
 
 function PD.LvTier(skill, learn, yellow, green, grey)
     if not skill then return nil end
@@ -5667,22 +6328,39 @@ function PD.PaintCard(r, card)
         z.__tipLines, z.__act, z.__it = nil, nil, nil
         return
     end
-    local x, w = PD.LV_RNG_X or 6, PD.LV_CARD_FIXW
-    tx:ClearAllPoints()
-    tx:SetPoint("CENTER", r, "LEFT", x + w / 2, PD.SB_DY)
+    local x = PD.LV_RNG_X or 6
+    local w = math.max(PD.TextW(card.text or "", 11) + 2 * PD.CARD_PAD,
+        (ns.hui and ns.hui.CHIP_S_MIN_W) or 24)
+    local ink = PD.CARD_INK[card.kind] or PD.CARD_INK.trainer
     local col = PD.CARD_COL[card.kind] or PD.CARD_COL.trainer
-    tx:SetTextColor(Unpack(PD.CARD_INK[card.kind] or PD.CARD_INK.trainer))
+    local solid = ns.hui and ns.hui.PaintSolidFill and bg.__pieces and bg.__pieces.__huiBaseCap ~= nil
+    tx:ClearAllPoints()
+    tx:SetPoint("CENTER", r, "LEFT", x + w / 2, PD.SB_DY + (solid and ((ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5) or 0))
+    if solid then
+        tx:SetTextColor(1, 1, 1)
+    else
+        tx:SetTextColor(Unpack(ink))
+    end
     tx:SetText(card.text or "")
     tx:Show()
-    local th = tx:GetStringHeight()
-    if (th or 0) <= 0 then th = 12 end
-    local half = math.floor(th / 2) + 1
+    local chH = (ns.hui and ns.hui.ChipH and ns.hui.ChipH(13)) or (tx:GetStringHeight() or 12)
+    local half = chH / 2
     bg:ClearAllPoints()
     bg:SetPoint("TOPLEFT", r, "LEFT", x, PD.SB_DY + half)
     bg:SetPoint("BOTTOMRIGHT", r, "LEFT", x + w, PD.SB_DY - half)
-    for _, tex in ipairs(bg.__pieces or {}) do
-        tex:SetVertexColor(col[1], col[2], col[3])
-        tex:SetAlpha(1)
+    if solid then
+        ns.hui.PaintSolidFill(bg.__pieces, ns.hui.ChipSolidBase(ink))
+        if bg.__border then
+            for _, tex in ipairs(bg.__border) do
+                tex:SetVertexColor(ink[1], ink[2], ink[3])
+                tex:SetAlpha(1)
+            end
+        end
+    else
+        for _, tex in ipairs(bg.__pieces or {}) do
+            tex:SetVertexColor(col[1], col[2], col[3])
+            tex:SetAlpha(1)
+        end
     end
     bg:Show()
     z.__tipLines = card.lines
@@ -5703,10 +6381,10 @@ PD.CARD_FIXW = nil
 function PD.CardFixW()
     if not PD.CARD_FIXW then
         PD.CARD_FIXW = math.ceil(math.max(
-            PD.TextW(L["训练师"], 10),
-            PD.TextW(L["世界掉落图纸"], 10),
-            PD.TextW(L["商人出售图纸"], 10),
-            PD.TextW(L["掉落&商人图纸"], 10))) + 2 * PD.CARD_PAD
+            PD.TextW(L["训练师"], 11),
+            PD.TextW(L["世界掉落图纸"], 11),
+            PD.TextW(L["商人出售图纸"], 11),
+            PD.TextW(L["掉落&商人图纸"], 11))) + 2 * PD.CARD_PAD
     end
     return PD.CARD_FIXW
 end
@@ -5767,6 +6445,7 @@ function PD.ClearMats(r)
     for j = 1, #r.blk do
         local b = r.blk[j]
         b.ic:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
         b.nm:Hide()
         b.ct:Hide()
         if b.zone then b.zone:Hide() end
@@ -5778,7 +6457,13 @@ function PD.WipeRow(r)
     r.__spec = nil
     PD.ClearMats(r); PD.ClearMatSegs(r)
     if r.icon then r.icon:Hide() end
-    if r.gic then for _, g in ipairs(r.gic) do g:Hide() end end
+    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
+    if r.gic then
+        for _, g in ipairs(r.gic) do
+            g:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(g, nil) end
+        end
+    end
     local iz = r.__iconZone; if iz then iz:Hide() end
     if r.__vs then
         for _, c in ipairs(r.__vs.cards) do c:Hide() end
@@ -5829,6 +6514,7 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
     if cut then
         local b = PD.RowBlk(r, n + 1)
         b.ic:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
         b.ct:SetText("")
         b.ct:Hide()
         b.nm:SetTextColor(Unpack(grey and C_DIM or C_TEXT))
@@ -5844,6 +6530,10 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
         local b = PD.RowBlk(r, k)
         SetIcon(b.ic, DG.ItemIcon(blk.id))
         b.ic:SetDesaturated(grey and true or false)
+        if ns.hui and ns.hui.SetIconRing then
+            local bq = PD.QualCached(blk.id)
+            ns.hui.SetIconRing(b.ic, bq and { ns.hui.QColor(bq) } or nil)
+        end
         b.ic:ClearAllPoints()
         b.ic:SetPoint("RIGHT", r, "RIGHT", -(W - right), 0)
         b.nm:Hide()
@@ -5861,40 +6551,65 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
     for k = n + (cut and 1 or 0) + 1, #r.blk do
         local b = r.blk[k]
         b.ic:Hide(); b.nm:Hide(); b.ct:Hide(); b.zone:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
     end
 end
 
 function PD.LevelSrc(rec)
-    if not rec then return nil, nil end
+    if not rec then return nil, nil, nil end
     local src = rec[14]
-    local fid = rec[13] and rec[13][1]
-    if not fid then return L["向训练师学习"], nil end
-    local detail
-    if src and src.drops and #src.drops > 0 then
-        detail = format(L["图纸：%s · 掉落 %d 处"], DG.ItemName(fid), #src.drops)
+    local f = rec[13]
+    local fid = f and f[1]
+    if type(fid) ~= "number" then return L["向训练师学习"], nil, nil end
+    local SM = ns.ProfSourceMerge
+    local raw = (SM and SM.SourceOf) and SM.SourceOf(fid) or nil
+    local view = raw or (type(src) == "table" and src or nil)
+    local kind = (SM and SM.Primary) and SM.Primary(view) or nil
+    if not kind then
+        view = type(src) == "table" and src or nil
+        kind = (SM and SM.Primary) and SM.Primary(view) or nil
     end
-    return L["需图纸 · 商人出售"], detail
+    local drops = view and (view.drops or view.d) or nil
+    local nDrop = (type(drops) == "table") and #drops or 0
+    local name = DG.ItemName(fid)
+    if kind == "vendor" then
+        local detail
+        if nDrop > 0 then detail = format(L["%s · 掉落 %d 处"], name, nDrop) end
+        return L["需图纸 · 商人出售"], detail, kind
+    elseif kind == "currency" then
+        local nCur = (SM and SM.CurrencyCount) and SM.CurrencyCount(view) or 0
+        return L["图纸 · 通货兑换"], format(L["%s · 兑换 %d 处"], name, nCur), kind
+    elseif kind == "drop" then
+        return L["图纸 · 掉落获取"], format(L["%s · 掉落 %d 处"], name, nDrop), kind
+    elseif kind == "quest" then
+        return L["图纸 · 任务获取"], nil, kind
+    end
+    return L["图纸 · 来源未知"], nil, kind
 end
 
 function PD.SourceParts(s)
-    local out = {}
-    if not s then return out end
+    local out, extra = {}, {}
+    if not s then return out, extra end
     if s.skill then
         out[#out + 1] = { text = format(L["技能 %s"], tostring(s.skill)), kind = "skill" }
     end
-    if s.drops and #s.drops > 0 then
-        out[#out + 1] = { text = format(L["掉落 %d 处"], #s.drops), kind = "drop" }
-    end
-    if s.vendors and #s.vendors > 0 then
-        local vs = PD.VendorListOf(s)
-        if #vs > 1 then
-            out[#out + 1] = { text = format(L["商人：%s 等 %d 人"], PD.VendorName(vs[1]), #vs), vendor = true }
-        elseif #vs == 1 then
+    local vs = PD.VendorListOf(s)
+    local nVendor = (type(vs) == "table") and #vs or 0
+    local nDrop = (type(s.drops) == "table") and #s.drops or 0
+    if nVendor > 0 then
+        if nVendor > 1 then
+            out[#out + 1] = { text = format(L["商人：%s 等 %d 人"], PD.VendorName(vs[1]), nVendor), vendor = true }
+        elseif nVendor == 1 then
             local v = vs[1]
             out[#out + 1] = { text = format(L["商人：%s"], PD.VendorName(v)), vendor = true }
         end
+        if nDrop > 0 then
+            extra[#extra + 1] = { text = format(L["另有掉落 %d 处"], nDrop), kind = "drop" }
+        end
+    elseif nDrop > 0 then
+        out[#out + 1] = { text = format(L["掉落 %d 处"], nDrop), kind = "drop" }
     end
-    return out
+    return out, extra
 end
 
 function PD.SourceText(s)
@@ -5902,6 +6617,14 @@ function PD.SourceText(s)
     if #p == 0 then return nil end
     local t = {}
     for i = 1, #p do t[i] = p[i].text end
+    return table.concat(t, " · ")
+end
+
+function PD.SourceExtraText(s)
+    local _, extra = PD.SourceParts(s)
+    if type(extra) ~= "table" or #extra == 0 then return nil end
+    local t = {}
+    for i = 1, #extra do t[i] = extra[i].text end
     return table.concat(t, " · ")
 end
 
@@ -6119,6 +6842,31 @@ function PD.DropLines(s)
     return out
 end
 
+function PD.DropZoneText(s, maxN)
+    if not (s and type(s.drops) == "table") then return nil end
+    local seen, order = {}, {}
+    for i = 1, #s.drops do
+        local dd = s.drops[i]
+        local area = (type(dd) == "table") and dd.area or nil
+        if type(area) == "number" then
+            local rec = seen[area]
+            if rec then
+                rec[2] = rec[2] + 1
+            else
+                rec = { area, 1 }
+                seen[area] = rec
+                order[#order + 1] = rec
+            end
+        end
+    end
+    if #order == 0 then return nil end
+    table.sort(order, function(a, b)
+        if a[2] ~= b[2] then return a[2] > b[2] end
+        return a[1] < b[1]
+    end)
+    return PD.ZoneText(order, maxN or 3)
+end
+
 local PICK_W, PICK_ROW_H, PICK_GAP, PICK_PAD = 210, 24, 2, 6
 
 function PD.HideVendorPick()
@@ -6300,7 +7048,7 @@ function PD.EnchantSpec(en)
     local vsEn = (en[10] and PD.VendorListOf(en[10])) or {}
     local hasVendor = #vsEn > 0
     local drEn = (en[10] and en[10].drops) or {}
-    local acqEn = (hasVendor and #drEn == 0) and L["商人售卖"] or L["世界掉落"]
+    local acqEn = hasVendor and L["商人售卖"] or L["世界掉落"]
     local base = en[10] and (L["图纸"] .. " · " .. acqEn) or L["训练师"]
     local dpre, dval, dact, vlines
     if hasVendor then
@@ -6321,6 +7069,12 @@ function PD.EnchantSpec(en)
     local lines = PD.RecipeSourceLines({ { en[1] or "" } }, resolved)
     if en[4] and en[4] ~= "" then lines[#lines + 1] = { en[4] } end
     if en[10] then lines[#lines + 1] = { PD.SourceText(en[10]) or "", 0.7, 0.7, 0.7 } end
+    local extraTx = en[10] and PD.SourceExtraText(en[10]) or nil
+    if extraTx then lines[#lines + 1] = { extraTx, 0.7, 0.7, 0.7 } end
+    if hasVendor and #drEn > 0 then
+        local zoneTx = PD.DropZoneText(en[10], 3)
+        if zoneTx then lines[#lines + 1] = { format(L["大多在 %s"], zoneTx), 0.7, 0.7, 0.7 } end
+    end
     if vlines then
         for _, ln in ipairs(vlines) do lines[#lines + 1] = ln end
     end
@@ -6869,8 +7623,7 @@ function PD.RecipeSpec(r)
     local station = meta and ({ forge = L["熔炉"], blackForge = L["黑铁熔炉"], moltenFoundry = L["熔火铸造厂"] })[meta.station]
     local vs = (r[14] and PD.VendorListOf(r[14])) or {}
     local hasVendor = #vs > 0
-    local hasDrop = r[14] and r[14].drops and #r[14].drops > 0 and true or false
-    local acq = (hasVendor and not hasDrop) and L["商人售卖"] or L["世界掉落"]
+    local acq = hasVendor and L["商人售卖"] or L["世界掉落"]
     local base
     if clientPending then
         base = L["客户端数据待读取"]
@@ -7321,7 +8074,7 @@ function PD.RowsRecipe(rows)
         realN, maxW = #list, nil
     end
     if PD.recipeSort then
-        local kf = ({ ah = "ahVal", cost = "costVal", diff = "diffVal", gap = "gapVal" })[PD.recipeSort]
+        local kf = ({ ah = "ahVal", cost = "costVal", diff = "diffVal" })[PD.recipeSort]
         if kf then
             local desc = PD.recipeSortDesc
             table.sort(list, function(a, b)
@@ -7461,40 +8214,6 @@ function PD.RowsGather(rows)
     if PD.cur == "fishing" then
         PD.RowsFishing(rows)
         return
-    end
-    local g = GA and GA[PD.cur]
-    if not g then return end
-    if PD.cur == "skinning" then
-        PushHead(rows, L["剥皮档次（等级区间 → 产出 → 分布）"])
-        for _, t in ipairs(g) do
-            local items = {}
-            for _, id in ipairs(t[2] or {}) do items[#items + 1] = DG.ItemName(id) end
-            rows[#rows + 1] = {
-                kind = "row",
-                text = format(L["等级 %s - %s"], tostring(t[1][1]), tostring(t[1][2])),
-                sub = table.concat(items, "  "),
-                right2 = PD.ZoneText(t[3], 3),
-                lines = { { format(L["产出：%s"], table.concat(items, "  ")) },
-                          { format(L["分布：%s"], PD.ZoneText(t[3])) } },
-            }
-        end
-        return
-    end
-    PushHead(rows, L["节点表（所需技能 → 产出 → 分布）"])
-    for _, n in ipairs(g) do
-        local head = n[1] and n[1][1]
-        local items = {}
-        for _, id in ipairs(n[1] or {}) do items[#items + 1] = DG.ItemName(id) end
-        local nm, got = DG.ItemName(head)
-        if not got then nm = head and format(L["物品 #%d"], head) or "?" end
-        rows[#rows + 1] = {
-            kind = "row", it = head and { head } or nil, text = nm,
-            sub = table.concat(items, "  "),
-            right = format(L["技能 %d"], n[2] or 0),
-            right2 = PD.ZoneText(n[3], 3),
-            lines = { { format(L["产出：%s"], table.concat(items, "  ")) },
-                      { format(L["分布：%s"], PD.ZoneText(n[3])) } },
-        }
     end
 end
 
@@ -7679,24 +8398,92 @@ function PD.RowsGatherRoute(rows)
         return
     end
 
-    PushHead(rows, L["采集升级路线（全程）"])
-    if curLv then
-        PushText(rows, format(L["当前技能 %d，绿色为推荐段：采到区间上缘再换下一段。"], curLv), 11, C_GREY)
-    else
-        PushText(rows, L["未学到该专业，先找训练师学习；学习后这里显示当前位置。"], 11, C_GREY)
+end
+
+local GC_SKIN_SKILL = { [1] = { 1, 9 }, [11] = { 10, 100 }, [21] = { 105, 150 }, [31] = { 155, 200 }, [41] = { 205, 250 }, [51] = { 255, 300 } }
+local GC_HERB_GRP = { { 1, 50 }, { 50, 100 }, { 100, 150 }, { 150, 205 }, { 205, 230 }, { 230, 270 }, { 270, 300 } }
+local GC_MINE_GRP = { { 1, 65 }, { 65, 125 }, { 125, 175 }, { 175, 245 }, { 245, 300 } }
+
+local function GCPlaceList(zones)
+    local ZL = ns.ExploreZoneLv
+    local out = {}
+    for _, z in ipairs(zones or {}) do
+        out[#out + 1] = {
+            zone = z[1],
+            name = DG.ZoneName(z[1]) or format("#%d", z[1]),
+            lv = ZL and ZL[z[1]] or nil,
+        }
     end
-    PushGap(rows)
+    return out
+end
+
+local function GCItemName(id)
+    if not id then return format(L["物品 #%d"], 0) end
+    local nm, got = DG.ItemName(id)
+    if type(nm) ~= "string" or nm == "" then nm = format(L["物品 #%d"], id) end
+    if not got then
+        PD.__itemNamePending = true
+        if DG.RequestItem then DG.RequestItem(id) end
+    end
+    return nm
+end
+
+function PD.GatherCards(rows)
+    local slug = PD.cur
+    local g = GA and GA[slug]
+    if not g then return {} end
+    local out = {}
+    for i, t in ipairs(g) do
+        local ids, zones, lvText
+        if slug == "skinning" then
+            ids, zones = t[2], t[3]
+            lvText = format(L["等级 %s - %s"], tostring(t[1][1]), tostring(t[1][2]))
+        else
+            ids, zones = t[1], t[3]
+            lvText = format(L["等级 %d"], t[2] or 0)
+        end
+        local subs = {}
+        if ids and ids[2] then subs[1] = ids[2] end
+        if ids and ids[3] then subs[2] = ids[3] end
+        out[#out + 1] = {
+            key = "g" .. i,
+            main = ids and ids[1] or nil,
+            subs = subs,
+            name = GCItemName(ids and ids[1]),
+            lvText = lvText,
+            places = GCPlaceList(zones),
+            fold = (slug == "herbalism") and true or nil,
+        }
+    end
+    return out
+end
+
+function PD.GatherRouteCards(rows)
+    local slug = PD.cur
+    local gmode = PD.GatherMode(slug)
+    if gmode == "smelt" then return false end
+    if slug == "fishing" then return false end
+    local g = GA and GA[slug]
+    if not g or #g == 0 then return false end
+    local _learned = PD.ProfLearned()
+    local curLv = _learned and _learned[slug] and _learned[slug].cur or nil
+    local idSkill = {}
+    if slug ~= "skinning" then
+        for _, t in ipairs(g) do
+            for _, id in ipairs(t[1] or {}) do
+                local s = t[2]
+                if s and (not idSkill[id] or s < idSkill[id]) then idSkill[id] = s end
+            end
+        end
+    end
     local function GrSameSeg(a, b)
         if #a ~= #b then return false end
         for k = 1, #a do if a[k] ~= b[k] then return false end end
         return true
     end
-    local SKIN_SKILL = { [1] = { 1, 1 }, [11] = { 10, 100 }, [21] = { 105, 150 }, [31] = { 155, 200 }, [41] = { 205, 250 }, [51] = { 255, 300 } }
     local gi = 1
-    local HERB_GRP = { { 1, 50 }, { 50, 100 }, { 100, 150 }, { 150, 205 }, { 205, 230 }, { 230, 270 }, { 270, 300 } }
-    local MINE_GRP = { { 1, 65 }, { 65, 125 }, { 125, 175 }, { 175, 245 }, { 245, 300 } }
     if slug == "herbalism" or slug == "mining" then
-        local grp = (slug == "herbalism") and HERB_GRP or MINE_GRP
+        local grp = (slug == "herbalism") and GC_HERB_GRP or GC_MINE_GRP
         local function GrpOf(s)
             local cur
             for _, rg in ipairs(grp) do
@@ -7713,10 +8500,9 @@ function PD.RowsGatherRoute(rows)
                 for _, id in ipairs(t[1]) do
                     if not seen[id] then last[1][#last[1] + 1] = id end
                 end
-                local zs = {}
+                local zs, zl = {}, {}
                 for _, z in ipairs(last[3]) do zs[z[1]] = math.max(zs[z[1]] or 0, z[2]) end
                 for _, z in ipairs(t[3]) do zs[z[1]] = math.max(zs[z[1]] or 0, z[2]) end
-                local zl = {}
                 for zid, cnt in pairs(zs) do zl[#zl + 1] = { zid, cnt } end
                 table.sort(zl, function(a, b) return a[2] > b[2] end)
                 for k = #zl, 7, -1 do zl[k] = nil end
@@ -7728,11 +8514,12 @@ function PD.RowsGatherRoute(rows)
         end
         g = merged
     end
+    local out = {}
     while gi <= #g do
         local t = g[gi]
         local lo, hi, ids, zones
         if slug == "skinning" then
-            local rng = SKIN_SKILL[t[1][1]] or { t[1][1], t[1][2] }
+            local rng = GC_SKIN_SKILL[t[1][1]] or { t[1][1], t[1][2] }
             lo, hi, ids, zones = rng[1], rng[2], t[2], t[3]
         else
             lo, ids, zones = t[2], t[1], t[3]
@@ -7749,7 +8536,7 @@ function PD.RowsGatherRoute(rows)
                     and PD.ZoneText(zones) == PD.ZoneText(nx[3])) then break end
             if slug == "skinning" then
                 if nx[1][1] ~= t[1][2] + 1 then break end
-                hi = (SKIN_SKILL[nx[1][1]] or { nil, nx[1][2] })[2]
+                hi = (GC_SKIN_SKILL[nx[1][1]] or { nil, nx[1][2] })[2]
             else
                 hi = (g[gi + 2] and g[gi + 2][2] or 301) - 1
                 if hi < lo then hi = lo end
@@ -7757,30 +8544,25 @@ function PD.RowsGatherRoute(rows)
             gi = gi + 1
         end
         local active = curLv and curLv >= lo and curLv <= hi
-        local headId = ids[1]
-        local nm
-        if t[4] then
-            local nms = {}
-            for _, id in ipairs(ids) do
-                local on = DG.ItemName(id)
-                nms[#nms + 1] = (type(on) == "string" and on ~= "") and on or format(L["物品 #%d"], id)
-            end
-            nm = table.concat(nms, "、")
-        else
-            nm = DG.ItemName(headId)
-            if not (type(nm) == "string" and nm ~= "") then nm = format(L["物品 #%d"], headId) end
+        local icons, dims = {}, {}
+        for k = 1, math.min(#ids, 4) do
+            local id = ids[k]
+            icons[k] = id
+            local need = idSkill[id]
+            if curLv and need and curLv < need then dims[k] = true end
         end
-        rows[#rows + 1] = {
-            kind = "row", h = PD.ROW_H1, gr3 = true,
-            it = { headId }, qItem = headId,
-            lv = (hi > lo) and format(L["%d - %d"], lo, hi) or tostring(lo),
-            loc = format(L["大多在 %s"], PD.ZoneText(zones)),
-            text = nm,
-            icons = (slug == "herbalism" or slug == "mining") and ids or nil,
-            nameColor = active and GR_GREEN or nil,
+        out[#out + 1] = {
+            kind = "route",
+            key = "r" .. #out,
+            name = (hi > lo) and format(L["%d - %d"], lo, hi) or tostring(lo),
+            icons = icons,
+            dims = dims,
+            places = GCPlaceList(zones),
+            active = active or nil,
         }
         gi = gi + 1
     end
+    return out
 end
 
 local function ClipFixedSteps(steps, target)
@@ -8081,7 +8863,8 @@ end
 
 function PD.PlanCostText(plan)
     if plan.completeCost==false and (plan.total or 0)==0 then return L["材料价格待补全"] end
-    return (plan.completeCost==false and "≥" or "")..RA.MoneyStr(plan.total or 0,"copper")
+    local floor = (plan.completeCost==false) or ((plan.np or 0) > 0)
+    return (floor and "≥" or "")..RA.MoneyStr(plan.total or 0,"copper")
 end
 
 function PD.CopyPlanSummary(plan)
@@ -8149,6 +8932,7 @@ function PD.StepIsMaterial(st)
     return material and true or false
 end
 function PD.StepRole(st)
+    if st.kind == "specialization_quest" then return L["专精任务"] end
     if st.checkpoint or st[3] == 0 then return L["实地采矿"] end
     local tags = st.tags or {}
     local leveling = tags.leveling or st.role == "level" or st.role == "both"
@@ -8170,6 +8954,7 @@ function PD.PurchasePriceHint(entry)
     if entry.reference then return L["参考报价（实际报价可能因声望而异；客户端实测优先）"] end
 end
 function PD.StepName(st)
+    if st.kind == "specialization_quest" then return L["专精任务"] end
     return (st.checkpoint or st[3] == 0) and L["实地采矿"] or SpellName(st[3])
 end
 
@@ -8453,26 +9238,28 @@ function PD.RowsExclusions(rows)
         local rec, ri = info.rec, info.ri
         local item = spellItem(rec) or spellItem(ri)
         want(item)
-        local src
+        local src, srcDetail
         if profession ~= PD.cur then
             local pro = D.pro[profession]
             src = (pro and pro.name or profession) .. " · "
                   .. (info.reason == "secondary" and L["联合升级"] or L["制作材料"])
         elseif rec then
-            src = PD.LevelSrc(rec)
+            src, srcDetail = PD.LevelSrc(rec)
         elseif ri then
             src = ri.trainer and L["向训练师学习"] or nil
         end
-        if rec and rec.clientPending then src = L["客户端数据待读取"] end
+        if rec and rec.clientPending then src, srcDetail = L["客户端数据待读取"], nil end
+        local cardTips = { { SpellName(spell), 1, 0.82, 0.4 },
+                     { L["完全禁止制作：可用购买或其他配方替代产物。"] },
+                     { L["左键切换允许或禁止；右键直接禁止。"], 0.7, 0.7, 0.7 } }
+        if srcDetail then cardTips[#cardTips + 1] = { srcDetail, 0.72, 0.72, 0.72 } end
         cards[#cards + 1] = {
             name = SpellName(spell),
             it = item,
             src = src,
             modeText = mode == "ban" and L["禁止"] or L["允许"],
             color = (mode == "ban" and EX_BAD) or EX_OK,
-            tips = { { SpellName(spell), 1, 0.82, 0.4 },
-                     { L["完全禁止制作：可用购买或其他配方替代产物。"] },
-                     { L["左键切换允许或禁止；右键直接禁止。"], 0.7, 0.7, 0.7 } },
+            tips = cardTips,
             act = function(_, button)
                 PD.ChangeRecipePolicy(profession, spell, button == "RightButton", false)
             end,
@@ -8826,6 +9613,7 @@ function PD.BuildLvOpts(slug, current)
     return {
         start = (PD.Setting("autoFromCurrent") and lv) and math.max(1, lv) or 1,
         onlyAH = PD.Setting("autoOnlyAH"),
+        noFormula = PD.Setting("autoNoFormula"),
         learnedOnly = PD.Setting("autoLearnedOnly"),
         target = PD.LvTarget(),
         scheme = fish and "fishing" or PD.SettingRaw("autoScheme"),
@@ -9428,9 +10216,10 @@ function PD.RowsLeveling(rows)
             end
         end
         if clipped and st._clip then count = count .. format(L[" · 按目标 %d 折算"], target) end
-        if st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
+        if st.kind == "specialization_quest" then count, cost = L["专精任务"], ""
+        elseif st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
         local tp = trackAll and trackAll.steps[index]
-        if tp and tp.casts > 0 and not (st.checkpoint or st[3] == 0) then
+        if tp and tp.casts > 0 and not (st.checkpoint or st[3] == 0 or st.kind == "specialization_quest") then
             count = format("%d/%d", tp.casts, st[4] or 0)
         end
         cntOf[st], costOf[st] = count, cost
@@ -9447,7 +10236,7 @@ function PD.RowsLeveling(rows)
         end
         cardOf[st] = cd
         if cd then
-            cardNeed = math.max(cardNeed, PD.TextW(cd.text, 10) + 2 * PD.CARD_PAD)
+            cardNeed = math.max(cardNeed, PD.TextW(cd.text, 11) + 2 * PD.CARD_PAD)
         end
         if PD.StepIsMaterial(st) then
             roleChipOf[st] = { text = L["中间产物"], bg = DG.Q_BADGE_MID_BG }
@@ -9470,7 +10259,9 @@ function PD.RowsLeveling(rows)
         end
         local output = PD.RecipeOutputText(riM or rec)
         if output and cd then cd.lines[#cd.lines + 1] = {output, 0.65, 0.75, 0.85} end
-        if cd and (st.checkpoint or st[3] == 0) then
+        if cd and st.kind == "specialization_quest" then
+            cd.lines[#cd.lines+1] = {L["专精任务：找训练师开启该专精后继续。"]}
+        elseif cd and (st.checkpoint or st[3] == 0) then
             cd.lines[#cd.lines+1] = {L["达到目标技能后重新计算"]}
         end
     end
@@ -9551,7 +10342,6 @@ function PD.RowsLeveling(rows)
                                     0.7, 0.7, 0.7 }
             end
             for _, w in ipairs(warn) do note(w[1], w[2], w[3], w[4]) end
-            rows[#rows + 1] = { kind = "head", text = format(L["1 → %d 分段路线"], target) }
             PushGap(rows, 4)
         end
         rows[#rows + 1] = { kind = "lvhead", h = 18, col = 1, noTip = true }
@@ -9575,7 +10365,8 @@ function PD.RowsLeveling(rows)
                 local pro = D.pro[st.profession]
                 src = (pro and pro.name or st.profession) .. " · " .. (st.reason == "secondary" and L["联合升级"] or L["制作材料"])
             elseif st.reason == "material" then src = L["制作材料"] end
-            if st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
+            if st.kind == "specialization_quest" then src = L["专精任务"]
+            elseif st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
             if (rec and rec.clientPending) or (ri and ri.clientPending) then src = L["客户端数据待读取"] end
             local segLo = tonumber(st[1])
             local segHi = tonumber(st[2])
@@ -9714,7 +10505,27 @@ function PD.RowsFormulaShop(rows, data, foldKey)
         local hasLoc = #dropEnts > 0
         local chipText = src.skill and format(L["技能 %s"], tostring(src.skill)) or nil
         local links = {}
-        if #drops > 0 then
+        local vendors = PD.VendorListOf(src)
+        if #vendors > 0 then
+            local vEnts = PD.VendorEntries(src)
+            local vtext = format(L["商人 %d 处"], #vendors)
+            if #vEnts == 0 then vtext = vtext .. " · " .. L["暂无坐标"] end
+            local vlines = PD.VendorLines(src, entry.id)
+            if #drops > 0 then
+                vlines[#vlines + 1] = { format(L["另有掉落 %d 处"], #drops), 0.75, 0.75, 0.75 }
+                for _, ln in ipairs(PD.DropLines(src)) do
+                    if ln[1] ~= L["点击：在地图上标记该 NPC"] and ln[1] ~= L["点击：选择要标记的 NPC"] then
+                        vlines[#vlines + 1] = ln
+                    end
+                end
+            end
+            links[#links + 1] = {
+                text = vtext,
+                lines = vlines,
+                color = (#vEnts > 0) and { 0.58, 0.86, 1 } or { 0.62, 0.62, 0.62 },
+                act = (#vEnts > 0) and PD.VendorAct(src) or function() end,
+            }
+        elseif #drops > 0 then
             local stext = format(L["掉落 %d 处"], #drops)
             if not hasLoc then stext = stext .. " · " .. L["暂无坐标"] end
             links[#links + 1] = {
@@ -9726,18 +10537,6 @@ function PD.RowsFormulaShop(rows, data, foldKey)
         else
             links[#links + 1] = { text = L["掉落未知"], color = { 0.62, 0.62, 0.62 },
                                   act = function() end }
-        end
-        local vendors = PD.VendorListOf(src)
-        if #vendors > 0 then
-            local vEnts = PD.VendorEntries(src)
-            local vtext = format(L["商人 %d 处"], #vendors)
-            if #vEnts == 0 then vtext = vtext .. " · " .. L["暂无坐标"] end
-            links[#links + 1] = {
-                text = vtext,
-                lines = PD.VendorLines(src, entry.id),
-                color = (#vEnts > 0) and { 0.58, 0.86, 1 } or { 0.62, 0.62, 0.62 },
-                act = (#vEnts > 0) and PD.VendorAct(src) or function() end,
-            }
         end
         local stockChip = PD.FormulaStockChip(entry)
         local stockInline = stockChip ~= nil and #vendors > 0
@@ -9777,24 +10576,20 @@ function PD.RowsFormulaShop(rows, data, foldKey)
             lines[#lines + 1] = {format(L["%s：%s · %s"], name, priceText, stockText), 0.7, 0.7, 0.7}
         end
         local selected = entry.source or entry.sourceType
-        local tag = selected == "vendor" and L["NPC购买"]
-            or ((selected == "ah" or selected == "auction") and L["拍卖行"] or L["尚无购买来源"])
+        local tagKind = selected == "vendor" and "vendor"
+            or ((selected == "ah" or selected == "auction") and "ah" or "none")
+        local tag = tagKind == "vendor" and L["NPC购买"]
+            or (tagKind == "ah" and L["拍卖行"] or L["尚无购买来源"])
         local priced = not (entry.unpriced or type(entry.cost) ~= "number")
         rows[#rows + 1] = {kind = "row", h = PD.ROW_H, col = 1, it = id and {id} or nil,
             text = PD.Fit(id and DG.ItemName(id) or L["未知图纸"], 13, (PD.splitLW or PD.COL_LW) - 130),
             chip = chipText and {text = chipText} or nil,
             links = links,
-            tag = {text = tag}, right = format("×%d", count),
+            tag = {text = tag, color = PD.TAG_INK[tagKind]}, right = format("×%d", count),
             right2 = priced and money(entry.cost) or priceLine,
             lines = lines, tipExtra = function() return lines end}
         if stock and not stockInline then PushText(rows, stock, 11, C_GREY, 1) end
         if entry.limited then PushText(rows, L["限量商人报价仅作参考，不能保证到访时有货。"], 11, C_GREY, 1) end
-        local parts = PD.SourceParts(src)
-        for _, part in ipairs(parts) do
-            if not part.vendor and part.kind ~= "skill" and part.kind ~= "drop" then
-                sourceRow(part.text, {{part.text}})
-            end
-        end
         if entry.questOnly then sourceRow(L["仅任务来源"], {{L["仅任务来源"]}}) end
         for _,quest in ipairs(src.quests or {}) do
             local title=quest.name or (quest.id and ("#"..quest.id)) or L["任务"]
@@ -10090,7 +10885,7 @@ function PD.PushTripOptimized(rows, res, data)
             PD.ShopMatRow(rows, e, data or {}, true,
                 { { L["比价后从拍卖行购买更划算。"], 0.7, 0.7, 0.7 } })
             local row = rows[before + 1]
-            if row then row.tag = { text = L["拍卖行"] } end
+            if row then row.tag = { text = L["拍卖行"], color = PD.TAG_INK.ah } end
         end
     end
 end
@@ -10156,7 +10951,7 @@ function PD.PushTripGroups(rows, data)
             PD.ShopMatRow(rows, e, data, true,
                 { { L["没有商人直售货源，需要从拍卖行购买。"], 0.7, 0.7, 0.7 } })
             local row = rows[before + 1]
-            if row then row.tag = { text = L["拍卖行"] } end
+            if row then row.tag = { text = L["拍卖行"], color = PD.TAG_INK.ah } end
         end
     end
     return nil
@@ -10208,7 +11003,8 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip)
         kind = "row", h = PD.ROW_H, col = 1, it = { id },
         text = PD.Fit(DG.ItemName(id), 13, lw - 130),
         sub = sub,
-        tag = { text = e.tool and L["工具"] or e.spec and L["专精任务"] or PD.PurchaseSource(e) },
+        tag = { text = e.tool and L["工具"] or e.spec and L["专精任务"] or PD.PurchaseSource(e),
+                color = PD.TagInkOf(e) },
         right = right,
         right2 = right2,
         lines = tip,
@@ -10288,7 +11084,8 @@ function PD.RowsRecoveryDetail(rows, src)
                     kind = "row", h = PD.ROW_H, col = 1, it = { o.id },
                     text = PD.Fit(DG.ItemName(o.id), 13, lw - 150),
                     sub = format(L["×%d · 单价 %s"], n, RA.MoneyStr(unit, "copper")),
-                    tag = { text = ah and L["拍卖行"] or L["卖店"] },
+                    tag = { text = ah and L["拍卖行"] or L["卖店"],
+                            color = ah and PD.TAG_INK.ah or PD.TAG_INK.shop },
                     right = RA.MoneyStr(revenue, "copper"),
                     lines = {
                         { format(L["%d 件 · 单价 %s"], n, RA.MoneyStr(unit, "copper")) },
@@ -10316,7 +11113,7 @@ function PD.RowsRecoveryDetail(rows, src)
                     kind = "row", h = PD.ROW_H, col = 1, it = { o.id },
                     text = PD.Fit(DG.ItemName(o.id), 13, lw - 150),
                     sub = format(L["×%d"], n),
-                    tag = { text = L["未知"] },
+                    tag = { text = L["未知"], color = PD.TAG_INK.unknown },
                     right = L["—"],
                     lines = {
                         { format(L["%d 件"], n) },
@@ -10557,7 +11354,7 @@ function PD.LevelTool()
             end
         end
         if PD.cur == "mining" then
-            list[#list + 1] = {key = "gather_mode", align = "right", text = L["切换到采集路线"]}
+            list[#list + 1] = {key = "gather_mode", align = "left", text = L["采集路线"]}
         end
     end
     if ns.ProfTrack then
@@ -10698,9 +11495,22 @@ function PD.LevelTool()
             PD.FlushPolicies()
         elseif k == "track" then
             local T = ns.ProfTrack
-            local res = PD.autoSnapshot
-            if T and res and PD.autoSnapshotSlug == PD.cur and T.Extract(res) then
-                T.Restart(PD.cur, res)
+            if T and T.Active and T.Active(PD.cur) then
+                T.Archive(PD.cur, "cancel")
+                PD.autoSnapshotSlug = nil
+            else
+                local res = PD.autoSnapshot
+                local ready = (T and res and PD.autoSnapshotSlug == PD.cur and T.Extract(res)) and true or false
+                if ready then
+                    T.Restart(PD.cur, res)
+                else
+                    local msg = L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
+                    if UIErrorsFrame and UIErrorsFrame.AddMessage then
+                        pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.82, 0.4)
+                    elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+                        pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, msg, 1, 0.82, 0.4)
+                    end
+                end
             end
         end
         PD.RequestRender()
@@ -10713,7 +11523,7 @@ PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
 PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
     { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling" }, 1 },
-    { L["采购与配方"], { "autoLearnedOnly", "autoOnlyAH", "autoBuyLimitedFormulas", "autoSkipUnpricedFormulas" }, 2 },
+    { L["采购与配方"], { "autoLearnedOnly", "autoOnlyAH", "autoBuyLimitedFormulas", "autoSkipUnpricedFormulas", "autoNoFormula" }, 2 },
     { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoCraftTools", "engChoice" }, 2 },
 }
 
@@ -10752,6 +11562,10 @@ function PD.RowsSettings(rows)
           desc = L["世界掉落图纸无拍卖行报价、商人图样无商人售价信息时，相应配方不参与升级路线。"],
           d1 = L["开启（默认）：来源价格无法核实的图纸不进路线，对应配方退回其他方案或固定参考路线。"],
           d2 = L["关闭：未知来源图纸照常参与计算，图纸费用按未知处理。"] },
+        { k = "autoNoFormula", name = L["只使用商人有定价的图纸"],
+          desc = L["未学配方的图纸必须在商人处以金币固定售卖，才按该价格参与路线比较。"],
+          d1 = L["开启：掉落、任务、通货兑换图纸的配方不参与路线，避免为一张图纸长跑或按 0 金计入。"],
+          d2 = L["关闭（默认）：各类来源的图纸照常参与，价格无法核实的按未知处理、不按 0 金计入。"] },
         { k = "autoFromCurrent", name = L["从当前技能开始计算"],
           desc = L["开启 = 只算当前技能到 300 的路线；关闭 = 从 1 全量重算整条路线（预估全程花费）"],
           d1 = L["开启：适合练级中途打开手册直接照着做。"],
@@ -11144,7 +11958,7 @@ local function WritBadge(cinfo, learned)
         return { text = L["已学"], color = { 1, 0.82, 0 } }
     end
     if learned[cinfo.slug] then
-        return { text = L["本专业"] }
+        return { text = L["本专业"], color = { 0.62, 0.86, 1.00 } }
     end
     local p = D.pro and D.pro[cinfo.slug]
     return { text = p and p.name or cinfo.slug, color = { 0.55, 0.57, 0.62 } }
@@ -11480,6 +12294,8 @@ function PD.Render()
     PD.lvSplit = false
     PD.gridSplit = false
     PD.wantIndexGrid = false
+    PD.wantGCards = false
+    PD.gcSpec = nil
     PD.wantBonusTable = false
     PD.wantTrainerBoard = false
     PD.hasSecs = false
@@ -11498,6 +12314,7 @@ function PD.Render()
                    .. "|" .. tostring(PD.shopGroup)
         if pk ~= PD.__pageKey then
             PD.__pageKey = pk
+            PD.gcOpen = {}
             for _, rr in pairs(PD.rows) do PD.WipeRow(rr) end
             if PD.sideRows then
                 for _, rr in pairs(PD.sideRows) do PD.WipeRow(rr) end
@@ -11531,13 +12348,24 @@ function PD.Render()
         PD.RowsCrates(rows)
     elseif PD.tab == "gather" then
         PD.gridSplit = (PD.cur == "fishing")
-        PD.RowsGather(rows)
+        if PD.cur == "fishing" then
+            PD.RowsGather(rows)
+        else
+            PD.gcSpec = PD.GatherCards(rows)
+            PD.wantGCards = true
+        end
     elseif PD.tab == "leveling" then
         if PD.IsGatherRoute() then
             PD.lvSplit = false
             PD.gridSplit = false
             PD.autoPage = nil
-            PD.RowsGatherRoute(rows)
+            local gcards = PD.GatherRouteCards(rows)
+            if gcards then
+                PD.gcSpec = gcards
+                PD.wantGCards = #gcards > 0
+            else
+                PD.RowsGatherRoute(rows)
+            end
         else
         tool, handler = PD.LevelTool()
         if PD.autoPage == "shop" and not PD.exclusionsOpen then
@@ -11573,6 +12401,7 @@ function PD.Render()
     else
         toolH = PD.PaintLvTiles() + PD.PaintTool(tool, handler)
     end
+    PD.gcTopPad = (toolH and toolH > 0) and 8 or 0
     PD.Layout(toolH)
 
     if PD.searchBox then

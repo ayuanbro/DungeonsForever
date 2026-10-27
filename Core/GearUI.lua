@@ -18,7 +18,7 @@ local FALLBACK_ICON = Host.FALLBACK_ICON
 local CONTENT_W = Host.CONTENT_W
 local PAGE_INSET = Host.PAGE_INSET
 
-local ROW_H = 34
+local ROW_H = 38
 local PAGE_TOP, PAGE_BOTTOM = 8, PAGE_INSET
 local CARD_GAP = 8
 local CARD_PAD = 10
@@ -162,7 +162,8 @@ local function EnsureGD()
         local fn = ns.EnsureGearData
         GD = type(fn) == "function" and fn() or nil
         GD_ITEMS = GD and GD.items or {}
-        GD_SRC = GD and GD.src or nil
+        local fsrc = ns.EnsureGearSrc
+        GD_SRC = (type(fsrc) == "function" and fsrc()) or (GD and GD.src) or nil
         GD_SRC_Q = type(ns.GearSrcQ) == "table" and ns.GearSrcQ or nil
         GD_WDLV = type(ns.GearWDLv) == "table" and ns.GearWDLv or nil
         GD_SRC_LV = type(ns.GearSrcQLv) == "table" and ns.GearSrcQLv or nil
@@ -719,7 +720,7 @@ local function EstRowH(e)
         end
         local lw = G.listHost and G.listHost.GetWidth and G.listHost:GetWidth()
         if type(lw) ~= "number" or lw <= 0 then lw = 560 end
-        local avail = lw - 2 * CARD_PAD - 32 - 6
+        local avail = lw - 2 * CARD_PAD - 40 - 6
         if avail < 120 then avail = 120 end
         local lines = math.ceil(wide / avail)
         if lines < 1 then lines = 1 end
@@ -1019,12 +1020,21 @@ local function PaintRow(r)
     if r.__huiCard or r.__plainCard then
         CardState(r, r.__hover and "hover" or "norm")
     end
+    r.name:ClearAllPoints()
+    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", CARD_PAD + 40, -3)
+    r.src:ClearAllPoints()
+    r.src:SetPoint("TOPLEFT", CARD_PAD + 470, -3)
+    r.src:SetPoint("RIGHT", r, "RIGHT", -(CARD_PAD + 34), 0)
+    SetTextC(r.src2, "")
     if e.hdr then
         r.icon:SetShown(false)
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         SetTextC(r.name, e.hdr)
         r.name:SetTextColor(Unpack(C_GOLD))
+        r.name:ClearAllPoints()
+        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", CARD_PAD + 40, -6)
         SetTextC(r.meta, "")
         SetTextC(r.req, "")
         SetTextC(r.ilvl, "")
@@ -1042,6 +1052,7 @@ local function PaintRow(r)
     end
     if e.kind == "bonus" then
         r.icon:SetShown(false)
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         SetTextC(r.name, "")
@@ -1049,7 +1060,7 @@ local function PaintRow(r)
         SetTextC(r.req, "")
         SetTextC(r.ilvl, "")
         r.src:ClearAllPoints()
-        r.src:SetPoint("LEFT", CARD_PAD + 32, 0)
+        r.src:SetPoint("LEFT", CARD_PAD + 40, 0)
         r.src:SetPoint("RIGHT", r, "RIGHT", -CARD_PAD, 0)
         r.src:SetWordWrap(true)
         SetTextC(r.src, e.n > 0 and format(L["%d 件：%s"], e.n, e.text or "") or (e.text or ""))
@@ -1065,7 +1076,7 @@ local function PaintRow(r)
     end
     r.icon:SetShown(true)
     r.src:ClearAllPoints()
-    r.src:SetPoint("TOPLEFT", CARD_PAD + 470, -6)
+    r.src:SetPoint("TOPLEFT", CARD_PAD + 470, -3)
     r.src:SetPoint("RIGHT", r, "RIGHT", -(CARD_PAD + 34), 0)
     r.src:SetWordWrap(false)
     if e.kind == "set" then
@@ -1073,15 +1084,20 @@ local function PaintRow(r)
         r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         local iconSet = set.class and SET_CLASS_ICON[set.class]
+        local setQ = nil
         if iconSet then
             SetTexC(r.icon, iconSet)
         else
             local rec = recs[(set.ids or {})[1]]
             if rec and rec.icon and rec.icon ~= "" then
                 SetTexC(r.icon, "Interface\\Icons\\" .. rec.icon)
+                setQ = rec.q
             else
                 SetTexC(r.icon, FALLBACK_ICON)
             end
+        end
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(r.icon, setQ and { ns.hui.QColor(setQ) } or nil)
         end
         local cr, cg, cb
         if G.setOpen == e.skey then
@@ -1122,6 +1138,9 @@ local function PaintRow(r)
             SetTexC(r.icon, FALLBACK_ICON)
         end
         local cr, cg, cb = QColor(rec.q)
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(r.icon, { ns.hui.QColor(rec.q) })
+        end
         SetTextC(r.name, rec.name)
         r.name:SetTextColor(cr, cg, cb)
         local slot = rec.s ~= "" and SLOT_LABEL[rec.s] or nil
@@ -1151,6 +1170,7 @@ local function PaintRow(r)
         SetTextC(r.sub, BIND_LABEL[rec.bind] or "")
     else
         SetTexC(r.icon, FALLBACK_ICON)
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         local gif = GetItemInfo or (C_Item and C_Item.GetItemInfo)
         local ok, nm
         if type(gif) == "function" then ok, nm = pcall(gif, e.id) end
@@ -1210,7 +1230,7 @@ local function PaintRow(r)
             local qx = w1 + 8
             if facOn then
                 r.facIcon:SetPoint("TOPLEFT", r.src, "TOPLEFT", w1 + 4, 1)
-                qx = w1 + 4 + 14 + 6
+                qx = w1 + 4 + 16 + 6
             end
             r.srcQ:SetPoint("TOPLEFT", r.src, "TOPLEFT", qx, 0)
             r.srcQ:Show()
@@ -2010,16 +2030,16 @@ local function BuildRow(parent)
     r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     Cardify(r, 4, 2)
     r.icon = r:CreateTexture(nil, "ARTWORK")
-    r.icon:SetSize(24, 24)
+    r.icon:SetSize(32, 32)
     r.icon:SetPoint("LEFT", CARD_PAD, 0)
     r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(r.icon) end
     r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-    r.name:SetPoint("TOPLEFT", CARD_PAD + 32, -6)
+    r.name:SetPoint("TOPLEFT", CARD_PAD + 40, -3)
     r.name:SetWidth(180)
     r.name:SetWordWrap(false)
-    r.sub = MakeFS(r, 11, C_DIM, "LEFT")
-    r.sub:SetPoint("TOPLEFT", CARD_PAD + 32, -22)
+    r.sub = MakeFS(r, 12, C_DIM, "LEFT")
+    r.sub:SetPoint("TOPLEFT", CARD_PAD + 40, -23)
     r.sub:SetWidth(180)
     r.sub:SetWordWrap(false)
     r.newTag = CreateFrame("Frame", nil, r)
@@ -2044,18 +2064,18 @@ local function BuildRow(parent)
     r.meta:SetWidth(96)
     r.meta:SetWordWrap(false)
     r.src = MakeFS(r, 12, C_TEXT, "LEFT")
-    r.src:SetPoint("TOPLEFT", CARD_PAD + 470, -6)
+    r.src:SetPoint("TOPLEFT", CARD_PAD + 470, -3)
     r.src:SetPoint("RIGHT", r, "RIGHT", -(CARD_PAD + 34), 0)
     r.src:SetWordWrap(false)
     r.facIcon = r:CreateTexture(nil, "ARTWORK")
-    r.facIcon:SetSize(14, 14)
-    r.facIcon:SetPoint("TOPLEFT", CARD_PAD + 470, -12)
+    r.facIcon:SetSize(16, 16)
+    r.facIcon:SetPoint("TOPLEFT", CARD_PAD + 470, -9)
     r.facIcon:Hide()
     r.srcQ = MakeFS(r, 12, C_DIM, "LEFT")
     r.srcQ:SetWordWrap(false)
     r.srcQ:Hide()
-    r.src2 = MakeFS(r, 11, C_DIM, "LEFT")
-    r.src2:SetPoint("TOPLEFT", CARD_PAD + 470, -20)
+    r.src2 = MakeFS(r, 12, C_DIM, "LEFT")
+    r.src2:SetPoint("TOPLEFT", CARD_PAD + 470, -23)
     r.src2:SetPoint("RIGHT", r, "RIGHT", -(CARD_PAD + 34), 0)
     r.src2:SetWordWrap(false)
     r.star = CreateFrame("Button", nil, r)
@@ -2127,7 +2147,7 @@ local function BuildRow(parent)
     r.tipZone = CreateFrame("Button", nil, r)
     r.tipZone:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     r.tipZone:SetPoint("TOPLEFT", r, "TOPLEFT", CARD_PAD, 0)
-    r.tipZone:SetPoint("BOTTOMRIGHT", r, "BOTTOMLEFT", CARD_PAD + 32 + 180 + 4, 0)
+    r.tipZone:SetPoint("BOTTOMRIGHT", r, "BOTTOMLEFT", CARD_PAD + 40 + 180 + 4, 0)
     r.tipZone:SetScript("OnEnter", function()
         local e = r.entry
         if e and e.id then ItemTip(r.tipZone, e.id) end
@@ -3889,7 +3909,7 @@ function G.Build(page)
         f:SetPoint("LEFT", x, 0)
         f:SetText(txt)
     end
-    HeadL(L["名称"], CARD_PAD + 32)
+    HeadL(L["名称"], CARD_PAD + 40)
     G.headSort = {}
     local function HeadSortBtn(key, x)
         local b = CreateFrame("Button", nil, headRow)
@@ -3897,10 +3917,10 @@ function G.Build(page)
         b:SetPoint("LEFT", x, 0)
         local arrow = b:CreateTexture(nil, "OVERLAY")
         arrow:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\icon\\NAV\\SortIcon")
-        arrow:SetSize(10, 10)
+        arrow:SetSize(14, 14)
         arrow:SetPoint("LEFT", b, "LEFT", 0, 0)
         local f = MakeFS(b, 16, C_GREY, "LEFT")
-        f:SetPoint("LEFT", b, "LEFT", 12, 0)
+        f:SetPoint("LEFT", b, "LEFT", 16, 0)
         f:SetText(L[key == "ilvl" and "物品等级" or "需要等级"])
         b:SetScript("OnClick", function()
             if G.sort ~= key then

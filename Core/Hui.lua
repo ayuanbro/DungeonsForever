@@ -1496,7 +1496,7 @@ do
             measure:SetText(it.text or "")
             local w = measure:GetStringWidth() + padX * 2
             if it.swatch then w = w + 14 + 7 end
-            if it.icon then w = w + iconSz + iconGap end
+            if it.icon then w = w + (it.iconSize or iconSz) + iconGap end
             if it.checked ~= nil then w = w + chkSz + chkGap end
             if w > maxW then maxW = w end
         end
@@ -1568,11 +1568,12 @@ do
                 tx = padX + 14 + 7
             end
             if it.icon then
+                local size = it.iconSize or iconSz
                 local ic = row:CreateTexture(nil, "ARTWORK")
-                ic:SetSize(iconSz, iconSz)
+                ic:SetSize(size, size)
                 ic:SetPoint("LEFT", row, "LEFT", padX, 0)
                 ic:SetTexture(it.icon)
-                tx = padX + iconSz + iconGap
+                tx = padX + size + iconGap
             end
             local fs = row:CreateFontString(nil, "OVERLAY")
             fs:SetPoint("LEFT", row, "LEFT", tx, 0)
@@ -1964,13 +1965,86 @@ do
     ns.hui.CHIP_S_TOP = 1.12
     ns.hui.CHIP_S_BOT = 0.86
 
+    ns.hui.CHIP_LIFT = 1.0
+    ns.hui.CHIP_LABEL_RATIO = -0.771
+
+    local fhCache = {}
+
+    function ns.hui.ChipLineH(size)
+        size = tonumber(size) or 14
+        local cached = fhCache[size]
+        if cached then return cached end
+        if not ns.hui.__metricFs then
+            local host = CreateFrame("Frame", nil, UIParent)
+            host:Hide()
+            ns.hui.__metricFs = host:CreateFontString(nil, "OVERLAY")
+        end
+        local probe = ns.hui.__metricFs
+        probe:SetFont(ns.FONT, size, "")
+        probe:SetText("\228\184\128\229\155\189")
+        local h = probe:GetStringHeight()
+        if type(h) ~= "number" or h <= 0 then h = size end
+        fhCache[size] = h
+        return h
+    end
+
+    function ns.hui.ChipFontKey()
+        return tostring(ns.FONT)
+    end
+
+    function ns.hui.ChipCalibTable()
+        local db = DungeonsForeverDB
+        if type(db) ~= "table" then return nil end
+        if type(db.chipCalib) ~= "table" then db.chipCalib = {} end
+        return db.chipCalib
+    end
+
+    function ns.hui.ChipK()
+        local t = ns.hui.ChipCalibTable()
+        if t then
+            local key = ns.hui.ChipFontKey()
+            local k = t[key]
+            if type(k) == "number" then return k end
+            local pre = key .. "|"
+            for kk, vv in pairs(t) do
+                if type(kk) == "string" and type(vv) == "number" and string.sub(kk, 1, #pre) == pre then
+                    t[key] = vv
+                    t[kk] = nil
+                    return vv
+                end
+            end
+        end
+        local lh = ns.hui.ChipLineH(14)
+        if lh <= 0 then lh = 14 end
+        return ns.hui.CHIP_LIFT / lh
+    end
+
+    function ns.hui.SetChipK(k)
+        local t = ns.hui.ChipCalibTable()
+        if not t then return false end
+        local key = ns.hui.ChipFontKey()
+        if type(k) == "number" then
+            t[key] = k
+        else
+            t[key] = nil
+        end
+        return true
+    end
+
+    function ns.hui.ChipDY(size)
+        return ns.hui.ChipK() * ns.hui.ChipLineH(size)
+    end
+
+    function ns.hui.ChipLabelDY(size)
+        return ns.hui.ChipK() * ns.hui.CHIP_LABEL_RATIO * ns.hui.ChipLineH(size)
+    end
+
     local function ChipGrad(base)
         return Mul(base, ns.hui.CHIP_S_TOP), Mul(base, ns.hui.CHIP_S_BOT)
     end
 
     function ns.hui.ChipH(fs)
-        if fs and fs <= 13 then return ns.hui.CHIP_S_H13 end
-        return ns.hui.CHIP_S_H
+        return ns.hui.ChipLineH(tonumber(fs) or 14)
     end
 
     function ns.hui.ChipSolidBase(ink)
@@ -2013,7 +2087,8 @@ do
         f.__chipBorder = ns.hui.BuildRoundBorder(f, ns.hui.CHIP_S_R, { 1, 1, 1, 1 }, nil, "BORDER", "both", 1)
         f.t = f:CreateFontString(nil, "OVERLAY")
         f.t:SetFont(ns.FONT, ns.hui.CHIP_S_FS, "")
-        f.t:SetPoint("CENTER", f, "CENTER", 0, 0.5)
+        f.t.__chipLy = ns.hui.ChipLabelDY(ns.hui.CHIP_S_FS)
+        f.t:SetPoint("CENTER", f, "CENTER", 0, f.t.__chipLy)
         f.t:SetWordWrap(false)
         f.t:SetTextColor(1, 1, 1)
         f.lab = f.t
@@ -2031,6 +2106,12 @@ do
         ink = ink or ns.hui.layer.L2
         f.t:SetText(text)
         f.t:SetTextColor(1, 1, 1)
+        local ly = ns.hui.ChipLabelDY(ns.hui.CHIP_S_FS)
+        if f.t.__chipLy ~= ly then
+            f.t.__chipLy = ly
+            f.t:ClearAllPoints()
+            f.t:SetPoint("CENTER", f, "CENTER", 0, ly)
+        end
         ns.hui.PaintSolidFill(f.__chipFill, ns.hui.ChipSolidBase(ink))
         if f.__chipBorder then
             for _, tex in ipairs(f.__chipBorder) do
@@ -2437,7 +2518,7 @@ do
         local arrow = dd.__huiArrow
         if not arrow then
             arrow = dd:CreateTexture(nil, "OVERLAY")
-            arrow:SetSize(12, 12)
+            arrow:SetSize(14, 14)
             arrow:SetPoint("RIGHT", dd, "RIGHT", -8, 0)
             arrow:SetTexture("Interface/AddOns/DungeonsForever/Media/textures/arrow.tga")
             arrow:SetRotation(math.pi)
@@ -3020,6 +3101,165 @@ do
         ns.hui.AddRepaint(s, function()
             trackFill:SetColorTexture(HUI_ACCENT[1], HUI_ACCENT[2], HUI_ACCENT[3], 1)
         end)
+    end
+
+    local ICON_GLOW_ALPHA = { 0.45, 0.16 }
+    local ICON_GLOW_OFF = { 1, 2 }
+    local ICON_GLOW_MASK = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIRoundRectMask"
+
+    local function NormRingMode(mode)
+        if mode == "line" then return "line" end
+        if mode == "none" then return "none" end
+        if mode == "off" then return "none" end
+        return "glow"
+    end
+
+    ns.hui.iconRingMode = "glow"
+    ns.hui.__ringReg = setmetatable({}, { __mode = "k" })
+
+    ns.Init(function()
+        local db = DungeonsForeverDB and DungeonsForeverDB.iconRingMode
+        local m = NormRingMode(db)
+        ns.hui.iconRingMode = m
+        if DungeonsForeverDB then DungeonsForeverDB.iconRingMode = m end
+    end)
+
+    function ns.hui.RingMode()
+        return NormRingMode(ns.hui.iconRingMode)
+    end
+
+    function ns.hui.IconRing(tex)
+        if not tex then return nil end
+        local ring = tex.__ring
+        if ring then return ring end
+        local f = tex:GetParent()
+        if not f then return nil end
+        ring = f:CreateTexture(nil, "BORDER")
+        ring:SetPoint("TOPLEFT", tex, "TOPLEFT", -1, 1)
+        ring:SetPoint("BOTTOMRIGHT", tex, "BOTTOMRIGHT", 1, -1)
+        ring:SetColorTexture(1, 1, 1, 1)
+        if ns.huiTheme == "hui" then
+            local mask = f:CreateMaskTexture(nil, "OVERLAY")
+            mask:SetAllPoints(ring)
+            mask:SetTexture("Interface/AddOns/DungeonsForever/Media/LibHUI/HUIRoundRectMask",
+                "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            ring:AddMaskTexture(mask)
+        end
+        ring:Hide()
+        tex.__ring = ring
+        ns.hui.__ringReg[tex] = true
+        return ring
+    end
+
+    function ns.hui.IconRingGlow(tex)
+        if not tex then return nil end
+        local gl = tex.__ringGlow
+        if gl then return gl end
+        local f = tex:GetParent()
+        if not f then return nil end
+        gl = {}
+        for i = 1, #ICON_GLOW_OFF do
+            local d = ICON_GLOW_OFF[i]
+            local t = f:CreateTexture(nil, "BORDER")
+            t:SetPoint("TOPLEFT", tex, "TOPLEFT", -d, d)
+            t:SetPoint("BOTTOMRIGHT", tex, "BOTTOMRIGHT", d, -d)
+            t:SetColorTexture(1, 1, 1, 1)
+            if ns.huiTheme == "hui" then
+                local mask = f:CreateMaskTexture(nil, "OVERLAY")
+                mask:SetAllPoints(t)
+                mask:SetTexture(ICON_GLOW_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+                t:AddMaskTexture(mask)
+            end
+            t:Hide()
+            gl[i] = t
+        end
+        tex.__ringGlow = gl
+        ns.hui.__ringReg[tex] = true
+        return gl
+    end
+
+    function ns.hui.QColor(q)
+        q = tonumber(q) or 1
+        local t = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
+        if t and t.r then return t.r, t.g, t.b end
+        local d = ({ { 0.62, 0.62, 0.62 }, { 1, 1, 1 }, { 0.12, 1, 0 }, { 0, 0.44, 0.87 },
+            { 0.64, 0.21, 0.93 }, { 1, 0.5, 0 }, { 0.9, 0.8, 0.5 }, { 0, 0.8, 1 } })[q + 1]
+        if d then return d[1], d[2], d[3] end
+        return 1, 1, 1
+    end
+
+    function ns.hui.SetIconRing(tex, color)
+        if not tex then return end
+        if not color then
+            if tex.__ring then tex.__ring:Hide() end
+            local off = tex.__ringGlow
+            if off then
+                for i = 1, #ICON_GLOW_OFF do off[i]:Hide() end
+            end
+            tex.__ringColor = nil
+            return
+        end
+        local ta = 1
+        if tex.GetAlpha then
+            local a = tex:GetAlpha()
+            if type(a) == "number" then ta = a end
+        end
+        local des = false
+        if tex.GetDesaturated then des = tex:GetDesaturated() and true or false end
+        local ca = color[4] or 1
+        local mode = ns.hui.RingMode()
+        local glow = (mode == "glow")
+        local ring = tex.__ring
+        if mode == "none" then
+            if ring then ring:Hide() end
+            local off = tex.__ringGlow
+            if off then
+                for i = 1, #ICON_GLOW_OFF do off[i]:Hide() end
+            end
+            tex.__ringColor = color
+            return
+        end
+        if glow then
+            if ring then ring:Hide() end
+        else
+            if not ring then ring = ns.hui.IconRing(tex) end
+            if ring then
+                ring:SetVertexColor(color[1], color[2], color[3], ca)
+                ring:SetAlpha(ta)
+                if ring.SetDesaturated then ring:SetDesaturated(des) end
+                ring:Show()
+            end
+        end
+        local gl = tex.__ringGlow
+        if glow and not gl then gl = ns.hui.IconRingGlow(tex) end
+        if gl then
+            for i = 1, #ICON_GLOW_OFF do
+                local t = gl[i]
+                if glow then
+                    t:SetVertexColor(color[1], color[2], color[3], 1)
+                    t:SetAlpha(ta * ca * ICON_GLOW_ALPHA[i])
+                    if t.SetDesaturated then t:SetDesaturated(des) end
+                    t:Show()
+                else
+                    t:Hide()
+                end
+            end
+        end
+        tex.__ringColor = color
+    end
+
+    function ns.hui.SetIconRingMode(mode)
+        mode = NormRingMode(mode)
+        ns.hui.iconRingMode = mode
+        if DungeonsForeverDB then DungeonsForeverDB.iconRingMode = mode end
+        local reg = ns.hui.__ringReg
+        if reg then
+            for tex in pairs(reg) do
+                local c = tex.__ringColor
+                if c then ns.hui.SetIconRing(tex, c) end
+            end
+        end
+        return mode
     end
 
     function ns.hui.RoundIcon(tex)

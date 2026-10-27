@@ -19,6 +19,7 @@ local C_DONE = { 0.91, 0.78, 0.42 }
 local CONTENT_W = Host.CONTENT_W
 local PAGE_INSET = Host.PAGE_INSET
 local FALLBACK_ICON = Host.FALLBACK_ICON
+local QUALITY_COLOR
 
 local B = ns.ExploreBooks
 local META = ns.ExploreBookMeta or {}
@@ -621,15 +622,15 @@ local function Row(i)
     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(r.icon) end
     r.icon:SetPoint("LEFT", r, "LEFT", 8 + EG.CHK + 8, 0)
     r.a = MakeFS(r, 14, C_TEXT, "LEFT")
-    r.a:SetPoint("TOPLEFT", r, "TOPLEFT", 8 + EG.CHK + 8 + EG.ICON + 10, -5)
+    r.a:SetPoint("TOPLEFT", r, "TOPLEFT", 8 + EG.CHK + 8 + EG.ICON + 10, -7)
     r.unStrike = r:CreateTexture(nil, "OVERLAY")
     r.unStrike:SetHeight(1)
     r.unStrike:SetColorTexture(0.64, 0.61, 0.55, 0.9)
     r.unStrike:Hide()
-    r.b = MakeFS(r, 14, C_GREY, "LEFT")
-    r.b:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 8 + EG.CHK + 8 + EG.ICON + 10, 4)
+    r.b = MakeFS(r, 12, C_GREY, "LEFT")
+    r.b:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 8 + EG.CHK + 8 + EG.ICON + 10, 7)
     r.c = MakeFS(r, 14, C_GOLD, "RIGHT")
-    r.c:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -5)
+    r.c:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -7)
     r.d = MakeFS(r, 14, C_GREY, "RIGHT")
     r.d:SetPoint("RIGHT", r.c, "LEFT", -6, 0)
     r.d2 = MakeFS(r, 14, C_GREY, "RIGHT")
@@ -704,7 +705,7 @@ local function MakeTagPill(r, key)
             p:SetBackdropBorderColor(0.29, 0.27, 0.24, 0.9)
         end
         local t = MakeFS(p, 11, nil, "CENTER")
-        t:SetAllPoints()
+        t:SetPoint("CENTER", p, "CENTER", 0, (ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5)
         t:SetWordWrap(false)
         p.t = t
         p:Hide()
@@ -726,9 +727,9 @@ local function PaintPill(r, key, txt, show, tR, tG, tB, eR, eG, eB)
         local pk = PILL_PREV[key]
         local prev = pk and PillGet(r, pk) or nil
         if prev and prev.IsShown and prev:IsShown() then
-            p:SetPoint("LEFT", prev, "RIGHT", 4, -0.8)
+            p:SetPoint("LEFT", prev, "RIGHT", 4, 0)
         else
-            p:SetPoint("LEFT", r.a, "RIGHT", 6, -0.8)
+            p:SetPoint("LEFT", r.a, "RIGHT", 6, ns.hui.ChipDY(14))
         end
         p.t:SetText(txt)
         p.t:SetTextColor(1, 1, 1)
@@ -896,6 +897,10 @@ local function PaintRow(r, idx, y, rec, zebra)
         r.icon:SetTexture("Interface\\Icons\\" .. ic)
     else
         r.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+    end
+    if ns.hui and ns.hui.SetIconRing then
+        local qq = id and DG.QualOf and DG.QualOf(id) or nil
+        ns.hui.SetIconRing(r.icon, qq and { ns.hui.QColor(qq) } or nil)
     end
 
     r.__it = id
@@ -1067,7 +1072,7 @@ local QUALITY_COLORS = {
     [3] = { 0, 0.44, 0.87 }, [4] = { 0.64, 0.21, 0.93 }, [5] = { 1, 0.5, 0 },
     [6] = { 0.9, 0.8, 0.5 }, [7] = { 0.76, 0.86, 0.92 },
 }
-local function QUALITY_COLOR(q)
+function QUALITY_COLOR(q)
     if type(q) == "number" then return QUALITY_COLORS[q] or { 1, 1, 1 } end
     return nil
 end
@@ -1121,6 +1126,9 @@ local function PaintRewards()
             row.icon:SetTexture("Interface\\Icons\\" .. ic)
         else
             row.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+        end
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(row.icon, q and { ns.hui.QColor(q) } or nil)
         end
         row.name:SetText(nm or "?")
         row.name:SetTextColor(Unpack(ok and (q and QUALITY_COLOR(q) or C_TEXT) or C_DIM))
@@ -1264,6 +1272,9 @@ local function PaintChip(c, id, note)
         c.icon:SetTexture("Interface\\Icons\\" .. ic)
     else
         c.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+    end
+    if ns.hui and ns.hui.SetIconRing then
+        ns.hui.SetIconRing(c.icon, q and { ns.hui.QColor(q) } or nil)
     end
     local w = c.nm.GetStringWidth and c.nm:GetStringWidth() or 0
     w = (type(w) == "number" and w or 0) + 4 + 24 + 5 + 6
@@ -1497,6 +1508,9 @@ local function PaintBagTotal()
         EG.bagFIcon:SetTexture("Interface\\Icons\\" .. ic)
     else
         EG.bagFIcon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+    end
+    if ns.hui and ns.hui.SetIconRing then
+        ns.hui.SetIconRing(EG.bagFIcon, q and { ns.hui.QColor(q) } or nil)
     end
     local y, idx = 140, 0
     for gi, g in ipairs(BAG_RW_GROUPS) do
@@ -1915,36 +1929,22 @@ local function RtMapPaint(mapID, x, y)
     local opool = EG.rtOvlTex or {}
     for i = 1, #opool do opool[i]:Hide() end
     if ns.RouteOvl then
-        local seen, names = {}, {}
         local otg = EG.rtCurTgt
         local olist = otg and otg.ovl
+        local on = 0
         if type(olist) == "table" then
             for i = 1, #olist do
-                local nm = olist[i]
-                if type(nm) == "string" and not seen[nm] then
-                    seen[nm] = true
-                    names[#names + 1] = nm
+                local od = ns.RouteOvl[olist[i]]
+                if od and od[1] == mapID and od[3] and od[4] and opool[on + 1] then
+                    on = on + 1
+                    local ot = opool[on]
+                    ot:ClearAllPoints()
+                    ot:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
+                    ot:SetSize(dw, dh)
+                    ot:SetTexture(od[2])
+                    ot:SetTexCoord(0, od[5] / od[3], 0, od[6] / od[4])
+                    ot:Show()
                 end
-            end
-        end
-        for nm, od in pairs(ns.RouteOvl) do
-            if type(od) == "table" and od[1] == mapID and not seen[nm] then
-                seen[nm] = true
-                names[#names + 1] = nm
-            end
-        end
-        local on = 0
-        for i = 1, #names do
-            local od = ns.RouteOvl[names[i]]
-            if od and od[1] == mapID and od[3] and od[4] and opool[on + 1] then
-                on = on + 1
-                local ot = opool[on]
-                ot:ClearAllPoints()
-                ot:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
-                ot:SetSize(dw, dh)
-                ot:SetTexture(od[2])
-                ot:SetTexCoord(0, od[5] / od[3], 0, od[6] / od[4])
-                ot:Show()
             end
         end
     end
@@ -2222,7 +2222,7 @@ local function PaintRoutes()
                     end
                     st.kind:ClearAllPoints()
                     if solid then
-                        st.kind:SetPoint("LEFT", st.act, "RIGHT", 8, -0.8)
+                        st.kind:SetPoint("LEFT", st.act, "RIGHT", 8, ns.hui.ChipDY(14))
                     else
                         st.kind:SetPoint("TOPLEFT", st.act, "TOPRIGHT", 8, 0)
                     end
@@ -2270,9 +2270,14 @@ local function PaintRoutes()
     end
     if EG.rtTime then EG.rtTime:SetText(race.time or t.time or "") end
     local msd = EG.rtStepSel and race.steps[EG.rtStepSel]
-    if msd and msd.x and msd.y then
-        local mm = (type(msd.m) == "table" and msd.m[1]) or t.mapID
-        RtMapPaint(mm, msd.x, msd.y)
+    if msd and type(msd.m) == "table" and msd.m[1] then
+        if msd.x and msd.y then
+            RtMapPaint(msd.m[1], msd.x, msd.y)
+        else
+            RtMapPaint(msd.m[1])
+        end
+    elseif msd and msd.x and msd.y then
+        RtMapPaint(t.mapID, msd.x, msd.y)
     else
         RtMapPaint(t.mapID)
     end
@@ -2379,9 +2384,14 @@ local function PaintBMChain(tab, KeepName)
                     nd.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
                 end
                 nd.icon:SetShown(true)
+                if ns.hui and ns.hui.SetIconRing then
+                    local qq = DG.QualOf and DG.QualOf(data.item) or nil
+                    ns.hui.SetIconRing(nd.icon, qq and { ns.hui.QColor(qq) } or nil)
+                end
             else
                 nd.icon:SetTexture("Interface\\Icons\\spell_holy_mindsooth")
                 nd.icon:SetShown(true)
+                if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(nd.icon, nil) end
             end
             PaintBMNode(nd)
             nd:Show()
@@ -2500,6 +2510,9 @@ local function PaintBMCodex(KeepName)
             else
                 rw2.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
             end
+            if ns.hui and ns.hui.SetIconRing then
+                ns.hui.SetIconRing(rw2.icon, q and { ns.hui.QColor(q) } or nil)
+            end
             rw2:Show()
         else
             rw2.__id, rw2.__note = nil, nil
@@ -2539,6 +2552,9 @@ local function PaintBMOv(KeepName)
             rw.icon:SetTexture("Interface\\Icons\\" .. ic)
         else
             rw.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+        end
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(rw.icon, q and { ns.hui.QColor(q) } or nil)
         end
     end
 end
@@ -3137,6 +3153,7 @@ function EG.PaintList()
         r.d:SetText("")
         r.chk:Hide()
         r.icon:SetTexture("")
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         r.__it, r.__mark, r.__rec = nil, nil, nil
         r.sep:Hide()
         y = y + EG.ROW_H + EG.LIST_PAD
@@ -3907,11 +3924,11 @@ function EG.Build(page)
                     if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(row.icon) end
                     row.icon:SetPoint("LEFT", row, "LEFT", 2, 0)
                     row.name = MakeFS(row, 14, C_TEXT, "LEFT")
-                    row.name:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 9, -1)
+                    row.name:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 9, -2)
                     row.name:SetPoint("RIGHT", row, "RIGHT", 0, 0)
                     row.name:SetWordWrap(false)
-                    row.meta = MakeFS(row, 14, C_GREY, "LEFT")
-                    row.meta:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 9, 1)
+                    row.meta = MakeFS(row, 12, C_GREY, "LEFT")
+                    row.meta:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 9, 2)
                     row.meta:SetPoint("RIGHT", row, "RIGHT", 0, 0)
                     row.meta:SetWordWrap(false)
                     row:SetScript("OnEnter", function(self) EG.RewardTip(self, true) end)
@@ -4098,16 +4115,16 @@ function EG.Build(page)
                     end
                 end
                 r.no = MakeFS(r, 16, C_GOLD, "LEFT")
-                r.no:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -4)
+                r.no:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -1)
                 r.no:SetWordWrap(false)
                 r.t = MakeFS(r, 16, C_TEXT, "LEFT")
-                r.t:SetPoint("TOPLEFT", r, "TOPLEFT", 32, -4)
+                r.t:SetPoint("TOPLEFT", r, "TOPLEFT", 32, -1)
                 r.t:SetWordWrap(false)
-                r.p = MakeFS(r, 14, C_GREY, "LEFT")
-                r.p:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 32, 3)
+                r.p = MakeFS(r, 12, C_GREY, "LEFT")
+                r.p:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 32, 1)
                 r.p:SetWordWrap(false)
                 r.st = MakeFS(r, 14, C_GREY, "RIGHT")
-                r.st:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -4)
+                r.st:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -1)
                 r.st:SetWordWrap(false)
                 r.__step = e
                 r:SetScript("OnClick", function(self)
@@ -4439,7 +4456,7 @@ function EG.Build(page)
                 nd.t = MakeFS(nd, 14, C_TEXT, "LEFT")
                 nd.t:SetPoint("TOPLEFT", nd, "TOPLEFT", 36, -6)
                 nd.t:SetWordWrap(false)
-                nd.sub = MakeFS(nd, 14, C_GREY, "LEFT")
+                nd.sub = MakeFS(nd, 12, C_GREY, "LEFT")
                 nd.sub:SetPoint("BOTTOMLEFT", nd, "BOTTOMLEFT", 8, 8)
                 nd.sub:SetWordWrap(false)
                 nd:SetScript("OnEnter", function(self)
@@ -4695,13 +4712,13 @@ function EG.Build(page)
                 if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(rw2.icon) end
                 rw2.icon:SetPoint("LEFT", rw2, "LEFT", 8, 0)
                 rw2.nm = MakeFS(rw2, 14, C_TEXT, "LEFT")
-                rw2.nm:SetPoint("TOPLEFT", rw2, "TOPLEFT", 36, -4)
+                rw2.nm:SetPoint("TOPLEFT", rw2, "TOPLEFT", 36, -1)
                 rw2.nm:SetWordWrap(false)
-                rw2.note = MakeFS(rw2, 14, C_GREY, "LEFT")
-                rw2.note:SetPoint("BOTTOMLEFT", rw2, "BOTTOMLEFT", 36, 4)
+                rw2.note = MakeFS(rw2, 12, C_GREY, "LEFT")
+                rw2.note:SetPoint("BOTTOMLEFT", rw2, "BOTTOMLEFT", 36, 1)
                 rw2.note:SetWordWrap(false)
                 rw2.badge = MakeFS(rw2, 14, C_GREY, "RIGHT")
-                rw2.badge:SetPoint("TOPRIGHT", rw2, "TOPRIGHT", -8, -4)
+                rw2.badge:SetPoint("TOPRIGHT", rw2, "TOPRIGHT", -8, -1)
                 rw2.badge:SetWordWrap(false)
                 rw2:EnableMouse(true)
                 rw2:EnableMouseWheel(true)

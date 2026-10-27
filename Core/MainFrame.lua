@@ -204,11 +204,16 @@ local appearanceCard
 local appearanceBtn
 local appearanceDot
 local appearanceArrow
+local appearanceRingBtn
+local appearanceRingDot
+local appearanceRingArrow
 local THEME_CHOICES = {
     "green", "youfeng", "zhangliangying", "orange", "orangered",
     "red", "pink", "tonghang", "qq",
 }
 local C_THEME_FALLBACK = { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
+local C_RING_LINE = { 0.8, 0.8, 0.8 }
+local C_RING_NONE = { 0.45, 0.45, 0.45 }
 
 local function ThemeAccent(key)
     local pal = ns.hui and ns.hui.palette and ns.hui.palette[key]
@@ -238,6 +243,25 @@ local function PaintAppearance()
             fs:SetTextColor(1, 1, 1)
         end
         ns.hui.SetButtonSelected(appearanceBtn, true)
+    end
+end
+
+local function PaintRingMode()
+    local mode = "glow"
+    if ns.hui and ns.hui.RingMode then mode = ns.hui.RingMode() end
+    local ac = (ns.hui and ns.hui.ACCENT) or C_THEME_FALLBACK
+    local dc = ac
+    if mode == "line" then dc = C_RING_LINE end
+    if mode == "none" then dc = C_RING_NONE end
+    if appearanceRingDot then appearanceRingDot:SetVertexColor(dc[1], dc[2], dc[3]) end
+    if appearanceRingArrow then appearanceRingArrow:SetTextColor(dc[1], dc[2], dc[3]) end
+    if appearanceRingBtn then
+        local fs = appearanceRingBtn:GetFontString()
+        if fs then
+            fs:SetText(L["图标描边"])
+            fs:SetTextColor(1, 1, 1)
+        end
+        if ns.hui and ns.hui.SetButtonSelected then ns.hui.SetButtonSelected(appearanceRingBtn, true) end
     end
 end
 
@@ -339,7 +363,11 @@ end
 
 function BuildAppearanceCard()
     if not (ns.hui and ns.hui.layer) then return end
-    if appearanceCard then PaintAppearance() return end
+    if appearanceCard then
+        PaintAppearance()
+        PaintRingMode()
+        return
+    end
     local card = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
     if ns.hui.BuildRoundedBG then
         ns.hui.BuildRoundedBG(card, 8, ns.hui.layer.L2, "both", true, 1)
@@ -355,7 +383,7 @@ function BuildAppearanceCard()
         card:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 6, -38)
         card:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -6, -38)
     end
-    card:SetHeight(64)
+    card:SetHeight(94)
     appearanceCard = card
 
     local hd = card:CreateFontString(nil, "OVERLAY")
@@ -399,6 +427,7 @@ function BuildAppearanceCard()
                 func = function()
                     ns.hui.ApplyColorTheme(key)
                     PaintAppearance()
+                    PaintRingMode()
                 end,
             }
         end
@@ -407,7 +436,69 @@ function BuildAppearanceCard()
     appearanceBtn = bt
     appearanceDot = dot
     appearanceArrow = arrow
+
+    local rb = ns.CreateButton(card)
+    rb:SetSize(192, 24)
+    rb:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -58)
+    rb.__huiKeepTextColor = true
+    local rfs = rb:GetFontString()
+    if rfs then
+        rfs:ClearAllPoints()
+        rfs:SetPoint("LEFT", rb, "LEFT", 26, 0)
+        rfs:SetPoint("RIGHT", rb, "RIGHT", -26, 0)
+        rfs:SetJustifyH("LEFT")
+    end
+    local rdot = rb:CreateTexture(nil, "ARTWORK")
+    rdot:SetSize(12, 12)
+    rdot:SetPoint("LEFT", rb, "LEFT", 9, 0)
+    rdot:SetTexture("Interface\\Buttons\\WHITE8x8")
+    if ns.hui.RoundIcon then ns.hui.RoundIcon(rdot) end
+    local rarrow = rb:CreateFontString(nil, "OVERLAY")
+    rarrow:SetFont(ns.FONT, 12, "")
+    rarrow:SetPoint("RIGHT", rb, "RIGHT", -8, 0)
+    rarrow:SetText("\226\150\188")
+    rb:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        if not (ns.hui and ns.hui.ShowMenu) then return end
+        local cur = "glow"
+        if ns.hui.RingMode then cur = ns.hui.RingMode() end
+        local ac = ns.hui.ACCENT or C_THEME_FALLBACK
+        local items = {
+            {
+                text = L["柔光"],
+                hlColor = ac,
+                selected = (cur == "glow"),
+                func = function()
+                    if ns.hui.SetIconRingMode then ns.hui.SetIconRingMode("glow") end
+                    PaintRingMode()
+                end,
+            },
+            {
+                text = L["实线"],
+                hlColor = C_RING_LINE,
+                selected = (cur == "line"),
+                func = function()
+                    if ns.hui.SetIconRingMode then ns.hui.SetIconRingMode("line") end
+                    PaintRingMode()
+                end,
+            },
+            {
+                text = L["无描边"],
+                hlColor = C_RING_NONE,
+                selected = (cur == "none"),
+                func = function()
+                    if ns.hui.SetIconRingMode then ns.hui.SetIconRingMode("none") end
+                    PaintRingMode()
+                end,
+            },
+        }
+        ns.hui.ShowMenu(items, { owner = self, anchor = self, up = true })
+    end)
+    appearanceRingBtn = rb
+    appearanceRingDot = rdot
+    appearanceRingArrow = rarrow
     PaintAppearance()
+    PaintRingMode()
 end
 ns.BuildAppearanceCard = BuildAppearanceCard
 ns.PaintAppearance = PaintAppearance
@@ -973,10 +1064,148 @@ local PAGE_ALIASES = {
     bis = "Bis",        ["配装"] = "Bis",
     zn = "Tier",        ["指南"] = "Tier",
 }
+local chipCalib
+local chipCalibMain
+local chipCalibChip
+local chipCalibVal
+
+local function ChipCalibLineH()
+    return (ns.hui and ns.hui.ChipLineH and ns.hui.ChipLineH(14)) or 14
+end
+
+local function ChipCalibDy()
+    local k = (ns.hui and ns.hui.ChipK and ns.hui.ChipK()) or 0
+    return k * ChipCalibLineH()
+end
+
+local function ChipCalibRefresh()
+    if chipCalibChip and chipCalibMain then
+        chipCalibChip:ClearAllPoints()
+        chipCalibChip:SetPoint("LEFT", chipCalibMain, "RIGHT", 6, ChipCalibDy())
+        if ns.hui and ns.hui.PaintSolidChip then
+            ns.hui.PaintSolidChip(chipCalibChip, L["可共享"], { 0.45, 0.86, 0.55 })
+        end
+    end
+    if chipCalibVal then
+        chipCalibVal:SetText(format(L["当前偏移 %+.2f"], ChipCalibDy()))
+    end
+end
+
+local function ChipCalibStep(step)
+    local k = (ns.hui and ns.hui.ChipK and ns.hui.ChipK()) or 0
+    local lh = ChipCalibLineH()
+    local dy = k * lh + step
+    if ns.hui and ns.hui.SetChipK then ns.hui.SetChipK(dy / lh) end
+    ChipCalibRefresh()
+end
+
+local function ChipCalibReset()
+    if ns.hui and ns.hui.SetChipK then ns.hui.SetChipK(nil) end
+    ChipCalibRefresh()
+end
+
+function ns.OpenChipCalib()
+    if not chipCalib then
+        local p = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+        p:SetSize(420, 214)
+        p:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+        p:SetFrameStrata("DIALOG")
+        p:EnableMouse(true)
+        p:SetMovable(true)
+        p:RegisterForDrag("LeftButton")
+        p:SetScript("OnDragStart", function(self) self:StartMoving() end)
+        p:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+        if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
+            ns.hui.SkinPopup(p, 8, nil, ns.hui.layer.L0)
+            if ns.hui.SkinShadow then ns.hui.SkinShadow(p) end
+        else
+            p:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8",
+                edgeSize = 1,
+            })
+            p:SetBackdropColor(0x0A / 255, 0x0C / 255, 0x10 / 255, 1)
+            p:SetBackdropBorderColor(1, 1, 1, 0.12)
+        end
+        chipCalib = p
+
+        local title = p:CreateFontString(nil, "OVERLAY")
+        title:SetFont(ns.FONT, 16, "")
+        title:SetText(L["卡片对齐校准"])
+        title:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -14)
+        title:SetTextColor(0.95, 0.96, 0.98)
+
+        local desc = p:CreateFontString(nil, "OVERLAY")
+        desc:SetFont(ns.FONT, 13, "")
+        desc:SetText(L["对照下面这行，把卡片调到与文字上下齐平。"])
+        desc:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -40)
+        desc:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
+
+        local host = CreateFrame("Frame", nil, p)
+        host:SetSize(388, 34)
+        host:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -64)
+        local main = host:CreateFontString(nil, "OVERLAY")
+        main:SetFont(ns.FONT, 14, "")
+        main:SetPoint("LEFT", host, "LEFT", 0, 0)
+        main:SetText(L["寻找背包"])
+        main:SetTextColor(0.95, 0.96, 0.98)
+        chipCalibMain = main
+        if ns.hui and ns.hui.MakeSolidChip then
+            chipCalibChip = ns.hui.MakeSolidChip(host, (host:GetFrameLevel() or 0) + 2,
+                (ns.hui.ChipH and ns.hui.ChipH(14)) or 14)
+        end
+
+        local val = p:CreateFontString(nil, "OVERLAY")
+        val:SetFont(ns.FONT, 13, "")
+        val:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -106)
+        val:SetTextColor(0.85, 0.93, 1.0)
+        chipCalibVal = val
+
+        local hint = p:CreateFontString(nil, "OVERLAY")
+        hint:SetFont(ns.FONT, 12, "")
+        hint:SetText(L["默认已对齐，一般不用动；只有换到字形差别很大的字体时才需微调。"])
+        hint:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -128)
+        hint:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
+
+        local function mkBtn(text, x, y, wpx, fn)
+            local bt = CreateFrame("Button", nil, p, "BackdropTemplate")
+            bt:SetSize(wpx, 24)
+            bt:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", x, y)
+            local bfs = bt:CreateFontString(nil, "OVERLAY")
+            bfs:SetFont(ns.FONT, 13, "")
+            bfs:SetPoint("CENTER")
+            bfs:SetText(text)
+            bt:SetFontString(bfs)
+            bt.__huiKeepTextColor = true
+            if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+            bfs:SetFont(ns.FONT, 13, "")
+            bfs:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+            bt:SetScript("OnClick", function()
+                if ns.PlaySound then ns.PlaySound(1) end
+                fn()
+            end)
+            return bt
+        end
+
+        mkBtn(L["下移 0.5"], 16, 44, 88, function() ChipCalibStep(-0.5) end)
+        mkBtn(L["下移 0.2"], 112, 44, 88, function() ChipCalibStep(-0.2) end)
+        mkBtn(L["上移 0.2"], 208, 44, 88, function() ChipCalibStep(0.2) end)
+        mkBtn(L["上移 0.5"], 304, 44, 88, function() ChipCalibStep(0.5) end)
+        mkBtn(L["重置"], 16, 12, 88, function() ChipCalibReset() end)
+        mkBtn(L["关闭"], 304, 12, 88, function() if chipCalib then chipCalib:Hide() end end)
+    end
+    ChipCalibRefresh()
+    chipCalib:Show()
+end
+
 SlashCmdList["DUNGEONSFOREVER"] = function(msg)
     local cmd = strtrim(msg or "")
     if cmd == "" then
         ns.Toggle()
+        return
+    end
+    if cmd == "对齐" or cmd == "卡片" or cmd:lower() == "chip" then
+        ns.OpenChipCalib()
         return
     end
     local key = PAGE_ALIASES[cmd:lower()]
@@ -993,4 +1222,5 @@ SlashCmdList["DUNGEONSFOREVER"] = function(msg)
     print("  /dfspeed — " .. L["载入速度"]
           .. "（" .. L["省电"] .. " / " .. L["标准"] .. " / " .. L["激进"] .. "）")
     print("  /dfgate — " .. L["进度条"] .. "（demo / off）")
+    print("  /df 对齐 — " .. L["卡片与文字对齐校准"])
 end

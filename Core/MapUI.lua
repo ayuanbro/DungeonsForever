@@ -2065,6 +2065,9 @@ end
 local function layoutLootRow(r, it, y, rowW)
     local id = it[1]
     r.icon:SetTexture(DG.ItemIcon(id))
+    if ns.hui and ns.hui.SetIconRing then
+        ns.hui.SetIconRing(r.icon, { ns.hui.QColor(DG.QualOf(id)) })
+    end
     local nm, hasName = DG.ItemName(id)
     r.name:SetText(nm)
     if hasName then
@@ -2299,8 +2302,10 @@ function M.SyncSide()
                     if srow[i].ic then
                         r.icon:SetTexture(srow[i].ic)
                         r.icon:Show()
+                        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
                     else
                         r.icon:Hide()
+                        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
                     end
                     r:ClearAllPoints()
                     r:SetPoint("TOPLEFT", blkSkill, "TOPLEFT", M.BLK_PAD + 6, by)

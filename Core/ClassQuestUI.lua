@@ -415,8 +415,8 @@ local function Ensure()
     dropBtn(2, function(bt)
         local items = {
             { text = L["全部阵营"], func = function() pick("side", "all") end },
-            { text = L["联盟"], icon = FAC_TEX.A, color = DG.C_FAC_A, func = function() pick("side", "A") end },
-            { text = L["部落"], icon = FAC_TEX.H, color = DG.C_FAC_H, func = function() pick("side", "H") end },
+            { text = L["联盟"], icon = FAC_TEX.A, iconSize = 16, color = DG.C_FAC_A, func = function() pick("side", "A") end },
+            { text = L["部落"], icon = FAC_TEX.H, iconSize = 16, color = DG.C_FAC_H, func = function() pick("side", "H") end },
         }
         if ns.hui and ns.hui.ShowMenu then ns.hui.ShowMenu(items, { owner = bt }) end
     end)
@@ -534,12 +534,12 @@ local function Ensure()
         fr.arrow:SetWidth(10)
         fr.dot = fr:CreateTexture(nil, "ARTWORK")
         fr.dot:SetTexture(DOT_DONE)
-        fr.dot:SetSize(10, 10)
+        fr.dot:SetSize(14, 14)
         fr.dot:SetPoint("LEFT", fr, "LEFT", 21, 0)
         fr.sym = fr:CreateTexture(nil, "OVERLAY")
         fr.sym:SetAllPoints(fr.dot)
         fr.name = MakeFS(fr, 14, C_TEXT, "LEFT")
-        fr.name:SetPoint("LEFT", fr, "LEFT", 34, 0)
+        fr.name:SetPoint("LEFT", fr, "LEFT", 38, 0)
         fr.name:SetWordWrap(false)
         fr.meta = MakeFS(fr, 14, C_GREY, "RIGHT")
         fr.meta:SetPoint("RIGHT", fr, "RIGHT", -6, 0)
@@ -570,12 +570,12 @@ local function Ensure()
         end
         fr.dot = fr:CreateTexture(nil, "ARTWORK")
         fr.dot:SetTexture(DOT_DONE)
-        fr.dot:SetSize(8, 8)
+        fr.dot:SetSize(14, 14)
         fr.dot:SetPoint("LEFT", fr, "LEFT", 17, 0)
         fr.sym = fr:CreateTexture(nil, "OVERLAY")
         fr.sym:SetAllPoints(fr.dot)
         fr.name = MakeFS(fr, 14, C_TEXT, "LEFT")
-        fr.name:SetPoint("LEFT", fr, "LEFT", 30, 0)
+        fr.name:SetPoint("LEFT", fr, "LEFT", 36, 0)
         fr.name:SetWordWrap(false)
         fr.lv = MakeFS(fr, 14, C_DIM, "RIGHT")
         fr.lv:SetPoint("RIGHT", fr, "RIGHT", -6, 0)
@@ -741,8 +741,8 @@ local function TakeNode()
         r.st = MakeFS(r, DET_FS, C_GREY, "RIGHT")
         r.st:SetPoint("TOPRIGHT", r, "TOPRIGHT", -26, -3)
         r.st:SetWordWrap(false)
-        r.sub = MakeFS(r, DET_FS, C_GREY, "LEFT")
-        r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -21)
+        r.sub = MakeFS(r, 12, C_GREY, "LEFT")
+        r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -23)
         r.sub:SetWidth(DetRowW() - 18)
         r.sub:SetWordWrap(false)
         r.ic = r:CreateTexture(nil, "ARTWORK")
@@ -824,10 +824,10 @@ local function TakeChip()
         r.icon:SetSize(32, 32)
         r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
         r.name = MakeFS(r, DET_FS, C_TEXT, "LEFT")
-        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 43, -4)
+        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 46, -6)
         r.name:SetWordWrap(false)
-        r.sub = MakeFS(r, DET_FS, C_GREY, "LEFT")
-        r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 43, -23)
+        r.sub = MakeFS(r, 12, C_GREY, "LEFT")
+        r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 46, -26)
         r.sub:SetWordWrap(false)
         pool.chip[pool.nChip] = r
     end
@@ -956,7 +956,7 @@ local function ChipRow(y, items, spell)
     local ncol = 2
     local colW = math.floor((detW - GAP) / ncol)
     local step = 44 + GAP
-    local nameW = colW - 43 - 6
+    local nameW = colW - 46 - 6
     local n = 0
     local function place(r)
         n = n + 1
@@ -978,6 +978,7 @@ local function ChipRow(y, items, spell)
                 if ok and v then tex = v end
             end
             r.icon:SetTexture(tex or "Interface\\Icons\\INV_Misc_QuestionMark")
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
             local sn = SpellName(spell) or format("#%d", spell)
             if DG.FitText then sn = DG.FitText(sn, DET_FS, nameW) end
             r.name:SetText(sn)
@@ -1002,12 +1003,14 @@ local function ChipRow(y, items, spell)
         if DG.FitText then inm = DG.FitText(inm, DET_FS, nameW) end
         r.name:SetText(inm)
         r.name:SetWidth(nameW)
-        local qr, qg, qb = DG.QColor(ItemQual(iid))
+        local qiid = ItemQual(iid)
+        local qr, qg, qb = DG.QColor(qiid)
         if qr then
             r.name:SetTextColor(qr, qg, qb)
         else
             r.name:SetTextColor(Unpack(C_GREY))
         end
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, qiid and { ns.hui.QColor(qiid) } or nil) end
         local mt = DG.ItemMeta and DG.ItemMeta(iid) or ""
         r.sub:SetText(mt)
         r.sub:SetShown(mt ~= "")
