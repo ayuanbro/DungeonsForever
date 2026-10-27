@@ -3146,9 +3146,9 @@ do
         end)
     end
 
-    local ICON_GLOW_ALPHA = { 0.45, 0.16 }
-    local ICON_GLOW_OFF = { 1, 2 }
-    local ICON_GLOW_MASK = "Interface/AddOns/DungeonsForever/Media/LibHUI/HUIRoundRectMask"
+    local RING_DIR = "Interface/AddOns/DungeonsForever/Media/LibHUI/"
+    local RING_TEX = RING_DIR .. "HUIRoundRectRing"
+    local RING_TEX_GLOW = RING_DIR .. "HUIRoundRectRingGlow"
 
     local function NormRingMode(mode)
         if mode == "line" then return "line" end
@@ -3178,47 +3178,10 @@ do
         local f = tex:GetParent()
         if not f then return nil end
         ring = f:CreateTexture(nil, "BORDER")
-        ring:SetPoint("TOPLEFT", tex, "TOPLEFT", -1, 1)
-        ring:SetPoint("BOTTOMRIGHT", tex, "BOTTOMRIGHT", 1, -1)
-        ring:SetColorTexture(1, 1, 1, 1)
-        if ns.huiTheme == "hui" then
-            local mask = f:CreateMaskTexture(nil, "OVERLAY")
-            mask:SetAllPoints(ring)
-            mask:SetTexture("Interface/AddOns/DungeonsForever/Media/LibHUI/HUIRoundRectMask",
-                "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-            ring:AddMaskTexture(mask)
-        end
         ring:Hide()
         tex.__ring = ring
         ns.hui.__ringReg[tex] = true
         return ring
-    end
-
-    function ns.hui.IconRingGlow(tex)
-        if not tex then return nil end
-        local gl = tex.__ringGlow
-        if gl then return gl end
-        local f = tex:GetParent()
-        if not f then return nil end
-        gl = {}
-        for i = 1, #ICON_GLOW_OFF do
-            local d = ICON_GLOW_OFF[i]
-            local t = f:CreateTexture(nil, "BORDER")
-            t:SetPoint("TOPLEFT", tex, "TOPLEFT", -d, d)
-            t:SetPoint("BOTTOMRIGHT", tex, "BOTTOMRIGHT", d, -d)
-            t:SetColorTexture(1, 1, 1, 1)
-            if ns.huiTheme == "hui" then
-                local mask = f:CreateMaskTexture(nil, "OVERLAY")
-                mask:SetAllPoints(t)
-                mask:SetTexture(ICON_GLOW_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-                t:AddMaskTexture(mask)
-            end
-            t:Hide()
-            gl[i] = t
-        end
-        tex.__ringGlow = gl
-        ns.hui.__ringReg[tex] = true
-        return gl
     end
 
     function ns.hui.QColor(q)
@@ -3235,10 +3198,6 @@ do
         if not tex then return end
         if not color then
             if tex.__ring then tex.__ring:Hide() end
-            local off = tex.__ringGlow
-            if off then
-                for i = 1, #ICON_GLOW_OFF do off[i]:Hide() end
-            end
             tex.__ringColor = nil
             return
         end
@@ -3251,43 +3210,30 @@ do
         if tex.GetDesaturated then des = tex:GetDesaturated() and true or false end
         local ca = color[4] or 1
         local mode = ns.hui.RingMode()
-        local glow = (mode == "glow")
         local ring = tex.__ring
         if mode == "none" then
             if ring then ring:Hide() end
-            local off = tex.__ringGlow
-            if off then
-                for i = 1, #ICON_GLOW_OFF do off[i]:Hide() end
-            end
             tex.__ringColor = color
             return
         end
-        if glow then
-            if ring then ring:Hide() end
-        else
-            if not ring then ring = ns.hui.IconRing(tex) end
-            if ring then
-                ring:SetVertexColor(color[1], color[2], color[3], ca)
-                ring:SetAlpha(ta)
-                if ring.SetDesaturated then ring:SetDesaturated(des) end
-                ring:Show()
-            end
+        if not ring then ring = ns.hui.IconRing(tex) end
+        if not ring then return end
+        local glow = (mode == "glow")
+        local pad = glow and 2 or 1
+        if ring.__pad ~= pad then
+            ring.__pad = pad
+            ring:ClearAllPoints()
+            ring:SetPoint("TOPLEFT", tex, "TOPLEFT", -pad, pad)
+            ring:SetPoint("BOTTOMRIGHT", tex, "BOTTOMRIGHT", pad, -pad)
         end
-        local gl = tex.__ringGlow
-        if glow and not gl then gl = ns.hui.IconRingGlow(tex) end
-        if gl then
-            for i = 1, #ICON_GLOW_OFF do
-                local t = gl[i]
-                if glow then
-                    t:SetVertexColor(color[1], color[2], color[3], 1)
-                    t:SetAlpha(ta * ca * ICON_GLOW_ALPHA[i])
-                    if t.SetDesaturated then t:SetDesaturated(des) end
-                    t:Show()
-                else
-                    t:Hide()
-                end
-            end
+        if ring.__texKind ~= mode then
+            ring.__texKind = mode
+            ring:SetTexture(glow and RING_TEX_GLOW or RING_TEX)
         end
+        ring:SetVertexColor(color[1], color[2], color[3], ca)
+        ring:SetAlpha(ta)
+        if ring.SetDesaturated then ring:SetDesaturated(des) end
+        ring:Show()
         tex.__ringColor = color
     end
 

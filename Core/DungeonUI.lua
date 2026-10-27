@@ -4556,7 +4556,21 @@ function DG.ApplyLootDropdownChrome()
         end
         bt1:SetWidth(DG.LOOT_BOSS_W)
         bt1:SetText(DG.FitText(L["类型："] .. lab, 14, DG.LOOT_DD_TEXT_W))
+        if bt1.__em then bt1.__em:Hide() end
+        local bfs = bt1.GetFontString and bt1:GetFontString()
+        if bfs then
+            bfs:ClearAllPoints()
+            bfs:SetPoint("CENTER", bt1, "CENTER", 0, 0)
+            bfs:SetJustifyH("CENTER")
+        end
         ns.hui.SetButtonSelected(bt1, filter ~= "all")
+        if bfs then
+            if filter ~= "all" then
+                bfs:SetTextColor(1, 1, 1)
+            else
+                bfs:SetTextColor(Unpack(C_TEXT))
+            end
+        end
     end
 end
 

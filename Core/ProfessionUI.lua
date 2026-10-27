@@ -515,6 +515,201 @@ function PD.MoneyBrief(v)
     return table.concat(out)
 end
 
+function PD.CoinSeg(copper)
+    copper = tonumber(copper) or 0
+    if copper < 0 then return "-" .. PD.CoinSeg(-copper) end
+    copper = math.floor(copper + 0.5)
+    local g = math.floor(copper / 10000)
+    local s = math.floor(copper / 100) % 100
+    local c = copper % 100
+    local out = {}
+    if g > 0 then out[#out + 1] = format("%d%s", g, MONEY_GOLD) end
+    if s > 0 then out[#out + 1] = format("%d%s", s, MONEY_SILVER) end
+    if c > 0 then out[#out + 1] = format("%d%s", c, MONEY_COPPER) end
+    if #out == 0 then return format("0%s", MONEY_COPPER) end
+    return table.concat(out)
+end
+
+function PD.CurPriceText(curID, amount)
+    curID, amount = tonumber(curID) or 0, tonumber(amount) or 0
+    local name, icon
+    if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
+        local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, curID)
+        if ok and type(info) == "table" then
+            name, icon = info.name, info.iconFileID
+        end
+    end
+    if not name and curID ~= PD.FAVOR_CURID then
+        local inm, got = DG.ItemName(curID)
+        if got and inm then
+            name = inm
+            if DG.ItemIcon then icon = DG.ItemIcon(curID) end
+        end
+    end
+    local ico = ""
+    if icon then ico = format("|T%s:0|t", icon) end
+    if curID == PD.FAVOR_CURID and ico ~= "" then
+        return format("%d%s", amount, ico)
+    end
+    if not name then
+        if curID == PD.FAVOR_CURID then name = L["商人青睐"] end
+        if not name then name = format(L["通货 #%d"], curID) end
+    end
+    return format("%d%s%s", amount, name, ico)
+end
+
+function PD.VendorCostText(o)
+    if type(o) ~= "table" then return nil end
+    local cid = tonumber(o.currencyID) or 0
+    if cid > 0 then
+        local am = tonumber(o.currencyAmount) or 0
+        if am > 0 then return PD.CurPriceText(cid, am) end
+        return nil
+    end
+    local pr = tonumber(o.price) or 0
+    if pr > 0 then return PD.CoinSeg(pr) end
+    return nil
+end
+
+function PD.VendorBestOffer(vs, offers)
+    if type(vs) ~= "table" then return nil, nil end
+    local bestV, bestO, bestKind, bestKey
+    for i = 1, #vs do
+        local v = vs[i]
+        local o = offers and offers[v.id or v.npcID]
+        if not o and ((tonumber(v.price) or 0) > 0 or (tonumber(v.cur) or 0) > 0) then
+            o = { price = v.price or 0, currencyID = v.cur or 0, currencyAmount = v.amt or 0 }
+        end
+        local cid = 0
+        local pr = 0
+        local am = 0
+        if o then
+            cid = tonumber(o.currencyID) or 0
+            pr = tonumber(o.price) or 0
+            am = tonumber(o.currencyAmount) or 0
+        end
+        local kind, key
+        if cid == 0 and pr > 0 then
+            kind, key = 0, pr
+        elseif cid > 0 and am > 0 then
+            kind, key = 1, am
+        end
+        if kind and (not bestKind or kind < bestKind or (kind == bestKind and key < bestKey)) then
+            bestV, bestO, bestKind, bestKey = v, o, kind, key
+        end
+    end
+    if not bestV then return vs[1], nil end
+    return bestV, bestO
+end
+
+PD.SRC_FS = 11
+PD.SRC_GAP = 4
+
+function PD.GlyphLen(s)
+    if type(s) ~= "string" or s == "" then return 0 end
+    local stepFn = ns.hui and ns.hui.CharStep
+    if type(stepFn) ~= "function" then return #s end
+    local i, n, c = 1, #s, 0
+    while i <= n do
+        local _, step = stepFn(s, i)
+        if type(step) ~= "number" or step < 1 then step = 1 end
+        i = i + step
+        c = c + 1
+    end
+    return c
+end
+
+function PD.GlyphPrefix(s, k)
+    if type(s) ~= "string" or s == "" then return "" end
+    local stepFn = ns.hui and ns.hui.CharStep
+    if type(stepFn) ~= "function" then return string.sub(s, 1, k) end
+    local i, n, c, out = 1, #s, 0, {}
+    while i <= n and c < k do
+        local ch, step = stepFn(s, i)
+        if type(step) ~= "number" or step < 1 then step = 1 end
+        out[#out + 1] = ch
+        i = i + step
+        c = c + 1
+    end
+    return table.concat(out)
+end
+
+function PD.MatLinesRight(matLines)
+    if type(matLines) ~= "table" then return 0 end
+    local last
+    for ln = 1, #matLines do
+        local blocks = matLines[ln]
+        if type(blocks) == "table" and #blocks > 0 then last = blocks end
+    end
+    if not last then return 0 end
+    local w = 0
+    for k = 1, #last do local b = last[k]
+        if b then
+            if b.more then
+                w = w + (b.tw or 0)
+            else
+                w = w + PD.REC_MAT_ICON + PD.REC_MAT_GAP + (b.tw or 0)
+            end
+        end
+    end
+    return PD.MAT_X + w
+end
+
+function PD.SrcLineRoom(matLines)
+    return (PD.MAT_ROW_W - 6) - (PD.MatLinesRight(matLines) + PD.SRC_GAP)
+end
+
+function PD.SrcLineFit(s)
+    if type(s) ~= "table" then return end
+    local pre, nm = s.dpre, s.dname
+    if type(pre) ~= "string" or pre == "" then return end
+    if type(nm) ~= "string" or nm == "" then return end
+    local cost = s.dcost
+    local fs = PD.SRC_FS
+    local room = PD.SrcLineRoom(s.matLines)
+    local preW = PD.TextW(pre, fs)
+    local function build(name)
+        if cost then return name .. "·" .. cost end
+        return name
+    end
+    s.dval = build(nm)
+    s.srcPriceCut = nil
+    if preW + PD.TextW(s.dval, fs) <= room then return end
+    local tail = 0
+    if cost then tail = PD.TextW("·" .. cost, fs) end
+    local short = PD.Fit(nm, fs, room - preW - tail)
+    local keep = PD.GlyphLen(short)
+    if short ~= nm and keep > 0 then keep = keep - 1 end
+    if keep >= 2 then
+        s.dval = build(short)
+        return
+    end
+    local two = build(PD.GlyphPrefix(nm, 2) .. "…")
+    if preW + PD.TextW(two, fs) <= room then
+        s.dval = two
+        return
+    end
+    s.dval = PD.Fit(two, fs, room - preW)
+    s.srcPriceCut = true
+end
+
+function PD.VendorSrcLine(src, fid)
+    local vs = PD.VendorListOf(src)
+    if type(vs) ~= "table" then return nil end
+    if #vs == 0 then return nil end
+    local offers = PD.FormulaOffersByNpc(fid)
+    local v, o = PD.VendorBestOffer(vs, offers)
+    if not v then return nil end
+    local pre = L["图纸"] .. "·" .. L["商人"]
+    if #vs > 1 then pre = pre .. format(L["(%d人)"], #vs) end
+    pre = pre .. ":"
+    local nm = PD.VendorName(v)
+    local cost = PD.VendorCostText(o)
+    local val = nm
+    if cost then val = nm .. "·" .. cost end
+    return pre, val, nm, cost
+end
+
 function PD.GatherMode(slug)
     if slug ~= "mining" then return "gather" end
     if not (LV and type(LV.mining) == "table") then return "gather" end
@@ -873,6 +1068,7 @@ PD.campView = "a"
 PD.autoPage = "route"
 PD.shopGroup = false
 PD.toolKey = nil
+PD.moneyKey = nil
 PD.perkOpen = {}
 PD.rows, PD.toolBtns = {}, {}
 PD.specs = nil
@@ -4747,7 +4943,7 @@ function PD.PickTabs()
     end
 end
 
-PD.TOOL_MIN_W, PD.TOOL_MAX_W = 56, 200
+PD.TOOL_MIN_W, PD.TOOL_MAX_W = 56, 210
 PD.TOOL_PADX = 18
 
 function PD.ToolSize(text)
@@ -7633,14 +7829,9 @@ function PD.EnchantSpec(en)
     local drEn = (en[10] and en[10].drops) or {}
     local acqEn = hasVendor and L["商人售卖"] or L["世界掉落"]
     local base = en[10] and (L["图纸"] .. " · " .. acqEn) or L["训练师"]
-    local dpre, dval, dact, vlines
+    local dpre, dval, dact, vlines, dname, dcost
     if hasVendor then
-        dpre = base
-        if #vsEn > 1 then
-            dval = format(L["商人：%s 等 %d 人"], tostring(vsEn[1] and vsEn[1].name or "?"), #vsEn)
-        else
-            dval = format(L["商人：%s"], tostring(vsEn[1] and vsEn[1].name or "?"))
-        end
+        dpre, dval, dname, dcost = PD.VendorSrcLine(en[10], (type(en[15]) == "number") and en[15] or nil)
         dact = PD.VendorAct(en[10])
         vlines = PD.VendorLines(en[10], (type(en[15]) == "number") and en[15] or nil)
     elseif #drEn > 0 then
@@ -7683,6 +7874,8 @@ function PD.EnchantSpec(en)
         src = en[10],
         dpre = dpre,
         dval = dval,
+        dname = dname,
+        dcost = dcost,
         dact = dact,
         vlines = vlines,
         costStr = costStr,
@@ -7748,6 +7941,7 @@ function PD.FitRecipeCols(list, maxW)
     PD.SyncRows()
     for _, s in ipairs(list) do
         PD.RecipeRowLayout(s)
+        PD.SrcLineFit(s)
     end
 end
 
@@ -8196,18 +8390,9 @@ function PD.RecipeSpec(r)
     else
         base = L["训练师"]
     end
-    local dpre, dval
+    local dpre, dval, dname, dcost
     if hasVendor then
-        dpre = base
-        if #vs > 1 then
-            dval = format(L["商人：%s 等 %d 人"], PD.VendorName(vs[1]), #vs)
-        else
-            dval = format(L["商人：%s"], PD.VendorName(vs[1]))
-        end
-        local vfid = type(r[13]) == "table" and r[13][1] or nil
-        local vmap = vfid and PD.FormulaOffersByNpc and PD.FormulaOffersByNpc(vfid) or nil
-        local vcost = vmap and (vs[1].id or vs[1].npcID) and vmap[vs[1].id or vs[1].npcID] or nil
-        if vcost then dval = dval .. " · " .. PD.FormulaCostText(vcost) end
+        dpre, dval, dname, dcost = PD.VendorSrcLine(r[14], (type(r[13]) == "table") and r[13][1] or nil)
     end
     local costStr, total, unpriced, ah
     if r[12] and #r[12] > 0 then
@@ -8250,6 +8435,8 @@ function PD.RecipeSpec(r)
         vlines = hasVendor and PD.VendorLines(r[14], type(r[13]) == "table" and r[13][1] or nil) or nil,
         dpre = dpre,
         dval = dval,
+        dname = dname,
+        dcost = dcost,
         costStr = costStr,
         ahStr = ahStr,
         pct = PD.AhPct(ah, total),
@@ -8411,88 +8598,276 @@ function PD.FavorSpec(f, d)
     }
 end
 
-PD.__favorBuyMemo = {}
+PD.FAVOR_CURID = 3402
+PD.NO_SELL_KEY = "__none"
+PD.DD_TYPE = "__ddtype"
+PD.DD_MONEY = "__ddmoney"
 
-function PD.RowIsFavorBuy(r)
-    local fid = r[13] and r[13][1]
-    if not fid then return false end
+PD.__curOfFid = {}
+
+function PD.CurKeysOfFid(fid)
+    if type(fid) ~= "number" then return nil end
+    local m = PD.__curOfFid
+    local hit = m[fid]
+    if hit ~= nil then
+        if hit == false then return nil end
+        return hit
+    end
     local flat = ns.EnsureProfFormulaOffers()[fid]
-    if not flat then return false end
-    for j = 1, #flat, 8 do
-        if tonumber(flat[j + 6]) == 3402 then return true end
+    local ks
+    if type(flat) == "table" then
+        ks = {}
+        for j = 1, #flat, 8 do
+            local cid = tonumber(flat[j + 6]) or 0
+            if cid > 0 then
+                ks[cid] = true
+            elseif (tonumber(flat[j + 1]) or 0) > 0 then
+                ks[0] = true
+            end
+        end
+        if next(ks) == nil then ks = nil end
     end
-    return false
+    m[fid] = ks or false
+    return ks
 end
 
-local function FavorBuyCount(d)
-    local m = PD.__favorBuyMemo
-    local n = m[d]
-    if n then return n end
-    n = 0
+function PD.RowCurHit(r)
+    local mk = PD.moneyKey
+    if mk == nil then return true end
+    local ks = PD.CurKeysOfFid(r[13] and r[13][1])
+    if mk == PD.NO_SELL_KEY then return ks == nil end
+    return (ks and ks[mk]) and true or false
+end
+
+PD.__curCntMemo = {}
+
+function PD.CurCounts(d)
+    local m = PD.__curCntMemo
+    local c = m[d]
+    if c then return c end
+    c = {}
+    local nosell = 0
     for _, r in ipairs(d.rows or {}) do
-        if PD.RowIsFavorBuy(r) then n = n + 1 end
-    end
-    m[d] = n
-    return n
-end
-
-function PD.RecipeTool(d)
-    if not d then return {}, nil end
-    local tool = {}
-    local function on(k) return PD.toolKey == k end
-    if d.rows and #d.rows > 0 then
-        tool[#tool + 1] = { key = "all", text = format(L["全部 %d"], #d.rows), on = on("all") }
-        for _, g in ipairs(d.groups or {}) do
-            tool[#tool + 1] = { key = g[1], text = format("%s %d", g[2] or g[1], g[4] or 0),
-                                on = on(g[1]) }
+        local ks = PD.CurKeysOfFid(r[13] and r[13][1])
+        if ks then
+            for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
+        else
+            nosell = nosell + 1
         end
     end
-    if d.enchants and #d.enchants > 0 then
-        if d.rows and #d.rows > 0 then
-            tool[#tool + 1] = { key = "__enchant", text = format(L["附魔 %d"], #d.enchants),
-                                on = on("__enchant") }
+    if d.favor and #d.favor > 0 then
+        c[PD.FAVOR_CURID] = (c[PD.FAVOR_CURID] or 0) + #d.favor
+    end
+    if nosell > 0 then c[PD.NO_SELL_KEY] = nosell end
+    m[d] = c
+    return c
+end
+
+PD.__curName = {}
+
+function PD.CurName(id)
+    local m = PD.__curName
+    local hit = m[id]
+    if hit and hit[3] then return hit[1], hit[2] end
+    local nm, ic = PD.CurrencyOf(id)
+    if not nm and id ~= PD.FAVOR_CURID then nm = PD.VendorItemName(id) end
+    if nm and nm ~= "" then
+        m[id] = { nm, ic, true }
+        return nm, ic
+    end
+    local fb
+    if hit then fb = hit[1] end
+    if not fb then
+        if id == PD.FAVOR_CURID then fb = L["商人青睐"] end
+        if not fb then fb = format(L["通货 #%d"], id) end
+    end
+    m[id] = { fb, ic }
+    return fb, ic
+end
+
+function PD.RecipeTypeItems(d)
+    local items = {}
+    if not d then return items end
+    local rowsN = (d.rows and #d.rows) or 0
+    local enchN = (d.enchants and #d.enchants) or 0
+    if rowsN > 0 then
+        items[#items + 1] = { v = "all", text = format(L["全部 %d"], rowsN) }
+        for _, g in ipairs(d.groups or {}) do
+            items[#items + 1] = { v = g[1], text = format("%s %d", g[2] or g[1], g[4] or 0) }
+        end
+    end
+    if enchN > 0 then
+        if rowsN > 0 then
+            items[#items + 1] = { v = "__enchant", text = format(L["附魔 %d"], enchN) }
         else
             local gc, og = {}, {}
             for _, e in ipairs(d.enchants) do
                 local g = tostring(e[3] or "")
                 if g == "" then g = L["其他"] end
-                if not gc[g] then gc[g] = 0; og[#og + 1] = g end
+                if not gc[g] then
+                    gc[g] = 0
+                    og[#og + 1] = g
+                end
                 gc[g] = gc[g] + 1
             end
-            tool[#tool + 1] = { key = "all", text = format(L["全部 %d"], #d.enchants), on = on("all") }
+            items[#items + 1] = { v = "all", text = format(L["全部 %d"], enchN) }
             for _, g in ipairs(og) do
-                tool[#tool + 1] = { key = g, text = format("%s %d", g, gc[g]), on = on(g) }
+                items[#items + 1] = { v = g, text = format("%s %d", g, gc[g]) }
             end
         end
     end
     if d.crafted and #d.crafted > 0 then
-        tool[#tool + 1] = { key = "__crafted", text = format(L["可制造 %d"], #d.crafted),
-                            on = on("__crafted") }
+        items[#items + 1] = { v = "__crafted", text = format(L["可制造 %d"], #d.crafted) }
     end
-    if d.favor and #d.favor > 0 then
-        tool[#tool + 1] = { key = "__favor", text = format(L["商人兑换 %d"], #d.favor),
-                            on = on("__favor") }
-    end
-    local fb = d.rows and FavorBuyCount(d) or 0
-    if fb > 0 then
-        tool[#tool + 1] = { key = "__favorbuy", text = format(L["商人兑换 %d"], fb),
-                            on = on("__favorbuy") }
-    end
-    if #tool > PD.TOOL_MAX then
+    if #items > PD.TOOL_MAX then
         local keep = PD.TOOL_MAX - 1
-        local rest = 0
-        for i = keep + 1, #tool do rest = rest + 1 end
-        for i = #tool, keep + 1, -1 do table.remove(tool, i) end
-        tool[#tool + 1] = { key = "__rest", text = format(L["其他 %d"], rest), on = on("__rest") }
+        local rest = #items - keep
+        for i = #items, keep + 1, -1 do table.remove(items, i) end
+        items[#items + 1] = { v = "__rest", text = format(L["其他 %d"], rest) }
     end
-    local valid = false
-    for _, t in ipairs(tool) do if t.on then valid = true end end
-    if not valid then
-        PD.toolKey = tool[1] and tool[1].key or "all"
-        if tool[1] then tool[1].on = true end
+    return items
+end
+
+function PD.RecipeCurItems(d)
+    local items = {}
+    if not d then return items end
+    local c = PD.CurCounts(d)
+    items[#items + 1] = { v = nil, text = L["不限"] }
+    local ids = {}
+    for k in pairs(c) do ids[#ids + 1] = k end
+    table.sort(ids, function(a, b)
+        if c[a] ~= c[b] then return c[a] > c[b] end
+        if type(a) ~= type(b) then return type(a) == "number" end
+        return a < b
+    end)
+    for _, id in ipairs(ids) do
+        local nm
+        if id == 0 then
+            nm = L["金币"]
+        elseif id == PD.NO_SELL_KEY then
+            nm = L["无售卖资料"]
+        else
+            nm = PD.CurName(id)
+        end
+        items[#items + 1] = { v = id, text = format("%s %d", tostring(nm), c[id]) }
+    end
+    return items
+end
+
+function PD.RecipeChipText(txt, dflt)
+    if type(txt) ~= "string" or txt == "" then txt = dflt end
+    if type(txt) ~= "string" then txt = "" end
+    local arrow = " ▼"
+    local room = PD.TOOL_MAX_W - PD.TOOL_PADX - PD.TextW(arrow, 14)
+    if PD.TextW(txt, 14) <= room then return txt .. arrow end
+    local short = string.gsub(txt, "%s+%d+$", "")
+    if short ~= txt and short ~= "" and PD.TextW(short, 14) <= room then
+        return short .. arrow
+    end
+    if short == "" then short = txt end
+    if PD.TextW(short, 14) > room then short = PD.Fit(short, 14, room) end
+    return short .. arrow
+end
+
+function PD.RecipeItemText(items, v)
+    for i = 1, #(items or {}) do
+        if items[i].v == v then return items[i].text end
+    end
+    return nil
+end
+
+function PD.RecipeChip(k)
+    for i = 1, PD.TOOL_MAX do
+        local bt = PD.toolBtns and PD.toolBtns[i]
+        if bt and bt.__key == k and bt:IsShown() then return bt end
+    end
+    return nil
+end
+
+function PD.RecipeMenu(items, owner, cur, pick)
+    if type(items) ~= "table" or #items == 0 then return end
+    if not (ns.hui and ns.hui.ShowMenu) then return end
+    local list = {}
+    for i = 1, #items do
+        local it = items[i]
+        local sel = (it.v == cur) and true or false
+        local row = { text = it.text, checked = sel,
+                      func = function() pick(it.v) end }
+        if sel then row.color = { 1, 0.82, 0 } end
+        list[#list + 1] = row
+    end
+    ns.hui.ShowMenu(list, { owner = owner, anchor = owner })
+end
+
+function PD.RecipeTool(d)
+    if not d then return {}, nil end
+    local tItems = PD.RecipeTypeItems(d)
+    local cItems = PD.RecipeCurItems(d)
+    local showType = #tItems > 2
+    if PD.moneyKey ~= nil then
+        PD.toolKey = "all"
+    elseif PD.toolKey == nil then
+        PD.toolKey = "all"
+    elseif PD.toolKey ~= "all" then
+        local ok = false
+        for i = 1, #tItems do
+            if tItems[i].v == PD.toolKey then ok = true end
+        end
+        if not ok then PD.toolKey = "all" end
+    end
+    if not showType then PD.toolKey = "all" end
+    local total
+    if d.rows and #d.rows > 0 then
+        total = #d.rows
+    else
+        total = (d.enchants and #d.enchants) or 0
+    end
+    local tool = {}
+    local allOn = (PD.moneyKey == nil and PD.toolKey == "all") or false
+    tool[#tool + 1] = { key = "all", text = format(L["全部 %d"], total), on = allOn }
+    if showType then
+        local txt = L["类型"]
+        if PD.toolKey ~= "all" then
+            local cur = PD.RecipeItemText(tItems, PD.toolKey)
+            if cur then txt = cur end
+        end
+        local tOn = (PD.moneyKey == nil and PD.toolKey ~= "all") or false
+        local def = { key = PD.DD_TYPE, text = PD.RecipeChipText(txt, L["类型"]), on = tOn }
+        tool[#tool + 1] = def
+    end
+    if #cItems > 1 then
+        local txt = L["货币"]
+        if PD.moneyKey ~= nil then
+            local cur = PD.RecipeItemText(cItems, PD.moneyKey)
+            if cur then txt = cur end
+        end
+        local mOn = (PD.moneyKey ~= nil)
+        local def = { key = PD.DD_MONEY, text = PD.RecipeChipText(txt, L["货币"]), on = mOn }
+        tool[#tool + 1] = def
     end
     return tool, function(k)
+        if k == PD.DD_TYPE then
+            PD.RecipeMenu(tItems, PD.RecipeChip(PD.DD_TYPE), PD.toolKey or "all", function(v)
+                PD.toolKey = v
+                PD.moneyKey = nil
+                if PD.scroll then PD.scroll:SetVerticalScroll(0) end
+                ns.PlaySound(1)
+                PD.RequestRender()
+            end)
+            return
+        end
+        if k == PD.DD_MONEY then
+            PD.RecipeMenu(cItems, PD.RecipeChip(PD.DD_MONEY), PD.moneyKey, function(v)
+                PD.moneyKey = v
+                PD.toolKey = "all"
+                if PD.scroll then PD.scroll:SetVerticalScroll(0) end
+                ns.PlaySound(1)
+                PD.RequestRender()
+            end)
+            return
+        end
         PD.toolKey = k
+        PD.moneyKey = nil
         if PD.scroll then PD.scroll:SetVerticalScroll(0) end
         PD.RequestRender()
     end
@@ -8505,6 +8880,23 @@ function PD.RecipeList(limit, q)
     local key = PD.toolKey
     local cap = limit or PD.ROW_CAP
     if cap < 1 then return out end
+    if PD.moneyKey ~= nil then
+        for _, r in ipairs(d.rows or {}) do
+            if PD.RowCurHit(r) and PD.RawHit(r, q) then
+                out[#out + 1] = PD.RecipeSpec(r)
+                if #out >= cap then return out end
+            end
+        end
+        if PD.moneyKey == PD.FAVOR_CURID then
+            for _, f in ipairs(d.favor or {}) do
+                if #out < cap then
+                    local sp = PD.FavorSpec(f, d)
+                    if PD.SearchHit(sp) then out[#out + 1] = sp end
+                end
+            end
+        end
+        return out
+    end
     if key == "__enchant" then
         for _, e in ipairs(d.enchants or {}) do
             if PD.RecipeVisible(e[14]) then out[#out + 1] = PD.EnchantSpec(e) end
@@ -8513,7 +8905,7 @@ function PD.RecipeList(limit, q)
         return out
     end
     if d.enchants and #d.enchants > 0 and not (d.rows and #d.rows > 0)
-       and key ~= "__crafted" and key ~= "__favor" and key ~= "__favorbuy" and key ~= "__rest" then
+       and key ~= "__crafted" and key ~= "__rest" then
         local want
         if key ~= "all" then want = tostring(key) end
         for _, e in ipairs(d.enchants or {}) do
@@ -8530,22 +8922,6 @@ function PD.RecipeList(limit, q)
         for _, c in ipairs(d.crafted or {}) do
             if PD.RecipeVisible(c[1]) then out[#out + 1] = PD.CraftedSpec(c) end
             if #out >= cap then break end
-        end
-        return out
-    end
-    if key == "__favor" then
-        for _, f in ipairs(d.favor or {}) do
-            out[#out + 1] = PD.FavorSpec(f, d)
-            if #out >= cap then break end
-        end
-        return out
-    end
-    if key == "__favorbuy" then
-        for _, r in ipairs(d.rows or {}) do
-            if PD.RowIsFavorBuy(r) then
-                out[#out + 1] = PD.RecipeSpec(r)
-                if #out >= cap then break end
-            end
         end
         return out
     end
@@ -8603,11 +8979,23 @@ function PD.ScanRecipe()
     local d = RGet(PD.cur)
     if not d then return 0, 0 end
     local key = PD.toolKey
-    if key == "__enchant" or key == "__crafted" or key == "__favor" then
+    if key == "__enchant" or key == "__crafted" then
         return nil
     end
-    if not (d.rows and #d.rows > 0) then return nil end
     local q = (PD.searchQ and PD.searchQ ~= "") and PD.searchQ or nil
+    if PD.moneyKey ~= nil then
+        local cn = 0
+        for _, r in ipairs(d.rows or {}) do
+            if PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
+        end
+        if PD.moneyKey == PD.FAVOR_CURID then
+            for _, f in ipairs(d.favor or {}) do
+                if PD.SearchHit(PD.FavorSpec(f, d)) then cn = cn + 1 end
+            end
+        end
+        return cn, nil
+    end
+    if not (d.rows and #d.rows > 0) then return nil end
     local fk = PD.EffKeyFilter(d)
 
     local n, maxW = 0, 0
@@ -8659,6 +9047,12 @@ function PD.RowsRecipe(rows)
         PushGap(rows)
         PushText(rows, format(L["没有名称或材料匹配「%s」的配方 —— 换个关键词再试试。"],
                               PD.searchQ), 12, C_GOLD)
+        return
+    end
+    if realN == 0 and (not PD.searchQ or PD.searchQ == "")
+       and (PD.toolKey ~= "all" or PD.moneyKey ~= nil) then
+        PushGap(rows)
+        PushText(rows, L["当前筛选没有配方 —— 换一个类型或货币，或点「全部」。"], 12, C_GOLD)
         return
     end
     local trunc = 0
@@ -12848,6 +13242,10 @@ function PD.RowsCrates(rows)
     end
 end
 
+local function PY()
+    if coroutine.running and coroutine.running() then coroutine.yield() end
+end
+
 function PD.Render()
     if not (PD.built and PD.page) or not PD.cur then return end
     PD.ResetItemNameMemo()
@@ -12949,6 +13347,7 @@ function PD.Render()
         PD.RowsOverview(rows)
     end
 
+    PY()
     local headText = tool and PD.lvRouteHead and PD.lvRouteHead.progress or nil
     local solverText = PD.SolverText()
     if solverText then headText = solverText end
@@ -12994,6 +13393,7 @@ function PD.Render()
     local keepV = (PD.__scrollSig == sig) and PD.__scrollV or 0
     PD.__scrollSig = sig
     PD.scroll:SetVerticalScroll(keepV)
+    PY()
     PD.truncated = PD.PaintRows(rows)
     ns.OpenPerf.Mark("首屏")
     PD.PlaceSettingsToggles(rows)
@@ -13083,6 +13483,7 @@ function PD.Show(slug)
         PD.ClearPlanCache()
         PD.cur = slug
         PD.toolKey = nil
+        PD.moneyKey = nil
         PD.campView = "a"
         PD.tab = "overview"
         PD.setOpen = false
@@ -13124,6 +13525,7 @@ function PD.EnsureCur()
     if slug then
         PD.cur = slug
         PD.toolKey = nil
+        PD.moneyKey = nil
         PD.tab = (type(db.lastTab) == "string") and db.lastTab or "overview"
         PD.setOpen = false
     end

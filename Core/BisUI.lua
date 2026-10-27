@@ -456,6 +456,10 @@ local function ScanDps(itemID)
     if dpsMiss[itemID] then return nil end
     if not DG.ItemInfo(itemID) then return nil end
     if (BG.__dpsDepth or 0) > 0 then return nil end
+    if BG.scanBudget ~= nil then
+        if BG.scanBudget <= 0 then return nil end
+        BG.scanBudget = BG.scanBudget - 1
+    end
     local tip = EnsureDpsTip()
     if not tip then return nil end
     BG.__dpsDepth = (BG.__dpsDepth or 0) + 1
@@ -517,6 +521,10 @@ local function ScanStatsTip(id)
     if c ~= nil then return c end
     if not DG.ItemInfo(id) then return nil end
     if (BG.__dpsDepth or 0) > 0 then return nil end
+    if BG.scanBudget ~= nil then
+        if BG.scanBudget <= 0 then return nil end
+        BG.scanBudget = BG.scanBudget - 1
+    end
     local tip = EnsureDpsTip()
     if not tip then return nil end
     BG.__dpsDepth = (BG.__dpsDepth or 0) + 1
@@ -2984,12 +2992,19 @@ local function PaintBrowser()
             if pass then pool[#pool + 1] = r end
         end
         local wishOf = ns.GearModule and ns.GearModule.WishIs
+        local sMap = {}
+        BG.scanBudget = 0
+        for i = 1, #pool do
+            local r = pool[i]
+            sMap[r] = ItemScore(r.id, w)
+        end
+        BG.scanBudget = nil
         table.sort(pool, function(a, b)
             if wishOf then
                 local wa, wb = wishOf(a.id), wishOf(b.id)
                 if wa ~= wb then return wa end
             end
-            local sa, sb = ItemScore(a.id, w), ItemScore(b.id, w)
+            local sa, sb = sMap[a], sMap[b]
             if sa and sb then return sa > sb end
             if sa or sb then return sa ~= nil end
             return (a.req or 0) < (b.req or 0)
@@ -3002,7 +3017,7 @@ local function PaintBrowser()
             if i > cap then break end
             local r = pool[i]
             list[#list + 1] = { item = r.id, q = r.q, cat = true, isWep = isWep,
-                                score = ItemScore(r.id, w) }
+                                score = sMap[r] }
         end
         if not (BG.baseScore and BG.baseScore > 0) then
             local mx
@@ -3534,6 +3549,7 @@ function BG.SweepNames()
     local dpsScanN = 0
     local miss = 0
     local sp = SpecRec()
+    BG.scanBudget = 14
     if sp then
         for _, key in ipairs(ALL_SLOT_KEYS) do
             local id = CurItem(sp, key)
@@ -3600,6 +3616,7 @@ function BG.SweepNames()
             end
         end
     end
+    BG.scanBudget = nil
     local prevMiss = BG._sweepMiss
     BG._sweepMiss = miss
     if not prevMiss or miss < prevMiss then

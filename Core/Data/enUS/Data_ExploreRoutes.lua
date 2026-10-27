@@ -10,7 +10,7 @@ ns.ExploreRoutes = {
           ovl = { "布瑞尔复活点" },
           races = {
             { race = "Undead", steps = {
-              { t = "First death", k = "die", x = 50, y = 56,
+              { t = "First death", k = "die", x = 43.8, y = 54.3,
                 d = "Leave the Deathknell starting area and head to the marked spot; any nearby undead mob works for the first death." },
               { t = "Graveyard resurrect", k = "grave", d = "Resurrect weakened at the Brill graveyard with the spirit healer — no penalty before level 10." },
               { t = "Open flight path", k = "fp", d = "Open the Brill flight path, then set your hearthstone to the Brill inn for later returns.",
@@ -152,7 +152,7 @@ ns.ExploreRoutes = {
           dst = { 1421, 44.2, 41.4 },
           races = {
             { race = "Other", steps = {
-              { t = "Set out", k = "travel", x = 17.6, y = 74.8, m = { 1426, 17.6, 74.8 },
+              { t = "Set out", k = "travel", x = 9.4, y = 79.1, m = { 1426, 9.4, 79.1 },
                 d = "Gather at the novice rest stop and head for Silverpine Forest." },
               { t = "Drown", k = "die",
                 d = "Once the zone banner switches to Silverpine Forest, get into the water and drown." },
