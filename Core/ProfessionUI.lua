@@ -506,11 +506,13 @@ function PD.MoneyBrief(v)
     local g = math.floor(v / 10000)
     local s = math.floor((v % 10000) / 100)
     local c = v % 100
-    if g > 0 then
-        return format("%d%s%d%s%d%s", g, MONEY_GOLD, s, MONEY_SILVER, c, MONEY_COPPER)
-    end
-    if s > 0 then return format("%d%s%d%s", s, MONEY_SILVER, c, MONEY_COPPER) end
-    return format("%d%s", c, MONEY_COPPER)
+    local out = {}
+    if g > 0 then out[#out + 1] = format("%d%s", g, MONEY_GOLD) end
+    if s > 0 then out[#out + 1] = format("%d%s", s, MONEY_SILVER) end
+    if c > 0 then out[#out + 1] = format("%d%s", c, MONEY_COPPER) end
+    if #out == 0 then return format("0%s", MONEY_COPPER) end
+    if #out > 2 then out[#out] = nil end
+    return table.concat(out)
 end
 
 function PD.GatherMode(slug)
@@ -589,10 +591,24 @@ PD.MAT_ICON_PX = 16
 PD.MAT_ROW_W = PD.RIGHT_W - 2 * PD.LIST_PAD
 PD.MAT_RIGHT_RESERVE = 132
 PD.MAT_TAIL_MIN = 14
-PD.MAT_X = math.floor(PD.MAT_ROW_W * 0.40)
-PD.MAT_W = PD.MAT_ROW_W - PD.MAT_RIGHT_RESERVE - PD.MAT_X - 8
+PD.REC_MAT_RIGHT = 6 + 91 + 88 + 88
+PD.MAT_X = 172
+PD.MAT_W = PD.MAT_ROW_W - PD.REC_MAT_RIGHT - PD.MAT_X - 8
 
-PD.RECIPE_NAME_MIN, PD.RECIPE_NAME_MAX = 100, math.floor(PD.MAT_ROW_W * 0.16)
+PD.REC_NAME_X = 46
+PD.REC_NAME_W = 110
+PD.REC_FS = 14
+PD.REC_SUB_FS = 12
+PD.REC_EFFECT_MAXW = 90
+PD.REC_SUB_MAXW = 118
+PD.REC_LIST_TOP = 3
+PD.REC_MAT_ICON = 16
+PD.REC_MAT_GAP = 4
+PD.REC_MAT_FS = 14
+PD.REC_MAT_SLOTS = 12
+PD.REC_MAT_ROW_GAP = 2
+PD.REC_ROW_H = 38
+
 PD.RECIPE_NAME_PAD = 16
 PD.RECIPE_BADGE_W = 26
 PD.RECIPE_PADL = 32
@@ -979,6 +995,47 @@ function PD.SegButtons(r)
     return list
 end
 
+function PD.SpellTipLines()
+    local GT = GameTooltip
+    if not (GT and type(GT.NumLines) == "function") then return nil end
+    local ok, v = pcall(GT.NumLines, GT)
+    if ok and type(v) == "number" then return v end
+    return nil
+end
+
+function PD.ShowSpellTip(owner)
+    local sid = owner and owner.__spell
+    if type(sid) ~= "number" then return false end
+    local GT = GameTooltip
+    if not GT then return false end
+    if ns.hui then ns.hui.nativeTipOwner = owner end
+    GT:SetOwner(owner, "ANCHOR_RIGHT")
+    GT:ClearLines()
+    local ok = false
+    if type(GT.SetSpellByID) == "function" then
+        ok = pcall(GT.SetSpellByID, GT, sid)
+    elseif type(GT.SetSpell) == "function" then
+        ok = pcall(GT.SetSpell, GT, sid, BOOKTYPE_SPELL or "spell")
+    end
+    if not ok then
+        if ns.hui then ns.hui.nativeTipOwner = nil end
+        return false
+    end
+    local n = PD.SpellTipLines()
+    if n == nil and type(GT.SetHyperlink) == "function" then
+        local ok2 = pcall(GT.SetHyperlink, GT, "spell:" .. tostring(sid))
+        if not ok2 then return false end
+        n = PD.SpellTipLines()
+    end
+    if type(n) == "number" and n < 1 then
+        if ns.hui then ns.hui.nativeTipOwner = nil end
+        return false
+    end
+    if ns.hui and ns.hui.ShowNativeTip then ns.hui.ShowNativeTip(GT) end
+    GT:Show()
+    return true
+end
+
 function PD.Row(i)
     local r = PD.rows[i]
     if r then return r end
@@ -1168,6 +1225,7 @@ function PD.Row(i)
         if not self.__noHover then PD.SetRowHover(self, true) end
         if self.__noTip then return end
         PD.hoverRow = self
+        if PD.ShowSpellTip(self) then return end
         if self.__lines == nil and self.__mkLines then
             self.__lines = self.__mkLines()
             self.__mkLines = nil
@@ -1195,10 +1253,12 @@ function PD.Row(i)
     end)
     r:SetScript("OnClick", function(self, button)
         if button == "RightButton" and not self.__routePolicy then return end
-        if button == "LeftButton" and self.__it
-           and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
-            DG.ItemShiftClick(self, button)
-            return
+        if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
+            if self.__spell and PD.InsertSpellLink(self.__spell) then return end
+            if self.__it then
+                DG.ItemShiftClick(self, button)
+                return
+            end
         end
         if self.__act then self.__act(self, button) end
         ns.PlaySound(1)
@@ -1351,6 +1411,11 @@ function PD.CullRows()
             if (spec.__gtop + spec.__gh) > vT and spec.__gtop < vB then
                 if r and r.__spec == spec and r.IsShown and not r:IsShown() then
                     r:Show()
+                    if spec.kind == "rechead" then
+                        PD.SetRowHover(r, false)
+                        PD.HideRowChips(r)
+                        PD.RestoreHeaderArrows(r)
+                    end
                 end
             elseif r and r.IsShown and r:IsShown() then
                 r:Hide()
@@ -1728,6 +1793,7 @@ function PD.BindRow(r, spec, h)
     r.__noHover = spec.noHover and true or false
     PD.SetRowHover(r, (not r.__noHover) and r.IsMouseOver and r:IsMouseOver())
     r.__it = spec.it
+    r.__spell = spec.spell
     r.__noTip = spec.noTip
     r.__lines = spec.lines
     r.__mkLines = spec.mkLines
@@ -1754,6 +1820,7 @@ function PD.BindRow(r, spec, h)
     end
     do
         local auxFs = 14
+        if spec.subFs then auxFs = spec.subFs end
         local fl = ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE"
         local _, bfs = r.b:GetFont()
         local wb = auxFs
@@ -1764,6 +1831,7 @@ function PD.BindRow(r, spec, h)
     end
     PD.ClearMats(r)
     PD.ClearMatSegs(r)
+    PD.ClearRecipeMats(r)
     if spec._matsPending then PD.FinishSpecMats(spec) end
     PD.RowBorder(r, spec.cur)
     r.tagFs:Hide()
@@ -1806,10 +1874,14 @@ function PD.BindRow(r, spec, h)
     if r.__pct then r.__pct:Hide() end
     if r.__costWhy then r.__costWhy:Hide() end
     if showIcon then
-        local iconSize = factionIcon and 16 or 20
+        local iconSize = factionIcon and 16 or (spec.recipe and 32 or 20)
         r.icon:SetSize(iconSize, iconSize)
         r.icon:ClearAllPoints()
-        r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - iconSize) / 2))
+        if spec.recipe then
+            r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -3)
+        else
+            r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - iconSize) / 2))
+        end
         SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
         if ns.hui and ns.hui.SetIconRing then
             local qq = nil
@@ -1918,6 +1990,9 @@ function PD.BindRow(r, spec, h)
         return
     end
     if spec.kind == "rechead" then
+        PD.SetRowHover(r, false)
+        PD.HideRowChips(r)
+        PD.RestoreHeaderArrows(r)
         r.h1:SetText(L["配方"])
         r.h1:ClearAllPoints()
         r.h1:SetPoint("LEFT", r, "LEFT", 6, 0)
@@ -1965,7 +2040,7 @@ function PD.BindRow(r, spec, h)
         end
         local onAh = PD.recipeSort == "ah"
         _ic(r.icon, onAh)
-        r.icon:SetPoint("RIGHT", r.h3, "LEFT", -3, 0)
+        PD.LayoutHeaderArrow(r.icon, r.h3)
         _hc(r.h3, onAh)
         r.hsTot:ClearAllPoints()
         r.hsTot:SetPoint("TOPRIGHT", r, "TOPRIGHT", X_ahR, 0)
@@ -1975,7 +2050,7 @@ function PD.BindRow(r, spec, h)
         r.hsTot:Show()
         local onCost = PD.recipeSort == "cost"
         _ic(r.icon2, onCost)
-        r.icon2:SetPoint("RIGHT", r.h4, "LEFT", -3, 0)
+        PD.LayoutHeaderArrow(r.icon2, r.h4)
         _hc(r.h4, onCost)
         r.hsOwn:ClearAllPoints()
         r.hsOwn:SetPoint("TOPRIGHT", r, "TOPRIGHT", -(6 + PD.DiffBarW()), 0)
@@ -1985,7 +2060,7 @@ function PD.BindRow(r, spec, h)
         r.hsOwn:Show()
         local onDiff = PD.recipeSort == "diff"
         _ic(r.icon3, onDiff)
-        r.icon3:SetPoint("RIGHT", r.h5, "LEFT", -3, 0)
+        PD.LayoutHeaderArrow(r.icon3, r.h5)
         _hc(r.h5, onDiff)
         r.hsCraft:ClearAllPoints()
         r.hsCraft:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, 0)
@@ -2463,7 +2538,7 @@ function PD.BindRow(r, spec, h)
         if q then ncol = { DG.QColor(q) } end
     end
     r.a:SetTextColor(Unpack(ncol or C_TEXT))
-    r.a:SetText(spec.text or "")
+    r.a:SetText(spec.disp or spec.text or "")
     r.b:SetText((spec.is_new and L[" |cff40d940新|r"] .. " " or "") .. (spec.sub or ""))
     r.c:SetText(spec.right or "")
     r.c:SetTextColor(Unpack(spec.rightColor or C_GOLD))
@@ -2495,19 +2570,40 @@ function PD.BindRow(r, spec, h)
     r.f:ClearAllPoints()
     if h <= PD.ROW_H1 then
         r.a:SetPoint("LEFT", r, "LEFT", padL, 0)
+        r.a:SetWidth(0)
+        r.a:SetWordWrap(false)
         r.b:SetText("")
+        r.b:SetWidth(0)
+        r.b:SetWordWrap(false)
         r.c:SetPoint("RIGHT", r, "RIGHT", -6, 0)
         r.d:SetText("")
         r.f:SetText("")
     else
-        r.a:SetPoint("TOPLEFT", r, "TOPLEFT", padL, -4)
+        local nx = spec.recipe and PD.REC_NAME_X or padL
+        r.a:SetPoint("TOPLEFT", r, "TOPLEFT", nx, spec.recipe and -3 or -4)
         r.b:ClearAllPoints()
-        r.b:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", padL, 4)
+        if not spec.recipe then
+            r.b:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", nx, 4)
+        end
         r.c:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -4)
         r.d:ClearAllPoints()
         r.d:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -6, 4)
-        r.f:SetPoint("LEFT", r, "LEFT", PD.MAT_X, 0)
-        if spec.matSegs then PD.PaintMatSegs(r, spec.matSegs, spec.matColor) end
+        if spec.recipe then
+            r.a:SetWidth(0)
+            r.a:SetWordWrap(false)
+            r.b:SetWidth(0)
+            r.b:SetWordWrap(false)
+            r.b:SetPoint("TOPLEFT", r, "TOPLEFT", nx, -23)
+            r.f:SetText("")
+            PD.PaintRecipeMats(r, spec)
+        else
+            r.a:SetWidth(0)
+            r.a:SetWordWrap(false)
+            r.b:SetWidth(0)
+            r.b:SetWordWrap(false)
+            r.f:SetPoint("LEFT", r, "LEFT", PD.MAT_X, 0)
+            if spec.matSegs then PD.PaintMatSegs(r, spec.matSegs, spec.matColor) end
+        end
     end
     if h > PD.ROW_H1 and (spec.sbdiff or spec.costStr or spec.ahStr) then
         PD.PaintDiffBar(r, spec.sbdiff)
@@ -4142,13 +4238,42 @@ function PD.Build(page)
     seb.ph:SetText(L["配方名 / 材料名"])
     seb.ph:SetPoint("LEFT", seb, "LEFT", 6, 0)
     seb.ph:Hide()
-    local function SyncPh()
+    seb:SetTextInsets(5, 22, 0, 0)
+    local SyncPh
+    local clr = CreateFrame("Button", nil, seb)
+    clr:SetSize(16, 16)
+    clr:SetPoint("RIGHT", seb, "RIGHT", -5, 0)
+    clr:SetFrameLevel(seb:GetFrameLevel() + 3)
+    clr.txt = MakeFS(clr, 14, C_GREY, "CENTER")
+    clr.txt:SetPoint("CENTER", clr, "CENTER", 0, 0)
+    clr.txt:SetText("×")
+    clr:SetScript("OnEnter", function(self) self.txt:SetTextColor(Unpack(C_TEXT)) end)
+    clr:SetScript("OnLeave", function(self) self.txt:SetTextColor(Unpack(C_GREY)) end)
+    clr:SetScript("OnClick", function()
+        local had = seb:HasFocus()
+        seb:SetText("")
+        if (PD.searchQ or "") ~= "" then
+            PD.searchQ = ""
+            PD.RequestRender()
+        end
+        if SyncPh then SyncPh() end
+        if had then
+            seb:SetFocus()
+            seb:SetCursorPosition(0)
+        end
+        ns.PlaySound(1)
+    end)
+    clr:Hide()
+    seb.clear = clr
+    SyncPh = function()
         local t = seb:GetText()
-        if (t == nil or t == "") and not seb:HasFocus() then
+        local empty = (t == nil or t == "")
+        if empty and not seb:HasFocus() then
             seb.ph:Show()
         else
             seb.ph:Hide()
         end
+        seb.clear:SetShown(not empty)
     end
     seb:SetScript("OnTextChanged", function(self)
         SyncPh()
@@ -4170,6 +4295,8 @@ function PD.Build(page)
     seb:SetScript("OnEditFocusGained", function() seb.ph:Hide() end)
     seb:SetScript("OnEditFocusLost", function() SyncPh() end)
     sb.eb = seb
+    seb:SetText(PD.searchQ or "")
+    SyncPh()
     PD.searchBox = sb
     coroutine.yield()
 
@@ -4184,6 +4311,8 @@ function PD.Build(page)
     scroll:EnableMouseWheel(true)
     scroll:SetScript("OnMouseWheel", function(self, delta)
         DG.WheelScroll(PD.scroll, PD.child, delta)
+        if PD.UpdateVScroll then PD.UpdateVScroll() end
+        if PD.CullRows then PD.CullRows() end
     end)
     local child = CreateFrame("Frame", nil, scroll)
     child:SetSize(PD.RIGHT_W, 10)
@@ -4299,6 +4428,8 @@ function PD.Build(page)
             if span <= 0 then return end
             local maxScroll = PD.child:GetHeight() - PD.scroll:GetHeight()
             PD.scroll:SetVerticalScroll(math.min(maxScroll, math.max(0, sc0 + (cy0 - cy) / span * maxScroll)))
+            if PD.UpdateVScroll then PD.UpdateVScroll() end
+            if PD.CullRows then PD.CullRows() end
         end)
     end)
     thumb:SetScript("OnMouseUp", function(self)
@@ -4976,6 +5107,7 @@ end
 
 function PD.UnifyTipFont(size)
     local n = (GameTooltip.NumLines and GameTooltip:NumLines()) or 0
+    if type(n) ~= "number" then n = (type(n) == "table") and #n or 0 end
     if n <= 0 then return end
     local base = _G["GameTooltipTextLeft1"]
     local path, sz, flags
@@ -5819,6 +5951,347 @@ function PD.MatText(list, maxN)
         t[#t + 1] = format("%d×%s%s", m[2] or 1, PD.MatIconTex(m[1]), DG.ItemName(m[1]))
     end
     return table.concat(t, "  ")
+end
+
+function PD.RecipeMatSegs(list)
+    local out = {}
+    if not list then return out end
+    for i = 1, #list do
+        local m = list[i]
+        local name = PD.ItemName(m[1]) or ""
+        out[i] = { id = m[1], cnt = m[2] or 1, name = name,
+                   tw = PD.TextW(name, PD.REC_MAT_FS) }
+    end
+    return out
+end
+
+function PD.PackRecipeMats(segs, budget)
+    local out = { {}, {} }
+    local total = #segs
+    local line, used, placed = 1, 0, 0
+    local i, more = 1, nil
+    while i <= total do
+        local seg = segs[i]
+        local b = { id = seg.id, cnt = seg.cnt, name = seg.name, tw = seg.tw }
+        local bw = PD.REC_MAT_ICON + PD.REC_MAT_GAP + b.tw
+        if placed >= PD.REC_MAT_SLOTS then
+            more = total - i + 1
+            break
+        end
+        if used + bw > budget and #out[line] > 0 then
+            if line == 2 then
+                more = total - i + 1
+                break
+            end
+            line, used = 2, 0
+        end
+        if used + bw > budget and #out[line] == 0 then
+            local room = budget - PD.REC_MAT_ICON - PD.REC_MAT_GAP
+            b.name = PD.Fit(seg.name or "", PD.REC_MAT_FS, room)
+            b.tw = PD.TextW(b.name, PD.REC_MAT_FS)
+            bw = PD.REC_MAT_ICON + PD.REC_MAT_GAP + b.tw
+        end
+        out[line][#out[line] + 1] = b
+        used = used + bw
+        placed = placed + 1
+        i = i + 1
+    end
+    if more then
+        local tail = (#out[2] > 0) and 2 or 1
+        while true do
+            local tw = PD.TextW("… +" .. tostring(more), PD.REC_MAT_FS)
+            local w = 0
+            for k = 1, #out[tail] do
+                w = w + PD.REC_MAT_ICON + PD.REC_MAT_GAP + out[tail][k].tw
+            end
+            if w + tw <= budget or #out[tail] == 0 then
+                out[tail][#out[tail] + 1] = { more = more, tw = tw }
+                break
+            end
+            out[tail][#out[tail]] = nil
+            more = more + 1
+        end
+    end
+    return out
+end
+
+function PD.RecipeRowHeight(s)
+    return PD.REC_ROW_H
+end
+
+function PD.RecipeRowLayout(s)
+    if not s then return s end
+    s.recipe = true
+    s.fs = PD.REC_FS
+    s.subFs = PD.REC_SUB_FS
+    if not s._matSegs then s._matSegs = PD.RecipeMatSegs(s._mats) end
+    s.matLines = PD.PackRecipeMats(s._matSegs, PD.MAT_W)
+    s.h = PD.RecipeRowHeight(s)
+    return s
+end
+
+function PD.MatBlockTex(r, i)
+    if type(r.mic) ~= "table" then r.mic = {} end
+    local t = r.mic[i]
+    if not t then
+        t = r:CreateTexture(nil, "ARTWORK", nil, 1)
+        t:SetSize(PD.REC_MAT_ICON, PD.REC_MAT_ICON)
+        t:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(t) end
+        r.mic[i] = t
+    end
+    return t
+end
+
+function PD.MatBlockFS(r, i)
+    if type(r.mtx) ~= "table" then r.mtx = {} end
+    local fs = r.mtx[i]
+    if not fs then
+        fs = MakeFS(r, PD.REC_MAT_FS, C_GREY, "LEFT")
+        fs:SetWordWrap(false)
+        r.mtx[i] = fs
+    end
+    return fs
+end
+
+function PD.MatBlockZone(r, i)
+    if type(r.mrz) ~= "table" then r.mrz = {} end
+    local z = r.mrz[i]
+    if not z then
+        z = CreateFrame("Button", nil, r)
+        PD.WireTipZone(z, r)
+        r.mrz[i] = z
+    end
+    return z
+end
+
+function PD.ClearRecipeMats(r)
+    if type(r.mic) == "table" then
+        for _, t in ipairs(r.mic) do
+            t:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(t, nil) end
+        end
+    end
+    if type(r.mtx) == "table" then
+        for _, fs in ipairs(r.mtx) do fs:SetText("") fs:Hide() end
+    end
+    if type(r.mrz) == "table" then
+        for _, z in ipairs(r.mrz) do z:Hide() end
+    end
+end
+
+function PD.RecMatLineH()
+    local h = PD.recMatLineH
+    if h then return h end
+    h = PD.REC_MAT_FS
+    if PD.page then
+        local fs = PD.mfsMat
+        if not fs then
+            fs = PD.page:CreateFontString(nil, "OVERLAY")
+            if fs then
+                fs:Hide()
+                PD.mfsMat = fs
+            end
+        end
+        if fs then
+            local flags = (ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE")) or "OUTLINE"
+            fs:SetFont(ns.FONT, PD.REC_MAT_FS, flags)
+            fs:SetText("吸收")
+            local got = fs:GetStringHeight()
+            if type(got) == "number" and got >= 8 and got <= 32 then h = got end
+            fs:SetText("")
+        end
+    end
+    if h < PD.REC_MAT_ICON then h = PD.REC_MAT_ICON end
+    PD.recMatLineH = h
+    return h
+end
+
+function PD.RecMatMetrics()
+    local lineH = PD.RecMatLineH()
+    local gap = PD.REC_MAT_ROW_GAP
+    if lineH * 2 + gap > PD.REC_ROW_H then gap = 0 end
+    local blockH = lineH * 2 + gap
+    local top = math.floor((PD.REC_ROW_H - blockH) / 2)
+    if top < 0 then top = 0 end
+    return lineH, gap, top
+end
+
+function PD.LayoutHeaderArrow(tex, anchorFs)
+    if not (tex and anchorFs) then return end
+    tex:ClearAllPoints()
+    tex:SetPoint("RIGHT", anchorFs, "LEFT", -3, 0)
+    tex:SetSize(14, 14)
+end
+
+function PD.RestoreHeaderArrows(r)
+    if not r then return end
+    PD.LayoutHeaderArrow(r.icon, r.h3)
+    PD.LayoutHeaderArrow(r.icon2, r.h4)
+    PD.LayoutHeaderArrow(r.icon3, r.h5)
+end
+
+function PD.HideRowChips(r)
+    if not r then return end
+    if r.tagChip then r.tagChip:Hide() end
+    if r.tagFs then r.tagFs:Hide() end
+    if r.__skchip then r.__skchip:Hide() end
+    if r.__pct then r.__pct:Hide() end
+    if r.__cardBg then r.__cardBg:Hide() end
+    if type(r.__subLinks) == "table" then
+        for k = 1, #r.__subLinks do r.__subLinks[k]:Hide() end
+    end
+    if type(r.segBtns) == "table" then
+        for _, sb in pairs(r.segBtns) do sb:Hide() end
+    end
+end
+
+function PD.RowVisibleChain(f)
+    local cur = f
+    local guard = 0
+    while cur and guard < 12 do
+        guard = guard + 1
+        if cur.IsShown then
+            local ok, v = pcall(cur.IsShown, cur)
+            if ok and v == false then return false end
+        end
+        cur = cur.GetParent and cur:GetParent() or nil
+    end
+    return true
+end
+
+function PD.DumpVisiblePieces()
+    local hdr
+    for i = 1, #(PD.curRows or {}) do
+        if PD.curRows[i] and PD.curRows[i].kind == "rechead" then hdr = PD.rows[i] break end
+    end
+    if not hdr then print("|cffff7a66DF:|r 没找到表头行") return end
+    local function num(v) return type(v) == "number" and v or nil end
+    local hl, ht = num(hdr:GetLeft()), num(hdr:GetTop())
+    local hw, hh = num(hdr:GetWidth()), num(hdr:GetHeight())
+    if not (hl and ht and hw and hh) then print("|cffff7a66DF:|r 表头没有有效矩形") return end
+    local hb, hr = ht - hh, hl + hw
+    local seen, hit, total = {}, 0, 0
+    local function pathOf(f)
+        local parts = {}
+        local cur = f
+        while cur and #parts < 8 do
+            local nm = cur.GetName and cur:GetName() or nil
+            if nm then parts[#parts + 1] = nm end
+            cur = cur.GetParent and cur:GetParent() or nil
+        end
+        return table.concat(parts, " < ")
+    end
+    local function walk(f, depth)
+        if depth > 9 or not f then return end
+        if f.GetRegions then
+            local regs = { f:GetRegions() }
+            for i = 1, #regs do
+                local t = regs[i]
+                if t and t.__huiPiece and not seen[t] and t.IsShown and t:IsShown() then
+                    seen[t] = true
+                    if PD.RowVisibleChain(t) then
+                        total = total + 1
+                        local l, top = num(t:GetLeft()), num(t:GetTop())
+                        local w, h = num(t:GetWidth()), num(t:GetHeight())
+                        if l and top and w and h then
+                            local b, r2 = top - h, l + w
+                            if r2 > hl and l < hr and top > hb and b < ht then
+                                hit = hit + 1
+                                print(format("|cffff7a66DF 表头相交:|r %.0fx%.0f L=%.0f T=%.0f parent=%s shadow=%s",
+                                    w, h, l, top, pathOf(t), tostring(t.__huiShadowPiece and true or false)))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if f.GetChildren then
+            local ch = { f:GetChildren() }
+            for i = 1, #ch do walk(ch[i], depth + 1) end
+        end
+    end
+    walk(UIParent, 1)
+    print(format("|cff7fdc7fDF 真可见 huiPiece=%d，其中与表头矩形相交=%d|r", total, hit))
+end
+
+function PD.DumpHeaderChildren()
+    local hdr
+    for i = 1, #(PD.curRows or {}) do
+        if PD.curRows[i] and PD.curRows[i].kind == "rechead" then hdr = PD.rows[i] break end
+    end
+    if not hdr then print("|cffff7a66DF:|r 没找到表头行") return end
+    print("|cff7fdc7fDF 表头子件：|r")
+    local ch = hdr.GetChildren and { hdr:GetChildren() } or {}
+    for i = 1, #ch do
+        local c = ch[i]
+        local w, h = c:GetWidth(), c:GetHeight()
+        print(format("  #%d %s w=%.0f h=%.0f shown=%s level=%s",
+            i, tostring(c), w, h, tostring(c:IsShown()), tostring(c:GetFrameLevel())))
+    end
+    local reg = hdr.GetRegions and { hdr:GetRegions() } or {}
+    for i = 1, #reg do
+        local c = reg[i]
+        if c.IsShown and c:IsShown() then
+            print(format("  R%d %s shown=%s", i, tostring(c), tostring(c:IsShown())))
+        end
+    end
+end
+
+function PD.PaintRecipeMats(r, spec)
+    PD.ClearRecipeMats(r)
+    local lines = spec and spec.matLines
+    if not lines then return end
+    local lineH, gap, top = PD.RecMatMetrics()
+    local iconDy = math.floor((lineH - PD.REC_MAT_ICON) / 2)
+    local textDy = math.floor((lineH - PD.REC_MAT_FS) / 2)
+    local y = -top
+    local slot = 0
+    for ln = 1, 2 do
+        local blocks = lines[ln]
+        if blocks and #blocks > 0 then
+            local x = 0
+            for k = 1, #blocks do
+                local b = blocks[k]
+                slot = slot + 1
+                if b.more then
+                    local fs = PD.MatBlockFS(r, slot)
+                    fs:SetText("… +" .. tostring(b.more))
+                    fs:SetTextColor(Unpack(C_GREY))
+                    fs:ClearAllPoints()
+                    fs:SetPoint("TOPLEFT", r, "TOPLEFT", PD.MAT_X + x, y - textDy)
+                    fs:Show()
+                    x = x + (b.tw or 0)
+                else
+                    local t = PD.MatBlockTex(r, slot)
+                    SetIcon(t, PD.ItemIcon(b.id))
+                    t:ClearAllPoints()
+                    t:SetPoint("TOPLEFT", r, "TOPLEFT", PD.MAT_X + x, y - iconDy)
+                    if ns.hui and ns.hui.SetIconRing then
+                        local q = PD.QualCached(b.id)
+                        ns.hui.SetIconRing(t, q and { ns.hui.QColor(q) } or nil)
+                    end
+                    t:Show()
+                    local fs = PD.MatBlockFS(r, slot)
+                    fs:SetText(b.name or "")
+                    fs:SetTextColor(Unpack(C_GREY))
+                    fs:ClearAllPoints()
+                    fs:SetPoint("LEFT", t, "RIGHT", PD.REC_MAT_GAP, 0)
+                    fs:Show()
+                    local z = PD.MatBlockZone(r, slot)
+                    z.__it = { b.id }
+                    z.__tipLines = nil
+                    z.__act = nil
+                    z:ClearAllPoints()
+                    z:SetPoint("TOPLEFT", t, "TOPLEFT", -2, 2)
+                    z:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 2, -2)
+                    z:Show()
+                    x = x + PD.REC_MAT_ICON + PD.REC_MAT_GAP + (b.tw or 0)
+                end
+            end
+            y = y - (lineH + gap)
+        end
+    end
 end
 
 function PD.IconZone(r)
@@ -7014,6 +7487,99 @@ function PD.RecipeVisible(spell, slug)
     return true
 end
 
+function PD.UniqList(list)
+    local out, seen = {}, {}
+    if type(list) ~= "table" then return out end
+    for i = 1, #list do
+        local v = list[i]
+        if type(v) == "string" and v ~= "" and not seen[v] then
+            seen[v] = true
+            out[#out + 1] = v
+        end
+    end
+    return out
+end
+
+PD.spellNameMemo, PD.spellNameN = {}, 0
+
+function PD.SpellName(id)
+    id = tonumber(id)
+    if not id then return nil end
+    local m = PD.spellNameMemo[id]
+    if m ~= nil then
+        if m == false then return nil end
+        return m
+    end
+    local nm
+    if C_Spell and C_Spell.GetSpellInfo then
+        local ok, info = pcall(C_Spell.GetSpellInfo, id)
+        if ok and type(info) == "table" and type(info.name) == "string" and info.name ~= "" then
+            nm = info.name
+        end
+    end
+    if not nm and type(GetSpellInfo) == "function" then
+        local ok, v = pcall(GetSpellInfo, id)
+        if ok and type(v) == "string" and v ~= "" then nm = v end
+    end
+    if PD.spellNameN >= 4096 then
+        PD.spellNameMemo, PD.spellNameN = {}, 0
+    end
+    if nm then
+        PD.spellNameMemo[id] = nm
+        PD.spellNameN = PD.spellNameN + 1
+        return nm
+    end
+    PD.spellNameMemo[id] = false
+    return nil
+end
+
+function PD.SpellTitle(id)
+    local full = PD.SpellName(id)
+    if not full then return nil end
+    local tail = full:match("^.+%-%s*(.+)$")
+    if type(tail) == "string" and tail ~= "" then return tail end
+    return nil
+end
+
+function PD.InsertSpellLink(id)
+    id = tonumber(id)
+    if not id then return false end
+    local nm = PD.SpellName(id)
+    if not nm then return false end
+    local link = "|Hspell:" .. id .. "|h[" .. nm .. "]|h"
+    local function box()
+        if type(ChatEdit_GetActiveWindow) ~= "function" then return nil end
+        local ok, eb = pcall(ChatEdit_GetActiveWindow)
+        if ok and eb then return eb end
+        return nil
+    end
+    local function verified()
+        local eb = box()
+        if not (eb and eb.GetText) then return false end
+        local ok, txt = pcall(eb.GetText, eb)
+        return ok and type(txt) == "string" and txt:find("Hspell:", 1, true) ~= nil
+    end
+    pcall(function()
+        if type(ChatFrame_OpenChat) == "function" then pcall(ChatFrame_OpenChat, "") end
+        if type(ChatEdit_InsertLink) == "function" then pcall(ChatEdit_InsertLink, link) end
+        if verified() then return end
+        local eb = box()
+        if eb and eb.Insert then pcall(eb.Insert, eb, link) end
+        if verified() then return end
+        if type(ChatFrame_OpenChat) == "function" then pcall(ChatFrame_OpenChat, link) end
+    end)
+    return verified()
+end
+
+function PD.JoinTop(list, n, sep)
+    local u = PD.UniqList(list)
+    if #u == 0 then return "" end
+    if #u <= n then return table.concat(u, sep) end
+    local head = {}
+    for i = 1, n do head[i] = u[i] end
+    return table.concat(head, sep) .. format(L[" 等 %d 项"], #u - n)
+end
+
 function PD.EnchantSpec(en)
     local resolved = PD.RecipeData(en, "enchants")
     local original = en
@@ -7039,11 +7605,28 @@ function PD.EnchantSpec(en)
     else
         ahStr = "—"
     end
+    local effectShort = ""
+    local effectTx = tostring(en[4] or "")
+    local catTx = tostring(en[3] or "")
+    if effectTx ~= "" then
+        local cand = effectTx
+        if PD.TextW(effectTx, PD.REC_SUB_FS) > PD.REC_EFFECT_MAXW then
+            cand = effectTx:match("使其获得(.+)的效果") or ""
+        end
+        if cand ~= "" then cand = cand:gsub("%s*%+%s*", "+") end
+        if cand ~= ""
+           and PD.TextW(cand, PD.REC_SUB_FS) <= PD.REC_EFFECT_MAXW
+           and PD.TextW(table.concat(PD.UniqList({ catTx, cand }), " · "),
+                        PD.REC_SUB_FS) <= PD.REC_SUB_MAXW then
+            effectShort = cand
+        end
+    end
     local spec
     if en[13] and #en[13] > 0 then
         local t = {}
         for _, b in ipairs(en[13]) do t[#t + 1] = b[3] or "" end
-        spec = table.concat(t, " / ")
+        t = PD.UniqList(t)
+        if #t > 0 then spec = table.concat(t, " / ") end
     end
     local vsEn = (en[10] and PD.VendorListOf(en[10])) or {}
     local hasVendor = #vsEn > 0
@@ -7085,12 +7668,12 @@ function PD.EnchantSpec(en)
     end
     if spec then lines[#lines + 1] = { format(L["适用：%s"], spec), 0.6, 0.9, 0.6 } end
     return {
-        kind = "row", is_new = en[11], _mats = en[9],
+        kind = "row", is_new = en[11], _mats = en[9], spell = tonumber(resolved.spell),
+        disp = PD.SpellTitle(resolved.spell),
         icon = SpellIcon(en[14]),
         qItem = (type(en[15]) == "number") and en[15] or nil,
         text = en[2] or en[1] or "?",
-        sub = table.concat({ tostring(en[3] or ""), tostring(en[4] or ""),
-                             spec or "" }, " · "),
+        sub = table.concat(PD.UniqList({ tostring(en[3] or ""), effectShort }), " · "),
         mats = clientPending and L["客户端数据待读取"] or matCol,
         matSegs = matSg,
         right = not (en[5] or en[6] or en[7] or en[8])
@@ -7127,6 +7710,8 @@ function PD.SearchHit(s)
     if not q or q == "" then return true end
     local name = tostring(s.text or "")
     if name ~= "" and string.find(string.lower(name), q, 1, true) then return true end
+    local disp = s.disp or (s.spell and PD.SpellTitle(s.spell))
+    if disp and disp ~= "" and string.find(string.lower(disp), q, 1, true) then return true end
     local sub = tostring(s.sub or "")
     if sub ~= "" and string.find(string.lower(sub), q, 1, true) then return true end
     for _, m in ipairs(s._mats or {}) do
@@ -7157,35 +7742,12 @@ function PD.FinishSpecMats(s)
 end
 
 function PD.FitRecipeCols(list, maxW)
-    if maxW == nil then
-        maxW = 0
-        for _, s in ipairs(list) do
-            local w = PD.TextW(s.text or "", 13)
-            local sw = PD.TextW(s.sub or "", 11) + (s.is_new and PD.RECIPE_BADGE_W or 0)
-            if sw > w then w = sw end
-            if w > maxW then maxW = w end
-        end
-    end
-    local nameW = math.floor(math.max(PD.RECIPE_NAME_MIN,
-                   math.min(PD.RECIPE_NAME_MAX, maxW + 6)))
-    PD.RECIPE_NAME_W = nameW
-    PD.MAT_X = nameW + PD.RECIPE_NAME_PAD
+    PD.RECIPE_NAME_W = PD.REC_NAME_W
+    PD.MAT_X = 172
     PD.MAT_W = PD.MAT_ROW_W - (6 + PD.DiffBarW() + PD.REC_AH_W + PD.REC_COST_W) - PD.MAT_X - 8
-    local keep = PD.SyncRows()
-    local idx = 0
+    PD.SyncRows()
     for _, s in ipairs(list) do
-        idx = idx + 1
-        if s._mats then
-            if idx <= keep then
-                PD.FinishSpecMats(s)
-            else
-                s._matsPending = true
-            end
-        end
-        if s.text and s.text ~= "" then
-            s.text = PD.Fit(s.text, 13, math.max(PD.MAT_X - 8 - PD.RECIPE_PADL,
-                                                 (PD.RECIPE_NAME_W or 0) - 6))
-        end
+        PD.RecipeRowLayout(s)
     end
 end
 
@@ -7663,6 +8225,7 @@ function PD.RecipeSpec(r)
     end
     return {
         kind = "row", is_new = r[11], it = { r[2] }, qItem = r[2], row = r, _mats = r[12],
+        spell = tonumber(resolved.spell),
         text = PD.ItemName(r[2]),
         tipExtra = function()
             local lines = PD.RecipeSourceLines(PD.PriceTipLines(r[2], r[12]), resolved)
@@ -7771,6 +8334,7 @@ function PD.CraftedSpec(c)
     end
     return {
         kind = "row", is_new = c[10], it = { c[2] }, qItem = c[2], _mats = c[8], craft = c,
+        spell = tonumber(resolved.spell),
         text = DG.ItemName(c[2]),
         sub = "",
         mats = clientPending and L["客户端数据待读取"] or matCol,
@@ -7832,7 +8396,7 @@ function PD.FavorSpec(f, d)
         ahStr = ah and RA.MoneyStr(ah, "copper") or "—"
     end
     return {
-        kind = "row", it = { f[1] }, qItem = f[1], _mats = mats,
+        kind = "row", it = { f[1] }, qItem = f[1], _mats = mats, spell = tonumber(f[1]),
         text = DG.ItemName(f[1]),
         right = format(L["技能 %s"], tostring(f[2])),
         right2 = format(L["商人青睐 %s"], tostring(f[3])),
@@ -8012,6 +8576,8 @@ function PD.RawHit(r, q)
     if nm and nm ~= "" and string.find(string.lower(tostring(nm)), q, 1, true) then
         return true
     end
+    local title = PD.SpellTitle(r[1])
+    if title and title ~= "" and string.find(string.lower(title), q, 1, true) then return true end
     local sub = tostring(r[5] or "")
     if sub ~= "" and string.find(string.lower(sub), q, 1, true) then return true end
     local resolved = PD.RecipeData(r, "rows")
@@ -8098,7 +8664,7 @@ function PD.RowsRecipe(rows)
     local trunc = 0
     if realN > PD.ROW_CAP then trunc = realN - PD.ROW_CAP end
     if realN > 0 then
-        rows[#rows + 1] = { kind = "rechead", h = 26, col = 1, noTip = true }
+        rows[#rows + 1] = { kind = "rechead", h = 26, col = 1, noTip = true, noHover = true }
     end
     for i = 1, #list do rows[#rows + 1] = list[i] end
     if trunc > 0 then
@@ -8185,9 +8751,7 @@ function PD.RowsFishing(rows)
                     local v = e[i]
                     if v ~= nil and v ~= false and v ~= 0 and v ~= "" then
                         if type(v) == "table" then
-                            local t = {}
-                            for _, x in ipairs(v) do t[#t + 1] = tostring(x) end
-                            v = table.concat(t, " / ")
+                            v = format(L["%d 项"], #v)
                         end
                         if v ~= "" then
                             lines[#lines + 1] = { format("%s：%s",
@@ -8280,8 +8844,9 @@ function PD.RowsFishAreas(rows, fish, areas, col, tkey)
         local canFold = #combined > 0
         rows[#rows + 1] = {
             kind = "row", h = PD.ROW_H1, fs = 14, col = col,
-            text = format(L["自行钓取：%s"], table.concat(names, "、")),
+            text = format(L["自行钓取：%s"], PD.JoinTop(names, PD.REC_LIST_TOP, "、")),
             nameColor = {0.42, 0.84, 0.95},
+            lines = { { table.concat(PD.UniqList(names), "、"), 0.7, 0.7, 0.7 } },
             right = canFold and (open and L["收起钓鱼区"] or L["展开钓鱼区"]) or nil,
             rightColor = canFold and C_GREY or nil,
             act = canFold and function()
@@ -8344,9 +8909,10 @@ function PD.RowsFishingLevelRoute(rows, curLv)
         end
         rows[#rows + 1] = {
             kind = "row", h = PD.ROW_H, text = format(L["%d – %d"], lo, hi),
-            sub = #fish > 0 and table.concat(fish, "、") or nil,
+            sub = #fish > 0 and PD.JoinTop(fish, PD.REC_LIST_TOP, "、") or nil,
             nameColor = active and {0.4, 0.9, 0.45} or nil,
             right = active and L["◆ 推荐当前就练这一档"] or nil,
+            lines = #fish > 0 and { { table.concat(PD.UniqList(fish), "、"), 0.7, 0.7, 0.7 } } or nil,
         }
         if step.note then PushText(rows, L[step.note] or step.note, 11, C_GREY) end
         PD.RowsFishAreas(rows, nil, step.areas)
@@ -8388,9 +8954,10 @@ function PD.RowsGatherRoute(rows)
             rows[#rows + 1] = {
                 kind = "row", h = PD.ROW_H1,
                 text = format(L["技能 %d 起"], band[1]),
-                sub = table.concat(names, "、"),
+                sub = PD.JoinTop(names, PD.REC_LIST_TOP, "、"),
                 nameColor = active and { 0.4, 0.9, 0.45 } or nil,
-                lines = { { active and L["◆ 推荐当前就练这一档"] or
+                lines = { { table.concat(PD.UniqList(names), "、"), 0.7, 0.7, 0.7 },
+                          { active and L["◆ 推荐当前就练这一档"] or
                     (nxt and format(L["练到 %d 换下一档"], nxt[1]) or L["练满为止"]),
                     0.62, 0.62, 0.62 } },
             }

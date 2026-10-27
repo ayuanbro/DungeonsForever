@@ -5119,7 +5119,7 @@ Y()
             EG.rtMapTex[i] = tx
         end
         EG.rtMapTexD = {}
-        for i = 1, 32 do
+        for i = 1, 48 do
             local tx = cv:CreateTexture(nil, "OVERLAY")
             tx:SetDrawLayer("OVERLAY", 0)
             tx:SetSize(10, 10)

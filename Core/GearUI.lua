@@ -27,7 +27,9 @@ local TITLE_ZONE = 0
 local CHIP_ZONE = 0
 local SORT_ZONE = 0
 local HEAD_ZONE = 20
-local PAGER_ZONE = 42
+local PAGER_H = 24
+local PAGER_GAP = 6
+local PAGER_ZONE = PAGER_H + PAGER_GAP
 
 local QUALITY_ORDER = { 5, 4, 3, 2, 1, 0 }
 local BIND_LABEL = {
@@ -731,18 +733,6 @@ local function EstRowH(e)
     return ROW_H
 end
 
-local function ChunkByRows(entries)
-    local pages, size, cur = {}, G.pageSize or 20, {}
-    for _, e in ipairs(entries) do
-        cur[#cur + 1] = e
-        if #cur >= size then
-            pages[#pages + 1] = cur
-            cur = {}
-        end
-    end
-    if #cur > 0 then pages[#pages + 1] = cur end
-    return pages
-end
 
 local function ChunkByHeight(entries, budget)
     local pages, cur, used = {}, {}, 0
@@ -757,6 +747,21 @@ local function ChunkByHeight(entries, budget)
     end
     if #cur > 0 then pages[#pages + 1] = cur end
     return pages
+end
+
+function G.PageRows()
+    local lh = G.listHost
+    local h
+    if lh and lh.GetHeight then
+        local ok, v = pcall(lh.GetHeight, lh)
+        if ok and type(v) == "number" then h = v end
+    end
+    if type(h) ~= "number" or h <= 0 then h = (G.pageSize or 20) * ROW_H end
+    local n = math.floor(h / ROW_H)
+    if n < 1 then n = 1 end
+    if n > 60 then n = 60 end
+    G.pageSize = n
+    return h
 end
 
 local function RebuildView()
@@ -774,11 +779,7 @@ local function RebuildView()
         entries = out
     end
     G.view = entries
-    if IsSetCat(G.cat) then
-        G.pagesData = ChunkByHeight(entries, (G.pageSize or 20) * ROW_H)
-    else
-        G.pagesData = ChunkByRows(entries)
-    end
+    G.pagesData = ChunkByHeight(entries, G.PageRows())
     G.pages = math.max(1, #G.pagesData)
     if (G.page or 1) > G.pages then G.page = G.pages end
 end
@@ -3173,7 +3174,8 @@ function G.PaintChrome()
         if G.listHost then
             G.listHost:ClearAllPoints()
             G.listHost:SetPoint("TOPLEFT", G.pageRight, "TOPLEFT", CARD_PAD, -top)
-            G.listHost:SetPoint("BOTTOMRIGHT", G.pageRight, "BOTTOMRIGHT", -CARD_PAD, CARD_PAD + 30)
+            G.listHost:SetPoint("BOTTOMRIGHT", G.pageRight, "BOTTOMRIGHT", -CARD_PAD,
+                                CARD_PAD + PAGER_ZONE)
         end
     end
 end
@@ -3350,11 +3352,7 @@ local function StartViewPipeline(gen, full)
         end
         if stage == "apply" then
             G.view = out
-            if IsSetCat(G.cat) then
-                G.pagesData = ChunkByHeight(out, (G.pageSize or 20) * ROW_H)
-            else
-                G.pagesData = ChunkByRows(out)
-            end
+            G.pagesData = ChunkByHeight(out, G.PageRows())
             G.pages = math.max(1, #G.pagesData)
             if (G.page or 1) > G.pages then G.page = G.pages end
             stage = "paint"
@@ -3973,9 +3971,11 @@ function G.Build(page)
     end
     coroutine.yield()
 
-    local inner = right:GetHeight() - 2 * CARD_PAD - TITLE_ZONE - CHIP_ZONE - SORT_ZONE - PAGER_ZONE
+    local inner = right:GetHeight()
+                  - (CARD_PAD + TITLE_ZONE + CHIP_ZONE + SORT_ZONE + HEAD_ZONE)
+                  - (CARD_PAD + PAGER_ZONE)
     local size = math.floor(inner / ROW_H)
-    if size < 8 then size = 8 end
+    if size < 1 then size = 1 end
     if size > 60 then size = 60 end
     G.pageSize = size
 

@@ -848,6 +848,63 @@ local function PY()
     if coroutine.running and coroutine.running() then coroutine.yield() end
 end
 
+local MakeRow
+
+local function SyncRows()
+    if not CG.built then return end
+    local lay = CG.__lay
+    if not (lay and CG.rows) then return end
+    local sc, child = CG.listScroll, CG.listChild
+    if not (sc and child) then return end
+    local v = sc:GetVerticalScroll() or 0
+    local viewH = sc:GetHeight() or 0
+    if viewH <= 0 then viewH = 420 end
+    local ylo = v - CG.LIST_BUF * CG.ROW_PITCH
+    local yhi = v + viewH + CG.LIST_BUF * CG.ROW_PITCH
+    local lo, hi
+    for i = 1, #lay do
+        local t = lay[i].top
+        if t + ROW_H >= ylo and t <= yhi then
+            if not lo then lo = i end
+            hi = i
+        end
+    end
+    for k = 1, #CG.rows do
+        local r = CG.rows[k]
+        if r.__rec ~= nil then r.__rec = nil end
+        r:Hide()
+    end
+    if lo then
+        local slot = 0
+        for i = lo, hi do
+            slot = slot + 1
+            local r = CG.rows[slot]
+            if not r then
+                r = MakeRow(child)
+                CG.rows[slot] = r
+            end
+            local e = lay[i]
+            PaintRow(r, e.rec)
+            r:ClearAllPoints()
+            r:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -e.top)
+            r:SetPoint("RIGHT", child, "RIGHT", 0, 0)
+        end
+    end
+    local miss = false
+    for k = 1, #CG.rows do
+        local r = CG.rows[k]
+        local rec = r.__rec
+        if rec then
+            local _, got = RecName(rec, CG.sub == SUB_PET)
+            if not got then miss = true break end
+        end
+    end
+    if miss then
+        CG.needNames = true
+        ProbeNames()
+    end
+end
+
 local function Paint()
     if not CG.built then return end
     if CG.PaintFilters then CG.PaintFilters() end
@@ -926,41 +983,8 @@ local function Paint()
         end
     end
 
-    local v = CG.listScroll:GetVerticalScroll() or 0
-    local viewH = CG.listScroll:GetHeight() or 0
-    if viewH <= 0 then viewH = 420 end
-    local ylo = v - CG.LIST_BUF * CG.ROW_PITCH
-    local yhi = v + viewH + CG.LIST_BUF * CG.ROW_PITCH
-    local lo, hi
-    for i = 1, #lay do
-        local t = lay[i].top
-        if t + ROW_H >= ylo and t <= yhi then
-            if not lo then lo = i end
-            hi = i
-        end
-    end
-
-    for k = 1, #CG.rows do
-        local r = CG.rows[k]
-        if r.__rec ~= nil then r.__rec = nil end
-        r:Hide()
-    end
-    if lo then
-        local slot = 0
-        for i = lo, hi do
-            slot = slot + 1
-            local r = CG.rows[slot]
-            if not r then
-                r = MakeRow(CG.listChild)
-                CG.rows[slot] = r
-            end
-            local e = lay[i]
-            PaintRow(r, e.rec)
-            r:ClearAllPoints()
-            r:SetPoint("TOPLEFT", CG.listChild, "TOPLEFT", 0, -e.top)
-            r:SetPoint("RIGHT", CG.listChild, "RIGHT", 0, 0)
-        end
-    end
+    CG.__lay = lay
+    SyncRows()
 
     if CG.UpdateListScroll then CG.UpdateListScroll() end
 
@@ -1008,22 +1032,23 @@ function CG.OnItemData(itemID)
         CG.needNames = false
         return
     end
-    if not CG.needNames or CG._itemRepaint then return end
-    CG._itemRepaint = true
-    if C_Timer and C_Timer.After then
-        C_Timer.After(0.05, function()
+    if not CG._itemRepaint then
+        CG._itemRepaint = true
+        if C_Timer and C_Timer.After then
+            C_Timer.After(0.05, function()
+                CG._itemRepaint = false
+                if CG.built and ns.PageVisible(CG.page) then
+                    if not CG.needNames then CG.needNames = not ProbeNames() end
+                    if CG.SyncRows then CG.SyncRows() end
+                end
+            end)
+        else
             CG._itemRepaint = false
-            if CG.built and CG.needNames and ns.PageVisible(CG.page) then
-                CG.needNames = not ProbeNames()
-                CG.RequestRender()
-            end
-        end)
-    else
-        CG._itemRepaint = false
+        end
     end
 end
 
-local function MakeRow(parent)
+function MakeRow(parent)
     local r = CreateFrame("Button", nil, parent, BT)
     r:SetHeight(ROW_H)
     r:SetWidth(LIST_W - 2 * PAD)
@@ -1210,6 +1235,12 @@ local function BuildListPanel(page)
     scroll:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -PAD, PAD)
     scroll:SetScript("OnMouseWheel", function(_, delta)
         DG.WheelScroll(scroll, child, delta)
+        if CG.UpdateListScroll then CG.UpdateListScroll() end
+        if CG.SyncRows then CG.SyncRows() end
+    end)
+    scroll:SetScript("OnVerticalScroll", function()
+        if CG.UpdateListScroll then CG.UpdateListScroll() end
+        if CG.SyncRows then CG.SyncRows() end
     end)
     CG.listScroll, CG.listChild = scroll, child
 
@@ -1285,6 +1316,8 @@ local function BuildListPanel(page)
             if span <= 0 then return end
             local maxScroll = child:GetHeight() - scroll:GetHeight()
             scroll:SetVerticalScroll(math.min(maxScroll, math.max(0, sc0 + (cy0 - cy) / span * maxScroll)))
+            if CG.UpdateListScroll then CG.UpdateListScroll() end
+            if CG.SyncRows then CG.SyncRows() end
         end)
     end)
     thumb:SetScript("OnMouseUp", function(self)
@@ -1693,6 +1726,7 @@ function CG.Refresh()
 end
 
 CG.Render = Paint
+CG.SyncRows = SyncRows
 
 function CG.RequestRender(sweep)
     if not CG.built then return end

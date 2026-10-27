@@ -2334,14 +2334,37 @@ do
             for _, e in ipairs(s.nineTex or {}) do e[1]:SetShown(e[2]) end
         end
     end
+    function ns.hui.TipWantsNative(tt)
+        local s = tt and tooltipSkins[tt]
+        local want = ns.hui.nativeTipOwner
+        if want and tt and type(tt.GetOwner) == "function" then
+            local ok, own = pcall(tt.GetOwner, tt)
+            if ok and own and own == want then
+                ns.hui.nativeTipOwner = nil
+                if s then s.nativeHold = true end
+                return true
+            end
+        end
+        return (s and s.nativeHold) and true or false
+    end
+
     local function ApplyTooltipSkin(tt, on)
         local s = tt and tooltipSkins[tt]
         if not s then return end
+        if ns.hui.TipWantsNative(tt) then on = false end
         s.on = on
         if tipApplying then return end
         tipApplying = true
         pcall(ApplyTooltipSkinBody, tt, on)
         tipApplying = false
+    end
+
+    function ns.hui.ShowNativeTip(tt)
+        local s = tt and tooltipSkins[tt]
+        if not s then return false end
+        s.nativeHold = true
+        ApplyTooltipSkin(tt, false)
+        return true
     end
 
     local function UnskinItemTooltip(tt)
@@ -2390,11 +2413,19 @@ do
         tooltipSkins[tt] = s
         hooksecurefunc(GameTooltip, "SetOwner", function(tt)
             local s2 = tooltipSkins[tt]
-            if s2 and s2.on then ApplyTooltipSkin(tt, false) end
+            if ns.hui.TipWantsNative(tt) then
+                ApplyTooltipSkin(tt, false)
+                return
+            end
+            if s2 then
+                if s2.on then ApplyTooltipSkin(tt, false) end
+                s2.on = nil
+            end
         end)
         tt:HookScript("OnUpdate", function(f)
             local s2 = tooltipSkins[f]
             if not (s2 and s2.on) then return end
+            if ns.hui.TipWantsNative(f) then return end
             local now = GetTime and GetTime() or 0
             if now - (s2.scanT or 0) < 0.2 then return end
             s2.scanT = now
@@ -2406,7 +2437,19 @@ do
             end
             if f.NineSlice and f.NineSlice.GetAlpha and f.NineSlice:GetAlpha() ~= 0 then f.NineSlice:SetAlpha(0) end
         end)
+        tt:HookScript("OnHide", function(f)
+            if not s.nativeHold then return end
+            s.nativeHold = nil
+            ns.hui.nativeTipOwner = nil
+            s.on = nil
+            ApplyTooltipSkin(f, ns.huiTheme == "hui")
+            s.on = nil
+        end)
         tt:HookScript("OnShow", function()
+            if ns.hui.TipWantsNative(tt) then
+                ApplyTooltipSkin(tt, false)
+                return
+            end
             if not s.snapDone then
                 s.snapDone = true
                 s.nineTex = CollectForeign(tt)
