@@ -213,9 +213,9 @@ class ExecutionFusionTests(unittest.TestCase):
             {cap=75,sk=0,lv=5,zh='初级'}, {cap=150,sk=50,lv=10,zh='中级'},
             {cap=225,sk=125,lv=20,zh='高级'}, {cap=300,sk=200,lv=35,zh='专家级'}}
           ns.ProfTrainers.alchemy={ranks=ranks,list={}};ns.ProfTrainers.mining={ranks=ranks,list={}}
-          caps={alchemy=75,mining=75};GetProfessions=function()return 1,2 end
+          caps={alchemy=75,mining=75};skillPoints=75;GetProfessions=function()return 1,2 end
           GetProfessionInfo=function(slot)
-            local p=slot==1 and 'alchemy' or 'mining';return p,nil,75,caps[p],nil,nil,slot==1 and 171 or 186
+            local p=slot==1 and 'alchemy' or 'mining';return p,nil,skillPoints,caps[p],nil,nil,slot==1 and 171 or 186
           end
           UnitLevel=function()return 60 end;UnitFactionGroup=function()return 'Alliance'end
           local seg=run.plan.executionSteps[1];seg.profession='mining';seg[1]=75;seg[2]=150;seg.goalSkill=150
@@ -229,6 +229,8 @@ class ExecutionFusionTests(unittest.TestCase):
           assert(not tasks[1].complete and not tasks[2].complete and tasks[1].state.maxSkill==75)
           assert(ns.ProfRanks.Title(tasks[2]):find('150') and #ns.ProfRanks.Lines(tasks[2])>0)
           caps.alchemy=150;caps.mining=150;tasks=pf.RankTasks('alchemy',300,run.plan.executionSteps,1)
+          assert(#tasks==0,'rank hint appeared before its reminder threshold')
+          skillPoints=125;tasks=pf.RankTasks('alchemy',300,run.plan.executionSteps,1)
           assert(#tasks==1 and tasks[1].profession=='alchemy' and tasks[1].cap==225)
           assert(run.plan.executionSteps[1]==frozen and frozen[2]==150 and run.attemptsDone==0)
         """)

@@ -344,6 +344,14 @@ local function ResolvedRow(row, slug, spell)
     return out
 end
 
+local function FormulaQuote(rec, slug, opts)
+    local E=ns.ProfEconomy
+    if not (E and E.FormulaFor and E.Normalize) then return nil end
+    local recipe=E.Normalize(rec,slug)
+    if not recipe then return nil end
+    return E.FormulaFor(recipe,{allowLimitedFormulas=opts and opts.allowLimitedFormulas})
+end
+
 local function BuildCandidates(slug, opts)
     local specBlocked = 0
     local pr = ns.ProfRecipes
@@ -366,19 +374,27 @@ local function BuildCandidates(slug, opts)
            and type(grey) == "number" and grey > learn
            and type(reagents) == "table" and #reagents > 0 then
             local ok = not rec.clientUnavailable and not rec.clientPending and not rec.cooldown and not rec.cooldownUnknown
+            local E=ns.ProfEconomy
+            local formulaFacade=E and E.FormulaFor and E.Normalize
+            local formula=FormulaQuote(rec,slug,opts)
+            if formula and not formula.usable then ok=false end
             local skipFormula = opts.noFormula
             if ok and skipFormula and type(rec[13]) == "table" and type(rec[13][1]) == "number" then
-                local SM = ns.ProfSourceMerge
-                local view = (SM and SM.SourceOf and SM.SourceOf(rec[13][1])) or rec[14]
-                local kind = (SM and SM.Primary) and SM.Primary(view) or nil
-                if kind ~= "vendor" then ok = false end
+                if formulaFacade then
+                    if formula and not formula.known and formula.source~="vendor" then ok=false end
+                else
+                    local SM = ns.ProfSourceMerge
+                    local view = (SM and SM.SourceOf and SM.SourceOf(rec[13][1])) or rec[14]
+                    local kind = (SM and SM.Primary) and SM.Primary(view) or nil
+                    if kind ~= "vendor" then ok = false end
+                end
             end
             if ok and opts.learnedOnly and not LearnKnown(spell) then ok = false end
             if ok and not LearnKnown(spell) and type(rec[13]) == "table"
                and type(rec[13][1]) == "number" then
                 local PDm = ns.ProfModule
                 local skipUnknown = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and true or false
-                if skipUnknown and not MatPrice(rec[13][1], soldSet) then ok = false end
+                if skipUnknown and not formulaFacade and not MatPrice(rec[13][1], soldSet) then ok = false end
             end
             if ok then
                 local cost, unpriced = 0, false
@@ -395,8 +411,13 @@ local function BuildCandidates(slug, opts)
                     local f = rec[13]
                     local fcost, funpriced = 0, false
                     if type(f) == "table" and type(f[1]) == "number" and not LearnKnown(spell) then
-                        local fp = MatPrice(f[1], soldSet)
-                        if fp then fcost = fp else funpriced = true end
+                        if formulaFacade then
+                            fcost=formula and formula.cost or 0
+                            funpriced=formula and formula.unpriced or false
+                        else
+                            local fp = MatPrice(f[1], soldSet)
+                            if fp then fcost = fp else funpriced = true end
+                        end
                     end
                     local base, unknown = 0, false
                     for _, m in ipairs(reagents) do
@@ -723,7 +744,7 @@ local function FillGaps(cands, steps, gaps, scheme, allowUnpriced)
     return MergeSteps(newSteps), newGaps
 end
 
-local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs, seedInv, skipMats)
+local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs, seedInv, skipMats, slug, opts)
     local total, crafts = 0, 0
     local productAH, productNPC, productPartial = 0, 0, false
     local mats, firstAt, matPrice, specSet = {}, {}, {}, {}
@@ -837,9 +858,15 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
         local rcode, rage
         if p == nil then rcode, rage = MatReason(id, soldSet) end
         local have = covered and covered[id] or nil
+        local vdb=ns.VendorPriceDB
+        local offers=vdb and vdb.GetOffers and vdb.GetOffers(id) or {}
+        local offer=offers[1]
+        local vendor=offer and offer.npcID and offer.unlimited and not offer.priceOnly and offer.purchasable~=false
+            and (soldSet[id] or offer.unit==p) or false
         list[#list + 1] = { id, n, cost = (p or 0) * n, unit = p or 0,
                             have = have, need = n + (have or 0),
-                            vendor = soldSet[id] and true or false,
+                            vendor = vendor and true or false, npcID=vendor and offer.npcID or nil,
+                            source=vendor and "vendor" or (p and "ah" or nil),
                             unpriced = (p == nil) and true or false,
                             spec = specSet[id] or nil,
                             reason = rcode, age = rage }
@@ -855,54 +882,22 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
         if e.vendor then vendorTotal = vendorTotal + (e.unit or 0) * e[2] end
     end
     local formulas, formulasTotal = {}, 0
-    local vdb = ns.VendorPriceDB
     for _, st in ipairs(steps) do
         local rec = recOf[st[3]]
         local f = rec and rec[13]
-        if type(f) == "table" and type(f[1]) == "number"
+        local formulaID=rec and (rec.formula or rec.formulaID or type(f)=="table" and f[1])
+        if type(formulaID) == "number"
            and not (skipLearnedFormulas and LearnKnown(st[3])) then
             local dup = false
             for _, x in ipairs(formulas) do
-                if x.id == f[1] then dup = true break end
+                if x.id == formulaID then dup = true break end
             end
             if not dup then
-                local SM = ns.ProfSourceMerge
-                local psrc = (SM and SM.SourceOf) and SM.SourceOf(f[1]) or nil
-                local primary = (psrc and SM.Primary) and SM.Primary(psrc) or nil
-                local currencyOnly = (primary == "currency") or nil
-                local p = MatPrice(f[1], soldSet)
-                if currencyOnly then p = nil end
-                local entry = {
-                    id = f[1], spell = st[3], cost = (not currencyOnly) and (p or 0) or nil,
-                    vendor = soldSet[f[1]] and true or false,
-                    unpriced = (p == nil and not currencyOnly) and true or false,
-                    currency = currencyOnly,
-                }
-                local raw = vdb and vdb.GetOffers and vdb.GetOffers(f[1]) or {}
-                local hasU, hasL, hasO = false, false, false
-                local offers = {}
-                for _, o in ipairs(raw) do
-                    if type(o) == "table" and o.npcID and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
-                        hasO = true
-                        if o.unlimited == true then hasU = true
-                        elseif o.limited or o.unlimited == false then hasL = true end
-                        offers[#offers + 1] = {
-                            npcID = o.npcID, price = o.price,
-                            quantity = o.quantity or o.bundleSize or 1,
-                            bundleSize = o.bundleSize or o.quantity or 1,
-                            unlimited = o.unlimited, limited = o.limited,
-                            stockUnknown = o.stockUnknown, estimated = o.estimated,
-                        }
-                    end
+                local entry=FormulaQuote(rec,st.profession or slug,opts)
+                if entry and not entry.known then
+                    formulas[#formulas + 1] = entry
+                    formulasTotal = formulasTotal + (entry.cost or 0)
                 end
-                if hasO then
-                    entry.vendorOffers = offers
-                    entry.unlimited = hasU or nil
-                    entry.limited = hasL or nil
-                    entry.stockUnknown = (not hasU and not hasL) or nil
-                end
-                formulas[#formulas + 1] = entry
-                formulasTotal = formulasTotal + (p or 0)
             end
         end
     end
@@ -938,7 +933,7 @@ function RA.SummarizeSteps(steps, slug, opts)
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, specInputs, opts.executionInventory)
+        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, specInputs, opts.executionInventory,nil,slug,opts)
     local res = {
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
@@ -952,6 +947,13 @@ function RA.SummarizeSteps(steps, slug, opts)
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
     }
+    for _,entry in ipairs(formulas) do
+        if entry.usable==false then
+            res.completeCost=false;res.feasible=false;res.status="recalculate_required"
+            res.diagnostics=res.diagnostics or {}
+            res.diagnostics[#res.diagnostics+1]={code="formulaUnavailable",item=entry.id,spell=entry.spell}
+        end
+    end
     local blockedSteps = RA.MarkFixedSpecializations(slug, steps, opts)
     if blockedSteps then
         res.blockedSteps = blockedSteps
@@ -1371,7 +1373,7 @@ function RA.ComputeFishing(slug, opts)
     end
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory, fishSet)
+        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory, fishSet,slug,opts)
     local reached = stepsOut[#stepsOut] and stepsOut[#stepsOut][2] or start
     local res = {
         planVersion = 2, scheme = "fishing", fishingRoute = true,
@@ -1429,7 +1431,7 @@ function RA.Compute(slug, opts)
     local kept = InjectTools(stepsOut, slug, cap, opts.start, recOf)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
+        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory,nil,slug,opts)
     local res = {
         scheme = scheme,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,

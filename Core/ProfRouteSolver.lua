@@ -818,7 +818,7 @@ function S.NewJob(slug,opts)
                 end
             end
         end
-        for _,o in ipairs(j.snap.offers[id] or {}) do
+        for _,o in ipairs(E.PreferredVendorOffers(j.snap.offers[id],vendorQuote)) do
             if not craftOnly and vendorQuote(o) then
                 local qty=o.quantity or o.bundleSize or 1; local p=o.price
                 if p and p>=0 then
@@ -971,7 +971,7 @@ function S.NewJob(slug,opts)
                 local auctionPriced=auctionQuote(id)
                 local enoughAuction=auctionPriced and auctionRemaining(s,id)>=missing
                 local best=enoughAuction and price*missing or math.huge
-                for _,o in ipairs(j.snap.offers[id] or {}) do
+                for _,o in ipairs(E.PreferredVendorOffers(j.snap.offers[id],vendorQuote)) do
                     if vendorQuote(o) then
                         local bundle=o.quantity or o.bundleSize or 1
                         best=min(best,ceil(missing/bundle)*o.price)

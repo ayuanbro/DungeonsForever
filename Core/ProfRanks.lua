@@ -54,7 +54,24 @@ local function professionData(slug)
     local info=ns.ProfData and ns.ProfData.pro and ns.ProfData.pro[slug]
     local out={name=info and info.name,ranks={}}
     local prior=1
-    for index, raw in ipairs(data.ranks or {}) do
+    local rawRanks=data.ranks or {}
+    if #rawRanks==0 then
+        -- Some gathering catalogues supply trainer bands but no rank rows.
+        -- Use their cap boundaries for reminders; missing eligibility stays unknown.
+        local caps,seen={},{}
+        for _,trainer in ipairs(data.list or {}) do
+            local cap=tonumber(tostring(trainer.rng):match('%-(%d+)$'))
+            if cap and not seen[cap] then caps[#caps+1]=cap;seen[cap]=true end
+        end
+        table.sort(caps)
+        rawRanks={}
+        local reminders={[75]=0,[150]=50,[225]=125,[300]=225}
+        for index,cap in ipairs(caps) do
+            local name=ranks[index] or {}
+            rawRanks[#rawRanks+1]={cap=cap,zh=name[1],tw=name[2],en=name[3],reminderSkill=reminders[cap]}
+        end
+    end
+    for index, raw in ipairs(rawRanks) do
         local method="trainer"
         if (slug=="cooking" or slug=="first-aid" or slug=="fishing") and index==3 then method="book"
         elseif (slug=="cooking" or slug=="first-aid" or slug=="fishing") and index==4 then method="quest" end
@@ -64,6 +81,7 @@ local function professionData(slug)
         end
         out.ranks[#out.ranks+1]={rank=index,cap=raw.cap,skillRequired=raw.sk,levelRequired=raw.lv,
             method=method,name={zhCN=raw.zh,zhTW=raw.tw,enUS=raw.en},trainerRange=prior.."-"..tostring(raw.cap),
+            reminderSkill=raw.reminderSkill,
             status="reference",conditionsKnown=raw.sk~=nil and raw.lv~=nil,note=note,bookItemID=book,
             referenceNote=tr("晋级门槛和获取方式为现有资料参考；缺失条件保持未知，实际开放以游戏为准。",
                 "晉級門檻和取得方式為現有資料參考；缺失條件保持未知，實際開放以遊戲為準。",
@@ -83,6 +101,34 @@ local function sourcesFor(slug,entry,state)
                 name={zhCN=raw.zh,zhTW=raw.tw,enUS=raw.en},
                 zone={zhCN=raw.loc_zh,zhTW=raw.loc_tw,enUS=raw.loc_en},
                 faction=raw.fac,map=raw.map,x=raw.x,y=raw.y,npcID=raw.npcID,itemID=entry.bookItemID}
+        end
+    end
+    -- Fill missing directions in the live guide without changing Core/Data.
+    -- Classic reference: wowhead.com/classic/npc=12919/nat-pagle and
+    -- icy-veins.com/wow-forever/cooking (Clamlette Surprise).
+    if #out==0 then
+        local id,map,x,y,name,zone,questID,questName
+        if slug=="fishing" and entry.rank==3 then
+            id=2626;name={"老人海明","老人海明","Old Man Heming"}
+            zone={"藏宝海湾 · 荆棘谷","藏寶海灣 · 荊棘谷","Booty Bay, Stranglethorn Vale"}
+        elseif slug=="cooking" and entry.rank==4 then
+            id=8125;name={"迪尔格·奎克里弗","迪爾格·奎克里弗","Dirge Quikcleave"}
+            zone={"加基森 · 塔纳利斯","加基森 · 塔納利斯","Gadgetzan, Tanaris"}
+            questID=6610;questName={"蚌肉大餐","蚌肉大餐","Clamlette Surprise"}
+        elseif slug=="fishing" and entry.rank==4 then
+            id,map,x,y=12919,1445,58.6,60.0
+            name={"纳特·帕格","納特·帕格","Nat Pagle"}
+            zone={"尘泥沼泽","塵泥沼澤","Dustwallow Marsh"}
+            questID=6607;questName={"钓鱼专家纳特·帕格","釣魚專家納特·帕格","Nat Pagle, Angler Extreme"}
+        end
+        if id then
+            local loc=ns.ProfVendors and ns.ProfVendors[id]
+            local locations=ns.EnsureProfNPCLocs and ns.EnsureProfNPCLocs()
+            loc=loc or locations and locations[id] and locations[id][1]
+            out[1]={kind=entry.method=="book" and "vendor" or entry.method,name=name,zone=zone,
+                faction="N",npcID=id,itemID=entry.bookItemID or (entry.method=="book" and 16083 or nil),
+                map=loc and loc[2] or map,x=loc and loc[3] or x,y=loc and loc[4] or y,
+                questID=questID,questName=questName}
         end
     end
     return out
@@ -190,7 +236,7 @@ function R.RouteSteps(slug, target, opts)
         local reminders=preferences.rankReminders or {}
         reminders=reminders[slug] or {}
         local reminder=reminders[entry.spell] or reminders[tostring(entry.spell)] or reminders[entry.rank]
-            or entry.skillRequired or math.max(0,priorCap-(preferences.rankReminderWindow or 25))
+            or entry.reminderSkill or entry.skillRequired or math.max(0,priorCap-(preferences.rankReminderWindow or 25))
         if reminder<=target then
             local step={}
             for key,value in pairs(entry) do step[key]=value end
@@ -246,7 +292,7 @@ function R.Title(step)
         step.professionName,step.name,tostring(step.cap or "?"))
 end
 
-function R.Lines(step)
+function R.Lines(step, maxSources)
     local out={}
     if step.complete then
         out[#out+1]=tr("已学习：当前技能上限已达到此阶。","已學習：目前技能上限已達到此階。","Learned: the current skill cap confirms this rank.")
@@ -276,7 +322,8 @@ function R.Lines(step)
     local function add(value) value=label(value); if value and value~="" then out[#out+1]=value end end
     add(step.note)
     if step.bookItemID then out[#out+1]=tr("教材：#","教材：#","Book: #")..step.bookItemID end
-    for _,source in ipairs(step.sources or {}) do
+    for index,source in ipairs(step.sources or {}) do
+        if maxSources and index>maxSources then break end
         local prefix=source.faction=="A" and tr("联盟 · ","聯盟 · ","Alliance · ")
             or (source.faction=="H" and tr("部落 · ","部落 · ","Horde · ") or "")
         local text=prefix..(label(source.name) or (source.npcID and ("NPC "..source.npcID)) or "")

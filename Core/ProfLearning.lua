@@ -10,7 +10,7 @@ local function spellOf(recipe) return recipe.spell or recipe.spellID or recipe[1
 function E.LearningPolicyFingerprint()
     -- An algorithm version invalidates older route caches without implying
     -- that any additional profession facts have been installed.
-    return "native-learning:3:dev-data"
+    return "native-learning:4:gold-procurement"
 end
 function E.LearningSource(recipe)
     if type(recipe)~="table" then return end

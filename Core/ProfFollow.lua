@@ -52,6 +52,7 @@ local BTN_W = { 92, 66, 66 }
 local BTN_GAP = 4
 local MAT_MAX = 6
 local SHOP_MAX = 16
+local VENDOR_MAX = 6
 local SWEEP_MAX = 5
 local IMPORT_TRIES = 5
 
@@ -168,7 +169,7 @@ function PF.RankTasks(slug, target, steps, currentIndex)
     local tasks = {}
     for _, profession in ipairs(order) do
         local step = ranks.NextStep(profession, targets[profession])
-        if step then tasks[#tasks + 1] = step end
+        if step and step.due then tasks[#tasks + 1] = step end
     end
     return tasks
 end
@@ -257,6 +258,13 @@ local function routeForCalc(slug, skill)
     end
     local XP = ns.ProfExecution
     local frozen = XP and XP.GetPlan and XP.GetPlan(slug)
+    local economy=ns.ProfEconomy
+    if frozen and frozen.learningPolicyFingerprint and economy and economy.LearningPolicyFingerprint
+        and frozen.learningPolicyFingerprint~=economy.LearningPolicyFingerprint() then
+        PF.pendingPlans=PF.pendingPlans or {}
+        PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code="learningPolicyChanged"}}}
+        return "auto",{}
+    end
     local PD = ns.ProfModule
     local fixedOnly=slug=="poisons" or slug=="mining" and PD and PD.GatherMode and PD.GatherMode(slug)=="smelt"
     if frozen and fixedOnly and frozen.mode~="fixed" then
@@ -677,6 +685,73 @@ local function shopList(s, onlyStep)
     return list
 end
 
+-- The first HUD task uses the plan's actual leaf purchases. Intermediate
+-- products, AH purchases and formula items must not become NPC material needs.
+local TipOn
+function PF.VendorPurchases(slug, plan)
+    local xp=ns.ProfExecution
+    plan=plan or (xp and xp.GetPlan and xp.GetPlan(slug)) or (RA and RA.Peek and RA.Peek(slug))
+    if not plan or plan.feasible==false then return {} end
+    local totals,order={},{}
+    for _,entry in ipairs(plan.mats or {}) do
+        local id=entry.id or entry[1]
+        if id and (entry.source=="vendor" or entry.vendor and entry.source~="ah" and entry.source~="auction") then
+            local row=totals[id]
+            if not row then
+                row={id=id,need=0,npcID=entry.npcID};totals[id]=row;order[#order+1]=id
+            end
+            row.need=row.need+(entry.count or entry[2] or entry.need or 0)
+        end
+    end
+    local out={}
+    for _,id in ipairs(order) do
+        local row=totals[id];row.have=Have(id);row.missing=math.max(0,row.need-row.have)
+        if row.missing>0 then out[#out+1]=row end
+    end
+    return out
+end
+
+function PF.PaintVendorPurchases(slug, y)
+    local panel=PF.f and PF.f.vendorShop
+    if not panel then return y,false end
+    local state=st()
+    local list=state and (state.step or 1)==1 and (PF.view or 0)==0 and PF.VendorPurchases(slug) or {}
+    if #list==0 then panel:Hide();PF.vendorScroll=nil;return y,false end
+    local offset=math.max(0,math.min(PF.vendorScroll or 0,math.max(0,#list-VENDOR_MAX)))
+    PF.vendorScroll=offset
+    panel.title:SetText(format(L["先购买 NPC 材料（%d 种）"],#list))
+    panel.more:SetShown(#list>VENDOR_MAX)
+    local pd=ns.ProfModule
+    local pending=false
+    for i,row in ipairs(panel.rows) do
+        local entry=list[offset+i]
+        row:Hide()
+        if entry then
+            local name,known=DG.ItemName(entry.id)
+            if not known and DG.RequestItem then DG.RequestItem(entry.id);pending=true end
+            local npc=entry.npcID and ns.ProfVendorNames and ns.ProfVendorNames[entry.npcID] or L["商人"]
+            local loc=entry.npcID and ns.ProfVendors and ns.ProfVendors[entry.npcID]
+            if not loc and entry.npcID and ns.EnsureProfNPCLocs then
+                local locations=ns.EnsureProfNPCLocs()[entry.npcID];loc=locations and locations[1]
+            end
+            local where=npc
+            local zone=loc and pd and pd.MapName and pd.MapName(loc[2])
+            if zone and zone~="" then where=where.." · "..zone end
+            if loc and loc[3] and loc[4] then where=where..format(" (%.1f, %.1f)",loc[3],loc[4]) end
+            row.name:SetText(format("%s ×%d",name or ("#"..entry.id),entry.missing))
+            row.source:SetText(where)
+            row.__it={entry.id};row.__loc=loc
+            TipOn(row,name or ("#"..entry.id),where)
+            row:SetScript("OnClick",loc and pd and pd.MarkVendorLoc and function()pd.MarkVendorLoc(loc)end or nil)
+            row:Show()
+        end
+    end
+    local height=28+math.min(#list,VENDOR_MAX)*38
+    panel:ClearAllPoints();panel:SetPoint("TOPLEFT",PF.f,"TOPLEFT",PAD,y)
+    panel:SetSize(W-2*PAD,height);panel:Show()
+    return y-height-8,pending
+end
+
 function PF.SupplementNeeds(slug)
     slug = slug or (st() and st().slug)
     if not slug then return nil end
@@ -699,7 +774,7 @@ function PF.SupplementNeeds(slug)
     return { items = items, kinds = kinds, qty = qty, step = s.step }
 end
 
-local function TipOn(bt, title, body)
+TipOn = function(bt, title, body)
     bt:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:ClearLines()
@@ -1162,6 +1237,34 @@ local function BuildBody()
     end)
     f.rankHint:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     f.rankHint:Hide()
+
+    f.vendorShop=CreateFrame("Frame",nil,f)
+    local vendorPanel=f.vendorShop
+    vendorPanel.title=MakeFS(vendorPanel,14,C_HEAD,"LEFT")
+    vendorPanel.title:SetPoint("TOPLEFT",vendorPanel,"TOPLEFT",0,-2)
+    vendorPanel.more=MakeFS(vendorPanel,11,C_GREY,"RIGHT")
+    vendorPanel.more:SetPoint("TOPRIGHT",vendorPanel,"TOPRIGHT",0,-3)
+    vendorPanel.more:SetText(L["滚轮查看更多"])
+    vendorPanel.title:SetPoint("RIGHT",vendorPanel.more,"LEFT",-6,0)
+    vendorPanel.title:SetWordWrap(false)
+    vendorPanel.rows={}
+    for i=1,VENDOR_MAX do
+        local row=CreateFrame("Button",nil,vendorPanel)
+        row:SetPoint("TOPLEFT",vendorPanel,"TOPLEFT",0,-24-(i-1)*38)
+        row:SetPoint("RIGHT",vendorPanel,"RIGHT",0,0);row:SetHeight(36)
+        row.name=MakeFS(row,14,C_TEXT,"LEFT")
+        row.name:SetPoint("TOPLEFT",row,"TOPLEFT",0,0);row.name:SetPoint("RIGHT",row,"RIGHT",0,0)
+        row.name:SetWordWrap(false)
+        row.source=MakeFS(row,11,C_GREY,"LEFT")
+        row.source:SetPoint("TOPLEFT",row,"TOPLEFT",0,-18);row.source:SetPoint("RIGHT",row,"RIGHT",0,0)
+        row.source:SetWordWrap(false)
+        vendorPanel.rows[i]=row
+    end
+    vendorPanel:EnableMouseWheel(true)
+    vendorPanel:SetScript("OnMouseWheel",function(_,delta)
+        PF.vendorScroll=math.max(0,(PF.vendorScroll or 0)-delta);PF.Paint()
+    end)
+    vendorPanel:Hide()
 
     f.seg = MakeFS(f, 16, C_GREY, "RIGHT")
     f.seg:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -42)
@@ -1643,6 +1746,8 @@ function PF.Paint()
 
     local y = -82
     local pending = false
+    if finished then f.vendorShop:Hide()
+    else y,pending=PF.PaintVendorPurchases(slug,y) end
 
     if not finished then
         local seg = steps[vi]

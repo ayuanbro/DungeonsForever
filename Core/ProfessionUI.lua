@@ -1959,6 +1959,7 @@ function PD.BindRow(r, spec, h)
             end
         end
         local function _ic(tex, on)
+            tex:ClearAllPoints()
             SetIcon(tex, SORT)
             tex:SetSize(14, 14)
             if on then tex:SetVertexColor(1, 0.82, 0, 1)
@@ -3366,11 +3367,19 @@ function PD.GCEnsure(i)
         b.zl = MakeFS(b, PD.GC_FS_ZONE - 1, C_GREY, "RIGHT")
         b.zl:SetWordWrap(false)
         b.zl:SetPoint("RIGHT", b, "RIGHT", 0, 0)
+        b.zn:SetPoint("RIGHT", b.zl, "LEFT", -6, 0)
         b:SetScript("OnEnter", function(self)
             self.zn:SetTextColor(1, 1, 1)
+            if GameTooltip and self.__name then
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:ClearLines()
+                GameTooltip:AddLine(self.__name, 1, 1, 1, true)
+                GameTooltip:Show()
+            end
         end)
         b:SetScript("OnLeave", function(self)
             self.zn:SetTextColor(PD.GC_ZONE[1], PD.GC_ZONE[2], PD.GC_ZONE[3])
+            if GameTooltip then GameTooltip:Hide() end
         end)
         b:SetScript("OnClick", function(self)
             if self.__zid then
@@ -3556,15 +3565,18 @@ function PD.GCFill(c, d)
         local pl = (k <= shown) and d.places[k] or nil
         if pl then
             b.__zid = pl.zone
+            b.__name = pl.name
             b.zn:SetText(pl.name or "")
             b.zn:SetTextColor(PD.GC_ZONE[1], PD.GC_ZONE[2], PD.GC_ZONE[3])
             b.zl:SetText(pl.lv or "")
+            b.zl:SetWidth(math.min(PD.GC_COLW / 3, math.max(1, PD.TextW(pl.lv or "", PD.GC_FS_ZONE - 1))))
             b:ClearAllPoints()
             b:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD, -(top + (k - 1) * PD.GC_PLACE))
             b:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
             b:Show()
         else
             b.__zid = nil
+            b.__name = nil
             b:Hide()
         end
     end
@@ -8516,7 +8528,8 @@ function PD.GatherRouteCards(rows)
                 last[3] = zl
                 last[4] = true
             else
-                merged[#merged + 1] = { t[1], t[2], t[3], nil, GrpOf(t[2]) }
+                local ids={};for k,id in ipairs(t[1]) do ids[k]=id end
+                merged[#merged + 1] = { ids, t[2], t[3], nil, GrpOf(t[2]) }
             end
         end
         g = merged
@@ -8980,6 +8993,7 @@ function PD.StepName(st)
         return format(L["转换：%s → %s"], PD.ItemName(c.inputItemID or st.sourceItem) or "?", PD.ItemName(c.outputItemID or st.targetItem or st.item) or "?")
     end
     if st.kind == "specialization_quest" then return L["专精任务"] end
+    if st.navigationOnly and st.name then return st.name end
     return (st.checkpoint or st[3] == 0) and L["实地采矿"] or SpellName(st[3])
 end
 
@@ -9994,6 +10008,19 @@ function PD.RowsCraftLog(rows)
     end
 end
 
+function PD.RowsRankReminder(rows, target)
+    local ranks=ns.ProfRanks
+    local rank=ranks and ranks.NextStep(PD.cur,target or PD.LvTarget())
+    if rank and rank.due then
+        PushHead(rows,ranks.Title(rank))
+        local details={}
+        for _,line in ipairs(ranks.Lines(rank)) do details[#details+1]={line} end
+        rows[#rows].lines=details
+        for _,line in ipairs(ranks.Lines(rank,3)) do PushText(rows,line,11,C_GREY) end
+        PushGap(rows,6)
+    end
+end
+
 function PD.RowsLeveling(rows)
     if PD.autoPage == "log" then
         PD.lvSummary, PD.lvRouteHead = nil, nil
@@ -10023,14 +10050,7 @@ function PD.RowsLeveling(rows)
     local autoOn = (not smeltRoute) and (needPartner or (PD.WindowShown() and (PD.cur ~= "poisons") and (fishRoute or PD.Setting("autoRoute") or PD.Setting("solverRoute")) and RA
                     and (fishRoute or scheme == "cheapest" or scheme == "optim" or RA.Available()) and true or false))
     local target = PD.LvTarget()
-    if ns.ProfRanks and PD.autoPage ~= "log" then
-        local rank=ns.ProfRanks.NextStep(PD.cur,target)
-        if rank and rank.due then
-            PushHead(rows,ns.ProfRanks.Title(rank))
-            for _,line in ipairs(ns.ProfRanks.Lines(rank)) do PushText(rows,line,11,C_GREY) end
-            PushGap(rows,6)
-        end
-    end
+    PD.RowsRankReminder(rows,target)
     if fishRoute then
         note(L["鱼类自行钓取；其他材料只使用不限量商人货物。"])
         note(L["鱼类不计金币成本；图纸仍按实际采购来源计费。"])
@@ -10472,7 +10492,6 @@ function PD.RowsLeveling(rows)
 end
 
 function PD.FormulaStockText(entry)
-    if entry.unlimited and entry.limited then return L["商人库存：固定售卖及限量刷新"] end
     if entry.unlimited then return L["商人库存：固定售卖（不限量）"] end
     if entry.limited then return L["商人库存：限量刷新"] end
     if entry.stockUnknown or #(entry.vendorOffers or {}) > 0
@@ -10487,9 +10506,6 @@ function PD.ToolOwned(itemID)
 end
 
 function PD.FormulaStockChip(entry)
-    if entry.unlimited and entry.limited then
-        return { text = L["不限量+限量"], color = { 0.98, 0.82, 0.45 } }
-    end
     if entry.unlimited then
         return { text = L["不限量"], color = { 0.55, 0.90, 0.62 } }
     end
@@ -10535,14 +10551,6 @@ function PD.RowsFormulaShop(rows, data, foldKey)
             local vtext = format(L["商人 %d 处"], #vendors)
             if #vEnts == 0 then vtext = vtext .. " · " .. L["暂无坐标"] end
             local vlines = PD.VendorLines(src, entry.id)
-            if #drops > 0 then
-                vlines[#vlines + 1] = { format(L["另有掉落 %d 处"], #drops), 0.75, 0.75, 0.75 }
-                for _, ln in ipairs(PD.DropLines(src)) do
-                    if ln[1] ~= L["点击：在地图上标记该 NPC"] and ln[1] ~= L["点击：选择要标记的 NPC"] then
-                        vlines[#vlines + 1] = ln
-                    end
-                end
-            end
             links[#links + 1] = {
                 text = vtext,
                 lines = vlines,
@@ -10640,15 +10648,15 @@ local function TripFaction()
 end
 
 local function TripBestOffer(id, mine)
-    local src = ns.ProfVendorOffers
-    if type(src) ~= "table" or not id then return nil end
-    local list = src[id]
+    local db=ns.VendorPriceDB
+    local list=db and db.GetOffers and db.GetOffers(id,{faction=mine})
     if type(list) ~= "table" then return nil end
     local best
     for i = 1, #list do
         local o = list[i]
         local side = o.faction
-        if side == nil or side == "N" or mine == nil or side == mine then
+        if o.npcID and o.unlimited and o.available~=false and not o.hasExtendedCost and (o.currencyID or 0)==0
+            and (side == nil or side == "N" or mine == nil or side == mine) then
             local q = o.quantity or 1
             local unit = (o.price or 0) / q
             if not best or unit < best.unit then
@@ -11387,7 +11395,7 @@ function PD.LevelTool()
             local total = #(trackRun.steps or {})
             local cur = math.min(trackRun.currentIndex or 1, total)
             list[#list + 1] = { key = "track", align = "right", on = true, tone = "blue",
-                                text = format(L["追踪 %d/%d"], cur, total) }
+                                text = format(L["追踪 %d/%d"], cur, total), tip = {{L["再次点击取消追踪；已记录的制作数据保留。"]}} }
         else
             list[#list + 1] = { key = "track", align = "right", tone = "blue", text = L["开始追踪"] }
         end
@@ -12384,6 +12392,8 @@ function PD.Render()
             PD.lvSplit = false
             PD.gridSplit = false
             PD.autoPage = nil
+            PD.lvSummary, PD.lvRouteHead = nil, nil
+            PD.RowsRankReminder(rows)
             local gcards = PD.GatherRouteCards(rows)
             if gcards then
                 PD.gcSpec = gcards

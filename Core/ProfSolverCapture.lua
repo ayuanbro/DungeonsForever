@@ -567,6 +567,11 @@ local function vendorQuote(o)
         and not o.hasExtendedCost and (not o.currencyID or o.currencyID == 0)
 end
 
+function E.PreferredVendorOffers(offers, eligible)
+    local db=ns.VendorPriceDB
+    return db and db.PreferredOffers and db.PreferredOffers(offers,eligible) or (offers or {})
+end
+
 local function formulaContext(context)
     context=context or {}
     return context.snapshot or context
@@ -739,11 +744,19 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
         offers=ns.VendorPriceDB.GetFormulaOffers(id,context,r.source)
     end
     if not offers and id and context.offers then offers=context.offers[id] end
-    entry.vendorOffers=offers or {}
+    -- Price seeds and anonymous catalogue placeholders are not suppliers.
+    -- Currency exchanges belong outside this gold procurement list.
+    for _,offer in ipairs(offers or {}) do
+        local currency=tonumber(offer.currencyID or offer.cur) or 0
+        if type(offer.npcID)=="number" and offer.npcID>0 and not offer.priceOnly
+            and currency==0 and not offer.hasExtendedCost then
+            entry.vendorOffers[#entry.vendorOffers+1]=offer
+        end
+    end
     local vendors,seen={},{}
     for _,o in ipairs(entry.vendorOffers) do
         if o.npcID and not seen[o.npcID] then
-            vendors[#vendors+1]={id=o.npcID,name=o.npcName or o.name or ("#"..o.npcID),zone=o.zone}
+            vendors[#vendors+1]={id=o.npcID,name=o.npcName or o.name or (ns.ProfVendorNames and ns.ProfVendorNames[o.npcID]) or ("#"..o.npcID),zone=o.zone}
             seen[o.npcID]=true
         end
     end
@@ -755,26 +768,31 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     if supply then entry.availableCount=supply.quantity;entry.supplyObserved=true;entry.supplyComplete=supply.complete==true end
     local best,bestCost
     local allowLimited=E.AllowLimitedFormulas(context)
+    local function purchasable(o)
+        local factionOK=not o.faction or not context.faction or o.faction==context.faction or o.faction=="N" or o.faction=="Neutral" or o.faction=="AH" or o.faction=="Both"
+        local quantity=o.quantity or o.bundleSize or 1
+        return not (not allowLimited and E.LimitedFormulaOffer(o)) and factionOK
+            and o.available~=false and o.purchasable~=false and o.priceUsable~=false
+            and type(o.price)=="number" and o.price>=0 and positiveInteger(quantity)
+            and (type(o.stock)~="number" or o.stock<0 or o.stock>=quantity)
+    end
     for _,o in ipairs(entry.vendorOffers) do
         if o.unlimited==true then entry.unlimited=true
         elseif E.LimitedFormulaOffer(o) then entry.limited=true
         else entry.stockUnknown=true end
-        if type(o.price)=="number" and o.price>=0 and not o.hasExtendedCost and (not o.currencyID or o.currencyID==0) then
-            local unit=o.price/(o.quantity or o.bundleSize or 1)
-            if not entry.vendorPrice or unit<entry.vendorPrice then entry.vendorPrice=unit end
-        end
-        local factionOK=not o.faction or not context.faction or o.faction==context.faction or o.faction=="N" or o.faction=="Neutral" or o.faction=="AH" or o.faction=="Both"
         local limitedBlocked=not allowLimited and E.LimitedFormulaOffer(o)
         if limitedBlocked then entry.limitedVendorDisabled=true end
-        if not limitedBlocked and o.available~=false and o.purchasable~=false and o.priceUsable~=false and factionOK
-            and not o.hasExtendedCost and (not o.currencyID or o.currencyID==0)
-            and type(o.price)=="number" and o.price>=0 and o.stock~=0 then
+    end
+    for _,o in ipairs(E.PreferredVendorOffers(entry.vendorOffers,purchasable)) do
+        if purchasable(o) then
             local quantity=o.quantity or o.bundleSize or 1
-            if not positiveInteger(quantity) then quantity=1 end
+            local unit=o.price/quantity
+            if not entry.vendorPrice or unit<entry.vendorPrice then entry.vendorPrice=unit end
             local cost=o.price -- One indivisible purchase supplies the formula.
-            if (type(o.stock)~="number" or o.stock<0 or o.stock>=quantity) and (not bestCost or cost<bestCost) then best,bestCost=o,cost end
+            if not bestCost or cost<bestCost then best,bestCost=o,cost end
         end
     end
+    if best then sources.drops=nil end
     if purchaseSource~="ah" and bestCost~=nil and (not ahUsable or bestCost<=entry.ahPrice) then
         entry.source="vendor";entry.cost=bestCost;entry.offer=best;entry.npcID=best.npcID
         local quantity=best.quantity or best.bundleSize or 1
@@ -1009,7 +1027,7 @@ function E.Capture(slug, opts, tick)
     for _, r in ipairs(s.recipes) do
         if r.formula and E.LearningSource(r)~="trainer" and not s.formulaOffers[r.formula] then
             local offers = vdb and vdb.GetFormulaOffers and vdb.GetFormulaOffers(r.formula, vendorContext, r.source)
-            if not offers or #offers==0 then
+            if not (vdb and vdb.GetFormulaOffers) then
                 offers = ns.ProfSupply and ns.ProfSupply.FormulaList and ns.ProfSupply.FormulaList(r.formula) or {}
             end
             s.formulaOffers[r.formula] = copy(offers or {})

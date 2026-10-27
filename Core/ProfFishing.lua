@@ -197,7 +197,7 @@ function P.Compute(opts)
     local materialComplete=true
     for id,entry in pairs(matOf) do
         local best,bestCost
-        for _,offer in ipairs(snap.offers[id] or {}) do
+        for _,offer in ipairs(E.PreferredVendorOffers(snap.offers[id],function(o)return vendorOK(o,snap)end)) do
             if vendorOK(offer,snap) then
                 local size=offer.quantity or offer.bundleSize or 1;local cost=ceil(entry.need/size)*offer.price
                 if not best or cost<bestCost then best,bestCost=offer,cost end

@@ -10,7 +10,7 @@ local serial, revision = 0, 0
 local legacyRun
 local MODEL, CACHE_LIMIT = 1, 4
 local function learningPolicy()
-    return E.LearningPolicyFingerprint and E.LearningPolicyFingerprint() or "native-learning:3:dev-data"
+    return E.LearningPolicyFingerprint and E.LearningPolicyFingerprint() or "native-learning:4:gold-procurement"
 end
 local function now() return time and time() or 0 end
 local function copy(value, seen)

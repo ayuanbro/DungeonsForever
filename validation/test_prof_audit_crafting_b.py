@@ -195,7 +195,7 @@ class CraftingBProfessionAuditTests(unittest.TestCase):
                 lua.execute("""
                   local profession,spell,formula=...;local E=ns.ProfEconomy
                   local recipe=assert(E.FindRecipe(profession,spell));assert(recipe.formula==formula)
-                  local snapshot={known={},prices={[formula]=50},formulaOffers={[formula]={{price=80,quantity=2,unlimited=true}}}}
+                  local snapshot={known={},prices={[formula]=50},formulaOffers={[formula]={{npcID=1,price=80,quantity=2,unlimited=true}}}}
                   local quote=E.FormulaFor(recipe,snapshot)
                   assert(quote and quote.source=='ah' and quote.cost==50)
                   snapshot.prices={};quote=E.FormulaFor(recipe,snapshot)
