@@ -13,7 +13,8 @@ G.SpecAbilities = SPEC_ABILITIES
 local cache
 local function spellKnown(spell)
     for _, name in ipairs({ "C_SpellBook.IsSpellKnown", "IsSpellKnown", "IsPlayerSpell", "C_Spell.IsSpellKnown" }) do
-        local fn = _G[name]
+        local parent, key = name:match("^([^.]+)%.(.+)$")
+        local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
         if type(fn) == "function" then
             local ok, value = pcall(fn, spell)
             if ok and type(value) == "boolean" then return value end
@@ -73,6 +74,10 @@ end
 
 function G.ItemFlag(spell)
     return SpecFlags(SpecRec(spell)) % 4 >= 2
+end
+
+function G.RequiredAbility(spell)
+    return SpecAbility(SpecRec(spell))
 end
 
 function G.HasPending(spell)
@@ -175,13 +180,15 @@ local function buildSpecGoal(def, faction)
         if k ~= "variants" then goal[k] = v end
     end
     goal.inputs = cloneInputs(def.inputs)
-    goal.prerequisiteQuestIDs = nil
     local variant = def.variants and faction and def.variants[faction]
     if variant then
         for k, v in pairs(variant) do goal[k] = v end
     elseif def.variants then
         goal.blockedReason = "specializationFactionUnknown"
     end
+    local prerequisites = {}
+    for _, id in ipairs(goal.prerequisiteQuestIDs or {}) do prerequisites[#prerequisites+1] = id end
+    goal.prerequisiteQuestIDs = prerequisites
     return goal
 end
 
@@ -273,8 +280,10 @@ function G.SpecializationContext(opts)
             if goal.questCompleted and abilities[goal.abilityID] ~= true then
                 goal.blockedReason = "specializationQuestAlreadyCompleted"
             end
-            ctx.goals[1] = goal
         end
+        -- Missing faction facts block the selected task; they do not remove
+        -- the obligation and turn a specialization route into a normal one.
+        ctx.goals[1] = goal
     end
     ctx.fingerprint = G.SpecFingerprint(choice)
     ctx.abilityFingerprint = G.SpecAbilityFingerprint(abilities)

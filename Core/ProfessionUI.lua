@@ -522,6 +522,12 @@ function PD.IsGatherRoute()
     return PD.GATHER_SLUGS[PD.cur] and not (PD.cur == "mining" and PD.GatherMode("mining") == "smelt")
 end
 
+function PD.GatherHUDSteps(slug,target)
+    local routes=ns.ProfGatheringRoutes
+    if not (routes and routes.HasRoute(slug)) then return nil end
+    return routes.Steps(slug,target or 300,{mode=PD.GatherMode(slug)})
+end
+
 function PD.LvTarget()
     if not PD.cur then return 300 end
     local db = ProfDB()
@@ -4599,7 +4605,8 @@ function PD.PickTabs()
     end
     local pf = ns.ProfFollow
     if pf and pf.PaintButton and PD.hudBtn then
-        if PD.tab == "leveling" and not PD.setOpen and not PD.IsGatherRoute() then
+        if PD.tab == "leveling" and not PD.setOpen
+           and (not PD.IsGatherRoute() or (ns.ProfGatheringRoutes and ns.ProfGatheringRoutes.HasRoute(PD.cur))) then
             pcall(pf.PaintButton, PD.hudBtn, PD.cur)
         else
             PD.hudBtn:Hide()
@@ -8624,7 +8631,18 @@ end
 
 function PD.PlanStatusParts(plan)
     if not plan then return L["正在计算升级路线…"] end
+    if plan.status=="recalculate_required" then
+        for _,diagnostic in ipairs(plan.diagnostics or {}) do
+            if diagnostic.code=="learningPolicyChanged" and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
+                return ns.ProfEconomy.DiagnosticText(diagnostic)
+            end
+        end
+    end
+    local search = plan.searchState
+    if search and search.running then return L["后台优化中"] end
+    if plan.stale then return L["已保存路线；数据或设置已变化，点击重新计算更新。"] end
     if plan.scheme == "fishing" and not plan.partial and plan.status == "complete" then return L["纯钓鱼路线已生成"] end
+    if plan.inputModelOptimal and plan.catalogueCoverageComplete == false then return L["已知输入模型内最优；配方覆盖未确认"] end
     if plan.optimal and plan.supplyComplete ~= false then return L["当前价格与期望模型内最优"] end
     if plan.partial then
         return format(L["已计算至%d"], plan.plannedTo or plan.start or 1), L["后续路线待补全"]
@@ -8637,7 +8655,7 @@ function PD.PlanStatusParts(plan)
         searching = L["后台优化中"], paused = L["优化已停止"],
         stopped = L["优化已停止"], infeasible = L["当前限制下没有可行路线"],
         incomplete = L["资料或价格不完整"], complete = L["当前找到的最低支出"],
-        error = L["计算发生错误，请重新计算。"],
+        error = L["计算发生错误，请重新计算。"], interrupted = L["优化已中断；执行计划已保存，可重新计算。"],
         selection_required = L["请选择搭配的主专业"],
         recalculate_required = L["搭配专业已更改，点击重新计算应用。"],
     }
@@ -8651,6 +8669,7 @@ function PD.PlanStatusText(plan)
 end
 
 function PD.PlanProgressText(plan)
+    plan = plan and (plan.searchState or plan)
     if not plan or plan.expanded == nil then return nil end
     if plan.expanded == 0 and plan.initialTotal == nil then return nil end
     if plan.initialTotal == nil then return format(L["仍在优化：已比较 %d 种组合"], plan.expanded or 0) end
@@ -8873,6 +8892,7 @@ function PD.CopyPlanSummary(plan)
     for _, key in ipairs({"planVersion", "status", "optimal", "feasible", "completeCost",
                            "revision", "partial", "plannedTo", "targetReached", "start", "target",
                            "expanded", "improvements", "initialTotal", "savings", "searchComplete", "budgetLimited",
+                           "inputModelOptimal", "catalogueCoverageComplete", "quoteComplete", "searchTermination", "searchState",
                            "stale", "cached", "settingsChanged", "referencePrices", "pricePending", "referenceRoute",
                            "auctionSupplyUnknown", "auctionSupplyObserved", "supplyComplete",
                            "formulasTotal", "formulaTotal", "formulaComplete", "formulaBlocked"}) do s[key] = plan[key] end
@@ -8932,6 +8952,7 @@ function PD.StepIsMaterial(st)
     return material and true or false
 end
 function PD.StepRole(st)
+    if st.kind == "essence_conversion" or st.kind == "conversion" then return L["精华转换"] end
     if st.kind == "specialization_quest" then return L["专精任务"] end
     if st.checkpoint or st[3] == 0 then return L["实地采矿"] end
     local tags = st.tags or {}
@@ -8954,6 +8975,10 @@ function PD.PurchasePriceHint(entry)
     if entry.reference then return L["参考报价（实际报价可能因声望而异；客户端实测优先）"] end
 end
 function PD.StepName(st)
+    if st.kind == "essence_conversion" or st.kind == "conversion" then
+        local c=st.conversion or {}
+        return format(L["转换：%s → %s"], PD.ItemName(c.inputItemID or st.sourceItem) or "?", PD.ItemName(c.outputItemID or st.targetItem or st.item) or "?")
+    end
     if st.kind == "specialization_quest" then return L["专精任务"] end
     return (st.checkpoint or st[3] == 0) and L["实地采矿"] or SpellName(st[3])
 end
@@ -9441,7 +9466,7 @@ function PD.RowsRoutePartner(rows, context)
     spanRows()
 end
 
-function PD.PlanDiagnostics(add, plan)
+function PD.PlanDiagnostics(emit, plan)
     local groups, order, seen = {}, {}, {}
     local hasSteps = PD.PlanHasSteps(plan)
     local branchOnly = {excluded=true, notLearned=true, cooldown=true,
@@ -9490,12 +9515,12 @@ function PD.PlanDiagnostics(add, plan)
                      or (type(diagnostic) == "string" and diagnostic or (type(diagnostic) == "table" and diagnostic.message))
         if message then
             if group.count > 1 then message = format(L["%s（同类 %d 项）"], message, group.count) end
-            if add then add(message, 0.95, 0.75, 0.4) end
+            if emit then emit(message, 0.95, 0.75, 0.4) end
             shown = shown + 1
         end
     end
-    if #order > shown and add then
-        add(format(L["另有 %d 类限制；调整设置后重新计算。"], #order - shown), 0.72, 0.72, 0.72)
+    if #order > shown and emit then
+        emit(format(L["另有 %d 类限制；调整设置后重新计算。"], #order - shown), 0.72, 0.72, 0.72)
     end
 end
 
@@ -9607,6 +9632,7 @@ function PD.StartSolverRoute(opts, key)
 end
 
 function PD.BuildLvOpts(slug, current)
+    if RA and RA.OptionsFor then return RA.OptionsFor(slug, current) end
     local fish = PD.CookingFishingMode(slug)
     local pair = (not fish) and PD.RoutePairContext() or nil
     local lv = tonumber(current)
@@ -9655,7 +9681,7 @@ function PD.RecalcNeeded()
     if not key then return false end
     if PD.autoSnapshotSlug ~= slug or not PD.autoSnapshot then return true end
     if PD.autoKey and PD.autoKey ~= key then return true end
-    return not PD.autoExact
+    return PD.autoSnapshot.stale == true
 end
 
 local GLOW_PERIOD = 2.2
@@ -9997,6 +10023,14 @@ function PD.RowsLeveling(rows)
     local autoOn = (not smeltRoute) and (needPartner or (PD.WindowShown() and (PD.cur ~= "poisons") and (fishRoute or PD.Setting("autoRoute") or PD.Setting("solverRoute")) and RA
                     and (fishRoute or scheme == "cheapest" or scheme == "optim" or RA.Available()) and true or false))
     local target = PD.LvTarget()
+    if ns.ProfRanks and PD.autoPage ~= "log" then
+        local rank=ns.ProfRanks.NextStep(PD.cur,target)
+        if rank and rank.due then
+            PushHead(rows,ns.ProfRanks.Title(rank))
+            for _,line in ipairs(ns.ProfRanks.Lines(rank)) do PushText(rows,line,11,C_GREY) end
+            PushGap(rows,6)
+        end
+    end
     if fishRoute then
         note(L["鱼类自行钓取；其他材料只使用不限量商人货物。"])
         note(L["鱼类不计金币成本；图纸仍按实际采购来源计费。"])
@@ -10012,36 +10046,14 @@ function PD.RowsLeveling(rows)
         opts.target = target
         PD.lvOpts = opts
         planKey = PD.PlanKeyOf(PD.cur, opts)
-        local SR = ns.ProfSolverRun
-        local wantExact = (PD.Setting("solverRoute") or needPartner or PD.forceExact) and true or false
-        PD.forceExact = nil
-        if SR and not fishRoute and wantExact then
-            local running = SR.Running and SR.Running(PD.cur) or false
-            if running and PD.solverSig ~= planKey then
-                PD.StopSolverRoute()
-                running = false
-            end
-            local exactOk = PD.autoExact and PD.autoSnapshot and planKey and PD.autoKey == planKey
-            if running then
-                res = SR.Result()
-                if res then res.exact = true end
-            elseif exactOk then
-                res = PD.autoSnapshot
-            elseif (not PD.autoSnapshot or PD.autoSnapshotSlug ~= PD.cur)
-                   and not (PD.exactFailed and PD.exactFailed[planKey]) then
-                PD.StartSolverRoute(opts, planKey)
-                res = SR.Result()
-                if res then res.exact = true end
-            else
-                res = RA.Get(PD.cur, opts)
-            end
-        elseif not needPartner then
-            if PD.autoExact and PD.autoSnapshotSlug == PD.cur and planKey and PD.autoKey == planKey then
-                res = PD.autoSnapshot
-            else
-                res = RA.Get(PD.cur, opts)
-            end
-        end
+        -- The page and HUD share the same saved candidate/execution facade.
+        -- Only an explicit user recalculation applies changed inputs.
+        if PD.forceExact then
+            PD.forceExact=nil
+            opts.cpuLimitMs=8000
+            res=RA.Recalculate(PD.cur,opts)
+        else res=RA.Get(PD.cur,opts) end
+        if res and res.planVersion==2 then res.exact=true end
         if res and res.planVersion ~= 2 and not res.priced and scheme ~= "optim" then res = nil end
     end
     local auto = (autoOn and res) and true or false
@@ -10129,12 +10141,20 @@ function PD.RowsLeveling(rows)
 
     local steps, clipped
     if auto then
-        steps = res.steps
+        steps = (res.executionSteps and #res.executionSteps > 0) and res.executionSteps or res.steps
     else
         steps, clipped = ClipFixedSteps(lv.steps or {}, target)
     end
     local fixedSum = (not auto) and RA and RA.SummarizeSteps(steps, PD.cur,
                           { learnedOnly = PD.Setting("autoLearnedOnly"), target = target }) or nil
+    if fixedSum then
+        fixedSum.mode="fixed";fixedSum.target=target
+        fixedSum.start=steps[1] and steps[1][1] or 1
+        PD.autoSnapshot,PD.autoSnapshotSlug=fixedSum,PD.cur
+        if fixedSum.feasible==false then
+            note(L["固定攻略包含不可执行步骤，请切换自动规划或先满足学习条件。"],0.95,0.75,0.4)
+        end
+    end
     local trackRun, trackAll = TrackStepsFor(PD.cur, steps)
 
     PD.lvSummary = {
@@ -10217,6 +10237,7 @@ function PD.RowsLeveling(rows)
         end
         if clipped and st._clip then count = count .. format(L[" · 按目标 %d 折算"], target) end
         if st.kind == "specialization_quest" then count, cost = L["专精任务"], ""
+        elseif st.kind == "essence_conversion" or st.kind == "conversion" then count = L["手动转换"]
         elseif st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
         local tp = trackAll and trackAll.steps[index]
         if tp and tp.casts > 0 and not (st.checkpoint or st[3] == 0 or st.kind == "specialization_quest") then
@@ -10366,6 +10387,7 @@ function PD.RowsLeveling(rows)
                 src = (pro and pro.name or st.profession) .. " · " .. (st.reason == "secondary" and L["联合升级"] or L["制作材料"])
             elseif st.reason == "material" then src = L["制作材料"] end
             if st.kind == "specialization_quest" then src = L["专精任务"]
+            elseif st.kind == "essence_conversion" or st.kind == "conversion" then src = L["手动完成后继续"]
             elseif st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
             if (rec and rec.clientPending) or (ri and ri.clientPending) then src = L["客户端数据待读取"] end
             local segLo = tonumber(st[1])
@@ -10378,7 +10400,8 @@ function PD.RowsLeveling(rows)
                 kind = "row", h = PD.TBL_H, col = 1, lvstep = true,
                 passed = passed, over = over,
                 trackCur = (trackAll and trackAll.current == index) and true or nil,
-                it = (rec and rec[2]) and { rec[2] }
+                it = (st.kind == "essence_conversion" or st.kind == "conversion") and st.item and {st.item}
+                     or (rec and rec[2]) and { rec[2] }
                      or ((ri and ri.makes) and { ri.makes } or nil),
                 icon = ((not rec) and ri and not ri.makes) and SpellIcon(st[3]) or nil,
                 tipExtra = (rec and rec[2])
@@ -10444,7 +10467,8 @@ function PD.RowsLeveling(rows)
             end
         end
     end
-    if res and res.planVersion == 2 then PD.PlanDiagnostics(note, res) end
+    local diagnosticPlan=res or fixedSum
+    if diagnosticPlan then PD.PlanDiagnostics(note, diagnosticPlan) end
 end
 
 function PD.FormulaStockText(entry)
@@ -11496,14 +11520,15 @@ function PD.LevelTool()
         elseif k == "track" then
             local T = ns.ProfTrack
             if T and T.Active and T.Active(PD.cur) then
-                T.Archive(PD.cur, "cancel")
+                if RA and RA.EndExecution then RA.EndExecution(PD.cur)
+                else T.Archive(PD.cur, "cancel") end
                 PD.autoSnapshotSlug = nil
             else
                 local res = PD.autoSnapshot
-                local ready = (T and res and PD.autoSnapshotSlug == PD.cur and T.Extract(res)) and true or false
-                if ready then
-                    T.Restart(PD.cur, res)
-                else
+                local ready = (T and res and res.feasible~=false and res.status~="recalculate_required"
+                    and PD.autoSnapshotSlug == PD.cur and T.Extract(res)) and true or false
+                local bound=ready and T.Restart(PD.cur,res)
+                if not bound then
                     local msg = L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
                     if UIErrorsFrame and UIErrorsFrame.AddMessage then
                         pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.82, 0.4)
@@ -13419,21 +13444,33 @@ if type(SlashCmdList) == "table" then
     end
 end
 
+local function HookRoutePlans()
 if RA and RA.OnPlanChanged then
     RA.OnPlanChanged(function(slug, plan)
         PD.craftAll = nil
         PD.craftAllFull = nil
         if type(slug) == "table" then plan = slug; slug = plan.slug end
-        if slug == PD.cur and plan then PD.autoSnapshot = plan; PD.autoSnapshotSlug = slug end
+        if slug == PD.cur and plan then
+            local xp=ns.ProfExecution
+            PD.autoSnapshot = xp and xp.GetPlan and xp.GetPlan(slug) or plan
+            PD.autoSnapshotSlug = slug
+        end
         if PD.built and ns.PageVisible(PD.page)
            and (slug == nil or slug == PD.cur) then PD.RequestRender() end
     end)
+    if RA.OnProgress then RA.OnProgress(function(slug)
+        if slug==PD.cur and PD.built and ns.PageVisible(PD.page) then
+            PD.PaintToolProgress(PD.SolverText(), nil)
+        end
+    end) end
 end
+end
+if ns.Init then ns.Init(HookRoutePlans) else HookRoutePlans() end
 if RA and RA.OnPricesChanged then
     RA.OnPricesChanged(function()
         local pf = ns.ProfFollow
         if pf and pf.InvalidateRoute then pcall(pf.InvalidateRoute) end
-        PD.ClearPlanCache()
+        if PD.autoSnapshot then PD.autoSnapshot.stale=true end
         if PD.built and ns.PageVisible(PD.page) then
             PD.RequestRender()
         end

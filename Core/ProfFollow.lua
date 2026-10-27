@@ -152,6 +152,74 @@ local function routeTarget(slug)
     return math.max(1, math.min(300, math.floor(v)))
 end
 
+-- Rank reminders read the character's real cap through ProfRanks. They are
+-- guidance beside the route and never become execution steps or craft facts.
+function PF.RankTasks(slug, target, steps, currentIndex)
+    local ranks = ns.ProfRanks
+    if not (ranks and ranks.NextStep) then return {} end
+    local targets, order = {[slug] = target or routeTarget(slug)}, {slug}
+    local current = steps and steps[currentIndex or 1]
+    local partner = current and current.profession
+    if partner and partner ~= slug then
+        local recipe = current.recipe or {}
+        targets[partner] = math.max(tonumber(current.goalSkill or current[2]) or 0, tonumber(recipe.learn) or 0)
+        order[#order + 1] = partner
+    end
+    local tasks = {}
+    for _, profession in ipairs(order) do
+        local step = ranks.NextStep(profession, targets[profession])
+        if step then tasks[#tasks + 1] = step end
+    end
+    return tasks
+end
+
+function PF.SpecializationQuestInfo(seg)
+    local xp=ns.ProfExecution
+    if not (xp and xp.IsSpecializationQuest(seg)) then return end
+    local goal=xp.SpecializationQuest(seg)
+    local function label(value)
+        if type(value)~="table" then return value end
+        local locale=GetLocale and GetLocale() or "zhCN"
+        return value[locale] or value.zhCN or value.enUS
+    end
+    local name=label(goal.questName or goal.name) or L["专业专精任务"]
+    local lines={}
+    local identity=goal.questID and format(L["任务 #%d"],goal.questID) or L["任务身份尚未确认"]
+    lines[#lines+1]=identity
+    local requirements={}
+    if type(goal.minSkill)=="number" then requirements[#requirements+1]=format(L["需要专业技能 %d"],goal.minSkill) end
+    if type(goal.minLevel)=="number" then requirements[#requirements+1]=format(L["需要角色等级 %d"],goal.minLevel) end
+    if #requirements>0 then lines[#lines+1]=table.concat(requirements," · ") end
+    local place={}
+    if label(goal.npcName) then place[#place+1]=label(goal.npcName)
+    elseif goal.npcID then place[#place+1]="#"..goal.npcID end
+    if label(goal.zone) then place[#place+1]=label(goal.zone) end
+    if #place>0 then lines[#lines+1]=table.concat(place," · ") end
+    if type(goal.x)=="number" and type(goal.y)=="number" then
+        lines[#lines+1]=format(L["参考坐标 %.2f, %.2f"],goal.x,goal.y)
+    end
+    local prerequisites={}
+    for _,id in ipairs(goal.prerequisiteQuestIDs or {}) do prerequisites[#prerequisites+1]="#"..id end
+    if #prerequisites>0 then
+        lines[#lines+1]=format(L["先完成前置任务并与导师对话：%s"],table.concat(prerequisites,", "))
+    end
+    local progress={}
+    for key,value in pairs(goal.questProgress or {}) do progress[key]=value end
+    local api=C_QuestLog
+    if goal.questID and api then
+        for _,probe in ipairs({{"inLog","IsOnQuest"},{"readyForTurnIn","ReadyForTurnIn"}}) do
+            if type(api[probe[2]])=="function" then
+                local ok,value=pcall(api[probe[2]],goal.questID)
+                if ok and type(value)=="boolean" then progress[probe[1]]=value end
+            end
+        end
+    end
+    local status=progress.readyForTurnIn and L["任务可交付"] or progress.inLog and L["任务已接取"] or nil
+    if status then lines[#lines+1]=status end
+    lines[#lines+1]=L["实际学会对应专精后才完成此步骤。"]
+    return {name=name,lines=lines,summary=identity..(status and " · "..status or ""),goal=goal}
+end
+
 local function clipFixedSteps(steps, target)
     if not target or target >= 300 then return steps end
     local out = {}
@@ -163,29 +231,97 @@ local function clipFixedSteps(steps, target)
         if isClip then
             nq = math.max(1, math.ceil(nq * (target - a) / (b - a) - 1e-9))
         end
-        out[#out + 1] = { a, nb, st[3], nq, _clip = isClip or nil }
+        local clipped={}
+        for key,value in pairs(st) do clipped[key]=value end
+        clipped[2],clipped[4],clipped._clip=nb,st.checkpoint and 0 or nq,isClip or nil
+        out[#out + 1] = clipped
     end
     return out
 end
 
+local function isGathering(slug)
+    local gathering=ns.ProfGatheringRoutes
+    if not (gathering and gathering.HasRoute(slug)) then return false end
+    local view=ns.ProfModule
+    return not (slug=="mining" and view and view.GatherMode and view.GatherMode(slug)=="smelt")
+end
+local function hasRoute(slug)
+    return slug and ((LV[slug] and LV[slug].steps) or (ns.ProfGatheringRoutes and ns.ProfGatheringRoutes.HasRoute(slug)))
+end
 local function routeForCalc(slug, skill)
-    local PD = ns.ProfModule
-    local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme") or "cheapest"
-    if PD and PD.Setting and PD.Setting("autoRoute") and RA
-       and (scheme == "optim" or RA.Available()) then
-        local opts = {
-            start = (PD.Setting("autoFromCurrent") and skill) and math.max(1, skill) or 1,
-            onlyAH = PD.Setting("autoOnlyAH"),
-            noFormula = PD.Setting("autoNoFormula"),
-            learnedOnly = PD.Setting("autoLearnedOnly"),
-            target = routeTarget(slug),
-            scheme = scheme,
-        }
-        local res = RA.Get(slug, opts)
-        if res and (res.priced or scheme == "optim") then return "auto", res.steps end
+    if isGathering(slug) then
+        PF.pendingPlans=PF.pendingPlans or {};PF.pendingPlans[slug]=nil
+        local steps=ns.ProfGatheringRoutes.Steps(slug,routeTarget(slug))
+        if not steps then PF.pendingPlans[slug]={status="incomplete",diagnostics={{code="professionCapUnknown"}}} end
+        return "gather",steps or {}
     end
+    local XP = ns.ProfExecution
+    local frozen = XP and XP.GetPlan and XP.GetPlan(slug)
+    local PD = ns.ProfModule
+    local fixedOnly=slug=="poisons" or slug=="mining" and PD and PD.GatherMode and PD.GatherMode(slug)=="smelt"
+    if frozen and fixedOnly and frozen.mode~="fixed" then
+        PF.pendingPlans=PF.pendingPlans or {}
+        PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code="fixedOnlyChanged"}}}
+        return "fixed",{}
+    end
+    if frozen then return frozen.mode == "fixed" and "fixed" or "auto", frozen.executionSteps or frozen.steps end
+    local ended = PF.endedPlan and PF.endedPlan[slug]
+    if ended and PF.Following and PF.Following(slug) then return ended.mode == "fixed" and "fixed" or "auto", ended.executionSteps or ended.steps end
+    local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme") or "cheapest"
+    local smelt = slug == "mining" and PD and PD.GatherMode and PD.GatherMode(slug) == "smelt"
+    local fish = PD and PD.CookingFishingMode and PD.CookingFishingMode(slug)
+    local auto = slug ~= "poisons" and not smelt and PD and PD.Setting and (PD.Setting("autoRoute") or PD.Setting("solverRoute") or fish) and RA
+        and (fish or scheme == "cheapest" or scheme == "optim" or RA.Available())
+    PF.pendingPlans = PF.pendingPlans or {}
+    if auto then
+        local opts = RA.OptionsFor and RA.OptionsFor(slug, skill) or {
+            start = (PD.Setting("autoFromCurrent") and skill) and math.max(1, skill) or 1,
+            onlyAH = PD.Setting("autoOnlyAH"), noFormula = PD.Setting("autoNoFormula"),
+            learnedOnly = PD.Setting("autoLearnedOnly"), target = routeTarget(slug), scheme = fish and "fishing" or scheme,
+        }
+        opts.target = routeTarget(slug)
+        local res = RA.Get(slug, opts)
+        local list = res and (res.executionSteps or res.steps)
+        if res and res.status ~= "selection_required" and res.status ~= "recalculate_required" and res.feasible ~= false
+            and list and #list > 0 then
+            PF.pendingPlans[slug] = nil
+            -- Following is an explicit request to execute; routine route reads
+            -- never create a run. Wait for a settled candidate before freezing.
+            if XP and XP.Bind and PF.Following(slug) and res.status ~= "searching" then
+                XP.Bind(slug, res)
+                frozen = XP.GetPlan(slug)
+                if frozen then return "auto", frozen.executionSteps or frozen.steps end
+            end
+            return "auto", list
+        end
+        PF.pendingPlans[slug] = res or {status="searching"}
+        return "auto", {}
+    end
+    PF.pendingPlans[slug] = nil
     local lv = LV[slug]
-    return "fixed", clipFixedSteps(lv and lv.steps or nil, routeTarget(slug))
+    local steps=clipFixedSteps(lv and lv.steps or nil,routeTarget(slug))
+    if RA and RA.FilterFixedSpecializations then
+        local filtered,blocked,goalRequired=RA.FilterFixedSpecializations(slug,steps,{target=routeTarget(slug)})
+        if goalRequired or blocked and #blocked>0 then
+            PF.pendingPlans[slug]={status="recalculate_required",specializationBlocked=true,
+                diagnostics=blocked or {},steps={},feasible=false}
+            return "fixed",{}
+        end
+        steps=filtered
+    end
+    if XP and PF.Following(slug) and steps and #steps>0 then
+        local summary=RA and RA.SummarizeSteps and RA.SummarizeSteps(steps,slug,{target=routeTarget(slug),scheme="fixed"})
+        summary=summary or {steps=steps,mats={},formulas={},total=0,scheme="fixed",target=routeTarget(slug)}
+        summary.mode="fixed";summary.scheme="fixed"
+        local normalized,reason=XP.NormalizePlan(slug,summary)
+        if not normalized or summary.feasible==false then
+            PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code=reason or "fixedUnavailable"}}}
+            return "fixed",{}
+        end
+        local run=XP.Bind(slug,normalized)
+        if run then return "fixed",run.plan.executionSteps or run.plan.steps end
+    end
+    return "fixed",steps
 end
 
 local rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT
@@ -213,15 +349,30 @@ local function routeKey(mode, steps)
 end
 
 local function derivedStep(slug, skill)
+    local XP = ns.ProfExecution
+    local run = not isGathering(slug) and XP and XP.GetRun and XP.GetRun(slug)
+    if run then XP.Sync(slug); return run.currentIndex or 1 end
+    local ended = PF.endedPlan and PF.endedPlan[slug]
+    if ended and PF.Following and PF.Following(slug) then return #(ended.executionSteps or ended.steps or {}) + 1 end
     local _, steps = routeFor(slug, skill)
     if not steps then return nil end
     for i, s in ipairs(steps) do
-        if skill < s[2] then return i end
+        if next(s.requiredOutputs or {}) or s.kind == "specialization_quest" or s.kind == "essence_conversion" or skill < s[2] then return i end
     end
     return #steps + 1
 end
 
 local function recMats(rec) return rec and (rec[12] or rec.mats) or nil end
+local function stepRecipe(seg, fallback)
+    if seg and seg.recipe then return seg.recipe end
+    local XP = ns.ProfExecution
+    if seg and XP and XP.IsConversion(seg) then
+        local conversion = XP.Conversion(seg)
+        if conversion then return {mats={{conversion.inputItemID,conversion.inputCount}},item=conversion.outputItemID,count=conversion.outputCount} end
+    end
+    if seg and XP and XP.IsSpecializationQuest(seg) then return {mats=XP.SpecializationQuest(seg).inputs or {}} end
+    return fallback
+end
 local function recItem(rec) return rec and (rec[2] or rec.makes) or nil end
 local function recBreaks(rec)
     if not rec then return nil end
@@ -284,7 +435,7 @@ function PF.Sync()
     if not (s and s.slug) then return false end
     local changed = false
     local cur = skillOf(s.slug)
-    if cur and cur > (s.skill or 0) then
+    if cur and cur ~= s.skill then
         s.skill = cur
         changed = true
         local PD = ns.ProfModule
@@ -318,7 +469,7 @@ function PF.RefreshRoute(slug)
 end
 
 function PF.Toggle(slug)
-    if not (slug and LV[slug] and LV[slug].steps) then return end
+    if not hasRoute(slug) then return end
     local p = dbProf()
     p.follow = p.follow or {}
     local k = charKey()
@@ -335,6 +486,7 @@ function PF.Toggle(slug)
         return
     end
     if not s then
+        if PF.endedPlan then PF.endedPlan[slug] = nil end
         local cur = skillOf(slug) or 0
         s = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1, t0 = time() }
         local _mode, _steps = routeFor(slug, cur)
@@ -387,9 +539,14 @@ function PF.VerifyCurrentOutput(total, ref)
     local prog = run and T.Progress(s.slug, nil, run)
     if not ref then ref = prog end
     if not ref or not ref.item or ref.finished then return false end
+    if ref.planID and (not run or ref.planID ~= run.planID) then return false end
     total = tonumber(total)
     if not total or total < 0 or total ~= math.floor(total) then return false end
-    local ok = T.VerifyOutput(s.slug, ref.index, ref.item, total)
+    local ok
+    if ref.manualConversion or prog and prog.manualConversion then
+        ok = T.ConfirmConversion and T.ConfirmConversion(s.slug, ref.index, total, run and run.planID)
+    else ok = T.VerifyOutput(s.slug, ref.index, ref.item, total) end
+    PF.InvalidateRoute(); PF.Sync()
     PF.view = 0
     PF.Paint()
     return ok ~= false
@@ -403,9 +560,9 @@ local function verifyOutputDialog()
     local run = T.GetRun(s.slug)
     local prog = run and T.Progress(s.slug, nil, run)
     if not prog or not prog.item or prog.finished then return end
-    local data = { slug = s.slug, index = prog.index, item = prog.item, total = prog.outputs or 0 }
+    local data = { slug = s.slug, index = prog.index, item = prog.item, total = prog.manualConversion and prog.remainingConversions or prog.outputs or 0, manualConversion = prog.manualConversion, planID = run.planID }
     StaticPopupDialogs.DF_PROF_VERIFY_OUTPUT = {
-        text = L["填写本步骤累计实际产出件数（不是当前背包数量）。"],
+        text = prog.manualConversion and L["填写本次已完成的精华转换次数。"] or L["填写本步骤累计实际产出件数（不是当前背包数量）。"],
         button1 = L["确认"], button2 = L["取消"], hasEditBox = true,
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
         OnShow = function(self)
@@ -435,6 +592,19 @@ local function expPerPoint(sk, o, y, g, gr)
 end
 
 local function craftsLeft(seg, skill, rec)
+    local XP = ns.ProfExecution
+    if seg.segmentID and XP and XP.CurrentPlan then
+        local slug = st() and st().slug
+        local run = slug and XP.GetRun(slug)
+        if run then
+            local progress = XP.Progress(run.slug, seg.segmentID)
+            if progress then
+                if XP.IsSpecializationQuest(seg) then return progress.complete and 0 or 1 end
+                return progress.remainingCrafts or 0
+            end
+        end
+    end
+    if XP and XP.IsSpecializationQuest(seg) then return 1 end
     local from = math.max(skill or 0, seg[1])
     if from >= seg[2] then return 0 end
     local learn, y, g, gr = recBreaks(rec)
@@ -460,10 +630,10 @@ local function shopList(s, onlyStep)
     for i = curStep, #steps do
         if onlyStep and i > curStep then break end
         local seg = steps[i]
-        local rec = rm[seg[3]]
+        local rec = stepRecipe(seg, rm[seg[3]])
         local mats = recMats(rec)
         local crafts = seg[4] or 0
-        if i == curStep then
+        if seg.segmentID or i == curStep then
             crafts = math.ceil(craftsLeft(seg, s.skill, rec))
         end
         if mats and crafts > 0 then
@@ -481,7 +651,8 @@ local function shopList(s, onlyStep)
         end
     end
     local G = ns.ProfGates
-    local goal = (not onlyStep) and G and G.SpecGoal and G.SpecGoal(s.slug, routeTarget(s.slug))
+    local active = ns.ProfExecution and ns.ProfExecution.GetPlan(s.slug)
+    local goal = (not active and not onlyStep) and G and G.SpecGoal and G.SpecGoal(s.slug, routeTarget(s.slug))
     if goal and type(goal.inputs) == "table" then
         for _, pair in ipairs(goal.inputs) do
             local sid, sn = pair[1], tonumber(pair[2]) or 0
@@ -671,7 +842,7 @@ local function jumpCraft()
     if not seg then return end
     local spellID = seg[3]
     if not IsLearned(spellID) then craftNotify(L["该配方还未学会，先找训练师学习"]) return end
-    local rec = recMap(s.slug)[spellID]
+    local rec = stepRecipe(seg, recMap(s.slug)[spellID])
     local mats = recMats(rec)
     if mats then
         for _, m in ipairs(mats) do
@@ -973,6 +1144,25 @@ local function BuildBody()
     f.skill = MakeFS(f, 16, C_GREY, "LEFT")
     f.skill:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -42)
 
+    f.rankHint = CreateFrame("Frame", nil, f)
+    f.rankHint:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -39)
+    f.rankHint:SetSize(196, 24)
+    f.rankHint:EnableMouse(true)
+    f.rankHint:SetScript("OnEnter", function(self)
+        local ranks = ns.ProfRanks
+        if not (ranks and GameTooltip and self.tasks and #self.tasks > 0) then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(L["专业晋级"], 1, 0.82, 0, true)
+        for _, step in ipairs(self.tasks) do
+            GameTooltip:AddLine(ranks.Title(step), 0.95, 0.78, 0.35, true)
+            for _, text in ipairs(ranks.Lines(step)) do GameTooltip:AddLine(text, 1, 1, 1, true) end
+        end
+        GameTooltip:Show()
+    end)
+    f.rankHint:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    f.rankHint:Hide()
+
     f.seg = MakeFS(f, 16, C_GREY, "RIGHT")
     f.seg:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -42)
 
@@ -1011,6 +1201,14 @@ local function BuildBody()
 
     f.card:EnableMouse(true)
     f.card:SetScript("OnEnter", function(self)
+        if self.__guide and GameTooltip then
+            GameTooltip:SetOwner(self,"ANCHOR_TOP")
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(self.__guide.name,1,0.82,0,true)
+            for _,line in ipairs(self.__guide.lines or {}) do GameTooltip:AddLine(line,1,1,1,true) end
+            GameTooltip:Show()
+            return
+        end
         if not self.__it then return end
         local PD = ns.ProfModule
         local extra
@@ -1295,7 +1493,7 @@ local function sweepPaint(pending)
 end
 
 local function paintMats(seg, rm, sold, w, remaining)
-    local rec = rm[seg[3]]
+    local rec = stepRecipe(seg, rm[seg[3]])
     local mats = recMats(rec)
     local n = 0
     local pending = false
@@ -1399,15 +1597,26 @@ function PF.Paint()
     f.title:SetText(format(L["%s升级HUD"], name))
 
     local cur, mx = skillOf(slug)
-    f.skill:SetText(cur and format(L["技能 %d / %d"], cur, mx or 300) or L["未学过该专业，先找训练师学习"])
+    local rankTasks = PF.RankTasks(slug, routeTarget(slug), steps, s.step)
+    f.rankHint.tasks = rankTasks
+    f.rankHint:SetShown(#rankTasks > 0)
+    local skillText = cur and format(L["技能 %d / %d"], cur, mx or 300) or L["未学过该专业，先找训练师学习"]
+    if #rankTasks > 0 then skillText = skillText .. " · " .. L["晋级"] end
+    f.skill:SetText(skillText)
+    f.skill:SetTextColor(Unpack(#rankTasks > 0 and C_HEAD or C_GREY))
     local ratio = cur and math.min(1, cur / 300) or 0
     f.bar:SetWidth(math.max(2, math.floor((W - 20) * ratio + 0.5)))
     f.bar:SetVertexColor(accent[1], accent[2], accent[3], 0.95)
 
     local finished = (s.step or 1) > #steps
     local vi = math.max(1, math.min(#steps, (s.step or 1) + (PF.view or 0)))
-    f.seg:SetText(((mode == "auto") and L["自动计算"] or L["固定路线"]) .. " · "
+    f.seg:SetText(((mode == "auto") and L["自动计算"] or mode == "gather" and L["采集路线"] or L["固定路线"]) .. " · "
                   .. format(L["段落 %d / %d"], vi, #steps))
+    local segmentWidth = f.seg.GetStringWidth and f.seg:GetStringWidth() or 140
+    local skillWidth = math.max(90, W - 28 - segmentWidth)
+    f.skill:SetWidth(skillWidth)
+    f.skill:SetWordWrap(false)
+    f.rankHint:SetWidth(skillWidth + 4)
 
     local segCur = (not finished) and steps[math.min((s.step or 1), #steps)] or nil
     if segCur then
@@ -1428,6 +1637,7 @@ function PF.Paint()
     local TK = ns.ProfTrack
     local vRun = TK and TK.Active and TK.Active(slug)
     local vProg = vRun and TK.Progress and TK.Progress(slug, nil, vRun)
+    f.verifyBtn:SetText(vProg and vProg.manualConversion and L["确认转换"] or L["校正产出"])
     f.verifyBtn:SetShown(not finished and vProg ~= nil and vProg.item ~= nil and not vProg.finished and not f.craftBtn:IsShown())
     f.craftBtn:SetShown(PF.CRAFT_BTN and not finished)
 
@@ -1438,7 +1648,7 @@ function PF.Paint()
         local seg = steps[vi]
         local rm = recMap(slug)
         local sold = soldSet(slug)
-        local rec = rm[seg[3]]
+        local rec = stepRecipe(seg, rm[seg[3]])
         local card, w = f.card, W - 2 * PAD - 16
         local isCur = (vi == s.step)
 
@@ -1463,7 +1673,12 @@ function PF.Paint()
         card.__it = prodItem and { prodItem } or nil
         card.__mats = recMats(rec)
         local PDm = ns.ProfModule
-        local nmText = SpellName(seg[3])
+        local nmText = seg.name or SpellName(seg[3])
+        local XP = ns.ProfExecution
+        local questInfo=PF.SpecializationQuestInfo(seg)
+        card.__guide=questInfo or seg.navigationOnly and {name=seg.name,lines={seg.detail or ""}} or nil
+        if XP and XP.IsConversion(seg) then nmText = L["精华转换"]
+        elseif questInfo then nmText=questInfo.name end
         card.name:SetText(nmText)
 
         local crafts = seg[4] or 0
@@ -1480,7 +1695,8 @@ function PF.Paint()
             src, detail = PDm.LevelSrc(rec)
         end
         local learned = IsLearned(seg[3])
-        local tagText = learned and L["已学习"] or (src or L["向训练师学习"])
+        local manual = seg.navigationOnly or seg.checkpoint or XP and (XP.IsConversion(seg) or XP.IsSpecializationQuest(seg))
+        local tagText = seg.navigationOnly and L["参考"] or manual and L["手动完成后继续"] or learned and L["已学习"] or (src or L["向训练师学习"])
         if detail and not learned then tagText = tagText .. " · " .. detail end
         card.srcTag:SetText(tagText)
         card.srcTag:SetTextColor(Unpack(learned and C_OK or C_GREY))
@@ -1493,7 +1709,9 @@ function PF.Paint()
 
         local rangeText = format(L["%d – %d"], seg[1], seg[2])
         card.range:SetText(rangeText)
-        local craftText = format(L["大约还需制作%d次"], crafts)
+        local craftText = questInfo and questInfo.summary
+            or seg.navigationOnly and L["按实际技能推进；不预计采集产出。"]
+            or seg.checkpoint and L["不预先计入尚未采到的矿石"] or format(L["大约还需制作%d次"], crafts)
         if canCraft then craftText = craftText .. " · " .. format(L["材料还可制作%d次"], canCraft) end
         card.crafts:SetText(craftText)
 
@@ -1759,7 +1977,10 @@ function PF.Paint()
     end
 
     if finished then
-        f.finish:SetText(format(L["%s跟随完成 · %s"], name, fmtTime(time() - (s.t0 or time()))))
+        local waiting = PF.pendingPlans and PF.pendingPlans[slug]
+        local PD = ns.ProfModule
+        f.finish:SetText(waiting and (PD and PD.PlanStatusText and PD.PlanStatusText(waiting) or L["正在计算升级路线…"])
+            or format(L["%s跟随完成 · %s"], name, fmtTime(time() - (s.t0 or time()))))
         f.finish:ClearAllPoints()
         f.finish:SetPoint("TOPLEFT", f, "TOPLEFT", 10, y)
         f.finish:Show()
@@ -1791,7 +2012,7 @@ end
 
 function PF.PaintButton(bt, slug)
     if not bt then return end
-    local ok = slug and slug ~= "__index" and LV[slug] and LV[slug].steps
+    local ok = slug and slug ~= "__index" and hasRoute(slug)
     if not ok then
         bt:SetShown(false)
         return
@@ -1816,7 +2037,7 @@ end
 
 function PF.PaintImportBtn(bt, slug)
     if not bt then return end
-    local ok = slug and slug ~= "__index" and LV[slug] and LV[slug].steps
+    local ok = slug and slug ~= "__index" and hasRoute(slug)
     if not ok then
         bt:SetShown(false)
         return
@@ -1840,3 +2061,27 @@ function PF.PaintImportBtn(bt, slug)
     end
     bt:SetShown(true)
 end
+
+
+-- A saved execution, rather than live skill alone, advances the HUD. Publication
+-- callbacks wake a visible waiting HUD without replacing any frozen execution.
+local function connectExecution()
+    local XP = ns.ProfExecution
+    if XP and XP.OnChanged then XP.OnChanged(function(slug, run, reason)
+        local state = st()
+        if not state or state.slug ~= slug then return end
+        if reason == "ended" and run.archiveReason == "completed" then
+            PF.endedPlan = PF.endedPlan or {}; PF.endedPlan[slug] = run.plan
+        end
+        PF.InvalidateRoute()
+        PF.Sync()
+        if PF.f and PF.f:IsShown() then PF.Paint() end
+    end) end
+    if RA and RA.OnPlanChanged then RA.OnPlanChanged(function(slug)
+        local state = st()
+        if not state or state.slug ~= slug then return end
+        PF.InvalidateRoute(); PF.Sync()
+        if PF.f and not state.hidden then PF.f:Show(); PF.Paint() end
+    end) end
+end
+if ns.Init then ns.Init(connectExecution) else connectExecution() end

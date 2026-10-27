@@ -320,6 +320,30 @@ local function RouteTick()
     end
 end
 
+-- Keep the dev tuple schema while sharing client corrections with the solver.
+local function ResolvedRow(row, slug, spell)
+    local E=ns.ProfEconomy
+    if not (E and E.ResolveRecipe) then return row end
+    local seed
+    if row.mats or row.learn then
+        seed={};for key,value in pairs(row) do seed[key]=value end
+        seed.spell=spell or seed.spell;seed.item=seed.item or seed.makes
+    else
+        seed={spell=row[1],item=row[2],count=row[3],learn=row[7],yellow=row[8],green=row[9],grey=row[10],
+            mats=row[12],formula=type(row[13])=="table" and row[13][1] or nil,source=row[14],category=row[4]}
+    end
+    local resolved=E.Normalize and E.Normalize(seed,slug) or E.ResolveRecipe(seed,slug)
+    if not resolved then return row end
+    if row.mats or row.learn then resolved.makes=resolved.item;return resolved end
+    local out={};for key,value in pairs(row) do out[key]=value end
+    out[2],out[3],out[7],out[8],out[9],out[10],out[12]=resolved.item,resolved.count,resolved.learn,resolved.yellow,resolved.green,resolved.grey,resolved.mats
+    out.clientUnavailable,out.clientPending=resolved.clientUnavailable,resolved.clientPending
+    out.cooldown,out.cooldownUnknown=resolved.cooldown,resolved.cooldownUnknown
+    out.requiredDataUnknown=resolved.requiredDataUnknown
+    out.outputMin,out.outputMax,out.variableOutput=resolved.outputMin,resolved.outputMax,resolved.variableOutput
+    return out
+end
+
 local function BuildCandidates(slug, opts)
     local specBlocked = 0
     local pr = ns.ProfRecipes
@@ -335,12 +359,13 @@ local function BuildCandidates(slug, opts)
     local cands, recOf = {}, {}
     for _, rec in ipairs(Rg.rows or {}) do
         RouteTick()
+        rec=ResolvedRow(rec,slug)
         local spell, learn, yellow, green, grey = rec[1], rec[7], rec[8], rec[9], rec[10]
         local reagents = rec[12]
         if type(spell) == "number" and type(learn) == "number"
            and type(grey) == "number" and grey > learn
            and type(reagents) == "table" and #reagents > 0 then
-            local ok = true
+            local ok = not rec.clientUnavailable and not rec.clientPending and not rec.cooldown and not rec.cooldownUnknown
             local skipFormula = opts.noFormula
             if ok and skipFormula and type(rec[13]) == "table" and type(rec[13][1]) == "number" then
                 local SM = ns.ProfSourceMerge
@@ -397,11 +422,13 @@ local function BuildCandidates(slug, opts)
     if LV and type(LV.rinfo) == "table" then
         for spell, ri in pairs(LV.rinfo) do
             RouteTick()
+            ri=ResolvedRow(ri,slug,spell)
             if type(spell) == "number" and not recOf[spell]
                and type(ri.learn) == "number" and type(ri.grey) == "number"
                and ri.grey > ri.learn
                and type(ri.mats) == "table" and #ri.mats > 0 then
-                local ok = not (opts.learnedOnly and not LearnKnown(spell))
+                local ok = not ri.clientUnavailable and not ri.clientPending and not ri.cooldown and not ri.cooldownUnknown
+                    and not (opts.learnedOnly and not LearnKnown(spell))
                 local cost, unpriced = 0, false
                 if ok then
                     for _, m in ipairs(ri.mats) do
@@ -749,8 +776,8 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
         total = total + (st.cost or 0)
         crafts = crafts + (st[4] or 0)
         local prod = rec and rec[2]
-        if type(prod) == "number" then
-            local outN = (st[4] or 0) * (rec[3] or 1)
+        if type(prod) == "number" and type(rec[3])=="number" and rec[3]>0 then
+            local outN = (st[4] or 0) * rec[3]
             RequestProduct(prod)
             local ah = AHPrice(prod)
             if ah then
@@ -760,6 +787,8 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             end
             local sp = NPCSellPrice(prod)
             if sp then productNPC = productNPC + sp * outN end
+        elseif type(prod)=="number"then
+            productPartial=true
         end
         if ml then
             for _, m in ipairs(ml) do
@@ -887,17 +916,17 @@ function RA.SummarizeSteps(steps, slug, opts)
     local pr = ns.ProfRecipes
     local Rg = pr and pr[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
-    if not (Rg and (type(Rg.rows) == "table"
-                    or (LV and type(LV.rinfo) == "table"))) then return nil end
+    if not ((Rg and type(Rg.rows)=="table")
+        or (LV and (type(LV.rinfo)=="table" or type(LV.steps)=="table"))) then return nil end
     local soldSet = {}
     if LV and type(LV.sold) == "table" then
         for _, id in ipairs(LV.sold) do soldSet[id] = true end
     end
     local recOf = {}
-    for _, rec in ipairs(Rg.rows or {}) do recOf[rec[1]] = rec end
+    for _, rec in ipairs(Rg and Rg.rows or {}) do recOf[rec[1]] = ResolvedRow(rec,slug) end
     if LV and type(LV.rinfo) == "table" then
         for spell, ri in pairs(LV.rinfo) do
-            if not recOf[spell] then recOf[spell] = ri end
+            if not recOf[spell] then recOf[spell] = ResolvedRow(ri,slug,spell) end
         end
     end
     local specInputs
@@ -927,7 +956,16 @@ function RA.SummarizeSteps(steps, slug, opts)
     if blockedSteps then
         res.blockedSteps = blockedSteps
         res.specBlocked = #blockedSteps
+        res.feasible=false;res.status="recalculate_required"
+        res.diagnostics={}
+        for _,blocked in ipairs(blockedSteps) do
+            res.diagnostics[#res.diagnostics+1]={code=blocked.reason,spell=blocked.spell,profession=slug}
+            if blocked.reason=="clientDataPending" then res.clientPending=true;res.completeCost=false;res.costComplete=false;res.priced=false end
+        end
+        res.blockingDiagnostics=res.diagnostics
     end
+    local _,_,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
+    if goalRequired then res.specializationGoalRequired=true;res.feasible=false;res.status="recalculate_required" end
     return RA.ApplyRecovery(res, slug, opts, recOf)
 end
 
@@ -946,12 +984,13 @@ local function RecoverySnapshot(slug, steps, recOf, toolItems)
                 local item = rec[2]
                 if type(item) ~= "number" then item = rec.makes end
                 local count = rec[3]
-                if type(count) ~= "number" then count = rec.count or 1 end
+                if type(count) ~= "number" then count = rec.count end
+                if count==nil and not rec.clientPending then count=1 end
                 local mats = rec[12] or rec.mats or {}
                 local row = {
                     profession = slug, spell = spell, key = key,
-                    item = (type(item) == "number" and item > 0) and item or nil,
-                    count = (type(count) == "number" and count > 0) and count or 1,
+                    item = (type(item) == "number" and item > 0 and type(count)=="number" and count>0) and item or nil,
+                    count = (type(count) == "number" and count > 0) and count or 0,
                     mats = mats,
                 }
                 snap.recipes[#snap.recipes + 1] = row
@@ -1136,8 +1175,9 @@ end
 
 function RA.FilterFixedSpecializations(slug, steps, opts)
     local G = ns.ProfGates
+    local E = ns.ProfEconomy
     local filtered, blocked = {}, {}
-    if not (G and G.LearningEligibility) then
+    if not (E and E.LearningEligibility) and not (G and G.LearningEligibility) then
         for _, st in ipairs(steps or {}) do filtered[#filtered + 1] = st end
         return filtered, blocked, false
     end
@@ -1145,7 +1185,20 @@ function RA.FilterFixedSpecializations(slug, steps, opts)
     for _, st in ipairs(steps or {}) do
         local spell = st[3] or st.spell
         local allowed, reason = true, nil
-        if spell then allowed, reason = G.LearningEligibility(spell) end
+        if spell and spell~=0 and not st.checkpoint then
+            local profession=st.profession or slug
+            local recipe=E and E.FindRecipe and E.FindRecipe(profession,spell) or st.recipe
+            if recipe and #(recipe.requiredDataUnknown or {})>0 then
+                local onlyLearn=true
+                for _,field in ipairs(recipe.requiredDataUnknown)do if field~="learn"then onlyLearn=false end end
+                allowed,reason=false,onlyLearn and "learningRequirementsUnknown"or"clientDataPending"
+            elseif recipe and (recipe.cooldown or recipe.cooldownUnknown)then
+                allowed,reason=false,recipe.cooldown and "cooldown"or"cooldownUnknown"
+            elseif recipe and E and E.LearningEligibility then
+                allowed,reason=E.LearningEligibility(recipe,opts and opts.snapshot)
+            elseif E and E.FindRecipe then allowed,reason=false,"clientDataPending"
+            elseif G and G.LearningEligibility then allowed,reason=G.LearningEligibility(spell) end
+        end
         if allowed then
             filtered[#filtered + 1] = st
         else
@@ -1160,6 +1213,7 @@ end
 
 function RA.MarkFixedSpecializations(slug, steps, opts)
     local _, blocked = RA.FilterFixedSpecializations(slug, steps, opts)
+    for _,st in ipairs(steps or {}) do st.specBlocked=nil end
     if #blocked == 0 then return nil end
     local bySpell = {}
     for _, b in ipairs(blocked) do
@@ -1167,7 +1221,7 @@ function RA.MarkFixedSpecializations(slug, steps, opts)
     end
     for _, st in ipairs(steps or {}) do
         local reason = bySpell[st[3]]
-        if reason then st.specBlocked = reason end
+        st.specBlocked = reason
     end
     return blocked
 end

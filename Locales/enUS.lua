@@ -4,6 +4,38 @@ if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
 
 local L = ns.L
 
+L["配方学习条件资料已更新，请重新计算路线。"] = "Recipe learning conditions have changed. Recalculate the route."
+-- Profession-specific route audit.
+L["任务身份尚未确认"] = "Quest identity unverified"
+L["需要专业技能 %d"] = "Requires profession skill %d"
+L["需要角色等级 %d"] = "Requires character level %d"
+L["参考坐标 %.2f, %.2f"] = "Reference coordinates %.2f, %.2f"
+L["先完成前置任务并与导师对话：%s"] = "Complete the prerequisite quests and speak to the mentor: %s"
+L["实际学会对应专精后才完成此步骤。"] = "This step completes only after you actually learn the specialization."
+L["实地剥皮"] = "Skinning in the field"
+L["实地采集"] = "Gathering in the field"
+L["钓鱼练习"] = "Fishing practice"
+L["参考"] = "Reference"
+L["参考采集导航；门槛不代表技能提升范围。"] = "Reference gathering navigation; entry thresholds do not guarantee skill gains."
+L["按实际技能推进；不预计采集产出。"] = "Advance using actual skill; gathered outputs are not assumed."
+L["固定攻略包含不可执行步骤，请切换自动规划或先满足学习条件。"] = "This fixed guide contains unavailable steps. Switch to automatic planning or meet their learning requirements."
+L["鱼类的钓取门槛或时间限制尚未确认，暂不用于纯钓鱼路线。"] = "Fishing skill or time restrictions are unverified; this fish is excluded from the self-fished route."
+L["当前专业技能上限尚未读取，暂不推断最后一段采集目标。"] = "The current profession cap is unknown; the final gathering target is not inferred."
+
+-- Native profession route planning and execution.
+L["专业专精任务"] = "Profession specialization quest"
+L["专业晋级"] = "Profession ranks"
+L["优化已中断；执行计划已保存，可重新计算。"] = "Optimization was interrupted. Your execution plan is saved; you can recalculate."
+L["制作工具的配方或产量资料尚未核实。"] = "The tool recipe or its output quantity has not been verified."
+L["填写本次已完成的精华转换次数。"] = "Enter the number of essence conversions you have completed."
+L["已知输入模型内最优；配方覆盖未确认"] = "Optimal for known inputs; recipe coverage unverified"
+L["手动完成后继续"] = "Complete manually before continuing"
+L["手动转换"] = "Manual conversion"
+L["晋级"] = "Rank up"
+L["确认转换"] = "Confirm conversion"
+L["精华转换"] = "Essence conversion"
+L["转换：%s → %s"] = "Convert: %s → %s"
+
 L[" |cff40d940新|r"] = " |cff40d940New|r"
 L[" · %d%%"] = " · %d%%"
 L[" · BOSS %d"] = " · Boss %d"

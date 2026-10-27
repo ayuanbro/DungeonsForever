@@ -90,6 +90,8 @@ local function activeList()
     return out
 end
 
+T._Notify = notify
+
 function T.OnChanged(fn)
     if type(fn) == "function" then listeners[#listeners + 1] = fn end
 end
@@ -724,6 +726,8 @@ local function syncAll()
 end
 
 local function initialize()
+    -- The advanced ledger owns observation when loaded by the main TOC.
+    if ns.ProfExecution then return end
     local c = db()
     c.session = (c.session or 0) + 1
     T.session = tostring(c.session)

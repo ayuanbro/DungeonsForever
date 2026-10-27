@@ -25,16 +25,36 @@ local function MaybeYield()
     end
 end
 
-local function validMats(mats)
-    if type(mats) ~= "table" or #mats == 0 then return false end
-    for _, m in ipairs(mats) do
-        if type(m) ~= "table" or type(m[1]) ~= "number" or m[1] <= 0
-            or type(m[2]) ~= "number" or m[2] <= 0 then return false end
+-- Solver snapshots and execution plans must not share nested recipe/quote data
+-- with the live client cache. Cooperatively copy large inputs when requested.
+local function copy(value, tick, seen)
+    if type(value) ~= "table" then return value end
+    seen = seen or {}
+    if seen[value] then return seen[value] end
+    local out, count = {}, 0
+    seen[value] = out
+    for k, v in pairs(value) do
+        out[k] = copy(v, tick, seen)
+        count = count + 1
+        if tick and count % 64 == 0 then tick() end
     end
-    return true
+    return out
+end
+E.Copy = function(value, tick) return type(value)=="table" and copy(value, tick) or {} end
+
+function E.CharacterKey()
+    return ((UnitName and UnitName("player")) or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "?")
 end
 
-E.Copy = shallow
+function E.ClientStore()
+    DungeonsForeverDB = DungeonsForeverDB or {}
+    DungeonsForeverDB.prof = DungeonsForeverDB.prof or {}
+    local prof = DungeonsForeverDB.prof
+    prof.economy = prof.economy or {}
+    local key = E.CharacterKey()
+    prof.economy[key] = prof.economy[key] or {}
+    return prof.economy[key]
+end
 
 if not E.GetPolicies then
     function E.GetPolicies()
@@ -86,6 +106,8 @@ local DIAG_TEXT = {
     formulaStockUnknown = L["图纸为限量或未核实库存，不能保证商人现货。"],
     auctionSupplyLimited = L["拍卖行可购数量不足，无法继续此配方；请查询更多货物或改用其他配方。"],
     fishingRecipeGap = L["当前技能没有符合纯钓鱼条件的可用配方，请检查食谱、材料来源或排除设置。"],
+    fishingRequirementsUnknown = L["鱼类的钓取门槛或时间限制尚未确认，暂不用于纯钓鱼路线。"],
+    professionCapUnknown = L["当前专业技能上限尚未读取，暂不推断最后一段采集目标。"],
     materialUnavailable = L["材料没有可靠的购买或制作来源。"],
     levelGap = L["当前技能区间没有可用升级配方。"],
     clientDataPending = L["客户端数据待读取，请打开对应专业面板。"],
@@ -97,6 +119,9 @@ local DIAG_TEXT = {
     batchDependency = L["合并制作所需的材料或学习等级尚未满足。"],
     batchSkillGap = L["合并制作后无法达到目标技能，请调整配方限制。"],
     executionInvalid = L["制作顺序或材料用途无法验证，请调整限制后重新计算。"],
+    learningRequirementsUnknown = L["配方学习条件尚未核实。"],
+    learningPolicyChanged = L["配方学习条件资料已更新，请重新计算路线。"],
+    toolFactsUnknown = L["制作工具的配方或产量资料尚未核实。"],
 }
 
 function E.DiagnosticText(d)
@@ -126,13 +151,54 @@ function E.Professions()
     local out = {}
     local PD = ns.ProfModule
     local list = PD and PD.ProfLearned and PD.ProfLearned() or {}
+    if not next(list) and type(GetProfessions)=="function" and type(GetProfessionInfo)=="function" then
+        local ok, a, b, c, d, e, f = pcall(GetProfessions)
+        if ok then
+            local ids = E.SkillIDs or {[171]="alchemy",[164]="blacksmithing",[333]="enchanting",[202]="engineering",
+                [165]="leatherworking",[197]="tailoring",[186]="mining",[182]="herbalism",[393]="skinning",
+                [185]="cooking",[129]="first-aid",[356]="fishing"}
+            for _, index in pairs({a,b,c,d,e,f}) do
+                local found, _, _, cur, cap, _, _, id = pcall(GetProfessionInfo, index)
+                if found and ids[id] and type(cur)=="number" and type(cap)=="number" then list[ids[id]]={cur=cur,max=cap} end
+            end
+        end
+    end
     for slug, v in pairs(list) do
-        out[slug] = { cur = tonumber(v.cur) or 1, max = tonumber(v.max) or 300, primary = true }
+        local info = ns.ProfData and ns.ProfData.pro and ns.ProfData.pro[slug]
+        local primary = info and info.kind=="primary" or (not info and slug~="cooking" and slug~="fishing" and slug~="first-aid")
+        out[slug] = { cur = tonumber(v.cur) or 1, max = tonumber(v.max) or 300, primary = primary }
     end
     return out
 end
 
+function E.SpecializationKnown(spell)
+    -- Execution completion needs a live ability observation, not a historical
+    -- recipe cache. Failed/missing APIs and pre-login queries remain unknown.
+    if type(IsLoggedIn)=="function" then
+        local ok, ready = pcall(IsLoggedIn)
+        if ok and ready==false then return nil end
+    end
+    for _, name in ipairs({"C_SpellBook.IsSpellKnown", "IsSpellKnown", "IsPlayerSpell", "C_Spell.IsSpellKnown"}) do
+        local parent, key = name:match("^([^.]+)%.(.+)$")
+        local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
+        if type(fn)=="function" then
+            local ok, value = pcall(fn, spell)
+            if ok and type(value)=="boolean" then return value end
+        end
+    end
+end
+
 function E.Known(spell)
+    local runtime = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[spell]
+    if runtime and runtime.learned == true then return true end
+    for _, name in ipairs({"C_SpellBook.IsSpellKnown", "IsSpellKnown", "IsPlayerSpell", "C_Spell.IsSpellKnown"}) do
+        local parent, key = name:match("^([^.]+)%.(.+)$")
+        local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
+        if type(fn)=="function" then
+            local ok, value = pcall(fn, spell)
+            if ok and type(value)=="boolean" then return value end
+        end
+    end
     local ra = ns.ProfRouteAuto
     if ra and ra.SpellKnown then
         local ok, v = pcall(ra.SpellKnown, spell)
@@ -289,39 +355,211 @@ function E.AuctionSupplyOf(context, id)
     return nil
 end
 
-function E.SummarizeAuctionSupply(result, context)
-    if type(result) ~= "table" then return result end
-    local ra = ns.ProfRouteAuto
-    if ra and ra.StampSupply then ra.StampSupply(result, context) end
-    local inputs, needed = {}, {}
-    for _, e in ipairs(result.mats or {}) do
-        local id = e.id or e[1]
-        if type(id) == "number" and id > 0 then
-            inputs[id] = SupplyIdentity(E.AuctionSupplyOf(context, id))
-            needed[id] = (needed[id] or 0) + (tonumber(e.count or e[2]) or 1)
-        end
-    end
-    result.auctionSupplyInputs = inputs
-    local complete = true
-    for _, e in ipairs(result.mats or {}) do
-        local id = e.id or e[1]
-        if type(id) == "number" and not e.vendor
-            and (e.source == nil or e.source == "ah" or e.source == "auction") then
-            local q = tonumber(e.availableCount)
-            if not q then
-                complete = false
-            else
-                if (needed[id] or 0) > q then
-                    e.supplyLimited = true
-                    complete = false
-                end
-                if e.supplyComplete ~= true then complete = false end
-            end
-        end
-    end
-    result.supplyComplete = complete and true or false
-    return result
+
+local function positiveInteger(value)
+    return type(value) == "number" and value > 0 and value == floor(value)
 end
+local function materialsValid(mats)
+    if type(mats) ~= "table" then return false end
+    for _, m in ipairs(mats) do
+        if type(m) ~= "table" or not positiveInteger(m[1]) or not positiveInteger(m[2]) then return false end
+    end
+    return true
+end
+
+function E.GetEngineeringSpecialization()
+    return ns.ProfGates and ns.ProfGates.GetPlannedChoice() or "none"
+end
+function E.GetEngineeringSpecializationContext(opts)
+    return ns.ProfGates and ns.ProfGates.SpecializationContext(opts) or {abilities={}, goals={}, choice="none"}
+end
+function E.SpecializationFingerprint(context)
+    return context and context.fingerprint or ""
+end
+function E.SpecializationAbilityFingerprint(abilities)
+    return ns.ProfGates and ns.ProfGates.SpecAbilityFingerprint(abilities) or ""
+end
+function E.ToolPlanningEnabled(opts)
+    if opts and opts.autoCraftTools ~= nil then return opts.autoCraftTools ~= false end
+    if opts and opts.snapshot and opts.snapshot.autoCraftTools ~= nil then return opts.snapshot.autoCraftTools ~= false end
+    return not (DungeonsForeverDB and DungeonsForeverDB.prof and DungeonsForeverDB.prof.autoCraftTools == false)
+end
+function E.ToolFingerprint(slug, opts)
+    local parts = {tostring(E.ToolPlanningEnabled(opts)), tostring(ns.ProfTools and ns.ProfTools.revision or 0)}
+    for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
+        parts[#parts+1] = table.concat({tool.spell or 0, tool.item or 0, tool.minSkill or 0, tostring(tool.bindOnPickup or false)}, ":")
+    end
+    return table.concat(parts, "|")
+end
+local function planningToolRecipe(slug, spell, snapshot)
+    for _, recipe in ipairs(snapshot and snapshot.recipes or {}) do
+        if recipe.profession==slug and recipe.spell==spell then return recipe end
+    end
+    -- A supplied snapshot owns its recipe observations. Never mix live client
+    -- requirements into an existing execution or synthetic input boundary.
+    if not snapshot and E.FindRecipe then return E.FindRecipe(slug, spell) end
+end
+function E.HasToolGoals(slug, opts)
+    if not E.ToolPlanningEnabled(opts) then return false end
+    local target = tonumber(opts and opts.target) or 300
+    for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
+        local recipe = planningToolRecipe(slug, tool.spell, opts and opts.snapshot)
+        if not recipe or type(recipe.learn)~="number" or target>recipe.learn then return true end
+    end
+    return false
+end
+function E.LearningSource(recipe)
+    if type(recipe) ~= "table" then return end
+    if recipe.learnSource == "trainer" or recipe.trainerObserved then return "trainer" end
+    local spell = recipe.spell or recipe[1]
+    local runtime = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[spell]
+    if runtime and runtime.trainerObserved then return "trainer" end
+    return ns.ProfGates and ns.ProfGates.LearningSource(spell) or recipe.learnSource
+end
+function E.ResolveRecipe(seed, slug)
+    if type(seed) ~= "table" then return end
+    local r = copy(seed)
+    r.profession = slug or r.profession
+    local rt = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[r.spell]
+    local client = false
+    if rt then
+        if materialsValid(rt.mats) and (#rt.mats > 0 or rt.learned or rt.validated or rt.trainerObserved) then
+            r.mats = copy(rt.mats); r.materialSource = "client"; client = true
+        end
+        if positiveInteger(rt.item) then r.item = rt.item; client = true end
+        if positiveInteger(rt.count) then
+            r.count = rt.count; r.outputMin = rt.outputMin or rt.count; r.outputMax = rt.outputMax or rt.count
+            r.variableOutput = rt.variableOutput; r.outputSource = "client"; client = true
+        end
+        if rt.variableOutput then
+            r.variableOutput = true
+            if positiveInteger(rt.outputMin) and positiveInteger(rt.outputMax) and rt.outputMax >= rt.outputMin then
+                r.count = rt.outputMin; r.outputMin = rt.outputMin; r.outputMax = rt.outputMax
+                r.outputBasis = "minimum"; r.outputConflict = nil
+            elseif positiveInteger(r.count) then r.outputBasis = "reference"
+            else r.outputConflict = true end
+        end
+        if rt.learn then r.learn = rt.learn; r.skillSource = "client" end
+        if rt.cooldown ~= nil and (rt.cooldown or r.cooldown ~= true or rt.cooldownVerified) then
+            r.cooldown = rt.cooldown; r.cooldownUnknown = nil
+        end
+        if rt.unavailable == true or rt.available == false then r.clientUnavailable = true end
+        if rt.available == true and not r.clientUnavailable then r.clientAvailable = true end
+        if rt.trainerObserved then
+            r.trainerObserved = true; r.trainerAvailable = rt.trainerAvailable
+            r.learnSource = "trainer"; r.clientAvailable = true; r.clientUnavailable = nil
+        end
+    end
+    local d = E.ClientStore()
+    r.learningRequirements = copy(d.learningRequirements and d.learningRequirements[r.spell])
+    local roster = d.recipeRosters and d.recipeRosters[r.profession]
+    if roster and roster.complete and not roster.ids[r.spell] and not (rt and rt.trainerObserved) then
+        r.clientUnavailable = true; r.clientAvailable = nil
+    end
+    r.materialSource = r.materialSource or (materialsValid(r.mats) and "catalogue" or "unknown")
+    r.outputSource = r.outputSource or ((positiveInteger(r.count) or not r.item) and "catalogue" or "unknown")
+    r.outputMin = r.outputMin or r.count
+    r.outputMax = r.outputMax or r.count
+    r.clientPending = not materialsValid(r.mats) or (r.item and not positiveInteger(r.count)) or nil
+    r.dataSource = client and "mixed" or "catalogue"
+    r.skillSource = r.skillSource or "catalogue"
+    r.key = r.profession and r.spell and r.profession .. ":" .. r.spell or r.key
+    return r
+end
+function E.Normalize(row, slug, kind)
+    if type(row) ~= "table" then return end
+    local r
+    if row.spell then r = copy(row)
+    elseif kind == "enchants" then
+        r = {spell=row[14], item=row[15], count=1, mats=row[9], learn=row[5], yellow=row[6], green=row[7], grey=row[8], source=row[10]}
+    elseif kind == "crafted" then
+        r = {spell=row[1], item=row[2], count=row[3], mats=row[8], learn=row[4], yellow=row[5], green=row[6], grey=row[7], formula=tonumber(row[9])}
+    else
+        local formula = row[13]
+        r = {spell=row[1], item=row[2], count=row[3], mats=row[12], learn=row[7], yellow=row[8], green=row[9], grey=row[10],
+            source=row[14], formula=type(formula)=="table" and formula[1] or nil, category=row[4]}
+    end
+    if not positiveInteger(r.spell) then return end
+    if not r.item and r.count == nil then r.count = 0 end
+    if r.count == nil then r.count = 1 end
+    r.profession = slug or r.profession
+    r.yellow = r.yellow or r.learn
+    r.green = r.green or (r.yellow and r.grey and (r.yellow+r.grey)/2) or r.yellow
+    r.catalogue = true
+    r = E.ResolveRecipe(r, r.profession)
+    local verifyCooldown = r.cooldownVerificationRequired == true or r.cooldownVerificationRequired == 1
+        or r.category == "Transmutes" or r.spell == 18560
+    if r.cooldown == nil then
+        local fn = (C_Spell and C_Spell.GetSpellBaseCooldown) or GetSpellBaseCooldown
+        local ok, ms = false, nil
+        if fn then ok, ms = pcall(fn, r.spell) end
+        if ok and type(ms)=="number" then r.cooldown = ms > 0
+        elseif not verifyCooldown then r.cooldown = false end
+    end
+    -- A zero base cooldown does not verify daily/shared recipe restrictions.
+    -- Apply this after runtime overrides too: ReadRecipe may have captured a
+    -- zero base duration without receiving an explicit hasCooldown result.
+    local runtime = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[r.spell]
+    if verifyCooldown and not r.cooldown and not (runtime and runtime.cooldownVerified) then
+        r.cooldownUnknown = true
+    end
+    return r
+end
+function E.FindRecipe(slug, spell)
+    local group = ns.ProfRecipes and ns.ProfRecipes[slug]
+    for _, row in ipairs(group and group.rows or {}) do
+        if row[1] == spell then return E.Normalize(row, slug, "rows") end
+    end
+    -- Retain dev's established upgrade data before adding the generic crafted
+    -- and enchant reference lists. Live observations still override either.
+    local ri = ns.ProfLeveling and ns.ProfLeveling[slug] and ns.ProfLeveling[slug].rinfo and ns.ProfLeveling[slug].rinfo[spell]
+    if ri then
+        local r = copy(ri); r.spell=spell; r.item=r.item or r.makes
+        r.formula=r.formula or r.formulaID
+        return E.Normalize(r, slug)
+    end
+    for _, kind in ipairs({"crafted", "enchants"}) do
+        for _, row in ipairs(group and group[kind] or {}) do
+            if (kind=="enchants" and row[14] or row[1]) == spell then return E.Normalize(row, slug, kind) end
+        end
+    end
+end
+function E.LearningEligibility(recipe, snapshot, state)
+    if type(recipe) ~= "table" then return false, "clientDataPending" end
+    snapshot = snapshot and (snapshot.snapshot or snapshot)
+    if recipe.clientUnavailable then return false, "clientUnavailable", {status="blocked"} end
+    local spell, key = recipe.spell or recipe[1], recipe.key
+    key = key or (recipe.profession and recipe.profession .. ":" .. tostring(spell))
+    local known = state and state.learned or snapshot and snapshot.known
+    if known and (known[key] or known[spell]) or not known and E.Known(spell) then return true, nil, {status="learned"} end
+    local requirement = recipe.learningRequirements
+    local current = state and state.skill and state.skill[recipe.profession]
+        or snapshot and snapshot.professions and snapshot.professions[recipe.profession] and snapshot.professions[recipe.profession].cur
+    if requirement then
+        local level = snapshot and snapshot.level or (not snapshot and UnitLevel and UnitLevel("player"))
+        if type(requirement.level)=="number" and requirement.level>0 then
+            if type(level)~="number" then return false,"clientDataPending",{status="unknown"} end
+            if level<requirement.level then return false,"characterLevelRequired",{status="blocked"} end
+        end
+        if type(requirement.skill)=="number" and requirement.skill>0 then
+            if type(current)~="number" then return false,"clientDataPending",{status="unknown"} end
+            if current<requirement.skill then return false,"skillRequired",{status="blocked"} end
+        end
+    end
+    local G = ns.ProfGates
+    local ability = G and G.RequiredAbility(spell) or 0
+    local abilities = state and state.specializationAbilities or {}
+    local actual = snapshot and (snapshot.specializationAbilities or snapshot.abilities)
+        or G and G.Abilities() or {}
+    if ability>0 and abilities[ability]~=true and actual[ability]~=true then
+        if abilities[ability]==false or actual[ability]==false then return false,"specializationRequired",{status="blocked",requiredAbility=ability,requiredAbilities={ability}} end
+        return true,nil,{status="unknown",requiredAbility=ability,hasPending=true}
+    end
+    if G and G.HasPending(spell) then return true,nil,{status="unknown",hasPending=true} end
+    if recipe.trainerAvailable==true or requirement or (G and G.LearningSource(spell)) then return true,nil,{status="allowed"} end
+    return true,nil,{status="unknown"}
+end
+E.RecipeSpecializationAllowed = E.LearningEligibility
 
 local function vendorQuote(o)
     return type(o) == "table" and o.unlimited == true and type(o.price) == "number"
@@ -329,294 +567,456 @@ local function vendorQuote(o)
         and not o.hasExtendedCost and (not o.currencyID or o.currencyID == 0)
 end
 
-function E.FormulaFor(r, context)
-    MaybeYield()
-    if type(r) ~= "table" then return end
-    local id = tonumber(r.formula)
-    if not id or id <= 0 then return nil end
-    local known = E.Known(r.spell)
-    if type(context) == "table" and type(context.known) == "table" then
-        if context.known[r.key] or context.known[r.spell] then known = true end
+local function formulaContext(context)
+    context=context or {}
+    return context.snapshot or context
+end
+-- This is a purchase-source policy. Learned recipes and explicit trainer
+-- learning paths keep their existing eligibility regardless of the setting.
+function E.AllowLimitedFormulas(context)
+    if context and context.allowLimitedFormulas~=nil then return context.allowLimitedFormulas==true end
+    local snapshot=context and context.snapshot
+    if snapshot and snapshot.allowLimitedFormulas~=nil then return snapshot.allowLimitedFormulas==true end
+    local db=DungeonsForeverDB and DungeonsForeverDB.prof
+    return db and db.autoBuyLimitedFormulas==true or false
+end
+function E.LimitedFormulaOffer(offer)
+    if offer.unlimited==true then return false end
+    if offer.limited==true or offer.stockStatus=="limited"
+        or (type(offer.stock)=="number" and offer.stock>=0)
+        or (type(offer.maxStock)=="number" and offer.maxStock>=0) then return true end
+    -- Normalized offers also use unlimited=false for missing stock evidence.
+    if offer.stockUnknown or offer.stockStatus=="unknown" then return false end
+    return offer.unlimited==false
+end
+local function recipeKnown(r,context)
+    if context.professions and context.professions[r.profession] and context.professions[r.profession].unlearned then return false end
+    if context.known then return context.known[r.key]==true or context.known[r.spell]==true end
+    return E.Known(r.spell)
+end
+local function hasEntries(t) return type(t)=="table" and next(t)~=nil end
+local function questSource(source)
+    if source.questOnly or source.quest or hasEntries(source.quests) or source.type=="quest" or source.kind=="quest" then return true end
+    -- `read=classic/wowhead` is scrape provenance, and numeric skill is the
+    -- required profession level. Neither field identifies a quest reward.
+    for _,key in ipairs({"skill","notes","description"}) do
+        local value=source[key]
+        if type(value)=="string" and (value:lower():find("quest",1,true) or value:find("任务",1,true) or value:find("任務",1,true)) then return true end
     end
-    if known then return { id = id, known = true, usable = true } end
-    local ra = ns.ProfRouteAuto
-    local cost, source, unpriced
-    local ah = ra and ra.AHPriceOf and ra.AHPriceOf(id)
-    if type(ah) == "number" and ah > 0 then cost, source = ah, "ah" end
-    local offers, hasUnlimited, hasLimited, hasOffer = {}, false, false, false
-    local vdb = ns.VendorPriceDB
-    local seenNpc = {}
-    local raw = {}
-    local flist = ns.ProfSupply and ns.ProfSupply.FormulaList and ns.ProfSupply.FormulaList(id) or nil
-    if type(flist) == "table" then
-        for _, o in ipairs(flist) do
-            raw[#raw + 1] = o
-            if o.npcID then seenNpc[o.npcID] = true end
+    return false
+end
+-- The latest actual observation remains a finite purchase budget after reload.
+-- Auctionator's daily maximum is reference-only; absent observations stay unknown.
+local function validSupply(entry)
+    return type(entry)=="table" and entry.source~="auctionator-daily-maximum"
+        and type(entry.quantity)=="number" and entry.quantity>=0
+        and entry.quantity<math.huge and entry.quantity==floor(entry.quantity)
+end
+function E.AuctionSupplyOf(context,id)
+    local entry
+    if context and context.auctionSupply then entry=context.auctionSupply[id]
+    elseif not context or not context.prices then
+        local bridge=ns.AuctionBridge
+        if bridge and bridge.GetAuctionSupply then entry=bridge.GetAuctionSupply(id,true) end
+    end
+    if validSupply(entry) then return entry end
+end
+local function quoteMetadata(context,id,field,method)
+    if context and context[field] then return context[field][id] end
+    -- A captured input must not acquire new metadata while its search runs.
+    if context and context.prices then return end
+    local bridge=ns.AuctionBridge
+    if bridge and type(bridge[method])=="function" then return bridge[method](id) end
+end
+local supplyIdentityFields={"quantity","observedAt","source","complete","ownerExcluded","market","batch","schemaVersion"}
+local function supplyIdentity(supply)
+    if not supply then return false end
+    local out={}
+    for _,key in ipairs(supplyIdentityFields) do out[key]=supply[key] end
+    return out
+end
+function E.AuctionSupplyChanged(result)
+    -- Prices/history have independent freshness. Only quantity evidence belongs
+    -- to this comparison, and looking it up never starts a scan or a search.
+    for id,previous in pairs(result.auctionSupplyInputs or {}) do
+        local current=E.AuctionSupplyOf(nil,id)
+        if (previous~=false)~=(current~=nil) then return true end
+        if current then
+            for _,key in ipairs(supplyIdentityFields) do if previous[key]~=current[key] then return true end end
         end
     end
-    local vlist = vdb and vdb.GetOffers and vdb.GetOffers(id, context) or {}
-    for _, o in ipairs(vlist) do
-        if not (o.npcID and seenNpc[o.npcID]) then raw[#raw + 1] = o end
+    return false
+end
+function E.SummarizeAuctionSupply(result,context)
+    local seen,needed={},{}
+    result.auctionSupplyUnknown=0;result.auctionSupplyObserved=false;result.supplyComplete=true
+    result.auctionSupplyInputs={}
+    -- Include unused, priced candidates: a new quantity for a previously scarce
+    -- cheaper recipe also changes the inputs to the saved minimum-cost result.
+    for id in pairs(context and context.prices or {}) do
+        result.auctionSupplyInputs[id]=supplyIdentity(E.AuctionSupplyOf(context,id))
     end
-    local PDm = ns.ProfModule
-    local allowLimited = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas")) and true or false
-    local limitedCost
-    for _, o in ipairs(raw) do
-        MaybeYield()
-        if type(o) == "table" and o.npcID and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
-            hasOffer = true
-            if o.unlimited == true then hasUnlimited = true
-            elseif o.limited or o.unlimited == false then hasLimited = true end
-            local pack = tonumber(o.quantity) or tonumber(o.bundleSize) or 1
-            if pack < 1 then pack = 1 end
-            offers[#offers + 1] = {
-                npcID = o.npcID, price = o.price, quantity = pack,
-                bundleSize = pack, unlimited = o.unlimited,
-                limited = o.limited, stockUnknown = o.stockUnknown, estimated = o.estimated,
-            }
+    for id in pairs(context and context.auctionSupply or {}) do
+        result.auctionSupplyInputs[id]=supplyIdentity(E.AuctionSupplyOf(context,id))
+    end
+    for _,list in ipairs({result.mats or {},result.formulas or {}}) do
+        for _,entry in ipairs(list) do
+            local id=entry.id or entry[1]
+            entry.priceObservedAt=quoteMetadata(context,id,"priceObservedAt","GetAuctionPriceObservedAt")
+            if (entry.source=="ah" or entry.source=="auction") and not entry.known then
+                local supply=E.AuctionSupplyOf(context,id)
+                result.auctionSupplyInputs[id]=supplyIdentity(supply)
+                entry.supplyObserved=supply~=nil
+                entry.supplyLimited=nil;entry.supplyObservedAt=nil;entry.supplySource=nil
+                entry.supplyOwnerExcluded=nil;entry.supplyObservedPrice=nil
+                entry.supplyMarket=nil;entry.supplyBatch=nil;entry.supplySchemaVersion=nil
+                entry.supplyHistoryQuantity=nil;entry.supplyHistoryObservedAt=nil
+                local history=quoteMetadata(context,id,"auctionSupplyHistory","GetAuctionSupplyHistory")
+                if type(history)=="table" and type(history.quantity)=="number" and history.quantity>=0
+                    and history.quantity<math.huge and history.quantity==floor(history.quantity) then
+                    entry.supplyHistoryQuantity=history.quantity;entry.supplyHistoryObservedAt=history.observedAt
+                end
+                if supply then
+                    entry.availableCount=supply.quantity;entry.supplyComplete=supply.complete==true
+                    entry.supplyObservedAt=supply.observedAt
+                    entry.supplySource=supply.source;entry.supplyOwnerExcluded=supply.ownerExcluded
+                    entry.supplyObservedPrice=supply.observedPrice;entry.supplyMarket=supply.market
+                    entry.supplyBatch=supply.batch;entry.supplySchemaVersion=supply.schemaVersion
+                    result.auctionSupplyObserved=true
+                    needed[id]=(needed[id] or 0)+(entry.count or entry[2] or 1)
+                    entry.supplyLimited=needed[id]>supply.quantity or nil
+                    result.supplyComplete=result.supplyComplete and supply.complete==true
+                        and supply.ownerExcluded~=false and not entry.supplyLimited
+                else
+                    entry.availableCount=nil;entry.supplyComplete=false;result.supplyComplete=false
+                    if not seen[id] then result.auctionSupplyUnknown=result.auctionSupplyUnknown+1 end
+                end
+                seen[id]=true
+            end
         end
-        if vendorQuote(o) and (not cost or source == "vendor" and o.price < cost) then
-            cost, source = o.price, "vendor"
+    end
+    result.auctionSupplyRevision=2
+    return result
+end
+function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
+    if type(r)~="table" then return end
+    context=formulaContext(context)
+    local id=tonumber(r.formula or r.formulaID)
+    local known=recipeKnown(r,context)
+    local sources=copy(r.source or {})
+    local meta=id and ns.ProfFormulaMeta and ns.ProfFormulaMeta[id]
+    meta=meta and {quests=meta.source and meta.source.quests,status="confirmed",questOnly=meta.source and meta.source.questOnly,coverage="partial"}
+    if meta then
+        sources.quests=copy(meta.quests)
+        -- A reward relationship proves an alternative, not exclusivity. Only
+        -- a complete acquisition inventory may suppress other purchase paths.
+        sources.questOnly=meta.coverage=="complete" and meta.questOnly==true or nil
+        sources.acquisitionCoverage=meta.coverage
+    end
+    -- Procurement sources must be rebuilt from the new item/NPC records.
+    -- Recipe-catalogue vendor annotations cannot establish a supplier.
+    sources.vendors=nil
+    local quest=questSource(sources)
+    local exclusiveQuest=meta and meta.status=="confirmed" and meta.coverage=="complete" and meta.questOnly==true
+    if not id or id<=0 then
+        if not quest then return end
+        id=nil
+    end
+    -- An observed trainer path does not require purchasing the teaching item.
+    if E.LearningSource(r)=="trainer" then return end
+    local entry={id=id,count=1,need=1,spell=r.spell,profession=r.profession,recipeKey=r.key,
+        known=known,sources=sources,recipe=r,recipes={{profession=r.profession,spell=r.spell,key=r.key,source=sources}},
+        questOnly=exclusiveQuest and not hasEntries(sources.vendors) and not hasEntries(sources.drops) or false,
+        questAcquisition=quest or false,
+        vendorOffers={},source="unknown",usable=true}
+    local ah=id and context.prices and context.prices[id]
+    if ah==nil and id and not context.prices then
+        local ra=ns.ProfRouteAuto; if ra and ra.AHPriceOf then ah=ra.AHPriceOf(id) end
+    end
+    if type(ah)=="number" and ah>0 and not (context.nonAuctionable and context.nonAuctionable[id]) then entry.ahPrice=ah end
+    local offers=id and context.formulaOffers and context.formulaOffers[id]
+    if not offers and not context.prices and id and ns.VendorPriceDB and ns.VendorPriceDB.GetFormulaOffers then
+        offers=ns.VendorPriceDB.GetFormulaOffers(id,context,r.source)
+    end
+    if not offers and id and context.offers then offers=context.offers[id] end
+    entry.vendorOffers=offers or {}
+    local vendors,seen={},{}
+    for _,o in ipairs(entry.vendorOffers) do
+        if o.npcID and not seen[o.npcID] then
+            vendors[#vendors+1]={id=o.npcID,name=o.npcName or o.name or ("#"..o.npcID),zone=o.zone}
+            seen[o.npcID]=true
         end
-        if allowLimited and type(o) == "table" and o.unlimited ~= true
-            and type(o.price) == "number" and o.price >= 0
-            and not o.hasExtendedCost and (not o.currencyID or o.currencyID == 0)
-            and o.available ~= false and o.purchasable ~= false then
-            if not limitedCost or o.price < limitedCost then limitedCost = o.price end
+    end
+    sources.vendors=vendors
+    entry.questOnly=exclusiveQuest and not hasEntries(vendors) and not hasEntries(sources.drops) or false
+    local supply=id and E.AuctionSupplyOf and E.AuctionSupplyOf(context,id)
+    local ahAvailable=auctionRemaining or (supply and supply.quantity)
+    local ahUsable=entry.ahPrice and (ahAvailable==nil or ahAvailable>=1)
+    if supply then entry.availableCount=supply.quantity;entry.supplyObserved=true;entry.supplyComplete=supply.complete==true end
+    local best,bestCost
+    local allowLimited=E.AllowLimitedFormulas(context)
+    for _,o in ipairs(entry.vendorOffers) do
+        if o.unlimited==true then entry.unlimited=true
+        elseif E.LimitedFormulaOffer(o) then entry.limited=true
+        else entry.stockUnknown=true end
+        if type(o.price)=="number" and o.price>=0 and not o.hasExtendedCost and (not o.currencyID or o.currencyID==0) then
+            local unit=o.price/(o.quantity or o.bundleSize or 1)
+            if not entry.vendorPrice or unit<entry.vendorPrice then entry.vendorPrice=unit end
+        end
+        local factionOK=not o.faction or not context.faction or o.faction==context.faction or o.faction=="N" or o.faction=="Neutral" or o.faction=="AH" or o.faction=="Both"
+        local limitedBlocked=not allowLimited and E.LimitedFormulaOffer(o)
+        if limitedBlocked then entry.limitedVendorDisabled=true end
+        if not limitedBlocked and o.available~=false and o.purchasable~=false and o.priceUsable~=false and factionOK
+            and not o.hasExtendedCost and (not o.currencyID or o.currencyID==0)
+            and type(o.price)=="number" and o.price>=0 and o.stock~=0 then
+            local quantity=o.quantity or o.bundleSize or 1
+            if not positiveInteger(quantity) then quantity=1 end
+            local cost=o.price -- One indivisible purchase supplies the formula.
+            if (type(o.stock)~="number" or o.stock<0 or o.stock>=quantity) and (not bestCost or cost<bestCost) then best,bestCost=o,cost end
         end
     end
-    if not cost and limitedCost then cost, source = limitedCost, "vendor" end
-    if not cost then unpriced = true end
-    local skipUnknown = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and true or false
-    if not allowLimited and not cost and hasOffer and not hasUnlimited then
-        return {
-            id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
-            recipeKey = r.key, known = false, sources = shallow(r.source),
-            vendorOffers = offers, source = "unknown", cost = nil,
-            usable = false, reason = "formulaLimited", unpriced = true,
-            limited = hasLimited, stockUnknown = hasOffer and not hasLimited or nil,
-        }
+    if purchaseSource~="ah" and bestCost~=nil and (not ahUsable or bestCost<=entry.ahPrice) then
+        entry.source="vendor";entry.cost=bestCost;entry.offer=best;entry.npcID=best.npcID
+        local quantity=best.quantity or best.bundleSize or 1
+        entry.bundleSize=positiveInteger(quantity) and quantity or 1;entry.count=entry.bundleSize
+        entry.availabilityUncertain=best.stockUnknown==true or best.stockStatus=="unknown"
+            or best.unlimited~=true and type(best.stock)~="number" or nil
+    elseif ahUsable then entry.source="ah";entry.cost=entry.ahPrice
+    elseif quest then entry.source="quest";entry.usable=known
     end
-    if not cost and skipUnknown then
-        return {
-            id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
-            recipeKey = r.key, known = false, sources = shallow(r.source),
-            vendorOffers = offers, source = "unknown", cost = nil,
-            usable = false, reason = "formulaUnknownSource", unpriced = true,
-            unlimited = hasUnlimited or nil, limited = hasLimited or nil,
-            stockUnknown = hasOffer and not hasUnlimited and not hasLimited or nil,
-        }
+    if known then entry.cost=0;entry.usable=true end
+    if not known and entry.cost==nil then entry.usable=false end
+    entry.unpriced=not known and entry.cost==nil or nil
+    entry.costComplete=known or (entry.cost~=nil and not entry.availabilityUncertain) or false
+    entry.sourceType=entry.source;entry.totalCost=entry.cost;entry.blocked=not entry.usable
+    entry.vendor=entry.source=="vendor"
+    if entry.blocked then
+        entry.reason=entry.ahPrice and ahAvailable~=nil and ahAvailable<1 and "auctionSupplyLimited"
+            or entry.limitedVendorDisabled and "limitedFormulaDisabled" or "formulaUnavailable"
     end
-    return {
-        id = id, count = 1, need = 1, spell = r.spell, profession = r.profession,
-        recipeKey = r.key, known = false, sources = shallow(r.source),
-        vendorOffers = offers, source = source or "unknown", cost = cost,
-        usable = (cost ~= nil) or false, unpriced = unpriced,
-        reason = (cost == nil) and "formulaPriceUnknown" or nil,
-        unlimited = hasUnlimited or nil, limited = hasLimited or nil,
-        stockUnknown = hasOffer and not hasUnlimited and not hasLimited or nil,
-    }
+    return entry
+end
+function E.CollectFormulas(steps,slug,context)
+    local snap=formulaContext(context);local list,byID={},{};local total,complete=0,true
+    for _,step in ipairs(steps or {}) do
+        if not step.checkpoint and (step[4] or step.count or 0)>0 then
+            local profession=step.profession or slug
+            local r=step.recipe or (snap.byKey and snap.byKey[profession..":"..tostring(step[3] or step.spell)]) or E.FindRecipe(profession,step[3] or step.spell)
+            local entry=r and E.FormulaFor(r,snap)
+            if entry and not entry.known then
+                local key=entry.id or entry.recipeKey or profession..":"..tostring(entry.spell)
+                local old=byID[key]
+                if old then old.recipes[#old.recipes+1]=entry.recipes[1]
+                else
+                    byID[key]=entry;list[#list+1]=entry
+                    total=total+(entry.cost or 0);complete=complete and entry.costComplete and entry.usable
+                end
+            end
+        end
+    end
+    table.sort(list,function(a,b) return (a.id or 0)<(b.id or 0) end)
+    return list,total,complete
 end
 
-function E.Index(s)
+
+function E.Index(s, tick)
     s.recipes = s.recipes or {}
     s.byItem, s.byProfession, s.byKey = {}, {}, {}
     for _, r in ipairs(s.recipes) do
-        MaybeYield()
+        if tick then tick() end
         r.key = r.key or (r.profession .. ":" .. r.spell)
-        r.count = r.count or 1
         r.mats = r.mats or {}
-        r.yellow = r.yellow or r.learn
-        r.green = r.green or r.yellow
+        if not r.clientPending then
+            r.count = r.count or 1
+            r.yellow = r.yellow or r.learn
+            r.green = r.green or r.yellow
+        end
         s.byKey[r.key] = r
         local p = s.byProfession[r.profession]
         if not p then p = {}; s.byProfession[r.profession] = p end
         p[#p + 1] = r
-        if type(r.item) == "number" and r.item > 0 and r.count > 0 then
+        if type(r.item) == "number" and r.item > 0 and type(r.count)=="number" and r.count > 0 then
             local a = s.byItem[r.item]
             if not a then a = {}; s.byItem[r.item] = a end
             a[#a + 1] = r
         end
     end
-    s.professions = s.professions or {}
-    s.known = s.known or {}
-    s.prices = s.prices or {}
-    s.offers = s.offers or {}
-    s.formulaOffers = s.formulaOffers or {}
-    s.auctionSupply = s.auctionSupply or {}
-    s.auctionSupplyHistory = s.auctionSupplyHistory or {}
-    s.priceObservedAt = s.priceObservedAt or {}
-    s.nonAuctionable = s.nonAuctionable or {}
-    s.vendorItems = s.vendorItems or {}
-    s.vendorSuppliers = s.vendorSuppliers or {}
-    s.diagnostics = s.diagnostics or {}
-    s.toolGoals = s.toolGoals or {}
-    s.specializationGoals = s.specializationGoals or {}
-    s.specializationAbilities = s.specializationAbilities or {}
+    for _, field in ipairs({"professions", "known", "prices", "offers", "formulaOffers", "auctionSupplyHistory",
+        "priceObservedAt", "nonAuctionable", "vendorItems", "vendorSuppliers", "diagnostics", "toolGoals",
+        "toolGoalsPending", "specializationGoals", "specializationAbilities", "retainedToolItems", "toolCraftOnlyItems"}) do
+        s[field] = s[field] or {}
+    end
+    -- Indexing an immutable input never consults the live auction/recipe cache.
+    local supply = {}
+    for id, entry in pairs(s.auctionSupply or {}) do
+        if validSupply(entry) then supply[id] = entry end
+        if tick then tick() end
+    end
+    s.auctionSupply = supply
     s.inventory = {}
-    local AB = ns.AuctionBridge
-    if AB and AB.SupplyFresh then
-        local seen = {}
-        for _, r in ipairs(s.recipes) do
-            MaybeYield()
-            if type(r.item) == "number" and r.item > 0 then seen[r.item] = true end
-            for _, m in ipairs(r.mats or {}) do
-                if type(m[1]) == "number" then seen[m[1]] = true end
-            end
-        end
-        for id in pairs(seen) do
-            MaybeYield()
-            local rec = AB.SupplyFresh(id)
-            if rec then
-                s.auctionSupply[id] = rec
-            end
-            if AB.GetAuctionSupplyHistory then
-                local h = AB.GetAuctionSupplyHistory(id)
-                if h then s.auctionSupplyHistory[id] = h end
-            end
-            if AB.GetAuctionPriceObservedAt then
-                local pt = AB.GetAuctionPriceObservedAt(id)
-                if pt then s.priceObservedAt[id] = pt end
-            end
+    s.trainingCosts, s.rankCosts, s.learningRequirements, s.rankRequirements = nil, nil, nil, nil
+    s.stations, s.stationRequirements = nil, nil
+    return s
+end
+
+function E.CaptureToolGoals(s, slug, opts)
+    s.autoCraftTools = E.ToolPlanningEnabled(opts)
+    s.toolFingerprint = E.ToolFingerprint(slug, opts)
+    s.toolGoals, s.toolGoalsPending = {}, {}
+    s.retainedToolItems, s.toolCraftOnlyItems = s.retainedToolItems or {}, s.toolCraftOnlyItems or {}
+    s.nonAuctionable = s.nonAuctionable or {}
+    local G = ns.ProfGates
+    local target = tonumber(opts and opts.target) or 300
+    for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
+        if tool.bindOnPickup then s.nonAuctionable[tool.item] = true; s.toolCraftOnlyItems[tool.item] = true end
+        if s.autoCraftTools then
+            local recipe = planningToolRecipe(slug, tool.spell, s)
+            if recipe and recipe.item and type(recipe.learn)=="number" and not recipe.clientPending then
+                if G and G.ToolOwned(recipe.item) then
+                    s.ownedToolItems = s.ownedToolItems or {}; s.ownedToolItems[tool.item] = true
+                elseif target>recipe.learn then
+                    local goal = copy(tool);goal.profession=slug;goal.item=recipe.item;goal.minSkill=recipe.learn
+                    goal.id=slug..":"..recipe.item
+                    s.toolGoals[#s.toolGoals+1] = goal;s.retainedToolItems[goal.item] = 1
+                    recipe.tool, recipe.toolItem = true, goal.item
+                end
+            else s.toolGoalsPending[#s.toolGoalsPending+1]={code="toolFactsUnknown",profession=slug,spell=tool.spell} end
         end
     end
     return s
 end
-
-local function addRecipe(s, slug, spell, item, count, learn, yellow, green, grey, mats, formula, source, category)
-    if type(spell) ~= "number" or spell <= 0 then return end
-    if type(learn) ~= "number" or type(grey) ~= "number" or grey <= learn then return end
-    if not validMats(mats) then return end
-    local key = slug .. ":" .. spell
-    if s.byKey[key] then return end
-    local r = {
-        profession = slug, spell = spell, item = item, count = count or 1,
-        learn = learn, yellow = yellow or learn, green = green or yellow or learn,
-        grey = grey, mats = mats, formula = formula, source = source or {},
-        category = category, key = key, catalogue = true,
-    }
-    s.recipes[#s.recipes + 1] = r
-    s.byKey[key] = r
-    s.known[key] = E.Known(spell)
-end
-
-function E.Capture(slug, opts, tick)
-    opts = opts or {}
-    tick = tick or function() end
-    if opts.snapshot then
-        local s = shallow(opts.snapshot)
-        s.professions = opts.professions or s.professions or E.Professions()
-        s.routeContext = s.routeContext or E.RouteContext(slug, opts, s.professions)
-        return E.Index(s)
+function E.CaptureSpecializations(s, opts, slug)
+    local G = ns.ProfGates
+    if not G then return s end
+    local specOpts = copy(opts or {})
+    specOpts.profession, specOpts.faction, specOpts.level = slug, s.faction, s.level
+    specOpts.snapshot = s
+    local spec = G.SpecializationContext(specOpts)
+    s.targetProfession, s.engineeringSpecialization = slug, spec.choice
+    s.specializationContext, s.specializationAbilities = spec, spec.abilities
+    s.specializationFingerprint = spec.fingerprint
+    s.specializationGoals = {}
+    for _, goal in ipairs(spec.goals or {}) do
+        -- Keep blocked goals: their requirements must not silently disappear
+        -- from an otherwise apparently complete engineering route.
+        s.specializationGoals[#s.specializationGoals+1] = copy(goal)
     end
-    local planProfs, routeCtx = E.RouteProfessions(slug, opts, opts.professions or E.Professions())
-    local s = {
-        recipes = {}, byKey = {}, known = {}, prices = {}, offers = {},
-        auctionSupply = {}, auctionSupplyHistory = {}, priceObservedAt = {},
-        vendorItems = {}, vendorSuppliers = {}, coverageComplete = true,
-        professions = planProfs,
-        stamp = (time and time()) or 0,
-        character = ns.ProfEconomy.CharacterKey and ns.ProfEconomy.CharacterKey() or nil,
-    }
+    return s
+end
+local function addRecipe(s, slug, row, kind)
+    local r = E.Normalize(row, slug, kind)
+    if not r or type(r.learn)~="number" or type(r.grey)~="number" or (r.grey<r.learn and not r.knownAtCurrentSkill)
+        or not materialsValid(r.mats) then return end
+    if s.byKey[r.key] then return end
+    s.recipes[#s.recipes+1] = r;s.byKey[r.key] = r
+    s.known[r.key] = not (s.professions[slug] and s.professions[slug].unlearned) and E.Known(r.spell) or false
+end
+function E.NonAuctionableItem(id)
+    local fn = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if type(fn)~="function" then return false end
+    local fields = {pcall(fn, id)}
+    return fields[1] and (fields[15]==1 or fields[15]==4) or false
+end
+function E.Capture(slug, opts, tick)
+    opts, tick = opts or {}, tick or function() end
+    if opts.snapshot then
+        local s = copy(opts.snapshot, tick)
+        s.professions, s.routeContext = E.RouteProfessions(slug, opts, opts.professions or s.professions or {})
+        s.allowLimitedFormulas = E.AllowLimitedFormulas(opts)
+        if s.coverageComplete == nil then s.coverageComplete = false end
+        s.essenceConversions = ns.ProfEssences and ns.ProfEssences.Enabled(slug, opts, s) or false
+        -- Explicit fixture/execution snapshots already contain their normalized
+        -- tool/specialization facts. Do not replace them with today's client.
+        if s.toolGoals == nil then E.CaptureToolGoals(s, slug, opts) end
+        if s.specializationContext == nil and ns.ProfGates then E.CaptureSpecializations(s, opts, slug) end
+        s = E.Index(s, tick)
+        if ns.ProfRecovery then ns.ProfRecovery.Capture(s, opts, tick) end
+        return s
+    end
+    if E.EnsureClientRuntime then E.EnsureClientRuntime() end
+    local professions, context = E.RouteProfessions(slug, opts, opts.professions or E.Professions())
+    local s = {recipes={},byKey={},known={},prices={},offers={},formulaOffers={},auctionSupply={},auctionSupplyHistory={},
+        priceObservedAt={},vendorItems={},vendorSuppliers={},nonAuctionable={},coverageComplete=false,
+        professions=copy(professions),routeContext=context,stamp=time and time() or 0,character=E.CharacterKey(),
+        allowLimitedFormulas=E.AllowLimitedFormulas(opts)}
     s.level = UnitLevel and UnitLevel("player") or nil
     local f = UnitFactionGroup and UnitFactionGroup("player") or nil
-    s.faction = f == "Alliance" and "A" or (f == "Horde" and "H" or nil)
-    s.routeContext = routeCtx
-    if routeCtx.unlearned and not (routeCtx.requiresPartner and routeCtx.partnerValid) then
-        return E.Index(s)
-    end
-    local tables = ns.ProfRecipes or {}
-    local loadList = { slug }
-    if routeCtx.requiresPartner and routeCtx.partnerValid then
-        loadList[#loadList + 1] = routeCtx.partner
-    end
-    for i = 1, #loadList do
-        local profSlug = loadList[i]
-        local d = tables[profSlug] or {}
-        for _, row in ipairs(d.rows or {}) do
-            local f13 = row[13]
-            addRecipe(s, profSlug, row[1], row[2], row[3], row[7], row[8], row[9], row[10],
-                row[12], type(f13) == "table" and f13[1] or nil, row[14], row[4])
-            tick()
+    s.faction = f=="Alliance" and "A" or f=="Horde" and "H" or f
+    if UnitClass then local ok,_,_,id=pcall(UnitClass,"player");if ok then s.classID=id end end
+    if UnitRace then local ok,_,_,id=pcall(UnitRace,"player");if ok then s.raceID=id end end
+    if context.unlearned and not (context.requiresPartner and context.partnerValid) then return E.Index(s, tick) end
+    local loadList, seen = {slug}, {[slug]=true}
+    -- Already learned professions may supply a dependency; enabling joint
+    -- leveling also permits the selected simulated partner to gain skill.
+    for p, info in pairs(professions) do
+        if not seen[p] and primaryOf(p) and (not info.unlearned or p==context.partner) then
+            loadList[#loadList+1]=p;seen[p]=true
         end
-        local lv = ns.ProfLeveling and ns.ProfLeveling[profSlug]
+    end
+    table.sort(loadList)
+    for _, p in ipairs(loadList) do
+        local group = ns.ProfRecipes and ns.ProfRecipes[p]
+        if E.IndexClientProfession then E.IndexClientProfession(p) end
+        for _, kind in ipairs({"rows"}) do
+            for _, row in ipairs(group and group[kind] or {}) do
+                local spell = kind=="enchants" and row[14] or row[1]
+                if E.ReadRecipe and spell then E.ReadRecipe(spell) end
+                addRecipe(s,p,row,kind);tick()
+            end
+        end
+        local lv = ns.ProfLeveling and ns.ProfLeveling[p]
         for spell, ri in pairs(lv and lv.rinfo or {}) do
-            local formula = ri.formula or ri.formulaID
-            addRecipe(s, profSlug, spell, ri.makes, ri.count, ri.learn, ri.yellow, ri.green, ri.grey,
-                ri.mats, formula, ri.source, ri.category)
-            tick()
+            if E.ReadRecipe then E.ReadRecipe(spell) end
+            local r = copy(ri);r.spell=spell;r.item=r.item or r.makes;r.formula=r.formula or r.formulaID
+            addRecipe(s,p,r);tick()
+        end
+        for _, kind in ipairs({"crafted", "enchants"}) do
+            for _, row in ipairs(group and group[kind] or {}) do
+                local spell = kind=="enchants" and row[14] or row[1]
+                if E.ReadRecipe and spell then E.ReadRecipe(spell) end
+                addRecipe(s,p,row,kind);tick()
+            end
         end
     end
+    E.CaptureSpecializations(s, opts, slug)
+    E.CaptureToolGoals(s, slug, opts)
     local items = {}
     for _, r in ipairs(s.recipes) do
-        if type(r.item) == "number" and r.item > 0 then items[r.item] = true end
-        for _, m in ipairs(r.mats) do items[m[1]] = true end
-        if r.formula and not s.known[r.key] then items[r.formula] = true end
+        if positiveInteger(r.item) then items[r.item]=true end
+        if r.formula and not s.known[r.key] and E.LearningSource(r)~="trainer" then items[r.formula]=true end
+        for _, m in ipairs(r.mats) do items[m[1]]=true end
+        tick()
     end
-    local ra = ns.ProfRouteAuto
-    local vdb = ns.VendorPriceDB
-    local context = { character = s.character, faction = s.faction, professions = s.professions, level = s.level }
+    for _, goal in ipairs(s.toolGoals or {}) do items[goal.item]=true end
+    for _, goal in ipairs(s.specializationGoals or {}) do for _, m in ipairs(goal.inputs or {}) do items[m[1]]=true end end
+    s.essenceConversions = ns.ProfEssences and ns.ProfEssences.Enabled(slug, opts, s) or false
+    if s.essenceConversions then ns.ProfEssences.ExpandItems(items) end
+    local ra, vdb, bridge = ns.ProfRouteAuto, ns.VendorPriceDB, ns.AuctionBridge
+    local vendorContext = {character=s.character,faction=s.faction,professions=s.professions,level=s.level}
     for id in pairs(items) do
+        if E.NonAuctionableItem(id) then s.nonAuctionable[id]=true end
         local price = ra and ra.AHPriceOf and ra.AHPriceOf(id)
-        if type(price) == "number" and price > 0 then s.prices[id] = price end
-        local offers = vdb and vdb.GetOffers and vdb.GetOffers(id, context)
-        if offers and #offers > 0 then
-            s.offers[id] = offers
-            for _, o in ipairs(offers) do
-                if vendorQuote(o) then s.vendorItems[id] = true; break end
+        if type(price)=="number" and price>0 then s.prices[id]=price end
+        local offers = vdb and vdb.GetOffers and vdb.GetOffers(id, vendorContext)
+        s.offers[id] = copy(offers or {})
+        for _, offer in ipairs(offers or {}) do if vendorQuote(offer) then s.vendorItems[id]=true;break end end
+        local supply = E.AuctionSupplyOf(nil, id)
+        if supply then s.auctionSupply[id]=copy(supply) end
+        if bridge and bridge.GetAuctionSupplyHistory then s.auctionSupplyHistory[id]=copy(bridge.GetAuctionSupplyHistory(id)) end
+        if bridge and bridge.GetAuctionPriceObservedAt then s.priceObservedAt[id]=bridge.GetAuctionPriceObservedAt(id) end
+        tick()
+    end
+    for _, r in ipairs(s.recipes) do
+        if r.formula and E.LearningSource(r)~="trainer" and not s.formulaOffers[r.formula] then
+            local offers = vdb and vdb.GetFormulaOffers and vdb.GetFormulaOffers(r.formula, vendorContext, r.source)
+            if not offers or #offers==0 then
+                offers = ns.ProfSupply and ns.ProfSupply.FormulaList and ns.ProfSupply.FormulaList(r.formula) or {}
             end
+            s.formulaOffers[r.formula] = copy(offers or {})
         end
         tick()
     end
-    s.formulaOffers = {}
-    local G = ns.ProfGates
-    if G then
-        s.abilities = s.abilities or G.Abilities()
-        s.specializationAbilities = G.Abilities()
-        s.toolGoals = G.ToolGoals(slug, opts.target)
-        s.retainedToolItems = s.retainedToolItems or {}
-        s.nonAuctionable = s.nonAuctionable or {}
-        local keptGoals = {}
-        for _, goal in ipairs(s.toolGoals) do
-            if goal.item and s.byKey[slug .. ":" .. tostring(goal.spell)] then
-                if G.ToolOwned and G.ToolOwned(goal.item) then
-                    s.ownedToolItems = s.ownedToolItems or {}
-                    s.ownedToolItems[goal.item] = true
-                else
-                    keptGoals[#keptGoals + 1] = goal
-                    s.retainedToolItems[goal.item] = 1
-                    s.nonAuctionable[goal.item] = true
-                end
-            end
-        end
-        s.toolGoals = keptGoals
-        local specTarget = tonumber(opts.target)
-        if not specTarget then
-            local db = DungeonsForeverDB and DungeonsForeverDB.prof
-            specTarget = tonumber(db and db.lvTarget and db.lvTarget[slug]) or 300
-        end
-        local specCtx = G.SpecializationContext and G.SpecializationContext {
-            profession = slug, target = specTarget, faction = s.faction, level = s.level,
-        } or nil
-        if specCtx then
-            s.targetProfession = slug
-            s.engineeringSpecialization = specCtx.choice
-            s.specializationContext = specCtx
-            s.specializationAbilities = specCtx.abilities
-            s.specializationFingerprint = specCtx.fingerprint
-            local keepGoals = {}
-            for _, goal in ipairs(specCtx.goals or {}) do
-                local reason = goal.blockedReason
-                if not reason or reason == "specializationLevelRequired" then
-                    keepGoals[#keepGoals + 1] = goal
-                end
-            end
-            s.specializationGoals = keepGoals
-        else
-            local specGoal = G.SpecGoal(slug, opts.target)
-            if specGoal then s.specializationGoals = { specGoal } end
-        end
-    end
-    if ns.ProfRecovery then ns.ProfRecovery.Capture(s, opts) end
-    return E.Index(s)
+    s = E.Index(s, tick)
+    if ns.ProfRecovery then ns.ProfRecovery.Capture(s, opts, tick) end
+    return s
 end
