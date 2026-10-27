@@ -451,6 +451,10 @@ function PV.PaintCard(f, id)
         if Host.DG and Host.DG.RequestItem then Host.DG.RequestItem(id) end
     end
     f.iconTex:SetTexture(ItemIcon(id))
+    if ns.hui and ns.hui.SetIconRing then
+        local qq = (Host.DG and Host.DG.QualOf) and Host.DG.QualOf(id) or nil
+        ns.hui.SetIconRing(f.iconTex, qq and { ns.hui.QColor(qq) } or nil)
+    end
 end
 
 function PV.TakeCard(idx)
@@ -470,6 +474,10 @@ function PV.OnItemData(itemID)
         local c = PV.chips[i]
         if c and c.__id == itemID and c:IsShown() then
             c.iconTex:SetTexture(ItemIcon(itemID))
+            if ns.hui and ns.hui.SetIconRing then
+                local cq = (Host.DG and Host.DG.QualOf) and Host.DG.QualOf(itemID) or nil
+                ns.hui.SetIconRing(c.iconTex, cq and { ns.hui.QColor(cq) } or nil)
+            end
         end
     end
     for i = 1, PV.nCard do
@@ -1139,7 +1147,10 @@ function PV.Refresh()
 end
 
 local function HideAll()
-    for i = 1, PV.nChip do PV.chips[i]:Hide() end
+    for i = 1, PV.nChip do
+        PV.chips[i]:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(PV.chips[i].iconTex, nil) end
+    end
     for i = 1, PV.nCard do PV.cards[i]:Hide() end
     for i = 1, 14 do PV.rankRows[i]:Hide() end
     for i = 1, 10 do PV.capRows[i]:Hide() end
@@ -1261,6 +1272,10 @@ function PV.RenderRanks()
             cursor = cursor + 1
             chip.__id = all[k]
             chip.iconTex:SetTexture(ItemIcon(all[k]))
+            if ns.hui and ns.hui.SetIconRing then
+                local rq = (Host.DG and Host.DG.QualOf) and Host.DG.QualOf(all[k]) or nil
+                ns.hui.SetIconRing(chip.iconTex, rq and { ns.hui.QColor(rq) } or nil)
+            end
             chip:SetPoint("TOPLEFT", PV.child, "TOPLEFT",
                 304 + (k - 1) * (PV.CHIP + 4), -(y0 + (i - 1) * 34 + 4))
             chip:Show()
@@ -1392,6 +1407,10 @@ function PV.RenderSets()
         local m = RD.marks[i]
         local chip = PV.markChips[i]
         chip.iconTex:SetTexture(ItemIcon(m.id))
+        if ns.hui and ns.hui.SetIconRing then
+            local mq = (Host.DG and Host.DG.QualOf) and Host.DG.QualOf(m.id) or nil
+            ns.hui.SetIconRing(chip.iconTex, mq and { ns.hui.QColor(mq) } or nil)
+        end
         chip.rank:SetText(format("R%d", m.rank))
         chip:SetPoint("TOPLEFT", PV.child, "TOPLEFT", mx, -PV.MARK_TOP)
         chip:Show()

@@ -1028,6 +1028,7 @@ local function PaintRow(r)
     SetTextC(r.src2, "")
     if e.hdr then
         r.icon:SetShown(false)
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         SetTextC(r.name, e.hdr)
@@ -1051,6 +1052,7 @@ local function PaintRow(r)
     end
     if e.kind == "bonus" then
         r.icon:SetShown(false)
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         SetTextC(r.name, "")
@@ -1082,15 +1084,20 @@ local function PaintRow(r)
         r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         local iconSet = set.class and SET_CLASS_ICON[set.class]
+        local setQ = nil
         if iconSet then
             SetTexC(r.icon, iconSet)
         else
             local rec = recs[(set.ids or {})[1]]
             if rec and rec.icon and rec.icon ~= "" then
                 SetTexC(r.icon, "Interface\\Icons\\" .. rec.icon)
+                setQ = rec.q
             else
                 SetTexC(r.icon, FALLBACK_ICON)
             end
+        end
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(r.icon, setQ and { ns.hui.QColor(setQ) } or nil)
         end
         local cr, cg, cb
         if G.setOpen == e.skey then
@@ -1131,6 +1138,9 @@ local function PaintRow(r)
             SetTexC(r.icon, FALLBACK_ICON)
         end
         local cr, cg, cb = QColor(rec.q)
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(r.icon, { ns.hui.QColor(rec.q) })
+        end
         SetTextC(r.name, rec.name)
         r.name:SetTextColor(cr, cg, cb)
         local slot = rec.s ~= "" and SLOT_LABEL[rec.s] or nil
@@ -1160,6 +1170,7 @@ local function PaintRow(r)
         SetTextC(r.sub, BIND_LABEL[rec.bind] or "")
     else
         SetTexC(r.icon, FALLBACK_ICON)
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         local gif = GetItemInfo or (C_Item and C_Item.GetItemInfo)
         local ok, nm
         if type(gif) == "function" then ok, nm = pcall(gif, e.id) end

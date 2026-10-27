@@ -978,6 +978,7 @@ local function ChipRow(y, items, spell)
                 if ok and v then tex = v end
             end
             r.icon:SetTexture(tex or "Interface\\Icons\\INV_Misc_QuestionMark")
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
             local sn = SpellName(spell) or format("#%d", spell)
             if DG.FitText then sn = DG.FitText(sn, DET_FS, nameW) end
             r.name:SetText(sn)
@@ -1002,12 +1003,14 @@ local function ChipRow(y, items, spell)
         if DG.FitText then inm = DG.FitText(inm, DET_FS, nameW) end
         r.name:SetText(inm)
         r.name:SetWidth(nameW)
-        local qr, qg, qb = DG.QColor(ItemQual(iid))
+        local qiid = ItemQual(iid)
+        local qr, qg, qb = DG.QColor(qiid)
         if qr then
             r.name:SetTextColor(qr, qg, qb)
         else
             r.name:SetTextColor(Unpack(C_GREY))
         end
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, qiid and { ns.hui.QColor(qiid) } or nil) end
         local mt = DG.ItemMeta and DG.ItemMeta(iid) or ""
         r.sub:SetText(mt)
         r.sub:SetShown(mt ~= "")

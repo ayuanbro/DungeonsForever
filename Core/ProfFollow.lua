@@ -1328,6 +1328,10 @@ local function paintMats(seg, rm, sold, w, remaining)
             line:Show()
             local ic = rowsMatIcon[i]
             ic:SetTexture(DG.ItemIcon(m[1]) or Host.FALLBACK_ICON)
+            if ns.hui and ns.hui.SetIconRing then
+                local mq = DG.QualOf and DG.QualOf(m[1]) or nil
+                ns.hui.SetIconRing(ic, mq and { ns.hui.QColor(mq) } or nil)
+            end
             ic:ClearAllPoints()
             ic:SetPoint("TOPLEFT", f.card, "TOPLEFT", 8, -(56 + (i - 1) * 26))
             ic:Show()
@@ -1347,11 +1351,13 @@ local function paintMats(seg, rm, sold, w, remaining)
             more:SetWidth(w)
             more:Show()
             rowsMatIcon[MAT_MAX + 1]:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
             rowsMatBadge[MAT_MAX + 1]:Hide()
             n = n + 1
         else
             rowsMat[MAT_MAX + 1]:Hide()
             rowsMatIcon[MAT_MAX + 1]:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
             rowsMatBadge[MAT_MAX + 1]:Hide()
         end
     elseif rec then
@@ -1364,10 +1370,12 @@ local function paintMats(seg, rm, sold, w, remaining)
     for i = n + 1, MAT_MAX do
         rowsMat[i]:Hide()
         rowsMatIcon[i]:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[i], nil) end
         rowsMatBadge[i]:Hide()
     end
     if n < MAT_MAX + 1 then
         rowsMatIcon[MAT_MAX + 1]:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
         rowsMatBadge[MAT_MAX + 1]:Hide()
     end
     return n, pending, canCraft
@@ -1447,6 +1455,10 @@ function PF.Paint()
             card.icon:SetTexture(DG.ItemIcon(prodItem))
         else
             card.icon:SetTexture(Host.FALLBACK_ICON)
+        end
+        if ns.hui and ns.hui.SetIconRing then
+            local pq = (prodItem and DG.QualOf) and DG.QualOf(prodItem) or nil
+            ns.hui.SetIconRing(card.icon, pq and { ns.hui.QColor(pq) } or nil)
         end
         card.__it = prodItem and { prodItem } or nil
         card.__mats = recMats(rec)

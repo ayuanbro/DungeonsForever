@@ -942,6 +942,10 @@ function FV:PaintRewardCard(f, id)
     if DG and DG.ItemIcon then
         f.iconTex:SetTexture(DG.ItemIcon(id))
     end
+    if ns.hui and ns.hui.SetIconRing then
+        local qq = (DG and DG.QualOf) and DG.QualOf(id) or nil
+        ns.hui.SetIconRing(f.iconTex, qq and { ns.hui.QColor(qq) } or nil)
+    end
 end
 
 function FV.OnItemData(itemID)

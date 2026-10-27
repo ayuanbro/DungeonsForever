@@ -204,11 +204,16 @@ local appearanceCard
 local appearanceBtn
 local appearanceDot
 local appearanceArrow
+local appearanceRingBtn
+local appearanceRingDot
+local appearanceRingArrow
 local THEME_CHOICES = {
     "green", "youfeng", "zhangliangying", "orange", "orangered",
     "red", "pink", "tonghang", "qq",
 }
 local C_THEME_FALLBACK = { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
+local C_RING_LINE = { 0.8, 0.8, 0.8 }
+local C_RING_NONE = { 0.45, 0.45, 0.45 }
 
 local function ThemeAccent(key)
     local pal = ns.hui and ns.hui.palette and ns.hui.palette[key]
@@ -238,6 +243,25 @@ local function PaintAppearance()
             fs:SetTextColor(1, 1, 1)
         end
         ns.hui.SetButtonSelected(appearanceBtn, true)
+    end
+end
+
+local function PaintRingMode()
+    local mode = "glow"
+    if ns.hui and ns.hui.RingMode then mode = ns.hui.RingMode() end
+    local ac = (ns.hui and ns.hui.ACCENT) or C_THEME_FALLBACK
+    local dc = ac
+    if mode == "line" then dc = C_RING_LINE end
+    if mode == "none" then dc = C_RING_NONE end
+    if appearanceRingDot then appearanceRingDot:SetVertexColor(dc[1], dc[2], dc[3]) end
+    if appearanceRingArrow then appearanceRingArrow:SetTextColor(dc[1], dc[2], dc[3]) end
+    if appearanceRingBtn then
+        local fs = appearanceRingBtn:GetFontString()
+        if fs then
+            fs:SetText(L["图标描边"])
+            fs:SetTextColor(1, 1, 1)
+        end
+        if ns.hui and ns.hui.SetButtonSelected then ns.hui.SetButtonSelected(appearanceRingBtn, true) end
     end
 end
 
@@ -339,7 +363,11 @@ end
 
 function BuildAppearanceCard()
     if not (ns.hui and ns.hui.layer) then return end
-    if appearanceCard then PaintAppearance() return end
+    if appearanceCard then
+        PaintAppearance()
+        PaintRingMode()
+        return
+    end
     local card = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
     if ns.hui.BuildRoundedBG then
         ns.hui.BuildRoundedBG(card, 8, ns.hui.layer.L2, "both", true, 1)
@@ -355,7 +383,7 @@ function BuildAppearanceCard()
         card:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 6, -38)
         card:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -6, -38)
     end
-    card:SetHeight(64)
+    card:SetHeight(94)
     appearanceCard = card
 
     local hd = card:CreateFontString(nil, "OVERLAY")
@@ -399,6 +427,7 @@ function BuildAppearanceCard()
                 func = function()
                     ns.hui.ApplyColorTheme(key)
                     PaintAppearance()
+                    PaintRingMode()
                 end,
             }
         end
@@ -407,7 +436,69 @@ function BuildAppearanceCard()
     appearanceBtn = bt
     appearanceDot = dot
     appearanceArrow = arrow
+
+    local rb = ns.CreateButton(card)
+    rb:SetSize(192, 24)
+    rb:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -58)
+    rb.__huiKeepTextColor = true
+    local rfs = rb:GetFontString()
+    if rfs then
+        rfs:ClearAllPoints()
+        rfs:SetPoint("LEFT", rb, "LEFT", 26, 0)
+        rfs:SetPoint("RIGHT", rb, "RIGHT", -26, 0)
+        rfs:SetJustifyH("LEFT")
+    end
+    local rdot = rb:CreateTexture(nil, "ARTWORK")
+    rdot:SetSize(12, 12)
+    rdot:SetPoint("LEFT", rb, "LEFT", 9, 0)
+    rdot:SetTexture("Interface\\Buttons\\WHITE8x8")
+    if ns.hui.RoundIcon then ns.hui.RoundIcon(rdot) end
+    local rarrow = rb:CreateFontString(nil, "OVERLAY")
+    rarrow:SetFont(ns.FONT, 12, "")
+    rarrow:SetPoint("RIGHT", rb, "RIGHT", -8, 0)
+    rarrow:SetText("\226\150\188")
+    rb:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        if not (ns.hui and ns.hui.ShowMenu) then return end
+        local cur = "glow"
+        if ns.hui.RingMode then cur = ns.hui.RingMode() end
+        local ac = ns.hui.ACCENT or C_THEME_FALLBACK
+        local items = {
+            {
+                text = L["柔光"],
+                hlColor = ac,
+                selected = (cur == "glow"),
+                func = function()
+                    if ns.hui.SetIconRingMode then ns.hui.SetIconRingMode("glow") end
+                    PaintRingMode()
+                end,
+            },
+            {
+                text = L["实线"],
+                hlColor = C_RING_LINE,
+                selected = (cur == "line"),
+                func = function()
+                    if ns.hui.SetIconRingMode then ns.hui.SetIconRingMode("line") end
+                    PaintRingMode()
+                end,
+            },
+            {
+                text = L["无描边"],
+                hlColor = C_RING_NONE,
+                selected = (cur == "none"),
+                func = function()
+                    if ns.hui.SetIconRingMode then ns.hui.SetIconRingMode("none") end
+                    PaintRingMode()
+                end,
+            },
+        }
+        ns.hui.ShowMenu(items, { owner = self, anchor = self, up = true })
+    end)
+    appearanceRingBtn = rb
+    appearanceRingDot = rdot
+    appearanceRingArrow = rarrow
     PaintAppearance()
+    PaintRingMode()
 end
 ns.BuildAppearanceCard = BuildAppearanceCard
 ns.PaintAppearance = PaintAppearance

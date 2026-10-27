@@ -19,6 +19,7 @@ local C_DONE = { 0.91, 0.78, 0.42 }
 local CONTENT_W = Host.CONTENT_W
 local PAGE_INSET = Host.PAGE_INSET
 local FALLBACK_ICON = Host.FALLBACK_ICON
+local QUALITY_COLOR
 
 local B = ns.ExploreBooks
 local META = ns.ExploreBookMeta or {}
@@ -897,6 +898,10 @@ local function PaintRow(r, idx, y, rec, zebra)
     else
         r.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
     end
+    if ns.hui and ns.hui.SetIconRing then
+        local qq = id and DG.QualOf and DG.QualOf(id) or nil
+        ns.hui.SetIconRing(r.icon, qq and { ns.hui.QColor(qq) } or nil)
+    end
 
     r.__it = id
     r.__rec = rec
@@ -1067,7 +1072,7 @@ local QUALITY_COLORS = {
     [3] = { 0, 0.44, 0.87 }, [4] = { 0.64, 0.21, 0.93 }, [5] = { 1, 0.5, 0 },
     [6] = { 0.9, 0.8, 0.5 }, [7] = { 0.76, 0.86, 0.92 },
 }
-local function QUALITY_COLOR(q)
+function QUALITY_COLOR(q)
     if type(q) == "number" then return QUALITY_COLORS[q] or { 1, 1, 1 } end
     return nil
 end
@@ -1121,6 +1126,9 @@ local function PaintRewards()
             row.icon:SetTexture("Interface\\Icons\\" .. ic)
         else
             row.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+        end
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(row.icon, q and { ns.hui.QColor(q) } or nil)
         end
         row.name:SetText(nm or "?")
         row.name:SetTextColor(Unpack(ok and (q and QUALITY_COLOR(q) or C_TEXT) or C_DIM))
@@ -1264,6 +1272,9 @@ local function PaintChip(c, id, note)
         c.icon:SetTexture("Interface\\Icons\\" .. ic)
     else
         c.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+    end
+    if ns.hui and ns.hui.SetIconRing then
+        ns.hui.SetIconRing(c.icon, q and { ns.hui.QColor(q) } or nil)
     end
     local w = c.nm.GetStringWidth and c.nm:GetStringWidth() or 0
     w = (type(w) == "number" and w or 0) + 4 + 24 + 5 + 6
@@ -1497,6 +1508,9 @@ local function PaintBagTotal()
         EG.bagFIcon:SetTexture("Interface\\Icons\\" .. ic)
     else
         EG.bagFIcon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+    end
+    if ns.hui and ns.hui.SetIconRing then
+        ns.hui.SetIconRing(EG.bagFIcon, q and { ns.hui.QColor(q) } or nil)
     end
     local y, idx = 140, 0
     for gi, g in ipairs(BAG_RW_GROUPS) do
@@ -2370,9 +2384,14 @@ local function PaintBMChain(tab, KeepName)
                     nd.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
                 end
                 nd.icon:SetShown(true)
+                if ns.hui and ns.hui.SetIconRing then
+                    local qq = DG.QualOf and DG.QualOf(data.item) or nil
+                    ns.hui.SetIconRing(nd.icon, qq and { ns.hui.QColor(qq) } or nil)
+                end
             else
                 nd.icon:SetTexture("Interface\\Icons\\spell_holy_mindsooth")
                 nd.icon:SetShown(true)
+                if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(nd.icon, nil) end
             end
             PaintBMNode(nd)
             nd:Show()
@@ -2491,6 +2510,9 @@ local function PaintBMCodex(KeepName)
             else
                 rw2.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
             end
+            if ns.hui and ns.hui.SetIconRing then
+                ns.hui.SetIconRing(rw2.icon, q and { ns.hui.QColor(q) } or nil)
+            end
             rw2:Show()
         else
             rw2.__id, rw2.__note = nil, nil
@@ -2530,6 +2552,9 @@ local function PaintBMOv(KeepName)
             rw.icon:SetTexture("Interface\\Icons\\" .. ic)
         else
             rw.icon:SetTexture("Interface\\Icons\\" .. tostring(FALLBACK_ICON))
+        end
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(rw.icon, q and { ns.hui.QColor(q) } or nil)
         end
     end
 end
@@ -3128,6 +3153,7 @@ function EG.PaintList()
         r.d:SetText("")
         r.chk:Hide()
         r.icon:SetTexture("")
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         r.__it, r.__mark, r.__rec = nil, nil, nil
         r.sep:Hide()
         y = y + EG.ROW_H + EG.LIST_PAD

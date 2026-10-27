@@ -100,6 +100,7 @@ local SLOT_NAMES = {
     finger = L["戒指"], finger2 = L["戒指"], trinket = L["饰品"], trinket2 = L["饰品"],
     shirt = L["衬衣"], tabard = L["公会徽章"],
     ["two-hand"] = L["双手武器"], ["main-hand"] = L["主手"], ["off-hand"] = L["副手"],
+    main = L["主手"], off = L["副手"],
     ranged = L["远程"],
 }
 
@@ -947,6 +948,27 @@ local function CatRowsFor(rkey)
     return out
 end
 
+function BG.CatRowsForMain()
+    local cap = UsableCap and UsableCap() or 60
+    local key = "main+2h:" .. tostring(cap) .. ":" .. tostring(BG.cls)
+    local c = BG.__mainRows
+    if c and c.key == key then return c.rows end
+    local out, seen = {}, {}
+    local a, b = CatRowsFor("main-hand"), CatRowsFor("two-hand")
+    for li = 1, 2 do
+        local src = (li == 1) and a or b
+        for i = 1, #src do
+            local r = src[i]
+            if not seen[r.id] then
+                seen[r.id] = true
+                out[#out + 1] = r
+            end
+        end
+    end
+    BG.__mainRows = { key = key, rows = out }
+    return out
+end
+
 local function CatSrcOf(id)
     local gm = ns.GearModule
     local so = gm and gm.srcOf and gm.srcOf[id]
@@ -1252,6 +1274,20 @@ local function MainKey(sp, side)
     return "main-hand"
 end
 
+function BG.MainDisp(sp)
+    local cur = BG.cur
+    if cur then
+        if cur["two-hand"] then return "two-hand" end
+        if cur["main-hand"] then return "main-hand" end
+    end
+    local pl = BG.usingPlan
+    if pl and pl.items then
+        if pl.items["two-hand"] then return "two-hand" end
+        if pl.items["main-hand"] then return "main-hand" end
+    end
+    return MainKey(sp)
+end
+
 local function OffKey(sp, side)
     if not sp then return "off-hand" end
     side = side or CurSide()
@@ -1272,7 +1308,7 @@ local function DataKey(sp, slotKey)
         if slotKey == "main-hand" and not SideHas(sp, "main-hand") then
             return MainKey(sp)
         end
-        return slotKey == "main" and MainKey(sp) or slotKey
+        return slotKey == "main" and BG.MainDisp(sp) or slotKey
     end
     if slotKey == "off" or slotKey == "off-hand" or slotKey == "held" or slotKey == "shield" then
         if MainKey(sp) == "two-hand" then return "off-hand" end
@@ -1283,7 +1319,7 @@ local function DataKey(sp, slotKey)
 end
 
 local function CurItem(sp, slotKey)
-    local dk = DataKey(sp, slotKey)
+    local dk = (slotKey == "main") and BG.MainDisp(sp) or DataKey(sp, slotKey)
     local id = BG.cur[dk]
     if id then return id end
     local pl = BG.usingPlan
@@ -1639,7 +1675,7 @@ local function SumStats()
     local acc = {}
     if not sp then return acc end
     local seen = {}
-    local dkMain, dkOff = MainKey(sp), OffKey(sp)
+    local dkMain, dkOff = BG.MainDisp(sp), OffKey(sp)
     for _, key in ipairs(ALL_SLOT_KEYS) do
         local dk = key
         if key == "two-hand" or key == "main-hand" then
@@ -1694,7 +1730,7 @@ end
 local function PaintDoll()
     local sp = SpecRec()
     if not sp then return end
-    local mk = MainKey(sp)
+    local mk = BG.MainDisp(sp)
     local ok2 = (mk == "two-hand") and "off-hand" or OffKey(sp)
     for key, cell in pairs(BG.dollCells) do
         local dkey = key
@@ -1708,12 +1744,14 @@ local function PaintDoll()
         if empty then
             cell.icon:SetTexture(SLOT_EMPTY[key] or "Interface\\PaperDoll\\UI-PaperDoll-Slot-Chest")
             cell.icon:SetTexCoord(SLOT_EMPTY_CROP, 1 - SLOT_EMPTY_CROP, SLOT_EMPTY_CROP, 1 - SLOT_EMPTY_CROP)
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(cell.icon, nil) end
             cell.name:SetText(key == "off" and mk == "two-hand"
                 and L["被双手武器占用"] or cell.slotLabel)
             cell.name:SetTextColor(Unpack(C_DIM))
         else
             cell.icon:SetTexture(ItemIcon(id))
             cell.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(cell.icon, { ns.hui.QColor(ItemQuality(sp, id, q)) }) end
             cell.name:SetText(DG.ItemName(id))
             cell.name:SetTextColor(Unpack(QColor(ItemQuality(sp, id, q))))
         end
@@ -1729,7 +1767,7 @@ local function PaintDoll()
         if cell.__huiCard then
             ns.hui.HuiCardState(cell, (sel or cell:IsMouseOver()) and "hover" or "norm")
         end
-        cell.dot:SetShown(BG.cur[dkey] ~= nil)
+        cell.dot:SetShown(not empty and BG.cur[dkey] ~= nil)
     end
 end
 
@@ -2792,6 +2830,7 @@ function FillBwRow(r)
     if r.__huiCard then ns.hui.HuiCardState(r, "norm") end
     if not row then
         r.icon:SetTexture("")
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         r.name:SetText(L["这个筛选下没有条目"])
         r.name:SetTextColor(Unpack(C_DIM))
         r.src:SetText("")
@@ -2809,6 +2848,7 @@ function FillBwRow(r)
     end
     local sp = SpecRec()
     r.icon:SetTexture(ItemIcon(row.item))
+    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, { ns.hui.QColor(ItemQuality(sp, row.item, row.q)) }) end
     local nm, okn = DG.ItemName(row.item)
     if not okn then
         BG.needNames = true
@@ -2915,7 +2955,11 @@ local function PaintBrowser()
     local sp = SpecRec()
     if not sp then return end
     local rkey = BG.sel and RowsKey(BG.sel) or nil
-    if rkey == "main-hand" then rkey = MainKey(sp) end
+    local mainBoth = false
+    if rkey == "main-hand" then
+        rkey = MainKey(sp)
+        mainBoth = (BG.sel == "main")
+    end
     if BG.sel then
         BG.bwTitle:SetText(SLOT_NAMES[BG.sel] or BG.sel)
     else
@@ -2929,7 +2973,7 @@ local function PaintBrowser()
         BG.baseScore = baseId and ItemScore(baseId, w) or nil
         BG.baseId = baseId
         local pool = {}
-        for _, r in ipairs(CatRowsFor(rkey)) do
+        for _, r in ipairs(mainBoth and BG.CatRowsForMain() or CatRowsFor(rkey)) do
             local kind = CatKind(r.id)
             local pass = not (next(BG.srcSet) ~= nil and not BG.srcSet[kind])
             if pass and lv and not UsableAt(r.id, lv, r.req or 0) then pass = false end
@@ -3297,7 +3341,23 @@ end
 
 function BG.SetSlot(slotKey, itemID)
     if not slotKey then return end
-    local dk = DataKey(SpecRec(), slotKey)
+    local sp = SpecRec()
+    local dk = DataKey(sp, slotKey)
+    if slotKey == "off" then
+        if itemID then BG.cur["two-hand"] = nil end
+        dk = OffKey(sp)
+    elseif slotKey == "main" or slotKey == "two-hand" or slotKey == "main-hand" then
+        if itemID == nil then
+            BG.cur["two-hand"] = nil
+            BG.cur["main-hand"] = nil
+        elseif BG.SlotOfAny and BG.SlotOfAny(itemID) == "two-hand" then
+            dk = "two-hand"
+            BG.cur["main-hand"] = nil
+        else
+            dk = "main-hand"
+            BG.cur["two-hand"] = nil
+        end
+    end
     if itemID == nil then BG.cur[dk] = nil else BG.cur[dk] = itemID end
     BG.RequestRender()
 end
@@ -3366,6 +3426,7 @@ function BG.SavePlan()
     local items, seen = {}, {}
     for _, key in ipairs(ALL_SLOT_KEYS) do
         local dk = DataKey(sp, key)
+        if key == "two-hand" or key == "main-hand" then dk = BG.MainDisp(sp) end
         if not seen[dk] then
             seen[dk] = true
             local id = CurItem(sp, dk)
@@ -3619,7 +3680,7 @@ local function MakeCell(parent, w, slotLabel, mirror)
         if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
         local sp = SpecRec()
         local id = CurItem(sp, self.__key)
-        if id and not (self.__key == "off" and MainKey(sp) == "two-hand") then
+        if id and not (self.__key == "off" and BG.MainDisp(sp) == "two-hand") then
             ItemTip(self, id)
         end
     end)
@@ -4913,3 +4974,4 @@ local function ScoreVsBis(id)
 end
 
 BG.ScoreVsBis = ScoreVsBis
+BG.SlotOfAny = SlotOfAny

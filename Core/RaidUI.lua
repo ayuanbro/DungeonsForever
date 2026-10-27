@@ -569,6 +569,7 @@ local function SetIconForRec(tex, rec)
         tex:SetTexture(t)
     end
     tex:SetAlpha(1)
+    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(tex, nil) end
 end
 
 function RU.PaintSetRow(row, rec)
@@ -607,6 +608,10 @@ function RU.PaintPieceCard(f, id)
     local tex = Host.FALLBACK_ICON
     if Host.DG and Host.DG.ItemIcon then tex = Host.DG.ItemIcon(id) end
     f.iconTex:SetTexture(tex)
+    if ns.hui and ns.hui.SetIconRing then
+        local pq = (Host.DG and Host.DG.QualOf) and Host.DG.QualOf(id) or nil
+        ns.hui.SetIconRing(f.iconTex, pq and { ns.hui.QColor(pq) } or nil)
+    end
 end
 
 function RU.OnItemData(itemID)

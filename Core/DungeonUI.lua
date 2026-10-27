@@ -4023,7 +4023,12 @@ function DG.PaintItemRow(c, itemID)
         end
         c.__named = hasName
     end
-    if c.icon and c.icon.SetTexture then c.icon:SetTexture(DG.ItemIcon(itemID)) end
+    if c.icon and c.icon.SetTexture then
+        c.icon:SetTexture(DG.ItemIcon(itemID))
+        if ns.hui and ns.hui.SetIconRing then
+            ns.hui.SetIconRing(c.icon, { ns.hui.QColor(DG.QualOf(itemID)) })
+        end
+    end
     if c.tp then c.tp:SetText(DG.ItemMeta(itemID)) end
 end
 
@@ -4889,6 +4894,7 @@ function U:RenderDungeonLoot()
                 takeRow(makeRow, function(r)
                     r:SetSize(cw, DG.LOOT_CARD_H)
                     r.icon:Hide(); r.name:Hide(); r.tag:Hide(); r.tp:Hide(); r.ch:Hide()
+                    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
                     r.__it = nil
                     r:SetAlpha(1)
                     r.note:SetText(L["暂无掉落数据"])
@@ -4912,6 +4918,9 @@ function U:RenderDungeonLoot()
                     r.note:Hide()
                     r.icon:SetTexture(DG.ItemIcon(it[1]))
                     r.icon:Show()
+                    if ns.hui and ns.hui.SetIconRing then
+                        ns.hui.SetIconRing(r.icon, { ns.hui.QColor(DG.QualOf(it[1])) })
+                    end
                     local nm, hasName = DG.ItemName(it[1])
                     local nbudget = it[3] and (cw - tx - DG.LOOT_TAG_W) or (cw - tx - DG.LOOT_TEXT_R)
                     r.name:SetText(DG.FitText(nm, DG.LOOT_FS_NAME, nbudget))
@@ -5088,6 +5097,9 @@ function U:RenderDungeonLootCards(groups, filter, takeRow, makeRow, bossMode, bo
                     r.note:Hide()
                     r.icon:SetTexture(DG.ItemIcon(it[1]))
                     r.icon:Show()
+                    if ns.hui and ns.hui.SetIconRing then
+                        ns.hui.SetIconRing(r.icon, { ns.hui.QColor(DG.QualOf(it[1])) })
+                    end
                     local nm, hasName = DG.ItemName(it[1])
                     local nbudget = it[3] and (rowW - ix - DG.LOOT_TAG_W) or (rowW - ix - DG.LOOT_TEXT_R)
                     r.name:SetText(DG.FitText(nm, DG.LOOT_FS_NAME, nbudget))
@@ -6026,7 +6038,6 @@ DG.Q_FLOW_SEC_GAP = 6
 DG.Q_FLOW_ST_GAP = 4
 DG.Q_FLOW_IDEO = "\227\128\128" .. " "
 DG.Q_LINK_ITEM = { 1, 0.92, 0.72 }
-DG.Q_DET_ICON = 20
 DG.C_FAC_A = { 0.45, 0.65, 1 }
 DG.C_FAC_H = { 1, 0.40, 0.40 }
 DG.Q_FS_NAME = 14
@@ -7812,32 +7823,55 @@ function U:RenderQuestDetail()
         local i = pool.nChip
         local r = pool.chip[i]
         if not r then
-            r = CreateFrame("Button", nil, child)
-            r:SetSize(detW, DG.Q_DET_ICON + 6)
+            r = CreateFrame("Button", nil, child, "BackdropTemplate")
+            r:SetSize(detW, 44)
+            r:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8",
+                edgeSize = 1,
+            })
+            if not r.__huiCard then HuiCardFX(r, 6, 2) end
             r:EnableMouse(true)
             r:EnableMouseWheel(true)
             r:SetScript("OnMouseWheel", function(_, delta)
                 DG.WheelScroll(U.dungeonQDet, U.dungeonQDetChild, delta)
             end)
             r:SetScript("OnEnter", function(self)
+                if not HuiCardState(self, "hover") then
+                    self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+                    self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
+                end
                 if self.__it then DG.ShowItemTip(self, self.__it) end
             end)
-            r:SetScript("OnLeave", function(self) GameTooltip:Hide() end)
+            r:SetScript("OnLeave", function(self)
+                if not HuiCardState(self, "norm") then
+                    self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+                    self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+                end
+                GameTooltip:Hide()
+            end)
             r:SetScript("OnClick", function(self, button) DG.ItemShiftClick(self, button) end)
             r.icon = r:CreateTexture(nil, "ARTWORK")
             r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
             if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(r.icon) end
-            r.icon:SetSize(DG.Q_DET_ICON, DG.Q_DET_ICON)
-            r.icon:SetPoint("LEFT", r, "LEFT", 2, 0)
+            r.icon:SetSize(32, 32)
+            r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
             r.name = MakeFS(r, DG.Q_FS_DET, C_TEXT, "LEFT")
-            r.name:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
-            r.name:SetWidth(detW - DG.Q_DET_ICON - 16)
+            r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 46, -6)
+            r.name:SetWidth(detW - 46 - 8)
             r.name:SetWordWrap(false)
-            r.badge = MakeFS(r, DG.Q_FS_DET, C_GREY, "RIGHT")
-            r.badge:SetPoint("RIGHT", r, "RIGHT", -8, 0)
+            r.sub = MakeFS(r, 12, C_GREY, "LEFT")
+            r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 46, -26)
+            r.sub:SetWordWrap(false)
+            r.badge = MakeFS(r, 12, C_GREY, "RIGHT")
+            r.badge:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -26)
             r.badge:SetWidth(46)
             r.badge:SetWordWrap(false)
             pool.chip[i] = r
+        end
+        if not r.__huiCard then
+            r:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+            r:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
         end
         return r
     end
@@ -8174,17 +8208,23 @@ function U:RenderQuestDetail()
         local colW = math.floor((detW - 8) / ncol)
         for idx, iid in ipairs(items) do
             local r = takeChip()
-            r:SetSize(colW, DG.Q_DET_ICON + 6)
+            r:SetSize(colW, 44)
+            local nw = colW - 46 - 8
             if questID then
                 r.__q = questID
-                r.name:SetWidth(colW - DG.Q_DET_ICON - 16 - 46)
+                nw = nw - 46 - 4
             else
                 r.__q = nil
-                r.name:SetWidth(colW - DG.Q_DET_ICON - 16)
             end
+            r.name:SetWidth(nw)
+            r.sub:SetWidth(nw)
             r.icon:SetTexture(DG.ItemIcon(iid))
+            if ns.hui and ns.hui.SetIconRing then
+                ns.hui.SetIconRing(r.icon, { ns.hui.QColor(DG.QualOf(iid)) })
+            end
             local inm, iok = DG.ItemName(iid)
             r.name:SetText(inm)
+            r.sub:SetText(DG.ItemMeta(iid) or "")
             if iok then
                 local qr, qg, qb = DG.QColor(DG.QualOf(iid))
                 if qr then
@@ -8199,7 +8239,8 @@ function U:RenderQuestDetail()
             r.__it = { iid }
             r:ClearAllPoints()
             r:SetPoint("TOPLEFT", child, "TOPLEFT",
-                (idx - 1) % ncol * (colW + 8), y - math.floor((idx - 1) / ncol) * (DG.Q_DET_ICON + 8))
+                (idx - 1) % ncol * (colW + 8), y - math.floor((idx - 1) / ncol) * 52)
+            HuiCardState(r, "norm")
             r:Show()
             DG.ApplyChipBadge(r)
         end
@@ -8220,7 +8261,7 @@ function U:RenderQuestDetail()
             f:SetText(L["任务需求"])
             put(f, 20)
             if hasChips then
-                y = y - renderChips(q[14], 2, q[1]) * (DG.Q_DET_ICON + 8) - 2
+                y = y - renderChips(q[14], 2, q[1]) * 52 - 2
             end
             if objTxt then
                 local t = takeTxt()
@@ -8237,7 +8278,7 @@ function U:RenderQuestDetail()
         local f = takeLab()
         f:SetText(L["任务奖励"])
         put(f, 20)
-        y = y - renderChips(rew, 2) * (DG.Q_DET_ICON + 8) - 2
+        y = y - renderChips(rew, 2) * 52 - 2
     end
     do
         local seg = DG.GainsSegs(q)

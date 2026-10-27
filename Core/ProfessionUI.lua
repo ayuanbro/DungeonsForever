@@ -1794,6 +1794,7 @@ function PD.BindRow(r, spec, h)
     local factionIcon = not itemID and (iconName == PD.FAC_ICON.a or iconName == PD.FAC_ICON.h)
     local showIcon = (spec.kind == "row" or spec.kind == "head") and (itemID or iconName) and true or false
     r.icon:SetShown(showIcon)
+    if not showIcon and ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
     if r.__iconZone then r.__iconZone:Hide() end
     if r.__vs then
         for _, c in ipairs(r.__vs.cards) do c:Hide() end
@@ -1810,6 +1811,11 @@ function PD.BindRow(r, spec, h)
         r.icon:ClearAllPoints()
         r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - iconSize) / 2))
         SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+        if ns.hui and ns.hui.SetIconRing then
+            local qq = nil
+            if itemID and not iconName then qq = PD.QualCached(itemID) end
+            ns.hui.SetIconRing(r.icon, qq and { ns.hui.QColor(qq) } or nil)
+        end
     end
 
     if spec.kind == "head" then
@@ -1821,6 +1827,11 @@ function PD.BindRow(r, spec, h)
             r.icon:ClearAllPoints()
             r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
             SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+            if ns.hui and ns.hui.SetIconRing then
+                local qq2 = nil
+                if itemID and not iconName then qq2 = PD.QualCached(itemID) end
+                ns.hui.SetIconRing(r.icon, qq2 and { ns.hui.QColor(qq2) } or nil)
+            end
             r.a:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
         else
             r.a:SetPoint("LEFT", r, "LEFT", 6, 0)
@@ -2158,9 +2169,14 @@ function PD.BindRow(r, spec, h)
                 if d.it then
                     c.ic:SetSize(22, 22)
                     SetIcon(c.ic, DG.ItemIcon(d.it))
+                    if ns.hui and ns.hui.SetIconRing then
+                        local vq = PD.QualCached(d.it)
+                        ns.hui.SetIconRing(c.ic, vq and { ns.hui.QColor(vq) } or nil)
+                    end
                     c.ic:Show()
                 else
                     c.ic:Hide()
+                    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(c.ic, nil) end
                 end
                 if d.win then
                     c.badgeFs:SetText(L["最省"])
@@ -2207,8 +2223,13 @@ function PD.BindRow(r, spec, h)
                 c.ic:Show()
                 c.ic:SetSize(24, 24)
                 SetIcon(c.ic, DG.ItemIcon(d.it))
+                if ns.hui and ns.hui.SetIconRing then
+                    local vq2 = PD.QualCached(d.it)
+                    ns.hui.SetIconRing(c.ic, vq2 and { ns.hui.QColor(vq2) } or nil)
+                end
             else
                 c.ic:Hide()
+                if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(c.ic, nil) end
             end
             c.nm:SetText(d.name or "")
             c.st:SetText(d.modeText or "")
@@ -2226,6 +2247,7 @@ function PD.BindRow(r, spec, h)
         r.a:SetText(""); r.b:SetText(""); r.c:SetText(""); r.c2:SetText(""); r.d:SetText(""); r.e:SetText(""); r.f:SetText("")
         r.dv:SetText(""); r.dv:Hide()
         if r.icon then r.icon:Hide() end
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
         PD.HideSkillBar(r)
         PD.PaintCard(r, nil)
         return
@@ -2250,6 +2272,7 @@ function PD.BindRow(r, spec, h)
         if spec.icons then
             r.e:SetText("")
             r.icon:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
             for k = 1, #r.gic do
                 local g, id = r.gic[k], spec.icons[k]
                 if id then
@@ -2261,8 +2284,13 @@ function PD.BindRow(r, spec, h)
                         g:SetPoint("RIGHT", r.gic[k - 1], "LEFT", -4, 0)
                     end
                     SetIcon(g, DG.ItemIcon(id))
+                    if ns.hui and ns.hui.SetIconRing then
+                        local gq2 = PD.QualCached(id)
+                        ns.hui.SetIconRing(g, gq2 and { ns.hui.QColor(gq2) } or nil)
+                    end
                 else
                     g:Hide()
+                    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(g, nil) end
                 end
             end
         else
@@ -2274,6 +2302,11 @@ function PD.BindRow(r, spec, h)
             r.icon:ClearAllPoints()
             r.icon:SetPoint("RIGHT", r.e, "LEFT", -6, 0)
             SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+            if ns.hui and ns.hui.SetIconRing then
+                local rq = nil
+                if itemID and not iconName then rq = PD.QualCached(itemID) end
+                ns.hui.SetIconRing(r.icon, rq and { ns.hui.QColor(rq) } or nil)
+            end
         end
         PD.HideSkillBar(r)
         PD.PaintCard(r, nil)
@@ -3281,6 +3314,7 @@ function PD.GCEnsure(i)
                    PD.GC_PAD + PD.GC_ICON + 9 + (k - 1) * (PD.GC_SUB + 4),
                    PD.GC_SUB_DY)
         t:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.IconRing then ns.hui.IconRing(t) end
         t:Hide()
         c.subs[k] = t
     end
@@ -3409,6 +3443,7 @@ function PD.GCFill(c, d)
     c.sep:SetPoint("TOP", c, "TOP", 0, -(PD.GCHeadY(d) - 1))
     if route then
         c.icon:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(c.icon, nil) end
         c.nm:ClearAllPoints()
         c.nm:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD, -6)
         c.nm:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
@@ -3422,9 +3457,14 @@ function PD.GCFill(c, d)
                 SetIcon(t, PD.ItemIcon(id))
                 local dim = d.dims and d.dims[k]
                 if dim then t:SetAlpha(0.3) else t:SetAlpha(1) end
+                if ns.hui and ns.hui.SetIconRing then
+                    local tq = PD.QualCached(id)
+                    ns.hui.SetIconRing(t, tq and { ns.hui.QColor(tq) } or nil)
+                end
                 t:Show()
             else
                 t:Hide()
+                if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(t, nil) end
             end
             local b = c.itBtn[k]
             if id then
@@ -3445,13 +3485,20 @@ function PD.GCFill(c, d)
         c.nm:SetPoint("TOPLEFT", c, "TOPLEFT", PD.GC_PAD + PD.GC_ICON + 9, PD.GC_NAME_DY)
         c.nm:SetPoint("RIGHT", c.lv, "LEFT", -6, 0)
         c.nm:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
-        for k = 1, 4 do c.ricos[k]:Hide() end
+        for k = 1, 4 do
+            c.ricos[k]:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(c.ricos[k], nil) end
+        end
         local subN = 0
         for k = 1, 3 do
             local t = c.subs[k]
             local id = d.subs and d.subs[k]
             if id then
                 SetIcon(t, PD.ItemIcon(id))
+                if ns.hui and ns.hui.SetIconRing then
+                    local sq = PD.QualCached(id)
+                    ns.hui.SetIconRing(t, sq and { ns.hui.QColor(sq) } or nil)
+                end
                 t:Show()
                 subN = subN + 1
                 local b = c.itBtn[subN + 1]
@@ -3464,6 +3511,7 @@ function PD.GCFill(c, d)
                 b:Show()
             else
                 t:Hide()
+                if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(t, nil) end
             end
         end
         for k = subN + 2, 4 do
@@ -3471,6 +3519,10 @@ function PD.GCFill(c, d)
             c.itBtn[k]:Hide()
         end
         SetIcon(c.icon, PD.ItemIcon(d.main))
+        if ns.hui and ns.hui.SetIconRing then
+            local mq = d.main and PD.QualCached(d.main) or nil
+            ns.hui.SetIconRing(c.icon, mq and { ns.hui.QColor(mq) } or nil)
+        end
         local b0 = c.itBtn[1]
         b0.__it = d.main
         b0:ClearAllPoints()
@@ -5931,6 +5983,7 @@ function PD.VsBlock(r)
         local ic = host:CreateTexture(nil, "OVERLAY", nil, 2)
         ic:SetSize(22, 22)
         ic:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 8, 6)
+        if ns.hui and ns.hui.IconRing then ns.hui.IconRing(ic) end
         ic:Hide()
         local nm = MakeFS(host, 12, C_TEXT, "LEFT")
         nm:SetWordWrap(false)
@@ -6392,6 +6445,7 @@ function PD.ClearMats(r)
     for j = 1, #r.blk do
         local b = r.blk[j]
         b.ic:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
         b.nm:Hide()
         b.ct:Hide()
         if b.zone then b.zone:Hide() end
@@ -6403,7 +6457,13 @@ function PD.WipeRow(r)
     r.__spec = nil
     PD.ClearMats(r); PD.ClearMatSegs(r)
     if r.icon then r.icon:Hide() end
-    if r.gic then for _, g in ipairs(r.gic) do g:Hide() end end
+    if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
+    if r.gic then
+        for _, g in ipairs(r.gic) do
+            g:Hide()
+            if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(g, nil) end
+        end
+    end
     local iz = r.__iconZone; if iz then iz:Hide() end
     if r.__vs then
         for _, c in ipairs(r.__vs.cards) do c:Hide() end
@@ -6454,6 +6514,7 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
     if cut then
         local b = PD.RowBlk(r, n + 1)
         b.ic:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
         b.ct:SetText("")
         b.ct:Hide()
         b.nm:SetTextColor(Unpack(grey and C_DIM or C_TEXT))
@@ -6469,6 +6530,10 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
         local b = PD.RowBlk(r, k)
         SetIcon(b.ic, DG.ItemIcon(blk.id))
         b.ic:SetDesaturated(grey and true or false)
+        if ns.hui and ns.hui.SetIconRing then
+            local bq = PD.QualCached(blk.id)
+            ns.hui.SetIconRing(b.ic, bq and { ns.hui.QColor(bq) } or nil)
+        end
         b.ic:ClearAllPoints()
         b.ic:SetPoint("RIGHT", r, "RIGHT", -(W - right), 0)
         b.nm:Hide()
@@ -6486,6 +6551,7 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
     for k = n + (cut and 1 or 0) + 1, #r.blk do
         local b = r.blk[k]
         b.ic:Hide(); b.nm:Hide(); b.ct:Hide(); b.zone:Hide()
+        if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
     end
 end
 
