@@ -38,6 +38,22 @@ end
 
 
 class NativeRoutePlansTests(unittest.TestCase):
+    def test_real_solver_reports_seed_skill_then_search_phase(self):
+        self.lua.execute('''
+          local solver=ns.ProfRouteSolver;local runner=ns.ProfSolverRun
+          local j=solver.NewJob('alchemy',{snapshot=fixture(),start=1,target=35})
+          local seed,search=false,false
+          for i=1,20000 do
+            solver.Run(j,0.01)
+            local phase=runner.Stamp(j)
+            if phase=='seed' and (j.seedSkill or 1)>1 then seed=true end
+            if phase=='search' then search=true end
+            if j.finished then break end
+          end
+          assert(j.finished and j.cpuLimitMs==8000)
+          assert(seed and search,'solver did not report both live phases')
+        ''')
+
     def setUp(self):
         self.lua=LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute(MOCKS)

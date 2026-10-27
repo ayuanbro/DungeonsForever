@@ -93,7 +93,7 @@ local function quote(id,s,fee,stamp,live)
     local reliable=type(supply)=="table" and amount(supply.quantity) and supply.quantity==floor(supply.quantity)
         and supply.complete==true and supply.ownerExcluded==true
         and supply.source=="client-auction-results"
-        and age and age>=0 and age<=172800 or false
+        and age and age>=0 and age<=1800 or false
     local blocked=bound(id,live and {} or s)
     local net=auction and fee and floor(auction*(100-fee)/100+1e-9) or nil
     local q={id=id,npcUnit=npc,auctionGross=auction,auctionNet=net,bound=blocked,

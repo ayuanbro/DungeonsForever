@@ -424,6 +424,14 @@ function E.RefreshClientData(readRecipes,readTrainer,onComplete,recipeIDs,forceI
     -- Older callers with no scan flags may represent an arbitrary spell/policy
     -- event. They retain conservative invalidation; typed skill events opt out.
     if forceInputs==nil then forceInputs=not readRecipes and not readTrainer and not recipeIDs end
+    -- The first no-op refresh must compare with its starting input, rather
+    -- than treating the lack of a previous notification as a data change.
+    runtime()
+    local initial=store()
+    local initialLevel
+    if UnitLevel then local ok,value=pcall(UnitLevel,"player");if ok then initialLevel=value end end
+    local baseline={recipes=initial.recipes,build=initial.recipeBuild,revision=initial.clientInputRevision or 0,
+        professions=E.Copy(E.Professions()),level=initialLevel,error=E.lastReadError}
     local deadline,ops=0,0
     local handle={}
     activeScans[handle]=true
@@ -445,7 +453,7 @@ function E.RefreshClientData(readRecipes,readTrainer,onComplete,recipeIDs,forceI
         local ok,err=coroutine.resume(co)
         if not ok then E.lastReadError=tostring(err) end
         if not ok or coroutine.status(co)=="dead" then
-            local d=store();local previous=notified[d];local professions=E.Professions()
+            local d=store();local previous=notified[d] or baseline;local professions=E.Professions()
             local level
             if UnitLevel then local levelOK,value=pcall(UnitLevel,"player");if levelOK then level=value end end
             local changed=forceInputs or not previous or previous.recipes~=d.recipes or previous.build~=d.recipeBuild

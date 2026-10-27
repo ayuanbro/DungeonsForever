@@ -166,6 +166,11 @@ end
 
 function RA.AHPriceOf(itemID)
     if not itemID then return nil end
+    local bridge=ns.AuctionBridge
+    local supply=bridge and bridge.GetAuctionSupply and bridge.GetAuctionSupply(itemID)
+    if supply and (supply.quantity or 0)>0 and type(supply.market)=="number" and supply.market>0 then
+        return supply.market
+    end
     return AHPrice(itemID)
 end
 
@@ -494,12 +499,17 @@ local function BuildCandidates(slug, opts)
         cands = kept
     end
     local G = ns.ProfGates
-    if G and not opts.ignoreSpecGate then
+    if G and not opts.ignoreSpecGate or Pol and Pol.RouteRecipeEligibility then
         local kept, blocked = {}, 0
         for _, c in ipairs(cands) do
-            local allowed, need = G.Allowed(slug, c.spell)
+            local allowed, need = true, nil
+            if G and not opts.ignoreSpecGate then allowed,need=G.Allowed(slug,c.spell) end
+            if allowed and Pol and Pol.RouteRecipeEligibility and Pol.FindRecipe then
+                local recipe=Pol.FindRecipe(slug,c.spell)
+                allowed,need=Pol.RouteRecipeEligibility(recipe,opts.snapshot)
+            end
             if allowed then
-                if G.TrainerTaught(c.spell) then c.fcost = 0; c.funpriced = nil; c.taughtByTrainer = true end
+                if G and G.TrainerTaught(c.spell) then c.fcost = 0; c.funpriced = nil; c.taughtByTrainer = true end
                 kept[#kept + 1] = c
             else
                 blocked = blocked + 1
@@ -1076,7 +1086,9 @@ local function InjectTools(stepsOut, slug, cap, startLv, recOf)
     local lo = tonumber(startLv) or 1
     for _, goal in ipairs(goals) do
         local P = goal.minSkill or 1
-        if P >= lo and not have[goal.spell] and recOf[goal.spell] and not G.ToolOwned(goal.item) then
+        local E=ns.ProfEconomy
+        local required=not (E and E.RequiredLevelingTool) or E.RequiredLevelingTool(slug,goal)
+        if required and P >= lo and not have[goal.spell] and recOf[goal.spell] and not G.ToolOwned(goal.item) then
             local at = #stepsOut + 1
             for i, st in ipairs(stepsOut) do
                 if (tonumber(st[2]) or 0) > P then at = i break end
@@ -1197,7 +1209,7 @@ function RA.FilterFixedSpecializations(slug, steps, opts)
             elseif recipe and (recipe.cooldown or recipe.cooldownUnknown)then
                 allowed,reason=false,recipe.cooldown and "cooldown"or"cooldownUnknown"
             elseif recipe and E and E.LearningEligibility then
-                allowed,reason=E.LearningEligibility(recipe,opts and opts.snapshot)
+                allowed,reason=(E.RouteRecipeEligibility or E.LearningEligibility)(recipe,opts and opts.snapshot)
             elseif E and E.FindRecipe then allowed,reason=false,"clientDataPending"
             elseif G and G.LearningEligibility then allowed,reason=G.LearningEligibility(spell) end
         end

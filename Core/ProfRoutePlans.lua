@@ -10,7 +10,7 @@ local serial, revision = 0, 0
 local legacyRun
 local MODEL, CACHE_LIMIT = 1, 4
 local function learningPolicy()
-    return E.LearningPolicyFingerprint and E.LearningPolicyFingerprint() or "native-learning:4:gold-procurement"
+    return E.LearningPolicyFingerprint and E.LearningPolicyFingerprint() or "native-learning:6:native-route-eligibility"
 end
 local function now() return time and time() or 0 end
 local function copy(value, seen)
@@ -57,7 +57,7 @@ end
 function RA.OptionsFor(slug, current)
     local opts = baseOptions and baseOptions(slug, current) or {}
     opts.fromCurrent = setting("autoFromCurrent", true)
-    opts.cpuLimitMs = setting("solverRoute", false) and 8000 or 5000
+    opts.cpuLimitMs = 8000
     opts.autoCraftTools = setting("autoCraftTools", true)
     opts.recoveryEnabled = setting("recoveryEnabled", false)
     opts.recoveryFeePercent = setting("recoveryFeePercent", 5)
@@ -88,12 +88,9 @@ local function options(slug, supplied)
     opts.partnerRequired = context and context.requiresPartner and not context.partnerValid or false
     if context and context.requiresPartner then opts.secondaryProfession = context.partner end
     if opts.scheme == "fishing" then opts.allowSecondaryLeveling=false; opts.secondaryProfession=nil end
-    local gates=ns.ProfGates
-    local spec=gates and gates.SpecializationContext and gates.SpecializationContext(opts)
-    local needsTools=E.HasToolGoals and E.HasToolGoals(slug,opts)
-    local needsEssence=ns.ProfEssences and ns.ProfEssences.Enabled(slug,opts,opts.snapshot)
-    if opts.scheme~="cheapest" and opts.scheme~="fishing" and
-        (needsTools or needsEssence or spec and (#(spec.goals or {})>0 or spec.selectionConflict)) then
+    -- Every purchasing strategy uses the same cumulative stock budget.
+    -- Pure fishing retains its separate, self-caught-material planner.
+    if opts.scheme~="cheapest" and opts.scheme~="fishing" then
         opts.specializationRecipeScore=function(recipe,state,snapshot,incremental)
             local gain=E.Gain(recipe,(state.skill or {})[recipe.profession] or 1)
             if gain<=0 then return math.huge end
@@ -132,6 +129,29 @@ local function identity(slug, opts)
     local scope = character() .. "|" .. slug
     if opts.snapshot then scope = scope .. "|" .. tostring(opts.snapshot) end
     return scope .. "|" .. signature(slug, opts), scope
+end
+local function refreshFreshness(result,slug,opts)
+    local settingsChanged=result.cacheSignature and result.cacheSignature~=signature(slug,opts) or false
+    local marketChanged=false
+    if result.auctionPriceInputs and RA.AHPriceOf then
+        for id,previous in pairs(result.auctionPriceInputs) do
+            local price=RA.AHPriceOf(id)
+            local current=type(price)=="number" and price>0 and price or false
+            if current~=previous then marketChanged=true;break end
+        end
+    end
+    local supplyChanged=(result.planVersion==2 and result.scheme~="fishing" and result.auctionSupplyRevision~=3)
+        or E.AuctionSupplyChanged and E.AuctionSupplyChanged(result) or false
+    local reason=result.staleReason
+    -- Cache refreshes and process-local auction revision counters are not input
+    -- changes. Explicit recipe/client changes still require a new calculation.
+    local explicit=result.stale and (reason=="recipes" or reason=="client-inputs" or reason=="specialization"
+        or reason=="prices" and not result.auctionPriceInputs)
+    result.settingsChanged=settingsChanged or nil
+    result.stale=(settingsChanged or marketChanged or supplyChanged or explicit) and true or nil
+    result.staleReason=settingsChanged and "settings" or supplyChanged and "supply"
+        or marketChanged and "prices" or explicit and reason or nil
+    return result
 end
 local function gate(slug, opts, code)
     return {slug=slug, planVersion=2, executionVersion=1, scheme=opts.scheme, start=opts.start, target=opts.target,
@@ -244,7 +264,7 @@ local function start(slug, opts, sigOpts)
     local db=not opts.snapshot and saved()
     if db then db.nextID=(db.nextID or 0)+1 end
     local id=character()..":route:"..tostring(db and db.nextID or serial)
-    if opts.scheme~="cheapest" and not opts.specializationRecipeScore then
+    if opts.scheme=="fishing" then
         local result=quickCompute(slug,opts)
         if not result then return nil end
         result.status=result.status or "complete"
@@ -277,26 +297,28 @@ function RA.Get(slug, supplied)
     if frozen then
         if frozen.learningPolicyFingerprint~=learningPolicy() then return gate(slug,opts,"learningPolicyChanged") end
         if RA.SpecializationPlanChanged and RA.SpecializationPlanChanged(frozen,slug,opts) then return gate(slug,opts,"specializationChanged") end
-        if frozen.cacheSignature and frozen.cacheSignature~=signature(slug,opts) then frozen.stale=true;frozen.settingsChanged=true end
-        if frozen.quoteSignature~=(RA.QuoteSig and RA.QuoteSig() or "") then frozen.stale=true end
-        if E.AuctionSupplyChanged and E.AuctionSupplyChanged(frozen) then frozen.stale=true end
-        return frozen
+        return refreshFreshness(frozen,slug,opts)
     end
     local result=results[key]
     if result then
-        if not opts.snapshot and result.quoteSignature and result.quoteSignature~=(RA.QuoteSig and RA.QuoteSig() or "") then result.stale=true end
-        if not opts.snapshot and E.AuctionSupplyChanged and E.AuctionSupplyChanged(result) then result.stale=true end
+        if not opts.snapshot then refreshFreshness(result,slug,opts) end
         return result
     end
     local selected=active[scope] and results[active[scope]]
     if not opts.snapshot and selected then
         if selected.learningPolicyFingerprint~=learningPolicy() then return gate(slug,opts,"learningPolicyChanged") end
-        selected.stale=true;selected.settingsChanged=true;return selected
+        return refreshFreshness(selected,slug,opts)
     end
     local db,cacheError
     if not opts.snapshot then db,cacheError=saved() end
     if cacheError then return gate(slug,opts,cacheError) end
     local record=db and (db.routes[signature(slug,opts)] or db.routes[db.active[slug]])
+    -- Older captures accidentally returned an empty catalogue for an unlearned
+    -- solo profession. Retry that empty candidate once; execution facts above
+    -- are always preserved and genuine failed new jobs are not auto-retried.
+    if record and type(record.result)=="table" and opts.targetUnlearned
+        and record.result.targetUnlearned and record.result.feasible==false
+        and type(record.result.steps)=="table" and #record.result.steps==0 then record=nil end
     if record~=nil and (type(record)~="table" or record.model~=MODEL or type(record.result)~="table"
         or type(record.result.steps)~="table" or record.result.executionSteps~=nil and type(record.result.executionSteps)~="table") then
         return gate(slug,opts,"historyUnreadable")
@@ -305,8 +327,7 @@ function RA.Get(slug, supplied)
         if record.result.learningPolicyFingerprint~=learningPolicy() then return gate(slug,opts,"learningPolicyChanged") end
         result=copy(record.result);result.cached=true
         if result.status=="searching" then result.status="interrupted";result.inFlight=false end
-        if record.result.cacheSignature~=signature(slug,opts) then result.stale=true;result.settingsChanged=true end
-        if result.quoteSignature~=(RA.QuoteSig and RA.QuoteSig() or "") then result.stale=true end
+        refreshFreshness(result,slug,opts)
         results[key]=result;active[scope]=key
         return result
     end
@@ -315,7 +336,7 @@ end
 function RA.Compute(slug, supplied)
     local opts=options(slug,supplied)
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
-    if opts.scheme~="cheapest" and not opts.specializationRecipeScore then return quickCompute(slug,opts) end
+    if opts.scheme=="fishing" then return quickCompute(slug,opts) end
     local result,job=S.Compute(slug,opts)
     if result then result.learningPolicyFingerprint=learningPolicy() end
     if RA.StampSpecializations then RA.StampSpecializations(result,slug,opts,job and job.snap) end
@@ -343,6 +364,9 @@ function RA.Recalculate(slug, supplied)
 end
 function RA.Invalidate(reason)
     clearPrices()
+    -- Old callers also use this to clear lookup caches (opening a page,
+    -- applying unchanged policies, closing the auction house).
+    if reason==nil then return end
     reason=type(reason)=="string" and reason or "inputs"
     for _,job in pairs(jobs) do job.stale=true;job.staleReason=reason end
     for _,result in pairs(results) do result.stale=true;result.staleReason=reason end
@@ -420,11 +444,11 @@ if run then
         if job then return job.result or job.published end
         return RA.Peek(ns.ProfModule and ns.ProfModule.cur)
     end
-    run.Active=function()
-        for _,job in pairs(jobs) do if not job.finished and not job.invalid and not job.cancelled then return {job=job,slug=job.slug} end end
+    run.Active=function(slug)
+        for _,job in pairs(jobs) do if (not slug or job.slug==slug) and not job.finished and not job.invalid and not job.cancelled then return {job=job,slug=job.slug} end end
     end
     run.State=function(job)
-        if not job then local entry=run.Active();job=entry and entry.job end
+        if type(job)=="string" or not job then local entry=run.Active(job);job=entry and entry.job end
         local phase,fraction=run.Stamp(job)
         return {phase=phase,fraction=fraction,seedSkill=job and job.seedSkill,target=job and job.target,
             expanded=job and job.expanded,cpuUsed=job and job.cpuUsed,cpuLimitMs=job and job.cpuLimitMs,status=job and job.status}
@@ -445,7 +469,14 @@ end
 local function initialize()
     local bridge=ns.AuctionBridge
     if bridge and bridge.OnChanged then bridge.OnChanged(function(_,reason)
-        if reason=="prices" or reason=="supply" then RA.Invalidate(reason) end
+        -- Stock queries do not invalidate unrelated professions or pretend that
+        -- an unchanged observation changed the player's settings.
+        if reason=="supply" then
+            clearPrices()
+            for _,job in pairs(jobs) do
+                if job.published and not job.opts.snapshot then refreshFreshness(job.published,job.slug,job.opts) end
+            end
+        elseif reason=="prices" then RA.Invalidate(reason) end
     end) end
     local frame=CreateFrame and CreateFrame("Frame")
     if frame then

@@ -99,12 +99,13 @@ local DIAG_TEXT = {
     pairingChanged = L["搭配专业已更改，点击重新计算应用。"],
     professionChanged = L["专业学习状态或旧路线规则已变化，请重新计算路线。"],
     formulaUnavailable = L["未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。"],
+    vendorFormulaRequired = L["未学配方的图纸没有可用的商人金币报价。"],
     limitedFormulaDisabled = L["当前设置不从商人购买限量图纸；请取得拍卖行报价或先学会该配方。"],
     formulaPolicyChanged = L["限量图纸购买设置已变化，请重新计算路线。"],
     formulaPriceUnknown = L["图纸购买价格尚未核实。"],
     formulaUnknownSource = L["图纸没有可核实的购买报价；可在设置关闭「不使用未知来源的图纸」。"],
     formulaStockUnknown = L["图纸为限量或未核实库存，不能保证商人现货。"],
-    auctionSupplyLimited = L["拍卖行可购数量不足，无法继续此配方；请查询更多货物或改用其他配方。"],
+    auctionSupplyLimited = L["拍卖行可购数量不足，无法继续此配方；请在 Auctionator 重新完整扫描或改用其他配方。"],
     fishingRecipeGap = L["当前技能没有符合纯钓鱼条件的可用配方，请检查食谱、材料来源或排除设置。"],
     fishingRequirementsUnknown = L["鱼类的钓取门槛或时间限制尚未确认，暂不用于纯钓鱼路线。"],
     professionCapUnknown = L["当前专业技能上限尚未读取，暂不推断最后一段采集目标。"],
@@ -130,6 +131,10 @@ function E.DiagnosticText(d)
     if type(d.message) == "string" then return d.message end
     local code = d.code
     if type(code) ~= "string" then return nil end
+    if code=="auctionSupplyLimited" and d.item and d.required and d.available then
+        local name=GetItemInfo and GetItemInfo(d.item) or ("#"..tostring(d.item))
+        return string.format(L["%s：拍卖行剩余可购 %d 件，本次需要 %d 件；请在 Auctionator 重新完整扫描或调整路线。"],name,d.available,d.required)
+    end
     return DIAG_TEXT[code] or code
 end
 
@@ -327,35 +332,6 @@ function E.RouteProfessions(slug, opts, professions)
     return selected, context
 end
 
-local SUPPLY_FIELDS = { "quantity", "observedAt", "source", "complete", "ownerExcluded", "market" }
-
-local function ValidSupply(entry)
-    return type(entry) == "table" and entry.source ~= "auctionator-daily-maximum"
-        and type(entry.quantity) == "number" and entry.quantity >= 0
-        and entry.quantity < math.huge and entry.quantity == math.floor(entry.quantity)
-end
-
-local function SupplyIdentity(entry)
-    if not entry then return false end
-    local out = {}
-    for i = 1, #SUPPLY_FIELDS do out[SUPPLY_FIELDS[i]] = entry[SUPPLY_FIELDS[i]] end
-    return out
-end
-
-function E.AuctionSupplyOf(context, id)
-    if type(id) ~= "number" or id <= 0 then return nil end
-    local entry
-    if context and context.auctionSupply then
-        entry = context.auctionSupply[id]
-    elseif not context or not context.prices then
-        local bridge = ns.AuctionBridge
-        if bridge and bridge.GetAuctionSupply then entry = bridge.GetAuctionSupply(id, true) end
-    end
-    if ValidSupply(entry) then return entry end
-    return nil
-end
-
-
 local function positiveInteger(value)
     return type(value) == "number" and value > 0 and value == floor(value)
 end
@@ -399,12 +375,19 @@ local function planningToolRecipe(slug, spell, snapshot)
     -- requirements into an existing execution or synthetic input boundary.
     if not snapshot and E.FindRecipe then return E.FindRecipe(slug, spell) end
 end
+function E.RequiredLevelingTool(slug, tool)
+    -- Preserve the native catalogue. Transmutation equipment is not a gate
+    -- for an ordinary potion route; actual dependencies are acquired normally.
+    return not tool.optional and not (slug=="alchemy" and (tool.item==9149 or tool.item==13503))
+end
 function E.HasToolGoals(slug, opts)
     if not E.ToolPlanningEnabled(opts) then return false end
     local target = tonumber(opts and opts.target) or 300
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
-        local recipe = planningToolRecipe(slug, tool.spell, opts and opts.snapshot)
-        if not recipe or type(recipe.learn)~="number" or target>recipe.learn then return true end
+        if E.RequiredLevelingTool(slug,tool) then
+            local recipe = planningToolRecipe(slug, tool.spell, opts and opts.snapshot)
+            if not recipe or type(recipe.learn)~="number" or target>recipe.learn then return true end
+        end
     end
     return false
 end
@@ -610,12 +593,20 @@ local function questSource(source)
     end
     return false
 end
--- The latest actual observation remains a finite purchase budget after reload.
--- Auctionator's daily maximum is reference-only; absent observations stay unknown.
-local function validSupply(entry)
-    return type(entry)=="table" and entry.source~="auctionator-daily-maximum"
-        and type(entry.quantity)=="number" and entry.quantity>=0
-        and entry.quantity<math.huge and entry.quantity==floor(entry.quantity)
+-- Injected snapshots may use bare finite budgets. Live client observations must
+-- be complete, exclude our auctions, and still be fresh at the capture boundary.
+local function validSupply(entry,stamp,live)
+    if type(entry)~="table" or type(entry.quantity)~="number" or entry.quantity<0
+        or entry.quantity==math.huge or entry.quantity~=floor(entry.quantity)
+        or entry.complete==false or entry.ownerExcluded==false then return false end
+    if entry.source=="auctionator-daily-maximum" or entry.source=="auctionator-update"
+        or entry.source=="auctionator-history" then return false end
+    if live or entry.source=="client-auction-results" then
+        if entry.source~="client-auction-results" or entry.complete~=true or entry.ownerExcluded~=true
+            or type(entry.observedAt)~="number" or entry.observedAt<=0 then return false end
+        if stamp and (entry.observedAt>stamp or stamp>(entry.expiresAt or entry.observedAt+1800)) then return false end
+    end
+    return true
 end
 function E.AuctionSupplyOf(context,id)
     local entry
@@ -624,7 +615,8 @@ function E.AuctionSupplyOf(context,id)
         local bridge=ns.AuctionBridge
         if bridge and bridge.GetAuctionSupply then entry=bridge.GetAuctionSupply(id,true) end
     end
-    if validSupply(entry) then return entry end
+    local stamp=context and context.stamp or (not context and time and time())
+    if validSupply(entry,stamp,not context) then return entry end
 end
 local function quoteMetadata(context,id,field,method)
     if context and context[field] then return context[field][id] end
@@ -633,7 +625,7 @@ local function quoteMetadata(context,id,field,method)
     local bridge=ns.AuctionBridge
     if bridge and type(bridge[method])=="function" then return bridge[method](id) end
 end
-local supplyIdentityFields={"quantity","observedAt","source","complete","ownerExcluded","market","batch","schemaVersion"}
+local supplyIdentityFields={"quantity","observedAt","source","complete","ownerExcluded","market","batch","schemaVersion","marketKey","observer"}
 local function supplyIdentity(supply)
     if not supply then return false end
     local out={}
@@ -647,7 +639,10 @@ function E.AuctionSupplyChanged(result)
         local current=E.AuctionSupplyOf(nil,id)
         if (previous~=false)~=(current~=nil) then return true end
         if current then
-            for _,key in ipairs(supplyIdentityFields) do if previous[key]~=current[key] then return true end end
+            for _,key in ipairs(supplyIdentityFields) do
+                -- A fresh observation of the same offer does not change a route.
+                if key~="observedAt" and key~="batch" and previous[key]~=current[key] then return true end
+            end
         end
     end
     return false
@@ -655,7 +650,19 @@ end
 function E.SummarizeAuctionSupply(result,context)
     local seen,needed={},{}
     result.auctionSupplyUnknown=0;result.auctionSupplyObserved=false;result.supplyComplete=true
+    result.auctionSupplyShortages={}
     result.auctionSupplyInputs={}
+    result.auctionSupplyCandidates={}
+    local candidates={}
+    local function candidate(id)
+        if type(id)=="number" and id>0 and not candidates[id] and not (context and context.nonAuctionable or {})[id] then
+            candidates[id]=true;result.auctionSupplyCandidates[#result.auctionSupplyCandidates+1]=id
+        end
+    end
+    for _,r in ipairs(context and context.recipes or {}) do
+        for _,m in ipairs(r.mats or {}) do candidate(m[1]) end
+        if r.formula and not (context.known or {})[r.key] then candidate(r.formula) end
+    end
     -- Include unused, priced candidates: a new quantity for a previously scarce
     -- cheaper recipe also changes the inputs to the saved minimum-cost result.
     for id in pairs(context and context.prices or {}) do
@@ -669,10 +676,12 @@ function E.SummarizeAuctionSupply(result,context)
             local id=entry.id or entry[1]
             entry.priceObservedAt=quoteMetadata(context,id,"priceObservedAt","GetAuctionPriceObservedAt")
             if (entry.source=="ah" or entry.source=="auction") and not entry.known then
+                candidate(id)
                 local supply=E.AuctionSupplyOf(context,id)
                 result.auctionSupplyInputs[id]=supplyIdentity(supply)
                 entry.supplyObserved=supply~=nil
-                entry.supplyLimited=nil;entry.supplyObservedAt=nil;entry.supplySource=nil
+                entry.supplyStatus=supply and "verified" or (context and context.auctionSupplyStatus or {})[id] or "unknown"
+                entry.supplyLimited=nil;entry.supplyRequired=nil;entry.supplyObservedAt=nil;entry.supplySource=nil;entry.supplyMethod=nil
                 entry.supplyOwnerExcluded=nil;entry.supplyObservedPrice=nil
                 entry.supplyMarket=nil;entry.supplyBatch=nil;entry.supplySchemaVersion=nil
                 entry.supplyHistoryQuantity=nil;entry.supplyHistoryObservedAt=nil
@@ -682,15 +691,16 @@ function E.SummarizeAuctionSupply(result,context)
                     entry.supplyHistoryQuantity=history.quantity;entry.supplyHistoryObservedAt=history.observedAt
                 end
                 if supply then
-                    entry.availableCount=supply.quantity;entry.supplyComplete=supply.complete==true
+                    entry.availableCount=supply.quantity;entry.supplyComplete=supply.complete~=false
                     entry.supplyObservedAt=supply.observedAt
                     entry.supplySource=supply.source;entry.supplyOwnerExcluded=supply.ownerExcluded
-                    entry.supplyObservedPrice=supply.observedPrice;entry.supplyMarket=supply.market
+                    entry.supplyMethod=supply.method
+                    entry.supplyObservedPrice=supply.observedPrice or supply.market;entry.supplyMarket=supply.market
                     entry.supplyBatch=supply.batch;entry.supplySchemaVersion=supply.schemaVersion
                     result.auctionSupplyObserved=true
                     needed[id]=(needed[id] or 0)+(entry.count or entry[2] or 1)
                     entry.supplyLimited=needed[id]>supply.quantity or nil
-                    result.supplyComplete=result.supplyComplete and supply.complete==true
+                    result.supplyComplete=result.supplyComplete and supply.complete~=false
                         and supply.ownerExcluded~=false and not entry.supplyLimited
                 else
                     entry.availableCount=nil;entry.supplyComplete=false;result.supplyComplete=false
@@ -700,7 +710,31 @@ function E.SummarizeAuctionSupply(result,context)
             end
         end
     end
-    result.auctionSupplyRevision=2
+    -- Show the same aggregate demand on material and teaching-item rows.
+    for _,list in ipairs({result.mats or {},result.formulas or {}}) do
+        for _,entry in ipairs(list) do
+            local id=entry.id or entry[1]
+            if entry.supplyObserved and needed[id] then
+                entry.supplyRequired=needed[id]
+                entry.supplyLimited=needed[id]>(entry.availableCount or 0) or nil
+            end
+        end
+    end
+    local shortages={}
+    local function shortage(d)
+        if d.code=="auctionSupplyLimited" and d.item and not shortages[d.item] then
+            shortages[d.item]=true;result.auctionSupplyShortages[#result.auctionSupplyShortages+1]=copy(d)
+        end
+    end
+    if result.targetReached~=true then
+        for _,d in ipairs(result.blockingDiagnostics or {}) do shortage(d) end
+        if result.feasible==false then for _,d in ipairs(result.diagnostics or {}) do shortage(d) end end
+    end
+    result.supplyComplete=result.supplyComplete and #result.auctionSupplyShortages==0
+    result.purchaseVerified=result.targetReached==true and result.supplyComplete and result.costComplete~=false
+        and result.learningComplete~=false and result.formulaComplete~=false
+    table.sort(result.auctionSupplyCandidates)
+    result.auctionSupplyRevision=3
     return result
 end
 function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
@@ -764,7 +798,7 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     entry.questOnly=exclusiveQuest and not hasEntries(vendors) and not hasEntries(sources.drops) or false
     local supply=id and E.AuctionSupplyOf and E.AuctionSupplyOf(context,id)
     local ahAvailable=auctionRemaining or (supply and supply.quantity)
-    local ahUsable=entry.ahPrice and (ahAvailable==nil or ahAvailable>=1)
+    local ahUsable=context.noFormula~=true and entry.ahPrice and (ahAvailable==nil or ahAvailable>=1)
     if supply then entry.availableCount=supply.quantity;entry.supplyObserved=true;entry.supplyComplete=supply.complete==true end
     local best,bestCost
     local allowLimited=E.AllowLimitedFormulas(context)
@@ -809,7 +843,8 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     entry.sourceType=entry.source;entry.totalCost=entry.cost;entry.blocked=not entry.usable
     entry.vendor=entry.source=="vendor"
     if entry.blocked then
-        entry.reason=entry.ahPrice and ahAvailable~=nil and ahAvailable<1 and "auctionSupplyLimited"
+        entry.reason=context.noFormula==true and not entry.limitedVendorDisabled and "vendorFormulaRequired"
+            or entry.ahPrice and ahAvailable~=nil and ahAvailable<1 and "auctionSupplyLimited"
             or entry.limitedVendorDisabled and "limitedFormulaDisabled" or "formulaUnavailable"
     end
     return entry
@@ -860,14 +895,15 @@ function E.Index(s, tick)
         end
     end
     for _, field in ipairs({"professions", "known", "prices", "offers", "formulaOffers", "auctionSupplyHistory",
-        "priceObservedAt", "nonAuctionable", "vendorItems", "vendorSuppliers", "diagnostics", "toolGoals",
+        "priceObservedAt", "auctionSupplyStatus", "nonAuctionable", "vendorItems", "vendorSuppliers", "diagnostics", "toolGoals",
         "toolGoalsPending", "specializationGoals", "specializationAbilities", "retainedToolItems", "toolCraftOnlyItems"}) do
         s[field] = s[field] or {}
     end
     -- Indexing an immutable input never consults the live auction/recipe cache.
     local supply = {}
     for id, entry in pairs(s.auctionSupply or {}) do
-        if validSupply(entry) then supply[id] = entry end
+        if validSupply(entry,s.stamp) then supply[id] = entry
+        else s.auctionSupplyStatus[id]=s.auctionSupplyStatus[id] or "incomplete" end
         if tick then tick() end
     end
     s.auctionSupply = supply
@@ -887,7 +923,7 @@ function E.CaptureToolGoals(s, slug, opts)
     local target = tonumber(opts and opts.target) or 300
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
         if tool.bindOnPickup then s.nonAuctionable[tool.item] = true; s.toolCraftOnlyItems[tool.item] = true end
-        if s.autoCraftTools then
+        if s.autoCraftTools and E.RequiredLevelingTool(slug,tool) then
             local recipe = planningToolRecipe(slug, tool.spell, s)
             if recipe and recipe.item and type(recipe.learn)=="number" and not recipe.clientPending then
                 if G and G.ToolOwned(recipe.item) then
@@ -941,6 +977,7 @@ function E.Capture(slug, opts, tick)
         local s = copy(opts.snapshot, tick)
         s.professions, s.routeContext = E.RouteProfessions(slug, opts, opts.professions or s.professions or {})
         s.allowLimitedFormulas = E.AllowLimitedFormulas(opts)
+        if opts.noFormula~=nil then s.noFormula=opts.noFormula==true end
         if s.coverageComplete == nil then s.coverageComplete = false end
         s.essenceConversions = ns.ProfEssences and ns.ProfEssences.Enabled(slug, opts, s) or false
         -- Explicit fixture/execution snapshots already contain their normalized
@@ -953,16 +990,18 @@ function E.Capture(slug, opts, tick)
     end
     if E.EnsureClientRuntime then E.EnsureClientRuntime() end
     local professions, context = E.RouteProfessions(slug, opts, opts.professions or E.Professions())
-    local s = {recipes={},byKey={},known={},prices={},offers={},formulaOffers={},auctionSupply={},auctionSupplyHistory={},
+    local s = {recipes={},byKey={},known={},prices={},offers={},formulaOffers={},auctionSupply={},auctionSupplyHistory={},auctionSupplyStatus={},
         priceObservedAt={},vendorItems={},vendorSuppliers={},nonAuctionable={},coverageComplete=false,
         professions=copy(professions),routeContext=context,stamp=time and time() or 0,character=E.CharacterKey(),
-        allowLimitedFormulas=E.AllowLimitedFormulas(opts)}
+        allowLimitedFormulas=E.AllowLimitedFormulas(opts),noFormula=opts.noFormula==true}
     s.level = UnitLevel and UnitLevel("player") or nil
     local f = UnitFactionGroup and UnitFactionGroup("player") or nil
     s.faction = f=="Alliance" and "A" or f=="Horde" and "H" or f
     if UnitClass then local ok,_,_,id=pcall(UnitClass,"player");if ok then s.classID=id end end
     if UnitRace then local ok,_,_,id=pcall(UnitRace,"player");if ok then s.raceID=id end end
-    if context.unlearned and not (context.requiresPartner and context.partnerValid) then return E.Index(s, tick) end
+    -- An unlearned target is a valid 1-to-target preview. A partner is only
+    -- required when the user explicitly enables joint profession leveling.
+    if context.requiresPartner and not context.partnerValid then return E.Index(s, tick) end
     local loadList, seen = {slug}, {[slug]=true}
     -- Already learned professions may supply a dependency; enabling joint
     -- leveling also permits the selected simulated partner to gain skill.
@@ -1011,15 +1050,18 @@ function E.Capture(slug, opts, tick)
     if s.essenceConversions then ns.ProfEssences.ExpandItems(items) end
     local ra, vdb, bridge = ns.ProfRouteAuto, ns.VendorPriceDB, ns.AuctionBridge
     local vendorContext = {character=s.character,faction=s.faction,professions=s.professions,level=s.level}
+    s.auctionPriceInputs={}
     for id in pairs(items) do
         if E.NonAuctionableItem(id) then s.nonAuctionable[id]=true end
         local price = ra and ra.AHPriceOf and ra.AHPriceOf(id)
+        s.auctionPriceInputs[id]=type(price)=="number" and price>0 and price or false
         if type(price)=="number" and price>0 then s.prices[id]=price end
         local offers = vdb and vdb.GetOffers and vdb.GetOffers(id, vendorContext)
         s.offers[id] = copy(offers or {})
         for _, offer in ipairs(offers or {}) do if vendorQuote(offer) then s.vendorItems[id]=true;break end end
         local supply = E.AuctionSupplyOf(nil, id)
         if supply then s.auctionSupply[id]=copy(supply) end
+        s.auctionSupplyStatus[id]=bridge and bridge.GetAuctionSupplyStatus and bridge.GetAuctionSupplyStatus(id) or "unknown"
         if bridge and bridge.GetAuctionSupplyHistory then s.auctionSupplyHistory[id]=copy(bridge.GetAuctionSupplyHistory(id)) end
         if bridge and bridge.GetAuctionPriceObservedAt then s.priceObservedAt[id]=bridge.GetAuctionPriceObservedAt(id) end
         tick()

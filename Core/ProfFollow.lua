@@ -278,7 +278,7 @@ local function routeForCalc(slug, skill)
     local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme") or "cheapest"
     local smelt = slug == "mining" and PD and PD.GatherMode and PD.GatherMode(slug) == "smelt"
     local fish = PD and PD.CookingFishingMode and PD.CookingFishingMode(slug)
-    local auto = slug ~= "poisons" and not smelt and PD and PD.Setting and (PD.Setting("autoRoute") or PD.Setting("solverRoute") or fish) and RA
+    local auto = slug ~= "poisons" and not smelt and PD and PD.Setting and (PD.Setting("autoRoute") or fish) and RA
         and (fish or scheme == "cheapest" or scheme == "optim" or RA.Available())
     PF.pendingPlans = PF.pendingPlans or {}
     if auto then

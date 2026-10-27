@@ -161,6 +161,13 @@ class Issue4Tests(unittest.TestCase):
           local fixed=ns.ProfRouteAuto.SummarizeSteps({{1,3,101,2}},'alchemy',{target=3})
           assert(#fixed.formulas==1 and not fixed.formulas[1].usable and not fixed.formulas[1].vendor)
           assert(fixed.feasible==false)
+          -- All purchasing strategies now share the solver; make the captured
+          -- fixture reflect the same unlearned drop formula as the native row.
+          local capture=ns.ProfEconomy.Capture
+          ns.ProfEconomy.Capture=function(...)
+            local s=capture(...);s.known={};s.recipes[1].formula=400
+            s.recipes[1].source={drops={{npc='Boss'}}};return ns.ProfEconomy.Index(s)
+          end
           for _,scheme in ipairs({'crafts','matcost','optim'})do
             local result=ns.ProfRouteAuto.Compute('alchemy',{start=1,target=3,scheme=scheme})
             assert(result and #result.steps==0,scheme..' used an unavailable formula')

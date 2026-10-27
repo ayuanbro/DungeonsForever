@@ -10,7 +10,7 @@ local function spellOf(recipe) return recipe.spell or recipe.spellID or recipe[1
 function E.LearningPolicyFingerprint()
     -- An algorithm version invalidates older route caches without implying
     -- that any additional profession facts have been installed.
-    return "native-learning:4:gold-procurement"
+    return "native-learning:6:native-route-eligibility"
 end
 function E.LearningSource(recipe)
     if type(recipe)~="table" then return end
@@ -193,6 +193,26 @@ function E.LearningEligibility(recipe,snapshot,state)
         requiredAbility=#list==1 and list[1]or nil,hasPending=hasPending or nil}
 end
 E.RecipeSpecializationAllowed=E.LearningEligibility
+
+-- Unknown learning restrictions may be shown in the recipe catalogue, but
+-- cannot become executable leveling or material-making steps.
+function E.RouteRecipeEligibility(recipe,snapshot,state)
+    local allowed,reason,detail=E.LearningEligibility(recipe,snapshot,state)
+    -- Missing audit coverage is distinct from an unknown concrete condition.
+    -- Keep the catalogue's audit status and use master's native recipe model.
+    local native=recipe and (recipe.dataSource=="catalogue" or recipe.dataSource=="mixed")
+    if allowed and native and detail and detail.status=="unknown" and not detail.requiredAbility
+        and not recipe.availabilityUnknown and recipe.verified~=false
+        and #(recipe.learningRoutes or {})==0 and #(recipe.learningConstraints or {})==0
+        and type(recipe.learn)=="number" and recipe.learn>=1
+        and type(recipe.mats)=="table" and not recipe.clientPending then
+        return true,nil,{status="catalogue",source="native",hasPending=detail.hasPending}
+    end
+    if allowed and detail and (detail.status=="unknown" or detail.status=="conflict") then
+        return false,"learningRequirementsUnknown",detail
+    end
+    return allowed,reason,detail
+end
 
 -- Freeze only quest flags referenced by this input. An injected snapshot must
 -- carry its own observations and never acquires today's quest state.

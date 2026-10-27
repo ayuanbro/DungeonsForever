@@ -5,3 +5,5 @@ dist/
 tests/
 tools/
 .data-updater.lock
+validation/
+docs/

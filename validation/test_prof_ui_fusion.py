@@ -35,6 +35,71 @@ class ProfessionUIFusionTests(unittest.TestCase):
     def setUp(self):
         self.boot('zhCN')
 
+    def test_route_progress_callbacks_paint_fraction_and_scope_to_current_profession(self):
+        self.lua.execute('''
+          for _,fn in ipairs(callbacks)do fn()end;callbacks={}
+          PD.built=true;PD.page=widget();ns.PageVisible=function()return true end
+          painted={};PD.PaintToolProgress=function(text,fraction)
+            painted[#painted+1]={text=text,fraction=fraction}
+          end
+          local ra=ns.ProfRouteAuto;local sr=ns.ProfSolverRun
+          ra.Get('alchemy',{snapshot=fixture(),start=1,target=300})
+          local job=sr.Active('alchemy').job
+          assert(PD.SolverText()==ns.L['正在准备数据'] and PD.solverFrac>0)
+          -- Exercise the real facade dispatcher with controlled search slices.
+          ns.ProfRouteSolver.Run=function(j)
+            j.progressVersion=(j.progressVersion or 0)+1
+            return false
+          end
+          job.snap={};job.seedSkill=94;ra.Pump('alchemy')
+          local p=painted[#painted]
+          assert(p.text==format(ns.L['正在推演 %d/%d'],94,300))
+          assert(type(p.fraction)=='number' and p.fraction>0 and p.fraction<1)
+          job.seedDone=true;job.cpuUsed=3440;ra.Pump('alchemy')
+          p=painted[#painted]
+          assert(p.text==format(ns.L['正在优化 %d%%'],43) and p.fraction>0)
+          job.finalizing=true;ra.Pump('alchemy')
+          assert(painted[#painted].text==ns.L['正在整理计算结果…'])
+          ra.Cancel('alchemy');assert(PD.SolverText()==nil and PD.solverFrac==nil)
+          ra.Continue('alchemy');PD.cur='enchanting'
+          assert(PD.SolverText()==nil and PD.solverFrac==nil)
+          PD.cur='alchemy';PD.tab='recipe';assert(PD.SolverText()==nil)
+        ''')
+
+    def test_legacy_precision_setting_does_not_change_new_route_budget(self):
+        self.lua.execute('''
+          for _,value in ipairs({false,true}) do
+            DungeonsForeverDB.prof.solverRoute=value
+            assert(PD.BuildLvOpts('alchemy',1).cpuLimitMs==8000)
+          end
+          local _,click=PD.LevelTool();click('recalc');PD.RowsLeveling({})
+          local job=ns.ProfSolverRun.Active('alchemy').job
+          assert(job.cpuLimitMs==8000)
+        ''')
+
+    def test_progress_bar_uses_screenshot_geometry_and_hides_when_finished(self):
+        self.lua.execute('''
+          local function frame()
+            local f={shown=false}
+            function f:SetSize(w,h)self.w=w;self.h=h end
+            function f:GetWidth()return self.w end
+            function f:GetFrameLevel()return 1 end
+            function f:SetFrameLevel()end
+            function f:SetPoint()end;function f:ClearAllPoints()end
+            function f:SetAllPoints()end;function f:SetColorTexture()end
+            function f:Show()self.shown=true end;function f:Hide()self.shown=false end
+            function f:IsShown()return self.shown end
+            function f:CreateTexture()return frame()end
+            return f
+          end
+          CreateFrame=frame;PD.page=frame();PD.setGear=frame()
+          PD.PaintToolProgress('Progress',0.43)
+          assert(PD.__progBar.w==150 and PD.__progBar.h==6)
+          assert(PD.__progFill.w==64 and PD.__progBar:IsShown())
+          PD.PaintToolProgress(nil,nil)
+          assert(not PD.__progHolder:IsShown() and not PD.__progBar:IsShown())
+        ''')
+
     def boot(self,locale):
         fixtures.NativeRoutePlansTests.setUp(self)
         self.lua.execute("GetLocale=function()return '"+locale+"'end")

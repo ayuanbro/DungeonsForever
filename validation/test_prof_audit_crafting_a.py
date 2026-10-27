@@ -218,7 +218,7 @@ class CraftingProfessionAuditTests(unittest.TestCase):
         self.lua.execute(r'''
           assert(ns.ProfLearningConditions==nil and ns.ProfLearningConditionsMeta==nil)
           local E=ns.ProfEconomy
-          assert(E.LearningPolicyFingerprint()=='native-learning:4:gold-procurement')
+          assert(E.LearningPolicyFingerprint()=='native-learning:6:native-route-eligibility')
           for _,case in ipairs({{'alchemy',17632},{'engineering',3918},{'enchanting',7418}})do
             local recipe=assert(E.FindRecipe(case[1],case[2]))
             assert(recipe.learningRoutes==nil and recipe.learningConstraints==nil)
