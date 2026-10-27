@@ -299,6 +299,18 @@ function PD.ShowSchemeMenu(owner)
             func = function() PD.SetRouteScheme(sk) end,
         }
     end
+    if PD.cur == "mining" then
+        local smelt = PD.GatherMode("mining") == "smelt"
+        items[#items + 1] = {
+            text = L["采集路线"],
+            checked = not smelt,
+            color = (not smelt) and { 1, 0.82, 0 } or nil,
+            func = function()
+                ProfDB().gatherMode = "gather"
+                PD.RequestRender()
+            end,
+        }
+    end
     ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
 end
 
@@ -545,22 +557,24 @@ PD.IX_ROWW_GAP = 8
 PD.IX_GROUP_GAP = 10
 
 PD.GC_COLS = 3
-PD.GC_GAP = 10
-PD.GC_COLW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - (PD.GC_COLS - 1) * PD.GC_GAP) / PD.GC_COLS)
-PD.GC_PAD = 9
+PD.GC_GAP = 8
+PD.GC_AVAIL_W = PD.RIGHT_W - PD.LIST_PAD
+PD.GC_COLW = math.floor((PD.GC_AVAIL_W - (PD.GC_COLS - 1) * PD.GC_GAP) / PD.GC_COLS)
+PD.GC_ROWW = PD.GC_COLS * PD.GC_COLW + (PD.GC_COLS - 1) * PD.GC_GAP
+PD.GC_PAD = 8
 PD.GC_ICON = 38
 PD.GC_RICON = 38
 PD.GC_RGAP = 4
 PD.GC_SUB = 16
 PD.GC_PLACE = 18
 PD.GC_MORE = 18
-PD.GC_TOP = 60
-PD.GC_ROUTE_TOP = 76
-PD.GC_HEAD = 54
-PD.GC_RHEAD = 70
-PD.GC_NAME_DY = -8
-PD.GC_LV_DY = -9
-PD.GC_SUB_DY = -30
+PD.GC_TOP = 56
+PD.GC_ROUTE_TOP = 74
+PD.GC_HEAD = 52
+PD.GC_RHEAD = 68
+PD.GC_NAME_DY = -10
+PD.GC_LV_DY = -11
+PD.GC_SUB_DY = -32
 PD.GC_RICON_DY = -28
 PD.GC_FS_NAME = 14
 PD.GC_FS_LV = 14
@@ -1656,7 +1670,8 @@ function PD.PaintRows(rows)
         PD.ixRoot:Hide()
     end
     if PD.wantGCards and PD.gcRoot then
-        h1 = h1 + PD.placeGCards(h1) + 8
+        local gpad = PD.gcTopPad or 0
+        h1 = h1 + gpad + PD.placeGCards(h1 + gpad) + 8
     elseif PD.gcRoot and PD.gcRoot:IsShown() then
         PD.gcRoot:Hide()
     end
@@ -3279,7 +3294,7 @@ function PD.GCEnsure(i)
         c.ricos[k] = t
     end
     c.sep = c:CreateTexture(nil, "ARTWORK")
-    c.sep:SetColorTexture(1, 1, 1, 0.07)
+    c.sep:SetColorTexture(1, 1, 1, 0.10)
     c.sep:SetHeight(1)
     c.sep:SetPoint("LEFT", c, "LEFT", PD.GC_PAD, 0)
     c.sep:SetPoint("RIGHT", c, "RIGHT", -PD.GC_PAD, 0)
@@ -3344,26 +3359,12 @@ function PD.GCEnsure(i)
         PD.RequestRender()
     end)
     c.more:Hide()
-    c.bT = c:CreateTexture(nil, "OVERLAY")
-    c.bB = c:CreateTexture(nil, "OVERLAY")
-    c.bL = c:CreateTexture(nil, "OVERLAY")
-    c.bR = c:CreateTexture(nil, "OVERLAY")
-    for _, t in ipairs({ c.bT, c.bB, c.bL, c.bR }) do
-        t:SetColorTexture(0.46, 0.82, 0.36, 0.95)
-        t:Hide()
+    if ns.hui and ns.hui.BuildRoundBorder then
+        c.__ring = ns.hui.BuildRoundBorder(c, 6, { 0.46, 0.82, 0.36, 1 }, nil, "OVERLAY", "both", 1)
+        if c.__ring then
+            for _, t in ipairs(c.__ring) do t:Hide() end
+        end
     end
-    c.bT:SetHeight(1)
-    c.bB:SetHeight(1)
-    c.bL:SetWidth(1)
-    c.bR:SetWidth(1)
-    c.bT:SetPoint("TOPLEFT", c, "TOPLEFT", 1, -1)
-    c.bT:SetPoint("TOPRIGHT", c, "TOPRIGHT", -1, -1)
-    c.bB:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 1, 1)
-    c.bB:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", -1, 1)
-    c.bL:SetPoint("TOPLEFT", c, "TOPLEFT", 1, -1)
-    c.bL:SetPoint("BOTTOMLEFT", c, "BOTTOMLEFT", 1, 1)
-    c.bR:SetPoint("TOPRIGHT", c, "TOPRIGHT", -1, -1)
-    c.bR:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", -1, 1)
     c:Hide()
     PD.gcCards[i] = c
     return c
@@ -3463,7 +3464,7 @@ function PD.GCFill(c, d)
                 t:Hide()
             end
         end
-        for k = 1 + subN, 4 do
+        for k = subN + 2, 4 do
             c.itBtn[k].__it = nil
             c.itBtn[k]:Hide()
         end
@@ -3484,12 +3485,9 @@ function PD.GCFill(c, d)
         c.lv:Show()
         c.lv:SetPoint("TOPRIGHT", c, "TOPRIGHT", -PD.GC_PAD, PD.GC_LV_DY)
     end
-    if c.bT then
+    if c.__ring then
         local on = d.active and true or false
-        c.bT:SetShown(on)
-        c.bB:SetShown(on)
-        c.bL:SetShown(on)
-        c.bR:SetShown(on)
+        for _, t in ipairs(c.__ring) do t:SetShown(on) end
     end
     local n = #(d.places or {})
     local shown = PD.GCShown(d)
@@ -3533,7 +3531,7 @@ function PD.placeGCards(y)
         return 0
     end
     root:ClearAllPoints()
-    root:SetPoint("TOPLEFT", PD.child, "TOPLEFT", PD.LIST_PAD, -y)
+    root:SetPoint("TOPLEFT", PD.child, "TOPLEFT", 0, -y)
     local rowsN = math.ceil(#cards / PD.GC_COLS)
     local cy = 0
     for r = 1, rowsN do
@@ -3576,7 +3574,7 @@ end
 
 function PD.BuildGCards(parent)
     local root = CreateFrame("Frame", nil, parent)
-    root:SetSize(PD.RIGHT_W - 2 * PD.LIST_PAD, 10)
+    root:SetSize(PD.GC_ROWW, 10)
     root:Hide()
     PD.gcRoot = root
     PD.gcCards = {}
@@ -4987,76 +4985,30 @@ function PD.TipTile(tf, lines)
     end)
 end
 
-function PD.BuildGatherModeMenu()
-    if PD.gcMenu then return PD.gcMenu end
-    local host = PD.page or UIParent
-    local f = CreateFrame("Frame", nil, host, "BackdropTemplate")
-    f:SetSize(132, 54)
-    f:SetFrameStrata("TOOLTIP")
-    local solid = f:CreateTexture(nil, "BACKGROUND")
-    solid:SetPoint("TOPLEFT", f, "TOPLEFT", 2, -2)
-    solid:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -2, 2)
-    solid:SetColorTexture(0.05, 0.06, 0.08, 0.97)
-    f.solid = solid
-    if ns.hui and ns.hui.layer and ns.hui.BuildRoundedBG then
-        ns.hui.BuildRoundedBG(f, 6, ns.hui.layer.L1, "both", true, 1)
-    else
-        f:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8x8",
-            edgeFile = "Interface\\Buttons\\WHITE8x8",
-            edgeSize = 1,
-        })
-        f:SetBackdropColor(0.05, 0.06, 0.08, 0.96)
-        f:SetBackdropBorderColor(1, 1, 1, 0.12)
-    end
-    f.rows = {}
-    for i = 1, 2 do
-        local b = CreateFrame("Button", nil, f)
-        b:SetHeight(26)
-        b:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -(1 + (i - 1) * 26))
-        b:SetPoint("RIGHT", f, "RIGHT", -1, 0)
-        b.txt = MakeFS(b, 14, C_TEXT, "LEFT")
-        b.txt:SetPoint("LEFT", b, "LEFT", 10, 0)
-        b.hl = b:CreateTexture(nil, "HIGHLIGHT")
-        b.hl:SetAllPoints(b)
-        b.hl:SetColorTexture(1, 1, 1, 0.07)
-        b:SetScript("OnClick", function(self)
-            ProfDB().gatherMode = self.__mode
-            f:Hide()
-            PD.RequestRender()
-            ns.PlaySound(1)
-        end)
-        f.rows[i] = b
-    end
-    f:Hide()
-    PD.gcMenu = f
-    return f
-end
-
-function PD.ShowGatherModeMenu(anchor)
-    if not anchor then return end
-    local f = PD.BuildGatherModeMenu()
-    if f:IsShown() then
-        f:Hide()
-        return
-    end
-    local cur = PD.GatherMode("mining")
-    local opts = { { "gather", L["采集路线"] }, { "smelt", L["熔炼路线"] } }
-    for i = 1, 2 do
-        local b = f.rows[i]
-        b.__mode = opts[i][1]
-        b.txt:SetText(opts[i][2])
-        if cur == opts[i][1] then
-            b.txt:SetTextColor(C_GOLD[1], C_GOLD[2], C_GOLD[3])
-        else
-            b.txt:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
-        end
-    end
-    f:SetWidth(math.max(120, anchor:GetWidth() or 132))
-    f:ClearAllPoints()
-    f:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
-    f:SetFrameLevel((anchor:GetFrameLevel() or 1) + 25)
-    f:Show()
+function PD.ShowGatherRouteMenu(owner)
+    if not (owner and ns.hui and ns.hui.ShowMenu) then return end
+    local smelt = PD.GatherMode("mining") == "smelt"
+    local items = {
+        {
+            text = L["采集路线"],
+            checked = not smelt,
+            color = (not smelt) and { 1, 0.82, 0 } or nil,
+            func = function()
+                ProfDB().gatherMode = "gather"
+                PD.RequestRender()
+            end,
+        },
+        {
+            text = L["熔炼路线"],
+            checked = smelt,
+            color = smelt and { 1, 0.82, 0 } or nil,
+            func = function()
+                ProfDB().gatherMode = "smelt"
+                PD.RequestRender()
+            end,
+        },
+    }
+    ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
 end
 
 function PD.PaintGatherTiles()
@@ -5117,7 +5069,7 @@ function PD.PaintGatherTiles()
         ((smelt and L["熔炼路线"] or L["采集路线"]) .. " " .. prog) or prog)
     if PD.cur == "mining" then
         tiles.scheme:SetScript("OnClick", function()
-            PD.ShowGatherModeMenu(tiles.scheme)
+            PD.ShowGatherRouteMenu(tiles.scheme)
             ns.PlaySound(1)
         end)
     else
@@ -5156,7 +5108,7 @@ function PD.PaintLvTiles()
     local s = PD.lvSummary or {}
     local fishRoute = PD.CookingFishingMode()
     local v = PD.LvTarget()
-    local auto = s.auto and true or false
+    local auto = PD.Setting("autoRoute")
     local warnAuto = s.autoSetting and (not s.ahOK or s.feasible == false)
     local fixedOnly = (PD.cur == "poisons")
     tiles.solver.__use = ((not fishRoute) and (not fixedOnly) and ns.ProfSolverRun) and true or false
@@ -12381,6 +12333,7 @@ function PD.Render()
     else
         toolH = PD.PaintLvTiles() + PD.PaintTool(tool, handler)
     end
+    PD.gcTopPad = (toolH and toolH > 0) and 8 or 0
     PD.Layout(toolH)
 
     if PD.searchBox then
