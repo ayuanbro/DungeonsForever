@@ -1,0 +1,161 @@
+{
+  "build": "1.60.1.70658",
+  "fingerprint": "770abb5addec95763d907a6a1c6fd48d21bec92c6666fcb3ac8f51b5170e3b85",
+  "summary": {
+    "confirmedPaths": 1856,
+    "luaBytes": 150831,
+    "recipes": 2540,
+    "recipesWithGaps": 2463
+  },
+  "sourceStatuses": {
+    "parseError": 19,
+    "sourceBlocked": 4683,
+    "sourceMissing": 3,
+    "verified": 175
+  },
+  "professions": {
+    "alchemy": {
+      "confirmedPaths": 150,
+      "missingReasons": {
+        "acquisitionSourceMissing": 151,
+        "itemDetailsMissing": 12,
+        "learningSourceMissing": 43,
+        "sourceBlocked": 191,
+        "sourceMissing": 3,
+        "unsupportedClassMask": 2
+      },
+      "recipes": 204,
+      "unknownPaths": 14
+    },
+    "blacksmithing": {
+      "confirmedPaths": 396,
+      "missingReasons": {
+        "acquisitionSourceMissing": 421,
+        "itemDetailsMissing": 67,
+        "learningSourceMissing": 56,
+        "sourceBlocked": 474,
+        "unsupportedClassMask": 2
+      },
+      "recipes": 513,
+      "unknownPaths": 69
+    },
+    "cooking": {
+      "confirmedPaths": 121,
+      "missingReasons": {
+        "acquisitionSourceMissing": 121,
+        "itemDetailsMissing": 9,
+        "learningSourceMissing": 10,
+        "sourceBlocked": 128,
+        "unsupportedClassMask": 3
+      },
+      "recipes": 135,
+      "unknownPaths": 12
+    },
+    "enchanting": {
+      "confirmedPaths": 169,
+      "missingReasons": {
+        "acquisitionSourceMissing": 194,
+        "itemDetailsMissing": 31,
+        "learningSourceMissing": 70,
+        "sourceBlocked": 264,
+        "unsupportedClassMask": 1
+      },
+      "recipes": 264,
+      "unknownPaths": 32
+    },
+    "engineering": {
+      "confirmedPaths": 171,
+      "missingReasons": {
+        "acquisitionSourceMissing": 205,
+        "itemDetailsMissing": 35,
+        "learningSourceMissing": 75,
+        "sourceBlocked": 280,
+        "unsupportedClassMask": 1
+      },
+      "recipes": 280,
+      "unknownPaths": 41
+    },
+    "fishing": {
+      "confirmedPaths": 3,
+      "missingReasons": {
+        "acquisitionSourceMissing": 5,
+        "itemDetailsMissing": 2,
+        "learningSourceMissing": 1,
+        "sourceBlocked": 6
+      },
+      "recipes": 6,
+      "unknownPaths": 2
+    },
+    "herbalism": {
+      "confirmedPaths": 2,
+      "missingReasons": {
+        "acquisitionSourceMissing": 2,
+        "learningSourceMissing": 2,
+        "sourceBlocked": 4
+      },
+      "recipes": 4,
+      "unknownPaths": 0
+    },
+    "leatherworking": {
+      "confirmedPaths": 466,
+      "missingReasons": {
+        "acquisitionSourceMissing": 510,
+        "itemDetailsMissing": 55,
+        "learningSourceMissing": 86,
+        "sourceBlocked": 593,
+        "unsupportedClassMask": 3
+      },
+      "recipes": 605,
+      "unknownPaths": 59
+    },
+    "mining": {
+      "confirmedPaths": 7,
+      "missingReasons": {
+        "acquisitionSourceMissing": 3,
+        "itemDetailsMissing": 1,
+        "learningSourceMissing": 14,
+        "sourceBlocked": 16
+      },
+      "recipes": 22,
+      "unknownPaths": 1
+    },
+    "poisons": {
+      "confirmedPaths": 0,
+      "missingReasons": {
+        "acquisitionSourceMissing": 6,
+        "itemDetailsMissing": 5,
+        "learningSourceMissing": 16,
+        "sourceBlocked": 22,
+        "unsupportedClassMask": 1
+      },
+      "recipes": 26,
+      "unknownPaths": 10
+    },
+    "skinning": {
+      "confirmedPaths": 2,
+      "missingReasons": {
+        "acquisitionSourceMissing": 2,
+        "learningSourceMissing": 1,
+        "sourceBlocked": 3
+      },
+      "recipes": 3,
+      "unknownPaths": 0
+    },
+    "tailoring": {
+      "confirmedPaths": 369,
+      "missingReasons": {
+        "acquisitionSourceMissing": 376,
+        "itemDetailsMissing": 27,
+        "learningSourceMissing": 89,
+        "sourceBlocked": 463,
+        "unsupportedClassMask": 1,
+        "unsupportedRaceMask": 2
+      },
+      "recipes": 478,
+      "unknownPaths": 29
+    }
+  },
+  "generationInput": false,
+  "sourceCoverageComplete": false,
+  "warning": "Confirmed learning paths do not guarantee acquisition, price or current-character eligibility."
+}
