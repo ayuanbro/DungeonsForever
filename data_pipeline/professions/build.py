@@ -60,9 +60,12 @@ def normalize(raw, manifest):
     tables = load_tables(raw, manifest)
     members, teaching = discover(tables)
     responses = {record["key"]: record for record in manifest["responses"]}
-    for record in responses.values():
+    evidence = list(responses.values())
+    while evidence:
+        record = evidence.pop()
         if "path" in record:
             checked_bytes(raw, record)
+        evidence.extend(record.get("attemptHistory", []))
     sparse = {integer(row["ID"]): row for row in tables["ItemSparse"]}
     page_cache, audit, facts = {}, [], {}
 
@@ -327,10 +330,20 @@ def emit_lua(facts, meta):
         for spell, record in sorted(records.items()):
             routes = []
             for route in record["routes"]:
-                routes.append([kind_ids[route["kind"]], route.get("teachingItemID", 0), status_ids[route["status"]],
-                    int(route["conditionsKnown"]), intern("conditions", route["conditions"]), route.get("trainingCost", -1),
-                    intern("sets", route.get("trainerIDs", [])), intern("sets", route.get("questIDs", [])),
-                    intern("acquisition", route.get("acquisition", {}))])
+                kind = kind_ids[route["kind"]]
+                flags = kind + status_ids[route["status"]] * 4 + int(route["conditionsKnown"]) * 16
+                conditions = intern("conditions", route["conditions"])
+                # Preserve template interning order; only the private route
+                # encoding changes, never normalized facts or public fields.
+                trainers = intern("sets", route.get("trainerIDs", []))
+                quests = intern("sets", route.get("questIDs", []))
+                acquisition = intern("acquisition", route.get("acquisition", {}))
+                if kind == 1:
+                    routes.append([flags, conditions, acquisition, route.get("trainingCost", -1), trainers])
+                elif kind == 2:
+                    routes.append([flags, route.get("teachingItemID", 0), conditions, acquisition])
+                else:
+                    routes.append([flags, quests, conditions, acquisition])
             lines.append(str(spell) + ":" + pack([coverage_ids[record["coverage"]], intern("gaps", record["missingReasons"]), routes]))
         profiles[slug] = "\n".join(lines)
     encoded_pools = {name: [pack(value) for value in values] for name, values in pools.items()}
@@ -433,9 +446,9 @@ local function Get(slug,spell)
  local offset=values[spell];local start=floor(offset/65536);local length=offset-start*65536
  local value=unpackValue(RAW[slug]:sub(start,start+length-1));local routes={}
  for _,row in ipairs(value[3])do
-  local flags=row[1]+row[3]*4+row[4]*16
-  local route={spell,flags,row[1]==3 and row[8]or row[2],row[5],row[9]}
-  if row[1]==1 then route[6]=row[6];route[7]=row[7]end
+  local flags=row[1];local kind=flags%4;local route
+  if kind==1 then route={spell,flags,0,row[2],row[3],row[4],row[5]}
+  else route={spell,flags,row[2],row[3],row[4]}end
   routes[#routes+1]=setmetatable(route,routeMT)
  end
  local mt=recordMTs[slug]

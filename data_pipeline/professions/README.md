@@ -49,9 +49,44 @@ python -m data_pipeline.professions fetch --out dist/prof-learning/raw \
   --resume --retry-failed
 ```
 
+`--retry-failed` 包含实际 404 的再次核对，不能把旧 404 当作永久删除证据。需要完整刷新网页（含旧成功页、历史失败与旧引用）时使用：
+
+```sh
+python -m data_pipeline.professions fetch --out dist/prof-learning/raw \
+  --resume --refresh-web
+```
+
+已知普通 HTTP 会被校验或拒绝时，可从第一次请求开始使用原生浏览器，并显式降低实体请求频率。以下命令仍可在无 GUI 的 Linux 运行：
+
+```sh
+python -m data_pipeline.professions fetch --out dist/prof-learning/raw \
+  --resume --refresh-web --web-transport browser --workers 1 --web-interval 2
+```
+
+`auto` 是默认传输；`browser` 不先发送 curl 请求，不把浏览器 Cookie 复制到另一套网络栈。请求 URL 优先采用本次同版本 Wago 名称，或本轮已验证关系列表中的名称，减少多余跳转；名称只作 URL 提示，实体仍按最终类型、ID 和正文校验。浏览器等待主文档响应后读取完整正文，不等待广告脚本的页面生命周期事件。连续失败保护在两种模式下均生效。
+
+该命令从可携带的原始包目录启动新一轮网页刷新，不读取旧 Lua 或生成报告。相同 `.partial` 中断后使用同样命令继续本轮，已经实际完成的成功页和 404 不从头重抓。旧网页原始响应保留为扁平 `attemptHistory` 并逐个校验、归档；刷新失败或未请求时不会回退使用旧成功页生成。采集只追踪明确支持的教学、商人、掉落及奖励关系，迭代到队列闭包，不再使用固定四层截断，也不遍历任意站内链接。
+
 恢复先验证已有响应校验值及最新版本，保留已验证原始响应，不读取生成文件。`--web-limit N` 只限制当前调用新发出的网页实体请求，适合小范围探测；正式全量采集不要设置。连续两次来源拒绝或传输失败会打开当前调用的主机熔断器，未发送请求的实体记为 `notFetched`、`attempted=false`、`errorCode=hostCircuitOpen`。若已有实际 HTTP 响应，保留原证据并将未发送的重试写入 `lastAttempt`。稍后再显式重试，不循环刷站。
 
 每 25 个网页实体保存 manifest 检查点。`fetchComplete=true` 只表示本批次已关闭并复查版本；**不是资料完整证明**。请查看 `sourceCoverageComplete`、每条响应状态和生成报告中的逐专业缺口。
+
+`webRun` 保存本轮 `targetCount`、`attempted`、`notAttempted`、各状态和跳过原因；`requestCoverageComplete` 仅表示本轮全部已发现目标都已实际尝试，包含连接失败的 `sourceError`，不代表全部取得正文或字段齐全。`sourceCoverageComplete` 表示当前响应都通过解析验证，仍不证明学习条件与获取条件完整，最终还须检查生成报告的逐项缺口。
+
+全量请求已完成后，可以只复核本轮某个被拒绝的 HTTP 状态，而不重新请求成功页、404 和解析错误页：
+
+```sh
+python -m data_pipeline.professions fetch --out dist/prof-learning/raw \
+  --resume --retry-current-http 403 --web-transport browser --workers 1 --web-interval 2
+```
+
+该模式仅接受 `403`、`429`、`202`，输入须有已完成的全量请求记录，且 latest 版本和 build config 仍一致；不能与 `--refresh-web` 或 `--retry-failed` 混用。它保留本轮 ID 和全量覆盖记录，在 `webRun.currentHttpRetry` 及分段记录中单列选中项、实际尝试项与新发现关联。`currentHttpRetry.complete` 表示这次定点操作已全部尝试，不代表全部成功。若重试被保护机制跳过，原始真实拒绝证据保留，未发送的重试另记，不把它算作成功或新的实际请求。
+
+仅 ZIP 封包失败、原始目录已经完成时，可以离线重建归档，不需要重新采集。封包会核对当前及历史响应的路径和 SHA-256，写好临时 ZIP 后再替换：
+
+```sh
+python -c 'from pathlib import Path; from data_pipeline.professions.fetch import snapshot_archive; p=Path("dist/prof-learning/raw"); snapshot_archive(p, p.with_suffix(".zip"))'
+```
 
 ## 来源判定和保留边界
 

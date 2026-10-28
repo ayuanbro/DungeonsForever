@@ -77,7 +77,10 @@ class BrowserTransport:
         deadline = time.monotonic() + self._timeout
         navigation_error = None
         try:
-            self._page.goto(url, wait_until="domcontentloaded", timeout=min(45000, self._timeout * 1000))
+            # The main response is enough to start reading. Response.body()
+            # below still waits for the complete document, without waiting for
+            # advertisement scripts to reach a DOM lifecycle milestone.
+            self._page.goto(url, wait_until="commit", timeout=min(45000, self._timeout * 1000))
         except Exception as error:
             # A challenge can replace the document during goto. Its final main
             # navigation response is still authoritative; page.content() is not.
