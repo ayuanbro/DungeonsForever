@@ -174,9 +174,16 @@ def normalize(raw, manifest):
                 if integer(row.get("RequiredSkill")) > 0 and integer(row.get("RequiredSkillRank")) > 0:
                     conditions.append({"kind": "skill", "professionID": integer(row["RequiredSkill"]), "value": integer(row["RequiredSkillRank"])})
                 if integer(row.get("MinFactionID")) > 0:
-                    standing = integer(row.get("MinReputation"))
-                    if 1 <= standing <= 8:
-                        conditions.append({"kind": "reputation", "factionID": integer(row["MinFactionID"]), "value": standing})
+                    # ItemSparse uses the zero-based ReputationRank enum
+                    # (Hated=0..Exalted=7); the client faction API returns
+                    # reaction/standingID as Hated=1..Exalted=8. Missing or
+                    # unsupported values must not default to Hated.
+                    try:
+                        standing = integer(row.get("MinReputation"), None)
+                    except SourceError:
+                        standing = None
+                    if standing is not None and 0 <= standing <= 7:
+                        conditions.append({"kind": "reputation", "factionID": integer(row["MinFactionID"]), "value": standing + 1})
                     else:
                         known = False; item_gaps.append("learningRequirementsUnknown")
                 if any(integer(row.get(field)) != 0 for field in ("RequiredPVPMedal", "RequiredPVPRank", "RequiredHoliday",

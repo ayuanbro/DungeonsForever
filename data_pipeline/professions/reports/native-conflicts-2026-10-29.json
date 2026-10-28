@@ -1,0 +1,333 @@
+{
+  "generationInput": false,
+  "build": "1.60.1.70658",
+  "fingerprint": "47966986d80651355845ab9208eadcf0927dccaa0adac55dc83ce3454d0952b9",
+  "comparedNativeRecipes": 2153,
+  "scope": "own-profession learning skill thresholds only; no source generation",
+  "numericConflicts": [
+    {
+      "profession": "alchemy",
+      "spell": 2329,
+      "route": "trainer:2329",
+      "sourceValue": 15,
+      "retainedDevValue": 40,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "alchemy",
+      "spell": 1231583,
+      "route": "item:1231583:241651",
+      "sourceValue": 250,
+      "retainedDevValue": 290,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "alchemy",
+      "spell": 1251744,
+      "route": "item:1251744:250991",
+      "sourceValue": 180,
+      "retainedDevValue": 185,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 2662,
+      "route": "trainer:2662",
+      "sourceValue": 15,
+      "retainedDevValue": 1,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 2667,
+      "route": "item:2667:2881",
+      "sourceValue": 80,
+      "retainedDevValue": 55,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 2673,
+      "route": "item:2673:5578",
+      "sourceValue": 130,
+      "retainedDevValue": 105,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3292,
+      "route": "trainer:3292",
+      "sourceValue": 70,
+      "retainedDevValue": 65,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3295,
+      "route": "item:3295:2883",
+      "sourceValue": 125,
+      "retainedDevValue": 100,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3297,
+      "route": "item:3297:3608",
+      "sourceValue": 145,
+      "retainedDevValue": 120,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3330,
+      "route": "item:3330:2882",
+      "sourceValue": 125,
+      "retainedDevValue": 100,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3334,
+      "route": "item:3334:3611",
+      "sourceValue": 145,
+      "retainedDevValue": 120,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3336,
+      "route": "item:3336:3612",
+      "sourceValue": 150,
+      "retainedDevValue": 125,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3491,
+      "route": "trainer:3491",
+      "sourceValue": 80,
+      "retainedDevValue": 75,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3492,
+      "route": "item:3492:12162",
+      "sourceValue": 160,
+      "retainedDevValue": 135,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3493,
+      "route": "item:3493:3866",
+      "sourceValue": 175,
+      "retainedDevValue": 150,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3494,
+      "route": "item:3494:10858",
+      "sourceValue": 155,
+      "retainedDevValue": 130,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3495,
+      "route": "item:3495:3867",
+      "sourceValue": 170,
+      "retainedDevValue": 145,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3496,
+      "route": "item:3496:12163",
+      "sourceValue": 180,
+      "retainedDevValue": 155,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3497,
+      "route": "item:3497:3868",
+      "sourceValue": 200,
+      "retainedDevValue": 175,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3498,
+      "route": "item:3498:12164",
+      "sourceValue": 185,
+      "retainedDevValue": 160,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3500,
+      "route": "item:3500:3869",
+      "sourceValue": 200,
+      "retainedDevValue": 175,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3503,
+      "route": "item:3503:6047",
+      "sourceValue": 190,
+      "retainedDevValue": 165,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3504,
+      "route": "item:3504:3870",
+      "sourceValue": 160,
+      "retainedDevValue": 135,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3505,
+      "route": "item:3505:3871",
+      "sourceValue": 175,
+      "retainedDevValue": 150,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3507,
+      "route": "item:3507:3872",
+      "sourceValue": 170,
+      "retainedDevValue": 145,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3511,
+      "route": "item:3511:3873",
+      "sourceValue": 195,
+      "retainedDevValue": 170,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3513,
+      "route": "item:3513:3874",
+      "sourceValue": 185,
+      "retainedDevValue": 160,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 3515,
+      "route": "item:3515:3875",
+      "sourceValue": 200,
+      "retainedDevValue": 175,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "cooking",
+      "spell": 1250150,
+      "route": "item:1250150:250181",
+      "sourceValue": 180,
+      "retainedDevValue": 275,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "engineering",
+      "spell": 1308182,
+      "route": "item:1308182:280324",
+      "sourceValue": 175,
+      "retainedDevValue": 180,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 7153,
+      "route": "item:7153:5974",
+      "sourceValue": 160,
+      "retainedDevValue": 125,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23706,
+      "route": "item:23706:227895",
+      "sourceValue": 300,
+      "retainedDevValue": 295,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23664,
+      "route": "item:23664:227896",
+      "sourceValue": 290,
+      "retainedDevValue": 255,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23665,
+      "route": "item:23665:227897",
+      "sourceValue": 300,
+      "retainedDevValue": 290,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "tailoring",
+      "spell": 435841,
+      "route": "item:435841:215369",
+      "sourceValue": 150,
+      "retainedDevValue": 170,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    },
+    {
+      "profession": "tailoring",
+      "spell": 435848,
+      "route": "item:435848:215370",
+      "sourceValue": 150,
+      "retainedDevValue": 170,
+      "decision": "retainDev",
+      "routeStatus": "confirmed"
+    }
+  ]
+}

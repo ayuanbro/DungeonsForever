@@ -60,25 +60,41 @@ def ordinary_get(url, retries=3):
     raise SourceError("request attempts exhausted")
 
 
+class HostCircuitOpen(SourceError):
+    attempted = False
+    error_code = "hostCircuitOpen"
+
+
+class TransportClosed(SourceError):
+    attempted = False
+    error_code = "transportClosed"
+
+
 class WowheadTransport:
-    """One anonymous session generation shared by two bounded HTTP workers.
+    """Two direct HTTP workers, with one persistent native-browser owner.
 
-    No cookies or verification response bodies enter the manifest. A browser is
-    started only on a JavaScript challenge; unsupported challenges stay blocked.
+    Direct curl requests keep the impersonation profile's matching headers.
+    JavaScript challenges switch to a browser session whose cookies stay there.
     """
-    agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
 
-    def __init__(self, interval=1.0):
+    def __init__(self, interval=1.0, browser_factory=None):
         self.local = threading.local()
         self.lock = threading.Lock()
-        self.cookies = []
-        self.generation = 0
-        self.bootstrap_attempts = 0
         self.pace_lock = threading.Lock()
         self.next_request = 0.0
         self.interval = interval
         self.blocked_episodes = 0
         self.circuit_open = False
+        self.closed = False
+        self._sessions = []
+        self._browser_factory = browser_factory
+        self._browser = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
 
     def pace(self):
         with self.pace_lock:
@@ -90,93 +106,69 @@ class WowheadTransport:
     def session(self):
         from curl_cffi import requests
         if not hasattr(self.local, "session"):
-            self.local.session = requests.Session(impersonate="chrome")
-            self.local.generation = -1
-        if self.local.generation != self.generation:
-            for cookie in self.cookies:
-                self.local.session.cookies.set(cookie["name"], cookie["value"], domain=cookie["domain"], path=cookie["path"])
-            self.local.generation = self.generation
+            with self.lock:
+                if self.closed:
+                    raise TransportClosed("HTTP transport is closed")
+                # Each object belongs to one HTTP worker. Avoid an internal
+                # thread-local curl handle so owner-independent close releases
+                # the same native handle, after the worker pool has drained.
+                session = requests.Session(impersonate="chrome", use_thread_local_curl=False)
+                self._sessions.append(session)
+                self.local.session = session
         return self.local.session
 
-    def bootstrap(self, url, previous_generation):
+    @staticmethod
+    def javascript_challenge(status, data):
+        return status == 202 or status == 200 and any(marker in data[:12000].lower() for marker in
+            (b"window.gokuprops", b"cf-chl-", b"just a moment"))
+
+    def browser(self):
         with self.lock:
-            if self.generation != previous_generation:
-                return True
-            self.bootstrap_attempts += 1
-            from playwright.sync_api import sync_playwright
-            from curl_cffi import requests
-            # Do not seed the challenge browser with the very token rejected by
-            # the origin. Presence of an old token is not successful renewal.
-            session = requests.Session(impersonate="chrome")
-            with sync_playwright() as playwright:
-                browser = playwright.chromium.launch(headless=True)
-                context = browser.new_context(locale="en-US", user_agent=self.agent)
-                page = context.new_page()
-                document = {"status": None}
-
-                def route_request(route):
-                    request = route.request
-                    host = urlsplit(request.url).hostname or ""
-                    permitted = any(host == domain or host.endswith("." + domain)
-                                    for domain in ("wowhead.com", "awswaf.com", "zamimg.com"))
-                    if not permitted or request.resource_type in ("image", "font", "media"):
-                        route.abort()
-                        return
-                    try:
-                        headers = dict(request.all_headers())
-                        headers.pop("content-length", None)
-                        headers.pop("accept-encoding", None)
-                        response = session.request(request.method, request.url, headers=headers,
-                            data=request.post_data_buffer, timeout=20, allow_redirects=False)
-                        if request.is_navigation_request() and request.frame == page.main_frame:
-                            document["status"] = response.status_code
-                        outgoing = dict(response.headers)
-                        for name in ("content-encoding", "content-length", "transfer-encoding"):
-                            outgoing.pop(name, None)
-                        route.fulfill(status=response.status_code, headers=outgoing, body=response.content)
-                    except Exception:
-                        route.abort()
-
-                try:
-                    page.route("**/*", route_request)
-                    page.goto(url, wait_until="domcontentloaded", timeout=45000)
-                    deadline = time.monotonic() + 25
-                    while time.monotonic() < deadline:
-                        page.wait_for_timeout(500)
-                        cookies = context.cookies()
-                        if document["status"] in (200, 404) and any(cookie["name"] == "aws-waf-token" for cookie in cookies):
-                            self.cookies = cookies
-                            self.generation += 1
-                            self.blocked_episodes = 0
-                            return True
-                    return False
-                finally:
-                    browser.close()
+            if self.closed:
+                raise TransportClosed("HTTP transport is closed")
+            if self._browser is None:
+                from .browser_transport import BrowserTransport
+                self._browser = (self._browser_factory or BrowserTransport)()
+            return self._browser
 
     def get(self, url, retries=3):
-        if self.circuit_open:
-            raise SourceError("hostCircuitOpen: repeated challenge renewal failed; retry failed sources in a later run")
+        with self.lock:
+            if self.closed:
+                raise TransportClosed("HTTP transport is closed")
+            if self.circuit_open:
+                raise HostCircuitOpen("host circuit open after repeated failures; no request was sent")
         for attempt in range(retries):
             try:
                 self.pace()
-                generation = self.generation
-                response = self.session().get(url, headers={"User-Agent": self.agent,
-                    "Accept-Language": "en-US,en;q=0.9"}, timeout=35)
-                status = classify_response(response.status_code, response.content)
-                if status == "sourceBlocked" and response.status_code != 429:
-                    if attempt + 1 < retries and self.bootstrap(url, generation):
-                        continue
-                if response.status_code in (429, 500, 502, 503, 504) and attempt + 1 < retries:
-                    time.sleep(retry_delay(response.headers, attempt))
-                    continue
-                if status == "sourceBlocked":
+                if attempt == 0:
                     with self.lock:
+                        if self.circuit_open:
+                            raise HostCircuitOpen("host circuit opened while queued; no request was sent")
+                browser = self._browser
+                if browser is None:
+                    # Do not replace the profile's UA/client-hints with a
+                    # different Chrome version or copy browser cookies here.
+                    response = self.session().get(url, timeout=35)
+                    result = response.status_code, response.content, dict(response.headers), response.url
+                    if self.javascript_challenge(result[0], result[1]):
+                        browser = self.browser()
+                if browser is not None:
+                    result = browser.get(url)
+                code, data, headers, final = result
+                status = classify_response(code, data)
+                if code in (429, 500, 502, 503, 504) and attempt + 1 < retries:
+                    time.sleep(retry_delay(headers, attempt))
+                    continue
+                with self.lock:
+                    if status == "sourceBlocked":
                         self.blocked_episodes += 1
                         if self.blocked_episodes >= 2:
                             self.circuit_open = True
-                else:
-                    self.blocked_episodes = 0
-                return response.status_code, response.content, dict(response.headers), response.url
+                    else:
+                        self.blocked_episodes = 0
+                return code, data, headers, final
+            except (HostCircuitOpen, TransportClosed):
+                raise
             except Exception:
                 if attempt + 1 == retries:
                     with self.lock:
@@ -187,9 +179,30 @@ class WowheadTransport:
                 time.sleep(2**attempt)
         raise SourceError("request attempts exhausted")
 
+    def close(self):
+        with self.lock:
+            if self.closed:
+                return
+            self.closed = True
+            browser, sessions = self._browser, self._sessions
+            self._sessions = []
+        errors = []
+        try:
+            if browser is not None:
+                browser.close()
+        except Exception as error:
+            errors.append(error)
+        for session in sessions:
+            try:
+                session.close()
+            except Exception as error:
+                errors.append(error)
+        if errors:
+            raise errors[0]
+
 
 def response_record(root, key, url, getter, table=None, entity=None):
-    record = {"key": key, "url": url, "fetchedAt": now()}
+    record = {"key": key, "url": url, "fetchedAt": now(), "attempted": True}
     try:
         status, data, headers, final = getter(url)
         # Only non-secret response metadata is retained.
@@ -198,7 +211,10 @@ def response_record(root, key, url, getter, table=None, entity=None):
                       contentDisposition=lower.get("content-disposition", ""),
                       status=classify_response(status, data), bytes=len(data), sha256=sha256(data))
         suffix = ".csv" if table else ".html"
-        path = Path("responses") / (key.replace(":", "-") + suffix)
+        # Immutable response names keep a crash before checkpointing from
+        # replacing bytes still referenced by the previous manifest.
+        identity = "" if table else "." + record["sha256"]
+        path = Path("responses") / (key.replace(":", "-") + identity + suffix)
         record["path"] = path.as_posix()
         (root / path).parent.mkdir(parents=True, exist_ok=True)
         (root / path).write_bytes(data)
@@ -220,8 +236,20 @@ def response_record(root, key, url, getter, table=None, entity=None):
                 record["error"] = str(error)
         return record
     except Exception as error:
-        record.update(status="sourceBlocked", error=type(error).__name__ + ": " + str(error)[:250])
+        attempted = getattr(error, "attempted", True)
+        record.update(status="sourceError" if attempted else "notFetched", attempted=attempted,
+                      errorCode=getattr(error, "error_code", type(error).__name__),
+                      error=type(error).__name__ + ": " + str(error)[:250])
         return record
+
+
+def retain_response_evidence(previous, record):
+    """An unsent retry does not erase the last real HTTP observation."""
+    if previous and record.get("attempted") is False:
+        retained = dict(previous)
+        retained["lastAttempt"] = {key: value for key, value in record.items() if key not in ("key", "url")}
+        return retained
+    return record
 
 
 def snapshot_archive(root, output):
@@ -331,48 +359,49 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
         members, teaching = discover(tables)
         targets = {("spell", spell) for _, spell in members}
         targets.update(("item", item) for items in teaching.values() for item in items)
-        transport = WowheadTransport(interval=max(0.0, web_interval))
-        seen = set()
-        count = 0
-        for depth in range(4):
-            batch = sorted(targets - seen, key=lambda x: ({"spell": 0, "item": 1, "quest": 2, "npc": 3}[x[0]], x[1]))
-            if not batch:
-                break
-            seen.update(batch)
-            pending = []
-            for kind, entity_id in batch:
-                key = f"web:{kind}:{entity_id}"
-                retryable = retry_failed and key in previous and previous[key]["status"] in ("sourceBlocked", "sourceError", "parseError")
-                if key in previous and previous[key]["status"] != "notFetched" and not retryable:
-                    record = previous[key]
-                    if record["status"] == "verified":
-                        parsed = parse_page((work / record["path"]).read_bytes(), kind, entity_id, record["finalUrl"])
-                        targets.update(referenced_entities(parsed))
-                    continue
-                if web_limit is not None and count + len(pending) >= web_limit:
-                    previous[key] = {"key": key, "status": "notFetched", "reason": "explicitWebLimit",
-                                     "url": f"https://www.wowhead.com/forever/{kind}={entity_id}"}
-                else:
-                    pending.append((kind, entity_id))
+        with WowheadTransport(interval=max(0.0, web_interval)) as transport:
+            seen = set()
+            count = 0
+            for depth in range(4):
+                batch = sorted(targets - seen, key=lambda x: ({"spell": 0, "item": 1, "quest": 2, "npc": 3}[x[0]], x[1]))
+                if not batch:
+                    break
+                seen.update(batch)
+                pending = []
+                for kind, entity_id in batch:
+                    key = f"web:{kind}:{entity_id}"
+                    retryable = retry_failed and key in previous and previous[key]["status"] in ("sourceBlocked", "sourceError", "parseError")
+                    if key in previous and previous[key]["status"] != "notFetched" and not retryable:
+                        record = previous[key]
+                        if record["status"] == "verified":
+                            parsed = parse_page((work / record["path"]).read_bytes(), kind, entity_id, record["finalUrl"])
+                            targets.update(referenced_entities(parsed))
+                        continue
+                    if web_limit is not None and count + len(pending) >= web_limit:
+                        previous[key] = retain_response_evidence(previous.get(key),
+                            {"key": key, "status": "notFetched", "reason": "explicitWebLimit", "attempted": False,
+                             "errorCode": "explicitWebLimit", "url": f"https://www.wowhead.com/forever/{kind}={entity_id}"})
+                    else:
+                        pending.append((kind, entity_id))
 
-            def acquire(entity):
-                kind, entity_id = entity
-                url = f"https://www.wowhead.com/forever/{kind}={entity_id}"
-                return response_record(work, f"web:{kind}:{entity_id}", url,
-                                       lambda u: transport.get(u, retries), entity=entity)
+                def acquire(entity):
+                    kind, entity_id = entity
+                    url = f"https://www.wowhead.com/forever/{kind}={entity_id}"
+                    return response_record(work, f"web:{kind}:{entity_id}", url,
+                                           lambda u: transport.get(u, retries), entity=entity)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
-                for record in pool.map(acquire, pending):
-                    previous[record["key"]] = record
-                    count += 1
-                    if record["status"] == "verified":
-                        _, kind, entity_id = record["key"].split(":")
-                        parsed = parse_page((work / record["path"]).read_bytes(), kind, int(entity_id), record["finalUrl"])
-                        targets.update(referenced_entities(parsed))
-                    if count % 25 == 0:
-                        manifest["responses"] = sorted(previous.values(), key=lambda r: r["key"])
-                        write_json(work / "manifest.json", manifest)
-                        log(f"web {count} / discovered {len(targets)} last={record['key']} {record['status']}", flush=True)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+                    for record in pool.map(acquire, pending):
+                        previous[record["key"]] = retain_response_evidence(previous.get(record["key"]), record)
+                        count += 1
+                        if record["status"] == "verified":
+                            _, kind, entity_id = record["key"].split(":")
+                            parsed = parse_page((work / record["path"]).read_bytes(), kind, int(entity_id), record["finalUrl"])
+                            targets.update(referenced_entities(parsed))
+                        if count % 25 == 0:
+                            manifest["responses"] = sorted(previous.values(), key=lambda r: r["key"])
+                            write_json(work / "manifest.json", manifest)
+                            log(f"web {count} / discovered {len(targets)} last={record['key']} {record['status']}", flush=True)
         manifest["responses"] = sorted(previous.values(), key=lambda r: r["key"])
         after = latest()
         manifest["latestAfter"] = after
@@ -388,6 +417,7 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
         for kind, entity_id in sorted(targets - seen):
             key = f"web:{kind}:{entity_id}"
             previous.setdefault(key, {"key": key, "status": "notFetched", "reason": "referenceDepthLimit",
+                                     "attempted": False, "errorCode": "referenceDepthLimit",
                                      "url": f"https://www.wowhead.com/forever/{kind}={entity_id}"})
         manifest["responses"] = sorted(previous.values(), key=lambda r: r["key"])
         manifest.update(fetchComplete=True, sourceCoverageComplete=all(r["status"] == "verified" for r in previous.values()),

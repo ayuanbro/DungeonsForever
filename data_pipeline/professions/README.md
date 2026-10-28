@@ -49,15 +49,17 @@ python -m data_pipeline.professions fetch --out dist/prof-learning/raw \
   --resume --retry-failed
 ```
 
-恢复先验证已有响应校验值及最新版本，保留已验证原始响应，不读取生成文件。`--web-limit N` 只限制当前调用新发出的网页请求，适合小范围探测；正式全量采集不要设置。连续两次校验恢复失败会打开当前调用的主机熔断器，剩余实体记为 `sourceBlocked`，避免几千次无意义的 403 请求。稍后再显式重试，不循环刷站。
+恢复先验证已有响应校验值及最新版本，保留已验证原始响应，不读取生成文件。`--web-limit N` 只限制当前调用新发出的网页实体请求，适合小范围探测；正式全量采集不要设置。连续两次来源拒绝或传输失败会打开当前调用的主机熔断器，未发送请求的实体记为 `notFetched`、`attempted=false`、`errorCode=hostCircuitOpen`。若已有实际 HTTP 响应，保留原证据并将未发送的重试写入 `lastAttempt`。稍后再显式重试，不循环刷站。
 
 每 25 个网页实体保存 manifest 检查点。`fetchComplete=true` 只表示本批次已关闭并复查版本；**不是资料完整证明**。请查看 `sourceCoverageComplete`、每条响应状态和生成报告中的逐专业缺口。
 
 ## 来源判定和保留边界
 
-HTTP 202/WAF 校验页、403、429、访问超时为 `sourceBlocked`；真实实体 404 为 `sourceMissing`；结构或实体不匹配为 `parseError`。最终 URL、实体标题、类型和技能 ID 必须一致。跳转后的通用列表即便带有 `WH.Gatherer` 也不能作为目标实体。
+HTTP 202/WAF 校验页、403、429 为 `sourceBlocked`；连接或超时异常为 `sourceError`；真实实体 404 为 `sourceMissing`；结构或实体不匹配为 `parseError`。最终 URL、实体标题、类型和技能 ID 必须一致。跳转后的通用列表即便带有 `WH.Gatherer` 也不能作为目标实体。
 
-解析器只读取 JSON 字面量和页面中的条件文字，不执行来源提供的任意数据脚本。种族优先使用页面明确 ID 或当前 `ChrRaces.PlayableRaceBit` 映射；未映射位、模糊的采集 mask、非零的未验证 PlayerCondition 及其他未支持条件保持未知。Python 保留大整数精度；生成到 Lua 的整数必须处于安全范围，Lua 解码不依赖平台的 `strtoul` 或浮点大数位运算。
+普通 HTTP 请求保留 curl 配套的浏览器请求头，不再硬写另一个浏览器版本。遇到 JavaScript 校验时，切到专用线程持有的 Chromium 匿名会话；UA 从实际浏览器版本派生，校验与后续取页面都使用浏览器自己的网络栈。Cookie 不再转交给另一套 HTTP 客户端，也不再把浏览器请求拦截后交给 curl。所有浏览器操作与关闭都在同一个所属线程执行；采集结束或失败时释放资源。交互验证码不自动点击或求解，普通 403 拒绝也不冒充 JavaScript 校验。
+
+解析器只读取 JSON 字面量和页面中的条件文字，不执行来源提供的任意数据脚本。种族优先使用页面明确 ID 或当前 `ChrRaces.PlayableRaceBit` 映射；未映射位、模糊的采集 mask、非零的未验证 PlayerCondition 及其他未支持条件保持未知。Python 保留大整数精度；生成到 Lua 的整数必须处于安全范围，Lua 解码不依赖平台的 `strtoul` 或浮点大数位运算。规则 2 将 DB2 `MinReputation` 的 0..7 转为客户端 `reaction` 的 1..8；缺失、空值与越界不当作有效门槛。这是字段索引转换，不修改 dev 原始数值。
 
 学习来源采用“多路径任选其一、同路径条件全部满足”。教材学习限制、制作条件与商人/任务/掉落获取限制分别处理。任务奖励或掉落关系不等于免费且保证可得的库存；网页缺详情也不证明游戏内实体删除。商人费用必须有明确 NPC、金币价格和已知 `VendorStackCount`，不把缺失包量补为 1。
 
@@ -101,6 +103,8 @@ docker run --rm --entrypoint python df-prof-learning-tests \
 本次真实采集的源文件覆盖率、逐专业确认路径、缺口与 HTTP 证据以根任务交付的 raw snapshot 和 report 为准。站点受阻时仍可交付来源已确认的部分，但不能宣称完整覆盖；插件严格排除缺少确认学习路径的未学配方。离线检查与真实游戏内学习、采购、执行验收分别报告。
 
 实施记录见 [2026-10-28 验收报告](reports/implementation-2026-10-28.md)，逐专业摘要见 [coverage](reports/coverage-2026-10-28.json)，具体门槛差异见 [native conflicts](reports/native-conflicts-2026-10-28.json)。当前报告保留未通过或未执行的验收项，不能只根据测试数量判断可直接合并。
+
+采集会话恢复、规则 2 声望修正及最新有限实测见 [2026-10-29 修复记录](reports/recovery-2026-10-29.md)。历史验收记录保留原范围，不能当作新版本已完成全量采集的证明。
 
 可选的原生数据对比只在生成后运行，不参与采集、补缺或生成：
 
