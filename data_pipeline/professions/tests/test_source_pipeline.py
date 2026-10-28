@@ -685,7 +685,7 @@ class RefreshRunContracts(unittest.TestCase):
                 transport.last_transport = "browser"
                 fetch(raw, resume=True, refresh_web=True, workers=1, web_interval=2,
                       web_transport="browser", log=lambda *a, **k: None)
-                cls.assert_called_once_with(interval=2, mode="browser")
+                cls.assert_called_once_with(interval=2, mode="browser", recoveries=2, cooldown=120.0, browser_assets="all")
                 urls = [call.args[0] for call in transport.get.call_args_list]
             self.assertNotIn(spell["url"], urls)
             current = json.loads((raw / "manifest.json").read_text())

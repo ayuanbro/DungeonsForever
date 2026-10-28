@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import concurrent.futures
 import datetime
+from email.utils import parsedate_to_datetime
 import html
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -36,10 +38,17 @@ def latest():
     return result
 
 
-def retry_delay(headers, attempt):
+def retry_delay(headers, attempt, wall_time=None):
+    """Honor both HTTP forms, case-insensitively, without shortening server waits."""
+    value = next((str(v).strip() for k, v in headers.items() if k.lower() == "retry-after"), "")
+    if value.isdigit():
+        return int(value)
     try:
-        return min(30.0, max(0.0, float(headers.get("Retry-After", 2**attempt))))
-    except (TypeError, ValueError):
+        date = parsedate_to_datetime(value)
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=datetime.timezone.utc)
+        return max(0.0, date.timestamp() - (time.time() if wall_time is None else wall_time))
+    except (TypeError, ValueError, OverflowError):
         return min(30.0, 2**attempt)
 
 
@@ -79,9 +88,12 @@ class WowheadTransport:
     JavaScript challenges switch to a browser session whose cookies stay there.
     """
 
-    def __init__(self, interval=1.0, browser_factory=None, mode="auto"):
-        if mode not in ("auto", "browser"):
-            raise SourceError("web transport must be auto or browser")
+    def __init__(self, interval=1.0, browser_factory=None, mode="auto", recoveries=0,
+                 cooldown=120.0, browser_assets="all"):
+        if mode not in ("auto", "browser", "browser-fetch"):
+            raise SourceError("invalid web transport")
+        if not isinstance(recoveries, int) or not 0 <= recoveries <= 3 or not math.isfinite(cooldown) or cooldown < 0 or not math.isfinite(interval) or interval < 0:
+            raise SourceError("invalid recovery limits")
         self.mode = mode
         self.local = threading.local()
         self.lock = threading.Lock()
@@ -94,6 +106,26 @@ class WowheadTransport:
         self._sessions = []
         self._browser_factory = browser_factory
         self._browser = None
+        self.request_lock = threading.Lock()
+        self.recovery_limit, self.cooldown = recoveries, cooldown
+        self.browser_assets = browser_assets
+        self.cooldown_until = 0.0
+        self.metrics = {"requests": 0, "recoveries": 0, "waitSeconds": 0.0, "httpStatuses": {}}
+
+    def _wait(self, seconds):
+        self.metrics["waitSeconds"] += seconds
+        time.sleep(seconds)
+
+    def _recover(self):
+        if not self.circuit_open:
+            return
+        if self.metrics["recoveries"] >= self.recovery_limit:
+            raise HostCircuitOpen("bounded host recovery exhausted; no request was sent")
+        self._wait(max(self.cooldown, self.cooldown_until - time.monotonic()))
+        self.metrics["recoveries"] += 1
+        self.circuit_open = False
+        # One probe may proceed. Failure immediately reopens the circuit.
+        self.blocked_episodes = 1
 
     def __enter__(self):
         return self
@@ -106,7 +138,7 @@ class WowheadTransport:
             delay = max(0.0, self.next_request - time.monotonic())
             self.next_request = max(time.monotonic(), self.next_request) + self.interval
         if delay:
-            time.sleep(delay)
+            self._wait(delay)
 
     def session(self):
         from curl_cffi import requests
@@ -133,11 +165,22 @@ class WowheadTransport:
                 raise TransportClosed("HTTP transport is closed")
             if self._browser is None:
                 from .browser_transport import BrowserTransport
-                self._browser = (self._browser_factory or BrowserTransport)()
+                self._browser = (self._browser_factory() if self._browser_factory else
+                                 BrowserTransport(request_mode="fetch" if self.mode == "browser-fetch" else "navigation",
+                                                  assets=self.browser_assets, diagnostics=True))
             return self._browser
 
     def get(self, url, retries=3):
+        # One host-wide scheduler: another worker cannot bypass Retry-After or
+        # a half-open probe. Parsing/writing the preceding response can overlap.
+        with self.request_lock:
+            return self._get_serial(url, retries)
+
+    def _get_serial(self, url, retries):
         self.local.last_transport = None
+        if self.closed:
+            raise TransportClosed("HTTP transport is closed")
+        self._recover()
         with self.lock:
             if self.closed:
                 raise TransportClosed("HTTP transport is closed")
@@ -151,7 +194,7 @@ class WowheadTransport:
                         if self.circuit_open:
                             raise HostCircuitOpen("host circuit opened while queued; no request was sent")
                 browser = self._browser
-                if browser is None and self.mode == "browser":
+                if browser is None and self.mode in ("browser", "browser-fetch"):
                     browser = self.browser()
                 if browser is None:
                     # Do not replace the profile's UA/client-hints with a
@@ -166,12 +209,31 @@ class WowheadTransport:
                     self.local.last_transport = "browser"
                     result = browser.get(url)
                 code, data, headers, final = result
+                self.metrics["requests"] += 1
+                counts = self.metrics["httpStatuses"]
+                counts[str(code)] = counts.get(str(code), 0) + 1
                 status = classify_response(code, data)
+                interactive = status == "sourceBlocked" and any(marker in data[:50000].lower() for marker in
+                    (b"g-recaptcha", b"h-captcha", b"captcha-container"))
+                if interactive:
+                    self.circuit_open = True
+                    self.recovery_limit = self.metrics["recoveries"]
+                    self.metrics["stopReason"] = "interactiveChallenge"
+                    return result
+                if status == "sourceBlocked" and any(k.lower() == "retry-after" for k in headers):
+                    deadline = time.monotonic() + retry_delay(headers, attempt)
+                    self.cooldown_until = max(self.cooldown_until, deadline)
+                    self.next_request = max(self.next_request, deadline)
                 if code in (429, 500, 502, 503, 504) and attempt + 1 < retries:
-                    time.sleep(retry_delay(headers, attempt))
+                    self._wait(retry_delay(headers, attempt))
                     continue
+                if code in (429, 500, 502, 503, 504):
+                    delay = retry_delay(headers, attempt)
+                    self.cooldown_until = max(self.cooldown_until, time.monotonic() + delay)
+                    # Also applies to the next entity after the last retry.
+                    self.next_request = max(self.next_request, self.cooldown_until)
                 with self.lock:
-                    if status == "sourceBlocked":
+                    if status == "sourceBlocked" or code >= 500:
                         self.blocked_episodes += 1
                         if self.blocked_episodes >= 2:
                             self.circuit_open = True
@@ -187,7 +249,7 @@ class WowheadTransport:
                         if self.blocked_episodes >= 2:
                             self.circuit_open = True
                     raise
-                time.sleep(2**attempt)
+                self._wait(2**attempt)
         raise SourceError("request attempts exhausted")
 
     @property
@@ -216,7 +278,7 @@ class WowheadTransport:
             raise errors[0]
 
 
-def response_record(root, key, url, getter, table=None, entity=None):
+def response_record(root, key, url, getter, table=None, entity=None, parsed_sink=None):
     record = {"key": key, "url": url, "fetchedAt": now(), "attempted": True}
     try:
         status, data, headers, final = getter(url)
@@ -246,6 +308,8 @@ def response_record(root, key, url, getter, table=None, entity=None):
                 else:
                     parsed = parse_page(data, *entity, final)
                     record["entity"] = {"kind": entity[0], "id": entity[1], "title": parsed["title"]}
+                    if parsed_sink is not None:
+                        parsed_sink.update(parsed)
             except (ValueError, UnicodeError) as error:
                 record["status"] = "parseError"
                 record["error"] = str(error)
@@ -429,11 +493,14 @@ def prepare_current_http_retry(source, build, status, pending_finalize=False):
     return plan
 
 
-def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_failed=False, refresh_web=False, web_interval=1.0, log=print, web_transport="auto", retry_current_http=None):
+def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_failed=False, refresh_web=False, web_interval=1.0, log=print, web_transport="auto", retry_current_http=None,
+          host_recoveries=2, host_cooldown=120.0, browser_assets="all"):
     if not 1 <= workers <= 2 or not 1 <= retries <= 3:
         raise SourceError("workers must be 1..2 and retries 1..3")
-    if web_transport not in ("auto", "browser"):
+    if web_transport not in ("auto", "browser", "browser-fetch"):
         raise SourceError("web transport must be auto or browser")
+    if not isinstance(host_recoveries, int) or not 0 <= host_recoveries <= 3 or not math.isfinite(host_cooldown) or host_cooldown < 0 or not math.isfinite(web_interval) or web_interval < 0 or browser_assets not in ("all", "light"):
+        raise SourceError("invalid host recovery or browser assets option")
     if retry_current_http is not None:
         if retry_current_http not in (403, 429, 202) or not isinstance(retry_current_http, int):
             raise SourceError("targeted HTTP code must be403,429 or202")
@@ -503,6 +570,8 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
         segment = {"startedAt": now(), "transport": web_transport, "workers": workers,
                    "interval": max(0.0, web_interval), "retries": retries, "webLimit": web_limit,
                    "urlRouting": "fresh-name-slug-v1", "attempted": 0}
+        segment.update(hostRecoveries=host_recoveries, hostCooldown=host_cooldown, browserAssets=browser_assets,
+                       scheduler="bounded-v2", maxPending=workers)
         manifest["webRun"].setdefault("segments", []).append(segment)
         if current_retry is not None:
             segment.update(operation="retry-current-http", httpStatus=retry_current_http,
@@ -558,8 +627,11 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
         segment["attemptedAtStart"] = manifest["webRun"]["attempted"]
         checkpoint(work / "manifest.json", manifest)
         log(f"web mode={mode} transport={web_transport} workers={workers} interval={max(0.0, web_interval)} attempted={manifest['webRun']['attempted']} / targets={len(targets)}", flush=True)
+        transport = None
         try:
-            with WowheadTransport(interval=max(0.0, web_interval), mode=web_transport) as transport:
+            with WowheadTransport(interval=max(0.0, web_interval), mode=web_transport,
+                                  recoveries=host_recoveries, cooldown=host_cooldown,
+                                  browser_assets=browser_assets) as transport:
                 # Traverse only explicit supported source relationships, once
                 # per entity. A fixed depth must not silently omit prerequisites.
                 while True:
@@ -594,23 +666,40 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
                     def acquire(entity):
                         kind, entity_id = entity
                         url = entity_url(kind, entity_id, names)
+                        parsed = {}
                         record = response_record(work, f"web:{kind}:{entity_id}", url,
-                                                 lambda u: transport.get(u, retries), entity=entity)
+                                                 lambda u: transport.get(u, retries), entity=entity, parsed_sink=parsed)
                         observed = getattr(transport, "last_transport", None)
                         if record.get("attempted") is True and isinstance(observed, str) and observed in ("http", "browser"):
                             record["transport"] = observed
                         record["webRunID"] = run_id
                         if current_retry is not None:
                             record["retryOperationID"] = current_retry["id"]
-                        return record
+                        return record, parsed
 
                     pool = concurrent.futures.ThreadPoolExecutor(max_workers=workers)
-                    futures = [pool.submit(acquire, entity) for entity in pending]
+                    entities = iter(pending)
+                    futures = set()
                     processed = set()
+
+                    def completed():
+                        def fill():
+                            while len(futures) < workers:
+                                entity = next(entities, None)
+                                if entity is None:
+                                    break
+                                futures.add(pool.submit(acquire, entity))
+                        fill()
+                        while futures:
+                            for future in concurrent.futures.as_completed(tuple(futures)):
+                                yield future
+                                futures.remove(future)
+                                processed.discard(future)
+                                fill()
 
                     def accept(future):
                         nonlocal count, attempted_count
-                        record = future.result()
+                        record, parsed = future.result()
                         processed.add(future)
                         previous[record["key"]] = retain_response_evidence(previous.get(record["key"]), record,
                             refresh=refresh_web or current_retry is not None and record["key"] not in retry_selected)
@@ -625,8 +714,6 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
                                     retry_completed.add(record["key"])
                                     current_retry["completedKeys"] = sorted(retry_completed)
                         if record["status"] == "verified":
-                            _, kind, entity_id = record["key"].split(":")
-                            parsed = parse_page((work / record["path"]).read_bytes(), kind, int(entity_id), record["finalUrl"])
                             references = referenced_entities(parsed, names)
                             if current_retry is not None:
                                 retry_additional.update(f"web:{kind}:{entity}" for kind, entity in references if (kind, entity) not in targets)
@@ -635,7 +722,7 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
                         return record
 
                     try:
-                        for future in concurrent.futures.as_completed(futures):
+                        for future in completed():
                             record = accept(future)
                             skipped_reason = record.get("errorCode") if record.get("attempted") is False else None
                             new_skip = skipped_reason is not None and skipped_reason not in reported_skips
@@ -667,6 +754,11 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
             manifest["responses"] = sorted(previous.values(), key=lambda r: r["key"])
             update_web_run(manifest, targets, previous)
             segment.update(finishedAt=now(), attempted=attempted_count, attemptedAtEnd=manifest["webRun"]["attempted"])
+            if isinstance(getattr(transport, "metrics", None), dict):
+                segment["transportMetrics"] = dict(transport.metrics)
+                browser = getattr(transport, "_browser", None)
+                if isinstance(getattr(browser, "identity", None), dict):
+                    segment["browserIdentity"] = dict(browser.identity)
             if current_retry is not None:
                 current_retry["complete"] = retry_selected.issubset(retry_completed) and all(
                     previous.get(key, {}).get("webRunID") == run_id and previous[key].get("attempted") is True

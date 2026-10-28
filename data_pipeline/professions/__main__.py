@@ -22,8 +22,14 @@ def main(argv=None):
         action.add_argument("--retry-failed", action="store_true", help="With --resume, retry blocked/error/missing (including HTTP404) responses")
         action.add_argument("--refresh-web", action="store_true", help="With --resume, refresh every same-build web entity, including verified pages and historical404 gaps")
         action.add_argument("--web-interval", type=float, default=1.0, help="Global minimum seconds between entity requests")
-        action.add_argument("--web-transport", choices=("auto", "browser"), default="auto",
+        action.add_argument("--web-transport", choices=("auto", "browser", "browser-fetch"), default="auto",
                             help="auto: HTTP then JS-browser fallback; browser: native browser from the first request")
+        action.add_argument("--host-recoveries", type=int, choices=range(4), default=2,
+                            help="Bounded host cooldown/probe episodes; zero keeps stop-on-circuit behavior")
+        action.add_argument("--host-cooldown", type=float, default=120,
+                            help="Minimum cooldown seconds before a single recovery probe")
+        action.add_argument("--browser-assets", choices=("all", "light"), default="all",
+                            help="Experimental light mode blocks images/fonts/media but disables HTTP cache")
         action.add_argument("--retry-current-http", type=int, choices=(403, 429, 202),
                             help="With --resume, retry only current full-run sourceBlocked responses with this HTTP code")
     for name in ("build", "check"):
@@ -31,6 +37,12 @@ def main(argv=None):
         action.add_argument("--raw", required=True, type=Path)
         action.add_argument("--output", required=True, type=Path)
         action.add_argument("--report", required=True, type=Path)
+    comparison = sub.add_parser("compare", help="Gated online transport comparison after a completed full collection (Linux)")
+    comparison.add_argument("--after-raw", type=Path, required=True)
+    comparison.add_argument("--out", type=Path, required=True)
+    comparison.add_argument("--limit", type=int, default=12)
+    comparison.add_argument("--interval", type=float, default=2.0)
+    comparison.add_argument("--rounds", type=int, default=2)
     args = parser.parse_args(argv)
     try:
         if args.command in ("fetch", "probe"):
@@ -39,7 +51,12 @@ def main(argv=None):
             from .fetch import fetch
             fetch(args.out, web_limit=args.web_limit, workers=args.workers, retries=args.retries, resume=args.resume,
                   retry_failed=args.retry_failed, refresh_web=args.refresh_web, web_interval=args.web_interval,
-                  web_transport=args.web_transport, retry_current_http=args.retry_current_http)
+                  web_transport=args.web_transport, retry_current_http=args.retry_current_http,
+                  host_recoveries=args.host_recoveries, host_cooldown=args.host_cooldown,
+                  browser_assets=args.browser_assets)
+        elif args.command == "compare":
+            from .compare_transport import compare
+            compare(args.after_raw, args.out, limit=args.limit, interval=args.interval, rounds=args.rounds)
         else:
             from .build import build
             build(args.raw, args.output, args.report, check=args.command == "check")

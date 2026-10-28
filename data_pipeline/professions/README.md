@@ -36,7 +36,7 @@ env -u DISPLAY -u WAYLAND_DISPLAY .venv/bin/python -m data_pipeline.professions 
 ## 命令
 
 - `probe --out DIR`：与正式采集使用相同接口，默认只请求 8 个新发现的网页实体。未请求项记录为 `notFetched`，不能把探测包说成全量覆盖。
-- `fetch --out DIR`：取得 `GET https://wago.tools/api/builds/wowf/latest`；固定产品、版本和 build config，下载 22 张相关 DB2 表，发现教材及世界来源。默认两个 HTTP worker，全局网页实体请求间隔 1 秒，临时错误最多尝试 3 次。
+- `fetch --out DIR`：取得 `GET https://wago.tools/api/builds/wowf/latest`；固定产品、版本和 build config，下载 22 张相关 DB2 表，发现教材及世界来源。默认两个处理 worker，全局网页实体请求间隔 1 秒，临时错误最多尝试 3 次。同一主机请求由共享调度器串行发出；前一个响应的解析和写盘可以与下一次网络等待重叠。
 - `build --raw DIR_OR_ZIP --output LUA --report JSON`：检查版本、输入身份、SHA-256、CSV 列与关联，再独立生成补充 Data 和审计报告。不会修改旧配方数组或添加新的原生制作配方。若输出目录名是 `Data`，仅允许写 `Data_ProfLearningSources.lua`。
 - `check`：同样参数，重新构建并逐字节比对现有 Lua 和报告，失败返回非零退出码。
 
@@ -67,7 +67,9 @@ python -m data_pipeline.professions fetch --out dist/prof-learning/raw \
 
 该命令从可携带的原始包目录启动新一轮网页刷新，不读取旧 Lua 或生成报告。相同 `.partial` 中断后使用同样命令继续本轮，已经实际完成的成功页和 404 不从头重抓。旧网页原始响应保留为扁平 `attemptHistory` 并逐个校验、归档；刷新失败或未请求时不会回退使用旧成功页生成。采集只追踪明确支持的教学、商人、掉落及奖励关系，迭代到队列闭包，不再使用固定四层截断，也不遍历任意站内链接。
 
-恢复先验证已有响应校验值及最新版本，保留已验证原始响应，不读取生成文件。`--web-limit N` 只限制当前调用新发出的网页实体请求，适合小范围探测；正式全量采集不要设置。连续两次来源拒绝或传输失败会打开当前调用的主机熔断器，未发送请求的实体记为 `notFetched`、`attempted=false`、`errorCode=hostCircuitOpen`。若已有实际 HTTP 响应，保留原证据并将未发送的重试写入 `lastAttempt`。稍后再显式重试，不循环刷站。
+恢复先验证已有响应校验值及最新版本，保留已验证原始响应，不读取生成文件。`--web-limit N` 只限制当前调用新发出的网页实体请求，适合小范围探测；正式全量采集不要设置。连续两次来源拒绝或传输失败会打开当前调用的主机熔断器。新版默认最多进行两次冷却恢复（`--host-recoveries 2`），每次至少等待 120 秒（`--host-cooldown 120`），然后只放行一个探测请求；探测失败立即再次熔断。达到上限后，未发送请求的实体记为 `notFetched`、`attempted=false`、`errorCode=hostCircuitOpen`。`--host-recoveries 0` 保留立即停止模式。交互验证码直接停止自动恢复。若已有实际 HTTP 响应，保留原证据并将未发送的重试写入 `lastAttempt`。
+
+`Retry-After` 按不区分大小写的响应头读取，支持秒数和 HTTP 日期，不再把服务器要求的等待缩短为 30 秒。等待约束也作用于下一个实体，其他 worker 不能提前穿过等待窗口。冷却恢复次数在本次调用内有硬上限，成功不会重新填满次数；原失败实体继续保留失败证据，最后可用定点重试再次核对。
 
 每 25 个网页实体保存 manifest 检查点。`fetchComplete=true` 只表示本批次已关闭并复查版本；**不是资料完整证明**。请查看 `sourceCoverageComplete`、每条响应状态和生成报告中的逐专业缺口。
 
@@ -149,3 +151,27 @@ python data_pipeline/professions/tests/audit_native_conflicts.py \
 ```
 
 性能复测脚本为 `tests/benchmark_delivery.py` 和 `tests/benchmark_callbacks.py`。前者的 `--baseline` 接受修改前源码快照，用于对比而非来源输入；后者需明确指定专业、目标和运行上限，避免无限搜索。所有场景为离线模拟客户端，真实游戏验收单独进行。
+
+## 采集效率改进与批次结束后的在线对照
+
+新版使用有界任务窗口，同时保留的 future 数量不超过 worker 数；新响应只解析一次，解析结果在内存中交给关系发现，不写进原始包。已保存响应在恢复时仍重新校验和解析，不把临时解析缓存当成可复现输入。每个运行分段记录恢复次数、等待时间、最终 HTTP 状态计数和浏览器一致性诊断。诊断不修改浏览器属性，也不宣称自动化不可识别。
+
+两项试验能力默认关闭：
+
+- `--web-transport browser-fetch`：第一次使用完整导航建立浏览器会话，后续在同一原生浏览器、同一来源内读取完整响应字节；JavaScript 校验或读取失败最多回退一次原生导航，普通 403 交给主机调度器。最终 URL、实体和正文仍经过相同解析校验。
+- `--browser-assets light`：只阻断图片、字体和媒体，保留文档、脚本、样式和校验请求。Playwright 路由会关闭 HTTP 缓存，因此该模式必须比较冷、热两遍的传输开销，不能仅凭图片请求减少判断更快。
+
+现有采集进程不会热重载这些改动；不要为了应用新版中断当前批次。批次完成后，在 Linux 环境显式运行：
+
+```sh
+env -u DISPLAY -u WAYLAND_DISPLAY .venv/bin/python -m data_pipeline.professions compare \
+  --after-raw .pipeline-runtime/prof-learning-full-20261029 \
+  --out dist/prof-learning/transport-comparison-20261029 \
+  --limit 12 --rounds 2 --interval 2
+```
+
+`compare` 是一次性命令，不启动监控或定时任务。它在任何联网前检查原批次全量请求已完成、归档与目录 manifest 一致，并通过 Linux `/proc` 排除仍运行的采集/对照进程；未满足条件就退出，原始包不变。在线前后复查 Wago latest，版本变化则不接受结果。输出目录必须全新且独立，任何对照数据都标记 `generationInput=false`。
+
+对照固定相同样本、请求间隔、解析器和浏览器版本，比较原生导航、同会话轻量读取和资源裁剪三种方式；样本覆盖实体类型及来源失败类型，两轮交换执行顺序，每组分别进行冷、热两遍。遇到拒绝或连接错误保存已获得的证据并停止整场对照，不通过更换会话继续刷出更高成功率。
+
+`report.json` 记录有效资料/分钟、验证通过率、受阻率、耗时、网络请求数、传输字节、缓存命中、浏览器一致性信息，以及逐实体字段/状态差异。网络字节来自页面目标 CDP，包含该目标的子资源，但不包含其他目标和协议开销；这是明确范围的流量指标，不等同于系统总流量。未出现真实 202 校验则标记 `challengeObserved=false`，不能宣称校验兼容性已通过。对照只度量传输模式，不冒充旧、新整个流水线的端到端性能比较，也不会自动改变默认配置或正式 Data。
