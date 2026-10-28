@@ -31,8 +31,17 @@ local function copy(value, tick, seen)
     if type(value) ~= "table" then return value end
     seen = seen or {}
     if seen[value] then return seen[value] end
+    local original=value
+    local meta=getmetatable(value)
+    if type(meta)=="table" and type(meta.__profLearningMaterialize)=="function" then
+        -- The generated provider keeps compact readonly tuple-backed views.
+        -- Freeze only referenced views into ordinary named snapshot fields;
+        -- shared templates remain shared through this copy's seen index.
+        value=meta.__profLearningMaterialize(value)
+    end
     local out, count = {}, 0
-    seen[value] = out
+    seen[original] = out
+    if value~=original then seen[value]=out end
     for k, v in pairs(value) do
         out[k] = copy(v, tick, seen)
         count = count + 1
@@ -103,6 +112,7 @@ local DIAG_TEXT = {
     limitedFormulaDisabled = L["当前设置不从商人购买限量图纸；请取得拍卖行报价或先学会该配方。"],
     formulaPolicyChanged = L["限量图纸购买设置已变化，请重新计算路线。"],
     formulaPriceUnknown = L["图纸购买价格尚未核实。"],
+    learningPriceUnknown = L["训练师学习费用尚未核实。"],
     formulaUnknownSource = L["图纸没有可核实的购买报价；可在设置关闭「不使用未知来源的图纸」。"],
     formulaStockUnknown = L["图纸为限量或未核实库存，不能保证商人现货。"],
     auctionSupplyLimited = L["拍卖行可购数量不足，无法继续此配方；请在 Auctionator 重新完整扫描或改用其他配方。"],
@@ -121,7 +131,14 @@ local DIAG_TEXT = {
     batchSkillGap = L["合并制作后无法达到目标技能，请调整配方限制。"],
     executionInvalid = L["制作顺序或材料用途无法验证，请调整限制后重新计算。"],
     learningRequirementsUnknown = L["配方学习条件尚未核实。"],
-    learningPolicyChanged = L["配方学习条件资料已更新，请重新计算路线。"],
+    learningDataMissing = L["学习资料缺失：该配方没有已确认的学习路径。"],
+    characterRaceRequired = L["当前种族不满足这条学习路径。"],
+    characterClassRequired = L["当前职业不满足这条学习路径。"],
+    reputationRequired = L["当前声望不满足这条学习路径。"],
+    questRequired = L["尚未完成这条学习路径要求的任务。"],
+    learningFactionRequired = L["当前阵营不满足这条学习路径。"],
+    learningConditionFailed = L["尚未满足这条学习路径的条件。"],
+    learningPolicyChanged = L["学习资料已更新，请重新计算；执行记录与进度已保留。"],
     toolFactsUnknown = L["制作工具的配方或产量资料尚未核实。"],
 }
 
@@ -161,7 +178,7 @@ function E.Professions()
         if ok then
             local ids = E.SkillIDs or {[171]="alchemy",[164]="blacksmithing",[333]="enchanting",[202]="engineering",
                 [165]="leatherworking",[197]="tailoring",[186]="mining",[182]="herbalism",[393]="skinning",
-                [185]="cooking",[129]="first-aid",[356]="fishing"}
+                [185]="cooking",[129]="first-aid",[356]="fishing",[40]="poisons"}
             for _, index in pairs({a,b,c,d,e,f}) do
                 local found, _, _, cur, cap, _, _, id = pcall(GetProfessionInfo, index)
                 if found and ids[id] and type(cur)=="number" and type(cap)=="number" then list[ids[id]]={cur=cur,max=cap} end
@@ -201,7 +218,10 @@ function E.Known(spell)
         local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
         if type(fn)=="function" then
             local ok, value = pcall(fn, spell)
-            if ok and type(value)=="boolean" then return value end
+            -- Some spell-book APIs return false for profession recipes even
+            -- when another supported API exposes them. Keep any positive
+            -- recipe observation, as the native route reader does.
+            if ok and value==true then return true end
         end
     end
     local ra = ns.ProfRouteAuto
@@ -355,13 +375,19 @@ end
 function E.SpecializationAbilityFingerprint(abilities)
     return ns.ProfGates and ns.ProfGates.SpecAbilityFingerprint(abilities) or ""
 end
-function E.ToolPlanningEnabled(opts)
+function E.ToolPlanningEnabled(opts,slug)
     if opts and opts.autoCraftTools ~= nil then return opts.autoCraftTools ~= false end
     if opts and opts.snapshot and opts.snapshot.autoCraftTools ~= nil then return opts.snapshot.autoCraftTools ~= false end
+    local view=ns.ProfModule
+    slug=slug or opts and (opts.profession or opts.targetProfession or opts.snapshot and opts.snapshot.targetProfession)
+    if view and view.SettingRaw then
+        local value=view.SettingRaw("autoCraftTools",slug)
+        if value~=nil then return value~=false end
+    end
     return not (DungeonsForeverDB and DungeonsForeverDB.prof and DungeonsForeverDB.prof.autoCraftTools == false)
 end
 function E.ToolFingerprint(slug, opts)
-    local parts = {tostring(E.ToolPlanningEnabled(opts)), tostring(ns.ProfTools and ns.ProfTools.revision or 0)}
+    local parts = {tostring(E.ToolPlanningEnabled(opts,slug)), tostring(ns.ProfTools and ns.ProfTools.revision or 0)}
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
         parts[#parts+1] = table.concat({tool.spell or 0, tool.item or 0, tool.minSkill or 0, tostring(tool.bindOnPickup or false)}, ":")
     end
@@ -381,7 +407,7 @@ function E.RequiredLevelingTool(slug, tool)
     return not tool.optional and not (slug=="alchemy" and (tool.item==9149 or tool.item==13503))
 end
 function E.HasToolGoals(slug, opts)
-    if not E.ToolPlanningEnabled(opts) then return false end
+    if not E.ToolPlanningEnabled(opts,slug) then return false end
     local target = tonumber(opts and opts.target) or 300
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
         if E.RequiredLevelingTool(slug,tool) then
@@ -436,7 +462,8 @@ function E.ResolveRecipe(seed, slug)
     local d = E.ClientStore()
     r.learningRequirements = copy(d.learningRequirements and d.learningRequirements[r.spell])
     local roster = d.recipeRosters and d.recipeRosters[r.profession]
-    if roster and roster.complete and not roster.ids[r.spell] and not (rt and rt.trainerObserved) then
+    if roster and roster.complete and not roster.ids[r.spell] and not (rt and rt.trainerObserved)
+        and not E.Known(r.spell) then
         r.clientUnavailable = true; r.clientAvailable = nil
     end
     r.materialSource = r.materialSource or (materialsValid(r.mats) and "catalogue" or "unknown")
@@ -532,8 +559,9 @@ function E.LearningEligibility(recipe, snapshot, state)
     local G = ns.ProfGates
     local ability = G and G.RequiredAbility(spell) or 0
     local abilities = state and state.specializationAbilities or {}
-    local actual = snapshot and (snapshot.specializationAbilities or snapshot.abilities)
-        or G and G.Abilities() or {}
+    local actual
+    if snapshot then actual=snapshot.specializationAbilities or snapshot.abilities or {}
+    else actual=G and G.Abilities() or {} end
     if ability>0 and abilities[ability]~=true and actual[ability]~=true then
         if abilities[ability]==false or actual[ability]==false then return false,"specializationRequired",{status="blocked",requiredAbility=ability,requiredAbilities={ability}} end
         return true,nil,{status="unknown",requiredAbility=ability,hasPending=true}
@@ -565,6 +593,12 @@ function E.AllowLimitedFormulas(context)
     if context and context.allowLimitedFormulas~=nil then return context.allowLimitedFormulas==true end
     local snapshot=context and context.snapshot
     if snapshot and snapshot.allowLimitedFormulas~=nil then return snapshot.allowLimitedFormulas==true end
+    local view=ns.ProfModule
+    local slug=context and (context.profession or context.targetProfession or snapshot and snapshot.targetProfession)
+    if view and view.SettingRaw then
+        local value=view.SettingRaw("autoBuyLimitedFormulas",slug)
+        if value~=nil then return value==true end
+    end
     local db=DungeonsForeverDB and DungeonsForeverDB.prof
     return db and db.autoBuyLimitedFormulas==true or false
 end
@@ -576,6 +610,10 @@ function E.LimitedFormulaOffer(offer)
     -- Normalized offers also use unlimited=false for missing stock evidence.
     if offer.stockUnknown or offer.stockStatus=="unknown" then return false end
     return offer.unlimited==false
+end
+local function formulaStockRestricted(offer)
+    return E.LimitedFormulaOffer(offer) or offer.stockUnknown==true or offer.stockStatus=="unknown"
+        or offer.unlimited~=true and not (type(offer.stock)=="number" and offer.stock<0)
 end
 local function recipeKnown(r,context)
     if context.professions and context.professions[r.profession] and context.professions[r.profession].unlearned then return false end
@@ -655,7 +693,8 @@ function E.SummarizeAuctionSupply(result,context)
     result.auctionSupplyCandidates={}
     local candidates={}
     local function candidate(id)
-        if type(id)=="number" and id>0 and not candidates[id] and not (context and context.nonAuctionable or {})[id] then
+        if type(id)=="number" and id>0 and not candidates[id]
+            and not (context and context.nonAuctionable or {})[id] then
             candidates[id]=true;result.auctionSupplyCandidates[#result.auctionSupplyCandidates+1]=id
         end
     end
@@ -805,7 +844,7 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     local function purchasable(o)
         local factionOK=not o.faction or not context.faction or o.faction==context.faction or o.faction=="N" or o.faction=="Neutral" or o.faction=="AH" or o.faction=="Both"
         local quantity=o.quantity or o.bundleSize or 1
-        return not (not allowLimited and E.LimitedFormulaOffer(o)) and factionOK
+        return not (not allowLimited and formulaStockRestricted(o)) and factionOK
             and o.available~=false and o.purchasable~=false and o.priceUsable~=false
             and type(o.price)=="number" and o.price>=0 and positiveInteger(quantity)
             and (type(o.stock)~="number" or o.stock<0 or o.stock>=quantity)
@@ -814,7 +853,7 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
         if o.unlimited==true then entry.unlimited=true
         elseif E.LimitedFormulaOffer(o) then entry.limited=true
         else entry.stockUnknown=true end
-        local limitedBlocked=not allowLimited and E.LimitedFormulaOffer(o)
+        local limitedBlocked=not allowLimited and formulaStockRestricted(o)
         if limitedBlocked then entry.limitedVendorDisabled=true end
     end
     for _,o in ipairs(E.PreferredVendorOffers(entry.vendorOffers,purchasable)) do
@@ -826,9 +865,9 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
             if not bestCost or cost<bestCost then best,bestCost=o,cost end
         end
     end
-    if best then sources.drops=nil end
     if purchaseSource~="ah" and bestCost~=nil and (not ahUsable or bestCost<=entry.ahPrice) then
         entry.source="vendor";entry.cost=bestCost;entry.offer=best;entry.npcID=best.npcID
+        entry.stock=best.stock;entry.maxStock=best.maxStock;entry.stockStatus=best.stockStatus
         local quantity=best.quantity or best.bundleSize or 1
         entry.bundleSize=positiveInteger(quantity) and quantity or 1;entry.count=entry.bundleSize
         entry.availabilityUncertain=best.stockUnknown==true or best.stockStatus=="unknown"
@@ -914,7 +953,7 @@ function E.Index(s, tick)
 end
 
 function E.CaptureToolGoals(s, slug, opts)
-    s.autoCraftTools = E.ToolPlanningEnabled(opts)
+    s.autoCraftTools = E.ToolPlanningEnabled(opts,slug)
     s.toolFingerprint = E.ToolFingerprint(slug, opts)
     s.toolGoals, s.toolGoalsPending = {}, {}
     s.retainedToolItems, s.toolCraftOnlyItems = s.retainedToolItems or {}, s.toolCraftOnlyItems or {}
@@ -964,6 +1003,7 @@ local function addRecipe(s, slug, row, kind)
     if s.byKey[r.key] then return end
     s.recipes[#s.recipes+1] = r;s.byKey[r.key] = r
     s.known[r.key] = not (s.professions[slug] and s.professions[slug].unlearned) and E.Known(r.spell) or false
+    if E.AttachLearningInfo then E.AttachLearningInfo(r,s.known[r.key]) end
 end
 function E.NonAuctionableItem(id)
     local fn = (C_Item and C_Item.GetItemInfo) or GetItemInfo
@@ -972,7 +1012,8 @@ function E.NonAuctionableItem(id)
     return fields[1] and (fields[15]==1 or fields[15]==4) or false
 end
 function E.Capture(slug, opts, tick)
-    opts, tick = opts or {}, tick or function() end
+    opts, tick = shallow(opts or {}), tick or function() end
+    opts.profession=slug
     if opts.snapshot then
         local s = copy(opts.snapshot, tick)
         s.professions, s.routeContext = E.RouteProfessions(slug, opts, opts.professions or s.professions or {})
@@ -1037,10 +1078,17 @@ function E.Capture(slug, opts, tick)
     end
     E.CaptureSpecializations(s, opts, slug)
     E.CaptureToolGoals(s, slug, opts)
+    if E.CaptureLearningFacts then E.CaptureLearningFacts(s,tick) end
     local items = {}
     for _, r in ipairs(s.recipes) do
         if positiveInteger(r.item) then items[r.item]=true end
         if r.formula and not s.known[r.key] and E.LearningSource(r)~="trainer" then items[r.formula]=true end
+        if not s.known[r.key] then
+            for _,route in ipairs(r.learningInfo and r.learningInfo.routes or {}) do
+                local item=tonumber(route.teachingItemID or route.itemID)
+                if route.kind=="item" and item and item>0 then items[item]=true end
+            end
+        end
         for _, m in ipairs(r.mats) do items[m[1]]=true end
         tick()
     end
@@ -1073,6 +1121,18 @@ function E.Capture(slug, opts, tick)
                 offers = ns.ProfSupply and ns.ProfSupply.FormulaList and ns.ProfSupply.FormulaList(r.formula) or {}
             end
             s.formulaOffers[r.formula] = copy(offers or {})
+        end
+        if not s.known[r.key] then
+            for _,route in ipairs(r.learningInfo and r.learningInfo.routes or {}) do
+                local item=tonumber(route.teachingItemID or route.itemID)
+                if route.kind=="item" and item and item>0 and not s.formulaOffers[item] then
+                    local offers=vdb and vdb.GetFormulaOffers and vdb.GetFormulaOffers(item,vendorContext,r.source)
+                    if not (vdb and vdb.GetFormulaOffers) then
+                        offers=ns.ProfSupply and ns.ProfSupply.FormulaList and ns.ProfSupply.FormulaList(item) or {}
+                    end
+                    s.formulaOffers[item]=copy(offers or {})
+                end
+            end
         end
         tick()
     end

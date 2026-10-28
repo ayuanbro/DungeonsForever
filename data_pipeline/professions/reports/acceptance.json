@@ -190,6 +190,13 @@
       ],
       "masterDataReplacementCheck": "delivery contract against master",
       "master": "698b48d7209000d3759a83ec0526c11aa328866f"
+    },
+    "committedSourceSnapshot": {
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "pendingWorkspaceFilesRequired": false
     }
   },
   "archive": {
@@ -223,8 +230,8 @@
       "sha256": "1099690eba95c4ab7437641a58891399d3205dd9acdf867c08ba4ae6220d0e14"
     },
     "implementation-2026-10-28.md": {
-      "bytes": 8412,
-      "sha256": "00d159f584724be7094c0e7d3a432683d02e2ee2949c53553256129855ca3b89"
+      "bytes": 8654,
+      "sha256": "3d0d357e8cfdd581e79f104eea3215be718737743f164607b04cff17f7bb0f59"
     },
     "input-manifest.json": {
       "bytes": 1592786,

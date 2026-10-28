@@ -6,6 +6,10 @@ local R={REVISION=1};ns.ProfRecovery=R
 local floor,min,max,ceil=math.floor,math.min,math.max,math.ceil
 local function copy(t,tick)
     if type(t)~="table" then return t end
+    local meta=getmetatable(t)
+    if type(meta)=="table" and type(meta.__profLearningMaterialize)=="function" then
+        t=meta.__profLearningMaterialize(t)
+    end
     local o={};local n=0
     for k,v in pairs(t) do
         o[k]=copy(v,tick);n=n+1

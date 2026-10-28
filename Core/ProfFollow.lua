@@ -96,16 +96,17 @@ local function IsLearned(spellID)
     return false
 end
 
-local function Have(id)
+local function Have(id, includeBank)
+    local bank=includeBank~=false
     if C_Item and C_Item.GetItemCount then
-        local ok, n = pcall(C_Item.GetItemCount, id, true)
-        if ok and type(n) == "number" then return n end
+        local ok, n = pcall(C_Item.GetItemCount, id, bank, false, false)
+        if ok and type(n) == "number" and n>=0 and n<math.huge and n==math.floor(n) then return n,true end
     end
     if type(GetItemCount) == "function" then
-        local ok, n = pcall(GetItemCount, id, true)
-        if ok and type(n) == "number" then return n end
+        local ok, n = pcall(GetItemCount, id, bank)
+        if ok and type(n) == "number" and n>=0 and n<math.huge and n==math.floor(n) then return n,true end
     end
-    return 0
+    return 0,false
 end
 
 local function dbProf()
@@ -259,33 +260,32 @@ local function routeForCalc(slug, skill)
     local XP = ns.ProfExecution
     local frozen = XP and XP.GetPlan and XP.GetPlan(slug)
     local economy=ns.ProfEconomy
-    if frozen and frozen.learningPolicyFingerprint and economy and economy.LearningPolicyFingerprint
+    if slug~="first-aid" and frozen and frozen.learningPolicyFingerprint and economy and economy.LearningPolicyFingerprint
         and frozen.learningPolicyFingerprint~=economy.LearningPolicyFingerprint() then
         PF.pendingPlans=PF.pendingPlans or {}
         PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code="learningPolicyChanged"}}}
         return "auto",{}
     end
     local PD = ns.ProfModule
-    local fixedOnly=slug=="poisons" or slug=="mining" and PD and PD.GatherMode and PD.GatherMode(slug)=="smelt"
+    local fixedOnly=slug=="first-aid" or slug=="poisons" or slug=="mining" and PD and PD.GatherMode and PD.GatherMode(slug)=="smelt"
     if frozen and fixedOnly and frozen.mode~="fixed" then
         PF.pendingPlans=PF.pendingPlans or {}
         PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code="fixedOnlyChanged"}}}
         return "fixed",{}
     end
-    if frozen then return frozen.mode == "fixed" and "fixed" or "auto", frozen.executionSteps or frozen.steps end
+    if frozen then return frozen.mode == "fixed" and "fixed" or "auto", frozen.executionSteps or frozen.steps,frozen end
     local ended = PF.endedPlan and PF.endedPlan[slug]
-    if ended and PF.Following and PF.Following(slug) then return ended.mode == "fixed" and "fixed" or "auto", ended.executionSteps or ended.steps end
-    local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme") or "cheapest"
+    if ended and PF.Following and PF.Following(slug) then return ended.mode == "fixed" and "fixed" or "auto", ended.executionSteps or ended.steps,ended end
+    local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme",slug) or "cheapest"
     local smelt = slug == "mining" and PD and PD.GatherMode and PD.GatherMode(slug) == "smelt"
     local fish = PD and PD.CookingFishingMode and PD.CookingFishingMode(slug)
-    local auto = slug ~= "poisons" and not smelt and PD and PD.Setting and (PD.Setting("autoRoute") or fish) and RA
-        and (fish or scheme == "cheapest" or scheme == "optim" or RA.Available())
+    local auto = not fixedOnly and not smelt and PD and PD.Setting and (PD.Setting("autoRoute",slug) or fish) and RA
     PF.pendingPlans = PF.pendingPlans or {}
     if auto then
         local opts = RA.OptionsFor and RA.OptionsFor(slug, skill) or {
-            start = (PD.Setting("autoFromCurrent") and skill) and math.max(1, skill) or 1,
-            onlyAH = PD.Setting("autoOnlyAH"), noFormula = PD.Setting("autoNoFormula"),
-            learnedOnly = PD.Setting("autoLearnedOnly"), target = routeTarget(slug), scheme = fish and "fishing" or scheme,
+            start = (PD.Setting("autoFromCurrent",slug) and skill) and math.max(1, skill) or 1,
+            onlyAH = PD.Setting("autoOnlyAH",slug), noFormula = PD.Setting("autoNoFormula",slug),
+            learnedOnly = PD.Setting("autoLearnedOnly",slug), target = routeTarget(slug), scheme = fish and "fishing" or scheme,
         }
         opts.target = routeTarget(slug)
         local res = RA.Get(slug, opts)
@@ -298,9 +298,9 @@ local function routeForCalc(slug, skill)
             if XP and XP.Bind and PF.Following(slug) and res.status ~= "searching" then
                 XP.Bind(slug, res)
                 frozen = XP.GetPlan(slug)
-                if frozen then return "auto", frozen.executionSteps or frozen.steps end
+                if frozen then return "auto", frozen.executionSteps or frozen.steps,frozen end
             end
-            return "auto", list
+            return "auto", list,res
         end
         PF.pendingPlans[slug] = res or {status="searching"}
         return "auto", {}
@@ -308,8 +308,12 @@ local function routeForCalc(slug, skill)
     PF.pendingPlans[slug] = nil
     local lv = LV[slug]
     local steps=clipFixedSteps(lv and lv.steps or nil,routeTarget(slug))
+    local opts=RA and RA.OptionsFor and RA.OptionsFor(slug,skill) or {}
+    opts.target,opts.scheme=routeTarget(slug),"fixed"
+    local summary=RA and RA.FixedPlan and RA.FixedPlan(slug,opts)
+    if summary then steps=summary.steps end
     if RA and RA.FilterFixedSpecializations then
-        local filtered,blocked,goalRequired=RA.FilterFixedSpecializations(slug,steps,{target=routeTarget(slug)})
+        local filtered,blocked,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
         if goalRequired or blocked and #blocked>0 then
             PF.pendingPlans[slug]={status="recalculate_required",specializationBlocked=true,
                 diagnostics=blocked or {},steps={},feasible=false}
@@ -318,7 +322,7 @@ local function routeForCalc(slug, skill)
         steps=filtered
     end
     if XP and PF.Following(slug) and steps and #steps>0 then
-        local summary=RA and RA.SummarizeSteps and RA.SummarizeSteps(steps,slug,{target=routeTarget(slug),scheme="fixed"})
+        summary=summary or RA and RA.SummarizeSteps and RA.SummarizeSteps(steps,slug,opts)
         summary=summary or {steps=steps,mats={},formulas={},total=0,scheme="fixed",target=routeTarget(slug)}
         summary.mode="fixed";summary.scheme="fixed"
         local normalized,reason=XP.NormalizePlan(slug,summary)
@@ -327,26 +331,27 @@ local function routeForCalc(slug, skill)
             return "fixed",{}
         end
         local run=XP.Bind(slug,normalized)
-        if run then return "fixed",run.plan.executionSteps or run.plan.steps end
+        if run then return "fixed",run.plan.executionSteps or run.plan.steps,run.plan end
     end
-    return "fixed",steps
+    return "fixed",steps,summary
 end
 
-local rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT
+local rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoPlan, rMemoT
 local ROUTE_MEMO_TTL = 10
 local function routeFor(slug, skill)
     local now = GetTime and GetTime() or 0
     if slug and rMemoSlug == slug and rMemoSkill == skill
        and (now - (rMemoT or 0)) < ROUTE_MEMO_TTL then
-        return rMemoMode, rMemoSteps
+        return rMemoMode, rMemoSteps,rMemoPlan
     end
-    local mode, steps = routeForCalc(slug, skill)
+    local mode, steps,plan = routeForCalc(slug, skill)
     rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT = slug, skill, mode, steps, now
-    return mode, steps
+    rMemoPlan=plan
+    return mode, steps,plan
 end
 
 function PF.InvalidateRoute()
-    rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT = nil, nil, nil, nil, nil
+    rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoPlan, rMemoT = nil, nil, nil, nil, nil,nil
 end
 
 local function routeKey(mode, steps)
@@ -371,6 +376,14 @@ local function derivedStep(slug, skill)
 end
 
 local function recMats(rec) return rec and (rec[12] or rec.mats) or nil end
+function PF.LearningWarning(slug, progress)
+    local XP=ns.ProfExecution
+    progress=progress or (XP and XP.Progress and XP.Progress(slug))
+    if not (progress and progress.learningBlocked) then return end
+    local E=ns.ProfEconomy
+    return E and E.DiagnosticText and E.DiagnosticText(progress.reason or "learningDataMissing")
+        or L["学习来源尚未确认"]
+end
 local function stepRecipe(seg, fallback)
     if seg and seg.recipe then return seg.recipe end
     local XP = ns.ProfExecution
@@ -381,7 +394,7 @@ local function stepRecipe(seg, fallback)
     if seg and XP and XP.IsSpecializationQuest(seg) then return {mats=XP.SpecializationQuest(seg).inputs or {}} end
     return fallback
 end
-local function recItem(rec) return rec and (rec[2] or rec.makes) or nil end
+local function recItem(rec) return rec and (rec[2] or rec.item or rec.makes) or nil end
 local function recBreaks(rec)
     if not rec then return nil end
     return rec[7] or rec.learn, rec[8] or rec.yellow, rec[9] or rec.green, rec[10] or rec.grey
@@ -419,6 +432,133 @@ local function soldSet(slug)
         soldCache[slug] = s
     end
     return s
+end
+
+local function purchaseSource(entry)
+    local source=entry.source or entry.sourceType
+    if source~=nil then return source end
+    return entry.vendor and "vendor" or nil
+end
+
+local function copyPurchase(entry)
+    local out={}
+    for key,value in pairs(entry) do out[key]=value end
+    out.id=entry.id or entry[1]
+    out.count=tonumber(entry.count or entry[2]) or 0
+    out.source=purchaseSource(entry)
+    return out
+end
+
+-- A shopping row has two independent ledgers: immutable plan receipts, and
+-- current purchases covering the remaining recipe demand after actual stock.
+-- Auction availability is never character inventory and never enters Have().
+local function allocatePurchases(row)
+    row.purchases={};row.purchaseCount=0;row.purchaseCost=0
+    row.ahCount,row.vendorCount=0,0
+    row.materialNeed=math.max(0,(row.need or 0)-(row.formulaNeed or 0))
+    row.materialMissing=row.haveKnown and math.max(0,row.materialNeed-math.max(0,row.have-(row.formulaNeed or 0))) or nil
+    if not row.haveKnown then
+        row.purchaseCount,row.purchaseCost=nil,nil
+        row.purchaseUnknown=true;row.inventoryUnknown=true
+        return
+    end
+    local left=math.max(0,row.need-row.have)
+    row.missing=left
+    local bridge=ns.AuctionBridge
+    local available=row.availableCount
+    if row.planAHCount>0 and bridge and bridge.GetAuctionSupply then
+        local observed=bridge.GetAuctionSupply(row.id)
+        available=observed and observed.quantity or nil
+        row.availableCount=available;row.supplyObserved=available~=nil
+        row.supplyStatus=bridge.GetAuctionSupplyStatus and bridge.GetAuctionSupplyStatus(row.id) or (available==nil and "unknown" or "verified")
+    end
+    row.supplyChanged=available~=nil and available<row.planAHCount
+    local function add(entry,count,cost)
+        if count<=0 then return end
+        local item=copyPurchase(entry);item.count=count;item[2]=count;item.cost=cost
+        row.purchases[#row.purchases+1]=item
+        row.purchaseCount=row.purchaseCount+count
+        if type(cost)=="number" and not item.unpriced then row.purchaseCost=row.purchaseCost and row.purchaseCost+cost
+        else row.purchaseCost=nil;row.costUnknown=true end
+        if item.source=="ah" or item.source=="auction" then row.ahCount=row.ahCount+count
+        elseif item.source=="vendor" or item.source=="npc" then row.vendorCount=row.vendorCount+count end
+    end
+    -- Pattern eligibility and its selected acquisition path are frozen. A
+    -- pattern already held/learned is not a generic material to optimize.
+    local formulaLeft=math.max(0,(row.formulaNeed or 0)-row.have)
+    local formulaAH=0
+    for _,entry in ipairs(row.planPurchases or {}) do
+        if entry.formula and formulaLeft>0 then
+            local count=math.min(formulaLeft,entry.count)
+            add(entry,count,entry.cost)
+            formulaLeft=formulaLeft-count;left=math.max(0,left-count)
+            if entry.source=="ah" or entry.source=="auction" then formulaAH=formulaAH+count end
+            if entry.usable==false or entry.unavailable or entry.available==false or entry.purchasable==false then row.purchaseUncovered=(row.purchaseUncovered or 0)+count end
+        end
+    end
+    local offers,auction,ahLimit={},nil,0
+    local hasMaterials=false;local quotesComplete=true
+    for _,entry in ipairs(row.planPurchases or {}) do
+        if not entry.formula then
+            hasMaterials=true
+            local source=entry.source
+            if source=="ah" or source=="auction" then
+                ahLimit=ahLimit+entry.count
+                local unit=entry.unit or (type(entry.cost)=="number" and entry.count>0 and entry.cost/entry.count)
+                if type(unit)=="number" and unit>0 and (not auction or auction==unit) and not entry.unpriced then auction=unit
+                else quotesComplete=false end
+            elseif source=="vendor" or source=="npc" then
+                local offer=copyPurchase(entry)
+                local size=entry.bundleSize or 1
+                local price=entry.bundlePrice or (type(entry.cost)=="number" and entry.count>0 and entry.cost*size/entry.count)
+                if type(price)=="number" and price>=0 and not entry.unpriced and entry.unlimited==true then
+                    offer.quantity,offer.price=size,price;offers[#offers+1]=offer
+                else quotesComplete=false end
+            else quotesComplete=false end
+        end
+    end
+    if available~=nil then ahLimit=math.min(ahLimit,math.max(0,available-formulaAH)) end
+    if left>0 and hasMaterials then
+        local entries,complete
+        if quotesComplete and RA and RA.MaterialPurchases then
+            -- Only the frozen plan's quotations participate. New market prices,
+            -- vendors and crafted alternatives cannot change the route here.
+            local snap={prices={[row.id]=auction},offers={[row.id]=offers},auctionSupply={}}
+            if available~=nil then snap.auctionSupply[row.id]={quantity=ahLimit} end
+            local total
+            entries,total,complete=RA.MaterialPurchases(row.id,left,{snapshot=snap,auctionRemaining={[row.id]=ahLimit}})
+        elseif row.have==0 and row.need==row.planDemand then
+            entries={};complete=true
+            for _,entry in ipairs(row.planPurchases or {}) do if not entry.formula then entries[#entries+1]=entry end end
+        elseif row.planVendorCount==0 and row.planAHCount>=left+formulaAH then
+            entries={{id=row.id,count=left,source="ah",unit=auction,cost=auction and auction*left}}
+            complete=available==nil or available>=left+formulaAH
+        else
+            row.purchaseUnknown=true;row.purchaseCount,row.purchaseCost=nil,nil
+        end
+        if entries then
+            local covered=0
+            local remainingAH=ahLimit
+            for _,entry in ipairs(entries) do
+                local count=tonumber(entry.count or entry[2]) or 0
+                local cost=entry.cost
+                if purchaseSource(entry)=="ah" or purchaseSource(entry)=="auction" then
+                    local requested=count
+                    count=math.min(count,remainingAH);remainingAH=math.max(0,remainingAH-count)
+                    if count~=requested then cost=entry.unit and entry.unit*count or (type(entry.cost)=="number" and requested>0 and entry.cost*count/requested) or nil end
+                end
+                add(entry,count,cost)
+                if purchaseSource(entry)~=nil then covered=covered+count end
+            end
+            if complete==false or covered<left then row.purchaseUncovered=(row.purchaseUncovered or 0)+math.max(0,left-covered) end
+        end
+    elseif left>0 then row.purchaseUncovered=(row.purchaseUncovered or 0)+left end
+    if row.purchaseCount then row.packSurplus=math.max(0,row.purchaseCount-row.missing) end
+    if row.ahCount>0 then
+        row.auctionUnknown=available==nil
+        if available~=nil and available<row.ahCount then row.auctionShortage=row.ahCount-available end
+    end
+    row.purchaseChanged=row.purchaseCount~=row.planPurchaseCount or row.purchaseCost~=row.planPurchaseCost
 end
 
 local function fmtTime(sec)
@@ -599,10 +739,10 @@ local function expPerPoint(sk, o, y, g, gr)
     return nil
 end
 
-local function craftsLeft(seg, skill, rec)
+local function craftsLeft(seg, skill, rec,routeSlug)
     local XP = ns.ProfExecution
     if seg.segmentID and XP and XP.CurrentPlan then
-        local slug = st() and st().slug
+        local slug = routeSlug or (st() and st().slug)
         local run = slug and XP.GetRun(slug)
         if run then
             local progress = XP.Progress(run.slug, seg.segmentID)
@@ -629,11 +769,14 @@ local function craftsLeft(seg, skill, rec)
     return (seg[4] or 0) * math.min(1, (seg[2] - from) / span)
 end
 
-local function shopList(s, onlyStep)
-    local _, steps = routeFor(s.slug, s.skill)
+local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
+    local _, steps,plan
+    if suppliedPlan then plan=suppliedPlan;steps=plan.executionSteps or plan.steps
+    else _,steps,plan=routeFor(s.slug,s.skill) end
     if not steps then return {} end
     local rm = recMap(s.slug)
     local totals, order = {}, {}
+    local futureOutputs,futureSpells={},{}
     local curStep = s.step or 1
     for i = curStep, #steps do
         if onlyStep and i > curStep then break end
@@ -642,7 +785,15 @@ local function shopList(s, onlyStep)
         local mats = recMats(rec)
         local crafts = seg[4] or 0
         if seg.segmentID or i == curStep then
-            crafts = math.ceil(craftsLeft(seg, s.skill, rec))
+            crafts = math.ceil(craftsLeft(seg, s.skill, rec,s.slug))
+        end
+        if crafts>0 then
+            futureSpells[(seg.profession or s.slug)..":"..tostring(seg[3])]=true
+            local item=recItem(rec)
+            local output=seg.outputMin or rec and (rec.outputMin or rec[3] or rec.count)
+            if item and type(output)=="number" and output>0 then
+                futureOutputs[item]=(futureOutputs[item] or 0)+crafts*output
+            end
         end
         if mats and crafts > 0 then
             for _, m in ipairs(mats) do
@@ -676,13 +827,166 @@ local function shopList(s, onlyStep)
             end
         end
     end
+    if not onlyStep and plan then
+        local leaves={}
+        local originalNeeds,originalOutputs={},{}
+        for _,segment in ipairs(steps) do
+            local recipe=stepRecipe(segment,rm[segment[3]])
+            local count=math.ceil(segment.expectedCrafts or segment[4] or 0)
+            for _,material in ipairs(recMats(recipe) or {}) do originalNeeds[material[1]]=(originalNeeds[material[1]] or 0)+(material[2] or 1)*count end
+            local item=recItem(recipe)
+            local output=segment.outputMin or recipe and (recipe.outputMin or recipe[3] or recipe.count)
+            if item and type(output)=="number" and output>0 then originalOutputs[item]=(originalOutputs[item] or 0)+output*count end
+        end
+        local function purchase(entry,formula)
+            local id=entry.id or entry[1]
+            if not id then return end
+            local leaf=leaves[id]
+            if not leaf then leaf={planPurchaseCount=0,planPurchaseCost=0,planAHCount=0,planVendorCount=0,planPurchases={}};leaves[id]=leaf end
+            local count=tonumber(entry.count or entry[2]) or (formula and 1 or 0)
+            local source=purchaseSource(entry)
+            if leaf.source and leaf.source~=source then leaf.source="mixed"
+            elseif not leaf.source then leaf.source=source end
+            leaf.planPurchaseCount=leaf.planPurchaseCount+count
+            if type(entry.cost)=="number" and not entry.unpriced then leaf.planPurchaseCost=leaf.planPurchaseCost and leaf.planPurchaseCost+entry.cost
+            else leaf.planPurchaseCost=nil end
+            local receipt=copyPurchase(entry);receipt.formula=formula and true or false;receipt.count=count
+            leaf.planPurchases[#leaf.planPurchases+1]=receipt
+            if source=="ah" or source=="auction" then leaf.planAHCount=leaf.planAHCount+count
+            elseif source=="vendor" or source=="npc" then leaf.planVendorCount=leaf.planVendorCount+count end
+            for _,key in ipairs({"npcID","unlimited","limited","stockUnknown","availableCount",
+                "supplyObserved","supplyStatus","supplyRequired","supplyComplete","supplyObservedAt",
+                "supplySource","supplyMethod","unit","bundleSize"}) do
+                if leaf[key]==nil then leaf[key]=entry[key] end
+            end
+            if formula then leaf.formulaCost=(leaf.formulaCost or 0)+(entry.cost or 0) end
+        end
+        for _,entry in ipairs(plan.mats or {}) do purchase(entry) end
+        for id,quantity in pairs(plan.retainedToolItems or {}) do
+            if leaves[id] then
+                if not totals[id] then totals[id]={id=id,need=0,at=math.huge};order[#order+1]=id end
+                totals[id].need=totals[id].need+(tonumber(quantity) or 0)
+            end
+        end
+        for _,id in ipairs(plan.toolItems or {}) do
+            if leaves[id] and not (plan.retainedToolItems and plan.retainedToolItems[id]) then
+                if not totals[id] then totals[id]={id=id,need=0,at=math.huge};order[#order+1]=id end
+                totals[id].need=totals[id].need+1
+            end
+        end
+        for _,id in ipairs(order) do
+            local row=totals[id]
+            row.need=math.max(0,row.need-(futureOutputs[id] or 0))
+            -- Only actual purchase leaves belong in the full shopping list.
+            if type(plan.mats)=="table" and not leaves[id] then row.need=0 end
+        end
+        local economy=ns.ProfEconomy
+        for _,entry in ipairs(plan.formulas or {}) do
+            local spell=entry.spell
+            local needed=not spell or futureSpells[(entry.profession or s.slug)..":"..spell]
+            local known=entry.known or spell and economy and economy.Known and economy.Known(spell)
+            local id=entry.id or entry[1]
+            if id and needed and not known and entry.usable~=false then
+                local row=totals[id]
+                if not row then row={id=id,need=0,at=math.huge};totals[id]=row;order[#order+1]=id end
+                local count=tonumber(entry.count or entry[2]) or 1
+                if count>(row.formulaNeed or 0) then
+                    purchase(entry,true)
+                    row.need=row.need+count-(row.formulaNeed or 0)
+                end
+                row.formulaNeed=math.max(row.formulaNeed or 0,count)
+                row.formula=true
+            end
+        end
+        for _,id in ipairs(order) do
+            local row,leaf=totals[id],leaves[id]
+            if leaf then
+                for key,value in pairs(leaf) do row[key]=value end
+                local tools=tonumber((plan.retainedToolItems or {})[id]) or 0
+                if tools==0 then for _,tool in ipairs(plan.toolItems or {}) do if tool==id then tools=1;break end end end
+                row.planDemand=math.max(0,(originalNeeds[id] or 0)-(originalOutputs[id] or 0))+tools+(row.formulaNeed or 0)
+            end
+        end
+    end
     local list = {}
     for _, id in ipairs(order) do
         local e = totals[id]
-        e.have = Have(e.id)
-        list[#list + 1] = e
+        if onlyStep or e.need>0 then
+            e.have,e.haveKnown = Have(e.id,not bagsOnly)
+            if not onlyStep and e.planPurchases then allocatePurchases(e) end
+            list[#list + 1] = e
+        end
     end
     return list
+end
+
+function PF.ShoppingList(slug,onlyStep)
+    local state=st()
+    if not state or state.slug~=slug then
+        local skill=skillOf(slug) or 0
+        state={slug=slug,skill=skill,step=derivedStep(slug,skill) or 1}
+    end
+    return shopList(state,onlyStep)
+end
+
+function PF.ShoppingSourceText(entry)
+    if entry.planPurchases then
+        if entry.inventoryUnknown then return L["背包或银行数量未能读取，无法确认还需购买多少。"] end
+        if entry.purchaseUnknown then return L["价格未知"] end
+        local parts={}
+        for _,purchase in ipairs(entry.purchases or {}) do
+            local source=purchaseSource(purchase)
+            local name=(source=="ah" or source=="auction") and L["拍卖行"]
+                or (source=="vendor" or source=="npc") and (ns.ProfVendorNames and ns.ProfVendorNames[purchase.npcID] or L["商人"])
+                or L["尚无购买来源"]
+            local cost=type(purchase.cost)=="number" and not purchase.unpriced and RA and RA.MoneyStr and RA.MoneyStr(purchase.cost,"copper") or L["价格未知"]
+            local text=format("%s ×%d · %s",name,purchase.count or 0,cost)
+            if source=="ah" or source=="auction" then
+                text=text.." · "..(entry.availableCount~=nil and format(L["可购 %d"],entry.availableCount) or L["库存未知"])
+            elseif purchase.unlimited then text=text.." · "..L["不限量"]
+            elseif purchase.limited then text=text.." · "..L["限量"]
+            elseif purchase.stockUnknown then text=text.." · "..L["库存未知"] end
+            parts[#parts+1]=text
+        end
+        if (entry.packSurplus or 0)>0 then parts[#parts+1]=format(L["整包余量 %d"],entry.packSurplus) end
+        if (entry.purchaseUncovered or 0)>0 then parts[#parts+1]=format(L["原计划货源还缺 %d 件，请重新计算。"],entry.purchaseUncovered) end
+        if (entry.auctionShortage or 0)>0 then parts[#parts+1]=L["库存不足"] end
+        return #parts>0 and format(L["待购：%s"],table.concat(parts," / ")) or L["已备齐"]
+    end
+    local source=purchaseSource(entry)
+    local text
+    if source=="mixed" then text=L["商人"].." / "..L["拍卖行"]
+    elseif source=="vendor" or source=="npc" then
+        text=ns.ProfVendorNames and ns.ProfVendorNames[entry.npcID] or L["商人"]
+        if entry.unlimited then text=text.." · "..L["不限量"]
+        elseif entry.limited then text=text.." · "..L["限量"]
+        elseif entry.stockUnknown then text=text.." · "..L["库存未知"] end
+    elseif source=="ah" or source=="auction" then
+        text=L["拍卖行"].." · "..(entry.availableCount and tostring(entry.availableCount) or L["库存未知"])
+    end
+    if text and entry.formula and entry.formulaCost and RA and RA.MoneyStr then
+        text=text.." · "..RA.MoneyStr(entry.formulaCost,"copper")
+    end
+    return text
+end
+
+function PF.ShoppingSourceDetail(entry)
+    if not entry.planPurchases then return PF.ShoppingSourceText(entry) end
+    local cost=type(entry.planPurchaseCost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(entry.planPurchaseCost,"copper") or L["价格未知"]
+    local parts={format(L["原料需 %d；原计划购入 %d，费用 %s"],entry.need or 0,entry.planPurchaseCount or 0,cost)}
+    if entry.haveKnown and (entry.have or 0)>0 then parts[#parts+1]=L["已有材料已抵扣；按原计划货源和报价计算待购费用。"] end
+    if entry.purchaseChanged and entry.supplyChanged then parts[#parts+1]=L["拍卖行可购数量已变化；待购数量按原计划货源和报价重新分配。"] end
+    for _,purchase in ipairs(entry.planPurchases) do
+        local item=copyPurchase(purchase)
+        item.need=item.count;item.have=0
+        parts[#parts+1]=format("%s ×%d · %s",PF.ShoppingSourceText(item) or L["尚无购买来源"],item.count,
+            type(item.cost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(item.cost,"copper") or L["价格未知"])
+    end
+    if entry.auctionUnknown then parts[#parts+1]=L["拍卖行可购数量未知，当前仅按价格估算；请在 Auctionator 重新完整扫描。"] end
+    if (entry.auctionShortage or 0)>0 then parts[#parts+1]=L["拍卖行可购数量不足，无法继续此配方；请在 Auctionator 重新完整扫描或改用其他配方。"] end
+    if entry.purchaseUncovered and entry.purchaseUncovered>0 then parts[#parts+1]=format(L["原计划货源还缺 %d 件，请重新计算。"],entry.purchaseUncovered) end
+    if entry.inventoryUnknown then parts[#parts+1]=L["背包或银行数量未能读取，无法确认还需购买多少。"] end
+    return table.concat(parts,"\n")
 end
 
 -- The first HUD task uses the plan's actual leaf purchases. Intermediate
@@ -692,21 +996,21 @@ function PF.VendorPurchases(slug, plan)
     local xp=ns.ProfExecution
     plan=plan or (xp and xp.GetPlan and xp.GetPlan(slug)) or (RA and RA.Peek and RA.Peek(slug))
     if not plan or plan.feasible==false then return {} end
-    local totals,order={},{}
-    for _,entry in ipairs(plan.mats or {}) do
-        local id=entry.id or entry[1]
-        if id and (entry.source=="vendor" or entry.vendor and entry.source~="ah" and entry.source~="auction") then
-            local row=totals[id]
-            if not row then
-                row={id=id,need=0,npcID=entry.npcID};totals[id]=row;order[#order+1]=id
+    local state=st()
+    if not state or state.slug~=slug then local skill=skillOf(slug) or 0;state={slug=slug,skill=skill,step=1} end
+    local list=shopList(state,false,false,plan)
+    local out,byKey={},{}
+    for _,entry in ipairs(list) do
+        for _,purchase in ipairs(entry.purchases or {}) do
+            local source=purchaseSource(purchase)
+            if not purchase.formula and (source=="vendor" or source=="npc") and purchase.count>0 then
+                local key=tostring(entry.id)..":"..tostring(purchase.npcID or 0)
+                local row=byKey[key]
+                if not row then row={id=entry.id,need=0,missing=0,cost=0,npcID=purchase.npcID,have=entry.have};byKey[key]=row;out[#out+1]=row end
+                row.need=row.need+purchase.count;row.missing=row.need
+                row.cost=type(purchase.cost)=="number" and row.cost and row.cost+purchase.cost or nil
             end
-            row.need=row.need+(entry.count or entry[2] or entry.need or 0)
         end
-    end
-    local out={}
-    for _,id in ipairs(order) do
-        local row=totals[id];row.have=Have(id);row.missing=math.max(0,row.need-row.have)
-        if row.missing>0 then out[#out+1]=row end
     end
     return out
 end
@@ -760,18 +1064,18 @@ function PF.SupplementNeeds(slug)
         local cur = skillOf(slug) or 0
         s = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1 }
     end
-    local list = shopList(s, true)
+    local list = shopList(s, true, true)
     local items, kinds, qty = {}, 0, 0
     for _, e in ipairs(list) do
         local lack = (e.need or 0) - (e.have or 0)
-        if lack > 0 then
+        if e.haveKnown and lack > 0 then
             items[#items + 1] = { id = e.id, need = e.need, have = e.have, lack = lack }
             kinds = kinds + 1
             qty = qty + lack
         end
     end
     if kinds == 0 then return nil end
-    return { items = items, kinds = kinds, qty = qty, step = s.step }
+    return { items = items, kinds = kinds, qty = qty, step = s.step, basis="bags" }
 end
 
 TipOn = function(bt, title, body)
@@ -915,6 +1219,8 @@ local function jumpCraft()
     local _, steps = routeFor(s.slug, s.skill)
     local seg = steps and steps[(s.step or 1)]
     if not seg then return end
+    local learningWarning=PF.LearningWarning(s.slug)
+    if learningWarning then craftNotify(learningWarning) return end
     local spellID = seg[3]
     if not IsLearned(spellID) then craftNotify(L["该配方还未学会，先找训练师学习"]) return end
     local rec = stepRecipe(seg, recMap(s.slug)[spellID])
@@ -972,16 +1278,22 @@ local function DoImport(slug, profName)
         tmp = { slug = slug, skill = cur, step = derivedStep(slug, cur) or 1 }
     end
     local list = shopList(tmp)
-    local items, missing = {}, 0
+    local items, missing, inventoryUnknown = {}, 0, false
     for _, e in ipairs(list) do
-        local nm, got = DG.ItemName(e.id)
-        if not got then
-            missing = missing + 1
-            DG.RequestItem(e.id)
-        else
-            local lack = e.need - e.have
-            if lack > 0 then
-                items[#items + 1] = { name = nm, need = lack }
+        local auction=e.source=="ah" or e.source=="auction" or e.source=="mixed"
+        if auction and e.haveKnown==false then inventoryUnknown=true
+        elseif auction then
+            local nm, got = DG.ItemName(e.id)
+            if not got then
+                missing = missing + 1
+                DG.RequestItem(e.id)
+            else
+                local lack = e.planPurchases and not e.purchaseUnknown and (e.ahCount or 0) or math.max(0,e.need-e.have)
+                if e.purchaseUnknown then lack=0 end
+                if not e.planPurchases and e.source=="mixed" then lack=math.min(lack,e.ahCount or 0) end
+                if lack > 0 then
+                    items[#items + 1] = { name = nm, need = lack }
+                end
             end
         end
     end
@@ -991,10 +1303,12 @@ local function DoImport(slug, profName)
         return
     end
     importTries = 0
+    if inventoryUnknown then craftNotify(L["背包或银行数量未能读取，无法确认还需购买多少。"]) end
     if ns.AuctionBridge and ns.AuctionBridge.DoImport then
         ns.AuctionBridge.DoImport(profName, items)
     end
 end
+PF.ImportShoppingList=DoImport
 
 local PROC_FRAME_MS, PROC_SLICE_MS = 10, 3
 
@@ -1019,7 +1333,8 @@ local function procureNotify(res)
     local RA = ns.ProfRouteAuto
     local byNPC, ahN, vendorN = {}, 0, 0
     for _, e in ipairs(res.mats or {}) do
-        if e.vendor then
+        local source=purchaseSource(e)
+        if source=="vendor" or source=="npc" then
             vendorN = vendorN + 1
             if e.npcID then byNPC[e.npcID] = (byNPC[e.npcID] or 0) + 1 end
         else
@@ -1032,12 +1347,19 @@ local function procureNotify(res)
         local nm = (VN and VN[npcID]) or format(L["商人 NPC #%d"], npcID)
         parts[#parts + 1] = format(L["%s（%d 种）"], nm, n)
     end
-    local head = format(L["优化买法完成：%d 位商人 + 拍卖行 %d 种"], #parts, ahN)
-    if RA and RA.MoneyStr and res.total then
-        head = head .. " · " .. format(L["预计花费 %s"], RA.MoneyStr(res.total, "copper"))
-    end
+    local head = L["材料采购比较（未应用）"]
+    if RA and RA.MoneyStr and res.comparisonTotal then
+        head = head .. " · " .. format(L["比较总预算（含图纸）：%s"], RA.MoneyStr(res.comparisonTotal, "copper"))
+    else head=head.." · "..L["价格未知"] end
     if #parts > 0 then head = head .. "：" .. table.concat(parts, "、") end
-    craftNotify(head)
+    local formulaWarning=res.comparisonFormulaDiagnostics and res.comparisonFormulaDiagnostics[1]
+    if formulaWarning then
+        local economy=ns.ProfEconomy
+        local warning=economy and economy.DiagnosticText and economy.DiagnosticText(formulaWarning)
+            or formulaWarning.message or L["库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。"]
+        head=head.." · "..warning
+    end
+    craftNotify(head.." · "..L["比较结果未应用；升级路线和当前采购仍按原计划。"])
 end
 
 function PF.ProcureStart()
@@ -1052,20 +1374,23 @@ function PF.ProcureStart()
         return
     end
     local list = shopList(s)
-    local demands, n = {}, 0
+    local _,_,plan=routeFor(s.slug,s.skill)
+    local demands, n, inventoryUnknown = {}, 0, false
     for _, e in ipairs(list) do
-        local lack = (e.need or 0) - (e.have or 0)
+        if not e.haveKnown then inventoryUnknown=true end
+        local lack = e.materialMissing or 0
         if lack > 0 and type(e.id) == "number" then
             demands[e.id] = (demands[e.id] or 0) + lack
             n = n + 1
         end
     end
     if n <= 0 then
-        craftNotify(L["购物清单已全部备齐，无需采购。"])
+        craftNotify(inventoryUnknown and L["背包或银行数量未能读取，无法确认还需购买多少。"] or L["购物清单已全部备齐，无需采购。"])
         return
     end
     local slug = s.slug
-    local opts = { target = 300 }
+    local opts = RA and RA.OptionsFor and RA.OptionsFor(slug,s.skill) or {}
+    opts.target=routeTarget(slug)
     opts.professions = (E.Professions and E.Professions()) or {}
     if not opts.professions[slug] then opts.professions[slug] = { cur = 1, max = 300 } end
     PF.procureRes = nil
@@ -1074,9 +1399,44 @@ function PF.ProcureStart()
     local job = { phase = "capture" }
     PF.procureJob = job
     job.co = coroutine.create(function()
-        local snap = E.Capture(slug, opts, function()
+        local captured = E.Capture(slug, opts, function()
             if debugprofilestop() > (job.deadline or 0) then coroutine.yield("work") end
         end)
+        local snap=E.Copy and E.Copy(captured) or captured
+        snap.known=snap.known or {}
+        job.formulaCost=0;job.formulaCostComplete=true
+        job.formulaDiagnostics={}
+        local seen={}
+        for _,formula in ipairs(plan and plan.formulas or {}) do
+            if not formula.known then
+                local id=formula.id or formula[1]
+                local key=id or formula.recipeKey or formula
+                if not seen[key] then
+                    seen[key]=true
+                    job.formulaCost=job.formulaCost+(formula.cost or 0)
+                    if type(formula.cost)~="number" or formula.unpriced or formula.costComplete==false then job.formulaCostComplete=false end
+                    if (purchaseSource(formula)=="ah" or purchaseSource(formula)=="auction") and id then
+                        local supply=snap.auctionSupply and snap.auctionSupply[id]
+                        local observed=E.AuctionSupplyOf and E.AuctionSupplyOf(snap,id)
+                        local required=formula.count or 1
+                        if not observed then
+                            job.formulaDiagnostics[#job.formulaDiagnostics+1]={code="auctionSupplyUnknown",item=id,
+                                message=L["库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。"]}
+                        elseif observed.quantity<required then
+                            job.formulaDiagnostics[#job.formulaDiagnostics+1]={code="auctionSupplyLimited",item=id,
+                                required=required,available=observed.quantity}
+                        end
+                        if supply then supply.quantity=math.max(0,(supply.quantity or 0)-(formula.count or 1)) end
+                    end
+                end
+                if formula.recipeKey then snap.known[formula.recipeKey]=true end
+                if formula.spell then snap.known[(formula.profession or slug)..":"..formula.spell]=true end
+                for _,recipe in ipairs(formula.recipes or {}) do
+                    if recipe.key then snap.known[recipe.key]=true
+                    elseif recipe.spell then snap.known[(recipe.profession or slug)..":"..recipe.spell]=true end
+                end
+            end
+        end
         job.phase = "search"
         return S.NewProcurementJob(snap, demands, { cpuLimitMs = 2000 })
     end)
@@ -1090,6 +1450,14 @@ function PF.ProcureStart()
                     if not res then res = S.Result(job.job, job.job.best, job.job.status) end
                     PF.procureJob = nil
                     PF.procureRes = (res and res.feasible and #(res.mats or {}) > 0) and res or nil
+                    if PF.procureRes then
+                        PF.procureRes.formulaBudget=job.formulaCost or 0
+                        PF.procureRes.comparisonTotal=job.formulaCostComplete and PF.procureRes.costComplete~=false and ((PF.procureRes.total or 0)+(job.formulaCost or 0)) or nil
+                        PF.procureRes.notApplied=true
+                        PF.procureRes.comparisonFormulaDiagnostics=job.formulaDiagnostics
+                        PF.procureRes.comparisonCanBuy=#job.formulaDiagnostics==0 and PF.procureRes.feasible~=false
+                            and PF.procureRes.supplyComplete~=false and (PF.procureRes.auctionSupplyUnknown or 0)==0 and job.formulaCostComplete
+                    end
                     if f and f:IsShown() then PF.Paint() end
                     procureNotify(PF.procureRes)
                     return true
@@ -1477,16 +1845,16 @@ local function BuildBody()
     end)
     f.shopImp:SetPoint("RIGHT", f.shop.missTog, "LEFT", -(labW + 10), 0)
     TipOn(f.shopImp, L["一键导入到拍卖行"],
-          L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])
+          L["将拍卖行采购的缺口导入 Auctionator；NPC 货物和自制材料不导入，同名清单将被覆盖。"])
 
-    f.shopProc = NewButton(f.shop, L["优化买法"], 66, 20, 13)
+    f.shopProc = NewButton(f.shop, L["比较买法"], 66, 20, 13)
     f.shopProc:SetScript("OnClick", function()
         PF.ProcureStart()
         ns.PlaySound(1)
     end)
     f.shopProc:SetPoint("RIGHT", f.shopImp, "LEFT", -10, 0)
-    TipOn(f.shopProc, L["优化买法"],
-          L["对清单里还缺的材料比较商人与拍卖行，找出总支出最低的买法；完成后聊天栏给出摘要，悬停商人名可在地图标记。"])
+    TipOn(f.shopProc, L["比较买法"],
+          L["此比较尚未应用；升级路线、购物清单和 HUD 仍使用当前计划。"])
 
     f.shopStep = NewButton(f.shop, L["分步"], 48, 20, 13)
     f.shopStep:SetScript("OnClick", function()
@@ -1621,7 +1989,7 @@ local function paintMats(seg, rm, sold, w, remaining)
             local line = rowsMat[i]
             line:SetTextColor(Unpack(ok and C_OK or C_BAD))
             local txt = format("%s %d/%d", nm, have, need)
-            if sold[m[1]] then txt = txt .. " · " .. L["商人直卖"] end
+            if sold[m[1]] then txt = txt .. " · " .. L["NPC也有出售"] end
             line:SetText(txt)
             line:ClearAllPoints()
             line:SetPoint("TOPLEFT", f.card, "TOPLEFT", 36, -(61 + (i - 1) * 26))
@@ -1800,11 +2168,13 @@ function PF.Paint()
             src, detail = PDm.LevelSrc(rec)
         end
         local learned = IsLearned(seg[3])
+        local learningWarning=isCur and PF.LearningWarning(slug,vProg)
+        if learningWarning then card.__guide={name=nmText,lines={learningWarning}} end
         local manual = seg.navigationOnly or seg.checkpoint or XP and (XP.IsConversion(seg) or XP.IsSpecializationQuest(seg))
         local tagText = seg.navigationOnly and L["参考"] or manual and L["手动完成后继续"] or learned and L["已学习"] or (src or L["向训练师学习"])
         if detail and not learned then tagText = tagText .. " · " .. detail end
         card.srcTag:SetText(tagText)
-        card.srcTag:SetTextColor(Unpack(learned and C_OK or C_GREY))
+        card.srcTag:SetTextColor(Unpack(learningWarning and C_BAD or learned and C_OK or C_GREY))
         local tagW = 90
         if PDm and PDm.TextW then
             local okW, tw = pcall(PDm.TextW, tagText, 14)
@@ -1818,7 +2188,7 @@ function PF.Paint()
             or seg.navigationOnly and L["按实际技能推进；不预计采集产出。"]
             or seg.checkpoint and L["不预先计入尚未采到的矿石"] or format(L["大约还需制作%d次"], crafts)
         if canCraft then craftText = craftText .. " · " .. format(L["材料还可制作%d次"], canCraft) end
-        card.crafts:SetText(craftText)
+        card.crafts:SetText(learningWarning or craftText)
 
         local rangeW, nameW = 40, 90
         if PDm and PDm.TextW then
@@ -1845,30 +2215,13 @@ function PF.Paint()
         local list = shopList(s)
         local shown = {}
         for _, e in ipairs(list) do
-            e.missing = e.need - e.have
-            if (not onlyMissView()) or e.missing > 0 then shown[#shown + 1] = e end
+            e.missing = e.haveKnown and math.max(0,e.need-e.have) or nil
+            if (not onlyMissView()) or e.missing==nil or e.missing > 0 then shown[#shown + 1] = e end
         end
         f.shop.missTog:SetChecked(onlyMissView())
-        if PF.ProcureBusy() then f.shopProc:SetText(L["优化中…"]) else f.shopProc:SetText(L["优化买法"]) end
-        local procure
-        if not PF.ProcureBusy() and PF.procureRes and PF.procureSlug == slug then
-            local cur = {}
-            for _, e in ipairs(list) do
-                local lack = (e.need or 0) - (e.have or 0)
-                if lack > 0 then cur[e.id] = (cur[e.id] or 0) + lack end
-            end
-            if procureSig(slug, cur) == PF.procureSig then procure = PF.procureRes end
-        end
-        local srcByID
-        if procure then
-            srcByID = {}
-            for _, e in ipairs(procure.mats or {}) do
-                local mid = e[1] or e.id
-                if mid and srcByID[mid] == nil then
-                    srcByID[mid] = e.vendor and { vendor = true, npcID = e.npcID } or { ah = true }
-                end
-            end
-        end
+        if PF.ProcureBusy() then f.shopProc:SetText(L["比较中…"]) else f.shopProc:SetText(L["比较买法"]) end
+        local srcByID={}
+        for _,entry in ipairs(list) do srcByID[entry.id]=entry end
         local function tw(txt)
             local PDm = ns.ProfModule
             if PDm and PDm.TextW then
@@ -1878,18 +2231,18 @@ function PF.Paint()
             return #txt * 5 + 16
         end
         local rows = {}
-        local nameW, numW, missW, tagW, srcW, anySold = 0, 0, 0, 0, 0, false
+        local nameW, numW, missW, tagW, srcW = 0, 0, 0, 0, 0
         local stepView = (dbProf().shopStepView) and true or false
         f.shopStep:SetText(stepView and L["汇总"] or L["分步"])
         local function pushRow(e)
             local nm, got = DG.ItemName(e.id)
             if not got then DG.RequestItem(e.id) pending = true end
             local row = {
-                nm = nm,
+                nm = e.formula and (L["图纸"].." · "..nm) or nm,
                 have = e.have,
                 need = e.need,
-                missing = e.need - e.have,
-                sold = soldSet(slug)[e.id] and true or false,
+                missing = e.missing,
+                inventoryUnknown = not e.haveKnown,
                 at = e.at or 0,
                 src = srcByID and srcByID[e.id] or nil,
             }
@@ -1899,20 +2252,19 @@ function PF.Paint()
             end
             local w1 = tw(row.nm)
             if w1 > nameW then nameW = w1 end
-            local w2 = tw(format("%d/%d", math.min(row.have, row.need), row.need))
+            local w2 = tw(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have, row.need), row.need))
             if w2 > numW then numW = w2 end
-            local w3 = tw(row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
+            local w3 = tw(row.inventoryUnknown and L["数量未核实"] or row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
             if w3 > missW then missW = w3 end
             local w5 = tw(row.gate and L["全程"] or format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
             if row.src then
-                local stext = row.src.vendor and (ns.ProfVendorNames and ns.ProfVendorNames[row.src.npcID]
-                    or L["商人"]) or L["拍卖行"]
-                local w4 = tw(stext) + 10
-                if w4 > srcW then srcW = w4 end
-                row.srcText = stext
+                row.srcText=PF.ShoppingSourceText(row.src)
+                if row.srcText then
+                    local w4 = tw(row.srcText) + 10
+                    if w4 > srcW then srcW = w4 end
+                end
             end
-            if row.sold then anySold = true end
             rows[#rows + 1] = row
         end
         if stepView then
@@ -1932,12 +2284,10 @@ function PF.Paint()
         else
             for _, e in ipairs(shown) do pushRow(e) end
         end
-        local soldW = anySold and (tw(L["直售"]) + 10) or 0
         local xName = 8
         local xNum = xName + nameW + 10
         local xMiss = xNum + numW + 10
-        local xSold = xMiss + missW + 8
-        local xSrc = xSold + soldW + 8
+        local xSrc = xMiss + missW + 8
         local maxScroll = math.max(0, #rows - SHOP_MAX)
         PF.shopScroll = math.max(0, math.min(PF.shopScroll or 0, maxScroll))
         local scroll = PF.shopScroll
@@ -1990,27 +2340,27 @@ function PF.Paint()
             else
                 nmFS:SetTextColor(Unpack(C_TEXT))
                 nmFS:SetText(row.nm)
-                num:SetText(format("%d/%d", math.min(row.have, row.need), row.need))
+                num:SetText(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have, row.need), row.need))
                 nmFS:ClearAllPoints()
                 nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
                 nmFS:Show()
                 num:ClearAllPoints()
                 num:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xNum, ry)
                 num:Show()
-                if row.missing > 0 then
+                if row.inventoryUnknown then
+                    paintPill(mp,L["数量未核实"],xMiss,missW,Unpack(C_BAD))
+                elseif row.missing > 0 then
                     paintPill(mp, format(L["缺%d"], row.missing), xMiss, missW, Unpack(C_BAD))
                 else
                     local okr, okg, okb = Unpack(C_OK)
                     paintPill(mp, L["已备齐"], xMiss, missW, okr, okg, okb, 0.5)
                 end
-                if row.sold then
-                    paintPill(sp, L["直售"], xSold, soldW, Unpack(C_OK))
-                else
-                    sp:Hide()
-                end
+                sp:Hide()
                 if row.src and row.srcText then
                     local kr, kg, kb = Unpack(C_HEAD)
                     paintPill(srcp, row.srcText, xSrc, srcW, kr, kg, kb, 0.22)
+                    srcp:EnableMouse(true)
+                    TipOn(srcp,row.nm,PF.ShoppingSourceDetail(row.src))
                 else
                     srcp:Hide()
                 end
@@ -2156,7 +2506,7 @@ function PF.PaintImportBtn(bt, slug)
         DoImport(slug, name)
         ns.PlaySound(1)
     end)
-    TipOn(bt, text, L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])
+    TipOn(bt, text, L["将拍卖行采购的缺口导入 Auctionator；NPC 货物和自制材料不导入，同名清单将被覆盖。"])
     local ifs = bt.GetFontString and bt:GetFontString()
     if ifs then
         ifs:ClearAllPoints()

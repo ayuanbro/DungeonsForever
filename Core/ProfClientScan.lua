@@ -8,7 +8,7 @@ local floor = math.floor
 local function store() return E.ClientStore() end
 local skillIDs = {[171]="alchemy",[164]="blacksmithing",[333]="enchanting",[202]="engineering",
     [165]="leatherworking",[197]="tailoring",[186]="mining",[182]="herbalism",[393]="skinning",
-    [185]="cooking",[129]="first-aid",[356]="fishing"}
+    [185]="cooking",[129]="first-aid",[356]="fishing",[40]="poisons"}
 E.SkillIDs = skillIDs
 function E.ProfessionSlug(id) return skillIDs[id] end
 local function call(name, ...)
@@ -325,6 +325,10 @@ function E.CaptureTrainer(previous)
         elseif serviceType=="unavailable" then requirement.available=false end
         if GetTrainerServiceLevelReq then local ok,level=pcall(GetTrainerServiceLevelReq,i);if ok and type(level)=="number" then requirement.level=level end end
         if GetTrainerServiceSkillReq then local ok,skillName,skill=pcall(GetTrainerServiceSkillReq,i);if ok and type(skill)=="number" then requirement.skill=skill;requirement.skillName=skillName end end
+        if type(GetTrainerServiceCost)=="function" then
+            local ok,cost,extra=pcall(GetTrainerServiceCost,i)
+            if ok and type(cost)=="number" and cost>=0 and (extra==nil or extra==0) then requirement.trainingCost=cost end
+        end
         if spell or infoOk and type(name)=="string" then
             local key=spell or tostring(name).."\031"..tostring(subtext or "")
             snapshot.services[key]={spell=spell,name=infoOk and name or nil,subtext=subtext,requirement=requirement}
@@ -381,7 +385,7 @@ function E.ScanTrainer(tick,snapshot)
         if spell and hasRecipe(spell) then
             local previous=d.learningRequirements[spell]
             if not previous or previous.level~=requirement.level or previous.skill~=requirement.skill
-                or previous.skillName~=requirement.skillName then
+                or previous.skillName~=requirement.skillName or previous.trainingCost~=requirement.trainingCost then
                 d.learningRequirements[spell]=requirement;changedInput()
             end
             local book=runtime();local r=book[spell] or {};local before=recipeBefore(r)
@@ -442,6 +446,7 @@ function E.RefreshClientData(readRecipes,readTrainer,onComplete,recipeIDs,forceI
     end
     local co=coroutine.create(function()
         runtime()
+        if E.RefreshLearningObservations then E.RefreshLearningObservations(nil,tick) end
         if readRecipes or (recipeIDs and not E.ScanRecipeDetails(recipeIDs,tick)) then
             E.ScanRecipes(tick); E.ScanCrafts(tick)
         end
@@ -456,6 +461,7 @@ function E.RefreshClientData(readRecipes,readTrainer,onComplete,recipeIDs,forceI
             local d=store();local previous=notified[d] or baseline;local professions=E.Professions()
             local level
             if UnitLevel then local levelOK,value=pcall(UnitLevel,"player");if levelOK then level=value end end
+            if E.UpdateLearningContext then E.UpdateLearningContext(level,professions) end
             local changed=forceInputs or not previous or previous.recipes~=d.recipes or previous.build~=d.recipeBuild
                 or previous.revision~=(d.clientInputRevision or 0) or previous.level~=level
                 or previous.error~=E.lastReadError or not sameProfessions(previous.professions,professions)
@@ -511,8 +517,10 @@ if type(CreateFrame)=="function" then
     if frame and frame.RegisterEvent and frame.SetScript then
         for _, event in ipairs({"TRADE_SKILL_SHOW", "TRADE_SKILL_LIST_UPDATE", "TRADE_SKILL_DATA_SOURCE_CHANGED",
             "TRADE_SKILL_DETAILS_UPDATE", "CRAFT_SHOW", "CRAFT_UPDATE", "TRAINER_SHOW", "TRAINER_UPDATE",
-            "SKILL_LINES_CHANGED", "SPELLS_CHANGED", "PLAYER_LEVEL_UP", "PLAYER_LOGIN"}) do pcall(frame.RegisterEvent, frame, event) end
+            "SKILL_LINES_CHANGED", "SPELLS_CHANGED", "PLAYER_LEVEL_UP", "PLAYER_LOGIN", "UPDATE_FACTION",
+            "QUEST_TURNED_IN", "QUEST_LOG_UPDATE", "QUEST_ACCEPTED"}) do pcall(frame.RegisterEvent, frame, event) end
         frame:SetScript("OnEvent", function(_, event)
+            if E.QueueLearningObservationEvent then E.QueueLearningObservationEvent(event) end
             if ns.ProfGates then ns.ProfGates.Invalidate() end
             if event=="TRAINER_SHOW" or event=="TRAINER_UPDATE" then pendingTrainer=E.CaptureTrainer(pendingTrainer)
             elseif event:find("TRADE_SKILL",1,true) or event:find("CRAFT",1,true) then pendingRecipes=true end

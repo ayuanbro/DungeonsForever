@@ -9,12 +9,28 @@ local jobs, results, active, listeners, progressListeners = {}, {}, {}, {}, {}
 local serial, revision = 0, 0
 local legacyRun
 local MODEL, CACHE_LIMIT = 1, 4
+-- The ordinary facade also publishes progress and source-gap diagnostics after
+-- each search slice. Leave room for that work inside the idle-job frame budget.
+local SEARCH_SLICE_MS = 0.5
 local function learningPolicy()
-    return E.LearningPolicyFingerprint and E.LearningPolicyFingerprint() or "native-learning:6:native-route-eligibility"
+    return E.LearningPolicyFingerprint and E.LearningPolicyFingerprint() or "native-learning:7:native-route-eligibility"
+end
+local function learningStale(result)
+    -- Only freshness metadata changes; execution facts and receipts stay intact.
+    result.stale=true;result.staleReason="learning-data";result.learningBlocked=true
+    result.learningBlockReason="learningPolicyChanged";result.status="recalculate_required"
+    result.learningComplete=false;result.completeCost=false;result.optimal=false
+    result.diagnostics=result.diagnostics or {}
+    local found=false
+    for _,d in ipairs(result.diagnostics) do if d.code=="learningPolicyChanged" then found=true;break end end
+    if not found then result.diagnostics[#result.diagnostics+1]={code="learningPolicyChanged"} end
+    return result
 end
 local function now() return time and time() or 0 end
 local function copy(value, seen)
     if type(value) ~= "table" then return value end
+    local view=getmetatable(value)
+    if type(view)=="table" and type(view.__profLearningMaterialize)=="function" then value=view.__profLearningMaterialize(value) end
     seen = seen or {}; if seen[value] then return seen[value] end
     local out = {}; seen[value] = out
     for k,v in pairs(value) do
@@ -47,22 +63,23 @@ local function saved()
     all[key] = all[key] or {routes={}, active={}, nextID=0}
     return all[key]
 end
-local function setting(key, fallback)
+local function setting(key, fallback, slug)
     local pd = ns.ProfModule
     if pd and pd.SettingRaw then
-        local value = pd.SettingRaw(key); if value ~= nil then return value end
+        local value = pd.SettingRaw(key,slug); if value ~= nil then return value end
     end
     return fallback
 end
 function RA.OptionsFor(slug, current)
     local opts = baseOptions and baseOptions(slug, current) or {}
-    opts.fromCurrent = setting("autoFromCurrent", true)
+    opts.fromCurrent = setting("autoFromCurrent", true,slug)
     opts.cpuLimitMs = 8000
-    opts.autoCraftTools = setting("autoCraftTools", true)
-    opts.recoveryEnabled = setting("recoveryEnabled", false)
-    opts.recoveryFeePercent = setting("recoveryFeePercent", 5)
-    opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false)
-    opts.skipUnpricedFormulas = setting("autoSkipUnpricedFormulas", true)
+    opts.autoCraftTools = setting("autoCraftTools", true,slug)
+    opts.recoveryEnabled = setting("recoveryEnabled", false,slug)
+    opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug)
+    opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false,slug)
+    opts.skipUnpricedFormulas = setting("autoSkipUnpricedFormulas", true,slug)
+    if slug=="first-aid" then opts.scheme="fixed";opts.autoCraftTools=false end
     opts.exclusions = copy(E.GetPolicies and E.GetPolicies(slug) or {})
     if E.GetRoutePartner then opts.secondaryProfession = E.GetRoutePartner(slug) end
     -- Only explicit continuation may introduce verified route-made stock.
@@ -77,10 +94,10 @@ local function options(slug, supplied)
     opts.profession = slug
     opts.start = math.max(1, math.min(300, math.floor(tonumber(opts.start) or 1)))
     opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or 300)))
-    if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false) end
-    if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", 5) end
-    if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true) end
-    if opts.allowLimitedFormulas == nil then opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false) end
+    if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false,slug) end
+    if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug) end
+    if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true,slug) end
+    if opts.allowLimitedFormulas == nil then opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false,slug) end
     opts.exclusions = opts.exclusions or copy(E.GetPolicies and E.GetPolicies(slug) or {})
     local profs = opts.snapshot and opts.snapshot.professions or opts.professions
     local context = E.RouteContext and E.RouteContext(slug, opts, profs)
@@ -113,7 +130,8 @@ local function signature(slug, opts)
         tostring(opts.noFormula), tostring(opts.learnedOnly), tostring(opts.allowSecondaryLeveling),
         tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
         tostring(opts.skipUnpricedFormulas), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
-        tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy()}, "|")
+        tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
+        E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
     if opts.snapshot then
         local stock={}
         for id,entry in pairs(opts.executionInventory or {}) do
@@ -131,7 +149,11 @@ local function identity(slug, opts)
     return scope .. "|" .. signature(slug, opts), scope
 end
 local function refreshFreshness(result,slug,opts)
+    if result.learningPolicyFingerprint and result.learningPolicyFingerprint~=learningPolicy() then return learningStale(result) end
     local settingsChanged=result.cacheSignature and result.cacheSignature~=signature(slug,opts) or false
+    local procurementPolicyChanged=result.planVersion==2 and
+        (result.scheme=="fishing" and result.fishingRouteRevision~=2
+            or result.scheme~="fishing" and result.procurementPolicyVersion~=S.ProcurementPolicyVersion)
     local marketChanged=false
     if result.auctionPriceInputs and RA.AHPriceOf then
         for id,previous in pairs(result.auctionPriceInputs) do
@@ -145,11 +167,11 @@ local function refreshFreshness(result,slug,opts)
     local reason=result.staleReason
     -- Cache refreshes and process-local auction revision counters are not input
     -- changes. Explicit recipe/client changes still require a new calculation.
-    local explicit=result.stale and (reason=="recipes" or reason=="client-inputs" or reason=="specialization"
+    local explicit=result.stale and (reason=="recipes" or reason=="client-inputs" or reason=="specialization" or reason=="learning-data"
         or reason=="prices" and not result.auctionPriceInputs)
     result.settingsChanged=settingsChanged or nil
-    result.stale=(settingsChanged or marketChanged or supplyChanged or explicit) and true or nil
-    result.staleReason=settingsChanged and "settings" or supplyChanged and "supply"
+    result.stale=(procurementPolicyChanged or settingsChanged or marketChanged or supplyChanged or explicit) and true or nil
+    result.staleReason=procurementPolicyChanged and "procurement-policy" or settingsChanged and "settings" or supplyChanged and "supply"
         or marketChanged and "prices" or explicit and reason or nil
     return result
 end
@@ -204,7 +226,7 @@ local function publish(job, result)
     result.executionOptions=copy(job.opts);result.executionOptions.snapshot=nil
     result.stale=job.stale or nil;result.staleReason=job.staleReason
     if RA.StampSpecializations then RA.StampSpecializations(result,job.slug,job.opts,job.snap) end
-    result.quoteSignature=RA.QuoteSig and RA.QuoteSig() or ""
+    result.quoteSignature=RA.QuoteSig and RA.QuoteSig(job.slug) or ""
     result.cacheSignature=job.signature
     job.published=result;results[job.key]=result;active[job.scope]=job.key
     job.publishedProgressVersion=job.progressVersion
@@ -218,7 +240,7 @@ local function release(job)
 end
 local function pump(job)
     if job.invalid or job.cancelled or job.finished then return true end
-    local done=S.Run(job,2)
+    local done=S.Run(job,SEARCH_SLICE_MS)
     if job.result and (job.result~=job.published or done) then publish(job,job.result)
     elseif job.published and job.progressVersion~=job.publishedProgressVersion then
         if S.Progress then
@@ -287,6 +309,10 @@ end
 function RA.OnPlanChanged(fn) if type(fn)=="function" then listeners[#listeners+1]=fn end end
 function RA.OnProgress(fn) if type(fn)=="function" then progressListeners[#progressListeners+1]=fn end end
 function RA.Get(slug, supplied)
+    if slug=="first-aid" then
+        if RA.Cancel then RA.Cancel(slug) end
+        return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
+    end
     local opts=options(slug,supplied)
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     local key,scope=identity(slug,opts)
@@ -295,7 +321,7 @@ function RA.Get(slug, supplied)
     if xp and xp.GetPlan then frozen,reason=xp.GetPlan(slug) end
     if reason=="historyUnreadable" then return gate(slug,opts,reason) end
     if frozen then
-        if frozen.learningPolicyFingerprint~=learningPolicy() then return gate(slug,opts,"learningPolicyChanged") end
+        if frozen.learningPolicyFingerprint~=learningPolicy() then return learningStale(frozen) end
         if RA.SpecializationPlanChanged and RA.SpecializationPlanChanged(frozen,slug,opts) then return gate(slug,opts,"specializationChanged") end
         return refreshFreshness(frozen,slug,opts)
     end
@@ -306,7 +332,7 @@ function RA.Get(slug, supplied)
     end
     local selected=active[scope] and results[active[scope]]
     if not opts.snapshot and selected then
-        if selected.learningPolicyFingerprint~=learningPolicy() then return gate(slug,opts,"learningPolicyChanged") end
+        if selected.learningPolicyFingerprint~=learningPolicy() then return learningStale(selected) end
         return refreshFreshness(selected,slug,opts)
     end
     local db,cacheError
@@ -318,14 +344,16 @@ function RA.Get(slug, supplied)
     -- are always preserved and genuine failed new jobs are not auto-retried.
     if record and type(record.result)=="table" and opts.targetUnlearned
         and record.result.targetUnlearned and record.result.feasible==false
-        and type(record.result.steps)=="table" and #record.result.steps==0 then record=nil end
+        and type(record.result.steps)=="table" and #record.result.steps==0
+        and #(record.result.learningGaps or {})==0
+        and record.result.learningCoverageComplete~=false then record=nil end
     if record~=nil and (type(record)~="table" or record.model~=MODEL or type(record.result)~="table"
         or type(record.result.steps)~="table" or record.result.executionSteps~=nil and type(record.result.executionSteps)~="table") then
         return gate(slug,opts,"historyUnreadable")
     end
     if record and record.model==MODEL and type(record.result)=="table" then
-        if record.result.learningPolicyFingerprint~=learningPolicy() then return gate(slug,opts,"learningPolicyChanged") end
         result=copy(record.result);result.cached=true
+        if result.learningPolicyFingerprint~=learningPolicy() then return learningStale(result) end
         if result.status=="searching" then result.status="interrupted";result.inFlight=false end
         refreshFreshness(result,slug,opts)
         results[key]=result;active[scope]=key
@@ -334,6 +362,7 @@ function RA.Get(slug, supplied)
     return start(slug,opts)
 end
 function RA.Compute(slug, supplied)
+    if slug=="first-aid" then return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug)) end
     local opts=options(slug,supplied)
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     if opts.scheme=="fishing" then return quickCompute(slug,opts) end
@@ -343,6 +372,10 @@ function RA.Compute(slug, supplied)
     return result,job
 end
 function RA.Recalculate(slug, supplied)
+    if slug=="first-aid" then
+        if RA.Cancel then RA.Cancel(slug) end
+        return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
+    end
     local opts=options(slug,supplied);local sigOpts=copy(opts);sigOpts.snapshot=opts.snapshot
     if not opts.snapshot then local _,cacheError=saved();if cacheError then return gate(slug,opts,cacheError) end end
     local xp=not opts.snapshot and ns.ProfExecution

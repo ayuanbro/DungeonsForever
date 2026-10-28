@@ -30,6 +30,7 @@ local XP = {}; ns.ProfExecution = XP
 local listeners, observationListeners, jobs, early = {}, {}, {}, {}
 local creditCaches = setmetatable({}, {__mode="k"})
 local recentCaches = setmetatable({}, {__mode="k"})
+local learningChecks = setmetatable({}, {__mode="k"})
 local registeredHistory = setmetatable({}, {__mode="k"})
 local performance = {creditBuilds=0,historyScans=0,recentBuilds=0}
 local observationTimer, completionTimer, observationGeneration = false, false, 0
@@ -41,6 +42,8 @@ local function integer(n) return type(n)=="number" and n>=0 and n==floor(n) and 
 local function copy(v, seen)
     if type(v)~="table" then if type(v)~="function" and type(v)~="userdata" then return v end; return end
     if ns.ProfPlanStore then ns.ProfPlanStore.Materialize(v) end
+    local view=getmetatable(v)
+    if type(view)=="table" and type(view.__profLearningMaterialize)=="function" then v=view.__profLearningMaterialize(v) end
     seen=seen or {}; if seen[v] then return end
     seen[v]=true; local out={}
     for k,x in pairs(v) do if type(k)=="string" or type(k)=="number" then out[k]=copy(x,seen) end end
@@ -166,6 +169,33 @@ local function segment(run,id)
     if type(id)=="number" then return steps(plan)[id],id end
     if not id then local i=run.currentIndex or 1;return steps(plan)[i],i end
     for i,x in ipairs(steps(plan)) do if x.segmentID==id or x.actionID==id then return x,i end end
+end
+-- Live execution checks only the current involved recipe. Archived plans and
+-- injected solver snapshots are never reinterpreted as today's character.
+function XP.ValidateLearning(plan,slug,seg)
+    if slug=="first-aid" or not (ns.IsForever and E and E.RouteRecipeEligibility) then return true end
+    local current=E.LearningPolicyFingerprint and E.LearningPolicyFingerprint()
+    if current and plan.learningPolicyFingerprint~=current then return false,"learningPolicyChanged" end
+    if not seg or seg.checkpoint or XP.IsConversion(seg) or XP.IsSpecializationQuest(seg) then return true end
+    local spell=seg.spell or seg[3]
+    if type(spell)~="number" or spell<=0 then return true end
+    local observation=E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""
+    local store=E.ClientStore and E.ClientStore()
+    local professions=E.Professions and E.Professions() or {}
+    local profession=seg.profession or slug
+    local key=table.concat({tostring(current),tostring(observation),tostring(store and store.clientInputRevision or 0),
+        tostring(seg.segmentID or spell),tostring(professions[profession] and professions[profession].cur)},":")
+    local cached=learningChecks[plan]
+    if cached and cached.key==key then return cached.allowed,cached.reason,cached.detail end
+    local rec=E.FindRecipe and E.FindRecipe(profession,spell) or seg.recipe
+    local allowed,reason,detail
+    if rec then allowed,reason,detail=E.RouteRecipeEligibility(rec)
+    else allowed,reason=false,"clientDataPending" end
+    local ra=ns.ProfRouteAuto
+    local diagnostic=ra and ra.LearningDiagnostic and ra.LearningDiagnostic(reason,rec,detail)
+        or {code=reason,spell=spell,profession=profession,missingReasons=detail and detail.missingReasons}
+    learningChecks[plan]={key=key,allowed=allowed,reason=reason,detail=diagnostic}
+    return allowed,reason,diagnostic
 end
 local function progressRecord(run,seg)
     local id=seg.segmentID; local p=run.progress[id]
@@ -371,6 +401,8 @@ function XP.Bind(slug,result,opts)
     if existing and not opts.force then
         if not catalogueAllowed(existing.plan) then return nil,"catalogueFiltered" end
         if specializationChanged(existing.plan,slug) then return nil,"specializationChanged" end
+        local learnable,learningReason=XP.ValidateLearning(existing.plan,slug,segment(existing))
+        if not learnable then return nil,learningReason end
         c.trackingSlug=slug
         if XP.RefreshObservation then XP.RefreshObservation() end
         if ready(result) and result~=existing.plan and result.revision~=existing.plan.revision then existing.newPlanAvailable=true;existing.candidateRevision=result.revision end
@@ -380,6 +412,8 @@ function XP.Bind(slug,result,opts)
     if not normalized then return nil,reason end
     if not catalogueAllowed(normalized) then return nil,"catalogueFiltered" end
     if not ready(normalized) then return nil,"pending" end
+    local learnable,learningReason=XP.ValidateLearning(normalized,slug,steps(normalized)[1])
+    if not learnable then return nil,learningReason end
     if existing then archive(c,slug,"replace") end
     c.nextID=(c.nextID or 0)+1
     local planID=normalized.planID or normalized.executionPlanID or (character()..":track:"..c.nextID)
@@ -675,6 +709,12 @@ function XP.Progress(slug,id,skillSnapshot,planID)
         result.targetItem=conversion.outputItemID;result.targetPerConversion=conversion.outputCount
         result.remainingInput=remainingCrafts*conversion.inputCount;result.remainingOutput=remainingCrafts*conversion.outputCount
     end
+    if not result.complete and index==(run.currentIndex or 1) and run.status~="archived" then
+        local allowed,reason,detail=XP.ValidateLearning(run.plan,slug,seg)
+        if not allowed then
+            result.blocked=true;result.learningBlocked=true;result.reason=reason;result.learningDetail=detail
+        end
+    end
     return result
 end
 function XP.Sync(slug,result)
@@ -703,6 +743,9 @@ function XP.Sync(slug,result)
     local skillSnapshot=E and E.Professions and E.Professions()
     while index<=#steps(run.plan) do local p=XP.Progress(slug,index,skillSnapshot);if not p.complete then break end;index=index+1 end
     run.currentIndex=index;run.step=index;run.finished=index>#steps(run.plan)
+    local currentProgress=not run.finished and XP.Progress(slug,index,skillSnapshot)
+    run.learningBlocked=currentProgress and currentProgress.learningBlocked or nil
+    run.learningBlockReason=currentProgress and currentProgress.learningBlocked and currentProgress.reason or nil
     if run.finished then
         -- Skill events may precede the final spell-success event. Give that
         -- last cast a bounded settling interval before detaching the run.
@@ -1045,6 +1088,7 @@ function XP.CalculateSupplement(slug,callback)
     if XP.IsSpecializationQuest(seg) then return nil,"specialization_quest_pending" end
     if XP.IsConversion(seg) then return nil,"manual_conversion_required" end
     if not p or p.complete then return nil,"complete" end
+    if p.learningBlocked then return nil,p.reason or "learningDataMissing" end
     if p.extraCrafts<=0 then return nil,"planned_attempts_remaining" end
     if p.blocked and not p.skillDone then return nil,"skill_gap" end
     local extra=max(1,p.extraCrafts);local demands={};local rec=recipe(seg,slug)
@@ -1393,7 +1437,8 @@ if T then
         return {planID=run.planID,status=run.status,current=run.currentIndex or 1,total=#steps(run.plan),
             done=min(#steps(run.plan),(run.currentIndex or 1)-1),planned=planned,casts=run.attemptsDone or 0,
             skill=skill(slug),target=run.plan.target,startSkill=run.startSkill,finished=run.finished,
-            stale=run.plan.stale,staleReason=run.plan.staleReason}
+            stale=run.plan.stale,staleReason=run.plan.staleReason,
+            learningBlocked=run.learningBlocked,learningBlockReason=run.learningBlockReason}
     end
     T.GetPlan=XP.GetPlan;T.PrepareRecalculate=XP.PrepareRecalculate;T.PlanRecalculated=XP.PlanRecalculated
     T.GetSupplement=XP.GetSupplement;T.CalculateSupplement=XP.CalculateSupplement

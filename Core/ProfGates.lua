@@ -281,9 +281,18 @@ function G.SpecializationContext(opts)
                 goal.blockedReason = "specializationQuestAlreadyCompleted"
             end
         end
-        -- Missing faction facts block the selected task; they do not remove
-        -- the obligation and turn a specialization route into a normal one.
-        ctx.goals[1] = goal
+        if goal.blockedReason=="specializationQuestAlreadyCompleted" then
+            -- A completed introduction cannot be performed again. Keep the
+            -- unresolved specialization visible, but do not stop ordinary
+            -- engineering leveling at 200. Quest completion is not evidence
+            -- that the specialization ability is currently learned.
+            ctx.unresolvedGoals={goal}
+            ctx.warnings={{code="specializationQuestAlreadyCompleted",profession=profession,
+                questID=goal.questID,abilityID=goal.abilityID,goalID=goal.id}}
+        else
+            -- Missing faction facts still block an uncompleted selected task.
+            ctx.goals[1] = goal
+        end
     end
     ctx.fingerprint = G.SpecFingerprint(choice)
     ctx.abilityFingerprint = G.SpecAbilityFingerprint(abilities)
@@ -304,6 +313,7 @@ function G.SpecGoal(slug, target)
         if not def or target0 < (def.minSkill or 200) then return nil end
         local goal = buildSpecGoal(def, G.FactionCode())
         if goal.blockedReason then return nil end
+        if questProgressOf(goal).completed==true then return nil end
         return goal
     end
     if actual == "gnomish" or actual == "goblin" then return nil end
@@ -313,7 +323,7 @@ function G.SpecGoal(slug, target)
     for _, def in pairs(source) do
         if def.profession == slug then
             local goal = buildSpecGoal(def, faction)
-            if not goal.blockedReason then
+            if not goal.blockedReason and questProgressOf(goal).completed~=true then
                 if not best or (goal.minSkill or 0) < (best.minSkill or 0) then best = goal end
             end
         end
@@ -350,7 +360,12 @@ function G.ToolOwned(itemID)
     return false
 end
 
-function G.AutoCraftTools()
+function G.AutoCraftTools(slug)
+    local view=ns.ProfModule
+    if view and view.SettingRaw then
+        local value=view.SettingRaw("autoCraftTools",slug)
+        if value~=nil then return value~=false end
+    end
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
     return not (db and db.autoCraftTools == false)
 end

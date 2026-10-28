@@ -259,7 +259,9 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           local function unexpected()error('frozen input queried live state')end
           UnitClass=unexpected;UnitRace=unexpected;UnitLevel=unexpected;IsPlayerSpell=unexpected
           C_QuestLog={IsQuestFlaggedCompleted=unexpected};C_Reputation={GetFactionDataByID=unexpected}
-          ns.ProfRouteAuto.AHPriceOf=unexpected;ns.VendorPriceDB.GetFormulaOffers=unexpected
+          ns.ProfRouteAuto.AHPriceOf=unexpected
+          ns.VendorPriceDB=ns.VendorPriceDB or {}
+          ns.VendorPriceDB.GetFormulaOffers=unexpected
           local ok,_,d=E.RouteRecipeEligibility(r,snap)
           assert(ok and d.quote.cost==11)
           snap.reputations=nil

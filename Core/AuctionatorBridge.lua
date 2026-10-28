@@ -310,7 +310,8 @@ local function FullRow(scan,row)
     local info=row.auctionInfo or row.replicateInfo
     if type(info)~="table" then scan.complete=false;return end
     local linkID=type(row.itemLink)=="string" and tonumber(row.itemLink:match("item:(%d+)"))
-    local id=info[17] or linkID
+    local id=info[17]
+    if not WholeNumber(id) or id==0 then id=linkID end
     if not WholeNumber(id) or id==0 or linkID and linkID~=id then scan.complete=false;return end
     local item=scan.items[id]
     if not item then item={q=0};scan.items[id]=item end
@@ -322,7 +323,8 @@ local function FullRow(scan,row)
         or buyout<0 or buyout==math.huge or info[18]==false then item.failure="incomplete";return end
     -- Bid-only and sold rows contribute no immediately purchasable stock.
     if qty==0 or buyout==0 then return end
-    local owner=classic and (info[15] or info[14]) or info[12]
+    local owner=info[classic and 15 or 12]
+    if classic and (type(owner)~="string" or owner=="") then owner=info[14] end
     if type(owner)~="string" or owner=="" then item.failure="incomplete";return end
     local player=UnitName and UnitName("player")
     if owner==player or owner:match("^[^-]+") == player then return end

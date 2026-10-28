@@ -8,12 +8,15 @@ if not S then return end
 local M = {}
 ns.ProfSolverRun = M
 
-local FRAME_MS = 6
-local SLICE_MS = 2
+local FRAME_MS = 2
+-- Leave room for one condition evaluation, result publication and incremental
+-- collection between cooperative yield points inside the two-ms job budget.
+local SLICE_MS = 0.5
 local NOTIFY_MS = 250
 local GC_SOFT_KB = 24576
-local GC_STEPS = 2
-local GC_STEP_KB = 512
+local GC_STEPS = 1
+local GC_STEP_KB = 256
+local GC_EVERY = 4
 
 local live = nil
 local serial = 0
@@ -109,20 +112,44 @@ function M.Start(slug, opts, hooks)
         a.notified = now
         h(j, M.State(j), done)
     end
+    local gcTick = 0
     local function keepGC()
         if not a.gcBase or a.gcBase <= 0 then return end
+        gcTick = gcTick + 1
+        if gcTick % GC_EVERY ~= 0 then return end
         if collectgarbage("count") <= a.gcBase + GC_SOFT_KB then return end
         for _ = 1, GC_STEPS do collectgarbage("step", GC_STEP_KB) end
     end
+    -- Keep preparation and result construction yieldable, as on master. The
+    -- ordinary route runner must not turn a source-data capture into one frame.
+    local runnerDead = false
+    local runner = coroutine.create(function()
+        local budget = SLICE_MS
+        while true do
+            if S.Run(j, budget) then return true end
+            budget = coroutine.yield(false)
+            if type(budget) ~= "number" then budget = SLICE_MS end
+        end
+    end)
+    local function advance(ms)
+        if runnerDead then return true end
+        local ok, result = coroutine.resume(runner, ms or SLICE_MS)
+        if not ok then
+            j.status = "error"
+            j.searchTermination = "error"
+            j.failures = j.failures or {}
+            j.failures.error = {code="solverError",detail=tostring(result)}
+            runnerDead = true
+            return true
+        end
+        if coroutine.status(runner) == "dead" then runnerDead = true return true end
+        return result == true
+    end
     ns.IdleJobs.Add(function()
         if live ~= a then return true end
-        local frameStart = debugprofilestop()
-        local done = false
-        while true do
-            done = S.Run(j, SLICE_MS)
-            if done then break end
-            if debugprofilestop() - frameStart >= FRAME_MS then break end
-        end
+        -- One resume leaves headroom for publication and avoids accumulating
+        -- two slightly oversized slices inside a nominal two-ms callback.
+        local done = advance(math.min(SLICE_MS, FRAME_MS))
         if not done then keepGC() end
         notify(done)
         if done then

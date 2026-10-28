@@ -3,7 +3,15 @@ local _,ns=...
 if not ns.LoadForeverPages then return end
 local E=ns.ProfEconomy
 local S={}; ns.ProfRouteSolver=S
+S.ProcurementPolicyVersion=3
 local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
+local stockFields={"unlimited","limited","stock","maxStock","stockUnknown","stockStatus"}
+local function stampStock(entry,offer)
+    if type(offer)=="table" then
+        for _,key in ipairs(stockFields) do entry[key]=offer[key] end
+    end
+    return entry
+end
 local function clock() return debugprofilestop and debugprofilestop() or (os and os.clock and os.clock()*1000) or 0 end
 local function available(s,id) return (s.inv[id] or 0)-(s.unusable[id] or 0) end
 -- learned and unusableSeed are initialized once and never mutated by a branch.
@@ -104,13 +112,39 @@ local function stampFreshResult(result,snapshot,tick)
     if route and route.StampToolPolicy then route.StampToolPolicy(result,snapshot and snapshot.targetProfession,nil,snapshot) end
     return result
 end
+local function stampLearningGaps(job,result)
+    if result._learningGapRevision~=(job.learningGapRevision or 0) then
+        result.learningGaps={}
+        for _,gap in pairs(job.learningGaps or {}) do
+            result.learningGaps[#result.learningGaps+1]=gap
+            if job.tick and coroutine.running()==job.co then job.tick() end
+        end
+        table.sort(result.learningGaps,function(a,b)
+            if a.profession~=b.profession then return tostring(a.profession)<tostring(b.profession) end
+            return (a.spell or 0)<(b.spell or 0)
+        end)
+        result._learningGapRevision=job.learningGapRevision or 0
+    end
+    result.learningCoverageComplete=#(result.learningGaps or {})==0
+    if not result.targetReached and not result.learningCoverageComplete then
+        result.learningComplete=false;result.completeCost=false;result.optimal=false
+        result.blockingDiagnostics=result.blockingDiagnostics or {}
+        local seen={}
+        for _,d in ipairs(result.blockingDiagnostics) do seen[tostring(d.code)..":"..tostring(d.recipe or d.spell)]=true end
+        for _,d in ipairs(result.learningGaps) do
+            local key=tostring(d.code)..":"..tostring(d.recipe or d.spell)
+            if not seen[key] then result.blockingDiagnostics[#result.blockingDiagnostics+1]=d;seen[key]=true end
+        end
+    end
+end
 -- Progress is deliberately scalar: callers need not rebuild or serialize a plan.
 function S.Progress(job,result)
     result=result or job.result
     local quoteComplete=result and result.costComplete and not result.essenceQuoteIncomplete and true or false
     if job.recovery and result and ((result.recoveryQuoteMissing or 0)>0 or result.recoveryFeeMissing) then quoteComplete=false end
     local inputOptimal=result and result.targetReached and job.exhausted and not job.restricted
-        and result.learningComplete~=false and result.formulaComplete~=false
+        and not result.alreadyAtTarget and result.learningComplete~=false and result.formulaComplete~=false
+        and result.specializationComplete~=false
         and result.supplyComplete~=false
         and not job.budgetLimited and job.status~="error" and job.status~="stopped" and quoteComplete or false
     local coverage=job.snap and job.snap.coverageComplete~=false or false
@@ -139,6 +173,7 @@ function S.RefreshStatus(job,result,status)
             E.SummarizeAuctionSupply(result,job.snap)
         end
     end
+    stampLearningGaps(job,result)
     result.initialTotal=job.initialTotal
     result.savings=result.feasible and job.initialTotal and max(0,job.initialTotal-result.total) or 0
     if job.recovery then
@@ -183,6 +218,7 @@ function S.Result(job,state,status)
     if state and job.resultState==state and job.resultCache then return S.RefreshStatus(job,job.resultCache,status) end
     local out={planVersion=2,executionVersion=1,scheme="cheapest",steps={},executionSteps={},actions={},mats={},firstAt={},gaps={},total=0,matTotal=0,vendorTotal=0,ahTotal=0,crafts=0,productAH=0,productNPC=0,productPartial=false,start=job.opts.start or 1,target=job.target,status=status or "searching",feasible=state~=nil,priced=true,optimal=false,diagnostics={},stamp=(time and time()) or 0,expanded=job.expanded or 0,improvements=job.improvements or 0,initialTotal=job.initialTotal,searchComplete=job.exhausted or false,budgetLimited=job.budgetLimited or false}
     out.searchTermination=job.searchTermination
+    out.procurementPolicyVersion=S.ProcurementPolicyVersion
     out.searchCpuMs=job.cpuUsed or 0
     out.searchCpuLimitMs=job.cpuLimitMs or 8000
     out.seedInventory=E.Copy(job.opts.executionInventory or {})
@@ -193,6 +229,9 @@ function S.Result(job,state,status)
     out.toolFingerprint=job.snap and job.snap.toolFingerprint
     out.specializationGoals=E.Copy(job.snap and job.snap.specializationGoals)
     out.specializationContext=E.Copy(job.snap and job.snap.specializationContext)
+    local specializationWarnings=out.specializationContext and out.specializationContext.warnings or {}
+    out.specializationComplete=#specializationWarnings==0
+    for _,warning in ipairs(specializationWarnings) do out.diagnostics[#out.diagnostics+1]=E.Copy(warning) end
     out.formulas={};out.formulasTotal=0;out.formulaAHTotal=0;out.formulaVendorTotal=0;out.formulaRevision=1;out.formulaComplete=true
     local context=job.snap and job.snap.routeContext
     out.professionPolicy=1
@@ -221,7 +260,7 @@ function S.Result(job,state,status)
     end
     local purchases,purchaseLookup,vendorPurchases={},{},{}
     local crafted={}; local pendingCost=0; local pendingUnpriced=false
-    local formulaEntries,formulaRecipes={},{}
+    local formulaEntries,formulaRecipes,formulaByOwner={},{},{}
     out.total=state.money; out.inventory=E.Copy(state.inv); out.finalSkills=E.Copy(state.skill)
     out.completedSpecializationGoals=E.Copy(state.completedSpecializationGoals)
     out.completedToolGoals=E.Copy(state.completedToolGoals)
@@ -256,7 +295,7 @@ function S.Result(job,state,status)
     for _,d in ipairs(out.diagnostics) do
         if d.code=="learningRequirementsUnknown" then out.learningComplete=false
         elseif d.code=="materialPriceUnknown" or d.code=="vendorPriceUnknown"
-            or d.code=="vendorEstimate" or d.code=="formulaPriceUnknown" then out.costComplete=false end
+            or d.code=="vendorEstimate" or d.code=="formulaPriceUnknown" or d.code=="learningPriceUnknown" then out.costComplete=false end
     end
     out.completeCost=out.costComplete
     out.priced=out.costComplete
@@ -314,9 +353,10 @@ function S.Result(job,state,status)
         elseif a.type=="formula" then
             local entry=E.Copy(a.formula);entry.recipes={};out.formulas[#out.formulas+1]=entry
             formulaEntries[entry.id or entry.recipeKey]=entry
+            if a.owner then formulaByOwner[a.owner]=entry end
             out.formulaComplete=out.formulaComplete and entry.costComplete
             out.formulasTotal=out.formulasTotal+a.cost
-            if a.source=="vendor" then
+            if a.source=="vendor" or a.source=="trainer" then
                 out.vendorTotal=out.vendorTotal+a.cost;out.formulaVendorTotal=out.formulaVendorTotal+a.cost
             elseif a.source=="ah" then out.ahTotal=out.ahTotal+a.cost;out.formulaAHTotal=out.formulaAHTotal+a.cost end
             out.referencePrices=out.referencePrices or entry.offer and entry.offer.reference
@@ -340,7 +380,7 @@ function S.Result(job,state,status)
                 key=identity[#identity]
             end
             local e=map[key]
-            if not e then e={a.item,0,id=a.item,count=0,need=0,cost=0,unit=0,vendor=a.source=="vendor",source=a.source,npcID=a.npcID,url=a.url,spell=a.spell,reason=a.reason,bundleSize=a.bundleSize,bundlePrice=bundlePrice,quoteSource=a.quoteSource,priceSource=a.priceSource,priceBasis=a.priceBasis,verifiedAt=a.verifiedAt}; map[key]=e;purchases[#purchases+1]=e end
+            if not e then e=stampStock({a.item,0,id=a.item,count=0,need=0,cost=0,unit=0,vendor=a.source=="vendor",source=a.source,npcID=a.npcID,url=a.url,spell=a.spell,reason=a.reason,bundleSize=a.bundleSize,bundlePrice=bundlePrice,quoteSource=a.quoteSource,priceSource=a.priceSource,priceBasis=a.priceBasis,verifiedAt=a.verifiedAt},a); map[key]=e;purchases[#purchases+1]=e end
             e[2]=e[2]+a.count; e.count=e[2]; e.need=e.count; e.cost=e.cost+a.cost; e.unit=e.cost/e.count
             e.unpriced=e.unpriced or a.unpriced or nil
             out.pricePending=out.pricePending or a.unpriced or nil
@@ -384,7 +424,7 @@ function S.Result(job,state,status)
         elseif a.type=="craft" or a.type=="gather" then
             local recipeKey=tostring(a.profession)..":"..tostring(a.spell)
             local f=job.formulaByRecipe and job.formulaByRecipe[recipeKey]
-            local entry=f and formulaEntries[f.id or recipeKey]
+            local entry=formulaByOwner[recipeKey] or f and formulaEntries[f.id or recipeKey]
             if entry and not formulaRecipes[recipeKey] then
                 entry.recipes[#entry.recipes+1]={profession=a.profession,spell=a.spell,key=recipeKey,source=f.sources}
                 formulaRecipes[recipeKey]=true
@@ -525,6 +565,8 @@ function S.Result(job,state,status)
             if a.type=="craft" and a.profession=="__purchase" then out.dependencyGraph[a.id]=nil;table.remove(out.actions,i) end
         end
     end
+    out.alreadyAtTarget=out.targetReached and out.start~=nil and out.target~=nil
+        and out.start>=out.target and #out.steps==0 and #out.executionSteps==0 or false
     return finishResult(job,out,state,status)
 end
 function S.NewJob(slug,opts)
@@ -575,10 +617,29 @@ function S.NewJob(slug,opts)
         index.lists[low]=candidates
         return candidates
     end
-    local function fail(code,r,id,required,availableCount)
+    local function fail(code,r,id,required,availableCount,learning)
         local key=code..":"..tostring(r and r.key or "")..":"..tostring(id or "")
+        if code=="learningDataMissing" and j.failures[key] then
+            if j.collectFailures then j.collectFailures[key]=j.failures[key] end
+            return
+        end
         j.failures[key]={code=code,recipe=r and r.key,item=id,spell=r and r.spell,profession=r and r.profession,
             required=required,available=availableCount}
+        if learning then
+            local route=ns.ProfRouteAuto
+            local d=route and route.LearningDiagnostic and route.LearningDiagnostic(code,r,learning)
+                or {code=code,recipe=r and r.key,spell=r and r.spell,profession=r and r.profession,
+                    item=r and (r.formula or r.formulaID),coverage=learning.coverage,
+                    routeId=learning.routeId,missingReasons=E.Copy(learning.missingReasons or {}),learningStatus=learning.status}
+            for k,v in pairs(d) do j.failures[key][k]=v end
+            if code=="learningDataMissing" or code=="learningRequirementsUnknown"
+                or type(learning.missingReasons)=="table" and #learning.missingReasons>0 then
+                j.learningGaps=j.learningGaps or {}
+                local identity=r and r.key or key
+                if not j.learningGaps[identity] then j.learningGapRevision=(j.learningGapRevision or 0)+1 end
+                j.learningGaps[identity]=d
+            end
+        end
         if j.collectFailures then j.collectFailures[key]=j.failures[key] end
     end
     local acquire,craft,levelTo
@@ -605,11 +666,13 @@ function S.NewJob(slug,opts)
     end
     local function allowed(r,s,reason)
         local eligibility=E.RouteRecipeEligibility or E.RecipeSpecializationAllowed
+        local learning
         if eligibility then
-            local ok,why=eligibility(r,j.snap,s)
-            if not ok then fail(why or "specializationRequired",r);return false end
+            local ok,why,detail=eligibility(r,j.snap,s)
+            if not ok then fail(why or "specializationRequired",r,nil,nil,nil,detail);return false end
+            learning=detail
         end
-        local formula=j.formulaByRecipe and j.formulaByRecipe[r.key]
+        local formula=learning and learning.quote or j.formulaByRecipe and j.formulaByRecipe[r.key]
         if formula and not formula.usable then fail(formula.reason or "formulaUnavailable",r,formula.id);return false end
         if r.clientUnavailable then fail("clientUnavailable",r,r.item); return false end
         if r.clientPending then fail("clientDataPending",r,r.item); return false end
@@ -621,13 +684,34 @@ function S.NewJob(slug,opts)
         local profession=j.snap.professions[r.profession]
         if opts.learnedOnly and not (profession and profession.unlearned)
             and not (s.learned[r.key] or s.learned[r.spell]) then fail("notLearned",r); return false end
-        return true
+        return true,learning
     end
     local function vendorQuote(o)
         return o.unlimited==true and type(o.price)=="number" and o.price>=0
             and o.available~=false and o.purchasable~=false and not o.hasExtendedCost
             and (not o.currencyID or o.currencyID==0)
             and (not o.faction or not j.snap.faction or o.faction==j.snap.faction or o.faction=="Neutral" or o.faction=="N")
+    end
+    local vendorChoices={}
+    local function materialVendorOffers(id)
+        if vendorChoices[id] then return vendorChoices[id] end
+        local out,byPack={},{}
+        for _,offer in ipairs(E.PreferredVendorOffers(j.snap.offers[id],vendorQuote)) do
+            if vendorQuote(offer) then
+                -- Suppliers with the same indivisible pack and quote certainty
+                -- have identical future procurement effects. Keep the cheapest;
+                -- retain different packs and reliable/estimated alternatives.
+                -- The snapshot still exposes every supplier for display.
+                local size=offer.quantity or offer.bundleSize or 1
+                local key=tostring(size)..":"..tostring(offer.estimated and not offer.reference or false)
+                local index=byPack[key]
+                if not index then out[#out+1]=offer;byPack[key]=#out
+                elseif offer.price<out[index].price then out[index]=offer end
+            end
+            tick()
+        end
+        vendorChoices[id]=out
+        return out
     end
     local function auctionQuote(id)
         local price=j.snap.prices[id]
@@ -673,25 +757,36 @@ function S.NewJob(slug,opts)
             t.ahUsed[id]=(t.ahUsed[id] or 0)+count
         end
         t.inv[id]=(t.inv[id] or 0)+count; t.money=t.money+cost
-        log(t,{type="buy",item=id,count=count,cost=cost,source=source,npcID=npc,reason=reason,url=url,bundleSize=bundle,bundlePrice=price,owner=owner,unpriced=unpriced,estimated=estimated,reference=offer and offer.reference,quoteSource=offer and offer.source,priceSource=offer and offer.priceSource,priceBasis=offer and offer.priceBasis,verifiedAt=offer and offer.verifiedAt})
+        log(t,stampStock({type="buy",item=id,count=count,cost=cost,source=source,npcID=npc,reason=reason,url=url,bundleSize=bundle,bundlePrice=price,owner=owner,unpriced=unpriced,estimated=estimated,reference=offer and offer.reference,quoteSource=offer and offer.source,priceSource=offer and offer.priceSource,priceBasis=offer and offer.priceBasis,verifiedAt=offer and offer.verifiedAt},offer))
         -- A verified reference price is a known quote in the reference-price
         -- model. Unqualified vendor caches still make the cost incomplete.
         if estimated and not (offer and offer.reference) then diagnostic(t,"vendor:"..id..":"..tostring(npc),"vendorEstimate",id) end
         if unpriced then diagnostic(t,source..":"..id,source=="vendor" and "vendorPriceUnknown" or "materialPriceUnknown",id) end
         return t
     end
-    local function learnFormula(s,r,choice)
-        local _,_,learning=(E.RouteRecipeEligibility or E.RecipeSpecializationAllowed)(r,j.snap,s)
+    local function stateFormula(r,s,remaining,purchaseSource)
+        if ns.IsForever and ns.ProfLearningSources and E.SelectLearningRoute then
+            local ok,_,detail=E.SelectLearningRoute(r,j.snap,s,remaining,purchaseSource)
+            return ok and detail and detail.quote or nil
+        end
+        return E.FormulaFor(r,j.snap,remaining,purchaseSource)
+    end
+    local function learnFormula(s,r,choice,selectedLearning)
+        local ok,why,learning=true,nil,selectedLearning
+        if not learning then ok,why,learning=(E.RouteRecipeEligibility or E.RecipeSpecializationAllowed)(r,j.snap,s) end
+        if not ok then fail(why or "learningDataMissing",r,nil,nil,nil,learning);return end
         if learning and learning.status=="unknown" then
+            if ns.IsForever and ns.ProfLearningSources then fail("learningDataMissing",r,nil,nil,nil,learning);return end
             s=clone(s);diagnostic(s,"learning:"..r.key,"learningRequirementsUnknown",r.key)
         end
-        local f=choice or j.formulaByRecipe[r.key]
+        local f=learning and learning.quote or j.formulaByRecipe[r.key]
+        if choice and (not f or not f.learningRouteId or choice.learningRouteId==f.learningRouteId) then f=choice end
         if not f or f.known then return s end
         if not f.usable then fail(f.reason or "formulaUnavailable",r,f.id);return end
         local key=f.id or r.key
         if s.formulaPaid[key] then return s end
         if f.source=="ah" and auctionRemaining(s,f.id)<1 then
-            f=E.FormulaFor(r,j.snap,auctionRemaining(s,f.id))
+            f=stateFormula(r,s,auctionRemaining(s,f.id))
             if not f or not f.usable then fail("auctionSupplyLimited",r,f and f.id);return end
         end
         local t=clone(s);t.formulaPaid[key]=true;t.money=t.money+(f.cost or 0)
@@ -702,7 +797,8 @@ function S.NewJob(slug,opts)
         return t
     end
     local function prepare(r,s,reason,path,emit)
-        if not allowed(r,s,reason) then return end
+        local usable,learning=allowed(r,s,reason)
+        if not usable then return end
         local skill=s.skill[r.profession]
         if not skill then fail("professionMissing",r); return end
         local learn=r.learn
@@ -716,17 +812,17 @@ function S.NewJob(slug,opts)
         if r.isNew and not (r.clientAvailable or r.catalogue or s.learned[r.key] or s.learned[r.spell] or r.formula or r.learnSource=="trainer" or (r.source and r.source.skill)) then
             fail("availabilityUnknown",r); return
         end
-        local prepared=learnFormula(s,r)
+        local prepared=learnFormula(s,r,nil,learning)
         if prepared then emit(prepared) end
-        local f=j.formulaByRecipe[r.key]
+        local f=learning and learning.quote or j.formulaByRecipe[r.key]
         if f and not f.known and f.source=="ah" and j.snap.auctionSupply[f.id]
             and not s.formulaPaid[f.id or r.key] and auctionRemaining(s,f.id)>=1 then
             -- Paying a little more at a vendor can reserve the last auction
             -- copy for a later reagent. It is a search branch, not a greedy
             -- decision made once for the whole recipe catalogue.
-            local alternative=E.FormulaFor(r,j.snap,0)
+            local alternative=stateFormula(r,s,0)
             if alternative and alternative.usable and alternative.source=="vendor" then
-                local t=learnFormula(s,r,alternative)
+                local t=learnFormula(s,r,alternative,learning)
                 if t then emit(t) end
             end
         end
@@ -734,9 +830,9 @@ function S.NewJob(slug,opts)
             and f.ahPrice and auctionRemaining(s,f.id)>=1 and not s.formulaPaid[f.id or r.key] then
             -- A limited shelf is a reference, while a quoted auction copy can
             -- provide a complete route. Explore both before uncertainty pruning.
-            local alternative=E.FormulaFor(r,j.snap,auctionRemaining(s,f.id),"ah")
+            local alternative=stateFormula(r,s,auctionRemaining(s,f.id),"ah")
             if alternative and alternative.usable and alternative.source=="ah" then
-                local t=learnFormula(s,r,alternative)
+                local t=learnFormula(s,r,alternative,learning)
                 if t then emit(t) end
             end
         end
@@ -834,7 +930,7 @@ function S.NewJob(slug,opts)
                 end
             end
         end
-        for _,o in ipairs(E.PreferredVendorOffers(j.snap.offers[id],vendorQuote)) do
+        for _,o in ipairs(materialVendorOffers(id)) do
             if not craftOnly and vendorQuote(o) then
                 local qty=o.quantity or o.bundleSize or 1; local p=o.price
                 if p and p>=0 then
@@ -1152,11 +1248,19 @@ function S.NewJob(slug,opts)
                     if a.count<=0 or a.count%bundle~=0 then return end
                     local price=a.bundlePrice or a.cost/(a.count/bundle)
                     t=buy(t,a.item,a.count,a.source,price,bundle,a.npcID,a.reason,a.url,a.estimated,a.owner,a.unpriced,
-                        {reference=a.reference,source=a.quoteSource,priceSource=a.priceSource,priceBasis=a.priceBasis,verifiedAt=a.verifiedAt})
+                        stampStock({reference=a.reference,source=a.quoteSource,priceSource=a.priceSource,priceBasis=a.priceBasis,verifiedAt=a.verifiedAt},a))
                     if not t then return end
                 elseif a.type=="formula" and active[a.owner] then
                     local f=a.formula; local key=f and (f.id or a.owner)
                     if f and not t.formulaPaid[key] then
+                        if ns.IsForever and ns.ProfLearningSources and E.RouteRecipeEligibility then
+                            local rec=j.snap.byKey[a.owner]
+                            local ok,detail
+                            if rec then local accepted,_,value=E.RouteRecipeEligibility(rec,j.snap,t);ok,detail=accepted,value end
+                            local quote=detail and detail.quote
+                            if not ok or not quote or quote.usable~=true
+                                or quote.learningRouteId~=f.learningRouteId or quote.cost~=a.cost then return end
+                        end
                         if a.source=="ah" and auctionRemaining(t,a.item)<(a.count or 1) then return end
                         t=clone(t);t.formulaPaid[key]=true;t.money=t.money+a.cost
                         if a.source=="ah" and j.snap.auctionSupply[a.item] then t.ahUsed[a.item]=(t.ahUsed[a.item] or 0)+(a.count or 1) end
@@ -1311,7 +1415,7 @@ function S.NewJob(slug,opts)
         local reachable={}
         for id in pairs(first.inv) do if available(first,id)>0 then reachable[id]=true end end
         for id,available in pairs(j.snap.vendorItems or {}) do if available then reachable[id]=true end end
-        for id,price in pairs(j.snap.prices) do if type(price)=="number" and price>0 then reachable[id]=true end end
+        for id,price in pairs(j.snap.prices) do if auctionQuote(id) then reachable[id]=true end end
         for id,offers in pairs(j.snap.offers) do for _,o in ipairs(offers) do
             if o.unlimited and o.price and not o.hasExtendedCost and o.purchasable~=false
                 and (not o.currencyID or o.currencyID==0) then reachable[id]=true end

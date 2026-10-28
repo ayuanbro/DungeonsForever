@@ -28,14 +28,19 @@ function VDB.IsCapitalOffer(offer)
     return found
 end
 
--- Apply location preference only after purchase eligibility. A sold-out or
--- inaccessible city merchant must not hide an available remote supplier.
+-- Location affects display and equal-price choices only. Retain remote offers:
+-- their whole-pack purchase cost can be lower than a city's or the auction's.
 function VDB.PreferredOffers(offers, eligible)
-    local cities = {}
+    local cities, others = {}, {}
     for _, offer in ipairs(offers or {}) do
-        if (not eligible or eligible(offer)) and VDB.IsCapitalOffer(offer) then cities[#cities+1] = offer end
+        if (not eligible or eligible(offer)) and VDB.IsCapitalOffer(offer) then
+            cities[#cities+1] = offer
+        else
+            others[#others+1] = offer
+        end
     end
-    return #cities > 0 and cities or (offers or {})
+    for _, offer in ipairs(others) do cities[#cities+1] = offer end
+    return cities
 end
 
 local function DB()
@@ -186,6 +191,7 @@ end
 
 local function Accessible(offer, context, character)
     if type(offer) ~= "table" or offer.unlimited ~= true or offer.available == false
+        or offer.purchasable == false
         or offer.priceOnly == true
         or offer.hasExtendedCost or offer.currencyID and offer.currencyID ~= 0
         or type(offer.price) ~= "number" or offer.price < 0
@@ -220,10 +226,14 @@ function VDB.GetOffers(itemID, context)
     if type(records) == "table" then
         for _, offer in pairs(records) do
             if type(offer) == "table" and offer.character == character then
-                if offer.npcID and offer.source == "merchant" then observedNPC[offer.npcID] = true end
-                if offer.npcID and (offer.available == false or offer.unlimited == false or offer.hasExtendedCost
-                    or offer.currencyID and offer.currencyID ~= 0) then blockedNPC[offer.npcID] = true end
+                if offer.npcID and (offer.available == false or offer.purchasable == false
+                    or offer.unlimited == false or offer.hasExtendedCost
+                    or offer.currencyID and offer.currencyID ~= 0
+                    or not RequirementsMet(offer, context)) then blockedNPC[offer.npcID] = true end
                 if offer.source == "merchant" and not offer.estimated and Accessible(offer, context, character) then
+                    -- A changed reputation tier or an unread price invalidates
+                    -- this quote, not the verified supplier in the catalogue.
+                    if offer.npcID then observedNPC[offer.npcID] = true end
                     result[#result + 1] = Copy(offer)
                 end
             end
@@ -275,6 +285,8 @@ function VDB.GetOffers(itemID, context)
     table.sort(result, function(a, b)
         if a.unit ~= b.unit then return a.unit < b.unit end
         if a.estimated ~= b.estimated then return not a.estimated end
+        local ac, bc = VDB.IsCapitalOffer(a), VDB.IsCapitalOffer(b)
+        if ac ~= bc then return ac end
         if a.quantity ~= b.quantity then return a.quantity < b.quantity end
         return (a.npcID or 0) < (b.npcID or 0)
     end)
@@ -283,13 +295,16 @@ end
 
 function VDB.GetSuppliers(itemID,context)
     context=context or {}
+    if ns.ProfSupply then ns.ProfSupply.Ensure() end
     local out={}; local seen={}
     for _,entry in ipairs(ns.ProfVendorOffers and ns.ProfVendorOffers[itemID] or {}) do
         local faction=entry.faction
         local blocked=false
         for _,observed in pairs(DB().profVendorOffers[itemID] or {}) do
             if observed.character==(context.character or Character()) and observed.npcID==entry.npcID and
-                (observed.available==false or observed.unlimited==false or observed.hasExtendedCost or (observed.currencyID and observed.currencyID~=0)) then blocked=true end
+                (observed.available==false or observed.purchasable==false or observed.unlimited==false
+                    or observed.hasExtendedCost or (observed.currencyID and observed.currencyID~=0)
+                    or not RequirementsMet(observed,context)) then blocked=true end
         end
         if not blocked and (not faction or faction=="N" or faction=="Neutral" or faction=="AH" or faction==Faction(context))
            and RequirementsMet(entry,context) then
@@ -299,7 +314,7 @@ function VDB.GetSuppliers(itemID,context)
     end
     for _,entry in pairs(DB().profVendorOffers[itemID] or {}) do
         if not seen[entry.npcID] and entry.character==(context.character or Character()) and entry.source=="merchant" and
-            entry.unlimited and entry.available~=false and not entry.hasExtendedCost and
+            entry.unlimited and entry.available~=false and entry.purchasable~=false and not entry.hasExtendedCost and
             (not entry.currencyID or entry.currencyID==0) and RequirementsMet(entry,context) then
             local record={}; for k,v in pairs(entry) do record[k]=v end
             out[#out+1]=record; seen[entry.npcID]=true
@@ -330,7 +345,9 @@ function VDB.GetFormulaOffers(itemID,context,source)
         if observed and (not pack or pack<1 or pack~=math.floor(pack)) then price=nil end
         local check={}; for k,v in pairs(o) do check[k]=v end
         check.price=price or 0;check.quantity=pack or 1
-        check.unlimited=true;check.available=true
+        -- Keep an unavailable formula's supplier/stock information for display;
+        -- priceUsable below independently controls purchase eligibility.
+        check.unlimited=true;check.available=true;check.purchasable=true
         if not Accessible(check,context,character) then return end
         o.price=price;o.quantity=check.quantity;o.bundleSize=check.quantity
         o.unit=type(price)=="number" and price/o.quantity or nil
@@ -342,7 +359,7 @@ function VDB.GetFormulaOffers(itemID,context,source)
         o.stockStatus=o.unlimited and "unlimited" or o.limited and "limited" or "unknown"
         o.stockUnknown=o.stockStatus=="unknown" or nil
         o.purchasable=raw.purchasable
-        o.available=not (raw.purchasable==false or o.stock==0)
+        o.available=not (raw.available==false or raw.purchasable==false or o.stock==0)
         o.priceUsable=o.available and type(price)=="number" and price>=0
         o.reference=not observed and raw.reference or nil
         if observed then
@@ -354,7 +371,8 @@ function VDB.GetFormulaOffers(itemID,context,source)
     end
     for _,o in pairs(DB().profVendorOffers[itemID] or {}) do
         if o.character==character and o.source=="merchant" then
-            if o.npcID then seen[o.npcID]=true end
+            if o.npcID and (o.purchasable==false or o.available==false or o.unlimited==false or o.stock==0 or o.hasExtendedCost
+                or o.currencyID and o.currencyID~=0 or not RequirementsMet(o,context)) then seen[o.npcID]=true end
             add(o,true)
         end
     end

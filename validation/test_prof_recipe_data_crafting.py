@@ -6,12 +6,14 @@ import unittest
 from test_prof_native_data import native_runtime,ROOT
 
 BASELINE='942a0ca1ae6478dabad4b0885f7abf4011338cc2'
+AUXILIARY='Core/Data/Data_ProfLearningSources.lua'
 
 
 class DevDataPreservationTests(unittest.TestCase):
     def test_every_data_path_and_source_matches_the_original_dev_tree(self):
         expected=subprocess.check_output(['git','ls-tree','-r','--name-only',BASELINE,'--','Core/Data'],cwd=ROOT,text=True).splitlines()
-        actual=[p.relative_to(ROOT).as_posix()for p in (ROOT/'Core/Data').rglob('*')if p.is_file()]
+        actual=[p.relative_to(ROOT).as_posix()for p in (ROOT/'Core/Data').rglob('*')if p.is_file()
+                and p.relative_to(ROOT).as_posix()!=AUXILIARY]
         self.assertEqual(sorted(actual),sorted(expected))
         for name in expected:
             with self.subTest(path=name):
@@ -20,7 +22,10 @@ class DevDataPreservationTests(unittest.TestCase):
 
     def test_toc_data_entries_and_locale_loading_rules_are_unchanged(self):
         original=subprocess.check_output(['git','show',BASELINE+':DungeonsForever.toc'],cwd=ROOT).decode('utf-8-sig')
-        def data_lines(text):return [line for line in text.splitlines()if line.startswith('Core\\Data\\')]
+        def data_lines(text):return [line for line in text.splitlines()if line.startswith('Core\\Data\\')
+                                    and line!='Core\\Data\\Data_ProfLearningSources.lua']
+        self.assertEqual((ROOT/'DungeonsForever.toc').read_text(encoding='utf-8-sig').splitlines().count(
+            'Core\\Data\\Data_ProfLearningSources.lua'),1)
         self.assertEqual(data_lines((ROOT/'DungeonsForever.toc').read_text(encoding='utf-8-sig')),data_lines(original))
 
     def test_starting_thresholds_and_mining_yield_retain_dev_values_in_three_locales(self):
@@ -49,7 +54,14 @@ class DevDataPreservationTests(unittest.TestCase):
           snapshot.prices[3859]=nil;snapshot.nonAuctionable[3859]=true
           local result=ns.ProfRouteSolver.Procure(snapshot,3859,1,
             {learnedOnly=true,autoCraftTools=false,recoveryEnabled=false,cpuLimitMs=1000})
+          -- The shipped supplier still participates, but its 450c charcoal
+          -- loses to the synthetic 1c AH quote in this fixture.
+          assert(snapshot.vendorItems[3857] and not snapshot.vendorOnlyItems)
           assert(result.feasible and result.total==2 and #result.executionSteps==1)
+          assert(result.vendorTotal==0 and result.ahTotal==2)
+          local charcoal
+          for _,m in ipairs(result.mats)do if m.id==3857 then charcoal=m end end
+          assert(charcoal and charcoal.source=='ah' and charcoal.count==1)
           assert(result.executionSteps[1][3]==3569 and result.executionSteps[1].expectedGain==0)
         ''')
 

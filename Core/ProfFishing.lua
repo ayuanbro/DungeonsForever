@@ -38,6 +38,10 @@ local function fishRecord(data,itemID)
 end
 local function clone(value)
     if type(value)~="table" then return value end
+    local meta=getmetatable(value)
+    if type(meta)=="table" and type(meta.__profLearningMaterialize)=="function" then
+        value=meta.__profLearningMaterialize(value)
+    end
     local out={};for k,v in pairs(value) do out[k]=clone(v) end;return out
 end
 local function vendorOK(o,snap)
@@ -76,7 +80,7 @@ function P.Compute(opts)
         formulaRevision=1,formulaComplete=true,completeCost=true,costComplete=true,priced=true,crafts=0,
         productAH=0,productNPC=0,productPartial=false,optimal=false,searchComplete=true,status="complete",
         targetUnlearned=not snap.professions.cooking or snap.professions.cooking.unlearned==true,
-        professionPolicy=1,stamp=time and time() or 0,fishingRouteRevision=1}
+        professionPolicy=1,stamp=time and time() or 0,fishingRouteRevision=2}
     local candidates,blocked={},{}
     local function fail(code,r,id)
         local key=code..":"..tostring(r and r.spell or "")..":"..tostring(id or "")
@@ -110,7 +114,15 @@ function P.Compute(opts)
                 else
                     local found=false
                     for _,o in ipairs(snap.offers[m[1]] or {}) do if vendorOK(o,snap) then found=true;break end end
-                    if not found then valid=false end
+                    local price=snap.prices[m[1]]
+                    local supply=snap.auctionSupply[m[1]]
+                    local auction=not (snap.nonAuctionable or {})[m[1]] and type(price)=="number"
+                        and price>0 and price<math.huge and (not supply or supply.quantity~=0)
+                    if not found and not auction then
+                        valid=false
+                        fail(type(price)=="number" and price>0 and supply and supply.quantity==0
+                            and "auctionSupplyLimited" or "materialUnavailable",r,m[1])
+                    end
                 end
             end
             local formula
@@ -186,59 +198,99 @@ function P.Compute(opts)
                 for _,area in ipairs(f.areas or {}) do step.fishingAreas[#step.fishingAreas+1]=clone(area) end
             else
                 local entry=matOf[m[1]]
-                if not entry then entry={id=m[1],need=0,count=0,source="vendor",vendor=true};matOf[m[1]]=entry end
+                if not entry then entry={id=m[1],need=0};matOf[m[1]]=entry end
                 entry.need=entry.need+need
             end
             out.firstAt[m[1]]=out.firstAt[m[1]] or step[1]
         end
     end
-    -- Share NPC purchase pack leftovers across all steps, and charge each new pack
-    -- only at the step that first needs it.
-    local materialComplete=true
-    for id,entry in pairs(matOf) do
-        local best,bestCost
-        for _,offer in ipairs(E.PreferredVendorOffers(snap.offers[id],function(o)return vendorOK(o,snap)end)) do
-            if vendorOK(offer,snap) then
-                local size=offer.quantity or offer.bundleSize or 1;local cost=ceil(entry.need/size)*offer.price
-                if not best or cost<bestCost then best,bestCost=offer,cost end
-            end
-        end
-        if best then
-            local size=best.quantity or best.bundleSize or 1
-            entry.count=ceil(entry.need/size)*size;entry[1],entry[2]=id,entry.count
-            entry.cost=bestCost;entry.unit=best.price/size;entry.bundleSize=size;entry.bundlePrice=best.price
-            entry.npcID=best.npcID;entry.url=best.url;entry.reference=best.reference;entry.estimated=best.estimated
-            entry.quoteSource=best.source;entry.priceBasis=best.priceBasis;entry.verifiedAt=best.verifiedAt
-            if best.estimated and not best.reference then
-                materialComplete=false;out.diagnostics[#out.diagnostics+1]={code="vendorEstimate",item=id}
-            end
-            out.referencePrices=out.referencePrices or best.reference
-            local used=0
-            for _,step in ipairs(out.steps) do
-                for _,m in ipairs(step.recipe.mats) do if m[1]==id then
-                    local nextUsed=used+m[2]*step[4]
-                    step.cost=step.cost+(ceil(nextUsed/size)-ceil(used/size))*best.price;used=nextUsed
-                end end
-            end
-            out.mats[#out.mats+1]=entry;out.matTotal=out.matTotal+bestCost
-        end
-    end
+    -- Reserve teaching items first: an item can also be a later reagent, and
+    -- both purchases share the same observed auction quantity.
     out.formulas,out.formulasTotal,out.formulaComplete=E.CollectFormulas(out.steps,"cooking",snap)
-    for _,f in ipairs(out.formulas) do
+    local remaining={}
+    for id,supply in pairs(snap.auctionSupply or {}) do
+        if type(supply.quantity)=="number" then remaining[id]=max(0,supply.quantity) end
+    end
+    local ra=ns.ProfRouteAuto
+    out.formulasTotal,out.formulaComplete=0,true
+    for i,entry in ipairs(out.formulas) do
+        local f=entry
+        if matOf[f.id] and ra and ra.PreferSharedFormula then
+            f=ra.PreferSharedFormula(f,matOf[f.id].need,{snapshot=snap,auctionRemaining=remaining}) or f
+            out.formulas[i]=f
+        end
+        out.formulasTotal=out.formulasTotal+(f.cost or 0)
+        out.formulaComplete=out.formulaComplete and f.costComplete==true and f.usable==true
         out.referencePrices=out.referencePrices or f.offer and f.offer.reference
         if f.availabilityUncertain then out.diagnostics[#out.diagnostics+1]={code="formulaStockUnknown",item=f.id} end
         if f.source=="vendor" then out.formulaVendorTotal=out.formulaVendorTotal+(f.cost or 0)
-        elseif f.source=="ah" then out.formulaAHTotal=out.formulaAHTotal+(f.cost or 0) end
+        elseif f.source=="ah" then
+            out.formulaAHTotal=out.formulaAHTotal+(f.cost or 0)
+            if remaining[f.id]~=nil then remaining[f.id]=max(0,remaining[f.id]-(f.count or 1)) end
+        end
         for _,step in ipairs(out.steps) do
             local owns=false;for _,ref in ipairs(f.recipes or {}) do if ref.spell==step[3] then owns=true end end
             if owns then step.cost=step.cost+(f.cost or 0);step.unpriced=step.unpriced or f.unpriced;break end
         end
     end
-    out.vendorTotal=out.matTotal+out.formulaVendorTotal;out.ahTotal=out.formulaAHTotal
+    -- Quote the entire non-fish demand once, preserving NPC pack leftovers and
+    -- any cheaper auction/NPC combination. Gathered fish never enter this list.
+    local materialComplete,materialAvailable=true,true
+    for id,need in pairs(matOf) do
+        local entries,total,complete,reason
+        if ra and ra.MaterialPurchases then
+            entries,total,complete,reason=ra.MaterialPurchases(id,need.need,{snapshot=snap,auctionRemaining=remaining})
+        else entries,total,complete,reason={},0,false,"materialUnavailable" end
+        entries=entries or {}
+        materialComplete=materialComplete and complete==true
+        if complete~=true then
+            local code=reason=="auctionSupplyInsufficient" and "auctionSupplyLimited" or reason or "materialUnavailable"
+            out.diagnostics[#out.diagnostics+1]={code=code,item=id,required=need.need,
+                available=remaining[id],profession="cooking"}
+            if code=="materialUnavailable" or code=="auctionSupplyLimited" then
+                materialAvailable=false
+                out.blockingDiagnostics[#out.blockingDiagnostics+1]={code=code,item=id,required=need.need,
+                    available=remaining[id],profession="cooking"}
+            end
+        end
+        local ledger={}
+        for _,raw in ipairs(entries) do
+            local entry=clone(raw)
+            entry.id=entry.id or entry[1] or id;entry.count=entry.count or entry[2] or 0
+            entry[1],entry[2]=entry.id,entry.count
+            if entry.source=="ah" then
+                if remaining[id]~=nil and not entry.unavailable then remaining[id]=max(0,remaining[id]-entry.count) end
+                out.ahTotal=out.ahTotal+(entry.cost or 0)
+            elseif entry.source=="vendor" then out.vendorTotal=out.vendorTotal+(entry.cost or 0) end
+            out.referencePrices=out.referencePrices or entry.reference
+            out.mats[#out.mats+1]=entry
+            ledger[#ledger+1]={entry=entry,used=0}
+        end
+        out.matTotal=out.matTotal+(total or 0)
+        -- Charge each actual purchase pack at its first use, then share its
+        -- leftovers across later steps regardless of the chosen purchase source.
+        local index=1
+        for _,step in ipairs(out.steps) do
+            for _,m in ipairs(step.recipe.mats) do if m[1]==id then
+                if complete~=true then step.unpriced=true end
+                local left=m[2]*step[4]
+                while left>0 and ledger[index] do
+                    local row=ledger[index];local entry=row.entry
+                    local size=entry.source=="vendor" and (entry.bundleSize or 1) or 1
+                    local quantity=min(left,max(0,entry.count-row.used))
+                    local packPrice=entry.bundlePrice or (entry.cost or 0)/max(1,entry.count)*size
+                    step.cost=step.cost+(ceil((row.used+quantity)/size)-ceil(row.used/size))*packPrice
+                    row.used=row.used+quantity;left=left-quantity
+                    if row.used>=entry.count then index=index+1 end
+                end
+            end end
+        end
+    end
+    out.vendorTotal=out.vendorTotal+out.formulaVendorTotal;out.ahTotal=out.ahTotal+out.formulaAHTotal
     out.total=out.matTotal+out.formulasTotal
     out.costComplete=out.formulaComplete and materialComplete and not out.learningRequirementsUnknown;out.completeCost=out.costComplete;out.priced=out.costComplete
     out.plannedTo=cur;out.targetReached=cur>=target;out.partial=cur>start and cur<target
-    out.feasible=#out.steps>0 or out.targetReached
+    out.feasible=(#out.steps>0 or out.targetReached) and materialAvailable
     if not out.costComplete then out.status="incomplete" end
     if not out.targetReached then
         out.status="incomplete";out.gaps={{cur,target}};out.remainingUnknown=true
@@ -259,7 +311,6 @@ function P.Compute(opts)
     table.sort(out.fishMaterials,function(a,b)return (out.firstAt[a.id] or 0)<(out.firstAt[b.id] or 0) end)
     E.SummarizeAuctionSupply(out,snap)
     if ns.ProfRecovery then ns.ProfRecovery.Apply(out,snap) end
-    local ra=ns.ProfRouteAuto
     return ra and ra.StampVendorQuotes and ra.StampVendorQuotes(out) or out
 end
 
