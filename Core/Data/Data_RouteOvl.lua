@@ -23,3 +23,11 @@ local D = {
 }
 
 ns.RouteOvl = D
+
+local A = {
+    ["lower_blackrock_spire"] = {
+        [1] = "Interface\\AddOns\\DungeonsForever\\Media\\RouteArea1",
+    },
+}
+
+ns.RouteArea = A

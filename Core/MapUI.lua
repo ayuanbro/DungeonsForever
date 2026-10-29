@@ -19,6 +19,7 @@ ns.MapModule = M
 M.COLS, M.ROWS = 4, 3
 M.TILE = 256
 M.ART_W, M.ART_H = 1002, 668
+M.OVL_W, M.OVL_H = 1024, 768
 M.N = M.COLS * M.ROWS
 
 M.FRAME_W = Host.CONTENT_W - Host.PAGE_INSET * 2
@@ -296,9 +297,10 @@ local ART = {
     dire_maul_west        = DM,
     lower_blackrock_spire = { "BlackrockSpire",
         { "BlackrockSpire1_", "BlackrockSpire2_", "BlackrockSpire3_", "BlackrockSpire4_",
-          "BlackrockSpire5_", "BlackrockSpire6_", "BlackrockSpire7_" } },
+          "BlackrockSpire5_", "BlackrockSpire6_", "BlackrockSpire7_",
+          "UpperBlackrockSpire\\UpperBlackrockSpire1_" } },
     upper_blackrock_spire = { "UpperBlackrockSpire",
-        { "UpperBlackrockSpire1_", "UpperBlackrockSpire2_", "UpperBlackrockSpire3_" } },
+        { "UpperBlackrockSpire1_", "UpperBlackrockSpire2_", "BlackrockSpire\\BlackrockSpire7_" } },
     scholomance           = { "ScholomanceOld",
         { "ScholomanceOld1_", "ScholomanceOld2_", "ScholomanceOld3_", "ScholomanceOld4_" } },
     stratholme_main       = ST,
@@ -405,6 +407,9 @@ end
 
 local function FloorName(id, idx)
     if not id then return nil end
+    local ov = ns.FloorName
+    local t0 = ov and ov[id] and ov[id][idx]
+    if t0 then return t0 end
     local arr = FLOOR_NAMES[FLOOR_KEY[id] or id]
     local t = arr and arr[idx]
     if not t then return nil end
@@ -434,6 +439,11 @@ local SHOW_FLOORS = {
     dire_maul_west  = { 2, 3, 4 },
     stratholme_main = { 1 },
     stratholme_service = { 2 },
+    lower_blackrock_spire = { 8, 1, 2, 3, 4, 5, 6 },
+}
+
+local FLOOR_NO = {
+    lower_blackrock_spire = { [1] = 8 },
 }
 
 local LAYER_PICK = {}
@@ -458,16 +468,22 @@ function M.LayersFor(id)
     return out
 end
 
+local function LayPath(id, lay)
+    if type(lay) ~= "string" then return nil end
+    if lay:find("\\", 1, true) then return WM .. lay end
+    return WM .. ART[id][1] .. "\\" .. lay
+end
+
 function M.PathFor(id)
     local layers = M.LayersFor(id)
     if not (layers and layers[1]) then return nil end
-    return WM .. ART[id][1] .. "\\" .. layers[1]
+    return LayPath(id, layers[1])
 end
 
 function M.PathAt(id, i)
     local layers = M.LayersFor(id)
     if not (layers and layers[i]) then return nil end
-    return WM .. ART[id][1] .. "\\" .. layers[i]
+    return LayPath(id, layers[i])
 end
 
 function M.PosFor(id, en, floor)
@@ -486,6 +502,9 @@ function M.PosFor(id, en, floor)
     return out
 end
 
+local IN_ZH_RARE = "稀有"
+local RARE_INK = { 0.80, 0.66, 1.00 }
+
 function M.BossesFor(id)
     local loot = (ns.DungeonLoot or {})[id]
     if type(loot) ~= "table" then return nil end
@@ -495,7 +514,9 @@ function M.BossesFor(id)
         if type(s) == "table"
            and ((s[4] and s[4] ~= "") or M.PosFor(id, s[1]) or M.GuideFor(id, s[1])) then
             out = out or {}
-            out[#out + 1] = { en = s[1], zh = s[2] or s[1], npc = s[4] or "", items = s[5] or {} }
+            local meta = s[3]
+            out[#out + 1] = { en = s[1], zh = s[2] or s[1], npc = s[4] or "", items = s[5] or {},
+                rare = type(meta) == "string" and meta:find(IN_ZH_RARE, 1, true) ~= nil or false }
         end
     end
     return out
@@ -938,6 +959,11 @@ local function BuildListRows()
         r.fs = MakeFS(r, 14, C_TEXT, "LEFT")
         r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
         r.fs:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+        if ns.hui and ns.hui.MakeSolidChip and ns.hui.ChipH then
+            r.rare = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 2, ns.hui.ChipH(14))
+            ns.hui.PaintSolidChip(r.rare, L["稀有"], RARE_INK)
+            r.rare:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+        end
         if ns.hui and ns.hui.BuildRoundBorder then
             r.__borderPieces = ns.hui.BuildRoundBorder(r, 6, { 1, 1, 1, 0.9 }, r, "BORDER", "both", 1)
         end
@@ -1162,6 +1188,11 @@ function M.Build(detail, hero)
     customTex:SetTexCoord(0, 1, 0, 1)
     customTex:Hide()
 
+    local areaTex = canvas:CreateTexture(nil, "OVERLAY")
+    areaTex:SetDrawLayer("OVERLAY", 2)
+    areaTex:SetTexCoord(0, 1, 0, 1)
+    areaTex:Hide()
+
     local routeLayer = CreateFrame("Frame", nil, frame)
     routeLayer:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
     routeLayer:SetSize(1, 1)
@@ -1278,6 +1309,7 @@ function M.Build(detail, hero)
     frame.hdrCard = hdrCard
     frame.tiles = tiles
     frame.customTex = customTex
+    frame.areaTex = areaTex
     frame.empty = empty
     frame.pins = pins
     frame.bar = bar
@@ -1368,24 +1400,38 @@ function M.SyncBar(layers, cur)
     if total <= avail then
         for i = 1, n do rowOf[i] = 1 end
     else
-        local acc = 0
-        local r = 1
-        for i = 1, n do
-            local need = ws[i] + (acc > 0 and GAP or 0)
-            if r == 1 and acc > 0 and acc + need > total / 2 then
-                r = 2
-                acc = 0
-                need = ws[i]
-            elseif r >= 2 and acc > 0 and acc + need > avail then
-                r = r + 1
-                acc = 0
-                need = ws[i]
+        local nBreak = n - 1
+        local bestRows, bestW, bestMask
+        for mask = 0, 2 ^ nBreak - 1 do
+            local rows, mx, acc, cnt, ok = 1, 0, 0, 0, true
+            for i = 1, n do
+                cnt = cnt + 1
+                acc = acc + ws[i] + (cnt > 1 and GAP or 0)
+                local brk = (i < n) and (math.floor(mask / 2 ^ (i - 1)) % 2 == 1)
+                if brk or i == n then
+                    if acc > avail then
+                        ok = false
+                        break
+                    end
+                    if acc > mx then mx = acc end
+                    if brk then
+                        rows = rows + 1
+                        acc, cnt = 0, 0
+                    end
+                end
             end
-            rowOf[i] = r
-            acc = acc + need
+            if ok and (not bestRows or rows < bestRows or (rows == bestRows and mx < bestW)) then
+                bestRows, bestW, bestMask = rows, mx, mask
+            end
         end
-        for i = 1, n do
-            if rowOf[i] > r then r = rowOf[i] end
+        if bestMask then
+            local r = 1
+            for i = 1, n do
+                rowOf[i] = r
+                if i < n and math.floor(bestMask / 2 ^ (i - 1)) % 2 == 1 then r = r + 1 end
+            end
+        else
+            for i = 1, n do rowOf[i] = i end
         end
     end
     local rows = (total <= avail) and 1 or math.max(rowOf[1], rowOf[n])
@@ -1546,6 +1592,8 @@ end
 
 function M.FloorNumAt(id, idx)
     local i = idx or 1
+    local o = FLOOR_NO[id] and FLOOR_NO[id][i]
+    if o then return o end
     local layers = M.LayersFor(id)
     local lay = layers and layers[i]
     if not lay then return i end
@@ -2572,6 +2620,20 @@ function M.SyncSide()
         local r = frame.listRows[n]
         r.__en = bosses[i].en
         r.fs:SetText(bosses[i].zh or bosses[i].en)
+        r.fs:ClearAllPoints()
+        r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
+        if r.rare then
+            if bosses[i].rare then
+                local cw = r.rare:GetWidth() or 0
+                r.fs:SetPoint("RIGHT", r, "RIGHT", -12 - cw, 0)
+                r.rare:Show()
+            else
+                r.fs:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+                r.rare:Hide()
+            end
+        else
+            r.fs:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+        end
         local cr, cg, cb = M.BossColor(id, bosses[i].en)
         bpPaint(r.__av, bpDisp(id, bosses[i].en), cr, cg, cb, 32)
         for _, t in ipairs(r.__borderPieces or {}) do t:SetVertexColor(cr, cg, cb) end
@@ -2587,6 +2649,21 @@ function M.SyncSide()
     frame.listScroll:SetVerticalScroll(0)
 end
 
+function M.BossLayer(id, en)
+    local pts = M.PosFor(id, en)
+    if not pts then return nil end
+    local cur = M.curLayer
+    local first
+    for i = 1, #pts do
+        local idx = M.LayerOf(id, pts[i][3] or 1)
+        if idx then
+            if cur and idx == cur then return idx end
+            first = first or idx
+        end
+    end
+    return first
+end
+
 function M.Select(en)
     local id = M.curId
     if not (id and en) then return end
@@ -2598,6 +2675,10 @@ function M.Select(en)
     if not hit then return end
     if M.detailEn == en then en = nil end
     M.detailEn = en
+    if en then
+        local idx = M.BossLayer(id, en)
+        if idx and idx ~= M.curLayer then M.SetLayer(idx) end
+    end
     M.SyncPins()
     M.SyncSide()
 end
@@ -2634,6 +2715,24 @@ function M.OnItemData(itemID)
         M.__oidT = nil
         if M.frame and M.frame:IsShown() and M.detailEn then M.SyncSide() end
     end)
+end
+
+function M.PaintArea(id, fn, cw, ch)
+    local frame = M.frame
+    local tex = frame and frame.areaTex
+    if not tex then return end
+    local row = id and ns.RouteArea and ns.RouteArea[id]
+    local path = row and fn and row[fn]
+    if not path then
+        tex:Hide()
+        return
+    end
+    tex:SetTexture(path)
+    tex:SetTexCoord(0, M.ART_W / M.OVL_W, 0, M.ART_H / M.OVL_H)
+    tex:ClearAllPoints()
+    tex:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", 0, 0)
+    tex:SetSize(cw, ch)
+    tex:Show()
 end
 
 function M.Paint(d)
@@ -2684,6 +2783,7 @@ function M.Paint(d)
             frame.empty:Show()
         end
         frame.pins:Hide()
+        M.PaintArea(id, M.FloorNumAt(id, 1), cw, ch)
         if cpath then
             M.SyncRoute(id, M.FloorNumAt(id, 1), cw, ch)
         else
@@ -2724,6 +2824,7 @@ function M.Paint(d)
             t:Show()
         end
     end
+    M.PaintArea(id, M.FloorNumAt(id, idx), cw, ch)
     M.SyncRoute(id, M.FloorNumAt(id, idx), cw, ch)
     M.SyncPins()
     M.SyncBar(layers, idx)

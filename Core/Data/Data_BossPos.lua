@@ -1,6 +1,16 @@
 local _, ns = ...
 
 ns.BossPos = {
+    ["upper_blackrock_spire"] = {
+        ["Pyroguard Emberseer"] = { { 29.9, 26.7, 2 } },
+        ["Solakar Flamewreath"] = { { 38.1, 37.7, 2 } },
+        ["Jed Runewatcher"] = { { 33, 25.6, 3 } },
+        ["Gyth"] = { { 48.8, 15.1, 3 } },
+        ["Warchief Rend Blackhand"] = { { 48.6, 25.6, 3 } },
+        ["The Beast"] = { { 64.3, 31.2, 3 } },
+        ["Goraluk Anvilcrack"] = { { 61.8, 45.5, 3 } },
+        ["General Drakkisath"] = { { 34.8, 50.1, 3 } },
+    },
     ["ragefire_chasm"] = {
         ["Bazzalan"] = { { 41.5, 86.2 } },
         ["Jergosh the Invoker"] = { { 33, 84.5 } },
@@ -211,19 +221,20 @@ ns.BossPos = {
         ["Zevrim Thornhoof"] = { { 57.5, 74.6, 6 } },
     },
     ["lower_blackrock_spire"] = {
-        ["Bannok Grimaxe"] = { { 46.9, 64.1 }, { 49.5, 56 } },
-        ["Crystal Fang"] = { { 54.1, 74.9, 2 } },
+        ["Bannok Grimaxe"] = { { 46.9, 64.1 } },
+        ["Crystal Fang"] = { { 55.4, 75.8, 2 } },
         ["Ghok Bashguud"] = { { 34.8, 60, 5 }, { 39.5, 67.5, 5 } },
-        ["Halycon"] = { { 39.3, 84.3, 5 } },
+        ["Halycon"] = { { 37.8, 83.8, 5 } },
         ["Highlord Omokk"] = { { 35.1, 55.3, 3 } },
-        ["Mother Smolderweb"] = { { 65, 74.4, 2 } },
-        ["Overlord Wyrmthalak"] = { { 56, 55.3, 6 } },
-        ["Quartermaster Zigris"] = { { 54.8, 83.8, 5 } },
-        ["Shadow Hunter Vosh'gajin"] = { { 55.6, 72, 2 } },
+        ["Mother Smolderweb"] = { { 61.4, 75.2, 2 } },
+        ["Overlord Wyrmthalak"] = { { 57.8, 60.5, 6 } },
+        ["Quartermaster Zigris"] = { { 54.1, 85, 5 } },
+        ["Shadow Hunter Vosh'gajin"] = { { 55.5, 69.4, 2 } },
         ["Spirestone Battle Lord"] = { { 35.8, 60.4, 3 } },
         ["Spirestone Butcher"] = { { 44.8, 57.8, 3 } },
         ["Spirestone Lord Magus"] = { { 37.4, 61.4, 3 } },
-        ["War Master Voone"] = { { 52.9, 53.2 } },
+        ["War Master Voone"] = { { 52.5, 54.9 } },
+        ["Gizrul the Slavener"] = { { 40.5, 83.6, 5 } },
     },
     ["dire_maul_north"] = {
         ["Captain Kromcrush"] = { { 31.8, 49.7 } },
@@ -243,7 +254,7 @@ ns.BossPos = {
         ["Tsu'zee"] = { { 32.2, 14.3, 3 } },
     },
     ["scholomance"] = {
-        ["Blood Steward of Kirtonos"] = { { 78.9, 71.6 }, { 49.6, 10.3, 2 } },
+        ["Blood Steward of Kirtonos"] = { { 78.9, 71.6 } },
         ["Doctor Theolen Krastinov"] = { { 88.8, 45.5, 3 } },
         ["Instructor Malicia"] = { { 72.6, 70.4, 3 } },
         ["Jandice Barov"] = { { 54.3, 14.4, 3 } },
@@ -256,6 +267,7 @@ ns.BossPos = {
         ["The Ravenian"] = { { 67.5, 48.7, 4 } },
         ["Vectus"] = { { 48.2, 66.2, 2 } },
         ["Darkmaster Gandling"] = { { 67.5, 29.8, 4 } },
+        ["Kirtonos the Herald"] = { { 49.5, 10.3, 2 } },
     },
     ["stratholme_main"] = {
         ["Archivist Galford"] = { { 27.1, 75.1 } },
