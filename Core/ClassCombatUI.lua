@@ -178,26 +178,67 @@ local function MacroIndexOf(name)
     return 0
 end
 
-local function CreateMacroNamed(name, legacy, body)
+local function CursorKind()
+    if type(GetCursorInfo) ~= "function" then return nil end
+    local ok, kind = pcall(GetCursorInfo)
+    if not ok then return nil end
+    return kind
+end
+
+local function PickUpMacroSlot(slot)
+    if type(PickupMacro) ~= "function" then return false end
+    if type(ClearCursor) == "function" then pcall(ClearCursor) end
+    if not pcall(PickupMacro, slot) then return false end
+    local kind = CursorKind()
+    if kind == nil then return true end
+    return kind == "macro"
+end
+
+local function CreateMacroNamed(name, legacy, body, icon)
     if InCombat() then
         Notify(L["战斗状态无法创建宏"])
         return
     end
     if type(CreateMacro) ~= "function" then return end
+    local iconArg = icon or "INV_Misc_QuestionMark"
+    local slot
     local idx = MacroIndexOf(name)
     if idx == 0 and legacy and legacy ~= "" then
         idx = MacroIndexOf(legacy)
     end
-    local ok
     if idx > 0 and type(EditMacro) == "function" then
-        ok = pcall(EditMacro, idx, name, "INV_Misc_QuestionMark", body)
+        local ok, res = pcall(EditMacro, idx, name, iconArg, body)
+        if not ok then
+            Notify(L["创建失败：角色宏已达上限"])
+            return
+        end
+        if type(res) == "number" and res > 0 then slot = res else slot = idx end
     else
-        ok = pcall(CreateMacro, name, "INV_Misc_QuestionMark", body, true)
+        local ok, res = pcall(CreateMacro, name, iconArg, body, true)
+        if not ok then
+            Notify(L["创建失败：角色宏已达上限"])
+            return
+        end
+        if type(res) == "number" and res > 0 then slot = res end
     end
-    if ok then
-        Notify(format(L["宏已创建：%s · 用 /macro 拖到动作条"], name))
+    local function drop()
+        local live = MacroIndexOf(name)
+        if live <= 0 and legacy and legacy ~= "" then live = MacroIndexOf(legacy) end
+        if live > 0 then slot = live end
+        if not slot or slot <= 0 then
+            Notify(L["创建失败：角色宏已达上限"])
+            return
+        end
+        if PickUpMacroSlot(slot) then
+            Notify(format(L["宏已就绪：%s · 拖到动作条"], name))
+        else
+            Notify(format(L["宏已创建：%s · 用 /macro 拖到动作条"], name))
+        end
+    end
+    if C_Timer and type(C_Timer.After) == "function" then
+        C_Timer.After(0, drop)
     else
-        Notify(L["创建失败：角色宏已达上限"])
+        drop()
     end
 end
 
@@ -417,7 +458,7 @@ local function Ensure()
         end)
         det:SetScript("OnLeave", function() GameTooltip:Hide() end)
         mk:SetScript("OnClick", function()
-            CreateMacroNamed(mk.__macroName, mk.__legacy, mk.__body)
+            CreateMacroNamed(mk.__macroName, mk.__legacy, mk.__body, mk.__icon)
         end)
         cp:SetScript("OnClick", function()
             ShowCopy(cp.__macroName or "", cp.__macroBody or "")
@@ -667,6 +708,7 @@ local function LayoutCard(fr, card, y)
     fr.__det.__macroBody = card.body
     fr.__macroName, fr.__macroBody = card.name, card.body
     fr.__mk.__macroName, fr.__mk.__legacy, fr.__mk.__body = card.full, card.legacy, card.body
+    fr.__mk.__icon = card.icon
     fr.__cp.__macroName, fr.__cp.__macroBody = card.name, card.body
     fr:ClearAllPoints()
     fr:SetPoint("TOPLEFT", TT.child, "TOPLEFT", (card.col - 1) * (CARD_W + CU.CARD_GAP), -y)
@@ -686,7 +728,8 @@ local function MacroCard(d, cls, m)
     local firstKey = (m.body or ""):match("{(.-)}")
     if firstKey then
         local ranks = Ranks(d, cls, firstKey)
-        icon = SpellIcon(KnownId(ranks) or BaseId(ranks))
+        local tex = SpellIcon(KnownId(ranks) or BaseId(ranks))
+        if tex and tex ~= FALLBACK_ICON then icon = tex end
     end
     local nm = m.name or ""
     return {
@@ -700,7 +743,7 @@ local function MacroCard(d, cls, m)
         color = color or CU.OK,
         state = state,
         tip = tip,
-        icon = icon or "Interface\\Icons\\INV_Misc_Note_01",
+        icon = icon,
     }
 end
 

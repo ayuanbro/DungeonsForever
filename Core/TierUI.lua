@@ -707,8 +707,9 @@ local function BuildSpecHero(page)
     meta:SetPoint("RIGHT", page, "TOPRIGHT", -(TT.EDGE + TT.INSET), -TT.SPEC_META_Y)
     TT.specMeta = meta
 
-    local grade = MakeFS(hero, 14, C_GREY, "RIGHT")
-    grade:SetPoint("TOPRIGHT", hero, "TOPRIGHT", 0, -2)
+    local grade = DG.MakeBadge(hero, ns.hui and ns.hui.layer.L3)
+    grade:SetPoint("LEFT", title, "RIGHT", 8, 0)
+    grade:Hide()
     TT.heroGrade = grade
 
     local sep = topCard:CreateTexture(nil, "ARTWORK")
@@ -1177,8 +1178,16 @@ TT.PaintHeader = function()
     local gk, pk = SpecGrade(cls, spec)
     if gk then
         local gc = TT.COLOR[gk] or TT.COLOR.D
-        TT.heroGrade:SetText(format(L["★ %s级 · %s"], gk, TT.PAGE_NAME[pk] or ""))
-        TT.heroGrade:SetTextColor(gc[1], gc[2], gc[3])
+        local txt = format(L["%s级 · %s"], gk, TT.PAGE_NAME[pk] or "")
+        TT.heroGrade.lab:SetText(txt)
+        local w = (TT.heroGrade.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+        if w < DG.Q_BADGE_MIN_W then w = DG.Q_BADGE_MIN_W end
+        if ns.hui and ns.hui.PaintSolidChip and TT.heroGrade.__chipFill then
+            ns.hui.PaintSolidChip(TT.heroGrade, txt, gc, w)
+        else
+            if DG.BadgeTint then DG.BadgeTint(TT.heroGrade, gc) end
+            TT.heroGrade:SetWidth(w)
+        end
         TT.heroGrade:Show()
     else
         TT.heroGrade:Hide()

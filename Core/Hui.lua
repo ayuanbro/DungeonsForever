@@ -2139,6 +2139,7 @@ do
     ns.hui.TEXT = C_TEXT
     ns.hui.ACCENT = C_ACCENT
     ns.hui.CARD_BORDER = C_CARD_BORDER
+    ns.hui.CTRL_BORDER = C_CTRL_BORDER
 
     function ns.hui.GetThemeBorderColor()
         if not ns.hui.FullTintOn() then return C_CARD_BORDER end

@@ -345,6 +345,8 @@ do
 end
 
 local TIP_CARD_H = 116
+local SET_COL2_X = 106
+local SET_COL3_X = 148
 local C_TIP_TXT = { 0.88, 0.88, 0.88 }
 local C_TIP_DIM = { 0.62, 0.62, 0.62 }
 local tipCard
@@ -503,8 +505,23 @@ end
 ns.BuildAppearanceCard = BuildAppearanceCard
 ns.PaintAppearance = PaintAppearance
 
+local function AnchorTipCard(card)
+    local qbCard = ns.QuickBar and ns.QuickBar.cardBg
+    card:ClearAllPoints()
+    if qbCard then
+        card:SetPoint("TOPLEFT", qbCard, "BOTTOMLEFT", 0, -10)
+        card:SetPoint("TOPRIGHT", qbCard, "BOTTOMRIGHT", 0, -10)
+    else
+        card:SetPoint("BOTTOMLEFT", settingsPop, "BOTTOMLEFT", 6, 12)
+        card:SetPoint("BOTTOMRIGHT", settingsPop, "BOTTOMRIGHT", -6, 12)
+    end
+end
+
 function BuildTipCard()
-    if tipCard then return end
+    if tipCard then
+        AnchorTipCard(tipCard)
+        return
+    end
     if not ns.TipLines then return end
     local card = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
@@ -514,14 +531,7 @@ function BuildTipCard()
         card:SetBackdropColor(0x16 / 255, 0x1A / 255, 0x22 / 255, 1)
         card:SetBackdropBorderColor(1, 1, 1, 0.1)
     end
-    local qbCard = ns.QuickBar and ns.QuickBar.cardBg
-    if qbCard then
-        card:SetPoint("TOPLEFT", qbCard, "BOTTOMLEFT", 0, -10)
-        card:SetPoint("TOPRIGHT", qbCard, "BOTTOMRIGHT", 0, -10)
-    else
-        card:SetPoint("BOTTOMLEFT", settingsPop, "BOTTOMLEFT", 6, 12)
-        card:SetPoint("BOTTOMRIGHT", settingsPop, "BOTTOMRIGHT", -6, 12)
-    end
+    AnchorTipCard(card)
     card:SetHeight(TIP_CARD_H)
 
     local hd = card:CreateFontString(nil, "OVERLAY")
@@ -534,7 +544,7 @@ function BuildTipCard()
     gsw:SetSize(36, 20)
     gsw:EnableMouse(true)
     if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(gsw) end
-    gsw:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -8)
+    gsw:SetPoint("TOPLEFT", card, "TOPLEFT", SET_COL2_X, -8)
     gsw:SetChecked(ns.TipCfg().global and true or false)
     gsw:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -553,24 +563,18 @@ function BuildTipCard()
         if ns.TipLines.RefreshPreview then ns.TipLines.RefreshPreview() end
     end)
 
-    local TIP_COL_W = 92
-    local function TipToggle(x, y, label, key, toggleFirst)
+    local function TipToggle(x, y, label, key)
         local tg = CreateFrame("CheckButton", nil, card)
         tg:SetSize(36, 20)
         tg:EnableMouse(true)
         if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
         local fs = card:CreateFontString(nil, "OVERLAY")
-        fs:SetFont(ns.FONT, 14, "")
+        fs:SetFont(ns.FONT, 12, "")
         fs:SetWordWrap(false)
         fs:SetText(label)
         fs:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
-        if toggleFirst then
-            tg:SetPoint("TOPLEFT", card, "TOPLEFT", x, y + 2)
-            fs:SetPoint("LEFT", tg, "RIGHT", 6, 0)
-        else
-            tg:SetPoint("TOPRIGHT", card, "TOPLEFT", x + TIP_COL_W, y + 2)
-            fs:SetPoint("LEFT", tg, "LEFT", 36 - TIP_COL_W, 0)
-        end
+        tg:SetPoint("TOPLEFT", card, "TOPLEFT", x, y + 2)
+        fs:SetPoint("LEFT", tg, "RIGHT", 6, 0)
         local function get() return ns.TipCfg()[key] end
         tg:SetChecked(get() and true or false)
         tg:SetScript("OnClick", function(self)
@@ -582,17 +586,17 @@ function BuildTipCard()
         return tg
     end
 
-    TipToggle(8, -34, L["掉落来源"], "src", true)
-    TipToggle(108, -34, L["BIS 推荐"], "bis")
-    TipToggle(8, -58, L["BIS 评分"], "bisScore", true)
-    TipToggle(108, -58, L["心愿标记"], "wish")
-    TipToggle(8, -82, L["任务来源"], "quest", true)
-    TipToggle(108, -82, L["物品等级"], "ilvl")
+    TipToggle(8, -34, L["掉落来源"], "src")
+    TipToggle(SET_COL2_X, -34, L["BIS 推荐"], "bis")
+    TipToggle(8, -58, L["BIS 评分"], "bisScore")
+    TipToggle(SET_COL2_X, -58, L["心愿标记"], "wish")
+    TipToggle(8, -82, L["任务来源"], "quest")
+    TipToggle(SET_COL2_X, -82, L["物品等级"], "ilvl")
 
     local bt = CreateFrame("Button", nil, card, "BackdropTemplate")
     bt:SetSize(44, 24)
     bt:EnableMouse(true)
-    bt:SetPoint("LEFT", hd, "RIGHT", 6, 0)
+    bt:SetPoint("TOPLEFT", card, "TOPLEFT", SET_COL3_X, -6)
     local pfs = bt:CreateFontString(nil, "OVERLAY")
     pfs:SetFont(ns.FONT, 13, "")
     pfs:SetPoint("CENTER")

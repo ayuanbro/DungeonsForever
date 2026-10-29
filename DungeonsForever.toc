@@ -7,7 +7,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.9.19
+## Version: 1.9.20
 ## SavedVariables: DungeonsForeverDB
 ## LoadOnDemand: 0
 

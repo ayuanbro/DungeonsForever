@@ -2732,17 +2732,20 @@ function G.PaintChips()
         for key, hd in pairs(G.headSort) do
             local on = G.sort == key
             hd.fs:SetText(L[key == "ilvl" and "物品等级" or "需要等级"])
-            hd.fs:SetTextColor(Unpack(on and C_GOLD or C_GREY))
             if on then
+                local ar, ag, ab = ns.SortArrowAccent()
+                hd.fs:SetTextColor(ar, ag, ab, 1)
                 if G.sortDir == 1 then
-                    hd.arrow:SetTexCoord(0, 0.5, 0, 1)
+                    hd.up:SetVertexColor(ar, ag, ab, 1)
+                    hd.dn:SetVertexColor(Unpack(ns.SORT_DIM))
                 else
-                    hd.arrow:SetTexCoord(0.5, 1, 0, 1)
+                    hd.dn:SetVertexColor(ar, ag, ab, 1)
+                    hd.up:SetVertexColor(Unpack(ns.SORT_DIM))
                 end
-                hd.arrow:SetVertexColor(1, 0.82, 0, 1)
             else
-                hd.arrow:SetTexCoord(0, 1, 0, 1)
-                hd.arrow:SetVertexColor(0.55, 0.57, 0.62, 1)
+                hd.fs:SetTextColor(Unpack(C_GREY))
+                hd.up:SetVertexColor(Unpack(C_GREY))
+                hd.dn:SetVertexColor(Unpack(C_GREY))
             end
         end
     end
@@ -3568,6 +3571,7 @@ function G.StartTexWarm()
     p(B .. "LibHUI/HUICircle")
     p(B .. "LibHUI/HUIRoundRectMask")
     p(B .. "LibHUI/HUIRoundImageMask")
+    p(B .. "DFCardMaskRect")
     p(B .. "textures/YY_close")
     p(B .. "textures/DF_Settings")
     p(B .. "textures/arrow")
@@ -3913,10 +3917,17 @@ function G.Build(page)
         local b = CreateFrame("Button", nil, headRow)
         b:SetSize(88, 20)
         b:SetPoint("LEFT", x, 0)
-        local arrow = b:CreateTexture(nil, "OVERLAY")
-        arrow:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\icon\\NAV\\SortIcon")
-        arrow:SetSize(14, 14)
-        arrow:SetPoint("LEFT", b, "LEFT", 0, 0)
+        local aw = 9
+        local ah = aw / ns.SORT_RATIO
+        local cy = ah * 1.15
+        local up = b:CreateTexture(nil, "OVERLAY")
+        up:SetTexture(ns.SORT_UP)
+        up:SetSize(aw, ah)
+        up:SetPoint("TOP", b, "LEFT", aw / 2, cy)
+        local dn = b:CreateTexture(nil, "OVERLAY")
+        dn:SetTexture(ns.SORT_DN)
+        dn:SetSize(aw, ah)
+        dn:SetPoint("BOTTOM", b, "LEFT", aw / 2, -cy)
         local f = MakeFS(b, 16, C_GREY, "LEFT")
         f:SetPoint("LEFT", b, "LEFT", 16, 0)
         f:SetText(L[key == "ilvl" and "物品等级" or "需要等级"])
@@ -3935,7 +3946,7 @@ function G.Build(page)
             G.Refresh()
             ns.PlaySound(1)
         end)
-        G.headSort[key] = { fs = f, arrow = arrow }
+        G.headSort[key] = { fs = f, up = up, dn = dn }
         return b
     end
     HeadSortBtn("ilvl", CARD_PAD + 168)

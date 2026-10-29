@@ -43,6 +43,33 @@ local priceCache = {}
 local NEG_TTL = 60
 local ahReason, ahAge = {}, {}
 
+local SCAN_KEYS = { "TimeOfLastGetAllScan", "TimeOfLastReplicateScan", "TimeOfLastBrowseScan" }
+
+local function ScanAge()
+    local A = Auctionator
+    local st = (type(A) == "table") and A.SavedState
+    if type(st) ~= "table" then return nil end
+    local best
+    for _, k in ipairs(SCAN_KEYS) do
+        local v = tonumber(st[k])
+        if v and v > 0 and (not best or v > best) then best = v end
+    end
+    if not best then return nil end
+    local now = (type(time) == "function") and time() or 0
+    local age = now - best
+    if age < 0 then return nil end
+    return age
+end
+
+local function ReasonRank(code)
+    if code == "stale" then return 1 end
+    if code == "noquote" then return 2 end
+    if code == "noscan" then return 3 end
+    if code == "novendor" then return 4 end
+    if code == "noapi" then return 5 end
+    return 6
+end
+
 local function AHPrice(id)
     local c = priceCache[id]
     if c ~= nil then
@@ -51,8 +78,9 @@ local function AHPrice(id)
         local t0 = priceCache.__t and priceCache.__t[id] or nil
         if t0 and (now - t0) < NEG_TTL then return nil end
     end
+    local hasAPI = RA.Available()
     local p
-    if RA.Available() then
+    if hasAPI then
         p = CallAPI(Auctionator.API.v1.GetAuctionPriceByItemID, id)
         if type(p) ~= "number" or p <= 0 then p = nil end
         if p and type(Auctionator.API.v1.GetAuctionAgeByItemID) == "function" then
@@ -71,7 +99,11 @@ local function AHPrice(id)
         ahReason[id] = "noapi"
     end
     if not p and ahReason[id] ~= "stale" and ahReason[id] ~= "noapi" then
-        ahReason[id] = "norec"
+        if ScanAge() == nil then
+            ahReason[id] = "noscan"
+        else
+            ahReason[id] = "noquote"
+        end
     end
     priceCache[id] = p or false
     if not p then
@@ -220,19 +252,7 @@ local function RequestProduct(id)
 end
 
 local function SnapshotSec()
-    local A = Auctionator
-    local st = (type(A) == "table") and A.SavedState
-    if type(st) ~= "table" then return nil end
-    local best
-    for _, k in ipairs({ "TimeOfLastGetAllScan", "TimeOfLastReplicateScan", "TimeOfLastBrowseScan" }) do
-        local v = tonumber(st[k])
-        if v and v > 0 and (not best or v > best) then best = v end
-    end
-    if not best then return nil end
-    local now = (type(time) == "function") and time() or 0
-    local age = now - best
-    if age < 0 then return nil end
-    return age
+    return ScanAge()
 end
 
 function RA.HasPriceData()
@@ -356,13 +376,16 @@ local function BuildCandidates(slug, opts)
                 if skipUnknown and not MatPrice(rec[13][1], soldSet) then ok = false end
             end
             if ok then
-                local cost, unpriced = 0, false
+                local cost, unpriced, unpricedN, unpricedRank = 0, false, 0, nil
                 for _, m in ipairs(reagents) do
                     local p = MatPrice(m[1], soldSet)
                     if p then
                         cost = cost + p * (m[2] or 1)
                     else
                         unpriced = true
+                        unpricedN = unpricedN + 1
+                        local rk = ReasonRank((MatReason(m[1], soldSet)))
+                        if unpricedRank == nil or rk < unpricedRank then unpricedRank = rk end
                     end
                 end
                 if ok then
@@ -385,6 +408,8 @@ local function BuildCandidates(slug, opts)
                         learn = learn, yellow = cY,
                         green = (type(green) == "number") and green or yellow or learn,
                         grey = grey, mats = reagents, cost = cost, unpriced = unpriced,
+                        unpricedN = (unpricedN > 0) and unpricedN or nil,
+                        unpricedRank = unpricedRank,
                         fcost = fcost, funpriced = funpriced or nil, base = base, cd = (rec[4] == "Transmutes") or nil,
                         unknown = unknown or nil,
                         learnO = math.max(1, math.min(learn, cY - 25)),
@@ -402,7 +427,7 @@ local function BuildCandidates(slug, opts)
                and ri.grey > ri.learn
                and type(ri.mats) == "table" and #ri.mats > 0 then
                 local ok = not (opts.learnedOnly and not LearnKnown(spell))
-                local cost, unpriced = 0, false
+                local cost, unpriced, unpricedN, unpricedRank = 0, false, 0, nil
                 if ok then
                     for _, m in ipairs(ri.mats) do
                         local p = MatPrice(m[1], soldSet)
@@ -410,6 +435,9 @@ local function BuildCandidates(slug, opts)
                             cost = cost + p * (m[2] or 1)
                         else
                             unpriced = true
+                            unpricedN = unpricedN + 1
+                            local rk = ReasonRank((MatReason(m[1], soldSet)))
+                            if unpricedRank == nil or rk < unpricedRank then unpricedRank = rk end
                         end
                     end
                 end
@@ -426,6 +454,8 @@ local function BuildCandidates(slug, opts)
                         spell = spell, item = (type(ri.makes) == "number") and ri.makes or nil,
                         learn = ri.learn, yellow = y, green = g, grey = ri.grey,
                         mats = ri.mats, cost = cost, unpriced = unpriced,
+                        unpricedN = (unpricedN > 0) and unpricedN or nil,
+                        unpricedRank = unpricedRank,
                         fcost = 0, base = base, unknown = unknown or nil,
                         learnO = math.max(1, math.min(ri.learn, y - 25)),
                     }
@@ -464,7 +494,8 @@ local function BuildCandidates(slug, opts)
     return cands, recOf, soldSet, specBlocked
 end
 
-local function Eligible(c, allowUnpriced)
+local function Eligible(c, allowUnpriced, allowMatUnpriced)
+    if c.unpriced and not allowMatUnpriced then return false end
     return allowUnpriced or (not c.funpriced)
 end
 
@@ -472,9 +503,9 @@ local function CanUse(scheme, c, cur)
     local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
     return cur >= lo and cur < c.grey
 end
-local function Usable(scheme, c, cur, allowUnpriced)
+local function Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced)
     if (scheme == "optim") and (c.cd or c.unknown) then return false end
-    if not Eligible(c, allowUnpriced) then return false end
+    if not Eligible(c, allowUnpriced, allowMatUnpriced) then return false end
     return CanUse(scheme, c, cur)
 end
 local function GainOf(scheme, c, cur)
@@ -492,7 +523,7 @@ local function MetricOf(scheme, c, g)
     return c.cost / g
 end
 
-local function Simulate(cands, start, cap, allowUnpriced, scheme)
+local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpriced)
     local steps, gaps = {}, {}
     local banned, segRun = {}, {}
     local cur = math.max(1, math.min(cap - 1, start or 1))
@@ -505,7 +536,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
 
         local best, bestMetric
         for _, c in ipairs(cands) do
-            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
+            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
                     local metric = MetricOf(scheme, c, g)
@@ -520,7 +551,8 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
         if not best then
             local nxt
             for _, c in ipairs(cands) do
-                if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
+                if not banned[c.spell] and Eligible(c, allowUnpriced, allowMatUnpriced)
+                   and not ((scheme == "optim") and (c.cd or c.unknown)) then
                     local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
                     if lo > cur and (not nxt or lo < nxt) then nxt = lo end
                 end
@@ -542,7 +574,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
                 cur = cur + 1
                 local stop = false
                 for _, c in ipairs(cands) do
-                    if c ~= best and not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
+                    if c ~= best and not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
                         if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
                             stop = true
@@ -572,7 +604,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme)
     return steps, gaps
 end
 
-local function SimulateRange(cands, a, b, scheme, allowUnpriced)
+local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnpriced, markFallback)
     local steps = {}
     local banned, segRun = {}, {}
     local cur = a
@@ -583,21 +615,32 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced)
         if guard > 1000 then break end
         local best, bestMetric
         for _, c in ipairs(cands) do
-            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
+            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
                     local metric = MetricOf(scheme, c, g)
-                    if not best or metric < bestMetric - 1e-9
-                       or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
-                        best, bestMetric = c, metric
+                    local better = (not best) or (metric < bestMetric - 1e-9)
+                    if not better and metric < bestMetric + 1e-9 then
+                        if markFallback then
+                            local cn, bn = c.unpricedN or 0, best.unpricedN or 0
+                            if cn < bn then
+                                better = true
+                            elseif cn == bn then
+                                local cr, br = c.unpricedRank or 9, best.unpricedRank or 9
+                                if cr < br or (cr == br and c.grey > best.grey) then better = true end
+                            end
+                        elseif c.grey > best.grey then
+                            better = true
+                        end
                     end
+                    if better then best, bestMetric = c, metric end
                 end
             end
         end
         if not best then
             local nxt
             for _, c in ipairs(cands) do
-                if not banned[c.spell] and Eligible(c, allowUnpriced)
+                if not banned[c.spell] and Eligible(c, allowUnpriced, allowMatUnpriced)
                    and not ((scheme == "optim") and (c.cd or c.unknown)) then
                     local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
                     if lo > cur and lo <= b and (not nxt or lo < nxt) then nxt = lo end
@@ -616,7 +659,7 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced)
                 local stop = false
                 for _, c in ipairs(cands) do
                     if c ~= best and not banned[c.spell] and cur <= b
-                       and Usable(scheme, c, cur, allowUnpriced) then
+                       and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
                         if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
                             stop = true
@@ -628,6 +671,8 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced)
             end
             local qty = math.max(1, math.ceil(crafts - 1e-9))
             local to = math.min(cur - 1, b)
+            local fb
+            if markFallback and best.unpriced then fb = true end
             local last = steps[#steps]
             if last and last[3] == best.spell and last[2] + 1 == from then
                 last[2] = to
@@ -638,6 +683,7 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced)
                     from, to, best.spell, qty,
                     cost = best.cost * qty, item = best.item,
                     unpriced = best.unpriced, est = true,
+                    unpricedFallback = fb,
                 }
                 segRun[best.spell] = (segRun[best.spell] or 0) + 1
                 if segRun[best.spell] >= MAX_PER_RECIPE then banned[best.spell] = true end
@@ -662,6 +708,7 @@ local function MergeSteps(steps)
             last.cost = (last.cost or 0) + (s.cost or 0)
             if s.unpriced then last.unpriced = true end
             if s.est then last.est = true end
+            if s.unpricedFallback then last.unpricedFallback = true end
         else
             out[#out + 1] = s
         end
@@ -669,7 +716,7 @@ local function MergeSteps(steps)
     return out
 end
 
-local function FillGaps(cands, steps, gaps, scheme, allowUnpriced)
+local function FillGaps(cands, steps, gaps, scheme, allowUnpriced, allowMatUnpriced, markFallback)
     local out = {}
     local si = 1
     for _, g in ipairs(gaps) do
@@ -677,7 +724,7 @@ local function FillGaps(cands, steps, gaps, scheme, allowUnpriced)
             out[#out + 1] = steps[si]
             si = si + 1
         end
-        local fills, resid = SimulateRange(cands, g[1], g[2], scheme, allowUnpriced)
+        local fills, resid = SimulateRange(cands, g[1], g[2], scheme, allowUnpriced, allowMatUnpriced, markFallback)
         for _, s in ipairs(fills) do out[#out + 1] = s end
         if resid then out[#out + 1] = { gap = resid } end
     end
@@ -738,7 +785,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             for _, m in ipairs(ml or {}) do
                 local rc, ra = MatReason(m[1], soldSet)
                 if rc then
-                    local rk = (rc == "stale" and 1) or (rc == "norec" and 2) or (rc == "novendor" and 3) or 4
+                    local rk = ReasonRank(rc)
                     if rk < rank or (rk == rank and (ra or 0) > (age or 0)) then
                         rank, code, age, mid = rk, rc, ra, m[1]
                     end
@@ -1274,7 +1321,7 @@ function RA.ComputeFishing(slug, opts)
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
     local start = math.max(1, math.min(cap - 1, opts.start or 1))
-    local steps, gaps = Simulate(cands, start, cap, true, "crafts")
+    local steps, gaps = Simulate(cands, start, cap, true, "crafts", true)
     if #steps == 0 then return nil end
     local stepsOut = ToReached(steps)
     local fishList, fishAt = {}, {}
@@ -1354,13 +1401,25 @@ function RA.Compute(slug, opts)
     cap = math.max(2, math.min(CAP, math.floor(cap)))
     local PDm = ns.ProfModule
     local allowUnpriced = false
-    if PDm and PDm.Setting then allowUnpriced = not PDm.Setting("autoSkipUnpricedFormulas") end
-    local steps, gaps = Simulate(cands, opts.start, cap, allowUnpriced, scheme)
+    local strictMats = true
+    if PDm then
+        if PDm.Setting then allowUnpriced = not PDm.Setting("autoSkipUnpricedFormulas") end
+        if PDm.SettingRaw then strictMats = PDm.SettingRaw("autoOnlyAH") ~= false end
+    end
+    local steps, gaps = Simulate(cands, opts.start, cap, allowUnpriced, scheme, not strictMats)
     local filled = false
-    if #gaps > 0 then
-        steps, gaps = FillGaps(cands, steps, gaps, scheme, allowUnpriced)
+    local strictOnly = opts.strictOnly
+    if strictOnly == nil and RA.__debugStrictOnly then strictOnly = true end
+    local fallbackN, fallbackFrom, fallbackTo = 0, nil, nil
+    if #gaps > 0 and not strictOnly then
+        steps, gaps = FillGaps(cands, steps, gaps, scheme, allowUnpriced, true, strictMats)
         for _, st in ipairs(steps) do
-            if st.est then filled = true break end
+            if st.est then filled = true end
+            if st.unpricedFallback then
+                fallbackN = fallbackN + 1
+                if fallbackFrom == nil or (st[1] or 0) < fallbackFrom then fallbackFrom = st[1] end
+                if fallbackTo == nil or (st[2] or 0) > fallbackTo then fallbackTo = st[2] end
+            end
         end
     end
     if scheme == "optim" then
@@ -1376,6 +1435,15 @@ function RA.Compute(slug, opts)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
         SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
+    local looseMats, looseN = nil, 0
+    if not strictMats then
+        for _, e in ipairs(mats or {}) do
+            if e.unpriced then looseN = looseN + 1 end
+        end
+        if looseN > 0 then looseMats = true end
+    end
+    local fallbackSteps = fallbackN
+    if fallbackSteps <= 0 then fallbackSteps = nil end
     local res = {
         scheme = scheme,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
@@ -1388,6 +1456,10 @@ function RA.Compute(slug, opts)
         target = cap,
         priced = RA.HasPriceData(),
         filled = filled,
+        looseMats = looseMats,
+        fallbackSteps = fallbackSteps,
+        fallbackFrom = fallbackFrom,
+        fallbackTo = fallbackTo,
         specBlocked = blockedCount,
         toolItems = kept,
         snapshotAge = SnapshotSec(),
@@ -1410,6 +1482,8 @@ function RA.Invalidate()
     end
     priceCache.__any = nil
     for k in pairs(vendorCache) do vendorCache[k] = nil end
+    for k in pairs(ahReason) do ahReason[k] = nil end
+    for k in pairs(ahAge) do ahAge[k] = nil end
 end
 
 local priceWatchers = {}
@@ -1431,7 +1505,7 @@ local function Fingerprint(opts, slug)
     local pol = Pol and Pol.GetPolicies and Pol.GetPolicies(slug) or nil
     local partner = opts.secondaryProfession
     if partner == nil and Pol and Pol.GetRoutePartner then partner = Pol.GetRoutePartner(slug) end
-    return string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s",
+    local base = string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s",
         tostring(opts.start), tostring(opts.onlyAH),
         tostring(opts.noFormula), tostring(opts.learnedOnly),
         tostring(opts.target and math.floor(tonumber(opts.target) or CAP)),
@@ -1439,8 +1513,9 @@ local function Fingerprint(opts, slug)
         tostring(opts.allowSecondaryLeveling),
         tostring(partner),
         pol and Pol.PolicyFingerprint(pol) or "")
+    if opts.strictOnly or RA.__debugStrictOnly then return base .. "|strictOnly" end
+    return base
 end
-
 function RA.QuoteSig()
     local AB = ns.AuctionBridge
     local PDm = ns.ProfModule

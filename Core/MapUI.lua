@@ -50,6 +50,14 @@ M.PIN_DOOR_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\MapDoor"
 M.PIN_NOTE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\NotePin"
 M.PIN_STAIR_UP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\StairsUp"
 M.PIN_STAIR_DN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\StairsDown"
+M.PIN_GLOW_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\PinGlow"
+M.PIN_GLOW_K = 2.1
+M.PIN_GLOW_GAIN = 0.85
+M.PIN_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\PinRing"
+M.PIN_RING_K = 2.5
+M.PIN_RING_RGB = { 1.00, 0.78, 0.22 }
+M.PIN_RING_SECS = 6
+M.PIN_LINK_TOL = 2.5
 M.PIN_SIZE = 48
 M.PIN_MIN = 27
 M.NOTE_SIZE = 21
@@ -125,7 +133,6 @@ function M.CycleRoutePalette()
 end
 
 local BP_MASK_TEX = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
-local BP_AVATAR_ORANGE = { 1, 0.60, 0.15 }
 local BP_BASE = nil
 
 local function bpBaseColor()
@@ -388,6 +395,14 @@ local FLOOR_KEY = {
     stratholme_service = "stratholme",
 }
 
+local function StripOrd(s)
+    if type(s) ~= "string" or #s < 4 then return s or "" end
+    if s:byte(1) == 0xE2 and s:byte(2) == 0x9D and s:byte(3) >= 0xB6 and s:byte(3) <= 0xBF then
+        return s:sub(4)
+    end
+    return s
+end
+
 local function FloorName(id, idx)
     if not id then return nil end
     local arr = FLOOR_NAMES[FLOOR_KEY[id] or id]
@@ -589,7 +604,10 @@ function M.ExtraPinsFor(id, floor)
                             if (floor == nil or pf == floor) and M.SideOK(sd) then
                                 out = out or {}
                                 out[#out + 1] = {
-                                    kind = kind, left = p[1], top = p[2],
+                                    kind = kind, left = p[1], top = p[2], floor = pf,
+                                    to = (type(p[6]) == "number") and p[6] or nil,
+                                    tox = (type(p[7]) == "number") and p[7] or nil,
+                                    toy = (type(p[8]) == "number") and p[8] or nil,
                                     text = (type(p[4]) == "string") and p[4] or "",
                                     side = sd,
                                 }
@@ -605,6 +623,9 @@ function M.ExtraPinsFor(id, floor)
                                 out[#out + 1] = {
                                     kind = kind, left = p[1], top = p[2], id = p[3],
                                     name = (kind == "rare") and p[4] or nil,
+                                    to = (type(p[6]) == "number") and p[6] or nil,
+                                    tox = (type(p[7]) == "number") and p[7] or nil,
+                                    toy = (type(p[8]) == "number") and p[8] or nil,
                                     text = txt,
                                 }
                             end
@@ -875,6 +896,19 @@ local function BuildPins()
         bt.dot:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BossSkull")
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
+        bt.__glow = bt:CreateTexture(nil, "BACKGROUND", nil, -1)
+        bt.__glow:SetTexture(M.PIN_GLOW_TEX)
+        bt.__glow:SetBlendMode("ADD")
+        bt.__glow:SetSize(M.PIN_SIZE * M.PIN_GLOW_K, M.PIN_SIZE * M.PIN_GLOW_K)
+        bt.__glow:SetPoint("CENTER", bt, "CENTER", 0, 0)
+        bt.__glow:Hide()
+        bt.__ring = bt:CreateTexture(nil, "BACKGROUND", nil, -2)
+        bt.__ring:SetTexture(M.PIN_RING_TEX)
+        bt.__ring:SetBlendMode("ADD")
+        bt.__ring:SetVertexColor(M.PIN_RING_RGB[1], M.PIN_RING_RGB[2], M.PIN_RING_RGB[3])
+        bt.__ring:SetSize(M.PIN_SIZE * M.PIN_RING_K, M.PIN_SIZE * M.PIN_RING_K)
+        bt.__ring:SetPoint("CENTER", bt, "CENTER", 0, 0)
+        bt.__ring:Hide()
         bt.__av = CreateFrame("Frame", nil, bt)
         bt.__av:SetSize(M.PIN_MIN, M.PIN_MIN)
         bt.__av:SetPoint("CENTER", bt, "CENTER", 0, 0)
@@ -1232,9 +1266,10 @@ function M.Build(detail, hero)
         M.WheelScroll(self, detChild, delta)
     end)
 
-    local detBack = Host.NewButton(detChild, L["‹ 全部首领"], 96, 24, 14)
+    local detBack = Host.NewButton(detChild, L["全部首领"], 96, 24, 14)
     detBack:SetScript("OnClick", function() M.ShowList() end)
     detBack:SetPoint("TOPRIGHT", detChild, "TOPRIGHT", 0, 0)
+    if Host.AddBtnIcon then Host.AddBtnIcon(detBack, "BackChevron", 16, 6) end
 
     local detName = MakeFS(detChild, 16, C_GOLD, "LEFT")
     detName:SetWordWrap(false)
@@ -1385,11 +1420,139 @@ function M.SetLayer(i)
     M.Paint(M.curD)
 end
 
-function M.FloorNumAt(id, idx)
+function M.LayerOf(id, floorNum)
     local layers = M.LayersFor(id)
-    local lay = layers and layers[idx or 1]
-    if not lay then return idx or 1 end
-    return tonumber(lay:match("(%d+)_")) or idx or 1
+    if not (layers and floorNum) then return nil end
+    for i = 1, #layers do
+        if M.FloorNumAt(id, i) == floorNum then return i end
+    end
+    return nil
+end
+
+function M.StepTarget(dir, to)
+    local layers = M.LayersFor(M.curId)
+    local cur = M.curLayer
+    if not (layers and cur) then return nil end
+    local i = to and M.LayerOf(M.curId, to) or (dir and (cur + dir))
+    if not i or i < 1 or i > #layers or i == cur then return nil end
+    local fn = SHOW_FLOORS[M.curId] and M.FloorNumAt(M.curId, i) or i
+    return i, fn, FloorName(M.curId, fn) or format(L["第 %d 层"], fn)
+end
+
+function M.StepFloor(dir, to)
+    local i = M.StepTarget(dir, to)
+    if not i then return false end
+    M.SetLayer(i)
+    return true
+end
+
+function M.CurFloorNum()
+    local idx = M.curLayer
+    if not (M.curId and idx) then return nil end
+    if M.LayersFor(M.curId) then return M.FloorNumAt(M.curId, idx) end
+    return 1
+end
+
+local function pulseDrv()
+    if M.pulseDriver then return M.pulseDriver end
+    local d = CreateFrame("Frame")
+    d:SetSize(1, 1)
+    d:Hide()
+    d:SetScript("OnUpdate", function(self)
+        local t = GetTime()
+        local btn = M.pulseBtn
+        local untilT = M.pulseUntil or 0
+        if not (btn and btn.__ring and btn:IsShown()) or t >= untilT then
+            if btn and btn.__ring then
+                btn.__ring:SetAlpha(1)
+                btn.__ring:Hide()
+            end
+            M.pulseBtn = nil
+            self:Hide()
+            return
+        end
+        local ph = ((t - (M.pulseStart or t)) % 1.4) / 1.4
+        local base = M.PIN_SIZE * M.PIN_RING_K
+        local sz = base * (1 + 0.06 * math.sin(ph * 6.2832))
+        local a = 0.88 + 0.12 * math.sin(ph * 6.2832 + 1.5708)
+        local left = untilT - t
+        if left < 0.7 then a = a * (left / 0.7) end
+        btn.__ring:SetSize(sz, sz)
+        btn.__ring:SetAlpha(a)
+    end)
+    M.pulseDriver = d
+    return d
+end
+
+function M.HighlightPin(btn, secs)
+    if not (btn and btn.__ring) then return false end
+    btn.__ring:SetSize(M.PIN_SIZE * M.PIN_RING_K, M.PIN_SIZE * M.PIN_RING_K)
+    btn.__ring:SetAlpha(1)
+    btn.__ring:Show()
+    M.pulseBtn = btn
+    M.pulseStart = GetTime()
+    M.pulseUntil = M.pulseStart + (secs or M.PIN_RING_SECS)
+    pulseDrv():Show()
+    return true
+end
+
+function M.ArriveAt(fromFloor, kind, tox, toy)
+    local frame = M.frame
+    if not (frame and frame.pinBtns and fromFloor) then return false end
+    local want = (kind == "next" and "prev") or (kind == "prev" and "next") or nil
+    local paired, exact, stair, anyTo, anyKind
+    local tol = M.PIN_LINK_TOL
+    for i = 1, M.MAX_PINS do
+        local b = frame.pinBtns[i]
+        local p = b and b.__p
+        if b and b:IsShown() and p then
+            local k = b.__kind
+            if k == "prev" or k == "next" or k == "entrance" then
+                if tox and toy and p.left and p.top
+                    and math.abs(p.left - tox) <= tol and math.abs(p.top - toy) <= tol then
+                    paired = paired or b
+                elseif p.to == fromFloor then
+                    if want and k == want then
+                        exact = exact or b
+                    elseif k == "prev" or k == "next" then
+                        stair = stair or b
+                    else
+                        anyTo = anyTo or b
+                    end
+                elseif want and k == want then
+                    anyKind = anyKind or b
+                end
+            end
+        end
+    end
+    local pick = paired or exact or stair or anyTo or anyKind
+    if pick then return M.HighlightPin(pick) end
+    return false
+end
+
+local SEQ_OK = {}
+
+local function seqOk(id, layers)
+    local ok = SEQ_OK[id]
+    if ok ~= nil then return ok end
+    ok = true
+    for k = 1, #layers do
+        local n = tonumber(layers[k]:match("(%d+)_")) or k
+        if n ~= k then ok = false break end
+    end
+    SEQ_OK[id] = ok
+    return ok
+end
+
+function M.FloorNumAt(id, idx)
+    local i = idx or 1
+    local layers = M.LayersFor(id)
+    local lay = layers and layers[i]
+    if not lay then return i end
+    local n = tonumber(lay:match("(%d+)_")) or i
+    if SHOW_FLOORS[id] then return n end
+    if #layers > 1 and not seqOk(id, layers) then return i end
+    return n
 end
 
 function M.BossColor(id, en)
@@ -1639,7 +1802,7 @@ function M.ShowRouteMenu(owner)
         local k = M.RouteSegKey(id, floor, i)
         local hid = M.routeHidden[k] and true or false
         items[#items + 1] = {
-            text = segs[i].from .. " → " .. segs[i].to,
+            text = StripOrd(segs[i].from) .. " → " .. StripOrd(segs[i].to),
             checked = not hid,
             color = hid and "|cff7a6a52" or nil,
             func = function()
@@ -1773,7 +1936,7 @@ function M.SyncPins()
                 nm = DG.ItemName(p.id)
                 cr, cg, cb = Unpack(C_TEXT)
             elseif kind == "entrance" then
-                nm = L["副本入口"]
+                nm = ""
                 cr, cg, cb = Unpack(C_GOLD)
             elseif kind == "note" then
                 nm = ""
@@ -1837,12 +2000,25 @@ function M.SyncPins()
                 bt.dot:Hide()
                 bt.__av:Show()
                 local isSel = (M.detailEn == p.en) or false
-                local rr, rg, rb = cr, cg, cb
-                if isSel then rr, rg, rb = BP_AVATAR_ORANGE[1], BP_AVATAR_ORANGE[2], BP_AVATAR_ORANGE[3] end
-                bpPaint(bt.__av, bpDisp(M.curId, p.en), rr, rg, rb, isSel and M.PIN_SIZE or M.PIN_MIN)
+                bpPaint(bt.__av, bpDisp(M.curId, p.en), cr, cg, cb, isSel and M.PIN_SIZE or M.PIN_MIN)
             end
-            bt.nm:SetText(nm or "")
             local sel = (kind == "boss") and (M.detailEn == p.en) or false
+            if kind == "boss" and not sel then nm = "" end
+            bt.nm:SetText(nm or "")
+            if bt.__glow then
+                local g = M.PIN_GLOW_GAIN
+                bt.__glow:SetVertexColor(cr * g, cg * g, cb * g)
+                bt.__glow:SetShown(sel)
+            end
+            if bt.__ring then bt.__ring:Hide() end
+            bt.nm:ClearAllPoints()
+            if kind == "boss" then
+                bt.nm:SetPoint("TOPLEFT", bt.dot, "BOTTOMLEFT", -2, -2)
+                bt.nm:SetJustifyH("LEFT")
+            else
+                bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
+                bt.nm:SetJustifyH("CENTER")
+            end
             local fpath, _, fflags = bt.nm:GetFont()
             bt.nm:SetFont(fpath, sel and 14 or 12, fflags)
             bt.nm:SetTextColor(cr, cg, cb)
@@ -1895,6 +2071,20 @@ function M.PinOnClick(self)
     elseif kind == "quest" and p and p.id then
         U.dungeonQuestSel = p.id
         U:SetDungeonTab("quest")
+    elseif kind == "prev" or kind == "next" then
+        local from = M.CurFloorNum()
+        if M.StepFloor((kind == "next") and 1 or -1, p and p.to) then
+            ns.PlaySound(1)
+            M.PinOnLeave()
+            M.ArriveAt(from, kind, p and p.tox, p and p.toy)
+        end
+    elseif kind == "entrance" and p and p.to then
+        local from = M.CurFloorNum()
+        if M.StepFloor(nil, p.to) then
+            ns.PlaySound(1)
+            M.PinOnLeave()
+            M.ArriveAt(from, "entrance", p.tox, p.toy)
+        end
     end
 end
 
@@ -1939,6 +2129,13 @@ function M.PinOnEnter(self)
         GameTooltip:AddLine(L["点击查看任务详情"], 0.7, 0.7, 0.7, true)
     elseif self.__kind == "entrance" then
         GameTooltip:AddLine(L["副本入口"], 1, 0.82, 0, true)
+        if p.text and p.text ~= "" then
+            GameTooltip:AddLine(p.text, 1, 1, 1, true)
+        end
+        local _, _, lbl = M.StepTarget(nil, p and p.to)
+        if lbl then
+            GameTooltip:AddLine(format(L["点击切换地图：%s"], lbl), 0.7, 0.9, 0.7, true)
+        end
     elseif self.__kind == "icon" then
         GameTooltip:AddLine(L["任务"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
@@ -1949,10 +2146,26 @@ function M.PinOnEnter(self)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
+        local _, _, lbl = M.StepTarget(-1, p and p.to)
+        if lbl then
+            if p.text and p.text ~= "" then
+                GameTooltip:AddLine(L["点击切换地图"], 0.7, 0.9, 0.7, true)
+            else
+                GameTooltip:AddLine(format(L["点击切换地图：%s"], lbl), 0.7, 0.9, 0.7, true)
+            end
+        end
     elseif self.__kind == "next" then
         GameTooltip:AddLine(L["下一层入口"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
+        end
+        local _, _, lbl = M.StepTarget(1, p and p.to)
+        if lbl then
+            if p.text and p.text ~= "" then
+                GameTooltip:AddLine(L["点击切换地图"], 0.7, 0.9, 0.7, true)
+            else
+                GameTooltip:AddLine(format(L["点击切换地图：%s"], lbl), 0.7, 0.9, 0.7, true)
+            end
         end
     elseif self.__kind == "rare" then
         GameTooltip:AddLine(L["稀有"] .. "：" .. (p.name or ""), 0.72, 0.76, 0.85, true)

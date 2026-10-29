@@ -57,7 +57,7 @@ local BAG_CHAIN = {
               place = L["石爪山脉 · 烈日石居上方废弃营地"], obj = L["散落杂物"] },
       rw = { { 3463, note = L["三选一 · 魔杖"] }, { 217314, note = L["三选一"] },
              { 217315, note = L["三选一"] }, { 3464 }, { 3465 }, { 216619 } } },
-    { key = "fire", no = "3½", title = "Rekindle", optional = true, xp = nil, q = 80001,
+    { key = "fire", no = "3.5", title = "Rekindle", optional = true, xp = nil, q = 80001,
       note = L["可选步：用②给的普通木柴 + 燧石和火绒重燃营火，燧石和火绒用完会还给你；链路不需要这步。"],
       loc = { area = 406, x = nil, y = nil, zn = L["同营地 · 营火"],
               place = L["石爪山脉 · 同营地营火（可选）"], obj = L["营火"] },
@@ -4170,9 +4170,15 @@ function EG.Build(page)
             if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(eb) end
             local ef = MakeFS(eb, 14, C_GOLD, "CENTER")
             ef:SetAllPoints()
-            ef:SetText(L["任务线奖励总览"] .. " ›")
+            ef:SetText(L["任务线奖励总览"])
             ef:SetWordWrap(false)
             eb:SetFontString(ef)
+            local eh = eb:CreateTexture(nil, "OVERLAY")
+            eh:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BackChevron.tga")
+            eh:SetTexCoord(1, 0, 0, 1)
+            eh:SetSize(9, 9)
+            eh:SetPoint("RIGHT", eb, "RIGHT", -6, 0)
+            eh:SetVertexColor(Unpack(C_GOLD))
             eb:SetScript("OnClick", function()
                 EG.bagMode = (EG.bagMode == "total") and "detail" or "total"
                 EG.RequestRender()
@@ -4506,9 +4512,11 @@ function EG.Build(page)
                 end)
                 EG.bmNodes[i] = nd
                 if i < 5 then
-                    local ar = MakeFS(chain, 16, C_GOLD, "CENTER")
-                    ar:SetText("›")
-                    ar:SetWordWrap(false)
+                    local ar = chain:CreateTexture(nil, "OVERLAY")
+                    ar:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BackChevron.tga")
+                    ar:SetTexCoord(1, 0, 0, 1)
+                    ar:SetHeight(12)
+                    ar:SetVertexColor(Unpack(C_GOLD))
                     ar:Hide()
                     EG.bmArrows[i] = ar
                 end
