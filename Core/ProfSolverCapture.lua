@@ -111,9 +111,9 @@ local DIAG_TEXT = {
     bindOnPickupFormulaDisabled = L["非金币获取的拾取绑定图纸未开启；此配方暂不参与路线。"],
     currencyFormulaDisabled = L["非金币拾取绑定与通货兑换均未开启；此配方暂不参与路线。"],
     formulaAcquisitionPending = L["请先取得并学习所需图纸，再开始制作。"],
-    formulaAuctionSupplyUnknown = L["图纸有拍卖行价格，但缺少最近的可购数量；需要最近数量至少为2。"],
-    formulaAuctionSupplyInsufficient = L["图纸最近的拍卖行可购数量不足2，或本路线已用完可购数量。"],
-    limitedFormulaDisabled = L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少2张的拍卖行图纸。"],
+    formulaAuctionSupplyUnknown = L["图纸有拍卖行价格，但缺少最近的可购数量；需要最近数量至少为1。"],
+    formulaAuctionSupplyInsufficient = L["图纸最近的拍卖行可购数量不足1，或本路线已用完可购数量。"],
+    limitedFormulaDisabled = L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少1张的拍卖行图纸。"],
     formulaPriceUnknown = L["图纸购买价格尚未核实。"],
     learningPriceUnknown = L["训练师学习费用尚未核实。"],
     formulaStockUnknown = L["图纸为限量或未核实库存，不能保证商人现货。"],
@@ -1063,7 +1063,7 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     entry.questOnly=exclusiveQuest and not hasEntries(vendors) and not hasEntries(sources.drops) or false
     local supply=id and E.FormulaAuctionSupplyOf(context,id)
     local ahAvailable=auctionRemaining or (supply and supply.quantity)
-    local ahUsable=entry.ahPrice and supply and supply.quantity>=2 and ahAvailable>=1
+    local ahUsable=entry.ahPrice and supply and supply.quantity>=1 and ahAvailable>=1
     if supply then
         entry.availableCount=supply.quantity;entry.supplyObserved=true;entry.supplyComplete=supply.complete==true
         entry.supplyObservedAt=supply.observedAt;entry.supplySource=supply.source
@@ -1124,7 +1124,7 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     entry.considerAuctionSupply=entry.source=="ah" and not known
     if entry.blocked then
         entry.reason=entry.ahPrice and not supply and "formulaAuctionSupplyUnknown"
-            or entry.ahPrice and (supply.quantity<2 or ahAvailable<1) and "formulaAuctionSupplyInsufficient"
+            or entry.ahPrice and (supply.quantity<1 or ahAvailable<1) and "formulaAuctionSupplyInsufficient"
             or entry.limitedVendorDisabled and "limitedFormulaDisabled" or "formulaUnavailable"
     end
     return entry
