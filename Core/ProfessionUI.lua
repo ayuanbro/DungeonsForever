@@ -11228,6 +11228,18 @@ end
 function PD.FormulaBlockedText(entry)
     if not (entry.blocked or entry.usable==false) then return end
     local reason=entry.reason
+    if reason == "formulaAuctionSupplyUnknown" then
+        local AB = ns.AuctionBridge
+        local enabled = AB
+            and AB.ReplicateScanEnabled
+            and AB.ReplicateScanEnabled()
+
+        if enabled == false then
+            return L["Auctionator 当前使用摘要扫描模式。请前往 Auctionator → 设置 → 高级，开启「默认使用较慢的备用扫描模式」，然后重新完整扫描。"]
+        elseif enabled == nil then
+            return L["无法确认 Auctionator 的扫描模式。请检查是否已开启「默认使用较慢的备用扫描模式」（复制模式），然后重新完整扫描。"]
+        end
+    end
     if reason=="learningDataMissing" or reason=="learningRequirementsUnknown" then
         return L["学习资料待补全"].."："..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
     elseif reason=="formulaLimited" or reason=="limitedFormulaDisabled" then

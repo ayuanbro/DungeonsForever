@@ -1924,3 +1924,7 @@ L["非金币拾取绑定与通货兑换均未开启；此配方暂不参与路�
 
 L["需要先取得并学习图纸；已知金币计入预算，其他获取或兑换成本尚未折算。"] = "Obtain and learn the pattern first; known gold is budgeted, while other acquisition or exchange costs remain unvalued."
 L["获取或兑换总成本未确认"] = "Total acquisition or exchange cost unconfirmed"
+
+-- Auctionator scan mode warnings
+L["Auctionator 当前使用摘要扫描模式。请前往 Auctionator → 设置 → 高级，开启「默认使用较慢的备用扫描模式」，然后重新完整扫描。"] = "Auctionator is using summary scan mode. Go to Auctionator → Settings → Advanced, enable 'Use alternate slower scan mode by default', then run another full scan."
+L["无法确认 Auctionator 的扫描模式。请检查是否已开启「默认使用较慢的备用扫描模式」（复制模式），然后重新完整扫描。"] = "Unable to determine Auctionator's scan mode. Check that 'Use alternate slower scan mode by default' (replicate mode) is enabled, then run another full scan."

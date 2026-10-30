@@ -422,4 +422,28 @@ local function InitializeAuctionatorStock()
         if event=="PLAYER_LOGIN" or name=="Auctionator" then AB.ConnectAuctionatorStock() end
     end)
 end
+
+function AB.ReplicateScanEnabled()
+    local a = _G.Auctionator
+    local cfg = type(a) == "table" and a.Config
+
+    if type(cfg) ~= "table"
+        or type(cfg.Get) ~= "function"
+        or type(cfg.Options) ~= "table"
+        or type(cfg.Options.REPLICATE_SCAN) ~= "string" then
+        return nil
+    end
+
+    local ok, enabled = pcall(
+        cfg.Get,
+        cfg.Options.REPLICATE_SCAN
+    )
+
+    if ok and type(enabled) == "boolean" then
+        return enabled
+    end
+
+    return nil
+end
+
 if ns.Init then ns.Init(InitializeAuctionatorStock) else InitializeAuctionatorStock() end
