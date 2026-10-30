@@ -5441,7 +5441,7 @@ function PD.PaintLvTiles()
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
     local scanWarning,scanBlocked=PD.ReplicateScanWarning()
-    if scanWarning then costLines[#costLines+1]={scanWarning,0.98,0.55,0.4} end
+   
     if scanBlocked and not fixedOnly then
         tiles.cost.label:SetText(L["拍卖行扫描"])
         tiles.cost.val:SetText(L["无法重新计算"])
