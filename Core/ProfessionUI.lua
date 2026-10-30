@@ -9535,7 +9535,8 @@ function PD.PlanCostText(plan)
 end
 
 function PD.CopyPlanSummary(plan)
-    if not plan or (plan.planVersion ~= 2 and not plan.referenceOnly) then return end
+    if not plan or (plan.planVersion ~= 2 and not plan.referenceOnly)
+        or (plan.slug and plan.slug ~= PD.cur) then return end
     local s = PD.lvSummary or {}
     for _, key in ipairs({"planVersion", "status", "optimal", "feasible", "completeCost", "costComplete", "learningComplete",
                            "revision", "partial", "plannedTo", "targetReached", "alreadyAtTarget", "start", "target",
@@ -10250,6 +10251,10 @@ function PD.StopSolverRoute()
     local aborting = (SR and SR.Running and SR.Running() and not PD.solverDone) and true or false
     if aborting then PD.autoExact = nil end
     if SR then SR.Stop() end
+    -- Invalidate callbacks created before switching professions.
+    PD.solverRunSerial = (PD.solverRunSerial or 0) + 1
+    PD.solverSlug = nil
+    PD.solverKey = nil
     PD.solverFrac = nil
     PD.solverSig = nil
     PD.solverRetry = nil
@@ -10262,13 +10267,23 @@ function PD.StartSolverRoute(opts, key)
     local SR = ns.ProfSolverRun
     if not SR or not opts then return end
     if opts.cpuLimitMs == nil then opts.cpuLimitMs = 8000 end
-    PD.solverSlug = PD.cur
-    PD.solverKey = key
-    PD.solverSig = key
+    local slug = PD.cur
+    local requestKey = key
+    PD.solverRunSerial = (PD.solverRunSerial or 0) + 1
+    local runSerial = PD.solverRunSerial
+    PD.solverSlug = slug
+    PD.solverKey = requestKey
+    PD.solverSig = requestKey
     PD.solverDone = false
     PD.solverFrac = 0
-    SR.Start(PD.cur, opts, {
+    local function isCurrent(j)
+        return PD.solverRunSerial == runSerial and PD.cur == slug
+            and PD.solverSlug == slug and PD.solverKey == requestKey
+            and (not j or not j.slug or j.slug == slug)
+    end
+    SR.Start(slug, opts, {
         onProgress = function(j, st)
+            if not isCurrent(j) then return end
             PD.solverFrac = st and st.fraction or nil
             if not PD.WindowShown() then
                 if not PD.__solverStopPend then
@@ -10298,29 +10313,32 @@ function PD.StartSolverRoute(opts, key)
             end
         end,
         onDone = function(j)
+            -- The mutable PD.cur/solverKey may already belong to another
+            -- profession by the time the previous asynchronous job completes.
+            if not isCurrent(j) then return end
             PD.solverDone = true
             PD.solverFrac = nil
             local res = j and (j.result or j.best) or nil
-            local usable = res and res.planVersion == 2 and #(res.steps or {}) > 0
-            local mine = PD.solverSlug == PD.cur
-            if usable and mine then
+            local usable = res and (not res.slug or res.slug == slug)
+                and res.planVersion == 2 and #(res.steps or {}) > 0
+            if usable then
                 res.exact = true
                 PD.autoSnapshot = res
-                PD.autoSnapshotSlug = PD.cur
-                PD.autoKey = PD.solverKey
+                PD.autoSnapshotSlug = slug
+                PD.autoKey = requestKey
                 PD.autoExact = true
-                if PD.exactFailed then PD.exactFailed[PD.solverKey or ""] = nil end
+                if PD.exactFailed then PD.exactFailed[requestKey or ""] = nil end
                 PD.solverFallback = nil
-            elseif mine then
+            else
                 PD.exactFailed = PD.exactFailed or {}
-                PD.exactFailed[PD.solverKey or ""] = true
+                PD.exactFailed[requestKey or ""] = true
                 PD.autoExact = false
                 if RA and RA.Get and PD.WindowShown() then
-                    local r2 = RA.Get(PD.cur, opts)
-                    if r2 then
+                    local r2 = RA.Get(slug, opts)
+                    if r2 and (not r2.slug or r2.slug == slug) then
                         PD.autoSnapshot = r2
-                        PD.autoSnapshotSlug = PD.cur
-                        PD.autoKey = PD.solverKey
+                        PD.autoSnapshotSlug = slug
+                        PD.autoKey = requestKey
                         PD.solverFallback = true
                     end
                 end
@@ -10798,6 +10816,8 @@ function PD.RowsLeveling(rows)
             opts.cpuLimitMs=8000
             res=RA.Recalculate(PD.cur,opts)
         else res=RA.Get(PD.cur,opts) end
+        -- Never render a foreign profession even if a legacy cache survived.
+        if res and res.slug and res.slug~=PD.cur then res=nil end
         if res and res.planVersion==2 then res.exact=true end
         if res and res.planVersion ~= 2 and not res.priced and scheme ~= "optim" then res = nil end
     end
@@ -14324,9 +14344,11 @@ if RA and RA.OnPlanChanged then
         PD.craftAll = nil
         PD.craftAllFull = nil
         if type(slug) == "table" then plan = slug; slug = plan.slug end
-        if slug == PD.cur and plan then
+        if slug == PD.cur and plan and (not plan.slug or plan.slug == slug) then
             local xp=ns.ProfExecution
-            PD.autoSnapshot = xp and xp.GetPlan and xp.GetPlan(slug) or plan
+            local frozen=xp and xp.GetPlan and xp.GetPlan(slug) or nil
+            if frozen and frozen.slug and frozen.slug~=slug then frozen=nil end
+            PD.autoSnapshot = frozen or plan
             PD.autoSnapshotSlug = slug
         end
         if PD.built and ns.PageVisible(PD.page)

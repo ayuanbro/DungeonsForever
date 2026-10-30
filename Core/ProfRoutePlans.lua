@@ -132,7 +132,9 @@ local function signature(slug, opts)
     local start = opts.fromCurrent == false and ("fixed:" .. opts.start) or "current"
     if opts.snapshot then start = tostring(opts.start) end
     local policy = E.PolicyFingerprint and E.PolicyFingerprint(opts.exclusions) or ""
-    local sig=table.concat({opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
+    -- Include the profession. Previously identical policies/targets for
+    -- two professions shared one persisted cache key and overwrote each other.
+    local sig=table.concat({"profession:"..tostring(slug), opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
         tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas), tostring(opts.considerAuctionSupply), tostring(opts.allowSecondaryLeveling),
         tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
         "formula-channels:2", tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
@@ -354,17 +356,21 @@ function RA.Get(slug, supplied)
     local frozen,reason
     if xp and xp.GetPlan then frozen,reason=xp.GetPlan(slug) end
     if reason=="historyUnreadable" then return gate(slug,opts,reason) end
+    -- Imported/tracked plans can also predate the old cache isolation fix.
+    if frozen and frozen.slug and frozen.slug~=slug then frozen=nil end
     if frozen then
         if frozen.learningPolicyFingerprint~=learningPolicy() then return learningStale(frozen) end
         if RA.SpecializationPlanChanged and RA.SpecializationPlanChanged(frozen,slug,opts) then return gate(slug,opts,"specializationChanged") end
         return refreshFreshness(frozen,slug,opts)
     end
     local result=results[key]
+    if result and result.slug and result.slug~=slug then result=nil end
     if result then
         if not opts.snapshot then refreshFreshness(result,slug,opts) end
         return result
     end
     local selected=active[scope] and results[active[scope]]
+    if selected and selected.slug and selected.slug~=slug then selected=nil end
     if not opts.snapshot and selected then
         if selected.learningPolicyFingerprint~=learningPolicy() then return learningStale(selected) end
         return refreshFreshness(selected,slug,opts)
@@ -372,7 +378,18 @@ function RA.Get(slug, supplied)
     local db,cacheError
     if not opts.snapshot then db,cacheError=saved() end
     if cacheError then return gate(slug,opts,cacheError) end
-    local record=db and (db.routes[signature(slug,opts)] or db.routes[db.active[slug]])
+    -- Legacy cache keys were not profession-scoped. Never load an old entry
+    -- unless both the saved record and its embedded result match this slug.
+    local function validRecord(rec)
+        return type(rec)=="table" and rec.slug==slug
+            and (type(rec.result)~="table" or rec.result.slug==nil or rec.result.slug==slug)
+    end
+    local record=db and db.routes[signature(slug,opts)]
+    if not validRecord(record) then record=nil end
+    if not record and db and db.active[slug] then
+        local legacy=db.routes[db.active[slug]]
+        if validRecord(legacy) then record=legacy end
+    end
     -- Older captures accidentally returned an empty catalogue for an unlearned
     -- solo profession. Retry that empty candidate once; execution facts above
     -- are always preserved and genuine failed new jobs are not auto-retried.
