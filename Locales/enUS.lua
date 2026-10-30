@@ -1928,3 +1928,9 @@ L["获取或兑换总成本未确认"] = "Total acquisition or exchange cost unc
 -- Auctionator scan mode warnings
 L["Auctionator 当前使用摘要扫描模式。请前往 Auctionator → 设置 → 高级，开启「默认使用较慢的备用扫描模式」，然后重新完整扫描。"] = "Auctionator is using summary scan mode. Go to Auctionator → Settings → Advanced, enable 'Use alternate slower scan mode by default', then run another full scan."
 L["无法确认 Auctionator 的扫描模式。请检查是否已开启「默认使用较慢的备用扫描模式」（复制模式），然后重新完整扫描。"] = "Unable to determine Auctionator's scan mode. Check that 'Use alternate slower scan mode by default' (replicate mode) is enabled, then run another full scan."
+-- Auctionator replicate-mode prerequisites
+L["Auctionator 当前使用摘要扫描模式，无法核实图纸库存。请在 Auctionator → 设置 → 高级中开启「默认使用较慢的备用扫描模式」。"] = "Auctionator is using summary scan mode, so pattern stock cannot be verified. Go to Auctionator → Settings → Advanced and enable 'Use alternate slower scan mode by default'."
+L["复制模式已开启，但尚无有效的复制扫描库存；请先完成一次新的复制模式完整扫描，再重新计算。"] = "Replicate mode is enabled, but no valid replicate stock scan is available. Run a new full scan in replicate mode before recalculating."
+L["无法确认 Auctionator 扫描模式，请检查是否开启备用扫描模式。"] = "Unable to confirm Auctionator's scan mode. Check that alternate scan mode is enabled."
+L["拍卖行扫描"] = "Auction scan"
+L["无法重新计算"] = "Cannot recalculate"

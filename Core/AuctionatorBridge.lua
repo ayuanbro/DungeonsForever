@@ -141,12 +141,25 @@ local function ProfDB()
     return DungeonsForeverDB and DungeonsForeverDB.prof
 end
 
+local function ReplicateGateDB()
+    local db=ProfDB()
+    if type(db)=="table" then return db end
+    if type(DungeonsForeverDB)=="table" and DungeonsForeverDB.prof==nil then
+        DungeonsForeverDB.prof={}
+        return DungeonsForeverDB.prof
+    end
+end
+
 -- A complete market snapshot also proves zero for IDs absent from its rows.
 -- Store one compact batch rather than duplicating its metadata on every item.
 local function SupplyRecord(id)
     local db=ProfDB()
     local batch=db and db.auctionFullScan
     if type(batch)~="table" or batch.v~=1 or type(batch.items)~="table" then return nil end
+    -- Never interpret stock from a scan invalidated by a mode switch.
+    if AB.ReplicateScanReady and AB.ReplicateScanReady()==false then
+        return {mk=batch.mk,ob=batch.ob,failure="unverified"}
+    end
     local item=batch.items[id]
     if item~=nil and type(item)~="table" then
         return {mk=batch.mk,ob=batch.ob,failure="incomplete"}
@@ -364,10 +377,15 @@ local function ImportFullRows(scan,rows)
             else fullState={status="unavailable"};fullRead=nil end
             return
         end
+        local enabled,mode=AB.ObserveReplicateMode()
+        if enabled==false or not mode
+            or mode.generation~=scan.modeGeneration or mode.scanSerial~=scan.scanSerial then
+            fullState={status="unverified"};fullRead=nil;return
+        end
         local db=ProfDB()
         if db then
             db.auctionFullScan={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
-                c=scan.complete,v=1}
+                c=scan.complete,v=1,rg=scan.modeGeneration,rs=scan.scanSerial}
             fullState.status=scan.complete and "complete" or "incomplete"
             fullState.observedAt=scan.observedAt
             fullRead=nil
@@ -391,9 +409,16 @@ function AB.ConnectAuctionatorStock()
     local listener={}
     function listener:ReceiveEvent(event,data)
         if event==ev.ScanStart then
+            local enabled,mode=AB.ObserveReplicateMode()
             StopFullImport()
+            if enabled==false or not mode then
+                fullState={status="unverified"};return
+            end
+            -- Each new attempt supersedes older complete scans, even on failure.
+            mode.scanSerial=mode.scanSerial+1
             fullRead={startedAt=time and time() or 0,mk=MarketKey(),ob=ObserverKey(),
-                modern=ev.ScanStart=="replicate_scan_start"}
+                modern=ev.ScanStart=="replicate_scan_start",
+                modeGeneration=mode.generation,scanSerial=mode.scanSerial}
             fullState={status="scanning"}
         elseif event==ev.ScanProgress and fullRead and type(data)=="number" and data>=0.2 then
             ExpectedFullRows(fullRead)
@@ -415,11 +440,17 @@ end
 
 local function InitializeAuctionatorStock()
     AB.ConnectAuctionatorStock()
+    AB.ObserveReplicateMode()
+    AB.HookReplicateModeSetting()
     local frame=CreateFrame and CreateFrame("Frame")
     if not frame then return end
     frame:RegisterEvent("ADDON_LOADED");frame:RegisterEvent("PLAYER_LOGIN")
     frame:SetScript("OnEvent",function(_,event,name)
-        if event=="PLAYER_LOGIN" or name=="Auctionator" then AB.ConnectAuctionatorStock() end
+        if event=="PLAYER_LOGIN" or name=="Auctionator" then
+            AB.ConnectAuctionatorStock()
+            AB.ObserveReplicateMode()
+            AB.HookReplicateModeSetting()
+        end
     end)
 end
 
@@ -499,6 +530,72 @@ function AB.ReplicateScanReady()
     end
 
     return true
+end
+
+local hookedModeConfig
+
+-- Persistent generation, not wall-clock time, prevents same-second off/on reuse.
+function AB.ObserveReplicateMode()
+    local enabled=AB.ReplicateScanEnabled()
+    if enabled==nil then return nil,nil end
+    local db=ReplicateGateDB()
+    if not db then return enabled,nil end
+    local state=db.auctionReplicateGate
+    if type(state)~="table" or state.v~=1
+        or not WholeNumber(state.generation) or state.generation<1
+        or not WholeNumber(state.scanSerial) then
+        state={v=1,enabled=enabled,generation=1,scanSerial=0}
+        db.auctionReplicateGate=state
+    elseif state.enabled~=enabled then
+        state.enabled=enabled
+        state.generation=state.generation+1
+        StopFullImport()
+        fullState={status="mode-changed"}
+        supplyRevision=supplyRevision+1
+        for _,fn in ipairs(supplyListeners) do pcall(fn,nil,"replicate-mode") end
+    end
+    return enabled,state
+end
+
+function AB.ReplicateScanReady()
+    -- Only Forever's live profession optimizer requires this scanner.
+    if not ns.IsForever then return true end
+    local enabled,state=AB.ObserveReplicateMode()
+    if enabled==nil then return nil,"replicateModeUnknown" end
+    if not enabled then return false,"replicateModeDisabled" end
+    local db=ReplicateGateDB()
+    local batch=db and db.auctionFullScan
+    local now=time and time() or 0
+    if not state or type(batch)~="table" or batch.v~=1 or batch.c~=true
+        or type(batch.items)~="table" or batch.mk~=MarketKey()
+        or batch.ob~=ObserverKey() or type(batch.t)~="number"
+        or batch.t<=0 or batch.t>now or now-batch.t>SUPPLY_MAX_AGE
+        or batch.rg~=state.generation or batch.rs~=state.scanSerial then
+        return false,"replicateScanRequired"
+    end
+    local a=_G.Auctionator
+    local summary=a and a.SavedState and a.SavedState.TimeOfLastBrowseScan
+    if type(summary)=="number" and summary>0 and summary>=batch.t then
+        return false,"replicateScanRequired"
+    end
+    return true
+end
+
+-- Observe Auctionator's real UI setting changes without replacing Config.Set.
+-- Reading the setting still detects changes missed while this addon was offline.
+function AB.HookReplicateModeSetting()
+    local a=_G.Auctionator
+    local cfg=type(a)=="table" and a.Config
+    if type(cfg)~="table" or type(cfg.Set)~="function" then return false end
+    if cfg==hookedModeConfig then return true end
+    if type(hooksecurefunc)~="function" then return false end
+    local ok=pcall(hooksecurefunc,cfg,"Set",function(option)
+        if cfg.Options and option==cfg.Options.REPLICATE_SCAN then
+            AB.ObserveReplicateMode()
+        end
+    end)
+    if ok then hookedModeConfig=cfg end
+    return ok
 end
 
 if ns.Init then ns.Init(InitializeAuctionatorStock) else InitializeAuctionatorStock() end

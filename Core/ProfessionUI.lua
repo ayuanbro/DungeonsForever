@@ -94,6 +94,29 @@ function PD.AuctionatorStatusText()
     return L["暂无有效拍卖行价格；请扫描或更新价格。"]
 end
 
+function PD.ReplicateScanMessage(reason)
+    if reason=="replicateModeDisabled" then
+        return L["Auctionator 当前使用摘要扫描模式，无法核实图纸库存。请在 Auctionator → 设置 → 高级中开启「默认使用较慢的备用扫描模式」。"]
+    elseif reason=="replicateScanRequired" then
+        return L["复制模式已开启，但尚无有效的复制扫描库存；请先完成一次新的复制模式完整扫描，再重新计算。"]
+    elseif reason=="replicateModeUnknown" then
+        return L["无法确认 Auctionator 扫描模式，请检查是否开启备用扫描模式。"]
+    end
+end
+
+function PD.ReplicateScanWarning()
+    if not ns.IsForever then return nil end
+    local st=PD.AuctionatorState()
+    if st=="missing" or st=="disabled" or st=="loading" then return nil end
+    local bridge=ns.AuctionBridge
+    if not (bridge and bridge.ReplicateScanReady) then
+        return PD.ReplicateScanMessage("replicateModeUnknown"),false
+    end
+    local ready,reason=bridge.ReplicateScanReady()
+    if ready==true then return nil end
+    return PD.ReplicateScanMessage(reason),ready==false
+end
+
 PD.SNAP_STALE_SEC = RA.MaxStaleSeconds()
 
 local function SnapAgePhrase(sec)
@@ -5417,6 +5440,13 @@ function PD.PaintLvTiles()
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
+    local scanWarning,scanBlocked=PD.ReplicateScanWarning()
+    if scanWarning then costLines[#costLines+1]={scanWarning,0.98,0.55,0.4} end
+    if scanBlocked and not fixedOnly then
+        tiles.cost.label:SetText(L["拍卖行扫描"])
+        tiles.cost.val:SetText(L["无法重新计算"])
+        tiles.cost.val:SetTextColor(0.95,0.45,0.4)
+    end
     local snapBadge, br, bg, bb = PD.SnapshotBadgeText(s)
     PD.SetBadge(snapBadge, br, bg, bb)
     local atxt
@@ -9198,6 +9228,8 @@ function PD.PlanStatusParts(plan)
     end
     if plan.status=="recalculate_required" then
         for _,diagnostic in ipairs(plan.diagnostics or {}) do
+            local scanText=PD.ReplicateScanMessage(diagnostic.code)
+            if scanText then return scanText end
             if diagnostic.code=="learningPolicyChanged" and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
                 return ns.ProfEconomy.DiagnosticText(diagnostic)
             end
@@ -10725,6 +10757,12 @@ function PD.RowsLeveling(rows)
         end
     end
     PD.warnNotes = notes
+    -- Show without requiring an eligible pattern or tooltip hover.
+    local scanWarning=PD.ReplicateScanWarning()
+    if scanWarning then
+        PushText(rows,scanWarning,12,{0.98,0.55,0.4},1)
+        PushGap(rows,4,1)
+    end
 
     local _learned = PD.ProfLearned()
     local curLv = _learned and _learned[PD.cur] and _learned[PD.cur].cur or nil

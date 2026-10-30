@@ -193,6 +193,15 @@ local function gate(slug, opts, code)
         steps={},executionSteps={},actions={},mats={},formulas={},gaps={},total=0,crafts=0,
         diagnostics={{code=code}},completeCost=false}
 end
+
+local function replicatePrerequisite(slug,opts)
+    -- Synthetic input, fixed guides, and other client versions are unaffected.
+    if not ns.IsForever or opts.snapshot then return nil end
+    local bridge=ns.AuctionBridge
+    if not (bridge and type(bridge.ReplicateScanReady)=="function") then return nil end
+    local ready,reason=bridge.ReplicateScanReady()
+    if ready==false then return gate(slug,opts,reason or "replicateScanRequired") end
+end
 local function remember(job, result)
     if job.opts.snapshot or result.status == "searching" then return end
     local db = saved(); if not db then return end
@@ -252,6 +261,17 @@ local function release(job)
 end
 local function pump(job)
     if job.invalid or job.cancelled or job.finished then return true end
+    if ns.IsForever and not job.opts.snapshot then
+        local bridge=ns.AuctionBridge
+        if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady()==false then
+            job.cancelled=true;job.status="stopped";job.searchTermination="replicate_scan_required"
+            if job.published then
+                job.published.status="stopped";job.published.inFlight=false
+                job.published.searchTermination="replicate_scan_required"
+            end
+            return true
+        end
+    end
     local done=S.Run(job,SEARCH_SLICE_MS)
     if job.result and (job.result~=job.published or done) then publish(job,job.result)
     elseif job.published and job.progressVersion~=job.publishedProgressVersion then
@@ -326,6 +346,8 @@ function RA.Get(slug, supplied)
         return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
     end
     local opts=options(slug,supplied)
+    local blocked=replicatePrerequisite(slug,opts)
+    if blocked then return blocked end
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     local key,scope=identity(slug,opts)
     local xp=not opts.snapshot and ns.ProfExecution
@@ -376,6 +398,8 @@ end
 function RA.Compute(slug, supplied)
     if slug=="first-aid" or slug=="poisons" then return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug)) end
     local opts=options(slug,supplied)
+    local blocked=replicatePrerequisite(slug,opts)
+    if blocked then return blocked end
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     if opts.scheme=="fishing" then return quickCompute(slug,opts) end
     local result,job=S.Compute(slug,opts)
@@ -389,6 +413,8 @@ function RA.Recalculate(slug, supplied)
         return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
     end
     local opts=options(slug,supplied);local sigOpts=copy(opts);sigOpts.snapshot=opts.snapshot
+    local blocked=replicatePrerequisite(slug,opts)
+    if blocked then return blocked end
     if not opts.snapshot then local _,cacheError=saved();if cacheError then return gate(slug,opts,cacheError) end end
     local xp=not opts.snapshot and ns.ProfExecution
     if xp and xp.PrepareRecalculate then
@@ -454,6 +480,12 @@ function RA.Cancel(slug)
     return changed
 end
 function RA.Continue(slug)
+    if ns.IsForever then
+        local bridge=ns.AuctionBridge
+        if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady()==false then
+            return false
+        end
+    end
     for _,job in pairs(jobs) do
         if (not slug or job.slug==slug) and job.cancelled and not job.finished and not job.invalid then
             job.cancelled=false;job.status="searching";job.searchTermination=nil
@@ -521,6 +553,9 @@ local function initialize()
             for _,job in pairs(jobs) do
                 if job.published and not job.opts.snapshot then refreshFreshness(job.published,job.slug,job.opts) end
             end
+        elseif reason=="replicate-mode" then
+            RA.Cancel()
+            RA.Invalidate("auction-mode")
         elseif reason=="prices" then RA.Invalidate(reason) end
     end) end
     local frame=CreateFrame and CreateFrame("Frame")
