@@ -80,7 +80,8 @@ class EconomyFusionTests(unittest.TestCase):
             local E=ns.ProfEconomy
             local r={spell=100,profession='alchemy',key='alchemy:100',formula=400}
             local snap={known={},prices={[400]=50},offers={},formulaOffers={[400]={{npcID=1,price=60,quantity=1,unlimited=true}}},
-                auctionSupply={[400]={quantity=1}},allowLimitedFormulas=false}
+                stamp=1000,auctionSupply={[400]={quantity=2,observedAt=900,complete=true,
+                  ownerExcluded=true,source='client-auction-results'}},allowLimitedFormulas=false}
             local f=E.FormulaFor(r,snap)
             assert(f.source=='ah' and f.cost==50)
             f=E.FormulaFor(r,snap,0)
@@ -94,7 +95,10 @@ class EconomyFusionTests(unittest.TestCase):
         self.run_lua("""
             local E=ns.ProfEconomy
             local r={spell=100,profession='alchemy',key='alchemy:100',formula=400}
-            local snap={known={},prices={[400]=50},formulaOffers={[400]={{npcID=1,price=80,quantity=2,unlimited=true}}}}
+            local snap={known={},prices={[400]=50},stamp=1000,
+                auctionSupply={[400]={quantity=2,observedAt=900,complete=true,
+                  ownerExcluded=true,source='client-auction-results'}},
+                formulaOffers={[400]={{npcID=1,price=80,quantity=2,unlimited=true}}}}
             assert(E.FormulaFor(r,snap).source=='ah')
             snap.prices={}
             local f=E.FormulaFor(r,snap)
@@ -131,7 +135,7 @@ class EconomyFusionTests(unittest.TestCase):
         self.run_lua("""
             local E=ns.ProfEconomy
             local res={mats={{id=400,count=2,source='ah'}},formulas={{id=400,count=1,source='ah'}}}
-            E.SummarizeAuctionSupply(res,{prices={[400]=1,[401]=1},auctionSupply={[400]={quantity=2,complete=true,ownerExcluded=true}}})
+            E.SummarizeAuctionSupply(res,{considerAuctionSupply=true,prices={[400]=1,[401]=1},auctionSupply={[400]={quantity=2,complete=true,ownerExcluded=true}}})
             assert(res.formulas[1].supplyLimited and res.supplyComplete==false)
             assert(res.auctionSupplyInputs[401]==false)
         """)

@@ -343,7 +343,7 @@ ns.ProfData = {
             guide = "bandages",
             summary = "First Aid is more than bandages: a First Aid Kit for the camp system, salves for bleeding / disease / poison, and craftable healing potions.",
             status = "Related Legacy effects",
-            recipes = 11,
+            recipes = 32,
             sub = 7,
             kinds = { Manual=9, Blueprint=2 },
             camp = {

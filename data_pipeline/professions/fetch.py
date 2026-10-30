@@ -81,6 +81,12 @@ class TransportClosed(SourceError):
     error_code = "transportClosed"
 
 
+class ResponseStorageError(SourceError):
+    """The request completed, but its response could not be saved safely."""
+    attempted = True
+    error_code = "responseStorageError"
+
+
 class WowheadTransport:
     """Two direct HTTP workers, with one persistent native-browser owner.
 
@@ -292,9 +298,26 @@ def response_record(root, key, url, getter, table=None, entity=None, parsed_sink
         # replacing bytes still referenced by the previous manifest.
         identity = "" if table else "." + record["sha256"]
         path = Path("responses") / (key.replace(":", "-") + identity + suffix)
-        record["path"] = path.as_posix()
-        (root / path).parent.mkdir(parents=True, exist_ok=True)
-        (root / path).write_bytes(data)
+        destination = root / path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        handle, temporary = tempfile.mkstemp(prefix=path.name + ".", suffix=".part", dir=destination.parent)
+        stage = Path(temporary)
+        try:
+            with os.fdopen(handle, "wb") as stream:
+                written = stream.write(data)
+                stream.flush()
+            if written != len(data) or stage.stat().st_size != len(data):
+                raise OSError("response write was incomplete")
+            os.replace(stage, destination)
+            record["path"] = path.as_posix()
+        except (OSError, MemoryError) as error:
+            try:
+                os.close(handle)
+            except OSError:
+                pass
+            raise ResponseStorageError("response storage failed: " + str(error)) from error
+        finally:
+            stage.unlink(missing_ok=True)
         if record["status"] == "verified":
             try:
                 if table:
@@ -355,13 +378,61 @@ def checkpoint(path, manifest):
         stage.unlink(missing_ok=True)
 
 
+def repair_known_empty_oom_response(root, manifest):
+    """Unlink only the known zero-byte artifact left by the prior OOM bug."""
+    run_id = manifest.get("webRun", {}).get("id")
+    repairs = []
+    for record in manifest.get("responses", []):
+        if (record.get("webRunID") != run_id or record.get("status") != "sourceError"
+                or record.get("errorCode") not in ("OSError", "responseStorageError")
+                or "cannot allocate memory" not in record.get("error", "").lower()
+                or not record.get("path") or int(record.get("bytes", 0)) <= 0):
+            continue
+        path = (root / record["path"]).resolve()
+        if not path.is_relative_to(root.resolve()) or not path.exists() or path.stat().st_size != 0:
+            continue
+        actual = sha256(path.read_bytes())
+        if actual == record.get("sha256"):
+            continue
+        evidence = {"path": record["path"], "expectedSHA256": record.get("sha256"),
+                    "actualSHA256": actual, "actualBytes": 0, "reason": "knownOomZeroByteArtifact",
+                    "detectedAt": now()}
+        record.pop("path", None)
+        record["integrityFailure"] = evidence
+        record["status"] = "notFetched"
+        record["attempted"] = False
+        record["errorCode"] = "responseStorageError"
+        repairs.append({"key": record.get("key"), **evidence})
+    if repairs:
+        manifest.setdefault("integrityRepairs", []).extend(repairs)
+    return bool(repairs)
+
+
+def accepted_reuse(manifest, record):
+    run = manifest.get("webRun", {})
+    reuse = run.get("reuse", {})
+    entry = reuse.get("records", {}).get(record.get("key"), {})
+    return bool(reuse.get("policy") == "same-build-verified-v1"
+                and reuse.get("build") == manifest.get("build")
+                and reuse.get("buildConfig") == manifest.get("buildInfo", {}).get("build_config")
+                and record.get("status") == "verified"
+                and record.get("webRunID") != run.get("id")
+                and record.get("path") and record.get("sha256")
+                and entry.get("sha256") == record.get("sha256")
+                and entry.get("sourceWebRunID") == record.get("webRunID"))
+
+
 def update_web_run(manifest, targets, records):
     run = manifest["webRun"]
     keys = sorted(f"web:{kind}:{entity}" for kind, entity in targets)
     counts, skips = {}, {}
-    attempted = 0
+    attempted, reused = 0, 0
+    effective = {}
     for key in keys:
         record = records.get(key, {})
+        status = record.get("status", "notFetched")
+        effective[status] = effective.get(status, 0) + 1
+        reused_record = accepted_reuse(manifest, record)
         if record.get("webRunID") != run["id"]:
             record = record.get("lastAttempt", {})
         if record.get("webRunID") == run["id"] and record.get("attempted") is True:
@@ -369,11 +440,17 @@ def update_web_run(manifest, targets, records):
             status = record["status"]
             counts[status] = counts.get(status, 0) + 1
         else:
-            reason = record.get("errorCode", "pending") if record.get("webRunID") == run["id"] else "pending"
+            if reused_record:
+                reused += 1
+            reason = "sameBuildReused" if reused_record else record.get("errorCode", "pending") if record.get("webRunID") == run["id"] else "pending"
             skips[reason] = skips.get(reason, 0) + 1
     run.update(targets=keys, targetCount=len(keys), attempted=attempted, notAttempted=len(keys) - attempted,
                statuses=counts, skippedReasons=skips, requestCoverageComplete=attempted == len(keys), updatedAt=now())
+    run.update(newlyRequested=attempted, reused=reused, reusedStatuses={"verified": reused} if reused else {},
+               covered=attempted + reused, uncovered=len(keys) - attempted - reused,
+               effectiveStatuses=effective, acquisitionCoverageComplete=attempted + reused == len(keys))
     manifest["requestCoverageComplete"] = run["requestCoverageComplete"]
+    manifest["acquisitionCoverageComplete"] = run["acquisitionCoverageComplete"]
 
 
 def snapshot_archive(root, output):
@@ -525,7 +602,11 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
                 log(f"no current sourceBlocked HTTP{retry_current_http} records; snapshot unchanged", flush=True)
                 return out
         if out.exists():
-            if resume and (retry_failed or refresh_web or current_retry is not None) and not work.exists():
+            closed_incomplete = False
+            if resume and not work.exists():
+                saved = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+                closed_incomplete = saved.get("requestCoverageComplete") is False
+            if resume and (retry_failed or refresh_web or current_retry is not None or closed_incomplete) and not work.exists():
                 out.rename(work)
             else:
                 raise SourceError("output already exists; choose fresh output or --resume with --retry-failed/--refresh-web")
@@ -542,6 +623,11 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
                 manifest = None
             else:
                 # Every previously accepted byte is revalidated by build/check.
+                if repair_known_empty_oom_response(work, manifest):
+                    # The prior implementation could publish an OOM-truncated
+                    # file path. Keep its audit record, but retry it in this
+                    # same refresh run after atomically checkpointing repair.
+                    checkpoint(work / "manifest.json", manifest)
                 for record in response_evidence(manifest["responses"]):
                     if "path" in record:
                         checked_bytes(work, record)
@@ -648,7 +734,9 @@ def fetch(out: Path, web_limit=None, workers=2, retries=3, resume=False, retry_f
                             key in retry_selected - retry_completed or key in retry_additional and not done)
                         retryable = retry_failed and old and old["status"] in (
                             "sourceBlocked", "sourceError", "parseError", "sourceMissing")
-                        if old and not targeted_pending and (done or old["status"] != "notFetched" and not refresh_web and not retryable):
+                        reused = old and accepted_reuse(manifest, old)
+                        inherited_pending = (continuing_web_run and old and old.get("webRunID") != run_id and not reused)
+                        if old and not targeted_pending and not inherited_pending and (done or reused and not refresh_web or old["status"] != "notFetched" and not refresh_web and not retryable):
                             if old["status"] == "verified":
                                 parsed = parse_page((work / old["path"]).read_bytes(), kind, entity_id, old["finalUrl"])
                                 targets.update(referenced_entities(parsed, names if old.get("webRunID") == run_id else None))

@@ -1,4 +1,4 @@
-"""Native first-aid gaps remain explicit without runtime data supplements."""
+"""Missing-catalogue fallback remains safe even after native First Aid ships."""
 import unittest
 
 from test_prof_native_data import native_runtime, ROOT
@@ -7,8 +7,10 @@ FIXED_SPELLS={3275,3276,3277,3278,7928,7929,10840,10841,18629,18630,
               1244431,1244432,1244433,1259342}
 
 
-def runtime(locale="zhCN"):
+def runtime(locale="zhCN", missing=True):
     lua=native_runtime(locale)
+    if missing:
+        lua.execute("local _=ns.ProfRecipes['first-aid'];ns.ProfRecipes['first-aid']=nil;ns.ProfLeveling['first-aid'].rinfo=nil")
     lua.execute("""
       selected='first-aid';currentSkill=1
       ns.ProfModule.ProfLearned=function()return {['first-aid']={cur=currentSkill,max=300}}end
@@ -143,6 +145,28 @@ class FirstAidUnseededBoundaryTests(unittest.TestCase):
           assert(#steps==16 and steps[1][3]==3275 and steps[1][4]==43)
           assert(steps[1].mats==nil,'unknown materials were written into the guide')
         """)
+
+
+    def test_fixed_first_aid_retains_authored_full_shopping_reference_without_inventing_steps(self):
+        lua=runtime()
+        add_route_and_execution(lua)
+        lua.execute('''
+          local result=ns.ProfRouteAuto.FixedPlan('first-aid',{target=300,recoveryEnabled=true})
+          assert(result.mode=='fixed' and result.referenceShopping and #result.mats==14)
+          assert(result.clientPending and result.feasible==false and not result.recoveryEnabled)
+          assert(result.total>0 and result.purchaseTotal==result.total and result.netTotal==result.total)
+          for index,entry in ipairs(result.mats)do
+            local authored=ns.ProfLeveling['first-aid'].shopping[index]
+            assert(entry.id==authored[1] and entry.count==authored[2])
+            assert(entry.source=='ah' and not entry.vendor,'NPC catalogue membership forced a missing supplier')
+          end
+          assert(ns.ProfLeveling['first-aid'].steps[1].mats==nil)
+          assert(ns.ProfEconomy.FindRecipe('first-aid',3275)==nil)
+          local run,reason=ns.ProfExecution.Bind('first-aid',result)
+          assert(run==nil and reason=='pending')
+          local partial=ns.ProfRouteAuto.FixedPlan('first-aid',{target=75})
+          assert(not partial.referenceShopping and partial.clientPending,'full supplies were guessed for a partial goal')
+        ''')
 
 
 if __name__=="__main__":

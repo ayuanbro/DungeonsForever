@@ -50,6 +50,33 @@ def mask_ids(value, table, race=False):
     return sorted(result)
 
 
+def vendor_cost(value):
+    """Read both legacy gold and Forever gold/currency/item cost tuples."""
+    def number(value):
+        return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+    if not isinstance(value, list) or len(value) != 1 or not isinstance(value[0], list):
+        return {}
+    parts = value[0]
+    if len(parts) == 1 and number(parts[0]):
+        return {'price': parts[0]}
+    if len(parts) != 3 or not number(parts[0]) or not all(isinstance(x, list) for x in parts[1:]):
+        return {}
+    def costs(rows):
+        if any(not isinstance(row, list) or len(row) != 2 or not number(row[0]) or row[0] == 0
+               or not number(row[1]) or row[1] == 0 for row in rows):
+            return None
+        return [{'id': row[0], 'count': row[1]} for row in rows]
+    currencies, items = costs(parts[1]), costs(parts[2])
+    if currencies is None or items is None:
+        return {}
+    result = {'price': parts[0]}
+    if currencies or items:
+        result.update(hasExtendedCost=True, currencies=currencies, costItems=items)
+        if len(currencies) == 1:
+            result.update(currencyID=currencies[0]['id'], currencyAmount=currencies[0]['count'])
+    return result
+
+
 def normalize(raw, manifest):
     if manifest.get("schema") != SCHEMA_VERSION or manifest.get("product") != PRODUCT or not manifest.get("fetchComplete"):
         raise SourceError("snapshot is not a completed latest-product acquisition")
@@ -67,6 +94,12 @@ def normalize(raw, manifest):
             checked_bytes(raw, record)
         evidence.extend(record.get("attemptHistory", []))
     sparse = {integer(row["ID"]): row for row in tables["ItemSparse"]}
+    level_rows = tables['SpellLevels']
+    level_schema = bool(level_rows) and all({'SpellID', 'DifficultyID', 'BaseLevel', 'SpellLevel'}.issubset(row) for row in level_rows)
+    levels = {}
+    for row in level_rows:
+        if integer(row.get('SpellID')) > 0 and integer(row.get('DifficultyID')) == 0:
+            levels[integer(row['SpellID'])] = max(integer(row.get('BaseLevel')), integer(row.get('SpellLevel')))
     page_cache, audit, facts = {}, [], {}
 
     def page(kind, entity):
@@ -144,9 +177,26 @@ def normalize(raw, manifest):
         if integer(recipe.get("level")) > 0:
             base_conditions.append({"kind": "level", "value": integer(recipe["level"])})
         routes = []
+        # AutomaticSkillRank=1 is handled by the server's LearnSkillRewardedSpells.
+        # This is affirmative same-build DB2 evidence, not absence of a book/NPC.
+        ranks = {integer(row.get('MinSkillLineRank')) for row in ability_rows}
+        if all(integer(row.get('AcquireMethod')) == 1 for row in ability_rows) and len(ranks) == 1 and min(ranks) > 0:
+            rank = min(ranks)
+            conditions = [copy.deepcopy(condition) for condition in base_conditions
+                          if condition['kind'] not in ('skill', 'level')]
+            conditions.append({'kind': 'skill', 'professionID': profession_id, 'value': rank})
+            if levels.get(spell, 0) > 0:
+                conditions.append({'kind': 'level', 'value': levels[spell]})
+            known = base_known and level_schema
+            if not level_schema:
+                gaps.append('learningRequirementsUnknown')
+            routes.append({'id': f'trainer:{spell}', 'kind': 'trainer', 'trainerIDs': [],
+                'status': 'confirmed' if known else 'unknown', 'conditionsKnown': known, 'conditions': unique(conditions),
+                'trainingCost': 0, 'acquisition': {'coverage': 'complete', 'status': 'confirmed', 'conditions': [],
+                    'kind': 'skillGrant', 'skillLineID': profession_id, 'minSkillRank': rank, 'acquireMethod': 1}})
         trainer_ids = sorted({integer(row.get("id")) for row in (web or {}).get("listviews", {}).get("taught-by-npc", ())
                               if integer(row.get("id")) > 0})
-        if trainer_ids:
+        if trainer_ids and not routes:
             known = base_known and "learnedat" in recipe and integer(recipe["learnedat"]) > 0
             route = {"id": f"trainer:{spell}", "kind": "trainer", "trainerIDs": trainer_ids,
                      "status": "confirmed" if known else "unknown", "conditionsKnown": known,
@@ -161,6 +211,14 @@ def normalize(raw, manifest):
         for item, effect_rows in sorted(items.items()):
             conditions = copy.deepcopy(base_conditions)
             row = sparse.get(item)
+            # First Aid's zero-orange web rows display the yellow threshold as
+            # learnedat. A same-build teaching book states the real requirement
+            # (e.g. Greater Healing Potion 155, yellow 175). Do not add both as
+            # cumulative learning requirements. Other native professions keep
+            # their existing policy until separately audited.
+            if (slug == 'first-aid' and row and integer(row.get('RequiredSkillRank')) > 0
+                    and integer(row.get('RequiredSkill')) in (129, 2942)):
+                conditions = [c for c in conditions if c.get('kind') != 'skill']
             item_page, item_status = page("item", item)
             item_gaps = []
             known = base_known
@@ -195,7 +253,15 @@ def normalize(raw, manifest):
                 mask = integer(row.get("AllowableClass"), -1)
                 if mask not in (0, -1):
                     try:
-                        conditions.append({"kind": "classIDs", "values": mask_ids(mask, tables["ChrClasses"])})
+                        # Item masks can include reserved/future class bits
+                        # (e.g. 32767 in Classic). If every class in this exact
+                        # build is allowed, those unused bits add no restriction.
+                        # A restricted mask still requires a complete mapping.
+                        class_bits = {1 << (integer(value["ID"]) - 1) for value in tables["ChrClasses"]
+                                      if integer(value["ID"]) > 0}
+                        all_classes = sum(class_bits)
+                        if not all_classes or mask & all_classes != all_classes:
+                            conditions.append({"kind": "classIDs", "values": mask_ids(mask, tables["ChrClasses"])})
                     except SourceError:
                         known = False; item_gaps.append("unsupportedClassMask")
                 elif mask == 0:
@@ -216,17 +282,20 @@ def normalize(raw, manifest):
                 known = False; item_gaps.append("unsupportedPlayerCondition")
             vendors = []
             for vendor in (item_page or {}).get("listviews", {}).get("sold-by", ()):
-                cost = vendor.get("cost")
-                if (isinstance(cost, list) and len(cost) == 1 and isinstance(cost[0], list)
-                        and len(cost[0]) == 1 and isinstance(cost[0][0], int) and cost[0][0] >= 0):
-                    quantity = integer((row or {}).get("VendorStackCount"))
-                    if quantity <= 0:
-                        continue
-                    quote = {"id": integer(vendor["id"]), "npcID": integer(vendor["id"]), "price": cost[0][0],
-                             "quantity": quantity, "status": "unknown", "conditionsKnown": False}
-                    if isinstance(vendor.get("stock"), int):
-                        quote.update(stock=vendor["stock"], unlimited=vendor["stock"] < 0)
-                    vendors.append(quote)
+                if integer(vendor.get('id')) <= 0:
+                    continue
+                quote = {'id': integer(vendor['id']), 'npcID': integer(vendor['id']),
+                         'status': 'unknown', 'conditionsKnown': False, **vendor_cost(vendor.get('cost'))}
+                quantity = integer((row or {}).get('VendorStackCount'))
+                if quantity > 0:
+                    quote['quantity'] = quantity
+                if isinstance(vendor.get('name') or vendor.get('displayName'), str):
+                    quote['name'] = vendor.get('name') or vendor['displayName']
+                if isinstance(vendor.get('location'), list):
+                    quote['areas'] = vendor['location']
+                if isinstance(vendor.get('stock'), int):
+                    quote.update(stock=vendor['stock'], unlimited=vendor['stock'] < 0)
+                vendors.append(quote)
             quests = [quest_conditions(integer(value["id"])) for value in
                       (item_page or {}).get("listviews", {}).get("reward-from-q", ()) if integer(value.get("id")) > 0]
             drops = [{"id": integer(value["id"])} for value in
@@ -240,8 +309,20 @@ def normalize(raw, manifest):
             if row and "Bonding" in row:
                 bonding = integer(row["Bonding"])
                 if bonding in (0, 1, 2, 3, 4, 5):
-                    acquisition["nonAuctionable"] = bonding in (1, 4, 5)
-            item_gaps.append("acquisitionSourceMissing")
+                    acquisition["bindingType"] = bonding
+                    acquisition["bindingSource"] = "ItemSparse"
+            elif (item_page or {}).get("bindingType") in (1, 2, 3):
+                acquisition["bindingType"] = item_page["bindingType"]
+                acquisition["bindingSource"] = "wowhead:item-tooltip"
+            if "bindingType" in acquisition:
+                bonding = acquisition["bindingType"]
+                acquisition["nonAuctionable"] = bonding in (1, 4, 5)
+                acquisition["bindOnPickup"] = bonding == 1
+            # Knowing where an item comes from is separate from confirming
+            # access to a particular vendor/quest. Retain unknown access flags;
+            # do not label an explicitly listed source as missing.
+            if not (vendors or quests or drops):
+                item_gaps.append("acquisitionSourceMissing")
             if item_status != "verified":
                 item_gaps.append(item_status)
             route = {"id": f"item:{spell}:{item}", "kind": "item", "teachingItemID": item,
@@ -287,10 +368,69 @@ def lua_quote(value):
                          if ord(char) < 32 else char for char in value) + '"'
 
 
+def runtime_facts(facts):
+    """Keep full NPC drop evidence offline, never as guaranteed game stock.
+
+    Drop NPC enumerations do not confirm learning or procurement eligibility.
+    Omitting that optional list also leaves the native dev drop view intact.
+    Trainer IDs, teaching items, conditions, quests and vendor quotes survive.
+    """
+    projected = copy.deepcopy(facts)
+    for records in projected.values():
+        for record in records.values():
+            for route in record['routes']:
+                acquisition = route.get('acquisition', {})
+                drops = acquisition.pop('drops', [])
+                if drops:
+                    acquisition['dropSourceCount'] = len(drops)
+                    acquisition['dropDetailsOffline'] = True
+                for vendor in acquisition.get('vendors', []):
+                    # Names/areas are already indexed by native NPC data; full
+                    # web labels remain in the audit, not duplicated per offer.
+                    vendor.pop('name', None)
+                    vendor.pop('areas', None)
+                    if vendor.get('npcID') == vendor.get('id'):
+                        vendor.pop('npcID', None)
+    return projected
+
+
+def specialization_groups(record):
+    """Compact OR-of-AND specialization requirements, including known recipes."""
+    supported = {20219, 20222, 9787, 9788, 17039, 17040, 17041, 10656, 10658, 10660}
+    groups = []
+    for route in record.get('routes', []):
+        group = sorted({c['value'] for c in route.get('conditions', [])
+                        if c.get('kind') == 'ability' and c.get('value') in supported})
+        if not group:
+            return []
+        if group not in groups:
+            groups.append(group)
+    return groups
+
+
+def automatic_skill_rank(record):
+    """Index only explicit, confirmed skill grants; full eligibility stays on the path."""
+    ranks = set()
+    for route in record.get('routes', []):
+        acquisition = route.get('acquisition', {})
+        rank = acquisition.get('minSkillRank')
+        if (route.get('kind') == 'trainer' and route.get('status') == 'confirmed'
+                and route.get('conditionsKnown') is True and acquisition.get('kind') == 'skillGrant'
+                and acquisition.get('status') == 'confirmed' and acquisition.get('coverage') == 'complete'
+                and acquisition.get('conditionsKnown') is not False
+                and acquisition.get('acquireMethod') == 1 and type(rank) is int and rank > 0
+                and any(c.get('kind') == 'skill' and c.get('professionID') == acquisition.get('skillLineID')
+                        and c.get('value') == rank for c in route.get('conditions', []))):
+            ranks.add(rank)
+    return next(iter(ranks)) if len(ranks) == 1 else None
+
+
 def emit_lua(facts, meta):
     strings, string_ids = [], {}
     pools = {name: [] for name in ("conditions", "acquisition", "sets", "gaps")}
     pool_ids = {name: {} for name in pools}
+    nested_counts, shared_ids, shared_values = Counter(), {}, []
+    shape_ids, shapes = {}, []
 
     def intern(name, value):
         key = canonical(value)
@@ -299,7 +439,15 @@ def emit_lua(facts, meta):
             pools[name].append(value)
         return pool_ids[name][key]
 
-    def pack(value):
+    def pack(value, literal=False):
+        if isinstance(value, (list, dict)) and not literal:
+            key = canonical(value)
+            if nested_counts[key] > 1:
+                if key not in shared_ids:
+                    shared_ids[key] = len(shared_values) + 1
+                    shared_values.append(None)
+                    shared_values[shared_ids[key] - 1] = pack(value, literal=True)
+                return "r" + base36(shared_ids[key]) + ";"
         if value is None:
             return "_"
         if value is True:
@@ -309,6 +457,8 @@ def emit_lua(facts, meta):
         if isinstance(value, int):
             if abs(value) > 2**53 - 1:
                 raise SourceError("inexact integer cannot enter Lua runtime")
+            if 1 <= value <= 36:
+                return "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[value - 1]
             return "z" if value == 0 else "n" + base36(value) + ";"
         if isinstance(value, str):
             if value not in string_ids:
@@ -318,7 +468,19 @@ def emit_lua(facts, meta):
         if isinstance(value, list):
             return "[" + "".join(pack(item) for item in value) + "]"
         if isinstance(value, dict):
-            return "{" + "".join(pack(key) + pack(value[key]) for key in sorted(value)) + "}"
+            constants, dynamic = [], []
+            for key in sorted(value):
+                child = value[key]
+                if isinstance(child, (str, bool)) or child == [] or child in (-1, 0, 1):
+                    constants.extend((key, child))
+                else:
+                    dynamic.append(key)
+            shape = [constants, dynamic]
+            identity = canonical(shape)
+            if identity not in shape_ids:
+                shape_ids[identity] = len(shapes) + 1
+                shapes.append(shape)
+            return "m" + base36(shape_ids[identity]) + ";" + "".join(pack(value[key]) for key in dynamic)
         raise SourceError("unsupported runtime value")
 
     profiles = {}
@@ -327,6 +489,7 @@ def emit_lua(facts, meta):
     coverage_ids = {"none": 0, "partial": 1, "complete": 2}
     for slug, records in sorted(facts.items()):
         lines = []
+        previous_spell = 0
         for spell, record in sorted(records.items()):
             routes = []
             for route in record["routes"]:
@@ -344,30 +507,67 @@ def emit_lua(facts, meta):
                     routes.append([flags, route.get("teachingItemID", 0), conditions, acquisition])
                 else:
                     routes.append([flags, quests, conditions, acquisition])
-            lines.append(str(spell) + ":" + pack([coverage_ids[record["coverage"]], intern("gaps", record["missingReasons"]), routes]))
+            lines.append(base36(spell - previous_spell) + ":" + pack([coverage_ids[record["coverage"]], intern("gaps", record["missingReasons"]), routes]))
+            previous_spell = spell
         profiles[slug] = "\n".join(lines)
+    def count_nested(value):
+        if isinstance(value, (list, dict)):
+            key = canonical(value)
+            if len(key) >= 24:
+                nested_counts[key] += 1
+            for child in value.values() if isinstance(value, dict) else value:
+                count_nested(child)
+    for values in pools.values():
+        for value in values:
+            count_nested(value)
     encoded_pools = {name: [pack(value) for value in values] for name, values in pools.items()}
+    encoded_shapes = [pack(value) for value in shapes]
     # String interning completes before serializing STR.
     lines = ["-- Generated by data_pipeline.professions; edit sources/rules, never this file.",
              "local _,ns=...", "if not ns.IsForever then return end",
              "local STR={" + ",".join(lua_quote(value) for value in strings) + "}", "local RAW={}"]
     for slug, value in profiles.items():
         lines.append("RAW[" + lua_quote(slug) + "]=" + lua_quote(value))
+    lines.append('local GRANTS={}')
+    for slug, records in sorted(facts.items()):
+        grants = [(spell, automatic_skill_rank(record)) for spell, record in sorted(records.items())]
+        value = ';'.join(f'{spell}:{rank}' for spell, rank in grants if rank is not None)
+        if value:
+            lines.append('GRANTS[' + lua_quote(slug) + ']=' + lua_quote(value))
+    lines.append('local SPECIALIZATIONS={}')
+    for slug, records in sorted(facts.items()):
+        entries = []
+        for spell, record in sorted(records.items()):
+            groups = specialization_groups(record)
+            if groups:
+                value = '{' + ','.join('{' + ','.join(map(str, group)) + '}' for group in groups) + '}'
+                entries.append('[' + str(spell) + ']=' + value)
+        if entries:
+            lines.append('SPECIALIZATIONS[' + lua_quote(slug) + ']={' + ','.join(entries) + '}')
     for name, values in encoded_pools.items():
-        lines.append("local " + name.upper() + "={" + ",".join(lua_quote(value) for value in values) + "}")
+        lines.append("local " + name.upper() + "=" + lua_quote("\n".join(values)))
+    lines.append("local SHARED=" + lua_quote("\n".join(shared_values)))
+    lines.append("local SHAPES=" + lua_quote("\n".join(encoded_shapes)))
     lines.append("local meta={schema=1,rules=" + str(RULES_VERSION) + ",product=" + lua_quote(PRODUCT) + ",build=" + lua_quote(meta["build"]) + ",fingerprint=" + lua_quote(meta["fingerprint"]) + "}")
     lines.append(r'''
+local pooled
 local function unpackValue(text)
  local p=1
  local function take()
   local c=text:sub(p,p);p=p+1
+  local byte=c:byte();if byte>=65 and byte<=90 then return byte-64 elseif byte>=48 and byte<=57 then return byte-21 end
   if c=="z"then return 0 elseif c=="t"then return true elseif c=="f"then return false elseif c=="_"then return nil end
-  if c=="n"or c=="s"then
+  if c=="n"or c=="s"or c=="r"or c=="m"then
    local e=assert(text:find(";",p,true));local first,sign=p,1
    if text:sub(first,first)=="-"then first=first+1;sign=-1 end
    local n=0;for i=first,e-1 do local b=text:byte(i);n=n*36+(b<=57 and b-48 or b-87)end
    n=n*sign;p=e+1
-   if c=="s"then return assert(STR[n])end;return n
+   if c=="s"then return assert(STR[n])elseif c=="r"then return pooled("shared",n,SHARED)
+   elseif c=="m"then
+    local shape=pooled("shapes",n,SHAPES);local value={}
+    for i=1,#shape[1],2 do value[shape[1][i]]=shape[1][i+1]end
+    for _,key in ipairs(shape[2])do value[key]=take()end;return value
+   end;return n
   end
   local value={}
   if c=="["then
@@ -380,9 +580,30 @@ local function unpackValue(text)
  return take()
 end
 local function weakValues()return setmetatable({}, {__mode="v"})end
-local decoded={conditions=weakValues(),acquisition=weakValues(),sets=weakValues(),gaps=weakValues()}
-local function pooled(name,id,raw)
- local values=decoded[name];if not values[id]then values[id]=unpackValue(raw[id])end;return values[id]
+local function AutomaticSkillRank(slug,spell)
+ local values=GRANTS[slug]
+ if type(values)=="string"then
+  local text=values;values={};GRANTS[slug]=values
+  for id,rank in text:gmatch("(%d+):(%d+)")do values[tonumber(id)]=tonumber(rank)end
+ end
+ return values and values[spell]or nil
+end
+local decoded={conditions=weakValues(),acquisition=weakValues(),sets=weakValues(),gaps=weakValues(),shared=weakValues(),shapes=weakValues()}
+local poolOffsets={}
+pooled=function(name,id,raw)
+ local values=decoded[name]
+ if not values[id]then
+  local offsets=poolOffsets[name]
+  if not offsets then
+   offsets={};poolOffsets[name]=offsets;local start=1
+   while start<=#raw do
+    offsets[#offsets+1]=start;local finish=raw:find("\n",start,true)
+    if not finish then break end;start=finish+1
+   end
+  end
+  local start=assert(offsets[id]);local finish=(offsets[id+1]or #raw+2)-2
+  values[id]=unpackValue(raw:sub(start,finish))
+ end;return values[id]
 end
 local indexes,caches,views={},{},{}
 local kinds={[1]="trainer",[2]="item",[3]="quest"}
@@ -391,11 +612,11 @@ local coverages={[0]="none",[1]="partial",[2]="complete"}
 local function index(slug)
  if not indexes[slug]then
   local values={};indexes[slug]=values;caches[slug]=weakValues()
-  local text=RAW[slug]or "";local start=1
+  local text=RAW[slug]or "";local start,spell,ordinal=1,0,0
   while start<=#text do
    local colon=text:find(":",start,true);local finish=text:find("\n",colon,true)or #text+1
-   local spell=tonumber(text:sub(start,colon-1));local length=finish-colon-1
-   assert(length<65536);values[spell]=(colon+1)*65536+length;start=finish+1
+   spell=spell+tonumber(text:sub(start,colon-1),36);ordinal=ordinal+1
+   assert(ordinal<65536);values[spell]=(colon+1)*65536+ordinal;start=finish+1
   end
  end
  return indexes[slug]
@@ -441,10 +662,11 @@ end
 local function Get(slug,spell)
  if type(slug)~="string"or type(spell)~="number"then return nil end
  local values=index(slug);local cache=caches[slug]
- if cache[spell]then return cache[spell]end
  if not values[spell]then return nil end
- local offset=values[spell];local start=floor(offset/65536);local length=offset-start*65536
- local value=unpackValue(RAW[slug]:sub(start,start+length-1));local routes={}
+ local offset=values[spell];local start=floor(offset/65536);local ordinal=offset-start*65536
+ if cache[ordinal]then return cache[ordinal]end
+ local text=RAW[slug];local finish=text:find("\n",start,true)or #text+1
+ local value=unpackValue(text:sub(start,finish-1));local routes={}
  for _,row in ipairs(value[3])do
   local flags=row[1];local kind=flags%4;local route
   if kind==1 then route={spell,flags,0,row[2],row[3],row[4],row[5]}
@@ -454,7 +676,7 @@ local function Get(slug,spell)
  local mt=recordMTs[slug]
  if not mt then mt={profession=slug,__index=recordIndex,__newindex=readOnly,__profLearningMaterialize=recordProjection};recordMTs[slug]=mt end
  local record=setmetatable({spell,value[1],value[2],routes},mt)
- cache[spell]=record
+ cache[ordinal]=record
  return record
 end
 local function ForProfession(slug)
@@ -473,7 +695,10 @@ local function Materialize(value,seen)
  for key,child in pairs(projection and projection(value)or value)do result[key]=Materialize(child,seen)end
  return result
 end
-ns.ProfLearningSources={meta=meta,Get=Get,ForProfession=ForProfession,Each=Each,Materialize=Materialize}
+local function SpecializationGroups(slug,spell)
+ return SPECIALIZATIONS[slug]and SPECIALIZATIONS[slug][spell]
+end
+ns.ProfLearningSources={meta=meta,Get=Get,ForProfession=ForProfession,Each=Each,Materialize=Materialize,AutomaticSkillRank=AutomaticSkillRank,SpecializationGroups=SpecializationGroups}
 '''.strip())
     return ("\n".join(lines) + "\n").encode("utf-8")
 
@@ -496,10 +721,11 @@ def build(raw, output, report_path, check=False):
             return build(target, output, report_path, check=check)
     manifest = json.loads((raw / "manifest.json").read_text(encoding="utf-8"))
     facts, gaps = normalize(raw, manifest)
+    runtime = runtime_facts(facts)
     semantic = {"schema": SCHEMA_VERSION, "rules": RULES_VERSION, "product": PRODUCT,
-                "build": manifest["build"], "professions": facts}
+                "build": manifest["build"], "professions": runtime}
     fingerprint = sha256(canonical(semantic).encode("utf-8"))
-    lua = emit_lua(facts, {"build": manifest["build"], "fingerprint": fingerprint})
+    lua = emit_lua(runtime, {"build": manifest["build"], "fingerprint": fingerprint})
     report = {"schema": SCHEMA_VERSION, "rules": RULES_VERSION, "product": PRODUCT,
               "build": manifest["build"], "fingerprint": fingerprint, "generationInput": False,
               "summary": {"recipes": sum(len(records) for records in facts.values()), "recipesWithGaps": len(gaps),
@@ -509,12 +735,27 @@ def build(raw, output, report_path, check=False):
                   ("key", "url", "finalUrl", "status", "httpStatus", "path", "sha256", "fetchedAt", "error")}
                   for record in sorted(manifest["responses"], key=lambda record: record["key"])],
               "facts": facts}
+    report['runtimeProjection'] = {'policy': 'compact-source-references-v2',
+        'offlineDropReferences': sum(len(route.get('acquisition', {}).get('drops', []))
+            for records in facts.values() for record in records.values() for route in record['routes']),
+        'preserved': ['learning paths', 'teaching items', 'trainer IDs', 'learning conditions',
+                      'quest conditions', 'vendor quotes', 'nonAuctionable', 'coverage and gaps'],
+        'nativeDropData': 'unchanged; runtime projection does not overwrite it',
+        'vendorLabelsAndAreas': 'offline; native NPC indexes supply runtime labels',
+        'duplicateVendorIDs': 'id retained; identical npcID alias omitted'}
     report["professions"] = {slug: {"recipes": len(rows),
         "confirmedPaths": sum(route["status"] == "confirmed" for row in rows.values() for route in row["routes"]),
         "unknownPaths": sum(route["status"] != "confirmed" for row in rows.values() for route in row["routes"]),
         "missingReasons": dict(sorted(Counter(reason for row in rows.values() for reason in row["missingReasons"]).items()))}
         for slug, rows in sorted(facts.items())}
     report["sourceStatuses"] = dict(sorted(Counter(row["status"] for row in manifest["responses"]).items()))
+    report["acquisition"] = {key: value for key, value in manifest.get("webRun", {}).items() if key in
+        ("id", "targetCount", "newlyRequested", "attempted", "notAttempted", "reused", "reusedStatuses",
+         "covered", "uncovered", "effectiveStatuses", "requestCoverageComplete", "acquisitionCoverageComplete")}
+    report["sourceGaps"] = [{key: value for key, value in row.items() if key in
+        ("key", "url", "finalUrl", "status", "httpStatus", "error", "path", "sha256", "webRunID")}
+        for row in sorted(manifest["responses"], key=lambda row: row["key"])
+        if row["key"].startswith("web:") and row["status"] != "verified"]
     report_bytes = (json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
     if check:
         if output.read_bytes() != lua or report_path.read_bytes() != report_bytes:

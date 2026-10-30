@@ -78,8 +78,10 @@ function RA.OptionsFor(slug, current)
     opts.recoveryEnabled = setting("recoveryEnabled", false,slug)
     opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug)
     opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false,slug)
-    opts.skipUnpricedFormulas = setting("autoSkipUnpricedFormulas", true,slug)
-    if slug=="first-aid" then opts.scheme="fixed";opts.autoCraftTools=false end
+    opts.allowBindOnPickupFormulas = setting("autoAllowBindOnPickupFormulas", false,slug)
+    opts.allowCurrencyFormulas = setting("autoAllowCurrencyFormulas", false,slug)
+    opts.considerAuctionSupply = setting("autoConsiderAuctionSupply", false,slug)
+    if slug=="first-aid" or slug=="poisons" then opts.scheme="fixed";opts.autoCraftTools=false end
     opts.exclusions = copy(E.GetPolicies and E.GetPolicies(slug) or {})
     if E.GetRoutePartner then opts.secondaryProfession = E.GetRoutePartner(slug) end
     -- Only explicit continuation may introduce verified route-made stock.
@@ -92,12 +94,16 @@ local function options(slug, supplied)
     if supplied and supplied.snapshot then opts.snapshot = supplied.snapshot end
     opts.scheme = opts.scheme or "cheapest"
     opts.profession = slug
+    opts.learnedOnly,opts.noFormula,opts.allowUnknownLearning,opts.skipUnpricedFormulas=nil,nil,nil,nil
+    opts.considerAuctionSupply=E.ConsiderAuctionSupply(opts)
     opts.start = math.max(1, math.min(300, math.floor(tonumber(opts.start) or 1)))
     opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or 300)))
     if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false,slug) end
     if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug) end
     if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true,slug) end
     if opts.allowLimitedFormulas == nil then opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false,slug) end
+    if opts.allowBindOnPickupFormulas == nil then opts.allowBindOnPickupFormulas = setting("autoAllowBindOnPickupFormulas", false,slug) end
+    if opts.allowCurrencyFormulas == nil then opts.allowCurrencyFormulas = setting("autoAllowCurrencyFormulas", false,slug) end
     opts.exclusions = opts.exclusions or copy(E.GetPolicies and E.GetPolicies(slug) or {})
     local profs = opts.snapshot and opts.snapshot.professions or opts.professions
     local context = E.RouteContext and E.RouteContext(slug, opts, profs)
@@ -127,9 +133,9 @@ local function signature(slug, opts)
     if opts.snapshot then start = tostring(opts.start) end
     local policy = E.PolicyFingerprint and E.PolicyFingerprint(opts.exclusions) or ""
     local sig=table.concat({opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
-        tostring(opts.noFormula), tostring(opts.learnedOnly), tostring(opts.allowSecondaryLeveling),
+        tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas), tostring(opts.considerAuctionSupply), tostring(opts.allowSecondaryLeveling),
         tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
-        tostring(opts.skipUnpricedFormulas), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
+        "formula-channels:2", tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
         E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
     if opts.snapshot then
@@ -150,6 +156,11 @@ local function identity(slug, opts)
 end
 local function refreshFreshness(result,slug,opts)
     if result.learningPolicyFingerprint and result.learningPolicyFingerprint~=learningPolicy() then return learningStale(result) end
+    -- Old partial/failed candidates promoted search-wide coverage gaps to route
+    -- blockers. Retire only that diagnosis; completed routes and execution facts
+    -- remain usable until a separate input actually changes.
+    local diagnosticPolicyChanged=result.planVersion==2 and result.scheme~="fishing"
+        and result.targetReached~=true and result.failureDiagnosticVersion~=S.FailureDiagnosticVersion
     local settingsChanged=result.cacheSignature and result.cacheSignature~=signature(slug,opts) or false
     local procurementPolicyChanged=result.planVersion==2 and
         (result.scheme=="fishing" and result.fishingRouteRevision~=2
@@ -170,8 +181,9 @@ local function refreshFreshness(result,slug,opts)
     local explicit=result.stale and (reason=="recipes" or reason=="client-inputs" or reason=="specialization" or reason=="learning-data"
         or reason=="prices" and not result.auctionPriceInputs)
     result.settingsChanged=settingsChanged or nil
-    result.stale=(procurementPolicyChanged or settingsChanged or marketChanged or supplyChanged or explicit) and true or nil
-    result.staleReason=procurementPolicyChanged and "procurement-policy" or settingsChanged and "settings" or supplyChanged and "supply"
+    result.diagnosticPolicyChanged=diagnosticPolicyChanged or nil
+    result.stale=(diagnosticPolicyChanged or procurementPolicyChanged or settingsChanged or marketChanged or supplyChanged or explicit) and true or nil
+    result.staleReason=diagnosticPolicyChanged and "diagnostic-policy" or procurementPolicyChanged and "procurement-policy" or settingsChanged and "settings" or supplyChanged and "supply"
         or marketChanged and "prices" or explicit and reason or nil
     return result
 end
@@ -309,7 +321,7 @@ end
 function RA.OnPlanChanged(fn) if type(fn)=="function" then listeners[#listeners+1]=fn end end
 function RA.OnProgress(fn) if type(fn)=="function" then progressListeners[#progressListeners+1]=fn end end
 function RA.Get(slug, supplied)
-    if slug=="first-aid" then
+    if slug=="first-aid" or slug=="poisons" then
         if RA.Cancel then RA.Cancel(slug) end
         return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
     end
@@ -362,7 +374,7 @@ function RA.Get(slug, supplied)
     return start(slug,opts)
 end
 function RA.Compute(slug, supplied)
-    if slug=="first-aid" then return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug)) end
+    if slug=="first-aid" or slug=="poisons" then return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug)) end
     local opts=options(slug,supplied)
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     if opts.scheme=="fishing" then return quickCompute(slug,opts) end
@@ -372,7 +384,7 @@ function RA.Compute(slug, supplied)
     return result,job
 end
 function RA.Recalculate(slug, supplied)
-    if slug=="first-aid" then
+    if slug=="first-aid" or slug=="poisons" then
         if RA.Cancel then RA.Cancel(slug) end
         return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
     end

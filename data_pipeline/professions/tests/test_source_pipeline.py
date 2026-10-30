@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import csv
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import threading
@@ -16,6 +17,7 @@ from urllib.parse import parse_qs, urlsplit
 import zipfile
 
 from data_pipeline.professions.build import build, mask_ids, normalize
+from data_pipeline.professions import RULES_VERSION
 from data_pipeline.professions.browser_transport import BrowserClosed, BrowserTransport
 from data_pipeline.professions.fetch import (HostCircuitOpen, WowheadTransport, fetch,
     entity_url, fresh_route_names, referenced_entities, response_evidence, response_record,
@@ -173,6 +175,34 @@ class ParserContracts(unittest.TestCase):
 
 
 class BuildContracts(unittest.TestCase):
+    def test_full_item_class_mask_allows_current_build_but_restricted_unknown_bits_do_not(self):
+        for mask, confirmed, ids in ((32767, True, None), (8, True, [4]), ((1 << 20) | 8, False, None)):
+            with self.subTest(mask=mask), temporary_directory() as temp:
+                tables = fixture_tables()
+                tables['ItemSparse'][0]['AllowableClass'] = str(mask)
+                facts, _ = normalize(Path(temp), snapshot(Path(temp), tables=tables))
+                info = facts['alchemy'][1000]
+                route = next(r for r in info['routes'] if r['kind'] == 'item')
+                self.assertEqual(route['conditionsKnown'], confirmed)
+                classes = [c['values'] for c in route['conditions'] if c['kind'] == 'classIDs']
+                self.assertEqual(classes, [ids] if ids else [])
+                self.assertEqual('unsupportedClassMask' in info['missingReasons'], not confirmed)
+
+    def test_listed_source_is_not_missing_without_promoting_unknown_vendor_access(self):
+        with temporary_directory() as temp:
+            root = Path(temp); manifest = snapshot(root)
+            facts, _ = normalize(root, manifest)
+            info = facts['alchemy'][1000]
+            self.assertNotIn('acquisitionSourceMissing', info['missingReasons'])
+            route = next(r for r in info['routes'] if r['kind'] == 'item')
+            acquisition = route['acquisition']
+            self.assertEqual(acquisition['status'], 'unknown')
+            self.assertFalse(acquisition['conditionsKnown'])
+            self.assertFalse(acquisition['vendors'][0]['conditionsKnown'])
+            self.assertEqual(acquisition['vendors'][0]['stock'], -1)
+            missing = facts['alchemy'][1001]
+            self.assertIn('acquisitionSourceMissing', missing['missingReasons'])
+
     def test_missing_item_does_not_confirm_an_empty_condition_list(self):
         with temporary_directory() as temp:
             root = Path(temp); manifest = snapshot(root)
@@ -238,8 +268,8 @@ class BuildContracts(unittest.TestCase):
             build(raw, lua, report)
             vm = native_runtime(); vm.execute("ns.IsForever=true")
             vm.execute("assert(loadstring(...,'@reputation-source-test'))('DungeonsForever',ns)", lua.read_text(encoding="utf8"))
+            self.assertEqual(vm.eval("ns.ProfLearningSources.meta.rules"), RULES_VERSION)
             vm.execute("""
-                assert(ns.ProfLearningSources.meta.rules==2)
                 local route=ns.ProfLearningSources.Get('enchanting',23802).routes[1]
                 local reputation
                 for _,condition in ipairs(route.conditions)do
@@ -365,6 +395,67 @@ class BuildContracts(unittest.TestCase):
 
 
 class AcquisitionContracts(unittest.TestCase):
+    def test_response_storage_failure_never_publishes_a_partial_path(self):
+        with temporary_directory() as temp:
+            root = Path(temp)
+            url = "https://www.wowhead.com/forever/item=2000"
+            def out_of_memory(fd, mode):
+                os.close(fd)
+                raise MemoryError("Cannot allocate memory")
+            with patch("data_pipeline.professions.fetch.os.fdopen", side_effect=out_of_memory):
+                record = response_record(root, "web:item:2000", url,
+                    lambda _: (200, b"full response bytes", {}, url))
+            self.assertEqual(record["status"], "sourceError")
+            self.assertEqual(record["errorCode"], "responseStorageError")
+            self.assertTrue(record["attempted"])
+            self.assertNotIn("path", record)
+            self.assertFalse(list((root / "responses").glob("*.part")))
+
+    def test_resume_repairs_only_known_zero_byte_oom_and_retries_same_run(self):
+        with temporary_directory() as temp:
+            root = Path(temp); raw = root / "raw"; raw.mkdir(); manifest = snapshot(raw)
+            run_id = "oom-recovery-same-run"
+            manifest.update(fetchComplete=True, requestCoverageComplete=False,
+                webRun={"id": run_id, "mode": "refresh", "requestCoverageComplete": False,
+                        "targets": ["web:item:2000", "web:spell:1000"]})
+            broken = next(r for r in manifest["responses"] if r["key"] == "web:spell:1000")
+            damaged_path = raw / broken["path"]
+            damaged_path.write_bytes(b"")
+            broken.update(webRunID=run_id, attempted=True, status="sourceError", errorCode="OSError",
+                error="OSError: [Errno 12] Cannot allocate memory", bytes=100,
+                sha256="a" * 64)
+            other = next(r for r in manifest["responses"] if r["key"] == "web:item:2000")
+            other.update(webRunID=run_id, attempted=True)
+            write_json(raw / "manifest.json", manifest)
+            def get(url, retries=3):
+                return 200, page_bytes("spell", 1000, {"recipes": [{"id": 1000}]}), {}, url
+            with patch("data_pipeline.professions.fetch.latest", return_value=BUILD), \
+                 patch("data_pipeline.professions.fetch.WowheadTransport") as cls:
+                transport = cls.return_value.__enter__.return_value
+                transport.get.side_effect = get
+                fetch(raw, resume=True, refresh_web=True, log=lambda *a, **k: None)
+                requested = [call.args[0] for call in transport.get.call_args_list]
+            current = json.loads((raw / "manifest.json").read_text())
+            repaired = next(r for r in current["responses"] if r["key"] == "web:spell:1000")
+            self.assertEqual(current["webRun"]["id"], run_id)
+            self.assertEqual(requested.count("https://www.wowhead.com/forever/spell=1000"), 1)
+            self.assertEqual(len(current["integrityRepairs"]), 1)
+            self.assertEqual(current["integrityRepairs"][0]["reason"], "knownOomZeroByteArtifact")
+            self.assertEqual(repaired["status"], "verified")
+            self.assertTrue((raw / repaired["path"]).is_file())
+            self.assertEqual(repaired["attemptHistory"][0]["integrityFailure"]["actualBytes"], 0)
+
+    def test_browser_page_recycles_after_configured_navigation_count(self):
+        url = "https://www.wowhead.com/forever/spell=1000"
+        factory, _, _ = BrowserOwnerContracts().browser_fixture({url: [(200, b"entity", url)]})
+        with BrowserTransport(factory=factory, recycle_every=1) as owner:
+            owner._recycle_page_owned = MagicMock()
+            owner.get(url)
+            owner.get(url)
+            self.assertEqual(owner.metrics["navigationCount"], 2)
+            self.assertEqual(owner.metrics["pageRecycles"], 0)
+            self.assertEqual(owner._recycle_page_owned.call_count, 2)
+
     def test_latest_change_restarts_and_never_mixes_tables(self):
         with temporary_directory() as temp:
             root = Path(temp); out = root / "raw"; tables = fixture_tables()

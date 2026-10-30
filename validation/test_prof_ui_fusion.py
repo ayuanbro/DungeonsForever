@@ -115,6 +115,8 @@ class ProfessionUIFusionTests(unittest.TestCase):
           PD.Fit=function(text)return text end;PD.RequestRender=function()end
           PD.ItemName=function(id)return 'Item'..tostring(id),true end
           DungeonsForeverDB.prof.autoRoute=true
+          -- Preserve stock-aware scenarios; default-off behavior has its own suite.
+          DungeonsForeverDB.prof.autoConsiderAuctionSupply=true
           DungeonsForeverDB.prof.lvTarget={alchemy=3,['first-aid']=3,mining=3}
           ns.ProfEconomy.Capture=function(slug)
             local s=fixture()
@@ -138,10 +140,11 @@ class ProfessionUIFusionTests(unittest.TestCase):
           assert(PD.lvSummary.planVersion==2 and PD.lvSummary.auto)
         ''')
 
-    def test_dev_first_aid_auto_and_mining_smelt_policy_are_preserved(self):
+    def test_first_aid_fixed_and_mining_smelt_policy_are_preserved(self):
         self.lua.execute('''
           PD.cur='first-aid';PD.RowsLeveling({})
-          assert(ns.ProfRouteAuto.HasWork('first-aid'),'first aid lost automatic planning')
+          assert(not ns.ProfRouteAuto.HasWork('first-aid'),'first aid started automatic planning')
+          assert(PD.autoSnapshot.mode=='fixed' and not PD.lvSummary.auto)
           PD.cur='mining';DungeonsForeverDB.prof.gatherMode='smelt'
           PD.RowsLeveling({})
           assert(not ns.ProfRouteAuto.HasWork('mining'),'smelt enabled automatic planning')

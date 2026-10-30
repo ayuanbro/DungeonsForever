@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-30",
+  "requestedPolicy": "First Aid unknown learning source defaults to trainer",
+  "learningPolicy": "native-learning:17:first-aid-trainer-default:",
+  "affectedShippedSpells": [
+    10841,
+    18629,
+    18630
+  ],
+  "preserved": [
+    "explicit item/quest/trainer origins",
+    "known skill requirements",
+    "client unavailable state",
+    "raw learning evidence",
+    "unknown trainer NPC and fee"
+  ],
+  "tests": {
+    "profession": {
+      "count": 492,
+      "result": "OK",
+      "log": ".pipeline-runtime/first-aid-complete-20261030/trainer-default-validation-final.log"
+    },
+    "focused": {
+      "count": 55,
+      "failures": 0,
+      "errors": 0,
+      "failedCases": []
+    },
+    "pipeline": {
+      "count": 152,
+      "errors": 5,
+      "failures": 0,
+      "scope": "Unrelated poison source assertions",
+      "log": ".pipeline-runtime/first-aid-complete-20261030/trainer-default-pipeline.log"
+    },
+    "withoutThisPolicyControl": {
+      "count": 13,
+      "failures": 0,
+      "errors": 5,
+      "failedCases": [
+        "test_automatic_origins_and_row_views_cover_all_affected_professions (test_source_origins.ShippedSourceOriginTests.test_automatic_origins_and_row_views_cover_all_affected_professions)",
+        "test_confirmed_rank_and_source_labels_match_in_three_locales (test_source_origins.ShippedSourceOriginTests.test_confirmed_rank_and_source_labels_match_in_three_locales) (locale='zhCN')",
+        "test_confirmed_rank_and_source_labels_match_in_three_locales (test_source_origins.ShippedSourceOriginTests.test_confirmed_rank_and_source_labels_match_in_three_locales) (locale='zhTW')",
+        "test_confirmed_rank_and_source_labels_match_in_three_locales (test_source_origins.ShippedSourceOriginTests.test_confirmed_rank_and_source_labels_match_in_three_locales) (locale='enUS')",
+        "test_eight_confirmed_grants_use_rank_one_without_changing_data_or_color_thresholds (test_source_origins.ShippedSourceOriginTests.test_eight_confirmed_grants_use_rank_one_without_changing_data_or_color_thresholds)"
+      ]
+    }
+  },
+  "controlMethod": "Patch Path.read_text in memory for Core/ProfLearning.lua, removing only this policy additions. No source files reverted.",
+  "controlScript": ".pipeline-runtime/first-aid-complete-20261030/check_trainer_default.py",
+  "dataChangedSinceFirstAidPublication": [],
+  "hashes": {
+    "Core/ProfLearning.lua": "42dd859ec25f184fa2d6a010639902e9743979a5d9c478783868eb8ed9b6df97",
+    "validation/test_prof_first_aid_complete.py": "cc3790667b2bab49857b43a508154741fb1885e988d913c83536bda860b8eda4",
+    "data_pipeline/professions/tests/test_runtime_learning.py": "ec101e59cc5503df5621f49cf460a0c6aba26a03dcd726b889e3681617575ef3"
+  },
+  "inGameValidation": "not run"
+}

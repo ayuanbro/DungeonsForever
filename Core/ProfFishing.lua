@@ -100,7 +100,6 @@ function P.Compute(opts)
             if r.clientUnavailable or r.cooldown or r.cooldownUnknown or r.clientPending or r.outputConflict then valid=false end
             if (r.availabilityUnknown or r.verified==false) and not r.clientAvailable
                 and not (snap.known[r.key] or snap.known[r.spell]) then valid=false end
-            if opts.learnedOnly and not out.targetUnlearned and not (snap.known[r.key] or snap.known[r.spell]) then valid=false end
             for _,m in ipairs(r.mats or {}) do
                 local f=fishRecord(data,m[1])
                 if f then
@@ -115,7 +114,7 @@ function P.Compute(opts)
                     local found=false
                     for _,o in ipairs(snap.offers[m[1]] or {}) do if vendorOK(o,snap) then found=true;break end end
                     local price=snap.prices[m[1]]
-                    local supply=snap.auctionSupply[m[1]]
+                    local supply=E.AuctionSupplyOf(snap,m[1])
                     local auction=not (snap.nonAuctionable or {})[m[1]] and type(price)=="number"
                         and price>0 and price<math.huge and (not supply or supply.quantity~=0)
                     if not found and not auction then
@@ -208,7 +207,7 @@ function P.Compute(opts)
     -- both purchases share the same observed auction quantity.
     out.formulas,out.formulasTotal,out.formulaComplete=E.CollectFormulas(out.steps,"cooking",snap)
     local remaining={}
-    for id,supply in pairs(snap.auctionSupply or {}) do
+    for id,supply in pairs(E.ConsiderAuctionSupply(snap) and snap.auctionSupply or {}) do
         if type(supply.quantity)=="number" then remaining[id]=max(0,supply.quantity) end
     end
     local ra=ns.ProfRouteAuto
@@ -223,7 +222,8 @@ function P.Compute(opts)
         out.formulaComplete=out.formulaComplete and f.costComplete==true and f.usable==true
         out.referencePrices=out.referencePrices or f.offer and f.offer.reference
         if f.availabilityUncertain then out.diagnostics[#out.diagnostics+1]={code="formulaStockUnknown",item=f.id} end
-        if f.source=="vendor" then out.formulaVendorTotal=out.formulaVendorTotal+(f.cost or 0)
+        if f.source=="vendor" or f.source=="trainer" or f.source=="acquire" and f.acquisitionKind=="currency" then
+            out.formulaVendorTotal=out.formulaVendorTotal+(f.cost or 0)
         elseif f.source=="ah" then
             out.formulaAHTotal=out.formulaAHTotal+(f.cost or 0)
             if remaining[f.id]~=nil then remaining[f.id]=max(0,remaining[f.id]-(f.count or 1)) end

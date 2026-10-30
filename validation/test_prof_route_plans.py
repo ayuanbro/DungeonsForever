@@ -22,8 +22,9 @@ ns.IdleJobs={Add=function(fn)queue[#queue+1]=fn end}
 C_Timer={After=function(_,fn)timers[#timers+1]=fn end}
 bag={};C_Item={GetItemCount=function(id)return bag[id] or 0 end}
 skills={alchemy={cur=1,max=300},enchanting={cur=1,max=300}}
+-- Existing quantity-ledger fixtures explicitly exercise the enabled policy.
 function fixture()
- return {recipes={{profession='alchemy',spell=101,item=10,count=1,mats={{11,1}},learn=1,yellow=100,green=200,grey=300,cooldown=false}},
+ return {considerAuctionSupply=true,recipes={{profession='alchemy',spell=101,item=10,count=1,mats={{11,1}},learn=1,yellow=100,green=200,grey=300,cooldown=false}},
   professions={alchemy={cur=1,max=300}},known={['alchemy:101']=true},prices={[11]=7},coverageComplete=true}
 end
 function finish(slug,opts)

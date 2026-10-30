@@ -133,7 +133,7 @@ class ExecutionFusionTests(unittest.TestCase):
         self.load("Core/ProfExecution.lua")
         self.lua.execute("initialize();xp=ns.ProfExecution;t=ns.ProfTrack;local old=t.GetRun('alchemy');assert(old.planID=='old' and old.legacyTrack and old.executionMigration==1);local p=t.Progress('alchemy',1);assert(p.casts==1 and p.outputs==3);assert(old.plan.executionSteps[1].recipe.spell==101)")
 
-    def test_first_aid_keeps_dev_automatic_route_support(self):
+    def test_execution_can_read_legacy_first_aid_ledger_without_generating_a_route(self):
         self.lua.execute("local p=fixture();p.executionSteps[1].profession='first-aid';assert(xp.NormalizePlan('first-aid',p));assert(xp.StartNew('first-aid',p))")
 
     def test_late_receipt_updates_archived_source_not_replacement(self):

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 
@@ -37,6 +38,12 @@ def main(argv=None):
         action.add_argument("--raw", required=True, type=Path)
         action.add_argument("--output", required=True, type=Path)
         action.add_argument("--report", required=True, type=Path)
+    for name in ("reparse", "reuse-verified"):
+        offline = sub.add_parser(name, help="Offline raw-response processing; no network requests")
+        offline.add_argument("--raw", required=True, type=Path)
+        offline.add_argument("--report", required=True, type=Path)
+    status = sub.add_parser("status", help="Read acquisition and reuse counters without networking")
+    status.add_argument("--raw", required=True, type=Path)
     comparison = sub.add_parser("compare", help="Gated online transport comparison after a completed full collection (Linux)")
     comparison.add_argument("--after-raw", type=Path, required=True)
     comparison.add_argument("--out", type=Path, required=True)
@@ -54,6 +61,21 @@ def main(argv=None):
                   web_transport=args.web_transport, retry_current_http=args.retry_current_http,
                   host_recoveries=args.host_recoveries, host_cooldown=args.host_cooldown,
                   browser_assets=args.browser_assets)
+        elif args.command == "status":
+            manifest = json.loads((args.raw / "manifest.json").read_text(encoding="utf-8"))
+            fields = ("id", "mode", "targetCount", "newlyRequested", "attempted", "notAttempted", "reused",
+                      "covered", "uncovered", "statuses", "reusedStatuses", "effectiveStatuses", "skippedReasons",
+                      "requestCoverageComplete", "acquisitionCoverageComplete", "closedAt")
+            print(json.dumps({"build": manifest["build"], "fetchComplete": manifest.get("fetchComplete"),
+                              "webRun": {key: manifest.get("webRun", {}).get(key) for key in fields}}, ensure_ascii=False, indent=2))
+        elif args.command == "reuse-verified":
+            from .reuse import reuse_verified
+            result = reuse_verified(args.raw, args.report)
+            print(json.dumps(result['summary'], ensure_ascii=False))
+        elif args.command == "reparse":
+            from .reparse import reparse
+            result = reparse(args.raw, args.report)
+            print(f"reparsed changes={len(result['changes'])} remainingErrors={len(result['remainingErrors'])}")
         elif args.command == "compare":
             from .compare_transport import compare
             compare(args.after_raw, args.out, limit=args.limit, interval=args.interval, rounds=args.rounds)

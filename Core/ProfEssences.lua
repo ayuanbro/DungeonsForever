@@ -76,7 +76,9 @@ function X.MissingQuotes(snapshot, items)
         if snapshot.nonAuctionable and snapshot.nonAuctionable[id] then return true end
         local price = snapshot.prices and snapshot.prices[id]
         if type(price) == "number" and price > 0 and price < math.huge then return true end
-        local supply = snapshot.auctionSupply and snapshot.auctionSupply[id]
+        local economy=ns.ProfEconomy
+        local supply = economy and economy.ConsiderAuctionSupply and economy.ConsiderAuctionSupply(snapshot)
+            and snapshot.auctionSupply and snapshot.auctionSupply[id]
         if supply and supply.complete == true and supply.quantity == 0 then return true end
         for _, offer in ipairs(snapshot.offers and snapshot.offers[id] or {}) do
             if offer.unlimited == true and type(offer.price) == "number"

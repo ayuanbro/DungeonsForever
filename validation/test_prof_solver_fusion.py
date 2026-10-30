@@ -28,7 +28,7 @@ function recipe(prof,spell,item,count,mats,learn,grey)
     learn=learn or 1,yellow=100,green=200,grey=grey or 300,cooldown=false}
 end
 function snapshot(recipes,prices)
-  local s={recipes=recipes or {},prices=prices or {},inventory={},
+  local s={considerAuctionSupply=true,recipes=recipes or {},prices=prices or {},inventory={},
     professions={alchemy={cur=1,max=300},mining={cur=300,max=300}},known={}}
   for _,r in ipairs(s.recipes) do s.known[r.profession..':'..r.spell]=true end
   return s

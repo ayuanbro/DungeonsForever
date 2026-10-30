@@ -4,6 +4,7 @@ import subprocess
 import unittest
 
 from test_prof_native_data import native_runtime,ROOT
+from data_pipeline.professions.first_aid import native_without_first_aid_update
 
 BASELINE='942a0ca1ae6478dabad4b0885f7abf4011338cc2'
 AUXILIARY='Core/Data/Data_ProfLearningSources.lua'
@@ -18,7 +19,8 @@ class DevDataPreservationTests(unittest.TestCase):
         for name in expected:
             with self.subTest(path=name):
                 original=subprocess.check_output(['git','show',BASELINE+':'+name],cwd=ROOT)
-                self.assertEqual((ROOT/name).read_bytes().replace(b'\r\n',b'\n'),original.replace(b'\r\n',b'\n'))
+                self.assertEqual(native_without_first_aid_update((ROOT/name).read_text(encoding='utf-8-sig')),
+                                 native_without_first_aid_update(original.decode('utf-8-sig')))
 
     def test_toc_data_entries_and_locale_loading_rules_are_unchanged(self):
         original=subprocess.check_output(['git','show',BASELINE+':DungeonsForever.toc'],cwd=ROOT).decode('utf-8-sig')
@@ -38,7 +40,7 @@ class DevDataPreservationTests(unittest.TestCase):
 
     def test_reference_only_recipes_do_not_enter_the_live_candidate_tables(self):
         lua=native_runtime()
-        for profession,spell in (('first-aid',3275),('blacksmithing',1224631),('leatherworking',1224615),('tailoring',1224607),('cooking',1225758)):
+        for profession,spell in (('blacksmithing',1224631),('leatherworking',1224615),('tailoring',1224607),('cooking',1225758)):
             with self.subTest(profession=profession,spell=spell):
                 self.assertIsNone(lua.eval('ns.ProfEconomy.FindRecipe')(profession,spell))
 

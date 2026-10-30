@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import unittest
+from data_pipeline.professions.first_aid import native_without_first_aid_update
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA = ROOT / 'Core/Data/Data_ProfLearningSources.lua'
@@ -29,8 +30,8 @@ class DeliveryContractTests(unittest.TestCase):
             if name == 'Core/Data/Data_ProfLearningSources.lua':
                 continue
             expected = subprocess.check_output(['git', 'show', BASE + ':' + name], cwd=ROOT)
-            self.assertEqual(expected.decode('utf8').replace('\r\n', '\n'),
-                             (ROOT / name).read_text(encoding='utf8'), name)
+            self.assertEqual(native_without_first_aid_update(expected.decode('utf8')),
+                             native_without_first_aid_update((ROOT / name).read_text(encoding='utf8')), name)
         original = subprocess.check_output(['git', 'show', BASE + ':DungeonsForever.toc'], cwd=ROOT).decode('utf8')
         current = (ROOT / 'DungeonsForever.toc').read_text(encoding='utf8')
         def entries(text):
@@ -41,7 +42,7 @@ class DeliveryContractTests(unittest.TestCase):
         self.assertIn('## SavedVariables: DungeonsForeverDB\n', current)
         self.assertIn('## LoadOnDemand: 0\n', current)
 
-    def test_generated_provider_is_forever_only_and_has_no_first_aid(self):
+    def test_generated_provider_is_forever_only_and_includes_first_aid(self):
         self.assertTrue(DATA.is_file(), 'Build and include the auxiliary Data before delivery')
         source = DATA.read_text(encoding='utf8')
         for forever in (False, True):
@@ -55,7 +56,8 @@ class DeliveryContractTests(unittest.TestCase):
             self.assertIsNotNone(provider)
             self.assertEqual(provider['meta']['product'], 'wowf')
             self.assertEqual(provider['meta']['schema'], 1)
-            self.assertIsNone(provider['Get']('first-aid', 3275))
+            self.assertEqual(provider['AutomaticSkillRank']('first-aid',3275),1)
+            self.assertIsNotNone(provider['Get']('first-aid',3275))
             self.assertIsNone(provider['Get']('blacksmithing', -1))
             # The relation exists in fresh DB2, but the missing item's unknown
             # requirements must not become an empty confirmed learning route.

@@ -1,0 +1,14 @@
+{
+  "build": "1.60.1.70685",
+  "fingerprint": "c66efb5a63bfa19c5761f8f07a5c0560768801b965b31599d2958c667e5e4650",
+  "generatedFingerprint": "9f5d6da4aa520af13720c40987f7fb814a93e0751167e2b00bcd2289a0b7d3ba",
+  "note": "Selected records come only from the new source build; other shipped records are retained verbatim as decoded facts.",
+  "operation": "scoped-artifact-publication",
+  "otherProfessionsChanged": [],
+  "outputSHA256": "24037709a85cd3c960045e3ca292d66ee792eb818ed9f97bc8492efecaec657f",
+  "previousFingerprint": "c0b5dba91ed30145734fcce393ceaeb6d8e2966a5856a2a731a8616050f1f3b4",
+  "previousProviderSHA256": "9c34b395b5f029daf0acead57df6890c24da1de2e40940045b45c9bd5bf8edbe",
+  "profession": "first-aid",
+  "recordCount": 34,
+  "sourceProviderSHA256": "41df6525202d80fd7294082bc206ff13d6dc98019664f7de8d38e18604017d0f"
+}

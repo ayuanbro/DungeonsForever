@@ -105,9 +105,6 @@ end
 local function MatPrice(id, soldSet)
     local v = VendorPrice(id)
     local a = RA.AHPriceOf and RA.AHPriceOf(id) or AHPrice(id)
-    local bridge=ns.AuctionBridge
-    local supply=bridge and bridge.GetAuctionSupply and bridge.GetAuctionSupply(id)
-    if supply and supply.quantity==0 then a=nil end
     if a and v and v <= a then return v end
     return a or v
 end
@@ -129,105 +126,19 @@ function RA.MaterialPurchases(id,need,opts)
     if snap then
         offers=snap.offers and snap.offers[id] or {}
         auction=snap.prices and snap.prices[id]
-        supply=economy and economy.AuctionSupplyOf and economy.AuctionSupplyOf(snap,id)
+        supply=economy and economy.AuctionSupplyOf and economy.AuctionSupplyOf(opts,id)
     else
         offers=ns.VendorPriceDB and ns.VendorPriceDB.GetOffers and ns.VendorPriceDB.GetOffers(id) or {}
         auction=RA.AHPriceOf(id)
-        supply=economy and economy.AuctionSupplyOf and economy.AuctionSupplyOf(nil,id)
+        supply=economy and economy.AuctionSupplyOf and economy.AuctionSupplyOf(opts,id)
     end
     if type(auction)~="number" or auction<=0 or auction==math.huge
         or (snap and snap.nonAuctionable or opts.nonAuctionable or {})[id]
         or not snap and economy and economy.NonAuctionableItem and economy.NonAuctionableItem(id) then auction=nil end
     local available=opts.auctionRemaining and opts.auctionRemaining[id]
     if available==nil and supply then available=supply.quantity end
-    local limit=auction and math.min(need,math.max(0,math.floor(available or need))) or 0
-    local byPack,reliable,maxPack={},{},1
-    local faction=snap and snap.faction
-    for _,offer in ipairs(offers) do
-        local size=offer.quantity or offer.bundleSize or 1
-        local price=offer.price
-        local side=offer.faction
-        local valid=offer.unlimited==true and offer.available~=false and offer.purchasable~=false
-            and not offer.priceOnly and not offer.hasExtendedCost and (not offer.currencyID or offer.currencyID==0)
-            and (not side or not faction or side==faction or side=="N" or side=="Neutral" or side=="Both" or side=="AH")
-            and type(price)=="number" and price>=0 and price<math.huge
-            and type(size)=="number" and size>=1 and size<math.huge and size==math.floor(size)
-        if valid then
-            local old=byPack[size]
-            local uncertain=offer.estimated and not offer.reference
-            if not old or price<old.price or price==old.price and old.estimated and not old.reference and not uncertain then
-                byPack[size]=offer
-            end
-            if not uncertain and (not reliable[size] or price<reliable[size].price) then reliable[size]=offer end
-        end
-    end
-    -- Match the route solver: prefer an executable, reliably priced purchase
-    -- over a cheaper estimate, retaining estimates only when no such plan exists.
-    if next(reliable) or auction and limit>=need then byPack=reliable end
-    local sizes={}
-    for size in pairs(byPack) do sizes[#sizes+1]=size;maxPack=math.max(maxPack,size) end
-    table.sort(sizes)
-    local costs,previous,chosen={[0]=0},{},{}
-    local maximum=#sizes>0 and need+maxPack-1 or 0
-    for quantity=1,maximum do
-        for _,size in ipairs(sizes) do
-            local before=quantity-size
-            if before>=0 and costs[before] then
-                local cost=costs[before]+byPack[size].price
-                if not costs[quantity] or cost<costs[quantity]-1e-9 then
-                    costs[quantity]=cost;previous[quantity]=before;chosen[quantity]=size
-                end
-            end
-        end
-    end
-    local best,bestNPC,bestAH
-    for quantity=0,maximum do
-        local rest=math.max(0,need-quantity)
-        if costs[quantity] and (rest==0 or auction and rest<=limit) then
-            local cost=costs[quantity]+rest*(auction or 0)
-            if not best or cost<best-1e-9 or math.abs(cost-best)<1e-9 and rest<bestAH then
-                best,bestNPC,bestAH=cost,quantity,rest
-            end
-        end
-    end
-    local function ahRow(count)
-        return {id,count,id=id,count=count,need=count,cost=(auction or 0)*count,unit=auction or 0,
-            source="ah",vendor=false,availableCount=available,supplyRequired=count,
-            supplyObserved=available~=nil,supplyComplete=supply and supply.complete,
-            supplyObservedAt=supply and supply.observedAt,supplySource=supply and supply.source,
-            supplyMethod=supply and supply.method}
-    end
-    if not best then
-        local entry
-        if auction then entry=ahRow(need)
-        else entry={id,need,id=id,count=need,need=need,cost=0,unit=0,unpriced=true} end
-        entry.unavailable=true;entry.costComplete=false
-        return {entry},entry.cost,false,auction and "auctionSupplyLimited" or "materialUnavailable"
-    end
-    local list,counts={},{}
-    local quantity=bestNPC
-    while quantity>0 do
-        local size=chosen[quantity]
-        counts[size]=(counts[size] or 0)+1;quantity=previous[quantity]
-    end
-    local complete,reason=true,nil
-    for _,size in ipairs(sizes) do
-        local packs=counts[size]
-        if packs then
-            local offer=byPack[size]
-            local entry={};for key,value in pairs(offer) do entry[key]=value end
-            local count=packs*size
-            entry[1],entry[2],entry.id,entry.count=id,count,id,count
-            entry.need=math.min(need,count);entry.cost=packs*offer.price;entry.unit=offer.price/size
-            entry.bundleSize,entry.bundlePrice=size,offer.price
-            entry.quoteSource=offer.quoteSource or offer.source
-            entry.source,entry.vendor="vendor",true
-            if offer.estimated and not offer.reference then complete=false;reason="vendorEstimate";entry.costComplete=false end
-            list[#list+1]=entry
-        end
-    end
-    if bestAH>0 then list[#list+1]=ahRow(bestAH) end
-    return list,best,complete,reason
+    return economy.MaterialPurchases(id,need,{offers=offers,auction=auction,supply=supply,
+        available=available,faction=snap and snap.faction})
 end
 
 function RA.PreferSharedFormula(entry,materialNeed,opts)
@@ -239,12 +150,8 @@ function RA.PreferSharedFormula(entry,materialNeed,opts)
     if not context then
         context={};for key,value in pairs(opts) do context[key]=value end
         context.profession=context.profession or entry.profession or entry.recipe.profession
-        local view=ns.ProfModule
-        if context.noFormula==nil and view and view.SettingRaw then
-            context.noFormula=view.SettingRaw("autoNoFormula",context.profession)
-        end
     end
-    local supply=economy.AuctionSupplyOf and economy.AuctionSupplyOf(opts.snapshot,id)
+    local supply=economy.AuctionSupplyOf and economy.AuctionSupplyOf(opts.snapshot and opts or context,id)
     local available=opts.auctionRemaining and opts.auctionRemaining[id]
     if available==nil and supply then available=supply.quantity end
     local candidates={}
@@ -275,6 +182,19 @@ function RA.PreferSharedFormula(entry,materialNeed,opts)
         return best
     end
     return entry
+end
+
+function RA.StampFormulaCosts(result)
+    if type(result)~="table" then return result end
+    for _,entry in ipairs(result.formulas or {}) do
+        if entry.unpriced or entry.costComplete==false then
+            result.costComplete=false;result.completeCost=false;result.formulaComplete=false
+            result.optimal=false;result.inputModelOptimal=false
+            result.diagnostics=result.diagnostics or {}
+            result.diagnostics[#result.diagnostics+1]={code="formulaPriceUnknown",item=entry.id,spell=entry.spell}
+        end
+    end
+    return result
 end
 
 function RA.StampMaterialPurchases(result)
@@ -557,8 +477,6 @@ local function FormulaQuote(rec, slug, opts)
     if E.AttachLearningInfo and not (opts and opts.snapshot) then E.AttachLearningInfo(recipe,LearnKnown(recipe.spell)) end
     local context={profession=slug}
     for key,value in pairs(opts or {}) do context[key]=value end
-    local view=ns.ProfModule
-    if context.noFormula==nil and view and view.SettingRaw then context.noFormula=view.SettingRaw("autoNoFormula",slug) end
     local remaining=context.auctionRemaining and context.auctionRemaining[recipe.formula or recipe.formulaID]
     return E.FormulaFor(recipe,context,remaining)
 end
@@ -605,24 +523,6 @@ local function BuildCandidates(slug, opts)
             local formulaFacade=E and E.FormulaFor and E.Normalize
             local formula=FormulaQuote(rec,slug,opts)
             if formula and not formula.usable then ok=false end
-            local skipFormula = opts.noFormula
-            if ok and skipFormula and type(rec[13]) == "table" and type(rec[13][1]) == "number" then
-                if formulaFacade then
-                    if formula and not formula.known and formula.source~="vendor" then ok=false end
-                else
-                    local SM = ns.ProfSourceMerge
-                    local view = (SM and SM.SourceOf and SM.SourceOf(rec[13][1])) or rec[14]
-                    local kind = (SM and SM.Primary) and SM.Primary(view) or nil
-                    if kind ~= "vendor" then ok = false end
-                end
-            end
-            if ok and opts.learnedOnly and not LearnKnown(spell) then ok = false end
-            if ok and not LearnKnown(spell) and type(rec[13]) == "table"
-               and type(rec[13][1]) == "number" then
-                local PDm = ns.ProfModule
-                local skipUnknown = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas",slug)) and true or false
-                if skipUnknown and not formulaFacade and not MatPrice(rec[13][1], soldSet) then ok = false end
-            end
             if ok then
                 local cost, unpriced = 0, false
                 for _, m in ipairs(reagents) do
@@ -662,6 +562,7 @@ local function BuildCandidates(slug, opts)
                         grey = grey, mats = reagents, cost = cost, unpriced = unpriced,
                         fcost = fcost, funpriced = funpriced or nil, base = base, cd = (rec[4] == "Transmutes") or nil,
                         learningCostKnown=formula~=nil,
+                        learningUsable=formula and formula.usable,
                         unknown = unknown or nil,
                         learnO = math.max(1, math.min(learn, cY - 25)),
                     }
@@ -679,7 +580,6 @@ local function BuildCandidates(slug, opts)
                and ri.grey > ri.learn
                and type(ri.mats) == "table" and #ri.mats > 0 then
                 local ok = not ri.clientUnavailable and not ri.clientPending and not ri.cooldown and not ri.cooldownUnknown
-                    and not (opts.learnedOnly and not LearnKnown(spell))
                 if not checkLearning(ri,spell) then ok=false;specBlocked=specBlocked+1 end
                 local formula=ok and FormulaQuote(ri,slug,opts)
                 if formula and not formula.usable then ok=false end
@@ -709,6 +609,7 @@ local function BuildCandidates(slug, opts)
                         mats = ri.mats, cost = cost, unpriced = unpriced,
                         fcost = formula and formula.cost or 0,
                         funpriced=formula and (formula.unpriced or formula.cost==nil) or nil,
+                        learningUsable=formula and formula.usable,
                         learningCostKnown=formula~=nil,
                         base = base, unknown = unknown or nil,
                         learnO = math.max(1, math.min(ri.learn, y - 25)),
@@ -758,7 +659,7 @@ local function BuildCandidates(slug, opts)
 end
 
 local function Eligible(c, allowUnpriced)
-    return allowUnpriced or (not c.funpriced)
+    return allowUnpriced or c.learningUsable or (not c.funpriced)
 end
 
 local function CanUse(scheme, c, cur)
@@ -1109,7 +1010,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
     local economy=ns.ProfEconomy
     local function observe(id)
         if id and remaining[id]==nil and economy and economy.AuctionSupplyOf then
-            local supply=economy.AuctionSupplyOf(purchaseOpts.snapshot,id)
+            local supply=economy.AuctionSupplyOf(purchaseOpts,id)
             if supply then remaining[id]=supply.quantity end
         end
     end
@@ -1120,7 +1021,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
         local rec=recOf[st[3]]
         if rec and not (skipLearnedFormulas and LearnKnown(st[3])) then
             local entry=FormulaQuote(rec,st.profession or slug,purchaseOpts)
-            if entry and not entry.known then
+            if entry and not entry.known and not entry.automatic then
                 local formulaID=entry.id
                 local key=formulaID or entry.recipeKey or (st.profession or slug)..":"..tostring(st[3])
                 if not paidLearning[key] then
@@ -1128,7 +1029,8 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
                     observe(formulaID)
                     entry=RA.PreferSharedFormula(entry,formulaID and mats[formulaID],purchaseOpts)
                     formulas[#formulas+1]=entry;formulasTotal=formulasTotal+(entry.cost or 0)
-                    if entry.source=="vendor" or entry.source=="npc" or entry.source=="trainer" then formulaVendorTotal=formulaVendorTotal+(entry.cost or 0)
+                    if entry.source=="vendor" or entry.source=="npc" or entry.source=="trainer"
+                        or entry.source=="acquire" and entry.acquisitionKind=="currency" then formulaVendorTotal=formulaVendorTotal+(entry.cost or 0)
                     elseif entry.source=="ah" and remaining[formulaID]~=nil then
                         remaining[formulaID]=math.max(0,remaining[formulaID]-(entry.count or 1))
                     end
@@ -1164,8 +1066,81 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
            productAH, productNPC, productPartial
 end
 
+-- Poisons retains master's authored guide and sold-list pricing. It is a
+-- reference guide, independent of ordinary profession procurement/eligibility.
+local function SummarizePoisons(steps, opts)
+    local guide=ns.ProfLeveling and ns.ProfLeveling.poisons
+    local catalogue=ns.ProfRecipes and ns.ProfRecipes.poisons
+    if not (guide and catalogue and catalogue.rows) then return nil end
+    local sold,recipes,counts,firstAt,prices={},{},{},{},{}
+    for _,id in ipairs(guide.sold or {}) do sold[id]=true end
+    for _,recipe in ipairs(catalogue.rows) do recipes[recipe[1]]=recipe end
+    local function quote(id)
+        local vendor=VendorPrice(id)
+        if sold[id] then return vendor end
+        local auction=AHPrice(id)
+        return auction and vendor and math.min(auction,vendor) or auction or vendor
+    end
+    local crafts,productAH,productNPC,productPartial=0,0,0,false
+    for _,step in ipairs(steps) do
+        local recipe=recipes[step[3]]
+        local mats=recipe and recipe[12]
+        step.mats,step.item,step.out=mats,recipe and recipe[2],recipe and recipe[3]
+        step.cost,step.unpriced=0,nil
+        step.unpricedReason,step.unpricedAge,step.unpricedMat=nil,nil,nil
+        for _,material in ipairs(mats or {}) do
+            local id,quantity=material[1],(material[2] or 1)*(step[4] or 0)
+            local price=quote(id);prices[id]=price
+            counts[id]=(counts[id] or 0)+quantity
+            firstAt[id]=math.min(firstAt[id] or math.huge,step[1])
+            if price then step.cost=step.cost+price*quantity
+            else step.unpriced=true;step.unpricedReason=sold[id] and "novendor" or ahReason[id] or "norec";step.unpricedMat=id end
+        end
+        crafts=crafts+(step[4] or 0)
+        if recipe and type(recipe[2])=="number" then
+            local id,count=recipe[2],(recipe[3] or 1)*(step[4] or 0)
+            RequestProduct(id)
+            local auction=AHPrice(id)
+            if auction then productAH=productAH+auction*count else productPartial=true end
+            productNPC=productNPC+(NPCSellPrice(id) or 0)*count
+        end
+    end
+    local list,total,vendorTotal={},0,0
+    for id,need in pairs(counts) do
+        local have=opts.executionInventory and opts.executionInventory[id]
+        have=type(have)=="number" and math.min(need,math.max(0,have)) or 0
+        local count,price=need-have,prices[id]
+        if count>0 then
+            local cost=(price or 0)*count
+            list[#list+1]={id,count,id=id,count=count,need=need,have=have>0 and have or nil,
+                cost=cost,unit=price or 0,vendor=sold[id] or false,source=sold[id] and "vendor" or "ah",
+                unpriced=price==nil,reason=price==nil and (sold[id] and "novendor" or ahReason[id] or "norec") or nil,
+                age=price==nil and ahAge[id] or nil}
+            total=total+cost
+            if sold[id] then vendorTotal=vendorTotal+cost end
+        end
+    end
+    table.sort(list,function(a,b)
+        if firstAt[a[1]]~=firstAt[b[1]] then return firstAt[a[1]]<firstAt[b[1]] end
+        if a[2]~=b[2] then return a[2]>b[2] end
+        return a[1]<b[1]
+    end)
+    local result={steps=steps,mats=list,firstAt=firstAt,matTotal=total,total=total,
+        vendorTotal=vendorTotal,ahTotal=total-vendorTotal,formulas={},formulasTotal=0,
+        crafts=crafts,productAH=productAH,productNPC=productNPC,productPartial=productPartial,
+        scheme="fixed",legacyPoisonGuide=true,considerAuctionSupply=false,
+        priced=RA.HasPriceData(),snapshotAge=SnapshotSec(),snapshotDays=priceCache.__minAge,
+        stamp=time and time() or 0}
+    return RA.ApplyRecovery(result,"poisons",opts,recipes)
+end
+
 function RA.SummarizeSteps(steps, slug, opts)
     opts = opts or {}
+    if slug=="poisons" then return SummarizePoisons(steps,opts) end
+    opts.profession=slug
+    if ns.ProfEconomy and ns.ProfEconomy.ConsiderAuctionSupply then
+        opts.considerAuctionSupply=ns.ProfEconomy.ConsiderAuctionSupply(opts)
+    end
     local pr = ns.ProfRecipes
     local Rg = pr and pr[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
@@ -1191,7 +1166,7 @@ function RA.SummarizeSteps(steps, slug, opts)
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, specInputs, opts.executionInventory,nil,slug,opts)
+        SummarizeCore(steps, recOf, soldSet, false, specInputs, opts.executionInventory,nil,slug,opts)
     local res = {
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
@@ -1211,7 +1186,7 @@ function RA.SummarizeSteps(steps, slug, opts)
         if entry.usable==false then
             res.completeCost=false;res.feasible=false;res.status="recalculate_required"
             res.diagnostics=res.diagnostics or {}
-            res.diagnostics[#res.diagnostics+1]={code="formulaUnavailable",item=entry.id,spell=entry.spell}
+            res.diagnostics[#res.diagnostics+1]={code=entry.reason or "formulaUnavailable",item=entry.id,spell=entry.spell}
         end
     end
     local blockedSteps = RA.MarkFixedSpecializations(slug, steps, opts)
@@ -1234,6 +1209,7 @@ function RA.SummarizeSteps(steps, slug, opts)
     local _,_,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
     if goalRequired then res.specializationGoalRequired=true;res.feasible=false;res.status="recalculate_required" end
     RA.StampMaterialPurchases(res)
+    RA.StampSupply(res,opts)
     RA.ApplyRecovery(res, slug, opts, recOf)
     for _,step in ipairs(res.steps or {}) do
         if not step.clientPending and not step.unpriced and step.attributedCost~=nil then step.cost=step.attributedCost end
@@ -1254,7 +1230,7 @@ function RA.FixedPlan(slug, supplied)
     local steps,clipped={},false
     for _,row in ipairs(guide.steps) do
         local from,to=tonumber(row[1]) or 1,tonumber(row[2]) or target
-        if from>=target and not row.checkpoint then break end
+        if slug~="poisons" and from>=target and not row.checkpoint then break end
         if from>target then break end
         local copy={}
         for key,value in pairs(row) do
@@ -1271,7 +1247,10 @@ function RA.FixedPlan(slug, supplied)
     local result=RA.SummarizeSteps(steps,slug,opts)
     if result then
         result.mode,result.scheme,result.target="fixed","fixed",target
-        result.procurementPolicyVersion=ns.ProfRouteSolver and ns.ProfRouteSolver.ProcurementPolicyVersion or 3
+        if slug=="first-aid" and result.clientPending then result.referenceOnly=true end
+        if slug~="poisons" then
+            result.procurementPolicyVersion=ns.ProfRouteSolver and ns.ProfRouteSolver.ProcurementPolicyVersion or 7
+        end
         result.start=steps[1] and steps[1][1] or target
         result.clipped=clipped
         if slug=="first-aid" and result.clientPending and target==300
@@ -1279,12 +1258,15 @@ function RA.FixedPlan(slug, supplied)
             -- The authored full-guide list is valid reference data even when
             -- individual recipe seeds are missing. It cannot prove execution
             -- or pattern costs, so the pending diagnostics remain in place.
-            result.mats={};result.referenceShopping=true
+            result.mats={};result.referenceShopping=true;result.referenceQuoted=false;result.referenceCostComplete=true
             local materialTotal,vendorTotal=0,0
             for _,material in ipairs(guide.shopping) do
                 local id,count=material[1],material[2]
                 local entries,cost,complete,reason=RA.MaterialPurchases(id,count,opts)
+                if not complete then result.referenceCostComplete=false end
                 for _,entry in ipairs(entries) do
+                    entry.considerAuctionSupply=result.considerAuctionSupply==true
+                    if not entry.unpriced and type(entry.cost)=="number" then result.referenceQuoted=true end
                     entry.need=count
                     if not complete then entry.costComplete=false;entry.procurementReason=reason end
                     result.mats[#result.mats+1]=entry
@@ -1295,7 +1277,10 @@ function RA.FixedPlan(slug, supplied)
             result.matTotal=materialTotal;result.vendorTotal=vendorTotal
             result.ahTotal=materialTotal-vendorTotal
             result.total=materialTotal+(result.formulasTotal or 0)
+            result.snapshotAge,result.snapshotDays=SnapshotSec(),priceCache.__minAge
             RA.StampMaterialPurchases(result)
+            if result.considerAuctionSupply then RA.StampSupply(result,opts) end
+            if result.supplyComplete==false or (result.auctionSupplyUnknown or 0)>0 then result.referenceCostComplete=false end
             RA.ApplyRecovery(result,slug,opts,{})
         end
     end
@@ -1368,6 +1353,7 @@ local function RecoveryOptions(opts,slug)
 end
 
 function RA.ApplyRecovery(res, slug, opts, recOf)
+    RA.StampFormulaCosts(res)
     local R = ns.ProfRecovery
     if not res or not R or not R.Apply then return res end
     local enabled, fee = RecoveryOptions(opts,slug)
@@ -1378,8 +1364,10 @@ function RA.ApplyRecovery(res, slug, opts, recOf)
     res.recoveryOptimized = false
     res.recoveryScheme = snap.recovery and snap.recovery.feePercent or nil
     res.recoveryFeeSource = snap.recovery and snap.recovery.feeSource or nil
-    RA.StampSupply(res)
-    RA.StampSpecializations(res, slug, opts, res.recoverySnapshot)
+    if slug~="poisons" then
+        RA.StampSupply(res,opts)
+        RA.StampSpecializations(res, slug, opts, res.recoverySnapshot)
+    end
     return res
 end
 
@@ -1567,6 +1555,17 @@ end
 
 function RA.StampSupply(result, context)
     if type(result) ~= "table" then return result end
+    local economy=ns.ProfEconomy
+    if economy and economy.SummarizeFormulaSupply then economy.SummarizeFormulaSupply(result,context) end
+    result.considerAuctionSupply=economy and economy.ConsiderAuctionSupply and economy.ConsiderAuctionSupply(context) or false
+    if not result.considerAuctionSupply then
+        result.auctionSupplyUnknown=nil
+        for _,entry in ipairs(result.mats or {}) do entry.considerAuctionSupply=false end
+        for _,entry in ipairs(result.formulas or {}) do
+            entry.considerAuctionSupply=entry.source=="ah" or entry.source=="auction"
+        end
+        return result
+    end
     local AB = ns.AuctionBridge
     local unknown = 0
     local now = (type(time) == "function") and time() or 0
@@ -1581,6 +1580,7 @@ function RA.StampSupply(result, context)
         return rec
     end
     for _, e in ipairs(result.mats or {}) do
+        e.considerAuctionSupply=true
         local mid = e.id or e[1]
         if mid and not e.vendor and (e.source == nil or e.source == "ah") then
             local rec = SupplyOf(mid)
@@ -1710,7 +1710,7 @@ function RA.ComputeFishing(slug, opts)
     end
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory, fishSet,slug,opts)
+        SummarizeCore(stepsOut, recOf, soldSet, false, nil, opts.executionInventory, fishSet,slug,opts)
     local reached = stepsOut[#stepsOut] and stepsOut[#stepsOut][2] or start
     local res = {
         planVersion = 2, scheme = "fishing", fishingRoute = true, fishingRouteRevision=2,
@@ -1745,9 +1745,7 @@ function RA.Compute(slug, opts)
     if scheme == nil or not SCHEME_LABEL[scheme] then scheme = "cheapest" end
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
-    local PDm = ns.ProfModule
     local allowUnpriced = false
-    if PDm and PDm.Setting then allowUnpriced = not PDm.Setting("autoSkipUnpricedFormulas",slug) end
     local steps, gaps = Simulate(cands, opts.start, cap, allowUnpriced, scheme)
     local filled = false
     if #gaps > 0 then
@@ -1776,7 +1774,7 @@ function RA.Compute(slug, opts)
     local kept = InjectTools(stepsOut, slug, cap, opts.start, recOf)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory,nil,slug,opts)
+        SummarizeCore(stepsOut, recOf, soldSet, false, nil, opts.executionInventory,nil,slug,opts)
     local res = {
         scheme = scheme,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
@@ -1845,9 +1843,10 @@ local function Fingerprint(opts, slug)
     local pol = Pol and Pol.GetPolicies and Pol.GetPolicies(slug) or nil
     local partner = opts.secondaryProfession
     if partner == nil and Pol and Pol.GetRoutePartner then partner = Pol.GetRoutePartner(slug) end
-    return string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
-        tostring(opts.start), tostring(opts.onlyAH),
-        tostring(opts.noFormula), tostring(opts.learnedOnly),
+    return string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
+        tostring(opts.start), tostring(opts.onlyAH), tostring(opts.considerAuctionSupply),
+        tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas),
+        tostring(opts.allowLimitedFormulas),
         tostring(opts.target and math.floor(tonumber(opts.target) or CAP)),
         tostring(opts.scheme),
         tostring(opts.allowSecondaryLeveling),
@@ -1863,10 +1862,11 @@ function RA.QuoteSig(slug)
     local rev = AB and AB.SupplyRevision and AB.SupplyRevision() or 0
     local fee = PDm and PDm.SettingRaw and tonumber(PDm.SettingRaw("recoveryFeePercent",slug)) or 5
     local lim = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas",slug)) and 1 or 0
-    local unk = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas",slug)) and 1 or 0
+    local bop = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoAllowBindOnPickupFormulas",slug)) and 1 or 0
+    local currency = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoAllowCurrencyFormulas",slug)) and 1 or 0
     local rec = (PDm and PDm.Setting and PDm.Setting("recoveryEnabled",slug)) and 1 or 0
     local tool = (PDm and PDm.Setting and PDm.Setting("autoCraftTools",slug)) and 1 or 0
-    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(unk)
+    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(bop) .. ":" .. tostring(currency)
         .. ":" .. tostring(rec) .. ":" .. tostring(tool)
 end
 
@@ -1888,8 +1888,10 @@ function RA.OptionsFor(slug, current)
     return {
         start = (PDm.Setting("autoFromCurrent",slug) and lv) and math.max(1, lv) or 1,
         onlyAH = PDm.Setting("autoOnlyAH",slug),
-        noFormula = PDm.Setting("autoNoFormula",slug),
-        learnedOnly = PDm.Setting("autoLearnedOnly",slug),
+        considerAuctionSupply = PDm.Setting("autoConsiderAuctionSupply",slug),
+        allowLimitedFormulas = PDm.Setting("autoBuyLimitedFormulas",slug),
+        allowBindOnPickupFormulas = PDm.Setting("autoAllowBindOnPickupFormulas",slug),
+        allowCurrencyFormulas = PDm.Setting("autoAllowCurrencyFormulas",slug),
         target = target,
         scheme = slug=="first-aid" and "fixed" or fish and "fishing" or PDm.SettingRaw("autoScheme",slug),
         allowSecondaryLeveling = PDm.Setting("autoSecondaryLeveling",slug),

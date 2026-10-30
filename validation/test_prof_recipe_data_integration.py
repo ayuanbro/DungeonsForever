@@ -6,6 +6,7 @@ from test_prof_solver_fusion import LuaRuntime, ROOT
 from test_prof_native_data import native_runtime
 import test_prof_recipe_data_first_aid as first_aid
 import test_prof_ui_fusion as ui_fixture
+from data_pipeline.professions.first_aid import native_without_first_aid_update
 
 
 class NativeRecipeDataBoundaryTests(unittest.TestCase):
@@ -22,8 +23,8 @@ class NativeRecipeDataBoundaryTests(unittest.TestCase):
             with self.subTest(path=relative):
                 committed=subprocess.check_output(['git','show','HEAD:'+relative],cwd=ROOT)
                 # Git stores LF while the Windows checkout can use CRLF.
-                self.assertEqual((ROOT/relative).read_text(encoding='utf-8-sig'),
-                                 committed.decode('utf-8-sig').replace('\r\n','\n'))
+                self.assertEqual(native_without_first_aid_update((ROOT/relative).read_text(encoding='utf-8-sig')),
+                                 native_without_first_aid_update(committed.decode('utf-8-sig')))
 
     def test_native_lazy_loader_only_opens_requested_original_professions(self):
         lua=native_runtime()
@@ -33,7 +34,8 @@ class NativeRecipeDataBoundaryTests(unittest.TestCase):
           assert(rawget(data,'first-aid')==nil)
           ns.EnsureProfRecipes({'alchemy'})
           local group=data.alchemy;local count=#group.rows
-          assert(count>0 and rawget(data,'tailoring')==nil and data['first-aid']==nil)
+          assert(count>0 and rawget(data,'tailoring')==nil and rawget(data,'first-aid')==nil)
+          ns.EnsureProfRecipes({'first-aid'});assert(#data['first-aid'].rows==32)
           ns.EnsureProfRecipes({'alchemy'});assert(data.alchemy==group and #group.rows==count)
           assert(getmetatable(data).__index==originalIndex)
           assert(ns.ProfRecipeData==nil and ns.ProfRecipeSupplements==nil)
@@ -70,7 +72,7 @@ class NativeRecipeDataBoundaryTests(unittest.TestCase):
                   assert(ns.ProfLeveling.enchanting.rinfo[7418].learn==1)
                   local recipe=ns.ProfEconomy.FindRecipe('enchanting',7418)
                   assert(recipe.learn==1 and recipe.mats[1][1]==247786)
-                  assert(ns.ProfRecipes['first-aid']==nil)
+                  assert(rawget(ns.ProfRecipes,'first-aid')==nil)
                   assert(ns.ProfRecipeData==nil and ns.ProfRecipeSupplements==nil)
                 """)
 

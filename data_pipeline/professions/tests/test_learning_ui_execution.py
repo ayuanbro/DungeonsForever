@@ -52,14 +52,14 @@ class StrictLearningSolverTests(unittest.TestCase):
           for _,a in ipairs(result.actions)do assert(a.type~='craft' or a.spell~=102)end
         """)
 
-    def test_all_unknown_paths_finish_with_data_gap_instead_of_spinning(self):
+    def test_unobtainable_teaching_item_finishes_with_purchase_gap_instead_of_spinning(self):
         self.lua.execute("""
           local snap=snapshot({missing(recipe('alchemy',102,12,1,{{11,1}},1,300))},{[11]=7})
           snap.known={}
           local result,job=solve('alchemy',snap,3,{autoCraftTools=false})
           assert(job.finished and not result.feasible and not result.targetReached)
           assert(#result.steps==0 and result.learningGaps[1].spell==102)
-          assert(result.learningGaps[1].code=='learningDataMissing')
+          assert(result.learningGaps[1].code=='formulaUnavailable',tostring(result.learningGaps[1].code))
         """)
 
     def test_confirmed_trainer_alternative_has_one_real_fee_and_no_book_purchase(self):
@@ -77,15 +77,40 @@ class StrictLearningSolverTests(unittest.TestCase):
           for _,a in ipairs(result.actions)do assert(a.item~=5577)end
         """)
 
+    def test_drop_pattern_with_auction_price_enters_exact_and_fixed_routes_with_one_purchase(self):
+        self.lua.execute("""
+          for _,fixed in ipairs({false,true})do
+            local a=recipe('alchemy',101,10,1,{{11,1}},1,300)
+            a.formula=900001;a.source={drops={{id=777}}}
+            a.learningInfo={spell=101,profession='alchemy',coverage='partial',missingReasons={'acquisitionSourceMissing'},
+              routes={{id='item:101:900001',kind='item',teachingItemID=900001,status='confirmed',
+                conditionsKnown=true,conditions={},acquisition={status='unknown',coverage='partial',
+                  conditionsKnown=false,conditions={},dropSourceCount=200,dropDetailsOffline=true,nonAuctionable=false}}}}
+            local snap=snapshot({a},{[11]=7,[900001]=501});snap.known={};snap.noFormula=false
+            snap.stamp=1000
+            snap.auctionSupply={[11]={quantity=3,complete=true,ownerExcluded=true,source='fixture'},
+              [900001]={quantity=2,observedAt=1000,complete=true,ownerExcluded=true,source='client-auction-results'}}
+            local opts={autoCraftTools=false}
+            if fixed then opts.fixedSteps={{1,4,101,3}}end
+            local result,job=solve('alchemy',snap,4,opts)
+            assert(not job.error and result.targetReached,tostring(job.error)..' '..tostring(result.reason))
+            assert(result.total==522,tostring(result.total))
+            assert(#result.formulas==1 and result.formulas[1].id==900001)
+            assert(result.formulas[1].source=='ah' and result.formulas[1].cost==501)
+            assert(result.formulas[1].count==1,'teaching item was bought for every craft')
+          end
+        """)
+
     def test_unknown_training_fee_is_never_zero_cost(self):
         self.lua.execute("""
           local a=trainer(recipe('alchemy',101,10,1,{{11,1}},1,300),nil)
           local snap=snapshot({a},{[11]=7});snap.known={}
           local result,job=solve('alchemy',snap,3,{autoCraftTools=false})
-          assert(job.finished and not result.targetReached and not result.feasible)
-          assert(result.completeCost==false and #result.actions==0)
-          local found=false;for _,d in ipairs(result.diagnostics)do if d.code=='learningPriceUnknown'then found=true end end
-          assert(found)
+          assert(job.finished and result.targetReached and result.feasible)
+          assert(result.completeCost==false)
+          assert(#result.formulas==1 and result.formulas[1].source=='trainer')
+          assert(result.formulas[1].usable and result.formulas[1].cost==nil)
+          assert(result.formulas[1].unpriced and not result.formulas[1].costComplete)
         """)
 
     def test_unrelated_unknown_recipe_does_not_block_a_complete_known_route(self):
@@ -149,7 +174,7 @@ class LearningFastRouteIntegrationTests(unittest.TestCase):
           ns.ProfLeveling={alchemy={sold={},rinfo={}}}
           Auctionator={API={v1={GetAuctionPriceByItemID=function(_,id)return 7 end}}}
           ns.ProfEconomy.Known=function()return false end
-          ns.ProfModule={Setting=function()return true end,SettingRaw=function()return true end}
+          ns.ProfModule={Setting=function()return true end,SettingRaw=function(key)return key~='autoAllowUnknownLearning' end}
         """)
         for name in ("ProfRouteAuto", "ProfLearning"):
             self.load((ROOT / "Core" / (name + ".lua")).read_text(encoding="utf-8"))
@@ -170,6 +195,31 @@ class LearningFastRouteIntegrationTests(unittest.TestCase):
           assert(result.formulasTotal==50,tostring(result.formulasTotal))
           assert(#result.formulas==1 and result.formulas[1].source=='trainer')
           assert(result.total==57,tostring(result.total))
+        """)
+
+    def test_fast_route_prices_a_drop_pattern_from_auction_once_for_multiple_crafts(self):
+        self.lua.execute("""
+          ns.ProfRecipes.alchemy.rows={ns.ProfRecipes.alchemy.rows[1]}
+          ns.ProfRecipes.alchemy.rows[1][10]=300
+          ns.ProfLearningSources.meta.fingerprint='drop-auction-fast'
+          ns.ProfLearningSources.Get=function(_,spell)
+            if spell~=101 then return end
+            return {spell=101,profession='alchemy',coverage='partial',missingReasons={'acquisitionSourceMissing'},
+              routes={{id='item:101:900001',kind='item',teachingItemID=900001,status='confirmed',conditionsKnown=true,
+                conditions={},acquisition={status='unknown',coverage='partial',conditionsKnown=false,
+                  conditions={},dropDetailsOffline=true,dropSourceCount=200,nonAuctionable=false}}}}
+          end
+          Auctionator.API.v1.GetAuctionPriceByItemID=function(_,id)return id==900001 and 501 or 7 end
+          ns.AuctionBridge={GetAuctionSupply=function(id)if id==900001 then return {
+            quantity=2,observedAt=1000,complete=true,ownerExcluded=true,source='client-auction-results'}end end}
+          local result=ns.ProfRouteAuto.Compute('alchemy',{start=1,target=4,onlyAH=true,
+            noFormula=false,considerAuctionSupply=false,scheme='cheapest'})
+          assert(#result.steps>0 and result.steps[1][1]==1 and result.steps[#result.steps][2]==4)
+          assert(#result.gaps==0 and #result.learningGaps==0)
+          assert(result.formulasTotal==501,tostring(result.formulasTotal))
+          assert(result.total==522,tostring(result.total))
+          assert(#result.formulas==1 and result.formulas[1].id==900001 and result.formulas[1].source=='ah')
+          assert(result.formulas[1].count==1,'fast route bought the pattern repeatedly')
         """)
 
 
@@ -245,10 +295,11 @@ class LearningExecutionIntegrationTests(unittest.TestCase):
           assert(run.plan==frozen and #frozen.executionSteps>0)
         """)
 
-    def test_first_aid_keeps_its_original_fixed_behavior(self):
+    def test_first_aid_enforces_changed_learning_policy_before_execution(self):
         self.lua.execute("""
           policy='changed';local before=checks
-          assert(xp.ValidateLearning(plan,'first-aid',plan.executionSteps[1]))
+          local ok,reason=xp.ValidateLearning(plan,'first-aid',plan.executionSteps[1])
+          assert(not ok and reason=='learningPolicyChanged')
           assert(checks==before)
         """)
 

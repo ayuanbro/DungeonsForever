@@ -3,7 +3,8 @@ local _,ns=...
 if not ns.LoadForeverPages then return end
 local E=ns.ProfEconomy
 local S={}; ns.ProfRouteSolver=S
-S.ProcurementPolicyVersion=3
+S.ProcurementPolicyVersion=7
+S.FailureDiagnosticVersion=1
 local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
 local stockFields={"unlimited","limited","stock","maxStock","stockUnknown","stockStatus"}
 local function stampStock(entry,offer)
@@ -113,6 +114,7 @@ local function stampFreshResult(result,snapshot,tick)
     return result
 end
 local function stampLearningGaps(job,result)
+    result.failureDiagnosticVersion=S.FailureDiagnosticVersion
     if result._learningGapRevision~=(job.learningGapRevision or 0) then
         result.learningGaps={}
         for _,gap in pairs(job.learningGaps or {}) do
@@ -126,16 +128,27 @@ local function stampLearningGaps(job,result)
         result._learningGapRevision=job.learningGapRevision or 0
     end
     result.learningCoverageComplete=#(result.learningGaps or {})==0
-    if not result.targetReached and not result.learningCoverageComplete then
-        result.learningComplete=false;result.completeCost=false;result.optimal=false
-        result.blockingDiagnostics=result.blockingDiagnostics or {}
+    -- Coverage records every rejected candidate visited by the search. Only
+    -- failures at the actual stopping frontier explain why this result stopped.
+    -- A missing recipe that was bypassed, is now grey, or was excluded cannot
+    -- turn a later stock/price failure into a learning-data failure.
+    result.blockingLearningGaps={}
+    if not result.targetReached then
+        local blockers=job.blockedSkill==(result.plannedTo or result.start) and job.blockers or result.blockingDiagnostics
         local seen={}
-        for _,d in ipairs(result.blockingDiagnostics) do seen[tostring(d.code)..":"..tostring(d.recipe or d.spell)]=true end
-        for _,d in ipairs(result.learningGaps) do
-            local key=tostring(d.code)..":"..tostring(d.recipe or d.spell)
-            if not seen[key] then result.blockingDiagnostics[#result.blockingDiagnostics+1]=d;seen[key]=true end
+        for _,d in ipairs(blockers or {}) do
+            if d.code=="learningDataMissing" or d.code=="learningRequirementsUnknown"
+                or type(d.missingReasons)=="table" and #d.missingReasons>0 then
+                local key=tostring(d.code)..":"..tostring(d.recipe or d.spell)
+                if not seen[key] then result.blockingLearningGaps[#result.blockingLearningGaps+1]=d;seen[key]=true end
+            end
         end
     end
+    result.learningBlocked=#result.blockingLearningGaps>0
+    if result._learningPathComplete==nil then result._learningPathComplete=result.learningComplete~=false end
+    result.learningComplete=result._learningPathComplete and not result.learningBlocked
+    if result.learningBlocked then result.completeCost=false;result.optimal=false
+    elseif result.costComplete~=nil then result.completeCost=result.costComplete end
 end
 -- Progress is deliberately scalar: callers need not rebuild or serialize a plan.
 function S.Progress(job,result)
@@ -255,6 +268,7 @@ function S.Result(job,state,status)
     if not state then
         out.priced=false; out.costComplete=false; out.completeCost=false
         for _,d in pairs(job.failures or {}) do out.diagnostics[#out.diagnostics+1]=d end
+        if job.blockedSkill==out.plannedTo then out.blockingDiagnostics=E.Copy(job.blockers or {}) end
         if job.opts.procurementDemands then out.procurement=true;out.demands=E.Copy(job.opts.procurementDemands);out.start=nil;out.target=nil;out.plannedTo=nil end
         return finishResult(job,out,state,status)
     end
@@ -356,7 +370,7 @@ function S.Result(job,state,status)
             if a.owner then formulaByOwner[a.owner]=entry end
             out.formulaComplete=out.formulaComplete and entry.costComplete
             out.formulasTotal=out.formulasTotal+a.cost
-            if a.source=="vendor" or a.source=="trainer" then
+            if a.source=="vendor" or a.source=="trainer" or a.source=="acquire" and entry.acquisitionKind=="currency" then
                 out.vendorTotal=out.vendorTotal+a.cost;out.formulaVendorTotal=out.formulaVendorTotal+a.cost
             elseif a.source=="ah" then out.ahTotal=out.ahTotal+a.cost;out.formulaAHTotal=out.formulaAHTotal+a.cost end
             out.referencePrices=out.referencePrices or entry.offer and entry.offer.reference
@@ -665,6 +679,16 @@ function S.NewJob(slug,opts)
         return lower>j.best.money+1e-7 or (math.abs(lower-j.best.money)<1e-7 and (s.switches or 0)>=(j.best.switches or 0))
     end
     local function allowed(r,s,reason)
+        local p=E.Policy(j.opts.exclusions,r)
+        if p=="ban" or (p=="level" and reason~="material") then fail("excluded",r,r.item); return false end
+        -- Material lookups may encounter a future producer that levelRecipes()
+        -- would omit. Its learning data cannot block this skill when prepare()
+        -- cannot reach its required level in the current acquisition branch.
+        local skill=s.skill[r.profession]
+        if not skill then fail("professionMissing",r);return false end
+        if skill<r.learn and (r.profession==slug or not opts.allowSecondaryLeveling) then
+            fail("skillRequired",r);return false
+        end
         local eligibility=E.RouteRecipeEligibility or E.RecipeSpecializationAllowed
         local learning
         if eligibility then
@@ -679,11 +703,6 @@ function S.NewJob(slug,opts)
         if r.cooldown or r.cooldownUnknown then fail(r.cooldown and "cooldown" or "cooldownUnknown",r); return false end
         if r.outputConflict then fail("outputConflict",r,r.item); return false end
         if (r.availabilityUnknown or r.verified==false) and not r.clientAvailable then if not s.learned[r.key] and not s.learned[r.spell] then fail("availabilityUnknown",r); return false end end
-        local p=E.Policy(j.opts.exclusions,r)
-        if p=="ban" or (p=="level" and reason~="material") then fail("excluded",r,r.item); return false end
-        local profession=j.snap.professions[r.profession]
-        if opts.learnedOnly and not (profession and profession.unlearned)
-            and not (s.learned[r.key] or s.learned[r.spell]) then fail("notLearned",r); return false end
         return true,learning
     end
     local function vendorQuote(o)
@@ -719,7 +738,7 @@ function S.NewJob(slug,opts)
             and type(price)=="number" and price>0
     end
     local function auctionRemaining(s,id)
-        local supply=j.snap.auctionSupply[id]
+        local supply=j.auctionSupply[id]
         return supply and max(0,supply.quantity-(s.ahUsed[id] or 0)) or math.huge
     end
     local function essenceConversion(id)
@@ -752,7 +771,7 @@ function S.NewJob(slug,opts)
     end
     local function buy(s,id,qty,source,price,bundle,npc,reason,url,estimated,owner,unpriced,offer)
         local t=clone(s); local count=ceil(qty/bundle)*bundle; local cost=ceil(qty/bundle)*price
-        if source=="ah" and j.snap.auctionSupply[id] then
+        if source=="ah" and j.auctionSupply[id] then
             if count>auctionRemaining(s,id) then fail("auctionSupplyLimited",nil,id,count,auctionRemaining(s,id));return end
             t.ahUsed[id]=(t.ahUsed[id] or 0)+count
         end
@@ -775,10 +794,6 @@ function S.NewJob(slug,opts)
         local ok,why,learning=true,nil,selectedLearning
         if not learning then ok,why,learning=(E.RouteRecipeEligibility or E.RecipeSpecializationAllowed)(r,j.snap,s) end
         if not ok then fail(why or "learningDataMissing",r,nil,nil,nil,learning);return end
-        if learning and learning.status=="unknown" then
-            if ns.IsForever and ns.ProfLearningSources then fail("learningDataMissing",r,nil,nil,nil,learning);return end
-            s=clone(s);diagnostic(s,"learning:"..r.key,"learningRequirementsUnknown",r.key)
-        end
         local f=learning and learning.quote or j.formulaByRecipe[r.key]
         if choice and (not f or not f.learningRouteId or choice.learningRouteId==f.learningRouteId) then f=choice end
         if not f or f.known then return s end
@@ -790,7 +805,8 @@ function S.NewJob(slug,opts)
             if not f or not f.usable then fail("auctionSupplyLimited",r,f and f.id);return end
         end
         local t=clone(s);t.formulaPaid[key]=true;t.money=t.money+(f.cost or 0)
-        if f.source=="ah" and j.snap.auctionSupply[f.id] then t.ahUsed[f.id]=(t.ahUsed[f.id] or 0)+1 end
+        if f.automatic then return t end -- Granted by profession skill; no separate learning purchase/action.
+        if f.source=="ah" and j.auctionSupply[f.id] then t.ahUsed[f.id]=(t.ahUsed[f.id] or 0)+1 end
         if f.unpriced then diagnostic(t,"formula:"..tostring(key),"formulaPriceUnknown",f.id or r.key) end
         if f.availabilityUncertain then diagnostic(t,"formulaStock:"..tostring(key),"formulaStockUnknown",f.id or r.key) end
         log(t,{type="formula",item=f.id,count=f.bundleSize or 1,cost=f.cost or 0,source=f.source,owner=r.key,unpriced=f.unpriced,formula=E.Copy(f)})
@@ -815,7 +831,7 @@ function S.NewJob(slug,opts)
         local prepared=learnFormula(s,r,nil,learning)
         if prepared then emit(prepared) end
         local f=learning and learning.quote or j.formulaByRecipe[r.key]
-        if f and not f.known and f.source=="ah" and j.snap.auctionSupply[f.id]
+        if f and not f.known and f.source=="ah" and j.auctionSupply[f.id]
             and not s.formulaPaid[f.id or r.key] and auctionRemaining(s,f.id)>=1 then
             -- Paying a little more at a vendor can reserve the last auction
             -- copy for a later reagent. It is a search branch, not a greedy
@@ -975,7 +991,7 @@ function S.NewJob(slug,opts)
             end
         elseif path[id] and j.snap.byItem[id] then restrict(j,"material_cycle") end
         if not had then
-            fail(j.snap.auctionSupply[id] and remaining<missing and "auctionSupplyLimited"
+            fail(j.auctionSupply[id] and remaining<missing and "auctionSupplyLimited"
                 or "materialUnavailable",nil,id,missing,remaining)
         end
         if j.seeding and localBest then finalEmit(localBest) end
@@ -1128,7 +1144,7 @@ function S.NewJob(slug,opts)
                 -- memoize that failure and hide a valid alternative entry.
                 if best<math.huge or not cyclic then quoteCache[key]=best end
                 if best==math.huge and j.collectFailures and not j.seedAborted then
-                    fail(j.snap.auctionSupply[id] and auctionRemaining(s,id)<missing
+                    fail(j.auctionSupply[id] and auctionRemaining(s,id)<missing
                         and "auctionSupplyLimited" or "materialUnavailable",nil,id,missing,auctionRemaining(s,id))
                 end
                 return best,cyclic
@@ -1259,11 +1275,11 @@ function S.NewJob(slug,opts)
                             if rec then local accepted,_,value=E.RouteRecipeEligibility(rec,j.snap,t);ok,detail=accepted,value end
                             local quote=detail and detail.quote
                             if not ok or not quote or quote.usable~=true
-                                or quote.learningRouteId~=f.learningRouteId or quote.cost~=a.cost then return end
+                                or quote.learningRouteId~=f.learningRouteId or (quote.cost or 0)~=a.cost then return end
                         end
                         if a.source=="ah" and auctionRemaining(t,a.item)<(a.count or 1) then return end
                         t=clone(t);t.formulaPaid[key]=true;t.money=t.money+a.cost
-                        if a.source=="ah" and j.snap.auctionSupply[a.item] then t.ahUsed[a.item]=(t.ahUsed[a.item] or 0)+(a.count or 1) end
+                        if a.source=="ah" and j.auctionSupply[a.item] then t.ahUsed[a.item]=(t.ahUsed[a.item] or 0)+(a.count or 1) end
                         log(t,E.Copy(a))
                         if f.unpriced then diagnostic(t,"formula:"..tostring(key),"formulaPriceUnknown",f.id or a.owner) end
                         if f.availabilityUncertain then diagnostic(t,"formulaStock:"..tostring(key),"formulaStockUnknown",f.id or a.owner) end
@@ -1373,15 +1389,94 @@ function S.NewJob(slug,opts)
         local t=replay(selected)
         if not t or (requireGoal and not goalsComplete(j,t)) then fail("executionInvalid");return end
         if changed then restrict(j,"chronological_replay_reduction") end
+        -- A one-craft seed compares one AH item with an entire NPC pack and
+        -- can repeat the more expensive unit purchase for hundreds of crafts.
+        -- Requote the selected route's total external demand before publishing
+        -- it, including when a strategy or search budget stops further search.
+        local purchases,formulaStock={},{}
+        for _,a in ipairs(selected) do
+            if a.type=="buy" then
+                local entry=purchases[a.item] or {cost=0,events=0}
+                purchases[a.item]=entry
+                entry.cost=entry.cost+a.cost;entry.events=entry.events+1
+                if a.unpriced or a.source~="ah" and a.source~="vendor" then entry.skip=true end
+            elseif a.type=="formula" and a.source=="ah" then
+                formulaStock[a.item]=(formulaStock[a.item] or 0)+(a.count or 1)
+            end
+            tick()
+        end
+        for id,entry in pairs(purchases) do
+            if entry.skip or entry.events<2 or #materialVendorOffers(id)==0 then purchases[id]=nil end
+        end
+        if not next(purchases) then t.batched=true;return t end
+        -- Minimum cumulative external stock at each consumer preserves crafted
+        -- intermediates, verified seed inventory, tool reservations and surplus.
+        local base=initial(j.snap,slug,opts)
+        local balance,demand={},{}
+        for id in pairs(purchases) do balance[id]=available(base,id);demand[id]=0 end
+        for _,a in ipairs(selected) do
+            if a.type=="craft" or a.type=="convert" or a.type=="specialization_quest" then
+                local inputs=a.type=="specialization_quest" and a.quest and a.quest.inputs or a.inputs
+                for _,m in ipairs(inputs or {}) do if balance[m[1]] then
+                    balance[m[1]]=balance[m[1]]-m[2]
+                    demand[m[1]]=max(demand[m[1]],-balance[m[1]])
+                end end
+                if a.usableOutput~=false then
+                    for _,m in ipairs(a.outputs or {}) do if balance[m[1]] then balance[m[1]]=balance[m[1]]+m[2] end end
+                end
+            elseif a.type=="tool_goal" and balance[a.item] then
+                demand[a.item]=max(demand[a.item],1-balance[a.item])
+            end
+            tick()
+        end
+        local replacements={}
+        for id,entry in pairs(purchases) do
+            if demand[id]>0 then
+                local supply=j.auctionSupply[id]
+                local remaining=supply and max(0,supply.quantity-(formulaStock[id] or 0)) or nil
+                local rows,cost,complete=E.MaterialPurchases(id,demand[id],{
+                    offers=materialVendorOffers(id),auction=auctionQuote(id) and j.snap.prices[id] or nil,
+                    supply=supply,available=remaining,faction=j.snap.faction},tick)
+                if complete and cost<entry.cost-1e-7 then replacements[id]=rows end
+            end
+        end
+        if next(replacements) then
+            local revised,inserted={},{}
+            for _,a in ipairs(selected) do
+                local rows=a.type=="buy" and replacements[a.item]
+                if rows then
+                    if not inserted[a.item] then
+                        for _,row in ipairs(rows) do
+                            revised[#revised+1]=stampStock({type="buy",item=a.item,count=row.count,cost=row.cost,
+                                source=row.source,npcID=row.npcID,reason=a.reason,owner=a.owner,url=row.url,
+                                bundleSize=row.bundleSize or 1,bundlePrice=row.bundlePrice or row.unit,
+                                estimated=row.estimated,reference=row.reference,quoteSource=row.quoteSource,
+                                priceSource=row.priceSource,priceBasis=row.priceBasis,verifiedAt=row.verifiedAt},row)
+                        end
+                        inserted[a.item]=true
+                    end
+                else revised[#revised+1]=a end
+                tick()
+            end
+            local candidate=replay(revised)
+            if candidate and (not requireGoal or goalsComplete(j,candidate)) and better(candidate,t) then t=candidate end
+        end
         t.batched=true
         return t
     end
     j.co=coroutine.create(function()
         j.snap=E.Capture(slug,opts,tick)
+        j.auctionSupply=E.ConsiderAuctionSupply(j.snap) and j.snap.auctionSupply or {}
+        if not E.ConsiderAuctionSupply(j.snap) and E.FormulaAuctionSupplyOf then
+            for id in pairs(j.snap.formulaItems or {}) do
+                local supply=E.FormulaAuctionSupplyOf(j.snap,id)
+                if supply then j.auctionSupply[id]=supply end
+            end
+        end
         j.seedSkill=opts.start or (j.snap.professions[slug] or {}).cur or 1
         j.recovery=not opts.procurementDemands and (opts.scheme==nil or opts.scheme=="cheapest")
             and j.snap.recovery and j.snap.recovery.enabled and ns.ProfRecovery and ns.ProfRecovery.StateRevenue and true or false
-        j.hasFiniteSupply=next(j.snap.auctionSupply)~=nil
+        j.hasFiniteSupply=next(j.auctionSupply)~=nil
         if not opts.start then opts.start=(j.snap.professions[slug] or {}).cur or 1 end
         local context=j.snap.routeContext or E.RouteContext(slug,opts,j.snap.professions)
         j.specializationConflict=slug=="engineering" and j.target>=200 and
@@ -1460,7 +1555,7 @@ function S.NewJob(slug,opts)
             elseif r.profession==slug and r.grey>opts.start and r.learn<j.target then
                 for _,m in ipairs(r.mats) do
                     if not reachable[m[1]] then
-                        local supply=j.snap.auctionSupply[m[1]]
+                        local supply=j.auctionSupply[m[1]]
                         fail(supply and supply.quantity<m[2] and "auctionSupplyLimited"
                             or "materialUnavailable",r,m[1],m[2],supply and supply.quantity)
                     end
@@ -1865,7 +1960,17 @@ function S.NewJob(slug,opts)
                 local known=memo[entry.key]
                 local cost=objective(t,j.recovery and j.snap or nil)
                 if known and math.abs(cost-known.cost)<1e-7 and math.abs(t.money-known.money)<1e-7 and t.switches==known.switches then
-                    expand(t,slug,j.target,{},function(u) rememberPrefix(u); push(u) end,false)
+                    local emitted=false
+                    local collect=t.skill[slug]>=(j.blockedSkill or first.skill[slug])
+                    if collect then j.collectFailures={} end
+                    expand(t,slug,j.target,{},function(u) emitted=true;rememberPrefix(u);push(u) end,false)
+                    if collect then
+                        if not emitted then
+                            j.blockedSkill=t.skill[slug];j.blockers={}
+                            for _,failure in pairs(j.collectFailures) do j.blockers[#j.blockers+1]=failure end
+                        end
+                        j.collectFailures=nil
+                    end
                 end
             end
             -- Reaching the node count on the final frontier state still proves

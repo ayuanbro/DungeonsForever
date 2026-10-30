@@ -9,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / '.pipeline-runtime/lib'))
 from lupa.lua51 import LuaRuntime
-from data_pipeline.professions.build import RULES_VERSION, emit_lua
+from data_pipeline.professions.build import RULES_VERSION, emit_lua, runtime_facts
 
 
 META = {'build': '1.60.1.70658', 'fingerprint': 'a' * 64}
@@ -42,6 +42,39 @@ def record(spell, kind, status, known, *, fee=None, trainers=None, quests=None, 
 
 
 class CompactRouteContracts(unittest.TestCase):
+    def test_specialization_index_retains_alternatives_without_expanding_records(self):
+        records={spell:record(spell,'item','confirmed',True) for spell in range(1,5)}
+        for value in records.values():
+            value['routes'][0]['conditions']=[{'kind':'ability','value':20222}]
+        records[2]['routes'].append(copy.deepcopy(records[2]['routes'][0]))
+        records[2]['routes'][1]['conditions']=[{'kind':'ability','value':20219}]
+        records[3]['routes'].append(copy.deepcopy(records[3]['routes'][0]))
+        records[3]['routes'][1]['conditions']=[]
+        records[4]['routes'][0]['conditions'].append({'kind':'ability','value':17039})
+        p=self.provider({'alchemy':records})
+        p['Get']=lambda *_: self.fail('compact index expanded a learning record')
+        self.assertEqual(p['SpecializationGroups']('alchemy',1)[1][1],20222)
+        self.assertEqual([list(g.values()) for g in p['SpecializationGroups']('alchemy',2).values()],[[20222],[20219]])
+        self.assertIsNone(p['SpecializationGroups']('alchemy',3))
+        self.assertEqual(list(p['SpecializationGroups']('alchemy',4)[1].values()),[17039,20222])
+
+    def test_automatic_rank_index_excludes_unknown_and_inconsistent_grants(self):
+        records={spell:record(spell,'trainer','confirmed',True) for spell in range(1,6)}
+        for value in records.values():
+            route=value['routes'][0]
+            route['conditions']=[{'kind':'skill','professionID':171,'value':1}]
+            route['acquisition']={'kind':'skillGrant','status':'confirmed','coverage':'complete',
+                                  'conditions':[],'minSkillRank':1,'skillLineID':171,'acquireMethod':1}
+        records[2]['routes'][0]['status']='unknown'
+        records[3]['routes'][0]['conditionsKnown']=False
+        records[4]['routes'][0]['acquisition']['acquireMethod']=0
+        records[5]['routes'][0]['acquisition']['minSkillRank']=5
+        p=self.provider({'alchemy':records})
+        self.assertEqual(p['AutomaticSkillRank']('alchemy',1),1)
+        for spell in range(2,7):
+            self.assertIsNone(p['AutomaticSkillRank']('alchemy',spell))
+        self.assertIsNone(p['AutomaticSkillRank']('first-aid',1))
+
     def provider(self, facts):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute('ns={IsForever=true}')
@@ -114,6 +147,35 @@ class CompactRouteContracts(unittest.TestCase):
         self.assertEqual(provider['meta']['build'], META['build'])
         self.assertEqual(provider['meta']['fingerprint'], META['fingerprint'])
         self.assertEqual(provider['meta']['rules'], RULES_VERSION)
+
+    def test_nested_shared_acquisition_values_roundtrip_without_changing_public_fields(self):
+        records = {spell: record(spell, 'item', 'confirmed', True) for spell in (1, 2, 3)}
+        for spell, value in records.items():
+            source = value['routes'][0]['acquisition']
+            source['drops'] = [{'id': 2**53 - 1}] + [{'id': entity} for entity in range(100, 230)]
+            source['quests'][0]['id'] = spell
+        provider = self.provider({'alchemy': records})
+        for spell, expected in records.items():
+            actual = provider['Materialize'](provider['Get']('alchemy', spell))
+            self.lua.globals().same(actual, self.lua.table_from(expected, recursive=True))
+
+    def test_runtime_projection_keeps_learning_conditions_and_minimal_source_references(self):
+        facts = {'alchemy': {1: record(1, 'item', 'confirmed', True)}}
+        before = copy.deepcopy(facts)
+        projected = runtime_facts(facts)
+        route = projected['alchemy'][1]['routes'][0]
+        original = facts['alchemy'][1]['routes'][0]
+        self.assertEqual(route['conditions'], original['conditions'])
+        self.assertEqual(route['status'], original['status'])
+        self.assertEqual(route['acquisition']['vendors'],
+                         [{k:v for k,v in vendor.items() if k != 'npcID'}
+                          for vendor in original['acquisition']['vendors']])
+        self.assertEqual(route['acquisition']['quests'], original['acquisition']['quests'])
+        self.assertTrue(route['acquisition']['dropDetailsOffline'])
+        self.assertEqual(route['acquisition']['dropSourceCount'], 1)
+        self.assertNotIn('drops', route['acquisition'])
+        self.assertFalse(route['acquisition']['conditionsKnown'])
+        self.assertEqual(facts, before)
 
 
 if __name__ == '__main__':

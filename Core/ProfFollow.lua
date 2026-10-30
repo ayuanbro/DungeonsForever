@@ -251,6 +251,13 @@ local function hasRoute(slug)
     return slug and ((LV[slug] and LV[slug].steps) or (ns.ProfGatheringRoutes and ns.ProfGatheringRoutes.HasRoute(slug)))
 end
 local function routeForCalc(slug, skill)
+    if slug=="poisons" then
+        -- Master's poison HUD follows skill and authored segments, not a saved
+        -- execution or the generic learning/procurement policy.
+        PF.pendingPlans=PF.pendingPlans or {};PF.pendingPlans[slug]=nil
+        local guide=LV[slug]
+        return "fixed",clipFixedSteps(guide and guide.steps,routeTarget(slug))
+    end
     if isGathering(slug) then
         PF.pendingPlans=PF.pendingPlans or {};PF.pendingPlans[slug]=nil
         local steps=ns.ProfGatheringRoutes.Steps(slug,routeTarget(slug))
@@ -260,7 +267,7 @@ local function routeForCalc(slug, skill)
     local XP = ns.ProfExecution
     local frozen = XP and XP.GetPlan and XP.GetPlan(slug)
     local economy=ns.ProfEconomy
-    if slug~="first-aid" and frozen and frozen.learningPolicyFingerprint and economy and economy.LearningPolicyFingerprint
+    if frozen and frozen.learningPolicyFingerprint and economy and economy.LearningPolicyFingerprint
         and frozen.learningPolicyFingerprint~=economy.LearningPolicyFingerprint() then
         PF.pendingPlans=PF.pendingPlans or {}
         PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code="learningPolicyChanged"}}}
@@ -284,8 +291,10 @@ local function routeForCalc(slug, skill)
     if auto then
         local opts = RA.OptionsFor and RA.OptionsFor(slug, skill) or {
             start = (PD.Setting("autoFromCurrent",slug) and skill) and math.max(1, skill) or 1,
-            onlyAH = PD.Setting("autoOnlyAH",slug), noFormula = PD.Setting("autoNoFormula",slug),
-            learnedOnly = PD.Setting("autoLearnedOnly",slug), target = routeTarget(slug), scheme = fish and "fishing" or scheme,
+            onlyAH = PD.Setting("autoOnlyAH",slug),
+            allowLimitedFormulas=PD.Setting("autoBuyLimitedFormulas",slug),
+            allowBindOnPickupFormulas=PD.Setting("autoAllowBindOnPickupFormulas",slug),
+            allowCurrencyFormulas=PD.Setting("autoAllowCurrencyFormulas",slug), target = routeTarget(slug), scheme = fish and "fishing" or scheme,
         }
         opts.target = routeTarget(slug)
         local res = RA.Get(slug, opts)
@@ -363,9 +372,9 @@ end
 
 local function derivedStep(slug, skill)
     local XP = ns.ProfExecution
-    local run = not isGathering(slug) and XP and XP.GetRun and XP.GetRun(slug)
+    local run = slug~="poisons" and not isGathering(slug) and XP and XP.GetRun and XP.GetRun(slug)
     if run then XP.Sync(slug); return run.currentIndex or 1 end
-    local ended = PF.endedPlan and PF.endedPlan[slug]
+    local ended = slug~="poisons" and PF.endedPlan and PF.endedPlan[slug]
     if ended and PF.Following and PF.Following(slug) then return #(ended.executionSteps or ended.steps or {}) + 1 end
     local _, steps = routeFor(slug, skill)
     if not steps then return nil end
@@ -377,6 +386,7 @@ end
 
 local function recMats(rec) return rec and (rec[12] or rec.mats) or nil end
 function PF.LearningWarning(slug, progress)
+    if slug=="poisons" then return end
     local XP=ns.ProfExecution
     progress=progress or (XP and XP.Progress and XP.Progress(slug))
     if not (progress and progress.learningBlocked) then return end
@@ -465,8 +475,9 @@ local function allocatePurchases(row)
     local left=math.max(0,row.need-row.have)
     row.missing=left
     local bridge=ns.AuctionBridge
-    local available=row.availableCount
-    if row.planAHCount>0 and bridge and bridge.GetAuctionSupply then
+    local useSupply=row.considerAuctionSupply~=false
+    local available=useSupply and row.availableCount or nil
+    if useSupply and row.planAHCount>0 and bridge and bridge.GetAuctionSupply then
         local observed=bridge.GetAuctionSupply(row.id)
         available=observed and observed.quantity or nil
         row.availableCount=available;row.supplyObserved=available~=nil
@@ -523,7 +534,7 @@ local function allocatePurchases(row)
         if quotesComplete and RA and RA.MaterialPurchases then
             -- Only the frozen plan's quotations participate. New market prices,
             -- vendors and crafted alternatives cannot change the route here.
-            local snap={prices={[row.id]=auction},offers={[row.id]=offers},auctionSupply={}}
+            local snap={prices={[row.id]=auction},offers={[row.id]=offers},auctionSupply={},considerAuctionSupply=useSupply}
             if available~=nil then snap.auctionSupply[row.id]={quantity=ahLimit} end
             local total
             entries,total,complete=RA.MaterialPurchases(row.id,left,{snapshot=snap,auctionRemaining={[row.id]=ahLimit}})
@@ -554,7 +565,7 @@ local function allocatePurchases(row)
         end
     elseif left>0 then row.purchaseUncovered=(row.purchaseUncovered or 0)+left end
     if row.purchaseCount then row.packSurplus=math.max(0,row.purchaseCount-row.missing) end
-    if row.ahCount>0 then
+    if useSupply and row.ahCount>0 then
         row.auctionUnknown=available==nil
         if available~=nil and available<row.ahCount then row.auctionShortage=row.ahCount-available end
     end
@@ -739,20 +750,38 @@ local function expPerPoint(sk, o, y, g, gr)
     return nil
 end
 
-local function craftsLeft(seg, skill, rec,routeSlug)
+local function craftsLeft(seg, skill, rec,routeSlug,future)
     local XP = ns.ProfExecution
     if seg.segmentID and XP and XP.CurrentPlan then
         local slug = routeSlug or (st() and st().slug)
         local run = slug and XP.GetRun(slug)
         if run then
             local progress = XP.Progress(run.slug, seg.segmentID)
-            if progress then
+            if progress and (progress.segmentID==seg.segmentID or progress.complete~=true) then
                 if XP.IsSpecializationQuest(seg) then return progress.complete and 0 or 1 end
+                local untouched=(progress.attemptsDone or 0)==0 and type(progress.currentSkill)=="number"
+                    and progress.currentSkill<=(seg[1] or 0)
+                if (future or untouched) and not progress.skillDone and not (XP.IsConversion and XP.IsConversion(seg)) then
+                    -- Future leveling starts at the frozen segment's skill, not
+                    -- the character's current skill. An untouched current
+                    -- segment also keeps the solver's fractional-gain count.
+                    -- Keep its funded attempts;
+                    -- actual receipts still govern material-only obligations.
+                    if seg.reason~="material" and seg.role~="material" then
+                        local planned=math.max(0,(seg.expectedCrafts or seg[4] or 0)-(progress.attemptsDone or 0))
+                        local output=seg.outputMin or rec and (rec.outputMin or rec.count or rec[3]) or 1
+                        local required=output>0 and math.ceil((progress.remainingOutputs or 0)/output) or 0
+                        return math.max(planned,required)
+                    end
+                end
                 return progress.remainingCrafts or 0
             end
         end
     end
     if XP and XP.IsSpecializationQuest(seg) then return 1 end
+    if seg.segmentID and (future or (skill or 0)<=(seg[1] or 0)) then
+        return seg.expectedCrafts or seg[4] or 0
+    end
     local from = math.max(skill or 0, seg[1])
     if from >= seg[2] then return 0 end
     local learn, y, g, gr = recBreaks(rec)
@@ -785,7 +814,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         local mats = recMats(rec)
         local crafts = seg[4] or 0
         if seg.segmentID or i == curStep then
-            crafts = math.ceil(craftsLeft(seg, s.skill, rec,s.slug))
+            crafts = math.ceil(craftsLeft(seg, s.skill, rec,s.slug,i>curStep))
         end
         if crafts>0 then
             futureSpells[(seg.profession or s.slug)..":"..tostring(seg[3])]=true
@@ -810,7 +839,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         end
     end
     local G = ns.ProfGates
-    local active = ns.ProfExecution and ns.ProfExecution.GetPlan(s.slug)
+    local active = s.slug~="poisons" and ns.ProfExecution and ns.ProfExecution.GetPlan(s.slug)
     local goal = (not active and not onlyStep) and G and G.SpecGoal and G.SpecGoal(s.slug, routeTarget(s.slug))
     if goal and type(goal.inputs) == "table" then
         for _, pair in ipairs(goal.inputs) do
@@ -850,7 +879,9 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             leaf.planPurchaseCount=leaf.planPurchaseCount+count
             if type(entry.cost)=="number" and not entry.unpriced then leaf.planPurchaseCost=leaf.planPurchaseCost and leaf.planPurchaseCost+entry.cost
             else leaf.planPurchaseCost=nil end
+            leaf.considerAuctionSupply=plan.considerAuctionSupply
             local receipt=copyPurchase(entry);receipt.formula=formula and true or false;receipt.count=count
+            receipt.considerAuctionSupply=plan.considerAuctionSupply
             leaf.planPurchases[#leaf.planPurchases+1]=receipt
             if source=="ah" or source=="auction" then leaf.planAHCount=leaf.planAHCount+count
             elseif source=="vendor" or source=="npc" then leaf.planVendorCount=leaf.planVendorCount+count end
@@ -913,6 +944,10 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         local e = totals[id]
         if onlyStep or e.need>0 then
             e.have,e.haveKnown = Have(e.id,not bagsOnly)
+            if s.slug=="poisons" then
+                e.vendor=soldSet(s.slug)[e.id] or false
+                e.source=e.vendor and "vendor" or "ah"
+            end
             if not onlyStep and e.planPurchases then allocatePurchases(e) end
             list[#list + 1] = e
         end
@@ -941,7 +976,7 @@ function PF.ShoppingSourceText(entry)
                 or L["尚无购买来源"]
             local cost=type(purchase.cost)=="number" and not purchase.unpriced and RA and RA.MoneyStr and RA.MoneyStr(purchase.cost,"copper") or L["价格未知"]
             local text=format("%s ×%d · %s",name,purchase.count or 0,cost)
-            if source=="ah" or source=="auction" then
+            if (source=="ah" or source=="auction") and entry.considerAuctionSupply~=false then
                 text=text.." · "..(entry.availableCount~=nil and format(L["可购 %d"],entry.availableCount) or L["库存未知"])
             elseif purchase.unlimited then text=text.." · "..L["不限量"]
             elseif purchase.limited then text=text.." · "..L["限量"]
@@ -962,7 +997,8 @@ function PF.ShoppingSourceText(entry)
         elseif entry.limited then text=text.." · "..L["限量"]
         elseif entry.stockUnknown then text=text.." · "..L["库存未知"] end
     elseif source=="ah" or source=="auction" then
-        text=L["拍卖行"].." · "..(entry.availableCount and tostring(entry.availableCount) or L["库存未知"])
+        text=L["拍卖行"]
+        if entry.considerAuctionSupply~=false then text=text.." · "..(entry.availableCount and tostring(entry.availableCount) or L["库存未知"]) end
     end
     if text and entry.formula and entry.formulaCost and RA and RA.MoneyStr then
         text=text.." · "..RA.MoneyStr(entry.formulaCost,"copper")
@@ -993,6 +1029,7 @@ end
 -- products, AH purchases and formula items must not become NPC material needs.
 local TipOn
 function PF.VendorPurchases(slug, plan)
+    if slug=="poisons" then return {} end
     local xp=ns.ProfExecution
     plan=plan or (xp and xp.GetPlan and xp.GetPlan(slug)) or (RA and RA.Peek and RA.Peek(slug))
     if not plan or plan.feasible==false then return {} end
@@ -1280,7 +1317,7 @@ local function DoImport(slug, profName)
     local list = shopList(tmp)
     local items, missing, inventoryUnknown = {}, 0, false
     for _, e in ipairs(list) do
-        local auction=e.source=="ah" or e.source=="auction" or e.source=="mixed"
+        local auction=slug=="poisons" or e.source=="ah" or e.source=="auction" or e.source=="mixed"
         if auction and e.haveKnown==false then inventoryUnknown=true
         elseif auction then
             local nm, got = DG.ItemName(e.id)
@@ -1378,7 +1415,7 @@ function PF.ProcureStart()
     local demands, n, inventoryUnknown = {}, 0, false
     for _, e in ipairs(list) do
         if not e.haveKnown then inventoryUnknown=true end
-        local lack = e.materialMissing or 0
+        local lack = s.slug=="poisons" and math.max(0,(e.need or 0)-(e.have or 0)) or e.materialMissing or 0
         if lack > 0 and type(e.id) == "number" then
             demands[e.id] = (demands[e.id] or 0) + lack
             n = n + 1
@@ -1415,7 +1452,7 @@ function PF.ProcureStart()
                     seen[key]=true
                     job.formulaCost=job.formulaCost+(formula.cost or 0)
                     if type(formula.cost)~="number" or formula.unpriced or formula.costComplete==false then job.formulaCostComplete=false end
-                    if (purchaseSource(formula)=="ah" or purchaseSource(formula)=="auction") and id then
+                    if (purchaseSource(formula)=="ah" or purchaseSource(formula)=="auction") and id and E.ConsiderAuctionSupply(snap) then
                         local supply=snap.auctionSupply and snap.auctionSupply[id]
                         local observed=E.AuctionSupplyOf and E.AuctionSupplyOf(snap,id)
                         local required=formula.count or 1
@@ -1989,7 +2026,7 @@ local function paintMats(seg, rm, sold, w, remaining)
             local line = rowsMat[i]
             line:SetTextColor(Unpack(ok and C_OK or C_BAD))
             local txt = format("%s %d/%d", nm, have, need)
-            if sold[m[1]] then txt = txt .. " · " .. L["NPC也有出售"] end
+            if sold[m[1]] then txt = txt .. " · " .. L[(st() and st().slug=="poisons") and "商人直卖" or "NPC也有出售"] end
             line:SetText(txt)
             line:ClearAllPoints()
             line:SetPoint("TOPLEFT", f.card, "TOPLEFT", 36, -(61 + (i - 1) * 26))
@@ -2106,7 +2143,7 @@ function PF.Paint()
     f.card:SetShown(not finished)
     f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished)
     local TK = ns.ProfTrack
-    local vRun = TK and TK.Active and TK.Active(slug)
+    local vRun = slug~="poisons" and TK and TK.Active and TK.Active(slug)
     local vProg = vRun and TK.Progress and TK.Progress(slug, nil, vRun)
     f.verifyBtn:SetText(vProg and vProg.manualConversion and L["确认转换"] or L["校正产出"])
     f.verifyBtn:SetShown(not finished and vProg ~= nil and vProg.item ~= nil and not vProg.finished and not f.craftBtn:IsShown())
@@ -2523,6 +2560,7 @@ end
 local function connectExecution()
     local XP = ns.ProfExecution
     if XP and XP.OnChanged then XP.OnChanged(function(slug, run, reason)
+        if slug=="poisons" then return end
         local state = st()
         if not state or state.slug ~= slug then return end
         if reason == "ended" and run.archiveReason == "completed" then

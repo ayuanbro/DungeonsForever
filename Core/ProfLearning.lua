@@ -6,6 +6,38 @@ local E = ns.ProfEconomy
 local eligibility, sourceOf = E.LearningEligibility, E.LearningSource
 local capture, findRecipe, formulaFor = E.Capture, E.FindRecipe, E.FormulaFor
 local floor = math.floor
+local firstAidTrainerDefault
+-- Additive evidence for the shipped build, checked against the exact item
+-- tooltip (not comments). See formula-policy-fixes-2026-10-30.json for hashes.
+-- Future generated providers retain bindingType/bindingSource themselves.
+local bindingSupplement={ [234271]=1,[234272]=1,[238782]=1,[238783]=1,[238784]=1,
+    [238785]=1,[238786]=1,[238787]=1,[238788]=1,[274049]=1 }
+local bindingViews=setmetatable({}, {__mode="kv"})
+local specializationCache=setmetatable({}, {__mode="k"})
+-- The four supplemental-only gates in the exact shipped provider. New
+-- providers expose their compact index directly, avoiding history expansion
+-- for already learned recipes. 13240 is supplemental-only, outside native rows.
+local shippedFingerprint="c0b5dba91ed30145734fcce393ceaeb6d8e2966a5856a2a731a8616050f1f3b4"
+local shippedSpecializations={engineering={ [12716]={{20222}},[13240]={{20222}},
+    [15628]={{20222}},[15633]={{20219}} } }
+local function specializationGroups(info)
+    if not info then return end
+    local cached=specializationCache[info]
+    if cached~=nil then return cached or nil end
+    local supported={};for _,id in ipairs(ns.ProfGates and ns.ProfGates.SpecAbilities or {})do supported[id]=true end
+    local groups={}
+    for _,route in ipairs(info.routes or {})do
+        local group={}
+        for _,condition in ipairs(route.conditions or {})do
+            if condition.kind=="ability" and supported[condition.value] then group[#group+1]=condition.value end
+        end
+        -- Different learning routes are alternatives, not cumulative gates.
+        if #group==0 then specializationCache[info]=false;return end
+        groups[#groups+1]=group
+    end
+    specializationCache[info]=#groups>0 and groups or false
+    return #groups>0 and groups or nil
+end
 local function spellOf(recipe) return recipe.spell or recipe.spellID or recipe[1] end
 local function provider()
     local data=ns.IsForever and ns.ProfLearningSources
@@ -13,30 +45,69 @@ local function provider()
         and data.meta.product=="wowf" and type(data.Get)=="function" then return data end
 end
 local function strict(recipe,snapshot)
-    return recipe and recipe.profession~="first-aid" and
+    return recipe and
         (recipe.learningSourcesRequired==true or snapshot and snapshot.learningSourcesRequired==true or ns.IsForever==true)
 end
 function E.LearningPolicyFingerprint()
     if ns.IsForever then
         local data=provider()
-        return "native-learning:8:verified-sources:"..tostring(data and data.meta.fingerprint or "missing")
+        return "native-learning:17:first-aid-trainer-default:"..tostring(data and data.meta.fingerprint or "missing")
     end
-    return "native-learning:7:native-route-eligibility"
+    return "native-learning:8:poisons-class-policy"
 end
 function E.GetLearningInfo(slug,spell)
-    if slug=="first-aid" then return end
     local data=provider()
     if not data or type(spell)~="number" or spell<=0 then return end
     local ok,info=pcall(data.Get,slug,spell)
     if ok and type(info)=="table" and info.spell==spell and info.profession==slug
-        and type(info.routes)=="table" then return info end
+        and type(info.routes)=="table" then
+        if data.meta.build~="1.60.1.70685" then return info end
+        if bindingViews[info] then return bindingViews[info] end
+        local view
+        for i,route in ipairs(info.routes)do
+            local binding=bindingSupplement[route.teachingItemID]
+            local a=route.acquisition or {}
+            if binding and a.nonAuctionable==nil and a.bindingType==nil then
+                if not view then
+                    view={spell=info.spell,profession=info.profession,coverage=info.coverage,
+                        missingReasons=info.missingReasons}
+                    view.routes={};for n,r in ipairs(info.routes)do view.routes[n]=r end
+                end
+                local r=E.Copy(route)
+                local acquisition=r.acquisition or {}
+                acquisition.bindingType=binding;acquisition.bindOnPickup=true
+                acquisition.nonAuctionable=true;acquisition.bindingSource="wowhead:item-tooltip"
+                r.acquisition=acquisition;view.routes[i]=r
+            end
+        end
+        if view then bindingViews[info]=view end
+        return view or info
+    end
 end
 function E.AttachLearningInfo(recipe,known)
     if not strict(recipe) then return recipe end
     recipe.learningSourcesRequired=true
     recipe.learningDataFingerprint=E.LearningPolicyFingerprint()
-    -- Positively learned recipes do not expand a profession's learning history.
-    if known~=true then recipe.learningInfo=E.GetLearningInfo(recipe.profession,spellOf(recipe)) end
+    local data=provider()
+    local rank=data and data.AutomaticSkillRank and data.AutomaticSkillRank(recipe.profession,spellOf(recipe))
+    if type(rank)=="number" and rank>=1 and rank==floor(rank) and type(recipe.learn)=="number"
+        and rank~=recipe.learn and recipe.skillSource~="client" then
+        -- Verified skill rewards are usable from their grant rank. Keep the
+        -- source tuple and yellow/green/grey curve intact; only this view changes.
+        recipe.catalogueLearn=recipe.catalogueLearn or recipe.learn
+        recipe.learn=rank;recipe.skillSource="automaticSkillGrant"
+    end
+    local slug,spell=recipe.profession,spellOf(recipe)
+    local info,groups
+    if known~=true then info=E.GetLearningInfo(slug,spell)
+    elseif data and data.SpecializationGroups then groups=data.SpecializationGroups(slug,spell)
+    elseif data and data.meta.fingerprint==shippedFingerprint then
+        groups=shippedSpecializations[slug] and shippedSpecializations[slug][spell]
+    else groups=specializationGroups(E.GetLearningInfo(slug,spell)) end
+    recipe.learningSpecializations=groups
+    -- Learned views retain only compact specialization alternatives, not the
+    -- complete acquisition history. Frozen captures keep these static facts.
+    if known~=true then recipe.learningInfo=info end
     return recipe
 end
 function E.LearningSource(recipe)
@@ -46,7 +117,11 @@ function E.LearningSource(recipe)
     for _,route in ipairs(recipe.learningRoutes or {})do
         if route.kind=="trainer" and (route.trainerObserved or route.trainerTaught)then return "trainer" end
     end
-    return sourceOf(recipe)
+    local source=sourceOf(recipe)
+    if source and source~="unknown" then return source end
+    if recipe.profession=="first-aid" and firstAidTrainerDefault(recipe,
+        recipe.learningInfo or E.GetLearningInfo(recipe.profession,spellOf(recipe))) then return "trainer" end
+    return source
 end
 local function faction(value)
     if value=="Alliance" or value=="a" then return "A" end
@@ -57,6 +132,22 @@ end
 local function identity(snapshot,key,fn)
     if snapshot then return snapshot[key] end
     if type(fn)=="function" then local ok,_,_,id=pcall(fn,"player");if ok then return id end end
+end
+local function professionClassEligibility(recipe,snapshot)
+    -- Ordinary professions never depend on character class. Poisons is a
+    -- Rogue skill, checked independently of recipe masks and learning source.
+    if recipe.profession~="poisons" then return true end
+    local id=identity(snapshot,"classID",UnitClass)
+    if type(id)~="number" or id<1 then return false,"clientDataPending",{status="unknown"} end
+    if id~=4 then return false,"poisonRogueRequired",{status="blocked"} end
+    return true
+end
+local CLASS_CONDITIONS={classIDs=true,classMask=true,itemClassMask=true,abilityClassMask=true}
+local function hasLearningConditions(conditions)
+    for _,condition in ipairs(conditions or {})do
+        if not CLASS_CONDITIONS[condition.kind] then return true end
+    end
+    return false
 end
 local function maskMatches(mask,id)
     if type(mask)~="number" or mask<0 or mask>9007199254740991 or mask~=floor(mask)then return nil end
@@ -77,13 +168,15 @@ local function standing(factionID)
 end
 local function conditionResult(condition,recipe,snapshot,state)
     local kind,value=condition.kind,condition.value
-    if kind=="raceIDs" or kind=="classIDs" then
+    -- Retain raw source fields for inspection, but never interpret class masks
+    -- as profession admission conditions. Poisons has the explicit guard above.
+    if CLASS_CONDITIONS[kind] then return true end
+    if kind=="raceIDs" then
         local ids=condition.values
         if not ids and type(condition.text)=="string" and condition.text:match("^%s*%[[%d,%s]*%]%s*$")then
             ids={};for id in condition.text:gmatch("%d+")do ids[#ids+1]=tonumber(id)end
         end
-        local isClass=kind=="classIDs"
-        local id=identity(snapshot,isClass and "classID" or "raceID",isClass and UnitClass or UnitRace)
+        local id=identity(snapshot,"raceID",UnitRace)
         if type(ids)~="table" or #ids==0 or type(id)~="number"then return nil end
         for _,candidate in ipairs(ids)do if id==candidate then return true end end
         return false
@@ -153,14 +246,10 @@ local function conditionResult(condition,recipe,snapshot,state)
         else rank=standing(id) end
         if type(rank)~="number" then return nil end
         return rank>=required
-    elseif kind=="classMask" or kind=="raceMask" or kind=="itemClassMask" then
+    elseif kind=="raceMask" then
         local mask=tonumber(value)
-        if kind=="itemClassMask" and mask==0 then return nil end
-        local class=kind=="classMask" or kind=="itemClassMask"
-        local fn
-        if class then fn=UnitClass else fn=UnitRace end
-        return maskMatches(mask,identity(snapshot,class and "classID" or "raceID",fn))
-    elseif kind=="abilityClassMask" or kind=="abilityRaceMask0" or kind=="abilityRaceMask1" then
+        return maskMatches(mask,identity(snapshot,"raceID",UnitRace))
+    elseif kind=="abilityRaceMask0" or kind=="abilityRaceMask1" then
         -- Zero explicitly means no filter. The client acquisition masks are a
         -- separate schema; interpreting their nonzero 64-bit values is pending.
         if tonumber(value)==0 then return true end
@@ -182,6 +271,8 @@ end
 local function legacyLearningEligibility(recipe,snapshot,state)
     if type(recipe)~="table"then return false,"clientDataPending",{status="unknown"}end
     snapshot=snapshot and (snapshot.snapshot or snapshot)
+    local classOK,classReason,classDetail=professionClassEligibility(recipe,snapshot)
+    if not classOK then return classOK,classReason,classDetail end
     local spell=spellOf(recipe)
     local key=recipe.key or recipe.profession and recipe.profession..":"..tostring(spell)
     local known=state and state.learned or snapshot and snapshot.known
@@ -260,7 +351,7 @@ function E.RouteRecipeEligibility(recipe,snapshot,state)
     local native=recipe and (recipe.dataSource=="catalogue" or recipe.dataSource=="mixed")
     if allowed and native and detail and detail.status=="unknown" and not detail.requiredAbility
         and not recipe.availabilityUnknown and recipe.verified~=false
-        and #(recipe.learningRoutes or {})==0 and #(recipe.learningConstraints or {})==0
+        and #(recipe.learningRoutes or {})==0 and not hasLearningConditions(recipe.learningConstraints)
         and type(recipe.learn)=="number" and recipe.learn>=1
         and type(recipe.mats)=="table" and not recipe.clientPending then
         return true,nil,{status="catalogue",source="native",hasPending=detail.hasPending}
@@ -286,22 +377,22 @@ local function known(recipe,snapshot,state)
     return E.Known(spell)
 end
 local CONDITION_REASON={raceIDs="characterRaceRequired",raceMask="characterRaceRequired",
-    classIDs="characterClassRequired",classMask="characterClassRequired",itemClassMask="characterClassRequired",
     reputation="reputationRequired",quest="questRequired",faction="learningFactionRequired",
     level="characterLevelRequired",skill="skillRequired",profession="professionMissing",ability="specializationRequired"}
 local function sourceConditionUnknown(condition)
     local kind=condition.kind
-    if kind=="abilityClassMask" or kind=="abilityRaceMask0" or kind=="abilityRaceMask1" then
+    if CLASS_CONDITIONS[kind] then return false end
+    if kind=="abilityRaceMask0" or kind=="abilityRaceMask1" then
         return tonumber(condition.value)~=0
     end
     if not CONDITION_REASON[kind] then return true end
-    if kind=="classIDs" or kind=="raceIDs" then
+    if kind=="raceIDs" then
         return type(condition.values)=="table" and #condition.values==0
             or type(condition.values)~="table" and type(condition.text)~="string"
     end
-    if kind=="classMask" or kind=="raceMask" or kind=="itemClassMask" then
+    if kind=="raceMask" then
         local n=tonumber(condition.value)
-        return not n or n<0 or n>9007199254740991 or n~=floor(n) or kind=="itemClassMask" and n==0
+        return not n or n<0 or n>9007199254740991 or n~=floor(n)
     end
     return condition.value==nil or condition.value==false
 end
@@ -332,6 +423,17 @@ local function infoFor(recipe,snapshot)
     if snapshot then return end
     return E.GetLearningInfo(recipe.profession,spellOf(recipe))
 end
+firstAidTrainerDefault=function(recipe,info)
+    if recipe.profession~="first-aid" or recipe.formula or recipe.formulaID then return false end
+    local source=sourceOf(recipe)
+    if source and source~="unknown" then return false end
+    for _,list in ipairs({recipe.learningRoutes or {},info and info.routes or {}})do
+        for _,route in ipairs(list)do
+            if route.kind=="trainer" or route.kind=="item" or route.kind=="quest" then return false end
+        end
+    end
+    return true
+end
 local function routesFor(recipe,info)
     local out,seen={},{}
     for _,list in ipairs({recipe.learningRoutes or {},info and info.routes or {}})do
@@ -342,13 +444,34 @@ local function routesFor(recipe,info)
             end
         end
     end
-    local trainer=false
-    for _,entry in ipairs(out)do if entry.route.kind=="trainer" then trainer=true;break end end
+    local trainer,items=false,{}
+    for _,entry in ipairs(out)do
+        local r=entry.route
+        if r.kind=="trainer" then trainer=true end
+        if r.kind=="item" then items[r.teachingItemID or r.itemID]=true end
+    end
     local G=ns.ProfGates
-    local explicit=(recipe.learnSource=="trainer" and not recipe.trainerObserved) or G and G.LearningSource(spellOf(recipe))=="trainer"
+    local explicit=recipe.trainerAvailable==true or (recipe.learnSource=="trainer" and not recipe.trainerObserved)
+        or G and G.LearningSource(spellOf(recipe))=="trainer"
     if not trainer and explicit then
         out[#out+1]={route={id="native:trainer:"..spellOf(recipe),kind="trainer",status="confirmed",
             conditionsKnown=true,conditions={},trainingCost=recipe.trainingCost}}
+    end
+    local item=recipe.formula or recipe.formulaID
+    if item and not items[item] then
+        out[#out+1]={route={id="native:item:"..spellOf(recipe)..":"..item,kind="item",teachingItemID=item,
+            status="unknown",conditionsKnown=false,conditions={},acquisition={}}}
+    end
+    if #out==0 and firstAidTrainerDefault(recipe,info) then
+        -- User policy: an unknown First Aid origin defaults to a trainer.
+        -- This is not an observed NPC or a zero-price quote; keep source data
+        -- intact and still enforce the recipe's known skill/character gates.
+        local conditions={}
+        if type(recipe.learn)=="number" and recipe.learn>0 then
+            conditions[1]={kind="skill",professionID=129,value=recipe.learn}
+        end
+        out[1]={route={id="default:trainer:"..spellOf(recipe),kind="trainer",status="confirmed",
+            conditionsKnown=true,conditions=conditions,defaultTrainer=true}}
     end
     return out
 end
@@ -367,14 +490,16 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
     if route.kind=="trainer" then
         -- Current character observations and the existing dev value retain
         -- precedence over an auxiliary web quote for the selected path.
-        local cost=recipe.learningRequirements and tonumber(recipe.learningRequirements.trainingCost)
+        local automatic=route.acquisition and route.acquisition.kind=="skillGrant"
+        local cost=automatic and 0 or recipe.learningRequirements and tonumber(recipe.learningRequirements.trainingCost)
         if cost==nil then cost=tonumber(recipe.trainingCost) end
         if cost==nil then cost=tonumber(route.trainingCost) end
         common.source="trainer";common.sourceType="trainer";common.recipe=recipe
         common.cost=cost and cost>=0 and cost or nil;common.totalCost=common.cost
-        common.usable=common.cost~=nil;common.costComplete=common.usable;common.blocked=not common.usable
-        common.unpriced=not common.usable or nil;common.reason=not common.usable and "learningPriceUnknown" or nil
+        common.usable=true;common.costComplete=common.cost~=nil;common.blocked=false
+        common.unpriced=common.cost==nil or nil;common.reason=common.unpriced and "learningPriceUnknown" or nil
         common.trainerIDs=route.trainerIDs
+        common.automatic=automatic or nil
         return common
     elseif route.kind~="item" then
         common.source=route.kind;common.usable=false;common.blocked=true;common.costComplete=false
@@ -398,11 +523,14 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
     view.formula,view.formulaID,view.selectedLearningRoute=id,id,route
     view.source=shallow(recipe.source)
     local acquisition=route.acquisition or {}
+    local acquisitionOK,acquisitionPending,acquisitionReason,_,_,acquisitionUnknown=
+        check(acquisition.conditions,recipe,snapshot,state,true)
     if acquisition.quests then view.source.quests=acquisition.quests end
     if acquisition.drops then view.source.drops=acquisition.drops end
     -- Partial world-source coverage cannot establish quest exclusivity.
     view.source.questOnly=nil
     local context=shallow(snapshot or pricingContext)
+    if not snapshot and not context.faction and UnitFactionGroup then context.faction=faction(UnitFactionGroup("player")) end
     if snapshot then
         context.known=context.known or {};context.prices=context.prices or {}
         context.formulaOffers=context.formulaOffers or {};context.offers=context.offers or {}
@@ -412,22 +540,36 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
         context.nonAuctionable=shallow(context.nonAuctionable);context.nonAuctionable[id]=true
     end
     local offers=context.formulaOffers and context.formulaOffers[id]
+    if not offers and not snapshot and ns.VendorPriceDB and ns.VendorPriceDB.GetFormulaOffers then
+        offers=ns.VendorPriceDB.GetFormulaOffers(id,context,view.source)
+    end
     local added={}
+    local supply=ns.ProfSupply
+    local vendorFacts=supply and supply.FormulaFacts and supply.FormulaFacts(id) or {}
     for _,o in ipairs(offers or {})do added[#added+1]=o end
-    if acquisition.status=="confirmed" or acquisition.conditionsKnown==true then
-        local have={};for _,o in ipairs(added)do if o.npcID then have[o.npcID]=true end end
+    if acquisitionOK and not acquisitionPending then
+        local have={};for _,o in ipairs(added)do
+            if o.npcID and o.source~="catalogue" then have[o.npcID]=true end
+        end
+        -- Static supplier facts supply faction metadata absent from a web
+        -- quote. Current/native quotes for the same NPC retain precedence.
         for _,o in ipairs(acquisition.vendors or {})do
             local npc=tonumber(o.id or o.npcID)
-            local quantity=tonumber(o.quantity)
+            local quantity=tonumber(o.quantity or 1)
+            local native=npc and vendorFacts[npc]
+            local side=o.faction or native and native.faction
             local allowed,pending=check(o.conditions,recipe,snapshot,state,true)
-            if allowed and not pending and o.conditionsKnown==true
+            if allowed and not pending and o.available~=false and o.purchasable~=false and o.priceUsable~=false
+                and (not native or native.available~=false and native.purchasable~=false)
                 and npc and npc>0 and quantity and quantity>0 and quantity==floor(quantity)
+                and not o.hasExtendedCost and not (o.currencyID and o.currencyID>0)
+                and #(o.currencies or {})==0 and #(o.costItems or {})==0
                 and not have[npc] and type(o.price)=="number" and o.price>=0 then
                 added[#added+1]={npcID=npc,price=o.price,quantity=quantity,
                     stock=type(o.stock)=="number" and o.stock>=0 and o.stock or nil,
                     unlimited=o.stock==-1,stockUnknown=o.stock==nil,reference=true,
                     source="learning-sources",priceSource="learning-sources",available=true,
-                    purchasable=true,priceUsable=true,faction=o.faction,conditions=o.conditions}
+                    purchasable=true,priceUsable=true,faction=side and faction(side),conditions=o.conditions}
             end
         end
     end
@@ -438,6 +580,92 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
     if quote then
         quote.learningRouteId,quote.learningRoute=route.id,route
         quote.recipeKey=key
+    end
+    if quote and quote.usable and (quote.source=="ah" or acquisitionOK and not acquisitionPending) then return quote end
+    if not acquisitionOK or acquisitionPending then
+        if quote then
+            quote.usable=false;quote.blocked=true;quote.cost=nil;quote.totalCost=nil
+            quote.costComplete=false;quote.unpriced=true
+            quote.reason=acquisitionReason or (acquisitionUnknown and "learningDataMissing" or "clientDataPending")
+        end
+        return quote
+    end
+    local bound=acquisition.nonAuctionable==true or context.nonAuctionable and context.nonAuctionable[id]==true
+        or recipe.bindOnPickup==true or quote and quote.bindOnPickup==true
+    if acquisition.bindOnPickup~=nil then bound=acquisition.bindOnPickup
+    elseif acquisition.bindingType~=nil then bound=acquisition.bindingType==1 end
+    local canBound=E.AllowBindOnPickupFormulas and E.AllowBindOnPickupFormulas(context,recipe.profession)
+    local canCurrency=E.AllowCurrencyFormulas and E.AllowCurrencyFormulas(context,recipe.profession)
+    local kind,offer,currencyLimited
+    local playerFaction=snapshot and snapshot.faction or not snapshot and UnitFactionGroup and UnitFactionGroup("player")
+    local function sourceAllowed(source,native)
+        local pass,pending=check(source.conditions,recipe,snapshot,state,true)
+        local side=source.faction or native and native.faction
+        side=side and faction(side)
+        return pass and not pending and source.available~=false and source.purchasable~=false
+            and (not native or native.available~=false and native.purchasable~=false)
+            and (not side or side=="N" or side==faction(playerFaction))
+    end
+    if bound and canCurrency then
+        for _,o in ipairs(acquisition.vendors or {})do
+            local currency=o.hasExtendedCost or (tonumber(o.currencyID) or 0)>0
+                or #(o.currencies or {})>0 or #(o.costItems or {})>0
+            local npc=tonumber(o.id or o.npcID)
+            local native=npc and vendorFacts[npc]
+            local unlimited=o.unlimited==true or type(o.stock)=="number" and o.stock<0
+            local stockOK=unlimited or E.AllowLimitedFormulas(context)
+                and (o.stock==nil or type(o.stock)=="number" and o.stock>=1)
+            if currency and npc and npc>0 and sourceAllowed(o,native) and not unlimited
+                and not E.AllowLimitedFormulas(context) then currencyLimited=true end
+            if currency and npc and npc>0 and sourceAllowed(o,native) and stockOK then
+                kind,offer="currency",o
+                if not o.faction and native and native.faction then
+                    offer=shallow(o);offer.faction=native.faction
+                end
+                break
+            end
+        end
+    end
+    if bound and canBound and not kind then
+        for _,q in ipairs(acquisition.quests or {})do
+            if sourceAllowed(q) then kind="quest";break end
+        end
+        if not kind then
+            for _,drop in ipairs(acquisition.drops or {})do
+                if sourceAllowed(drop) then kind="drop";break end
+            end
+            if not kind and #(acquisition.drops or {})==0 and (acquisition.dropSourceCount or 0)>0 then kind="drop" end
+        end
+    end
+    if kind then
+        common.id=id;common.recipe=recipe;common.source="acquire";common.sourceType="acquire"
+        common.usable=true;common.blocked=false;common.costComplete=false;common.unpriced=true
+        common.acquisitionPending=true;common.acquisitionKind=kind;common.acquisition=acquisition
+        common.acquisitionOffer=offer;common.acquisitionOffers=offer and {offer} or nil;common.sources=view.source
+        if offer then
+            common.cost=type(offer.price)=="number" and offer.price>=0 and offer.price or nil
+            common.totalCost=common.cost;common.knownGoldCost=common.cost
+            common.npcID=tonumber(offer.id or offer.npcID);common.stock=offer.stock
+            common.unlimited=offer.unlimited==true or type(offer.stock)=="number" and offer.stock<0
+            common.limited=not common.unlimited and E.LimitedFormulaOffer(offer) or nil
+            common.stockUnknown=not common.unlimited and not common.limited or nil
+            common.stockStatus=common.unlimited and "unlimited" or common.limited and "limited" or "unknown"
+            common.availabilityUncertain=not common.unlimited or nil
+        end
+        return common
+    end
+    if quote and currencyLimited then quote.reason="limitedFormulaDisabled";quote.limitedVendorDisabled=true end
+    if quote and bound and not canBound and (#(acquisition.quests or {})>0
+        or #(acquisition.drops or {})>0 or (acquisition.dropSourceCount or 0)>0)
+        and not quote.limitedVendorDisabled then
+        quote.reason="bindOnPickupFormulaDisabled"
+    end
+    if quote and bound and (#(acquisition.vendors or {})>0) and not canCurrency then
+        for _,o in ipairs(acquisition.vendors)do
+            if o.hasExtendedCost or (tonumber(o.currencyID) or 0)>0 or #(o.currencies or {})>0 or #(o.costItems or {})>0 then
+                quote.reason="currencyFormulaDisabled";break
+            end
+        end
     end
     return quote
 end
@@ -458,78 +686,99 @@ local function decision(recipe,info,status,route)
     return detail
 end
 
--- Selection and pricing deliberately use one evaluator. Quotes attached to a
--- decision belong to that exact route, including simulated specialization state.
+-- Admission follows actual learning/acquisition channels. Missing source audit
+-- coverage never cancels a priced, stocked purchase; concrete restrictions do.
 function E.SelectLearningRoute(recipe,snapshot,state,remaining,purchaseSource,pricingContext)
     if type(recipe)~="table" then return false,"clientDataPending",{status="unknown"} end
     snapshot=snapshot and (snapshot.snapshot or snapshot)
-    if recipe.profession=="first-aid" or not strict(recipe,snapshot) then
+    if not strict(recipe,snapshot) then
         return legacyLearningEligibility(recipe,snapshot,state)
     end
-    if recipe.craftingUnavailable==true or recipe.craftUnavailable==true then
+    local classOK,classReason,classDetail=professionClassEligibility(recipe,snapshot)
+    if not classOK then return classOK,classReason,classDetail end
+    if recipe.craftingUnavailable or recipe.craftUnavailable or recipe.clientUnavailable then
         return false,"clientUnavailable",{status="blocked"}
     end
-    -- ResolveRecipe does not infer roster absence for a positively known
-    -- recipe. A remaining clientUnavailable flag is an explicit client fact,
-    -- independent of historical learning eligibility.
-    if recipe.clientUnavailable then return false,"clientUnavailable",{status="blocked"} end
-    if known(recipe,snapshot,state) then return true,nil,{status="learned"} end
-    local info=infoFor(recipe,snapshot)
-    if recipe.trainerAvailable==true then
-        local route={id="observed:trainer:"..spellOf(recipe),kind="trainer",status="confirmed",conditionsKnown=true,
-            trainingCost=recipe.learningRequirements and recipe.learningRequirements.trainingCost,conditions={}}
-        local detail=decision(recipe,info,"observed",route);detail.quote=routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,pricingContext)
-        detail.missingReasons={};return true,nil,detail
+    local G=ns.ProfGates
+    local function specializationAllowed(ability)
+        local choice=snapshot and (snapshot.engineeringSpecialization
+            or snapshot.specializationContext and snapshot.specializationContext.choice)
+            or not snapshot and G and G.GetPlannedChoice and G.GetPlannedChoice()
+        return not (ability==20219 and choice=="goblin" or ability==20222 and choice=="gnomish")
+            and conditionResult({kind="ability",value=ability},recipe,snapshot,state)~=false
     end
+    local ability=G and G.RequiredAbility(spellOf(recipe)) or 0
+    if ability>0 then
+        if not specializationAllowed(ability) then
+            return false,"specializationRequired",{status="blocked",requiredAbility=ability,requiredAbilities={ability}}
+        end
+    end
+    local isKnown=known(recipe,snapshot,state)
+    local groups=isKnown and (recipe.learningSpecializations or specializationGroups(infoFor(recipe,snapshot)))
+    if groups then
+        local allowed,required=false,{}
+        for _,group in ipairs(groups)do
+            local pass=true
+            for _,id in ipairs(group)do
+                if not specializationAllowed(id) then pass=false;required[#required+1]=id end
+            end
+            if pass then allowed=true;break end
+        end
+        if not allowed then return false,"specializationRequired",{status="blocked",requiredAbilities=required,
+            requiredAbility=#required==1 and required[1] or nil} end
+    end
+    if isKnown then return true,nil,{status="learned"} end
+    local info=infoFor(recipe,snapshot)
     local input=snapshot
     if input and not input.known then input=shallow(input);input.known={} end
-    -- Requirements observed at one trainer belong to that learning offer;
-    -- they cannot close an independent book or quest path for the recipe.
     local baseRecipe=recipe
     if recipe.trainerObserved and recipe.learningRequirements then
         baseRecipe=shallow(recipe);baseRecipe.learningRequirements=nil
     end
     local ok,reason,base=eligibility(baseRecipe,input,state)
     if not ok then return ok,reason,base end
-    if base and base.requiredAbility then return false,"clientDataPending",base end
-    local allowed,unresolved,blocked,abilities,_,sourceUnknown=check(recipe._conditionsCheck or recipe.learningConstraints,recipe,input,state)
-    if not allowed then
-        local detail=decision(recipe,info,"blocked");detail.requiredAbilities=abilities
-        return false,blocked,detail
+    if base and base.requiredAbility then return false,"specializationRequired",base end
+    local function requirements(conditions,supplemental)
+        local pass,pending,why,abilities,conflicts,sourceUnknown=check(conditions,recipe,input,state,supplemental)
+        if not pass then return false,why,abilities,conflicts end
+        -- Unknown historical source fields do not invalidate a purchase, but a
+        -- concrete specialization prerequisite still needs affirmative evidence.
+        for _,condition in ipairs(type(conditions)=="table" and conditions or {})do
+            if condition.kind=="ability" and (not specializationAllowed(tonumber(condition.value))
+                or conditionResult(condition,recipe,input,state)~=true) then
+                return false,"specializationRequired",{tonumber(condition.value)},conflicts
+            end
+        end
+        if pending then return false,sourceUnknown and "learningDataMissing" or "clientDataPending",abilities,conflicts end
+        return true,nil,abilities,conflicts
     end
-    if unresolved then return false,sourceUnknown and "learningDataMissing" or "clientDataPending",decision(recipe,info,"unknown") end
-    local best,bestCost,fallback,blockedDetail,blockedReason,hasSourceGap,hasObservationGap
+    local pass,why,required=requirements(recipe._conditionsCheck or recipe.learningConstraints)
+    if not pass then
+        local detail=decision(recipe,info,"blocked");detail.requiredAbilities=required
+        return false,why,detail
+    end
+    local best,bestCost,unpriced,failure,failureReason
     for _,entry in ipairs(routesFor(recipe,info))do
         local route=entry.route
-        if route.status=="confirmed" and route.conditionsKnown==true then
-            local pass,pending,why,required,conflicts,sourcePending=check(route.conditions,recipe,input,state,entry.supplemental)
-            local acquired=route.kind=="item" and ownedItem(recipe,input,route.teachingItemID or route.itemID)>0
-            if pass and not pending and not acquired then
-                local aq,ap,ar,_,_,as=check(route.acquisition and route.acquisition.conditions,recipe,input,state,entry.supplemental)
-                pass,pending,why,sourcePending=aq,ap,ar,as
-            end
-            local detail=decision(recipe,info,pending and "unknown" or pass and "allowed" or "blocked",route)
-            detail.numericConflicts=#conflicts>0 and conflicts or nil;detail.requiredAbilities=required
-            if pass and not pending then
-                detail.quote=routeQuote(recipe,route,input,remaining,purchaseSource,state,pricingContext)
-                local quote=detail.quote
-                if quote and quote.usable and type(quote.cost)=="number" then
-                    if not bestCost or quote.cost<bestCost then best,bestCost=detail,quote.cost end
-                elseif not fallback then fallback=detail end
-            elseif pending then if sourcePending then hasSourceGap=true else hasObservationGap=true end
-            else blockedDetail,blockedReason=blockedDetail or detail,blockedReason or why end
-        else hasSourceGap=true end
+        if route.kind=="item" or route.kind=="trainer" and route.status=="confirmed" and route.conditionsKnown==true then
+            local allowed,blocked,abilities,conflicts=requirements(route.conditions,entry.supplemental)
+            local detail=decision(recipe,info,allowed and "allowed" or "blocked",route)
+            detail.numericConflicts=conflicts and #conflicts>0 and conflicts or nil
+            detail.requiredAbilities=abilities
+            if allowed then
+                local quote=routeQuote(recipe,route,input,remaining,purchaseSource,state,pricingContext)
+                detail.quote=quote
+                if quote and quote.usable then
+                    detail.missingReasons={}
+                    if type(quote.cost)=="number" and not quote.acquisitionPending then
+                        if not bestCost or quote.cost<bestCost then best,bestCost=detail,quote.cost end
+                    elseif not unpriced then unpriced=detail end
+                elseif not failure then failure,failureReason=detail,quote and quote.reason or "formulaUnavailable" end
+            elseif not failure then failure,failureReason=detail,blocked end
+        end
     end
-    if best or fallback then return true,nil,best or fallback end
-    if hasSourceGap or not blockedDetail and not hasObservationGap then
-        local detail=decision(recipe,info,"unknown");detail.hasPending=true
-        return false,"learningDataMissing",detail
-    end
-    if hasObservationGap then
-        local detail=decision(recipe,info,"unknown");detail.hasPending=true
-        return false,"clientDataPending",detail
-    end
-    return false,blockedReason or "learningConditionFailed",blockedDetail
+    if best or unpriced then return true,nil,best or unpriced end
+    return false,failureReason or "learningDataMissing",failure or decision(recipe,info,"unknown")
 end
 function E.LearningEligibility(recipe,snapshot,state)
     if strict(recipe,snapshot and (snapshot.snapshot or snapshot)) then return E.SelectLearningRoute(recipe,snapshot,state) end
@@ -546,15 +795,46 @@ function E.FormulaFor(recipe,context,remaining,purchaseSource)
     local snapshot=context and (context.snapshot or
         (context.known~=nil or context.recipes~=nil or context.byKey~=nil or context.prices~=nil
             or context.learningSourcesRequired~=nil) and context)
-    if not strict(recipe,snapshot) then return formulaFor(recipe,context,remaining,purchaseSource) end
+    if not strict(recipe,snapshot) then
+        local quote=formulaFor(recipe,context,remaining,purchaseSource)
+        if type(recipe)=="table" then
+            local allowed,reason,detail=professionClassEligibility(recipe,snapshot)
+            if not allowed then
+                quote=quote or {id=recipe.formula or recipe.formulaID,spell=spellOf(recipe),profession=recipe.profession}
+                quote.usable,quote.blocked,quote.known,quote.costComplete=false,true,false,false
+                quote.source,quote.sourceType="unknown","unknown"
+                quote.vendor=false
+                quote.cost,quote.totalCost,quote.offer,quote.npcID=nil,nil,nil,nil
+                quote.reason,quote.learningStatus,quote.unpriced=reason,detail.status,true
+            end
+        end
+        return quote
+    end
     local ok,reason,detail=E.SelectLearningRoute(recipe,snapshot,nil,remaining,purchaseSource,context)
     if ok and detail.status=="learned" then return end
     if ok then return detail.quote end
-    return {id=recipe.formula or recipe.formulaID,spell=spellOf(recipe),profession=recipe.profession,
-        recipeKey=recipe.key,recipe=recipe,count=1,need=1,source="unknown",known=false,
-        usable=false,blocked=true,costComplete=false,unpriced=true,reason=reason,
-        learningStatus=detail and detail.status,missingReasons=detail and detail.missingReasons,
-        recipes={{profession=recipe.profession,spell=spellOf(recipe),key=recipe.key}}}
+    if detail and detail.quote then return detail.quote end
+    -- Learning eligibility and purchase evidence are independent. Retain
+    -- prices/stock for the reference UI even when learning is blocked, without
+    -- selecting or charging for that purchase. Frozen captures stay isolated.
+    local quote
+    local item=recipe.formula or recipe.formulaID
+    for _,entry in ipairs(routesFor(recipe,infoFor(recipe,snapshot))) do
+        local route=entry.route
+        if route.kind=="item" and (route.teachingItemID or route.itemID)==item then
+            quote=routeQuote(recipe,route,snapshot,remaining,purchaseSource,nil,context);break
+        end
+    end
+    quote=quote or formulaFor(recipe,context,remaining,purchaseSource) or {}
+    quote.id,quote.spell,quote.profession=item,spellOf(recipe),recipe.profession
+    quote.recipeKey,quote.recipe=recipe.key,recipe
+    quote.count,quote.need,quote.known=1,1,false
+    quote.source,quote.sourceType,quote.vendor="unknown","unknown",false
+    quote.cost,quote.totalCost,quote.offer,quote.npcID=nil,nil,nil,nil
+    quote.usable,quote.blocked,quote.costComplete,quote.unpriced=false,true,false,true
+    quote.reason,quote.learningStatus,quote.missingReasons=reason,detail and detail.status,detail and detail.missingReasons
+    quote.recipes={{profession=recipe.profession,spell=spellOf(recipe),key=recipe.key}}
+    return quote
 end
 if findRecipe then
     function E.FindRecipe(slug,spell)

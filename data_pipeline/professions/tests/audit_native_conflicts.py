@@ -26,6 +26,7 @@ def main():
             recipe = find(slug, int(spell))
             if recipe is None or not isinstance(recipe['learn'], (int, float)):
                 continue
+            reference = recipe['catalogueLearn'] if isinstance(recipe['catalogueLearn'], (int, float)) else recipe['learn']
             compared += 1
             for route in fact.get('routes', []):
                 for condition in route.get('conditions', []):
@@ -34,11 +35,12 @@ def main():
                         profession = slug_for(condition['professionID'])
                     profession = profession or slug
                     if (condition.get('kind') == 'skill' and profession == slug
-                            and condition.get('value') != recipe['learn']):
+                            and condition.get('value') != reference):
                         conflicts.append(dict(profession=slug, spell=int(spell), route=route['id'],
                                               sourceValue=condition.get('value'),
-                                              retainedDevValue=recipe['learn'],
-                                              decision='retainDev', routeStatus=route.get('status')))
+                                              retainedDevValue=reference, effectiveRuntimeValue=recipe['learn'],
+                                              decision='confirmedAutomaticSkillGrant' if recipe['skillSource']=='automaticSkillGrant' else 'retainDev',
+                                              routeStatus=route.get('status')))
     result = dict(generationInput=False, build=report['build'],
                   fingerprint=report['fingerprint'], comparedNativeRecipes=compared,
                   scope='own-profession learning skill thresholds only; no source generation',

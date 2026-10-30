@@ -108,12 +108,14 @@ local DIAG_TEXT = {
     pairingChanged = L["搭配专业已更改，点击重新计算应用。"],
     professionChanged = L["专业学习状态或旧路线规则已变化，请重新计算路线。"],
     formulaUnavailable = L["未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。"],
-    vendorFormulaRequired = L["未学配方的图纸没有可用的商人金币报价。"],
-    limitedFormulaDisabled = L["当前设置不从商人购买限量图纸；请取得拍卖行报价或先学会该配方。"],
-    formulaPolicyChanged = L["限量图纸购买设置已变化，请重新计算路线。"],
+    bindOnPickupFormulaDisabled = L["非金币获取的拾取绑定图纸未开启；此配方暂不参与路线。"],
+    currencyFormulaDisabled = L["非金币拾取绑定与通货兑换均未开启；此配方暂不参与路线。"],
+    formulaAcquisitionPending = L["请先取得并学习所需图纸，再开始制作。"],
+    formulaAuctionSupplyUnknown = L["图纸有拍卖行价格，但缺少最近的可购数量；需要最近数量至少为2。"],
+    formulaAuctionSupplyInsufficient = L["图纸最近的拍卖行可购数量不足2，或本路线已用完可购数量。"],
+    limitedFormulaDisabled = L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少2张的拍卖行图纸。"],
     formulaPriceUnknown = L["图纸购买价格尚未核实。"],
     learningPriceUnknown = L["训练师学习费用尚未核实。"],
-    formulaUnknownSource = L["图纸没有可核实的购买报价；可在设置关闭「不使用未知来源的图纸」。"],
     formulaStockUnknown = L["图纸为限量或未核实库存，不能保证商人现货。"],
     auctionSupplyLimited = L["拍卖行可购数量不足，无法继续此配方；请在 Auctionator 重新完整扫描或改用其他配方。"],
     fishingRecipeGap = L["当前技能没有符合纯钓鱼条件的可用配方，请检查食谱、材料来源或排除设置。"],
@@ -134,6 +136,7 @@ local DIAG_TEXT = {
     learningDataMissing = L["学习资料缺失：该配方没有已确认的学习路径。"],
     characterRaceRequired = L["当前种族不满足这条学习路径。"],
     characterClassRequired = L["当前职业不满足这条学习路径。"],
+    poisonRogueRequired = L["毒药仅限盗贼学习和制作。"],
     reputationRequired = L["当前声望不满足这条学习路径。"],
     questRequired = L["尚未完成这条学习路径要求的任务。"],
     learningFactionRequired = L["当前阵营不满足这条学习路径。"],
@@ -583,24 +586,142 @@ function E.PreferredVendorOffers(offers, eligible)
     return db and db.PreferredOffers and db.PreferredOffers(offers,eligible) or (offers or {})
 end
 
+-- Quote the combined demand from frozen NPC/AH inputs. Both fixed guides and
+-- solver replay use this integer-pack comparison, including finite AH supply.
+function E.MaterialPurchases(id,need,context,tick)
+    need=math.max(0,math.ceil(tonumber(need) or 0))
+    if need==0 then return {},0,true end
+    local offers,auction,supply=context.offers or {},context.auction,context.supply
+    local available,faction=context.available,context.faction
+    local limit=auction and math.min(need,math.max(0,math.floor(available or need))) or 0
+    local byPack,reliable,maxPack={},{},1
+    for _,offer in ipairs(offers) do
+        local size=offer.quantity or offer.bundleSize or 1
+        local price=offer.price
+        local side=offer.faction
+        local valid=offer.unlimited==true and offer.available~=false and offer.purchasable~=false
+            and not offer.priceOnly and not offer.hasExtendedCost and (not offer.currencyID or offer.currencyID==0)
+            and (not side or not faction or side==faction or side=="N" or side=="Neutral" or side=="Both" or side=="AH")
+            and type(price)=="number" and price>=0 and price<math.huge
+            and type(size)=="number" and size>=1 and size<math.huge and size==math.floor(size)
+        if valid then
+            local old=byPack[size]
+            local uncertain=offer.estimated and not offer.reference
+            if not old or price<old.price or price==old.price and old.estimated and not old.reference and not uncertain then
+                byPack[size]=offer
+            end
+            if not uncertain and (not reliable[size] or price<reliable[size].price) then reliable[size]=offer end
+        end
+    end
+    -- Match the route solver: prefer an executable, reliably priced purchase
+    -- over a cheaper estimate, retaining estimates only when no such plan exists.
+    if next(reliable) or auction and limit>=need then byPack=reliable end
+    local sizes={}
+    for size in pairs(byPack) do sizes[#sizes+1]=size;maxPack=math.max(maxPack,size) end
+    table.sort(sizes)
+    local costs,previous,chosen={[0]=0},{},{}
+    local maximum=#sizes>0 and need+maxPack-1 or 0
+    for quantity=1,maximum do
+        if tick then tick() end
+        for _,size in ipairs(sizes) do
+            local before=quantity-size
+            if before>=0 and costs[before] then
+                local cost=costs[before]+byPack[size].price
+                if not costs[quantity] or cost<costs[quantity]-1e-9 then
+                    costs[quantity]=cost;previous[quantity]=before;chosen[quantity]=size
+                end
+            end
+        end
+    end
+    local best,bestNPC,bestAH
+    for quantity=0,maximum do
+        local rest=math.max(0,need-quantity)
+        if costs[quantity] and (rest==0 or auction and rest<=limit) then
+            local cost=costs[quantity]+rest*(auction or 0)
+            if not best or cost<best-1e-9 or math.abs(cost-best)<1e-9 and rest<bestAH then
+                best,bestNPC,bestAH=cost,quantity,rest
+            end
+        end
+    end
+    local function ahRow(count)
+        return {id,count,id=id,count=count,need=count,cost=(auction or 0)*count,unit=auction or 0,
+            source="ah",vendor=false,availableCount=available,supplyRequired=count,
+            supplyObserved=available~=nil,supplyComplete=supply and supply.complete,
+            supplyObservedAt=supply and supply.observedAt,supplySource=supply and supply.source,
+            supplyMethod=supply and supply.method}
+    end
+    if not best then
+        local entry
+        if auction then entry=ahRow(need)
+        else entry={id,need,id=id,count=need,need=need,cost=0,unit=0,unpriced=true} end
+        entry.unavailable=true;entry.costComplete=false
+        return {entry},entry.cost,false,auction and "auctionSupplyLimited" or "materialUnavailable"
+    end
+    local list,counts={},{}
+    local quantity=bestNPC
+    while quantity>0 do
+        local size=chosen[quantity]
+        counts[size]=(counts[size] or 0)+1;quantity=previous[quantity]
+    end
+    local complete,reason=true,nil
+    for _,size in ipairs(sizes) do
+        local packs=counts[size]
+        if packs then
+            local offer=byPack[size]
+            local entry={};for key,value in pairs(offer) do entry[key]=value end
+            local count=packs*size
+            entry[1],entry[2],entry.id,entry.count=id,count,id,count
+            entry.need=math.min(need,count);entry.cost=packs*offer.price;entry.unit=offer.price/size
+            entry.bundleSize,entry.bundlePrice=size,offer.price
+            entry.quoteSource=offer.quoteSource or offer.source
+            entry.source,entry.vendor="vendor",true
+            if offer.estimated and not offer.reference then complete=false;reason="vendorEstimate";entry.costComplete=false end
+            list[#list+1]=entry
+        end
+    end
+    if bestAH>0 then list[#list+1]=ahRow(bestAH) end
+    return list,best,complete,reason
+end
+
 local function formulaContext(context)
     context=context or {}
     return context.snapshot or context
 end
 -- This is a purchase-source policy. Learned recipes and explicit trainer
 -- learning paths keep their existing eligibility regardless of the setting.
-function E.AllowLimitedFormulas(context)
+function E.AllowLimitedFormulas(context,profession)
     if context and context.allowLimitedFormulas~=nil then return context.allowLimitedFormulas==true end
     local snapshot=context and context.snapshot
     if snapshot and snapshot.allowLimitedFormulas~=nil then return snapshot.allowLimitedFormulas==true end
+    if snapshot or context and (context.prices~=nil or context.known~=nil or context.recipes~=nil) then return false end
     local view=ns.ProfModule
-    local slug=context and (context.profession or context.targetProfession or snapshot and snapshot.targetProfession)
+    local slug=profession or context and (context.profession or context.targetProfession or snapshot and snapshot.targetProfession)
     if view and view.SettingRaw then
         local value=view.SettingRaw("autoBuyLimitedFormulas",slug)
         if value~=nil then return value==true end
     end
     local db=DungeonsForeverDB and DungeonsForeverDB.prof
     return db and db.autoBuyLimitedFormulas==true or false
+end
+local function formulaPermission(context,field,setting,profession)
+    if context and context[field]~=nil then return context[field]==true end
+    local snapshot=context and context.snapshot
+    if snapshot and snapshot[field]~=nil then return snapshot[field]==true end
+    if snapshot or context and (context.prices~=nil or context.known~=nil or context.recipes~=nil) then return false end
+    local view=ns.ProfModule
+    local slug=profession or context and (context.profession or context.targetProfession or snapshot and snapshot.targetProfession)
+    if view and view.SettingRaw then return view.SettingRaw(setting,slug)==true end
+    local db=DungeonsForeverDB and DungeonsForeverDB.prof
+    return db and db[setting]==true or false
+end
+function E.AllowBindOnPickupFormulas(context,profession)
+    -- The persisted key now governs non-gold acquisition only. Ordinary gold
+    -- vendors follow their stock/access rules regardless of item binding.
+    return formulaPermission(context,"allowBindOnPickupFormulas","autoAllowBindOnPickupFormulas",profession)
+end
+function E.AllowCurrencyFormulas(context,profession)
+    return E.AllowBindOnPickupFormulas(context,profession)
+        or formulaPermission(context,"allowCurrencyFormulas","autoAllowCurrencyFormulas",profession)
 end
 function E.LimitedFormulaOffer(offer)
     if offer.unlimited==true then return false end
@@ -646,7 +767,19 @@ local function validSupply(entry,stamp,live)
     end
     return true
 end
+function E.ConsiderAuctionSupply(context)
+    if context and context.considerAuctionSupply~=nil then return context.considerAuctionSupply==true end
+    if context and context.snapshot and context.snapshot.considerAuctionSupply~=nil then
+        return context.snapshot.considerAuctionSupply==true
+    end
+    local view=ns.ProfModule
+    return view and view.SettingRaw and view.SettingRaw("autoConsiderAuctionSupply",
+        context and (context.profession or context.slug))==true or false
+end
 function E.AuctionSupplyOf(context,id)
+    -- A nil context reads observation evidence; route contexts opt into budgets.
+    if context and not E.ConsiderAuctionSupply(context) then return end
+    context=context and (context.snapshot or context)
     local entry
     if context and context.auctionSupply then entry=context.auctionSupply[id]
     elseif not context or not context.prices then
@@ -655,6 +788,20 @@ function E.AuctionSupplyOf(context,id)
     end
     local stamp=context and context.stamp or (not context and time and time())
     if validSupply(entry,stamp,not context) then return entry end
+end
+-- A teaching item needs affirmative recent market availability even when
+-- material quantities are not budgeted. History/price alone cannot prove this.
+function E.FormulaAuctionSupplyOf(context,id)
+    context=context and (context.snapshot or context)
+    local frozen=context and (context.prices~=nil or context.known~=nil or context.recipes~=nil
+        or context.byKey~=nil or context.learningSourcesRequired~=nil)
+    local entry=context and context.auctionSupply and context.auctionSupply[id]
+    if not entry and not frozen then
+        local bridge=ns.AuctionBridge
+        if bridge and bridge.GetAuctionSupply then entry=bridge.GetAuctionSupply(id,true) end
+    end
+    local stamp=context and context.stamp or (time and time())
+    if type(stamp)=="number" and validSupply(entry,stamp,true) then return entry end
 end
 local function quoteMetadata(context,id,field,method)
     if context and context[field] then return context[field][id] end
@@ -671,6 +818,16 @@ local function supplyIdentity(supply)
     return out
 end
 function E.AuctionSupplyChanged(result)
+    for id,previous in pairs(result.formulaAuctionSupplyInputs or {}) do
+        local current=E.FormulaAuctionSupplyOf(nil,id)
+        if (previous~=false)~=(current~=nil) then return true end
+        if current then
+            for _,key in ipairs(supplyIdentityFields) do
+                if key~="observedAt" and key~="batch" and previous[key]~=current[key] then return true end
+            end
+        end
+    end
+    if result.considerAuctionSupply==false then return false end
     -- Prices/history have independent freshness. Only quantity evidence belongs
     -- to this comparison, and looking it up never starts a scan or a search.
     for id,previous in pairs(result.auctionSupplyInputs or {}) do
@@ -685,7 +842,67 @@ function E.AuctionSupplyChanged(result)
     end
     return false
 end
+function E.SummarizeFormulaSupply(result,context)
+    context=formulaContext(context)
+    local inputs={}
+    local needed={}
+    for _,list in ipairs({result.mats or {},result.formulas or {}}) do
+        for _,entry in ipairs(list) do
+            if (entry.source=="ah" or entry.source=="auction") and not entry.known then
+                local id=entry.id or entry[1]
+                if id then needed[id]=(needed[id] or 0)+(entry.count or entry[2] or 1) end
+            end
+        end
+    end
+    local function candidate(id)
+        if type(id)=="number" and id>0 and inputs[id]==nil then
+            inputs[id]=supplyIdentity(E.FormulaAuctionSupplyOf(context,id))
+        end
+    end
+    for _,recipe in ipairs(context.recipes or {}) do
+        if not (context.known or {})[recipe.key] then
+            candidate(recipe.formula or recipe.formulaID)
+            for _,route in ipairs(recipe.learningInfo and recipe.learningInfo.routes or {}) do
+                if route.kind=="item" then
+                    candidate(route.teachingItemID or route.itemID)
+                end
+            end
+        end
+    end
+    for _,entry in ipairs(result.formulas or {}) do
+        if not entry.known then
+            candidate(entry.id)
+            if entry.source=="ah" or entry.source=="auction" then
+                local supply=E.FormulaAuctionSupplyOf(context,entry.id)
+                entry.considerAuctionSupply=true;entry.supplyObserved=supply~=nil
+                entry.availableCount=supply and supply.quantity
+                entry.supplyRequired=needed[entry.id]
+                entry.supplyLimited=supply and needed[entry.id]>supply.quantity or nil
+                entry.supplyComplete=supply~=nil and not entry.supplyLimited
+                entry.supplyStatus=supply and "verified" or "unknown"
+                entry.supplyObservedAt=supply and supply.observedAt
+                entry.supplySource=supply and supply.source
+                entry.supplyOwnerExcluded=supply and supply.ownerExcluded
+                entry.supplyMethod=supply and supply.method
+            end
+        end
+    end
+    result.formulaAuctionSupplyInputs=inputs
+    return result
+end
 function E.SummarizeAuctionSupply(result,context)
+    E.SummarizeFormulaSupply(result,context)
+    result.considerAuctionSupply=E.ConsiderAuctionSupply(context)
+    if not result.considerAuctionSupply then
+        result.auctionSupplyUnknown=nil;result.auctionSupplyObserved=nil;result.supplyComplete=nil
+        result.auctionSupplyInputs={};result.auctionSupplyCandidates={};result.auctionSupplyShortages={}
+        result.purchaseVerified=false;result.auctionSupplyRevision=3
+        for _,entry in ipairs(result.mats or {}) do entry.considerAuctionSupply=false end
+        for _,entry in ipairs(result.formulas or {}) do
+            entry.considerAuctionSupply=(entry.source=="ah" or entry.source=="auction") and not entry.known
+        end
+        return result
+    end
     local seen,needed={},{}
     result.auctionSupplyUnknown=0;result.auctionSupplyObserved=false;result.supplyComplete=true
     result.auctionSupplyShortages={}
@@ -713,6 +930,7 @@ function E.SummarizeAuctionSupply(result,context)
     for _,list in ipairs({result.mats or {},result.formulas or {}}) do
         for _,entry in ipairs(list) do
             local id=entry.id or entry[1]
+            entry.considerAuctionSupply=true
             entry.priceObservedAt=quoteMetadata(context,id,"priceObservedAt","GetAuctionPriceObservedAt")
             if (entry.source=="ah" or entry.source=="auction") and not entry.known then
                 candidate(id)
@@ -811,7 +1029,14 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     if ah==nil and id and not context.prices then
         local ra=ns.ProfRouteAuto; if ra and ra.AHPriceOf then ah=ra.AHPriceOf(id) end
     end
-    if type(ah)=="number" and ah>0 and not (context.nonAuctionable and context.nonAuctionable[id]) then entry.ahPrice=ah end
+    local acquisition=r.selectedLearningRoute and r.selectedLearningRoute.acquisition
+    local bound=(context.nonAuctionable and context.nonAuctionable[id]) or r.bindOnPickup==true
+        or acquisition and acquisition.nonAuctionable==true
+        or not context.prices and id and E.NonAuctionableItem(id)
+    entry.bindOnPickup=bound and true or nil
+    -- A real recent market quote outranks static binding/source metadata for
+    -- teaching items. Materials keep their separate non-auctionable policy.
+    if type(ah)=="number" and ah>0 and ah<math.huge then entry.ahPrice=ah end
     local offers=id and context.formulaOffers and context.formulaOffers[id]
     if not offers and not context.prices and id and ns.VendorPriceDB and ns.VendorPriceDB.GetFormulaOffers then
         offers=ns.VendorPriceDB.GetFormulaOffers(id,context,r.source)
@@ -822,7 +1047,8 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     for _,offer in ipairs(offers or {}) do
         local currency=tonumber(offer.currencyID or offer.cur) or 0
         if type(offer.npcID)=="number" and offer.npcID>0 and not offer.priceOnly
-            and currency==0 and not offer.hasExtendedCost then
+            and currency==0 and not offer.hasExtendedCost
+            and #(offer.currencies or {})==0 and #(offer.costItems or {})==0 then
             entry.vendorOffers[#entry.vendorOffers+1]=offer
         end
     end
@@ -835,18 +1061,26 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     end
     sources.vendors=vendors
     entry.questOnly=exclusiveQuest and not hasEntries(vendors) and not hasEntries(sources.drops) or false
-    local supply=id and E.AuctionSupplyOf and E.AuctionSupplyOf(context,id)
+    local supply=id and E.FormulaAuctionSupplyOf(context,id)
     local ahAvailable=auctionRemaining or (supply and supply.quantity)
-    local ahUsable=context.noFormula~=true and entry.ahPrice and (ahAvailable==nil or ahAvailable>=1)
-    if supply then entry.availableCount=supply.quantity;entry.supplyObserved=true;entry.supplyComplete=supply.complete==true end
+    local ahUsable=entry.ahPrice and supply and supply.quantity>=2 and ahAvailable>=1
+    if supply then
+        entry.availableCount=supply.quantity;entry.supplyObserved=true;entry.supplyComplete=supply.complete==true
+        entry.supplyObservedAt=supply.observedAt;entry.supplySource=supply.source
+        entry.supplyOwnerExcluded=supply.ownerExcluded;entry.supplyMethod=supply.method
+    end
     local best,bestCost
-    local allowLimited=E.AllowLimitedFormulas(context)
-    local function purchasable(o)
+    local allowLimited=E.AllowLimitedFormulas(context,r.profession)
+    local function quoted(o)
         local factionOK=not o.faction or not context.faction or o.faction==context.faction or o.faction=="N" or o.faction=="Neutral" or o.faction=="AH" or o.faction=="Both"
         local quantity=o.quantity or o.bundleSize or 1
-        return not (not allowLimited and formulaStockRestricted(o)) and factionOK
+        return factionOK
             and o.available~=false and o.purchasable~=false and o.priceUsable~=false
             and type(o.price)=="number" and o.price>=0 and positiveInteger(quantity)
+    end
+    local function purchasable(o)
+        local quantity=o.quantity or o.bundleSize or 1
+        return quoted(o) and not (not allowLimited and formulaStockRestricted(o))
             and (type(o.stock)~="number" or o.stock<0 or o.stock>=quantity)
     end
     for _,o in ipairs(entry.vendorOffers) do
@@ -855,17 +1089,23 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
         else entry.stockUnknown=true end
         local limitedBlocked=not allowLimited and formulaStockRestricted(o)
         if limitedBlocked then entry.limitedVendorDisabled=true end
-    end
-    for _,o in ipairs(E.PreferredVendorOffers(entry.vendorOffers,purchasable)) do
-        if purchasable(o) then
-            local quantity=o.quantity or o.bundleSize or 1
-            local unit=o.price/quantity
+        -- A policy-disabled offer still has a known reference price. It must
+        -- not become a selected purchase or contribute to the route cost.
+        if quoted(o) then
+            local unit=o.price/(o.quantity or o.bundleSize or 1)
             if not entry.vendorPrice or unit<entry.vendorPrice then entry.vendorPrice=unit end
+        end
+    end
+    -- Compare actual costs across all eligible suppliers. A location preference
+    -- must not hide a cheaper quote when deciding NPC versus auction purchase.
+    for _,o in ipairs(entry.vendorOffers) do
+        if purchasable(o) then
             local cost=o.price -- One indivisible purchase supplies the formula.
             if not bestCost or cost<bestCost then best,bestCost=o,cost end
         end
     end
-    if purchaseSource~="ah" and bestCost~=nil and (not ahUsable or bestCost<=entry.ahPrice) then
+    if purchaseSource~="ah" and bestCost~=nil and (not ahUsable or bestCost<entry.ahPrice
+        or bestCost==entry.ahPrice and not formulaStockRestricted(best)) then
         entry.source="vendor";entry.cost=bestCost;entry.offer=best;entry.npcID=best.npcID
         entry.stock=best.stock;entry.maxStock=best.maxStock;entry.stockStatus=best.stockStatus
         local quantity=best.quantity or best.bundleSize or 1
@@ -881,9 +1121,10 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     entry.costComplete=known or (entry.cost~=nil and not entry.availabilityUncertain) or false
     entry.sourceType=entry.source;entry.totalCost=entry.cost;entry.blocked=not entry.usable
     entry.vendor=entry.source=="vendor"
+    entry.considerAuctionSupply=entry.source=="ah" and not known
     if entry.blocked then
-        entry.reason=context.noFormula==true and not entry.limitedVendorDisabled and "vendorFormulaRequired"
-            or entry.ahPrice and ahAvailable~=nil and ahAvailable<1 and "auctionSupplyLimited"
+        entry.reason=entry.ahPrice and not supply and "formulaAuctionSupplyUnknown"
+            or entry.ahPrice and (supply.quantity<2 or ahAvailable<1) and "formulaAuctionSupplyInsufficient"
             or entry.limitedVendorDisabled and "limitedFormulaDisabled" or "formulaUnavailable"
     end
     return entry
@@ -895,7 +1136,7 @@ function E.CollectFormulas(steps,slug,context)
             local profession=step.profession or slug
             local r=step.recipe or (snap.byKey and snap.byKey[profession..":"..tostring(step[3] or step.spell)]) or E.FindRecipe(profession,step[3] or step.spell)
             local entry=r and E.FormulaFor(r,snap)
-            if entry and not entry.known then
+            if entry and not entry.known and not entry.automatic then
                 local key=entry.id or entry.recipeKey or profession..":"..tostring(entry.spell)
                 local old=byID[key]
                 if old then old.recipes[#old.recipes+1]=entry.recipes[1]
@@ -933,7 +1174,7 @@ function E.Index(s, tick)
             a[#a + 1] = r
         end
     end
-    for _, field in ipairs({"professions", "known", "prices", "offers", "formulaOffers", "auctionSupplyHistory",
+    for _, field in ipairs({"professions", "known", "prices", "offers", "formulaOffers", "formulaItems", "auctionSupplyHistory",
         "priceObservedAt", "auctionSupplyStatus", "nonAuctionable", "vendorItems", "vendorSuppliers", "diagnostics", "toolGoals",
         "toolGoalsPending", "specializationGoals", "specializationAbilities", "retainedToolItems", "toolCraftOnlyItems"}) do
         s[field] = s[field] or {}
@@ -946,6 +1187,19 @@ function E.Index(s, tick)
         if tick then tick() end
     end
     s.auctionSupply = supply
+    for _,recipe in ipairs(s.recipes or {}) do
+        if not (s.known or {})[recipe.key] then
+            local item=recipe.formula or recipe.formulaID
+            if positiveInteger(item) then s.formulaItems[item]=true end
+            for _,route in ipairs(recipe.learningInfo and recipe.learningInfo.routes or {}) do
+                item=tonumber(route.teachingItemID or route.itemID)
+                if route.kind=="item" and positiveInteger(item) then
+                    s.formulaItems[item]=true
+                    if route.acquisition and route.acquisition.nonAuctionable==true then s.nonAuctionable[item]=true end
+                end
+            end
+        end
+    end
     s.inventory = {}
     s.trainingCosts, s.rankCosts, s.learningRequirements, s.rankRequirements = nil, nil, nil, nil
     s.stations, s.stationRequirements = nil, nil
@@ -1014,11 +1268,18 @@ end
 function E.Capture(slug, opts, tick)
     opts, tick = shallow(opts or {}), tick or function() end
     opts.profession=slug
+    -- Retired preferences never restrict a newly captured route.
+    opts.noFormula,opts.learnedOnly,opts.allowUnknownLearning=nil,nil,nil
+    opts.considerAuctionSupply=E.ConsiderAuctionSupply(opts)
     if opts.snapshot then
         local s = copy(opts.snapshot, tick)
+        s.considerAuctionSupply=opts.considerAuctionSupply
+        s.noFormula,s.learnedOnly,s.allowUnknownLearning=nil,nil,nil
+        s.stamp=s.stamp or (time and time())
         s.professions, s.routeContext = E.RouteProfessions(slug, opts, opts.professions or s.professions or {})
         s.allowLimitedFormulas = E.AllowLimitedFormulas(opts)
-        if opts.noFormula~=nil then s.noFormula=opts.noFormula==true end
+        s.allowBindOnPickupFormulas=E.AllowBindOnPickupFormulas(opts)
+        s.allowCurrencyFormulas=formulaPermission(opts,"allowCurrencyFormulas","autoAllowCurrencyFormulas")
         if s.coverageComplete == nil then s.coverageComplete = false end
         s.essenceConversions = ns.ProfEssences and ns.ProfEssences.Enabled(slug, opts, s) or false
         -- Explicit fixture/execution snapshots already contain their normalized
@@ -1034,7 +1295,10 @@ function E.Capture(slug, opts, tick)
     local s = {recipes={},byKey={},known={},prices={},offers={},formulaOffers={},auctionSupply={},auctionSupplyHistory={},auctionSupplyStatus={},
         priceObservedAt={},vendorItems={},vendorSuppliers={},nonAuctionable={},coverageComplete=false,
         professions=copy(professions),routeContext=context,stamp=time and time() or 0,character=E.CharacterKey(),
-        allowLimitedFormulas=E.AllowLimitedFormulas(opts),noFormula=opts.noFormula==true}
+        allowLimitedFormulas=E.AllowLimitedFormulas(opts),
+        allowBindOnPickupFormulas=E.AllowBindOnPickupFormulas(opts),
+        allowCurrencyFormulas=formulaPermission(opts,"allowCurrencyFormulas","autoAllowCurrencyFormulas"),
+        considerAuctionSupply=opts.considerAuctionSupply}
     s.level = UnitLevel and UnitLevel("player") or nil
     local f = UnitFactionGroup and UnitFactionGroup("player") or nil
     s.faction = f=="Alliance" and "A" or f=="Horde" and "H" or f
@@ -1079,14 +1343,19 @@ function E.Capture(slug, opts, tick)
     E.CaptureSpecializations(s, opts, slug)
     E.CaptureToolGoals(s, slug, opts)
     if E.CaptureLearningFacts then E.CaptureLearningFacts(s,tick) end
-    local items = {}
+    local items = {};s.formulaItems={}
     for _, r in ipairs(s.recipes) do
         if positiveInteger(r.item) then items[r.item]=true end
-        if r.formula and not s.known[r.key] and E.LearningSource(r)~="trainer" then items[r.formula]=true end
+        if r.formula and not s.known[r.key] and E.LearningSource(r)~="trainer" then
+            items[r.formula]=true;s.formulaItems[r.formula]=true
+        end
         if not s.known[r.key] then
             for _,route in ipairs(r.learningInfo and r.learningInfo.routes or {}) do
                 local item=tonumber(route.teachingItemID or route.itemID)
-                if route.kind=="item" and item and item>0 then items[item]=true end
+                if route.kind=="item" and item and item>0 then
+                    items[item]=true;s.formulaItems[item]=true
+                    if route.acquisition and route.acquisition.nonAuctionable==true then s.nonAuctionable[item]=true end
+                end
             end
         end
         for _, m in ipairs(r.mats) do items[m[1]]=true end

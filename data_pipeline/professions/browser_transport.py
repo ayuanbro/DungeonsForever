@@ -27,9 +27,11 @@ def playwright_factory():
 
 class BrowserTransport:
     def __init__(self, factory=None, timeout=60, request_mode="navigation", assets="all",
-                 collect_metrics=False, diagnostics=False):
+                 collect_metrics=False, diagnostics=False, recycle_every=100):
         if request_mode not in ("navigation", "fetch") or assets not in ("all", "light"):
             raise ValueError("invalid browser mode")
+        if not isinstance(recycle_every, int) or recycle_every < 0:
+            raise ValueError("browser page recycle interval must be nonnegative")
         self._factory = factory or playwright_factory
         self._timeout = timeout
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="wowhead-browser")
@@ -42,8 +44,11 @@ class BrowserTransport:
         self._ready_for_fetch = False
         self.metrics = {"requests": 0, "encodedBytes": 0, "cacheHits": 0,
                         "lightFetches": 0, "navigationFallbacks": 0, "browserRestarts": 0,
+                        "pageRecycles": 0, "navigationCount": 0,
                         "navigationStatuses": {}, "fetchStatuses": {}}
         self.identity = None
+        self.recycle_every = recycle_every
+        self._cdp = None
 
     def __enter__(self):
         return self
@@ -80,17 +85,37 @@ class BrowserTransport:
             self._page = self._context.new_page()
             self._page.on("response", self._on_response_owned)
             if self.collect_metrics:
-                session = self._context.new_cdp_session(self._page)
-                session.send("Network.enable")
-                session.on("Network.requestWillBeSent", lambda _: self._metric("requests", 1))
-                session.on("Network.requestServedFromCache", lambda _: self._metric("cacheHits", 1))
-                session.on("Network.loadingFinished", lambda event: self._metric("encodedBytes", event.get("encodedDataLength", 0)))
+                self._instrument_page_owned()
         except Exception:
             self._close_owned()
             raise
 
     def _metric(self, key, value):
         self.metrics[key] += value
+
+    def _instrument_page_owned(self):
+        self._cdp = self._context.new_cdp_session(self._page)
+        self._cdp.send("Network.enable")
+        self._cdp.on("Network.requestWillBeSent", lambda _: self._metric("requests", 1))
+        self._cdp.on("Network.requestServedFromCache", lambda _: self._metric("cacheHits", 1))
+        self._cdp.on("Network.loadingFinished", lambda event: self._metric("encodedBytes", event.get("encodedDataLength", 0)))
+
+    def _recycle_page_owned(self):
+        if self._page is not None:
+            try:
+                if self._cdp is not None:
+                    self._cdp.detach()
+            except Exception:
+                pass
+            self._cdp = None
+            self._page.close()
+        self._page = self._context.new_page()
+        self._page.on("response", self._on_response_owned)
+        if self.collect_metrics:
+            self._instrument_page_owned()
+        self._ready_for_fetch = False
+        self._responses = []
+        self.metrics["pageRecycles"] += 1
 
     def _identity_owned(self):
         value = self._page.evaluate("""() => ({userAgent:navigator.userAgent, platform:navigator.platform, webdriver:navigator.webdriver,
@@ -157,6 +182,7 @@ class BrowserTransport:
         self._responses = []
         deadline = time.monotonic() + self._timeout
         navigation_error = None
+        self.metrics["navigationCount"] += 1
         try:
             # The main response is enough to start reading. Response.body()
             # below still waits for the complete document, without waiting for
@@ -190,6 +216,9 @@ class BrowserTransport:
                                 except Exception:
                                     # Diagnostics never promote or discard source evidence.
                                     self.identity = {"diagnosticStatus": "unavailable"}
+                            if (self.recycle_every and self.metrics["navigationCount"] % self.recycle_every == 0
+                                    and self._context is not None):
+                                self._recycle_page_owned()
                             return last
                     except Exception as error:
                         navigation_error = error
@@ -213,6 +242,7 @@ class BrowserTransport:
                     if self._playwright is not None:
                         self._playwright.stop()
                 finally:
+                    self._cdp = None
                     self._playwright = self._browser = self._context = self._page = None
                     self._responses = []
                     self._ready_for_fetch = False

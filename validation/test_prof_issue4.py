@@ -96,7 +96,10 @@ class Issue4Tests(unittest.TestCase):
             {npcID=2,price=0,unlimited=true,hasExtendedCost=true}}}}
           local f=E.FormulaFor(r,s)
           assert(f.source~='vendor' and not f.usable and #f.vendorOffers==0 and #f.sources.drops==1)
-          s.prices[400]=50;f=E.FormulaFor(r,s)
+          s.prices[400]=50;s.stamp=1000
+          s.auctionSupply={[400]={quantity=2,observedAt=900,complete=true,
+            ownerExcluded=true,source='client-auction-results'}}
+          f=E.FormulaFor(r,s)
           assert(f.source=='ah' and not f.vendor)
           local rows={};PD.RowsFormulaShop(rows,{formulas={f}})
           for _,row in ipairs(rows)do
@@ -104,7 +107,8 @@ class Issue4Tests(unittest.TestCase):
           end
           s.formulaOffers[400]={{npcID=3,price=15,quantity=1,unlimited=true}}
           f=E.FormulaFor(r,s)
-          assert(f.source=='vendor' and not f.sources.drops)
+          assert(f.source=='vendor' and f.npcID==3 and #f.sources.vendors==1)
+          assert(f.sources.drops[1].npc=='Drop boss','selected purchase source erased reference acquisition data')
           assert(#r.source.drops==1,'procurement mutated recipe source data')
         ''')
 
@@ -124,7 +128,7 @@ class Issue4Tests(unittest.TestCase):
             {known={},prices={},formulaOffers={[400]=offers},allowLimitedFormulas=true})
           assert(f.limited and not f.unlimited and f.source=='vendor')
           assert(PD.FormulaStockChip(f).text=='限量刷新')
-          assert(PD.FormulaStockChip({unlimited=true,limited=true}).text=='不限量')
+          assert(PD.FormulaStockChip({unlimited=true,limited=true}).text=='不限量+限量')
         ''')
 
     def test_3_unpriced_unlearned_formula_is_excluded_from_solver(self):
@@ -178,21 +182,21 @@ class Issue4Tests(unittest.TestCase):
           assert(#normalized.formulas==1 and normalized.feasible==false,'normalized fixed recipe lost its formula')
         ''')
 
-    def test_5_city_merchant_wins_even_when_remote_price_is_lower(self):
+    def test_5_cheaper_remote_merchant_competes_with_city_and_auction(self):
         self.load((ROOT / 'Core/ProfSolverCapture.lua').read_text(encoding='utf-8-sig'))
         self.lua.execute(r'''
           ns.ProfVendors={[1]={0,1446,20,20},[2]={0,1453,30,30}}
-          local s=fixture();s.prices={};s.offers={[11]={
-            {npcID=1,price=1,quantity=1,unlimited=true},
-            {npcID=2,price=7,quantity=1,unlimited=true}}}
+          local s=fixture();s.prices={[11]=50};s.offers={[11]={
+            {npcID=1,price=20,quantity=1,unlimited=true},
+            {npcID=2,price=100,quantity=1,unlimited=true}}}
           local result=finish('alchemy',{snapshot=s,start=1,target=3})
-          assert(result.targetReached and result.total==14 and result.mats[1].npcID==2)
+          assert(result.targetReached and result.total==40 and result.mats[1].npcID==1)
           local f=ns.ProfEconomy.FormulaFor({profession='alchemy',spell=101,formula=400},
             {known={},prices={},formulaOffers={[400]=s.offers[11]}})
-          assert(f.npcID==2 and f.cost==7)
-          s.offers[11][2].available=false
+          assert(f.npcID==1 and f.cost==20)
+          s.offers[11][1].available=false
           result=ns.ProfRouteAuto.Compute('alchemy',{snapshot=s,start=1,target=3})
-          assert(result.targetReached and result.mats[1].npcID==1)
+          assert(result.targetReached and result.total==100 and result.mats[1].source=='ah')
         ''')
 
     def test_5_reference_city_supplier_is_considered_beside_observed_remote_offer(self):
@@ -203,16 +207,32 @@ class Issue4Tests(unittest.TestCase):
           ns.ProfVendorOffers={[11]={{npcID=2,price=7,quantity=1,unlimited=true,
             source='supply-verified',verifiedAt=1,reference=true,priceVerified=true}}}
           local offers=ns.VendorPriceDB.GetOffers(11)
-          assert(#offers==1 and offers[1].npcID==2)
+          assert(#offers==2 and offers[1].npcID==1 and offers[2].npcID==2)
           offers=ns.VendorPriceDB.GetOffers(11,{requireObservedPrice=true})
           assert(#offers==1 and offers[1].npcID==1)
         ''')
 
+    def test_5_whole_pack_cost_competes_before_location_or_unit_price(self):
+        self.load((ROOT / 'Core/ProfSolverCapture.lua').read_text(encoding='utf-8-sig'))
+        self.lua.execute(r'''
+          ns.ProfVendors={[1]={0,1446,20,20},[2]={0,1453,30,30}}
+          local s=fixture();s.prices={[11]=5};s.offers={[11]={
+            {npcID=1,price=2,quantity=1,unlimited=true},
+            {npcID=2,price=10,quantity=10,unlimited=true}}}
+          local r=ns.ProfRouteAuto.Compute('alchemy',{snapshot=s,start=1,target=2})
+          assert(r.targetReached and r.total==2 and r.mats[1].npcID==1 and r.mats[1].count==1)
+          r=ns.ProfRouteAuto.Compute('alchemy',{snapshot=s,start=1,target=11})
+          assert(r.targetReached and r.total==10 and r.mats[1].npcID==2 and r.mats[1].count==10)
+        ''')
+
     def test_6_hud_first_panel_uses_only_actual_missing_vendor_materials(self):
         self.lua.execute(r'''
-          local plan={mats={{id=11,count=4,source='vendor',npcID=2},
-            {id=11,count=2,source='vendor',npcID=2},{id=12,count=3,source='ah'}},
-            formulas={{id=400,count=1,source='vendor'}}}
+          local plan=finish('alchemy',{start=1,target=2})
+          plan.executionSteps[1].recipe.mats={{11,6},{12,3}}
+          plan.mats={{id=11,count=4,source='vendor',npcID=2,cost=4,unit=1,bundleSize=1,unlimited=true},
+            {id=11,count=2,source='vendor',npcID=2,cost=2,unit=1,bundleSize=1,unlimited=true},
+            {id=12,count=3,source='ah',cost=3,unit=1}}
+          plan.formulas={{id=400,count=1,source='vendor'}}
           bag[11]=2
           local list=ns.ProfFollow.VendorPurchases('alchemy',plan)
           assert(#list==1 and list[1].missing==4 and list[1].npcID==2)
@@ -237,8 +257,12 @@ class Issue4Tests(unittest.TestCase):
         ''')
         self.load((ROOT / 'Core/ProfFollow.lua').read_text(encoding='utf-8-sig'))
         self.lua.execute(r'''
-          local plan=finish('alchemy',{start=1,target=3})
-          plan.mats={};for i=1,8 do plan.mats[i]={id=20+i,count=i,source='vendor',vendor=true,npcID=2}end
+          local plan=finish('alchemy',{start=1,target=2})
+          plan.mats={};plan.executionSteps[1].recipe.mats={}
+          for i=1,8 do
+            plan.mats[i]={id=20+i,count=i,source='vendor',vendor=true,npcID=2,cost=i,unit=1,bundleSize=1,unlimited=true}
+            plan.executionSteps[1].recipe.mats[i]={20+i,i}
+          end
           assert(ns.ProfExecution.Bind('alchemy',plan))
           local pf=ns.ProfFollow
           DungeonsForeverDB.prof.follow={['Test-Realm']={slug='alchemy',skill=1,step=1,t0=1000}}

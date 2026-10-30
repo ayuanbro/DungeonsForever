@@ -14,9 +14,12 @@ from lupa.lua51 import LuaRuntime
 DATA=[
     'Data_Professions.lua','Data_ProfRecipes.lua','Data_ProfLeveling.lua',
     'Data_ProfSpecializations.lua','Data_ProfSpecializationQuests.lua','Data_ProfTools.lua',
+    'Data_ProfMaterialSupply.lua','Data_ProfFormulaOffers.lua','Data_ProfVendors.lua','Data_ProfVendorNames.lua',
 ]
+# Exercise the same verified NPC supplier records as the normal TOC. An AH-only
+# mock cannot compare NPC packs against auctions for vials and charcoal.
 DOMAIN=[
-    'ProfPolicies.lua','ProfGates.lua','ProfSolverCapture.lua','ProfLearning.lua','ProfClientScan.lua',
+    'ProfPolicies.lua','ProfSupply.lua','VendorPriceDB.lua','ProfGates.lua','ProfSolverCapture.lua','ProfLearning.lua','ProfClientScan.lua',
     'ProfEssences.lua','ProfRecovery.lua','ProfRouteSolver.lua',
 ]
 
@@ -26,6 +29,7 @@ def native_runtime(locale='zhCN'):
     lua.execute("""
       ns={LoadForeverPages=true,L=setmetatable({}, {__index=function(_,k)return k end})}
       DungeonsForeverDB={prof={}}
+      ns.DB=function()return DungeonsForeverDB end
       selected='alchemy'; observedKnown={}
       function UnitName()return 'NativeTest'end
       function GetRealmName()return 'Realm'end
@@ -80,20 +84,35 @@ class ProfessionNativeDataTests(unittest.TestCase):
                     self.assertEqual(result['steps'][1][2],2)
                     self.assertFalse(result['catalogueCoverageComplete'])
                     self.assertFalse(result['optimal'])
+                    if profession=='alchemy':
+                        vial=next(m for m in result['mats'].values() if m['id']==3371)
+                        # This fixture offers every auction item for 1 copper.
+                        # A real NPC pack is available but costs more for one vial.
+                        self.assertEqual(vial['source'],'ah')
+                        self.assertEqual(vial['count'],1)
+                        self.assertEqual(vial['cost'],1)
+                        offers=lua.execute('return ns.VendorPriceDB.GetOffers(3371)')
+                        self.assertGreater(len(offers),0)
+                        self.assertTrue(offers[1]['unlimited'])
+                        self.assertEqual(offers[1]['quantity'],5)
 
-    def test_first_aid_missing_recipe_data_remains_explicit_without_static_injection(self):
+    def test_first_aid_native_recipe_solves_from_initial_skill_in_all_locales(self):
         for locale in ('zhCN','zhTW','enUS'):
             with self.subTest(locale=locale):
                 lua=native_runtime(locale)
                 lua.execute("selected='first-aid'")
-                self.assertIsNone(lua.execute("return ns.ProfEconomy.FindRecipe('first-aid',3275)"))
+                recipe=lua.execute("return ns.ProfEconomy.FindRecipe('first-aid',3275)")
+                self.assertEqual(recipe['learn'],1)
+                self.assertEqual(recipe['count'],1)
+                self.assertEqual(recipe['mats'][1][1],2589)
+                lua.execute('observedKnown[3275]=true')
                 result=lua.execute("""
                   return ns.ProfRouteSolver.Compute(selected,{start=1,target=2,
                     autoCraftTools=false,recoveryEnabled=false,cpuLimitMs=1000})
                 """)[0]
-                self.assertFalse(result['feasible'])
-                self.assertEqual(len(result['steps']),0)
-                self.assertIn(result['status'],('infeasible','incomplete'))
+                self.assertTrue(result['feasible'])
+                self.assertGreater(len(result['steps']),0)
+                self.assertEqual(result['steps'][1][3],3275)
                 self.assertGreater(len(lua.execute("return ns.ProfLeveling['first-aid'].steps")),0)
 
     def test_dev_upgrade_rinfo_precedes_new_generic_enchant_reference(self):

@@ -41,6 +41,11 @@ class LearningSourceRuntimeTests(unittest.TestCase):
               nonAuctionable={},completedQuests={},reputations={},ownedTeachingItems={},
               allowLimitedFormulas=false,noFormula=false}
           end
+          function recentSupply(snap,item,quantity)
+            snap.stamp=1000;snap.auctionSupply=snap.auctionSupply or {}
+            snap.auctionSupply[item]={quantity=quantity or 2,observedAt=1000,
+              complete=true,ownerExcluded=true,source='client-auction-results'}
+          end
         """)
 
     def test_missing_or_corrupt_supplement_does_not_revive_unknown_native_routes(self):
@@ -55,16 +60,16 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           assert(E.RouteRecipeEligibility(r,snap))
         """)
 
-    def test_known_item_link_and_price_do_not_confirm_missing_learning_requirements(self):
+    def test_missing_source_metadata_does_not_block_a_priced_stocked_teaching_item(self):
         self.lua.execute("""
           sourceRecord('blacksmithing',2671,{{id='item:5577',kind='item',teachingItemID=5577,
             status='unknown',conditionsKnown=false,conditions={}}})
           local E=ns.ProfEconomy;local r=E.FindRecipe('blacksmithing',2671);local snap=input('blacksmithing')
-          snap.prices[5577]=1
+          snap.prices[5577]=1;recentSupply(snap,5577)
           local ok,reason=E.RouteRecipeEligibility(r,snap)
-          assert(not ok and reason=='learningDataMissing')
+          assert(ok,tostring(reason))
           local quote=E.FormulaFor(r,snap)
-          assert(not quote.usable and quote.reason=='learningDataMissing' and quote.cost==nil)
+          assert(quote.usable and quote.source=='ah' and quote.cost==1)
         """)
 
     def test_known_recipe_keeps_explicit_client_crafting_unavailability(self):
@@ -94,13 +99,14 @@ class LearningSourceRuntimeTests(unittest.TestCase):
         self.lua.execute("""
           sourceRecord('alchemy',7183,{trainer('trainer:7183',100),itemPath('book:7183',900001)})
           local E=ns.ProfEconomy;local r=E.FindRecipe('alchemy',7183);local snap=input('alchemy')
-          snap.prices[900001]=25
+          snap.prices[900001]=25;recentSupply(snap,900001)
           local ok,_,d=E.RouteRecipeEligibility(r,snap)
           assert(ok and d.routeId=='book:7183' and d.quote.cost==25 and d.quote.source=='ah')
           assert(E.FormulaFor(r,snap).learningRouteId==d.routeId)
           snap.noFormula=true
           ok,_,d=E.RouteRecipeEligibility(r,snap)
-          assert(ok and d.routeId=='trainer:7183' and d.quote.cost==100)
+          assert(ok and d.routeId=='book:7183' and d.quote.cost==25,
+            'removed vendor-only preference blocked the cheaper auction')
         """)
 
     def test_fast_price_options_keep_live_character_facts_and_purchase_policy(self):
@@ -111,9 +117,17 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           UnitClass=function()return 'Rogue','ROGUE',4 end
           C_Reputation={GetFactionDataByID=function(id)assert(id==529);return {reaction=6}end}
           ns.ProfRouteAuto.AHPriceOf=function(id)return id==900001 and 3 or nil end
+          ns.AuctionBridge={GetAuctionSupply=function(id)if id==900001 then return {
+            quantity=2,observedAt=1000,complete=true,ownerExcluded=true,source='client-auction-results'}end end}
           local quote=E.FormulaFor(r,{profession='alchemy',noFormula=false})
           assert(quote.source=='ah' and quote.cost==3)
           quote=E.FormulaFor(r,{profession='alchemy',noFormula=true})
+          assert(quote.source=='ah' and quote.cost==3)
+          UnitClass=function()return 'Mage','MAGE',8 end
+          quote=E.FormulaFor(r,{profession='alchemy'})
+          assert(quote.source=='ah' and quote.cost==3)
+          C_Reputation.GetFactionDataByID=function()return {reaction=5}end
+          quote=E.FormulaFor(r,{profession='alchemy'})
           assert(quote.source=='trainer' and quote.cost==100)
         """)
 
@@ -122,7 +136,7 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           sourceRecord('alchemy',7183,{itemPath('book:7183',900001,{{kind='level',value=40}})})
           local E=ns.ProfEconomy;local r=E.FindRecipe('alchemy',7183);local snap=input('alchemy')
           r.trainerObserved=true;r.trainerAvailable=false;r.learningRequirements={level=60,skill=300}
-          snap.level=40;snap.prices[900001]=13
+          snap.level=40;snap.prices[900001]=13;recentSupply(snap,900001)
           local ok,_,d=E.RouteRecipeEligibility(r,snap)
           assert(ok and d.routeId=='book:7183' and d.quote.cost==13)
         """)
@@ -147,18 +161,19 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           sourceRecord('alchemy',7183,{trainer('trainer:7183')})
           local E=ns.ProfEconomy;local r=E.FindRecipe('alchemy',7183);local snap=input('alchemy')
           local ok,_,d=E.RouteRecipeEligibility(r,snap)
-          assert(ok and d.quote.cost==nil and not d.quote.usable and not d.quote.costComplete)
-          local f=E.FormulaFor(r,snap);assert(not f.usable and f.reason=='learningPriceUnknown')
+          assert(ok and d.quote.cost==nil and d.quote.usable and not d.quote.costComplete)
+          local f=E.FormulaFor(r,snap)
+          assert(f.usable and f.unpriced and f.cost==nil and f.reason=='learningPriceUnknown')
         """)
 
-    def test_non_auctionable_book_cannot_use_an_auction_quote(self):
+    def test_non_auctionable_book_uses_valid_auction_quote_without_mutating_facts(self):
         self.lua.execute("""
           sourceRecord('alchemy',7183,{itemPath('book:7183',900001,{},
             {coverage='partial',conditions={},nonAuctionable=true})})
           local E=ns.ProfEconomy;local r=E.FindRecipe('alchemy',7183);local snap=input('alchemy')
-          snap.prices[900001]=1
+          snap.prices[900001]=1;recentSupply(snap,900001)
           local f=E.FormulaFor(r,snap)
-          assert(not f.usable and f.cost==nil and f.source=='unknown')
+          assert(f.usable and f.cost==1 and f.source=='ah')
           assert(snap.nonAuctionable[900001]==nil,'source projection mutated immutable input')
         """)
 
@@ -173,7 +188,7 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           assert(snap.prices[7183]==nil)
         """)
 
-    def test_supplier_price_does_not_confirm_missing_access_conditions(self):
+    def test_concrete_supplier_is_usable_without_a_coverage_flag(self):
         self.lua.execute("""
           sourceRecord('alchemy',7183,{itemPath('book:7183',900001,{},
             {status='confirmed',coverage='partial',conditionsKnown=true,conditions={},
@@ -181,8 +196,8 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           local E=ns.ProfEconomy;local r=E.FindRecipe('alchemy',7183);local snap=input('alchemy')
           snap.noFormula=true
           local quote=E.FormulaFor(r,snap)
-          assert(quote and not quote.usable and quote.cost==nil)
-          assert(snap.formulaOffers[900001]==nil)
+          assert(quote and quote.usable and quote.source=='vendor' and quote.cost==21)
+          assert(snap.formulaOffers[900001]==nil,'quoting mutated the frozen source input')
         """)
 
     def test_identified_supplier_quote_requires_its_own_conditions(self):
@@ -204,19 +219,60 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           sourceRecord('alchemy',7183,{itemPath('book:7183',900001)})
           sourceRecord('alchemy',2334,{itemPath('book:2334',900001)})
           local E=ns.ProfEconomy;local a=E.FindRecipe('alchemy',7183);local b=E.FindRecipe('alchemy',2334)
-          local snap=input('alchemy');snap.prices[900001]=73
+          local snap=input('alchemy');snap.prices[900001]=73;recentSupply(snap,900001)
           local rows,cost,complete=E.CollectFormulas({{recipe=a,spell=7183,count=1},
             {recipe=b,spell=2334,count=1}},'alchemy',snap)
           assert(#rows==1 and cost==73 and complete and #rows[1].recipes==2)
+        """)
+
+    def test_real_generated_drop_pattern_accepts_auction_price_and_counts_purchase_once(self):
+        self.lua.execute("assert(loadstring(...,'@generated-drop-pattern'))('DungeonsForever',ns)",
+                         (ROOT / 'Core/Data/Data_ProfLearningSources.lua').read_text(encoding='utf8'))
+        self.lua.execute("""
+          local E=ns.ProfEconomy
+          local r=E.FindRecipe('alchemy',3230);local snap=input('alchemy')
+          local info=E.GetLearningInfo('alchemy',3230)
+          assert(info.routes[1].teachingItemID==2553)
+          assert(info.routes[1].acquisition.dropSourceCount>0)
+          assert(info.routes[1].acquisition.status=='unknown')
+          snap.prices[2553]=25000
+          recentSupply(snap,2553)
+          local ok,reason,detail=E.RouteRecipeEligibility(r,snap)
+          assert(ok,tostring(reason))
+          assert(detail.quote.usable and detail.quote.source=='ah' and detail.quote.cost==25000)
+          local rows,total,complete=E.CollectFormulas({{recipe=r,spell=3230,count=5},
+            {recipe=r,spell=3230,count=3}},'alchemy',snap)
+          assert(#rows==1 and rows[1].id==2553 and total==25000 and complete)
+          snap.noFormula=true
+          assert(E.FormulaFor(r,snap).usable,'removed vendor-only preference blocked auction procurement')
+        """)
+
+    def test_partial_drop_or_quest_sources_do_not_block_auction_but_learning_requirements_do(self):
+        self.lua.execute("""
+          sourceRecord('alchemy',7183,{itemPath('book:7183',900001,
+            {{kind='classIDs',values={4}},{kind='reputation',factionID=529,value=6}},
+            {status='unknown',conditionsKnown=false,coverage='partial',conditions={},
+             dropDetailsOffline=true,dropSourceCount=200,nonAuctionable=false,
+             quests={{id=9,conditionsKnown=false,conditions={{kind='quest',value=9}}}}})})
+          local E=ns.ProfEconomy;local r=E.FindRecipe('alchemy',7183);local snap=input('alchemy')
+          snap.prices[900001]=73;snap.reputations[529]=6;snap.completedQuests[9]=false
+          recentSupply(snap,900001)
+          local ok,reason,detail=E.RouteRecipeEligibility(r,snap)
+          assert(ok,tostring(reason))
+          assert(detail.quote.source=='ah' and detail.quote.usable and detail.quote.cost==73)
+          snap.reputations[529]=5
+          ok,reason=E.RouteRecipeEligibility(r,snap)
+          assert(not ok and reason=='reputationRequired','AH bypassed the learning requirement')
         """)
 
     def test_search_state_exhausted_auction_chooses_trainer_and_prepaid_shared_book_stays_free(self):
         self.lua.execute("""
           sourceRecord('alchemy',7183,{trainer('trainer:7183',100),itemPath('book:7183',900001)})
           local E=ns.ProfEconomy;local r=E.FindRecipe('alchemy',7183);local snap=input('alchemy')
+          snap.considerAuctionSupply=true
           snap.prices[900001]=25
-          snap.auctionSupply={[900001]={quantity=1,complete=true,ownerExcluded=true,source='fixture'}}
-          local state={skill={alchemy=300},learned={},specializationAbilities={},ahUsed={[900001]=1},formulaPaid={}}
+          recentSupply(snap,900001,2)
+          local state={skill={alchemy=300},learned={},specializationAbilities={},ahUsed={[900001]=2},formulaPaid={}}
           local ok,_,d=E.RouteRecipeEligibility(r,snap,state)
           assert(ok and d.quote.source=='trainer' and d.quote.cost==100)
           state.formulaPaid[900001]=true
@@ -238,10 +294,10 @@ class LearningSourceRuntimeTests(unittest.TestCase):
     def test_character_failures_and_source_unknowns_are_distinct(self):
         self.lua.execute("""
           local E=ns.ProfEconomy;local snap=input('alchemy')
-          sourceRecord('alchemy',7183,{trainer('trainer:7183',1,{{kind='classIDs',values={8}}})})
+          sourceRecord('alchemy',7183,{trainer('trainer:7183',1,{{kind='raceIDs',values={8}}})})
           local r=E.FindRecipe('alchemy',7183);local ok,reason=E.RouteRecipeEligibility(r,snap)
-          assert(not ok and reason=='characterClassRequired')
-          snap.classID=nil;ok,reason=E.RouteRecipeEligibility(r,snap)
+          assert(not ok and reason=='characterRaceRequired')
+          snap.raceID=nil;ok,reason=E.RouteRecipeEligibility(r,snap)
           assert(not ok and reason=='clientDataPending')
           sourceRecord('alchemy',7183,{trainer('trainer:7183',1,
             {{kind='abilityRaceMask0',value='18446744072387644493'}})})
@@ -256,6 +312,7 @@ class LearningSourceRuntimeTests(unittest.TestCase):
              {kind='reputation',factionID=529,value=6},{kind='quest',value=9}})})
           local E=ns.ProfEconomy;local r=E.FindRecipe('alchemy',7183);local snap=input('alchemy')
           snap.reputations[529]=6;snap.completedQuests[9]=true;snap.prices[900001]=11
+          recentSupply(snap,900001)
           local function unexpected()error('frozen input queried live state')end
           UnitClass=unexpected;UnitRace=unexpected;UnitLevel=unexpected;IsPlayerSpell=unexpected
           C_QuestLog={IsQuestFlaggedCompleted=unexpected};C_Reputation={GetFactionDataByID=unexpected}
@@ -291,15 +348,16 @@ class LearningSourceRuntimeTests(unittest.TestCase):
           assert(snap.completedQuests[9]==false)
         """)
 
-    def test_known_capture_does_not_expand_learning_records_and_first_aid_keeps_native_path(self):
+    def test_known_capture_stays_lazy_and_unknown_first_aid_uses_learning_policy(self):
         self.lua.execute("""
           local E=ns.ProfEconomy
+          ns.ProfLearningSources.SpecializationGroups=function()return nil end
           IsPlayerSpell=function()return true end
           local snap=E.Capture('alchemy',{target=2,autoCraftTools=false,recoveryEnabled=false})
           assert(#snap.recipes>0 and sourceLookups==0)
           local r={profession='first-aid',spell=3275,key='first-aid:3275',dataSource='catalogue',learn=1,mats={{2589,1}}}
           local ok=E.RouteRecipeEligibility(r,{known={},professions={['first-aid']={cur=1,max=75}},specializationAbilities={}})
-          assert(ok)
+          assert(ok,'Unknown First Aid origin should use the user-selected trainer default')
           assert(E.ProfessionSlug(40)=='poisons')
         """)
 

@@ -173,7 +173,7 @@ end
 -- Live execution checks only the current involved recipe. Archived plans and
 -- injected solver snapshots are never reinterpreted as today's character.
 function XP.ValidateLearning(plan,slug,seg)
-    if slug=="first-aid" or not (ns.IsForever and E and E.RouteRecipeEligibility) then return true end
+    if not (ns.IsForever and E and E.RouteRecipeEligibility) then return true end
     local current=E.LearningPolicyFingerprint and E.LearningPolicyFingerprint()
     if current and plan.learningPolicyFingerprint~=current then return false,"learningPolicyChanged" end
     if not seg or seg.checkpoint or XP.IsConversion(seg) or XP.IsSpecializationQuest(seg) then return true end
@@ -183,18 +183,33 @@ function XP.ValidateLearning(plan,slug,seg)
     local store=E.ClientStore and E.ClientStore()
     local professions=E.Professions and E.Professions() or {}
     local profession=seg.profession or slug
+    local pd=ns.ProfModule
+    local pricing={allowBindOnPickupFormulas=pd and pd.Setting and pd.Setting("autoAllowBindOnPickupFormulas",slug) or false,
+        allowCurrencyFormulas=pd and pd.Setting and pd.Setting("autoAllowCurrencyFormulas",slug) or false,
+        allowLimitedFormulas=pd and pd.Setting and pd.Setting("autoBuyLimitedFormulas",slug) or false}
     local key=table.concat({tostring(current),tostring(observation),tostring(store and store.clientInputRevision or 0),
-        tostring(seg.segmentID or spell),tostring(professions[profession] and professions[profession].cur)},":")
+        tostring(seg.segmentID or spell),tostring(professions[profession] and professions[profession].cur),
+        tostring(pricing.allowBindOnPickupFormulas),tostring(pricing.allowCurrencyFormulas),tostring(pricing.allowLimitedFormulas)},":")
     local cached=learningChecks[plan]
-    if cached and cached.key==key then return cached.allowed,cached.reason,cached.detail end
+    -- Acquisition can change with bag contents before a profession observation.
+    if cached and cached.key==key and not cached.inventoryDependent then
+        return cached.allowed,cached.reason,cached.detail
+    end
     local rec=E.FindRecipe and E.FindRecipe(profession,spell) or seg.recipe
     local allowed,reason,detail
-    if rec then allowed,reason,detail=E.RouteRecipeEligibility(rec)
+    if rec and E.SelectLearningRoute then
+        allowed,reason,detail=E.SelectLearningRoute(rec,nil,nil,nil,nil,pricing)
+    elseif rec then allowed,reason,detail=E.RouteRecipeEligibility(rec)
     else allowed,reason=false,"clientDataPending" end
+    if allowed and detail and detail.quote and detail.quote.acquisitionPending then
+        allowed,reason=false,"formulaAcquisitionPending"
+    end
     local ra=ns.ProfRouteAuto
     local diagnostic=ra and ra.LearningDiagnostic and ra.LearningDiagnostic(reason,rec,detail)
         or {code=reason,spell=spell,profession=profession,missingReasons=detail and detail.missingReasons}
-    learningChecks[plan]={key=key,allowed=allowed,reason=reason,detail=diagnostic}
+    local quote=detail and detail.quote
+    learningChecks[plan]={key=key,allowed=allowed,reason=reason,detail=diagnostic,
+        inventoryDependent=quote and (quote.id or quote.acquisitionPending or quote.source=="owned") and true or false}
     return allowed,reason,diagnostic
 end
 local function progressRecord(run,seg)

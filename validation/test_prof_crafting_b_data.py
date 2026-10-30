@@ -8,6 +8,7 @@ from __future__ import annotations
 from functools import lru_cache
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 import sys
 import unittest
@@ -27,6 +28,15 @@ MODES={**{p:'automatic_crafting'for p in ('blacksmithing','leatherworking','tail
        'comprehension':'reference_without_leveling_route','camping':'reference_without_leveling_route'}
 
 
+@lru_cache(maxsize=None)
+def baseline_source(path):
+    # This inventory describes a pinned historical baseline, not today's files.
+    # Preserve the line endings recorded by that Windows capture as well.
+    source=subprocess.check_output(['git','show','942a0ca1ae6478dabad4b0885f7abf4011338cc2:'+path],cwd=ROOT)
+    if path!='Core/Data/Data_Professions.lua':source=source.replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')
+    return source
+
+
 @lru_cache(maxsize=1)
 def upstream():
     lua=runtime();lua.execute('ns={}')
@@ -44,7 +54,7 @@ def dev_records():
     lua=runtime();lua.execute("ns={};function GetLocale()return 'zhCN'end")
     for name in ('Data_Professions','Data_ProfRecipes','Data_ProfLeveling','Data_ProfGathering','Data_ProfMining'):
         path=ROOT/'Core'/'Data'/(name+'.lua')
-        lua.execute("assert(loadstring(...))('DungeonsForever',ns)",path.read_text(encoding='utf-8-sig'))
+        lua.execute("assert(loadstring(...))('DungeonsForever',ns)",baseline_source(path.relative_to(ROOT).as_posix()).decode('utf-8-sig'))
     records=plain(lua.execute(r"""
       local records={}
       local function add(out,raw,kind,profession)
@@ -334,7 +344,7 @@ def compile_candidates():
                       'dependencyFiles':[{'path':path,'sha256':hashlib.sha256(git_source(path).encode('utf-8')).hexdigest()}
                           for path in('AddOns/DungeonsForever_Maps/Data/Data_MapCatalog.lua','AddOns/DungeonsForever_Maps/Domain/Catalog.lua')]},
             'baseline':{'commit':'942a0ca1ae6478dabad4b0885f7abf4011338cc2','build':devlua.execute('return ns.ProfData.build'),
-                        'sourceFiles':[{ 'path':path,'sha256':hashlib.sha256((ROOT/path).read_bytes()).hexdigest()}for path in rawpaths],
+                        'sourceFiles':[{ 'path':path,'sha256':hashlib.sha256(baseline_source(path)).hexdigest()}for path in rawpaths],
                         'normalization':'current dev named contract with rows > rinfo > crafted/enchants; no live runtime overrides'},
             'policies':['Different source versions are explicit; a newer build does not resolve contradictory facts.',
                         'Missing acquisition conditions stay unknown; use the learning-condition evidence and real client observations.',
@@ -356,7 +366,7 @@ class CraftingBDataInventoryTests(unittest.TestCase):
         self.assertEqual(data['source']['build'],'1.60.1.70532')
         self.assertEqual(data['baseline']['build'],'1.60.1.70338')
         for record in data['baseline']['sourceFiles']:
-            self.assertEqual(record['sha256'],hashlib.sha256((ROOT/record['path']).read_bytes()).hexdigest())
+            self.assertEqual(record['sha256'],hashlib.sha256(baseline_source(record['path'])).hexdigest())
 
     def test_every_explicit_dev_and_mod_recipe_identity_has_a_field_review(self):
         data=inventory();actual={(r['profession'],r['spell'])for r in data['entries']+data['matching']}

@@ -26,7 +26,7 @@ class HUDLearningTests(unittest.TestCase):
           assert(pf.LearningWarning('alchemy',{learningBlocked=false})==nil and calls==1)
         """)
 
-    def test_first_aid_frozen_hud_survives_supplement_fingerprint_change(self):
+    def test_first_aid_frozen_hud_requires_recalculation_without_erasing_history(self):
         self.load_follow()
         self.lua.execute("""
           skills['first-aid']={cur=1,max=75}
@@ -39,8 +39,8 @@ class HUDLearningTests(unittest.TestCase):
           ns.ProfEconomy.LearningPolicyFingerprint=function()return 'new-source-data'end
           pf.InvalidateRoute()
           local list=pf.ShoppingList('first-aid')
-          assert(#list>0,'First Aid must keep its existing frozen route and shopping list')
-          assert(not pf.pendingPlans or not pf.pendingPlans['first-aid'])
+          assert(#list==0,'Stale First Aid plans must not issue purchase instructions')
+          assert(pf.pendingPlans['first-aid'].status=='recalculate_required')
           assert(frozen.learningPolicyFingerprint=='old-source-data')
         """)
 

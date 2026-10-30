@@ -28,10 +28,10 @@ class SpecialRouteFixture(unittest.TestCase):
           end
           function fishInput(recipes)
             local snap={recipes=recipes or {cook(101)},professions={cooking={cur=1,max=300}},known={},
-              prices={[999]=1},offers={[999]={{unlimited=true,available=true,purchasable=true,price=11,quantity=5,reference=true}}},
+              prices={[999]=5},offers={[999]={{unlimited=true,available=true,purchasable=true,price=11,quantity=5,reference=true}}},
               formulaOffers={},auctionSupply={},coverageComplete=true}
             for _,r in ipairs(snap.recipes)do snap.known[r.key]=true end
-            return {snapshot=snap,start=1,target=4,scheme='fishing',recoveryEnabled=false,
+            return {snapshot=snap,start=1,target=4,scheme='fishing',recoveryEnabled=false,considerAuctionSupply=true,
               fishingData={fish={[6291]={areas={{zoneID=12,minSkill=1,noGetaway=25}},catchRate=.6,restrictionsVerified=true}}},
               cookingGuide={{from=1,to=4,spell=101}}}
           end
@@ -54,16 +54,132 @@ class SelfFishedCookingAuditTests(SpecialRouteFixture):
         super().setUp()
         self.fishing()
 
-    def test_nonfish_material_must_have_unlimited_vendor_quote(self):
-        self.lua.execute("local o=fishInput();o.snapshot.offers={};local r=computeFish(o);assert(not r.feasible and #r.steps==0)")
+    def test_nonfish_material_without_vendor_or_auction_quote_is_explicitly_rejected(self):
+        self.lua.execute(r'''
+          local o=fishInput();o.snapshot.offers={};o.snapshot.prices={}
+          local r=computeFish(o);assert(not r.feasible and #r.steps==0)
+          local found=false;for _,d in ipairs(r.blockingDiagnostics)do
+            if d.code=='materialUnavailable'and d.item==999 then found=true end
+          end
+          assert(found)
+        ''')
+
+    def test_nonfish_auction_quote_can_be_cheaper_or_replace_a_missing_npc(self):
+        self.lua.execute(r'''
+          for _,npc in ipairs({true,false})do
+            local o=fishInput();o.snapshot.prices[999]=1
+            if not npc then o.snapshot.offers={}end
+            o.snapshot.auctionSupply[999]={quantity=3,complete=true,ownerExcluded=true}
+            local r=computeFish(o)
+            assert(r.feasible and r.targetReached and r.total==3 and r.ahTotal==3 and r.vendorTotal==0)
+            assert(#r.mats==1 and r.mats[1].source=='ah'and r.mats[1].count==3)
+            assert(r.steps[1].cost==3 and r.fishMaterials[1].count==3)
+          end
+        ''')
 
     def test_limited_or_extended_cost_nonfish_material_is_rejected(self):
         self.lua.execute(r'''
           for _,mode in ipairs({'limited','currency','unavailable'})do
             local o=fishInput();local offer=o.snapshot.offers[999][1]
+            o.snapshot.prices={}
             if mode=='limited'then offer.unlimited=false elseif mode=='currency'then offer.currencyID=1 else offer.available=false end
             assert(not computeFish(o).feasible,mode)
           end
+        ''')
+
+    def test_nonfish_auction_shortage_is_not_treated_as_a_complete_route(self):
+        self.lua.execute(r'''
+          for _,quantity in ipairs({0,2})do
+            local o=fishInput();o.snapshot.offers={}
+            o.snapshot.auctionSupply[999]={quantity=quantity,complete=true,ownerExcluded=true}
+            local r=computeFish(o)
+            assert(not r.feasible and r.status=='incomplete')
+            local found=false;for _,d in ipairs(r.blockingDiagnostics)do
+              if d.code=='auctionSupplyLimited'and d.item==999 then found=true end
+            end
+            assert(found,'auction shortage had no item-level explanation')
+          end
+        ''')
+
+    def test_nonfish_mixed_purchases_reserve_auction_quantity_and_share_npc_packs(self):
+        self.lua.execute(r'''
+          local o=fishInput({cook(101,1,2),cook(102,2,300)})
+          o.target=8;o.cookingGuide={{from=1,to=2,spell=101},{from=2,to=8,spell=102}}
+          o.snapshot.prices[999]=1
+          o.snapshot.auctionSupply[999]={quantity=2,complete=true,ownerExcluded=true}
+          local r=computeFish(o)
+          assert(r.feasible and r.targetReached and r.total==13 and r.vendorTotal==11 and r.ahTotal==2)
+          local counts={}
+          for _,m in ipairs(r.mats)do counts[m.source]=(counts[m.source]or 0)+m.count end
+          assert(counts.vendor==5 and counts.ah==2)
+          assert(r.steps[1].cost+r.steps[2].cost==13)
+          assert(o.snapshot.auctionSupply[999].quantity==2,'frozen input stock was mutated')
+        ''')
+
+    def test_multiple_npc_pack_sizes_and_auction_costs_are_assigned_to_their_steps(self):
+        self.lua.execute(r'''
+          local o=fishInput({cook(101,1,2),cook(102,2,300)})
+          o.target=7;o.cookingGuide={{from=1,to=2,spell=101},{from=2,to=7,spell=102}}
+          o.snapshot.offers[999]={{npcID=1,unlimited=true,price=4,quantity=2},
+            {npcID=2,unlimited=true,price=6,quantity=3}}
+          o.snapshot.prices[999]=1;o.snapshot.auctionSupply[999]={quantity=1,complete=true}
+          local r=computeFish(o)
+          assert(r.feasible and r.total==11 and r.vendorTotal==10 and r.ahTotal==1)
+          assert(#r.mats==3 and r.steps[1].cost==4 and r.steps[2].cost==7)
+          assert(r.fishingRouteRevision==2)
+        ''')
+
+    def test_nonfish_unknown_stock_keeps_the_quantity_warning_without_changing_prices(self):
+        self.lua.execute(r'''
+          local o=fishInput();o.snapshot.offers={};o.snapshot.prices[999]=1
+          ns.ProfRouteAuto.AHPriceOf=function()error('read live auction price from frozen route')end
+          ns.VendorPriceDB={GetOffers=function()error('read live NPC offers from frozen route')end}
+          local r=computeFish(o)
+          assert(r.feasible and r.total==3 and r.ahTotal==3 and r.auctionSupplyUnknown==1)
+          assert(not r.purchaseVerified and not r.supplyComplete)
+        ''')
+
+    def test_formula_and_nonfish_reagent_share_the_same_auction_stock(self):
+        self.lua.execute(r'''
+          local recipe=cook(101);recipe.formula=999;recipe.trainerAvailable=nil;recipe.learnSource='item'
+          recipe.learningRequirements={skill=1}
+          local o=fishInput({recipe});o.snapshot.known={};o.snapshot.offers={};o.snapshot.prices[999]=1
+          o.snapshot.auctionSupply[999]={quantity=3,complete=true,ownerExcluded=true,
+            observedAt=1000,source='client-auction-results'}
+          local r=computeFish(o)
+          assert(not r.feasible and not r.costComplete and r.formulasTotal==1)
+          local count=0;for _,m in ipairs(r.mats)do if m.source=='ah'and not m.unavailable then count=count+m.count end end
+          assert(count<=2,'the teaching item was not reserved before reagent purchases')
+          o.snapshot.auctionSupply[999].quantity=4;r=computeFish(o)
+          assert(r.feasible and r.total==4 and r.formulaAHTotal==1 and r.ahTotal==4)
+          assert(r.mats[1].count==3 and r.mats[1].supplyRequired==4 and r.purchaseVerified)
+          o.noFormula=true;r=computeFish(o)
+          assert(r.feasible and r.total==4,'retired vendor-only setting blocked a priced formula')
+        ''')
+
+    def test_vendor_formula_can_preserve_the_last_auction_copy_for_cheaper_reagents(self):
+        self.lua.execute(r'''
+          local a,b=cook(101,1,2),cook(102,2,300)
+          for _,recipe in ipairs({a,b})do
+            recipe.formula=999;recipe.trainerAvailable=nil;recipe.learnSource='item'
+            recipe.learningRequirements={skill=1}
+          end
+          local o=fishInput({a,b});o.snapshot.known={};o.target=3
+          o.cookingGuide={{from=1,to=2,spell=101},{from=2,to=3,spell=102}}
+          o.snapshot.prices[999]=1
+          o.snapshot.auctionSupply[999]={quantity=1,complete=true,ownerExcluded=true}
+          o.snapshot.offers[999]={{npcID=7,unlimited=true,price=7,quantity=1}}
+          o.snapshot.formulaOffers[999]={{npcID=8,unlimited=true,price=2,quantity=1}}
+          ns.ProfRouteAuto.AHPriceOf=function()error('read live price from frozen fishing route')end
+          ns.VendorPriceDB={GetOffers=function()error('read live NPC quote')end,
+            GetFormulaOffers=function()error('read live formula quote')end}
+          local r=computeFish(o)
+          assert(r.feasible and r.costComplete and r.total==10,tostring(r.total))
+          assert(#r.formulas==1 and r.formulas[1].source=='vendor'and r.formulasTotal==2)
+          assert(#r.formulas[1].recipes==2,'changing purchase source lost the recipe owners')
+          assert(r.vendorTotal==9 and r.ahTotal==1 and r.formulaVendorTotal==2)
+          assert(r.steps[1].cost+r.steps[2].cost==10)
+          assert(o.snapshot.auctionSupply[999].quantity==1)
         ''')
 
     def test_pack_cost_is_charged_and_output_count_is_preserved(self):
@@ -84,9 +200,9 @@ class SelfFishedCookingAuditTests(SpecialRouteFixture):
           assert(r.steps[1].cost==11 and r.steps[2].cost==0)
         ''')
 
-    def test_learned_only_and_exclusions_are_enforced(self):
+    def test_retired_learned_only_does_not_block_trainer_but_exclusions_remain(self):
         self.lua.execute(r'''
-          local o=fishInput();o.learnedOnly=true;o.snapshot.known={};assert(not computeFish(o).feasible)
+          local o=fishInput();o.learnedOnly=true;o.snapshot.known={};assert(computeFish(o).feasible)
           o=fishInput();o.exclusions={['cooking:101']='ban'};assert(not computeFish(o).feasible)
         ''')
 
@@ -127,6 +243,8 @@ class SelfFishedCookingAuditTests(SpecialRouteFixture):
           a.formula=888;b.formula=888;a.trainerAvailable=nil;b.trainerAvailable=nil
           a.learnSource='item';b.learnSource='item'
           local o=fishInput({a,b});o.snapshot.known={};o.snapshot.prices[888]=7
+          o.snapshot.auctionSupply[888]={quantity=2,complete=true,ownerExcluded=true,
+            observedAt=1000,source='client-auction-results'}
           o.cookingGuide={{from=1,to=2,spell=101},{from=2,to=4,spell=102}}
           local r=computeFish(o)
           assert(r.feasible and #r.formulas==1 and r.formulasTotal==7 and r.total==18,tostring(r.total))
@@ -169,9 +287,9 @@ class GatheringAndFixedAuditTests(SpecialRouteFixture):
           for _,fish in ipairs(r.fishMaterials)do assert(fish.count>0 and fish.source=='fishing')end
         ''')
 
-    def test_normal_cooking_and_first_aid_still_use_automatic_solver(self):
+    def test_normal_cooking_uses_solver_and_first_aid_uses_fixed_guide(self):
         self.lua.execute(r'''
-          for _,slug in ipairs({'cooking','first-aid'})do
+          for _,slug in ipairs({'cooking'})do
             local s={recipes={{profession=slug,spell=101,item=10,count=1,mats={{11,1}},
               learn=1,yellow=100,green=200,grey=300,cooldown=false}},
               professions={[slug]={cur=1,max=300}},known={[slug..':101']=true},prices={[11]=7},coverageComplete=true}
@@ -179,6 +297,10 @@ class GatheringAndFixedAuditTests(SpecialRouteFixture):
             local r=ns.ProfRouteAuto.Get(slug,opts);assert(r.status=='searching',slug)
             r=finish(slug,opts);assert(r.feasible and r.targetReached and r.total==7,slug)
           end
+          local fixed=assert(ns.ProfRouteAuto.Get('first-aid',{target=300,scheme='cheapest'}))
+          assert(fixed.mode=='fixed' and fixed.scheme=='fixed' and #fixed.steps==16)
+          assert(not ns.ProfRouteAuto.HasWork('first-aid'))
+          assert(not fixed.clientPending and #fixed.mats>0)
         ''')
 
     def test_gathering_checkpoints_never_invent_materials_or_crafts(self):
@@ -244,11 +366,15 @@ class GatheringAndFixedAuditTests(SpecialRouteFixture):
           ns.ProfExecution.StartNew('poisons',{mode='auto',scheme='cheapest',executionVersion=1,steps={},
             executionSteps={{100,125,101,25,profession='poisons',segmentID='old-auto',recipe=recipe}},feasible=true})
           pf.Toggle('poisons');pf.Sync()
-          assert(pf.pendingPlans.poisons.status=='recalculate_required')
-          assert(pf.pendingPlans.poisons.diagnostics[1].code=='fixedOnlyChanged')
+          assert(not pf.pendingPlans.poisons)
+          assert(pf.Following('poisons'))
+          local old=ns.ProfExecution.GetRun('poisons')
+          assert(old and old.plan.mode=='auto','restoring the guide must preserve old history')
+          local needs=pf.ShoppingList('poisons')
+          for _,row in ipairs(needs)do assert(row.id~=20,'old automatic execution leaked into the guide')end
         ''')
 
-    def test_first_aid_keeps_dev_auto_policy_and_unknown_fixed_recipe_is_blocked(self):
+    def test_unknown_first_aid_fixed_recipe_is_blocked(self):
         self.lua.execute(r'''
           local steps=ns.ProfLeveling['first-aid'].steps
           local old=ns.ProfEconomy.FindRecipe

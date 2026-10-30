@@ -1,8 +1,12 @@
 # Forever 专业学习资料流水线
 
+急救现已纳入来源发现和统一运行时校验。32条制作配方的生成、字段证据、定向发布及剩余学习来源缺口见[急救数据修复](../../docs/first-aid-data-20261030.md)。`publish_profession`仅负责保留未选中专业并发布指定专业的新生成记录，不参与采集或用旧文件填补来源缺失。
+
 此包从 Wago 的 **Forever (`wowf`) 最新版本**重新发现专业技能和教材关系，再获取 Wowhead Forever 的技能、教材、任务和 NPC 证据。生成器不读取原有 Lua、modularization 目录、历史候选 JSON、数据库字节码或本地客户端。
 
 原始 CSV/HTML 是可复现输入；新下载过程中暂存的同版本原始响应可以恢复。生成后的 Lua、审计报告与旧配方目录均不能替代来源输入。
+
+当前规则6支持各专业的明确自动技能奖励，以及金币/通货/物品兑换的教材商人来源。教材职业掩码若已覆盖同版本全部职业，不再因预留职业位被判为未知；受限且含未映射位的掩码仍保留未知。明确列出的商人、任务或掉落不再标成获取来源缺失，获取条件的未知状态仍保留。自动习得门槛通过独立索引应用于运行时视图，原始Data和黄/绿/灰节点不变；角色条件继续按完整路径检查。8项游戏实测确认及验证见[自动习得门槛修正](reports/automatic-skill-ranks-2026-10-30.md)，逐专业来源清单见[来源修正记录](reports/source-origins-2026-10-30.md)，规则6及采购提示修复见[配方采购问题记录](../../docs/profession-formula-purchase-fix-20261030.md)。
 
 ## Linux 无图形环境运行
 
@@ -74,6 +78,19 @@ python -m data_pipeline.professions fetch --out dist/prof-learning/raw \
 每 25 个网页实体保存 manifest 检查点。`fetchComplete=true` 只表示本批次已关闭并复查版本；**不是资料完整证明**。请查看 `sourceCoverageComplete`、每条响应状态和生成报告中的逐专业缺口。
 
 `webRun` 保存本轮 `targetCount`、`attempted`、`notAttempted`、各状态和跳过原因；`requestCoverageComplete` 仅表示本轮全部已发现目标都已实际尝试，包含连接失败的 `sourceError`，不代表全部取得正文或字段齐全。`sourceCoverageComplete` 表示当前响应都通过解析验证，仍不证明学习条件与获取条件完整，最终还须检查生成报告的逐项缺口。
+
+允许离线复用同一原始包、同一 Wago build/config 的旧批次 verified 页面：
+
+```sh
+python -m data_pipeline.professions reuse-verified --raw RAW_DIR --report reuse-and-source-gaps.json
+python -m data_pipeline.professions status --raw RAW_DIR
+```
+
+命令从原始清单发现候选，校验 DB2、网页 SHA-256、实体身份及当前解析器结果后登记复用，不使用旧生成 Lua，也不联网。原 `webRunID`、采集时间和请求历史保留。`newlyRequested` 等于原 `attempted`；`reused` 单列，二者不重复；`covered=newlyRequested+reused`，`uncovered=targetCount-covered`。`notAttempted` 仍表示本轮未发送请求的数量，包含复用项；`requestCoverageComplete` 不因复用而变为 true。`acquisitionCoverageComplete` 表示全部目标均被本轮尝试或有效复用，失败响应仍在 sourceGaps 中。报告分别列出来源缺口、未新抓且未复用的实体，以及复用证据。状态或 SHA/build/config 改变会使旧复用登记失效。
+
+对已关闭但请求未覆盖完整的目录，`fetch --resume` 可恢复原 acquire 批次并跳过已接受的复用；显式 `--refresh-web` 则重新请求旧批次页面。规则3支持安全读取对象字面量中未加引号的键与单引号字符串，并在生成物内部共享重复的嵌套来源描述；不会执行网页 JavaScript，也不改变 provider 的公开结构。
+
+规则3的完整审计 facts 保留全部掉落 NPC 证据。运行时投影不携带该完整名单，改为 `dropSourceCount` 和 `dropDetailsOffline`；教材、学习路径、条件、训练师、任务、商人报价及非拍卖限制仍保留。投影不会提供 `acquisition.drops` 覆盖 dev 原有掉落资料，也不会把未知获取方式确认成可执行采购。运行时指纹基于实际投影事实，原始包与完整审计可离线复查全部名单。`tests/verify_generated.py --data LUA --audit JSON --output JSON` 在 Lua5.1 中逐项对比所有运行时公开字段。
 
 全量请求已完成后，可以只复核本轮某个被拒绝的 HTTP 状态，而不重新请求成功页、404 和解析错误页：
 

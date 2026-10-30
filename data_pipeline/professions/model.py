@@ -1,6 +1,7 @@
 """Source contracts and parsers. All integer decoding stays exact in Python."""
 from __future__ import annotations
 
+import ast
 import csv
 import hashlib
 import html
@@ -18,10 +19,10 @@ TABLES = ("SkillLine", "SkillLineAbility", "SkillRaceClassInfo", "SpellEffect",
           "ItemXItemEffect", "ItemEffect", "PlayerCondition", "Faction", "ChrRaces",
           "ChrClasses", "QuestV2", "QuestInfo", "SpellReagents", "Item",
           "SpellEquippedItems", "SpellCategories", "SpellFocusObject")
-# Product identities, not recipe catalogues. First aid intentionally excluded.
+# Product identities, not recipe catalogues. Include secondary crafting skills.
 PROFESSIONS = {171: "alchemy", 164: "blacksmithing", 333: "enchanting", 202: "engineering",
                165: "leatherworking", 197: "tailoring", 186: "mining", 182: "herbalism",
-               393: "skinning", 185: "cooking", 356: "fishing", 40: "poisons"}
+               393: "skinning", 185: "cooking", 356: "fishing", 40: "poisons", 129: "first-aid"}
 REQUIRED = {"SkillLine": {"ID"}, "SkillLineAbility": {"ID", "SkillLine", "Spell", "ClassMask"},
             "ItemXItemEffect": {"ID", "ItemID", "ItemEffectID"},
             "ItemEffect": {"ID", "TriggerType", "SpellID", "PlayerConditionID"},
@@ -174,6 +175,27 @@ def classify_response(status, data, content_type=""):
     return "verified"
 
 
+def listview_json(text):
+    """Decode JSON-like Wowhead literals without executing JavaScript.
+
+    Wowhead also emits unquoted object keys (for example modes). Only
+    identifier keys outside strings are normalized; expressions stay invalid.
+    """
+    try:
+        return json.JSONDecoder().raw_decode(text)[0]
+    except json.JSONDecodeError:
+        pass
+    token = re.compile(r'"(?:\\.|[^"\\])*"|(?P<prefix>[{,]\s*)(?P<key>[A-Za-z_$][\w$]*)\s*:')
+    token = re.compile(token.pattern + r"|(?P<single>'(?:\\.|[^'\\])*')")
+    def replace(match):
+        if match.group('single') is not None:
+            return json.dumps(ast.literal_eval(match.group('single')))
+        if match.group('key') is None:
+            return match.group(0)
+        return match.group('prefix') + json.dumps(match.group('key')) + ':'
+    return json.JSONDecoder().raw_decode(token.sub(replace, text))[0]
+
+
 def parse_page(data: bytes, kind: str, entity_id: int, final_url: str):
     """Extract literal JSON arrays/strings only; never evaluate downloaded JS."""
     text = data.decode("utf-8-sig")
@@ -194,7 +216,7 @@ def parse_page(data: bytes, kind: str, entity_id: int, final_url: str):
         literal = re.search(r"\bdata:\s*(\[|\{)", body)
         if identifier and literal:
             try:
-                rows, _ = decoder.raw_decode(body[literal.end()-1:])
+                rows = listview_json(body[literal.end()-1:])
                 if isinstance(rows, list):
                     listviews[identifier.group(1)] = rows
             except json.JSONDecodeError:
@@ -210,5 +232,22 @@ def parse_page(data: bytes, kind: str, entity_id: int, final_url: str):
             for r in listviews.get("recipes", ())):
         # Non-crafting member skills remain explicit reference gaps.
         raise SourceError("matching recipe record missing")
-    return {"kind": kind, "id": entity_id, "title": html.unescape(title.group(1)),
-            "listviews": listviews, "markup": markup}
+    result = {"kind": kind, "id": entity_id, "title": html.unescape(title.group(1)),
+              "listviews": listviews, "markup": markup}
+    if kind == "item":
+        # Match this item's own tooltip, never comments, related-item tooltips,
+        # or an absent label (absence does not establish an unbound item).
+        match = re.search(r"g_items\[" + str(entity_id) + r"\]\.tooltip_enus\s*=\s*", text)
+        if match:
+            try:
+                tooltip, _ = decoder.raw_decode(text[match.end():])
+                binding = re.search(r"<!--bo-->(.*?)<!--", tooltip, re.S)
+                if binding:
+                    label = html.unescape(re.sub(r"<[^>]+>", "", binding[1])).strip()
+                    value = {"Binds when picked up": 1, "Binds when equipped": 2,
+                             "Binds when used": 3}.get(label)
+                    if value is not None:
+                        result["bindingType"] = value
+            except (json.JSONDecodeError, TypeError):
+                pass
+    return result

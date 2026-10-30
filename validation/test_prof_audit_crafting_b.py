@@ -51,7 +51,11 @@ class CraftingBProfessionAuditTests(unittest.TestCase):
                         autoCraftTools=true,recoveryEnabled=false,cpuLimitMs=1000})
                     """)[0]
                     self.assertTrue(result['feasible'])
-                    self.assertEqual(result['steps'][1][3],spell)
+                    # Retired learnedOnly no longer excludes another learnable
+                    # starter recipe. At equal cost tailoring chooses 2387.
+                    expected_spell = 2387 if profession == 'tailoring' else spell
+                    self.assertEqual(result['steps'][1][3],expected_spell)
+                    self.assertTrue(result['targetReached'])
                     self.assertEqual(result['steps'][1][2],2)
                     self.assertEqual(result['total'],sum(material.values()))
                     self.assertFalse(result['optimal'])
@@ -195,7 +199,10 @@ class CraftingBProfessionAuditTests(unittest.TestCase):
                 lua.execute("""
                   local profession,spell,formula=...;local E=ns.ProfEconomy
                   local recipe=assert(E.FindRecipe(profession,spell));assert(recipe.formula==formula)
-                  local snapshot={known={},prices={[formula]=50},formulaOffers={[formula]={{npcID=1,price=80,quantity=2,unlimited=true}}}}
+                  local snapshot={known={},prices={[formula]=50},stamp=1000,
+                    auctionSupply={[formula]={quantity=2,observedAt=900,complete=true,
+                      ownerExcluded=true,source='client-auction-results'}},
+                    formulaOffers={[formula]={{npcID=1,price=80,quantity=2,unlimited=true}}}}
                   local quote=E.FormulaFor(recipe,snapshot)
                   assert(quote and quote.source=='ah' and quote.cost==50)
                   snapshot.prices={};quote=E.FormulaFor(recipe,snapshot)
