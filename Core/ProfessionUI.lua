@@ -5440,8 +5440,8 @@ function PD.PaintLvTiles()
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
-    local scanWarning,scanBlocked=PD.ReplicateScanWarning()
-   
+    -- The body shows the scan warning; the cost tile only shows blocked state.
+    local _,scanBlocked=PD.ReplicateScanWarning()
     if scanBlocked and not fixedOnly then
         tiles.cost.label:SetText(L["拍卖行扫描"])
         tiles.cost.val:SetText(L["无法重新计算"])
@@ -10817,7 +10817,12 @@ function PD.RowsLeveling(rows)
     if res and (res.status == "selection_required" or res.status == "recalculate_required") then
         PD.lvSummary = {target = target, auto = true, autoSetting = true, scheme = scheme, ahOK = true}
         PD.CopyPlanSummary(res)
-        PushText(rows, PD.PlanStatusText(res), 12, {0.95, 0.75, 0.4})
+        -- The prerequisite warning has already been shown at the top.
+        -- Do not repeat the identical status in a second text row.
+        local statusText = PD.PlanStatusText(res)
+        if statusText ~= scanWarning then
+            PushText(rows, statusText, 12, {0.95, 0.75, 0.4})
+        end
         PD.RowsLearningBlockers(rows,res)
         return
     end
