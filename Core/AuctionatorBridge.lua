@@ -446,4 +446,59 @@ function AB.ReplicateScanEnabled()
     return nil
 end
 
+function AB.ReplicateScanReady()
+    local enabled = AB.ReplicateScanEnabled()
+
+    -- 无法判断设置：仅警告，不新增强制拦截
+    if enabled == nil then
+        return nil, "replicateModeUnknown"
+    end
+
+    local db = ProfDB()
+
+    if enabled == false then
+        if db and time then
+            db.replicateRequiredAfter = math.max(
+                db.replicateRequiredAfter or 0,
+                time()
+            )
+        end
+        return false, "replicateModeDisabled"
+    end
+
+    local batch = db and db.auctionFullScan
+    local now = time and time()
+
+    -- 必须存在本角色、本服务器的有效复制扫描结果
+    if type(batch) ~= "table"
+        or batch.v ~= 1
+        or batch.c ~= true
+        or type(batch.items) ~= "table"
+        or batch.mk ~= MarketKey()
+        or batch.ob ~= ObserverKey()
+        or type(batch.t) ~= "number"
+        or not now
+        or batch.t > now
+        or now - batch.t > SUPPLY_MAX_AGE then
+        return false, "replicateScanRequired"
+    end
+
+    -- 摘要扫描不能替代复制扫描
+    local a = _G.Auctionator
+    local saved = a and a.SavedState
+    local lastSummary = saved
+        and saved.TimeOfLastBrowseScan or 0
+
+    local requiredAfter = math.max(
+        db.replicateRequiredAfter or 0,
+        type(lastSummary) == "number" and lastSummary or 0
+    )
+
+    if batch.t <= requiredAfter then
+        return false, "replicateScanRequired"
+    end
+
+    return true
+end
+
 if ns.Init then ns.Init(InitializeAuctionatorStock) else InitializeAuctionatorStock() end
