@@ -395,8 +395,11 @@ function S.Result(job,state,status)
             end
             local e=map[key]
             if not e then e=stampStock({a.item,0,id=a.item,count=0,need=0,cost=0,unit=0,vendor=a.source=="vendor",source=a.source,npcID=a.npcID,url=a.url,spell=a.spell,reason=a.reason,bundleSize=a.bundleSize,bundlePrice=bundlePrice,quoteSource=a.quoteSource,priceSource=a.priceSource,priceBasis=a.priceBasis,verifiedAt=a.verifiedAt},a); map[key]=e;purchases[#purchases+1]=e end
+            
             e[2]=e[2]+a.count; e.count=e[2]; e.need=e.count; e.cost=e.cost+a.cost; e.unit=e.cost/e.count
+            e.netDemand=true
             e.unpriced=e.unpriced or a.unpriced or nil
+
             out.pricePending=out.pricePending or a.unpriced or nil
             e.reference=e.reference or a.reference or nil; e.estimated=e.estimated or a.estimated or nil
             out.referencePrices=out.referencePrices or a.reference or nil
