@@ -1817,6 +1817,7 @@ end
 
 local cache = {}
 
+
 function RA.Invalidate()
     local R = ns.ProfRecovery
     if R and R.Invalidate then R.Invalidate() end
@@ -1828,7 +1829,10 @@ function RA.Invalidate()
     end
     priceCache.__any = nil
     for k in pairs(vendorCache) do vendorCache[k] = nil end
+    for k in pairs(ahReason) do ahReason[k] = nil end
+    for k in pairs(ahAge) do ahAge[k] = nil end
 end
+
 
 local priceWatchers = {}
 function RA.OnPricesChanged(fn)
