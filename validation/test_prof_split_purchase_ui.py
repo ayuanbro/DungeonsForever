@@ -243,36 +243,89 @@ class SplitPurchaseUITests(unittest.TestCase):
               end
             ''')
 
-    def test_comparison_preserves_missing_or_unknown_original_pattern_stock_warning(self):
+    
+    def test_comparison_validates_actual_pattern_demand(self):
         self.prepare()
         self.lua.execute('''
           PD.ProcureStart=nativeProcureStart
           debugprofilestop=function()return 0 end
           ns.IdleJobs={Add=function(fn)previewPump=fn end}
-          for _,quantity in ipairs({0,1,false})do
+
+          local cases={
+            {stock=0,need=1,allowed=false,reason='formulaAuctionSupplyInsufficient'},
+            {stock=1,need=1,allowed=true},
+            {stock=false,need=1,allowed=false,reason='formulaAuctionSupplyUnknown'},
+            {stock=1,need=2,allowed=false,reason='formulaAuctionSupplyInsufficient'},
+            {stock=2,need=2,allowed=true},
+          }
+
+          for _,case in ipairs(cases)do
             PD.ProcureClear()
-            local original={known={},auctionSupply={},recipes={},professions={alchemy={cur=1,max=300}},considerAuctionSupply=false}
-            if quantity~=false then original.auctionSupply[11]={quantity=quantity,observedAt=1000,
-              complete=true,ownerExcluded=true,source='client-auction-results'}end
-            original.stamp=1000
+            local original={
+              known={},auctionSupply={},recipes={},
+              professions={alchemy={cur=1,max=300}},
+              considerAuctionSupply=false,stamp=1000
+            }
+
+            if case.stock~=false then
+              original.auctionSupply[11]={
+                quantity=case.stock,observedAt=1000,
+                complete=true,ownerExcluded=true,
+                source='client-auction-results'
+              }
+            end
+
             ns.ProfEconomy.Capture=function()return original end
-            local result={feasible=true,costComplete=true,total=70,mats={{id=11,count=7,source='vendor',cost=70}}}
-            ns.ProfRouteSolver.NewProcurementJob=function()return {result=result}end
+            local result={
+              feasible=true,costComplete=true,total=70,
+              mats={{id=11,count=7,source='vendor',cost=70}}
+            }
+            ns.ProfRouteSolver.NewProcurementJob=function()
+              return {result=result}
+            end
             ns.ProfRouteSolver.Run=function()return true end
-            local data={mats={{id=11,count=7,source='vendor',cost=70}},formulasTotal=3,formulaComplete=true,
-              formulas={{id=11,count=1,cost=3,source='ah',recipeKey='alchemy:999'}}}
-            PD.ProcureStart(data);assert(previewPump())
+
+            local data={
+              mats={{id=11,count=7,source='vendor',cost=70}},
+              formulasTotal=3,formulaComplete=true,
+              formulas={{
+                id=11,count=case.need,cost=3,source='ah',
+                recipeKey='alchemy:999'
+              }}
+            }
+
+            PD.ProcureStart(data)
+            assert(previewPump())
+
             local candidate=PD.procureRes
-            assert(candidate==result and candidate.comparisonCanBuy==false)
-            local diagnostic=candidate.comparisonFormulaDiagnostics[1]
-            assert(diagnostic.item==11)
-            if quantity~=false then assert(diagnostic.code=='formulaAuctionSupplyInsufficient'and diagnostic.available==quantity)
-            else assert(diagnostic.code=='formulaAuctionSupplyUnknown')end
-            local rows={};PD.RowsProcurementComparison(rows,candidate,data)
-            assert(textRow(rows,ns.ProfEconomy.DiagnosticText(diagnostic)))
-            assert(original.known['alchemy:999']==nil and data.formulas[1].cost==3)
+            assert(candidate==result)
+            assert(candidate.comparisonCanBuy==case.allowed)
+
+            local diagnostics=candidate.comparisonFormulaDiagnostics or {}
+            if case.allowed then
+              assert(#diagnostics==0,
+                'valid auction pattern was incorrectly rejected')
+            else
+              assert(#diagnostics==1)
+              local diagnostic=diagnostics[1]
+              assert(diagnostic.item==11)
+              assert(diagnostic.code==case.reason)
+
+              if case.stock~=false then
+                assert(diagnostic.available==case.stock)
+                assert(diagnostic.required==case.need)
+              end
+
+              local rows={}
+              PD.RowsProcurementComparison(rows,candidate,data)
+              assert(textRow(rows,ns.ProfEconomy.DiagnosticText(diagnostic)))
+            end
+
+            assert(original.known['alchemy:999']==nil)
+            assert(data.formulas[1].cost==3)
           end
         ''')
+
 
 
 if __name__=='__main__':unittest.main()

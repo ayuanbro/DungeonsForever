@@ -94,7 +94,7 @@ function PD.AuctionatorStatusText()
     return L["暂无有效拍卖行价格；请扫描或更新价格。"]
 end
 
-PD.SNAP_STALE_SEC = 48 * 3600
+PD.SNAP_STALE_SEC = RA.MaxStaleSeconds()
 
 local function SnapAgePhrase(sec)
     sec = tonumber(sec)
@@ -9386,15 +9386,15 @@ function PD.AuctionSupplyLines(entry)
             add(entry.supplyOwnerExcluded == true and L["已排除本人拍卖"] or L["是否包含本人拍卖：未核实"])
             local stamp = tonumber(entry.supplyObservedAt)
             local now = type(time) == "function" and time() or nil
-            if stamp and now and now - stamp > 1800 then
+            if stamp and now and now - stamp > PD.SNAP_STALE_SEC then
                 add(L["库存观测已过期；请在 Auctionator 重新完整扫描后计算路线。"], true)
             end
             add(L["最近观测数量不保证当前仍在售，也不保证全部可按最低价格购买。"])
             if type(entry.supplyObservedPrice) == "number" then
-                add(format(L["数量观测时最低单价：%s"], RA.MoneyStr(entry.supplyObservedPrice, "copper")))
+                add(format(L["数量观测时加权平均单价：%s"], RA.MoneyStr(entry.supplyObservedPrice, "copper")))
             end
         elseif entry.supplyObserved ~= true or tonumber(entry.availableCount)==nil then
-            add(L["库存只读取 Auctionator 完整扫描的数据，有效期为 30 分钟；缺失或过期时请重新完整扫描。"], true)
+            add(L["库存只读取 Auctionator 完整扫描的数据，有效期为 48 小时；缺失或过期时请重新完整扫描。"], true)
         end
         local history = tonumber(entry.supplyHistoryQuantity)
         if history and history >= 0 then
@@ -11231,7 +11231,7 @@ function PD.FormulaBlockedText(entry)
     if reason=="learningDataMissing" or reason=="learningRequirementsUnknown" then
         return L["学习资料待补全"].."："..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
     elseif reason=="formulaLimited" or reason=="limitedFormulaDisabled" then
-        return L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少2张的拍卖行图纸。"]
+        return L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少1张的拍卖行图纸。"]
     end
     local E=ns.ProfEconomy
     local text=E and E.DiagnosticText and E.DiagnosticText(reason)
@@ -11559,7 +11559,7 @@ function PD.ProcureStart(data)
             local supply=id and snap.auctionSupply[id]
             if (source=="ah" or source=="auction") and id then
                 local observed=E.FormulaAuctionSupplyOf(snap,id)
-                local required=math.max(2,formula.count or formula[2] or 1)
+                local required=math.max(1,formula.count or formula[2] or 1)
                 if not observed then
                     st.formulaDiagnostics[#st.formulaDiagnostics+1]={code="formulaAuctionSupplyUnknown",item=id}
                 elseif observed.quantity<required then
@@ -12389,12 +12389,12 @@ function PD.RowsSettings(rows)
           d1 = L["开启：路线更可靠，但可能出现无配方可用的缺口区间。"],
           d2 = L["关闭：可查看含缺价材料的方案，但不会把未知费用计为零。"] },
         { k = "autoConsiderAuctionSupply", name = L["考虑拍卖行的销售数量"],
-          desc = L["按完整扫描的在售数量限制材料采购；拍卖行图纸始终需要近期数量至少2张。"],
+          desc = L["按完整扫描的在售数量限制材料采购；拍卖行图纸始终需要近期数量至少1张。"],
           d1 = L["开启：材料和图纸共用可购数量，数量不足时尝试其他货源或配方。"],
           d2 = L["关闭（默认）：材料按价格规划；不取消图纸的近期在售数量要求。"] },
         { k = "autoBuyLimitedFormulas", name = L["允许NPC限量销售图纸"],
           desc = L["允许限量商人报价与拍卖行报价比较，选择更便宜的购买渠道。"],
-          d1 = L["默认关闭；关闭时仍可使用有价格且近期在售数量至少2张的拍卖行图纸。"],
+          d1 = L["默认关闭；关闭时仍可使用有价格且近期在售数量至少1张的拍卖行图纸。"],
           d2 = L["开启后可能选择限量商人，到访时可能无货；非金币拾取绑定来源仍需对应许可。"] },
         { k = "autoAllowBindOnPickupFormulas", name = L["允许非金币获取的拾取绑定图纸"],
           desc = L["允许掉落、任务、通货或物品兑换取得的拾取绑定图纸参与路线。"],

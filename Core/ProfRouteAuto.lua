@@ -215,6 +215,12 @@ function RA.MaxStale()
     return MAX_STALE
 end
 
+
+function RA.MaxStaleSeconds()
+    return MAX_STALE * 86400
+end
+
+
 local sellCache = {}
 local function NPCSellPrice(id)
     local hit = sellCache[id]
@@ -1586,7 +1592,7 @@ function RA.StampSupply(result, context)
             local rec = SupplyOf(mid)
             if rec and rec.complete and rec.ownerExcluded and rec.source == "client-auction-results"
                 and type(rec.quantity) == "number" and rec.observedAt > 0
-                and now - rec.observedAt <= 172800 then
+                and now - rec.observedAt <= RA.MaxStaleSeconds() then
                 e.source = e.source or "ah"
                 e.availableCount = rec.quantity
                 e.supplyObserved = true

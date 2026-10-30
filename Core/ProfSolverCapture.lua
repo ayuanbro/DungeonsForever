@@ -763,7 +763,7 @@ local function validSupply(entry,stamp,live)
     if live or entry.source=="client-auction-results" then
         if entry.source~="client-auction-results" or entry.complete~=true or entry.ownerExcluded~=true
             or type(entry.observedAt)~="number" or entry.observedAt<=0 then return false end
-        if stamp and (entry.observedAt>stamp or stamp>(entry.expiresAt or entry.observedAt+1800)) then return false end
+        if stamp and (entry.observedAt>stamp or stamp - entry.observedAt > ns.ProfRouteAuto.MaxStaleSeconds()) then return false end
     end
     return true
 end

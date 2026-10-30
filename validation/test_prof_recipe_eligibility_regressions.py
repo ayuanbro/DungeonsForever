@@ -140,5 +140,76 @@ class RecipeEligibilityRegressions(unittest.TestCase):
           assert(E.ToolPlanningEnabled(nil,'engineering') and not E.ToolPlanningEnabled(nil,'alchemy'))
         ''')
 
+    
+    def test_single_auction_pattern_is_eligible(self):
+        self.lua.execute('''
+          local E=ns.ProfEconomy
+          local recipe=E.FindRecipe('alchemy',3230)
+          assert(recipe.formula==2553)
+
+          local snap=E.Capture('alchemy',{
+            start=1,target=300,
+            autoCraftTools=false,
+            allowLimitedFormulas=false,
+            recoveryEnabled=false
+          })
+
+          local item=2553
+          snap.auctionSupply[item]={
+            quantity=1,
+            observedAt=snap.stamp-1,
+            complete=true,
+            ownerExcluded=true,
+            source='client-auction-results'
+          }
+
+          -- 1 张有效现货，应允许购买
+          local one=E.FormulaFor(recipe,snap)
+          assert(one and one.usable and one.source=='ah'
+            and one.cost>0,
+            'one auction copy must be usable')
+
+          -- 0 张现货，不得从拍卖行购买
+          snap.auctionSupply[item].quantity=0
+          local zero=E.FormulaFor(recipe,snap)
+          assert(not zero or not (zero.usable and zero.source=='ah'),
+            'zero auction stock must be rejected')
+
+          -- 库存未知，不能假定有现货
+          snap.auctionSupply[item]=nil
+          local unknown=E.FormulaFor(recipe,snap)
+          assert(not unknown or not (unknown.usable and unknown.source=='ah'),
+            'unknown stock must not be treated as available')
+        ''')
+
+
+    def test_formula_auction_supply_uses_price_ttl(self):
+        self.lua.execute('''
+          local E = ns.ProfEconomy
+          local observed = 1000
+          local snap = {
+            prices = {[2553] = 100},
+            auctionSupply = {
+              [2553] = {
+                quantity = 1,
+                observedAt = observed,
+                expiresAt = observed + 1800,
+                source = "client-auction-results",
+                complete = true,
+                ownerExcluded = true
+              }
+            }
+          }
+
+          snap.stamp = observed + 47 * 3600
+          assert(E.FormulaAuctionSupplyOf(snap, 2553))
+
+          snap.stamp = observed + 48 * 3600
+          assert(E.FormulaAuctionSupplyOf(snap, 2553))
+
+          snap.stamp = observed + 48 * 3600 + 1
+          assert(not E.FormulaAuctionSupplyOf(snap, 2553))
+        ''')
+
 
 if __name__=='__main__':unittest.main()

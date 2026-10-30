@@ -118,7 +118,7 @@ function AB.DoImport(profName, items)
 end
 
 -- A quantity is a short-lived observation, never Auctionator's daily maximum.
-local SUPPLY_MAX_AGE = 1800
+local SUPPLY_MAX_AGE  = ns.ProfRouteAuto.MaxStaleSeconds()
 
 local supplyRevision = 0
 local supplyListeners = {}
@@ -328,8 +328,12 @@ local function FullRow(scan,row)
     if type(owner)~="string" or owner=="" then item.failure="incomplete";return end
     local player=UnitName and UnitName("player")
     if owner==player or owner:match("^[^-]+") == player then return end
-    local unit=buyout/qty
-    item.q=item.q+qty;item.p=math.min(item.p or unit,unit)
+    -- 按数量加权计算平均单价
+    local oldQty = item.q
+    local newQty = oldQty + qty
+
+    item.p = ((item.p or 0) * oldQty + buyout) / newQty
+    item.q = newQty
 end
 
 local function ImportFullRows(scan,rows)
