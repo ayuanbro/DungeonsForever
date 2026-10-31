@@ -251,24 +251,24 @@ function BuildAbout()
     local icon = left:CreateTexture(nil, "ARTWORK")
     icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\DungeonsForever.blp")
     icon:SetSize(88, 88)
-    icon:SetPoint("CENTER", left, "CENTER", 0, 132)
+    icon:SetPoint("CENTER", left, "CENTER", 0, 146)
 
     local brand = left:CreateFontString(nil, "OVERLAY")
     brand:SetFont(ns.FONT, 16, "")
     brand:SetText(L["无限副本手册"])
-    brand:SetPoint("CENTER", left, "CENTER", 0, 58)
+    brand:SetPoint("CENTER", left, "CENTER", 0, 72)
     brand:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
 
     local sub = left:CreateFontString(nil, "OVERLAY")
     sub:SetFont(ns.FONT, 14, "")
     sub:SetText("DungeonsForever" .. (DF_VERSION and (" · v" .. DF_VERSION) or ""))
-    sub:SetPoint("CENTER", left, "CENTER", 0, 32)
+    sub:SetPoint("CENTER", left, "CENTER", 0, 46)
     sub:SetTextColor(0.55, 0.62, 0.70)
 
     local studio = left:CreateFontString(nil, "OVERLAY")
     studio:SetFont(ns.FONT, 14, "")
     studio:SetText(L["黑科研研究所"])
-    studio:SetPoint("CENTER", left, "CENTER", 0, 6)
+    studio:SetPoint("CENTER", left, "CENTER", 0, 20)
     studio:SetTextColor(0.55, 0.62, 0.70)
 
     local QQ_NUM = "728916609"
@@ -339,6 +339,7 @@ function BuildAbout()
 
     local rows = {
         { key = L["作者"], parts = { { t = L["圆圆"] } } },
+        { key = L["制作团队"], parts = { { t = L["专业增强"] .. " wzk" } } },
         { key = L["鸣谢"], parts = { { t = L["黑科研 · 胡里胡涂"] } } },
         { key = L["QQ群"], qq = true, parts = { { t = QQ_NUM } } },
         { key = L["指令"], parts = {
@@ -383,7 +384,7 @@ function BuildAbout()
     end
 
     local lines = {}
-    local ly = -22
+    local ly = -8
     for i = 1, #rows do
         local row = rows[i]
         local ln = left:CreateFontString(nil, "OVERLAY")

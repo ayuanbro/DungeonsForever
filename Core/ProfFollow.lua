@@ -59,6 +59,59 @@ local C_OK   = { 0.27, 0.75, 0.45 }
 local C_BAD  = { 0.85, 0.30, 0.30 }
 local C_HEAD = { 0.95, 0.78, 0.35 }
 
+local CUE_FILES = {
+    cap = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_skill_cap.ogg",
+    item = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_next_item.ogg",
+    on = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_voice_on.ogg",
+}
+
+local function cueMuted()
+    local db = DungeonsForeverDB
+    local p = db and db.prof
+    return (p and p.muteCue) and true or false
+end
+
+local function playCue(kind)
+    if cueMuted() then return end
+    if type(PlaySoundFile) ~= "function" then return end
+    local path = CUE_FILES[kind]
+    if path then pcall(PlaySoundFile, path, "Master") end
+end
+
+local function cueMsg(msg)
+    if DEFAULT_CHAT_FRAME then
+        DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99无限副本手册:|r " .. msg, 1, 1, 1)
+    end
+end
+
+if type(SlashCmdList) == "table" then
+    SLASH_DUNGEONSFOREVERVOICE1 = "/dfvoice"
+    SLASH_DUNGEONSFOREVERVOICE2 = "/df语音"
+    SlashCmdList["DUNGEONSFOREVERVOICE"] = function(msg)
+        local k = type(msg) == "string" and msg:match("^%s*(.-)%s*$") or ""
+        k = k:lower()
+        if k == "cap" or k == "上限" or k == "1" then
+            playCue("cap")
+            cueMsg(L["播放：专业技能点上限了"])
+        elseif k == "item" or k == "下一件" or k == "2" then
+            playCue("item")
+            cueMsg(L["播放：做下一件物品啦"])
+        elseif k == "on" or k == "开启" or k == "3" then
+            playCue("on")
+            cueMsg(L["播放：语音开启"])
+        else
+            playCue("cap")
+            cueMsg(L["播放：专业技能点上限了"])
+            if C_Timer and C_Timer.After then
+                C_Timer.After(1.8, function()
+                    playCue("item")
+                    cueMsg(L["播放：做下一件物品啦"])
+                end)
+            end
+        end
+    end
+end
+
 local function Accent()
     local PD = ns.ProfModule
     if PD and PD.NavAccent then return { PD.NavAccent() } end
@@ -308,7 +361,7 @@ function PF.Sync()
         changed = true
         if dropped then
             local TK = ns.ProfTrack
-            if TK and TK.Drop then pcall(TK.Drop, s.slug) end
+            if TK and TK.Archive then pcall(TK.Archive, s.slug, "skill_dropped") end
             PF.InvalidateRoute()
             s.step = nil
             s.rkey = nil
@@ -350,6 +403,36 @@ function PF.RefreshRoute(slug)
     if PF.f and PF.f:IsShown() then pcall(PF.Paint) end
 end
 
+function PF.PaintMute(btn)
+    local bt = btn or (PF.f and PF.f.muteBtn)
+    if not (bt and bt.tex) then return end
+    local muted = cueMuted()
+    SetButtonSelected(bt, muted)
+    if bt.__hover then
+        bt.tex:SetVertexColor(1, 1, 1, 1)
+    elseif muted then
+        bt.tex:SetVertexColor(0.95, 0.32, 0.32, 0.98)
+    else
+        local r, g, b = 0.78, 0.78, 0.78
+        local xb = PF.f and PF.f.xBtn
+        if xb and xb.GetFontString then
+            local fs = xb:GetFontString()
+            if fs and fs.GetTextColor then
+                local tr, tg, tb = fs:GetTextColor()
+                if tr then r, g, b = tr, tg, tb end
+            end
+        end
+        bt.tex:SetVertexColor(r, g, b, 0.95)
+    end
+end
+
+function PF.RefreshMainUI()
+    local PD = ns.ProfModule
+    if PD and PD.built and PD.page and PD.page.IsVisible and PD.page:IsVisible() then
+        if PD.RequestRender then PD.RequestRender() end
+    end
+end
+
 function PF.Toggle(slug)
     if not (slug and LV[slug] and LV[slug].steps) then return end
     local p = dbProf()
@@ -360,11 +443,13 @@ function PF.Toggle(slug)
     if s and not s.hidden and PF.building then
         s.hidden = true
         PF.onBuilt = nil
+        PF.RefreshMainUI()
         return
     end
     if s and not s.hidden and PF.f and PF.f:IsShown() then
         s.hidden = true
         PF.f:Hide()
+        PF.RefreshMainUI()
         return
     end
     if not s then
@@ -381,6 +466,7 @@ function PF.Toggle(slug)
         PF.view = 0
         PF.f:Show()
         PF.Paint()
+        PF.RefreshMainUI()
         return
     end
     if PF.building then return end
@@ -390,6 +476,7 @@ function PF.Toggle(slug)
         PF.view = 0
         PF.f:Show()
         PF.Paint()
+        PF.RefreshMainUI()
     end
     PF.Build()
 end
@@ -1367,7 +1454,36 @@ local function BuildBody()
         local s = st()
         if s then s.hidden = true end
         f:Hide()
+        if PF.RefreshMainUI then PF.RefreshMainUI() end
     end)
+
+    f.muteBtn = NewButton(f, "", 24, 22, 14)
+    f.muteBtn:SetPoint("TOPRIGHT", f.xBtn, "TOPLEFT", -4, 0)
+    f.muteBtn.tex = f.muteBtn:CreateTexture(nil, "ARTWORK")
+    f.muteBtn.tex:SetSize(12, 12)
+    f.muteBtn.tex:SetPoint("CENTER", f.muteBtn, "CENTER", 0, 0)
+    f.muteBtn.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\prof_mute.tga")
+    f.muteBtn:SetScript("OnClick", function()
+        local p = dbProf()
+        p.muteCue = (not p.muteCue) and true or nil
+        PF.PaintMute()
+        cueMsg(p.muteCue and L["已静音：不再播放升级语音"] or L["已恢复语音提示"])
+        if not p.muteCue then playCue("on") end
+        ns.PlaySound(1)
+    end)
+    f.muteBtn:SetScript("OnEnter", function(self)
+        self.__hover = true
+        PF.PaintMute(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(cueMuted() and L["语音提示：已静音（点击恢复）"] or L["语音提示：开启（点击静音）"], 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    f.muteBtn:SetScript("OnLeave", function(self)
+        self.__hover = false
+        PF.PaintMute(self)
+        GameTooltip:Hide()
+    end)
+    PF.PaintMute(f.muteBtn)
     BuildStep(7)
 
     local pos = dbProf().followPos
@@ -1538,6 +1654,22 @@ function PF.Paint()
 
     local cur, mx = skillOf(slug)
     local atCap = (cur ~= nil and mx ~= nil and mx > 0 and cur >= mx)
+    if atCap then
+        if not PF.__capSaid then
+            PF.__capSaid = true
+            playCue("cap")
+        end
+    else
+        PF.__capSaid = nil
+    end
+    local curStep = s.step or 1
+    if PF.__lastSlug ~= slug then
+        PF.__lastSlug = slug
+        PF.__lastStep = curStep
+    elseif PF.__lastStep ~= curStep then
+        PF.__lastStep = curStep
+        playCue("item")
+    end
     f.skill:SetText(cur and format(L["技能 %d / %d"], cur, mx or 300) or L["未学过该专业，先找训练师学习"])
     if atCap then
         f.skill:SetTextColor(0.95, 0.32, 0.32)
@@ -2007,6 +2139,11 @@ function PF.PaintButton(bt, slug)
     bt:SetShown(true)
 end
 
+function PF.ImportList(slug)
+    local name = (D.pro and D.pro[slug] and D.pro[slug].name) or slug
+    DoImport(slug, name)
+end
+
 function PF.PaintImportBtn(bt, slug)
     if not bt then return end
     local ok = slug and slug ~= "__index" and LV[slug] and LV[slug].steps
@@ -2019,8 +2156,7 @@ function PF.PaintImportBtn(bt, slug)
     local PDm = ns.ProfModule
     if PDm and PDm.TextW then bt:SetWidth(math.ceil(PDm.TextW(text, 13)) + 22) end
     bt:SetScript("OnClick", function()
-        local name = (D.pro and D.pro[slug] and D.pro[slug].name) or slug
-        DoImport(slug, name)
+        PF.ImportList(slug)
         ns.PlaySound(1)
     end)
     TipOn(bt, text, L["将当前购物清单导入 Auctionator 的购物清单，只导入还缺的数量，同名清单将被覆盖。"])

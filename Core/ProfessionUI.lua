@@ -370,13 +370,12 @@ function PD.EngChoiceLabel(value)
     local key = value or "none"
     if key == "goblin" then return L["地精工程学"] end
     if key == "gnomish" then return L["侏儒工程学"] end
-    return L["不指定"]
+    return L["不选择分支"]
 end
 
 function PD.SetEngChoice(value)
     local G = ns.ProfGates
     if not (G and G.SetPlannedChoice) then return end
-    if G.GetPlannedChoice() == value then return end
     if not G.SetPlannedChoice(value) then return end
     PD.ProfRecalc()
 end
@@ -385,6 +384,7 @@ function PD.ShowEngChoiceMenu(owner)
     local G = ns.ProfGates
     if not (G and G.GetPlannedChoice and ns.hui and ns.hui.ShowMenu) then return end
     local cur = G.GetPlannedChoice()
+    if G.EffectiveChoice then cur = G.EffectiveChoice() end
     local items = {}
     for _, opt in ipairs({ "none", "goblin", "gnomish" }) do
         local checked = cur == opt
@@ -2417,7 +2417,7 @@ function PD.BindRow(r, spec, h)
             r.foldZone:Show()
         end
         if spec.right and spec.right ~= "" then
-            r.c:SetTextColor(Unpack(C_GREY))
+            r.c:SetTextColor(Unpack(spec.rightColor or C_GREY))
             r.c:SetText(spec.right)
             r.c:ClearAllPoints()
             r.c:SetWordWrap(false)
@@ -4469,11 +4469,18 @@ function PD.Build(page)
     PD.hudBtn = hudBtn
     coroutine.yield()
 
-    local impBtn = NewButton(page, L["一键导入购物清单"], PD.IMP_W, PD.TOOL_H, 14)
-    SetButtonSelected(impBtn, false)
-    impBtn:Hide()
-    PD.impBtn = impBtn
+    PD.JUMP_W = 104
+    local jumpBtn = NewButton(page, L["跳到当前段落"], PD.JUMP_W, PD.TOOL_H, 13)
+    SetButtonSelected(jumpBtn, false)
+    jumpBtn:Hide()
+    jumpBtn:SetPoint("TOPRIGHT", hudBtn, "TOPLEFT", -PD.TOOL_GAP, 0)
+    jumpBtn:SetScript("OnClick", function()
+        PD.JumpToSeg()
+        ns.PlaySound(1)
+    end)
+    PD.jumpBtn = jumpBtn
     coroutine.yield()
+
     local actDiv = CreateFrame("Frame", nil, page)
     actDiv:SetFrameLevel(page:GetFrameLevel() + 60)
     actDiv:SetSize(1, 16)
@@ -4895,8 +4902,8 @@ function PD.Build(page)
         if PD.lvSplit then
             if not PD.divider then track:Hide() return end
             track:ClearAllPoints()
-            track:SetPoint("TOPLEFT", PD.divider, "TOPLEFT", -4, -2)
-            track:SetPoint("BOTTOMLEFT", PD.divider, "BOTTOMLEFT", -4, 2)
+            track:SetPoint("TOPLEFT", PD.divider, "TOPLEFT", -9, -2)
+            track:SetPoint("BOTTOMLEFT", PD.divider, "BOTTOMLEFT", -9, 2)
         elseif PD.tab == "recipe" or PD.tab == "leveling" then
             track:ClearAllPoints()
             track:SetPoint("TOPRIGHT", sc, "TOPRIGHT", -1, -2)
@@ -5250,15 +5257,6 @@ function PD.PickTabs()
             PD.hudBtn:Hide()
         end
     end
-    if pf and pf.PaintImportBtn and PD.impBtn then
-        pcall(pf.PaintImportBtn, PD.impBtn, PD.cur)
-    end
-    if PD.impBtn then
-        local wantImp = PD.tab == "leveling" and PD.autoPage == "shop"
-                        and (not PD.setOpen) and PD.cur ~= nil and PD.cur ~= "__index"
-                        and LV[PD.cur] ~= nil and LV[PD.cur].steps ~= nil
-        PD.impBtn:SetShown(wantImp and true or false)
-    end
 end
 
 PD.TOOL_MIN_W, PD.TOOL_MAX_W = 56, 210
@@ -5548,7 +5546,6 @@ function PD.PaintTool(list, handler, yoff)
                      -(PD.BODY_TOP + yoff + actRow * (PD.TOOL_H + PD.TOOL_GAP)))
     end
     placeAction(PD.hudBtn, PD.HUD_W)
-    placeAction(PD.impBtn, PD.IMP_W)
     if PD.actDiv then
         if rightTotal > 0 and ax > 24 then
             PD.actDiv:ClearAllPoints()
@@ -5562,7 +5559,7 @@ function PD.PaintTool(list, handler, yoff)
     end
     local rows = (n > 0) and (row + 1) or 0
     rows = rows + actRow
-    if rows == 0 and ((PD.hudBtn and PD.hudBtn:IsShown()) or (PD.impBtn and PD.impBtn:IsShown())) then
+    if rows == 0 and (PD.hudBtn and PD.hudBtn:IsShown()) then
         rows = 1
     end
     PD.toolRows = rows
@@ -6050,6 +6047,30 @@ function PD.PaintLvTiles()
     if s.budgetLimited then details[#details + 1] = { L["已完成本轮计算，当前结果尚未证明最优。"], 0.95, 0.75, 0.4 } end
     if s.quotesRefreshed then details[#details + 1] = { L["数量或费率已更新，本轮数字已按最新价格重算。"], 0.7, 0.7, 0.7 } end
     for _, ln in ipairs(details) do costLines[#costLines + 1] = ln end
+    if PD.autoPage == "log" then
+        local cost, madeCasts, wantCasts = PD.CraftLogCost(PD.cur)
+        tiles.cost.label:SetText(L["当前总花费"])
+        tiles.cost.val:SetText(PD.RecoveryMoney(cost))
+        tiles.cost.val:SetTextColor(Unpack(madeCasts > 0 and C_GOLD or C_GREY))
+        costLines = {
+            { format(L["按实际制作次数计：%d 次（计划 %d 次）"], madeCasts, wantCasts) },
+            { L["单价取自当前方案的配方成本"], 0.7, 0.7, 0.7 },
+        }
+        PD.SetBadge(L["按方案单价估算"], 0.7, 0.7, 0.7)
+    elseif PD.autoPage == "recovery" then
+        local rec = tonumber(s.recoveryTotal) or 0
+        tiles.cost.label:SetText(L["预计总回血"])
+        tiles.cost.val:SetText(PD.RecoveryMoney(rec))
+        tiles.cost.val:SetTextColor(Unpack(rec > 0 and { 0.49, 0.82, 0.63 } or C_GREY))
+        costLines = {
+            { L["按当前方案的产物售价估算，未扣拍卖行手续费以外的损耗"], 0.7, 0.7, 0.7 },
+        }
+        if (s.recoveryMissing or 0) > 0 then
+            costLines[#costLines + 1] = { format(L["其中 %d 种产物售价未知，未计回血"], s.recoveryMissing),
+                                          0.95, 0.75, 0.4 }
+        end
+        PD.SetBadge(L["按快照售价估算"], 0.7, 0.7, 0.7)
+    end
     TipOn(tiles.cost, costLines)
     if fixedOnly then tiles.scheme.__use = false end
     local n = 0
@@ -6059,7 +6080,17 @@ function PD.PaintLvTiles()
     PD.PlaceCards(n > 0 and n or 1)
     if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local recNet = s.netTotal or ((s.total or 0) - s.recoveryTotal)
-        PD.SetSub(format(L["回血 %s · 净 %s"], PD.MoneyBrief(s.recoveryTotal), PD.MoneyBrief(recNet)))
+        local netTxt
+        if recNet < 0 then
+            netTxt = format(L["净赚 %s"], PD.MoneyBrief(-recNet))
+        else
+            netTxt = format(L["净成本 %s"], PD.MoneyBrief(recNet))
+        end
+        if PD.autoPage == "recovery" then
+            PD.SetSub(format(L["成本 %s · %s"], PD.MoneyBrief(s.total or 0), netTxt))
+        else
+            PD.SetSub(format(L["回血 %s · %s"], PD.MoneyBrief(s.recoveryTotal), netTxt))
+        end
     else
         PD.SetSub(nil)
     end
@@ -11250,6 +11281,7 @@ function PD.StartSolverRoute(opts, key)
                     end
                 end
             end
+            PD.AutoTrack()
             if PD.built and PD.page and PD.page:IsShown() then PD.RequestRender() end
         end,
     })
@@ -11378,21 +11410,66 @@ function PD.CopyPlanRes(res)
     return out
 end
 
-function PD.SavePlanSnap(slug, res)
+function PD.SavePlanSkel(slug, res)
     slug = slug or PD.cur
-    local copy = PD.CopyPlanRes(res)
-    if not slug or not copy then return end
+    if type(res) ~= "table" or type(res.steps) ~= "table" or #res.steps == 0 then return end
+    local steps = {}
+    for i = 1, #res.steps do
+        local st = res.steps[i]
+        if type(st) == "table" and type(st[3]) == "number" then
+            local e = { tonumber(st[1]) or 1, tonumber(st[2]) or 1, st[3], tonumber(st[4]) or 1 }
+            if st.tool then
+                e.tool = true
+                e.toolItem = st.toolItem
+                e.toolSpell = st.toolSpell
+                e.toolBop = st.toolBop
+            end
+            steps[#steps + 1] = e
+        end
+    end
+    if #steps == 0 then return end
     local db = ProfDB()
-    db.planSnap = db.planSnap or {}
-    db.planSnap[slug] = copy
+    db.planSkel = db.planSkel or {}
+    db.planSkel[slug] = {
+        v = 1,
+        sig = res.skelSig or res.planSig,
+        pv = res.planVersion,
+        stamp = (type(time) == "function") and time() or 0,
+        start = res.start,
+        target = res.target,
+        scheme = res.scheme,
+        filled = res.filled and true or nil,
+        fallbackSteps = res.fallbackSteps,
+        fallbackFrom = res.fallbackFrom,
+        fallbackTo = res.fallbackTo,
+        specBlocked = res.specBlocked,
+        steps = steps,
+    }
 end
 
-function PD.RestorePlanSnap(slug)
+function PD.SkelOf(slug)
     slug = slug or PD.cur
     local db = ProfDB()
-    local copy = db.planSnap and db.planSnap[slug]
-    if type(copy) ~= "table" or type(copy.steps) ~= "table" or #copy.steps == 0 then return nil end
-    return copy
+    local skel = db.planSkel and db.planSkel[slug]
+    if type(skel) ~= "table" or skel.v ~= 1 then return nil end
+    if type(skel.steps) ~= "table" or #skel.steps == 0 then return nil end
+    return skel
+end
+
+function PD.RestorePlanSkel(slug, current)
+    slug = slug or PD.cur
+    local skel = PD.SkelOf(slug)
+    if not skel then return nil end
+    local RA = ns.ProfRouteAuto
+    if not (RA and RA.RebuildFromSkel) then return nil end
+    local opts = PD.BuildLvOpts(slug, current)
+    local res = RA.RebuildFromSkel(slug, skel, opts)
+    if type(res) ~= "table" or type(res.steps) ~= "table" or #res.steps == 0 then return nil end
+    local sig = RA.PlanSig and opts and RA.PlanSig(slug, opts) or nil
+    if skel.sig and sig and skel.sig ~= sig then res.stale = true end
+    res.planSig = sig
+    res.skelSig = skel.sig
+    return res
 end
 
 function PD.SavePlanPrev(slug)
@@ -11400,29 +11477,28 @@ function PD.SavePlanPrev(slug)
     if PD.autoSnapshotSlug ~= slug then return end
     local copy = PD.CopyPlanRes(PD.autoSnapshot)
     if not copy then return end
-    local db = ProfDB()
-    db.planPrev = db.planPrev or {}
-    db.planPrev[slug] = copy
+    PD.planPrevMem = PD.planPrevMem or {}
+    PD.planPrevMem[slug] = copy
 end
 
 function PD.HasPlanPrev(slug)
     slug = slug or PD.cur
-    local db = ProfDB()
-    local e = db.planPrev and db.planPrev[slug]
+    local mem = PD.planPrevMem
+    local e = mem and mem[slug]
     return (type(e) == "table" and type(e.steps) == "table" and #e.steps > 0) and true or false
 end
 
 function PD.RevertPlan()
     local slug = PD.cur
-    local db = ProfDB()
-    local e = db.planPrev and db.planPrev[slug]
+    local mem = PD.planPrevMem
+    local e = mem and mem[slug]
     if type(e) ~= "table" or type(e.steps) ~= "table" or #e.steps == 0 then return false end
-    db.planPrev[slug] = nil
+    mem[slug] = nil
     PD.autoSnapshot, PD.autoSnapshotSlug = e, slug
     PD.autoExact = true
     local learned = PD.ProfLearned and PD.ProfLearned(true) or {}
     PD.autoKey = PD.PlanKeyOf(slug, PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur))
-    PD.SavePlanSnap(slug, e)
+    PD.SavePlanSkel(slug, e)
     PD.forceExact = nil
     PD.exactFailed = {}
     return true
@@ -11680,6 +11756,63 @@ local function TrackRunOf(slug)
     return nil
 end
 
+function PD.AutoTrack()
+    local T = ns.ProfTrack
+    if not (T and T.EnsureActive) then return end
+    if not (PD.cur and PD.autoSnapshot and PD.autoSnapshotSlug == PD.cur) then return end
+    pcall(T.EnsureActive, PD.cur, PD.autoSnapshot)
+end
+
+function PD.CurrentSegRow()
+    local rows = PD.curRows
+    if type(rows) ~= "table" then return nil end
+    local learned = PD.ProfLearned and PD.ProfLearned() or nil
+    local cur = learned and learned[PD.cur] and learned[PD.cur].cur or nil
+    local fallback
+    for i = 1, #rows do
+        local s = rows[i]
+        if s and s.kind == "row" and s.sbLo and s.sbHi then
+            if cur and cur >= s.sbLo and cur < s.sbHi then return i end
+            if s.trackCur and not fallback then fallback = i end
+        end
+    end
+    return fallback
+end
+
+function PD.SegRowTop(idx)
+    local rows = PD.curRows
+    if not (rows and idx) then return nil end
+    local top = PD.hasSecs and PD.SEC_PAD or 0
+    for i = 1, idx - 1 do
+        local s = rows[i]
+        if s then top = top + (PD.RowHeight(s) or 0) end
+    end
+    return top, (PD.RowHeight(rows[idx]) or 0)
+end
+
+function PD.SegRowVisible(idx)
+    local top, h = PD.SegRowTop(idx)
+    local sc = PD.scroll
+    if not (top and sc and sc.GetVerticalScroll and sc.GetHeight) then return true end
+    local v = sc:GetVerticalScroll() or 0
+    local vh = sc:GetHeight() or 0
+    if vh <= 0 then return true end
+    return (top >= v and top + h <= v + vh)
+end
+
+function PD.JumpToSeg(idx)
+    idx = idx or PD.CurrentSegRow()
+    local top = PD.SegRowTop(idx)
+    local sc = PD.scroll
+    if not (top and sc and sc.SetVerticalScroll) then return end
+    local maxScroll = 0
+    if PD.child and PD.child.GetHeight then
+        maxScroll = math.max(0, (PD.child:GetHeight() or 0) - (sc:GetHeight() or 0))
+    end
+    sc:SetVerticalScroll(math.min(maxScroll, math.max(0, top - 4)))
+    PD.RequestRender()
+end
+
 local function TrackStepsFor(slug, steps)
     local T = ns.ProfTrack
     if not T then return nil end
@@ -11698,9 +11831,29 @@ local function TrackStepsFor(slug, steps)
     return run, T.ProgressAll(slug)
 end
 
+function PD.CraftLogCost(slug)
+    local T = ns.ProfTrack
+    local run = T and T.GetRun and T.GetRun(slug or PD.cur)
+    if not run then return 0, 0, 0 end
+    local steps = run.steps or {}
+    local total, casts, planned = 0, 0, 0
+    for i = 1, #steps do
+        local st = steps[i]
+        local p = (run.progress or {})[i]
+        local made = p and (tonumber(p.casts) or 0) or 0
+        local want = tonumber(st.crafts) or 0
+        local cost = tonumber(st.cost) or 0
+        if want > 0 and made > 0 and cost > 0 then total = total + cost * made / want end
+        casts = casts + made
+        planned = planned + want
+    end
+    return math.floor(total + 0.5), casts, planned
+end
+
 function PD.RowsCraftLog(rows)
     local T = ns.ProfTrack
     PushHead(rows, L["制作记录"])
+    local headIdx = #rows
     PushGap(rows, 4)
     if not T or not T.Summary then
         PushText(rows, L["未启用制作追踪。"], 14, C_GREY)
@@ -11710,7 +11863,7 @@ function PD.RowsCraftLog(rows)
     if not sum then
         PushText(rows, L["本角色还没有任何制作记录。"], 14, C_TEXT)
         PushGap(rows, 4)
-        PushText(rows, L["在「路线」页点「开始追踪」后，这里会记录每一步实际做了几次、产出多少。"], 14, C_GREY)
+        PushText(rows, L["打开升级页就会自动开始追踪，这里记录每一步实际做了几次、产出多少。"], 14, C_GREY)
         return
     end
     local stText, stColor
@@ -11727,27 +11880,54 @@ function PD.RowsCraftLog(rows)
     end
     local total = sum.total or 0
     local idx = math.min(sum.current or 1, total)
-    PushText(rows, format(L["%s · 第 %d/%d 步 · 技能 %s→%s"], stText, idx, total,
-                          tostring(sum.startSkill or "—"), tostring(sum.target or "—")), 14, stColor)
-    PushText(rows, format(L["已做 %d 次 · 计划 %d 次"], sum.casts or 0, sum.planned or 0), 14, C_TEXT)
+    if rows[headIdx] then
+        rows[headIdx].right = format(L["%s · 第 %d/%d 步 · 技能 %s→%s · 已做 %d/%d 次"], stText, idx, total,
+                                     tostring(sum.startSkill or "—"), tostring(sum.target or "—"),
+                                     sum.casts or 0, sum.planned or 0)
+        rows[headIdx].rightColor = stColor
+        rows[headIdx].subFs = 12
+    end
     PushGap(rows, 8)
     local list = T.RecipeTotals(PD.cur)
     if #list == 0 then
         PushText(rows, L["还没有可统计的制作。"], 14, C_GREY)
     else
         PushHead(rows, L["按配方汇总"], 1)
-        for _, e in ipairs(list) do
-            local name = PD.StepName({ 0, 0, e.spell })
-            if (type(name) ~= "string" or name == "") and e.item then name = PD.ItemName(e.item) end
-            rows[#rows + 1] = {
-                kind = "row", h = PD.ROW_H, col = 1,
-                it = e.item and { e.item } or nil,
-                text = name or tostring(e.spell or ""),
-                right = format(L["%d 次"], e.casts),
-                right2 = format(L["%d 件"], e.out),
-                noTip = true,
+        local all = PD.craftAll and PD.craftAll[PD.cur]
+        local shown = all and #list or math.min(#list, 9)
+        local cards = {}
+        for i = 1, shown do
+            local e = list[i]
+            local nm2 = PD.StepName({ 0, 0, e.spell })
+            if (type(nm2) ~= "string" or nm2 == "") and e.item then nm2 = PD.ItemName(e.item) end
+            nm2 = nm2 or tostring(e.spell or "")
+            cards[#cards + 1] = {
+                name = nm2,
+                it = e.item,
+                modeText = format(L["%d 次"], e.casts or 0),
+                color = { 0.54, 0.80, 0.42 },
+                src = format(L["%d 件"], e.out or 0),
+                tips = { { nm2, 1, 0.82, 0.4 },
+                         { format(L["制作 %d 次 · 产出 %d 件"], e.casts or 0, e.out or 0) } },
             }
         end
+        if not all and #list > 9 then
+            cards[#cards + 1] = {
+                name = format(L["还有 %d 个配方"], #list - 9),
+                modeText = "",
+                color = C_GREY,
+                src = L["点击展开"],
+                act = function()
+                    PD.craftAll = PD.craftAll or {}
+                    PD.craftAll[PD.cur] = true
+                    PD.RequestRender()
+                end,
+            }
+        end
+        local ch, gap, cols = 44, 6, 3
+        local gridRows = math.ceil(#cards / cols)
+        rows[#rows + 1] = { kind = "exgrid", span = true, noHover = true,
+                            h = gridRows * ch + (gridRows - 1) * gap, cards = cards }
     end
     local hist = T.History(PD.cur)
     local past = {}
@@ -11758,25 +11938,40 @@ function PD.RowsCraftLog(rows)
     if #past > 0 then
         PushGap(rows, 8)
         PushHead(rows, L["历史记录"], 1)
+        local hcards = {}
         for _, run in ipairs(past) do
             local n = 0
             for _ in ipairs(run.steps or {}) do n = n + 1 end
-            local tag = run.status == "done" and L["已完成"]
-                        or (run.status == "stale" and L["技能值变动"] or L["已归档"])
+            local tag, tagCol
+            if run.status == "done" then
+                tag, tagCol = L["已完成"], { 0.49, 0.82, 0.63 }
+            elseif run.status == "stale" then
+                tag, tagCol = L["技能值变动"], { 0.90, 0.74, 0.36 }
+            else
+                tag, tagCol = L["已归档"], { 0.90, 0.50, 0.50 }
+            end
             local planID = run.planID
-            rows[#rows + 1] = {
-                kind = "row", h = PD.ROW_H, col = 1,
-                text = format(L["%d 步 · 技能 %s→%s"], n, tostring(run.startSkill or "—"),
+            hcards[#hcards + 1] = {
+                name = format(L["%d 步 · %s→%s"], n, tostring(run.startSkill or "—"),
                               tostring(run.target or "—")),
-                right = tag,
-                rightColor = C_GREY,
-                lines = { { L["右键删除这条记录"], 0.72, 0.72, 0.72 } },
-                rightAct = function()
-                    local TT = ns.ProfTrack
-                    if TT and TT.Remove then TT.Remove(PD.cur, planID) end
+                modeText = tag,
+                color = tagCol,
+                src = format(L["%d 次制作"], tonumber(run.casts) or 0),
+                tips = { { format(L["%d 步 · 技能 %s→%s"], n, tostring(run.startSkill or "—"),
+                                  tostring(run.target or "—")) },
+                         { L["右键删除这条记录"], 0.72, 0.72, 0.72 } },
+                act = function(_, button)
+                    if button == "RightButton" then
+                        local TT = ns.ProfTrack
+                        if TT and TT.Remove then TT.Remove(PD.cur, planID) end
+                    end
                 end,
             }
         end
+        local ch, gap, cols = 44, 6, 3
+        local gridRows = math.ceil(#hcards / cols)
+        rows[#rows + 1] = { kind = "exgrid", span = true, noHover = true,
+                            h = gridRows * ch + (gridRows - 1) * gap, cards = hcards }
     end
 end
 
@@ -11820,7 +12015,7 @@ function PD.RowsLeveling(rows)
     local planKey
     PD.lvOpts = nil
     if not PD.autoSnapshot or PD.autoSnapshotSlug ~= PD.cur then
-        local saved = PD.RestorePlanSnap(PD.cur)
+        local saved = PD.RestorePlanSkel(PD.cur, curLv)
         if saved then
             PD.autoSnapshot, PD.autoSnapshotSlug = saved, PD.cur
             PD.autoExact = true
@@ -11877,7 +12072,7 @@ function PD.RowsLeveling(rows)
         PD.autoExact = res.exact == true
         if PD.__savedRes ~= res then
             PD.__savedRes = res
-            PD.SavePlanSnap(PD.cur, res)
+            PD.SavePlanSkel(PD.cur, res)
         end
     end
     PD.RowsRoutePartner(rows, pairContext)
@@ -13071,14 +13266,16 @@ function PD.RowsAutoShop(rows, data)
         title = format(L["购物清单（固定路线 1–%d）"], data.target or 300)
     end
     PushHead(rows, title, 1)
-    local segs = { { key = "shop_group", text = L["按商人采购"], on = PD.shopGroup } }
+    rows[#rows].noHover = true
+    local segs = { { key = "shop_group", text = L["按商人采购"], on = PD.shopGroup },
+                   { key = "import_list", text = L["一键导入购物清单"] } }
     if PD.shopGroup then
         if PD.ProcureBusy() then
-            segs[2] = { key = "procure_cancel", text = L["取消优化"] }
+            segs[3] = { key = "procure_cancel", text = L["取消优化"] }
         elseif PD.procureView then
-            segs[2] = { key = "procure_clear", text = L["还原分组"] }
+            segs[3] = { key = "procure_clear", text = L["还原分组"] }
         else
-            segs[2] = { key = "procure_go", text = L["优化买法"] }
+            segs[3] = { key = "procure_go", text = L["优化买法"] }
         end
     end
     rows[#rows].segs = segs
@@ -13262,6 +13459,36 @@ function PD.LevelTool()
         { key = "page_log",   text = L["制作记录"], on = onLog },
         { key = "page_rec",   text = L["回血"],     on = onRec },
     }
+    if PD.cur == "engineering" then
+        local gates = ns.ProfGates
+        local chosen = "none"
+        if gates and gates.EffectiveChoice then chosen = gates.EffectiveChoice() end
+        local actual = "unknown"
+        if gates and gates.EngineeringChoice then actual = gates.EngineeringChoice() end
+        local tip = {
+            { L["专业分支"], 1, 1, 1 },
+            { L["不选择分支：地精与侏儒的专属配方都不会出现在路线里。"], 0.7, 0.7, 0.7 },
+            { L["地精工程学：只按地精专属配方安排路线，不出现侏儒专属。"], 0.7, 0.7, 0.7 },
+            { L["侏儒工程学：只按侏儒专属配方安排路线，不出现地精专属。"], 0.7, 0.7, 0.7 },
+        }
+        if actual == "conflict" then
+            tip[#tip + 1] = { L["当前已同时学会地精工程学与侏儒工程学。"], 0.88, 0.42, 0.38 }
+        elseif actual == "unknown" then
+            tip[#tip + 1] = { L["暂时读不到当前已学的工程专精，默认按所选分支筛选。"], 0.7, 0.7, 0.7 }
+        elseif actual == "none" then
+            tip[#tip + 1] = { L["当前尚未学会任何工程专精。"], 0.7, 0.7, 0.7 }
+        else
+            tip[#tip + 1] = { format(L["当前已学：%s。"], PD.EngChoiceLabel(actual)), 0.7, 0.7, 0.7 }
+        end
+        if chosen ~= "none" and actual ~= "unknown" and actual ~= "conflict"
+            and actual ~= "none" and chosen ~= actual then
+            tip[#tip + 1] = { format(L["已学专精与所选分支不一致：已学%s。"], PD.EngChoiceLabel(actual)),
+                              0.88, 0.42, 0.38 }
+        end
+        list[#list + 1] = { key = "eng_spec", dd = true, on = chosen ~= "none",
+                            text = L["专业分支"] .. "：" .. PD.EngChoiceLabel(chosen),
+                            tip = tip }
+    end
     if not onLog and not onRec and PD.autoPage ~= "shop" then
         local snap = (PD.autoSnapshotSlug == PD.cur) and PD.autoSnapshot or nil
         local head, detail = PD.PlanSupplyParts(snap)
@@ -13287,17 +13514,7 @@ function PD.LevelTool()
             list[#list + 1] = {key = "gather_mode", align = "left", text = L["采集路线"]}
         end
     end
-    if ns.ProfTrack then
-        local trackRun = TrackRunOf(PD.cur)
-        if trackRun then
-            local total = #(trackRun.steps or {})
-            local cur = math.min(trackRun.currentIndex or 1, total)
-            list[#list + 1] = { key = "track", align = "right", on = true, tone = "blue",
-                                text = format(L["追踪 %d/%d"], cur, total) }
-        else
-            list[#list + 1] = { key = "track", align = "right", tone = "blue", text = L["开始追踪"] }
-        end
-    end
+    if ns.ProfTrack then PD.AutoTrack() end
     if PD.cur ~= "poisons" then
         local need = PD.RecalcNeeded()
         local rec = { key = "recalc", align = "right", primary = true, glow = need, text = L["重新计算"] }
@@ -13328,6 +13545,9 @@ function PD.LevelTool()
             PD.autoPage = "recovery"
             PD.exclusionsOpen = false
             PD.FlushPolicies()
+        elseif k == "eng_spec" then
+            local chip = PD.RecipeChip("eng_spec")
+            PD.ShowEngChoiceMenu(chip)
         elseif k == "supply_warn" then
             PD.autoPage = "shop"
             PD.exclusionsOpen = false
@@ -13356,6 +13576,10 @@ function PD.LevelTool()
             PD.shopGroup = not PD.shopGroup
             if not PD.shopGroup then PD.ProcureClear() end
             PD.RequestRender()
+        elseif k == "import_list" then
+            local pf = ns.ProfFollow
+            if pf and pf.ImportList then pcall(pf.ImportList, PD.cur) end
+            ns.PlaySound(1)
         elseif k == "procure_go" then
             PD.ProcureStart(PD.lvShopData)
         elseif k == "procure_cancel" then
@@ -13390,7 +13614,7 @@ function PD.LevelTool()
             PD.ProcureClear()
             PD.SavePlanPrev(PD.cur)
             local pdb = ProfDB()
-            if pdb.planSnap then pdb.planSnap[PD.cur] = nil end
+            if pdb.planSkel then pdb.planSkel[PD.cur] = nil end
             PD.ClearPlanCache()
             PD.exactFailed = {}
             local E = ns.ProfEconomy
@@ -13427,24 +13651,7 @@ function PD.LevelTool()
             PD.exclusionsOpen = false
             PD.FlushPolicies()
         elseif k == "track" then
-            local T = ns.ProfTrack
-            if T and T.Active and T.Active(PD.cur) then
-                T.Archive(PD.cur, "cancel")
-                PD.autoSnapshotSlug = nil
-            else
-                local res = PD.autoSnapshot
-                local ready = (T and res and PD.autoSnapshotSlug == PD.cur and T.Extract(res)) and true or false
-                if ready then
-                    T.Restart(PD.cur, res)
-                else
-                    local msg = L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
-                    if UIErrorsFrame and UIErrorsFrame.AddMessage then
-                        pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.82, 0.4)
-                    elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
-                        pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, msg, 1, 0.82, 0.4)
-                    end
-                end
-            end
+            PD.AutoTrack()
         end
         PD.RequestRender()
     end
@@ -13557,10 +13764,13 @@ function PD.RowsSettings(rows)
     end
     local function pushEng(col)
         local planned = G.GetPlannedChoice()
+        local shown = planned
+        if G.EffectiveChoice then shown = G.EffectiveChoice() end
         local lines = {
             { L["工程专精计划"], 1, 1, 1 },
             { L["计划学习的工程专精分支，只影响路线编排，不会改变已学专精。"], 0.7, 0.7, 0.7 },
             { L["选定分支后，路线会按该分支安排专精任务与所需材料。"], 0.7, 0.7, 0.7 },
+            { L["未手动选择时跟随当前已学分支。"], 0.7, 0.7, 0.7 },
         }
         local actual = G.EngineeringChoice()
         if actual == "conflict" then
@@ -13571,7 +13781,7 @@ function PD.RowsSettings(rows)
         rows[#rows + 1] = {
             kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
             text = L["工程专精计划"],
-            right = PD.EngChoiceLabel(planned) .. "  " .. PD.SET_MORE,
+            right = PD.EngChoiceLabel(shown) .. "  " .. PD.SET_MORE,
             act = function(row) PD.ShowEngChoiceMenu(row) end,
             help = lines,
         }
@@ -14368,6 +14578,13 @@ function PD.Render()
     PD.truncated = PD.PaintRows(rows)
     ns.OpenPerf.Mark("首屏")
     PD.PlaceSettingsToggles(rows)
+    if PD.jumpBtn then
+        local idx
+        if PD.tab == "leveling" and not PD.setOpen and not PD.IsGatherRoute() then
+            idx = PD.CurrentSegRow()
+        end
+        PD.jumpBtn:SetShown(idx ~= nil and not PD.SegRowVisible(idx))
+    end
     PD.scroll:Show()
     PD.RequestRows(rows)
     PD.WarmNames()
@@ -14448,6 +14665,8 @@ end
 
 function PD.Show(slug)
     if type(slug) ~= "string" then return end
+    local G = ns.ProfGates
+    if G and G.Invalidate then G.Invalidate() end
     ns.OpenPerf.Begin("专业·" .. tostring(slug))
     PD.HideVendorPick()
     if slug ~= PD.cur then

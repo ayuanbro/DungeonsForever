@@ -82,6 +82,12 @@ end
 function G.Allowed(slug, spell)
     local ability = SpecAbility(SpecRec(spell))
     if ability == 0 then return true end
+    if ability == 20219 or ability == 20222 then
+        local choice = G.EffectiveChoice()
+        if choice == "gnomish" and ability == 20219 then return true end
+        if choice == "goblin" and ability == 20222 then return true end
+        return false, G.AbilityLabel(ability)
+    end
     local v = G.Abilities()[ability]
     if v == true or v == nil then return true end
     return false, G.AbilityLabel(ability)
@@ -153,16 +159,21 @@ function G.GetPlannedChoice()
     return "none"
 end
 
+function G.EffectiveChoice()
+    local db = DungeonsForeverDB and DungeonsForeverDB.prof
+    local v = db and db.engChoice
+    if ENG_CHOICES[v] then return v, true end
+    local actual = G.EngineeringChoice()
+    if actual == "gnomish" or actual == "goblin" then return actual, false end
+    return "none", false
+end
+
 function G.SetPlannedChoice(value)
     if not ENG_CHOICES[value] then return false end
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.prof = DungeonsForeverDB.prof or {}
-    if G.GetPlannedChoice() == value then return true end
-    if value == "none" then
-        DungeonsForeverDB.prof.engChoice = nil
-    else
-        DungeonsForeverDB.prof.engChoice = value
-    end
+    if DungeonsForeverDB.prof.engChoice == value then return true end
+    DungeonsForeverDB.prof.engChoice = value
     G.Invalidate()
     local RA = ns.ProfRouteAuto
     if RA and RA.Invalidate then RA.Invalidate("specialization") end

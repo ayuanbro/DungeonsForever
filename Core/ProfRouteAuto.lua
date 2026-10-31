@@ -1469,6 +1469,72 @@ function RA.Compute(slug, opts)
     return RA.ApplyRecovery(res, slug, opts, recOf)
 end
 
+function RA.RebuildFromSkel(slug, skel, opts)
+    opts = opts or {}
+    if type(skel) ~= "table" or type(skel.steps) ~= "table" or #skel.steps == 0 then return nil end
+    local pr = ns.ProfRecipes
+    local Rg = pr and pr[slug]
+    if not (Rg and type(Rg.rows) == "table") then return nil end
+    local recOf = {}
+    for _, rec in ipairs(Rg.rows) do
+        if type(rec[1]) == "number" then recOf[rec[1]] = rec end
+    end
+    local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
+    local soldSet = {}
+    if LV and type(LV.sold) == "table" then
+        for _, id in ipairs(LV.sold) do soldSet[id] = true end
+    end
+    if LV and type(LV.rinfo) == "table" then
+        for spell, ri in pairs(LV.rinfo) do
+            if recOf[spell] == nil and type(ri) == "table" then recOf[spell] = ri end
+        end
+    end
+    local steps, toolItems = {}, {}
+    for i = 1, #skel.steps do
+        local src = skel.steps[i]
+        if type(src) == "table" and type(src[3]) == "number" and recOf[src[3]] then
+            local st = { tonumber(src[1]) or 1, tonumber(src[2]) or 1, src[3], tonumber(src[4]) or 1 }
+            if src.tool then
+                st.tool, st.toolItem = true, src.toolItem
+                st.toolSpell, st.toolBop = src.toolSpell, src.toolBop
+                if type(src.toolItem) == "number" then toolItems[#toolItems + 1] = src.toolItem end
+            end
+            steps[#steps + 1] = st
+        end
+    end
+    if #steps == 0 then return nil end
+    local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
+          productAH, productNPC, productPartial =
+        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
+    local cap = tonumber(opts.target) or tonumber(skel.target) or CAP
+    cap = math.max(2, math.min(CAP, math.floor(cap)))
+    local res = {
+        scheme = skel.scheme or opts.scheme or "cheapest",
+        planVersion = skel.pv,
+        steps = steps, gaps = {}, mats = mats, firstAt = firstAt,
+        total = total + formulasTotal, matTotal = total,
+        formulas = formulas, formulasTotal = formulasTotal,
+        vendorTotal = vendorTotal, ahTotal = total - vendorTotal,
+        productAH = productAH, productNPC = productNPC, productPartial = productPartial,
+        crafts = crafts,
+        start = math.max(1, math.min(CAP - 1, tonumber(skel.start) or tonumber(opts.start) or 1)),
+        target = cap,
+        priced = RA.HasPriceData(),
+        filled = skel.filled and true or false,
+        fallbackSteps = skel.fallbackSteps,
+        fallbackFrom = skel.fallbackFrom,
+        fallbackTo = skel.fallbackTo,
+        specBlocked = tonumber(skel.specBlocked) or 0,
+        toolItems = toolItems,
+        snapshotAge = SnapshotSec(),
+        snapshotDays = priceCache.__minAge,
+        stamp = time and time() or 0,
+        stale = skel.stale and true or nil,
+        fromSkeleton = true,
+    }
+    return RA.ApplyRecovery(res, slug, opts, recOf)
+end
+
 function RA.FinalizeTools(res, slug, opts)
     if type(res) ~= "table" or type(res.steps) ~= "table" then return res end
     opts = opts or {}
@@ -1542,6 +1608,15 @@ local function Fingerprint(opts, slug)
         tostring(partner),
         pol and Pol.PolicyFingerprint(pol) or "")
     if opts.strictOnly or RA.__debugStrictOnly then return base .. "|strictOnly" end
+    local inv = opts.executionInventory
+    if type(inv) == "table" then
+        local n, sum = 0, 0
+        for id, c in pairs(inv) do
+            n = n + 1
+            sum = sum + (tonumber(id) or 0) + (tonumber(c) or 0)
+        end
+        if n > 0 then return base .. "|inv" .. n .. ":" .. sum end
+    end
     return base
 end
 function RA.QuoteSig()
@@ -1561,7 +1636,11 @@ function RA.SpecSig(slug)
     local G = ns.ProfGates
     if not (G and G.SpecFingerprint) then return "" end
     local choice = "none"
-    if G.GetPlannedChoice then choice = G.GetPlannedChoice() end
+    if G.EffectiveChoice then
+        choice = G.EffectiveChoice()
+    elseif G.GetPlannedChoice then
+        choice = G.GetPlannedChoice()
+    end
     return G.SpecFingerprint(choice)
 end
 

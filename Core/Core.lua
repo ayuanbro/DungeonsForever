@@ -37,7 +37,28 @@ end
 local function DB()
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.ui = DungeonsForeverDB.ui or {}
-    return DungeonsForeverDB
+    local db = DungeonsForeverDB
+    if db.svVersion ~= 2 then
+        db.svVersion = 2
+        db.openPerf = nil
+        db.memProbe = nil
+        db.memMarks = nil
+        local prof = db.prof
+        if type(prof) == "table" then
+            prof.planSnap = nil
+            prof.planPrev = nil
+            local track = prof.track
+            if type(track) == "table" then
+                for _, c in pairs(track) do
+                    if type(c) == "table" then
+                        c.seen = nil
+                        c.order = nil
+                    end
+                end
+            end
+        end
+    end
+    return db
 end
 ns.DB = DB
 
@@ -761,6 +782,8 @@ do
     end
 end
 
+local memProbeLog, memMarkLog = {}, {}
+
 SLASH_DFMEMLUA1 = "/dfmem"
 SlashCmdList["DFMEMLUA"] = function()
     if type(UpdateAddOnMemoryUsage) == "function" then UpdateAddOnMemoryUsage() end
@@ -772,9 +795,7 @@ SlashCmdList["DFMEMLUA"] = function()
     local mem2 = type(GetAddOnMemoryUsage) == "function"
         and GetAddOnMemoryUsage("DungeonsForever") or 0
     local heap2 = collectgarbage("count")
-    DungeonsForeverDB = DungeonsForeverDB or {}
-    DungeonsForeverDB.memProbe = DungeonsForeverDB.memProbe or {}
-    local log = DungeonsForeverDB.memProbe
+    local log = memProbeLog
     log[#log + 1] = {
         t = date("%m-%d %H:%M:%S"),
         ver = GetAddOnMetadata and GetAddOnMetadata("DungeonsForever", "Version") or "?",
@@ -788,12 +809,7 @@ end
 
 function ns.MemMark(label)
     collectgarbage("collect")
-    DungeonsForeverDB = DungeonsForeverDB or {}
-    local m = DungeonsForeverDB.memMarks
-    if not m then
-        m = {}
-        DungeonsForeverDB.memMarks = m
-    end
+    local m = memMarkLog
     local ts = ""
     if type(date) == "function" then ts = date("%H:%M:%S") end
     m[#m + 1] = {
@@ -808,6 +824,7 @@ ns.OpenPerf = nil
 do
     local OP = {}
     ns.OpenPerf = OP
+    OP.log = {}
     local function commit(s, altTotal)
         local total
         if #s > 0 then
@@ -823,12 +840,7 @@ do
             parts[#parts + 1] = s[i][1] .. " " .. math.floor(s[i][2] + 0.5)
         end
         local marks = table.concat(parts, ", ")
-        DungeonsForeverDB = DungeonsForeverDB or {}
-        local arr = DungeonsForeverDB.openPerf
-        if not arr then
-            arr = {}
-            DungeonsForeverDB.openPerf = arr
-        end
+        local arr = OP.log
         local ts = ""
         if type(date) == "function" then ts = date("%H:%M:%S") end
         arr[#arr + 1] = { t = ts, page = s.label, ms = ms, marks = marks }

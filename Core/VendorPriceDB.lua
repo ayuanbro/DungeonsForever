@@ -18,6 +18,74 @@ local function Now()
     return (time and time()) or 0
 end
 
+local neededSet, neededBuilt, neededCount, neededSlugs = nil, false, 0, 0
+local touched = {}
+
+local function AddRecipeItems(data, out)
+    if type(data) ~= "table" then return end
+    for _, kind in ipairs({ "rows", "crafted", "enchants" }) do
+        local list = data[kind]
+        if type(list) == "table" then
+            for i = 1, #list do
+                local rec = list[i]
+                if type(rec) == "table" then
+                    local mats = rec[12]
+                    if type(mats) == "table" then
+                        for j = 1, #mats do
+                            local m = mats[j]
+                            if type(m) == "table" and type(m[1]) == "number" then out[m[1]] = true end
+                        end
+                    end
+                    local formula = rec[13]
+                    if type(formula) == "table" and type(formula[1]) == "number" then out[formula[1]] = true end
+                end
+            end
+        end
+    end
+end
+
+local function BuildNeeded()
+    local out = {}
+    local rec = ns.ProfRecipes
+    local slugs = 0
+    if type(rec) == "table" then
+        if type(ns.EnsureProfRecipes) == "function" then pcall(ns.EnsureProfRecipes) end
+        for _, data in pairs(rec) do
+            slugs = slugs + 1
+            AddRecipeItems(data, out)
+        end
+    end
+    local tools = ns.ProfTools
+    if type(tools) == "table" then
+        for _, list in pairs(tools) do
+            if type(list) == "table" then
+                for i = 1, #list do
+                    local tool = list[i]
+                    if type(tool) == "table" and type(tool.item) == "number" then out[tool.item] = true end
+                end
+            end
+        end
+    end
+    neededSlugs = slugs
+    return out
+end
+
+local function Needed(itemID)
+    if not neededBuilt then
+        neededSet = BuildNeeded()
+        neededCount = 0
+        for _ in pairs(neededSet) do neededCount = neededCount + 1 end
+        if neededSlugs >= 3 and neededCount >= 300 then neededBuilt = true end
+    end
+    if touched[itemID] then return true end
+    if neededSlugs < 3 or neededCount < 300 then return true end
+    return neededSet[itemID] == true
+end
+
+local function MarkUsed(itemID)
+    if type(itemID) == "number" then touched[itemID] = true end
+end
+
 local function Character()
     local name, realm
     if UnitFullName then name, realm = UnitFullName("player") end
@@ -182,6 +250,7 @@ end
 function VDB.GetOffers(itemID, context)
     if type(itemID) ~= "number" then return {} end
     context = context or {}
+    if not context.noMark then MarkUsed(itemID) end
     if ns.ProfSupply then ns.ProfSupply.Ensure() end
     local character = context.character or Character()
     local result, blockedNPC = {}, {}
@@ -250,6 +319,7 @@ end
 
 function VDB.GetSuppliers(itemID,context)
     context=context or {}
+    if type(itemID) == "number" then MarkUsed(itemID) end
     local out={}; local seen={}
     for _,entry in ipairs(ns.ProfVendorOffers and ns.ProfVendorOffers[itemID] or {}) do
         local faction=entry.faction
@@ -286,6 +356,7 @@ end
 
 function VDB.GetFormulaOffers(itemID,context,source)
     context=context or {}; source=source or {}
+    if type(itemID) == "number" then MarkUsed(itemID) end
     local character=context.character or Character()
     local result,seen={},{}
     local function add(raw,observed)
@@ -380,8 +451,6 @@ function VDB.Scan()
     if not ok or type(count) ~= "number" or count <= 0 or not npcID or not character then return 0 end
     local db, stamp, fresh, changed = DB(), Now(), 0, false
     local repKey = ReputationKey()
-    local mapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
-    local position = mapID and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(mapID, "player")
     for index = 1, count do
         local name, price, quantity, available, purchasable, extendedCost, currencyID = ReadMerchantInfo(index)
         local itemID
@@ -402,28 +471,33 @@ function VDB.Scan()
             local quotedPrice = eligible and price or nil
             local formulaPrice=type(price)=="number" and price>=0 and quantity and quantity>=1
                 and quantity==math.floor(quantity) and not extendedCost and (not currencyID or currencyID==0) and price or nil
-            local records = db.profVendorOffers[itemID]
-            if type(records) ~= "table" then records = {}; db.profVendorOffers[itemID] = records end
-            local key = character .. ":" .. npcID
-            local old = records[key]
-            if not old or old.price ~= quotedPrice or old.quantity ~= quantity or old.available ~= (not rejected)
-                or old.unlimited ~= unlimited or old.hasExtendedCost ~= (not not extendedCost)
-                or old.currencyID ~= currencyID or old.reputationKey ~= repKey
-                or old.formulaPrice~=formulaPrice or old.stock~=available or old.purchasable~=purchasable then
-                records[key] = {
-                    itemID = itemID, npcID = npcID, npcName = UnitName and UnitName("npc"),
-                    price = quotedPrice, quantity = quantity, bundleSize = quantity,
-                    formulaPrice=formulaPrice,stock=available,purchasable=purchasable,
-                    unlimited = unlimited, available = not rejected, hasExtendedCost = not not extendedCost,
-                    currencyID = currencyID, source = "merchant", verifiedAt = stamp,
-                    url = "https://www.wowhead.com/forever/npc=" .. npcID,
-                    character = character, faction = Faction(), estimated = false,
-                    priceBasis = "current-character", reputationRevision = reputationRevision, reputationKey = repKey,
-                    mapID = mapID, x = position and position.x, y = position and position.y,
-                }
-                changed = true
-                if eligible and not old then fresh = fresh + 1 end
-                if eligible then db.vendorPrices[itemID] = { p = price / quantity, t = stamp } end
+            if not Needed(itemID) then
+                if db.profVendorOffers[itemID] ~= nil then
+                    db.profVendorOffers[itemID] = nil
+                    changed = true
+                end
+                db.vendorPrices[itemID] = nil
+            else
+                local records = db.profVendorOffers[itemID]
+                if type(records) ~= "table" then records = {}; db.profVendorOffers[itemID] = records end
+                local key = character .. ":" .. npcID
+                local old = records[key]
+                if not old or old.price ~= quotedPrice or old.quantity ~= quantity or old.available ~= (not rejected)
+                    or old.unlimited ~= unlimited or old.hasExtendedCost ~= (not not extendedCost)
+                    or old.currencyID ~= currencyID or old.reputationKey ~= repKey
+                    or old.formulaPrice~=formulaPrice or old.stock~=available or old.purchasable~=purchasable then
+                    records[key] = {
+                        npcID = npcID, character = character, source = "merchant",
+                        price = quotedPrice, quantity = quantity,
+                        formulaPrice=formulaPrice,stock=available,purchasable=purchasable,
+                        unlimited = unlimited, available = not rejected, hasExtendedCost = not not extendedCost,
+                        currencyID = currencyID, verifiedAt = stamp, faction = Faction(),
+                        reputationKey = repKey,
+                    }
+                    changed = true
+                    if eligible and not old then fresh = fresh + 1 end
+                    if eligible then db.vendorPrices[itemID] = { p = price / quantity, t = stamp } end
+                end
             end
         end
     end
@@ -434,9 +508,42 @@ end
 function VDB.Count()
     local count = 0
     for itemID in pairs(DB().profVendorOffers) do
-        if #VDB.GetOffers(itemID,{requireObservedPrice=true}) > 0 then count = count + 1 end
+        if #VDB.GetOffers(itemID,{requireObservedPrice=true,noMark=true}) > 0 then count = count + 1 end
     end
     return count
+end
+
+function VDB.Prune()
+    neededSet = nil
+    neededBuilt = false
+    neededCount = 0
+    Needed(-1)
+    if neededSlugs < 3 or neededCount < 300 then return 0 end
+    local db = DB()
+    local removed = 0
+    for itemID, records in pairs(db.profVendorOffers) do
+        if type(records) ~= "table" or not Needed(itemID) then
+            db.profVendorOffers[itemID] = nil
+            db.vendorPrices[itemID] = nil
+            removed = removed + 1
+        else
+            for _, rec in pairs(records) do
+                if type(rec) == "table" then
+                    rec.npcName = nil
+                    rec.url = nil
+                    rec.x = nil
+                    rec.y = nil
+                    rec.mapID = nil
+                    rec.itemID = nil
+                    rec.bundleSize = nil
+                    rec.priceBasis = nil
+                    rec.reputationRevision = nil
+                    rec.estimated = nil
+                end
+            end
+        end
+    end
+    return removed
 end
 
 if CreateFrame then
@@ -458,4 +565,8 @@ if CreateFrame then
         end
         if C_Timer and C_Timer.After then C_Timer.After(0, ScanLater) else ScanLater() end
     end)
+end
+
+if C_Timer and C_Timer.After then
+    C_Timer.After(8, function() pcall(VDB.Prune) end)
 end
