@@ -14,6 +14,7 @@ ns.BossModelDisplay = {
     ["blackrock_depths"] = {
         ["Ambassador Flamelash"] = 8329,
         ["Bael'Gar"] = 12162,
+        ["Chest of The Seven"] = 8687,
         ["Emperor Dagran Thaurissan"] = 8807,
         ["Fineous Darkvire"] = 8704,
         ["General Angerforge"] = 8756,

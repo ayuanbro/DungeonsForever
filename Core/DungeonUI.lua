@@ -46,7 +46,13 @@ local function IsHui()
 end
 
 local function Fnt(size)
-    return FONT_BASE, size, ns.hui.FontFlags("OUTLINE")
+    local face = FONT_BASE or ns.FONT or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+    local flags = "OUTLINE"
+    if ns.hui and ns.hui.FontFlags then
+        local ok, f = pcall(ns.hui.FontFlags, "OUTLINE")
+        if ok and type(f) == "string" then flags = f end
+    end
+    return face, size, flags
 end
 
 local function Unpack(c)
@@ -295,7 +301,9 @@ end
 
 function DG.Pack(list)
     local sorted = {}
-    for _, d in ipairs(list) do sorted[#sorted + 1] = d end
+    for _, d in ipairs(list) do
+        if not d.noList then sorted[#sorted + 1] = d end
+    end
     table.sort(sorted, function(a, b)
         if a.levelMin ~= b.levelMin then return a.levelMin < b.levelMin end
         return a.levelMax < b.levelMax
@@ -506,8 +514,10 @@ function DG.BuildList()
     }
     local buckets = { now = {}, rec = {}, up = {} }
     for _, d in ipairs(data.dungeons) do
-        local b = buckets[DG.GroupOf(d, lv)]
-        b[#b + 1] = d
+        if not d.noList then
+            local b = buckets[DG.GroupOf(d, lv)]
+            b[#b + 1] = d
+        end
     end
 
     local y = -4

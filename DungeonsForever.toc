@@ -7,8 +7,9 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.9.21
+## Version: 1.9.22
 ## SavedVariables: DungeonsForeverDB
+## OptionalDeps: EllesmereUI
 ## LoadOnDemand: 0
 
 Locales\zhCN.lua
@@ -26,6 +27,7 @@ Core\Data\Data_BossModel.lua
 Core\Data\Data_MapPins.lua
 Core\Data\Data_GravePos.lua
 Core\Data\Data_Route.lua
+Core\Data\Data_InstanceMap.lua
 Core\Data\Data_FloorName.lua
 Core\Data\Data_BossSkills.lua
 Core\Data\Data_NPCLoc.lua
@@ -151,6 +153,7 @@ Core\TipLines.lua
 Core\PvPUI.lua
 Core\FactionUI.lua
 Core\MapUI.lua
+Core\MapOnWorld.lua
 Core\LootFilterUI.lua
 Core\RaidUI.lua
 Core\ProfPolicies.lua

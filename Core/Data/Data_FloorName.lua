@@ -1,6 +1,9 @@
 local _, ns = ...
 
 ns.FloorName = {
+    ["gnomeregan"] = {
+        [5] = "副本入口",
+    },
     ["lower_blackrock_spire"] = {
         [1] = "L1塔萨洛尔",
         [2] = "L2蛛网隧道",
@@ -9,5 +12,11 @@ ns.FloorName = {
         [5] = "L5哈雷肯之巢",
         [6] = "L7战斗之厅",
         [8] = "入口层",
+    },
+    ["sm_graveyard"] = {
+        [1] = "墓园",
+    },
+    ["sm_library"] = {
+        [1] = "图书馆",
     },
 }

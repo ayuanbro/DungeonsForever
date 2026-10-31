@@ -608,6 +608,18 @@ local function ItemStatsOf(id)
     return out
 end
 
+local function StatsKnown(id)
+    if statSeen[id] or tipStatCache[id] ~= nil or dpsCache[id] ~= nil or dpsMiss[id] then
+        return true
+    end
+    local fn = DG and DG.ItemInfo
+    if type(fn) == "function" then
+        local ok, v = pcall(fn, id)
+        if ok and v ~= nil then return true end
+    end
+    return false
+end
+
 local function ItemScore(id, w)
     if not id then return nil end
     local k = BG.cls .. ":" .. BG.spec .. ":" .. (BG.wGen or 0) .. ":" .. dpsGen
@@ -991,9 +1003,12 @@ local function CatKind(id)
     local _, so = CatSrcOf(id)
     if so then return "boss" end
     local src = CatSrcOf(id)
-    local kind = string.match(src, "^(.-)|") or src
-    if kind == "任务奖励" then return "quest" end
+    local kind, place = string.match(src, "^(.-)|(.*)$")
+    if not kind then kind = src end
+    if kind == "首领掉落" or kind == "副本掉落" or kind == "多个首领" then return "boss" end
+    if kind == "任务奖励" or string.find(kind, "任务：", 1, true) then return "quest" end
     if kind == "商人" then return "vendor" end
+    if place == "专业制作" then return "craft" end
     if string.find(kind, "制作", 1, true) or string.find(kind, "（", 1, true) then
         return "craft"
     end
@@ -1001,6 +1016,7 @@ local function CatKind(id)
         or kind == "稀有掉落" or kind == "小怪掉落" or kind == "物件" then
         return "rare"
     end
+    if place and place ~= "" then return "boss" end
     return "other"
 end
 
@@ -1010,6 +1026,11 @@ local function CatSrcText(id)
         local nm = so.inst and so.inst.name or ""
         if so.boss and so.boss ~= "" then return nm .. " · " .. so.boss end
         return nm
+    end
+    local kind, place = string.match(src, "^(.-)|(.*)$")
+    if kind and place and place ~= "" and kind ~= "首领掉落" and kind ~= "副本掉落"
+        and CatKind(id) == "boss" then
+        return place .. " · " .. kind
     end
     return string.gsub(src, "|", " · ")
 end
@@ -1296,6 +1317,17 @@ function BG.MainDisp(sp)
     return MainKey(sp)
 end
 
+function BG.FixWeaponPair(t)
+    if type(t) ~= "table" or not t["two-hand"] then return false end
+    local had = t["main-hand"] ~= nil or t["off-hand"] ~= nil
+        or t["held"] ~= nil or t["shield"] ~= nil
+    t["main-hand"] = nil
+    t["off-hand"] = nil
+    t["held"] = nil
+    t["shield"] = nil
+    return had
+end
+
 local function OffKey(sp, side)
     if not sp then return "off-hand" end
     side = side or CurSide()
@@ -1327,6 +1359,7 @@ local function DataKey(sp, slotKey)
 end
 
 local function CurItem(sp, slotKey)
+    if slotKey == "off" and BG.MainDisp(sp) == "two-hand" then return nil end
     local dk = (slotKey == "main") and BG.MainDisp(sp) or DataKey(sp, slotKey)
     local id = BG.cur[dk]
     if id then return id end
@@ -1820,8 +1853,10 @@ local AUTO_SRC_KNOWN = { craft = true, quest = true, boss = true, rare = true, v
 local AUTO_SRC_DQ = { boss = true, quest = true }
 local AUTO_SNAP_MAX = 6
 local AUTO_BUDGET_MS = 6
+local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
+BG.AUTO_GEN_REV = 4
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -1876,11 +1911,29 @@ local function ManualPut(items, cls, tspec, lv, srcSet)
     p.cls = cls
     p.tspec = tspec
     p.vol = lv
+    BG.FixWeaponPair(items)
     p.items = CopyCur(items)
     local ss = {}
     for k, v in pairs(srcSet or {}) do ss[k] = v end
     p.srcSet = ss
     return p
+end
+
+function BG.DropPlan(p)
+    if type(p) ~= "table" then return false end
+    if p.manual then
+        local t = DB().manual
+        if type(t) ~= "table" then return false end
+        local key = ManualSlot(p.cls or BG.cls, p.tspec or BG.tspec)
+        if t[key] == nil then return false end
+        t[key] = nil
+        return true
+    end
+    local plans = PlansFor(BG.cls)
+    for i = 1, #plans do
+        if plans[i] == p then table.remove(plans, i) return true end
+    end
+    return false
 end
 
 local autoVer
@@ -1899,7 +1952,8 @@ local function AutoVer()
 end
 
 local function AutoSig(mode, cap)
-    return table.concat({ tostring(AutoVer()), tostring(BG.cls or ""),
+    return table.concat({ tostring(AutoVer()), tostring(BG.AUTO_GEN_REV or 0),
+        tostring(BG.cls or ""),
         tostring(BG.spec or ""), tostring(BG.tspec or ""), tostring(mode),
         tostring(cap), tostring(BG.wGen or 0), tostring(BG.wActive or 0),
         PlayerFac() or "" }, "|")
@@ -1941,6 +1995,7 @@ end
 
 local function AutoStore(mode, cap, sig, items, cls)
     if not autoSnapsLoaded then LoadAutoSnaps() end
+    BG.FixWeaponPair(items)
     autoSnaps[sig] = { sig = sig, mode = mode, cls = cls, lv = cap,
                        t = NowSec(), items = CopyCur(items) }
     SaveAutoSnaps()
@@ -2103,6 +2158,46 @@ local function AutoBuckets(job)
     return i >= job.total
 end
 
+local function AutoSort(job)
+    if job.sorted then return end
+    job.sorted = true
+    for _, b in pairs(job.buckets) do
+        if #b > 1 then
+            table.sort(b, function(x, y)
+                local xi, yi = x.ilvl or 0, y.ilvl or 0
+                if xi ~= yi then return xi > yi end
+                return (x.id or 0) < (y.id or 0)
+            end)
+        end
+    end
+end
+
+local function AutoWarmSlot(job)
+    local n = 0
+    for gi = 1, #(job.groups or {}) do
+        local b = job.buckets[job.groups[gi]]
+        if b then
+            local lim = #b
+            if lim > AUTO_TOP_N then lim = AUTO_TOP_N end
+            for i = 1, lim do
+                local r = b[i]
+                if r and not StatsKnown(r.id) and not (BG.statDead and BG.statDead[r.id]) then
+                    BG.statMiss = BG.statMiss or {}
+                    local c = (BG.statMiss[r.id] or 0) + 1
+                    BG.statMiss[r.id] = c
+                    if c >= 4 then
+                        BG.statDead = BG.statDead or {}
+                        BG.statDead[r.id] = true
+                    end
+                    if DG.RequestItem then DG.RequestItem(r.id, true) end
+                    n = n + 1
+                end
+            end
+        end
+    end
+    return n
+end
+
 local function AutoPick(job)
     local keys = job.keys
     while job.ki <= #keys do
@@ -2119,18 +2214,40 @@ local function AutoPick(job)
                 job.groups = SLOT_GEAR[rkey] or {}
                 job.gi, job.bi = 1, 1
                 job.best, job.bestScore = nil, nil
+                if not job.warmed then
+                    job.warmed = true
+                    if AutoWarmSlot(job) > 0 then
+                        job.needWait = true
+                        return false
+                    end
+                end
             end
         else
             local g = job.groups[job.gi]
             if not g then
+                if not job.best and (job.keyTries or 0) < 3 then
+                    job.keyTries = (job.keyTries or 0) + 1
+                    job.gi, job.bi = 1, 1
+                    if AutoWarmSlot(job) > 0 then
+                        job.needWait = true
+                        return false
+                    end
+                end
                 if job.best then
-                    job.cur[job.dk] = job.best
-                    if AutoKind(job.best) == "quest" or (ns.GearUni and ns.GearUni[job.best]) then
-                        job.usedQ[job.best] = true
+                    job.slotSc = job.slotSc or {}
+                    local prev = job.slotSc[job.dk]
+                    if prev == nil or (job.bestScore or 0) > prev then
+                        job.cur[job.dk] = job.best
+                        job.slotSc[job.dk] = job.bestScore or 0
+                        if AutoKind(job.best) == "quest" or (ns.GearUni and ns.GearUni[job.best]) then
+                            job.usedQ[job.best] = true
+                        end
                     end
                 end
                 job.ki = job.ki + 1
                 job.curKey = nil
+                job.warmed = nil
+                job.keyTries = nil
             else
                 local b = job.buckets[g]
                 local r = b and b[job.bi]
@@ -2139,7 +2256,8 @@ local function AutoPick(job)
                     job.bi = 1
                 else
                     job.bi = job.bi + 1
-                    if UsableAt(r.id, job.cap, r.req or 0) and not job.usedQ[r.id] then
+                    if UsableAt(r.id, job.cap, r.req or 0) and not job.usedQ[r.id]
+                        and StatsKnown(r.id) then
                         local sc = ItemScore(r.id, job.w)
                         if sc and (job.bestScore == nil or sc > job.bestScore) then
                             job.best, job.bestScore = r.id, sc
@@ -2176,6 +2294,7 @@ local function AutoPump(jobId)
     local done = false
     if job.phase == 1 then
         if AutoBuckets(job) then
+            AutoSort(job)
             job.phase = 2
         else
             done = false
@@ -2185,14 +2304,14 @@ local function AutoPump(jobId)
     if autoJob ~= job then return end
     local frac
     if job.phase == 1 then
-        frac = 0.4 * ((job.ci or 0) / math.max(1, job.total or 1))
+        frac = 0.3 * ((job.ci or 0) / math.max(1, job.total or 1))
     else
         local sub = 0
         if job.curKey and job.groups and #job.groups > 0 then
             sub = ((job.gi or 1) - 1) / #job.groups
             if sub > 1 then sub = 1 end
         end
-        frac = 0.4 + 0.6 * ((job.ki - 1 + sub) / math.max(1, #job.keys))
+        frac = 0.3 + 0.7 * ((job.ki - 1 + sub) / math.max(1, #job.keys))
     end
     if done then
         autoJob = nil
@@ -2222,7 +2341,9 @@ local function AutoPump(jobId)
         return
     end
     BG.PaintAutoProg(frac)
-    C_Timer.After(0, function() AutoPump(jobId) end)
+    local wait = job.needWait and 0.25 or 0
+    job.needWait = nil
+    C_Timer.After(wait, function() AutoPump(jobId) end)
 end
 
 local function AutoJobStart(mode, cap, sig, srcSet)
@@ -2602,11 +2723,12 @@ local function PaintPlans()
             y = y + PLAN_H + 2
         end
     end
-    local has = BG.usingPlan ~= nil and BG.usingPlan.manual ~= true
-    BG.renameBtn:SetEnabled(has)
-    BG.deleteBtn:SetEnabled(has)
-    BG.renameBtn.lbl:SetTextColor(Unpack(has and C_TEXT or C_DIM))
-    BG.deleteBtn.lbl:SetTextColor(Unpack(has and C_TEXT or C_DIM))
+    local hasRen = BG.usingPlan ~= nil and BG.usingPlan.manual ~= true
+    local hasDel = BG.usingPlan ~= nil
+    BG.renameBtn:SetEnabled(hasRen)
+    BG.deleteBtn:SetEnabled(hasDel)
+    BG.renameBtn.lbl:SetTextColor(Unpack(hasRen and C_TEXT or C_DIM))
+    BG.deleteBtn.lbl:SetTextColor(Unpack(hasDel and C_TEXT or C_DIM))
     BG.planChild:SetHeight(y + 6)
     if BG.planScroll and BG.planScroll.GetVerticalScroll then
         local mx = math.max(0, y + 6 - (BG.planScroll:GetHeight() or 0))
@@ -2839,9 +2961,14 @@ function FillBwRow(r)
     if not row then
         r.icon:SetTexture("")
         if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
-        r.name:SetText(L["这个筛选下没有条目"])
+        if BG.offLocked then
+            r.name:SetText(L["副手已锁定"])
+            r.src:SetText(L["主手为双手武器，副手不再装备"])
+        else
+            r.name:SetText(L["这个筛选下没有条目"])
+            r.src:SetText("")
+        end
         r.name:SetTextColor(Unpack(C_DIM))
-        r.src:SetText("")
         r.eqTag:SetShown(false)
         r.ownTag:SetShown(false)
         r.sideTag:SetShown(false)
@@ -2968,13 +3095,15 @@ local function PaintBrowser()
         rkey = MainKey(sp)
         mainBoth = (BG.sel == "main")
     end
+    local offLocked = (BG.sel == "off" and BG.MainDisp(sp) == "two-hand")
+    BG.offLocked = offLocked
     if BG.sel then
         BG.bwTitle:SetText(SLOT_NAMES[BG.sel] or BG.sel)
     else
         BG.bwTitle:SetText(L["点左侧部位查看备选"])
     end
     local list = {}
-    if BG.sel and rkey then
+    if BG.sel and rkey and not offLocked then
         local w = EffWeights()
         local lv = BG.onlyUsable and (BG.filterLv or PlayerLevel() or 60) or nil
         local baseId = CurItem(sp, BG.sel)
@@ -3154,6 +3283,7 @@ end
 function BG.Render()
     if not BG.built then return end
     EnsureBIS()
+    BG.FixWeaponPair(BG.cur)
     if not BG.vol then BG.vol = DefaultVol() end
     if not BG.sel then BG.sel = SLOTS_LEFT[1] end
     if not BG.tspec then
@@ -3368,6 +3498,9 @@ function BG.SetSlot(slotKey, itemID)
         elseif BG.SlotOfAny and BG.SlotOfAny(itemID) == "two-hand" then
             dk = "two-hand"
             BG.cur["main-hand"] = nil
+            BG.cur["off-hand"] = nil
+            BG.cur["held"] = nil
+            BG.cur["shield"] = nil
         else
             dk = "main-hand"
             BG.cur["two-hand"] = nil
@@ -3449,6 +3582,7 @@ function BG.SavePlan()
             if id then items[dk] = id end
         end
     end
+    BG.FixWeaponPair(items)
     local enchs = {}
     for _, dk in ipairs(ALL_SLOT_KEYS) do
         local eid = CurEnch(sp, dk)
@@ -4004,17 +4138,27 @@ local function MakePlanRow(parent)
     end)
     r.edit:SetScript("OnEditFocusLost", function(self) self:Hide() end)
     r:SetScript("OnClick", function(self, button)
-        if button == "RightButton" and self.__plan then
+        if button == "RightButton" and (self.__plan or self.__manual) then
+            local p = self.__plan or BG.ManualPlan()
+            if not p then return end
             if IsShiftKeyDown() then
-                local plans = PlansFor(BG.cls)
-                for i, p in ipairs(plans) do
-                    if p == self.__plan then table.remove(plans, i) break end
-                end
-                if BG.usingPlan == self.__plan then BG.usingPlan = nil end
+                BG.DropPlan(p)
+                if BG.usingPlan == p then BG.usingPlan = nil end
                 BG.RequestRender()
                 return
             end
-            self.edit:SetText(self.__plan.name or "")
+            if p.manual then
+                ns.hui.ShowMenu({
+                    { text = L["应用此方案"], func = function() BG.UseManualPlan() end },
+                    { text = L["删除方案"], func = function()
+                        BG.DropPlan(p)
+                        if BG.usingPlan == p then BG.usingPlan = nil end
+                        BG.RequestRender()
+                    end },
+                }, { owner = self })
+                return
+            end
+            self.edit:SetText(p.name or "")
             self.edit:Show()
             self.edit:SetFocus()
             return
@@ -4062,10 +4206,7 @@ local function BuildMid(m1, m2)
     BG.deleteBtn:SetScript("OnClick", function()
         local p = BG.usingPlan
         if not p then return end
-        local plans = PlansFor(BG.cls)
-        for i, q in ipairs(plans) do
-            if q == p then table.remove(plans, i) break end
-        end
+        BG.DropPlan(p)
         BG.usingPlan = nil
         BG.RequestRender()
         ns.PlaySound(1)

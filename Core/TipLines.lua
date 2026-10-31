@@ -351,6 +351,15 @@ local function IlvlOf(id)
     return nil
 end
 
+local function PlainWidth(fs)
+    if not fs or not fs.GetWidth then return nil end
+    local ok, w = pcall(fs.GetWidth, fs)
+    if not ok or w == nil then return nil end
+    if issecretvalue and issecretvalue(w) then return nil end
+    if type(w) ~= "number" or w <= 0 then return nil end
+    return w
+end
+
 local function InsertIlvl(tt, id)
     local nm = tt.GetName and tt:GetName()
     if type(nm) ~= "string" or nm == "" then return end
@@ -377,7 +386,7 @@ local function InsertIlvl(tt, id)
         if lf then
             r.tl = lf:GetText()
             r.lr, r.lg, r.lb = lf:GetTextColor()
-            r.tw = lf:GetWidth()
+            r.tw = PlainWidth(lf)
         end
         if rf then
             r.tr = rf:GetText()
@@ -807,9 +816,7 @@ function TL.RefreshPreview()
         Append(tip, TL.Lines(id))
     end
     tip:Show()
-    local w = 0
-    local ok, v = pcall(tip.GetWidth, tip)
-    if ok and type(v) == "number" then w = v end
+    local w = PlainWidth(tip) or 0
     if w > PREVIEW_W then tip:SetScale(PREVIEW_W / w) end
 end
 
