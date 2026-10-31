@@ -329,8 +329,8 @@ M.ZONE_AREA = {
 }
 
 M.ZONE_MENU = {
-    [1428] = { "blackrock_mountain", "blackrock_depths", "lower_blackrock_spire", "upper_blackrock_spire" },
-    [1427] = { "blackrock_mountain", "upper_blackrock_spire", "lower_blackrock_spire" },
+    [1428] = { "blackrock_mountain", "blackrock_depths", "upper_blackrock_spire", "lower_blackrock_spire" },
+    [1427] = { "blackrock_mountain", "blackrock_depths", "upper_blackrock_spire", "lower_blackrock_spire" },
 }
 
 local BRM = MD .. "burningsteppes\\blackrockmountain\\blackrockmountain"
@@ -508,6 +508,13 @@ local function StripOrd(s)
     if s:byte(1) == 0xE2 and s:byte(2) == 0x9D and s:byte(3) >= 0xB6 and s:byte(3) <= 0xBF then
         return s:sub(4)
     end
+    return s
+end
+
+local function FloorWord(s)
+    s = StripOrd(s)
+    if s == "上一层入口" then return L["上楼"] end
+    if s == "下一层入口" then return L["下楼"] end
     return s
 end
 
@@ -1052,6 +1059,12 @@ local function BuildPins()
         bt.dot:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BossSkull")
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
+        bt.entry = bt:CreateTexture(nil, "ARTWORK", nil, 2)
+        bt.entry:SetPoint("CENTER", bt, "CENTER", 0, 0)
+        bt.entry:SetSize(M.PIN_SIZE * 0.62, M.PIN_SIZE * 0.62)
+        bt.entry:SetTexture(M.PIN_DOOR_TEX)
+        pcall(bt.entry.SetAtlas, bt.entry, "dungeon")
+        bt.entry:Hide()
         bt.__glow = bt:CreateTexture(nil, "BACKGROUND", nil, -1)
         bt.__glow:SetTexture(M.PIN_GLOW_TEX)
         bt.__glow:SetBlendMode("ADD")
@@ -1967,9 +1980,7 @@ local function routeDot(e, host, x, y, cr, cg, cb, si)
     e.c:Show()
 end
 
-local hitPool = {}
-local hoverSeg, hoverLeave = nil, 0
-local hoverTicker
+local hovers = setmetatable({}, { __mode = "k" })
 
 local function paintSeg(si, on)
     local used = M.frame and M.frame.routeUsed or 0
@@ -1991,70 +2002,80 @@ local function paintSeg(si, on)
     end
 end
 
-function M.SetHoverSeg(si)
-    if si == hoverSeg then return end
-    if hoverSeg then paintSeg(hoverSeg, false) end
-    hoverSeg = si
-    if si then paintSeg(si, true) end
-    hoverLeave = GetTime()
-end
-
-function M.HoveredSeg()
-    return hoverSeg
-end
-
-local function hoverTick()
-    if hoverSeg and (GetTime() - hoverLeave) > 0.08 then
-        M.SetHoverSeg(nil)
+function M.NewSegHover(parent, paintFn)
+    local st = hovers[parent]
+    if st then
+        st.paint = paintFn
+        return st
     end
-end
-
-local function hitBtn(host, i)
-    local b = hitPool[i]
-    if not b then
-        b = CreateFrame("Button", nil, host)
-        b:SetSize(M.HIT_SIZE, M.HIT_SIZE)
-        b:EnableMouse(true)
-        b:SetScript("OnEnter", function(self)
-            M.SetHoverSeg(self.si)
-        end)
-        b:SetScript("OnLeave", function(self)
-            hoverLeave = GetTime()
-        end)
-        hitPool[i] = b
+    st = { parent = parent, paint = paintFn, pool = {}, seg = nil, leaveAt = nil, acc = 0 }
+    hovers[parent] = st
+    function st:Set(si)
+        if si == self.seg then
+            self.leaveAt = nil
+            return
+        end
+        if self.seg then self.paint(self.seg, false) end
+        self.seg = si
+        self.leaveAt = nil
+        if si then self.paint(si, true) end
     end
-    return b
-end
-
-local function buildHits(host, arr, cnt)
-    local hi = 0
-    local step = M.HIT_STEP
-    for si = 1, cnt do
-        local pts = arr[si]
-        if pts and #pts > 1 then
-            for i = 2, #pts do
-                local a, b = pts[i - 1], pts[i]
-                local dx, dy = b[1] - a[1], b[2] - a[2]
-                local d = math.sqrt(dx * dx + dy * dy)
-                if d > 1 then
-                    local k = math.max(1, math.ceil(d / step))
-                    for j = 0, k - 1 do
-                        local u = j / k
-                        hi = hi + 1
-                        local btn = hitBtn(host, hi)
-                        btn.si = si
-                        btn:ClearAllPoints()
-                        btn:SetPoint("CENTER", host, "TOPLEFT", a[1] + dx * u, -(a[2] + dy * u))
-                        btn:Show()
+    function st:HideAll()
+        self:Set(nil)
+        for i = 1, #self.pool do self.pool[i]:Hide() end
+    end
+    function st:Build(host, arr, cnt)
+        local hi = 0
+        local step = M.HIT_STEP
+        for si = 1, cnt do
+            local pts = arr[si]
+            if pts and #pts > 1 then
+                for i = 2, #pts do
+                    local a, b = pts[i - 1], pts[i]
+                    local dx, dy = b[1] - a[1], b[2] - a[2]
+                    local d = math.sqrt(dx * dx + dy * dy)
+                    if d > 1 then
+                        local k = math.max(1, math.ceil(d / step))
+                        for j = 0, k - 1 do
+                            local u = j / k
+                            hi = hi + 1
+                            local btn = self.pool[hi]
+                            if not btn then
+                                btn = CreateFrame("Button", nil, host)
+                                btn:SetSize(M.HIT_SIZE, M.HIT_SIZE)
+                                btn:EnableMouse(true)
+                                btn:SetScript("OnEnter", function(b) st:Set(b.si) end)
+                                btn:SetScript("OnLeave", function(b)
+                                    if st.seg == b.si then st.leaveAt = GetTime() end
+                                end)
+                                self.pool[hi] = btn
+                            end
+                            local lv, hl = btn:GetFrameLevel(), host:GetFrameLevel()
+                            if lv ~= hl then btn:SetFrameLevel(hl) end
+                            btn.si = si
+                            btn:ClearAllPoints()
+                            btn:SetPoint("CENTER", host, "TOPLEFT", a[1] + dx * u, -(a[2] + dy * u))
+                            btn:Show()
+                        end
                     end
                 end
             end
         end
+        for i = hi + 1, #self.pool do self.pool[i]:Hide() end
+        return hi
     end
-    for i = hi + 1, #hitPool do
-        hitPool[i]:Hide()
-    end
-    return hi
+    local tick = CreateFrame("Button", nil, parent)
+    tick:SetSize(1, 1)
+    tick:EnableMouse(false)
+    tick:SetScript("OnUpdate", function(_, el)
+        st.acc = st.acc + el
+        if st.acc < 0.05 then return end
+        st.acc = 0
+        if st.seg and st.leaveAt and (GetTime() - st.leaveAt) > 0.08 then
+            st:Set(nil)
+        end
+    end)
+    return st
 end
 
 function M.SyncRoute(id, floor, cw, ch)
@@ -2063,14 +2084,10 @@ function M.SyncRoute(id, floor, cw, ch)
     if not host then return end
     local used = frame.routeUsed or 0
     local n = 0
-    if hoverSeg then M.SetHoverSeg(nil) end
-    if not hoverTicker then
-        hoverTicker = CreateFrame("Button", nil, host)
-        hoverTicker:SetSize(1, 1)
-        hoverTicker:EnableMouse(false)
-        hoverTicker:SetScript("OnUpdate", hoverTick)
-    end
+    local hv = M.NewSegHover(host, paintSeg)
+    if hv.seg then hv:Set(nil) end
     local built = 0
+    local cwOk = type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0
     if type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0 and M.RouteOn(id) then
         local segs = floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
         if type(segs) == "table" and #segs > 0 then
@@ -2136,7 +2153,7 @@ function M.SyncRoute(id, floor, cw, ch)
                     end
                 end
             end
-            built = buildHits(host, arr, #segs)
+            built = hv:Build(host, arr, #segs)
         end
     end
     for i = n + 1, used do
@@ -2146,9 +2163,7 @@ function M.SyncRoute(id, floor, cw, ch)
             e.c:Hide()
         end
     end
-    if n == 0 or built == 0 then
-        for i = 1, #hitPool do hitPool[i]:Hide() end
-    end
+    if cwOk and built == 0 then hv:HideAll() end
     frame.routeUsed = n
     M.SyncRouteNo(id, floor, cw, ch)
     host:SetShown(n > 0 or (frame.noUsed or 0) > 0)
@@ -2317,7 +2332,7 @@ function M.ShowRouteMenu(owner)
         local k = M.RouteSegKey(id, floor, i)
         local hid = M.routeHidden[k] and true or false
         items[#items + 1] = {
-            text = StripOrd(segs[i].from) .. " → " .. StripOrd(segs[i].to),
+            text = FloorWord(segs[i].from) .. " → " .. FloorWord(segs[i].to),
             checked = not hid,
             color = hid and "|cff7a6a52" or nil,
             func = function()
@@ -2425,6 +2440,7 @@ function M.SyncPins()
             local skip = nil
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
+            if bt.entry then bt.entry:Hide() end
             if kind == "note" or kind == "quest" or kind == "icon" then
                 bt:SetFrameLevel(frame.pins:GetFrameLevel() + 2)
             else
@@ -2485,9 +2501,8 @@ function M.SyncPins()
                     bt.__qState = "ready"
                 end
             elseif kind == "entrance" then
-                bt.dot:SetShown(true)
-                bt.dot:SetTexture(M.PIN_DOOR_TEX)
-                bt.dot:SetVertexColor(1, 1, 1)
+                bt.dot:Hide()
+                bt.entry:Show()
                 bt.__av:Hide()
             elseif kind == "dungeon" then
                 bt.dot:SetShown(true)
@@ -2700,7 +2715,7 @@ function M.PinOnEnter(self)
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
     elseif self.__kind == "prev" then
-        GameTooltip:AddLine(L["上一层入口"], 1, 0.82, 0, true)
+        GameTooltip:AddLine(L["上楼"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
@@ -2713,7 +2728,7 @@ function M.PinOnEnter(self)
             end
         end
     elseif self.__kind == "next" then
-        GameTooltip:AddLine(L["下一层入口"], 1, 0.82, 0, true)
+        GameTooltip:AddLine(L["下楼"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end

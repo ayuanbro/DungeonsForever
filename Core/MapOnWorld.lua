@@ -494,7 +494,7 @@ local function smoothPts(src)
     return out
 end
 
-local function routeDot(view, x, y, cr, cg, cb)
+local function routeDot(view, x, y, cr, cg, cb, si)
     local i = (view.routeUsed or 0) + 1
     local e = view.routePool[i]
     if not e then
@@ -513,6 +513,9 @@ local function routeDot(view, x, y, cr, cg, cb)
     view.routeUsed = i
     local edge = M.routeThin and M.ROUTE_THIN_EDGE or M.ROUTE_DOT_EDGE
     local core = M.routeThin and M.ROUTE_THIN_DOT or M.ROUTE_DOT
+    e.si = si
+    e.bedge, e.bcore = edge, core
+    e.br, e.bg, e.bb = cr, cg, cb
     e.o:SetSize(edge, edge)
     e.o:ClearAllPoints()
     e.o:SetPoint("CENTER", view.route, "TOPLEFT", x, -y)
@@ -526,9 +529,31 @@ local function routeDot(view, x, y, cr, cg, cb)
     e.c:Show()
 end
 
+local function paintSegWorld(view, si, on)
+    local used = view.routeUsed or 0
+    for i = 1, used do
+        local e = view.routePool[i]
+        if e and e.si == si and e.bedge then
+            if on then
+                e.o:SetSize(e.bedge * 1.5, e.bedge * 1.5)
+                e.c:SetSize(e.bcore * 1.6, e.bcore * 1.6)
+                e.c:SetVertexColor(math.min(1, e.br * 1.28 + 0.16),
+                                   math.min(1, e.bg * 1.28 + 0.16),
+                                   math.min(1, e.bb * 1.28 + 0.16))
+            else
+                e.o:SetSize(e.bedge, e.bedge)
+                e.c:SetSize(e.bcore, e.bcore)
+                e.c:SetVertexColor(e.br, e.bg, e.bb)
+            end
+        end
+    end
+end
+
 local function syncRoute(view, id, floor, cw, ch)
     local used = view.routeUsed or 0
     local n = 0
+    local hv = M.NewSegHover(view.route, function(si, on) paintSegWorld(view, si, on) end)
+    if hv.seg then hv:Set(nil) end
     view.routeUsed = 0
     if id and floor and M.RouteOn(id) then
         local segs = ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
@@ -585,7 +610,7 @@ local function syncRoute(view, id, floor, cw, ch)
                                     n = n + 1
                                     local t = (total > 0) and ((acc + d * u) / total) or 0
                                     local cr, cg, cb = M.RouteColor(t)
-                                    routeDot(view, a[1] + dx * u, a[2] + dy * u, cr, cg, cb)
+                                    routeDot(view, a[1] + dx * u, a[2] + dy * u, cr, cg, cb, si)
                                 end
                             end
                             sd = sd + d
@@ -594,8 +619,10 @@ local function syncRoute(view, id, floor, cw, ch)
                     end
                 end
             end
+            hv:Build(view.route, arr, #segs)
         end
     end
+    if n == 0 then hv:HideAll() end
     for i = n + 1, used do
         local e = view.routePool[i]
         if e then
@@ -675,6 +702,7 @@ local function syncPins(view, id, floor, cw, ch)
             n = i
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
+            if bt.entry then bt.entry:Hide() end
             if kind == "note" or kind == "quest" or kind == "icon" then
                 bt:SetFrameLevel(view.pins:GetFrameLevel() + 2)
             else
@@ -725,9 +753,8 @@ local function syncPins(view, id, floor, cw, ch)
                     bt.__qState = "ready"
                 end
             elseif kind == "entrance" then
-                bt.dot:SetShown(true)
-                bt.dot:SetTexture(M.PIN_DOOR_TEX)
-                bt.dot:SetVertexColor(1, 1, 1)
+                bt.dot:Hide()
+                bt.entry:Show()
                 bt.__av:Hide()
             elseif kind == "dungeon" then
                 bt.dot:SetShown(true)
@@ -1239,6 +1266,10 @@ local function buildZoneIndex()
             local old = list[mid] or {}
             local byId = {}
             for i = 1, #old do byId[old[i].id] = old[i] end
+            local ax, ay
+            for i = 1, #old do
+                if old[i].x and old[i].y then ax, ay = old[i].x, old[i].y break end
+            end
             local row, seen = {}, {}
             for i = 1, #ids do
                 local did = ids[i]
@@ -1248,8 +1279,15 @@ local function buildZoneIndex()
                         local d = detailOf(did)
                         r = { id = did, name = (d and d.name) or did }
                     end
+                    if ax and not (r.x and r.y) then r.x, r.y = ax, ay end
                     row[#row + 1] = r
                     seen[did] = true
+                end
+            end
+            for i = 1, #old do
+                if not seen[old[i].id] then
+                    row[#row + 1] = old[i]
+                    seen[old[i].id] = true
                 end
             end
             list[mid] = row
@@ -1312,6 +1350,23 @@ local function ensureMenu()
     UIDropDownMenu_Initialize(dropDown, dropdownInit, "MENU")
     UIDropDownMenu_SetWidth(dropDown, 160)
     return dropDown
+end
+
+function W.OpenEntryMenu(ids, anchor)
+    if type(ids) ~= "table" or #ids < 1 then return end
+    if #ids == 1 then
+        W.OpenDungeon(ids[1])
+        return
+    end
+    local rows = {}
+    for i = 1, #ids do
+        local d = detailOf(ids[i])
+        rows[i] = { id = ids[i], name = (d and d.name) or ids[i] }
+    end
+    ensureMenu()
+    W.menuList = rows
+    CloseDropDownMenus()
+    ToggleDropDownMenu(1, nil, dropDown, anchor or UIParent, 0, 0)
 end
 
 local function styleNavBtn(bt)
@@ -1534,6 +1589,16 @@ local function entryPin(i, canvas)
     return pin
 end
 
+local function ArtTopLevel()
+    local api = _G.OpenMapAPI
+    if type(api) ~= "table" then return 0 end
+    local ok, st = pcall(api.IsStitched)
+    if not (ok and st) then return 0 end
+    local ok2, top = pcall(api.ArtTopLevel)
+    if ok2 and type(top) == "number" then return top + 4 end
+    return 0
+end
+
 local function placeEntryPin(pin, canvas, row)
     local cs = canvas:GetScale() or 1
     local s = (cs > 0) and (1 / cs) or 1
@@ -1552,14 +1617,48 @@ function Provider:RemoveAllData()
     self.shown = 0
 end
 
+local function CurMap(self)
+    local wmf = _G.WorldMapFrame
+    if wmf and wmf.GetMapID then
+        local ok, id = pcall(wmf.GetMapID, wmf)
+        if ok and type(id) == "number" and id > 0 then return wmf, id end
+    end
+    local m = self and self.GetMap and self:GetMap()
+    return m, m and m.GetMapID and m:GetMapID()
+end
+
+local function StitchedRows(host)
+    local api = _G.OpenMapAPI
+    if type(api) ~= "table" or type(host) ~= "number" then return nil end
+    if ArtTopLevel() <= 0 then return nil end
+    local de = ns.DungeonEntry
+    if type(de) ~= "table" then return nil end
+    local out
+    for id, e in pairs(de) do
+        if type(e) == "table" and type(e[1]) == "number" and e[2] and e[3] and hasArt(id) then
+            local oku, u, v = pcall(api.WorldFromMap, e[1], e[2] / 100, e[3] / 100)
+            if oku and u then
+                local okm, cx, cy = pcall(api.MapFromWorld, host, u, v)
+                if okm and cx and cy and cx > -0.05 and cx < 1.05 and cy > -0.05 and cy < 1.05 then
+                    out = out or {}
+                    local d = detailOf(id)
+                    out[#out + 1] = { id = id, name = (d and d.name) or id,
+                                      x = cx * 100, y = cy * 100 }
+                end
+            end
+        end
+    end
+    return out
+end
+
 function Provider:RefreshAllData()
     self:RemoveAllData()
-    local map = self:GetMap()
-    local mapID = map and map:GetMapID()
-    local rows = mapID and W.EntriesIn(mapID)
+    local map, mapID = CurMap(self)
+    local rows = StitchedRows(mapID) or (mapID and W.EntriesIn(mapID))
+    if ns.OpenMapBridge then rows = ns.OpenMapBridge.Keep(rows) end
     self.groups = nil
     if not (rows and #rows > 0) then return end
-    local canvas = map:GetCanvas()
+    local canvas = map and map.GetCanvas and map:GetCanvas()
     if not canvas or (canvas:GetWidth() or 0) <= 1 then return end
     local groups, byKey = {}, {}
     for i = 1, #rows do
@@ -1579,6 +1678,7 @@ function Provider:RefreshAllData()
         local ok2, lv = pcall(function() return mgr:GetValidFrameLevel("PIN_FRAME_LEVEL_DUNGEON_ENTRANCE") end)
         if ok2 and type(lv) == "number" then level = lv end
     end
+    level = math.max(level, ArtTopLevel())
     local n = math.min(#groups, PIN_ENTRY_MAX)
     for i = 1, n do
         local g = groups[i]
@@ -1597,8 +1697,8 @@ function Provider:RefreshAllData()
 end
 
 function Provider:Relayout()
-    local map = self:GetMap()
-    local canvas = map and map:GetCanvas()
+    local map = CurMap(self)
+    local canvas = map and map.GetCanvas and map:GetCanvas()
     if not (canvas and self.groups) then return end
     for i = 1, math.min(#self.groups, self.shown or 0) do
         placeEntryPin(entryPins[i], canvas, self.groups[i])
@@ -1630,15 +1730,21 @@ local function driveEntryPins()
     if not (entryProvider and WorldMapFrame) then return end
     local ok, map = pcall(entryProvider.GetMap, entryProvider)
     if not (ok and map) then return end
+    local lm = _G.WorldMapFrame
+    local lid
+    if lm and lm.GetMapID then
+        local okid, id = pcall(lm.GetMapID, lm)
+        if okid and type(id) == "number" and id > 0 then lid = id end
+    end
     local cv = map:GetCanvas()
     local canvas = cv
-    local mapID = map:GetMapID()
+    local mapID = lid or map:GetMapID()
     local cs = (canvas and canvas:GetScale()) or 0
     local cw = (canvas and canvas:GetWidth()) or 0
     local ch = (canvas and canvas:GetHeight()) or 0
     local sig = table.concat({
         tostring(mapID), tostring(cs), tostring(cw), tostring(ch),
-        W.Active() and "1" or "0",
+        W.Active() and "1" or "0", tostring(ArtTopLevel()),
     }, "|")
     if sig == epSig then return end
     epSig = sig
@@ -1667,6 +1773,12 @@ local function buildPinPool(view)
         bt.dot:SetTexture(M.PIN_BOSS_TEX)
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
+        bt.entry = bt:CreateTexture(nil, "ARTWORK", nil, 2)
+        bt.entry:SetPoint("CENTER", bt, "CENTER", 0, 0)
+        bt.entry:SetSize(M.PIN_SIZE * 0.62, M.PIN_SIZE * 0.62)
+        bt.entry:SetTexture(M.PIN_DOOR_TEX)
+        pcall(bt.entry.SetAtlas, bt.entry, "dungeon")
+        bt.entry:Hide()
         bt.__glow = bt:CreateTexture(nil, "BACKGROUND", nil, -1)
         bt.__glow:SetTexture(M.PIN_GLOW_TEX)
         bt.__glow:SetBlendMode("ADD")

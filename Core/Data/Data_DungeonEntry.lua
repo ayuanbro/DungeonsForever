@@ -29,7 +29,7 @@ ns.DungeonEntry = {
     ["the_stockade"] = { 1453, 50.4, 66.4, "暴风城" },
     ["ragefire_chasm"] = { 1454, 51.5, 49.7, "奥格瑞玛" },
     ["hall_of_thanes"] = { 1455, 28.2, 47.7, "铁炉堡" },
-    ["blackrock_depths"] = { 1427, 27.1, 72.5, "灼热峡谷" },
+    ["blackrock_depths"] = { 1427, 45.6, 89.4, "灼热峡谷" },
     ["lower_blackrock_spire"] = { 1428, 33.0, 25.2, "燃烧平原" },
     ["upper_blackrock_spire"] = { 1428, 33.0, 25.2, "燃烧平原" },
 }
