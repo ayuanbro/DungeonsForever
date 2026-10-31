@@ -707,7 +707,7 @@ ns.DungeonLoot = {
             { 252513, nil, true },
             { 252515, nil, true },
         } },
-        { "Razorfen Spearhide", "剃刀沼泽刺鬃守卫", "", "4438", {
+        { "Razorfen Spearhide", "剃刀沼泽刺鬃守卫", "稀有", "4438", {
             { 6679, 60, false },
         } },
         { "Agathelos the Raging", "暴怒的阿迦赛罗斯", "", "4422", {

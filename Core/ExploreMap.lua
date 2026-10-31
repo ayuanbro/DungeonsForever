@@ -560,6 +560,12 @@ local function graveFit(disp, scale)
 end
 
 function ns.ExploreMapRefresh()
+    if ns.MapWorldModule and ns.MapWorldModule.Active and ns.MapWorldModule.Active() then
+        releasePins()
+        releaseGraves()
+        releaseLines()
+        return
+    end
     if not (WorldMapFrame and WorldMapFrame.IsShown and WorldMapFrame:IsShown()
             and WorldMapFrame.GetMapID) then return end
     if routeOn and cfg().autoRecalc ~= false and route[1]

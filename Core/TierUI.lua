@@ -434,7 +434,10 @@ local function BuildNav(page)
 
     TT.classBtns = {}
     local y = TT.NAV_FIRST_Y
+    local _ncls = 0
     for _, cls in ipairs(TT.CLASS_ORDER) do
+        _ncls = _ncls + 1
+        if _ncls % 2 == 0 then coroutine.yield() end
         if G.specs[cls] then
             local cb = NewButton(page, ClassName(cls), TT.NAV_W, TT.NAV_ITEM_H, TT.NAV_FS)
             if not (ns.hui and ns.hui.BuildCapsule) then
@@ -704,8 +707,9 @@ local function BuildSpecHero(page)
     meta:SetPoint("RIGHT", page, "TOPRIGHT", -(TT.EDGE + TT.INSET), -TT.SPEC_META_Y)
     TT.specMeta = meta
 
-    local grade = MakeFS(hero, 14, C_GREY, "RIGHT")
-    grade:SetPoint("TOPRIGHT", hero, "TOPRIGHT", 0, -2)
+    local grade = DG.MakeBadge(hero, ns.hui and ns.hui.layer.L3)
+    grade:SetPoint("LEFT", title, "RIGHT", 8, 0)
+    grade:Hide()
     TT.heroGrade = grade
 
     local sep = topCard:CreateTexture(nil, "ARTWORK")
@@ -725,6 +729,7 @@ local function BuildSpecPool(parent)
 
     TT.scCards = {}
     for i = 1, TT.CARD_MAX do
+        if i % 2 == 0 then coroutine.yield() end
         local fr = CreateFrame("Frame", nil, child)
         fr:SetWidth(TT.FULL_W)
         fr:Hide()
@@ -739,6 +744,7 @@ local function BuildSpecPool(parent)
 
     TT.rowPool = {}
     for i = 1, TT.ROW_MAX do
+        if i % 4 == 0 then coroutine.yield() end
         local fs = MakeFS(TT.rowHost, 14, C_TEXT, "LEFT")
         fs:SetWordWrap(true)
         fs:Hide()
@@ -1172,8 +1178,16 @@ TT.PaintHeader = function()
     local gk, pk = SpecGrade(cls, spec)
     if gk then
         local gc = TT.COLOR[gk] or TT.COLOR.D
-        TT.heroGrade:SetText(format(L["★ %s级 · %s"], gk, TT.PAGE_NAME[pk] or ""))
-        TT.heroGrade:SetTextColor(gc[1], gc[2], gc[3])
+        local txt = format(L["%s级 · %s"], gk, TT.PAGE_NAME[pk] or "")
+        TT.heroGrade.lab:SetText(txt)
+        local w = (TT.heroGrade.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+        if w < DG.Q_BADGE_MIN_W then w = DG.Q_BADGE_MIN_W end
+        if ns.hui and ns.hui.PaintSolidChip and TT.heroGrade.__chipFill then
+            ns.hui.PaintSolidChip(TT.heroGrade, txt, gc, w)
+        else
+            if DG.BadgeTint then DG.BadgeTint(TT.heroGrade, gc) end
+            TT.heroGrade:SetWidth(w)
+        end
         TT.heroGrade:Show()
     else
         TT.heroGrade:Hide()
@@ -1437,6 +1451,7 @@ function TT.Build(page)
     coroutine.yield()
 
     BuildNav(page)
+    coroutine.yield()
     BuildSubTabs(page)
     coroutine.yield()
     BuildScroll(page)
@@ -1461,7 +1476,9 @@ function TT.Build(page)
     BuildNotes(TT.rowHost)
     coroutine.yield()
     BuildSpecHero(page)
+    coroutine.yield()
     BuildSecTabs(page)
+    coroutine.yield()
     BuildSpecPool(child)
     coroutine.yield()
 
@@ -1503,7 +1520,7 @@ function TT.Build(page)
     end
     coroutine.yield()
 
-    TT.Render()
+    if TT.RequestRender then TT.RequestRender() else TT.Render() end
     end))
 end
 

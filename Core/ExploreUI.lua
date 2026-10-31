@@ -57,7 +57,7 @@ local BAG_CHAIN = {
               place = L["石爪山脉 · 烈日石居上方废弃营地"], obj = L["散落杂物"] },
       rw = { { 3463, note = L["三选一 · 魔杖"] }, { 217314, note = L["三选一"] },
              { 217315, note = L["三选一"] }, { 3464 }, { 3465 }, { 216619 } } },
-    { key = "fire", no = "3½", title = "Rekindle", optional = true, xp = nil, q = 80001,
+    { key = "fire", no = "3.5", title = "Rekindle", optional = true, xp = nil, q = 80001,
       note = L["可选步：用②给的普通木柴 + 燧石和火绒重燃营火，燧石和火绒用完会还给你；链路不需要这步。"],
       loc = { area = 406, x = nil, y = nil, zn = L["同营地 · 营火"],
               place = L["石爪山脉 · 同营地营火（可选）"], obj = L["营火"] },
@@ -1846,9 +1846,27 @@ local function RtFullName(t)
     return t.name or ""
 end
 
+local OVL_TINT = { [1] = { 0.47, 0.71, 1.00 }, [2] = { 1.00, 0.50, 0.44 } }
+
+local function RtOvlSide()
+    local db = ns.DB()
+    local v = db.explore and db.explore.ovlSide
+    if v == 1 or v == 2 then return v end
+    local f = UnitFactionGroup and UnitFactionGroup("player")
+    return (f == "Alliance") and 1 or 2
+end
+
+local function RtOvlSync()
+    local cur = RtOvlSide()
+    for _, bt in ipairs(EG.rtOvlBtns or {}) do
+        SetButtonSelected(bt, bt.__side == cur)
+    end
+end
+
 local function RtMapPaint(mapID, x, y)
     local mp, cv = EG.rtMap, EG.rtMapCanvas
     if not (mp and cv and mapID) then return end
+    RtOvlSync()
     local pool = EG.rtMapTex or {}
     local pin = EG.rtMapPin
     local zn
@@ -1911,17 +1929,22 @@ local function RtMapPaint(mapID, x, y)
     local det = ns.MapDetail and ns.MapDetail[mapID]
     local k = 0
     if det then
-        for i = 1, #det, 5 do
+        for i = 1, #det, 9 do
             local t = dp[k + 1]
             if not t then break end
             k = k + 1
             local dx, dy = det[i + 1], det[i + 2]
             local sw, sh = det[i + 3], det[i + 4]
+            local u0, v0, u1, v1 = det[i + 5], det[i + 6], det[i + 7], det[i + 8]
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", cv, "TOPLEFT", dx * S, dy * S)
             t:SetSize(sw * S, sh * S)
             t:SetTexture(det[i])
-            t:SetTexCoord(0, 1, 0, 1)
+            if u0 then
+                t:SetTexCoord(u0, u1, v0, v1)
+            else
+                t:SetTexCoord(0, 1, 0, 1)
+            end
             t:Show()
         end
     end
@@ -1929,22 +1952,25 @@ local function RtMapPaint(mapID, x, y)
     local opool = EG.rtOvlTex or {}
     for i = 1, #opool do opool[i]:Hide() end
     if ns.RouteOvl then
-        local otg = EG.rtCurTgt
-        local olist = otg and otg.ovl
         local on = 0
-        if type(olist) == "table" then
-            for i = 1, #olist do
-                local od = ns.RouteOvl[olist[i]]
-                if od and od[1] == mapID and od[3] and od[4] and opool[on + 1] then
-                    on = on + 1
-                    local ot = opool[on]
-                    ot:ClearAllPoints()
-                    ot:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
-                    ot:SetSize(dw, dh)
-                    ot:SetTexture(od[2])
-                    ot:SetTexCoord(0, od[5] / od[3], 0, od[6] / od[4])
-                    ot:Show()
-                end
+        local side = RtOvlSide()
+        local names = {}
+        for nm in pairs(ns.RouteOvl) do names[#names + 1] = nm end
+        table.sort(names)
+        for ni = 1, #names do
+            local od = ns.RouteOvl[names[ni]]
+            local os = od[7] or 0
+            if od[1] == mapID and (os == 0 or os == side) and od[3] and od[4] and opool[on + 1] then
+                on = on + 1
+                local ot = opool[on]
+                ot:ClearAllPoints()
+                ot:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
+                ot:SetSize(dw, dh)
+                ot:SetTexture(od[2])
+                local tc = OVL_TINT[side] or OVL_TINT[1]
+                ot:SetVertexColor(tc[1], tc[2], tc[3])
+                ot:SetTexCoord(0, od[5] / od[3], 0, od[6] / od[4])
+                ot:Show()
             end
         end
     end
@@ -4144,9 +4170,15 @@ function EG.Build(page)
             if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(eb) end
             local ef = MakeFS(eb, 14, C_GOLD, "CENTER")
             ef:SetAllPoints()
-            ef:SetText(L["任务线奖励总览"] .. " ›")
+            ef:SetText(L["任务线奖励总览"])
             ef:SetWordWrap(false)
             eb:SetFontString(ef)
+            local eh = eb:CreateTexture(nil, "OVERLAY")
+            eh:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BackChevron.tga")
+            eh:SetTexCoord(1, 0, 0, 1)
+            eh:SetSize(9, 9)
+            eh:SetPoint("RIGHT", eb, "RIGHT", -6, 0)
+            eh:SetVertexColor(Unpack(C_GOLD))
             eb:SetScript("OnClick", function()
                 EG.bagMode = (EG.bagMode == "total") and "detail" or "total"
                 EG.RequestRender()
@@ -4480,9 +4512,11 @@ function EG.Build(page)
                 end)
                 EG.bmNodes[i] = nd
                 if i < 5 then
-                    local ar = MakeFS(chain, 16, C_GOLD, "CENTER")
-                    ar:SetText("›")
-                    ar:SetWordWrap(false)
+                    local ar = chain:CreateTexture(nil, "OVERLAY")
+                    ar:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BackChevron.tga")
+                    ar:SetTexCoord(1, 0, 0, 1)
+                    ar:SetHeight(12)
+                    ar:SetVertexColor(Unpack(C_GOLD))
                     ar:Hide()
                     EG.bmArrows[i] = ar
                 end
@@ -5110,6 +5144,24 @@ Y()
         cv:SetSize(10, 10)
         cv:SetPoint("TOP", mp, "TOP", 0, -30)
         EG.rtMapCanvas = cv
+        EG.rtOvlBtns = {}
+        do
+            local defs = { { 1, L["联盟"] }, { 2, L["部落"] } }
+            for i = 1, #defs do
+                local sd = defs[i]
+                local bt = NewButton(cv, sd[2], 40, 20, 12)
+                bt:SetPoint("TOPLEFT", cv, "TOPLEFT", 8 + (i - 1) * 42, -8)
+                bt:SetFrameLevel((cv:GetFrameLevel() or 0) + 6)
+                bt.__side = sd[1]
+                bt:SetScript("OnClick", function(self)
+                    local db = ns.DB()
+                    db.explore = db.explore or {}
+                    db.explore.ovlSide = self.__side
+                    EG.RtMapRepaint()
+                end)
+                EG.rtOvlBtns[i] = bt
+            end
+        end
         EG.rtMapTex = {}
         for i = 1, 24 do
             local tx = cv:CreateTexture(nil, "ARTWORK")
@@ -5119,7 +5171,7 @@ Y()
             EG.rtMapTex[i] = tx
         end
         EG.rtMapTexD = {}
-        for i = 1, 32 do
+        for i = 1, 48 do
             local tx = cv:CreateTexture(nil, "OVERLAY")
             tx:SetDrawLayer("OVERLAY", 0)
             tx:SetSize(10, 10)
@@ -5190,7 +5242,7 @@ Y()
         mpin:Hide()
         EG.rtMapPin = mpin
         EG.rtOvlTex = {}
-        for i = 1, 8 do
+        for i = 1, 16 do
             local ltx = cv:CreateTexture(nil, "OVERLAY")
             ltx:SetDrawLayer("OVERLAY", 2)
             ltx:SetSize(10, 10)

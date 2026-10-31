@@ -23,6 +23,16 @@ ns.SET_ICON = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\DF_Settings"
 ns.SET_ICON_IDLE = { 0.55, 0.62, 0.70 }
 ns.SET_ICON_ON = { 1, 1, 1 }
 ns.SET_ICON_ACT = { 1, 0.84, 0 }
+ns.SORT_UP = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\NAV\\SortUp"
+ns.SORT_DN = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\NAV\\SortDown"
+ns.SORT_RATIO = 1.3
+ns.SORT_DIM = { 0.34, 0.36, 0.40 }
+
+function ns.SortArrowAccent()
+    local a = ns.hui and ns.hui.ACCENT
+    if a then return a[1], a[2], a[3] end
+    return 0x46 / 255, 0xbf / 255, 0x72 / 255
+end
 
 local function DB()
     DungeonsForeverDB = DungeonsForeverDB or {}
@@ -36,8 +46,11 @@ if ns.options.buttonSound == nil then ns.options.buttonSound = true end
 
 ns.QUICK_VER = 1
 ns.QUICK_GROUPS = { "dungeon", "prof", "explore" }
-ns.QUICK_EXPLORE = { "books", "rewards", "bag", "bm" }
+ns.QUICK_EXPLORE = { "books", "bag" }
 ns.QUICK_TABS = { "Dungeons", "Raids", "Professions", "Explore", "Collections", "Factions", "Bis", "Tier", "PvP", "Gear" }
+
+local QUICK_EXPLORE_SET = {}
+for _, k in ipairs(ns.QUICK_EXPLORE) do QUICK_EXPLORE_SET[k] = true end
 
 function ns.QuickCfg()
     local ui = DB().ui
@@ -56,6 +69,9 @@ function ns.QuickCfg()
     for _, k in ipairs(ns.QUICK_EXPLORE) do
         if q.expl[k] == nil then q.expl[k] = true end
     end
+    for k in pairs(q.expl) do
+        if not QUICK_EXPLORE_SET[k] then q.expl[k] = nil end
+    end
     if type(q.tabs) ~= "table" then q.tabs = {} end
     for _, k in ipairs(ns.QUICK_TABS) do
         if q.tabs[k] == nil then q.tabs[k] = true end
@@ -64,10 +80,16 @@ function ns.QuickCfg()
 end
 
 do
-    local candidates = {
-        "ARKai_T.ttf", "ARHei.TTF", "ARKai_C.ttf",
+    local candidates = {}
+    if GetLocale() == "zhCN" then
+        candidates[#candidates + 1] = "ARHei.ttf"
+    end
+    for _, name in ipairs({
+        "ARKai_T.ttf", "ARHei.ttf", "ARKai_C.ttf",
         "bLEI00D.TTF", "bHEI00M.TTF", "bKAI00M.TTF", "arheiuhk_bd.TTF",
-    }
+    }) do
+        candidates[#candidates + 1] = name
+    end
     local probe = UIParent:CreateFontString()
     probe:Hide()
     for _, name in ipairs(candidates) do
@@ -546,7 +568,7 @@ do
         end
         local urgent = #qUrg > 0
         if not urgent and inCombat() then return end
-        local budget = urgent and 12 or 6
+        local budget = urgent and 4 or 4
         local t0 = debugprofilestop()
         local dUrg, dNorm = {}, {}
         pump(qUrg, t0, budget, dUrg)

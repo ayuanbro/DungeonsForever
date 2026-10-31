@@ -46,7 +46,13 @@ local function IsHui()
 end
 
 local function Fnt(size)
-    return FONT_BASE, size, ns.hui.FontFlags("OUTLINE")
+    local face = FONT_BASE or ns.FONT or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+    local flags = "OUTLINE"
+    if ns.hui and ns.hui.FontFlags then
+        local ok, f = pcall(ns.hui.FontFlags, "OUTLINE")
+        if ok and type(f) == "string" then flags = f end
+    end
+    return face, size, flags
 end
 
 local function Unpack(c)
@@ -207,11 +213,25 @@ DG.OLD_EDGE = { 0.30, 0.35, 0.50 }
 DG.NOART_COLOR = { 0.26, 0.28, 0.32 }
 
 DG.HERO_H = 144
-DG.HERO_PLATE_H = 40
-DG.HERO_TITLE_Y, DG.HERO_META_Y = DG.HERO_H - 36, DG.HERO_H - 16
+DG.HERO_PLATE_H = 52
+DG.HERO_TITLE_Y, DG.HERO_META_Y = DG.HERO_H - 24, DG.HERO_H - 16
+DG.HERO_TITLE_MAXW = 226
+DG.ENT_CHIP_ICONW = 21
+DG.ENT_CHIP_TXTPAD = 8
+DG.ENT_CHIP_MINW = 60
+DG.ENT_CHIP_MAXW = 150
+DG.ENT_CHIP_H = 24
+DG.ENT_CHIP_GAP = 6
+DG.ENT_CHIP_LEAD = 10
 DG.FILTER_Y = DG.HERO_H + 8
 DG.SCROLL_Y = DG.FILTER_Y + 32
 DG.GUIDE_TOP_Y = DG.HERO_H + 8
+DG.HERO_FADE_REVERSED = false
+DG.HERO_FADE = {
+    { 0.00, 0.10, 0.85, 0.65 },
+    { 0.10, 0.25, 0.65, 0.15 },
+    { 0.25, 0.40, 0.15, 0.00 },
+}
 DG.HERO_TEX_OFFICIAL = { 0.02, 0.98, 0.422, 0.668 }
 DG.HERO_TEX_CAMELOT = { 0.00, 1.00, 0.372, 0.628 }
 DG.WIDE_TEX_OFFICIAL = { 0.115, 0.885, 0.295, 0.805 }
@@ -281,7 +301,9 @@ end
 
 function DG.Pack(list)
     local sorted = {}
-    for _, d in ipairs(list) do sorted[#sorted + 1] = d end
+    for _, d in ipairs(list) do
+        if not d.noList then sorted[#sorted + 1] = d end
+    end
     table.sort(sorted, function(a, b)
         if a.levelMin ~= b.levelMin then return a.levelMin < b.levelMin end
         return a.levelMax < b.levelMax
@@ -312,6 +334,21 @@ DG.CARD_COLS, DG.CARD_H, DG.CARD_GAP = 5, 58, 8
 DG.GUTTER = 8
 DG.CHILD_W = CONTENT_W - PAGE_INSET * 2
 DG.CARD_W = math.floor((DG.CHILD_W - DG.GUTTER * 2 - (DG.CARD_COLS - 1) * DG.CARD_GAP) / DG.CARD_COLS)
+DG.CARD_GLOW_K = { 0.16, 0.12, 0.09, 0.06, 0.04, 0.02 }
+DG.CARD_STROKE = false
+DG.CARD_MASK = "Interface\\AddOns\\DungeonsForever\\Media\\DFCardMaskRect"
+DG.CARD_SHADE = { { 1, 0.22, 0.78, 0.82, 0.92 } }
+
+local function CardRoundTex(tex)
+    if not (tex and tex.AddMaskTexture) then return end
+    local f = tex:GetParent()
+    if not f then return end
+    local m = f:CreateMaskTexture(nil, "OVERLAY")
+    m:SetAllPoints(tex)
+    m:SetTexture(DG.CARD_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    tex:AddMaskTexture(m)
+    tex.__dfMask = m
+end
 
 function DG.WheelScroll(scroll, child, delta)
     if not (scroll and child) then return end
@@ -340,8 +377,19 @@ local function CardEdge(card, r, g, b, a)
             t:SetVertexColor(r, g, b)
             t:SetAlpha(a)
         end
-    else
+    elseif not card.__noStroke then
         card:SetBackdropBorderColor(r, g, b, a)
+    end
+    local gl = card.__rglow
+    if gl then
+        for i = 1, #gl do
+            local e = gl[i]
+            local al = a * e[2]
+            for _, t in ipairs(e[1]) do
+                t:SetVertexColor(r, g, b)
+                t:SetAlpha(al)
+            end
+        end
     end
 end
 
@@ -359,19 +407,42 @@ function DG.NewCard(parent)
         ns.hui.BuildRoundedBG(card, 6, ns.hui.layer.L2, "both", false)
         card:SetBackdropBorderColor(0, 0, 0, 0)
         if ns.hui.BuildRoundBorder then
-            card.__rborder = ns.hui.BuildRoundBorder(card, 6, ns.hui.CARD_BORDER, card, "OVERLAY", "both", 1)
+            if DG.CARD_STROKE == false then
+                card.__noStroke = true
+            else
+                card.__rborder = ns.hui.BuildRoundBorder(card, 6, ns.hui.CARD_BORDER, card, "OVERLAY", "both", 1)
+                local gl = {}
+                for step, k in ipairs(DG.CARD_GLOW_K) do
+                    local pc = ns.hui.BuildRoundBorder(card, 6, ns.hui.CARD_BORDER, card, "OVERLAY", "both", 1, nil, nil, nil, step)
+                    if pc then gl[#gl + 1] = { pc, k } end
+                end
+                card.__rglow = gl
+            end
+            local sh = {}
+            for i = 1, #DG.CARD_SHADE do
+                local e = DG.CARD_SHADE[i]
+                local pc = ns.hui.BuildRoundBorder(card, 6, { e[3], e[4], e[5], e[2] },
+                    card, "OVERLAY", "both", 1, nil, nil, nil, e[1])
+                if pc then
+                    for _, t in ipairs(pc) do t:SetAlpha(e[2]) end
+                    sh[#sh + 1] = pc
+                end
+            end
+            card.__rshade = sh
         end
         rounded = true
     end
     card.art = card:CreateTexture(nil, "BACKGROUND")
     card.art:SetAllPoints()
-    if rounded and ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(card.art) end
+    if rounded then CardRoundTex(card.art) end
     card.dim = card:CreateTexture(nil, "ARTWORK")
     card.dim:SetAllPoints()
+    if rounded then CardRoundTex(card.dim) end
     card.plate = card:CreateTexture(nil, "ARTWORK")
     card.plate:SetPoint("BOTTOMLEFT", card, "BOTTOMLEFT", 1, 1)
     card.plate:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -1, 1)
     card.plate:SetHeight(20)
+    if rounded then CardRoundTex(card.plate) end
     if IsHui() then
         card.plate:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\VGradient")
     else
@@ -443,8 +514,10 @@ function DG.BuildList()
     }
     local buckets = { now = {}, rec = {}, up = {} }
     for _, d in ipairs(data.dungeons) do
-        local b = buckets[DG.GroupOf(d, lv)]
-        b[#b + 1] = d
+        if not d.noList then
+            local b = buckets[DG.GroupOf(d, lv)]
+            b[#b + 1] = d
+        end
     end
 
     local y = -4
@@ -844,9 +917,9 @@ end
 DG.Loader = {
     budgetMs = 4,
     preset   = "normal",
-    budgetFactor = 0.8,
-    capMin = 8,
-    capMax = 200,
+    budgetFactor = 0.05,
+    capMin = 1,
+    capMax = 2,
 }
 DG.LOADER_PRESETS = { eco = 2, normal = 4, turbo = 8 }
 DG.LOADER_LABEL = { eco = L["省电"], normal = L["标准"], turbo = L["激进"] }
@@ -857,9 +930,9 @@ function DG.Loader.CurCap(remaining)
     local L0 = DG.Loader
     local dt = L0.__dt
     if type(dt) ~= "number" or dt <= 0 then dt = 16 end
-    local cap = dt * (L0.budgetFactor or 0.8)
-    local lo = L0.capMin or 8
-    local hi = L0.capMax or 200
+    local cap = dt * (L0.budgetFactor or 0.05)
+    local lo = L0.capMin or 1
+    local hi = L0.capMax or 2
     if dt > 400 then
         local slow = dt * 0.5
         if slow > 800 then slow = 800 end
@@ -3184,18 +3257,42 @@ function DG.EnsureDetailBuilt()
     hero:SetHeight(DG.HERO_H)
     hero.art = hero:CreateTexture(nil, "BACKGROUND")
     hero.art:SetAllPoints()
-    local heroSheen = hero:CreateTexture(nil, "ARTWORK")
-    heroSheen:SetAllPoints()
-    heroSheen:SetColorTexture(0, 0, 0, 0.20)
+    hero.fade = {}
+    for i = 1, #DG.HERO_FADE do
+        local seg = DG.HERO_FADE[i]
+        local t = hero:CreateTexture(nil, "ARTWORK")
+        t:SetTexture("Interface/Buttons/WHITE8X8")
+        local a1, a2 = seg[3], seg[4]
+        if DG.HERO_FADE_REVERSED then a1, a2 = a2, a1 end
+        t:SetGradient("HORIZONTAL", CreateColor(0, 0, 0, a1), CreateColor(0, 0, 0, a2))
+        hero.fade[i] = t
+    end
+    local function LayoutHeroFade()
+        local w = (hero.GetWidth and hero:GetWidth()) or 0
+        if type(w) ~= "number" or w <= 0 then return end
+        for i = 1, #DG.HERO_FADE do
+            local seg = DG.HERO_FADE[i]
+            local t = hero.fade[i]
+            if t then
+                t:ClearAllPoints()
+                t:SetPoint("TOPLEFT", hero, "TOPLEFT", math.floor(w * seg[1] + 0.5), 0)
+                t:SetPoint("BOTTOMRIGHT", hero, "BOTTOMLEFT", math.floor(w * seg[2] + 0.5), 0)
+            end
+        end
+    end
+    hero.LayoutFade = LayoutHeroFade
+    LayoutHeroFade()
+    hero:HookScript("OnSizeChanged", LayoutHeroFade)
     local heroPlate = hero:CreateTexture(nil, "ARTWORK")
     heroPlate:SetPoint("BOTTOMLEFT", hero, "BOTTOMLEFT", 0, 0)
     heroPlate:SetPoint("BOTTOMRIGHT", hero, "BOTTOMRIGHT", 0, 0)
     heroPlate:SetHeight(DG.HERO_PLATE_H)
-    heroPlate:SetColorTexture(0, 0, 0, 0.66)
+    heroPlate:SetTexture("Interface/Buttons/WHITE8X8")
+    heroPlate:SetGradient("VERTICAL", CreateColor(0, 0, 0, 1.00), CreateColor(0, 0, 0, 0))
     U.dungeonDetailHero = hero
     U.dungeonDetailBase = hero:GetFrameLevel()
 
-    local back = NewButton(detail, L["‹ 副本"], 70, 24, 14)
+    local back = NewButton(detail, L["副本"], 76, 24, 14)
     back:SetFrameLevel(hero:GetFrameLevel() + 1)
     back:SetPoint("TOPLEFT", detail, "TOPLEFT", 8, -8)
     back:SetScript("OnClick", function()
@@ -3211,6 +3308,17 @@ function DG.EnsureDetailBuilt()
         DG.CullListRows()
         ns.PlaySound(1)
     end)
+    local bicon = back:CreateTexture(nil, "OVERLAY")
+    bicon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BackChevron.tga")
+    bicon:SetSize(16, 16)
+    bicon:SetPoint("LEFT", back, "LEFT", 7, 0)
+    back.__backIcon = bicon
+    local bfs = back:GetFontString()
+    if bfs then
+        bfs:ClearAllPoints()
+        bfs:SetPoint("LEFT", 28, 0)
+        bfs:SetJustifyH("LEFT")
+    end
     U.dungeonBack = back
     U.dungeonDetailTitle = MakeFS(hero, 16, C_WHITE, "LEFT")
     U.dungeonDetailTitle:SetShadowColor(0, 0, 0, 1)
@@ -3228,6 +3336,7 @@ function DG.EnsureDetailBuilt()
     U.dungeonDetailMeta:SetShadowColor(0, 0, 0, 1)
     U.dungeonDetailMeta:SetShadowOffset(1, -1)
     U.dungeonDetailMeta:SetPoint("TOPLEFT", hero, "TOPLEFT", 12, -DG.HERO_META_Y)
+    U.dungeonDetailMeta:Hide()
     U.dungeonDetailTipZone = CreateFrame("Frame", nil, detail)
     U.dungeonDetailTipZone:SetPoint("TOPLEFT", detail, "TOPLEFT", 10, -DG.HERO_TITLE_Y + 4)
     U.dungeonDetailTipZone:SetPoint("TOPRIGHT", detail, "TOPRIGHT", 0, -DG.HERO_TITLE_Y + 4)
@@ -3266,21 +3375,69 @@ function DG.EnsureDetailBuilt()
     DG.RunSteps()
 end
 
+local function ChipTextFor(chip, label, maxw)
+    local room = maxw - DG.ENT_CHIP_ICONW - DG.ENT_CHIP_TXTPAD - 4
+    if room < 20 then room = 20 end
+    local nm = DG.ClipTo(chip, label, room)
+    if nm ~= label then
+        if nm == "" then nm = "…" else nm = nm .. "…" end
+    end
+    return nm
+end
+
+local function ChipMeasure(chip, label)
+    chip:SetSize(DG.ENT_CHIP_MAXW, DG.ENT_CHIP_H)
+    chip:SetText(label)
+    local fs = chip:GetFontString()
+    local tw = (fs and fs:GetStringWidth()) or 0
+    if type(tw) ~= "number" then tw = 0 end
+    return DG.ENT_CHIP_ICONW + tw + DG.ENT_CHIP_TXTPAD
+end
+
+local function ChipResize(chip, w)
+    if w < DG.ENT_CHIP_MINW then w = DG.ENT_CHIP_MINW end
+    if w > DG.ENT_CHIP_MAXW then w = DG.ENT_CHIP_MAXW end
+    chip:SetSize(w, DG.ENT_CHIP_H)
+    return w
+end
+
 function DG.PaintEntChips(d)
     local chips = U.dungeonEntChips
     if not (d and chips) then return end
     local pts = DG.EntrancePoints(d.id)
     local n = pts and #pts or 0
+    local hero = U.dungeonDetailHero
+    local title = U.dungeonDetailTitle
+    local heroW = (hero and hero.GetWidth and hero:GetWidth()) or 0
+    local titleW = (title and title.GetStringWidth and title:GetStringWidth()) or 0
+    local rightLimit = 0
+    if type(heroW) == "number" and heroW > 0 then rightLimit = heroW - 12 end
+    local used = 12 + (type(titleW) == "number" and titleW or 0) + DG.ENT_CHIP_LEAD
     for ci = 1, #chips do
         local chip = chips[ci]
         if ci <= n then
             local p = pts[ci]
-            chip:SetText(p.label or L["入口"])
-            if ci == 1 then
-                chip:SetPoint("LEFT", U.dungeonDetailTitle, "RIGHT", 10, 0)
-            else
-                chip:SetPoint("LEFT", chips[ci - 1], "RIGHT", 6, 0)
+            local label = p.label or L["入口"]
+            local w = ChipMeasure(chip, label)
+            if w > DG.ENT_CHIP_MAXW then
+                chip:SetText(ChipTextFor(chip, label, DG.ENT_CHIP_MAXW))
+                w = DG.ENT_CHIP_MAXW
             end
+            if rightLimit > 0 and used + w > rightLimit then
+                local avail = rightLimit - used
+                if avail >= DG.ENT_CHIP_MINW and avail < w then
+                    chip:SetText(ChipTextFor(chip, label, avail))
+                    w = avail
+                end
+            end
+            w = ChipResize(chip, w)
+            chip:ClearAllPoints()
+            if ci == 1 then
+                chip:SetPoint("LEFT", title, "RIGHT", DG.ENT_CHIP_LEAD, 0)
+            else
+                chip:SetPoint("LEFT", chips[ci - 1], "RIGHT", DG.ENT_CHIP_GAP, 0)
+            end
+            used = used + w + DG.ENT_CHIP_GAP
             chip:Show()
         else
             chip:Hide()
@@ -3427,7 +3584,7 @@ function DG.BuildDetailChips()
     if not (detail and hero) then return end
     if next(U.dungeonEntChips or {}) then return end
     for i = 1, 3 do
-        local chip = NewButton(detail, "", 76, 24, 14)
+        local chip = NewButton(detail, "", DG.ENT_CHIP_MINW, DG.ENT_CHIP_H, 14)
         AddBtnIcon(chip, "EntryPin", 14, 5)
         chip:SetFrameLevel(hero:GetFrameLevel() + 1)
         chip.__entIdx = i
@@ -4359,6 +4516,11 @@ function DG.ShowItemTip(owner, it, extra, title)
     local ok, err = pcall(DG.ShowItemTipBody, owner, it, extra, title)
     DG.__tipBusy = nil
     if not ok then error(err, 0) end
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0, function()
+            if GameTooltip:IsShown() then GameTooltip:Show() end
+        end)
+    end
 end
 
 function DG.TipAppendLines(lines)
@@ -4556,7 +4718,21 @@ function DG.ApplyLootDropdownChrome()
         end
         bt1:SetWidth(DG.LOOT_BOSS_W)
         bt1:SetText(DG.FitText(L["类型："] .. lab, 14, DG.LOOT_DD_TEXT_W))
+        if bt1.__em then bt1.__em:Hide() end
+        local bfs = bt1.GetFontString and bt1:GetFontString()
+        if bfs then
+            bfs:ClearAllPoints()
+            bfs:SetPoint("CENTER", bt1, "CENTER", 0, 0)
+            bfs:SetJustifyH("CENTER")
+        end
         ns.hui.SetButtonSelected(bt1, filter ~= "all")
+        if bfs then
+            if filter ~= "all" then
+                bfs:SetTextColor(1, 1, 1)
+            else
+                bfs:SetTextColor(Unpack(C_TEXT))
+            end
+        end
     end
 end
 
@@ -4591,22 +4767,34 @@ function U:ShowDungeonDetail(d)
     DG.ListFadesVisible(false)
     detail:Show()
     local hero = U.dungeonDetailHero
-    if hero then DG.PaintArt(hero.art, d, "hero") end
+    if hero then
+        DG.PaintArt(hero.art, d, "hero")
+        if hero.LayoutFade then hero.LayoutFade() end
+    end
     U.dungeonDetailCur = d
     U.dungeonQFlow = nil
     U.dungeonQDetKey = nil
     U.dungeonQListKey = nil
-    if U.dungeonBack then U.dungeonBack:SetText(d.raid and L["‹ 团本"] or L["‹ 副本"]) end
+    if U.dungeonBack then U.dungeonBack:SetText(d.raid and L["团本"] or L["副本"]) end
     DG.PrewarmLoot(d)
 
-    U.dungeonDetailTitle:SetText(d.name .. "  " .. d.nameEn)
+    local titleFs = U.dungeonDetailTitle
+    local loc = (type(GetLocale) == "function" and GetLocale()) or "zhCN"
+    local nameTxt = d.name
+    if loc ~= "zhCN" and loc ~= "zhTW" then nameTxt = d.nameEn or d.name end
+    local tail = "  |cff8b8b8b" .. format(L["等级 %d-%d"], d.levelMin, d.levelMax) .. "|r"
+    titleFs:SetText(tail)
+    local tailW = titleFs:GetStringWidth() or 0
+    local room = DG.HERO_TITLE_MAXW - tailW - 10
+    if room < 30 then room = 30 end
+    local nm = DG.ClipTo(titleFs, nameTxt, room)
+    if nm ~= nameTxt then
+        if nm == "" then nm = "…" else nm = nm .. "…" end
+    end
+    titleFs:SetText(nm .. tail)
     DG.PaintEntChips(d)
     SetTip(U.dungeonDetailTipZone, d.isNew and L["新副本的 boss 名单来自 beta 客户端，标「新」的是无限版新增的物品；没有掉落数据的 boss 只列名字。"]
         or L["谁掉什么、掉率多少是经典旧世的数据。标「新」的是无限版新增的掉落；其余物品无限版的属性可能有改动，以正式版为准。"])
-    local meta = format(L["等级 %d–%d · %s"], d.levelMin, d.levelMax, d.zone or L["位置未知"])
-    if d.bossCount then meta = meta .. format(L[" · BOSS %d"], d.bossCount) end
-    if d.dropCount then meta = meta .. format(L[" · 掉落 %d"], d.dropCount) end
-    U.dungeonDetailMeta:SetText(meta)
 
     U:RenderDungeonTab()
 end

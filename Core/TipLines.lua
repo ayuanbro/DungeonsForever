@@ -351,6 +351,15 @@ local function IlvlOf(id)
     return nil
 end
 
+local function PlainWidth(fs)
+    if not fs or not fs.GetWidth then return nil end
+    local ok, w = pcall(fs.GetWidth, fs)
+    if not ok or w == nil then return nil end
+    if issecretvalue and issecretvalue(w) then return nil end
+    if type(w) ~= "number" or w <= 0 then return nil end
+    return w
+end
+
 local function InsertIlvl(tt, id)
     local nm = tt.GetName and tt:GetName()
     if type(nm) ~= "string" or nm == "" then return end
@@ -358,7 +367,7 @@ local function InsertIlvl(tt, id)
     local il = IlvlOf(id)
     if not il then return end
     local l2 = _G[nm .. "TextLeft2"]
-    if not l2 or not l2:IsShown() then return end
+    if not l2 then return end
     local txt = format(L["物品等级 %d"], il)
     if l2:GetText() == txt then return end
     local n = tt.NumLines and tt:NumLines() or 0
@@ -374,11 +383,12 @@ local function InsertIlvl(tt, id)
         local lf = _G[nm .. "TextLeft" .. i]
         local rf = _G[nm .. "TextRight" .. i]
         local r = {}
-        if lf and lf:IsShown() then
+        if lf then
             r.tl = lf:GetText()
             r.lr, r.lg, r.lb = lf:GetTextColor()
+            r.tw = PlainWidth(lf)
         end
-        if rf and rf:IsShown() then
+        if rf then
             r.tr = rf:GetText()
             r.rr, r.rg, r.rb = rf:GetTextColor()
         end
@@ -387,17 +397,32 @@ local function InsertIlvl(tt, id)
     tt:AddLine(txt, C_SRC[1], C_SRC[2], C_SRC[3], true)
     local m = tt:NumLines()
     if type(m) ~= "number" or m <= n then return end
-    for i = m, 3, -1 do
-        local d = rows[i - 1] or {}
+    local step = m - n
+    for i = m, 2 + step, -1 do
+        local d = rows[i - step] or {}
         local lf = _G[nm .. "TextLeft" .. i]
         local rf = _G[nm .. "TextRight" .. i]
         if lf then
             lf:SetText(d.tl)
-            if d.tl then lf:SetTextColor(d.lr or 1, d.lg or 1, d.lb or 1) end
+            if d.tl then
+                lf:SetTextColor(d.lr or 1, d.lg or 1, d.lb or 1)
+                if lf.Show then lf:Show() end
+            elseif lf.Hide then
+                lf:Hide()
+            end
+            if d.tw and d.tw > 0 then
+                lf:SetWidth(d.tw)
+                lf:SetWordWrap(true)
+            end
         end
         if rf then
             rf:SetText(d.tr)
-            if d.tr then rf:SetTextColor(d.rr or 1, d.rg or 1, d.rb or 1) end
+            if d.tr then
+                rf:SetTextColor(d.rr or 1, d.rg or 1, d.rb or 1)
+                if rf.Show then rf:Show() end
+            elseif rf.Hide then
+                rf:Hide()
+            end
         end
     end
     l2:SetText(txt)
@@ -424,6 +449,7 @@ local function Augment(tt)
     InsertIlvl(tt, id)
     local lines = TL.Lines(id)
     Append(tt, lines, 0)
+    if tt.IsShown and tt:IsShown() and tt.Show then pcall(tt.Show, tt) end
     local n = type(lines) == "table" and #lines or 0
     tt.__dfAugN = n
     for i = 1, n do
@@ -790,9 +816,7 @@ function TL.RefreshPreview()
         Append(tip, TL.Lines(id))
     end
     tip:Show()
-    local w = 0
-    local ok, v = pcall(tip.GetWidth, tip)
-    if ok and type(v) == "number" then w = v end
+    local w = PlainWidth(tip) or 0
     if w > PREVIEW_W then tip:SetScale(PREVIEW_W / w) end
 end
 

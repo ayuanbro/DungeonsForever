@@ -34,10 +34,8 @@ QB.FILL, QB.FILL_HOT = 0.04, 0.12
 local strbyte, strsub, format = string.byte, string.sub, format or string.format
 
 local EXPLORE_DEFS = {
-    { key = "books",   text = L["40本书"] },
-    { key = "rewards", text = L["奖励总览"] },
-    { key = "bag",     text = L["睡袋"] },
-    { key = "bm",      text = L["战斗法师"] },
+    { key = "books", text = L["40本书"] },
+    { key = "bag",   text = L["睡袋"] },
 }
 
 local function Accent()
@@ -444,13 +442,14 @@ function QB:OnMainShow()
 end
 
 local SET_PAD, SET_ROW_H, SET_HDR_H = 14, 24, 22
+local SET_COL2_X = 106
 
 local function Toggle(parent)
     local tg = CreateFrame("CheckButton", nil, parent)
     tg:SetSize(36, 20)
     tg:EnableMouse(true)
     if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
-    tg.label = Fs(parent, 14, C_TEXT)
+    tg.label = Fs(parent, 12, C_TEXT)
     tg.label:SetJustifyH("RIGHT")
     tg.label:SetPoint("RIGHT", tg, "LEFT", -6, 0)
     return tg
@@ -504,7 +503,10 @@ function QB:EnsureSettings()
         local bt2
         if bLabel then
             bt2 = Toggle(parent)
-            bt2:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 6 - SET_PAD, yv)
+            bt2:SetPoint("TOPLEFT", parent, "TOPLEFT", SET_COL2_X, yv)
+            bt2.label:ClearAllPoints()
+            bt2.label:SetPoint("LEFT", bt2, "RIGHT", 6, 0)
+            bt2.label:SetJustifyH("LEFT")
             bt2.label:SetText(bLabel)
             bt2:SetChecked(bIsOn() and true or false)
             bt2:SetScript("OnClick", function(self)
@@ -539,7 +541,10 @@ function QB:EnsureSettings()
 
         local function TabRow(label, isOn, setOn)
             local tg = Toggle(tabCard)
-            tg:SetPoint("TOPRIGHT", tabCard, "TOPRIGHT", -4, ty)
+            tg:SetPoint("TOPLEFT", tabCard, "TOPLEFT", SET_PAD - 6, ty)
+            tg.label:ClearAllPoints()
+            tg.label:SetPoint("LEFT", tg, "RIGHT", 6, 0)
+            tg.label:SetJustifyH("LEFT")
             tg.label:SetText(label)
             tg:SetChecked(isOn() and true or false)
             tg:SetScript("OnClick", function(sel)
@@ -630,7 +635,10 @@ function QB:EnsureSettings()
 
     local function ToggleRow(label, isOn, setOn)
         local tg = Toggle(host)
-        tg:SetPoint("TOPRIGHT", host, "TOPRIGHT", 6 - SET_PAD, hy)
+        tg:SetPoint("TOPLEFT", host, "TOPLEFT", SET_PAD - 6, hy)
+        tg.label:ClearAllPoints()
+        tg.label:SetPoint("LEFT", tg, "RIGHT", 6, 0)
+        tg.label:SetJustifyH("LEFT")
         tg.label:SetText(label)
         tg:SetChecked(isOn() and true or false)
         tg:SetScript("OnClick", function(self)
@@ -656,7 +664,7 @@ function QB:EnsureSettings()
         hfs:SetText(L["快捷按钮栏"])
         set.on = Toggle(host)
         set.on:ClearAllPoints()
-        set.on:SetPoint("TOPRIGHT", host, "TOPRIGHT", 6 - SET_PAD, hy)
+        set.on:SetPoint("TOPLEFT", host, "TOPLEFT", SET_COL2_X, hy)
         set.on:SetChecked(ns.QuickCfg().on and true or false)
         set.on:SetScript("OnClick", function(self)
             ns.PlaySound(1)
