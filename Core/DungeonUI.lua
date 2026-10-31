@@ -2277,11 +2277,19 @@ function DG.PaintQuestOverview(d)
     local inside = {}
     for i = 1, #list do inside[list[i][1]] = list[i] end
     local parent, extOf, extSeen = {}, {}, {}
+    local parentsAll = {}
     for i = 1, #list do
         local q = list[i]
         local pres = q[9]
         if type(pres) == "table" then
+            local ps = {}
+            parentsAll[q[1]] = ps
             for _, pid in ipairs(pres) do
+                if type(pid) == "number" then
+                    local dup = false
+                    for k = 1, #ps do if ps[k] == pid then dup = true break end end
+                    if not dup then ps[#ps + 1] = pid end
+                end
                 if inside[pid] then
                     if not parent[q[1]] then parent[q[1]] = pid end
                 elseif not extSeen[pid] then
@@ -2539,7 +2547,7 @@ function DG.PaintQuestOverview(d)
         nodeBorder(n, (c == DG.Q_OV_TODO) and nil or c)
         setMark(n, c)
     end
-    local function place(q, c, y)
+    local function place(q, c, y, xo)
         local n = takeNode()
         n:SetSize(nw, DG.Q_OV_H)
         n.name:SetWidth(nw - 8)
@@ -2567,13 +2575,14 @@ function DG.PaintQuestOverview(d)
         n.__tintC = nil
         n.__selNow = (q[1] == U.dungeonQuestSel)
         pQovNodeState(n, n.__selNow and "sel" or "norm")
+        local qx = xo or colX[c]
         n:ClearAllPoints()
-        n:SetPoint("TOPLEFT", canvas, "TOPLEFT", colX[c], -y)
-        n.__ox = colX[c]
+        n:SetPoint("TOPLEFT", canvas, "TOPLEFT", qx, -y)
+        n.__ox = qx
         n.__oy = y
         return n
     end
-    local function placeExt(pid, c, y)
+    local function placeExt(pid, c, y, xo)
         local n = takeNode()
         n:SetSize(nw, DG.Q_OV_H)
         n.name:SetWidth(nw - 8)
@@ -2601,9 +2610,10 @@ function DG.PaintQuestOverview(d)
         n.__tintC = nil
         n.__selNow = (U.dungeonQDetExt ~= nil and pid == U.dungeonQDetExt)
         pQovNodeState(n, n.__selNow and "sel" or "norm")
+        local ex = xo or colX[c]
         n:ClearAllPoints()
-        n:SetPoint("TOPLEFT", canvas, "TOPLEFT", colX[c], -y)
-        n.__ox = colX[c]
+        n:SetPoint("TOPLEFT", canvas, "TOPLEFT", ex, -y)
+        n.__ox = ex
         n.__oy = y
         return n
     end
@@ -2799,8 +2809,12 @@ function DG.PaintQuestOverview(d)
     end
     local startCX = math.max(8, (canvasW - nw) / 2)
     local maxRR = 0
+    local multiPre = false
+    for _, ps in pairs(parentsAll) do
+        if #ps > 1 then multiPre = true break end
+    end
     if nCols == 0 and U.dungeonQOVFlowCard then U.dungeonQOVFlowCard:Hide() end
-    if nCols > 0 then
+    if nCols > 0 and not multiPre then
         local minLv, maxLv = nil, nil
         for i = 1, #list do
             local lv = tonumber(list[i][3])
@@ -3178,6 +3192,244 @@ function DG.PaintQuestOverview(d)
                 end
             end
         end
+
+        local curN = nil
+        for i = 1, #placed do
+            if DG.QuestActive(placed[i].q[1]) then
+                curN = placed[i].n
+                break
+            end
+        end
+        if curN then
+            curN.name:SetTextColor(1, 0.82, 0, 1)
+            curN.stbar:SetSize(6, 28)
+        end
+    end
+
+    if nCols > 0 and multiPre then
+        local extInfo = ns.EnsureDungeonQuestExtInfo and ns.EnsureDungeonQuestExtInfo() or {}
+        local graph, order, gpre = {}, {}, {}
+        local function addNode(qid, row)
+            if graph[qid] then return end
+            graph[qid] = { row = row }
+            order[#order + 1] = qid
+            local pres = row and row[9] or (extInfo[qid] and extInfo[qid].pre)
+            if type(pres) == "table" then
+                local ps = {}
+                for _, pid in ipairs(pres) do
+                    if type(pid) == "number" then
+                        local dup = false
+                        for k = 1, #ps do if ps[k] == pid then dup = true break end end
+                        if not dup then
+                            ps[#ps + 1] = pid
+                            addNode(pid, inside[pid])
+                        end
+                    end
+                end
+                if #ps > 0 then gpre[qid] = ps end
+            end
+        end
+        for i = 1, #list do addNode(list[i][1], list[i]) end
+
+        local rank, rankBusy = {}, {}
+        local function rankOf(qid)
+            local r = rank[qid]
+            if r then return r end
+            if rankBusy[qid] then return 0 end
+            rankBusy[qid] = true
+            local best = 0
+            local ps = gpre[qid]
+            if ps then
+                for k = 1, #ps do
+                    local pr = rankOf(ps[k]) + 1
+                    if pr > best then best = pr end
+                end
+            end
+            rankBusy[qid] = nil
+            rank[qid] = best
+            return best
+        end
+        for i = 1, #order do rankOf(order[i]) end
+
+        local byRank, maxRank = {}, 0
+        for i = 1, #order do
+            local qid = order[i]
+            local r = rank[qid] or 0
+            if r > maxRank then maxRank = r end
+            local t = byRank[r]
+            if not t then t = {} byRank[r] = t end
+            t[#t + 1] = qid
+        end
+
+        local posC = {}
+        local r0 = byRank[0] or {}
+        local rowW0 = #r0 * nw + math.max(0, #r0 - 1) * COL_GAP
+        if rowW0 + 16 > canvasW then canvasW = rowW0 + 16 end
+        local x0 = 8 + math.max(0, (canvasW - 16 - rowW0) / 2)
+        local cur = x0
+        for k = 1, #r0 do
+            posC[r0[k]] = cur + nw / 2
+            cur = cur + nw + COL_GAP
+        end
+
+        for r = 1, maxRank do
+            local nd = byRank[r]
+            if nd and #nd > 0 then
+                local pref = {}
+                for k = 1, #nd do
+                    local qid = nd[k]
+                    local ps = gpre[qid] or {}
+                    local s, n = 0, 0
+                    for j = 1, #ps do
+                        local px = posC[ps[j]]
+                        if px then s = s + px n = n + 1 end
+                    end
+                    pref[qid] = (n > 0) and (s / n) or (canvasW / 2)
+                end
+                table.sort(nd, function(a, b)
+                    if pref[a] ~= pref[b] then return pref[a] < pref[b] end
+                    return a < b
+                end)
+                local left = 8
+                for k = 1, #nd do
+                    local qid = nd[k]
+                    local cx = pref[qid]
+                    local lo = left + nw / 2
+                    local hi = canvasW - 8 - nw / 2
+                    if hi < lo then hi = lo end
+                    if cx < lo then cx = lo end
+                    if cx > hi then cx = hi end
+                    posC[qid] = cx
+                    left = cx + nw / 2 + COL_GAP
+                end
+            end
+        end
+
+        local placed = {}
+        for i = 1, #order do
+            local qid = order[i]
+            local g = graph[qid]
+            local r = rank[qid] or 0
+            local xo = (posC[qid] or (canvasW / 2)) - nw / 2
+            if g.row then
+                local n = place(g.row, 1, rowY(r), xo)
+                placed[#placed + 1] = { q = g.row, n = n }
+            else
+                placeExt(qid, 1, rowY(r), xo)
+            end
+        end
+
+        local minLv, maxLv = nil, nil
+        for i = 1, #list do
+            local lv = tonumber(list[i][3])
+            if lv then
+                if not minLv or lv < minLv then minLv = lv end
+                if not maxLv or lv > maxLv then maxLv = lv end
+            end
+        end
+        local dMin = (minLv and DG.DifficultyColor(minLv)) or DG.Q_OV_DONE
+        local dMax = (maxLv and DG.DifficultyColor(maxLv)) or { 1, 0.5, 0.25, 1 }
+        local lvB = (maxLv and (UnitLevel("player") or 0) >= maxLv) and DG.Q_OV_DONE or nil
+        placeMark(format(L["最低 %d 级"], minLv or 1), format(L["最高 %d 级"], maxLv or minLv or 1), dMin, canvasW / 2 - nw / 2, 0, lvB, dMax)
+
+        local spineY = (DG.Q_OV_H + rowY(0)) / 2
+        local sortedR0 = {}
+        for k = 1, #r0 do sortedR0[#sortedR0 + 1] = r0[k] end
+        table.sort(sortedR0, function(a, b) return (posC[a] or 0) < (posC[b] or 0) end)
+        if #sortedR0 > 0 then
+            local xTop = canvasW / 2
+            local xL = posC[sortedR0[1]] or xTop
+            local xR = posC[sortedR0[#sortedR0]] or xTop
+            local bendR = math.min(RAD, rowY(0) - spineY)
+            local bend = (xR - xL) > bendR * 2
+            local lo = bend and (xL + bendR) or xL
+            local hi = bend and (xR - bendR) or xR
+            local splitR = 0
+            if #sortedR0 > 1 and (xTop - lo) > RAD + 2 and (hi - xTop) > RAD + 2 then
+                splitR = RAD
+            end
+            local lcT = DG.Q_OV_TODO
+            vline(xTop, DG.Q_OV_H, spineY - splitR, lcT)
+            if splitR > 0 then
+                rawArc(xTop, spineY, 0, 1, -1, 0, splitR, lcT)
+                rawArc(xTop, spineY, 0, 1, 1, 0, splitR, lcT)
+            end
+            if hi - lo > 0.25 then hline(spineY, lo, hi, lcT) end
+            for k = 1, #sortedR0 do
+                local qid = sortedR0[k]
+                local xc = posC[qid] or xTop
+                local lc = lineColor({ qid }, nil)
+                if bend and k == 1 then
+                    path(lc, { { xL + bendR, spineY }, { xL, spineY }, { xL, rowY(0) } })
+                elseif bend and k == #sortedR0 then
+                    path(lc, { { xR - bendR, spineY }, { xR, spineY }, { xR, rowY(0) } })
+                elseif splitR > 0 and math.abs(xc - xTop) < 0.5 then
+                    vline(xc, spineY + splitR, rowY(0), lc)
+                else
+                    vline(xc, spineY, rowY(0), lc)
+                end
+            end
+        end
+
+        for i = 1, #order do
+            local qid = order[i]
+            local ps = gpre[qid]
+            if ps and #ps > 0 then
+                local cy = rowY(rank[qid] or 0)
+                local cx = posC[qid] or (canvasW / 2)
+                local childQ = graph[qid].row or { qid }
+                if #ps == 1 then
+                    local p = ps[1]
+                    local px = posC[p] or cx
+                    local py = rowY(rank[p] or 0) + DG.Q_OV_H
+                    local lc = lineColor(childQ, graph[p].row or { p })
+                    if math.abs(px - cx) < 0.5 then
+                        vline(px, py, cy, lc)
+                    else
+                        elbow(px, py, cx, cy, lc)
+                    end
+                else
+                    local topY = 0
+                    for k = 1, #ps do
+                        local py = rowY(rank[ps[k]] or 0) + DG.Q_OV_H
+                        if py > topY then topY = py end
+                    end
+                    local jc = lineColor(childQ, nil)
+                    local splitR = math.min(RAD, (cy - topY) / 2 - 2)
+                    if splitR < 1.5 then splitR = 0 end
+                    local joinY = cy - math.max(splitR + 6, 8)
+                    local lcL, lcR, dL, dR = nil, nil, nil, nil
+                    for k = 1, #ps do
+                        local p = ps[k]
+                        local px = posC[p] or cx
+                        local py = rowY(rank[p] or 0) + DG.Q_OV_H
+                        local lc = lineColor(childQ, graph[p].row or { p })
+                        local d = math.abs(px - cx)
+                        if d < 1 then
+                            vline(px, py, joinY, lc)
+                        else
+                            local off = math.min(splitR, d - 0.5)
+                            local ex = cx + ((px < cx) and -off or off)
+                            path(lc, { { px, py }, { px, joinY }, { ex, joinY } })
+                            if px < cx then
+                                if not dL or d < dL then dL, lcL = d, lc end
+                            else
+                                if not dR or d < dR then dR, lcR = d, lc end
+                            end
+                        end
+                    end
+                    if splitR > 0 then
+                        vline(cx, joinY + splitR, cy, jc)
+                        rawArc(cx, joinY, 0, -1, -1, 0, splitR, lcL or jc)
+                        rawArc(cx, joinY, 0, -1, 1, 0, splitR, lcR or jc)
+                    else
+                        vline(cx, joinY, cy, jc)
+                    end
+                end
+            end
+        end
+
+        maxRR = maxRank
 
         local curN = nil
         for i = 1, #placed do

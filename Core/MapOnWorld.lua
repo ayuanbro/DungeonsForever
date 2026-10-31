@@ -390,6 +390,7 @@ function W.Resolve()
         local nm = names[i]
         if nm and nm ~= "" then
             local id = nameIndex()[nameKey(nm)]
+            if not hasArt(id) and M.NamePrefixFor then id = M.NamePrefixFor(nm) end
             if hasArt(id) then
                 if cur and sameArt(cur, id) then return cur, "cur" end
                 return id, "name"
@@ -1094,6 +1095,7 @@ function W.Show(id, why)
     W.Build()
     local view = W.view
     if not view then return end
+    local prevId = W.curId
     W.curId = id
     W.curStamp = instStamp()
     W.why = why
@@ -1112,6 +1114,8 @@ function W.Show(id, why)
     elseif inside ~= W.inInst then
         W.inInst = inside
         M.curLayer = oLayer or 1
+    elseif prevId and prevId ~= id and oLayer and oLayer <= nLayer then
+        M.curLayer = oLayer
     end
     W.zoneMap = W.ZoneOf(id)
     if not inside then W.zoneMap = worldMapID() or W.zoneMap end

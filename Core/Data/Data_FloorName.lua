@@ -1,6 +1,10 @@
 local _, ns = ...
 
 ns.FloorName = {
+    ["city_of_dalaran"] = {
+        [1] = "达拉然城",
+        [2] = "下水道",
+    },
     ["gnomeregan"] = {
         [5] = "副本入口",
     },

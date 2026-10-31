@@ -93,6 +93,8 @@ end)
 
 local aboutGlyph
 local about
+local aboutBuilt
+local BuildAbout
 
 local function SyncAboutGlyph()
     if not aboutGlyph then return end
@@ -130,6 +132,11 @@ aboutBtn:SetScript("OnLeave", function()
 end)
 aboutBtn:SetScript("OnClick", function()
     ns.PlaySound(1)
+    if not aboutBuilt then
+        about:Show()
+        BuildAbout()
+        about:Hide()
+    end
     about:SetShown(not about:IsShown())
     SyncAboutGlyph()
 end)
@@ -146,54 +153,442 @@ about:SetScript("OnMouseUp", function()
 end)
 about:Hide()
 if ns.hui and ns.hui.SkinPopup then
-    ns.hui.SkinPopup(about, 8)
+    ns.hui.SkinPopup(about, 8, nil, ns.hui.layer and ns.hui.layer.L0 or nil)
     if ns.hui.SkinShadow then ns.hui.SkinShadow(about) end
 else
     about:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
-    about:SetBackdropColor(0x10 / 255, 0x13 / 255, 0x1A / 255, 1)
+    about:SetBackdropColor(0x0A / 255, 0x0C / 255, 0x10 / 255, 1)
 end
 
-do
-    local icon = about:CreateTexture(nil, "ARTWORK")
-    icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\DungeonsForever.blp")
-    icon:SetSize(56, 56)
-    icon:SetPoint("CENTER", about, "CENTER", 0, 148)
+local AB_EDGE_X = 32
+local AB_EDGE_B = 28
+local AB_TOP = 52
+local AB_GAP = 8
+local AB_PAD = 8
+local AB_BAR = 8
+local AB_CARD_W = (W - AB_EDGE_X * 2 - AB_GAP) / 2
+local AB_RIGHT_X = AB_EDGE_X + AB_CARD_W + AB_GAP
+local AB_CARD_H = H - AB_TOP - AB_EDGE_B
+local AB_INNER_W = AB_CARD_W - AB_PAD * 2
+local AB_HDR_H = 24
+local AB_COLS = 2
+local AB_COL_GAP = 8
+local AB_ROW_H = 26
+local AB_AVAIL_W = AB_INNER_W - AB_BAR
+local AB_COL_W = math.floor((AB_AVAIL_W - (AB_COLS - 1) * AB_COL_GAP) / AB_COLS)
+local AB_DIV_Y = AB_PAD + AB_HDR_H + 10
+local AB_GRID_TOP = AB_DIV_Y + 10
+local AB_GRID_H = AB_CARD_H - AB_GRID_TOP - AB_PAD
 
-    local brand = about:CreateFontString(nil, "OVERLAY")
+local C_AB_VAL = { 0.88, 0.90, 0.93 }
+local C_AB_DIM = { 0.62, 0.62, 0.68 }
+local C_AB_HEAD = { 0.95, 0.96, 0.98 }
+local C_AB_KEYHEX = "|cff8c9eb3"
+
+local function AbAccentHex()
+    local a = (ns.hui and ns.hui.ACCENT) or { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
+    return string.format("|cff%02x%02x%02x",
+        math.floor(a[1] * 255 + 0.5), math.floor(a[2] * 255 + 0.5), math.floor(a[3] * 255 + 0.5))
+end
+
+local function AbCharLen(s)
+    local i, n, len = 1, 0, #s
+    while i <= len do
+        local b = s:byte(i)
+        if b >= 240 then i = i + 4
+        elseif b >= 224 then i = i + 3
+        elseif b >= 192 then i = i + 2
+        else i = i + 1 end
+        n = n + 1
+    end
+    return n
+end
+
+local function AbCharCut(s, keep)
+    local i, c, len = 1, 0, #s
+    while i <= len and c < keep do
+        local b = s:byte(i)
+        if b >= 240 then i = i + 4
+        elseif b >= 224 then i = i + 3
+        elseif b >= 192 then i = i + 2
+        else i = i + 1 end
+        c = c + 1
+    end
+    return s:sub(1, i - 1)
+end
+
+local function AbFit(fs, text, maxW)
+    fs:SetText(text)
+    local w = fs:GetStringWidth()
+    if type(w) ~= "number" or w <= maxW then return end
+    local lo, hi, best = 1, AbCharLen(text), 0
+    while lo <= hi do
+        local mid = math.floor((lo + hi) / 2)
+        fs:SetText(AbCharCut(text, mid) .. "…")
+        local mw = fs:GetStringWidth()
+        if type(mw) == "number" and mw <= maxW then
+            best = mid
+            lo = mid + 1
+        else
+            hi = mid - 1
+        end
+    end
+    fs:SetText(AbCharCut(text, best) .. "…")
+end
+
+function BuildAbout()
+    if aboutBuilt then return end
+    aboutBuilt = true
+
+    local left = CreateFrame("Frame", nil, about, "BackdropTemplate")
+    left:SetSize(AB_CARD_W, AB_CARD_H)
+    left:SetPoint("TOPLEFT", about, "TOPLEFT", AB_EDGE_X, -AB_TOP)
+    left:SetFrameLevel(about:GetFrameLevel() + 1)
+    if left.SetBackdropColor then left:SetBackdropColor(0, 0, 0, 0) end
+    if left.SetBackdropBorderColor then left:SetBackdropBorderColor(0, 0, 0, 0) end
+    ns.hui.BuildRoundedBG(left, 8, ns.hui.layer.L1, "both", true)
+
+    local icon = left:CreateTexture(nil, "ARTWORK")
+    icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\DungeonsForever.blp")
+    icon:SetSize(88, 88)
+    icon:SetPoint("CENTER", left, "CENTER", 0, 132)
+
+    local brand = left:CreateFontString(nil, "OVERLAY")
     brand:SetFont(ns.FONT, 16, "")
     brand:SetText(L["无限副本手册"])
-    brand:SetPoint("CENTER", about, "CENTER", 0, 92)
-    brand:SetTextColor(0.95, 0.96, 0.98)
+    brand:SetPoint("CENTER", left, "CENTER", 0, 58)
+    brand:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
 
-    local ver = DF_VERSION
-    local sub = about:CreateFontString(nil, "OVERLAY")
+    local sub = left:CreateFontString(nil, "OVERLAY")
     sub:SetFont(ns.FONT, 14, "")
-    sub:SetText("DungeonsForever" .. (ver and (" · v" .. ver) or ""))
-    sub:SetPoint("CENTER", about, "CENTER", 0, 66)
+    sub:SetText("DungeonsForever" .. (DF_VERSION and (" · v" .. DF_VERSION) or ""))
+    sub:SetPoint("CENTER", left, "CENTER", 0, 32)
     sub:SetTextColor(0.55, 0.62, 0.70)
 
-    local studio = about:CreateFontString(nil, "OVERLAY")
+    local studio = left:CreateFontString(nil, "OVERLAY")
     studio:SetFont(ns.FONT, 14, "")
     studio:SetText(L["黑科研研究所"])
-    studio:SetPoint("CENTER", about, "CENTER", 0, 42)
+    studio:SetPoint("CENTER", left, "CENTER", 0, 6)
     studio:SetTextColor(0.55, 0.62, 0.70)
 
-    local rows = {
-        { L["作者"], L["圆圆"] },
-        { L["鸣谢"], L["黑科研 · 胡里胡涂"] },
-        { L["QQ群"], "728916609" },
-        { L["指令"], "|cff46bf72/df|r · |cff46bf72/fbsc|r · /副本手册 — " .. L["开关窗口"] },
-        { L["页面"], "|cff46bf72/df fb|r" .. L["副本"] .. " · |cff46bf72tb|r" .. L["团本"]
-            .. " · |cff46bf72zy|r" .. L["专业"] .. " · |cff46bf72ts|r" .. L["探索"]
-            .. " · |cff46bf72hp|r" .. L["藏品"] .. " · |cff46bf72wm|r" .. L["声望"] .. " · |cff46bf72bis|r" .. L["配装"] },
-    }
-    for i, row in ipairs(rows) do
-        local ln = about:CreateFontString(nil, "OVERLAY")
-        ln:SetFont(ns.FONT, 14, "")
-        ln:SetText("|cff8c9eb3" .. row[1] .. "|r　" .. row[2])
-        ln:SetPoint("CENTER", about, "CENTER", 0, 6 - (i - 1) * 28)
-        ln:SetTextColor(0.88, 0.90, 0.93)
+    local QQ_NUM = "728916609"
+    local qqPop
+    local function ShowQQPop(anchor)
+        if not qqPop then
+            local p = CreateFrame("Frame", nil, about, "BackdropTemplate")
+            p:SetSize(248, 110)
+            p:SetFrameLevel(about:GetFrameLevel() + 12)
+            p:EnableMouse(true)
+            if p.SetBackdropColor then p:SetBackdropColor(0, 0, 0, 0) end
+            if p.SetBackdropBorderColor then p:SetBackdropBorderColor(0, 0, 0, 0) end
+            ns.hui.BuildRoundedBG(p, 8, ns.hui.layer.L0, "both", true)
+            if ns.hui.SkinShadow then ns.hui.SkinShadow(p) end
+
+            local t = p:CreateFontString(nil, "OVERLAY")
+            t:SetFont(ns.FONT, 14, "")
+            t:SetText(L["QQ群"])
+            t:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
+            t:SetPoint("TOPLEFT", p, "TOPLEFT", 12, -12)
+
+            local eb = CreateFrame("EditBox", nil, p, "BackdropTemplate")
+            eb:SetSize(224, 26)
+            eb:SetPoint("TOPLEFT", p, "TOPLEFT", 12, -36)
+            eb:SetAutoFocus(false)
+            eb:SetFont(ns.FONT, 14, "")
+            eb:SetTextColor(1, 1, 1)
+            eb:SetTextInsets(8, 8, 0, 0)
+            eb:SetJustifyH("LEFT")
+            eb:SetMaxLetters(32)
+            if eb.SetBackdropColor then eb:SetBackdropColor(0, 0, 0, 0) end
+            if eb.SetBackdropBorderColor then eb:SetBackdropBorderColor(0, 0, 0, 0) end
+            ns.hui.BuildRoundedBG(eb, 6, ns.hui.layer.L2, "both", true)
+            eb:SetScript("OnEscapePressed", function(self)
+                self:ClearFocus()
+                p:Hide()
+            end)
+
+            local tip = p:CreateFontString(nil, "OVERLAY")
+            tip:SetFont(ns.FONT, 12, "")
+            tip:SetText(L["全选后 Ctrl+C 复制，Esc 关闭"])
+            tip:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
+            tip:SetPoint("TOPLEFT", p, "TOPLEFT", 12, -72)
+
+            p:SetScript("OnMouseUp", function(self)
+                eb:ClearFocus()
+                self:Hide()
+            end)
+            p.eb = eb
+            qqPop = p
+        end
+        qqPop:ClearAllPoints()
+        qqPop:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", -24, -10)
+        qqPop:Show()
+        qqPop.eb:SetText(QQ_NUM)
+        qqPop.eb:HighlightText()
+        if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+            C_Timer.After(0, function()
+                if qqPop and qqPop:IsShown() then
+                    qqPop.eb:SetFocus()
+                    qqPop.eb:HighlightText()
+                end
+            end)
+        else
+            qqPop.eb:SetFocus()
+        end
     end
+
+    local rows = {
+        { key = L["作者"], parts = { { t = L["圆圆"] } } },
+        { key = L["鸣谢"], parts = { { t = L["黑科研 · 胡里胡涂"] } } },
+        { key = L["QQ群"], qq = true, parts = { { t = QQ_NUM } } },
+        { key = L["指令"], parts = {
+            { t = "/df", cmd = "/df" },
+            { t = " · " },
+            { t = "/fbsc", cmd = "/fbsc" },
+            { t = " · " },
+            { t = L["/副本手册"], cmd = L["/副本手册"] },
+            { t = " — " .. L["开关窗口"] },
+        } },
+        { key = L["页面"], parts = {
+            { t = "/df fb", cmd = "/df fb" }, { t = " " .. L["副本"] }, { t = " · " },
+            { t = "/df tb", cmd = "/df tb" }, { t = " " .. L["团本"] }, { t = " · " },
+            { t = "/df zy", cmd = "/df zy" }, { t = " " .. L["专业"] }, { t = " · " },
+            { t = "/df zn", cmd = "/df zn" }, { t = " " .. L["指南"] },
+        } },
+        { key = L["页面"], parts = {
+            { t = "/df ts", cmd = "/df ts" }, { t = " " .. L["探索"] }, { t = " · " },
+            { t = "/df hp", cmd = "/df hp" }, { t = " " .. L["藏品"] }, { t = " · " },
+            { t = "/df wm", cmd = "/df wm" }, { t = " " .. L["声望"] }, { t = " · " },
+            { t = "/df bis", cmd = "/df bis" }, { t = " " .. L["配装"] },
+        } },
+    }
+
+    local function BuildLine(row, hot)
+        local out = C_AB_KEYHEX .. row.key .. "|r　"
+        for pi = 1, #row.parts do
+            local p = row.parts[pi]
+            if p.cmd or (row.qq and pi == 1) then
+                out = out .. ((hot == pi) and "|cffffffff" or AbAccentHex()) .. p.t .. "|r"
+            else
+                out = out .. p.t
+            end
+        end
+        return out
+    end
+
+    local function SendCmd(cmd)
+        if type(ChatFrame_OpenChat) == "function" then
+            ChatFrame_OpenChat(cmd)
+        end
+    end
+
+    local lines = {}
+    local ly = -22
+    for i = 1, #rows do
+        local row = rows[i]
+        local ln = left:CreateFontString(nil, "OVERLAY")
+        ln:SetFont(ns.FONT, 14, "")
+        ln:SetJustifyH("CENTER")
+        ln:SetWidth(AB_INNER_W)
+        ln:SetPoint("TOP", left, "CENTER", 0, ly)
+        ln:SetTextColor(C_AB_VAL[1], C_AB_VAL[2], C_AB_VAL[3])
+
+        ln:SetText(row.key)
+        local keyW = ln:GetStringWidth() or 0
+        ln:SetText(row.key .. "　")
+        local headW = ln:GetStringWidth() or 0
+        if headW < keyW then headW = keyW + 14 end
+
+        local widths = {}
+        local totalW = headW
+        for pi = 1, #row.parts do
+            ln:SetText(row.parts[pi].t)
+            local w = ln:GetStringWidth() or 0
+            widths[pi] = w
+            totalW = totalW + w
+        end
+
+        ln:SetText(BuildLine(row, 0))
+
+        local cursor = (AB_INNER_W - totalW) / 2 + headW
+        for pi = 1, #row.parts do
+            local p = row.parts[pi]
+            local w = widths[pi]
+            if p.cmd or (row.qq and pi == 1) then
+                local b = CreateFrame("Button", nil, left)
+                b:SetSize(w + 2, 20)
+                b:SetPoint("LEFT", ln, "LEFT", cursor - 1, 0)
+                b:SetFrameLevel(left:GetFrameLevel() + 2)
+                b:EnableMouse(true)
+                if p.cmd then
+                    b:SetScript("OnClick", function() SendCmd(p.cmd) end)
+                else
+                    b:SetScript("OnClick", function(self) ShowQQPop(self) end)
+                end
+                b:SetScript("OnEnter", function() ln:SetText(BuildLine(row, pi)) end)
+                b:SetScript("OnLeave", function() ln:SetText(BuildLine(row, 0)) end)
+                if b.SetCursor then b:SetCursor("Interface/Cursor/Point") end
+            end
+            cursor = cursor + w
+        end
+
+        lines[#lines + 1] = { fs = ln, row = row }
+        local vh = ln:GetStringHeight()
+        if type(vh) ~= "number" or vh <= 0 then vh = 14 end
+        ly = ly - math.max(28, vh + 10)
+    end
+
+    local card = CreateFrame("Frame", nil, about, "BackdropTemplate")
+    card:SetSize(AB_CARD_W, AB_CARD_H)
+    card:SetPoint("TOPLEFT", about, "TOPLEFT", AB_RIGHT_X, -AB_TOP)
+    card:SetFrameLevel(about:GetFrameLevel() + 2)
+    card:EnableMouse(true)
+    card:SetScript("OnMouseUp", function()
+        ns.PlaySound(1)
+        about:Hide()
+        SyncAboutGlyph()
+    end)
+    if card.SetBackdropColor then card:SetBackdropColor(0, 0, 0, 0) end
+    if card.SetBackdropBorderColor then card:SetBackdropBorderColor(0, 0, 0, 0) end
+    ns.hui.BuildRoundedBG(card, 8, ns.hui.layer.L1, "both", true)
+
+    local hdr = card:CreateFontString(nil, "OVERLAY")
+    hdr:SetFont(ns.FONT, 16, "")
+    hdr:SetText(L["支持榜"])
+    hdr:SetPoint("TOPLEFT", card, "TOPLEFT", AB_PAD, -(AB_PAD + 4))
+    hdr:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
+
+    local members = ns.Supporters or {}
+    local cnt = card:CreateFontString(nil, "OVERLAY")
+    cnt:SetFont(ns.FONT, 14, "")
+    cnt:SetText(string.format(L["共 %d 位"], #members))
+    cnt:SetPoint("LEFT", hdr, "RIGHT", 8, 0)
+    cnt:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
+
+    local div = card:CreateTexture(nil, "ARTWORK")
+    div:SetTexture("Interface\\Buttons\\WHITE8x8")
+    local dv = ns.hui.layer.DIV
+    div:SetVertexColor(dv[1], dv[2], dv[3], 1)
+    div:SetHeight(1)
+    div:SetPoint("TOPLEFT", card, "TOPLEFT", AB_PAD, -AB_DIV_Y)
+    div:SetPoint("TOPRIGHT", card, "TOPRIGHT", -AB_PAD, -AB_DIV_Y)
+
+    local scroll = CreateFrame("ScrollFrame", nil, card)
+    scroll:SetPoint("TOPLEFT", card, "TOPLEFT", AB_PAD, -AB_GRID_TOP)
+    scroll:SetSize(AB_AVAIL_W, AB_GRID_H)
+    local child = CreateFrame("Frame", nil, scroll)
+    child:SetSize(AB_AVAIL_W, AB_GRID_H)
+    scroll:SetScrollChild(child)
+
+    for i = 1, #members do
+        local col = (i - 1) % AB_COLS
+        local row = math.floor((i - 1) / AB_COLS)
+        local nm = child:CreateFontString(nil, "OVERLAY")
+        nm:SetFont(ns.FONT, 14, "")
+        nm:SetJustifyH("LEFT")
+        nm:SetWordWrap(false)
+        nm:SetTextColor(1, 1, 1)
+        nm:SetPoint("TOPLEFT", child, "TOPLEFT",
+            col * (AB_COL_W + AB_COL_GAP),
+            -(row * AB_ROW_H))
+        AbFit(nm, members[i], AB_COL_W - 4)
+    end
+    local cy = math.ceil(#members / AB_COLS) * AB_ROW_H
+    child:SetHeight(math.max(cy, AB_GRID_H))
+
+    if #members == 0 then
+        local empty = card:CreateFontString(nil, "OVERLAY")
+        empty:SetFont(ns.FONT, 14, "")
+        empty:SetText(L["还没有记录"])
+        empty:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
+        empty:SetPoint("CENTER", scroll, "CENTER", 0, 0)
+    end
+
+    local track = CreateFrame("Frame", nil, card)
+    track:SetSize(7, AB_GRID_H - 4)
+    track:SetPoint("TOPLEFT", scroll, "TOPRIGHT", 0, -2)
+    track:SetFrameLevel(card:GetFrameLevel() + 10)
+    track.__fill = ns.hui.BuildSolidFill(track, 3, ns.hui.layer.L2)
+    track:Hide()
+
+    local thumb = CreateFrame("Frame", nil, card)
+    thumb:SetSize(5, 24)
+    thumb:SetFrameLevel(card:GetFrameLevel() + 11)
+    thumb.__fill = ns.hui.BuildSolidFill(thumb, 2, ns.hui.layer.L4)
+    thumb:EnableMouse(true)
+    thumb:Hide()
+
+    local function BarUpdate()
+        local ch = child:GetHeight() or 0
+        local vh = scroll:GetHeight() or 0
+        if vh <= 0 or ch <= vh + 2 then
+            track:Hide()
+            thumb:Hide()
+            return
+        end
+        track:Show()
+        thumb:Show()
+        local th = math.max(24, track:GetHeight() * vh / ch)
+        thumb:SetHeight(th)
+        local vp = scroll:GetVerticalScroll()
+        if type(vp) ~= "number" then vp = 0 end
+        local frac = 0
+        local maxs = ch - vh
+        if maxs > 0 then frac = vp / maxs end
+        if frac < 0 then frac = 0 elseif frac > 1 then frac = 1 end
+        local span = math.max(0, track:GetHeight() - th)
+        thumb:ClearAllPoints()
+        thumb:SetPoint("TOP", track, "TOP", 0, -(frac * span))
+    end
+
+    card:SetScript("OnMouseWheel", function(_, delta)
+        if not track:IsShown() then return end
+        local maxs = (child:GetHeight() or 0) - (scroll:GetHeight() or 0)
+        local v = (scroll:GetVerticalScroll() or 0) - delta * 48
+        if v < 0 then v = 0 elseif v > maxs then v = maxs end
+        scroll:SetVerticalScroll(v)
+        BarUpdate()
+    end)
+
+    thumb:SetScript("OnMouseDown", function(self)
+        local scale = UIParent:GetEffectiveScale()
+        local _, cy0 = GetCursorPosition()
+        self.__y0 = cy0 / scale
+        self.__s0 = scroll:GetVerticalScroll() or 0
+        self:SetScript("OnUpdate", function(me)
+            local span = (track:GetHeight() or 0) - (me:GetHeight() or 0)
+            if span <= 0 then return end
+            local _, cy1 = GetCursorPosition()
+            local maxs = (child:GetHeight() or 0) - (scroll:GetHeight() or 0)
+            local v = me.__s0 + (me.__y0 - cy1 / scale) / span * maxs
+            if v < 0 then v = 0 elseif v > maxs then v = maxs end
+            scroll:SetVerticalScroll(v)
+            BarUpdate()
+        end)
+    end)
+    thumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+    thumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
+    thumb:SetScript("OnEnter", function(self)
+        self.__hover = true
+        ns.hui.PaintSolidFill(self.__fill, ns.hui.layer.L5)
+    end)
+    thumb:SetScript("OnLeave", function(self)
+        self.__hover = false
+        ns.hui.PaintSolidFill(self.__fill, ns.hui.layer.L4)
+    end)
+
+    ns.hui.AddRepaint(about, function()
+        for i = 1, #lines do
+            local r = lines[i]
+            r.fs:SetText(BuildLine(r.row, 0))
+        end
+        ns.hui.PaintSolidFill(track.__fill, ns.hui.layer.L2)
+        ns.hui.PaintSolidFill(thumb.__fill, thumb.__hover and ns.hui.layer.L5 or ns.hui.layer.L4)
+        local d2 = ns.hui.layer.DIV
+        div:SetVertexColor(d2[1], d2[2], d2[3], 1)
+    end)
+
+    BarUpdate()
 end
 
 local settingsGlyph

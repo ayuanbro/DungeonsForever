@@ -61,6 +61,7 @@ M.BOSS_MODEL_UP = 66
 M.MAX_PINS = 48
 M.LOGO_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DungeonsForever.blp"
 M.LOGO_SIZE = 20
+M.LOGO_LIFT = 2.5
 M.PIN_BOSS_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\BossSkull"
 M.PIN_QUEST_READY_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinReady"
 M.PIN_QUEST_LOCKED_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinLocked"
@@ -316,7 +317,7 @@ local TILE_FIX = {
 }
 M.TILE_FIX = TILE_FIX
 
-M.OUTSIDE_LAYER = { maraudon = 3 }
+M.OUTSIDE_LAYER = { maraudon = 3, wailing_caverns = 2 }
 
 M.ZONE_AREA = {
     { id = "blackrock_mountain", zone = { "燃烧平原", "Burning Steppes", "灼热峡谷", "Searing Gorge" },
@@ -326,6 +327,9 @@ M.ZONE_AREA = {
               "Shadowforge City", "Blackrock Spire", "Forgewright's Tomb",
               "The Grinding Quarry", "The Mason's Quarter" },
       mark = { "黑石", "Blackrock" } },
+    { id = "wailing_caverns", zone = { "贫瘠之地", "The Barrens", "哀嚎洞穴", "Wailing Caverns" },
+      sub = { "哀嚎洞穴", "哀嚎洞穴入口", "Wailing Caverns" },
+      mark = { "哀嚎洞穴", "Wailing Caverns" } },
 }
 
 M.ZONE_MENU = {
@@ -565,6 +569,72 @@ local FLOOR_NO = {
 
 local LAYER_PICK = {}
 
+local NAME_HEAD
+
+local function enWords(s)
+    local out = {}
+    for w in tostring(s):gmatch("[%a']+") do out[#out + 1] = w:lower() end
+    return out
+end
+
+local function headOK(a, b, n)
+    for i = 1, n do
+        if a[i] ~= b[i] then return false end
+    end
+    return true
+end
+
+function M.NamePrefixFor(txt)
+    if type(txt) ~= "string" or txt == "" then return nil end
+    if not NAME_HEAD then
+        local cn, en = {}, {}
+        local list = ns.DungeonData and ns.DungeonData.dungeons
+        if type(list) == "table" and #list > 0 then
+            for i = 1, #list do
+                local d = list[i]
+                if type(d.name) == "string" and d.name ~= "" then
+                    cn[#cn + 1] = { d.name, d.id }
+                end
+                if type(d.nameEn) == "string" and d.nameEn ~= "" then
+                    en[#en + 1] = { enWords(d.nameEn), d.id }
+                end
+            end
+            NAME_HEAD = { cn = cn, en = en }
+        end
+    end
+    if not NAME_HEAD then return nil end
+    local cand, seen = {}, {}
+    local cnList = NAME_HEAD.cn
+    for i = 1, #cnList do
+        local nm, id = cnList[i][1], cnList[i][2]
+        if #txt <= #nm and nm:sub(1, #txt) == txt and not seen[id] then
+            seen[id] = true
+            cand[#cand + 1] = id
+        end
+    end
+    if #cand == 0 then
+        local tw = enWords(txt)
+        if #tw > 0 then
+            local enList = NAME_HEAD.en
+            for i = 1, #enList do
+                local w, id = enList[i][1], enList[i][2]
+                if w[1] and #w >= #tw and headOK(w, tw, #tw) and not seen[id] then
+                    seen[id] = true
+                    cand[#cand + 1] = id
+                end
+            end
+        end
+    end
+    if #cand == 0 then return nil end
+    local cur = M.curId
+    if cur then
+        for i = 1, #cand do
+            if cand[i] == cur then return cur end
+        end
+    end
+    return cand[1]
+end
+
 function M.LayersFor(id)
     local row = id and ART[id]
     if not row then return nil end
@@ -719,8 +789,21 @@ end
 
 function M.SideOK(sd)
     if not sd then return true end
+    if sd ~= "A" and sd ~= "H" then return true end
     local ps = DG.PlayerSide and DG.PlayerSide() or nil
     return (not ps) or ps == sd
+end
+
+function M.QuestSideOK(qid)
+    if not qid then return true end
+    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
+    local sd = (type(row) == "table") and row[2] or nil
+    if sd ~= "A" and sd ~= "H" then
+        local ext = ns.EnsureDungeonQuestExtInfo and ns.EnsureDungeonQuestExtInfo() or nil
+        local info = (type(ext) == "table") and ext[qid] or nil
+        sd = (type(info) == "table") and info.side or nil
+    end
+    return M.SideOK(sd)
 end
 
 function M.DetailOf(id)
@@ -777,7 +860,7 @@ function M.ExtraPinsFor(id, floor)
                             end
                         else
                             local pf = p[(kind == "rare") and 5 or 4] or 1
-                            if floor == nil or pf == floor then
+                            if (floor == nil or pf == floor) and (kind ~= "quest" or M.QuestSideOK(p[3])) then
                                 local txt
                                 if kind == "quest" and type(p[5]) == "string" then
                                     txt = p[5]
@@ -1363,7 +1446,7 @@ function M.BuildSide(f, w, h, withBar, bgLayer)
     local hdrLogo = listChild:CreateTexture(nil, "ARTWORK")
     hdrLogo:SetTexture(M.LOGO_TEX)
     hdrLogo:SetSize(M.LOGO_SIZE, M.LOGO_SIZE)
-    hdrLogo:SetPoint("TOPLEFT", listChild, "TOPLEFT", 0, 0)
+    hdrLogo:SetPoint("TOPLEFT", listChild, "TOPLEFT", 0, M.LOGO_LIFT)
 
     local listHdr = MakeFS(listChild, 14, C_GOLD, "LEFT")
     listHdr:SetPoint("TOPLEFT", listChild, "TOPLEFT", M.LOGO_SIZE + 6, 0)
@@ -2607,8 +2690,7 @@ function M.PinOnClick(self, inWorld)
     if kind == "boss" and p and p.en then
         M.Select(p.en)
     elseif kind == "quest" and p and p.id then
-        U.dungeonQuestSel = p.id
-        U:SetDungeonTab("quest")
+        M.GotoQuest(p.id, inWorld)
     elseif kind == "prev" or kind == "next" then
         local from = M.CurFloorNum()
         if M.StepFloor((kind == "next") and 1 or -1, p and p.to) then
@@ -2647,6 +2729,59 @@ function M.GotoDungeon(id, inWorld)
     if DU and DU.SetDungeonTab then
         pcall(DU.SetDungeonTab, DU, "map")
     end
+end
+
+function M.QuestScrollTo(qid)
+    local U = ns.DungeonUI
+    local sc = U and U.dungeonQuestScroll
+    local pool = U and U.dungeonQuestPool
+    if not (qid and sc and type(pool) == "table" and type(pool.row) == "table") then return end
+    for i = 1, #pool.row do
+        local r = pool.row[i]
+        if r and r.__q and r.__q[1] == qid and r:IsShown() and type(r.__vtop) == "number" then
+            local h = sc:GetHeight() or 0
+            local top = -r.__vtop
+            local vs = sc:GetVerticalScroll() or 0
+            if top < vs then
+                vs = top
+            elseif h > 0 and top + DG.Q_ROW_H > vs + h then
+                vs = top + DG.Q_ROW_H - h
+            end
+            if vs < 0 then vs = 0 end
+            pcall(sc.SetVerticalScroll, sc, vs)
+            return
+        end
+    end
+end
+
+function M.GotoQuest(qid, inWorld)
+    if not qid then return end
+    local U = ns.DungeonUI
+    if inWorld then
+        local MW = ns.MapWorldModule
+        if MW then
+            MW.suppress = true
+            if MW.Active and MW.Active() then MW.Hide() end
+        end
+        if WorldMapFrame and WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
+            HideUIPanel(WorldMapFrame)
+        end
+        if M.curId and ns.ShowDungeonDetail then ns.ShowDungeonDetail(M.curId) end
+    end
+    if not U then return end
+    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
+    local qsd = (type(row) == "table") and row[2] or nil
+    if (qsd == "A" or qsd == "H") and U.dungeonQSide ~= qsd then U.dungeonQSide = qsd end
+    U.dungeonQView = "list"
+    U.dungeonQFlow = nil
+    U.dungeonQuestSel = qid
+    U.dungeonQListKey = nil
+    if U.SetDungeonTab then
+        pcall(U.SetDungeonTab, U, "quest")
+    elseif U.RenderDungeonQuests then
+        U:RenderDungeonQuests()
+    end
+    M.QuestScrollTo(qid)
 end
 
 function M.PinOnEnter(self)

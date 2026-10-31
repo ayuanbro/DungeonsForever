@@ -550,6 +550,17 @@ end
 
 local graveFitMap = {}
 
+local function mapStitched()
+    local B = ns.OpenMapBridge
+    if B and B.Active then return B.Active() and true or false end
+    local a = _G.OpenMapAPI
+    if type(a) == "table" and type(a.IsStitched) == "function" then
+        local ok, v = pcall(a.IsStitched)
+        return ok and v and true or false
+    end
+    return false
+end
+
 local function graveFit(disp, scale)
     local v = graveFitMap[disp]
     if not v or scale < v then
@@ -633,9 +644,12 @@ function ns.ExploreMapRefresh()
     if c.showGrave == true then
         local flat = ns.GravePos[disp]
         if type(flat) == "table" then
-            local fit = graveFit(disp, scale)
-            local zoom = scale / fit
-            if zoom > 2 then zoom = 2 end
+            local zoom = 1
+            if not mapStitched() then
+                local fit = graveFit(disp, scale)
+                zoom = scale / fit
+                if zoom > 2 then zoom = 2 end
+            end
             local gsize = GRAVE_SIZE * zoom / scale
             local zone
             if C_Map and C_Map.GetMapInfo then
