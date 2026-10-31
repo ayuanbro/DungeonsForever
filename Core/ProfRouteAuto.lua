@@ -83,19 +83,20 @@ local function AHPrice(id)
 end
 
 local vendorCache = {}
+
 local function VendorPrice(id)
     local hit = vendorCache[id]
     if hit ~= nil then return hit or nil end
     local p
     if ns.VendorPriceDB then
         local ok, v = pcall(ns.VendorPriceDB.GetPrice, id)
-        if ok and type(v) == "number" and v >= 0 then p = v end
+        if ok and type(v) == "number" and v > 0 then p = v end
     end
     if not p and RA.Available() then
         local fn = Auctionator.API.v1.GetVendorPriceByItemID
         if type(fn) == "function" then
             local v = CallAPI(fn, id)
-            if type(v) == "number" and v >= 0 then p = v end
+            if type(v) == "number" and v > 0 then p = v end
         end
     end
     vendorCache[id] = p or false
