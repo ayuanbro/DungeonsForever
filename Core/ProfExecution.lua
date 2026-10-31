@@ -319,7 +319,12 @@ function XP.NormalizePlan(slug,result)
     return out
 end
 local function ready(result)
-    return result and result.feasible~=false and result.status~="selection_required" and result.status~="recalculate_required" and #steps(result)>0
+    return result
+        and result.feasible ~= false
+        and result.status ~= "searching"
+        and result.status ~= "selection_required"
+        and result.status ~= "recalculate_required"
+        and #steps(result) > 0
 end
 local function originSignature(plan)
     -- Legacy/fixed candidates have no persisted plan ID. Compare their small

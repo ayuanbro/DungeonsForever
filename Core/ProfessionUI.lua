@@ -12404,7 +12404,6 @@ function PD.RowsCraftLog(rows)
 end
 
 function PD.RowsRankReminder(rows, target)
-    if PD.cur=="herbalism" or PD.cur=="mining" or PD.cur=="skinning" then return end
     local ranks=ns.ProfRanks
     local rank=ranks and ranks.NextStep(PD.cur,target or PD.LvTarget())
     if rank and rank.due then
@@ -12452,6 +12451,10 @@ function PD.RowsLeveling(rows)
     local autoOn = (not PD.FixedOnly()) and (not smeltRoute) and (needPartner or (PD.WindowShown()
                     and (fishRoute or PD.Setting("autoRoute")) and RA and true or false))
     local target = PD.LvTarget()
+    -- Show profession rank guidance on the leveling route page.
+    if PD.autoPage == nil or PD.autoPage == "route" then
+        PD.RowsRankReminder(rows, target)
+    end
     if fishRoute then
         note(L["鱼类自行钓取；其他材料比较 NPC 与拍卖行的实际采购费用。"])
         note(L["鱼类不计金币成本；图纸仍按实际采购来源计费。"])
@@ -14105,16 +14108,38 @@ function PD.LevelTool()
         elseif k == "track" then
             local T = ns.ProfTrack
             if T and T.Active and T.Active(PD.cur) then
-                if RA and RA.EndExecution then RA.EndExecution(PD.cur)
-                else T.Archive(PD.cur, "cancel") end
+                -- Suspend HUD auto-start before ending the execution.
+                -- EndExecution may trigger route refresh callbacks immediately.
+                local follow = ns.ProfFollow
+                if follow and follow.SuspendAutoTrack then
+                    follow.SuspendAutoTrack(PD.cur)
+                end
+
+                if RA and RA.EndExecution then
+                    RA.EndExecution(PD.cur)
+                else
+                    T.Archive(PD.cur, "cancel")
+                end
+
                 PD.autoSnapshotSlug = nil
             else
                 local res = PD.autoSnapshot
-                local ready = (T and res and res.feasible~=false and res.status~="recalculate_required"
-                    and PD.autoSnapshotSlug == PD.cur and T.Extract(res)) and true or false
-                local bound=ready and T.Restart(PD.cur,res)
+                local computing = res and res.status == "searching"
+
+                local ready = (T and res
+                    and not computing
+                    and res.feasible ~= false
+                    and res.status ~= "selection_required"
+                    and res.status ~= "recalculate_required"
+                    and PD.autoSnapshotSlug == PD.cur
+                    and T.Extract(res)) and true or false
+
+                local bound = ready and T.Restart(PD.cur, res)
+
                 if not bound then
-                    local msg = L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
+                    local msg = computing
+                        and L["正在计算升级路线…"]
+                        or L["当前没有可追踪的路线：请先点「重新计算」生成升级路线。"]
                     if UIErrorsFrame and UIErrorsFrame.AddMessage then
                         pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.82, 0.4)
                     elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
@@ -14975,6 +15000,9 @@ function PD.Render()
             PD.autoPage = nil
             PD.lvSummary, PD.lvRouteHead = nil, nil
             -- Gathering upgrade pages retain their route-only layout.
+            -- Show rank guidance before the gathering route.
+            PD.RowsRankReminder(rows, PD.LvTarget())
+
             local gcards = PD.GatherRouteCards(rows)
             if gcards then
                 PD.gcSpec = gcards

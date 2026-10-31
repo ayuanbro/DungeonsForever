@@ -53,20 +53,335 @@ class Issue4Tests(unittest.TestCase):
         for name in ('VendorPriceDB', 'ProfFollow'):
             self.load((ROOT / 'Core' / (name + '.lua')).read_text(encoding='utf-8-sig'))
         self.lua.execute(WIDGETS)
+        
+    def test_7_hud_refreshes_when_only_skill_cap_changes(self):
+        self.lua.execute(r'''
+          local PF = ns.ProfFollow
+          local XP = ns.ProfExecution
+
+          local skill, cap = 125, 150
+
+          local player = type(UnitName) == 'function'
+              and UnitName('player') or '?'
+          local realm = type(GetRealmName) == 'function'
+              and GetRealmName() or '?'
+          local key = player .. '-' .. realm
+
+          local state = {
+              slug = 'alchemy',
+              skill = 125,
+              maxSkill = 150,
+              step = 1,
+              rkey = 'auto:1:125:101:300',
+              hidden = true,
+          }
+
+          DungeonsForeverDB.prof.follow = {
+              [key] = state
+          }
+
+          -- 使用固定的路线数据，避免求解器影响测试。
+          local plan = {
+              mode = 'auto',
+              executionSteps = {{125, 300, 101, 1}},
+          }
+
+          XP.GetPlan = function() return plan end
+
+          PD.ProfLearned = function()
+              return {
+                  alchemy = {cur = skill, max = cap}
+              }
+          end
+
+          PD.cur = 'alchemy'
+          PD.built = true
+          PD.page = {
+              IsVisible = function() return true end
+          }
+
+          local renderCalls = 0
+          PD.Render = function()
+              renderCalls = renderCalls + 1
+          end
+
+          PF.InvalidateRoute()
+
+          -- 状态未变化，不应该刷新。
+          assert(not PF.Sync())
+          assert(renderCalls == 0)
+
+          -- 当前技能仍为 125，仅上限从 150 提高到 225。
+          cap = 225
+
+          assert(PF.Sync(),
+              'Skill cap change was not detected')
+          assert(state.skill == 125)
+          assert(state.maxSkill == 225)
+          assert(renderCalls == 1,
+              'Cap change did not refresh profession UI')
+
+          -- 没有新变化，不应反复刷新。
+          assert(not PF.Sync())
+          assert(renderCalls == 1,
+              'Unchanged cap caused repeated rendering')
+        ''')
+
+    def test_7_gathering_rank_guidance_in_leveling_page(self):
+        for path in (
+          'Core/Data/Data_ProfTrainers.lua',
+          'Core/Data/Data_ProfVendors.lua',
+          'Core/ProfRanks.lua',
+        ):
+            self.load((ROOT / path).read_text(encoding='utf-8-sig'))
+
+        self.lua.execute(r'''
+          local ids = {
+              mining=186, herbalism=182,
+              skinning=393, fishing=356
+          }
+
+          local skill, cap = 50, 75
+
+          GetProfessions = function() return 1 end
+          GetProfessionInfo = function()
+              return 'Profession', nil, skill, cap,
+                     nil, nil, ids[PD.cur]
+          end
+
+          -- Mock UI rendering, but execute the real page routing.
+          PD.built = true
+          PD.page = recordedWidget()
+          PD.scroll = recordedWidget()
+          PD.rows = {}
+
+          PD.PickNav = function() end
+          PD.PickTabs = function() end
+          PD.ResetItemNameMemo = function() end
+          PD.PaintToolProgress = function() end
+          PD.PaintToolStale = function() end
+          PD.PaintLvTiles = function() return 0 end
+          PD.LV_TILE_H = 64
+          PD.PaintTool = function() return 0 end
+          PD.Layout = function() end
+          PD.PaintRows = function() return false end
+          PD.PlaceSettingsToggles = function() end
+          PD.RequestRows = function() end
+          PD.WarmNames = function() end
+          PD.UpdateVScroll = function() end
+          PD.SolverText = function() return nil end
+          PD.Wrap = function(text) return {text} end
+
+          PD.GatherRouteCards = function()
+              if PD.cur == 'fishing' then return false end
+              return {}
+          end
+          PD.RowsGatherRoute = function(rows)
+              rows[#rows+1] = {kind='head', text='Gather route'}
+          end
+
+          local ranks = ns.ProfRanks
+
+          for _,slug in ipairs({
+              'mining', 'herbalism', 'skinning', 'fishing'
+          }) do
+              for _,pair in ipairs({
+                  {50,75}, {125,150}, {225,225}
+              }) do
+                  skill, cap = pair[1], pair[2]
+                  PD.cur = slug
+                  PD.tab = 'leveling'
+                  PD.autoPage = nil
+                  DungeonsForeverDB.prof.lvTarget[slug] = 300
+
+                  assert(PD.IsGatherRoute(), slug)
+
+                  local expected = ranks.NextStep(slug,300)
+                  assert(expected and expected.due, slug)
+
+                  PD.Render()
+
+                  local found
+                  for _,row in ipairs(PD.specs or {}) do
+                      if row.kind == 'head'
+                          and row.text == ranks.Title(expected) then
+                          found = row
+                          break
+                      end
+                  end
+
+                  assert(found,
+                      slug..':'..skill..' missing rank reminder')
+                  assert(#(found.lines or {}) > 0)
+
+                  local texts = {}
+                  for _,line in ipairs(found.lines) do
+                      texts[#texts+1] = line[1]
+                  end
+
+                  local detail = table.concat(texts, '\n')
+                  local source = expected.sources[1]
+
+                  assert(source and source.x and source.y)
+                  assert(detail:find(string.format(
+                      '(%.1f, %.1f)', source.x, source.y
+                  ), 1, true), slug..' missing NPC coordinates')
+
+                  if slug == 'fishing' and skill == 125 then
+                      assert(expected.method == 'book')
+                  elseif slug == 'fishing' and skill == 225 then
+                      assert(expected.method == 'quest')
+                  else
+                      assert(expected.method == 'trainer')
+                  end
+              end
+          end
+        ''')
+
+    def test_cancel_tracking_suspends_hud_until_reopened(self):
+        self.lua.execute(r'''
+          local PF = ns.ProfFollow
+          local XP = ns.ProfExecution
+          local T = ns.ProfTrack
+          local RA = ns.ProfRouteAuto
+
+          local plan = finish('alchemy', {start=1, target=3})
+          PD.autoSnapshot = plan
+          PD.autoSnapshotSlug = 'alchemy'
+
+          local state = {
+              slug = 'alchemy',
+              skill = 1,
+              step = 1,
+          }
+
+          DungeonsForeverDB.prof.follow = {
+              ['Test-Realm'] = state
+          }
+
+          -- 手动开始追踪
+          local _, click = PD.LevelTool()
+          click('track')
+          assert(T.Active('alchemy'))
+
+          -- 用户主动取消追踪
+          _, click = PD.LevelTool()
+          click('track')
+
+          assert(not T.Active('alchemy'))
+          assert(state.autoTrackSuspended == true,
+              'Cancellation did not suspend HUD auto-tracking')
+
+          -- 模拟新的可执行路线
+          RA.Get = function()
+              return {
+                  status = 'complete',
+                  feasible = true,
+                  steps = {{1, 3, 101, 2}},
+                  executionSteps = {{1, 3, 101, 2}},
+              }
+          end
+
+          local bindCalls = 0
+          XP.Bind = function()
+              bindCalls = bindCalls + 1
+              return nil
+          end
+
+          -- HUD 仍然打开，路线刷新不得重新追踪
+          PF.RefreshRoute('alchemy')
+          assert(bindCalls == 0,
+              'HUD restarted tracking after manual cancellation')
+
+          -- 关闭后重新打开 HUD，恢复自动启动权限
+          state.hidden = true
+          PF.f = recordedWidget()
+          PF.Paint = function() end
+
+          PF.Toggle('alchemy')
+
+          assert(not state.autoTrackSuspended,
+              'HUD reopen did not clear suspension')
+          assert(bindCalls == 1,
+              'HUD reopen did not attempt auto-tracking')
+        ''')
+
+    def test_track_button_waits_for_completed_search(self):
+        self.lua.execute(r'''
+          local plan = finish('alchemy', {start=1, target=3})
+          local T = ns.ProfTrack
+
+          PD.autoSnapshot = plan
+          PD.autoSnapshotSlug = 'alchemy'
+
+          local originalRestart = T.Restart
+          local restartCalls = 0
+
+          T.Restart = function(...)
+              restartCalls = restartCalls + 1
+              return originalRestart(...)
+          end
+
+          -- 即使已有可执行步骤，搜索中也不能启动追踪
+          plan.status = 'searching'
+          local _, click = PD.LevelTool()
+          click('track')
+
+          assert(restartCalls == 0)
+          assert(not T.Active('alchemy'))
+
+          -- 搜索结束后，允许正常启动追踪
+          plan.status = 'complete'
+          _, click = PD.LevelTool()
+          click('track')
+
+          assert(restartCalls == 1)
+          assert(T.Active('alchemy'))
+        ''')
 
     def test_1_recycled_recipe_header_has_one_anchor_per_sort_icon(self):
         self.lua.execute(r'''
-          local r=recordedRow()
-          for _,name in ipairs({'icon','icon2','icon3'})do r[name]:SetAllPoints(r)end
-          PD.BindRow(r,{kind='rechead'},26)
-          for _,name in ipairs({'icon','icon2','icon3'})do
-            local icon=r[name]
-            assert(#icon.points==1 and icon.points[1][1]=='RIGHT',name..' retained an old anchor')
-            assert(icon.width==14 and icon.height==14)
-          end
-          r.hsOwn.__act();assert(PD.recipeSort=='cost')
-          r.hsOwn.__act();assert(PD.recipeSortDesc)
-          r.hsOwn.__act();assert(PD.recipeSort==nil)
+            local r = recordedRow()
+
+            -- 首次构造排序箭头
+            PD.BindRow(r, {kind='rechead'}, 26)
+
+            -- 模拟复用前残留的错误锚点
+            for i=1,3 do
+              local pair = r['__ha'..i]
+              assert(pair and #pair==2)
+              pair[1]:SetAllPoints(r)
+              pair[2]:SetAllPoints(r)
+            end
+
+            -- 重新绑定同一行
+            PD.BindRow(r, {kind='rechead'}, 26)
+
+            -- 验证旧锚点已被清除
+            for i=1,3 do
+              local pair = r['__ha'..i]
+              local up, dn = pair[1], pair[2]
+
+              assert(#up.points==1)
+              assert(#dn.points==1)
+              assert(up.points[1][1]=='TOP')
+              assert(dn.points[1][1]=='BOTTOM')
+
+              assert(up.width==11)
+              assert(dn.width==11)
+              assert(math.abs(up.height-11/1.3)<0.001)
+              assert(math.abs(dn.height-11/1.3)<0.001)
+            end
+
+            -- 验证排序交互
+            r.hsOwn.__act()
+            assert(PD.recipeSort=='cost')
+
+            r.hsOwn.__act()
+            assert(PD.recipeSortDesc)
+
+            r.hsOwn.__act()
+            assert(PD.recipeSort==nil)
         ''')
 
     def test_2_track_button_cancels_and_keeps_recorded_attempts(self):
@@ -343,6 +658,46 @@ class Issue4Tests(unittest.TestCase):
             local cards=PD.GatherRouteCards({});assert(#cards==1 and #cards[1].icons==2)
             assert(#ns.ProfGathering.herbalism[1][1]==1,'render changed the reference gathering table')
           end
+        ''')
+    def test_hud_autotrack_respects_hidden_state(self):
+        self.lua.execute(r'''
+          local PF = ns.ProfFollow
+          local XP = ns.ProfExecution
+          local RA = ns.ProfRouteAuto
+
+          local state = {
+              slug = 'alchemy',
+              skill = 1,
+              step = 1,
+              hidden = true,
+          }
+          DungeonsForeverDB.prof.follow = {
+              ['Test-Realm'] = state
+          }
+
+          local binds = 0
+
+          RA.Get = function()
+              return {
+                  status = 'complete',
+                  feasible = true,
+                  steps = {{1, 3, 101, 2}},
+              }
+          end
+
+          XP.Bind = function()
+              binds = binds + 1
+              return nil
+          end
+
+          -- HUD 隐藏，不应创建追踪
+          PF.RefreshRoute('alchemy')
+          assert(binds == 0, 'Hidden HUD started tracking')
+
+          -- HUD 显示，应自动启动追踪
+          state.hidden = nil
+          PF.RefreshRoute('alchemy')
+          assert(binds == 1, 'Visible HUD did not start tracking')
         ''')
 
 

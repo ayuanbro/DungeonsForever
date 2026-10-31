@@ -192,6 +192,33 @@ function PF.SpecializationQuestInfo(seg)
     if type(goal.minSkill)=="number" then requirements[#requirements+1]=format(L["需要专业技能 %d"],goal.minSkill) end
     if type(goal.minLevel)=="number" then requirements[#requirements+1]=format(L["需要角色等级 %d"],goal.minLevel) end
     if #requirements>0 then lines[#lines+1]=table.concat(requirements," · ") end
+    -- 显示专精任务所需的交付材料
+    if type(goal.inputs) == "table" and #goal.inputs > 0 then
+        local materials = {}
+
+        for _, pair in ipairs(goal.inputs) do
+            local itemID = tonumber(pair[1])
+            local quantity = tonumber(pair[2])
+
+            if itemID and quantity and quantity > 0 then
+                local name = DG.ItemName(itemID)
+
+                if not name or name == "" then
+                    name = "#" .. itemID
+                    if DG.RequestItem then
+                        DG.RequestItem(itemID)
+                    end
+                end
+
+                materials[#materials + 1] =
+                    format("%s ×%d", name, quantity)
+            end
+        end
+
+        if #materials > 0 then
+            lines[#lines + 1] = format(L["任务材料：%s"],table.concat(materials, L["、"]))
+        end
+    end
     local place={}
     if label(goal.npcName) then place[#place+1]=label(goal.npcName)
     elseif goal.npcID then place[#place+1]="#"..goal.npcID end
@@ -209,14 +236,22 @@ function PF.SpecializationQuestInfo(seg)
     for key,value in pairs(goal.questProgress or {}) do progress[key]=value end
     local api=C_QuestLog
     if goal.questID and api then
-        for _,probe in ipairs({{"inLog","IsOnQuest"},{"readyForTurnIn","ReadyForTurnIn"}}) do
+        for _, probe in ipairs({
+            {"inLog", "IsOnQuest"},
+            {"readyForTurnIn", "ReadyForTurnIn"},
+            {"completed", "IsQuestFlaggedCompleted"},
+        }) do
             if type(api[probe[2]])=="function" then
                 local ok,value=pcall(api[probe[2]],goal.questID)
                 if ok and type(value)=="boolean" then progress[probe[1]]=value end
             end
         end
     end
-    local status=progress.readyForTurnIn and L["任务可交付"] or progress.inLog and L["任务已接取"] or nil
+    local status =
+        progress.completed and L["任务已完成"]
+        or progress.readyForTurnIn and L["任务可交付"]
+        or progress.inLog and L["任务已接取"]
+        or nil
     if status then lines[#lines+1]=status end
     lines[#lines+1]=L["实际学会对应专精后才完成此步骤。"]
     return {name=name,lines=lines,summary=identity..(status and " · "..status or ""),goal=goal}
@@ -304,7 +339,13 @@ local function routeForCalc(slug, skill)
             PF.pendingPlans[slug] = nil
             -- Following is an explicit request to execute; routine route reads
             -- never create a run. Wait for a settled candidate before freezing.
-            if XP and XP.Bind and PF.Following(slug) and res.status ~= "searching" then
+            local hudState = st()
+            if XP and XP.Bind
+                and hudState
+                and hudState.slug == slug
+                and not hudState.hidden
+                and not hudState.autoTrackSuspended
+                and res.status ~= "searching" then
                 XP.Bind(slug, res)
                 frozen = XP.GetPlan(slug)
                 if frozen then return "auto", frozen.executionSteps or frozen.steps,frozen end
@@ -330,7 +371,12 @@ local function routeForCalc(slug, skill)
         end
         steps=filtered
     end
-    if XP and PF.Following(slug) and steps and #steps>0 then
+    local hudState = st()
+    if XP and hudState
+        and hudState.slug == slug
+        and not hudState.hidden
+        and not hudState.autoTrackSuspended
+        and steps and #steps > 0 then
         summary=summary or RA and RA.SummarizeSteps and RA.SummarizeSteps(steps,slug,opts)
         summary=summary or {steps=steps,mats={},formulas={},total=0,scheme="fixed",target=routeTarget(slug)}
         summary.mode="fixed";summary.scheme="fixed"
@@ -589,16 +635,33 @@ function PF.Following(slug)
     return (s and s.slug == slug) and true or false
 end
 
+-- Explicit cancellation suspends HUD auto-start until the HUD is reopened.
+function PF.SuspendAutoTrack(slug)
+    local s = st()
+    if s and s.slug == slug then
+        s.autoTrackSuspended = true
+        PF.InvalidateRoute()
+    end
+end
+
 function PF.Sync()
     local s = st()
     if not (s and s.slug) then return false end
     local changed = false
-    local cur = skillOf(s.slug)
-    if cur and cur ~= s.skill then
-        s.skill = cur
+    local cur, maxSkill = skillOf(s.slug)
+
+    local skillChanged = cur ~= nil and cur ~= s.skill
+    local capChanged = maxSkill ~= nil and maxSkill ~= s.maxSkill
+
+    if skillChanged or capChanged then
+        if cur ~= nil then s.skill = cur end
+        if maxSkill ~= nil then s.maxSkill = maxSkill end
+
         changed = true
+
         local PD = ns.ProfModule
-        if PD and PD.built and PD.cur == s.slug and PD.page and PD.page:IsVisible() then
+        if PD and PD.built and PD.cur == s.slug
+            and PD.page and PD.page:IsVisible() then
             pcall(PD.Render, PD)
         end
     end
@@ -653,6 +716,7 @@ function PF.Toggle(slug)
         p.follow[k] = s
     end
     s.hidden = nil
+    s.autoTrackSuspended = nil
     PF.InvalidateRoute()
     if PF.f then
         PF.Sync()
@@ -2224,7 +2288,10 @@ function PF.Paint()
         local craftText = questInfo and questInfo.summary
             or seg.navigationOnly and L["按实际技能推进；不预计采集产出。"]
             or seg.checkpoint and L["不预先计入尚未采到的矿石"] or format(L["大约还需制作%d次"], crafts)
-        if canCraft then craftText = craftText .. " · " .. format(L["材料还可制作%d次"], canCraft) end
+        if canCraft and not questInfo then
+            craftText = craftText .. " · " ..
+                format(L["材料还可制作%d次"], canCraft)
+        end
         card.crafts:SetText(learningWarning or craftText)
 
         local rangeW, nameW = 40, 90
