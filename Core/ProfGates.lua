@@ -13,7 +13,8 @@ G.SpecAbilities = SPEC_ABILITIES
 local cache
 local function spellKnown(spell)
     for _, name in ipairs({ "C_SpellBook.IsSpellKnown", "IsSpellKnown", "IsPlayerSpell", "C_Spell.IsSpellKnown" }) do
-        local fn = _G[name]
+        local parent, key = name:match("^([^.]+)%.(.+)$")
+        local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
         if type(fn) == "function" then
             local ok, value = pcall(fn, spell)
             if ok and type(value) == "boolean" then return value end
@@ -73,6 +74,10 @@ end
 
 function G.ItemFlag(spell)
     return SpecFlags(SpecRec(spell)) % 4 >= 2
+end
+
+function G.RequiredAbility(spell)
+    return SpecAbility(SpecRec(spell))
 end
 
 function G.HasPending(spell)
@@ -175,13 +180,15 @@ local function buildSpecGoal(def, faction)
         if k ~= "variants" then goal[k] = v end
     end
     goal.inputs = cloneInputs(def.inputs)
-    goal.prerequisiteQuestIDs = nil
     local variant = def.variants and faction and def.variants[faction]
     if variant then
         for k, v in pairs(variant) do goal[k] = v end
     elseif def.variants then
         goal.blockedReason = "specializationFactionUnknown"
     end
+    local prerequisites = {}
+    for _, id in ipairs(goal.prerequisiteQuestIDs or {}) do prerequisites[#prerequisites+1] = id end
+    goal.prerequisiteQuestIDs = prerequisites
     return goal
 end
 
@@ -273,6 +280,17 @@ function G.SpecializationContext(opts)
             if goal.questCompleted and abilities[goal.abilityID] ~= true then
                 goal.blockedReason = "specializationQuestAlreadyCompleted"
             end
+        end
+        if goal.blockedReason=="specializationQuestAlreadyCompleted" then
+            -- A completed introduction cannot be performed again. Keep the
+            -- unresolved specialization visible, but do not stop ordinary
+            -- engineering leveling at 200. Quest completion is not evidence
+            -- that the specialization ability is currently learned.
+            ctx.unresolvedGoals={goal}
+            ctx.warnings={{code="specializationQuestAlreadyCompleted",profession=profession,
+                questID=goal.questID,abilityID=goal.abilityID,goalID=goal.id}}
+        else
+            -- Missing faction facts still block an uncompleted selected task.
             ctx.goals[1] = goal
         end
     end
@@ -295,6 +313,7 @@ function G.SpecGoal(slug, target)
         if not def or target0 < (def.minSkill or 200) then return nil end
         local goal = buildSpecGoal(def, G.FactionCode())
         if goal.blockedReason then return nil end
+        if questProgressOf(goal).completed==true then return nil end
         return goal
     end
     if actual == "gnomish" or actual == "goblin" then return nil end
@@ -304,7 +323,7 @@ function G.SpecGoal(slug, target)
     for _, def in pairs(source) do
         if def.profession == slug then
             local goal = buildSpecGoal(def, faction)
-            if not goal.blockedReason then
+            if not goal.blockedReason and questProgressOf(goal).completed~=true then
                 if not best or (goal.minSkill or 0) < (best.minSkill or 0) then best = goal end
             end
         end
@@ -341,7 +360,12 @@ function G.ToolOwned(itemID)
     return false
 end
 
-function G.AutoCraftTools()
+function G.AutoCraftTools(slug)
+    local view=ns.ProfModule
+    if view and view.SettingRaw then
+        local value=view.SettingRaw("autoCraftTools",slug)
+        if value~=nil then return value~=false end
+    end
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
     return not (db and db.autoCraftTools == false)
 end

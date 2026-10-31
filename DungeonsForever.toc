@@ -57,6 +57,7 @@ Core\Data\Data_ProfTools.lua
 Core\Data\Data_ProfSpecializations.lua
 Core\Data\Data_ProfSpecializationQuests.lua
 Core\Data\Data_ProfFormulaQuests.lua
+Core\Data\Data_ProfLearningSources.lua
 Core\Data\Data_Explore.lua
 Core\Data\Data_ExplorePets.lua
 Core\Data\Data_ExploreToys.lua
@@ -167,9 +168,17 @@ Core\ProfSourceMerge.lua
 Core\ProfGates.lua
 Core\ProfRecovery.lua
 Core\VendorPriceDB.lua
+Core\ProfEssences.lua
 Core\ProfSolverCapture.lua
+Core\ProfLearning.lua
+Core\ProfClientScan.lua
+Core\ProfRanks.lua
 Core\ProfRouteSolver.lua
+Core\ProfFishing.lua
+Core\ProfGathering.lua
+Core\ProfExecution.lua
 Core\ProfSolverRun.lua
+Core\ProfRoutePlans.lua
 Core\ExploreUI.lua
 Core\ExploreMap.lua
 Core\CollectionUI.lua

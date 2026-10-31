@@ -91,6 +91,31 @@ end
 
 local FORMULA_STEP = 8
 
+-- Only static access metadata is joined by NPC. Payment IDs in the old tuple
+-- are untyped; never copy them over the typed currencies/costItems payload.
+local formulaFacts = setmetatable({}, {__mode="k"})
+function M.FormulaFacts(itemID)
+    local flat=ns.EnsureProfFormulaOffers and ns.EnsureProfFormulaOffers()[itemID]
+    if type(flat)~="table" or #flat%FORMULA_STEP~=0 then return EMPTY end
+    local cached=formulaFacts[flat]
+    if cached then return cached end
+    cached={}
+    for i=1,#flat,FORMULA_STEP do
+        local npc,side=flat[i],FactionOf(flat[i+3])
+        if Int(npc,1) then
+            local previous=cached[npc]
+            if not previous then cached[npc]={faction=side,available=flat[i+2]~=0,purchasable=true}
+            else
+                -- Conflicting references cannot establish a faction limit.
+                if previous.faction~=side then previous.faction=nil end
+                previous.available=previous.available or flat[i+2]~=0
+            end
+        end
+    end
+    formulaFacts[flat]=cached
+    return cached
+end
+
 local function BuildFormulaList(itemID, withCurrency)
     local flat = ns.EnsureProfFormulaOffers()[itemID]
     if type(flat) ~= "table" then return nil end
@@ -121,6 +146,7 @@ local function BuildFormulaList(itemID, withCurrency)
             if Int(curID, 1) then
                 if not withCurrency then entry = nil end
                 if entry then
+                    entry.price=type(cost)=="number" and cost or nil
                     entry.currencyID = curID
                     entry.currencyAmount = tonumber(curAmt) or 0
                     entry.hasExtendedCost = true

@@ -1,0 +1,134 @@
+{
+  "build": "1.60.1.70658",
+  "rules": 2,
+  "fingerprint": "47966986d80651355845ab9208eadcf0927dccaa0adac55dc83ce3454d0952b9",
+  "sourceCoverageComplete": false,
+  "summary": {
+    "confirmedPaths": 1864,
+    "luaBytes": 151197,
+    "recipes": 2540,
+    "recipesWithGaps": 2455
+  },
+  "originalData": {
+    "count": 129,
+    "changed": []
+  },
+  "reputation": {
+    "correctedConditions": 183,
+    "referenceSpells": 178,
+    "nativePaths": 180,
+    "nativeSpells": 175
+  },
+  "tests": {
+    "windowsWorkspace": {
+      "tests": 68,
+      "failures": 0,
+      "errors": 0
+    },
+    "isolatedCommittedRuntime": {
+      "scope": "HEAD runtime with only this recovery pipeline, source tests and auxiliary Data overlaid",
+      "tests": 68,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "linux": {
+      "tests": 68,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "display": null,
+      "waylandDisplay": null,
+      "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+      "offlineArchiveCheck": true,
+      "summary": {
+        "recipes": 2540,
+        "recipesWithGaps": 2455,
+        "confirmedPaths": 1864,
+        "luaBytes": 151197
+      }
+    }
+  },
+  "probes": {
+    "freshDB2": 22,
+    "freshWebAttempted": 12,
+    "freshWebVerified": 12,
+    "resumedAttempted": 16,
+    "resumedVerified": 12,
+    "resumedParseErrors": 4,
+    "targeted": {
+      "verified": 3,
+      "sourceMissing": 1
+    },
+    "nativeBrowserComponent": {
+      "coldAndReused200": true,
+      "closed": true
+    }
+  },
+  "memory": {
+    "passed": true,
+    "scope": "isolated HEAD runtime; full professional TOC before initialization; strong reference retention",
+    "coldMaxKiB": 252.63671875,
+    "singleProfessionMaxKiB": 501.17578125,
+    "allProfessionsMaxKiB": 1311.80078125
+  },
+  "capture": {
+    "iterations": 100,
+    "baselineP95Ms": 11.196400002518203,
+    "currentP95Ms": 11.551600000530016,
+    "regressionPercent": 3.172448268478467,
+    "baselineMedianMs": 8.630950000224402,
+    "currentMedianMs": 8.858350000082282
+  },
+  "capturePassed": true,
+  "linuxOfflineArchiveReplay": true,
+  "archiveHashesChecked": true,
+  "limitations": [
+    "Full historical failed-source replay not completed; sourceCoverageComplete remains false.",
+    "Original dev Data, TOC and game runtime source were not changed by this repair; other pending workspace changes are preserved.",
+    "Actual in-game learning, purchasing, visible UI and hard callback timing are untested; Docker image not built.",
+    "Browser network consistency tested on Linux only; old 2026-10-28 validation artifacts retain their historical scope."
+  ],
+  "artifacts": {
+    "Data_ProfLearningSources.lua": {
+      "bytes": 151197,
+      "sha256": "75059d017f0ef792e2940544018d02c214427040cf964039442a388e2ef79f36"
+    },
+    "fresh-probe.zip": {
+      "bytes": 2703765,
+      "sha256": "6d12b9602ce9095ac275c3b9ec8648f2807f70406981bf59363e9459cb63d43c"
+    },
+    "memory.json": {
+      "bytes": 64669,
+      "sha256": "6929653f1478f73c19edb60ac01430493290137e23d1995ac7f050e55f88a7a8"
+    },
+    "native-conflicts-2026-10-29.json": {
+      "bytes": 8720,
+      "sha256": "6fa0dda2052dbbc322715342e53966d6a07cc2c8c1377223c3135b6220445257"
+    },
+    "performance.json": {
+      "bytes": 2097,
+      "sha256": "70a5b1dc724cd299718ba997ab36a4508d43370130306ce5debe4efc77b52d03"
+    },
+    "raw.zip": {
+      "bytes": 6152243,
+      "sha256": "cf06530ca7d34c2383a978a9b255359735285c7f6b0a8d693b145d7d3e79be82"
+    },
+    "recovery-2026-10-29.md": {
+      "bytes": 6143,
+      "sha256": "612bb8090f0bfd03620c590e3e8e7452761fdf1473f273f6f79a06f9c3bb629a"
+    },
+    "report.json": {
+      "bytes": 4624071,
+      "sha256": "c1b8795a6bac114935aa258812321b3be30fc7ef8fbfa86c138ae4e59ff7b484"
+    },
+    "reputation-corrections-2026-10-29.json": {
+      "bytes": 32439,
+      "sha256": "bd1bfbe3205dbad7b5cff7fd60d9adfa88ed6e37cf4dbffe7ae78596adbc1103"
+    },
+    "targeted-evidence.zip": {
+      "bytes": 189040,
+      "sha256": "679b37679593d53169a5702c604ab3d6fdcaf149bc50536d3308edcd1bf1e9d7"
+    }
+  }
+}

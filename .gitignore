@@ -1,0 +1,9 @@
+__pycache__/
+.pipeline-runtime/
+data-updater/
+dist/
+tests/
+tools/
+.data-updater.lock
+validation/
+docs/

@@ -1,0 +1,728 @@
+{
+  "acquisition": {
+    "acquisitionCoverageComplete": false,
+    "attempted": 7480,
+    "covered": 8714,
+    "effectiveStatuses": {
+      "parseError": 255,
+      "sourceBlocked": 4,
+      "sourceMissing": 278,
+      "verified": 8193
+    },
+    "id": "2026-10-29T15:22:29.888417+00:00",
+    "newlyRequested": 7480,
+    "notAttempted": 1250,
+    "requestCoverageComplete": false,
+    "reused": 1234,
+    "reusedStatuses": {
+      "verified": 1234
+    },
+    "targetCount": 8730,
+    "uncovered": 16
+  },
+  "automaticNumericConflicts": [
+    {
+      "decision": "retainDev",
+      "profession": "alchemy",
+      "retainedDevValue": 10,
+      "route": "trainer:1245246",
+      "routeStatus": "confirmed",
+      "sourceValue": 1,
+      "spell": 1245246
+    },
+    {
+      "decision": "retainDev",
+      "profession": "alchemy",
+      "retainedDevValue": 10,
+      "route": "trainer:1245250",
+      "routeStatus": "confirmed",
+      "sourceValue": 1,
+      "spell": 1245250
+    },
+    {
+      "decision": "retainDev",
+      "profession": "blacksmithing",
+      "retainedDevValue": 10,
+      "route": "trainer:1245287",
+      "routeStatus": "confirmed",
+      "sourceValue": 1,
+      "spell": 1245287
+    },
+    {
+      "decision": "retainDev",
+      "profession": "enchanting",
+      "retainedDevValue": 20,
+      "route": "trainer:7428",
+      "routeStatus": "confirmed",
+      "sourceValue": 1,
+      "spell": 7428
+    },
+    {
+      "decision": "retainDev",
+      "profession": "enchanting",
+      "retainedDevValue": 10,
+      "route": "trainer:1245320",
+      "routeStatus": "confirmed",
+      "sourceValue": 1,
+      "spell": 1245320
+    },
+    {
+      "decision": "retainDev",
+      "profession": "enchanting",
+      "retainedDevValue": 10,
+      "route": "trainer:1245321",
+      "routeStatus": "confirmed",
+      "sourceValue": 1,
+      "spell": 1245321
+    },
+    {
+      "decision": "retainDev",
+      "profession": "poisons",
+      "retainedDevValue": 125,
+      "route": "trainer:8681",
+      "routeStatus": "confirmed",
+      "sourceValue": 1,
+      "spell": 8681
+    },
+    {
+      "decision": "retainDev",
+      "profession": "tailoring",
+      "retainedDevValue": 5,
+      "route": "trainer:3755",
+      "routeStatus": "confirmed",
+      "sourceValue": 1,
+      "spell": 3755
+    }
+  ],
+  "automaticSkillGrantCount": 37,
+  "automaticSkillGrants": {
+    "alchemy": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 171,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 7183,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 171,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1245246,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 171,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1245250,
+        "status": "confirmed"
+      }
+    ],
+    "blacksmithing": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 164,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2660,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 164,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2663,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 164,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 3115,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 164,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 12260,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 164,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1245287,
+        "status": "confirmed"
+      }
+    ],
+    "cooking": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 185,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2538,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 185,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2540,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 185,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 8604,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 185,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1229737,
+        "status": "confirmed"
+      }
+    ],
+    "enchanting": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 333,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 7418,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 333,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 7421,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "level",
+            "value": 5
+          },
+          {
+            "kind": "skill",
+            "professionID": 333,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 7428,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 333,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 13262,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 333,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1245320,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 333,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1245321,
+        "status": "confirmed"
+      }
+    ],
+    "engineering": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 202,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 3918,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 202,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 3919,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 202,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 3920,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 202,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1235244,
+        "status": "confirmed"
+      }
+    ],
+    "herbalism": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 182,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1235236,
+        "status": "confirmed"
+      }
+    ],
+    "leatherworking": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 165,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2149,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 165,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2152,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 165,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2881,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 165,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 7126,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 165,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 9058,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 165,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 9059,
+        "status": "confirmed"
+      }
+    ],
+    "mining": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 186,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2657,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 186,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 1235230,
+        "status": "confirmed"
+      }
+    ],
+    "poisons": [
+      {
+        "conditions": [
+          {
+            "kind": "classIDs",
+            "values": [
+              4
+            ]
+          },
+          {
+            "kind": "level",
+            "value": 20
+          },
+          {
+            "kind": "skill",
+            "professionID": 40,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 8681,
+        "status": "confirmed"
+      }
+    ],
+    "tailoring": [
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 197,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2387,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 197,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 2963,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 197,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 3755,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 197,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 3915,
+        "status": "confirmed"
+      },
+      {
+        "conditions": [
+          {
+            "kind": "skill",
+            "professionID": 197,
+            "value": 1
+          }
+        ],
+        "rank": 1,
+        "spell": 12044,
+        "status": "confirmed"
+      }
+    ]
+  },
+  "build": "1.60.1.70685",
+  "capture": {
+    "maxP95RegressionPercent": 4.233899980806588,
+    "observations": [
+      {
+        "afterMedianMs": 8.54435000110243,
+        "afterP95Ms": 11.526999998750398,
+        "beforeMedianMs": 8.387500000026193,
+        "beforeP95Ms": 11.148100002174033,
+        "iterations": 150,
+        "learned": true,
+        "profession": "alchemy",
+        "regressionPercent": 3.398785411886096
+      },
+      {
+        "afterMedianMs": 11.41885000106413,
+        "afterP95Ms": 15.853699998842785,
+        "beforeMedianMs": 11.526750000484753,
+        "beforeP95Ms": 15.502999998716405,
+        "iterations": 150,
+        "learned": false,
+        "profession": "alchemy",
+        "regressionPercent": 2.2621428120713327
+      },
+      {
+        "afterMedianMs": 22.791999999753898,
+        "afterP95Ms": 29.435700002068188,
+        "beforeMedianMs": 23.688399998718523,
+        "beforeP95Ms": 29.866900000342866,
+        "iterations": 150,
+        "learned": true,
+        "profession": "blacksmithing",
+        "regressionPercent": -1.4437387149979664
+      },
+      {
+        "afterMedianMs": 33.27289999833738,
+        "afterP95Ms": 41.168399999151006,
+        "beforeMedianMs": 33.32380000028934,
+        "beforeP95Ms": 40.58019999865792,
+        "iterations": 150,
+        "learned": false,
+        "profession": "blacksmithing",
+        "regressionPercent": 1.449475361167618
+      },
+      {
+        "afterMedianMs": 31.398400000398397,
+        "afterP95Ms": 38.22789999685483,
+        "beforeMedianMs": 31.524600000921055,
+        "beforeP95Ms": 37.91769999952521,
+        "iterations": 150,
+        "learned": true,
+        "profession": "leatherworking",
+        "regressionPercent": 0.818087587943106
+      },
+      {
+        "afterMedianMs": 43.41575000034936,
+        "afterP95Ms": 53.60270000164746,
+        "beforeMedianMs": 43.829999998706626,
+        "beforeP95Ms": 51.42540000088047,
+        "iterations": 150,
+        "learned": false,
+        "profession": "leatherworking",
+        "regressionPercent": 4.233899980806588
+      }
+    ],
+    "passed": true,
+    "scope": "capture target 75 only; excludes solving, UI, callbacks, initial load and real client"
+  },
+  "dataSHA256": "4845dca0cf0103cae0c30ae1736c057717bac101bf7dbebfd2e22be0e76ee6b9",
+  "extendedCostReferences": 723,
+  "fingerprint": "1367c3e5be8d2db2049978546cf48cde61d26f06cb90be1d66e3acf7121f9894",
+  "firstAidUnchanged": true,
+  "generation": {
+    "allPublicFieldsEqualFreshRuntimeProjection": true,
+    "build": "1.60.1.70685",
+    "dataSHA256": "4845dca0cf0103cae0c30ae1736c057717bac101bf7dbebfd2e22be0e76ee6b9",
+    "fingerprint": "1367c3e5be8d2db2049978546cf48cde61d26f06cb90be1d66e3acf7121f9894",
+    "firstAidExcluded": true,
+    "foreverOnly": true,
+    "luaVersion": "Lua 5.1",
+    "nativeRecipesUntouched": true,
+    "offline": true,
+    "professions": {
+      "alchemy": 204,
+      "blacksmithing": 513,
+      "cooking": 135,
+      "enchanting": 264,
+      "engineering": 280,
+      "fishing": 6,
+      "herbalism": 4,
+      "leatherworking": 605,
+      "mining": 22,
+      "poisons": 26,
+      "skinning": 3,
+      "tailoring": 478
+    },
+    "recordsVerified": 2540,
+    "rules": 4
+  },
+  "hardTwoMillisecondCallbackBudget": "not measured; no new background task",
+  "lineEndingOnlyDifferences": [
+    "Locales/enUS.lua",
+    "Locales/zhTW.lua"
+  ],
+  "liveGameAcceptance": false,
+  "measurementSourceTextMatchesDelivery": true,
+  "memory": {
+    "allProfessionsMaxKiB": 1336.46484375,
+    "coldMaxKiB": 250.2607421875,
+    "passed": true,
+    "scope": "Full selected TOC/three locales, pre-initialization; strongly retained native record/route views; excludes initialized UI, timers and full frozen condition pools",
+    "singleProfessionMaxKiB": 505.55078125
+  },
+  "newWebRequests": 0,
+  "offline": true,
+  "originalDataFilesUnchanged": 129,
+  "originalTOCUnchanged": true,
+  "replay": {
+    "archiveReplayAuditEqual": true,
+    "archiveReplayLuaEqual": true,
+    "checkPassed": true,
+    "dataSHA256": "4845dca0cf0103cae0c30ae1736c057717bac101bf7dbebfd2e22be0e76ee6b9",
+    "headlessLinux": true,
+    "rawArchiveSHA256": "be42b2ad57c438bb25207d6a259131ac116206ea7c6091cd81eabde9df0fea7d",
+    "seconds": 36.00402783000027,
+    "socketConnectForbidden": true,
+    "stage": "/tmp/df-source-origin-rules4-e70s0s7m",
+    "summary": {
+      "confirmedPaths": 2261,
+      "luaBytes": 117832,
+      "recipes": 2540,
+      "recipesWithGaps": 2123
+    }
+  },
+  "rules": 4,
+  "sourceGapCount": 537,
+  "summary": {
+    "confirmedPaths": 2261,
+    "luaBytes": 117832,
+    "recipes": 2540,
+    "recipesWithGaps": 2123
+  },
+  "tests": {
+    "extraSourceAndUI": 40,
+    "groupsOverlap": true,
+    "nativeAndLearning": 68,
+    "pipeline": 138,
+    "skipped": 0
+  },
+  "vendorReferences": 1642
+}

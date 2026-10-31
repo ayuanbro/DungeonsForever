@@ -117,33 +117,83 @@ function AB.DoImport(profName, items)
     Say(L["未检测到 Auctionator，请在 Auctionator → 购物清单 → 导入 中粘贴"])
 end
 
-local SUPPLY_MAX_AGE = 172800
-local SUPPLY_RETRY = 2
-local SUPPLY_TIMEOUT = 6
+-- A quantity is a short-lived observation, never Auctionator's daily maximum.
+local SUPPLY_MAX_AGE  = ns.ProfRouteAuto.MaxStaleSeconds()
 
-local supplyFrame, supplyQueue, supplyCur, supplyTimer, supplyDone
-local supplyRetry, supplyRevision = 0, 0
+local supplyRevision = 0
+local supplyListeners = {}
+local function MarketKey()
+    return tostring(GetRealmName and GetRealmName() or "") .. ":"
+        .. tostring(UnitFactionGroup and UnitFactionGroup("player") or "")
+end
+local function ObserverKey()
+    return tostring(UnitGUID and UnitGUID("player") or UnitName and UnitName("player") or "")
+end
+function AB.OnChanged(fn)
+    if type(fn)=="function" then supplyListeners[#supplyListeners+1]=fn end
+end
+local function SupplyChanged(id)
+    supplyRevision=supplyRevision+1
+    for _,fn in ipairs(supplyListeners) do pcall(fn,id,"supply") end
+end
 
 local function ProfDB()
     return DungeonsForeverDB and DungeonsForeverDB.prof
 end
 
-local function SupplyStore()
-    local db = ProfDB()
-    if not db then return nil end
-    db.auctionSupply = db.auctionSupply or {}
-    return db.auctionSupply
+local function ReplicateGateDB()
+    local db=ProfDB()
+    if type(db)=="table" then return db end
+    if type(DungeonsForeverDB)=="table" and DungeonsForeverDB.prof==nil then
+        DungeonsForeverDB.prof={}
+        return DungeonsForeverDB.prof
+    end
+end
+
+-- A complete market snapshot also proves zero for IDs absent from its rows.
+-- Store one compact batch rather than duplicating its metadata on every item.
+local function SupplyRecord(id)
+    local db=ProfDB()
+    local batch=db and db.auctionFullScan
+    if type(batch)~="table" or batch.v~=1 or type(batch.items)~="table" then return nil end
+    -- Never interpret stock from a scan invalidated by a mode switch.
+    if AB.ReplicateScanReady and AB.ReplicateScanReady()==false then
+        return {mk=batch.mk,ob=batch.ob,failure="unverified"}
+    end
+    local item=batch.items[id]
+    if item~=nil and type(item)~="table" then
+        return {mk=batch.mk,ob=batch.ob,failure="incomplete"}
+    end
+    if not item and batch.c~=true then
+        return {mk=batch.mk,ob=batch.ob,failure="incomplete"}
+    end
+    return {q=item and item.q or 0,p=item and item.p,t=batch.t,mk=batch.mk,ob=batch.ob,
+        c=batch.c==true and not (item and item.failure),ox=true,s="client-auction-results",v=2,
+        failure=item and item.failure or batch.c~=true and "incomplete" or nil,
+        method="auctionator-full-scan"}
 end
 
 function AB.SupplyRevision()
     return supplyRevision
 end
 
-function AB.GetAuctionSupply(id, live)
+function AB.GetAuctionSupplyStatus(id)
     if type(id) ~= "number" or id <= 0 then return nil end
-    local store = SupplyStore()
-    local rec = store and store[id] or nil
-    if type(rec) ~= "table" then return nil end
+    local rec = SupplyRecord(id)
+    if type(rec) ~= "table" then return "unknown" end
+    local now = time and time() or 0
+    local qty, stamp = tonumber(rec.q), tonumber(rec.t)
+    if rec.mk ~= MarketKey() or rec.ob ~= ObserverKey() then return "unverified" end
+    if rec.failure then return rec.failure end
+    if rec.c ~= true or rec.ox ~= true or rec.s ~= "client-auction-results" then return "incomplete" end
+    if not qty or qty < 0 or qty == math.huge or qty ~= math.floor(qty) then return "incomplete" end
+    if not stamp or stamp~=stamp or stamp <= 0 or stamp > now or now-stamp > SUPPLY_MAX_AGE then return "expired" end
+    return "verified"
+end
+
+function AB.GetAuctionSupply(id, live)
+    if AB.GetAuctionSupplyStatus(id) ~= "verified" then return nil end
+    local rec = SupplyRecord(id)
     return {
         quantity = tonumber(rec.q),
         observedAt = tonumber(rec.t) or 0,
@@ -151,17 +201,16 @@ function AB.GetAuctionSupply(id, live)
         ownerExcluded = rec.ox == true,
         source = rec.s or "client-auction-results",
         market = tonumber(rec.p),
+        marketKey = rec.mk,
+        observer = rec.ob,
+        method = rec.method,
+        schemaVersion = rec.v,
+        expiresAt = rec.t + SUPPLY_MAX_AGE,
     }
 end
 
 function AB.SupplyFresh(id)
-    local rec = AB.GetAuctionSupply(id)
-    if not rec or not rec.complete or not rec.ownerExcluded then return nil end
-    if rec.source ~= "client-auction-results" then return nil end
-    if type(rec.quantity) ~= "number" then return nil end
-    local now = (type(time) == "function") and time() or 0
-    if rec.observedAt <= 0 or now - rec.observedAt > SUPPLY_MAX_AGE then return nil end
-    return rec
+    return AB.GetAuctionSupply(id)
 end
 
 function AB.SupplyEstimate(id)
@@ -190,7 +239,8 @@ function AB.SupplyEstimate(id)
         end
     end
     if qty == nil then return nil end
-    local observedAt = (day and A.Constants.SCAN_DAY_0) and day * 86400 + A.Constants.SCAN_DAY_0 or nil
+    local day0=A.Constants and A.Constants.SCAN_DAY_0
+    local observedAt = (day and day0) and day * 86400 + day0 or nil
     return {
         quantity = qty,
         observedAt = observedAt or 0,
@@ -199,16 +249,6 @@ function AB.SupplyEstimate(id)
         source = "auctionator-update",
         market = tonumber(entry.m),
     }
-end
-
-local function SupplyWrite(id, qty, price)
-    local store = SupplyStore()
-    if not store then return end
-    store[id] = {
-        q = qty, p = price, t = (time and time()) or 0,
-        c = true, ox = true, s = "client-auction-results",
-    }
-    supplyRevision = supplyRevision + 1
 end
 
 function AB.GetAuctionSupplyHistory(id)
@@ -241,9 +281,9 @@ end
 
 function AB.GetAuctionPriceObservedAt(id)
     if type(id) ~= "number" or id <= 0 then return nil end
-    local store = SupplyStore()
-    local rec = store and store[id] or nil
-    if type(rec) == "table" and tonumber(rec.t) and rec.t > 0 then return tonumber(rec.t) end
+    local rec = SupplyRecord(id)
+    if type(rec) == "table" and rec.mk==MarketKey() and tonumber(rec.p) and rec.p>0
+        and tonumber(rec.t) and rec.t>0 then return tonumber(rec.t) end
     local est = AB.SupplyEstimate(id)
     if type(est) == "table" and tonumber(est.observedAt) and est.observedAt > 0 then
         return tonumber(est.observedAt)
@@ -251,180 +291,311 @@ function AB.GetAuctionPriceObservedAt(id)
     return nil
 end
 
-local function SupplyAbort(msg)
-    if supplyTimer then supplyTimer:Cancel(); supplyTimer = nil end
-    supplyQueue, supplyCur, supplyDone = nil, nil, nil
-    supplyRetry = 0
-    if supplyFrame then supplyFrame:UnregisterAllEvents() end
-    if msg then Say(msg) end
+-- Auctionator 341 emits the raw get-all / replicate rows at ScanComplete.
+-- Its saved Database.a field is a daily maximum, not the latest quantity.
+-- Observe the scan that Auctionator already performs; never send a query here.
+local fullBus,fullListener,fullEvents,fullRead,fullTimer
+local fullGeneration=0
+local fullState={status="unavailable"}
+local function WholeNumber(n)
+    return type(n)=="number" and n>=0 and n<math.huge and n==math.floor(n)
 end
-
-local function SupplySorts()
-    local order = (type(Enum) == "table" and type(Enum.AuctionHouseSortOrder) == "table")
-        and Enum.AuctionHouseSortOrder.Price or 0
-    return { { sortOrder = order, reverseSort = false } }
+local function StopFullImport()
+    fullGeneration=fullGeneration+1
+    if fullTimer then fullTimer:Cancel();fullTimer=nil end
+    fullRead=nil
 end
+function AB.FullScanStatus() return fullState end
 
-local function SupplyHarvest()
-    local id, key, isCommodity = supplyCur.id, supplyCur.key, supplyCur.commodity
-    local qty, price, complete = 0, nil, false
-    if isCommodity then
-        complete = C_AuctionHouse.HasFullCommoditySearchResults(id) and true or false
-        local n = C_AuctionHouse.GetNumCommoditySearchResults(id)
-        for i = 1, n do
-            local info = C_AuctionHouse.GetCommoditySearchResultInfo(id, i)
-            if type(info) == "table" and info.containsOwnerItem ~= true then
-                qty = qty + (tonumber(info.quantity) or 0)
-                local unit = tonumber(info.unitPrice) or 0
-                if unit > 0 and (price == nil or unit < price) then price = unit end
-            end
-        end
-    else
-        complete = key and C_AuctionHouse.HasFullItemSearchResults(key) and true or false
-        if key then
-            local n = C_AuctionHouse.GetNumItemSearchResults(key)
-            for i = 1, n do
-                local info = C_AuctionHouse.GetItemSearchResultInfo(key, i)
-                if type(info) == "table" and info.containsOwnerItem ~= true then
-                    qty = qty + (tonumber(info.quantity) or 0)
-                    local buyout = tonumber(info.buyoutPrice) or 0
-                    if buyout > 0 and (price == nil or buyout < price) then price = buyout end
-                end
-            end
-        end
+local function ExpectedFullRows(scan)
+    if scan.expected~=nil then return end
+    local ok,count,total
+    if scan.modern then
+        local fn=C_AuctionHouse and C_AuctionHouse.GetNumReplicateItems
+        if fn then ok,count=pcall(fn) end
+    elseif GetNumAuctionItems then ok,count,total=pcall(GetNumAuctionItems,"list") end
+    if ok and WholeNumber(count) and (total==nil or total==count) then
+        scan.expected=count;scan.observedAt=time and time() or scan.startedAt
     end
-    return qty, price, complete
+end
+local function FullRow(scan,row)
+    if type(row)~="table" then scan.complete=false;return end
+    local info=row.auctionInfo or row.replicateInfo
+    if type(info)~="table" then scan.complete=false;return end
+    local linkID=type(row.itemLink)=="string" and tonumber(row.itemLink:match("item:(%d+)"))
+    local id=info[17]
+    if not WholeNumber(id) or id==0 then id=linkID end
+    if not WholeNumber(id) or id==0 or linkID and linkID~=id then scan.complete=false;return end
+    local item=scan.items[id]
+    if not item then item={q=0};scan.items[id]=item end
+    local qty=info[3]
+    local classic=info[17]~=nil or info[18]~=nil or row.replicateInfo~=nil
+        or type(info[14])=="string" or type(info[15])=="string"
+    local buyout=info[classic and 10 or 9]
+    if not WholeNumber(qty) or type(buyout)~="number" or buyout~=buyout
+        or buyout<0 or buyout==math.huge or info[18]==false then item.failure="incomplete";return end
+    -- Bid-only and sold rows contribute no immediately purchasable stock.
+    if qty==0 or buyout==0 then return end
+    local owner=info[classic and 15 or 12]
+    if classic and (type(owner)~="string" or owner=="") then owner=info[14] end
+    if type(owner)~="string" or owner=="" then item.failure="incomplete";return end
+    local player=UnitName and UnitName("player")
+    if owner==player or owner:match("^[^-]+") == player then return end
+    -- 按数量加权计算平均单价
+    local oldQty = item.q
+    local newQty = oldQty + qty
+
+    item.p = ((item.p or 0) * oldQty + buyout) / newQty
+    item.q = newQty
 end
 
-local SupplySend
-local function SupplyNext()
-    supplyRetry = 0
-    if supplyTimer then supplyTimer:Cancel(); supplyTimer = nil end
-    local nextID = #supplyQueue > 0 and table.remove(supplyQueue, 1) or nil
-    if not nextID then
-        local done = supplyDone
-        SupplyAbort()
-        if done then done() end
-        return
+local function ImportFullRows(scan,rows)
+    if type(rows)~="table" or scan.expected==nil then
+        fullState={status="incomplete"};fullRead=nil;return
     end
-    local status = C_AuctionHouse.GetItemCommodityStatus(nextID)
-    if status == nil then
-        if supplyCur.waiting == nextID then
-            supplyCur.waiting = nil
-            SupplyNext()
+    scan.items={};scan.complete=true;scan.index=1
+    local rowCount=0
+    for index in pairs(rows) do
+        if not WholeNumber(index) or index<1 then scan.complete=false end
+        rowCount=rowCount+1
+    end
+    if rowCount~=scan.expected then scan.complete=false end
+    fullState={status="processing",done=0,total=scan.expected}
+    local generation=fullGeneration
+    local function step()
+        fullTimer=nil
+        if generation~=fullGeneration then return end
+        if scan.mk~=MarketKey() or scan.ob~=ObserverKey() then
+            fullState={status="unverified"};fullRead=nil;return
+        end
+        -- Missing raw rows are unknown. Never infer an empty market from them.
+        local last=math.min(scan.index+249,scan.expected)
+        for index=scan.index,last do FullRow(scan,rows[index]) end
+        scan.index=last+1;fullState.done=last
+        if scan.index<=scan.expected then
+            if C_Timer and C_Timer.NewTimer then fullTimer=C_Timer.NewTimer(0,step)
+            else fullState={status="unavailable"};fullRead=nil end
             return
         end
-        supplyCur.waiting = nextID
-        table.insert(supplyQueue, nextID)
-        supplyTimer = C_Timer.NewTimer(0.5, SupplyNext)
-        return
+        local enabled,mode=AB.ObserveReplicateMode()
+        if enabled==false or not mode
+            or mode.generation~=scan.modeGeneration or mode.scanSerial~=scan.scanSerial then
+            fullState={status="unverified"};fullRead=nil;return
+        end
+        local db=ProfDB()
+        if db then
+            db.auctionFullScan={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
+                c=scan.complete,v=1,rg=scan.modeGeneration,rs=scan.scanSerial}
+            fullState.status=scan.complete and "complete" or "incomplete"
+            fullState.observedAt=scan.observedAt
+            fullRead=nil
+            SupplyChanged(nil)
+        else fullState={status="unavailable"};fullRead=nil end
     end
-    local key = C_AuctionHouse.MakeItemKey(nextID)
-    if not key or not C_AuctionHouse.GetItemKeyInfo(key) then
-        SupplyNext()
-        return
-    end
-    supplyCur = { id = nextID, key = key, commodity = status == 1 }
-    if not C_AuctionHouse.IsThrottledMessageSystemReady() then
-        supplyTimer = C_Timer.NewTimer(0.4, function() SupplySend() end)
-        return
-    end
-    SupplySend()
+    if C_Timer and C_Timer.NewTimer then fullTimer=C_Timer.NewTimer(0,step)
+    else fullState={status="unavailable"};fullRead=nil end
 end
 
-SupplySend = function()
-    if not supplyCur or not supplyCur.id then return end
-    C_AuctionHouse.SendSearchQuery(supplyCur.key, SupplySorts(), true)
-    if supplyTimer then supplyTimer:Cancel() end
-    supplyTimer = C_Timer.NewTimer(SUPPLY_TIMEOUT, function()
-        supplyRetry = supplyRetry + 1
-        if supplyRetry > SUPPLY_RETRY then
-            SupplyNext()
-        else
-            SupplySend()
+function AB.ConnectAuctionatorStock()
+    local A=Auctionator
+    local bus=type(A)=="table" and A.EventBus
+    local ev=type(A)=="table" and A.FullScan and A.FullScan.Events
+    if type(bus)~="table" or type(bus.Register)~="function" or type(ev)~="table"
+        or type(ev.ScanStart)~="string" or type(ev.ScanComplete)~="string"
+        or type(ev.ScanProgress)~="string" or type(ev.ScanFailed)~="string" then return false end
+    if fullBus==bus then return true end
+    if fullBus and fullBus.Unregister then pcall(fullBus.Unregister,fullBus,fullListener,fullEvents) end
+    StopFullImport()
+    local listener={}
+    function listener:ReceiveEvent(event,data)
+        if event==ev.ScanStart then
+            local enabled,mode=AB.ObserveReplicateMode()
+            StopFullImport()
+            if enabled==false or not mode then
+                fullState={status="unverified"};return
+            end
+            -- Each new attempt supersedes older complete scans, even on failure.
+            mode.scanSerial=mode.scanSerial+1
+            fullRead={startedAt=time and time() or 0,mk=MarketKey(),ob=ObserverKey(),
+                modern=ev.ScanStart=="replicate_scan_start",
+                modeGeneration=mode.generation,scanSerial=mode.scanSerial}
+            fullState={status="scanning"}
+        elseif event==ev.ScanProgress and fullRead and type(data)=="number" and data>=0.2 then
+            ExpectedFullRows(fullRead)
+        elseif event==ev.ScanFailed then
+            StopFullImport();fullState={status="failed"}
+        elseif event==ev.ScanComplete and fullRead and fullState.status=="scanning" then
+            -- Capture only this scan's raw payload, never the historical DB or
+            -- the current query list (another search may already have started).
+            ImportFullRows(fullRead,data)
+        end
+    end
+    local events={ev.ScanStart,ev.ScanProgress,ev.ScanFailed,ev.ScanComplete}
+    local ok=pcall(bus.Register,bus,listener,events)
+    if not ok then return false end
+    fullBus,fullListener,fullEvents=bus,listener,events
+    fullState={status="ready"}
+    return true
+end
+
+local function InitializeAuctionatorStock()
+    AB.ConnectAuctionatorStock()
+    AB.ObserveReplicateMode()
+    AB.HookReplicateModeSetting()
+    local frame=CreateFrame and CreateFrame("Frame")
+    if not frame then return end
+    frame:RegisterEvent("ADDON_LOADED");frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent",function(_,event,name)
+        if event=="PLAYER_LOGIN" or name=="Auctionator" then
+            AB.ConnectAuctionatorStock()
+            AB.ObserveReplicateMode()
+            AB.HookReplicateModeSetting()
         end
     end)
 end
 
-local function SupplyAccept()
-    local qty, price = SupplyHarvest()
-    SupplyWrite(supplyCur.id, qty, price)
-    SupplyNext()
+function AB.ReplicateScanEnabled()
+    local a = _G.Auctionator
+    local cfg = type(a) == "table" and a.Config
+
+    if type(cfg) ~= "table"
+        or type(cfg.Get) ~= "function"
+        or type(cfg.Options) ~= "table"
+        or type(cfg.Options.REPLICATE_SCAN) ~= "string" then
+        return nil
+    end
+
+    local ok, enabled = pcall(
+        cfg.Get,
+        cfg.Options.REPLICATE_SCAN
+    )
+
+    if ok and type(enabled) == "boolean" then
+        return enabled
+    end
+
+    return nil
 end
 
-local function SupplyOnEvent(_, event, arg1)
-    if event == "AUCTION_HOUSE_CLOSED" then
-        SupplyAbort(L["拍卖行已关闭，数量扫描中止。"])
-        return
-    end
-    if not supplyCur then return end
-    if event == "AUCTION_HOUSE_SEARCH_RESULTS_UPDATED"
-        or event == "COMMODITY_SEARCH_RESULTS_UPDATED"
-        or event == "ITEM_SEARCH_RESULTS_UPDATED" then
-        if supplyCur.commodity and arg1 == supplyCur.id then
-            if not C_AuctionHouse.HasFullCommoditySearchResults(supplyCur.id) then
-                C_AuctionHouse.RequestMoreCommoditySearchResults(supplyCur.id)
-            else
-                SupplyAccept()
-            end
-        elseif not supplyCur.commodity and type(arg1) == "table" and arg1.itemID == supplyCur.id then
-            if not C_AuctionHouse.HasFullItemSearchResults(arg1) then
-                C_AuctionHouse.RequestMoreItemSearchResults(arg1)
-            else
-                SupplyAccept()
-            end
-        end
-    elseif event == "AUCTION_HOUSE_SEARCH_RESULTS_INCREMENTAL" then
-        if supplyCur.commodity then
-            if C_AuctionHouse.HasFullCommoditySearchResults(supplyCur.id) then SupplyAccept() end
-        elseif supplyCur.key and C_AuctionHouse.HasFullItemSearchResults(supplyCur.key) then
-            SupplyAccept()
-        end
-    end
-end
+function AB.ReplicateScanReady()
+    local enabled = AB.ReplicateScanEnabled()
 
-function AB.SupplyScanActive()
-    return supplyQueue ~= nil
-end
+    -- 无法判断设置：仅警告，不新增强制拦截
+    if enabled == nil then
+        return nil, "replicateModeUnknown"
+    end
 
-function AB.StartSupplyScan(ids, onDone)
-    if not (type(C_AuctionHouse) == "table" and C_AuctionHouse.SendSearchQuery) then
-        Say(L["当前客户端没有拍卖行查询接口，无法扫描数量。"])
-        return false
-    end
-    local ah = AuctionHouseFrame
-    if not (type(ah) == "table" and ah.IsShown and ah:IsShown()) then
-        Say(L["请先打开拍卖行，再点一次扫描。"])
-        return false
-    end
-    if supplyQueue then Say(L["数量扫描进行中。"]) return true end
-    local queue = {}
-    local seen = {}
-    for _, id in ipairs(ids or {}) do
-        if type(id) == "number" and id > 0 and not seen[id] then
-            seen[id] = true
-            queue[#queue + 1] = id
+    local db = ProfDB()
+
+    if enabled == false then
+        if db and time then
+            db.replicateRequiredAfter = math.max(
+                db.replicateRequiredAfter or 0,
+                time()
+            )
         end
+        return false, "replicateModeDisabled"
     end
-    if #queue == 0 then Say(L["没有需要扫描的物品。"]) return false end
-    if not supplyFrame then
-        supplyFrame = CreateFrame("Frame")
-        supplyFrame:SetScript("OnEvent", SupplyOnEvent)
+
+    local batch = db and db.auctionFullScan
+    local now = time and time()
+
+    -- 必须存在本角色、本服务器的有效复制扫描结果
+    if type(batch) ~= "table"
+        or batch.v ~= 1
+        or batch.c ~= true
+        or type(batch.items) ~= "table"
+        or batch.mk ~= MarketKey()
+        or batch.ob ~= ObserverKey()
+        or type(batch.t) ~= "number"
+        or not now
+        or batch.t > now
+        or now - batch.t > SUPPLY_MAX_AGE then
+        return false, "replicateScanRequired"
     end
-    supplyQueue = queue
-    supplyDone = onDone
-    supplyFrame:RegisterEvent("AUCTION_HOUSE_CLOSED")
-    local evOk = C_EventUtils and C_EventUtils.IsEventValid or nil
-    local function RegEvent(ev)
-        if evOk and not evOk(ev) then return end
-        pcall(supplyFrame.RegisterEvent, supplyFrame, ev)
+
+    -- 摘要扫描不能替代复制扫描
+    local a = _G.Auctionator
+    local saved = a and a.SavedState
+    local lastSummary = saved
+        and saved.TimeOfLastBrowseScan or 0
+
+    local requiredAfter = math.max(
+        db.replicateRequiredAfter or 0,
+        type(lastSummary) == "number" and lastSummary or 0
+    )
+
+    if batch.t <= requiredAfter then
+        return false, "replicateScanRequired"
     end
-    RegEvent("AUCTION_HOUSE_SEARCH_RESULTS_UPDATED")
-    RegEvent("AUCTION_HOUSE_SEARCH_RESULTS_INCREMENTAL")
-    RegEvent("COMMODITY_SEARCH_RESULTS_UPDATED")
-    RegEvent("ITEM_SEARCH_RESULTS_UPDATED")
-    supplyCur = {}
-    Say(format(L["开始扫描拍卖行数量（%d 种）…"], #queue))
-    SupplyNext()
+
     return true
 end
+
+local hookedModeConfig
+
+-- Persistent generation, not wall-clock time, prevents same-second off/on reuse.
+function AB.ObserveReplicateMode()
+    local enabled=AB.ReplicateScanEnabled()
+    if enabled==nil then return nil,nil end
+    local db=ReplicateGateDB()
+    if not db then return enabled,nil end
+    local state=db.auctionReplicateGate
+    if type(state)~="table" or state.v~=1
+        or not WholeNumber(state.generation) or state.generation<1
+        or not WholeNumber(state.scanSerial) then
+        state={v=1,enabled=enabled,generation=1,scanSerial=0}
+        db.auctionReplicateGate=state
+    elseif state.enabled~=enabled then
+        state.enabled=enabled
+        state.generation=state.generation+1
+        StopFullImport()
+        fullState={status="mode-changed"}
+        supplyRevision=supplyRevision+1
+        for _,fn in ipairs(supplyListeners) do pcall(fn,nil,"replicate-mode") end
+    end
+    return enabled,state
+end
+
+function AB.ReplicateScanReady()
+    -- Only Forever's live profession optimizer requires this scanner.
+    if not ns.IsForever then return true end
+    local enabled,state=AB.ObserveReplicateMode()
+    if enabled==nil then return nil,"replicateModeUnknown" end
+    if not enabled then return false,"replicateModeDisabled" end
+    local db=ReplicateGateDB()
+    local batch=db and db.auctionFullScan
+    local now=time and time() or 0
+    if not state or type(batch)~="table" or batch.v~=1 or batch.c~=true
+        or type(batch.items)~="table" or batch.mk~=MarketKey()
+        or batch.ob~=ObserverKey() or type(batch.t)~="number"
+        or batch.t<=0 or batch.t>now or now-batch.t>SUPPLY_MAX_AGE
+        or batch.rg~=state.generation or batch.rs~=state.scanSerial then
+        return false,"replicateScanRequired"
+    end
+    local a=_G.Auctionator
+    local summary=a and a.SavedState and a.SavedState.TimeOfLastBrowseScan
+    if type(summary)=="number" and summary>0 and summary>=batch.t then
+        return false,"replicateScanRequired"
+    end
+    return true
+end
+
+-- Observe Auctionator's real UI setting changes without replacing Config.Set.
+-- Reading the setting still detects changes missed while this addon was offline.
+function AB.HookReplicateModeSetting()
+    local a=_G.Auctionator
+    local cfg=type(a)=="table" and a.Config
+    if type(cfg)~="table" or type(cfg.Set)~="function" then return false end
+    if cfg==hookedModeConfig then return true end
+    if type(hooksecurefunc)~="function" then return false end
+    local ok=pcall(hooksecurefunc,cfg,"Set",function(option)
+        if cfg.Options and option==cfg.Options.REPLICATE_SCAN then
+            AB.ObserveReplicateMode()
+        end
+    end)
+    if ok then hookedModeConfig=cfg end
+    return ok
+end
+
+if ns.Init then ns.Init(InitializeAuctionatorStock) else InitializeAuctionatorStock() end

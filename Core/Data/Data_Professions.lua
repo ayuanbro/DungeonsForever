@@ -340,7 +340,7 @@ ns.ProfData = {
             guide = "bandages",
             summary = "急救远不止绷带：为营地系统准备的急救包、应对流血／疾病／中毒的治疗药剂，以及可制造的治疗药水。",
             status = "关联传承效果",
-            recipes = 11,
+            recipes = 32,
             sub = 7,
             kinds = { Manual=9, Blueprint=2 },
             camp = {
