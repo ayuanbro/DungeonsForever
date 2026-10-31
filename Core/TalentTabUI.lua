@@ -658,14 +658,15 @@ OpenPlanPop = function()
             local del = CreateFrame("Button", nil, bt)
             del:SetSize(18, 18)
             del:SetPoint("TOPLEFT", bt, "TOPLEFT", 98, -3)
-            del:SetNormalFontObject(GameFontNormalSmall)
             del:SetText("X")
+            del:GetFontString():SetFont(ns.FONT, 11, "")
             del:GetFontString():SetTextColor(1, 0.4, 0.35, 1)
             del:SetScript("OnClick", function()
                 StaticPopupDialogs["DF_TALENT_BUILD_DEL"] = {
                     text = format(L["删除方案「%s」？"], r.label),
                     button1 = L["确定"],
                     button2 = L["取消"],
+                    OnShow = function(self) ns.SkinPopupFont(self) end,
                     OnAccept = function()
                         local list = BuildsOf()
                         for bi = #list, 1, -1 do
@@ -683,8 +684,8 @@ OpenPlanPop = function()
             local ren = CreateFrame("Button", nil, bt)
             ren:SetSize(18, 18)
             ren:SetPoint("TOPLEFT", bt, "TOPLEFT", 80, -3)
-            ren:SetNormalFontObject(GameFontNormalSmall)
             ren:SetText("改")
+            ren:GetFontString():SetFont(ns.FONT, 11, "")
             ren:GetFontString():SetTextColor(0.6, 0.8, 1, 1)
             ren:SetScript("OnClick", function()
                 StaticPopupDialogs["DF_TALENT_BUILD_REN"] = {
@@ -699,6 +700,7 @@ OpenPlanPop = function()
                         e:SetText(r.label)
                         e:HighlightText()
                         e:SetFocus()
+                        ns.SkinPopupFont(self)
                     end,
                     OnAccept = function(self)
                         local e = self.EditBox or self.editBox

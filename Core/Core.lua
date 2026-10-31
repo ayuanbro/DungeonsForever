@@ -284,7 +284,97 @@ function ns.CreateEditBox(parent, size)
     return eb
 end
 
-function ns.GetWindowTheme() return "hui" end
+function ns.SkinPopupFont(p)
+    if not (p and ns.FONT) then return end
+    local function fixFS(fs)
+        if not (fs and fs.GetFont and fs.SetFont) then return end
+        local path, size, flags = fs:GetFont()
+        if path and path ~= ns.FONT then
+            pcall(fs.SetFont, fs, ns.FONT, size or 12, flags or "")
+        end
+    end
+    local function walk(f, depth)
+        if not (f and depth <= 4) then return end
+        fixFS(f)
+        for _, r in ipairs({ f:GetRegions() }) do fixFS(r) end
+        for _, c in ipairs({ f:GetChildren() }) do walk(c, depth + 1) end
+    end
+    walk(p, 0)
+end
+
+function ns.SkinTipFont(tt, size, skipResize)
+    tt = tt or _G.GameTooltip
+    if not (tt and tt.NumLines and ns.FONT) then return end
+    local prefix = tt.GetName and tt:GetName()
+    if type(prefix) ~= "string" then return end
+    local n = tt:NumLines()
+    if type(n) ~= "number" then n = type(n) == "table" and #n or 0 end
+    if n <= 0 then return end
+    local want = tonumber(size) or 0
+    for i = 1, n do
+        for _, side in ipairs({ "TextLeft", "TextRight" }) do
+            local fs = _G[prefix .. side .. i]
+            if fs and fs.SetFont then
+                local _, sz, flags = fs:GetFont()
+                pcall(fs.SetFont, fs, ns.FONT, want > 0 and want or tonumber(sz) or 14, flags or "")
+            end
+        end
+    end
+    if skipResize then return end
+    local sum0 = 0
+    local maxW = 0
+    for i = 1, n do
+        local l = _G[prefix .. "TextLeft" .. i]
+        if l and l.SetWidth then
+            sum0 = sum0 + (l:GetStringHeight() or 0)
+            l:SetWidth(4000)
+            if l.GetText then l:SetText(l:GetText()) end
+            local w = l:GetStringWidth() or 0
+            if w > maxW then maxW = w end
+        end
+    end
+    if maxW > 460 then maxW = 460 end
+    local sum1 = 0
+    for i = 1, n do
+        local l = _G[prefix .. "TextLeft" .. i]
+        if l then
+            if maxW > 20 then l:SetWidth(maxW) end
+            if l.GetText then l:SetText(l:GetText()) end
+            sum1 = sum1 + (l:GetStringHeight() or 0)
+        end
+    end
+    if maxW > 20 and tt.SetWidth and tt.SetHeight then
+        local pad = (tt:GetHeight() or 0) - sum0
+        tt:SetWidth(maxW + 20)
+        tt:SetHeight(sum1 + pad)
+    end
+end
+
+function ns.HookTipFont(tt, size)
+    if not (tt and tt.HookScript) or tt.__dfTipFont then return end
+    tt.__dfTipFont = true
+    tt.__dfTipFrames = -1
+    tt:HookScript("OnShow", function(self)
+        self.__dfTipFrames = 0
+        ns.SkinTipFont(self, size, true)
+    end)
+    tt:HookScript("OnUpdate", function(self)
+        if (self.__dfTipFrames or -1) < 0 then return end
+        self.__dfTipFrames = self.__dfTipFrames + 1
+        if self.__dfTipFrames >= 2 then self.__dfTipFrames = -1 end
+        ns.SkinTipFont(self, size, true)
+    end)
+    tt:HookScript("OnHide", function(self) self.__dfTipFrames = -1 end)
+end
+
+function ns.HookAllTipFont()
+    for _, name in ipairs({ "GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2" }) do
+        local tt = _G[name]
+        if tt then ns.HookTipFont(tt) end
+    end
+end
+
+ns.Init(function() ns.HookAllTipFont() end)
 function ns.GetWindowColorTheme() return nil end
 function ns.WithColorThemeScope(_, fn) if fn then return fn() end end
 function ns.WithThemeScope(_, fn) if fn then return fn() end end

@@ -449,7 +449,7 @@ FV.Build = function(page)
     FV.searchBox = sb
     local eb = CreateFrame("EditBox", nil, sb)
     eb:SetAllPoints()
-    eb:SetFontObject("GameFontHighlightSmall")
+    eb:SetFont(ns.FONT, 11, "")
     eb:SetTextInsets(6, 6, 0, 0)
     eb:SetAutoFocus(false)
     eb:SetMaxLetters(30)

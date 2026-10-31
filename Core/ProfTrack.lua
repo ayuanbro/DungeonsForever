@@ -270,16 +270,48 @@ local function carryProgress(old, steps)
     return progress
 end
 
+local function recorded(run)
+    if type(run) ~= "table" then return false end
+    for _, n in pairs(run.outputs or EMPTY) do
+        if (tonumber(n) or 0) > 0 then return true end
+    end
+    for _, p in pairs(run.progress or EMPTY) do
+        if type(p) == "table" then
+            if (tonumber(p.casts) or 0) > 0 then return true end
+            if type(p.attempts) == "table" then
+                for _ in pairs(p.attempts) do return true end
+            end
+        end
+    end
+    return false
+end
+
 function T.Archive(slug, reason, run)
     run = run or T.GetRun(slug)
-    if run then
-        run.status = "archived"
-        run.archivedAt = now()
-        run.archiveReason = reason or "replace"
+    local c = db()
+    c.active[slug] = nil
+    if type(run) ~= "table" then return nil end
+    if not recorded(run) then
+        if run.planID then c.runs[run.planID] = nil end
+        notify(slug, nil)
+        return nil
     end
-    db().active[slug] = nil
-    if run then notify(slug, run) end
+    run.status = "archived"
+    run.archivedAt = now()
+    run.archiveReason = reason or "replace"
+    notify(slug, run)
     return run
+end
+
+function T.Remove(slug, planID)
+    local c = db()
+    local run = planID and c.runs[planID] or nil
+    if type(run) ~= "table" then return false end
+    if run.status == "active" then return false end
+    c.runs[planID] = nil
+    if run.slug and c.active[run.slug] == planID then c.active[run.slug] = nil end
+    notify(slug or run.slug, nil)
+    return true
 end
 
 function T.Drop(slug)
@@ -368,6 +400,28 @@ function T.Skill(slug)
     return skillOf(slug)
 end
 
+function T.PickIndex(steps, cur, casts)
+    if type(steps) ~= "table" or #steps == 0 then return 1 end
+    cur = tonumber(cur) or 0
+    local firstAvail, firstOpen, lastAvail = nil, nil, nil
+    local allDone = true
+    for i = 1, #steps do
+        local st = steps[i]
+        local from = tonumber(st.from or st[1]) or 0
+        local to = tonumber(st.to or st[2]) or 0
+        if to > 0 and cur < to then allDone = false end
+        if from <= cur then lastAvail = i end
+        if cur >= from and (to <= 0 or cur < to) then
+            if not firstAvail then firstAvail = i end
+            local planned = tonumber(st.crafts or st[4]) or 0
+            local made = tonumber(casts and casts[i]) or 0
+            if not firstOpen and (planned <= 0 or made < planned) then firstOpen = i end
+        end
+    end
+    if allDone then return #steps + 1 end
+    return firstOpen or firstAvail or lastAvail or 1
+end
+
 function T.Sync(slug)
     local run = T.GetRun(slug)
     if not run then return nil end
@@ -390,11 +444,13 @@ function T.Sync(slug)
             return run
         end
     end
-    local i = 1
     local steps = run.steps or EMPTY
-    while i <= #steps and cur >= (steps[i].to or 0) do
-        i = i + 1
+    local casts = {}
+    for idx = 1, #steps do
+        local p = (run.progress or {})[idx]
+        casts[idx] = p and tonumber(p.casts) or 0
     end
+    local i = T.PickIndex(steps, cur, casts)
     local moved = (run.currentIndex ~= i)
     run.currentIndex = i
     run.step = i
@@ -540,6 +596,38 @@ function T.RecordOutput(slug, itemID, qty, castGUID)
     run.updatedAt = now()
     notify(slug, run)
     return true
+end
+
+function T.CraftFallback(slug, itemID, qty)
+    local run = T.GetRun(slug)
+    if not run or run.status ~= "active" then return false, "inactive" end
+    local steps = run.steps or EMPTY
+    local idx
+    local cur = run.currentIndex or 1
+    for i = cur, #steps do
+        if steps[i].item == itemID then idx = i break end
+    end
+    if not idx then
+        for i = 1, #steps do
+            if steps[i].item == itemID then idx = i break end
+        end
+    end
+    if not idx then return false, "no_step" end
+    local p = (run.progress or {})[idx]
+    if type(p) == "table" and type(p.attempts) == "table" then
+        local last = p.attempts[#p.attempts]
+        if type(last) == "table" and (now() - (last.at or 0)) < 3 then
+            return false, "recent"
+        end
+    end
+    local n = tonumber(qty) or 1
+    if n < 1 then n = 1 end
+    if n > 5 then n = 5 end
+    local ok = false
+    for _ = 1, n do
+        if T.RecordAttempt(slug, steps[idx].spell, nil) then ok = true end
+    end
+    return ok
 end
 
 function T.VerifyOutput(slug, index, itemID, total)
@@ -733,7 +821,13 @@ local function initialize()
     T.capabilities = {}
     f:SetScript("OnEvent", function(_, event, ...)
         if event == "UNIT_SPELLCAST_SUCCEEDED" then
-            local unit, castGUID, spellID = ...
+            local unit, a, b = ...
+            local spellID, castGUID
+            if type(a) == "number" then
+                spellID = a
+            elseif type(b) == "number" then
+                castGUID, spellID = a, b
+            end
             if unit == "player" and type(spellID) == "number" then
                 for _, slug in ipairs(activeList()) do
                     if T.RecordAttempt(slug, spellID, castGUID) then break end
@@ -751,6 +845,7 @@ local function initialize()
             end
             if integer(itemID) and itemID > 0 then
                 recordAll(function(slug)
+                    T.CraftFallback(slug, itemID, qty)
                     T.RecordOutput(slug, itemID, qty)
                 end)
             end

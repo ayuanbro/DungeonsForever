@@ -170,6 +170,10 @@ end
 
 local function routeForCalc(slug, skill)
     local PD = ns.ProfModule
+    if PD and PD.autoSnapshot and PD.autoSnapshotSlug == slug then
+        local snapSteps = PD.autoSnapshot.steps
+        if type(snapSteps) == "table" and #snapSteps > 0 then return "auto", snapSteps end
+    end
     local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme") or "cheapest"
     if PD and PD.Setting and PD.Setting("autoRoute") and RA
        and (scheme == "optim" or RA.Available()) then
@@ -188,21 +192,24 @@ local function routeForCalc(slug, skill)
     return "fixed", clipFixedSteps(lv and lv.steps or nil, routeTarget(slug))
 end
 
-local rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT
+local rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT, rMemoSnap
 local ROUTE_MEMO_TTL = 10
 local function routeFor(slug, skill)
     local now = GetTime and GetTime() or 0
-    if slug and rMemoSlug == slug and rMemoSkill == skill
+    local PD = ns.ProfModule
+    local snap = (PD and PD.autoSnapshotSlug == slug) and PD.autoSnapshot or nil
+    if slug and rMemoSlug == slug and rMemoSkill == skill and rMemoSnap == snap
        and (now - (rMemoT or 0)) < ROUTE_MEMO_TTL then
         return rMemoMode, rMemoSteps
     end
     local mode, steps = routeForCalc(slug, skill)
-    rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT = slug, skill, mode, steps, now
+    rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT, rMemoSnap =
+        slug, skill, mode, steps, now, snap
     return mode, steps
 end
 
 function PF.InvalidateRoute()
-    rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT = nil, nil, nil, nil, nil
+    rMemoSlug, rMemoSkill, rMemoMode, rMemoSteps, rMemoT, rMemoSnap = nil, nil, nil, nil, nil, nil
 end
 
 local function routeKey(mode, steps)
@@ -215,6 +222,17 @@ end
 local function derivedStep(slug, skill)
     local _, steps = routeFor(slug, skill)
     if not steps then return nil end
+    local T = ns.ProfTrack
+    local run = T and T.GetRun and T.GetRun(slug)
+    local casts = {}
+    if run and type(run.steps) == "table" then
+        for i = 1, #steps do
+            local rs = run.steps[i]
+            local p = (run.progress or {})[i]
+            if rs and rs.spell == steps[i][3] and p then casts[i] = tonumber(p.casts) or 0 end
+        end
+    end
+    if T and T.PickIndex then return T.PickIndex(steps, skill or 0, casts) end
     for i, s in ipairs(steps) do
         if skill < s[2] then return i end
     end
@@ -284,9 +302,20 @@ function PF.Sync()
     if not (s and s.slug) then return false end
     local changed = false
     local cur = skillOf(s.slug)
-    if cur and cur > (s.skill or 0) then
+    if cur and cur ~= (s.skill or 0) then
+        local dropped = cur < (s.skill or 0)
         s.skill = cur
         changed = true
+        if dropped then
+            local TK = ns.ProfTrack
+            if TK and TK.Drop then pcall(TK.Drop, s.slug) end
+            PF.InvalidateRoute()
+            s.step = nil
+            s.rkey = nil
+            PF.view = 0
+            PF.shopScroll = nil
+            s.t0 = time()
+        end
         local PD = ns.ProfModule
         if PD and PD.built and PD.cur == s.slug and PD.page and PD.page:IsVisible() then
             pcall(PD.Render, PD)
@@ -303,6 +332,10 @@ function PF.Sync()
     local d = derivedStep(s.slug, s.skill or 0)
     if d and d > (s.step or 1) then
         s.step = d
+        changed = true
+    end
+    if not s.step then
+        s.step = d or 1
         changed = true
     end
     return changed
@@ -415,6 +448,7 @@ local function verifyOutputDialog()
                 edit:SetFocus()
                 edit:HighlightText()
             end
+            ns.SkinPopupFont(self)
         end,
         OnAccept = function(self)
             local d = self.data
@@ -594,7 +628,8 @@ local function openProfPanel(s)
     if C_TradeSkillUI and C_TradeSkillUI.OpenTradeSkill and type(GetProfessionInfo) == "function" then
         for _, idx in ipairs(ids) do
             if idx then
-                local nm, skillLine = GetProfessionInfo(idx)
+                local nm, a2, a3, a4, a5, a6, a7 = GetProfessionInfo(idx)
+                local skillLine = a7 or a2
                 if profName and nm == profName and skillLine
                     and pcall(C_TradeSkillUI.OpenTradeSkill, skillLine) then
                     return true
@@ -603,7 +638,7 @@ local function openProfPanel(s)
         end
         for _, idx in ipairs(ids) do
             if idx then
-                local skillLine = select(7, GetProfessionInfo(idx))
+                local skillLine = select(7, GetProfessionInfo(idx)) or select(2, GetProfessionInfo(idx))
                 if skillLine and pcall(C_TradeSkillUI.OpenTradeSkill, skillLine) then
                     return true
                 end
@@ -712,6 +747,90 @@ local function jumpCraft()
     else
         craftNotify(L["无法自动打开专业面板，请手动打开后重试"])
     end
+end
+
+local pendSearch
+local function recipeSearchBox()
+    local pf = _G.ProfessionsFrame
+    if not (pf and pf.IsShown and pf:IsShown()) then return nil end
+    local page = pf.CraftingPage
+    local list = page and page.RecipeList
+    return list and list.SearchBox or nil
+end
+
+local function applyRecipeSearch()
+    if not pendSearch then return true end
+    if not pendSearch.filled then
+        local txt = pendSearch.name
+        local CUI = C_TradeSkillUI
+        if CUI and CUI.SetRecipeItemNameFilter then pcall(CUI.SetRecipeItemNameFilter, txt) end
+        local sb = recipeSearchBox()
+        if sb and sb.SetText then
+            pcall(sb.SetText, sb, txt)
+            if sb.GetScript then
+                local fn = sb:GetScript("OnTextChanged")
+                if fn then pcall(fn, sb, txt, false) end
+            end
+            if sb.SetFocus then pcall(sb.SetFocus, sb) end
+        end
+        pendSearch.filled = true
+        return false
+    end
+    return true
+end
+
+local function applyRecipeSelect()
+    if not pendSearch then return true end
+    if not pendSearch.filled then return false end
+    local spell = pendSearch.spell
+    if not spell then
+        pendSearch = nil
+        return true
+    end
+    local CUI = C_TradeSkillUI
+    if CUI and CUI.OpenRecipe then
+        if pcall(CUI.OpenRecipe, spell) then
+            pendSearch = nil
+            return true
+        end
+    end
+    if CUI and CUI.SetSelectedRecipe then
+        pcall(CUI.SetSelectedRecipe, spell)
+        if CUI.GetSelectedRecipeID then
+            local ok, rid = pcall(CUI.GetSelectedRecipeID)
+            if ok and rid == spell then
+                pendSearch = nil
+                return true
+            end
+        end
+    end
+    pendSearch = nil
+    return true
+end
+
+function PF.SearchRecipe(name, spellID)
+    if type(name) ~= "string" or name == "" then return false end
+    pendSearch = { name = name, spell = tonumber(spellID) }
+    local s = st()
+    if s then pcall(openProfPanel, s) end
+    if applyRecipeSearch() and applyRecipeSelect() then return true end
+    if C_Timer and C_Timer.After then
+        local tries = 0
+        local function tick()
+            local filled = applyRecipeSearch()
+            if filled and applyRecipeSelect() then return end
+            tries = tries + 1
+            if tries < 20 and pendSearch then
+                C_Timer.After(0.15, tick)
+            elseif pendSearch then
+                local opened = recipeSearchBox() ~= nil
+                pendSearch = nil
+                if not opened then craftNotify(L["无法自动打开专业面板，请手动打开后重试"]) end
+            end
+        end
+        C_Timer.After(0.2, tick)
+    end
+    return true
 end
 
 local importTries = 0
@@ -942,6 +1061,8 @@ local function BuildBody()
     end)
     f:RegisterEvent("BAG_UPDATE_DELAYED")
     f:RegisterEvent("CHAT_MSG_SKILL")
+    pcall(f.RegisterEvent, f, "SPELLS_CHANGED")
+    pcall(f.RegisterEvent, f, "LEARNED_SPELL_IN_TAB")
 
     f:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -969,6 +1090,11 @@ local function BuildBody()
     f.title = MakeFS(f, 16, C_TEXT, "LEFT")
     f.title:SetWordWrap(false)
     f.title:SetPoint("TOPLEFT", f, "TOPLEFT", 42, -14)
+
+    f.capWarn = MakeFS(f, 12, { 0.95, 0.32, 0.32 }, "LEFT")
+    f.capWarn:SetWordWrap(false)
+    f.capWarn:SetPoint("LEFT", f.title, "RIGHT", 8, 0)
+    f.capWarn:Hide()
 
     f.skill = MakeFS(f, 16, C_GREY, "LEFT")
     f.skill:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -42)
@@ -1020,6 +1146,9 @@ local function BuildBody()
         DG.ShowItemTip(self, self.__it, extra)
     end)
     f.card:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    f.card:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" and self.__nm then PF.SearchRecipe(self.__nm, self.__spell) end
+    end)
 
     f.card.icon = f.card:CreateTexture(nil, "ARTWORK")
     f.card.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -1039,9 +1168,14 @@ local function BuildBody()
     f.card.crafts:SetWordWrap(false)
     f.card.crafts:SetPoint("TOPLEFT", f.card, "TOPLEFT", 42, -33)
 
-    f.card.srcTag = MakeFS(f.card, 14, C_GREY, "RIGHT")
-    f.card.srcTag:SetWordWrap(false)
-    f.card.srcTag:SetPoint("TOPRIGHT", f.card, "TOPRIGHT", -8, -9)
+    f.card.chipLearn = DG.MakeBadge(f.card, DG.Q_BADGE_SHARE_BG)
+    f.card.chipSrc = DG.MakeBadge(f.card,
+        (ns.ProfModule and ns.ProfModule.CARD_COL and ns.ProfModule.CARD_COL.trainer) or { 0.29, 0.33, 0.40 })
+    for _, ch in ipairs({ f.card.chipLearn, f.card.chipSrc }) do
+        ch.lab:SetFont(ns.FONT, DG.Q_BADGE_FS,
+            (ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE")) or "OUTLINE")
+        ch:Hide()
+    end
 
     f.card.matHead = MakeFS(f.card, 14, C_GREY, "LEFT")
     f.card.matHead:SetPoint("TOPLEFT", f.card, "TOPLEFT", 8, -56)
@@ -1268,6 +1402,10 @@ function PF.Build()
                 f = nil
             end
             PF.f = nil
+            if DEFAULT_CHAT_FRAME and err then
+                pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME,
+                    "|cffff5555无限副本手册：HUD 构建失败|r " .. tostring(err), 1, 1, 1)
+            end
             return
         end
         if coroutine.status(co) ~= "dead" then
@@ -1399,7 +1537,32 @@ function PF.Paint()
     f.title:SetText(format(L["%s升级HUD"], name))
 
     local cur, mx = skillOf(slug)
+    local atCap = (cur ~= nil and mx ~= nil and mx > 0 and cur >= mx)
     f.skill:SetText(cur and format(L["技能 %d / %d"], cur, mx or 300) or L["未学过该专业，先找训练师学习"])
+    if atCap then
+        f.skill:SetTextColor(0.95, 0.32, 0.32)
+    else
+        f.skill:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3])
+    end
+    if f.capWarn then
+        if atCap then
+            f.capWarn:SetText(L["找训练师提高技能上限"])
+            f.capWarn:Show()
+        else
+            f.capWarn:Hide()
+        end
+    end
+    if f.__round then
+        local br, bgc, bb, ba = 1, 1, 1, 0.25
+        if atCap then br, bgc, bb, ba = 0.93, 0.32, 0.32, 0.95 end
+        for _, tex in ipairs(f.__round) do tex:SetVertexColor(br, bgc, bb, ba) end
+    elseif atCap then
+        f:SetBackdropBorderColor(0.93, 0.32, 0.32, 0.95)
+    elseif ns.huiTheme == "hui" then
+        f:SetBackdropBorderColor(1, 1, 1, 0.10)
+    else
+        f:SetBackdropBorderColor(0.30, 0.30, 0.30, 1)
+    end
     local ratio = cur and math.min(1, cur / 300) or 0
     f.bar:SetWidth(math.max(2, math.floor((W - 20) * ratio + 0.5)))
     f.bar:SetVertexColor(accent[1], accent[2], accent[3], 0.95)
@@ -1465,6 +1628,8 @@ function PF.Paint()
         local PDm = ns.ProfModule
         local nmText = SpellName(seg[3])
         card.name:SetText(nmText)
+        card.__nm = nmText
+        card.__spell = seg[3]
 
         local crafts = seg[4] or 0
         local remaining = crafts
@@ -1475,21 +1640,49 @@ function PF.Paint()
         local nMat, pend, canCraft = paintMats(seg, rm, sold, w - 8, remaining)
         pending = pending or pend
 
-        local src, detail
-        if PDm and PDm.LevelSrc then
-            src, detail = PDm.LevelSrc(rec)
-        end
         local learned = IsLearned(seg[3])
-        local tagText = learned and L["已学习"] or (src or L["向训练师学习"])
-        if detail and not learned then tagText = tagText .. " · " .. detail end
-        card.srcTag:SetText(tagText)
-        card.srcTag:SetTextColor(Unpack(learned and C_OK or C_GREY))
-        local tagW = 90
-        if PDm and PDm.TextW then
-            local okW, tw = pcall(PDm.TextW, tagText, 14)
-            if okW and type(tw) == "number" then tagW = math.ceil(tw) end
+        local isTrainer = not (type(rec) == "table" and type(rec[13]) == "table"
+            and type(rec[13][1]) == "number")
+        local srcLabel, srcColor
+        local CARD_COL = PDm and PDm.CARD_COL or {}
+        if isTrainer then
+            srcLabel, srcColor = L["训练师"], CARD_COL.trainer
+        elseif PDm and PDm.LevelSrc then
+            local _, _, kind = PDm.LevelSrc(rec)
+            if kind == "vendor" then
+                srcLabel, srcColor = L["商人"], CARD_COL.vendor
+            elseif kind == "drop" then
+                srcLabel, srcColor = L["掉落"], CARD_COL.drop
+            elseif kind == "currency" then
+                srcLabel, srcColor = L["兑换"], CARD_COL.vendor
+            elseif kind == "quest" then
+                srcLabel, srcColor = L["任务"], CARD_COL.both
+            else
+                srcLabel, srcColor = L["图纸"], CARD_COL.both
+            end
         end
-        card.srcTag:SetWidth(tagW)
+        local chL, chS = card.chipLearn, card.chipSrc
+        chL.lab:SetText(learned and L["已学"] or L["未学"])
+        DG.BadgeTint(chL, learned and DG.Q_BADGE_SHARE_BG or DG.Q_BADGE_RACE_BG)
+        local w1 = math.max(DG.Q_BADGE_MIN_W, (chL.lab:GetStringWidth() or 18) + DG.Q_BADGE_PAD * 2)
+        chL:SetSize(w1, DG.Q_BADGE_H)
+        local tagW = w1
+        chL:ClearAllPoints()
+        if srcLabel then
+            chS.lab:SetText(srcLabel)
+            DG.BadgeTint(chS, srcColor or { 0.29, 0.33, 0.40 })
+            local w2 = math.max(DG.Q_BADGE_MIN_W, (chS.lab:GetStringWidth() or 18) + DG.Q_BADGE_PAD * 2)
+            chS:SetSize(w2, DG.Q_BADGE_H)
+            chS:ClearAllPoints()
+            chS:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
+            chS:Show()
+            chL:SetPoint("TOPRIGHT", chS, "TOPLEFT", -DG.Q_BADGE_GAP, 0)
+            tagW = tagW + DG.Q_BADGE_GAP + w2
+        else
+            chS:Hide()
+            chL:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
+        end
+        chL:Show()
 
         local rangeText = format(L["%d – %d"], seg[1], seg[2])
         card.range:SetText(rangeText)
@@ -1578,7 +1771,7 @@ function PF.Paint()
             if w1 > nameW then nameW = w1 end
             local w2 = tw(format("%d/%d", math.min(row.have, row.need), row.need))
             if w2 > numW then numW = w2 end
-            local w3 = tw(row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
+            local w3 = math.max(tw(L["已备齐"]), tw(format(L["缺%d"], row.need or 0))) + 10
             if w3 > missW then missW = w3 end
             local w5 = tw(row.gate and L["全程"] or format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end

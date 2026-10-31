@@ -1481,7 +1481,7 @@ function PD.Row(i)
         GameTooltip:Hide()
     end)
     r:SetScript("OnClick", function(self, button)
-        if button == "RightButton" and not self.__routePolicy then return end
+        if button == "RightButton" and not (self.__routePolicy or self.__rightAct) then return end
         if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
             if self.__spell and PD.InsertSpellLink(self.__spell) then return end
             if self.__it then
@@ -2278,6 +2278,7 @@ function PD.BindRow(r, spec, h)
     r.__linesFirst = spec.linesFirst
     r.__act = spec.act
     r.__routePolicy = spec.lvstep and spec.act and true or nil
+    r.__rightAct = spec.rightAct
     r.__tipTitle = spec.tipTitle
     r.__tipExtra = spec.tipExtra
     r.__named = false
@@ -4427,6 +4428,17 @@ function PD.Build(page)
         ns.PlaySound(1)
     end)
     PD.setGear = gear
+    local rev = NewButton(page, L["返回上次路线"], 96, PD.SUB_H, 12)
+    rev:GetFontString():SetTextColor(0.95, 0.36, 0.36)
+    rev:SetPoint("TOPRIGHT", gear, "TOPLEFT", -6, 0)
+    rev:Hide()
+    rev:SetScript("OnClick", function()
+        if PD.RevertPlan() then
+            ns.PlaySound(1)
+            PD.RequestRender()
+        end
+    end)
+    PD.revertBt = rev
     if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(gear, true) end
     coroutine.yield()
 
@@ -5179,6 +5191,13 @@ function PD.PickTabs()
         end
         if on then shown = shown + 1 end
     end
+    if PD.revertBt then
+        local ron = (PD.tab == "leveling") and PD.HasPlanPrev(PD.cur)
+        if PD.revertBt.__shown ~= ron then
+            PD.revertBt.__shown = ron
+            PD.revertBt:SetShown(ron)
+        end
+    end
     if PD.setGear then
         local gon = (PD.tab == "leveling")
         if PD.setGear.__shown ~= gon then
@@ -5566,7 +5585,7 @@ function PD.PaintToolProgress(text, frac)
         local holder = PD.__progHolder
         holder:ClearAllPoints()
         if PD.setGear then
-            holder:SetPoint("RIGHT", PD.setGear, "LEFT", -8, 0)
+            holder:SetPoint("RIGHT", (PD.revertBt and PD.revertBt:IsShown() and PD.revertBt or PD.setGear), "LEFT", -8, 0)
         else
             holder:SetPoint("RIGHT", PD.page, "RIGHT", -(PD.LIST_PAD + 40), -(PD.SUB_Y + PD.SUB_H / 2))
         end
@@ -5622,7 +5641,7 @@ function PD.PaintToolStale(text)
     if text and text ~= "" and PD.setGear and PD.setGear:IsShown() then
         local holder = PD.__staleHolder
         holder:ClearAllPoints()
-        holder:SetPoint("RIGHT", PD.setGear, "LEFT", -8, 0)
+        holder:SetPoint("RIGHT", (PD.revertBt and PD.revertBt:IsShown() and PD.revertBt or PD.setGear), "LEFT", -8, 0)
         rf:SetText(text)
         rf:Show()
         holder:Show()
@@ -6886,6 +6905,8 @@ function PD.HideRowChips(r)
     if r.__skchip then r.__skchip:Hide() end
     if r.__pct then r.__pct:Hide() end
     if r.__cardBg then r.__cardBg:Hide() end
+    if r.__toolBadge then r.__toolBadge:Hide() end
+    if r.__roleBadge then r.__roleBadge:Hide() end
     if type(r.__subLinks) == "table" then
         for k = 1, #r.__subLinks do r.__subLinks[k]:Hide() end
     end
@@ -7707,6 +7728,24 @@ function PD.WipeRow(r, keepShown)
     if not r then return end
     r.__spec = nil
     PD.ClearMats(r); PD.ClearMatSegs(r)
+    PD.ClearRecipeMats(r)
+    PD.PaintDiffBar(r, nil)
+    PD.HideRowChips(r)
+    if r.__pcOk then PD.PCWipe(r) end
+    if r.__costWhy then r.__costWhy:Hide() end
+    if r.icon4 then r.icon4:Hide() end
+    for i = 1, 6 do local fs = r["h" .. i]; if fs then fs:Hide() end end
+    for i = 1, 3 do
+        local arrows = r["__ha" .. i]
+        if arrows then arrows[1]:Hide(); arrows[2]:Hide() end
+    end
+    if r.hsOwn then r.hsOwn:Hide() end
+    if r.hsTot then r.hsTot:Hide() end
+    if r.hsCraft then r.hsCraft:Hide() end
+    if r.hsGap then r.hsGap:Hide() end
+    if r.foldZone then r.foldZone:Hide() end
+    if r.foldArrD then r.foldArrD:Hide() end
+    if r.foldArrU then r.foldArrU:Hide() end
     if r.icon then r.icon:Hide() end
     if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
     if r.gic then
@@ -7728,6 +7767,8 @@ function PD.WipeRow(r, keepShown)
     if r.sep then r.sep:Hide() end
     if r.tagFs then r.tagFs:Hide() end
     if r.tagBg then r.tagBg:Hide() end
+    if r.__toolBadge then r.__toolBadge:Hide() end
+    if r.__roleBadge then r.__roleBadge:Hide() end
     if r.dv then r.dv:SetText(""); r.dv:Hide() end
     if r.__sbBg then PD.HideSkillBar(r) end
     if r.__cardZone then PD.PaintCard(r, nil) end
@@ -7741,6 +7782,7 @@ function PD.WipeRow(r, keepShown)
     if r.f then r.f:SetText("") end
     r.__noHover = nil
     r.__noTip = nil
+    r.__rightAct = nil
     r.__lines = nil
     r.__tipTitle = nil
     r.__tipExtra = nil
@@ -11181,6 +11223,10 @@ function PD.StartSolverRoute(opts, key)
             local usable = res and res.planVersion == 2 and #(res.steps or {}) > 0
             local mine = PD.solverSlug == PD.cur
             if usable and mine then
+                if RA and RA.FinalizeTools then
+                    local okF, rf = pcall(RA.FinalizeTools, res, PD.cur, opts)
+                    if okF and type(rf) == "table" then res = rf end
+                end
                 res.exact = true
                 PD.autoSnapshot = res
                 PD.autoSnapshotSlug = PD.cur
@@ -11232,12 +11278,33 @@ function PD.PlanRes(slug, opts)
     return PD.__planShown
 end
 
+function PD.PlanLockOf(slug)
+    slug = slug or PD.cur
+    local db = ProfDB()
+    db.planLock = db.planLock or {}
+    local lock = db.planLock[slug]
+    if type(lock) ~= "table" then
+        lock = {}
+        db.planLock[slug] = lock
+    end
+    return lock
+end
+
 function PD.BuildLvOpts(slug, current)
     local fish = PD.CookingFishingMode(slug)
     local pair = (not fish) and PD.RoutePairContext() or nil
     local lv = tonumber(current)
+    local lock = PD.PlanLockOf(slug)
+    if lock.start == nil then
+        lock.start = (PD.Setting("autoFromCurrent") and lv) and math.max(1, lv) or 1
+    end
+    if lock.inv == nil then
+        local CI = ns.ProfTrack and ns.ProfTrack.ContinueInventory
+        local inv = CI and CI(slug) or nil
+        lock.inv = (type(inv) == "table") and inv or false
+    end
     return {
-        start = (PD.Setting("autoFromCurrent") and lv) and math.max(1, lv) or 1,
+        start = lock.start,
         onlyAH = PD.Setting("autoOnlyAH"),
         noFormula = PD.Setting("autoNoFormula"),
         learnedOnly = PD.Setting("autoLearnedOnly"),
@@ -11245,21 +11312,130 @@ function PD.BuildLvOpts(slug, current)
         scheme = fish and "fishing" or PD.SettingRaw("autoScheme"),
         allowSecondaryLeveling = PD.Setting("autoSecondaryLeveling"),
         secondaryProfession = pair and pair.partner or nil,
-        executionInventory = ns.ProfTrack and ns.ProfTrack.ContinueInventory
-            and ns.ProfTrack.ContinueInventory(slug) or nil,
+        executionInventory = (type(lock.inv) == "table") and lock.inv or nil,
     }
+end
+
+function PD.ToolSigOf(slug)
+    local G = ns.ProfGates
+    if not (G and G.ToolItemSet and G.ToolOwned) then return "" end
+    local ok, set = pcall(G.ToolItemSet, slug)
+    if not ok or type(set) ~= "table" then return "" end
+    local ids = {}
+    for id in pairs(set) do ids[#ids + 1] = id end
+    if #ids == 0 then return "" end
+    table.sort(ids)
+    local out = {}
+    for _, id in ipairs(ids) do
+        out[#out + 1] = tostring(id) .. (G.ToolOwned(id) and "1" or "0")
+    end
+    return "#T" .. table.concat(out, ",")
 end
 
 function PD.PlanKeyOf(slug, opts)
     slug = slug or PD.cur
     if not (RA and RA.PlanSig) then return nil end
-    return tostring(slug) .. "@" .. RA.PlanSig(slug, opts or {})
+    return tostring(slug) .. "@" .. RA.PlanSig(slug, opts or {}) .. PD.ToolSigOf(slug)
+end
+
+local PLAN_KEEP = { "scheme", "steps", "gaps", "mats", "firstAt", "total", "matTotal",
+    "formulas", "formulasTotal", "vendorTotal", "ahTotal", "productAH", "productNPC",
+    "productPartial", "crafts", "start", "target", "priced", "filled", "looseMats",
+    "fallbackSteps", "fallbackFrom", "fallbackTo", "specBlocked", "toolItems",
+    "snapshotAge", "snapshotDays", "stamp", "planVersion", "exact" }
+
+local function planCopy(v, depth, budget)
+    local t = type(v)
+    if t == "number" or t == "string" or t == "boolean" then return v end
+    if t ~= "table" then return nil end
+    depth = (depth or 0) + 1
+    if depth > 6 then return nil end
+    budget.n = budget.n + 1
+    if budget.n > 3000 then return nil end
+    local out = {}
+    for k, sub in pairs(v) do
+        local kt = type(k)
+        if kt == "number" or kt == "string" then
+            local sv = planCopy(sub, depth, budget)
+            if sv ~= nil then out[k] = sv end
+        end
+    end
+    return out
+end
+
+function PD.CopyPlanRes(res)
+    if type(res) ~= "table" or type(res.steps) ~= "table" then return nil end
+    local budget = { n = 0 }
+    local out = {}
+    for _, k in ipairs(PLAN_KEEP) do
+        local v = res[k]
+        if v ~= nil then
+            local sv = planCopy(v, 0, budget)
+            if sv ~= nil then out[k] = sv end
+        end
+    end
+    if budget.n > 3000 then return nil end
+    return out
+end
+
+function PD.SavePlanSnap(slug, res)
+    slug = slug or PD.cur
+    local copy = PD.CopyPlanRes(res)
+    if not slug or not copy then return end
+    local db = ProfDB()
+    db.planSnap = db.planSnap or {}
+    db.planSnap[slug] = copy
+end
+
+function PD.RestorePlanSnap(slug)
+    slug = slug or PD.cur
+    local db = ProfDB()
+    local copy = db.planSnap and db.planSnap[slug]
+    if type(copy) ~= "table" or type(copy.steps) ~= "table" or #copy.steps == 0 then return nil end
+    return copy
+end
+
+function PD.SavePlanPrev(slug)
+    slug = slug or PD.cur
+    if PD.autoSnapshotSlug ~= slug then return end
+    local copy = PD.CopyPlanRes(PD.autoSnapshot)
+    if not copy then return end
+    local db = ProfDB()
+    db.planPrev = db.planPrev or {}
+    db.planPrev[slug] = copy
+end
+
+function PD.HasPlanPrev(slug)
+    slug = slug or PD.cur
+    local db = ProfDB()
+    local e = db.planPrev and db.planPrev[slug]
+    return (type(e) == "table" and type(e.steps) == "table" and #e.steps > 0) and true or false
+end
+
+function PD.RevertPlan()
+    local slug = PD.cur
+    local db = ProfDB()
+    local e = db.planPrev and db.planPrev[slug]
+    if type(e) ~= "table" or type(e.steps) ~= "table" or #e.steps == 0 then return false end
+    db.planPrev[slug] = nil
+    PD.autoSnapshot, PD.autoSnapshotSlug = e, slug
+    PD.autoExact = true
+    local learned = PD.ProfLearned and PD.ProfLearned(true) or {}
+    PD.autoKey = PD.PlanKeyOf(slug, PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur))
+    PD.SavePlanSnap(slug, e)
+    PD.forceExact = nil
+    PD.exactFailed = {}
+    return true
 end
 
 function PD.ClearPlanCache()
     PD.StopSolverRoute()
     PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
     PD.autoKey, PD.autoExact = nil, nil
+    if PD.cur then
+        local db = ProfDB()
+        if db.planLock then db.planLock[PD.cur] = nil end
+    end
     if PD.exactFailed then
         local n = 0
         for _ in pairs(PD.exactFailed) do n = n + 1 end
@@ -11587,12 +11763,18 @@ function PD.RowsCraftLog(rows)
             for _ in ipairs(run.steps or {}) do n = n + 1 end
             local tag = run.status == "done" and L["已完成"]
                         or (run.status == "stale" and L["技能值变动"] or L["已归档"])
+            local planID = run.planID
             rows[#rows + 1] = {
-                kind = "row", h = PD.ROW_H, col = 1, noTip = true,
+                kind = "row", h = PD.ROW_H, col = 1,
                 text = format(L["%d 步 · 技能 %s→%s"], n, tostring(run.startSkill or "—"),
                               tostring(run.target or "—")),
                 right = tag,
                 rightColor = C_GREY,
+                lines = { { L["右键删除这条记录"], 0.72, 0.72, 0.72 } },
+                rightAct = function()
+                    local TT = ns.ProfTrack
+                    if TT and TT.Remove then TT.Remove(PD.cur, planID) end
+                end,
             }
         end
     end
@@ -11637,11 +11819,23 @@ function PD.RowsLeveling(rows)
     local res
     local planKey
     PD.lvOpts = nil
+    if not PD.autoSnapshot or PD.autoSnapshotSlug ~= PD.cur then
+        local saved = PD.RestorePlanSnap(PD.cur)
+        if saved then
+            PD.autoSnapshot, PD.autoSnapshotSlug = saved, PD.cur
+            PD.autoExact = true
+            PD.__needKeySync = true
+        end
+    end
     if autoOn then
         local opts = PD.BuildLvOpts(PD.cur, curLv)
         opts.target = target
         PD.lvOpts = opts
         planKey = PD.PlanKeyOf(PD.cur, opts)
+        if PD.__needKeySync then
+            PD.__needKeySync = nil
+            PD.autoKey = planKey
+        end
         local SR = ns.ProfSolverRun
         local wantExact = (PD.Setting("solverRoute") or needPartner or PD.forceExact) and true or false
         PD.forceExact = nil
@@ -11681,6 +11875,10 @@ function PD.RowsLeveling(rows)
         PD.autoSnapshot, PD.autoSnapshotSlug = res, PD.cur
         PD.autoKey = planKey
         PD.autoExact = res.exact == true
+        if PD.__savedRes ~= res then
+            PD.__savedRes = res
+            PD.SavePlanSnap(PD.cur, res)
+        end
     end
     PD.RowsRoutePartner(rows, pairContext)
     PD.RowsSpecQuest(rows)
@@ -12030,7 +12228,7 @@ function PD.RowsLeveling(rows)
             local segHi = tonumber(st[2])
             local stepLv = _learned and _learned[st.profession or PD.cur]
             local actualLv = stepLv and stepLv.cur or curLv
-            local over = (actualLv ~= nil and segHi ~= nil and segHi < actualLv) or nil
+            local over = (actualLv ~= nil and segHi ~= nil and segHi <= actualLv) or nil
             local passed = (greyOn and over) or nil
             rows[#rows + 1] = {
                 kind = "row", h = PD.TBL_H, col = 1, lvstep = true, fs = PD.LV_FS,
@@ -13190,6 +13388,9 @@ function PD.LevelTool()
         elseif k == "recalc" then
             PD.exclusionsOpen = false
             PD.ProcureClear()
+            PD.SavePlanPrev(PD.cur)
+            local pdb = ProfDB()
+            if pdb.planSnap then pdb.planSnap[PD.cur] = nil end
             PD.ClearPlanCache()
             PD.exactFailed = {}
             local E = ns.ProfEconomy

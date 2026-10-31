@@ -1085,7 +1085,7 @@ local function InjectTools(stepsOut, slug, cap, startLv, recOf)
         if P >= lo and not have[goal.spell] and recOf[goal.spell] and not G.ToolOwned(goal.item) then
             local at = #stepsOut + 1
             for i, st in ipairs(stepsOut) do
-                if (tonumber(st[2]) or 0) > P then at = i break end
+                if (tonumber(st[1]) or 0) >= P then at = i break end
             end
             table.insert(stepsOut, at, { P, P, goal.spell, 1,
                 tool = true, toolItem = goal.item, toolSpell = goal.spell,
@@ -1466,6 +1466,34 @@ function RA.Compute(slug, opts)
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
     }
+    return RA.ApplyRecovery(res, slug, opts, recOf)
+end
+
+function RA.FinalizeTools(res, slug, opts)
+    if type(res) ~= "table" or type(res.steps) ~= "table" then return res end
+    opts = opts or {}
+    local cands, recOf, soldSet = BuildCandidates(slug, opts)
+    if not cands then return res end
+    local cap = tonumber(opts.target) or CAP
+    cap = math.max(2, math.min(CAP, math.floor(cap)))
+    local kept = InjectTools(res.steps, slug, cap, opts.start, recOf)
+    if type(kept) ~= "table" or #kept == 0 then return res end
+    local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
+          productAH, productNPC, productPartial =
+        SummarizeCore(res.steps, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
+    res.mats = mats
+    res.firstAt = firstAt
+    res.matTotal = total
+    res.total = total + (formulasTotal or 0)
+    res.formulas = formulas
+    res.formulasTotal = formulasTotal
+    res.vendorTotal = vendorTotal
+    res.ahTotal = total - vendorTotal
+    res.productAH = productAH
+    res.productNPC = productNPC
+    res.productPartial = productPartial
+    res.crafts = crafts
+    res.toolItems = kept
     return RA.ApplyRecovery(res, slug, opts, recOf)
 end
 
