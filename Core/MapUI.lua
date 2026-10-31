@@ -86,6 +86,7 @@ M.ROUTE_THIN_DOT, M.ROUTE_THIN_EDGE = 2.6, 5.0
 M.ROUTE_DASH_ON, M.ROUTE_DASH_OFF = 13, 9
 M.ROUTE_DOT_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_dot"
 M.MAX_ROUTE_DOTS = 2400
+M.HIT_STEP, M.HIT_SIZE = 16, 18
 M.ROUTE_PALETTES = {
     { id = "rainbow", stops = {
         { 0.00, 0.961, 0.278, 0.227 },
@@ -477,7 +478,7 @@ local FLOOR_NAMES = {
         { "Hall of Blackhand", "黑手大厅", "黑手大廳" },
         { "Halycon's Lair", "哈雷肯之巢", "哈雷肯之巢" },
         { "Chamber of Battle", "战斗之厅", "戰鬥之廳" },
-        [14] = { "Blackrock Mountain", "黑石山", "黑石山" },
+        [9] = { "Blackrock Mountain", "黑石山", "黑石山" },
     },
     upper_blackrock_spire = {
         [4] = { "Blackrock Mountain", "黑石山", "黑石山" },
@@ -1946,9 +1947,13 @@ local function routeTex(host, i)
     return e
 end
 
-local function routeDot(e, host, x, y, cr, cg, cb)
+local function routeDot(e, host, x, y, cr, cg, cb, si)
     local edge = M.routeThin and M.ROUTE_THIN_EDGE or M.ROUTE_DOT_EDGE
     local core = M.routeThin and M.ROUTE_THIN_DOT or M.ROUTE_DOT
+    e.si = si
+    e.bx, e.by = x, y
+    e.br, e.bg, e.bb = cr, cg, cb
+    e.bedge, e.bcore = edge, core
     e.o:SetSize(edge, edge)
     e.o:ClearAllPoints()
     e.o:SetPoint("CENTER", host, "TOPLEFT", x, -y)
@@ -1962,12 +1967,110 @@ local function routeDot(e, host, x, y, cr, cg, cb)
     e.c:Show()
 end
 
+local hitPool = {}
+local hoverSeg, hoverLeave = nil, 0
+local hoverTicker
+
+local function paintSeg(si, on)
+    local used = M.frame and M.frame.routeUsed or 0
+    for i = 1, used do
+        local e = routePool[i]
+        if e and e.si == si and e.bedge then
+            if on then
+                e.o:SetSize(e.bedge * 1.5, e.bedge * 1.5)
+                e.c:SetSize(e.bcore * 1.6, e.bcore * 1.6)
+                e.c:SetVertexColor(math.min(1, e.br * 1.28 + 0.16),
+                                   math.min(1, e.bg * 1.28 + 0.16),
+                                   math.min(1, e.bb * 1.28 + 0.16))
+            else
+                e.o:SetSize(e.bedge, e.bedge)
+                e.c:SetSize(e.bcore, e.bcore)
+                e.c:SetVertexColor(e.br, e.bg, e.bb)
+            end
+        end
+    end
+end
+
+function M.SetHoverSeg(si)
+    if si == hoverSeg then return end
+    if hoverSeg then paintSeg(hoverSeg, false) end
+    hoverSeg = si
+    if si then paintSeg(si, true) end
+    hoverLeave = GetTime()
+end
+
+function M.HoveredSeg()
+    return hoverSeg
+end
+
+local function hoverTick()
+    if hoverSeg and (GetTime() - hoverLeave) > 0.08 then
+        M.SetHoverSeg(nil)
+    end
+end
+
+local function hitBtn(host, i)
+    local b = hitPool[i]
+    if not b then
+        b = CreateFrame("Button", nil, host)
+        b:SetSize(M.HIT_SIZE, M.HIT_SIZE)
+        b:EnableMouse(true)
+        b:SetScript("OnEnter", function(self)
+            M.SetHoverSeg(self.si)
+        end)
+        b:SetScript("OnLeave", function(self)
+            hoverLeave = GetTime()
+        end)
+        hitPool[i] = b
+    end
+    return b
+end
+
+local function buildHits(host, arr, cnt)
+    local hi = 0
+    local step = M.HIT_STEP
+    for si = 1, cnt do
+        local pts = arr[si]
+        if pts and #pts > 1 then
+            for i = 2, #pts do
+                local a, b = pts[i - 1], pts[i]
+                local dx, dy = b[1] - a[1], b[2] - a[2]
+                local d = math.sqrt(dx * dx + dy * dy)
+                if d > 1 then
+                    local k = math.max(1, math.ceil(d / step))
+                    for j = 0, k - 1 do
+                        local u = j / k
+                        hi = hi + 1
+                        local btn = hitBtn(host, hi)
+                        btn.si = si
+                        btn:ClearAllPoints()
+                        btn:SetPoint("CENTER", host, "TOPLEFT", a[1] + dx * u, -(a[2] + dy * u))
+                        btn:Show()
+                    end
+                end
+            end
+        end
+    end
+    for i = hi + 1, #hitPool do
+        hitPool[i]:Hide()
+    end
+    return hi
+end
+
 function M.SyncRoute(id, floor, cw, ch)
     local frame = M.frame
     local host = frame and frame.route
     if not host then return end
     local used = frame.routeUsed or 0
     local n = 0
+    if hoverSeg then M.SetHoverSeg(nil) end
+    if not hoverTicker then
+        hoverTicker = CreateFrame("Button", nil, host)
+        hoverTicker:SetSize(1, 1)
+        hoverTicker:EnableMouse(false)
+        hoverTicker:SetScript("OnUpdate", hoverTick)
+    end
+    local built = 0
     if type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0 and M.RouteOn(id) then
         local segs = floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
         if type(segs) == "table" and #segs > 0 then
@@ -2024,7 +2127,7 @@ function M.SyncRoute(id, floor, cw, ch)
                                     local t = (total > 0) and ((acc + d * u) / total) or 0
                                     local cr, cg, cb = M.RouteColor(t)
                                     routeDot(routeTex(host, n), host,
-                                             a[1] + dx * u, a[2] + dy * u, cr, cg, cb)
+                                             a[1] + dx * u, a[2] + dy * u, cr, cg, cb, si)
                                 end
                             end
                             sd = sd + d
@@ -2033,6 +2136,7 @@ function M.SyncRoute(id, floor, cw, ch)
                     end
                 end
             end
+            built = buildHits(host, arr, #segs)
         end
     end
     for i = n + 1, used do
@@ -2042,8 +2146,145 @@ function M.SyncRoute(id, floor, cw, ch)
             e.c:Hide()
         end
     end
+    if n == 0 or built == 0 then
+        for i = 1, #hitPool do hitPool[i]:Hide() end
+    end
     frame.routeUsed = n
-    host:SetShown(n > 0)
+    M.SyncRouteNo(id, floor, cw, ch)
+    host:SetShown(n > 0 or (frame.noUsed or 0) > 0)
+end
+
+M.NO_D = 20
+M.NO_DY = -16
+
+local function noD()
+    local v = ns.RouteNoSize
+    if type(v) ~= "number" then return M.NO_D end
+    if v < 10 then v = 10 end
+    if v > 44 then v = 44 end
+    return v
+end
+
+local noPools = {}
+
+local function noPoolFor(host, tag)
+    local p = noPools[tag]
+    if p and p.host == host then return p end
+    if p then
+        for i = 1, #p.list do
+            p.list[i].rim:Hide()
+            p.list[i].inner:Hide()
+            p.list[i].txt:Hide()
+        end
+    end
+    p = { host = host, list = {}, n = 0 }
+    noPools[tag] = p
+    return p
+end
+
+local function noBadge(p)
+    local i = p.n + 1
+    p.n = i
+    local e = p.list[i]
+    if e then return e end
+    e = {}
+    e.rim = p.host:CreateTexture(nil, "ARTWORK", nil, 6)
+    e.rim:SetTexture(M.ROUTE_DOT_TEX)
+    e.inner = p.host:CreateTexture(nil, "ARTWORK", nil, 7)
+    e.inner:SetTexture(M.ROUTE_DOT_TEX)
+    e.inner:SetVertexColor(0.06, 0.05, 0.04, 0.92)
+    e.txt = p.host:CreateFontString(nil, "OVERLAY")
+    e.txt:SetFont("Fonts\\ARHei.ttf", 12, "OUTLINE")
+    e.txt:SetTextColor(1, 1, 1)
+    p.list[i] = e
+    return e
+end
+
+function M.SyncNoBadges(host, tag, cw, ch, items)
+    if not host then return 0 end
+    local p = noPoolFor(host, tag)
+    local used = p.n
+    p.n = 0
+    local d = noD()
+    local di = d * 0.7
+    local dy = 0
+    if items and cw and ch and cw > 0 and ch > 0 then
+        for k = 1, #items do
+            local it = items[k]
+            local e = noBadge(p)
+            local x, y = it[5], -it[6] + dy
+            e.rim:SetVertexColor(it[1], it[2], it[3], 1)
+            e.rim:ClearAllPoints()
+            e.rim:SetPoint("CENTER", host, "TOPLEFT", x, y)
+            e.rim:SetSize(d, d)
+            e.inner:ClearAllPoints()
+            e.inner:SetPoint("CENTER", host, "TOPLEFT", x, y)
+            e.inner:SetSize(di, di)
+            e.txt:SetFont("Fonts\\ARHei.ttf", math.floor(d * (it[7] and 0.44 or 0.58)), "OUTLINE")
+            e.txt:SetText(it[4])
+            e.txt:ClearAllPoints()
+            e.txt:SetPoint("CENTER", host, "TOPLEFT", x, y)
+            e.rim:Show()
+            e.inner:Show()
+            e.txt:Show()
+        end
+    end
+    local top = used
+    if p.n > top then top = p.n end
+    for i = p.n + 1, top do
+        local e = p.list[i]
+        if e then
+            e.rim:Hide()
+            e.inner:Hide()
+            e.txt:Hide()
+        end
+    end
+    return p.n
+end
+
+function M.SegNoItems(id, floor, segs, cw, ch, hidden)
+    local items = {}
+    if not cw or cw <= 0 or not ch or ch <= 0 then return items end
+    local kx, ky = cw * 0.01, ch * 0.01
+    if type(segs) == "table" then
+        for i = 1, #segs do
+            local sg = segs[i]
+            local no = sg and sg.no
+            local pts = sg and sg.pts
+            if no and no ~= "" and no ~= "-" and pts and #pts > 0
+                    and not (hidden and hidden(i)) then
+                local at = sg.noAt
+                if type(at) ~= "number" or at < 1 or at > #pts then at = 1 end
+                local p = pts[at]
+                local cr, cg, cb = M.RouteColor(sg.t0 or 0)
+                items[#items + 1] = { cr, cg, cb, tostring(no),
+                                      p[1] * kx, p[2] * ky, #tostring(no) >= 3 }
+            end
+        end
+    end
+    local pins = id and floor and ns.DungeonRouteNo and ns.DungeonRouteNo[id]
+    pins = pins and pins[floor]
+    if type(pins) == "table" then
+        for i = 1, #pins do
+            local e = pins[i]
+            if e and e[1] and e[2] and e[3] then
+                items[#items + 1] = { 0.93, 0.78, 0.42, tostring(e[1]),
+                                      e[2] * kx, e[3] * ky, #tostring(e[1]) >= 3 }
+            end
+        end
+    end
+    return items
+end
+
+function M.SyncRouteNo(id, floor, cw, ch)
+    local frame = M.frame
+    local host = frame and frame.route
+    if not host then return end
+    local segs = M.RouteOn(id) and floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
+    local items = M.SegNoItems(id, floor, segs, cw, ch, function(i)
+        return M.routeHidden[M.RouteSegKey(id, floor, i)]
+    end)
+    frame.noUsed = M.SyncNoBadges(host, "detail", cw, ch, items)
 end
 
 function M.ShowRouteMenu(owner)
@@ -3004,6 +3245,14 @@ function M.PaintArea(id, fn, cw, ch)
     local frame = M.frame
     local tex = frame and frame.areaTex
     if not tex then return end
+    local host = frame.canvas
+    local items = fn and ns.AreaVec and ns.AreaVec.dun and ns.AreaVec.dun[id] and ns.AreaVec.dun[id][fn]
+    if items and host and ns.AreaDraw then
+        ns.AreaDraw.Paint(host, cw, ch, items, 1, 1, 1, { base = 3 })
+        tex:Hide()
+        return
+    end
+    if host and ns.AreaDraw then ns.AreaDraw.Clear(host) end
     local row = id and ns.RouteArea and ns.RouteArea[id]
     local path = row and fn and row[fn]
     if not path then

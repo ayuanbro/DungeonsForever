@@ -1951,16 +1951,35 @@ local function RtMapPaint(mapID, x, y)
     for j = k + 1, #dp do dp[j]:Hide() end
     local opool = EG.rtOvlTex or {}
     for i = 1, #opool do opool[i]:Hide() end
+    local vside = RtOvlSide()
+    local vlist = {}
+    if ns.AreaVec and ns.AreaVec.ovl then
+        for _, it in pairs(ns.AreaVec.ovl) do
+            if it.map == mapID and (it.side == 0 or it.side == vside) then
+                vlist[#vlist + 1] = it
+            end
+        end
+    end
+    if ns.AreaDraw then
+        if #vlist > 0 then
+            local tc = OVL_TINT[vside] or OVL_TINT[1]
+            ns.AreaDraw.Paint(cv, dw, dh, vlist, tc[1], tc[2], tc[3],
+                { base = 1, layer = "OVERLAY", fillA = ns.AreaDraw.FILL_A_OVL })
+        else
+            ns.AreaDraw.Clear(cv)
+        end
+    end
     if ns.RouteOvl then
         local on = 0
-        local side = RtOvlSide()
+        local side = vside
         local names = {}
         for nm in pairs(ns.RouteOvl) do names[#names + 1] = nm end
         table.sort(names)
         for ni = 1, #names do
             local od = ns.RouteOvl[names[ni]]
             local os = od[7] or 0
-            if od[1] == mapID and (os == 0 or os == side) and od[3] and od[4] and opool[on + 1] then
+            local vd = ns.AreaVec and ns.AreaVec.ovl and ns.AreaVec.ovl[names[ni]]
+            if not vd and od[1] == mapID and (os == 0 or os == side) and od[3] and od[4] and opool[on + 1] then
                 on = on + 1
                 local ot = opool[on]
                 ot:ClearAllPoints()
