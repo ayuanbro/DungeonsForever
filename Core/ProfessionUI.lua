@@ -2356,6 +2356,7 @@ function PD.BindRow(r, spec, h)
         if r.__fishRoute then r.__fishRoute:Hide() end
         PD.WipeRow(r, true)
         PD.PCApply(r, spec, r:GetWidth(), h)
+        r.__spec = spec -- Keep virtualized cards eligible for culling/redisplay.
         return
     end
     if r.__pcOk then PD.PCWipe(r) end
@@ -8066,6 +8067,28 @@ function PD.WipeRow(r, keepShown)
     if r.__fishRoute then r.__fishRoute:Hide() end
     r.__spec = nil
     PD.ClearMats(r); PD.ClearMatSegs(r)
+    -- Reused rows must also release the recipe-only overlay regions.
+    -- Ordinary BindRow handles these, but the pcard path returns early.
+    PD.ClearRecipeMats(r)
+    PD.PaintDiffBar(r, nil)
+    PD.HideRowChips(r)
+    if r.__pcOk then PD.PCWipe(r) end
+    if r.__costWhy then r.__costWhy:Hide() end
+    if r.__toolBadge then r.__toolBadge:Hide() end
+    if r.__roleBadge then r.__roleBadge:Hide() end
+    if r.icon4 then r.icon4:Hide() end
+    for _, fs in ipairs({r.h1, r.h2, r.h3, r.h4, r.h5, r.h6}) do fs:Hide() end
+    for i = 1, 3 do
+        local arrows = r["__ha" .. i]
+        if arrows then arrows[1]:Hide(); arrows[2]:Hide() end
+    end
+    if r.hsOwn then r.hsOwn:Hide() end
+    if r.hsTot then r.hsTot:Hide() end
+    if r.hsCraft then r.hsCraft:Hide() end
+    if r.hsGap then r.hsGap:Hide() end
+    if r.foldZone then r.foldZone:Hide() end
+    if r.foldArrD then r.foldArrD:Hide() end
+    if r.foldArrU then r.foldArrU:Hide() end
     if r.icon then r.icon:Hide() end
     if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
     if r.gic then
@@ -8101,6 +8124,12 @@ function PD.WipeRow(r, keepShown)
     r.__noHover = nil
     r.__noTip = nil
     r.__lines = nil
+    r.__mkLines = nil
+    r.__linesFirst = nil
+    r.__it = nil
+    r.__spell = nil
+    r.__act = nil
+    r.__routePolicy = nil
     r.__tipTitle = nil
     r.__tipExtra = nil
     if not keepShown then r:Hide() end
