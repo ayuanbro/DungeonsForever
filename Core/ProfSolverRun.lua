@@ -11,7 +11,16 @@ ns.ProfSolverRun = M
 local FRAME_MS = 2
 -- Leave room for one condition evaluation, result publication and incremental
 -- collection between cooperative yield points inside the two-ms job budget.
-local SLICE_MS = 0.5
+local SLICE_MS = 1.5
+-- DF_ROUTE_ADAPTIVE_SLICE_V15
+-- Spend a small, bounded share of frame time on an open profession page.
+-- Overloaded frames get shorter slices; fast refreshes keep a small cap.
+local function adaptiveSliceMs()
+    local fps=type(GetFramerate)=="function" and GetFramerate() or 60
+    if type(fps)~="number" or fps<=0 then fps=60 end
+    if fps<25 then return 0.6 end
+    return math.min(2.25, math.max(0.8, (1000/fps)*0.09))
+end
 local NOTIFY_MS = 250
 local GC_SOFT_KB = 24576
 local GC_STEPS = 1
@@ -149,7 +158,7 @@ function M.Start(slug, opts, hooks)
         if live ~= a then return true end
         -- One resume leaves headroom for publication and avoids accumulating
         -- two slightly oversized slices inside a nominal two-ms callback.
-        local done = advance(math.min(SLICE_MS, FRAME_MS))
+        local done = advance(math.min(adaptiveSliceMs(), FRAME_MS))
         if not done then keepGC() end
         notify(done)
         if done then

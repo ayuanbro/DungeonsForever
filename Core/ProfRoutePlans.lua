@@ -11,7 +11,16 @@ local legacyRun
 local MODEL, CACHE_LIMIT = 1, 4
 -- The ordinary facade also publishes progress and source-gap diagnostics after
 -- each search slice. Leave room for that work inside the idle-job frame budget.
-local SEARCH_SLICE_MS = 0.5
+-- DF_ROUTE_ADAPTIVE_SLICE_V15
+-- Spend a small, bounded share of frame time on an open profession page.
+-- Overloaded frames get shorter slices; fast refreshes keep a small cap.
+local function adaptiveSliceMs()
+    local fps=type(GetFramerate)=="function" and GetFramerate() or 60
+    if type(fps)~="number" or fps<=0 then fps=60 end
+    if fps<25 then return 0.6 end
+    return math.min(2.25, math.max(0.8, (1000/fps)*0.09))
+end
+
 local function learningPolicy()
     return E.LearningPolicyFingerprint and E.LearningPolicyFingerprint() or "native-learning:7:native-route-eligibility"
 end
@@ -274,7 +283,7 @@ local function pump(job)
             return true
         end
     end
-    local done=S.Run(job,SEARCH_SLICE_MS)
+    local done=S.Run(job,adaptiveSliceMs())
     if job.result and (job.result~=job.published or done) then publish(job,job.result)
     elseif job.published and job.progressVersion~=job.publishedProgressVersion then
         if S.Progress then

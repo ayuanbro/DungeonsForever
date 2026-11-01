@@ -16,8 +16,23 @@ end
 local function clock() return debugprofilestop and debugprofilestop() or (os and os.clock and os.clock()*1000) or 0 end
 local function available(s,id) return (s.inv[id] or 0)-(s.unusable[id] or 0) end
 -- learned and unusableSeed are initialized once and never mutated by a branch.
+-- DF_REBATCH_SAFE_FINALIZE_AND_FLAT_STATE_V14
+-- Solver state fields hold scalar leaves. Deep copying every diagnostic's
+-- immutable nested record at each branch is unnecessary and costly.
+-- Preserve independent outer maps, while keeping their immutable values.
+local function copyStateMap(source)
+    local out={}
+    for key,value in pairs(source or {}) do out[key]=value end
+    return out
+end
 local function clone(s)
-    return {inv=E.Copy(s.inv),unusable=E.Copy(s.unusable),unusableSeed=s.unusableSeed,produced=E.Copy(s.produced),skill=E.Copy(s.skill),progress=E.Copy(s.progress),cap=E.Copy(s.cap),learned=s.learned,formulaPaid=E.Copy(s.formulaPaid),ahUsed=E.Copy(s.ahUsed),specializationAbilities=E.Copy(s.specializationAbilities),completedSpecializationGoals=E.Copy(s.completedSpecializationGoals),completedToolGoals=E.Copy(s.completedToolGoals),diagnostics=E.Copy(s.diagnostics),money=s.money,log=s.log,switches=s.switches or 0,lastRecipe=s.lastRecipe}
+    return {inv=copyStateMap(s.inv),unusable=copyStateMap(s.unusable),unusableSeed=s.unusableSeed,
+        produced=copyStateMap(s.produced),skill=copyStateMap(s.skill),progress=copyStateMap(s.progress),
+        cap=copyStateMap(s.cap),learned=s.learned,formulaPaid=copyStateMap(s.formulaPaid),
+        ahUsed=copyStateMap(s.ahUsed),specializationAbilities=copyStateMap(s.specializationAbilities),
+        completedSpecializationGoals=copyStateMap(s.completedSpecializationGoals),
+        completedToolGoals=copyStateMap(s.completedToolGoals),diagnostics=copyStateMap(s.diagnostics),
+        money=s.money,log=s.log,switches=s.switches or 0,lastRecipe=s.lastRecipe}
 end
 local function consume(s,id,n)
     local stock=s.inv[id] or 0
@@ -234,9 +249,12 @@ function S.Result(job,state,status)
     local finalStatus = status or job.status
     if state and state == job.best and not job.rebatchFinalized
         and (finalStatus == "complete" or finalStatus == "incomplete")
-        and job.rebatchFinal then
+        and job.rebatchFinal and coroutine.running()==job.co then
         job.rebatchFinalized = true
+        local previousPhase=job.phase
+        job.phase="rebatch"
         local candidate = job.rebatchFinal(state)
+        job.phase=previousPhase
         if candidate and candidate ~= state then
             state = candidate
             job.best = candidate
@@ -251,6 +269,9 @@ function S.Result(job,state,status)
     out.procurementPolicyVersion=S.ProcurementPolicyVersion
     out.searchCpuMs=job.cpuUsed or 0
     out.searchCpuLimitMs=job.cpuLimitMs or 8000
+    out.phaseCpuMs=E.Copy(job.phaseCpuMs or {})
+    out.solverWork=E.Copy(job.workCounters or {})
+    out.firstFeasibleCpuMs=job.firstFeasibleCpuMs
     out.seedInventory=E.Copy(job.opts.executionInventory or {})
     out.scheme=job.opts.scheme or "cheapest"
     out.toolGoals=E.Copy(job.snap and job.snap.toolGoals)
@@ -296,7 +317,7 @@ function S.Result(job,state,status)
     out.completedSpecializationGoals=E.Copy(state.completedSpecializationGoals)
     out.completedToolGoals=E.Copy(state.completedToolGoals)
     out.specializationAbilities=E.Copy(state.specializationAbilities)
-    for _,d in pairs(state.diagnostics) do out.diagnostics[#out.diagnostics+1]=d end
+    for _,d in pairs(state.diagnostics) do out.diagnostics[#out.diagnostics+1]=E.Copy(d) end
     local checkedLearning={}
     for _,d in ipairs(out.diagnostics) do
         if d.code=="learningRequirementsUnknown" then checkedLearning[d.detail]=true end
@@ -687,7 +708,7 @@ local function rebatchMove(list, earlier, later, mode)
     return out
 end
 
-function S.RebatchChronological(original, replay, tick)
+function S.RebatchChronological(original, replay, tick, cpuTime)
     if not original or type(replay) ~= "function" then return original end
     local list = actions(original)
     if #list < 3 or #list > 1600 then return original end
@@ -706,9 +727,13 @@ function S.RebatchChronological(original, replay, tick)
     local maxAttempts = #list > 600 and 3 or #list > 200 and 6 or 12
     local maxProbes = #list > 600 and 18 or #list > 200 and 36 or 96
     local probes = 0
-    local started = type(debugprofilestop) == "function" and debugprofilestop() or nil
+    local useCPU = type(cpuTime)=="function"
+    local started = useCPU and cpuTime()
+        or (type(debugprofilestop)=="function" and debugprofilestop() or nil)
     local function timeExceeded()
-        return started and debugprofilestop() - started >= 200 or false
+        if not started then return false end
+        return (useCPU and cpuTime() or debugprofilestop()) - started
+            >= (useCPU and 60 or 200)
     end
     local currentScore = rebatchSwitches(list)
     -- Replays execute the original eligibility, skill-gain, stock, quest and
@@ -754,6 +779,10 @@ end
 function S.NewJob(slug,opts)
     opts=opts or {}
     local j={slug=slug,opts=opts,target=min(300,max(1,floor(opts.target or 300))),expanded=0,failures={},cpuUsed=0,cpuLimitMs=max(1,tonumber(opts.cpuLimitMs) or 8000),status="searching",generation=0,progressVersion=0,resultVersion=0,frontierLimit=max(1,floor(tonumber(opts.maxFrontier) or 20000))}
+    j.phase, j.phaseCpuMs = "capture", {}
+    j.seedLeafPrices = {}
+    j.workCounters = {fastSeedPurchases=0,leafQuoteHits=0,
+        seedQuoteCalls=0,batchedPlans=0,batchReuses=0,replayCalls=0}
     local function better(a,b) return betterState(a,b,j.recovery and j.snap or nil) end
     local ops=0
     local function cpuTime()
@@ -951,6 +980,93 @@ function S.NewJob(slug,opts)
         if unpriced then diagnostic(t,source..":"..id,source=="vendor" and "vendorPriceUnknown" or "materialPriceUnknown",id) end
         return t
     end
+    -- DF_ROUTE_ANYTIME_SEED_AND_FRAME_V15
+    -- Warm-start procurement is permitted to use one executable, fully priced
+    -- source combination. Exhaustive make/buy/split enumeration remains intact
+    -- in the refined seed and frontier; this only accelerates the first route.
+    local function fastSeedPurchase(s, id, missing, reason, path)
+        if missing <= 0 then return s end
+        local auctionPrice = auctionQuote(id) and j.snap.prices[id] or nil
+        local ahRemaining = auctionPrice and auctionRemaining(s, id) or 0
+        local best
+        local function consider(cost, uncertain, ah, offer, vendorQty, waste)
+            if not best or (best.uncertain and not uncertain)
+                or (best.uncertain == uncertain and (cost < best.cost - 1e-7
+                    or (math.abs(cost - best.cost) < 1e-7 and waste < best.waste))) then
+                best = {cost=cost, uncertain=uncertain, ah=ah, offer=offer,
+                    vendorQty=vendorQty, waste=waste}
+            end
+        end
+        if auctionPrice and ahRemaining >= missing then
+            consider(missing * auctionPrice, false, missing, nil, 0, 0)
+        end
+        for _, offer in ipairs(materialVendorOffers(id)) do
+            if vendorQuote(offer) then
+                local size = offer.quantity or offer.bundleSize or 1
+                local price = offer.price
+                local uncertain = offer.estimated and not offer.reference and true or false
+                if type(size)=="number" and size>=1 and size==floor(size)
+                    and type(price)=="number" and price>=0 then
+                    local packs = ceil(missing / size)
+                    consider(packs * price, uncertain, 0, offer,
+                        packs * size, packs * size - missing)
+                    -- Finite AH stock can cover a non-integral pack remainder.
+                    if auctionPrice and ahRemaining > 0 then
+                        local ah = min(missing, ahRemaining)
+                        local remainder = missing - ah
+                        if remainder > 0 then
+                            local n = ceil(remainder / size) * size
+                            consider(ah * auctionPrice + n / size * price,
+                                uncertain, ah, offer, n, ah + n - missing)
+                        end
+                        -- With one unlimited NPC pack and an AH unit price,
+                        -- the minimum mixed cost lies at a pack-count endpoint.
+                        -- The last required pack may reduce the AH need: e.g.
+                        -- need=4, pack=3, AH cap=2 => vendor3 + AH1 (not AH2).
+                        local packs = ceil(max(0, missing - ahRemaining) / size)
+                        if packs > 0 then
+                            local n = packs * size
+                            local onlyAH = max(0, missing - n)
+                            if onlyAH > 0 and onlyAH <= ahRemaining then
+                                consider(onlyAH * auctionPrice + packs * price,
+                                    uncertain, onlyAH, offer, n, onlyAH + n - missing)
+                            end
+                        end
+                        -- The other endpoint is the last partial pack before
+                        -- a full-vendor purchase. Necessary when AH alone is
+                        -- sufficient but mixing one pack lowers the cost.
+                        local partialPacks = ceil(missing / size) - 1
+                        if partialPacks > 0 then
+                            local n = partialPacks * size
+                            local onlyAH = missing - n
+                            if onlyAH <= ahRemaining then
+                                consider(onlyAH * auctionPrice + partialPacks * price,
+                                    uncertain, onlyAH, offer, n, 0)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if not best then return nil end
+        local t = s
+        if best.ah > 0 then
+            t = buy(t, id, best.ah, "ah", auctionPrice, 1, nil,
+                reason, nil, nil, path and path.owner)
+            if not t then return nil end
+        end
+        if best.offer then
+            local offer = best.offer
+            local size = offer.quantity or offer.bundleSize or 1
+            t = buy(t, id, best.vendorQty, "vendor", offer.price, size,
+                offer.npcID, reason, offer.url, offer.estimated,
+                path and path.owner, nil, offer)
+        end
+        if t and available(t, id) >= missing + available(s, id) then
+            return t
+        end
+        return nil
+    end
     local function stateFormula(r,s,remaining,purchaseSource)
         if ns.IsForever and ns.ProfLearningSources and E.SelectLearningRoute then
             local ok,_,detail=E.SelectLearningRoute(r,j.snap,s,remaining,purchaseSource)
@@ -1084,6 +1200,17 @@ function S.NewJob(slug,opts)
         local craftOnly=path.forceCraftItem==id or j.snap.toolCraftOnlyItems and j.snap.toolCraftOnlyItems[id]
         local auctionPriced=not craftOnly and auctionQuote(id)
         local remaining=auctionRemaining(s,id)
+        -- The first seed needs an executable route quickly. Skip
+        -- expensive split/make/buy enumeration only when an unconditional
+        -- full purchase is available. Exact refinement is unchanged.
+        if j.seeding and j.directSeed and not craftOnly then
+            local warm = fastSeedPurchase(s, id, missing, reason, path)
+            if warm then
+                j.workCounters.fastSeedPurchases=j.workCounters.fastSeedPurchases+1
+                finalEmit(warm)
+                return
+            end
+        end
         local conversion=not craftOnly and essenceConversion(id)
         if conversion and not path["essence:"..conversion.key] then
             -- Every integer split competes with buying the requested form.
@@ -1261,6 +1388,7 @@ function S.NewJob(slug,opts)
             local candidates={}
             local quoteCache={}
             local function quote(id,qty,path)
+                j.workCounters.seedQuoteCalls=j.workCounters.seedQuoteCalls+1
                 tick()
                 if j.seedAborted then return math.huge end
                 local missing=max(0,qty-available(s,id)); if missing==0 then return 0 end
@@ -1270,6 +1398,41 @@ function S.NewJob(slug,opts)
                 local auctionPriced=auctionQuote(id)
                 local enoughAuction=auctionPriced and auctionRemaining(s,id)>=missing
                 local best=enoughAuction and price*missing or math.huge
+                -- DF_ROUTE_LEAF_QUOTE_CACHE_V15
+                -- Immutable, unconstrained raw-material quotes only. These
+                -- depend on missing quantity, not the current route state.
+                local producers = j.snap.byItem[id]
+                local rawLeaf = (not producers or #producers==0)
+                    and not j.auctionSupply[id] and not essenceConversion(id)
+                if rawLeaf then
+                    local bucket = j.seedLeafPrices[id]
+                    local cached = bucket and bucket[missing]
+                    if cached ~= nil then
+                        j.workCounters.leafQuoteHits = j.workCounters.leafQuoteHits + 1
+                        quoteCache[key] = cached
+                        if cached==math.huge and j.collectFailures and not j.seedAborted then
+                            fail("materialUnavailable", nil, id, missing, nil)
+                        end
+                        return cached
+                    end
+                    local raw = best
+                    for _,offer in ipairs(materialVendorOffers(id)) do
+                        if vendorQuote(offer) then
+                            local size = offer.quantity or offer.bundleSize or 1
+                            raw = min(raw, ceil(missing / size) * offer.price)
+                        end
+                    end
+                    if (j.seedLeafPriceEntries or 0)<4096 then
+                        if not bucket then bucket={}; j.seedLeafPrices[id]=bucket end
+                        bucket[missing] = raw
+                        j.seedLeafPriceEntries=(j.seedLeafPriceEntries or 0)+1
+                    end
+                    quoteCache[key] = raw
+                    if raw==math.huge and j.collectFailures and not j.seedAborted then
+                        fail("materialUnavailable", nil, id, missing, nil)
+                    end
+                    return raw
+                end
                 for _,o in ipairs(E.PreferredVendorOffers(j.snap.offers[id],vendorQuote)) do
                     if vendorQuote(o) then
                         local bundle=o.quantity or o.bundleSize or 1
@@ -1420,8 +1583,16 @@ function S.NewJob(slug,opts)
     -- Keep the search's chronology. Moving every occurrence of a recipe to its
     -- first occurrence changes skill gains and can turn later leveling into waste.
     local function batchPlan(raw,requireGoal)
+        -- A validated replay already carries normalized acquisition lots.
+        -- Reprocessing it cannot improve this fixed action ledger.
+        if raw and raw.batched and (not requireGoal or goalsComplete(j,raw)) then
+            j.workCounters.batchReuses=j.workCounters.batchReuses+1
+            return raw
+        end
+        j.workCounters.batchedPlans=j.workCounters.batchedPlans+1
         local original=actions(raw)
         local function replay(list)
+            j.workCounters.replayCalls=j.workCounters.replayCalls+1
             local t=initial(j.snap,slug,opts)
             t.diagnostics={}
             local active={}
@@ -1514,7 +1685,7 @@ function S.NewJob(slug,opts)
                 local failures, collected = j.failures, j.collectFailures
                 local restricted, restriction = j.restricted, j.restrictedReason
                 j.failures, j.collectFailures = {}, nil
-                local result = S.RebatchChronological(candidate, replay, tick)
+                local result = S.RebatchChronological(candidate, replay, tick, cpuTime)
                 j.failures, j.collectFailures = failures, collected
                 j.restricted, j.restrictedReason = restricted, restriction
                 return result or candidate
@@ -1977,8 +2148,9 @@ function S.NewJob(slug,opts)
             j.seedAborted=false
             -- Recursive material comparisons are a warm start. Reserve most
             -- of the shared CPU budget for actual frontier exploration.
-            j.seedDeadline=smooth and cpuTime()+750
-                or not direct and not opts.specializationRecipeScore and cpuTime()+250 or nil
+            -- DF_ROUTE_SEED_BUDGET_V15
+            j.seedDeadline=smooth and cpuTime()+450
+                or not direct and cpuTime()+300 or nil
             local checkpoint=first.skill[slug]
             while current and not goalsComplete(j,current) do
                 local nextState
@@ -2012,6 +2184,7 @@ function S.NewJob(slug,opts)
             if direct and not smooth and (not current or not goalsComplete(j,current)) then publishPrefix(current or j.partial) end
             return current
         end
+        j.phase="initial_seed"
         local current=seed(not opts.specializationRecipeScore)
         if current and goalsComplete(j,current) then current=batchPlan(current,true) end
         j.seedDone=true
@@ -2033,6 +2206,7 @@ function S.NewJob(slug,opts)
                     -- A later rejected probe must preserve restrictions carried
                     -- by an earlier accepted incumbent in this same portfolio.
                     local restricted,restriction=j.restricted,j.restrictedReason
+                    j.phase="smooth_seed"
                     local smooth=seed(true,mode)
                     if smooth and goalsComplete(j,smooth) then smooth=batchPlan(smooth,true) end
                     if smooth and goalsComplete(j,smooth) and better(smooth,current) then
@@ -2081,6 +2255,7 @@ function S.NewJob(slug,opts)
                 j.result=S.Result(j,j.best,"searching"); coroutine.yield("publish")
             end
         end
+        j.phase="refined_seed"
         local refined=seed(false)
         if refined and goalsComplete(j,refined) then refined=batchPlan(refined,true) end
         if refined and goalsComplete(j,refined) and better(refined,j.best) then
@@ -2099,6 +2274,7 @@ function S.NewJob(slug,opts)
         -- Terminal products have fixed sale value and cannot affect a future
         -- action. Keep them in the ledger and compare net cost, cash and switches.
         -- All consumable stock, provenance, fees and limited supply stay keyed.
+        j.phase="frontier"
         local heap={}; local memo={}; local serial=0
         local function less(a,b)
             if math.abs(a.score-b.score)>1e-7 then return a.score<b.score end
@@ -2184,9 +2360,31 @@ function S.ChargeExternalWork(j,elapsed)
     j.externalCpuUsed=(j.externalCpuUsed or 0)+elapsed
     S.RefreshStatus(j)
 end
+-- DF_ROUTE_QUALITY_BUDGET_V15
+local function qualityBudgetDue(j)
+    local opts=j.opts or {}
+    if j.finalizing or j.finished or not j.seedDone
+        or opts.fixedSteps or opts.procurementDemands
+        or opts.specializationRecipeScore or opts.anytime==false
+        or (opts.snapshot and opts.anytime~=true) then return false end
+    if j.best and goalsComplete(j,j.best) and not j.firstFeasibleCpuMs then
+        j.firstFeasibleCpuMs=j.cpuUsed or 0
+    end
+    local extra=tonumber(opts.postFeasibleCpuMs) or 1250
+    extra=max(200,min(4000,extra))
+    return j.firstFeasibleCpuMs
+        and (j.cpuUsed or 0)-j.firstFeasibleCpuMs>=extra or false
+end
 local function finalize(j,status)
     j.status=status
-    if j.best and j.resultState==j.best and j.resultCache then
+    j.phase="finalize"
+    -- DF_REBATCH_FINALIZE_COROUTINE_FIX_V13
+    -- A cached result may still trigger final-only rebatching. Its replay/tick
+    -- can coroutine.yield(), so it MUST NOT run on the scheduler's main thread.
+    -- Reuse the cached fast path only after that optional replay has completed.
+    local rebatchPending = j.best and j.rebatchFinal and not j.rebatchFinalized
+        and (status=="complete" or status=="incomplete")
+    if j.best and j.resultState==j.best and j.resultCache and not rebatchPending then
         j.result=S.Result(j,j.best,status);j.finished=true
         return
     end
@@ -2205,14 +2403,33 @@ function S.Run(j,budget)
         S.RefreshStatus(j);return true
     end
     local start=clock();j.sliceStart=start;j.deadline=start+(budget or 2)
+    local phase=j.phase or (j.finalizing and "finalize" or not j.snap and "capture" or "initial_seed")
     local before=j.cpuUsed
+    if not j.finalizing and qualityBudgetDue(j) then
+        j.budgetLimited=true;j.searchTermination="quality_budget"
+        finalize(j,uncertainty(j.best)==0 and "complete" or "incomplete")
+        -- A cached final result can mark the job finished immediately.
+        -- Never resume the abandoned search coroutine after that point.
+        if j.finished then
+            local delta=max(0,clock()-start)
+            j.phaseCpuMs[phase]=(j.phaseCpuMs[phase] or 0)+delta
+            j.cpuUsed=max(before,j.cpuUsed)+delta;j.sliceStart=nil
+            if j.result then j.result.phaseCpuMs=E.Copy(j.phaseCpuMs) end
+            j.progressVersion=(j.progressVersion or 0)+1
+            S.RefreshStatus(j)
+            return true
+        end
+    end
     if not j.finalizing and j.cpuUsed>=j.cpuLimitMs then
         j.budgetLimited=true;j.searchTermination="cpu_limit"
         finalize(j,j.best and (uncertainty(j.best)==0 and "complete" or "incomplete") or "incomplete")
         -- Cached results need no replay. A new finalization coroutine continues
         -- below, using this call's still-unused frame budget.
         if j.finished then
-            j.cpuUsed=max(before,j.cpuUsed)+max(0,clock()-start);j.sliceStart=nil
+            local delta=max(0,clock()-start)
+            j.phaseCpuMs[phase]=(j.phaseCpuMs[phase] or 0)+delta
+            j.cpuUsed=max(before,j.cpuUsed)+delta;j.sliceStart=nil
+            if j.result then j.result.phaseCpuMs=E.Copy(j.phaseCpuMs) end
             j.progressVersion=(j.progressVersion or 0)+1;S.RefreshStatus(j);return true
         end
     end
@@ -2224,13 +2441,19 @@ function S.Run(j,budget)
         j.error=why
         if j.finalizing then j.finished=true;j.finalizing=nil
         else finalize(j,"error") end
+    elseif not j.finalizing and qualityBudgetDue(j)
+        and coroutine.status(j.co)~="dead" then
+        j.budgetLimited=true;j.searchTermination="quality_budget"
+        finalize(j,uncertainty(j.best)==0 and "complete" or "incomplete")
     elseif not j.finalizing and max(before,j.cpuUsed)+elapsed>=j.cpuLimitMs and coroutine.status(j.co)~="dead" then
         j.budgetLimited=true;j.searchTermination="cpu_limit"
         finalize(j,j.best and (uncertainty(j.best)==0 and "complete" or "incomplete") or "incomplete")
     end
-    j.cpuUsed=max(before,j.cpuUsed)+max(0,clock()-start);j.sliceStart=nil
+    local delta=max(0,clock()-start)
+    j.phaseCpuMs[phase]=(j.phaseCpuMs[phase] or 0)+delta
+    j.cpuUsed=max(before,j.cpuUsed)+delta;j.sliceStart=nil
     local done=j.finished or coroutine.status(j.co)=="dead"
-    if done or not j.progressAt or clock()-j.progressAt>=200 then
+    if done and j.result then j.result.phaseCpuMs=E.Copy(j.phaseCpuMs) end    if done or not j.progressAt or clock()-j.progressAt>=200 then
         j.progressAt=clock();j.progressVersion=(j.progressVersion or 0)+1
     end
     S.RefreshStatus(j)
