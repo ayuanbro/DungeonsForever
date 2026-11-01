@@ -1,0 +1,1053 @@
+{
+  "build": "1.60.1.70685",
+  "conflicts": [],
+  "note": "Versioned source facts, not in-game verification. Learning coverage is tracked separately.",
+  "profession": "first-aid",
+  "records": [
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 45,
+      "grey": 60,
+      "item": 1251,
+      "learn": 1,
+      "learnBasis": "SkillLineAbility.automaticSkillRank",
+      "mats": [
+        [
+          2589,
+          1
+        ]
+      ],
+      "name": "Linen Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 3275,
+      "trainer": false,
+      "yellow": 30
+    },
+    {
+      "category": "Potions",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 75,
+      "grey": 95,
+      "item": 118,
+      "learn": 1,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          3371,
+          1
+        ],
+        [
+          2678,
+          1
+        ],
+        [
+          2447,
+          1
+        ]
+      ],
+      "name": "Minor Healing Potion",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1244431,
+      "trainer": true,
+      "yellow": 55
+    },
+    {
+      "category": "Camping",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 22,
+      "grey": 25,
+      "item": 279968,
+      "learn": 20,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          1251,
+          3
+        ],
+        [
+          159,
+          1
+        ]
+      ],
+      "name": "First Aid Kit",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1230117,
+      "trainer": true,
+      "yellow": 20
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 75,
+      "grey": 100,
+      "item": 2581,
+      "learn": 40,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          2589,
+          2
+        ]
+      ],
+      "name": "Heavy Linen Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 3276,
+      "trainer": true,
+      "yellow": 50
+    },
+    {
+      "category": "Potions",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 105,
+      "grey": 125,
+      "item": 858,
+      "learn": 55,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          3371,
+          1
+        ],
+        [
+          2678,
+          2
+        ],
+        [
+          2450,
+          1
+        ]
+      ],
+      "name": "Lesser Healing Potion",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1244432,
+      "trainer": true,
+      "yellow": 85
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 115,
+      "grey": 150,
+      "item": 3530,
+      "learn": 80,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          2592,
+          1
+        ]
+      ],
+      "name": "Wool Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 3277,
+      "trainer": true,
+      "yellow": 80
+    },
+    {
+      "category": "Remedies",
+      "count": 3,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 115,
+      "grey": 150,
+      "item": 6452,
+      "learn": 80,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          1475,
+          1
+        ]
+      ],
+      "name": "Anti-Venom",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 7934,
+      "trainer": true,
+      "yellow": 80
+    },
+    {
+      "category": "Remedies",
+      "count": 3,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 125,
+      "grey": 160,
+      "item": 255716,
+      "learn": 90,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          3174,
+          1
+        ],
+        [
+          2678,
+          1
+        ],
+        [
+          2723,
+          1
+        ]
+      ],
+      "name": "Simple Poultice",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1259342,
+      "trainer": true,
+      "yellow": 90
+    },
+    {
+      "category": "Potions",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 155,
+      "grey": 175,
+      "item": 929,
+      "learn": 110,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          3372,
+          1
+        ],
+        [
+          2692,
+          1
+        ],
+        [
+          2453,
+          1
+        ]
+      ],
+      "name": "Healing Potion",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1244433,
+      "trainer": true,
+      "yellow": 135
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 150,
+      "grey": 185,
+      "item": 3531,
+      "learn": 115,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          2592,
+          2
+        ]
+      ],
+      "name": "Heavy Wool Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 3278,
+      "trainer": true,
+      "yellow": 115
+    },
+    {
+      "category": "Remedies",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 155,
+      "grey": 190,
+      "item": 255720,
+      "learn": 120,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          2592,
+          2
+        ],
+        [
+          2321,
+          2
+        ]
+      ],
+      "name": "Woolen Tourniquet",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1259347,
+      "trainer": true,
+      "yellow": 120
+    },
+    {
+      "category": "Remedies",
+      "count": 3,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 6454,
+      "green": 165,
+      "grey": 200,
+      "item": 6453,
+      "learn": 130,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          1288,
+          1
+        ]
+      ],
+      "name": "Strong Anti-Venom",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 7935,
+      "trainer": false,
+      "yellow": 130
+    },
+    {
+      "category": "Remedies",
+      "count": 3,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255724,
+      "green": 190,
+      "grey": 220,
+      "item": 255717,
+      "learn": 140,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          1468,
+          1
+        ],
+        [
+          3713,
+          1
+        ],
+        [
+          2686,
+          1
+        ]
+      ],
+      "name": "Clever Poultice",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1259343,
+      "trainer": false,
+      "yellow": 160
+    },
+    {
+      "category": "Camping",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 273105,
+      "green": 142,
+      "grey": 145,
+      "item": 279940,
+      "learn": 140,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          6452,
+          1
+        ],
+        [
+          8544,
+          2
+        ],
+        [
+          4470,
+          2
+        ]
+      ],
+      "name": "Toxin Study",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1262996,
+      "trainer": false,
+      "yellow": 140
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 180,
+      "grey": 210,
+      "item": 6450,
+      "learn": 150,
+      "learnBasis": "Wowhead.colors.orange",
+      "mats": [
+        [
+          4306,
+          1
+        ]
+      ],
+      "name": "Silk Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 7928,
+      "trainer": true,
+      "yellow": 150
+    },
+    {
+      "category": "Potions",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255723,
+      "green": 195,
+      "grey": 215,
+      "item": 1710,
+      "learn": 155,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          3372,
+          1
+        ],
+        [
+          2692,
+          3
+        ],
+        [
+          3357,
+          1
+        ]
+      ],
+      "name": "Greater Healing Potion",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1244434,
+      "trainer": false,
+      "yellow": 175
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 16112,
+      "green": 210,
+      "grey": 240,
+      "item": 6451,
+      "learn": 180,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          4306,
+          2
+        ]
+      ],
+      "name": "Heavy Silk Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 7929,
+      "trainer": false,
+      "yellow": 180
+    },
+    {
+      "category": "Remedies",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255726,
+      "green": 250,
+      "grey": 280,
+      "item": 255721,
+      "learn": 200,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          4304,
+          2
+        ],
+        [
+          4291,
+          2
+        ]
+      ],
+      "name": "Leather Tourniquet",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1259348,
+      "trainer": false,
+      "yellow": 220
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 16113,
+      "green": 240,
+      "grey": 270,
+      "item": 8544,
+      "learn": 210,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          4338,
+          1
+        ]
+      ],
+      "name": "Mageweave Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 10840,
+      "trainer": false,
+      "yellow": 210
+    },
+    {
+      "category": "Remedies",
+      "count": 3,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255727,
+      "green": 255,
+      "grey": 285,
+      "item": 255718,
+      "learn": 210,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          7070,
+          1
+        ],
+        [
+          2692,
+          1
+        ],
+        [
+          2596,
+          1
+        ]
+      ],
+      "name": "Superior Poultice",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1259344,
+      "trainer": false,
+      "yellow": 225
+    },
+    {
+      "category": "Potions",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255725,
+      "green": 250,
+      "grey": 270,
+      "item": 3928,
+      "learn": 215,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          8925,
+          1
+        ],
+        [
+          3713,
+          1
+        ],
+        [
+          8838,
+          1
+        ]
+      ],
+      "name": "Superior Healing Potion",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1244435,
+      "trainer": false,
+      "yellow": 230
+    },
+    {
+      "category": "Remedies",
+      "count": 3,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255728,
+      "green": 260,
+      "grey": 290,
+      "item": 255715,
+      "learn": 215,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          255645,
+          1
+        ]
+      ],
+      "name": "Potent Anti-Venom",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1259341,
+      "trainer": false,
+      "yellow": 230
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 270,
+      "grey": 300,
+      "item": 8545,
+      "learn": 240,
+      "learnBasis": "SkillLineAbility.yellowReference",
+      "mats": [
+        [
+          4338,
+          2
+        ]
+      ],
+      "name": "Heavy Mageweave Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 10841,
+      "trainer": false,
+      "yellow": 240
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 290,
+      "grey": 320,
+      "item": 14529,
+      "learn": 260,
+      "learnBasis": "SkillLineAbility.yellowReference",
+      "mats": [
+        [
+          14047,
+          1
+        ]
+      ],
+      "name": "Runecloth Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 18629,
+      "trainer": false,
+      "yellow": 260
+    },
+    {
+      "category": "Remedies",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255730,
+      "green": 310,
+      "grey": 340,
+      "item": 255722,
+      "learn": 265,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          8170,
+          2
+        ],
+        [
+          14047,
+          2
+        ],
+        [
+          8343,
+          2
+        ]
+      ],
+      "name": "Surgical Tourniquet",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1259349,
+      "trainer": false,
+      "yellow": 280
+    },
+    {
+      "category": "Potions",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255729,
+      "green": 310,
+      "grey": 330,
+      "item": 13446,
+      "learn": 275,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          8925,
+          1
+        ],
+        [
+          3713,
+          3
+        ],
+        [
+          13464,
+          1
+        ]
+      ],
+      "name": "Major Healing Potion",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1244436,
+      "trainer": false,
+      "yellow": 290
+    },
+    {
+      "category": "Remedies",
+      "count": 3,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 255731,
+      "green": 325,
+      "grey": 355,
+      "item": 255719,
+      "learn": 280,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          7080,
+          1
+        ],
+        [
+          2692,
+          1
+        ],
+        [
+          2594,
+          1
+        ]
+      ],
+      "name": "Powerful Poultice",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1259345,
+      "trainer": false,
+      "yellow": 295
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "green": 320,
+      "grey": 350,
+      "item": 14530,
+      "learn": 290,
+      "learnBasis": "SkillLineAbility.yellowReference",
+      "mats": [
+        [
+          14047,
+          2
+        ]
+      ],
+      "name": "Heavy Runecloth Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 18630,
+      "trainer": false,
+      "yellow": 290
+    },
+    {
+      "category": "Remedies",
+      "count": 3,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 19442,
+      "green": 330,
+      "grey": 360,
+      "item": 19440,
+      "learn": 300,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          19441,
+          1
+        ]
+      ],
+      "name": "Powerful Anti-Venom",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 23787,
+      "trainer": false,
+      "yellow": 300
+    },
+    {
+      "category": "Bandages",
+      "count": 4,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 23689,
+      "green": 330,
+      "grey": 360,
+      "item": 23684,
+      "learn": 300,
+      "learnBasis": "SkillLineAbility.yellowReference",
+      "mats": [
+        [
+          23567,
+          1
+        ],
+        [
+          14047,
+          10
+        ]
+      ],
+      "name": "Crystal Infused Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 30021,
+      "trainer": false,
+      "yellow": 300
+    },
+    {
+      "category": "Bandages",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 232434,
+      "green": 327,
+      "grey": 340,
+      "item": 232433,
+      "learn": 300,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          14530,
+          2
+        ]
+      ],
+      "name": "Dense Runecloth Bandage",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 470349,
+      "trainer": false,
+      "yellow": 315
+    },
+    {
+      "category": "Camping",
+      "count": 1,
+      "craftingBasis": "SpellReagents; SpellEffect.CreateItem",
+      "formula": 273118,
+      "green": 300,
+      "grey": 300,
+      "item": 279951,
+      "learn": 300,
+      "learnBasis": "ItemSparse.RequiredSkillRank",
+      "mats": [
+        [
+          4470,
+          2
+        ],
+        [
+          6453,
+          2
+        ],
+        [
+          14530,
+          5
+        ]
+      ],
+      "name": "Plague Doctor's Laboratory",
+      "skillCurveBasis": "SkillLineAbility.low/high; green=floor((low+high)/2)",
+      "spell": 1263001,
+      "trainer": false,
+      "yellow": 300
+    }
+  ],
+  "sources": {
+    "db2:ItemEffect": {
+      "fetchedAt": "2026-10-28T23:10:07.755864+00:00",
+      "path": "responses/db2-ItemEffect.csv",
+      "sha256": "3a6ef3faec7cff32057a7d8113aa1d7c0e5d521d651d03e33aa3e40df9854d1c",
+      "url": "https://wago.tools/db2/ItemEffect/csv?build=1.60.1.70685&locale=enUS"
+    },
+    "db2:ItemSparse": {
+      "fetchedAt": "2026-10-28T23:10:00.240267+00:00",
+      "path": "responses/db2-ItemSparse.csv",
+      "sha256": "0080602eee20264f9768f86700938564bc1c96107fa73b0cb8d95f973688aca7",
+      "url": "https://wago.tools/db2/ItemSparse/csv?build=1.60.1.70685&locale=enUS"
+    },
+    "db2:ItemXItemEffect": {
+      "fetchedAt": "2026-10-28T23:10:05.841876+00:00",
+      "path": "responses/db2-ItemXItemEffect.csv",
+      "sha256": "293a13df4f7952ff7c14d5fd3317b6de13dc32865e86b892e646a1aa842afadb",
+      "url": "https://wago.tools/db2/ItemXItemEffect/csv?build=1.60.1.70685&locale=enUS"
+    },
+    "db2:SkillLineAbility": {
+      "fetchedAt": "2026-10-28T23:09:44.299110+00:00",
+      "path": "responses/db2-SkillLineAbility.csv",
+      "sha256": "ac2db6c3bb92ee8ed66f0aec19b1b1d0045dc92e456f07ea4dd4733e407eca53",
+      "url": "https://wago.tools/db2/SkillLineAbility/csv?build=1.60.1.70685&locale=enUS"
+    },
+    "db2:SpellEffect": {
+      "fetchedAt": "2026-10-28T23:09:47.218342+00:00",
+      "path": "responses/db2-SpellEffect.csv",
+      "sha256": "5df75189351ab194c114fa391ef4a832ab357753e8c752a4a69c78cfab51bfcf",
+      "url": "https://wago.tools/db2/SpellEffect/csv?build=1.60.1.70685&locale=enUS"
+    },
+    "db2:SpellLearnSpell": {
+      "fetchedAt": "2026-10-28T23:09:50.824523+00:00",
+      "path": "responses/db2-SpellLearnSpell.csv",
+      "sha256": "b6d101c650376c26eb39ced0e62368cf3c9bb602934b6235b58961e1e28d40d7",
+      "url": "https://wago.tools/db2/SpellLearnSpell/csv?build=1.60.1.70685&locale=enUS"
+    },
+    "db2:SpellName": {
+      "fetchedAt": "2026-10-28T23:09:57.752595+00:00",
+      "path": "responses/db2-SpellName.csv",
+      "sha256": "9ee5fa04d421e9e3925d21036be2c616f11d4c8f62e033fec3d641cd0c52998d",
+      "url": "https://wago.tools/db2/SpellName/csv?build=1.60.1.70685&locale=enUS"
+    },
+    "db2:SpellReagents": {
+      "fetchedAt": "2026-10-28T23:10:19.820925+00:00",
+      "path": "responses/db2-SpellReagents.csv",
+      "sha256": "47a239be7aca0043dea181311d86d0956edcea46c52d7491ee04140372b3846d",
+      "url": "https://wago.tools/db2/SpellReagents/csv?build=1.60.1.70685&locale=enUS"
+    },
+    "web:spell:10840": {
+      "fetchedAt": "2026-10-30T02:13:15.169240+00:00",
+      "path": "responses/web-spell-10840.04ddb9be1fb3e93ca6c08d1cc249673c2f464adb4a12c3cec02abfafe50728ee.html",
+      "sha256": "04ddb9be1fb3e93ca6c08d1cc249673c2f464adb4a12c3cec02abfafe50728ee",
+      "url": "https://www.wowhead.com/forever/spell=10840"
+    },
+    "web:spell:10841": {
+      "fetchedAt": "2026-10-30T02:13:15.172246+00:00",
+      "path": "responses/web-spell-10841.45295f6c6a77192f42694ac6801c44d6568d977796ebaac66ff20b2cb4d2e25b.html",
+      "sha256": "45295f6c6a77192f42694ac6801c44d6568d977796ebaac66ff20b2cb4d2e25b",
+      "url": "https://www.wowhead.com/forever/spell=10841"
+    },
+    "web:spell:1230117": {
+      "fetchedAt": "2026-10-30T02:13:15.176245+00:00",
+      "path": "responses/web-spell-1230117.7e3220ae8ac41928311d293a9be1c7841c895458f5b368d4d0e8523a34dd0430.html",
+      "sha256": "7e3220ae8ac41928311d293a9be1c7841c895458f5b368d4d0e8523a34dd0430",
+      "url": "https://www.wowhead.com/forever/spell=1230117"
+    },
+    "web:spell:1244431": {
+      "fetchedAt": "2026-10-30T02:13:15.179758+00:00",
+      "path": "responses/web-spell-1244431.308bc0796b9d8d77e471b9a95a94b14ff550a11891c63d234043a70b70d86abd.html",
+      "sha256": "308bc0796b9d8d77e471b9a95a94b14ff550a11891c63d234043a70b70d86abd",
+      "url": "https://www.wowhead.com/forever/spell=1244431"
+    },
+    "web:spell:1244432": {
+      "fetchedAt": "2026-10-30T02:13:15.183764+00:00",
+      "path": "responses/web-spell-1244432.46d14cfb414330fcf842f9ffd78d32214d1f39b97fb7a98d6c56025abc3699cb.html",
+      "sha256": "46d14cfb414330fcf842f9ffd78d32214d1f39b97fb7a98d6c56025abc3699cb",
+      "url": "https://www.wowhead.com/forever/spell=1244432"
+    },
+    "web:spell:1244433": {
+      "fetchedAt": "2026-10-30T02:13:15.186763+00:00",
+      "path": "responses/web-spell-1244433.49b63120cc0d6824ea1a229f4f366eec66c0fe1af531e4a3cfc4e410c8345dac.html",
+      "sha256": "49b63120cc0d6824ea1a229f4f366eec66c0fe1af531e4a3cfc4e410c8345dac",
+      "url": "https://www.wowhead.com/forever/spell=1244433"
+    },
+    "web:spell:1244434": {
+      "fetchedAt": "2026-10-30T02:13:15.190280+00:00",
+      "path": "responses/web-spell-1244434.6eb39047186c71cb9e62675c50ed5a73be7f0e9b3b12b17d977e5d20cddadea3.html",
+      "sha256": "6eb39047186c71cb9e62675c50ed5a73be7f0e9b3b12b17d977e5d20cddadea3",
+      "url": "https://www.wowhead.com/forever/spell=1244434"
+    },
+    "web:spell:1244435": {
+      "fetchedAt": "2026-10-30T02:13:15.194279+00:00",
+      "path": "responses/web-spell-1244435.472eccaac2f49e7124ad0188cf4fd4676502f70fb1e20c992a507c44a96154f5.html",
+      "sha256": "472eccaac2f49e7124ad0188cf4fd4676502f70fb1e20c992a507c44a96154f5",
+      "url": "https://www.wowhead.com/forever/spell=1244435"
+    },
+    "web:spell:1244436": {
+      "fetchedAt": "2026-10-30T02:13:15.197785+00:00",
+      "path": "responses/web-spell-1244436.aa383c62a0523b88c6e6a5219936ca86155cdf98761c6d508f6ecb3420838f61.html",
+      "sha256": "aa383c62a0523b88c6e6a5219936ca86155cdf98761c6d508f6ecb3420838f61",
+      "url": "https://www.wowhead.com/forever/spell=1244436"
+    },
+    "web:spell:1259341": {
+      "fetchedAt": "2026-10-30T02:13:15.200297+00:00",
+      "path": "responses/web-spell-1259341.8fe0a09ec1b7bad58c0c26a4ecf8ab2a1999d2e7f807d260ab5e35574fbdcd6a.html",
+      "sha256": "8fe0a09ec1b7bad58c0c26a4ecf8ab2a1999d2e7f807d260ab5e35574fbdcd6a",
+      "url": "https://www.wowhead.com/forever/spell=1259341"
+    },
+    "web:spell:1259342": {
+      "fetchedAt": "2026-10-30T02:13:15.204303+00:00",
+      "path": "responses/web-spell-1259342.38a611f255e88f046adbfca959bb3350b78028532c6c94fd850a1c3965912e83.html",
+      "sha256": "38a611f255e88f046adbfca959bb3350b78028532c6c94fd850a1c3965912e83",
+      "url": "https://www.wowhead.com/forever/spell=1259342"
+    },
+    "web:spell:1259343": {
+      "fetchedAt": "2026-10-30T02:13:15.207807+00:00",
+      "path": "responses/web-spell-1259343.69814db39b11f1c3d07cb1a1f709aeef725bbbb1ebbc4d1e3c90038ec73282ee.html",
+      "sha256": "69814db39b11f1c3d07cb1a1f709aeef725bbbb1ebbc4d1e3c90038ec73282ee",
+      "url": "https://www.wowhead.com/forever/spell=1259343"
+    },
+    "web:spell:1259344": {
+      "fetchedAt": "2026-10-30T02:13:15.210817+00:00",
+      "path": "responses/web-spell-1259344.61fd1debc6313c989259c7c013b23b01e5d398e4b934b0d7da28e5e26d67091f.html",
+      "sha256": "61fd1debc6313c989259c7c013b23b01e5d398e4b934b0d7da28e5e26d67091f",
+      "url": "https://www.wowhead.com/forever/spell=1259344"
+    },
+    "web:spell:1259345": {
+      "fetchedAt": "2026-10-30T02:13:15.213818+00:00",
+      "path": "responses/web-spell-1259345.ed59ce6bf97c7f74426c2e1914efea462194d4d430d3c4c7159cb2e2aa3e6009.html",
+      "sha256": "ed59ce6bf97c7f74426c2e1914efea462194d4d430d3c4c7159cb2e2aa3e6009",
+      "url": "https://www.wowhead.com/forever/spell=1259345"
+    },
+    "web:spell:1259347": {
+      "fetchedAt": "2026-10-30T02:13:15.218325+00:00",
+      "path": "responses/web-spell-1259347.a5551a5c2fbd8855c767e6ecacc19e3b46deb22b214056f1d8d0363c00c92c92.html",
+      "sha256": "a5551a5c2fbd8855c767e6ecacc19e3b46deb22b214056f1d8d0363c00c92c92",
+      "url": "https://www.wowhead.com/forever/spell=1259347"
+    },
+    "web:spell:1259348": {
+      "fetchedAt": "2026-10-30T02:13:15.221336+00:00",
+      "path": "responses/web-spell-1259348.8d6f5ffd9a62e337d8c6c44dedb824e185514c083211fa0dcbfaca407adf88a0.html",
+      "sha256": "8d6f5ffd9a62e337d8c6c44dedb824e185514c083211fa0dcbfaca407adf88a0",
+      "url": "https://www.wowhead.com/forever/spell=1259348"
+    },
+    "web:spell:1259349": {
+      "fetchedAt": "2026-10-30T02:13:15.225336+00:00",
+      "path": "responses/web-spell-1259349.0eaf5120f8d6aebd5346e9be8c026119cc9d942987b5616f348e6a2c8f9692f3.html",
+      "sha256": "0eaf5120f8d6aebd5346e9be8c026119cc9d942987b5616f348e6a2c8f9692f3",
+      "url": "https://www.wowhead.com/forever/spell=1259349"
+    },
+    "web:spell:1262996": {
+      "fetchedAt": "2026-10-30T02:13:15.227841+00:00",
+      "path": "responses/web-spell-1262996.f56130b2d62adf9c8d9f25babbef384d062ea4a72bc19750a67789be1af075ca.html",
+      "sha256": "f56130b2d62adf9c8d9f25babbef384d062ea4a72bc19750a67789be1af075ca",
+      "url": "https://www.wowhead.com/forever/spell=1262996"
+    },
+    "web:spell:1263001": {
+      "fetchedAt": "2026-10-30T02:13:15.232851+00:00",
+      "path": "responses/web-spell-1263001.f93a74745b6cd09bc0d2168174a73062d312cf0b0fc9e314213b670b0cb12ec6.html",
+      "sha256": "f93a74745b6cd09bc0d2168174a73062d312cf0b0fc9e314213b670b0cb12ec6",
+      "url": "https://www.wowhead.com/forever/spell=1263001"
+    },
+    "web:spell:18629": {
+      "fetchedAt": "2026-10-30T02:13:15.237851+00:00",
+      "path": "responses/web-spell-18629.1ef6569db2fa3b18aeb1368128df72933dc00b6db40be395ab201ad2d8c98244.html",
+      "sha256": "1ef6569db2fa3b18aeb1368128df72933dc00b6db40be395ab201ad2d8c98244",
+      "url": "https://www.wowhead.com/forever/spell=18629"
+    },
+    "web:spell:18630": {
+      "fetchedAt": "2026-10-30T02:13:15.242370+00:00",
+      "path": "responses/web-spell-18630.ecb7f8755115dbfc44381077c3ad3c2ca1cf2eadb9476a6743e8446a1631561e.html",
+      "sha256": "ecb7f8755115dbfc44381077c3ad3c2ca1cf2eadb9476a6743e8446a1631561e",
+      "url": "https://www.wowhead.com/forever/spell=18630"
+    },
+    "web:spell:23787": {
+      "fetchedAt": "2026-10-30T02:13:15.246371+00:00",
+      "path": "responses/web-spell-23787.052cf5f3502f944b5e9887abf60351aace80e11fbc7542716bad5d28ceb3596b.html",
+      "sha256": "052cf5f3502f944b5e9887abf60351aace80e11fbc7542716bad5d28ceb3596b",
+      "url": "https://www.wowhead.com/forever/spell=23787"
+    },
+    "web:spell:30021": {
+      "fetchedAt": "2026-10-30T02:13:15.250387+00:00",
+      "path": "responses/web-spell-30021.8fc0246d80eed41a129ffc91e9ed76657314f5296189b558390a2afde2ac66e8.html",
+      "sha256": "8fc0246d80eed41a129ffc91e9ed76657314f5296189b558390a2afde2ac66e8",
+      "url": "https://www.wowhead.com/forever/spell=30021"
+    },
+    "web:spell:3275": {
+      "fetchedAt": "2026-10-30T02:13:15.255394+00:00",
+      "path": "responses/web-spell-3275.38384d592db115b9ce394256acf54e687f663927629eb95a531388a429bf5b9f.html",
+      "sha256": "38384d592db115b9ce394256acf54e687f663927629eb95a531388a429bf5b9f",
+      "url": "https://www.wowhead.com/forever/spell=3275"
+    },
+    "web:spell:3276": {
+      "fetchedAt": "2026-10-30T02:13:15.259913+00:00",
+      "path": "responses/web-spell-3276.63a3ea6bf635aff7be59798e03ff6dffc76affb6283fdfea07cbab4cdf79042b.html",
+      "sha256": "63a3ea6bf635aff7be59798e03ff6dffc76affb6283fdfea07cbab4cdf79042b",
+      "url": "https://www.wowhead.com/forever/spell=3276"
+    },
+    "web:spell:3277": {
+      "fetchedAt": "2026-10-30T02:13:15.263911+00:00",
+      "path": "responses/web-spell-3277.1896248e22551a61ff9bd6849c5ac361a3e98826695850890697df6a99760204.html",
+      "sha256": "1896248e22551a61ff9bd6849c5ac361a3e98826695850890697df6a99760204",
+      "url": "https://www.wowhead.com/forever/spell=3277"
+    },
+    "web:spell:3278": {
+      "fetchedAt": "2026-10-30T02:13:15.268414+00:00",
+      "path": "responses/web-spell-3278.b0d51c7bef830f404135ed0be8a5160878f6bcb8830e8b710cd3e395d2400942.html",
+      "sha256": "b0d51c7bef830f404135ed0be8a5160878f6bcb8830e8b710cd3e395d2400942",
+      "url": "https://www.wowhead.com/forever/spell=3278"
+    },
+    "web:spell:7928": {
+      "fetchedAt": "2026-10-30T02:13:15.275425+00:00",
+      "path": "responses/web-spell-7928.0d4f7a95346053152480bac279f98aa5ff7a14c6c933db1bfe2b996d4db4cf58.html",
+      "sha256": "0d4f7a95346053152480bac279f98aa5ff7a14c6c933db1bfe2b996d4db4cf58",
+      "url": "https://www.wowhead.com/forever/spell=7928"
+    },
+    "web:spell:7929": {
+      "fetchedAt": "2026-10-30T02:13:15.277932+00:00",
+      "path": "responses/web-spell-7929.065b30656c19ce41242dffe9e112240c8a17c996e45ba169cb8fd93846df1b20.html",
+      "sha256": "065b30656c19ce41242dffe9e112240c8a17c996e45ba169cb8fd93846df1b20",
+      "url": "https://www.wowhead.com/forever/spell=7929"
+    },
+    "web:spell:7934": {
+      "fetchedAt": "2026-10-30T02:13:15.280942+00:00",
+      "path": "responses/web-spell-7934.946d5c73c9f1cd3c64894b2ed03b457d38290b2b52d120104e603fe4f3bee349.html",
+      "sha256": "946d5c73c9f1cd3c64894b2ed03b457d38290b2b52d120104e603fe4f3bee349",
+      "url": "https://www.wowhead.com/forever/spell=7934"
+    },
+    "web:spell:7935": {
+      "fetchedAt": "2026-10-30T02:13:15.283943+00:00",
+      "path": "responses/web-spell-7935.75c79ad883b54cb70862b8ca6fbf179bca92e877c9948e42d4458b1a2a26bdec.html",
+      "sha256": "75c79ad883b54cb70862b8ca6fbf179bca92e877c9948e42d4458b1a2a26bdec",
+      "url": "https://www.wowhead.com/forever/spell=7935"
+    }
+  }
+}

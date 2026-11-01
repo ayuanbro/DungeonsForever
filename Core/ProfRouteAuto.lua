@@ -9,9 +9,6 @@ local CALLER = "DungeonsForever"
 local CAP = 300
 local MAX_STALE = 2
 local MAX_PER_RECIPE = 3
-local PROFIT_CAP = 20
-local PLAN_STRUCT_REV = 3
-local RESID_MASS = 0.7
 local CACHE_TTL = 600
 local CACHE_SLOTS = 4
 local G_YELLOW, G_GREEN = 0.5, 0.05
@@ -46,33 +43,6 @@ local priceCache = {}
 local NEG_TTL = 60
 local ahReason, ahAge = {}, {}
 
-local SCAN_KEYS = { "TimeOfLastGetAllScan", "TimeOfLastReplicateScan", "TimeOfLastBrowseScan" }
-
-local function ScanAge()
-    local A = Auctionator
-    local st = (type(A) == "table") and A.SavedState
-    if type(st) ~= "table" then return nil end
-    local best
-    for _, k in ipairs(SCAN_KEYS) do
-        local v = tonumber(st[k])
-        if v and v > 0 and (not best or v > best) then best = v end
-    end
-    if not best then return nil end
-    local now = (type(time) == "function") and time() or 0
-    local age = now - best
-    if age < 0 then return nil end
-    return age
-end
-
-local function ReasonRank(code)
-    if code == "stale" then return 1 end
-    if code == "noquote" then return 2 end
-    if code == "noscan" then return 3 end
-    if code == "novendor" then return 4 end
-    if code == "noapi" then return 5 end
-    return 6
-end
-
 local function AHPrice(id)
     local c = priceCache[id]
     if c ~= nil then
@@ -81,9 +51,8 @@ local function AHPrice(id)
         local t0 = priceCache.__t and priceCache.__t[id] or nil
         if t0 and (now - t0) < NEG_TTL then return nil end
     end
-    local hasAPI = RA.Available()
     local p
-    if hasAPI then
+    if RA.Available() then
         p = CallAPI(Auctionator.API.v1.GetAuctionPriceByItemID, id)
         if type(p) ~= "number" or p <= 0 then p = nil end
         if p and type(Auctionator.API.v1.GetAuctionAgeByItemID) == "function" then
@@ -102,11 +71,7 @@ local function AHPrice(id)
         ahReason[id] = "noapi"
     end
     if not p and ahReason[id] ~= "stale" and ahReason[id] ~= "noapi" then
-        if ScanAge() == nil then
-            ahReason[id] = "noscan"
-        else
-            ahReason[id] = "noquote"
-        end
+        ahReason[id] = "norec"
     end
     priceCache[id] = p or false
     if not p then
@@ -118,6 +83,7 @@ local function AHPrice(id)
 end
 
 local vendorCache = {}
+
 local function VendorPrice(id)
     local hit = vendorCache[id]
     if hit ~= nil then return hit or nil end
@@ -139,9 +105,8 @@ end
 
 local function MatPrice(id, soldSet)
     local v = VendorPrice(id)
-    if soldSet[id] then return v end
-    local a = AHPrice(id)
-    if a and v and v < a then return v end
+    local a = RA.AHPriceOf and RA.AHPriceOf(id) or AHPrice(id)
+    if a and v and v <= a then return v end
     return a or v
 end
 
@@ -151,9 +116,111 @@ local function MatReason(id, soldSet)
     return ahReason[id] or "norec", ahAge[id]
 end
 
+-- Direct material procurement shared by fixed guides and self-fished cooking.
+-- NPC stock is bought in whole packs; observed auction stock is a finite budget.
+function RA.MaterialPurchases(id,need,opts)
+    opts=opts or {};need=math.max(0,math.ceil(tonumber(need) or 0))
+    if need==0 then return {},0,true end
+    local snap=opts.snapshot
+    local economy=ns.ProfEconomy
+    local offers,auction,supply
+    if snap then
+        offers=snap.offers and snap.offers[id] or {}
+        auction=snap.prices and snap.prices[id]
+        supply=economy and economy.AuctionSupplyOf and economy.AuctionSupplyOf(opts,id)
+    else
+        offers=ns.VendorPriceDB and ns.VendorPriceDB.GetOffers and ns.VendorPriceDB.GetOffers(id) or {}
+        auction=RA.AHPriceOf(id)
+        supply=economy and economy.AuctionSupplyOf and economy.AuctionSupplyOf(opts,id)
+    end
+    if type(auction)~="number" or auction<=0 or auction==math.huge
+        or (snap and snap.nonAuctionable or opts.nonAuctionable or {})[id]
+        or not snap and economy and economy.NonAuctionableItem and economy.NonAuctionableItem(id) then auction=nil end
+    local available=opts.auctionRemaining and opts.auctionRemaining[id]
+    if available==nil and supply then available=supply.quantity end
+    return economy.MaterialPurchases(id,need,{offers=offers,auction=auction,supply=supply,
+        available=available,faction=snap and snap.faction})
+end
+
+function RA.PreferSharedFormula(entry,materialNeed,opts)
+    opts=opts or {}
+    local economy=ns.ProfEconomy
+    local id=entry and entry.id
+    if not id or not entry.recipe or not (economy and economy.FormulaFor) or not materialNeed or materialNeed<=0 then return entry end
+    local context=opts.snapshot
+    if not context then
+        context={};for key,value in pairs(opts) do context[key]=value end
+        context.profession=context.profession or entry.profession or entry.recipe.profession
+    end
+    local supply=economy.AuctionSupplyOf and economy.AuctionSupplyOf(opts.snapshot and opts or context,id)
+    local available=opts.auctionRemaining and opts.auctionRemaining[id]
+    if available==nil and supply then available=supply.quantity end
+    local candidates={}
+    local npc=economy.FormulaFor(entry.recipe,context,0)
+    local auction=economy.FormulaFor(entry.recipe,context,available,"ah")
+    if npc then candidates[#candidates+1]=npc end
+    if auction then candidates[#candidates+1]=auction end
+    local best,bestRank,bestCost
+    for _,candidate in ipairs(candidates) do
+        if candidate and candidate.usable and not candidate.known
+            and (candidate.source=="vendor" or candidate.source=="ah") then
+            local remaining=available
+            if candidate.source=="ah" and remaining~=nil then remaining=math.max(0,remaining-(candidate.count or 1)) end
+            local purchaseOpts={};for key,value in pairs(opts) do purchaseOpts[key]=value end
+            purchaseOpts.auctionRemaining={[id]=remaining}
+            local materials,cost,complete=RA.MaterialPurchases(id,materialNeed,purchaseOpts)
+            local executable=true
+            for _,material in ipairs(materials) do if material.unavailable then executable=false end end
+            local rank=not executable and 2 or complete and candidate.costComplete~=false and 0 or 1
+            local combined=(candidate.cost or 0)+cost
+            if bestRank==nil or rank<bestRank or rank==bestRank and combined<bestCost-1e-9 then
+                best,bestRank,bestCost=candidate,rank,combined
+            end
+        end
+    end
+    if best then
+        best.recipes=entry.recipes or best.recipes
+        return best
+    end
+    return entry
+end
+
+function RA.StampFormulaCosts(result)
+    if type(result)~="table" then return result end
+    for _,entry in ipairs(result.formulas or {}) do
+        if entry.unpriced or entry.costComplete==false then
+            result.costComplete=false;result.completeCost=false;result.formulaComplete=false
+            result.optimal=false;result.inputModelOptimal=false
+            result.diagnostics=result.diagnostics or {}
+            result.diagnostics[#result.diagnostics+1]={code="formulaPriceUnknown",item=entry.id,spell=entry.spell}
+        end
+    end
+    return result
+end
+
+function RA.StampMaterialPurchases(result)
+    for _,entry in ipairs(result.mats or {}) do
+        if entry.unavailable or entry.costComplete==false then
+            result.costComplete=false;result.completeCost=false
+            result.diagnostics=result.diagnostics or {}
+            local code=entry.procurementReason or (entry.unavailable and "materialUnavailable" or "vendorEstimate")
+            result.diagnostics[#result.diagnostics+1]={code=code,item=entry.id or entry[1],
+                required=entry.supplyRequired or entry.count or entry[2],available=entry.availableCount}
+            if entry.unavailable then result.feasible=false;result.status="recalculate_required" end
+        end
+    end
+    return result
+end
+
 function RA.MaxStale()
     return MAX_STALE
 end
+
+
+function RA.MaxStaleSeconds()
+    return MAX_STALE * 86400
+end
+
 
 local sellCache = {}
 local function NPCSellPrice(id)
@@ -201,6 +268,11 @@ end
 
 function RA.AHPriceOf(itemID)
     if not itemID then return nil end
+    local bridge=ns.AuctionBridge
+    local supply=bridge and bridge.GetAuctionSupply and bridge.GetAuctionSupply(itemID)
+    if supply and (supply.quantity or 0)>0 and type(supply.market)=="number" and supply.market>0 then
+        return supply.market
+    end
     return AHPrice(itemID)
 end
 
@@ -255,7 +327,19 @@ local function RequestProduct(id)
 end
 
 local function SnapshotSec()
-    return ScanAge()
+    local A = Auctionator
+    local st = (type(A) == "table") and A.SavedState
+    if type(st) ~= "table" then return nil end
+    local best
+    for _, k in ipairs({ "TimeOfLastGetAllScan", "TimeOfLastReplicateScan", "TimeOfLastBrowseScan" }) do
+        local v = tonumber(st[k])
+        if v and v > 0 and (not best or v > best) then best = v end
+    end
+    if not best then return nil end
+    local now = (type(time) == "function") and time() or 0
+    local age = now - best
+    if age < 0 then return nil end
+    return age
 end
 
 function RA.HasPriceData()
@@ -343,9 +427,84 @@ local function RouteTick()
     end
 end
 
+-- Keep the dev tuple schema while sharing client corrections with the solver.
+local function ResolvedRow(row, slug, spell)
+    local E=ns.ProfEconomy
+    if not (E and E.ResolveRecipe) then return row end
+    local seed
+    if row.mats or row.learn then
+        seed={};for key,value in pairs(row) do seed[key]=value end
+        seed.spell=spell or seed.spell;seed.item=seed.item or seed.makes
+    else
+        seed={spell=row[1],item=row[2],count=row[3],learn=row[7],yellow=row[8],green=row[9],grey=row[10],
+            mats=row[12],formula=type(row[13])=="table" and row[13][1] or nil,source=row[14],category=row[4]}
+    end
+    local resolved=E.Normalize and E.Normalize(seed,slug) or E.ResolveRecipe(seed,slug)
+    if not resolved then return row end
+    if E.AttachLearningInfo then E.AttachLearningInfo(resolved,LearnKnown(resolved.spell)) end
+    if row.mats or row.learn then resolved.makes=resolved.item;return resolved end
+    local out={};for key,value in pairs(row) do out[key]=value end
+    out[2],out[3],out[7],out[8],out[9],out[10],out[12]=resolved.item,resolved.count,resolved.learn,resolved.yellow,resolved.green,resolved.grey,resolved.mats
+    out.clientUnavailable,out.clientPending=resolved.clientUnavailable,resolved.clientPending
+    out.cooldown,out.cooldownUnknown=resolved.cooldown,resolved.cooldownUnknown
+    out.requiredDataUnknown=resolved.requiredDataUnknown
+    out.outputMin,out.outputMax,out.variableOutput=resolved.outputMin,resolved.outputMax,resolved.variableOutput
+    out.learningRecipe=resolved
+    out.formula,out.formulaID=resolved.formula,resolved.formulaID
+    return out
+end
+
+-- Keep only the involved IDs and explanation, never a copy of the source index.
+function RA.LearningDiagnostic(code, recipe, detail)
+    detail=type(detail)=="table" and detail or {}
+    local route=detail.route or {}
+    local reasons={}
+    for _,reason in ipairs(detail.missingReasons or {}) do reasons[#reasons+1]=reason end
+    local items={}
+    for _,id in ipairs(detail.missingItemIDs or {}) do items[#items+1]=id end
+    return {code=code or "learningDataMissing",recipe=recipe and recipe.key,
+        spell=recipe and (recipe.spell or recipe.spellID or recipe[1]),
+        profession=recipe and recipe.profession,
+        item=detail.teachingItemID or route.teachingItemID or route.itemID
+            or recipe and (recipe.formula or recipe.formulaID),
+        routeId=detail.routeId or route.id,coverage=detail.coverage,
+        missingReasons=reasons,missingItemIDs=items,learningStatus=detail.status}
+end
+
+local function sourceGap(code,detail)
+    return code=="learningDataMissing" or code=="learningRequirementsUnknown"
+        or detail and type(detail.missingReasons)=="table" and #detail.missingReasons>0
+end
+
+local function FormulaQuote(rec, slug, opts)
+    local E=ns.ProfEconomy
+    if not (E and E.FormulaFor and E.Normalize) then return nil end
+    local recipe=rec.learningRecipe or E.Normalize(rec,slug)
+    if not recipe then return nil end
+    if E.AttachLearningInfo and not (opts and opts.snapshot) then E.AttachLearningInfo(recipe,LearnKnown(recipe.spell)) end
+    local context={profession=slug}
+    for key,value in pairs(opts or {}) do context[key]=value end
+    local remaining=context.auctionRemaining and context.auctionRemaining[recipe.formula or recipe.formulaID]
+    return E.FormulaFor(recipe,context,remaining)
+end
+
 local function BuildCandidates(slug, opts)
-    local resid = (opts and opts.residualMass) and RESID_MASS or 1
     local specBlocked = 0
+    local learningGaps,gapSeen={},{}
+    local function checkLearning(rec,spell)
+        local economy=ns.ProfEconomy
+        if not (economy and economy.RouteRecipeEligibility) then return true end
+        local recipe=rec.learningRecipe or (rec.spell and rec)
+            or economy.Normalize and economy.Normalize(rec,slug)
+            or economy.FindRecipe and economy.FindRecipe(slug,spell)
+        if not recipe then return true end
+        local ok,reason,detail=economy.RouteRecipeEligibility(recipe,opts.snapshot)
+        if not ok and sourceGap(reason,detail) and not gapSeen[spell] then
+            gapSeen[spell]=true
+            learningGaps[#learningGaps+1]=RA.LearningDiagnostic(reason,recipe,detail)
+        end
+        return ok
+    end
     local pr = ns.ProfRecipes
     local Rg = pr and pr[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
@@ -359,46 +518,42 @@ local function BuildCandidates(slug, opts)
     local cands, recOf = {}, {}
     for _, rec in ipairs(Rg.rows or {}) do
         RouteTick()
+        rec=ResolvedRow(rec,slug)
         local spell, learn, yellow, green, grey = rec[1], rec[7], rec[8], rec[9], rec[10]
         local reagents = rec[12]
         if type(spell) == "number" and type(learn) == "number"
            and type(grey) == "number" and grey > learn
            and type(reagents) == "table" and #reagents > 0 then
-            local ok = true
-            local skipFormula = opts.noFormula
-            if ok and skipFormula and type(rec[13]) == "table" and type(rec[13][1]) == "number" then
-                local SM = ns.ProfSourceMerge
-                local view = (SM and SM.SourceOf and SM.SourceOf(rec[13][1])) or rec[14]
-                local kind = (SM and SM.Primary) and SM.Primary(view) or nil
-                if kind ~= "vendor" then ok = false end
-            end
-            if ok and opts.learnedOnly and not LearnKnown(spell) then ok = false end
-            if ok and not LearnKnown(spell) and type(rec[13]) == "table"
-               and type(rec[13][1]) == "number" then
-                local PDm = ns.ProfModule
-                local skipUnknown = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and true or false
-                if skipUnknown and not MatPrice(rec[13][1], soldSet) then ok = false end
-            end
+            local ok = not rec.clientUnavailable and not rec.clientPending and not rec.cooldown and not rec.cooldownUnknown
+            if not checkLearning(rec,spell) then ok=false;specBlocked=specBlocked+1 end
+            local E=ns.ProfEconomy
+            local formulaFacade=E and E.FormulaFor and E.Normalize
+            local formula=FormulaQuote(rec,slug,opts)
+            if formula and not formula.usable then ok=false end
             if ok then
-                local cost, unpriced, unpricedN, unpricedRank = 0, false, 0, nil
+                local cost, unpriced = 0, false
                 for _, m in ipairs(reagents) do
                     local p = MatPrice(m[1], soldSet)
                     if p then
                         cost = cost + p * (m[2] or 1)
                     else
                         unpriced = true
-                        unpricedN = unpricedN + 1
-                        local rk = ReasonRank((MatReason(m[1], soldSet)))
-                        if unpricedRank == nil or rk < unpricedRank then unpricedRank = rk end
                     end
                 end
                 if ok then
                     local itemID = rec[2]
                     local f = rec[13]
                     local fcost, funpriced = 0, false
-                    if type(f) == "table" and type(f[1]) == "number" and not LearnKnown(spell) then
-                        local fp = MatPrice(f[1], soldSet)
-                        if fp then fcost = fp else funpriced = true end
+                    if formula and not formula.known then
+                        fcost=formula.cost or 0;funpriced=formula.unpriced or formula.cost==nil
+                    elseif type(f) == "table" and type(f[1]) == "number" and not LearnKnown(spell) then
+                        if formulaFacade then
+                            fcost=formula and formula.cost or 0
+                            funpriced=formula and formula.unpriced or false
+                        else
+                            local fp = MatPrice(f[1], soldSet)
+                            if fp then fcost = fp else funpriced = true end
+                        end
                     end
                     local base, unknown = 0, false
                     for _, m in ipairs(reagents) do
@@ -406,19 +561,16 @@ local function BuildCandidates(slug, opts)
                         local sp = NPCSellPrice(m[1])
                         if sp then base = base + sp * (m[2] or 1) end
                     end
-                    local qty = (type(rec[3]) == "number") and rec[3] or 1
-                    local value = ((type(itemID) == "number") and AHPrice(itemID) or 0) * qty * resid
                     local cY = (type(yellow) == "number") and yellow or learn
                     cands[#cands + 1] = {
                         spell = spell, item = (type(itemID) == "number") and itemID or nil,
                         learn = learn, yellow = cY,
                         green = (type(green) == "number") and green or yellow or learn,
                         grey = grey, mats = reagents, cost = cost, unpriced = unpriced,
-                        unpricedN = (unpricedN > 0) and unpricedN or nil,
-                        unpricedRank = unpricedRank,
                         fcost = fcost, funpriced = funpriced or nil, base = base, cd = (rec[4] == "Transmutes") or nil,
+                        learningCostKnown=formula~=nil,
+                        learningUsable=formula and formula.usable,
                         unknown = unknown or nil,
-                        value = value,
                         learnO = math.max(1, math.min(learn, cY - 25)),
                     }
                     recOf[spell] = rec
@@ -429,12 +581,16 @@ local function BuildCandidates(slug, opts)
     if LV and type(LV.rinfo) == "table" then
         for spell, ri in pairs(LV.rinfo) do
             RouteTick()
+            ri=ResolvedRow(ri,slug,spell)
             if type(spell) == "number" and not recOf[spell]
                and type(ri.learn) == "number" and type(ri.grey) == "number"
                and ri.grey > ri.learn
                and type(ri.mats) == "table" and #ri.mats > 0 then
-                local ok = not (opts.learnedOnly and not LearnKnown(spell))
-                local cost, unpriced, unpricedN, unpricedRank = 0, false, 0, nil
+                local ok = not ri.clientUnavailable and not ri.clientPending and not ri.cooldown and not ri.cooldownUnknown
+                if not checkLearning(ri,spell) then ok=false;specBlocked=specBlocked+1 end
+                local formula=ok and FormulaQuote(ri,slug,opts)
+                if formula and not formula.usable then ok=false end
+                local cost, unpriced = 0, false
                 if ok then
                     for _, m in ipairs(ri.mats) do
                         local p = MatPrice(m[1], soldSet)
@@ -442,9 +598,6 @@ local function BuildCandidates(slug, opts)
                             cost = cost + p * (m[2] or 1)
                         else
                             unpriced = true
-                            unpricedN = unpricedN + 1
-                            local rk = ReasonRank((MatReason(m[1], soldSet)))
-                            if unpricedRank == nil or rk < unpricedRank then unpricedRank = rk end
                         end
                     end
                 end
@@ -457,15 +610,15 @@ local function BuildCandidates(slug, opts)
                         local sp = NPCSellPrice(m[1])
                         if sp then base = base + sp * (m[2] or 1) end
                     end
-                    local value = ((type(ri.makes) == "number") and AHPrice(ri.makes) or 0) * resid
                     cands[#cands + 1] = {
                         spell = spell, item = (type(ri.makes) == "number") and ri.makes or nil,
                         learn = ri.learn, yellow = y, green = g, grey = ri.grey,
                         mats = ri.mats, cost = cost, unpriced = unpriced,
-                        unpricedN = (unpricedN > 0) and unpricedN or nil,
-                        unpricedRank = unpricedRank,
-                        fcost = 0, base = base, unknown = unknown or nil,
-                        value = value,
+                        fcost = formula and formula.cost or 0,
+                        funpriced=formula and (formula.unpriced or formula.cost==nil) or nil,
+                        learningUsable=formula and formula.usable,
+                        learningCostKnown=formula~=nil,
+                        base = base, unknown = unknown or nil,
                         learnO = math.max(1, math.min(ri.learn, y - 25)),
                     }
                     recOf[spell] = ri
@@ -485,12 +638,20 @@ local function BuildCandidates(slug, opts)
         cands = kept
     end
     local G = ns.ProfGates
-    if G and not opts.ignoreSpecGate then
+    if G and not opts.ignoreSpecGate or Pol and Pol.RouteRecipeEligibility then
         local kept, blocked = {}, 0
         for _, c in ipairs(cands) do
-            local allowed, need = G.Allowed(slug, c.spell)
+            local allowed, need = true, nil
+            if G and not opts.ignoreSpecGate then allowed,need=G.Allowed(slug,c.spell) end
+            if allowed and Pol and Pol.RouteRecipeEligibility and Pol.FindRecipe then
+                local recipe=Pol.FindRecipe(slug,c.spell)
+                allowed,need=Pol.RouteRecipeEligibility(recipe,opts.snapshot)
+            end
             if allowed then
-                if G.TrainerTaught(c.spell) then c.fcost = 0; c.funpriced = nil; c.taughtByTrainer = true end
+                if G and G.TrainerTaught(c.spell) then
+                    if not c.learningCostKnown then c.fcost = 0; c.funpriced = nil end
+                    c.taughtByTrainer = true
+                end
                 kept[#kept + 1] = c
             else
                 blocked = blocked + 1
@@ -498,23 +659,23 @@ local function BuildCandidates(slug, opts)
             end
         end
         cands = kept
-        specBlocked = blocked
+        specBlocked = specBlocked + blocked
     end
-    return cands, recOf, soldSet, specBlocked
+    table.sort(learningGaps,function(a,b)return (a.spell or 0)<(b.spell or 0)end)
+    return cands, recOf, soldSet, specBlocked, learningGaps
 end
 
-local function Eligible(c, allowUnpriced, allowMatUnpriced)
-    if c.unpriced and not allowMatUnpriced then return false end
-    return allowUnpriced or (not c.funpriced)
+local function Eligible(c, allowUnpriced)
+    return allowUnpriced or c.learningUsable or (not c.funpriced)
 end
 
 local function CanUse(scheme, c, cur)
     local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
     return cur >= lo and cur < c.grey
 end
-local function Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced)
+local function Usable(scheme, c, cur, allowUnpriced)
     if (scheme == "optim") and (c.cd or c.unknown) then return false end
-    if not Eligible(c, allowUnpriced, allowMatUnpriced) then return false end
+    if not Eligible(c, allowUnpriced) then return false end
     return CanUse(scheme, c, cur)
 end
 local function GainOf(scheme, c, cur)
@@ -531,19 +692,10 @@ local function MetricOf(scheme, c, g)
     if scheme == "optim" then return (c.base or 0) / g end
     return c.cost / g
 end
-local function EffMetric(scheme, c, g, useVal)
-    local m = MetricOf(scheme, c, g)
-    if scheme == "cheapest" and useVal and (c.value or 0) > (c.cost or 0) then
-        local span = math.max(1, (c.grey or 0) - (c.learn or 0))
-        local net = ((c.cost or 0) - c.value) / g + (c.fcost or 0) / span
-        if net < m then m = net end
-    end
-    return m
-end
 
-local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpriced)
+local function Simulate(cands, start, cap, allowUnpriced, scheme)
     local steps, gaps = {}, {}
-    local banned, segRun, profitMade = {}, {}, {}
+    local banned, segRun = {}, {}
     local cur = math.max(1, math.min(cap - 1, start or 1))
     local guard = 0
 
@@ -554,10 +706,10 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpric
 
         local best, bestMetric
         for _, c in ipairs(cands) do
-            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
+            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
-                    local metric = EffMetric(scheme, c, g, (profitMade[c.spell] or 0) < PROFIT_CAP)
+                    local metric = MetricOf(scheme, c, g)
                     if not best or metric < bestMetric - 1e-9
                        or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
                         best, bestMetric = c, metric
@@ -569,8 +721,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpric
         if not best then
             local nxt
             for _, c in ipairs(cands) do
-                if not banned[c.spell] and Eligible(c, allowUnpriced, allowMatUnpriced)
-                   and not ((scheme == "optim") and (c.cd or c.unknown)) then
+                if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
                     local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
                     if lo > cur and (not nxt or lo < nxt) then nxt = lo end
                 end
@@ -588,16 +739,13 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpric
             while cur < cap do
                 local g = Gain(cur, best)
                 if not g then break end
-                local delta = 1 / g
-                if (best.value or 0) > (best.cost or 0)
-                   and (profitMade[best.spell] or 0) + crafts + delta > PROFIT_CAP then break end
-                crafts = crafts + delta
+                crafts = crafts + 1 / g
                 cur = cur + 1
                 local stop = false
                 for _, c in ipairs(cands) do
-                    if c ~= best and not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
+                    if c ~= best and not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
-                        if g2 and EffMetric(scheme, c, g2, (profitMade[c.spell] or 0) < PROFIT_CAP) < bestMetric - 1e-9 then
+                        if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
                             stop = true
                             break
                         end
@@ -606,7 +754,6 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpric
                 if stop then break end
             end
             local qty = math.max(1, math.ceil(crafts - 1e-9))
-            profitMade[best.spell] = (profitMade[best.spell] or 0) + qty
             local last = steps[#steps]
             if last and last[3] == best.spell and last[2] + 1 == from then
                 last[2] = cur - 1
@@ -626,9 +773,9 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpric
     return steps, gaps
 end
 
-local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnpriced, markFallback)
+local function SimulateRange(cands, a, b, scheme, allowUnpriced)
     local steps = {}
-    local banned, segRun, profitMade = {}, {}, {}
+    local banned, segRun = {}, {}
     local cur = a
     local guard = 0
     while cur <= b do
@@ -637,32 +784,21 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnprice
         if guard > 1000 then break end
         local best, bestMetric
         for _, c in ipairs(cands) do
-            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
+            if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
-                    local metric = EffMetric(scheme, c, g, (profitMade[c.spell] or 0) < PROFIT_CAP)
-                    local better = (not best) or (metric < bestMetric - 1e-9)
-                    if not better and metric < bestMetric + 1e-9 then
-                        if markFallback then
-                            local cn, bn = c.unpricedN or 0, best.unpricedN or 0
-                            if cn < bn then
-                                better = true
-                            elseif cn == bn then
-                                local cr, br = c.unpricedRank or 9, best.unpricedRank or 9
-                                if cr < br or (cr == br and c.grey > best.grey) then better = true end
-                            end
-                        elseif c.grey > best.grey then
-                            better = true
-                        end
+                    local metric = MetricOf(scheme, c, g)
+                    if not best or metric < bestMetric - 1e-9
+                       or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
+                        best, bestMetric = c, metric
                     end
-                    if better then best, bestMetric = c, metric end
                 end
             end
         end
         if not best then
             local nxt
             for _, c in ipairs(cands) do
-                if not banned[c.spell] and Eligible(c, allowUnpriced, allowMatUnpriced)
+                if not banned[c.spell] and Eligible(c, allowUnpriced)
                    and not ((scheme == "optim") and (c.cd or c.unknown)) then
                     local lo = (scheme == "optim") and (c.learnO or c.learn) or c.learn
                     if lo > cur and lo <= b and (not nxt or lo < nxt) then nxt = lo end
@@ -676,17 +812,14 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnprice
             while cur <= b do
                 local g = Gain(cur, best)
                 if not g then break end
-                local delta = 1 / g
-                if (best.value or 0) > (best.cost or 0)
-                   and (profitMade[best.spell] or 0) + crafts + delta > PROFIT_CAP then break end
-                crafts = crafts + delta
+                crafts = crafts + 1 / g
                 cur = cur + 1
                 local stop = false
                 for _, c in ipairs(cands) do
                     if c ~= best and not banned[c.spell] and cur <= b
-                       and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
+                       and Usable(scheme, c, cur, allowUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
-                        if g2 and EffMetric(scheme, c, g2, (profitMade[c.spell] or 0) < PROFIT_CAP) < bestMetric - 1e-9 then
+                        if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
                             stop = true
                             break
                         end
@@ -695,10 +828,7 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnprice
                 if stop then break end
             end
             local qty = math.max(1, math.ceil(crafts - 1e-9))
-            profitMade[best.spell] = (profitMade[best.spell] or 0) + qty
             local to = math.min(cur - 1, b)
-            local fb
-            if markFallback and best.unpriced then fb = true end
             local last = steps[#steps]
             if last and last[3] == best.spell and last[2] + 1 == from then
                 last[2] = to
@@ -709,7 +839,6 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnprice
                     from, to, best.spell, qty,
                     cost = best.cost * qty, item = best.item,
                     unpriced = best.unpriced, est = true,
-                    unpricedFallback = fb,
                 }
                 segRun[best.spell] = (segRun[best.spell] or 0) + 1
                 if segRun[best.spell] >= MAX_PER_RECIPE then banned[best.spell] = true end
@@ -734,7 +863,6 @@ local function MergeSteps(steps)
             last.cost = (last.cost or 0) + (s.cost or 0)
             if s.unpriced then last.unpriced = true end
             if s.est then last.est = true end
-            if s.unpricedFallback then last.unpricedFallback = true end
         else
             out[#out + 1] = s
         end
@@ -742,7 +870,7 @@ local function MergeSteps(steps)
     return out
 end
 
-local function FillGaps(cands, steps, gaps, scheme, allowUnpriced, allowMatUnpriced, markFallback)
+local function FillGaps(cands, steps, gaps, scheme, allowUnpriced)
     local out = {}
     local si = 1
     for _, g in ipairs(gaps) do
@@ -750,7 +878,7 @@ local function FillGaps(cands, steps, gaps, scheme, allowUnpriced, allowMatUnpri
             out[#out + 1] = steps[si]
             si = si + 1
         end
-        local fills, resid = SimulateRange(cands, g[1], g[2], scheme, allowUnpriced, allowMatUnpriced, markFallback)
+        local fills, resid = SimulateRange(cands, g[1], g[2], scheme, allowUnpriced)
         for _, s in ipairs(fills) do out[#out + 1] = s end
         if resid then out[#out + 1] = { gap = resid } end
     end
@@ -769,10 +897,18 @@ local function FillGaps(cands, steps, gaps, scheme, allowUnpriced, allowMatUnpri
     return MergeSteps(newSteps), newGaps
 end
 
-local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs, seedInv, skipMats)
+local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs, seedInv, skipMats, slug, opts)
     local total, crafts = 0, 0
     local productAH, productNPC, productPartial = 0, 0, false
     local mats, firstAt, matPrice, specSet = {}, {}, {}, {}
+    local function quote(id)
+        if opts and opts.snapshot then
+            local entries,cost=RA.MaterialPurchases(id,1,opts)
+            if entries[1] and not entries[1].unpriced then return cost end
+            return nil
+        end
+        return MatPrice(id,soldSet)
+    end
     for _, st in ipairs(steps) do
         local rec = recOf[st[3]]
         local ml = rec and (rec[12] or rec.mats) or nil
@@ -793,7 +929,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
                 for _, m in ipairs(ml) do
                     local id = m[1]
                     if not (skipMats and skipMats[id]) then
-                        if matPrice[id] == nil then matPrice[id] = MatPrice(id, soldSet) end
+                        if matPrice[id] == nil then matPrice[id] = quote(id) end
                         local p = matPrice[id]
                         if p then
                             sc = sc + p * (m[2] or 1) * (st[4] or 0)
@@ -811,7 +947,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             for _, m in ipairs(ml or {}) do
                 local rc, ra = MatReason(m[1], soldSet)
                 if rc then
-                    local rk = ReasonRank(rc)
+                    local rk = (rc == "stale" and 1) or (rc == "norec" and 2) or (rc == "novendor" and 3) or 4
                     if rk < rank or (rk == rank and (ra or 0) > (age or 0)) then
                         rank, code, age, mid = rk, rc, ra, m[1]
                     end
@@ -822,8 +958,8 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
         total = total + (st.cost or 0)
         crafts = crafts + (st[4] or 0)
         local prod = rec and rec[2]
-        if type(prod) == "number" then
-            local outN = (st[4] or 0) * (rec[3] or 1)
+        if type(prod) == "number" and type(rec[3])=="number" and rec[3]>0 then
+            local outN = (st[4] or 0) * rec[3]
             RequestProduct(prod)
             local ah = AHPrice(prod)
             if ah then
@@ -833,6 +969,8 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             end
             local sp = NPCSellPrice(prod)
             if sp then productNPC = productNPC + sp * outN end
+        elseif type(prod)=="number"then
+            productPartial=true
         end
         if ml then
             for _, m in ipairs(ml) do
@@ -841,7 +979,7 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
                     mats[id] = (mats[id] or 0) + (m[2] or 1) * (st[4] or 0)
                     if not firstAt[id] or st[1] < firstAt[id] then firstAt[id] = st[1] end
                     if matPrice[id] == nil then
-                        matPrice[id] = MatPrice(id, soldSet)
+                        matPrice[id] = quote(id)
                     end
                 end
             end
@@ -854,19 +992,16 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
                 mats[sid] = (mats[sid] or 0) + sn
                 specSet[sid] = true
                 if firstAt[sid] == nil then firstAt[sid] = 0 end
-                if matPrice[sid] == nil then matPrice[sid] = MatPrice(sid, soldSet) end
+                if matPrice[sid] == nil then matPrice[sid] = quote(sid) end
             end
         end
     end
-    local covered, coveredCost = nil, 0
+    local covered
     if type(seedInv) == "table" then
         for id, have in pairs(seedInv) do
             local need = mats[id]
             if need and need > 0 and type(have) == "number" and have > 0 then
                 local use = math.min(need, have)
-                local p = matPrice[id]
-                if p == nil then p = MatPrice(id, soldSet) end
-                if p then coveredCost = coveredCost + p * use end
                 covered = covered or {}
                 covered[id] = use
                 mats[id] = need - use
@@ -874,19 +1009,53 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             end
         end
     end
+    local purchaseOpts={}
+    for key,value in pairs(opts or {}) do purchaseOpts[key]=value end
+    local remaining={}
+    for id,count in pairs(purchaseOpts.auctionRemaining or {}) do remaining[id]=count end
+    purchaseOpts.auctionRemaining=remaining
+    local economy=ns.ProfEconomy
+    local function observe(id)
+        if id and remaining[id]==nil and economy and economy.AuctionSupplyOf then
+            local supply=economy.AuctionSupplyOf(purchaseOpts,id)
+            if supply then remaining[id]=supply.quantity end
+        end
+    end
+    for id in pairs(mats) do observe(id) end
+    local formulas,formulasTotal,formulaVendorTotal={},0,0
+    local paidLearning={}
+    for _,st in ipairs(steps) do
+        local rec=recOf[st[3]]
+        if rec and not (skipLearnedFormulas and LearnKnown(st[3])) then
+            local entry=FormulaQuote(rec,st.profession or slug,purchaseOpts)
+            if entry and not entry.known and not entry.automatic then
+                local formulaID=entry.id
+                local key=formulaID or entry.recipeKey or (st.profession or slug)..":"..tostring(st[3])
+                if not paidLearning[key] then
+                    paidLearning[key]=true
+                    observe(formulaID)
+                    entry=RA.PreferSharedFormula(entry,formulaID and mats[formulaID],purchaseOpts)
+                    formulas[#formulas+1]=entry;formulasTotal=formulasTotal+(entry.cost or 0)
+                    if entry.source=="vendor" or entry.source=="npc" or entry.source=="trainer"
+                        or entry.source=="acquire" and entry.acquisitionKind=="currency" then formulaVendorTotal=formulaVendorTotal+(entry.cost or 0)
+                    elseif entry.source=="ah" and remaining[formulaID]~=nil then
+                        remaining[formulaID]=math.max(0,remaining[formulaID]-(entry.count or 1))
+                    end
+                end
+            end
+        end
+    end
     local list = {}
     for id, n in pairs(mats) do
-        local p = matPrice[id]
-        if p == nil then p = MatPrice(id, soldSet) end
-        local rcode, rage
-        if p == nil then rcode, rage = MatReason(id, soldSet) end
         local have = covered and covered[id] or nil
-        list[#list + 1] = { id, n, cost = (p or 0) * n, unit = p or 0,
-                            have = have, need = n + (have or 0),
-                            vendor = soldSet[id] and true or false,
-                            unpriced = (p == nil) and true or false,
-                            spec = specSet[id] or nil,
-                            reason = rcode, age = rage }
+        local entries,_,complete,reason=RA.MaterialPurchases(id,n,purchaseOpts)
+        for _,entry in ipairs(entries) do
+            entry.have,entry.need=have,n+(have or 0)
+            entry.spec=specSet[id] or nil
+            if entry.unpriced then entry.reason,entry.age=MatReason(id,soldSet) end
+            if not complete then entry.costComplete=false;entry.procurementReason=reason end
+            list[#list+1]=entry
+        end
     end
     table.sort(list, function(a, b)
         local fa, fb = firstAt[a[1]] or math.huge, firstAt[b[1]] or math.huge
@@ -894,83 +1063,105 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
         if a[2] ~= b[2] then return a[2] > b[2] end
         return a[1] < b[1]
     end)
-    local vendorTotal = 0
+    local vendorTotal = formulaVendorTotal
+    total=0
     for _, e in ipairs(list) do
-        if e.vendor then vendorTotal = vendorTotal + (e.unit or 0) * e[2] end
+        total=total+e.cost
+        if e.vendor then vendorTotal = vendorTotal + e.cost end
     end
-    local formulas, formulasTotal = {}, 0
-    local vdb = ns.VendorPriceDB
-    for _, st in ipairs(steps) do
-        local rec = recOf[st[3]]
-        local f = rec and rec[13]
-        if type(f) == "table" and type(f[1]) == "number"
-           and not (skipLearnedFormulas and LearnKnown(st[3])) then
-            local dup = false
-            for _, x in ipairs(formulas) do
-                if x.id == f[1] then dup = true break end
-            end
-            if not dup then
-                local SM = ns.ProfSourceMerge
-                local psrc = (SM and SM.SourceOf) and SM.SourceOf(f[1]) or nil
-                local primary = (psrc and SM.Primary) and SM.Primary(psrc) or nil
-                local currencyOnly = (primary == "currency") or nil
-                local p = MatPrice(f[1], soldSet)
-                if currencyOnly then p = nil end
-                local entry = {
-                    id = f[1], spell = st[3], cost = (not currencyOnly) and (p or 0) or nil,
-                    vendor = soldSet[f[1]] and true or false,
-                    unpriced = (p == nil and not currencyOnly) and true or false,
-                    currency = currencyOnly,
-                }
-                local raw = vdb and vdb.GetOffers and vdb.GetOffers(f[1]) or {}
-                local hasU, hasL, hasO = false, false, false
-                local offers = {}
-                for _, o in ipairs(raw) do
-                    if type(o) == "table" and o.npcID and (type(o.price) == "number" or o.unlimited ~= nil or o.limited ~= nil) then
-                        hasO = true
-                        if o.unlimited == true then hasU = true
-                        elseif o.limited or o.unlimited == false then hasL = true end
-                        offers[#offers + 1] = {
-                            npcID = o.npcID, price = o.price,
-                            quantity = o.quantity or o.bundleSize or 1,
-                            bundleSize = o.bundleSize or o.quantity or 1,
-                            unlimited = o.unlimited, limited = o.limited,
-                            stockUnknown = o.stockUnknown, estimated = o.estimated,
-                        }
-                    end
-                end
-                if hasO then
-                    entry.vendorOffers = offers
-                    entry.unlimited = hasU or nil
-                    entry.limited = hasL or nil
-                    entry.stockUnknown = (not hasU and not hasL) or nil
-                end
-                formulas[#formulas + 1] = entry
-                formulasTotal = formulasTotal + (p or 0)
-            end
-        end
-    end
-    if coveredCost > 0 then total = math.max(0, total - coveredCost) end
     return total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
            productAH, productNPC, productPartial
 end
 
+-- Poisons retains master's authored guide and sold-list pricing. It is a
+-- reference guide, independent of ordinary profession procurement/eligibility.
+local function SummarizePoisons(steps, opts)
+    local guide=ns.ProfLeveling and ns.ProfLeveling.poisons
+    local catalogue=ns.ProfRecipes and ns.ProfRecipes.poisons
+    if not (guide and catalogue and catalogue.rows) then return nil end
+    local sold,recipes,counts,firstAt,prices={},{},{},{},{}
+    for _,id in ipairs(guide.sold or {}) do sold[id]=true end
+    for _,recipe in ipairs(catalogue.rows) do recipes[recipe[1]]=recipe end
+    local function quote(id)
+        local vendor=VendorPrice(id)
+        if sold[id] then return vendor end
+        local auction=AHPrice(id)
+        return auction and vendor and math.min(auction,vendor) or auction or vendor
+    end
+    local crafts,productAH,productNPC,productPartial=0,0,0,false
+    for _,step in ipairs(steps) do
+        local recipe=recipes[step[3]]
+        local mats=recipe and recipe[12]
+        step.mats,step.item,step.out=mats,recipe and recipe[2],recipe and recipe[3]
+        step.cost,step.unpriced=0,nil
+        step.unpricedReason,step.unpricedAge,step.unpricedMat=nil,nil,nil
+        for _,material in ipairs(mats or {}) do
+            local id,quantity=material[1],(material[2] or 1)*(step[4] or 0)
+            local price=quote(id);prices[id]=price
+            counts[id]=(counts[id] or 0)+quantity
+            firstAt[id]=math.min(firstAt[id] or math.huge,step[1])
+            if price then step.cost=step.cost+price*quantity
+            else step.unpriced=true;step.unpricedReason=sold[id] and "novendor" or ahReason[id] or "norec";step.unpricedMat=id end
+        end
+        crafts=crafts+(step[4] or 0)
+        if recipe and type(recipe[2])=="number" then
+            local id,count=recipe[2],(recipe[3] or 1)*(step[4] or 0)
+            RequestProduct(id)
+            local auction=AHPrice(id)
+            if auction then productAH=productAH+auction*count else productPartial=true end
+            productNPC=productNPC+(NPCSellPrice(id) or 0)*count
+        end
+    end
+    local list,total,vendorTotal={},0,0
+    for id,need in pairs(counts) do
+        local have=opts.executionInventory and opts.executionInventory[id]
+        have=type(have)=="number" and math.min(need,math.max(0,have)) or 0
+        local count,price=need-have,prices[id]
+        if count>0 then
+            local cost=(price or 0)*count
+            list[#list+1]={id,count,id=id,count=count,need=need,have=have>0 and have or nil,
+                cost=cost,unit=price or 0,vendor=sold[id] or false,source=sold[id] and "vendor" or "ah",
+                unpriced=price==nil,reason=price==nil and (sold[id] and "novendor" or ahReason[id] or "norec") or nil,
+                age=price==nil and ahAge[id] or nil}
+            total=total+cost
+            if sold[id] then vendorTotal=vendorTotal+cost end
+        end
+    end
+    table.sort(list,function(a,b)
+        if firstAt[a[1]]~=firstAt[b[1]] then return firstAt[a[1]]<firstAt[b[1]] end
+        if a[2]~=b[2] then return a[2]>b[2] end
+        return a[1]<b[1]
+    end)
+    local result={steps=steps,mats=list,firstAt=firstAt,matTotal=total,total=total,
+        vendorTotal=vendorTotal,ahTotal=total-vendorTotal,formulas={},formulasTotal=0,
+        crafts=crafts,productAH=productAH,productNPC=productNPC,productPartial=productPartial,
+        scheme="fixed",legacyPoisonGuide=true,considerAuctionSupply=false,
+        priced=RA.HasPriceData(),snapshotAge=SnapshotSec(),snapshotDays=priceCache.__minAge,
+        stamp=time and time() or 0}
+    return RA.ApplyRecovery(result,"poisons",opts,recipes)
+end
+
 function RA.SummarizeSteps(steps, slug, opts)
     opts = opts or {}
+    if slug=="poisons" then return SummarizePoisons(steps,opts) end
+    opts.profession=slug
+    if ns.ProfEconomy and ns.ProfEconomy.ConsiderAuctionSupply then
+        opts.considerAuctionSupply=ns.ProfEconomy.ConsiderAuctionSupply(opts)
+    end
     local pr = ns.ProfRecipes
     local Rg = pr and pr[slug]
     local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
-    if not (Rg and (type(Rg.rows) == "table"
-                    or (LV and type(LV.rinfo) == "table"))) then return nil end
+    if not ((Rg and type(Rg.rows)=="table")
+        or (LV and (type(LV.rinfo)=="table" or type(LV.steps)=="table"))) then return nil end
     local soldSet = {}
     if LV and type(LV.sold) == "table" then
         for _, id in ipairs(LV.sold) do soldSet[id] = true end
     end
     local recOf = {}
-    for _, rec in ipairs(Rg.rows or {}) do recOf[rec[1]] = rec end
+    for _, rec in ipairs(Rg and Rg.rows or {}) do recOf[rec[1]] = ResolvedRow(rec,slug) end
     if LV and type(LV.rinfo) == "table" then
         for spell, ri in pairs(LV.rinfo) do
-            if not recOf[spell] then recOf[spell] = ri end
+            if not recOf[spell] then recOf[spell] = ResolvedRow(ri,slug,spell) end
         end
     end
     local specInputs
@@ -982,12 +1173,12 @@ function RA.SummarizeSteps(steps, slug, opts)
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, specInputs, opts.executionInventory)
+        SummarizeCore(steps, recOf, soldSet, false, specInputs, opts.executionInventory,nil,slug,opts)
     local res = {
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
         total = total + formulasTotal, vendorTotal = vendorTotal,
-        ahTotal = total - vendorTotal,
+        ahTotal = total + formulasTotal - vendorTotal,
         productAH = productAH, productNPC = productNPC, productPartial = productPartial,
         crafts = crafts,
         scheme = opts.scheme or "fixed",
@@ -996,12 +1187,111 @@ function RA.SummarizeSteps(steps, slug, opts)
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
     }
+    local economy=ns.ProfEconomy
+    res.learningPolicyFingerprint=economy and economy.LearningPolicyFingerprint and economy.LearningPolicyFingerprint()
+    for _,entry in ipairs(formulas) do
+        if entry.usable==false then
+            res.completeCost=false;res.feasible=false;res.status="recalculate_required"
+            res.diagnostics=res.diagnostics or {}
+            res.diagnostics[#res.diagnostics+1]={code=entry.reason or "formulaUnavailable",item=entry.id,spell=entry.spell}
+        end
+    end
     local blockedSteps = RA.MarkFixedSpecializations(slug, steps, opts)
     if blockedSteps then
         res.blockedSteps = blockedSteps
         res.specBlocked = #blockedSteps
+        res.feasible=false;res.status="recalculate_required"
+        res.diagnostics={}
+        for _,blocked in ipairs(blockedSteps) do
+            local diagnostic=blocked.learningDetail or {code=blocked.reason,spell=blocked.spell,profession=slug}
+            res.diagnostics[#res.diagnostics+1]=diagnostic
+            if sourceGap(blocked.reason,diagnostic) then
+                res.learningGaps=res.learningGaps or {};res.learningGaps[#res.learningGaps+1]=diagnostic
+                res.learningCoverageComplete=false;res.learningComplete=false;res.completeCost=false
+            end
+            if blocked.reason=="clientDataPending" then res.clientPending=true;res.completeCost=false;res.costComplete=false;res.priced=false end
+        end
+        res.blockingDiagnostics=res.diagnostics
     end
-    return RA.ApplyRecovery(res, slug, opts, recOf)
+    local _,_,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
+    if goalRequired then res.specializationGoalRequired=true;res.feasible=false;res.status="recalculate_required" end
+    RA.StampMaterialPurchases(res)
+    RA.StampSupply(res,opts)
+    RA.ApplyRecovery(res, slug, opts, recOf)
+    for _,step in ipairs(res.steps or {}) do
+        if not step.clientPending and not step.unpriced and step.attributedCost~=nil then step.cost=step.attributedCost end
+    end
+    return res
+end
+
+-- A fixed guide only refreshes quantities and quotes; it never starts a search.
+-- Copy authored rows because summarization enriches them with runtime metadata.
+function RA.FixedPlan(slug, supplied)
+    local guide=ns.ProfLeveling and ns.ProfLeveling[slug]
+    if not (guide and type(guide.steps)=="table") then return nil end
+    local opts={}
+    for key,value in pairs(supplied or {}) do opts[key]=value end
+    local target=math.max(1,math.min(300,math.floor(tonumber(opts.target) or 300)))
+    opts.target,opts.scheme,opts.profession=target,"fixed",slug
+    if slug=="first-aid" then opts.recoveryEnabled=false end
+    local steps,clipped={},false
+    for _,row in ipairs(guide.steps) do
+        local from,to=tonumber(row[1]) or 1,tonumber(row[2]) or target
+        if slug~="poisons" and from>=target and not row.checkpoint then break end
+        if from>target then break end
+        local copy={}
+        for key,value in pairs(row) do
+            if key~="cost" and key~="unpriced" and key~="unpricedReason"
+                and key~="unpricedAge" and key~="unpricedMat" then copy[key]=value end
+        end
+        if to>target then
+            copy[2]=target
+            copy[4]=row.checkpoint and 0 or math.max(1,math.ceil((row[4] or 0)*(target-from)/math.max(1,to-from)-1e-9))
+            copy._clip=true;clipped=true
+        end
+        steps[#steps+1]=copy
+    end
+    local result=RA.SummarizeSteps(steps,slug,opts)
+    if result then
+        result.mode,result.scheme,result.target="fixed","fixed",target
+        if slug=="first-aid" and result.clientPending then result.referenceOnly=true end
+        if slug~="poisons" then
+            result.procurementPolicyVersion=ns.ProfRouteSolver and ns.ProfRouteSolver.ProcurementPolicyVersion or 8
+        end
+        result.start=steps[1] and steps[1][1] or target
+        result.clipped=clipped
+        if slug=="first-aid" and result.clientPending and target==300
+            and #result.mats==0 and type(guide.shopping)=="table" then
+            -- The authored full-guide list is valid reference data even when
+            -- individual recipe seeds are missing. It cannot prove execution
+            -- or pattern costs, so the pending diagnostics remain in place.
+            result.mats={};result.referenceShopping=true;result.referenceQuoted=false;result.referenceCostComplete=true
+            local materialTotal,vendorTotal=0,0
+            for _,material in ipairs(guide.shopping) do
+                local id,count=material[1],material[2]
+                local entries,cost,complete,reason=RA.MaterialPurchases(id,count,opts)
+                if not complete then result.referenceCostComplete=false end
+                for _,entry in ipairs(entries) do
+                    entry.considerAuctionSupply=result.considerAuctionSupply==true
+                    if not entry.unpriced and type(entry.cost)=="number" then result.referenceQuoted=true end
+                    entry.need=count
+                    if not complete then entry.costComplete=false;entry.procurementReason=reason end
+                    result.mats[#result.mats+1]=entry
+                    if entry.vendor then vendorTotal=vendorTotal+entry.cost end
+                end
+                materialTotal=materialTotal+cost
+            end
+            result.matTotal=materialTotal;result.vendorTotal=vendorTotal
+            result.ahTotal=materialTotal-vendorTotal
+            result.total=materialTotal+(result.formulasTotal or 0)
+            result.snapshotAge,result.snapshotDays=SnapshotSec(),priceCache.__minAge
+            RA.StampMaterialPurchases(result)
+            if result.considerAuctionSupply then RA.StampSupply(result,opts) end
+            if result.supplyComplete==false or (result.auctionSupplyUnknown or 0)>0 then result.referenceCostComplete=false end
+            RA.ApplyRecovery(result,slug,opts,{})
+        end
+    end
+    return result
 end
 
 local function RecoverySnapshot(slug, steps, recOf, toolItems)
@@ -1019,12 +1309,13 @@ local function RecoverySnapshot(slug, steps, recOf, toolItems)
                 local item = rec[2]
                 if type(item) ~= "number" then item = rec.makes end
                 local count = rec[3]
-                if type(count) ~= "number" then count = rec.count or 1 end
+                if type(count) ~= "number" then count = rec.count end
+                if count==nil and not rec.clientPending then count=1 end
                 local mats = rec[12] or rec.mats or {}
                 local row = {
                     profession = slug, spell = spell, key = key,
-                    item = (type(item) == "number" and item > 0) and item or nil,
-                    count = (type(count) == "number" and count > 0) and count or 1,
+                    item = (type(item) == "number" and item > 0 and type(count)=="number" and count>0) and item or nil,
+                    count = (type(count) == "number" and count > 0) and count or 0,
                     mats = mats,
                 }
                 snap.recipes[#snap.recipes + 1] = row
@@ -1055,20 +1346,24 @@ local function RecoverySnapshot(slug, steps, recOf, toolItems)
     return snap
 end
 
-local function RecoveryOptions(opts)
+local function RecoveryOptions(opts,slug)
     opts = opts or {}
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
     local enabled = opts.recoveryEnabled
+    local pd=ns.ProfModule
+    if enabled == nil and pd and pd.Setting then enabled=pd.Setting("recoveryEnabled",slug) end
     if enabled == nil then enabled = not (db and db.recoveryEnabled == false) end
     local fee = opts.recoveryFeePercent
+    if fee == nil and pd and pd.SettingRaw then fee=pd.SettingRaw("recoveryFeePercent",slug) end
     if fee == nil and db then fee = db.recoveryFeePercent end
     return enabled, fee
 end
 
 function RA.ApplyRecovery(res, slug, opts, recOf)
+    RA.StampFormulaCosts(res)
     local R = ns.ProfRecovery
     if not res or not R or not R.Apply then return res end
-    local enabled, fee = RecoveryOptions(opts)
+    local enabled, fee = RecoveryOptions(opts,slug)
     local snap = RecoverySnapshot(slug, res.steps, recOf, res.toolItems)
     R.Capture(snap, { recoveryEnabled = enabled, recoveryFeePercent = fee })
     res.scheme = res.scheme or (opts and opts.scheme) or "fixed"
@@ -1076,8 +1371,10 @@ function RA.ApplyRecovery(res, slug, opts, recOf)
     res.recoveryOptimized = false
     res.recoveryScheme = snap.recovery and snap.recovery.feePercent or nil
     res.recoveryFeeSource = snap.recovery and snap.recovery.feeSource or nil
-    RA.StampSupply(res)
-    RA.StampSpecializations(res, slug, opts, res.recoverySnapshot)
+    if slug~="poisons" then
+        RA.StampSupply(res,opts)
+        RA.StampSpecializations(res, slug, opts, res.recoverySnapshot)
+    end
     return res
 end
 
@@ -1097,251 +1394,10 @@ local function ToReached(steps)
     return out
 end
 
-local function ToolCraftsOf(spell, a, b, recOf)
-    if a > b then return 0 end
-    local rec = recOf[spell]
-    if not rec then return nil end
-    local c
-    if rec.mats or rec.learn then
-        c = { learn = rec.learn, yellow = rec.yellow, green = rec.green, grey = rec.grey }
-    else
-        c = { learn = rec[7], yellow = rec[8], green = rec[9], grey = rec[10] }
-    end
-    if not (c.learn and c.grey) then return nil end
-    local n = 0
-    for i = a, b do
-        local g = Gain(i, c)
-        if not g then return nil end
-        n = n + 1 / g
-    end
-    return n
-end
-
-local function SplitForTool(stepsOut, P, recOf)
-    for i, st in ipairs(stepsOut) do
-        if not st.tool and st[3] ~= 0 and not st.checkpoint then
-            local a, b = tonumber(st[1]) or 0, tonumber(st[2]) or 0
-            if a > P then return i end
-            if P < b then
-                local unit = (st.cost or 0) / math.max(1, st[4] or 1)
-                if P == a then
-                    local n = ToolCraftsOf(st[3], P + 1, b - 1, recOf)
-                    if n == 0 then
-                        table.remove(stepsOut, i)
-                        return i
-                    end
-                    st[1] = P + 1
-                    st[4] = math.max(1, math.ceil((n or (st[4] or 1)) - 1e-9))
-                    st.cost = unit * st[4]
-                    st.stepIndex = nil
-                    st.index = nil
-                    return i
-                end
-                local n1 = ToolCraftsOf(st[3], a, P - 1, recOf)
-                local n2 = ToolCraftsOf(st[3], P + 1, b - 1, recOf)
-                if not n1 or not n2 then
-                    local total = math.max(1, b - a)
-                    n1 = n1 or (st[4] or 1) * (P - a) / total
-                    n2 = n2 or (st[4] or 1) * (b - P - 1) / total
-                end
-                st[2] = P
-                st[4] = math.max(1, math.ceil(n1 - 1e-9))
-                st.cost = unit * st[4]
-                st.stepIndex = nil
-                st.index = nil
-                local right = {}
-                for k, v in pairs(st) do right[k] = v end
-                right[1] = P + 1
-                right[2] = b
-                right[4] = math.max(1, math.ceil(n2 - 1e-9))
-                right.cost = unit * right[4]
-                table.insert(stepsOut, i + 1, right)
-                return i + 1
-            end
-        end
-    end
-    return nil
-end
-
-local function NormalizeStepOrder(steps)
-    if type(steps) ~= "table" or #steps < 2 then return false end
-    local ordered = true
-    for i = 2, #steps do
-        local prev = tonumber(steps[i - 1][1]) or 0
-        local cur = tonumber(steps[i][1]) or 0
-        if cur < prev then
-            ordered = false
-            break
-        end
-    end
-    if ordered then return false end
-    local idx = {}
-    for i = 1, #steps do idx[i] = i end
-    table.sort(idx, function(x, y)
-        local sx = tonumber(steps[x][1]) or 0
-        local sy = tonumber(steps[y][1]) or 0
-        if sx ~= sy then return sx < sy end
-        return x < y
-    end)
-    local out = {}
-    for i = 1, #idx do out[i] = steps[idx[i]] end
-    for i = 1, #out do steps[i] = out[i] end
-    return true
-end
-
-local function DeNestEnabled()
-    local PDm = ns.ProfModule
-    if not (PDm and PDm.Setting) then return true end
-    return PDm.Setting("autoDeNestSteps") ~= false
-end
-
-local function DeNestSteps(steps, recOf)
-    if type(steps) ~= "table" or #steps < 2 then return false end
-    local changed = false
-    local dirty = true
-    local guard = 0
-    while dirty and guard < 64 do
-        guard = guard + 1
-        dirty = false
-        for i = 1, #steps do
-            local inner = steps[i]
-            local p = tonumber(inner[1]) or 0
-            local q = tonumber(inner[2]) or 0
-            local isCraft = q > p and not inner.checkpoint and not inner.tool
-                and (tonumber(inner[3]) or 0) ~= 0
-            if isCraft then
-                for j = 1, #steps do
-                    if j ~= i then
-                        local outer = steps[j]
-                        if not outer.checkpoint and not outer.tool
-                            and (tonumber(outer[3]) or 0) ~= 0 and outer[3] ~= inner[3] then
-                            local a = tonumber(outer[1]) or 0
-                            local b = tonumber(outer[2]) or 0
-                            if a <= p and q <= b and (a < p or q < b) then
-                                local total = tonumber(outer[4]) or 1
-                                local hasBoth = a < p and q < b
-                                if not (hasBoth and total < 2) then
-                                    local unit = (outer.cost or 0) / math.max(1, total)
-                                    local wL, wR = 0, 0
-                                    if a < p then
-                                        wL = ToolCraftsOf(outer[3], a, p - 1, recOf) or (p - a)
-                                    end
-                                    if q < b then
-                                        wR = ToolCraftsOf(outer[3], q, b - 1, recOf) or (b - q)
-                                    end
-                                    if wL + wR <= 0 then
-                                        wL, wR = math.max(1, p - a), math.max(1, b - q)
-                                    end
-                                    local left, right
-                                    if a < p then
-                                        left = {}
-                                        for k, v in pairs(outer) do left[k] = v end
-                                        left[2] = p
-                                        left.stepIndex = nil
-                                        left.index = nil
-                                    end
-                                    if q < b then
-                                        right = {}
-                                        for k, v in pairs(outer) do right[k] = v end
-                                        right[1] = q
-                                        right.stepIndex = nil
-                                        right.index = nil
-                                    end
-                                    if left and right then
-                                        local nL = math.floor(total * wL / (wL + wR) + 0.5)
-                                        if nL < 1 then nL = 1 end
-                                        if nL > total - 1 then nL = total - 1 end
-                                        left[4] = nL
-                                        left.cost = unit * nL
-                                        right[4] = total - nL
-                                        right.cost = unit * right[4]
-                                    else
-                                        local only = left or right
-                                        only[4] = total
-                                        only.cost = outer.cost
-                                    end
-                                    steps[j] = left
-                                    if right then table.insert(steps, j + 1, right) end
-                                    dirty = true
-                                    changed = true
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            if dirty then break end
-        end
-    end
-    return changed
-end
-
-local function SplitAroundTools(stepsOut, recOf)
-    local changed = false
-    for i = 1, #stepsOut do
-        local tool = stepsOut[i]
-        if tool.tool then
-            local p, q = tonumber(tool[1]) or 0, tonumber(tool[2]) or 0
-            for j = 1, #stepsOut do
-                if j ~= i then
-                    local s = stepsOut[j]
-                    if not s.tool and s[3] ~= 0 and not s.checkpoint then
-                        local a, b = tonumber(s[1]) or 0, tonumber(s[2]) or 0
-                        if a < q and p < b and not (a >= p and q >= b) then
-                            local unit = (s.cost or 0) / math.max(1, s[4] or 1)
-                            local nL, nR = 0, 0
-                            if a < p then
-                                nL = ToolCraftsOf(s[3], a, p - 1, recOf)
-                                if not nL then nL = (s[4] or 1) * (p - a) / math.max(1, b - a) end
-                            end
-                            if q < b then
-                                nR = ToolCraftsOf(s[3], q, b - 1, recOf)
-                                if not nR then nR = (s[4] or 1) * (b - q) / math.max(1, b - a) end
-                            end
-                            local left, right = nil, nil
-                            if a < p then
-                                left = {}
-                                for k, v in pairs(s) do left[k] = v end
-                                left[2] = p
-                                left[4] = math.max(1, math.ceil(nL - 1e-9))
-                                left.cost = unit * left[4]
-                                left.stepIndex = nil
-                                left.index = nil
-                            end
-                            if q < b then
-                                right = {}
-                                for k, v in pairs(s) do right[k] = v end
-                                right[1] = q
-                                right[4] = math.max(1, math.ceil(nR - 1e-9))
-                                right.cost = unit * right[4]
-                                right.stepIndex = nil
-                                right.index = nil
-                            end
-                            table.remove(stepsOut, j)
-                            if j < i then i = i - 1 end
-                            local ti = i
-                            if left then
-                                table.insert(stepsOut, ti, left)
-                                ti = ti + 1
-                            end
-                            if right then
-                                table.insert(stepsOut, ti + 1, right)
-                            end
-                            changed = true
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return changed
-end
-
 local function InjectTools(stepsOut, slug, cap, startLv, recOf)
     local kept = {}
     local G = ns.ProfGates
-    if not G or not G.AutoCraftTools() then return kept end
+    if not G or not G.AutoCraftTools(slug) then return kept end
     local goals = G.ToolGoals(slug, cap)
     if #goals == 0 then return kept end
     local have = {}
@@ -1349,13 +1405,14 @@ local function InjectTools(stepsOut, slug, cap, startLv, recOf)
     local lo = tonumber(startLv) or 1
     for _, goal in ipairs(goals) do
         local P = goal.minSkill or 1
-        if P >= lo and not have[goal.spell] and recOf[goal.spell] and not G.ToolOwned(goal.item) then
+        local E=ns.ProfEconomy
+        local required=not (E and E.RequiredLevelingTool) or E.RequiredLevelingTool(slug,goal)
+        if required and P >= lo and not have[goal.spell] and recOf[goal.spell] and not G.ToolOwned(goal.item) then
             local at = #stepsOut + 1
             for i, st in ipairs(stepsOut) do
-                if (tonumber(st[1]) or 0) >= P then at = i break end
+                if (tonumber(st[2]) or 0) > P then at = i break end
             end
-            at = SplitForTool(stepsOut, P, recOf) or at
-            table.insert(stepsOut, at, { P, P + 1, goal.spell, 1,
+            table.insert(stepsOut, at, { P, P, goal.spell, 1,
                 tool = true, toolItem = goal.item, toolSpell = goal.spell,
                 toolBop = goal.bindOnPickup or nil })
             have[goal.spell] = true
@@ -1451,20 +1508,35 @@ end
 
 function RA.FilterFixedSpecializations(slug, steps, opts)
     local G = ns.ProfGates
+    local E = ns.ProfEconomy
     local filtered, blocked = {}, {}
-    if not (G and G.LearningEligibility) then
+    if not (E and E.LearningEligibility) and not (G and G.LearningEligibility) then
         for _, st in ipairs(steps or {}) do filtered[#filtered + 1] = st end
         return filtered, blocked, false
     end
     local ctx = SpecContext(slug, opts)
     for _, st in ipairs(steps or {}) do
         local spell = st[3] or st.spell
-        local allowed, reason = true, nil
-        if spell then allowed, reason = G.LearningEligibility(spell) end
+        local allowed, reason, detail, recipe = true, nil, nil, nil
+        if spell and spell~=0 and not st.checkpoint then
+            local profession=st.profession or slug
+            recipe=E and E.FindRecipe and E.FindRecipe(profession,spell) or st.recipe
+            if recipe and #(recipe.requiredDataUnknown or {})>0 then
+                local onlyLearn=true
+                for _,field in ipairs(recipe.requiredDataUnknown)do if field~="learn"then onlyLearn=false end end
+                allowed,reason=false,onlyLearn and "learningRequirementsUnknown"or"clientDataPending"
+            elseif recipe and (recipe.cooldown or recipe.cooldownUnknown)then
+                allowed,reason=false,recipe.cooldown and "cooldown"or"cooldownUnknown"
+            elseif recipe and E and E.LearningEligibility then
+                allowed,reason,detail=(E.RouteRecipeEligibility or E.LearningEligibility)(recipe,opts and opts.snapshot)
+            elseif E and E.FindRecipe then allowed,reason=false,"clientDataPending"
+            elseif G and G.LearningEligibility then allowed,reason=G.LearningEligibility(spell) end
+        end
         if allowed then
             filtered[#filtered + 1] = st
         else
             blocked[#blocked + 1] = { spell = spell, from = st[1], to = st[2],
+                learningDetail=detail and RA.LearningDiagnostic(reason,recipe,detail),
                 reason = reason or "specializationRequired" }
         end
     end
@@ -1475,6 +1547,7 @@ end
 
 function RA.MarkFixedSpecializations(slug, steps, opts)
     local _, blocked = RA.FilterFixedSpecializations(slug, steps, opts)
+    for _,st in ipairs(steps or {}) do st.specBlocked=nil end
     if #blocked == 0 then return nil end
     local bySpell = {}
     for _, b in ipairs(blocked) do
@@ -1482,13 +1555,24 @@ function RA.MarkFixedSpecializations(slug, steps, opts)
     end
     for _, st in ipairs(steps or {}) do
         local reason = bySpell[st[3]]
-        if reason then st.specBlocked = reason end
+        st.specBlocked = reason
     end
     return blocked
 end
 
 function RA.StampSupply(result, context)
     if type(result) ~= "table" then return result end
+    local economy=ns.ProfEconomy
+    if economy and economy.SummarizeFormulaSupply then economy.SummarizeFormulaSupply(result,context) end
+    result.considerAuctionSupply=economy and economy.ConsiderAuctionSupply and economy.ConsiderAuctionSupply(context) or false
+    if not result.considerAuctionSupply then
+        result.auctionSupplyUnknown=nil
+        for _,entry in ipairs(result.mats or {}) do entry.considerAuctionSupply=false end
+        for _,entry in ipairs(result.formulas or {}) do
+            entry.considerAuctionSupply=entry.source=="ah" or entry.source=="auction"
+        end
+        return result
+    end
     local AB = ns.AuctionBridge
     local unknown = 0
     local now = (type(time) == "function") and time() or 0
@@ -1503,12 +1587,13 @@ function RA.StampSupply(result, context)
         return rec
     end
     for _, e in ipairs(result.mats or {}) do
+        e.considerAuctionSupply=true
         local mid = e.id or e[1]
         if mid and not e.vendor and (e.source == nil or e.source == "ah") then
             local rec = SupplyOf(mid)
             if rec and rec.complete and rec.ownerExcluded and rec.source == "client-auction-results"
                 and type(rec.quantity) == "number" and rec.observedAt > 0
-                and now - rec.observedAt <= 172800 then
+                and now - rec.observedAt <= RA.MaxStaleSeconds() then
                 e.source = e.source or "ah"
                 e.availableCount = rec.quantity
                 e.supplyObserved = true
@@ -1589,7 +1674,7 @@ function RA.ComputeFishing(slug, opts)
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
     local start = math.max(1, math.min(cap - 1, opts.start or 1))
-    local steps, gaps = Simulate(cands, start, cap, true, "crafts", true)
+    local steps, gaps = Simulate(cands, start, cap, true, "crafts")
     if #steps == 0 then return nil end
     local stepsOut = ToReached(steps)
     local fishList, fishAt = {}, {}
@@ -1632,15 +1717,15 @@ function RA.ComputeFishing(slug, opts)
     end
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory, fishSet)
+        SummarizeCore(stepsOut, recOf, soldSet, false, nil, opts.executionInventory, fishSet,slug,opts)
     local reached = stepsOut[#stepsOut] and stepsOut[#stepsOut][2] or start
     local res = {
-        planVersion = 2, scheme = "fishing", fishingRoute = true,
+        planVersion = 2, scheme = "fishing", fishingRoute = true, fishingRouteRevision=2,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
         fishMaterials = fishList,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
         total = total + formulasTotal, vendorTotal = vendorTotal,
-        ahTotal = total - vendorTotal,
+        ahTotal = total + formulasTotal - vendorTotal,
         productAH = productAH, productNPC = productNPC, productPartial = productPartial,
         crafts = crafts,
         start = start, target = cap, plannedTo = reached,
@@ -1661,34 +1746,28 @@ function RA.Compute(slug, opts)
         local fr = RA.ComputeFishing(slug, opts)
         if fr then return fr end
     end
-    local cands, recOf, soldSet, blockedCount = BuildCandidates(slug, opts)
+    local cands, recOf, soldSet, blockedCount, learningGaps = BuildCandidates(slug, opts)
     if not cands then return nil end
     local scheme = opts.scheme
     if scheme == nil or not SCHEME_LABEL[scheme] then scheme = "cheapest" end
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
-    local PDm = ns.ProfModule
     local allowUnpriced = false
-    local strictMats = true
-    if PDm then
-        if PDm.Setting then allowUnpriced = not PDm.Setting("autoSkipUnpricedFormulas") end
-        if PDm.SettingRaw then strictMats = PDm.SettingRaw("autoOnlyAH") ~= false end
-    end
-    local steps, gaps = Simulate(cands, opts.start, cap, allowUnpriced, scheme, not strictMats)
+    local steps, gaps = Simulate(cands, opts.start, cap, allowUnpriced, scheme)
     local filled = false
-    local strictOnly = opts.strictOnly
-    if strictOnly == nil and RA.__debugStrictOnly then strictOnly = true end
-    local fallbackN, fallbackFrom, fallbackTo = 0, nil, nil
-    if #gaps > 0 and not strictOnly then
-        steps, gaps = FillGaps(cands, steps, gaps, scheme, allowUnpriced, true, strictMats)
+    if #gaps > 0 then
+        steps, gaps = FillGaps(cands, steps, gaps, scheme, allowUnpriced)
         for _, st in ipairs(steps) do
-            if st.est then filled = true end
-            if st.unpricedFallback then
-                fallbackN = fallbackN + 1
-                if fallbackFrom == nil or (st[1] or 0) < fallbackFrom then fallbackFrom = st[1] end
-                if fallbackTo == nil or (st[2] or 0) > fallbackTo then fallbackTo = st[2] end
-            end
+            if st.est then filled = true break end
         end
+    end
+    if #learningGaps>0 and #gaps>0 then
+        -- A later usable interval is not reachable across an unresolved gap.
+        local stop=cap
+        for _,gap in ipairs(gaps) do stop=math.min(stop,gap[1]) end
+        local prefix={}
+        for _,step in ipairs(steps) do if step[1]<stop then prefix[#prefix+1]=step end end
+        steps=prefix
     end
     if scheme == "optim" then
         local bySpell = {}
@@ -1702,141 +1781,43 @@ function RA.Compute(slug, opts)
     local kept = InjectTools(stepsOut, slug, cap, opts.start, recOf)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
-    local looseMats, looseN = nil, 0
-    if not strictMats then
-        for _, e in ipairs(mats or {}) do
-            if e.unpriced then looseN = looseN + 1 end
-        end
-        if looseN > 0 then looseMats = true end
-    end
-    local fallbackSteps = fallbackN
-    if fallbackSteps <= 0 then fallbackSteps = nil end
+        SummarizeCore(stepsOut, recOf, soldSet, false, nil, opts.executionInventory,nil,slug,opts)
     local res = {
         scheme = scheme,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,
         total = total + formulasTotal, matTotal = total,
         formulas = formulas, formulasTotal = formulasTotal,
-        vendorTotal = vendorTotal, ahTotal = total - vendorTotal,
+        vendorTotal = vendorTotal, ahTotal = total + formulasTotal - vendorTotal,
         productAH = productAH, productNPC = productNPC, productPartial = productPartial,
         crafts = crafts,
         start = math.max(1, math.min(CAP - 1, opts.start or 1)),
         target = cap,
         priced = RA.HasPriceData(),
         filled = filled,
-        looseMats = looseMats,
-        fallbackSteps = fallbackSteps,
-        fallbackFrom = fallbackFrom,
-        fallbackTo = fallbackTo,
         specBlocked = blockedCount,
+        learningGaps=learningGaps,learningCoverageComplete=#learningGaps==0,
         toolItems = kept,
         snapshotAge = SnapshotSec(),
         snapshotDays = priceCache.__minAge,
         stamp = time and time() or 0,
     }
-    return RA.ApplyRecovery(res, slug, opts, recOf)
-end
-
-function RA.RebuildFromSkel(slug, skel, opts)
-    opts = opts or {}
-    if type(skel) ~= "table" or type(skel.steps) ~= "table" or #skel.steps == 0 then return nil end
-    local pr = ns.ProfRecipes
-    local Rg = pr and pr[slug]
-    if not (Rg and type(Rg.rows) == "table") then return nil end
-    local recOf = {}
-    for _, rec in ipairs(Rg.rows) do
-        if type(rec[1]) == "number" then recOf[rec[1]] = rec end
-    end
-    local LV = ns.ProfLeveling and ns.ProfLeveling[slug]
-    local soldSet = {}
-    if LV and type(LV.sold) == "table" then
-        for _, id in ipairs(LV.sold) do soldSet[id] = true end
-    end
-    if LV and type(LV.rinfo) == "table" then
-        for spell, ri in pairs(LV.rinfo) do
-            if recOf[spell] == nil and type(ri) == "table" then recOf[spell] = ri end
+    if #learningGaps>0 then
+        res.plannedTo=stepsOut[#stepsOut] and stepsOut[#stepsOut][2] or res.start
+        res.targetReached=res.plannedTo>=cap;res.partial=not res.targetReached
+        res.feasible=#stepsOut>0;res.status=res.targetReached and "complete" or res.feasible and "incomplete" or "infeasible"
+        res.optimal=false
+        if not res.targetReached then
+            res.learningComplete=false;res.completeCost=false
+            res.blockingDiagnostics=learningGaps;res.diagnostics=learningGaps
         end
     end
-    local steps, toolItems = {}, {}
-    for i = 1, #skel.steps do
-        local src = skel.steps[i]
-        if type(src) == "table" and type(src[3]) == "number" and recOf[src[3]] then
-            local st = { tonumber(src[1]) or 1, tonumber(src[2]) or 1, src[3], tonumber(src[4]) or 1 }
-            if src.tool then
-                st.tool, st.toolItem = true, src.toolItem
-                st.toolSpell, st.toolBop = src.toolSpell, src.toolBop
-                if type(src.toolItem) == "number" then toolItems[#toolItems + 1] = src.toolItem end
-            end
-            steps[#steps + 1] = st
-        end
-    end
-    if #steps == 0 then return nil end
-    if DeNestEnabled() then DeNestSteps(steps, recOf) end
-    NormalizeStepOrder(steps)
-    local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
-          productAH, productNPC, productPartial =
-        SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
-    local cap = tonumber(opts.target) or tonumber(skel.target) or CAP
-    cap = math.max(2, math.min(CAP, math.floor(cap)))
-    local res = {
-        scheme = skel.scheme or opts.scheme or "cheapest",
-        planVersion = skel.pv,
-        steps = steps, gaps = {}, mats = mats, firstAt = firstAt,
-        total = total + formulasTotal, matTotal = total,
-        formulas = formulas, formulasTotal = formulasTotal,
-        vendorTotal = vendorTotal, ahTotal = total - vendorTotal,
-        productAH = productAH, productNPC = productNPC, productPartial = productPartial,
-        crafts = crafts,
-        start = math.max(1, math.min(CAP - 1, tonumber(skel.start) or tonumber(opts.start) or 1)),
-        target = cap,
-        priced = RA.HasPriceData(),
-        filled = skel.filled and true or false,
-        fallbackSteps = skel.fallbackSteps,
-        fallbackFrom = skel.fallbackFrom,
-        fallbackTo = skel.fallbackTo,
-        specBlocked = tonumber(skel.specBlocked) or 0,
-        toolItems = toolItems,
-        snapshotAge = SnapshotSec(),
-        snapshotDays = priceCache.__minAge,
-        stamp = time and time() or 0,
-        stale = skel.stale and true or nil,
-        fromSkeleton = true,
-    }
-    return RA.ApplyRecovery(res, slug, opts, recOf)
-end
-
-function RA.FinalizeTools(res, slug, opts)
-    if type(res) ~= "table" or type(res.steps) ~= "table" then return res end
-    opts = opts or {}
-    local cands, recOf, soldSet = BuildCandidates(slug, opts)
-    if not cands then return res end
-    local cap = tonumber(opts.target) or CAP
-    cap = math.max(2, math.min(CAP, math.floor(cap)))
-    local changed = SplitAroundTools(res.steps, recOf)
-    local kept = InjectTools(res.steps, slug, cap, opts.start, recOf)
-    if DeNestEnabled() and DeNestSteps(res.steps, recOf) then changed = true end
-    if NormalizeStepOrder(res.steps) then changed = true end
-    if not changed and (type(kept) ~= "table" or #kept == 0) then return res end
-    local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
-          productAH, productNPC, productPartial =
-        SummarizeCore(res.steps, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
-    res.mats = mats
-    res.firstAt = firstAt
-    res.matTotal = total
-    res.total = total + (formulasTotal or 0)
-    res.formulas = formulas
-    res.formulasTotal = formulasTotal
-    res.vendorTotal = vendorTotal
-    res.ahTotal = total - vendorTotal
-    res.productAH = productAH
-    res.productNPC = productNPC
-    res.productPartial = productPartial
-    res.crafts = crafts
-    res.toolItems = kept
+    local economy=ns.ProfEconomy
+    res.learningPolicyFingerprint=economy and economy.LearningPolicyFingerprint and economy.LearningPolicyFingerprint()
     return RA.ApplyRecovery(res, slug, opts, recOf)
 end
 
 local cache = {}
+
 
 function RA.Invalidate()
     local R = ns.ProfRecovery
@@ -1852,6 +1833,7 @@ function RA.Invalidate()
     for k in pairs(ahReason) do ahReason[k] = nil end
     for k in pairs(ahAge) do ahAge[k] = nil end
 end
+
 
 local priceWatchers = {}
 function RA.OnPricesChanged(fn)
@@ -1872,53 +1854,38 @@ local function Fingerprint(opts, slug)
     local pol = Pol and Pol.GetPolicies and Pol.GetPolicies(slug) or nil
     local partner = opts.secondaryProfession
     if partner == nil and Pol and Pol.GetRoutePartner then partner = Pol.GetRoutePartner(slug) end
-    local base = string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
-        tostring(opts.start), tostring(opts.onlyAH),
-        tostring(opts.noFormula), tostring(opts.learnedOnly),
+    return string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
+        tostring(opts.start), tostring(opts.onlyAH), tostring(opts.considerAuctionSupply),
+        tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas),
+        tostring(opts.allowLimitedFormulas),
         tostring(opts.target and math.floor(tonumber(opts.target) or CAP)),
         tostring(opts.scheme),
         tostring(opts.allowSecondaryLeveling),
         tostring(partner),
-        tostring(opts.residualMass),
-        tostring(PLAN_STRUCT_REV),
-        pol and Pol.PolicyFingerprint(pol) or "")
-    if opts.strictOnly or RA.__debugStrictOnly then return base .. "|strictOnly" end
-    local inv = opts.executionInventory
-    if type(inv) == "table" then
-        local n, sum = 0, 0
-        for id, c in pairs(inv) do
-            n = n + 1
-            sum = sum + (tonumber(id) or 0) + (tonumber(c) or 0)
-        end
-        if n > 0 then return base .. "|inv" .. n .. ":" .. sum end
-    end
-    return base
+        pol and Pol.PolicyFingerprint(pol) or "",
+        Pol and Pol.LearningPolicyFingerprint and Pol.LearningPolicyFingerprint() or "",
+        Pol and Pol.LearningObservationFingerprint and Pol.LearningObservationFingerprint() or "")
 end
-function RA.QuoteSig()
+
+function RA.QuoteSig(slug)
     local AB = ns.AuctionBridge
     local PDm = ns.ProfModule
     local rev = AB and AB.SupplyRevision and AB.SupplyRevision() or 0
-    local fee = PDm and PDm.SettingRaw and tonumber(PDm.SettingRaw("recoveryFeePercent")) or 5
-    local lim = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas")) and 1 or 0
-    local unk = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and 1 or 0
-    local rec = (PDm and PDm.Setting and PDm.Setting("recoveryEnabled")) and 1 or 0
-    local tool = (PDm and PDm.Setting and PDm.Setting("autoCraftTools")) and 1 or 0
-    local rm = (PDm and PDm.Setting and PDm.Setting("autoResidualMass")) and 1 or 0
-    local dn = (PDm and PDm.Setting and PDm.Setting("autoDeNestSteps") ~= false) and 1 or 0
-    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(unk)
-        .. ":" .. tostring(rec) .. ":" .. tostring(tool) .. ":" .. tostring(rm)
-        .. ":" .. tostring(dn)
+    local fee = PDm and PDm.SettingRaw and tonumber(PDm.SettingRaw("recoveryFeePercent",slug)) or 5
+    local lim = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoBuyLimitedFormulas",slug)) and 1 or 0
+    local bop = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoAllowBindOnPickupFormulas",slug)) and 1 or 0
+    local currency = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoAllowCurrencyFormulas",slug)) and 1 or 0
+    local rec = (PDm and PDm.Setting and PDm.Setting("recoveryEnabled",slug)) and 1 or 0
+    local tool = (PDm and PDm.Setting and PDm.Setting("autoCraftTools",slug)) and 1 or 0
+    return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(bop) .. ":" .. tostring(currency)
+        .. ":" .. tostring(rec) .. ":" .. tostring(tool)
 end
 
 function RA.SpecSig(slug)
     local G = ns.ProfGates
     if not (G and G.SpecFingerprint) then return "" end
     local choice = "none"
-    if G.EffectiveChoice then
-        choice = G.EffectiveChoice()
-    elseif G.GetPlannedChoice then
-        choice = G.GetPlannedChoice()
-    end
+    if G.GetPlannedChoice then choice = G.GetPlannedChoice() end
     return G.SpecFingerprint(choice)
 end
 
@@ -1926,21 +1893,22 @@ function RA.OptionsFor(slug, current)
     local PDm = ns.ProfModule
     if not (PDm and PDm.Setting) then return nil end
     local fish = PDm.CookingFishingMode and PDm.CookingFishingMode(slug) or false
-    local pair = (not fish) and PDm.RoutePairContext and PDm.RoutePairContext() or nil
-    local target = PDm.LvTarget and PDm.LvTarget() or CAP
+    local pair = (not fish) and PDm.RoutePairContext and PDm.RoutePairContext(slug) or nil
+    local target = PDm.LvTarget and PDm.LvTarget(slug) or CAP
     local lv = tonumber(current)
     return {
-        start = (PDm.Setting("autoFromCurrent") and lv) and math.max(1, lv) or 1,
-        onlyAH = PDm.Setting("autoOnlyAH"),
-        noFormula = PDm.Setting("autoNoFormula"),
-        learnedOnly = PDm.Setting("autoLearnedOnly"),
+        start = (PDm.Setting("autoFromCurrent",slug) and lv) and math.max(1, lv) or 1,
+        onlyAH = PDm.Setting("autoOnlyAH",slug),
+        considerAuctionSupply = PDm.Setting("autoConsiderAuctionSupply",slug),
+        allowLimitedFormulas = PDm.Setting("autoBuyLimitedFormulas",slug),
+        allowBindOnPickupFormulas = PDm.Setting("autoAllowBindOnPickupFormulas",slug),
+        allowCurrencyFormulas = PDm.Setting("autoAllowCurrencyFormulas",slug),
         target = target,
-        scheme = fish and "fishing" or PDm.SettingRaw("autoScheme"),
-        residualMass = PDm.Setting("autoResidualMass"),
-        allowSecondaryLeveling = PDm.Setting("autoSecondaryLeveling"),
+        scheme = slug=="first-aid" and "fixed" or fish and "fishing" or PDm.SettingRaw("autoScheme",slug),
+        allowSecondaryLeveling = PDm.Setting("autoSecondaryLeveling",slug),
         secondaryProfession = pair and pair.partner or nil,
-        executionInventory = ns.ProfTrack and ns.ProfTrack.ContinueInventory
-            and ns.ProfTrack.ContinueInventory(slug) or nil,
+        executionInventory = ns.ProfExecution and ns.ProfExecution.GetContinuation
+            and ns.ProfExecution.GetContinuation(slug) or nil,
     }
 end
 
@@ -1950,52 +1918,13 @@ function RA.Recalculate(slug, opts)
 end
 
 function RA.PlanSig(slug, opts)
-    return Fingerprint(opts or {}, slug) .. "#" .. RA.QuoteSig() .. "#" .. RA.SpecSig(slug)
-end
-
-function RA.Peek(slug, opts)
-    opts = opts or {}
-    local bucket = cache[slug]
-    if not bucket then return nil end
-    local e = bucket[Fingerprint(opts, slug)]
-    if not e then return nil end
-    if e.sig ~= RA.QuoteSig() or e.specSig ~= RA.SpecSig(slug) then return nil end
-    local now = (type(time) == "function") and time() or 0
-    if (now - e.stamp) >= CACHE_TTL then return nil end
-    return e.res
-end
-
-local asyncBusy = {}
-
-function RA.GetAsync(slug, opts, onDone)
-    local key = tostring(slug) .. "|" .. tostring((opts or {}).start) .. "|" .. tostring((opts or {}).target)
-    if asyncBusy[key] then return false end
-    local ticket = {}
-    asyncBusy[key] = ticket
-    local co = coroutine.create(function() return RA.Get(slug, opts) end)
-    local function finish(res, err)
-        if asyncBusy[key] ~= ticket then return end
-        asyncBusy[key] = nil
-        if type(onDone) == "function" then onDone(res, err) end
-    end
-    local function job()
-        if asyncBusy[key] ~= ticket then return true end
-        local t0 = debugprofilestop and debugprofilestop() or 0
-        while true do
-            local ok, res = coroutine.resume(co)
-            if not ok then finish(nil, res) return true end
-            if coroutine.status(co) == "dead" then finish(res) return true end
-            if debugprofilestop and (debugprofilestop() - t0) >= 3 then return false end
-        end
-    end
-    if ns.IdleJobs then ns.IdleJobs.Add(job) else job() end
-    return true
+    return Fingerprint(opts or {}, slug) .. "#" .. RA.QuoteSig(slug) .. "#" .. RA.SpecSig(slug)
 end
 
 function RA.Get(slug, opts)
     opts = opts or {}
     local fp = Fingerprint(opts, slug)
-    local sig = RA.QuoteSig()
+    local sig = RA.QuoteSig(slug)
     local specSig = RA.SpecSig(slug)
     local bucket = cache[slug]
     if not bucket then

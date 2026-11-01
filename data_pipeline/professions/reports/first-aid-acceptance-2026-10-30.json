@@ -1,0 +1,72 @@
+{
+  "tests": {
+    "profession": {
+      "count": 485,
+      "result": "OK"
+    },
+    "pipeline": {
+      "count": 152,
+      "result": "OK"
+    }
+  },
+  "changedDataFiles": [
+    "Core/Data/Data_Professions.lua",
+    "Core/Data/Data_ProfLearningSources.lua",
+    "Core/Data/Data_ProfLeveling.lua",
+    "Core/Data/Data_ProfRecipes.lua",
+    "Core/Data/enUS/Data_Professions.lua",
+    "Core/Data/enUS/Data_ProfLeveling.lua",
+    "Core/Data/enUS/Data_ProfRecipes.lua",
+    "Core/Data/zhTW/Data_Professions.lua",
+    "Core/Data/zhTW/Data_ProfLeveling.lua",
+    "Core/Data/zhTW/Data_ProfRecipes.lua"
+  ],
+  "otherProfessionFactsChanged": 0,
+  "recipes": 32,
+  "learningRecords": 34,
+  "metadata": {
+    "rules": 7,
+    "fingerprint": "c66efb5a63bfa19c5761f8f07a5c0560768801b965b31599d2958c667e5e4650",
+    "build": "1.60.1.70685",
+    "schema": 1,
+    "product": "wowf"
+  },
+  "liveConfirmations": [
+    {
+      "spell": 3275,
+      "outputPerCraft": 1,
+      "source": "user confirmation in this conversation",
+      "date": "2026-10-30"
+    }
+  ],
+  "gameUIAndFullRouteAcceptance": "not run",
+  "remainingLearningSourceSpells": [
+    10841,
+    18629,
+    18630
+  ],
+  "hashes": {
+    "Core/Data/Data_Professions.lua": "202601a968609bc649190cc9531532bc28585953067a77b11900b40035245398",
+    "Core/Data/Data_ProfLearningSources.lua": "24037709a85cd3c960045e3ca292d66ee792eb818ed9f97bc8492efecaec657f",
+    "Core/Data/Data_ProfLeveling.lua": "1591353ed2f2d5591f7701aca79c10bdfde6b302764c519a80e0e9830bca42cd",
+    "Core/Data/Data_ProfRecipes.lua": "45a1fcdc4ef4d07ee0118639ae90e0db83b91ea941c0bc3894995fa75ce03ccd",
+    "Core/Data/enUS/Data_Professions.lua": "2b7eed3bdb326cab13127573d8b83f4f009677724ff99c4381f4b359975380a9",
+    "Core/Data/enUS/Data_ProfLeveling.lua": "2177450e466a5d317c1d26b655a80e765ddb91492aafd5085bcf0baa33196a53",
+    "Core/Data/enUS/Data_ProfRecipes.lua": "9f525f906575f360c66a543ee225ce053cf0e4071622010a79200de3f38853ab",
+    "Core/Data/zhTW/Data_Professions.lua": "074584af5298e06685967599fa5a925546baadb87913076a6aa0c9e879319d80",
+    "Core/Data/zhTW/Data_ProfLeveling.lua": "ffbbf4b3ad1066bf551180056b3ba335e7caec968902868147d0816c5fdde199",
+    "Core/Data/zhTW/Data_ProfRecipes.lua": "70d85d2a9660fb83558ae622f5123681d538db5f3102617b1071dd24093f63c7",
+    "Core/ProfLearning.lua": "177c31eaaffd2d81239eea6e7475ed0b603c49e42d79f4be9fceba91dedf64c9",
+    "Core/ProfExecution.lua": "4daac81e39f5f1a13bff093ea0ccfc44df858d9e7f6079c1f6675fd0461d1c8f",
+    "Core/ProfFollow.lua": "aca1de7ea8cabe87d5ffa99365e1dbe5caebb780f857fc984ca65ef43c6f716c",
+    "Core/ProfessionUI.lua": "a6409140ea8a5c09dbfe5b80dc48674efb77be5bc4a21724ada237aced68e484",
+    "DungeonsForever.toc": "173785b16a0bedd2b55f2a8ca6830b80d02cf6904ed55554bc50fb36c6a1d516"
+  },
+  "sourceArchive": {
+    "path": ".pipeline-runtime\\first-aid-complete-20261030\\source-snapshot.zip",
+    "sha256": "4901066a7feaf7503bc7545c7796b8f7e66a6ae1fc43bc5b0dd1d2f8a237fbfb",
+    "files": 8804
+  },
+  "nativeRecipeGenerationDeterministic": true,
+  "diffCheck": "passed"
+}

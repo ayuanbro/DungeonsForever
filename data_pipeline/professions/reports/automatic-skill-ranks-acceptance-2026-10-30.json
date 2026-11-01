@@ -1,0 +1,221 @@
+{
+  "archiveReplay": {
+    "archiveReplayAuditEqual": true,
+    "archiveReplayLuaEqual": true,
+    "checkPassed": true,
+    "dataSHA256": "2cf3d8db3bee7cfb88dad1c2d07bb73a5fcde250c48611f45c0da33fbbb40007",
+    "headlessLinux": true,
+    "rawArchiveSHA256": "be42b2ad57c438bb25207d6a259131ac116206ea7c6091cd81eabde9df0fea7d",
+    "seconds": 35.701279973000055,
+    "socketConnectForbidden": true,
+    "summary": {
+      "confirmedPaths": 2261,
+      "luaBytes": 118685,
+      "recipes": 2540,
+      "recipesWithGaps": 2123
+    }
+  },
+  "build": "1.60.1.70685",
+  "capture": {
+    "maxP95RegressionPercent": 4.617579734676602,
+    "observations": [
+      {
+        "afterMedianMs": 8.533250000255066,
+        "afterP95Ms": 11.057599997002399,
+        "beforeMedianMs": 8.404399999562884,
+        "beforeP95Ms": 10.817700000188779,
+        "iterations": 150,
+        "learned": true,
+        "profession": "alchemy",
+        "regressionPercent": 2.217661765527179
+      },
+      {
+        "afterMedianMs": 11.626249999608262,
+        "afterP95Ms": 15.474200001335703,
+        "beforeMedianMs": 11.604799999986426,
+        "beforeP95Ms": 15.69050000034622,
+        "iterations": 150,
+        "learned": false,
+        "profession": "alchemy",
+        "regressionPercent": -1.3785411491395672
+      },
+      {
+        "afterMedianMs": 19.176750001861365,
+        "afterP95Ms": 23.189700001239544,
+        "beforeMedianMs": 18.96504999967874,
+        "beforeP95Ms": 22.524700001667952,
+        "iterations": 150,
+        "learned": true,
+        "profession": "blacksmithing",
+        "regressionPercent": 2.952314568106784
+      },
+      {
+        "afterMedianMs": 27.56405000036466,
+        "afterP95Ms": 36.05349999997998,
+        "beforeMedianMs": 26.979799999026,
+        "beforeP95Ms": 34.4695000021602,
+        "iterations": 150,
+        "learned": false,
+        "profession": "blacksmithing",
+        "regressionPercent": 4.595366911967114
+      },
+      {
+        "afterMedianMs": 25.624949999837554,
+        "afterP95Ms": 31.115500001760665,
+        "beforeMedianMs": 25.282949998654658,
+        "beforeP95Ms": 31.82520000336808,
+        "iterations": 150,
+        "learned": true,
+        "profession": "leatherworking",
+        "regressionPercent": -2.229993846173184
+      },
+      {
+        "afterMedianMs": 35.219399998823064,
+        "afterP95Ms": 42.453500002011424,
+        "beforeMedianMs": 35.51255000093079,
+        "beforeP95Ms": 40.57969999848865,
+        "iterations": 150,
+        "learned": false,
+        "profession": "leatherworking",
+        "regressionPercent": 4.617579734676602
+      }
+    ],
+    "passed": true,
+    "scope": "capture target 75 only; excludes solving, UI, callbacks, initial load and real client"
+  },
+  "clientObservedThresholdsHavePriority": true,
+  "difficultyColorThresholdsUnchanged": true,
+  "evidence": {
+    "agentPerformedGameAcceptance": false,
+    "sameBuildWagoSkillLineAbilityAgrees": true,
+    "userReportedAllEightAutomaticOnProfessionLearning": true,
+    "userReportedDate": "2026-10-30"
+  },
+  "fingerprint": "4132273a88c07e5f33f2296562f324253bb3e6e6b02591324941ac031aedc7eb",
+  "firstAidUnchanged": true,
+  "frozenInputsPreserved": true,
+  "generation": {
+    "allPublicFieldsEqualFreshRuntimeProjection": true,
+    "build": "1.60.1.70685",
+    "dataSHA256": "2cf3d8db3bee7cfb88dad1c2d07bb73a5fcde250c48611f45c0da33fbbb40007",
+    "fingerprint": "4132273a88c07e5f33f2296562f324253bb3e6e6b02591324941ac031aedc7eb",
+    "firstAidExcluded": true,
+    "foreverOnly": true,
+    "luaVersion": "Lua 5.1",
+    "nativeRecipesUntouched": true,
+    "offline": true,
+    "professions": {
+      "alchemy": 204,
+      "blacksmithing": 513,
+      "cooking": 135,
+      "enchanting": 264,
+      "engineering": 280,
+      "fishing": 6,
+      "herbalism": 4,
+      "leatherworking": 605,
+      "mining": 22,
+      "poisons": 26,
+      "skinning": 3,
+      "tailoring": 478
+    },
+    "recordsVerified": 2540,
+    "rules": 5
+  },
+  "hardTwoMillisecondCallbackBudget": "not measured; no new background task",
+  "learningPolicyVersion": 9,
+  "memory": {
+    "allProfessionsMaxKiB": 1339.0888671875,
+    "coldMaxKiB": 252.884765625,
+    "passed": true,
+    "scope": "Full selected TOC, three locales, pre-initialization, strongly retained native recipe record/route views",
+    "singleProfessionMaxKiB": 508.1748046875
+  },
+  "newWebRequests": 0,
+  "offline": true,
+  "originalDataFilesUnchanged": 129,
+  "originalTOCUnchanged": true,
+  "resolved": [
+    {
+      "decision": "confirmedAutomaticSkillGrant",
+      "effectiveRank": 1,
+      "originalDataRank": 10,
+      "profession": "alchemy",
+      "spell": 1245246,
+      "userReportedDate": "2026-10-30"
+    },
+    {
+      "decision": "confirmedAutomaticSkillGrant",
+      "effectiveRank": 1,
+      "originalDataRank": 10,
+      "profession": "alchemy",
+      "spell": 1245250,
+      "userReportedDate": "2026-10-30"
+    },
+    {
+      "decision": "confirmedAutomaticSkillGrant",
+      "effectiveRank": 1,
+      "originalDataRank": 10,
+      "profession": "blacksmithing",
+      "spell": 1245287,
+      "userReportedDate": "2026-10-30"
+    },
+    {
+      "decision": "confirmedAutomaticSkillGrant",
+      "effectiveRank": 1,
+      "originalDataRank": 20,
+      "profession": "enchanting",
+      "spell": 7428,
+      "userReportedDate": "2026-10-30"
+    },
+    {
+      "decision": "confirmedAutomaticSkillGrant",
+      "effectiveRank": 1,
+      "originalDataRank": 10,
+      "profession": "enchanting",
+      "spell": 1245320,
+      "userReportedDate": "2026-10-30"
+    },
+    {
+      "decision": "confirmedAutomaticSkillGrant",
+      "effectiveRank": 1,
+      "originalDataRank": 10,
+      "profession": "enchanting",
+      "spell": 1245321,
+      "userReportedDate": "2026-10-30"
+    },
+    {
+      "decision": "confirmedAutomaticSkillGrant",
+      "effectiveRank": 1,
+      "originalDataRank": 125,
+      "profession": "poisons",
+      "spell": 8681,
+      "userReportedDate": "2026-10-30"
+    },
+    {
+      "decision": "confirmedAutomaticSkillGrant",
+      "effectiveRank": 1,
+      "originalDataRank": 5,
+      "profession": "tailoring",
+      "spell": 3755,
+      "userReportedDate": "2026-10-30"
+    }
+  ],
+  "rules": 5,
+  "summary": {
+    "confirmedPaths": 2261,
+    "luaBytes": 118685,
+    "recipes": 2540,
+    "recipesWithGaps": 2123
+  },
+  "tests": {
+    "locales": [
+      "zhCN",
+      "zhTW",
+      "enUS"
+    ],
+    "nativeAndLearning": 68,
+    "pipeline": 143,
+    "rankOneIsolatedRouteCases": 16,
+    "skipped": 0
+  }
+}

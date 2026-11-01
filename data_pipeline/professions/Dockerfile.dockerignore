@@ -1,0 +1,12 @@
+**
+!data_pipeline/
+!data_pipeline/**
+!Core/
+!Core/**
+!Locales/
+!Locales/**
+!validation/
+!validation/**
+!DungeonsForever.toc
+**/__pycache__/
+**/.pipeline-test-*/

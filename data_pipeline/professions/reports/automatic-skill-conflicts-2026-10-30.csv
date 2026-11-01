@@ -1,0 +1,9 @@
+﻿profession,spell,route,sourceValue,retainedDevValue,decision,routeStatus
+alchemy,1245246,trainer:1245246,1,10,retainDev,confirmed
+alchemy,1245250,trainer:1245250,1,10,retainDev,confirmed
+blacksmithing,1245287,trainer:1245287,1,10,retainDev,confirmed
+enchanting,7428,trainer:7428,1,20,retainDev,confirmed
+enchanting,1245320,trainer:1245320,1,10,retainDev,confirmed
+enchanting,1245321,trainer:1245321,1,10,retainDev,confirmed
+poisons,8681,trainer:8681,1,125,retainDev,confirmed
+tailoring,3755,trainer:3755,1,5,retainDev,confirmed

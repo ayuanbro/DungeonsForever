@@ -1,0 +1,354 @@
+{
+  "date": "2026-10-30",
+  "scope": "Current repository data and offline consumers; no live game or live auction inspection.",
+  "question": "Can existing data and schemas support the agreed formula-acquisition rules?",
+  "conclusion": "Partially. Typed learning/acquisition/cost/stock fields support the main rules, but data gaps and two reproduced consumer omissions prevent claiming complete correctness.",
+  "label": "允许非金币获取的拾取绑定图纸",
+  "implementationChangedThisTurn": "UI/localization wording only; audit findings remain open.",
+  "generatedDataVerification": {
+    "allPublicFieldsEqualFreshRuntimeProjection": true,
+    "build": "1.60.1.70685",
+    "dataSHA256": "9c34b395b5f029daf0acead57df6890c24da1de2e40940045b45c9bd5bf8edbe",
+    "fingerprint": "c0b5dba91ed30145734fcce393ceaeb6d8e2966a5856a2a731a8616050f1f3b4",
+    "firstAidExcluded": true,
+    "foreverOnly": true,
+    "luaVersion": "Lua 5.1",
+    "nativeRecipesUntouched": true,
+    "offline": true,
+    "professions": {
+      "alchemy": 204,
+      "blacksmithing": 513,
+      "cooking": 135,
+      "enchanting": 264,
+      "engineering": 280,
+      "fishing": 6,
+      "herbalism": 4,
+      "leatherworking": 605,
+      "mining": 22,
+      "poisons": 26,
+      "skinning": 3,
+      "tailoring": 478
+    },
+    "recordsVerified": 2540,
+    "rules": 6
+  },
+  "nativeCatalogue": {
+    "scope": "native rows/crafted/enchants plus leveling.rinfo, deduplicated by profession+spell; first aid excluded",
+    "liveGameVerified": false,
+    "sourceBuild": "1.60.1.70685",
+    "sourceFingerprint": "c0b5dba91ed30145734fcce393ceaeb6d8e2966a5856a2a731a8616050f1f3b4",
+    "counts": {
+      "nativeRecipes": 2154,
+      "nativeRecipesInScope": 2154,
+      "nativeWithSupplement": 2153,
+      "nativeWithAtLeastOneLearningPath": 2126,
+      "nativeFormulaRecipes": 1481,
+      "nativeFormulaRecipesWithItemPath": 1480,
+      "nativeWithoutLearningPaths": 28,
+      "nativeFormulaRecipesWithoutSupplement": 1
+    },
+    "professions": {
+      "alchemy": {
+        "nativeRecipes": 182,
+        "withSupplement": 181,
+        "withoutSupplement": 1
+      },
+      "blacksmithing": {
+        "nativeRecipes": 441,
+        "withSupplement": 441
+      },
+      "cooking": {
+        "nativeRecipes": 124,
+        "withSupplement": 124
+      },
+      "enchanting": {
+        "nativeRecipes": 192,
+        "withSupplement": 192
+      },
+      "engineering": {
+        "nativeRecipes": 246,
+        "withSupplement": 246
+      },
+      "leatherworking": {
+        "nativeRecipes": 511,
+        "withSupplement": 511
+      },
+      "mining": {
+        "nativeRecipes": 15,
+        "withSupplement": 15
+      },
+      "poisons": {
+        "nativeRecipes": 26,
+        "withSupplement": 26
+      },
+      "tailoring": {
+        "nativeRecipes": 417,
+        "withSupplement": 417
+      }
+    },
+    "supplementOnlyAbilityCount": 3,
+    "supplementOnlyAbilityExamples": [
+      {
+        "profession": "engineering",
+        "spell": 15633,
+        "formula": 11827,
+        "supplementPresent": true,
+        "routes": 1,
+        "itemRoutes": 1,
+        "unresolvedItemBindings": 0,
+        "sourceCoverage": "partial",
+        "missingReasons": "acquisitionSourceMissing",
+        "nativeAbility": 0,
+        "supplementAbilities": "20219"
+      },
+      {
+        "profession": "engineering",
+        "spell": 15628,
+        "formula": 11828,
+        "supplementPresent": true,
+        "routes": 1,
+        "itemRoutes": 1,
+        "unresolvedItemBindings": 0,
+        "sourceCoverage": "partial",
+        "missingReasons": "acquisitionSourceMissing",
+        "nativeAbility": 0,
+        "supplementAbilities": "20222"
+      },
+      {
+        "profession": "engineering",
+        "spell": 12716,
+        "formula": "",
+        "supplementPresent": true,
+        "routes": 1,
+        "itemRoutes": 1,
+        "unresolvedItemBindings": 1,
+        "sourceCoverage": "partial",
+        "missingReasons": "acquisitionSourceMissing|itemDetailsMissing|sourceMissing",
+        "nativeAbility": 0,
+        "supplementAbilities": "20222"
+      }
+    ],
+    "sourceFileSHA256": "9c34b395b5f029daf0acead57df6890c24da1de2e40940045b45c9bd5bf8edbe"
+  },
+  "nativeFieldCoverage": {
+    "nativeRecipeCount": 2154,
+    "counts": {
+      "itemRoutes": 1723,
+      "bindingTradable": 720,
+      "noDocumentedAcquisition": 456,
+      "bindingUnknown": 125,
+      "bindingBound": 878,
+      "boundWithoutDocumentedAcquisition": 169
+    },
+    "notes": "Item-route counts, not unique items; native recipes keyed by profession+spell."
+  },
+  "supported": {
+    "typedCost": [
+      "price",
+      "currencies[{id,count}]",
+      "costItems[{id,count}]"
+    ],
+    "bindingMarker": "nonAuctionable bool with missing distinct from false",
+    "stock": "-1 unlimited, nonnegative limited count; observations separate from static stock",
+    "liveAuctionRequirement": "positive price plus complete owner-excluded client-auction-results quantity >=2, observed within 1800 seconds"
+  },
+  "sourceFieldCoverage": {
+    "counts": {
+      "item_routes_with_dropDetailsOffline": 573,
+      "item_routes_with_dropSourceCount": 573,
+      "item_routes_with_quests": 84,
+      "item_routes_with_vendors": 852,
+      "offline_drop_source_relationships": 37261,
+      "recipes": 2540,
+      "routes": 2611,
+      "vendor_extended": 723,
+      "vendor_nonextended": 919,
+      "vendor_with_costItems": 99,
+      "vendor_with_currencies": 624,
+      "vendor_with_currencyID": 624
+    },
+    "item_route_binding": {
+      "false": 845,
+      "missing": 251,
+      "true": 946
+    },
+    "vendor_price": {
+      "positive": 919,
+      "zero": 723
+    },
+    "vendor_quantity": {
+      "1": 1640,
+      "missing": 2
+    },
+    "vendor_stock": {
+      "-1": 1355,
+      "1": 278,
+      "2": 8,
+      "3": 1
+    },
+    "extended_vendor_fields": {
+      "conditions_missing": 723,
+      "costItems_present": 723,
+      "currencies_present": 723,
+      "currencyID_missing": 99,
+      "currencyID_present": 624,
+      "faction_missing": 723,
+      "price_present": 723,
+      "quantity_present": 723,
+      "rows": 723,
+      "stock_-1": 723
+    },
+    "extended_legacy_comparison": {
+      "currency_pairs_in_legacy": 624,
+      "item_exchange_pairs_in_legacy": 99,
+      "legacy_currency_matches": 624,
+      "legacy_currency_slot_holds_item_id": 99,
+      "legacy_side_0": 26,
+      "legacy_side_1": 309,
+      "legacy_side_2": 309,
+      "legacy_side_3": 79
+    },
+    "raw_binding_for_unique_teaching_items": {
+      "0": 844,
+      "1": 945,
+      "3": 1
+    },
+    "raw_binding_missing_item_rows": 247
+  },
+  "findings": [
+    {
+      "id": "exchange-faction",
+      "severity": "high",
+      "type": "missing_field_and_consumer_join",
+      "status": "open",
+      "evidence": "All 723 extended-cost vendor rows omit faction; legacy same item+NPC rows contain 309 Alliance, 309 Horde, 79 neutral, 26 unknown.",
+      "reproduction": {
+        "profession": "alchemy",
+        "spell": 1251752,
+        "item": 250998,
+        "playerFaction": "A",
+        "selectedNPC": 248196,
+        "selectedNPCFactionFromLegacy": "H",
+        "availableAllianceNPC": 256729
+      },
+      "impact": "A currency route can recommend an opposing-faction NPC.",
+      "fix": "Preserve or merge faction/access facts by item+NPC before selecting any exchange offer.",
+      "evidenceFile": "D:\\wangzekun\\Documents\\DungeonsForever\\.pipeline-runtime\\formula-policy-data-audit-20261030\\currency-faction-probe.json"
+    },
+    {
+      "id": "specialization-evidence",
+      "severity": "high",
+      "type": "consumer_omits_available_field",
+      "status": "open",
+      "evidence": "Native gates return 0 for spells 12716, 15628, 15633, while supplemental conditions require engineering abilities 20222, 20222, 20219.",
+      "impact": "The recipe-level SelectLearningRoute learned shortcut and planned-choice check can omit supplemental-only specialization restrictions; some full-solver paths have additional global conflict guards.",
+      "fix": "Unify specialization evidence before the learned-recipe shortcut and planned-choice check; preserve alternative route semantics.",
+      "evidenceFile": "D:\\wangzekun\\Documents\\DungeonsForever\\.pipeline-runtime\\formula-policy-data-audit-20261030\\consumer_boundary_probes.json"
+    },
+    {
+      "id": "binding-coverage",
+      "severity": "medium",
+      "type": "missing_source_data",
+      "status": "open",
+      "evidence": {
+        "allItemRoutes": 2042,
+        "allBindingMissing": 251,
+        "nativeItemRoutes": 1723,
+        "nativeBindingMissing": 125
+      },
+      "impact": "Static sources cannot classify every teaching item; unknown does not prove tradable or bound. Some catalogue entries are deprecated or may be resolved from client observations.",
+      "fix": "Retain the binding enum plus its known/unknown state; obtain missing source facts without inventing defaults.",
+      "evidenceFile": "D:\\wangzekun\\Documents\\DungeonsForever\\.pipeline-runtime\\formula-policy-data-audit-20261030\\native-binding-gaps.csv"
+    },
+    {
+      "id": "source-coverage",
+      "severity": "medium",
+      "type": "missing_source_data",
+      "status": "open",
+      "evidence": {
+        "nativeRecipes": 2154,
+        "nativeWithSupplement": 2153,
+        "nativeWithoutLearningPaths": 28,
+        "nativeItemRoutesWithoutSupplementAcquisition": 456,
+        "nativeBoundItemRoutesWithoutSupplementAcquisition": 169,
+        "missingNativeRecipe": {
+          "profession": "alchemy",
+          "spell": 1251750,
+          "item": 250996
+        }
+      },
+      "impact": "These are gaps in the supplemental layer, not proof that merged native/client/AH evidence cannot supply an acquisition path.",
+      "fix": "Reconcile native, supplemental and observed channels; record source uncertainty separately from actual eligibility restrictions.",
+      "evidenceFile": "D:\\wangzekun\\Documents\\DungeonsForever\\.pipeline-runtime\\formula-policy-data-audit-20261030\\native-field-coverage.json"
+    },
+    {
+      "id": "direct-quest-learning",
+      "severity": "medium",
+      "type": "represented_channel_not_consumed",
+      "status": "open",
+      "evidence": {
+        "profession": "tailoring",
+        "spell": 19435,
+        "quest": 6032,
+        "kind": "quest"
+      },
+      "impact": "An unlearned recipe with only a direct quest-teaching route is reported as learningDataMissing; it is not a BOP teaching item.",
+      "fix": "Define and implement a separate direct-quest learning channel instead of silently treating the existing route as absent.",
+      "evidenceFile": "D:\\wangzekun\\Documents\\DungeonsForever\\.pipeline-runtime\\formula-policy-data-audit-20261030\\direct_quest_consumer_probe.json"
+    },
+    {
+      "id": "acquisition-access",
+      "severity": "medium",
+      "type": "incomplete_source_conditions",
+      "status": "open",
+      "evidence": "All 1642 supplemental vendor rows lack typed access conditions. The 161 quest-source entries carry 161 level and 112 faction conditions, but not complete prerequisite/reward/phase checks. Drop sources are reduced to counts in 573 item routes.",
+      "impact": "These channels support a pending-acquisition plan, not a guarantee of immediate availability.",
+      "fix": "Keep pending acquisition and incomplete cost flags; add known prerequisites and access conditions without claiming absent fields are satisfied.",
+      "evidenceFile": "D:\\wangzekun\\Documents\\DungeonsForever\\.pipeline-runtime\\formula-policy-data-audit-20261030\\schema-coverage.json"
+    },
+    {
+      "id": "legacy-cost-type",
+      "severity": "medium",
+      "type": "legacy_schema_limit",
+      "status": "open",
+      "evidence": "99 item-exchange offers use the legacy currency ID slot; the typed supplemental costItems correctly retains their item identity. Legacy decoding also drops a nonzero gold component from synthetic extended-cost tuples. Current observed exchange offers all have zero gold.",
+      "impact": "The typed primary path is correct for existing item exchanges; legacy fallback cannot faithfully represent arbitrary mixed or multiple payment types.",
+      "fix": "Treat typed price/currencies/costItems as authoritative; preserve payment kind, amounts, and known zero versus missing cost in legacy projections.",
+      "evidenceFile": "D:\\wangzekun\\Documents\\DungeonsForever\\.pipeline-runtime\\formula-policy-data-audit-20261030\\item-cost-overlay-probe.json",
+      "currentExchangeBindingRows": {
+        "nonAuctionableTrue": 701,
+        "nonAuctionableFalse": 22,
+        "missing": 0
+      }
+    },
+    {
+      "id": "unresolved-conditions",
+      "severity": "medium",
+      "type": "schema_loss",
+      "status": "open",
+      "evidence": "The generator records unparsed item restrictions only as missingReasons/conditionsKnown=false. Item 21302 has AllowableClass 31240; current Rogue allowance is valid because bit 4 is set and retained classIDs={4} excludes other current classes.",
+      "impact": "The unresolved raw restriction is not preserved, but this example is not proof of an invalid current-class admission.",
+      "fix": "Separate missing provenance from unresolved concrete conditions and preserve raw condition identifiers/masks.",
+      "evidenceFile": "D:\\wangzekun\\Documents\\DungeonsForever\\.pipeline-runtime\\formula-policy-data-audit-20261030\\consumer_boundary_probes.json"
+    }
+  ],
+  "priority": [
+    "exchange-faction",
+    "specialization-evidence",
+    "binding-coverage",
+    "unresolved-conditions",
+    "legacy-cost-type",
+    "direct-quest-learning",
+    "acquisition-access",
+    "source-coverage"
+  ],
+  "renameValidation": {
+    "existingUITestsPassed": 22,
+    "newTestsAdded": false
+  },
+  "coreDataIntegrity": {
+    "count": 130,
+    "changed": [],
+    "added": []
+  }
+}

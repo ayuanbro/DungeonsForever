@@ -1,0 +1,1472 @@
+{
+  "generationInput": false,
+  "rules": 2,
+  "build": "1.60.1.70658",
+  "count": 183,
+  "conditions": [
+    {
+      "profession": "alchemy",
+      "spell": 17559,
+      "teachingItemID": 13482,
+      "factionID": 529,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "alchemy",
+      "spell": 17561,
+      "teachingItemID": 13484,
+      "factionID": 576,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "alchemy",
+      "spell": 24365,
+      "teachingItemID": 20011,
+      "factionID": 270,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "alchemy",
+      "spell": 24366,
+      "teachingItemID": 20012,
+      "factionID": 270,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "alchemy",
+      "spell": 24367,
+      "teachingItemID": 20013,
+      "factionID": 270,
+      "rawDB2Rank": 7,
+      "clientReaction": 8
+    },
+    {
+      "profession": "alchemy",
+      "spell": 24368,
+      "teachingItemID": 20014,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "alchemy",
+      "spell": 25146,
+      "teachingItemID": 20761,
+      "factionID": 59,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 16660,
+      "teachingItemID": 12698,
+      "factionID": 529,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 20872,
+      "teachingItemID": 17049,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 20873,
+      "teachingItemID": 17053,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 20874,
+      "teachingItemID": 17051,
+      "factionID": 59,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 20876,
+      "teachingItemID": 17052,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 20890,
+      "teachingItemID": 17059,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 20897,
+      "teachingItemID": 17060,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23632,
+      "teachingItemID": 19203,
+      "factionID": 529,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23633,
+      "teachingItemID": 19205,
+      "factionID": 529,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23636,
+      "teachingItemID": 19206,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23637,
+      "teachingItemID": 19207,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23638,
+      "teachingItemID": 19208,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23639,
+      "teachingItemID": 19209,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23650,
+      "teachingItemID": 19210,
+      "factionID": 59,
+      "rawDB2Rank": 7,
+      "clientReaction": 8
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23652,
+      "teachingItemID": 19211,
+      "factionID": 59,
+      "rawDB2Rank": 7,
+      "clientReaction": 8
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 23653,
+      "teachingItemID": 19212,
+      "factionID": 59,
+      "rawDB2Rank": 7,
+      "clientReaction": 8
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 24136,
+      "teachingItemID": 19776,
+      "factionID": 270,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 24137,
+      "teachingItemID": 19777,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 24138,
+      "teachingItemID": 19778,
+      "factionID": 270,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 24139,
+      "teachingItemID": 19779,
+      "factionID": 270,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 24140,
+      "teachingItemID": 19780,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 24141,
+      "teachingItemID": 19781,
+      "factionID": 270,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 24399,
+      "teachingItemID": 20040,
+      "factionID": 59,
+      "rawDB2Rank": 7,
+      "clientReaction": 8
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 27586,
+      "teachingItemID": 22219,
+      "factionID": 609,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 27590,
+      "teachingItemID": 22221,
+      "factionID": 609,
+      "rawDB2Rank": 7,
+      "clientReaction": 8
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 28242,
+      "teachingItemID": 22703,
+      "factionID": 529,
+      "rawDB2Rank": 7,
+      "clientReaction": 8
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 28243,
+      "teachingItemID": 22704,
+      "factionID": 529,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 28244,
+      "teachingItemID": 22705,
+      "factionID": 749,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1252366,
+      "teachingItemID": 251469,
+      "factionID": 576,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1252367,
+      "teachingItemID": 251470,
+      "factionID": 576,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1297138,
+      "teachingItemID": 275598,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1297139,
+      "teachingItemID": 275599,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1297140,
+      "teachingItemID": 275600,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1297141,
+      "teachingItemID": 275601,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1297142,
+      "teachingItemID": 275602,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1297143,
+      "teachingItemID": 275603,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301421,
+      "teachingItemID": 276928,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301422,
+      "teachingItemID": 276929,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301423,
+      "teachingItemID": 276930,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301424,
+      "teachingItemID": 276931,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301425,
+      "teachingItemID": 276932,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301426,
+      "teachingItemID": 276933,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301445,
+      "teachingItemID": 276952,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301446,
+      "teachingItemID": 276953,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301447,
+      "teachingItemID": 276954,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301448,
+      "teachingItemID": 276955,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301449,
+      "teachingItemID": 276956,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301450,
+      "teachingItemID": 276957,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301526,
+      "teachingItemID": 276976,
+      "factionID": 2787,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301527,
+      "teachingItemID": 276977,
+      "factionID": 2787,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301534,
+      "teachingItemID": 276984,
+      "factionID": 2740,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "blacksmithing",
+      "spell": 1301535,
+      "teachingItemID": 276985,
+      "factionID": 2740,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "enchanting",
+      "spell": 23799,
+      "teachingItemID": 19444,
+      "factionID": 59,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "enchanting",
+      "spell": 23800,
+      "teachingItemID": 19445,
+      "factionID": 576,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "enchanting",
+      "spell": 23801,
+      "teachingItemID": 19446,
+      "factionID": 529,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "enchanting",
+      "spell": 23802,
+      "teachingItemID": 19447,
+      "factionID": 529,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "enchanting",
+      "spell": 23803,
+      "teachingItemID": 19448,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "enchanting",
+      "spell": 23804,
+      "teachingItemID": 19449,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "enchanting",
+      "spell": 25081,
+      "teachingItemID": 20732,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "enchanting",
+      "spell": 25081,
+      "teachingItemID": 229008,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "enchanting",
+      "spell": 25082,
+      "teachingItemID": 20733,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "enchanting",
+      "spell": 25082,
+      "teachingItemID": 229009,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "enchanting",
+      "spell": 25129,
+      "teachingItemID": 20756,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "enchanting",
+      "spell": 25130,
+      "teachingItemID": 20757,
+      "factionID": 270,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "enchanting",
+      "spell": 27837,
+      "teachingItemID": 22392,
+      "factionID": 576,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "enchanting",
+      "spell": 463866,
+      "teachingItemID": 228979,
+      "factionID": 749,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "enchanting",
+      "spell": 463871,
+      "teachingItemID": 228982,
+      "factionID": 576,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "enchanting",
+      "spell": 471400,
+      "teachingItemID": 232610,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "engineering",
+      "spell": 24356,
+      "teachingItemID": 20000,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "engineering",
+      "spell": 24357,
+      "teachingItemID": 20001,
+      "factionID": 270,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 19068,
+      "teachingItemID": 20253,
+      "factionID": 576,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 19080,
+      "teachingItemID": 20254,
+      "factionID": 576,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 20853,
+      "teachingItemID": 17022,
+      "factionID": 59,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 20854,
+      "teachingItemID": 17023,
+      "factionID": 59,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 20855,
+      "teachingItemID": 17025,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23628,
+      "teachingItemID": 19202,
+      "factionID": 576,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23629,
+      "teachingItemID": 19204,
+      "factionID": 576,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23703,
+      "teachingItemID": 19326,
+      "factionID": 576,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23704,
+      "teachingItemID": 19327,
+      "factionID": 576,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23705,
+      "teachingItemID": 19328,
+      "factionID": 529,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23706,
+      "teachingItemID": 19329,
+      "factionID": 529,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23706,
+      "teachingItemID": 227895,
+      "factionID": 529,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23707,
+      "teachingItemID": 19330,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23708,
+      "teachingItemID": 19331,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23709,
+      "teachingItemID": 19332,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 23710,
+      "teachingItemID": 19333,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 24121,
+      "teachingItemID": 19769,
+      "factionID": 270,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 24122,
+      "teachingItemID": 19770,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 24123,
+      "teachingItemID": 19771,
+      "factionID": 270,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 24124,
+      "teachingItemID": 19772,
+      "factionID": 270,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 24125,
+      "teachingItemID": 19773,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297126,
+      "teachingItemID": 275586,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297127,
+      "teachingItemID": 275587,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297128,
+      "teachingItemID": 275588,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297129,
+      "teachingItemID": 275589,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297130,
+      "teachingItemID": 275590,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297131,
+      "teachingItemID": 275591,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297132,
+      "teachingItemID": 275592,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297133,
+      "teachingItemID": 275593,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297134,
+      "teachingItemID": 275594,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297135,
+      "teachingItemID": 275595,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297136,
+      "teachingItemID": 275596,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1297137,
+      "teachingItemID": 275597,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301427,
+      "teachingItemID": 276934,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301428,
+      "teachingItemID": 276935,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301429,
+      "teachingItemID": 276936,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301430,
+      "teachingItemID": 276937,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301431,
+      "teachingItemID": 276938,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301432,
+      "teachingItemID": 276939,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301433,
+      "teachingItemID": 276940,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301434,
+      "teachingItemID": 276941,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301435,
+      "teachingItemID": 276942,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301436,
+      "teachingItemID": 276943,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301437,
+      "teachingItemID": 276944,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301438,
+      "teachingItemID": 276945,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301451,
+      "teachingItemID": 276958,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301452,
+      "teachingItemID": 276959,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301453,
+      "teachingItemID": 276960,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301454,
+      "teachingItemID": 276961,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301455,
+      "teachingItemID": 276962,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301456,
+      "teachingItemID": 276963,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301457,
+      "teachingItemID": 276964,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301458,
+      "teachingItemID": 276965,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301459,
+      "teachingItemID": 276966,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301460,
+      "teachingItemID": 276967,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301461,
+      "teachingItemID": 276968,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301462,
+      "teachingItemID": 276969,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301528,
+      "teachingItemID": 276978,
+      "factionID": 2787,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301529,
+      "teachingItemID": 276979,
+      "factionID": 2787,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301530,
+      "teachingItemID": 276980,
+      "factionID": 2787,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301531,
+      "teachingItemID": 276981,
+      "factionID": 2787,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301536,
+      "teachingItemID": 276986,
+      "factionID": 2740,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301537,
+      "teachingItemID": 276987,
+      "factionID": 2740,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301538,
+      "teachingItemID": 276988,
+      "factionID": 2740,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "leatherworking",
+      "spell": 1301539,
+      "teachingItemID": 276989,
+      "factionID": 2740,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 20848,
+      "teachingItemID": 17017,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 20849,
+      "teachingItemID": 17018,
+      "factionID": 59,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23662,
+      "teachingItemID": 19215,
+      "factionID": 576,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23663,
+      "teachingItemID": 19218,
+      "factionID": 576,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23664,
+      "teachingItemID": 19216,
+      "factionID": 529,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23664,
+      "teachingItemID": 227896,
+      "factionID": 529,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23665,
+      "teachingItemID": 19217,
+      "factionID": 529,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23665,
+      "teachingItemID": 227897,
+      "factionID": 529,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23666,
+      "teachingItemID": 19219,
+      "factionID": 59,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 23667,
+      "teachingItemID": 19220,
+      "factionID": 59,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "tailoring",
+      "spell": 24091,
+      "teachingItemID": 19764,
+      "factionID": 270,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "tailoring",
+      "spell": 24092,
+      "teachingItemID": 19765,
+      "factionID": 270,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 24093,
+      "teachingItemID": 19766,
+      "factionID": 270,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 27724,
+      "teachingItemID": 22310,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 27725,
+      "teachingItemID": 22312,
+      "factionID": 609,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "tailoring",
+      "spell": 28210,
+      "teachingItemID": 22683,
+      "factionID": 609,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "tailoring",
+      "spell": 28480,
+      "teachingItemID": 22774,
+      "factionID": 609,
+      "rawDB2Rank": 6,
+      "clientReaction": 7
+    },
+    {
+      "profession": "tailoring",
+      "spell": 28481,
+      "teachingItemID": 22773,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 28482,
+      "teachingItemID": 22772,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1297120,
+      "teachingItemID": 275580,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1297121,
+      "teachingItemID": 275581,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1297122,
+      "teachingItemID": 275582,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1297123,
+      "teachingItemID": 275583,
+      "factionID": 609,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1297124,
+      "teachingItemID": 275584,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1297125,
+      "teachingItemID": 275585,
+      "factionID": 609,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301439,
+      "teachingItemID": 276946,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301440,
+      "teachingItemID": 276947,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301441,
+      "teachingItemID": 276948,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301442,
+      "teachingItemID": 276949,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301443,
+      "teachingItemID": 276950,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301444,
+      "teachingItemID": 276951,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301463,
+      "teachingItemID": 276970,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301464,
+      "teachingItemID": 276971,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301465,
+      "teachingItemID": 276972,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301466,
+      "teachingItemID": 276973,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301468,
+      "teachingItemID": 276974,
+      "factionID": 2758,
+      "rawDB2Rank": 5,
+      "clientReaction": 6
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301469,
+      "teachingItemID": 276975,
+      "factionID": 2758,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301532,
+      "teachingItemID": 276982,
+      "factionID": 2787,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301533,
+      "teachingItemID": 276983,
+      "factionID": 2787,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301540,
+      "teachingItemID": 276990,
+      "factionID": 2740,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    },
+    {
+      "profession": "tailoring",
+      "spell": 1301541,
+      "teachingItemID": 276991,
+      "factionID": 2740,
+      "rawDB2Rank": 4,
+      "clientReaction": 5
+    }
+  ]
+}

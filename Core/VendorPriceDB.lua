@@ -6,6 +6,42 @@ local watchers = {}
 local pendingScan = false
 local reputationRevision = 0
 local reputationKey
+local capitalMaps = { [1453]=true, [1454]=true, [1455]=true, [1456]=true, [1457]=true, [1458]=true }
+local capitalAreas = { [1519]=true, [1637]=true, [1537]=true, [1638]=true, [1657]=true, [1497]=true }
+local capitalNPCs = {}
+
+function VDB.IsCapitalOffer(offer)
+    if type(offer) ~= "table" or offer.summoned then return false end
+    local map = offer.uiMapID or offer.mapID or offer.map
+    if type(map)=="number" and map>0 then return capitalMaps[map] or false end
+    if capitalMaps[map] or capitalAreas[offer.areaID or offer.area] then return true end
+    local id = offer.npcID or offer.id
+    if not id then return false end
+    if capitalNPCs[id] ~= nil then return capitalNPCs[id] end
+    local loc = ns.ProfVendors and ns.ProfVendors[id]
+    local locations = ns.EnsureProfNPCLocs and ns.EnsureProfNPCLocs() or ns.ProfNPCLocs
+    local found = loc and capitalMaps[loc[2]] or false
+    for _, entry in ipairs(locations and locations[id] or {}) do
+        if capitalMaps[entry[2]] then found = true; break end
+    end
+    capitalNPCs[id] = found
+    return found
+end
+
+-- Location affects display and equal-price choices only. Retain remote offers:
+-- their whole-pack purchase cost can be lower than a city's or the auction's.
+function VDB.PreferredOffers(offers, eligible)
+    local cities, others = {}, {}
+    for _, offer in ipairs(offers or {}) do
+        if (not eligible or eligible(offer)) and VDB.IsCapitalOffer(offer) then
+            cities[#cities+1] = offer
+        else
+            others[#others+1] = offer
+        end
+    end
+    for _, offer in ipairs(others) do cities[#cities+1] = offer end
+    return cities
+end
 
 local function DB()
     local db = ns.DB()
@@ -18,51 +54,78 @@ local function Now()
     return (time and time()) or 0
 end
 
+-- Keep runtime lookup hints in RAM. Persist only profession-relevant merchant
+-- observations; the profession catalog and formula vendor index are shipped
+-- with the addon, so their data must not be copied into SavedVariables.
 local neededSet, neededBuilt, neededCount, neededSlugs = nil, false, 0, 0
+local formulaIndexReady = false
 local touched = {}
+
+local function AddMaterialList(mats, out)
+    if type(mats) ~= "table" then return end
+    for _, m in ipairs(mats) do
+        if type(m) == "table" then
+            local id = tonumber(m[1] or m.id or m.item)
+            if id and id > 0 then out[id] = true end
+        end
+    end
+end
 
 local function AddRecipeItems(data, out)
     if type(data) ~= "table" then return end
     for _, kind in ipairs({ "rows", "crafted", "enchants" }) do
         local list = data[kind]
         if type(list) == "table" then
-            for i = 1, #list do
-                local rec = list[i]
+            for _, rec in ipairs(list) do
                 if type(rec) == "table" then
-                    local mats = rec[12]
-                    if type(mats) == "table" then
-                        for j = 1, #mats do
-                            local m = mats[j]
-                            if type(m) == "table" and type(m[1]) == "number" then out[m[1]] = true end
-                        end
-                    end
-                    local formula = rec[13]
-                    if type(formula) == "table" and type(formula[1]) == "number" then out[formula[1]] = true end
+                    AddMaterialList(rec[12] or rec.mats, out)
+                    local formula = rec[13] or rec.formula or rec.formulaID
+                    if type(formula) == "table" then formula = formula[1] end
+                    if type(formula) == "number" and formula > 0 then out[formula] = true end
                 end
             end
+        end
+    end
+    -- PR #7 also uses the normalized leveling rinfo catalogue.
+    for _, rec in pairs(data.rinfo or {}) do
+        if type(rec) == "table" then
+            AddMaterialList(rec.mats, out)
+            local formula = rec.formula or rec.formulaID
+            if type(formula) == "number" and formula > 0 then out[formula] = true end
         end
     end
 end
 
 local function BuildNeeded()
-    local out = {}
-    local rec = ns.ProfRecipes
-    local slugs = 0
-    if type(rec) == "table" then
-        if type(ns.EnsureProfRecipes) == "function" then pcall(ns.EnsureProfRecipes) end
-        for _, data in pairs(rec) do
+    local out, slugs = {}, 0
+    if type(ns.EnsureProfRecipes) == "function" then pcall(ns.EnsureProfRecipes) end
+    if type(ns.ProfRecipes) == "table" then
+        for _, data in pairs(ns.ProfRecipes) do
             slugs = slugs + 1
             AddRecipeItems(data, out)
         end
     end
-    local tools = ns.ProfTools
-    if type(tools) == "table" then
-        for _, list in pairs(tools) do
-            if type(list) == "table" then
-                for i = 1, #list do
-                    local tool = list[i]
-                    if type(tool) == "table" and type(tool.item) == "number" then out[tool.item] = true end
+    if type(ns.ProfLeveling) == "table" then
+        for _, data in pairs(ns.ProfLeveling) do AddRecipeItems(data, out) end
+    end
+    for _, list in pairs(type(ns.ProfTools) == "table" and ns.ProfTools or {}) do
+        if type(list) == "table" then
+            for _, tool in ipairs(list) do
+                if type(tool) == "table" and type(tool.item) == "number" then
+                    out[tool.item] = true
                 end
+            end
+        end
+    end
+    -- Formula offers are a separate indexed source in PR #7. Without these
+    -- IDs, an NPC-discovered teachable formula can be pruned accidentally.
+    formulaIndexReady = false
+    if type(ns.EnsureProfFormulaOffers) == "function" then
+        local ok, formulas = pcall(ns.EnsureProfFormulaOffers)
+        if ok and type(formulas) == "table" then
+            formulaIndexReady = true
+            for itemID in pairs(formulas) do
+                if type(itemID) == "number" then out[itemID] = true end
             end
         end
     end
@@ -75,15 +138,16 @@ local function Needed(itemID)
         neededSet = BuildNeeded()
         neededCount = 0
         for _ in pairs(neededSet) do neededCount = neededCount + 1 end
-        if neededSlugs >= 3 and neededCount >= 300 then neededBuilt = true end
+        if formulaIndexReady and neededSlugs >= 3 and neededCount >= 300 then neededBuilt = true end
     end
     if touched[itemID] then return true end
-    if neededSlugs < 3 or neededCount < 300 then return true end
+    -- Never prune from a partially initialized profession database.
+    if not formulaIndexReady or neededSlugs < 3 or neededCount < 300 then return true end
     return neededSet[itemID] == true
 end
 
 local function MarkUsed(itemID)
-    if type(itemID) == "number" then touched[itemID] = true end
+    if type(itemID) == "number" and itemID > 0 then touched[itemID] = true end
 end
 
 local function Character()
@@ -136,6 +200,16 @@ local function Copy(offer)
     result.bundleSize = result.quantity
     result.unit = offer.price / result.quantity
     result.estimated = offer.estimated == true
+    -- Reconstruct display-only merchant metadata at read time rather than
+    -- copying the same strings into every stored item/NPC observation.
+    if result.source == "merchant" and result.npcID then
+        if not result.npcName and ns.ProfVendorNames then
+            result.npcName = ns.ProfVendorNames[result.npcID]
+        end
+        if not result.url then
+            result.url = "https://www.wowhead.com/forever/npc=" .. result.npcID
+        end
+    end
     return result
 end
 
@@ -223,6 +297,7 @@ end
 
 local function Accessible(offer, context, character)
     if type(offer) ~= "table" or offer.unlimited ~= true or offer.available == false
+        or offer.purchasable == false
         or offer.priceOnly == true
         or offer.hasExtendedCost or offer.currencyID and offer.currencyID ~= 0
         or type(offer.price) ~= "number" or offer.price < 0
@@ -253,23 +328,28 @@ function VDB.GetOffers(itemID, context)
     if not context.noMark then MarkUsed(itemID) end
     if ns.ProfSupply then ns.ProfSupply.Ensure() end
     local character = context.character or Character()
-    local result, blockedNPC = {}, {}
+    local result, blockedNPC, observedNPC = {}, {}, {}
     local records = DB().profVendorOffers[itemID]
     if type(records) == "table" then
         for _, offer in pairs(records) do
             if type(offer) == "table" and offer.character == character then
-                if offer.npcID and (offer.available == false or offer.unlimited == false or offer.hasExtendedCost
-                    or offer.currencyID and offer.currencyID ~= 0) then blockedNPC[offer.npcID] = true end
+                if offer.npcID and (offer.available == false or offer.purchasable == false
+                    or offer.unlimited == false or offer.hasExtendedCost
+                    or offer.currencyID and offer.currencyID ~= 0
+                    or not RequirementsMet(offer, context)) then blockedNPC[offer.npcID] = true end
                 if offer.source == "merchant" and not offer.estimated and Accessible(offer, context, character) then
+                    -- A changed reputation tier or an unread price invalidates
+                    -- this quote, not the verified supplier in the catalogue.
+                    if offer.npcID then observedNPC[offer.npcID] = true end
                     result[#result + 1] = Copy(offer)
                 end
             end
         end
     end
-    if #result == 0 and not context.requireObservedPrice then
+    if not context.requireObservedPrice then
         for _, offer in ipairs(ns.ProfVendorOffers and ns.ProfVendorOffers[itemID] or {}) do
             if offer.reference == true and offer.priceVerified == true
-                and not blockedNPC[offer.npcID] and Accessible(offer, context, character) then
+                and not observedNPC[offer.npcID] and not blockedNPC[offer.npcID] and Accessible(offer, context, character) then
                 result[#result + 1] = Copy(offer)
             end
         end
@@ -308,9 +388,12 @@ function VDB.GetOffers(itemID, context)
                 priceOnly = true })
         end
     end
+    result = VDB.PreferredOffers(result)
     table.sort(result, function(a, b)
         if a.unit ~= b.unit then return a.unit < b.unit end
         if a.estimated ~= b.estimated then return not a.estimated end
+        local ac, bc = VDB.IsCapitalOffer(a), VDB.IsCapitalOffer(b)
+        if ac ~= bc then return ac end
         if a.quantity ~= b.quantity then return a.quantity < b.quantity end
         return (a.npcID or 0) < (b.npcID or 0)
     end)
@@ -319,14 +402,17 @@ end
 
 function VDB.GetSuppliers(itemID,context)
     context=context or {}
-    if type(itemID) == "number" then MarkUsed(itemID) end
+    if not context.noMark then MarkUsed(itemID) end
+    if ns.ProfSupply then ns.ProfSupply.Ensure() end
     local out={}; local seen={}
     for _,entry in ipairs(ns.ProfVendorOffers and ns.ProfVendorOffers[itemID] or {}) do
         local faction=entry.faction
         local blocked=false
         for _,observed in pairs(DB().profVendorOffers[itemID] or {}) do
             if observed.character==(context.character or Character()) and observed.npcID==entry.npcID and
-                (observed.available==false or observed.unlimited==false or observed.hasExtendedCost or (observed.currencyID and observed.currencyID~=0)) then blocked=true end
+                (observed.available==false or observed.purchasable==false or observed.unlimited==false
+                    or observed.hasExtendedCost or (observed.currencyID and observed.currencyID~=0)
+                    or not RequirementsMet(observed,context)) then blocked=true end
         end
         if not blocked and (not faction or faction=="N" or faction=="Neutral" or faction=="AH" or faction==Faction(context))
            and RequirementsMet(entry,context) then
@@ -336,7 +422,7 @@ function VDB.GetSuppliers(itemID,context)
     end
     for _,entry in pairs(DB().profVendorOffers[itemID] or {}) do
         if not seen[entry.npcID] and entry.character==(context.character or Character()) and entry.source=="merchant" and
-            entry.unlimited and entry.available~=false and not entry.hasExtendedCost and
+            entry.unlimited and entry.available~=false and entry.purchasable~=false and not entry.hasExtendedCost and
             (not entry.currencyID or entry.currencyID==0) and RequirementsMet(entry,context) then
             local record={}; for k,v in pairs(entry) do record[k]=v end
             out[#out+1]=record; seen[entry.npcID]=true
@@ -356,28 +442,37 @@ end
 
 function VDB.GetFormulaOffers(itemID,context,source)
     context=context or {}; source=source or {}
-    if type(itemID) == "number" then MarkUsed(itemID) end
+    if not context.noMark then MarkUsed(itemID) end
     local character=context.character or Character()
     local result,seen={},{}
     local function add(raw,observed)
-        if type(raw)~="table" then return end
+        if type(raw)~="table" or type(raw.npcID)~="number" or raw.npcID<=0 or raw.priceOnly then return end
         local o={}; for k,v in pairs(raw) do o[k]=v end
+        if observed then
+            if not o.npcName and ns.ProfVendorNames then o.npcName = ns.ProfVendorNames[o.npcID] end
+            if not o.url then o.url = "https://www.wowhead.com/forever/npc=" .. o.npcID end
+        end
         local price=observed and raw.formulaPrice or raw.price
         if observed and price==nil and raw.unlimited then price=raw.price end
         local pack=tonumber(raw.quantity or raw.bundleSize)
         if observed and (not pack or pack<1 or pack~=math.floor(pack)) then price=nil end
         local check={}; for k,v in pairs(o) do check[k]=v end
-        check.price=price or 0;check.quantity=check.quantity or check.bundleSize or 1
-        check.unlimited=true;check.available=true
+        check.price=price or 0;check.quantity=pack or 1
+        -- Keep an unavailable formula's supplier/stock information for display;
+        -- priceUsable below independently controls purchase eligibility.
+        check.unlimited=true;check.available=true;check.purchasable=true
         if not Accessible(check,context,character) then return end
         o.price=price;o.quantity=check.quantity;o.bundleSize=check.quantity
         o.unit=type(price)=="number" and price/o.quantity or nil
         o.stock=observed and raw.stock or nil
-        o.limited=raw.unlimited==false or raw.limited==true or nil
-        o.stockStatus=raw.unlimited==true and "unlimited" or o.limited and "limited" or "unknown"
+        local stock=observed and raw.stock or raw.maxStock
+        o.limited=(type(stock)=="number" and stock>=0) or raw.limited==true or raw.stockStatus=="limited" or nil
+        if not raw.stockUnknown and raw.stockStatus~="unknown" and raw.unlimited==false then o.limited=true end
+        o.unlimited=not o.limited and (raw.unlimited==true or stock==-1) or false
+        o.stockStatus=o.unlimited and "unlimited" or o.limited and "limited" or "unknown"
         o.stockUnknown=o.stockStatus=="unknown" or nil
         o.purchasable=raw.purchasable
-        o.available=not (raw.purchasable==false or o.stock==0)
+        o.available=not (raw.available==false or raw.purchasable==false or o.stock==0)
         o.priceUsable=o.available and type(price)=="number" and price>=0
         o.reference=not observed and raw.reference or nil
         if observed then
@@ -389,7 +484,8 @@ function VDB.GetFormulaOffers(itemID,context,source)
     end
     for _,o in pairs(DB().profVendorOffers[itemID] or {}) do
         if o.character==character and o.source=="merchant" then
-            if o.npcID and (o.purchasable==false or o.hasExtendedCost or o.currencyID and o.currencyID~=0) then seen[o.npcID]=true end
+            if o.npcID and (o.purchasable==false or o.available==false or o.unlimited==false or o.stock==0 or o.hasExtendedCost
+                or o.currencyID and o.currencyID~=0 or not RequirementsMet(o,context)) then seen[o.npcID]=true end
             add(o,true)
         end
     end
@@ -402,13 +498,14 @@ function VDB.GetFormulaOffers(itemID,context,source)
     end
     for _,v in ipairs(source.vendors or {}) do
         local id=v.id or v.npcID or v[5]
-        if not id or not seen[id] then
+        local currency=tonumber(v.currencyID or v.cur) or 0
+        if type(id)=="number" and id>0 and not seen[id] and currency==0 and not v.hasExtendedCost then
             local o={npcID=id,npcName=v.name or v[1],name=v.name or v[1],zone=v.zone or v[2],
                 price=type(v.price)=="number" and v.price or nil,quantity=v.quantity or 1,
                 unlimited=v.unlimited,limited=v.limited,stockUnknown=v.unlimited==nil and v.limited==nil or nil,
                 stockStatus=v.unlimited and "unlimited" or v.limited and "limited" or "unknown",
                 source="catalogue",reference=true,url=v.url,available=true,priceUsable=false}
-            if o.price and v.priceVerified and v.verifiedAt then
+            if not context.requireObservedPrice and o.price and v.priceVerified and v.verifiedAt then
                 o.verifiedAt=v.verifiedAt;o.priceVerified=true;add(o,false)
             else result[#result+1]=o;if id then seen[id]=true end end
         end
@@ -451,6 +548,11 @@ function VDB.Scan()
     if not ok or type(count) ~= "number" or count <= 0 or not npcID or not character then return 0 end
     local db, stamp, fresh, changed = DB(), Now(), 0, false
     local repKey = ReputationKey()
+    -- Preserve a map hint only for NPCs not covered by static location data.
+    local staticNPC = (ns.ProfVendors and ns.ProfVendors[npcID])
+        or (ns.ProfNPCLocs and ns.ProfNPCLocs[npcID])
+    local mapID = not staticNPC and C_Map and C_Map.GetBestMapForUnit
+        and C_Map.GetBestMapForUnit("player") or nil
     for index = 1, count do
         local name, price, quantity, available, purchasable, extendedCost, currencyID = ReadMerchantInfo(index)
         local itemID
@@ -489,10 +591,14 @@ function VDB.Scan()
                     records[key] = {
                         npcID = npcID, character = character, source = "merchant",
                         price = quotedPrice, quantity = quantity,
-                        formulaPrice=formulaPrice,stock=available,purchasable=purchasable,
-                        unlimited = unlimited, available = not rejected, hasExtendedCost = not not extendedCost,
+                        formulaPrice = formulaPrice, stock = available, purchasable = purchasable,
+                        unlimited = unlimited, available = not rejected,
+                        hasExtendedCost = not not extendedCost,
                         currencyID = currencyID, verifiedAt = stamp, faction = Faction(),
                         reputationKey = repKey,
+                        npcName = (not (ns.ProfVendorNames and ns.ProfVendorNames[npcID]))
+                            and (UnitName and UnitName("npc")) or nil,
+                        mapID = mapID,
                     }
                     changed = true
                     if eligible and not old then fresh = fresh + 1 end
@@ -513,12 +619,12 @@ function VDB.Count()
     return count
 end
 
+-- Compact existing SavedVariables from older builds. The source-independent
+-- offer fields needed by PR #7's procurement model remain untouched.
 function VDB.Prune()
-    neededSet = nil
-    neededBuilt = false
-    neededCount = 0
+    neededSet, neededBuilt, neededCount = nil, false, 0
     Needed(-1)
-    if neededSlugs < 3 or neededCount < 300 then return 0 end
+    if not formulaIndexReady or neededSlugs < 3 or neededCount < 300 then return 0 end
     local db = DB()
     local removed = 0
     for itemID, records in pairs(db.profVendorOffers) do
@@ -529,11 +635,14 @@ function VDB.Prune()
         else
             for _, rec in pairs(records) do
                 if type(rec) == "table" then
-                    rec.npcName = nil
+                    local npcID = rec.npcID
+                    if ns.ProfVendorNames and ns.ProfVendorNames[npcID] then rec.npcName = nil end
                     rec.url = nil
-                    rec.x = nil
-                    rec.y = nil
-                    rec.mapID = nil
+                    rec.x, rec.y = nil, nil
+                    if (ns.ProfVendors and ns.ProfVendors[npcID])
+                        or (ns.ProfNPCLocs and ns.ProfNPCLocs[npcID]) then
+                        rec.mapID = nil
+                    end
                     rec.itemID = nil
                     rec.bundleSize = nil
                     rec.priceBasis = nil
@@ -542,6 +651,9 @@ function VDB.Prune()
                 end
             end
         end
+    end
+    for itemID in pairs(db.vendorPrices) do
+        if not Needed(itemID) then db.vendorPrices[itemID] = nil end
     end
     return removed
 end
