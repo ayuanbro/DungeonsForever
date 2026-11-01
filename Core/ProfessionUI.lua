@@ -11854,8 +11854,13 @@ local function TrackStepsFor(slug, steps)
         end
         if same then return run, T.ProgressAll(slug) end
     end
-    if not (T.Rebase and T.Rebase(run, steps)) then return nil end
-    return run, T.ProgressAll(slug)
+    if T.Rebase and T.Rebase(run, steps) then return run, T.ProgressAll(slug) end
+    if T.Restart then
+        pcall(T.Restart, slug, { steps = steps, start = run.start, target = run.target, scheme = run.scheme })
+        run = TrackRunOf(slug)
+        if run and run.steps and #run.steps == #steps then return run, T.ProgressAll(slug) end
+    end
+    return nil
 end
 
 function PD.CraftLogCost(slug)
@@ -13578,7 +13583,7 @@ function PD.LevelTool()
                               0.88, 0.42, 0.38 }
         end
         list[#list + 1] = { key = "eng_spec", dd = true, on = chosen ~= "none",
-                            text = L["专业分支"] .. "：" .. PD.EngChoiceLabel(chosen),
+                            text = PD.EngChoiceLabel(chosen),
                             tip = tip }
     end
     if not onLog and not onRec and PD.autoPage ~= "shop" then

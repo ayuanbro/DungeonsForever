@@ -844,10 +844,15 @@ local function watchSelection(p)
             C_Timer.After(0.5, tick)
             return
         end
-        if not po.noSelect and tries <= 6 then
+        if not po.noSelect and tries <= 60 then
             local srch = cp.RecipeList and cp.RecipeList.SearchBox
-            if srch and srch.SetText and srch.GetText and srch:GetText() == "" then
-                pcall(srch.SetText, srch, p.name)
+            if srch and srch.SetText and srch.GetText then
+                local txt = srch:GetText()
+                if txt ~= nil and txt ~= "" and txt ~= p.name then
+                    pcall(srch.SetText, srch, "")
+                    local fn = srch.GetScript and srch:GetScript("OnTextChanged")
+                    if fn then pcall(fn, srch, true) end
+                end
             end
         end
         local t = cp.SchematicForm.transaction
@@ -872,7 +877,7 @@ local function watchSelection(p)
                 return
             end
         end
-        if rid ~= p.spellID and nm ~= p.name and not po.noSelect and tries <= 10 then
+        if rid ~= p.spellID and nm ~= p.name and not po.noSelect and tries <= 60 then
             local CUI = C_TradeSkillUI
             local sb = cp.RecipeList and cp.RecipeList.ScrollBox
             local nodeReady = false
@@ -1810,7 +1815,14 @@ function PF.Paint()
         playCue("item")
     end
     if cur then
-        f.skill:SetText(format(L["技能 %d / %d"], cur, mx or 300))
+        local _, stp = routeFor(s.slug, s.skill)
+        local seg = stp and stp[curStep]
+        local toPts = seg and tonumber(seg[2]) or nil
+        if toPts and toPts > cur then
+            f.skill:SetText(format(L["技能 %d（%d）/ %d"], cur, toPts, mx or 300))
+        else
+            f.skill:SetText(format(L["技能 %d / %d"], cur, mx or 300))
+        end
         f.skill:Show()
         if f.noLearn then f.noLearn:Hide() end
     else
