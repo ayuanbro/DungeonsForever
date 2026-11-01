@@ -76,6 +76,7 @@ function G.ItemFlag(spell)
     return SpecFlags(SpecRec(spell)) % 4 >= 2
 end
 
+-- Retained for ProfLearning and ProfSolverCapture in PR #7.
 function G.RequiredAbility(spell)
     return SpecAbility(SpecRec(spell))
 end
@@ -85,8 +86,14 @@ function G.HasPending(spell)
 end
 
 function G.Allowed(slug, spell)
-    local ability = SpecAbility(SpecRec(spell))
+    local ability = G.RequiredAbility(spell)
     if ability == 0 then return true end
+    if ability == 20219 or ability == 20222 then
+        local choice = G.EffectiveChoice()
+        if choice == "gnomish" and ability == 20219 then return true end
+        if choice == "goblin" and ability == 20222 then return true end
+        return false, G.AbilityLabel(ability)
+    end
     local v = G.Abilities()[ability]
     if v == true or v == nil then return true end
     return false, G.AbilityLabel(ability)
@@ -113,6 +120,12 @@ function G.LearningEligibility(spell)
     local ability = SpecAbility(rec)
     if ability == 0 then
         return true, nil, { status = G.LearningSource(spell) and "allowed" or "unknown", hasPending = hp }
+    end
+    -- The plan's branch preference does not invent a learned ability.
+    -- A matching branch must still be learned (or acquired in a planned quest).
+    local allowed, reason = G.Allowed("engineering", spell)
+    if not allowed then
+        return false, reason, { status = "blocked", hasPending = hp, ability = ability }
     end
     local v = G.Abilities()[ability]
     if v == true then return true, nil, { status = "allowed", hasPending = hp, ability = ability } end
@@ -151,23 +164,35 @@ end
 
 local ENG_CHOICES = { none = true, goblin = true, gnomish = true }
 
-function G.GetPlannedChoice()
+-- The stored choice is either an explicit preference, or nil (automatic).
+-- Existing valid stored values are preserved without migration.
+function G.GetChoiceSetting()
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
     local v = db and db.engChoice
     if ENG_CHOICES[v] then return v end
-    return "none"
+    return "auto"
+end
+
+function G.EffectiveChoice()
+    local setting = G.GetChoiceSetting()
+    if setting ~= "auto" then return setting, true end
+    local actual = G.EngineeringChoice()
+    if actual == "gnomish" or actual == "goblin" then return actual, false end
+    return "none", false
+end
+
+-- Compatibility: the PR solver, learning gates and plan signatures call this.
+-- Returning the resolved choice keeps those paths consistent with the menu.
+function G.GetPlannedChoice()
+    return G.EffectiveChoice()
 end
 
 function G.SetPlannedChoice(value)
-    if not ENG_CHOICES[value] then return false end
+    if value ~= "auto" and not ENG_CHOICES[value] then return false end
+    if G.GetChoiceSetting() == value then return true end
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.prof = DungeonsForeverDB.prof or {}
-    if G.GetPlannedChoice() == value then return true end
-    if value == "none" then
-        DungeonsForeverDB.prof.engChoice = nil
-    else
-        DungeonsForeverDB.prof.engChoice = value
-    end
+    DungeonsForeverDB.prof.engChoice = (value ~= "auto") and value or nil
     G.Invalidate()
     local RA = ns.ProfRouteAuto
     if RA and RA.Invalidate then RA.Invalidate("specialization") end
@@ -231,8 +256,7 @@ function G.SpecializationContext(opts)
     local prior = hasSnap and injected.specializationContext or nil
     local choice = opts.engineeringSpecialization or (prior and prior.choice)
     if not choice and hasSnap then choice = injected.engineeringSpecialization end
-    if not choice then choice = G.GetPlannedChoice() end
-    if not ENG_CHOICES[choice] then choice = "none" end
+    if not ENG_CHOICES[choice] then choice = G.EffectiveChoice() end
     local supplied
     if hasSnap then supplied = injected.specializationAbilities or (prior and prior.abilities) end
     local abilities = {}
@@ -281,16 +305,14 @@ function G.SpecializationContext(opts)
                 goal.blockedReason = "specializationQuestAlreadyCompleted"
             end
         end
-        if goal.blockedReason=="specializationQuestAlreadyCompleted" then
-            -- A completed introduction cannot be performed again. Keep the
-            -- unresolved specialization visible, but do not stop ordinary
-            -- engineering leveling at 200. Quest completion is not evidence
-            -- that the specialization ability is currently learned.
-            ctx.unresolvedGoals={goal}
-            ctx.warnings={{code="specializationQuestAlreadyCompleted",profession=profession,
-                questID=goal.questID,abilityID=goal.abilityID,goalID=goal.id}}
+        if goal.blockedReason == "specializationQuestAlreadyCompleted" then
+            -- A finished introduction must not be planned again. Do not mistake
+            -- quest completion for proof that the specialization is learned.
+            ctx.unresolvedGoals = { goal }
+            ctx.warnings = {{ code = "specializationQuestAlreadyCompleted", profession = profession,
+                questID = goal.questID, abilityID = goal.abilityID, goalID = goal.id }}
         else
-            -- Missing faction facts still block an uncompleted selected task.
+            -- Keep unfinished, blocked tasks visible for the route solver.
             ctx.goals[1] = goal
         end
     end
@@ -306,29 +328,15 @@ function G.SpecGoal(slug, target)
     if not source then return nil end
     local actual = G.EngineeringChoice()
     if actual == "conflict" then return nil end
-    local planned = G.GetPlannedChoice()
-    if planned ~= "none" then
-        if actual == planned then return nil end
-        local def = source[planned]
-        if not def or target0 < (def.minSkill or 200) then return nil end
-        local goal = buildSpecGoal(def, G.FactionCode())
-        if goal.blockedReason then return nil end
-        if questProgressOf(goal).completed==true then return nil end
-        return goal
-    end
-    if actual == "gnomish" or actual == "goblin" then return nil end
-    if target0 < 200 then return nil end
-    local faction = G.FactionCode()
-    local best
-    for _, def in pairs(source) do
-        if def.profession == slug then
-            local goal = buildSpecGoal(def, faction)
-            if not goal.blockedReason and questProgressOf(goal).completed~=true then
-                if not best or (goal.minSkill or 0) < (best.minSkill or 0) then best = goal end
-            end
-        end
-    end
-    return best
+    local planned = G.EffectiveChoice()
+    -- Never silently choose an arbitrary branch when "none" is selected.
+    if planned == "none" then return nil end
+    if actual == planned then return nil end
+    local def = source[planned]
+    if not def or target0 < (def.minSkill or 200) then return nil end
+    local goal = buildSpecGoal(def, G.FactionCode())
+    if goal.blockedReason or questProgressOf(goal).completed == true then return nil end
+    return goal
 end
 
 function G.ToolGoals(slug, target)
@@ -361,10 +369,10 @@ function G.ToolOwned(itemID)
 end
 
 function G.AutoCraftTools(slug)
-    local view=ns.ProfModule
+    local view = ns.ProfModule
     if view and view.SettingRaw then
-        local value=view.SettingRaw("autoCraftTools",slug)
-        if value~=nil then return value~=false end
+        local value = view.SettingRaw("autoCraftTools", slug)
+        if value ~= nil then return value ~= false end
     end
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
     return not (db and db.autoCraftTools == false)
