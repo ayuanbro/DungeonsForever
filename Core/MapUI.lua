@@ -59,20 +59,21 @@ M.BOSS_MODEL_W = 260
 M.BOSS_MODEL_UP = 66
 
 M.MAX_PINS = 48
-M.LOGO_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DungeonsForever.blp"
+M.LOGO_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp"
 M.LOGO_SIZE = 20
-M.PIN_BOSS_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\BossSkull"
-M.PIN_QUEST_READY_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinReady"
-M.PIN_QUEST_LOCKED_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinLocked"
-M.PIN_QUEST_PRE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinPre"
-M.PIN_DOOR_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\MapDoor"
-M.PIN_NOTE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\NotePin"
-M.PIN_STAIR_UP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\StairsUp"
-M.PIN_STAIR_DN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\StairsDown"
-M.PIN_GLOW_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\PinGlow"
+M.LOGO_LIFT = 2.5
+M.PIN_BOSS_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\BossSkull"
+M.PIN_QUEST_READY_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinReady"
+M.PIN_QUEST_LOCKED_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinLocked"
+M.PIN_QUEST_PRE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinPre"
+M.PIN_DOOR_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\MapDoor"
+M.PIN_NOTE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\NotePin"
+M.PIN_STAIR_UP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\StairsUp"
+M.PIN_STAIR_DN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\StairsDown"
+M.PIN_GLOW_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\PinGlow"
 M.PIN_GLOW_K = 2.1
 M.PIN_GLOW_GAIN = 0.85
-M.PIN_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\PinRing"
+M.PIN_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\PinRing"
 M.PIN_RING_K = 2.5
 M.PIN_RING_RGB = { 1.00, 0.78, 0.22 }
 M.PIN_RING_SECS = 6
@@ -86,6 +87,7 @@ M.ROUTE_THIN_DOT, M.ROUTE_THIN_EDGE = 2.6, 5.0
 M.ROUTE_DASH_ON, M.ROUTE_DASH_OFF = 13, 9
 M.ROUTE_DOT_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_dot"
 M.MAX_ROUTE_DOTS = 2400
+M.HIT_STEP, M.HIT_SIZE = 16, 18
 M.ROUTE_PALETTES = {
     { id = "rainbow", stops = {
         { 0.00, 0.961, 0.278, 0.227 },
@@ -315,7 +317,7 @@ local TILE_FIX = {
 }
 M.TILE_FIX = TILE_FIX
 
-M.OUTSIDE_LAYER = { maraudon = 3 }
+M.OUTSIDE_LAYER = { maraudon = 3, wailing_caverns = 2 }
 
 M.ZONE_AREA = {
     { id = "blackrock_mountain", zone = { "燃烧平原", "Burning Steppes", "灼热峡谷", "Searing Gorge" },
@@ -325,11 +327,14 @@ M.ZONE_AREA = {
               "Shadowforge City", "Blackrock Spire", "Forgewright's Tomb",
               "The Grinding Quarry", "The Mason's Quarter" },
       mark = { "黑石", "Blackrock" } },
+    { id = "wailing_caverns", zone = { "贫瘠之地", "The Barrens", "哀嚎洞穴", "Wailing Caverns" },
+      sub = { "哀嚎洞穴", "哀嚎洞穴入口", "Wailing Caverns" },
+      mark = { "哀嚎洞穴", "Wailing Caverns" } },
 }
 
 M.ZONE_MENU = {
-    [1428] = { "blackrock_mountain", "blackrock_depths", "lower_blackrock_spire", "upper_blackrock_spire" },
-    [1427] = { "blackrock_mountain", "upper_blackrock_spire", "lower_blackrock_spire" },
+    [1428] = { "blackrock_mountain", "blackrock_depths", "upper_blackrock_spire", "lower_blackrock_spire" },
+    [1427] = { "blackrock_mountain", "blackrock_depths", "upper_blackrock_spire", "lower_blackrock_spire" },
 }
 
 local BRM = MD .. "burningsteppes\\blackrockmountain\\blackrockmountain"
@@ -477,7 +482,7 @@ local FLOOR_NAMES = {
         { "Hall of Blackhand", "黑手大厅", "黑手大廳" },
         { "Halycon's Lair", "哈雷肯之巢", "哈雷肯之巢" },
         { "Chamber of Battle", "战斗之厅", "戰鬥之廳" },
-        [14] = { "Blackrock Mountain", "黑石山", "黑石山" },
+        [9] = { "Blackrock Mountain", "黑石山", "黑石山" },
     },
     upper_blackrock_spire = {
         [4] = { "Blackrock Mountain", "黑石山", "黑石山" },
@@ -507,6 +512,13 @@ local function StripOrd(s)
     if s:byte(1) == 0xE2 and s:byte(2) == 0x9D and s:byte(3) >= 0xB6 and s:byte(3) <= 0xBF then
         return s:sub(4)
     end
+    return s
+end
+
+local function FloorWord(s)
+    s = StripOrd(s)
+    if s == "上一层入口" then return L["上楼"] end
+    if s == "下一层入口" then return L["下楼"] end
     return s
 end
 
@@ -556,6 +568,72 @@ local FLOOR_NO = {
 }
 
 local LAYER_PICK = {}
+
+local NAME_HEAD
+
+local function enWords(s)
+    local out = {}
+    for w in tostring(s):gmatch("[%a']+") do out[#out + 1] = w:lower() end
+    return out
+end
+
+local function headOK(a, b, n)
+    for i = 1, n do
+        if a[i] ~= b[i] then return false end
+    end
+    return true
+end
+
+function M.NamePrefixFor(txt)
+    if type(txt) ~= "string" or txt == "" then return nil end
+    if not NAME_HEAD then
+        local cn, en = {}, {}
+        local list = ns.DungeonData and ns.DungeonData.dungeons
+        if type(list) == "table" and #list > 0 then
+            for i = 1, #list do
+                local d = list[i]
+                if type(d.name) == "string" and d.name ~= "" then
+                    cn[#cn + 1] = { d.name, d.id }
+                end
+                if type(d.nameEn) == "string" and d.nameEn ~= "" then
+                    en[#en + 1] = { enWords(d.nameEn), d.id }
+                end
+            end
+            NAME_HEAD = { cn = cn, en = en }
+        end
+    end
+    if not NAME_HEAD then return nil end
+    local cand, seen = {}, {}
+    local cnList = NAME_HEAD.cn
+    for i = 1, #cnList do
+        local nm, id = cnList[i][1], cnList[i][2]
+        if #txt <= #nm and nm:sub(1, #txt) == txt and not seen[id] then
+            seen[id] = true
+            cand[#cand + 1] = id
+        end
+    end
+    if #cand == 0 then
+        local tw = enWords(txt)
+        if #tw > 0 then
+            local enList = NAME_HEAD.en
+            for i = 1, #enList do
+                local w, id = enList[i][1], enList[i][2]
+                if w[1] and #w >= #tw and headOK(w, tw, #tw) and not seen[id] then
+                    seen[id] = true
+                    cand[#cand + 1] = id
+                end
+            end
+        end
+    end
+    if #cand == 0 then return nil end
+    local cur = M.curId
+    if cur then
+        for i = 1, #cand do
+            if cand[i] == cur then return cur end
+        end
+    end
+    return cand[1]
+end
 
 function M.LayersFor(id)
     local row = id and ART[id]
@@ -711,8 +789,21 @@ end
 
 function M.SideOK(sd)
     if not sd then return true end
+    if sd ~= "A" and sd ~= "H" then return true end
     local ps = DG.PlayerSide and DG.PlayerSide() or nil
     return (not ps) or ps == sd
+end
+
+function M.QuestSideOK(qid)
+    if not qid then return true end
+    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
+    local sd = (type(row) == "table") and row[2] or nil
+    if sd ~= "A" and sd ~= "H" then
+        local ext = ns.EnsureDungeonQuestExtInfo and ns.EnsureDungeonQuestExtInfo() or nil
+        local info = (type(ext) == "table") and ext[qid] or nil
+        sd = (type(info) == "table") and info.side or nil
+    end
+    return M.SideOK(sd)
 end
 
 function M.DetailOf(id)
@@ -769,7 +860,7 @@ function M.ExtraPinsFor(id, floor)
                             end
                         else
                             local pf = p[(kind == "rare") and 5 or 4] or 1
-                            if floor == nil or pf == floor then
+                            if (floor == nil or pf == floor) and (kind ~= "quest" or M.QuestSideOK(p[3])) then
                                 local txt
                                 if kind == "quest" and type(p[5]) == "string" then
                                     txt = p[5]
@@ -1048,9 +1139,15 @@ local function BuildPins()
         bt.nm:SetShadowOffset(1, -1)
         bt.dot = bt:CreateTexture(nil, "OVERLAY")
         bt.dot:SetAllPoints()
-        bt.dot:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BossSkull")
+        bt.dot:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\BossSkull")
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
+        bt.entry = bt:CreateTexture(nil, "ARTWORK", nil, 2)
+        bt.entry:SetPoint("CENTER", bt, "CENTER", 0, 0)
+        bt.entry:SetSize(M.PIN_SIZE * 0.62, M.PIN_SIZE * 0.62)
+        bt.entry:SetTexture(M.PIN_DOOR_TEX)
+        pcall(bt.entry.SetAtlas, bt.entry, "dungeon")
+        bt.entry:Hide()
         bt.__glow = bt:CreateTexture(nil, "BACKGROUND", nil, -1)
         bt.__glow:SetTexture(M.PIN_GLOW_TEX)
         bt.__glow:SetBlendMode("ADD")
@@ -1349,7 +1446,7 @@ function M.BuildSide(f, w, h, withBar, bgLayer)
     local hdrLogo = listChild:CreateTexture(nil, "ARTWORK")
     hdrLogo:SetTexture(M.LOGO_TEX)
     hdrLogo:SetSize(M.LOGO_SIZE, M.LOGO_SIZE)
-    hdrLogo:SetPoint("TOPLEFT", listChild, "TOPLEFT", 0, 0)
+    hdrLogo:SetPoint("TOPLEFT", listChild, "TOPLEFT", 0, M.LOGO_LIFT)
 
     local listHdr = MakeFS(listChild, 14, C_GOLD, "LEFT")
     listHdr:SetPoint("TOPLEFT", listChild, "TOPLEFT", M.LOGO_SIZE + 6, 0)
@@ -1946,9 +2043,13 @@ local function routeTex(host, i)
     return e
 end
 
-local function routeDot(e, host, x, y, cr, cg, cb)
+local function routeDot(e, host, x, y, cr, cg, cb, si)
     local edge = M.routeThin and M.ROUTE_THIN_EDGE or M.ROUTE_DOT_EDGE
     local core = M.routeThin and M.ROUTE_THIN_DOT or M.ROUTE_DOT
+    e.si = si
+    e.bx, e.by = x, y
+    e.br, e.bg, e.bb = cr, cg, cb
+    e.bedge, e.bcore = edge, core
     e.o:SetSize(edge, edge)
     e.o:ClearAllPoints()
     e.o:SetPoint("CENTER", host, "TOPLEFT", x, -y)
@@ -1962,12 +2063,114 @@ local function routeDot(e, host, x, y, cr, cg, cb)
     e.c:Show()
 end
 
+local hovers = setmetatable({}, { __mode = "k" })
+
+local function paintSeg(si, on)
+    local used = M.frame and M.frame.routeUsed or 0
+    for i = 1, used do
+        local e = routePool[i]
+        if e and e.si == si and e.bedge then
+            if on then
+                e.o:SetSize(e.bedge * 1.5, e.bedge * 1.5)
+                e.c:SetSize(e.bcore * 1.6, e.bcore * 1.6)
+                e.c:SetVertexColor(math.min(1, e.br * 1.28 + 0.16),
+                                   math.min(1, e.bg * 1.28 + 0.16),
+                                   math.min(1, e.bb * 1.28 + 0.16))
+            else
+                e.o:SetSize(e.bedge, e.bedge)
+                e.c:SetSize(e.bcore, e.bcore)
+                e.c:SetVertexColor(e.br, e.bg, e.bb)
+            end
+        end
+    end
+end
+
+function M.NewSegHover(parent, paintFn)
+    local st = hovers[parent]
+    if st then
+        st.paint = paintFn
+        return st
+    end
+    st = { parent = parent, paint = paintFn, pool = {}, seg = nil, leaveAt = nil, acc = 0 }
+    hovers[parent] = st
+    function st:Set(si)
+        if si == self.seg then
+            self.leaveAt = nil
+            return
+        end
+        if self.seg then self.paint(self.seg, false) end
+        self.seg = si
+        self.leaveAt = nil
+        if si then self.paint(si, true) end
+    end
+    function st:HideAll()
+        self:Set(nil)
+        for i = 1, #self.pool do self.pool[i]:Hide() end
+    end
+    function st:Build(host, arr, cnt)
+        local hi = 0
+        local step = M.HIT_STEP
+        for si = 1, cnt do
+            local pts = arr[si]
+            if pts and #pts > 1 then
+                for i = 2, #pts do
+                    local a, b = pts[i - 1], pts[i]
+                    local dx, dy = b[1] - a[1], b[2] - a[2]
+                    local d = math.sqrt(dx * dx + dy * dy)
+                    if d > 1 then
+                        local k = math.max(1, math.ceil(d / step))
+                        for j = 0, k - 1 do
+                            local u = j / k
+                            hi = hi + 1
+                            local btn = self.pool[hi]
+                            if not btn then
+                                btn = CreateFrame("Button", nil, host)
+                                btn:SetSize(M.HIT_SIZE, M.HIT_SIZE)
+                                btn:EnableMouse(true)
+                                btn:SetScript("OnEnter", function(b) st:Set(b.si) end)
+                                btn:SetScript("OnLeave", function(b)
+                                    if st.seg == b.si then st.leaveAt = GetTime() end
+                                end)
+                                self.pool[hi] = btn
+                            end
+                            local lv, hl = btn:GetFrameLevel(), host:GetFrameLevel()
+                            if lv ~= hl then btn:SetFrameLevel(hl) end
+                            btn.si = si
+                            btn:ClearAllPoints()
+                            btn:SetPoint("CENTER", host, "TOPLEFT", a[1] + dx * u, -(a[2] + dy * u))
+                            btn:Show()
+                        end
+                    end
+                end
+            end
+        end
+        for i = hi + 1, #self.pool do self.pool[i]:Hide() end
+        return hi
+    end
+    local tick = CreateFrame("Button", nil, parent)
+    tick:SetSize(1, 1)
+    tick:EnableMouse(false)
+    tick:SetScript("OnUpdate", function(_, el)
+        st.acc = st.acc + el
+        if st.acc < 0.05 then return end
+        st.acc = 0
+        if st.seg and st.leaveAt and (GetTime() - st.leaveAt) > 0.08 then
+            st:Set(nil)
+        end
+    end)
+    return st
+end
+
 function M.SyncRoute(id, floor, cw, ch)
     local frame = M.frame
     local host = frame and frame.route
     if not host then return end
     local used = frame.routeUsed or 0
     local n = 0
+    local hv = M.NewSegHover(host, paintSeg)
+    if hv.seg then hv:Set(nil) end
+    local built = 0
+    local cwOk = type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0
     if type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0 and M.RouteOn(id) then
         local segs = floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
         if type(segs) == "table" and #segs > 0 then
@@ -2024,7 +2227,7 @@ function M.SyncRoute(id, floor, cw, ch)
                                     local t = (total > 0) and ((acc + d * u) / total) or 0
                                     local cr, cg, cb = M.RouteColor(t)
                                     routeDot(routeTex(host, n), host,
-                                             a[1] + dx * u, a[2] + dy * u, cr, cg, cb)
+                                             a[1] + dx * u, a[2] + dy * u, cr, cg, cb, si)
                                 end
                             end
                             sd = sd + d
@@ -2033,6 +2236,7 @@ function M.SyncRoute(id, floor, cw, ch)
                     end
                 end
             end
+            built = hv:Build(host, arr, #segs)
         end
     end
     for i = n + 1, used do
@@ -2042,8 +2246,143 @@ function M.SyncRoute(id, floor, cw, ch)
             e.c:Hide()
         end
     end
+    if cwOk and built == 0 then hv:HideAll() end
     frame.routeUsed = n
-    host:SetShown(n > 0)
+    M.SyncRouteNo(id, floor, cw, ch)
+    host:SetShown(n > 0 or (frame.noUsed or 0) > 0)
+end
+
+M.NO_D = 20
+M.NO_DY = -16
+
+local function noD()
+    local v = ns.RouteNoSize
+    if type(v) ~= "number" then return M.NO_D end
+    if v < 10 then v = 10 end
+    if v > 44 then v = 44 end
+    return v
+end
+
+local noPools = {}
+
+local function noPoolFor(host, tag)
+    local p = noPools[tag]
+    if p and p.host == host then return p end
+    if p then
+        for i = 1, #p.list do
+            p.list[i].rim:Hide()
+            p.list[i].inner:Hide()
+            p.list[i].txt:Hide()
+        end
+    end
+    p = { host = host, list = {}, n = 0 }
+    noPools[tag] = p
+    return p
+end
+
+local function noBadge(p)
+    local i = p.n + 1
+    p.n = i
+    local e = p.list[i]
+    if e then return e end
+    e = {}
+    e.rim = p.host:CreateTexture(nil, "ARTWORK", nil, 6)
+    e.rim:SetTexture(M.ROUTE_DOT_TEX)
+    e.inner = p.host:CreateTexture(nil, "ARTWORK", nil, 7)
+    e.inner:SetTexture(M.ROUTE_DOT_TEX)
+    e.inner:SetVertexColor(0.06, 0.05, 0.04, 0.92)
+    e.txt = p.host:CreateFontString(nil, "OVERLAY")
+    e.txt:SetFont("Fonts\\ARHei.ttf", 12, "OUTLINE")
+    e.txt:SetTextColor(1, 1, 1)
+    p.list[i] = e
+    return e
+end
+
+function M.SyncNoBadges(host, tag, cw, ch, items)
+    if not host then return 0 end
+    local p = noPoolFor(host, tag)
+    local used = p.n
+    p.n = 0
+    local d = noD()
+    local di = d * 0.7
+    local dy = 0
+    if items and cw and ch and cw > 0 and ch > 0 then
+        for k = 1, #items do
+            local it = items[k]
+            local e = noBadge(p)
+            local x, y = it[5], -it[6] + dy
+            e.rim:SetVertexColor(it[1], it[2], it[3], 1)
+            e.rim:ClearAllPoints()
+            e.rim:SetPoint("CENTER", host, "TOPLEFT", x, y)
+            e.rim:SetSize(d, d)
+            e.inner:ClearAllPoints()
+            e.inner:SetPoint("CENTER", host, "TOPLEFT", x, y)
+            e.inner:SetSize(di, di)
+            e.txt:SetFont("Fonts\\ARHei.ttf", math.floor(d * (it[7] and 0.44 or 0.58)), "OUTLINE")
+            e.txt:SetText(it[4])
+            e.txt:ClearAllPoints()
+            e.txt:SetPoint("CENTER", host, "TOPLEFT", x, y)
+            e.rim:Show()
+            e.inner:Show()
+            e.txt:Show()
+        end
+    end
+    local top = used
+    if p.n > top then top = p.n end
+    for i = p.n + 1, top do
+        local e = p.list[i]
+        if e then
+            e.rim:Hide()
+            e.inner:Hide()
+            e.txt:Hide()
+        end
+    end
+    return p.n
+end
+
+function M.SegNoItems(id, floor, segs, cw, ch, hidden)
+    local items = {}
+    if not cw or cw <= 0 or not ch or ch <= 0 then return items end
+    local kx, ky = cw * 0.01, ch * 0.01
+    if type(segs) == "table" then
+        for i = 1, #segs do
+            local sg = segs[i]
+            local no = sg and sg.no
+            local pts = sg and sg.pts
+            if no and no ~= "" and no ~= "-" and pts and #pts > 0
+                    and not (hidden and hidden(i)) then
+                local at = sg.noAt
+                if type(at) ~= "number" or at < 1 or at > #pts then at = 1 end
+                local p = pts[at]
+                local cr, cg, cb = M.RouteColor(sg.t0 or 0)
+                items[#items + 1] = { cr, cg, cb, tostring(no),
+                                      p[1] * kx, p[2] * ky, #tostring(no) >= 3 }
+            end
+        end
+    end
+    local pins = id and floor and ns.DungeonRouteNo and ns.DungeonRouteNo[id]
+    pins = pins and pins[floor]
+    if type(pins) == "table" then
+        for i = 1, #pins do
+            local e = pins[i]
+            if e and e[1] and e[2] and e[3] then
+                items[#items + 1] = { 0.93, 0.78, 0.42, tostring(e[1]),
+                                      e[2] * kx, e[3] * ky, #tostring(e[1]) >= 3 }
+            end
+        end
+    end
+    return items
+end
+
+function M.SyncRouteNo(id, floor, cw, ch)
+    local frame = M.frame
+    local host = frame and frame.route
+    if not host then return end
+    local segs = M.RouteOn(id) and floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
+    local items = M.SegNoItems(id, floor, segs, cw, ch, function(i)
+        return M.routeHidden[M.RouteSegKey(id, floor, i)]
+    end)
+    frame.noUsed = M.SyncNoBadges(host, "detail", cw, ch, items)
 end
 
 function M.ShowRouteMenu(owner)
@@ -2076,7 +2415,7 @@ function M.ShowRouteMenu(owner)
         local k = M.RouteSegKey(id, floor, i)
         local hid = M.routeHidden[k] and true or false
         items[#items + 1] = {
-            text = StripOrd(segs[i].from) .. " → " .. StripOrd(segs[i].to),
+            text = FloorWord(segs[i].from) .. " → " .. FloorWord(segs[i].to),
             checked = not hid,
             color = hid and "|cff7a6a52" or nil,
             func = function()
@@ -2184,6 +2523,7 @@ function M.SyncPins()
             local skip = nil
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
+            if bt.entry then bt.entry:Hide() end
             if kind == "note" or kind == "quest" or kind == "icon" then
                 bt:SetFrameLevel(frame.pins:GetFrameLevel() + 2)
             else
@@ -2244,9 +2584,8 @@ function M.SyncPins()
                     bt.__qState = "ready"
                 end
             elseif kind == "entrance" then
-                bt.dot:SetShown(true)
-                bt.dot:SetTexture(M.PIN_DOOR_TEX)
-                bt.dot:SetVertexColor(1, 1, 1)
+                bt.dot:Hide()
+                bt.entry:Show()
                 bt.__av:Hide()
             elseif kind == "dungeon" then
                 bt.dot:SetShown(true)
@@ -2351,8 +2690,7 @@ function M.PinOnClick(self, inWorld)
     if kind == "boss" and p and p.en then
         M.Select(p.en)
     elseif kind == "quest" and p and p.id then
-        U.dungeonQuestSel = p.id
-        U:SetDungeonTab("quest")
+        M.GotoQuest(p.id, inWorld)
     elseif kind == "prev" or kind == "next" then
         local from = M.CurFloorNum()
         if M.StepFloor((kind == "next") and 1 or -1, p and p.to) then
@@ -2391,6 +2729,59 @@ function M.GotoDungeon(id, inWorld)
     if DU and DU.SetDungeonTab then
         pcall(DU.SetDungeonTab, DU, "map")
     end
+end
+
+function M.QuestScrollTo(qid)
+    local U = ns.DungeonUI
+    local sc = U and U.dungeonQuestScroll
+    local pool = U and U.dungeonQuestPool
+    if not (qid and sc and type(pool) == "table" and type(pool.row) == "table") then return end
+    for i = 1, #pool.row do
+        local r = pool.row[i]
+        if r and r.__q and r.__q[1] == qid and r:IsShown() and type(r.__vtop) == "number" then
+            local h = sc:GetHeight() or 0
+            local top = -r.__vtop
+            local vs = sc:GetVerticalScroll() or 0
+            if top < vs then
+                vs = top
+            elseif h > 0 and top + DG.Q_ROW_H > vs + h then
+                vs = top + DG.Q_ROW_H - h
+            end
+            if vs < 0 then vs = 0 end
+            pcall(sc.SetVerticalScroll, sc, vs)
+            return
+        end
+    end
+end
+
+function M.GotoQuest(qid, inWorld)
+    if not qid then return end
+    local U = ns.DungeonUI
+    if inWorld then
+        local MW = ns.MapWorldModule
+        if MW then
+            MW.suppress = true
+            if MW.Active and MW.Active() then MW.Hide() end
+        end
+        if WorldMapFrame and WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
+            HideUIPanel(WorldMapFrame)
+        end
+        if M.curId and ns.ShowDungeonDetail then ns.ShowDungeonDetail(M.curId) end
+    end
+    if not U then return end
+    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
+    local qsd = (type(row) == "table") and row[2] or nil
+    if (qsd == "A" or qsd == "H") and U.dungeonQSide ~= qsd then U.dungeonQSide = qsd end
+    U.dungeonQView = "list"
+    U.dungeonQFlow = nil
+    U.dungeonQuestSel = qid
+    U.dungeonQListKey = nil
+    if U.SetDungeonTab then
+        pcall(U.SetDungeonTab, U, "quest")
+    elseif U.RenderDungeonQuests then
+        U:RenderDungeonQuests()
+    end
+    M.QuestScrollTo(qid)
 end
 
 function M.PinOnEnter(self)
@@ -2459,7 +2850,7 @@ function M.PinOnEnter(self)
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
     elseif self.__kind == "prev" then
-        GameTooltip:AddLine(L["上一层入口"], 1, 0.82, 0, true)
+        GameTooltip:AddLine(L["上楼"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
@@ -2472,7 +2863,7 @@ function M.PinOnEnter(self)
             end
         end
     elseif self.__kind == "next" then
-        GameTooltip:AddLine(L["下一层入口"], 1, 0.82, 0, true)
+        GameTooltip:AddLine(L["下楼"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
@@ -3004,6 +3395,14 @@ function M.PaintArea(id, fn, cw, ch)
     local frame = M.frame
     local tex = frame and frame.areaTex
     if not tex then return end
+    local host = frame.canvas
+    local items = fn and ns.AreaVec and ns.AreaVec.dun and ns.AreaVec.dun[id] and ns.AreaVec.dun[id][fn]
+    if items and host and ns.AreaDraw then
+        ns.AreaDraw.Paint(host, cw, ch, items, 1, 1, 1, { base = 3 })
+        tex:Hide()
+        return
+    end
+    if host and ns.AreaDraw then ns.AreaDraw.Clear(host) end
     local row = id and ns.RouteArea and ns.RouteArea[id]
     local path = row and fn and row[fn]
     if not path then

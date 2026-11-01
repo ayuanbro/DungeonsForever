@@ -86,6 +86,7 @@ function AB.ShowCopy(text)
                 edit:SetText(pendingImportText)
                 edit:HighlightText()
                 edit:SetFocus()
+                ns.SkinPopupFont(self)
             end,
             EditBoxOnEnterPressed = function(self)
                 self:GetParent():Hide()

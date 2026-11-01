@@ -589,13 +589,13 @@ local function Row(i)
     r.chk:SetPoint("LEFT", r, "LEFT", 8, 0)
     r.chk.ring = r.chk:CreateTexture(nil, "ARTWORK")
     r.chk.ring:SetAllPoints()
-    r.chk.ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckRing")
+    r.chk.ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing")
     r.chk.disc = r.chk:CreateTexture(nil, "ARTWORK")
     r.chk.disc:SetAllPoints()
-    r.chk.disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+    r.chk.disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
     r.chk.tickF = r.chk:CreateTexture(nil, "OVERLAY")
     r.chk.tickF:SetAllPoints()
-    r.chk.tickF:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckMark")
+    r.chk.tickF:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
     r.chk:SetScript("OnClick", function(self, button)
         local id = self:GetParent().__it
         if not id then return end
@@ -862,14 +862,14 @@ local function PaintRow(r, idx, y, rec, zebra)
         r.chk.ring:Hide()
         r.chk.disc:Show()
         r.chk.disc:SetVertexColor(Unpack(C_DONE))
-        r.chk.tickF:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckTicks2")
+        r.chk.tickF:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckTicks2")
         r.chk.tickF:Show()
         r.chk.tickF:SetVertexColor(1, 1, 1, 1)
     elseif inbag then
         r.chk.ring:Hide()
         r.chk.disc:Show()
         r.chk.disc:SetVertexColor(Unpack(C_GREEN))
-        r.chk.tickF:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckMark")
+        r.chk.tickF:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
         r.chk.tickF:Show()
         r.chk.tickF:SetVertexColor(1, 1, 1, 1)
     else
@@ -1605,7 +1605,7 @@ EG.RT_BODY_H = 294
 EG.RT_MAX_TARGETS, EG.RT_MAX_STEPS = 10, 14
 local RT_PIN_ATLAS = "Waypoint-MapPin-Tracked"
 EG.RT_GRAVE_NATIVE = "Interface\\RaidFrame\\Raid-Icon-Rez"
-EG.RT_GRAVE_OWN = "Interface\\AddOns\\DungeonsForever\\Media\\SpiritPin"
+EG.RT_GRAVE_OWN = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\SpiritPin"
 local RT_SIDE_FALLBACK = { 1.00, 0.84, 0.08 }
 local RtGo, RtTip
 
@@ -1655,7 +1655,7 @@ function EG.TakeStepRow(i)
     st.coRx = st.co:CreateTexture(nil, "OVERLAY")
     st.coRx:SetSize(10.4, 15)
     st.coRx:SetPoint("LEFT", st.co, "LEFT", 8, 0)
-    st.coRx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\EntryPin")
+    st.coRx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin")
     st.coRx:SetTexCoord(14 / 64, 50 / 64, 9 / 64, 61 / 64)
     st.coTx:ClearAllPoints()
     st.coTx:SetPoint("LEFT", st.coRx, "RIGHT", 6, 0)
@@ -1823,6 +1823,16 @@ local function PaintGraveBtn(on)
     if SetButtonSelected then SetButtonSelected(bt, on) end
 end
 
+local function PaintAreaBtn(on)
+    local bt = EG.areaBtn
+    if not bt then return end
+    if on == nil then
+        on = ns.ExploreAreaOn and ns.ExploreAreaOn() or false
+    end
+    bt:SetText(on and L["复活区域：开"] or L["复活区域：关"])
+    if SetButtonSelected then SetButtonSelected(bt, on) end
+end
+
 local function RtZoneOf(t)
     if not (t and t.fp) then return "" end
     local zn = string.match(t.fp, "^(.-)%s*·%s") or t.fp
@@ -1951,16 +1961,35 @@ local function RtMapPaint(mapID, x, y)
     for j = k + 1, #dp do dp[j]:Hide() end
     local opool = EG.rtOvlTex or {}
     for i = 1, #opool do opool[i]:Hide() end
+    local vside = RtOvlSide()
+    local vlist = {}
+    if ns.AreaVec and ns.AreaVec.ovl then
+        for _, it in pairs(ns.AreaVec.ovl) do
+            if it.map == mapID and (it.side == 0 or it.side == vside) then
+                vlist[#vlist + 1] = it
+            end
+        end
+    end
+    if ns.AreaDraw then
+        if #vlist > 0 then
+            local tc = OVL_TINT[vside] or OVL_TINT[1]
+            ns.AreaDraw.Paint(cv, dw, dh, vlist, tc[1], tc[2], tc[3],
+                { base = 1, layer = "OVERLAY", fillA = ns.AreaDraw.FILL_A_OVL })
+        else
+            ns.AreaDraw.Clear(cv)
+        end
+    end
     if ns.RouteOvl then
         local on = 0
-        local side = RtOvlSide()
+        local side = vside
         local names = {}
         for nm in pairs(ns.RouteOvl) do names[#names + 1] = nm end
         table.sort(names)
         for ni = 1, #names do
             local od = ns.RouteOvl[names[ni]]
             local os = od[7] or 0
-            if od[1] == mapID and (os == 0 or os == side) and od[3] and od[4] and opool[on + 1] then
+            local vd = ns.AreaVec and ns.AreaVec.ovl and ns.AreaVec.ovl[names[ni]]
+            if not vd and od[1] == mapID and (os == 0 or os == side) and od[3] and od[4] and opool[on + 1] then
                 on = on + 1
                 local ot = opool[on]
                 ot:ClearAllPoints()
@@ -4174,7 +4203,7 @@ function EG.Build(page)
             ef:SetWordWrap(false)
             eb:SetFontString(ef)
             local eh = eb:CreateTexture(nil, "OVERLAY")
-            eh:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BackChevron.tga")
+            eh:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\BackChevron.tga")
             eh:SetTexCoord(1, 0, 0, 1)
             eh:SetSize(9, 9)
             eh:SetPoint("RIGHT", eb, "RIGHT", -6, 0)
@@ -4513,7 +4542,7 @@ function EG.Build(page)
                 EG.bmNodes[i] = nd
                 if i < 5 then
                     local ar = chain:CreateTexture(nil, "OVERLAY")
-                    ar:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BackChevron.tga")
+                    ar:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\BackChevron.tga")
                     ar:SetTexCoord(1, 0, 0, 1)
                     ar:SetHeight(12)
                     ar:SetVertexColor(Unpack(C_GOLD))
@@ -4862,7 +4891,7 @@ Y()
             bt:SetPoint("TOPRIGHT", EG.graveBtn, "TOPLEFT", -8, 0)
             local GS_ICON = {
                 native = EG.RT_GRAVE_NATIVE,
-                circle = "Interface\\AddOns\\DungeonsForever\\Media\\SpiritPinCircle",
+                circle = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\SpiritPinCircle",
                 custom = EG.RT_GRAVE_OWN,
             }
             local GS_NAME = {
@@ -4924,6 +4953,30 @@ Y()
             EG.rtStyleSync = Sync
             Sync()
 Y()
+        end
+
+        do
+            local bt = NewButton(root, "", 150, 24, 14)
+            bt:SetPoint("TOPRIGHT", EG.graveStyleBtn, "TOPLEFT", -8, 0)
+            bt:SetScript("OnClick", function()
+                local on
+                if ns.ExploreAreaToggle then on = ns.ExploreAreaToggle() end
+                PaintAreaBtn(on)
+                if ns.PlaySound then ns.PlaySound(1) end
+            end)
+            bt:SetScript("OnEnter", function(self)
+                if GameTooltip then
+                    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+                    GameTooltip:SetText(L["复活区域"], 1, 0.82, 0.24)
+                    GameTooltip:AddLine(L["在世界地图上显示各复活点的覆盖范围。"], 0.85, 0.85, 0.85, true)
+                    GameTooltip:Show()
+                end
+            end)
+            bt:SetScript("OnLeave", function()
+                if GameTooltip then GameTooltip:Hide() end
+            end)
+            EG.areaBtn = bt
+            PaintAreaBtn()
         end
 
         local lc = CreateFrame("Frame", nil, root)
@@ -5005,7 +5058,7 @@ Y()
         local pin = EG.rtDstBtn:CreateTexture(nil, "ARTWORK")
         pin:SetSize(14, 14)
         pin:SetPoint("CENTER", EG.rtDstBtn, "CENTER", 0, 0)
-        pin:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\EntryPin")
+        pin:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin")
         EG.rtDstBtn:SetScript("OnClick", function(self)
             if self.__go then RtGo(self.__go[1], self.__go[2], self.__go[3]) end
         end)
@@ -5185,7 +5238,7 @@ Y()
             tx:SetDrawLayer("OVERLAY", 5)
             tx:SetSize(18, 18)
             tx:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
-            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\SpiritPin")
+            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\SpiritPin")
             tx:Hide()
             EG.rtGraveTex[i] = tx
         end
@@ -5195,7 +5248,7 @@ Y()
             tx:SetDrawLayer("OVERLAY", 4)
             tx:SetSize(20, 20)
             tx:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
-            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
             tx:SetVertexColor(0.05, 0.05, 0.06, 0.88)
             tx:Hide()
             EG.rtGraveDisc[i] = tx
@@ -5206,7 +5259,7 @@ Y()
             tx:SetDrawLayer("OVERLAY", 4)
             tx:SetSize(20, 20)
             tx:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
-            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckRing")
+            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing")
             tx:SetVertexColor(0.78, 0.74, 0.62, 0.9)
             tx:Hide()
             EG.rtGraveRing[i] = tx
@@ -5217,7 +5270,7 @@ Y()
             tx:SetDrawLayer("OVERLAY", 6)
             tx:SetSize(8, 8)
             tx:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
-            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
             tx:SetVertexColor(0.03, 0.03, 0.04, 0.92)
             tx:Hide()
             EG.rtGraveRim[i] = tx
@@ -5228,7 +5281,7 @@ Y()
             tx:SetDrawLayer("OVERLAY", 6)
             tx:SetSize(6, 6)
             tx:SetPoint("TOPLEFT", cv, "TOPLEFT", 0, 0)
-            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+            tx:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
             tx:Hide()
             EG.rtGraveDot[i] = tx
         end
@@ -5237,7 +5290,7 @@ Y()
         mpin:SetSize(22, 22)
         if mpin.SetAtlas then mpin:SetAtlas(RT_PIN_ATLAS) end
         if not mpin.GetAtlas or not mpin:GetAtlas() then
-            mpin:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\EntryPin")
+            mpin:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin")
         end
         mpin:Hide()
         EG.rtMapPin = mpin
@@ -5264,7 +5317,7 @@ Y()
         local eic = eh:CreateTexture(nil, "ARTWORK")
         eic:SetSize(28, 28)
         eic:SetPoint("CENTER", eh, "CENTER", 0, 26)
-        eic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\NotePin")
+        eic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\NotePin")
         eic:SetAlpha(0.35)
         local etx = MakeFS(eh, 14, C_DIM, "CENTER")
         etx:SetPoint("TOP", eic, "BOTTOM", 0, -8)

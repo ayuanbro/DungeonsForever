@@ -449,7 +449,7 @@ FV.Build = function(page)
     FV.searchBox = sb
     local eb = CreateFrame("EditBox", nil, sb)
     eb:SetAllPoints()
-    eb:SetFontObject("GameFontHighlightSmall")
+    eb:SetFont(ns.FONT, 11, "")
     eb:SetTextInsets(6, 6, 0, 0)
     eb:SetAutoFocus(false)
     eb:SetMaxLetters(30)
@@ -500,13 +500,13 @@ FV.Build = function(page)
         bt.boxF = boxF
         bt.ring = boxF:CreateTexture(nil, "ARTWORK")
         bt.ring:SetAllPoints()
-        bt.ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckRing")
+        bt.ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing")
         bt.disc = boxF:CreateTexture(nil, "ARTWORK")
         bt.disc:SetAllPoints()
-        bt.disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+        bt.disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
         bt.tick = boxF:CreateTexture(nil, "OVERLAY")
         bt.tick:SetAllPoints()
-        bt.tick:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckMark")
+        bt.tick:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
         bt.label = MakeFS(bt, 14, C_TEXT, "LEFT")
         bt.label:SetPoint("LEFT", boxF, "RIGHT", 7, 0)
         bt.label:SetText(opt.text)
@@ -722,7 +722,7 @@ FV.Build = function(page)
     qb:SetPoint("TOPRIGHT", rightCard, "TOPRIGHT", -14, -10)
     local qfs = qb:GetFontString()
     local qt = qb:CreateTexture(nil, "OVERLAY")
-    qt:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\EntryPin")
+    qt:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin")
     qt:SetSize(12, 12)
     qt:SetPoint("LEFT", qb, "LEFT", 4, 0)
     if qfs then
@@ -897,7 +897,7 @@ function FV:PaintList()
                 ns.hui.HuiCardState(r, "norm")
                 r.__hst = "norm"
             end
-            if not (HUI and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, sel, "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGradFac")) then
+            if not (HUI and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, sel, "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_RowSelGradFac")) then
                 if sel then
                     SetButtonSelected(r, false)
                 end

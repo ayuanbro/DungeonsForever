@@ -1200,7 +1200,7 @@ do
     ns.hui.BuildCapsule = BuildCapsule
     ns.hui.GlassPaint = GlassPaint
 
-    local ROW_SEL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGrad"
+    local ROW_SEL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_RowSelGrad"
 
     function ns.hui.PaintRowSelect(f, on, tex)
         if not f or not f.__huiCard then return false end
@@ -1538,15 +1538,15 @@ do
                 local ring = row:CreateTexture(nil, "ARTWORK")
                 ring:SetSize(chkSz, chkSz)
                 ring:SetPoint("LEFT", row, "LEFT", padX, 0)
-                ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckRing")
+                ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing")
                 local disc = row:CreateTexture(nil, "ARTWORK")
                 disc:SetSize(chkSz, chkSz)
                 disc:SetPoint("LEFT", row, "LEFT", padX, 0)
-                disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+                disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
                 local tick = row:CreateTexture(nil, "OVERLAY")
                 tick:SetSize(chkSz, chkSz)
                 tick:SetPoint("LEFT", row, "LEFT", padX, 0)
-                tick:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckMark")
+                tick:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
                 ring:SetShown(not on)
                 disc:SetShown(on)
                 tick:SetShown(on)
@@ -1797,12 +1797,12 @@ do
         RegisterPixelStrip(bx, "h")
     end
 
-    local SEG_PILL_L = "Interface\\AddOns\\DungeonsForever\\Media\\DF_SegPillL"
-    local SEG_PILL_M = "Interface\\AddOns\\DungeonsForever\\Media\\DF_SegPillM"
-    local SEG_PILL_R = "Interface\\AddOns\\DungeonsForever\\Media\\DF_SegPillR"
-    local PILL_SH_L = "Interface\\AddOns\\DungeonsForever\\Media\\DF_PillShadowL"
-    local PILL_SH_M = "Interface\\AddOns\\DungeonsForever\\Media\\DF_PillShadowM"
-    local PILL_SH_R = "Interface\\AddOns\\DungeonsForever\\Media\\DF_PillShadowR"
+    local SEG_PILL_L = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_SegPillL"
+    local SEG_PILL_M = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_SegPillM"
+    local SEG_PILL_R = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_SegPillR"
+    local PILL_SH_L = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_PillShadowL"
+    local PILL_SH_M = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_PillShadowM"
+    local PILL_SH_R = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_PillShadowR"
 
     function ns.hui.CreateSegmentedControl(host)
         local padX, padY = 3, 2
@@ -2881,9 +2881,9 @@ do
         return on and (W - K - 3) or 3
     end
 
-    local TOGGLE_ON_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_ToggleOn"
-    local TOGGLE_OFF_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_ToggleOff"
-    local KNOB_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_Knob"
+    local TOGGLE_ON_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_ToggleOn"
+    local TOGGLE_OFF_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_ToggleOff"
+    local KNOB_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_Knob"
 
     local function ApplyToggleState(bt, texs, knob, animate)
         animate = animate and true or false

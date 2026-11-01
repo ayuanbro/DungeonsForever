@@ -1289,13 +1289,28 @@ ns.DungeonLoot = {
     ["alcaz_prison"] = {
     },
     ["sunken_temple"] = {
-        { "Balcony Minibosses", "Balcony Miniboss", "", "6701", {
-            { 10783, 5, false },
+        { "Loro", "Loro", "", "5714", {
             { 10784, 2.6, false },
-            { 10787, 7, false },
-            { 10788, 10, false },
-            { 10785, 5.7, false },
+        } },
+        { "Gasher", "Gasher", "", "5713", {
             { 10786, 8.3, false },
+        } },
+        { "Mijan", "Mijan", "", "5717", {
+            { 10785, 5.7, false },
+            { 10788, 10, false },
+        } },
+        { "Zolo", "Zolo", "", "5712", {
+            { 10787, 7, false },
+        } },
+        { "Zul'Lor", "Zul'Lor", "", "5716", {
+            { 10786, 8.3, false },
+            { 10787, 7, false },
+        } },
+        { "Hukku", "Hukku", "", "5715", {
+            { 10783, 5, false },
+            { 10785, 5.7, false },
+        } },
+        { "Balcony Minibosses", "Balcony Miniboss", "", "", {
             { 20606, 20, false },
             { 20607, 24, false },
             { 20608, 22, false },

@@ -289,7 +289,7 @@ local function TakeNode(parent)
         btn.iconTex:SetTexCoord(0.14, 0.86, 0.14, 0.86)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(btn.iconTex) end
         btn.borderTex = btn.iconFrame:CreateTexture(nil, "OVERLAY")
-        btn.borderTex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentBorder")
+        btn.borderTex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Talent\\TalentBorder")
         btn.borderTex:SetSize(ICON + 4, ICON + 4)
         btn.borderTex:SetPoint("CENTER", btn, "CENTER", 0, 0)
         btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -658,14 +658,15 @@ OpenPlanPop = function()
             local del = CreateFrame("Button", nil, bt)
             del:SetSize(18, 18)
             del:SetPoint("TOPLEFT", bt, "TOPLEFT", 98, -3)
-            del:SetNormalFontObject(GameFontNormalSmall)
             del:SetText("X")
+            del:GetFontString():SetFont(ns.FONT, 11, "")
             del:GetFontString():SetTextColor(1, 0.4, 0.35, 1)
             del:SetScript("OnClick", function()
                 StaticPopupDialogs["DF_TALENT_BUILD_DEL"] = {
                     text = format(L["删除方案「%s」？"], r.label),
                     button1 = L["确定"],
                     button2 = L["取消"],
+                    OnShow = function(self) ns.SkinPopupFont(self) end,
                     OnAccept = function()
                         local list = BuildsOf()
                         for bi = #list, 1, -1 do
@@ -683,8 +684,8 @@ OpenPlanPop = function()
             local ren = CreateFrame("Button", nil, bt)
             ren:SetSize(18, 18)
             ren:SetPoint("TOPLEFT", bt, "TOPLEFT", 80, -3)
-            ren:SetNormalFontObject(GameFontNormalSmall)
             ren:SetText("改")
+            ren:GetFontString():SetFont(ns.FONT, 11, "")
             ren:GetFontString():SetTextColor(0.6, 0.8, 1, 1)
             ren:SetScript("OnClick", function()
                 StaticPopupDialogs["DF_TALENT_BUILD_REN"] = {
@@ -699,6 +700,7 @@ OpenPlanPop = function()
                         e:SetText(r.label)
                         e:HighlightText()
                         e:SetFocus()
+                        ns.SkinPopupFont(self)
                     end,
                     OnAccept = function(self)
                         local e = self.EditBox or self.editBox
@@ -1267,8 +1269,8 @@ local function Ensure()
         UI.spentFs[t] = sp
         local rb = NewButton(pl, nil, 19, 19, 14)
         rb:SetPoint("TOPRIGHT", pl, "TOPRIGHT", -PAD, -4)
-        rb:SetNormalTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentReset")
-        rb:SetHighlightTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentReset", "ADD")
+        rb:SetNormalTexture("Interface\\AddOns\\DungeonsForever\\Media\\Talent\\TalentReset")
+        rb:SetHighlightTexture("Interface\\AddOns\\DungeonsForever\\Media\\Talent\\TalentReset", "ADD")
         rb.__tree = t
         BindResetBtn(rb)
         UI.resetBtns[t] = rb

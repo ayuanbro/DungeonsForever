@@ -12,8 +12,8 @@ local C_QUEST = { 0.75, 0.78, 0.82 }
 local C_SC_UP = { 0.47, 0.85, 0.45 }
 local C_SC_DOWN = { 0.92, 0.42, 0.38 }
 
-local LOGO = "|TInterface\\AddOns\\DungeonsForever\\Media\\DF_Logo.tga:16:16:0:0:32:32:0:32:0:32|t "
-local LOGO_GAP = "|TInterface\\AddOns\\DungeonsForever\\Media\\DF_Blank.tga:16:16:0:0:32:32:0:32:0:32|t "
+local LOGO = "|TInterface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp:16:16:0:0:128:128:0:128:0:128|t "
+local LOGO_GAP = "|TInterface\\AddOns\\DungeonsForever\\Media\\Brand\\DF_Blank.tga:16:16:0:0:32:32:0:32:0:32|t "
 
 local TIP_VER = 1
 local TIP_KEYS = { "src", "bis", "bisScore", "wish", "quest", "ilvl" }
