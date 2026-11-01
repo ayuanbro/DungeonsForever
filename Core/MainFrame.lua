@@ -113,7 +113,7 @@ aboutBtn:SetHitRectInsets(-3, -3, -3, -3)
 if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(aboutBtn, { noFrame = true }) end
 do
     local q = aboutBtn:CreateTexture(nil, "ARTWORK")
-    q:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\HelpIcon")
+    q:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Brand\\HelpIcon")
     q:SetSize(14, 14)
     q:SetPoint("CENTER")
     q:SetVertexColor(0.56, 0.63, 0.72)
@@ -249,7 +249,7 @@ function BuildAbout()
     ns.hui.BuildRoundedBG(left, 8, ns.hui.layer.L1, "both", true)
 
     local icon = left:CreateTexture(nil, "ARTWORK")
-    icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\DungeonsForever.blp")
+    icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp")
     icon:SetSize(88, 88)
     icon:SetPoint("CENTER", left, "CENTER", 0, 146)
 
@@ -1439,7 +1439,7 @@ ns.Init(function()
 
     local launcher = LDB:NewDataObject("DungeonsForever", {
         type = "launcher",
-        icon = "Interface\\AddOns\\DungeonsForever\\Media\\DungeonsForever.blp",
+        icon = "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp",
         OnClick = function(_, button)
             if button == "LeftButton" then ns.Toggle() end
         end,

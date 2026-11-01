@@ -9,6 +9,9 @@ local CALLER = "DungeonsForever"
 local CAP = 300
 local MAX_STALE = 2
 local MAX_PER_RECIPE = 3
+local PROFIT_CAP = 20
+local PLAN_STRUCT_REV = 3
+local RESID_MASS = 0.7
 local CACHE_TTL = 600
 local CACHE_SLOTS = 4
 local G_YELLOW, G_GREEN = 0.5, 0.05
@@ -341,6 +344,7 @@ local function RouteTick()
 end
 
 local function BuildCandidates(slug, opts)
+    local resid = (opts and opts.residualMass) and RESID_MASS or 1
     local specBlocked = 0
     local pr = ns.ProfRecipes
     local Rg = pr and pr[slug]
@@ -402,6 +406,8 @@ local function BuildCandidates(slug, opts)
                         local sp = NPCSellPrice(m[1])
                         if sp then base = base + sp * (m[2] or 1) end
                     end
+                    local qty = (type(rec[3]) == "number") and rec[3] or 1
+                    local value = ((type(itemID) == "number") and AHPrice(itemID) or 0) * qty * resid
                     local cY = (type(yellow) == "number") and yellow or learn
                     cands[#cands + 1] = {
                         spell = spell, item = (type(itemID) == "number") and itemID or nil,
@@ -412,6 +418,7 @@ local function BuildCandidates(slug, opts)
                         unpricedRank = unpricedRank,
                         fcost = fcost, funpriced = funpriced or nil, base = base, cd = (rec[4] == "Transmutes") or nil,
                         unknown = unknown or nil,
+                        value = value,
                         learnO = math.max(1, math.min(learn, cY - 25)),
                     }
                     recOf[spell] = rec
@@ -450,6 +457,7 @@ local function BuildCandidates(slug, opts)
                         local sp = NPCSellPrice(m[1])
                         if sp then base = base + sp * (m[2] or 1) end
                     end
+                    local value = ((type(ri.makes) == "number") and AHPrice(ri.makes) or 0) * resid
                     cands[#cands + 1] = {
                         spell = spell, item = (type(ri.makes) == "number") and ri.makes or nil,
                         learn = ri.learn, yellow = y, green = g, grey = ri.grey,
@@ -457,6 +465,7 @@ local function BuildCandidates(slug, opts)
                         unpricedN = (unpricedN > 0) and unpricedN or nil,
                         unpricedRank = unpricedRank,
                         fcost = 0, base = base, unknown = unknown or nil,
+                        value = value,
                         learnO = math.max(1, math.min(ri.learn, y - 25)),
                     }
                     recOf[spell] = ri
@@ -522,10 +531,19 @@ local function MetricOf(scheme, c, g)
     if scheme == "optim" then return (c.base or 0) / g end
     return c.cost / g
 end
+local function EffMetric(scheme, c, g, useVal)
+    local m = MetricOf(scheme, c, g)
+    if scheme == "cheapest" and useVal and (c.value or 0) > (c.cost or 0) then
+        local span = math.max(1, (c.grey or 0) - (c.learn or 0))
+        local net = ((c.cost or 0) - c.value) / g + (c.fcost or 0) / span
+        if net < m then m = net end
+    end
+    return m
+end
 
 local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpriced)
     local steps, gaps = {}, {}
-    local banned, segRun = {}, {}
+    local banned, segRun, profitMade = {}, {}, {}
     local cur = math.max(1, math.min(cap - 1, start or 1))
     local guard = 0
 
@@ -539,7 +557,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpric
             if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
-                    local metric = MetricOf(scheme, c, g)
+                    local metric = EffMetric(scheme, c, g, (profitMade[c.spell] or 0) < PROFIT_CAP)
                     if not best or metric < bestMetric - 1e-9
                        or (metric < bestMetric + 1e-9 and c.grey > best.grey) then
                         best, bestMetric = c, metric
@@ -570,13 +588,16 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpric
             while cur < cap do
                 local g = Gain(cur, best)
                 if not g then break end
-                crafts = crafts + 1 / g
+                local delta = 1 / g
+                if (best.value or 0) > (best.cost or 0)
+                   and (profitMade[best.spell] or 0) + crafts + delta > PROFIT_CAP then break end
+                crafts = crafts + delta
                 cur = cur + 1
                 local stop = false
                 for _, c in ipairs(cands) do
                     if c ~= best and not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
-                        if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
+                        if g2 and EffMetric(scheme, c, g2, (profitMade[c.spell] or 0) < PROFIT_CAP) < bestMetric - 1e-9 then
                             stop = true
                             break
                         end
@@ -585,6 +606,7 @@ local function Simulate(cands, start, cap, allowUnpriced, scheme, allowMatUnpric
                 if stop then break end
             end
             local qty = math.max(1, math.ceil(crafts - 1e-9))
+            profitMade[best.spell] = (profitMade[best.spell] or 0) + qty
             local last = steps[#steps]
             if last and last[3] == best.spell and last[2] + 1 == from then
                 last[2] = cur - 1
@@ -606,7 +628,7 @@ end
 
 local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnpriced, markFallback)
     local steps = {}
-    local banned, segRun = {}, {}
+    local banned, segRun, profitMade = {}, {}, {}
     local cur = a
     local guard = 0
     while cur <= b do
@@ -618,7 +640,7 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnprice
             if not banned[c.spell] and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
                 local g = GainOf(scheme, c, cur)
                 if g then
-                    local metric = MetricOf(scheme, c, g)
+                    local metric = EffMetric(scheme, c, g, (profitMade[c.spell] or 0) < PROFIT_CAP)
                     local better = (not best) or (metric < bestMetric - 1e-9)
                     if not better and metric < bestMetric + 1e-9 then
                         if markFallback then
@@ -654,14 +676,17 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnprice
             while cur <= b do
                 local g = Gain(cur, best)
                 if not g then break end
-                crafts = crafts + 1 / g
+                local delta = 1 / g
+                if (best.value or 0) > (best.cost or 0)
+                   and (profitMade[best.spell] or 0) + crafts + delta > PROFIT_CAP then break end
+                crafts = crafts + delta
                 cur = cur + 1
                 local stop = false
                 for _, c in ipairs(cands) do
                     if c ~= best and not banned[c.spell] and cur <= b
                        and Usable(scheme, c, cur, allowUnpriced, allowMatUnpriced) then
                         local g2 = GainOf(scheme, c, cur)
-                        if g2 and MetricOf(scheme, c, g2) < bestMetric - 1e-9 then
+                        if g2 and EffMetric(scheme, c, g2, (profitMade[c.spell] or 0) < PROFIT_CAP) < bestMetric - 1e-9 then
                             stop = true
                             break
                         end
@@ -670,6 +695,7 @@ local function SimulateRange(cands, a, b, scheme, allowUnpriced, allowMatUnprice
                 if stop then break end
             end
             local qty = math.max(1, math.ceil(crafts - 1e-9))
+            profitMade[best.spell] = (profitMade[best.spell] or 0) + qty
             local to = math.min(cur - 1, b)
             local fb
             if markFallback and best.unpriced then fb = true end
@@ -1071,6 +1097,247 @@ local function ToReached(steps)
     return out
 end
 
+local function ToolCraftsOf(spell, a, b, recOf)
+    if a > b then return 0 end
+    local rec = recOf[spell]
+    if not rec then return nil end
+    local c
+    if rec.mats or rec.learn then
+        c = { learn = rec.learn, yellow = rec.yellow, green = rec.green, grey = rec.grey }
+    else
+        c = { learn = rec[7], yellow = rec[8], green = rec[9], grey = rec[10] }
+    end
+    if not (c.learn and c.grey) then return nil end
+    local n = 0
+    for i = a, b do
+        local g = Gain(i, c)
+        if not g then return nil end
+        n = n + 1 / g
+    end
+    return n
+end
+
+local function SplitForTool(stepsOut, P, recOf)
+    for i, st in ipairs(stepsOut) do
+        if not st.tool and st[3] ~= 0 and not st.checkpoint then
+            local a, b = tonumber(st[1]) or 0, tonumber(st[2]) or 0
+            if a > P then return i end
+            if P < b then
+                local unit = (st.cost or 0) / math.max(1, st[4] or 1)
+                if P == a then
+                    local n = ToolCraftsOf(st[3], P + 1, b - 1, recOf)
+                    if n == 0 then
+                        table.remove(stepsOut, i)
+                        return i
+                    end
+                    st[1] = P + 1
+                    st[4] = math.max(1, math.ceil((n or (st[4] or 1)) - 1e-9))
+                    st.cost = unit * st[4]
+                    st.stepIndex = nil
+                    st.index = nil
+                    return i
+                end
+                local n1 = ToolCraftsOf(st[3], a, P - 1, recOf)
+                local n2 = ToolCraftsOf(st[3], P + 1, b - 1, recOf)
+                if not n1 or not n2 then
+                    local total = math.max(1, b - a)
+                    n1 = n1 or (st[4] or 1) * (P - a) / total
+                    n2 = n2 or (st[4] or 1) * (b - P - 1) / total
+                end
+                st[2] = P
+                st[4] = math.max(1, math.ceil(n1 - 1e-9))
+                st.cost = unit * st[4]
+                st.stepIndex = nil
+                st.index = nil
+                local right = {}
+                for k, v in pairs(st) do right[k] = v end
+                right[1] = P + 1
+                right[2] = b
+                right[4] = math.max(1, math.ceil(n2 - 1e-9))
+                right.cost = unit * right[4]
+                table.insert(stepsOut, i + 1, right)
+                return i + 1
+            end
+        end
+    end
+    return nil
+end
+
+local function NormalizeStepOrder(steps)
+    if type(steps) ~= "table" or #steps < 2 then return false end
+    local ordered = true
+    for i = 2, #steps do
+        local prev = tonumber(steps[i - 1][1]) or 0
+        local cur = tonumber(steps[i][1]) or 0
+        if cur < prev then
+            ordered = false
+            break
+        end
+    end
+    if ordered then return false end
+    local idx = {}
+    for i = 1, #steps do idx[i] = i end
+    table.sort(idx, function(x, y)
+        local sx = tonumber(steps[x][1]) or 0
+        local sy = tonumber(steps[y][1]) or 0
+        if sx ~= sy then return sx < sy end
+        return x < y
+    end)
+    local out = {}
+    for i = 1, #idx do out[i] = steps[idx[i]] end
+    for i = 1, #out do steps[i] = out[i] end
+    return true
+end
+
+local function DeNestEnabled()
+    local PDm = ns.ProfModule
+    if not (PDm and PDm.Setting) then return true end
+    return PDm.Setting("autoDeNestSteps") ~= false
+end
+
+local function DeNestSteps(steps, recOf)
+    if type(steps) ~= "table" or #steps < 2 then return false end
+    local changed = false
+    local dirty = true
+    local guard = 0
+    while dirty and guard < 64 do
+        guard = guard + 1
+        dirty = false
+        for i = 1, #steps do
+            local inner = steps[i]
+            local p = tonumber(inner[1]) or 0
+            local q = tonumber(inner[2]) or 0
+            local isCraft = q > p and not inner.checkpoint and not inner.tool
+                and (tonumber(inner[3]) or 0) ~= 0
+            if isCraft then
+                for j = 1, #steps do
+                    if j ~= i then
+                        local outer = steps[j]
+                        if not outer.checkpoint and not outer.tool
+                            and (tonumber(outer[3]) or 0) ~= 0 and outer[3] ~= inner[3] then
+                            local a = tonumber(outer[1]) or 0
+                            local b = tonumber(outer[2]) or 0
+                            if a <= p and q <= b and (a < p or q < b) then
+                                local total = tonumber(outer[4]) or 1
+                                local hasBoth = a < p and q < b
+                                if not (hasBoth and total < 2) then
+                                    local unit = (outer.cost or 0) / math.max(1, total)
+                                    local wL, wR = 0, 0
+                                    if a < p then
+                                        wL = ToolCraftsOf(outer[3], a, p - 1, recOf) or (p - a)
+                                    end
+                                    if q < b then
+                                        wR = ToolCraftsOf(outer[3], q, b - 1, recOf) or (b - q)
+                                    end
+                                    if wL + wR <= 0 then
+                                        wL, wR = math.max(1, p - a), math.max(1, b - q)
+                                    end
+                                    local left, right
+                                    if a < p then
+                                        left = {}
+                                        for k, v in pairs(outer) do left[k] = v end
+                                        left[2] = p
+                                        left.stepIndex = nil
+                                        left.index = nil
+                                    end
+                                    if q < b then
+                                        right = {}
+                                        for k, v in pairs(outer) do right[k] = v end
+                                        right[1] = q
+                                        right.stepIndex = nil
+                                        right.index = nil
+                                    end
+                                    if left and right then
+                                        local nL = math.floor(total * wL / (wL + wR) + 0.5)
+                                        if nL < 1 then nL = 1 end
+                                        if nL > total - 1 then nL = total - 1 end
+                                        left[4] = nL
+                                        left.cost = unit * nL
+                                        right[4] = total - nL
+                                        right.cost = unit * right[4]
+                                    else
+                                        local only = left or right
+                                        only[4] = total
+                                        only.cost = outer.cost
+                                    end
+                                    steps[j] = left
+                                    if right then table.insert(steps, j + 1, right) end
+                                    dirty = true
+                                    changed = true
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            if dirty then break end
+        end
+    end
+    return changed
+end
+
+local function SplitAroundTools(stepsOut, recOf)
+    local changed = false
+    for i = 1, #stepsOut do
+        local tool = stepsOut[i]
+        if tool.tool then
+            local p, q = tonumber(tool[1]) or 0, tonumber(tool[2]) or 0
+            for j = 1, #stepsOut do
+                if j ~= i then
+                    local s = stepsOut[j]
+                    if not s.tool and s[3] ~= 0 and not s.checkpoint then
+                        local a, b = tonumber(s[1]) or 0, tonumber(s[2]) or 0
+                        if a < q and p < b and not (a >= p and q >= b) then
+                            local unit = (s.cost or 0) / math.max(1, s[4] or 1)
+                            local nL, nR = 0, 0
+                            if a < p then
+                                nL = ToolCraftsOf(s[3], a, p - 1, recOf)
+                                if not nL then nL = (s[4] or 1) * (p - a) / math.max(1, b - a) end
+                            end
+                            if q < b then
+                                nR = ToolCraftsOf(s[3], q, b - 1, recOf)
+                                if not nR then nR = (s[4] or 1) * (b - q) / math.max(1, b - a) end
+                            end
+                            local left, right = nil, nil
+                            if a < p then
+                                left = {}
+                                for k, v in pairs(s) do left[k] = v end
+                                left[2] = p
+                                left[4] = math.max(1, math.ceil(nL - 1e-9))
+                                left.cost = unit * left[4]
+                                left.stepIndex = nil
+                                left.index = nil
+                            end
+                            if q < b then
+                                right = {}
+                                for k, v in pairs(s) do right[k] = v end
+                                right[1] = q
+                                right[4] = math.max(1, math.ceil(nR - 1e-9))
+                                right.cost = unit * right[4]
+                                right.stepIndex = nil
+                                right.index = nil
+                            end
+                            table.remove(stepsOut, j)
+                            if j < i then i = i - 1 end
+                            local ti = i
+                            if left then
+                                table.insert(stepsOut, ti, left)
+                                ti = ti + 1
+                            end
+                            if right then
+                                table.insert(stepsOut, ti + 1, right)
+                            end
+                            changed = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return changed
+end
+
 local function InjectTools(stepsOut, slug, cap, startLv, recOf)
     local kept = {}
     local G = ns.ProfGates
@@ -1087,7 +1354,8 @@ local function InjectTools(stepsOut, slug, cap, startLv, recOf)
             for i, st in ipairs(stepsOut) do
                 if (tonumber(st[1]) or 0) >= P then at = i break end
             end
-            table.insert(stepsOut, at, { P, P, goal.spell, 1,
+            at = SplitForTool(stepsOut, P, recOf) or at
+            table.insert(stepsOut, at, { P, P + 1, goal.spell, 1,
                 tool = true, toolItem = goal.item, toolSpell = goal.spell,
                 toolBop = goal.bindOnPickup or nil })
             have[goal.spell] = true
@@ -1503,6 +1771,8 @@ function RA.RebuildFromSkel(slug, skel, opts)
         end
     end
     if #steps == 0 then return nil end
+    if DeNestEnabled() then DeNestSteps(steps, recOf) end
+    NormalizeStepOrder(steps)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
         SummarizeCore(steps, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
@@ -1542,8 +1812,11 @@ function RA.FinalizeTools(res, slug, opts)
     if not cands then return res end
     local cap = tonumber(opts.target) or CAP
     cap = math.max(2, math.min(CAP, math.floor(cap)))
+    local changed = SplitAroundTools(res.steps, recOf)
     local kept = InjectTools(res.steps, slug, cap, opts.start, recOf)
-    if type(kept) ~= "table" or #kept == 0 then return res end
+    if DeNestEnabled() and DeNestSteps(res.steps, recOf) then changed = true end
+    if NormalizeStepOrder(res.steps) then changed = true end
+    if not changed and (type(kept) ~= "table" or #kept == 0) then return res end
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
         SummarizeCore(res.steps, recOf, soldSet, opts.learnedOnly, nil, opts.executionInventory)
@@ -1599,13 +1872,15 @@ local function Fingerprint(opts, slug)
     local pol = Pol and Pol.GetPolicies and Pol.GetPolicies(slug) or nil
     local partner = opts.secondaryProfession
     if partner == nil and Pol and Pol.GetRoutePartner then partner = Pol.GetRoutePartner(slug) end
-    local base = string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s",
+    local base = string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
         tostring(opts.start), tostring(opts.onlyAH),
         tostring(opts.noFormula), tostring(opts.learnedOnly),
         tostring(opts.target and math.floor(tonumber(opts.target) or CAP)),
         tostring(opts.scheme),
         tostring(opts.allowSecondaryLeveling),
         tostring(partner),
+        tostring(opts.residualMass),
+        tostring(PLAN_STRUCT_REV),
         pol and Pol.PolicyFingerprint(pol) or "")
     if opts.strictOnly or RA.__debugStrictOnly then return base .. "|strictOnly" end
     local inv = opts.executionInventory
@@ -1628,8 +1903,11 @@ function RA.QuoteSig()
     local unk = (PDm and PDm.SettingRaw and PDm.SettingRaw("autoSkipUnpricedFormulas")) and 1 or 0
     local rec = (PDm and PDm.Setting and PDm.Setting("recoveryEnabled")) and 1 or 0
     local tool = (PDm and PDm.Setting and PDm.Setting("autoCraftTools")) and 1 or 0
+    local rm = (PDm and PDm.Setting and PDm.Setting("autoResidualMass")) and 1 or 0
+    local dn = (PDm and PDm.Setting and PDm.Setting("autoDeNestSteps") ~= false) and 1 or 0
     return tostring(rev) .. ":" .. tostring(fee) .. ":" .. tostring(lim) .. ":" .. tostring(unk)
-        .. ":" .. tostring(rec) .. ":" .. tostring(tool)
+        .. ":" .. tostring(rec) .. ":" .. tostring(tool) .. ":" .. tostring(rm)
+        .. ":" .. tostring(dn)
 end
 
 function RA.SpecSig(slug)
@@ -1658,6 +1936,7 @@ function RA.OptionsFor(slug, current)
         learnedOnly = PDm.Setting("autoLearnedOnly"),
         target = target,
         scheme = fish and "fishing" or PDm.SettingRaw("autoScheme"),
+        residualMass = PDm.Setting("autoResidualMass"),
         allowSecondaryLeveling = PDm.Setting("autoSecondaryLeveling"),
         secondaryProfession = pair and pair.partner or nil,
         executionInventory = ns.ProfTrack and ns.ProfTrack.ContinueInventory

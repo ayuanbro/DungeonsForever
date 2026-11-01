@@ -929,6 +929,63 @@ local function navTailLeft()
     return nil
 end
 
+local function ensureAreaBtn()
+    if W.areaBtn or not WorldMapFrame then return W.areaBtn end
+    local nav = navBar()
+    if not nav then return nil end
+    local areaBtn = makeNativeBtn(nav, L["复活区域"], BTN_W, BTN_H)
+    areaBtn:SetFrameLevel(nav:GetFrameLevel() + 8)
+    euiBtn(areaBtn)
+    areaBtn:SetScript("OnClick", function(self)
+        local on
+        if ns.ExploreAreaToggle then on = ns.ExploreAreaToggle() end
+        setPicked(self, not on)
+    end)
+    areaBtn:SetScript("OnEnter", function(self)
+        GameTooltip:ClearLines()
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        local tex = M.LOGO_TEX
+            or "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp"
+        GameTooltip:AddLine("|T" .. tex .. ":18|t " .. L["复活区域"], 1, 0.82, 0, true)
+        GameTooltip:AddLine(L["在世界地图上显示各复活点的覆盖范围。"], 0.75, 0.75, 0.75, true)
+        GameTooltip:Show()
+    end)
+    areaBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    setPicked(areaBtn, ns.ExploreAreaOn and ns.ExploreAreaOn() or false)
+    W.areaBtn = areaBtn
+    return areaBtn
+end
+
+local function syncAreaBtn()
+    local ab = ensureAreaBtn()
+    if not ab then return end
+    setPicked(ab, ns.ExploreAreaOn and ns.ExploreAreaOn() or false)
+    if W.Active() then
+        if ab:IsShown() then ab:Hide() end
+        return
+    end
+    if not ab:IsShown() then ab:Show() end
+    local lim = navTailLeft()
+    local nav = navBar()
+    local wmf = WorldMapFrame
+    if not (lim and nav and wmf and wmf.GetLeft and wmf:GetLeft() and wmf:GetTop()) then
+        if not ab.__fb then
+            ab.__fb = true
+            ab.__dx, ab.__dy = nil, nil
+            ab:ClearAllPoints()
+            ab:SetPoint("TOPRIGHT", nav or wmf, "TOPRIGHT", -(NAV_PAD_R + BTN_W), -NAV_PAD_T)
+        end
+        return
+    end
+    ab.__fb = nil
+    local dx = (lim - BTN_GAP) - wmf:GetLeft() - BTN_W
+    local dy = (wmf:GetTop() - (nav:GetTop() or 0)) + NAV_PAD_T
+    if ab.__dx == dx and ab.__dy == dy then return end
+    ab.__dx, ab.__dy = dx, dy
+    ab:ClearAllPoints()
+    ab:SetPoint("TOPLEFT", wmf, "TOPLEFT", dx, -dy)
+end
+
 local function layout(view)
     local aw, ah = mapAreaSize()
     if aw <= 0 or ah <= 0 then return end
@@ -992,6 +1049,7 @@ local function layout(view)
         end
         view.routeBtn:ClearAllPoints()
         view.routeBtn:SetPoint("RIGHT", view.pinBtn, "LEFT", -BTN_GAP, 0)
+        if W.areaBtn and W.areaBtn:IsShown() then W.areaBtn:Hide() end
     end
     view.floorPanel:ClearAllPoints()
     view.floorPanel:SetPoint("TOPRIGHT", view.canvas, "TOPRIGHT", 0, 0)
@@ -1939,6 +1997,8 @@ function W.Build()
     euiBtn(pinBtn)
     view.pinBtn = pinBtn
 
+    ensureAreaBtn()
+
     local panel = CreateFrame("Frame", nil, view, "BackdropTemplate")
     panel:SetFrameLevel(view:GetFrameLevel() + 9)
     if ns.hui and ns.hui.BuildRoundedBG then
@@ -2040,6 +2100,7 @@ local function tick_()
     local view = W.view
     if view then syncNav(view) end
     if not (view and view:IsShown()) then
+        syncAreaBtn()
         if W.suppress then return end
         local id, why = autoPick()
         if id then
@@ -2133,6 +2194,7 @@ function W.Hook()
     W.watch = watch
     guardToggle()
     attachPins()
+    ensureAreaBtn()
     if WorldMapFrame:IsShown() then onShow() end
 end
 

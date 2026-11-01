@@ -78,7 +78,7 @@ end
 local function AddBtnIcon(bt, tex, size, pad)
     local fs = bt:GetFontString()
     local t = bt:CreateTexture(nil, "OVERLAY")
-    t:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\" .. tex)
+    t:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\" .. tex)
     t:SetSize(size, size)
     t:SetPoint("LEFT", bt, "LEFT", pad or 5, 0)
     if fs then
@@ -336,7 +336,7 @@ DG.CHILD_W = CONTENT_W - PAGE_INSET * 2
 DG.CARD_W = math.floor((DG.CHILD_W - DG.GUTTER * 2 - (DG.CARD_COLS - 1) * DG.CARD_GAP) / DG.CARD_COLS)
 DG.CARD_GLOW_K = { 0.16, 0.12, 0.09, 0.06, 0.04, 0.02 }
 DG.CARD_STROKE = false
-DG.CARD_MASK = "Interface\\AddOns\\DungeonsForever\\Media\\DFCardMaskRect"
+DG.CARD_MASK = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DFCardMaskRect"
 DG.CARD_SHADE = { { 1, 0.22, 0.78, 0.82, 0.92 } }
 
 local function CardRoundTex(tex)
@@ -444,7 +444,7 @@ function DG.NewCard(parent)
     card.plate:SetHeight(20)
     if rounded then CardRoundTex(card.plate) end
     if IsHui() then
-        card.plate:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\VGradient")
+        card.plate:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\VGradient")
     else
         card.plate:SetColorTexture(0, 0, 0, 0.55)
     end
@@ -2116,9 +2116,9 @@ function DG.EnsureQuestLane()
     U.dungeonQOVLabel = refreshZoomLabel
 
     local legend = {
-        { "Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc", DG.Q_OV_DONE, "Interface\\AddOns\\DungeonsForever\\Media\\CheckMark", { 0.043, 0.239, 0.102 }, DG.Q_OV_DONE, L["任务完成"] },
-        { "Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc", DG.Q_OV_ACT, "Interface\\AddOns\\DungeonsForever\\Media\\QMarkAsk", { 0.227, 0.165, 0 }, DG.Q_OV_ACT, L["已接取"] },
-        { "Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc", DG.Q_OV_TODO, "Interface\\AddOns\\DungeonsForever\\Media\\QMarkExcl", { 0.102, 0.102, 0.102 }, DG.Q_OV_TODO, L["未接取"] },
+        { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_DONE, "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark", { 0.043, 0.239, 0.102 }, DG.Q_OV_DONE, L["任务完成"] },
+        { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_ACT, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk", { 0.227, 0.165, 0 }, DG.Q_OV_ACT, L["已接取"] },
+        { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_TODO, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl", { 0.102, 0.102, 0.102 }, DG.Q_OV_TODO, L["未接取"] },
     }
     local legf = CreateFrame("Frame", nil, card)
     legf:SetFrameLevel(sf:GetFrameLevel() + 10)
@@ -2427,12 +2427,12 @@ function DG.PaintQuestOverview(d)
             n.tint:SetAllPoints()
             n.tint:Hide()
             n.okD = n:CreateTexture(nil, "ARTWORK")
-            n.okD:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+            n.okD:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
             n.okD:SetSize(DG.Q_BADGE_H, DG.Q_BADGE_H)
             n.okD:SetPoint("BOTTOMRIGHT", n, "BOTTOMRIGHT", -6, DG.Q_OV_H - 24 - DG.Q_BADGE_H)
             n.okD:Hide()
             n.okT = n:CreateTexture(nil, "OVERLAY")
-            n.okT:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckMark")
+            n.okT:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
             n.okT:SetAllPoints(n.okD)
             n.okT:Hide()
             n:SetScript("OnEnter", function(self)
@@ -2487,9 +2487,9 @@ function DG.PaintQuestOverview(d)
         return DG.Q_OV_TODO
     end
     local MARK_ICON = {
-        [DG.Q_OV_DONE] = "Interface\\AddOns\\DungeonsForever\\Media\\CheckMark",
-        [DG.Q_OV_ACT] = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkAsk",
-        [DG.Q_OV_TODO] = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkExcl",
+        [DG.Q_OV_DONE] = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",
+        [DG.Q_OV_ACT] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
+        [DG.Q_OV_TODO] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
     }
     local function extState(pid)
         local st = DG.QuestState(pid)
@@ -2669,7 +2669,7 @@ function DG.PaintQuestOverview(d)
         l:SetEndPoint("TOPLEFT", canvas, x2, -y2)
     end
     local LINEW = 2.5
-    local ARC_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DFLineArc"
+    local ARC_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DFLineArc"
     local function takeArc()
         nArc = nArc + 1
         local t = pool.arc[nArc]
@@ -2705,7 +2705,7 @@ function DG.PaintQuestOverview(d)
         t:SetPoint("TOPLEFT", canvas, "TOPLEFT", x0, -y0)
         t:SetVertexColor(lc[1], lc[2], lc[3], 0.9)
     end
-    local FIL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DFLineFil"
+    local FIL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DFLineFil"
     local FIL_R = 8
     local FIL_OUT = FIL_R + LINEW / 2
     local FIL_UV = FIL_OUT / 16
@@ -3561,7 +3561,7 @@ function DG.EnsureDetailBuilt()
         ns.PlaySound(1)
     end)
     local bicon = back:CreateTexture(nil, "OVERLAY")
-    bicon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BackChevron.tga")
+    bicon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\BackChevron.tga")
     bicon:SetSize(16, 16)
     bicon:SetPoint("LEFT", back, "LEFT", 7, 0)
     back.__backIcon = bicon
@@ -6465,9 +6465,9 @@ DG.Q_FLOW_H = 20
 DG.Q_FLOW_DOT = 16
 DG.Q_FLOW_MARK = 14
 DG.Q_MARK_SYM = {
-    done = "Interface\\AddOns\\DungeonsForever\\Media\\CheckMark",
-    active = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkAsk",
-    todo = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkExcl",
+    done = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",
+    active = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
+    todo = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
 }
 DG.Q_MARK_INK = {
     done = { 0.043, 0.239, 0.102 },
@@ -6603,7 +6603,7 @@ function DG.NodeLoc(qid, npcID, fb)
     return DG.ZoneShort(fb)
 end
 
-DG.BADGE_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\HUIPillCap"
+DG.BADGE_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\HUIPillCap"
 DG.BADGE_CAP_W = 8
 
 function DG.MakeBadge(parent, bg)
@@ -6885,7 +6885,7 @@ DG.Q_FAC_ICON = {
 }
 DG.Q_FAC_ICON_SZ = 16
 
-DG.QLIST_SEL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGrad496"
+DG.QLIST_SEL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_RowSelGrad496"
 
 function DG.PaintQListRow(r, st)
     if not r then return end
@@ -7673,7 +7673,7 @@ function DG.FlowTakeLink(child, pool)
         b.fs:SetPoint("TOPLEFT", b, "TOPLEFT", 0, -3)
         b.fs:SetWordWrap(false)
         b.ic = b:CreateTexture(nil, "ARTWORK")
-        b.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+        b.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
         b.ic:SetSize(DG.Q_FLOW_MARK, DG.Q_FLOW_MARK)
         b.ic:SetPoint("LEFT", b, "LEFT", 0, 0)
         b.ic:Hide()
@@ -7716,7 +7716,7 @@ end
 function DG.FlowMark(b, st, col)
     if not b or not b.ic then return end
     if st and col then
-        b.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+        b.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
         b.ic:SetVertexColor(col[1], col[2], col[3], 1)
         b.icT:SetTexture(DG.Q_MARK_SYM[st] or DG.Q_MARK_SYM.todo)
         local k = DG.Q_MARK_INK[st]
@@ -7862,7 +7862,7 @@ function DG.RenderQuestFlow(child, pool, d, keep)
             if not num then
                 num = {}
                 num.ic = child:CreateTexture(nil, "ARTWORK")
-                num.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+                num.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
                 num.ic:SetSize(DG.Q_FLOW_DOT, DG.Q_FLOW_DOT)
                 num.ic:SetVertexColor(0.22, 0.25, 0.30, 1)
                 num.fs = MakeFS(child, 12, C_GREY, "CENTER")
@@ -8239,7 +8239,7 @@ function U:RenderQuestDetail()
             r.st = MakeFS(r, 14, C_GREY, "RIGHT")
             r.st:SetPoint("TOPRIGHT", r, "TOPRIGHT", -26, -3)
             r.ic = r:CreateTexture(nil, "ARTWORK")
-            r.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+            r.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
             r.ic:SetSize(DG.Q_BADGE_H, DG.Q_BADGE_H)
             r.ic:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -4)
             r.ic:Hide()

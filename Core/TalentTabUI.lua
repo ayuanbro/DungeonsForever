@@ -289,7 +289,7 @@ local function TakeNode(parent)
         btn.iconTex:SetTexCoord(0.14, 0.86, 0.14, 0.86)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(btn.iconTex) end
         btn.borderTex = btn.iconFrame:CreateTexture(nil, "OVERLAY")
-        btn.borderTex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentBorder")
+        btn.borderTex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Talent\\TalentBorder")
         btn.borderTex:SetSize(ICON + 4, ICON + 4)
         btn.borderTex:SetPoint("CENTER", btn, "CENTER", 0, 0)
         btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -1269,8 +1269,8 @@ local function Ensure()
         UI.spentFs[t] = sp
         local rb = NewButton(pl, nil, 19, 19, 14)
         rb:SetPoint("TOPRIGHT", pl, "TOPRIGHT", -PAD, -4)
-        rb:SetNormalTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentReset")
-        rb:SetHighlightTexture("Interface\\AddOns\\DungeonsForever\\Media\\TalentReset", "ADD")
+        rb:SetNormalTexture("Interface\\AddOns\\DungeonsForever\\Media\\Talent\\TalentReset")
+        rb:SetHighlightTexture("Interface\\AddOns\\DungeonsForever\\Media\\Talent\\TalentReset", "ADD")
         rb.__tree = t
         BindResetBtn(rb)
         UI.resetBtns[t] = rb

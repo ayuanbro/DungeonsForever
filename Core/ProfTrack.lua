@@ -382,6 +382,17 @@ function T.HealActive(slug)
     return #list - 1
 end
 
+function T.StopAll(reason)
+    local c = db()
+    local list = {}
+    for slug in pairs(c.active) do list[#list + 1] = slug end
+    local n = 0
+    for i = 1, #list do
+        if T.Archive(list[i], reason or "disabled") then n = n + 1 end
+    end
+    return n
+end
+
 function T.Bind(slug, result, opts)
     if type(slug) ~= "string" then return nil, "bad_slug" end
     opts = opts or {}

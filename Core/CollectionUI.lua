@@ -503,7 +503,7 @@ local function PaintRow(r, rec)
             r.src:SetTextColor(Unpack(GROUP_COL[g] or C_GREY))
         end
         local selOn = (CG.sel == rec)
-        if not (ns.hui and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, selOn, "Interface\\AddOns\\DungeonsForever\\Media\\DF_RowSelGradColl")) then
+        if not (ns.hui and ns.hui.PaintRowSelect and ns.hui.PaintRowSelect(r, selOn, "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_RowSelGradColl")) then
             SetOutline(r, selOn, ThemeAccent())
         end
         if r.__hover and selOn then

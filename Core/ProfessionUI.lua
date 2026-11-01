@@ -183,6 +183,9 @@ PD.SETTING_DEF.autoOnlyAH = true
 PD.SETTING_DEF.autoLearnedOnly = false
 PD.SETTING_DEF.autoBuyLimitedFormulas = false
 PD.SETTING_DEF.autoSkipUnpricedFormulas = true
+PD.SETTING_DEF.autoResidualMass = false
+PD.SETTING_DEF.autoMergeSteps = false
+PD.SETTING_DEF.autoDeNestSteps = true
 PD.SETTING_DEF.autoNoFormula = false
 PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
@@ -190,6 +193,7 @@ PD.SETTING_DEF.solverRoute = false
 PD.SETTING_DEF.recoveryEnabled = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
+PD.SETTING_DEF.recordCraftLog = true
 PD.RECOVERY_FEES = { 0, 5, 10, 15, 20 }
 
 PD.GATHER_SLUGS = { mining = true, herbalism = true, skinning = true, fishing = true }
@@ -1175,7 +1179,7 @@ function PD.SyncHover()
     end
 end
 
-PD.PILL_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\HUIPillCap"
+PD.PILL_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\HUIPillCap"
 PD.PILL_CAP_W = 5
 
 function PD.MakePill(parent, col, cr)
@@ -4980,6 +4984,15 @@ function PD.Build(page)
                 if string.sub(self.__key, 1, 4) == "auto" and RA then
                     RA.Invalidate()
                 end
+                if self.__key == "recordCraftLog" then
+                    local T = ns.ProfTrack
+                    if T then
+                        if not PD.Setting("recordCraftLog") then
+                            if T.StopAll then pcall(T.StopAll, "disabled") end
+                        end
+                        if PD.RequestRender then PD.RequestRender() end
+                    end
+                end
             end
             PD.RequestRender()
             ns.PlaySound(1)
@@ -4993,7 +5006,7 @@ function PD.Build(page)
         local hp = CreateFrame("Button", nil, child)
         hp:SetSize(16, 16)
         hp.icon = hp:CreateTexture(nil, "ARTWORK")
-        hp.icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\HelpIcon")
+        hp.icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Brand\\HelpIcon")
         hp.icon:SetSize(14, 14)
         hp.icon:SetPoint("CENTER")
         hp.icon:SetVertexColor(C_HELP[1], C_HELP[2], C_HELP[3])
@@ -5881,14 +5894,24 @@ function PD.PaintLvTiles()
         TipOn(tiles.mode, modeLines)
     end
     local sch = s.scheme or "cheapest"
+    local solverOnly = (not fishRoute) and PD.Setting("solverRoute") and tiles.solver.__use and true or false
     tiles.scheme.label:SetText(L["路线方案"])
     tiles.scheme.val:SetText(fishRoute and L["钓鱼路线"] or ((RA and RA.SchemeLabel) and RA.SchemeLabel(sch) or L["最省钱"]))
     if fixedOnly then
         tiles.scheme:SetScript("OnClick", nil)
+    elseif solverOnly then
+        tiles.scheme:SetScript("OnClick", function()
+            local msg = L["精确方案固定按总支出优化，四档方案不生效；关闭精确方案后可选。"]
+            if UIErrorsFrame and UIErrorsFrame.AddMessage then
+                pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, msg, 1, 0.82, 0.4)
+            elseif DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+                pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, msg, 1, 0.82, 0.4)
+            end
+        end)
     else
         tiles.scheme:SetScript("OnClick", function() PD.ShowSchemeMenu(tiles.scheme) end)
     end
-    tiles.scheme.val:SetTextColor(Unpack(C_WHITE))
+    tiles.scheme.val:SetTextColor(Unpack(solverOnly and C_GREY or C_WHITE))
     local schemeDesc = {
         cheapest = L["比较采购、自制与图纸支出"],
         matcost = L["只按材料价选配方"],
@@ -5915,6 +5938,9 @@ function PD.PaintLvTiles()
         }
     else
         schemeLines[#schemeLines + 1] = { L["点击选择路线方案"], 0.7, 0.7, 0.7 }
+    end
+    if solverOnly then
+        table.insert(schemeLines, 1, { L["精确方案开启：统一按总支出优化，四档方案结果相同。"], 0.95, 0.75, 0.4 })
     end
     TipOn(tiles.scheme, schemeLines)
     if tiles.solver.__use then
@@ -7132,7 +7158,7 @@ function PD.WarnChip(r, plainTip)
         PD.WireTipZone(z, r)
     end
     local tex = z:CreateTexture(nil, "OVERLAY", nil, 2)
-    tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\WarnTri")
+    tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri")
     tex:SetSize(18, 18)
     tex:SetPoint("CENTER", z, "CENTER", 0, 0)
     r.__warn = z
@@ -11431,7 +11457,7 @@ function PD.SavePlanSkel(slug, res)
     local db = ProfDB()
     db.planSkel = db.planSkel or {}
     db.planSkel[slug] = {
-        v = 1,
+        v = 3,
         sig = res.skelSig or res.planSig,
         pv = res.planVersion,
         stamp = (type(time) == "function") and time() or 0,
@@ -11451,7 +11477,7 @@ function PD.SkelOf(slug)
     slug = slug or PD.cur
     local db = ProfDB()
     local skel = db.planSkel and db.planSkel[slug]
-    if type(skel) ~= "table" or skel.v ~= 1 then return nil end
+    if type(skel) ~= "table" or skel.v ~= 3 then return nil end
     if type(skel.steps) ~= "table" or #skel.steps == 0 then return nil end
     return skel
 end
@@ -11759,6 +11785,7 @@ end
 function PD.AutoTrack()
     local T = ns.ProfTrack
     if not (T and T.EnsureActive) then return end
+    if not PD.Setting("recordCraftLog") then return end
     if not (PD.cur and PD.autoSnapshot and PD.autoSnapshotSlug == PD.cur) then return end
     pcall(T.EnsureActive, PD.cur, PD.autoSnapshot)
 end
@@ -11975,6 +12002,45 @@ function PD.RowsCraftLog(rows)
     end
 end
 
+local function MergeToolGapSteps(steps)
+    local out, members = {}, {}
+    for i, st in ipairs(steps) do
+        local last = out[#out]
+        local joinable = last and not st.tool and not last.tool
+                          and st[3] ~= 0 and last[3] ~= 0
+                          and not st.checkpoint and not last.checkpoint
+                          and st[3] == last[3] and st.profession == last.profession
+        if joinable then
+            local onlyTools = true
+            for j = members[#out][#members[#out]] + 1, i - 1 do
+                if not steps[j].tool then onlyTools = false break end
+            end
+            if onlyTools then
+                if #members[#out] == 1 then
+                    local copy = {}
+                    for k, v in pairs(out[#out]) do copy[k] = v end
+                    out[#out] = copy
+                end
+                last = out[#out]
+                last[2] = st[2]
+                last[4] = (last[4] or 0) + (st[4] or 0)
+                last.cost = (last.cost or 0) + (st.cost or 0)
+                if st.unpriced then last.unpriced = true end
+                if st.est then last.est = true end
+                if st.unpricedFallback then last.unpricedFallback = true end
+                members[#out][#members[#out] + 1] = i
+            else
+                out[#out + 1] = st
+                members[#out] = { i }
+            end
+        else
+            out[#out + 1] = st
+            members[#out] = { i }
+        end
+    end
+    return out, members
+end
+
 function PD.RowsLeveling(rows)
     if PD.autoPage == "log" then
         PD.lvSummary, PD.lvRouteHead = nil, nil
@@ -12067,10 +12133,11 @@ function PD.RowsLeveling(rows)
     end
     local auto = (autoOn and res) and true or false
     if res then
+        local sameSnap = (res == PD.autoSnapshot)
         PD.autoSnapshot, PD.autoSnapshotSlug = res, PD.cur
         PD.autoKey = planKey
-        PD.autoExact = res.exact == true
-        if PD.__savedRes ~= res then
+        if not sameSnap then PD.autoExact = res.exact == true end
+        if PD.__savedRes ~= res and (res.exact == true or not PD.SkelOf(PD.cur)) then
             PD.__savedRes = res
             PD.SavePlanSkel(PD.cur, res)
         end
@@ -12158,9 +12225,17 @@ function PD.RowsLeveling(rows)
     else
         steps, clipped = ClipFixedSteps(lv.steps or {}, target)
     end
+    if type(steps) == "table" and #steps > 0 and (auto or not PD.Setting("autoRoute")) then
+        PD.lastSteps, PD.lastStepsSlug, PD.lastStepsSkill = steps, PD.cur, curLv
+        PD.lastStepsAuto = auto
+    end
     local fixedSum = (not auto) and RA and RA.SummarizeSteps(steps, PD.cur,
                           { learnedOnly = PD.Setting("autoLearnedOnly"), target = target }) or nil
     local trackRun, trackAll = TrackStepsFor(PD.cur, steps)
+    local dispSteps, dispMembers = steps, nil
+    if type(steps) == "table" and #steps > 0 and PD.Setting("autoMergeSteps") then
+        dispSteps, dispMembers = MergeToolGapSteps(steps)
+    end
 
     PD.lvSummary = {
         target = target, auto = auto,
@@ -12221,7 +12296,7 @@ function PD.RowsLeveling(rows)
     local costW = PD.TextW(L["成本"], PD.LV_FS)
     local stepW = PD.TextW(L["步骤"], PD.LV_FS)
     local cardNeed = 0
-    for index, st in ipairs(steps or {}) do
+    for index, st in ipairs(dispSteps or {}) do
         local rec = PD.StepRecipe(st) or recOf[st[3]]
         if not rec and rin then rec = rin[st[3]] end
         local riM
@@ -12255,9 +12330,15 @@ function PD.RowsLeveling(rows)
         if clipped and st._clip then count = count .. format(L[" · 按目标 %d 折算"], target) end
         if st.kind == "specialization_quest" then count, cost = L["专精任务"], ""
         elseif st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
-        local tp = trackAll and trackAll.steps[index]
-        if tp and tp.casts > 0 and not (st.checkpoint or st[3] == 0 or st.kind == "specialization_quest") then
-            count = format("%d/%d", tp.casts, st[4] or 0)
+        local tpCasts = 0
+        if trackAll then
+            for _, mi in ipairs(dispMembers and dispMembers[index] or { index }) do
+                local t = trackAll.steps[mi]
+                tpCasts = tpCasts + (t and t.casts or 0)
+            end
+        end
+        if tpCasts > 0 and not (st.checkpoint or st[3] == 0 or st.kind == "specialization_quest") then
+            count = format("%d/%d", tpCasts, st[4] or 0)
         end
         cntOf[st], costOf[st] = count, cost
         rngW = math.max(rngW, PD.TextW(PD.StepRange(st), PD.LV_FS))
@@ -12396,7 +12477,18 @@ function PD.RowsLeveling(rows)
             PushGap(rows, 4)
         end
         rows[#rows + 1] = { kind = "lvhead", h = 18, col = 1, noTip = true }
-        for index, st in ipairs(steps) do
+        for index, st in ipairs(dispSteps) do
+            local curHit
+            if trackAll and trackAll.current then
+                local mem = dispMembers and dispMembers[index]
+                if mem then
+                    for _, mi in ipairs(mem) do
+                        if mi == trackAll.current then curHit = true break end
+                    end
+                else
+                    curHit = trackAll.current == index
+                end
+            end
             local rec = PD.StepRecipe(st) or recOf[st[3]]
             local ri = nil
             if rec and (rec.mats or rec.learn) then
@@ -12428,7 +12520,7 @@ function PD.RowsLeveling(rows)
             rows[#rows + 1] = {
                 kind = "row", h = PD.TBL_H, col = 1, lvstep = true, fs = PD.LV_FS,
                 passed = passed, over = over,
-                trackCur = (trackAll and trackAll.current == index) and true or nil,
+                trackCur = curHit and true or nil,
                 it = (rec and rec[2]) and { rec[2] }
                      or ((ri and ri.makes) and { ri.makes } or nil),
                 icon = ((not rec) and ri and not ri.makes) and SpellIcon(st[3]) or nil,
@@ -13498,7 +13590,7 @@ function PD.LevelTool()
         for _, ln in ipairs(PD.warnNotes or {}) do tip[#tip + 1] = ln end
         if #tip > 0 then
             list[#list + 1] = { key = "supply_warn",
-                                icon = "Interface\\AddOns\\DungeonsForever\\Media\\WarnTri",
+                                icon = "Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri",
                                 iconColor = { 1, 1, 1 }, tip = tip }
         end
     end
@@ -13662,9 +13754,10 @@ PD.SET_MORE = ">"
 PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
 PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
-    { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling" }, 1 },
-    { L["采购与配方"], { "autoLearnedOnly", "autoOnlyAH", "autoBuyLimitedFormulas", "autoSkipUnpricedFormulas", "autoNoFormula" }, 2 },
-    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoCraftTools", "engChoice" }, 2 },
+    { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling", "autoMergeSteps", "autoDeNestSteps" }, 1 },
+    { L["采购与配方"], { "autoLearnedOnly", "autoOnlyAH", "autoBuyLimitedFormulas", "autoSkipUnpricedFormulas", "autoNoFormula", "autoResidualMass" }, 2 },
+    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoCraftTools" }, 2 },
+    { L["制作记录"], { "recordCraftLog" }, 2 },
 }
 
 function PD.RowsSettings(rows)
@@ -13706,6 +13799,10 @@ function PD.RowsSettings(rows)
           desc = L["未学配方的图纸必须在商人处以金币固定售卖，才按该价格参与路线比较。"],
           d1 = L["开启：掉落、任务、通货兑换图纸的配方不参与路线，避免为一张图纸长跑或按 0 金计入。"],
           d2 = L["关闭（默认）：各类来源的图纸照常参与，价格无法核实的按未知处理、不按 0 金计入。"] },
+        { k = "autoResidualMass", name = L["产物按大量上架折价"],
+          desc = L["路线比较时配方产物折算的收益：按拍卖行全价（默认）或七折模拟大量上架。"],
+          d1 = L["关闭（默认）：最省钱方案按「材料成本 − 产物拍卖行全价」挑配方，净亏的配方（如精致轻弹丸）不会入选，边做边赚的配方（如劣质炸药）会插在合适位置，每配方最多插 20 次。"],
+          d2 = L["开启：产物收益打七折再比较，只留利润更高的机会，适合打算把产物批量上架的情况。"] },
         { k = "autoFromCurrent", name = L["从当前技能开始计算"],
           desc = L["开启 = 只算当前技能到 300 的路线；关闭 = 从 1 全量重算整条路线（预估全程花费）"],
           d1 = L["开启：适合练级中途打开手册直接照着做。"],
@@ -13714,6 +13811,14 @@ function PD.RowsSettings(rows)
           desc = L["总支出更低时，将另一主专业升到制作所需材料的最低等级。"],
           d1 = L["默认关闭：仍可使用另一主专业当前能制作的材料。"],
           d2 = L["开启后计入另一专业所需的材料费用，最高 300；查看未学专业时需先选择搭配主专业。"] },
+        { k = "autoMergeSteps", name = L["合并被工具打断的步骤"],
+          desc = L["拆分显示（默认）：插入工具的点位把主步骤切成两段，范围不重叠；合并：被工具隔开的同配方段落并作一行。"],
+          d1 = L["开启后：同一配方被工具步骤隔开的两段并作一行，范围恢复连续，但看不出工具占用了哪些技能点。"],
+          d2 = L["关闭（默认）：每段独立成行、范围互不重叠；跟练 HUD 始终按拆分状态执行，工具配方能正确插进对应点位。"] },
+        { k = "autoDeNestSteps", name = L["拆分被包含的步骤"],
+          desc = L["某步骤的技能区间完全落在另一步骤内部时，把外层步骤切成两段、让它首尾相接不互相跨越。"],
+          d1 = L["开启（默认）：如自爆绵羊 154-184 内含青铜框架 158-174 时，绵羊拆成 154-158 与 174-184 两行，制作次数按区间收益比例分摊、总数不变。"],
+          d2 = L["关闭：保持原样，区间互相跨越的两行上下排列显示；只有工具步骤的拆分不受本项影响。"] },
         { k = "recoveryEnabled", name = L["回血模式"],
           desc = L["把「搓完卖掉能收回多少」计入路线决策，比较采购支出减去剩余产物预计收入。"],
           d1 = L["开启：精确方案按净成本挑选配方；其他方案仍按采购支出选，但会显示预计回血。"],
@@ -13722,6 +13827,10 @@ function PD.RowsSettings(rows)
           desc = L["把附魔棒、炼金石、扳手这类必须自备的工具排进路线。"],
           d1 = L["开启：在工具可用等级插入一次制作，产出的工具计入保留物品、不按可出售计算。"],
           d2 = L["关闭：路线不含工具制作，需要你自己准备。"] },
+        { k = "recordCraftLog", name = L["自动记录制作进度"],
+          desc = L["打开升级页后自动记录每一步实际做了几次、产出多少。"],
+          d1 = L["开启（默认）：算出路线后自动开始记录，升级 HUD 与「制作记录」页都靠它。"],
+          d2 = L["关闭：不再记录；已开始的记录会归档到「制作记录」的历史里，重新打开可在下次进升级页时恢复。"] },
     }
     local byKey = {}
     for _, d in ipairs(defs) do byKey[d.k] = d end
@@ -13730,7 +13839,6 @@ function PD.RowsSettings(rows)
         return true
     end
     local G = ns.ProfGates
-    local engOK = (PD.cur == "engineering") and (G and G.GetPlannedChoice) and true or false
     local fee = tonumber(PD.SettingRaw("recoveryFeePercent")) or 5
 
     local function pushTextCol(text, fs, color, col)
@@ -13762,30 +13870,6 @@ function PD.RowsSettings(rows)
                      { L["默认 5%，常用 0 / 5 / 10 / 15 / 20，也可输入 0–25 之间的整数。"], 0.7, 0.7, 0.7 } },
         }
     end
-    local function pushEng(col)
-        local planned = G.GetPlannedChoice()
-        local shown = planned
-        if G.EffectiveChoice then shown = G.EffectiveChoice() end
-        local lines = {
-            { L["工程专精计划"], 1, 1, 1 },
-            { L["计划学习的工程专精分支，只影响路线编排，不会改变已学专精。"], 0.7, 0.7, 0.7 },
-            { L["选定分支后，路线会按该分支安排专精任务与所需材料。"], 0.7, 0.7, 0.7 },
-            { L["未手动选择时跟随当前已学分支。"], 0.7, 0.7, 0.7 },
-        }
-        local actual = G.EngineeringChoice()
-        if actual == "conflict" then
-            lines[#lines + 1] = { L["当前已同时学会地精与侏儒专精，需先重置其中一支。"], 0.88, 0.42, 0.38 }
-        elseif planned ~= "none" and actual ~= "unknown" and actual ~= "none" and actual ~= planned then
-            lines[#lines + 1] = { format(L["已学专精与计划不一致：已学%s。"], PD.EngChoiceLabel(actual)), 0.88, 0.42, 0.38 }
-        end
-        rows[#rows + 1] = {
-            kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
-            text = L["工程专精计划"],
-            right = PD.EngChoiceLabel(shown) .. "  " .. PD.SET_MORE,
-            act = function(row) PD.ShowEngChoiceMenu(row) end,
-            help = lines,
-        }
-    end
 
     for _, grp in ipairs(PD.SET_GROUPS) do
         local gcol = (grp[3] == 2) and 2 or 1
@@ -13794,8 +13878,6 @@ function PD.RowsSettings(rows)
             local kk = key
             if kk == "recoveryFee" then
                 items[#items + 1] = pushFee
-            elseif kk == "engChoice" then
-                if engOK then items[#items + 1] = pushEng end
             elseif byKey[kk] and allowed(kk) then
                 local d = byKey[kk]
                 items[#items + 1] = function(col) pushToggle(d, col) end

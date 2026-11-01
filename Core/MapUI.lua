@@ -59,21 +59,21 @@ M.BOSS_MODEL_W = 260
 M.BOSS_MODEL_UP = 66
 
 M.MAX_PINS = 48
-M.LOGO_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\DungeonsForever.blp"
+M.LOGO_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp"
 M.LOGO_SIZE = 20
 M.LOGO_LIFT = 2.5
-M.PIN_BOSS_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\BossSkull"
-M.PIN_QUEST_READY_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinReady"
-M.PIN_QUEST_LOCKED_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinLocked"
-M.PIN_QUEST_PRE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\QuestPinPre"
-M.PIN_DOOR_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\MapDoor"
-M.PIN_NOTE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\NotePin"
-M.PIN_STAIR_UP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\StairsUp"
-M.PIN_STAIR_DN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\StairsDown"
-M.PIN_GLOW_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\PinGlow"
+M.PIN_BOSS_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\BossSkull"
+M.PIN_QUEST_READY_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinReady"
+M.PIN_QUEST_LOCKED_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinLocked"
+M.PIN_QUEST_PRE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinPre"
+M.PIN_DOOR_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\MapDoor"
+M.PIN_NOTE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\NotePin"
+M.PIN_STAIR_UP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\StairsUp"
+M.PIN_STAIR_DN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\StairsDown"
+M.PIN_GLOW_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\PinGlow"
 M.PIN_GLOW_K = 2.1
 M.PIN_GLOW_GAIN = 0.85
-M.PIN_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\PinRing"
+M.PIN_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\PinRing"
 M.PIN_RING_K = 2.5
 M.PIN_RING_RGB = { 1.00, 0.78, 0.22 }
 M.PIN_RING_SECS = 6
@@ -1139,7 +1139,7 @@ local function BuildPins()
         bt.nm:SetShadowOffset(1, -1)
         bt.dot = bt:CreateTexture(nil, "OVERLAY")
         bt.dot:SetAllPoints()
-        bt.dot:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\BossSkull")
+        bt.dot:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\BossSkull")
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
         bt.entry = bt:CreateTexture(nil, "ARTWORK", nil, 2)

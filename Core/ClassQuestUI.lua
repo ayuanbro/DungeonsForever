@@ -47,11 +47,11 @@ local C_DONE = { 0.25, 0.85, 0.35 }
 local C_ACT = { 1.00, 0.82, 0.00 }
 local C_TODO = { 0.58, 0.60, 0.63 }
 
-local DOT_DONE = "Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc"
+local DOT_DONE = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
 local DOT_SYM = {
-    done = "Interface\\AddOns\\DungeonsForever\\Media\\CheckMark",
-    active = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkAsk",
-    todo = "Interface\\AddOns\\DungeonsForever\\Media\\QMarkExcl",
+    done = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",
+    active = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
+    todo = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
 }
 local DOT_INK = {
     done = { 0.043, 0.239, 0.102 },
@@ -746,7 +746,7 @@ local function TakeNode()
         r.sub:SetWidth(DetRowW() - 18)
         r.sub:SetWordWrap(false)
         r.ic = r:CreateTexture(nil, "ARTWORK")
-        r.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc")
+        r.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
         r.ic:SetSize(DG.Q_BADGE_H, DG.Q_BADGE_H)
         r.ic:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -4)
         r.ic:Hide()
