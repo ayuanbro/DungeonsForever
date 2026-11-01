@@ -135,7 +135,31 @@ function P.Compute(opts)
         end
     end
     local cur=start;local guide=routes.cookingSteps or {};local guard=0
-    while cur<target and guard<1000 do
+    if opts.routeSkeleton then
+        local valid=true
+        for _,src in ipairs(opts.routeSkeleton.steps) do
+            local selected
+            for _,candidate in ipairs(candidates) do
+                if candidate.r.spell==src[3] then selected=candidate;break end
+            end
+            local r=selected and selected.r
+            if not r or r.learn>src[1] or src[1]~=cur then valid=false;break end
+            out.steps[#out.steps+1]={src[1],src[2],src[3],src[4],profession="cooking",role="level",reason="level",
+                recipe=clone(r),item=r.item,cost=0,leveling=true,stepIndex=#out.steps+1,
+                fishing={},fishMaterials={},fishingAreas={},actionIDs={}}
+            if selected.learningUnknown then out.learningRequirementsUnknown=true end
+            out.crafts=out.crafts+src[4];cur=src[2]
+        end
+        if not valid then
+            out.steps=clone(opts.routeSkeleton.steps);out.executionSteps=clone(out.steps)
+            out.status="recalculate_required";out.feasible=false
+            out.costComplete=false;out.completeCost=false;out.priced=false
+            for _,d in pairs(blocked) do out.diagnostics[#out.diagnostics+1]=d end
+            out.diagnostics[#out.diagnostics+1]={code="fishingRecipeGap",profession="cooking"}
+            return out
+        end
+    end
+    while not opts.routeSkeleton and cur<target and guard<1000 do
         guard=guard+1
         local preferred,stageTo
         for _,stage in ipairs(guide) do

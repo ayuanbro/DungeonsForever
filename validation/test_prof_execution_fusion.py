@@ -1,4 +1,4 @@
-"""Dev execution ledger: frozen routes, receipts, allocations and save migration."""
+"""Dev execution ledger: frozen routes, current bag continuation, cumulative production and master-style session-only matching."""
 from pathlib import Path
 import os
 import sys
@@ -67,12 +67,22 @@ class ExecutionFusionTests(unittest.TestCase):
         self.lua.execute("""
           xp.RecordAttempt('alchemy',101,'a');xp.RecordOutput({itemID=10,quantity=3,castGUID='a'})
           xp.RecordAttempt('alchemy',101,'b');xp.RecordOutput({itemID=10,quantity=3,castGUID='b'})
-          skills.alchemy.cur=3;xp.Sync('alchemy');local p=t.Progress('alchemy',1)
+          bag[10]=6;skills.alchemy.cur=3;xp.Sync('alchemy');local p=t.Progress('alchemy',1)
           assert(p.complete and p.casts==2 and p.outputs==6 and run.currentIndex==2)
         """)
 
-    def test_unconfirmed_casts_and_unrelated_bag_stock_never_become_carry(self):
-        self.lua.execute("xp.RecordAttempt('alchemy',101,'a');bag[10]=200;bag[20]=900;assert(next(t.ContinueInventory('alchemy'))==nil)")
+    def test_bag_materials_are_usable_without_production_receipts(self):
+        self.lua.execute("xp.RecordAttempt('alchemy',101,'a');bag[10]=200;bag[20]=900;bag[99]=50;local stock=t.ContinueInventory('alchemy');assert(stock[10]==200 and stock[20]==900 and stock[99]==nil);assert(xp.Progress('alchemy',1).actualOutputs==0)")
+
+    def test_continuation_excludes_bank_and_reagent_bank_counts(self):
+        self.lua.execute("""
+          C_Item.GetItemCount=function(id,bank,uses,reagentBank)
+            assert(bank==false and uses==false and reagentBank==false)
+            return id==20 and 2 or 0
+          end
+          local inventory=xp.GetContinuation('alchemy')
+          assert(inventory[20]==2 and inventory[10]==nil)
+        """)
 
     def test_candidate_publications_do_not_replace_frozen_plan(self):
         self.lua.execute("""
@@ -83,7 +93,7 @@ class ExecutionFusionTests(unittest.TestCase):
           assert(run.plan==original and original.executionSteps[1][4]==3)
         """)
 
-    def test_confirmed_consumed_intermediates_are_deducted_and_bag_capped(self):
+    def test_continuation_reads_current_bags_without_subtracting_consumption_twice(self):
         self.lua.execute("""
           local p=fixture();local b={1,3,102,1,segmentID='consumer',profession='alchemy',recipe=recipes[102],item=11,
             goalSkill=3,expectedGain=2,expectedCrafts=1,attemptLimit=1,outputMin=2,requiredOutputs={}}
@@ -91,32 +101,103 @@ class ExecutionFusionTests(unittest.TestCase):
           xp.RecordAttempt('alchemy',101,'a');xp.RecordOutput({itemID=10,quantity=3,castGUID='a'})
           xp.RecordAttempt('alchemy',101,'b');xp.RecordOutput({itemID=10,quantity=3,castGUID='b'})
           xp.RecordAttempt('alchemy',102,'consume');bag[10]=3;bag[20]=900
-          assert(xp.GetContinuation('alchemy')[10]==3 and xp.GetContinuation('alchemy')[20]==nil)
-          bag[10]=100;assert(xp.GetContinuation('alchemy')[10]==4)
+          assert(xp.GetContinuation('alchemy')[10]==3 and xp.GetContinuation('alchemy')[20]==900)
+          bag[10]=100;assert(xp.GetContinuation('alchemy')[10]==100);bag[10]=0;assert(xp.GetContinuation('alchemy')[10]==nil)
         """)
 
     def test_manual_verification_preserves_actual_cast_count(self):
         self.lua.execute("xp.RecordAttempt('alchemy',101,'a');assert(t.VerifyOutput('alchemy',1,10,3));local p=t.Progress('alchemy',1);assert(p.outputs==3 and p.casts==1 and p.pendingOutputs==0)")
 
-    def test_duplicate_cast_and_receipt_order_are_reconciled(self):
+    def test_unmatched_receipt_is_not_saved_and_casts_deduplicate_in_memory(self):
         self.lua.execute("""
-          xp.RecordOutput({itemID=10,quantity=3,castGUID='a'});xp.RecordAttempt('alchemy',101,'a')
-          xp.RecordAttempt('alchemy',101,'a');assert(t.Progress('alchemy',1).casts==1 and t.Progress('alchemy',1).outputs==3)
+          assert(not xp.RecordOutput({itemID=10,quantity=3,castGUID='a'}))
+          xp.RecordAttempt('alchemy',101,'a')
+          assert(t.Progress('alchemy',1).outputs==0,'unmatched output was queued')
+          assert(xp.RecordOutput({itemID=10,quantity=3,castGUID='a'}))
+          assert(not xp.RecordAttempt('alchemy',101,'a'))
+          assert(t.Progress('alchemy',1).casts==1 and t.Progress('alchemy',1).outputs==3)
         """)
 
-    def test_recalculate_inherits_only_validated_remaining_outputs(self):
+    def test_recalculate_uses_fresh_bag_stock_on_each_request(self):
         self.lua.execute("""
           local p=fixture();p.executionSteps[2]={3,4,102,1,segmentID='consumer',profession='alchemy',recipe=recipes[102],item=11,
              goalSkill=4,expectedGain=1,expectedCrafts=1,attemptLimit=1,requiredOutputs={}}
           run=xp.StartNew('alchemy',p);xp.RecordAttempt('alchemy',101,'a');xp.RecordOutput({itemID=10,quantity=3,castGUID='a'})
-          bag[10]=20;local inventory,id=xp.PrepareRecalculate('alchemy');assert(inventory[10]==3 and id==run.planID and not xp.GetRun('alchemy'))
-          local again,source=xp.PrepareRecalculate('alchemy');assert(again[10]==3 and source==id)
+          bag[10]=20;local inventory,id=xp.PrepareRecalculate('alchemy');assert(inventory[10]==20 and id==run.planID and not xp.GetRun('alchemy'))
+          bag[10]=7;local again,source=xp.PrepareRecalculate('alchemy');assert(again[10]==7 and source==id)
         """)
 
     def test_reload_keeps_same_plan_and_progress(self):
         self.lua.execute("xp.RecordAttempt('alchemy',101,'a');savedID=run.planID")
         self.load("Core/ProfExecution.lua")
         self.lua.execute("initialize();xp=ns.ProfExecution;t=ns.ProfTrack;assert(t.GetRun('alchemy').planID==savedID and t.Progress('alchemy',1).casts==1)")
+
+    def test_inventory_read_failure_does_not_replace_or_archive_the_active_plan(self):
+        self.lua.execute("""
+          C_Item.GetItemCount=function()error('inventory unavailable')end;GetItemCount=nil
+          local inventory,reason=xp.GetContinuation('alchemy')
+          assert(inventory==nil and reason=='inventoryUnknown')
+          local seed,id,errorCode=xp.PrepareRecalculate('alchemy')
+          assert(seed==nil and id==nil and errorCode=='inventoryUnknown')
+          assert(xp.GetRun('alchemy')==run and run.status=='active')
+          local p=xp.Progress('alchemy',1);assert(p.inventoryUnknown and not p.complete)
+        """)
+
+    def test_bag_updates_change_material_progress_without_inventing_crafts(self):
+        self.lua.execute("""
+          skills.alchemy.cur=3;xp.Sync('alchemy')
+          assert(not xp.Progress('alchemy',1).materialDone)
+          assert(xp.eventFrame.events.BAG_UPDATE_DELAYED)
+          bag[10]=6
+          xp.eventFrame.OnEvent(xp.eventFrame,'BAG_UPDATE_DELAYED')
+          local p=xp.Progress('alchemy',1)
+          assert(p.complete and p.casts==0 and p.actualOutputs==0 and run.currentIndex==2)
+          bag[10]=1
+          xp.eventFrame.OnEvent(xp.eventFrame,'BAG_UPDATE_DELAYED')
+          p=xp.Progress('alchemy',1)
+          assert(not p.materialDone and p.remainingOutputs==5 and run.currentIndex==1)
+        """)
+
+    def test_same_bag_stack_cannot_fund_two_material_obligations(self):
+        self.lua.execute("""
+          local p=fixture();local later=fixture().executionSteps[1];later.segmentID='later'
+          p.executionSteps[1].requiredOutputs={[10]=2};later.requiredOutputs={[10]=2}
+          p.executionSteps[2]=later;run=xp.StartNew('alchemy',p);bag[10]=3
+          assert(xp.Progress('alchemy',1).remainingOutputs==0)
+          assert(xp.Progress('alchemy',2).remainingOutputs==1)
+          assert(xp.Progress('alchemy',1).casts==0 and xp.Progress('alchemy',2).casts==0)
+        """)
+
+    def test_completed_consumer_uses_up_its_quota_without_recreating_material_stock(self):
+        self.lua.execute("""
+          local p=fixture();p.executionSteps[2]={1,3,102,3,segmentID='consumer',profession='alchemy',
+            recipe=recipes[102],item=11,goalSkill=3,expectedGain=2,expectedCrafts=3,attemptLimit=3,
+            outputMin=2,requiredOutputs={}}
+          run=xp.StartNew('alchemy',p)
+          for i=1,3 do xp.RecordAttempt('alchemy',102,'consumer:'..i)end
+          local progress=xp.Progress('alchemy',1)
+          assert(progress.materialDone and progress.actualOutputs==0 and progress.casts==0)
+          assert(xp.GetContinuation('alchemy')[10]==nil)
+        """)
+
+    def test_completed_quest_releases_the_unused_material_chain_without_craft_history(self):
+        self.lua.execute("""
+          local p=fixture();local a=p.executionSteps[1]
+          a.expectedGain=0;a.requiredOutputs={[10]=2};a.expectedCrafts=1;a[4]=1
+          a.allocations={{consumerID='producer',itemID=10,count=2}}
+          local producer={1,1,102,1,segmentID='producer',profession='alchemy',recipe=recipes[102],item=11,
+            expectedGain=0,expectedCrafts=1,attemptLimit=1,outputMin=2,requiredOutputs={[11]=2},
+            allocations={{consumerID='quest',itemID=11,count=2}}}
+          local quest={1,1,0,0,segmentID='quest',profession='alchemy',kind='specialization_quest',
+            quest={abilityID=123,inputs={{11,2}}},inputs={{11,2}},expectedGain=0,requiredOutputs={}}
+          p.executionSteps={a,producer,quest};run=xp.StartNew('alchemy',p)
+          assert(not xp.Progress('alchemy',1).materialDone)
+          ns.ProfEconomy.SpecializationKnown=function(id)return id==123 end
+          xp.Sync('alchemy')
+          assert(xp.Progress('alchemy',1).materialDone and xp.Progress('alchemy',2).materialDone)
+          assert(xp.Progress('alchemy',3).complete and run.attemptsDone==0)
+          for _,record in pairs(run.progress)do assert(record.history==nil)end
+        """)
 
     def test_only_execution_observer_is_registered(self):
         self.lua.execute("assert(not t.frame and xp.eventFrame);xp.eventFrame.OnEvent(xp.eventFrame,'UNIT_SPELLCAST_SUCCEEDED','player','hidden',101);assert(t.Progress('alchemy',1).casts==1)")
@@ -154,63 +235,240 @@ class ExecutionFusionTests(unittest.TestCase):
           assert(xp.GetRecipeTotals('alchemy',summary.planID)[1].confirmedOutputs[10]==3)
         """)
 
-    def test_legacy_aggregate_receipts_survive_without_inventing_chronology(self):
-        self.lua.execute("""
-          DungeonsForeverDB={prof={track={['Test-Realm']={version=1,active={alchemy='old'},runs={
-            old={planID='old',slug='alchemy',status='active',start=1,target=3,
-              steps={{from=1,to=3,spell=101,crafts=3,item=10},{from=3,to=4,spell=102,crafts=1,item=11}},
-              progress={{casts=2,out=5}},outputs={[10]=5}}
-          }}}}}
-          bag[10]=999
-          local old=xp.GetRun('alchemy');local p=xp.Progress('alchemy',1)
-          assert(p.casts==2 and p.actualOutputs==5)
-          assert(#old.progress[old.plan.executionSteps[1].segmentID].attempts==0)
-          assert(next(xp.GetContinuation('alchemy'))==nil)
-          assert(old.legacyTrack.progress[1].out==5 and old.steps==nil and old.outputs==nil)
-          xp.RecordAttempt('alchemy',101,'new');xp.RecordOutput({itemID=10,quantity=3,castGUID='new'})
-          assert(xp.Progress('alchemy',1).actualOutputs==8 and xp.GetContinuation('alchemy')[10]==3)
-        """)
+    def reload_execution(self):
+        # SavedVariables rebuilds plain tables; never rely on runtime aliases.
+        self.lua.execute("DungeonsForeverDB=ns.ProfEconomy.Copy(DungeonsForeverDB)")
         self.load("Core/ProfExecution.lua")
-        self.lua.execute("initialize();xp=ns.ProfExecution;assert(xp.Progress('alchemy',1).actualOutputs==8)")
+        self.lua.execute("initialize();xp=ns.ProfExecution;t=ns.ProfTrack;run=xp.GetRun('alchemy')")
 
-    def test_previous_migration_repairs_aggregate_totals_once(self):
+    def test_repeated_casts_persist_only_totals_without_matching_payloads(self):
         self.lua.execute("""
-          local id=run.planID..':legacy:1'
-          run.plan.executionSteps[1].segmentID=id
-          run.progress={[id]={casts=2,attempts={},manualOutputs={}}};run.attemptsDone=2
-          run.legacyTrack={steps={{item=10}},progress={{casts=2,out=5}},outputs={[10]=5}}
-          run.steps={{spell=101}};run.outputs={[10]=0};run.casts=2
-          local store=DungeonsForeverDB.prof.track['Test-Realm'];store.devExecutionMigration=1
-          assert(xp.Progress('alchemy',1).actualOutputs==5)
-          assert(run.steps==nil and run.outputs==nil and store.devExecutionMigration==2)
-          assert(xp.Progress('alchemy',1).actualOutputs==5)
+          for i=1,120 do
+            clock=1000+i
+            assert(xp.RecordAttempt('alchemy',101,'cast:'..i))
+            assert(xp.RecordOutput({itemID=10,quantity=3,castGUID='cast:'..i,eventID=i}))
+          end
+          local record=run.progress[run.plan.executionSteps[1].segmentID]
+          assert(record.attempts==nil and record.history==nil and record.outputs[10].actual==360)
+          clock=clock+16;xp.RefreshObservation()
+          assert(record.attempts==nil and record.history==nil and record.outputs[10].actual==360)
+          local p=xp.Progress('alchemy',1)
+          assert(p.casts==120 and p.actualOutputs==360 and p.pendingOutputs==0)
+          assert(run.materialLedger.consumed[20]==120)
+          local c=DungeonsForeverDB.prof.track['Test-Realm']
+          assert(not c.seen and not c.order and not c.seenCasts and not c.castOrder)
+          assert(not c.seenReceipts and not c.receiptOrder and not c.devExecutionMigration)
+          assert(not c.receiptWindowVersion and not c.receiptUntil and not c.recentRunIDs and not c.nextAttempt)
+          assert(not DungeonsForeverDB.prof.vendorPrices and not DungeonsForeverDB.prof.profVendorOffers)
+        """)
+        self.reload_execution()
+        self.lua.execute("local p=xp.Progress('alchemy',1);assert(p.casts==120 and p.actualOutputs==360);assert(run.materialLedger.consumed[20]==120)")
+
+    def test_reload_keeps_totals_and_uses_master_item_fallback(self):
+        self.lua.execute("""
+          xp.RecordAttempt('alchemy',101,'a')
+          xp.RecordOutput({itemID=10,quantity=3,castGUID='a',eventID=21})
+          clock=1004;xp.RecordAttempt('alchemy',101,'b')
+        """)
+        self.reload_execution()
+        self.lua.execute("""
+          clock=2000
+          assert(xp.RecordOutput({itemID=10,quantity=2,castGUID='b',eventID=22}))
+          local p=xp.Progress('alchemy',1)
+          assert(p.casts==2 and p.actualOutputs==5 and p.pendingOutputs==0)
+          local ok,reason=xp.RecordOutput({itemID=10,quantity=2,castGUID='b',eventID=22})
+          assert(ok and reason=='duplicate','same-session receipt ID did not deduplicate')
+          assert(xp.RecordAttempt('alchemy',101,'a'),'reload incorrectly restored old GUID deduplication')
+          assert(xp.Progress('alchemy',1).casts==3 and xp.Progress('alchemy',1).actualOutputs==5)
+        """)
+        self.reload_execution()
+        self.lua.execute("assert(xp.Progress('alchemy',1).actualOutputs==5)")
+
+
+    def test_session_matching_has_no_fifteen_second_expiry(self):
+        self.lua.execute("""
+          assert(xp.RecordAttempt('alchemy',101,'slow'))
+          clock=clock+120;xp.RefreshObservation()
+          assert(xp.RecordOutput({itemID=10,quantity=3,castGUID='slow'},'chat'))
+          assert(xp.RecordOutput({itemID=10,quantity=2,castGUID='slow'},'structured'))
+          local p=xp.Progress('alchemy',1)
+          assert(p.actualOutputs==2 and p.guaranteedOutputs==2 and p.pendingOutputs==0)
         """)
 
-    def test_archived_legacy_save_with_sparse_progress_keeps_receipts(self):
+    def test_pending_cast_cache_keeps_only_the_latest_thirty_two_guids(self):
         self.lua.execute("""
-          DungeonsForeverDB={prof={track={['Test-Realm']={version=1,active={},runs={
-            old={planID='old',slug='alchemy',status='archived',start=1,target=4,
-              steps={{from=1,to=3,spell=101,crafts=3,item=10},{from=3,to=4,spell=102,crafts=1,item=11}},
-              progress={[2]={casts=1,out=5}},outputs={[11]=5}}
-          }}}}}
-          local old=xp.GetHistory('alchemy')[1]
-          assert(not xp.GetRun('alchemy') and old.steps==nil)
-          local summary=xp.GetSummary('alchemy')
-          assert(summary.total==2 and summary.casts==1 and summary.target==4)
-          assert(xp.GetRecipeTotals('alchemy','old')[2].confirmedOutputs[11]==5)
-          assert(xp.Progress('alchemy',2,nil,'old').actualOutputs==5)
+          local p=fixture();p.executionSteps[2]=fixture().executionSteps[1]
+          p.executionSteps[2].segmentID='second';run=xp.StartNew('alchemy',p)
+          assert(xp.RecordAttempt('alchemy',101,'oldest',1))
+          for i=1,31 do assert(xp.RecordAttempt('alchemy',101,'new:'..i,2))end
+          assert(xp.RecordOutput({itemID=10,quantity=3,castGUID='oldest'},'chat'))
+          assert(xp.Progress('alchemy',1).actualOutputs==3)
+          assert(xp.RecordAttempt('alchemy',101,'overflow',2))
+          -- The evicted GUID no longer identifies the first step. Like master,
+          -- item fallback selects the last recorded matching step instead.
+          assert(xp.RecordOutput({itemID=10,quantity=2,castGUID='oldest'},'structured'))
+          assert(xp.Progress('alchemy',1).actualOutputs==3)
+          assert(xp.Progress('alchemy',2).actualOutputs==2)
         """)
 
-    def test_legacy_dev_save_migrates_without_losing_receipts(self):
+    def test_cast_guid_deduplication_is_bounded_to_five_hundred_twelve(self):
         self.lua.execute("""
-          DungeonsForeverDB={prof={track={['Test-Realm']={version=1,nextID=1,nextAttempt=1,active={alchemy='old'},runs={
-            old={planID='old',slug='alchemy',status='active',scheme='cheapest',start=1,target=3,
-              steps={{from=1,to=3,spell=101,crafts=3,item=10,mats={{20,1}}}},
-              progress={{casts=1,attempts={{seq=1,spell=101,item=10,out=3,at=999,castGUID='oldcast'}}}},outputs={[10]=3}}
-          }}}}}
+          assert(xp.RecordAttempt('alchemy',101,'first'))
+          for i=1,511 do assert(xp.RecordAttempt('alchemy',101,'cast:'..i))end
+          local ok,why=xp.RecordAttempt('alchemy',101,'first')
+          assert(not ok and why=='duplicate')
+          assert(xp.RecordAttempt('alchemy',101,'overflow'))
+          assert(xp.RecordAttempt('alchemy',101,'first'),'old GUID did not leave the bounded memory cache')
+          assert(xp.Progress('alchemy',1).casts==514)
+          local record=run.progress[run.plan.executionSteps[1].segmentID]
+          assert(record.attempts==nil and record.outputs[10].pending==514)
         """)
-        self.load("Core/ProfExecution.lua")
-        self.lua.execute("initialize();xp=ns.ProfExecution;t=ns.ProfTrack;local old=t.GetRun('alchemy');assert(old.planID=='old' and old.legacyTrack and old.executionMigration==1);local p=t.Progress('alchemy',1);assert(p.casts==1 and p.outputs==3);assert(old.plan.executionSteps[1].recipe.spell==101)")
+
+    def test_reload_discards_exact_cast_mapping_and_falls_back_by_item(self):
+        self.lua.execute("""
+          local p=fixture();p.executionSteps[2]=fixture().executionSteps[1]
+          p.executionSteps[2].segmentID='second';run=xp.StartNew('alchemy',p)
+          assert(xp.RecordAttempt('alchemy',101,'first-step',1))
+          assert(xp.RecordAttempt('alchemy',101,'second-step',2))
+        """)
+        self.reload_execution()
+        self.lua.execute("""
+          assert(xp.RecordOutput({itemID=10,quantity=3,castGUID='first-step'}))
+          assert(xp.Progress('alchemy',1).actualOutputs==0)
+          assert(xp.Progress('alchemy',2).actualOutputs==3)
+          assert(xp.Progress('alchemy',1).casts==1 and xp.Progress('alchemy',2).casts==1)
+        """)
+
+    def test_receipts_without_guid_use_last_item_then_other_pending_item(self):
+        self.lua.execute("""
+          local p=fixture();p.executionSteps[2]=fixture().executionSteps[1]
+          p.executionSteps[2].segmentID='second';run=xp.StartNew('alchemy',p)
+          xp.RecordAttempt('alchemy',101,'first',1)
+          xp.RecordAttempt('alchemy',101,'second',2)
+          assert(xp.RecordOutput({itemID=10,quantity=3,eventID=1},'chat'))
+          assert(xp.Progress('alchemy',2).actualOutputs==3 and xp.Progress('alchemy',1).actualOutputs==0)
+          assert(xp.RecordOutput({itemID=10,quantity=2,eventID=2},'chat'))
+          assert(xp.Progress('alchemy',1).actualOutputs==2 and xp.Progress('alchemy',2).actualOutputs==3)
+        """)
+
+    def test_explicit_profession_receipt_does_not_use_another_professions_last_cast(self):
+        self.lua.execute("""
+          local p=fixture();p.planID='mining';p.executionSteps[1].profession='mining'
+          local miner=assert(xp.StartNew('mining',p))
+          xp.RecordAttempt('alchemy',101,'alchemy-cast')
+          xp.RecordAttempt('mining',101,'mining-cast')
+          assert(t.RecordOutput('alchemy',10,3))
+          assert(xp.Progress('alchemy',1).actualOutputs==3 and xp.Progress('mining',1).actualOutputs==0)
+          assert(t.RecordOutput('mining',10,2))
+          assert(xp.Progress('mining',1).actualOutputs==2)
+        """)
+
+    def test_manual_total_override_preserves_later_outputs(self):
+        self.lua.execute("""
+          for i=1,2 do
+            xp.RecordAttempt('alchemy',101,'a'..i)
+            xp.RecordOutput({itemID=10,quantity=3,castGUID='a'..i})
+          end
+          assert(xp.VerifyOutput('alchemy',1,10,5))
+          xp.RecordAttempt('alchemy',101,'later');xp.RecordOutput({itemID=10,quantity=3,castGUID='later'})
+          clock=1016;xp.RefreshObservation()
+          local record=run.progress[run.plan.executionSteps[1].segmentID]
+          assert(record.history==nil and record.manualOutputs==nil and record.outputs[10].actual==8)
+          assert(xp.Progress('alchemy',1).actualOutputs==8 and xp.Progress('alchemy',1).casts==3)
+        """)
+        self.reload_execution()
+        self.lua.execute("assert(xp.Progress('alchemy',1).actualOutputs==8);assert(xp.VerifyOutput('alchemy',1,10,9));assert(xp.Progress('alchemy',1).actualOutputs==9)")
+
+    def test_manual_total_covers_cached_casts_within_the_same_session(self):
+        self.lua.execute("""
+          xp.RecordAttempt('alchemy',101,'covered')
+          assert(xp.VerifyOutput('alchemy',1,10,7))
+          xp.RecordAttempt('alchemy',101,'new')
+        """)
+        self.lua.execute("""
+          assert(xp.RecordOutput({itemID=10,quantity=3,castGUID='new'}))
+          assert(xp.RecordOutput({itemID=10,quantity=9,castGUID='covered'}))
+          local p=xp.Progress('alchemy',1)
+          assert(p.casts==2 and p.actualOutputs==10 and p.pendingOutputs==0)
+        """)
+
+    def test_structured_receipt_corrects_chat_total_by_delta(self):
+        self.lua.execute("""
+          xp.RecordAttempt('alchemy',101,'a')
+          xp.RecordOutput({itemID=10,quantity=3,castGUID='a'},'chat')
+          xp.RecordOutput({itemID=10,quantity=2,castGUID='a'},'structured')
+          local p=xp.Progress('alchemy',1)
+          assert(p.actualOutputs==2 and p.guaranteedOutputs==2 and p.pendingOutputs==0 and p.outputConflict)
+          clock=1016;xp.RefreshObservation()
+          assert(run.progress[run.plan.executionSteps[1].segmentID].history==nil)
+        """)
+        self.reload_execution()
+        self.lua.execute("assert(xp.Progress('alchemy',1).actualOutputs==2)")
+
+    def test_consumption_order_does_not_override_observed_bag_stock(self):
+        self.lua.execute("""
+          local p=fixture();p.executionSteps[2]={1,3,102,1,segmentID='consumer',profession='alchemy',
+            recipe=recipes[102],item=11,goalSkill=3,expectedGain=2,expectedCrafts=1,attemptLimit=1,
+            outputMin=2,requiredOutputs={}}
+          run=xp.StartNew('alchemy',p)
+          xp.RecordAttempt('alchemy',102,'before-producer')
+          xp.RecordAttempt('alchemy',101,'unconfirmed')
+          xp.RecordAttempt('alchemy',102,'consume-unconfirmed')
+          xp.VerifyOutput('alchemy',1,10,3)
+          xp.RecordAttempt('alchemy',101,'confirmed');xp.RecordOutput({itemID=10,quantity=3,castGUID='confirmed'})
+          bag[10]=99
+          before=xp.Progress('alchemy',1);carry=xp.GetContinuation('alchemy')[10]
+          assert(carry==99,'continuation must use the observed bag quantity')
+          clock=1016;xp.RefreshObservation()
+          local after=xp.Progress('alchemy',1)
+          for _,k in ipairs({'casts','actualOutputs','pendingOutputs','remainingOutputs','materialDone','extraCrafts'}) do
+            assert(after[k]==before[k],k)
+          end
+          assert(xp.GetContinuation('alchemy')[10]==carry)
+        """)
+        self.reload_execution()
+        self.lua.execute("assert(xp.GetContinuation('alchemy')[10]==carry);assert(xp.Progress('alchemy',1).actualOutputs==before.actualOutputs)")
+
+    def test_variable_and_missing_receipts_keep_totals_without_time_expiry(self):
+        self.lua.execute("""
+          xp.RecordAttempt('alchemy',101,'a');xp.RecordOutput({itemID=10,quantity=3,castGUID='a'},'chat')
+          clock=1010;xp.RecordAttempt('alchemy',101,'b')
+          clock=1016;xp.RefreshObservation()
+          local record=run.progress[run.plan.executionSteps[1].segmentID]
+          assert(record.history==nil and record.attempts==nil and record.outputs[10].actual==3)
+          assert(xp.RecordOutput({itemID=10,quantity=2,castGUID='b'}))
+          xp.RecordAttempt('alchemy',101,'unknown')
+          clock=1032;xp.RefreshObservation()
+          local p=xp.Progress('alchemy',1)
+          assert(p.casts==3 and p.actualOutputs==5 and p.pendingOutputs==1)
+          assert(record.history==nil and record.attempts==nil)
+          local totals=xp.GetRecipeTotals('alchemy')[1]
+          assert(totals.confirmedOutputs[10]==5 and totals.guaranteedOutputs[10]==7)
+        """)
+        self.reload_execution()
+        self.lua.execute("local p=xp.Progress('alchemy',1);assert(p.actualOutputs==5 and p.pendingOutputs==1)")
+
+    def test_stopping_tracking_drops_memory_cache_without_a_background_observer(self):
+        self.lua.execute("""
+          xp.RecordAttempt('alchemy',101,'pending')
+          xp.DisableTracking()
+          local record=run.progress[run.plan.executionSteps[1].segmentID]
+          assert(record.attempts==nil and record.history==nil)
+          assert(not next(xp.eventFrame.events))
+          assert(xp.Progress('alchemy',1).pendingOutputs==1)
+        """)
+
+    def test_archiving_stops_observation_without_a_receipt_window_timer(self):
+        self.lua.execute("""
+          timers={};C_Timer={After=function(delay,fn)timers[#timers+1]={due=clock+delay,fn=fn}end}
+          xp.RecordAttempt('alchemy',101,'last');xp.End('alchemy','cancel')
+          local record=run.progress[run.plan.executionSteps[1].segmentID]
+          assert(record.attempts==nil and record.history==nil)
+          assert(#timers==0,'archived execution scheduled a receipt-expiry timer')
+          assert(not xp.GetRun('alchemy') and not next(xp.eventFrame.events))
+          assert(not xp.RecordOutput({itemID=10,quantity=3,castGUID='last'}))
+          assert(xp.GetRecipeTotals('alchemy',run.planID)[1].casts==1)
+        """)
 
     def test_execution_can_read_legacy_first_aid_ledger_without_generating_a_route(self):
         self.lua.execute("local p=fixture();p.executionSteps[1].profession='first-aid';assert(xp.NormalizePlan('first-aid',p));assert(xp.StartNew('first-aid',p))")
@@ -234,10 +492,10 @@ class ExecutionFusionTests(unittest.TestCase):
           local c=fixture().executionSteps[1];c.segmentID='later';c.expectedGain=0;c.goalSkill=nil;c.requiredOutputs={[10]=2}
           c[4]=1;c.expectedCrafts=1;c.allocations={{consumerID='future',itemID=10,count=2}}
           p.executionSteps={a,b,c};run=xp.StartNew('alchemy',p)
-          xp.RecordAttempt('alchemy',101,'first');xp.RecordOutput({itemID=10,quantity=2,castGUID='first'})
-          xp.RecordAttempt('alchemy',101,'second');xp.RecordOutput({itemID=10,quantity=2,castGUID='second'})
-          xp.RecordAttempt('alchemy',102,'spend1');xp.RecordOutput({itemID=11,quantity=2,castGUID='spend1'})
-          xp.RecordAttempt('alchemy',102,'spend2');xp.RecordOutput({itemID=11,quantity=2,castGUID='spend2'})
+          xp.RecordAttempt('alchemy',101,'first');bag[10]=2;xp.RecordOutput({itemID=10,quantity=2,castGUID='first'})
+          xp.RecordAttempt('alchemy',101,'second');bag[10]=4;xp.RecordOutput({itemID=10,quantity=2,castGUID='second'})
+          xp.RecordAttempt('alchemy',102,'spend1');bag[10]=2;bag[11]=2;xp.RecordOutput({itemID=11,quantity=2,castGUID='spend1'})
+          xp.RecordAttempt('alchemy',102,'spend2');bag[10]=0;bag[11]=4;xp.RecordOutput({itemID=11,quantity=2,castGUID='spend2'})
           local later=xp.Progress('alchemy',3)
           assert(later.actualOutputs==2 and not later.materialDone and later.remainingOutputs==2 and later.divertedOutputs==2)
           assert(xp.Progress('alchemy',1).complete)
@@ -267,7 +525,7 @@ class ExecutionFusionTests(unittest.TestCase):
           skills.alchemy.cur=3;pf.Sync()
           xp.RecordAttempt('alchemy',101,'a');xp.RecordOutput({itemID=10,quantity=3,castGUID='a'})
           xp.RecordAttempt('alchemy',101,'b');xp.RecordOutput({itemID=10,quantity=3,castGUID='b'})
-          pf.Sync();assert(follow.step==2)
+          bag[10]=6;pf.Sync();assert(follow.step==2)
         """)
 
     def test_hud_waiting_for_solver_keeps_automatic_mode(self):
@@ -332,14 +590,17 @@ class ExecutionFusionTests(unittest.TestCase):
              executionSteps={{1,1,0,1,segmentID='convert',profession='enchanting',kind='essence_conversion',
                item=10938,goalSkill=1,expectedGain=0,expectedCrafts=1,attemptLimit=1,outputMin=3,
                conversion=conversion,requiredOutputs={[10938]=3}}},steps={},mats={},formulas={}}
-          run=xp.StartNew('enchanting',p);bag[10938]=30
+          run=xp.StartNew('enchanting',p);bag[10938]=0
           assert(not xp.Progress('enchanting',1).complete)
           assert(not xp.RecordAttempt('enchanting',0,'not-a-craft'))
           assert(not xp.ConfirmConversion('enchanting',1,1,'obsolete'))
-          assert(xp.ConfirmConversion('enchanting',1,1,run.planID))
+          assert(xp.ConfirmConversion('enchanting',1,1,run.planID));bag[10938]=3
           local progress=xp.Progress('enchanting',1)
           assert(progress.complete and progress.actualOutputs==3 and run.attemptsDone==0)
           assert(#xp.GetRecipeTotals('enchanting')==0)
+          local record=run.progress[run.plan.executionSteps[1].segmentID]
+          assert(record.attempts==nil and record.history==nil)
+          assert(run.materialLedger.consumed[10939]==1 and run.materialLedger.confirmed[10938]==3)
         """)
 
     def test_observer_can_record_another_active_profession_once(self):
@@ -397,6 +658,32 @@ class ExecutionSupplementSolverTests(unittest.TestCase):
           assert(returned==supplement and not returned.inFlight and returned.total==4)
           assert(#run.plan.executionSteps==2 and run.plan.executionSteps[1][3]==102 and run.plan.executionSteps[2][3]==101)
           local progress=xp.Progress('alchemy',2);assert(progress.attemptLimit==3 and progress.casts==1)
+        """)
+
+    def test_topup_uses_bag_stock_but_reserves_the_remaining_base_demand(self):
+        self.lua.execute("""
+          local first=run.plan.executionSteps[1]
+          local future=ns.ProfEconomy.Copy(first);future.segmentID='future';future.expectedGain=1
+          future.goalSkill=4;future[1]=3;future[2]=4
+          run.plan.executionSteps[2]=future
+          bag[20]=2
+          local returned=xp.CalculateSupplement('alchemy')
+          for i=1,5000 do if not returned.inFlight then break end;xp.Pump('alchemy')end
+          assert(returned.feasible and returned.appended)
+          -- One of the two bag reagents remains reserved for the future step.
+          -- The extra two crafts can reuse only the other; make one more for 2c.
+          assert(returned.total==2,tostring(returned.total))
+          assert(returned.seedInventory[20]==1)
+          assert(bag[20]==2,'planning must not mutate the observed inventory')
+        """)
+
+    def test_topup_can_be_fully_supplied_by_unrelated_existing_bag_materials(self):
+        self.lua.execute("""
+          bag[20]=2
+          local returned=xp.CalculateSupplement('alchemy')
+          for i=1,5000 do if not returned.inFlight then break end;xp.Pump('alchemy')end
+          assert(returned.feasible and returned.appended and returned.total==0)
+          assert(returned.seedInventory[20]==2 and #returned.mats==0)
         """)
 
 

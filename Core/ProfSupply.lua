@@ -131,7 +131,7 @@ local function BuildFormulaList(itemID, withCurrency)
             local limited = (type(stock) == "number" and stock >= 0) and stock or nil
             local entry = {
                 npcID = npcID,
-                quantity = Int(pack, 1) and pack or 1,
+                quantity = Int(pack, 1) and pack or nil,
                 unlimited = unlimited, limited = limited,
                 maxStock = limited and stock or nil,
                 stockUnknown = (not unlimited and limited == nil) or nil,
@@ -140,7 +140,7 @@ local function BuildFormulaList(itemID, withCurrency)
                 source = "formula-offers", verifiedAt = verifiedAt,
                 faction = FactionOf(side),
                 areaID = Int(areaID, 1) and areaID or nil,
-                hasExtendedCost = false, currencyID = 0, price = 0,
+                hasExtendedCost = false, currencyID = 0,
             }
             entry.bundleSize = entry.quantity
             if Int(curID, 1) then
@@ -151,10 +151,11 @@ local function BuildFormulaList(itemID, withCurrency)
                     entry.currencyAmount = tonumber(curAmt) or 0
                     entry.hasExtendedCost = true
                 end
-            elseif type(cost) == "number" then
+            elseif Int(cost, 0) and Int(pack, 1) then
                 entry.price = cost
             else
-                entry = nil
+                -- A missing collected price or pack size is an unknown quote.
+                entry.priceVerified = false
             end
             if entry then
                 list = list or {}

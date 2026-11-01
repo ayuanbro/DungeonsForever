@@ -3,6 +3,9 @@
 local _,ns=...
 if not ns.LoadForeverPages then return end
 local R={REVISION=1};ns.ProfRecovery=R
+-- Master's bulk-listing estimate and profitable-recipe preference limit.
+local RESID_MASS, PROFIT_CAP = 0.7, 20
+R.PROFIT_CAP = PROFIT_CAP
 local floor,min,max,ceil=math.floor,math.min,math.max,math.ceil
 local function copy(t,tick)
     if type(t)~="table" then return t end
@@ -72,8 +75,8 @@ local function livePrice(id)
 end
 -- Retain the dev price-revaluation API while applying the same evidence
 -- thresholds as freshly captured quotes.
-local function rerate(q,fee)
-    q.auctionNet=q.auctionGross and fee and floor(q.auctionGross*(100-fee)/100+1e-9) or nil
+local function rerate(q,fee,residualMass)
+    q.auctionNet=q.auctionGross and fee and floor(q.auctionGross*(residualMass and RESID_MASS or 1)*(100-fee)/100+1e-9) or nil
     q.assumedAllSold=nil;q.missing=nil;q.unsellable=q.bound and true or nil
     if q.npcUnit~=nil then
         q.unit=q.npcUnit;q.source="npc"
@@ -85,7 +88,7 @@ local function rerate(q,fee)
     return q
 end
 R.Rerate=rerate
-local function quote(id,s,fee,stamp,live)
+local function quote(id,s,fee,stamp,live,residualMass)
     local npc
     if not live and s.sellPrices then npc=s.sellPrices[id] else npc=R.NPCSellPriceOf(id) end
     if not amount(npc) then npc=nil else npc=floor(npc) end
@@ -107,7 +110,7 @@ local function quote(id,s,fee,stamp,live)
         market=supply and supply.market,batch=supply and supply.batch}
     -- Without N the spread cannot be established. Missing is not a zero-price
     -- assumption even when a seemingly attractive auction quote is available.
-    return rerate(q,fee)
+    return rerate(q,fee,residualMass)
 end
 local identityFields={"npcUnit","auctionGross","auctionNet","bound","quantity","observedAt","complete","ownerExcluded","supplySource","supplyReliable","market","batch","source","unit","missing"}
 local function identity(q)
@@ -119,6 +122,7 @@ function R.Options(opts)
     local db=DungeonsForeverDB and DungeonsForeverDB.prof
     if db then
         if opts.recoveryEnabled==nil and db.recoveryEnabled~=nil then opts.recoveryEnabled=db.recoveryEnabled end
+        if opts.residualMass==nil and db.autoResidualMass~=nil then opts.residualMass=db.autoResidualMass end
         if opts.recoveryFeePercent==nil and type(db.recoveryFeePercent)=="number" then
             opts.recoveryFeePercent=db.recoveryFeePercent
         end
@@ -132,31 +136,27 @@ function R.Capture(snapshot,opts,tick)
     if snapshot.recovery and snapshot.recovery.revision==R.REVISION and snapshot.recovery.quotes then
         local old=snapshot.recovery
         if opts.recoveryEnabled~=nil and opts.recoveryEnabled~=old.enabled
-            or percent(opts.recoveryFeePercent) and opts.recoveryFeePercent~=old.feePercent then
+            or percent(opts.recoveryFeePercent) and opts.recoveryFeePercent~=old.feePercent
+            or opts.residualMass~=nil and opts.residualMass~=old.residualMass then
             local r=copy(old,tick)
             if opts.recoveryEnabled~=nil then r.enabled=opts.recoveryEnabled~=false end
+            if opts.residualMass~=nil then r.residualMass=opts.residualMass==true end
             if percent(opts.recoveryFeePercent) then
                 r.feePercent=opts.recoveryFeePercent;r.feeSource="manual";r.feeReference=false;r.feeOverride=opts.recoveryFeePercent
-                for _,q in pairs(r.quotes) do
-                    q.auctionNet=q.auctionGross and floor(q.auctionGross*(100-r.feePercent)/100+1e-9) or nil
-                    q.unit=q.npcUnit or 0;q.source=q.npcUnit~=nil and "npc" or "unknown";q.assumedAllSold=nil
-                    if q.npcUnit~=nil and not q.bound and q.auctionNet and q.auctionNet-q.npcUnit>100
-                        and q.supplyReliable and (q.quantity or 0)>=40 then q.unit=q.auctionNet;q.source="ah";q.assumedAllSold=true end
-                    if tick then tick() end
-                end
             end
+            for _,q in pairs(r.quotes) do rerate(q,r.feePercent,r.residualMass);if tick then tick() end end
             snapshot.recovery=r
         end
         return snapshot.recovery
     end
     local fee,source,reference=R.Fee(snapshot,opts)
-    local r={revision=R.REVISION,enabled=opts.recoveryEnabled~=false,feePercent=fee,
+    local r={revision=R.REVISION,enabled=opts.recoveryEnabled~=false,residualMass=opts.residualMass==true,feePercent=fee,
         feeSource=source,feeReference=reference,feeOverride=opts.recoveryFeePercent,
         clientFee=copy(snapshot.auctionFee,tick),
         capturedAt=snapshot.stamp or now(),quotes={}}
     for _,recipe in ipairs(snapshot.recipes or {}) do
         if type(recipe.item)=="number" and recipe.item>0 and (recipe.count or 1)>0 then
-            r.quotes[recipe.item]=quote(recipe.item,snapshot,fee,r.capturedAt,false)
+            r.quotes[recipe.item]=quote(recipe.item,snapshot,fee,r.capturedAt,false,r.residualMass)
             if r.quotes[recipe.item].missing then requestMissingItem(recipe.item) end
         end
         if tick then tick() end
@@ -164,30 +164,36 @@ function R.Capture(snapshot,opts,tick)
     snapshot.recovery=r
     return r
 end
-function R.StateRevenue(state,snapshot)
+local function revenue(state,snapshot,produced)
     local total=0
-    for id,count in pairs(state and state.produced or {}) do
+    for id,count in pairs(produced or {}) do
         local q=snapshot and snapshot.recovery and snapshot.recovery.quotes[id]
         local retained=snapshot and snapshot.retainedToolItems and snapshot.retainedToolItems[id] or 0
-        local purchased=max(0,((state.inv or {})[id] or 0)-count)
+        local purchased=max(0,((state.inv or {})[id] or 0)-((state.produced or {})[id] or 0))
         local sale=max(0,count-max(0,retained-purchased))
         if q and amount(count) then total=total+sale*(q.unit or 0) end
     end
     return total
 end
+function R.StateRevenue(state,snapshot)
+    return revenue(state,snapshot,state and state.produced)
+end
+function R.PriorityRevenue(state,snapshot)
+    return revenue(state,snapshot,state and state.priorityProduced)
+end
 function R.Objective(state,snapshot)
     local r=snapshot and snapshot.recovery
-    return (state and state.money or 0)-(r and r.enabled and R.StateRevenue(state,snapshot) or 0)
+    return (state and state.money or 0)-(r and r.enabled and R.PriorityRevenue(state,snapshot) or 0)
 end
 local function changed(result,opts)
     local old=result and result.recoverySnapshot
     if not old or result.recoveryRevision~=R.REVISION then return true end
-    opts=opts or {recoveryEnabled=old.enabled,recoveryFeePercent=old.feeOverride}
-    if (opts.recoveryEnabled~=false)~=old.enabled then return true end
+    opts=opts or {recoveryEnabled=old.enabled,recoveryFeePercent=old.feeOverride,residualMass=old.residualMass}
+    if (opts.recoveryEnabled~=false)~=old.enabled or (opts.residualMass==true)~=(old.residualMass==true) then return true end
     local supplied=opts.snapshot
     if supplied and supplied.recovery and supplied.recovery.revision==R.REVISION then
         local current=supplied.recovery
-        if current.enabled~=old.enabled or current.feePercent~=old.feePercent or current.feeSource~=old.feeSource then return true end
+        if current.enabled~=old.enabled or current.feePercent~=old.feePercent or current.feeSource~=old.feeSource or current.residualMass~=old.residualMass then return true end
         for id,q in pairs(old.quotes or {}) do
             if not current.quotes[id] or identity(current.quotes[id])~=identity(q) then return true end
         end
@@ -196,7 +202,7 @@ local function changed(result,opts)
     local fee,source,reference=R.Fee(supplied or {auctionFee=old.clientFee},opts)
     if fee~=old.feePercent or source~=old.feeSource or reference~=old.feeReference then return true end
     for id,q in pairs(old.quotes or {}) do
-        if identity(quote(id,supplied or {},fee,now(),not supplied))~=identity(q) then return true end
+        if identity(quote(id,supplied or {},fee,now(),not supplied,opts.residualMass))~=identity(q) then return true end
     end
     return false
 end
@@ -209,7 +215,7 @@ function R.Changed(result,opts)
     if not result or opts and opts.snapshot or type(GetTime)~="function" then return changed(result,opts) end
     local stamp=GetTime();local bridge=ns.AuctionBridge
     local revision=bridge and bridge.SupplyRevision and bridge.SupplyRevision() or 0
-    local signature=tostring(opts and opts.recoveryEnabled)..":"..tostring(opts and opts.recoveryFeePercent)..":"..tostring(revision)
+    local signature=tostring(opts and opts.recoveryEnabled)..":"..tostring(opts and opts.recoveryFeePercent)..":"..tostring(opts and opts.residualMass)..":"..tostring(revision)
     local previous=changedMemo[result]
     if previous and previous.signature==signature and stamp>=previous.at and stamp-previous.at<1 then return previous.value end
     local value=changed(result,opts)
@@ -300,8 +306,9 @@ function R.GroupOutputs(outputs,tick)
 end
 function R.Apply(result,snapshot,tick)
     if not result then return end
-    snapshot=snapshot or {};local frozen=R.Capture(snapshot,{recoveryEnabled=result.recoveryEnabled},tick)
+    snapshot=snapshot or {};local frozen=R.Capture(snapshot,{recoveryEnabled=result.recoveryEnabled,residualMass=snapshot.recovery and snapshot.recovery.residualMass},tick)
     result.recoveryRevision=R.REVISION;result.recoveryEnabled=frozen.enabled
+    result.residualMass=frozen.residualMass;result.profitPriorityLimit=PROFIT_CAP
     result.recoveryOptimized=frozen.enabled and result.scheme=="cheapest" and not result.procurement or false
     result.recoverySnapshot=copy(frozen,tick)
     result.recoveryQuoteMissing=0

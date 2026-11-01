@@ -16,9 +16,9 @@ local BOOK_ICON = "Interface\\Icons\\INV_Misc_Book_09"
 local DIAL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_dial"
 local DART_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_arrow"
 local GRAVE_TEX = "Interface\\RaidFrame\\Raid-Icon-Rez"
-local GRAVE_OWN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\SpiritPin"
-local GRAVE_DISC_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\CheckDisc"
-local GRAVE_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\CheckRing"
+local GRAVE_OWN_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\SpiritPin"
+local GRAVE_DISC_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
+local GRAVE_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing"
 local GRAVE_SIZE = 22
 local GRAVE_DOT = 0.38
 local GRAVE_DOT_IN = 0.30
@@ -38,6 +38,7 @@ local updateTrackerFn
 local settingsFrame
 local pins, pinPool = {}, {}
 local graves, gravePool = {}, {}
+local areas, areaPool = {}, {}
 local lines, linePool = {}, {}
 local meLineLn
 
@@ -53,6 +54,7 @@ local DEF_CFG = {
     showLines = false,
     showMeLine = true,
     showGrave = false,
+    showArea = false,
     graveStyle = "native",
     lineW = 2,
     showCompass = true,
@@ -539,6 +541,27 @@ local function releaseGraves()
     end
 end
 
+local function areaAcquire(canvas)
+    local t = areaPool[#areaPool]
+    if not t then
+        t = canvas:CreateTexture(nil, "OVERLAY")
+        t:SetTexCoord(0, 1, 0, 1)
+    end
+    t:SetParent(canvas)
+    t:SetAlpha(1)
+    return t
+end
+
+local function releaseAreas()
+    for i = #areas, 1, -1 do
+        local t = areas[i]
+        t:Hide()
+        t:ClearAllPoints()
+        areas[i] = nil
+        areaPool[#areaPool + 1] = t
+    end
+end
+
 local function mapScale()
     local sc = WorldMapFrame.ScrollContainer
     if sc and sc.GetCanvasScale then
@@ -549,6 +572,32 @@ local function mapScale()
 end
 
 local graveFitMap = {}
+
+local areaHosts = {}
+
+local function areaHostOf(canvas)
+    if not canvas then return nil end
+    local f = areaHosts[canvas]
+    if not f then
+        f = CreateFrame("Frame", nil, canvas)
+        f:SetAllPoints(canvas)
+        f:EnableMouse(false)
+        areaHosts[canvas] = f
+    end
+    f:SetFrameLevel(canvas:GetFrameLevel() + 2007)
+    return f
+end
+
+local function mapStitched()
+    local B = ns.OpenMapBridge
+    if B and B.Active then return B.Active() and true or false end
+    local a = _G.OpenMapAPI
+    if type(a) == "table" and type(a.IsStitched) == "function" then
+        local ok, v = pcall(a.IsStitched)
+        return ok and v and true or false
+    end
+    return false
+end
 
 local function graveFit(disp, scale)
     local v = graveFitMap[disp]
@@ -563,6 +612,7 @@ function ns.ExploreMapRefresh()
     if ns.MapWorldModule and ns.MapWorldModule.Active and ns.MapWorldModule.Active() then
         releasePins()
         releaseGraves()
+        releaseAreas()
         releaseLines()
         return
     end
@@ -575,6 +625,7 @@ function ns.ExploreMapRefresh()
     end
     releasePins()
     releaseGraves()
+    releaseAreas()
     releaseLines()
     local okID, disp = pcall(WorldMapFrame.GetMapID, WorldMapFrame)
     if not okID or not disp or not alive(disp) then return end
@@ -630,12 +681,39 @@ function ns.ExploreMapRefresh()
     end
     end
 
+    if c.showArea == true and ns.AreaVec and ns.AreaVec.ovl and ns.AreaDraw then
+        local vside = 2
+        local f = UnitFactionGroup and UnitFactionGroup("player")
+        if f == "Alliance" then vside = 1 end
+        local vlist = {}
+        for _, it in pairs(ns.AreaVec.ovl) do
+            if it.map == disp and (it.side == 0 or it.side == vside) then
+                vlist[#vlist + 1] = it
+            end
+        end
+        if #vlist > 0 then
+            local tc = SIDE_COL[vside] or SIDE_COL[0]
+            local ah = areaHostOf(canvas)
+            if ah then
+                ns.AreaDraw.Paint(ah, w, h, vlist, tc[1], tc[2], tc[3],
+                    { base = 1, layer = "OVERLAY", fillA = 0.1 })
+            end
+        else
+            ns.AreaDraw.Clear(areaHosts[canvas])
+        end
+    else
+        ns.AreaDraw.Clear(areaHosts[canvas])
+    end
+
     if c.showGrave == true then
         local flat = ns.GravePos[disp]
         if type(flat) == "table" then
-            local fit = graveFit(disp, scale)
-            local zoom = scale / fit
-            if zoom > 2 then zoom = 2 end
+            local zoom = 1
+            if not mapStitched() then
+                local fit = graveFit(disp, scale)
+                zoom = scale / fit
+                if zoom > 2 then zoom = 2 end
+            end
             local gsize = GRAVE_SIZE * zoom / scale
             local zone
             if C_Map and C_Map.GetMapInfo then
@@ -1413,6 +1491,20 @@ end
 
 function ns.ExploreGraveToggle()
     return ns.ExploreGraveSet(not cfg().showGrave)
+end
+
+function ns.ExploreAreaOn()
+    return cfg().showArea == true
+end
+
+function ns.ExploreAreaSet(v)
+    cfg().showArea = v and true or false
+    ns.ExploreMapRefresh()
+    return cfg().showArea
+end
+
+function ns.ExploreAreaToggle()
+    return ns.ExploreAreaSet(not cfg().showArea)
 end
 
 function ns.ExploreGraveStyle()

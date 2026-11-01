@@ -8,3 +8,4 @@ tools/
 validation/
 docs/
 *.bak
+test/

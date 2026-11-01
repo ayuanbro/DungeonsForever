@@ -13,9 +13,10 @@ local CACHE_TTL = 600
 local CACHE_SLOTS = 4
 local G_YELLOW, G_GREEN = 0.5, 0.05
 
-local SCHEME_ORDER = { "cheapest", "matcost", "crafts", "optim" }
+local SCHEME_ORDER = { "cheapest", "stable", "matcost", "crafts", "optim" }
 local SCHEME_LABEL = {
     cheapest = "最省钱",
+    stable = "稳定升级",
     matcost = "材料成本",
     crafts = "次数最少",
     optim = "乐观计数",
@@ -90,14 +91,7 @@ local function VendorPrice(id)
     local p
     if ns.VendorPriceDB then
         local ok, v = pcall(ns.VendorPriceDB.GetPrice, id)
-        if ok and type(v) == "number" and v > 0 then p = v end
-    end
-    if not p and RA.Available() then
-        local fn = Auctionator.API.v1.GetVendorPriceByItemID
-        if type(fn) == "function" then
-            local v = CallAPI(fn, id)
-            if type(v) == "number" and v > 0 then p = v end
-        end
+        if ok and type(v) == "number" and v >= 0 and v < math.huge then p = v end
     end
     vendorCache[id] = p or false
     return p
@@ -1356,16 +1350,18 @@ local function RecoveryOptions(opts,slug)
     local fee = opts.recoveryFeePercent
     if fee == nil and pd and pd.SettingRaw then fee=pd.SettingRaw("recoveryFeePercent",slug) end
     if fee == nil and db then fee = db.recoveryFeePercent end
-    return enabled, fee
+    local residual=opts.residualMass
+    if residual==nil and pd and pd.Setting then residual=pd.Setting("autoResidualMass",slug) end
+    return enabled, fee, residual==true
 end
 
 function RA.ApplyRecovery(res, slug, opts, recOf)
     RA.StampFormulaCosts(res)
     local R = ns.ProfRecovery
     if not res or not R or not R.Apply then return res end
-    local enabled, fee = RecoveryOptions(opts,slug)
+    local enabled, fee, residual = RecoveryOptions(opts,slug)
     local snap = RecoverySnapshot(slug, res.steps, recOf, res.toolItems)
-    R.Capture(snap, { recoveryEnabled = enabled, recoveryFeePercent = fee })
+    R.Capture(snap, { recoveryEnabled = enabled, recoveryFeePercent = fee, residualMass = residual })
     res.scheme = res.scheme or (opts and opts.scheme) or "fixed"
     R.Apply(res, snap)
     res.recoveryOptimized = false

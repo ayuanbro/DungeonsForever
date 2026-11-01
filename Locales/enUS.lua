@@ -2083,3 +2083,65 @@ L["尚未学习工程专精；不会使用专精限定配方。"] = "No Engineer
 -- Native solver cost-search status (v8).
 L["路线已生成，尚未进行降本搜索。"] = "Route generated; cost optimization search has not started."
 L["路线已生成，成本尚未证明最优。"] = "Route generated; the lowest cost has not been proven."
+
+-- Compatible UI and map additions from master 1.9.30.
+L["上楼"] = "Stairs up"
+L["下楼"] = "Stairs down"
+L["专业增强"] = "Profession upgrades"
+L["全选后 Ctrl+C 复制，Esc 关闭"] = "Ctrl+C to copy, Esc to close"
+L["共 %d 位"] = "%d total"
+L["制作 %d 次 · 产出 %d 件"] = "Crafted %d times, %d produced"
+L["制作团队"] = "Team"
+L["复活区域"] = "Resurrection zones"
+L["复活区域：关"] = "Resurrection zones: off"
+L["复活区域：开"] = "Resurrection zones: on"
+L["在世界地图上显示各复活点的覆盖范围。"] = "Show each spirit healer's coverage area on the world map."
+L["点击卡片：打开专业面板、定位本步配方并填好制作次数"] = "Click the card to open the profession window on this step's recipe with the craft count already filled in"
+L["支持榜"] = "Supporters"
+L["点击展开"] = "Click to expand"
+L["还有 %d 个配方"] = "%d more recipes"
+L["还没有记录"] = "No records yet"
+
+-- Compatible UI and map additions from master 1.9.30.
+L["定位当前步骤"] = "Jump to current step"
+
+-- Profession HUD voice prompts (master).
+L["播放：专业技能点上限了"] = "Playing: skill cap reached"
+L["播放：做下一件物品啦"] = "Playing: next item"
+L["播放：语音开启"] = "Playing: voice prompts on"
+L["播放：该配方还未学会，先找训练师学习"] = "Playing: recipe not learned yet — learn it from a trainer first"
+L["已静音：不再播放升级语音"] = "Muted: leveling voice prompts disabled"
+L["已恢复语音提示"] = "Voice prompts enabled"
+L["语音提示：已静音（点击恢复）"] = "Voice prompts: muted (click to enable)"
+L["语音提示：开启（点击静音）"] = "Voice prompts: on (click to mute)"
+
+L["返回上次路线"] = "Back to previous route"
+
+L["当前总花费"] = "Spent so far"
+L["按实际制作次数计：%d 次（计划 %d 次）"] = "Based on actual crafts: %d (planned %d)"
+L["按方案单价估算"] = "Estimated from plan unit prices"
+L["预计总回血"] = "Expected total return"
+L["按当前方案的产物售价估算，未扣拍卖行手续费以外的损耗"] = "Estimated from the current plan's product prices"
+L["按快照售价估算"] = "Estimated from snapshot prices"
+L["净成本 %s"] = "Net cost %s"
+L["成本 %s · %s"] = "Cost %s · %s"
+L["回血 %s · %s"] = "Return %s · %s"
+L["右键删除这条记录"] = "Right-click to delete this record"
+L["此记录仍被执行或续算引用，暂不能删除"] = "This record is still used by an execution or continuation and cannot be deleted."
+L["单价取自执行方案的采购成本，自制材料不重复计费"] = "Estimated from execution-plan purchase costs; crafted materials are not charged twice."
+L["部分已制作步骤成本未知"] = "Some completed crafts have unknown costs."
+
+L["下一步预览"] = "Next step preview"
+
+L["产物按大量上架折价"] = "Discount output for bulk posting"
+L["路线比较时配方产物折算的收益：按拍卖行全价（默认）或七折模拟大量上架。"] = "Output value used when comparing routes: full auction-house price (default) or 70% to simulate bulk posting."
+L["七折仅影响拍卖产物估值；手续费照常计算，NPC卖价不打折。"] = "The 30% discount applies only to auction sale estimates. Auction fees still apply; vendor sale prices are unchanged."
+L["回血模式下，盈利优先每配方最多20次；之后仍可为升级或材料继续制作。"] = "With recovery enabled, prioritize profit for up to 20 crafts per recipe. Required leveling and material crafts can continue."
+L["开启：「最省钱」计入预计回血，盈利优先每配方最多20次；其他方案保留原目标。"] = "Cheapest includes estimated recovery, with profit prioritized for up to 20 crafts per recipe. Other strategies keep their objectives."
+
+L["稳定升级"] = "Stable leveling"
+L["优先橙黄配方减少绿色冲点，再比较采购成本；必要材料照常制作"] = "Prefer orange/yellow leveling recipes, then compare purchase costs; required materials are still crafted."
+L["稳定升级优先减少绿色冲点；数量仍按平均升点率估算，未增加备用材料。"] = "Stable leveling favors fewer green attempts. Quantities still use expected skill gains, without reserve materials."
+L["当前路线仍含 %d 次绿色冲点；可检查其他配方和材料来源后重算。"] = "This route still includes %d green leveling attempts. Check alternative recipes and supplies before recalculating."
+L["拍卖产物按七折估值，NPC卖价不打折。"] = "Auction outputs are valued at 70%; vendor sale prices are unchanged."
+L["盈利优先每配方最多20次；多余产物仍计入预计回血。"] = "Profit is prioritized for up to 20 crafts per recipe; all remaining outputs still count toward estimated recovery."

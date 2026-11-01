@@ -46,14 +46,15 @@ class CachedVendorRestrictionTests(unittest.TestCase):
 
     def test_vendor_price_cache_cannot_revive_an_explicitly_blocked_supplier(self):
         self.lua.execute('''
-          Auctionator={API={v1={GetVendorPriceByItemID=function()return 1 end}}}
-          local bad=observed();bad.purchasable=false;save(bad)
+          Auctionator={API={v1={GetVendorPriceByItemID=function()error('live vendor cache used')end}}}
+          save(observed())
+          local bad=ns.ProfVendorOffers[3371][1];bad.purchasable=false
           local ctx={reputationKey='72:4',allowVendorCache=true}
           assert(#ns.VendorPriceDB.GetSuppliers(3371,ctx)==0)
           for _,o in ipairs(ns.VendorPriceDB.GetOffers(3371,ctx))do
             assert(o.priceOnly or o.npcID~=1313,'cache revived an unpurchasable NPC')
           end
-          bad=observed();bad.requirements={questID=123};save(bad)
+          bad.purchasable=true;bad.requirements={questID=123}
           ctx.quests={[123]=false}
           assert(#ns.VendorPriceDB.GetSuppliers(3371,ctx)==0)
           for _,o in ipairs(ns.VendorPriceDB.GetOffers(3371,ctx))do
@@ -63,9 +64,11 @@ class CachedVendorRestrictionTests(unittest.TestCase):
 
     def test_unavailable_formula_remains_visible_but_not_buyable(self):
         self.lua.execute('''
-          local bad=observed();bad.available=false;bad.formulaPrice=18;save(bad)
+          local bad=reference(200);bad.available=false
+          ns.ProfSupply.FormulaList=function()return {bad}end
+          local old=observed();old.formulaPrice=18;save(old)
           local offers=ns.VendorPriceDB.GetFormulaOffers(3371,{reputationKey='72:4'})
-          assert(#offers==1 and offers[1].source=='merchant')
+          assert(#offers==1 and offers[1].source=='supply-verified' and offers[1].price==200)
           assert(offers[1].unlimited and offers[1].npcID==1313)
           assert(offers[1].available==false and offers[1].priceUsable==false)
         ''')

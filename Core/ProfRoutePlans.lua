@@ -6,9 +6,11 @@ local RA, E, S = ns.ProfRouteAuto, ns.ProfEconomy, ns.ProfRouteSolver
 if not (RA and E and S) then return end
 local quickCompute, clearPrices, baseOptions = RA.Compute, RA.Invalidate, RA.OptionsFor
 local jobs, results, active, listeners, progressListeners = {}, {}, {}, {}, {}
+-- Master's one previous candidate per profession, kept only for this session.
+local planPrevMem = {}
 local serial, revision = 0, 0
 local legacyRun
-local MODEL, CACHE_LIMIT = 1, 4
+local MODEL = 1
 -- The ordinary facade also publishes progress and source-gap diagnostics after
 -- each search slice. Leave room for that work inside the idle-job frame budget.
 -- DF_ROUTE_ADAPTIVE_SLICE_V15
@@ -84,6 +86,7 @@ function RA.OptionsFor(slug, current)
     opts.fromCurrent = setting("autoFromCurrent", true,slug)
     opts.cpuLimitMs = 8000
     opts.autoCraftTools = setting("autoCraftTools", true,slug)
+    opts.residualMass = setting("autoResidualMass", false,slug)
     opts.recoveryEnabled = setting("recoveryEnabled", false,slug)
     opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug)
     opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false,slug)
@@ -93,7 +96,7 @@ function RA.OptionsFor(slug, current)
     if slug=="first-aid" or slug=="poisons" then opts.scheme="fixed";opts.autoCraftTools=false end
     opts.exclusions = copy(E.GetPolicies and E.GetPolicies(slug) or {})
     if E.GetRoutePartner then opts.secondaryProfession = E.GetRoutePartner(slug) end
-    -- Only explicit continuation may introduce verified route-made stock.
+    -- Only explicit continuation imports the current bag inventory.
     opts.executionInventory = nil
     return opts
 end
@@ -107,6 +110,7 @@ local function options(slug, supplied)
     opts.considerAuctionSupply=E.ConsiderAuctionSupply(opts)
     opts.start = math.max(1, math.min(300, math.floor(tonumber(opts.start) or 1)))
     opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or 300)))
+    if opts.residualMass == nil then opts.residualMass = setting("autoResidualMass", false,slug) end
     if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false,slug) end
     if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug) end
     if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true,slug) end
@@ -122,7 +126,7 @@ local function options(slug, supplied)
     if opts.scheme == "fishing" then opts.allowSecondaryLeveling=false; opts.secondaryProfession=nil end
     -- Every purchasing strategy uses the same cumulative stock budget.
     -- Pure fishing retains its separate, self-caught-material planner.
-    if opts.scheme~="cheapest" and opts.scheme~="fishing" then
+    if opts.scheme~="cheapest" and opts.scheme~="fishing" and opts.scheme~="stable" then
         opts.specializationRecipeScore=function(recipe,state,snapshot,incremental)
             local gain=E.Gain(recipe,(state.skill or {})[recipe.profession] or 1)
             if gain<=0 then return math.huge end
@@ -146,7 +150,7 @@ local function signature(slug, opts)
     local sig=table.concat({"profession:"..tostring(slug), opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
         tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas), tostring(opts.considerAuctionSupply), tostring(opts.allowSecondaryLeveling),
         tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
-        "formula-channels:2", tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
+        "formula-channels:2", "profit-priority:20", tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
         E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
     if opts.snapshot then
@@ -213,21 +217,53 @@ local function replicatePrerequisite(slug,opts)
     local ready,reason=bridge.ReplicateScanReady()
     if ready==false then return gate(slug,opts,reason or "replicateScanRequired") end
 end
-local function remember(job, result)
-    if job.opts.snapshot or result.status == "searching" then return end
-    local db = saved(); if not db then return end
-    db.routes[job.signature] = {slug=job.slug, result=copy(result), savedAt=now(), model=MODEL}
-    db.active[job.slug] = job.signature
-    local entries={}
-    for key, row in pairs(db.routes) do
-        if type(row)=="table" and row.slug == job.slug then entries[#entries+1]={key=key, stamp=row.savedAt or 0} end
-    end
-    table.sort(entries, function(a,b) return a.stamp>b.stamp end)
-    local kept=1
-    for _,entry in ipairs(entries) do
-        if entry.key ~= job.signature then
-            kept=kept+1; if kept>CACHE_LIMIT then db.routes[entry.key]=nil end
+-- Based on master's SavePlanSkel: persist ordered four-tuples, never prices,
+-- recipe tables or the expanded shopping/display result. Native execution also
+-- needs profession/quest/conversion identity and segment allocation obligations.
+local skeletonStepFields={"profession","kind","reason","checkpoint","segmentID",
+    "tool","toolItem","toolSpell","toolBop","fromProgress","toProgress",
+    "goalID","questID","abilityID","sourceItem","targetItem"}
+local skeletonOptionFields={"fromCurrent","onlyAH","allowSecondaryLeveling","secondaryProfession",
+    "autoCraftTools","allowLimitedFormulas","allowBindOnPickupFormulas","allowCurrencyFormulas",
+    "considerAuctionSupply","residualMass","recoveryEnabled","recoveryFeePercent","engineeringSpecialization"}
+local function planSkeleton(result,opts,status)
+    local rows=result.executionSteps or result.steps
+    if type(rows)~="table" or #rows==0 then return end
+    local steps={}
+    for _,st in ipairs(rows) do
+        local e={st[1],st[2],st[3],st[4]}
+        for _,key in ipairs(skeletonStepFields) do e[key]=st[key] end
+        e.allocations={}
+        local edges={}
+        for _,allocation in ipairs(st.allocations or {}) do
+            local key=allocation.consumerID..":"..allocation.itemID
+            local edge=edges[key]
+            if not edge then
+                edge={consumerID=allocation.consumerID,itemID=allocation.itemID,count=0}
+                edges[key]=edge;e.allocations[#e.allocations+1]=edge
+            end
+            edge.count=edge.count+allocation.count
         end
+        steps[#steps+1]=e
+    end
+    local settings={}
+    for _,key in ipairs(skeletonOptionFields) do settings[key]=opts[key] end
+    settings.exclusions=copy(opts.exclusions or {})
+    settings.engineeringSpecialization=result.specializationPolicy and result.specializationPolicy.choice or settings.engineeringSpecialization
+    return {v=1,slug=result.slug,pv=result.planVersion,sig=result.cacheSignature,
+        planID=result.planID,start=result.start,target=result.target,scheme=result.scheme,
+        stamp=now(),status=status or result.status,steps=steps,options=settings,
+        seedInventory=copy(result.seedInventory or {})}
+end
+local function remember(job,result,status)
+    if job.opts.snapshot or job.opts.routeSkeleton or result.status=="searching" and not status then return end
+    local skeleton=planSkeleton(result,job.opts,status)
+    if not skeleton then return end
+    local db=saved();if not db then return end
+    db.routes[job.signature]={slug=job.slug,skeleton=skeleton,model=MODEL}
+    db.active[job.slug]=job.signature
+    for key,row in pairs(db.routes) do
+        if key~=job.signature and type(row)=="table" and row.slug==job.slug then db.routes[key]=nil end
     end
 end
 local searchFields={"status","expanded","improvements","initialTotal","bestTotal","savings","budgetLimited",
@@ -238,7 +274,7 @@ local searchFields={"status","expanded","improvements","initialTotal","bestTotal
 local function updateExecution(job, result)
     local xp=ns.ProfExecution
     if job.opts.snapshot or not xp then return end
-    if job.finished and xp.PlanRecalculated then xp.PlanRecalculated(job.slug,result) end
+    if job.finished and not job.opts.routeSkeleton and xp.PlanRecalculated then xp.PlanRecalculated(job.slug,result) end
     local frozen=xp.GetPlan and xp.GetPlan(job.slug)
     if not frozen then return end
     if frozen.planID==result.planID or frozen.originPlanID==result.planID then
@@ -256,13 +292,23 @@ local function publish(job, result)
     revision=revision+1
     result.slug=job.slug;result.revision=revision;result.planID=job.planID;result.routeModel=MODEL
     result.learningPolicyFingerprint=learningPolicy()
-    result.executionOptions=copy(job.opts);result.executionOptions.snapshot=nil
+    local executionOptions={}
+    for key,value in pairs(job.opts) do
+        if key~="snapshot" and key~="routeSkeleton" then executionOptions[key]=value end
+    end
+    result.executionOptions=copy(executionOptions)
     result.stale=job.stale or nil;result.staleReason=job.staleReason
     if RA.StampSpecializations then RA.StampSpecializations(result,job.slug,job.opts,job.snap) end
     result.quoteSignature=RA.QuoteSig and RA.QuoteSig(job.slug) or ""
     result.cacheSignature=job.signature
     job.published=result;results[job.key]=result;active[job.scope]=job.key
     job.publishedProgressVersion=job.progressVersion
+    if job.opts.routeSkeleton then
+        result.cached=true;result.fromSkeleton=true
+        result.optimal=false;result.inputModelOptimal=false;result.searchComplete=false
+        result.costSearchPerformed=false
+        refreshFreshness(result,job.slug,job.requestOptions or job.opts)
+    end
     remember(job,result);updateExecution(job,result)
     for _,fn in ipairs(listeners) do pcall(fn,job.slug,result) end
     if started and S.ChargeExternalWork and job.co then S.ChargeExternalWork(job,math.max(0,debugprofilestop()-started)) end
@@ -327,21 +373,23 @@ end
 local function start(slug, opts, sigOpts)
     local key, scope=identity(slug,sigOpts or opts)
     serial=serial+1
+    local skel=opts.routeSkeleton
     local db=not opts.snapshot and saved()
-    if db then db.nextID=(db.nextID or 0)+1 end
-    local id=character()..":route:"..tostring(db and db.nextID or serial)
+    if db and not skel then db.nextID=(db.nextID or 0)+1 end
+    local id=skel and skel.planID or character()..":route:"..tostring(db and db.nextID or serial)
     if opts.scheme=="fishing" then
         local result=quickCompute(slug,opts)
         if not result then return nil end
         result.status=result.status or "complete"
         local xp=ns.ProfExecution
         if xp and xp.NormalizePlan then result=xp.NormalizePlan(slug,result) or result end
-        local job={key=key,scope=scope,slug=slug,signature=signature(slug,sigOpts or opts),opts=opts,planID=id,finished=true}
+        local job={key=key,scope=scope,slug=slug,signature=skel and skel.sig or signature(slug,sigOpts or opts),opts=opts,requestOptions=sigOpts,planID=id,finished=true}
         publish(job,result);return result
     end
     local job=S.NewJob(slug,opts)
     job.key,job.scope,job.slug,job.planID=key,scope,slug,id
-    job.signature=signature(slug,sigOpts or opts)
+    job.signature=skel and skel.sig or signature(slug,sigOpts or opts)
+    job.requestOptions=sigOpts
     jobs[key]=job;active[scope]=key
     local result=S.Result(job,nil,"searching")
     result.slug=slug;result.planID=id;result.cacheSignature=job.signature
@@ -388,39 +436,35 @@ function RA.Get(slug, supplied)
     local db,cacheError
     if not opts.snapshot then db,cacheError=saved() end
     if cacheError then return gate(slug,opts,cacheError) end
-    -- Legacy cache keys were not profession-scoped. Never load an old entry
-    -- unless both the saved record and its embedded result match this slug.
     local function validRecord(rec)
         return type(rec)=="table" and rec.slug==slug
-            and (type(rec.result)~="table" or rec.result.slug==nil or rec.result.slug==slug)
     end
     local record=db and db.routes[signature(slug,opts)]
     if not validRecord(record) then record=nil end
     if not record and db and db.active[slug] then
-        local legacy=db.routes[db.active[slug]]
-        if validRecord(legacy) then record=legacy end
+        local selectedRecord=db.routes[db.active[slug]]
+        if validRecord(selectedRecord) then record=selectedRecord end
     end
-    -- Older captures accidentally returned an empty catalogue for an unlearned
-    -- solo profession. Retry that empty candidate once; execution facts above
-    -- are always preserved and genuine failed new jobs are not auto-retried.
-    if record and type(record.result)=="table" and opts.targetUnlearned
-        and record.result.targetUnlearned and record.result.feasible==false
-        and type(record.result.steps)=="table" and #record.result.steps==0
-        and #(record.result.learningGaps or {})==0
-        and record.result.learningCoverageComplete~=false then record=nil end
-    if record~=nil and (type(record)~="table" or record.model~=MODEL or type(record.result)~="table"
-        or type(record.result.steps)~="table" or record.result.executionSteps~=nil and type(record.result.executionSteps)~="table") then
-        return gate(slug,opts,"historyUnreadable")
-    end
-    if record and record.model==MODEL and type(record.result)=="table" then
-        result=copy(record.result);result.cached=true
-        if result.learningPolicyFingerprint~=learningPolicy() then return learningStale(result) end
-        if result.status=="searching" then result.status="interrupted";result.inFlight=false end
-        refreshFreshness(result,slug,opts)
-        results[key]=result;active[scope]=key
-        return result
+    if record then
+        local skel=record.skeleton
+        if record.model~=MODEL or type(skel)~="table" or skel.v~=1 or skel.pv~=2 or skel.slug~=slug
+            or type(skel.steps)~="table" or #skel.steps==0 or type(skel.options)~="table" then
+            return gate(slug,opts,"historyUnreadable")
+        end
+        return RA.RebuildFromSkel(slug,skel,opts)
     end
     return start(slug,opts)
+end
+-- Master's restore flow: resolve today's recipe data and quotes for the saved
+-- choices. The solver's linear reconstruction shares the native procurement and
+-- eligibility checks; it never enters route search or chooses replacement crafts.
+function RA.RebuildFromSkel(slug,skel,supplied)
+    local request=options(slug,supplied)
+    local restored=copy(skel.options)
+    restored.start,restored.target,restored.scheme=skel.start,skel.target,skel.scheme
+    local opts=options(slug,restored)
+    opts.routeSkeleton=skel;opts.executionInventory=copy(skel.seedInventory)
+    return start(slug,opts,request)
 end
 function RA.Compute(slug, supplied)
     if slug=="first-aid" or slug=="poisons" then return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug)) end
@@ -443,6 +487,7 @@ function RA.Recalculate(slug, supplied)
     local blocked=replicatePrerequisite(slug,opts)
     if blocked then return blocked end
     if not opts.snapshot then local _,cacheError=saved();if cacheError then return gate(slug,opts,cacheError) end end
+    if not opts.snapshot then RA.SavePlanPrev(slug) end
     local xp=not opts.snapshot and ns.ProfExecution
     if xp and xp.PrepareRecalculate then
         local inventory,source,errorCode=xp.PrepareRecalculate(slug)
@@ -460,6 +505,40 @@ function RA.Recalculate(slug, supplied)
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     return start(slug,opts,sigOpts)
 end
+function RA.SavePlanPrev(slug)
+    local scope=character().."|"..slug
+    local xp=ns.ProfExecution
+    if xp and not xp.CanRevertCandidate(slug) then planPrevMem[scope]=nil;return end
+    local key=active[scope];local result=key and results[key]
+    if type(result)~="table" or type(result.steps)~="table" or #result.steps==0 then return end
+    -- Native copies retain task/conversion identity and material allocations.
+    local previous=copy(result)
+    if previous.status=="searching" then
+        previous.status="stopped";previous.searchTermination="user_stopped"
+    end
+    previous.inFlight=false
+    planPrevMem[scope]={key=key,result=previous}
+end
+function RA.HasPlanPrev(slug)
+    if not slug then return false end
+    local xp=ns.ProfExecution
+    return (not xp or xp.CanRevertCandidate(slug)) and planPrevMem[character().."|"..slug]~=nil
+end
+function RA.RevertPlan(slug,supplied)
+    if not RA.HasPlanPrev(slug) then return false end
+    local db=saved();if not db then return false end
+    local scope=character().."|"..slug
+    local previous=planPrevMem[scope];local result=previous.result
+    for key,job in pairs(jobs) do if job.scope==scope then release(job);jobs[key]=nil end end
+    for key in pairs(results) do if key:sub(1,#scope+1)==scope.."|" then results[key]=nil end end
+    planPrevMem[scope]=nil
+    revision=revision+1;result.revision=revision
+    results[previous.key]=result;active[scope]=previous.key
+    refreshFreshness(result,slug,options(slug,supplied))
+    remember({slug=slug,signature=result.cacheSignature,opts=result.executionOptions or {}},result)
+    for _,fn in ipairs(listeners) do pcall(fn,slug,result) end
+    return result
+end
 function RA.Invalidate(reason)
     clearPrices()
     -- Old callers also use this to clear lookup caches (opening a page,
@@ -468,10 +547,7 @@ function RA.Invalidate(reason)
     reason=type(reason)=="string" and reason or "inputs"
     for _,job in pairs(jobs) do job.stale=true;job.staleReason=reason end
     for _,result in pairs(results) do result.stale=true;result.staleReason=reason end
-    local db=saved()
-    for _,record in pairs(db and db.routes or {}) do
-        if type(record)=="table" and type(record.result)=="table" then record.result.stale=true;record.result.staleReason=reason end
-    end
+    for _,entry in pairs(planPrevMem) do entry.result.stale=true;entry.result.staleReason=reason end
     local xp=ns.ProfExecution
     if xp and xp.GetHistory then
         -- Only current runs need the live stale marker. Archived facts stay frozen.
@@ -592,8 +668,7 @@ local function initialize()
             for _,job in pairs(jobs) do
                 local result=job.published
                 if result and #(result.steps or {})>0 then
-                    local stored=copy(result);stored.status="interrupted";stored.inFlight=false
-                    remember(job,stored)
+                    remember(job,result,"interrupted")
                 end
             end
         end)

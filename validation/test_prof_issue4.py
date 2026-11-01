@@ -430,8 +430,8 @@ class Issue4Tests(unittest.TestCase):
     def test_3_formula_offers_reject_placeholder_and_preserve_real_stock(self):
         self.lua.execute(r'''
           ns.ProfSupply={FormulaList=function()return {
-            {npcID=3,price=20,quantity=1,unlimited=false,limited=1,maxStock=1,source='formula-offers',verifiedAt=1},
-            {npcID=4,price=21,quantity=1,unlimited=false,limited=1,maxStock=1,source='formula-offers',verifiedAt=1}}
+            {npcID=3,price=20,quantity=1,unlimited=false,limited=1,maxStock=1,source='formula-offers',verifiedAt=1,reference=true,priceVerified=true},
+            {npcID=4,price=21,quantity=1,unlimited=false,limited=1,maxStock=1,source='formula-offers',verifiedAt=1,reference=true,priceVerified=true}}
           end}
           local source={vendors={{name='商人',price=10,unlimited=true},
             {id=5,name='Currency vendor',price=0,cur=99,unlimited=true},
@@ -457,19 +457,22 @@ class Issue4Tests(unittest.TestCase):
           assert(ns.ProfRouteAuto.Compute('alchemy',{snapshot=s,start=1,target=3}).targetReached)
         ''')
 
-    def test_4_page_reopen_and_reload_reuse_saved_plan_without_capture(self):
+    def test_4_page_reopen_reuses_memory_and_reload_rebuilds_skeleton(self):
         self.lua.execute(r'''
           PD.RowsLeveling({})
           local opts=ns.ProfRouteAuto.OptionsFor('alchemy',1);opts.target=3
           savedPlan=finish('alchemy',opts)
+          reloadCapture=ns.ProfEconomy.Capture
           ns.ProfEconomy.Capture=function()error('opening a cached route must not capture')end
           PD.RowsLeveling({});PD.RowsLeveling({})
           assert(PD.autoSnapshot.planID==savedPlan.planID)
         ''')
         self.load((ROOT / 'Core/ProfRoutePlans.lua').read_text(encoding='utf-8-sig'))
         self.lua.execute(r'''
-          PD.RowsLeveling({})
-          assert(PD.autoSnapshot.cached and PD.autoSnapshot.planID==savedPlan.planID)
+          ns.ProfEconomy.Capture=reloadCapture
+          local opts=ns.ProfRouteAuto.OptionsFor('alchemy',1);opts.target=3
+          finish('alchemy',opts);PD.RowsLeveling({})
+          assert(PD.autoSnapshot.cached and PD.autoSnapshot.fromSkeleton and PD.autoSnapshot.planID==savedPlan.planID)
         ''')
 
     def test_3_fixed_and_fast_routes_do_not_use_vendor_price_seeds_for_formulas(self):
@@ -514,7 +517,7 @@ class Issue4Tests(unittest.TestCase):
           assert(result.targetReached and result.total==100 and result.mats[1].source=='ah')
         ''')
 
-    def test_5_reference_city_supplier_is_considered_beside_observed_remote_offer(self):
+    def test_5_only_collected_suppliers_are_considered_despite_old_remote_quotes(self):
         self.lua.execute(r'''
           ns.ProfVendors={[1]={0,1446,20,20},[2]={0,1453,30,30}}
           DungeonsForeverDB.profVendorOffers={[11]={{npcID=1,price=1,quantity=1,unlimited=true,
@@ -522,9 +525,9 @@ class Issue4Tests(unittest.TestCase):
           ns.ProfVendorOffers={[11]={{npcID=2,price=7,quantity=1,unlimited=true,
             source='supply-verified',verifiedAt=1,reference=true,priceVerified=true}}}
           local offers=ns.VendorPriceDB.GetOffers(11)
-          assert(#offers==2 and offers[1].npcID==1 and offers[2].npcID==2)
+          assert(#offers==1 and offers[1].npcID==2 and offers[1].price==7)
           offers=ns.VendorPriceDB.GetOffers(11,{requireObservedPrice=true})
-          assert(#offers==1 and offers[1].npcID==1)
+          assert(#offers==1 and offers[1].npcID==2 and offers[1].price==7)
         ''')
 
     def test_5_whole_pack_cost_competes_before_location_or_unit_price(self):

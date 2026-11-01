@@ -240,6 +240,7 @@ PD.SETTING_DEF.autoAllowBindOnPickupFormulas = false
 PD.SETTING_DEF.autoAllowCurrencyFormulas = false
 PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
+PD.SETTING_DEF.autoResidualMass = false
 PD.SETTING_DEF.recoveryEnabled = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
@@ -264,7 +265,7 @@ end
 PD.PROF_SETTING_KEYS={autoRoute=true,autoScheme=true,autoOnlyAH=true,autoConsiderAuctionSupply=true,
     autoBuyLimitedFormulas=true,autoAllowBindOnPickupFormulas=true,autoAllowCurrencyFormulas=true,
     autoSecondaryLeveling=true,autoFromCurrent=true,autoCraftTools=true,
-    recoveryEnabled=true,recoveryFeePercent=true}
+    recoveryEnabled=true,recoveryFeePercent=true,autoResidualMass=true}
 function PD.FixedOnly(slug)
     slug=slug or PD.cur
     return slug=="first-aid" or slug=="poisons"
@@ -4558,6 +4559,17 @@ function PD.Build(page)
         ns.PlaySound(1)
     end)
     PD.setGear = gear
+    local rev = NewButton(page, L["返回上次路线"], 96, PD.SUB_H, 12)
+    rev:GetFontString():SetTextColor(0.95, 0.36, 0.36)
+    rev:SetPoint("TOPRIGHT", gear, "TOPLEFT", -6, 0)
+    rev:Hide()
+    rev:SetScript("OnClick", function()
+        if PD.RevertPlan() then
+            ns.PlaySound(1)
+            PD.RequestRender()
+        end
+    end)
+    PD.revertBt = rev
     if ns.hui and ns.hui.SetButtonFrameless then ns.hui.SetButtonFrameless(gear, true) end
     coroutine.yield()
 
@@ -5297,6 +5309,13 @@ function PD.PickTabs()
         end
         if on then shown = shown + 1 end
     end
+    if PD.revertBt then
+        local ron = (PD.tab == "leveling") and PD.HasPlanPrev(PD.cur)
+        if PD.revertBt.__shown ~= ron then
+            PD.revertBt.__shown = ron
+            PD.revertBt:SetShown(ron)
+        end
+    end
     if PD.setGear then
         local gon = (PD.tab == "leveling")
         if PD.setGear.__shown ~= gon then
@@ -5686,7 +5705,7 @@ function PD.PaintToolProgress(text, frac)
         local holder = PD.__progHolder
         holder:ClearAllPoints()
         if PD.setGear then
-            holder:SetPoint("RIGHT", PD.setGear, "LEFT", -8, 0)
+            holder:SetPoint("RIGHT", PD.revertBt and PD.revertBt:IsShown() and PD.revertBt or PD.setGear, "LEFT", -8, 0)
         else
             holder:SetPoint("RIGHT", PD.page, "RIGHT", -(PD.LIST_PAD + 40), -(PD.SUB_Y + PD.SUB_H / 2))
         end
@@ -5743,7 +5762,7 @@ function PD.PaintToolStale(text)
        and not (PD.__progHolder and PD.__progHolder:IsShown()) then
         local holder = PD.__staleHolder
         holder:ClearAllPoints()
-        holder:SetPoint("RIGHT", PD.setGear, "LEFT", -8, 0)
+        holder:SetPoint("RIGHT", PD.revertBt and PD.revertBt:IsShown() and PD.revertBt or PD.setGear, "LEFT", -8, 0)
         rf:SetWidth(300)
         rf:SetText(text)
         rf:Show()
@@ -5995,6 +6014,7 @@ function PD.PaintLvTiles()
     end
     tiles.scheme.val:SetTextColor(Unpack(C_WHITE))
     local schemeDesc = {
+        stable = L["优先橙黄配方减少绿色冲点，再比较采购成本；必要材料照常制作"],
         cheapest = L["比较采购、自制与图纸支出；回血模式开启时比较净成本"],
         matcost = L["只按材料价选配方"],
         crafts = L["升点率高优先，同分取便宜"],
@@ -6137,6 +6157,37 @@ function PD.PaintLvTiles()
     if s.budgetLimited then details[#details + 1] = { L["已完成本轮计算，当前结果尚未证明最优。"], 0.95, 0.75, 0.4 } end
     if s.quotesRefreshed then details[#details + 1] = { L["数量或费率已更新，本轮数字已按最新价格重算。"], 0.7, 0.7, 0.7 } end
     for _, ln in ipairs(details) do costLines[#costLines + 1] = ln end
+    if PD.autoPage == "log" then
+        local cost, madeCasts, wantCasts = PD.CraftLogCost(PD.cur)
+        tiles.cost.label:SetText(L["当前总花费"])
+        tiles.cost.val:SetText(cost ~= nil and PD.RecoveryMoney(cost) or L["未知"])
+        tiles.cost.val:SetTextColor(Unpack(madeCasts > 0 and C_GOLD or C_GREY))
+        costLines = {
+            { format(L["按实际制作次数计：%d 次（计划 %d 次）"], madeCasts, wantCasts) },
+            { L["单价取自执行方案的采购成本，自制材料不重复计费"], 0.7, 0.7, 0.7 },
+        }
+        if cost == nil then costLines[#costLines + 1] = { L["部分已制作步骤成本未知"], 0.95, 0.75, 0.4 } end
+        PD.SetBadge(L["按方案单价估算"], 0.7, 0.7, 0.7)
+    elseif PD.autoPage == "recovery" then
+        local rec = tonumber(s.recoveryTotal) or 0
+        tiles.cost.label:SetText(L["预计总回血"])
+        tiles.cost.val:SetText(PD.RecoveryMoney(rec))
+        tiles.cost.val:SetTextColor(Unpack(rec > 0 and { 0.49, 0.82, 0.63 } or C_GREY))
+        costLines = {
+            { L["按当前方案的产物售价估算，未扣拍卖行手续费以外的损耗"], 0.7, 0.7, 0.7 },
+        }
+        if (s.recoveryMissing or 0) > 0 then
+            costLines[#costLines + 1] = { format(L["其中 %d 种产物售价未知，未计回血"], s.recoveryMissing),
+                                          0.95, 0.75, 0.4 }
+        end
+        PD.SetBadge(L["按快照售价估算"], 0.7, 0.7, 0.7)
+    end
+    if PD.autoPage ~= "log" and s.residualMass then
+        costLines[#costLines + 1] = { L["拍卖产物按七折估值，NPC卖价不打折。"], 0.7, 0.7, 0.7 }
+    end
+    if PD.autoPage ~= "log" and s.recoveryOptimized and s.profitPriorityLimit then
+        costLines[#costLines + 1] = { L["盈利优先每配方最多20次；多余产物仍计入预计回血。"], 0.7, 0.7, 0.7 }
+    end
     TipOn(tiles.cost, costLines)
     if fixedOnly then tiles.scheme.__use = false end
     local n = 0
@@ -6144,9 +6195,19 @@ function PD.PaintLvTiles()
         if tiles[k].__use then n = n + 1 end
     end
     PD.PlaceCards(n > 0 and n or 1)
-    if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
+    if PD.autoPage ~= "log" and type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local recNet = s.netTotal or ((s.total or 0) - s.recoveryTotal)
-        PD.SetSub(format(L["回血 %s · 净 %s"], PD.MoneyBrief(s.recoveryTotal), PD.MoneyBrief(recNet)))
+        local netTxt
+        if recNet < 0 then
+            netTxt = format(L["净赚 %s"], PD.MoneyBrief(-recNet))
+        else
+            netTxt = format(L["净成本 %s"], PD.MoneyBrief(recNet))
+        end
+        if PD.autoPage == "recovery" then
+            PD.SetSub(format(L["成本 %s · %s"], PD.MoneyBrief(s.total or 0), netTxt))
+        else
+            PD.SetSub(format(L["回血 %s · %s"], PD.MoneyBrief(s.recoveryTotal), netTxt))
+        end
     else
         PD.SetSub(nil)
     end
@@ -11066,6 +11127,8 @@ function PD.CopyRecoverySummary(src)
     s.recoveryMissing = src.recoveryMissing
     s.recoveryOptimized = src.recoveryOptimized
     s.recoveryAssumesAllSold = src.recoveryAssumesAllSold
+    s.residualMass = src.residualMass
+    s.profitPriorityLimit = src.profitPriorityLimit
     s.recoveryFeePercent = src.recoverySnapshot and src.recoverySnapshot.feePercent or nil
     s.saleOutputs = src.saleOutputs
     s.purchaseTotal = src.purchaseTotal or src.total
@@ -12033,6 +12096,26 @@ function PD.PlanKeyOf(slug, opts)
     return tostring(slug) .. "@" .. RA.PlanSig(slug, opts or {})
 end
 
+function PD.HasPlanPrev(slug)
+    return RA and RA.HasPlanPrev and RA.HasPlanPrev(slug or PD.cur) or false
+end
+
+function PD.RevertPlan()
+    local slug = PD.cur
+    local learned = PD.ProfLearned and PD.ProfLearned(true) or {}
+    local opts = PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur)
+    local e = RA and RA.RevertPlan and RA.RevertPlan(slug, opts)
+    if not e then return false end
+    PD.ProcureClear()
+    PD.solverPaintRes, PD.solverFrac = nil, nil
+    PD.autoSnapshot, PD.autoSnapshotSlug = e, slug
+    PD.autoExact = true
+    PD.autoKey = PD.PlanKeyOf(slug, opts)
+    PD.forceExact = nil
+    PD.exactFailed = {}
+    return true
+end
+
 function PD.ClearPlanCache()
     PD.StopSolverRoute()
     PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
@@ -12282,6 +12365,46 @@ local function TrackRunOf(slug)
     return nil
 end
 
+function PD.CurrentSegRow()
+    local rows = PD.curRows or {}
+    -- The execution ledger wins over skill ranges: a producer may still owe
+    -- materials after the character has passed its displayed skill interval.
+    for i, row in ipairs(rows) do
+        if row.lvstep and row.trackCur then return i end
+    end
+    local learned = PD.ProfLearned and PD.ProfLearned()
+    local cur = learned and learned[PD.cur] and learned[PD.cur].cur
+    if not cur then return nil end
+    for i, row in ipairs(rows) do
+        if row.lvstep and row.sbLo and row.sbHi and cur >= row.sbLo and cur < row.sbHi then return i end
+    end
+end
+
+function PD.SegRowTop(idx)
+    local row = PD.curRows and idx and PD.curRows[idx]
+    if row then return row.__gtop, row.__gh or PD.RowHeight(row) end
+end
+
+function PD.SegRowVisible(idx)
+    local top, h = PD.SegRowTop(idx)
+    local sc = PD.scroll
+    if not (top and sc and sc.GetVerticalScroll and sc.GetHeight) then return true end
+    local offset, height = sc:GetVerticalScroll() or 0, sc:GetHeight() or 0
+    return height <= 0 or top >= offset and top + h <= offset + height
+end
+
+function PD.JumpToSeg(idx)
+    local top = PD.SegRowTop(idx or PD.CurrentSegRow())
+    local sc = PD.scroll
+    if not (top and sc and sc.SetVerticalScroll and sc.GetHeight) then return end
+    local height = PD.child and PD.child.GetHeight and PD.child:GetHeight() or 0
+    local maxScroll = math.max(0, height - (sc:GetHeight() or 0))
+    local offset = math.min(maxScroll, math.max(0, top - 4))
+    PD.__scrollV = offset
+    sc:SetVerticalScroll(offset)
+    PD.RequestRender()
+end
+
 local function TrackStepsFor(slug, steps)
     local T = ns.ProfExecution
     if not T then return nil end
@@ -12331,6 +12454,31 @@ local function TrackStepsFor(slug, steps)
     return nil
 end
 
+function PD.CraftLogCost(slug)
+    local T = ns.ProfExecution
+    slug = slug or PD.cur
+    local run = T and (T.GetRun(slug) or T.GetHistory(slug)[1])
+    if not run then return 0, 0, 0 end
+    local steps = run.plan and (run.plan.executionSteps or run.plan.steps)
+    if type(steps) ~= "table" then return nil, 0, 0 end
+    local unknown = false
+    local total, casts, planned = 0, 0, 0
+    for i = 1, #steps do
+        local st = steps[i]
+        local p = (run.progress or {})[st.segmentID]
+        local made = p and (tonumber(p.casts) or 0) or 0
+        local want = tonumber(st[4]) or 0
+        local cost = tonumber(st.cost)
+        if made > 0 and (cost == nil or st.unpriced or want <= 0) then unknown = true end
+        cost = cost or 0
+        if want > 0 and made > 0 and cost > 0 then total = total + cost * made / want end
+        casts = casts + made
+        planned = planned + want
+    end
+    if unknown then return nil, casts, planned end
+    return math.floor(total + 0.5), casts, planned
+end
+
 function PD.RowsCraftLog(rows)
     local T = ns.ProfExecution
     PushHead(rows, L["制作记录"])
@@ -12374,20 +12522,40 @@ function PD.RowsCraftLog(rows)
         PushText(rows, L["还没有可统计的制作。"], 14, C_GREY)
     else
         PushHead(rows, L["按配方汇总"], 1)
-        for _, e in ipairs(list) do
+        local all = PD.craftAll and PD.craftAll[PD.cur]
+        local shown = all and #list or math.min(#list, 9)
+        local cards = {}
+        for i = 1, shown do
+            local e = list[i]
             local item,quantity=nil,0
             for id,n in pairs(e.confirmedOutputs) do item=item or id;quantity=quantity+n end
             local name = PD.StepName({ 0, 0, e.spell })
             if (type(name) ~= "string" or name == "") and item then name = PD.ItemName(item) end
-            rows[#rows + 1] = {
-                kind = "row", h = PD.ROW_H, col = 1,
-                it = item and { item } or nil,
-                text = name or tostring(e.spell or ""),
-                right = format(L["%d 次"], e.casts),
-                right2 = format(L["%d 件"], quantity),
-                noTip = true,
+            name = name or tostring(e.spell or "")
+            cards[#cards + 1] = {
+                name = name, it = item,
+                modeText = format(L["%d 次"], e.casts),
+                color = { 0.54, 0.80, 0.42 },
+                src = format(L["%d 件"], quantity),
+                tips = { { name, 1, 0.82, 0.4 },
+                         { format(L["制作 %d 次 · 产出 %d 件"], e.casts, quantity) } },
             }
         end
+        if shown < #list then
+            local slug = PD.cur
+            cards[#cards + 1] = {
+                name = format(L["还有 %d 个配方"], #list - shown),
+                src = L["点击展开"], color = C_GREY,
+                act = function()
+                    PD.craftAll = PD.craftAll or {}
+                    PD.craftAll[slug] = true
+                    PD.RequestRender()
+                end,
+            }
+        end
+        local count = math.ceil(#cards / 3)
+        rows[#rows + 1] = { kind = "exgrid", span = true, noHover = true,
+                            h = count * 44 + (count - 1) * 6, cards = cards }
     end
     local hist = T.GetHistory(PD.cur)
     local past = {}
@@ -12398,18 +12566,28 @@ function PD.RowsCraftLog(rows)
     if #past > 0 then
         PushGap(rows, 8)
         PushHead(rows, L["历史记录"], 1)
+        local cards = {}
         for _, run in ipairs(past) do
+            local planID, slug = run.planID, PD.cur
+            local removable = T.CanRemove(slug, planID)
             local summary = T.GetSummary(PD.cur,run.planID) or {}
             local tag = summary.finished and L["已完成"]
                         or (run.status == "stale" and L["技能值变动"] or L["已归档"])
-            rows[#rows + 1] = {
-                kind = "row", h = PD.ROW_H, col = 1, noTip = true,
-                text = format(L["%d 步 · 技能 %s→%s"], summary.total or 0, tostring(summary.startSkill or "—"),
+            cards[#cards + 1] = {
+                name = format(L["%d 步 · 技能 %s→%s"], summary.total or 0, tostring(summary.startSkill or "—"),
                               tostring(summary.target or "—")),
-                right = tag,
-                rightColor = C_GREY,
+                modeText = tag, color = C_GREY,
+                src = format(L["%d 次制作"], summary.casts or 0),
+                tips = { { removable and L["右键删除这条记录"]
+                    or L["此记录仍被执行或续算引用，暂不能删除"], 0.72, 0.72, 0.72 } },
+                act = function(_, button)
+                    if button == "RightButton" and T.Remove(slug, planID) then PD.RequestRender() end
+                end,
             }
         end
+        local count = math.ceil(#cards / 3)
+        rows[#rows + 1] = { kind = "exgrid", span = true, noHover = true,
+                            h = count * 44 + (count - 1) * 6, cards = cards }
     end
 end
 
@@ -12630,6 +12808,12 @@ function PD.RowsLeveling(rows)
     PD.CopyPlanSummary(res)
     local shownSum = auto and res or fixedSum
     PD.RowsLearningBlockers(rows,shownSum)
+    if shownSum and shownSum.scheme=="stable" then
+        note(L["稳定升级优先减少绿色冲点；数量仍按平均升点率估算，未增加备用材料。"],0.72,0.72,0.72)
+        if (shownSum.greenLevelCrafts or 0)>0 then
+            note(format(L["当前路线仍含 %d 次绿色冲点；可检查其他配方和材料来源后重算。"],shownSum.greenLevelCrafts),0.95,0.75,0.4)
+        end
+    end
     if shownSum and (shownSum.specBlocked or 0) > 0 and not (shownSum.blockedSteps and #shownSum.blockedSteps > 0) then
         note(format(L["已按本角色专精过滤 %d 个无法学习的配方"], shownSum.specBlocked), 0.72, 0.72, 0.72)
     end
@@ -13997,6 +14181,9 @@ function PD.LevelTool()
         { key = "page_log",   text = L["制作记录"], on = onLog },
         { key = "page_rec",   text = L["回血"],     on = onRec },
     }
+    if not onLog and not onRec and PD.autoPage ~= "shop" then
+        list[#list + 1] = { key = "jump_current", align = "right", text = L["定位当前步骤"] }
+    end
     -- Single engineering specialization selector: top bar only.
     -- Unspecified means no manual target; known specializations are detected.
     if PD.cur == "engineering" then
@@ -14079,7 +14266,9 @@ function PD.LevelTool()
         list[#list + 1] = rec
     end
     return list, function(k)
-        if k == "page_route" then
+        if k == "jump_current" then
+            PD.JumpToSeg()
+        elseif k == "page_route" then
             PD.autoPage = "route"
             PD.exclusionsOpen = false
             PD.FlushPolicies()
@@ -14205,7 +14394,7 @@ PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
     { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling" }, 1 },
     { L["采购与配方"], { "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
-    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoCraftTools" }, 2 },
+    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools" }, 2 },
 }
 
 function PD.RowsSettings(rows)
@@ -14257,8 +14446,12 @@ function PD.RowsSettings(rows)
           d2 = L["开启后计入另一专业所需的材料费用，最高 300；查看未学专业时需先选择搭配主专业。"] },
         { k = "recoveryEnabled", name = L["回血模式"],
           desc = L["把「搓完卖掉能收回多少」计入路线决策，比较采购支出减去剩余产物预计收入。"],
-          d1 = L["开启：「最省钱」按净成本挑选配方；其他路线方案保留各自目标，并显示预计回血。"],
+          d1 = L["开启：「最省钱」计入预计回血，盈利优先每配方最多20次；其他方案保留原目标。"],
           d2 = L["关闭：只看采购支出，同时仍显示预计回血与净成本供参考。"] },
+        { k = "autoResidualMass", name = L["产物按大量上架折价"],
+          desc = L["路线比较时配方产物折算的收益：按拍卖行全价（默认）或七折模拟大量上架。"],
+          d1 = L["七折仅影响拍卖产物估值；手续费照常计算，NPC卖价不打折。"],
+          d2 = L["回血模式下，盈利优先每配方最多20次；之后仍可为升级或材料继续制作。"] },
         { k = "autoCraftTools", name = L["自动备齐专业工具"],
           desc = L["把附魔棒、扳手这类升级路线必需的工具排进路线。"],
           d1 = L["开启：在工具可用等级插入一次制作，产出的工具计入保留物品、不按可出售计算。"],

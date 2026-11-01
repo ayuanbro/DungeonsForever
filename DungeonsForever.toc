@@ -5,7 +5,7 @@
 ## Notes-zhCN: 无限 副本手册：副本列表 / 详情 / 地图 / 掉落 / 任务 / 攻略（无限服另含专业页）
 ## Notes-zhTW: 無限 副本手冊：副本列表 / 詳情 / 地圖 / 掉落 / 任務 / 攻略（無限服另含專業頁）
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
-## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
+## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
 ## Author: 圆圆
 ## Version: 1.9.22
 ## SavedVariables: DungeonsForeverDB
@@ -27,6 +27,7 @@ Core\Data\Data_BossModel.lua
 Core\Data\Data_MapPins.lua
 Core\Data\Data_GravePos.lua
 Core\Data\Data_Route.lua
+Core\Data\Data_RouteAreas.lua
 Core\Data\Data_InstanceMap.lua
 Core\Data\Data_FloorName.lua
 Core\Data\Data_BossSkills.lua
@@ -39,6 +40,7 @@ Core\Data\Data_QuestEndNpc.lua
 Core\Data\Data_Professions.lua
 Core\Data\Data_Crates.lua
 Core\Data\Data_Plunder.lua
+Core\Data\Data_Supporters.lua
 Core\Data\Data_Gear.lua
 Core\Data\Data_GearVendors.lua
 Core\Data\Data_GearRareSpawns.lua
@@ -153,8 +155,10 @@ Core\DungeonUI.lua
 Core\TipLines.lua
 Core\PvPUI.lua
 Core\FactionUI.lua
+Core\MapAreaDraw.lua
 Core\MapUI.lua
 Core\MapOnWorld.lua
+Core\MapOpenMap.lua
 Core\LootFilterUI.lua
 Core\RaidUI.lua
 Core\ProfPolicies.lua

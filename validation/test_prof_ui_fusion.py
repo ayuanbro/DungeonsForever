@@ -170,11 +170,18 @@ class ProfessionUIFusionTests(unittest.TestCase):
           xp.RecordAttempt('alchemy',101,'log');xp.RecordOutput({itemID=10,quantity=1,castGUID='log'})
           xp.End('alchemy','completed')
           local rows={};PD.RowsCraftLog(rows)
-          local found=false
+          local found,history=false,false
           for _,row in ipairs(rows) do
-            if row.right==format(ns.L['%d 次'],1) and row.right2==format(ns.L['%d 件'],1) then found=true end
+            if row.kind=='exgrid' then
+              for _,card in ipairs(row.cards) do
+                if card.it==10 and card.modeText==format(ns.L['%d 次'],1)
+                  and card.src==format(ns.L['%d 件'],1) then found=true end
+                if card.modeText==ns.L['已完成'] and card.src==format(ns.L['%d 次制作'],1) then history=true end
+              end
+            end
           end
           assert(found,'archiving hid the recorded recipe totals')
+          assert(history,'archiving hid the completed execution history')
           assert(run.steps==nil and run.outputs==nil)
         ''')
 

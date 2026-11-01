@@ -80,6 +80,7 @@ if not E.Policy then
 end
 
 local DIAG_TEXT = {
+    inventoryUnknown = L["背包或银行数量未能读取，无法确认还需购买多少。"],
     vendorEstimate = L["NPC购买价格尚未配置。"],
     vendorQuoteChanged = L["NPC购买价格资料已更新，请重新计算路线。"],
     toolPolicyChanged = L["工具设置或工具列表已变化，请手动重新计算路线。"],

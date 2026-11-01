@@ -52,7 +52,7 @@ class NativeMaterialMatrixTests(unittest.TestCase):
               assert(tested>200,'the native material coverage unexpectedly shrank')
             ''')
 
-    def test_catalogue_gaps_use_a_real_merchant_observation_without_data_injection(self):
+    def test_catalogue_gaps_stay_unknown_to_npc_pricing_despite_live_quotes(self):
         lua = audit.runtime()
         lua.execute('''
           local ids={2723,2928,2930,5173,8923,8924}
@@ -60,17 +60,68 @@ class NativeMaterialMatrixTests(unittest.TestCase):
             local before=ns.VendorPriceDB.GetOffers(id)
             for _,offer in ipairs(before)do assert(offer.priceOnly or not offer.unlimited)end
           end
-          UnitGUID=function()return 'Creature-0-0-0-0-999999-0000000000'end
-          GetMerchantNumItems=function()return #ids end
-          GetMerchantItemID=function(i)return ids[i]end
-          C_MerchantFrame={GetItemInfo=function(i)return {name='Observed item '..ids[i],
-            price=10,stackCount=5,numAvailable=-1,isPurchasable=true,hasExtendedCost=false}end}
-          assert(ns.VendorPriceDB.Scan()==#ids)
+          DungeonsForeverDB.profVendorOffers={};DungeonsForeverDB.vendorPrices={}
           for _,id in ipairs(ids)do
-            local rows,cost,complete=ns.ProfRouteAuto.MaterialPurchases(id,10)
-            assert(complete and cost==20 and #rows==1 and rows[1].source=='vendor')
-            assert(rows[1].npcID==999999 and rows[1].count==10)
+            DungeonsForeverDB.profVendorOffers[id]={{npcID=999999,price=10,quantity=5,
+              unlimited=true,available=true,purchasable=true,source='merchant',verifiedAt=1000,
+              character='Test-Realm',reputationKey=''}}
+            DungeonsForeverDB.vendorPrices[id]={p=2,t=1000}
           end
+          Auctionator.API.v1.GetVendorPriceByItemID=function()error('live vendor cache used')end
+          GetMerchantNumItems=function()error('live merchant was scanned')end
+          for _,id in ipairs(ids)do
+            assert(ns.VendorPriceDB.GetPrice(id)==nil and #ns.VendorPriceDB.GetSuppliers(id)==0)
+            assert(ns.ProfRouteAuto.NPCBuyPriceOf(id)==nil)
+            local rows,cost,complete=ns.ProfRouteAuto.MaterialPurchases(id,10)
+            assert(complete and cost==100000 and #rows==1 and rows[1].source=='ah')
+            assert(rows[1].count==10,'normal auction purchasing was changed')
+          end
+        ''')
+
+    def test_cached_vendor_unit_prices_reach_capture_fixed_and_optimized_costs(self):
+        lua = audit.runtime()
+        lua.execute('''
+          local ids={2723,2928,2930,5173,8923,8924};local cached={}
+          for _,id in ipairs(ids)do cached[id]=2 end
+          Auctionator.API.v1.GetVendorPriceByItemID=function(caller,id)
+            assert(caller=='DungeonsForever');return cached[id]
+          end
+          GetMerchantNumItems=function()error('the addon must not scan merchants')end
+          ns.ProfRouteAuto.AHPriceOf=function()return 100 end
+          for _,id in ipairs(ids)do
+            assert(ns.ProfRouteAuto.NPCBuyPriceOf(id)==2)
+            local rows,cost,complete=ns.ProfRouteAuto.MaterialPurchases(id,7)
+            assert(complete and cost==14 and #rows==1 and rows[1].source=='vendor')
+            assert(rows[1].count==7 and rows[1].unit==2 and rows[1].quoteSource=='auctionator-vendor')
+            assert(rows[1].priceBasis=='cached-unit' and not rows[1].npcID)
+          end
+          -- Cache priority also applies when the collected quote is cheaper.
+          assert(ns.VendorPriceDB.GetPrice(3371)<8)
+          cached[3371]=8
+          local captured=auditSnapshot('alchemy')
+          assert(captured.vendorItems[3371] and #captured.offers[3371]==1 and captured.offers[3371][1].unit==8,
+            'live capture did not prioritize the cache quote')
+          for _,scheme in ipairs({'cheapest','matcost','crafts','optim','fixed'})do
+            local s={recipes={{profession='alchemy',spell=2000000001,count=1,item=2000000002,
+              learn=1,yellow=300,green=300,grey=301,cooldown=false,mats={{3371,1}}}},
+              known={['alchemy:2000000001']=true},prices={[3371]=100},
+              offers={[3371]=captured.offers[3371]},faction='A',professions={alchemy={cur=1,max=300}}}
+            local opts={snapshot=s,start=1,target=5,scheme=scheme,
+              autoCraftTools=false,recoveryEnabled=false,maxNodes=1}
+            if scheme=='fixed' then opts.fixedSteps={{1,5,2000000001,4}}end
+            local plan,job=ns.ProfRouteAuto.Compute('alchemy',opts)
+            assert(not job.error and plan.targetReached and plan.costComplete,scheme)
+            assert(plan.total==32 and plan.ahTotal==0 and plan.mats[1].count==4,scheme)
+            assert(plan.mats[1].quoteSource=='auctionator-vendor' and not plan.mats[1].npcID)
+          end
+          ns.ProfRouteAuto.AHPriceOf=function()return 1 end
+          local rows,cost,complete=ns.ProfRouteAuto.MaterialPurchases(2723,7)
+          assert(complete and cost==7 and rows[1].source=='ah','cheaper auction was ignored')
+          cached[2723]=0;ns.ProfRouteAuto.Invalidate()
+          assert(ns.ProfRouteAuto.NPCBuyPriceOf(2723)==0)
+          rows,cost,complete=ns.ProfRouteAuto.MaterialPurchases(2723,7)
+          assert(complete and cost==0 and rows[1].source=='vendor')
+          assert(DungeonsForeverDB.profVendorOffers==nil and DungeonsForeverDB.vendorPrices==nil)
         ''')
 
     def test_native_full_routes_and_hud_agree_before_any_crafts(self):
