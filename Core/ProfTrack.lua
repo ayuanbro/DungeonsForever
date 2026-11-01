@@ -10,6 +10,11 @@ local max = math.max
 local min = math.min
 local EMPTY = {}
 local listeners = {}
+-- Master retained the slash command; resolve translations from addon namespace.
+local L = ns.L or setmetatable({}, { __index = function(_, key) return key end })
+local seenMem, seenOrder = {}, {}
+local pendCast, pendOrder, pendLast = {}, {}, nil
+local addSrc, addAt = {}, {}
 
 local function now()
     return (type(time) == "function") and time() or 0
@@ -40,13 +45,13 @@ local function db()
     local key = charKey()
     local c = d.prof.track[key]
     if type(c) ~= "table" or c.version ~= 1 then
-        c = { version = 1, nextID = 0, nextAttempt = 0, active = {}, runs = {}, seen = {}, order = {} }
+        c = { version = 1, nextID = 0, nextAttempt = 0, active = {}, runs = {} }
         d.prof.track[key] = c
     end
     c.active = c.active or {}
     c.runs = c.runs or {}
-    c.seen = c.seen or {}
-    c.order = c.order or {}
+    c.seen = nil
+    c.order = nil
     return c
 end
 
@@ -66,10 +71,22 @@ local function progressOf(run, i)
     run.progress = run.progress or {}
     local p = run.progress[i]
     if type(p) ~= "table" then
-        p = { casts = 0, attempts = {} }
+        p = { casts = 0, out = 0 }
         run.progress[i] = p
     end
-    p.attempts = p.attempts or {}
+    if type(p.attempts) == "table" then
+        local out = tonumber(p.out) or 0
+        local n = 0
+        for _, a in ipairs(p.attempts) do
+            out = out + (tonumber(a.out) or 0)
+            n = n + 1
+        end
+        if (tonumber(p.casts) or 0) < n then p.casts = n end
+        p.out = out
+        p.attempts = nil
+    end
+    if p.casts == 0 then p.casts = 0 end
+    if p.out == 0 then p.out = 0 end
     return p
 end
 
@@ -90,6 +107,7 @@ local function activeList()
     return out
 end
 
+-- ProfExecution forwards its own ledger updates through this legacy-facing API.
 T._Notify = notify
 
 function T.OnChanged(fn)
@@ -206,14 +224,15 @@ function T.Rebase(run, steps)
         if oi then
             local p = run.progress and run.progress[oi]
             if type(p) == "table" then
-                local attempts = {}
-                local src = p.attempts or EMPTY
-                for k = 1, #src do attempts[#attempts + 1] = src[k] end
                 local manual = p.manual
                 if type(manual) == "table" and manual.item ~= fresh[ni].item then manual = nil end
+                local outN = tonumber(p.out) or 0
+                if type(p.attempts) == "table" then
+                    for _, a in ipairs(p.attempts) do outN = outN + (tonumber(a.out) or 0) end
+                end
                 progress[ni] = {
                     casts = min(p.casts or 0, fresh[ni].crafts or 0),
-                    attempts = attempts,
+                    out = outN,
                     manual = manual,
                 }
                 kept = kept + 1
@@ -251,14 +270,15 @@ local function carryProgress(old, steps)
                     used[oi] = true
                     local p = old.progress[oi]
                     if type(p) == "table" then
-                        local attempts = {}
-                        local src = p.attempts or EMPTY
-                        for q = 1, #src do attempts[q] = src[q] end
                         local manual = p.manual
                         if type(manual) == "table" and manual.item ~= steps[ni].item then manual = nil end
+                        local outN = tonumber(p.out) or 0
+                        if type(p.attempts) == "table" then
+                            for _, a in ipairs(p.attempts) do outN = outN + (tonumber(a.out) or 0) end
+                        end
                         progress[ni] = {
                             casts = min(p.casts or 0, steps[ni].crafts or 0),
-                            attempts = attempts,
+                            out = outN,
                             manual = manual,
                         }
                         kept = kept + 1
@@ -272,16 +292,63 @@ local function carryProgress(old, steps)
     return progress
 end
 
+local function recorded(run)
+    if type(run) ~= "table" then return false end
+    for _, n in pairs(run.outputs or EMPTY) do
+        if (tonumber(n) or 0) > 0 then return true end
+    end
+    for _, p in pairs(run.progress or EMPTY) do
+        if type(p) == "table" then
+            if (tonumber(p.casts) or 0) > 0 then return true end
+            if (tonumber(p.out) or 0) > 0 then return true end
+            if type(p.attempts) == "table" then
+                for _ in pairs(p.attempts) do return true end
+            end
+        end
+    end
+    return false
+end
+
+local function pruneArchived(slug)
+    local c = db()
+    local list = {}
+    for id, r in pairs(c.runs) do
+        if r.slug == slug and r.status ~= "active" then
+            list[#list + 1] = { id = id, at = tonumber(r.archivedAt or r.updatedAt) or 0 }
+        end
+    end
+    if #list <= 3 then return end
+    table.sort(list, function(a, b) return a.at > b.at end)
+    for i = 4, #list do c.runs[list[i].id] = nil end
+end
+
 function T.Archive(slug, reason, run)
     run = run or T.GetRun(slug)
-    if run then
-        run.status = "archived"
-        run.archivedAt = now()
-        run.archiveReason = reason or "replace"
+    local c = db()
+    c.active[slug] = nil
+    if type(run) ~= "table" then return nil end
+    if not recorded(run) then
+        if run.planID then c.runs[run.planID] = nil end
+        notify(slug, nil)
+        return nil
     end
-    db().active[slug] = nil
-    if run then notify(slug, run) end
+    run.status = "archived"
+    run.archivedAt = now()
+    run.archiveReason = reason or "replace"
+    pruneArchived(run.slug or slug)
+    notify(slug, run)
     return run
+end
+
+function T.Remove(slug, planID)
+    local c = db()
+    local run = planID and c.runs[planID] or nil
+    if type(run) ~= "table" then return false end
+    if run.status == "active" then return false end
+    c.runs[planID] = nil
+    if run.slug and c.active[run.slug] == planID then c.active[run.slug] = nil end
+    notify(slug or run.slug, nil)
+    return true
 end
 
 function T.Drop(slug)
@@ -292,6 +359,43 @@ function T.Drop(slug)
         if run.slug ~= slug then kept[id] = run end
     end
     c.runs = kept
+end
+
+function T.HealActive(slug)
+    local c = db()
+    local list = {}
+    for _, r in pairs(c.runs) do
+        if r.slug == slug and r.status == "active" then list[#list + 1] = r end
+    end
+    if #list <= 1 then
+        if #list == 1 then c.active[slug] = list[1].planID end
+        return 0
+    end
+    table.sort(list, function(a, b)
+        local an, bn = tonumber(a.casts) or 0, tonumber(b.casts) or 0
+        if an ~= bn then return an > bn end
+        return (tonumber(a.updatedAt) or 0) > (tonumber(b.updatedAt) or 0)
+    end)
+    local keep = list[1]
+    c.active[slug] = keep.planID
+    for i = 2, #list do
+        list[i].status = "archived"
+        list[i].archivedAt = now()
+        list[i].archiveReason = "duplicate"
+    end
+    notify(slug, keep)
+    return #list - 1
+end
+
+function T.StopAll(reason)
+    local c = db()
+    local list = {}
+    for slug in pairs(c.active) do list[#list + 1] = slug end
+    local n = 0
+    for i = 1, #list do
+        if T.Archive(list[i], reason or "disabled") then n = n + 1 end
+    end
+    return n
 end
 
 function T.Bind(slug, result, opts)
@@ -352,6 +456,29 @@ function T.Restart(slug, result)
     return T.Bind(slug, result, { force = true })
 end
 
+function T.EnsureActive(slug, result)
+    local c = db()
+    local run = T.GetRun(slug)
+    if run and run.status == "active" then return run, "existing" end
+    local best, bestCasts, bestAt
+    for _, r in pairs(c.runs) do
+        if r.slug == slug and r.status == "active" then
+            local n = tonumber(r.casts) or 0
+            local at = tonumber(r.updatedAt) or 0
+            if not best or n > bestCasts or (n == bestCasts and at > bestAt) then
+                best, bestCasts, bestAt = r, n, at
+            end
+        end
+    end
+    if best and best.planID then
+        c.active[slug] = best.planID
+        notify(slug, best)
+        return best, "reattached"
+    end
+    if type(result) ~= "table" or type(result.steps) ~= "table" then return nil, "no_result" end
+    return T.Bind(slug, result, { force = false })
+end
+
 function T.History(slug)
     local c = db()
     local list = {}
@@ -368,6 +495,28 @@ end
 
 function T.Skill(slug)
     return skillOf(slug)
+end
+
+function T.PickIndex(steps, cur, casts)
+    if type(steps) ~= "table" or #steps == 0 then return 1 end
+    cur = tonumber(cur) or 0
+    local firstAvail, firstOpen, lastAvail = nil, nil, nil
+    local allDone = true
+    for i = 1, #steps do
+        local st = steps[i]
+        local from = tonumber(st.from or st[1]) or 0
+        local to = tonumber(st.to or st[2]) or 0
+        if to > 0 and cur < to then allDone = false end
+        if from <= cur then lastAvail = i end
+        if cur >= from and (to <= 0 or cur < to) then
+            if not firstAvail then firstAvail = i end
+            local planned = tonumber(st.crafts or st[4]) or 0
+            local made = tonumber(casts and casts[i]) or 0
+            if not firstOpen and (planned <= 0 or made < planned) then firstOpen = i end
+        end
+    end
+    if allDone then return #steps + 1 end
+    return firstOpen or firstAvail or lastAvail or 1
 end
 
 function T.Sync(slug)
@@ -392,11 +541,13 @@ function T.Sync(slug)
             return run
         end
     end
-    local i = 1
     local steps = run.steps or EMPTY
-    while i <= #steps and cur >= (steps[i].to or 0) do
-        i = i + 1
+    local casts = {}
+    for idx = 1, #steps do
+        local p = (run.progress or {})[idx]
+        casts[idx] = p and tonumber(p.casts) or 0
     end
+    local i = T.PickIndex(steps, cur, casts)
     local moved = (run.currentIndex ~= i)
     run.currentIndex = i
     run.step = i
@@ -431,7 +582,7 @@ function T.Progress(slug, index, run)
     if type(p.manual) == "table" then
         outputs = tonumber(p.manual.total) or 0
     else
-        for _, a in ipairs(p.attempts) do outputs = outputs + (tonumber(a.out) or 0) end
+        outputs = tonumber(p.out) or 0
     end
     local planned = st.crafts or 0
     local casts = p.casts or 0
@@ -478,33 +629,41 @@ function T.Match(run, spellID)
     return nil
 end
 
-function T.RecordAttempt(slug, spellID, castGUID)
+local function allowAdd(step, src)
+    local t = now()
+    local s, a = addSrc[step], addAt[step] or 0
+    if s and s ~= src and (t - a) < 2 then return false end
+    addSrc[step], addAt[step] = src, t
+    return true
+end
+
+function T.RecordAttempt(slug, spellID, castGUID, src)
     if type(spellID) ~= "number" then return false, "bad_spell" end
     local run = T.GetRun(slug)
     if not run or run.status ~= "active" then return false, "inactive" end
     local i = T.Match(run, spellID)
     if not i then return false, "no_match" end
-    local c = db()
+    if not allowAdd(i, src or "cast") then return false, "dup" end
+    db()
     if castGUID then
         local key = tostring(castGUID)
-        if c.seen[key] then return false, "duplicate" end
-        c.seen[key] = true
-        c.order[#c.order + 1] = key
-        while #c.order > 512 do
-            c.seen[table.remove(c.order, 1)] = nil
+        if seenMem[key] then return false, "duplicate" end
+        seenMem[key] = true
+        seenOrder[#seenOrder + 1] = key
+        while #seenOrder > 512 do
+            seenMem[table.remove(seenOrder, 1)] = nil
         end
     end
-    c.nextAttempt = (c.nextAttempt or 0) + 1
     local p = progressOf(run, i)
     local st = run.steps[i]
     p.casts = (p.casts or 0) + 1
-    p.attempts[#p.attempts + 1] = {
-        seq = c.nextAttempt,
-        spell = spellID,
-        castGUID = castGUID,
-        at = now(),
-        item = st.item,
-    }
+    pendLast = { step = i, item = st.item, spell = spellID, at = now() }
+    if castGUID then
+        local pk = tostring(castGUID)
+        pendCast[pk] = pendLast
+        pendOrder[#pendOrder + 1] = pk
+        while #pendOrder > 32 do pendCast[table.remove(pendOrder, 1)] = nil end
+    end
     run.casts = (run.casts or 0) + 1
     run.progressVersion = (run.progressVersion or 0) + 1
     run.updatedAt = now()
@@ -518,30 +677,68 @@ function T.RecordOutput(slug, itemID, qty, castGUID)
     local run = T.GetRun(slug)
     if not run then return false, "no_run" end
     local steps = run.steps or EMPTY
-    local found
-    for i = #steps, 1, -1 do
-        local st = steps[i]
-        local p = (run.progress or {})[i]
-        if p then
-            for _, a in ipairs(p.attempts or EMPTY) do
-                if (st.item == itemID or a.item == itemID) and a.out == nil then
-                    if not castGUID or a.castGUID == castGUID then
-                        found = a
-                        break
-                    end
-                end
+    local hit
+    if castGUID then
+        local key = tostring(castGUID)
+        hit = pendCast[key]
+        if hit then pendCast[key] = nil end
+    end
+    if not hit and pendLast and pendLast.item == itemID then hit = pendLast end
+    if not hit then
+        for _, h in pairs(pendCast) do
+            if h.item == itemID then hit = h end
+        end
+    end
+    local idx
+    if hit then
+        idx = hit.step
+    else
+        for i = #steps, 1, -1 do
+            local st = steps[i]
+            local p = (run.progress or {})[i]
+            if st.item == itemID and type(p) == "table" and (tonumber(p.casts) or 0) > 0 then
+                idx = i
+                break
             end
         end
-        if found then break end
     end
-    if not found then return false, "unmatched" end
-    found.out = qty
-    found.outputAt = now()
+    if not idx then return false, "unmatched" end
+    local p = progressOf(run, idx)
+    p.out = (tonumber(p.out) or 0) + qty
     run.outputs[itemID] = (run.outputs[itemID] or 0) + qty
     run.progressVersion = (run.progressVersion or 0) + 1
     run.updatedAt = now()
     notify(slug, run)
     return true
+end
+
+function T.CraftFallback(slug, itemID, qty)
+    local run = T.GetRun(slug)
+    if not run or run.status ~= "active" then return false, "inactive" end
+    local steps = run.steps or EMPTY
+    local idx
+    local cur = run.currentIndex or 1
+    for i = cur, #steps do
+        if steps[i].item == itemID then idx = i break end
+    end
+    if not idx then
+        for i = 1, #steps do
+            if steps[i].item == itemID then idx = i break end
+        end
+    end
+    if not idx then return false, "no_step" end
+    local p = (run.progress or {})[idx]
+    if pendLast and pendLast.step == idx and (now() - (pendLast.at or 0)) < 3 then
+        return false, "recent"
+    end
+    local n = tonumber(qty) or 1
+    if n < 1 then n = 1 end
+    if n > 5 then n = 5 end
+    local ok = false
+    for _ = 1, n do
+        if T.RecordAttempt(slug, steps[idx].spell, nil, "out") then ok = true end
+    end
+    return ok
 end
 
 function T.VerifyOutput(slug, index, itemID, total)
@@ -576,9 +773,7 @@ function T.RecipeTotals(slug)
             if type(p.manual) == "table" then
                 entry.out = entry.out + (tonumber(p.manual.total) or 0)
             else
-                for _, a in ipairs(p.attempts or EMPTY) do
-                    entry.out = entry.out + (tonumber(a.out) or 0)
-                end
+                entry.out = entry.out + (tonumber(p.out) or 0)
             end
         end
     end
@@ -726,8 +921,16 @@ local function syncAll()
 end
 
 local function initialize()
-    -- The advanced ledger owns observation when loaded by the main TOC.
-    if ns.ProfExecution then return end
+    -- PR #7 runs a more detailed execution ledger. It alone observes events,
+    -- matches receipts and stores attempts; do not register a second observer.
+    if ns.ProfExecution then
+        -- The legacy /dftrack command promises deletion; the advanced T.Drop
+        -- compatibility method archives instead. Do not expose a misleading
+        -- command that is also unsafe for the execution ledger.
+        if type(SlashCmdList) == "table" then SlashCmdList["DUNGEONSDFTRACK"] = nil end
+        SLASH_DUNGEONSDFTRACK1 = nil
+        return
+    end
     local c = db()
     c.session = (c.session or 0) + 1
     T.session = tostring(c.session)
@@ -737,7 +940,13 @@ local function initialize()
     T.capabilities = {}
     f:SetScript("OnEvent", function(_, event, ...)
         if event == "UNIT_SPELLCAST_SUCCEEDED" then
-            local unit, castGUID, spellID = ...
+            local unit, a, b = ...
+            local spellID, castGUID
+            if type(a) == "number" then
+                spellID = a
+            elseif type(b) == "number" then
+                castGUID, spellID = a, b
+            end
             if unit == "player" and type(spellID) == "number" then
                 for _, slug in ipairs(activeList()) do
                     if T.RecordAttempt(slug, spellID, castGUID) then break end
@@ -755,6 +964,7 @@ local function initialize()
             end
             if integer(itemID) and itemID > 0 then
                 recordAll(function(slug)
+                    T.CraftFallback(slug, itemID, qty)
                     T.RecordOutput(slug, itemID, qty)
                 end)
             end
@@ -773,6 +983,26 @@ local function initialize()
         T.capabilities[event] = pcall(f.RegisterEvent, f, event) and true or false
     end
     syncAll()
+end
+
+if type(SlashCmdList) == "table" and not ns.ProfExecution then
+    SLASH_DUNGEONSDFTRACK1 = "/dftrack"
+    SlashCmdList["DUNGEONSDFTRACK"] = function()
+        if ns.ProfExecution then return end
+        local PD = ns.ProfModule
+        local slug = PD and PD.cur
+        local function say(msg)
+            if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+                DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99无限副本手册:|r " .. msg, 1, 1, 1)
+            end
+        end
+        if not slug then
+            say(L["先打开专业页再执行"])
+            return
+        end
+        T.Drop(slug)
+        say(L["已清除本专业的追踪与制作记录"])
+    end
 end
 
 if ns.Init then ns.Init(initialize) else initialize() end
