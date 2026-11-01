@@ -12,14 +12,19 @@ G.SpecAbilities = SPEC_ABILITIES
 
 local cache
 local function spellKnown(spell)
+    local observedFalse = false
     for _, name in ipairs({ "C_SpellBook.IsSpellKnown", "IsSpellKnown", "IsPlayerSpell", "C_Spell.IsSpellKnown" }) do
         local parent, key = name:match("^([^.]+)%.(.+)$")
         local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
         if type(fn) == "function" then
             local ok, value = pcall(fn, spell)
-            if ok and type(value) == "boolean" then return value end
+            -- Different client APIs can disagree. An affirmative result wins;
+            -- otherwise return false only after checking all available APIs.
+            if ok and value == true then return true end
+            if ok and value == false then observedFalse = true end
         end
     end
+    if observedFalse then return false end
 end
 
 function G.Invalidate()
@@ -133,11 +138,15 @@ function G.LearningEligibility(spell)
     return false, G.AbilityLabel(ability), { status = "blocked", hasPending = hp, ability = ability }
 end
 
-function G.SpecFingerprint(choice)
+function G.SpecFingerprint(choice, abilities)
     local meta = ns.ProfSpecializationsMeta or {}
     local q = ns.ProfSpecializationQuestMeta or {}
-    return table.concat({ "1", tostring(choice or "none"), tostring(meta.revision or 0),
-        tostring(meta.fpr or ""), tostring(q.revision or 0), tostring(q.sourceCommit or "") }, ":")
+    -- Include observed/simulated abilities so learning a branch invalidates
+    -- an existing planned route even when the manually selected branch matches.
+    local skills = type(abilities) == "table" and abilities or G.Abilities()
+    local skillSig = G.SpecAbilityFingerprint and G.SpecAbilityFingerprint(skills) or ""
+    return table.concat({ "2", tostring(choice or "none"), tostring(meta.revision or 0),
+        tostring(meta.fpr or ""), tostring(q.revision or 0), tostring(q.sourceCommit or ""), skillSig }, ":")
 end
 
 function G.EngineeringChoice()
@@ -164,35 +173,42 @@ end
 
 local ENG_CHOICES = { none = true, goblin = true, gnomish = true }
 
--- The stored choice is either an explicit preference, or nil (automatic).
--- Existing valid stored values are preserved without migration.
+-- "none" is the default/manual-unspecified state. It does not suppress an
+-- already learned Engineering specialization. No "auto" menu mode exists.
 function G.GetChoiceSetting()
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
-    local v = db and db.engChoice
-    if ENG_CHOICES[v] then return v end
-    return "auto"
+    local value = db and db.engChoice
+    if value == "goblin" or value == "gnomish" then return value end
+    -- Legacy "auto" and "none" values are treated as unspecified.
+    return "none"
 end
 
+-- The selected plan is authoritative when set; otherwise use the character's
+-- actually learned specialization. Unknown/unlearned never unlock recipes.
 function G.EffectiveChoice()
-    local setting = G.GetChoiceSetting()
-    if setting ~= "auto" then return setting, true end
-    local actual = G.EngineeringChoice()
-    if actual == "gnomish" or actual == "goblin" then return actual, false end
+    local selected = G.GetChoiceSetting()
+    if selected ~= "none" then return selected, true end
+    local learned = G.EngineeringChoice()
+    if learned == "goblin" or learned == "gnomish" then return learned, false end
     return "none", false
 end
 
--- Compatibility: the PR solver, learning gates and plan signatures call this.
--- Returning the resolved choice keeps those paths consistent with the menu.
+-- Existing PR callers expect the effective route-planning choice.
 function G.GetPlannedChoice()
-    return G.EffectiveChoice()
+    local choice = G.EffectiveChoice()
+    return choice
 end
 
 function G.SetPlannedChoice(value)
-    if value ~= "auto" and not ENG_CHOICES[value] then return false end
-    if G.GetChoiceSetting() == value then return true end
+    if not ENG_CHOICES[value] then return false end
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.prof = DungeonsForeverDB.prof or {}
-    DungeonsForeverDB.prof.engChoice = (value ~= "auto") and value or nil
+    local db = DungeonsForeverDB.prof
+    -- Don't persist "none". Existing saved "auto"/"none" is cleaned when
+    -- users change the dropdown, without modifying other stored preferences.
+    local newValue = value ~= "none" and value or nil
+    if db.engChoice == newValue then return true end
+    db.engChoice = newValue
     G.Invalidate()
     local RA = ns.ProfRouteAuto
     if RA and RA.Invalidate then RA.Invalidate("specialization") end
@@ -316,7 +332,7 @@ function G.SpecializationContext(opts)
             ctx.goals[1] = goal
         end
     end
-    ctx.fingerprint = G.SpecFingerprint(choice)
+    ctx.fingerprint = G.SpecFingerprint(choice, abilities)
     ctx.abilityFingerprint = G.SpecAbilityFingerprint(abilities)
     return ctx
 end

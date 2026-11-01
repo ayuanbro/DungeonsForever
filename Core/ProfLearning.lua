@@ -704,8 +704,11 @@ function E.SelectLearningRoute(recipe,snapshot,state,remaining,purchaseSource,pr
         local choice=snapshot and (snapshot.engineeringSpecialization
             or snapshot.specializationContext and snapshot.specializationContext.choice)
             or not snapshot and G and G.GetPlannedChoice and G.GetPlannedChoice()
-        return not (ability==20219 and choice=="goblin" or ability==20222 and choice=="gnomish")
-            and conditionResult({kind="ability",value=ability},recipe,snapshot,state)~=false
+        -- Restrict each Engineering-only recipe to its actual or planned branch.
+        -- A missing/unknown specialization never enables either branch.
+        if ability==20219 and choice~="gnomish" then return false end
+        if ability==20222 and choice~="goblin" then return false end
+        return conditionResult({kind="ability",value=ability},recipe,snapshot,state)~=false
     end
     local ability=G and G.RequiredAbility(spellOf(recipe)) or 0
     if ability>0 then

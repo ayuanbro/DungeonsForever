@@ -2074,3 +2074,8 @@ L["默认已对齐，一般不用动；只有换到字形差别很大的字体�
 L["（已回滚）"] = "(rolled back)"
 L["任务材料：%s"] = "Quest materials: %s"
 L["、"] = ", "
+
+-- Engineering specialization auto-detection (PR #7).
+L["不指定时，自动使用角色已经学会的工程专精配方。"] = "When no branch is chosen, recipes from your learned Engineering specialization are included automatically."
+L["当前已学工程专精：%s。其专属配方已加入升级路线候选。"] = "Learned Engineering specialization: %s. Its exclusive recipes are included in leveling route candidates."
+L["尚未学习工程专精；不会使用专精限定配方。"] = "No Engineering specialization learned; specialization-only recipes are excluded."

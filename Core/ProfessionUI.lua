@@ -454,27 +454,26 @@ function PD.SetRecoveryFee(pct)
 end
 
 function PD.EngChoiceLabel(value)
-    local key = value or "none"
-    if key == "goblin" then return L["地精工程学"] end
-    if key == "gnomish" then return L["侏儒工程学"] end
+    if value == "goblin" then return L["地精工程学"] end
+    if value == "gnomish" then return L["侏儒工程学"] end
     return L["不指定"]
 end
 
 function PD.SetEngChoice(value)
     local G = ns.ProfGates
     if not (G and G.SetPlannedChoice) then return end
-    if G.GetPlannedChoice() == value then return end
+    if G.GetChoiceSetting and G.GetChoiceSetting() == value then return end
     if not G.SetPlannedChoice(value) then return end
     PD.ProfRecalc()
 end
 
 function PD.ShowEngChoiceMenu(owner)
     local G = ns.ProfGates
-    if not (G and G.GetPlannedChoice and ns.hui and ns.hui.ShowMenu) then return end
-    local cur = G.GetPlannedChoice()
+    if not (G and G.GetChoiceSetting and ns.hui and ns.hui.ShowMenu) then return end
+    local selected = G.GetChoiceSetting()
     local items = {}
     for _, opt in ipairs({ "none", "goblin", "gnomish" }) do
-        local checked = cur == opt
+        local checked = selected == opt
         items[#items + 1] = {
             text = PD.EngChoiceLabel(opt),
             checked = checked,
@@ -13986,6 +13985,39 @@ function PD.LevelTool()
         { key = "page_log",   text = L["制作记录"], on = onLog },
         { key = "page_rec",   text = L["回血"],     on = onRec },
     }
+    -- Single engineering specialization selector: top bar only.
+    -- Unspecified means no manual target; known specializations are detected.
+    if PD.cur == "engineering" then
+        local G = ns.ProfGates
+        if G and G.GetChoiceSetting and G.EffectiveChoice then
+            local setting = G.GetChoiceSetting()
+            local actual = G.EngineeringChoice and G.EngineeringChoice() or "unknown"
+            local tip = {
+                { L["工程专精计划"], 1, 1, 1 },
+                { L["不指定时，自动使用角色已经学会的工程专精配方。"], 0.7, 0.7, 0.7 },
+            }
+            if actual == "unknown" then
+                tip[#tip + 1] = { L["角色专精状态尚未读取，请登录角色并打开工程学面板后重试。"], 0.95, 0.75, 0.4 }
+            elseif actual == "conflict" then
+                tip[#tip + 1] = { L["当前已同时学会地精与侏儒专精，需先重置其中一支。"], 0.88, 0.42, 0.38 }
+            elseif setting == "none" then
+                if actual == "goblin" or actual == "gnomish" then
+                    tip[#tip + 1] = { format(L["当前已学工程专精：%s。其专属配方已加入升级路线候选。"],
+                        PD.EngChoiceLabel(actual)), 0.8, 0.9, 0.7 }
+                else
+                    tip[#tip + 1] = { L["尚未学习工程专精；不会使用专精限定配方。"], 0.85, 0.85, 0.85 }
+                end
+            elseif actual ~= "none" and actual ~= setting then
+                tip[#tip + 1] = { format(L["已学专精与计划不一致：已学%s。"],
+                    PD.EngChoiceLabel(actual)), 0.88, 0.42, 0.38 }
+            end
+            list[#list + 1] = {
+                key = "eng_spec", dd = true, on = setting ~= "none",
+                text = L["工程专精计划"] .. "：" .. PD.EngChoiceLabel(setting),
+                tip = tip,
+            }
+        end
+    end
     if not onLog and not onRec and PD.autoPage ~= "shop" then
         local snap = (PD.autoSnapshotSlug == PD.cur) and PD.autoSnapshot or nil
         local head, detail = PD.PlanSupplyParts(snap)
@@ -14051,6 +14083,8 @@ function PD.LevelTool()
             PD.autoPage = "recovery"
             PD.exclusionsOpen = false
             PD.FlushPolicies()
+        elseif k == "eng_spec" then
+            PD.ShowEngChoiceMenu(PD.RecipeChip("eng_spec"))
         elseif k == "supply_warn" then
             PD.autoPage = "shop"
             PD.exclusionsOpen = false
@@ -14159,7 +14193,7 @@ PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
     { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling" }, 1 },
     { L["采购与配方"], { "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
-    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoCraftTools", "engChoice" }, 2 },
+    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoCraftTools" }, 2 },
 }
 
 function PD.RowsSettings(rows)
@@ -14225,8 +14259,6 @@ function PD.RowsSettings(rows)
         if cheapest and k == "autoOnlyAH" then return false end
         return true
     end
-    local G = ns.ProfGates
-    local engOK = (PD.cur == "engineering") and (G and G.GetPlannedChoice) and true or false
     local fee = tonumber(PD.SettingRaw("recoveryFeePercent")) or 5
 
     local function pushTextCol(text, fs, color, col)
@@ -14258,28 +14290,6 @@ function PD.RowsSettings(rows)
                      { L["默认 5%，常用 0 / 5 / 10 / 15 / 20，也可输入 0–25 之间的整数。"], 0.7, 0.7, 0.7 } },
         }
     end
-    local function pushEng(col)
-        local planned = G.GetPlannedChoice()
-        local lines = {
-            { L["工程专精计划"], 1, 1, 1 },
-            { L["计划学习的工程专精分支，只影响路线编排，不会改变已学专精。"], 0.7, 0.7, 0.7 },
-            { L["选定分支后，路线会按该分支安排专精任务与所需材料。"], 0.7, 0.7, 0.7 },
-        }
-        local actual = G.EngineeringChoice()
-        if actual == "conflict" then
-            lines[#lines + 1] = { L["当前已同时学会地精与侏儒专精，需先重置其中一支。"], 0.88, 0.42, 0.38 }
-        elseif planned ~= "none" and actual ~= "unknown" and actual ~= "none" and actual ~= planned then
-            lines[#lines + 1] = { format(L["已学专精与计划不一致：已学%s。"], PD.EngChoiceLabel(actual)), 0.88, 0.42, 0.38 }
-        end
-        rows[#rows + 1] = {
-            kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
-            text = L["工程专精计划"],
-            right = PD.EngChoiceLabel(planned) .. "  " .. PD.SET_MORE,
-            act = function(row) PD.ShowEngChoiceMenu(row) end,
-            help = lines,
-        }
-    end
-
     for _, grp in ipairs(PD.SET_GROUPS) do
         local gcol = (grp[3] == 2) and 2 or 1
         local items = {}
@@ -14287,8 +14297,6 @@ function PD.RowsSettings(rows)
             local kk = key
             if kk == "recoveryFee" then
                 items[#items + 1] = pushFee
-            elseif kk == "engChoice" then
-                if engOK then items[#items + 1] = pushEng end
             elseif byKey[kk] and allowed(kk) then
                 local d = byKey[kk]
                 items[#items + 1] = function(col) pushToggle(d, col) end
