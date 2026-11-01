@@ -496,7 +496,7 @@ function E.CancelClientReads()
     for _,handle in ipairs(handles) do handle.Cancel() end
 end
 
--- The dev addon owns this frame directly, just like ProfTrack and VendorPriceDB.
+-- The dev addon owns this frame directly, just like ProfExecution and VendorPriceDB.
 -- Coalesce event bursts before starting one cooperative client read.
 if type(CreateFrame)=="function" then
     local frame = CreateFrame("Frame")

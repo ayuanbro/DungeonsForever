@@ -36,7 +36,7 @@ def runtime(locale='zhCN', faction='A'):
     ''')
     for path in ('Core/Data/Data_ProfItemNames.lua', 'Core/Data/Data_VendorPrices.lua',
                  'Core/Data/Data_ProfGathering.lua', 'Core/Data/Data_ProfFishingRoutes.lua',
-                 'Core/ProfRouteAuto.lua', 'Core/ProfTrack.lua', 'Core/ProfExecution.lua',
+                 'Core/ProfRouteAuto.lua', 'Core/ProfExecution.lua',
                  'Core/ProfSolverRun.lua', 'Core/ProfRoutePlans.lua', 'Core/ProfFollow.lua',
                  'Core/ProfGathering.lua', 'Core/ProfFishing.lua'):
         lua.execute("assert(loadstring(...))('DungeonsForever',ns)",

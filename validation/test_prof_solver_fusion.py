@@ -95,6 +95,54 @@ class ProfessionSolverFusionTests(unittest.TestCase):
           end end
         ''')
 
+    def test_full_leather_processing_beats_available_expensive_auction(self):
+        self.lua.execute(r'''
+          local level=recipe('leatherworking',1254980,99000,1,{{8170,4}},1,300)
+          level.yellow=300;level.green=300
+          local make=recipe('leatherworking',22331,8170,1,{{4304,6}},1,1)
+          local s=snapshot({level,make},{[8170]=908099,[4304]=121013})
+          s.professions={leatherworking={cur=250,max=300}}
+          s.considerAuctionSupply=false
+          local S=ns.ProfRouteSolver
+          local j=S.NewJob('leatherworking',{snapshot=s,start=250,target=251,
+            recoveryEnabled=false,cpuLimitMs=8000})
+          for i=1,20000 do
+            if j.best or j.finished then break end
+            S.Run(j,1)
+          end
+          assert(not j.error,tostring(j.error))
+          assert(j.best and j.best.money==4*6*121013,tostring(j.best and j.best.money))
+          local result=S.Result(j,j.best,'searching')
+          assert(countCrafts(result,22331)==4)
+          assert(bought(result,8170)==0 and bought(result,4304)==24)
+          assert((j.workCounters.fastSeedCrafts or 0)>0)
+          assert(result.costSearchPerformed==(result.expanded>0))
+          assert(S.ProcurementPolicyVersion==8)
+        ''')
+
+    def test_nested_leather_processing_and_blocked_recipe_constraints(self):
+        self.lua.execute(r'''
+          local level=recipe('leatherworking',1254980,99000,1,{{8170,2}},1,300)
+          level.yellow=300;level.green=300
+          local rugged=recipe('leatherworking',22331,8170,1,{{4304,6}},1,1)
+          local thick=recipe('leatherworking',22332,4304,1,{{4234,6}},1,1)
+          local s=snapshot({level,rugged,thick},
+            {[8170]=908099,[4304]=121013,[4234]=10000})
+          s.professions={leatherworking={cur=250,max=300}}
+          s.considerAuctionSupply=false
+          local r,j=solve('leatherworking',s,251,{start=250,cpuLimitMs=8000})
+          assert(r.feasible and r.targetReached and not j.error)
+          assert(r.total==2*6*6*10000,tostring(r.total))
+          assert(countCrafts(r,22331)==2 and countCrafts(r,22332)==12)
+          assert(bought(r,8170)==0 and bought(r,4304)==0 and bought(r,4234)==72)
+          thick.clientUnavailable=true
+          rugged.clientUnavailable=true
+          r,j=solve('leatherworking',s,251,{start=250,cpuLimitMs=8000})
+          assert(r.feasible and r.targetReached and not j.error)
+          assert(r.total==2*908099,tostring(r.total))
+          assert(countCrafts(r,22331)==0 and countCrafts(r,22332)==0)
+        ''')
+
     def test_split_competes_with_direct_purchase_and_carries_surplus(self):
         self.lua.execute(r'''
           local r=solve('enchanting',essenceSnapshot({{10938,4}},{[10938]=4,[10939]=10}),2)

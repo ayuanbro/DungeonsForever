@@ -17,7 +17,7 @@ function widget()
  end})
 end
 UIParent=widget();GameTooltip=widget()
-ns.hui={CharStep=function(s,i)return i+1 end,TextW=function(s)return #tostring(s)*6 end}
+ns.hui={CharStep=function(s,i)return s:sub(i,i),1,1 end,TextW=function(s)return #tostring(s)*6 end}
 ns.ProfData={pro={alchemy={name='Alchemy',kind='primary'},mining={name='Mining',kind='primary'},
  ['first-aid']={name='First Aid'},enchanting={name='Enchanting',kind='primary'}},order={'alchemy'}}
 ns.ProfLeveling={alchemy={steps={{1,3,101,2}}},['first-aid']={steps={{1,3,101,2}}},mining={steps={{1,3,101,2}}}}
@@ -160,6 +160,24 @@ class ProfessionUIFusionTests(unittest.TestCase):
           assert(#PD.autoSnapshot.executionSteps>0)
         ''')
 
+    def test_craft_log_reads_archived_execution_without_legacy_interface(self):
+        self.lua.execute('''
+          ns.ProfTrack=nil
+          local plan=finish('alchemy',{snapshot=fixture(),start=1,target=3})
+          PD.autoSnapshot=plan;PD.autoSnapshotSlug='alchemy'
+          local _,click=PD.LevelTool();click('track')
+          local xp=ns.ProfExecution;local run=assert(xp.GetActive('alchemy'))
+          xp.RecordAttempt('alchemy',101,'log');xp.RecordOutput({itemID=10,quantity=1,castGUID='log'})
+          xp.End('alchemy','completed')
+          local rows={};PD.RowsCraftLog(rows)
+          local found=false
+          for _,row in ipairs(rows) do
+            if row.right==format(ns.L['%d 次'],1) and row.right2==format(ns.L['%d 件'],1) then found=true end
+          end
+          assert(found,'archiving hid the recorded recipe totals')
+          assert(run.steps==nil and run.outputs==nil)
+        ''')
+
     def test_three_locale_entry_and_new_route_messages(self):
         for locale in ('zhCN','zhTW','enUS'):
             with self.subTest(locale=locale):
@@ -186,7 +204,7 @@ class ProfessionUIFusionTests(unittest.TestCase):
         lua.execute(UI_MOCKS)
         load=lua.eval("function(source)assert(loadstring(source))('DungeonsForever',ns)end")
         expected=['ProfPolicies','ProfRouteAuto','ProfessionUI','AuctionatorBridge','ProfFollow',
-            'ProfTrack','ProfSupply','ProfSourceMerge','ProfGates','ProfRecovery','VendorPriceDB',
+            'ProfSupply','ProfSourceMerge','ProfGates','ProfRecovery','VendorPriceDB',
             'ProfEssences','ProfSolverCapture','ProfLearning','ProfClientScan','ProfRanks','ProfRouteSolver','ProfFishing','ProfGathering',
             'ProfExecution','ProfSolverRun','ProfRoutePlans']
         loaded=[]
@@ -195,7 +213,10 @@ class ProfessionUIFusionTests(unittest.TestCase):
             name=path.rsplit('/',1)[-1].removesuffix('.lua')
             if path.startswith('Core/') and name in expected:
                 load((ROOT/path).read_text(encoding='utf-8-sig'));loaded.append(name)
+                if name in ('ProfessionUI', 'ProfFollow'):
+                    lua.execute("assert(ns.ProfExecution==nil and ns.ProfTrack==nil)")
         self.assertEqual(loaded,expected)
+        self.assertFalse((ROOT/'Core/ProfTrack.lua').exists())
         lua.execute('''
           ns.ProfModule.ProfLearned=function()return skills end
           for _,fn in ipairs(callbacks)do fn()end
@@ -203,6 +224,16 @@ class ProfessionUIFusionTests(unittest.TestCase):
           assert(not ns.ProfTrack.frame,'legacy observer registered duplicate crafting events')
           assert(ns.ProfExecution.eventFrame,'native execution observer did not initialize')
           assert(ns.ProfEconomy.ClientInputFrame,'native client observer was not loaded')
+          local owner=ns.ProfExecution
+          ns.ProfTrack=nil
+          local changes=0;ns.ProfFollow.InvalidateRoute=function()changes=changes+1 end
+          DungeonsForeverDB.prof.follow={['Test-Realm']={slug='alchemy',skill=1,step=1}}
+          ns.ProfFollow.Sync=function()end
+          local candidate=finish('alchemy',{snapshot=fixture(),start=1,target=3})
+          assert(owner.Bind('alchemy',candidate))
+          local before=changes
+          owner.RecordAttempt('alchemy',101,'toc-order')
+          assert(changes==before+1,'HUD missed or duplicated the delayed subscription')
         ''')
 
 

@@ -1256,7 +1256,7 @@ function RA.FixedPlan(slug, supplied)
         result.mode,result.scheme,result.target="fixed","fixed",target
         if slug=="first-aid" and result.clientPending then result.referenceOnly=true end
         if slug~="poisons" then
-            result.procurementPolicyVersion=ns.ProfRouteSolver and ns.ProfRouteSolver.ProcurementPolicyVersion or 7
+            result.procurementPolicyVersion=ns.ProfRouteSolver and ns.ProfRouteSolver.ProcurementPolicyVersion or 8
         end
         result.start=steps[1] and steps[1][1] or target
         result.clipped=clipped
@@ -1907,8 +1907,8 @@ function RA.OptionsFor(slug, current)
         scheme = slug=="first-aid" and "fixed" or fish and "fishing" or PDm.SettingRaw("autoScheme",slug),
         allowSecondaryLeveling = PDm.Setting("autoSecondaryLeveling",slug),
         secondaryProfession = pair and pair.partner or nil,
-        executionInventory = ns.ProfTrack and ns.ProfTrack.ContinueInventory
-            and ns.ProfTrack.ContinueInventory(slug) or nil,
+        executionInventory = ns.ProfExecution and ns.ProfExecution.GetContinuation
+            and ns.ProfExecution.GetContinuation(slug) or nil,
     }
 end
 

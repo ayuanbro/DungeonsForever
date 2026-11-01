@@ -10860,6 +10860,10 @@ function PD.PlanStatusParts(plan)
     if plan.targetReached and plan.learningComplete == false then
         return L["路线已生成；部分配方学习条件待核实。"]
     end
+    if plan.status=="complete" and plan.targetReached and not plan.optimal then
+        if (plan.expanded or 0)==0 then return L["路线已生成，尚未进行降本搜索。"] end
+        return L["路线已生成，成本尚未证明最优。"]
+    end
     local status = {
         searching = L["后台优化中"], paused = L["优化已停止"],
         stopped = L["优化已停止"], infeasible = L["当前限制下没有可行路线"],
@@ -11146,6 +11150,7 @@ function PD.CopyPlanSummary(plan)
                            "revision", "partial", "plannedTo", "targetReached", "alreadyAtTarget", "start", "target",
                            "expanded", "improvements", "initialTotal", "savings", "searchComplete", "budgetLimited",
                            "inputModelOptimal", "catalogueCoverageComplete", "quoteComplete", "searchTermination", "searchState",
+                           "costSearchPerformed", "costSearchStatus",
                            "stale", "staleReason", "cached", "settingsChanged", "referencePrices", "pricePending", "referenceRoute",
                            "considerAuctionSupply", "allowBindOnPickupFormulas", "allowCurrencyFormulas", "auctionSupplyUnknown", "auctionSupplyObserved", "supplyComplete", "auctionSupplyShortages", "purchaseVerified",
                            "formulasTotal", "formulaTotal", "formulaComplete", "formulaBlocked", "procurementPolicyVersion",
@@ -12017,8 +12022,8 @@ function PD.BuildLvOpts(slug, current)
         scheme = PD.FixedOnly(slug) and "fixed" or fish and "fishing" or PD.SettingRaw("autoScheme",slug),
         allowSecondaryLeveling = PD.Setting("autoSecondaryLeveling",slug),
         secondaryProfession = pair and pair.partner or nil,
-        executionInventory = ns.ProfTrack and ns.ProfTrack.ContinueInventory
-            and ns.ProfTrack.ContinueInventory(slug) or nil,
+        executionInventory = ns.ProfExecution and ns.ProfExecution.GetContinuation
+            and ns.ProfExecution.GetContinuation(slug) or nil,
     }
 end
 
@@ -12270,7 +12275,7 @@ end
 
 local function TrackRunOf(slug)
     if slug=="poisons" then return nil end
-    local T = ns.ProfTrack
+    local T = ns.ProfExecution
     if not T then return nil end
     local run = T.GetRun(slug)
     if run and run.status == "active" then return run end
@@ -12278,14 +12283,14 @@ local function TrackRunOf(slug)
 end
 
 local function TrackStepsFor(slug, steps)
-    local T = ns.ProfTrack
+    local T = ns.ProfExecution
     if not T then return nil end
     local run = TrackRunOf(slug)
     if not run then return nil end
-    local mine = run.steps
+    local mine = run.plan.executionSteps or run.plan.steps
     if type(mine) ~= "table" or type(steps) ~= "table" or #steps == 0 or #mine == 0 then return nil end
     if steps[1].segmentIDs then
-        local progress=T.ProgressAll(slug)
+        local progress=T.GetProgressAll(slug)
         if not progress then return nil end
         local ledger=run.plan and run.plan.executionSteps or mine
         local byID={}
@@ -12296,7 +12301,7 @@ local function TrackStepsFor(slug, steps)
         local grouped={run=run,finished=progress.finished,current=#steps+1,steps={}}
         local assigned={}
         for index,group in ipairs(steps) do
-            local sum={casts=0,outputs=0,remaining=0,complete=true}
+            local sum={casts=0,actualOutputs=0,remainingCrafts=0,complete=true}
             if not group.segmentIDs or #group.segmentIDs==0 then return nil end
             for _,id in ipairs(group.segmentIDs) do
                 local executionIndex=byID[id]
@@ -12304,8 +12309,8 @@ local function TrackStepsFor(slug, steps)
                 if not part or assigned[id] then return nil end
                 assigned[id]=true
                 sum.casts=sum.casts+(part.casts or 0)
-                sum.outputs=sum.outputs+(part.outputs or 0)
-                sum.remaining=sum.remaining+(part.remaining or 0)
+                sum.actualOutputs=sum.actualOutputs+(part.actualOutputs or 0)
+                sum.remainingCrafts=sum.remainingCrafts+(part.remainingCrafts or 0)
                 sum.complete=sum.complete and part.complete==true
                 if executionIndex==progress.current then grouped.current=index end
             end
@@ -12318,23 +12323,23 @@ local function TrackStepsFor(slug, steps)
     if #mine == #steps then
         local same = true
         for i = 1, #steps do
-            if steps[i][3] ~= mine[i].spell then same = false break end
+            if steps[i][3] ~= mine[i][3] or (steps[i].profession or slug) ~= (mine[i].profession or slug)
+                or steps[i].segmentID and steps[i].segmentID ~= mine[i].segmentID then same = false break end
         end
-        if same then return run, T.ProgressAll(slug) end
+        if same then return run, T.GetProgressAll(slug) end
     end
-    if not (T.Rebase and T.Rebase(run, steps)) then return nil end
-    return run, T.ProgressAll(slug)
+    return nil
 end
 
 function PD.RowsCraftLog(rows)
-    local T = ns.ProfTrack
+    local T = ns.ProfExecution
     PushHead(rows, L["制作记录"])
     PushGap(rows, 4)
-    if not T or not T.Summary then
+    if not T or not T.GetSummary then
         PushText(rows, L["未启用制作追踪。"], 14, C_GREY)
         return
     end
-    local sum = T.Summary(PD.cur)
+    local sum = T.GetSummary(PD.cur)
     if not sum then
         PushText(rows, L["本角色还没有任何制作记录。"], 14, C_TEXT)
         PushGap(rows, 4)
@@ -12350,6 +12355,8 @@ function PD.RowsCraftLog(rows)
         end
     elseif sum.finished or sum.status == "done" then
         stText, stColor = L["已完成"], { 0.49, 0.82, 0.63 }
+    elseif sum.status == "archived" then
+        stText, stColor = L["已归档"], C_GREY
     else
         stText, stColor = L["追踪中"], C_GOLD
     end
@@ -12359,25 +12366,30 @@ function PD.RowsCraftLog(rows)
                           tostring(sum.startSkill or "—"), tostring(sum.target or "—")), 14, stColor)
     PushText(rows, format(L["已做 %d 次 · 计划 %d 次"], sum.casts or 0, sum.planned or 0), 14, C_TEXT)
     PushGap(rows, 8)
-    local list = T.RecipeTotals(PD.cur)
+    local list = {}
+    for _,entry in ipairs(T.GetRecipeTotals(PD.cur,sum.planID)) do
+        if (entry.casts or 0)>0 then list[#list+1]=entry end
+    end
     if #list == 0 then
         PushText(rows, L["还没有可统计的制作。"], 14, C_GREY)
     else
         PushHead(rows, L["按配方汇总"], 1)
         for _, e in ipairs(list) do
+            local item,quantity=nil,0
+            for id,n in pairs(e.confirmedOutputs) do item=item or id;quantity=quantity+n end
             local name = PD.StepName({ 0, 0, e.spell })
-            if (type(name) ~= "string" or name == "") and e.item then name = PD.ItemName(e.item) end
+            if (type(name) ~= "string" or name == "") and item then name = PD.ItemName(item) end
             rows[#rows + 1] = {
                 kind = "row", h = PD.ROW_H, col = 1,
-                it = e.item and { e.item } or nil,
+                it = item and { item } or nil,
                 text = name or tostring(e.spell or ""),
                 right = format(L["%d 次"], e.casts),
-                right2 = format(L["%d 件"], e.out),
+                right2 = format(L["%d 件"], quantity),
                 noTip = true,
             }
         end
     end
-    local hist = T.History(PD.cur)
+    local hist = T.GetHistory(PD.cur)
     local past = {}
     for _, run in ipairs(hist) do
         if run.status ~= "active" then past[#past + 1] = run end
@@ -12387,14 +12399,13 @@ function PD.RowsCraftLog(rows)
         PushGap(rows, 8)
         PushHead(rows, L["历史记录"], 1)
         for _, run in ipairs(past) do
-            local n = 0
-            for _ in ipairs(run.steps or {}) do n = n + 1 end
-            local tag = run.status == "done" and L["已完成"]
+            local summary = T.GetSummary(PD.cur,run.planID) or {}
+            local tag = summary.finished and L["已完成"]
                         or (run.status == "stale" and L["技能值变动"] or L["已归档"])
             rows[#rows + 1] = {
                 kind = "row", h = PD.ROW_H, col = 1, noTip = true,
-                text = format(L["%d 步 · 技能 %s→%s"], n, tostring(run.startSkill or "—"),
-                              tostring(run.target or "—")),
+                text = format(L["%d 步 · 技能 %s→%s"], summary.total or 0, tostring(summary.startSkill or "—"),
+                              tostring(summary.target or "—")),
                 right = tag,
                 rightColor = C_GREY,
             }
@@ -12794,7 +12805,8 @@ function PD.RowsLeveling(rows)
                 if res.status == "searching" or res.status == "incomplete" then
                     progress = PD.PlanProgressText(res) or L["正在快速计算适合路线"]
                 elseif (res.status == "complete" or res.optimal) and res.expanded then
-                    progress = format(L["优化结束：已比较 %d 种组合"], res.expanded)
+                    progress = res.expanded==0 and L["路线已生成，尚未进行降本搜索。"]
+                        or format(L["优化结束：已比较 %d 种组合"], res.expanded)
                 end
             end
             PD.lvRouteHead = { progress = progress }
@@ -14043,10 +14055,10 @@ function PD.LevelTool()
             list[#list + 1] = {key = "gather_mode", align = "left", text = L["采集路线"]}
         end
     end
-    if ns.ProfTrack then
+    if ns.ProfExecution then
         local trackRun = TrackRunOf(PD.cur)
         if trackRun then
-            local total = #(trackRun.steps or {})
+            local total = #(trackRun.plan.executionSteps or trackRun.plan.steps or {})
             local cur = math.min(trackRun.currentIndex or 1, total)
             list[#list + 1] = { key = "track", align = "right", on = true, tone = "blue",
                                 text = format(L["追踪 %d/%d"], cur, total), tip = {{L["再次点击取消追踪；已记录的制作数据保留。"]}} }
@@ -14140,8 +14152,8 @@ function PD.LevelTool()
             PD.exclusionsOpen = false
             PD.FlushPolicies()
         elseif k == "track" then
-            local T = ns.ProfTrack
-            if T and T.Active and T.Active(PD.cur) then
+            local T = ns.ProfExecution
+            if T and T.GetActive and T.GetActive(PD.cur) then
                 -- Suspend HUD auto-start before ending the execution.
                 -- EndExecution may trigger route refresh callbacks immediately.
                 local follow = ns.ProfFollow
@@ -14152,7 +14164,7 @@ function PD.LevelTool()
                 if RA and RA.EndExecution then
                     RA.EndExecution(PD.cur)
                 else
-                    T.Archive(PD.cur, "cancel")
+                    T.End(PD.cur, "cancel")
                 end
 
                 PD.autoSnapshotSlug = nil
@@ -14166,9 +14178,9 @@ function PD.LevelTool()
                     and res.status ~= "selection_required"
                     and res.status ~= "recalculate_required"
                     and PD.autoSnapshotSlug == PD.cur
-                    and T.Extract(res)) and true or false
+                    and #(res.executionSteps or res.steps or {}) > 0) and true or false
 
-                local bound = ready and T.Restart(PD.cur, res)
+                local bound = ready and T.StartNew(PD.cur, res)
 
                 if not bound then
                     local msg = computing
@@ -15222,7 +15234,7 @@ end
 
 local function HookTrack()
     if PD.__trackHooked then return end
-    local T = ns.ProfTrack
+    local T = ns.ProfExecution
     if not T or not T.OnChanged then return end
     PD.__trackHooked = true
     T.OnChanged(function()

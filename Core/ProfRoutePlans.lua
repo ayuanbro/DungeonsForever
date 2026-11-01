@@ -232,6 +232,7 @@ local function remember(job, result)
 end
 local searchFields={"status","expanded","improvements","initialTotal","bestTotal","savings","budgetLimited",
     "searchComplete","searchTermination","searchCpuMs","searchCpuLimitMs","inputModelOptimal",
+    "costSearchPerformed","costSearchStatus",
     "catalogueCoverageComplete","quoteComplete","restrictedReason","searchModel","frontierStates","memoStates",
     "searchFrontierLimit","initialNetTotal","bestNetTotal","netSavings","recoveryOptimized"}
 local function updateExecution(job, result)

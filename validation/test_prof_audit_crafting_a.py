@@ -62,7 +62,7 @@ class CraftingProfessionAuditTests(unittest.TestCase):
         self.load = self.lua.eval("function(source)assert(loadstring(source))('DungeonsForever',ns)end")
         for name in ("Data_ProfRecipes", "Data_ProfLeveling", "Data_ProfTools", "Data_ProfSpecializations", "Data_ProfSpecializationQuests"):
             self.load((ROOT / "Core" / "Data" / (name + ".lua")).read_text(encoding="utf-8-sig"))
-        for name in ("ProfPolicies", "ProfGates", "ProfEssences", "ProfClientScan", "ProfSolverCapture", "ProfLearning", "ProfRecovery", "ProfRouteSolver", "ProfTrack", "ProfExecution"):
+        for name in ("ProfPolicies", "ProfGates", "ProfEssences", "ProfClientScan", "ProfSolverCapture", "ProfLearning", "ProfRecovery", "ProfRouteSolver", "ProfExecution"):
             self.load((ROOT / "Core" / (name + ".lua")).read_text(encoding="utf-8-sig"))
         self.lua.execute(r'''
           ns.ProfEconomy.Professions=function()return skills end

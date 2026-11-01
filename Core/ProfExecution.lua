@@ -1,4 +1,4 @@
--- Persistent execution facts, adapted to the dev Core data and ProfTrack APIs.
+-- Sole owner of profession execution, event observation and saved history.
 -- The main addon owns loading and DungeonsForeverDB.prof remains the sole store.
 local _, ns = ...
 
@@ -54,9 +54,9 @@ local function db()
     local prof=ns.ProfessionDB();prof.track=prof.track or {}
     local key=character(); local c=prof.track[key]
     if type(c)~="table" or c.version~=1 then c={version=1,nextID=0,nextAttempt=0,active={},runs={},seen={},order={},preparing={}}; prof.track[key]=c end
-    if upgradeLegacy and not c.devExecutionMigration then
-        for _,run in pairs(c.runs or {}) do if not run.plan and type(run.steps)=="table" then upgradeLegacy(run,c) end end
-        c.devExecutionMigration=1
+    if upgradeLegacy and (tonumber(c.devExecutionMigration) or 0)<2 then
+        for _,run in pairs(c.runs or {}) do upgradeLegacy(run,c) end
+        c.devExecutionMigration=2
     end
     c.seen=c.seen or {};c.order=c.order or {}
     c.active=c.active or {}; c.runs=c.runs or {}; c.preparing=c.preparing or {}; c.seenCasts=c.seenCasts or {}; c.castOrder=c.castOrder or {}
@@ -269,7 +269,13 @@ function XP.PerformanceCounters()
     return {creditBuilds=performance.creditBuilds,historyScans=performance.historyScans,recentBuilds=performance.recentBuilds}
 end
 function XP.GetRun(slug) local c=db();return c.runs[c.active[slug]] end
-XP.GetActive=XP.GetRun
+function XP.Get(slug,planID)
+    local run=planID and db().runs[planID]
+    return run and run.slug==slug and run or nil
+end
+function XP.GetActive(slug)
+    local run=XP.GetRun(slug);return run and run.status=="active" and run or nil
+end
 function XP.HasActive(slug)
     local c=db()
     if slug then local run=c.runs[c.active[slug]];return run~=nil and run.status=="active" end
@@ -291,6 +297,23 @@ function XP.GetHistory(slug)
         return a.planID>b.planID
     end)
     return list
+end
+function XP.GetSummary(slug,planID)
+    local run
+    if planID then run=XP.Get(slug,planID) else run=XP.GetRun(slug) end
+    if not run and not planID then run=XP.GetHistory(slug)[1] end
+    if not run then return end
+    local plan=readablePlan(run)
+    if not plan then return nil,"historyUnreadable" end
+    local list=steps(plan);local planned=0
+    for _,seg in ipairs(list) do planned=planned+(seg[4] or 0) end
+    return {planID=run.planID,status=run.status,archiveReason=run.archiveReason,
+        current=run.currentIndex or 1,total=#list,done=min(#list,(run.currentIndex or 1)-1),
+        planned=planned,casts=run.attemptsDone or 0,skill=skill(slug),
+        target=plan.target or plan.targetSkill,startSkill=run.startSkill or plan.startSkill or plan.start,
+        finished=run.finished or run.archiveReason=="completed" or run.status=="done",
+        stale=plan.stale or run.status=="stale",staleReason=plan.staleReason or run.staleReason,
+        learningBlocked=run.learningBlocked,learningBlockReason=run.learningBlockReason}
 end
 function XP.NormalizePlan(slug,result)
     if type(result)=="table" and (rawget(result,"__dfHistory")~=nil or rawget(result,"__dfPlan")~=nil) then return nil,"historyUnreadable" end
@@ -449,7 +472,7 @@ function XP.Bind(slug,result,opts)
     for _,row in ipairs(plan.steps or {}) do for i,id in ipairs(row.segmentIDs or {}) do row.segmentIDs[i]=ids[id] or id end end
     local run={planID=planID,id=planID,originPlanID=normalized.planID or normalized.executionPlanID,
         originSignature=not (normalized.planID or normalized.executionPlanID) and originSignature(result) or nil,
-        slug=slug,plan=plan,status="active",createdAt=now(),updatedAt=now(),progressVersion=0,
+        slug=slug,plan=plan,status="active",createdAt=now(),updatedAt=now(),progressVersion=0,startSkill=skill(slug),
         currentIndex=1,step=1,attemptsDone=0,progress={},supplements={},inheritedInventory=copy(plan.seedInventory or opts.executionInventory
             or c.preparing[slug] and c.preparing[slug].inventory or {}),
         inheritedFrom=plan.executionSourcePlanID or plan.executionOptions and plan.executionOptions.executionSourcePlanID
@@ -466,6 +489,9 @@ local function outputFacts(run,seg)
     local p=progressRecord(run,seg);local rec=recipe(seg,run.slug)
     local confirmed,guaranteed={},{};local pending=0
     local output=seg.item or rec.item or rec.makes
+    -- Older saves kept some receipts only as totals. Preserve these facts for
+    -- reporting, without inventing cast times or reusable inventory chronology.
+    for item,n in pairs(p.legacyOutputs or {}) do confirmed[item]=n;guaranteed[item]=n end
     for _,a in ipairs(p.attempts) do
         local item=a.item or output
         if item then
@@ -736,6 +762,14 @@ function XP.Progress(slug,id,skillSnapshot,planID)
         end
     end
     return result
+end
+function XP.GetProgressAll(slug)
+    local run=XP.GetRun(slug);if not run then return end
+    local plan=readablePlan(run);if not plan then return nil,"historyUnreadable" end
+    local out={run=run,current=run.currentIndex or 1,finished=run.finished,steps={}}
+    local snapshot=E and E.Professions and E.Professions()
+    for i=1,#steps(plan) do out.steps[i]=XP.Progress(slug,i,snapshot,run.planID) end
+    return out
 end
 function XP.Sync(slug,result)
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
@@ -1252,8 +1286,6 @@ function XP.ReconcileLifecycle()
     return XP.RefreshObservation()
 end
 function XP.Initialize()
-    local old=ns.ProfTrack and ns.ProfTrack.frame
-    if old and old.UnregisterAllEvents then old:UnregisterAllEvents() end
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
     observationGeneration=observationGeneration+1;observationTimer=false;completionTimer=false
     local c=db();c.observerSession=(c.observerSession or 0)+1;XP.eventSession=tostring(c.observerSession)
@@ -1289,7 +1321,7 @@ function XP.Initialize()
     end)
     XP.ReconcileLifecycle()
 end
--- Compatibility facade and legacy migration are installed below before startup.
+-- Legacy migration and interface aliases are installed before startup.
 
 function XP.DisableTracking()
     observationGeneration=observationGeneration+1
@@ -1314,158 +1346,122 @@ end
 -- promoted into production receipts. Unknown historical fields survive in the
 -- original backup so a newer reader can still recover them.
 upgradeLegacy=function(run,c)
-    if type(run)~="table" or run.plan or type(run.steps)~="table" then return end
-    local legacySteps,legacyProgress=run.steps,run.progress or {}
-    local plan={executionVersion=1,planVersion=2,slug=run.slug,planID=run.planID,
-        mode=run.scheme=="fixed" and "fixed" or "auto",scheme=run.scheme,
-        start=run.start,target=run.target,total=run.totalCost,priced=run.priced,
-        status="complete",feasible=true,executionSteps={},steps={},mats={},formulas={}}
-    local migrated={};local total=0
-    run.legacyTrack={steps=copy(legacySteps),progress=copy(legacyProgress),outputs=copy(run.outputs or {}),
-        planSig=run.planSig,migratedAt=now()}
-    for i,old in ipairs(legacySteps) do
-        local spell=old.spell or old[3];local profession=old.profession or run.slug
-        local rec=E and E.FindRecipe and E.FindRecipe(profession,spell)
-        rec=copy(rec or {spell=spell,profession=profession,item=old.item,count=old.out or 1,mats=old.mats or {},
-            learn=old.from or old[1] or 1,yellow=old.from or old[1] or 1,
-            green=old.to or old[2] or 300,grey=max((old.to or old[2] or 300)+1,2)})
-        local a,b=old.from or old[1] or 0,old.to or old[2] or 0
-        local count=old.crafts or old[4] or 0
-        local id=run.planID..":legacy:"..i
-        local seg={a,b,spell,count,segmentID=id,actionID=id,profession=profession,recipe=rec,
-            item=old.item or rec.item,goalSkill=b,expectedGain=max(0,b-a),expectedCrafts=count,attemptLimit=count,
-            outputMin=rec.outputMin or rec.count or 1,outputMax=rec.outputMax or rec.count or 1,
-            requiredOutputs={},materialMinCrafts=0,allocations={},cost=old.cost,est=old.est}
-        if b<=a and count>0 and seg.item then
-            seg.requiredOutputs[seg.item]=seg.outputMin*count;seg.materialMinCrafts=count
+    if type(run)~="table" then return end
+    if not run.plan and type(run.steps)=="table" then
+        local legacySteps,legacyProgress=run.steps,run.progress or {}
+        local plan={executionVersion=1,planVersion=2,slug=run.slug,planID=run.planID,
+            mode=run.scheme=="fixed" and "fixed" or "auto",scheme=run.scheme,
+            start=run.start,target=run.target,total=run.totalCost,priced=run.priced,
+            status="complete",feasible=true,executionSteps={},steps={},mats={},formulas={}}
+        local migrated={};local total=0
+        run.legacyTrack={steps=copy(legacySteps),progress=copy(legacyProgress),outputs=copy(run.outputs or {}),
+            planSig=run.planSig,migratedAt=now()}
+        for i,old in ipairs(legacySteps) do
+            local spell=old.spell or old[3];local profession=old.profession or run.slug
+            local rec=E and E.FindRecipe and E.FindRecipe(profession,spell)
+            rec=copy(rec or {spell=spell,profession=profession,item=old.item,count=old.out or 1,mats=old.mats or {},
+                learn=old.from or old[1] or 1,yellow=old.from or old[1] or 1,
+                green=old.to or old[2] or 300,grey=max((old.to or old[2] or 300)+1,2)})
+            local a,b=old.from or old[1] or 0,old.to or old[2] or 0
+            local count=old.crafts or old[4] or 0
+            local id=run.planID..":legacy:"..i
+            local seg={a,b,spell,count,segmentID=id,actionID=id,profession=profession,recipe=rec,
+                item=old.item or rec.item,goalSkill=b,expectedGain=max(0,b-a),expectedCrafts=count,attemptLimit=count,
+                outputMin=rec.outputMin or rec.count or 1,outputMax=rec.outputMax or rec.count or 1,
+                requiredOutputs={},materialMinCrafts=0,allocations={},cost=old.cost,est=old.est}
+            if b<=a and count>0 and seg.item then
+                seg.requiredOutputs[seg.item]=seg.outputMin*count;seg.materialMinCrafts=count
+            end
+            plan.executionSteps[i]=seg;plan.steps[i]=seg
+            local source=legacyProgress[i] or {};local progress={casts=source.casts or 0,attempts={},manualOutputs={}}
+            total=total+progress.casts
+            for _,oldAttempt in ipairs(source.attempts or {}) do
+                local attempt=copy(oldAttempt)
+                attempt.sequence=attempt.sequence or attempt.seq or ((c.nextAttempt or 0)+1)
+                c.nextAttempt=max(c.nextAttempt or 0,attempt.sequence)
+                attempt.spellID=attempt.spellID or attempt.spell or spell;attempt.segmentID=id
+                attempt.item=attempt.item or seg.item;attempt.actual=attempt.actual or attempt.out
+                attempt.minimum=attempt.minimum or seg.outputMin;attempt.sources=attempt.sources or {}
+                if attempt.actual~=nil then attempt.sources.legacy={quantity=attempt.actual} end
+                progress.attempts[#progress.attempts+1]=attempt
+            end
+            if type(source.manual)=="table" and source.manual.item then
+                progress.manualOutputs[source.manual.item]={total=source.manual.total or 0,throughSequence=c.nextAttempt or 0}
+            end
+            migrated[id]=progress
         end
-        plan.executionSteps[i]=seg;plan.steps[i]=seg
-        local source=legacyProgress[i] or {};local progress={casts=source.casts or 0,attempts={},manualOutputs={}}
-        total=total+progress.casts
-        for _,oldAttempt in ipairs(source.attempts or {}) do
-            local attempt=copy(oldAttempt)
-            attempt.sequence=attempt.sequence or attempt.seq or ((c.nextAttempt or 0)+1)
-            c.nextAttempt=max(c.nextAttempt or 0,attempt.sequence)
-            attempt.spellID=attempt.spellID or attempt.spell or spell;attempt.segmentID=id
-            attempt.item=attempt.item or seg.item;attempt.actual=attempt.actual or attempt.out
-            attempt.minimum=attempt.minimum or seg.outputMin;attempt.sources=attempt.sources or {}
-            if attempt.actual~=nil then attempt.sources.legacy={quantity=attempt.actual} end
-            progress.attempts[#progress.attempts+1]=attempt
-        end
-        if type(source.manual)=="table" and source.manual.item then
-            progress.manualOutputs[source.manual.item]={total=source.manual.total or 0,throughSequence=c.nextAttempt or 0}
-        end
-        migrated[id]=progress
+        run.plan=plan;run.progress=migrated;run.attemptsDone=total;run.supplements=run.supplements or {}
+        run.inheritedInventory=run.inheritedInventory or {};run.executionMigration=1
+        if run.status=="active" and not c.trackingSlug then c.trackingSlug=run.slug end
     end
-    run.plan=plan;run.progress=migrated;run.attemptsDone=total;run.supplements=run.supplements or {}
-    run.inheritedInventory=run.inheritedInventory or {};run.executionMigration=1
-    if run.status=="active" and not c.trackingSlug then c.trackingSlug=run.slug end
+    if not run.plan then return end
+    -- Also repair totals omitted by the first execution migration. Its backup
+    -- survives reloads, so this is independent of the currently installed UI.
+    local backup=run.legacyTrack
+    if backup then
+        for i,source in pairs(backup.progress or {}) do
+            local old=(backup.steps or {})[i]
+            local p=run.progress and run.progress[run.planID..":legacy:"..i]
+            if p and old and old.item and integer(source.out) and source.out>0 then
+                p.legacyOutputs=p.legacyOutputs or {};p.legacyOutputs[old.item]=source.out
+                run.byRecipe=nil;run.byRecipeVersion=nil
+            end
+        end
+    end
+    -- These were persisted UI projections of plan/progress, not independent
+    -- execution facts. Keep the original legacy backup, but stop storing views.
+    run.steps=nil;run.outputs=nil;run.casts=nil;run.currentSkill=nil
+    run.start=nil;run.target=nil;run.scheme=nil;run.totalCost=nil;run.priced=nil
+    run.planSig=nil;run.specSig=nil
 end
 
--- Keep the public dev ProfTrack surface used by ProfessionUI and ProfFollow.
--- The execution ledger owns facts; these views expose the former field names.
-local T=ns.ProfTrack
-if T then
-    local legacyExtract=T.Extract
-    local function compat(run)
-        if not run or not readablePlan(run) then return run end
-        run.steps={}
-        for i,seg in ipairs(steps(run.plan)) do
-            local rec=recipe(seg,run.slug)
-            run.steps[i]={from=seg[1] or 0,to=seg[2] or 0,spell=seg[3],crafts=seg[4] or 0,
-                item=seg.item or rec.item,out=rec.count,mats=rec.mats or {},cost=seg.cost,est=seg.est,
-                profession=seg.profession,segmentID=seg.segmentID,kind=seg.kind}
-        end
-        run.start=run.plan.start;run.target=run.plan.target;run.scheme=run.plan.scheme
-        run.totalCost=run.plan.total;run.priced=run.plan.priced;run.casts=run.attemptsDone or 0
-        run.currentSkill=skill(run.slug);run.finished=(run.currentIndex or 1)>#run.steps or nil
-        run.outputs={}
-        for _,entry in ipairs(XP.GetRecipeTotals(run.slug,run.planID)) do
-            for item,n in pairs(entry.confirmedOutputs or {}) do run.outputs[item]=(run.outputs[item] or 0)+n end
-        end
-        return run
-    end
-    function T.Get(slug,planID) return compat(planID and db().runs[planID]) end
-    function T.GetRun(slug) return compat(XP.GetRun(slug)) end
-    function T.Active(slug) local run=T.GetRun(slug);return run and run.status=="active" and run or nil end
-    function T.History(slug)
-        local all=XP.GetHistory(slug);for _,run in ipairs(all) do compat(run) end;return all
-    end
-    function T.Bind(slug,result,opts) local run,reason=XP.Bind(slug,result,opts);return compat(run),reason end
-    function T.Restart(slug,result) return T.Bind(slug,result,{force=true}) end
-    function T.Archive(slug,reason) return compat(XP.End(slug,reason or "archived")) end
-    function T.Drop(slug) return T.Archive(slug,"dropped") end
-    function T.Sync(slug) return compat(XP.Sync(slug)) end
-    function T.Extract(result)
-        if result and result.executionVersion==1 then
-            local out={}
-            for _,seg in ipairs(steps(result)) do
-                local rec=recipe(seg,result.slug)
-                out[#out+1]={from=seg[1],to=seg[2],spell=seg[3],crafts=seg[4] or 0,item=seg.item or rec.item,
-                    out=rec.count,mats=rec.mats or {},cost=seg.cost,profession=seg.profession,segmentID=seg.segmentID}
-            end
-            return #out>0 and out or nil
-        end
-        return legacyExtract(result)
-    end
-    function T.SamePlan(run,result)
-        if not run or not result then return false end
-        if result==run.plan or result.planID and result.planID==run.planID then return true end
-        return originSignature(run.plan)==originSignature(result)
-    end
-    function T.Rebase(run,list)
-        -- Repainting a candidate is never authorization to rewrite a frozen run.
-        return run and run.plan and originSignature(run.plan)==originSignature({executionSteps=list}) or false
-    end
-    function T.Progress(slug,index,run)
-        run=run or XP.GetRun(slug);if not run then return end
-        local i=index or run.currentIndex or 1;local p=XP.Progress(slug,i,nil,run.planID)
-        if not p then return end
-        local seg=steps(run.plan)[i];local rec=seg and recipe(seg,slug) or {}
-        p.index=i;p.from=seg and seg[1];p.to=seg and seg[2];p.spell=seg and seg[3]
-        p.item=seg and (seg.item or rec.item);p.mats=rec.mats or {};p.planned=seg and (seg[4] or 0) or 0
-        p.outputs=p.actualOutputs or 0;p.remaining=p.remainingCrafts or 0;p.current=p.currentSkill
-        p.started=(p.casts or 0)>0;p.over=p.extraCrafts and p.extraCrafts>0 or nil;p.finished=seg==nil or nil
-        return p
-    end
-    function T.ProgressAll(slug)
-        local run=T.GetRun(slug);if not run then return end
-        local out={run=run,current=run.currentIndex or 1,finished=run.finished,steps={}}
-        for i=1,#run.steps do out.steps[i]=T.Progress(slug,i,run) end;return out
-    end
-    T.RecordAttempt=XP.RecordAttempt
-    function T.RecordOutput(slug,item,quantity,guid)
-        return XP.RecordOutput({itemID=item,quantity=quantity or 1,castGUID=guid},"structured")
-    end
-    T.VerifyOutput=XP.VerifyOutput
-    T.RecordCreatedText=XP.RecordCreatedMessage
-    T.ContinueInventory=XP.GetContinuation
-    function T.RecipeTotals(slug)
-        local out={}
-        for _,entry in ipairs(XP.GetRecipeTotals(slug)) do
-            local item,quantity
-            for id,n in pairs(entry.confirmedOutputs or {}) do item=item or id;quantity=(quantity or 0)+n end
-            if (entry.casts or 0)>0 then
-                local row=copy(entry);row.item=item;row.out=quantity or 0;out[#out+1]=row
-            end
-        end
-        return out
-    end
-    function T.Summary(slug)
-        local run=T.GetRun(slug) or T.History(slug)[1];if not run then return end
-        local planned=0;for _,seg in ipairs(steps(run.plan)) do planned=planned+(seg[4] or 0) end
-        return {planID=run.planID,status=run.status,current=run.currentIndex or 1,total=#steps(run.plan),
-            done=min(#steps(run.plan),(run.currentIndex or 1)-1),planned=planned,casts=run.attemptsDone or 0,
-            skill=skill(slug),target=run.plan.target,startSkill=run.startSkill,finished=run.finished,
-            stale=run.plan.stale,staleReason=run.plan.staleReason,
-            learningBlocked=run.learningBlocked,learningBlockReason=run.learningBlockReason}
-    end
-    T.GetPlan=XP.GetPlan;T.PrepareRecalculate=XP.PrepareRecalculate;T.PlanRecalculated=XP.PlanRecalculated
-    T.GetSupplement=XP.GetSupplement;T.CalculateSupplement=XP.CalculateSupplement
-    T.ConfirmConversion=XP.ConfirmConversion
-    XP.OnChanged(function(slug,run,reason)
-        compat(run)
-        if T._Notify then T._Notify(slug,run,reason) end
-    end)
+-- Old method names share the execution owner and its notification list. Only
+-- argument/result adapters live here; no duplicate state or saved projections.
+local T={};ns.ProfTrack=T
+T.Get=XP.Get;T.GetRun=XP.GetRun;T.Active=XP.GetActive;T.History=XP.GetHistory
+T.Bind=XP.Bind;T.Restart=XP.StartNew;T.Sync=XP.Sync;T.OnChanged=XP.OnChanged
+T.RecordAttempt=XP.RecordAttempt;T.VerifyOutput=XP.VerifyOutput
+T.RecordCreatedText=XP.RecordCreatedMessage;T.ContinueInventory=XP.GetContinuation
+T.Summary=XP.GetSummary;T.GetPlan=XP.GetPlan
+T.PrepareRecalculate=XP.PrepareRecalculate;T.PlanRecalculated=XP.PlanRecalculated
+T.GetSupplement=XP.GetSupplement;T.CalculateSupplement=XP.CalculateSupplement
+T.ConfirmConversion=XP.ConfirmConversion
+function T.Archive(slug,reason) return XP.End(slug,reason or "archived") end
+function T.Drop(slug) return XP.End(slug,"dropped") end
+function T.RecordOutput(slug,item,quantity,guid)
+    return XP.RecordOutput({itemID=item,quantity=quantity or 1,castGUID=guid},"structured")
 end
+local function trackProgress(slug,run,i,p)
+    if not p then return end
+    local seg=segment(run,i);local rec=seg and recipe(seg,slug) or {}
+    p.index=i;p.from=seg and seg[1];p.to=seg and seg[2];p.spell=seg and seg[3]
+    p.item=p.outputItem;p.mats=rec.mats or {};p.planned=seg and (seg[4] or 0) or 0
+    p.outputs=p.actualOutputs or 0;p.remaining=p.remainingCrafts or 0;p.current=p.currentSkill
+    p.started=(p.casts or 0)>0;p.over=p.extraCrafts and p.extraCrafts>0 or nil
+    p.finished=not p.historyUnreadable and seg==nil or nil
+    return p
+end
+function T.Progress(slug,index,run)
+    run=run or XP.GetRun(slug);if not run then return end
+    local i=index or run.currentIndex or 1
+    return trackProgress(slug,run,i,XP.Progress(slug,i,nil,run.planID))
+end
+function T.ProgressAll(slug)
+    local out=XP.GetProgressAll(slug);if not out then return end
+    for i=1,#out.steps do out.steps[i]=trackProgress(slug,out.run,i,out.steps[i]) end
+    return out
+end
+function T.RecipeTotals(slug)
+    local out={}
+    for _,entry in ipairs(XP.GetRecipeTotals(slug)) do
+        if (entry.casts or 0)>0 then
+            local quantity=0
+            for item,n in pairs(entry.confirmedOutputs) do entry.item=entry.item or item;quantity=quantity+n end
+            entry.out=quantity;out[#out+1]=entry
+        end
+    end
+    return out
+end
+-- ProfessionUI resolves this owner when rendering. ProfFollow subscribes via
+-- ns.Init, after the TOC has loaded this file and all of its dependencies.
 if ns.Init then ns.Init(XP.Initialize) else XP.Initialize() end

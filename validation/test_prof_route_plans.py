@@ -59,7 +59,7 @@ class NativeRoutePlansTests(unittest.TestCase):
         self.lua=LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute(MOCKS)
         self.load=self.lua.eval("function(source)assert(loadstring(source))('DungeonsForever',ns)end")
-        for name in ("ProfPolicies","ProfRouteAuto","ProfTrack","ProfEssences","ProfSolverCapture","ProfRecovery","ProfRouteSolver","ProfExecution","ProfSolverRun","ProfRoutePlans"):
+        for name in ("ProfPolicies","ProfRouteAuto","ProfEssences","ProfSolverCapture","ProfRecovery","ProfRouteSolver","ProfExecution","ProfSolverRun","ProfRoutePlans"):
             self.load((ROOT/"Core"/(name+".lua")).read_text(encoding="utf-8-sig"))
         self.lua.execute('''
           ns.ProfEconomy.Professions=function()return skills end

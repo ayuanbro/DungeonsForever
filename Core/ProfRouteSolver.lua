@@ -3,7 +3,7 @@ local _,ns=...
 if not ns.LoadForeverPages then return end
 local E=ns.ProfEconomy
 local S={}; ns.ProfRouteSolver=S
-S.ProcurementPolicyVersion=7
+S.ProcurementPolicyVersion=8
 S.FailureDiagnosticVersion=1
 local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
 local stockFields={"unlimited","limited","stock","maxStock","stockUnknown","stockStatus"}
@@ -179,6 +179,9 @@ function S.Progress(job,result)
     return {status=job.status,expanded=job.expanded or 0,improvements=job.improvements or 0,
         searchCpuMs=job.cpuUsed or 0,searchCpuLimitMs=job.cpuLimitMs or 8000,
         searchComplete=job.exhausted or false,budgetLimited=job.budgetLimited or false,
+        costSearchPerformed=(job.expanded or 0)>0,
+        costSearchStatus=(job.expanded or 0)==0 and (job.seedDone and "seed_only" or "pending")
+            or (job.exhausted and not job.budgetLimited and "exhausted" or "searched_unproven"),
         searchTermination=job.searchTermination,resultVersion=job.resultVersion or 0,
         progressVersion=job.progressVersion or 0,inputModelOptimal=inputOptimal,
         catalogueCoverageComplete=coverage,quoteComplete=quoteComplete,
@@ -781,8 +784,9 @@ function S.NewJob(slug,opts)
     local j={slug=slug,opts=opts,target=min(300,max(1,floor(opts.target or 300))),expanded=0,failures={},cpuUsed=0,cpuLimitMs=max(1,tonumber(opts.cpuLimitMs) or 8000),status="searching",generation=0,progressVersion=0,resultVersion=0,frontierLimit=max(1,floor(tonumber(opts.maxFrontier) or 20000))}
     j.phase, j.phaseCpuMs = "capture", {}
     j.seedLeafPrices = {}
-    j.workCounters = {fastSeedPurchases=0,leafQuoteHits=0,
-        seedQuoteCalls=0,batchedPlans=0,batchReuses=0,replayCalls=0}
+    j.workCounters = {fastSeedPurchases=0,fastSeedCrafts=0,seedCraftComparisons=0,
+        seedCandidateTrials=0,leafQuoteHits=0,seedQuoteCalls=0,
+        batchedPlans=0,batchReuses=0,replayCalls=0}
     local function better(a,b) return betterState(a,b,j.recovery and j.snap or nil) end
     local ops=0
     local function cpuTime()
@@ -984,8 +988,7 @@ function S.NewJob(slug,opts)
     -- Warm-start procurement is permitted to use one executable, fully priced
     -- source combination. Exhaustive make/buy/split enumeration remains intact
     -- in the refined seed and frontier; this only accelerates the first route.
-    local function fastSeedPurchase(s, id, missing, reason, path)
-        if missing <= 0 then return s end
+    local function fastSeedOffer(s, id, missing)
         local auctionPrice = auctionQuote(id) and j.snap.prices[id] or nil
         local ahRemaining = auctionPrice and auctionRemaining(s, id) or 0
         local best
@@ -1048,6 +1051,11 @@ function S.NewJob(slug,opts)
                 end
             end
         end
+        return best, auctionPrice
+    end
+    local function fastSeedPurchase(s, id, missing, reason, path)
+        if missing <= 0 then return s end
+        local best, auctionPrice = fastSeedOffer(s, id, missing)
         if not best then return nil end
         local t = s
         if best.ah > 0 then
@@ -1066,6 +1074,17 @@ function S.NewJob(slug,opts)
             return t
         end
         return nil
+    end
+    -- Constant-time warm-seed cost envelope from relaxed material values.
+    -- The executable route still validates every make/buy choice; this quote
+    -- is only a ranking hint and never creates materials or learning rights.
+    local function seedMaterialQuote(s,id,need)
+        local missing=max(0,need-available(s,id))
+        if missing<=0 then return 0 end
+        local potential=j.values and j.values[id]
+        if potential and potential>0 then return potential*missing end
+        local offer=fastSeedOffer(s,id,missing)
+        return offer and offer.cost or math.huge
     end
     local function stateFormula(r,s,remaining,purchaseSource)
         if ns.IsForever and ns.ProfLearningSources and E.SelectLearningRoute then
@@ -1200,14 +1219,62 @@ function S.NewJob(slug,opts)
         local craftOnly=path.forceCraftItem==id or j.snap.toolCraftOnlyItems and j.snap.toolCraftOnlyItems[id]
         local auctionPriced=not craftOnly and auctionQuote(id)
         local remaining=auctionRemaining(s,id)
-        -- The first seed needs an executable route quickly. Skip
-        -- expensive split/make/buy enumeration only when an unconditional
-        -- full purchase is available. Exact refinement is unchanged.
+        -- Compare direct purchase against a bounded set of executable
+        -- processing chains; frontier exploration retains exact splits.
         if j.seeding and j.directSeed and not craftOnly then
-            local warm = fastSeedPurchase(s, id, missing, reason, path)
-            if warm then
-                j.workCounters.fastSeedPurchases=j.workCounters.fastSeedPurchases+1
-                finalEmit(warm)
+            local warm=fastSeedPurchase(s,id,missing,reason,path)
+            local selected=warm
+            local ceiling=warm and warm.money-s.money or math.huge
+            local uncertain=warm and uncertainty(warm)>uncertainty(s)
+            if not path[id] then
+                local pth=E.Copy(path);pth[id]=true
+                local materialProfession=opts.materialProfession or slug
+                local candidates={}
+                for _,r in ipairs(j.snap.byItem[id] or {}) do
+                    local own=path.ownProfessionOnly and r.profession==path.ownProfessionOnly
+                        or not path.ownProfessionOnly and (j.purchasePriced[id]
+                            or r.profession==materialProfession or materialProfession=="__purchase")
+                    if own and not used[r.key] and type(r.count)=="number" and r.count>0 then
+                        local n=ceil(missing/r.count)
+                        local f=j.formulaByRecipe[r.key]
+                        local estimate=f and not f.known and not s.formulaPaid[f.id or r.key] and (f.cost or 0) or 0
+                        for _,m in ipairs(r.mats or {}) do
+                            estimate=estimate+seedMaterialQuote(s,m[1],m[2]*n)
+                            if estimate>=ceiling and not uncertain then break end
+                        end
+                        if estimate<ceiling-1e-7 or uncertain then
+                            candidates[#candidates+1]={recipe=r,count=n,estimate=estimate}
+                        end
+                    end
+                    tick()
+                end
+                table.sort(candidates,function(a,b)
+                    if a.estimate~=b.estimate then return a.estimate<b.estimate end
+                    return a.recipe.spell<b.recipe.spell
+                end)
+                local trials=0
+                for _,candidate in ipairs(candidates) do
+                    if j.seedAborted or trials>=3 then break end
+                    if selected and not uncertain and candidate.estimate>=selected.money-s.money-1e-7 then break end
+                    local r=candidate.recipe
+                    if allowed(r,s,"material") then
+                        local u=E.Copy(used);u[r.key]=true
+                        trials=trials+1
+                        j.workCounters.seedCraftComparisons=j.workCounters.seedCraftComparisons+1
+                        craft(s,r,candidate.count,"material",pth,function(t)
+                            if available(t,id)>=need and better(t,selected) then selected=t end
+                        end)
+                    end
+                    tick()
+                end
+            end
+            if selected then
+                if selected==warm then
+                    j.workCounters.fastSeedPurchases=j.workCounters.fastSeedPurchases+1
+                else
+                    j.workCounters.fastSeedCrafts=j.workCounters.fastSeedCrafts+1
+                end
+                finalEmit(selected)
                 return
             end
         end
@@ -1451,9 +1518,17 @@ function S.NewJob(slug,opts)
                         best=min(best,sourceCost+targetCost)
                     end
                 end
-                if j.directSeed and best<math.huge then quoteCache[key]=best; return best end
+                if j.directSeed then
+                    best=min(best,seedMaterialQuote(s,id,qty))
+                    -- A failed quote can be cycle-dependent. Only cache a
+                    -- finite upper bound, never an infinite path-specific miss.
+                    if best<math.huge then
+                        quoteCache[key]=best
+                        return best
+                    end
+                end
                 local cyclic=false
-                if not enoughAuction and not path[id] then
+                if not path[id] then
                     path[id]=true
                     for _,r in ipairs(j.snap.byItem[id] or {}) do
                         local materialProfession=opts.materialProfession or slug
@@ -1466,7 +1541,6 @@ function S.NewJob(slug,opts)
                                 cost=cost+value; cyclic=cyclic or cycle
                             end
                             best=min(best,cost)
-                            if j.directSeed and best<math.huge then break end
                         end
                     end
                     path[id]=nil
@@ -1531,9 +1605,14 @@ function S.NewJob(slug,opts)
                 return a.estimate<b.estimate or (a.estimate==b.estimate and a.recipe.spell<b.recipe.spell)
             end)
             local selected,selectedScore
+            local directTrials=0
             for _,candidate in ipairs(candidates) do
                 if j.seedAborted then return end
+                if j.directSeed and selected and not opts.specializationRecipeScore
+                    and (directTrials>=3 or candidate.estimate>=selected.money-s.money-1e-7) then break end
                 if candidate.estimate<math.huge or not j.directSeed then
+                    directTrials=directTrials+1
+                    j.workCounters.seedCandidateTrials=j.workCounters.seedCandidateTrials+1
                     local winner
                     craft(s,candidate.recipe,candidate.count,p==slug and "level" or "secondary",path,function(t)
                         if (t.skill[p]>s.skill[p] or t.skill[p]==s.skill[p] and (t.progress[p] or 0)>(s.progress[p] or 0))
@@ -1543,7 +1622,6 @@ function S.NewJob(slug,opts)
                     if winner and (score and (not selectedScore or score<selectedScore-1e-7
                         or math.abs(score-selectedScore)<1e-7 and better(winner,selected))
                         or not score and better(winner,selected)) then selected=winner;selectedScore=score end
-                    if winner and j.directSeed and not opts.specializationRecipeScore then emit(winner); return end
                 end
             end
             if selected then emit(selected); return end
@@ -2203,6 +2281,7 @@ function S.NewJob(slug,opts)
                 -- Both heuristics use the original frozen ledger and the same
                 -- final objective. Neither may discard the complete incumbent.
                 for _,mode in ipairs(j.recovery and {"purchase","net"} or {"purchase"}) do
+                    if cpuTime()>=j.cpuLimitMs*.72 then break end
                     -- A later rejected probe must preserve restrictions carried
                     -- by an earlier accepted incumbent in this same portfolio.
                     local restricted,restriction=j.restricted,j.restrictedReason
@@ -2256,7 +2335,7 @@ function S.NewJob(slug,opts)
             end
         end
         j.phase="refined_seed"
-        local refined=seed(false)
+        local refined=cpuTime()<j.cpuLimitMs*.82 and seed(false) or nil
         if refined and goalsComplete(j,refined) then refined=batchPlan(refined,true) end
         if refined and goalsComplete(j,refined) and better(refined,j.best) then
             current=refined; j.best=refined; j.improvements=(j.improvements or 0)+1
@@ -2370,7 +2449,7 @@ local function qualityBudgetDue(j)
     if j.best and goalsComplete(j,j.best) and not j.firstFeasibleCpuMs then
         j.firstFeasibleCpuMs=j.cpuUsed or 0
     end
-    local extra=tonumber(opts.postFeasibleCpuMs) or 1250
+    local extra=tonumber(opts.postFeasibleCpuMs) or max(1500,min(3500,(j.cpuLimitMs or 8000)*.35))
     extra=max(200,min(4000,extra))
     return j.firstFeasibleCpuMs
         and (j.cpuUsed or 0)-j.firstFeasibleCpuMs>=extra or false

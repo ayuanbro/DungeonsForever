@@ -755,12 +755,12 @@ function PF.Skip()
 end
 
 function PF.VerifyCurrentOutput(total, ref)
-    local T = ns.ProfTrack
+    local T = ns.ProfExecution
     local s = st()
     if not (s and s.slug and T and T.VerifyOutput and T.Progress) then return false end
     local run = T.GetRun(s.slug)
-    local prog = run and T.Progress(s.slug, nil, run)
-    if not ref then ref = prog end
+    local prog = run and T.Progress(s.slug, nil, nil, run.planID)
+    if not ref and prog then ref = {index=prog.index,item=prog.outputItem,planID=run.planID} end
     if not ref or not ref.item or ref.finished then return false end
     if ref.planID and (not run or ref.planID ~= run.planID) then return false end
     total = tonumber(total)
@@ -776,14 +776,14 @@ function PF.VerifyCurrentOutput(total, ref)
 end
 
 local function verifyOutputDialog()
-    local T = ns.ProfTrack
+    local T = ns.ProfExecution
     local s = st()
     if not (s and s.slug and T and T.GetRun and T.Progress) then return end
     if not (StaticPopupDialogs and StaticPopup_Show) then return end
     local run = T.GetRun(s.slug)
-    local prog = run and T.Progress(s.slug, nil, run)
-    if not prog or not prog.item or prog.finished then return end
-    local data = { slug = s.slug, index = prog.index, item = prog.item, total = prog.manualConversion and prog.remainingConversions or prog.outputs or 0, manualConversion = prog.manualConversion, planID = run.planID }
+    local prog = run and T.Progress(s.slug, nil, nil, run.planID)
+    if not prog or not prog.outputItem or prog.finished then return end
+    local data = { slug = s.slug, index = prog.index, item = prog.outputItem, total = prog.manualConversion and prog.remainingConversions or prog.actualOutputs or 0, manualConversion = prog.manualConversion, planID = run.planID }
     StaticPopupDialogs.DF_PROF_VERIFY_OUTPUT = {
         text = prog.manualConversion and L["填写本次已完成的精华转换次数。"] or L["填写本步骤累计实际产出件数（不是当前背包数量）。"],
         button1 = L["确认"], button2 = L["取消"], hasEditBox = true,
@@ -2206,11 +2206,11 @@ function PF.Paint()
     f.finish:SetShown(finished)
     f.card:SetShown(not finished)
     f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished)
-    local TK = ns.ProfTrack
-    local vRun = slug~="poisons" and TK and TK.Active and TK.Active(slug)
-    local vProg = vRun and TK.Progress and TK.Progress(slug, nil, vRun)
+    local TK = ns.ProfExecution
+    local vRun = slug~="poisons" and TK and TK.GetActive and TK.GetActive(slug)
+    local vProg = vRun and TK.Progress and TK.Progress(slug, nil, nil, vRun.planID)
     f.verifyBtn:SetText(vProg and vProg.manualConversion and L["确认转换"] or L["校正产出"])
-    f.verifyBtn:SetShown(not finished and vProg ~= nil and vProg.item ~= nil and not vProg.finished and not f.craftBtn:IsShown())
+    f.verifyBtn:SetShown(not finished and vProg ~= nil and vProg.outputItem ~= nil and not vProg.finished and not f.craftBtn:IsShown())
     f.craftBtn:SetShown(PF.CRAFT_BTN and not finished)
 
     local y = -82

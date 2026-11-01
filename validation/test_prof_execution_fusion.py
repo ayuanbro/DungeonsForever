@@ -54,7 +54,6 @@ class ExecutionFusionTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute(MOCKS)
-        self.load("Core/ProfTrack.lua")
         self.load("Core/ProfExecution.lua")
         self.lua.execute("initialize();xp=ns.ProfExecution;t=ns.ProfTrack;plan=fixture();run=xp.Bind('alchemy',plan)")
 
@@ -81,7 +80,7 @@ class ExecutionFusionTests(unittest.TestCase):
           local candidate=fixture();candidate.revision=2;candidate.executionSteps[1][4]=99
           assert(t.Bind('alchemy',candidate)==run and run.plan==original and run.newPlanAvailable)
           assert(t.Progress('alchemy',1).casts==1 and original.executionSteps[1][4]==3)
-          assert(not t.Rebase(run,candidate.executionSteps))
+          assert(run.plan==original and original.executionSteps[1][4]==3)
         """)
 
     def test_confirmed_consumed_intermediates_are_deducted_and_bag_capped(self):
@@ -121,6 +120,86 @@ class ExecutionFusionTests(unittest.TestCase):
 
     def test_only_execution_observer_is_registered(self):
         self.lua.execute("assert(not t.frame and xp.eventFrame);xp.eventFrame.OnEvent(xp.eventFrame,'UNIT_SPELLCAST_SUCCEEDED','player','hidden',101);assert(t.Progress('alchemy',1).casts==1)")
+
+    def test_both_interfaces_share_facts_deduplication_and_notifications(self):
+        self.lua.execute("""
+          local native,legacy=0,0
+          xp.OnChanged(function(_,r)assert(r==run);native=native+1 end)
+          t.OnChanged(function(_,r)assert(r==run);legacy=legacy+1 end)
+          assert(t.GetRun('alchemy')==run and t.OnChanged==xp.OnChanged)
+          t.RecordAttempt('alchemy',101,'shared')
+          xp.eventFrame.OnEvent(xp.eventFrame,'UNIT_SPELLCAST_SUCCEEDED','player','shared',101)
+          t.RecordOutput('alchemy',10,3,'shared')
+          xp.RecordOutput({itemID=10,quantity=3,castGUID='shared'})
+          assert(xp.Progress('alchemy',1).casts==1 and xp.Progress('alchemy',1).actualOutputs==3)
+          assert(native==2 and legacy==2 and #frames==1)
+          t.Archive('alchemy','cancel')
+          assert(native==3 and legacy==3 and not xp.GetRun('alchemy'))
+          assert(xp.Get('alchemy',run.planID)==run and not t.Get('mining',run.planID))
+          assert(not xp.GetSummary('mining',run.planID))
+        """)
+
+    def test_progress_and_history_reads_do_not_persist_legacy_views(self):
+        self.lua.execute("""
+          xp.RecordAttempt('alchemy',101,'a');xp.RecordOutput({itemID=10,quantity=3,castGUID='a'})
+          for i=1,3 do
+            t.GetRun('alchemy');t.History('alchemy');t.ProgressAll('alchemy');t.Summary('alchemy')
+            xp.GetProgressAll('alchemy');xp.GetSummary('alchemy')
+          end
+          assert(run.steps==nil and run.outputs==nil and run.casts==nil and run.target==nil)
+          assert(run.plan.executionSteps[1][3]==101 and run.attemptsDone==1)
+          xp.End('alchemy','completed')
+          local summary=xp.GetSummary('alchemy')
+          assert(summary.finished and summary.startSkill==1 and summary.target==3 and summary.casts==1)
+          assert(xp.GetRecipeTotals('alchemy',summary.planID)[1].confirmedOutputs[10]==3)
+        """)
+
+    def test_legacy_aggregate_receipts_survive_without_inventing_chronology(self):
+        self.lua.execute("""
+          DungeonsForeverDB={prof={track={['Test-Realm']={version=1,active={alchemy='old'},runs={
+            old={planID='old',slug='alchemy',status='active',start=1,target=3,
+              steps={{from=1,to=3,spell=101,crafts=3,item=10},{from=3,to=4,spell=102,crafts=1,item=11}},
+              progress={{casts=2,out=5}},outputs={[10]=5}}
+          }}}}}
+          bag[10]=999
+          local old=xp.GetRun('alchemy');local p=xp.Progress('alchemy',1)
+          assert(p.casts==2 and p.actualOutputs==5)
+          assert(#old.progress[old.plan.executionSteps[1].segmentID].attempts==0)
+          assert(next(xp.GetContinuation('alchemy'))==nil)
+          assert(old.legacyTrack.progress[1].out==5 and old.steps==nil and old.outputs==nil)
+          xp.RecordAttempt('alchemy',101,'new');xp.RecordOutput({itemID=10,quantity=3,castGUID='new'})
+          assert(xp.Progress('alchemy',1).actualOutputs==8 and xp.GetContinuation('alchemy')[10]==3)
+        """)
+        self.load("Core/ProfExecution.lua")
+        self.lua.execute("initialize();xp=ns.ProfExecution;assert(xp.Progress('alchemy',1).actualOutputs==8)")
+
+    def test_previous_migration_repairs_aggregate_totals_once(self):
+        self.lua.execute("""
+          local id=run.planID..':legacy:1'
+          run.plan.executionSteps[1].segmentID=id
+          run.progress={[id]={casts=2,attempts={},manualOutputs={}}};run.attemptsDone=2
+          run.legacyTrack={steps={{item=10}},progress={{casts=2,out=5}},outputs={[10]=5}}
+          run.steps={{spell=101}};run.outputs={[10]=0};run.casts=2
+          local store=DungeonsForeverDB.prof.track['Test-Realm'];store.devExecutionMigration=1
+          assert(xp.Progress('alchemy',1).actualOutputs==5)
+          assert(run.steps==nil and run.outputs==nil and store.devExecutionMigration==2)
+          assert(xp.Progress('alchemy',1).actualOutputs==5)
+        """)
+
+    def test_archived_legacy_save_with_sparse_progress_keeps_receipts(self):
+        self.lua.execute("""
+          DungeonsForeverDB={prof={track={['Test-Realm']={version=1,active={},runs={
+            old={planID='old',slug='alchemy',status='archived',start=1,target=4,
+              steps={{from=1,to=3,spell=101,crafts=3,item=10},{from=3,to=4,spell=102,crafts=1,item=11}},
+              progress={[2]={casts=1,out=5}},outputs={[11]=5}}
+          }}}}}
+          local old=xp.GetHistory('alchemy')[1]
+          assert(not xp.GetRun('alchemy') and old.steps==nil)
+          local summary=xp.GetSummary('alchemy')
+          assert(summary.total==2 and summary.casts==1 and summary.target==4)
+          assert(xp.GetRecipeTotals('alchemy','old')[2].confirmedOutputs[11]==5)
+          assert(xp.Progress('alchemy',2,nil,'old').actualOutputs==5)
+        """)
 
     def test_legacy_dev_save_migrates_without_losing_receipts(self):
         self.lua.execute("""
@@ -206,6 +285,16 @@ class ExecutionFusionTests(unittest.TestCase):
         self.load_follow()
         self.lua.execute("assert(not pf.VerifyCurrentOutput(5,{index=1,item=10,planID='obsolete'}));assert(t.Progress('alchemy',1).outputs==0)")
 
+    def test_hud_confirms_current_output_without_legacy_interface(self):
+        self.load_follow()
+        self.lua.execute("""
+          ns.ProfTrack=nil
+          xp.RecordAttempt('alchemy',101,'native-hud')
+          assert(pf.VerifyCurrentOutput(4))
+          local p=xp.Progress('alchemy',1)
+          assert(p.casts==1 and p.actualOutputs==4 and run.steps==nil)
+        """)
+
     def test_hud_rank_guidance_reads_actual_caps_for_main_and_current_partner(self):
         self.load_follow()
         self.lua.execute("""
@@ -277,7 +366,7 @@ class ExecutionSupplementSolverTests(unittest.TestCase):
           skills={alchemy={cur=1,max=300}}
         """)
         load = self.lua.eval("function(source)assert(loadstring(source))('DungeonsForever',ns)end")
-        for name in ("ProfPolicies", "ProfEssences", "ProfGates", "ProfSolverCapture", "ProfRecovery", "ProfRouteSolver", "ProfTrack", "ProfExecution"):
+        for name in ("ProfPolicies", "ProfEssences", "ProfGates", "ProfSolverCapture", "ProfRecovery", "ProfRouteSolver", "ProfExecution"):
             load((ROOT / "Core" / (name + ".lua")).read_text(encoding="utf-8-sig"))
         self.lua.execute("""
           ns.ProfEconomy.Professions=function()return skills end

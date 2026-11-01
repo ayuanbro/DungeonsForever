@@ -2079,3 +2079,7 @@ L["、"] = ", "
 L["不指定时，自动使用角色已经学会的工程专精配方。"] = "When no branch is chosen, recipes from your learned Engineering specialization are included automatically."
 L["当前已学工程专精：%s。其专属配方已加入升级路线候选。"] = "Learned Engineering specialization: %s. Its exclusive recipes are included in leveling route candidates."
 L["尚未学习工程专精；不会使用专精限定配方。"] = "No Engineering specialization learned; specialization-only recipes are excluded."
+
+-- Native solver cost-search status (v8).
+L["路线已生成，尚未进行降本搜索。"] = "Route generated; cost optimization search has not started."
+L["路线已生成，成本尚未证明最优。"] = "Route generated; the lowest cost has not been proven."

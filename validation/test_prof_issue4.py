@@ -309,15 +309,15 @@ class Issue4Tests(unittest.TestCase):
     def test_track_button_waits_for_completed_search(self):
         self.lua.execute(r'''
           local plan = finish('alchemy', {start=1, target=3})
-          local T = ns.ProfTrack
+          local T = ns.ProfExecution
 
           PD.autoSnapshot = plan
           PD.autoSnapshotSlug = 'alchemy'
 
-          local originalRestart = T.Restart
+          local originalRestart = T.StartNew
           local restartCalls = 0
 
-          T.Restart = function(...)
+          T.StartNew = function(...)
               restartCalls = restartCalls + 1
               return originalRestart(...)
           end
@@ -328,7 +328,7 @@ class Issue4Tests(unittest.TestCase):
           click('track')
 
           assert(restartCalls == 0)
-          assert(not T.Active('alchemy'))
+          assert(not T.GetActive('alchemy'))
 
           -- 搜索结束后，允许正常启动追踪
           plan.status = 'complete'
@@ -336,7 +336,7 @@ class Issue4Tests(unittest.TestCase):
           click('track')
 
           assert(restartCalls == 1)
-          assert(T.Active('alchemy'))
+          assert(T.GetActive('alchemy'))
         ''')
 
     def test_1_recycled_recipe_header_has_one_anchor_per_sort_icon(self):

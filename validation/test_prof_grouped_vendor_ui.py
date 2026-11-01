@@ -27,7 +27,7 @@ class GroupedVendorUITests(unittest.TestCase):
           assert(#plan.steps==2 and #plan.executionSteps==10)
           local xp=ns.ProfExecution
           local run=assert(xp.Bind('alchemy',plan))
-          ns.ProfTrack.Rebase=function()error('grouped view must not rebase execution')end
+          ns.ProfTrack=nil
           local function paint()
             PD.Wrap=function(text)return{text}end
             ns.ProfRouteAuto.Get=function()return xp.GetPlan('alchemy')end
@@ -46,7 +46,7 @@ class GroupedVendorUITests(unittest.TestCase):
           local rows=paint()
           assert(rows[1].cnt=='1/5' and rows[2].cnt=='1/5')
           assert(run.currentIndex==3 and #run.plan.executionSteps==10)
-          assert(#run.steps==10 and run.plan.executionSteps[2][3]==102)
+          assert(run.steps==nil and run.plan.executionSteps[2][3]==102)
         ''')
 
     def test_material_five_tuples_and_pattern_eight_tuples_keep_correct_stock_and_price(self):

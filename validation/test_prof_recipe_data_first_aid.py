@@ -42,7 +42,7 @@ def add_route_and_execution(lua):
         GetFormulaOffers=function()return {}end}
       bag={};C_Item={GetItemCount=function(item)return bag[item]or 0 end}
     """)
-    for name in ("ProfRouteAuto","ProfTrack","ProfExecution"):
+    for name in ("ProfRouteAuto","ProfExecution"):
         load(lua,name)
     lua.execute("for _,fn in ipairs(callbacks)do fn()end;callbacks={}")
 

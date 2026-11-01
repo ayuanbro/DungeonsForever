@@ -162,7 +162,6 @@ Core\ProfRouteAuto.lua
 Core\ProfessionUI.lua
 Core\AuctionatorBridge.lua
 Core\ProfFollow.lua
-Core\ProfTrack.lua
 Core\ProfSupply.lua
 Core\ProfSourceMerge.lua
 Core\ProfGates.lua
