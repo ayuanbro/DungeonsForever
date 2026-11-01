@@ -7,3 +7,4 @@ tools/
 .data-updater.lock
 validation/
 docs/
+*.bak

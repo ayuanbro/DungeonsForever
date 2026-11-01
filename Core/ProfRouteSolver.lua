@@ -228,6 +228,23 @@ function S.Result(job,state,status)
     local prefix=job.preview or (job.partial and job.partial.batched and job.partial)
     local partial=not state and prefix and (prefix.skill[job.slug]>(job.opts.start or 1) or completedGoals(prefix)>0)
     if partial then state=prefix; partial=not goalsComplete(job,state) end
+    -- BEGIN DF_REBATCH_FINAL_ONLY_V2
+    -- Do not use replay optimization during quick seed, search, or preview.
+    -- It may run ONCE, only for the final incumbent, after search termination.
+    local finalStatus = status or job.status
+    if state and state == job.best and not job.rebatchFinalized
+        and (finalStatus == "complete" or finalStatus == "incomplete")
+        and job.rebatchFinal then
+        job.rebatchFinalized = true
+        local candidate = job.rebatchFinal(state)
+        if candidate and candidate ~= state then
+            state = candidate
+            job.best = candidate
+            job.resultState = nil
+            job.resultCache = nil
+        end
+    end
+    -- END DF_REBATCH_FINAL_ONLY_V2
     if state and job.resultState==state and job.resultCache then return S.RefreshStatus(job,job.resultCache,status) end
     local out={planVersion=2,executionVersion=1,scheme="cheapest",steps={},executionSteps={},actions={},mats={},firstAt={},gaps={},total=0,matTotal=0,vendorTotal=0,ahTotal=0,crafts=0,productAH=0,productNPC=0,productPartial=false,start=job.opts.start or 1,target=job.target,status=status or "searching",feasible=state~=nil,priced=true,optimal=false,diagnostics={},stamp=(time and time()) or 0,expanded=job.expanded or 0,improvements=job.improvements or 0,initialTotal=job.initialTotal,searchComplete=job.exhausted or false,budgetLimited=job.budgetLimited or false}
     out.searchTermination=job.searchTermination
@@ -586,6 +603,154 @@ function S.Result(job,state,status)
         and out.start>=out.target and #out.steps==0 and #out.executionSteps==0 or false
     return finishResult(job,out,state,status)
 end
+-- BEGIN DF_REBATCH_CHRONOLOGICAL_V2
+-- The solver still chooses the recipes and buys. This bounded, post-solve pass
+-- only changes execution order after a full replay proves equivalent results.
+local function rebatchSameMap(a, b)
+    a, b = a or {}, b or {}
+    for k, v in pairs(a) do if b[k] ~= v then return false end end
+    for k, v in pairs(b) do if a[k] ~= v then return false end end
+    return true
+end
+
+local function rebatchSameKeys(a, b)
+    a, b = a or {}, b or {}
+    for k in pairs(a) do if b[k] == nil then return false end end
+    for k in pairs(b) do if a[k] == nil then return false end end
+    return true
+end
+
+local function rebatchEquivalent(a, b)
+    if not a or not b or math.abs((a.money or 0) - (b.money or 0)) > 1e-7 then return false end
+    for _, key in ipairs({"inv", "unusable", "unusableSeed", "produced",
+            "cap", "ahUsed", "formulaPaid", "specializationAbilities",
+            "completedSpecializationGoals", "completedToolGoals"}) do
+        if not rebatchSameMap(a[key], b[key]) then return false end
+    end
+    -- A reordered sequence may legitimately gain more skill earlier. Reject
+    -- any loss of completed skill or fractional progress at the same skill.
+    if not rebatchSameKeys(a.skill, b.skill) then return false end
+    for profession, oldSkill in pairs(a.skill or {}) do
+        local newSkill = b.skill[profession]
+        if type(oldSkill) ~= "number" or type(newSkill) ~= "number"
+            or newSkill < oldSkill then return false end
+        if newSkill == oldSkill and (b.progress and b.progress[profession] or 0) + 1e-7
+            < (a.progress and a.progress[profession] or 0) then return false end
+    end
+    return rebatchSameKeys(a.diagnostics, b.diagnostics)
+end
+
+local function rebatchKey(a)
+    if a and a.type == "craft" and a.spell and a.profession then
+        return tostring(a.profession) .. ":" .. tostring(a.spell)
+    end
+end
+
+local function rebatchSwitches(list)
+    local switches, previous = 0, nil
+    for _, action in ipairs(list) do
+        local key = rebatchKey(action)
+        if key then
+            if previous and previous ~= key then switches = switches + 1 end
+            previous = key
+        end
+    end
+    return switches
+end
+
+local function rebatchMove(list, earlier, later, mode)
+    -- mode 1: move the later craft after the earlier craft.
+    -- mode 2: first bring forward only purchases for the later craft's reagents.
+    -- mode 3: move the earlier craft before the later craft instead.
+    local moved = {}
+    if mode == 2 then
+        local inputs = {}
+        for _, mat in ipairs(list[later].inputs or {}) do inputs[mat[1]] = true end
+        for i = earlier + 1, later - 1 do
+            local action = list[i]
+            if action.type == "buy" and inputs[action.item] then moved[i] = true end
+        end
+    end
+    local out = {}
+    for i, action in ipairs(list) do
+        if mode == 3 and i == later then out[#out + 1] = list[earlier] end
+        if mode ~= 3 and i == earlier + 1 then
+            for k = earlier + 1, later - 1 do
+                if moved[k] then out[#out + 1] = list[k] end
+            end
+            out[#out + 1] = list[later]
+        end
+        if i ~= (mode == 3 and earlier or later) and not moved[i] then
+            out[#out + 1] = action
+        end
+    end
+    return out
+end
+
+function S.RebatchChronological(original, replay, tick)
+    if not original or type(replay) ~= "function" then return original end
+    local list = actions(original)
+    if #list < 3 or #list > 1600 then return original end
+    local occurrences, duplicate = {}, false
+    for _, action in ipairs(list) do
+        local key = rebatchKey(action)
+        if key then
+            if occurrences[key] then duplicate = true; break end
+            occurrences[key] = true
+        end
+    end
+    if not duplicate then return original end
+    local best, attempts = original, 0
+    -- Final-result only. Keep the optional improvement bounded regardless of
+    -- route size and the number of non-improving rearrangements examined.
+    local maxAttempts = #list > 600 and 3 or #list > 200 and 6 or 12
+    local maxProbes = #list > 600 and 18 or #list > 200 and 36 or 96
+    local probes = 0
+    local started = type(debugprofilestop) == "function" and debugprofilestop() or nil
+    local function timeExceeded()
+        return started and debugprofilestop() - started >= 200 or false
+    end
+    local currentScore = rebatchSwitches(list)
+    -- Replays execute the original eligibility, skill-gain, stock, quest and
+    -- procurement checks. A failed speculative replay is simply discarded.
+    while attempts < maxAttempts and probes < maxProbes and not timeExceeded() do
+        local previous = {}
+        local improvement = false
+        for later, action in ipairs(list) do
+            local key = rebatchKey(action)
+            local earlier = key and previous[key] or nil
+            if earlier and later > earlier + 1 then
+                for mode = 1, 3 do
+                    probes = probes + 1
+                    if probes > maxProbes or timeExceeded() then break end
+                    local candidateOrder = rebatchMove(list, earlier, later, mode)
+                    if rebatchSwitches(candidateOrder) < currentScore then
+                        attempts = attempts + 1
+                        if tick then tick() end
+                        local candidate = replay(candidateOrder)
+                        if rebatchEquivalent(best, candidate) then
+                            local resultOrder = actions(candidate)
+                            local resultScore = rebatchSwitches(resultOrder)
+                            if resultScore < currentScore then
+                                best, list, currentScore = candidate, resultOrder, resultScore
+                                improvement = true
+                                break
+                            end
+                        end
+                        if attempts >= maxAttempts then break end
+                    end
+                end
+                if improvement or attempts >= maxAttempts or probes >= maxProbes
+                    or timeExceeded() then break end
+            end
+            if key then previous[key] = later end
+        end
+        if not improvement or probes >= maxProbes or timeExceeded() then break end
+    end
+    return best
+end
+-- END DF_REBATCH_CHRONOLOGICAL_V2
+
 function S.NewJob(slug,opts)
     opts=opts or {}
     local j={slug=slug,opts=opts,target=min(300,max(1,floor(opts.target or 300))),expanded=0,failures={},cpuUsed=0,cpuLimitMs=max(1,tonumber(opts.cpuLimitMs) or 8000),status="searching",generation=0,progressVersion=0,resultVersion=0,frontierLimit=max(1,floor(tonumber(opts.maxFrontier) or 20000))}
@@ -1338,6 +1503,23 @@ function S.NewJob(slug,opts)
         end
         local first=replay(original)
         if not first then fail("executionInvalid");return end
+        -- Cache the verified replay function, not a reordered candidate.
+        -- Search seeds, previews and frontier nodes must NEVER pay for rebatching.
+        if not j.rebatchFinal then
+            j.rebatchFinal = function(candidate)
+                if opts.fixedSteps or opts.procurementDemands
+                    or opts.specializationRecipeScore or opts.preserveRecipeOrder then
+                    return candidate
+                end
+                local failures, collected = j.failures, j.collectFailures
+                local restricted, restriction = j.restricted, j.restrictedReason
+                j.failures, j.collectFailures = {}, nil
+                local result = S.RebatchChronological(candidate, replay, tick)
+                j.failures, j.collectFailures = failures, collected
+                j.restricted, j.restrictedReason = restricted, restriction
+                return result or candidate
+            end
+        end
         local trace=actions(first);local need,keep,quantities,owners,needOwner={},{},{},{},{}
         local changed=false
         -- Positive fractional skill is useful even when the integer range is 195–195.
