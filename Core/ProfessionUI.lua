@@ -733,10 +733,12 @@ function PD.LvTarget()
 end
 
 PD.LIST_PAD = 8
+PD.GRID_X = 0
+PD.GRID_W = PD.RIGHT_W - PD.LIST_PAD
 PD.COL_GAP = 12
 local LV_SPLIT = ((type(GetLocale) == "function") and GetLocale() == "enUS") and 0.75 or 0.80
-PD.COL_LW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - PD.COL_GAP) * LV_SPLIT)
-PD.COL_RW = PD.RIGHT_W - 2 * PD.LIST_PAD - PD.COL_GAP - PD.COL_LW
+PD.COL_LW = math.floor((PD.GRID_W - PD.COL_GAP) * LV_SPLIT)
+PD.COL_RW = PD.GRID_W - PD.COL_GAP - PD.COL_LW
 
 PD.SHOP_SPLIT = 0.62
 PD.SEC_CARD_MAX = 8
@@ -746,12 +748,12 @@ PD.SEC_IN = 8
 PD.SEC_GAP = 8
 PD.OV_GUT = PD.SEC_GAP + 2 * PD.SEC_PAD
 
-PD.GRID_LW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - PD.COL_GAP) / 2)
-PD.GRID_RW = PD.RIGHT_W - 2 * PD.LIST_PAD - PD.COL_GAP - PD.GRID_LW
+PD.GRID_LW = math.floor((PD.GRID_W - PD.COL_GAP) / 2)
+PD.GRID_RW = PD.GRID_W - PD.COL_GAP - PD.GRID_LW
 
 PD.IX_COLS = 3
 PD.IX_GAP = 8
-PD.IX_COLW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - (PD.IX_COLS - 1) * PD.IX_GAP) / PD.IX_COLS)
+PD.IX_COLW = math.floor((PD.GRID_W - (PD.IX_COLS - 1) * PD.IX_GAP) / PD.IX_COLS)
 PD.IX_CARD_H = 46
 PD.IX_ICON = 24
 PD.IX_HEAD_H = 18
@@ -788,7 +790,7 @@ PD.MAXPLACE = 6
 
 PD.MAT_FS = 13
 PD.MAT_ICON_PX = 16
-PD.MAT_ROW_W = PD.RIGHT_W - 2 * PD.LIST_PAD
+PD.MAT_ROW_W = PD.GRID_W
 PD.MAT_RIGHT_RESERVE = 132
 PD.MAT_TAIL_MIN = 14
 PD.REC_MAT_RIGHT = 6 + 91 + 88 + 88
@@ -819,13 +821,14 @@ PD.ROW_H2 = 38
 PD.PC_INSET = 3
 PD.PC_GAP = 8
 PD.PC_COLS = 3
-PD.PC_COLW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - (PD.PC_COLS - 1) * PD.PC_GAP) / PD.PC_COLS)
+PD.PC_COLW = math.floor((PD.GRID_W - (PD.PC_COLS - 1) * PD.PC_GAP) / PD.PC_COLS)
 PD.PC_PAD = 8
 PD.PC_ICON = 32
 PD.PC_RAD = 6
 PD.PC_FS_NAME = 14
 PD.PC_FS_TX = 12
-PD.PC_FS_SM = 11
+PD.PC_FS_SM = 12
+PD.PC_CHIP_FS = 12
 PD.PC_LH = 17
 PD.PC_NAME_LH = 20
 PD.PC_CHIP_GAP = 4
@@ -1579,8 +1582,12 @@ function PD.PCLines(tx, w)
     if type(tx) ~= "string" or tx == "" then return 0 end
     local avail = (w or 364) - 2 * PD.PC_PAD
     if avail < 40 then avail = 40 end
-    local total = PD.TextW(tx, PD.PC_FS_TX)
-    local n = math.ceil(total / avail)
+    local n = 0
+    for seg in (tx .. "\n"):gmatch("([^\n]*)\n") do
+        local k = math.ceil(PD.TextW(seg, PD.PC_FS_TX) / avail)
+        if k < 1 then k = 1 end
+        n = n + k
+    end
     if n < 1 then n = 1 end
     return n
 end
@@ -1640,7 +1647,7 @@ function PD.PCLvPaint(r, hovK)
             f.__lv = k
             f.__onLv = function(v) PD.PCSetLv(r, v) end
             ns.hui.PaintSolidChip(f, on and format(L["等级%d"], k) or tostring(k),
-                                  PD.PCLvInk(k, lv, hov))
+                                  PD.PCLvInk(k, lv, hov), nil, PD.PC_CHIP_FS)
             f:ClearAllPoints()
             f:SetPoint("TOPLEFT", r, "TOPLEFT", cx, -PD.PC_LV_DY)
             cx = cx + (f:GetWidth() or 0) + PD.PC_CHIP_GAP
@@ -1999,7 +2006,7 @@ function PD.PaintRows(rows)
     local sideFix = (PD.sideFixed and PD.side) and true or false
     if PD.side then PD.side:SetShown(sideFix) end
     local sideSpecs = {}
-    local ROW_W = PD.RIGHT_W - 2 * PD.LIST_PAD
+    local ROW_W = PD.GRID_W
     local syncN = PD.SyncRows()
     local vis, vTop, vBot = false, 0, 0
     do
@@ -2053,7 +2060,7 @@ function PD.PaintRows(rows)
             local col, x, w, top
             if span then
                 top = math.max(y[1], y[2], y[3])
-                x, w = PD.LIST_PAD, ROW_W
+                x, w = PD.GRID_X, ROW_W
             else
                 if isPC then
                     col = math.min(math.max(spec.col or 1, 1), PD.PC_COLS)
@@ -2068,21 +2075,21 @@ function PD.PaintRows(rows)
                 end
                 top = y[col]
                 if isPC then
-                    x = PD.LIST_PAD + (col - 1) * (PD.PC_COLW + PD.PC_GAP)
+                    x = PD.GRID_X + (col - 1) * (PD.PC_COLW + PD.PC_GAP)
                     w = PD.PC_COLW
                 elseif PD.lvSplit then
                     local lw = PD.splitLW or PD.COL_LW
                     local rw = PD.splitRW or PD.COL_RW
-                    x = (col == 2) and (PD.LIST_PAD + lw + PD.OV_GUT) or PD.LIST_PAD
+                    x = (col == 2) and (PD.GRID_X + lw + PD.OV_GUT) or PD.GRID_X
                     w = (col == 2) and rw or lw
                 elseif grid then
-                    x = (col == 2) and (PD.LIST_PAD + PD.GRID_LW + PD.COL_GAP) or PD.LIST_PAD
+                    x = (col == 2) and (PD.GRID_X + PD.GRID_LW + PD.COL_GAP) or PD.GRID_X
                     w = (col == 2) and PD.GRID_RW or PD.GRID_LW
                 else
-                    x, w = PD.LIST_PAD, ROW_W
+                    x, w = PD.GRID_X, ROW_W
                 end
             end
-            if spec.sec and spec.sec > 0 then
+            if spec.sec and spec.sec > 0 and not PD.noSecCard then
                 w = w - PD.SEC_IN
             end
             if spec.kind == "exgrid" then
@@ -2140,7 +2147,7 @@ function PD.PaintRows(rows)
     end
     if PD.gridSep then
         if grid and PD.gridSepOn and gTop and gBot and (gBot - gTop) > 24 then
-            local sx = PD.LIST_PAD + PD.GRID_LW + PD.COL_GAP / 2
+            local sx = PD.GRID_X + PD.GRID_LW + PD.COL_GAP / 2
             PD.gridSep:ClearAllPoints()
             PD.gridSep:SetPoint("TOPLEFT", PD.child, "TOPLEFT", sx, -(gTop + 6))
             PD.gridSep:SetHeight(gBot - gTop - 12)
@@ -2166,7 +2173,7 @@ function PD.PaintRows(rows)
             for i = 1, #PD.sideCards do PD.sideCards[i]:Hide() end
         end
     end
-    if PD.hasSecs then
+    if PD.hasSecs and not PD.noSecCard then
         local ciP, ciG = 0, 0
         local ciS = 0
         for s = 1, (PD.secCount or 0) do
@@ -2372,6 +2379,7 @@ function PD.BindRow(r, spec, h)
             r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", 6, -math.floor((h - iconSize) / 2))
         end
         SetIcon(r.icon, iconName or DG.ItemIcon(itemID))
+        if r.icon.SetDesaturated then r.icon:SetDesaturated(false) end
         if ns.hui and ns.hui.SetIconRing then
             local qq = nil
             if itemID and not iconName then qq = PD.QualCached(itemID) end
@@ -3490,14 +3498,16 @@ end
 local TR_RANK_COLOR = { { 0.36, 0.79, 0.65 }, { 0.94, 0.62, 0.15 },
                         { 0.85, 0.35, 0.19 }, { 0.64, 0.18, 0.18 } }
 
+PD.TR_CARD_H = 38
+PD.TR_CARD_GAP = 4
+
 function PD.BuildTrainerBoard(parent)
     local card = CreateFrame("Frame", nil, parent)
     PD.trainerCard = card
-    ns.hui.BuildRoundedBG(card, 6, ns.hui.layer.L2, "both", true, 1)
     card:Hide()
     local root = CreateFrame("Frame", nil, card)
     PD.trainerBoard = root
-    root:SetSize(PD.RIGHT_W - 2 * PD.LIST_PAD, 10)
+    root:SetSize(PD.GRID_W, 10)
     root.__chips = {}
     root.__fs = {}
 end
@@ -3525,15 +3535,16 @@ local function TrZoneOf(t)
 end
 
 local function TrLocOf(t)
-    local loc = GetLocale()
-    if loc == "enUS" then return t.loc_en end
-    local zh = (loc == "zhTW") and t.loc_tw or t.loc_zh
-    if not zh then return t.loc_en end
-    local sub = zh:match("^(.-) · ")
-    if not sub then return zh end
     local zone = TrZoneOf(t)
-    if not zone then return zh end
-    return sub .. " · " .. zone
+    if zone and zone ~= "" then return zone end
+    local loc = GetLocale()
+    local txt = (loc == "zhTW") and t.loc_tw or (loc == "enUS") and t.loc_en or t.loc_zh
+    if not txt then return t.loc_en end
+    local big = txt:match("· ([^·]+)$")
+    if big then return (big:gsub("^%s+", ""):gsub("%s+$", "")) end
+    big = txt:match(", ([^,]+)$")
+    if big then return (big:gsub("^%s+", ""):gsub("%s+$", "")) end
+    return txt
 end
 
 function PD.FillTrainerBoard()
@@ -3554,7 +3565,7 @@ function PD.FillTrainerBoard()
     table.sort(rngs, function(a, b) return TrRngLow(a) < TrRngLow(b) end)
     local COLS = #rngs
     if COLS == 0 then return 0 end
-    local W = PD.RIGHT_W - PD.SEC_PAD_X - 2 * PD.LIST_PAD
+    local W = PD.GRID_W
     local GAP = 8
     local COL_W = math.floor((W - (COLS - 1) * GAP) / COLS)
     if root.__bands then
@@ -3627,19 +3638,19 @@ function PD.FillTrainerBoard()
                             c.xy = MakeFS(c, 12, { 0.71, 0.83, 0.96 }, "RIGHT")
                         end
                         if c.__huiCard then ns.hui.HuiCardState(c, "norm") end
-                        c:SetSize(COL_W, 34)
+                        c:SetSize(COL_W, PD.TR_CARD_H)
                         c:ClearAllPoints()
                         c:SetPoint("TOPLEFT", root, "TOPLEFT", x0, yCur)
                         c.n:ClearAllPoints()
-                        c.n:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -1)
+                        c.n:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -3)
                         c.n:SetText(TrNameOf(t))
                         c.n:Show()
                         c.l:ClearAllPoints()
-                        c.l:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -21)
+                        c.l:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -22)
                         c.l:SetText(TrLocOf(t) or "")
                         c.l:Show()
                         c.xy:ClearAllPoints()
-                        c.xy:SetPoint("TOPRIGHT", c, "TOPRIGHT", -8, -10)
+                        c.xy:SetPoint("TOPRIGHT", c, "TOPRIGHT", -8, -22)
                         c.xy:SetText(format("%g, %g", t.x, t.y))
                         c.xy:Show()
                         c.__tr = t
@@ -3665,7 +3676,7 @@ function PD.FillTrainerBoard()
                             GameTooltip:Hide()
                         end)
                         c:Show()
-                        yCur = yCur - 38
+                        yCur = yCur - (PD.TR_CARD_H + PD.TR_CARD_GAP)
                     end
                     yCur = yCur - 6
                 end
@@ -3686,12 +3697,12 @@ function PD.placeTrainerBoard(y)
         return
     end
     PD.trainerCard:ClearAllPoints()
-    PD.trainerCard:SetPoint("TOPLEFT", PD.child, "TOPLEFT", 0, -y)
-    PD.trainerCard:SetSize(PD.RIGHT_W - PD.SEC_PAD_X, h + 2 * PD.SEC_PAD)
+    PD.trainerCard:SetPoint("TOPLEFT", PD.child, "TOPLEFT", PD.GRID_X, -y)
+    PD.trainerCard:SetSize(PD.GRID_W, h)
     PD.trainerCard:Show()
     PD.trainerBoard:ClearAllPoints()
-    PD.trainerBoard:SetPoint("TOPLEFT", PD.trainerCard, "TOPLEFT", PD.LIST_PAD, -PD.SEC_PAD)
-    PD.trainerBoard:SetSize(PD.RIGHT_W - 2 * PD.LIST_PAD, h)
+    PD.trainerBoard:SetPoint("TOPLEFT", PD.trainerCard, "TOPLEFT", 0, 0)
+    PD.trainerBoard:SetSize(PD.GRID_W, h)
     PD.trainerBoard:Show()
 end
 
@@ -3758,7 +3769,7 @@ function PD.BuildIndexGrid(parent)
         L["次要专业 —— 每个角色三个都能学"],
         L["营地系统"],
     }
-    local w = PD.RIGHT_W - 2 * PD.LIST_PAD
+    local w = PD.GRID_W
     local root = CreateFrame("Frame", nil, parent)
     root:SetSize(w, 10)
     PD.ixRoot = root
@@ -3860,7 +3871,7 @@ end
 
 function PD.placeIndexGrid(y)
     PD.ixRoot:ClearAllPoints()
-    PD.ixRoot:SetPoint("TOPLEFT", PD.child, "TOPLEFT", PD.LIST_PAD, -y)
+    PD.ixRoot:SetPoint("TOPLEFT", PD.child, "TOPLEFT", PD.GRID_X, -y)
     PD.ixRoot:SetHeight(PD.ixGridH or 10)
     PD.ixRoot:Show()
     PD.PaintIndexCards()
@@ -4823,6 +4834,15 @@ function PD.Build(page)
     divider:SetWidth(1)
     divider:Hide()
     PD.divider = divider
+    coroutine.yield()
+
+    local tabRule = page:CreateTexture(nil, "BORDER")
+    tabRule:SetColorTexture(Unpack(ns.hui.CARD_BORDER))
+    tabRule:SetHeight(1)
+    tabRule:SetPoint("TOPLEFT", page, "TOPLEFT", PD.RIGHT_X + PD.GRID_X,
+                     -(PD.SUB_Y + PD.SUB_H + 4))
+    tabRule:SetWidth(PD.GRID_W)
+    PD.tabRule = tabRule
     coroutine.yield()
 
     local scroll = CreateFrame("ScrollFrame", nil, page)
@@ -6140,7 +6160,7 @@ function PD.Layout(toolH)
     elseif PD.gridSplit then splitW = PD.GRID_LW end
     if splitW and not PD.hideDivider then
         local gut = PD.lvSplit and PD.OV_GUT or PD.COL_GAP
-        local mx = PD.RIGHT_X + PD.LIST_PAD + splitW + gut / 2
+        local mx = PD.RIGHT_X + PD.GRID_X + splitW + gut / 2
         PD.divider:ClearAllPoints()
         PD.divider:SetPoint("TOPLEFT", PD.page, "TOPLEFT", mx, -top)
         PD.divider:SetPoint("BOTTOMLEFT", PD.page, "BOTTOMLEFT", mx, bot)
@@ -6279,7 +6299,7 @@ function PD.PushCardRow(rows, list)
 end
 
 function PD.PushWideCard(rows, d)
-    local w = PD.RIGHT_W - 2 * PD.LIST_PAD - PD.SEC_IN
+    local w = PD.GRID_W - PD.SEC_IN
     rows[#rows + 1] = { kind = "pcard", col = 1, span = true, h = PD.PCHeight(d, w),
                         pc = d, noHover = true }
 end
@@ -6374,7 +6394,7 @@ function PD.PushCampNavCards(rows, lv)
         if vd then
             local loc = tostring(vd[3] or "")
             if camp then
-                loc = format("%s · %s · %s", tostring(camp[1] or ""),
+                loc = format("%s\n%s · %s", tostring(camp[1] or ""),
                              PD.CampZoneName(camp[6], tostring(camp[2] or "")),
                              tostring(camp[3] or ""))
             end
@@ -9597,7 +9617,7 @@ function PD.RecipeList(limit, q)
     if cap < 1 then return out end
     if PD.moneyKey ~= nil then
         for _, r in ipairs(d.rows or {}) do
-            if PD.RowCurHit(r) and PD.RawHit(r, q) then
+            if (not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then
                 out[#out + 1] = PD.RecipeSpec(r)
                 if #out >= cap then return out end
             end
@@ -9645,7 +9665,7 @@ function PD.RecipeList(limit, q)
     local __tGate = debugprofilestop and debugprofilestop() or 0
     for _, r in ipairs(d.rows or {}) do
         __ri = __ri + 1
-        if (not fk) or r[4] == fk then
+        if (not r.nip) and ((not fk) or r[4] == fk) then
             if PD.RawHit(r, q) then
                 out[#out + 1] = PD.RecipeSpec(r)
                 if #out >= cap then break end
@@ -9701,7 +9721,7 @@ function PD.ScanRecipe()
     if PD.moneyKey ~= nil then
         local cn = 0
         for _, r in ipairs(d.rows or {}) do
-            if PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
+            if (not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
         end
         if PD.moneyKey == PD.FAVOR_CURID then
             for _, f in ipairs(d.favor or {}) do
@@ -9715,7 +9735,7 @@ function PD.ScanRecipe()
 
     local n, maxW = 0, 0
     for _, r in ipairs(d.rows or {}) do
-        if (not fk) or r[4] == fk then
+        if (not r.nip) and ((not fk) or r[4] == fk) then
             if PD.RawHit(r, q) then
                 n = n + 1
                 if n <= PD.ROW_CAP then
@@ -10746,7 +10766,7 @@ local function MatRecipesUsing(itemId)
     if rr and rr.rows then
         for _, r in ipairs(rr.rows) do
             local mats = r[12] or r[8]
-            if type(mats) == "table" then
+            if (not r.nip) and type(mats) == "table" then
                 for _, m in ipairs(mats) do
                     if type(m) == "table" and (m[1] == itemId or m.id == itemId) then
                         out[#out + 1] = r[1]
@@ -12388,7 +12408,7 @@ function PD.RowsLeveling(rows)
             cd.lines[#cd.lines+1] = {L["达到目标技能后重新计算"]}
         end
     end
-    local rowW = PD.RIGHT_W - 2 * PD.LIST_PAD
+    local rowW = PD.GRID_W
     PD.LV_ROW_W = rowW
     PD.LV_STEP_W = math.ceil(stepW)
     PD.LV_RNG_X = PD.LV_STEP_X + PD.LV_STEP_W + PD.LV_COL_GAP
@@ -14498,8 +14518,8 @@ function PD.RowsCrates(rows)
         return
     end
     PD.lvSplit = true
-    PD.splitLW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - PD.OV_GUT) * PD.CRATE_SPLIT)
-    PD.splitRW = PD.RIGHT_W - 2 * PD.LIST_PAD - PD.OV_GUT - PD.splitLW
+    PD.splitLW = math.floor((PD.GRID_W - PD.OV_GUT) * PD.CRATE_SPLIT)
+    PD.splitRW = PD.GRID_W - PD.OV_GUT - PD.splitLW
     if PD.tab == "writ" then
         PD.WritRows(rows)
     elseif PD.tab == "plunder" then
@@ -14531,6 +14551,7 @@ function PD.Render()
     PD.wantBonusTable = false
     PD.wantTrainerBoard = false
     PD.hasSecs = false
+    PD.noSecCard = false
     PD.sideFixed = false
     PD.noZebra = false
     PD.gridSepOn = false
@@ -14566,6 +14587,7 @@ function PD.Render()
         PD.lvSplit = false
         PD.wantIndexGrid = (PD.cur == "__index")
         PD.hasSecs = true
+        PD.noSecCard = true
         PD.hideDivider = true
         if PD.cur == "camping" then
             PD.campView = "bonus"
@@ -14603,8 +14625,8 @@ function PD.Render()
         tool, handler = PD.LevelTool()
         if PD.autoPage == "shop" and not PD.exclusionsOpen then
             PD.lvSplit = true
-            PD.splitLW = math.floor((PD.RIGHT_W - 2 * PD.LIST_PAD - PD.OV_GUT) * PD.SHOP_SPLIT)
-            PD.splitRW = PD.RIGHT_W - 2 * PD.LIST_PAD - PD.OV_GUT - PD.splitLW
+            PD.splitLW = math.floor((PD.GRID_W - PD.OV_GUT) * PD.SHOP_SPLIT)
+            PD.splitRW = PD.GRID_W - PD.OV_GUT - PD.splitLW
             PD.sideFixed = true
         else
             PD.lvSplit = false

@@ -1089,7 +1089,7 @@ PARTS["engineering"] = function() return {
             { 15633, 11826, 1, "Devices", "","", 205, 205, 205, 205, false, { { 7075, 1 }, { 4389, 2 }, { 7191, 1 }, { 3860, 2 }, { 6037, 1 } }, { 11827, 2 }, { skill=205, read="classic", vendors={}, drops={ { chance=2, lv={}, npc="Crowd Pummeler 9-60", zone="Gnomeregan" } } }, {}, "", "" },
             { 12900, 10719, 1, "Devices", "","", 190, 205, 225, 245, false, { { 10559, 1 }, { 10560, 1 }, { 3860, 4 } } },
             { 15628, 11825, 1, "Devices", "","", 205, 205, 207, 210, false, { { 4394, 1 }, { 7077, 1 }, { 7191, 1 }, { 3860, 6 } }, { 11828, 2 }, { skill=205, read="classic", vendors={}, drops={ { chance=15, lv={}, npc="Mekgineer Thermaplugg", zone="Gnomeregan" } } }, {}, "", "" },
-            { 12719, 10579, 100, "Ammo", "Ammunition, Lv 37", "", 195, 210, 230, 250, false, { { 3030, 100 }, { 10505, 2 }, { 3860, 2 } } },
+            { nip = "未实装到游戏里", 12719, 10579, 100, "Ammo", "Ammunition, Lv 37", "", 195, 210, 230, 250, false, { { 3030, 100 }, { 10505, 2 }, { 3860, 2 } } },
             { 12596, 10512, 200, "Ammo", "Ammunition, Lv 37", "", 210, 210, 230, 250, false, { { 3860, 1 }, { 10505, 1 } } },
             { 12597, 10546, 1, "Devices", "Lv 30","", 210, 230, 240, 250, false, { { 10559, 1 }, { 7909, 2 }, { 4304, 2 } }, { 10602, 1 }, { skill=210, read="classic", vendors={ { id=9544, cost="", name="Yuka Screwspigot", zone="Burning Steppes" }, { id=8679, cost="", name="克纳兹·枪焰", zone="Stranglethorn Vale" } }, drops={} }, {}, "", "" },
             { 12599, 10561, 1, "Parts", "", "", 215, 215, 235, 255, false, { { 3860, 3 } } },

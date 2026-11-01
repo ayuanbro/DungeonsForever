@@ -361,7 +361,7 @@ local function BuildCandidates(slug, opts)
         RouteTick()
         local spell, learn, yellow, green, grey = rec[1], rec[7], rec[8], rec[9], rec[10]
         local reagents = rec[12]
-        if type(spell) == "number" and type(learn) == "number"
+        if (not rec.nip) and type(spell) == "number" and type(learn) == "number"
            and type(grey) == "number" and grey > learn
            and type(reagents) == "table" and #reagents > 0 then
             local ok = true
@@ -1205,15 +1205,15 @@ local function DeNestSteps(steps, recOf)
         dirty = false
         for i = 1, #steps do
             local inner = steps[i]
-            local p = tonumber(inner[1]) or 0
-            local q = tonumber(inner[2]) or 0
-            local isCraft = q > p and not inner.checkpoint and not inner.tool
+            local p = inner and (tonumber(inner[1]) or 0) or 0
+            local q = inner and (tonumber(inner[2]) or 0) or 0
+            local isCraft = inner ~= nil and q > p and not inner.checkpoint and not inner.tool
                 and (tonumber(inner[3]) or 0) ~= 0
             if isCraft then
                 for j = 1, #steps do
                     if j ~= i then
                         local outer = steps[j]
-                        if not outer.checkpoint and not outer.tool
+                        if outer and not outer.checkpoint and not outer.tool
                             and (tonumber(outer[3]) or 0) ~= 0 and outer[3] ~= inner[3] then
                             local a = tonumber(outer[1]) or 0
                             local b = tonumber(outer[2]) or 0
@@ -1260,8 +1260,12 @@ local function DeNestSteps(steps, recOf)
                                         only[4] = total
                                         only.cost = outer.cost
                                     end
-                                    steps[j] = left
-                                    if right then table.insert(steps, j + 1, right) end
+                                    if left then
+                                        steps[j] = left
+                                        if right then table.insert(steps, j + 1, right) end
+                                    else
+                                        steps[j] = right
+                                    end
                                     dirty = true
                                     changed = true
                                     break

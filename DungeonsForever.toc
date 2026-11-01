@@ -5,9 +5,9 @@
 ## Notes-zhCN: 无限 副本手册：副本列表 / 详情 / 地图 / 掉落 / 任务 / 攻略（无限服另含专业页）
 ## Notes-zhTW: 無限 副本手冊：副本列表 / 詳情 / 地圖 / 掉落 / 任務 / 攻略（無限服另含專業頁）
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
-## IconTexture: Interface\AddOns\DungeonsForever\Media\DungeonsForever.blp
+## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.9.30
+## Version: 1.9.31
 ## SavedVariables: DungeonsForeverDB
 ## OptionalDeps: EllesmereUI
 ## LoadOnDemand: 0
@@ -80,6 +80,8 @@ Core\Data\Data_PvPRanks.lua
 Core\Data\Data_PvPSets.lua
 Core\Data\Data_PvPHonor.lua
 Core\Data\Data_VendorPrices.lua
+Core\Data\Data_SpellBook.lua
+Core\Data\Data_WeaponTraining.lua
 Core\Data\zhTW\Data_Dungeons.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonLoot.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonQuests.lua [AllowLoadTextLocale zhTW]
@@ -110,6 +112,8 @@ Core\Data\zhTW\Data_Gear.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_GearVendors.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_GearRareSpawns.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ProfTrainers.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_SpellBook.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_WeaponTraining.lua [AllowLoadTextLocale zhTW]
 Core\Data\enUS\Data_Dungeons.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_DungeonLoot.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_DungeonQuests.lua [AllowLoadTextLocale enUS]
@@ -117,6 +121,7 @@ Core\Data\enUS\Data_DungeonGuide.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_MapPins.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_Gear.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ProfTrainers.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_SpellBook.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_NPCLoc.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_DungeonEntry.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_Professions.lua [AllowLoadTextLocale enUS]
@@ -187,3 +192,6 @@ Core\MainFrame.lua
 Core\QuickBar.lua
 Core\Data\Data_MapDetail.lua
 Core\Data\Data_RouteOvl.lua
+Core\SpellTraining.lua
+Core\WeaponMasters.lua
+Core\NativeSpellBook.lua

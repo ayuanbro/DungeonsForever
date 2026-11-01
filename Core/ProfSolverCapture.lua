@@ -535,8 +535,10 @@ function E.Capture(slug, opts, tick)
         local d = tables[profSlug] or {}
         for _, row in ipairs(d.rows or {}) do
             local f13 = row[13]
-            addRecipe(s, profSlug, row[1], row[2], row[3], row[7], row[8], row[9], row[10],
-                row[12], type(f13) == "table" and f13[1] or nil, row[14], row[4])
+            if not row.nip then
+                addRecipe(s, profSlug, row[1], row[2], row[3], row[7], row[8], row[9], row[10],
+                    row[12], type(f13) == "table" and f13[1] or nil, row[14], row[4])
+            end
             tick()
         end
         local lv = ns.ProfLeveling and ns.ProfLeveling[profSlug]

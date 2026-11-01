@@ -4977,6 +4977,17 @@ Y()
             end)
             EG.areaBtn = bt
             PaintAreaBtn()
+            bt.__lastOn = ns.ExploreAreaOn and ns.ExploreAreaOn() or false
+            bt:SetScript("OnUpdate", function(self, dt)
+                self.__t = (self.__t or 0) + dt
+                if self.__t < 0.25 then return end
+                self.__t = 0
+                local on = ns.ExploreAreaOn and ns.ExploreAreaOn() or false
+                if on ~= self.__lastOn then
+                    self.__lastOn = on
+                    PaintAreaBtn(on)
+                end
+            end)
         end
 
         local lc = CreateFrame("Frame", nil, root)
