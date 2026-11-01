@@ -1,12 +1,8 @@
 __pycache__/
 .pipeline-runtime/
 .venv/
-data-updater/
 data_pipeline/
-dist/
-tests/
-tools/
-.data-updater.lock
-validation/
 docs/
+tests/
+validation/
 *.bak
