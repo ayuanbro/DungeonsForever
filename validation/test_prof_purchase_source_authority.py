@@ -100,15 +100,17 @@ class PurchaseSourceAuthorityHUDTests(unittest.TestCase):
           DungeonsForeverDB.prof.follow={['Test-Realm']={slug='alchemy',skill=1,step=1,t0=1000}}
           local pf=ns.ProfFollow
           pf.Build();pf.f:Show();pf.showShop=true;pf.Paint()
-          assert(not pf.procureRes and not pf.f.vendorShop:IsShown())
+          assert(not pf.procureRes and pf.f.vendorShop==nil)
           local list=pf.ShoppingList('alchemy')
           assert(#list==1 and list[1].source=='ah' and list[1].availableCount==30)
           local stockText=pf.ShoppingSourceText(list[1]);local painted=false
           for _,widget in ipairs(allWidgets)do
-            if widget.text==stockText then painted=true end
+            if widget.text==ns.L['拍卖行'] then painted=true end
+            assert(widget.text~=stockText,'full purchase details widened the HUD source label')
             assert(widget.text~=ns.L['直售'],'NPC availability became a selected source badge')
           end
-          assert(painted,'native default HUD did not paint the Auctionator quantity')
+          assert(painted,'native HUD did not paint the selected auction source')
+          assert(pf.ShoppingSourceDetail(list[1]):find(stockText,1,true),'purchase details missing from tooltip')
           pf.ImportShoppingList('alchemy','Alchemy')
           assert(#imported==1 and imported[1].name=='Item11' and imported[1].need==2)
         ''')

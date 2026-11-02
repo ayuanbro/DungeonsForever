@@ -100,7 +100,8 @@ class ProfessionToolbarTests(unittest.TestCase):
           PD.divider=recordedWidget();PD.actDiv=recordedWidget()
           PD.toolBtns={};for i=1,PD.TOOL_MAX do PD.toolBtns[i]=buttonWidget()end
           PD.hudBtn=buttonWidget();PD.hudBtn:SetWidth(130);PD.hudBtn:Show()
-          PD.impBtn=buttonWidget();PD.impBtn:SetWidth(150)
+          PD.JUMP_W=104;PD.jumpBtn=buttonWidget();PD.jumpBtn:SetSize(104,PD.TOOL_H)
+          PD.jumpBtn:SetPoint('TOPRIGHT',PD.hudBtn,'TOPLEFT',-PD.TOOL_GAP,0)
           PD.SearchReserve=function()return 0 end
           PD.TextW=function(text)
             local width=0
@@ -115,8 +116,8 @@ class ProfessionToolbarTests(unittest.TestCase):
           PD.cur='engineering';PD.tab='leveling';PD.RecalcNeeded=function()return false end
           PD.RoutePairContext=function()end;PD.warnNotes={}
           PD.PlanSupplyParts=function()end
-          function checkLayout(page,width,yoff)
-            PD.autoPage=page;PD.RIGHT_W=width;PD.impBtn:SetShown(page=='shop')
+          function checkLayout(page,width,yoff,jumpShown)
+            PD.autoPage=page;PD.RIGHT_W=width;PD.jumpBtn:SetShown(jumpShown and page=='route')
             local list,handler=PD.LevelTool()
             local h=PD.PaintTool(list,handler,yoff)
             PD.Layout(yoff+h)
@@ -124,16 +125,24 @@ class ProfessionToolbarTests(unittest.TestCase):
             for _,b in ipairs(PD.toolBtns)do if b:IsShown()then
               frames[#frames+1]=b;if b.__key=='eng_spec'then eng=b end
             end end
-            for _,b in ipairs({PD.hudBtn,PD.impBtn})do if b:IsShown()then frames[#frames+1]=b end end
+            for _,b in ipairs({PD.hudBtn,PD.jumpBtn})do if b:IsShown()then frames[#frames+1]=b end end
             assert(eng and eng.__ddArr:IsShown(),'engineering selector missing')
             local contentTop=-PD.scroll.points[1][5]
+            local function position(b)
+              local p=b.points[1]
+              if p[2]==PD.hudBtn then
+                local hp=PD.hudBtn.points[1]
+                return hp[4]+p[4]-b:GetWidth(),-hp[5]-p[5]
+              end
+              return p[4],-p[5]
+            end
             for i,a in ipairs(frames)do
-              local ap=a.points[1];local ax,ay=ap[4],-ap[5]
+              local ax,ay=position(a)
               assert(ay>=PD.BODY_TOP+yoff,'stale toolbar vertical offset')
               assert(ay+a:GetHeight()<=contentTop,'route content overlaps toolbar: '..tostring(a.__key))
               assert(ax>=PD.RIGHT_X and ax+a:GetWidth()<=PD.RIGHT_X+width,'button outside panel')
               for j=i+1,#frames do
-                local b=frames[j];local bp=b.points[1];local bx,by=bp[4],-bp[5]
+                local b=frames[j];local bx,by=position(b)
                 local hit=ax<bx+b:GetWidth() and bx<ax+a:GetWidth()
                   and ay<by+b:GetHeight() and by<ay+a:GetHeight()
                 assert(not hit,'toolbar buttons overlap: '..tostring(a.__key)..' / '..tostring(b.__key))
@@ -148,13 +157,15 @@ class ProfessionToolbarTests(unittest.TestCase):
             with self.subTest(locale=locale):
                 self.setup_locale(locale)
                 self.lua.execute('''
-                  for _,width in ipairs({900,680,1020})do checkLayout('route',width,76)end
+                  for _,width in ipairs({900,680,1020})do
+                    checkLayout('route',width,76,false);checkLayout('route',width,76,true)
+                  end
                 ''')
 
-    def test_shop_and_route_switch_keep_both_action_buttons_clear(self):
+    def test_shop_and_route_switch_keep_hud_and_jump_buttons_clear(self):
         self.lua.execute('''
           for _,width in ipairs({900,680,1020})do
-            checkLayout('shop',width,76);checkLayout('route',width,76)
+            checkLayout('shop',width,76);checkLayout('route',width,76,true)
           end
         ''')
 

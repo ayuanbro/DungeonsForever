@@ -216,25 +216,27 @@ class TrackingHUDTests(unittest.TestCase):
           local savedSync=xp.Sync;local calls=0
           xp.Sync=function(...)calls=calls+1;return savedSync(...)end
           xp.eventFrame.OnEvent(xp.eventFrame,'PLAYER_REGEN_DISABLED')
-          assert(pf.f.skill:GetText()==ns.L['战斗中暂停追踪，脱战后自动恢复。'])
+          assert(pf.f.skill:GetText()==ns.L['战斗中暂停追踪'])
+          assert(pf.f.rankHint.statusDetail==ns.L['战斗中暂停追踪，脱战后自动恢复。'])
           calls=0
           for i=1,10 do assert(not pf.Sync());pf.Paint()end
           local timersBefore=#timers;pf.f.scripts.OnEvent(pf.f,'BAG_UPDATE_DELAYED')
           assert(calls==0 and #timers==timersBefore)
           xp.eventFrame.OnEvent(xp.eventFrame,'PLAYER_REGEN_ENABLED')
-          assert(calls>0 and pf.f.skill:GetText()~=ns.L['战斗中暂停追踪，脱战后自动恢复。'])
+          assert(calls>0 and pf.f.skill:GetText()~=ns.L['战斗中暂停追踪'])
         ''')
 
     def test_expiry_leaves_hud_stopped_until_explicit_restart(self):
         self.lua.execute('''
           clock=clock+48*60*60;xp.ExpireIdle()
           assert(follow.autoTrackSuspended=='inactive' and not xp.GetActive('alchemy'))
-          assert(pf.f.skill:GetText()==ns.L['48 小时无制作，追踪已自动结束。'])
+          assert(pf.f.skill:GetText()==ns.L['追踪已自动结束'])
+          assert(pf.f.rankHint.statusDetail==ns.L['48 小时无制作，追踪已自动结束。'])
           for i=1,5 do pf.Sync();pf.Paint()end
           assert(not xp.GetActive('alchemy'))
           xp.StartNew('alchemy',run.plan)
           assert(xp.GetActive('alchemy') and not follow.autoTrackSuspended)
-          assert(pf.f.skill:GetText()~=ns.L['48 小时无制作，追踪已自动结束。'])
+          assert(pf.f.skill:GetText()~=ns.L['追踪已自动结束'])
         ''')
 
 

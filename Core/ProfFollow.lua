@@ -24,6 +24,15 @@ local function RoundFrame(fr, radius, col)
     for _, tex in ipairs(pieces) do tex:SetShown(true) end
     return pieces
 end
+local function RoundBG(fr, radius, col)
+    if not (ns.hui and ns.hui.BuildRoundedBG) then
+        fr:SetBackdropColor(col[1], col[2], col[3], col[4])
+        return nil
+    end
+    fr:SetBackdropColor(0, 0, 0, 0)
+    fr.__rbg = ns.hui.BuildRoundedBG(fr, radius, col, "both", false)
+    return fr.__rbg
+end
 local Unpack = Host.Unpack
 local C_GOLD, C_GREY, C_DIM, C_TEXT = Host.C_GOLD, Host.C_GREY, Host.C_DIM, Host.C_TEXT
 local C_WHITE = Host.C_WHITE
@@ -48,18 +57,20 @@ local format = string.format
 local PF = {}
 ns.ProfFollow = PF
 
-PF.CRAFT_BTN = false
 
 local f
 local cueState = {}
 
-local W, W_BASE = 352, 352
+local W, W_BASE = 375, 375
 local PAD = 12
+local SRC_COL_W = 68
+local SRC_TEXT_W = 56
+local NUM_CAP = 56
+local TAG_CAP = 46
 local BTN_W = { 92, 66, 66 }
 local BTN_GAP = 4
 local MAT_MAX = 6
 local SHOP_MAX = 16
-local VENDOR_MAX = 6
 local SWEEP_MAX = 5
 local IMPORT_TRIES = 5
 
@@ -1000,6 +1011,56 @@ local function craftsLeft(seg, skill, rec,routeSlug,future)
     return (seg[4] or 0) * math.min(1, (seg[2] - from) / span)
 end
 
+-- Master's overlapping-skill cards are display choices, never execution order.
+-- Keep the frozen current step, and only add an independent, funded craft.
+local function currentCands(steps, skill, curStep, slug, rm, run)
+    local out = { math.max(1, math.min(#steps, curStep or 1)) }
+    local XP = ns.ProfExecution
+    local first = steps[out[1]]
+    local profession = first and (first.profession or slug)
+    if profession ~= slug then skill = skillOf(profession) or 0 end
+    local reserved, produced, consumers = {}, {}, {}
+    for i = out[1], #steps do
+        local sg = steps[i]
+        if (sg.profession or slug) ~= profession or sg.navigationOnly or sg.checkpoint or sg.tool
+            or (tonumber(sg[3]) or 0) <= 0
+            or XP and (XP.IsConversion(sg) or XP.IsSpecializationQuest(sg)) then break end
+        local a, b = tonumber(sg[1]) or 0, tonumber(sg[2]) or 0
+        if i > out[1] and a > skill then break end
+        local rec = stepRecipe(sg, rm[sg[3]])
+        local progress = run and XP.Progress(slug, sg.segmentID or i, nil, run.planID)
+        if progress and progress.blocked then break end
+        local remaining = math.ceil(craftsLeft(sg, skill, rec, slug, i ~= out[1]))
+        if i > out[1] and a <= skill and skill < b and sg[3] ~= first[3]
+            and remaining > 0 and not (progress and progress.complete)
+            and not consumers[sg.segmentID or i] and IsLearned(sg[3]) then
+            local safe = rec ~= nil
+            if run and XP.ValidateLearning then safe = safe and XP.ValidateLearning(run.plan, slug, sg) end
+            for _, m in ipairs(recMats(rec) or {}) do
+                local have, known = Have(m[1], false)
+                if not known or produced[m[1]] or have < (reserved[m[1]] or 0) + (m[2] or 1) * remaining then
+                    safe = false; break
+                end
+            end
+            if safe then out[2] = i; break end
+        end
+        if remaining > 0 then
+            for _, m in ipairs(recMats(rec) or {}) do
+                reserved[m[1]] = (reserved[m[1]] or 0) + (m[2] or 1) * remaining
+            end
+            local item = recItem(rec)
+            if item then produced[item] = true end
+            for _, allocation in ipairs(sg.allocations or {}) do
+                if (allocation.count or 0) > 0 and allocation.consumerID then consumers[allocation.consumerID] = true end
+            end
+            for _, allocation in ipairs(sg.reserve and sg.reserve.allocations or {}) do
+                if (allocation.count or 0) > 0 and allocation.consumerID then consumers[allocation.consumerID] = true end
+            end
+        end
+    end
+    return out
+end
+
 local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
     local _, steps,plan
     if suppliedPlan then plan=suppliedPlan;steps=plan.executionSteps or plan.steps
@@ -1248,7 +1309,8 @@ end
 function PF.ShoppingSourceDetail(entry)
     if not entry.planPurchases then return PF.ShoppingSourceText(entry) end
     local cost=type(entry.planPurchaseCost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(entry.planPurchaseCost,"copper") or L["价格未知"]
-    local parts={format(L["原料需 %d；原计划购入 %d，费用 %s"],entry.need or 0,entry.planPurchaseCount or 0,cost)}
+    local parts={PF.ShoppingSourceText(entry) or "",
+        format(L["原料需 %d；原计划购入 %d，费用 %s"],entry.need or 0,entry.planPurchaseCount or 0,cost)}
     if entry.haveKnown and (entry.have or 0)>0 then parts[#parts+1]=L["已有材料已抵扣；按原计划货源和报价计算待购费用。"] end
     if entry.purchaseChanged and entry.supplyChanged then parts[#parts+1]=L["拍卖行可购数量已变化；待购数量按原计划货源和报价重新分配。"] end
     for _,purchase in ipairs(entry.planPurchases) do
@@ -1289,47 +1351,6 @@ function PF.VendorPurchases(slug, plan)
         end
     end
     return out
-end
-
-function PF.PaintVendorPurchases(slug, y)
-    local panel=PF.f and PF.f.vendorShop
-    if not panel then return y,false end
-    local state=st()
-    local list=state and (state.step or 1)==1 and (PF.view or 0)==0 and PF.VendorPurchases(slug) or {}
-    if #list==0 then panel:Hide();PF.vendorScroll=nil;return y,false end
-    local offset=math.max(0,math.min(PF.vendorScroll or 0,math.max(0,#list-VENDOR_MAX)))
-    PF.vendorScroll=offset
-    panel.title:SetText(format(L["先购买 NPC 材料（%d 种）"],#list))
-    panel.more:SetShown(#list>VENDOR_MAX)
-    local pd=ns.ProfModule
-    local pending=false
-    for i,row in ipairs(panel.rows) do
-        local entry=list[offset+i]
-        row:Hide()
-        if entry then
-            local name,known=DG.ItemName(entry.id)
-            if not known and DG.RequestItem then DG.RequestItem(entry.id);pending=true end
-            local npc=entry.npcID and ns.ProfVendorNames and ns.ProfVendorNames[entry.npcID] or L["商人"]
-            local loc=entry.npcID and ns.ProfVendors and ns.ProfVendors[entry.npcID]
-            if not loc and entry.npcID and ns.EnsureProfNPCLocs then
-                local locations=ns.EnsureProfNPCLocs()[entry.npcID];loc=locations and locations[1]
-            end
-            local where=npc
-            local zone=loc and pd and pd.MapName and pd.MapName(loc[2])
-            if zone and zone~="" then where=where.." · "..zone end
-            if loc and loc[3] and loc[4] then where=where..format(" (%.1f, %.1f)",loc[3],loc[4]) end
-            row.name:SetText(format("%s ×%d",name or ("#"..entry.id),entry.missing))
-            row.source:SetText(where)
-            row.__it={entry.id};row.__loc=loc
-            TipOn(row,name or ("#"..entry.id),where)
-            row:SetScript("OnClick",loc and pd and pd.MarkVendorLoc and function()pd.MarkVendorLoc(loc)end or nil)
-            row:Show()
-        end
-    end
-    local height=28+math.min(#list,VENDOR_MAX)*38
-    panel:ClearAllPoints();panel:SetPoint("TOPLEFT",PF.f,"TOPLEFT",PAD,y)
-    panel:SetSize(W-2*PAD,height);panel:Show()
-    return y-height-8,pending
 end
 
 function PF.SupplementNeeds(slug)
@@ -1670,175 +1691,6 @@ local function DoImport(slug, profName)
 end
 PF.ImportShoppingList=DoImport
 
-local PROC_FRAME_MS, PROC_SLICE_MS = 10, 3
-
-local function procureSig(slug, demands)
-    local ids = {}
-    for id in pairs(demands) do ids[#ids + 1] = id end
-    table.sort(ids)
-    local parts = {}
-    for i = 1, #ids do parts[i] = ids[i] .. ":" .. demands[ids[i]] end
-    return slug .. "|" .. table.concat(parts, ",")
-end
-
-function PF.ProcureBusy()
-    return PF.procureJob ~= nil
-end
-
-local function procureNotify(res)
-    if not res then
-        craftNotify(L["优化买法：未找到可行买法，部分材料没有可靠货源。"])
-        return
-    end
-    local RA = ns.ProfRouteAuto
-    local byNPC, ahN, vendorN = {}, 0, 0
-    for _, e in ipairs(res.mats or {}) do
-        local source=purchaseSource(e)
-        if source=="vendor" or source=="npc" then
-            vendorN = vendorN + 1
-            if e.npcID then byNPC[e.npcID] = (byNPC[e.npcID] or 0) + 1 end
-        else
-            ahN = ahN + 1
-        end
-    end
-    local VN = ns.ProfVendorNames
-    local parts = {}
-    for npcID, n in pairs(byNPC) do
-        local nm = (VN and VN[npcID]) or format(L["商人 NPC #%d"], npcID)
-        parts[#parts + 1] = format(L["%s（%d 种）"], nm, n)
-    end
-    local head = L["材料采购比较（未应用）"]
-    if RA and RA.MoneyStr and res.comparisonTotal then
-        head = head .. " · " .. format(L["比较总预算（含图纸）：%s"], RA.MoneyStr(res.comparisonTotal, "copper"))
-    else head=head.." · "..L["价格未知"] end
-    if #parts > 0 then head = head .. "：" .. table.concat(parts, "、") end
-    local formulaWarning=res.comparisonFormulaDiagnostics and res.comparisonFormulaDiagnostics[1]
-    if formulaWarning then
-        local economy=ns.ProfEconomy
-        local warning=economy and economy.DiagnosticText and economy.DiagnosticText(formulaWarning)
-            or formulaWarning.message or L["库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。"]
-        head=head.." · "..warning
-    end
-    craftNotify(head.." · "..L["比较结果未应用；升级路线和当前采购仍按原计划。"])
-end
-
-function PF.ProcureStart()
-    local s = st()
-    if not (s and s.slug) then return end
-    if PF.procureJob then return end
-    local E = ns.ProfEconomy
-    local S = ns.ProfRouteSolver
-    local J = ns.IdleJobs
-    if not (E and S and J and E.Capture and S.NewProcurementJob and S.Run) then
-        craftNotify(L["优化买法不可用：求解器组件未加载。"])
-        return
-    end
-    local list = shopList(s)
-    local _,_,plan=routeFor(s.slug,s.skill)
-    local demands, n, inventoryUnknown = {}, 0, false
-    for _, e in ipairs(list) do
-        if not e.haveKnown then inventoryUnknown=true end
-        local lack = s.slug=="poisons" and math.max(0,(e.need or 0)-(e.have or 0)) or e.materialMissing or 0
-        if lack > 0 and type(e.id) == "number" then
-            demands[e.id] = (demands[e.id] or 0) + lack
-            n = n + 1
-        end
-    end
-    if n <= 0 then
-        craftNotify(inventoryUnknown and L["背包或银行数量未能读取，无法确认还需购买多少。"] or L["购物清单已全部备齐，无需采购。"])
-        return
-    end
-    local slug = s.slug
-    local opts = RA and RA.OptionsFor and RA.OptionsFor(slug,s.skill) or {}
-    opts.target=routeTarget(slug)
-    opts.professions = (E.Professions and E.Professions()) or {}
-    if not opts.professions[slug] then opts.professions[slug] = { cur = 1, max = 300 } end
-    PF.procureRes = nil
-    PF.procureSlug = slug
-    PF.procureSig = procureSig(slug, demands)
-    local job = { phase = "capture" }
-    PF.procureJob = job
-    job.co = coroutine.create(function()
-        local captured = E.Capture(slug, opts, function()
-            if debugprofilestop() > (job.deadline or 0) then coroutine.yield("work") end
-        end)
-        local snap=E.Copy and E.Copy(captured) or captured
-        snap.known=snap.known or {}
-        job.formulaCost=0;job.formulaCostComplete=true
-        job.formulaDiagnostics={}
-        local seen={}
-        for _,formula in ipairs(plan and plan.formulas or {}) do
-            if not formula.known then
-                local id=formula.id or formula[1]
-                local key=id or formula.recipeKey or formula
-                if not seen[key] then
-                    seen[key]=true
-                    job.formulaCost=job.formulaCost+(formula.cost or 0)
-                    if type(formula.cost)~="number" or formula.unpriced or formula.costComplete==false then job.formulaCostComplete=false end
-                    if (purchaseSource(formula)=="ah" or purchaseSource(formula)=="auction") and id and E.ConsiderAuctionSupply(snap) then
-                        local supply=snap.auctionSupply and snap.auctionSupply[id]
-                        local observed=E.AuctionSupplyOf and E.AuctionSupplyOf(snap,id)
-                        local required=formula.count or 1
-                        if not observed then
-                            job.formulaDiagnostics[#job.formulaDiagnostics+1]={code="auctionSupplyUnknown",item=id,
-                                message=L["库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。"]}
-                        elseif observed.quantity<required then
-                            job.formulaDiagnostics[#job.formulaDiagnostics+1]={code="auctionSupplyLimited",item=id,
-                                required=required,available=observed.quantity}
-                        end
-                        if supply then supply.quantity=math.max(0,(supply.quantity or 0)-(formula.count or 1)) end
-                    end
-                end
-                if formula.recipeKey then snap.known[formula.recipeKey]=true end
-                if formula.spell then snap.known[(formula.profession or slug)..":"..formula.spell]=true end
-                for _,recipe in ipairs(formula.recipes or {}) do
-                    if recipe.key then snap.known[recipe.key]=true
-                    elseif recipe.spell then snap.known[(recipe.profession or slug)..":"..recipe.spell]=true end
-                end
-            end
-        end
-        job.phase = "search"
-        return S.NewProcurementJob(snap, demands, { cpuLimitMs = 2000 })
-    end)
-    J.Add(function()
-        if PF.procureJob ~= job then return true end
-        job.deadline = debugprofilestop() + PROC_FRAME_MS
-        while true do
-            if job.job then
-                if S.Run(job.job, PROC_SLICE_MS) then
-                    local res = job.job.result
-                    if not res then res = S.Result(job.job, job.job.best, job.job.status) end
-                    PF.procureJob = nil
-                    PF.procureRes = (res and res.feasible and #(res.mats or {}) > 0) and res or nil
-                    if PF.procureRes then
-                        PF.procureRes.formulaBudget=job.formulaCost or 0
-                        PF.procureRes.comparisonTotal=job.formulaCostComplete and PF.procureRes.costComplete~=false and ((PF.procureRes.total or 0)+(job.formulaCost or 0)) or nil
-                        PF.procureRes.notApplied=true
-                        PF.procureRes.comparisonFormulaDiagnostics=job.formulaDiagnostics
-                        PF.procureRes.comparisonCanBuy=#job.formulaDiagnostics==0 and PF.procureRes.feasible~=false
-                            and PF.procureRes.supplyComplete~=false and (PF.procureRes.auctionSupplyUnknown or 0)==0 and job.formulaCostComplete
-                    end
-                    if f and f:IsShown() then PF.Paint() end
-                    procureNotify(PF.procureRes)
-                    return true
-                end
-            else
-                local ok, out = coroutine.resume(job.co)
-                if not ok then
-                    PF.procureJob = nil
-                    if f and f:IsShown() then PF.Paint() end
-                    craftNotify(L["优化买法计算出错。"])
-                    return true
-                end
-                if coroutine.status(job.co) == "dead" then job.job = out end
-            end
-            if debugprofilestop() >= job.deadline then break end
-        end
-        if f and f:IsShown() then PF.Paint() end
-        return false
-    end)
-end
-
 local f
 
 local rowsShop = {}
@@ -1922,13 +1774,19 @@ local function BuildBody()
         edgeFile = "Interface\\Buttons\\WHITE8x8",
         edgeSize = 1,
     })
-    if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L2 then
-        local l2 = ns.hui.layer.L2
-        f:SetBackdropColor(l2[1], l2[2], l2[3], 0.95)
+    local bgCol = { 0, 0, 0, 0.35 }
+    if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L0 then
+        local l0 = ns.hui.layer.L0
+        bgCol = { l0[1], l0[2], l0[3], 0.95 }
         f:SetBackdropBorderColor(1, 1, 1, 0.10)
     else
-        f:SetBackdropColor(0, 0, 0, 0.35)
         f:SetBackdropBorderColor(0.30, 0.30, 0.30, 1)
+    end
+    RoundBG(f, 6, bgCol)
+    if ns.hui and ns.hui.SkinShadow then
+        f:SetHeight(200)
+        ns.hui.SkinShadow(f, 16, 0.55, 6)
+        f:SetHeight(10)
     end
     f.__round = RoundFrame(f, 6, { 1, 1, 1, 0.25 })
     if f.__round then f:SetBackdropBorderColor(0, 0, 0, 0) end
@@ -1944,14 +1802,50 @@ local function BuildBody()
     f.title:SetWordWrap(false)
     f.title:SetPoint("TOPLEFT", f, "TOPLEFT", 42, -14)
 
-    f.skill = MakeFS(f, 16, C_GREY, "LEFT")
+    f.capWarn = MakeFS(f, 12, { 0.95, 0.32, 0.32 }, "LEFT")
+    f.capWarn:SetWordWrap(false)
+    f.capWarn:SetPoint("LEFT", f.title, "RIGHT", 8, 0)
+    f.capWarn:Hide()
+
+    f.skill = MakeFS(f, 16, C_TEXT, "LEFT")
     f.skill:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -42)
+
+    f.noLearn = CreateFrame("Frame", nil, f, BackdropTemplateMixin and "BackdropTemplate" or nil)
+    f.noLearn:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -40)
+    f.noLearn:SetHeight(22)
+    f.noLearn:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
+    RoundBG(f.noLearn, 5, { 0.42, 0.09, 0.09, 0.92 })
+    f.noLearn:SetBackdropBorderColor(0.93, 0.32, 0.32, 1)
+    f.noLearn.__round = RoundFrame(f.noLearn, 5, { 0.93, 0.32, 0.32, 1 })
+    if f.noLearn.__round then f.noLearn:SetBackdropBorderColor(0, 0, 0, 0) end
+    f.noLearnTxt = MakeFS(f.noLearn, 12, { 1, 0.86, 0.86 }, "CENTER")
+    f.noLearnTxt:SetWordWrap(false)
+    f.noLearnTxt:SetPoint("CENTER", f.noLearn, "CENTER", 0, 0)
+    f.noLearnTxt:SetText(L["未学习该专业"])
+    do
+        local cw = 72
+        local PDm = ns.ProfModule
+        if PDm and PDm.TextW then
+            local okw, wv = pcall(PDm.TextW, L["未学习该专业"], 12)
+            if okw and type(wv) == "number" then cw = math.ceil(wv) end
+        end
+        f.noLearn:SetWidth(cw + 20)
+    end
+    f.noLearn:Hide()
 
     f.rankHint = CreateFrame("Frame", nil, f)
     f.rankHint:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -39)
     f.rankHint:SetSize(196, 24)
     f.rankHint:EnableMouse(true)
     f.rankHint:SetScript("OnEnter", function(self)
+        if self.statusTitle and GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(self.statusTitle, 1, 0.82, 0, true)
+            GameTooltip:AddLine(self.statusDetail, 1, 1, 1, true)
+            GameTooltip:Show()
+            return
+        end
         local ranks = ns.ProfRanks
         if not (ranks and GameTooltip and self.tasks and #self.tasks > 0) then return end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -1966,38 +1860,10 @@ local function BuildBody()
     f.rankHint:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     f.rankHint:Hide()
 
-    f.vendorShop=CreateFrame("Frame",nil,f)
-    local vendorPanel=f.vendorShop
-    vendorPanel.title=MakeFS(vendorPanel,14,C_HEAD,"LEFT")
-    vendorPanel.title:SetPoint("TOPLEFT",vendorPanel,"TOPLEFT",0,-2)
-    vendorPanel.more=MakeFS(vendorPanel,11,C_GREY,"RIGHT")
-    vendorPanel.more:SetPoint("TOPRIGHT",vendorPanel,"TOPRIGHT",0,-3)
-    vendorPanel.more:SetText(L["滚轮查看更多"])
-    vendorPanel.title:SetPoint("RIGHT",vendorPanel.more,"LEFT",-6,0)
-    vendorPanel.title:SetWordWrap(false)
-    vendorPanel.rows={}
-    for i=1,VENDOR_MAX do
-        local row=CreateFrame("Button",nil,vendorPanel)
-        row:SetPoint("TOPLEFT",vendorPanel,"TOPLEFT",0,-24-(i-1)*38)
-        row:SetPoint("RIGHT",vendorPanel,"RIGHT",0,0);row:SetHeight(36)
-        row.name=MakeFS(row,14,C_TEXT,"LEFT")
-        row.name:SetPoint("TOPLEFT",row,"TOPLEFT",0,0);row.name:SetPoint("RIGHT",row,"RIGHT",0,0)
-        row.name:SetWordWrap(false)
-        row.source=MakeFS(row,11,C_GREY,"LEFT")
-        row.source:SetPoint("TOPLEFT",row,"TOPLEFT",0,-18);row.source:SetPoint("RIGHT",row,"RIGHT",0,0)
-        row.source:SetWordWrap(false)
-        vendorPanel.rows[i]=row
-    end
-    vendorPanel:EnableMouseWheel(true)
-    vendorPanel:SetScript("OnMouseWheel",function(_,delta)
-        PF.vendorScroll=math.max(0,(PF.vendorScroll or 0)-delta);PF.Paint()
-    end)
-    vendorPanel:Hide()
-
     f.seg = MakeFS(f, 16, C_GREY, "RIGHT")
     f.seg:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -42)
 
-    f.barBG = f:CreateTexture(nil, "BACKGROUND")
+    f.barBG = f:CreateTexture(nil, "BACKGROUND", nil, 2)
     f.barBG:SetColorTexture(1, 1, 1, 0.12)
     f.barBG:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -66)
     f.barBG:SetSize(W - 20, 5)
@@ -2023,12 +1889,12 @@ local function BuildBody()
             edgeFile = "Interface\\Buttons\\WHITE8x8",
             edgeSize = 1,
         })
-        if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L3 then
-            local l3 = ns.hui.layer.L3
-            card:SetBackdropColor(l3[1], l3[2], l3[3], 0.95)
-        else
-            card:SetBackdropColor(1, 1, 1, 0.06)
+        local cardCol = { 1, 1, 1, 0.06 }
+        if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L1 then
+            local l1 = ns.hui.layer.L1
+            cardCol = { l1[1], l1[2], l1[3], 0.95 }
         end
+        RoundBG(card, 6, cardCol)
         card:SetBackdropBorderColor(0, 0, 0, 0)
         card.__round = RoundFrame(card, 6, { 0, 1, 0.4, 0.9 })
 
@@ -2082,9 +1948,14 @@ local function BuildBody()
         card.crafts:SetWordWrap(false)
         card.crafts:SetPoint("TOPLEFT", card, "TOPLEFT", 42, -33)
 
-        card.srcTag = MakeFS(card, 14, C_GREY, "RIGHT")
-        card.srcTag:SetWordWrap(false)
-        card.srcTag:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
+        card.chipLearn = DG.MakeBadge(card, DG.Q_BADGE_SHARE_BG)
+        card.chipSrc = DG.MakeBadge(card,
+            (ns.ProfModule and ns.ProfModule.CARD_COL and ns.ProfModule.CARD_COL.trainer) or { 0.29, 0.33, 0.40 })
+        for _, ch in ipairs({ card.chipLearn, card.chipSrc }) do
+            ch.lab:SetFont(ns.FONT, DG.Q_BADGE_FS,
+                (ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE")) or "OUTLINE")
+            ch:Hide()
+        end
 
         card.matHead = MakeFS(card, 14, C_GREY, "LEFT")
         card.matHead:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -56)
@@ -2122,12 +1993,12 @@ local function BuildBody()
         edgeFile = "Interface\\Buttons\\WHITE8x8",
         edgeSize = 1,
     })
-    if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L3 then
-        local l3 = ns.hui.layer.L3
-        f.shop:SetBackdropColor(l3[1], l3[2], l3[3], 0.95)
-    else
-        f.shop:SetBackdropColor(1, 1, 1, 0.04)
+    local shopCol = { 1, 1, 1, 0.04 }
+    if ns.huiTheme == "hui" and ns.hui and ns.hui.layer and ns.hui.layer.L1 then
+        local l1s = ns.hui.layer.L1
+        shopCol = { l1s[1], l1s[2], l1s[3], 0.95 }
     end
+    RoundBG(f.shop, 6, shopCol)
     f.shop:SetBackdropBorderColor(1, 1, 1, 0.14)
     f.shop.__round = RoundFrame(f.shop, 6, { 1, 1, 1, 0.14 })
     if f.shop.__round then f.shop:SetBackdropBorderColor(0, 0, 0, 0) end
@@ -2213,6 +2084,39 @@ local function BuildBody()
         rowsShopSoldPill[i] = MakePill(C_TEXT)
         rowsShopTagPill[i] = MakePill(C_DIM)
         rowsShopSrcPill[i] = MakePill(C_HEAD)
+        local src0 = rowsShopSrcPill[i]
+        src0:EnableMouse(true)
+        src0:SetScript("OnEnter", function(self)
+            local r = self.__row
+            if not r or not r.srcText then return end
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:ClearLines()
+            if r.srcKind == 1 then
+                GameTooltip:AddLine(r.srcFull or r.srcText, 1, 0.82, 0, true)
+                local loc = r.npcID and ns.ProfVendors and ns.ProfVendors[r.npcID]
+                GameTooltip:AddLine(loc and L["点击在地图上标出该商人"] or L["该商人的位置暂未收录"],
+                                    0.75, 0.75, 0.75, true)
+            else
+                GameTooltip:AddLine(r.nm, 1, 0.82, 0, true)
+            end
+            local detail = PF.ShoppingSourceDetail(r.src)
+            if detail then GameTooltip:AddLine(detail, 1, 1, 1, true) end
+            GameTooltip:Show()
+        end)
+        src0:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        if src0.SetHitRectInsets then src0:SetHitRectInsets(-2, -3, -3, -2) end
+        src0:SetScript("OnMouseUp", function(self, btn)
+            if btn ~= "LeftButton" then return end
+            local r = self.__row
+            if not r or r.srcKind ~= 1 or not r.npcID then return end
+            local PDm = ns.ProfModule
+            local loc = ns.ProfVendors and ns.ProfVendors[r.npcID]
+            if PDm and PDm.MarkVendorLoc then PDm.MarkVendorLoc(loc) end
+            if not loc then
+                craftNotify(format(L["%s 的位置暂未收录"], r.srcFull or r.srcText or "?"))
+            end
+            ns.PlaySound(1)
+        end)
     end
     BuildStep(6)
 
@@ -2228,15 +2132,6 @@ local function BuildBody()
     TipOn(f.shopImp, L["一键导入到拍卖行"],
           L["将拍卖行采购的缺口导入 Auctionator；NPC 货物和自制材料不导入，同名清单将被覆盖。"])
 
-    f.shopProc = NewButton(f.shop, L["比较买法"], 66, 20, 13)
-    f.shopProc:SetScript("OnClick", function()
-        PF.ProcureStart()
-        ns.PlaySound(1)
-    end)
-    f.shopProc:SetPoint("RIGHT", f.shopImp, "LEFT", -10, 0)
-    TipOn(f.shopProc, L["比较买法"],
-          L["此比较尚未应用；升级路线、购物清单和 HUD 仍使用当前计划。"])
-
     f.shopStep = NewButton(f.shop, L["分步"], 48, 20, 13)
     f.shopStep:SetScript("OnClick", function()
         dbProf().shopStepView = not (dbProf().shopStepView and true or false)
@@ -2244,27 +2139,32 @@ local function BuildBody()
         PF.Paint()
         ns.PlaySound(1)
     end)
-    f.shopStep:SetPoint("RIGHT", f.shopProc, "LEFT", -10, 0)
+    f.shopStep:SetPoint("RIGHT", f.shopImp, "LEFT", -10, 0)
     TipOn(f.shopStep, L["分步 / 汇总"],
           L["汇总：所有步骤的材料合并成一行。分步：按首次需要的步骤分组列出，便于分段采购。"])
-
-    f.craftBtn = NewButton(f, L["跳转制造"], 66, 22, 14)
-    f.craftBtn:Hide()
-    f.craftBtn:SetScript("OnClick", function()
-        jumpCraft()
-        ns.PlaySound(1)
-    end)
-    TipOn(f.craftBtn, L["跳转制造"],
-          L["打开专业面板并自动定位当前段配方、预填制造数量；在面板内点一次制造即可批量完成。"])
 
     f.finish = MakeFS(f, 14, C_OK, "LEFT")
     f.finish:SetWordWrap(false)
 
-    f.nowBtn = NewButton(f, L["回到当前"], 84, 22, 14)
+    local nowW = 68
+    do
+        local PDm = ns.ProfModule
+        if PDm and PDm.TextW then
+            local ok, wv = pcall(PDm.TextW, L["回到当前"], 13)
+            if ok and type(wv) == "number" then nowW = math.max(nowW, math.ceil(wv) + 14) end
+            ok, wv = pcall(PDm.TextW, L["校正产出"], 13)
+            if ok and type(wv) == "number" then nowW = math.max(nowW, math.ceil(wv) + 14) end
+        end
+    end
+    f.cardBtnW = nowW
+
+    f.nowBtn = NewButton(f.card, L["回到当前"], nowW, 20, 13)
+    f.nowBtn:SetFrameLevel((f.card:GetFrameLevel() or 0) + 6)
     f.nowBtn:Hide()
     f.nowBtn:SetScript("OnClick", function() PF.view = 0 PF.Paint() ns.PlaySound(1) end)
 
-    f.verifyBtn = NewButton(f, L["校正产出"], 84, 22, 14)
+    f.verifyBtn = NewButton(f.card, L["校正产出"], nowW, 20, 13)
+    f.verifyBtn:SetFrameLevel((f.card:GetFrameLevel() or 0) + 6)
     f.verifyBtn:Hide()
     f.verifyBtn:SetScript("OnClick", function() verifyOutputDialog() ns.PlaySound(1) end)
 
@@ -2315,7 +2215,6 @@ local function BuildBody()
         GameTooltip:Hide()
     end)
     PF.PaintMute(f.muteBtn)
-    f.title:SetPoint("RIGHT", f.muteBtn, "LEFT", -6, 0)
     BuildStep(7)
 
     local pos = dbProf().followPos
@@ -2376,7 +2275,7 @@ local function sweepPaint(pending)
     end
 end
 
-local function paintMats(card, seg, rm, sold, w, remaining)
+local function paintMats(card, seg, rm, sold, w, remaining, resR)
     local rowsMat, rowsMatIcon, rowsMatBadge = card.__rowsMat, card.__rowsIcon, card.__rowsBadge
     local rec = stepRecipe(seg, rm[seg[3]])
     local mats = recMats(rec)
@@ -2407,7 +2306,7 @@ local function paintMats(card, seg, rm, sold, w, remaining)
             line:SetText(txt)
             line:ClearAllPoints()
             line:SetPoint("TOPLEFT", card, "TOPLEFT", 36, -(61 + (i - 1) * 26))
-            line:SetWidth(w - 28)
+            line:SetWidth(math.max(60, w - 28 - (resR or 0)))
             line:Show()
             local ic = rowsMatIcon[i]
             ic:SetTexture(DG.ItemIcon(m[1]) or Host.FALLBACK_ICON)
@@ -2431,7 +2330,7 @@ local function paintMats(card, seg, rm, sold, w, remaining)
             more:SetText(format(L["…共 %d 种材料，进购物清单看合计"], #mats))
             more:ClearAllPoints()
             more:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -(56 + n * 26))
-            more:SetWidth(w)
+            more:SetWidth(math.max(60, w - (resR or 0)))
             more:Show()
             rowsMatIcon[MAT_MAX + 1]:Hide()
             if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(rowsMatIcon[MAT_MAX + 1], nil) end
@@ -2464,19 +2363,34 @@ local function paintMats(card, seg, rm, sold, w, remaining)
     return n, pending, canCraft
 end
 
+local function paintTrackingStatus(title, detail)
+    f.skill:SetText(title)
+    f.skill:SetWidth(W_BASE - 20)
+    f.skill:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
+    f.skill:SetWordWrap(false)
+    f.skill:Show()
+    f.noLearn:Hide()
+    f.seg:Hide()
+    f.capWarn:Hide()
+    f.rankHint.tasks = nil
+    f.rankHint.statusTitle, f.rankHint.statusDetail = title, detail
+    f.rankHint:SetWidth(W_BASE - 16)
+    f.rankHint:Show()
+end
+
 function PF.Paint()
     if not (f and f:IsShown()) then return end
     if trackingPaused() then
         PF.combatPaused=true
-        f.skill:SetText(L["战斗中暂停追踪，脱战后自动恢复。"])
+        paintTrackingStatus(L["战斗中暂停追踪"], L["战斗中暂停追踪，脱战后自动恢复。"])
         return
     end
     local state=st()
     if state and state.autoTrackSuspended=="inactive" then
-        f.skill:SetText(L["48 小时无制作，追踪已自动结束。"])
+        paintTrackingStatus(L["追踪已自动结束"], L["48 小时无制作，追踪已自动结束。"])
         return
     end
-    W = W_BASE + ((PF.showShop and PF.wide) or 0)
+    W = W_BASE
     f:SetWidth(W)
     f.barBG:SetWidth(W - 20)
     local s = st()
@@ -2495,11 +2409,54 @@ function PF.Paint()
     local rankTasks = PF.RankTasks(slug, routeTarget(slug), steps, s.step)
     updateCues(slug, rankTasks)
     f.rankHint.tasks = rankTasks
+    f.rankHint.statusTitle, f.rankHint.statusDetail = nil, nil
     f.rankHint:SetShown(#rankTasks > 0)
-    local skillText = cur and format(L["技能 %d / %d"], cur, mx or 300) or L["未学过该专业，先找训练师学习"]
-    if #rankTasks > 0 then skillText = skillText .. " · " .. L["晋级"] end
-    f.skill:SetText(skillText)
-    f.skill:SetTextColor(Unpack(#rankTasks > 0 and C_HEAD or C_GREY))
+    local atCap = false
+    for _, task in ipairs(rankTasks) do
+        local state = task.state or {}
+        if task.due and state.known and state.maxSkill and state.maxSkill > 0
+            and state.skill and state.skill >= state.maxSkill then atCap = true; break end
+    end
+    if cur then
+        local _, stp = routeFor(s.slug, s.skill)
+        local seg = stp and stp[s.step or 1]
+        local toPts = seg and tonumber(seg[2]) or nil
+        if toPts and toPts > cur then
+            f.skill:SetText(format(L["技能 %d（%d）/ %d"], cur, toPts, mx or 300))
+        else
+            f.skill:SetText(format(L["技能 %d / %d"], cur, mx or 300))
+        end
+        f.skill:Show()
+        if f.noLearn then f.noLearn:Hide() end
+    else
+        f.skill:SetText("")
+        f.skill:Hide()
+        if f.noLearn then f.noLearn:Show() end
+    end
+    if atCap then
+        f.skill:SetTextColor(0.95, 0.32, 0.32)
+    else
+        f.skill:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
+    end
+    if f.capWarn then
+        if atCap then
+            f.capWarn:SetText(L["找训练师提高技能上限"])
+            f.capWarn:Show()
+        else
+            f.capWarn:Hide()
+        end
+    end
+    if f.__round then
+        local br, bgc, bb, ba = 1, 1, 1, 0.25
+        if atCap then br, bgc, bb, ba = 0.93, 0.32, 0.32, 0.95 end
+        for _, tex in ipairs(f.__round) do tex:SetVertexColor(br, bgc, bb, ba) end
+    elseif atCap then
+        f:SetBackdropBorderColor(0.93, 0.32, 0.32, 0.95)
+    elseif ns.huiTheme == "hui" then
+        f:SetBackdropBorderColor(1, 1, 1, 0.10)
+    else
+        f:SetBackdropBorderColor(0.30, 0.30, 0.30, 1)
+    end
     local ratio = cur and math.min(1, cur / 300) or 0
     f.bar:SetWidth(math.max(2, math.floor((W - 20) * ratio + 0.5)))
     f.bar:SetVertexColor(accent[1], accent[2], accent[3], 0.95)
@@ -2508,6 +2465,7 @@ function PF.Paint()
     local vi = math.max(1, math.min(#steps, (s.step or 1) + (PF.view or 0)))
     f.seg:SetText(((mode == "auto") and L["自动计算"] or mode == "gather" and L["采集路线"] or L["固定路线"]) .. " · "
                   .. format(L["段落 %d / %d"], vi, #steps))
+    f.seg:Show()
     local segmentWidth = f.seg.GetStringWidth and f.seg:GetStringWidth() or 140
     local skillWidth = math.max(90, W - 28 - segmentWidth)
     f.skill:SetWidth(skillWidth)
@@ -2530,27 +2488,24 @@ function PF.Paint()
     f.finish:SetShown(finished)
     f.card:SetShown(not finished)
     f.card2:Hide()
-    f.nowBtn:SetShown((PF.view or 0) ~= 0 and not finished)
+    local viewing = (PF.view or 0) ~= 0 and not finished
+    f.nowBtn:SetShown(viewing)
     local TK = ns.ProfExecution
     local vRun = slug~="poisons" and TK and TK.GetActive and TK.GetActive(slug)
     local vProg = vRun and TK.Progress and TK.Progress(slug, nil, nil, vRun.planID)
     f.verifyBtn:SetText(vProg and vProg.manualConversion and L["确认转换"] or L["校正产出"])
-    f.verifyBtn:SetShown(not finished and vProg ~= nil and vProg.outputItem ~= nil and not vProg.finished and not f.craftBtn:IsShown())
-    f.craftBtn:SetShown(PF.CRAFT_BTN and not finished)
+    local verShown = not finished and vProg ~= nil and vProg.outputItem ~= nil and not vProg.finished
+    f.verifyBtn:SetShown(verShown)
 
     local y = -82
     local pending = false
-    if finished then f.vendorShop:Hide()
-    else y,pending=PF.PaintVendorPurchases(slug,y) end
 
     if not finished then
-        -- Keep the required current segment visible even when it lacks mats.
-        local cands = {vi}
-        if (PF.view or 0) == 0 and mode ~= "gather" and vi < #steps then cands[2] = vi + 1 end
+        local rm = recMap(slug)
+        local cands = viewing and {vi} or currentCands(steps, cur or s.skill or 0, s.step or 1, slug, rm, vRun)
         local cards = {f.card, f.card2}
         for painted, ci in ipairs(cands) do
         local seg = steps[ci]
-        local rm = recMap(slug)
         local sold = soldSet(slug)
         local rec = stepRecipe(seg, rm[seg[3]])
         local card, w = cards[painted], W - 2 * PAD - 16
@@ -2588,16 +2543,17 @@ function PF.Paint()
 
         local crafts = seg[4] or 0
         local remaining = crafts
-        if ci == s.step then
-            remaining = math.ceil(craftsLeft(seg, s.skill, rec))
+        if seg.segmentID or ci == s.step then
+            remaining = math.ceil(craftsLeft(seg, s.skill, rec, slug, ci ~= s.step))
             crafts = remaining
         end
-        local nMat, pend, canCraft = paintMats(card, seg, rm, sold, w - 8, remaining)
+        local nMat, pend, canCraft = paintMats(card, seg, rm, sold, w - 8, remaining,
+            viewing and ((f.cardBtnW or 68) + 6) or 0)
         pending = pending or pend
 
-        local src, detail
+        local src, detail, kind
         if PDm and PDm.LevelSrc then
-            src, detail = PDm.LevelSrc(rec)
+            src, detail, kind = PDm.LevelSrc(rec, seg.profession or slug, seg.recipe, true)
         end
         local learned = IsLearned(seg[3])
         local learningWarning=isCur and PF.LearningWarning(slug,vProg)
@@ -2605,28 +2561,77 @@ function PF.Paint()
         local manual = seg.navigationOnly or seg.checkpoint or XP and (XP.IsConversion(seg) or XP.IsSpecializationQuest(seg))
         card.__step = ci
         card.__spell = not manual and seg[3] ~= 0 and seg[3] or nil
-        local tagText = seg.navigationOnly and L["参考"] or manual and L["手动完成后继续"] or learned and L["已学习"] or (src or L["向训练师学习"])
-        if detail and not learned then tagText = tagText .. " · " .. detail end
-        if painted == 2 then tagText = L["下一步预览"] .. " · " .. tagText end
-        card.srcTag:SetText(tagText)
-        card.srcTag:SetTextColor(Unpack(learningWarning and C_BAD or learned and C_OK or C_GREY))
-        local tagW = 90
-        if PDm and PDm.TextW then
-            local okW, tw = pcall(PDm.TextW, tagText, 14)
-            if okW and type(tw) == "number" then tagW = math.ceil(tw) end
-        end
-        card.srcTag:SetWidth(tagW)
+        local srcLabel, srcColor
+        local CARD_COL = PDm and PDm.CARD_COL or {}
+        if manual then
+            srcLabel = seg.navigationOnly and L["参考"] or questInfo and L["任务"]
+                or XP and XP.IsConversion(seg) and L["精华转换"] or L["采集"]
+            srcColor = CARD_COL.both
+        elseif kind == "vendor" then srcLabel, srcColor = L["商人"], CARD_COL.vendor
+        elseif kind == "drop" then srcLabel, srcColor = L["掉落"], CARD_COL.drop
+        elseif kind == "currency" then srcLabel, srcColor = L["兑换"], CARD_COL.vendor
+        elseif kind == "quest" then srcLabel, srcColor = L["任务"], CARD_COL.both
+        elseif kind == "trainer" or src == L["向训练师学习"] then srcLabel, srcColor = L["训练师"], CARD_COL.trainer
+        else srcLabel, srcColor = L["图纸"], CARD_COL.both end
+        local chL, chS = card.chipLearn, card.chipSrc
+            chL.lab:SetText(learned and L["已学"] or L["未学"])
+            DG.BadgeTint(chL, learned and DG.Q_BADGE_SHARE_BG or DG.Q_BADGE_RACE_BG)
+            local w1 = math.max(DG.Q_BADGE_MIN_W, (chL.lab:GetStringWidth() or 18) + DG.Q_BADGE_PAD * 2)
+            chL:SetSize(w1, DG.Q_BADGE_H)
+            local tagW = w1
+            chL:ClearAllPoints()
+            if srcLabel then
+                chS.lab:SetText(srcLabel)
+                chS:EnableMouse(true)
+                if manual then TipOn(chS, srcLabel, questInfo and questInfo.summary or seg.detail)
+                else TipOn(chS, src or srcLabel, detail) end
+                DG.BadgeTint(chS, srcColor or { 0.29, 0.33, 0.40 })
+                local w2 = math.max(DG.Q_BADGE_MIN_W, (chS.lab:GetStringWidth() or 18) + DG.Q_BADGE_PAD * 2)
+                chS:SetSize(w2, DG.Q_BADGE_H)
+                chS:ClearAllPoints()
+                chS:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
+                chS:Show()
+                chL:SetPoint("TOPRIGHT", chS, "TOPLEFT", -DG.Q_BADGE_GAP, 0)
+                tagW = tagW + DG.Q_BADGE_GAP + w2
+            else
+                chS:Hide()
+                chL:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
+            end
+            chL:Show()
 
+        if manual then chL:Hide();tagW = srcLabel and (chS:GetWidth() or 0) or 0 end
         local rangeText = format(L["%d – %d"], seg[1], seg[2])
         card.range:SetText(rangeText)
-        local craftText = questInfo and questInfo.summary
-            or seg.navigationOnly and L["按实际技能推进；不预计采集产出。"]
-            or seg.checkpoint and L["不预先计入尚未采到的矿石"] or format(L["大约还需制作%d次"], crafts)
-        if canCraft and not questInfo then
-            craftText = craftText .. " · " ..
-                format(L["材料还可制作%d次"], canCraft)
-        end
+            local numCol = format("|cff%02x%02x%02x", math.floor(accent[1] * 255 + 0.5),
+                math.floor(accent[2] * 255 + 0.5), math.floor(accent[3] * 255 + 0.5))
+            local exactQty = (tonumber(seg[4]) or 0) <= math.max(1, seg[2] - seg[1])
+            if exactQty and C_TradeSkillUI and C_TradeSkillUI.GetRecipeInfo then
+                local okInfo, ri = pcall(C_TradeSkillUI.GetRecipeInfo, seg[3])
+                if okInfo and type(ri) == "table" then
+                    local rd = ri.relativeDifficulty
+                    if rd == nil then rd = ri.difficulty end
+                    if rd ~= nil and rd >= 1 then exactQty = false end
+                end
+            end
+            local needKey = L["还需%s次"]
+            if not exactQty then needKey = L["还需约%s次"] end
+            local craftText = format(needKey, numCol .. crafts .. "|r")
+            if canCraft then
+                craftText = craftText .. "/" .. format(L["可制造%s次"], numCol .. canCraft .. "|r")
+            end
+            if vRun and TK.Progress then
+                local pv = TK.Progress(slug, ci, nil, vRun.planID)
+                if pv and pv.outputItem then
+                    craftText = craftText .. "/" .. format(L["已生产%s"], numCol .. (pv.actualOutputs or 0) .. "|r")
+                end
+            end
+        if questInfo then craftText = questInfo.summary
+        elseif seg.navigationOnly then craftText = L["按实际技能推进；不预计采集产出。"]
+        elseif seg.checkpoint then craftText = L["不预先计入尚未采到的矿石"] end
         card.crafts:SetText(learningWarning or craftText)
+        local craftW = w - 54
+        if verShown and painted == 1 then craftW = craftW - (f.cardBtnW or 68) - 2 end
+        card.crafts:SetWidth(math.max(60, craftW))
 
         local rangeW, nameW = 40, 90
         if PDm and PDm.TextW then
@@ -2642,7 +2647,7 @@ function PF.Paint()
         card.range:SetPoint("TOPLEFT", card, "TOPLEFT", 42 + nameX + 10, -12)
         card.range:SetWidth(rangeW + 6)
 
-        local cardH = nMat * 26 + 60 + (((PF.view or 0) ~= 0) and 26 or 0)
+        local cardH = math.max(nMat * 26 + 60, viewing and 86 or 60)
         card:ClearAllPoints()
         card:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
         card:SetSize(W - 2 * PAD, cardH)
@@ -2658,7 +2663,6 @@ function PF.Paint()
             if (not onlyMissView()) or e.missing==nil or e.missing > 0 then shown[#shown + 1] = e end
         end
         f.shop.missTog:SetChecked(onlyMissView())
-        if PF.ProcureBusy() then f.shopProc:SetText(L["比较中…"]) else f.shopProc:SetText(L["比较买法"]) end
         local srcByID={}
         for _,entry in ipairs(list) do srcByID[entry.id]=entry end
         local function tw(txt)
@@ -2669,8 +2673,28 @@ function PF.Paint()
             end
             return #txt * 5 + 16
         end
+        local function clipText(txt, maxW)
+            if type(txt) ~= "string" or txt == "" then return txt end
+            local PDm = ns.ProfModule
+            local CS = ns.hui and ns.hui.CharStep
+            if not (PDm and PDm.TextW and CS) then return txt end
+            local ok, wv = pcall(PDm.TextW, txt, 14)
+            if not ok or type(wv) ~= "number" or wv <= maxW then return txt end
+            local out, w = "", 0
+            local i, n = 1, #txt
+            while i <= n do
+                local ch, step, k = CS(txt, i)
+                local cw = (k or 1) * 14
+                if w + cw > maxW - 14 then break end
+                out = out .. ch
+                w = w + cw
+                i = i + (step or 1)
+            end
+            if out == "" then return txt end
+            return out .. "…"
+        end
         local rows = {}
-        local nameW, numW, missW, tagW, srcW = 0, 0, 0, 0, 0
+        local nameW, numW, missW, tagW = 0, 0, 0, 0
         local stepView = (dbProf().shopStepView) and true or false
         f.shopStep:SetText(stepView and L["汇总"] or L["分步"])
         local function pushRow(e)
@@ -2698,11 +2722,22 @@ function PF.Paint()
             local w5 = tw(row.gate and L["全程"] or format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
             if row.src then
-                row.srcText=PF.ShoppingSourceText(row.src)
-                if row.srcText then
-                    local w4 = tw(row.srcText) + 10
-                    if w4 > srcW then srcW = w4 end
+                local entry = row.src
+                local vendor = (entry.vendorCount or 0) > 0 or purchaseSource(entry) == "vendor"
+                local auction = (entry.ahCount or 0) > 0 or purchaseSource(entry) == "ah"
+                if vendor and auction then row.srcText, row.srcKind = L["商人"] .. "/" .. L["拍卖行"], 4
+                elseif vendor then row.srcText, row.srcKind = L["商人"], 1
+                elseif auction then row.srcText, row.srcKind = L["拍卖行"], 2
+                elseif entry.selfCraft then row.srcText, row.srcKind = L["自制"], 3 end
+                if row.srcKind == 1 then
+                    row.npcID = entry.npcID
+                    for _, purchase in ipairs(entry.purchases or {}) do
+                        if purchase.npcID then row.npcID = purchase.npcID; break end
+                    end
+                    row.srcFull = row.npcID and ns.ProfVendorNames and ns.ProfVendorNames[row.npcID]
+                    row.srcText = row.srcFull or row.srcText
                 end
+                row.srcText = clipText(row.srcText, SRC_TEXT_W)
             end
             rows[#rows + 1] = row
         end
@@ -2723,20 +2758,21 @@ function PF.Paint()
         else
             for _, e in ipairs(shown) do pushRow(e) end
         end
+        if numW < 34 then numW = 34 end
+        if numW > NUM_CAP then numW = NUM_CAP end
+        if tagW > TAG_CAP then tagW = TAG_CAP end
+        if tagW < 34 then tagW = 34 end
+        local srcW = SRC_COL_W
+        local innerW = W - 2 * PAD
         local xName = 8
-        local xNum = xName + nameW + 10
-        local xMiss = xNum + numW + 10
-        local xSrc = xMiss + missW + 8
+        local xSrc = innerW - 14 - tagW - 8 - srcW
+        local xMiss = xSrc - 8 - missW
+        local xNum = xMiss - 10 - numW
+        nameW = xNum - 10 - xName
+        if nameW < 40 then nameW = 40 end
         local maxScroll = math.max(0, #rows - SHOP_MAX)
         PF.shopScroll = math.max(0, math.min(PF.shopScroll or 0, maxScroll))
         local scroll = PF.shopScroll
-        local needInner = xSrc + srcW + 10 + tagW + 14
-        local baseInner = W_BASE - 2 * PAD - 16
-        local newWide = (needInner > baseInner) and (needInner - baseInner) or nil
-        if (newWide or 0) ~= (PF.wide or 0) then
-            PF.wide = newWide
-            C_Timer.After(0, PF.Paint)
-        end
         local n = 0
         for ri = scroll + 1, math.min(#rows, scroll + SHOP_MAX) do
             local row = rows[ri]
@@ -2766,6 +2802,7 @@ function PF.Paint()
             end
             if row.head then
                 nmFS:SetText(row.nm)
+                nmFS:SetWidth(innerW - 2 * xName)
                 nmFS:SetTextColor(Unpack(C_HEAD))
                 nmFS:ClearAllPoints()
                 nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
@@ -2778,7 +2815,9 @@ function PF.Paint()
                 n = n + 1
             else
                 nmFS:SetTextColor(Unpack(C_TEXT))
-                nmFS:SetText(row.nm)
+                nmFS:SetText((tw(row.nm) > nameW) and clipText(row.nm, nameW) or row.nm)
+                nmFS:SetWidth(nameW)
+                num:SetWidth(numW)
                 num:SetText(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have, row.need), row.need))
                 nmFS:ClearAllPoints()
                 nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
@@ -2787,7 +2826,7 @@ function PF.Paint()
                 num:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xNum, ry)
                 num:Show()
                 if row.inventoryUnknown then
-                    paintPill(mp,L["数量未核实"],xMiss,missW,Unpack(C_BAD))
+                    paintPill(mp,L["未知"],xMiss,missW,Unpack(C_BAD))
                 elseif row.missing > 0 then
                     paintPill(mp, format(L["缺%d"], row.missing), xMiss, missW, Unpack(C_BAD))
                 else
@@ -2796,11 +2835,21 @@ function PF.Paint()
                 end
                 sp:Hide()
                 if row.src and row.srcText then
-                    local kr, kg, kb = Unpack(C_HEAD)
-                    paintPill(srcp, row.srcText, xSrc, srcW, kr, kg, kb, 0.22)
+                    if row.srcKind == 1 then
+                        local kr, kg, kb = Unpack(C_HEAD)
+                        paintPill(srcp, row.srcText, xSrc, srcW, kr, kg, kb)
+                    elseif row.srcKind == 3 then
+                        local okr, okg, okb = Unpack(C_OK)
+                        paintPill(srcp, row.srcText, xSrc, srcW, okr, okg, okb, 0.5)
+                    else
+                        paintPill(srcp, row.srcText, xSrc, srcW, 0.58, 0.58, 0.58, 0.45)
+                    end
+                    srcp.__row = row
+                    srcp.fs:SetWidth(srcW - 10)
+                    srcp.fs:SetWordWrap(false)
                     srcp:EnableMouse(true)
-                    TipOn(srcp,row.nm,PF.ShoppingSourceDetail(row.src))
                 else
+                    srcp.__row = nil
                     srcp:Hide()
                 end
                 tp:ClearAllPoints()
@@ -2866,7 +2915,6 @@ function PF.Paint()
         end
     else
         f.shop:Hide()
-        PF.wide = nil
         PF.shopScroll = nil
     end
 
@@ -2881,24 +2929,22 @@ function PF.Paint()
         y = y - 34
     end
 
-    if (PF.view or 0) ~= 0 and not finished then
+    if viewing then
         f.nowBtn:ClearAllPoints()
-        f.nowBtn:SetPoint("BOTTOMRIGHT", f.card, "BOTTOMRIGHT", -6, 4)
+        f.nowBtn:SetPoint("TOPRIGHT", f.card, "TOPRIGHT", -8, -59)
     end
-    if f.verifyBtn:IsShown() then
-        f.verifyBtn:ClearAllPoints()
-        f.verifyBtn:SetPoint("TOPRIGHT", f.btns[2], "TOPLEFT", -BTN_GAP, 0)
-    end
-
     local by = y - 4
     f.btns[1]:ClearAllPoints()
     f.btns[1]:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, by)
-    f.craftBtn:ClearAllPoints()
-    f.craftBtn:SetPoint("TOPLEFT", f.btns[1], "TOPRIGHT", BTN_GAP, 0)
     f.btns[3]:ClearAllPoints()
     f.btns[3]:SetPoint("TOPRIGHT", f, "TOPRIGHT", -PAD, by)
     f.btns[2]:ClearAllPoints()
     f.btns[2]:SetPoint("TOPRIGHT", f.btns[3], "TOPLEFT", -BTN_GAP, 0)
+    f.verifyBtn:SetShown(verShown)
+    if verShown then
+        f.verifyBtn:ClearAllPoints()
+        f.verifyBtn:SetPoint("TOPRIGHT", f.card, "TOPRIGHT", -8, -30)
+    end
 
     f:SetHeight(-by + 30)
     sweepPaint(pending)

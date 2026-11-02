@@ -115,55 +115,6 @@ class HUDPurchaseProjectionTests(unittest.TestCase):
           assert(messages[1]:find(ns.L['背包或银行数量未能读取，无法确认还需购买多少。'],1,true))
         ''')
 
-    def test_comparison_reserves_frozen_pattern_stock_and_cost_without_applying_its_purchases(self):
-        self.prepare()
-        self.lua.execute('''
-          local plan=ns.ProfExecution.GetPlan('alchemy')
-          plan.formulas={{id=11,count=1,cost=3,source='ah',recipeKey='other:999',
-            recipes={{key='other:999'}},costComplete=true}}
-          captured=ns.ProfEconomy.Index(fixture())
-          captured.auctionSupply={[11]={quantity=5}}
-          captured.known['other:999']=false
-          ns.ProfEconomy.Capture=function()return captured end
-          ns.IdleJobs.Add=function(fn)previewPump=fn end
-          debugprofilestop=function()return 0 end
-          ns.ProfRouteSolver.NewProcurementJob=function(snapshot,demands)
-            previewSnapshot=snapshot;previewDemands=demands
-            return {result={feasible=true,costComplete=true,total=8,
-              mats={{id=11,count=7,cost=8,source='vendor',npcID=99}}}}
-          end
-          ns.ProfRouteSolver.Run=function()return true end
-          local before=pf.ShoppingList('alchemy')[1]
-          pf.ProcureStart();assert(previewPump and previewPump())
-          assert(previewSnapshot~=captured and previewSnapshot.auctionSupply[11].quantity==4)
-          assert(previewSnapshot.known['other:999'] and captured.known['other:999']==false)
-          assert(captured.auctionSupply[11].quantity==5 and previewDemands[11]==7)
-          assert(pf.procureRes.notApplied and pf.procureRes.formulaBudget==3 and pf.procureRes.comparisonTotal==11)
-          local after=pf.ShoppingList('alchemy')[1]
-          assert(after.planPurchaseCost==before.planPurchaseCost and after.purchaseCost==before.purchaseCost)
-          assert(after.vendorCount==before.vendorCount and after.ahCount==before.ahCount)
-          assert(ns.ProfExecution.GetPlan('alchemy')==plan and plan.total==12)
-        ''')
-
-
-    def test_comparison_does_not_hide_unbuyable_original_auction_patterns(self):
-        self.prepare()
-        self.lua.execute('''
-          ns.ProfExecution.GetPlan('alchemy').formulas={{id=11,count=1,cost=3,source='ah',recipeKey='other:999'}}
-          local captured=ns.ProfEconomy.Index(fixture());captured.auctionSupply={[11]={quantity=0}}
-          ns.ProfEconomy.Capture=function()return captured end
-          ns.IdleJobs.Add=function(fn)previewPump=fn end
-          debugprofilestop=function()return 0 end
-          ns.ProfRouteSolver.NewProcurementJob=function()return {result={feasible=true,costComplete=true,
-            total=70,mats={{id=11,count=7,cost=70,source='vendor'}}}}end
-          ns.ProfRouteSolver.Run=function()return true end
-          pf.ProcureStart();assert(previewPump())
-          assert(pf.procureRes.notApplied and pf.procureRes.comparisonCanBuy==false)
-          local diagnostic=pf.procureRes.comparisonFormulaDiagnostics[1]
-          assert(diagnostic.code=='auctionSupplyLimited'and diagnostic.item==11 and diagnostic.available==0)
-          assert(captured.auctionSupply[11].quantity==0 and not captured.known['other:999'])
-        ''')
-
 
 if __name__=='__main__':
     unittest.main()

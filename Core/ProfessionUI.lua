@@ -2369,14 +2369,12 @@ end
 
 function PD.BindRow(r, spec, h)
     if spec.kind == "pcard" then
-        if r.__fishRoute then r.__fishRoute:Hide() end
-        PD.WipeRow(r, true)
+            PD.WipeRow(r, true)
         PD.PCApply(r, spec, r:GetWidth(), h)
         r.__spec = spec -- Keep virtualized cards eligible for culling/redisplay.
         return
     end
     if r.__pcOk then PD.PCWipe(r) end
-    if r.__fishRoute then r.__fishRoute:Hide() end
     for _, fs in ipairs({r.a,r.b,r.c,r.c2,r.d,r.e,r.f}) do
         fs:SetWidth(0)
     end
@@ -2457,10 +2455,6 @@ function PD.BindRow(r, spec, h)
         end
     end
 
-    if spec.kind=="fishstage" or spec.kind=="fishwaters" then
-        PD.PaintFishingRouteRow(r,spec,h)
-        return
-    end
     local iconName = spec.icon
     local itemID = spec.it and spec.it[1]
     local factionIcon = not itemID and (iconName == PD.FAC_ICON.a or iconName == PD.FAC_ICON.h)
@@ -4612,7 +4606,7 @@ function PD.Build(page)
     PD.LV_TILE_H, PD.LV_TILE_GAP = 64, 8
     PD.SET_CARD_W, PD.SET_CHIP_H, PD.SET_CHIP_GAP = 500, 24, 6
     PD.RES_MIN_W = 262
-    PD.HUD_W, PD.IMP_W = 96, 110
+    PD.HUD_W = 96
 
     local hudBtn = NewButton(page, "", PD.HUD_W, PD.TOOL_H, 14)
     SetButtonSelected(hudBtn, false)
@@ -4620,10 +4614,16 @@ function PD.Build(page)
     PD.hudBtn = hudBtn
     coroutine.yield()
 
-    local impBtn = NewButton(page, L["一键导入购物清单"], PD.IMP_W, PD.TOOL_H, 14)
-    SetButtonSelected(impBtn, false)
-    impBtn:Hide()
-    PD.impBtn = impBtn
+    PD.JUMP_W = 104
+    local jumpBtn = NewButton(page, L["跳到当前段落"], PD.JUMP_W, PD.TOOL_H, 13)
+    SetButtonSelected(jumpBtn, false)
+    jumpBtn:Hide()
+    jumpBtn:SetPoint("TOPRIGHT", hudBtn, "TOPLEFT", -PD.TOOL_GAP, 0)
+    jumpBtn:SetScript("OnClick", function()
+        PD.JumpToSeg()
+        ns.PlaySound(1)
+    end)
+    PD.jumpBtn = jumpBtn
     coroutine.yield()
     local actDiv = CreateFrame("Frame", nil, page)
     actDiv:SetFrameLevel(page:GetFrameLevel() + 60)
@@ -5068,6 +5068,7 @@ function PD.Build(page)
     scroll:SetScript("OnVerticalScroll", function()
         PD.UpdateVScroll()
         if PD.CullRows then PD.CullRows() end
+        if PD.curRows and PD.UpdateJumpButton() then PD.RequestRender() end
     end)
     thumb:SetScript("OnMouseDown", function(self, btn)
         if btn ~= "LeftButton" then return end
@@ -5132,7 +5133,7 @@ function PD.Build(page)
         local hp = CreateFrame("Button", nil, child)
         hp:SetSize(16, 16)
         hp.icon = hp:CreateTexture(nil, "ARTWORK")
-        hp.icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\HelpIcon")
+        hp.icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Brand\\HelpIcon")
         hp.icon:SetSize(14, 14)
         hp.icon:SetPoint("CENTER")
         hp.icon:SetVertexColor(C_HELP[1], C_HELP[2], C_HELP[3])
@@ -5397,15 +5398,6 @@ function PD.PickTabs()
         else
             PD.hudBtn:Hide()
         end
-    end
-    if pf and pf.PaintImportBtn and PD.impBtn then
-        pcall(pf.PaintImportBtn, PD.impBtn, PD.cur)
-    end
-    if PD.impBtn then
-        local wantImp = PD.tab == "leveling" and PD.autoPage == "shop"
-                        and (not PD.setOpen) and PD.cur ~= nil and PD.cur ~= "__index"
-                        and LV[PD.cur] ~= nil and LV[PD.cur].steps ~= nil
-        PD.impBtn:SetShown(wantImp and true or false)
     end
 end
 
@@ -5676,9 +5668,10 @@ function PD.PaintTool(list, handler, yoff)
     local actBase = PD.RIGHT_W - rightTotal
     PD.actX = actBase
     local actRow, ax, placedCount = 0, actBase, 0
-    local function placeAction(btn, want)
+    local function placeAction(btn, want, before)
         if not (btn and btn:IsShown()) then return end
-        local bw = btn:GetWidth() or want
+        before = before or 0
+        local bw = (btn:GetWidth() or want) + before
         local try = ax - bw
         if placedCount > 0 or rightTotal > 0 then try = try - PD.TOOL_GAP end
         -- Check each occupied row, including a wrapped specialization selector.
@@ -5692,11 +5685,13 @@ function PD.PaintTool(list, handler, yoff)
         ax = try
         placedCount = placedCount + 1
         btn:ClearAllPoints()
-        btn:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X + ax,
+        btn:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X + ax + before,
                      -(PD.BODY_TOP + yoff + actRow * (PD.TOOL_H + PD.TOOL_GAP)))
     end
-    placeAction(PD.hudBtn, PD.HUD_W)
-    placeAction(PD.impBtn, PD.IMP_W)
+    -- Keep master's jump button directly left of the HUD, and wrap the pair
+    -- together so neither can cover the engineering specialization selector.
+    local jumpSpace = PD.jumpBtn and PD.jumpBtn:IsShown() and (PD.JUMP_W + PD.TOOL_GAP) or 0
+    placeAction(PD.hudBtn, PD.HUD_W, jumpSpace)
     if PD.actDiv then
         if rightTotal > 0 and ax > 24 then
             PD.actDiv:ClearAllPoints()
@@ -5750,7 +5745,7 @@ function PD.PaintToolBar(frac)
         local holder = PD.__progHolder
         if not holder then return end
         bar = CreateFrame("Frame", nil, holder)
-        bar:SetSize(150, 6)
+        bar:SetSize(120, 6)
         bar:SetPoint("RIGHT", PD.__progFs, "LEFT", -8, 0)
         local bg = bar:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
@@ -7273,7 +7268,7 @@ function PD.WarnChip(r, plainTip)
         PD.WireTipZone(z, r)
     end
     local tex = z:CreateTexture(nil, "OVERLAY", nil, 2)
-    tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\WarnTri")
+    tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri")
     tex:SetSize(18, 18)
     tex:SetPoint("CENTER", z, "CENTER", 0, 0)
     r.__warn = z
@@ -8150,7 +8145,6 @@ end
 
 function PD.WipeRow(r, keepShown)
     if not r then return end
-    if r.__fishRoute then r.__fishRoute:Hide() end
     r.__spec = nil
     PD.ClearMats(r); PD.ClearMatSegs(r)
     -- Reused rows must also release the recipe-only overlay regions.
@@ -10511,95 +10505,15 @@ function PD.OnItemData()
     end)
 end
 
-function PD.PaintFishingRouteRow(r, spec, h)
-    for _,fs in ipairs({r.a,r.b,r.c,r.c2,r.d,r.e,r.f}) do fs:SetText("") end
-    r.icon:Hide();r.dv:Hide();r.sep:Hide()
-    for _,ic in ipairs(r.gic or {}) do ic:Hide() end
-    PD.HideSkillBar(r);PD.PaintCard(r,nil)
-    local f=r.__fishRoute
-    if not f then
-        f=CreateFrame("Frame",nil,r);f:SetAllPoints();r.__fishRoute=f
-        f.bg=f:CreateTexture(nil,"BACKGROUND");f.bg:SetAllPoints()
-        f.edge=f:CreateTexture(nil,"ARTWORK");f.edge:SetPoint("TOPLEFT",0,0);f.edge:SetPoint("BOTTOMLEFT",0,0);f.edge:SetWidth(3)
-        f.title=MakeFS(f,20,C_WHITE,"LEFT")
-        f.caption=MakeFS(f,11,C_GREY,"LEFT")
-        f.state=MakeFS(f,12,C_GREY,"RIGHT")
-        f.fish={};f.zones={}
-    end
-    f:Show()
-    for _,fish in ipairs(f.fish) do fish:Hide() end
-    for _,zone in ipairs(f.zones) do zone:Hide() end
-    local w=spec.__gw or r:GetWidth()
-    local accent=spec.active and {0.35,0.84,0.53} or {0.58,0.67,0.76}
-    f.bg:SetColorTexture(0.12,0.15,0.19,spec.kind=="fishstage" and 0.95 or 0.45)
-    f.edge:SetColorTexture(accent[1],accent[2],accent[3],spec.kind=="fishstage" and 1 or 0.25)
-    f.title:ClearAllPoints();f.caption:ClearAllPoints();f.state:ClearAllPoints()
-    if spec.kind=="fishstage" then
-        f.title:SetFont(ns.FONT,20,"");f.title:SetPoint("TOPLEFT",16,-12)
-        f.title:SetText(spec.text);f.title:SetTextColor(Unpack(C_WHITE))
-        f.caption:SetPoint("TOPLEFT",16,-39);f.caption:SetText(L["技能范围"])
-        f.state:SetPoint("TOPRIGHT",-12,-12)
-        f.state:SetText(spec.active and L["当前阶段"] or "")
-        f.state:SetTextColor(accent[1],accent[2],accent[3])
-        local ids=spec.fishIDs or {}
-        local cw=math.max(40,math.floor((w-156)/math.max(1,#ids)))
-        for index,id in ipairs(ids) do
-            local item=f.fish[index]
-            if not item then
-                item=CreateFrame("Button",nil,f);f.fish[index]=item
-                item.ic=item:CreateTexture(nil,"ARTWORK");item.ic:SetSize(30,30);item.ic:SetPoint("LEFT",0,0)
-                item.name=MakeFS(item,13,C_TEXT,"LEFT");item.name:SetWordWrap(false)
-                item.name:SetPoint("LEFT",item.ic,"RIGHT",7,0)
-                item.name:SetPoint("RIGHT",item,"RIGHT",-10,0)
-                item:SetScript("OnEnter",function(self)
-                    GameTooltip:SetOwner(self,"ANCHOR_RIGHT");GameTooltip:SetItemByID(self.itemID);GameTooltip:Show()
-                end)
-                item:SetScript("OnLeave",function()GameTooltip:Hide()end)
-            end
-            item.itemID=id;item:SetSize(cw,36);item:ClearAllPoints()
-            item:SetPoint("TOPLEFT",144+(index-1)*cw,-26)
-            local name=DG.ItemName(id)
-            SetIcon(item.ic,DG.ItemIcon(id));item.name:SetText(name);item:Show()
-        end
-    else
-        f.title:SetFont(ns.FONT,12,"");f.title:SetTextColor(Unpack(C_GREY))
-        f.title:SetPoint("TOPLEFT",16,-8);f.title:SetText(L["推荐水域"])
-        f.caption:SetText("")
-        f.state:SetPoint("TOPRIGHT",-12,-8);f.state:SetText(spec.requirements or "")
-        f.state:SetTextColor(Unpack(C_GREY))
-        local cols=math.max(1,math.min(4,#spec.areas));local gap=8
-        local cw=math.floor((w-32-(cols-1)*gap)/cols)
-        for index,area in ipairs(spec.areas) do
-            local zone=f.zones[index]
-            if not zone then
-                zone=NewButton(f,"",cw,28,13);f.zones[index]=zone
-                zone:SetScript("OnClick",function(self)PD.ShowFishingArea(self.area)end)
-                zone:SetScript("OnEnter",function(self)
-                    GameTooltip:SetOwner(self,"ANCHOR_RIGHT");GameTooltip:ClearLines()
-                    GameTooltip:AddLine(PD.FishingAreaName(self.area),1,1,1)
-                    GameTooltip:AddLine(PD.FishingAreaDetail(self.area),0.72,0.76,0.8,true)
-                    GameTooltip:AddLine(L["钓鱼加成包含鱼竿、鱼饵和装备；达到不脱钩技能更稳定。"],0.6,0.65,0.7,true)
-                    GameTooltip:Show()
-                end)
-                zone:SetScript("OnLeave",function()GameTooltip:Hide()end)
-            end
-            zone.area=area;zone:SetText(PD.FishingAreaName(area));zone:SetSize(cw,28)
-            zone:ClearAllPoints();zone:SetPoint("TOPLEFT",16+((index-1)%cols)*(cw+gap),-28-math.floor((index-1)/cols)*36)
-            local mapID=area.mapID or (ns.AreaMap and ns.AreaMap[area.zoneID])
-            zone:SetEnabled(mapID~=nil);zone:Show()
-        end
-    end
-end
-
 function PD.RowsFishingLevelRoute(rows, curLv)
     local guide = ns.ProfFishingRoutes
     local steps = guide and guide.fishingSteps
     if not steps or #steps == 0 then return false end
-    PushHead(rows, L["钓鱼升级路线"])
-    rows[#rows].lines={{L["成功钓获鱼类可提升技能；技能越高，通常需要更多次成功钓获。"]},
-        {L["推荐按鱼类与技能选择水域；可留在低级水域练满，无需到点强制换区。"],0.7,0.7,0.7}}
-    PushText(rows,L["按技能查看阶段，点击水域打开地图。"],12,C_GREY)
-    PushGap(rows,10)
+    PushHead(rows, L["钓鱼升级路线（优先推荐水域）"])
+    PushText(rows, L["成功钓获鱼类可提升技能；技能越高，通常需要更多次成功钓获。"], 11, C_GREY)
+    PushText(rows, L["推荐按鱼类与技能选择水域；可留在低级水域练满，无需到点强制换区。"], 11, C_GREY)
+    PushText(rows, L["钓鱼加成包含鱼竿、鱼饵和装备；达到不脱钩技能更稳定。"], 11, C_GREY)
+    PushGap(rows)
     for index, step in ipairs(steps) do
         local lo, hi = step.from or step[1], step.to or step[2]
         local active = curLv and curLv >= lo and (curLv < hi or (index == #steps and curLv == hi))
@@ -10612,21 +10526,16 @@ function PD.RowsFishingLevelRoute(rows, curLv)
             end
             fish[#fish + 1] = nm
         end
-        rows[#rows+1]={kind="fishstage",h=68,text=format(L["%d – %d"],lo,hi),
-            fishIDs=step.fishIDs,active=active,noHover=true,
-            lines={{format(L["%d – %d"],lo,hi)}, {table.concat(fish,"、"),0.7,0.8,0.9},
-                {step.note and (L[step.note] or step.note) or "",0.7,0.7,0.7}}}
-        local groups,lookup={},{}
-        for _,area in ipairs(step.areas or {}) do
-            local key=tostring(area.minSkill)..":"..tostring(area.noGetaway or area.avoidGetaway)
-            if not lookup[key] then local group={areas={},first=area};lookup[key]=group;groups[#groups+1]=group end
-            local group=lookup[key];group.areas[#group.areas+1]=area
-        end
-        for _,group in ipairs(groups) do
-            rows[#rows+1]={kind="fishwaters",h=28+math.ceil(#group.areas/4)*36,areas=group.areas,
-                requirements=PD.FishingAreaDetail({minSkill=group.first.minSkill,noGetaway=group.first.noGetaway or group.first.avoidGetaway}),noHover=true}
-        end
-        PushGap(rows,14)
+        rows[#rows + 1] = {
+            kind = "row", h = PD.ROW_H, text = format(L["%d – %d"], lo, hi),
+            sub = #fish > 0 and PD.JoinTop(fish, PD.REC_LIST_TOP, "、") or nil,
+            nameColor = active and {0.4, 0.9, 0.45} or nil,
+            right = active and L["◆ 推荐当前就练这一档"] or nil,
+            lines = #fish > 0 and { { table.concat(PD.UniqList(fish), "、"), 0.7, 0.7, 0.7 } } or nil,
+        }
+        if step.note then PushText(rows, L[step.note] or step.note, 11, C_GREY) end
+        PD.RowsFishAreas(rows, nil, step.areas)
+        PushGap(rows, 4)
     end
     return true
 end
@@ -12149,7 +12058,6 @@ function PD.RevertPlan()
     local opts = PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur)
     local e = RA and RA.RevertPlan and RA.RevertPlan(slug, opts)
     if not e then return false end
-    PD.ProcureClear()
     PD.solverPaintRes, PD.solverFrac = nil, nil
     PD.autoSnapshot, PD.autoSnapshotSlug = e, slug
     PD.autoExact = true
@@ -12436,6 +12344,21 @@ function PD.SegRowVisible(idx)
     return height <= 0 or top >= offset and top + h <= offset + height
 end
 
+function PD.UpdateJumpButton()
+    local button = PD.jumpBtn
+    if not button then return false end
+    local idx
+    if PD.tab == "leveling" and not PD.setOpen and not PD.IsGatherRoute()
+       and not PD.exclusionsOpen and (PD.autoPage == nil or PD.autoPage == "route")
+       and PD.hudBtn and PD.hudBtn:IsShown() then
+        idx = PD.CurrentSegRow()
+    end
+    local shown = idx ~= nil and not PD.SegRowVisible(idx)
+    local changed = button:IsShown() ~= shown
+    button:SetShown(shown)
+    return changed
+end
+
 function PD.JumpToSeg(idx)
     local top = PD.SegRowTop(idx or PD.CurrentSegRow())
     local sc = PD.scroll
@@ -12525,6 +12448,7 @@ end
 function PD.RowsCraftLog(rows)
     local T = ns.ProfExecution
     PushHead(rows, L["制作记录"])
+    local headIdx = #rows
     PushGap(rows, 4)
     if not T or not T.GetSummary then
         PushText(rows, L["未启用制作追踪。"], 14, C_GREY)
@@ -12553,9 +12477,13 @@ function PD.RowsCraftLog(rows)
     end
     local total = sum.total or 0
     local idx = math.min(sum.current or 1, total)
-    PushText(rows, format(L["%s · 第 %d/%d 步 · 技能 %s→%s"], stText, idx, total,
-                          tostring(sum.startSkill or "—"), tostring(sum.target or "—")), 14, stColor)
-    PushText(rows, format(L["已做 %d 次 · 计划 %d 次"], sum.casts or 0, sum.planned or 0), 14, C_TEXT)
+    if rows[headIdx] then
+        rows[headIdx].right = format(L["%s · 第 %d/%d 步 · 技能 %s→%s · 已做 %d/%d 次"], stText, idx, total,
+                                     tostring(sum.startSkill or "—"), tostring(sum.target or "—"),
+                                     sum.casts or 0, sum.planned or 0)
+        rows[headIdx].rightColor = stColor
+        rows[headIdx].subFs = 12
+    end
     PushGap(rows, 8)
     local list = {}
     for _,entry in ipairs(T.GetRecipeTotals(PD.cur,sum.planID)) do
@@ -12614,12 +12542,18 @@ function PD.RowsCraftLog(rows)
             local planID, slug = run.planID, PD.cur
             local removable = T.CanRemove(slug, planID)
             local summary = T.GetSummary(PD.cur,run.planID) or {}
-            local tag = summary.finished and L["已完成"]
-                        or (run.status == "stale" and L["技能值变动"] or L["已归档"])
+            local tag, tagCol
+            if summary.finished or run.status == "done" then
+                tag, tagCol = L["已完成"], { 0.49, 0.82, 0.63 }
+            elseif summary.stale or run.status == "stale" then
+                tag, tagCol = L["技能值变动"], { 0.90, 0.74, 0.36 }
+            else
+                tag, tagCol = L["已归档"], { 0.90, 0.50, 0.50 }
+            end
             cards[#cards + 1] = {
-                name = format(L["%d 步 · 技能 %s→%s"], summary.total or 0, tostring(summary.startSkill or "—"),
+                name = format(L["%d 步 · %s→%s"], summary.total or 0, tostring(summary.startSkill or "—"),
                               tostring(summary.target or "—")),
-                modeText = tag, color = C_GREY,
+                modeText = tag, color = tagCol,
                 src = format(L["%d 次制作"], summary.casts or 0),
                 tips = { { removable and L["右键删除这条记录"]
                     or L["此记录仍被执行或续算引用，暂不能删除"], 0.72, 0.72, 0.72 } },
@@ -13483,12 +13417,13 @@ function PD.TripGroups(data)
                 order[#order + 1] = g
             end
             local unit = e.unit
-            local cost = e.cost or (unit and unit * n) or nil
+            local cost = e.cost
             local item={}
             for key,value in pairs(e) do item[key]=value end
             item.id,item.n,item.count,item.unit,item.cost=id,n,n,unit,cost
             g.items[#g.items + 1] = item
-            g.total = g.total + (cost or 0)
+            g.unpriced = g.unpriced or e.unpriced or type(cost) ~= "number"
+            if not e.unpriced and type(cost) == "number" then g.total = g.total + cost end
         elseif source=="ah" or source=="auction" then
             ah[#ah + 1] = e
         else
@@ -13512,299 +13447,17 @@ local function TripMapName(loc)
     return PD.CampZoneName(loc[1], "")
 end
 
-local PROCURE_FRAME_MS = 10
-local PROCURE_SLICE_MS = 3
-
-local function TripDemands(data)
-    local d, n = {}, 0
-    for _, e in ipairs((data and data.mats) or {}) do
-        local id = e.id or e[1]
-        local c = e.count or e[2] or 0
-        if type(id) == "number" and id > 0 and type(c) == "number" and c > 0 then
-            c = math.floor(c)
-            if c > 0 then
-                d[id] = (d[id] or 0) + c
-                n = n + c
-            end
-        end
-    end
-    return d, n
-end
-
-local function TripDemandSig(d)
-    local ids = {}
-    for id in pairs(d) do ids[#ids + 1] = id end
-    table.sort(ids)
-    local parts = {}
-    for i = 1, #ids do parts[i] = ids[i] .. ":" .. d[ids[i]] end
-    return table.concat(parts, ",")
-end
-
-function PD.TripKey(data)
-    local d, n = TripDemands(data)
-    if n <= 0 then return nil end
-    local formulas={}
-    for _,entry in ipairs(data.formulas or {}) do
-        formulas[#formulas+1]=table.concat({tostring(entry.id or entry[1]),
-            PD.PurchaseSourceKind(entry),tostring(entry.count or entry[2] or 1),tostring(entry.cost)},":")
-    end
-    table.sort(formulas)
-    return tostring(PD.cur).."|"..tostring(data.planID or "").."|"..TripDemandSig(d).."|"..table.concat(formulas,",")
-end
-
-function PD.ProcureBusy()
-    return PD.procureJob ~= nil
-end
-
-function PD.ProcureText()
-    local st = PD.procureJob
-    if not st then return nil end
-    if st.phase == "search" then return L["正在比较商人与拍卖行"] end
-    return L["正在整理价格数据"]
-end
-
-function PD.ProcureStop()
-    PD.procureJob = nil
-    PD.procureFrac = nil
-end
-
-function PD.ProcureClear()
-    PD.procureJob = nil
-    PD.procureFrac = nil
-    PD.procureRes = nil
-    PD.procureKey = nil
-    PD.procureView = false
-end
-
-function PD.ProcureActive(data)
-    if PD.procureJob then return nil end
-    if not PD.procureView or not PD.procureRes then return nil end
-    if PD.procureKey ~= PD.TripKey(data) then
-        PD.procureView = false
-        return nil
-    end
-    return PD.procureRes
-end
-
-function PD.ProcureStart(data)
-    local E = ns.ProfEconomy
-    local S = ns.ProfRouteSolver
-    local J = ns.IdleJobs
-    local slug = PD.cur
-    if not (E and S and J) then return end
-    if PD.procureJob then return end
-    if type(slug) ~= "string" or slug == "__index" or slug == "poisons" then return end
-    local demands, n = TripDemands(data)
-    if n <= 0 then return end
-    local key = PD.TripKey(data)
-    if PD.procureKey == key and PD.procureRes then PD.procureView = true; PD.RequestRender(); return end
-    PD.ProcureClear()
-    PD.procureKey = key
-    local opts = {}
-    if type(PD.lvOpts) == "table" then
-        for k, v in pairs(PD.lvOpts) do opts[k] = v end
-    end
-    opts.snapshot = nil
-    if opts.target == nil then opts.target = 300 end
-    if type(opts.professions) ~= "table" then
-        opts.professions = (E.Professions and E.Professions()) or {}
-    end
-    if not opts.professions[slug] then opts.professions[slug] = { cur = 1, max = 300 } end
-    local st = { phase = "capture" }
-    PD.procureJob = st
-    PD.procureFrac = 0
-    st.co = coroutine.create(function()
-        local snap = E.Capture(slug, opts, function()
-            if debugprofilestop() > (st.deadline or 0) then coroutine.yield("work") end
-        end)
-        -- The comparison owns its input. Already-budgeted teaching items must
-        -- not be bought twice or consume the material auction budget again.
-        snap=E.Copy(snap,function()
-            if debugprofilestop()>(st.deadline or 0)then coroutine.yield("work")end
-        end)
-        snap.known=snap.known or {};snap.auctionSupply=snap.auctionSupply or {}
-        st.formulaDiagnostics={}
-        for _,formula in ipairs(data.formulas or {}) do
-            local id=formula.id or formula[1]
-            local source=PD.PurchaseSourceKind(formula)
-            local supply=id and snap.auctionSupply[id]
-            if (source=="ah" or source=="auction") and id then
-                local observed=E.FormulaAuctionSupplyOf(snap,id)
-                local required=math.max(1,formula.count or formula[2] or 1)
-                if not observed then
-                    st.formulaDiagnostics[#st.formulaDiagnostics+1]={code="formulaAuctionSupplyUnknown",item=id}
-                elseif observed.quantity<required then
-                    st.formulaDiagnostics[#st.formulaDiagnostics+1]={code="formulaAuctionSupplyInsufficient",item=id,
-                        required=required,available=observed.quantity}
-                end
-            end
-            if (source=="ah" or source=="auction") and supply and type(supply.quantity)=="number" then
-                supply.quantity=math.max(0,supply.quantity-(formula.count or formula[2] or 1))
-            end
-            if formula.recipeKey then snap.known[formula.recipeKey]=true end
-            local recipe=formula.recipe
-            if recipe and recipe.key then snap.known[recipe.key]=true end
-            for _,ref in ipairs(formula.recipes or {}) do
-                local key=ref.key or ref.recipeKey
-                    or ref.profession and ref.spell and (ref.profession..":"..tostring(ref.spell))
-                if key then snap.known[key]=true end
-            end
-        end
-        st.phase = "search"
-        return S.NewProcurementJob(snap, demands, { cpuLimitMs = 2000 })
-    end)
-    J.Add(function()
-        if PD.procureJob ~= st then return true end
-        st.deadline = debugprofilestop() + PROCURE_FRAME_MS
-        while true do
-            if st.job then
-                if S.Run(st.job, PROCURE_SLICE_MS) then
-                    local res = st.job.result
-                    if not res then res = S.Result(st.job, st.job.best, st.job.status) end
-                    PD.procureJob = nil
-                    PD.procureFrac = nil
-                    PD.procureRes = res
-                    if res then
-                        res.comparisonFormulaDiagnostics=st.formulaDiagnostics
-                        res.comparisonCanBuy=#(st.formulaDiagnostics or {})==0 and res.feasible~=false
-                            and res.supplyComplete~=false and (res.auctionSupplyUnknown or 0)==0 and data.formulaComplete~=false
-                    end
-                    PD.procureView = PD.procureRes ~= nil
-                    if PD.built and PD.page and PD.page:IsShown() then PD.RequestRender() end
-                    return true
-                end
-            else
-                local ok, out = coroutine.resume(st.co)
-                if not ok then
-                    PD.procureJob = nil
-                    PD.procureFrac = nil
-                    PD.procureRes = nil
-                    PD.procureView = false
-                    if PD.built and PD.page and PD.page:IsShown() then PD.RequestRender() end
-                    return true
-                end
-                if coroutine.status(st.co) == "dead" then st.job = out end
-            end
-            if debugprofilestop() >= st.deadline then break end
-        end
-        if st.painted ~= st.phase then
-            st.painted = st.phase
-            if PD.built and PD.page and PD.page:IsShown() then PD.RequestRender() end
-        end
-        return false
-    end)
-end
-
-function PD.PushTripOptimized(rows, res, data)
-    local seen, order, ah, other = {}, {}, {}, {}
-    for _, e in ipairs(res.mats or {}) do
-        local source=PD.PurchaseSourceKind(e)
-        if (source == "vendor" or source == "npc") and e.npcID then
-            local g = seen[e.npcID]
-            if not g then
-                g = { npcID = e.npcID, items = {}, total = 0 }
-                seen[e.npcID] = g
-                order[#order + 1] = g
-            end
-            g.items[#g.items + 1] = e
-            g.total = g.total + (e.cost or 0)
-        elseif source=="ah" or source=="auction" then
-            ah[#ah + 1] = e
-        else
-            other[#other+1]=e
-        end
-    end
-    table.sort(order, function(a, b)
-        if a.total ~= b.total then return a.total > b.total end
-        return (a.npcID or 0) < (b.npcID or 0)
-    end)
-    PushHead(rows, format(L["材料（%d 种）· 比较买法"], PD.MaterialKindCount(res.mats)), 1)
-    PushText(rows, format(L["商人处 %s · 拍卖行 %s；商人按整包数量计入，点击条目在地图上标出该商人。"],
-        RA.MoneyStr(res.vendorTotal or 0, "copper"), RA.MoneyStr(res.ahTotal or 0, "copper")), 11, C_GREY, 1)
-    for _, g in ipairs(order) do
-        local name = (ns.ProfVendorNames and ns.ProfVendorNames[g.npcID]) or L["位置未收录的商人"]
-        local loc = ns.ProfVendors and ns.ProfVendors[g.npcID]
-        local hasLoc = type(loc) == "table"
-        PushHead(rows, name, 1)
-        rows[#rows].right = hasLoc and format("%s %.1f, %.1f", TripMapName(loc), loc[3] or 0, loc[4] or 0)
-                               or L["位置未收录"]
-        rows[#rows].suffix = format(L["%d 种 · %s"], PD.MaterialKindCount(g.items), RA.MoneyStr(g.total or 0, "copper"))
-        if hasLoc then
-            local locH = loc
-            rows[#rows].act = function() PD.MarkVendorLoc(locH) end
-        end
-        for _, it in ipairs(g.items) do
-            local cnt = it.count or it[2] or 0
-            local costText = it.cost and RA.MoneyStr(it.cost, "copper") or L["价格未知"]
-            local extra = {}
-            if (it.bundleSize or 1) > 1 and it.bundlePrice then
-                extra[1] = { format(L["每组 %d 件 %s"], it.bundleSize,
-                    RA.MoneyStr(it.bundlePrice, "copper")), 0.7, 0.7, 0.7 }
-            end
-            extra[#extra + 1] = { format(L["小计：%s"], costText), 1, 0.82, 0 }
-            local before = #rows
-            PD.ShopMatRow(rows, it, data or {}, true, extra, true)
-            local row = rows[before + 1]
-            if row and (it.bundleSize or 1) > 1 then
-                row.sub = format(L["每包 %d 件"], it.bundleSize)
-            end
-            if row and hasLoc then
-                local loc0 = loc
-                row.act = function() PD.MarkVendorLoc(loc0) end
-            end
-        end
-    end
-    if #ah > 0 then
-        PushHead(rows, format(L["拍卖行（%d 种）"], PD.MaterialKindCount(ah)), 1)
-        rows[#rows].right = RA.MoneyStr(res.ahTotal or 0, "copper")
-        for _, e in ipairs(ah) do
-            local before = #rows
-            PD.ShopMatRow(rows, e, data or {}, true,
-                { { L["比价后从拍卖行购买更划算。"], 0.7, 0.7, 0.7 } }, true)
-            local row = rows[before + 1]
-            if row then row.tag = { text = L["拍卖行"], color = PD.TAG_INK.ah } end
-        end
-    end
-    for _,entry in ipairs(other) do PD.ShopMatRow(rows,entry,data or {},true) end
-end
-
-function PD.RowsProcurementComparison(rows, comparison, data)
-    local first=#rows+1
-    PushHead(rows,L["材料采购比较（未应用）"],1)
-    rows[#rows].foldKey="shop_comparison"
-    if not PD.FoldOn("shop_comparison") then
-        PushText(rows,L["此比较尚未应用；升级路线、购物清单和 HUD 仍使用当前计划。"],11,C_GREY,1)
-        local formulas=data.formulasTotal or data.formulaTotal or 0
-        local complete=comparison.completeCost~=false and comparison.costComplete~=false and data.formulaComplete~=false
-        local total=PD.PlanCostText({total=(comparison.total or 0)+formulas,completeCost=complete})
-        PushText(rows,format(L["比较总预算（含图纸）：%s"],total),14,C_GOLD,1)
-        if #(data.formulas or {})>0 then
-            PushText(rows,format(L["已计入原路线图纸支出：%s"],RA.MoneyStr(formulas,"copper")),11,C_GREY,1)
-        end
-        if #(comparison.mats or {})>0 then PD.PushTripOptimized(rows,comparison,data) end
-        if #(comparison.formulas or {})>0 then PD.RowsFormulaShop(rows,comparison,"comparison_formulas") end
-        local supply=PD.PlanSupplyText(comparison)
-        if supply then PushText(rows,supply,11,{0.95,0.75,0.4},1) end
-        for _,diagnostic in ipairs(comparison.comparisonFormulaDiagnostics or {}) do
-            local message=ns.ProfEconomy.DiagnosticText(diagnostic)
-            if message then PushText(rows,message,11,{0.95,0.75,0.4},1) end
-        end
-        PD.PlanDiagnostics(function(text,r,g,b)PushText(rows,text,11,{r,g,b},1)end,comparison)
-    end
-    for index=first,#rows do rows[index].comparisonPreview=true end
-end
-
 function PD.PushTripGroups(rows, data)
     local groups, ah, other = PD.TripGroups(data)
-    local money = 0
-    for _, g in ipairs(groups) do money = money + (g.total or 0) end
-    PushHead(rows, format(L["材料（%d 种）· 按商人采购"], PD.MaterialKindCount(data.mats)), 1)
-    rows[#rows].right = format(L["%d 位商人 · %s"], #groups, RA.MoneyStr(money, "copper"))
-    local hint = L["按本路线选定的货源分组；点击商人条目在地图上定位。"]
-    if PD.ProcureBusy() then
-        hint = (PD.ProcureText() or "") .. " · " .. hint
+    local money, unpriced = 0, false
+    for _, g in ipairs(groups) do
+        money = money + (g.total or 0)
+        unpriced = unpriced or g.unpriced
     end
-    PushText(rows, hint, 11, C_GREY, 1)
+    PushHead(rows, format(L["材料（%d 种）· 按商人采购"], PD.MaterialKindCount(data.mats)), 1)
+    rows[#rows].right = format(L["%d 位商人 · %s"], #groups,
+        unpriced and L["价格未知"] or RA.MoneyStr(money, "copper"))
+    PushText(rows, L["按本路线选定的货源分组；点击商人条目在地图上定位。"], 11, C_GREY, 1)
     for _, g in ipairs(groups) do
         local name = (ns.ProfVendorNames and ns.ProfVendorNames[g.npcID]) or L["位置未收录的商人"]
         local loc = ns.ProfVendors and ns.ProfVendors[g.npcID]
@@ -13812,7 +13465,8 @@ function PD.PushTripGroups(rows, data)
         PushHead(rows, name, 1)
         rows[#rows].right = hasLoc and format("%s %.1f, %.1f", TripMapName(loc), loc[3] or 0, loc[4] or 0)
                                or L["位置未收录"]
-        rows[#rows].suffix = format(L["%d 种 · %s"], PD.MaterialKindCount(g.items), RA.MoneyStr(g.total or 0, "copper"))
+        rows[#rows].suffix = format(L["%d 种 · %s"], PD.MaterialKindCount(g.items),
+            g.unpriced and L["价格未知"] or RA.MoneyStr(g.total or 0, "copper"))
         if hasLoc then
             local locH = loc
             rows[#rows].act = function() PD.MarkVendorLoc(locH) end
@@ -13823,20 +13477,17 @@ function PD.PushTripGroups(rows, data)
             if it.bundleSize and it.bundleSize > 1 then
                 extra[1] = { format(L["每组 %d 件"], it.bundleSize), 0.7, 0.7, 0.7 }
             end
-            local before = #rows
             PD.ShopMatRow(rows, it, data, true, extra, true)
-            local row = rows[before + 1]
-            if row and hasLoc then
-                local loc0 = loc
-                row.act = function() PD.MarkVendorLoc(loc0) end
-            end
         end
     end
     if #ah > 0 then
-        local ahMoney = 0
-        for _, e in ipairs(ah) do ahMoney = ahMoney + (e.cost or 0) end
+        local ahMoney, ahUnpriced = 0, false
+        for _, e in ipairs(ah) do
+            if e.unpriced or type(e.cost) ~= "number" then ahUnpriced = true
+            else ahMoney = ahMoney + e.cost end
+        end
         PushHead(rows, format(L["拍卖行（%d 种）"], PD.MaterialKindCount(ah)), 1)
-        rows[#rows].right = RA.MoneyStr(ahMoney, "copper")
+        rows[#rows].right = ahUnpriced and L["价格未知"] or RA.MoneyStr(ahMoney, "copper")
         for _, e in ipairs(ah) do
             local before = #rows
             PD.ShopMatRow(rows, e, data, true,
@@ -13867,20 +13518,21 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip, final)
     local used = tonumber(e.have) or (not e.netDemand and tonumber(e.used)) or 0
     local need = tonumber(e.need) or (n + used)
     local cost = tonumber(e.cost) or 0
+    local unpriced = e.unpriced or type(e.cost) ~= "number"
     local unit = tonumber(e.unit) or (n > 0 and cost / n or 0)
     local seg = PD.ShopMatSeg(data, id)
     local sub
     if seg then sub = format(L["首用于 %d–%d 段"], seg[1], seg[2]) end
     local right, right2
-    if priced and not e.unpriced then
+    if priced and not unpriced then
         right = format(L["×%d · %s"], n or 0, RA.MoneyStr(unit, "copper"))
         right2 = RA.MoneyStr(cost, "copper")
     else
         right = format("×%d", n or 0)
-        right2 = e.unpriced and PD.UnpriceShort(e) or nil
+        right2 = unpriced and PD.UnpriceShort(e) or nil
     end
     local tip = { { format(L["本行采购：%d 件"], n or 0) },
-                  e.unpriced
+                  unpriced
                       and { PD.UnpriceWhy(e, id), 0.95, 0.75, 0.4 }
                       or { format(L["约 %s"], RA.MoneyStr(cost, "copper")), 1, 0.82, 0 },
                   { sub or "", 0.7, 0.7, 0.7 } }
@@ -13912,6 +13564,8 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip, final)
         local priceHint = PD.PurchasePriceHint(e)
         if priceHint then tip[#tip + 1] = { priceHint, 0.95, 0.75, 0.4 } end
     end
+    local vendorLoc = (source == "vendor" or source == "npc")
+        and e.npcID and ns.ProfVendors and ns.ProfVendors[e.npcID]
     rows[#rows + 1] = {
         kind = "row", h = PD.ROW_H2, col = 1, it = { id },
         fs = PD.ROW2_FS, bFs = PD.ROW2_SUB_FS, iconPx = PD.ROW2_ICON,
@@ -13922,6 +13576,7 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip, final)
         right = right,
         right2 = right2,
         lines = tip,
+        act = type(vendorLoc) == "table" and function() PD.MarkVendorLoc(vendorLoc) end or nil,
         purchaseSource = source, purchaseCount = n, purchaseCost = e.cost,
     }
     if e.spec then
@@ -14046,34 +13701,65 @@ function PD.RowsReserveShopping(rows,data)
     if not follow or not follow.ShoppingForPlan then return end
     local list=follow.ShoppingForPlan(PD.cur,data)
     PushHead(rows,L["当前采购（含备用，背包只扣一次）"],1)
-    local function add(entry,count,cost,source)
-        local detail=follow.ShoppingSourceText(entry)
-        rows[#rows+1]={kind="row",h=PD.ROW_H2,col=1,it={entry.id},fs=PD.ROW2_FS,bFs=PD.ROW2_SUB_FS,
-            text=PD.ItemName(entry.id),sub=format(L["基础 %d · 备用 %d · 背包 %s"],entry.baseNeed or entry.need,
-                entry.reserveNeed or 0,entry.haveKnown and tostring(entry.have) or L["未知"]),
-            right=count and format(L["待购 %d"],count) or L["数量未核实"],
-            right2=cost and RA.MoneyStr(cost,"copper") or L["价格未知"],
-            lines={{detail,.7,.7,.7}},purchaseCount=count,purchaseCost=cost,purchaseSource=source}
+    if not PD.shopGroup then
+        rows[#rows].foldKey = "shop_mats"
+        if PD.FoldOn("shop_mats") then return end
     end
+    -- Keep the current procurement ledger, but share the normal shopping rows
+    -- and vendor groups so reserves retain source badges and map actions.
+    local display,byID={},{}
+    for key,value in pairs(data) do display[key]=value end
+    display.mats={}
+    local function add(entry,purchase,count,cost)
+        local item={}
+        for key,value in pairs(purchase) do item[key]=value end
+        item.id,item.count,item.cost=entry.id,count or 0,cost
+        item.unit=count and count>0 and type(cost)=="number" and cost/count or nil
+        item.source=PD.PurchaseSourceKind(purchase)
+        item.unpriced=cost==nil or purchase.unpriced
+        if item.source=="ah" or item.source=="auction" then
+            item.availableCount,item.supplyObserved,item.supplyStatus=entry.availableCount,entry.supplyObserved,entry.supplyStatus
+            item.supplyRequired=count
+            item.considerAuctionSupply=entry.considerAuctionSupply
+        end
+        -- Quantities already include reserves and the single bag deduction.
+        -- Old receipt consumption fields cannot describe this current purchase.
+        item.need,item.have,item.used,item.usedCount,item.actualNeed=nil,nil,nil,nil,nil
+        item.netDemand=true
+        display.mats[#display.mats+1]=item
+        byID[entry.id]=entry
+    end
+    for _,entry in ipairs(list) do
+        for _,purchase in ipairs(entry.purchases or {}) do
+            add(entry,purchase,purchase.count,purchase.cost)
+        end
+        if entry.purchaseUnknown or entry.inventoryUnknown or (entry.purchaseUncovered or 0)>0 then
+            add(entry,{source="unknown"},nil,nil)
+        end
+    end
+    local first=#rows+1
     if PD.shopGroup then
-        local groups,order={},{}
-        for _,entry in ipairs(list) do
-            for _,purchase in ipairs(entry.purchases or {}) do
-                local key=tostring(purchase.source)..":"..tostring(purchase.npcID or 0)
-                if not groups[key] then groups[key]={};order[#order+1]=key end
-                groups[key][#groups[key]+1]={entry,purchase}
-            end
-            if entry.purchaseUnknown or entry.inventoryUnknown or (entry.purchaseUncovered or 0)>0 then add(entry,nil,nil) end
-        end
-        table.sort(order)
-        for _,key in ipairs(order) do
-            local first=groups[key][1][2]
-            local name=first.vendor and (ns.ProfVendorNames and ns.ProfVendorNames[first.npcID] or L["商人"]) or L["拍卖行"]
-            PushHead(rows,name,1)
-            for _,pair in ipairs(groups[key]) do add(pair[1],pair[2].count,pair[2].cost,pair[2].source) end
-        end
+        PD.PushTripGroups(rows,display)
     else
-        for _,entry in ipairs(list) do add(entry,entry.purchaseCount,entry.purchaseCost,entry.source) end
+        for _,entry in ipairs(display.mats) do PD.ShopMatRow(rows,entry,display,true) end
+    end
+    for index=first,#rows do
+        local row=rows[index]
+        local entry=row.it and byID[row.it[1]]
+        if entry then
+            local summary=format(L["基础 %d · 备用 %d · 背包 %s"],entry.baseNeed or entry.need,
+                entry.reserveNeed or 0,entry.haveKnown and tostring(entry.have) or L["未知"])
+            row.sub=row.sub or summary
+            row.lines[#row.lines+1]={summary,.7,.7,.7}
+            local detail=follow.ShoppingSourceText(entry)
+            if detail then row.lines[#row.lines+1]={detail,.7,.7,.7} end
+            if entry.purchaseUnknown or entry.inventoryUnknown
+                or row.purchaseSource=="unknown" and (entry.purchaseUncovered or 0)>0 then
+                row.right,row.right2=L["数量未核实"],L["价格未知"]
+                row.purchaseCount,row.purchaseCost=nil,nil
+                row.lines={{summary,.7,.7,.7},{detail or L["数量未核实"],.95,.75,.4}}
+            end
+        end
     end
 end
 
@@ -14081,8 +13767,7 @@ function PD.RowsAutoShop(rows, data)
     local mode = data.mode or "auto"
     local mats = data.mats or {}
     local priced = (data.planVersion == 2 and data.total ~= nil) or data.referenceQuoted or (data.priced and true) or false
-    -- The comparison is a preview; it must not rewrite the active plan or HUD.
-    local comparison = PD.shopGroup and PD.ProcureActive(data) or nil
+    -- Shopping rows and totals use the purchases selected by the route.
     local total = data.total
     local vendorTotal = data.vendorTotal or 0
     local ahTotal = data.ahTotal or 0
@@ -14099,21 +13784,13 @@ function PD.RowsAutoShop(rows, data)
         title = format(L["购物清单（固定路线 1–%d）"], data.target or 300)
     end
     PushHead(rows, title, 1)
+    rows[#rows].noHover = true
+    rows[#rows].segs = { { key = "shop_group", text = L["按商人采购"], on = PD.shopGroup },
+                          { key = "import_list", text = L["一键导入购物清单"] } }
     if data.referenceOnly then
         PushText(rows,L["固定攻略参考；逐配方资料待补全。"],12,C_GOLD,1)
         if not data.referenceShopping then return end
     end
-    local segs = { { key = "shop_group", text = L["按商人采购"], on = PD.shopGroup } }
-    if PD.shopGroup then
-        if PD.ProcureBusy() then
-            segs[2] = { key = "procure_cancel", text = L["停止比较"] }
-        elseif PD.procureView then
-            segs[2] = { key = "procure_clear", text = L["关闭比较"] }
-        else
-            segs[2] = { key = "procure_go", text = L["比较买法"] }
-        end
-    end
-    rows[#rows].segs = segs
     if #mats == 0 and #(data.fishMaterials or {}) == 0 and #(data.formulas or {})==0
         and not (data.reserve and #data.reserve.mats>0) then
         PushText(rows, L["没有需要准备的材料。"], 12, C_GREY, 1)
@@ -14144,14 +13821,13 @@ function PD.RowsAutoShop(rows, data)
     elseif PD.shopGroup then
         if #mats > 0 then PD.PushTripGroups(rows, data) end
     else
-    PushHead(rows, format(L["材料（%d 种）"], PD.MaterialKindCount(mats)), 1)
-    rows[#rows].foldKey = "shop_mats"
-    if not PD.FoldOn("shop_mats") then
-    for _, e in ipairs(mats) do PD.ShopMatRow(rows, e, data, priced) end
-    end
+        PushHead(rows, format(L["材料（%d 种）"], PD.MaterialKindCount(mats)), 1)
+        rows[#rows].foldKey = "shop_mats"
+        if not PD.FoldOn("shop_mats") then
+            for _,entry in ipairs(mats) do PD.ShopMatRow(rows,entry,data,priced) end
+        end
     end
     if data.formulas then PD.RowsFormulaShop(rows, data, "shop_formulas") end
-    if comparison then PD.RowsProcurementComparison(rows,comparison,data) end
 
     local snapSec, snapDays = data.snapshotAge, data.snapshotDays
     local tip = {}
@@ -14343,9 +14019,6 @@ function PD.LevelTool()
         { key = "page_log",   text = L["制作记录"], on = onLog },
         { key = "page_rec",   text = L["回血"],     on = onRec },
     }
-    if not onLog and not onRec and PD.autoPage ~= "shop" then
-        list[#list + 1] = { key = "jump_current", align = "right", text = L["定位当前步骤"] }
-    end
     -- Single engineering specialization selector: top bar only.
     -- Unspecified means no manual target; known specializations are detected.
     if PD.cur == "engineering" then
@@ -14398,7 +14071,7 @@ function PD.LevelTool()
         if notes and #notes > 0 then list[1].tip = notes end
         if #tip > 0 then
             list[#list + 1] = { key = "supply_warn",
-                                icon = "Interface\\AddOns\\DungeonsForever\\Media\\WarnTri",
+                                icon = "Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri",
                                 iconColor = { 1, 1, 1 }, tip = tip }
         end
     end
@@ -14448,9 +14121,7 @@ function PD.LevelTool()
         list[#list + 1] = rec
     end
     return list, function(k)
-        if k == "jump_current" then
-            PD.JumpToSeg()
-        elseif k == "page_route" then
+        if k == "page_route" then
             PD.autoPage = "route"
             PD.exclusionsOpen = false
             PD.FlushPolicies()
@@ -14476,17 +14147,14 @@ function PD.LevelTool()
             PD.ShowRecoveryFeeInput()
         elseif k == "shop_group" then
             PD.shopGroup = not PD.shopGroup
-            if not PD.shopGroup then PD.ProcureClear() end
             PD.RequestRender()
-        elseif k == "procure_go" then
-            PD.ProcureStart(PD.lvShopData)
-        elseif k == "procure_cancel" then
-            PD.ProcureStop()
-        elseif k == "procure_clear" then
-            PD.ProcureClear()
+        elseif k == "import_list" then
+            local pf = ns.ProfFollow
+            local name = (D.pro and D.pro[PD.cur] and D.pro[PD.cur].name) or PD.cur
+            if pf and pf.ImportShoppingList then pcall(pf.ImportShoppingList, PD.cur, name) end
+            ns.PlaySound(1)
         elseif k == "recalc" then
             PD.exclusionsOpen = false
-            PD.ProcureClear()
             PD.ClearPlanCache()
             PD.exactFailed = {}
             local E = ns.ProfEconomy
@@ -15447,14 +15115,17 @@ function PD.Render()
         PD.PaintToolStale(stale)
     end
 
-    local toolH
-    if PD.tab == "leveling" and not PD.setOpen then
-        toolH = PD.PaintLvTiles() + PD.PaintTool(tool, handler, PD.LV_TILE_H + 8) - 8
-    else
-        toolH = PD.PaintLvTiles() + PD.PaintTool(tool, handler)
+    local function layoutTools()
+        local toolH
+        if PD.tab == "leveling" and not PD.setOpen then
+            toolH = PD.PaintLvTiles() + PD.PaintTool(tool, handler, PD.LV_TILE_H + 8) - 8
+        else
+            toolH = PD.PaintLvTiles() + PD.PaintTool(tool, handler)
+        end
+        PD.gcTopPad = (toolH and toolH > 0) and 8 or 0
+        PD.Layout(toolH)
     end
-    PD.gcTopPad = (toolH and toolH > 0) and 8 or 0
-    PD.Layout(toolH)
+    layoutTools()
 
     if PD.searchBox then
         if PD.tab == "recipe" and not PD.setOpen then
@@ -15481,6 +15152,12 @@ function PD.Render()
     PD.scroll:SetVerticalScroll(keepV)
     PY()
     PD.truncated = PD.PaintRows(rows)
+    if PD.UpdateJumpButton() then
+        -- Row geometry is known only after painting. Account for the newly
+        -- shown/hidden jump button before exposing the final toolbar layout.
+        layoutTools()
+        PD.truncated = PD.PaintRows(rows)
+    end
     ns.OpenPerf.Mark("首屏")
     PD.PlaceSettingsToggles(rows)
     PD.scroll:Show()

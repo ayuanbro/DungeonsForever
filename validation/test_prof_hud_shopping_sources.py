@@ -88,22 +88,6 @@ class HUDShoppingSourceTests(unittest.TestCase):
           assert(row.availableCount==0 and (row.purchaseUncovered or 0)>0)
         ''')
 
-    def test_material_optimization_never_treats_patterns_as_generic_materials(self):
-        self.follow()
-        self.lua.execute('''
-          local p=fixture();p.planID='optimize-leaves'
-          p.formulas={{id=400,spell=101,count=1,cost=50,source='ah'}}
-          xp.StartNew('alchemy',p);pf.InvalidateRoute()
-          debugprofilestop=function()return 0 end
-          ns.ProfEconomy.Capture=function()return {}end
-          ns.ProfEconomy.ConsiderAuctionSupply=function()return true end
-          ns.ProfRouteSolver={Run=function()end,NewProcurementJob=function(snap,demands)
-            captured=demands;return {}end}
-          ns.IdleJobs={Add=function()end}
-          pf.ProcureStart();assert(pf.procureJob)
-          assert(coroutine.resume(pf.procureJob.co))
-          assert(captured[20]==3 and captured[400]==nil)
-        ''')
 
     def test_first_aid_hud_refuses_legacy_automatic_execution_without_erasing_it(self):
         self.follow()

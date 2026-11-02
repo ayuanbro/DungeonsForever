@@ -18,8 +18,8 @@ class HUDVoiceTests(unittest.TestCase):
           DEFAULT_CHAT_FRAME={AddMessage=function(_,message)messages[#messages+1]=message end}
           C_Spell={IsSpellKnown=function()return knownRecipe end}
           local base=recordedWidget
-          function recordedWidget()
-            local w=base()
+          function recordedWidget(...)
+            local w=base(...)
             function w:Hide()
               local shown=self.visible;self.visible=false
               if shown and self.scripts.OnHide then self.scripts.OnHide(self)end

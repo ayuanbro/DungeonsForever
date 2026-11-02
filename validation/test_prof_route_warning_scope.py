@@ -172,13 +172,19 @@ class ReserveShoppingCopyTests(unittest.TestCase):
 
     def test_shopping_keeps_reserve_quantities_and_budget_without_model_details(self):
         self.lua.execute('''
-          local plan=reserveSolve();local steps=plan.executionSteps;bag[11]=2;PD.shopGroup=false
+          local plan=reserveSolve();local steps=plan.executionSteps;bag[11]=2
           assert(plan.total==35 and plan.reserve.total==21 and plan.reserve.steps[1].extraCrafts==3)
           local rows={};PD.RowsAutoShop(rows,plan)
           local quantity=false;local summary={}
           for _,row in ipairs(rows)do
-            if row.sub=='基础 5 · 备用 3 · 背包 2' then
-              assert(row.purchaseCount==6);quantity=true
+            if row.it and row.it[1]==11 then
+              assert(row.purchaseCount==6)
+              -- The pending grouping decision retains two presentations: the
+              -- clean worktree shows this inline, dev in the shared row tip.
+              if row.sub=='基础 5 · 备用 3 · 背包 2' then quantity=true end
+              for _,line in ipairs(row.lines or {})do
+                if line[1]=='基础 5 · 备用 3 · 背包 2' then quantity=true end
+              end
             end
             if row.col==2 and row.text then summary[#summary+1]=row.text end
             for _,field in ipairs({'text','sub','right','right2'})do
@@ -242,7 +248,7 @@ class ToolbarTooltipScopeTests(unittest.TestCase):
 
     def test_cached_button_updates_and_clears_hover_text_without_layout_change(self):
         self.lua.execute('''
-          PD.hudBtn:Hide();PD.impBtn:Hide();PD.UnifyTipFont=function()end
+          PD.hudBtn:Hide();PD.jumpBtn:Hide();PD.UnifyTipFont=function()end
           local list={{key='route',text='Route'}}
           PD.PaintTool(list,function()end,0)
           local b=PD.toolBtns[1];local paintKey=b.__ptk
@@ -260,7 +266,7 @@ class ToolbarTooltipScopeTests(unittest.TestCase):
 
     def test_reused_warning_button_does_not_leak_into_plain_button(self):
         self.lua.execute('''
-          PD.hudBtn:Hide();PD.impBtn:Hide()
+          PD.hudBtn:Hide();PD.jumpBtn:Hide()
           PD.PaintTool({{key='warn',icon='warning',tip={{'OLD'}}}},function()end,0)
           local b=PD.toolBtns[1];assert(b.__icon:IsShown() and b.__tipLines[1][1]=='OLD')
           PD.PaintTool({{key='track',text='Track',tip={{'TRACK'}}}},function()end,0)

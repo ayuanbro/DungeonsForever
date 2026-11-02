@@ -334,7 +334,10 @@ class ReserveTests(unittest.TestCase):
 
 class ReserveShoppingTests(unittest.TestCase):
     def setUp(self):
-        ui.ProfessionUIFusionTests.boot(self,'zhCN')
+        ReserveShoppingTests.prepare(self)
+
+    def prepare(self,locale='zhCN'):
+        ui.ProfessionUIFusionTests.boot(self,locale)
         self.load((lifecycle.ROOT/'Core/ProfSolverCapture.lua').read_text(encoding='utf-8-sig'))
         self.load((lifecycle.ROOT/'Core/ProfReserve.lua').read_text(encoding='utf-8-sig'))
         self.load((lifecycle.ROOT/'Core/ProfFollow.lua').read_text(encoding='utf-8-sig'))
@@ -355,6 +358,95 @@ class ReserveShoppingTests(unittest.TestCase):
           assert(row.purchaseCost==14)
           local rows={};PD.RowsReserveShopping(rows,r)
           local found=false;for _,x in ipairs(rows)do if x.purchaseCount==2 then found=true end end;assert(found)
+        ''')
+
+    def test_reserve_rows_keep_source_badges_and_vendor_map_groups_in_three_locales(self):
+        for locale in ('zhCN','zhTW','enUS'):
+            with self.subTest(locale=locale):
+                self.prepare(locale)
+                self.lua.execute('''
+                  local s=reserveFixture();s.recipes[1].mats={{11,1},{12,1}}
+                  s.prices={[11]=4,[12]=7}
+                  s.offers={[11]={{npcID=7,quantity=5,price=10,unlimited=true}}}
+                  local plan=reserveSolve(s);local budget=plan.total
+                  bag[11]=3;bag[12]=6
+                  ns.ProfVendorNames={[7]='Selected supplier'}
+                  ns.ProfVendors={[7]={'Zone',101,22,33}}
+                  C_Map={GetMapInfo=function()return{name='Selected zone'}end}
+                  PD.MarkVendorLoc=function(loc)marked=loc end
+                  PD.Wrap=function(text)return{text}end
+                  ns.VendorPriceDB={GetOffers=function()error('display reselected a supplier')end}
+                  local native=ns.ProfFollow.ShoppingForPlan
+                  ns.ProfFollow.ShoppingForPlan=function(...)
+                    local list=native(...)
+                    for _,entry in ipairs(list)do
+                      for _,purchase in ipairs(entry.purchases or {})do
+                        purchase.vendor=nil -- source is authoritative even without the legacy flag.
+                      end
+                    end
+                    return list
+                  end
+                  PD.shopGroup=true
+                  local rows={};PD.RowsAutoShop(rows,plan)
+                  local found={};local vendorHead,auctionHead
+                  for index,row in ipairs(rows)do
+                    if row.it then found[row.it[1]]=row end
+                    if row.text=='Selected supplier' then vendorHead=index end
+                    if row.text==format(ns.L['拍卖行（%d 种）'],1)then auctionHead=index end
+                  end
+                  assert(found[11].tag and found[11].tag.text==ns.L['NPC购买'],'reserve vendor badge missing')
+                  assert(found[12].tag and found[12].tag.text==ns.L['拍卖行'],'reserve auction badge missing')
+                  assert(found[11].purchaseCount==5 and found[11].purchaseCost==10)
+                  assert(found[12].purchaseCount==2 and found[12].purchaseCost==14)
+                  assert(found[11].right==format(ns.L['×%d · %s'],5,ns.ProfRouteAuto.MoneyStr(2,'copper')))
+                  local seg=PD.ShopMatSeg(plan,11)
+                  assert(seg and found[11].sub==format(ns.L['首用于 %d–%d 段'],seg[1],seg[2]))
+                  assert(vendorHead and auctionHead and vendorHead<auctionHead,'vendor group is missing or below auctions')
+                  assert(rows[vendorHead].right:find('Selected zone',1,true))
+                  rows[vendorHead].act();assert(marked==ns.ProfVendors[7])
+                  marked=nil;found[11].act();assert(marked==ns.ProfVendors[7])
+                  assert(plan.total==budget,'display changed the adopted plan budget')
+                ''')
+
+    def test_reserve_mixed_purchases_and_unknown_inventory_keep_their_meaning(self):
+        self.lua.execute('''
+          local s=fixture();s.recipes[1].mats={{11,7}};s.prices[11]=1;s.considerAuctionSupply=true
+          s.auctionSupply={[11]={quantity=2}}
+          s.offers={[11]={{npcID=7,quantity=5,price=10,unlimited=true}}}
+          local plan=ns.ProfRouteAuto.Compute('alchemy',{snapshot=s,start=1,target=2,reserveMode='ample'})
+          assert(plan.reserve and plan.reserve.mode=='ample')
+          PD.Wrap=function(text)return{text}end
+          local list=ns.ProfFollow.ShoppingForPlan('alchemy',plan)
+          local expected=list[1];local rows={};PD.RowsAutoShop(rows,plan)
+          local sources={};local count,cost=0,0
+          for _,row in ipairs(rows)do if row.it and row.it[1]==11 then
+            assert(row.tag,'split reserve source badge missing')
+            sources[row.purchaseSource]=true
+            count=count+(row.purchaseCount or 0);cost=cost+(row.purchaseCost or 0)
+          end end
+          assert(sources.vendor and sources.ah,'reserve purchases were merged or relabeled')
+          assert(count==expected.purchaseCount and cost==expected.purchaseCost)
+          ns.AuctionBridge.GetAuctionSupply=function()return nil end
+          ns.AuctionBridge.GetAuctionSupplyStatus=function()return 'expired'end
+          local rows={};PD.RowsAutoShop(rows,plan);local found=false
+          for _,row in ipairs(rows)do if row.purchaseSource=='ah' then
+            local warned=false
+            for _,line in ipairs(row.lines or {})do
+              if line[1]==ns.L['库存观测已过期；请在 Auctionator 重新完整扫描后计算路线。']then warned=true end
+              assert(line[1]~=format(ns.L['拍卖行数量快照：%d 件；本路线购买 %d 件。'],2,2))
+            end
+            assert(warned,'reserve row reused the old auction observation')
+            found=true
+          end end
+          assert(found)
+          C_Item.GetItemCount=function()return nil end
+          local rows={};PD.RowsAutoShop(rows,plan);local found=false
+          for _,row in ipairs(rows)do if row.it and row.it[1]==11 then
+            assert(row.right==ns.L['数量未核实'] and row.right2==ns.L['价格未知'])
+            assert(row.purchaseCount==nil and row.purchaseCost==nil)
+            found=true
+          end end
+          assert(found,'unknown inventory was hidden')
         ''')
 
     def test_prepared_intermediates_do_not_trigger_raw_material_refill(self):
@@ -379,7 +471,7 @@ class ReserveShoppingTests(unittest.TestCase):
           assert(#rows==1 and rows[1].reserveNeed==2 and rows[1].purchaseCount==0)
         ''')
 
-    def test_settings_are_profession_scoped_and_shopping_renders_both_modes(self):
+    def test_settings_are_profession_scoped_and_shopping_defaults_to_expanded_list(self):
         self.lua.execute('''
           assert(PD.SettingRaw('autoReserveMode','alchemy')=='ample')
           PD.SetSettingRaw('autoReserveMode','off','alchemy')
@@ -392,7 +484,14 @@ class ReserveShoppingTests(unittest.TestCase):
           end
           PD.cur='alchemy'
           local r=reserveSolve()
-          for _,group in ipairs({false,true})do PD.shopGroup=group;PD.RowsAutoShop({},r)end
+          local shopping={};PD.RowsAutoShop(shopping,r)
+          assert(PD.shopGroup==false and not PD.FoldOn('shop_mats'))
+          local fold,material=false,false
+          for _,row in ipairs(shopping)do
+            if row.foldKey=='shop_mats'then fold=true end
+            if row.purchaseSource then material=true end
+          end
+          assert(fold and material)
         ''')
 
     def test_seed_funded_reserve_shows_zero_to_buy_and_unknown_inventory_stays_unknown(self):

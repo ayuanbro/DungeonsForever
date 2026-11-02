@@ -8,8 +8,8 @@ import test_prof_ui_fusion as ui
 ROOT = ui.ROOT
 
 WIDGETS = r'''
-function recordedWidget()
- local w={points={},scripts={},visible=false,width=0,height=20,text=''}
+function recordedWidget(parent)
+ local w={points={},scripts={},visible=false,width=0,height=20,text='',parent=parent}
  function w:ClearAllPoints()self.points={}end
  function w:SetPoint(...)self.points[#self.points+1]={...}end
  function w:SetAllPoints(other)self.points={{'TOPLEFT',other},{'BOTTOMRIGHT',other}}end
@@ -18,6 +18,9 @@ function recordedWidget()
  function w:SetHeight(y)self.height=y end
  function w:GetWidth()return self.width end
  function w:GetHeight()return self.height end
+ function w:GetFrameLevel()return self.frameLevel or 0 end
+ function w:SetBackdropColor(...)self.backdropColor={...}end
+ function w:SetFont(...)self.font={...}end
  function w:SetText(text)self.text=text or ''end
  function w:GetText()return self.text end
  function w:GetFont()return 'font',13 end
@@ -33,6 +36,15 @@ function recordedWidget()
  return setmetatable(w,{__index=function(_,k)
   if k:match('^Set') or k:match('^Enable') or k:match('^Register') then return function()end end
  end})
+end
+if ns and ns.ProfHost and ns.ProfHost.DG then
+ local d=ns.ProfHost.DG
+ d.Q_BADGE_H=13.7;d.Q_BADGE_GAP=4;d.Q_BADGE_PAD=5;d.Q_BADGE_FS=11;d.Q_BADGE_MIN_W=24
+ d.Q_BADGE_RACE_BG={0.6,0.2,0.2}
+ d.MakeBadge=function(parent,color)
+  local badge=recordedWidget();badge.parent=parent;badge.lab=recordedWidget();badge.color=color;return badge
+ end
+ d.BadgeTint=function(badge,color)badge.color=color end
 end
 function recordedRow()
  local r=recordedWidget();r.blk={}
@@ -543,7 +555,7 @@ class Issue4Tests(unittest.TestCase):
           assert(r.targetReached and r.total==10 and r.mats[1].npcID==2 and r.mats[1].count==10)
         ''')
 
-    def test_6_hud_first_panel_uses_only_actual_missing_vendor_materials(self):
+    def test_6_vendor_purchase_data_uses_only_actual_missing_vendor_materials(self):
         self.lua.execute(r'''
           local plan=finish('alchemy',{start=1,target=2})
           plan.executionSteps[1].recipe.mats={{11,6},{12,3}}
@@ -554,20 +566,11 @@ class Issue4Tests(unittest.TestCase):
           bag[11]=2
           local list=ns.ProfFollow.VendorPurchases('alchemy',plan)
           assert(#list==1 and list[1].missing==4 and list[1].npcID==2)
-          ns.ProfExecution.GetPlan=function()return plan end
-          DungeonsForeverDB.prof.follow={['Test-Realm']={slug='alchemy',step=1}}
-          local panel=recordedWidget();panel.title=recordedWidget();panel.more=recordedWidget();panel.rows={}
-          for i=1,6 do local row=recordedWidget();row.name=recordedWidget();row.source=recordedWidget();panel.rows[i]=row end
-          ns.ProfFollow.f=recordedWidget();ns.ProfFollow.f.vendorShop=panel
-          local y=ns.ProfFollow.PaintVendorPurchases('alchemy',-82)
-          assert(y < -82 and panel:IsShown() and panel.rows[1].name.text:find('×4',1,true))
           bag[11]=6
-          assert(ns.ProfFollow.PaintVendorPurchases('alchemy',-82)==-82 and not panel:IsShown())
-          bag[11]=0;DungeonsForeverDB.prof.follow['Test-Realm'].step=2
-          assert(ns.ProfFollow.PaintVendorPurchases('alchemy',-82)==-82 and not panel:IsShown())
+          assert(#ns.ProfFollow.VendorPurchases('alchemy',plan)==0)
         ''')
 
-    def test_6_native_hud_build_paints_scrollable_vendor_panel_before_craft_card(self):
+    def test_6_vendor_materials_stay_in_shopping_without_expanding_the_hud_header(self):
         self.lua.execute(r'''
           CreateFrame=recordedWidget
           ns.ProfHost.MakeFS=recordedWidget;ns.ProfHost.NewButton=recordedWidget
@@ -586,10 +589,10 @@ class Issue4Tests(unittest.TestCase):
           DungeonsForeverDB.prof.follow={['Test-Realm']={slug='alchemy',skill=1,step=1,t0=1000}}
           pf.Build();assert(pf.f,'native HUD constructor failed')
           pf.f:Show();pf.Paint()
-          assert(pf.f.vendorShop:IsShown() and pf.f.vendorShop.more:IsShown())
-          assert(pf.f.card.points[1][5] < pf.f.vendorShop.points[1][5])
-          pf.f.vendorShop.scripts.OnMouseWheel(nil,-1)
-          assert(pf.vendorScroll==1 and pf.f.vendorShop.rows[1].name.text:find('Item22',1,true))
+          assert(pf.f.vendorShop==nil and pf.f.card.points[1][5]==-82)
+          local list=pf.ShoppingList('alchemy');assert(#list==8)
+          pf.showShop=true;pf.Paint()
+          assert(pf.f.shop:IsShown() and pf.f:GetWidth()==375)
         ''')
 
     def test_3_rejected_formula_supplier_cannot_return_through_capture_fallback(self):

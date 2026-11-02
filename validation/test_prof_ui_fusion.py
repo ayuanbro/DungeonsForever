@@ -77,7 +77,7 @@ class ProfessionUIFusionTests(unittest.TestCase):
           assert(job.cpuLimitMs==8000)
         ''')
 
-    def test_progress_bar_uses_screenshot_geometry_and_hides_when_finished(self):
+    def test_progress_bar_uses_master_geometry_and_hides_when_finished(self):
         self.lua.execute('''
           local function frame()
             local f={shown=false}
@@ -94,8 +94,8 @@ class ProfessionUIFusionTests(unittest.TestCase):
           end
           CreateFrame=frame;PD.page=frame();PD.setGear=frame()
           PD.PaintToolProgress('Progress',0.43)
-          assert(PD.__progBar.w==150 and PD.__progBar.h==6)
-          assert(PD.__progFill.w==64 and PD.__progBar:IsShown())
+          assert(PD.__progBar.w==120 and PD.__progBar.h==6)
+          assert(PD.__progFill.w==51 and PD.__progBar:IsShown())
           PD.PaintToolProgress(nil,nil)
           assert(not PD.__progHolder:IsShown() and not PD.__progBar:IsShown())
         ''')
