@@ -1,5 +1,3 @@
--- Client observations enhance the existing dev data; loading remains owned
--- by the main addon TOC. Failed/unopened/foreign book reads never prove absence.
 local _, ns = ...
 if not ns.LoadForeverPages or not ns.ProfEconomy then return end
 local E = ns.ProfEconomy
@@ -42,8 +40,6 @@ local function runtime()
     return d.recipes
 end
 E.EnsureClientRuntime = runtime
--- Only positive IDs from our static tables can participate in a route. This
--- index retains original records, not another copy of the profession catalog.
 local recipeIDs = {}
 local indexed = {}
 local function indexProfession(slug)
@@ -63,12 +59,10 @@ local function hasRecipe(spell)
     if not positiveInteger(spell) then return false end
     if E.RecipeNIP(spell) then return false end
     if recipeIDs[spell] then return true end
-    -- Build lazily for the currently open/learned professions first.
     for slug in pairs(E.Professions()) do indexProfession(slug) end
     local pd = ns.ProfModule
     if pd and pd.cur then indexProfession(pd.cur) end
     if recipeIDs[spell] then return true end
-    -- A simulated unlearned target is also valid without opening its book.
     for slug, group in pairs(ns.ProfRecipes or {}) do if type(group)=="table" then indexProfession(slug) end end
     return recipeIDs[spell] ~= nil
 end
@@ -131,8 +125,6 @@ function E.ReadRecipe(spell, observedInfo, infoAlreadyRead)
         (type(schematic.outputItemID)=="number" and schematic.outputItemID>0) or
         (type(schematic.quantityMin)=="number" and schematic.quantityMin>0) or
         (type(schematic.reagentSlotSchematics)=="table" and #schematic.reagentSlotSchematics>0)) then schematic=nil end
-    -- Some builds expose a schematic for an arbitrary spell but no recipe-info
-    -- lookup outside the active book. Read that useful data independently.
     if not info and not schematic and not (api.GetRecipeNumReagents and api.GetRecipeReagentInfo) then return end
     local book=runtime(); local r=book[spell] or {};local before=recipeBefore(r); book[spell]=r
     local positiveEvidence=info or schematic or r.learned==true or r.trainerObserved or r.validated or E.Known(spell)
@@ -184,8 +176,6 @@ function E.ReadRecipe(spell, observedInfo, infoAlreadyRead)
             local riOk,_,_,qty=call("C_TradeSkillUI.GetRecipeReagentInfo",spell,i)
             if riOk and positiveInteger(id) and positiveInteger(qty) then mats[#mats+1]={id,qty} else complete=false end
         end
-        -- Some clients return 0 for an arbitrary inaccessible spell. Accept an
-        -- empty input list only after the recipe itself was positively observed.
         if complete and (num>0 or r.learned==true) then r.mats=mats
         elseif num==0 and not positiveEvidence then
             if r.mats and #r.mats==0 then r.mats=nil end
@@ -237,7 +227,6 @@ function E.ScanCrafts(tick)
         tick()
     end
 end
--- Refresh only the currently open profession. Do not mistake another player's linked book for ours.
 function E.ScanRecipes(tick)
     tick=tick or function() end
     if C_TradeSkillUI and C_TradeSkillUI.IsTradeSkillLinked and C_TradeSkillUI.IsTradeSkillLinked() then return end
@@ -264,8 +253,6 @@ function E.ScanRecipes(tick)
         end
         local endBaseOk,endBase=call("C_TradeSkillUI.GetBaseProfessionInfo")
         local endChangingOk,endChanging=call("C_TradeSkillUI.IsDataSourceChanging")
-        -- Require positive evidence that this is an all-recipes view. Legacy
-        -- learned-only lists and a changing/foreign book cannot prove absence.
         if complete and unlearned and endBaseOk and type(endBase)=="table" and skillIDs[endBase.professionID]==slug and endChangingOk and endChanging==false then
             local d=store(); d.recipeRosters=d.recipeRosters or {}
             local previous=d.recipeRosters[slug]
@@ -305,8 +292,6 @@ function E.ScanRecipes(tick)
         end
     end
 end
--- Capture only transient trainer API fields at the event boundary. Name
--- resolution and catalogue work may then wait safely until the scene allows it.
 function E.CaptureTrainer(previous)
     if not GetNumTrainerServices or not GetTrainerServiceInfo then return previous end
     local countOk,count=call("GetNumTrainerServices")
@@ -349,13 +334,9 @@ function E.ScanTrainer(tick,snapshot)
     local subtextFn=C_Spell and C_Spell.GetSpellSubtext
     local function fallback(name,subtext)
         if type(name)~="string" or not spellName then return nil end
-        -- Stable names are cached for this catalogue/API. Failed lazy client
-        -- reads are retried on the next scan; ambiguity is never guessed away.
         if not trainerNames or trainerNames.spellName~=spellName or trainerNames.subtextFn~=subtextFn
              then
             trainerNames={spellName=spellName,subtextFn=subtextFn,names={},pending={}}
-            -- Explicit all-profession iteration is reserved for ambiguous legacy
-            -- trainer names; ordinary recipe queries always name a profession.
             for slug in pairs(E.Professions()) do indexProfession(slug) end
             for spell in pairs(recipeIDs) do trainerNames.pending[spell]=true; tick() end
         end
@@ -396,8 +377,6 @@ function E.ScanTrainer(tick,snapshot)
         tick()
     end
 end
--- A details event with explicit recipe IDs can refresh those entries without
--- rereading the roster. Unknown/changing/foreign books retain the full scan.
 function E.ScanRecipeDetails(ids,tick)
     tick=tick or function() end
     if type(ids)~="table" or not next(ids) then return false end
@@ -426,11 +405,7 @@ function E.RefreshClientData(readRecipes,readTrainer,onComplete,recipeIDs,forceI
         if onComplete then onComplete(false,"tracking_disabled") end
         return {done=true,cancelled=true,Cancel=function() end}
     end
-    -- Older callers with no scan flags may represent an arbitrary spell/policy
-    -- event. They retain conservative invalidation; typed skill events opt out.
     if forceInputs==nil then forceInputs=not readRecipes and not readTrainer and not recipeIDs end
-    -- The first no-op refresh must compare with its starting input, rather
-    -- than treating the lack of a previous notification as a data change.
     runtime()
     local initial=store()
     local initialLevel
@@ -497,8 +472,6 @@ function E.CancelClientReads()
     for _,handle in ipairs(handles) do handle.Cancel() end
 end
 
--- The dev addon owns this frame directly, just like ProfExecution and VendorPriceDB.
--- Coalesce event bursts before starting one cooperative client read.
 if type(CreateFrame)=="function" then
     local frame = CreateFrame("Frame")
     local pendingRecipes, pendingTrainer, queued, scan, rescan = false, nil, false, nil, false

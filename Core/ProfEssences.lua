@@ -1,5 +1,3 @@
--- Verified Classic item-use conversions. These actions consume no skill point
--- and belong to the route's material ledger, not to its crafting recipe list.
 local _, ns = ...
 if not ns.LoadForeverPages then return end
 local X = { revision = 1 }
@@ -68,8 +66,6 @@ function X.Contains(mats)
     end
     return false
 end
--- Missing alternative quotes limit an optimality claim even when the selected
--- material purchases have complete costs. An observed zero supply is evidence.
 function X.MissingQuotes(snapshot, items)
     local missing, seen = {}, {}
     local function known(id)

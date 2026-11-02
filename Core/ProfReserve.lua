@@ -1,4 +1,3 @@
--- Optional purchasing and execution allowance. Never changes the selected route.
 local _,ns=...
 if not ns.LoadForeverPages then return end
 local E=ns.ProfEconomy
@@ -11,9 +10,6 @@ function R.Label(value)
     return value=="off" and L["不准备余量"] or value=="standard" and L["适量备用"] or L["充足备用"]
 end
 
--- Exact hitting-time CDF for independent one-point attempts under E.Gain.
--- The failure budget is shared across the entire route (union bound), not
--- advertised as a whole-route 95% after giving each step a separate 95%.
 function R.Attempts(recipe,start,goal,confidence,tick)
     start,goal=floor(start),ceil(goal)
     if start>=goal then return 0 end
@@ -88,8 +84,6 @@ function R.Build(plan,snapshot,opts,tick)
             end
         elseif s.checkpoint then lower[p]=s[2]
         elseif not s.kind then
-            -- Fixed tools/materials keep their quantity. Only certain gains
-            -- may raise the starting lower bound for the next leveling step.
             for _=1,(s.expectedCrafts or s[4] or 0) do
                 if E.Gain(recipe,from)<1 then break end
                 from=from+1
@@ -102,9 +96,6 @@ function R.Build(plan,snapshot,opts,tick)
         initial[i]=row.extraCrafts
     end
 
-    -- Replay only provenance, using the same purchased-first convention as
-    -- the native result ledger. This finds actual spare lots and the original
-    -- producer of each input; no new recipe/source search is performed.
     local pools,sources,quotes,baseAH={},{},{},{}
     local position=0
     local function add(item,count,index,made,source)
@@ -144,8 +135,6 @@ function R.Build(plan,snapshot,opts,tick)
     for item,n in pairs(retained) do
         for _,lot in ipairs(pools[item] or {}) do local used=min(n,lot.left);lot.left=lot.left-used;n=n-used end
     end
-    -- Extra skill attempts may already produce the intermediates needed by
-    -- later reserves. Share them before adding any more producer attempts.
     for i,s in ipairs(steps) do
         local per=s.outputMin or s.recipe and s.recipe.count or 0
         if initial[i]>0 and s.item and per>0 then add(s.item,initial[i]*per,i,true,{reserve=true}) end
@@ -214,8 +203,6 @@ function R.Build(plan,snapshot,opts,tick)
         local need=requests[id] or 0
         local purchases,cost,complete=ns.ProfRouteAuto.MaterialPurchases(id,need,{snapshot=frozen,auctionRemaining={[id]=remaining}})
         if need==0 then
-            -- Retain a zero-quantity quotation so a seed/pack-funded reserve
-            -- still has a shopping row; it is not another purchase or cost.
             local templates=ns.ProfRouteAuto.MaterialPurchases(id,1,{snapshot=frozen,auctionRemaining={[id]=remaining}})
             for _,entry in ipairs(templates or {}) do
                 local quote=E.Copy(entry);quote[2]=0;quote.count=0;quote.need=0;quote.cost=0
@@ -244,9 +231,6 @@ function R.Build(plan,snapshot,opts,tick)
     return result
 end
 
--- Remaining shopping allowance only decreases as funded attempts are used.
--- It is not replenished after every cast. Intermediate preparation has its
--- own output obligation in the executor, separate from probabilistic extras.
 function R.Remaining(plan,casts,disabled,completed)
     local need,byConsumer={},{}
     if disabled or not plan.reserve or plan.reserve.mode=="off" then return need end
@@ -257,8 +241,6 @@ function R.Remaining(plan,casts,disabled,completed)
         local inputs={};byConsumer[s.segmentID]=inputs
         for _,m in ipairs((s.recipe or {}).mats or {}) do inputs[m[1]]=(inputs[m[1]] or 0)+extra*m[2] end
     end
-    -- Only an explicitly allocated earlier producer offsets a purchase.
-    -- A later incidental output must not erase an earlier material shortage.
     for _,s in ipairs(plan.executionSteps or {}) do for _,a in ipairs(s.reserve and s.reserve.allocations or {}) do
         local inputs=byConsumer[a.consumerID]
         if inputs then inputs[a.itemID]=max(0,(inputs[a.itemID] or 0)-a.count) end

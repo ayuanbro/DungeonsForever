@@ -1,12 +1,8 @@
--- A self-fished cooking reference route. Gathered fish are requirements, never
--- free inventory injected into the general purchase-cost solver.
 local _,ns=...
 if not ns.LoadForeverPages then return end
 local E=ns.ProfEconomy
 local P={};ns.ProfFishing=P
 local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
--- The reviewed modular route's authored cooking guide is a reference, not a
--- client observation. All recipes still pass the dev normalized eligibility.
 local guide={
     {from=1,to=50,spell=7751},{from=50,to=100,spell=7753},
     {from=100,to=175,spell=7755},{from=175,to=225,spell=20916},
@@ -24,8 +20,6 @@ local function fishingData(opts)
         f.areas=raw.areas or raw.a or {};f.catchRate=raw.catchRate or raw.rate
         f.seasonal=raw.seasonal or raw.season;f.timeRestricted=raw.timeRestricted or raw.night
         f.requirementsKnown=raw.restrictionsVerified==true or authored[tonumber(id)]==true
-        -- A known authored guide is marked as reference. It must never be
-        -- promoted into a fabricated restrictionsVerified/client evidence bit.
         f.restrictionsReference=raw.restrictionsVerified~=true and authored[tonumber(id)]==true or nil
         out.fish[id]=f
     end
@@ -183,8 +177,6 @@ function P.Compute(opts)
             local seen=false;for _,diagnostic in ipairs(out.diagnostics)do if diagnostic.code=="learningRequirementsUnknown"and diagnostic.spell==r.spell then seen=true;break end end
             if not seen then out.diagnostics[#out.diagnostics+1]={code="learningRequirementsUnknown",spell=r.spell,detail=r.key}end
         end
-        -- Stop at the next learning threshold so a lower-effort valid recipe
-        -- can take over. Preferred guide stages are retained through 225.
         if not preferred or r.spell~=preferred then
             for _,c in ipairs(candidates) do if cur<c.r.learn and c.r.learn<to then to=c.r.learn end end
         end
@@ -227,8 +219,6 @@ function P.Compute(opts)
             out.firstAt[m[1]]=out.firstAt[m[1]] or step[1]
         end
     end
-    -- Reserve teaching items first: an item can also be a later reagent, and
-    -- both purchases share the same observed auction quantity.
     out.formulas,out.formulasTotal,out.formulaComplete=E.CollectFormulas(out.steps,"cooking",snap)
     local remaining={}
     for id,supply in pairs(E.ConsiderAuctionSupply(snap) and snap.auctionSupply or {}) do
@@ -257,8 +247,6 @@ function P.Compute(opts)
             if owns then step.cost=step.cost+(f.cost or 0);step.unpriced=step.unpriced or f.unpriced;break end
         end
     end
-    -- Quote the entire non-fish demand once, preserving NPC pack leftovers and
-    -- any cheaper auction/NPC combination. Gathered fish never enter this list.
     local materialComplete,materialAvailable=true,true
     for id,need in pairs(matOf) do
         local entries,total,complete,reason
@@ -291,8 +279,6 @@ function P.Compute(opts)
             ledger[#ledger+1]={entry=entry,used=0}
         end
         out.matTotal=out.matTotal+(total or 0)
-        -- Charge each actual purchase pack at its first use, then share its
-        -- leftovers across later steps regardless of the chosen purchase source.
         local index=1
         for _,step in ipairs(out.steps) do
             for _,m in ipairs(step.recipe.mats) do if m[1]==id then
@@ -338,8 +324,6 @@ function P.Compute(opts)
     return ra and ra.StampVendorQuotes and ra.StampVendorQuotes(out) or out
 end
 
--- Replace only the special cooking route. The main TOC and default dev source
--- tables remain authoritative; no catalogue addon or loading gate is added.
 if ns.ProfRouteAuto then
     ns.ProfRouteAuto.ComputeFishing=function(slug,opts)
         if slug~="cooking" then return nil end

@@ -106,6 +106,8 @@ end
 
 function PD.ReplicateScanWarning()
     if not ns.IsForever then return nil end
+    local AB = ns.AuctionBridge
+    if not (AB and AB.Precise and AB.Precise()) then return nil end
     local st=PD.AuctionatorState()
     if st=="missing" or st=="disabled" or st=="loading" then return nil end
     local bridge=ns.AuctionBridge
@@ -176,7 +178,6 @@ function PD.SnapshotBadgeState(s)
         if sec then return "frame", sec end
         return "ageunknown"
     end
-    -- The shared price source is available; this route has not been priced.
     return "incomplete"
 end
 
@@ -246,6 +247,7 @@ PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.autoResidualMass = false
 PD.SETTING_DEF.autoReserveMode = "ample"
 PD.SETTING_DEF.recoveryEnabled = false
+PD.SETTING_DEF.preciseRecovery = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
 PD.RECOVERY_FEES = { 0, 5, 10, 15, 20 }
@@ -285,7 +287,6 @@ function PD.SettingRaw(k,slug)
     local db=ProfDB()
     local values=PD.PROF_SETTING_KEYS[k] and db.professionSettings and db.professionSettings[slug]
     local v=values and values[k]
-    -- Old global values are migration defaults only; new edits never change them.
     if v==nil then v=db[k] end
     if v == nil then return PD.SETTING_DEF[k] end
     return v
@@ -1284,7 +1285,7 @@ function PD.SyncHover()
     end
 end
 
-PD.PILL_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\HUIPillCap"
+PD.PILL_CAP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\HUIPillCap"
 PD.PILL_CAP_W = 5
 
 function PD.MakePill(parent, col, cr)
@@ -2374,7 +2375,7 @@ function PD.BindRow(r, spec, h)
     if spec.kind == "pcard" then
             PD.WipeRow(r, true)
         PD.PCApply(r, spec, r:GetWidth(), h)
-        r.__spec = spec -- Keep virtualized cards eligible for culling/redisplay.
+        r.__spec = spec
         return
     end
     if r.__pcOk then PD.PCWipe(r) end
@@ -2475,6 +2476,9 @@ function PD.BindRow(r, spec, h)
     end
     if r.__pct then r.__pct:Hide() end
     if r.__costWhy then r.__costWhy:Hide() end
+    if r.blk then
+        for _, b in ipairs(r.blk) do if b.tag then b.tag:Hide() end end
+    end
     if showIcon then
         r.icon:SetSize(iconSize, iconSize)
         r.icon:ClearAllPoints()
@@ -5467,7 +5471,6 @@ function PD.PaintTool(list, handler, yoff)
         local def = (i <= n) and list[i] or nil
         if def then
             local w, text = wid[i], txt[i]
-            -- Right-aligned controls must not reset the wrapped left cursor.
             local bx, brow
             if rxs[i] then
                 bx, brow = rxs[i], 0
@@ -5479,8 +5482,6 @@ function PD.PaintTool(list, handler, yoff)
                         .. tostring(def.on) .. "|" .. tostring(def.primary) .. "|"
                         .. tostring(def.tone) .. "|" .. text .. "|" .. tostring(def.right)
                         .. "|" .. tostring(def.icon) .. "|" .. tostring(def.glow)
-            -- Tooltip content can change while this pooled button keeps the
-            -- same text, size and position. Refresh it outside the paint cache.
             bt.__tipLines = def.tip
             if def.tip and not bt.__tipHooked then
                 bt.__tipHooked = true
@@ -5572,6 +5573,7 @@ function PD.PaintTool(list, handler, yoff)
             bt.__key = def.key
             bt.__row = brow
             if def.icon then
+                if bt.__ddArr then bt.__ddArr:Hide() end
                 if bt.__warn then bt.__warn:Hide(); bt.__warn.__tipLines = nil end
                 if bt.__rightFs then bt.__rightFs:Hide() end
                 local ic = bt.__icon
@@ -5677,7 +5679,6 @@ function PD.PaintTool(list, handler, yoff)
         local bw = (btn:GetWidth() or want) + before
         local try = ax - bw
         if placedCount > 0 or rightTotal > 0 then try = try - PD.TOOL_GAP end
-        -- Check each occupied row, including a wrapped specialization selector.
         while try < (leftEnds[actRow] or 0) + PD.TOOL_GAP
             and ((leftEnds[actRow] or 0) > 0 or placedCount > 0 or (actRow == 0 and rightTotal > 0)) do
             actRow = actRow + 1
@@ -5691,8 +5692,6 @@ function PD.PaintTool(list, handler, yoff)
         btn:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X + ax + before,
                      -(PD.BODY_TOP + yoff + actRow * (PD.TOOL_H + PD.TOOL_GAP)))
     end
-    -- Keep master's jump button directly left of the HUD, and wrap the pair
-    -- together so neither can cover the engineering specialization selector.
     local jumpSpace = PD.jumpBtn and PD.jumpBtn:IsShown() and (PD.JUMP_W + PD.TOOL_GAP) or 0
     placeAction(PD.hudBtn, PD.HUD_W, jumpSpace)
     if PD.actDiv then
@@ -6146,7 +6145,6 @@ function PD.PaintLvTiles()
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
-    -- The body shows the scan warning; the cost tile only shows blocked state.
     local _,scanBlocked=PD.ReplicateScanWarning()
     if scanBlocked and not fixedOnly then
         tiles.cost.label:SetText(L["拍卖行扫描"])
@@ -7907,9 +7905,6 @@ function PD.RecipeLearningView(recipe, frozen)
         end
     end
     if route then return {allowed=true,status="allowed",route=route,quote=quote,frozen=true} end
-    -- A catalogue describes learning at this recipe's retained dev threshold.
-    -- It must not label a future trainer recipe as missing merely because the
-    -- current character has not reached that skill yet.
     local skill=tonumber(recipe.learn)
     local state=skill and {skill={[recipe.profession]=skill}} or nil
     local pricing={allowBindOnPickupFormulas=PD.Setting("autoAllowBindOnPickupFormulas",recipe.profession),
@@ -7991,8 +7986,6 @@ function PD.RecipeLearningCard(recipe, frozen)
     local view=PD.RecipeLearningView(recipe,frozen)
     if not view then return end
     if not view.frozen then
-        -- Catalogue origins remain facts even when this character cannot buy
-        -- or learn now. Only frozen plans display the selected purchase path.
         local origin=PD.LearningOriginCard(recipe,view)
         if origin then
             if not view.allowed then
@@ -8128,6 +8121,13 @@ function PD.RowBlk(r, j)
     b.ct:SetShadowOffset(1, -1)
     b.nm:SetWordWrap(false)
     b.ct:SetWordWrap(false)
+    b.tag = MakeFS(r, 12, C_TEXT, "CENTER")
+    b.tag:SetFont(ns.FONT, 12, "THICKOUTLINE")
+    b.tag:SetPoint("TOP", b.ic, "TOP", 0, -1)
+    b.tag:SetShadowColor(0, 0, 0, 1)
+    b.tag:SetShadowOffset(1, -1)
+    b.tag:SetWordWrap(false)
+    b.tag:Hide()
     b.zone = CreateFrame("Button", nil, r)
     b.zone:Hide()
     PD.WireTipZone(b.zone, r)
@@ -8150,8 +8150,6 @@ function PD.WipeRow(r, keepShown)
     if not r then return end
     r.__spec = nil
     PD.ClearMats(r); PD.ClearMatSegs(r)
-    -- Reused rows must also release the recipe-only overlay regions.
-    -- Ordinary BindRow handles these, but the pcard path returns early.
     PD.ClearRecipeMats(r)
     PD.PaintDiffBar(r, nil)
     PD.HideRowChips(r)
@@ -8243,6 +8241,7 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
     if cut then
         local b = PD.RowBlk(r, n + 1)
         b.ic:Hide()
+        if b.tag then b.tag:Hide() end
         if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
         b.ct:SetText("")
         b.ct:Hide()
@@ -8275,6 +8274,9 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
         b.zone:SetPoint("RIGHT", r, "RIGHT", -(W - right), 0)
         b.zone:SetSize(PD.TBL_ICON, PD.TBL_ICON)
         b.ic:Show(); b.ct:Show(); b.zone:Show()
+        if b.tag then
+            if blk.tag then b.tag:SetText(blk.tag); b.tag:Show() else b.tag:Hide() end
+        end
         right = right - blk.w - PD.TBL_BLK_GAP
     end
     for k = n + (cut and 1 or 0) + 1, #r.blk do
@@ -8773,7 +8775,9 @@ function PD.RecipeSourceLines(lines, r)
 end
 
 function PD.RecipeVisible(spell, slug)
-    if ns.ProfRecipeNIP and ns.ProfRecipeNIP[spell] then return false end
+    if ns.ProfRecipeNIP and ns.ProfRecipeNIP[spell] then
+        return PD.moneyKey == PD.SRC_NIP_KEY
+    end
     if (slug or PD.cur)=="poisons" then return true end
     local E = ns.ProfEconomy
     if E and E.ResolveRecipe then
@@ -9089,8 +9093,6 @@ end
 function PD.BoundRecipeColumns(r,spec,padL)
     local nameWidth=math.max(1,PD.MAT_X-8-padL)
     r.a:SetWidth(nameWidth)
-    -- Description/new labels share the name column; source text stays to the
-    -- right of the auction-price/percentage column on the second line.
     local subX=padL
     local point,relative,relativePoint,x=r.b:GetPoint(1)
     if relative==r and type(x)=="number" then subX=x end
@@ -9239,8 +9241,6 @@ function PD.VendorOffersOf(itemID)
                 maxStock=offer.maxStock,stockUnknown=offer.stockUnknown})
         end
     end
-    -- Material supply uses five fields; pattern offers use eight. Their own
-    -- normalizers retain bundle sizes and stock without interpreting raw tags.
     normalized(ns.ProfVendorOffers and ns.ProfVendorOffers[itemID])
     if supply and supply.DisplayList and ns.EnsureProfFormulaOffers then
         normalized(supply.DisplayList(itemID))
@@ -9570,7 +9570,6 @@ function PD.RecipeSpec(r)
     end
     local learningCard=PD.RecipeLearningCard(resolved,false)
     if learningCard then
-        -- Display copy: preserve source provenance while showing verified origin.
         r[13]=learningCard.fid and {learningCard.fid} or nil
         r[14]=learningCard.source
         vs=PD.VendorListOf(r[14]);hasVendor=#vs>0
@@ -9824,9 +9823,63 @@ function PD.CurKeysOfFid(fid)
     return ks
 end
 
+PD.SRC_TRAINER_KEY = "__srctrainer"
+PD.SRC_DROP_KEY = "__srcdrop"
+PD.SRC_NIP_KEY = "__srcnip"
+PD.SRC_UNKNOWN_KEY = "__srcunk"
+PD.SRC_VENDOR_KEY = "__srcvendor"
+
+function PD.SrcKindOf(r)
+    local f = r and r[13]
+    local fid = (type(f) == "table") and f[1] or nil
+    if type(fid) ~= "number" then return "trainer", nil end
+    local SM = ns.ProfSourceMerge
+    local view = (SM and SM.SourceOf and SM.SourceOf(fid)) or r[14]
+    return (SM and SM.Primary and SM.Primary(view)) or nil, fid
+end
+
+function PD.SrcBucketOf(r)
+    if not r then return nil end
+    if r.nip then return PD.SRC_NIP_KEY end
+    local kind = PD.SrcKindOf(r)
+    if kind == "trainer" then return PD.SRC_TRAINER_KEY end
+    if kind == nil then return PD.SRC_UNKNOWN_KEY end
+    if kind == "drop" then return PD.SRC_DROP_KEY end
+    return nil
+end
+
+function PD.EnchBucketOf(e)
+    if not e then return nil end
+    if e.nip then return PD.SRC_NIP_KEY end
+    if not ((e[10] ~= nil) or (type(e[16]) == "number")) then return PD.SRC_TRAINER_KEY end
+    local SM = ns.ProfSourceMerge
+    local kind = (e[10] and SM and SM.Primary) and SM.Primary(e[10]) or nil
+    if not kind and e[10] and #(PD.VendorListOf(e[10]) or {}) > 0 then kind = "vendor" end
+    if kind == "drop" then return PD.SRC_DROP_KEY end
+    if kind == "vendor" then return PD.SRC_VENDOR_KEY end
+    if kind == nil then return PD.SRC_UNKNOWN_KEY end
+    return nil
+end
+
+function PD.EnchCurHit(e, mk)
+    if not e then return false end
+    if mk == nil then return true end
+    if mk == PD.SRC_TRAINER_KEY or mk == PD.SRC_DROP_KEY
+        or mk == PD.SRC_NIP_KEY or mk == PD.SRC_UNKNOWN_KEY
+        or mk == PD.SRC_VENDOR_KEY then
+        return PD.EnchBucketOf(e) == mk
+    end
+    local ks = PD.CurKeysOfFid(type(e[16]) == "number" and e[16] or nil)
+    return (ks and ks[mk]) and true or false
+end
+
 function PD.RowCurHit(r)
     local mk = PD.moneyKey
     if mk == nil then return true end
+    if mk == PD.SRC_TRAINER_KEY or mk == PD.SRC_DROP_KEY
+        or mk == PD.SRC_NIP_KEY or mk == PD.SRC_UNKNOWN_KEY then
+        return PD.SrcBucketOf(r) == mk
+    end
     local ks = PD.CurKeysOfFid(r[13] and r[13][1])
     if mk == PD.NO_SELL_KEY then return ks == nil end
     return (ks and ks[mk]) and true or false
@@ -9839,21 +9892,27 @@ function PD.CurCounts(d)
     local c = m[d]
     if c then return c end
     c = {}
-    local nosell = 0
     for _, r in ipairs(d.rows or {}) do
-        if (not r.nip) and not (ns.ProfRecipeNIP and ns.ProfRecipeNIP[r[1]]) then
-            local ks = PD.CurKeysOfFid(r[13] and r[13][1])
+        local ks = PD.CurKeysOfFid(r[13] and r[13][1])
+        if ks then
+            for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
+        end
+        local sk = PD.SrcBucketOf(r)
+        if sk then c[sk] = (c[sk] or 0) + 1 end
+    end
+    if not (d.rows and #d.rows > 0) then
+        for _, e in ipairs(d.enchants or {}) do
+            local ek = PD.EnchBucketOf(e)
+            if ek then c[ek] = (c[ek] or 0) + 1 end
+            local ks = PD.CurKeysOfFid(type(e[16]) == "number" and e[16] or nil)
             if ks then
                 for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
-            else
-                nosell = nosell + 1
             end
         end
     end
     if d.favor and #d.favor > 0 then
         c[PD.FAVOR_CURID] = (c[PD.FAVOR_CURID] or 0) + #d.favor
     end
-    if nosell > 0 then c[PD.NO_SELL_KEY] = nosell end
     m[d] = c
     return c
 end
@@ -9955,11 +10014,30 @@ function PD.RecipeCurItems(d)
             nm = L["金币"]
         elseif id == PD.NO_SELL_KEY then
             nm = L["无售卖资料"]
+        elseif id == PD.SRC_TRAINER_KEY then
+            nm = L["训练师"]
+        elseif id == PD.SRC_DROP_KEY then
+            nm = L["世界掉落"]
+        elseif id == PD.SRC_NIP_KEY then
+            nm = L["未实装"]
+        elseif id == PD.SRC_UNKNOWN_KEY then
+            nm = L["来源未知"]
+        elseif id == PD.SRC_VENDOR_KEY then
+            nm = L["商人售卖"]
         else
             nm = PD.CurName(id)
         end
         items[#items + 1] = { v = id, text = format("%s %d", tostring(nm), c[id]) }
     end
+    local function tail(v)
+        for i = #items, 1, -1 do
+            if items[i].v == v then return table.remove(items, i) end
+        end
+        return nil
+    end
+    local unk, nipItem = tail(PD.SRC_UNKNOWN_KEY), tail(PD.SRC_NIP_KEY)
+    if unk then items[#items + 1] = unk end
+    if nipItem then items[#items + 1] = nipItem end
     return items
 end
 
@@ -10088,9 +10166,10 @@ function PD.RecipeList(limit, q)
     local key = PD.toolKey
     local cap = limit or PD.ROW_CAP
     if cap < 1 then return out end
+    local showNip = (PD.moneyKey == PD.SRC_NIP_KEY)
     if PD.moneyKey ~= nil then
         for _, r in ipairs(d.rows or {}) do
-            if (not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then
+            if (showNip or not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then
                 out[#out + 1] = PD.RecipeSpec(r)
                 if #out >= cap then return out end
             end
@@ -10107,7 +10186,7 @@ function PD.RecipeList(limit, q)
     end
     if key == "__enchant" then
         for _, e in ipairs(d.enchants or {}) do
-            if PD.RecipeVisible(e[14]) then out[#out + 1] = PD.EnchantSpec(e) end
+            if PD.EnchCurHit(e, PD.moneyKey) and PD.RecipeVisible(e[14]) then out[#out + 1] = PD.EnchantSpec(e) end
             if #out >= cap then break end
         end
         return out
@@ -10119,7 +10198,7 @@ function PD.RecipeList(limit, q)
         for _, e in ipairs(d.enchants or {}) do
             local g = tostring(e[3] or "")
             if g == "" then g = L["其他"] end
-            if ((not want) or g == want) and PD.RecipeVisible(e[14]) then
+            if ((not want) or g == want) and PD.EnchCurHit(e, PD.moneyKey) and PD.RecipeVisible(e[14]) then
                 out[#out + 1] = PD.EnchantSpec(e)
                 if #out >= cap then break end
             end
@@ -10191,10 +10270,11 @@ function PD.ScanRecipe()
         return nil
     end
     local q = (PD.searchQ and PD.searchQ ~= "") and PD.searchQ or nil
+    local showNip = (PD.moneyKey == PD.SRC_NIP_KEY)
     if PD.moneyKey ~= nil then
         local cn = 0
         for _, r in ipairs(d.rows or {}) do
-            if (not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
+            if (showNip or not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
         end
         if PD.moneyKey == PD.FAVOR_CURID then
             for _, f in ipairs(d.favor or {}) do
@@ -10227,7 +10307,6 @@ end
 function PD.RowsRecipe(rows)
     local d = RGet(PD.cur)
     if not d and PD.cur=="first-aid" then
-        -- Guide ranges identify references, not learning thresholds or complete recipes.
         PushText(rows,L["固定攻略参考；逐配方资料待补全。"],12,C_GOLD)
         local seen,finish,query={},{},string.lower(PD.searchQ or "")
         for _,step in ipairs(LV[PD.cur] and LV[PD.cur].steps or {})do finish[step[3]]=step[2] end
@@ -10854,6 +10933,9 @@ function PD.PlanStatusParts(plan)
                     or L["已保存路线无法读取，请重新计算。"]
             end
             local scanText=PD.ReplicateScanMessage(diagnostic.code)
+            if scanText and ns.AuctionBridge and ns.AuctionBridge.Precise and not ns.AuctionBridge.Precise() then
+                scanText=nil
+            end
             if scanText then return scanText end
             if diagnostic.code=="learningPolicyChanged" and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
                 return ns.ProfEconomy.DiagnosticText(diagnostic)
@@ -11883,7 +11965,6 @@ function PD.StopSolverRoute()
     local aborting = (SR and SR.Running and SR.Running() and not PD.solverDone) and true or false
     if aborting then PD.autoExact = nil end
     if SR then SR.Stop() end
-    -- Invalidate callbacks created before switching professions.
     PD.solverRunSerial = (PD.solverRunSerial or 0) + 1
     PD.solverSlug = nil
     PD.solverKey = nil
@@ -11969,8 +12050,6 @@ function PD.StartSolverRoute(opts, key)
             end
         end,
         onDone = function(j)
-            -- The mutable PD.cur/solverKey may already belong to another
-            -- profession by the time the previous asynchronous job completes.
             if not isCurrent(j) then return end
             PD.solverDone = true
             PD.solverFrac = nil
@@ -12326,8 +12405,6 @@ end
 
 function PD.CurrentSegRow()
     local rows = PD.curRows or {}
-    -- The execution ledger wins over skill ranges: a producer may still owe
-    -- materials after the character has passed its displayed skill interval.
     for i, row in ipairs(rows) do
         if row.lvstep and row.trackCur then return i end
     end
@@ -12413,7 +12490,6 @@ local function TrackStepsFor(slug, steps)
             end
             grouped.steps[index]=sum
         end
-        -- A grouped view never rewrites execution chronology or receipt IDs.
         for _,segment in ipairs(ledger) do if not assigned[segment.segmentID] then return nil end end
         return run,grouped
     end
@@ -12582,16 +12658,16 @@ function PD.RowsCraftLog(rows)
 end
 
 function PD.RowsRankReminder(rows, target)
-    local ranks=ns.ProfRanks
-    local rank=ranks and ranks.NextStep(PD.cur,target or PD.LvTarget())
-    if rank and rank.due then
-        PushHead(rows,ranks.Title(rank))
-        local details={}
-        for _,line in ipairs(ranks.Lines(rank)) do details[#details+1]={line} end
-        rows[#rows].lines=details
-        for _,line in ipairs(ranks.Lines(rank,3)) do PushText(rows,line,11,C_GREY) end
-        PushGap(rows,6)
-    end
+end
+
+function PD.RankReminderTip()
+    local ranks = ns.ProfRanks
+    local rank = ranks and ranks.NextStep(PD.cur, PD.LvTarget())
+    if not (rank and rank.due) then return nil end
+    local tip = { { ranks.Title(rank), 1, 1, 1 } }
+    for _, line in ipairs(ranks.Lines(rank)) do tip[#tip + 1] = { line, 0.88, 0.88, 0.88 } end
+    for _, line in ipairs(ranks.Lines(rank, 3)) do tip[#tip + 1] = { line, 0.7, 0.7, 0.7 } end
+    return tip
 end
 
 function PD.ReserveWarningLines(reserve)
@@ -12604,8 +12680,6 @@ function PD.ReserveWarningLines(reserve)
         if d.code == "quote" and d.itemID then unpriced[d.itemID] = true end
     end
     for _, d in ipairs(reserve.diagnostics or {}) do
-        -- Missing prices also produce a supply diagnostic. Report the known
-        -- pricing problem without claiming that the item is out of stock.
         if not (d.code == "supply" and unpriced[d.itemID]) then
             local kind = kinds[d.code] or "quantity"
             groups[kind] = groups[kind] or {}
@@ -12645,8 +12719,6 @@ function PD.RowsLeveling(rows)
     local activeRun, activePlan = TrackRunOf(PD.cur)
     local unreadable = activeRun and not activePlan
     if unreadable then
-        -- Keep the failure in the summary used by the cost tile as well as
-        -- the body. An empty summary is not evidence of missing prices.
         PD.lvSummary = {slug=PD.cur,planVersion=2,status="recalculate_required",feasible=false,
             diagnostics={{code="historyUnreadable"}}}
         PD.lvRouteHead = nil
@@ -12678,7 +12750,6 @@ function PD.RowsLeveling(rows)
         end
     end
     PD.warnNotes = notes
-    -- Show without requiring an eligible pattern or tooltip hover.
     local scanWarning=PD.ReplicateScanWarning()
     if scanWarning then
         PushText(rows,scanWarning,12,{0.98,0.55,0.4},1)
@@ -12697,7 +12768,6 @@ function PD.RowsLeveling(rows)
     local autoOn = (not PD.FixedOnly()) and (not smeltRoute) and (needPartner or (PD.WindowShown()
                     and (fishRoute or PD.Setting("autoRoute")) and RA and true or false))
     local target = PD.LvTarget()
-    -- Show profession rank guidance on the leveling route page.
     if PD.autoPage == nil or PD.autoPage == "route" then
         PD.RowsRankReminder(rows, target)
     end
@@ -12716,14 +12786,11 @@ function PD.RowsLeveling(rows)
         opts.target = target
         PD.lvOpts = opts
         planKey = PD.PlanKeyOf(PD.cur, opts)
-        -- The page and HUD share the same saved candidate/execution facade.
-        -- Only an explicit user recalculation applies changed inputs.
         if PD.forceExact then
             PD.forceExact=nil
             opts.cpuLimitMs=8000
             res=RA.Recalculate(PD.cur,opts)
         else res=RA.Get(PD.cur,opts) end
-        -- Never render a foreign profession even if a legacy cache survived.
         if res and res.slug and res.slug~=PD.cur then res=nil end
         if res and res.planVersion==2 then res.exact=true end
         if res and res.planVersion ~= 2 and not res.priced and scheme ~= "optim" then res = nil end
@@ -12733,6 +12800,17 @@ function PD.RowsLeveling(rows)
         PD.autoSnapshot, PD.autoSnapshotSlug = res, PD.cur
         PD.autoKey = planKey
         PD.autoExact = res.exact == true
+    end
+    if res and res.seedInventory and ns.ProfExecution and ns.ProfExecution.BagCount then
+        local drift = false
+        for id, n in pairs(res.seedInventory) do
+            if (ns.ProfExecution.BagCount(id) or 0) ~= n then drift = true break end
+        end
+        PD.__invDrift = PD.__invDrift or {}
+        PD.__invDrift[PD.cur] = drift and true or nil
+        if drift then
+            warning(L["背包材料与上次计算时不一致，当前成本仍按旧库存计算；请点「重新计算」更新。"], 0.95, 0.75, 0.4)
+        end
     end
     PD.RowsRoutePartner(rows, pairContext)
     PD.RowsSpecQuest(rows)
@@ -12744,8 +12822,6 @@ function PD.RowsLeveling(rows)
     if res and (res.status == "selection_required" or res.status == "recalculate_required") then
         PD.lvSummary = {target = target, auto = true, autoSetting = true, scheme = scheme, ahOK = true}
         PD.CopyPlanSummary(res)
-        -- The prerequisite warning has already been shown at the top.
-        -- Do not repeat the identical status in a second text row.
         local statusText = PD.PlanStatusText(res)
         if statusText ~= scanWarning then
             PushText(rows, statusText, 12, {0.95, 0.75, 0.4})
@@ -13099,6 +13175,7 @@ function PD.RowsLeveling(rows)
             PushGap(rows, 4)
         end
         rows[#rows + 1] = { kind = "lvhead", h = 18, col = 1, noTip = true }
+        local producedBefore = {}
         for index, st in ipairs(steps) do
             local rec = PD.StepRecipe(st) or recOf[st[3]]
             local ri = nil
@@ -13110,6 +13187,25 @@ function PD.RowsLeveling(rows)
             end
             local mats = (rec and rec[12]) or (ri and ri.mats) or {}
             local blocks, _, cut = PD.PackMats(mats, PD.LV_MAT_W)
+            for _, b in ipairs(blocks or {}) do
+                if b.id then
+                    if producedBefore[b.id] then
+                        b.tag = L["产物"]
+                    else
+                        local seed = res and res.seedInventory or {}
+                        local XPe = ns.ProfExecution
+                        local live = XPe and XPe.BagCount and (XPe.BagCount(b.id) or 0) or nil
+                        local have = live or (tonumber(seed[b.id]) or 0)
+                        if type(GetItemCount) == "function" and have <= 0 then
+                            local ok, n = pcall(GetItemCount, b.id)
+                            if ok and type(n) == "number" then have = n end
+                            local ok2, n2 = pcall(GetItemCount, b.id, true)
+                            if ok2 and type(n2) == "number" and n2 > have then have = n2 end
+                        end
+                        if have > 0 then b.tag = L["库存"] end
+                    end
+                end
+            end
             local nm = PD.StepName(st)
             local src
             if rec or ns.IsForever and st.recipe then
@@ -13133,6 +13229,8 @@ function PD.RowsLeveling(rows)
             local actualLv = stepLv and stepLv.cur or curLv
             local over = (actualLv ~= nil and segHi ~= nil and segHi < actualLv) or nil
             local passed = (greyOn and over) or nil
+            local pout = (rec and rec[2]) or (ri and ri.makes) or st.item
+            if pout then producedBefore[pout] = true end
             rows[#rows + 1] = {
                 kind = "row", h = PD.TBL_H, col = 1, lvstep = true, fs = PD.LV_FS,
                 passed = passed, over = over,
@@ -13153,7 +13251,8 @@ function PD.RowsLeveling(rows)
                 src = src,
                 cnt = cntOf[st] or format(L["~%s 次制作"], tostring(st[4])),
                 cost = costOf[st] or "",
-                costWhy = whyLong[st],
+                costWhy = whyLong[st] or (((tonumber(st.cost) or 0) <= 0 and (st[4] or 0) > 0)
+                    and L["本步材料来自背包库存或前面步骤自制的中间产物，因此没有新增采购支出。"] or nil),
                 costWhyShort = whyOf[st],
                 role = PD.StepRole(st),
                 toolChip = chipOf[st],
@@ -13556,8 +13655,6 @@ end
 function PD.ShopMatRow(rows, e, data, priced, extraTip, final)
     local lw = PD.splitLW or PD.COL_LW
     local id = e.id or e[1]
-    -- The plan has already budgeted inventory and selected purchase sources.
-    -- Do not subtract live bags again from net rows used by the HUD.
     local n = tonumber(e.count) or tonumber(e[2]) or 0
     local used = tonumber(e.have) or (not e.netDemand and tonumber(e.used)) or 0
     local need = tonumber(e.need) or (n + used)
@@ -13749,8 +13846,6 @@ function PD.RowsReserveShopping(rows,data)
         rows[#rows].foldKey = "shop_mats"
         if PD.FoldOn("shop_mats") then return end
     end
-    -- Keep the current procurement ledger, but share the normal shopping rows
-    -- and vendor groups so reserves retain source badges and map actions.
     local display,byID={},{}
     for key,value in pairs(data) do display[key]=value end
     display.mats={}
@@ -13766,8 +13861,6 @@ function PD.RowsReserveShopping(rows,data)
             item.supplyRequired=count
             item.considerAuctionSupply=entry.considerAuctionSupply
         end
-        -- Quantities already include reserves and the single bag deduction.
-        -- Old receipt consumption fields cannot describe this current purchase.
         item.need,item.have,item.used,item.usedCount,item.actualNeed=nil,nil,nil,nil,nil
         item.netDemand=true
         display.mats[#display.mats+1]=item
@@ -13811,7 +13904,6 @@ function PD.RowsAutoShop(rows, data)
     local mode = data.mode or "auto"
     local mats = data.mats or {}
     local priced = (data.planVersion == 2 and data.total ~= nil) or data.referenceQuoted or (data.priced and true) or false
-    -- Shopping rows and totals use the purchases selected by the route.
     local total = data.total
     local vendorTotal = data.vendorTotal or 0
     local ahTotal = data.ahTotal or 0
@@ -14063,8 +14155,6 @@ function PD.LevelTool()
         { key = "page_log",   text = L["制作记录"], on = onLog },
         { key = "page_rec",   text = L["回血"],     on = onRec },
     }
-    -- Single engineering specialization selector: top bar only.
-    -- Unspecified means no manual target; known specializations are detected.
     if PD.cur == "engineering" then
         local G = ns.ProfGates
         if G and G.GetChoiceSetting and G.EffectiveChoice then
@@ -14091,7 +14181,7 @@ function PD.LevelTool()
             end
             list[#list + 1] = {
                 key = "eng_spec", dd = true, on = setting ~= "none",
-                text = L["工程专精计划"] .. "：" .. PD.EngChoiceLabel(setting),
+                text = setting == "none" and L["专精不指定"] or PD.EngChoiceLabel(setting),
                 tip = tip,
             }
         end
@@ -14099,8 +14189,6 @@ function PD.LevelTool()
     if not onLog and not onRec and PD.autoPage ~= "shop" then
         local snap = (PD.autoSnapshotSlug == PD.cur) and PD.autoSnapshot or nil
         local notes = PD.warnNotes
-        -- Notices belong to the route rendered this pass, not the previous
-        -- profession, an earlier candidate, or a prerequisite-only page.
         if not (notes and notes.slug == PD.cur and notes.plan == snap and PD.PlanHasSteps(snap))
             or snap.status == "selection_required" or snap.status == "recalculate_required" then
             snap, notes = nil, nil
@@ -14111,12 +14199,17 @@ function PD.LevelTool()
         if head then tip[#tip + 1] = { head, 0.95, 0.75, 0.4 } end
         if detail then tip[#tip + 1] = { detail, 0.85, 0.85, 0.85 } end
         for _, ln in ipairs(notes and notes.warnings or {}) do tip[#tip + 1] = ln end
-        -- General route explanations stay on the Route tab, outside warnings.
         if notes and #notes > 0 then list[1].tip = notes end
         if #tip > 0 then
             list[#list + 1] = { key = "supply_warn",
                                 icon = "Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri",
                                 iconColor = { 1, 1, 1 }, tip = tip }
+        end
+        local rankTip = PD.RankReminderTip()
+        if rankTip then
+            list[#list + 1] = { key = "rank_warn",
+                                icon = "Interface\\AddOns\\DungeonsForever\\Media\\Prof\\WarnTri",
+                                iconColor = { 1, 1, 1 }, tip = rankTip }
         end
     end
     if not PD.FixedOnly() then
@@ -14238,8 +14331,6 @@ function PD.LevelTool()
         elseif k == "track" then
             local T = ns.ProfExecution
             if T and T.GetActive and T.GetActive(PD.cur) then
-                -- Suspend HUD auto-start before ending the execution.
-                -- EndExecution may trigger route refresh callbacks immediately.
                 local follow = ns.ProfFollow
                 if follow and follow.SuspendAutoTrack then
                     follow.SuspendAutoTrack(PD.cur)
@@ -15119,8 +15210,6 @@ function PD.Render()
             PD.gridSplit = false
             PD.autoPage = nil
             PD.lvSummary, PD.lvRouteHead = nil, nil
-            -- Gathering upgrade pages retain their route-only layout.
-            -- Show rank guidance before the gathering route.
             PD.RowsRankReminder(rows, PD.LvTarget())
 
             local gcards = PD.GatherRouteCards(rows)
@@ -15198,8 +15287,6 @@ function PD.Render()
     PY()
     PD.truncated = PD.PaintRows(rows)
     if PD.UpdateJumpButton() then
-        -- Row geometry is known only after painting. Account for the newly
-        -- shown/hidden jump button before exposing the final toolbar layout.
         layoutTools()
         PD.truncated = PD.PaintRows(rows)
     end

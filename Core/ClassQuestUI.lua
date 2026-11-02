@@ -1646,6 +1646,16 @@ function CQ.Render()
     end
 end
 
+function CQ.Focus(key)
+    if not key then return false end
+    CQ.open = CQ.open or {}
+    CQ.open[key] = true
+    CQ.sel = { type = "chain", row = { key = key } }
+    CQ.ToTop()
+    if TT and TT.RequestRender then TT.RequestRender() end
+    return true
+end
+
 function CQ.OnItemData(itemID)
     if not (CQ.built and CQ.sel) then return end
     local st = CQ.sel.type

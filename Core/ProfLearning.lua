@@ -1,5 +1,3 @@
--- Native recipe views consume immutable supplemental learning facts. Original
--- Data tuples remain owned by their existing loaders and are never rewritten.
 local _, ns = ...
 if not ns.LoadForeverPages or not ns.ProfEconomy then return end
 local E = ns.ProfEconomy
@@ -7,16 +5,10 @@ local eligibility, sourceOf = E.LearningEligibility, E.LearningSource
 local capture, findRecipe, formulaFor = E.Capture, E.FindRecipe, E.FormulaFor
 local floor = math.floor
 local firstAidTrainerDefault
--- Additive evidence for the shipped build, checked against the exact item
--- tooltip (not comments). See formula-policy-fixes-2026-10-30.json for hashes.
--- Future generated providers retain bindingType/bindingSource themselves.
 local bindingSupplement={ [234271]=1,[234272]=1,[238782]=1,[238783]=1,[238784]=1,
     [238785]=1,[238786]=1,[238787]=1,[238788]=1,[274049]=1 }
 local bindingViews=setmetatable({}, {__mode="kv"})
 local specializationCache=setmetatable({}, {__mode="k"})
--- The four supplemental-only gates in the exact shipped provider. New
--- providers expose their compact index directly, avoiding history expansion
--- for already learned recipes. 13240 is supplemental-only, outside native rows.
 local shippedFingerprint="c0b5dba91ed30145734fcce393ceaeb6d8e2966a5856a2a731a8616050f1f3b4"
 local shippedSpecializations={engineering={ [12716]={{20222}},[13240]={{20222}},
     [15628]={{20222}},[15633]={{20219}} } }
@@ -31,7 +23,6 @@ local function specializationGroups(info)
         for _,condition in ipairs(route.conditions or {})do
             if condition.kind=="ability" and supported[condition.value] then group[#group+1]=condition.value end
         end
-        -- Different learning routes are alternatives, not cumulative gates.
         if #group==0 then specializationCache[info]=false;return end
         groups[#groups+1]=group
     end
@@ -92,8 +83,6 @@ function E.AttachLearningInfo(recipe,known)
     local rank=data and data.AutomaticSkillRank and data.AutomaticSkillRank(recipe.profession,spellOf(recipe))
     if type(rank)=="number" and rank>=1 and rank==floor(rank) and type(recipe.learn)=="number"
         and rank~=recipe.learn and recipe.skillSource~="client" then
-        -- Verified skill rewards are usable from their grant rank. Keep the
-        -- source tuple and yellow/green/grey curve intact; only this view changes.
         recipe.catalogueLearn=recipe.catalogueLearn or recipe.learn
         recipe.learn=rank;recipe.skillSource="automaticSkillGrant"
     end
@@ -105,8 +94,6 @@ function E.AttachLearningInfo(recipe,known)
         groups=shippedSpecializations[slug] and shippedSpecializations[slug][spell]
     else groups=specializationGroups(E.GetLearningInfo(slug,spell)) end
     recipe.learningSpecializations=groups
-    -- Learned views retain only compact specialization alternatives, not the
-    -- complete acquisition history. Frozen captures keep these static facts.
     if known~=true then recipe.learningInfo=info end
     return recipe
 end
@@ -134,8 +121,6 @@ local function identity(snapshot,key,fn)
     if type(fn)=="function" then local ok,_,_,id=pcall(fn,"player");if ok then return id end end
 end
 local function professionClassEligibility(recipe,snapshot)
-    -- Ordinary professions never depend on character class. Poisons is a
-    -- Rogue skill, checked independently of recipe masks and learning source.
     if recipe.profession~="poisons" then return true end
     local id=identity(snapshot,"classID",UnitClass)
     if type(id)~="number" or id<1 then return false,"clientDataPending",{status="unknown"} end
@@ -168,8 +153,6 @@ local function standing(factionID)
 end
 local function conditionResult(condition,recipe,snapshot,state)
     local kind,value=condition.kind,condition.value
-    -- Retain raw source fields for inspection, but never interpret class masks
-    -- as profession admission conditions. Poisons has the explicit guard above.
     if CLASS_CONDITIONS[kind] then return true end
     if kind=="raceIDs" then
         local ids=condition.values
@@ -195,8 +178,6 @@ local function conditionResult(condition,recipe,snapshot,state)
             or snapshot.specializationContext and snapshot.specializationContext.abilities or {}
         else actual=ns.ProfGates and ns.ProfGates.Abilities() or {} end
         if simulated[id]==true or actual[id]==true then return true end
-        -- Missing an explicit required ability is an unmet prerequisite of this
-        -- route. A different acquisition route can still satisfy the recipe.
         if strict(recipe,snapshot) and actual[id]==nil and simulated[id]==nil then return nil end
         return false,id
     elseif kind=="level" then
@@ -250,12 +231,9 @@ local function conditionResult(condition,recipe,snapshot,state)
         local mask=tonumber(value)
         return maskMatches(mask,identity(snapshot,"raceID",UnitRace))
     elseif kind=="abilityRaceMask0" or kind=="abilityRaceMask1" then
-        -- Zero explicitly means no filter. The client acquisition masks are a
-        -- separate schema; interpreting their nonzero 64-bit values is pending.
         if tonumber(value)==0 then return true end
         return nil
     end
-    -- Account and other unsupported restrictions stay unknown.
     return nil
 end
 local function evaluate(conditions,recipe,snapshot,state)
@@ -277,16 +255,12 @@ local function legacyLearningEligibility(recipe,snapshot,state)
     local spell=spellOf(recipe)
     local key=recipe.key or recipe.profession and recipe.profession..":"..tostring(spell)
     local known=state and state.learned or snapshot and snapshot.known
-    -- A positively learned recipe is usable even if a stale reference/roster
-    -- still carries a restriction. Frozen snapshots never query live spell APIs.
     if known and (known[key]==true or known[spell]==true) or not known and E.Known(spell)then
         return true,nil,{status="learned"}
     end
     if recipe.clientUnavailable then return false,"clientUnavailable",{status="blocked"}end
     if recipe.trainerAvailable==true then return true,nil,{status="observed"}end
     local ok,reason,base=eligibility(recipe,snapshot,state)
-    -- An explicitly supplied alternative route must not erase a specialization
-    -- prerequisite already present in dev's existing gate data.
     if not ok then return ok,reason,base end
     local constraints=recipe._conditionsCheck or recipe.learningConstraints
     if constraints and #constraints>0 then
@@ -343,12 +317,8 @@ end
 E.LearningEligibility=legacyLearningEligibility
 E.RecipeSpecializationAllowed=legacyLearningEligibility
 
--- Unknown learning restrictions may be shown in the recipe catalogue, but
--- cannot become executable leveling or material-making steps.
 function E.RouteRecipeEligibility(recipe,snapshot,state)
     local allowed,reason,detail=E.LearningEligibility(recipe,snapshot,state)
-    -- Missing audit coverage is distinct from an unknown concrete condition.
-    -- Keep the catalogue's audit status and use master's native recipe model.
     local native=recipe and (recipe.dataSource=="catalogue" or recipe.dataSource=="mixed")
     if allowed and native and detail and detail.status=="unknown" and not detail.requiredAbility
         and not recipe.availabilityUnknown and recipe.verified~=false
@@ -404,8 +374,6 @@ local function check(conditions,recipe,snapshot,state,projectNative)
         local accepted,ability
         local p=condition.profession or (condition.professionID and E.ProfessionSlug and E.ProfessionSlug(condition.professionID)) or recipe.profession
         if projectNative and condition.kind=="skill" and p==recipe.profession and type(recipe.learn)=="number" then
-            -- The source is retained for audit, but the existing solver owns
-            -- this recipe's dev learning threshold and future skill planning.
             accepted=true
             if tonumber(condition.value)~=recipe.learn then
                 conflicts[#conflicts+1]={kind="skill",sourceValue=condition.value,retainedValue=recipe.learn}
@@ -420,7 +388,6 @@ local function check(conditions,recipe,snapshot,state,projectNative)
 end
 local function infoFor(recipe,snapshot)
     if recipe.learningInfo then return recipe.learningInfo end
-    -- An immutable capture may only use the facts it actually contains.
     if snapshot then return end
     return E.GetLearningInfo(recipe.profession,spellOf(recipe))
 end
@@ -464,9 +431,6 @@ local function routesFor(recipe,info)
             status="unknown",conditionsKnown=false,conditions={},acquisition={}}}
     end
     if #out==0 and firstAidTrainerDefault(recipe,info) then
-        -- User policy: an unknown First Aid origin defaults to a trainer.
-        -- This is not an observed NPC or a zero-price quote; keep source data
-        -- intact and still enforce the recipe's known skill/character gates.
         local conditions={}
         if type(recipe.learn)=="number" and recipe.learn>0 then
             conditions[1]={kind="skill",professionID=129,value=recipe.learn}
@@ -489,8 +453,6 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
         learningRouteId=route.id,learningRoute=route,count=1,need=1,
         recipes={{profession=recipe.profession,spell=spellOf(recipe),key=key}},sources={}}
     if route.kind=="trainer" then
-        -- Current character observations and the existing dev value retain
-        -- precedence over an auxiliary web quote for the selected path.
         local automatic=route.acquisition and route.acquisition.kind=="skillGrant"
         local cost=automatic and 0 or recipe.learningRequirements and tonumber(recipe.learningRequirements.trainingCost)
         if cost==nil then cost=tonumber(recipe.trainingCost) end
@@ -528,7 +490,6 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
         check(acquisition.conditions,recipe,snapshot,state,true)
     if acquisition.quests then view.source.quests=acquisition.quests end
     if acquisition.drops then view.source.drops=acquisition.drops end
-    -- Partial world-source coverage cannot establish quest exclusivity.
     view.source.questOnly=nil
     local context=shallow(snapshot or pricingContext)
     if not snapshot and not context.faction and UnitFactionGroup then context.faction=faction(UnitFactionGroup("player")) end
@@ -552,8 +513,6 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
         local have={};for _,o in ipairs(added)do
             if o.npcID and o.source~="catalogue" then have[o.npcID]=true end
         end
-        -- Static supplier facts supply faction metadata absent from a web
-        -- quote. Current/native quotes for the same NPC retain precedence.
         for _,o in ipairs(acquisition.vendors or {})do
             local npc=tonumber(o.id or o.npcID)
             local quantity=tonumber(o.quantity or 1)
@@ -687,8 +646,6 @@ local function decision(recipe,info,status,route)
     return detail
 end
 
--- Admission follows actual learning/acquisition channels. Missing source audit
--- coverage never cancels a priced, stocked purchase; concrete restrictions do.
 function E.SelectLearningRoute(recipe,snapshot,state,remaining,purchaseSource,pricingContext)
     if type(recipe)~="table" then return false,"clientDataPending",{status="unknown"} end
     if E.RecipeNIP(spellOf(recipe),recipe) then return false,"catalogueFiltered",{status="blocked"} end
@@ -706,8 +663,6 @@ function E.SelectLearningRoute(recipe,snapshot,state,remaining,purchaseSource,pr
         local choice=snapshot and (snapshot.engineeringSpecialization
             or snapshot.specializationContext and snapshot.specializationContext.choice)
             or not snapshot and G and G.GetPlannedChoice and G.GetPlannedChoice()
-        -- Restrict each Engineering-only recipe to its actual or planned branch.
-        -- A missing/unknown specialization never enables either branch.
         if ability==20219 and choice~="gnomish" then return false end
         if ability==20222 and choice~="goblin" then return false end
         return conditionResult({kind="ability",value=ability},recipe,snapshot,state)~=false
@@ -746,8 +701,6 @@ function E.SelectLearningRoute(recipe,snapshot,state,remaining,purchaseSource,pr
     local function requirements(conditions,supplemental)
         local pass,pending,why,abilities,conflicts,sourceUnknown=check(conditions,recipe,input,state,supplemental)
         if not pass then return false,why,abilities,conflicts end
-        -- Unknown historical source fields do not invalidate a purchase, but a
-        -- concrete specialization prerequisite still needs affirmative evidence.
         for _,condition in ipairs(type(conditions)=="table" and conditions or {})do
             if condition.kind=="ability" and (not specializationAllowed(tonumber(condition.value))
                 or conditionResult(condition,recipe,input,state)~=true) then
@@ -795,8 +748,6 @@ function E.RouteRecipeEligibility(recipe,snapshot,state)
     return legacyRouteEligibility(recipe,snapshot,state)
 end
 function E.FormulaFor(recipe,context,remaining,purchaseSource)
-    -- Native fast routing passes pricing options, not an immutable capture.
-    -- Options keep live character reads while a real snapshot remains isolated.
     local snapshot=context and (context.snapshot or
         (context.known~=nil or context.recipes~=nil or context.byKey~=nil or context.prices~=nil
             or context.learningSourcesRequired~=nil) and context)
@@ -819,9 +770,6 @@ function E.FormulaFor(recipe,context,remaining,purchaseSource)
     if ok and detail.status=="learned" then return end
     if ok then return detail.quote end
     if detail and detail.quote then return detail.quote end
-    -- Learning eligibility and purchase evidence are independent. Retain
-    -- prices/stock for the reference UI even when learning is blocked, without
-    -- selecting or charging for that purchase. Frozen captures stay isolated.
     local quote
     local item=recipe.formula or recipe.formulaID
     for _,entry in ipairs(routesFor(recipe,infoFor(recipe,snapshot))) do
@@ -868,8 +816,6 @@ local function fact(value)
     return tostring(value)
 end
 function E.LearningObservationFingerprint()
-    -- Initialize once for callers that validate a recipe before opening a route.
-    -- Subsequent reads are revision-only; typed client tasks compare the values.
     if ns.IsForever and not contextState and E.UpdateLearningContext then
         E.UpdateLearningContext(UnitLevel and UnitLevel("player"),E.Professions())
     end
@@ -922,9 +868,6 @@ function E.RefreshLearningObservations(event,tick)
     return changed
 end
 
--- The capture caller names the profession and recipes before this hook runs.
--- Collect only referenced character facts and teaching items. Never expand a
--- directory-wide catalogue in response to a character event or recipe query.
 function E.CaptureLearningFacts(snapshot,tick)
     local ids,reputations,abilities,items={},{},{},{}
     local changed=false
@@ -990,9 +933,6 @@ function E.Capture(slug,opts,tick)
     return snapshot
 end
 
--- Keep caches from an earlier learning algorithm separate. This version does
--- includes the supplemental content hash; volatile acquisition times do not
--- invalidate route caches.
 local gates=ns.ProfGates
 if gates and gates.SpecFingerprint then
     local fingerprint=gates.SpecFingerprint

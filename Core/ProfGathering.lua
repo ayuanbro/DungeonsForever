@@ -1,5 +1,3 @@
--- Reference gathering navigation. Checkpoints contain no material receipts,
--- crafting counts or assumed harvests, and a final goal needs an observed cap.
 local _,ns=...
 if not ns.LoadForeverPages then return end
 local G={};ns.ProfGatheringRoutes=G
@@ -60,8 +58,6 @@ function G.Steps(slug,target,opts)
     end
     local data=ns.ProfGathering[slug]
     if slug=="skinning" then
-        -- Keep the same authored skill bands as the existing dev page. These
-        -- ranges guide travel; they do not promise a particular harvest/yield.
         for _,row in ipairs(data) do
             local range=skinBands[row[1] and row[1][1]]
             if range then add(range[1],range[2],row[3],row[2]) end

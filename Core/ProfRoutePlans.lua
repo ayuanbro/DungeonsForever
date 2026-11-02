@@ -1,21 +1,13 @@
--- Shared route lifecycle for the native, main-TOC profession implementation.
--- Calculations are replaceable candidates; an execution owns an immutable copy.
 local _, ns = ...
 if not ns.LoadForeverPages then return end
 local RA, E, S = ns.ProfRouteAuto, ns.ProfEconomy, ns.ProfRouteSolver
 if not (RA and E and S) then return end
 local quickCompute, clearPrices, baseOptions = RA.Compute, RA.Invalidate, RA.OptionsFor
 local jobs, results, active, listeners, progressListeners = {}, {}, {}, {}, {}
--- Master's one previous candidate per profession, kept only for this session.
 local planPrevMem = {}
 local serial, revision = 0, 0
 local legacyRun
 local MODEL = 1
--- The ordinary facade also publishes progress and source-gap diagnostics after
--- each search slice. Leave room for that work inside the idle-job frame budget.
--- DF_ROUTE_ADAPTIVE_SLICE_V15
--- Spend a small, bounded share of frame time on an open profession page.
--- Overloaded frames get shorter slices; fast refreshes keep a small cap.
 local function adaptiveSliceMs()
     local fps=type(GetFramerate)=="function" and GetFramerate() or 60
     if type(fps)~="number" or fps<=0 then fps=60 end
@@ -27,7 +19,6 @@ local function learningPolicy()
     return E.LearningPolicyFingerprint and E.LearningPolicyFingerprint() or "native-learning:7:native-route-eligibility"
 end
 local function learningStale(result)
-    -- Only freshness metadata changes; execution facts and receipts stay intact.
     result.stale=true;result.staleReason="learning-data";result.learningBlocked=true
     result.learningBlockReason="learningPolicyChanged";result.status="recalculate_required"
     result.learningComplete=false;result.completeCost=false;result.optimal=false
@@ -63,7 +54,6 @@ local function saved()
     if DungeonsForeverDB.prof~=nil and type(DungeonsForeverDB.prof)~="table" then return nil,"historyUnreadable" end
     DungeonsForeverDB.prof = DungeonsForeverDB.prof or {}
     local prof = DungeonsForeverDB.prof
-    -- Use a native cache subtree; do not reinterpret module-branch archives.
     if prof.routePlans~=nil and (type(prof.routePlans)~="table" or prof.routePlans.version~=MODEL) then return nil,"historyUnreadable" end
     prof.routePlans = prof.routePlans or {version=MODEL, characters={}}
     local all = prof.routePlans.characters
@@ -97,13 +87,11 @@ function RA.OptionsFor(slug, current)
     if slug=="first-aid" or slug=="poisons" then opts.scheme="fixed";opts.autoCraftTools=false end
     opts.exclusions = copy(E.GetPolicies and E.GetPolicies(slug) or {})
     if E.GetRoutePartner then opts.secondaryProfession = E.GetRoutePartner(slug) end
-    -- Only explicit continuation imports the current bag inventory.
     opts.executionInventory = nil
     return opts
 end
 local function options(slug, supplied)
     local opts = copy(supplied or RA.OptionsFor(slug))
-    -- Identity of a synthetic immutable input is kept out of serialized copies.
     if supplied and supplied.snapshot then opts.snapshot = supplied.snapshot end
     opts.scheme = opts.scheme or "cheapest"
     opts.profession = slug
@@ -126,8 +114,6 @@ local function options(slug, supplied)
     opts.partnerRequired = context and context.requiresPartner and not context.partnerValid or false
     if context and context.requiresPartner then opts.secondaryProfession = context.partner end
     if opts.scheme == "fishing" then opts.allowSecondaryLeveling=false; opts.secondaryProfession=nil end
-    -- Every purchasing strategy uses the same cumulative stock budget.
-    -- Pure fishing retains its separate, self-caught-material planner.
     if opts.scheme~="cheapest" and opts.scheme~="fishing" and opts.scheme~="stable" then
         opts.specializationRecipeScore=function(recipe,state,snapshot,incremental)
             local gain=E.Gain(recipe,(state.skill or {})[recipe.profession] or 1)
@@ -147,8 +133,6 @@ local function signature(slug, opts)
     local start = opts.fromCurrent == false and ("fixed:" .. opts.start) or "current"
     if opts.snapshot then start = tostring(opts.start) end
     local policy = E.PolicyFingerprint and E.PolicyFingerprint(opts.exclusions) or ""
-    -- Include the profession. Previously identical policies/targets for
-    -- two professions shared one persisted cache key and overwrote each other.
     local sig=table.concat({"profession:"..tostring(slug), opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
         tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas), tostring(opts.considerAuctionSupply), tostring(opts.allowSecondaryLeveling),
         tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
@@ -173,9 +157,6 @@ local function identity(slug, opts)
 end
 local function refreshFreshness(result,slug,opts)
     if result.learningPolicyFingerprint and result.learningPolicyFingerprint~=learningPolicy() then return learningStale(result) end
-    -- Old partial/failed candidates promoted search-wide coverage gaps to route
-    -- blockers. Retire only that diagnosis; completed routes and execution facts
-    -- remain usable until a separate input actually changes.
     local diagnosticPolicyChanged=result.planVersion==2 and result.scheme~="fishing"
         and result.targetReached~=true and result.failureDiagnosticVersion~=S.FailureDiagnosticVersion
     local settingsChanged=result.cacheSignature and result.cacheSignature~=signature(slug,opts) or false
@@ -193,8 +174,6 @@ local function refreshFreshness(result,slug,opts)
     local supplyChanged=(result.planVersion==2 and result.scheme~="fishing" and result.auctionSupplyRevision~=3)
         or E.AuctionSupplyChanged and E.AuctionSupplyChanged(result) or false
     local reason=result.staleReason
-    -- Cache refreshes and process-local auction revision counters are not input
-    -- changes. Explicit recipe/client changes still require a new calculation.
     local explicit=result.stale and (reason=="recipes" or reason=="client-inputs" or reason=="specialization" or reason=="learning-data"
         or reason=="prices" and not result.auctionPriceInputs)
     result.settingsChanged=settingsChanged or nil
@@ -212,16 +191,13 @@ local function gate(slug, opts, code)
 end
 
 local function replicatePrerequisite(slug,opts)
-    -- Synthetic input, fixed guides, and other client versions are unaffected.
     if not ns.IsForever or opts.snapshot then return nil end
     local bridge=ns.AuctionBridge
     if not (bridge and type(bridge.ReplicateScanReady)=="function") then return nil end
+    if not (bridge.Precise and bridge.Precise()) then return nil end
     local ready,reason=bridge.ReplicateScanReady()
     if ready==false then return gate(slug,opts,reason or "replicateScanRequired") end
 end
--- Based on master's SavePlanSkel: persist ordered four-tuples, never prices,
--- recipe tables or the expanded shopping/display result. Native execution also
--- needs profession/quest/conversion identity and segment allocation obligations.
 local skeletonStepFields={"profession","kind","reason","checkpoint","segmentID",
     "tool","toolItem","toolSpell","toolBop","fromProgress","toProgress",
     "goalID","questID","abilityID","sourceItem","targetItem"}
@@ -323,6 +299,7 @@ local function pump(job)
     if job.invalid or job.cancelled or job.finished then return true end
     if ns.IsForever and not job.opts.snapshot then
         local bridge=ns.AuctionBridge
+        if bridge and bridge.Precise and not bridge.Precise() then bridge=nil end
         if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady()==false then
             job.cancelled=true;job.status="stopped";job.searchTermination="replicate_scan_required"
             if job.published then
@@ -416,7 +393,6 @@ function RA.Get(slug, supplied)
     local frozen,reason
     if xp and xp.GetPlan then frozen,reason=xp.GetPlan(slug) end
     if reason=="historyUnreadable" then return gate(slug,opts,reason) end
-    -- Imported/tracked plans can also predate the old cache isolation fix.
     if frozen and frozen.slug and frozen.slug~=slug then frozen=nil end
     if frozen then
         if frozen.learningPolicyFingerprint~=learningPolicy() then return learningStale(frozen) end
@@ -457,9 +433,6 @@ function RA.Get(slug, supplied)
     end
     return start(slug,opts)
 end
--- Master's restore flow: resolve today's recipe data and quotes for the saved
--- choices. The solver's linear reconstruction shares the native procurement and
--- eligibility checks; it never enters route search or chooses replacement crafts.
 function RA.RebuildFromSkel(slug,skel,supplied)
     local request=options(slug,supplied)
     local restored=copy(skel.options)
@@ -525,7 +498,6 @@ function RA.SavePlanPrev(slug)
     if xp and not xp.CanRevertCandidate(slug) then planPrevMem[scope]=nil;return end
     local key=active[scope];local result=key and results[key]
     if type(result)~="table" or type(result.steps)~="table" or #result.steps==0 then return end
-    -- Native copies retain task/conversion identity and material allocations.
     local previous=copy(result)
     if previous.status=="searching" then
         previous.status="stopped";previous.searchTermination="user_stopped"
@@ -555,8 +527,6 @@ function RA.RevertPlan(slug,supplied)
 end
 function RA.Invalidate(reason)
     clearPrices()
-    -- Old callers also use this to clear lookup caches (opening a page,
-    -- applying unchanged policies, closing the auction house).
     if reason==nil then return end
     reason=type(reason)=="string" and reason or "inputs"
     for _,job in pairs(jobs) do job.stale=true;job.staleReason=reason end
@@ -564,7 +534,6 @@ function RA.Invalidate(reason)
     for _,entry in pairs(planPrevMem) do entry.result.stale=true;entry.result.staleReason=reason end
     local xp=ns.ProfExecution
     if xp and xp.GetHistory then
-        -- Only current runs need the live stale marker. Archived facts stay frozen.
         for _,slug in ipairs(E.PrimaryOrder or {"alchemy","blacksmithing","cooking","enchanting","engineering","first-aid","leatherworking","mining","tailoring"}) do
             local plan=xp.GetPlan(slug);if plan then plan.stale=true;plan.staleReason=reason end
         end
@@ -628,7 +597,6 @@ function RA.EndExecution(slug)
 end
 function RA.PlanSig(slug, opts) return signature(slug,options(slug,opts)) end
 RA.Start=RA.Get
--- Preserve the dev precision API while sharing the route facade's jobs.
 local run=ns.ProfSolverRun
 if run then
     run.Running=RA.HasWork
@@ -663,8 +631,6 @@ end
 local function initialize()
     local bridge=ns.AuctionBridge
     if bridge and bridge.OnChanged then bridge.OnChanged(function(_,reason)
-        -- Stock queries do not invalidate unrelated professions or pretend that
-        -- an unchanged observation changed the player's settings.
         if reason=="supply" then
             clearPrices()
             for _,job in pairs(jobs) do

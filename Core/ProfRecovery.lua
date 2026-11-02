@@ -1,9 +1,6 @@
--- Frozen sale estimates and a separate recursive cost ledger. Purchase quotes
--- remain in ProfEconomy; selling a future output never supplies buying money.
 local _,ns=...
 if not ns.LoadForeverPages then return end
 local R={REVISION=1};ns.ProfRecovery=R
--- Master's bulk-listing estimate and profitable-recipe preference limit.
 local RESID_MASS, PROFIT_CAP = 0.7, 20
 R.PROFIT_CAP = PROFIT_CAP
 local floor,min,max,ceil=math.floor,math.min,math.max,math.ceil
@@ -32,7 +29,6 @@ local function requestMissingItem(id)
     end
 end
 
--- Zero is a loaded, valid sell price. Nil remains retryable client data.
 function R.NPCSellPriceOf(id)
     for _,fn in ipairs({C_Item and C_Item.GetItemInfo or false,GetItemInfo or false}) do
         if type(fn)=="function" then
@@ -57,9 +53,6 @@ end
 function R.Fee(snapshot,opts)
     opts=opts or {}
     if percent(opts.recoveryFeePercent) then return opts.recoveryFeePercent,"manual",false end
-    -- The Forever C_AuctionHouse declarations expose deposits, but no cut
-    -- getter. Accept an explicit reliable client observation if one is supplied;
-    -- never mistake CalculateItemDeposit (which needs a real bag location) for it.
     local client=snapshot and snapshot.auctionFee
     if type(client)=="table" and client.reliable==true and percent(client.percent) then
         return client.percent,client.source or "client",false
@@ -73,8 +66,6 @@ local function livePrice(id)
     local ra=ns.ProfRouteAuto
     return ra and ra.AHPriceOf and ra.AHPriceOf(id)
 end
--- Retain the dev price-revaluation API while applying the same evidence
--- thresholds as freshly captured quotes.
 local function rerate(q,fee,residualMass)
     q.auctionNet=q.auctionGross and fee and floor(q.auctionGross*(residualMass and RESID_MASS or 1)*(100-fee)/100+1e-9) or nil
     q.assumedAllSold=nil;q.missing=nil;q.unsellable=q.bound and true or nil
@@ -108,8 +99,6 @@ local function quote(id,s,fee,stamp,live,residualMass)
         complete=supply and supply.complete,ownerExcluded=supply and supply.ownerExcluded,
         supplySource=supply and supply.source,supplyReliable=reliable,
         market=supply and supply.market,batch=supply and supply.batch}
-    -- Without N the spread cannot be established. Missing is not a zero-price
-    -- assumption even when a seemingly attractive auction quote is available.
     return rerate(q,fee,residualMass)
 end
 local identityFields={"npcUnit","auctionGross","auctionNet","bound","quantity","observedAt","complete","ownerExcluded","supplySource","supplyReliable","market","batch","source","unit","missing"}
@@ -131,8 +120,6 @@ function R.Options(opts)
 end
 function R.Capture(snapshot,opts,tick)
     opts=R.Options(opts);snapshot=snapshot or {}
-    -- A supplied route input is already immutable. In particular, a coroutine
-    -- must not pick up a new quote half way through its search.
     if snapshot.recovery and snapshot.recovery.revision==R.REVISION and snapshot.recovery.quotes then
         local old=snapshot.recovery
         if opts.recoveryEnabled~=nil and opts.recoveryEnabled~=old.enabled
@@ -209,9 +196,6 @@ end
 local changedMemo=setmetatable({},{__mode="k"})
 function R.Invalidate() changedMemo=setmetatable({},{__mode="k"}) end
 function R.Changed(result,opts)
-    -- HUD and page refreshes often read the same result in one frame. Bound the
-    -- live reads to once per second; price/item notifications clear this memo.
-    -- Injected snapshots remain deterministic and never use the live cache.
     if not result or opts and opts.snapshot or type(GetTime)~="function" then return changed(result,opts) end
     local stamp=GetTime();local bridge=ns.AuctionBridge
     local revision=bridge and bridge.SupplyRevision and bridge.SupplyRevision() or 0
@@ -235,12 +219,8 @@ local function trace(result,snapshot)
         for _,a in ipairs(result.actions) do
             if a.type=="buy" or a.type=="formula" then return result.actions end
         end
-        -- Fishing records crafts but its purchases live only in mats/formulas.
         if #(result.mats or {})==0 and #(result.formulas or {})==0 then return result.actions end
     end
-    -- Fixed guides, legacy scoring, and fishing do not have a solver action log.
-    -- Their already selected purchases and recipe snapshots are sufficient for
-    -- a read-only replay; this does not change their recipe choices.
     local out={}
     for _,m in ipairs(result.mats or {}) do
         local n=m.count or m[2] or m.need or 0
@@ -268,7 +248,6 @@ local function trace(result,snapshot)
         elseif r and not step.checkpoint then
             local n=step[4] or step.count or 0;local inputs={}
             for _,m in ipairs(r.mats or {}) do inputs[#inputs+1]={m[1],m[2]*n} end
-            -- Fish are gathered at zero purchase cost, never credited as sales.
             local id=r.item;local qty=(r.count or 1)*n
             out[#out+1]={id="derived:"..i,type="craft",profession=r.profession,spell=r.spell,count=n,
                 inputs=inputs,outputs=id and {{id,qty}} or {},item=id,outputCount=qty,derivedStep=step,derivedIndex=i,derivedLength=#rows}
@@ -284,9 +263,6 @@ local function addAccounting(target,a,tick)
     for _,key in ipairs(sumFields) do target[key]=(target[key] or 0)+(a[key] or 0) end
     for _,output in ipairs(a.recoveryOutputs or {}) do target.recoveryOutputs[#target.recoveryOutputs+1]=copy(output,tick) end
 end
--- Lots retain their original craft/cost ownership during replay. A displayed
--- step can combine many such crafts; summarize only equivalent frozen quotes.
--- This also accepts old saved steps without rewriting their accounting data.
 function R.GroupOutputs(outputs,tick)
     local grouped,index={},{}
     for _,output in ipairs(outputs or {}) do
@@ -348,10 +324,6 @@ function R.Apply(result,snapshot,tick)
         local cost,remaining=0,n
         local pool=pools[id] or {}
         local heads=poolHeads[id] or {1,1};poolHeads[id]=heads
-        -- Identical to the solver's state.produced rule: purchased stock first,
-        -- then route-made stock. Purchased pack leftovers cannot become revenue.
-        -- Exhausted lots never refill. Each provenance class advances its own
-        -- cursor, including across later puts, instead of rescanning old lots.
         for pass=1,2 do
             local index=heads[pass]
             while n>0 and index<=#pool do
@@ -363,8 +335,6 @@ function R.Apply(result,snapshot,tick)
                     lot.count=lot.count-used;lot.cost=lot.cost-part;n=n-used;cost=cost+part
                     if lot.origin then
                         if terminalDemand then
-                            -- Top-up demands are retained final products. They
-                            -- are neither sold nor an invisible downstream craft.
                             lot.origin.attributedCost=lot.origin.attributedCost+part
                             lot.origin.demandCost=lot.origin.demandCost+part
                             lot.origin.demandCount=lot.origin.demandCount+used
@@ -386,9 +356,6 @@ function R.Apply(result,snapshot,tick)
         elseif a.type=="convert" then
             local cost=0;for _,input in ipairs(a.inputs or {}) do cost=cost+take(input[1],input[2]) end
             local outputN=0;for _,output in ipairs(a.outputs or {}) do outputN=outputN+(output[2] or 0) end
-            -- A conversion transfers the paid cost into another denomination.
-            -- Its remainder is still purchased material, never a fresh sale
-            -- output (including when a crafted input was consumed here).
             if outputN>0 then for _,output in ipairs(a.outputs) do
                 put(output[1],output[2],cost*output[2]/outputN,nil,a.owner,a.usableOutput)
             end end
@@ -405,8 +372,6 @@ function R.Apply(result,snapshot,tick)
         end
         if tick then tick() end
     end
-    -- ProcureMany removes its synthetic demand craft from player actions. Replay
-    -- those already-satisfied obligations once so only natural surplus is sold.
     for id,n in pairs(result.consumedDemands or {}) do
         local cost,consumed=take(id,n,nil,true)
         result.demandAttribution[#result.demandAttribution+1]={id=id,count=consumed,cost=cost}
@@ -414,8 +379,6 @@ function R.Apply(result,snapshot,tick)
         if tick then tick() end
     end
     table.sort(result.demandAttribution,function(a,b)return a.id<b.id end)
-    -- Permanent tools remain with the player. A lower tool used as a reagent
-    -- has already left these pools and cannot be retained or sold twice.
     result.retainedTools={}
     local demandNonCraftCost=result.demandNonCraftCost
     for id,n in pairs(snapshot.retainedToolItems or result.retainedToolItems or {}) do
@@ -440,8 +403,6 @@ function R.Apply(result,snapshot,tick)
             if q.missing then missing[id]=true end
         else
             result.purchaseRemainders[#result.purchaseRemainders+1]={id=id,count=lot.count,cost=lot.cost,owner=lot.owner}
-            -- A pack remainder is still part of spending and belongs to its
-            -- consumer's line, but is never a crafted sale output.
             local owner=lot.ownerAccount or lot.owner and byRecipe[lot.owner] and byRecipe[lot.owner][1]
             if owner then owner.attributedCost=owner.attributedCost+lot.cost end
         end
@@ -471,8 +432,6 @@ function R.Apply(result,snapshot,tick)
             local r=recipeFor(step,snapshot)
             local k=step.kind=="specialization_quest" and ("quest:"..tostring(step.goalID)) or (r and (r.key or (tostring(r.profession)..":"..tostring(r.spell))) or key({profession=step.profession,spell=step[3]}))
             for _,a in ipairs(byRecipe[k] or {}) do addAccounting(total,a,tick) end
-            -- Unsegmented legacy lists can repeat the same recipe. Their row
-            -- count apportions its total without assigning the whole batch twice.
             local all=recipeCounts[k] or 0
             local count=step[4] or 0
             if all>0 and count>0 and count<all then
@@ -493,8 +452,6 @@ function R.Apply(result,snapshot,tick)
     for _,step in ipairs(result.steps or {}) do allocated=allocated+fill(step);if tick then tick() end end
     local executionAllocated=0
     for _,step in ipairs(result.executionSteps or {}) do executionAllocated=executionAllocated+fill(step);if tick then tick() end end
-    -- Decimal splits are retained until the route boundary. Attribute the last
-    -- copper residual (including legacy cost-only lines) once, never per edge.
     local delta=result.purchaseTotal-result.demandNonCraftCost-allocated
     result.recoveryUnallocatedCost=delta
     local last=result.steps and result.steps[#result.steps]
@@ -517,8 +474,6 @@ function R.Apply(result,snapshot,tick)
         end
     end
     roundAttribution(result.steps)
-    -- Some old adapters share rows between the lists. Preserve exact values
-    -- across the second independent rounding pass as well.
     for _,step in ipairs(result.executionSteps or {}) do
         if step.attributedCostExact~=nil then step.attributedCost=step.attributedCostExact end
     end

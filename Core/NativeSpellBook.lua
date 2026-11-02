@@ -16,8 +16,9 @@ local GROUP_ORDER = {
     { key = "available", name = "可学" },
     { key = "next",      name = "即将学" },
     { key = "notlevel",  name = "等级不够" },
-    { key = "known",     name = "已学" },
+    { key = "quest",     name = "任务获得" },
     { key = "talent",    name = "天赋获得" },
+    { key = "known",     name = "已学" },
 }
 
 local WGROUP_ORDER = {
@@ -63,6 +64,91 @@ end
 local function ReleaseTip()
     if GameTooltip then GameTooltip:Hide() end
     if ns.hui then ns.hui.nativeTipOwner = nil end
+end
+
+local cmpTip, cmpOwner
+
+local function HideCompare()
+    if cmpTip then cmpTip:Hide() end
+    cmpOwner = nil
+end
+
+local function ShowCompare(owner, id)
+    if not (owner and id) then
+        HideCompare()
+        return
+    end
+    if not cmpTip then
+        cmpTip = CreateFrame("GameTooltip", "DungeonsForeverSpellCompareTip", UIParent, "GameTooltipTemplate")
+        cmpTip:SetClampedToScreen(true)
+    end
+    cmpTip:SetOwner(owner, "ANCHOR_NONE")
+    cmpTip:ClearLines()
+    local ok = pcall(cmpTip.SetSpellByID, cmpTip, id)
+    if not ok then
+        cmpTip:Hide()
+        return
+    end
+    cmpTip:AddLine(ns.L["已学等级"], 0.5, 0.5, 0.5)
+    cmpTip:Show()
+    cmpTip:ClearAllPoints()
+    local main = GameTooltip
+    local screen = (GetScreenWidth and GetScreenWidth()) or 1024
+    if main and main:GetRight() and (main:GetRight() + cmpTip:GetWidth()) <= screen then
+        cmpTip:SetPoint("TOPLEFT", main, "TOPRIGHT", 0, 0)
+    elseif main then
+        cmpTip:SetPoint("TOPRIGHT", main, "TOPLEFT", 0, 0)
+    end
+    cmpOwner = owner
+end
+
+local cmpWatch = CreateFrame("Frame")
+cmpWatch:SetScript("OnEvent", function()
+    if not cmpOwner then
+        cmpWatch:UnregisterAllEvents()
+        return
+    end
+    local d = cmpOwner.__d
+    if not (d and d.knownId and GameTooltip and GameTooltip:IsShown()) then
+        HideCompare()
+        cmpWatch:UnregisterAllEvents()
+        return
+    end
+    if IsAltKeyDown() then
+        ShowCompare(cmpOwner, d.knownId)
+    else
+        HideCompare()
+    end
+end)
+
+local function TrackCompare(owner, id)
+    if not id then
+        HideCompare()
+        return
+    end
+    if IsAltKeyDown() then
+        ShowCompare(owner, id)
+        cmpWatch:RegisterEvent("MODIFIER_STATE_CHANGED")
+    else
+        HideCompare()
+    end
+end
+
+local function OpenClassQuest(key)
+    local CQ = ns.ClassQuestUI
+    if not (CQ and CQ.Focus and key) then return false end
+    local db = ns.DB and ns.DB()
+    if db then
+        db.tier = db.tier or {}
+        db.tier.mode = "cq"
+        db.tier.nav = "spec"
+        db.tier.cls = select(2, UnitClass("player"))
+        db.tier.spec = nil
+    end
+    if ns.Open then pcall(ns.Open) end
+    if ns.OpenPage then pcall(ns.OpenPage, "Tier") end
+    pcall(CQ.Focus, key)
+    return true
 end
 
 local function SpellLink(id)
@@ -123,14 +209,28 @@ local function ItemEnter(btn)
         GT:AddLine(format("%s %s %.1f, %.1f", d.sub or "", tr.zoneName or "", tr.x or 0, tr.y or 0), 0.9, 0.9, 0.9)
         GT:AddLine(ns.L["点击：在地图上标记该训练师"], 1, 0.82, 0, true)
     end
+    if d.quest then
+        local q = d.quest
+        if q.name then
+            GT:AddLine(format("%s %s", ns.L["任务"], q.name), 1, 0.82, 0)
+        end
+        if q.npc and q.zone then
+            GT:AddLine(format("%s %s %.1f, %.1f", q.npc, q.zone, q.x or 0, q.y or 0), 0.9, 0.9, 0.9)
+        end
+        GT:AddLine(ns.L["左键：打开职业任务页"], 1, 0.82, 0, true)
+        GT:AddLine(ns.L["右键：在地图上标记"], 1, 0.82, 0, true)
+    end
     if ns.hui and ns.hui.ShowNativeTip then ns.hui.ShowNativeTip(GT) end
     GT:Show()
+    TrackCompare(frame, d.knownId)
     if frame.Button and frame.Button.IconHighlight and not EUIOn() then
         frame.Button.IconHighlight:SetAlpha(1)
     end
 end
 
 local function ItemLeave(btn)
+    HideCompare()
+    cmpWatch:UnregisterAllEvents()
     ReleaseTip()
     local frame = ItemOf(btn)
     if frame and frame.Button and frame.Button.IconHighlight and not EUIOn() then
@@ -138,10 +238,18 @@ local function ItemLeave(btn)
     end
 end
 
-local function ItemClick(btn)
+local function ItemClick(btn, button)
     local frame = ItemOf(btn)
     local d = frame and frame.__d
     if not d then return end
+    if d.quest then
+        if button == "RightButton" then
+            if ns.WeaponMasters then ns.WeaponMasters.MarkNPC(d.quest) end
+        else
+            OpenClassQuest(d.quest.key)
+        end
+        return
+    end
     if d.trainer then
         if ns.WeaponMasters then ns.WeaponMasters.MarkNPC(d.trainer) end
         return
@@ -232,7 +340,7 @@ local function ItemInit(frame, d)
     if not ov then
         ov = CreateFrame("Button", nil, frame)
         ov:SetAllPoints(frame)
-        ov:RegisterForClicks("LeftButtonUp")
+        ov:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         ov:SetScript("OnEnter", ItemEnter)
         ov:SetScript("OnLeave", ItemLeave)
         ov:SetScript("OnClick", ItemClick)
@@ -373,10 +481,17 @@ local function LevelText(lv)
     return format(ns.L["人物 %d 级"], lv)
 end
 
+local function QuestWhere(q)
+    if q.zone and q.x then
+        return format("%s %.1f, %.1f", q.zone, q.x, q.y or 0)
+    end
+    return LevelText(q.lv)
+end
+
 local function BuildSpellGroups()
     local st = ns.SpellTraining
     if not (st and st.Rows) then return nil end
-    local rows = st.Rows()
+    local rows, plv = st.Rows()
     if not rows then return nil end
     local groups = {}
     for _, gd in ipairs(GROUP_ORDER) do
@@ -384,15 +499,24 @@ local function BuildSpellGroups()
         if #g > 0 then
             local elements = {}
             for _, row in ipairs(g) do
-                elements[#elements + 1] = {
+                local el = {
                     templateKey = TPL_SPELL,
                     name = row.name,
                     icon = row.icon,
-                    sub = (row.rank and format(ns.L["等级 %d"], row.rank)) or ((row.tab and row.tab ~= row.name) and row.tab) or "",
-                    req = gd.known and ns.L["已学"] or LevelText(row.learn),
                     spellID = row.id,
-                    dim = (gd.key == "notlevel"),
+                    knownId = row.knownId,
                 }
+                if row.quest then
+                    el.quest = row.quest
+                    el.sub = row.quest.name or ""
+                    el.req = QuestWhere(row.quest)
+                    el.dim = (gd.key == "notlevel") or ((row.quest.lv or 0) > plv)
+                else
+                    el.sub = (row.rank and format(ns.L["等级 %d"], row.rank)) or ((row.tab and row.tab ~= row.name) and row.tab) or ""
+                    el.req = gd.known and ns.L["已学"] or LevelText(row.learn)
+                    el.dim = (gd.key == "notlevel")
+                end
+                elements[#elements + 1] = el
             end
             groups[#groups + 1] = {
                 header = { templateKey = TPL_HEADER, text = ns.L[gd.name] },
@@ -415,14 +539,12 @@ local function BuildWeaponGroups()
             local elements = {}
             for _, row in ipairs(g) do
                 local trainers = row.trainers or {}
-                local status = gd.known and ns.L["已学"] or LevelText(row.level)
-                local sub = (status ~= "" and row.name) and format("%s · %s", row.name, status) or row.name
                 if #trainers == 0 then
                     elements[#elements + 1] = {
                         templateKey = TPL_SPELL,
                         name = row.name,
                         icon = row.icon,
-                        sub = sub,
+                        sub = "",
                         req = ns.L["未收录该训练师的地图位置"],
                         spellID = row.id,
                         dim = true,
@@ -431,9 +553,9 @@ local function BuildWeaponGroups()
                     for _, tr in ipairs(trainers) do
                         elements[#elements + 1] = {
                             templateKey = TPL_SPELL,
-                            name = tr.name,
+                            name = row.name,
                             icon = row.icon,
-                            sub = sub,
+                            sub = tr.name or "",
                             req = format("%s %.1f, %.1f", tr.zoneName or "", tr.x or 0, tr.y or 0),
                             spellID = row.id,
                             trainer = tr,
@@ -504,7 +626,7 @@ end
 
 local ShowPage
 
-local tabLineLook
+local tabLineH
 
 local function TabLine(tb)
     if not tb then return nil end
@@ -517,18 +639,31 @@ local function TabLine(tb)
     end
 end
 
-local function LineLook()
-    if tabLineLook then return tabLineLook end
+local function LineHeight()
+    if tabLineH then return tabLineH end
     local sys = book and book.CategoryTabSystem
     for _, t in ipairs((sys and sys.tabs) or {}) do
         local u = TabLine(t)
         if u then
-            local r, g, b = u:GetVertexColor()
-            tabLineLook = { h = u:GetHeight() or 1, r = r or 1, g = g or 1, b = b or 1 }
-            return tabLineLook
+            tabLineH = u:GetHeight() or 1
+            return tabLineH
         end
     end
-    return nil
+    return 1
+end
+
+local function LineRGB()
+    local db = EllesmereUIDB and EllesmereUIDB.blizzWinAccentBar
+    if db then
+        if db.enabled == false then return nil end
+        if db.useCustom and db.color then
+            local c = db.color
+            return c.r or 1, c.g or 1, c.b or 1
+        end
+    end
+    local g = EllesmereUI and EllesmereUI.ELLESMERE_GREEN
+    if g then return g.r or 1, g.g or 1, g.b or 1 end
+    return 1, 1, 1
 end
 
 local function TabLineShow(tb, on)
@@ -536,15 +671,19 @@ local function TabLineShow(tb, on)
     local line = tb.__dfLine
     if not line then
         if not EUIOn() then return end
-        local look = LineLook()
-        if not look then return end
+        if not LineRGB() then return end
         line = tb:CreateTexture(nil, "OVERLAY", nil, 6)
         line:SetPoint("BOTTOMLEFT", tb, "BOTTOMLEFT", 0, 0)
         line:SetPoint("BOTTOMRIGHT", tb, "BOTTOMRIGHT", 0, 0)
-        line:SetHeight(look.h)
-        line:SetColorTexture(look.r, look.g, look.b, 1)
+        line:SetHeight(LineHeight())
         tb.__dfLine = line
     end
+    local r, g, b = LineRGB()
+    if not r then
+        line:Hide()
+        return
+    end
+    line:SetColorTexture(r, g, b, 1)
     if on and EUIOn() then line:Show() else line:Hide() end
 end
 
@@ -560,7 +699,6 @@ end
 
 local function PaintTabs()
     if not book then return end
-    LineLook()
     local shown = activePage ~= nil
     StyleOurTab(tabButton, shown and activePage == "spell")
     StyleOurTab(weaponTabButton, shown and activePage == "weapon")

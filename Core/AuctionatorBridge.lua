@@ -118,7 +118,6 @@ function AB.DoImport(profName, items)
     Say(L["未检测到 Auctionator，请在 Auctionator → 购物清单 → 导入 中粘贴"])
 end
 
--- A quantity is a short-lived observation, never Auctionator's daily maximum.
 local SUPPLY_MAX_AGE  = ns.ProfRouteAuto.MaxStaleSeconds()
 
 local supplyRevision = 0
@@ -151,13 +150,26 @@ local function ReplicateGateDB()
     end
 end
 
--- A complete market snapshot also proves zero for IDs absent from its rows.
--- Store one compact batch rather than duplicating its metadata on every item.
+local recipeItemSet
+local BATCH_TTL = 24 * 3600
+local function FreshBatch()
+    local db = ProfDB()
+    local batch = db and db.auctionFullScan
+    if type(batch) ~= "table" then return nil end
+    local t = tonumber(batch.t)
+    if not t or t <= 0 then return nil end
+    local now = (time and time()) or 0
+    if now > 0 and (now - t) > BATCH_TTL then
+        db.auctionFullScan = nil
+        return nil
+    end
+    return batch
+end
+
 local function SupplyRecord(id)
     local db=ProfDB()
-    local batch=db and db.auctionFullScan
+    local batch=FreshBatch()
     if type(batch)~="table" or batch.v~=1 or type(batch.items)~="table" then return nil end
-    -- Never interpret stock from a scan invalidated by a mode switch.
     if AB.ReplicateScanReady and AB.ReplicateScanReady()==false then
         return {mk=batch.mk,ob=batch.ob,failure="unverified"}
     end
@@ -212,6 +224,30 @@ end
 
 function AB.SupplyFresh(id)
     return AB.GetAuctionSupply(id)
+end
+
+local function RecipeItems()
+    if recipeItemSet then return recipeItemSet end
+    recipeItemSet = {}
+    local all = ns.ProfRecipes
+    for _, def in pairs(all or {}) do
+        for _, rec in ipairs(def.rows or {}) do
+            if type(rec[2]) == "number" then recipeItemSet[rec[2]] = true end
+            for _, m in ipairs(type(rec[12]) == "table" and rec[12] or {}) do
+                if type(m[1]) == "number" then recipeItemSet[m[1]] = true end
+            end
+        end
+        for _, e in ipairs(def.enchants or {}) do
+            if type(e[16]) == "number" then recipeItemSet[e[16]] = true end
+        end
+    end
+    return recipeItemSet
+end
+
+function AB.Precise()
+    local PD=ns.ProfModule
+    if not (PD and PD.Setting) then return false end
+    return PD.Setting("preciseRecovery")==true
 end
 
 function AB.SupplyEstimate(id)
@@ -292,9 +328,6 @@ function AB.GetAuctionPriceObservedAt(id)
     return nil
 end
 
--- Auctionator 341 emits the raw get-all / replicate rows at ScanComplete.
--- Its saved Database.a field is a daily maximum, not the latest quantity.
--- Observe the scan that Auctionator already performs; never send a query here.
 local fullBus,fullListener,fullEvents,fullRead,fullTimer
 local fullGeneration=0
 local fullState={status="unavailable"}
@@ -335,14 +368,12 @@ local function FullRow(scan,row)
     local buyout=info[classic and 10 or 9]
     if not WholeNumber(qty) or type(buyout)~="number" or buyout~=buyout
         or buyout<0 or buyout==math.huge or info[18]==false then item.failure="incomplete";return end
-    -- Bid-only and sold rows contribute no immediately purchasable stock.
     if qty==0 or buyout==0 then return end
     local owner=info[classic and 15 or 12]
     if classic and (type(owner)~="string" or owner=="") then owner=info[14] end
     if type(owner)~="string" or owner=="" then item.failure="incomplete";return end
     local player=UnitName and UnitName("player")
     if owner==player or owner:match("^[^-]+") == player then return end
-    -- 按数量加权计算平均单价
     local oldQty = item.q
     local newQty = oldQty + qty
 
@@ -369,7 +400,6 @@ local function ImportFullRows(scan,rows)
         if scan.mk~=MarketKey() or scan.ob~=ObserverKey() then
             fullState={status="unverified"};fullRead=nil;return
         end
-        -- Missing raw rows are unknown. Never infer an empty market from them.
         local last=math.min(scan.index+249,scan.expected)
         for index=scan.index,last do FullRow(scan,rows[index]) end
         scan.index=last+1;fullState.done=last
@@ -384,8 +414,13 @@ local function ImportFullRows(scan,rows)
             fullState={status="unverified"};fullRead=nil;return
         end
         local db=ProfDB()
-        if db then
-            db.auctionFullScan={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
+        if db and AB.Precise() then
+            local keep = RecipeItems()
+            local slim = {}
+            for id, rec in pairs(scan.items) do
+                if keep[id] then slim[id] = rec end
+            end
+            db.auctionFullScan={items=slim,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
                 c=scan.complete,v=1,rg=scan.modeGeneration,rs=scan.scanSerial}
             fullState.status=scan.complete and "complete" or "incomplete"
             fullState.observedAt=scan.observedAt
@@ -415,7 +450,6 @@ function AB.ConnectAuctionatorStock()
             if enabled==false or not mode then
                 fullState={status="unverified"};return
             end
-            -- Each new attempt supersedes older complete scans, even on failure.
             mode.scanSerial=mode.scanSerial+1
             fullRead={startedAt=time and time() or 0,mk=MarketKey(),ob=ObserverKey(),
                 modern=ev.ScanStart=="replicate_scan_start",
@@ -426,8 +460,6 @@ function AB.ConnectAuctionatorStock()
         elseif event==ev.ScanFailed then
             StopFullImport();fullState={status="failed"}
         elseif event==ev.ScanComplete and fullRead and fullState.status=="scanning" then
-            -- Capture only this scan's raw payload, never the historical DB or
-            -- the current query list (another search may already have started).
             ImportFullRows(fullRead,data)
         end
     end
@@ -481,7 +513,6 @@ end
 function AB.ReplicateScanReady()
     local enabled = AB.ReplicateScanEnabled()
 
-    -- 无法判断设置：仅警告，不新增强制拦截
     if enabled == nil then
         return nil, "replicateModeUnknown"
     end
@@ -498,10 +529,9 @@ function AB.ReplicateScanReady()
         return false, "replicateModeDisabled"
     end
 
-    local batch = db and db.auctionFullScan
+    local batch = FreshBatch()
     local now = time and time()
 
-    -- 必须存在本角色、本服务器的有效复制扫描结果
     if type(batch) ~= "table"
         or batch.v ~= 1
         or batch.c ~= true
@@ -515,7 +545,6 @@ function AB.ReplicateScanReady()
         return false, "replicateScanRequired"
     end
 
-    -- 摘要扫描不能替代复制扫描
     local a = _G.Auctionator
     local saved = a and a.SavedState
     local lastSummary = saved
@@ -535,7 +564,6 @@ end
 
 local hookedModeConfig
 
--- Persistent generation, not wall-clock time, prevents same-second off/on reuse.
 function AB.ObserveReplicateMode()
     local enabled=AB.ReplicateScanEnabled()
     if enabled==nil then return nil,nil end
@@ -559,13 +587,12 @@ function AB.ObserveReplicateMode()
 end
 
 function AB.ReplicateScanReady()
-    -- Only Forever's live profession optimizer requires this scanner.
     if not ns.IsForever then return true end
     local enabled,state=AB.ObserveReplicateMode()
     if enabled==nil then return nil,"replicateModeUnknown" end
     if not enabled then return false,"replicateModeDisabled" end
     local db=ReplicateGateDB()
-    local batch=db and db.auctionFullScan
+    local batch=FreshBatch()
     local now=time and time() or 0
     if not state or type(batch)~="table" or batch.v~=1 or batch.c~=true
         or type(batch.items)~="table" or batch.mk~=MarketKey()
@@ -582,8 +609,6 @@ function AB.ReplicateScanReady()
     return true
 end
 
--- Observe Auctionator's real UI setting changes without replacing Config.Set.
--- Reading the setting still detects changes missed while this addon was offline.
 function AB.HookReplicateModeSetting()
     local a=_G.Auctionator
     local cfg=type(a)=="table" and a.Config

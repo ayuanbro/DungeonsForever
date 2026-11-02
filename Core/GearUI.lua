@@ -733,7 +733,6 @@ local function EstRowH(e)
     return ROW_H
 end
 
-
 local function ChunkByHeight(entries, budget)
     local pages, cur, used = {}, {}, 0
     for _, e in ipairs(entries) do

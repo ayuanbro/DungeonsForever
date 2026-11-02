@@ -91,8 +91,6 @@ end
 
 local FORMULA_STEP = 8
 
--- Only static access metadata is joined by NPC. Payment IDs in the old tuple
--- are untyped; never copy them over the typed currencies/costItems payload.
 local formulaFacts = setmetatable({}, {__mode="k"})
 function M.FormulaFacts(itemID)
     local flat=ns.EnsureProfFormulaOffers and ns.EnsureProfFormulaOffers()[itemID]
@@ -106,7 +104,6 @@ function M.FormulaFacts(itemID)
             local previous=cached[npc]
             if not previous then cached[npc]={faction=side,available=flat[i+2]~=0,purchasable=true}
             else
-                -- Conflicting references cannot establish a faction limit.
                 if previous.faction~=side then previous.faction=nil end
                 previous.available=previous.available or flat[i+2]~=0
             end
@@ -154,7 +151,6 @@ local function BuildFormulaList(itemID, withCurrency)
             elseif Int(cost, 0) and Int(pack, 1) then
                 entry.price = cost
             else
-                -- A missing collected price or pack size is an unknown quote.
                 entry.priceVerified = false
             end
             if entry then
