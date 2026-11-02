@@ -194,6 +194,7 @@ local function replicatePrerequisite(slug,opts)
     if not ns.IsForever or opts.snapshot then return nil end
     local bridge=ns.AuctionBridge
     if not (bridge and type(bridge.ReplicateScanReady)=="function") then return nil end
+    if not (bridge.Precise and bridge.Precise()) then return nil end
     local ready,reason=bridge.ReplicateScanReady()
     if ready==false then return gate(slug,opts,reason or "replicateScanRequired") end
 end
@@ -298,6 +299,7 @@ local function pump(job)
     if job.invalid or job.cancelled or job.finished then return true end
     if ns.IsForever and not job.opts.snapshot then
         local bridge=ns.AuctionBridge
+        if bridge and bridge.Precise and not bridge.Precise() then bridge=nil end
         if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady()==false then
             job.cancelled=true;job.status="stopped";job.searchTermination="replicate_scan_required"
             if job.published then

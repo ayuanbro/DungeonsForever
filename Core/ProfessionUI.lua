@@ -106,6 +106,8 @@ end
 
 function PD.ReplicateScanWarning()
     if not ns.IsForever then return nil end
+    local AB = ns.AuctionBridge
+    if not (AB and AB.Precise and AB.Precise()) then return nil end
     local st=PD.AuctionatorState()
     if st=="missing" or st=="disabled" or st=="loading" then return nil end
     local bridge=ns.AuctionBridge
@@ -245,6 +247,7 @@ PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.autoResidualMass = false
 PD.SETTING_DEF.autoReserveMode = "ample"
 PD.SETTING_DEF.recoveryEnabled = false
+PD.SETTING_DEF.preciseRecovery = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
 PD.RECOVERY_FEES = { 0, 5, 10, 15, 20 }
@@ -2473,6 +2476,9 @@ function PD.BindRow(r, spec, h)
     end
     if r.__pct then r.__pct:Hide() end
     if r.__costWhy then r.__costWhy:Hide() end
+    if r.blk then
+        for _, b in ipairs(r.blk) do if b.tag then b.tag:Hide() end end
+    end
     if showIcon then
         r.icon:SetSize(iconSize, iconSize)
         r.icon:ClearAllPoints()
@@ -10927,6 +10933,9 @@ function PD.PlanStatusParts(plan)
                     or L["已保存路线无法读取，请重新计算。"]
             end
             local scanText=PD.ReplicateScanMessage(diagnostic.code)
+            if scanText and ns.AuctionBridge and ns.AuctionBridge.Precise and not ns.AuctionBridge.Precise() then
+                scanText=nil
+            end
             if scanText then return scanText end
             if diagnostic.code=="learningPolicyChanged" and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
                 return ns.ProfEconomy.DiagnosticText(diagnostic)

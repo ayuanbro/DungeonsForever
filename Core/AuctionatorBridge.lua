@@ -150,9 +150,25 @@ local function ReplicateGateDB()
     end
 end
 
+local recipeItemSet
+local BATCH_TTL = 24 * 3600
+local function FreshBatch()
+    local db = ProfDB()
+    local batch = db and db.auctionFullScan
+    if type(batch) ~= "table" then return nil end
+    local t = tonumber(batch.t)
+    if not t or t <= 0 then return nil end
+    local now = (time and time()) or 0
+    if now > 0 and (now - t) > BATCH_TTL then
+        db.auctionFullScan = nil
+        return nil
+    end
+    return batch
+end
+
 local function SupplyRecord(id)
     local db=ProfDB()
-    local batch=db and db.auctionFullScan
+    local batch=FreshBatch()
     if type(batch)~="table" or batch.v~=1 or type(batch.items)~="table" then return nil end
     if AB.ReplicateScanReady and AB.ReplicateScanReady()==false then
         return {mk=batch.mk,ob=batch.ob,failure="unverified"}
@@ -208,6 +224,30 @@ end
 
 function AB.SupplyFresh(id)
     return AB.GetAuctionSupply(id)
+end
+
+local function RecipeItems()
+    if recipeItemSet then return recipeItemSet end
+    recipeItemSet = {}
+    local all = ns.ProfRecipes
+    for _, def in pairs(all or {}) do
+        for _, rec in ipairs(def.rows or {}) do
+            if type(rec[2]) == "number" then recipeItemSet[rec[2]] = true end
+            for _, m in ipairs(type(rec[12]) == "table" and rec[12] or {}) do
+                if type(m[1]) == "number" then recipeItemSet[m[1]] = true end
+            end
+        end
+        for _, e in ipairs(def.enchants or {}) do
+            if type(e[16]) == "number" then recipeItemSet[e[16]] = true end
+        end
+    end
+    return recipeItemSet
+end
+
+function AB.Precise()
+    local PD=ns.ProfModule
+    if not (PD and PD.Setting) then return false end
+    return PD.Setting("preciseRecovery")==true
 end
 
 function AB.SupplyEstimate(id)
@@ -374,8 +414,13 @@ local function ImportFullRows(scan,rows)
             fullState={status="unverified"};fullRead=nil;return
         end
         local db=ProfDB()
-        if db then
-            db.auctionFullScan={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
+        if db and AB.Precise() then
+            local keep = RecipeItems()
+            local slim = {}
+            for id, rec in pairs(scan.items) do
+                if keep[id] then slim[id] = rec end
+            end
+            db.auctionFullScan={items=slim,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
                 c=scan.complete,v=1,rg=scan.modeGeneration,rs=scan.scanSerial}
             fullState.status=scan.complete and "complete" or "incomplete"
             fullState.observedAt=scan.observedAt
@@ -484,7 +529,7 @@ function AB.ReplicateScanReady()
         return false, "replicateModeDisabled"
     end
 
-    local batch = db and db.auctionFullScan
+    local batch = FreshBatch()
     local now = time and time()
 
     if type(batch) ~= "table"
@@ -547,7 +592,7 @@ function AB.ReplicateScanReady()
     if enabled==nil then return nil,"replicateModeUnknown" end
     if not enabled then return false,"replicateModeDisabled" end
     local db=ReplicateGateDB()
-    local batch=db and db.auctionFullScan
+    local batch=FreshBatch()
     local now=time and time() or 0
     if not state or type(batch)~="table" or batch.v~=1 or batch.c~=true
         or type(batch.items)~="table" or batch.mk~=MarketKey()
