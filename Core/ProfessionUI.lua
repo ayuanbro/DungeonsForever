@@ -145,8 +145,9 @@ end
 
 function PD.SnapshotBadgeState(s)
     s = s or {}
+    if not next(s) then return "no_plan" end
     if s.referenceOnly then return "recipe_reference" end
-    if s.diagnosticPolicyChanged then return "rules_changed" end
+    if s.diagnosticPolicyChanged or s.status=="recalculate_required" then return "rules_changed" end
     if PD.PlanLearningBlocked(s) then return "learning_unknown" end
     if s.scheme == "optim" and s.planVersion~=2 then return "optim" end
     if s.auctionSupplyShortages and #s.auctionSupplyShortages>0 then return "stock_short" end
@@ -175,11 +176,13 @@ function PD.SnapshotBadgeState(s)
         if sec then return "frame", sec end
         return "ageunknown"
     end
-    return "noprice"
+    -- The shared price source is available; this route has not been priced.
+    return "incomplete"
 end
 
 function PD.SnapshotBadgeText(s)
     local st, sec = PD.SnapshotBadgeState(s)
+    if st == "no_plan" then return nil end
     if st=="recipe_reference" then return L["配方资料待补全"],0.95,0.75,0.4 end
     if st == "learning_reference" then return L["含未知学习来源"], 0.95, 0.75, 0.4 end
     if st == "rules_changed" then return L["路线待重算"], 0.95, 0.75, 0.4 end
@@ -6178,7 +6181,7 @@ function PD.PaintLvTiles()
     if s.budgetLimited then details[#details + 1] = { L["已完成本轮计算，当前结果尚未证明最优。"], 0.95, 0.75, 0.4 } end
     if s.quotesRefreshed then details[#details + 1] = { L["数量或费率已更新，本轮数字已按最新价格重算。"], 0.7, 0.7, 0.7 } end
     for _, ln in ipairs(details) do costLines[#costLines + 1] = ln end
-    if PD.autoPage == "log" then
+    if PD.autoPage == "log" and s.status ~= "recalculate_required" then
         local cost, madeCasts, wantCasts = PD.CraftLogCost(PD.cur)
         tiles.cost.label:SetText(L["当前总花费"])
         tiles.cost.val:SetText(cost ~= nil and PD.RecoveryMoney(cost) or L["未知"])
@@ -6189,7 +6192,7 @@ function PD.PaintLvTiles()
         }
         if cost == nil then costLines[#costLines + 1] = { L["部分已制作步骤成本未知"], 0.95, 0.75, 0.4 } end
         PD.SetBadge(L["按方案单价估算"], 0.7, 0.7, 0.7)
-    elseif PD.autoPage == "recovery" then
+    elseif PD.autoPage == "recovery" and s.status ~= "recalculate_required" then
         local rec = tonumber(s.recoveryTotal) or 0
         tiles.cost.label:SetText(L["预计总回血"])
         tiles.cost.val:SetText(PD.RecoveryMoney(rec))
@@ -12639,15 +12642,22 @@ end
 
 function PD.RowsLeveling(rows)
     PD.warnNotes = nil
+    local activeRun, activePlan = TrackRunOf(PD.cur)
+    local unreadable = activeRun and not activePlan
+    if unreadable then
+        -- Keep the failure in the summary used by the cost tile as well as
+        -- the body. An empty summary is not evidence of missing prices.
+        PD.lvSummary = {slug=PD.cur,planVersion=2,status="recalculate_required",feasible=false,
+            diagnostics={{code="historyUnreadable"}}}
+        PD.lvRouteHead = nil
+        PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
+    end
     if PD.autoPage == "log" then
-        PD.lvSummary, PD.lvRouteHead = nil, nil
+        if not unreadable then PD.lvSummary, PD.lvRouteHead = nil, nil end
         PD.RowsCraftLog(rows)
         return
     end
-    local activeRun, activePlan = TrackRunOf(PD.cur)
-    if activeRun and not activePlan then
-        PD.lvSummary, PD.lvRouteHead = nil, nil
-        PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
+    if unreadable then
         PushText(rows, L["执行计划缺失或无法读取；请结束追踪后重新计算。"], 14, C_GREY)
         return
     end

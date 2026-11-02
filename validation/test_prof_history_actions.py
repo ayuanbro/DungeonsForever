@@ -88,6 +88,55 @@ class HistoryActionsTests(unittest.TestCase):
           assert(PD.CraftLogCost('alchemy')==nil)
         ''')
 
+    def test_invalid_execution_cost_tile_reports_plan_problem_with_prices_available(self):
+        self.broken_run()
+        self.lua.execute('''
+          ra.Available=function()return true end
+          ra.HasPriceData=function()return true end
+          assert(PD.AuctionatorState()=='ok')
+          local function tile()
+            local f=widget();f.label=widget();f.val=widget()
+            f.val.SetText=function(self,value)self.text=value end
+            return f
+          end
+          PD.lvTiles={mode=tile(),scheme=tile(),excl=tile(),target=tile(),cost=tile()}
+          PD.chipOrder={'mode','scheme','excl','target'};PD.LV_TILE_H=60
+          PD.PaintTileBorder=function()end;PD.PlaceCards=function()end
+          PD.SetBadge=function(text)badge=text end;PD.SetSub=function()end
+          PD.TipTile=function(t,lines)t.lines=lines end
+          for _,page in ipairs({'route','shop','log','recovery'})do
+            PD.autoPage=page;PD.RowsLeveling({});PD.PaintLvTiles()
+            assert(badge==ns.L['路线待重算'])
+            assert(PD.lvTiles.cost.val.text==ns.L['—'])
+            local found=false
+            for _,line in ipairs(PD.lvTiles.cost.lines)do
+              assert(not line[1]:find('扫描',1,true),'plan failure requested an auction scan')
+              if line[1]==ns.L['执行计划缺失或无法读取；请结束追踪后重新计算。'] then found=true end
+            end
+            assert(found)
+          end
+          local _,click=PD.LevelTool();click('track');click('recalc')
+          PD.autoPage='route';PD.RowsLeveling({})
+          for i=1,100 do ra.Pump('alchemy');if not ra.HasWork('alchemy') then break end end
+          PD.RowsLeveling({});PD.PaintLvTiles()
+          -- The fixture has prices but no full-scan quantity certification.
+          assert(PD.SnapshotBadgeState(PD.lvSummary)=='stock_unknown')
+          assert(badge~=ns.L['路线待重算'] and PD.lvTiles.cost.val.text~=ns.L['—'])
+        ''')
+
+    def test_empty_summary_is_not_missing_price_data_but_real_absence_is_reported(self):
+        self.lua.execute('''
+          ra.Available=function()return true end
+          ra.HasPriceData=function()return true end
+          assert(PD.SnapshotBadgeText(nil)==nil and PD.SnapshotBadgeText({})==nil)
+          assert(PD.SnapshotBadgeState({scheme='cheapest',priced=false})=='incomplete')
+          assert(PD.SnapshotBadgeState({planVersion=2,status='recalculate_required',
+            diagnostics={{code='historyUnreadable'}}})=='rules_changed')
+          ra.HasPriceData=function()return false end
+          assert(PD.AuctionatorState()=='noprice')
+          assert(PD.SnapshotBadgeText({scheme='cheapest',priced=false})==ns.L['缺少价格快照，请扫描拍卖行'])
+        ''')
+
     def test_invalid_plan_shapes_share_validation_without_conversion(self):
         self.broken_run()
         self.lua.execute('''
