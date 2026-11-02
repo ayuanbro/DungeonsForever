@@ -12,13 +12,17 @@ G.SpecAbilities = SPEC_ABILITIES
 
 local cache
 local function spellKnown(spell)
+    local observedFalse = false
     for _, name in ipairs({ "C_SpellBook.IsSpellKnown", "IsSpellKnown", "IsPlayerSpell", "C_Spell.IsSpellKnown" }) do
-        local fn = _G[name]
+        local parent, key = name:match("^([^.]+)%.(.+)$")
+        local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
         if type(fn) == "function" then
             local ok, value = pcall(fn, spell)
-            if ok and type(value) == "boolean" then return value end
+            if ok and value == true then return true end
+            if ok and value == false then observedFalse = true end
         end
     end
+    if observedFalse then return false end
 end
 
 function G.Invalidate()
@@ -75,12 +79,16 @@ function G.ItemFlag(spell)
     return SpecFlags(SpecRec(spell)) % 4 >= 2
 end
 
+function G.RequiredAbility(spell)
+    return SpecAbility(SpecRec(spell))
+end
+
 function G.HasPending(spell)
     return SpecFlags(SpecRec(spell)) % 8 >= 4
 end
 
 function G.Allowed(slug, spell)
-    local ability = SpecAbility(SpecRec(spell))
+    local ability = G.RequiredAbility(spell)
     if ability == 0 then return true end
     if ability == 20219 or ability == 20222 then
         local choice = G.EffectiveChoice()
@@ -115,17 +123,23 @@ function G.LearningEligibility(spell)
     if ability == 0 then
         return true, nil, { status = G.LearningSource(spell) and "allowed" or "unknown", hasPending = hp }
     end
+    local allowed, reason = G.Allowed("engineering", spell)
+    if not allowed then
+        return false, reason, { status = "blocked", hasPending = hp, ability = ability }
+    end
     local v = G.Abilities()[ability]
     if v == true then return true, nil, { status = "allowed", hasPending = hp, ability = ability } end
     if v == nil then return true, nil, { status = "unknown", hasPending = hp, ability = ability } end
     return false, G.AbilityLabel(ability), { status = "blocked", hasPending = hp, ability = ability }
 end
 
-function G.SpecFingerprint(choice)
+function G.SpecFingerprint(choice, abilities)
     local meta = ns.ProfSpecializationsMeta or {}
     local q = ns.ProfSpecializationQuestMeta or {}
-    return table.concat({ "1", tostring(choice or "none"), tostring(meta.revision or 0),
-        tostring(meta.fpr or ""), tostring(q.revision or 0), tostring(q.sourceCommit or "") }, ":")
+    local skills = type(abilities) == "table" and abilities or G.Abilities()
+    local skillSig = G.SpecAbilityFingerprint and G.SpecAbilityFingerprint(skills) or ""
+    return table.concat({ "2", tostring(choice or "none"), tostring(meta.revision or 0),
+        tostring(meta.fpr or ""), tostring(q.revision or 0), tostring(q.sourceCommit or ""), skillSig }, ":")
 end
 
 function G.EngineeringChoice()
@@ -152,28 +166,34 @@ end
 
 local ENG_CHOICES = { none = true, goblin = true, gnomish = true }
 
-function G.GetPlannedChoice()
+function G.GetChoiceSetting()
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
-    local v = db and db.engChoice
-    if ENG_CHOICES[v] then return v end
+    local value = db and db.engChoice
+    if value == "goblin" or value == "gnomish" then return value end
     return "none"
 end
 
 function G.EffectiveChoice()
-    local db = DungeonsForeverDB and DungeonsForeverDB.prof
-    local v = db and db.engChoice
-    if ENG_CHOICES[v] then return v, true end
-    local actual = G.EngineeringChoice()
-    if actual == "gnomish" or actual == "goblin" then return actual, false end
+    local selected = G.GetChoiceSetting()
+    if selected ~= "none" then return selected, true end
+    local learned = G.EngineeringChoice()
+    if learned == "goblin" or learned == "gnomish" then return learned, false end
     return "none", false
+end
+
+function G.GetPlannedChoice()
+    local choice = G.EffectiveChoice()
+    return choice
 end
 
 function G.SetPlannedChoice(value)
     if not ENG_CHOICES[value] then return false end
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.prof = DungeonsForeverDB.prof or {}
-    if DungeonsForeverDB.prof.engChoice == value then return true end
-    DungeonsForeverDB.prof.engChoice = value
+    local db = DungeonsForeverDB.prof
+    local newValue = value ~= "none" and value or nil
+    if db.engChoice == newValue then return true end
+    db.engChoice = newValue
     G.Invalidate()
     local RA = ns.ProfRouteAuto
     if RA and RA.Invalidate then RA.Invalidate("specialization") end
@@ -186,13 +206,15 @@ local function buildSpecGoal(def, faction)
         if k ~= "variants" then goal[k] = v end
     end
     goal.inputs = cloneInputs(def.inputs)
-    goal.prerequisiteQuestIDs = nil
     local variant = def.variants and faction and def.variants[faction]
     if variant then
         for k, v in pairs(variant) do goal[k] = v end
     elseif def.variants then
         goal.blockedReason = "specializationFactionUnknown"
     end
+    local prerequisites = {}
+    for _, id in ipairs(goal.prerequisiteQuestIDs or {}) do prerequisites[#prerequisites+1] = id end
+    goal.prerequisiteQuestIDs = prerequisites
     return goal
 end
 
@@ -235,8 +257,7 @@ function G.SpecializationContext(opts)
     local prior = hasSnap and injected.specializationContext or nil
     local choice = opts.engineeringSpecialization or (prior and prior.choice)
     if not choice and hasSnap then choice = injected.engineeringSpecialization end
-    if not choice then choice = G.GetPlannedChoice() end
-    if not ENG_CHOICES[choice] then choice = "none" end
+    if not ENG_CHOICES[choice] then choice = G.EffectiveChoice() end
     local supplied
     if hasSnap then supplied = injected.specializationAbilities or (prior and prior.abilities) end
     local abilities = {}
@@ -284,10 +305,16 @@ function G.SpecializationContext(opts)
             if goal.questCompleted and abilities[goal.abilityID] ~= true then
                 goal.blockedReason = "specializationQuestAlreadyCompleted"
             end
+        end
+        if goal.blockedReason == "specializationQuestAlreadyCompleted" then
+            ctx.unresolvedGoals = { goal }
+            ctx.warnings = {{ code = "specializationQuestAlreadyCompleted", profession = profession,
+                questID = goal.questID, abilityID = goal.abilityID, goalID = goal.id }}
+        else
             ctx.goals[1] = goal
         end
     end
-    ctx.fingerprint = G.SpecFingerprint(choice)
+    ctx.fingerprint = G.SpecFingerprint(choice, abilities)
     ctx.abilityFingerprint = G.SpecAbilityFingerprint(abilities)
     return ctx
 end
@@ -299,28 +326,14 @@ function G.SpecGoal(slug, target)
     if not source then return nil end
     local actual = G.EngineeringChoice()
     if actual == "conflict" then return nil end
-    local planned = G.GetPlannedChoice()
-    if planned ~= "none" then
-        if actual == planned then return nil end
-        local def = source[planned]
-        if not def or target0 < (def.minSkill or 200) then return nil end
-        local goal = buildSpecGoal(def, G.FactionCode())
-        if goal.blockedReason then return nil end
-        return goal
-    end
-    if actual == "gnomish" or actual == "goblin" then return nil end
-    if target0 < 200 then return nil end
-    local faction = G.FactionCode()
-    local best
-    for _, def in pairs(source) do
-        if def.profession == slug then
-            local goal = buildSpecGoal(def, faction)
-            if not goal.blockedReason then
-                if not best or (goal.minSkill or 0) < (best.minSkill or 0) then best = goal end
-            end
-        end
-    end
-    return best
+    local planned = G.EffectiveChoice()
+    if planned == "none" then return nil end
+    if actual == planned then return nil end
+    local def = source[planned]
+    if not def or target0 < (def.minSkill or 200) then return nil end
+    local goal = buildSpecGoal(def, G.FactionCode())
+    if goal.blockedReason or questProgressOf(goal).completed == true then return nil end
+    return goal
 end
 
 function G.ToolGoals(slug, target)
@@ -352,7 +365,12 @@ function G.ToolOwned(itemID)
     return false
 end
 
-function G.AutoCraftTools()
+function G.AutoCraftTools(slug)
+    local view = ns.ProfModule
+    if view and view.SettingRaw then
+        local value = view.SettingRaw("autoCraftTools", slug)
+        if value ~= nil then return value ~= false end
+    end
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
     return not (db and db.autoCraftTools == false)
 end

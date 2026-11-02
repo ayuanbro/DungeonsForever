@@ -8,8 +8,21 @@ if not S then return end
 local M = {}
 ns.ProfSolverRun = M
 
-local FRAME_MS = 3
-local SLICE_MS = 1
+local FRAME_MS = 2
+local SLICE_MS = 3
+local SLICE_MS_UI = 10
+local function sliceBudget()
+    local PD = ns.ProfModule
+    local f = PD and (PD.page or PD.frame)
+    if f and f.IsShown and f:IsShown() then return SLICE_MS_UI end
+    return SLICE_MS
+end
+local function adaptiveSliceMs()
+    local fps=type(GetFramerate)=="function" and GetFramerate() or 60
+    if type(fps)~="number" or fps<=0 then fps=60 end
+    if fps<25 then return 0.6 end
+    return math.min(2.25, math.max(0.8, (1000/fps)*0.09))
+end
 local NOTIFY_MS = 250
 local GC_SOFT_KB = 24576
 local GC_STEPS = 1
@@ -22,6 +35,8 @@ local serial = 0
 local function stamp(j)
     if not j then return "idle", 0 end
     if j.finished then return "done", 1 end
+    if j.finalizing then return "finalizing", 1 end
+    if not j.snap then return "prepare", 0.01 end
     if not j.seedDone then
         local target = j.target or 300
         local skill = j.seedSkill or 1
@@ -31,7 +46,7 @@ local function stamp(j)
         if p < 0 then p = 0 elseif p > 1 then p = 1 end
         return "seed", 0.04 + 0.66 * p
     end
-    local cap = j.cpuLimitMs or 5000
+    local cap = j.cpuLimitMs or 8000
     if cap < 1 then cap = 1 end
     local used = (j.cpuUsed or 0) / cap
     if used < 0 then used = 0 elseif used > 1 then used = 1 end
@@ -111,43 +126,37 @@ function M.Start(slug, opts, hooks)
     local gcTick = 0
     local function keepGC()
         if not a.gcBase or a.gcBase <= 0 then return end
-        gcTick = (gcTick or 0) + 1
+        gcTick = gcTick + 1
         if gcTick % GC_EVERY ~= 0 then return end
         if collectgarbage("count") <= a.gcBase + GC_SOFT_KB then return end
         for _ = 1, GC_STEPS do collectgarbage("step", GC_STEP_KB) end
     end
     local runnerDead = false
     local runner = coroutine.create(function()
-        local budget = SLICE_MS
+        local budget = sliceBudget()
         while true do
             if S.Run(j, budget) then return true end
             budget = coroutine.yield(false)
-            if type(budget) ~= "number" then budget = SLICE_MS end
+            if type(budget) ~= "number" then budget = sliceBudget() end
         end
     end)
-    coroutine.resume(runner)
     local function advance(ms)
         if runnerDead then return true end
-        local ok, res = coroutine.resume(runner, ms or SLICE_MS)
+        local ok, result = coroutine.resume(runner, ms or sliceBudget())
         if not ok then
             j.status = "error"
             j.searchTermination = "error"
-            j.failures.error = { code = "solverError", detail = tostring(res) }
+            j.failures = j.failures or {}
+            j.failures.error = {code="solverError",detail=tostring(result)}
             runnerDead = true
             return true
         end
         if coroutine.status(runner) == "dead" then runnerDead = true return true end
-        return res == true
+        return result == true
     end
     ns.IdleJobs.Add(function()
         if live ~= a then return true end
-        local frameStart = debugprofilestop()
-        local done = false
-        while true do
-            done = advance(SLICE_MS)
-            if done then break end
-            if debugprofilestop() - frameStart >= FRAME_MS then break end
-        end
+        local done = advance(math.min(adaptiveSliceMs(), FRAME_MS))
         if not done then keepGC() end
         notify(done)
         if done then

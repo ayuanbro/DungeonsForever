@@ -1,10 +1,22 @@
 local _,ns=...
 if not ns.LoadForeverPages then return end
 local R={REVISION=1};ns.ProfRecovery=R
+local RESID_MASS, PROFIT_CAP = 0.7, 20
+R.PROFIT_CAP = PROFIT_CAP
 local floor,min,max,ceil=math.floor,math.min,math.max,math.ceil
-local function copy(t)
+local function copy(t,tick)
     if type(t)~="table" then return t end
-    local o={};for k,v in pairs(t) do o[k]=copy(v) end;return o
+    local meta=getmetatable(t)
+    if type(meta)=="table" and type(meta.__profLearningMaterialize)=="function" then
+        t=meta.__profLearningMaterialize(t)
+    end
+    local o={};local n=0
+    for k,v in pairs(t) do
+        o[k]=copy(v,tick);n=n+1
+        if tick and n%32==0 then tick() end
+    end
+    if tick then tick() end
+    return o
 end
 local function amount(n) return type(n)=="number" and n==n and n>=0 and n<math.huge end
 local function percent(n) return amount(n) and n<=100 end
@@ -38,7 +50,6 @@ local function bound(id,s)
     end
     return false
 end
-R.DefaultFeePercent=5
 function R.Fee(snapshot,opts)
     opts=opts or {}
     if percent(opts.recoveryFeePercent) then return opts.recoveryFeePercent,"manual",false end
@@ -49,29 +60,26 @@ function R.Fee(snapshot,opts)
     local constants=type(Auctionator)=="table" and Auctionator.Constants
     local factor=type(constants)=="table" and constants.AfterAHCut
     if amount(factor) and factor<=1 then return (1-factor)*100,"auctionator-reference",true end
-    return R.DefaultFeePercent,"default",false
+    return nil,"unknown",false
 end
 local function livePrice(id)
     local ra=ns.ProfRouteAuto
     return ra and ra.AHPriceOf and ra.AHPriceOf(id)
 end
-local function rerate(q,fee)
-    q.auctionNet=q.auctionGross and fee and floor(q.auctionGross*(100-fee)/100+1e-9) or nil
-    q.assumedAllSold=nil;q.missing=nil;q.unsellable=nil
-    if q.bound then
-        if q.npcUnit~=nil then q.unit=q.npcUnit;q.source="npc" else q.unit=0;q.source="unknown";q.missing=true end
-        q.unsellable=true
-    elseif q.auctionNet and (q.npcUnit==nil or q.auctionNet>q.npcUnit) then
-        q.unit=q.auctionNet;q.source="ah";q.assumedAllSold=true
-    elseif q.npcUnit~=nil then
+local function rerate(q,fee,residualMass)
+    q.auctionNet=q.auctionGross and fee and floor(q.auctionGross*(residualMass and RESID_MASS or 1)*(100-fee)/100+1e-9) or nil
+    q.assumedAllSold=nil;q.missing=nil;q.unsellable=q.bound and true or nil
+    if q.npcUnit~=nil then
         q.unit=q.npcUnit;q.source="npc"
-    else
-        q.unit=0;q.source="unknown";q.missing=true
-    end
+        if not q.bound and q.auctionNet and q.auctionNet-q.npcUnit>100
+            and q.supplyReliable and (q.quantity or 0)>=40 then
+            q.unit=q.auctionNet;q.source="ah";q.assumedAllSold=true
+        end
+    else q.unit=0;q.source="unknown";q.missing=true end
     return q
 end
 R.Rerate=rerate
-local function quote(id,s,fee,stamp,live)
+local function quote(id,s,fee,stamp,live,residualMass)
     local npc
     if not live and s.sellPrices then npc=s.sellPrices[id] else npc=R.NPCSellPriceOf(id) end
     if not amount(npc) then npc=nil else npc=floor(npc) end
@@ -83,14 +91,15 @@ local function quote(id,s,fee,stamp,live)
     local reliable=type(supply)=="table" and amount(supply.quantity) and supply.quantity==floor(supply.quantity)
         and supply.complete==true and supply.ownerExcluded==true
         and supply.source=="client-auction-results"
-        and age and age>=0 and age<=172800 or false
+        and age and age>=0 and age<=1800 or false
     local blocked=bound(id,live and {} or s)
-    local q={id=id,npcUnit=npc,auctionGross=auction,bound=blocked,
+    local net=auction and fee and floor(auction*(100-fee)/100+1e-9) or nil
+    local q={id=id,npcUnit=npc,auctionGross=auction,auctionNet=net,bound=blocked,
         quantity=supply and supply.quantity,observedAt=supply and supply.observedAt,
         complete=supply and supply.complete,ownerExcluded=supply and supply.ownerExcluded,
         supplySource=supply and supply.source,supplyReliable=reliable,
         market=supply and supply.market,batch=supply and supply.batch}
-    return rerate(q,fee)
+    return rerate(q,fee,residualMass)
 end
 local identityFields={"npcUnit","auctionGross","auctionNet","bound","quantity","observedAt","complete","ownerExcluded","supplySource","supplyReliable","market","batch","source","unit","missing"}
 local function identity(q)
@@ -102,67 +111,76 @@ function R.Options(opts)
     local db=DungeonsForeverDB and DungeonsForeverDB.prof
     if db then
         if opts.recoveryEnabled==nil and db.recoveryEnabled~=nil then opts.recoveryEnabled=db.recoveryEnabled end
+        if opts.residualMass==nil and db.autoResidualMass~=nil then opts.residualMass=db.autoResidualMass end
         if opts.recoveryFeePercent==nil and type(db.recoveryFeePercent)=="number" then
             opts.recoveryFeePercent=db.recoveryFeePercent
         end
     end
     return opts
 end
-function R.Capture(snapshot,opts)
+function R.Capture(snapshot,opts,tick)
     opts=R.Options(opts);snapshot=snapshot or {}
     if snapshot.recovery and snapshot.recovery.revision==R.REVISION and snapshot.recovery.quotes then
         local old=snapshot.recovery
         if opts.recoveryEnabled~=nil and opts.recoveryEnabled~=old.enabled
-            or percent(opts.recoveryFeePercent) and opts.recoveryFeePercent~=old.feePercent then
-            local r=copy(old)
+            or percent(opts.recoveryFeePercent) and opts.recoveryFeePercent~=old.feePercent
+            or opts.residualMass~=nil and opts.residualMass~=old.residualMass then
+            local r=copy(old,tick)
             if opts.recoveryEnabled~=nil then r.enabled=opts.recoveryEnabled~=false end
+            if opts.residualMass~=nil then r.residualMass=opts.residualMass==true end
             if percent(opts.recoveryFeePercent) then
                 r.feePercent=opts.recoveryFeePercent;r.feeSource="manual";r.feeReference=false;r.feeOverride=opts.recoveryFeePercent
-                for _,q in pairs(r.quotes) do rerate(q,r.feePercent) end
             end
+            for _,q in pairs(r.quotes) do rerate(q,r.feePercent,r.residualMass);if tick then tick() end end
             snapshot.recovery=r
         end
         return snapshot.recovery
     end
     local fee,source,reference=R.Fee(snapshot,opts)
-    local r={revision=R.REVISION,enabled=opts.recoveryEnabled~=false,feePercent=fee,
+    local r={revision=R.REVISION,enabled=opts.recoveryEnabled~=false,residualMass=opts.residualMass==true,feePercent=fee,
         feeSource=source,feeReference=reference,feeOverride=opts.recoveryFeePercent,
-        clientFee=copy(snapshot.auctionFee),
+        clientFee=copy(snapshot.auctionFee,tick),
         capturedAt=snapshot.stamp or now(),quotes={}}
     for _,recipe in ipairs(snapshot.recipes or {}) do
         if type(recipe.item)=="number" and recipe.item>0 and (recipe.count or 1)>0 then
-            r.quotes[recipe.item]=quote(recipe.item,snapshot,fee,r.capturedAt,false)
+            r.quotes[recipe.item]=quote(recipe.item,snapshot,fee,r.capturedAt,false,r.residualMass)
             if r.quotes[recipe.item].missing then requestMissingItem(recipe.item) end
         end
+        if tick then tick() end
     end
     snapshot.recovery=r
     return r
 end
-function R.StateRevenue(state,snapshot)
+local function revenue(state,snapshot,produced)
     local total=0
-    for id,count in pairs(state and state.produced or {}) do
+    for id,count in pairs(produced or {}) do
         local q=snapshot and snapshot.recovery and snapshot.recovery.quotes[id]
         local retained=snapshot and snapshot.retainedToolItems and snapshot.retainedToolItems[id] or 0
-        local purchased=max(0,((state.inv or {})[id] or 0)-count)
+        local purchased=max(0,((state.inv or {})[id] or 0)-((state.produced or {})[id] or 0))
         local sale=max(0,count-max(0,retained-purchased))
-        if q and q.supplyReliable and amount(q.quantity) then sale=min(sale,q.quantity) end
         if q and amount(count) then total=total+sale*(q.unit or 0) end
     end
     return total
 end
+function R.StateRevenue(state,snapshot)
+    return revenue(state,snapshot,state and state.produced)
+end
+function R.PriorityRevenue(state,snapshot)
+    return revenue(state,snapshot,state and state.priorityProduced)
+end
 function R.Objective(state,snapshot)
     local r=snapshot and snapshot.recovery
-    return (state and state.money or 0)-(r and r.enabled and R.StateRevenue(state,snapshot) or 0)
+    return (state and state.money or 0)-(r and r.enabled and R.PriorityRevenue(state,snapshot) or 0)
 end
 local function changed(result,opts)
     local old=result and result.recoverySnapshot
     if not old or result.recoveryRevision~=R.REVISION then return true end
-    opts=opts or {recoveryEnabled=old.enabled,recoveryFeePercent=old.feeOverride}
-    if (opts.recoveryEnabled~=false)~=old.enabled then return true end
+    opts=opts or {recoveryEnabled=old.enabled,recoveryFeePercent=old.feeOverride,residualMass=old.residualMass}
+    if (opts.recoveryEnabled~=false)~=old.enabled or (opts.residualMass==true)~=(old.residualMass==true) then return true end
     local supplied=opts.snapshot
     if supplied and supplied.recovery and supplied.recovery.revision==R.REVISION then
         local current=supplied.recovery
-        if current.enabled~=old.enabled or current.feePercent~=old.feePercent or current.feeSource~=old.feeSource then return true end
+        if current.enabled~=old.enabled or current.feePercent~=old.feePercent or current.feeSource~=old.feeSource or current.residualMass~=old.residualMass then return true end
         for id,q in pairs(old.quotes or {}) do
             if not current.quotes[id] or identity(current.quotes[id])~=identity(q) then return true end
         end
@@ -171,7 +189,7 @@ local function changed(result,opts)
     local fee,source,reference=R.Fee(supplied or {auctionFee=old.clientFee},opts)
     if fee~=old.feePercent or source~=old.feeSource or reference~=old.feeReference then return true end
     for id,q in pairs(old.quotes or {}) do
-        if identity(quote(id,supplied or {},fee,now(),not supplied))~=identity(q) then return true end
+        if identity(quote(id,supplied or {},fee,now(),not supplied,opts.residualMass))~=identity(q) then return true end
     end
     return false
 end
@@ -181,7 +199,7 @@ function R.Changed(result,opts)
     if not result or opts and opts.snapshot or type(GetTime)~="function" then return changed(result,opts) end
     local stamp=GetTime();local bridge=ns.AuctionBridge
     local revision=bridge and bridge.SupplyRevision and bridge.SupplyRevision() or 0
-    local signature=tostring(opts and opts.recoveryEnabled)..":"..tostring(opts and opts.recoveryFeePercent)..":"..tostring(revision)
+    local signature=tostring(opts and opts.recoveryEnabled)..":"..tostring(opts and opts.recoveryFeePercent)..":"..tostring(opts and opts.residualMass)..":"..tostring(revision)
     local previous=changedMemo[result]
     if previous and previous.signature==signature and stamp>=previous.at and stamp-previous.at<1 then return previous.value end
     local value=changed(result,opts)
@@ -219,7 +237,15 @@ local function trace(result,snapshot)
     local rows=result.executionSteps and #result.executionSteps>0 and result.executionSteps or result.steps or {}
     for i,step in ipairs(rows) do
         local r=recipeFor(step,snapshot)
-        if r and not step.checkpoint then
+        if step.kind=="essence_conversion" or step.kind=="conversion" then
+            local c=step.conversion or {};local n=step.expectedCrafts or step[4] or 0
+            local source=c.inputItemID or step.sourceItem;local input=c.inputCount or step.sourcePerConversion
+            local target=c.outputItemID or step.targetItem or step.item;local output=c.outputCount or step.targetPerConversion or step.outputMin
+            if source and target and input and output then
+                out[#out+1]={id="derived:"..i,type="convert",count=n,owner=step.owner,
+                    inputs={{source,input*n}},outputs={{target,output*n}}}
+            end
+        elseif r and not step.checkpoint then
             local n=step[4] or step.count or 0;local inputs={}
             for _,m in ipairs(r.mats or {}) do inputs[#inputs+1]={m[1],m[2]*n} end
             local id=r.item;local qty=(r.count or 1)*n
@@ -233,11 +259,11 @@ local sumFields={"productionCost","attributedCost","transferredCost","recoveryTo
 local function newAccounting()
     local a={recoveryOutputs={}};for _,key in ipairs(sumFields) do a[key]=0 end;return a
 end
-local function addAccounting(target,a)
+local function addAccounting(target,a,tick)
     for _,key in ipairs(sumFields) do target[key]=(target[key] or 0)+(a[key] or 0) end
-    for _,output in ipairs(a.recoveryOutputs or {}) do target.recoveryOutputs[#target.recoveryOutputs+1]=copy(output) end
+    for _,output in ipairs(a.recoveryOutputs or {}) do target.recoveryOutputs[#target.recoveryOutputs+1]=copy(output,tick) end
 end
-function R.GroupOutputs(outputs)
+function R.GroupOutputs(outputs,tick)
     local grouped,index={},{}
     for _,output in ipairs(outputs or {}) do
         local key=table.concat({tostring(output.id),tostring(output.source or ""),
@@ -250,17 +276,22 @@ function R.GroupOutputs(outputs)
         entry.count=entry.count+(output.count or 0)
         entry.cost=entry.cost+(output.cost or 0)
         entry.revenue=entry.revenue+(output.revenue or 0)
+        if tick then tick() end
     end
     return grouped
 end
-function R.Apply(result,snapshot)
+function R.Apply(result,snapshot,tick)
     if not result then return end
-    snapshot=snapshot or {};local frozen=R.Capture(snapshot,{recoveryEnabled=result.recoveryEnabled})
+    snapshot=snapshot or {};local frozen=R.Capture(snapshot,{recoveryEnabled=result.recoveryEnabled,residualMass=snapshot.recovery and snapshot.recovery.residualMass},tick)
     result.recoveryRevision=R.REVISION;result.recoveryEnabled=frozen.enabled
+    result.residualMass=frozen.residualMass;result.profitPriorityLimit=PROFIT_CAP
     result.recoveryOptimized=frozen.enabled and result.scheme=="cheapest" and not result.procurement or false
-    result.recoverySnapshot=copy(frozen)
+    result.recoverySnapshot=copy(frozen,tick)
     result.recoveryQuoteMissing=0
-    for _,q in pairs(frozen.quotes or {}) do if q.missing then result.recoveryQuoteMissing=result.recoveryQuoteMissing+1 end end
+    for _,q in pairs(frozen.quotes or {}) do
+        if q.missing then result.recoveryQuoteMissing=result.recoveryQuoteMissing+1 end
+        if tick then tick() end
+    end
     result.recoveryFeeMissing=frozen.feePercent==nil or nil
     if result.recoveryOptimized and (result.recoveryQuoteMissing>0 or result.recoveryFeeMissing) then result.optimal=false end
     result.purchaseTotal=result.total or 0;result.recoveryTotal=0;result.saleOutputs={}
@@ -268,7 +299,7 @@ function R.Apply(result,snapshot)
     result.demandAttribution={};result.demandCost=0;result.demandNonCraftCost=0
     result.recoveryAssumesAllSold=false
     local actions=trace(result,snapshot)
-    local pools,accounts,byID,byStep,byRecipe,formulaCosts,recipeCounts={},{},{},{},{},{},{}
+    local pools,poolHeads,accounts,byID,byStep,byRecipe,formulaCosts,recipeCounts={},{},{},{},{},{},{},{}
     local function key(a) return tostring(a.profession or "")..":"..tostring(a.spell or 0) end
     for i,a in ipairs(actions) do
         if a.type=="craft" or a.type=="specialization_quest" then
@@ -283,6 +314,7 @@ function R.Apply(result,snapshot)
             byRecipe[k]=byRecipe[k] or {};byRecipe[k][#byRecipe[k]+1]=ac
             recipeCounts[k]=(recipeCounts[k] or 0)+max(1,a.count or 0)
         elseif a.type=="formula" and a.owner then formulaCosts[a.owner]=(formulaCosts[a.owner] or 0)+(a.cost or 0) end
+        if tick then tick() end
     end
     local function put(id,n,cost,origin,owner,usable)
         if not id or not n or n<=0 then return end
@@ -290,8 +322,13 @@ function R.Apply(result,snapshot)
     end
     local function take(id,n,consumer,terminalDemand)
         local cost,remaining=0,n
+        local pool=pools[id] or {}
+        local heads=poolHeads[id] or {1,1};poolHeads[id]=heads
         for pass=1,2 do
-            for _,lot in ipairs(pools[id] or {}) do
+            local index=heads[pass]
+            while n>0 and index<=#pool do
+                local lot=pool[index]
+                if tick then tick() end
                 if lot.usable and (lot.origin==nil)==(pass==1) and n>0 and lot.count>0 then
                     if not lot.origin and not lot.owner and consumer then lot.owner=consumer.key;lot.ownerAccount=consumer end
                     local used=min(n,lot.count);local part=lot.cost*used/lot.count
@@ -307,13 +344,21 @@ function R.Apply(result,snapshot)
                         end
                     elseif terminalDemand then result.demandNonCraftCost=result.demandNonCraftCost+part end
                 end
+                if not lot.usable or (lot.origin==nil)~=(pass==1) or lot.count<=0 then index=index+1 else break end
             end
+            heads[pass]=index
         end
         return cost,remaining-n
     end
     for i,a in ipairs(actions) do
         if a.type=="buy" then put(a.item,a.count,a.cost or 0,nil,a.owner)
         elseif a.type=="seed" then put(a.item,a.count,0,nil,nil,a.usableOutput)
+        elseif a.type=="convert" then
+            local cost=0;for _,input in ipairs(a.inputs or {}) do cost=cost+take(input[1],input[2]) end
+            local outputN=0;for _,output in ipairs(a.outputs or {}) do outputN=outputN+(output[2] or 0) end
+            if outputN>0 then for _,output in ipairs(a.outputs) do
+                put(output[1],output[2],cost*output[2]/outputN,nil,a.owner,a.usableOutput)
+            end end
         elseif accounts[i] then
             local ac=accounts[i];local cost=0
             for _,input in ipairs(a.inputs or {}) do cost=cost+take(input[1],input[2],ac) end
@@ -325,11 +370,13 @@ function R.Apply(result,snapshot)
                 for _,o in ipairs(a.outputs) do put(o[1],o[2],cost*o[2]/outputN,ac,nil,a.usableOutput) end
             else ac.attributedCost=cost end
         end
+        if tick then tick() end
     end
     for id,n in pairs(result.consumedDemands or {}) do
         local cost,consumed=take(id,n,nil,true)
         result.demandAttribution[#result.demandAttribution+1]={id=id,count=consumed,cost=cost}
         result.demandCost=result.demandCost+cost
+        if tick then tick() end
     end
     table.sort(result.demandAttribution,function(a,b)return a.id<b.id end)
     result.retainedTools={}
@@ -337,77 +384,54 @@ function R.Apply(result,snapshot)
     for id,n in pairs(snapshot.retainedToolItems or result.retainedToolItems or {}) do
         local cost,retained=take(id,n,nil,true)
         if retained>0 then result.retainedTools[#result.retainedTools+1]={id=id,count=retained,cost=cost} end
+        if tick then tick() end
     end
     result.demandNonCraftCost=demandNonCraftCost
     local sold,missing={},{ }
-    local quota={}
-    local function sellEntry(q,id,src,unit,miss)
-        local key=id..":"..src..":"..tostring(unit)
-        local entry=sold[key]
-        if not entry then
-            entry=copy(q);entry.id=id;entry.count=0;entry.cost=0;entry.revenue=0
-            entry.source=src;entry.unit=unit or 0;entry.missing=miss and true or nil
-            if src~="ah" then entry.quantity=nil end
-            sold[key]=entry
-        end
-        return entry
-    end
-    for id,pool in pairs(pools) do for _,lot in ipairs(pool) do if lot.count>0 then
+    for id,pool in pairs(pools) do for _,lot in ipairs(pool) do
+    if tick then tick() end
+    if lot.count>0 then
         if lot.origin then
-            local ac=lot.origin;ac.attributedCost=ac.attributedCost+lot.cost
+            local ac=lot.origin;ac.attributedCost=ac.attributedCost+lot.cost;ac.saleCount=ac.saleCount+lot.count
             local q=frozen.quotes[id] or {unit=0,source="unknown",missing=true}
-            local ahLeft=nil
-            if q.source=="ah" and q.supplyReliable and amount(q.quantity) then
-                ahLeft=quota[id] or q.quantity
-            end
-            local parts
-            if ahLeft==nil then
-                parts={{n=lot.count,src=q.source,unit=q.unit,miss=q.missing,assumed=q.source=="ah"}}
-            else
-                quota[id]=ahLeft
-                local ahN=min(lot.count,ahLeft)
-                quota[id]=ahLeft-ahN
-                parts={}
-                if ahN>0 then parts[#parts+1]={n=ahN,src="ah",unit=q.unit,miss=false,assumed=false} end
-                local rest=lot.count-ahN
-                if rest>0 then
-                    if q.npcUnit~=nil then parts[#parts+1]={n=rest,src="npc",unit=q.npcUnit,miss=false,assumed=false}
-                    else parts[#parts+1]={n=rest,src="unknown",unit=0,miss=true,assumed=false} end
-                end
-            end
-            for _,pt in ipairs(parts) do
-                local revenue=pt.n*(pt.unit or 0)
-                local cost=lot.cost*pt.n/lot.count
-                ac.saleCount=ac.saleCount+pt.n
-                local entry=sellEntry(q,id,pt.src,pt.unit,pt.miss)
-                entry.count=entry.count+pt.n;entry.cost=entry.cost+cost;entry.revenue=entry.revenue+revenue
-                if pt.assumed then entry.assumed=true end
-                ac.recoveryTotal=ac.recoveryTotal+revenue
-                ac.recoveryOutputs[#ac.recoveryOutputs+1]={id=id,count=pt.n,cost=cost,unit=pt.unit or 0,source=pt.src,revenue=revenue,missing=pt.miss and true or nil}
-                if pt.miss then missing[id]=true end
-            end
+            local entry=sold[id]
+            if not entry then entry=copy(q);entry.id=id;entry.count=0;entry.cost=0;entry.revenue=0;sold[id]=entry end
+            local revenue=lot.count*(q.unit or 0)
+            entry.count=entry.count+lot.count;entry.cost=entry.cost+lot.cost;entry.revenue=entry.revenue+revenue
+            ac.recoveryTotal=ac.recoveryTotal+revenue
+            ac.recoveryOutputs[#ac.recoveryOutputs+1]={id=id,count=lot.count,cost=lot.cost,unit=q.unit or 0,source=q.source,revenue=revenue,missing=q.missing}
+            if q.missing then missing[id]=true end
         else
             result.purchaseRemainders[#result.purchaseRemainders+1]={id=id,count=lot.count,cost=lot.cost,owner=lot.owner}
             local owner=lot.ownerAccount or lot.owner and byRecipe[lot.owner] and byRecipe[lot.owner][1]
             if owner then owner.attributedCost=owner.attributedCost+lot.cost end
         end
     end end end
+    for _,ac in pairs(accounts) do
+        local per=ac.count>0 and ac.producedCount/ac.count or 0
+        local required=ac.consumedCount+ac.demandCount
+        local material=per>0 and ceil(required/per) or 0
+        ac.naturalRemainder=min(ac.saleCount,max(0,material*per-required))
+        ac.levelingRemainder=ac.saleCount-ac.naturalRemainder
+        if tick then tick() end
+    end
     for id,entry in pairs(sold) do
         result.saleOutputs[#result.saleOutputs+1]=entry;result.recoveryTotal=result.recoveryTotal+entry.revenue
-        if entry.source=="ah" and entry.assumed then result.recoveryAssumesAllSold=true end
+        if entry.source=="ah" then result.recoveryAssumesAllSold=true end
         if missing[id] then result.recoveryMissing=result.recoveryMissing+1;result.recoveryMissingItems[#result.recoveryMissingItems+1]=id end
+        if tick then tick() end
     end
     table.sort(result.saleOutputs,function(a,b)return a.id<b.id end);table.sort(result.recoveryMissingItems)
     table.sort(result.purchaseRemainders,function(a,b)return a.id<b.id end)
     local function fill(step)
         local total=newAccounting();local found=false
-        if byStep[step] then addAccounting(total,byStep[step]);found=true end
-        if not found then for _,id in ipairs(step.actionIDs or {}) do if byID[id] then addAccounting(total,byID[id]);found=true end end end
-        if not found and step.actionID and byID[step.actionID] then addAccounting(total,byID[step.actionID]);found=true end
+        if byStep[step] then addAccounting(total,byStep[step],tick);found=true end
+        if not found then for _,id in ipairs(step.actionIDs or {}) do if byID[id] then addAccounting(total,byID[id],tick);found=true end end end
+        if not found and step.actionID and byID[step.actionID] then addAccounting(total,byID[step.actionID],tick);found=true end
         if not found then
             local r=recipeFor(step,snapshot)
             local k=step.kind=="specialization_quest" and ("quest:"..tostring(step.goalID)) or (r and (r.key or (tostring(r.profession)..":"..tostring(r.spell))) or key({profession=step.profession,spell=step[3]}))
-            for _,a in ipairs(byRecipe[k] or {}) do addAccounting(total,a) end
+            for _,a in ipairs(byRecipe[k] or {}) do addAccounting(total,a,tick) end
             local all=recipeCounts[k] or 0
             local count=step[4] or 0
             if all>0 and count>0 and count<all then
@@ -420,14 +444,14 @@ function R.Apply(result,snapshot)
         end
         for _,field in ipairs(sumFields) do step[field]=total[field] end
         step.attributedCostExact=nil
-        step.recoveryOutputs=R.GroupOutputs(total.recoveryOutputs);step.netTotal=step.attributedCost-step.recoveryTotal
+        step.recoveryOutputs=R.GroupOutputs(total.recoveryOutputs,tick);step.netTotal=step.attributedCost-step.recoveryTotal
         step.costTransferred=step.saleCount==0 and step.transferredCost>0 or nil
         return step.attributedCost
     end
     local allocated=0
-    for _,step in ipairs(result.steps or {}) do allocated=allocated+fill(step) end
+    for _,step in ipairs(result.steps or {}) do allocated=allocated+fill(step);if tick then tick() end end
     local executionAllocated=0
-    for _,step in ipairs(result.executionSteps or {}) do executionAllocated=executionAllocated+fill(step) end
+    for _,step in ipairs(result.executionSteps or {}) do executionAllocated=executionAllocated+fill(step);if tick then tick() end end
     local delta=result.purchaseTotal-result.demandNonCraftCost-allocated
     result.recoveryUnallocatedCost=delta
     local last=result.steps and result.steps[#result.steps]
@@ -446,6 +470,7 @@ function R.Apply(result,snapshot)
             local nextRounded=floor(exact+.5+1e-8)
             step.attributedCost=nextRounded-rounded;rounded=nextRounded
             step.netTotal=step.attributedCost-(step.recoveryTotal or 0)
+            if tick then tick() end
         end
     end
     roundAttribution(result.steps)

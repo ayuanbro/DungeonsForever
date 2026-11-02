@@ -38,8 +38,7 @@ local function DB()
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.ui = DungeonsForeverDB.ui or {}
     local db = DungeonsForeverDB
-    if db.svVersion ~= 2 then
-        db.svVersion = 2
+    if db.svVersion ~= 3 then
         db.openPerf = nil
         db.memProbe = nil
         db.memMarks = nil
@@ -57,6 +56,7 @@ local function DB()
                 end
             end
         end
+        db.svVersion = 3
     end
     return db
 end

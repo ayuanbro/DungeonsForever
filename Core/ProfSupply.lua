@@ -91,6 +91,28 @@ end
 
 local FORMULA_STEP = 8
 
+local formulaFacts = setmetatable({}, {__mode="k"})
+function M.FormulaFacts(itemID)
+    local flat=ns.EnsureProfFormulaOffers and ns.EnsureProfFormulaOffers()[itemID]
+    if type(flat)~="table" or #flat%FORMULA_STEP~=0 then return EMPTY end
+    local cached=formulaFacts[flat]
+    if cached then return cached end
+    cached={}
+    for i=1,#flat,FORMULA_STEP do
+        local npc,side=flat[i],FactionOf(flat[i+3])
+        if Int(npc,1) then
+            local previous=cached[npc]
+            if not previous then cached[npc]={faction=side,available=flat[i+2]~=0,purchasable=true}
+            else
+                if previous.faction~=side then previous.faction=nil end
+                previous.available=previous.available or flat[i+2]~=0
+            end
+        end
+    end
+    formulaFacts[flat]=cached
+    return cached
+end
+
 local function BuildFormulaList(itemID, withCurrency)
     local flat = ns.EnsureProfFormulaOffers()[itemID]
     if type(flat) ~= "table" then return nil end
@@ -106,7 +128,7 @@ local function BuildFormulaList(itemID, withCurrency)
             local limited = (type(stock) == "number" and stock >= 0) and stock or nil
             local entry = {
                 npcID = npcID,
-                quantity = Int(pack, 1) and pack or 1,
+                quantity = Int(pack, 1) and pack or nil,
                 unlimited = unlimited, limited = limited,
                 maxStock = limited and stock or nil,
                 stockUnknown = (not unlimited and limited == nil) or nil,
@@ -115,20 +137,21 @@ local function BuildFormulaList(itemID, withCurrency)
                 source = "formula-offers", verifiedAt = verifiedAt,
                 faction = FactionOf(side),
                 areaID = Int(areaID, 1) and areaID or nil,
-                hasExtendedCost = false, currencyID = 0, price = 0,
+                hasExtendedCost = false, currencyID = 0,
             }
             entry.bundleSize = entry.quantity
             if Int(curID, 1) then
                 if not withCurrency then entry = nil end
                 if entry then
+                    entry.price=type(cost)=="number" and cost or nil
                     entry.currencyID = curID
                     entry.currencyAmount = tonumber(curAmt) or 0
                     entry.hasExtendedCost = true
                 end
-            elseif type(cost) == "number" then
+            elseif Int(cost, 0) and Int(pack, 1) then
                 entry.price = cost
             else
-                entry = nil
+                entry.priceVerified = false
             end
             if entry then
                 list = list or {}

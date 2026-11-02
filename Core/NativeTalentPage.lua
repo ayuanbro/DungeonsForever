@@ -13,7 +13,10 @@ local TP = ns.TalentPlans
 local MAX_PT = 51
 local COLW, GX, TOP = 303, 41, 50
 local GRID_Y, ROW_STEP, NODE_SIZE = 200, 60, 40
+local BODY_W, BODY_H = 1212, 595
 local LIST_W, LIST_ROW, LIST_STEP = 220, 22, 25
+local LIST_DROP = 20
+local BRAND_LIFT = 5
 local PLAN_ROWS, SKILL_ROWS = 7, 6
 
 local U0, U1, V0, V1 = 0.00049, 0.99951, 0.00049, 0.57520
@@ -268,7 +271,7 @@ local function BuildBackground(b)
     for i = 1, 4 do
         local t = b:CreateTexture(nil, 'OVERLAY', nil, 1)
         t:SetPoint('TOPLEFT', b, 'TOPLEFT', (i - 1) * COLW, 0)
-        t:SetSize(COLW, 595)
+        t:SetSize(COLW, BODY_H)
         t:SetTexture(art)
         local a, c = U0 + (U1 - U0) * (i - 1) / 3, U0 + (U1 - U0) * i / 3
         if i == 4 then
@@ -294,7 +297,7 @@ local function BuildBackground(b)
     br:SetPoint('TOPLEFT', b, 'TOPLEFT', 606, 0)
     local bd = b:CreateTexture(nil, 'OVERLAY', nil, 6)
     bd:SetAtlas('Talents-inner-frame-c60')
-    bd:SetPoint('TOPLEFT', b, 'TOPLEFT', -2, -4)
+    bd:SetPoint('TOPLEFT', b, 'TOPLEFT', -2, 4)
     bd:SetSize(1216, 603)
 end
 
@@ -627,9 +630,9 @@ local function BuildList(parent, y, rows, mode)
         r.ic:SetSize(16, 16)
         r.ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         if plan then
-            r.seq = NewText(r, 12, 0.72, 0.76, 0.82, 'RIGHT')
-            r.seq:SetPoint('LEFT', r, 'LEFT', 0, 0)
-            r.seq:SetWidth(14)
+            r.seq = NewText(r, 14, 0.72, 0.76, 0.82, 'LEFT')
+            r.seq:SetPoint('LEFT', r, 'LEFT', -2, 0)
+            r.seq:SetWidth(16)
         end
         r.nm = NewText(r, 14, 0.92, 0.92, 0.92, 'LEFT')
         r.nm:SetPoint('LEFT', r, 'LEFT', plan and 38 or 22, 0)
@@ -649,7 +652,7 @@ local function BuildHeaderRow(y, cols)
     local out = {}
     for i = 1, #cols do
         local c = cols[i]
-        local t = NewText(body, 12, 0.55, 0.58, 0.62, (c.right or c.rx) and 'RIGHT' or 'LEFT')
+        local t = NewText(body, 14, 0.55, 0.58, 0.62, (c.right or c.rx) and 'RIGHT' or 'LEFT')
         if c.rx then
             t:SetPoint('TOPRIGHT', body, 'TOPLEFT', 3 * COLW + GX + c.rx, -(y - TOP))
         elseif c.right then
@@ -663,13 +666,19 @@ local function BuildHeaderRow(y, cols)
     return out
 end
 
+local function PlanName()
+    local p = NP.plan
+    if p and p.name and p.name ~= '' then return p.name end
+    return string.format(L['方案%d'], NP.planIdx or 1)
+end
+
 local function BuildLists()
     planTitle = NewText(body, 14, 1, 0.82, 0, 'LEFT')
-    planTitle:SetPoint('TOPLEFT', body, 'TOPLEFT', 3 * COLW + GX - 2, -(GRID_Y - 45 - TOP))
+    planTitle:SetPoint('TOPLEFT', body, 'TOPLEFT', 3 * COLW + GX - 2, -(GRID_Y - 45 + LIST_DROP - TOP))
     planTitle:SetText(L['加点计划'])
 
-    planHeader = BuildHeaderRow(GRID_Y - 15, {
-        { rx = 14, text = L['序号'] },
+    planHeader = BuildHeaderRow(GRID_Y - 15 + LIST_DROP, {
+        { x = -2, text = L['序号'] },
         { x = 38, text = L['天赋'] },
         { rx = LIST_W - 66, text = L['等级'] },
         { right = true, text = L['进度'] },
@@ -677,7 +686,7 @@ local function BuildLists()
 
     viewBtn = CreateFrame('Button', 'DungeonsForeverTalentViewBtn', body, 'UIPanelButtonNoTooltipTemplate')
     viewBtn:SetSize(56, 18)
-    viewBtn:SetPoint('RIGHT', body, 'TOPLEFT', 3 * COLW + GX + LIST_W, -(GRID_Y - 37 - TOP))
+    viewBtn:SetPoint('RIGHT', body, 'TOPLEFT', 3 * COLW + GX + LIST_W, -(GRID_Y - 37 + LIST_DROP - TOP))
     viewBtn:SetText(L['实时'])
     Skinnable(viewBtn)
     viewBtn:SetScript('OnClick', function()
@@ -693,25 +702,25 @@ local function BuildLists()
     end)
     viewBtn:SetScript('OnLeave', function() GameTooltip:Hide() end)
 
-    planRows = BuildList(body, GRID_Y, PLAN_ROWS, 'plan')
+    planRows = BuildList(body, GRID_Y + LIST_DROP, PLAN_ROWS, 'plan')
 
     local sep = body:CreateTexture(nil, 'OVERLAY')
-    sep:SetPoint('TOPLEFT', body, 'TOPLEFT', 3 * COLW + GX, -(GRID_Y + PLAN_ROWS * LIST_STEP + 8 - TOP))
+    sep:SetPoint('TOPLEFT', body, 'TOPLEFT', 3 * COLW + GX, -(GRID_Y + PLAN_ROWS * LIST_STEP + 8 + LIST_DROP - TOP))
     sep:SetSize(LIST_W, 1)
     sep:SetTexture(WHITE)
     sep:SetVertexColor(1, 1, 1, 0.14)
 
     skillTitle = NewText(body, 14, 1, 0.82, 0, 'LEFT')
-    skillTitle:SetPoint('TOPLEFT', body, 'TOPLEFT', 3 * COLW + GX - 2, -(GRID_Y + PLAN_ROWS * LIST_STEP + 17 - TOP))
+    skillTitle:SetPoint('TOPLEFT', body, 'TOPLEFT', 3 * COLW + GX - 2, -(GRID_Y + PLAN_ROWS * LIST_STEP + 17 + LIST_DROP - TOP))
     skillTitle:SetText(L['可学习的技能'])
 
-    skillHeader = BuildHeaderRow(GRID_Y + PLAN_ROWS * LIST_STEP + 35, {
+    skillHeader = BuildHeaderRow(GRID_Y + PLAN_ROWS * LIST_STEP + 35 + LIST_DROP, {
         { x = 22, text = L['技能'] },
         { rx = LIST_W - 62, text = L['技能等级'] },
         { right = true, text = L['人物等级'] },
     })
 
-    skillRows = BuildList(body, GRID_Y + PLAN_ROWS * LIST_STEP + 55, SKILL_ROWS, 'skill')
+    skillRows = BuildList(body, GRID_Y + PLAN_ROWS * LIST_STEP + 55 + LIST_DROP, SKILL_ROWS, 'skill')
 end
 
 local function MakeButton(parent, w, text, x, y)
@@ -1267,7 +1276,7 @@ local function UpdateLists()
     for i = shownRows + 1, PLAN_ROWS do planRows[i]:Hide() end
     if planTitle then
         if NP.viewMode == 'plan' then
-            planTitle:SetText(string.format(L['总览 · %d 点'], #pending))
+            planTitle:SetText(PlanName())
         else
             planTitle:SetText(string.format(L['实时 · %d 点'], (base and base.spent) or TotalSpent()))
         end
@@ -1849,7 +1858,7 @@ function NP.Build(T)
     if RestoreSim() then NP.seeded = true end
 
     body = CreateFrame('Frame', 'DungeonsForeverTalentPage', T)
-    body:SetSize(1212, 595)
+    body:SetSize(BODY_W, BODY_H)
     body:SetPoint('TOPLEFT', T, 'TOPLEFT', 0, -TOP)
     body:SetFrameLevel(1000)
     body:Hide()
@@ -1862,6 +1871,10 @@ function NP.Build(T)
         BuildHeader(t, 'Interface\\Icons\\' .. tostring(tree.icon), tree.name or '', true)
     end
     BuildHeader(4, BRAND, L['加点计划'], false)
+    if headers[4] and headers[4].Icon then
+        headers[4].Icon:ClearAllPoints()
+        headers[4].Icon:SetPoint('CENTER', headers[4], 'CENTER', -3, 3 + BRAND_LIFT)
+    end
 
     BuildNodes()
     NP.byName = {}
