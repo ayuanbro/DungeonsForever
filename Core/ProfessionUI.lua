@@ -145,8 +145,9 @@ end
 
 function PD.SnapshotBadgeState(s)
     s = s or {}
+    if not next(s) then return "no_plan" end
     if s.referenceOnly then return "recipe_reference" end
-    if s.diagnosticPolicyChanged then return "rules_changed" end
+    if s.diagnosticPolicyChanged or s.status=="recalculate_required" then return "rules_changed" end
     if PD.PlanLearningBlocked(s) then return "learning_unknown" end
     if s.scheme == "optim" and s.planVersion~=2 then return "optim" end
     if s.auctionSupplyShortages and #s.auctionSupplyShortages>0 then return "stock_short" end
@@ -175,11 +176,13 @@ function PD.SnapshotBadgeState(s)
         if sec then return "frame", sec end
         return "ageunknown"
     end
-    return "noprice"
+    -- The shared price source is available; this route has not been priced.
+    return "incomplete"
 end
 
 function PD.SnapshotBadgeText(s)
     local st, sec = PD.SnapshotBadgeState(s)
+    if st == "no_plan" then return nil end
     if st=="recipe_reference" then return L["配方资料待补全"],0.95,0.75,0.4 end
     if st == "learning_reference" then return L["含未知学习来源"], 0.95, 0.75, 0.4 end
     if st == "rules_changed" then return L["路线待重算"], 0.95, 0.75, 0.4 end
@@ -6178,7 +6181,7 @@ function PD.PaintLvTiles()
     if s.budgetLimited then details[#details + 1] = { L["已完成本轮计算，当前结果尚未证明最优。"], 0.95, 0.75, 0.4 } end
     if s.quotesRefreshed then details[#details + 1] = { L["数量或费率已更新，本轮数字已按最新价格重算。"], 0.7, 0.7, 0.7 } end
     for _, ln in ipairs(details) do costLines[#costLines + 1] = ln end
-    if PD.autoPage == "log" then
+    if PD.autoPage == "log" and s.status ~= "recalculate_required" then
         local cost, madeCasts, wantCasts = PD.CraftLogCost(PD.cur)
         tiles.cost.label:SetText(L["当前总花费"])
         tiles.cost.val:SetText(cost ~= nil and PD.RecoveryMoney(cost) or L["未知"])
@@ -6189,7 +6192,7 @@ function PD.PaintLvTiles()
         }
         if cost == nil then costLines[#costLines + 1] = { L["部分已制作步骤成本未知"], 0.95, 0.75, 0.4 } end
         PD.SetBadge(L["按方案单价估算"], 0.7, 0.7, 0.7)
-    elseif PD.autoPage == "recovery" then
+    elseif PD.autoPage == "recovery" and s.status ~= "recalculate_required" then
         local rec = tonumber(s.recoveryTotal) or 0
         tiles.cost.label:SetText(L["预计总回血"])
         tiles.cost.val:SetText(PD.RecoveryMoney(rec))
@@ -10845,6 +10848,11 @@ function PD.PlanStatusParts(plan)
     end
     if plan.status=="recalculate_required" then
         for _,diagnostic in ipairs(plan.diagnostics or {}) do
+            if diagnostic.code=="historyUnreadable" then
+                local xp=ns.ProfExecution
+                return xp and xp.GetActive(plan.slug or PD.cur) and L["执行计划缺失或无法读取；请结束追踪后重新计算。"]
+                    or L["已保存路线无法读取，请重新计算。"]
+            end
             local scanText=PD.ReplicateScanMessage(diagnostic.code)
             if scanText then return scanText end
             if diagnostic.code=="learningPolicyChanged" and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
@@ -12312,7 +12320,7 @@ local function TrackRunOf(slug)
     local T = ns.ProfExecution
     if not T then return nil end
     local run = T.GetRun(slug)
-    if run and run.status == "active" then return run end
+    if run and run.status == "active" then return run, T.GetPlan(slug) end
     return nil
 end
 
@@ -12374,14 +12382,14 @@ end
 local function TrackStepsFor(slug, steps)
     local T = ns.ProfExecution
     if not T then return nil end
-    local run = TrackRunOf(slug)
-    if not run then return nil end
-    local mine = run.plan.executionSteps or run.plan.steps
+    local run, plan = TrackRunOf(slug)
+    if not plan then return nil end
+    local mine = plan.executionSteps or plan.steps
     if type(mine) ~= "table" or type(steps) ~= "table" or #steps == 0 or #mine == 0 then return nil end
     if steps[1].segmentIDs then
         local progress=T.GetProgressAll(slug)
         if not progress then return nil end
-        local ledger=run.plan and run.plan.executionSteps or mine
+        local ledger=plan.executionSteps or mine
         local byID={}
         for index,segment in ipairs(ledger) do
             if not segment.segmentID then return nil end
@@ -12425,8 +12433,9 @@ function PD.CraftLogCost(slug)
     slug = slug or PD.cur
     local run = T and (T.GetRun(slug) or T.GetHistory(slug)[1])
     if not run then return 0, 0, 0 end
-    local steps = run.plan and (run.plan.executionSteps or run.plan.steps)
-    if type(steps) ~= "table" then return nil, 0, 0 end
+    local plan = T.GetPlan(slug,run.planID)
+    if not plan then return nil, 0, 0 end
+    local steps = plan.executionSteps or plan.steps
     local unknown = false
     local total, casts, planned = 0, 0, 0
     for i = 1, #steps do
@@ -12454,8 +12463,12 @@ function PD.RowsCraftLog(rows)
         PushText(rows, L["未启用制作追踪。"], 14, C_GREY)
         return
     end
-    local sum = T.GetSummary(PD.cur)
+    local sum, reason = T.GetSummary(PD.cur)
     if not sum then
+        if reason == "historyUnreadable" then
+            PushText(rows, L["这份制作记录的执行计划无法读取；记录已保留。"], 14, C_GREY)
+            return
+        end
         PushText(rows, L["本角色还没有任何制作记录。"], 14, C_TEXT)
         PushGap(rows, 4)
         PushText(rows, L["在「路线」页点「开始执行」或打开升级 HUD 后，这里会记录每一步实际做了几次、产出多少。"], 14, C_GREY)
@@ -12629,9 +12642,23 @@ end
 
 function PD.RowsLeveling(rows)
     PD.warnNotes = nil
+    local activeRun, activePlan = TrackRunOf(PD.cur)
+    local unreadable = activeRun and not activePlan
+    if unreadable then
+        -- Keep the failure in the summary used by the cost tile as well as
+        -- the body. An empty summary is not evidence of missing prices.
+        PD.lvSummary = {slug=PD.cur,planVersion=2,status="recalculate_required",feasible=false,
+            diagnostics={{code="historyUnreadable"}}}
+        PD.lvRouteHead = nil
+        PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
+    end
     if PD.autoPage == "log" then
-        PD.lvSummary, PD.lvRouteHead = nil, nil
+        if not unreadable then PD.lvSummary, PD.lvRouteHead = nil, nil end
         PD.RowsCraftLog(rows)
+        return
+    end
+    if unreadable then
+        PushText(rows, L["执行计划缺失或无法读取；请结束追踪后重新计算。"], 14, C_GREY)
         return
     end
     local lv = LV[PD.cur]
@@ -12847,8 +12874,8 @@ function PD.RowsLeveling(rows)
     end
     if shownSum and shownSum.reserve and shownSum.reserve.mode~="off" then
         for _, text in ipairs(PD.ReserveWarningLines(shownSum.reserve)) do warning(text) end
-        local xp=ns.ProfExecution;local run=xp and xp.GetRun(PD.cur)
-        if run and run.plan.reserve and not run.reserveDisabled then
+        local xp=ns.ProfExecution;local run, plan=TrackRunOf(PD.cur)
+        if plan and plan.reserve and not run.reserveDisabled then
             rows[#rows+1]={kind="row",col=1,h=PD.ROW_H1,text=L["停止本次备用计划"],
                 act=function() xp.SkipReserve(PD.cur);if ns.ProfFollow then ns.ProfFollow.Paint() end;PD.RequestRender() end}
         end
@@ -13404,23 +13431,29 @@ end
 
 function PD.TripGroups(data)
     local seen, order, ah, other = {}, {}, {}, {}
+    local unassigned = { items = {}, total = 0 }
     for _, e in ipairs(data.mats or {}) do
         local id = e.id or e[1]
         local n = e.count or e[2] or 0
         local source=PD.PurchaseSourceKind(e)
-        local npc=(source=="vendor" or source=="npc") and e.npcID
-        if npc and id then
-            local g = seen[npc]
-            if not g then
-                g = { npcID = npc, items = {}, total = 0 }
-                seen[npc] = g
-                order[#order + 1] = g
+        if source=="vendor" or source=="npc" then
+            local npc = e.npcID
+            if type(npc) ~= "number" or npc <= 0 or npc % 1 ~= 0 then npc = nil end
+            local g = unassigned
+            if npc and id then
+                g = seen[npc]
+                if not g then
+                    g = { npcID = npc, items = {}, total = 0 }
+                    seen[npc] = g
+                    order[#order + 1] = g
+                end
             end
             local unit = e.unit
             local cost = e.cost
             local item={}
             for key,value in pairs(e) do item[key]=value end
             item.id,item.n,item.count,item.unit,item.cost=id,n,n,unit,cost
+            item.npcID = npc
             g.items[#g.items + 1] = item
             g.unpriced = g.unpriced or e.unpriced or type(cost) ~= "number"
             if not e.unpriced and type(cost) == "number" then g.total = g.total + cost end
@@ -13434,7 +13467,7 @@ function PD.TripGroups(data)
         if a.total ~= b.total then return a.total > b.total end
         return (a.npcID or 0) < (b.npcID or 0)
     end)
-    return order, ah, other
+    return order, ah, other, unassigned
 end
 
 local function TripMapName(loc)
@@ -13448,15 +13481,17 @@ local function TripMapName(loc)
 end
 
 function PD.PushTripGroups(rows, data)
-    local groups, ah, other = PD.TripGroups(data)
-    local money, unpriced = 0, false
+    local groups, ah, other, unassigned = PD.TripGroups(data)
+    local money, unpriced = unassigned.total, unassigned.unpriced
     for _, g in ipairs(groups) do
         money = money + (g.total or 0)
         unpriced = unpriced or g.unpriced
     end
     PushHead(rows, format(L["材料（%d 种）· 按商人采购"], PD.MaterialKindCount(data.mats)), 1)
-    rows[#rows].right = format(L["%d 位商人 · %s"], #groups,
-        unpriced and L["价格未知"] or RA.MoneyStr(money, "copper"))
+    local totalText = unpriced and L["价格未知"] or RA.MoneyStr(money, "copper")
+    rows[#rows].right = #unassigned.items > 0
+        and format(L["NPC采购合计：%s"], totalText)
+        or format(L["%d 位商人 · %s"], #groups, totalText)
     PushText(rows, L["按本路线选定的货源分组；点击商人条目在地图上定位。"], 11, C_GREY, 1)
     for _, g in ipairs(groups) do
         local name = (ns.ProfVendorNames and ns.ProfVendorNames[g.npcID]) or L["位置未收录的商人"]
@@ -13480,6 +13515,12 @@ function PD.PushTripGroups(rows, data)
             PD.ShopMatRow(rows, it, data, true, extra, true)
         end
     end
+    if #unassigned.items > 0 then
+        PushHead(rows, L["NPC采购（未指定商人）"], 1)
+        rows[#rows].right = format(L["%d 种 · %s"], PD.MaterialKindCount(unassigned.items),
+            unassigned.unpriced and L["价格未知"] or RA.MoneyStr(unassigned.total, "copper"))
+        for _, entry in ipairs(unassigned.items) do PD.ShopMatRow(rows, entry, data, true) end
+    end
     if #ah > 0 then
         local ahMoney, ahUnpriced = 0, false
         for _, e in ipairs(ah) do
@@ -13496,7 +13537,10 @@ function PD.PushTripGroups(rows, data)
             if row then row.tag = { text = L["拍卖行"], color = PD.TAG_INK.ah } end
         end
     end
-    for _,entry in ipairs(other) do PD.ShopMatRow(rows,entry,data,true) end
+    if #other > 0 then
+        PushHead(rows, L["来源待确认"], 1)
+        for _,entry in ipairs(other) do PD.ShopMatRow(rows,entry,data,true) end
+    end
     return nil
 end
 
@@ -14088,14 +14132,15 @@ function PD.LevelTool()
         end
     end
     if ns.ProfExecution then
-        local trackRun = TrackRunOf(PD.cur)
+        local trackRun, trackPlan = TrackRunOf(PD.cur)
         if trackRun then
-            local total = #(trackRun.plan.executionSteps or trackRun.plan.steps or {})
+            local total = trackPlan and #(trackPlan.executionSteps or trackPlan.steps) or 0
             local cur = math.min(trackRun.currentIndex or 1, total)
             list[#list + 1] = { key = "track", align = "right", on = true, tone = "blue",
-                                text = format(L["追踪 %d/%d"], cur, total), tip = {
+                                text = trackPlan and format(L["追踪 %d/%d"], cur, total) or L["结束追踪"], tip = {
                                     { L["结束追踪"], 1, 0.82, 0 },
-                                    { L["不再升级时，请点击此按钮结束追踪；制作记录保留。"] },
+                                    { trackPlan and L["不再升级时，请点击此按钮结束追踪；制作记录保留。"]
+                                        or L["执行计划缺失或无法读取；请结束追踪后重新计算。"] },
                                     { L["连续 48 小时无制作（含离线）自动结束；战斗中暂停，脱战后恢复。"], 0.85, 0.85, 0.85 },
                                     { L["关闭 HUD 只隐藏窗口，不会结束追踪。"], 0.85, 0.85, 0.85 },
                                 } }

@@ -268,7 +268,8 @@ local function updateCues(slug, rankTasks)
     local XP = ns.ProfExecution
     local run = XP and XP.GetActive and XP.GetActive(slug)
     local index = run and run.currentIndex or 1
-    local steps = run and run.plan and (run.plan.executionSteps or run.plan.steps)
+    local plan = run and XP.GetPlan(slug)
+    local steps = plan and (plan.executionSteps or plan.steps)
     local seg = steps and steps[index]
     local step = seg and (seg.segmentID or seg)
     local advanced = run and cueState.run == run and cueState.step and step ~= cueState.step
@@ -405,7 +406,13 @@ local function routeForCalc(slug, skill)
         return "gather",steps or {}
     end
     local XP = ns.ProfExecution
-    local frozen = XP and XP.GetPlan and XP.GetPlan(slug)
+    local frozen, planError
+    if XP and XP.GetPlan then frozen, planError = XP.GetPlan(slug) end
+    if planError then
+        PF.pendingPlans=PF.pendingPlans or {}
+        PF.pendingPlans[slug]={status="recalculate_required",slug=slug,feasible=false,diagnostics={{code=planError}}}
+        return "auto",{}
+    end
     local economy=ns.ProfEconomy
     if frozen and frozen.learningPolicyFingerprint and economy and economy.LearningPolicyFingerprint
         and frozen.learningPolicyFingerprint~=economy.LearningPolicyFingerprint() then
