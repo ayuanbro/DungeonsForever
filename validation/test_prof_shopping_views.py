@@ -261,5 +261,136 @@ class ShoppingViewTests(unittest.TestCase):
           unchanged()
         ''')
 
+    def vendor_cache_fixture(self):
+        self.load((ui.ROOT/'Core/VendorPriceDB.lua').read_text(encoding='utf-8-sig'))
+        self.lua.execute('''
+          cachedVendorCalls={}
+          Auctionator={API={v1={GetVendorPriceByItemID=function(caller,id)
+            assert(caller=='DungeonsForever')
+            cachedVendorCalls[id]=(cachedVendorCalls[id] or 0)+1
+            return ({[2880]=95,[4470]=38})[id]
+          end}}}
+          ns.ProfSupply={Ensure=function()end}
+          ns.ProfVendorOffers={[12]={{npcID=7,price=5,quantity=1,unlimited=true,
+            available=true,purchasable=true,reference=true,priceVerified=true,
+            source='supply-verified',verifiedAt=1000,faction='N'}}}
+          function cachedNPCPlan(mode,auctionFlux)
+            local s=fixture();s.considerAuctionSupply=false
+            s.recipes[1].mats={{2880,3},{4470,2},{11,1},{12,1}}
+            s.prices={[2880]=auctionFlux and 1 or 200,[4470]=100,[11]=7,[12]=20}
+            s.offers={}
+            for _,id in ipairs({2880,4470,12})do
+              s.offers[id]=ns.VendorPriceDB.GetOffers(id)
+            end
+            for _,id in ipairs({2880,4470})do
+              local q=s.offers[id][1]
+              assert(q and q.npcID==nil and q.priceSource=='auctionator-vendor' and q.priceBasis=='cached-unit')
+            end
+            if mode=='ample' then s.recipes[1].yellow=1;s.recipes[1].green=1;s.recipes[1].grey=100 end
+            local p,j=ns.ProfRouteAuto.Compute('alchemy',{snapshot=s,start=1,target=2,
+              autoCraftTools=false,recoveryEnabled=false,reserveMode=mode,cpuLimitMs=1000})
+            assert(not j.error and p.targetReached)
+            return p
+          end
+          function rowSections(rows)
+            local out,current={},nil
+            for _,row in ipairs(rows)do
+              if row.kind=='head' and row.col==1 then current=row.text end
+              if row.purchaseSource then out[row.it[1]]={row=row,section=current}end
+            end
+            return out
+          end
+          function assertCachedReceipts()
+            for _,e in ipairs(plan.mats)do if e.id==2880 or e.id==4470 then
+              assert(e.source=='vendor' and e.npcID==nil and e.quoteSource=='auctionator-vendor')
+              assert(e.priceBasis=='cached-unit' and e.unit==(e.id==2880 and 95 or 38))
+            end end
+            for _,entry in ipairs(ns.ProfFollow.ShoppingForPlan('alchemy',plan))do
+              if entry.id==2880 or entry.id==4470 then
+                for _,p in ipairs(entry.purchases or {})do
+                  assert(p.source=='vendor' and p.npcID==nil and p.quoteSource=='auctionator-vendor')
+                  assert(p.priceBasis=='cached-unit')
+                end
+              end
+            end
+          end
+        ''')
+
+    def test_real_vendor_cache_without_npc_has_own_group_in_base_and_reserve_three_locales(self):
+        for locale in ('zhCN','zhTW','enUS'):
+            for mode in ('off','ample'):
+                with self.subTest(locale=locale,reserve=mode):
+                    self.prepare(locale);self.vendor_cache_fixture()
+                    self.lua.globals().reserveMode=mode
+                    self.lua.execute('''
+                      usePlan(cachedNPCPlan(reserveMode))
+                      assert(cachedVendorCalls[2880]>0 and cachedVendorCalls[4470]>0)
+                      if reserveMode=='off' then assert(plan.total==373)
+                      else assert(plan.reserve.total>0)end
+                      assertCachedReceipts()
+                      local plain=receipts(visibleRows)
+                      clickHeader('shop_group')
+                      assert(deepEqual(plain,receipts(visibleRows)))
+                      local sections=rowSections(visibleRows)
+                      local label=ns.L['NPC采购（未指定商人）']
+                      assert(sections[2880].section==label and sections[4470].section==label)
+                      assert(sections[2880].row.tag.text==ns.L['NPC购买'] and not sections[2880].row.act)
+                      assert(sections[4470].row.tag.text==ns.L['NPC购买'] and not sections[4470].row.act)
+                      assert(sections[12].section=='Selected supplier' and sections[12].row.act)
+                      assert(sections[11].section==format(ns.L['拍卖行（%d 种）'],1))
+                      local cacheCost=sections[2880].row.purchaseCost+sections[4470].row.purchaseCost
+                      local vendorCost=cacheCost+sections[12].row.purchaseCost
+                      assert(findText(visibleRows,label).right==format(ns.L['%d 种 · %s'],2,
+                        ns.ProfRouteAuto.MoneyStr(cacheCost,'copper')))
+                      assert(findText(visibleRows,format(ns.L['材料（%d 种）· 按商人采购'],4)).right==
+                        format(ns.L['NPC采购合计：%s'],ns.ProfRouteAuto.MoneyStr(vendorCost,'copper')))
+                      imported=nil;clickHeader('import_list')
+                      assert(imported and #imported==1 and imported[1].name=='Item11')
+                      assert(imported[1].need==sections[11].row.purchaseCount)
+                      for _,key in ipairs({'NPC采购（未指定商人）','来源待确认','NPC采购合计：%s'})do
+                        assert(rawget(ns.L,key),key)
+                      end
+                      assertCachedReceipts();unchanged()
+                    ''')
+
+    def test_explicit_cheaper_auction_remains_auction_despite_real_vendor_cache(self):
+        self.vendor_cache_fixture()
+        self.lua.execute('''
+          usePlan(cachedNPCPlan('off',true))
+          local plain=receipts(visibleRows)
+          clickHeader('shop_group')
+          local sections=rowSections(visibleRows)
+          assert(sections[2880].row.purchaseSource=='ah')
+          assert(sections[2880].section==format(ns.L['拍卖行（%d 种）'],2))
+          assert(sections[4470].section==ns.L['NPC采购（未指定商人）'])
+          assert(deepEqual(plain,receipts(visibleRows)))
+          imported=nil;clickHeader('import_list')
+          assert(imported and #imported==2)
+          local seen={};for _,entry in ipairs(imported)do seen[entry.name]=entry.need end
+          assert(seen.Item2880==3 and seen.Item11==1 and not seen.Item4470)
+          unchanged()
+        ''')
+
+    def test_unassigned_npc_unknown_price_and_unknown_source_have_distinct_headers(self):
+        self.vendor_cache_fixture()
+        self.lua.execute('''
+          local p=cachedNPCPlan('off');local cached
+          for _,e in ipairs(p.mats)do if e.id==4470 then e.cost=nil;e.unpriced=true;cached=e end end
+          assert(cached and cached.npcID==nil)
+          p.mats[#p.mats+1]={id=99,count=2,source='unknown',vendor=true,cost=nil,unpriced=true}
+          usePlan(p);local plain=receipts(visibleRows)
+          clickHeader('shop_group')
+          local sections=rowSections(visibleRows)
+          local label=ns.L['NPC采购（未指定商人）']
+          assert(sections[4470].section==label and sections[4470].row.purchaseCost==nil)
+          assert(sections[99].section==ns.L['来源待确认'] and sections[99].row.purchaseCost==nil)
+          assert(sections[99].row.purchaseSource=='unknown')
+          assert(findText(visibleRows,label).right==format(ns.L['%d 种 · %s'],2,ns.L['价格未知']))
+          assert(findText(visibleRows,format(ns.L['材料（%d 种）· 按商人采购'],5)).right==
+            format(ns.L['NPC采购合计：%s'],ns.L['价格未知']))
+          assert(deepEqual(plain,receipts(visibleRows)))
+          unchanged()
+        ''')
+
 
 if __name__=='__main__':unittest.main()

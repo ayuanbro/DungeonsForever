@@ -92,7 +92,10 @@ local function outputTotal(p,item)
     if not total then total={actual=0,guaranteed=0,pending=0};p.outputs[item]=total end
     return total
 end
-local function steps(plan) return plan and (plan.executionSteps or plan.steps) or {} end
+local function steps(plan)
+    local list=type(plan)=="table" and (plan.executionSteps or plan.steps)
+    return type(list)=="table" and list or {}
+end
 local function readablePlan(run)
     local plan=run and run.plan
     if type(plan)=="table" and rawget(plan,"__dfHistory")==nil and rawget(plan,"__dfPlan")==nil
@@ -295,7 +298,10 @@ function XP.CanRevertCandidate(slug)
         and not (preparing and (preparing.hadActive or preparing.sourcePlanID))
         and not (source and source.sourcePlanID)
 end
-function XP.GetPlan(slug) local run=XP.GetRun(slug);if run then return readablePlan(run) end end
+function XP.GetPlan(slug,planID)
+    local run=planID and XP.Get(slug,planID) or not planID and XP.GetRun(slug)
+    if run then return readablePlan(run) end
+end
 function XP.CurrentPlan()
     local slug = db().trackingSlug
     return slug and XP.GetPlan(slug) or nil
@@ -319,7 +325,8 @@ function XP.CanRemove(slug,planID)
         for _,source in pairs(sources) do if source.sourcePlanID==planID then return false end end
     end
     for id,other in pairs(c.runs) do if id~=planID then
-        local plan=other.plan or {};local opts=plan.executionOptions or {}
+        local plan=type(other.plan)=="table" and other.plan or {}
+        local opts=type(plan.executionOptions)=="table" and plan.executionOptions or {}
         if other.inheritedFrom==planID or other.originPlanID==planID
             or plan.executionSourcePlanID==planID or opts.executionSourcePlanID==planID then return false end
     end end
@@ -365,7 +372,8 @@ local function pruneArchived(slug)
     repeat
         local list={}
         for id,r in pairs(c.runs) do
-            if r.slug==slug and r.status~="active" then
+            -- An unreadable plan cannot prove that its history is empty.
+            if r.slug==slug and r.status~="active" and readablePlan(r) then
                 list[#list+1]={id=id,run=r,at=tonumber(r.archivedAt or r.updatedAt) or 0}
             end
         end
@@ -489,7 +497,9 @@ function XP.End(slug,reason)
     archive(c,slug,reason or "ended")
     run.status="archived";run.archivedAt=run.archivedAt or now();run.archiveReason=reason or "ended"
     run.endedAt=run.endedAt or now();run.completionDue=nil
-    c.continuation[slug]={sourcePlanID=run.planID}
+    -- Ending an unreadable execution releases it without making it a source
+    -- for the next route. Keep the record; never fabricate a replacement plan.
+    c.continuation[slug]=readablePlan(run) and {sourcePlanID=run.planID} or nil
     if run.originSignature then
         c.endedContracts[slug]=c.endedContracts[slug] or {};c.endedContracts[slug][run.originSignature]=run.planID
     end
@@ -1457,7 +1467,12 @@ function XP.RefreshObservation()
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then if XP.DisableTracking then XP.DisableTracking() end;return false,false end
     XP.ExpireIdle()
     local c=db();local at=now()
-    local tracking=XP.HasActive();local paused=XP.IsCombatPaused()
+    local tracking=false
+    for _,id in pairs(c.active) do
+        local run=c.runs[id]
+        if run and run.status=="active" and readablePlan(run) then tracking=true;break end
+    end
+    local paused=XP.IsCombatPaused()
     local active=tracking and not paused;local receipts=active or tracking and pendLast~=nil
     local f=XP.eventFrame
     if f then
@@ -1476,7 +1491,7 @@ function XP.RefreshObservation()
     if not tracking then clearPending();combatPaused=nil end
     scheduleIdleCheck()
     local due
-    for _,id in pairs(c.active) do local run=c.runs[id];if run and run.completionDue then due=min(due or run.completionDue,run.completionDue) end end
+    for _,id in pairs(c.active) do local run=c.runs[id];if run and run.completionDue and readablePlan(run) then due=min(due or run.completionDue,run.completionDue) end end
     if due and not paused and not completionTimer and C_Timer and C_Timer.After then
         completionTimer=true;local generation=observationGeneration;local scheduling=true
         C_Timer.After(max(0.1,due-at),function()

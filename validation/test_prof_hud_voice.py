@@ -83,6 +83,19 @@ class HUDVoiceTests(unittest.TestCase):
           assert(run.currentIndex==1 and follow.step==1)
         ''')
 
+    def test_missing_execution_plan_blocks_hud_without_autostart_or_wrong_profession(self):
+        self.lua.execute('''
+          run.plan=nil
+          PD.cur='enchanting'
+          pf.InvalidateRoute();pf.Sync();pf.Paint()
+          local pending=pf.pendingPlans.alchemy
+          assert(pending and pending.slug=='alchemy' and pending.feasible==false)
+          assert(pf.f.finish:GetText()==ns.L['执行计划缺失或无法读取；请结束追踪后重新计算。'])
+          assert(not pf.f.verifyBtn:IsShown())
+          assert(xp.GetActive('alchemy')==run and not xp.GetActive('enchanting'))
+          assert(#sounds==0 and run.plan==nil)
+        ''')
+
     def test_actual_execution_advance_announces_once_across_repaints(self):
         self.lua.execute('''
           advance();assert(run.currentIndex==2)

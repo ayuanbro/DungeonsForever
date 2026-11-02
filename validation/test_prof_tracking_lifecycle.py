@@ -78,6 +78,37 @@ class TrackingLifecycleTests(unittest.TestCase):
           assert(run.lastCraftAt==1200 and run.attemptsDone==1)
         ''')
 
+    def test_reload_with_missing_plan_stops_observation_and_can_restart(self):
+        self.lua.execute("xp.RecordAttempt('alchemy',101,'before-reload');run.plan=nil;oldID=run.planID")
+        self.reload()
+        self.lua.execute('''
+          local invalid=xp.GetActive('alchemy')
+          assert(invalid and invalid.plan==nil and invalid.attemptsDone==1)
+          assert(not next(xp.eventFrame.events))
+          local p=xp.Progress('alchemy')
+          assert(p.blocked and p.historyUnreadable and not p.complete)
+          xp.End('alchemy')
+          assert(xp.Get('alchemy',oldID)==invalid)
+          local inventory,source,err=xp.PrepareRecalculate('alchemy')
+          assert(type(inventory)=='table' and not source and not err)
+          local fresh=assert(xp.StartNew('alchemy',fixture()))
+          assert(fresh.plan and fresh.attemptsDone==0 and xp.eventFrame.events.UNIT_SPELLCAST_SUCCEEDED)
+        ''')
+
+    def test_unreadable_plan_does_not_prevent_other_profession_tracking(self):
+        self.lua.execute('''
+          run.plan=nil
+          local other=fixture();other.planID='other';other.slug='mining'
+          for _,seg in ipairs(other.executionSteps)do seg.profession='mining';seg.recipe.profession='mining' end
+          assert(xp.StartNew('mining',other))
+          local active,receipts=xp.RefreshObservation()
+          assert(active and receipts and xp.eventFrame.events.UNIT_SPELLCAST_SUCCEEDED)
+          assert(not xp.RecordAttempt('alchemy',101,'invalid'))
+          assert(xp.RecordAttempt('mining',101,'valid'))
+          xp.End('alchemy')
+          assert(xp.GetActive('mining') and xp.eventFrame.events.UNIT_SPELLCAST_SUCCEEDED)
+        ''')
+
     def test_reload_retains_original_deadline(self):
         self.lua.execute("clock=1100;xp.RecordAttempt('alchemy',101,'real');clock=1100+limit-1")
         self.reload()

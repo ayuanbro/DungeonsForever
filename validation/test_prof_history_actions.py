@@ -26,6 +26,98 @@ class HistoryActionsTests(unittest.TestCase):
           assert(xp.GetActive('alchemy')==current and current.attemptsDone==0)
         ''')
 
+    def broken_run(self):
+        self.lua.execute('''
+          broken=newrun();assert(xp.RecordAttempt('alchemy',101,'before-plan-loss'))
+          broken.plan=nil
+        ''')
+
+    def test_missing_plan_does_not_break_leveling_pages_or_other_professions(self):
+        self.broken_run()
+        self.lua.execute('''
+          PD.built=true;PD.page=widget();PD.scroll=widget();PD.rows={};PD.LV_TILE_H=64
+          for _,name in ipairs({'PickNav','PickTabs','Layout','PlaceSettingsToggles',
+            'RequestRows','WarmNames','PaintToolProgress','PaintToolStale','UpdateVScroll'})do
+            PD[name]=function()end
+          end
+          PD.PaintLvTiles=function()return 0 end
+          PD.PaintRows=function(rows)rendered=rows end
+          PD.PaintTool=function(list)painted=list;return 0 end
+          function trackButton()
+            for _,entry in ipairs(painted)do if entry.key=='track' then return entry end end
+          end
+          for _,page in ipairs({'route','shop','log','recovery'})do
+            PD.autoPage=page;PD.Render()
+            local button=trackButton()
+            assert(button and button.on and button.text==ns.L['结束追踪'])
+            assert(#rendered>0 and xp.GetActive('alchemy')==broken)
+          end
+          PD.cur='enchanting';PD.autoPage='route';PD.Render()
+          assert(trackButton().text==ns.L['开始执行'] and not xp.GetActive('enchanting'))
+          assert(xp.GetActive('alchemy')==broken and broken.attemptsDone==1)
+        ''')
+
+    def test_end_unreadable_execution_allows_recalculation_without_losing_history(self):
+        self.broken_run()
+        self.lua.execute('''
+          local planID=broken.planID;local progress=broken.progress
+          local _,click=PD.LevelTool();click('track')
+          assert(not xp.GetActive('alchemy') and broken.status=='archived')
+          assert(xp.Get('alchemy',planID)==broken and broken.progress==progress)
+          local inventory,source,err=xp.PrepareRecalculate('alchemy')
+          assert(type(inventory)=='table' and not source and not err)
+          click('recalc');PD.RowsLeveling({})
+          assert(PD.autoSnapshot and PD.autoSnapshot.status=='searching')
+          for i=1,100 do ra.Pump('alchemy');if not ra.HasWork('alchemy') then break end end
+          PD.RowsLeveling({})
+          assert(PD.autoSnapshot.feasible and #PD.autoSnapshot.steps>0)
+          local replacement=newrun()
+          assert(replacement~=broken and replacement.plan and replacement.attemptsDone==0)
+          assert(xp.Get('alchemy',planID)==broken and broken.attemptsDone==1)
+        ''')
+
+    def test_unreadable_history_is_not_reported_as_no_history(self):
+        self.broken_run()
+        self.lua.execute('''
+          local rows={};PD.RowsCraftLog(rows);local text=''
+          for _,row in ipairs(rows)do
+            assert(row.text~=ns.L['本角色还没有任何制作记录。'])
+            if row.kind=='text' then text=text..row.text end
+          end
+          assert(text==ns.L['这份制作记录的执行计划无法读取；记录已保留。'])
+          assert(PD.CraftLogCost('alchemy')==nil)
+        ''')
+
+    def test_invalid_plan_shapes_share_validation_without_conversion(self):
+        self.broken_run()
+        self.lua.execute('''
+          for _,value in ipairs({false,42,'invalid',{},
+            {executionVersion=2,steps={}}, {executionSteps=42,steps={}}})do
+            broken.plan=value
+            local list=PD.LevelTool();local found=false
+            for _,b in ipairs(list)do if b.key=='track' then
+              assert(b.text==ns.L['结束追踪']);found=true
+            end end
+            assert(found)
+            for _,page in ipairs({'route','shop','log','recovery'})do
+              PD.autoPage=page;PD.RowsLeveling({})
+            end
+            assert(broken.plan==value and PD.CraftLogCost('alchemy')==nil)
+          end
+        ''')
+
+    def test_unreadable_only_tracking_disables_observation_and_reenables_for_valid_run(self):
+        self.broken_run()
+        self.lua.execute('''
+          local active,receipts=xp.RefreshObservation()
+          assert(not active and not receipts)
+          assert(not xp.RecordAttempt('alchemy',101,'invalid-plan'))
+          assert(broken.attemptsDone==1)
+          xp.End('alchemy');newrun()
+          active,receipts=xp.RefreshObservation()
+          assert(active and receipts and xp.RecordAttempt('alchemy',101,'valid-plan'))
+        ''')
+
     def test_end_and_recalculation_sources_are_protected(self):
         self.lua.execute('''
           local old=newrun();xp.PrepareRecalculate('alchemy')

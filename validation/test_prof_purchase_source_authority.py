@@ -35,10 +35,12 @@ class PurchaseSourceAuthorityUITests(unittest.TestCase):
           local missing={id=14,count=1,source='unknown',vendor=true,npcID=8}
           local noLocation={id=15,count=1,source='vendor',cost=5}
           local data={mats={vendor,auction,mixed,missing,noLocation}}
-          local groups,ah,other=PD.TripGroups(data)
+          local groups,ah,other,unassigned=PD.TripGroups(data)
           assert(#groups==1 and groups[1].npcID==7 and groups[1].total==10)
           assert(groups[1].items[1].bundleSize==5 and groups[1].items[1].unlimited)
-          assert(#ah==1 and ah[1]==auction and #other==3)
+          assert(#ah==1 and ah[1]==auction and #other==2)
+          assert(#unassigned.items==1 and unassigned.items[1].id==15 and unassigned.total==5)
+          assert(unassigned.items[1].npcID==nil and unassigned.items[1].source=='vendor')
           PD.Wrap=function(text)return{text}end
           PD.ProcureActive=function()return nil end
           local rows={};PD.PushTripGroups(rows,data)
