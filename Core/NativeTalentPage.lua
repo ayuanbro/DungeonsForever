@@ -937,7 +937,7 @@ local function BuildNeedCard()
     local label = f:CreateFontString(nil, 'OVERLAY')
     label:SetFont('Fonts\\ARKai_T.ttf', 15, '')
     label:SetTextColor(1, 1, 1)
-    label:SetText(L['需要等级'])
+    label:SetText(L['等级'])
     label:SetPoint('RIGHT', f, 'RIGHT', -60, 0)
 
     local box = CreateFrame('Frame', nil, f)
@@ -954,7 +954,7 @@ local function BuildNeedCard()
     f:EnableMouse(true)
     f:SetScript('OnEnter', function(self)
         TipBegin(self, 'ANCHOR_LEFT')
-        GameTooltip:SetText(L['需要等级'], 1, 1, 1)
+        GameTooltip:SetText(L['等级'], 1, 1, 1)
         GameTooltip:AddLine(L['角色 10 级起每级 1 点：需要等级 = 已投入点数 + 9'], 0.9, 0.9, 0.9, true)
         GameTooltip:Show()
     end)
@@ -1275,11 +1275,7 @@ local function UpdateLists()
     end
     for i = shownRows + 1, PLAN_ROWS do planRows[i]:Hide() end
     if planTitle then
-        if NP.viewMode == 'plan' then
-            planTitle:SetText(PlanName())
-        else
-            planTitle:SetText(string.format(L['实时 · %d 点'], (base and base.spent) or TotalSpent()))
-        end
+        planTitle:SetText(PlanName())
     end
     if viewBtn then viewBtn:SetText(NP.viewMode == 'plan' and L['总览'] or L['实时']) end
 
