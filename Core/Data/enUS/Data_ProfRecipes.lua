@@ -2464,6 +2464,9 @@ ns.ProfRecipes = setmetatable({}, {
         if not f then return nil end
         PARTS[k] = nil
         local v = f()
+        for _, row in ipairs(v.rows or {}) do
+            row.nip = row.nip or ns.ProfRecipeNIP[row[1]]
+        end
         rawset(t, k, v)
         return v
     end,

@@ -87,6 +87,7 @@ function RA.OptionsFor(slug, current)
     opts.cpuLimitMs = 8000
     opts.autoCraftTools = setting("autoCraftTools", true,slug)
     opts.residualMass = setting("autoResidualMass", false,slug)
+    opts.reserveMode = setting("autoReserveMode", "ample",slug)
     opts.recoveryEnabled = setting("recoveryEnabled", false,slug)
     opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug)
     opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false,slug)
@@ -111,6 +112,7 @@ local function options(slug, supplied)
     opts.start = math.max(1, math.min(300, math.floor(tonumber(opts.start) or 1)))
     opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or 300)))
     if opts.residualMass == nil then opts.residualMass = setting("autoResidualMass", false,slug) end
+    if opts.reserveMode == nil then opts.reserveMode = setting("autoReserveMode", "ample",slug) end
     if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false,slug) end
     if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug) end
     if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true,slug) end
@@ -150,7 +152,7 @@ local function signature(slug, opts)
     local sig=table.concat({"profession:"..tostring(slug), opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
         tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas), tostring(opts.considerAuctionSupply), tostring(opts.allowSecondaryLeveling),
         tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
-        "formula-channels:2", "profit-priority:20", tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
+        "formula-channels:2", "profit-priority:20", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
         E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
     if opts.snapshot then
@@ -225,7 +227,7 @@ local skeletonStepFields={"profession","kind","reason","checkpoint","segmentID",
     "goalID","questID","abilityID","sourceItem","targetItem"}
 local skeletonOptionFields={"fromCurrent","onlyAH","allowSecondaryLeveling","secondaryProfession",
     "autoCraftTools","allowLimitedFormulas","allowBindOnPickupFormulas","allowCurrencyFormulas",
-    "considerAuctionSupply","residualMass","recoveryEnabled","recoveryFeePercent","engineeringSpecialization"}
+    "considerAuctionSupply","reserveMode","residualMass","recoveryEnabled","recoveryFeePercent","engineeringSpecialization"}
 local function planSkeleton(result,opts,status)
     local rows=result.executionSteps or result.steps
     if type(rows)~="table" or #rows==0 then return end
@@ -465,6 +467,18 @@ function RA.RebuildFromSkel(slug,skel,supplied)
     local opts=options(slug,restored)
     opts.routeSkeleton=skel;opts.executionInventory=copy(skel.seedInventory)
     return start(slug,opts,request)
+end
+function RA.ChangeReserveMode(slug,mode)
+    local selected=RA.Peek(slug)
+    if not selected or selected.status=="searching" then return end
+    local opts=copy(selected.executionOptions or RA.OptionsFor(slug,selected.start))
+    opts.reserveMode=mode
+    local skel=planSkeleton(selected,opts,selected.status)
+    if not skel then return end
+    skel.sig=signature(slug,options(slug,opts))
+    if RA.SavePlanPrev then RA.SavePlanPrev(slug,selected) end
+    RA.Cancel(slug)
+    return RA.RebuildFromSkel(slug,skel,opts)
 end
 function RA.Compute(slug, supplied)
     if slug=="first-aid" or slug=="poisons" then return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug)) end

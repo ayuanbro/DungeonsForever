@@ -23,8 +23,14 @@ class NativeRecipeDataBoundaryTests(unittest.TestCase):
             with self.subTest(path=relative):
                 committed=subprocess.check_output(['git','show','HEAD:'+relative],cwd=ROOT)
                 # Git stores LF while the Windows checkout can use CRLF.
-                self.assertEqual(native_without_first_aid_update((ROOT/relative).read_text(encoding='utf-8-sig')),
-                                 native_without_first_aid_update(committed.decode('utf-8-sig')))
+                current = native_without_first_aid_update((ROOT/relative).read_text(encoding='utf-8-sig'))
+                original = native_without_first_aid_update(committed.decode('utf-8-sig'))
+                if relative.endswith('Data_ProfRecipes.lua'):
+                    # The shared nip map and lazy-loader annotation are allowed;
+                    # all original recipe definitions must remain byte-identical.
+                    current = current[current.index('local PARTS = {}'):current.index('ns.ProfRecipeKeys = KEYS')]
+                    original = original[original.index('local PARTS = {}'):original.index('ns.ProfRecipeKeys = KEYS')]
+                self.assertEqual(current, original)
 
     def test_native_lazy_loader_only_opens_requested_original_professions(self):
         lua=native_runtime()

@@ -268,13 +268,11 @@ class NativeStageBatchTests(unittest.TestCase):
 
     def test_new_candidate_does_not_change_frozen_execution(self):
         self.lua.execute('''
-          local solver=ns.ProfRouteSolver;local original=solver.RebatchChronological
-          solver.RebatchChronological=function(s)return s end
-          local old=ns.ProfRouteAuto.Compute('alchemy',batchOptions())
+          local opts=batchOptions();opts.preserveRecipeOrder=true
+          local old=ns.ProfRouteAuto.Compute('alchemy',opts)
           assert(#old.executionSteps==40)
           local run=assert(ns.ProfExecution.StartNew('alchemy',old))
           local frozen=run.plan;local first=frozen.executionSteps[1].segmentID
-          solver.RebatchChronological=original
           local candidate=ns.ProfRouteAuto.Compute('alchemy',batchOptions());verifyBatched(candidate)
           assert(ns.ProfExecution.GetRun('alchemy')==run and run.plan==frozen)
           assert(#run.plan.executionSteps==40 and run.plan.executionSteps[1].segmentID==first)

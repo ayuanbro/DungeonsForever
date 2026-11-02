@@ -18,7 +18,7 @@ class HistoryActionsTests(unittest.TestCase):
 
     def test_remove_independent_archive_preserves_active_and_other_profession(self):
         self.lua.execute('''
-          local old=newrun();local current=newrun()
+          local old=newrun();assert(xp.RecordAttempt('alchemy',101,'old-cast'));local current=newrun()
           assert(not xp.Remove('enchanting',old.planID))
           assert(not xp.Remove('alchemy',current.planID))
           assert(xp.CanRemove('alchemy',old.planID) and xp.Remove('alchemy',old.planID))
@@ -36,7 +36,8 @@ class HistoryActionsTests(unittest.TestCase):
 
     def test_archived_inherited_sources_are_protected(self):
         self.lua.execute('''
-          local source=newrun();local current=newrun()
+          local source=newrun();assert(xp.RecordAttempt('alchemy',101,'source-cast'));local current=newrun()
+          assert(xp.Get('alchemy',source.planID))
           current.inheritedFrom=source.planID
           assert(not xp.Remove('alchemy',source.planID))
           current.inheritedFrom=nil
@@ -54,7 +55,7 @@ class HistoryActionsTests(unittest.TestCase):
 
     def test_right_click_uses_card_identity_and_does_not_delete_on_left_click(self):
         self.lua.execute('''
-          local old=newrun();newrun();local rows={};PD.RowsCraftLog(rows)
+          local old=newrun();assert(xp.RecordAttempt('alchemy',101,'old-cast'));newrun();local rows={};PD.RowsCraftLog(rows)
           local card
           for _,row in ipairs(rows)do for _,c in ipairs(row.cards or {})do if c.act and c.tips then card=c end end end
           assert(card);PD.cur='enchanting';card.act(nil,'LeftButton')

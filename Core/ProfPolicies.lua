@@ -5,6 +5,20 @@ if not ns.LoadForeverPages then return end
 local P = {}
 ns.ProfEconomy = P
 
+-- Master's nip flag also applies to normalized recipes and supplemental inputs.
+function P.RecipeNIP(spell, recipe)
+    return (recipe and recipe.nip) or (ns.ProfRecipeNIP and ns.ProfRecipeNIP[spell])
+end
+
+function P.StepsHaveNIP(steps)
+    for _, step in ipairs(steps or {}) do
+        if not step.checkpoint and step.kind ~= "specialization_quest"
+            and step.kind ~= "essence_conversion" and step.kind ~= "conversion"
+            and (step.nip or P.RecipeNIP(step.spell or step[3], step.recipe)) then return true end
+    end
+    return false
+end
+
 local drafts = {}
 
 local function store()

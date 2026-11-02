@@ -100,6 +100,27 @@ function ns.QuickCfg()
     return q
 end
 
+function ns.SpellTabsTaken()
+    local NB = ns.NativeSpellBook
+    if NB and NB.OthersOccupied then
+        return NB.OthersOccupied() and true or false
+    end
+    return false
+end
+
+function ns.SpellEnhOn()
+    local v = DB().ui.spellEnh
+    if v == nil then return not ns.SpellTabsTaken() end
+    return v == true
+end
+
+function ns.SetSpellEnh(on)
+    DB().ui.spellEnh = on and true or false
+    if ns.NativeSpellBook and ns.NativeSpellBook.SetEnabled then
+        ns.NativeSpellBook.SetEnabled(on and true or false)
+    end
+end
+
 do
     local candidates = {}
     if GetLocale() == "zhCN" then

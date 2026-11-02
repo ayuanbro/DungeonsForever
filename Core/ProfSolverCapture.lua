@@ -90,6 +90,7 @@ local DIAG_TEXT = {
     outputConflict = L["制作产量待读取，请打开对应专业面板。"],
     availabilityUnknown = L["配方学习条件尚未核实。"],
     excluded = L["配方已按自定义规则排除。"],
+    catalogueFiltered = L["路线包含已排除的配方，请重新计算。"],
     notLearned = L["当前设置仅允许已学配方。"],
     clientUnavailable = L["客户端已确认此配方不可用。"],
     specializationRequired = L["尚未满足此配方的专业专精学习要求。"],
@@ -482,6 +483,8 @@ function E.ResolveRecipe(seed, slug)
 end
 function E.Normalize(row, slug, kind)
     if type(row) ~= "table" then return end
+    local spell = row.spell or (kind == "enchants" and row[14] or row[1])
+    if E.RecipeNIP(spell, row) then return end
     local r
     if row.spell then r = copy(row)
     elseif kind == "enchants" then
@@ -520,6 +523,7 @@ function E.Normalize(row, slug, kind)
     return r
 end
 function E.FindRecipe(slug, spell)
+    if E.RecipeNIP(spell) then return end
     local group = ns.ProfRecipes and ns.ProfRecipes[slug]
     for _, row in ipairs(group and group.rows or {}) do
         if row[1] == spell then return E.Normalize(row, slug, "rows") end
@@ -540,6 +544,7 @@ function E.FindRecipe(slug, spell)
 end
 function E.LearningEligibility(recipe, snapshot, state)
     if type(recipe) ~= "table" then return false, "clientDataPending" end
+    if E.RecipeNIP(recipe.spell or recipe[1], recipe) then return false, "catalogueFiltered", {status="blocked"} end
     snapshot = snapshot and (snapshot.snapshot or snapshot)
     if recipe.clientUnavailable then return false, "clientUnavailable", {status="blocked"} end
     local spell, key = recipe.spell or recipe[1], recipe.key
@@ -1154,7 +1159,12 @@ end
 
 
 function E.Index(s, tick)
-    s.recipes = s.recipes or {}
+    local recipes = {}
+    for _, r in ipairs(s.recipes or {}) do
+        if not E.RecipeNIP(r.spell, r) then recipes[#recipes + 1] = r end
+        if tick then tick() end
+    end
+    s.recipes = recipes
     s.byItem, s.byProfession, s.byKey = {}, {}, {}
     for _, r in ipairs(s.recipes) do
         if tick then tick() end

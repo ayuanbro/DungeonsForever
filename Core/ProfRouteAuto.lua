@@ -424,6 +424,7 @@ end
 -- Keep the dev tuple schema while sharing client corrections with the solver.
 local function ResolvedRow(row, slug, spell)
     local E=ns.ProfEconomy
+    if E and E.RecipeNIP and E.RecipeNIP(spell or row.spell or row[1],row) then return row end
     if not (E and E.ResolveRecipe) then return row end
     local seed
     if row.mats or row.learn then
@@ -515,7 +516,8 @@ local function BuildCandidates(slug, opts)
         rec=ResolvedRow(rec,slug)
         local spell, learn, yellow, green, grey = rec[1], rec[7], rec[8], rec[9], rec[10]
         local reagents = rec[12]
-        if type(spell) == "number" and type(learn) == "number"
+        if (not rec.nip) and not (ns.ProfRecipeNIP and ns.ProfRecipeNIP[spell])
+           and type(spell) == "number" and type(learn) == "number"
            and type(grey) == "number" and grey > learn
            and type(reagents) == "table" and #reagents > 0 then
             local ok = not rec.clientUnavailable and not rec.clientPending and not rec.cooldown and not rec.cooldownUnknown
@@ -576,7 +578,8 @@ local function BuildCandidates(slug, opts)
         for spell, ri in pairs(LV.rinfo) do
             RouteTick()
             ri=ResolvedRow(ri,slug,spell)
-            if type(spell) == "number" and not recOf[spell]
+            if (not ri.nip) and not (ns.ProfRecipeNIP and ns.ProfRecipeNIP[spell])
+               and type(spell) == "number" and not recOf[spell]
                and type(ri.learn) == "number" and type(ri.grey) == "number"
                and ri.grey > ri.learn
                and type(ri.mats) == "table" and #ri.mats > 0 then
@@ -1137,6 +1140,10 @@ end
 
 function RA.SummarizeSteps(steps, slug, opts)
     opts = opts or {}
+    if ns.ProfEconomy and ns.ProfEconomy.StepsHaveNIP and ns.ProfEconomy.StepsHaveNIP(steps) then
+        return {steps={},executionSteps={},mats={},formulas={},status="recalculate_required",feasible=false,
+            targetReached=false,completeCost=false,costComplete=false,diagnostics={{code="catalogueFiltered"}}}
+    end
     if slug=="poisons" then return SummarizePoisons(steps,opts) end
     opts.profession=slug
     if ns.ProfEconomy and ns.ProfEconomy.ConsiderAuctionSupply then

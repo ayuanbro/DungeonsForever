@@ -2097,16 +2097,21 @@ do
         return f
     end
 
-    function ns.hui.PaintSolidChip(f, text, ink, width)
+    function ns.hui.PaintSolidChip(f, text, ink, width, fs)
         if not (f and f.t) then return end
         if not text or text == "" then
             f:Hide()
             return
         end
         ink = ink or ns.hui.layer.L2
+        fs = tonumber(fs) or ns.hui.CHIP_S_FS
+        if f.t.__chipFs ~= fs then
+            f.t.__chipFs = fs
+            f.t:SetFont(ns.FONT, fs, "")
+        end
         f.t:SetText(text)
         f.t:SetTextColor(1, 1, 1)
-        local ly = ns.hui.ChipLabelDY(ns.hui.CHIP_S_FS)
+        local ly = ns.hui.ChipLabelDY(fs)
         if f.t.__chipLy ~= ly then
             f.t.__chipLy = ly
             f.t:ClearAllPoints()

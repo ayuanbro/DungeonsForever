@@ -38,6 +38,10 @@ local function RGet(k)
 end
 local LV = ns.ProfLeveling
 local RA = ns.ProfRouteAuto
+local function trackingPaused()
+    local xp=ns.ProfExecution
+    return xp and xp.IsCombatPaused and xp.IsCombatPaused()
+end
 
 local format = string.format
 
@@ -610,6 +614,8 @@ local function allocatePurchases(row)
     end
     local left=math.max(0,row.need-row.have)
     row.missing=left
+    row.baseMissing=math.max(0,(row.baseNeed or row.need)-row.have)
+    row.reserveMissing=math.max(0,left-row.baseMissing)
     local bridge=ns.AuctionBridge
     local useSupply=row.considerAuctionSupply~=false
     local available=useSupply and row.availableCount or nil
@@ -726,18 +732,25 @@ function PF.Following(slug)
 end
 
 -- Explicit cancellation suspends HUD auto-start until the HUD is reopened.
-function PF.SuspendAutoTrack(slug)
+function PF.SuspendAutoTrack(slug, reason)
     local s = st()
     if s and s.slug == slug then
-        s.autoTrackSuspended = true
+        s.autoTrackSuspended = reason or true
         PF.InvalidateRoute()
     end
 end
 
 function PF.Sync()
+    if trackingPaused() then PF.combatPaused=true;return false end
     local s = st()
     if not (s and s.slug) then return false end
-    local changed = false
+    if s.autoTrackSuspended=="inactive" then
+        local xp=ns.ProfExecution
+        if not (xp and xp.GetActive(s.slug)) then return false end
+        s.autoTrackSuspended=nil
+    end
+    local changed = PF.combatPaused or false
+    PF.combatPaused=nil
     local cur, maxSkill = skillOf(s.slug)
 
     local skillChanged = cur ~= nil and cur ~= s.skill
@@ -803,6 +816,13 @@ function PF.RefreshRoute(slug)
     if PF.f and PF.f:IsShown() then pcall(PF.Paint) end
 end
 
+function PF.RefreshMainUI()
+    local PD = ns.ProfModule
+    if PD and PD.built and PD.page and PD.page.IsVisible and PD.page:IsVisible() then
+        if PD.RequestRender then PD.RequestRender() end
+    end
+end
+
 function PF.Toggle(slug)
     if not hasRoute(slug) then return end
     local p = dbProf()
@@ -813,11 +833,13 @@ function PF.Toggle(slug)
     if s and not s.hidden and PF.building then
         s.hidden = true
         PF.onBuilt = nil
+        PF.RefreshMainUI()
         return
     end
     if s and not s.hidden and PF.f and PF.f:IsShown() then
         s.hidden = true
         PF.f:Hide()
+        PF.RefreshMainUI()
         return
     end
     if not s then
@@ -836,6 +858,7 @@ function PF.Toggle(slug)
         PF.view = 0
         PF.f:Show()
         PF.Paint()
+        PF.RefreshMainUI()
         return
     end
     if PF.building then return end
@@ -845,6 +868,7 @@ function PF.Toggle(slug)
         PF.view = 0
         PF.f:Show()
         PF.Paint()
+        PF.RefreshMainUI()
     end
     PF.Build()
 end
@@ -908,6 +932,7 @@ local function verifyOutputDialog()
                 edit:SetFocus()
                 edit:HighlightText()
             end
+            ns.SkinPopupFont(self)
         end,
         OnAccept = function(self)
             local d = self.data
@@ -983,6 +1008,19 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
     local rm = recMap(s.slug)
     local totals, order = {}, {}
     local futureOutputs,futureSpells={},{}
+    local reserve=not onlyStep and plan and plan.reserve and plan.reserve.mode~="off" and ns.ProfReserve
+    local xp=ns.ProfExecution
+    local run=xp and xp.GetRun(s.slug)
+    local matching=run and plan and (run.plan==plan or plan.planID and run.originPlanID==plan.planID)
+    local casts,completed,baseRemaining={},{},{}
+    if reserve and matching then for _,seg in ipairs(steps) do
+        local progress=xp.Progress(s.slug,seg.segmentID)
+        if progress and progress.segmentID==seg.segmentID then
+            casts[seg.segmentID]=progress.casts;completed[seg.segmentID]=progress.complete
+            baseRemaining[seg.segmentID]=progress.baseRemaining or 0
+        end
+    end end
+    local reserveNeeds=reserve and reserve.Remaining(plan,casts,matching and run.reserveDisabled,completed) or {}
     local curStep = s.step or 1
     for i = curStep, #steps do
         if onlyStep and i > curStep then break end
@@ -992,6 +1030,9 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         local crafts = seg[4] or 0
         if seg.segmentID or i == curStep then
             crafts = math.ceil(craftsLeft(seg, s.skill, rec,s.slug,i>curStep))
+        end
+        if reserve and matching then
+            crafts=math.min(crafts,baseRemaining[seg.segmentID] or 0)
         end
         if crafts>0 then
             futureSpells[(seg.profession or s.slug)..":"..tostring(seg[3])]=true
@@ -1070,6 +1111,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             if formula then leaf.formulaCost=(leaf.formulaCost or 0)+(entry.cost or 0) end
         end
         for _,entry in ipairs(plan.mats or {}) do purchase(entry) end
+        if reserve then for _,entry in ipairs(plan.reserve.mats or {}) do purchase(entry) end end
         for id,quantity in pairs(plan.retainedToolItems or {}) do
             if leaves[id] then
                 if not totals[id] then totals[id]={id=id,need=0,at=math.huge};order[#order+1]=id end
@@ -1115,12 +1157,23 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
                 row.planDemand=math.max(0,(originalNeeds[id] or 0)-(originalOutputs[id] or 0))+tools+(row.formulaNeed or 0)
             end
         end
+        if reserve then
+            for _,entry in ipairs(plan.reserve.materials or {}) do
+                local id=entry.id;local amount=reserveNeeds[id] or 0
+                if amount>0 then
+                    if not totals[id] then totals[id]={id=id,need=0,at=math.huge};order[#order+1]=id end
+                    local row=totals[id];row.baseNeed=row.need;row.reserveNeed=amount;row.need=row.need+amount
+                    if not row.planPurchases and leaves[id] then for key,value in pairs(leaves[id]) do row[key]=value end end
+                    row.planDemand=(row.planDemand or row.baseNeed)+entry.count
+                end
+            end
+        end
     end
     local list = {}
     for _, id in ipairs(order) do
         local e = totals[id]
         if onlyStep or e.need>0 then
-            e.have,e.haveKnown = Have(e.id,not bagsOnly)
+            e.have,e.haveKnown = Have(e.id,not (bagsOnly or reserve))
             if s.slug=="poisons" then
                 e.vendor=soldSet(s.slug)[e.id] or false
                 e.source=e.vendor and "vendor" or "ah"
@@ -1130,6 +1183,12 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         end
     end
     return list
+end
+
+function PF.ShoppingForPlan(slug,plan)
+    local xp=ns.ProfExecution;local run=xp and xp.GetRun(slug)
+    local matching=run and (run.plan==plan or plan.planID and run.originPlanID==plan.planID)
+    return shopList({slug=slug,skill=skillOf(slug) or plan.start or 1,step=matching and run.currentIndex or 1},false,true,plan)
 end
 
 function PF.ShoppingList(slug,onlyStep)
@@ -1146,6 +1205,9 @@ function PF.ShoppingSourceText(entry)
         if entry.inventoryUnknown then return L["背包或银行数量未能读取，无法确认还需购买多少。"] end
         if entry.purchaseUnknown then return L["价格未知"] end
         local parts={}
+        if (entry.reserveNeed or 0)>0 then
+            parts[#parts+1]=format(L["基础缺 %d · 备用缺 %d"],entry.baseMissing or 0,entry.reserveMissing or 0)
+        end
         for _,purchase in ipairs(entry.purchases or {}) do
             local source=purchaseSource(purchase)
             local name=(source=="ah" or source=="auction") and L["拍卖行"]
@@ -1547,6 +1609,10 @@ local function jumpCraft(stepIdx)
         end
     end
     local count = math.max(1, math.ceil(craftsLeft(seg, s.skill, rec, s.slug, index ~= s.step)))
+    if XP and XP.SafeCraftCount then
+        count=XP.SafeCraftCount(s.slug,seg.segmentID or index,count)
+        if count<=0 then craftNotify(L["本步备用不足，或材料需留给后续步骤；请检查采购清单或续算。"]);return end
+    end
     local name = SpellName(spellID)
     if not name then craftNotify(L["配方数据未就绪，稍后再试"]) return end
     jumpEvtInit()
@@ -1840,8 +1906,9 @@ local function BuildBody()
         PF.Paint()
     end)
     f:SetScript("OnEvent", function()
-        if f:IsShown() then
+        if f:IsShown() and not trackingPaused() then
             C_Timer.After(0, function()
+                if trackingPaused() then return end
                 PF.Sync()
                 PF.Paint()
             end)
@@ -2216,7 +2283,10 @@ local function BuildBody()
         local s = st()
         if s then s.hidden = true end
         f:Hide()
+        if PF.RefreshMainUI then PF.RefreshMainUI() end
     end)
+    TipOn(f.xBtn, L["隐藏 HUD"], L["关闭 HUD 只隐藏窗口，不会结束追踪。"] .. "\n"
+        .. L["不再升级时，请在升级页点击追踪进度按钮结束追踪。"])
 
     f.muteBtn = NewButton(f, "", 24, 22, 14)
     f.muteBtn:SetPoint("TOPRIGHT", f.xBtn, "TOPLEFT", -4, 0)
@@ -2396,6 +2466,16 @@ end
 
 function PF.Paint()
     if not (f and f:IsShown()) then return end
+    if trackingPaused() then
+        PF.combatPaused=true
+        f.skill:SetText(L["战斗中暂停追踪，脱战后自动恢复。"])
+        return
+    end
+    local state=st()
+    if state and state.autoTrackSuspended=="inactive" then
+        f.skill:SetText(L["48 小时无制作，追踪已自动结束。"])
+        return
+    end
     W = W_BASE + ((PF.showShop and PF.wide) or 0)
     f:SetWidth(W)
     f.barBG:SetWidth(W - 20)
@@ -2837,6 +2917,10 @@ function PF.PaintButton(bt, slug)
     local PD = ns.ProfModule
     if PD and PD.TextW then bt:SetWidth(math.ceil(PD.TextW(text, 13)) + 22) end
     bt:SetScript("OnClick", function() PF.Toggle(slug) end)
+    TipOn(bt, text, L["打开 HUD 后，路线就绪时会自动开始执行并追踪制作进度。"] .. "\n"
+        .. L["连续 48 小时无制作（含离线）自动结束；战斗中暂停，脱战后恢复。"] .. "\n"
+        .. L["关闭 HUD 只隐藏窗口，不会结束追踪。"] .. "\n"
+        .. L["不再升级时，请在升级页点击追踪进度按钮结束追踪。"])
     local active = PF.IsActive(slug)
     SetButtonSelected(bt, active)
     local fs = bt.GetFontString and bt:GetFontString()
@@ -2881,6 +2965,11 @@ end
 -- callbacks wake a visible waiting HUD without replacing any frozen execution.
 local function connectExecution()
     local XP = ns.ProfExecution
+    if XP and XP.OnObservationChanged then XP.OnObservationChanged(function()
+        if PF.f and PF.f:IsShown() then
+            PF.Sync();PF.Paint()
+        end
+    end) end
     if XP and XP.OnChanged then XP.OnChanged(function(slug, run, reason)
         if slug=="poisons" then return end
         local state = st()

@@ -610,7 +610,7 @@ L["圆圈自制"] = "Custom circle"
 L["土堆"] = "Mound"
 L["圣物"] = "Relic"
 L["圣骑士"] = "Paladin"
-L["在「路线」页点「开始追踪」后，这里会记录每一步实际做了几次、产出多少。"] = "Press Start tracking on the Route page; this log then records how many times each step was actually crafted and how much was produced."
+L["在「路线」页点「开始执行」或打开升级 HUD 后，这里会记录每一步实际做了几次、产出多少。"] = "Press Start execution on the Route page or open the leveling HUD to record actual crafts and output for each step."
 L["在世界地图上标出灵魂医者的位置。"] = "Marks spirit healers on the world map."
 L["在古拉巴什竞技场击杀 25 次"] = "25 kills in Gurubashi Arena"
 L["在四个战场阵营声望达到崇拜（各 1 点，共 4 点）"] = "Exalted with all four battleground factions (1 point each, 4 total)"
@@ -820,7 +820,18 @@ L["开启：路线里的每一段都能立刻开做。"] = "On: every segment of
 L["开启：这类图样计入路线与采购；商人报价仅作参考，到访时可能无货。"] = "On: these formulas enter the route and shopping list; vendor quotes are advisory and stock may be gone on arrival."
 L["开启：适合练级中途打开手册直接照着做。"] = "On: best for picking the guide up mid-leveling."
 L["开图自动亮路线"] = "Auto route on map open"
-L["开始追踪"] = "Start tracking"
+L["开始执行"] = "Start execution"
+L["结束追踪"] = "Stop tracking"
+L["固定当前路线，记录制作与产出，更新步骤进度和材料缺口。"] = "Lock in the current route, record crafts and output, and update step progress and missing materials."
+L["不再升级时，请再次点击此按钮结束追踪；制作记录保留。"] = "When you finish leveling, click this button again to stop tracking. Craft records are kept."
+L["不再升级时，请点击此按钮结束追踪；制作记录保留。"] = "When you finish leveling, click this button to stop tracking. Craft records are kept."
+L["关闭 HUD 只隐藏窗口，不会结束追踪。"] = "Closing the HUD only hides the window; tracking continues."
+L["打开 HUD 后，路线就绪时会自动开始执行并追踪制作进度。"] = "Opening the HUD automatically starts execution and tracks crafting progress once the route is ready."
+L["不再升级时，请在升级页点击追踪进度按钮结束追踪。"] = "When you finish leveling, click the tracking progress button on the Leveling page to stop tracking."
+L["隐藏 HUD"] = "Hide HUD"
+L["连续 48 小时无制作（含离线）自动结束；战斗中暂停，脱战后恢复。"] = "Stops after 48 hours without crafting, including offline time. Pauses in combat and resumes afterward."
+L["战斗中暂停追踪，脱战后自动恢复。"] = "Tracking paused in combat; resumes afterward."
+L["48 小时无制作，追踪已自动结束。"] = "Tracking stopped after 48 hours without crafting."
 L["开放世界"] = "Open world"
 L["弹药"] = "Ammo"
 L["强度"] = "Power"
@@ -1783,7 +1794,6 @@ L["默认关闭：仍可使用另一主专业当前能制作的材料。"] = "Of
 L["默认只读，添加方案后可编辑"] = "Read-only by default; add a preset to edit"
 L["先购买 NPC 材料（%d 种）"] = "Buy NPC materials first (%d items)"
 L["滚轮查看更多"] = "Scroll for more"
-L["再次点击取消追踪；已记录的制作数据保留。"] = "Click again to stop tracking. Recorded crafts are kept."
 L["默认（自动探测）"] = "Default (auto-detect)"
 L["（%s 掉落）"] = " (drops from %s)"
 L["（只看%s阵营任务）"] = "(%s faction quests only)"
@@ -1811,7 +1821,6 @@ L["按技能查看阶段，点击水域打开地图。"] = "Find your skill stag
 L["库存待更新"] = "Stock needs updating"
 L["数量未核实"] = "Stock unverified"
 L["库存不足"] = "Insufficient stock"
-L["有 %d 种物品的拍卖行库存不足，路线尚未达到目标。"] = "%d auction items have insufficient stock; the route has not reached its target."
 L["按卖店价值选配方，采购仍检查实际报价与库存"] = "Prefer recipes by vendor sale value; purchases still check actual quotes and stock."
 L["拍卖行库存已更新，点击重新计算即可使用。"] = "Auction stock updated. Click Recalculate to use it."
 L["数量来源：Auctionator 完整扫描（已排除本人拍卖）"] = "Stock source: Auctionator full scan, excluding your auctions"
@@ -2141,7 +2150,73 @@ L["开启：「最省钱」计入预计回血，盈利优先每配方最多20次
 
 L["稳定升级"] = "Stable leveling"
 L["优先橙黄配方减少绿色冲点，再比较采购成本；必要材料照常制作"] = "Prefer orange/yellow leveling recipes, then compare purchase costs; required materials are still crafted."
-L["稳定升级优先减少绿色冲点；数量仍按平均升点率估算，未增加备用材料。"] = "Stable leveling favors fewer green attempts. Quantities still use expected skill gains, without reserve materials."
 L["当前路线仍含 %d 次绿色冲点；可检查其他配方和材料来源后重算。"] = "This route still includes %d green leveling attempts. Check alternative recipes and supplies before recalculating."
 L["拍卖产物按七折估值，NPC卖价不打折。"] = "Auction outputs are valued at 70%; vendor sale prices are unchanged."
 L["盈利优先每配方最多20次；多余产物仍计入预计回血。"] = "Profit is prioritized for up to 20 crafts per recipe; all remaining outputs still count toward estimated recovery."
+
+L["不准备余量"] = "No reserve"
+
+L["适量备用"] = "Standard reserve"
+
+L["充足备用"] = "Ample reserve"
+
+L["备料余量"] = "Material reserve"
+
+L["点击切换：不准备余量 / 适量备用 / 充足备用。"] = "Click to cycle: No reserve / Standard reserve / Ample reserve."
+
+
+
+
+
+
+L["停止本次备用计划"] = "Stop this run's reserve plan"
+
+L["基础缺 %d · 备用缺 %d"] = "Base shortage %d · Reserve shortage %d"
+
+L["本步备用不足，或材料需留给后续步骤；请检查采购清单或续算。"] = "This step has insufficient reserve, or materials are needed later. Check shopping or recalculate from current stock."
+
+L["当前采购（含备用，背包只扣一次）"] = "Current shopping (includes reserve; bags deducted once)"
+
+L["基础 %d · 备用 %d · 背包 %s"] = "Base %d · Reserve %d · Bags %s"
+
+L["待购 %d"] = "Buy %d"
+
+L["备用材料预算：%s"] = "Reserve material budget: %s"
+
+L["基础加备用预算：%s"] = "Base plus reserve budget: %s"
+L["基础路线：共 %d 种材料 · 合计 %d 件"] = "Base route: %d material types · %d items"
+L["用于自动生成的候选路线；固定攻略不增加备用。"] = "Applies to automatically generated candidate routes. Fixed guides do not add reserves."
+L["武器技能"] = "Weapon Skills"
+L["可学"] = "Learnable"
+L["即将学"] = "Coming soon"
+L["等级不够"] = "Level too low"
+L["天赋获得"] = "From talents"
+L["人物 %d 级"] = "Req. lv %d"
+L["点击：在地图上标记该训练师"] = "Click: mark this trainer on your map"
+L["战斗中无法打开训练师"] = "Cannot open the trainer page in combat"
+L["未收录该训练师的地图位置"] = "No map location recorded for this trainer"
+L["技能页增强"] = "Spellbook tabs"
+L["训练师、武器技能两页"] = "Trainer and weapon skill tabs"
+L["在原生技能书里增加训练师与武器技能页"] = "Adds trainer and weapon skill tabs to the native spellbook"
+L["已有插件占用技能页"] = "Spellbook tabs already taken"
+L["其它插件页签同时开启"] = "Other addon tabs are on too"
+L["%d/%d 页"] = "%d/%d"
+L["路线包含已排除的配方，请重新计算。"] = "The route contains excluded recipes. Please recalculate."
+
+L["有 %d 种物品的拍卖行库存不足；请查看购物清单，补充货源后重新计算。"] = "Auction stock is insufficient for %d items. Check the shopping list, find more stock, then recalculate."
+L["备用材料缺少报价：%s；请更新价格后重新计算。"] = "Reserve materials have no price: %s. Update prices, then recalculate."
+L["备用材料货源不足：%s；请查看购物清单，补充货源后重新计算。"] = "Not enough stock for reserve materials: %s. Check the shopping list, find more stock, then recalculate."
+L["产量不固定，备用可能不足：%s；请在制作时按实际缺口补料。"] = "Output varies, so reserves may fall short: %s. Top up materials as needed while crafting."
+L["部分步骤无法准备足够的升级备用：%s；请检查配方技能范围后重新计算。"] = "Some steps cannot provide enough reserve for leveling: %s. Check recipe skill ranges, then recalculate."
+L["备用数量未算完整：%s；请重新计算，制作时留意材料缺口。"] = "Reserve quantities are incomplete: %s. Recalculate and watch for missing materials while crafting."
+L["备用材料需求未算全：%s；请重新计算，并在制作时按实际缺口补料。"] = "Reserve material needs are incomplete: %s. Recalculate and top up materials as needed while crafting."
+L["部分配方或材料"] = "Some recipes or materials"
+L["%s 等 %d 种物品"] = "%s (%d items in total)"
+L["备用计划不完整；请检查购物清单，制作时按实际缺口补料。"] = "The reserve plan is incomplete. Check the shopping list and top up materials as needed while crafting."
+L["固定路线的材料和图纸费用未核实；请在购物清单核价后再开始执行。"] = "Material and recipe costs for this fixed route are unverified. Check prices in the shopping list before starting."
+L["有 %d 个步骤受专精限制（%s）：%s；请在配方页核对专精要求后重新计算。"] = "%d steps are restricted by specialization (%s): %s. Check requirements on the Recipes page, then recalculate."
+L["技能 %d–%d 的材料报价不全；请更新价格后重新计算。"] = "Material prices for skill %d–%d are incomplete. Update prices, then recalculate."
+L["%d 种材料缺少报价，费用尚未算全；请更新价格后重新计算。"] = "%d materials have no price, so the cost is incomplete. Update prices, then recalculate."
+L["固定路线的材料价格未核实；请更新价格或改用自动计算。"] = "Material prices for the fixed route are unverified. Update prices or switch to automatic calculation."
+L["请在配方页核对上述限制，更新资料或调整设置后重新计算。"] = "Check these restrictions on the Recipes page. Update the data or adjust settings, then recalculate."
+L["备用材料只在需要时使用；数量和预算见购物清单。"] = "Use reserve materials only when needed. Quantities and budget are shown in the shopping list."

@@ -61,6 +61,7 @@ local function indexProfession(slug)
 end
 local function hasRecipe(spell)
     if not positiveInteger(spell) then return false end
+    if E.RecipeNIP(spell) then return false end
     if recipeIDs[spell] then return true end
     -- Build lazily for the currently open/learned professions first.
     for slug in pairs(E.Professions()) do indexProfession(slug) end

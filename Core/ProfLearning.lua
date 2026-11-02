@@ -270,6 +270,7 @@ local function evaluate(conditions,recipe,snapshot,state)
 end
 local function legacyLearningEligibility(recipe,snapshot,state)
     if type(recipe)~="table"then return false,"clientDataPending",{status="unknown"}end
+    if E.RecipeNIP(spellOf(recipe),recipe) then return false,"catalogueFiltered",{status="blocked"} end
     snapshot=snapshot and (snapshot.snapshot or snapshot)
     local classOK,classReason,classDetail=professionClassEligibility(recipe,snapshot)
     if not classOK then return classOK,classReason,classDetail end
@@ -690,6 +691,7 @@ end
 -- coverage never cancels a priced, stocked purchase; concrete restrictions do.
 function E.SelectLearningRoute(recipe,snapshot,state,remaining,purchaseSource,pricingContext)
     if type(recipe)~="table" then return false,"clientDataPending",{status="unknown"} end
+    if E.RecipeNIP(spellOf(recipe),recipe) then return false,"catalogueFiltered",{status="blocked"} end
     snapshot=snapshot and (snapshot.snapshot or snapshot)
     if not strict(recipe,snapshot) then
         return legacyLearningEligibility(recipe,snapshot,state)

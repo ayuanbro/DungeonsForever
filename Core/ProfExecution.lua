@@ -37,9 +37,15 @@ local creditCaches = setmetatable({}, {__mode="k"})
 local learningChecks = setmetatable({}, {__mode="k"})
 local performance = {creditBuilds=0,historyScans=0}
 local completionTimer, observationGeneration = false, 0
+local idleTimer, checkingIdle, combatPaused
+local IDLE_LIMIT = 48 * 60 * 60
 local observedActive, observedReceipts
 local floor, ceil, max, min = math.floor, math.ceil, math.max, math.min
 local function now() return time and time() or 0 end
+function XP.IsCombatPaused()
+    return combatPaused or (InCombatLockdown and InCombatLockdown())
+        or (UnitAffectingCombat and UnitAffectingCombat("player")) or false
+end
 local function integer(n) return type(n)=="number" and n>=0 and n==floor(n) and n<math.huge end
 local function copy(v, seen)
     if type(v)~="table" then if type(v)~="function" and type(v)~="userdata" then return v end; return end
@@ -71,8 +77,8 @@ local function clearPending()
 end
 local function cachePending(entry)
     pendLast=entry
-    if entry.castGUID then
-        local pk=tostring(entry.castGUID)
+    if entry.castGUID or entry.receiptKey then
+        local pk=tostring(entry.castGUID or entry.receiptKey)
         if not pendCast[pk] then pendOrder[#pendOrder+1]=pk end
         pendCast[pk]=pendLast
         while #pendOrder>32 do pendCast[table.remove(pendOrder,1)]=nil end
@@ -99,6 +105,7 @@ function XP.IsSpecializationQuest(seg) return seg and seg.kind=="specialization_
 function XP.SpecializationQuest(seg) return seg and (seg.quest or seg.specializationGoal or seg.goal or seg) or {} end
 function XP.IsConversion(seg) return seg and (seg.kind=="essence_conversion" or seg.kind=="conversion") end
 local function catalogueAllowed(plan)
+    if E and E.StepsHaveNIP and E.StepsHaveNIP(steps(plan)) then return false end
     for _,segment in ipairs(steps(plan)) do
         local spell=segment.spell or segment[3]
         if type(spell)=="number"and spell>0 and not XP.IsConversion(segment) and not XP.IsSpecializationQuest(segment)
@@ -146,11 +153,18 @@ local function quotaMap(value)
     end
     return out
 end
-local function requiredOutputs(seg)
+local function requiredOutputs(seg,run)
     local required=quotaMap(seg.requiredOutputs)
+    if run and not run.reserveDisabled then
+        for item,n in pairs(seg.reserve and seg.reserve.requiredOutputs or {}) do required[item]=(required[item] or 0)+n end
+    end
     local c=XP.Conversion(seg)
     if c and next(required)==nil then required[c.outputItemID]=c.outputCount*ceil(seg.expectedCrafts or seg[4] or 0) end
     return required
+end
+local function reserveAllowance(run,seg)
+    if run.reserveDisabled then return run.reserveUsed and run.reserveUsed[seg.segmentID] or 0 end
+    return seg.reserve and seg.reserve.extraCrafts or 0
 end
 local function recipe(seg,slug)
     if XP.IsSpecializationQuest(seg) then return {mats=XP.SpecializationQuest(seg).inputs or {}} end
@@ -170,6 +184,7 @@ end
 -- Live execution checks only the current involved recipe. Archived plans and
 -- injected solver snapshots are never reinterpreted as today's character.
 function XP.ValidateLearning(plan,slug,seg)
+    if seg and E and E.StepsHaveNIP and E.StepsHaveNIP({seg}) then return false,"catalogueFiltered" end
     if not (ns.IsForever and E and E.RouteRecipeEligibility) then return true end
     local current=E.LearningPolicyFingerprint and E.LearningPolicyFingerprint()
     if current and plan.learningPolicyFingerprint~=current then return false,"learningPolicyChanged" end
@@ -331,6 +346,44 @@ function XP.Remove(slug,planID)
     if XP.RefreshObservation then XP.RefreshObservation() end
     return true
 end
+-- Master's empty-record check, using the native aggregate fields. Quest and
+-- conversion confirmations are execution facts even without a recipe cast.
+local function recorded(run)
+    if type(run)~="table" then return false end
+    if (run.attemptsDone or 0)>0 or (run.conversionsDone or 0)>0 then return true end
+    for _,p in pairs(run.progress or {}) do
+        if (p.casts or 0)>0 or p.questCompleted then return true end
+        for _,total in pairs(p.outputs or {}) do
+            if (total.actual or 0)>0 or (total.guaranteed or 0)>0 then return true end
+        end
+    end
+    return false
+end
+local function pruneArchived(slug)
+    local c=db()
+    local removed
+    repeat
+        local list={}
+        for id,r in pairs(c.runs) do
+            if r.slug==slug and r.status~="active" then
+                list[#list+1]={id=id,run=r,at=tonumber(r.archivedAt or r.updatedAt) or 0}
+            end
+        end
+        table.sort(list,function(a,b)
+            if a.at~=b.at then return a.at>b.at end
+            return tostring(a.id)>tostring(b.id)
+        end)
+        local kept=0;removed=false
+        for _,entry in ipairs(list) do
+            local hasFacts=recorded(entry.run)
+            if hasFacts then kept=kept+1 end
+            -- Keep master's latest three archives, plus any source still needed
+            -- by execution/continuation. Remove handles caches and notifications.
+            if (not hasFacts or kept>3) and XP.Remove(slug,entry.id) then removed=true end
+        end
+        -- Deleting an unused child can release a previously protected source.
+    until not removed
+end
 function XP.GetSummary(slug,planID)
     local run
     if planID then run=XP.Get(slug,planID) else run=XP.GetRun(slug) end
@@ -442,10 +495,54 @@ function XP.End(slug,reason)
     end
     if c.trackingSlug==slug then c.trackingSlug=nil end
     changed(run,"ended")
+    pruneArchived(slug)
     if XP.RefreshObservation then XP.RefreshObservation() end
     return run
 end
+local function idleOwners()
+    local c=db();local owners={}
+    for slug,id in pairs(c.active) do
+        local run=c.runs[id];if run and run.status=="active" then owners[slug]=run end
+    end
+    for slug,pending in pairs(c.preparing) do
+        if pending.hadActive then owners[slug]=owners[slug] or c.runs[pending.sourcePlanID] end
+    end
+    return owners
+end
+local function idleDeadline(run)
+    -- Before the first craft, the run's start is the beginning of inactivity.
+    return (run.lastCraftAt or run.createdAt)+IDLE_LIMIT
+end
+function XP.ExpireIdle()
+    if checkingIdle then return end
+    checkingIdle=true
+    local at=now()
+    for slug,run in pairs(idleOwners()) do if at>=idleDeadline(run) then
+        -- Prevent an open HUD from immediately starting another execution.
+        local follow=ns.ProfFollow
+        if follow and follow.SuspendAutoTrack then follow.SuspendAutoTrack(slug,"inactive") end
+        XP.End(slug,"inactive")
+    end end
+    checkingIdle=nil
+end
+local function scheduleIdleCheck()
+    local due
+    for _,run in pairs(idleOwners()) do due=min(due or idleDeadline(run),idleDeadline(run)) end
+    -- A craft may extend the deadline. Keep the one existing wakeup and check
+    -- the new deadline there, instead of allocating a timer for every craft.
+    if idleTimer and due and idleTimer.due<=due then return end
+    if idleTimer then idleTimer.handle:Cancel();idleTimer=nil end
+    if due and C_Timer and C_Timer.NewTimer then
+        local token={due=due};idleTimer=token
+        token.handle=C_Timer.NewTimer(max(0.1,due-now()),function()
+            if idleTimer~=token then return end
+            idleTimer=nil;XP.ExpireIdle();XP.RefreshObservation()
+        end)
+    end
+end
 function XP.Bind(slug,result,opts)
+    if XP.IsCombatPaused() then return nil,"combatPaused" end
+    XP.ExpireIdle()
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then ns.ProfessionTracking.SetEnabled(true) end
     local ra=ns.ProfRouteAuto
     local active=XP.GetRun(slug)
@@ -501,6 +598,9 @@ function XP.Bind(slug,result,opts)
         ids[old]=id;seg.segmentID=id;seg.actionID=id
     end
     for _,seg in ipairs(steps(plan)) do for _,a in ipairs(seg.allocations or {}) do if ids[a.consumerID] then a.consumerID=ids[a.consumerID] end end end
+    for _,seg in ipairs(steps(plan)) do for _,a in ipairs(seg.reserve and seg.reserve.allocations or {}) do
+        if ids[a.consumerID] then a.consumerID=ids[a.consumerID] end
+    end end
     for _,row in ipairs(plan.steps or {}) do for i,id in ipairs(row.segmentIDs or {}) do row.segmentIDs[i]=ids[id] or id end end
     local run={planID=planID,id=planID,originPlanID=normalized.planID or normalized.executionPlanID,
         originSignature=not (normalized.planID or normalized.executionPlanID) and originSignature(result) or nil,
@@ -508,8 +608,14 @@ function XP.Bind(slug,result,opts)
         currentIndex=1,step=1,attemptsDone=0,progress={},supplements={},
         inheritedFrom=plan.executionSourcePlanID or plan.executionOptions and plan.executionOptions.executionSourcePlanID
             or opts.executionSourcePlanID or c.preparing[slug] and c.preparing[slug].sourcePlanID}
-    c.runs[planID]=run;c.active[slug]=planID;c.trackingSlug=slug;c.preparing[slug]=nil
-    XP.Sync(slug);changed(run);if XP.RefreshObservation then XP.RefreshObservation() end;return run
+    local source=run.inheritedFrom and c.runs[run.inheritedFrom]
+    if source and not opts.force then
+        run.lastCraftAt=source.lastCraftAt or source.createdAt
+        if now()>=idleDeadline(run) then return nil,"executionEnded" end
+    end
+    c.runs[planID]=run;c.active[slug]=planID;c.trackingSlug=slug;c.preparing[slug]=nil;c.continuation[slug]=nil
+    XP.Sync(slug);changed(run);pruneArchived(slug)
+    if XP.RefreshObservation then XP.RefreshObservation() end;return run
 end
 XP.Start=XP.Bind
 function XP.StartNew(slug,result,opts)
@@ -541,7 +647,7 @@ end
 local function creditsFor(run,target)
     local inventory={}
     for _,seg in ipairs(steps(run.plan)) do
-        for item in pairs(requiredOutputs(seg)) do
+        for item in pairs(requiredOutputs(seg,run)) do
             if inventory[item]==nil then inventory[item]=bagCount(item) or false end
         end
     end
@@ -552,10 +658,10 @@ local function creditsFor(run,target)
     local list,bySegment,used={},{},{}
     for index,seg in ipairs(steps(run.plan)) do
         local record=progressRecord(run,seg)
-        local funded=ceil((seg.expectedCrafts or seg[4] or 0)+(record.supplementAllowance or 0)-1e-9)
+        local funded=ceil((seg.expectedCrafts or seg[4] or 0)+(record.supplementAllowance or 0)+reserveAllowance(run,seg)-1e-9)
         local casts=min(record.casts or 0,funded)
         if XP.IsSpecializationQuest(seg) then funded=1;casts=record.questCompleted and 1 or 0 end
-        local o={seg=seg,index=index,record=record,funded=funded,required=requiredOutputs(seg),
+        local o={seg=seg,index=index,record=record,funded=funded,required=requiredOutputs(seg,run),
             consumed={},waived={},destinations={},released={}}
         list[#list+1]=o;bySegment[seg.segmentID]=o;used[seg.segmentID]={}
         for _,m in ipairs(recipe(seg,run.slug).mats or {}) do
@@ -563,7 +669,9 @@ local function creditsFor(run,target)
         end
     end
     for _,o in ipairs(list) do
-        for _,a in ipairs(o.seg.allocations or {}) do
+        local allocations=copy(o.seg.allocations or {})
+        if not run.reserveDisabled then for _,a in ipairs(o.seg.reserve and o.seg.reserve.allocations or {}) do allocations[#allocations+1]=a end end
+        for _,a in ipairs(allocations) do
             if a.itemID and a.consumerID and (a.count or 0)>0 then
                 local dest=o.destinations[a.itemID] or {};o.destinations[a.itemID]=dest
                 dest[a.consumerID]=(dest[a.consumerID] or 0)+a.count
@@ -693,7 +801,7 @@ function XP.Progress(slug,id,skillSnapshot,planID)
     local confirmed,guaranteed,pending,output=outputFacts(run,seg)
     local credit=creditsFor(run,seg)
     local reused,reusedActual,fulfilled,waived=credit.available,credit.available,credit.credited,credit.waived
-    local required=requiredOutputs(seg);local remaining={};local materialDone=true
+    local required=requiredOutputs(seg,run);local remaining={};local materialDone=true
     for item,n in pairs(required) do remaining[item]=max(0,n-(fulfilled[item] or 0)-(waived[item] or 0));if remaining[item]>0 then materialDone=false end end
     local cur=skill(seg.profession or slug,skillSnapshot);local goal=seg.goalSkill or seg[2]
     local skillDone=not goal or (cur~=nil and cur>=goal) or (seg.expectedGain or 0)<=0 and not seg.checkpoint
@@ -723,7 +831,10 @@ function XP.Progress(slug,id,skillSnapshot,planID)
     end
     local remainingCrafts=max(materialCrafts,ceil(levelCrafts-1e-9))
     if not skillDone and (grey or not cur) then remainingCrafts=max(1,materialCrafts) end
-    local limit=ceil((seg.attemptLimit or seg.expectedCrafts or seg[4] or 0)+(p.supplementAllowance or 0)-1e-9)
+    local baseLimit=ceil((seg.attemptLimit or seg.expectedCrafts or seg[4] or 0)-1e-9)
+    local allowance=reserveAllowance(run,seg)
+    local limit=baseLimit+allowance+(p.supplementAllowance or 0)
+    local reserveRemaining=not run.reserveDisabled and max(0,allowance-max(0,(p.casts or 0)-baseLimit)) or 0
     local direct={};for _,m in ipairs(rec.mats or {}) do direct[#direct+1]={id=m[1],count=m[2]*remainingCrafts,perCraft=m[2]} end
     local result={segmentID=seg.segmentID,index=index,kind=seg.kind,complete=skillDone and materialDone,skillDone=skillDone,skillMet=skillDone,materialDone=materialDone,
         currentSkill=cur,goalSkill=goal,attemptsDone=p.casts or 0,casts=p.casts or 0,minimumCrafts=seg.materialMinCrafts or 0,minCrafts=seg.materialMinCrafts or 0,
@@ -734,6 +845,8 @@ function XP.Progress(slug,id,skillSnapshot,planID)
         fulfilledOutputs=fulfilled[output] or 0,divertedOutputs=max(0,min(required[output] or 0,(guaranteed[output] or 0)+(reused[output] or 0))-(fulfilled[output] or 0)),
         requiredByItem=required,confirmedByItem=confirmed,guaranteedByItem=guaranteed,remainingByItem=remaining,
         remainingCrafts=remainingCrafts,expectedRemaining=levelCrafts,attemptLimit=limit,extraCrafts=max(0,(p.casts or 0)+remainingCrafts-limit),
+        reserveAllowance=allowance,reserveRemaining=reserveRemaining,
+        baseRemaining=max(0,limit-(p.casts or 0)-reserveRemaining),
         exhausted=(p.casts or 0)>=limit and not (skillDone and materialDone),blocked=grey or credit.unknown,inventoryUnknown=credit.unknown or nil,reason=credit.unknown and "inventoryUnknown" or nil,directMaterials=direct,outputConflict=p.outputConflict}
     if conversion then
         result.manualConversion=true
@@ -759,8 +872,51 @@ function XP.GetProgressAll(slug)
     for i=1,#steps(plan) do out.steps[i]=XP.Progress(slug,i,snapshot,run.planID) end
     return out
 end
+function XP.SkipReserve(slug)
+    local run=XP.GetRun(slug);if not run then return false end
+    if run.reserveDisabled then return true end
+    run.reserveUsed={}
+    for _,seg in ipairs(steps(run.plan)) do
+        local used=min(reserveAllowance(run,seg),max(0,(progressRecord(run,seg).casts or 0)-(seg.expectedCrafts or seg[4] or 0)))
+        if used>0 then run.reserveUsed[seg.segmentID]=used end
+    end
+    run.reserveDisabled=true;invalidateCredits(run);XP.Sync(slug);changed(run);return true
+end
+function XP.SafeCraftCount(slug,id,requested)
+    local run=XP.GetRun(slug);local seg,index
+    if run then seg,index=segment(run,id) end
+    if not seg or not run.plan.reserve or run.plan.reserve.mode=="off" or run.reserveDisabled then return requested end
+    local p=XP.Progress(slug,id)
+    if not p or p.complete then return 0 end
+    local base=p.baseRemaining or 0
+    local count=min(requested,base+(p.reserveRemaining or 0))
+    local baseOther,extraOther,earlierBase={},{},{}
+    for i=1,#steps(run.plan) do
+        local future=steps(run.plan)[i];local progress=XP.Progress(slug,future.segmentID)
+        if i~=index and progress and not progress.complete then
+            local n=min(progress.remainingCrafts or 0,progress.baseRemaining or 0)
+            if XP.IsSpecializationQuest(future) then n=1 end
+            for _,m in ipairs(recipe(future,slug).mats or {}) do
+                baseOther[m[1]]=(baseOther[m[1]] or 0)+m[2]*n
+                extraOther[m[1]]=(extraOther[m[1]] or 0)+m[2]*(progress.reserveRemaining or 0)
+                if i<index then earlierBase[m[1]]=(earlierBase[m[1]] or 0)+m[2]*n end
+            end
+        end
+    end
+    for _,m in ipairs(recipe(seg,slug).mats or {}) do
+        local stock=bagCount(m[1]);if stock==nil then return 0,"inventoryUnknown" end
+        -- Base work proceeds in route order even when later purchases are
+        -- incomplete. Only optional extras must protect every other step.
+        local basic=min(base,count,floor(max(0,stock-(earlierBase[m[1]] or 0))/m[2]))
+        local extra=max(0,floor((stock-basic*m[2]-(baseOther[m[1]] or 0)-(extraOther[m[1]] or 0))/m[2]))
+        count=min(count,basic+extra)
+    end
+    return max(0,count)
+end
 function XP.Sync(slug,result)
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
+    XP.ExpireIdle()
+    if XP.IsCombatPaused() then return XP.GetRun(slug) end
     local run=XP.GetRun(slug)
     if not run and result then run=XP.Bind(slug,result) end
     if not run then return end
@@ -838,9 +994,9 @@ local function receiptFallback(receipt)
         end
     end
 end
-local function acceptReceipt(receipt)
+local function acceptReceipt(receipt,matched)
     -- Master order: cast GUID, last matching item, pending item, recorded step.
-    local hit=receipt.castGUID and pendCast[tostring(receipt.castGUID)]
+    local hit=matched or receipt.castGUID and pendCast[tostring(receipt.castGUID)]
     if hit and not matchingReceipt(hit,receipt) then return false end
     if not hit and matchingReceipt(pendLast,receipt)
         and (not receipt.castGUID or not pendLast.castGUID or receipt.castGUID==pendLast.castGUID)
@@ -865,54 +1021,185 @@ local function acceptReceipt(receipt)
         local total=outputTotal(p,hit.item)
         total.actual=total.actual+(hit.actual or 0)-(previous or 0)
         total.guaranteed=total.guaranteed+(hit.actual or hit.minimum)-(previous or hit.minimum)
-        if hit.pending and previous==nil and hit.actual~=nil then total.pending=max(0,total.pending-1) end
+        if hit.pending and previous==nil and hit.actual~=nil then total.pending=max(0,total.pending-(hit.pendingCrafts or 1)) end
     end
     if hit.actual and hit.actual<hit.minimum then p.outputConflict=true end
     if hit.sources.structured and hit.sources.chat and hit.sources.structured.quantity~=hit.sources.chat.quantity then p.outputConflict=true end
     invalidateCredits(run)
+    if XP.IsCombatPaused() then
+        -- Settle only a known pre-combat cast. Defer route traversal and view
+        -- notifications until combat ends, including archived summary rebuilds.
+        run.progressVersion=(run.progressVersion or 0)+1;run.updatedAt=now()
+        return true
+    end
     if run.status=="active" then XP.Sync(run.slug) end
     changed(run);return true
 end
-function XP.RecordOutput(data,source)
+function XP.RecordOutput(data,source,crafted)
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
+    XP.ExpireIdle()
     if type(data)~="table" then return false,"invalid_receipt" end
     local receipt={itemID=tonumber(data.itemID or data.id),quantity=tonumber(data.quantity or data.count),
         source=source or data.source or "structured",castGUID=data.castGUID and tostring(data.castGUID),
-        spellID=data.spellID,slug=data.slug}
+        spellID=tonumber(data.spellID or data.recipeID),slug=data.slug}
     if not integer(receipt.itemID) or receipt.itemID<=0 or not integer(receipt.quantity) or receipt.quantity<=0 then return false,"invalid_receipt" end
     local id=data.receiptID or data.eventID
     local key=id and receipt.source..":"..tostring(id)
     if key and receiptMem[key] then return true,"duplicate" end
-    if not acceptReceipt(receipt) then return false,"unmatched" end
+    receipt.eventKey=key
+    local matched
+    if XP.IsCombatPaused() then
+        -- No inference or plan scan in combat; only cached casts can receive
+        -- their late output. Ordinary loot cannot create production history.
+        matched=receipt.castGUID and pendCast[receipt.castGUID]
+            or not receipt.castGUID and matchingReceipt(pendLast,receipt) and pendLast
+        if not matchingReceipt(matched,receipt) then return false,"combatPaused" end
+        crafted=false
+    end
+    if crafted then
+        local reason
+        matched,reason=XP.CraftFallback(receipt)
+        if not matched then return reason=="duplicate",reason end
+        -- Recovered aggregate matches also need a session identity before a
+        -- repeated result or a late spell-success event can arrive.
+        if receipt.castGUID then
+            matched.castGUID=receipt.castGUID;remember(seenMem,seenOrder,receipt.castGUID,512)
+        end
+        matched.at=matched.at or now();cachePending(matched)
+    end
+    if not acceptReceipt(receipt,matched) then return false,"unmatched" end
     remember(receiptMem,receiptOrder,key,256)
     return true
 end
-function XP.RecordAttempt(slug,spellID,castGUID,id)
+function XP.RecordAttempt(slug,spellID,castGUID,id,inferred)
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
+    XP.ExpireIdle()
+    if XP.IsCombatPaused() then return false,"combatPaused" end
+    if castGUID then
+        castGUID=tostring(castGUID)
+        if seenMem[castGUID] then return false,"duplicate" end
+    end
+    if not inferred then
+        -- Master's two-second cross-source guard: attach a late spell event to
+        -- an anonymous inferred cast instead of charging its materials twice.
+        local function late(a)
+            return a and a.run.slug==slug and a.spell==spellID and db().runs[a.run.planID]==a.run
+                and (a.inferredRemaining or 0)>0 and now()-(a.at or 0)<2
+        end
+        local hit=late(pendLast) and pendLast
+        if not hit then for _,a in pairs(pendCast) do if late(a) then hit=a;break end end end
+        if hit then
+            hit.inferredRemaining=hit.inferredRemaining-1
+            if castGUID then
+                remember(seenMem,seenOrder,castGUID,512);hit.castGUID=castGUID;cachePending(hit)
+            end
+            return false,"duplicate"
+        end
+    end
     local run=XP.GetRun(slug);if not run or run.status~="active" or type(spellID)~="number" then return false end
     if not readablePlan(run) then return false,"historyUnreadable" end
     local seg=matchingSegment(run,spellID,id);if not seg or XP.IsSpecializationQuest(seg) or XP.IsConversion(seg) then return false end
-    if castGUID then
-        local key=tostring(castGUID)
-        if seenMem[key] then return false,"duplicate" end
-        seenMem[key]=true;seenOrder[#seenOrder+1]=key
-        while #seenOrder>512 do seenMem[table.remove(seenOrder,1)]=nil end
-        castGUID=key
-    end
+    remember(seenMem,seenOrder,castGUID,512)
     local rec=recipe(seg,slug);local p=progressRecord(run,seg)
     local a={run=run,progress=p,step=seg.segmentID,castGUID=castGUID,spell=spellID,
         item=seg.item or rec.item or rec.makes,minimum=seg.outputMin or rec.outputMin or rec.count or 0,
-        pending=true,sources={}}
+        pending=true,sources={},at=now()}
     local total=outputTotal(p,a.item)
     if total then total.guaranteed=total.guaranteed+a.minimum;total.pending=total.pending+1 end
     p.casts=(p.casts or 0)+1;run.attemptsDone=(run.attemptsDone or 0)+1
+    run.lastCraftAt=now()
     cachePending(a)
     if run.completionDue then run.completionDue=now()+2 end
     invalidateCredits(run)
     XP.Sync(slug);changed(run);if XP.RefreshObservation then XP.RefreshObservation() end;return true,a
 end
+function XP.CraftFallback(receipt)
+    -- Called only for TRADE_SKILL_ITEM_CRAFTED_RESULT, never bag or loot updates.
+    local guid=receipt.castGUID
+    local hit=guid and pendCast[guid]
+    if hit then
+        if matchingReceipt(hit,receipt) then return hit end
+        return nil,"wrong_receipt"
+    end
+    if guid and seenMem[guid] then return nil,"unmatched" end
+    local function pending(a)
+        return matchingReceipt(a,receipt) and not a.sources.structured
+            and (not guid or not a.castGUID)
+    end
+    if pending(pendLast) then return pendLast end
+    for _,a in pairs(pendCast) do if pending(a) then return a end end
+    if not guid and not receipt.eventKey and matchingReceipt(pendLast,receipt)
+        and pendLast.sources.structured and now()-(pendLast.at or 0)<3 then
+        return nil,pendLast.sources.structured.quantity==receipt.quantity and "duplicate" or "ambiguous_receipt"
+    end
+    -- A reload loses cast identities but retains pending aggregate production.
+    hit=receiptFallback(receipt)
+    if hit and hit.pending then
+        local known,visited=0,{}
+        local function countKnown(a)
+            if a and not visited[a] and a.run==hit.run and a.progress==hit.progress
+                and a.item==hit.item and a.pending and a.actual==nil then
+                visited[a]=true;known=known+(a.pendingCrafts or 1)
+            end
+        end
+        countKnown(pendLast);for _,a in pairs(pendCast) do countKnown(a) end
+        -- A different live GUID is a different cast. Only production whose
+        -- identity was lost may use the aggregate fallback after a reload.
+        if outputTotal(hit.progress,hit.item).pending>known then return hit end
+    end
+
+    local found,chosen
+    for slug,id in pairs(db().active) do
+        local run=db().runs[id]
+        if (not receipt.slug or receipt.slug==slug) and run and run.status=="active" and readablePlan(run) then
+            local list=steps(run.plan);local cur=run.currentIndex or 1
+            -- Reuse master's current/future-first, then earlier-step lookup.
+            for offset=0,#list-1 do
+                local index=(cur-1+offset)%#list+1;local seg=list[index]
+                if not seg.checkpoint and not seg.navigationOnly and not XP.IsConversion(seg) and not XP.IsSpecializationQuest(seg)
+                    and seg.item==receipt.itemID and (not receipt.spellID or seg[3]==receipt.spellID) then
+                    if found and (found~=run or chosen[3]~=seg[3] or chosen.profession~=seg.profession) then
+                        return nil,"ambiguous_recipe"
+                    end
+                    if not found then found,chosen=run,seg end
+                end
+            end
+        end
+    end
+    if not found then return nil,"no_step" end
+    local count=1
+    if not guid then
+        local rec=recipe(chosen,found.slug)
+        local lo=chosen.outputMin or rec.outputMin or rec.count
+        local hi=chosen.outputMax or rec.outputMax or lo
+        if not integer(lo) or lo<=0 or not integer(hi) or hi<lo then return nil,"unknown_output" end
+        local least,most=ceil(receipt.quantity/hi),floor(receipt.quantity/lo)
+        if least~=most or least<1 or least>5 then return nil,"ambiguous_quantity" end
+        count=least
+    end
+    local entry
+    for _=1,count do
+        local ok,a=XP.RecordAttempt(found.slug,chosen[3],guid,chosen.segmentID,true)
+        if not ok then return nil,a or "inactive" end
+        entry=a
+    end
+    -- A batch receipt settles all inferred casts, while its quantity remains
+    -- output units. Never leave fictitious pending output or duplicate costs.
+    entry.minimum=entry.minimum*count;entry.pendingCrafts=count
+    entry.inferredRemaining=not guid and count or 0
+    entry.receiptKey=receipt.eventKey and "receipt:"..receipt.eventKey
+    cachePending(entry)
+    return entry
+end
+function XP.RecordCraftedResult(data,quantity)
+    -- Reuse master's table/positional event payload handling.
+    if type(data)~="table" then data={itemID=data,quantity=quantity} end
+    return XP.RecordOutput(data,"structured",true)
+end
 function XP.ConfirmConversion(slug,id,count,planID)
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
+    XP.ExpireIdle()
+    if XP.IsCombatPaused() then return false,"combatPaused" end
     local run=XP.GetRun(slug);if not run then return false,"no_execution" end
     if planID and planID~=run.planID then return false,"stale_plan" end
     if not readablePlan(run) then return false,"historyUnreadable" end
@@ -936,11 +1223,14 @@ function XP.ConfirmConversion(slug,id,count,planID)
     total.guaranteed=total.guaranteed+count*conversion.outputCount
     record.casts=(record.casts or 0)+count;record.verifiedAt=now()
     run.conversionsDone=(run.conversionsDone or 0)+count
+    run.lastCraftAt=now()
     invalidateCredits(run)
     XP.Sync(slug);changed(run);if XP.RefreshObservation then XP.RefreshObservation() end
     return true,count
 end
 function XP.VerifyOutput(slug,id,item,total)
+    XP.ExpireIdle()
+    if XP.IsCombatPaused() then return false,"combatPaused" end
     if not integer(item) or item<=0 or not integer(total) then return false,"invalid_quantity" end
     local run=XP.GetRun(slug);if not run then return false,"no_execution" end
     if not readablePlan(run) then return false,"historyUnreadable" end
@@ -989,7 +1279,8 @@ function XP.PrepareRecalculate(slug)
     local preparing={hadActive=run~=nil and run.status=="active" or previous and previous.hadActive or false,
         sourcePlanID=run and run.planID or previous and previous.sourcePlanID or source and source.sourcePlanID,inventory=copy(seed)}
     if run then archive(c,slug,"recalculate");changed(run) end
-    c.preparing[slug]=preparing;referencesChanged();if XP.RefreshObservation then XP.RefreshObservation() end;return seed,preparing.sourcePlanID
+    c.preparing[slug]=preparing;referencesChanged();pruneArchived(slug)
+    if XP.RefreshObservation then XP.RefreshObservation() end;return seed,preparing.sourcePlanID
 end
 function XP.PlanRecalculated(slug,result)
     local c=db();local p=c.preparing[slug]
@@ -1093,7 +1384,7 @@ function XP.CalculateSupplement(slug,callback)
         local reserved={}
         for _,future in ipairs(steps(run.plan)) do
             local record=progressRecord(run,future)
-            local allowance=(future.attemptLimit or future.expectedCrafts or future[4] or 0)+(record.supplementAllowance or 0)
+            local allowance=(future.attemptLimit or future.expectedCrafts or future[4] or 0)+(record.supplementAllowance or 0)+reserveAllowance(run,future)
             local remaining=max(0,allowance-(record.casts or 0))
             if XP.IsSpecializationQuest(future) then remaining=record.questCompleted and 0 or 1
             else
@@ -1164,11 +1455,14 @@ local receiptEvents={"TRADE_SKILL_ITEM_CRAFTED_RESULT","CHAT_MSG_LOOT"}
 local observedEvents={}
 function XP.RefreshObservation()
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then if XP.DisableTracking then XP.DisableTracking() end;return false,false end
+    XP.ExpireIdle()
     local c=db();local at=now()
-    local active=XP.HasActive();local receipts=active
+    local tracking=XP.HasActive();local paused=XP.IsCombatPaused()
+    local active=tracking and not paused;local receipts=active or tracking and pendLast~=nil
     local f=XP.eventFrame
     if f then
         local wanted={}
+        if tracking then wanted.PLAYER_REGEN_DISABLED=true;wanted.PLAYER_REGEN_ENABLED=true end
         if active then for _,event in ipairs(executionEvents) do wanted[event]=true end end
         if receipts then for _,event in ipairs(receiptEvents) do wanted[event]=true end end
         for event in pairs(observedEvents) do if not wanted[event] then
@@ -1179,10 +1473,11 @@ function XP.RefreshObservation()
             local ok=pcall(f.RegisterEvent,f,event);XP.capabilities[event]=ok;observedEvents[event]=ok or nil
         end end
     end
-    if not active then clearPending() end
+    if not tracking then clearPending();combatPaused=nil end
+    scheduleIdleCheck()
     local due
     for _,id in pairs(c.active) do local run=c.runs[id];if run and run.completionDue then due=min(due or run.completionDue,run.completionDue) end end
-    if due and not completionTimer and C_Timer and C_Timer.After then
+    if due and not paused and not completionTimer and C_Timer and C_Timer.After then
         completionTimer=true;local generation=observationGeneration;local scheduling=true
         C_Timer.After(max(0.1,due-at),function()
             if generation~=observationGeneration then return end
@@ -1201,6 +1496,7 @@ function XP.RefreshObservation()
 end
 function XP.ReconcileLifecycle()
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
+    XP.ExpireIdle()
     local c=db();local slugs={};for slug in pairs(c.active) do slugs[#slugs+1]=slug end
     for _,slug in ipairs(slugs) do
         local run=c.runs[c.active[slug]]
@@ -1215,6 +1511,7 @@ end
 function XP.Initialize()
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
     observationGeneration=observationGeneration+1;completionTimer=false
+    combatPaused=nil
     local c=db();c.observerSession=(c.observerSession or 0)+1;XP.eventSession=tostring(c.observerSession)
     -- Only active executions can own an in-flight supplement; archived plans
     -- and their compressed payloads are irrelevant to observation startup.
@@ -1224,6 +1521,16 @@ function XP.Initialize()
     if type(CreateFrame)~="function" then return end
     local f=XP.eventFrame or CreateFrame("Frame");XP.eventFrame=f;XP.capabilities=XP.capabilities or {}
     f:SetScript("OnEvent",function(_,event,...)
+        if event=="PLAYER_REGEN_DISABLED" then
+            combatPaused=true;XP.RefreshObservation();return
+        elseif event=="PLAYER_REGEN_ENABLED" then
+            combatPaused=nil;XP.ReconcileLifecycle()
+            local slugs={};for slug in pairs(db().active) do slugs[#slugs+1]=slug end
+            for _,slug in ipairs(slugs) do local run=XP.GetRun(slug);if run then changed(run) end end
+            return
+        end
+        XP.ExpireIdle()
+        if XP.IsCombatPaused() and event~="TRADE_SKILL_ITEM_CRAFTED_RESULT" and event~="CHAT_MSG_LOOT" then return end
         if event=="UNIT_SPELLCAST_SUCCEEDED" then
             local unit,guid,spell=...;if unit~="player" then return end
             local c=db();local selected=c.trackingSlug
@@ -1234,7 +1541,7 @@ function XP.Initialize()
                 table.sort(slugs)
                 for _,slug in ipairs(slugs) do if XP.RecordAttempt(slug,spell,guid) then break end end
             end
-        elseif event=="TRADE_SKILL_ITEM_CRAFTED_RESULT" then XP.RecordOutput((...),"structured")
+        elseif event=="TRADE_SKILL_ITEM_CRAFTED_RESULT" then XP.RecordCraftedResult(...)
         elseif event=="CHAT_MSG_LOOT" then local args={...};XP.RecordCreatedMessage(args[1],args[11])
         elseif event=="SPELLS_CHANGED" or event=="LEARNED_SPELL_IN_TAB" or event=="QUEST_TURNED_IN" then
             local slugs={};for slug in pairs(db().active) do slugs[#slugs+1]=slug end
@@ -1252,7 +1559,8 @@ end
 
 function XP.DisableTracking()
     observationGeneration=observationGeneration+1
-    completionTimer=false
+    completionTimer=false;combatPaused=nil
+    if idleTimer then idleTimer.handle:Cancel();idleTimer=nil end
     for _,job in pairs(jobs) do
         if ns.IdleJobs and ns.IdleJobs.Cancel then ns.IdleJobs.Cancel(job) end
         job.cancelled=true
