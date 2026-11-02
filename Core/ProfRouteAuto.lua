@@ -365,6 +365,10 @@ local function BuildCandidates(slug, opts)
            and type(grey) == "number" and grey > learn
            and type(reagents) == "table" and #reagents > 0 then
             local ok = true
+            if type(rec[13]) == "table" and type(rec[13][1]) == "number" then
+                local PDm = ns.ProfModule
+                if PDm and PDm.SrcKindOf and PDm.SrcKindOf(rec) == nil then ok = false end
+            end
             local skipFormula = opts.noFormula
             if ok and skipFormula and type(rec[13]) == "table" and type(rec[13][1]) == "number" then
                 local SM = ns.ProfSourceMerge

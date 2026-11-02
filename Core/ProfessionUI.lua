@@ -8190,20 +8190,22 @@ function PD.DropLines(s)
         local dd = s.drops[i]
         if dd and (dd.npc or dd.zone) then
             local nm = PD.DropName(dd)
+            local zoneOnly = (not dd.npc) or dd.npc == ""
+            if zoneOnly then nm = dd.zone end
             local key = nm .. "|" .. tostring(dd.zone or "")
             if not seen[key] then
                 seen[key] = true
                 local line = format(L["掉落：%s"], nm)
                 local zn = PD.DropZone(dd, nil)
-                if zn ~= "" then line = line .. " · " .. zn end
-                if dd.chance then
+                if zn ~= "" and not zoneOnly then line = line .. " · " .. zn end
+                if dd.chance and not zoneOnly then
                     local pct = dd.chance
                     if pct > 0 and pct <= 1 then pct = pct * 100 end
                     pct = math.floor(pct + 0.5)
                     if pct > 100 then pct = 100 end
                     line = line .. format(L[" · %d%%"], pct)
                 end
-                if not located[nm] then line = line .. " · " .. L["暂无坐标"] end
+                if (not zoneOnly) and not located[nm] then line = line .. " · " .. L["暂无坐标"] end
                 out[#out + 1] = { line, 0.75, 0.75, 0.75 }
             end
         end
@@ -8560,14 +8562,32 @@ function PD.EnchantSpec(en)
     local vsEn = (en[10] and PD.VendorListOf(en[10])) or {}
     local hasVendor = #vsEn > 0
     local drEn = (en[10] and en[10].drops) or {}
-    local acqEn = hasVendor and L["商人售卖"] or L["世界掉落"]
-    local base = en[10] and (L["图纸"] .. " · " .. acqEn) or L["训练师"]
+    local SMen = ns.ProfSourceMerge
+    local kindEn = (en[10] and SMen and SMen.Primary) and SMen.Primary(en[10]) or nil
+    if not kindEn and hasVendor then kindEn = "vendor" end
+    local isFormula = (en[10] ~= nil) or (type(en[16]) == "number")
+    local base
+    if en.nip then
+        base = L["未实装"]
+    elseif not isFormula then
+        base = L["训练师"]
+    elseif kindEn == "vendor" then
+        base = L["图纸"] .. " · " .. L["商人售卖"]
+    elseif kindEn == "currency" then
+        base = L["图纸 · 通货兑换"]
+    elseif kindEn == "drop" then
+        base = L["图纸 · 掉落获取"]
+    elseif kindEn == "quest" then
+        base = L["图纸 · 任务获取"]
+    else
+        base = L["图纸来源未知"]
+    end
     local dpre, dval, dact, vlines, dname, dcost
     if hasVendor then
         dpre, dval, dname, dcost = PD.VendorSrcLine(en[10], (type(en[15]) == "number") and en[15] or nil)
         dact = PD.VendorAct(en[10])
         vlines = PD.VendorLines(en[10], (type(en[15]) == "number") and en[15] or nil)
-    elseif #drEn > 0 then
+    elseif #drEn > 0 and kindEn == "drop" then
         dpre = base
         dval = format(L["掉落 %d 处"], #drEn)
         dact = PD.DropAct(en[10])
@@ -8603,7 +8623,7 @@ function PD.EnchantSpec(en)
         right = not (en[5] or en[6] or en[7] or en[8])
                 and format("%s · %s", format(L["学 %s"], tostring(en[5])),
                            PD.TierText(en[6], en[7], en[8])) or nil,
-        right2 = clientPending and L["客户端数据待读取"] or (resolved.clientUnavailable and L["客户端已确认不可用"]) or ((not dval) and base or nil),
+        right2 = en.nip and base or clientPending and L["客户端数据待读取"] or (resolved.clientUnavailable and L["客户端已确认不可用"]) or ((not dval) and base or nil),
         right2Fs = PD.SRC_FS,
         src = en[10],
         dpre = dpre,
@@ -9113,16 +9133,28 @@ function PD.RecipeSpec(r)
     local station = meta and ({ forge = L["熔炉"], blackForge = L["黑铁熔炉"], moltenFoundry = L["熔火铸造厂"] })[meta.station]
     local vs = (r[14] and PD.VendorListOf(r[14])) or {}
     local hasVendor = #vs > 0
-    local acq = hasVendor and L["商人售卖"] or L["世界掉落"]
     local base
     if clientPending then
         base = L["客户端数据待读取"]
     elseif resolved.clientUnavailable then
         base = L["客户端已确认不可用"]
-    elseif r[13] then
-        base = L["图纸"] .. " · " .. acq
-    else
+    elseif r.nip then
+        base = L["未实装"]
+    elseif type(r[13]) ~= "table" then
         base = L["训练师"]
+    else
+        local kind = PD.SrcKindOf(r)
+        if kind == "vendor" then
+            base = L["图纸"] .. " · " .. L["商人售卖"]
+        elseif kind == "currency" then
+            base = L["图纸 · 通货兑换"]
+        elseif kind == "drop" then
+            base = L["图纸 · 掉落获取"]
+        elseif kind == "quest" then
+            base = L["图纸 · 任务获取"]
+        else
+            base = L["图纸来源未知"]
+        end
     end
     local dpre, dval, dname, dcost
     if hasVendor then
@@ -9164,7 +9196,7 @@ function PD.RecipeSpec(r)
         right = not ((r[7] or r[8] or r[9] or r[10]))
                 and format("%s · %s", format(L["学 %s"], tostring(r[7])),
                            PD.TierText(r[8], r[9], r[10])) or nil,
-        right2 = (not dval) and base or nil,
+        right2 = r.nip and base or ((not dval) and base or nil),
         right2Fs = PD.SRC_FS,
         src = r[14],
         vlines = hasVendor and PD.VendorLines(r[14], type(r[13]) == "table" and r[13][1] or nil) or nil,
@@ -9336,10 +9368,59 @@ end
 
 PD.FAVOR_CURID = 3402
 PD.NO_SELL_KEY = "__none"
+PD.SRC_TRAINER_KEY = "__srctrainer"
+PD.SRC_DROP_KEY = "__srcdrop"
+PD.SRC_NIP_KEY = "__srcnip"
+PD.SRC_UNKNOWN_KEY = "__srcunk"
+PD.SRC_VENDOR_KEY = "__srcvendor"
 PD.DD_TYPE = "__ddtype"
 PD.DD_MONEY = "__ddmoney"
 
+function PD.SrcKindOf(r)
+    local f = r and r[13]
+    local fid = (type(f) == "table") and f[1] or nil
+    if type(fid) ~= "number" then return "trainer", nil end
+    local SM = ns.ProfSourceMerge
+    local view = (SM and SM.SourceOf and SM.SourceOf(fid)) or r[14]
+    return (SM and SM.Primary and SM.Primary(view)) or nil, fid
+end
+
+function PD.SrcBucketOf(r)
+    if not r then return nil end
+    if r.nip then return PD.SRC_NIP_KEY end
+    local kind = PD.SrcKindOf(r)
+    if kind == "trainer" then return PD.SRC_TRAINER_KEY end
+    if kind == nil then return PD.SRC_UNKNOWN_KEY end
+    if kind == "drop" then return PD.SRC_DROP_KEY end
+    return nil
+end
+
+function PD.EnchBucketOf(e)
+    if not e then return nil end
+    if e.nip then return PD.SRC_NIP_KEY end
+    if not ((e[10] ~= nil) or (type(e[16]) == "number")) then return PD.SRC_TRAINER_KEY end
+    local SM = ns.ProfSourceMerge
+    local kind = (e[10] and SM and SM.Primary) and SM.Primary(e[10]) or nil
+    if not kind and e[10] and #(PD.VendorListOf(e[10]) or {}) > 0 then kind = "vendor" end
+    if kind == "drop" then return PD.SRC_DROP_KEY end
+    if kind == "vendor" then return PD.SRC_VENDOR_KEY end
+    if kind == nil then return PD.SRC_UNKNOWN_KEY end
+    return nil
+end
+
 PD.__curOfFid = {}
+
+function PD.EnchCurHit(e, mk)
+    if not e then return false end
+    if mk == nil then return true end
+    if mk == PD.SRC_TRAINER_KEY or mk == PD.SRC_DROP_KEY
+        or mk == PD.SRC_NIP_KEY or mk == PD.SRC_UNKNOWN_KEY
+        or mk == PD.SRC_VENDOR_KEY then
+        return PD.EnchBucketOf(e) == mk
+    end
+    local ks = PD.CurKeysOfFid(type(e[16]) == "number" and e[16] or nil)
+    return (ks and ks[mk]) and true or false
+end
 
 function PD.CurKeysOfFid(fid)
     if type(fid) ~= "number" then return nil end
@@ -9370,6 +9451,10 @@ end
 function PD.RowCurHit(r)
     local mk = PD.moneyKey
     if mk == nil then return true end
+    if mk == PD.SRC_TRAINER_KEY or mk == PD.SRC_DROP_KEY
+        or mk == PD.SRC_NIP_KEY or mk == PD.SRC_UNKNOWN_KEY then
+        return PD.SrcBucketOf(r) == mk
+    end
     local ks = PD.CurKeysOfFid(r[13] and r[13][1])
     if mk == PD.NO_SELL_KEY then return ks == nil end
     return (ks and ks[mk]) and true or false
@@ -9382,19 +9467,27 @@ function PD.CurCounts(d)
     local c = m[d]
     if c then return c end
     c = {}
-    local nosell = 0
     for _, r in ipairs(d.rows or {}) do
         local ks = PD.CurKeysOfFid(r[13] and r[13][1])
         if ks then
             for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
-        else
-            nosell = nosell + 1
+        end
+        local sk = PD.SrcBucketOf(r)
+        if sk then c[sk] = (c[sk] or 0) + 1 end
+    end
+    if not (d.rows and #d.rows > 0) then
+        for _, e in ipairs(d.enchants or {}) do
+            local ek = PD.EnchBucketOf(e)
+            if ek then c[ek] = (c[ek] or 0) + 1 end
+            local ks = PD.CurKeysOfFid(type(e[16]) == "number" and e[16] or nil)
+            if ks then
+                for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
+            end
         end
     end
     if d.favor and #d.favor > 0 then
         c[PD.FAVOR_CURID] = (c[PD.FAVOR_CURID] or 0) + #d.favor
     end
-    if nosell > 0 then c[PD.NO_SELL_KEY] = nosell end
     m[d] = c
     return c
 end
@@ -9482,11 +9575,30 @@ function PD.RecipeCurItems(d)
             nm = L["金币"]
         elseif id == PD.NO_SELL_KEY then
             nm = L["无售卖资料"]
+        elseif id == PD.SRC_TRAINER_KEY then
+            nm = L["训练师"]
+        elseif id == PD.SRC_DROP_KEY then
+            nm = L["世界掉落"]
+        elseif id == PD.SRC_NIP_KEY then
+            nm = L["未实装"]
+        elseif id == PD.SRC_UNKNOWN_KEY then
+            nm = L["来源未知"]
+        elseif id == PD.SRC_VENDOR_KEY then
+            nm = L["商人售卖"]
         else
             nm = PD.CurName(id)
         end
         items[#items + 1] = { v = id, text = format("%s %d", tostring(nm), c[id]) }
     end
+    local function tail(v)
+        for i = #items, 1, -1 do
+            if items[i].v == v then return table.remove(items, i) end
+        end
+        return nil
+    end
+    local unk, nipItem = tail(PD.SRC_UNKNOWN_KEY), tail(PD.SRC_NIP_KEY)
+    if unk then items[#items + 1] = unk end
+    if nipItem then items[#items + 1] = nipItem end
     return items
 end
 
@@ -9538,6 +9650,7 @@ function PD.RecipeTool(d)
     if not d then return {}, nil end
     local tItems = PD.RecipeTypeItems(d)
     local cItems = PD.RecipeCurItems(d)
+    if PD.moneyKey == PD.SRC_VENDOR_KEY and (d.rows and #d.rows > 0) then PD.moneyKey = nil end
     local showType = #tItems > 2
     if PD.moneyKey ~= nil then
         PD.toolKey = "all"
@@ -9616,10 +9729,19 @@ function PD.RecipeList(limit, q)
     local cap = limit or PD.ROW_CAP
     if cap < 1 then return out end
     if PD.moneyKey ~= nil then
+        local showNip = (PD.moneyKey == PD.SRC_NIP_KEY)
         for _, r in ipairs(d.rows or {}) do
-            if (not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then
+            if (showNip or not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then
                 out[#out + 1] = PD.RecipeSpec(r)
                 if #out >= cap then return out end
+            end
+        end
+        if not (d.rows and #d.rows > 0) then
+            for _, e in ipairs(d.enchants or {}) do
+                if (showNip or not e.nip) and PD.EnchCurHit(e, PD.moneyKey) and PD.RecipeVisible(e[14]) then
+                    out[#out + 1] = PD.EnchantSpec(e)
+                    if #out >= cap then return out end
+                end
             end
         end
         if PD.moneyKey == PD.FAVOR_CURID then
@@ -9634,7 +9756,7 @@ function PD.RecipeList(limit, q)
     end
     if key == "__enchant" then
         for _, e in ipairs(d.enchants or {}) do
-            if PD.RecipeVisible(e[14]) then out[#out + 1] = PD.EnchantSpec(e) end
+            if (not e.nip) and PD.RecipeVisible(e[14]) then out[#out + 1] = PD.EnchantSpec(e) end
             if #out >= cap then break end
         end
         return out
@@ -9646,7 +9768,7 @@ function PD.RecipeList(limit, q)
         for _, e in ipairs(d.enchants or {}) do
             local g = tostring(e[3] or "")
             if g == "" then g = L["其他"] end
-            if ((not want) or g == want) and PD.RecipeVisible(e[14]) then
+            if ((not want) or g == want) and (not e.nip) and PD.RecipeVisible(e[14]) then
                 out[#out + 1] = PD.EnchantSpec(e)
                 if #out >= cap then break end
             end
@@ -9718,10 +9840,11 @@ function PD.ScanRecipe()
         return nil
     end
     local q = (PD.searchQ and PD.searchQ ~= "") and PD.searchQ or nil
-    if PD.moneyKey ~= nil then
+    if PD.moneyKey ~= nil and (d.rows and #d.rows > 0) then
+        local showNip = (PD.moneyKey == PD.SRC_NIP_KEY)
         local cn = 0
         for _, r in ipairs(d.rows or {}) do
-            if (not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
+            if (showNip or not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
         end
         if PD.moneyKey == PD.FAVOR_CURID then
             for _, f in ipairs(d.favor or {}) do
