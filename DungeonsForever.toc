@@ -7,7 +7,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 1.9.31
+## Version: 1.9.32
 ## SavedVariables: DungeonsForeverDB
 ## OptionalDeps: EllesmereUI
 ## LoadOnDemand: 0
@@ -81,6 +81,7 @@ Core\Data\Data_PvPSets.lua
 Core\Data\Data_PvPHonor.lua
 Core\Data\Data_VendorPrices.lua
 Core\Data\Data_SpellBook.lua
+Core\Data\Data_SpellExtra.lua
 Core\Data\Data_WeaponTraining.lua
 Core\Data\zhTW\Data_Dungeons.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonLoot.lua [AllowLoadTextLocale zhTW]
@@ -195,3 +196,4 @@ Core\Data\Data_RouteOvl.lua
 Core\SpellTraining.lua
 Core\WeaponMasters.lua
 Core\NativeSpellBook.lua
+Core\NativeTalentPage.lua

@@ -1245,6 +1245,10 @@ local function Ensure()
     UI.navPlate = plate()
     local sl = TT.scroll and TT.scroll.GetFrameLevel and TT.scroll:GetFrameLevel() or 1
     if type(sl) ~= "number" then sl = 1 end
+    if TT.child and TT.child.GetFrameLevel then
+        local hl = TT.child:GetFrameLevel()
+        if type(hl) == "number" and hl >= sl then sl = hl + 1 end
+    end
     for i = 1, 4 do
         UI.plates[i]:SetFrameLevel(sl)
     end
