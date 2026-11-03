@@ -139,15 +139,6 @@ local function signature(slug, opts)
         "formula-channels:2", "profit-priority:20", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
         E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
-    if opts.snapshot then
-        local stock={}
-        for id,entry in pairs(opts.executionInventory or {}) do
-            stock[#stock+1]=tostring(id)..":"..tostring(type(entry)=="table" and entry.count or entry)
-                ..":"..tostring(type(entry)=="table" and entry.usable)
-        end
-        table.sort(stock)
-        sig=sig.."|carry:"..tostring(opts.executionSourcePlanID or "")..":"..table.concat(stock,",")
-    end
     return sig
 end
 local function identity(slug, opts)
@@ -237,8 +228,7 @@ local function planSkeleton(result,opts,status)
     settings.engineeringSpecialization=result.specializationPolicy and result.specializationPolicy.choice or settings.engineeringSpecialization
     return {v=1,slug=result.slug,pv=result.planVersion,sig=result.cacheSignature,
         planID=result.planID,start=result.start,target=result.target,scheme=result.scheme,
-        stamp=now(),status=status or result.status,steps=steps,options=settings,
-        seedInventory=copy(result.seedInventory or {})}
+        stamp=now(),status=status or result.status,steps=steps,options=settings}
 end
 local function remember(job,result,status)
     if job.opts.snapshot or job.opts.routeSkeleton or result.status=="searching" and not status then return end
@@ -454,7 +444,7 @@ function RA.RebuildFromSkel(slug,skel,supplied)
     local restored=copy(skel.options)
     restored.start,restored.target,restored.scheme=skel.start,skel.target,skel.scheme
     local opts=options(slug,restored)
-    opts.routeSkeleton=skel;opts.executionInventory=copy(skel.seedInventory)
+    opts.routeSkeleton=skel
     return start(slug,opts,request)
 end
 function RA.ChangeReserveMode(slug,mode)

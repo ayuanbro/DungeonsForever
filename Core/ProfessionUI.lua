@@ -12882,17 +12882,6 @@ function PD.RowsLeveling(rows)
         PD.autoKey = planKey
         PD.autoExact = res.exact == true
     end
-    if res and res.seedInventory and ns.ProfExecution and ns.ProfExecution.BagCount then
-        local drift = false
-        for id, n in pairs(res.seedInventory) do
-            if (ns.ProfExecution.BagCount(id) or 0) ~= n then drift = true break end
-        end
-        PD.__invDrift = PD.__invDrift or {}
-        PD.__invDrift[PD.cur] = drift and true or nil
-        if drift then
-            warning(L["背包材料与上次计算时不一致，当前成本仍按旧库存计算；请点「重新计算」更新。"], 0.95, 0.75, 0.4)
-        end
-    end
     PD.RowsRoutePartner(rows, pairContext)
     PD.RowsSpecQuest(rows)
     if pairContext and pairContext.requiresPartner and not pairContext.partnerValid then
@@ -13931,7 +13920,8 @@ function PD.RowsReserveShopping(rows,data)
     local follow=ns.ProfFollow
     if not follow or not follow.ShoppingForPlan then return end
     local list=follow.ShoppingForPlan(PD.cur,data)
-    PushHead(rows,L["当前采购（含备用，背包只扣一次）"],1)
+    local reserve=data.reserve and data.reserve.mode~="off"
+    PushHead(rows,L[reserve and "当前采购（含备用，背包只扣一次）" or "当前采购（已扣背包）"],1)
     if not PD.shopGroup then
         rows[#rows].foldKey = "shop_mats"
         if PD.FoldOn("shop_mats") then return end
@@ -13974,8 +13964,9 @@ function PD.RowsReserveShopping(rows,data)
         local row=rows[index]
         local entry=row.it and byID[row.it[1]]
         if entry then
-            local summary=format(L["基础 %d · 备用 %d · 背包 %s"],entry.baseNeed or entry.need,
-                entry.reserveNeed or 0,entry.haveKnown and tostring(entry.have) or L["请检查背包"])
+            local have=entry.haveKnown and tostring(entry.have) or L["请检查背包"]
+            local summary=reserve and format(L["基础 %d · 备用 %d · 背包 %s"],entry.baseNeed or entry.need,
+                entry.reserveNeed or 0,have) or format(L["需求 %d · 背包 %s"],entry.need,have)
             row.sub=row.sub or summary
             row.lines[#row.lines+1]={summary,.7,.7,.7}
             local detail=follow.ShoppingSourceText(entry)
@@ -14042,7 +14033,7 @@ function PD.RowsAutoShop(rows, data)
         end
         PushText(rows, format(L["当前制作步骤背包还缺：%s"], table.concat(parts, "、")), 12, { 0.95, 0.75, 0.4 }, 1)
     end
-    if data.reserve and data.reserve.mode~="off" then
+    if follow and follow.ShoppingForPlan and (data.planVersion==2 or data.reserve and data.reserve.mode~="off") then
         PD.RowsReserveShopping(rows,data)
     elseif PD.shopGroup then
         if #mats > 0 then PD.PushTripGroups(rows, data) end

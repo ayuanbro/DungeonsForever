@@ -665,13 +665,13 @@ local function allocatePurchases(row)
             if source=="ah" or source=="auction" then
                 ahLimit=ahLimit+entry.count
                 local unit=entry.unit or (type(entry.cost)=="number" and entry.count>0 and entry.cost/entry.count)
-                if type(unit)=="number" and unit>0 and (not auction or auction==unit) and not entry.unpriced then auction=unit
+                if type(entry.cost)=="number" and type(unit)=="number" and unit>0 and (not auction or auction==unit) and not entry.unpriced then auction=unit
                 else quotesComplete=false end
             elseif source=="vendor" or source=="npc" then
                 local offer=copyPurchase(entry)
                 local size=entry.bundleSize or 1
                 local price=entry.bundlePrice or (type(entry.cost)=="number" and entry.count>0 and entry.cost*size/entry.count)
-                if type(price)=="number" and price>=0 and not entry.unpriced and entry.unlimited==true then
+                if type(entry.cost)=="number" and type(price)=="number" and price>=0 and not entry.unpriced and entry.unlimited==true then
                     offer.quantity,offer.price=size,price;offers[#offers+1]=offer
                 else quotesComplete=false end
             else quotesComplete=false end
@@ -1060,9 +1060,10 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
     local xp=ns.ProfExecution
     local run=xp and xp.GetRun(s.slug)
     local matching=run and plan and (run.plan==plan or plan.planID and run.originPlanID==plan.planID)
+    local projected=not onlyStep and not matching and plan and xp and xp.PreviewProgress and xp.PreviewProgress(s.slug,plan)
     local casts,completed,baseRemaining={},{},{}
-    if reserve and matching then for _,seg in ipairs(steps) do
-        local progress=xp.Progress(s.slug,seg.segmentID)
+    if reserve and (matching or projected) then for _,seg in ipairs(steps) do
+        local progress=matching and xp.Progress(s.slug,seg.segmentID) or projected[seg.segmentID]
         if progress and progress.segmentID==seg.segmentID then
             casts[seg.segmentID]=progress.casts;completed[seg.segmentID]=progress.complete
             baseRemaining[seg.segmentID]=progress.baseRemaining or 0
@@ -1079,7 +1080,9 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         if seg.segmentID or i == curStep then
             crafts = math.ceil(craftsLeft(seg, s.skill, rec,s.slug,i>curStep))
         end
-        if reserve and matching then
+        if projected and projected[seg.segmentID] and (seg.reason=="material" or seg.role=="material" or xp.IsConversion(seg)) then
+            crafts=math.min(crafts,projected[seg.segmentID].baseCrafts or crafts)
+        elseif reserve and matching then
             crafts=math.min(crafts,baseRemaining[seg.segmentID] or 0)
         end
         if crafts>0 then
