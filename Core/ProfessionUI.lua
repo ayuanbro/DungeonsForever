@@ -301,6 +301,10 @@ function PD.SetSettingRaw(k,value,slug)
         db.professionSettings[slug]=db.professionSettings[slug] or {}
         db.professionSettings[slug][k]=value
     else db[k]=value end
+    if k=="recoveryEnabled" then
+        local bridge=ns.AuctionBridge
+        if bridge and bridge.SyncStockPersistence then bridge.SyncStockPersistence() end
+    end
 end
 
 function PD.CookingRoute()
@@ -14435,7 +14439,7 @@ function PD.RowsSettings(rows)
           d1 = L["默认关闭：仍可使用另一主专业当前能制作的材料。"],
           d2 = L["开启后计入另一专业所需的材料费用，最高 300；查看未学专业时需先选择搭配主专业。"] },
         { k = "recoveryEnabled", name = L["回血模式"],
-          desc = L["把「搓完卖掉能收回多少」计入路线决策，比较采购支出减去剩余产物预计收入。"],
+          desc = L["把「搓完卖掉能收回多少」计入路线决策，比较采购支出减去剩余产物预计收入。"] .. " " .. L["有专业开启回血时保存共享拍卖库存；全部关闭后仅保留本次内存数据。"],
           d1 = L["开启：「最省钱」计入预计回血，盈利优先每配方最多20次；其他方案保留原目标。"],
           d2 = L["关闭：只看采购支出，同时仍显示预计回血与净成本供参考。"] },
         { k = "autoResidualMass", name = L["产物按大量上架折价"],

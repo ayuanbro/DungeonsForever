@@ -150,9 +150,35 @@ local function ReplicateGateDB()
     end
 end
 
-local function SupplyRecord(id)
+local fullBatch
+
+function AB.StockPersistenceEnabled()
+    local PD=ns.ProfModule
+    if not (PD and PD.Setting) then return false end
+    if PD.Setting("recoveryEnabled")==true then return true end
     local db=ProfDB()
-    local batch=db and db.auctionFullScan
+    for slug in pairs(db and db.professionSettings or {}) do
+        if PD.Setting("recoveryEnabled",slug)==true then return true end
+    end
+    return false
+end
+
+local function CurrentBatch()
+    if not fullBatch and AB.StockPersistenceEnabled() then
+        local db=ProfDB()
+        fullBatch=db and db.auctionFullScan
+    end
+    return fullBatch
+end
+
+function AB.SyncStockPersistence()
+    local batch=CurrentBatch()
+    local db=ProfDB()
+    if db then db.auctionFullScan=AB.StockPersistenceEnabled() and batch or nil end
+end
+
+local function SupplyRecord(id)
+    local batch=CurrentBatch()
     if type(batch)~="table" or batch.v~=2 or type(batch.items)~="table" then return nil end
     if AB.ReplicateScanReady and AB.ReplicateScanReady()==false then
         return {mk=batch.mk,ob=batch.ob,failure="unverified"}
@@ -373,15 +399,13 @@ local function ImportFullRows(scan,rows)
             or mode.generation~=scan.modeGeneration or mode.scanSerial~=scan.scanSerial then
             fullState={status="unverified"};fullRead=nil;return
         end
-        local db=ProfDB()
-        if db then
-            db.auctionFullScan={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
-                c=scan.complete,v=2,rg=scan.modeGeneration,rs=scan.scanSerial}
-            fullState.status=scan.complete and "complete" or "incomplete"
-            fullState.observedAt=scan.observedAt
-            fullRead=nil
-            SupplyChanged(nil)
-        else fullState={status="unavailable"};fullRead=nil end
+        fullBatch={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
+            c=scan.complete,v=2,rg=scan.modeGeneration,rs=scan.scanSerial}
+        AB.SyncStockPersistence()
+        fullState.status=scan.complete and "complete" or "incomplete"
+        fullState.observedAt=scan.observedAt
+        fullRead=nil
+        SupplyChanged(nil)
     end
     if C_Timer and C_Timer.NewTimer then fullTimer=C_Timer.NewTimer(0,step)
     else fullState={status="unavailable"};fullRead=nil end
@@ -427,6 +451,7 @@ function AB.ConnectAuctionatorStock()
 end
 
 local function InitializeAuctionatorStock()
+    AB.SyncStockPersistence()
     AB.ConnectAuctionatorStock()
     AB.ObserveReplicateMode()
     AB.HookReplicateModeSetting()
@@ -484,7 +509,7 @@ function AB.ReplicateScanReady()
         return false, "replicateModeDisabled"
     end
 
-    local batch = db and db.auctionFullScan
+    local batch = CurrentBatch()
     local now = time and time()
 
     if type(batch) ~= "table"
@@ -546,8 +571,7 @@ function AB.ReplicateScanReady()
     local enabled,state=AB.ObserveReplicateMode()
     if enabled==nil then return nil,"replicateModeUnknown" end
     if not enabled then return false,"replicateModeDisabled" end
-    local db=ReplicateGateDB()
-    local batch=db and db.auctionFullScan
+    local batch=CurrentBatch()
     local now=time and time() or 0
     if not state or type(batch)~="table" or batch.v~=2 or batch.c~=true
         or type(batch.items)~="table" or batch.mk~=MarketKey()

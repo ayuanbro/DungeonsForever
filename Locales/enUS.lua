@@ -2246,3 +2246,5 @@ L["序号"] = "No."
 L["技能等级"] = "Rank"
 L["人物等级"] = "Level"
 L["导入方案"] = "Imported plan"
+
+L["有专业开启回血时保存共享拍卖库存；全部关闭后仅保留本次内存数据。"] = "Shared auction stock is saved while any profession has recovery enabled. With recovery off for every profession, only this session's stock is kept in memory."
