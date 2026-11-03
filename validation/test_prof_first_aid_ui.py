@@ -76,7 +76,7 @@ class FirstAidUITests(unittest.TestCase):
           Auctionator.API.v1.GetAuctionPriceByItemID=function()return nil end
           local p=ns.ProfRouteAuto.FixedPlan('first-aid',{target=300})
           assert(p.referenceOnly and not p.referenceQuoted and not p.referenceCostComplete)
-          assert(PD.PlanCostText(p)==ns.L['材料价格待补全'])
+          assert(PD.PlanCostText(p)==ns.L['请扫描拍卖行'])
           local partial=ns.ProfRouteAuto.FixedPlan('first-aid',{target=75})
           assert(partial.referenceOnly and not partial.referenceShopping and #partial.mats==0)
           assert(PD.PlanCostText(partial)==ns.L['配方资料待补全'])
@@ -90,7 +90,7 @@ class FirstAidUITests(unittest.TestCase):
           assert(PD.lvSummary.referenceOnly and PD.lvSummary.referenceQuoted)
           assert(PD.PlanCostText(PD.lvSummary):find(ns.L['材料参考价'],1,true))
           for _,line in ipairs(PD.warnNotes or {})do
-            assert(line[1]~=ns.L['暂无有效拍卖行价格；请扫描或更新价格。'])
+            assert(line[1]~=ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'])
             assert(not line[1]:find('clientDataPending',1,true),'missing recipe data was labeled as a specialization block')
           end
           local steps=0
@@ -117,14 +117,14 @@ class FirstAidUITests(unittest.TestCase):
           PD.PaintLvTiles()
           assert(PD.lvTiles.cost.val.text:find(ns.L['材料参考价'],1,true))
           for _,line in ipairs(PD.lvTiles.cost.lines)do
-            assert(line[1]~=ns.L['暂无有效拍卖行价格；请扫描或更新价格。'])
+            assert(line[1]~=ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'])
           end
           PD.autoPage='shop';rows={};PD.RowsLeveling(rows)
           assert(PD.lvSummary.referenceOnly and PD.lvShopData.referenceShopping)
           local found=false
           for _,r in ipairs(rows)do
             if r.text and r.text:find(ns.L['材料参考价'],1,true)then found=true end
-            assert(r.text~=ns.L['暂无有效拍卖行价格；请扫描或更新价格。'])
+            assert(r.text~=ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'])
           end
           assert(found,'shopping total discarded the available material quotes')
         ''')

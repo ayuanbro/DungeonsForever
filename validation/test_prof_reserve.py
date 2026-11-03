@@ -432,7 +432,7 @@ class ReserveShoppingTests(unittest.TestCase):
           for _,row in ipairs(rows)do if row.purchaseSource=='ah' then
             local warned=false
             for _,line in ipairs(row.lines or {})do
-              if line[1]==ns.L['库存观测已过期；请在 Auctionator 重新完整扫描后计算路线。']then warned=true end
+              if line[1]==ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。']then warned=true end
               assert(line[1]~=format(ns.L['拍卖行数量快照：%d 件；本路线购买 %d 件。'],2,2))
             end
             assert(warned,'reserve row reused the old auction observation')
@@ -442,7 +442,7 @@ class ReserveShoppingTests(unittest.TestCase):
           C_Item.GetItemCount=function()return nil end
           local rows={};PD.RowsAutoShop(rows,plan);local found=false
           for _,row in ipairs(rows)do if row.it and row.it[1]==11 then
-            assert(row.right==ns.L['数量未核实'] and row.right2==ns.L['价格未知'])
+            assert(row.right==ns.L['请检查背包'] and row.right2==ns.L['请核对价格'])
             assert(row.purchaseCount==nil and row.purchaseCost==nil)
             found=true
           end end

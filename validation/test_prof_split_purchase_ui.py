@@ -105,11 +105,11 @@ class SplitPurchaseUITests(unittest.TestCase):
             e.availableCount=nil;e.supplyObserved=nil;e.supplyRequired=nil
           end end
           local head,detail=PD.PlanSupplyParts(plan)
-          assert(head==format(ns.L['有 %d 种拍卖行物品数量未知，路线仅按价格估算，不能确认能买齐；请在 Auctionator 重新完整扫描。'],1))
+          assert(head==format(ns.L['有 %d 种物品需要更新在售数量；请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'],1))
           assert(detail:find('Item11',1,true))
           local rows={};PD.RowsAutoShop(rows,plan)
           local seen={};for _,row in ipairs(receiptRows(rows,11))do seen[row.purchaseSource]=row end
-          local warning=ns.L['拍卖行可购数量未知，当前仅按价格估算；请在 Auctionator 重新完整扫描。']
+          local warning=ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。']
           assert(lineContains(seen.ah,warning))
           assert(not lineContains(seen.vendor,warning))
         ''')
@@ -125,7 +125,7 @@ class SplitPurchaseUITests(unittest.TestCase):
           local rows={};PD.RowsAutoShop(rows,plan)
           local found=false
           for _,row in ipairs(receiptRows(rows,11))do if row.purchaseSource=='ah'then
-            assert(lineContains(row,format(ns.L['拍卖行已读取数量不足：可购 %d 件，需要 %d 件。'],2,3)))
+            assert(lineContains(row,format(ns.L['扫描记录有 %d 件，需要 %d 件；请用 Auctionator 完整扫描后重新计算。'],2,3)))
             found=true
           end end
           assert(found and textRow(rows,PD.PlanCostText(plan)))
@@ -160,7 +160,8 @@ class SplitPurchaseUITests(unittest.TestCase):
             self.lua.execute('''
               for _,key in ipairs({'本行采购：%d 件','本行用于路线：%d 件；整包余量：%d 件。',
                 '本路线选择从商人购买这部分材料。'})do
-                assert(type(rawget(ns.L,key))=='string'and rawget(ns.L,key)~='',key)
+                local value=GetLocale()=='zhCN' and ns.L[key] or rawget(ns.L,key)
+                assert(type(value)=='string' and value~='',key)
               end
             ''')
 

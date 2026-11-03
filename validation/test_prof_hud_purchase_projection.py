@@ -83,7 +83,7 @@ class HUDPurchaseProjectionTests(unittest.TestCase):
           assert(not row.auctionShortage and not row.auctionUnknown and (row.purchaseUncovered or 0)==0)
           local text=pf.ShoppingSourceDetail(row)
           assert(text:find(ns.L['拍卖行可购数量已变化；待购数量按原计划货源和报价重新分配。'],1,true))
-          assert(not text:find(ns.L['拍卖行可购数量不足，无法继续此配方；请在 Auctionator 重新完整扫描或改用其他配方。'],1,true))
+          assert(not text:find(ns.L['本次扫描的材料数量不够；请用 Auctionator 完整扫描后重新计算，或更换货源。'],1,true))
           assert(row.planAHCount==2 and row.planVendorCount==5 and row.planPurchaseCost==12)
           pf.ImportShoppingList('alchemy','Alchemy');assert(#imported==0)
           assert(pf.VendorPurchases('alchemy')[1].missing==10)
@@ -98,8 +98,8 @@ class HUDPurchaseProjectionTests(unittest.TestCase):
           assert(row.ahCount==2 and row.vendorCount==5 and row.auctionUnknown and row.supplyStatus=='expired')
           assert(row.availableCount==nil and not row.supplyObserved)
           assert(row.planPurchaseCost==12 and row.purchaseCost==12)
-          assert(pf.ShoppingSourceText(row):find(ns.L['库存未知'],1,true))
-          assert(pf.ShoppingSourceDetail(row):find(ns.L['拍卖行可购数量未知，当前仅按价格估算；请在 Auctionator 重新完整扫描。'],1,true))
+          assert(pf.ShoppingSourceText(row):find(ns.L['请扫描拍卖行'],1,true))
+          assert(pf.ShoppingSourceDetail(row):find(ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'],1,true))
         ''')
 
     def test_unreadable_character_stock_never_becomes_zero_or_an_auction_export(self):
@@ -112,7 +112,7 @@ class HUDPurchaseProjectionTests(unittest.TestCase):
           assert(row.purchaseCount==nil and row.purchaseCost==nil and #row.purchases==0)
           assert(row.planPurchaseCount==7 and row.planPurchaseCost==12)
           pf.ImportShoppingList('alchemy','Alchemy');assert(#imported==0 and #messages==1)
-          assert(messages[1]:find(ns.L['背包或银行数量未能读取，无法确认还需购买多少。'],1,true))
+          assert(messages[1]:find(ns.L['请打开背包和银行，再查看需要购买的数量。'],1,true))
         ''')
 
 

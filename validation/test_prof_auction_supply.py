@@ -29,15 +29,18 @@ function CreateFrame()
  frames[#frames+1]=f;return f
 end
 C_Timer={NewTimer=function(delay,fn)
- local t={fn=fn,delay=delay};function t:Cancel()self.cancelled=true end
+ local t={fn=fn,delay=delay,due=clock+delay};function t:Cancel()self.cancelled=true end
  timers[#timers+1]=t;return t
 end}
 function step()
- while #timers>0 do
-  local t=table.remove(timers,1)
-  if not t.cancelled then t.fn();return end
+ local i=1
+ while i<=#timers do
+  local t=timers[i]
+  if t.cancelled then table.remove(timers,i)
+  elseif t.due<=clock then table.remove(timers,i);t.fn();return
+  else i=i+1 end
  end
- error('no timer')
+ error('no due timer')
 end
 function event(e,arg)
  for _,f in ipairs(frames)do if f.events[e]then f.OnEvent(f,e,arg)end end
@@ -75,12 +78,13 @@ class AuctionSupplyBridgeTests(unittest.TestCase):
           assert(DungeonsForeverDB.prof.auctionSupply[11]==old and #requests==0)
         ''')
 
-    def test_only_valid_full_scan_batches_provide_available_quantity(self):
+    def test_only_valid_memory_batches_provide_available_quantity(self):
+        from test_prof_auctionator_full_scan import SOURCE_MOCK
+        self.lua.execute(SOURCE_MOCK)
+        self.lua.execute("event('ADDON_LOADED','Auctionator')")
         self.lua.execute(r'''
           local b=ns.AuctionBridge
-          ns.ProfModule={Setting=function(k)return k=='recoveryEnabled' end}
-          local batch={v=2,c=true,t=clock,mk='Realm:Alliance',ob='Player',items={[11]={q=7,p=20}}}
-          DungeonsForeverDB.prof.auctionFullScan=batch
+          beginFull(1);sendFull({rawRow(11,7,140,'Seller')});finishFull()
           assert(b.GetAuctionSupply(11).quantity==7 and b.GetAuctionSupply(12).quantity==0)
           clock=clock+1801
           assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='expired')
@@ -88,14 +92,20 @@ class AuctionSupplyBridgeTests(unittest.TestCase):
           assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='unverified')
           GetRealmName=function()return 'Realm'end;UnitName=function()return 'Other'end
           assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='unverified')
-          UnitName=function()return 'Player'end;batch.c=false
+          UnitName=function()return 'Player'end
+          beginFull(2);sendFull({rawRow(11,7,140,'Seller')});finishFull()
           assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(12)=='incomplete')
-          batch.c=true;batch.items[11].q=-1;assert(b.GetAuctionSupply(11)==nil)
-          batch.items[11].q=0;assert(b.GetAuctionSupply(11).quantity==0)
-          assert(#requests==0)
+          beginFull(1);sendFull({rawRow(11,-1,20,'Seller')});finishFull()
+          assert(b.GetAuctionSupply(11)==nil)
+          beginFull(1);sendFull({rawRow(11,0,0,'Seller')});finishFull()
+          assert(b.GetAuctionSupply(11).quantity==0)
+          assert(#requests==0 and DungeonsForeverDB.prof.auctionFullScan==nil)
         ''')
 
-    def test_real_capture_freezes_the_full_scan_budget_and_marks_expiration(self):
+    def test_real_capture_freezes_memory_budget_and_marks_expiration(self):
+        from test_prof_auctionator_full_scan import SOURCE_MOCK
+        self.lua.execute(SOURCE_MOCK)
+        self.lua.execute("event('ADDON_LOADED','Auctionator')")
         for name in ('ProfPolicies','ProfRouteAuto','ProfEssences','ProfSolverCapture','ProfRouteSolver'):
             self.load((ROOT/'Core'/(name+'.lua')).read_text(encoding='utf-8-sig'))
         self.lua.execute(r'''
@@ -103,15 +113,14 @@ class AuctionSupplyBridgeTests(unittest.TestCase):
             Setting=function(k)return k=='recoveryEnabled' end}
           ns.ProfRecipes={alchemy={rows={{101,10,1,'',nil,nil,1,100,200,300,false,{{11,1}}}}}}
           IsPlayerSpell=function()return true end;UnitLevel=function()return 60 end
-          DungeonsForeverDB.prof.auctionFullScan={v=2,c=true,t=clock,mk='Realm:Alliance',ob='Player',
-            items={[11]={q=1,p=7}}}
+          beginFull(1);sendFull({rawRow(11,1,7,'Seller')});finishFull()
           local s=ns.ProfEconomy.Capture('alchemy',{start=1,target=3,autoCraftTools=false,considerAuctionSupply=true})
           assert(s.prices[11]==7 and s.auctionSupply[11].quantity==1)
-          DungeonsForeverDB.prof.auctionFullScan.items[11].q=100
+          beginFull(1);sendFull({rawRow(11,100,700,'Seller')});finishFull()
           local r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=3,autoCraftTools=false})
           assert(not r.targetReached and #r.auctionSupplyShortages==1)
-          assert(s.auctionSupply[11].quantity==1,'in-flight budget changed with saved data')
-          Auctionator={API={v1={GetAuctionPriceByItemID=function()return 7 end}}}
+          assert(s.auctionSupply[11].quantity==1,'in-flight budget changed after another scan')
+          Auctionator.API={v1={GetAuctionPriceByItemID=function()return 7 end}}
           clock=clock+1801
           s=ns.ProfEconomy.Capture('alchemy',{start=1,target=3,autoCraftTools=false,considerAuctionSupply=true})
           assert(s.auctionSupply[11]==nil and s.auctionSupplyStatus[11]=='expired')
@@ -196,7 +205,7 @@ class AuctionSupplyUITests(unittest.TestCase):
           assert(PD.SnapshotBadgeState({planVersion=2,status='infeasible',completeCost=false,
             auctionSupplyShortages={{item=11}}})=='stock_short')
           assert(PD.AuctionSupplyText({source='ah',supplyObserved=false,supplyStatus='expired'})==
-            ns.L['库存观测已过期；请在 Auctionator 重新完整扫描后计算路线。'])
+            ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'])
           assert(PD.PlanSupplyText({feasible=false,auctionSupplyCandidates={11}})==nil,
             'an unused catalogue material requested a full scan')
           assert(PD.PlanSupplyText({feasible=false,auctionSupplyUnknown=1,
@@ -218,9 +227,9 @@ class AuctionSupplyUITests(unittest.TestCase):
             with self.subTest(locale=locale):
                 self.boot(locale)
                 self.lua.execute(r'''
-                  for _,key in ipairs({'数量未核实',
-                    '库存观测已过期；请在 Auctionator 重新完整扫描后计算路线。',
-                    '库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。'})do assert(GetLocale()=='zhCN' and ns.L[key] or rawget(ns.L,key))end
+                  for _,key in ipairs({'请扫描拍卖行',
+                    '请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。',
+                    '请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'})do assert(GetLocale()=='zhCN' and ns.L[key] or rawget(ns.L,key))end
                   assert(PD.SnapshotBadgeState({planVersion=2,scheme='optim',supplyComplete=false})=='stock_unknown')
                 ''')
 

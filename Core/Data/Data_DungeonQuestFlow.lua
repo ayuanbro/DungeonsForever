@@ -1,6 +1,7 @@
 local _, ns = ...
 
 function ns.EnsureDungeonQuestFlow()
+    ns.EnsureDungeonQuestFlow = function() return ns.DungeonQuestFlow end
     if ns.DungeonQuestFlow then return ns.DungeonQuestFlow end
     ns.DungeonQuestFlow = {
     ragefire_chasm = {

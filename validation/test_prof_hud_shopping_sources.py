@@ -82,7 +82,7 @@ class HUDShoppingSourceTests(unittest.TestCase):
           ns.AuctionBridge.GetAuctionSupply=function()return nil end
           local entry=pf.ShoppingList('alchemy')[1]
           assert(entry.availableCount==nil and not entry.supplyObserved)
-          assert(pf.ShoppingSourceText(entry):find('库存未知',1,true))
+          assert(pf.ShoppingSourceText(entry):find('请扫描拍卖行',1,true))
           ns.AuctionBridge.GetAuctionSupply=function()return {quantity=0}end
           local row=pf.ShoppingList('alchemy')[1]
           assert(row.availableCount==0 and (row.purchaseUncovered or 0)>0)

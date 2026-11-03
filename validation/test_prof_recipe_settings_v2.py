@@ -114,7 +114,7 @@ class RecipeSettingsV2Tests(unittest.TestCase):
             assert(row.right2=='gold:50 · '..ns.L['获取或兑换总成本未确认'])
             local costs=row.lines[#row.lines][1]
             assert(costs:find('gold:50',1,true) and costs:find('Item7 ×2',1,true) and costs:find('Item8 ×3',1,true))
-            local warning=ns.L[mode=='limited' and '限量商人报价仅作参考，不能保证到访时有货。' or '商人库存：性质尚未核实']
+            local warning=ns.L[mode=='limited' and '限量商人报价仅作参考，不能保证到访时有货。' or '请向商人确认现货']
             local warned=false;for _,line in ipairs(row.lines)do if line[1]==warning then warned=true end end
             assert(warned,'the acquisition quote lost its stock warning')
           end end

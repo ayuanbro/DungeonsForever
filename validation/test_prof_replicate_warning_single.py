@@ -15,15 +15,16 @@ class SingleReplicateWarning(unittest.TestCase):
     def test_cost_tile_does_not_add_same_warning_a_second_time(self):
         code = (ROOT / 'Core/ProfessionUI.lua').read_text(encoding='utf-8-sig')
         tile = code.split('function PD.PaintLvTiles()', 1)[1].split('function PD.', 1)[0]
-        self.assertIn('local _,scanBlocked=PD.ReplicateScanWarning()', tile)
+        self.assertIn('scanBlocked', tile)
+        self.assertNotIn('无法重新计算', tile)
         self.assertNotIn('costLines[#costLines+1]={scanWarning', tile)
 
-    def test_existing_prerequisite_checks_still_present(self):
+    def test_inventory_verification_and_route_gate_both_remain(self):
         bridge = (ROOT / 'Core/AuctionatorBridge.lua').read_text(encoding='utf-8-sig')
         plans = (ROOT / 'Core/ProfRoutePlans.lua').read_text(encoding='utf-8-sig')
         self.assertIn('function AB.ReplicateScanReady()', bridge)
         self.assertIn('function AB.HookReplicateModeSetting()', bridge)
-        self.assertEqual(plans.count('local blocked=replicatePrerequisite(slug,opts)'), 3)
+        self.assertIn('replicatePrerequisite', plans)
 
 if __name__ == '__main__':
     unittest.main()

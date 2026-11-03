@@ -2,6 +2,7 @@ local _, ns = ...
 
 ns.ProfNPCLocsMeta={schemaVersion=1,source="wowhead-npc",npcCount=1017}
 ns.EnsureProfNPCLocs = function()
+    ns.EnsureProfNPCLocs = function() return ns.ProfNPCLocs end
     if ns.ProfNPCLocs then return ns.ProfNPCLocs end
 ns.ProfNPCLocs={
 [46]={{0,1431,47.6,12.2}},

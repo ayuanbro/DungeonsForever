@@ -205,7 +205,7 @@ class ShoppingViewTests(unittest.TestCase):
           assert(#unknown==1 and unknown[1].source=='unknown' and unknown[1].count==nil and unknown[1].cost==nil)
           clickHeader('shop_group');assert(deepEqual(unknown,receipts(visibleRows)))
           for _,row in ipairs(visibleRows)do if row.purchaseSource=='unknown' then
-            assert(row.right==ns.L['数量未核实'] and row.right2==ns.L['价格未知'])
+            assert(row.right==ns.L['请检查背包'] and row.right2==ns.L['请核对价格'])
           end end
           unchanged()
         ''')
@@ -219,13 +219,13 @@ class ShoppingViewTests(unittest.TestCase):
           local ordinary=receipts(visibleRows)
           assert(#ordinary==2 and ordinary[1].cost==nil and ordinary[2].cost==nil)
           for _,row in ipairs(visibleRows)do if row.purchaseSource then
-            assert(row.right2==PD.UnpriceShort({}) or row.right2==ns.L['价格未知'])
+            assert(row.right2==PD.UnpriceShort({}) or row.right2==ns.L['请核对价格'])
           end end
           clickHeader('shop_group')
           assert(deepEqual(ordinary,receipts(visibleRows)))
-          assert(findText(visibleRows,'Selected supplier').suffix:find(ns.L['价格未知'],1,true))
-          assert(findText(visibleRows,format(ns.L['拍卖行（%d 种）'],1)).right==ns.L['价格未知'])
-          assert(findText(visibleRows,format(ns.L['材料（%d 种）· 按商人采购'],1)).right:find(ns.L['价格未知'],1,true))
+          assert(findText(visibleRows,'Selected supplier').suffix:find(ns.L['请核对价格'],1,true))
+          assert(findText(visibleRows,format(ns.L['拍卖行（%d 种）'],1)).right==ns.L['请扫描拍卖行'])
+          assert(findText(visibleRows,format(ns.L['材料（%d 种）· 按商人采购'],1)).right:find(ns.L['请核对价格'],1,true))
           unchanged()
         ''')
 
@@ -348,7 +348,7 @@ class ShoppingViewTests(unittest.TestCase):
                       assert(imported and #imported==1 and imported[1].name=='Item11')
                       assert(imported[1].need==sections[11].row.purchaseCount)
                       for _,key in ipairs({'NPC采购（未指定商人）','来源待确认','NPC采购合计：%s'})do
-                        assert(rawget(ns.L,key),key)
+                        assert(GetLocale()=='zhCN' and ns.L[key] or rawget(ns.L,key),key)
                       end
                       assertCachedReceipts();unchanged()
                     ''')
@@ -385,9 +385,9 @@ class ShoppingViewTests(unittest.TestCase):
           assert(sections[4470].section==label and sections[4470].row.purchaseCost==nil)
           assert(sections[99].section==ns.L['来源待确认'] and sections[99].row.purchaseCost==nil)
           assert(sections[99].row.purchaseSource=='unknown')
-          assert(findText(visibleRows,label).right==format(ns.L['%d 种 · %s'],2,ns.L['价格未知']))
+          assert(findText(visibleRows,label).right==format(ns.L['%d 种 · %s'],2,ns.L['请核对价格']))
           assert(findText(visibleRows,format(ns.L['材料（%d 种）· 按商人采购'],5)).right==
-            format(ns.L['NPC采购合计：%s'],ns.L['价格未知']))
+            format(ns.L['NPC采购合计：%s'],ns.L['请核对价格']))
           assert(deepEqual(plain,receipts(visibleRows)))
           unchanged()
         ''')

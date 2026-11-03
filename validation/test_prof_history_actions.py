@@ -134,7 +134,7 @@ class HistoryActionsTests(unittest.TestCase):
             diagnostics={{code='historyUnreadable'}}})=='rules_changed')
           ra.HasPriceData=function()return false end
           assert(PD.AuctionatorState()=='noprice')
-          assert(PD.SnapshotBadgeText({scheme='cheapest',priced=false})==ns.L['缺少价格快照，请扫描拍卖行'])
+          assert(PD.SnapshotBadgeText({scheme='cheapest',priced=false})==ns.L['请扫描拍卖行'])
         ''')
 
     def test_invalid_plan_shapes_share_validation_without_conversion(self):

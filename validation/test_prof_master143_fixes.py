@@ -182,16 +182,16 @@ class CompleteMarketTests(unittest.TestCase):
             beginFull(4);sendFull({rawRow(11,8,56,'Seller'),rawRow(12,2,14,'Seller'),
               rawRow(10940,10,50,'Seller'),rawRow(9999,3,21,'Seller')});finishFull()
             local b=ns.AuctionBridge
-            assert(b.StockPersistenceEnabled()==setting and b.ReplicateScanReady()==true)
+            assert(b.ReplicateScanReady()==true)
             for id,q in pairs({[11]=8,[12]=2,[10940]=10,[9999]=3}) do assert(b.GetAuctionSupply(id).quantity==q) end
             assert(b.GetAuctionSupply(8888).quantity==0)
-            assert((DungeonsForeverDB.prof.auctionFullScan~=nil)==setting and #requests==0)
+            assert(DungeonsForeverDB.prof.auctionFullScan==nil and #requests==0)
           end
         ''')
 
     def test_filtered_old_batch_is_unknown_until_new_complete_scan(self):
         self.lua.execute('''
-          local b=ns.AuctionBridge;local gate=DungeonsForeverDB.prof.auctionReplicateGate
+          local b=ns.AuctionBridge;local _,gate=b.ObserveReplicateMode()
           ns.ProfModule={Setting=function(k)return k=='recoveryEnabled' end}
           DungeonsForeverDB.prof.auctionFullScan={v=1,c=true,t=clock,mk='Realm:Alliance',ob='Player',
             rg=gate.generation,rs=gate.scanSerial,items={[11]={q=8,p=7}}}
@@ -214,8 +214,7 @@ class CompleteMarketTests(unittest.TestCase):
           assert(b.ReplicateScanReady()==true and b.GetAuctionSupply(12).quantity==1)
         ''')
 
-    def test_reload_keeps_complete_batch_and_uses_shared_forty_eight_hour_expiry(self):
-        # The actual route module supplies the same expiry used by the UI.
+    def test_memory_scan_uses_shared_forty_eight_hour_expiry(self):
         self.load((ROOT/'Core/ProfRouteAuto.lua').read_text(encoding='utf-8-sig'))
         self.load((ROOT/'Core/AuctionatorBridge.lua').read_text(encoding='utf-8-sig'))
         self.lua.execute('''
@@ -223,7 +222,6 @@ class CompleteMarketTests(unittest.TestCase):
           beginFull(1);sendFull({rawRow(12,2,14,'Seller')});finishFull()
           assert(ns.ProfRouteAuto.MaxStaleSeconds()==48*3600)
         ''')
-        self.load((ROOT/'Core/AuctionatorBridge.lua').read_text(encoding='utf-8-sig'))
         self.lua.execute('''
           local b=ns.AuctionBridge;clock=clock+25*3600
           assert(b.ReplicateScanReady()==true and b.GetAuctionSupply(12).quantity==2)
@@ -235,27 +233,33 @@ class CompleteMarketTests(unittest.TestCase):
 class UnifiedSupplyTests(unittest.TestCase):
     setUp = routes.NativeRoutePlansTests.setUp
 
-    def test_live_route_entry_points_always_check_replicate_scan(self):
-        self.lua.execute('''
+    def test_live_route_entry_points_require_a_complete_scan(self):
+        self.lua.execute("""
           ns.IsForever=true;ns.AuctionBridge={ReplicateScanReady=function()return false,'replicateScanRequired'end}
+          ns.ProfEconomy.Capture=function()error('blocked calculation captured inputs')end
           local ra=ns.ProfRouteAuto
           for _,f in ipairs({ra.Get,ra.Compute,ra.Recalculate}) do
-            local r=f('alchemy',{start=1,target=3})
-            assert(r.status=='recalculate_required' and r.diagnostics[1].code=='replicateScanRequired')
-            assert(not ra.HasWork('alchemy'))
+            for _,supply in ipairs({false,true})do
+              local r=f('alchemy',{start=1,target=3,considerAuctionSupply=supply})
+              assert(r.status=='recalculate_required' and r.diagnostics[1].code=='replicateScanRequired')
+            end
           end
-        ''')
+          assert(not ra.HasWork('alchemy'))
+        """)
 
-    def test_running_search_stops_if_scan_becomes_invalid(self):
-        self.lua.execute('''
+    def test_search_and_resume_stop_when_scan_becomes_unavailable(self):
+        self.lua.execute("""
           ns.IsForever=true;local ready=true
           ns.AuctionBridge={ReplicateScanReady=function()return ready,'replicateScanRequired'end}
           ns.ProfEconomy.Capture=function()return ns.ProfEconomy.Index(fixture())end
           local ra=ns.ProfRouteAuto;ra.Get('alchemy',{start=1,target=3})
-          assert(ra.HasWork('alchemy'));ready=false;ra.Pump('alchemy')
-          assert(not ra.HasWork('alchemy'))
+          assert(ra.HasWork('alchemy'));ready=false
+          ra.Pump('alchemy')
           assert(ra.Peek('alchemy').searchTermination=='replicate_scan_required')
-        ''')
+          assert(ra.Continue('alchemy')==false and not ra.HasWork('alchemy'))
+          ready=true;ra.Continue('alchemy')
+          assert(finish('alchemy',{start=1,target=3}).targetReached)
+        """)
 
     def test_historical_estimate_cannot_become_frozen_or_live_material_budget(self):
         self.lua.execute('''

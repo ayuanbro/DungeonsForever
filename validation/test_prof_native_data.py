@@ -38,7 +38,8 @@ def native_runtime(locale='zhCN'):
       function IsPlayerSpell(id)return observedKnown[id]==true end
       function time()return 1000 end
       function GetBuildInfo()return '1.60.1',70338 end
-      ns.ProfRouteAuto={AHPriceOf=function()return 1 end}
+      ns.ProfRouteAuto={AHPriceOf=function()return 1 end,
+        MaxStaleSeconds=function()return 2*86400 end}
       ns.ProfModule={ProfLearned=function()return {[selected]={cur=1,max=75}}end}
     """)
     lua.globals().testLocale=locale

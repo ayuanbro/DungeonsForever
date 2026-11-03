@@ -135,7 +135,7 @@ class AuctionSupplyOptionUI(unittest.TestCase):
                 if row.togKey then count=count+1 end
                 if row.togKey==key then
                   found=true;assert(row.text==ns.L['考虑拍卖行的销售数量'])
-                  assert(rawget(ns.L,'考虑拍卖行的销售数量') and #row.help==4)
+                  assert((GetLocale()=='zhCN' or rawget(ns.L,'考虑拍卖行的销售数量')) and #row.help==4)
                 end
               end
               assert(found and count<=PD.SETTING_TOG_MAX)

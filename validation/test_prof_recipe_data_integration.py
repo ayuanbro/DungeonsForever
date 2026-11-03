@@ -117,7 +117,12 @@ class NativeRecipeDataBoundaryTests(unittest.TestCase):
                   PD.cur='enchanting';PD.toolKey='all'
                   local group=ns.ProfRecipes.enchanting
                   local tools=PD.RecipeTool(group)
-                  assert(tools[1].key=='all'and tools[1].text:find(tostring(#group.enchants),1,true))
+                  local visible=0
+                  for _,enchant in ipairs(group.enchants)do
+                    if not enchant.nip and not ns.ProfRecipeNIP[enchant[14]]then visible=visible+1 end
+                  end
+                  assert(visible>0 and visible<#group.enchants)
+                  assert(tools[1].key=='all'and tools[1].text==string.format(ns.L['全部 %d'],visible))
                   assert(PD.EnchantSpec(group.enchants[1]).text)
                   assert(PD.CraftedSpec(group.crafted[1]).text)
                   assert(ns.ProfRecipes['first-aid']==nil)

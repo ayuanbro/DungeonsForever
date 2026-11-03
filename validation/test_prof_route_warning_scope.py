@@ -83,8 +83,8 @@ class RouteWarningScopeTests(unittest.TestCase):
     def test_current_candidate_warning_shows_without_starting_tracking(self):
         self.lua.execute('''
           shown.reserve.complete=false;PD.Render()
-          assert(tooltipContains('supply_warn','备用材料缺少报价'))
-          assert(tooltipContains('supply_warn','请更新价格后重新计算'))
+          assert(tooltipContains('supply_warn','需要更新报价'))
+          assert(tooltipContains('supply_warn','请使用 Auctionator 完整扫描一次拍卖行后重新计算'))
           assert(not tooltipContains('supply_warn','模型覆盖目标'))
           assert(not tooltipContains('supply_warn','备用预算'))
           assert(not tooltipContains('supply_warn','建议预制备用'))
@@ -96,7 +96,7 @@ class RouteWarningScopeTests(unittest.TestCase):
     def test_current_route_supply_warning_is_kept(self):
         self.lua.execute('''
           shown.considerAuctionSupply=true;shown.auctionSupplyUnknown=2
-          PD.Render();assert(tooltipContains('supply_warn','数量未知'))
+          PD.Render();assert(tooltipContains('supply_warn','请使用 Auctionator 完整扫描一次拍卖行'))
           shown.considerAuctionSupply=false;PD.Render();assert(not button('supply_warn'))
         ''')
 
@@ -123,7 +123,7 @@ class RouteWarningScopeTests(unittest.TestCase):
             diagnostics={{code='quote',itemID=10},{code='quote',itemID=10},{code='supply',itemID=10},
               {code='supply',itemID=11},{code='supply',itemID=11}}})
           assert(#lines==2)
-          assert(lines[1]:find('ALCHEMY-ONLY',1,true) and lines[1]:find('更新价格',1,true))
+          assert(lines[1]:find('ALCHEMY-ONLY',1,true) and lines[1]:find('完整扫描',1,true))
           assert(lines[2]:find('Item11',1,true) and lines[2]:find('补充货源',1,true))
           assert(not lines[2]:find('ALCHEMY-ONLY',1,true),'missing price was reported as a stock shortage')
         ''')
@@ -161,7 +161,7 @@ class RouteWarningScopeTests(unittest.TestCase):
           shown.reserve.complete=false;shown.specBlocked=4;PD.Render()
           assert(tooltipContains('page_route','已按本角色专精过滤'))
           assert(not tooltipContains('supply_warn','已按本角色专精过滤'))
-          assert(tooltipContains('supply_warn','备用材料缺少报价'))
+          assert(tooltipContains('supply_warn','需要更新报价'))
           shown.blockingDiagnostics={{code='learningDataMissing'}};PD.Render()
           assert(tooltipContains('supply_warn','请在配方页核对上述限制'))
         ''')
@@ -210,8 +210,8 @@ class ReserveShoppingCopyTests(unittest.TestCase):
             if row.col==2 and row.text then summary[#summary+1]=row.text end
           end
           local text=table.concat(summary)
-          assert(text:find(format(ns.L['备用材料预算：%s'],ns.L['价格未知']),1,true))
-          assert(text:find('备用材料缺少报价',1,true) and text:find('请更新价格后重新计算',1,true))
+          assert(text:find(format(ns.L['备用材料预算：%s'],ns.L['请核对价格']),1,true))
+          assert(text:find('需要更新报价',1,true) and text:find('请使用 Auctionator 完整扫描一次拍卖行后重新计算',1,true))
           assert(plan.reserve.total==nil)
         ''')
 
@@ -233,7 +233,7 @@ class ReserveWarningLocaleTests(unittest.TestCase):
                     assert(not line:find('95%%') and not line:find('覆盖目标',1,true))
                     if GetLocale()=='enUS' then assert(line:find('%.') and not line:find('备用',1,true)) end
                   end
-                  assert(rawget(ns.L,'备用材料只在需要时使用；数量和预算见购物清单。'))
+                  assert(GetLocale()=='zhCN' or rawget(ns.L,'备用材料只在需要时使用；数量和预算见购物清单。'))
                   local rows={};PD.RowsSettings(rows);local help
                   for _,row in ipairs(rows)do if row.text==ns.L['备料余量']then help=row.help end end
                   assert(help)

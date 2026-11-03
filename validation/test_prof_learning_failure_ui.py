@@ -20,6 +20,7 @@ class LearningFailureUITests(unittest.TestCase):
         self.lua.execute('''
           ns.ProfData,ns.ProfRecipes,ns.ProfLeveling=unpack(savedData)
           ns.ProfRouteAuto.MoneyStr=function(n)return tostring(n or 0)end
+          ns.ProfRouteAuto.MaxStaleSeconds=function()return 48*3600 end
           GetSpellInfo=function(id)if id==2365 then return '语言药剂' end end
         ''')
         load((ROOT / 'Core/ProfessionUI.lua').read_text(encoding='utf-8-sig'))
@@ -95,7 +96,7 @@ class LearningFailureUITests(unittest.TestCase):
           ns.AuctionBridge.GetAuctionSupply=function(id)assert(id==11);return nil end
           p.blockingDiagnostics={{code='auctionSupplyLimited',item=11,required=2,available=1}}
           assert(PD.RouteSupplyNeedsRescan(p))
-          assert(PD.PlanCacheText(p)==ns.L['库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。'])
+          assert(PD.PlanCacheText(p)==ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'])
         ''')
 
     def test_old_failure_rules_notice_has_priority_over_old_learning_classification(self):

@@ -139,10 +139,10 @@ class AuctionatorFullScanTests(unittest.TestCase):
         self.lua.execute(r'''
           local b=ns.AuctionBridge;local ev=Auctionator.FullScan.Events
           beginFull(1);sendFull({rawRow(11,2,14,'Seller')});finishFull()
-          local stamp=b.GetAuctionSupply(11).observedAt;clock=clock+50
+          clock=clock+50
           beginFull(1);sendFull({rawRow(11,200,1400,'Seller')})
           Auctionator.EventBus:Emit(ev.ScanFailed)
-          assert(b.GetAuctionSupply(11).quantity==2 and b.GetAuctionSupply(11).observedAt==stamp)
+          assert(b.GetAuctionSupply(11)==nil,'failed new scan reused the discarded batch')
           beginFull(1);sendFull({rawRow(11,3,21,'Seller')});finishFull()
           assert(b.GetAuctionSupply(11).quantity==3 and #requests==0)
           clock=clock+1801;assert(b.GetAuctionSupply(11)==nil)
@@ -226,7 +226,7 @@ class AuctionatorFullScanUITests(unittest.TestCase):
           assert(not hasCheck() and not PD.RouteSupplyNeedsRescan(p))
           assert(PD.PlanCacheText(p)==ns.L['拍卖行库存已更新，点击重新计算即可使用。'])
           available=false;assert(not hasCheck() and PD.RouteSupplyNeedsRescan(p))
-          assert(PD.PlanCacheText(p)==ns.L['库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。'])
+          assert(PD.PlanCacheText(p)==ns.L['请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'])
           local text=PD.PlanSupplyText({auctionSupplyUnknown=1,mats={{id=11,source='ah'}}})
           assert(text:find('Auctionator',1,true))
           local lines=PD.AuctionSupplyLines({id=11,source='ah',availableCount=10,count=3,
@@ -245,9 +245,9 @@ class AuctionatorFullScanUITests(unittest.TestCase):
                 self.lua.execute(r'''
                   for _,key in ipairs({'拍卖行库存已更新，点击重新计算即可使用。',
                     '数量来源：Auctionator 完整扫描（已排除本人拍卖）',
-                    '库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。',
-                    '有 %d 种拍卖行物品数量未知，路线仅按价格估算，不能确认能买齐；请在 Auctionator 重新完整扫描。',
-                    '库存只读取 Auctionator 完整扫描的数据，有效期为 48 小时；缺失或过期时请重新完整扫描。'})do
+                    '请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。',
+                    '有 %d 种物品需要更新在售数量；请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。',
+                    '请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。'})do
                     assert(GetLocale()=='zhCN' and ns.L[key] or rawget(ns.L,key),key)
                   end
                 ''')

@@ -13,14 +13,18 @@ class ProfessionReportUITests(unittest.TestCase):
     setUp = ui.ProfessionUIFusionTests.setUp
     boot = ui.ProfessionUIFusionTests.boot
 
-    def test_shopping_and_route_never_insert_the_unrelated_trainer_paragraph(self):
+    def test_rank_reminder_stays_on_route_and_out_of_shopping(self):
         self.lua.execute('''
-          PD.RowsRankReminder=function()error('unexpected trainer paragraph')end
+          local reminders=0
+          PD.RowsRankReminder=function()reminders=reminders+1 end
           PD.RowsAutoShop=function()end
           for _,page in ipairs({'route','shop'})do
+            reminders=0
             PD.autoPage=page;PD.RowsLeveling({})
+            assert(reminders==(page=='route' and 1 or 0))
             local opts=ns.ProfRouteAuto.OptionsFor('alchemy',1);opts.target=3
-            finish('alchemy',opts);PD.RowsLeveling({})
+            finish('alchemy',opts);reminders=0;PD.RowsLeveling({})
+            assert(reminders==(page=='route' and 1 or 0))
           end
         ''')
 
@@ -93,7 +97,7 @@ class ProfessionReportUITests(unittest.TestCase):
           local drop,unknown=false,false
           for _,line in ipairs(formula.lines)do
             if line[1]=='drop-reference'then drop=true end
-            if line[1]:find(ns.L['库存性质尚未核实'],1,true)then unknown=true end
+            if line[1]:find(ns.L['请向商人确认现货'],1,true)then unknown=true end
             assert(not line[1]:find(ns.L['限量刷新'],1,true),'unknown was called limited')
           end
           assert(drop and unknown)
@@ -142,7 +146,7 @@ class ProfessionReportUITests(unittest.TestCase):
                   for _,key in ipairs({'已达到目标等级 %d，无需继续升级。',
                     '如需查看全程路线，可在设置中关闭「从当前技能开始计算」。',
                     '当前制作步骤背包还缺：%s','采购规则已更新，请重新计算路线。'})do
-                    assert(rawget(ns.L,key),key)
+                    assert(GetLocale()=='zhCN' and ns.L[key] or rawget(ns.L,key),key)
                   end
                 ''')
 

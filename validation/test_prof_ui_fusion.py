@@ -211,8 +211,8 @@ class ProfessionUIFusionTests(unittest.TestCase):
         lua.execute(UI_MOCKS)
         load=lua.eval("function(source)assert(loadstring(source))('DungeonsForever',ns)end")
         expected=['ProfPolicies','ProfRouteAuto','ProfessionUI','AuctionatorBridge','ProfFollow',
-            'ProfSupply','ProfSourceMerge','ProfGates','ProfRecovery','VendorPriceDB',
-            'ProfEssences','ProfSolverCapture','ProfLearning','ProfClientScan','ProfRanks','ProfRouteSolver','ProfFishing','ProfGathering',
+            'ProfSupply','ProfSourceMerge','ProfGates','ProfRecovery','ProfEssences',
+            'VendorPriceDB','ProfSolverCapture','ProfLearning','ProfClientScan','ProfRanks','ProfRouteSolver','ProfFishing','ProfGathering',
             'ProfExecution','ProfSolverRun','ProfRoutePlans']
         loaded=[]
         for line in (ROOT/'DungeonsForever.toc').read_text(encoding='utf-8-sig').splitlines():

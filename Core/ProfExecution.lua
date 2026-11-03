@@ -436,10 +436,19 @@ local function originSignature(plan)
     end
     return table.concat(parts)
 end
+local function releaseSourceReferences(run)
+    run.inheritedFrom=nil
+    local plan=readablePlan(run)
+    if plan then
+        plan.executionSourcePlanID=nil
+        if plan.executionOptions then plan.executionOptions.executionSourcePlanID=nil end
+    end
+end
 local function archive(c,slug,reason)
     local run=c.runs[c.active[slug]]
     if run then
         run.status="archived";run.archivedAt=now();run.archiveReason=reason or "recalculate"
+        releaseSourceReferences(run)
     end
     c.active[slug]=nil
     if c.trackingSlug==slug then c.trackingSlug=nil end
@@ -514,8 +523,17 @@ local function scheduleIdleCheck()
         end)
     end
 end
+local function replicateScanReason()
+    if not ns.IsForever then return end
+    local bridge=ns.AuctionBridge
+    if not (bridge and bridge.ReplicateScanReady) then return "replicateModeUnknown" end
+    local ready,reason=bridge.ReplicateScanReady()
+    if ready~=true then return reason or "replicateScanRequired" end
+end
 function XP.Bind(slug,result,opts)
     if XP.IsCombatPaused() then return nil,"combatPaused" end
+    local scanReason=replicateScanReason()
+    if scanReason then return nil,scanReason end
     XP.ExpireIdle()
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then ns.ProfessionTracking.SetEnabled(true) end
     local ra=ns.ProfRouteAuto
@@ -587,6 +605,7 @@ function XP.Bind(slug,result,opts)
         run.lastCraftAt=source.lastCraftAt or source.createdAt
         if now()>=idleDeadline(run) then return nil,"executionEnded" end
     end
+    if source and not recorded(source) then releaseSourceReferences(run) end
     c.runs[planID]=run;c.active[slug]=planID;c.trackingSlug=slug;c.preparing[slug]=nil;c.continuation[slug]=nil
     XP.Sync(slug);changed(run);pruneArchived(slug)
     if XP.RefreshObservation then XP.RefreshObservation() end;return run
@@ -1301,6 +1320,8 @@ local function appendSupplement(run,result,seg,extra)
     XP.Sync(run.slug);changed(run);return true
 end
 function XP.CalculateSupplement(slug,callback)
+    local scanReason=replicateScanReason()
+    if scanReason then return nil,scanReason end
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
     local run=XP.GetRun(slug);if not run then return nil,"no_execution" end
     if not readablePlan(run) then return nil,"historyUnreadable" end
@@ -1354,6 +1375,13 @@ function XP.CalculateSupplement(slug,callback)
     end)
     local function pump()
         if task.cancelled then return true end
+        local scanReason=replicateScanReason()
+        if scanReason then
+            state.status="recalculate_required";state.error=scanReason;state.feasible=false;state.inFlight=false
+            state.diagnostics={{code=scanReason}};jobs[run.planID]=nil
+            if callback then pcall(callback,state) end
+            return true
+        end
         if not readablePlan(run) then
             state.status="blocked";state.error="historyUnreadable";state.feasible=false;state.inFlight=false
             state.diagnostics={{code="historyUnreadable"}};jobs[run.planID]=nil

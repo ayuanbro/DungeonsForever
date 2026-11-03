@@ -264,4 +264,91 @@ class CraftedReceiptTests(unittest.TestCase):
         ''')
 
 
+class RecalculationHistoryMemoryTests(unittest.TestCase):
+    def setUp(self):
+        import test_prof_route_plans as routes
+        routes.NativeRoutePlansTests.setUp(self)
+        self.lua.execute('''
+          xp=ns.ProfExecution;ra=ns.ProfRouteAuto
+          ns.ProfEconomy.Capture=function(slug,opts)
+            local s=fixture();s.executionInventory=opts.executionInventory
+            return ns.ProfEconomy.Index(s)
+          end
+          function recalculate()
+            ra.Recalculate('alchemy',{start=1,target=4})
+            finish('alchemy',{start=1,target=4})
+            local pending=queue;queue={}
+            for _,fn in ipairs(pending)do assert(fn()==true)end
+            return xp.GetRun('alchemy')
+          end
+          recalculate();assert(xp.Bind('alchemy',ra.Peek('alchemy')))
+        ''')
+
+    def test_empty_recalculations_release_old_plans(self):
+        self.lua.execute('''
+          local weak=setmetatable({},{__mode='v'})
+          for i=1,25 do
+            weak[i]=xp.GetPlan('alchemy');recalculate()
+          end
+          collectgarbage('collect');collectgarbage('collect')
+          assert(#xp.GetHistory('alchemy')==1)
+          for i=1,25 do assert(weak[i]==nil,'empty plan still retained: '..i)end
+          local active=xp.GetActive('alchemy')
+          assert(active and active.plan.total==21 and active.lastCraftAt==1000)
+          assert(not active.inheritedFrom and not active.plan.executionSourcePlanID)
+          assert(not active.plan.executionOptions.executionSourcePlanID)
+        ''')
+
+    def test_recorded_recalculations_keep_existing_history_limit_and_totals(self):
+        self.lua.execute('''
+          for i=1,20 do
+            local old=xp.GetActive('alchemy');local id=old.planID
+            clock=clock+1
+            assert(xp.RecordAttempt('alchemy',101,'memory-cast:'..i))
+            assert(xp.RecordOutput({slug='alchemy',itemID=10,quantity=1,
+              castGUID='memory-cast:'..i},'structured'))
+            recalculate()
+            local totals=xp.GetRecipeTotals('alchemy',id)
+            assert(totals[1].casts==1 and totals[1].confirmedOutputs[10]==1)
+          end
+          local history=xp.GetHistory('alchemy');assert(#history==4)
+          local archived=0
+          for _,run in ipairs(history)do
+            if run.status=='archived'then
+              archived=archived+1
+              assert(run.attemptsDone==1 and run.plan.total==21)
+              assert(not run.inheritedFrom and not run.plan.executionSourcePlanID)
+              assert(not run.plan.executionOptions.executionSourcePlanID)
+              local totals=xp.GetRecipeTotals('alchemy',run.planID)
+              assert(totals[1].casts==1 and totals[1].confirmedOutputs[10]==1)
+            end
+          end
+          assert(archived==3 and xp.GetActive('alchemy').attemptsDone==0)
+        ''')
+
+    def test_other_profession_preparation_protects_its_source(self):
+        self.lua.execute('''
+          local source=xp.GetActive('alchemy');local id=source.planID
+          local c=DungeonsForeverDB.prof.track['Test-Realm']
+          c.preparing.enchanting={sourcePlanID=id,inventory={[11]=9}}
+          for i=1,10 do recalculate()end
+          assert(xp.Get('alchemy',id)==source and #xp.GetHistory('alchemy')==2)
+          assert(c.preparing.enchanting.inventory[11]==9)
+          c.preparing.enchanting=nil;recalculate()
+          assert(not xp.Get('alchemy',id) and #xp.GetHistory('alchemy')==1)
+        ''')
+
+    def test_archived_source_still_matches_a_pending_receipt(self):
+        self.lua.execute('''
+          local old=xp.GetActive('alchemy');local id=old.planID
+          assert(xp.RecordAttempt('alchemy',101,'memory-pending'))
+          local next=ns.ProfEconomy.Copy(old.plan);next.planID='replacement'
+          assert(xp.StartNew('alchemy',next,{executionSourcePlanID=id}))
+          assert(xp.RecordOutput({slug='alchemy',itemID=10,quantity=2,
+            castGUID='memory-pending'},'structured'))
+          local totals=xp.GetRecipeTotals('alchemy',id)
+          assert(totals[1].casts==1 and totals[1].confirmedOutputs[10]==2)
+          assert(xp.GetActive('alchemy').attemptsDone==0)
+        ''')
+
 if __name__=='__main__':unittest.main()
