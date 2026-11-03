@@ -383,8 +383,6 @@ function RA.Get(slug, supplied)
         return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
     end
     local opts=options(slug,supplied)
-    local blocked=replicatePrerequisite(slug,opts)
-    if blocked then return blocked end
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     local key,scope=identity(slug,opts)
     local xp=not opts.snapshot and ns.ProfExecution
@@ -397,6 +395,8 @@ function RA.Get(slug, supplied)
         if RA.SpecializationPlanChanged and RA.SpecializationPlanChanged(frozen,slug,opts) then return gate(slug,opts,"specializationChanged") end
         return refreshFreshness(frozen,slug,opts)
     end
+    local blocked=replicatePrerequisite(slug,opts)
+    if blocked then return blocked end
     local result=results[key]
     if result and result.slug and result.slug~=slug then result=nil end
     if result then

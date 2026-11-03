@@ -75,7 +75,7 @@ class AuctionatorFullScanTests(unittest.TestCase):
           assert(q.complete and q.ownerExcluded and #requests==0)
           assert(b.GetAuctionSupply(12).quantity==0 and b.GetAuctionSupply(13).quantity==0)
           assert(b.GetAuctionSupply(99).quantity==0,'complete market did not establish absence')
-          assert(DungeonsForeverDB.prof.auctionFullScan.items[11].auctionInfo==nil)
+          assert(DungeonsForeverDB.prof.auctionFullScan==nil,'default scan persisted a market copy')
         ''')
 
     def test_replicate_scan_records_use_the_same_quantity_budget(self):

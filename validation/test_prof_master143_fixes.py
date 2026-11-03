@@ -177,21 +177,22 @@ class CompleteMarketTests(unittest.TestCase):
         self.lua.execute('''
           ns.ProfRecipes={alchemy={rows={{101,10,1,'','','',1,100,200,300,false,{{11,1}},{12,1}}}}}
           for _,setting in ipairs({false,true}) do
-            DungeonsForeverDB.prof.preciseRecovery=setting
-            ns.ProfModule={Setting=function()error('removed mode must not be read')end}
+            DungeonsForeverDB.prof.recoveryEnabled=setting
+            ns.ProfModule={Setting=function(k)return DungeonsForeverDB.prof[k]==true end}
             beginFull(4);sendFull({rawRow(11,8,56,'Seller'),rawRow(12,2,14,'Seller'),
               rawRow(10940,10,50,'Seller'),rawRow(9999,3,21,'Seller')});finishFull()
             local b=ns.AuctionBridge
-            assert(b.Precise==nil and b.ReplicateScanReady()==true)
+            assert(b.StockPersistenceEnabled()==setting and b.ReplicateScanReady()==true)
             for id,q in pairs({[11]=8,[12]=2,[10940]=10,[9999]=3}) do assert(b.GetAuctionSupply(id).quantity==q) end
             assert(b.GetAuctionSupply(8888).quantity==0)
-            assert(DungeonsForeverDB.prof.auctionFullScan.v==2 and #requests==0)
+            assert((DungeonsForeverDB.prof.auctionFullScan~=nil)==setting and #requests==0)
           end
         ''')
 
     def test_filtered_old_batch_is_unknown_until_new_complete_scan(self):
         self.lua.execute('''
           local b=ns.AuctionBridge;local gate=DungeonsForeverDB.prof.auctionReplicateGate
+          ns.ProfModule={Setting=function(k)return k=='recoveryEnabled' end}
           DungeonsForeverDB.prof.auctionFullScan={v=1,c=true,t=clock,mk='Realm:Alliance',ob='Player',
             rg=gate.generation,rs=gate.scanSerial,items={[11]={q=8,p=7}}}
           assert(b.GetAuctionSupply(12)==nil and b.ReplicateScanReady()==false)
@@ -218,6 +219,7 @@ class CompleteMarketTests(unittest.TestCase):
         self.load((ROOT/'Core/ProfRouteAuto.lua').read_text(encoding='utf-8-sig'))
         self.load((ROOT/'Core/AuctionatorBridge.lua').read_text(encoding='utf-8-sig'))
         self.lua.execute('''
+          ns.ProfModule={Setting=function(k)return k=='recoveryEnabled' end}
           beginFull(1);sendFull({rawRow(12,2,14,'Seller')});finishFull()
           assert(ns.ProfRouteAuto.MaxStaleSeconds()==48*3600)
         ''')

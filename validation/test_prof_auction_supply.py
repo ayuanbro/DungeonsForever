@@ -78,6 +78,7 @@ class AuctionSupplyBridgeTests(unittest.TestCase):
     def test_only_valid_full_scan_batches_provide_available_quantity(self):
         self.lua.execute(r'''
           local b=ns.AuctionBridge
+          ns.ProfModule={Setting=function(k)return k=='recoveryEnabled' end}
           local batch={v=2,c=true,t=clock,mk='Realm:Alliance',ob='Player',items={[11]={q=7,p=20}}}
           DungeonsForeverDB.prof.auctionFullScan=batch
           assert(b.GetAuctionSupply(11).quantity==7 and b.GetAuctionSupply(12).quantity==0)
@@ -98,7 +99,8 @@ class AuctionSupplyBridgeTests(unittest.TestCase):
         for name in ('ProfPolicies','ProfRouteAuto','ProfEssences','ProfSolverCapture','ProfRouteSolver'):
             self.load((ROOT/'Core'/(name+'.lua')).read_text(encoding='utf-8-sig'))
         self.lua.execute(r'''
-          ns.ProfModule={ProfLearned=function()return {alchemy={cur=1,max=300}}end}
+          ns.ProfModule={ProfLearned=function()return {alchemy={cur=1,max=300}}end,
+            Setting=function(k)return k=='recoveryEnabled' end}
           ns.ProfRecipes={alchemy={rows={{101,10,1,'',nil,nil,1,100,200,300,false,{{11,1}}}}}}
           IsPlayerSpell=function()return true end;UnitLevel=function()return 60 end
           DungeonsForeverDB.prof.auctionFullScan={v=2,c=true,t=clock,mk='Realm:Alliance',ob='Player',
