@@ -82,7 +82,7 @@ FV.LIST_GAP = 4
 FV.COLS = 3
 
 local function Cfg()
-    local db = ns.DB()
+    local db = ns.FactionDB()
     db.factions = db.factions or {}
     local c = db.factions
     if c.ally == nil then c.ally = true end

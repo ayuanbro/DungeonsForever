@@ -32,12 +32,21 @@ local function adopt(db, legacy)
     legacy.profMoved = true
 end
 
-function ns.ProfDB()
+local last
+
+local function sync()
     local db = _G[NAME]
     if type(db) ~= "table" then
         db = {}
         _G[NAME] = db
     end
+    if last and last ~= db then mergeMissing(db, last) end
+    last = db
+    return db
+end
+
+function ns.ProfDB()
+    local db = sync()
     if not booted then
         booted = true
         adopt(db, _G.DungeonsForeverDB)

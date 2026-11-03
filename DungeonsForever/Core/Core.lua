@@ -40,8 +40,8 @@ ns.MODULES = {
     { key = "Professions", addon = "DungeonsForeverProf",    sv = "DungeonsForeverProfDB",    legacy = { "prof", "profAudit" }, movedKey = "profMoved", label = "专业", probe = "ProfModule" },
     { key = "Gear",        addon = "DungeonsForeverGear",    sv = "DungeonsForeverGearDB",    legacy = { "gear", "bis", "wishlist" }, label = "装备库", tabs = { "Gear", "Bis" }, probe = "GearModule" },
     { key = "Tier",        addon = "DungeonsForeverClass",   sv = "DungeonsForeverClassDB",   legacy = { "tier", "talent", "talentSim" }, label = "职业指南", probe = "TierModule" },
-    { key = "Explore",     addon = "DungeonsForeverExplore", sv = "DungeonsForeverExploreDB", legacy = nil, label = "探索", tabs = { "Explore", "Collections" }, probe = "ExploreModule" },
-    { key = "Factions",    addon = "DungeonsForeverFaction", sv = nil, legacy = nil, label = "声望", probe = "FactionModule" },
+    { key = "Explore",     addon = "DungeonsForeverExplore", sv = "DungeonsForeverExploreDB", legacy = { "explore" }, label = "探索", tabs = { "Explore", "Collections" }, probe = "ExploreModule" },
+    { key = "Factions",    addon = "DungeonsForeverFaction", sv = "DungeonsForeverFactionDB", legacy = { "factions" }, label = "声望", probe = "FactionModule" },
     { key = "PvP",         addon = "DungeonsForeverPvP",     sv = nil, legacy = nil, label = "PvP", probe = "PvPModule" },
     { key = "Spell",       addon = "DungeonsForeverSpell",   sv = nil, legacy = nil, label = "技能书", probe = "NativeSpellBook" },
 }

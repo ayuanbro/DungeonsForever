@@ -7,3 +7,5 @@ if P then
     ns.FactionStep = P.Step
     ns.FactionPhased = P.Phased
 end
+
+ns.FactionDB = ns.ModuleDB("DungeonsForeverFactionDB", { "factions" })

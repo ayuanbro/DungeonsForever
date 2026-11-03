@@ -11,7 +11,7 @@
 ## Notes-zhTW: 無限副本手冊 探索模組：探索與藏品（可在插件列表中單獨關閉）
 ## Notes-enUS: Explore module for DungeonsForever: exploration and collections (can be disabled separately)
 ## Author: 圆圆
-## Version: 2.0.0
+## Version: 2.0.1
 ## Dependencies: DungeonsForever
 ## LoadOnDemand: 1
 ## SavedVariables: DungeonsForeverExploreDB

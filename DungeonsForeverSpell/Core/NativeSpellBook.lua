@@ -137,7 +137,7 @@ end
 local function OpenClassQuest(key)
     local CQ = ns.ClassQuestUI
     if not (CQ and CQ.Focus and key) then return false end
-    local db = ns.ClassDB
+    local db = ns.ClassDB and ns.ClassDB()
     if type(db) ~= "table" then db = ns.DB and ns.DB() end
     if db then
         db.tier = db.tier or {}

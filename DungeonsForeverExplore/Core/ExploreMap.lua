@@ -62,7 +62,7 @@ local DEF_CFG = {
     hudScale = 1,
 }
 local function cfg()
-    local db = ns.DB and ns.DB()
+    local db = ns.ExploreDB()
     if not db then return DEF_CFG end
     db.explore = db.explore or {}
     local s = db.explore.mapCfg
@@ -869,7 +869,7 @@ local function mkBtn(parent, text, w)
 end
 
 local function saveTrackerPos(self)
-    local db = ns.DB and ns.DB()
+    local db = ns.ExploreDB()
     if not db then return end
     local p, _, rp, x, y = self:GetPoint()
     db.explore = db.explore or {}
@@ -1068,7 +1068,7 @@ local function createSettings()
     resetB:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -10)
     resetB:SetScript("OnClick", function()
         ns.PlaySound(1)
-        local db = ns.DB and ns.DB()
+        local db = ns.ExploreDB()
         if db and db.explore and db.explore.mapCfg then
             local c = db.explore.mapCfg
             for k in pairs(c) do c[k] = nil end
@@ -1349,7 +1349,7 @@ local function createTracker()
         self:StopMovingOrSizing()
         pcall(saveTrackerPos, self)
     end)
-    local pos = ns.DB and ns.DB() and ns.DB().explore and ns.DB().explore.routePos
+    local pos = ns.ExploreDB and ns.ExploreDB().explore and ns.ExploreDB().explore.routePos
     if pos then
         f:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4])
     else

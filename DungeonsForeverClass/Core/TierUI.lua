@@ -132,10 +132,10 @@ for cls, list in pairs(T.specs or {}) do
 end
 
 local function DB()
-    local s = ns.ClassDB.tier
+    local s = ns.ClassDB().tier
     if not s then
         s = {}
-        ns.ClassDB.tier = s
+        ns.ClassDB().tier = s
     end
     if not s.tab then s.tab = T.pages[1].key end
     if s.nav ~= "spec" then s.nav = "rank" end

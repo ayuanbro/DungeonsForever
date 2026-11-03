@@ -46,10 +46,10 @@ local BORDER_OPEN = { 0.62, 0.62, 0.62 }
 local BORDER_LOCK = { 0.42, 0.42, 0.42 }
 
 local function TalDB()
-    local t = ns.ClassDB.talent
+    local t = ns.ClassDB().talent
     if not t then
         t = {}
-        ns.ClassDB.talent = t
+        ns.ClassDB().talent = t
     end
     return t
 end

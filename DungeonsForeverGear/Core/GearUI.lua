@@ -302,19 +302,19 @@ local ROW_MT = {
 local recs = {}
 
 local function GDB()
-    local s = ns.GearDB.gear
+    local s = ns.GearDB().gear
     if not s then
         s = {}
-        ns.GearDB.gear = s
+        ns.GearDB().gear = s
     end
     return s
 end
 
 local function WishTable()
-    local s = ns.GearDB.wishlist
+    local s = ns.GearDB().wishlist
     if not s then
         s = {}
-        ns.GearDB.wishlist = s
+        ns.GearDB().wishlist = s
     end
     return s
 end
@@ -3655,7 +3655,7 @@ function G.StartGlyphWarm()
 end
 
 function G.StartDataWarm()
-    if ns.GearDB and ns.GearDB.dfDataWarm == false then return end
+    if ns.GearDB and ns.GearDB().dfDataWarm == false then return end
     if G.__dataWarm then return end
     G.__dataWarm = true
     EnsureGD()

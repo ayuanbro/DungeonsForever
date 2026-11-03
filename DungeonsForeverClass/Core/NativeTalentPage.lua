@@ -115,10 +115,10 @@ local function Skinnable(b)
 end
 
 local function DB()
-    local t = ns.ClassDB.talentSim
+    local t = ns.ClassDB().talentSim
     if not t then
         t = {}
-        ns.ClassDB.talentSim = t
+        ns.ClassDB().talentSim = t
     end
     if not t.builds then t.builds = {} end
     return t

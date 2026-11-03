@@ -6,39 +6,55 @@ local function mergeMissing(dst, src)
     end
 end
 
-local booted = {}
+local last = {}
 
-function ns.ModuleDB(svName, legacyKeys, primary)
-    local db = _G[svName]
-    if type(db) ~= "table" then
-        db = {}
-        _G[svName] = db
+local function sync(svName)
+    local g = _G[svName]
+    if type(g) ~= "table" then
+        g = {}
+        _G[svName] = g
     end
-    if not booted[svName] then
-        booted[svName] = true
-        local legacy = _G.DungeonsForeverDB
-        if type(legacy) == "table" and type(legacyKeys) == "table" then
-            for i = 1, #legacyKeys do
-                local k = legacyKeys[i]
-                local old = legacy[k]
-                if type(old) == "table" then
-                    if type(db[k]) ~= "table" then
-                        db[k] = old
-                    else
-                        mergeMissing(db[k], old)
-                    end
-                elseif old ~= nil and db[k] == nil then
+    local prev = last[svName]
+    if prev and prev ~= g then
+        mergeMissing(g, prev)
+    end
+    last[svName] = g
+    return g
+end
+
+local function promote(svName, legacyKeys, db)
+    local legacy = _G.DungeonsForeverDB
+    if type(legacy) ~= "table" or type(legacyKeys) ~= "table" then return end
+    local hit = false
+    for i = 1, #legacyKeys do
+        local k = legacyKeys[i]
+        local old = legacy[k]
+        if old ~= nil then
+            hit = true
+            if type(old) == "table" then
+                if type(db[k]) ~= "table" then
                     db[k] = old
+                else
+                    mergeMissing(db[k], old)
                 end
-                legacy[k] = nil
+            elseif db[k] == nil then
+                db[k] = old
             end
         end
-        if type(legacy) == "table" then
-            legacy[svName .. "Moved"] = true
-        end
     end
-    if primary and type(db[primary]) ~= "table" then db[primary] = {} end
-    return db
+    if hit then
+        for i = 1, #legacyKeys do legacy[legacyKeys[i]] = nil end
+        legacy[svName .. "Moved"] = true
+    end
+end
+
+function ns.ModuleDB(svName, legacyKeys, primary)
+    return function()
+        local db = sync(svName)
+        promote(svName, legacyKeys, db)
+        if primary and type(db[primary]) ~= "table" then db[primary] = {} end
+        return db
+    end
 end
 
 function ns.ModuleDBKeys(svName, keys)

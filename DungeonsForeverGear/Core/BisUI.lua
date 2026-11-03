@@ -22,8 +22,6 @@ local FALLBACK_ICON = Host.FALLBACK_ICON
 local BIS, VOLS, N_PRESET
 local SPEC_DEFS = { { id = "pve", label = L["副本"] }, { id = "pvp", label = L["战场"] },
                     { id = "tank", label = L["坦克"] } }
-local SPEC_LABEL = {}
-for _, def in ipairs(SPEC_DEFS) do SPEC_LABEL[def.id] = def.label end
 local function EnsureBIS()
     if VOLS then return BIS end
     VOLS = {}
@@ -42,23 +40,7 @@ local function EnsureBIS()
             VOLS = { { lv = tonumber(BIS.default) or 0, classes = BIS.classes } }
         end
     end
-    local maxPages = 2
-    local slugs, seen = {}, {}
-    for _, v in ipairs(VOLS) do
-        for _, c in ipairs(v.classes) do
-            if not seen[c.slug] then seen[c.slug] = true slugs[#slugs + 1] = c.slug end
-        end
-    end
-    for _, slug in ipairs(slugs) do
-        local n = 0
-        for _, v in ipairs(VOLS) do
-            for _, c in ipairs(v.classes) do
-                if c.slug == slug then n = n + #c.specs end
-            end
-        end
-        if n > maxPages then maxPages = n end
-    end
-    N_PRESET = maxPages * 2 + 3
+    N_PRESET = 3
     return BIS
 end
 local N_USER = 7
@@ -670,10 +652,10 @@ local W_ICONS = {
 local C_RED_W = { 0.85, 0.3, 0.3 }
 
 local function DB()
-    local s = ns.GearDB.bis
+    local s = ns.GearDB().bis
     if not s then
         s = { plans = {} }
-        ns.GearDB.bis = s
+        ns.GearDB().bis = s
     end
     if not s.plans then s.plans = {} end
     return s
@@ -2423,7 +2405,6 @@ end
 
 local function PresetList()
     local out = {}
-    local tsp = BG.tspec
     local src = BG.AUTO_SRC or {}
     out[#out + 1] = { auto = "known", lv = BG.AutoLevel(), srcSet = src.known }
     out[#out + 1] = { auto = "dq", lv = BG.AutoLevel(), srcSet = src.dq }
@@ -2432,48 +2413,13 @@ local function PresetList()
         out[#out + 1] = { manual = true, type = L["手动过滤生成的BIS结果"],
                           srcSet = mp.srcSet or BG.srcSet }
     end
-    for i = #VOLS, 1, -1 do
-        local v = VOLS[i]
-        local c
-        for _, cc in ipairs(v.classes or {}) do
-            if cc.slug == BG.cls then c = cc break end
-        end
-        if c then
-            local cnt = {}
-            for _, sp in ipairs(c.specs) do
-                cnt[sp.id] = (cnt[sp.id] or 0) + 1
-            end
-            local pages = {}
-            for _, sp in ipairs(c.specs) do
-                if (cnt[sp.id] or 0) <= 1 or sp.tspec == nil or sp.tspec == tsp then
-                    pages[#pages + 1] = sp
-                end
-            end
-            if #pages == 0 then
-                for _, sp in ipairs(c.specs) do pages[#pages + 1] = sp end
-            end
-            for _, sp in ipairs(pages) do
-                local solo = (cnt[sp.id] or 0) <= 1
-                local lab, ts = sp.label, sp.tspec
-                if solo then lab, ts = nil, nil end
-                if lab == SPEC_LABEL[sp.id] then lab = nil end
-                for _, sd in ipairs({ "a", "h" }) do
-                    out[#out + 1] = { vol = i, spec = sp.id, tspec = ts,
-                                      key = sp.key, type = SPEC_LABEL[sp.id] or sp.id,
-                                      talent = lab, side = sd }
-                end
-            end
-        end
-    end
     return out
 end
 
 local function PresetText(pe)
     if pe.manual then return pe.type end
     if pe.auto then return format(L["%d级 自动方案"], pe.lv) end
-    local lv = format(L["%d级 · "], VOLS[pe.vol].lv)
-    local side = (pe.side == "a") and L["联盟"] or L["部落"]
-    return lv .. pe.type .. " · " .. side, pe.talent and (lv .. pe.type .. " · " .. pe.talent .. " · " .. side) or nil
+    return pe.type
 end
 
 BG.CHIP_INK_SRC = {
@@ -2615,22 +2561,16 @@ local function PaintPlans()
     local rows = BG.planRows
     local y = 0
     local presets = PresetList()
-    local cur = SpecRec()
-    local curKey = cur and cur.key or nil
     for i = 1, N_PRESET do
         local r = rows[i]
         local pe = presets[i]
         if pe then
             r:Show()
-            local sideNow = BG.side or PlayerFac()
             local active
             if pe.auto then
                 active = (BG.usingPlan == nil and BG.autoPlan == pe.auto)
-            elseif pe.manual then
-                active = (BG.usingPlan ~= nil and BG.usingPlan.manual == true)
             else
-                active = (BG.usingPlan == nil and BG.autoPlan == nil and BG.vol == pe.vol
-                    and curKey == pe.key and sideNow == pe.side)
+                active = (BG.usingPlan ~= nil and BG.usingPlan.manual == true)
             end
             local chip = (pe.auto or pe.manual) and true or false
             local rh = chip and BG.PLAN_TALL or PLAN_H
@@ -2664,11 +2604,11 @@ local function PaintPlans()
             BG.PaintSrcChips(r, chip and pe.srcSet or nil)
             r.dot:SetShown(active)
             r.__plan = nil
-            r.__vol = pe.vol
-            r.__spec = pe.spec
-            r.__tspec = pe.tspec
-            r.__key = pe.key
-            r.__side = pe.side
+            r.__vol = nil
+            r.__spec = nil
+            r.__tspec = nil
+            r.__key = nil
+            r.__side = nil
             r.__auto = pe.auto
             r.__manual = pe.manual
             r.__sel = active
@@ -3648,21 +3588,6 @@ function BG.UsePlan(plan)
     BG.RequestRender()
 end
 
-function BG.UsePreset(idx, specId, side, pageKey, tspec)
-    if not VOLS[idx] then return end
-    BG.vol = idx
-    if tspec then BG.tspec = tspec end
-    if pageKey then BG.pkey = pageKey end
-    if specId then BG.spec = specId else SyncSpecFromTspec() end
-    BG.side = side or nil
-    BG.cur = {}
-    BG.ench = {}
-    BG.usingPlan = nil
-    BG.autoPlan = nil
-    BG.AutoJobCancel()
-    BG.RequestRender()
-end
-
 function BG.ResetToRec()
     BG.cur = {}
     BG.ench = {}
@@ -4168,8 +4093,6 @@ local function MakePlanRow(parent)
             BG.UseAutoPlan(self.__auto)
         elseif self.__manual then
             BG.UseManualPlan()
-        elseif self.__vol then
-            BG.UsePreset(self.__vol, self.__spec, self.__side, self.__key, self.__tspec)
         else
             BG.ResetToRec()
         end

@@ -8,4 +8,4 @@ if P then
     ns.ExplorePhased = P.Phased
 end
 
-ns.ExploreDB = ns.ModuleDB("DungeonsForeverExploreDB", {  })
+ns.ExploreDB = ns.ModuleDB("DungeonsForeverExploreDB", { "explore" })

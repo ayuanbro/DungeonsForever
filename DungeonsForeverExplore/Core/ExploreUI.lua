@@ -280,7 +280,7 @@ EG.NECK_AT, EG.RING_AT, EG.CHOICE_AT = 10, 20, 25
 EG.SWEEP_AT = { 0.5, 1.5, 3, 5, 8 }
 
 local function Found()
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     db.explore.found = db.explore.found or {}
     return db.explore.found
@@ -332,7 +332,7 @@ local function ToyQuestTitle(qid)
 end
 
 local function BagFac()
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     if db.explore.bagFac == "A" or db.explore.bagFac == "H" then
         return db.explore.bagFac
@@ -346,7 +346,7 @@ local function BagFac()
 end
 
 local function View()
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     for _, f in ipairs(EG.FILTERS) do
         if db.explore.view == f.key then return f.key end
@@ -355,7 +355,7 @@ local function View()
 end
 
 local function CurSub()
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     if db.explore.subPage == "rewards" then return "rewards" end
     if db.explore.subPage == "bag" then return "bag" end
@@ -368,7 +368,7 @@ local function CurSub()
 end
 
 local function SetSub(key)
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     db.explore.subPage = key
     EG._sweepFails = 0
@@ -1688,7 +1688,7 @@ local function RtFac()
         local ok, _, eng = pcall(UnitFactionGroup, "player")
         if ok and eng == "Alliance" then id = "a" end
     end
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     local pick = db.explore.rtFac
     if pick ~= "h" and pick ~= "a" then pick = id end
@@ -1696,7 +1696,7 @@ local function RtFac()
 end
 
 local function RtSel(fac)
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     local list = ROUTES[fac] or {}
     local n = db.explore.rtSel
@@ -1705,7 +1705,7 @@ local function RtSel(fac)
 end
 
 local function RtRace(fac, idx)
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     local t = (ROUTES[fac] or {})[idx]
     if not t then return 1 end
@@ -1715,7 +1715,7 @@ local function RtRace(fac, idx)
 end
 
 local function RtPick(fac, n)
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     db.explore.rtFac = fac
     db.explore.rtSel = n
@@ -1724,7 +1724,7 @@ local function RtPick(fac, n)
 end
 
 local function RtPickRace(fac, idx, j)
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     db.explore.rtRace = db.explore.rtRace or {}
     db.explore.rtRace[fac .. ":" .. idx] = j
@@ -1859,7 +1859,7 @@ end
 local OVL_TINT = { [1] = { 0.47, 0.71, 1.00 }, [2] = { 1.00, 0.50, 0.44 } }
 
 local function RtOvlSide()
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     local v = db.explore and db.explore.ovlSide
     if v == 1 or v == 2 then return v end
     local f = UnitFactionGroup and UnitFactionGroup("player")
@@ -2348,7 +2348,7 @@ end
 local BM_TAB_KEYS = { "ov", "saber", "witch", "codex" }
 
 local function BMTab()
-    local db = ns.DB()
+    local db = ns.ExploreDB()
     db.explore = db.explore or {}
     for _, key in ipairs(BM_TAB_KEYS) do
         if db.explore.bmTab == key then return key end
@@ -3626,7 +3626,7 @@ function EG.Build(page)
         tf:SetText(f.text)
         bt:SetFontString(tf)
         bt:SetScript("OnClick", function(self)
-            local db = ns.DB()
+            local db = ns.ExploreDB()
             db.explore = db.explore or {}
             db.explore.view = (db.explore.view == self.__key) and "all" or self.__key
             if CurSub() == "rewards" then db.explore.subPage = "books" end
@@ -4099,7 +4099,7 @@ function EG.Build(page)
                 if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(ic) end
                 bt.__icon = ic
                 bt:SetScript("OnClick", function()
-                    local db = ns.DB()
+                    local db = ns.ExploreDB()
                     db.explore = db.explore or {}
                     db.explore.bagFac = f
                     EG.RequestRender()
@@ -4456,7 +4456,7 @@ function EG.Build(page)
                 tf:SetAllPoints()
                 tf:SetFont(ns.FONT, 14, "")
                 bt:SetScript("OnClick", function()
-                    local db = ns.DB()
+                    local db = ns.ExploreDB()
                     db.explore = db.explore or {}
                     db.explore.bmTab = t.key
                     EG.RequestRender()
@@ -5194,7 +5194,7 @@ Y()
                 bt:SetFrameLevel((cv:GetFrameLevel() or 0) + 6)
                 bt.__side = sd[1]
                 bt:SetScript("OnClick", function(self)
-                    local db = ns.DB()
+                    local db = ns.ExploreDB()
                     db.explore = db.explore or {}
                     db.explore.ovlSide = self.__side
                     EG.RtMapRepaint()
