@@ -14381,7 +14381,7 @@ PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
     { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling" }, 1 },
     { L["采购与配方"], { "reserveMode", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
-    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools" }, 2 },
+    { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools", "preciseRecovery" }, 2 },
 }
 
 function PD.RowsSettings(rows)
@@ -14443,6 +14443,10 @@ function PD.RowsSettings(rows)
           desc = L["把附魔棒、扳手这类升级路线必需的工具排进路线。"],
           d1 = L["开启：在工具可用等级插入一次制作，产出的工具计入保留物品、不按可出售计算。"],
           d2 = L["关闭：路线不含工具制作，需要你自己准备。"] },
+        { k = "preciseRecovery", name = L["精确回血（需拍卖行完整扫描）"],
+          desc = L["开启后按本轮拍卖行完整扫描计算可卖数量，只保存配方用得到的物品，24 小时后自动作废。"],
+          d1 = L["关闭：直接用拍卖行插件的价格与日均存量估算，不保存任何拍卖数据，也不需要扫描。"],
+          d2 = L["开启：先在拍卖行完成一次「复制模式」完整扫描，结果更准，但需手动扫描并占用少量存档。"] },
     }
     local byKey = {}
     for _, d in ipairs(defs) do byKey[d.k] = d end

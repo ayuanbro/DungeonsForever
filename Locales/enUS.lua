@@ -2246,3 +2246,7 @@ L["序号"] = "No."
 L["技能等级"] = "Rank"
 L["人物等级"] = "Level"
 L["导入方案"] = "Imported plan"
+L["精确回血（需拍卖行完整扫描）"] = 'Precise buy-back (needs full auction scan)'
+L["开启后按本轮拍卖行完整扫描计算可卖数量，只保存配方用得到的物品，24 小时后自动作废。"] = 'When on, sellable counts come from this session\'s full auction scan; only recipe items are stored and they expire after 24 hours.'
+L["关闭：直接用拍卖行插件的价格与日均存量估算，不保存任何拍卖数据，也不需要扫描。"] = 'Off: use the auction addon\'s prices and daily stock estimate; no auction data is stored and no scan is needed.'
+L["开启：先在拍卖行完成一次「复制模式」完整扫描，结果更准，但需手动扫描并占用少量存档。"] = 'On: run one full replicate-mode scan first; results are more accurate but must be triggered manually and use a little storage.'
