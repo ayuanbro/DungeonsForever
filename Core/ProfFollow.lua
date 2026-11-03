@@ -57,7 +57,6 @@ local format = string.format
 local PF = {}
 ns.ProfFollow = PF
 
-
 local f
 local cueState = {}
 
@@ -229,8 +228,6 @@ local function routeTarget(slug)
     return math.max(1, math.min(300, math.floor(v)))
 end
 
--- Rank reminders read the character's real cap through ProfRanks. They are
--- guidance beside the route and never become execution steps or craft facts.
 function PF.RankTasks(slug, target, steps, currentIndex)
     local ranks = ns.ProfRanks
     if not (ranks and ranks.NextStep) then return {} end
@@ -250,8 +247,6 @@ function PF.RankTasks(slug, target, steps, currentIndex)
     return tasks
 end
 
--- Audio follows the frozen execution, never the card selected for browsing.
--- Only the mute preference is saved; these transition markers live in memory.
 local function updateCues(slug, rankTasks)
     if cueState.slug ~= slug then cueState = { slug = slug } end
     local caps, newCap = {}, false
@@ -298,7 +293,6 @@ function PF.SpecializationQuestInfo(seg)
     if type(goal.minSkill)=="number" then requirements[#requirements+1]=format(L["需要专业技能 %d"],goal.minSkill) end
     if type(goal.minLevel)=="number" then requirements[#requirements+1]=format(L["需要角色等级 %d"],goal.minLevel) end
     if #requirements>0 then lines[#lines+1]=table.concat(requirements," · ") end
-    -- 显示专精任务所需的交付材料
     if type(goal.inputs) == "table" and #goal.inputs > 0 then
         local materials = {}
 
@@ -393,8 +387,6 @@ local function hasRoute(slug)
 end
 local function routeForCalc(slug, skill)
     if slug=="poisons" then
-        -- Master's poison HUD follows skill and authored segments, not a saved
-        -- execution or the generic learning/procurement policy.
         PF.pendingPlans=PF.pendingPlans or {};PF.pendingPlans[slug]=nil
         local guide=LV[slug]
         return "fixed",clipFixedSteps(guide and guide.steps,routeTarget(slug))
@@ -449,8 +441,6 @@ local function routeForCalc(slug, skill)
         if res and res.status ~= "selection_required" and res.status ~= "recalculate_required" and res.feasible ~= false
             and list and #list > 0 then
             PF.pendingPlans[slug] = nil
-            -- Following is an explicit request to execute; routine route reads
-            -- never create a run. Wait for a settled candidate before freezing.
             local hudState = st()
             if XP and XP.Bind
                 and hudState
@@ -617,9 +607,6 @@ local function copyPurchase(entry)
     return out
 end
 
--- A shopping row has two independent ledgers: immutable plan receipts, and
--- current purchases covering the remaining recipe demand after actual stock.
--- Auction availability is never character inventory and never enters Have().
 local function allocatePurchases(row)
     row.purchases={};row.purchaseCount=0;row.purchaseCost=0
     row.ahCount,row.vendorCount=0,0
@@ -654,8 +641,6 @@ local function allocatePurchases(row)
         if item.source=="ah" or item.source=="auction" then row.ahCount=row.ahCount+count
         elseif item.source=="vendor" or item.source=="npc" then row.vendorCount=row.vendorCount+count end
     end
-    -- Pattern eligibility and its selected acquisition path are frozen. A
-    -- pattern already held/learned is not a generic material to optimize.
     local formulaLeft=math.max(0,(row.formulaNeed or 0)-row.have)
     local formulaAH=0
     for _,entry in ipairs(row.planPurchases or {}) do
@@ -692,8 +677,6 @@ local function allocatePurchases(row)
     if left>0 and hasMaterials then
         local entries,complete
         if quotesComplete and RA and RA.MaterialPurchases then
-            -- Only the frozen plan's quotations participate. New market prices,
-            -- vendors and crafted alternatives cannot change the route here.
             local snap={prices={[row.id]=auction},offers={[row.id]=offers},auctionSupply={},considerAuctionSupply=useSupply}
             if available~=nil then snap.auctionSupply[row.id]={quantity=ahLimit} end
             local total
@@ -749,7 +732,6 @@ function PF.Following(slug)
     return (s and s.slug == slug) and true or false
 end
 
--- Explicit cancellation suspends HUD auto-start until the HUD is reopened.
 function PF.SuspendAutoTrack(slug, reason)
     local s = st()
     if s and s.slug == slug then
@@ -982,11 +964,6 @@ local function craftsLeft(seg, skill, rec,routeSlug,future)
                 local untouched=(progress.attemptsDone or 0)==0 and type(progress.currentSkill)=="number"
                     and progress.currentSkill<=(seg[1] or 0)
                 if (future or untouched) and not progress.skillDone and not (XP.IsConversion and XP.IsConversion(seg)) then
-                    -- Future leveling starts at the frozen segment's skill, not
-                    -- the character's current skill. An untouched current
-                    -- segment also keeps the solver's fractional-gain count.
-                    -- Keep its funded attempts;
-                    -- actual receipts still govern material-only obligations.
                     if seg.reason~="material" and seg.role~="material" then
                         local planned=math.max(0,(seg.expectedCrafts or seg[4] or 0)-(progress.attemptsDone or 0))
                         local output=seg.outputMin or rec and (rec.outputMin or rec.count or rec[3]) or 1
@@ -1018,8 +995,6 @@ local function craftsLeft(seg, skill, rec,routeSlug,future)
     return (seg[4] or 0) * math.min(1, (seg[2] - from) / span)
 end
 
--- Master's overlapping-skill cards are display choices, never execution order.
--- Keep the frozen current step, and only add an independent, funded craft.
 local function currentCands(steps, skill, curStep, slug, rm, run)
     local out = { math.max(1, math.min(#steps, curStep or 1)) }
     local XP = ns.ProfExecution
@@ -1195,7 +1170,6 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         for _,id in ipairs(order) do
             local row=totals[id]
             row.need=math.max(0,row.need-(futureOutputs[id] or 0))
-            -- Only actual purchase leaves belong in the full shopping list.
             if type(plan.mats)=="table" and not leaves[id] then row.need=0 end
         end
         local economy=ns.ProfEconomy
@@ -1333,8 +1307,6 @@ function PF.ShoppingSourceDetail(entry)
     return table.concat(parts,"\n")
 end
 
--- The first HUD task uses the plan's actual leaf purchases. Intermediate
--- products, AH purchases and formula items must not become NPC material needs.
 local TipOn
 function PF.VendorPurchases(slug, plan)
     if slug=="poisons" then return {} end
@@ -1601,8 +1573,6 @@ function jumpApply()
 end
 
 local function jumpCraft(stepIdx)
-    -- Every new click replaces the previous request, including clicks that are
-    -- blocked by missing materials, learning restrictions, or manual steps.
     jumpPending = nil
     local s = st()
     if not (s and s.slug) then return end
@@ -1888,7 +1858,6 @@ local function BuildBody()
     f:Show()
     BuildStep(2)
 
-    -- Reuse master's card factory and per-card material widgets.
     local function CreateCard()
         local card = CreateFrame("Frame", nil, f, BackdropTemplateMixin and "BackdropTemplate" or nil)
         card:SetBackdrop({
@@ -3013,9 +2982,6 @@ function PF.PaintImportBtn(bt, slug)
     bt:SetShown(true)
 end
 
-
--- A saved execution, rather than live skill alone, advances the HUD. Publication
--- callbacks wake a visible waiting HUD without replacing any frozen execution.
 local function connectExecution()
     local XP = ns.ProfExecution
     if XP and XP.OnObservationChanged then XP.OnObservationChanged(function()

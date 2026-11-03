@@ -25,8 +25,6 @@ local function MaybeYield()
     end
 end
 
--- Solver snapshots and execution plans must not share nested recipe/quote data
--- with the live client cache. Cooperatively copy large inputs when requested.
 local function copy(value, tick, seen)
     if type(value) ~= "table" then return value end
     seen = seen or {}
@@ -34,9 +32,6 @@ local function copy(value, tick, seen)
     local original=value
     local meta=getmetatable(value)
     if type(meta)=="table" and type(meta.__profLearningMaterialize)=="function" then
-        -- The generated provider keeps compact readonly tuple-backed views.
-        -- Freeze only referenced views into ordinary named snapshot fields;
-        -- shared templates remain shared through this copy's seen index.
         value=meta.__profLearningMaterialize(value)
     end
     local out, count = {}, 0
@@ -199,8 +194,6 @@ function E.Professions()
 end
 
 function E.SpecializationKnown(spell)
-    -- Execution completion needs a live ability observation, not a historical
-    -- recipe cache. Failed/missing APIs and pre-login queries remain unknown.
     if type(IsLoggedIn)=="function" then
         local ok, ready = pcall(IsLoggedIn)
         if ok and ready==false then return nil end
@@ -223,9 +216,6 @@ function E.Known(spell)
         local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
         if type(fn)=="function" then
             local ok, value = pcall(fn, spell)
-            -- Some spell-book APIs return false for profession recipes even
-            -- when another supported API exposes them. Keep any positive
-            -- recipe observation, as the native route reader does.
             if ok and value==true then return true end
         end
     end
@@ -402,13 +392,9 @@ local function planningToolRecipe(slug, spell, snapshot)
     for _, recipe in ipairs(snapshot and snapshot.recipes or {}) do
         if recipe.profession==slug and recipe.spell==spell then return recipe end
     end
-    -- A supplied snapshot owns its recipe observations. Never mix live client
-    -- requirements into an existing execution or synthetic input boundary.
     if not snapshot and E.FindRecipe then return E.FindRecipe(slug, spell) end
 end
 function E.RequiredLevelingTool(slug, tool)
-    -- Preserve the native catalogue. Transmutation equipment is not a gate
-    -- for an ordinary potion route; actual dependencies are acquired normally.
     return not tool.optional and not (slug=="alchemy" and (tool.item==9149 or tool.item==13503))
 end
 function E.HasToolGoals(slug, opts)
@@ -513,9 +499,6 @@ function E.Normalize(row, slug, kind)
         if ok and type(ms)=="number" then r.cooldown = ms > 0
         elseif not verifyCooldown then r.cooldown = false end
     end
-    -- A zero base cooldown does not verify daily/shared recipe restrictions.
-    -- Apply this after runtime overrides too: ReadRecipe may have captured a
-    -- zero base duration without receiving an explicit hasCooldown result.
     local runtime = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[r.spell]
     if verifyCooldown and not r.cooldown and not (runtime and runtime.cooldownVerified) then
         r.cooldownUnknown = true
@@ -528,8 +511,6 @@ function E.FindRecipe(slug, spell)
     for _, row in ipairs(group and group.rows or {}) do
         if row[1] == spell then return E.Normalize(row, slug, "rows") end
     end
-    -- Retain dev's established upgrade data before adding the generic crafted
-    -- and enchant reference lists. Live observations still override either.
     local ri = ns.ProfLeveling and ns.ProfLeveling[slug] and ns.ProfLeveling[slug].rinfo and ns.ProfLeveling[slug].rinfo[spell]
     if ri then
         local r = copy(ri); r.spell=spell; r.item=r.item or r.makes
@@ -592,8 +573,6 @@ function E.PreferredVendorOffers(offers, eligible)
     return db and db.PreferredOffers and db.PreferredOffers(offers,eligible) or (offers or {})
 end
 
--- Quote the combined demand from frozen NPC/AH inputs. Both fixed guides and
--- solver replay use this integer-pack comparison, including finite AH supply.
 function E.MaterialPurchases(id,need,context,tick)
     need=math.max(0,math.ceil(tonumber(need) or 0))
     if need==0 then return {},0,true end
@@ -619,8 +598,6 @@ function E.MaterialPurchases(id,need,context,tick)
             if not uncertain and (not reliable[size] or price<reliable[size].price) then reliable[size]=offer end
         end
     end
-    -- Match the route solver: prefer an executable, reliably priced purchase
-    -- over a cheaper estimate, retaining estimates only when no such plan exists.
     if next(reliable) or auction and limit>=need then byPack=reliable end
     local sizes={}
     for size in pairs(byPack) do sizes[#sizes+1]=size;maxPack=math.max(maxPack,size) end
@@ -693,8 +670,6 @@ local function formulaContext(context)
     context=context or {}
     return context.snapshot or context
 end
--- This is a purchase-source policy. Learned recipes and explicit trainer
--- learning paths keep their existing eligibility regardless of the setting.
 function E.AllowLimitedFormulas(context,profession)
     if context and context.allowLimitedFormulas~=nil then return context.allowLimitedFormulas==true end
     local snapshot=context and context.snapshot
@@ -721,8 +696,6 @@ local function formulaPermission(context,field,setting,profession)
     return db and db[setting]==true or false
 end
 function E.AllowBindOnPickupFormulas(context,profession)
-    -- The persisted key now governs non-gold acquisition only. Ordinary gold
-    -- vendors follow their stock/access rules regardless of item binding.
     return formulaPermission(context,"allowBindOnPickupFormulas","autoAllowBindOnPickupFormulas",profession)
 end
 function E.AllowCurrencyFormulas(context,profession)
@@ -734,7 +707,6 @@ function E.LimitedFormulaOffer(offer)
     if offer.limited==true or offer.stockStatus=="limited"
         or (type(offer.stock)=="number" and offer.stock>=0)
         or (type(offer.maxStock)=="number" and offer.maxStock>=0) then return true end
-    -- Normalized offers also use unlimited=false for missing stock evidence.
     if offer.stockUnknown or offer.stockStatus=="unknown" then return false end
     return offer.unlimited==false
 end
@@ -750,16 +722,12 @@ end
 local function hasEntries(t) return type(t)=="table" and next(t)~=nil end
 local function questSource(source)
     if source.questOnly or source.quest or hasEntries(source.quests) or source.type=="quest" or source.kind=="quest" then return true end
-    -- `read=classic/wowhead` is scrape provenance, and numeric skill is the
-    -- required profession level. Neither field identifies a quest reward.
     for _,key in ipairs({"skill","notes","description"}) do
         local value=source[key]
         if type(value)=="string" and (value:lower():find("quest",1,true) or value:find("任务",1,true) or value:find("任務",1,true)) then return true end
     end
     return false
 end
--- Injected snapshots may use bare finite budgets. Live client observations must
--- be complete, exclude our auctions, and still be fresh at the capture boundary.
 local function validSupply(entry,stamp,live)
     if type(entry)~="table" or type(entry.quantity)~="number" or entry.quantity<0
         or entry.quantity==math.huge or entry.quantity~=floor(entry.quantity)
@@ -783,7 +751,6 @@ function E.ConsiderAuctionSupply(context)
         context and (context.profession or context.slug))==true or false
 end
 function E.AuctionSupplyOf(context,id)
-    -- A nil context reads observation evidence; route contexts opt into budgets.
     if context and not E.ConsiderAuctionSupply(context) then return end
     context=context and (context.snapshot or context)
     local entry
@@ -795,8 +762,6 @@ function E.AuctionSupplyOf(context,id)
     local stamp=context and context.stamp or (not context and time and time())
     if validSupply(entry,stamp,not context) then return entry end
 end
--- A teaching item needs affirmative recent market availability even when
--- material quantities are not budgeted. History/price alone cannot prove this.
 function E.FormulaAuctionSupplyOf(context,id)
     context=context and (context.snapshot or context)
     local frozen=context and (context.prices~=nil or context.known~=nil or context.recipes~=nil
@@ -811,7 +776,6 @@ function E.FormulaAuctionSupplyOf(context,id)
 end
 local function quoteMetadata(context,id,field,method)
     if context and context[field] then return context[field][id] end
-    -- A captured input must not acquire new metadata while its search runs.
     if context and context.prices then return end
     local bridge=ns.AuctionBridge
     if bridge and type(bridge[method])=="function" then return bridge[method](id) end
@@ -834,14 +798,11 @@ function E.AuctionSupplyChanged(result)
         end
     end
     if result.considerAuctionSupply==false then return false end
-    -- Prices/history have independent freshness. Only quantity evidence belongs
-    -- to this comparison, and looking it up never starts a scan or a search.
     for id,previous in pairs(result.auctionSupplyInputs or {}) do
         local current=E.AuctionSupplyOf(nil,id)
         if (previous~=false)~=(current~=nil) then return true end
         if current then
             for _,key in ipairs(supplyIdentityFields) do
-                -- A fresh observation of the same offer does not change a route.
                 if key~="observedAt" and key~="batch" and previous[key]~=current[key] then return true end
             end
         end
@@ -925,8 +886,6 @@ function E.SummarizeAuctionSupply(result,context)
         for _,m in ipairs(r.mats or {}) do candidate(m[1]) end
         if r.formula and not (context.known or {})[r.key] then candidate(r.formula) end
     end
-    -- Include unused, priced candidates: a new quantity for a previously scarce
-    -- cheaper recipe also changes the inputs to the saved minimum-cost result.
     for id in pairs(context and context.prices or {}) do
         result.auctionSupplyInputs[id]=supplyIdentity(E.AuctionSupplyOf(context,id))
     end
@@ -973,7 +932,6 @@ function E.SummarizeAuctionSupply(result,context)
             end
         end
     end
-    -- Show the same aggregate demand on material and teaching-item rows.
     for _,list in ipairs({result.mats or {},result.formulas or {}}) do
         for _,entry in ipairs(list) do
             local id=entry.id or entry[1]
@@ -1010,13 +968,9 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     meta=meta and {quests=meta.source and meta.source.quests,status="confirmed",questOnly=meta.source and meta.source.questOnly,coverage="partial"}
     if meta then
         sources.quests=copy(meta.quests)
-        -- A reward relationship proves an alternative, not exclusivity. Only
-        -- a complete acquisition inventory may suppress other purchase paths.
         sources.questOnly=meta.coverage=="complete" and meta.questOnly==true or nil
         sources.acquisitionCoverage=meta.coverage
     end
-    -- Procurement sources must be rebuilt from the new item/NPC records.
-    -- Recipe-catalogue vendor annotations cannot establish a supplier.
     sources.vendors=nil
     local quest=questSource(sources)
     local exclusiveQuest=meta and meta.status=="confirmed" and meta.coverage=="complete" and meta.questOnly==true
@@ -1024,7 +978,6 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
         if not quest then return end
         id=nil
     end
-    -- An observed trainer path does not require purchasing the teaching item.
     if E.LearningSource(r)=="trainer" then return end
     local entry={id=id,count=1,need=1,spell=r.spell,profession=r.profession,recipeKey=r.key,
         known=known,sources=sources,recipe=r,recipes={{profession=r.profession,spell=r.spell,key=r.key,source=sources}},
@@ -1040,16 +993,12 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
         or acquisition and acquisition.nonAuctionable==true
         or not context.prices and id and E.NonAuctionableItem(id)
     entry.bindOnPickup=bound and true or nil
-    -- A real recent market quote outranks static binding/source metadata for
-    -- teaching items. Materials keep their separate non-auctionable policy.
     if type(ah)=="number" and ah>0 and ah<math.huge then entry.ahPrice=ah end
     local offers=id and context.formulaOffers and context.formulaOffers[id]
     if not offers and not context.prices and id and ns.VendorPriceDB and ns.VendorPriceDB.GetFormulaOffers then
         offers=ns.VendorPriceDB.GetFormulaOffers(id,context,r.source)
     end
     if not offers and id and context.offers then offers=context.offers[id] end
-    -- Price seeds and anonymous catalogue placeholders are not suppliers.
-    -- Currency exchanges belong outside this gold procurement list.
     for _,offer in ipairs(offers or {}) do
         local currency=tonumber(offer.currencyID or offer.cur) or 0
         if type(offer.npcID)=="number" and offer.npcID>0 and not offer.priceOnly
@@ -1095,18 +1044,14 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
         else entry.stockUnknown=true end
         local limitedBlocked=not allowLimited and formulaStockRestricted(o)
         if limitedBlocked then entry.limitedVendorDisabled=true end
-        -- A policy-disabled offer still has a known reference price. It must
-        -- not become a selected purchase or contribute to the route cost.
         if quoted(o) then
             local unit=o.price/(o.quantity or o.bundleSize or 1)
             if not entry.vendorPrice or unit<entry.vendorPrice then entry.vendorPrice=unit end
         end
     end
-    -- Compare actual costs across all eligible suppliers. A location preference
-    -- must not hide a cheaper quote when deciding NPC versus auction purchase.
     for _,o in ipairs(entry.vendorOffers) do
         if purchasable(o) then
-            local cost=o.price -- One indivisible purchase supplies the formula.
+            local cost=o.price
             if not bestCost or cost<bestCost then best,bestCost=o,cost end
         end
     end
@@ -1157,7 +1102,6 @@ function E.CollectFormulas(steps,slug,context)
     return list,total,complete
 end
 
-
 function E.Index(s, tick)
     local recipes = {}
     for _, r in ipairs(s.recipes or {}) do
@@ -1190,7 +1134,6 @@ function E.Index(s, tick)
         "toolGoalsPending", "specializationGoals", "specializationAbilities", "retainedToolItems", "toolCraftOnlyItems"}) do
         s[field] = s[field] or {}
     end
-    -- Indexing an immutable input never consults the live auction/recipe cache.
     local supply = {}
     for id, entry in pairs(s.auctionSupply or {}) do
         if validSupply(entry,s.stamp) then supply[id] = entry
@@ -1255,8 +1198,6 @@ function E.CaptureSpecializations(s, opts, slug)
     s.specializationFingerprint = spec.fingerprint
     s.specializationGoals = {}
     for _, goal in ipairs(spec.goals or {}) do
-        -- Keep blocked goals: their requirements must not silently disappear
-        -- from an otherwise apparently complete engineering route.
         s.specializationGoals[#s.specializationGoals+1] = copy(goal)
     end
     return s
@@ -1279,7 +1220,6 @@ end
 function E.Capture(slug, opts, tick)
     opts, tick = shallow(opts or {}), tick or function() end
     opts.profession=slug
-    -- Retired preferences never restrict a newly captured route.
     opts.noFormula,opts.learnedOnly,opts.allowUnknownLearning=nil,nil,nil
     opts.considerAuctionSupply=E.ConsiderAuctionSupply(opts)
     if opts.snapshot then
@@ -1293,8 +1233,6 @@ function E.Capture(slug, opts, tick)
         s.allowCurrencyFormulas=formulaPermission(opts,"allowCurrencyFormulas","autoAllowCurrencyFormulas")
         if s.coverageComplete == nil then s.coverageComplete = false end
         s.essenceConversions = ns.ProfEssences and ns.ProfEssences.Enabled(slug, opts, s) or false
-        -- Explicit fixture/execution snapshots already contain their normalized
-        -- tool/specialization facts. Do not replace them with today's client.
         if s.toolGoals == nil then E.CaptureToolGoals(s, slug, opts) end
         if s.specializationContext == nil and ns.ProfGates then E.CaptureSpecializations(s, opts, slug) end
         s = E.Index(s, tick)
@@ -1315,12 +1253,8 @@ function E.Capture(slug, opts, tick)
     s.faction = f=="Alliance" and "A" or f=="Horde" and "H" or f
     if UnitClass then local ok,_,_,id=pcall(UnitClass,"player");if ok then s.classID=id end end
     if UnitRace then local ok,_,_,id=pcall(UnitRace,"player");if ok then s.raceID=id end end
-    -- An unlearned target is a valid 1-to-target preview. A partner is only
-    -- required when the user explicitly enables joint profession leveling.
     if context.requiresPartner and not context.partnerValid then return E.Index(s, tick) end
     local loadList, seen = {slug}, {[slug]=true}
-    -- Already learned professions may supply a dependency; enabling joint
-    -- leveling also permits the selected simulated partner to gain skill.
     for p, info in pairs(professions) do
         if not seen[p] and primaryOf(p) and (not info.unlearned or p==context.partner) then
             loadList[#loadList+1]=p;seen[p]=true

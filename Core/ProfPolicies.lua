@@ -5,7 +5,6 @@ if not ns.LoadForeverPages then return end
 local P = {}
 ns.ProfEconomy = P
 
--- Master's nip flag also applies to normalized recipes and supplemental inputs.
 function P.RecipeNIP(spell, recipe)
     return (recipe and recipe.nip) or (ns.ProfRecipeNIP and ns.ProfRecipeNIP[spell])
 end

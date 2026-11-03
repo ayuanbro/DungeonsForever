@@ -3,6 +3,9 @@ local _, ns = ...
 if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
 
 local L = ns.L
+
+L["专精不指定"] = "Specialization: unspecified"
+
 L["拍卖行价格可用"] = "Auction prices available"
 L["配方资料待补全"] = "Recipe details missing"
 L["固定攻略参考；逐配方资料待补全。"] = "Fixed guide reference; individual recipe details are missing."
@@ -11,9 +14,7 @@ L["攻略区间 %d–%d"] = "Guide range %d–%d"
 L["随专业技能获得"] = "Automatic with skill"
 L["达到对应专业技能后自动习得，无需另购图纸或支付配方学习费。"] = "Automatically learned at the required profession skill; no separate pattern or recipe learning fee."
 L["尚无可核实的金币采购报价；已知来源保留供查阅。"] = "No verified gold purchase quote is available; known origins remain listed for reference."
-
 L["配方学习条件资料已更新，请重新计算路线。"] = "Recipe learning conditions have changed. Recalculate the route."
--- Profession-specific route audit.
 L["任务身份尚未确认"] = "Quest identity unverified"
 L["需要专业技能 %d"] = "Requires profession skill %d"
 L["需要角色等级 %d"] = "Requires character level %d"
@@ -29,8 +30,6 @@ L["按实际技能推进；不预计采集产出。"] = "Advance using actual sk
 L["固定攻略包含不可执行步骤，请切换自动规划或先满足学习条件。"] = "This fixed guide contains unavailable steps. Switch to automatic planning or meet their learning requirements."
 L["鱼类的钓取门槛或时间限制尚未确认，暂不用于纯钓鱼路线。"] = "Fishing skill or time restrictions are unverified; this fish is excluded from the self-fished route."
 L["当前专业技能上限尚未读取，暂不推断最后一段采集目标。"] = "The current profession cap is unknown; the final gathering target is not inferred."
-
--- Native profession route planning and execution.
 L["专业专精任务"] = "Profession specialization quest"
 L["专业晋级"] = "Profession ranks"
 L["优化已中断；执行计划已保存，可重新计算。"] = "Optimization was interrupted. Your execution plan is saved; you can recalculate."
@@ -43,7 +42,6 @@ L["晋级"] = "Rank up"
 L["确认转换"] = "Confirm conversion"
 L["精华转换"] = "Essence conversion"
 L["转换：%s → %s"] = "Convert: %s → %s"
-
 L[" |cff40d940新|r"] = " |cff40d940New|r"
 L[" · %d%%"] = " · %d%%"
 L[" · BOSS %d"] = " · Boss %d"
@@ -1824,8 +1822,6 @@ L["采购规则已更新，请重新计算路线。"] = "Purchasing rules were u
 L["NPC也有出售"] = "Also sold by NPCs"
 L["本路线选择从拍卖行购买。"] = "This route purchases this item at the auction house."
 L["按本路线选定的货源分组；点击商人条目在地图上定位。"] = "Grouped by the sources selected for this route. Click a vendor entry to locate the NPC on the map."
-
--- Professional learning source availability.
 L["学习资料待补全"] = "Learning data incomplete"
 L["来源未提供该记录"] = "The source does not provide this record"
 L["资料来源暂时无法访问"] = "The data source could not be accessed"
@@ -1870,13 +1866,10 @@ L["当前阵营不满足这条学习路径。"] = "Your faction does not meet th
 L["当前角色不满足这条学习路径的条件。"] = "Your character does not meet this learning path's requirements."
 L["尚未满足这条学习路径的条件。"] = "The requirements of this learning path are not met."
 L["训练师学习费用尚未核实。"] = "The trainer learning fee is unverified."
-
 L["考虑拍卖行的销售数量"] = "Consider auction house quantities"
 L["按 Auctionator 完整扫描到的在售数量，限制材料和图纸的采购数量。"] = "Limit material and recipe purchases to quantities listed in an Auctionator full scan."
 L["开启：材料和图纸共用可购数量；数量不足时尝试其他货源或配方，数量未知时提示重新扫描。"] = "Enabled: materials and recipes share the available quantity. Shortages use alternative sources or recipes; unknown quantities prompt a rescan."
 L["关闭（默认）：只按价格计算路线，不受拍卖行在售数量限制。"] = "Disabled by default: calculate routes using prices without limiting purchases to listed auction quantities."
-
--- Optional unverified learning references.
 L["允许学习来源资料缺失的配方参与路线计算。"] = "Include recipes with missing learning-source data in route planning."
 L["默认关闭；已确认不满足的条件或客户端不可用配方仍不能使用。"] = "Off by default. Known unmet requirements and client-confirmed unavailable recipes still block use."
 L["未知学习来源仅供规划参考，实际学习条件和费用请在游戏中核对。"] = "Unknown learning sources are planning references. Verify learning requirements and costs in game."
@@ -1888,8 +1881,6 @@ L["关闭（默认）：限量或库存未核实的商人图样不参与采购�
 L["未学配方的图纸仅使用符合库存设置的商人金币报价，不从拍卖行购买图纸。"] = "Use only vendor gold quotes that meet stock settings for unlearned patterns; exclude auction purchases."
 L["开启：拍卖行图纸报价不参与采购；限量商人图样还需开启「允许采购限量图样」。"] = "On: exclude auction pattern quotes. Limited vendor stock also requires Allow limited-stock patterns."
 L["关闭：允许使用拍卖行图纸报价，仍受来源、价格和库存设置限制。"] = "Off: allow auction pattern quotes, subject to source, price and stock settings."
-
--- Pattern acquisition channels.
 L["允许NPC限量销售图纸"] = "Allow limited-stock NPC patterns"
 L["允许通货兑换图纸"] = "Allow currency-exchange patterns"
 L["按完整扫描的在售数量限制材料采购；拍卖行图纸始终需要近期数量至少1张。"] = "Limit material purchases by complete auction scans; auction patterns always require at least 1 recently observed copies."
@@ -1903,7 +1894,6 @@ L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或�
 L["请先取得并学习所需图纸，再开始制作。"] = "Obtain and learn the required pattern before crafting."
 L["图纸有拍卖行价格，但缺少最近的可购数量；需要最近数量至少为2。"] = "The pattern has an auction price, but recent stock is unknown; at least 1 recent copies are required."
 L["图纸最近的拍卖行可购数量不足1，或本路线已用完可购数量。"] = "Recent auction stock is below 1 copies, or this route has exhausted the available supply."
-
 L["开启后可能选择限量商人，到访时可能无货；非金币拾取绑定来源仍需对应许可。"] = "May select limited-stock NPCs that are sold out when visited; non-gold acquisition of bound patterns still requires permission."
 L["允许非金币获取的拾取绑定图纸"] = "Allow non-gold acquisition of bind-on-pickup patterns"
 L["允许掉落、任务、通货或物品兑换取得的拾取绑定图纸参与路线。"] = "Allow bind-on-pickup patterns obtained from drops, quests, currency or item exchanges in routes."
@@ -1914,21 +1904,15 @@ L["默认关闭；任一开关开启即可规划兑换。合格拍卖行报价�
 L["金币加通货或物品也属于兑换；仅此项开启不放行掉落或任务，限量NPC仍受限量开关约束。"] = "Gold combined with currency or items is also an exchange. This option alone excludes drops and quests; limited-stock NPCs still require the stock option."
 L["非金币获取的拾取绑定图纸未开启；此配方暂不参与路线。"] = "Non-gold acquisition of bind-on-pickup patterns is disabled; this recipe is excluded from routes."
 L["非金币拾取绑定与通货兑换均未开启；此配方暂不参与路线。"] = "Both non-gold acquisition of bind-on-pickup patterns and currency exchanges are disabled; this recipe is excluded from routes."
-
 L["需要先取得并学习图纸；已知金币计入预算，其他获取或兑换成本尚未折算。"] = "Obtain and learn the pattern first; known gold is budgeted, while other acquisition or exchange costs remain unvalued."
 L["获取或兑换总成本未确认"] = "Total acquisition or exchange cost unconfirmed"
-
--- Auctionator scan mode warnings
 L["Auctionator 当前使用摘要扫描模式。请前往 Auctionator → 设置 → 高级，开启「默认使用较慢的备用扫描模式」，然后重新完整扫描。"] = "Auctionator is using summary scan mode. Go to Auctionator → Settings → Advanced, enable 'Use alternate slower scan mode by default', then run another full scan."
 L["无法确认 Auctionator 的扫描模式。请检查是否已开启「默认使用较慢的备用扫描模式」（复制模式），然后重新完整扫描。"] = "Unable to determine Auctionator's scan mode. Check that 'Use alternate slower scan mode by default' (replicate mode) is enabled, then run another full scan."
--- Auctionator replicate-mode prerequisites
 L["Auctionator 当前使用摘要扫描模式，无法核实图纸库存。请在 Auctionator → 设置 → 高级中开启「默认使用较慢的备用扫描模式」。"] = "Auctionator is using summary scan mode, so pattern stock cannot be verified. Go to Auctionator → Settings → Advanced and enable 'Use alternate slower scan mode by default'."
 L["复制模式已开启，但尚无有效的复制扫描库存；请先完成一次新的复制模式完整扫描，再重新计算。"] = "Replicate mode is enabled, but no valid replicate stock scan is available. Run a new full scan in replicate mode before recalculating."
 L["无法确认 Auctionator 扫描模式，请检查是否开启备用扫描模式。"] = "Unable to confirm Auctionator's scan mode. Check that alternate scan mode is enabled."
 L["拍卖行扫描"] = "Auction scan"
 L["无法重新计算"] = "Cannot recalculate"
-
--- Additional master 1.9.21 localization keys missing from dev.
 L["%d 步无有价配方，已按缺价兜底：这些步骤的费用为下限"] = "%d step(s) had no priced recipe and were filled from unpriced fallbacks: their cost is a lower bound"
 L["%s级 · %s"] = "%s tier · %s"
 L["(%d人)"] = " (%d)"
@@ -2066,18 +2050,11 @@ L["金币"] = "Gold"
 L["默认已对齐，一般不用动；只有换到字形差别很大的字体时才需微调。"] = "Aligned by default; only adjust it for a font with very different glyphs."
 L["（已回滚）"] = "(rolled back)"
 L["任务材料：%s"] = "Quest materials: %s"
-L["、"] = ", "
-
--- Engineering specialization auto-detection (PR #7).
 L["不指定时，自动使用角色已经学会的工程专精配方。"] = "When no branch is chosen, recipes from your learned Engineering specialization are included automatically."
 L["当前已学工程专精：%s。其专属配方已加入升级路线候选。"] = "Learned Engineering specialization: %s. Its exclusive recipes are included in leveling route candidates."
 L["尚未学习工程专精；不会使用专精限定配方。"] = "No Engineering specialization learned; specialization-only recipes are excluded."
-
--- Native solver cost-search status (v8).
 L["路线已生成，尚未进行降本搜索。"] = "Route generated; cost optimization search has not started."
 L["路线已生成，成本尚未证明最优。"] = "Route generated; the lowest cost has not been proven."
-
--- Compatible UI and map additions from master 1.9.30.
 L["上楼"] = "Stairs up"
 L["下楼"] = "Stairs down"
 L["专业增强"] = "Profession upgrades"
@@ -2094,11 +2071,7 @@ L["支持榜"] = "Supporters"
 L["点击展开"] = "Click to expand"
 L["还有 %d 个配方"] = "%d more recipes"
 L["还没有记录"] = "No records yet"
-
--- Compatible UI and map additions from master 1.9.30.
 L["定位当前步骤"] = "Jump to current step"
-
--- Profession HUD voice prompts (master).
 L["播放：专业技能点上限了"] = "Playing: skill cap reached"
 L["播放：做下一件物品啦"] = "Playing: next item"
 L["播放：语音开启"] = "Playing: voice prompts on"
@@ -2107,9 +2080,7 @@ L["已静音：不再播放升级语音"] = "Muted: leveling voice prompts disab
 L["已恢复语音提示"] = "Voice prompts enabled"
 L["语音提示：已静音（点击恢复）"] = "Voice prompts: muted (click to enable)"
 L["语音提示：开启（点击静音）"] = "Voice prompts: on (click to mute)"
-
 L["返回上次路线"] = "Back to previous route"
-
 L["当前总花费"] = "Spent so far"
 L["按实际制作次数计：%d 次（计划 %d 次）"] = "Based on actual crafts: %d (planned %d)"
 L["按方案单价估算"] = "Estimated from plan unit prices"
@@ -2123,50 +2094,29 @@ L["右键删除这条记录"] = "Right-click to delete this record"
 L["此记录仍被执行或续算引用，暂不能删除"] = "This record is still used by an execution or continuation and cannot be deleted."
 L["单价取自执行方案的采购成本，自制材料不重复计费"] = "Estimated from execution-plan purchase costs; crafted materials are not charged twice."
 L["部分已制作步骤成本未知"] = "Some completed crafts have unknown costs."
-
 L["下一步预览"] = "Next step preview"
-
 L["产物按大量上架折价"] = "Discount output for bulk posting"
 L["路线比较时配方产物折算的收益：按拍卖行全价（默认）或七折模拟大量上架。"] = "Output value used when comparing routes: full auction-house price (default) or 70% to simulate bulk posting."
 L["七折仅影响拍卖产物估值；手续费照常计算，NPC卖价不打折。"] = "The 30% discount applies only to auction sale estimates. Auction fees still apply; vendor sale prices are unchanged."
 L["回血模式下，盈利优先每配方最多20次；之后仍可为升级或材料继续制作。"] = "With recovery enabled, prioritize profit for up to 20 crafts per recipe. Required leveling and material crafts can continue."
 L["开启：「最省钱」计入预计回血，盈利优先每配方最多20次；其他方案保留原目标。"] = "Cheapest includes estimated recovery, with profit prioritized for up to 20 crafts per recipe. Other strategies keep their objectives."
-
 L["稳定升级"] = "Stable leveling"
 L["优先橙黄配方减少绿色冲点，再比较采购成本；必要材料照常制作"] = "Prefer orange/yellow leveling recipes, then compare purchase costs; required materials are still crafted."
 L["当前路线仍含 %d 次绿色冲点；可检查其他配方和材料来源后重算。"] = "This route still includes %d green leveling attempts. Check alternative recipes and supplies before recalculating."
 L["拍卖产物按七折估值，NPC卖价不打折。"] = "Auction outputs are valued at 70%; vendor sale prices are unchanged."
 L["盈利优先每配方最多20次；多余产物仍计入预计回血。"] = "Profit is prioritized for up to 20 crafts per recipe; all remaining outputs still count toward estimated recovery."
-
 L["不准备余量"] = "No reserve"
-
 L["适量备用"] = "Standard reserve"
-
 L["充足备用"] = "Ample reserve"
-
 L["备料余量"] = "Material reserve"
-
 L["点击切换：不准备余量 / 适量备用 / 充足备用。"] = "Click to cycle: No reserve / Standard reserve / Ample reserve."
-
-
-
-
-
-
 L["停止本次备用计划"] = "Stop this run's reserve plan"
-
 L["基础缺 %d · 备用缺 %d"] = "Base shortage %d · Reserve shortage %d"
-
 L["本步备用不足，或材料需留给后续步骤；请检查采购清单或续算。"] = "This step has insufficient reserve, or materials are needed later. Check shopping or recalculate from current stock."
-
 L["当前采购（含备用，背包只扣一次）"] = "Current shopping (includes reserve; bags deducted once)"
-
 L["基础 %d · 备用 %d · 背包 %s"] = "Base %d · Reserve %d · Bags %s"
-
 L["待购 %d"] = "Buy %d"
-
 L["备用材料预算：%s"] = "Reserve material budget: %s"
-
 L["基础加备用预算：%s"] = "Base plus reserve budget: %s"
 L["基础路线：共 %d 种材料 · 合计 %d 件"] = "Base route: %d material types · %d items"
 L["用于自动生成的候选路线；固定攻略不增加备用。"] = "Applies to automatically generated candidate routes. Fixed guides do not add reserves."
@@ -2186,7 +2136,6 @@ L["已有插件占用技能页"] = "Spellbook tabs already taken"
 L["其它插件页签同时开启"] = "Other addon tabs are on too"
 L["%d/%d 页"] = "%d/%d"
 L["路线包含已排除的配方，请重新计算。"] = "The route contains excluded recipes. Please recalculate."
-
 L["有 %d 种物品的拍卖行库存不足；请查看购物清单，补充货源后重新计算。"] = "Auction stock is insufficient for %d items. Check the shopping list, find more stock, then recalculate."
 L["备用材料缺少报价：%s；请更新价格后重新计算。"] = "Reserve materials have no price: %s. Update prices, then recalculate."
 L["备用材料货源不足：%s；请查看购物清单，补充货源后重新计算。"] = "Not enough stock for reserve materials: %s. Check the shopping list, find more stock, then recalculate."
@@ -2204,7 +2153,6 @@ L["%d 种材料缺少报价，费用尚未算全；请更新价格后重新计�
 L["固定路线的材料价格未核实；请更新价格或改用自动计算。"] = "Material prices for the fixed route are unverified. Update prices or switch to automatic calculation."
 L["请在配方页核对上述限制，更新资料或调整设置后重新计算。"] = "Check these restrictions on the Recipes page. Update the data or adjust settings, then recalculate."
 L["备用材料只在需要时使用；数量和预算见购物清单。"] = "Use reserve materials only when needed. Quantities and budget are shown in the shopping list."
-
 L["兑换"] = "Exchange"
 L["可制造%s次"] = "reagents for %s"
 L["已生产%s"] = "%s made"
@@ -2214,8 +2162,87 @@ L["未学习该专业"] = "Profession not learned"
 L["跳到当前段落"] = "Jump to current step"
 L["还需%s次"] = "%s crafts left"
 L["还需约%s次"] = "~%s crafts left"
-
 L["%s 的位置暂未收录"] = "%s has not been mapped yet"
 L["执行计划缺失或无法读取；请结束追踪后重新计算。"] = "The execution plan is missing or unreadable. End tracking, then recalculate."
 L["已保存路线无法读取，请重新计算。"] = "The saved route is unreadable. Please recalculate."
 L["这份制作记录的执行计划无法读取；记录已保留。"] = "The execution plan for this crafting record is unreadable. The record has been retained."
+L["不选择分支"] = "Do not select"
+L["不选择分支：地精与侏儒的专属配方都不会出现在路线里。"] = "Do not select: neither goblin nor gnomish recipes appear in the route."
+L["专业分支"] = "Specialization"
+L["优化买法"] = "Optimize buying"
+L["优化买法不可用：求解器组件未加载。"] = "Optimize unavailable: solver components not loaded."
+L["优化买法完成：%d 位商人 + 拍卖行 %d 种"] = "Optimized: %d vendor(s) + %d AH item(s)"
+L["优化买法计算出错。"] = "Optimize calculation failed."
+L["优化买法：未找到可行买法，部分材料没有可靠货源。"] = "Optimize: no viable purchase plan; some items have no reliable source."
+L["侏儒工程学：只按侏儒专属配方安排路线，不出现地精专属。"] = "Gnomish Engineering: the route uses gnomish recipes only; goblin ones are hidden."
+L["先打开专业页再执行"] = "Open the profession page first"
+L["合并被工具打断的步骤"] = "Merge steps split by tools"
+L["拆分显示（默认）：插入工具的点位把主步骤切成两段，范围不重叠；合并：被工具隔开的同配方段落并作一行。"] = "Split view (default): the tool point cuts the main step into two non-overlapping ranges; merged: same-recipe segments around a tool join into one row."
+L["开启后：同一配方被工具步骤隔开的两段并作一行，范围恢复连续，但看不出工具占用了哪些技能点。"] = "On: two same-recipe segments separated by a tool step show as one continuous row, hiding which skill points the tool occupies."
+L["关闭（默认）：每段独立成行、范围互不重叠；跟练 HUD 始终按拆分状态执行，工具配方能正确插进对应点位。"] = "Off (default): every segment is its own row with no overlap; the follow HUD always runs on the split plan so tool crafts slot in correctly."
+L["拆分被包含的步骤"] = "Split contained steps"
+L["某步骤的技能区间完全落在另一步骤内部时，把外层步骤切成两段、让它首尾相接不互相跨越。"] = "When a step's skill range falls entirely inside another step, cut the outer step in two so ranges no longer span across each other."
+L["开启（默认）：如自爆绵羊 154-184 内含青铜框架 158-174 时，绵羊拆成 154-158 与 174-184 两行，制作次数按区间收益比例分摊、总数不变。"] = "On (default): if Explosive Sheep 154-184 contains Bronze Framework 158-174, the sheep splits into 154-158 and 174-184; craft counts are shared by expected gain per range with the total unchanged."
+L["关闭：保持原样，区间互相跨越的两行上下排列显示；只有工具步骤的拆分不受本项影响。"] = "Off: keep the two spanning rows stacked as-is; only tool-step splitting is unaffected by this option."
+L["关闭（默认）：最省钱方案按「材料成本 − 产物拍卖行全价」挑配方，净亏的配方（如精致轻弹丸）不会入选，边做边赚的配方（如劣质炸药）会插在合适位置，每配方最多插 20 次。"] = "Off (default): the cheapest plan picks recipes by material cost minus full auction-house output value; net-losing recipes never join, and profit-making ones (e.g. Coarse Dynamite) get slotted in, capped at 20 crafts per recipe."
+L["开启：产物收益打七折再比较，只留利润更高的机会，适合打算把产物批量上架的情况。"] = "On: output value counts at 70%, keeping only higher-profit openings - for bulk posting outputs on the AH."
+L["单价取自当前方案的配方成本"] = "Unit price taken from the current plan's recipe cost"
+L["取消优化"] = "Stop optimizing"
+L["商人处 %s · 拍卖行 %s；商人按整包数量计入，点击条目在地图上标出该商人。"] = "Vendors %s · auction house %s; vendor stacks are counted in full; click a row to mark that vendor on the map."
+L["在「路线」页点「开始追踪」后，这里会记录每一步实际做了几次、产出多少。"] = "Press Start tracking on the Route page; this log then records how many times each step was actually crafted and how much was produced."
+L["地精工程学：只按地精专属配方安排路线，不出现侏儒专属。"] = "Goblin Engineering: the route uses goblin recipes only; gnomish ones are hidden."
+L["实时 · %d 点"] = "Live · %d pts"
+L["总览 · %d 点"] = "Overview · %d pts"
+L["加点计划视图"] = "Talent plan view"
+L["实时：从当前进度继续"] = "Live: continue from current progress"
+L["总览：按等级从头列出"] = "Overview: list from level 1 in order"
+L["已投入天赋"] = "Talents spent"
+L["角色 10 级起每级 1 点：需要等级 = 已投入点数 + 9"] = "1 talent point per level from 10: level needed = points spent + 9"
+L["对清单里还缺的材料比较商人与拍卖行，找出总支出最低的买法；完成后聊天栏给出摘要，悬停商人名可在地图标记。"] = "Compares vendors and the AH for missing items to find the cheapest purchase plan; a summary is posted in chat when done."
+L["已学专精与所选分支不一致：已学%s。"] = "Learned specialization differs from the selected branch: %s already learned."
+L["未手动选择时跟随当前已学分支。"] = "When no branch is picked manually, the route follows the specialization you already know."
+L["已清除本专业的追踪与制作记录"] = "Tracking and craft records cleared for this profession"
+L["开始追踪"] = "Start tracking"
+L["当前尚未学会任何工程专精。"] = "You have not learned any engineering specialization yet."
+L["当前已同时学会地精工程学与侏儒工程学。"] = "You currently know both Goblin and Gnomish Engineering."
+L["当前已学：%s。"] = "Currently learned: %s."
+L["请在专业面板里点一下 %s"] = "Click %s in the profession window."
+L["打开升级页就会自动开始追踪，这里记录每一步实际做了几次、产出多少。"] = "Tracking starts automatically when you open the leveling page; craft counts and output are recorded here."
+L["未实装"] = "Not implemented"
+L["图纸来源未知"] = "Pattern source unknown"
+L["来源未知"] = "Unknown source"
+L["暂时读不到当前已学的工程专精，默认按所选分支筛选。"] = "Cannot read your current engineering specialization right now; filtering by the selected branch."
+L["材料（%d 种）· 优化买法"] = "Materials (%d) · optimized buying"
+L["正在整理价格数据"] = "Collecting price data"
+L["正在比较商人与拍卖行"] = "Comparing vendors and auction house"
+L["比价后从拍卖行购买更划算。"] = "Cheaper at the auction house after comparing prices."
+L["点击在地图上标出该商人"] = "Click to mark this vendor on the map"
+L["商人处直接出售"] = "Sold directly by this vendor"
+L["拍卖行购买"] = "Buy from the auction house"
+L["还原分组"] = "Back to grouping"
+L["请在专业面板左侧点一下 %s，点完会自动选中 %s 并填入 %d 次"] = "Click %s on the left of the profession panel; the recipe %s and its %d crafts are filled in right after"
+L["成本 %s · 净成本 %s"] = "Cost %s · Net cost %s"
+L["采购 %s · 回血 %s · %s"] = "Buy %s · Return %s · %s"
+L["自动记录制作进度"] = "Auto-record crafting progress"
+L["打开升级页后自动记录每一步实际做了几次、产出多少。"] = "Records how many times each step was crafted and how much was produced once the leveling page is opened."
+L["开启（默认）：算出路线后自动开始记录，升级 HUD 与「制作记录」页都靠它。"] = "On (default): recording starts automatically once the route is ready; both the leveling HUD and the craft log depend on it."
+L["关闭：不再记录；已开始的记录会归档到「制作记录」的历史里，重新打开可在下次进升级页时恢复。"] = "Off: recording stops; the current run is archived into the craft log history and resumes when you turn it back on."
+L["精确方案开启：统一按总支出优化，四档方案结果相同。"] = "Exact solver is on: everything is optimised for total spend, so all four modes give the same route."
+L["精确方案固定按总支出优化，四档方案不生效；关闭精确方案后可选。"] = "The exact solver always optimises total spend, so the four modes have no effect. Turn it off to pick one."
+L["任务获得"] = "From quests"
+L["左键：打开职业任务页"] = "Left-click: open the class quest page"
+L["右键：在地图上标记"] = "Right-click: mark it on the map"
+L["已学等级"] = "Known rank"
+L["模拟已满 %d 点"] = "Simulation full at %d points"
+L["本系第 %d 行需先点满 5 点"] = "Requires 5 points in row %d of this tree"
+L["本系第 %d 行需先投入 %d 点，还差 %d 点"] = "Row %d needs %d points above it (%d more)"
+L["需先点满 %s"] = "Requires %s maxed first"
+L["暂无可学习的技能"] = "No trainable spells"
+L["进度"] = "Progress"
+L["需等级"] = "Level"
+L["与当前方案一致"] = "Matches current plan"
+L["已载入该方案"] = "Plan loaded"
+L["序号"] = "No."
+L["技能等级"] = "Rank"
+L["人物等级"] = "Level"
+L["导入方案"] = "Imported plan"

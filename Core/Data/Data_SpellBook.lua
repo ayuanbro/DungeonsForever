@@ -2,7 +2,6 @@ local _, ns = ...
 
 if not ns.IsTitan then return end
 
-
 ns.SpellBookData = {
     version = "2026-10-16",
     levels = "1~60",
@@ -2716,4 +2715,3 @@ ns.SpellBookData = {
         },
     },    },
 }
-

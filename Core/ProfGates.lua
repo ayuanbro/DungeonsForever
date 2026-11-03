@@ -18,8 +18,6 @@ local function spellKnown(spell)
         local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
         if type(fn) == "function" then
             local ok, value = pcall(fn, spell)
-            -- Different client APIs can disagree. An affirmative result wins;
-            -- otherwise return false only after checking all available APIs.
             if ok and value == true then return true end
             if ok and value == false then observedFalse = true end
         end
@@ -81,7 +79,6 @@ function G.ItemFlag(spell)
     return SpecFlags(SpecRec(spell)) % 4 >= 2
 end
 
--- Retained for ProfLearning and ProfSolverCapture in PR #7.
 function G.RequiredAbility(spell)
     return SpecAbility(SpecRec(spell))
 end
@@ -126,8 +123,6 @@ function G.LearningEligibility(spell)
     if ability == 0 then
         return true, nil, { status = G.LearningSource(spell) and "allowed" or "unknown", hasPending = hp }
     end
-    -- The plan's branch preference does not invent a learned ability.
-    -- A matching branch must still be learned (or acquired in a planned quest).
     local allowed, reason = G.Allowed("engineering", spell)
     if not allowed then
         return false, reason, { status = "blocked", hasPending = hp, ability = ability }
@@ -141,8 +136,6 @@ end
 function G.SpecFingerprint(choice, abilities)
     local meta = ns.ProfSpecializationsMeta or {}
     local q = ns.ProfSpecializationQuestMeta or {}
-    -- Include observed/simulated abilities so learning a branch invalidates
-    -- an existing planned route even when the manually selected branch matches.
     local skills = type(abilities) == "table" and abilities or G.Abilities()
     local skillSig = G.SpecAbilityFingerprint and G.SpecAbilityFingerprint(skills) or ""
     return table.concat({ "2", tostring(choice or "none"), tostring(meta.revision or 0),
@@ -173,18 +166,13 @@ end
 
 local ENG_CHOICES = { none = true, goblin = true, gnomish = true }
 
--- "none" is the default/manual-unspecified state. It does not suppress an
--- already learned Engineering specialization. No "auto" menu mode exists.
 function G.GetChoiceSetting()
     local db = DungeonsForeverDB and DungeonsForeverDB.prof
     local value = db and db.engChoice
     if value == "goblin" or value == "gnomish" then return value end
-    -- Legacy "auto" and "none" values are treated as unspecified.
     return "none"
 end
 
--- The selected plan is authoritative when set; otherwise use the character's
--- actually learned specialization. Unknown/unlearned never unlock recipes.
 function G.EffectiveChoice()
     local selected = G.GetChoiceSetting()
     if selected ~= "none" then return selected, true end
@@ -193,7 +181,6 @@ function G.EffectiveChoice()
     return "none", false
 end
 
--- Existing PR callers expect the effective route-planning choice.
 function G.GetPlannedChoice()
     local choice = G.EffectiveChoice()
     return choice
@@ -204,8 +191,6 @@ function G.SetPlannedChoice(value)
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.prof = DungeonsForeverDB.prof or {}
     local db = DungeonsForeverDB.prof
-    -- Don't persist "none". Existing saved "auto"/"none" is cleaned when
-    -- users change the dropdown, without modifying other stored preferences.
     local newValue = value ~= "none" and value or nil
     if db.engChoice == newValue then return true end
     db.engChoice = newValue
@@ -322,13 +307,10 @@ function G.SpecializationContext(opts)
             end
         end
         if goal.blockedReason == "specializationQuestAlreadyCompleted" then
-            -- A finished introduction must not be planned again. Do not mistake
-            -- quest completion for proof that the specialization is learned.
             ctx.unresolvedGoals = { goal }
             ctx.warnings = {{ code = "specializationQuestAlreadyCompleted", profession = profession,
                 questID = goal.questID, abilityID = goal.abilityID, goalID = goal.id }}
         else
-            -- Keep unfinished, blocked tasks visible for the route solver.
             ctx.goals[1] = goal
         end
     end
@@ -345,7 +327,6 @@ function G.SpecGoal(slug, target)
     local actual = G.EngineeringChoice()
     if actual == "conflict" then return nil end
     local planned = G.EffectiveChoice()
-    -- Never silently choose an arbitrary branch when "none" is selected.
     if planned == "none" then return nil end
     if actual == planned then return nil end
     local def = source[planned]

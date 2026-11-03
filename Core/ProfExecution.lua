@@ -1,9 +1,5 @@
--- Sole owner of profession execution, event observation and saved history.
--- The main addon owns loading and DungeonsForeverDB.prof remains the sole store.
 local _, ns = ...
 
--- Use the shared storage facade; standalone domain fixtures may supply
--- the same profession subtree without loading the native core.
 if not ns.ProfessionDB then
     function ns.ProfessionDB(create)
         if ns.ProfessionStorage then return ns.ProfessionStorage.Get(create) end
@@ -28,8 +24,6 @@ if not ns.LoadForeverPages then return end
 local E, S = ns.ProfEconomy, ns.ProfRouteSolver
 local XP = {}; ns.ProfExecution = XP
 local listeners, observationListeners, jobs = {}, {}, {}
--- Reuse master's bounded, session-only tracking caches. Native entries retain
--- their execution/segment owner and source totals for receipt correction.
 local seenMem, seenOrder = {}, {}
 local pendCast, pendOrder, pendLast = {}, {}, nil
 local receiptMem, receiptOrder = {}, {}
@@ -84,7 +78,6 @@ local function cachePending(entry)
         while #pendOrder>32 do pendCast[table.remove(pendOrder,1)]=nil end
     end
 end
--- Only aggregate production is durable. Matching state is never serialized.
 local function outputTotal(p,item)
     if not item then return end
     p.outputs=p.outputs or {}
@@ -184,8 +177,6 @@ local function segment(run,id)
     if not id then local i=run.currentIndex or 1;return steps(plan)[i],i end
     for i,x in ipairs(steps(plan)) do if x.segmentID==id or x.actionID==id then return x,i end end
 end
--- Live execution checks only the current involved recipe. Archived plans and
--- injected solver snapshots are never reinterpreted as today's character.
 function XP.ValidateLearning(plan,slug,seg)
     if seg and E and E.StepsHaveNIP and E.StepsHaveNIP({seg}) then return false,"catalogueFiltered" end
     if not (ns.IsForever and E and E.RouteRecipeEligibility) then return true end
@@ -206,7 +197,6 @@ function XP.ValidateLearning(plan,slug,seg)
         tostring(seg.segmentID or spell),tostring(professions[profession] and professions[profession].cur),
         tostring(pricing.allowBindOnPickupFormulas),tostring(pricing.allowCurrencyFormulas),tostring(pricing.allowLimitedFormulas)},":")
     local cached=learningChecks[plan]
-    -- Acquisition can change with bag contents before a profession observation.
     if cached and cached.key==key and not cached.inventoryDependent then
         return cached.allowed,cached.reason,cached.detail
     end
@@ -244,12 +234,8 @@ local function referencesChanged()
     if ra and ra.CacheReferencesChanged then ra.CacheReferencesChanged(character()) end
 end
 local function changed(run,lifecycleReason)
-    -- Fact writers invalidate before Sync. Notifying views must not discard the
-    -- allocation ledger that Sync just built for those same facts.
     run.progressVersion=(run.progressVersion or 0)+1;run.updatedAt=now()
     referencesChanged()
-    -- A late receipt remains an execution fact even if its archived plan can
-    -- no longer be decoded. Keep the last derived ledger until it can be rebuilt.
     if XP.GetRecipeTotals and readablePlan(run) then
         run.byRecipe=XP.GetRecipeTotals(run.slug,run.planID,true)
         run.byRecipeVersion=run.progressVersion
@@ -262,8 +248,6 @@ local function changed(run,lifecycleReason)
             local record=progressRecord(run,seg)
             local casts=XP.IsSpecializationQuest(seg) and (record.questCompleted and 1 or 0) or record.casts or 0
             for _,m in ipairs(recipe(seg,run.slug).mats or {}) do ledger.consumed[m[1]]=(ledger.consumed[m[1]] or 0)+m[2]*casts end
-            -- Manual conversions are material facts, never recipe casts. They
-            -- are omitted from byRecipe but still belong to this same ledger.
             if XP.IsConversion(seg) then for item,total in pairs(record.outputs) do
                 ledger.confirmed[item]=(ledger.confirmed[item] or 0)+total.actual
                 ledger.guaranteed[item]=(ledger.guaranteed[item] or 0)+total.guaranteed
@@ -336,7 +320,6 @@ function XP.Remove(slug,planID)
     if not XP.CanRemove(slug,planID) then return false end
     local c=db();local run=c.runs[planID]
     c.runs[planID]=nil
-    -- Keep the ended-contract guard without retaining a dangling run reference.
     for _,contracts in pairs(c.endedContracts) do
         for signature,id in pairs(contracts) do if id==planID then contracts[signature]=true end end
     end
@@ -353,8 +336,6 @@ function XP.Remove(slug,planID)
     if XP.RefreshObservation then XP.RefreshObservation() end
     return true
 end
--- Master's empty-record check, using the native aggregate fields. Quest and
--- conversion confirmations are execution facts even without a recipe cast.
 local function recorded(run)
     if type(run)~="table" then return false end
     if (run.attemptsDone or 0)>0 or (run.conversionsDone or 0)>0 then return true end
@@ -372,7 +353,6 @@ local function pruneArchived(slug)
     repeat
         local list={}
         for id,r in pairs(c.runs) do
-            -- An unreadable plan cannot prove that its history is empty.
             if r.slug==slug and r.status~="active" and readablePlan(r) then
                 list[#list+1]={id=id,run=r,at=tonumber(r.archivedAt or r.updatedAt) or 0}
             end
@@ -385,11 +365,8 @@ local function pruneArchived(slug)
         for _,entry in ipairs(list) do
             local hasFacts=recorded(entry.run)
             if hasFacts then kept=kept+1 end
-            -- Keep master's latest three archives, plus any source still needed
-            -- by execution/continuation. Remove handles caches and notifications.
             if (not hasFacts or kept>3) and XP.Remove(slug,entry.id) then removed=true end
         end
-        -- Deleting an unused child can release a previously protected source.
     until not removed
 end
 function XP.GetSummary(slug,planID)
@@ -444,9 +421,6 @@ local function ready(result)
         and #steps(result) > 0
 end
 local function originSignature(plan)
-    -- Legacy/fixed candidates have no persisted plan ID. Compare their small
-    -- execution contract so merely redisplaying that same cache cannot restart
-    -- a terminal run. New solver plans use their explicit ID instead.
     local parts={}
     local function field(value) local text=type(value)..":"..tostring(value);parts[#parts+1]=#text..":"..text end
     for _,key in ipairs({"mode","revision","total","targetSkill","startSkill"}) do field(plan and plan[key]) end
@@ -473,16 +447,12 @@ local function archive(c,slug,reason)
 end
 function XP.End(slug,reason)
     local c=db();local run=XP.GetRun(slug)
-    -- Cancelling a replacement must not let its eventual solver publication
-    -- turn the archived source back into an active execution.
     local preparing=c.preparing[slug]
     if not run and preparing and preparing.sourcePlanID then run=c.runs[preparing.sourcePlanID] end
     c.preparing[slug]=nil
     if not run then
         c.active[slug]=nil;if c.trackingSlug==slug then c.trackingSlug=nil end
         if preparing and (preparing.sourcePlanID or type(preparing.inventory)=="table" and next(preparing.inventory)) then
-            -- Keep the entire carry evidence when an old/corrupt save lost its
-            -- source run. Ending observation must never silently discard it.
             c.continuation[slug]=copy(preparing);c.continuation[slug].missingSource=true
             c.continuation[slug].endedAt=c.continuation[slug].endedAt or now()
         end
@@ -497,8 +467,6 @@ function XP.End(slug,reason)
     archive(c,slug,reason or "ended")
     run.status="archived";run.archivedAt=run.archivedAt or now();run.archiveReason=reason or "ended"
     run.endedAt=run.endedAt or now();run.completionDue=nil
-    -- Ending an unreadable execution releases it without making it a source
-    -- for the next route. Keep the record; never fabricate a replacement plan.
     c.continuation[slug]=readablePlan(run) and {sourcePlanID=run.planID} or nil
     if run.originSignature then
         c.endedContracts[slug]=c.endedContracts[slug] or {};c.endedContracts[slug][run.originSignature]=run.planID
@@ -520,7 +488,6 @@ local function idleOwners()
     return owners
 end
 local function idleDeadline(run)
-    -- Before the first craft, the run's start is the beginning of inactivity.
     return (run.lastCraftAt or run.createdAt)+IDLE_LIMIT
 end
 function XP.ExpireIdle()
@@ -528,7 +495,6 @@ function XP.ExpireIdle()
     checkingIdle=true
     local at=now()
     for slug,run in pairs(idleOwners()) do if at>=idleDeadline(run) then
-        -- Prevent an open HUD from immediately starting another execution.
         local follow=ns.ProfFollow
         if follow and follow.SuspendAutoTrack then follow.SuspendAutoTrack(slug,"inactive") end
         XP.End(slug,"inactive")
@@ -538,8 +504,6 @@ end
 local function scheduleIdleCheck()
     local due
     for _,run in pairs(idleOwners()) do due=min(due or idleDeadline(run),idleDeadline(run)) end
-    -- A craft may extend the deadline. Keep the one existing wakeup and check
-    -- the new deadline there, instead of allocating a timer for every craft.
     if idleTimer and due and idleTimer.due<=due then return end
     if idleTimer then idleTimer.handle:Cancel();idleTimer=nil end
     if due and C_Timer and C_Timer.NewTimer then
@@ -651,18 +615,37 @@ local function bagCount(item)
         if ok and integer(n) then return n end
     end
 end
--- Completed consumers discharge their planned material demand. The remaining
--- obligations share today's bag stock once, irrespective of its origin.
--- Neither this projection nor continuation replays a production event log.
-local function creditsFor(run,target)
-    local inventory={}
+XP.BagCount=bagCount
+local function skillComplete(run,seg,index,record,skillSnapshot)
+    local cur=skill(seg.profession or run.slug,skillSnapshot);local goal=seg.goalSkill or seg[2]
+    local skillDone=not goal or (cur~=nil and cur>=goal) or (seg.expectedGain or 0)<=0 and not seg.checkpoint
+    if XP.Conversion(seg) then skillDone=true
+    elseif seg.checkpoint or seg[3]==0 then skillDone=cur~=nil and goal~=nil and cur>=goal end
+    local fractional=seg.fractionalTransition or (seg.expectedGain or 0)>0 and seg[2]==seg[1] and seg.attemptLimit~=nil
+    if not skillDone and fractional and (record.casts or 0)>=ceil(seg.attemptLimit-1e-9) then
+        local following=steps(run.plan)[index+1]
+        if following then
+            local nextRecipe=recipe(following,run.slug);local nextSkill=skill(following.profession or run.slug,skillSnapshot)
+            if following.checkpoint or (nextSkill and type(nextRecipe.learn)=="number" and nextSkill>=nextRecipe.learn) then skillDone=true end
+        end
+    end
+    return skillDone,cur,goal
+end
+local function creditsFor(run,target,skillSnapshot)
+    local inventory,skillState={},{}
+    skillSnapshot=skillSnapshot or E and E.Professions and E.Professions()
     for _,seg in ipairs(steps(run.plan)) do
+        local profession=seg.profession or run.slug
+        if not skillState[profession] then skillState[profession]={cur=skill(profession,skillSnapshot)} end
         for item in pairs(requiredOutputs(seg,run)) do
             if inventory[item]==nil then inventory[item]=bagCount(item) or false end
         end
     end
     local cached=creditCaches[run];local same=cached and cached._version==(run.creditVersion or 0)
     if same then for item,n in pairs(inventory) do if cached._inventory[item]~=n then same=false;break end end end
+    if same then for profession,state in pairs(skillState) do
+        if not cached._skills[profession] or cached._skills[profession].cur~=state.cur then same=false;break end
+    end end
     if same and cached[target.segmentID] then return cached[target.segmentID] end
     performance.creditBuilds=performance.creditBuilds+1
     local list,bySegment,used={},{},{}
@@ -700,7 +683,6 @@ local function creditsFor(run,target)
                     if left<=0 then break end
                 end
             end
-            -- Plan order makes sharing a consumer's completed quantity stable.
             for _,consumer in ipairs(list) do
                 local id=consumer.seg.segmentID;local n=min(dest[id] or 0,used[id][item] or 0)
                 n=min(n,max(0,required-(o.consumed[item] or 0)-(o.waived[item] or 0)))
@@ -724,14 +706,12 @@ local function creditsFor(run,target)
             end
         end
     end
-    -- Bag stock or a completed task can remove an entire material-only craft.
-    -- Release its unneeded upstream allocations, then redistribute bag stock.
     for pass=1,#list+1 do
         allocateBags();local changed=false
         for index=#list,1,-1 do
             local consumer=list[index];local seg=consumer.seg
             if not consumer.unknown and not seg.checkpoint and not XP.IsSpecializationQuest(seg)
-                and (seg.expectedGain or 0)<=0 then
+                and skillComplete(run,seg,index,consumer.record,skillState) then
                 local rec=recipe(seg,run.slug);local needed=0;local output=seg.item or rec.item
                 local per=seg.outputMin or rec.outputMin or rec.count or 1
                 for item,n in pairs(consumer.required) do
@@ -754,14 +734,12 @@ local function creditsFor(run,target)
         if not changed then break end
     end
     allocateBags()
-    bySegment._version=run.creditVersion or 0;bySegment._inventory=inventory;creditCaches[run]=bySegment
+    bySegment._version=run.creditVersion or 0;bySegment._inventory=inventory;bySegment._skills=skillState;creditCaches[run]=bySegment
     return bySegment[target.segmentID]
 end
 function XP.GetRecipeTotals(slug,planID,fresh)
     local run=planID and db().runs[planID] or XP.GetRun(slug)
     if not run or run.slug~=slug then return {} end
-    -- Saved summaries describe the same execution facts; history browsing must
-    -- not inflate every archived plan just to display its recipe totals.
     if not fresh and run.status=="archived" and type(run.byRecipe)=="table"
         and (run.byRecipeVersion==nil or run.byRecipeVersion==run.progressVersion) then
         return copy(run.byRecipe)
@@ -809,22 +787,11 @@ function XP.Progress(slug,id,skillSnapshot,planID)
             extraCrafts=0,blocked=not done,directMaterials=direct}
     end
     local confirmed,guaranteed,pending,output=outputFacts(run,seg)
-    local credit=creditsFor(run,seg)
+    local credit=creditsFor(run,seg,skillSnapshot)
     local reused,reusedActual,fulfilled,waived=credit.available,credit.available,credit.credited,credit.waived
     local required=requiredOutputs(seg,run);local remaining={};local materialDone=true
     for item,n in pairs(required) do remaining[item]=max(0,n-(fulfilled[item] or 0)-(waived[item] or 0));if remaining[item]>0 then materialDone=false end end
-    local cur=skill(seg.profession or slug,skillSnapshot);local goal=seg.goalSkill or seg[2]
-    local skillDone=not goal or (cur~=nil and cur>=goal) or (seg.expectedGain or 0)<=0 and not seg.checkpoint
-    if conversion then skillDone=true
-    elseif seg.checkpoint or seg[3]==0 then skillDone=cur~=nil and goal~=nil and cur>=goal end
-    local fractional=seg.fractionalTransition or (seg.expectedGain or 0)>0 and seg[2]==seg[1] and seg.attemptLimit~=nil
-    if not skillDone and fractional and (p.casts or 0)>=ceil(seg.attemptLimit-1e-9) then
-        local following=steps(run.plan)[index+1]
-        if following then
-            local nextRecipe=recipe(following,slug);local nextSkill=skill(following.profession or slug,skillSnapshot)
-            if following.checkpoint or (nextSkill and type(nextRecipe.learn)=="number" and nextSkill>=nextRecipe.learn) then skillDone=true end
-        end
-    end
+    local skillDone,cur,goal=skillComplete(run,seg,index,p,skillSnapshot)
     local levelCrafts=0;local grey=false
     if not skillDone and cur and goal then
         for sk=cur,goal-1 do
@@ -915,8 +882,6 @@ function XP.SafeCraftCount(slug,id,requested)
     end
     for _,m in ipairs(recipe(seg,slug).mats or {}) do
         local stock=bagCount(m[1]);if stock==nil then return 0,"inventoryUnknown" end
-        -- Base work proceeds in route order even when later purchases are
-        -- incomplete. Only optional extras must protect every other step.
         local basic=min(base,count,floor(max(0,stock-(earlierBase[m[1]] or 0))/m[2]))
         local extra=max(0,floor((stock-basic*m[2]-(baseOther[m[1]] or 0)-(extraOther[m[1]] or 0))/m[2]))
         count=min(count,basic+extra)
@@ -954,8 +919,6 @@ function XP.Sync(slug,result)
     run.learningBlocked=currentProgress and currentProgress.learningBlocked or nil
     run.learningBlockReason=currentProgress and currentProgress.learningBlocked and currentProgress.reason or nil
     if run.finished then
-        -- Skill events may precede the final spell-success event. Give that
-        -- last cast a bounded settling interval before detaching the run.
         run.completionDue=run.completionDue or now()+2
         if now()>=run.completionDue then XP.End(slug,"completed")
         elseif XP.RefreshObservation then XP.RefreshObservation() end
@@ -978,8 +941,6 @@ local function matchingReceipt(a,receipt)
         and db().runs[a.run.planID]==a.run
 end
 local function receiptFallback(receipt)
-    -- Master's reverse item lookup, restricted to active native executions.
-    -- It recovers a step, not a cast identity lost on reload or cache eviction.
     local c=db();local slugs={}
     if receipt.slug then slugs[1]=receipt.slug
     else
@@ -1005,7 +966,6 @@ local function receiptFallback(receipt)
     end
 end
 local function acceptReceipt(receipt,matched)
-    -- Master order: cast GUID, last matching item, pending item, recorded step.
     local hit=matched or receipt.castGUID and pendCast[tostring(receipt.castGUID)]
     if hit and not matchingReceipt(hit,receipt) then return false end
     if not hit and matchingReceipt(pendLast,receipt)
@@ -1037,8 +997,6 @@ local function acceptReceipt(receipt,matched)
     if hit.sources.structured and hit.sources.chat and hit.sources.structured.quantity~=hit.sources.chat.quantity then p.outputConflict=true end
     invalidateCredits(run)
     if XP.IsCombatPaused() then
-        -- Settle only a known pre-combat cast. Defer route traversal and view
-        -- notifications until combat ends, including archived summary rebuilds.
         run.progressVersion=(run.progressVersion or 0)+1;run.updatedAt=now()
         return true
     end
@@ -1059,8 +1017,6 @@ function XP.RecordOutput(data,source,crafted)
     receipt.eventKey=key
     local matched
     if XP.IsCombatPaused() then
-        -- No inference or plan scan in combat; only cached casts can receive
-        -- their late output. Ordinary loot cannot create production history.
         matched=receipt.castGUID and pendCast[receipt.castGUID]
             or not receipt.castGUID and matchingReceipt(pendLast,receipt) and pendLast
         if not matchingReceipt(matched,receipt) then return false,"combatPaused" end
@@ -1070,8 +1026,6 @@ function XP.RecordOutput(data,source,crafted)
         local reason
         matched,reason=XP.CraftFallback(receipt)
         if not matched then return reason=="duplicate",reason end
-        -- Recovered aggregate matches also need a session identity before a
-        -- repeated result or a late spell-success event can arrive.
         if receipt.castGUID then
             matched.castGUID=receipt.castGUID;remember(seenMem,seenOrder,receipt.castGUID,512)
         end
@@ -1090,8 +1044,6 @@ function XP.RecordAttempt(slug,spellID,castGUID,id,inferred)
         if seenMem[castGUID] then return false,"duplicate" end
     end
     if not inferred then
-        -- Master's two-second cross-source guard: attach a late spell event to
-        -- an anonymous inferred cast instead of charging its materials twice.
         local function late(a)
             return a and a.run.slug==slug and a.spell==spellID and db().runs[a.run.planID]==a.run
                 and (a.inferredRemaining or 0)>0 and now()-(a.at or 0)<2
@@ -1124,7 +1076,6 @@ function XP.RecordAttempt(slug,spellID,castGUID,id,inferred)
     XP.Sync(slug);changed(run);if XP.RefreshObservation then XP.RefreshObservation() end;return true,a
 end
 function XP.CraftFallback(receipt)
-    -- Called only for TRADE_SKILL_ITEM_CRAFTED_RESULT, never bag or loot updates.
     local guid=receipt.castGUID
     local hit=guid and pendCast[guid]
     if hit then
@@ -1142,7 +1093,6 @@ function XP.CraftFallback(receipt)
         and pendLast.sources.structured and now()-(pendLast.at or 0)<3 then
         return nil,pendLast.sources.structured.quantity==receipt.quantity and "duplicate" or "ambiguous_receipt"
     end
-    -- A reload loses cast identities but retains pending aggregate production.
     hit=receiptFallback(receipt)
     if hit and hit.pending then
         local known,visited=0,{}
@@ -1153,8 +1103,6 @@ function XP.CraftFallback(receipt)
             end
         end
         countKnown(pendLast);for _,a in pairs(pendCast) do countKnown(a) end
-        -- A different live GUID is a different cast. Only production whose
-        -- identity was lost may use the aggregate fallback after a reload.
         if outputTotal(hit.progress,hit.item).pending>known then return hit end
     end
 
@@ -1163,7 +1111,6 @@ function XP.CraftFallback(receipt)
         local run=db().runs[id]
         if (not receipt.slug or receipt.slug==slug) and run and run.status=="active" and readablePlan(run) then
             local list=steps(run.plan);local cur=run.currentIndex or 1
-            -- Reuse master's current/future-first, then earlier-step lookup.
             for offset=0,#list-1 do
                 local index=(cur-1+offset)%#list+1;local seg=list[index]
                 if not seg.checkpoint and not seg.navigationOnly and not XP.IsConversion(seg) and not XP.IsSpecializationQuest(seg)
@@ -1193,8 +1140,6 @@ function XP.CraftFallback(receipt)
         if not ok then return nil,a or "inactive" end
         entry=a
     end
-    -- A batch receipt settles all inferred casts, while its quantity remains
-    -- output units. Never leave fictitious pending output or duplicate costs.
     entry.minimum=entry.minimum*count;entry.pendingCrafts=count
     entry.inferredRemaining=not guid and count or 0
     entry.receiptKey=receipt.eventKey and "receipt:"..receipt.eventKey
@@ -1202,7 +1147,6 @@ function XP.CraftFallback(receipt)
     return entry
 end
 function XP.RecordCraftedResult(data,quantity)
-    -- Reuse master's table/positional event payload handling.
     if type(data)~="table" then data={itemID=data,quantity=quantity} end
     return XP.RecordOutput(data,"structured",true)
 end
@@ -1226,8 +1170,6 @@ function XP.ConfirmConversion(slug,id,count,planID)
     if index~=run.currentIndex then return false,"not_current_step" end
     count=count or p.remainingConversions
     if not integer(count) or count<=0 or count>p.remainingConversions then return false,"invalid_quantity" end
-    -- This explicit user attestation is the only conversion receipt. Purchases,
-    -- loot, skill changes and spell success must never invent a conversion.
     local record=progressRecord(run,seg);local total=outputTotal(record,conversion.outputItemID)
     total.actual=total.actual+count*conversion.outputCount
     total.guaranteed=total.guaranteed+count*conversion.outputCount
@@ -1294,8 +1236,6 @@ function XP.PrepareRecalculate(slug)
 end
 function XP.PlanRecalculated(slug,result)
     local c=db();local p=c.preparing[slug]
-    -- The first published prefix is a preview, not the completed replacement.
-    -- Freezing it here hid every later extension of the same calculation.
     if p and p.hadActive and ready(result) and result.status~="searching" then
         return XP.Bind(slug,result,{executionInventory=p.inventory})
     end
@@ -1389,8 +1329,6 @@ function XP.CalculateSupplement(slug,callback)
         for _,step in ipairs(steps(run.plan)) do
             if (progressRecord(run,step).casts or 0)>0 then snap.known[(step.profession or slug)..":"..step[3]]=true end
         end
-        -- Current bag stock promised to remaining base steps is not free
-        -- top-up stock. Reserve it before supplying the extra demand.
         local reserved={}
         for _,future in ipairs(steps(run.plan)) do
             local record=progressRecord(run,future)
@@ -1430,9 +1368,6 @@ function XP.CalculateSupplement(slug,callback)
         if coroutine.status(co)~="dead" then return false end
         jobs[run.planID]=nil
         result=result or {status="infeasible",feasible=false,mats={},formulas={},total=0};result.inFlight=false
-        -- The caller may retain the object returned by CalculateSupplement.
-        -- Publish the terminal result into that same object so it cannot remain
-        -- permanently marked as searching after the ledger has accepted it.
         if result~=state then
             for key in pairs(state) do state[key]=nil end
             for key,value in pairs(result) do state[key]=value end
@@ -1458,8 +1393,6 @@ function XP.CalculateSupplement(slug,callback)
     return state
 end
 function XP.Pump(slug) local run=XP.GetRun(slug);local j=run and jobs[run.planID];if j then return j.pump() end end
--- Observation follows execution activity, never HUD visibility. At rest the
--- frame has no subscriptions, timers or historical-plan traversal.
 local executionEvents={"BAG_UPDATE_DELAYED","UNIT_SPELLCAST_SUCCEEDED","SKILL_LINES_CHANGED","CHAT_MSG_SKILL","SPELLS_CHANGED","LEARNED_SPELL_IN_TAB","QUEST_TURNED_IN"}
 local receiptEvents={"TRADE_SKILL_ITEM_CRAFTED_RESULT","CHAT_MSG_LOOT"}
 local observedEvents={}
@@ -1528,8 +1461,6 @@ function XP.Initialize()
     observationGeneration=observationGeneration+1;completionTimer=false
     combatPaused=nil
     local c=db();c.observerSession=(c.observerSession or 0)+1;XP.eventSession=tostring(c.observerSession)
-    -- Only active executions can own an in-flight supplement; archived plans
-    -- and their compressed payloads are irrelevant to observation startup.
     for _,id in pairs(c.active) do local run=c.runs[id]
         if run and run.supplement and run.supplement.inFlight then run.supplement.inFlight=false;run.supplement.status="stale";run.supplement.stale=true;run.supplement.feasible=false end
     end
@@ -1550,8 +1481,6 @@ function XP.Initialize()
             local unit,guid,spell=...;if unit~="player" then return end
             local c=db();local selected=c.trackingSlug
             if not (selected and XP.RecordAttempt(selected,spell,guid)) then
-                -- Keep dev's ability to observe another active profession.
-                -- One cast belongs to one execution, even if plans overlap.
                 local slugs={};for slug in pairs(c.active) do if slug~=selected then slugs[#slugs+1]=slug end end
                 table.sort(slugs)
                 for _,slug in ipairs(slugs) do if XP.RecordAttempt(slug,spell,guid) then break end end
@@ -1570,7 +1499,6 @@ function XP.Initialize()
     end)
     XP.ReconcileLifecycle()
 end
--- Interface aliases are installed before startup.
 
 function XP.DisableTracking()
     observationGeneration=observationGeneration+1
@@ -1591,8 +1519,6 @@ function XP.DisableTracking()
     observedEvents={};observedActive=false;observedReceipts=false
 end
 
--- Old method names share the execution owner and its notification list. Only
--- argument/result adapters live here; no duplicate state or saved projections.
 local T={};ns.ProfTrack=T
 T.Get=XP.Get;T.GetRun=XP.GetRun;T.Active=XP.GetActive;T.History=XP.GetHistory
 T.CanRemove=XP.CanRemove;T.Remove=XP.Remove
@@ -1639,6 +1565,4 @@ function T.RecipeTotals(slug)
     end
     return out
 end
--- ProfessionUI resolves this owner when rendering. ProfFollow subscribes via
--- ns.Init, after the TOC has loaded this file and all of its dependencies.
 if ns.Init then ns.Init(XP.Initialize) else XP.Initialize() end

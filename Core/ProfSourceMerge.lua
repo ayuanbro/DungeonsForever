@@ -180,6 +180,7 @@ function M.Primary(src)
     end
     local ds = DropList(src)
     if ds and #ds > 0 then return "drop" end
+    if src.worldDrop then return "drop" end
     local qs = src.quests
     if type(qs) == "table" and #qs > 0 then return "quest" end
     if src.questOnly then return "quest" end

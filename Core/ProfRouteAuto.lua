@@ -110,8 +110,6 @@ local function MatReason(id, soldSet)
     return ahReason[id] or "norec", ahAge[id]
 end
 
--- Direct material procurement shared by fixed guides and self-fished cooking.
--- NPC stock is bought in whole packs; observed auction stock is a finite budget.
 function RA.MaterialPurchases(id,need,opts)
     opts=opts or {};need=math.max(0,math.ceil(tonumber(need) or 0))
     if need==0 then return {},0,true end
@@ -210,11 +208,9 @@ function RA.MaxStale()
     return MAX_STALE
 end
 
-
 function RA.MaxStaleSeconds()
     return MAX_STALE * 86400
 end
-
 
 local sellCache = {}
 local function NPCSellPrice(id)
@@ -421,7 +417,6 @@ local function RouteTick()
     end
 end
 
--- Keep the dev tuple schema while sharing client corrections with the solver.
 local function ResolvedRow(row, slug, spell)
     local E=ns.ProfEconomy
     if E and E.RecipeNIP and E.RecipeNIP(spell or row.spell or row[1],row) then return row end
@@ -449,7 +444,6 @@ local function ResolvedRow(row, slug, spell)
     return out
 end
 
--- Keep only the involved IDs and explanation, never a copy of the source index.
 function RA.LearningDiagnostic(code, recipe, detail)
     detail=type(detail)=="table" and detail or {}
     local route=detail.route or {}
@@ -1070,8 +1064,6 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
            productAH, productNPC, productPartial
 end
 
--- Poisons retains master's authored guide and sold-list pricing. It is a
--- reference guide, independent of ordinary profession procurement/eligibility.
 local function SummarizePoisons(steps, opts)
     local guide=ns.ProfLeveling and ns.ProfLeveling.poisons
     local catalogue=ns.ProfRecipes and ns.ProfRecipes.poisons
@@ -1225,8 +1217,6 @@ function RA.SummarizeSteps(steps, slug, opts)
     return res
 end
 
--- A fixed guide only refreshes quantities and quotes; it never starts a search.
--- Copy authored rows because summarization enriches them with runtime metadata.
 function RA.FixedPlan(slug, supplied)
     local guide=ns.ProfLeveling and ns.ProfLeveling[slug]
     if not (guide and type(guide.steps)=="table") then return nil end
@@ -1263,9 +1253,6 @@ function RA.FixedPlan(slug, supplied)
         result.clipped=clipped
         if slug=="first-aid" and result.clientPending and target==300
             and #result.mats==0 and type(guide.shopping)=="table" then
-            -- The authored full-guide list is valid reference data even when
-            -- individual recipe seeds are missing. It cannot prove execution
-            -- or pattern costs, so the pending diagnostics remain in place.
             result.mats={};result.referenceShopping=true;result.referenceQuoted=false;result.referenceCostComplete=true
             local materialTotal,vendorTotal=0,0
             for _,material in ipairs(guide.shopping) do
@@ -1413,7 +1400,7 @@ local function InjectTools(stepsOut, slug, cap, startLv, recOf)
         if required and P >= lo and not have[goal.spell] and recOf[goal.spell] and not G.ToolOwned(goal.item) then
             local at = #stepsOut + 1
             for i, st in ipairs(stepsOut) do
-                if (tonumber(st[2]) or 0) > P then at = i break end
+                if (tonumber(st[1]) or 0) >= P then at = i break end
             end
             table.insert(stepsOut, at, { P, P, goal.spell, 1,
                 tool = true, toolItem = goal.item, toolSpell = goal.spell,
@@ -1765,7 +1752,6 @@ function RA.Compute(slug, opts)
         end
     end
     if #learningGaps>0 and #gaps>0 then
-        -- A later usable interval is not reachable across an unresolved gap.
         local stop=cap
         for _,gap in ipairs(gaps) do stop=math.min(stop,gap[1]) end
         local prefix={}
@@ -1821,7 +1807,6 @@ end
 
 local cache = {}
 
-
 function RA.Invalidate()
     local R = ns.ProfRecovery
     if R and R.Invalidate then R.Invalidate() end
@@ -1836,7 +1821,6 @@ function RA.Invalidate()
     for k in pairs(ahReason) do ahReason[k] = nil end
     for k in pairs(ahAge) do ahAge[k] = nil end
 end
-
 
 local priceWatchers = {}
 function RA.OnPricesChanged(fn)

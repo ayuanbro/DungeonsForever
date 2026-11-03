@@ -1,12 +1,6 @@
---@curseforge-project-slug: libdbicon-1-0@
------------------------------------------------------------------------
--- LibDBIcon-1.0
---
--- Allows addons to easily create a lightweight minimap icon as an alternative to heavier LDB displays.
---
 
 local DBICON10 = "LibDBIcon-1.0"
-local DBICON10_MINOR = 56 -- Bump on changes
+local DBICON10_MINOR = 56
 if not LibStub then error(DBICON10 .. " requires LibStub.") end
 local ldb = LibStub("LibDataBroker-1.1", true)
 if not ldb then error(DBICON10 .. " requires LibDataBroker-1.1.") end
@@ -130,7 +124,6 @@ local function onLeaveCompartment(self, menu)
 	end
 end
 
---------------------------------------------------------------------------------
 
 local onDragStart, updatePosition
 
@@ -312,11 +305,9 @@ local function createButton(name, object, db, customCompartmentIcon)
 	if db and db.showInCompartment then
 		lib:AddButtonToCompartment(name, customCompartmentIcon)
 	end
-	lib.callbacks:Fire("LibDBIcon_IconCreated", button, name) -- Fire 'Icon Created' callback
+	lib.callbacks:Fire("LibDBIcon_IconCreated", button, name)
 end
 
--- Wait a bit with the initial positioning to let any GetMinimapShape addons
--- load up.
 if not lib.loggedIn then
 	local frame = CreateFrame("Frame")
 	frame:SetScript("OnEvent", function(self)
@@ -356,9 +347,6 @@ do
 	Minimap:HookScript("OnLeave", OnMinimapLeave)
 end
 
---------------------------------------------------------------------------------
--- Button API
---
 
 function lib:Register(name, object, db, customCompartmentIcon)
 	if not object.icon then error("Can't register LDB objects without icons set!") end
@@ -469,7 +457,6 @@ function lib:SetButtonToPosition(button, position)
 	updatePosition(lib.objects[button] or button, position)
 end
 
--- Button Configuration
 function lib:SetButtonSize(name, size)
 	local button = lib:GetMinimapButton(name)
 	if button and type(size) == "number" then
@@ -494,11 +481,10 @@ end
 function lib:ResetButtonHighlightTexture(name)
 	local button = lib:GetMinimapButton(name)
 	if button then
-		button:SetHighlightTexture(136477) --"Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight"
+		button:SetHighlightTexture(136477)
 	end
 end
 
--- Border configuration
 function lib:RemoveButtonBorder(name)
 	local button = lib:GetMinimapButton(name)
 	if button.border then
@@ -529,7 +515,7 @@ function lib:ResetButtonBorder(name)
 		button.border:Show()
 		button.border:ClearAllPoints()
 		button.border:SetPoint("TOPLEFT", 0, 0)
-		button.border:SetTexture(136430) --"Interface\\Minimap\\MiniMap-TrackingBorder"
+		button.border:SetTexture(136430)
 		if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then
 			button.border:SetSize(50, 50)
 		else
@@ -538,7 +524,6 @@ function lib:ResetButtonBorder(name)
 	end
 end
 
--- Background configuration
 function lib:RemoveButtonBackground(name)
 	local button = lib:GetMinimapButton(name)
 	if button.background then
@@ -568,7 +553,7 @@ function lib:ResetButtonBackground(name)
 	if button.background then
 		button.background:Show()
 		button.background:ClearAllPoints()
-		button.background:SetTexture(136467) --"Interface\\Minimap\\UI-Minimap-Background"
+		button.background:SetTexture(136467)
 		if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then
 			button.background:SetSize(24, 24)
 			button.background:SetPoint("CENTER", 0, 0)
@@ -579,7 +564,6 @@ function lib:ResetButtonBackground(name)
 	end
 end
 
--- Icon Configuration
 function lib:SetButtonIcon(name, iconTexture, size, framePoint, offsetX, offsetY)
 	local button = lib:GetMinimapButton(name)
 	if button.icon then
@@ -616,9 +600,6 @@ function lib:ResetButtonIcon(name)
 	end
 end
 
---------------------------------------------------------------------------------
--- Addon Compartment API
---
 
 function lib:IsButtonCompartmentAvailable()
 	if AddonCompartmentFrame then
@@ -677,9 +658,6 @@ function lib:RemoveButtonFromCompartment(buttonName)
 	end
 end
 
---------------------------------------------------------------------------------
--- Upgrades
---
 
 for name, button in next, lib.objects do
 	local db = button.db
@@ -693,7 +671,7 @@ for name, button in next, lib.objects do
 	button:SetScript("OnMouseDown", onMouseDown)
 	button:SetScript("OnMouseUp", onMouseUp)
 
-	if not button.fadeOut then -- Upgrade to 39
+	if not button.fadeOut then
 		button.fadeOut = button:CreateAnimationGroup()
 		local animOut = button.fadeOut:CreateAnimation("Alpha")
 		animOut:SetOrder(1)
@@ -704,8 +682,8 @@ for name, button in next, lib.objects do
 		button.fadeOut:SetToFinalAlpha(true)
 	end
 end
-lib:SetButtonRadius(lib.radius) -- Upgrade to 40
-if lib.notCreated then -- Upgrade to 50
+lib:SetButtonRadius(lib.radius)
+if lib.notCreated then
 	for name in next, lib.notCreated do
 		createButton(name, lib.notCreated[name][1], lib.notCreated[name][2])
 	end

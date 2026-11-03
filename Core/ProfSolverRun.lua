@@ -9,12 +9,14 @@ local M = {}
 ns.ProfSolverRun = M
 
 local FRAME_MS = 2
--- Leave room for one condition evaluation, result publication and incremental
--- collection between cooperative yield points inside the two-ms job budget.
-local SLICE_MS = 1.5
--- DF_ROUTE_ADAPTIVE_SLICE_V15
--- Spend a small, bounded share of frame time on an open profession page.
--- Overloaded frames get shorter slices; fast refreshes keep a small cap.
+local SLICE_MS = 3
+local SLICE_MS_UI = 10
+local function sliceBudget()
+    local PD = ns.ProfModule
+    local f = PD and (PD.page or PD.frame)
+    if f and f.IsShown and f:IsShown() then return SLICE_MS_UI end
+    return SLICE_MS
+end
 local function adaptiveSliceMs()
     local fps=type(GetFramerate)=="function" and GetFramerate() or 60
     if type(fps)~="number" or fps<=0 then fps=60 end
@@ -129,20 +131,18 @@ function M.Start(slug, opts, hooks)
         if collectgarbage("count") <= a.gcBase + GC_SOFT_KB then return end
         for _ = 1, GC_STEPS do collectgarbage("step", GC_STEP_KB) end
     end
-    -- Keep preparation and result construction yieldable, as on master. The
-    -- ordinary route runner must not turn a source-data capture into one frame.
     local runnerDead = false
     local runner = coroutine.create(function()
-        local budget = SLICE_MS
+        local budget = sliceBudget()
         while true do
             if S.Run(j, budget) then return true end
             budget = coroutine.yield(false)
-            if type(budget) ~= "number" then budget = SLICE_MS end
+            if type(budget) ~= "number" then budget = sliceBudget() end
         end
     end)
     local function advance(ms)
         if runnerDead then return true end
-        local ok, result = coroutine.resume(runner, ms or SLICE_MS)
+        local ok, result = coroutine.resume(runner, ms or sliceBudget())
         if not ok then
             j.status = "error"
             j.searchTermination = "error"
@@ -156,8 +156,6 @@ function M.Start(slug, opts, hooks)
     end
     ns.IdleJobs.Add(function()
         if live ~= a then return true end
-        -- One resume leaves headroom for publication and avoids accumulating
-        -- two slightly oversized slices inside a nominal two-ms callback.
         local done = advance(math.min(adaptiveSliceMs(), FRAME_MS))
         if not done then keepGC() end
         notify(done)

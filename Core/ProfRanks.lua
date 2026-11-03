@@ -1,5 +1,3 @@
--- Rank guidance is a live view over the reference data. It never changes a
--- frozen crafting plan, the purchase ledger, or recorded execution facts.
 local _, ns = ...
 if not ns.LoadForeverPages then return end
 local R = {}
@@ -56,8 +54,6 @@ local function professionData(slug)
     local prior=1
     local rawRanks=data.ranks or {}
     if #rawRanks==0 then
-        -- Some gathering catalogues supply trainer bands but no rank rows.
-        -- Use their cap boundaries for reminders; missing eligibility stays unknown.
         local caps,seen={},{}
         for _,trainer in ipairs(data.list or {}) do
             local cap=tonumber(tostring(trainer.rng):match('%-(%d+)$'))
@@ -93,8 +89,6 @@ end
 local function sourcesFor(slug,entry,state)
     local out={}
     local data=trainerData(slug)
-    -- A reference book/task keeps its own acquisition method. Trainer locations
-    -- are useful directions, not evidence that a trainer bypasses that method.
     for _,raw in ipairs(data and data.list or {}) do
         if raw.rng==entry.trainerRange and (not state.faction or not raw.fac or raw.fac=="N" or raw.fac==state.faction) then
             out[#out+1]={kind=entry.method=="book" and "vendor" or entry.method,
@@ -103,9 +97,6 @@ local function sourcesFor(slug,entry,state)
                 faction=raw.fac,map=raw.map,x=raw.x,y=raw.y,npcID=raw.npcID,itemID=entry.bookItemID}
         end
     end
-    -- Fill missing directions in the live guide without changing Core/Data.
-    -- Classic reference: wowhead.com/classic/npc=12919/nat-pagle and
-    -- icy-veins.com/wow-forever/cooking (Clamlette Surprise).
     if #out==0 then
         local id,map,x,y,name,zone,questID,questName
         if slug=="fishing" and entry.rank==3 then
@@ -134,8 +125,6 @@ local function sourcesFor(slug,entry,state)
     return out
 end
 
--- Unknown API state stays unknown. In particular, do not use Economy's
--- solver defaults (1/75), a saved plan's cap, or skill points as rank evidence.
 function R.Status(slug, opts)
     opts=opts or {}
     local state={known=false}
@@ -203,8 +192,6 @@ local function rankChoices(profession)
             return (tonumber(a.spell) or 0)<(tonumber(b.spell) or 0)
         end)
         local selected=copy(candidates[1])
-        -- Several real spells may confer the same profession rank. Guidance
-        -- represents that rank once; its alternative spell facts stay intact.
         if #candidates>1 then selected.candidates=copy(candidates) end
         out[#out+1]=selected
     end
@@ -281,8 +268,6 @@ end
 function R.NextStep(slug, target, opts)
     local steps=R.RouteSteps(slug,target,opts)
     local state=steps[1] and steps[1].state
-    -- A guide may show a rank early, but a route that ends inside the current
-    -- cap does not require another rank and must be allowed to finish.
     if state and state.known and (number(target) or 300)<=state.maxSkill then return nil end
     for _,step in ipairs(steps) do if not step.complete then return step end end
 end

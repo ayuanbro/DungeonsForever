@@ -367,7 +367,6 @@ ns.ProfLeveling = {
         vendor = { a={ "卡爾西·沙登", 256731, "軍需官", "inv_misc_food_15", 10.8, 72.4, 44 }, h={ "阿扎貝克", 248198, "軍需官", "inv_misc_food_15", 49.6, 29.2, 17 } },
     },
     ["first-aid"] = {
-        -- BEGIN GENERATED FIRST AID
         rinfo = {
             [3275] = { item=1251, count=1, learn=1, yellow=30, green=45, grey=60, mats={ { 2589, 1 } } },
             [1244431] = { item=118, count=1, learn=1, yellow=55, green=75, grey=95, mats={ { 3371, 1 }, { 2678, 1 }, { 2447, 1 } } },
@@ -402,7 +401,6 @@ ns.ProfLeveling = {
             [470349] = { item=232433, count=1, learn=300, yellow=315, green=327, grey=340, mats={ { 14530, 2 } }, formula=232434 },
             [1263001] = { item=279951, count=1, learn=300, yellow=300, green=300, grey=300, mats={ { 4470, 2 }, { 6453, 2 }, { 14530, 5 } }, formula=273118 },
         },
-        -- END GENERATED FIRST AID
         steps = {
             { 1, 41, 3275, 43 },
             { 41, 55, 3276, 15 },

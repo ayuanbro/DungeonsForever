@@ -25,8 +25,6 @@ function VDB.IsCapitalOffer(offer)
     return found
 end
 
--- Location affects display and equal-price choices only. Retain remote offers:
--- their whole-pack purchase cost can be lower than a city's or the auction's.
 function VDB.PreferredOffers(offers, eligible)
     local cities, others = {}, {}
     for _, offer in ipairs(offers or {}) do
@@ -58,7 +56,6 @@ local function Faction(context)
     return faction
 end
 
--- Display hints are reconstructed from the shipped NPC catalogue in RAM.
 local function Copy(offer)
     local result = {}
     for key, value in pairs(offer) do result[key] = value end
@@ -88,7 +85,6 @@ end
 
 local function RequirementsMet(offer, context)
     if context and context.npcAccess and context.npcAccess[offer.npcID] == false then return false end
-    -- A catalogue entry alone does not establish access to a summoned NPC.
     if offer.summoned and not (context and context.npcAccess and context.npcAccess[offer.npcID] == true) then
         return false
     end
@@ -159,8 +155,6 @@ local function Accessible(offer, context)
     return RequirementsMet(offer, context)
 end
 
--- Auctionator's cached unit price takes priority. Collected supplier quotes
--- are used when the API is missing, fails, or has no valid price for this item.
 function VDB.GetOffers(itemID, context)
     if type(itemID) ~= "number" then return {} end
     local api = Auctionator and Auctionator.API and Auctionator.API.v1
@@ -168,8 +162,6 @@ function VDB.GetOffers(itemID, context)
     if type(quote) == "function" then
         local ok, unit = pcall(quote, "DungeonsForever", itemID)
         if ok and type(unit) == "number" and unit >= 0 and unit < math.huge then
-            -- One is an accounting unit for this unit-price quote, not an
-            -- observed pack size. The API supplies no NPC or location.
             return {{price=unit, unit=unit, quantity=1, bundleSize=1,
                 unlimited=true, available=true, purchasable=true,
                 source="auctionator-vendor", priceSource="auctionator-vendor", priceBasis="cached-unit"}}
@@ -214,8 +206,6 @@ function VDB.GetFormulaOffers(itemID, context, source)
     local function add(raw, verified)
         if type(raw) ~= "table" or type(raw.npcID) ~= "number" or raw.npcID <= 0 or raw.priceOnly then return end
         local o = {}; for k,v in pairs(raw) do o[k] = v end
-        -- Check access independently of price and stock, so an unknown or
-        -- limited offer can still explain where a formula comes from.
         local check = {}; for k,v in pairs(o) do check[k] = v end
         check.price, check.quantity = 0, 1
         check.unlimited, check.available, check.purchasable = true, true, true
@@ -227,7 +217,6 @@ function VDB.GetFormulaOffers(itemID, context, source)
         o.price = priced and price or nil
         o.quantity = validPack and pack or nil; o.bundleSize = o.quantity
         o.unit = priced and price / pack or nil
-        -- maxStock is the collected stock policy, never a live inventory count.
         o.stock = nil
         local stock = raw.maxStock
         o.limited = (type(stock) == "number" and stock >= 0) or raw.limited == true
@@ -248,8 +237,6 @@ function VDB.GetFormulaOffers(itemID, context, source)
     for _, offer in ipairs(supply and supply.FormulaList and supply.FormulaList(itemID) or {}) do
         add(offer, offer.priceVerified == true and offer.reference == true)
     end
-    -- Collected recipe sources can carry additional NPCs. Missing price
-    -- or pack facts stay unknown; they are not completed from live observations.
     for _, v in ipairs(source.vendors or {}) do
         local id = v.id or v.npcID or v[5]
         local currency = tonumber(v.currencyID or v.cur) or 0
@@ -269,7 +256,6 @@ function VDB.GetFormulaOffers(itemID, context, source)
     return result
 end
 
--- Reputation still changes purchase eligibility, but never the collected price.
 if CreateFrame then
     local frame = CreateFrame("Frame")
     frame:RegisterEvent("UPDATE_FACTION")
