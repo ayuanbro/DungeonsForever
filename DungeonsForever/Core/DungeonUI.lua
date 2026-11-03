@@ -8998,16 +8998,20 @@ local function BuildSubTabs()
         { key = "Raids",    text = L["团本"],  width = DG.CAPSULE_W },
     }
     if ns.LoadForeverPages then
-        if type(ns.ProfModule) == "table" then
-            defs[#defs + 1] = { key = "Professions", text = L["专业"], width = DG.CAPSULE_W }
+        for _, t in ipairs({
+            { key = "Professions", text = L["专业"] },
+            { key = "Explore", text = L["探索"] },
+            { key = "Collections", text = L["藏品"] },
+            { key = "Factions", text = L["声望"] },
+            { key = "Bis", text = L["BIS配装"] },
+            { key = "Tier", text = L["职业指南"] },
+            { key = "PvP", text = L["PvP"] },
+            { key = "Gear", text = L["装备库"] },
+        }) do
+            if ns.ModuleOn(t.key) then
+                defs[#defs + 1] = { key = t.key, text = t.text, width = DG.CAPSULE_W }
+            end
         end
-        defs[#defs + 1] = { key = "Explore", text = L["探索"], width = DG.CAPSULE_W }
-        defs[#defs + 1] = { key = "Collections", text = L["藏品"], width = DG.CAPSULE_W }
-        defs[#defs + 1] = { key = "Factions", text = L["声望"], width = DG.CAPSULE_W }
-        defs[#defs + 1] = { key = "Bis", text = L["BIS配装"], width = DG.CAPSULE_W }
-        defs[#defs + 1] = { key = "Tier", text = L["职业指南"], width = DG.CAPSULE_W }
-        defs[#defs + 1] = { key = "PvP", text = L["PvP"], width = DG.CAPSULE_W }
-        defs[#defs + 1] = { key = "Gear", text = L["装备库"], width = DG.CAPSULE_W }
     end
     local BTN_H = IsHui() and 20 or 26
     local GAP = IsHui() and 0 or 6
@@ -9152,21 +9156,21 @@ function U:SwitchSub(key)
     local k = "Dungeons"
     if key == "Raids" then
         k = "Raids"
-    elseif key == "Professions" and ns.LoadForeverPages then
+    elseif key == "Professions" and ns.ModuleOn("Professions") then
         k = "Professions"
-    elseif key == "Explore" and ns.LoadForeverPages then
+    elseif key == "Explore" and ns.ModuleOn("Explore") then
         k = "Explore"
-    elseif key == "Collections" and ns.LoadForeverPages then
+    elseif key == "Collections" and ns.ModuleOn("Collections") then
         k = "Collections"
-    elseif key == "Factions" and ns.LoadForeverPages then
+    elseif key == "Factions" and ns.ModuleOn("Factions") then
         k = "Factions"
-    elseif key == "Bis" and ns.LoadForeverPages then
+    elseif key == "Bis" and ns.ModuleOn("Bis") then
         k = "Bis"
-    elseif key == "Tier" and ns.LoadForeverPages then
+    elseif key == "Tier" and ns.ModuleOn("Tier") then
         k = "Tier"
-    elseif key == "PvP" and ns.LoadForeverPages then
+    elseif key == "PvP" and ns.ModuleOn("PvP") then
         k = "PvP"
-    elseif key == "Gear" and ns.LoadForeverPages then
+    elseif key == "Gear" and ns.ModuleOn("Gear") then
         k = "Gear"
     end
     U.curSub = k
@@ -9288,21 +9292,21 @@ function U:Build()
     local saved = DB().subTab
     if saved == "Raids" then
         U.curSub = "Raids"
-    elseif saved == "Professions" and ns.LoadForeverPages then
+    elseif saved == "Professions" and ns.ModuleOn("Professions") then
         U.curSub = "Professions"
-    elseif saved == "Explore" and ns.LoadForeverPages then
+    elseif saved == "Explore" and ns.ModuleOn("Explore") then
         U.curSub = "Explore"
-    elseif saved == "Collections" and ns.LoadForeverPages then
+    elseif saved == "Collections" and ns.ModuleOn("Collections") then
         U.curSub = "Collections"
-    elseif saved == "Bis" and ns.LoadForeverPages then
+    elseif saved == "Bis" and ns.ModuleOn("Bis") then
         U.curSub = "Bis"
-    elseif saved == "Tier" and ns.LoadForeverPages then
+    elseif saved == "Tier" and ns.ModuleOn("Tier") then
         U.curSub = "Tier"
-    elseif saved == "PvP" and ns.LoadForeverPages then
+    elseif saved == "PvP" and ns.ModuleOn("PvP") then
         U.curSub = "PvP"
-    elseif saved == "Factions" and ns.LoadForeverPages then
+    elseif saved == "Factions" and ns.ModuleOn("Factions") then
         U.curSub = "Factions"
-    elseif saved == "Gear" and ns.LoadForeverPages then
+    elseif saved == "Gear" and ns.ModuleOn("Gear") then
         U.curSub = "Gear"
     else
         U.curSub = "Dungeons"
@@ -9477,6 +9481,7 @@ function ns.OpenPage(key)
     if not frame then return end
     if not frame:IsShown() then frame:Show() end
     frame:Raise()
+    if not ns.ModuleOn(key) then key = "Dungeons" end
     if U.built then U:SwitchSub(key) end
 end
 

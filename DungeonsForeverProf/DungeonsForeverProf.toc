@@ -1,16 +1,17 @@
 ## Interface: 11508, 11509, 16001, 20506, 30405, 38002, 40402, 50503, 50504, 50505, 120005, 120007, 120100
-## Title: <DungeonsForeverProf> |cff46bf72DungeonsForever - Profession|r
-## Title-zhCN: |cff46bf72无限副本手册 专业页|r
-## Title-zhTW: |cff46bf72無限副本手冊 專業頁|r
-## Title-enUS: |cff46bf72DungeonsForever - Profession|r
+## Title: <DungeonsForeverProf> |cff46bf72DungeonsForever - Profession Module|r
+## Title-zhCN: |cff46bf72无限副本手册 专业模块|r
+## Title-zhTW: |cff46bf72無限副本手冊 專業模組|r
+## Title-enUS: |cff46bf72DungeonsForever - Profession Module|r
+## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
 ## Category: 圆圆的插件
 ## Group: DungeonsForever
-## Notes: Profession page module for DungeonsForever
-## Notes-zhCN: 无限副本手册 专业页模块（可在插件列表中单独关闭）
-## Notes-zhTW: 無限副本手冊 專業頁模組（可在插件列表中單獨關閉）
-## Notes-enUS: Profession page module for DungeonsForever (can be disabled separately)
+## Notes: Profession module for DungeonsForever
+## Notes-zhCN: 无限副本手册 专业模块（可在插件列表中单独关闭）
+## Notes-zhTW: 無限副本手冊 專業模組（可在插件列表中單獨關閉）
+## Notes-enUS: Profession module for DungeonsForever (can be disabled separately)
 ## Author: 圆圆
-## Version: 1.9.48
+## Version: 2.0.0
 ## Dependencies: DungeonsForever
 ## LoadOnDemand: 1
 ## SavedVariables: DungeonsForeverProfDB

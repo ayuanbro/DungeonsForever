@@ -234,7 +234,7 @@ function PD.SnapshotBadgeText(s)
     if st=="recipe_reference" then return L["配方资料待补全"],0.95,0.75,0.4 end
     if st == "learning_reference" then return L["含未知学习来源"], 0.95, 0.75, 0.4 end
     if st == "rules_changed" then return L["路线待重算"], 0.95, 0.75, 0.4 end
-    if st == "learning_unknown" then return L["学习资料待补全"], 0.95, 0.75, 0.4 end
+    if st == "learning_unknown" then return L["资料待补"], 0.95, 0.75, 0.4 end
     if st == "optim" then return L["乐观计数"], 0.85, 0.82, 0.72 end
     if st == "calculating" then return L["计算中"], 0.95, 0.75, 0.4 end
     if st == "no_route" then return L["无可用路线"], 0.95, 0.75, 0.4 end
@@ -7732,16 +7732,24 @@ PD.SB_INK = {
     { 1.00, 1.00, 1.00 },
 }
 PD.CARD_COL = {
-    trainer = { 0.29, 0.33, 0.40 },
-    drop    = { 0.42, 0.27, 0.66 },
-    vendor  = { 0.54, 0.42, 0.12 },
-    both    = { 0.13, 0.44, 0.42 },
+    auto     = { 0.16, 0.40, 0.20 },
+    trainer  = { 0.18, 0.30, 0.48 },
+    vendor   = { 0.46, 0.36, 0.10 },
+    drop     = { 0.46, 0.36, 0.10 },
+    both     = { 0.46, 0.36, 0.10 },
+    currency = { 0.46, 0.36, 0.10 },
+    quest    = { 0.46, 0.36, 0.10 },
+    unknown  = { 0.46, 0.16, 0.16 },
 }
 PD.CARD_INK = {
-    trainer = { 0.98, 0.84, 0.36 },
-    drop    = { 0.86, 0.70, 1.00 },
-    vendor  = { 0.40, 0.95, 0.78 },
-    both    = { 1.00, 0.58, 0.42 },
+    auto     = { 0.55, 0.95, 0.55 },
+    trainer  = { 0.55, 0.78, 1.00 },
+    vendor   = { 0.98, 0.84, 0.36 },
+    drop     = { 0.98, 0.84, 0.36 },
+    both     = { 0.98, 0.84, 0.36 },
+    currency = { 0.98, 0.84, 0.36 },
+    quest    = { 0.98, 0.84, 0.36 },
+    unknown  = { 1.00, 0.50, 0.45 },
 }
 
 PD.TAG_INK = {
@@ -7899,10 +7907,10 @@ end
 
 local TRAINER_CARD = {
     kind = "trainer", text = L["训练师"],
-    lines = { { L["向训练师学习"], 0.81, 0.85, 0.89 } },
+    lines = { { L["需前往训练师处学习并支付学习费用；已学会的配方无需重复付费。"], 0.81, 0.85, 0.89 } },
 }
 local AUTO_SKILL_CARD = {
-    kind="trainer",text=L["随专业技能获得"],
+    kind="auto",text=L["初始技能"],
     lines={{L["达到对应专业技能后自动习得，无需另购图纸或支付配方学习费。"],0.7,0.7,0.7}},
 }
 
@@ -7940,11 +7948,11 @@ function PD.CardFixW()
     if not PD.CARD_FIXW then
         PD.CARD_FIXW = math.ceil(math.max(
             PD.TextW(L["训练师"], 11),
-            PD.TextW(L["世界掉落图纸"], 11),
-            PD.TextW(L["商人出售图纸"], 11),
+            PD.TextW(L["图纸 · 掉落"], 11),
+            PD.TextW(L["图纸 · 商人"], 11),
             PD.TextW(L["随专业技能获得"], 11),
-            PD.TextW(L["图纸 · 通货兑换"], 11),
-            PD.TextW(L["掉落&商人图纸"], 11))) + 2 * PD.CARD_PAD
+            PD.TextW(L["图纸 · 兑换"], 11),
+            PD.TextW(L["图纸 · 商人掉落"], 11))) + 2 * PD.CARD_PAD
     end
     return PD.CARD_FIXW
 end
@@ -8028,9 +8036,9 @@ function PD.LearningOriginCard(recipe,view)
     end
     local kind=hasVendor and (currency and not gold and "currency" or hasDrop and "both" or "vendor")
         or hasDrop and "drop" or src.quests and #src.quests>0 and "quest" or "unknown"
-    local text=kind=="currency" and L["图纸 · 通货兑换"] or kind=="both" and L["掉落&商人图纸"]
-        or kind=="vendor" and L["商人出售图纸"] or kind=="drop" and L["世界掉落图纸"]
-        or kind=="quest" and L["图纸 · 任务获取"] or L["图纸 · 来源未知"]
+    local text=kind=="currency" and L["图纸 · 兑换"] or kind=="both" and L["图纸 · 商人掉落"]
+        or kind=="vendor" and L["图纸 · 商人"] or kind=="drop" and L["图纸 · 掉落"]
+        or kind=="quest" and L["图纸 · 任务"] or L["图纸 · 未知"]
     if kind=="unknown" and view.quote and view.quote.usable then
         if view.quote.source=="ah"then kind,text="ah",L["图纸 · 拍卖行"]
         elseif view.quote.source=="owned"then kind,text="owned",L["已拥有图纸"]end
@@ -8050,9 +8058,9 @@ function PD.RecipeLearningCard(recipe, frozen)
         local origin=PD.LearningOriginCard(recipe,view)
         if origin then
             if not view.allowed then
-                origin.lines[#origin.lines+1]={view.reason=="clientUnavailable" and L["客户端已确认不可用"]
-                    or view.reason=="learningDataMissing" and L["学习资料待补全"]
-                    or L["学习条件未满足"],0.95,0.75,0.4}
+                origin.lines[#origin.lines+1]={view.reason=="clientUnavailable" and L["未实装"]
+                    or view.reason=="learningDataMissing" and L["资料待补"]
+                    or L["条件未满足"],0.95,0.75,0.4}
                 if view.reason=="learningDataMissing"then
                     origin.lines[#origin.lines+1]={PD.LearningGapText({spell=recipe.spell,
                         missingReasons=view.detail and view.detail.missingReasons}),0.95,0.75,0.4}
@@ -8068,18 +8076,18 @@ function PD.RecipeLearningCard(recipe, frozen)
     if not view.allowed then
         local reason,detail=view.reason,view.detail
         if reason=="clientUnavailable" then
-            return {kind="unknown",text=L["客户端已确认不可用"],lines={{L["此记录仅供查阅，不参与自动路线。"],0.95,0.75,0.4}}}
+            return {kind="unknown",text=L["未实装"],lines={{L["此记录仅供查阅，不参与自动路线。"],0.95,0.75,0.4}}}
         end
         local diagnostic=RA.LearningDiagnostic and RA.LearningDiagnostic(reason,recipe,detail)
             or {spell=recipe.spell,missingReasons=detail and detail.missingReasons}
-        local text=reason=="learningDataMissing" and L["学习资料待补全"] or L["学习条件未满足"]
+        local text=reason=="learningDataMissing" and L["资料待补"] or L["条件未满足"]
         local why=reason=="learningDataMissing" and PD.LearningGapText(diagnostic)
             or ns.ProfEconomy.DiagnosticText and ns.ProfEconomy.DiagnosticText(reason) or reason
         return {kind="unknown",text=text,lines={{why,0.95,0.75,0.4},
             {L["保留供查阅；取得已确认学习路径后才用于自动路线。"],0.7,0.7,0.7}}}
     end
     if view.status=="learned" then
-        return {kind="trainer",text=L["已学会"],lines={{L["已学会，无需再次购买图纸或支付学习费用。"],0.7,0.7,0.7}}}
+        return {kind="auto",text=L["已学会"],lines={{L["已学会，无需再次购买图纸或支付学习费用。"],0.7,0.7,0.7}}}
     end
     local route,quote=view.route,view.quote
     if route and route.kind=="trainer" then
@@ -8088,7 +8096,7 @@ function PD.RecipeLearningCard(recipe, frozen)
     end
     local fid=route and (route.teachingItemID or route.itemID)
     if not fid then
-        return {kind="unknown",text=L["学习资料待补全"],lines={{L["学习来源尚未确认"],0.95,0.75,0.4}}}
+        return {kind="unknown",text=L["资料待补"],lines={{L["学习来源尚未确认"],0.95,0.75,0.4}}}
     end
     local source=quote and quote.source
     local src={}
@@ -8117,8 +8125,8 @@ function PD.RecipeLearningCard(recipe, frozen)
     end
     local kind=source=="vendor" and "vendor" or source=="owned" and "owned" or source=="ah" and "ah"
         or source=="acquire" and "acquire" or "unknown"
-    local text=kind=="vendor" and L["商人出售图纸"] or kind=="owned" and L["已拥有图纸"]
-        or kind=="ah" and L["图纸 · 拍卖行"] or kind=="acquire" and PD.PurchaseSource(quote) or L["图纸 · 来源未知"]
+    local text=kind=="vendor" and L["图纸 · 商人"] or kind=="owned" and L["已拥有图纸"]
+        or kind=="ah" and L["图纸 · 拍卖行"] or kind=="acquire" and PD.PurchaseSource(quote) or L["图纸 · 未知"]
     return {kind=kind,text=text,fid=fid,source=src,lines=lines,
         act=kind=="vendor" and PD.VendorAct(src) or nil}
 end
@@ -8157,9 +8165,9 @@ function PD.CardOf(rec, ri, resolved, profession, frozen)
     local ahLine = PD.FormulaAuctionLine(fid)
     if ahLine then lines[#lines + 1] = ahLine end
     local kind = (hasDrop and hasVendor and "both") or (hasVendor and "vendor") or "drop"
-    local text = (kind == "both" and L["掉落&商人图纸"])
-        or (kind == "vendor" and L["商人出售图纸"])
-        or L["世界掉落图纸"]
+    local text = (kind == "both" and L["图纸 · 商人掉落"])
+        or (kind == "vendor" and L["图纸 · 商人"])
+        or L["图纸 · 掉落"]
     return {
         kind = kind,
         text = text, fid = fid, lines = lines,
@@ -8354,7 +8362,7 @@ function PD.LevelSrc(rec, profession, resolved, frozen)
     else resolved=resolved or rec.spell and rec or E and E.FindRecipe and E.FindRecipe(profession or PD.cur,rec[1]) end
     local card=resolved and PD.RecipeLearningCard(resolved,frozen==true)
     if card then
-        local text=card.kind=="trainer" and card.text==L["训练师"] and L["向训练师学习"] or card.text
+        local text=card.kind=="trainer" and card.text==L["训练师"] and L["训练师"] or card.text
         local detail=card.kind=="unknown" and card.lines[1] and card.lines[1][1] or nil
         if type(detail)=="string" then
             local pfx=format(L["图纸：%s"],"")
@@ -8365,7 +8373,7 @@ function PD.LevelSrc(rec, profession, resolved, frozen)
     local src = rec[14]
     local f = rec[13]
     local fid = f and f[1]
-    if type(fid) ~= "number" then return L["向训练师学习"], nil, nil end
+    if type(fid) ~= "number" then return L["训练师"], nil, nil end
     local SM = ns.ProfSourceMerge
     local raw = (SM and SM.SourceOf) and SM.SourceOf(fid) or nil
     local view = raw or (type(src) == "table" and src or nil)
@@ -8380,16 +8388,16 @@ function PD.LevelSrc(rec, profession, resolved, frozen)
     if kind == "vendor" then
         local detail
         if nDrop > 0 then detail = format(L["%s · 掉落 %d 处"], name, nDrop) end
-        return L["需图纸 · 商人出售"], detail, kind
+        return L["图纸 · 商人"], detail, kind
     elseif kind == "currency" then
         local nCur = (SM and SM.CurrencyCount) and SM.CurrencyCount(view) or 0
-        return L["图纸 · 通货兑换"], format(L["%s · 兑换 %d 处"], name, nCur), kind
+        return L["图纸 · 兑换"], format(L["%s · 兑换 %d 处"], name, nCur), kind
     elseif kind == "drop" then
-        return L["图纸 · 掉落获取"], nDrop>0 and format(L["%s · 掉落 %d 处"], name, nDrop) or name, kind
+        return L["图纸 · 掉落"], nDrop>0 and format(L["%s · 掉落 %d 处"], name, nDrop) or name, kind
     elseif kind == "quest" then
-        return L["图纸 · 任务获取"], nil, kind
+        return L["图纸 · 任务"], nil, kind
     end
-    return L["图纸 · 来源未知"], nil, kind
+    return L["图纸 · 未知"], nil, kind
 end
 
 function PD.SourceParts(s)
@@ -8818,7 +8826,7 @@ function PD.RecipeSourceLines(lines, r)
     lines = lines or {}
     if r and r.legacyPoisonGuide then return lines end
     if r and r.clientUnavailable then
-        lines[#lines + 1] = {L["客户端已确认不可用"], 0.95, 0.75, 0.4}
+        lines[#lines + 1] = {L["未实装"], 0.95, 0.75, 0.4}
         lines[#lines + 1] = {L["此记录仅供查阅，不参与自动路线。"], 0.95, 0.75, 0.4}
     end
     local output = PD.RecipeOutputText(r)
@@ -9073,7 +9081,7 @@ function PD.EnchantSpec(en)
         right = not (en[5] or en[6] or en[7] or en[8])
                 and format("%s · %s", format(L["学 %s"], tostring(en[5])),
                            PD.TierText(en[6], en[7], en[8])) or nil,
-        right2 = clientPending and L["客户端数据待读取"] or (resolved.clientUnavailable and L["客户端已确认不可用"]) or ((not dval) and base or nil),
+        right2 = clientPending and L["客户端数据待读取"] or (resolved.clientUnavailable and L["未实装"]) or ((not dval) and base or nil),
         right2Fs = PD.SRC_FS,
         src = en[10],
         dpre = dpre,
@@ -9628,7 +9636,7 @@ function PD.RecipeSpec(r)
     if clientPending then
         base = L["客户端数据待读取"]
     elseif resolved.clientUnavailable then
-        base = L["客户端已确认不可用"]
+        base = L["未实装"]
     elseif r[13] then
         base = L["图纸"] .. " · " .. acq
     else
@@ -9786,7 +9794,7 @@ function PD.CraftedSpec(c)
         right = not (c[4] or c[5] or green or c[7])
                 and format("%s · %s", format(L["学 %s"], tostring(c[4])),
                            PD.TierText(c[5], green, c[7])) or nil,
-        right2 = clientPending and L["客户端数据待读取"] or (resolved.clientUnavailable and L["客户端已确认不可用"]) or base,
+        right2 = clientPending and L["客户端数据待读取"] or (resolved.clientUnavailable and L["未实装"]) or base,
         src = learningCard and learningCard.source,
         vlines = learningCard and learningCard.lines,
         act = learningCard and learningCard.act,
@@ -11737,7 +11745,7 @@ function PD.RowsExclusions(rows)
         elseif rec then
             src, srcDetail = PD.LevelSrc(rec)
         elseif ri then
-            src = ri.trainer and L["向训练师学习"] or nil
+            src = ri.trainer and L["训练师"] or nil
         end
         if rec and rec.clientPending then src, srcDetail = L["客户端数据待读取"], nil end
         local cardTips = { { SpellName(spell), 1, 0.82, 0.4 },
@@ -13285,7 +13293,7 @@ function PD.RowsLeveling(rows)
                 src=PD.LevelSrc(rec or ri,st.profession or PD.cur,st.recipe,true)
             end
             if not src and not rec and ri then
-                src = ri.trainer and L["向训练师学习"] or nil
+                src = ri.trainer and L["训练师"] or nil
             end
             if st.profession and st.profession ~= PD.cur then
                 local pro = D.pro[st.profession]
@@ -13438,7 +13446,7 @@ function PD.FormulaBlockedText(entry)
         end
     end
     if reason=="learningDataMissing" or reason=="learningRequirementsUnknown" then
-        return L["学习资料待补全"].."："..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
+        return L["资料待补"].."："..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
     elseif reason=="formulaLimited" or reason=="limitedFormulaDisabled" then
         return L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少1张的拍卖行图纸。"]
     end
@@ -13474,7 +13482,7 @@ function PD.RowsFormulaShop(rows, data, foldKey)
                 or GetSpellInfo and GetSpellInfo(spell) or format(L["技能 #%d"],spell)
             rows[#rows+1]={kind="row",h=PD.ROW_H,col=1,text=name,
                 tag={text=L["训练师"],color=PD.TAG_INK.vendor},right2=money(entry.cost),
-                lines={{L["向训练师学习"]},{L["此步骤采用已确认的训练师学习路径，无需购买教材。"],0.7,0.7,0.7}}}
+                lines={{L["训练师"]},{L["此步骤采用已确认的训练师学习路径，无需购买教材。"],0.7,0.7,0.7}}}
             if entry.costComplete==false then PushText(rows,L["请打开训练师页面核对学习费用。"],11,C_GREY,1) end
         else
         local id, count = entry.id, entry.count or 1
@@ -13575,8 +13583,8 @@ function PD.RowsFormulaShop(rows, data, foldKey)
                 or entry.reason=="bindOnPickupFormulaDisabled" or entry.reason=="currencyFormulaDisabled" then
                 tag=L["采购受设置限制"]
             elseif entry.reason=="learningDataMissing" or entry.reason=="learningRequirementsUnknown" then
-                tag=L["学习资料待补全"]
-            elseif entry.learningStatus=="blocked" then tag=L["学习条件未满足"] end
+                tag=L["资料待补"]
+            elseif entry.learningStatus=="blocked" then tag=L["条件未满足"] end
         end
         local priced = not (entry.unpriced or type(entry.cost) ~= "number")
         local acquisitionCost=selected=="acquire" and

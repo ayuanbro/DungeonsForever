@@ -458,28 +458,14 @@ local function paintArt(view, id, idx, cw, ch)
 end
 
 local function paintArea(view, id, fn, cw, ch)
-    local tex = view.areaTex
-    if not tex then return end
     local host = view.canvas
+    if not (host and ns.AreaDraw) then return end
     local items = fn and ns.AreaVec and ns.AreaVec.dun and ns.AreaVec.dun[id] and ns.AreaVec.dun[id][fn]
-    if items and host and ns.AreaDraw then
+    if items then
         ns.AreaDraw.Paint(host, cw, ch, items, 1, 1, 1, { base = 3 })
-        tex:Hide()
-        return
+    else
+        ns.AreaDraw.Clear(host)
     end
-    if host and ns.AreaDraw then ns.AreaDraw.Clear(host) end
-    local row = id and ns.RouteArea and ns.RouteArea[id]
-    local path = row and fn and row[fn]
-    if not path then
-        tex:Hide()
-        return
-    end
-    tex:SetTexture(path)
-    tex:SetTexCoord(0, M.ART_W / M.OVL_W, 0, M.ART_H / M.OVL_H)
-    tex:ClearAllPoints()
-    tex:SetPoint("TOPLEFT", view.canvas, "TOPLEFT", 0, 0)
-    tex:SetSize(cw, ch)
-    tex:Show()
 end
 
 local function smoothPts(src)
@@ -1959,12 +1945,6 @@ function W.Build()
     custom:SetTexCoord(0, 1, 0, 1)
     custom:Hide()
     view.custom = custom
-
-    local areaTex = canvas:CreateTexture(nil, "OVERLAY")
-    areaTex:SetDrawLayer("OVERLAY", 2)
-    areaTex:SetTexCoord(0, 1, 0, 1)
-    areaTex:Hide()
-    view.areaTex = areaTex
 
     local route = CreateFrame("Frame", nil, view)
     route:SetSize(1, 1)

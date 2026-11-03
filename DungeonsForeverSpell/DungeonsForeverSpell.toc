@@ -1,0 +1,27 @@
+## Interface: 11508, 11509, 16001, 20506, 30405, 38002, 40402, 50503, 50504, 50505, 120005, 120007, 120100
+## Title: <DungeonsForeverSpell> |cff46bf72DungeonsForever - Spellbook Module|r
+## Title-zhCN: |cff46bf72无限副本手册 技能书模块|r
+## Title-zhTW: |cff46bf72無限副本手冊 技能書模組|r
+## Title-enUS: |cff46bf72DungeonsForever - Spellbook Module|r
+## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
+## Category: 圆圆的插件
+## Group: DungeonsForever
+## Notes: Spellbook module for DungeonsForever (can be disabled separately)
+## Notes-zhCN: 无限副本手册 技能书模块：原生技能书增强（可在插件列表中单独关闭）
+## Notes-zhTW: 無限副本手冊 技能書模組：原生技能書增強（可在插件列表中單獨關閉）
+## Notes-enUS: Spellbook module for DungeonsForever (can be disabled separately)
+## Author: 圆圆
+## Version: 2.0.0
+## Dependencies: DungeonsForever
+## LoadOnDemand: 1
+
+Core\ModuleInit.lua
+Core\Data\Data_SpellBook.lua
+Core\Data\Data_SpellExtra.lua
+Core\Data\Data_WeaponTraining.lua
+Core\Data\zhTW\Data_SpellBook.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_WeaponTraining.lua [AllowLoadTextLocale zhTW]
+Core\Data\enUS\Data_SpellBook.lua [AllowLoadTextLocale enUS]
+Core\SpellTraining.lua
+Core\WeaponMasters.lua
+Core\NativeSpellBook.lua

@@ -1545,11 +1545,6 @@ function M.Build(detail, hero)
     customTex:SetTexCoord(0, 1, 0, 1)
     customTex:Hide()
 
-    local areaTex = canvas:CreateTexture(nil, "OVERLAY")
-    areaTex:SetDrawLayer("OVERLAY", 2)
-    areaTex:SetTexCoord(0, 1, 0, 1)
-    areaTex:Hide()
-
     local routeLayer = CreateFrame("Frame", nil, frame)
     routeLayer:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
     routeLayer:SetSize(1, 1)
@@ -1612,7 +1607,6 @@ function M.Build(detail, hero)
     frame.hdrCard = hdrCard
     frame.tiles = tiles
     frame.customTex = customTex
-    frame.areaTex = areaTex
     frame.empty = empty
     frame.pins = pins
     frame.bar = bar
@@ -3393,28 +3387,14 @@ end
 
 function M.PaintArea(id, fn, cw, ch)
     local frame = M.frame
-    local tex = frame and frame.areaTex
-    if not tex then return end
-    local host = frame.canvas
+    local host = frame and frame.canvas
+    if not (host and ns.AreaDraw) then return end
     local items = fn and ns.AreaVec and ns.AreaVec.dun and ns.AreaVec.dun[id] and ns.AreaVec.dun[id][fn]
-    if items and host and ns.AreaDraw then
+    if items then
         ns.AreaDraw.Paint(host, cw, ch, items, 1, 1, 1, { base = 3 })
-        tex:Hide()
-        return
+    else
+        ns.AreaDraw.Clear(host)
     end
-    if host and ns.AreaDraw then ns.AreaDraw.Clear(host) end
-    local row = id and ns.RouteArea and ns.RouteArea[id]
-    local path = row and fn and row[fn]
-    if not path then
-        tex:Hide()
-        return
-    end
-    tex:SetTexture(path)
-    tex:SetTexCoord(0, M.ART_W / M.OVL_W, 0, M.ART_H / M.OVL_H)
-    tex:ClearAllPoints()
-    tex:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", 0, 0)
-    tex:SetSize(cw, ch)
-    tex:Show()
 end
 
 function M.Paint(d)

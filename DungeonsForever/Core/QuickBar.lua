@@ -161,7 +161,7 @@ function QB:Collect()
         end
     end
 
-    if cfg.groups.prof and ns.LoadForeverPages then
+    if cfg.groups.prof and ns.LoadForeverPages and ns.ModuleOn("Professions") then
         out[#out + 1] = { grp = L["专业"] }
         local D = ns.ProfData
         local PD = ns.ProfModule
@@ -190,7 +190,7 @@ function QB:Collect()
         if n.prof == 0 then out[#out + 1] = { text = L["未学任何专业"], dead = true } end
     end
 
-    if cfg.groups.explore and ns.LoadForeverPages then
+    if cfg.groups.explore and ns.LoadForeverPages and ns.ModuleOn("Explore") then
         local picked = {}
         for _, e in ipairs(EXPLORE_DEFS) do
             if cfg.expl[e.key] then picked[#picked + 1] = e end
@@ -558,6 +558,17 @@ function QB:EnsureSettings()
             return tg
         end
 
+        local TAB_LABEL = {
+            Dungeons = "5人本", Raids = "团本", Professions = "专业", Explore = "探索",
+            Collections = "藏品", Factions = "声望", Bis = "BIS配装", Tier = "职业指南",
+            PvP = "PvP", Gear = "装备库",
+        }
+        local function tabLabel(k)
+            local t = TAB_LABEL[k]
+            if not t then return k end
+            return L[t]
+        end
+
         local function mkSetOn(key)
             return function(v)
                 local tabs = ns.QuickCfg().tabs
@@ -572,20 +583,24 @@ function QB:EnsureSettings()
                     if left == 0 then v = true end
                 end
                 local wasOn = tabs[key] ~= false
+                local m = ns.ModuleDesc(key)
+                local before = (m and ns.ModuleWant(m)) and true or false
                 tabs[key] = v
-                if key == "Professions" and wasOn ~= (v ~= false) then
+                if m and wasOn ~= (v ~= false) then
+                    local want = ns.ModuleWant(m) and true or false
                     if type(C_AddOns) == "table" then
-                        if v and C_AddOns.EnableAddOn then
-                            pcall(C_AddOns.EnableAddOn, "DungeonsForeverProf")
-                        elseif not v and C_AddOns.DisableAddOn then
-                            pcall(C_AddOns.DisableAddOn, "DungeonsForeverProf")
+                        if want and C_AddOns.EnableAddOn then
+                            pcall(C_AddOns.EnableAddOn, m.addon)
+                        elseif not want and C_AddOns.DisableAddOn then
+                            pcall(C_AddOns.DisableAddOn, m.addon)
                         end
                     end
                     if ns.ConfirmReload then
-                        if v then
-                            ns.ConfirmReload(L["专业页模块已开启，需要重载界面后生效。"])
-                        else
-                            ns.ConfirmReload(L["专业页模块已关闭，需要重载界面后生效；重载后专业页不再加载。"])
+                        local name = tabLabel(key)
+                        if before and not want then
+                            ns.ConfirmReload(format(L["「%s」已关闭，重载后整套不再加载"], name))
+                        elseif want and not before then
+                            ns.ConfirmReload(format(L["「%s」已开启，重载界面后生效"], name))
                         end
                     end
                 end
@@ -695,54 +710,254 @@ function QB:EnsureSettings()
         hy = hy - SET_HDR_H
     end
 
-    Header(L["显示分组"])
-    do
-        set.group.dungeon = ToggleRow(L["推荐五人本"],
-            function() return ns.QuickCfg().groups.dungeon end,
-            function(v) ns.QuickCfg().groups.dungeon = v end)
-        if ns.LoadForeverPages then
-            set.group.prof, set.group.explore = ToggleRow2(
-                L["专业"],
-                function() return ns.QuickCfg().groups.prof end,
-                function(v) ns.QuickCfg().groups.prof = v end,
-                L["探索"],
-                function() return ns.QuickCfg().groups.explore end,
-                function(v) ns.QuickCfg().groups.explore = v end)
+    local dropPanels = {}
+    local dropGuard
+    local dropBaseY = hy
+    local blocks = {}
+
+    local function GuardDrops()
+        if dropGuard then return end
+        dropGuard = CreateFrame("Frame")
+        dropGuard:RegisterEvent("GLOBAL_MOUSE_DOWN")
+        dropGuard:SetScript("OnEvent", function()
+            for k = 1, #dropPanels do
+                local d = dropPanels[k]
+                if d:IsShown() and not d:IsMouseOver()
+                    and not (d.owner and d.owner:IsMouseOver()) then
+                    d:Hide()
+                end
+            end
+        end)
+    end
+
+    local function CheckRow(p, idx, text)
+        local row = CreateFrame("Button", nil, p)
+        row:SetSize(190, 24)
+        row:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -4 - (idx - 1) * 24)
+        local hl = row:CreateTexture(nil, "BACKGROUND")
+        hl:SetAllPoints()
+        hl:SetColorTexture(0, 0, 0, 0)
+        row:SetScript("OnEnter", function()
+            local L5 = ns.hui and ns.hui.layer and ns.hui.layer.L5
+            if L5 then hl:SetColorTexture(L5[1], L5[2], L5[3], 1) end
+        end)
+        row:SetScript("OnLeave", function()
+            hl:SetColorTexture(0, 0, 0, 0)
+        end)
+        local bx = CreateFrame("Frame", nil, row)
+        bx:SetSize(16, 16)
+        bx:SetPoint("LEFT", row, "LEFT", 10, 0)
+        row.ring = bx:CreateTexture(nil, "ARTWORK")
+        row.ring:SetAllPoints()
+        row.ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing")
+        row.ring:SetVertexColor(0.42, 0.41, 0.38, 0.9)
+        row.disc = bx:CreateTexture(nil, "ARTWORK")
+        row.disc:SetAllPoints()
+        row.disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
+        row.disc:SetVertexColor(0.91, 0.78, 0.42)
+        row.tick = bx:CreateTexture(nil, "OVERLAY")
+        row.tick:SetAllPoints()
+        row.tick:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
+        row.label = Fs(row, 14, C_TEXT)
+        row.label:SetPoint("LEFT", bx, "RIGHT", 7, 0)
+        row.label:SetText(text)
+        return row
+    end
+
+    local function Relayout()
+        local y = dropBaseY
+        for k = 1, #blocks do
+            local b = blocks[k]
+            if b.show() then
+                b.label:Show()
+                b.label:ClearAllPoints()
+                b.label:SetPoint("TOPLEFT", host, "TOPLEFT", SET_PAD - 6, y)
+                b.btn:Show()
+                b.btn:ClearAllPoints()
+                b.btn:SetPoint("TOPLEFT", host, "TOPLEFT", 8, y - SET_HDR_H)
+                y = y - SET_HDR_H - SET_ROW_H
+            else
+                b.label:Hide()
+                b.btn:Hide()
+            end
         end
+        hy = y
+        host:SetHeight(8 - y)
+        for k = 1, #dropPanels do dropPanels[k]:Hide() end
+        if ns.LayoutSettingsStack then ns.LayoutSettingsStack() end
     end
 
-    Header(L["专业列表"])
-    do
-        local learned = Chip(host, L["只看已学"], 68, 22)
-        local all = Chip(host, L["全部"], 68, 22)
-        learned:SetPoint("TOPRIGHT", host, "TOPRIGHT", 6 - SET_PAD, hy)
-        all:SetPoint("RIGHT", learned, "LEFT", -6, 0)
-        set.chipLearned, set.chipAll = learned, all
-        learned:SetScript("OnClick", function()
+    local function DropRow(label, items, opts)
+        local hfs = Fs(host, self.FS_AUX, C_DIM)
+        hfs:SetText(label)
+
+        local bt = CreateFrame("Button", nil, host, "BackdropTemplate")
+        bt:SetSize(192, 24)
+        bt.__huiKeepTextColor = true
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+        local bfs = Fs(bt, 13, C_TEXT)
+        bfs:SetPoint("LEFT", bt, "LEFT", 10, 0)
+        bfs:SetPoint("RIGHT", bt, "RIGHT", -22, 0)
+        bfs:SetJustifyH("LEFT")
+        local arw = Fs(bt, 12, C_DIM)
+        arw:SetPoint("RIGHT", bt, "RIGHT", -8, 0)
+        arw:SetText("\226\150\188")
+
+        local panel, rows = nil, {}
+
+        local function Paint()
+            for k = 1, #items do
+                local on = opts.get(items[k].key) and true or false
+                local r = rows[k]
+                if r then
+                    r.ring:SetShown(not on)
+                    r.disc:SetShown(on)
+                    r.tick:SetShown(on)
+                    local c = on and C_TEXT or C_DIM
+                    r.label:SetTextColor(c[1], c[2], c[3])
+                end
+            end
+            bfs:SetText(opts.summary())
+            if ns.QuickCfg().on then
+                bt:Enable()
+                bfs:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
+            else
+                bt:Disable()
+                bfs:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
+            end
+            arw:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
+        end
+
+        local function BuildPanel()
+            if panel then return panel end
+            GuardDrops()
+            local p = CreateFrame("Frame", nil, pop, "BackdropTemplate")
+            p:SetFrameLevel((host:GetFrameLevel() or 500) + 20)
+            p:SetSize(192, #items * 24 + 8)
+            p:EnableMouse(true)
+            p:SetScript("OnMouseWheel", function() end)
+            if ns.hui and ns.hui.SkinPopup then
+                ns.hui.SkinPopup(p, 8, "both", ns.hui.layer.L0)
+            end
+            p.owner = bt
+            for k = 1, #items do
+                local it = items[k]
+                local row = CheckRow(p, k, it.label)
+                row:SetScript("OnClick", function()
+                    ns.PlaySound(1)
+                    opts.click(it.key)
+                    Paint()
+                    QB:SyncSettings()
+                    QB:Apply()
+                    if opts.single then p:Hide() end
+                end)
+                rows[k] = row
+            end
+            panel = p
+            dropPanels[#dropPanels + 1] = p
+            return p
+        end
+
+        bt:SetScript("OnClick", function(self)
             ns.PlaySound(1)
-            ns.QuickCfg().profMode = "learned"
-            QB:SyncSettings()
-            QB:Apply()
+            local p = BuildPanel()
+            if p:IsShown() then
+                p:Hide()
+                return
+            end
+            for k = 1, #dropPanels do
+                if dropPanels[k] ~= p then dropPanels[k]:Hide() end
+            end
+            p:ClearAllPoints()
+            p:SetPoint("TOPLEFT", self, "BOTTOMLEFT", 0, -4)
+            p:Show()
+            Paint()
         end)
-        all:SetScript("OnClick", function()
-            ns.PlaySound(1)
-            ns.QuickCfg().profMode = "all"
-            QB:SyncSettings()
-            QB:Apply()
-        end)
-        hy = hy - SET_ROW_H
+
+        blocks[#blocks + 1] = {
+            label = hfs,
+            btn = bt,
+            show = opts.show or function() return true end,
+        }
+        Paint()
+        return bt
     end
 
-    Header(L["探索子页"])
     do
-        local a = { key = "books", text = L["40本书"] }
-        local b = { key = "bag",   text = L["睡袋"] }
-        local ga = function() return ns.QuickCfg().expl[a.key] end
-        local sa = function(v) ns.QuickCfg().expl[a.key] = v end
-        local gb = function() return ns.QuickCfg().expl[b.key] end
-        local sb = function(v) ns.QuickCfg().expl[b.key] = v end
-        set.expl[a.key], set.expl[b.key] = ToggleRow2(a.text, ga, sa, b.text, gb, sb)
+        local groupItems = { { key = "dungeon", label = L["推荐五人本"] } }
+        if ns.LoadForeverPages then
+            groupItems[#groupItems + 1] = { key = "prof", label = L["专业"] }
+            groupItems[#groupItems + 1] = { key = "explore", label = L["探索"] }
+        end
+        DropRow(L["显示分组"], groupItems, {
+            get = function(k) return ns.QuickCfg().groups[k] end,
+            click = function(k)
+                local g = ns.QuickCfg().groups
+                g[k] = not (g[k] and true)
+            end,
+            summary = function()
+                local out = {}
+                for k = 1, #groupItems do
+                    if ns.QuickCfg().groups[groupItems[k].key] then
+                        out[#out + 1] = groupItems[k].label
+                    end
+                end
+                return (#out > 0) and table.concat(out, "、") or L["未选择"]
+            end,
+        })
     end
+
+    do
+        local profItems = {
+            { key = "learned", label = L["只看已学"] },
+            { key = "all", label = L["全部"] },
+        }
+        DropRow(L["专业列表"], profItems, {
+            single = true,
+            show = function()
+                return ns.LoadForeverPages and ns.QuickCfg().groups.prof and true or false
+            end,
+            get = function(k)
+                local mode = ns.QuickCfg().profMode
+                if mode ~= "all" then mode = "learned" end
+                return mode == k
+            end,
+            click = function(k) ns.QuickCfg().profMode = k end,
+            summary = function()
+                return (ns.QuickCfg().profMode == "all") and L["全部"] or L["只看已学"]
+            end,
+        })
+    end
+
+    do
+        local explItems = {
+            { key = "books", label = L["40本书"] },
+            { key = "bag", label = L["睡袋"] },
+        }
+        DropRow(L["探索子页"], explItems, {
+            show = function()
+                return ns.LoadForeverPages and ns.QuickCfg().groups.explore and true or false
+            end,
+            get = function(k) return ns.QuickCfg().expl[k] end,
+            click = function(k)
+                local e = ns.QuickCfg().expl
+                e[k] = not (e[k] and true)
+            end,
+            summary = function()
+                local out = {}
+                for k = 1, #explItems do
+                    if ns.QuickCfg().expl[explItems[k].key] then
+                        out[#out + 1] = explItems[k].label
+                    end
+                end
+                return (#out > 0) and table.concat(out, "、") or L["未选择"]
+            end,
+        })
+    end
+
+    Relayout()
+    set.repaint = set.repaint or {}
+    set.repaint[#set.repaint + 1] = Relayout
 
     if self.cardBg then self.cardBg:SetHeight(8 - hy) end
 
@@ -760,19 +975,12 @@ function QB:SyncSettings()
     end
 
     set.on:SetChecked(cfg.on and true or false)
-    for k, tg in pairs(set.group) do
-        tg:SetChecked(cfg.groups[k] and true or false)
-        Gate(tg)
-    end
-    for k, tg in pairs(set.expl) do
-        tg:SetChecked(cfg.expl[k] and true or false)
-        Gate(tg)
-    end
     for k, tg in pairs(set.tabs or {}) do
         tg:SetChecked(cfg.tabs[k] ~= false)
     end
-    PaintChip(set.chipLearned, cfg.profMode ~= "all")
-    PaintChip(set.chipAll, cfg.profMode == "all")
+    for i = 1, #(set.repaint or {}) do
+        set.repaint[i]()
+    end
 end
 
 ns.Init(function()

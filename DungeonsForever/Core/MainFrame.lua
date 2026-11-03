@@ -705,7 +705,7 @@ settingsBtn:SetScript("OnClick", function()
     if show and ns.QuickBar then ns.QuickBar:SyncSettings() end
     if show then BuildTipCard() end
     if show then BuildAppearanceCard() end
-    if show then BuildSpellCard() end
+    if show then BuildEnhCard() end
     settingsPop:SetShown(show)
     SyncSettingsGlyph()
 end)
@@ -902,41 +902,80 @@ end
 ns.BuildAppearanceCard = BuildAppearanceCard
 ns.PaintAppearance = PaintAppearance
 
-local spellCard
+local enhCard
 local spellToggle
-local spellNote
+local talentToggle
 
-local function SyncSpellCard()
-    if not spellToggle then return end
-    local on = ns.SpellEnhOn and ns.SpellEnhOn()
-    spellToggle:SetChecked(on and true or false)
-    if not spellNote then return end
-    if ns.SpellTabsTaken and ns.SpellTabsTaken() then
-        spellNote:SetText(on and L["其它插件页签同时开启"] or L["已有插件占用技能页"])
-        spellNote:SetTextColor(1, 0.72, 0.32)
-    else
-        spellNote:SetText(L["训练师、武器技能两页"])
-        spellNote:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
+local function SpellBlocked()
+    return (ns.SpellTabsTaken and ns.SpellTabsTaken()) and true or false
+end
+
+local function SyncEnhCard()
+    if spellToggle then
+        spellToggle:SetChecked((ns.SpellEnhOn and ns.SpellEnhOn()) and true or false)
+        local blocked = SpellBlocked()
+        spellToggle:SetAlpha(blocked and 0.4 or 1)
+        if blocked then
+            spellToggle:Disable()
+        else
+            spellToggle:Enable()
+        end
+    end
+    if talentToggle then
+        talentToggle:SetChecked((ns.TalentEnhOn and ns.TalentEnhOn()) and true or false)
     end
 end
 
-local function AnchorSpellCard()
-    if not spellCard then return end
-    spellCard:ClearAllPoints()
+local function AnchorEnhCard()
+    if not enhCard then return end
+    enhCard:ClearAllPoints()
     local up = appearanceCard or tipCard
     if up then
-        spellCard:SetPoint("TOPLEFT", up, "BOTTOMLEFT", 0, -8)
-        spellCard:SetPoint("TOPRIGHT", up, "BOTTOMRIGHT", 0, -8)
+        enhCard:SetPoint("TOPLEFT", up, "BOTTOMLEFT", 0, -8)
+        enhCard:SetPoint("TOPRIGHT", up, "BOTTOMRIGHT", 0, -8)
     else
-        spellCard:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 6, -38)
-        spellCard:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -6, -38)
+        enhCard:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 6, -38)
+        enhCard:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -6, -38)
     end
 end
 
-function BuildSpellCard()
-    if spellCard then
-        AnchorSpellCard()
-        SyncSpellCard()
+local function EnhRow(card, y, title, tip, noteFn)
+    local hd = card:CreateFontString(nil, "OVERLAY")
+    hd:SetFont(ns.FONT, 15, "")
+    hd:SetPoint("TOPLEFT", card, "TOPLEFT", 8, y)
+    hd:SetText(title)
+    hd:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+
+    local tg = CreateFrame("CheckButton", nil, card)
+    tg:SetSize(36, 20)
+    tg:EnableMouse(true)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
+    tg:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, y + 1)
+    tg:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(title, 1, 1, 1, true)
+        if noteFn then
+            local lines = noteFn()
+            if lines then
+                for i = 1, #lines do
+                    GameTooltip:AddLine(lines[i], 1, 0.55, 0.35, true)
+                end
+            end
+        end
+        GameTooltip:AddLine(tip, 0.78, 0.80, 0.84, true)
+        GameTooltip:Show()
+    end)
+    tg:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    return tg
+end
+
+function BuildEnhCard()
+    if enhCard then
+        AnchorEnhCard()
+        SyncEnhCard()
         return
     end
     local card = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
@@ -947,49 +986,42 @@ function BuildSpellCard()
         card:SetBackdropColor(0x16 / 255, 0x1A / 255, 0x22 / 255, 1)
         card:SetBackdropBorderColor(1, 1, 1, 0.1)
     end
-    spellCard = card
-    AnchorSpellCard()
-    card:SetHeight(46)
+    enhCard = card
+    AnchorEnhCard()
+    card:SetHeight(80)
 
     local hd = card:CreateFontString(nil, "OVERLAY")
-    hd:SetFont(ns.FONT, 15, "")
-    hd:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -7)
-    hd:SetText(L["技能页增强"])
-    hd:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+    hd:SetFont(ns.FONT, 14, "")
+    hd:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -8)
+    hd:SetText(L["原生界面增强"])
+    hd:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
 
-    local tg = CreateFrame("CheckButton", nil, card)
-    tg:SetSize(36, 20)
-    tg:EnableMouse(true)
-    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
-    tg:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -6)
-    tg:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:ClearLines()
-        GameTooltip:AddLine(L["技能页增强"], 1, 1, 1, true)
-        GameTooltip:AddLine(L["在原生技能书里增加训练师与武器技能页"], 0.78, 0.80, 0.84, true)
-        GameTooltip:Show()
-    end)
-    tg:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-    tg:SetScript("OnClick", function(self)
+    spellToggle = EnhRow(card, -30, L["技能页增强"], L["在原生技能书里增加训练师与武器技能页"],
+        function()
+            if not SpellBlocked() then return nil end
+            return { L["其它插件已占用技能书页签，本项暂不可用"],
+                     L["两个插件不能同时往技能书里加页；关掉对方的技能页增强并重载后，这里会自动恢复。"] }
+        end)
+    talentToggle = EnhRow(card, -58, L["天赋页增强"], L["在原生天赋界面增加天赋模拟页与加点序号"])
+
+    spellToggle:SetScript("OnClick", function(self)
+        if SpellBlocked() then return end
         ns.PlaySound(1)
         local nv = not (ns.SpellEnhOn and ns.SpellEnhOn())
         self:SetChecked(nv)
         if ns.SetSpellEnh then ns.SetSpellEnh(nv) end
-        SyncSpellCard()
+        SyncEnhCard()
     end)
-    spellToggle = tg
-
-    local note = card:CreateFontString(nil, "OVERLAY")
-    note:SetFont(ns.FONT, 11, "")
-    note:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -29)
-    note:SetWidth(184)
-    note:SetJustifyH("LEFT")
-    spellNote = note
-    SyncSpellCard()
+    talentToggle:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local nv = not (ns.TalentEnhOn and ns.TalentEnhOn())
+        self:SetChecked(nv)
+        if ns.SetTalentEnh then ns.SetTalentEnh(nv) end
+        SyncEnhCard()
+    end)
+    SyncEnhCard()
 end
-ns.BuildSpellCard = BuildSpellCard
+ns.BuildEnhCard = BuildEnhCard
 
 local function AnchorTipCard(card)
     local qbCard = ns.QuickBar and ns.QuickBar.cardBg
@@ -1224,6 +1256,24 @@ function BuildTipCard()
     end)
 end
 ns.BuildTipCard = BuildTipCard
+
+function ns.LayoutSettingsStack()
+    if tipCard then
+        AnchorTipCard(tipCard)
+    end
+    if appearanceCard then
+        appearanceCard:ClearAllPoints()
+        if tipCard then
+            appearanceCard:SetPoint("TOPLEFT", tipCard, "BOTTOMLEFT", 0, -10)
+            appearanceCard:SetPoint("TOPRIGHT", tipCard, "BOTTOMRIGHT", 0, -10)
+        else
+            appearanceCard:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 6, -38)
+            appearanceCard:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -6, -38)
+        end
+    end
+    AnchorEnhCard()
+end
+
 
 local SCALE_MIN, SCALE_MAX, SCALE_STEP = 60, 140, 5
 

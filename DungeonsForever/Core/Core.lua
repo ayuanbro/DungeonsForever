@@ -34,6 +34,61 @@ function ns.SortArrowAccent()
     return 0x46 / 255, 0xbf / 255, 0x72 / 255
 end
 
+ns.EvtPool = ns.EvtPool or {}
+
+ns.MODULES = {
+    { key = "Professions", addon = "DungeonsForeverProf",    sv = "DungeonsForeverProfDB",    legacy = { "prof", "profAudit" }, movedKey = "profMoved", label = "专业", probe = "ProfModule" },
+    { key = "Gear",        addon = "DungeonsForeverGear",    sv = "DungeonsForeverGearDB",    legacy = { "gear", "bis", "wishlist" }, label = "装备库", tabs = { "Gear", "Bis" }, probe = "GearModule" },
+    { key = "Tier",        addon = "DungeonsForeverClass",   sv = "DungeonsForeverClassDB",   legacy = { "tier", "talent", "talentSim" }, label = "职业指南", probe = "TierModule" },
+    { key = "Explore",     addon = "DungeonsForeverExplore", sv = "DungeonsForeverExploreDB", legacy = nil, label = "探索", tabs = { "Explore", "Collections" }, probe = "ExploreModule" },
+    { key = "Factions",    addon = "DungeonsForeverFaction", sv = nil, legacy = nil, label = "声望", probe = "FactionModule" },
+    { key = "PvP",         addon = "DungeonsForeverPvP",     sv = nil, legacy = nil, label = "PvP", probe = "PvPModule" },
+    { key = "Spell",       addon = "DungeonsForeverSpell",   sv = nil, legacy = nil, label = "技能书", probe = "NativeSpellBook" },
+}
+
+ns.MODULE_BY_TAB = {}
+ns.MODULE_BY_ADDON = {}
+for _, m in ipairs(ns.MODULES) do
+    m.tabs = m.tabs or { m.key }
+    for _, t in ipairs(m.tabs) do ns.MODULE_BY_TAB[t] = m end
+    ns.MODULE_BY_ADDON[m.addon] = m
+end
+
+function ns.AddonLoaded(name)
+    if type(C_AddOns) == "table" and C_AddOns.IsAddOnLoaded then
+        return C_AddOns.IsAddOnLoaded(name) and true or false
+    end
+    if type(IsAddOnLoaded) == "function" then
+        local ok, a = pcall(IsAddOnLoaded, name)
+        if ok then return a == true or a == 1 end
+    end
+    return false
+end
+
+function ns.ModuleOn(tabKey)
+    local m = ns.MODULE_BY_TAB[tabKey]
+    if not m then return true end
+    if m.probe and ns[m.probe] ~= nil then return true end
+    return ns.AddonLoaded(m.addon)
+end
+
+function ns.ModuleDesc(tabKey)
+    return ns.MODULE_BY_TAB[tabKey]
+end
+
+function ns.ModuleWant(m)
+    if type(m) ~= "table" then return false end
+    if m.key == "Spell" then
+        local ui = ns.DB and ns.DB().ui
+        return not (ui and ui.spellEnh == false)
+    end
+    local tabs = ns.QuickCfg().tabs
+    for _, t in ipairs(m.tabs) do
+        if tabs[t] ~= false then return true end
+    end
+    return false
+end
+
 local function DB()
     DungeonsForeverDB = DungeonsForeverDB or {}
     DungeonsForeverDB.ui = DungeonsForeverDB.ui or {}
@@ -58,11 +113,12 @@ local function DB()
         end
         db.svVersion = 3
     end
-    if db.profMoved then
-        local pdb = _G.DungeonsForeverProfDB
-        if type(pdb) == "table" and type(pdb.prof) == "table" then
-            db.prof = nil
-            db.profAudit = nil
+    for _, m in ipairs(ns.MODULES) do
+        if m.sv and m.legacy then
+            local mk = m.movedKey or (m.sv .. "Moved")
+            if db[mk] and ns.ModuleDBKeys and ns.ModuleDBKeys(m.sv, m.legacy) then
+                for i = 1, #m.legacy do db[m.legacy[i]] = nil end
+            end
         end
     end
     return db
@@ -127,6 +183,20 @@ end
 
 function ns.SetProfModule(on)
     ns.QuickCfg().tabs.Professions = on and true or false
+end
+
+function ns.TalentEnhOn()
+    local v = DB().ui.talentEnh
+    if v == nil then return true end
+    return v == true
+end
+
+function ns.SetTalentEnh(on)
+    DB().ui.talentEnh = on and true or false
+    if ns.ConfirmReload and ns.AddonLoaded and ns.AddonLoaded("DungeonsForeverClass") then
+        ns.ConfirmReload(on and ns.L["「天赋页增强」已开启，重载界面后生效"]
+            or ns.L["「天赋页增强」已关闭，重载后生效"])
+    end
 end
 
 function ns.ConfirmReload(msg)
@@ -939,37 +1009,47 @@ do
     end
 end
 
-local profBoot = CreateFrame("Frame")
-profBoot:RegisterEvent("ADDON_LOADED")
-profBoot:SetScript("OnEvent", function(self, event, name)
-    if name ~= "DungeonsForever" then return end
-    self:UnregisterEvent("ADDON_LOADED")
-    local want = ns.QuickCfg().tabs.Professions ~= false
-    if want and not ns.ProfModule then
-        if type(C_AddOns) == "table" and C_AddOns.EnableAddOn then pcall(C_AddOns.EnableAddOn, "DungeonsForeverProf") end
-        if type(C_AddOns) == "table" and C_AddOns.LoadAddOn then
-            pcall(C_AddOns.LoadAddOn, "DungeonsForeverProf")
-        elseif type(LoadAddOn) == "function" then
-            pcall(LoadAddOn, "DungeonsForeverProf")
-        end
-    elseif not want and type(C_AddOns) == "table" and C_AddOns.DisableAddOn then
-        pcall(C_AddOns.DisableAddOn, "DungeonsForeverProf")
-    end
-    local q = _G.DF_PROF_LAZY
-    if type(q) ~= "table" then return end
-    _G.DF_PROF_LAZY = nil
+local function drainLazy(list, label)
+    if type(list) ~= "table" then return 0 end
     local bad = 0
-    for i = 1, #q do
-        local ok, err = pcall(q[i])
+    for i = 1, #list do
+        local ok, err = pcall(list[i])
         if not ok then
             bad = bad + 1
             if DEFAULT_CHAT_FRAME and bad <= 3 then
-                DEFAULT_CHAT_FRAME:AddMessage("|cffff5555DungeonsForever|r 专业页模块第 " .. i .. " 项初始化失败：" .. tostring(err))
+                DEFAULT_CHAT_FRAME:AddMessage("|cffff5555DungeonsForever|r " .. label .. "第 " .. i .. " 项初始化失败：" .. tostring(err))
             end
         end
-        q[i] = nil
+        list[i] = nil
     end
-    if ns.ProfModule == nil and DEFAULT_CHAT_FRAME then
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff5555DungeonsForever|r 专业页模块未加载（" .. bad .. " 项失败），请确认 DungeonsForeverProf 已启用。")
+    return bad
+end
+
+local moduleBoot = CreateFrame("Frame")
+moduleBoot:RegisterEvent("ADDON_LOADED")
+moduleBoot:SetScript("OnEvent", function(self, event, name)
+    if name ~= "DungeonsForever" then return end
+    self:UnregisterEvent("ADDON_LOADED")
+    for _, m in ipairs(ns.MODULES) do
+        local want = ns.ModuleWant(m)
+        if want then
+            if not ns.AddonLoaded(m.addon) then
+                if type(C_AddOns) == "table" and C_AddOns.EnableAddOn then pcall(C_AddOns.EnableAddOn, m.addon) end
+                if type(C_AddOns) == "table" and C_AddOns.LoadAddOn then
+                    pcall(C_AddOns.LoadAddOn, m.addon)
+                elseif type(LoadAddOn) == "function" then
+                    pcall(LoadAddOn, m.addon)
+                end
+            end
+        elseif type(C_AddOns) == "table" and C_AddOns.DisableAddOn then
+            pcall(C_AddOns.DisableAddOn, m.addon)
+        end
+    end
+    local bad = drainLazy(_G.DF_PROF_LAZY, "专业模块")
+    bad = bad + drainLazy(_G.DF_MODULE_LAZY, "页面模块")
+    _G.DF_PROF_LAZY = nil
+    _G.DF_MODULE_LAZY = nil
+    if bad > 0 and DEFAULT_CHAT_FRAME then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff5555DungeonsForever|r 有 " .. bad .. " 项页面模块初始化失败，请检查对应子插件是否已启用。")
     end
 end)
