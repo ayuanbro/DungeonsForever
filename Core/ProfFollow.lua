@@ -737,6 +737,7 @@ function PF.Following(slug)
 end
 
 function PF.SuspendAutoTrack(slug, reason)
+    if reason == "recalculate" and PF.endedPlan then PF.endedPlan[slug] = nil end
     local s = st()
     if s and s.slug == slug then
         s.autoTrackSuspended = reason or true
@@ -2125,6 +2126,8 @@ local function BuildBody()
 
     f.finish = MakeFS(f, 14, C_OK, "LEFT")
     f.finish:SetWordWrap(false)
+    f.scanStatus = MakeFS(f, 11, C_DIM, "LEFT")
+    f.scanStatus:SetWordWrap(true)
 
     local nowW = 68
     do
@@ -2360,6 +2363,7 @@ end
 
 function PF.Paint()
     if not (f and f:IsShown()) then return end
+    f.scanStatus:Hide()
     if trackingPaused() then
         PF.combatPaused=true
         paintTrackingStatus(L["战斗中暂停追踪"], L["战斗中暂停追踪，脱战后自动恢复。"])
@@ -2909,6 +2913,21 @@ function PF.Paint()
         y = y - 34
     end
 
+    local PD=ns.ProfModule
+    local scanText=PD and PD.ScanSnapshotText and PD.ScanSnapshotText()
+    local scanWarning,scanBlocked
+    if PD and PD.ReplicateScanWarning then scanWarning,scanBlocked=PD.ReplicateScanWarning() end
+    scanText=scanText or scanWarning
+    if scanText and not (finished and f.finish:GetText()==scanText) then
+        f.scanStatus:SetText(scanText)
+        f.scanStatus:SetTextColor(scanBlocked and 0.98 or 0.55,scanBlocked and 0.55 or 0.85,scanBlocked and 0.4 or 0.6)
+        f.scanStatus:SetWidth(W-20)
+        f.scanStatus:ClearAllPoints()
+        f.scanStatus:SetPoint("TOPLEFT",f,"TOPLEFT",10,y)
+        f.scanStatus:Show()
+        y=y-math.max(16,f.scanStatus:GetStringHeight())-8
+    end
+
     if viewing then
         f.nowBtn:ClearAllPoints()
         f.nowBtn:SetPoint("TOPRIGHT", f.card, "TOPRIGHT", -8, -59)
@@ -2987,6 +3006,13 @@ function PF.PaintImportBtn(bt, slug)
 end
 
 local function connectExecution()
+    local bridge=ns.AuctionBridge
+    if bridge and bridge.OnChanged then bridge.OnChanged(function(_,reason)
+        if reason=="supply" or reason=="scan-status" then
+            PF.InvalidateRoute()
+            if PF.f and PF.f:IsShown() then PF.Sync();PF.Paint() end
+        end
+    end) end
     local XP = ns.ProfExecution
     if XP and XP.OnObservationChanged then XP.OnObservationChanged(function()
         if PF.f and PF.f:IsShown() then

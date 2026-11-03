@@ -94,10 +94,48 @@ function PD.AuctionatorStatusText()
     return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
 end
 
+function PD.ScanSnapshotText()
+    if not ns.IsForever then return end
+    local bridge=ns.AuctionBridge
+    local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+    if not snapshot then return end
+    if snapshot.status=="available" then
+        local minutes=math.max(0,math.floor(((time and time() or 0)-snapshot.observedAt)/60))
+        local scan=bridge.FullScanStatus and bridge.FullScanStatus()
+        if scan and (scan.status=="scanning" or scan.status=="processing") then
+            return L["正在更新扫描，当前使用上次完整扫描"]
+        elseif scan and (scan.status=="failed" or scan.status=="incomplete" or scan.status=="unverified") then
+            return format(L["本次扫描失败，沿用 %d 分钟前的完整扫描"],minutes)
+        end
+        return format(L["使用 %d 分钟前的完整扫描"],minutes)
+    elseif snapshot.status=="expired" then
+        return L["完整扫描数据已超过 2 天，请更新后重新计算。"]
+    elseif snapshot.status=="mismatch" then
+        return L["已保存的完整扫描属于其他角色或市场，请用当前角色完成一次完整扫描。"]
+    elseif snapshot.status=="invalid" then
+        return L["已保存的完整扫描数据无效，请重新完成一次完整扫描。"]
+    end
+end
+
+function PD.ScanModeAdvice()
+    local bridge=ns.AuctionBridge
+    if ns.IsForever and bridge and bridge.ReplicateScanEnabled and bridge.ReplicateScanEnabled()==true then
+        return L["不使用专业功能时，推荐切回摘要模式。"]
+    end
+end
+
 function PD.ReplicateScanMessage(reason)
+    if reason=="replicateModeDisabled" or reason=="replicateScanRequired" or reason=="replicateModeUnknown" then
+        local bridge=ns.AuctionBridge
+        local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+        if snapshot and snapshot.status~="available" and snapshot.status~="missing" then return PD.ScanSnapshotText() end
+    end
     if reason=="replicateModeDisabled" then
         return L["请在「设置选项 → 插件 → Auctionator → 高级」中确认已勾选「默认使用较慢的备用扫描模式」，然后到拍卖行使用 Auctionator 完成一次完整扫描。"]
     elseif reason=="replicateScanRequired" then
+        if ns.AuctionBridge and ns.AuctionBridge.FullScanSnapshotStatus then
+            return L["尚无可用的完整扫描数据，请使用 Auctionator 完成一次完整扫描。"]
+        end
         return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
     elseif reason=="replicateModeUnknown" then
         local st=PD.AuctionatorState()
@@ -108,9 +146,10 @@ end
 
 function PD.ReplicateScanWarning()
     if not ns.IsForever then return nil end
+    local bridge=ns.AuctionBridge
+    if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady()==true then return nil end
     local st=PD.AuctionatorState()
     if st=="missing" or st=="disabled" or st=="loading" then return PD.AuctionatorStatusText(),true end
-    local bridge=ns.AuctionBridge
     if not (bridge and bridge.ReplicateScanReady) then
         return PD.ReplicateScanMessage("replicateModeUnknown"),true
     end
@@ -183,6 +222,14 @@ end
 
 function PD.SnapshotBadgeText(s)
     local st, sec = PD.SnapshotBadgeState(s)
+    local bridge=ns.AuctionBridge
+    local snapshot=ns.IsForever and bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+    if snapshot and snapshot.status=="available" then
+        if st=="stock_changed" or st=="stale" then return L["路线待重算"],0.95,0.75,0.4 end
+        if st=="stock_unknown" then return L["部分物品库存未知"],0.95,0.75,0.4 end
+        if st=="incomplete" then return L["路线待核对"],0.95,0.75,0.4 end
+        if st=="unpriced" or st=="noprice" then return L["价格待补全"],0.95,0.75,0.4 end
+    end
     if st == "no_plan" then return nil end
     if st=="recipe_reference" then return L["配方资料待补全"],0.95,0.75,0.4 end
     if st == "learning_reference" then return L["含未知学习来源"], 0.95, 0.75, 0.4 end
@@ -5981,6 +6028,8 @@ function PD.PaintLvTiles()
     end
     for _, k in ipairs({ "mode", "scheme", "excl", "target" }) do tiles[k].__use = true end
     local s = PD.lvSummary or {}
+    local _,scanBlocked=PD.ReplicateScanWarning()
+    local scanNotice=PD.ScanSnapshotText()
     local fishRoute = PD.CookingFishingMode()
     local v = PD.LvTarget()
     local auto = PD.Setting("autoRoute")
@@ -6103,7 +6152,7 @@ function PD.PaintLvTiles()
     else
         tiles.cost.val:SetText(L["—"])
         tiles.cost.val:SetTextColor(Unpack(C_GREY))
-        costLines = { { PD.AuctionatorStatusText(), 0.7, 0.7, 0.7 } }
+        costLines = { { scanNotice or PD.AuctionatorStatusText(), 0.7, 0.7, 0.7 } }
     end
     if (s.np or 0) > 0 then
         costLines[#costLines + 1] = { format(L["含无价材料 %d 种：花费为估算下限"], s.np),
@@ -6118,10 +6167,8 @@ function PD.PaintLvTiles()
         costLines[#costLines + 1] = { L["Auctionator 已安装但未启用，请启用后重载界面。"], 0.95, 0.75, 0.4 }
     elseif ahState == "loading" then
         costLines[#costLines + 1] = { L["拍卖行价格读取中…"], 0.7, 0.7, 0.7 }
-    elseif ahState == "stale" then
-        costLines[#costLines + 1] = { L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 0.9, 0.35, 0.35 }
-    elseif ahState == "noprice" then
-        costLines[#costLines + 1] = { L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 0.9, 0.35, 0.35 }
+    elseif ahState == "stale" or ahState == "noprice" then
+        costLines[#costLines + 1] = { scanNotice or L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 0.7, 0.7, 0.7 }
     end
     if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local net = s.netTotal or ((s.total or 0) - s.recoveryTotal)
@@ -6143,7 +6190,6 @@ function PD.PaintLvTiles()
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
-    local _,scanBlocked=PD.ReplicateScanWarning()
     if scanBlocked then
         tiles.cost.label:SetText(L["拍卖行扫描"])
         tiles.cost.val:SetText(L["请扫描拍卖行"])
@@ -6164,16 +6210,18 @@ function PD.PaintLvTiles()
     elseif s.priced and snapSec then
         atxt = PD.SnapshotSecText(snapSec)
     elseif s.priced then
-        atxt = L["请扫描拍卖行"]
+        atxt = scanNotice or L["请扫描拍卖行"]
     end
-    local details = { { atxt or PD.AuctionatorStatusText(), 0.7, 0.7, 0.7 } }
+    local detailText=atxt or scanNotice or PD.AuctionatorStatusText()
+    local details = { { detailText, 0.7, 0.7, 0.7 } }
+    if scanNotice and scanNotice~=detailText then details[#details+1]={scanNotice,0.7,0.7,0.7} end
     if snapSec then
         details[#details + 1] = { format(L["上次扫描： %s"], PD.SnapshotSecText(snapSec)), 0.7, 0.7, 0.7 }
     end
     local progress = PD.PlanProgressText(s)
     if progress then details[#details + 1] = { progress, 0.7, 0.7, 0.7 } end
     local cached = PD.PlanCacheText(s)
-    if cached then details[#details + 1] = { cached, 0.95, 0.75, 0.4 } end
+    if cached and cached~=detailText and cached~=scanNotice then details[#details + 1] = { cached, 0.95, 0.75, 0.4 } end
     if s.budgetLimited then details[#details + 1] = { L["已完成本轮计算，当前结果尚未证明最优。"], 0.95, 0.75, 0.4 } end
     if s.quotesRefreshed then details[#details + 1] = { L["数量或费率已更新，本轮数字已按最新价格重算。"], 0.7, 0.7, 0.7 } end
     for _, ln in ipairs(details) do costLines[#costLines + 1] = ln end
@@ -6211,7 +6259,20 @@ function PD.PaintLvTiles()
     if PD.autoPage ~= "log" and s.recoveryEstimated then
         costLines[#costLines + 1] = { L["回血暂按历史数据估算；请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 0.95, 0.75, 0.4 }
     end
-    TipOn(tiles.cost, costLines)
+    if ns.IsForever then
+        local advice=PD.ScanModeAdvice()
+        if advice then
+            costLines[#costLines+1]={advice,0.7,0.7,0.7}
+            costLines[#costLines+1]={L["切回摘要模式：在「设置选项 → 插件 → Auctionator → 高级」中取消勾选「默认使用较慢的备用扫描模式」。"],0.7,0.7,0.7}
+        end
+        costLines[#costLines+1]={L["摘要模式下，本插件不监听或保存扫描数据；仍可使用 2 天内的完整扫描快照计算。"],0.7,0.7,0.7}
+        costLines[#costLines+1]={L["完整扫描快照保留 2 天，过期后自动删除；重载或切换扫描模式不会延长有效期。"],0.7,0.7,0.7}
+    end
+    local uniqueLines,seenLines={},{}
+    for _,line in ipairs(costLines) do
+        if not seenLines[line[1]] then uniqueLines[#uniqueLines+1]=line;seenLines[line[1]]=true end
+    end
+    TipOn(tiles.cost, uniqueLines)
     if fixedOnly then tiles.scheme.__use = false end
     local n = 0
     for _, k in ipairs(PD.chipOrder) do
@@ -11009,6 +11070,12 @@ function PD.PlanCacheText(plan)
     if plan and plan.staleReason=="procurement-policy" then return L["采购规则已更新，请重新计算路线。"] end
     if plan and plan.staleReason=="supply" then
         if not PD.RouteSupplyNeedsRescan(plan) then return L["拍卖行库存已更新，点击重新计算即可使用。"] end
+        local bridge=ns.AuctionBridge
+        if bridge and bridge.FullScanSnapshotStatus then
+            local warning=PD.ReplicateScanWarning()
+            if warning then return warning end
+            return L["部分物品库存未知"]
+        end
         return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
     end
     if plan and plan.stale then return L["路线输入已更新，点击重新计算。"] end
@@ -12753,7 +12820,20 @@ function PD.RowsLeveling(rows)
     PD.warnNotes = notes
     local scanWarning=PD.ReplicateScanWarning()
     if scanWarning then
+        warningSeen[scanWarning]=true
         PushText(rows,scanWarning,12,{0.98,0.55,0.4},1)
+        PushGap(rows,4,1)
+    else
+        local scanNotice=PD.ScanSnapshotText()
+        if scanNotice then
+            PushText(rows,scanNotice,12,{0.55,0.85,0.6},1)
+            PushGap(rows,4,1)
+        end
+    end
+
+    local scanAdvice=PD.ScanModeAdvice()
+    if scanAdvice then
+        PushText(rows,scanAdvice,11,C_DIM,1)
         PushGap(rows,4,1)
     end
 
@@ -13061,7 +13141,6 @@ function PD.RowsLeveling(rows)
             local owned = PD.ToolOwned(st.toolItem)
             chipOf[st] = owned and { text = L["已拥有"], bg = DG.Q_BADGE_SHARE_BG }
                 or st.toolBop and { text = L["BoP 制作"], bg = DG.Q_BADGE_PRE_BG }
-                or { text = L["可购买"], bg = DG.Q_BADGE_BUY_BG }
             if cd then
                 cd.lines[#cd.lines + 1] = {
                     owned and L["工具：已在背包或银行中，无需再次制作。"]
@@ -13136,6 +13215,7 @@ function PD.RowsLeveling(rows)
                         or format(L["优化结束：已比较 %d 种组合"], res.expanded)
                 end
             end
+            if activePlan==res and progress then progress=format(L["已保存路线 · %s"],progress) end
             PD.lvRouteHead = { progress = progress }
             if PD.solverFallback and not (res and res.exact) then
                 PushText(rows, PD.SolverFallbackText(), 12, { 0.95, 0.75, 0.4 })
@@ -13349,6 +13429,11 @@ function PD.FormulaBlockedText(entry)
     if not (entry.blocked or entry.usable==false) then return end
     local reason=entry.reason
     if reason == "formulaAuctionSupplyUnknown" then
+        local warning=PD.ReplicateScanWarning()
+        if warning then return warning end
+        if ns.AuctionBridge and ns.AuctionBridge.FullScanSnapshotStatus then
+            return L["本次完整扫描未能核实此图纸的库存，请重新扫描或核对购买来源。"]
+        end
         local AB = ns.AuctionBridge
         local enabled = AB
             and AB.ReplicateScanEnabled
@@ -14297,6 +14382,14 @@ function PD.LevelTool()
             if pf and pf.ImportShoppingList then pcall(pf.ImportShoppingList, PD.cur, name) end
             ns.PlaySound(1)
         elseif k == "recalc" then
+            local follow = ns.ProfFollow
+            if follow and follow.SuspendAutoTrack then follow.SuspendAutoTrack(PD.cur, "recalculate") end
+            if RA and RA.EndExecution then
+                RA.EndExecution(PD.cur)
+            else
+                local T = ns.ProfExecution
+                if T and T.End then T.End(PD.cur, "ended") end
+            end
             PD.exclusionsOpen = false
             PD.ClearPlanCache()
             PD.exactFailed = {}
@@ -14447,9 +14540,9 @@ function PD.RowsSettings(rows)
           d1 = L["七折仅影响拍卖产物估值；手续费照常计算，NPC卖价不打折。"],
           d2 = L["回血模式下，盈利优先每配方最多20次；之后仍可为升级或材料继续制作。"] },
         { k = "autoCraftTools", name = L["自动备齐专业工具"],
-          desc = L["把附魔棒、扳手这类升级路线必需的工具排进路线。"],
-          d1 = L["开启：在工具可用等级插入一次制作，产出的工具计入保留物品、不按可出售计算。"],
-          d2 = L["关闭：路线不含工具制作，需要你自己准备。"] },
+          desc = L["自动备齐升级所需的专业工具，已有工具不重复准备。"],
+          d1 = L["开启：每种必需工具至少备齐一件；比较购买和制作，购买进入购物清单，制作进入升级路线。"],
+          d2 = L["关闭：不额外安排工具准备；工具配方仍可作为普通升级配方参与计算。"] },
     }
     local byKey = {}
     for _, d in ipairs(defs) do byKey[d.k] = d end
@@ -15252,6 +15345,7 @@ function PD.Render()
         if tool and PD.tab == "leveling" and PD.autoSnapshotSlug == PD.cur
            and PD.autoSnapshot and PD.autoSnapshot.stale then
             stale = PD.PlanCacheText(PD.autoSnapshot)
+            if stale==PD.ReplicateScanWarning() then stale=nil end
         end
         PD.PaintToolStale(stale)
     end
@@ -16295,7 +16389,7 @@ end
 local function HookRoutePlans()
 local bridge=ns.AuctionBridge
 if bridge and bridge.OnChanged then bridge.OnChanged(function(_,reason)
-    if reason=="supply" and PD.built and ns.PageVisible(PD.page) then PD.RequestRender() end
+    if (reason=="supply" or reason=="scan-status") and PD.built and ns.PageVisible(PD.page) then PD.RequestRender() end
 end) end
 if RA and RA.OnPlanChanged then
     RA.OnPlanChanged(function(slug, plan)
