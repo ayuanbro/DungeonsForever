@@ -11,6 +11,8 @@ import test_prof_ui_fusion as ui
 
 BRIDGE_MOCKS = r'''
 ns={LoadForeverPages=true,L=setmetatable({},{__index=function(_,k)return k end})}
+-- Use a short deterministic expiry for isolated bridge lifecycle tests.
+ns.ProfRouteAuto={MaxStaleSeconds=function()return 1800 end}
 DungeonsForeverDB={prof={}};clock=10000;timers={};frames={};requests={};messages={}
 function time()return clock end
 function UnitName()return 'Player' end
@@ -76,7 +78,7 @@ class AuctionSupplyBridgeTests(unittest.TestCase):
     def test_only_valid_full_scan_batches_provide_available_quantity(self):
         self.lua.execute(r'''
           local b=ns.AuctionBridge
-          local batch={v=1,c=true,t=clock,mk='Realm:Alliance',ob='Player',items={[11]={q=7,p=20}}}
+          local batch={v=2,c=true,t=clock,mk='Realm:Alliance',ob='Player',items={[11]={q=7,p=20}}}
           DungeonsForeverDB.prof.auctionFullScan=batch
           assert(b.GetAuctionSupply(11).quantity==7 and b.GetAuctionSupply(12).quantity==0)
           clock=clock+1801
@@ -99,7 +101,7 @@ class AuctionSupplyBridgeTests(unittest.TestCase):
           ns.ProfModule={ProfLearned=function()return {alchemy={cur=1,max=300}}end}
           ns.ProfRecipes={alchemy={rows={{101,10,1,'',nil,nil,1,100,200,300,false,{{11,1}}}}}}
           IsPlayerSpell=function()return true end;UnitLevel=function()return 60 end
-          DungeonsForeverDB.prof.auctionFullScan={v=1,c=true,t=clock,mk='Realm:Alliance',ob='Player',
+          DungeonsForeverDB.prof.auctionFullScan={v=2,c=true,t=clock,mk='Realm:Alliance',ob='Player',
             items={[11]={q=1,p=7}}}
           local s=ns.ProfEconomy.Capture('alchemy',{start=1,target=3,autoCraftTools=false,considerAuctionSupply=true})
           assert(s.prices[11]==7 and s.auctionSupply[11].quantity==1)
@@ -216,7 +218,7 @@ class AuctionSupplyUITests(unittest.TestCase):
                 self.lua.execute(r'''
                   for _,key in ipairs({'数量未核实',
                     '库存观测已过期；请在 Auctionator 重新完整扫描后计算路线。',
-                    '库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。'})do assert(rawget(ns.L,key))end
+                    '库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。'})do assert(GetLocale()=='zhCN' and ns.L[key] or rawget(ns.L,key))end
                   assert(PD.SnapshotBadgeState({planVersion=2,scheme='optim',supplyComplete=false})=='stock_unknown')
                 ''')
 

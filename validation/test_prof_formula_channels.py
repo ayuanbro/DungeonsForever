@@ -8,6 +8,8 @@ class FormulaChannelTests(unittest.TestCase):
     def setUp(self):
         self.lua=native_runtime()
         self.lua.execute('''
+          -- Keep expiry cases deterministic in this isolated economy fixture.
+          ns.ProfRouteAuto.MaxStaleSeconds=function()return 1800 end
           function formulaRecipe()
             return {key='alchemy:999001',profession='alchemy',spell=999001,formula=400,source={}}
           end
@@ -24,7 +26,7 @@ class FormulaChannelTests(unittest.TestCase):
           end
         ''')
 
-    def test_auction_needs_price_and_recent_two_items_despite_retired_flags_and_material_setting(self):
+    def test_auction_needs_price_and_recent_stock_despite_retired_flags_and_material_setting(self):
         self.lua.execute('''
           local E=ns.ProfEconomy;local s=input()
           s.noFormula=true;s.learnedOnly=true;s.allowUnknownLearning=false;s.skipUnpricedFormulas=true
@@ -39,10 +41,10 @@ class FormulaChannelTests(unittest.TestCase):
           assert(not E.FormulaFor(formulaRecipe(),s).usable)
         ''')
 
-    def test_single_missing_stale_unverified_and_own_auction_counts_cannot_qualify(self):
+    def test_zero_missing_stale_unverified_and_own_auction_counts_cannot_qualify(self):
         self.lua.execute('''
           local E=ns.ProfEconomy;local s=input()
-          s.auctionSupply[400]=stock(1)
+          s.auctionSupply[400]=stock(0)
           assert(E.FormulaFor(formulaRecipe(),s).reason=='formulaAuctionSupplyInsufficient')
           local bad={stock(20),stock(20),stock(20),stock(20),{quantity=20}}
           bad[1].observedAt=1;s.stamp=2000
@@ -132,12 +134,14 @@ class FormulaChannelTests(unittest.TestCase):
           end
         ''')
 
-    def test_remaining_budget_cannot_replace_observed_two_item_threshold(self):
+    def test_remaining_budget_cannot_replace_observed_positive_stock_threshold(self):
         self.lua.execute('''
           local E=ns.ProfEconomy;local s=input()
           assert(E.FormulaFor(formulaRecipe(),s,1).usable)
           assert(not E.FormulaFor(formulaRecipe(),s,0).usable)
           s.auctionSupply[400]=stock(1)
+          assert(E.FormulaFor(formulaRecipe(),s,1).usable)
+          s.auctionSupply[400]=stock(0)
           assert(not E.FormulaFor(formulaRecipe(),s,99).usable)
           s.auctionSupply={}
           assert(not E.FormulaFor(formulaRecipe(),s,99).usable)

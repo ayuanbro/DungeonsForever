@@ -106,8 +106,6 @@ end
 
 function PD.ReplicateScanWarning()
     if not ns.IsForever then return nil end
-    local AB = ns.AuctionBridge
-    if not (AB and AB.Precise and AB.Precise()) then return nil end
     local st=PD.AuctionatorState()
     if st=="missing" or st=="disabled" or st=="loading" then return nil end
     local bridge=ns.AuctionBridge
@@ -247,7 +245,6 @@ PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.autoResidualMass = false
 PD.SETTING_DEF.autoReserveMode = "ample"
 PD.SETTING_DEF.recoveryEnabled = false
-PD.SETTING_DEF.preciseRecovery = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
 PD.RECOVERY_FEES = { 0, 5, 10, 15, 20 }
@@ -7957,7 +7954,8 @@ function PD.LearningOriginCard(recipe,view)
     if #src.drops==0 and reference then src.drops=reference.drops or reference.d or {} end
     src.quests=acquisition.quests or native and native.quests
     local count=acquisition.dropSourceCount or #src.drops
-    local hasDrop=count>0;local hasVendor=#src.vendors>0
+    src.worldDrop=native and native.worldDrop or reference and reference.worldDrop or acquisition.worldDrop
+    local hasDrop=count>0 or src.worldDrop==true;local hasVendor=#src.vendors>0
     local currency,gold=false,false
     for _,vendor in ipairs(src.vendors)do
         local exchange=(vendor.cur or 0)>0 or vendor.hasExtendedCost==true
@@ -7976,7 +7974,7 @@ function PD.LearningOriginCard(recipe,view)
     end
     local lines={{format(L["图纸：%s"],DG.ItemName(fid)),1,0.82,0.35}}
     if hasVendor then for _,line in ipairs(PD.VendorLines(src,fid))do lines[#lines+1]=line end end
-    if hasDrop then lines[#lines+1]={format(L["掉落 %d 处"],count),0.75,0.75,0.75}end
+    if count>0 then lines[#lines+1]={format(L["掉落 %d 处"],count),0.75,0.75,0.75}end
     local ah=PD.FormulaAuctionLine(fid);if ah then lines[#lines+1]=ah end
     return {kind=kind,text=text,fid=fid,source=src,lines=lines,act=hasVendor and PD.VendorAct(src) or nil}
 end
@@ -8319,7 +8317,7 @@ function PD.LevelSrc(rec, profession, resolved, frozen)
         local nCur = (SM and SM.CurrencyCount) and SM.CurrencyCount(view) or 0
         return L["图纸 · 通货兑换"], format(L["%s · 兑换 %d 处"], name, nCur), kind
     elseif kind == "drop" then
-        return L["图纸 · 掉落获取"], format(L["%s · 掉落 %d 处"], name, nDrop), kind
+        return L["图纸 · 掉落获取"], nDrop>0 and format(L["%s · 掉落 %d 处"], name, nDrop) or name, kind
     elseif kind == "quest" then
         return L["图纸 · 任务获取"], nil, kind
     end
@@ -10174,6 +10172,14 @@ function PD.RecipeList(limit, q)
                 if #out >= cap then return out end
             end
         end
+        if not (d.rows and #d.rows > 0) then
+            for _, e in ipairs(d.enchants or {}) do
+                if PD.EnchCurHit(e, PD.moneyKey) and PD.RecipeVisible(e[14]) then
+                    out[#out + 1] = PD.EnchantSpec(e)
+                    if #out >= cap then return out end
+                end
+            end
+        end
         if PD.moneyKey == PD.FAVOR_CURID then
             for _, f in ipairs(d.favor or {}) do
                 if #out < cap then
@@ -10269,6 +10275,7 @@ function PD.ScanRecipe()
     if key == "__enchant" or key == "__crafted" then
         return nil
     end
+    if not (d.rows and #d.rows > 0) then return nil end
     local q = (PD.searchQ and PD.searchQ ~= "") and PD.searchQ or nil
     local showNip = (PD.moneyKey == PD.SRC_NIP_KEY)
     if PD.moneyKey ~= nil then
@@ -10283,7 +10290,6 @@ function PD.ScanRecipe()
         end
         return cn, nil
     end
-    if not (d.rows and #d.rows > 0) then return nil end
     local fk = PD.EffKeyFilter(d)
 
     local n, maxW = 0, 0
@@ -10933,9 +10939,6 @@ function PD.PlanStatusParts(plan)
                     or L["已保存路线无法读取，请重新计算。"]
             end
             local scanText=PD.ReplicateScanMessage(diagnostic.code)
-            if scanText and ns.AuctionBridge and ns.AuctionBridge.Precise and not ns.AuctionBridge.Precise() then
-                scanText=nil
-            end
             if scanText then return scanText end
             if diagnostic.code=="learningPolicyChanged" and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
                 return ns.ProfEconomy.DiagnosticText(diagnostic)

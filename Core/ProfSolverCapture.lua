@@ -761,10 +761,6 @@ function E.AuctionSupplyOf(context,id)
     end
     local stamp=context and context.stamp or (not context and time and time())
     if validSupply(entry,stamp,not context) then return entry end
-    local bridge=ns.AuctionBridge
-    if bridge and bridge.SupplyEstimate and not (bridge.Precise and bridge.Precise()) then
-        return bridge.SupplyEstimate(id)
-    end
 end
 function E.FormulaAuctionSupplyOf(context,id)
     context=context and (context.snapshot or context)

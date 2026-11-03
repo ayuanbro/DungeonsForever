@@ -11,6 +11,7 @@ ROOT = stock.ROOT
 SOURCE_MOCK = r'''
 Auctionator={FullScan={Events={ScanStart='get_all_scan_start',ScanProgress='get_all_scan_progress',
   ScanFailed='get_all_scan_failed',ScanComplete='get_all_scan_complete'}},
+  Config={Options={REPLICATE_SCAN='replicate'},Get=function()return true end},
   Database={db={['11']={a={['0']=999},m=1}}},SavedState={TimeOfLastGetAllScan=clock}}
 local bus={listeners={},registers=0};Auctionator.EventBus=bus
 function bus:Register(listener,events)
@@ -70,7 +71,7 @@ class AuctionatorFullScanTests(unittest.TestCase):
             rawRow(11,100,1,'Player'),rawRow(12,20,0,'Bidder'),rawRow(13,30,30,'Player-Realm')})
           finishFull()
           local q=b.GetAuctionSupply(11)
-          assert(q.quantity==5 and q.market==7 and q.method=='auctionator-full-scan')
+          assert(q.quantity==5 and q.market==41/5 and q.method=='auctionator-full-scan')
           assert(q.complete and q.ownerExcluded and #requests==0)
           assert(b.GetAuctionSupply(12).quantity==0 and b.GetAuctionSupply(13).quantity==0)
           assert(b.GetAuctionSupply(99).quantity==0,'complete market did not establish absence')
@@ -246,8 +247,8 @@ class AuctionatorFullScanUITests(unittest.TestCase):
                     '数量来源：Auctionator 完整扫描（已排除本人拍卖）',
                     '库存数据缺失或已过期，请在 Auctionator 重新完整扫描后计算路线。',
                     '有 %d 种拍卖行物品数量未知，路线仅按价格估算，不能确认能买齐；请在 Auctionator 重新完整扫描。',
-                    '库存只读取 Auctionator 完整扫描的数据，有效期为 30 分钟；缺失或过期时请重新完整扫描。'})do
-                    assert(rawget(ns.L,key),key)
+                    '库存只读取 Auctionator 完整扫描的数据，有效期为 48 小时；缺失或过期时请重新完整扫描。'})do
+                    assert(GetLocale()=='zhCN' and ns.L[key] or rawget(ns.L,key),key)
                   end
                 ''')
 

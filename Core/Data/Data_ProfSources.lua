@@ -1,6 +1,6 @@
 local _, ns = ...
 
-ns.ProfSourcesMeta={schemaVersion=1,source="wowhead-forever",itemCount=1089,vendorRows=1393,dropRows=2646,dropCap=10}
+ns.ProfSourcesMeta={schemaVersion=1,source="wowhead-forever",itemCount=1089,vendorRows=1391,dropRows=2646,dropCap=10}
 ns.EnsureProfSources = function()
     if ns.ProfSources then return ns.ProfSources end
 ns.ProfSources={
@@ -489,7 +489,7 @@ ns.ProfSources={
 [18658]={d={{npc="Crimson Inquisitor", id=10426, pct=0.04, area=2017}}},
 [18661]={d={{npc="Weapon Technician", id=8920, pct=0.04, area=1584}}},
 [18731]={v={{id=5128, name="伯布斯·钢轴", area=1537, side="a", price=2105, stock=1}, {id=3366, name="达玛尔", area=1637, side="h", price=2000, stock=1}}},
-[18949]={v={{id=4225, name="塞诺里奥", area=1657, side="a", price=2000, stock=1}, {id=4589, name="约瑟夫·摩尔", area=1497, side="h", price=2000, stock=1}}},
+[18949]={worldDrop=true},
 [19027]={v={{id=14637, name="索尔宾·范达瑟", area=357, price=5000, stock=-1}}},
 [19202]={v={{id=11557, name="梅罗什", area=361, price=23157, stock=-1}}},
 [19203]={v={{id=11536, name="军需官米兰达·布利洛克", area=139, price=22000, stock=-1}, {id=10856, name="银色黎明军需官哈萨娜", area=85, price=23157, stock=-1}, {id=10857, name="银色黎明军需官莱斯巴克", area=28, price=23157, stock=-1}}},

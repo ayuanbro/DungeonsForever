@@ -616,15 +616,36 @@ local function bagCount(item)
     end
 end
 XP.BagCount=bagCount
-local function creditsFor(run,target)
-    local inventory={}
+local function skillComplete(run,seg,index,record,skillSnapshot)
+    local cur=skill(seg.profession or run.slug,skillSnapshot);local goal=seg.goalSkill or seg[2]
+    local skillDone=not goal or (cur~=nil and cur>=goal) or (seg.expectedGain or 0)<=0 and not seg.checkpoint
+    if XP.Conversion(seg) then skillDone=true
+    elseif seg.checkpoint or seg[3]==0 then skillDone=cur~=nil and goal~=nil and cur>=goal end
+    local fractional=seg.fractionalTransition or (seg.expectedGain or 0)>0 and seg[2]==seg[1] and seg.attemptLimit~=nil
+    if not skillDone and fractional and (record.casts or 0)>=ceil(seg.attemptLimit-1e-9) then
+        local following=steps(run.plan)[index+1]
+        if following then
+            local nextRecipe=recipe(following,run.slug);local nextSkill=skill(following.profession or run.slug,skillSnapshot)
+            if following.checkpoint or (nextSkill and type(nextRecipe.learn)=="number" and nextSkill>=nextRecipe.learn) then skillDone=true end
+        end
+    end
+    return skillDone,cur,goal
+end
+local function creditsFor(run,target,skillSnapshot)
+    local inventory,skillState={},{}
+    skillSnapshot=skillSnapshot or E and E.Professions and E.Professions()
     for _,seg in ipairs(steps(run.plan)) do
+        local profession=seg.profession or run.slug
+        if not skillState[profession] then skillState[profession]={cur=skill(profession,skillSnapshot)} end
         for item in pairs(requiredOutputs(seg,run)) do
             if inventory[item]==nil then inventory[item]=bagCount(item) or false end
         end
     end
     local cached=creditCaches[run];local same=cached and cached._version==(run.creditVersion or 0)
     if same then for item,n in pairs(inventory) do if cached._inventory[item]~=n then same=false;break end end end
+    if same then for profession,state in pairs(skillState) do
+        if not cached._skills[profession] or cached._skills[profession].cur~=state.cur then same=false;break end
+    end end
     if same and cached[target.segmentID] then return cached[target.segmentID] end
     performance.creditBuilds=performance.creditBuilds+1
     local list,bySegment,used={},{},{}
@@ -689,8 +710,10 @@ local function creditsFor(run,target)
         allocateBags();local changed=false
         for index=#list,1,-1 do
             local consumer=list[index];local seg=consumer.seg
+            -- Reuse the material-chain release pass once a consumer no longer
+            -- needs skill gains. Its remaining output obligations still apply.
             if not consumer.unknown and not seg.checkpoint and not XP.IsSpecializationQuest(seg)
-                and (seg.expectedGain or 0)<=0 then
+                and skillComplete(run,seg,index,consumer.record,skillState) then
                 local rec=recipe(seg,run.slug);local needed=0;local output=seg.item or rec.item
                 local per=seg.outputMin or rec.outputMin or rec.count or 1
                 for item,n in pairs(consumer.required) do
@@ -713,7 +736,7 @@ local function creditsFor(run,target)
         if not changed then break end
     end
     allocateBags()
-    bySegment._version=run.creditVersion or 0;bySegment._inventory=inventory;creditCaches[run]=bySegment
+    bySegment._version=run.creditVersion or 0;bySegment._inventory=inventory;bySegment._skills=skillState;creditCaches[run]=bySegment
     return bySegment[target.segmentID]
 end
 function XP.GetRecipeTotals(slug,planID,fresh)
@@ -766,22 +789,11 @@ function XP.Progress(slug,id,skillSnapshot,planID)
             extraCrafts=0,blocked=not done,directMaterials=direct}
     end
     local confirmed,guaranteed,pending,output=outputFacts(run,seg)
-    local credit=creditsFor(run,seg)
+    local credit=creditsFor(run,seg,skillSnapshot)
     local reused,reusedActual,fulfilled,waived=credit.available,credit.available,credit.credited,credit.waived
     local required=requiredOutputs(seg,run);local remaining={};local materialDone=true
     for item,n in pairs(required) do remaining[item]=max(0,n-(fulfilled[item] or 0)-(waived[item] or 0));if remaining[item]>0 then materialDone=false end end
-    local cur=skill(seg.profession or slug,skillSnapshot);local goal=seg.goalSkill or seg[2]
-    local skillDone=not goal or (cur~=nil and cur>=goal) or (seg.expectedGain or 0)<=0 and not seg.checkpoint
-    if conversion then skillDone=true
-    elseif seg.checkpoint or seg[3]==0 then skillDone=cur~=nil and goal~=nil and cur>=goal end
-    local fractional=seg.fractionalTransition or (seg.expectedGain or 0)>0 and seg[2]==seg[1] and seg.attemptLimit~=nil
-    if not skillDone and fractional and (p.casts or 0)>=ceil(seg.attemptLimit-1e-9) then
-        local following=steps(run.plan)[index+1]
-        if following then
-            local nextRecipe=recipe(following,slug);local nextSkill=skill(following.profession or slug,skillSnapshot)
-            if following.checkpoint or (nextSkill and type(nextRecipe.learn)=="number" and nextSkill>=nextRecipe.learn) then skillDone=true end
-        end
-    end
+    local skillDone,cur,goal=skillComplete(run,seg,index,p,skillSnapshot)
     local levelCrafts=0;local grey=false
     if not skillDone and cur and goal then
         for sk=cur,goal-1 do
@@ -803,8 +815,7 @@ function XP.Progress(slug,id,skillSnapshot,planID)
     local limit=baseLimit+allowance+(p.supplementAllowance or 0)
     local reserveRemaining=not run.reserveDisabled and max(0,allowance-max(0,(p.casts or 0)-baseLimit)) or 0
     local direct={};for _,m in ipairs(rec.mats or {}) do direct[#direct+1]={id=m[1],count=m[2]*remainingCrafts,perCraft=m[2]} end
-    local skillOvertaken=skillDone and not materialDone and cur~=nil and goal~=nil and cur>goal or false
-    local result={segmentID=seg.segmentID,index=index,kind=seg.kind,complete=skillDone and materialDone or skillOvertaken,skillDone=skillDone,skillMet=skillDone,materialDone=materialDone,skillOvertaken=skillOvertaken or nil,
+    local result={segmentID=seg.segmentID,index=index,kind=seg.kind,complete=skillDone and materialDone,skillDone=skillDone,skillMet=skillDone,materialDone=materialDone,
         currentSkill=cur,goalSkill=goal,attemptsDone=p.casts or 0,casts=p.casts or 0,minimumCrafts=seg.materialMinCrafts or 0,minCrafts=seg.materialMinCrafts or 0,
         outputItem=output,requiredOutputs=required[output] or 0,actualOutputs=confirmed[output] or 0,confirmedOutputs=confirmed[output] or 0,
         guaranteedOutputs=guaranteed[output] or 0,pendingOutputs=pending,remainingOutputs=remaining[output] or 0,

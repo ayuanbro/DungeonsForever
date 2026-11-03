@@ -1,6 +1,6 @@
 """Nip recipes never enter UI choices, route inputs, or execution.
 
-Tests use actual Lua 5.1 modules, master IDs and current localized catalogues.
+Tests use actual Lua 5.1 modules, shared exclusion IDs and current localized catalogues.
 Synthetic prices/skills exercise the policy, not live-server availability.
 """
 import unittest
@@ -10,10 +10,11 @@ import test_prof_route_plans as plan_fixture
 import test_prof_ui_fusion as ui_fixture
 import test_prof_recipe_data_first_aid as client_fixture
 
-MASTER_IDS = {11447, 17579, 22430, 1251750, 2671, 8366, 8368, 9942,
+NIP_IDS = {11447, 17579, 22430, 1251750, 2671, 8366, 8368, 9942,
               16960, 16965, 16967, 16980, 16986, 16987, 12719, 12720,
               12722, 12900, 12904, 10550, 19106, 7636, 8778, 12062,
-              12063, 12068, 12083, 12087, 12090}
+              12063, 12068, 12083, 12087, 12090,
+              1252247, 1252248, 1252249, 1252250, 1252251}
 
 
 def load(lua, path):
@@ -26,12 +27,12 @@ class RecipeNIPTests(unittest.TestCase):
         plan_fixture.NativeRoutePlansTests.setUp(self)
         load(self.lua, 'Core/Data/Data_ProfRecipes.lua')
 
-    def test_shared_master_list_is_identical_in_three_locales(self):
+    def test_shared_nip_list_is_identical_in_three_locales(self):
         for locale in ('zhCN', 'zhTW', 'enUS'):
             with self.subTest(locale=locale):
                 lua = native_runtime(locale)
                 ns = lua.globals().ns
-                self.assertEqual(set(ns.ProfRecipeNIP.keys()), MASTER_IDS)
+                self.assertEqual(set(ns.ProfRecipeNIP.keys()), NIP_IDS)
                 marked = {}
                 for slug, group in ns.EnsureProfRecipes().items():
                     for _, row in (group['rows'] or {}).items():
@@ -39,7 +40,7 @@ class RecipeNIPTests(unittest.TestCase):
                             marked[row[1]] = slug
                             self.assertEqual(row['nip'], '未实装到游戏里')
                             self.assertIsNone(ns.ProfEconomy.FindRecipe(slug, row[1]))
-                self.assertEqual(set(marked), MASTER_IDS)
+                self.assertEqual(set(marked), NIP_IDS)
 
     def test_normalization_cannot_reintroduce_excluded_recipe_shapes(self):
         lua = native_runtime()
