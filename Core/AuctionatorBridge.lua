@@ -150,7 +150,6 @@ local function ReplicateGateDB()
     end
 end
 
--- Version 2 requires full-market batches; absent IDs can then prove zero stock.
 local function SupplyRecord(id)
     local db=ProfDB()
     local batch=db and db.auctionFullScan

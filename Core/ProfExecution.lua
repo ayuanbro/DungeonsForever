@@ -710,8 +710,6 @@ local function creditsFor(run,target,skillSnapshot)
         allocateBags();local changed=false
         for index=#list,1,-1 do
             local consumer=list[index];local seg=consumer.seg
-            -- Reuse the material-chain release pass once a consumer no longer
-            -- needs skill gains. Its remaining output obligations still apply.
             if not consumer.unknown and not seg.checkpoint and not XP.IsSpecializationQuest(seg)
                 and skillComplete(run,seg,index,consumer.record,skillState) then
                 local rec=recipe(seg,run.slug);local needed=0;local output=seg.item or rec.item
