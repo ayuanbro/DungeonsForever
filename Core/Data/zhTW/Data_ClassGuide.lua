@@ -4,6 +4,7 @@ if gl ~= 'zhTW' then return end
 local _, ns = ...
 
 ns.EnsureClassGuide = function()
+ns.EnsureClassGuide = function() return ns.ClassGuide end
 if ns.ClassGuide then return ns.ClassGuide end
 ns.ClassGuide = {
     meta = {

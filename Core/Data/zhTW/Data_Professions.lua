@@ -343,7 +343,7 @@ ns.ProfData = {
             guide = "bandages",
             summary = "急救遠不止繃帶：為營地系統準備的急救包、應對流血／疾病／中毒的治療藥劑，以及可製造的治療藥水。",
             status = "關聯傳承效果",
-            recipes = 11,
+            recipes = 32,
             sub = 7,
             kinds = { Manual=9, Blueprint=2 },
             camp = {

@@ -436,10 +436,19 @@ local function originSignature(plan)
     end
     return table.concat(parts)
 end
+local function releaseSourceReferences(run)
+    run.inheritedFrom=nil
+    local plan=readablePlan(run)
+    if plan then
+        plan.executionSourcePlanID=nil
+        if plan.executionOptions then plan.executionOptions.executionSourcePlanID=nil end
+    end
+end
 local function archive(c,slug,reason)
     local run=c.runs[c.active[slug]]
     if run then
         run.status="archived";run.archivedAt=now();run.archiveReason=reason or "recalculate"
+        releaseSourceReferences(run)
     end
     c.active[slug]=nil
     if c.trackingSlug==slug then c.trackingSlug=nil end
@@ -514,8 +523,17 @@ local function scheduleIdleCheck()
         end)
     end
 end
+local function replicateScanReason()
+    if not ns.IsForever then return end
+    local bridge=ns.AuctionBridge
+    if not (bridge and bridge.ReplicateScanReady) then return "replicateModeUnknown" end
+    local ready,reason=bridge.ReplicateScanReady()
+    if ready~=true then return reason or "replicateScanRequired" end
+end
 function XP.Bind(slug,result,opts)
     if XP.IsCombatPaused() then return nil,"combatPaused" end
+    local scanReason=replicateScanReason()
+    if scanReason then return nil,scanReason end
     XP.ExpireIdle()
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then ns.ProfessionTracking.SetEnabled(true) end
     local ra=ns.ProfRouteAuto
@@ -587,6 +605,7 @@ function XP.Bind(slug,result,opts)
         run.lastCraftAt=source.lastCraftAt or source.createdAt
         if now()>=idleDeadline(run) then return nil,"executionEnded" end
     end
+    if source and not recorded(source) then releaseSourceReferences(run) end
     c.runs[planID]=run;c.active[slug]=planID;c.trackingSlug=slug;c.preparing[slug]=nil;c.continuation[slug]=nil
     XP.Sync(slug);changed(run);pruneArchived(slug)
     if XP.RefreshObservation then XP.RefreshObservation() end;return run
@@ -616,15 +635,36 @@ local function bagCount(item)
     end
 end
 XP.BagCount=bagCount
-local function creditsFor(run,target)
-    local inventory={}
+local function skillComplete(run,seg,index,record,skillSnapshot)
+    local cur=skill(seg.profession or run.slug,skillSnapshot);local goal=seg.goalSkill or seg[2]
+    local skillDone=not goal or (cur~=nil and cur>=goal) or (seg.expectedGain or 0)<=0 and not seg.checkpoint
+    if XP.Conversion(seg) then skillDone=true
+    elseif seg.checkpoint or seg[3]==0 then skillDone=cur~=nil and goal~=nil and cur>=goal end
+    local fractional=seg.fractionalTransition or (seg.expectedGain or 0)>0 and seg[2]==seg[1] and seg.attemptLimit~=nil
+    if not skillDone and fractional and (record.casts or 0)>=ceil(seg.attemptLimit-1e-9) then
+        local following=steps(run.plan)[index+1]
+        if following then
+            local nextRecipe=recipe(following,run.slug);local nextSkill=skill(following.profession or run.slug,skillSnapshot)
+            if following.checkpoint or (nextSkill and type(nextRecipe.learn)=="number" and nextSkill>=nextRecipe.learn) then skillDone=true end
+        end
+    end
+    return skillDone,cur,goal
+end
+local function creditsFor(run,target,skillSnapshot)
+    local inventory,skillState={},{}
+    skillSnapshot=skillSnapshot or E and E.Professions and E.Professions()
     for _,seg in ipairs(steps(run.plan)) do
+        local profession=seg.profession or run.slug
+        if not skillState[profession] then skillState[profession]={cur=skill(profession,skillSnapshot)} end
         for item in pairs(requiredOutputs(seg,run)) do
             if inventory[item]==nil then inventory[item]=bagCount(item) or false end
         end
     end
     local cached=creditCaches[run];local same=cached and cached._version==(run.creditVersion or 0)
     if same then for item,n in pairs(inventory) do if cached._inventory[item]~=n then same=false;break end end end
+    if same then for profession,state in pairs(skillState) do
+        if not cached._skills[profession] or cached._skills[profession].cur~=state.cur then same=false;break end
+    end end
     if same and cached[target.segmentID] then return cached[target.segmentID] end
     performance.creditBuilds=performance.creditBuilds+1
     local list,bySegment,used={},{},{}
@@ -690,7 +730,7 @@ local function creditsFor(run,target)
         for index=#list,1,-1 do
             local consumer=list[index];local seg=consumer.seg
             if not consumer.unknown and not seg.checkpoint and not XP.IsSpecializationQuest(seg)
-                and (seg.expectedGain or 0)<=0 then
+                and skillComplete(run,seg,index,consumer.record,skillState) then
                 local rec=recipe(seg,run.slug);local needed=0;local output=seg.item or rec.item
                 local per=seg.outputMin or rec.outputMin or rec.count or 1
                 for item,n in pairs(consumer.required) do
@@ -713,7 +753,7 @@ local function creditsFor(run,target)
         if not changed then break end
     end
     allocateBags()
-    bySegment._version=run.creditVersion or 0;bySegment._inventory=inventory;creditCaches[run]=bySegment
+    bySegment._version=run.creditVersion or 0;bySegment._inventory=inventory;bySegment._skills=skillState;creditCaches[run]=bySegment
     return bySegment[target.segmentID]
 end
 function XP.GetRecipeTotals(slug,planID,fresh)
@@ -739,8 +779,7 @@ function XP.GetRecipeTotals(slug,planID,fresh)
     if run.status=="archived" then run.byRecipe=copy(list);run.byRecipeVersion=run.progressVersion end
     return list
 end
-function XP.Progress(slug,id,skillSnapshot,planID)
-    local run=planID and db().runs[planID] or XP.GetRun(slug);if not run or run.slug~=slug then return nil end
+local function progressFor(run,slug,id,skillSnapshot,baseOnly)
     if not readablePlan(run) then
         return {complete=false,skillDone=false,skillMet=false,materialDone=false,blocked=true,
             historyUnreadable=true,reason="historyUnreadable",attemptsDone=0,casts=0,
@@ -766,22 +805,11 @@ function XP.Progress(slug,id,skillSnapshot,planID)
             extraCrafts=0,blocked=not done,directMaterials=direct}
     end
     local confirmed,guaranteed,pending,output=outputFacts(run,seg)
-    local credit=creditsFor(run,seg)
+    local credit=run.previewCredits and run.previewCredits[seg.segmentID] or creditsFor(run,seg,skillSnapshot)
     local reused,reusedActual,fulfilled,waived=credit.available,credit.available,credit.credited,credit.waived
-    local required=requiredOutputs(seg,run);local remaining={};local materialDone=true
+    local required=baseOnly and quotaMap(seg.requiredOutputs) or requiredOutputs(seg,run);local remaining={};local materialDone=true
     for item,n in pairs(required) do remaining[item]=max(0,n-(fulfilled[item] or 0)-(waived[item] or 0));if remaining[item]>0 then materialDone=false end end
-    local cur=skill(seg.profession or slug,skillSnapshot);local goal=seg.goalSkill or seg[2]
-    local skillDone=not goal or (cur~=nil and cur>=goal) or (seg.expectedGain or 0)<=0 and not seg.checkpoint
-    if conversion then skillDone=true
-    elseif seg.checkpoint or seg[3]==0 then skillDone=cur~=nil and goal~=nil and cur>=goal end
-    local fractional=seg.fractionalTransition or (seg.expectedGain or 0)>0 and seg[2]==seg[1] and seg.attemptLimit~=nil
-    if not skillDone and fractional and (p.casts or 0)>=ceil(seg.attemptLimit-1e-9) then
-        local following=steps(run.plan)[index+1]
-        if following then
-            local nextRecipe=recipe(following,slug);local nextSkill=skill(following.profession or slug,skillSnapshot)
-            if following.checkpoint or (nextSkill and type(nextRecipe.learn)=="number" and nextSkill>=nextRecipe.learn) then skillDone=true end
-        end
-    end
+    local skillDone,cur,goal=skillComplete(run,seg,index,p,skillSnapshot)
     local levelCrafts=0;local grey=false
     if not skillDone and cur and goal then
         for sk=cur,goal-1 do
@@ -803,8 +831,7 @@ function XP.Progress(slug,id,skillSnapshot,planID)
     local limit=baseLimit+allowance+(p.supplementAllowance or 0)
     local reserveRemaining=not run.reserveDisabled and max(0,allowance-max(0,(p.casts or 0)-baseLimit)) or 0
     local direct={};for _,m in ipairs(rec.mats or {}) do direct[#direct+1]={id=m[1],count=m[2]*remainingCrafts,perCraft=m[2]} end
-    local skillOvertaken=skillDone and not materialDone and cur~=nil and goal~=nil and cur>goal or false
-    local result={segmentID=seg.segmentID,index=index,kind=seg.kind,complete=skillDone and materialDone or skillOvertaken,skillDone=skillDone,skillMet=skillDone,materialDone=materialDone,skillOvertaken=skillOvertaken or nil,
+    local result={segmentID=seg.segmentID,index=index,kind=seg.kind,complete=skillDone and materialDone,skillDone=skillDone,skillMet=skillDone,materialDone=materialDone,
         currentSkill=cur,goalSkill=goal,attemptsDone=p.casts or 0,casts=p.casts or 0,minimumCrafts=seg.materialMinCrafts or 0,minCrafts=seg.materialMinCrafts or 0,
         outputItem=output,requiredOutputs=required[output] or 0,actualOutputs=confirmed[output] or 0,confirmedOutputs=confirmed[output] or 0,
         guaranteedOutputs=guaranteed[output] or 0,pendingOutputs=pending,remainingOutputs=remaining[output] or 0,
@@ -831,6 +858,26 @@ function XP.Progress(slug,id,skillSnapshot,planID)
         end
     end
     return result
+end
+function XP.Progress(slug,id,skillSnapshot,planID)
+    local run=planID and db().runs[planID] or XP.GetRun(slug);if not run or run.slug~=slug then return nil end
+    return progressFor(run,slug,id,skillSnapshot)
+end
+function XP.PreviewProgress(slug,plan)
+    if type(plan)~="table" or plan.executionVersion~=1 then return {} end
+    local run={slug=slug,plan=plan,progress={},status="archived",currentIndex=1,creditVersion=0}
+    local snapshot=E and E.Professions and E.Professions()
+    local out={}
+    for _,seg in ipairs(steps(plan)) do
+        if seg.segmentID then
+            local progress=progressFor(run,slug,seg.segmentID,snapshot)
+            run.previewCredits=creditCaches[run]
+            local base=progressFor(run,slug,seg.segmentID,snapshot,true)
+            progress.baseCrafts=max(base.remainingCrafts or 0,(progress.remainingCrafts or 0)-(seg.reserve and seg.reserve.extraCrafts or 0))
+            out[seg.segmentID]=progress
+        end
+    end
+    return out
 end
 function XP.GetProgressAll(slug)
     local run=XP.GetRun(slug);if not run then return end
@@ -1292,6 +1339,8 @@ local function appendSupplement(run,result,seg,extra)
     XP.Sync(run.slug);changed(run);return true
 end
 function XP.CalculateSupplement(slug,callback)
+    local scanReason=replicateScanReason()
+    if scanReason then return nil,scanReason end
     if ns.ProfessionTracking and not ns.ProfessionTracking.IsEnabled() then return end
     local run=XP.GetRun(slug);if not run then return nil,"no_execution" end
     if not readablePlan(run) then return nil,"historyUnreadable" end
@@ -1345,6 +1394,13 @@ function XP.CalculateSupplement(slug,callback)
     end)
     local function pump()
         if task.cancelled then return true end
+        local scanReason=replicateScanReason()
+        if scanReason then
+            state.status="recalculate_required";state.error=scanReason;state.feasible=false;state.inFlight=false
+            state.diagnostics={{code=scanReason}};jobs[run.planID]=nil
+            if callback then pcall(callback,state) end
+            return true
+        end
         if not readablePlan(run) then
             state.status="blocked";state.error="historyUnreadable";state.feasible=false;state.inFlight=false
             state.diagnostics={{code="historyUnreadable"}};jobs[run.planID]=nil

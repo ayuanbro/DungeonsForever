@@ -1,6 +1,7 @@
 local _, ns = ...
 
 ns.EnsureBISData = function()
+ns.EnsureBISData = function() return ns.BIS end
 if ns.BIS then return ns.BIS end
 ns.BIS = {
     updated = "2026-10-16",

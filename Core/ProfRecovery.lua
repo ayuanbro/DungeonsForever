@@ -72,7 +72,7 @@ local function rerate(q,fee,residualMass)
     if q.npcUnit~=nil then
         q.unit=q.npcUnit;q.source="npc"
         if not q.bound and q.auctionNet and q.auctionNet-q.npcUnit>100
-            and q.supplyReliable and (q.quantity or 0)>=40 then
+            and (q.supplyReliable or q.supplyEstimated) and (q.quantity or 0)>=40 then
             q.unit=q.auctionNet;q.source="ah";q.assumedAllSold=true
         end
     else q.unit=0;q.source="unknown";q.missing=true end
@@ -91,17 +91,29 @@ local function quote(id,s,fee,stamp,live,residualMass)
     local reliable=type(supply)=="table" and amount(supply.quantity) and supply.quantity==floor(supply.quantity)
         and supply.complete==true and supply.ownerExcluded==true
         and supply.source=="client-auction-results"
-        and age and age>=0 and age<=1800 or false
+        and age and age>=0 and age<=ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds() or false
+    local estimated=false
+    if not reliable then
+        local history
+        if live then
+            history=b and b.GetAuctionSupplyHistory and b.GetAuctionSupplyHistory(id)
+        else history=s.auctionSupplyHistory and s.auctionSupplyHistory[id] end
+        if type(history)=="table" and history.source=="auctionator-history"
+            and amount(history.quantity) and history.quantity==floor(history.quantity)
+            and amount(history.observedAt) and history.observedAt>0 and history.observedAt<=stamp then
+            supply=history;estimated=true
+        end
+    end
     local blocked=bound(id,live and {} or s)
     local net=auction and fee and floor(auction*(100-fee)/100+1e-9) or nil
     local q={id=id,npcUnit=npc,auctionGross=auction,auctionNet=net,bound=blocked,
         quantity=supply and supply.quantity,observedAt=supply and supply.observedAt,
         complete=supply and supply.complete,ownerExcluded=supply and supply.ownerExcluded,
-        supplySource=supply and supply.source,supplyReliable=reliable,
+        supplySource=supply and supply.source,supplyReliable=reliable,supplyEstimated=estimated,
         market=supply and supply.market,batch=supply and supply.batch}
     return rerate(q,fee,residualMass)
 end
-local identityFields={"npcUnit","auctionGross","auctionNet","bound","quantity","observedAt","complete","ownerExcluded","supplySource","supplyReliable","market","batch","source","unit","missing"}
+local identityFields={"npcUnit","auctionGross","auctionNet","bound","quantity","observedAt","complete","ownerExcluded","supplySource","supplyReliable","supplyEstimated","market","batch","source","unit","missing"}
 local function identity(q)
     local p={};for _,key in ipairs(identityFields) do p[#p+1]=key.."="..tostring(q[key]) end
     return table.concat(p,";")
@@ -297,7 +309,7 @@ function R.Apply(result,snapshot,tick)
     result.purchaseTotal=result.total or 0;result.recoveryTotal=0;result.saleOutputs={}
     result.recoveryMissing=0;result.recoveryMissingItems={};result.purchaseRemainders={}
     result.demandAttribution={};result.demandCost=0;result.demandNonCraftCost=0
-    result.recoveryAssumesAllSold=false
+    result.recoveryAssumesAllSold=false;result.recoveryEstimated=nil
     local actions=trace(result,snapshot)
     local pools,poolHeads,accounts,byID,byStep,byRecipe,formulaCosts,recipeCounts={},{},{},{},{},{},{},{}
     local function key(a) return tostring(a.profession or "")..":"..tostring(a.spell or 0) end
@@ -417,6 +429,7 @@ function R.Apply(result,snapshot,tick)
     end
     for id,entry in pairs(sold) do
         result.saleOutputs[#result.saleOutputs+1]=entry;result.recoveryTotal=result.recoveryTotal+entry.revenue
+        if entry.supplyEstimated then result.recoveryEstimated=true end
         if entry.source=="ah" then result.recoveryAssumesAllSold=true end
         if missing[id] then result.recoveryMissing=result.recoveryMissing+1;result.recoveryMissingItems[#result.recoveryMissingItems+1]=id end
         if tick then tick() end

@@ -139,15 +139,6 @@ local function signature(slug, opts)
         "formula-channels:2", "profit-priority:20", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
         E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
-    if opts.snapshot then
-        local stock={}
-        for id,entry in pairs(opts.executionInventory or {}) do
-            stock[#stock+1]=tostring(id)..":"..tostring(type(entry)=="table" and entry.count or entry)
-                ..":"..tostring(type(entry)=="table" and entry.usable)
-        end
-        table.sort(stock)
-        sig=sig.."|carry:"..tostring(opts.executionSourcePlanID or "")..":"..table.concat(stock,",")
-    end
     return sig
 end
 local function identity(slug, opts)
@@ -191,13 +182,20 @@ local function gate(slug, opts, code)
 end
 
 local function replicatePrerequisite(slug,opts)
-    if not ns.IsForever or opts.snapshot then return nil end
+    if not ns.IsForever then return nil end
     local bridge=ns.AuctionBridge
-    if not (bridge and type(bridge.ReplicateScanReady)=="function") then return nil end
-    if not (bridge.Precise and bridge.Precise()) then return nil end
+    if not (bridge and type(bridge.ReplicateScanReady)=="function") then return gate(slug,opts,"replicateModeUnknown") end
     local ready,reason=bridge.ReplicateScanReady()
-    if ready==false then return gate(slug,opts,reason or "replicateScanRequired") end
+    if ready~=true then return gate(slug,opts,reason or "replicateScanRequired") end
 end
+local fixedPlan=RA.FixedPlan
+function RA.FixedPlan(slug,supplied)
+    local opts=supplied or RA.OptionsFor(slug)
+    local blocked=replicatePrerequisite(slug,opts)
+    if blocked then return blocked end
+    return fixedPlan(slug,opts)
+end
+
 local skeletonStepFields={"profession","kind","reason","checkpoint","segmentID",
     "tool","toolItem","toolSpell","toolBop","fromProgress","toProgress",
     "goalID","questID","abilityID","sourceItem","targetItem"}
@@ -230,8 +228,7 @@ local function planSkeleton(result,opts,status)
     settings.engineeringSpecialization=result.specializationPolicy and result.specializationPolicy.choice or settings.engineeringSpecialization
     return {v=1,slug=result.slug,pv=result.planVersion,sig=result.cacheSignature,
         planID=result.planID,start=result.start,target=result.target,scheme=result.scheme,
-        stamp=now(),status=status or result.status,steps=steps,options=settings,
-        seedInventory=copy(result.seedInventory or {})}
+        stamp=now(),status=status or result.status,steps=steps,options=settings}
 end
 local function remember(job,result,status)
     if job.opts.snapshot or job.opts.routeSkeleton or result.status=="searching" and not status then return end
@@ -295,19 +292,24 @@ local function release(job)
     job.co=nil;job.snap=nil;job.best=nil;job.partial=nil;job.preview=nil
     job.candidateIndex=nil;job.pump=nil;job.invalid=true
 end
+local function discardScope(scope)
+    if legacyRun and legacyRun.job and legacyRun.job.scope==scope then legacyRun=nil end
+    for key,job in pairs(jobs) do if job.scope==scope then
+        release(job);jobs[key]=nil;results[key]=nil
+    end end
+    local key=active[scope]
+    if key then results[key]=nil end
+    active[scope]=nil
+end
 local function pump(job)
     if job.invalid or job.cancelled or job.finished then return true end
-    if ns.IsForever and not job.opts.snapshot then
-        local bridge=ns.AuctionBridge
-        if bridge and bridge.Precise and not bridge.Precise() then bridge=nil end
-        if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady()==false then
-            job.cancelled=true;job.status="stopped";job.searchTermination="replicate_scan_required"
-            if job.published then
-                job.published.status="stopped";job.published.inFlight=false
-                job.published.searchTermination="replicate_scan_required"
-            end
-            return true
+    if replicatePrerequisite(job.slug,job.opts) then
+        job.cancelled=true;job.status="stopped";job.searchTermination="replicate_scan_required"
+        if job.published then
+            job.published.status="stopped";job.published.inFlight=false
+            job.published.searchTermination="replicate_scan_required"
         end
+        return true
     end
     local done=S.Run(job,adaptiveSliceMs())
     if job.result and (job.result~=job.published or done) then publish(job,job.result)
@@ -350,6 +352,8 @@ local function schedule(job)
     end
 end
 local function start(slug, opts, sigOpts)
+    local blocked=replicatePrerequisite(slug,opts)
+    if blocked then return blocked end
     local key, scope=identity(slug,sigOpts or opts)
     serial=serial+1
     local skel=opts.routeSkeleton
@@ -363,16 +367,18 @@ local function start(slug, opts, sigOpts)
         local xp=ns.ProfExecution
         if xp and xp.NormalizePlan then result=xp.NormalizePlan(slug,result) or result end
         local job={key=key,scope=scope,slug=slug,signature=skel and skel.sig or signature(slug,sigOpts or opts),opts=opts,requestOptions=sigOpts,planID=id,finished=true}
+        discardScope(scope)
         publish(job,result);return result
     end
     local job=S.NewJob(slug,opts)
     job.key,job.scope,job.slug,job.planID=key,scope,slug,id
     job.signature=skel and skel.sig or signature(slug,sigOpts or opts)
     job.requestOptions=sigOpts
-    jobs[key]=job;active[scope]=key
     local result=S.Result(job,nil,"searching")
     result.slug=slug;result.planID=id;result.cacheSignature=job.signature
     result.learningPolicyFingerprint=learningPolicy()
+    discardScope(scope)
+    jobs[key]=job;active[scope]=key
     job.published=result;results[key]=result
     schedule(job)
     return result
@@ -385,8 +391,6 @@ function RA.Get(slug, supplied)
         return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
     end
     local opts=options(slug,supplied)
-    local blocked=replicatePrerequisite(slug,opts)
-    if blocked then return blocked end
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     local key,scope=identity(slug,opts)
     local xp=not opts.snapshot and ns.ProfExecution
@@ -399,6 +403,8 @@ function RA.Get(slug, supplied)
         if RA.SpecializationPlanChanged and RA.SpecializationPlanChanged(frozen,slug,opts) then return gate(slug,opts,"specializationChanged") end
         return refreshFreshness(frozen,slug,opts)
     end
+    local blocked=replicatePrerequisite(slug,opts)
+    if blocked then return blocked end
     local result=results[key]
     if result and result.slug and result.slug~=slug then result=nil end
     if result then
@@ -438,7 +444,7 @@ function RA.RebuildFromSkel(slug,skel,supplied)
     local restored=copy(skel.options)
     restored.start,restored.target,restored.scheme=skel.start,skel.target,skel.scheme
     local opts=options(slug,restored)
-    opts.routeSkeleton=skel;opts.executionInventory=copy(skel.seedInventory)
+    opts.routeSkeleton=skel
     return start(slug,opts,request)
 end
 function RA.ChangeReserveMode(slug,mode)
@@ -446,6 +452,8 @@ function RA.ChangeReserveMode(slug,mode)
     if not selected or selected.status=="searching" then return end
     local opts=copy(selected.executionOptions or RA.OptionsFor(slug,selected.start))
     opts.reserveMode=mode
+    local blocked=replicatePrerequisite(slug,opts)
+    if blocked then return blocked end
     local skel=planSkeleton(selected,opts,selected.status)
     if not skel then return end
     skel.sig=signature(slug,options(slug,opts))
@@ -486,11 +494,17 @@ function RA.Recalculate(slug, supplied)
         end
     end
     local _,scope=identity(slug,opts)
-    for key,job in pairs(jobs) do if job.scope==scope then release(job);jobs[key]=nil end end
-    for key in pairs(results) do if key:sub(1,#scope+1)==scope.."|" then results[key]=nil end end
-    active[scope]=nil;clearPrices()
+    discardScope(scope);clearPrices()
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     return start(slug,opts,sigOpts)
+end
+function RA.CacheReferencesChanged(owner)
+    local xp=ns.ProfExecution
+    if not (xp and xp.CanRevertCandidate) then return end
+    local prefix=(owner or character()).."|"
+    for scope in pairs(planPrevMem) do
+        if scope:sub(1,#prefix)==prefix and not xp.CanRevertCandidate(scope:sub(#prefix+1)) then planPrevMem[scope]=nil end
+    end
 end
 function RA.SavePlanPrev(slug)
     local scope=character().."|"..slug
@@ -515,8 +529,7 @@ function RA.RevertPlan(slug,supplied)
     local db=saved();if not db then return false end
     local scope=character().."|"..slug
     local previous=planPrevMem[scope];local result=previous.result
-    for key,job in pairs(jobs) do if job.scope==scope then release(job);jobs[key]=nil end end
-    for key in pairs(results) do if key:sub(1,#scope+1)==scope.."|" then results[key]=nil end end
+    discardScope(scope)
     planPrevMem[scope]=nil
     revision=revision+1;result.revision=revision
     results[previous.key]=result;active[scope]=previous.key
@@ -566,12 +579,7 @@ function RA.Cancel(slug)
     return changed
 end
 function RA.Continue(slug)
-    if ns.IsForever then
-        local bridge=ns.AuctionBridge
-        if bridge and bridge.ReplicateScanReady and bridge.ReplicateScanReady()==false then
-            return false
-        end
-    end
+    if replicatePrerequisite(slug,{}) then return false end
     for _,job in pairs(jobs) do
         if (not slug or job.slug==slug) and job.cancelled and not job.finished and not job.invalid then
             job.cancelled=false;job.status="searching";job.searchTermination=nil
@@ -620,8 +628,8 @@ if run then
         opts=copy(opts or RA.OptionsFor(slug));opts.cpuLimitMs=opts.cpuLimitMs or 8000
         if supplied and supplied.snapshot then opts.snapshot=supplied.snapshot end
         local result=RA.Recalculate(slug,opts)
-        local key=identity(slug,options(slug,opts))
-        local job=jobs[key] or {slug=slug,result=result,published=result,finished=true}
+        local key,scope=identity(slug,options(slug,opts))
+        local job=jobs[key] or {key=key,scope=scope,slug=slug,result=result,published=result,finished=true}
         job.hooks=hooks
         legacyRun={job=job,slug=slug,hooks=hooks}
         if job.finished and hooks and hooks.onDone then pcall(hooks.onDone,job) end
@@ -637,8 +645,10 @@ local function initialize()
                 if job.published and not job.opts.snapshot then refreshFreshness(job.published,job.slug,job.opts) end
             end
         elseif reason=="replicate-mode" then
-            RA.Cancel()
-            RA.Invalidate("auction-mode")
+            if not bridge.ReplicateScanReady() then
+                RA.Cancel()
+                RA.Invalidate("auction-mode")
+            end
         elseif reason=="prices" then RA.Invalidate(reason) end
     end) end
     local frame=CreateFrame and CreateFrame("Frame")

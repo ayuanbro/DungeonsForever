@@ -4,6 +4,7 @@ if gl ~= 'zhTW' then return end
 local _, ns = ...
 
 ns.EnsureGearVendors = function()
+    ns.EnsureGearVendors = function() return ns.GearVendors end
     if ns.GearVendors then return ns.GearVendors end
     ns.GearVendors = {
     [85] = {{ 2113, 85, "h", "Archibald Kava", "阿基班德·卡瓦" }, { 4558, 1497, "h", "Lauren Newcomb", "勞倫·紐科布" }, { 3074, 215, "h", "Varia Hardhide", "瓦利亞·韌皮" }, { 3160, 14, "h", "Huklah", "哈克拉恩" } },

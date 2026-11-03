@@ -210,6 +210,7 @@ ns.ClassQuestChains = {
 }
 
 function ns.EnsureClassQuestInfo()
+    ns.EnsureClassQuestInfo = function() return ns.ClassQuestInfo end
     if ns.ClassQuestInfo then return ns.ClassQuestInfo end
     ns.ClassQuestInfo = {
     [26] = { n = "A Lesson to Learn", cn = "必修的课程", l = 16, r = 16, f = "A", races = { 4, 95 }, s = { { 4217, "玛斯雷·驭熊者", "达纳苏斯", 35.2, 8, 1457 } }, e = { 11802, "德迪利特·星焰", "月光林地", 56.2, 30.4, 1450 }, note = "16 级后可直接向职业训练师学习水栖形态，本链改为可选；想拿链奖励或体验流程再做，月光林地传送回去接后续最方便。" },
