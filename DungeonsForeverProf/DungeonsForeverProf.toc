@@ -1,0 +1,72 @@
+## Interface: 11508, 11509, 16001, 20506, 30405, 38002, 40402, 50503, 50504, 50505, 120005, 120007, 120100
+## Title: <DungeonsForeverProf> |cff46bf72DungeonsForever - Profession|r
+## Title-zhCN: |cff46bf72无限副本手册 专业页|r
+## Title-zhTW: |cff46bf72無限副本手冊 專業頁|r
+## Title-enUS: |cff46bf72DungeonsForever - Profession|r
+## Category: 圆圆的插件
+## Group: DungeonsForever
+## Notes: Profession page module for DungeonsForever
+## Notes-zhCN: 无限副本手册 专业页模块（可在插件列表中单独关闭）
+## Notes-zhTW: 無限副本手冊 專業頁模組（可在插件列表中單獨關閉）
+## Notes-enUS: Profession page module for DungeonsForever (can be disabled separately)
+## Author: 圆圆
+## Version: 1.9.48
+## Dependencies: DungeonsForever
+## LoadOnDemand: 1
+## SavedVariables: DungeonsForeverProfDB
+
+Core\ProfDB.lua
+Core\ProfPaint.lua
+Core\Data\Data_ProfRecipes.lua
+Core\Data\Data_ProfLeveling.lua
+Core\Data\Data_ProfGathering.lua
+Core\Data\Data_ProfVendors.lua
+Core\Data\Data_ProfVendorNames.lua
+Core\Data\Data_ProfDropNpcs.lua
+Core\Data\Data_ProfTrainers.lua
+Core\Data\Data_ProfMaterialSupply.lua
+Core\Data\Data_ProfFormulaOffers.lua
+Core\Data\Data_ProfTools.lua
+Core\Data\Data_ProfSpecializations.lua
+Core\Data\Data_ProfSpecializationQuests.lua
+Core\Data\Data_ProfFormulaQuests.lua
+Core\Data\Data_ProfLearningSources.lua
+Core\Data\zhTW\Data_ProfRecipes.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_ProfLeveling.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_ProfVendorNames.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_ProfDropNpcs.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_ProfTrainers.lua [AllowLoadTextLocale zhTW]
+Core\Data\enUS\Data_ProfTrainers.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_ProfRecipes.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_ProfLeveling.lua [AllowLoadTextLocale enUS]
+Core\Data\Data_ProfMining.lua
+Core\Data\Data_ProfFishingRoutes.lua
+Core\Data\Data_ProfSources.lua
+Core\Data\Data_ProfNPCLocs.lua
+Core\Data\Data_ProfItemNames.lua
+Core\Data\zhTW\Data_ProfItemNames.lua [AllowLoadTextLocale zhTW]
+Core\Data\Data_ProfMakeSrc.lua
+Core\Data\Data_ProfVendorSide.lua
+Core\Data\Data_ProfDropNames.lua
+Core\ProfPolicies.lua
+Core\ProfMigrate.lua
+Core\ProfRouteAuto.lua
+Core\ProfessionUI.lua
+Core\ProfFollow.lua
+Core\ProfSupply.lua
+Core\ProfSourceMerge.lua
+Core\ProfGates.lua
+Core\ProfRecovery.lua
+Core\ProfEssences.lua
+Core\ProfSolverCapture.lua
+Core\ProfLearning.lua
+Core\ProfClientScan.lua
+Core\ProfRanks.lua
+Core\ProfRouteSolver.lua
+Core\ProfReserve.lua
+Core\ProfFishing.lua
+Core\ProfGathering.lua
+Core\ProfExecution.lua
+Core\ProfSolverRun.lua
+Core\ProfRoutePlans.lua
+Core\AuctionatorBridge.lua
