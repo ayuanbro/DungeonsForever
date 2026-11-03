@@ -807,6 +807,7 @@ ns.DungeonQuestShare = {
     [7877] = true, [8181] = true, [8418] = true, [8945] = true, [8949] = true, [8950] = true,
 }
 function ns.EnsureDungeonQuestExtInfo()
+    ns.EnsureDungeonQuestExtInfo = function() return ns.DungeonQuestExtInfo end
     if ns.DungeonQuestExtInfo then return ns.DungeonQuestExtInfo end
     ns.DungeonQuestExtInfo = {
     [17] = { lv = 36, lvStd = 42, nm = "奥达曼的蘑菇", npc = "加克", npcid = 1470, side = "A", zone = "奥达曼" },

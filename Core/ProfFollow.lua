@@ -463,6 +463,10 @@ local function routeForCalc(slug, skill)
     local opts=RA and RA.OptionsFor and RA.OptionsFor(slug,skill) or {}
     opts.target,opts.scheme=routeTarget(slug),"fixed"
     local summary=RA and RA.FixedPlan and RA.FixedPlan(slug,opts)
+    if summary and summary.status=="recalculate_required" then
+        PF.pendingPlans[slug]=summary
+        return "fixed",{}
+    end
     if summary then steps=summary.steps end
     if RA and RA.FilterFixedSpecializations then
         local filtered,blocked,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
@@ -1244,8 +1248,8 @@ end
 
 function PF.ShoppingSourceText(entry)
     if entry.planPurchases then
-        if entry.inventoryUnknown then return L["背包或银行数量未能读取，无法确认还需购买多少。"] end
-        if entry.purchaseUnknown then return L["价格未知"] end
+        if entry.inventoryUnknown then return L["请打开背包和银行，再查看需要购买的数量。"] end
+        if entry.purchaseUnknown then return L["请核对价格"] end
         local parts={}
         if (entry.reserveNeed or 0)>0 then
             parts[#parts+1]=format(L["基础缺 %d · 备用缺 %d"],entry.baseMissing or 0,entry.reserveMissing or 0)
@@ -1255,13 +1259,13 @@ function PF.ShoppingSourceText(entry)
             local name=(source=="ah" or source=="auction") and L["拍卖行"]
                 or (source=="vendor" or source=="npc") and (ns.ProfVendorNames and ns.ProfVendorNames[purchase.npcID] or L["商人"])
                 or L["尚无购买来源"]
-            local cost=type(purchase.cost)=="number" and not purchase.unpriced and RA and RA.MoneyStr and RA.MoneyStr(purchase.cost,"copper") or L["价格未知"]
+            local cost=type(purchase.cost)=="number" and not purchase.unpriced and RA and RA.MoneyStr and RA.MoneyStr(purchase.cost,"copper") or L["请核对价格"]
             local text=format("%s ×%d · %s",name,purchase.count or 0,cost)
             if (source=="ah" or source=="auction") and entry.considerAuctionSupply~=false then
-                text=text.." · "..(entry.availableCount~=nil and format(L["可购 %d"],entry.availableCount) or L["库存未知"])
+                text=text.." · "..(entry.availableCount~=nil and format(L["可购 %d"],entry.availableCount) or L["请扫描拍卖行"])
             elseif purchase.unlimited then text=text.." · "..L["不限量"]
             elseif purchase.limited then text=text.." · "..L["限量"]
-            elseif purchase.stockUnknown then text=text.." · "..L["库存未知"] end
+            elseif purchase.stockUnknown then text=text.." · "..L["请向商人确认现货"] end
             parts[#parts+1]=text
         end
         if (entry.packSurplus or 0)>0 then parts[#parts+1]=format(L["整包余量 %d"],entry.packSurplus) end
@@ -1276,10 +1280,10 @@ function PF.ShoppingSourceText(entry)
         text=ns.ProfVendorNames and ns.ProfVendorNames[entry.npcID] or L["商人"]
         if entry.unlimited then text=text.." · "..L["不限量"]
         elseif entry.limited then text=text.." · "..L["限量"]
-        elseif entry.stockUnknown then text=text.." · "..L["库存未知"] end
+        elseif entry.stockUnknown then text=text.." · "..L["请向商人确认现货"] end
     elseif source=="ah" or source=="auction" then
         text=L["拍卖行"]
-        if entry.considerAuctionSupply~=false then text=text.." · "..(entry.availableCount and tostring(entry.availableCount) or L["库存未知"]) end
+        if entry.considerAuctionSupply~=false then text=text.." · "..(entry.availableCount and tostring(entry.availableCount) or L["请扫描拍卖行"]) end
     end
     if text and entry.formula and entry.formulaCost and RA and RA.MoneyStr then
         text=text.." · "..RA.MoneyStr(entry.formulaCost,"copper")
@@ -1289,7 +1293,7 @@ end
 
 function PF.ShoppingSourceDetail(entry)
     if not entry.planPurchases then return PF.ShoppingSourceText(entry) end
-    local cost=type(entry.planPurchaseCost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(entry.planPurchaseCost,"copper") or L["价格未知"]
+    local cost=type(entry.planPurchaseCost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(entry.planPurchaseCost,"copper") or L["请核对价格"]
     local parts={PF.ShoppingSourceText(entry) or "",
         format(L["原料需 %d；原计划购入 %d，费用 %s"],entry.need or 0,entry.planPurchaseCount or 0,cost)}
     if entry.haveKnown and (entry.have or 0)>0 then parts[#parts+1]=L["已有材料已抵扣；按原计划货源和报价计算待购费用。"] end
@@ -1298,12 +1302,12 @@ function PF.ShoppingSourceDetail(entry)
         local item=copyPurchase(purchase)
         item.need=item.count;item.have=0
         parts[#parts+1]=format("%s ×%d · %s",PF.ShoppingSourceText(item) or L["尚无购买来源"],item.count,
-            type(item.cost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(item.cost,"copper") or L["价格未知"])
+            type(item.cost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(item.cost,"copper") or L["请核对价格"])
     end
-    if entry.auctionUnknown then parts[#parts+1]=L["拍卖行可购数量未知，当前仅按价格估算；请在 Auctionator 重新完整扫描。"] end
-    if (entry.auctionShortage or 0)>0 then parts[#parts+1]=L["拍卖行可购数量不足，无法继续此配方；请在 Auctionator 重新完整扫描或改用其他配方。"] end
+    if entry.auctionUnknown then parts[#parts+1]=L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"] end
+    if (entry.auctionShortage or 0)>0 then parts[#parts+1]=L["本次扫描的材料数量不够；请用 Auctionator 完整扫描后重新计算，或更换货源。"] end
     if entry.purchaseUncovered and entry.purchaseUncovered>0 then parts[#parts+1]=format(L["原计划货源还缺 %d 件，请重新计算。"],entry.purchaseUncovered) end
-    if entry.inventoryUnknown then parts[#parts+1]=L["背包或银行数量未能读取，无法确认还需购买多少。"] end
+    if entry.inventoryUnknown then parts[#parts+1]=L["请打开背包和银行，再查看需要购买的数量。"] end
     return table.concat(parts,"\n")
 end
 
@@ -1661,7 +1665,7 @@ local function DoImport(slug, profName)
         return
     end
     importTries = 0
-    if inventoryUnknown then craftNotify(L["背包或银行数量未能读取，无法确认还需购买多少。"]) end
+    if inventoryUnknown then craftNotify(L["请打开背包和银行，再查看需要购买的数量。"]) end
     if ns.AuctionBridge and ns.AuctionBridge.DoImport then
         ns.AuctionBridge.DoImport(profName, items)
     end
@@ -2693,7 +2697,7 @@ function PF.Paint()
             if w1 > nameW then nameW = w1 end
             local w2 = tw(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have, row.need), row.need))
             if w2 > numW then numW = w2 end
-            local w3 = tw(row.inventoryUnknown and L["数量未核实"] or row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
+            local w3 = tw(row.inventoryUnknown and L["请检查背包"] or row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
             if w3 > missW then missW = w3 end
             local w5 = tw(row.gate and L["全程"] or format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
@@ -2802,7 +2806,7 @@ function PF.Paint()
                 num:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xNum, ry)
                 num:Show()
                 if row.inventoryUnknown then
-                    paintPill(mp,L["未知"],xMiss,missW,Unpack(C_BAD))
+                    paintPill(mp,L["请检查背包"],xMiss,missW,Unpack(C_BAD))
                 elseif row.missing > 0 then
                     paintPill(mp, format(L["缺%d"], row.missing), xMiss, missW, Unpack(C_BAD))
                 else

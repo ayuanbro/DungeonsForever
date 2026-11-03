@@ -137,51 +137,33 @@ local function SupplyChanged(id)
     for _,fn in ipairs(supplyListeners) do pcall(fn,id,"supply") end
 end
 
-local function ProfDB()
-    return DungeonsForeverDB and DungeonsForeverDB.prof
+local fullBatch,fullFailure,fullExpiryTimer,replicateState
+local function ReleaseFullBatch(reason,observation)
+    if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
+    local batch=observation or fullBatch or fullFailure
+    if batch then fullFailure={mk=batch.mk,ob=batch.ob,failure=reason} end
+    fullBatch=nil
 end
-
-local function ReplicateGateDB()
-    local db=ProfDB()
-    if type(db)=="table" then return db end
-    if type(DungeonsForeverDB)=="table" and DungeonsForeverDB.prof==nil then
-        DungeonsForeverDB.prof={}
-        return DungeonsForeverDB.prof
-    end
-end
-
-local fullBatch
-
-function AB.StockPersistenceEnabled()
-    local PD=ns.ProfModule
-    if not (PD and PD.Setting) then return false end
-    if PD.Setting("recoveryEnabled")==true then return true end
-    local db=ProfDB()
-    for slug in pairs(db and db.professionSettings or {}) do
-        if PD.Setting("recoveryEnabled",slug)==true then return true end
-    end
-    return false
-end
-
-local function CurrentBatch()
-    if not fullBatch and AB.StockPersistenceEnabled() then
-        local db=ProfDB()
-        fullBatch=db and db.auctionFullScan
-    end
-    return fullBatch
-end
-
-function AB.SyncStockPersistence()
-    local batch=CurrentBatch()
-    local db=ProfDB()
-    if db then db.auctionFullScan=AB.StockPersistenceEnabled() and batch or nil end
+local function FullBatchFailure(batch)
+    if batch.mk~=MarketKey() or batch.ob~=ObserverKey() then return "unverified" end
+    if batch.v~=2 or batch.c~=true or type(batch.items)~="table" then return "incomplete" end
+    local stamp=batch.t;local now=time and time() or 0
+    if type(stamp)~="number" or stamp~=stamp or stamp<=0 or stamp>now or now-stamp>SUPPLY_MAX_AGE then return "expired" end
+    if replicateState and (batch.rg~=replicateState.generation or batch.rs~=replicateState.scanSerial) then return "unverified" end
+    local a=_G.Auctionator
+    local summary=a and a.SavedState and a.SavedState.TimeOfLastBrowseScan
+    if type(summary)=="number" and summary>0 and summary>=stamp then return "unverified" end
 end
 
 local function SupplyRecord(id)
-    local batch=CurrentBatch()
-    if type(batch)~="table" or batch.v~=2 or type(batch.items)~="table" then return nil end
-    if AB.ReplicateScanReady and AB.ReplicateScanReady()==false then
-        return {mk=batch.mk,ob=batch.ob,failure="unverified"}
+    local batch=fullBatch
+    if batch then
+        local failure=FullBatchFailure(batch)
+        if failure then ReleaseFullBatch(failure);batch=nil end
+    end
+    if not batch then return fullFailure end
+    if AB.ReplicateScanReady and AB.ReplicateScanReady()~=true then
+        return fullFailure or {mk=batch.mk,ob=batch.ob,failure="unverified"}
     end
     local item=batch.items[id]
     if item~=nil and type(item)~="table" then
@@ -324,6 +306,23 @@ local function StopFullImport()
     fullGeneration=fullGeneration+1
     if fullTimer then fullTimer:Cancel();fullTimer=nil end
     fullRead=nil
+    ReleaseFullBatch("unverified")
+end
+local function ScheduleFullExpiry()
+    if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
+    if not fullBatch then return end
+    local failure=FullBatchFailure(fullBatch)
+    if failure then ReleaseFullBatch(failure);return end
+    if not (C_Timer and C_Timer.NewTimer) then return end
+    local generation=fullGeneration
+    fullExpiryTimer=C_Timer.NewTimer(math.max(1,fullBatch.t+SUPPLY_MAX_AGE+1-(time and time() or 0)),function()
+        if generation~=fullGeneration then return end
+        fullExpiryTimer=nil
+        if not fullBatch then return end
+        local failure=FullBatchFailure(fullBatch)
+        if failure then ReleaseFullBatch(failure);SupplyChanged(nil)
+        else ScheduleFullExpiry() end
+    end)
 end
 function AB.FullScanStatus() return fullState end
 
@@ -369,7 +368,7 @@ end
 
 local function ImportFullRows(scan,rows)
     if type(rows)~="table" or scan.expected==nil then
-        fullState={status="incomplete"};fullRead=nil;return
+        fullState={status="incomplete"};fullRead=nil;ReleaseFullBatch("incomplete",scan);return
     end
     scan.items={};scan.complete=true;scan.index=1
     local rowCount=0
@@ -401,7 +400,8 @@ local function ImportFullRows(scan,rows)
         end
         fullBatch={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
             c=scan.complete,v=2,rg=scan.modeGeneration,rs=scan.scanSerial}
-        AB.SyncStockPersistence()
+        fullFailure=nil
+        if scan.complete then ScheduleFullExpiry() else ReleaseFullBatch("incomplete") end
         fullState.status=scan.complete and "complete" or "incomplete"
         fullState.observedAt=scan.observedAt
         fullRead=nil
@@ -451,7 +451,8 @@ function AB.ConnectAuctionatorStock()
 end
 
 local function InitializeAuctionatorStock()
-    AB.SyncStockPersistence()
+    local db=DungeonsForeverDB and DungeonsForeverDB.prof
+    if type(db)=="table" then db.auctionFullScan=nil;db.auctionReplicateGate=nil;db.replicateRequiredAfter=nil end
     AB.ConnectAuctionatorStock()
     AB.ObserveReplicateMode()
     AB.HookReplicateModeSetting()
@@ -490,71 +491,15 @@ function AB.ReplicateScanEnabled()
     return nil
 end
 
-function AB.ReplicateScanReady()
-    local enabled = AB.ReplicateScanEnabled()
-
-    if enabled == nil then
-        return nil, "replicateModeUnknown"
-    end
-
-    local db = ProfDB()
-
-    if enabled == false then
-        if db and time then
-            db.replicateRequiredAfter = math.max(
-                db.replicateRequiredAfter or 0,
-                time()
-            )
-        end
-        return false, "replicateModeDisabled"
-    end
-
-    local batch = CurrentBatch()
-    local now = time and time()
-
-    if type(batch) ~= "table"
-        or batch.v ~= 2
-        or batch.c ~= true
-        or type(batch.items) ~= "table"
-        or batch.mk ~= MarketKey()
-        or batch.ob ~= ObserverKey()
-        or type(batch.t) ~= "number"
-        or not now
-        or batch.t > now
-        or now - batch.t > SUPPLY_MAX_AGE then
-        return false, "replicateScanRequired"
-    end
-
-    local a = _G.Auctionator
-    local saved = a and a.SavedState
-    local lastSummary = saved
-        and saved.TimeOfLastBrowseScan or 0
-
-    local requiredAfter = math.max(
-        db.replicateRequiredAfter or 0,
-        type(lastSummary) == "number" and lastSummary or 0
-    )
-
-    if batch.t <= requiredAfter then
-        return false, "replicateScanRequired"
-    end
-
-    return true
-end
-
 local hookedModeConfig
 
 function AB.ObserveReplicateMode()
     local enabled=AB.ReplicateScanEnabled()
     if enabled==nil then return nil,nil end
-    local db=ReplicateGateDB()
-    if not db then return enabled,nil end
-    local state=db.auctionReplicateGate
-    if type(state)~="table" or state.v~=1
-        or not WholeNumber(state.generation) or state.generation<1
-        or not WholeNumber(state.scanSerial) then
-        state={v=1,enabled=enabled,generation=1,scanSerial=0}
-        db.auctionReplicateGate=state
+    local state=replicateState
+    if not state then
+        state={enabled=enabled,generation=1,scanSerial=0}
+        replicateState=state
     elseif state.enabled~=enabled then
         state.enabled=enabled
         state.generation=state.generation+1
@@ -571,20 +516,11 @@ function AB.ReplicateScanReady()
     local enabled,state=AB.ObserveReplicateMode()
     if enabled==nil then return nil,"replicateModeUnknown" end
     if not enabled then return false,"replicateModeDisabled" end
-    local batch=CurrentBatch()
-    local now=time and time() or 0
-    if not state or type(batch)~="table" or batch.v~=2 or batch.c~=true
-        or type(batch.items)~="table" or batch.mk~=MarketKey()
-        or batch.ob~=ObserverKey() or type(batch.t)~="number"
-        or batch.t<=0 or batch.t>now or now-batch.t>SUPPLY_MAX_AGE
-        or batch.rg~=state.generation or batch.rs~=state.scanSerial then
-        return false,"replicateScanRequired"
+    if fullBatch then
+        local failure=FullBatchFailure(fullBatch)
+        if failure then ReleaseFullBatch(failure) end
     end
-    local a=_G.Auctionator
-    local summary=a and a.SavedState and a.SavedState.TimeOfLastBrowseScan
-    if type(summary)=="number" and summary>0 and summary>=batch.t then
-        return false,"replicateScanRequired"
-    end
+    if not state or not fullBatch then return false,"replicateScanRequired" end
     return true
 end
 

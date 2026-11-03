@@ -4,6 +4,7 @@ if gl ~= 'zhTW' then return end
 local _, ns = ...
 
 ns.EnsureProfTrainers = function()
+    ns.EnsureProfTrainers = function() return ns.ProfTrainers end
     if ns.ProfTrainers then return ns.ProfTrainers end
 ns.ProfTrainers = {
     ["alchemy"] = {

@@ -2,6 +2,7 @@ local _, ns = ...
 
 ns.ProfSourcesMeta={schemaVersion=1,source="wowhead-forever",itemCount=1089,vendorRows=1391,dropRows=2646,dropCap=10}
 ns.EnsureProfSources = function()
+    ns.EnsureProfSources = function() return ns.ProfSources end
     if ns.ProfSources then return ns.ProfSources end
 ns.ProfSources={
 [728]={v={{id=340, name="肯多尔·卡邦卡", area=1519, side="a", price=189, stock=-1}}},
