@@ -168,7 +168,7 @@ class RecipeNIPTests(unittest.TestCase):
           assert(not ok and why=='catalogueFiltered')
         ''')
 
-    def test_continuation_uses_bags_and_cannot_choose_excluded_recipe(self):
+    def test_continuation_preserves_full_cost_and_cannot_choose_excluded_recipe(self):
         self.plans()
         self.lua.execute('''
           ns.ProfEconomy.Capture=function(slug,opts)
@@ -180,7 +180,7 @@ class RecipeNIPTests(unittest.TestCase):
           local ra=ns.ProfRouteAuto;local original=finish('alchemy',{start=1,target=3})
           local run=assert(ns.ProfExecution.Bind('alchemy',original));bag[11]=1
           ra.Recalculate('alchemy',{start=1,target=3});local r=finish('alchemy',{start=1,target=3})
-          assert(r.total==7 and r.seedInventory[11]==1 and run.plan.total==14)
+          assert(r.total==14 and next(r.seedInventory)==nil and run.plan.total==14)
           for _,step in ipairs(r.executionSteps)do assert(step[3]==101)end
         ''')
 

@@ -892,7 +892,7 @@ local function FillGaps(cands, steps, gaps, scheme, allowUnpriced)
     return MergeSteps(newSteps), newGaps
 end
 
-local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs, seedInv, skipMats, slug, opts)
+local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInputs, skipMats, slug, opts)
     local total, crafts = 0, 0
     local productAH, productNPC, productPartial = 0, 0, false
     local mats, firstAt, matPrice, specSet = {}, {}, {}, {}
@@ -991,19 +991,6 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
             end
         end
     end
-    local covered
-    if type(seedInv) == "table" then
-        for id, have in pairs(seedInv) do
-            local need = mats[id]
-            if need and need > 0 and type(have) == "number" and have > 0 then
-                local use = math.min(need, have)
-                covered = covered or {}
-                covered[id] = use
-                mats[id] = need - use
-                if mats[id] <= 0 then mats[id] = nil end
-            end
-        end
-    end
     local purchaseOpts={}
     for key,value in pairs(opts or {}) do purchaseOpts[key]=value end
     local remaining={}
@@ -1042,10 +1029,8 @@ local function SummarizeCore(steps, recOf, soldSet, skipLearnedFormulas, specInp
     end
     local list = {}
     for id, n in pairs(mats) do
-        local have = covered and covered[id] or nil
         local entries,_,complete,reason=RA.MaterialPurchases(id,n,purchaseOpts)
         for _,entry in ipairs(entries) do
-            entry.have,entry.need=have,n+(have or 0)
             entry.spec=specSet[id] or nil
             if entry.unpriced then entry.reason,entry.age=MatReason(id,soldSet) end
             if not complete then entry.costComplete=false;entry.procurementReason=reason end
@@ -1107,12 +1092,10 @@ local function SummarizePoisons(steps, opts)
     end
     local list,total,vendorTotal={},0,0
     for id,need in pairs(counts) do
-        local have=opts.executionInventory and opts.executionInventory[id]
-        have=type(have)=="number" and math.min(need,math.max(0,have)) or 0
-        local count,price=need-have,prices[id]
+        local count,price=need,prices[id]
         if count>0 then
             local cost=(price or 0)*count
-            list[#list+1]={id,count,id=id,count=count,need=need,have=have>0 and have or nil,
+            list[#list+1]={id,count,id=id,count=count,need=need,
                 cost=cost,unit=price or 0,vendor=sold[id] or false,source=sold[id] and "vendor" or "ah",
                 unpriced=price==nil,reason=price==nil and (sold[id] and "novendor" or ahReason[id] or "norec") or nil,
                 age=price==nil and ahAge[id] or nil}
@@ -1170,7 +1153,7 @@ function RA.SummarizeSteps(steps, slug, opts)
     end
     local total, crafts, list, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(steps, recOf, soldSet, false, specInputs, opts.executionInventory,nil,slug,opts)
+        SummarizeCore(steps, recOf, soldSet, false, specInputs,nil,slug,opts)
     local res = {
         steps = steps, mats = list, firstAt = firstAt,
         matTotal = total, formulas = formulas, formulasTotal = formulasTotal,
@@ -1711,7 +1694,7 @@ function RA.ComputeFishing(slug, opts)
     end
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, false, nil, opts.executionInventory, fishSet,slug,opts)
+        SummarizeCore(stepsOut, recOf, soldSet, false, nil, fishSet,slug,opts)
     local reached = stepsOut[#stepsOut] and stepsOut[#stepsOut][2] or start
     local res = {
         planVersion = 2, scheme = "fishing", fishingRoute = true, fishingRouteRevision=2,
@@ -1774,7 +1757,7 @@ function RA.Compute(slug, opts)
     local kept = InjectTools(stepsOut, slug, cap, opts.start, recOf)
     local total, crafts, mats, firstAt, vendorTotal, formulas, formulasTotal,
           productAH, productNPC, productPartial =
-        SummarizeCore(stepsOut, recOf, soldSet, false, nil, opts.executionInventory,nil,slug,opts)
+        SummarizeCore(stepsOut, recOf, soldSet, false, nil,nil,slug,opts)
     local res = {
         scheme = scheme,
         steps = stepsOut, gaps = gaps, mats = mats, firstAt = firstAt,

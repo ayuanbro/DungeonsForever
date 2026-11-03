@@ -141,7 +141,7 @@ class NativeRoutePlansTests(unittest.TestCase):
           assert(run.plan==frozen and run.plan.planID==r.planID)
         ''')
 
-    def test_explicit_recalculation_uses_current_bags_without_changing_original_cost(self):
+    def test_explicit_recalculation_preserves_material_cost_despite_current_bags(self):
         self.lua.execute('''
           ns.ProfEconomy.Capture=function(slug,opts)
             local s=fixture();s.executionInventory=opts.executionInventory
@@ -152,10 +152,10 @@ class NativeRoutePlansTests(unittest.TestCase):
           local old=assert(ns.ProfExecution.Bind('alchemy',original))
           bag[11]=1
           ra.Recalculate('alchemy',opts);local result=finish('alchemy',opts)
-          assert(result.total==7 and result.seedInventory[11]==1)
+          assert(result.total==14 and next(result.seedInventory)==nil)
           assert(original.total==14 and old.plan.total==14 and old.status=='archived')
           assert(result.planID~=original.planID)
-          assert(result.mats[1].count==1,'bag inventory must be applied exactly once')
+          assert(result.mats[1].count==2,'route budget must include every consumed ingredient')
         ''')
 
     def test_only_latest_candidate_per_profession_is_saved(self):
@@ -510,16 +510,16 @@ class NativeRoutePlansTests(unittest.TestCase):
           assert(bought==1 and r.formulas[1].source=='ah' and r.formulas[1].count==1)
         ''')
 
-    def test_explicit_opening_inventory_is_applied_once_after_reload(self):
+    def test_opening_inventory_does_not_discount_cost_before_or_after_reload(self):
         self.lua.execute('''
           ns.ProfEconomy.Capture=function()return ns.ProfEconomy.Index(fixture())end
           opts={start=1,target=3,executionInventory={[11]=1}}
-          original=finish('alchemy',opts);assert(original.total==7)
+          original=finish('alchemy',opts);assert(original.total==14)
         ''')
         self.reload_routes()
         self.lua.execute('''
           local r=finish('alchemy',{start=1,target=3})
-          assert(r.targetReached and r.total==7 and r.mats[1].count==1 and r.seedInventory[11]==1)
+          assert(r.targetReached and r.total==14 and r.mats[1].count==2 and next(r.seedInventory)==nil)
         ''')
 
     def test_changed_recipe_cannot_satisfy_invalid_saved_allocations(self):

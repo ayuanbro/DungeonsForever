@@ -378,6 +378,8 @@ class ShoppingViewTests(unittest.TestCase):
           for _,e in ipairs(p.mats)do if e.id==4470 then e.cost=nil;e.unpriced=true;cached=e end end
           assert(cached and cached.npcID==nil)
           p.mats[#p.mats+1]={id=99,count=2,source='unknown',vendor=true,cost=nil,unpriced=true}
+          local mats=p.executionSteps[1].recipe.mats
+          mats[#mats+1]={99,2}
           usePlan(p);local plain=receipts(visibleRows)
           clickHeader('shop_group')
           local sections=rowSections(visibleRows)

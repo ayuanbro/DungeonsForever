@@ -2,7 +2,7 @@ local _,ns=...
 if not ns.LoadForeverPages then return end
 local E=ns.ProfEconomy
 local S={}; ns.ProfRouteSolver=S
-S.ProcurementPolicyVersion=8
+S.ProcurementPolicyVersion=9
 S.FailureDiagnosticVersion=1
 local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
 local stockFields={"unlimited","limited","stock","maxStock","stockUnknown","stockStatus"}
@@ -62,10 +62,11 @@ local function initial(snap,slug,opts,tick)
     local s={inv={},unusable={},unusableSeed={},produced={},priorityProduced={},profitMade={},skill={},progress={},cap={},learned=E.Copy(snap.known,tick),formulaPaid={},ahUsed={},specializationAbilities=E.Copy(snap.specializationAbilities,tick),completedSpecializationGoals={},completedToolGoals={},diagnostics={},greenLevelCrafts=0,money=0,switches=0}
     for p,v in pairs(snap.professions) do s.skill[p]=v.cur or 1; s.cap[p]=v.max or 300 end
     s.skill[slug]=opts.start or s.skill[slug] or 1; s.cap[slug]=s.cap[slug] or 300
-    local ids={}; for id in pairs(opts.executionInventory or {}) do if type(id)=="number" then ids[#ids+1]=id end end
+    local inventory=opts.procurementDemands and opts.executionInventory or {}
+    local ids={}; for id in pairs(inventory) do if type(id)=="number" then ids[#ids+1]=id end end
     table.sort(ids)
     for _,id in ipairs(ids) do
-        local entry=opts.executionInventory[id]
+        local entry=inventory[id]
         local n=type(entry)=="table" and entry.count or entry
         if type(n)=="number" and n>0 and n==floor(n) then
             s.inv[id]=n
@@ -271,7 +272,7 @@ function S.Result(job,state,status)
     out.phaseCpuMs=E.Copy(job.phaseCpuMs or {})
     out.solverWork=E.Copy(job.workCounters or {})
     out.firstFeasibleCpuMs=job.firstFeasibleCpuMs
-    out.seedInventory=E.Copy(job.opts.executionInventory or {})
+    out.seedInventory=E.Copy(job.opts.procurementDemands and job.opts.executionInventory or {})
     out.scheme=job.opts.scheme or "cheapest"
     out.greenLevelCrafts=state and state.greenLevelCrafts or 0
     out.toolGoals=E.Copy(job.snap and job.snap.toolGoals)

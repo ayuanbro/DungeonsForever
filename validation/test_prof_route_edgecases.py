@@ -60,15 +60,15 @@ class NativeRouteEdgeCasesTests(unittest.TestCase):
           assert(completed==1,'legacy completion callback must fire exactly once')
         ''')
 
-    def test_synthetic_verified_inventory_is_part_of_route_identity(self):
+    def test_backpack_inventory_does_not_change_route_identity_or_cost(self):
         self.lua.execute(r'''
           local ra=ns.ProfRouteAuto
           local s=fixture()
           local first=finish('alchemy',{snapshot=s,start=1,target=3})
           assert(first.total==14)
           local second=finish('alchemy',{snapshot=s,start=1,target=3,executionInventory={[11]=2}})
-          assert(second.total==0,'synthetic route reused a cache made with different verified stock')
-          assert(first~=second)
+          assert(second.total==14,'backpack stock discounted the route cost')
+          assert(first==second)
         ''')
 
     def test_malformed_saved_route_cache_is_preserved_without_lua_error(self):

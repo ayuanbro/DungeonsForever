@@ -779,8 +779,7 @@ function XP.GetRecipeTotals(slug,planID,fresh)
     if run.status=="archived" then run.byRecipe=copy(list);run.byRecipeVersion=run.progressVersion end
     return list
 end
-function XP.Progress(slug,id,skillSnapshot,planID)
-    local run=planID and db().runs[planID] or XP.GetRun(slug);if not run or run.slug~=slug then return nil end
+local function progressFor(run,slug,id,skillSnapshot,baseOnly)
     if not readablePlan(run) then
         return {complete=false,skillDone=false,skillMet=false,materialDone=false,blocked=true,
             historyUnreadable=true,reason="historyUnreadable",attemptsDone=0,casts=0,
@@ -806,9 +805,9 @@ function XP.Progress(slug,id,skillSnapshot,planID)
             extraCrafts=0,blocked=not done,directMaterials=direct}
     end
     local confirmed,guaranteed,pending,output=outputFacts(run,seg)
-    local credit=creditsFor(run,seg,skillSnapshot)
+    local credit=run.previewCredits and run.previewCredits[seg.segmentID] or creditsFor(run,seg,skillSnapshot)
     local reused,reusedActual,fulfilled,waived=credit.available,credit.available,credit.credited,credit.waived
-    local required=requiredOutputs(seg,run);local remaining={};local materialDone=true
+    local required=baseOnly and quotaMap(seg.requiredOutputs) or requiredOutputs(seg,run);local remaining={};local materialDone=true
     for item,n in pairs(required) do remaining[item]=max(0,n-(fulfilled[item] or 0)-(waived[item] or 0));if remaining[item]>0 then materialDone=false end end
     local skillDone,cur,goal=skillComplete(run,seg,index,p,skillSnapshot)
     local levelCrafts=0;local grey=false
@@ -859,6 +858,26 @@ function XP.Progress(slug,id,skillSnapshot,planID)
         end
     end
     return result
+end
+function XP.Progress(slug,id,skillSnapshot,planID)
+    local run=planID and db().runs[planID] or XP.GetRun(slug);if not run or run.slug~=slug then return nil end
+    return progressFor(run,slug,id,skillSnapshot)
+end
+function XP.PreviewProgress(slug,plan)
+    if type(plan)~="table" or plan.executionVersion~=1 then return {} end
+    local run={slug=slug,plan=plan,progress={},status="archived",currentIndex=1,creditVersion=0}
+    local snapshot=E and E.Professions and E.Professions()
+    local out={}
+    for _,seg in ipairs(steps(plan)) do
+        if seg.segmentID then
+            local progress=progressFor(run,slug,seg.segmentID,snapshot)
+            run.previewCredits=creditCaches[run]
+            local base=progressFor(run,slug,seg.segmentID,snapshot,true)
+            progress.baseCrafts=max(base.remainingCrafts or 0,(progress.remainingCrafts or 0)-(seg.reserve and seg.reserve.extraCrafts or 0))
+            out[seg.segmentID]=progress
+        end
+    end
+    return out
 end
 function XP.GetProgressAll(slug)
     local run=XP.GetRun(slug);if not run then return end

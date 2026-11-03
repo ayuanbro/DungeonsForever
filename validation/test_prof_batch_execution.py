@@ -68,13 +68,13 @@ class BatchExecutionTests(unittest.TestCase):
           assertLedger(after)
         ''')
 
-    def test_finite_stock_and_preexisting_materials_are_not_double_purchased(self):
+    def test_batch_cost_and_input_counts_do_not_change_with_preexisting_materials(self):
         self.lua.execute('''
           local s=engineering();s.inventory={[4357]=5};s.auctionSupply={[2835]={quantity=100},[2589]={quantity=100}}
           local before,after=planned(s,50,{executionInventory={[4357]=5},considerAuctionSupply=true})
           assert(#after.executionSteps==2)
           assert(bought(after,2835)==after.executionSteps[1][4])
-          assert(after.executionSteps[1][4]+5==after.executionSteps[2][4])
+          assert(after.executionSteps[1][4]==after.executionSteps[2][4])
           assert(bought(after,2835)<=100 and bought(after,2589)<=100)
           assertLedger(after)
         ''')
@@ -111,7 +111,7 @@ class BatchExecutionTests(unittest.TestCase):
         self.lua.execute('''
           local a=recipe('engineering',1,10,1,{{11,1}},1,300)
           local b=recipe('engineering',2,11,1,{{10,1}},1,300)
-          local s=snapshot({a,b},{});s.professions={engineering={cur=1,max=75}}
+          local s=snapshot({a,b},{[11]=1});s.professions={engineering={cur=1,max=75}}
           local before,after=planned(s,5,{executionInventory={[11]=1},fixedSteps={{1,2,1,1},{2,3,2,1},{3,4,1,1},{4,5,2,1}}})
           assert(#after.executionSteps==4 and after.crafts==4)
           assertLedger(after)

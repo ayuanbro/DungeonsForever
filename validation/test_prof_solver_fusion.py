@@ -118,7 +118,7 @@ class ProfessionSolverFusionTests(unittest.TestCase):
           assert(bought(result,8170)==0 and bought(result,4304)==24)
           assert((j.workCounters.fastSeedCrafts or 0)>0)
           assert(result.costSearchPerformed==(result.expanded>0))
-          assert(S.ProcurementPolicyVersion==8)
+          assert(S.ProcurementPolicyVersion==9)
         ''')
 
     def test_nested_leather_processing_and_blocked_recipe_constraints(self):
@@ -177,15 +177,15 @@ class ProfessionSolverFusionTests(unittest.TestCase):
           assert(r.feasible and not r.essenceQuoteIncomplete and r.quoteComplete)
         ''')
 
-    def test_only_verified_execution_stock_can_offset_purchase(self):
+    def test_route_cost_keeps_all_inputs_even_with_verified_execution_stock(self):
         self.lua.execute(r'''
           local s=essenceSnapshot({{10938,2}},{[10938]=4,[10939]=10})
           s.inventory={[10938]=999,[10939]=999}
           local r=solve('enchanting',s,2)
           assert(r.total==8 and bought(r,10938)==2)
           r=solve('enchanting',s,2,{executionInventory={[10939]=1}})
-          assert(r.total==0 and #r.mats==0 and r.inventory[10938]==1)
-          assert(#conversions(r)==1 and #r.seedAllocations==1)
+          assert(r.total==8 and bought(r,10938)==2)
+          assert(#conversions(r)==0 and #r.seedAllocations==0 and next(r.seedInventory)==nil)
         ''')
 
     def test_solver_honors_requested_budget_and_reports_frontier_limit(self):

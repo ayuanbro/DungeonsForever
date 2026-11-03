@@ -136,22 +136,24 @@ class ReserveTests(unittest.TestCase):
           assert(fresh.total==old and r.total==35)
         ''')
 
-    def test_seed_inventory_offsets_only_unallocated_surplus(self):
+    def test_seed_inventory_does_not_discount_base_or_reserve_budget(self):
         self.lua.execute('''
           local r=ns.ProfRouteAuto.Compute('alchemy',{snapshot=reserveFixture(),start=1,target=3,
             executionInventory={[11]=7},reserveMode='ample'})
-          assert(r.total==0 and r.reserve.steps[1].extraCrafts==3)
-          assert(r.reserve.materials[1].count==3 and r.reserve.materials[1].spare==2)
-          assert(r.reserve.total==7 and r.reserve.materials[1].purchaseNeed==1)
+          assert(r.total==35 and r.reserve.steps[1].extraCrafts==3)
+          assert(r.reserve.materials[1].count==3 and r.reserve.materials[1].spare==0)
+          assert(r.reserve.total==21 and r.reserve.materials[1].purchaseNeed==3)
         ''')
 
-    def test_missing_reserve_quote_does_not_make_base_route_infeasible(self):
+    def test_owned_materials_do_not_hide_missing_base_cost_quotes(self):
         self.lua.execute('''
           local s=reserveFixture();s.prices={}
           local r=ns.ProfRouteAuto.Compute('alchemy',{snapshot=s,start=1,target=3,
             executionInventory={[11]=5},reserveMode='ample'})
-          assert(r.feasible and r.targetReached and r.total==0)
-          assert(not r.reserve.complete and not r.reserve.priced and r.reserve.total==nil)
+          assert(not r.feasible and not r.targetReached and not r.priced)
+          local missing=false
+          for _,d in ipairs(r.diagnostics)do if d.item==11 then missing=true end end
+          assert(missing,'inventory hid a missing material cost quote')
         ''')
 
     def test_frozen_reserve_and_spent_allowance_survive_executor_reload(self):

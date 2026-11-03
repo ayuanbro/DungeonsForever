@@ -62,14 +62,15 @@ class RouteWideVendorPurchasesTests(unittest.TestCase):
           end
         ''')
 
-    def test_pack_surplus_and_execution_inventory_are_not_bought_twice(self):
+    def test_full_material_budget_keeps_pack_surplus_despite_execution_inventory(self):
         self.lua.execute('''
           local s=fixture();s.prices[11]=4
           s.offers={[11]={{npcID=7,price=18,quantity=5,unlimited=true}}}
           local r=ns.ProfRouteAuto.Compute('alchemy',{snapshot=s,start=1,target=13,
             scheme='matcost',executionInventory={[11]=2},autoCraftTools=false,recoveryEnabled=false})
-          assert(r.targetReached and r.total==36 and r.ahTotal==0)
-          assert(#r.mats==1 and r.mats[1].count==10 and r.crafts==12)
+          assert(r.targetReached and r.total==44 and r.ahTotal==8)
+          local count=0;for _,row in ipairs(r.mats)do count=count+row.count end
+          assert(#r.mats==2 and count==12 and r.crafts==12)
         ''')
 
     def test_unavailable_and_uncertain_suppliers_do_not_replace_reliable_purchases(self):
