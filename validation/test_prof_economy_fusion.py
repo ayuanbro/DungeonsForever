@@ -24,7 +24,7 @@ class EconomyFusionTests(unittest.TestCase):
             ns.ProfModule={ProfLearned=function()return {alchemy={cur=1,max=75},enchanting={cur=10,max=75}}end}
             ns.ProfRecipes={alchemy={rows={{100,200,1,"",nil,nil,1,10,20,30,nil,{{300,2}}}}}}
             ns.ProfLeveling={alchemy={rinfo={}}}
-            ns.ProfRouteAuto={AHPriceOf=function()return 999 end}
+            ns.ProfRouteAuto={AHPriceOf=function()return 999 end,MaxAuctionSupplyAgeSeconds=function()return 172800 end}
         """)
         for path in ("Core/ProfPolicies.lua", "Core/ProfGates.lua", "Core/ProfSolverCapture.lua", "Core/ProfClientScan.lua"):
             self.lua.execute("assert(loadstring(...))('DungeonsForever',ns)", (ROOT / path).read_text(encoding="utf-8"))

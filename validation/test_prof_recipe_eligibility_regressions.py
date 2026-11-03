@@ -183,7 +183,7 @@ class RecipeEligibilityRegressions(unittest.TestCase):
         ''')
 
 
-    def test_formula_auction_supply_uses_price_ttl(self):
+    def test_formula_auction_supply_uses_separate_two_day_ttl(self):
         self.lua.execute('''
           local E = ns.ProfEconomy
           local observed = 1000
@@ -193,7 +193,7 @@ class RecipeEligibilityRegressions(unittest.TestCase):
               [2553] = {
                 quantity = 1,
                 observedAt = observed,
-                expiresAt = observed + 1800,
+                expiresAt = observed + 172800,
                 source = "client-auction-results",
                 complete = true,
                 ownerExcluded = true
@@ -201,13 +201,13 @@ class RecipeEligibilityRegressions(unittest.TestCase):
             }
           }
 
-          snap.stamp = observed + 47 * 3600
+          snap.stamp = observed + 3600
           assert(E.FormulaAuctionSupplyOf(snap, 2553))
 
-          snap.stamp = observed + 48 * 3600
+          snap.stamp = observed + 2 * 86400
           assert(E.FormulaAuctionSupplyOf(snap, 2553))
 
-          snap.stamp = observed + 48 * 3600 + 1
+          snap.stamp = observed + 2 * 86400 + 1
           assert(not E.FormulaAuctionSupplyOf(snap, 2553))
         ''')
 

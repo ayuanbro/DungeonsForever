@@ -12,7 +12,7 @@ import test_prof_ui_fusion as ui
 BRIDGE_MOCKS = r'''
 ns={LoadForeverPages=true,L=setmetatable({},{__index=function(_,k)return k end})}
 -- Use a short deterministic expiry for isolated bridge lifecycle tests.
-ns.ProfRouteAuto={MaxStaleSeconds=function()return 1800 end}
+ns.ProfRouteAuto={MaxStaleSeconds=function()return 48*3600 end,MaxAuctionSupplyAgeSeconds=function()return 1800 end}
 DungeonsForeverDB={prof={}};clock=10000;timers={};frames={};requests={};messages={}
 function time()return clock end
 function UnitName()return 'Player' end
@@ -89,17 +89,17 @@ class AuctionSupplyBridgeTests(unittest.TestCase):
           clock=clock+1801
           assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='expired')
           clock=clock-1801;GetRealmName=function()return 'AnotherRealm'end
-          assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='unverified')
+          assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='expired')
           GetRealmName=function()return 'Realm'end;UnitName=function()return 'Other'end
-          assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='unverified')
+          assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='expired')
           UnitName=function()return 'Player'end
           beginFull(2);sendFull({rawRow(11,7,140,'Seller')});finishFull()
-          assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(12)=='incomplete')
+          assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(12)=='expired')
           beginFull(1);sendFull({rawRow(11,-1,20,'Seller')});finishFull()
           assert(b.GetAuctionSupply(11)==nil)
           beginFull(1);sendFull({rawRow(11,0,0,'Seller')});finishFull()
           assert(b.GetAuctionSupply(11).quantity==0)
-          assert(#requests==0 and DungeonsForeverDB.prof.auctionFullScan==nil)
+          assert(#requests==0 and DungeonsForeverDB.prof.auctionFullScan.items[11].q==0)
         ''')
 
     def test_real_capture_freezes_memory_budget_and_marks_expiration(self):

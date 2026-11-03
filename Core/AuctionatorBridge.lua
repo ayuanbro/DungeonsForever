@@ -118,7 +118,16 @@ function AB.DoImport(profName, items)
     Say(L["未检测到 Auctionator，请在 Auctionator → 购物清单 → 导入 中粘贴"])
 end
 
-local SUPPLY_MAX_AGE  = ns.ProfRouteAuto.MaxStaleSeconds()
+local SUPPLY_MAX_AGE = ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds()
+local SNAPSHOT_VERSION = 3
+local function WholeNumber(n)
+    return type(n)=="number" and n>=0 and n<math.huge and n==math.floor(n)
+end
+local function ScanDB()
+    if type(DungeonsForeverDB)~="table" then DungeonsForeverDB={} end
+    if type(DungeonsForeverDB.prof)~="table" then DungeonsForeverDB.prof={} end
+    return DungeonsForeverDB.prof
+end
 
 local supplyRevision = 0
 local supplyListeners = {}
@@ -137,28 +146,66 @@ local function SupplyChanged(id)
     for _,fn in ipairs(supplyListeners) do pcall(fn,id,"supply") end
 end
 
-local fullBatch,fullFailure,fullExpiryTimer,replicateState
-local function ReleaseFullBatch(reason,observation)
+local fullBatch,fullFailure,fullExpiryTimer,fullExpiryToken,replicateState
+local restoredSnapshot=false
+local function ReleaseFullBatch(reason,observation,snapshotStatus)
     if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
+    fullExpiryToken=nil
     local batch=observation or fullBatch or fullFailure
-    if batch then fullFailure={mk=batch.mk,ob=batch.ob,failure=reason} end
+    fullFailure={v=SNAPSHOT_VERSION,failure=reason,snapshotStatus=snapshotStatus}
+    if type(batch)=="table" then
+        fullFailure.mk,fullFailure.ob=batch.mk,batch.ob
+        if WholeNumber(batch.t) and batch.t>0 then fullFailure.t=batch.t end
+    end
     fullBatch=nil
+    ScanDB().auctionFullScan=fullFailure
 end
 local function FullBatchFailure(batch)
-    if batch.mk~=MarketKey() or batch.ob~=ObserverKey() then return "unverified" end
-    if batch.v~=2 or batch.c~=true or type(batch.items)~="table" then return "incomplete" end
+    if batch.v~=SNAPSHOT_VERSION or batch.c~=true or type(batch.items)~="table" then return "incomplete" end
     local stamp=batch.t;local now=time and time() or 0
-    if type(stamp)~="number" or stamp~=stamp or stamp<=0 or stamp>now or now-stamp>SUPPLY_MAX_AGE then return "expired" end
-    if replicateState and (batch.rg~=replicateState.generation or batch.rs~=replicateState.scanSerial) then return "unverified" end
-    local a=_G.Auctionator
-    local summary=a and a.SavedState and a.SavedState.TimeOfLastBrowseScan
-    if type(summary)=="number" and summary>0 and summary>=stamp then return "unverified" end
+    if not WholeNumber(stamp) or stamp<=0 or stamp>now then return "incomplete" end
+    if now-stamp>SUPPLY_MAX_AGE then return "expired" end
+    if batch.mk~=MarketKey() or batch.ob~=ObserverKey() then return "unverified" end
+end
+
+
+local function ValidSavedBatch(batch)
+    local now=time and time() or 0
+    if type(batch)~="table" or batch.v~=SNAPSHOT_VERSION or batch.c~=true
+        or batch.s~="client-auction-results" or batch.ox~=true
+        or type(batch.mk)~="string" or batch.mk=="" or type(batch.ob)~="string" or batch.ob==""
+        or not WholeNumber(batch.t) or batch.t<=0 or batch.t>now
+        or not WholeNumber(batch.completedAt) or batch.completedAt<batch.t or batch.completedAt>now
+        or not WholeNumber(batch.expected) or batch.received~=batch.expected or type(batch.items)~="table" then return false end
+    local count=0
+    for id,item in pairs(batch.items) do
+        if not WholeNumber(id) or id==0 or type(item)~="table" or not WholeNumber(item.q)
+            or item.failure~=nil and item.failure~="incomplete"
+            or item.p~=nil and (type(item.p)~="number" or item.p~=item.p or item.p<=0 or item.p==math.huge)
+            or item.q>0 and item.p==nil then return false end
+        count=count+1
+    end
+    return count<=batch.expected
+end
+
+
+function AB.FullScanSnapshotStatus()
+    local batch=fullBatch
+    local failure=batch and FullBatchFailure(batch)
+    if failure and failure~="unverified" then ReleaseFullBatch(failure);batch=nil end
+    local meta=batch or fullFailure
+    local status=batch and (failure=="unverified" and "mismatch" or "available")
+        or meta and (meta.failure=="expired" and "expired" or meta.snapshotStatus=="missing" and "missing" or "invalid") or "missing"
+    return {status=status,observedAt=meta and meta.t,
+        expiresAt=meta and meta.t and meta.t+SUPPLY_MAX_AGE,
+        restored=restoredSnapshot,completedAt=batch and batch.completedAt}
 end
 
 local function SupplyRecord(id)
     local batch=fullBatch
     if batch then
         local failure=FullBatchFailure(batch)
+        if failure=="unverified" then return {mk=batch.mk,ob=batch.ob,failure=failure} end
         if failure then ReleaseFullBatch(failure);batch=nil end
     end
     if not batch then return fullFailure end
@@ -173,7 +220,7 @@ local function SupplyRecord(id)
         return {mk=batch.mk,ob=batch.ob,failure="incomplete"}
     end
     return {q=item and item.q or 0,p=item and item.p,t=batch.t,mk=batch.mk,ob=batch.ob,
-        c=batch.c==true and not (item and item.failure),ox=true,s="client-auction-results",v=2,
+        c=batch.c==true and not (item and item.failure),ox=true,s="client-auction-results",v=SNAPSHOT_VERSION,
         failure=item and item.failure or batch.c~=true and "incomplete" or nil,
         method="auctionator-full-scan"}
 end
@@ -188,8 +235,8 @@ function AB.GetAuctionSupplyStatus(id)
     if type(rec) ~= "table" then return "unknown" end
     local now = time and time() or 0
     local qty, stamp = tonumber(rec.q), tonumber(rec.t)
-    if rec.mk ~= MarketKey() or rec.ob ~= ObserverKey() then return "unverified" end
     if rec.failure then return rec.failure end
+    if rec.mk ~= MarketKey() or rec.ob ~= ObserverKey() then return "unverified" end
     if rec.c ~= true or rec.ox ~= true or rec.s ~= "client-auction-results" then return "incomplete" end
     if not qty or qty < 0 or qty == math.huge or qty ~= math.floor(qty) then return "incomplete" end
     if not stamp or stamp~=stamp or stamp <= 0 or stamp > now or now-stamp > SUPPLY_MAX_AGE then return "expired" end
@@ -299,32 +346,36 @@ end
 local fullBus,fullListener,fullEvents,fullRead,fullTimer
 local fullGeneration=0
 local fullState={status="unavailable"}
-local function WholeNumber(n)
-    return type(n)=="number" and n>=0 and n<math.huge and n==math.floor(n)
-end
 local function StopFullImport()
     fullGeneration=fullGeneration+1
     if fullTimer then fullTimer:Cancel();fullTimer=nil end
     fullRead=nil
-    ReleaseFullBatch("unverified")
 end
 local function ScheduleFullExpiry()
     if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
     if not fullBatch then return end
     local failure=FullBatchFailure(fullBatch)
-    if failure then ReleaseFullBatch(failure);return end
+    if failure and failure~="unverified" then ReleaseFullBatch(failure);return end
     if not (C_Timer and C_Timer.NewTimer) then return end
-    local generation=fullGeneration
+    local token={};fullExpiryToken=token
     fullExpiryTimer=C_Timer.NewTimer(math.max(1,fullBatch.t+SUPPLY_MAX_AGE+1-(time and time() or 0)),function()
-        if generation~=fullGeneration then return end
+        if fullExpiryToken~=token then return end
         fullExpiryTimer=nil
         if not fullBatch then return end
         local failure=FullBatchFailure(fullBatch)
-        if failure then ReleaseFullBatch(failure);SupplyChanged(nil)
+        if failure and failure~="unverified" then ReleaseFullBatch(failure);SupplyChanged(nil)
         else ScheduleFullExpiry() end
     end)
 end
 function AB.FullScanStatus() return fullState end
+local function ScanStatusChanged()
+    for _,fn in ipairs(supplyListeners) do pcall(fn,nil,"scan-status") end
+end
+local function ImportFailed(status)
+    StopFullImport();fullState={status=status}
+    if not fullBatch and not fullFailure then ReleaseFullBatch("incomplete",nil,"missing") end
+    ScanStatusChanged()
+end
 
 local function ExpectedFullRows(scan)
     if scan.expected~=nil then return end
@@ -368,7 +419,7 @@ end
 
 local function ImportFullRows(scan,rows)
     if type(rows)~="table" or scan.expected==nil then
-        fullState={status="incomplete"};fullRead=nil;ReleaseFullBatch("incomplete",scan);return
+        ImportFailed("incomplete");return
     end
     scan.items={};scan.complete=true;scan.index=1
     local rowCount=0
@@ -380,38 +431,57 @@ local function ImportFullRows(scan,rows)
     fullState={status="processing",done=0,total=scan.expected}
     local generation=fullGeneration
     local function step()
-        fullTimer=nil
         if generation~=fullGeneration then return end
+        fullTimer=nil
         if scan.mk~=MarketKey() or scan.ob~=ObserverKey() then
-            fullState={status="unverified"};fullRead=nil;return
+            ImportFailed("unverified");return
         end
         local last=math.min(scan.index+249,scan.expected)
         for index=scan.index,last do FullRow(scan,rows[index]) end
         scan.index=last+1;fullState.done=last
         if scan.index<=scan.expected then
             if C_Timer and C_Timer.NewTimer then fullTimer=C_Timer.NewTimer(0,step)
-            else fullState={status="unavailable"};fullRead=nil end
+            else ImportFailed("unavailable") end
             return
         end
         local enabled,mode=AB.ObserveReplicateMode()
-        if enabled==false or not mode
-            or mode.generation~=scan.modeGeneration or mode.scanSerial~=scan.scanSerial then
-            fullState={status="unverified"};fullRead=nil;return
+
+        if enabled~=true or not mode then return end
+        if mode.generation~=scan.modeGeneration or mode.scanSerial~=scan.scanSerial then
+            ImportFailed("unverified");return
         end
-        fullBatch={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
-            c=scan.complete,v=2,rg=scan.modeGeneration,rs=scan.scanSerial}
+        if not scan.complete then ImportFailed("incomplete");return end
+        local candidate={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
+            c=true,v=SNAPSHOT_VERSION,s="client-auction-results",ox=true,
+            completedAt=time and time() or scan.observedAt,expected=scan.expected,received=rowCount}
+        if not ValidSavedBatch(candidate) then ImportFailed("incomplete");return end
+        fullBatch=candidate
         fullFailure=nil
-        if scan.complete then ScheduleFullExpiry() else ReleaseFullBatch("incomplete") end
+        restoredSnapshot=false
+        ScanDB().auctionFullScan=fullBatch
+        ScheduleFullExpiry()
         fullState.status=scan.complete and "complete" or "incomplete"
         fullState.observedAt=scan.observedAt
         fullRead=nil
         SupplyChanged(nil)
     end
     if C_Timer and C_Timer.NewTimer then fullTimer=C_Timer.NewTimer(0,step)
-    else fullState={status="unavailable"};fullRead=nil end
+    else ImportFailed("unavailable") end
+end
+
+local function DisconnectFullScan()
+    if fullBus and fullBus.Unregister then pcall(fullBus.Unregister,fullBus,fullListener,fullEvents) end
+    fullBus,fullListener,fullEvents=nil,nil,nil
+    StopFullImport()
 end
 
 function AB.ConnectAuctionatorStock()
+    local enabled=AB.ReplicateScanEnabled()
+    if enabled~=true then
+        if fullBus or fullRead or fullTimer then DisconnectFullScan() end
+        fullState={status=enabled==false and "summary" or "unavailable"}
+        return false
+    end
     local A=Auctionator
     local bus=type(A)=="table" and A.EventBus
     local ev=type(A)=="table" and A.FullScan and A.FullScan.Events
@@ -419,25 +489,24 @@ function AB.ConnectAuctionatorStock()
         or type(ev.ScanStart)~="string" or type(ev.ScanComplete)~="string"
         or type(ev.ScanProgress)~="string" or type(ev.ScanFailed)~="string" then return false end
     if fullBus==bus then return true end
-    if fullBus and fullBus.Unregister then pcall(fullBus.Unregister,fullBus,fullListener,fullEvents) end
-    StopFullImport()
+    DisconnectFullScan()
     local listener={}
     function listener:ReceiveEvent(event,data)
+        if self~=fullListener then return end
+        local enabled,mode=AB.ObserveReplicateMode()
+        if enabled~=true or self~=fullListener then return end
         if event==ev.ScanStart then
-            local enabled,mode=AB.ObserveReplicateMode()
             StopFullImport()
-            if enabled==false or not mode then
-                fullState={status="unverified"};return
-            end
             mode.scanSerial=mode.scanSerial+1
             fullRead={startedAt=time and time() or 0,mk=MarketKey(),ob=ObserverKey(),
                 modern=ev.ScanStart=="replicate_scan_start",
                 modeGeneration=mode.generation,scanSerial=mode.scanSerial}
             fullState={status="scanning"}
+            ScanStatusChanged()
         elseif event==ev.ScanProgress and fullRead and type(data)=="number" and data>=0.2 then
             ExpectedFullRows(fullRead)
         elseif event==ev.ScanFailed then
-            StopFullImport();fullState={status="failed"}
+            ImportFailed("failed")
         elseif event==ev.ScanComplete and fullRead and fullState.status=="scanning" then
             ImportFullRows(fullRead,data)
         end
@@ -451,8 +520,22 @@ function AB.ConnectAuctionatorStock()
 end
 
 local function InitializeAuctionatorStock()
-    local db=DungeonsForeverDB and DungeonsForeverDB.prof
-    if type(db)=="table" then db.auctionFullScan=nil;db.auctionReplicateGate=nil;db.replicateRequiredAfter=nil end
+    local db=ScanDB()
+    db.auctionReplicateGate=nil;db.replicateRequiredAfter=nil
+    local saved=db.auctionFullScan
+    if saved~=nil then
+        restoredSnapshot=true
+        if ValidSavedBatch(saved) then
+            fullBatch=saved;ScheduleFullExpiry()
+        elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION and saved.items==nil
+            and saved.failure=="incomplete" and saved.snapshotStatus=="missing" then
+            fullFailure=saved
+        elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION and saved.items==nil
+            and saved.failure=="expired" and WholeNumber(saved.t) and saved.t>0
+            and (time and time() or 0)-saved.t>SUPPLY_MAX_AGE then
+            fullFailure=saved
+        else ReleaseFullBatch("incomplete") end
+    end
     AB.ConnectAuctionatorStock()
     AB.ObserveReplicateMode()
     AB.HookReplicateModeSetting()
@@ -495,8 +578,9 @@ local hookedModeConfig
 
 function AB.ObserveReplicateMode()
     local enabled=AB.ReplicateScanEnabled()
-    if enabled==nil then return nil,nil end
+    if enabled==nil then AB.ConnectAuctionatorStock();return nil,nil end
     local state=replicateState
+    local changed=false
     if not state then
         state={enabled=enabled,generation=1,scanSerial=0}
         replicateState=state
@@ -505,7 +589,11 @@ function AB.ObserveReplicateMode()
         state.generation=state.generation+1
         StopFullImport()
         fullState={status="mode-changed"}
-        supplyRevision=supplyRevision+1
+        changed=true
+    end
+    AB.ConnectAuctionatorStock()
+    if changed then
+        ScanStatusChanged()
         for _,fn in ipairs(supplyListeners) do pcall(fn,nil,"replicate-mode") end
     end
     return enabled,state
@@ -513,15 +601,11 @@ end
 
 function AB.ReplicateScanReady()
     if not ns.IsForever then return true end
+    if AB.FullScanSnapshotStatus().status=="available" then return true end
     local enabled,state=AB.ObserveReplicateMode()
     if enabled==nil then return nil,"replicateModeUnknown" end
     if not enabled then return false,"replicateModeDisabled" end
-    if fullBatch then
-        local failure=FullBatchFailure(fullBatch)
-        if failure then ReleaseFullBatch(failure) end
-    end
-    if not state or not fullBatch then return false,"replicateScanRequired" end
-    return true
+    return false,"replicateScanRequired"
 end
 
 function AB.HookReplicateModeSetting()

@@ -36,7 +36,8 @@ class FullScanFallbackFieldsTests(unittest.TestCase):
           assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupplyStatus(11)=='incomplete')
           local conflict=rawRow(11,5,35,'Seller');conflict.auctionInfo[17]=12
           beginFull(1);sendFull({conflict});finishFull()
-          assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupply(12)==nil)
+          assert(b.GetAuctionSupply(11)==nil and b.GetAuctionSupply(12).quantity==0)
+          assert(b.FullScanStatus().status=='incomplete')
           assert(#requests==0)
         ''')
 

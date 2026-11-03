@@ -17,7 +17,7 @@ function private(fn,name)
  error('missing upvalue '..name)
 end
 function watchBatch()
- local batch=assert(private(b.ReplicateScanReady,'fullBatch'))
+ local batch=assert(private(b.FullScanSnapshotStatus,'fullBatch'))
  watched[1]=batch;watched[2]=batch.items;watched[3]=batch.items[11]
 end
 function collect()
@@ -27,7 +27,7 @@ function collect()
 end
 function released()
  collect()
- assert(private(b.ReplicateScanReady,'fullBatch')==nil)
+ assert(private(b.FullScanSnapshotStatus,'fullBatch')==nil)
  for i=1,3 do assert(watched[i]==nil,'scan payload retained at '..i)end
 end
 function scan()
@@ -63,7 +63,7 @@ class ScanMemoryLifecycleTests(unittest.TestCase):
     def boot(self, max_age=1800):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute(BRIDGE_MOCKS)
-        self.lua.execute('local age=...;ns.IsForever=true;ns.ProfRouteAuto.MaxStaleSeconds=function()return age end', max_age)
+        self.lua.execute('local age=...;ns.IsForever=true;ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds=function()return age end', max_age)
         self.lua.execute(SOURCE_MOCK)
         self.lua.execute("assert(loadstring(...))('DungeonsForever',ns)",
                          (ROOT/'Core/AuctionatorBridge.lua').read_text(encoding='utf-8-sig'))
@@ -80,7 +80,7 @@ class ScanMemoryLifecycleTests(unittest.TestCase):
           assert(watched[1] and watched[2] and watched[3])
           assert(b.GetAuctionSupply(11).quantity==2 and b.GetAuctionSupply(12).quantity==0)
           assert(expiryTimer().due==clock+1801)
-          assert(#requests==0 and DungeonsForeverDB.prof.auctionFullScan==nil)
+          assert(#requests==0 and DungeonsForeverDB.prof.auctionFullScan.items~=nil)
         ''')
 
     def test_passive_expiry_releases_payload_after_the_inclusive_freshness_boundary(self):
@@ -102,13 +102,13 @@ class ScanMemoryLifecycleTests(unittest.TestCase):
           assert(ready==false and reason=='replicateScanRequired')
         ''')
 
-    def test_production_48_hour_expiry_preserves_the_last_valid_second(self):
-        self.boot(48*3600)
+    def test_production_two_day_expiry_preserves_the_last_valid_second(self):
+        self.boot(2*86400)
         self.lua.execute('''
           scan();local stamp=clock
-          fireDue(stamp+48*3600)
+          fireDue(stamp+2*86400)
           assert(b.ReplicateScanReady() and expiryTimer())
-          fireDue(stamp+48*3600+1);released()
+          fireDue(stamp+2*86400+1);released()
           assert(not expiryTimer() and b.GetAuctionSupplyStatus(11)=='expired')
         ''')
 
@@ -120,13 +120,13 @@ class ScanMemoryLifecycleTests(unittest.TestCase):
           fireDue(clock+1801);released();assert(not expiryTimer())
         ''')
 
-    def test_new_scan_releases_previous_batch_before_its_first_result(self):
+    def test_new_scan_retains_previous_batch_until_success(self):
         self.lua.execute('''
-          scan();beginFull(1);released()
-          assert(not expiryTimer() and not b.ReplicateScanReady())
-          assert(b.GetAuctionSupply(11)==nil)
+          scan();beginFull(1);collect()
+          assert(watched[1] and expiryTimer() and b.ReplicateScanReady())
+          assert(b.GetAuctionSupply(11).quantity==2)
           Auctionator.EventBus:Emit(Auctionator.FullScan.Events.ScanFailed)
-          released();assert(b.GetAuctionSupply(11)==nil)
+          collect();assert(watched[1] and b.GetAuctionSupply(11).quantity==2)
           scan();assert(b.ReplicateScanReady() and expiryTimer())
         ''')
 
@@ -143,14 +143,14 @@ class ScanMemoryLifecycleTests(unittest.TestCase):
           assert(b.GetAuctionSupply(11)==nil and not b.ReplicateScanReady())
         ''')
 
-    def test_mode_switch_drops_counts_and_never_resurrects_them_when_reenabled(self):
+    def test_mode_switch_keeps_successful_counts(self):
         self.lua.execute('''
           scan();Auctionator.Config.Get=function()return false end;b.ObserveReplicateMode()
-          released();assert(not expiryTimer())
+          collect();assert(watched[1] and expiryTimer())
           local ready,reason=b.ReplicateScanReady()
-          assert(ready==false and reason=='replicateModeDisabled')
+          assert(ready and reason==nil)
           Auctionator.Config.Get=function()return true end;b.ObserveReplicateMode()
-          assert(not b.ReplicateScanReady() and b.GetAuctionSupply(11)==nil)
+          assert(b.ReplicateScanReady() and b.GetAuctionSupply(11).quantity==2)
           scan();assert(b.ReplicateScanReady() and expiryTimer())
         ''')
 
@@ -158,41 +158,41 @@ class ScanMemoryLifecycleTests(unittest.TestCase):
         self.lua.execute('''
           scan();Auctionator.Config.Get=function()return nil end
           local ready,reason=b.ReplicateScanReady()
-          assert(ready==nil and reason=='replicateModeUnknown' and b.GetAuctionSupply(11)==nil)
+          assert(ready and reason==nil and b.GetAuctionSupply(11).quantity==2)
           collect();assert(watched[1] and watched[2] and expiryTimer())
           Auctionator.Config.Get=function()return true end
           assert(b.ReplicateScanReady() and b.GetAuctionSupply(11).quantity==2)
         ''')
 
-    def test_newer_summary_scan_discards_full_counts_but_leaves_history_readable(self):
+    def test_newer_summary_scan_retains_full_counts_but_leaves_history_readable(self):
         self.lua.execute('''
           Auctionator.Constants={SCAN_DAY_0=9000}
           Auctionator.Database.GetPriceHistory=function()return {{rawDay=0,available=99}}end
           scan();Auctionator.SavedState.TimeOfLastBrowseScan=clock
-          assert(not b.ReplicateScanReady());released();assert(not expiryTimer())
-          assert(b.GetAuctionSupply(11)==nil)
+          assert(b.ReplicateScanReady());collect();assert(watched[1] and expiryTimer())
+          assert(b.GetAuctionSupply(11).quantity==2)
           local history=b.GetAuctionSupplyHistory(11)
           assert(history.quantity==99 and history.observedAt==9000 and not history.complete)
-          assert(history.source=='auctionator-history' and DungeonsForeverDB.prof.auctionFullScan==nil)
+          assert(history.source=='auctionator-history' and DungeonsForeverDB.prof.auctionFullScan.items~=nil)
         ''')
 
-    def test_confirmed_identity_change_discards_counts_and_keeps_failure_identity(self):
+    def test_identity_mismatch_retains_snapshot_but_blocks_access(self):
         for change in ("GetRealmName=function()return 'AnotherRealm'end",
                        "UnitName=function()return 'AnotherPlayer'end"):
             with self.subTest(change=change):
                 self.boot()
                 self.lua.execute('scan();'+change+'''
                   assert(b.GetAuctionSupplyStatus(11)=='unverified')
-                  released();assert(not expiryTimer())
+                  collect();assert(watched[1] and expiryTimer())
                   GetRealmName=function()return 'Realm'end;UnitName=function()return 'Player'end
-                  assert(b.GetAuctionSupply(11)==nil and not b.ReplicateScanReady())
+                  assert(b.GetAuctionSupply(11).quantity==2 and b.ReplicateScanReady())
                 ''')
         self.boot()
         self.lua.execute('''
           scan();fireDue(clock+1801);released()
           assert(b.GetAuctionSupplyStatus(11)=='expired')
           GetRealmName=function()return 'AnotherRealm'end
-          assert(b.GetAuctionSupplyStatus(11)=='unverified')
+          assert(b.GetAuctionSupplyStatus(11)=='expired')
         ''')
 
     def test_global_incompleteness_releases_aggregate_but_individual_failures_do_not(self):
@@ -224,7 +224,7 @@ class ScanMemoryLifecycleTests(unittest.TestCase):
         self.lua.execute('''
           local rows={};for i=1,10000 do rows[i]=rawRow(i,2,14,'Seller')end
           beginFull(#rows);sendFull(rows);finishFull();rows=nil;watchBatch()
-          local before=collect();Auctionator.Config.Get=function()return false end;b.ObserveReplicateMode()
+          local before=collect();fireDue(clock+1801)
           released();local after=collect()
           assert(before-after>500,'discarded market aggregate was not reclaimed')
           assert(not expiryTimer() and #requests==0)

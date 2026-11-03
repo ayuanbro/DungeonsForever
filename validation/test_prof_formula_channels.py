@@ -9,7 +9,7 @@ class FormulaChannelTests(unittest.TestCase):
         self.lua=native_runtime()
         self.lua.execute('''
           -- Keep expiry cases deterministic in this isolated economy fixture.
-          ns.ProfRouteAuto.MaxStaleSeconds=function()return 1800 end
+          ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds=function()return 1800 end
           function formulaRecipe()
             return {key='alchemy:999001',profession='alchemy',spell=999001,formula=400,source={}}
           end

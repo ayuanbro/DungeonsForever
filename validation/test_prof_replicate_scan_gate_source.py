@@ -3,15 +3,15 @@ from pathlib import Path
 import unittest
 ROOT=Path(__file__).resolve().parents[1]
 class ReplicateModeGateSourceTests(unittest.TestCase):
-    def test_mode_revision_and_successful_scan_serial_are_bound(self):
+    def test_import_generation_and_persisted_snapshot_are_separate(self):
         bridge=(ROOT/'Core/AuctionatorBridge.lua').read_text(encoding='utf-8-sig')
         for item in ('function AB.ObserveReplicateMode()',
                      'function AB.ReplicateScanReady()',
                      'function AB.HookReplicateModeSetting()',
                      'state.generation=state.generation+1',
                      'mode.scanSerial=mode.scanSerial+1',
-                     'rg=scan.modeGeneration,rs=scan.scanSerial',
-                     'batch.rg~=replicateState.generation or batch.rs~=replicateState.scanSerial'):
+                     'ScanDB().auctionFullScan=fullBatch',
+                     'mode.generation~=scan.modeGeneration or mode.scanSerial~=scan.scanSerial'):
             self.assertIn(item,bridge)
     def test_scan_notice_gates_recalculation(self):
         route=(ROOT/'Core/ProfRoutePlans.lua').read_text(encoding='utf-8-sig')

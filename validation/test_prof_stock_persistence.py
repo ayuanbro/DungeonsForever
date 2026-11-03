@@ -1,4 +1,4 @@
-"""Auction scan memory, reload price fallback, and required replicate scans."""
+"""Persisted full-scan snapshots, reload reuse, and required scan provenance."""
 import unittest
 import test_prof_route_plans as routes
 import test_prof_ui_fusion as ui
@@ -51,14 +51,17 @@ class StockPersistenceTests(unittest.TestCase):
           finishFull()
         """)
 
-    def test_default_scan_stays_in_memory_and_keeps_all_item_kinds(self):
+    def test_default_scan_persists_and_keeps_all_item_kinds(self):
         for preference in ({}, {'recoveryEnabled': False}, {'recoveryEnabled': True},
                            {'professionSettings': {'engineering': {'recoveryEnabled': True}}}):
             with self.subTest(preference=preference):
                 lua = self.boot({'prof': preference})
                 before=plain(lua.globals().DungeonsForeverDB)
                 self.scan(lua)
-                self.assertEqual(plain(lua.globals().DungeonsForeverDB),before)
+                after=plain(lua.globals().DungeonsForeverDB)
+                snapshot=after['prof'].pop('auctionFullScan')
+                self.assertEqual(after,before)
+                self.assertEqual(snapshot['v'],3)
                 lua.execute("""
                   local b=ns.AuctionBridge
                   assert(b.StockPersistenceEnabled==nil and b.SyncStockPersistence==nil and b.ReplicateScanReady())
@@ -66,7 +69,7 @@ class StockPersistenceTests(unittest.TestCase):
                     assert(b.GetAuctionSupply(id).quantity==q)
                   end
                   assert(b.GetAuctionSupply(88).quantity==0)
-                  assert(DungeonsForeverDB.prof.auctionFullScan==nil and #requests==0)
+                  assert(DungeonsForeverDB.prof.auctionFullScan.items[11].q==8 and #requests==0)
                 """)
 
     def test_default_memory_snapshot_reaches_real_capture_and_solver(self):
@@ -82,42 +85,42 @@ class StockPersistenceTests(unittest.TestCase):
           assert(s.auctionSupply[11].quantity==8 and s.prices[11]==7)
           local r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=3,autoCraftTools=false})
           assert(r.targetReached and r.total==14 and r.purchaseVerified)
-          assert(DungeonsForeverDB.prof.auctionFullScan==nil)
+          assert(DungeonsForeverDB.prof.auctionFullScan.items[11].q==8)
         """)
 
-    def test_toggling_recovery_does_not_save_or_clear_live_inventory(self):
+    def test_toggling_recovery_does_not_change_saved_inventory(self):
         lua = self.boot()
         self.scan(lua)
         lua.execute("""
           local b=ns.AuctionBridge;local revision=b.SupplyRevision()
           for _,enabled in ipairs({true,false,true}) do
             DungeonsForeverDB.prof.recoveryEnabled=enabled
-            assert(DungeonsForeverDB.prof.auctionFullScan==nil)
+            assert(DungeonsForeverDB.prof.auctionFullScan.items[11].q==8)
             assert(DungeonsForeverDB.prof.auctionReplicateGate==nil)
             assert(b.ReplicateScanReady() and b.GetAuctionSupply(12).quantity==2)
           end
           assert(b.SupplyRevision()==revision and #requests==0)
         """)
 
-    def test_default_reload_loses_inventory_and_does_not_use_daily_high(self):
+    def test_default_reload_restores_inventory_and_does_not_use_daily_high(self):
         lua = self.boot()
         self.scan(lua)
         fresh = self.boot(plain(lua.globals().DungeonsForeverDB))
         fresh.execute("""
           local b=ns.AuctionBridge
           local ready,reason=b.ReplicateScanReady()
-          assert(ready==false and reason=='replicateScanRequired')
-          assert(b.GetAuctionSupply(11)==nil and DungeonsForeverDB.prof.auctionFullScan==nil)
+          assert(ready==true and reason==nil and b.FullScanSnapshotStatus().restored)
+          assert(b.GetAuctionSupply(11).quantity==8 and b.GetAuctionSupply(11).observedAt==10000)
           assert(Auctionator.Database.db['11'].a['0']==999)
           beginFull(1);sendFull({rawRow(11,1,7,'Seller')});finishFull()
           assert(b.ReplicateScanReady() and b.GetAuctionSupply(11).quantity==1)
         """)
 
-    def test_recovery_enabled_reload_also_loses_scan_and_retains_auctionator_price_fallback(self):
+    def test_recovery_enabled_reload_restores_scan_prices(self):
         lua = self.boot({'prof': {'recoveryEnabled': True}})
         self.scan(lua)
         saved = plain(lua.globals().DungeonsForeverDB)
-        self.assertNotIn('auctionFullScan', saved['prof'])
+        self.assertIn('auctionFullScan', saved['prof'])
         self.assertNotIn('auctionReplicateGate', saved['prof'])
         fresh = self.boot(saved)
         fresh.execute("assert(loadstring(...))('DungeonsForever',ns)",
@@ -125,21 +128,21 @@ class StockPersistenceTests(unittest.TestCase):
         fresh.execute("""
           Auctionator.API={v1={GetAuctionPriceByItemID=function()return 19 end}}
           local b=ns.AuctionBridge
-          assert(not b.ReplicateScanReady() and b.GetAuctionSupply(12)==nil)
-          assert(b.GetAuctionSupplyStatus(12)=='unknown')
-          assert(ns.ProfRouteAuto.AHPriceOf(12)==19)
+          assert(b.ReplicateScanReady() and b.GetAuctionSupply(12).quantity==2)
+          assert(b.GetAuctionSupplyStatus(12)=='verified')
+          assert(ns.ProfRouteAuto.AHPriceOf(12)==7)
           beginFull(1);sendFull({rawRow(12,2,14,'Seller')});finishFull()
           assert(ns.ProfRouteAuto.AHPriceOf(12)==7)
         """)
 
-    def test_disabled_recovery_reload_cannot_restore_inventory(self):
+    def test_disabled_recovery_reload_restores_inventory(self):
         lua = self.boot({'prof': {'recoveryEnabled': True}})
         self.scan(lua)
         lua.execute("DungeonsForeverDB.prof.recoveryEnabled=false")
         saved = plain(lua.globals().DungeonsForeverDB)
-        self.assertNotIn('auctionFullScan', saved['prof'])
+        self.assertIn('auctionFullScan', saved['prof'])
         fresh = self.boot(saved)
-        fresh.execute("assert(not ns.AuctionBridge.ReplicateScanReady() and ns.AuctionBridge.GetAuctionSupply(11)==nil)")
+        fresh.execute("assert(ns.AuctionBridge.ReplicateScanReady() and ns.AuctionBridge.GetAuctionSupply(11).quantity==8)")
 
     def test_removed_scan_fields_are_discarded_without_touching_execution_or_settings(self):
         saved={'prof': {'recoveryEnabled': True, 'auctionFullScan': {
@@ -150,7 +153,7 @@ class StockPersistenceTests(unittest.TestCase):
         fresh=self.boot(saved)
         fresh.execute("""
           assert(ns.AuctionBridge.GetAuctionSupply(11)==nil)
-          assert(DungeonsForeverDB.prof.auctionFullScan==nil)
+          assert(DungeonsForeverDB.prof.auctionFullScan.items==nil and ns.AuctionBridge.FullScanSnapshotStatus().status=='invalid')
           assert(DungeonsForeverDB.prof.auctionReplicateGate==nil)
           assert(DungeonsForeverDB.prof.replicateRequiredAfter==nil)
           assert(DungeonsForeverDB.prof.recoveryEnabled)
@@ -165,13 +168,13 @@ class StockPersistenceTests(unittest.TestCase):
           local b=ns.AuctionBridge;local db=DungeonsForeverDB.prof
           db.professionSettings.alchemy.recoveryEnabled=false
           ns.ProfModule.cur='engineering'
-          assert(b.GetAuctionSupply(12).quantity==2 and db.auctionFullScan==nil)
+          assert(b.GetAuctionSupply(12).quantity==2 and db.auctionFullScan.items[12].q==2)
           db.professionSettings.engineering.recoveryEnabled=false
           assert(b.ReplicateScanReady() and b.GetAuctionSupply(12).quantity==2)
-          assert(db.auctionFullScan==nil and db.auctionReplicateGate==nil)
+          assert(db.auctionFullScan.items[12].q==2 and db.auctionReplicateGate==nil)
         """)
 
-    def test_chunked_scan_never_saves_regardless_of_recovery_setting(self):
+    def test_chunked_scan_publishes_only_when_complete_regardless_of_recovery(self):
         for final in (False, True):
             with self.subTest(final=final):
                 lua = self.boot({'prof': {'recoveryEnabled': not final}})
@@ -184,10 +187,10 @@ class StockPersistenceTests(unittest.TestCase):
                   DungeonsForeverDB.prof.recoveryEnabled=final
                   step()
                   assert(b.ReplicateScanReady() and b.GetAuctionSupply(11).quantity==301)
-                  assert(DungeonsForeverDB.prof.auctionFullScan==nil)
+                  assert(DungeonsForeverDB.prof.auctionFullScan.items[11].q==301)
                 """)
 
-    def test_failed_scan_and_mode_changes_cannot_reuse_unverified_memory(self):
+    def test_failed_scan_and_mode_changes_retain_verified_snapshot(self):
         for enabled in (False, True):
             with self.subTest(enabled=enabled):
                 lua = self.boot({'prof': {'recoveryEnabled': enabled}})
@@ -195,13 +198,13 @@ class StockPersistenceTests(unittest.TestCase):
                 lua.execute("""
                   local b=ns.AuctionBridge
                   beginFull(1);Auctionator.EventBus:Emit(Auctionator.FullScan.Events.ScanFailed)
-                  assert(not b.ReplicateScanReady() and b.GetAuctionSupply(11)==nil)
+                  assert(b.ReplicateScanReady() and b.GetAuctionSupply(11).quantity==8)
                   beginFull(1);sendFull({rawRow(11,2,14,'Seller')});finishFull()
                   assert(b.GetAuctionSupply(11).quantity==2)
                   Auctionator.Config.Get=function()return false end
-                  assert(not b.ReplicateScanReady())
+                  assert(b.ReplicateScanReady())
                   Auctionator.Config.Get=function()return true end
-                  assert(not b.ReplicateScanReady() and b.GetAuctionSupply(11)==nil)
+                  assert(b.ReplicateScanReady() and b.GetAuctionSupply(11).quantity==2)
                 """)
 
     def test_incomplete_market_never_claims_missing_item_is_zero(self):
@@ -210,7 +213,7 @@ class StockPersistenceTests(unittest.TestCase):
           beginFull(2);sendFull({rawRow(11,1,7,'Seller')});finishFull()
           assert(not ns.AuctionBridge.ReplicateScanReady())
           assert(ns.AuctionBridge.GetAuctionSupply(11)==nil and ns.AuctionBridge.GetAuctionSupply(12)==nil)
-          assert(DungeonsForeverDB.prof.auctionFullScan==nil)
+          assert(DungeonsForeverDB.prof.auctionFullScan.items==nil)
         """)
 
     def test_expiration_and_observer_checks_apply_regardless_of_recovery(self):
@@ -226,7 +229,7 @@ class StockPersistenceTests(unittest.TestCase):
                   assert(not b.ReplicateScanReady() and b.GetAuctionSupply(11)==nil)
                 """)
 
-    def test_live_recovery_uses_memory_then_reload_falls_back_without_inventing_stock(self):
+    def test_live_recovery_uses_verified_snapshot_without_inventing_stock(self):
         for scanned in (False,True):
             with self.subTest(scanned=scanned):
                 lua=self.boot({'prof': {'recoveryEnabled': True}})
@@ -252,7 +255,7 @@ class StockPersistenceTests(unittest.TestCase):
                     local f=ns.ProfEconomy.FormulaAuctionSupplyOf(s,11)
                     assert(f==nil,'historical daily high was used as formula stock')
                   end
-                  assert(DungeonsForeverDB.prof.auctionFullScan==nil)
+                  assert((DungeonsForeverDB.prof.auctionFullScan~=nil)==scanned)
                 """)
 
     def test_price_only_capture_still_requires_a_complete_auction_scan(self):
@@ -345,7 +348,7 @@ class StockPersistenceRouteTests(unittest.TestCase):
           local r=finish('alchemy',{start=1,target=3,considerAuctionSupply=true})
           assert(r.fromSkeleton and r.total==38 and #r.actions>0)
           assert(r.auctionSupplyUnknown==1 and not r.purchaseVerified)
-          assert(DungeonsForeverDB.prof.auctionFullScan==nil and DungeonsForeverDB.prof.auctionReplicateGate==nil)
+          assert(DungeonsForeverDB.prof.auctionFullScan.items[11].q==100 and DungeonsForeverDB.prof.auctionReplicateGate==nil)
           assert(not ns.ProfExecution.GetPlan('alchemy'))
         """)
 

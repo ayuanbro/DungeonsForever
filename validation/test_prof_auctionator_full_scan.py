@@ -20,6 +20,12 @@ function bus:Register(listener,events)
   self.listeners[e]=self.listeners[e] or {};table.insert(self.listeners[e],listener)
  end
 end
+function bus:Unregister(listener,events)
+ for _,e in ipairs(events)do
+  local listeners=self.listeners[e] or {}
+  for i=#listeners,1,-1 do if listeners[i]==listener then table.remove(listeners,i)end end
+ end
+end
 function bus:Emit(event,...)
  for _,listener in ipairs(self.listeners[event] or {})do listener:ReceiveEvent(event,...)end
 end
@@ -75,7 +81,7 @@ class AuctionatorFullScanTests(unittest.TestCase):
           assert(q.complete and q.ownerExcluded and #requests==0)
           assert(b.GetAuctionSupply(12).quantity==0 and b.GetAuctionSupply(13).quantity==0)
           assert(b.GetAuctionSupply(99).quantity==0,'complete market did not establish absence')
-          assert(DungeonsForeverDB.prof.auctionFullScan==nil,'default scan persisted a market copy')
+          assert(DungeonsForeverDB.prof.auctionFullScan.items[11].q==5)
         ''')
 
     def test_replicate_scan_records_use_the_same_quantity_budget(self):
@@ -142,7 +148,7 @@ class AuctionatorFullScanTests(unittest.TestCase):
           clock=clock+50
           beginFull(1);sendFull({rawRow(11,200,1400,'Seller')})
           Auctionator.EventBus:Emit(ev.ScanFailed)
-          assert(b.GetAuctionSupply(11)==nil,'failed new scan reused the discarded batch')
+          assert(b.GetAuctionSupply(11).quantity==2 and b.GetAuctionSupply(11).observedAt==clock-50)
           beginFull(1);sendFull({rawRow(11,3,21,'Seller')});finishFull()
           assert(b.GetAuctionSupply(11).quantity==3 and #requests==0)
           clock=clock+1801;assert(b.GetAuctionSupply(11)==nil)

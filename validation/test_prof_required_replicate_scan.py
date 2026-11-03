@@ -1,4 +1,4 @@
-"""Require completed in-memory replicate scans at profession route entry points."""
+"""Require valid completed replicate snapshots at profession route entry points."""
 import unittest
 import test_prof_route_plans as routes
 from test_prof_auctionator_full_scan import SOURCE_MOCK
@@ -81,8 +81,8 @@ class RequiredReplicateScanTests(unittest.TestCase):
           ns.AuctionBridge=bridge;scan()
           Auctionator.Config.Get=function()error('not readable')end
           local q=bridge.GetAuctionSupply(11)
-          assert(q==nil,'last scan leaked through an unreadable mode')
-          assertBlocked(ra.Compute,'alchemy',{start=1,target=3},'replicateModeUnknown')
+          assert(q.quantity==8 and bridge.ReplicateScanReady())
+          assert(ra.Compute('alchemy',{start=1,target=3}).targetReached)
         ''')
 
     def test_scan_must_finish_importing_before_routes_can_use_its_quantities(self):
@@ -96,18 +96,17 @@ class RequiredReplicateScanTests(unittest.TestCase):
           local result=ra.Compute('alchemy',{start=1,target=3,considerAuctionSupply=true})
           assert(result.targetReached and result.total==14)
           assert(result.mats[1].availableCount==8 and result.auctionSupplyUnknown==0)
-          assert(DungeonsForeverDB.prof.auctionFullScan==nil and DungeonsForeverDB.prof.auctionReplicateGate==nil)
+          assert(DungeonsForeverDB.prof.auctionFullScan.items[11].q==8 and DungeonsForeverDB.prof.auctionReplicateGate==nil)
         ''')
 
-    def test_failed_partial_and_newer_summary_scans_do_not_reuse_old_counts(self):
+    def test_failed_partial_and_summary_scans_keep_last_success_until_expiry(self):
         self.lua.execute('''
           scan();beginFull(1);Auctionator.EventBus:Emit(Auctionator.FullScan.Events.ScanFailed)
-          assertBlocked(ra.Compute,'alchemy',{start=1,target=3},'replicateScanRequired')
-          assert(bridge.GetAuctionSupply(11)==nil)
+          assert(bridge.ReplicateScanReady() and bridge.GetAuctionSupply(11).quantity==8)
           scan();beginFull(2);sendFull({rawRow(11,8,56,'Seller')});finishFull()
-          assertBlocked(ra.Get,'alchemy',{start=1,target=3},'replicateScanRequired')
+          assert(bridge.ReplicateScanReady() and bridge.GetAuctionSupply(11).quantity==8)
           scan();Auctionator.SavedState.TimeOfLastBrowseScan=clock
-          assertBlocked(ra.Get,'alchemy',{start=1,target=3},'replicateScanRequired')
+          assert(bridge.ReplicateScanReady() and bridge.GetAuctionSupply(11).quantity==8)
           scan();assert(ra.Compute('alchemy',{start=1,target=3}).targetReached)
         ''')
 
@@ -115,7 +114,7 @@ class RequiredReplicateScanTests(unittest.TestCase):
         self.lua.execute('''
           scan();local candidate=ra.Get('alchemy',{start=1,target=3})
           assert(ra.HasWork('alchemy'))
-          clock=clock+48*3600+1
+          clock=clock+172801
           ns.ProfRouteSolver.Run=function()error('stale scan search advanced')end
           ra.Pump('alchemy')
           assert(candidate.searchTermination=='replicate_scan_required' and not ra.HasWork('alchemy'))
@@ -134,11 +133,11 @@ class RequiredReplicateScanTests(unittest.TestCase):
           for _,record in pairs(before.routes)do skel=record.skeleton;break end
           assert(skel)
           local nextID=before.nextID
-          Auctionator.Config.Get=function()return false end
+          clock=clock+172801
           assertBlocked(function(slug,supplied)return ra.RebuildFromSkel(slug,skel,supplied)end,
-            'alchemy',opts,'replicateModeDisabled')
+            'alchemy',opts,'replicateScanRequired')
           local blocked=ra.ChangeReserveMode('alchemy','ample')
-          assert(blocked.status=='recalculate_required' and blocked.diagnostics[1].code=='replicateModeDisabled')
+          assert(blocked.status=='recalculate_required' and blocked.diagnostics[1].code=='replicateScanRequired')
           assert(ra.Peek('alchemy')==candidate and before.nextID==nextID and not ra.HasWork('alchemy'))
         ''')
 

@@ -47,14 +47,14 @@ class RecoveryHistoryTests(unittest.TestCase):
 
     def test_expired_or_incomplete_recovery_observation_uses_history(self):
         self.lua.execute('''
-          clock=4000
+          clock=200000
           for _,bad in ipairs({'expired','incomplete','own','future'}) do
-            local s=historyFixture();local v={quantity=1,observedAt=4000,complete=true,
+            local s=historyFixture();local v={quantity=1,observedAt=200000,complete=true,
               ownerExcluded=true,source='client-auction-results'}
             if bad=='expired' then v.observedAt=1000
             elseif bad=='incomplete' then v.complete=false
             elseif bad=='own' then v.ownerExcluded=false
-            else v.observedAt=4001 end
+            else v.observedAt=200001 end
             s.auctionSupply[10]=v
             local q=ns.ProfRecovery.Capture(s,{recoveryEnabled=true,recoveryFeePercent=0}).quotes[10]
             assert(q.quantity==100 and q.supplyEstimated and not q.supplyReliable and q.source=='ah')
@@ -183,28 +183,28 @@ class RecoveryHistoryReloadTests(unittest.TestCase):
         ''')
         return lua
 
-    def test_scan_then_relogin_uses_history_without_persisting_market(self):
+    def test_scan_then_relogin_uses_saved_market_instead_of_daily_history(self):
         lua=self.boot()
         lua.execute('''
           beginFull(2);sendFull({rawRow(11,8,56,'Seller'),rawRow(10,20,6000,'Seller')});finishFull()
           local s=capture();local q=s.recovery.quotes[10]
           assert(q.quantity==20 and q.source=='npc' and q.supplyReliable and not q.supplyEstimated)
-          assert(DungeonsForeverDB.prof.auctionFullScan==nil and DungeonsForeverDB.prof.auctionReplicateGate==nil)
+          assert(DungeonsForeverDB.prof.auctionFullScan.items[10].q>0 and DungeonsForeverDB.prof.auctionReplicateGate==nil)
         ''')
         fresh=self.boot(plain(lua.globals().DungeonsForeverDB))
         fresh.execute('''
           local s=capture();local q=s.recovery.quotes[10]
-          assert(ns.AuctionBridge.GetAuctionSupply(10)==nil and s.auctionSupply[10]==nil)
-          assert(q.quantity==100 and q.source=='ah' and q.unit==475 and q.supplyEstimated and not q.supplyReliable)
-          assert(ns.ProfEconomy.FormulaAuctionSupplyOf(s,10)==nil)
+          assert(ns.AuctionBridge.GetAuctionSupply(10).quantity==20 and s.auctionSupply[10].quantity==20)
+          assert(q.quantity==20 and q.source=='npc' and q.supplyReliable and not q.supplyEstimated)
+          assert(ns.ProfEconomy.FormulaAuctionSupplyOf(s,10).quantity==20)
           local r=ns.ProfRouteSolver.Compute('alchemy',{snapshot=s,start=1,target=3,autoCraftTools=false,
             recoveryEnabled=true,recoveryFeePercent=5})
-          assert(r.targetReached and r.recoveryEstimated and r.recoveryTotal==950)
-          assert(not r.purchaseVerified and r.auctionSupplyUnknown==1)
+          assert(r.targetReached and not r.recoveryEstimated and r.recoveryTotal==4)
+          assert(r.purchaseVerified and r.auctionSupplyUnknown==0)
           beginFull(2);sendFull({rawRow(11,8,56,'Seller'),rawRow(10,40,12000,'Seller')});finishFull()
           s=capture();q=s.recovery.quotes[10]
           assert(q.quantity==40 and q.unit==285 and q.supplyReliable and not q.supplyEstimated)
-          assert(DungeonsForeverDB.prof.auctionFullScan==nil and DungeonsForeverDB.prof.auctionReplicateGate==nil)
+          assert(DungeonsForeverDB.prof.auctionFullScan.items[10].q>0 and DungeonsForeverDB.prof.auctionReplicateGate==nil)
         ''')
 
 

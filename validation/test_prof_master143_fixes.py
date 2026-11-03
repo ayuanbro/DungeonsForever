@@ -185,7 +185,7 @@ class CompleteMarketTests(unittest.TestCase):
             assert(b.ReplicateScanReady()==true)
             for id,q in pairs({[11]=8,[12]=2,[10940]=10,[9999]=3}) do assert(b.GetAuctionSupply(id).quantity==q) end
             assert(b.GetAuctionSupply(8888).quantity==0)
-            assert(DungeonsForeverDB.prof.auctionFullScan==nil and #requests==0)
+            assert(DungeonsForeverDB.prof.auctionFullScan.items~=nil and #requests==0)
           end
         ''')
 
@@ -200,21 +200,21 @@ class CompleteMarketTests(unittest.TestCase):
           assert(b.ReplicateScanReady()==true and b.GetAuctionSupply(12).quantity==2)
         ''')
 
-    def test_mode_switch_and_failed_scan_do_not_resurrect_an_old_batch(self):
+    def test_mode_switch_and_failed_scan_keep_previous_success(self):
         self.lua.execute('''
           local b=ns.AuctionBridge
           beginFull(1);sendFull({rawRow(12,2,14,'Seller')});finishFull()
           Auctionator.Config.Get=function()return false end
-          assert(b.ReplicateScanReady()==false and b.GetAuctionSupply(12)==nil)
+          assert(b.ReplicateScanReady()==true and b.GetAuctionSupply(12).quantity==2)
           Auctionator.Config.Get=function()return true end
-          assert(b.ReplicateScanReady()==false)
+          assert(b.ReplicateScanReady()==true)
           beginFull(1);Auctionator.EventBus:Emit(Auctionator.FullScan.Events.ScanFailed)
-          assert(b.ReplicateScanReady()==false and b.GetAuctionSupply(12)==nil)
+          assert(b.ReplicateScanReady()==true and b.GetAuctionSupply(12).quantity==2)
           beginFull(1);sendFull({rawRow(12,1,7,'Seller')});finishFull()
           assert(b.ReplicateScanReady()==true and b.GetAuctionSupply(12).quantity==1)
         ''')
 
-    def test_memory_scan_uses_shared_forty_eight_hour_expiry(self):
+    def test_inventory_two_day_expiry_is_independent_of_prices(self):
         self.load((ROOT/'Core/ProfRouteAuto.lua').read_text(encoding='utf-8-sig'))
         self.load((ROOT/'Core/AuctionatorBridge.lua').read_text(encoding='utf-8-sig'))
         self.lua.execute('''
@@ -223,9 +223,9 @@ class CompleteMarketTests(unittest.TestCase):
           assert(ns.ProfRouteAuto.MaxStaleSeconds()==48*3600)
         ''')
         self.lua.execute('''
-          local b=ns.AuctionBridge;clock=clock+25*3600
+          local b=ns.AuctionBridge;clock=clock+2*86400
           assert(b.ReplicateScanReady()==true and b.GetAuctionSupply(12).quantity==2)
-          clock=clock+23*3600+1
+          clock=clock+1
           assert(b.ReplicateScanReady()==false and b.GetAuctionSupply(12)==nil)
         ''')
 

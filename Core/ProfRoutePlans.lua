@@ -655,8 +655,10 @@ local function initialize()
                 if job.published and not job.opts.snapshot then refreshFreshness(job.published,job.slug,job.opts) end
             end
         elseif reason=="replicate-mode" then
-            RA.Cancel()
-            RA.Invalidate("auction-mode")
+            if not bridge.ReplicateScanReady() then
+                RA.Cancel()
+                RA.Invalidate("auction-mode")
+            end
         elseif reason=="prices" then RA.Invalidate(reason) end
     end) end
     local frame=CreateFrame and CreateFrame("Frame")

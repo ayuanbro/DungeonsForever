@@ -21,6 +21,7 @@ from lupa.lua51 import LuaRuntime
 
 FIXTURE = r'''
 ns={LoadForeverPages=true,L=setmetatable({},{__index=function(_,k)return k end})}
+ns.ProfRouteAuto={MaxAuctionSupplyAgeSeconds=function()return 172800 end}
 DungeonsForeverDB={prof={}}
 time=function() return 1000 end
 function recipe(prof,spell,item,count,mats,learn,grey)
