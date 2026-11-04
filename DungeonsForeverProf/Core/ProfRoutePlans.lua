@@ -290,6 +290,7 @@ local function publish(job, result)
 end
 local function release(job)
     job.co=nil;job.snap=nil;job.best=nil;job.partial=nil;job.preview=nil
+    job.rebatchFinal=nil;job.tick=nil;job.resultState=nil;job.resultCache=nil;job.auctionSupply=nil
     job.candidateIndex=nil;job.pump=nil;job.invalid=true
 end
 local function discardScope(scope)
