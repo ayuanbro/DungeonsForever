@@ -13294,11 +13294,13 @@ function PD.RowsLeveling(rows)
             end
             local progress
             if res.planVersion == 2 then
-                if res.status == "searching" or res.status == "incomplete" then
-                    progress = PD.PlanProgressText(res) or L["正在快速计算适合路线"]
+                if RA.HasWork and RA.HasWork(PD.cur) then
+                    progress = PD.SolverText() or PD.PlanProgressText(res) or L["正在计算升级路线…"]
                 elseif (res.status == "complete" or res.optimal) and res.expanded then
                     progress = res.expanded==0 and L["路线已生成，尚未进行降本搜索。"]
                         or format(L["优化结束：已比较 %d 种组合"], res.expanded)
+                else
+                    progress = PD.PlanStatusText(res)
                 end
             end
             if activePlan==res and progress then progress=format(L["已保存路线 · %s"],progress) end
@@ -14500,7 +14502,7 @@ function PD.LevelTool()
                 PD.autoSnapshotSlug = nil
             else
                 local res = PD.autoSnapshot
-                local computing = res and res.status == "searching"
+                local computing = res and (res.status == "searching" or res.finalizing)
 
                 local ready = (T and res
                     and not computing

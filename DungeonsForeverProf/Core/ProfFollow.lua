@@ -453,7 +453,7 @@ local function routeForCalc(slug, skill)
                 and hudState.slug == slug
                 and not hudState.hidden
                 and not hudState.autoTrackSuspended
-                and res.status ~= "searching" then
+                and res.status ~= "searching" and not res.finalizing then
                 XP.Bind(slug, res)
                 frozen = XP.GetPlan(slug)
                 if frozen then return "auto", frozen.executionSteps or frozen.steps,frozen end

@@ -408,6 +408,7 @@ local function ready(result)
     return result
         and result.feasible ~= false
         and result.status ~= "searching"
+        and not result.finalizing
         and result.status ~= "selection_required"
         and result.status ~= "recalculate_required"
         and #steps(result) > 0

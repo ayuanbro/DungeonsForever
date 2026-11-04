@@ -534,7 +534,7 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
         end
     end
     if #added>0 then
-        context.formulaOffers=shallow(context.formulaOffers);context.formulaOffers[id]=added
+        context.formulaOffers={[id]=added}
     end
     local quote=formulaFor(view,context,remaining,purchaseSource)
     if quote then
