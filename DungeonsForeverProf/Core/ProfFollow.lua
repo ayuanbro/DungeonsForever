@@ -963,13 +963,26 @@ local function expPerPoint(sk, o, y, g, gr)
     return nil
 end
 
-local function craftsLeft(seg, skill, rec,routeSlug,future)
+local function progressReader(run)
+    local E,XP=ns.ProfEconomy,ns.ProfExecution
+    local snapshot,credits
+    local cache={}
+    return function(id)
+        local key=id or false
+        if not cache[key] then
+            if not credits then snapshot=E and E.Professions and E.Professions();credits={} end
+            cache[key]=XP.Progress(run.slug,id,snapshot,run.planID,credits)
+        end
+        return cache[key]
+    end
+end
+local function craftsLeft(seg, skill, rec,routeSlug,future,readProgress)
     local XP = ns.ProfExecution
     if seg.segmentID and XP and XP.CurrentPlan then
         local slug = routeSlug or (st() and st().slug)
         local run = slug and XP.GetRun(slug)
         if run then
-            local progress = XP.Progress(run.slug, seg.segmentID)
+            local progress = readProgress and readProgress(seg.segmentID) or XP.Progress(run.slug, seg.segmentID)
             if progress and (progress.segmentID==seg.segmentID or progress.complete~=true) then
                 if XP.IsSpecializationQuest(seg) then return progress.complete and 0 or 1 end
                 local untouched=(progress.attemptsDone or 0)==0 and type(progress.currentSkill)=="number"
@@ -1009,6 +1022,7 @@ end
 local function currentCands(steps, skill, curStep, slug, rm, run)
     local out = { math.max(1, math.min(#steps, curStep or 1)) }
     local XP = ns.ProfExecution
+    local readProgress=run and progressReader(run)
     local first = steps[out[1]]
     local profession = first and (first.profession or slug)
     if profession ~= slug then skill = skillOf(profession) or 0 end
@@ -1021,9 +1035,9 @@ local function currentCands(steps, skill, curStep, slug, rm, run)
         local a, b = tonumber(sg[1]) or 0, tonumber(sg[2]) or 0
         if i > out[1] and a > skill then break end
         local rec = stepRecipe(sg, rm[sg[3]])
-        local progress = run and XP.Progress(slug, sg.segmentID or i, nil, run.planID)
+        local progress = readProgress and readProgress(sg.segmentID or i)
         if progress and progress.blocked then break end
-        local remaining = math.ceil(craftsLeft(sg, skill, rec, slug, i ~= out[1]))
+        local remaining = math.ceil(craftsLeft(sg, skill, rec, slug, i ~= out[1],readProgress))
         if i > out[1] and a <= skill and skill < b and sg[3] ~= first[3]
             and remaining > 0 and not (progress and progress.complete)
             and not consumers[sg.segmentID or i] and IsLearned(sg[3]) then
@@ -1065,11 +1079,12 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
     local reserve=not onlyStep and plan and plan.reserve and plan.reserve.mode~="off" and ns.ProfReserve
     local xp=ns.ProfExecution
     local run=xp and xp.GetRun(s.slug)
+    local readProgress=run and progressReader(run)
     local matching=run and plan and (run.plan==plan or plan.planID and run.originPlanID==plan.planID)
     local projected=not onlyStep and not matching and plan and xp and xp.PreviewProgress and xp.PreviewProgress(s.slug,plan)
     local casts,completed,baseRemaining={},{},{}
     if reserve and (matching or projected) then for _,seg in ipairs(steps) do
-        local progress=matching and xp.Progress(s.slug,seg.segmentID) or projected[seg.segmentID]
+        local progress=matching and readProgress(seg.segmentID) or projected[seg.segmentID]
         if progress and progress.segmentID==seg.segmentID then
             casts[seg.segmentID]=progress.casts;completed[seg.segmentID]=progress.complete
             baseRemaining[seg.segmentID]=progress.baseRemaining or 0
@@ -1084,7 +1099,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         local mats = recMats(rec)
         local crafts = seg[4] or 0
         if seg.segmentID or i == curStep then
-            crafts = math.ceil(craftsLeft(seg, s.skill, rec,s.slug,i>curStep))
+            crafts = math.ceil(craftsLeft(seg, s.skill, rec,s.slug,i>curStep,readProgress))
         end
         if projected and projected[seg.segmentID] and (seg.reason=="material" or seg.role=="material" or xp.IsConversion(seg)) then
             crafts=math.min(crafts,projected[seg.segmentID].baseCrafts or crafts)

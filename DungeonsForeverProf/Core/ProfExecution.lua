@@ -772,7 +772,7 @@ function XP.GetRecipeTotals(slug,planID,fresh)
     if run.status=="archived" then run.byRecipe=copy(list);run.byRecipeVersion=run.progressVersion end
     return list
 end
-local function progressFor(run,slug,id,skillSnapshot,baseOnly)
+local function progressFor(run,slug,id,skillSnapshot,baseOnly,creditSnapshot)
     if not readablePlan(run) then
         return {complete=false,skillDone=false,skillMet=false,materialDone=false,blocked=true,
             historyUnreadable=true,reason="historyUnreadable",attemptsDone=0,casts=0,
@@ -798,7 +798,9 @@ local function progressFor(run,slug,id,skillSnapshot,baseOnly)
             extraCrafts=0,blocked=not done,directMaterials=direct}
     end
     local confirmed,guaranteed,pending,output=outputFacts(run,seg)
-    local credit=run.previewCredits and run.previewCredits[seg.segmentID] or creditsFor(run,seg,skillSnapshot)
+    local credits=creditSnapshot and creditSnapshot.credits or run.previewCredits
+    local credit=credits and credits[seg.segmentID] or creditsFor(run,seg,skillSnapshot)
+    if creditSnapshot then creditSnapshot.credits=creditCaches[run] end
     local reused,reusedActual,fulfilled,waived=credit.available,credit.available,credit.credited,credit.waived
     local required=baseOnly and quotaMap(seg.requiredOutputs) or requiredOutputs(seg,run);local remaining={};local materialDone=true
     for item,n in pairs(required) do remaining[item]=max(0,n-(fulfilled[item] or 0)-(waived[item] or 0));if remaining[item]>0 then materialDone=false end end
@@ -852,20 +854,20 @@ local function progressFor(run,slug,id,skillSnapshot,baseOnly)
     end
     return result
 end
-function XP.Progress(slug,id,skillSnapshot,planID)
+function XP.Progress(slug,id,skillSnapshot,planID,creditSnapshot)
     local run=planID and db().runs[planID] or XP.GetRun(slug);if not run or run.slug~=slug then return nil end
-    return progressFor(run,slug,id,skillSnapshot)
+    return progressFor(run,slug,id,skillSnapshot,nil,creditSnapshot)
 end
 function XP.PreviewProgress(slug,plan)
     if type(plan)~="table" or plan.executionVersion~=1 then return {} end
     local run={slug=slug,plan=plan,progress={},status="archived",currentIndex=1,creditVersion=0}
     local snapshot=E and E.Professions and E.Professions()
     local out={}
-    for _,seg in ipairs(steps(plan)) do
+    for i,seg in ipairs(steps(plan)) do
         if seg.segmentID then
-            local progress=progressFor(run,slug,seg.segmentID,snapshot)
+            local progress=progressFor(run,slug,i,snapshot)
             run.previewCredits=creditCaches[run]
-            local base=progressFor(run,slug,seg.segmentID,snapshot,true)
+            local base=progressFor(run,slug,i,snapshot,true)
             progress.baseCrafts=max(base.remainingCrafts or 0,(progress.remainingCrafts or 0)-(seg.reserve and seg.reserve.extraCrafts or 0))
             out[seg.segmentID]=progress
         end
@@ -877,7 +879,8 @@ function XP.GetProgressAll(slug)
     local plan=readablePlan(run);if not plan then return nil,"historyUnreadable" end
     local out={run=run,current=run.currentIndex or 1,finished=run.finished,steps={}}
     local snapshot=E and E.Professions and E.Professions()
-    for i=1,#steps(plan) do out.steps[i]=XP.Progress(slug,i,snapshot,run.planID) end
+    local credits={}
+    for i=1,#steps(plan) do out.steps[i]=XP.Progress(slug,i,snapshot,run.planID,credits) end
     return out
 end
 function XP.SetReserveMode(slug,mode)
@@ -913,13 +916,15 @@ function XP.SafeCraftCount(slug,id,requested)
     local run=XP.GetRun(slug);local seg,index
     if run then seg,index=segment(run,id) end
     if not seg or not run.plan.reserve or run.plan.reserve.mode=="off" or run.reserveDisabled then return requested end
-    local p=XP.Progress(slug,id)
+    local snapshot=E and E.Professions and E.Professions()
+    local credits={}
+    local p=XP.Progress(slug,index,snapshot,nil,credits)
     if not p or p.complete then return 0 end
     local base=p.baseRemaining or 0
     local count=min(requested,base+(p.reserveRemaining or 0))
     local baseOther,extraOther,earlierBase={},{},{}
     for i=1,#steps(run.plan) do
-        local future=steps(run.plan)[i];local progress=XP.Progress(slug,future.segmentID)
+        local future=steps(run.plan)[i];local progress=XP.Progress(slug,i,snapshot,nil,credits)
         if i~=index and progress and not progress.complete then
             local n=min(progress.remainingCrafts or 0,progress.baseRemaining or 0)
             if XP.IsSpecializationQuest(future) then n=1 end
@@ -963,9 +968,10 @@ function XP.Sync(slug,result)
     end
     local index=1
     local skillSnapshot=E and E.Professions and E.Professions()
-    while index<=#steps(run.plan) do local p=XP.Progress(slug,index,skillSnapshot);if not p.complete then break end;index=index+1 end
+    local credits={}
+    while index<=#steps(run.plan) do local p=XP.Progress(slug,index,skillSnapshot,nil,credits);if not p.complete then break end;index=index+1 end
     run.currentIndex=index;run.step=index;run.finished=index>#steps(run.plan)
-    local currentProgress=not run.finished and XP.Progress(slug,index,skillSnapshot)
+    local currentProgress=not run.finished and XP.Progress(slug,index,skillSnapshot,nil,credits)
     run.learningBlocked=currentProgress and currentProgress.learningBlocked or nil
     run.learningBlockReason=currentProgress and currentProgress.learningBlocked and currentProgress.reason or nil
     if run.finished then
@@ -979,9 +985,10 @@ end
 local function matchingSegment(run,spell,id)
     if id then local seg=segment(run,id);if seg and not XP.IsConversion(seg) and seg[3]==spell then return seg end end
     local current=segment(run);if current and not XP.IsConversion(current) and current[3]==spell then return current end
-    local fallback
+    local fallback,snapshot,credits
     for i,seg in ipairs(steps(run.plan)) do if seg[3]==spell and not seg.checkpoint and not XP.IsConversion(seg) then
-        fallback=seg;local p=XP.Progress(run.slug,i);if not p.complete then return seg end
+        if not credits then snapshot=E and E.Professions and E.Professions();credits={} end
+        fallback=seg;local p=XP.Progress(run.slug,i,snapshot,nil,credits);if not p.complete then return seg end
     end end
     return fallback
 end
@@ -1381,14 +1388,15 @@ function XP.CalculateSupplement(slug,callback)
         for _,step in ipairs(steps(run.plan)) do
             if (progressRecord(run,step).casts or 0)>0 then snap.known[(step.profession or slug)..":"..step[3]]=true end
         end
-        local reserved={}
-        for _,future in ipairs(steps(run.plan)) do
+        local reserved,credits={},{}
+        local snapshot=E and E.Professions and E.Professions()
+        for i,future in ipairs(steps(run.plan)) do
             local record=progressRecord(run,future)
             local allowance=(future.attemptLimit or future.expectedCrafts or future[4] or 0)+(record.supplementAllowance or 0)+reserveAllowance(run,future)
             local remaining=max(0,allowance-(record.casts or 0))
             if XP.IsSpecializationQuest(future) then remaining=record.questCompleted and 0 or 1
             else
-                local progress=XP.Progress(slug,future.segmentID)
+                local progress=XP.Progress(slug,i,snapshot,nil,credits)
                 remaining=min(remaining,progress and progress.remainingCrafts or remaining)
             end
             for _,m in ipairs(recipe(future,slug).mats or {}) do reserved[m[1]]=(reserved[m[1]] or 0)+remaining*m[2] end
