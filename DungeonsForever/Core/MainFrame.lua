@@ -996,7 +996,7 @@ function BuildEnhCard()
     hd:SetText(L["原生界面增强"])
     hd:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
 
-    spellToggle = EnhRow(card, -30, L["技能页增强"], L["在原生技能书里增加训练师与武器技能页"],
+    spellToggle = EnhRow(card, -30, L["技能页增强"], L["在原生技能书里增加职业技能与训练师页"],
         function()
             if not SpellBlocked() then return nil end
             return { L["其它插件已占用技能书页签，本项暂不可用"],
