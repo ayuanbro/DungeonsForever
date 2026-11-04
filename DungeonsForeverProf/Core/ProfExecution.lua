@@ -879,15 +879,34 @@ function XP.GetProgressAll(slug)
     for i=1,#steps(plan) do out.steps[i]=XP.Progress(slug,i,snapshot,run.planID) end
     return out
 end
-function XP.SkipReserve(slug)
-    local run=XP.GetRun(slug);if not run then return false end
-    if run.reserveDisabled then return true end
-    run.reserveUsed={}
-    for _,seg in ipairs(steps(run.plan)) do
-        local used=min(reserveAllowance(run,seg),max(0,(progressRecord(run,seg).casts or 0)-(seg.expectedCrafts or seg[4] or 0)))
-        if used>0 then run.reserveUsed[seg.segmentID]=used end
+function XP.SetReserveMode(slug,mode)
+    local run=XP.GetRun(slug)
+    if not run then return true end
+    local plan,reason=readablePlan(run)
+    if not plan then return false,reason end
+    if plan.scheme=="fixed" or plan.referenceOnly or plan.planVersion~=2 then return true end
+    local reserve=ns.ProfReserve
+    if not reserve then return false,"pending" end
+    mode=reserve.Mode(mode)
+    local used={}
+    for _,seg in ipairs(steps(plan)) do
+        local casts=progressRecord(run,seg).casts or 0
+        local base=ceil((seg.attemptLimit or seg.expectedCrafts or seg[4] or 0)-1e-9)
+        local n=max(run.reserveUsed and run.reserveUsed[seg.segmentID] or 0,
+            min(reserveAllowance(run,seg),max(0,casts-base)))
+        if n>0 then used[seg.segmentID]=n end
     end
-    run.reserveDisabled=true;invalidateCredits(run);XP.Sync(slug);changed(run);return true
+    reserve.Rebuild(plan,mode)
+    run.reserveUsed=used;run.reserveDisabled=mode=="off" or nil
+    for _,seg in ipairs(steps(plan)) do
+        if seg.reserve then seg.reserve.extraCrafts=max(seg.reserve.extraCrafts or 0,used[seg.segmentID] or 0) end
+    end
+    invalidateCredits(run);XP.Sync(slug);changed(run)
+    return true
+end
+function XP.SkipReserve(slug)
+    if not XP.GetRun(slug) then return false end
+    return XP.SetReserveMode(slug,"off")
 end
 function XP.SafeCraftCount(slug,id,requested)
     local run=XP.GetRun(slug);local seg,index

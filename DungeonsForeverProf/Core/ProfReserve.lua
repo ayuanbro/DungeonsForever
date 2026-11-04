@@ -4,9 +4,9 @@ local E=ns.ProfEconomy
 local R={};ns.ProfReserve=R
 local ceil,floor,min,max=math.ceil,math.floor,math.min,math.max
 local levels={off=0,standard=.90,ample=.95}
-function R.Mode(value) return levels[value] and value or "ample" end
+function R.Mode(value) return levels[value] and value or "standard" end
 function R.Label(value)
-    local L=ns.L
+    local L=ns.L;value=R.Mode(value)
     return value=="off" and L["不准备余量"] or value=="standard" and L["适量备用"] or L["充足备用"]
 end
 
@@ -229,6 +229,33 @@ function R.Build(plan,snapshot,opts,tick)
     if not result.priced then result.total=nil end
     for i,s in ipairs(steps) do s.reserve=result.steps[i] end
     return result
+end
+
+function R.Rebuild(plan,mode)
+    local opts=E.Copy(plan.executionOptions or {})
+    opts.reserveMode=R.Mode(mode);opts.profession=plan.slug
+    local snapshot={professions={},offers={},prices={},auctionSupply={},nonAuctionable={},
+        considerAuctionSupply=plan.considerAuctionSupply}
+    if opts.reserveMode~="off" then
+        local ra,vdb=ns.ProfRouteAuto,ns.VendorPriceDB
+        local faction=UnitFactionGroup and UnitFactionGroup("player")
+        snapshot.faction=faction=="Alliance" and "A" or faction=="Horde" and "H" or faction
+        local context={character=E.CharacterKey and E.CharacterKey(),faction=snapshot.faction,
+            professions=E.Professions and E.Professions() or {},level=UnitLevel and UnitLevel("player")}
+        local items={}
+        for _,s in ipairs(plan.executionSteps or {}) do
+            for _,m in ipairs((s.recipe or {}).mats or {}) do items[m[1]]=true end
+        end
+        for id in pairs(items) do
+            snapshot.prices[id]=ra.AHPriceOf and ra.AHPriceOf(id)
+            snapshot.offers[id]=E.Copy(vdb and vdb.GetOffers and vdb.GetOffers(id,context) or {})
+            snapshot.auctionSupply[id]=E.AuctionSupplyOf and E.AuctionSupplyOf(nil,id)
+            snapshot.nonAuctionable[id]=E.NonAuctionableItem and E.NonAuctionableItem(id) or false
+        end
+    end
+    plan.reserve=R.Build(plan,snapshot,opts)
+    plan.executionOptions=opts
+    return plan.reserve
 end
 
 function R.Remaining(plan,casts,disabled,completed)

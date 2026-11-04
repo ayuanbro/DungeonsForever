@@ -301,7 +301,7 @@ PD.SETTING_DEF.autoAllowCurrencyFormulas = false
 PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.autoResidualMass = false
-PD.SETTING_DEF.autoReserveMode = "ample"
+PD.SETTING_DEF.autoReserveMode = "standard"
 PD.SETTING_DEF.recoveryEnabled = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
@@ -412,7 +412,11 @@ function PD.CycleReserveMode()
     local current=PD.SettingRaw("autoReserveMode")
     local mode=current=="off" and "standard" or current=="standard" and "ample" or "off"
     PD.SetSettingRaw("autoReserveMode",mode)
-    if RA and RA.ChangeReserveMode then RA.ChangeReserveMode(PD.cur,mode) end
+    if RA and RA.ChangeReserveMode then
+        local _,reason=RA.ChangeReserveMode(PD.cur,mode)
+        if reason then PD.SetSettingRaw("autoReserveMode",current) end
+    end
+    if ns.ProfFollow and ns.ProfFollow.Paint then ns.ProfFollow.Paint() end
     PD.autoSnapshot,PD.autoSnapshotSlug=nil,nil
     PD.RequestRender()
 end
@@ -14645,11 +14649,13 @@ function PD.RowsSettings(rows)
             elseif kk=="reserveMode" and not PD.FixedOnly() then
                 items[#items+1]=function(col)
                     rows[#rows+1]={kind="row",h=PD.SET_ROW_H,col=col,fcol=col,fs=14,
-                        text=L["备料余量"],right=ns.ProfReserve and ns.ProfReserve.Label(PD.SettingRaw("autoReserveMode")) or L["充足备用"],
+                        text=L["备料余量"],right=ns.ProfReserve and ns.ProfReserve.Label(PD.SettingRaw("autoReserveMode")) or L["适量备用"],
                         act=PD.CycleReserveMode,help={{L["备料余量"]},
                             {L["点击切换：不准备余量 / 适量备用 / 充足备用。"],.7,.7,.7},
-                            {L["用于自动生成的候选路线；固定攻略不增加备用。"],.7,.7,.7},
-                            {L["备用材料只在需要时使用；数量和预算见购物清单。"],.7,.7,.7}}}
+                            {L["制作后不一定涨技能，多备一些材料，减少中途缺料来回采购。"],.7,.7,.7},
+                            {L["默认适量备用；充足备用会预留更多材料，所需预算可能更高。"],.7,.7,.7},
+                            {L["切换后立即更新路线和购物清单，保留已完成的制作进度。"],.7,.7,.7},
+                            {L["不准备余量只保留基础用量；固定攻略不额外备料。"],.7,.7,.7}}}
                 end
             elseif byKey[kk] and allowed(kk) then
                 local d = byKey[kk]
