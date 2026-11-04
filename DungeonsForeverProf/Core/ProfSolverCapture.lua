@@ -25,7 +25,7 @@ local function MaybeYield()
     end
 end
 
-local function copy(value, tick, seen)
+local function copy(value, tick, seen, overrides)
     if type(value) ~= "table" then return value end
     seen = seen or {}
     if seen[value] then return seen[value] end
@@ -37,6 +37,15 @@ local function copy(value, tick, seen)
     local out, count = {}, 0
     seen[original] = out
     if value~=original then seen[value]=out end
+    if overrides then
+        for k,v in pairs(value) do
+            if overrides[k]==nil then out[k]=copy(v,tick,seen) end
+            count=count+1
+            if tick and count%64==0 then tick() end
+        end
+        for k,v in pairs(overrides) do out[k]=v end
+        return out
+    end
     for k, v in pairs(value) do
         out[k] = copy(v, tick, seen)
         count = count + 1
@@ -44,7 +53,7 @@ local function copy(value, tick, seen)
     end
     return out
 end
-E.Copy = function(value, tick) return type(value)=="table" and copy(value, tick) or {} end
+E.Copy = function(value, tick, overrides) return type(value)=="table" and copy(value, tick, nil, overrides) or {} end
 
 function E.CharacterKey()
     return ((UnitName and UnitName("player")) or "?") .. "-" .. ((GetRealmName and GetRealmName()) or "?")

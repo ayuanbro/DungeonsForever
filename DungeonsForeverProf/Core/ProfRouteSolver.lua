@@ -2736,7 +2736,7 @@ function S.NewJob(slug,opts)
             if reference then publishPrefix(reference) end
             j.referenceSeed=false
             if j.preview and goalsComplete(j,j.preview) and uncertainty(j.preview)==0 then
-                j.best=j.preview; j.initialTotal=j.preview.money; j.initialObjective=objective(j.preview,j.recovery and j.snap or nil)
+                current=j.preview;j.best=current; j.initialTotal=j.preview.money; j.initialObjective=objective(j.preview,j.recovery and j.snap or nil)
                 j.initialNetTotal=j.preview.money-(j.recovery and ns.ProfRecovery.StateRevenue(j.preview,j.snap) or 0)
                 j.result=S.Result(j,j.best,"searching"); coroutine.yield("publish")
             end
@@ -2934,9 +2934,8 @@ function S.Compute(slug,opts)
     return j.result or S.Result(j,j.best,j.status),j
 end
 function S.NewProcurementJob(snapshot,demands,opts)
-    opts=E.Copy(opts or {}); opts.snapshot=E.Copy(snapshot); opts.snapshot.recipes={}
-    opts.snapshot.specializationGoals={}
-    opts.snapshot.toolGoals={}
+    opts=E.Copy(opts or {},nil,{snapshot=false})
+    opts.snapshot=E.Copy(snapshot,nil,{recipes={},specializationGoals={},toolGoals={},professions={},known={},byKey={},byItem={},byProfession={}})
     if opts.referenceFallback==nil then opts.referenceFallback=false end
     for _,r in ipairs(snapshot.recipes or {}) do opts.snapshot.recipes[#opts.snapshot.recipes+1]=r end
     local totals={}
