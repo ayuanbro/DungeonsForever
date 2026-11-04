@@ -826,9 +826,11 @@ function E.SummarizeFormulaSupply(result,context,tick)
     for _,recipe in ipairs(context.recipes or {}) do
         if not (context.known or {})[recipe.key] then
             candidate(recipe.formula or recipe.formulaID)
-            for _,route in ipairs(recipe.learningInfo and recipe.learningInfo.routes or {}) do
-                if route.kind=="item" then
-                    candidate(route.teachingItemID or route.itemID)
+            for _,routes in ipairs({recipe.learningRoutes or {},recipe.learningInfo and recipe.learningInfo.routes or {}}) do
+                for _,route in ipairs(routes) do
+                    if route.kind=="item" then
+                        candidate(route.teachingItemID or route.itemID)
+                    end
                 end
             end
         end
@@ -1150,11 +1152,13 @@ function E.Index(s, tick)
         if not (s.known or {})[recipe.key] then
             local item=recipe.formula or recipe.formulaID
             if positiveInteger(item) then s.formulaItems[item]=true end
-            for _,route in ipairs(recipe.learningInfo and recipe.learningInfo.routes or {}) do
-                item=tonumber(route.teachingItemID or route.itemID)
-                if route.kind=="item" and positiveInteger(item) then
-                    s.formulaItems[item]=true
-                    if route.acquisition and route.acquisition.nonAuctionable==true then s.nonAuctionable[item]=true end
+            for _,routes in ipairs({recipe.learningRoutes or {},recipe.learningInfo and recipe.learningInfo.routes or {}}) do
+                for _,route in ipairs(routes) do
+                    item=tonumber(route.teachingItemID or route.itemID)
+                    if route.kind=="item" and positiveInteger(item) then
+                        s.formulaItems[item]=true
+                        if route.acquisition and route.acquisition.nonAuctionable==true then s.nonAuctionable[item]=true end
+                    end
                 end
             end
         end
@@ -1300,11 +1304,13 @@ function E.Capture(slug, opts, tick)
             items[r.formula]=true;s.formulaItems[r.formula]=true
         end
         if not s.known[r.key] then
-            for _,route in ipairs(r.learningInfo and r.learningInfo.routes or {}) do
-                local item=tonumber(route.teachingItemID or route.itemID)
-                if route.kind=="item" and item and item>0 then
-                    items[item]=true;s.formulaItems[item]=true
-                    if route.acquisition and route.acquisition.nonAuctionable==true then s.nonAuctionable[item]=true end
+            for _,routes in ipairs({r.learningRoutes or {},r.learningInfo and r.learningInfo.routes or {}}) do
+                for _,route in ipairs(routes) do
+                    local item=tonumber(route.teachingItemID or route.itemID)
+                    if route.kind=="item" and item and item>0 then
+                        items[item]=true;s.formulaItems[item]=true
+                        if route.acquisition and route.acquisition.nonAuctionable==true then s.nonAuctionable[item]=true end
+                    end
                 end
             end
         end
@@ -1342,14 +1348,16 @@ function E.Capture(slug, opts, tick)
             s.formulaOffers[r.formula] = copy(offers or {})
         end
         if not s.known[r.key] then
-            for _,route in ipairs(r.learningInfo and r.learningInfo.routes or {}) do
-                local item=tonumber(route.teachingItemID or route.itemID)
-                if route.kind=="item" and item and item>0 and not s.formulaOffers[item] then
-                    local offers=vdb and vdb.GetFormulaOffers and vdb.GetFormulaOffers(item,vendorContext,r.source)
-                    if not (vdb and vdb.GetFormulaOffers) then
-                        offers=ns.ProfSupply and ns.ProfSupply.FormulaList and ns.ProfSupply.FormulaList(item) or {}
+            for _,routes in ipairs({r.learningRoutes or {},r.learningInfo and r.learningInfo.routes or {}}) do
+                for _,route in ipairs(routes) do
+                    local item=tonumber(route.teachingItemID or route.itemID)
+                    if route.kind=="item" and item and item>0 and not s.formulaOffers[item] then
+                        local offers=vdb and vdb.GetFormulaOffers and vdb.GetFormulaOffers(item,vendorContext,r.source)
+                        if not (vdb and vdb.GetFormulaOffers) then
+                            offers=ns.ProfSupply and ns.ProfSupply.FormulaList and ns.ProfSupply.FormulaList(item) or {}
+                        end
+                        s.formulaOffers[item]=copy(offers or {})
                     end
-                    s.formulaOffers[item]=copy(offers or {})
                 end
             end
         end
