@@ -11,7 +11,7 @@
 ## Notes-zhTW: 無限副本手冊 職業模組：職業指南與天賦（可在插件列表中單獨關閉）
 ## Notes-enUS: Class module for DungeonsForever: class guides and talents (can be disabled separately)
 ## Author: 圆圆
-## Version: 2.0.1
+## Version: 2.0.2
 ## Dependencies: DungeonsForever
 ## LoadOnDemand: 1
 ## SavedVariables: DungeonsForeverClassDB

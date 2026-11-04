@@ -211,7 +211,7 @@ function ST.Rows()
                 local baseLv = sp.learnLv
                 if fix and fix[sp.id] then baseLv = fix[sp.id] end
                 local row = {
-                    name = sp.name, nameEn = sp.nameEn, icon = sp.icon,
+                    name = sp.name, icon = sp.icon,
                     tab = tab.name, learn = baseLv,
                 }
                 if sp.isTalent then
