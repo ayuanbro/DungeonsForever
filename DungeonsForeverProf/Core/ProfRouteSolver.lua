@@ -1852,11 +1852,53 @@ function S.NewJob(slug,opts)
             t.rebatchGreenCrafts=greenCrafts
             return t
         end
-        local function rebuildBatches(candidate)
+        local function rebuildBatches(candidate,advance)
             local list=actions(candidate)
+            local current=initial(j.snap,slug,opts)
+            if advance then
+                local useful
+                for _,a in ipairs(list) do
+                    local key=rebatchKey(a);local r=key and j.snap.byKey[key]
+                    if r and r.item and a.reason=="material" and a.usableOutput~=false
+                        and (a.from or 0)>=r.grey and (current.skill[r.profession] or 0)<r.grey then useful=true;break end
+                    tick()
+                end
+                if not useful then return end
+            end
             local stages=rebatchStages(list,j.snap.byKey)
             local ranges={};for _,range in ipairs(stages) do ranges[range[1]]=range[2] end
-            local current=initial(j.snap,slug,opts)
+            local advanced={}
+            local function advanceMaterials(first)
+                local groups,byKey={},{}
+                for i=first,#list do
+                    local a=list[i];local key=rebatchKey(a);local r=key and j.snap.byKey[key]
+                    if r and r.item and not advanced[key] and a.reason=="material" and a.usableOutput~=false
+                        and (a.from or 0)>=r.grey and (current.skill[r.profession] or 0)>=r.learn
+                        and (current.skill[r.profession] or 0)<min(r.grey,current.cap[r.profession] or 300) then
+                        local g=byKey[key]
+                        if not g then g={recipe=r,count=0};groups[#groups+1]=g;byKey[key]=g end
+                        g.count=g.count+a.count
+                    end
+                    tick()
+                end
+                for _,g in ipairs(groups) do
+                    local r=g.recipe;local skill=current.skill[r.profession]
+                    local target=min(r.grey,current.cap[r.profession] or 300,r.profession==slug and j.target or 300)
+                    local limit=min(advance[r.key] or g.count,max(0,g.count-floor(available(current,r.item)/r.count)))
+                    local n,progress=0,current.progress[r.profession] or 0
+                    while n<limit and skill<target do
+                        local gain=E.Gain(r,skill);if gain<=0 then break end
+                        progress=progress+gain;local whole=floor(progress+1e-7)
+                        skill=skill+whole;progress=floor((progress-whole)*1000000+.5)/1000000
+                        n=n+1;tick()
+                    end
+                    if n>0 then
+                        local best
+                        craft(current,r,n,"material",{[r.item]=true},function(t) if better(t,best) then best=t end end)
+                        if best then current=best;advanced[r.key]=n end
+                    end
+                end
+            end
             local function stage(first,last)
                 local groups,byKey,byItem,used,goals={},{},{},{},{}
                 for i=first,last do
@@ -1891,6 +1933,7 @@ function S.NewJob(slug,opts)
                     if not r.item or not used[r.item] or g.produced>used[r.item] then roots[#roots+1]=g end
                 end
                 if #roots==0 then return end
+                if advance then advanceMaterials(first) end
                 local lastRoot={};for _,g in ipairs(roots) do lastRoot[g.recipe.profession]=g end
                 for _,g in ipairs(roots) do
                     local r=g.recipe;local goal=g.goal
@@ -1904,6 +1947,7 @@ function S.NewJob(slug,opts)
                         end
                     end
                     local base=current
+                    if advance and r.item then minimum=max(0,minimum-floor(available(base,r.item)/r.count)) end
                     local function trial(n)
                         if n==0 then return base end
                         local best
@@ -1948,8 +1992,16 @@ function S.NewJob(slug,opts)
             end
             local verified=replay(actions(current))
             if not verified or not goalsComplete(j,verified) or uncertainty(verified)>uncertainty(candidate) then return end
+            if advance and not next(advanced) then return end
+            local retry
+            for key,n in pairs(advanced) do
+                local r=j.snap.byKey[key]
+                local surplus=available(verified,r.item)-max(available(candidate,r.item),r.count-1)
+                if surplus>0 then advance[key]=max(0,n-ceil(surplus/r.count));retry=true end
+            end
+            if retry then return nil,true end
             if stable and (verified.greenLevelCrafts or 0)>(candidate.greenLevelCrafts or 0) then return end
-            if rebatchSwitches(actions(verified))>=rebatchSwitches(list) then return end
+            if not advance and rebatchSwitches(actions(verified))>=rebatchSwitches(list) then return end
             verified.batched=true
             return verified
         end
@@ -1966,6 +2018,13 @@ function S.NewJob(slug,opts)
                 local seeding,direct,aborted=j.seeding,j.directSeed,j.seedAborted
                 j.seeding=true;j.directSeed=true;j.seedAborted=false
                 local rebuilt=rebuildBatches(candidate)
+                local limits={}
+                for _=1,3 do
+                    local advanced,retry=rebuildBatches(candidate,limits)
+                    if advanced and better(advanced,candidate) and (not rebuilt or better(advanced,rebuilt)) then rebuilt=advanced end
+                    if not retry then break end
+                    tick()
+                end
                 j.batchRecipes=nil;j.seeding,j.directSeed,j.seedAborted=seeding,direct,aborted
                 local baseline=candidate.rebatchGreenCrafts~=nil and candidate or replay(actions(candidate))
                 local result = rebuilt or baseline and rebatchEquivalent(candidate,baseline)
