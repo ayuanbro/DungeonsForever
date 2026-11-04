@@ -32,6 +32,111 @@ local C_TEXT = Host.C_TEXT
 local M = {}
 ns.MapModule = M
 
+local ZM = { k = 1, x = 0, y = 0, min = 1, max = 3 }
+ns.MapZoom = ZM
+
+function ZM.Reset()
+    ZM.k, ZM.x, ZM.y = 1, 0, 0
+end
+
+function ZM.Limits(bw, bh)
+    local k = ZM.k
+    return math.max(0, (bw * k - bw) / 2), math.max(0, (bh * k - bh) / 2)
+end
+
+function ZM.ClampTo(lx, ly)
+    if ZM.x > lx then ZM.x = lx elseif ZM.x < -lx then ZM.x = -lx end
+    if ZM.y > ly then ZM.y = ly elseif ZM.y < -ly then ZM.y = -ly end
+    if ZM.k <= ZM.min then ZM.x, ZM.y = 0, 0 end
+end
+
+function M.PinPoint(bt, p, cw, ch)
+    bt:ClearAllPoints()
+    bt:SetPoint("CENTER", bt:GetParent(), "TOPLEFT", (p.left / 100) * cw, -(p.top / 100) * ch)
+end
+
+local function cursorUI()
+    local x, y = GetCursorPosition()
+    local s = 1
+    if UIParent and UIParent.GetEffectiveScale then
+        s = UIParent:GetEffectiveScale() or 1
+    end
+    if not s or s <= 0 then s = 1 end
+    return x / s, y / s
+end
+
+local function dragUpdate(self)
+    local frame = M.frame
+    if not (frame and frame.baseW and frame.baseH) then return end
+    if type(IsMouseButtonDown) == "function" and not IsMouseButtonDown("LeftButton") then
+        self.__lx, self.__ly = nil, nil
+        self:SetScript("OnUpdate", nil)
+        return
+    end
+    local x, y = cursorUI()
+    local lx = self.__lx or x
+    local ly = self.__ly or y
+    self.__lx, self.__ly = x, y
+    local dx, dy = x - lx, y - ly
+    if dx == 0 and dy == 0 then return end
+    local mx, my = ZM.Limits(frame.baseW, frame.baseH)
+    ZM.x, ZM.y = ZM.x + dx, ZM.y + dy
+    ZM.ClampTo(mx, my)
+    M.PanSync()
+end
+
+function M.ZoomAt(factor)
+    local frame = M.frame
+    local art = frame and frame.canvas
+    local clip = frame and frame.clip
+    if not (art and clip and frame.baseW and frame.baseH) then return end
+    local old = ZM.k
+    local nk = old * factor
+    if nk < ZM.min then nk = ZM.min end
+    if nk > ZM.max then nk = ZM.max end
+    if nk == old then return end
+    local left, top = art:GetLeft(), art:GetTop()
+    local w, h = art:GetWidth(), art:GetHeight()
+    local vl, vt = clip:GetLeft(), clip:GetTop()
+    if not (left and top and vl and vt and w and h) or w <= 0 or h <= 0 then return end
+    local bw, bh = frame.baseW, frame.baseH
+    local cx, cy = cursorUI()
+    local u = math.max(0, math.min(1, (cx - left) / w))
+    local v = math.max(0, math.min(1, (top - cy) / h))
+    local k = nk / old
+    local nw, nh = w * k, h * k
+    local nleft, ntop = cx - u * nw, cy + v * nh
+    ZM.k = nk
+    ZM.x = (nleft + nw / 2) - (vl + bw / 2)
+    ZM.y = (ntop - nh / 2) - (vt - bh / 2)
+    local mx, my = ZM.Limits(bw, bh)
+    ZM.ClampTo(mx, my)
+    M.ZoomSync()
+end
+
+function M.ZoomWheel(delta)
+    local frame = M.frame
+    if not (frame and frame.baseW) then return end
+    if M.curId == nil and not M.curD then return end
+    M.ZoomAt((delta > 0) and 1.15 or (1 / 1.15))
+end
+
+function M.PanSync()
+    local frame = M.frame
+    local art = frame and frame.canvas
+    local clip = frame and frame.clip
+    if not (art and clip) then return end
+    art:ClearAllPoints()
+    art:SetPoint("CENTER", clip, "CENTER", ZM.x, ZM.y)
+end
+
+function M.ZoomSync()
+    local frame = M.frame
+    if not (frame and frame.clip) then return end
+    if not (frame.baseW and frame.baseH) then return end
+    M.Paint(M.curD)
+end
+
 M.COLS, M.ROWS = 4, 3
 M.TILE = 256
 M.ART_W, M.ART_H = 1002, 668
@@ -1528,9 +1633,36 @@ function M.Build(detail, hero)
         hdrCard:SetBackdropBorderColor(1, 1, 1, 0.10)
     end
 
-    local canvas = CreateFrame("Frame", nil, frame)
-    canvas:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    local clip = CreateFrame("Frame", nil, frame)
+    clip:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    clip:SetSize(1, 1)
+    clip:SetClipsChildren(true)
+    clip:Show()
+
+    local mapHit = CreateFrame("Button", nil, clip)
+    mapHit:SetAllPoints(clip)
+    mapHit:SetFrameLevel(clip:GetFrameLevel() + 1)
+    mapHit:EnableMouse(true)
+    mapHit:EnableMouseWheel(true)
+    mapHit:SetScript("OnMouseWheel", function(_, delta) M.ZoomWheel(delta) end)
+    mapHit:SetScript("OnMouseDown", function(self, button)
+        if button ~= "LeftButton" then return end
+        self.__lx, self.__ly = cursorUI()
+        self:SetScript("OnUpdate", dragUpdate)
+    end)
+    mapHit:SetScript("OnMouseUp", function(self)
+        self.__lx, self.__ly = nil, nil
+        self:SetScript("OnUpdate", nil)
+    end)
+    mapHit:SetScript("OnHide", function(self)
+        self.__lx, self.__ly = nil, nil
+        self:SetScript("OnUpdate", nil)
+    end)
+
+    local canvas = CreateFrame("Frame", nil, clip)
+    canvas:SetPoint("TOPLEFT", clip, "TOPLEFT", 0, 0)
     canvas:SetSize(1, 1)
+    canvas:SetFrameLevel(clip:GetFrameLevel() + 1)
     canvas:Hide()
 
     local tiles = {}
@@ -1545,10 +1677,10 @@ function M.Build(detail, hero)
     customTex:SetTexCoord(0, 1, 0, 1)
     customTex:Hide()
 
-    local routeLayer = CreateFrame("Frame", nil, frame)
-    routeLayer:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    local routeLayer = CreateFrame("Frame", nil, clip)
+    routeLayer:SetPoint("TOPLEFT", clip, "TOPLEFT", 0, 0)
     routeLayer:SetSize(1, 1)
-    routeLayer:SetFrameLevel(frame:GetFrameLevel() + 2)
+    routeLayer:SetFrameLevel(clip:GetFrameLevel() + 2)
     routeLayer:Hide()
 
     local empty = MakeFS(frame, 14, C_GREY, "CENTER")
@@ -1556,10 +1688,10 @@ function M.Build(detail, hero)
     empty:SetText(L["这个副本没有客户端自带的地图。"])
     empty:Hide()
 
-    local pins = CreateFrame("Frame", nil, frame)
-    pins:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    local pins = CreateFrame("Frame", nil, clip)
+    pins:SetPoint("TOPLEFT", clip, "TOPLEFT", 0, 0)
     pins:SetSize(1, 1)
-    pins:SetFrameLevel(frame:GetFrameLevel() + 3)
+    pins:SetFrameLevel(clip:GetFrameLevel() + 3)
     pins:Hide()
     local bar = CreateFrame("Frame", nil, frame)
     bar:SetHeight(M.BAR_H)
@@ -1604,6 +1736,8 @@ function M.Build(detail, hero)
     side:SetPoint("TOPLEFT", frame, "TOPLEFT", M.FRAME_W - M.SIDE_W, 0)
 
     frame.canvas = canvas
+    frame.clip = clip
+    frame.mapHit = mapHit
     frame.hdrCard = hdrCard
     frame.tiles = tiles
     frame.customTex = customTex
@@ -1780,6 +1914,7 @@ function M.SetLayer(i)
     if not (layers and layers[i]) then return end
     if i == M.curLayer then return end
     M.curLayer = i
+    ZM.Reset()
     M.Paint(M.curD)
 end
 
@@ -2085,7 +2220,7 @@ function M.NewSegHover(parent, paintFn)
         st.paint = paintFn
         return st
     end
-    st = { parent = parent, paint = paintFn, pool = {}, seg = nil, leaveAt = nil, acc = 0 }
+    st = { parent = parent, paint = paintFn, seg = nil, leaveAt = nil, acc = 0 }
     hovers[parent] = st
     function st:Set(si)
         if si == self.seg then
@@ -2099,11 +2234,16 @@ function M.NewSegHover(parent, paintFn)
     end
     function st:HideAll()
         self:Set(nil)
-        for i = 1, #self.pool do self.pool[i]:Hide() end
+        self.hi = 0
     end
     function st:Build(host, arr, cnt)
         local hi = 0
         local step = M.HIT_STEP
+        local pts2 = self.pts
+        if not pts2 then
+            pts2 = {}
+            self.pts = pts2
+        end
         for si = 1, cnt do
             local pts = arr[si]
             if pts and #pts > 1 then
@@ -2116,29 +2256,19 @@ function M.NewSegHover(parent, paintFn)
                         for j = 0, k - 1 do
                             local u = j / k
                             hi = hi + 1
-                            local btn = self.pool[hi]
-                            if not btn then
-                                btn = CreateFrame("Button", nil, host)
-                                btn:SetSize(M.HIT_SIZE, M.HIT_SIZE)
-                                btn:EnableMouse(true)
-                                btn:SetScript("OnEnter", function(b) st:Set(b.si) end)
-                                btn:SetScript("OnLeave", function(b)
-                                    if st.seg == b.si then st.leaveAt = GetTime() end
-                                end)
-                                self.pool[hi] = btn
+                            local h = pts2[hi]
+                            if not h then
+                                h = {}
+                                pts2[hi] = h
                             end
-                            local lv, hl = btn:GetFrameLevel(), host:GetFrameLevel()
-                            if lv ~= hl then btn:SetFrameLevel(hl) end
-                            btn.si = si
-                            btn:ClearAllPoints()
-                            btn:SetPoint("CENTER", host, "TOPLEFT", a[1] + dx * u, -(a[2] + dy * u))
-                            btn:Show()
+                            h[1], h[2], h[3] = a[1] + dx * u, a[2] + dy * u, si
                         end
                     end
                 end
             end
         end
-        for i = hi + 1, #self.pool do self.pool[i]:Hide() end
+        self.hi = hi
+        self.parent = host
         return hi
     end
     local tick = CreateFrame("Button", nil, parent)
@@ -2148,7 +2278,35 @@ function M.NewSegHover(parent, paintFn)
         st.acc = st.acc + el
         if st.acc < 0.05 then return end
         st.acc = 0
-        if st.seg and st.leaveAt and (GetTime() - st.leaveAt) > 0.08 then
+        local host, pts2, hi = st.parent, st.pts, st.hi or 0
+        local near
+        if hi > 0 and host and host:IsShown() then
+            local l, t = host:GetLeft(), host:GetTop()
+            if l and t then
+                local cx, cy = cursorUI()
+                local px, py = cx - l, t - cy
+                local lim = M.HIT_SIZE * 0.5
+                local best = lim * lim
+                local w, hgt = host:GetWidth(), host:GetHeight()
+                if px > -lim and py > -lim and px < (w or 0) + lim and py < (hgt or 0) + lim then
+                    for i = 1, hi do
+                        local h = pts2[i]
+                        local dx, dy = px - h[1], py - h[2]
+                        local d = dx * dx + dy * dy
+                        if d < best then
+                            best = d
+                            near = h[3]
+                        end
+                    end
+                end
+            end
+        end
+        if near then
+            st.leaveAt = nil
+            st:Set(near)
+        elseif st.seg and not st.leaveAt then
+            st.leaveAt = GetTime()
+        elseif st.seg and st.leaveAt and (GetTime() - st.leaveAt) > 0.1 then
             st:Set(nil)
         end
     end)
@@ -2524,9 +2682,7 @@ function M.SyncPins()
                 bt:SetFrameLevel(frame.pins:GetFrameLevel())
             end
             bt.__qState, bt.__qPre, bt.__qPreOf = nil, nil, nil
-            bt:ClearAllPoints()
-            bt:SetPoint("CENTER", frame.pins, "TOPLEFT",
-                        (p.left / 100) * cw, -(p.top / 100) * ch)
+            M.PinPoint(bt, p, cw, ch)
             local nm, cr, cg, cb
             if kind == "boss" then
                 nm = p.zh or p.en or ""
@@ -3404,21 +3560,30 @@ function M.Paint(d)
     local id = d and d.id
     local layers = M.LayersFor(id)
     local leftW, cw, ch, cx, cy = M.Box()
-    frame.pinW, frame.pinH = cw, ch
 
     if M.curId ~= id then
         M.curId, M.curLayer, M.detailEn = id, 1, nil
+        ZM.Reset()
     end
 
+    frame.baseW, frame.baseH = cw, ch
+    local zw, zh = cw * ZM.k, ch * ZM.k
+    frame.pinW, frame.pinH = zw, zh
+    local lx, ly = ZM.Limits(cw, ch)
+    ZM.ClampTo(lx, ly)
+
+    frame.clip:ClearAllPoints()
+    frame.clip:SetPoint("TOPLEFT", frame, "TOPLEFT", cx, -cy)
+    frame.clip:SetSize(cw, ch)
     frame.canvas:ClearAllPoints()
-    frame.canvas:SetPoint("TOPLEFT", frame, "TOPLEFT", cx, -cy)
-    frame.canvas:SetSize(cw, ch)
+    frame.canvas:SetPoint("CENTER", frame.clip, "CENTER", ZM.x, ZM.y)
+    frame.canvas:SetSize(zw, zh)
     frame.pins:ClearAllPoints()
-    frame.pins:SetPoint("TOPLEFT", frame, "TOPLEFT", cx, -cy)
-    frame.pins:SetSize(cw, ch)
+    frame.pins:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", 0, 0)
+    frame.pins:SetSize(zw, zh)
     frame.route:ClearAllPoints()
-    frame.route:SetPoint("TOPLEFT", frame, "TOPLEFT", cx, -cy)
-    frame.route:SetSize(cw, ch)
+    frame.route:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", 0, 0)
+    frame.route:SetSize(zw, zh)
     frame.bar:ClearAllPoints()
     frame.bar:SetPoint("RIGHT", frame.hdrCard, "RIGHT", -M.SIDE_PAD, 0)
     frame.bossPinBtn:ClearAllPoints()
@@ -3436,7 +3601,7 @@ function M.Paint(d)
             frame.customTex:SetTexCoord(0, 1, 0, cv1)
             frame.customTex:ClearAllPoints()
             frame.customTex:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", 0, 0)
-            frame.customTex:SetSize(cw, ch)
+            frame.customTex:SetSize(zw, zh)
             frame.customTex:Show()
             frame.empty:Hide()
         else
@@ -3445,9 +3610,9 @@ function M.Paint(d)
             frame.empty:Show()
         end
         frame.pins:Hide()
-        M.PaintArea(id, M.FloorNumAt(id, 1), cw, ch)
+        M.PaintArea(id, M.FloorNumAt(id, 1), zw, zh)
         if cpath then
-            M.SyncRoute(id, M.FloorNumAt(id, 1), cw, ch)
+            M.SyncRoute(id, M.FloorNumAt(id, 1), zw, zh)
         else
             frame.route:Hide()
         end
@@ -3464,7 +3629,7 @@ function M.Paint(d)
     M.curLayer = idx
 
     frame.canvas:Show()
-    local lay = M.Layout(cw, ch)
+    local lay = M.Layout(zw, zh)
     local path = M.PathAt(id, idx)
     local fixRow = id and TILE_FIX[id]
     local fixTile = fixRow and fixRow[idx]
@@ -3475,7 +3640,7 @@ function M.Paint(d)
         frame.customTex:SetTexCoord(0, 1, 0, cv1)
         frame.customTex:ClearAllPoints()
         frame.customTex:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", 0, 0)
-        frame.customTex:SetSize(cw, ch)
+        frame.customTex:SetSize(zw, zh)
         frame.customTex:Show()
     else
         for _, p in ipairs(lay) do
@@ -3488,8 +3653,8 @@ function M.Paint(d)
             t:Show()
         end
     end
-    M.PaintArea(id, M.FloorNumAt(id, idx), cw, ch)
-    M.SyncRoute(id, M.FloorNumAt(id, idx), cw, ch)
+    M.PaintArea(id, M.FloorNumAt(id, idx), zw, zh)
+    M.SyncRoute(id, M.FloorNumAt(id, idx), zw, zh)
     M.SyncPins()
     M.SyncBar(layers, idx)
     M.SyncSide()

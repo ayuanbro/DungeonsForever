@@ -696,8 +696,7 @@ local function syncPins(view, id, floor, cw, ch)
                 bt:SetFrameLevel(view.pins:GetFrameLevel())
             end
             bt.__qState, bt.__qPre, bt.__qPreOf = nil, nil, nil
-            bt:ClearAllPoints()
-            bt:SetPoint("CENTER", view.pins, "TOPLEFT", (p.left / 100) * cw, -(p.top / 100) * ch)
+            M.PinPoint(bt, p, cw, ch)
             local nm, cr, cg, cb
             if kind == "boss" then
                 nm = p.zh or p.en or ""
@@ -978,10 +977,35 @@ local function layout(view)
     local cw, ch, cx, cy = M.FitBox(aw, ah)
     view.cw, view.ch = cw, ch
     local ox, oy = areaOffset()
-    for _, f in ipairs({ view.canvas, view.route, view.pins }) do
-        f:ClearAllPoints()
-        f:SetPoint("TOPLEFT", view, "TOPLEFT", ox + cx, -(oy + cy))
-        f:SetSize(cw, ch)
+    if view.stage then
+        view.stage:ClearAllPoints()
+        view.stage:SetPoint("TOPLEFT", view, "TOPLEFT", ox + cx, -(oy + cy))
+        view.stage:SetSize(cw, ch)
+    end
+    local ZM = ns.MapZoom
+    local k = (ZM and ZM.k) or 1
+    if ZM then
+        local lx, ly = ZM.Limits(cw, ch)
+        ZM.ClampTo(lx, ly)
+    end
+    local zx = (ZM and ZM.x) or 0
+    local zy = (ZM and ZM.y) or 0
+    local zw, zh = cw * k, ch * k
+    view.zw, view.zh = zw, zh
+    if view.canvas then
+        view.canvas:ClearAllPoints()
+        view.canvas:SetPoint("CENTER", view.stage, "CENTER", zx, zy)
+        view.canvas:SetSize(zw, zh)
+    end
+    if view.route then
+        view.route:ClearAllPoints()
+        view.route:SetPoint("TOPLEFT", view.canvas, "TOPLEFT", 0, 0)
+        view.route:SetSize(zw, zh)
+    end
+    if view.pins then
+        view.pins:ClearAllPoints()
+        view.pins:SetPoint("TOPLEFT", view.canvas, "TOPLEFT", 0, 0)
+        view.pins:SetSize(zw, zh)
     end
     if view.bg then
         view.bg:ClearAllPoints()
@@ -1013,11 +1037,10 @@ local function layout(view)
     end
     local nav = navBar()
     if view.block then
-        local top = 0
-        if nav then top = math.max(0, (view:GetTop() or 0) - (nav:GetBottom() or 0)) end
+        local box = view.stage or view
         view.block:ClearAllPoints()
-        view.block:SetPoint("TOPLEFT", view, "TOPLEFT", 0, -top)
-        view.block:SetPoint("BOTTOMRIGHT", view, "BOTTOMRIGHT", 0, 0)
+        view.block:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
+        view.block:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
     end
     if nav then
         local side = view.side
@@ -1038,7 +1061,96 @@ local function layout(view)
         if W.areaBtn and W.areaBtn:IsShown() then W.areaBtn:Hide() end
     end
     view.floorPanel:ClearAllPoints()
-    view.floorPanel:SetPoint("TOPRIGHT", view.canvas, "TOPRIGHT", 0, 0)
+    view.floorPanel:SetPoint("BOTTOMRIGHT", view.stage or view.canvas, "BOTTOMRIGHT", 0, 0)
+end
+
+local function cursorUI()
+    local x, y = GetCursorPosition()
+    local s = 1
+    if UIParent and UIParent.GetEffectiveScale then
+        s = UIParent:GetEffectiveScale() or 1
+    end
+    if not s or s <= 0 then s = 1 end
+    return x / s, y / s
+end
+
+local function inStage()
+    local view = W.view
+    local st = view and view.stage
+    if not st then return false end
+    local l, r = st:GetLeft(), st:GetRight()
+    local t, b = st:GetTop(), st:GetBottom()
+    if not (l and r and t and b) then return false end
+    local x, y = cursorUI()
+    return x >= l and x <= r and y >= b and y <= t
+end
+
+function W.PanSync()
+    local view = W.view
+    local art = view and view.canvas
+    local st = view and view.stage
+    local ZM = ns.MapZoom
+    if not (art and st and ZM) then return end
+    art:ClearAllPoints()
+    art:SetPoint("CENTER", st, "CENTER", ZM.x, ZM.y)
+end
+
+function W.ZoomAt(factor)
+    local view = W.view
+    local art = view and view.canvas
+    local st = view and view.stage
+    local ZM = ns.MapZoom
+    if not (art and st and ZM) then return end
+    local old = ZM.k
+    local nk = old * factor
+    if nk < ZM.min then nk = ZM.min end
+    if nk > ZM.max then nk = ZM.max end
+    if nk == old then return end
+    local left, top = art:GetLeft(), art:GetTop()
+    local w, h = art:GetWidth(), art:GetHeight()
+    local vl, vt = st:GetLeft(), st:GetTop()
+    local bw, bh = st:GetWidth(), st:GetHeight()
+    if not (left and top and vl and vt and w and h and bw and bh) then return end
+    if w <= 0 or h <= 0 or bw <= 0 or bh <= 0 then return end
+    local cx, cy = cursorUI()
+    local u = math.max(0, math.min(1, (cx - left) / w))
+    local v = math.max(0, math.min(1, (top - cy) / h))
+    local k = nk / old
+    local nw, nh = w * k, h * k
+    local nleft, ntop = cx - u * nw, cy + v * nh
+    ZM.k = nk
+    ZM.x = (nleft + nw / 2) - (vl + bw / 2)
+    ZM.y = (ntop - nh / 2) - (vt - bh / 2)
+    local mx, my = ZM.Limits(bw, bh)
+    ZM.ClampTo(mx, my)
+    W.Sync()
+end
+
+function W.ZoomWheel(delta)
+    if not inStage() then return end
+    W.ZoomAt((delta > 0) and 1.15 or (1 / 1.15))
+end
+
+local function dragWorld(self)
+    local view = W.view
+    local st = view and view.stage
+    local ZM = ns.MapZoom
+    if not (st and ZM) then return end
+    if type(IsMouseButtonDown) ~= "function" or not IsMouseButtonDown("LeftButton") then
+        self.__lx, self.__ly = nil, nil
+        self:SetScript("OnUpdate", nil)
+        return
+    end
+    local x, y = cursorUI()
+    local lx = self.__lx or x
+    local ly = self.__ly or y
+    self.__lx, self.__ly = x, y
+    local dx, dy = x - lx, y - ly
+    if dx == 0 and dy == 0 then return end
+    local mx, my = ZM.Limits(st:GetWidth(), st:GetHeight())
+    ZM.x, ZM.y = ZM.x + dx, ZM.y + dy
+    ZM.ClampTo(mx, my)
+    W.PanSync()
 end
 
 function W.Sync()
@@ -1050,7 +1162,7 @@ function W.Sync()
         return
     end
     layout(view)
-    local cw, ch = view.cw or 0, view.ch or 0
+    local cw, ch = view.zw or 0, view.zh or 0
     if cw <= 0 or ch <= 0 then return end
     local layers = M.LayersFor(id)
     local idx = M.curLayer or 1
@@ -1141,6 +1253,7 @@ function W.Show(id, why)
     if not view then return end
     local prevId = W.curId
     W.curId = id
+    if prevId ~= id and ns.MapZoom then ns.MapZoom.Reset() end
     W.curStamp = instStamp()
     W.why = why
     M.curId = id
@@ -1176,6 +1289,7 @@ end
 function W.Hide()
     local view = W.view
     if not view then return end
+    if ns.MapZoom then ns.MapZoom.Reset() end
     if view.routeBtn then view.routeBtn:Hide() end
     if view.pinBtn then view.pinBtn:Hide() end
     if view.taskBtn then view.taskBtn:Hide() end
@@ -1204,6 +1318,8 @@ end
 local function setLayer(i)
     local layers = M.LayersFor(W.curId)
     if not (layers and layers[i]) then return end
+    if i == (M.curLayer or 1) then return end
+    if ns.MapZoom then ns.MapZoom.Reset() end
     local d = M.curD
     if M.frame and M.frame:IsShown() and d and d.id == W.curId then
         M.SetLayer(i)
@@ -1885,12 +2001,26 @@ function W.Build()
     W.view = view
 
     local block = CreateFrame("Button", nil, view)
-    block:SetFrameLevel(view:GetFrameLevel() + 1)
+    block:SetFrameLevel(view:GetFrameLevel() - 1)
     block:SetPoint("TOPLEFT", view, "TOPLEFT")
     block:SetSize(1, 1)
     block:RegisterForClicks("RightButtonUp")
     block:EnableMouseWheel(true)
-    block:SetScript("OnMouseWheel", function() end)
+    block:SetScript("OnMouseWheel", function(_, delta) W.ZoomWheel(delta) end)
+    block:SetScript("OnMouseDown", function(self, button)
+        if button ~= "LeftButton" then return end
+        if not inStage() then return end
+        self.__lx, self.__ly = cursorUI()
+        self:SetScript("OnUpdate", dragWorld)
+    end)
+    block:SetScript("OnMouseUp", function(self)
+        self.__lx, self.__ly = nil, nil
+        self:SetScript("OnUpdate", nil)
+    end)
+    block:SetScript("OnHide", function(self)
+        self.__lx, self.__ly = nil, nil
+        self:SetScript("OnUpdate", nil)
+    end)
     block:SetScript("OnClick", function(_, button)
         if button == "RightButton" and W.ExitWorld then W.ExitWorld() end
     end)
@@ -1927,9 +2057,16 @@ function W.Build()
     view.bg:SetAllPoints()
     view.bg:SetColorTexture(0.05, 0.045, 0.03, 1)
 
-    local canvas = CreateFrame("Frame", nil, view)
+    local stage = CreateFrame("Frame", nil, view)
+    stage:SetSize(1, 1)
+    stage:SetClipsChildren(true)
+    stage:Show()
+    view.stage = stage
+
+    local canvas = CreateFrame("Frame", nil, stage)
     canvas:SetSize(1, 1)
-    canvas:SetFrameLevel(view:GetFrameLevel() + 1)
+    canvas:SetPoint("TOPLEFT", stage, "TOPLEFT", 0, 0)
+    canvas:SetFrameLevel(stage:GetFrameLevel() + 1)
     view.canvas = canvas
 
     local tiles = {}
@@ -1946,41 +2083,44 @@ function W.Build()
     custom:Hide()
     view.custom = custom
 
-    local route = CreateFrame("Frame", nil, view)
+    local route = CreateFrame("Frame", nil, stage)
     route:SetSize(1, 1)
-    route:SetFrameLevel(view:GetFrameLevel() + 2)
+    route:SetPoint("TOPLEFT", stage, "TOPLEFT", 0, 0)
+    route:SetFrameLevel(stage:GetFrameLevel() + 2)
     route:Hide()
     view.route = route
     view.routePool = {}
     view.routeUsed = 0
 
-    local pins = CreateFrame("Frame", nil, view)
+    local pins = CreateFrame("Frame", nil, stage)
     pins:SetSize(1, 1)
-    pins:SetFrameLevel(view:GetFrameLevel() + 3)
+    pins:SetPoint("TOPLEFT", stage, "TOPLEFT", 0, 0)
+    pins:SetFrameLevel(stage:GetFrameLevel() + 3)
     pins:Hide()
     view.pins = pins
     buildPinPool(view)
 
     local nav = navBar()
-    local routeBtn = makeNativeBtn(nav, L["路线显示"], BTN_W, BTN_H)
-    routeBtn:SetFrameLevel(nav:GetFrameLevel() + 8)
+    local routeBtn = Host.NewButton(UIParent, L["路线显示"], BTN_W, BTN_H, 14)
+    routeBtn:SetFrameStrata("FULLSCREEN_DIALOG")
+    routeBtn:SetFrameLevel(200)
     routeBtn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     routeBtn:SetScript("OnClick", routeToggle)
     routeBtn:Hide()
-    euiBtn(routeBtn)
     view.routeBtn = routeBtn
 
-    local pinBtn = makeNativeBtn(nav, L["图钉显示"], BTN_W, BTN_H)
-    pinBtn:SetFrameLevel(nav:GetFrameLevel() + 8)
+    local pinBtn = Host.NewButton(UIParent, L["图钉显示"], BTN_W, BTN_H, 14)
+    pinBtn:SetFrameStrata("FULLSCREEN_DIALOG")
+    pinBtn:SetFrameLevel(200)
     pinBtn:SetScript("OnClick", function(self) M.ShowPinMenu(self) end)
     pinBtn:Hide()
-    euiBtn(pinBtn)
     view.pinBtn = pinBtn
 
     ensureAreaBtn()
 
     local panel = CreateFrame("Frame", nil, view, "BackdropTemplate")
-    panel:SetFrameLevel(view:GetFrameLevel() + 9)
+    panel:SetFrameStrata("TOOLTIP")
+    panel:SetFrameLevel(100)
     if ns.hui and ns.hui.BuildRoundedBG then
         ns.hui.BuildRoundedBG(panel, 9, ns.hui.layer and ns.hui.layer.L1, "both", true, 1)
     else
@@ -1995,13 +2135,13 @@ function W.Build()
     panel:Hide()
     view.floorPanel = panel
 
-    local host = WorldMapFrame or view
+    local host = view
     local closeBtn = _G.WorldMapFrameCloseButton
     local cbH = (closeBtn and closeBtn:GetHeight()) or 24
     local taskBtn = CreateFrame("Button", nil, host, "BackdropTemplate")
     taskBtn:SetSize(60, cbH)
-    taskBtn:SetFrameStrata((closeBtn and closeBtn:GetFrameStrata()) or "HIGH")
-    taskBtn:SetFrameLevel((closeBtn and closeBtn:GetFrameLevel() or 500) + 10)
+    taskBtn:SetFrameStrata("TOOLTIP")
+    taskBtn:SetFrameLevel(100)
     if not skinCloseStyle(taskBtn) then
         taskBtn:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",

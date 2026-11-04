@@ -350,6 +350,26 @@ local ICON_G = "|TInterface\\MoneyFrame\\UI-GoldIcon:0|t"
 local ICON_S = "|TInterface\\MoneyFrame\\UI-SilverIcon:0|t"
 local ICON_C = "|TInterface\\MoneyFrame\\UI-CopperIcon:0|t"
 
+function RA.StepConsumeCost(st)
+    if type(st) ~= "table" then return nil end
+    local rec = st.recipe
+    local mats = rec and (rec.mats or rec[12]) or st.mats
+    if type(mats) ~= "table" then return nil end
+    local count = tonumber(st[4]) or 0
+    if count <= 0 then return nil end
+    local total, priced = 0, 0
+    for _, m in ipairs(mats) do
+        local id = type(m) == "table" and m[1] or nil
+        local qty = type(m) == "table" and (m[2] or 1) or 1
+        if type(id) == "number" then
+            local p = MatPrice(id)
+            if p then total = total + p * qty * count; priced = priced + 1 end
+        end
+    end
+    if priced == 0 then return nil end
+    return total, priced < #mats
+end
+
 function RA.MoneyStr(copper, opt)
     copper = tonumber(copper)
     if copper and copper < 0 then

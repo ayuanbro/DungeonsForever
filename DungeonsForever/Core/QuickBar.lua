@@ -312,6 +312,7 @@ function QB:Ensure()
     f:EnableMouse(true)
     f:SetScript("OnMouseWheel", function() end)
     if ns.hui and ns.hui.SkinPopup and ns.hui.layer then ns.hui.SkinPopup(f, 8, nil, ns.hui.layer.L0) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(f) end
     self.frame = f
 
     local scroll = CreateFrame("ScrollFrame", nil, f)

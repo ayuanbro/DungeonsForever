@@ -2748,7 +2748,7 @@ function PD.BindRow(r, spec, h)
         for _, column in ipairs(columns) do
             local text = column[1]
             text:SetTextColor(Unpack(C_GREY))
-            text:SetFont(ns.FONT, 12, hout)
+            text:SetFont(ns.FONT, 14, hout)
             text:SetText(column[2])
             text:ClearAllPoints()
             text:SetPoint(column[3], r, column[3], column[4], 0)
@@ -4692,12 +4692,13 @@ function PD.Build(page)
     PD.setCard = setCard
     coroutine.yield()
     PD.lvTiles = {}
-    PD.chipOrder = { "mode", "scheme", "excl", "target" }
+    PD.chipOrder = { "mode", "scheme", "excl", "target", "spec" }
     for _, td in ipairs({
         { key = "mode",   text = L["模式"] },
         { key = "scheme", text = L["路线方案"] },
         { key = "excl",   text = L["排除"] },
         { key = "target", text = L["目标等级"] },
+        { key = "spec",   text = L["专精"] },
     }) do
         local tf = CreateFrame("Button", nil, setCard, "BackdropTemplate")
         tf:SetSize(90, PD.SET_CHIP_H)
@@ -5934,7 +5935,7 @@ end
 function PD.PaintGatherTiles()
     local tiles = PD.lvTiles
     if PD.tab ~= "leveling" or PD.setOpen then
-        for _, k in ipairs({ "mode", "scheme", "excl", "target" }) do
+        for _, k in ipairs({ "mode", "scheme", "excl", "target", "spec" }) do
             tiles[k].__use = false
             tiles[k]:Hide()
         end
@@ -5943,6 +5944,8 @@ function PD.PaintGatherTiles()
         return 0
     end
     tiles.excl.__use, tiles.target.__use = false, false
+    tiles.spec.__use = false
+    tiles.spec:SetScript("OnClick", nil)
     tiles.mode.__use, tiles.scheme.__use = true, true
     tiles.mode:SetScript("OnClick", nil)
     tiles.scheme:SetScript("OnClick", nil)
@@ -6188,6 +6191,20 @@ function PD.PaintLvTiles()
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
     TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
+    local engG = ns.ProfGates
+    if PD.cur == "engineering" and engG and engG.GetChoiceSetting then
+        local engSet = engG.GetChoiceSetting()
+        tiles.spec.__use = true
+        tiles.spec.label:SetText(L["专精"])
+        tiles.spec.val:SetText(engSet == "none" and L["不指定"] or PD.EngChoiceLabel(engSet))
+        tiles.spec.val:SetTextColor(Unpack(C_WHITE))
+        tiles.spec:SetScript("OnClick", function()
+            PD.ShowEngChoiceMenu(tiles.spec)
+            ns.PlaySound(1)
+        end)
+        TipOn(tiles.spec, { { L["点击指定工程专精；不指定时使用角色已学会的专精配方"], 0.7, 0.7, 0.7 } })
+        PD.PaintTileBorder(tiles.spec, { 1, 1, 1, 0.10 })
+    end
     if scanBlocked then
         tiles.cost.label:SetText(L["拍卖行扫描"])
         tiles.cost.val:SetText(L["请扫描拍卖行"])
@@ -7732,24 +7749,32 @@ PD.SB_INK = {
     { 1.00, 1.00, 1.00 },
 }
 PD.CARD_COL = {
-    auto     = { 0.16, 0.40, 0.20 },
-    trainer  = { 0.18, 0.30, 0.48 },
-    vendor   = { 0.46, 0.36, 0.10 },
-    drop     = { 0.46, 0.36, 0.10 },
-    both     = { 0.46, 0.36, 0.10 },
-    currency = { 0.46, 0.36, 0.10 },
-    quest    = { 0.46, 0.36, 0.10 },
-    unknown  = { 0.46, 0.16, 0.16 },
+    auto     = { 0.12, 0.34, 0.15 },
+    trainer  = { 0.10, 0.22, 0.42 },
+    vendor   = { 0.40, 0.30, 0.06 },
+    drop     = { 0.40, 0.30, 0.06 },
+    both     = { 0.40, 0.30, 0.06 },
+    currency = { 0.40, 0.30, 0.06 },
+    quest    = { 0.40, 0.30, 0.06 },
+    ah       = { 0.40, 0.30, 0.06 },
+    acquire  = { 0.40, 0.30, 0.06 },
+    item     = { 0.40, 0.30, 0.06 },
+    owned    = { 0.12, 0.34, 0.15 },
+    unknown  = { 0.42, 0.12, 0.12 },
 }
 PD.CARD_INK = {
     auto     = { 0.55, 0.95, 0.55 },
-    trainer  = { 0.55, 0.78, 1.00 },
-    vendor   = { 0.98, 0.84, 0.36 },
-    drop     = { 0.98, 0.84, 0.36 },
-    both     = { 0.98, 0.84, 0.36 },
-    currency = { 0.98, 0.84, 0.36 },
-    quest    = { 0.98, 0.84, 0.36 },
-    unknown  = { 1.00, 0.50, 0.45 },
+    trainer  = { 0.45, 0.70, 1.00 },
+    vendor   = { 1.00, 0.80, 0.28 },
+    drop     = { 1.00, 0.80, 0.28 },
+    both     = { 1.00, 0.80, 0.28 },
+    currency = { 1.00, 0.80, 0.28 },
+    quest    = { 1.00, 0.80, 0.28 },
+    ah       = { 1.00, 0.80, 0.28 },
+    acquire  = { 1.00, 0.80, 0.28 },
+    item     = { 1.00, 0.80, 0.28 },
+    owned    = { 0.55, 0.95, 0.55 },
+    unknown  = { 1.00, 0.45, 0.40 },
 }
 
 PD.TAG_INK = {
@@ -7948,11 +7973,11 @@ function PD.CardFixW()
     if not PD.CARD_FIXW then
         PD.CARD_FIXW = math.ceil(math.max(
             PD.TextW(L["训练师"], 11),
-            PD.TextW(L["图纸 · 掉落"], 11),
-            PD.TextW(L["图纸 · 商人"], 11),
+            PD.TextW(L["图纸|掉落"], 11),
+            PD.TextW(L["图纸|商人"], 11),
             PD.TextW(L["随专业技能获得"], 11),
-            PD.TextW(L["图纸 · 兑换"], 11),
-            PD.TextW(L["图纸 · 商人掉落"], 11))) + 2 * PD.CARD_PAD
+            PD.TextW(L["图纸|兑换"], 11),
+            PD.TextW(L["图纸|商人掉落"], 11))) + 2 * PD.CARD_PAD
     end
     return PD.CARD_FIXW
 end
@@ -8036,11 +8061,11 @@ function PD.LearningOriginCard(recipe,view)
     end
     local kind=hasVendor and (currency and not gold and "currency" or hasDrop and "both" or "vendor")
         or hasDrop and "drop" or src.quests and #src.quests>0 and "quest" or "unknown"
-    local text=kind=="currency" and L["图纸 · 兑换"] or kind=="both" and L["图纸 · 商人掉落"]
-        or kind=="vendor" and L["图纸 · 商人"] or kind=="drop" and L["图纸 · 掉落"]
-        or kind=="quest" and L["图纸 · 任务"] or L["图纸 · 未知"]
+    local text=kind=="currency" and L["图纸|兑换"] or kind=="both" and L["图纸|商人掉落"]
+        or kind=="vendor" and L["图纸|商人"] or kind=="drop" and L["图纸|掉落"]
+        or kind=="quest" and L["图纸|任务"] or L["图纸|未知"]
     if kind=="unknown" and view.quote and view.quote.usable then
-        if view.quote.source=="ah"then kind,text="ah",L["图纸 · 拍卖行"]
+        if view.quote.source=="ah"then kind,text="ah",L["图纸|拍卖行"]
         elseif view.quote.source=="owned"then kind,text="owned",L["已拥有图纸"]end
     end
     local lines={{format(L["图纸：%s"],DG.ItemName(fid)),1,0.82,0.35}}
@@ -8125,8 +8150,8 @@ function PD.RecipeLearningCard(recipe, frozen)
     end
     local kind=source=="vendor" and "vendor" or source=="owned" and "owned" or source=="ah" and "ah"
         or source=="acquire" and "acquire" or "unknown"
-    local text=kind=="vendor" and L["图纸 · 商人"] or kind=="owned" and L["已拥有图纸"]
-        or kind=="ah" and L["图纸 · 拍卖行"] or kind=="acquire" and PD.PurchaseSource(quote) or L["图纸 · 未知"]
+    local text=kind=="vendor" and L["图纸|商人"] or kind=="owned" and L["已拥有图纸"]
+        or kind=="ah" and L["图纸|拍卖行"] or kind=="acquire" and PD.PurchaseSource(quote) or L["图纸|未知"]
     return {kind=kind,text=text,fid=fid,source=src,lines=lines,
         act=kind=="vendor" and PD.VendorAct(src) or nil}
 end
@@ -8165,9 +8190,9 @@ function PD.CardOf(rec, ri, resolved, profession, frozen)
     local ahLine = PD.FormulaAuctionLine(fid)
     if ahLine then lines[#lines + 1] = ahLine end
     local kind = (hasDrop and hasVendor and "both") or (hasVendor and "vendor") or "drop"
-    local text = (kind == "both" and L["图纸 · 商人掉落"])
-        or (kind == "vendor" and L["图纸 · 商人"])
-        or L["图纸 · 掉落"]
+    local text = (kind == "both" and L["图纸|商人掉落"])
+        or (kind == "vendor" and L["图纸|商人"])
+        or L["图纸|掉落"]
     return {
         kind = kind,
         text = text, fid = fid, lines = lines,
@@ -8388,16 +8413,16 @@ function PD.LevelSrc(rec, profession, resolved, frozen)
     if kind == "vendor" then
         local detail
         if nDrop > 0 then detail = format(L["%s · 掉落 %d 处"], name, nDrop) end
-        return L["图纸 · 商人"], detail, kind
+        return L["图纸|商人"], detail, kind
     elseif kind == "currency" then
         local nCur = (SM and SM.CurrencyCount) and SM.CurrencyCount(view) or 0
-        return L["图纸 · 兑换"], format(L["%s · 兑换 %d 处"], name, nCur), kind
+        return L["图纸|兑换"], format(L["%s · 兑换 %d 处"], name, nCur), kind
     elseif kind == "drop" then
-        return L["图纸 · 掉落"], nDrop>0 and format(L["%s · 掉落 %d 处"], name, nDrop) or name, kind
+        return L["图纸|掉落"], nDrop>0 and format(L["%s · 掉落 %d 处"], name, nDrop) or name, kind
     elseif kind == "quest" then
-        return L["图纸 · 任务"], nil, kind
+        return L["图纸|任务"], nil, kind
     end
-    return L["图纸 · 未知"], nil, kind
+    return L["图纸|未知"], nil, kind
 end
 
 function PD.SourceParts(s)
@@ -12830,19 +12855,28 @@ function PD.RowsLeveling(rows)
     end
     PD.warnNotes = notes
     local scanWarning=PD.ReplicateScanWarning()
+    local scanAdvice=PD.ScanModeAdvice()
     if scanWarning then
         warningSeen[scanWarning]=true
         PushText(rows,scanWarning,12,{0.98,0.55,0.4},1)
         PushGap(rows,4,1)
     else
         local scanNotice=PD.ScanSnapshotText()
-        if scanNotice then
-            PushText(rows,scanNotice,12,{0.55,0.85,0.6},1)
+        if scanNotice and scanAdvice then
+            rows[#rows+1]={kind="row",col=1,h=PD.ROW_H1,text=scanNotice,fs=14,
+                color={0.55,0.85,0.6},right=scanAdvice,rightColor=C_DIM}
+            PushGap(rows,4,1)
+            scanAdvice=nil
+        elseif scanNotice then
+            PushText(rows,scanNotice,14,{0.55,0.85,0.6},1)
+            PushGap(rows,4,1)
+        end
+        if scanAdvice then
+            PushText(rows,scanAdvice,14,C_DIM,1)
             PushGap(rows,4,1)
         end
     end
 
-    local scanAdvice=PD.ScanModeAdvice()
     if scanAdvice then
         PushText(rows,scanAdvice,11,C_DIM,1)
         PushGap(rows,4,1)
@@ -13031,11 +13065,6 @@ function PD.RowsLeveling(rows)
     end
     if shownSum and shownSum.reserve and shownSum.reserve.mode~="off" then
         for _, text in ipairs(PD.ReserveWarningLines(shownSum.reserve)) do warning(text) end
-        local xp=ns.ProfExecution;local run, plan=TrackRunOf(PD.cur)
-        if plan and plan.reserve and not run.reserveDisabled then
-            rows[#rows+1]={kind="row",col=1,h=PD.ROW_H1,text=L["停止本次备用计划"],
-                act=function() xp.SkipReserve(PD.cur);if ns.ProfFollow then ns.ProfFollow.Paint() end;PD.RequestRender() end}
-        end
     end
     if shownSum and (shownSum.specBlocked or 0) > 0 and not (shownSum.blockedSteps and #shownSum.blockedSteps > 0) then
         note(format(L["已按本角色专精过滤 %d 个无法学习的配方"], shownSum.specBlocked), 0.72, 0.72, 0.72)
@@ -13104,7 +13133,18 @@ function PD.RowsLeveling(rows)
                 whyOf[st] = PD.UnpriceWhyShort(st)
                 whyLong[st] = PD.UnpriceWhy(st)
             else
-                cost = (st.est and "≈" or "") .. RA.MoneyStr(st.cost)
+                local spend = tonumber(st.cost) or 0
+                local shown, consumeOnly = spend, false
+                if RA.StepConsumeCost then
+                    local cc = RA.StepConsumeCost(st)
+                    if cc and cc > 0 then shown, consumeOnly = cc, true end
+                end
+                cost = (st.est and "≈" or "") .. RA.MoneyStr(shown)
+                if consumeOnly then
+                    whyLong[st] = spend > 0
+                        and format(L["本步显示消耗材料的价值；本步实际新增采购支出 %s。"], RA.MoneyStr(spend))
+                        or L["本步显示消耗材料的价值；采购已在前面步骤一次性完成，本步没有新增支出。"]
+                end
             end
         end
         if clipped and st._clip then count = count .. format(L[" · 按目标 %d 折算"], target) end

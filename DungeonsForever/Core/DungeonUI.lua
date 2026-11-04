@@ -67,6 +67,22 @@ local function MakeFS(parent, size, color, justify)
     return fs
 end
 
+local function FSW(fs, dflt)
+    local w = fs and fs.GetStringWidth and fs:GetStringWidth()
+    if type(w) == "number" then return w end
+    local t = fs and fs.GetText and fs:GetText()
+    if type(t) == "string" and #t > 0 then return #t * 7 end
+    return dflt or 0
+end
+
+local function FSH(fs, dflt)
+    local h = fs and fs.GetStringHeight and fs:GetStringHeight()
+    if type(h) == "number" then return h end
+    local t = fs and fs.GetText and fs:GetText()
+    if type(t) == "string" and #t > 0 then return 14 end
+    return dflt or 14
+end
+
 local function NewButton(parent, text, w, h, size)
     local bt = ns.CreateButton(parent)
     bt:SetSize(w, h)
@@ -2127,8 +2143,8 @@ function DG.EnsureQuestLane()
     for _, it in ipairs(legend) do
         local fs = MakeFS(legf, 11, it[5], "LEFT")
         fs:SetText(it[6])
-        legParts[#legParts + 1] = { it, fs, fs:GetStringWidth() }
-        legW = legW + DG.Q_BADGE_H + 4 + fs:GetStringWidth()
+        legParts[#legParts + 1] = { it, fs, FSW(fs) }
+        legW = legW + DG.Q_BADGE_H + 4 + FSW(fs)
     end
     legW = legW + 8 * (#legend - 1)
     legf:SetWidth(legW)
@@ -2563,7 +2579,7 @@ function DG.PaintQuestOverview(d)
         n.posB.__wantCol = chainText and DG.Q_BADGE_PRE_BG or DG.Q_BADGE_IN_BG
         DG.BadgeTint(n.posB, n.posB.__wantCol)
         n.posB.lab:SetText(chainText or ((DG.QLCall("GetQuestType", q[1]) == 81) and L["地下城"] or L["副本内"]))
-        local bw = (n.posB.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+        local bw = FSW(n.posB.lab, 20) + DG.Q_BADGE_PAD * 2
         n.posB:SetWidth(bw)
         n.posB:ClearAllPoints()
         n.posB:SetPoint("TOPLEFT", n, "TOPLEFT", 6, -24)
@@ -2600,7 +2616,7 @@ function DG.PaintQuestOverview(d)
         n.posB.__wantCol = DG.Q_BADGE_PRE_BG
         DG.BadgeTint(n.posB, n.posB.__wantCol)
         n.posB.lab:SetText(L["前置"])
-        local bw = (n.posB.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+        local bw = FSW(n.posB.lab, 20) + DG.Q_BADGE_PAD * 2
         n.posB:SetWidth(bw)
         n.posB:ClearAllPoints()
         n.posB:SetPoint("TOPLEFT", n, "TOPLEFT", 6, -24)
@@ -3641,7 +3657,7 @@ local function ChipMeasure(chip, label)
     chip:SetSize(DG.ENT_CHIP_MAXW, DG.ENT_CHIP_H)
     chip:SetText(label)
     local fs = chip:GetFontString()
-    local tw = (fs and fs:GetStringWidth()) or 0
+    local tw = (fs and FSW(fs)) or 0
     if type(tw) ~= "number" then tw = 0 end
     return DG.ENT_CHIP_ICONW + tw + DG.ENT_CHIP_TXTPAD
 end
@@ -3661,7 +3677,7 @@ function DG.PaintEntChips(d)
     local hero = U.dungeonDetailHero
     local title = U.dungeonDetailTitle
     local heroW = (hero and hero.GetWidth and hero:GetWidth()) or 0
-    local titleW = (title and title.GetStringWidth and title:GetStringWidth()) or 0
+    local titleW = FSW(title)
     local rightLimit = 0
     if type(heroW) == "number" and heroW > 0 then rightLimit = heroW - 12 end
     local used = 12 + (type(titleW) == "number" and titleW or 0) + DG.ENT_CHIP_LEAD
@@ -3897,7 +3913,7 @@ function DG.BuildDetailFilterRow()
         tg.label = MakeFS(tg, 14, C_TEXT, "RIGHT")
         tg.label:SetPoint("RIGHT", tg, "LEFT", -6, 0)
         tg.label:SetText(L["已完成"])
-        tg:SetHitRectInsets(-((tg.label:GetStringWidth() or 60) + 6), 0, 0, 0)
+        tg:SetHitRectInsets(-(FSW(tg.label, 60) + 6), 0, 0, 0)
         tg:Hide()
         tg:SetScript("OnClick", function(self)
             U:SetQuestShowDone(self:GetChecked() and true or false)
@@ -3912,7 +3928,7 @@ function DG.BuildDetailFilterRow()
         tg.label = MakeFS(tg, 14, C_TEXT, "RIGHT")
         tg.label:SetPoint("RIGHT", tg, "LEFT", -6, 0)
         tg.label:SetText(L["地图图钉"])
-        tg:SetHitRectInsets(-((tg.label:GetStringWidth() or 60) + 6), 0, 0, 0)
+        tg:SetHitRectInsets(-(FSW(tg.label, 60) + 6), 0, 0, 0)
         tg:SetChecked(DB().mapQuestPins ~= false)
         tg:SetScript("OnClick", function(self)
             local s = DB()
@@ -4071,7 +4087,7 @@ function DG.BuildDungeonOverview()
         nm:SetWordWrap(false)
         nm:SetText(d.name)
         local barW = p.x2 - p.x1
-        local nameW = nm:GetStringWidth()
+        local nameW = FSW(nm)
         if type(nameW) ~= "number" or nameW <= 0 then nameW = (#d.name / 3) * 12 end
         if not d.isNew then
             nm:SetPoint("RIGHT", bar, "RIGHT", -4, 0)
@@ -4874,7 +4890,7 @@ end
 function DG.ClipTo(f, s, maxw)
     if type(s) ~= "string" or not f then return "" end
     f:SetText(s)
-    if (f:GetStringWidth() or 0) <= maxw then return s end
+    if FSW(f) <= maxw then return s end
     local step = ns.hui and ns.hui.CharStep
     if not step then return s end
     local n, i = #s, 1
@@ -4887,7 +4903,7 @@ function DG.ClipTo(f, s, maxw)
     for k = #starts, 1, -1 do
         local cand = s:sub(1, starts[k] - 1)
         f:SetText(cand)
-        if (f:GetStringWidth() or 0) <= maxw then return cand end
+        if FSW(f) <= maxw then return cand end
     end
     f:SetText("")
     return ""
@@ -5036,7 +5052,7 @@ function U:ShowDungeonDetail(d)
     if loc ~= "zhCN" and loc ~= "zhTW" then nameTxt = d.nameEn or d.name end
     local tail = "  |cff8b8b8b" .. format(L["等级 %d-%d"], d.levelMin, d.levelMax) .. "|r"
     titleFs:SetText(tail)
-    local tailW = titleFs:GetStringWidth() or 0
+    local tailW = FSW(titleFs)
     local room = DG.HERO_TITLE_MAXW - tailW - 10
     if room < 30 then room = 30 end
     local nm = DG.ClipTo(titleFs, nameTxt, room)
@@ -6543,7 +6559,7 @@ function DG.QuestOverviewClsBadge(n, cls)
     end
     local lab = DG.QClassLabel(cls) or cls
     b.lab:SetText(lab)
-    local bw = (b.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+    local bw = FSW(b.lab, 20) + DG.Q_BADGE_PAD * 2
     if bw < DG.Q_BADGE_MIN_W then bw = DG.Q_BADGE_MIN_W end
     if ns.hui and ns.hui.PaintSolidChip and b.__chipFill then
         ns.hui.PaintSolidChip(b, lab, DG.QClassColor(cls), bw)
@@ -6645,7 +6661,7 @@ end
 
 function DG.PlaceBadge(b, x, text, maxX)
     b.lab:SetText(text)
-    local w = (b.lab:GetStringWidth() or 20) + DG.Q_BADGE_PAD * 2
+    local w = FSW(b.lab, 20) + DG.Q_BADGE_PAD * 2
     local minW = DG.Q_BADGE_MIN_W
     if w < minW then w = minW end
     if maxX and x + w > maxX then
@@ -6660,7 +6676,7 @@ function DG.PlaceBadge(b, x, text, maxX)
     b:ClearAllPoints()
     local host = b:GetParent()
     local nm = host and host.name
-    local nh = nm and nm.GetStringHeight and nm:GetStringHeight() or 0
+    local nh = FSH(nm)
     if nh <= 0 then nh = DG.Q_FS_NAME end
     if nm then
         b:SetPoint("TOPLEFT", nm, "TOPLEFT", x - DG.Q_X_NAME, -(nh - DG.Q_BADGE_H) / 2)
@@ -7256,7 +7272,7 @@ function U:RenderDungeonQuests()
                     r.lv:Hide()
                 end
                 local bmax = DG.Q_X_LOC - 4
-                local bx = DG.Q_X_NAME + (r.name:GetStringWidth() or 0) + DG.Q_BADGE_GAP
+                local bx = DG.Q_X_NAME + FSW(r.name) + DG.Q_BADGE_GAP
                 local ci = 0
                 if hasName and clsList then
                     for k = 1, #clsList do
@@ -7709,7 +7725,7 @@ function DG.FlowTakeLink(child, pool)
 end
 
 local function FlowWrapLines(fs, size)
-    local h = fs:GetStringHeight() or size
+    local h = FSH(fs, size)
     return math.max(1, math.ceil(h / size))
 end
 
@@ -7780,13 +7796,13 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
             b.fs:SetWordWrap(false)
             if ob and b.ic:IsShown() then
                 b.fs:SetText(ob)
-                icx = b.fs:GetStringWidth() or 0
+                icx = b.FSW(fs) or 0
             end
             b.ic:ClearAllPoints()
             b.ic:SetPoint("LEFT", b, "LEFT", icx, 0)
             b.fs:SetText(txt)
             b.fs:SetTextColor(Unpack(col))
-            tw = b.fs:GetStringWidth() or 0
+            tw = b.FSW(fs) or 0
             if cx + tw > xEnd and cx > x0 then
                 y = y - DG.Q_FLOW_H
                 cx = x0
@@ -7812,7 +7828,7 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
             f:SetWidth(0)
             f:SetWordWrap(false)
             f:SetText(tk.t or "")
-            tw = f:GetStringWidth() or 0
+            tw = FSW(f)
             if cx + tw > xEnd and cx > x0 then
                 y = y - DG.Q_FLOW_H
                 cx = x0
@@ -8572,7 +8588,7 @@ function U:RenderQuestDetail()
             local t = takeTxt()
             t:SetText(pnote)
             t:SetTextColor(Unpack(C_GREY))
-            local h = t:GetStringHeight()
+            local h = FSH(t)
             put(t, (type(h) == "number" and h or 18) + 2)
         end
         y = y - 4
@@ -8623,7 +8639,7 @@ function U:RenderQuestDetail()
             local t = takeTxt()
             t:SetText(desc)
             t:SetTextColor(Unpack(C_TEXT))
-            local h = t:GetStringHeight()
+            local h = FSH(t)
             put(t, (type(h) == "number" and h or 18) + 4)
             y = y - 2
         end
@@ -8638,7 +8654,7 @@ function U:RenderQuestDetail()
             local t = takeTxt()
             t:SetText(note)
             t:SetTextColor(Unpack(C_TEXT))
-            local h = t:GetStringHeight()
+            local h = FSH(t)
             put(t, (type(h) == "number" and h or 18) + 4)
             y = y - 2
         end
@@ -8707,7 +8723,7 @@ function U:RenderQuestDetail()
                 local t = takeTxt()
                 t:SetText(objTxt)
                 t:SetTextColor(Unpack(C_TEXT))
-                local h = t:GetStringHeight()
+                local h = FSH(t)
                 put(t, (type(h) == "number" and h or 18) + 4)
                 y = y - 2
             end
@@ -8730,7 +8746,7 @@ function U:RenderQuestDetail()
             local t = takeTxt()
             t:SetText(txt)
             t:SetTextColor(Unpack(C_TEXT))
-            local h = t:GetStringHeight()
+            local h = FSH(t)
             put(t, (type(h) == "number" and h or 18) + 4)
             y = y - 2
         end
@@ -8823,7 +8839,7 @@ function U:RenderDungeonGuide()
             f:SetText(r.t)
             f:ClearAllPoints()
             f:SetPoint("TOPLEFT", c, "TOPLEFT", DG.GUIDE_PAD + (r.x or 0), cy)
-            local sh = f:GetStringHeight()
+            local sh = FSH(f)
             cy = cy - (type(sh) == "number" and sh or 18) - (i == last and 0 or (r.gap or 4))
         end
         for i = c.n + 1, #c.rows do c.rows[i]:Hide() end

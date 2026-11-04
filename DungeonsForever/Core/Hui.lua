@@ -1494,7 +1494,9 @@ do
         for i = 1, #items do
             local it = items[i]
             measure:SetText(it.text or "")
-            local w = measure:GetStringWidth() + padX * 2
+            local mw = measure:GetStringWidth()
+            if type(mw) ~= "number" then mw = 0 end
+            local w = mw + padX * 2
             if it.swatch then w = w + 14 + 7 end
             if it.icon then w = w + (it.iconSize or iconSz) + iconGap end
             if it.checked ~= nil then w = w + chkSz + chkGap end
