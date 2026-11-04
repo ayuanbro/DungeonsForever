@@ -11,7 +11,7 @@
 ## Notes-zhTW: 無限副本手冊 專業模組（可在插件列表中單獨關閉）
 ## Notes-enUS: Profession module for DungeonsForever (can be disabled separately)
 ## Author: 圆圆
-## Version: 2.0.2
+## Version: 2.0.3
 ## Dependencies: DungeonsForever
 ## LoadOnDemand: 1
 ## SavedVariables: DungeonsForeverProfDB

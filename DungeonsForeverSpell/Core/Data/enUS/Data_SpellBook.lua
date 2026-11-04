@@ -6,8 +6,10 @@ local ns = _G.DF_NS or {}
 if not ns.IsTitan then return end
 
 ns.SpellBookData = {
+    version = "2026-11-04",
     classes = {
     DRUID = {
+        total = 60,
         tabs = {
         {
             name = "Balance",
@@ -314,6 +316,7 @@ ns.SpellBookData = {
         },
     },
     HUNTER = {
+        total = 58,
         tabs = {
         {
             name = "Beast Mastery",
@@ -539,6 +542,7 @@ ns.SpellBookData = {
         },
     },
     MAGE = {
+        total = 62,
         tabs = {
         {
             name = "Arcane",
@@ -833,6 +837,7 @@ ns.SpellBookData = {
         },
     },
     PALADIN = {
+        total = 51,
         tabs = {
         {
             name = "Holy",
@@ -1092,6 +1097,7 @@ ns.SpellBookData = {
         },
     },
     PRIEST = {
+        total = 57,
         tabs = {
         {
             name = "Discipline",
@@ -1446,6 +1452,7 @@ ns.SpellBookData = {
         },
     },
     ROGUE = {
+        total = 57,
         tabs = {
         {
             name = "Mutilate",
@@ -1637,6 +1644,7 @@ ns.SpellBookData = {
         },
     },
     SHAMAN = {
+        total = 57,
         tabs = {
         {
             name = "Elemental Combat",
@@ -1912,6 +1920,7 @@ ns.SpellBookData = {
         },
     },
     WARLOCK = {
+        total = 56,
         tabs = {
         {
             name = "Affliction",
@@ -2182,6 +2191,7 @@ ns.SpellBookData = {
         },
     },
     WARRIOR = {
+        total = 42,
         tabs = {
         {
             name = "Arms",
