@@ -198,9 +198,40 @@ local function MaxPoints()
     return MAX_PT
 end
 
+local POINT_START_SPELL = 1225474
+
+local function StartLv()
+    local plv = (UnitLevel and UnitLevel('player')) or 0
+    local now = (GetTime and GetTime()) or 0
+    local c = NP.startLv
+    if c and c.plv == plv and (now - c.at) < 10 then return c.v end
+    local v = 10
+    if IsPlayerSpell and IsPlayerSpell(POINT_START_SPELL) then
+        local tx
+        if C_Spell and C_Spell.GetSpellDescription then
+            local ok, d = pcall(C_Spell.GetSpellDescription, POINT_START_SPELL)
+            if ok and type(d) == 'string' then tx = d end
+        end
+        if not tx and C_TooltipInfo and C_TooltipInfo.GetSpellByID then
+            local ok, data = pcall(C_TooltipInfo.GetSpellByID, POINT_START_SPELL)
+            if ok and type(data) == 'table' and data.lines then
+                for i = 1, #data.lines do
+                    local t2 = data.lines[i] and data.lines[i].leftText
+                    if t2 and t2 ~= '' and t2 ~= '被动' then tx = t2 end
+                end
+            end
+        end
+        local n = tx and (tx:match('从(%d+)级开始') or tx:match('[Ll]evel%s*(%d+)'))
+        if n then v = tonumber(n) or 10 end
+    end
+    if v < 1 or v > 10 then v = 10 end
+    NP.startLv = { plv = plv, at = now, v = v }
+    return v
+end
+
 local function LivePoints()
     local lv = UnitLevel('player') or 0
-    return math.min(MAX_PT, math.max(0, lv - 9))
+    return math.min(MAX_PT, math.max(0, lv - (StartLv() - 1)))
 end
 
 local function TreeSpent(t)
@@ -870,6 +901,7 @@ local function PendingSeq(base)
     local capLv = (base and base.lv) or 60
     local overview = NP.viewMode == 'plan' or (base and base.all) or false
     local early, late = {}, {}
+    local baseLvOff = StartLv() - 1
     for i = 1, #seq do
         local it = seq[i]
         local nd = NodeOf(it[1], it[2])
@@ -880,7 +912,7 @@ local function PendingSeq(base)
             local cur = (have[it[1]] or {})[it[2]] or 0
             if overview or n > cur then
                 k = k + 1
-                local lv = 9 + (overview and k or (baseSpent + k))
+                local lv = baseLvOff + (overview and k or (baseSpent + k))
                 local item = { t = it[1], i = it[2], nd = nd, lv = lv, target = n,
                     have = cur, over = lv > capLv, first = n == 1 }
                 if overview or not item.over then
@@ -954,7 +986,7 @@ local function BuildNeedCard()
     f:SetScript('OnEnter', function(self)
         TipBegin(self, 'ANCHOR_LEFT')
         GameTooltip:SetText(L['等级'], 1, 1, 1)
-        GameTooltip:AddLine(L['角色 10 级起每级 1 点：需要等级 = 已投入点数 + 9'], 0.9, 0.9, 0.9, true)
+        GameTooltip:AddLine(string.format(L['角色 %d 级起每级 1 点：需要等级 = 已投入点数 + %d'], StartLv(), StartLv() - 1), 0.9, 0.9, 0.9, true)
         GameTooltip:Show()
     end)
     f:SetScript('OnLeave', function() GameTooltip:Hide() end)
@@ -974,8 +1006,9 @@ local function CurrencyCard(on)
         label:SetText(L['已投入天赋'])
         if amount then amount:SetText(TotalSpent()) end
         if needCard then
-            needCard:Show()
-            if needAmount then needAmount:SetText(9 + TotalSpent()) end
+            local spent = TotalSpent()
+            needCard:SetShown(spent > 0)
+            if needAmount then needAmount:SetText(StartLv() - 1 + spent) end
         end
     else
         if NP.curOrig then label:SetText(NP.curOrig) end
@@ -1599,7 +1632,7 @@ local function ShowPlanMenu(anchor)
         end
         local lv = NewText(r, 14, 0.62, 0.68, 0.78, 'RIGHT')
         lv:SetPoint('RIGHT', r, 'RIGHT', -2, 0)
-        lv:SetText(string.format(L['需要等级 %d'], total + 9))
+        lv:SetText(string.format(L['需要等级 %d'], total + StartLv() - 1))
         r:SetScript('OnClick', function()
             NP.plan = rows[i].plan or { name = rows[i].label, alloc = alloc }
             NP.planIdx = rows[i].idx

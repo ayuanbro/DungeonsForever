@@ -73,7 +73,7 @@ function RA.OptionsFor(slug, current)
     opts.cpuLimitMs = 8000
     opts.autoCraftTools = setting("autoCraftTools", true,slug)
     opts.residualMass = setting("autoResidualMass", false,slug)
-    opts.reserveMode = setting("autoReserveMode", "ample",slug)
+    opts.reserveMode = setting("autoReserveMode", "standard",slug)
     opts.recoveryEnabled = setting("recoveryEnabled", false,slug)
     opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug)
     opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false,slug)
@@ -96,7 +96,7 @@ local function options(slug, supplied)
     opts.start = math.max(1, math.min(300, math.floor(tonumber(opts.start) or 1)))
     opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or 300)))
     if opts.residualMass == nil then opts.residualMass = setting("autoResidualMass", false,slug) end
-    if opts.reserveMode == nil then opts.reserveMode = setting("autoReserveMode", "ample",slug) end
+    if opts.reserveMode == nil then opts.reserveMode = setting("autoReserveMode", "standard",slug) end
     if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false,slug) end
     if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug) end
     if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true,slug) end
@@ -268,6 +268,9 @@ local function publish(job, result)
         if key~="snapshot" and key~="routeSkeleton" then executionOptions[key]=value end
     end
     result.executionOptions=copy(executionOptions)
+    if result.reserve and result.reserve.mode~=ns.ProfReserve.Mode(job.opts.reserveMode) then
+        ns.ProfReserve.Rebuild(result,job.opts.reserveMode)
+    end
     result.stale=job.stale or nil;result.staleReason=job.staleReason
     if RA.StampSpecializations then RA.StampSpecializations(result,job.slug,job.opts,job.snap) end
     result.quoteSignature=RA.QuoteSig and RA.QuoteSig(job.slug) or ""
@@ -444,18 +447,59 @@ function RA.RebuildFromSkel(slug,skel,supplied)
     return start(slug,opts,request)
 end
 function RA.ChangeReserveMode(slug,mode)
+    local reserve=ns.ProfReserve
+    if not reserve then return nil,"pending" end
+    mode=reserve.Mode(mode)
+    local xp=ns.ProfExecution
+    local frozen,reason
+    if xp and xp.GetPlan then frozen,reason=xp.GetPlan(slug) end
+    if reason then return nil,reason end
     local selected=RA.Peek(slug)
-    if not selected or selected.status=="searching" then return end
-    local opts=copy(selected.executionOptions or RA.OptionsFor(slug,selected.start))
-    opts.reserveMode=mode
-    local blocked=replicatePrerequisite(slug,opts)
-    if blocked then return blocked end
-    local skel=planSkeleton(selected,opts,selected.status)
-    if not skel then return end
-    skel.sig=signature(slug,options(slug,opts))
-    if RA.SavePlanPrev then RA.SavePlanPrev(slug,selected) end
-    RA.Cancel(slug)
-    return RA.RebuildFromSkel(slug,skel,opts)
+    if mode~="off" and (frozen or selected) then
+        local blocked=replicatePrerequisite(slug,{})
+        if blocked then return nil,blocked.diagnostics[1].code end
+    end
+    if frozen and xp.SetReserveMode then
+        local ok,reason=xp.SetReserveMode(slug,mode)
+        if not ok then return nil,reason end
+        local opts=options(slug,frozen.executionOptions)
+        frozen.cacheSignature=signature(slug,opts)
+    end
+    local pending={}
+    for _,job in pairs(jobs) do if job.slug==slug and not job.invalid then pending[#pending+1]=job end end
+    local selectedJob
+    for _,job in ipairs(pending) do
+        local previousKey=job.key
+        job.opts.reserveMode=mode
+        if job.requestOptions then job.requestOptions.reserveMode=mode end
+        job.signature=signature(slug,options(slug,job.requestOptions or job.opts))
+        job.key=identity(slug,job.requestOptions or job.opts)
+        jobs[previousKey]=nil;jobs[job.key]=job
+        results[job.key]=results[previousKey];if previousKey~=job.key then results[previousKey]=nil end
+        active[job.scope]=job.key
+        if job.published==selected then selectedJob=job end
+    end
+    if selected then
+        local opts=copy(selected.executionOptions or RA.OptionsFor(slug,selected.start))
+        opts.reserveMode=mode
+        if selected~=frozen and selected.scheme~="fixed" and selected.feasible and selected.executionSteps then
+            reserve.Rebuild(selected,mode)
+        end
+        selected.executionOptions=opts
+        selected.cacheSignature=signature(slug,options(slug,opts))
+        if selectedJob then
+            selected.cacheSignature=selectedJob.signature
+            remember(selectedJob,selected)
+        else
+            local key,scope=identity(slug,options(slug,opts))
+            local previousKey=active[scope]
+            if previousKey and previousKey~=key then results[previousKey]=nil end
+            results[key]=selected;active[scope]=key
+            remember({slug=slug,opts=opts,signature=selected.cacheSignature},selected)
+        end
+        for _,fn in ipairs(listeners) do pcall(fn,slug,selected) end
+    end
+    return frozen or selected
 end
 function RA.Compute(slug, supplied)
     if slug=="first-aid" or slug=="poisons" then return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug)) end
