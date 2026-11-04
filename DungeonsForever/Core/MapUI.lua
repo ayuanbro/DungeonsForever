@@ -29,6 +29,20 @@ local C_GREY = Host.C_GREY
 local C_GOLD = Host.C_GOLD
 local C_TEXT = Host.C_TEXT
 
+local function FPath(fs)
+    if not (fs and fs.GetFont) then return ns.FONT or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF" end
+    local ok, p = pcall(fs.GetFont, fs)
+    if ok and type(p) == "string" and #p > 0 then return p end
+    return ns.FONT or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+end
+
+local function FFlags(fs, dflt)
+    if not (fs and fs.GetFont) then return dflt end
+    local ok, _, _, fl = pcall(fs.GetFont, fs)
+    if ok and type(fl) == "string" and #fl > 0 then return fl end
+    return dflt
+end
+
 local M = {}
 ns.MapModule = M
 
@@ -1301,8 +1315,7 @@ local function BuildPins()
         bt:SetSize(M.PIN_SIZE, M.PIN_SIZE)
         bt.__idx = i
         bt.nm = MakeFS(pinText, 12, C_GOLD, "CENTER")
-        local nfp, _, nff = bt.nm:GetFont()
-        bt.nm:SetFont(nfp, 12, "OUTLINE")
+        bt.nm:SetFont(FPath(bt.nm), 12, "OUTLINE")
         bt.nm:SetShadowColor(0, 0, 0, 1)
         bt.nm:SetShadowOffset(1, -1)
         bt.dot = bt:CreateTexture(nil, "OVERLAY")
@@ -2868,7 +2881,7 @@ function M.SyncPins()
             bt.nm:ClearAllPoints()
             bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
             bt.nm:SetJustifyH("CENTER")
-            local fpath, _, fflags = bt.nm:GetFont()
+            local fpath, fflags = FPath(bt.nm), FFlags(bt.nm, "OUTLINE")
             bt.nm:SetFont(fpath, sel and 14 or 12, fflags)
             bt.nm:SetTextColor(cr, cg, cb)
             bt.dot:ClearAllPoints()
@@ -3863,7 +3876,7 @@ local function wpPinAcquire(canvas)
                 local f = _G["GameTooltipTextLeft" .. i]
                 if f and f.GetFont then
                     local f2, s2, fl2 = f:GetFont()
-                    if f2 and s2 then bf, bs, bfl = f2, s2, fl2 break end
+                    if type(f2) == "string" and s2 then bf, bs, bfl = f2, s2, fl2 break end
                 end
             end
             if bf then

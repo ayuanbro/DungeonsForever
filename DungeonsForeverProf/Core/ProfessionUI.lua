@@ -13,6 +13,15 @@ local SetOutline, SetButtonSelected, Unpack = Host.SetOutline, Host.SetButtonSel
 local C_GOLD, C_GREY = Host.C_GOLD, Host.C_GREY
 local C_DIM, C_WHITE, C_TEXT = Host.C_DIM, Host.C_WHITE, Host.C_TEXT
 local C_HELP = { 0.58, 0.64, 0.74 }
+
+local function FSW(fs, dflt)
+    if not (fs and fs.GetStringWidth) then return dflt or 0 end
+    local ok, w = pcall(fs.GetStringWidth, fs)
+    if ok and type(w) == "number" then return w end
+    local t = fs.GetText and fs:GetText()
+    if type(t) == "string" and #t > 0 then return #t * 7 end
+    return dflt or 0
+end
 local CONTENT_W = Host.CONTENT_W
 local PAGE_INSET, ROW_CLASS = Host.PAGE_INSET, Host.ROW_CLASS
 local FALLBACK_ICON = Host.FALLBACK_ICON
@@ -2632,7 +2641,7 @@ function PD.BindRow(r, spec, h)
         if spec.warn and spec.warn[1] then
             local wz = PD.WarnChip(r)
             wz:ClearAllPoints()
-            wz:SetPoint("LEFT", r.a, "LEFT", r.a:GetStringWidth() + 8, 0)
+            wz:SetPoint("LEFT", r.a, "LEFT", FSW(r.a) + 8, 0)
             wz.__tipLines = spec.warn
             wz:Show()
         end
@@ -3059,7 +3068,7 @@ function PD.BindRow(r, spec, h)
         end
         r.c:ClearAllPoints()
         r.c:SetPoint("RIGHT", r, "RIGHT", -PD.LV_COUNT_R, 0)
-        local nw = math.min(r.e:GetStringWidth() or 0, PD.LV_NAME_W)
+        local nw = math.min(FSW(r.e), PD.LV_NAME_W)
         local chipX = PD.LV_NAME_X + nw
         local function placeChip(key, item, startX)
             local bd = r[key]
@@ -3088,7 +3097,7 @@ function PD.BindRow(r, spec, h)
                 bd.__fs = fs
             end
             local pad = (solidChip and ns.hui.CHIP_S_PAD) or (cardStyle and PD.CARD_PAD or DG.Q_BADGE_PAD)
-            local w = (bd.lab:GetStringWidth() or 16) + pad * 2
+            local w = (FSW(bd.lab, 16)) + pad * 2
             if solidChip and w < ns.hui.CHIP_S_MIN_W then w = ns.hui.CHIP_S_MIN_W end
             local bh
             if solidChip then
@@ -3284,7 +3293,7 @@ function PD.BindRow(r, spec, h)
             chip:ClearAllPoints()
             chip:SetPoint("TOPRIGHT", r.c2, "BOTTOMRIGHT", 0, -1)
             chip:SetHeight(15)
-            chip:SetWidth(chip.fs:GetStringWidth() + 8)
+            chip:SetWidth(FSW(chip.fs) + 8)
             chip:SetFrameLevel(r:GetFrameLevel() + 2)
             chip:Show()
         elseif r.__pct then
@@ -3341,7 +3350,7 @@ function PD.BindRow(r, spec, h)
             chip.fs:SetTextColor(Unpack(ink))
             chip:SetHeight(16)
         end
-        chip:SetWidth(chip.fs:GetStringWidth() + ((ns.hui and ns.hui.CHIP_S_PAD) or 5) * 2)
+        chip:SetWidth(FSW(chip.fs) + ((ns.hui and ns.hui.CHIP_S_PAD) or 5) * 2)
         chip:ClearAllPoints()
         local anchor = (spec.tag and r.tagChip:IsShown()) and r.tagChip or r.a
         chip:SetPoint("LEFT", anchor, "RIGHT", 6, (anchor == r.a) and -0.8 or 0)
@@ -3381,7 +3390,7 @@ function PD.BindRow(r, spec, h)
                         chip.fs:SetTextColor(Unpack(sink))
                         chip:SetHeight(16)
                     end
-                    chip:SetWidth(chip.fs:GetStringWidth() + ((ns.hui and ns.hui.CHIP_S_PAD) or 5) * 2)
+                    chip:SetWidth(FSW(chip.fs) + ((ns.hui and ns.hui.CHIP_S_PAD) or 5) * 2)
                     chip:ClearAllPoints()
                     chip:SetPoint("LEFT", z, "LEFT", 0, 0)
                     chip:SetFrameLevel((r:GetFrameLevel() or 0) + 2)
@@ -3396,7 +3405,7 @@ function PD.BindRow(r, spec, h)
                     z.fs:SetTextColor(Unpack(lk.color or { 0.98, 0.82, 0.35 }))
                     z.__tipLines = lk.lines
                     z.__act = lk.act or function() end
-                    lw = z.fs:GetStringWidth()
+                    lw = FSW(z.fs)
                 end
                 if spec.recipeCols then
                     local avail=PD.MAT_X-8-x
@@ -3415,7 +3424,7 @@ function PD.BindRow(r, spec, h)
         if h > PD.ROW_H1 then
             local rightW = 0
             if spec.right2 and spec.right2 ~= "" then
-                rightW = (r.d:GetStringWidth() or 0) + 10
+                rightW = FSW(r.d) + 10
             end
             local avail = (r:GetWidth() or 0) - x - rightW - 6
             local subTxt = r.b:GetText() or ""
@@ -4784,15 +4793,15 @@ function PD.Build(page)
         local f = card and card.badge
         if not f then return end
         if not text or text == "" then f:Hide() return end
-        local labelW = (card.label and card.label:GetStringWidth()) or 0
+        local labelW = (card.label and FSW(card.label)) or 0
         local maxW = (card:GetWidth() or 240) - 28 - labelW - 12
         if maxW < 24 then maxW = 24 end
         f.fs:SetText(text)
         f.fs:SetTextColor(r or 0.95, g or 0.75, b or 0.4, 1)
-        local w = f.fs:GetStringWidth() or 0
+        local w = FSW(f.fs)
         if w > maxW then
             f.fs:SetText(PD.Fit(text, 12, maxW))
-            w = f.fs:GetStringWidth() or w
+            w = FSW(f.fs, w)
         end
         f:SetWidth(math.max(30, math.ceil(w) + 8))
         f:Show()
@@ -4804,7 +4813,7 @@ function PD.Build(page)
         if not text or text == "" then f:Hide() return end
         f:SetText(text)
         local w = math.max(60, (card:GetWidth() or 240) - 28)
-        if (f:GetStringWidth() or 0) > w then f:SetText(PD.Fit(text, 12, w)) end
+        if FSW(f) > w then f:SetText(PD.Fit(text, 12, w)) end
         f:Show()
     end
     function PD.PlaceCards(n)
@@ -5867,7 +5876,7 @@ function PD.UnifyTipFont(size)
         if l and l.SetText and l.SetWidth then
             l:SetWidth(4000)
             l:SetText(l:GetText())
-            maxW = math.max(maxW, l:GetStringWidth() or 0)
+            maxW = math.max(maxW, FSW(l))
         end
     end
     maxW = math.min(maxW, 460)
@@ -7397,9 +7406,9 @@ function PD.PaintTag(r, tag)
     end
     local pad = (ns.hui and ns.hui.CHIP_S_PAD) or 5
     local minw = (ns.hui and ns.hui.CHIP_S_MIN_W) or 24
-    chip:SetSize(math.max(fs:GetStringWidth() + pad * 2, minw), ns.hui and ns.hui.ChipH and ns.hui.ChipH(13) or 15)
+    chip:SetSize(math.max(FSW(fs) + pad * 2, minw), ns.hui and ns.hui.ChipH and ns.hui.ChipH(13) or 15)
     chip:ClearAllPoints()
-    chip:SetPoint("LEFT", r.a, "LEFT", r.a:GetStringWidth() + 8, (ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(13)) or -0.8)
+    chip:SetPoint("LEFT", r.a, "LEFT", FSW(r.a) + 8, (ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(13)) or -0.8)
     chip:Show()
     fs:Show()
 end
@@ -7698,7 +7707,7 @@ function PD.PaintMatSegs(r, segs, color, budget)
         end
         fs:SetTextColor(Unpack(scol))
         fs:SetText(segs[i].text or "")
-        local natural=fs:GetStringWidth() or 0
+        local natural=FSW(fs)
         local width=math.min(natural,budget-used)
         local clipped=natural>width
         if width<PD.MAT_ICON_PX and segs[i].id then fs:SetText("…");clipped=true end
@@ -9212,7 +9221,7 @@ function PD.BoundRecipeColumns(r,spec,padL)
     r.c2:SetWidth(math.max(1,PD.REC_AH_W-8))
     local sourceWidth=math.max(1,PD.DiffBarW()+PD.REC_COST_W-8)
     if spec.dval then
-        local prefix=math.min(r.d:GetStringWidth() or 0,math.floor(sourceWidth*0.45))
+        local prefix=math.min(FSW(r.d),math.floor(sourceWidth*0.45))
         r.d:SetWidth(math.max(1,prefix));r.dv:SetWidth(math.max(1,sourceWidth-prefix))
     else r.d:SetWidth(sourceWidth) end
 end

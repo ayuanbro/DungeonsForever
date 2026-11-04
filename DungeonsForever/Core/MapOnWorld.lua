@@ -793,6 +793,7 @@ local function syncPins(view, id, floor, cw, ch)
             bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
             bt.nm:SetJustifyH("CENTER")
             local fpath = bt.nm:GetFont()
+            if type(fpath) ~= "string" then fpath = ns.FONT or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF" end
             bt.nm:SetFont(fpath, sel and 14 or 12, PIN_FLAGS)
             bt.nm:SetTextColor(cr, cg, cb)
             bt.dot:ClearAllPoints()

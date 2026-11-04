@@ -10,6 +10,15 @@ local DG = Host.DG
 local MakeFS, NewButton = Host.MakeFS, Host.NewButton
 local SetButtonSelected = Host.SetButtonSelected
 
+local function FSW(fs, dflt)
+    if not (fs and fs.GetStringWidth) then return dflt or 0 end
+    local ok, w = pcall(fs.GetStringWidth, fs)
+    if ok and type(w) == "number" then return w end
+    local t = fs.GetText and fs:GetText()
+    if type(t) == "string" and #t > 0 then return #t * 7 end
+    return dflt or 0
+end
+
 local function ProfIconTex(name)
     if not name then return Host.FALLBACK_ICON end
     if type(name) == "string" and not name:find("\\", 1, true) then
@@ -2450,7 +2459,7 @@ function PF.Paint()
     f.seg:SetText(((mode == "auto") and L["自动计算"] or mode == "gather" and L["采集路线"] or L["固定路线"]) .. " · "
                   .. format(L["段落 %d / %d"], vi, #steps))
     f.seg:Show()
-    local segmentWidth = f.seg.GetStringWidth and f.seg:GetStringWidth() or 140
+    local segmentWidth = FSW(f.seg, 140)
     local skillWidth = math.max(90, W - 28 - segmentWidth)
     f.skill:SetWidth(skillWidth)
     f.skill:SetWordWrap(false)
@@ -2560,7 +2569,7 @@ function PF.Paint()
         local chL, chS = card.chipLearn, card.chipSrc
             chL.lab:SetText(learned and L["已学"] or L["未学"])
             DG.BadgeTint(chL, learned and DG.Q_BADGE_SHARE_BG or DG.Q_BADGE_RACE_BG)
-            local w1 = math.max(DG.Q_BADGE_MIN_W, (chL.lab:GetStringWidth() or 18) + DG.Q_BADGE_PAD * 2)
+            local w1 = math.max(DG.Q_BADGE_MIN_W, FSW(chL.lab, 18) + DG.Q_BADGE_PAD * 2)
             chL:SetSize(w1, DG.Q_BADGE_H)
             local tagW = w1
             chL:ClearAllPoints()
@@ -2570,7 +2579,7 @@ function PF.Paint()
                 if manual then TipOn(chS, srcLabel, questInfo and questInfo.summary or seg.detail)
                 else TipOn(chS, src or srcLabel, detail) end
                 DG.BadgeTint(chS, srcColor or { 0.29, 0.33, 0.40 })
-                local w2 = math.max(DG.Q_BADGE_MIN_W, (chS.lab:GetStringWidth() or 18) + DG.Q_BADGE_PAD * 2)
+                local w2 = math.max(DG.Q_BADGE_MIN_W, FSW(chS.lab, 18) + DG.Q_BADGE_PAD * 2)
                 chS:SetSize(w2, DG.Q_BADGE_H)
                 chS:ClearAllPoints()
                 chS:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9)
