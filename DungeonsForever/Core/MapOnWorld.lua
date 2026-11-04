@@ -430,7 +430,7 @@ local function paintArt(view, id, idx, cw, ch)
     local lay = M.Layout(cw, ch)
     local path = M.PathAt(id, idx)
     local fixRow = id and M.TILE_FIX and M.TILE_FIX[id]
-    local fixTile = fixRow and fixRow[idx]
+    local fixTile = fixRow and fixRow[M.ArtIdx(id, idx)]
     local cpath, cv1 = M.CustomFloorFor(id, idx)
     if not cpath then cpath, cv1 = M.CustomFor(id) end
     if not cv1 then cv1 = 1 end
@@ -685,6 +685,7 @@ local function syncPins(view, id, floor, cw, ch)
             local p = list[i]
             local bt = view.pinBtns[i]
             local kind = p.kind or "boss"
+            local ps = M.PinScale()
             local skip
             n = i
             bt.__kind, bt.__p = kind, p
@@ -777,7 +778,7 @@ local function syncPins(view, id, floor, cw, ch)
                 bt.__av:Show()
                 local isSel = (M.detailEn == p.en) or false
                 M.PaintBossPin(bt.__av, M.BossPinDisplay(id, p.en), cr, cg, cb,
-                    isSel and M.PIN_SIZE or M.PIN_MIN)
+                    (isSel and M.PIN_SIZE or M.PIN_MIN) * ps)
             end
             local sel = (kind == "boss") and (M.detailEn == p.en) or false
             if kind == "boss" and not sel then nm = "" end
@@ -789,13 +790,8 @@ local function syncPins(view, id, floor, cw, ch)
             end
             if bt.__ring then bt.__ring:Hide() end
             bt.nm:ClearAllPoints()
-            if kind == "boss" then
-                bt.nm:SetPoint("TOPLEFT", bt.dot, "BOTTOMLEFT", -2, -2)
-                bt.nm:SetJustifyH("LEFT")
-            else
-                bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
-                bt.nm:SetJustifyH("CENTER")
-            end
+            bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
+            bt.nm:SetJustifyH("CENTER")
             local fpath = bt.nm:GetFont()
             bt.nm:SetFont(fpath, sel and 14 or 12, PIN_FLAGS)
             bt.nm:SetTextColor(cr, cg, cb)
@@ -809,12 +805,9 @@ local function syncPins(view, id, floor, cw, ch)
             else
                 dsz = sel and M.PIN_SIZE or M.PIN_MIN
             end
-            bt.dot:SetSize(dsz, dsz)
-            if kind == "note" then
-                bt:SetSize(M.NOTE_SIZE + 9, M.NOTE_SIZE + 9)
-            else
-                bt:SetSize(M.PIN_SIZE, M.PIN_SIZE)
-            end
+            bt.dot:SetSize(dsz * ps, dsz * ps)
+            local bsz = dsz + 8
+            bt:SetSize(bsz * ps, bsz * ps)
             if skip then
                 bt.nm:SetText("")
                 bt:Hide()
@@ -1139,6 +1132,7 @@ local function dragWorld(self)
     if type(IsMouseButtonDown) ~= "function" or not IsMouseButtonDown("LeftButton") then
         self.__lx, self.__ly = nil, nil
         self:SetScript("OnUpdate", nil)
+        M.SetHoverMouse(view.route, true)
         return
     end
     local x, y = cursorUI()
@@ -1151,6 +1145,15 @@ local function dragWorld(self)
     ZM.x, ZM.y = ZM.x + dx, ZM.y + dy
     ZM.ClampTo(mx, my)
     W.PanSync()
+end
+
+function W.BeginDrag()
+    local view = W.view
+    local block = view and view.block
+    if not block then return end
+    M.SetHoverMouse(view.route, false)
+    block.__lx, block.__ly = cursorUI()
+    block:SetScript("OnUpdate", dragWorld)
 end
 
 function W.Sync()
@@ -1240,7 +1243,7 @@ function W.OpenDungeon(id)
     W.pinned, W.pinnedMap = nil, nil
     if W.curId ~= id then
         local o = (not inInstance()) and M.OUTSIDE_LAYER and M.OUTSIDE_LAYER[id]
-        M.curLayer = o or 1
+        M.curLayer = o or M.EntryLayer(id) or 1
     end
     if not WorldMapFrame:IsShown() then WorldMapFrame:Show() end
     W.Show(id, "pick")
@@ -1264,13 +1267,17 @@ function W.Show(id, why)
     local oLayer = (not inside) and M.OUTSIDE_LAYER and M.OUTSIDE_LAYER[id]
     if not inside and not oLayer and why == "area" then oLayer = 1 end
     local nLayer = #(M.LayersFor(id) or {})
+    if prevId ~= id then
+        local e = M.EntryLayer(id)
+        if e then M.curLayer = e end
+    end
     if nLayer > 0 and (M.curLayer or 1) > nLayer then M.curLayer = 1 end
     if W.inInst == nil then
         W.inInst = inside
         if oLayer then M.curLayer = oLayer end
     elseif inside ~= W.inInst then
         W.inInst = inside
-        M.curLayer = oLayer or 1
+        M.curLayer = oLayer or M.EntryLayer(id) or 1
     elseif prevId and prevId ~= id and oLayer and oLayer <= nLayer then
         M.curLayer = oLayer
     end
@@ -1933,7 +1940,8 @@ local function buildPinPool(view)
         bt.nm:SetShadowColor(0, 0, 0, 1)
         bt.nm:SetShadowOffset(1, -1)
         bt.dot = bt:CreateTexture(nil, "OVERLAY")
-        bt.dot:SetAllPoints()
+        bt.dot:SetPoint("CENTER", bt, "CENTER", 0, 0)
+        bt.dot:SetSize(M.PIN_SIZE, M.PIN_SIZE)
         bt.dot:SetTexture(M.PIN_BOSS_TEX)
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
@@ -2010,16 +2018,19 @@ function W.Build()
     block:SetScript("OnMouseDown", function(self, button)
         if button ~= "LeftButton" then return end
         if not inStage() then return end
+        M.SetHoverMouse(view.route, false)
         self.__lx, self.__ly = cursorUI()
         self:SetScript("OnUpdate", dragWorld)
     end)
     block:SetScript("OnMouseUp", function(self)
         self.__lx, self.__ly = nil, nil
         self:SetScript("OnUpdate", nil)
+        M.SetHoverMouse(view.route, true)
     end)
     block:SetScript("OnHide", function(self)
         self.__lx, self.__ly = nil, nil
         self:SetScript("OnUpdate", nil)
+        M.SetHoverMouse(view.route, true)
     end)
     block:SetScript("OnClick", function(_, button)
         if button == "RightButton" and W.ExitWorld then W.ExitWorld() end
@@ -2101,19 +2112,21 @@ function W.Build()
     buildPinPool(view)
 
     local nav = navBar()
-    local routeBtn = Host.NewButton(UIParent, L["路线显示"], BTN_W, BTN_H, 14)
+    local routeBtn = makeNativeBtn(UIParent, L["路线显示"], BTN_W, BTN_H)
     routeBtn:SetFrameStrata("FULLSCREEN_DIALOG")
     routeBtn:SetFrameLevel(200)
     routeBtn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     routeBtn:SetScript("OnClick", routeToggle)
     routeBtn:Hide()
+    euiBtn(routeBtn)
     view.routeBtn = routeBtn
 
-    local pinBtn = Host.NewButton(UIParent, L["图钉显示"], BTN_W, BTN_H, 14)
+    local pinBtn = makeNativeBtn(UIParent, L["图钉显示"], BTN_W, BTN_H)
     pinBtn:SetFrameStrata("FULLSCREEN_DIALOG")
     pinBtn:SetFrameLevel(200)
     pinBtn:SetScript("OnClick", function(self) M.ShowPinMenu(self) end)
     pinBtn:Hide()
+    euiBtn(pinBtn)
     view.pinBtn = pinBtn
 
     ensureAreaBtn()

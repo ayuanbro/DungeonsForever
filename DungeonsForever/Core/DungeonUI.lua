@@ -2819,16 +2819,19 @@ function DG.PaintQuestOverview(d)
         path(lc, { { x, y1 }, { x, y1 + 8 }, { lx, y1 + 8 }, { lx, y2 - 8 }, { x, y2 - 8 }, { x, y2 } })
     end
 
-    local canvasW = (nCols > 0) and (colX[nCols] + nw + 8) or math.max(DG.Q_LIST_W - 24, 200)
-    if nCols > 0 and DG.CurQuestFlow(d) then
-        canvasW = math.max(canvasW, nw * 5 + COL_GAP * 2 + 32)
-    end
-    local startCX = math.max(8, (canvasW - nw) / 2)
-    local maxRR = 0
     local multiPre = false
     for _, ps in pairs(parentsAll) do
         if #ps > 1 then multiPre = true break end
     end
+    local fwCard = nw * 2 + COL_GAP
+    local hasCard = (nCols > 0) and (DG.CurQuestFlow(d) ~= nil)
+    local canvasW = (nCols > 0) and (colX[nCols] + nw + 8) or math.max(DG.Q_LIST_W - 24, 200)
+    if hasCard then
+        canvasW = math.max(canvasW, nw * 5 + COL_GAP * 2 + 32)
+    end
+    local startCX = math.max(8, (canvasW - nw) / 2)
+    local cardX = startCX + nw + 8
+    local maxRR = 0
     if nCols == 0 and U.dungeonQOVFlowCard then U.dungeonQOVFlowCard:Hide() end
     if nCols > 0 and not multiPre then
         local minLv, maxLv = nil, nil
@@ -2843,8 +2846,6 @@ function DG.PaintQuestOverview(d)
         local dMax = (maxLv and DG.DifficultyColor(maxLv)) or { 1, 0.5, 0.25, 1 }
         local lvB = (maxLv and (UnitLevel("player") or 0) >= maxLv) and DG.Q_OV_DONE or nil
         placeMark(format(L["最低 %d 级"], minLv or 1), format(L["最高 %d 级"], maxLv or minLv or 1), dMin, startCX, 0, lvB, dMax)
-        local fw = nw * 2 + COL_GAP
-        DG.PaintOverviewFlow(d, canvas, canvasW - 8 - fw, fw)
 
         local nodeByQid, nodeByExt = {}, {}
         local extDone = {}
@@ -3281,6 +3282,7 @@ function DG.PaintQuestOverview(d)
         local r0 = byRank[0] or {}
         local rowW0 = #r0 * nw + math.max(0, #r0 - 1) * COL_GAP
         if rowW0 + 16 > canvasW then canvasW = rowW0 + 16 end
+        cardX = canvasW / 2 + nw / 2 + 8
         local x0 = 8 + math.max(0, (canvasW - 16 - rowW0) / 2)
         local cur = x0
         for k = 1, #r0 do
@@ -3462,6 +3464,9 @@ function DG.PaintQuestOverview(d)
 
     local cvh = (nCols > 0) and (rowY(maxRR) + DG.Q_OV_H + 8) or 10
     canvas:SetSize(canvasW, cvh)
+    if hasCard then
+        DG.PaintOverviewFlow(d, canvas, cardX, fwCard)
+    end
     if U.__ovFitW ~= math.floor(canvasW) then
         U.__ovFitW = math.floor(canvasW)
         U.dungeonQOVZoom = math.max(0.5, math.min(1, availW / canvasW))
@@ -6477,7 +6482,7 @@ function DG.QuestRaceTag(qid)
     return DG.Q_RACE_TAG_L[rt.label] or rt.label
 end
 DG.Q_FS_DET = 14
-DG.Q_FLOW_H = 20
+DG.Q_FLOW_H = 18
 DG.Q_FLOW_DOT = 16
 DG.Q_FLOW_MARK = 14
 DG.Q_MARK_SYM = {
@@ -6491,7 +6496,7 @@ DG.Q_MARK_INK = {
     todo = { 0.102, 0.102, 0.102 },
 }
 DG.Q_FLOW_SEC_GAP = 6
-DG.Q_FLOW_ST_GAP = 4
+DG.Q_FLOW_ST_GAP = 3
 DG.Q_FLOW_IDEO = "\227\128\128" .. " "
 DG.Q_LINK_ITEM = { 1, 0.92, 0.72 }
 DG.C_FAC_A = { 0.45, 0.65, 1 }
@@ -6957,9 +6962,9 @@ end
 
 function U:RenderDungeonQuests()
     local d = U.dungeonDetailCur
+    DG.EnsureQuestLane()
     local child, pool = U.dungeonQuestChild, U.dungeonQuestPool
     if not (d and child and pool) then return end
-    DG.EnsureQuestLane()
     DG.EnsureQuestListener()
     local list = DG.QuestList(d)
     DG.BuildPreDone(list)
@@ -7142,7 +7147,9 @@ function U:RenderDungeonQuests()
         c:ClearAllPoints()
         c:SetPoint("TOPLEFT", child, "TOPLEFT", DG.Q_PAD + 4, y)
         c.name:SetText(L["副本任务总览"])
-        local ico = flow.side and DG.Q_FAC_ICON[flow.side]
+        local lside = flow.side
+        if lside ~= "A" and lside ~= "H" then lside = U.dungeonQSide end
+        local ico = (lside == "A" or lside == "H") and DG.Q_FAC_ICON[lside] or nil
         if ico then
             c.fac:SetTexture(ico)
             c.fac:Show()
@@ -7724,9 +7731,12 @@ function DG.FlowTakeLink(child, pool)
     return b
 end
 
-local function FlowWrapLines(fs, size)
-    local h = FSH(fs, size)
-    return math.max(1, math.ceil(h / size))
+local function FlowWrapLines(fs, lh, tw, avail)
+    if tw and avail and avail > 0 then
+        return math.max(1, math.ceil(tw / (avail * 0.95)))
+    end
+    local h = FSH(fs, lh)
+    return math.max(1, math.ceil((h - 2) / lh))
 end
 
 function DG.FlowMark(b, st, col)
@@ -7796,13 +7806,13 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
             b.fs:SetWordWrap(false)
             if ob and b.ic:IsShown() then
                 b.fs:SetText(ob)
-                icx = b.FSW(fs) or 0
+                icx = FSW(b.fs) or 0
             end
             b.ic:ClearAllPoints()
             b.ic:SetPoint("LEFT", b, "LEFT", icx, 0)
             b.fs:SetText(txt)
             b.fs:SetTextColor(Unpack(col))
-            tw = b.FSW(fs) or 0
+            tw = FSW(b.fs) or 0
             if cx + tw > xEnd and cx > x0 then
                 y = y - DG.Q_FLOW_H
                 cx = x0
@@ -7815,7 +7825,7 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
                 if fw < 10 then fw = 10 end
                 b.fs:SetWidth(fw)
                 b.fs:SetWordWrap(true)
-                local lns = FlowWrapLines(b.fs, DG.Q_FS_DET)
+                local lns = FlowWrapLines(b.fs, DG.Q_FLOW_H, tw, fw)
                 b:SetSize(avail, lns * DG.Q_FLOW_H)
                 y = y - (lns - 1) * DG.Q_FLOW_H
                 cx = xEnd
@@ -7839,7 +7849,7 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
             if tw > avail then
                 f:SetWidth(avail)
                 f:SetWordWrap(true)
-                local lns = FlowWrapLines(f, DG.Q_FS_DET)
+                local lns = FlowWrapLines(f, DG.Q_FLOW_H, tw, avail)
                 y = y - (lns - 1) * DG.Q_FLOW_H
                 cx = xEnd
             else
@@ -8067,7 +8077,9 @@ function DG.PaintOverviewFlow(d, canvas, x, w)
     c:SetPoint("TOPLEFT", canvas, "TOPLEFT", x, 0)
     c:SetSize(w, DG.Q_OV_H)
     local nx = 6
-    local ico = flow.side and DG.Q_FAC_ICON[flow.side]
+    local oside = flow.side
+    if oside ~= "A" and oside ~= "H" then oside = U.dungeonQSide end
+    local ico = (oside == "A" or oside == "H") and DG.Q_FAC_ICON[oside] or nil
     if ico then
         c.fac:SetTexture(ico)
         c.fac:Show()

@@ -6202,7 +6202,18 @@ function PD.PaintLvTiles()
             PD.ShowEngChoiceMenu(tiles.spec)
             ns.PlaySound(1)
         end)
-        TipOn(tiles.spec, { { L["点击指定工程专精；不指定时使用角色已学会的专精配方"], 0.7, 0.7, 0.7 } })
+        local specTip = { { L["点击指定工程专精；不指定时使用角色已学会的专精配方"], 0.7, 0.7, 0.7 } }
+        local engActual = engG.EngineeringChoice and engG.EngineeringChoice() or "unknown"
+        if engActual == "unknown" then
+            specTip[#specTip + 1] = { L["角色专精状态尚未读取，请登录角色并打开工程学面板后重试。"], 0.95, 0.75, 0.4 }
+        elseif engActual == "conflict" then
+            specTip[#specTip + 1] = { L["当前已同时学会地精与侏儒专精，需先重置其中一支。"], 0.88, 0.42, 0.38 }
+        elseif engSet == "none" and (engActual == "goblin" or engActual == "gnomish") then
+            specTip[#specTip + 1] = { format(L["当前已学工程专精：%s。"], PD.EngChoiceLabel(engActual)), 0.8, 0.9, 0.7 }
+        elseif engSet ~= "none" and engActual ~= "none" and engActual ~= engSet then
+            specTip[#specTip + 1] = { format(L["已学专精与计划不一致：已学%s。"], PD.EngChoiceLabel(engActual)), 0.88, 0.42, 0.38 }
+        end
+        TipOn(tiles.spec, specTip)
         PD.PaintTileBorder(tiles.spec, { 1, 1, 1, 0.10 })
     end
     if scanBlocked then
@@ -13102,6 +13113,28 @@ function PD.RowsLeveling(rows)
     local costW = PD.TextW(L["成本"], PD.LV_FS)
     local stepW = PD.TextW(L["步骤"], PD.LV_FS)
     local cardNeed = 0
+    local rngAdj = {}
+    do
+        local all = steps or {}
+        for _, si in ipairs(all) do
+            local a, b = si[1], si[2]
+            if type(a) == "number" and type(b) == "number" and a < b then
+                local lo, hi = a, b
+                for _, sj in ipairs(all) do
+                    local p, q = sj[1], sj[2]
+                    if type(p) == "number" and p == q and sj[3] ~= si[3] and a <= p and q <= b then
+                        if p == lo then lo = lo + 1 elseif q == hi then hi = hi - 1 end
+                    end
+                end
+                if lo <= hi then rngAdj[si] = { lo, hi } end
+            end
+        end
+    end
+    local function rngText(st)
+        local adj = rngAdj[st]
+        if not adj then return PD.StepRange(st) end
+        return (adj[2] > adj[1]) and format("%d - %d", adj[1], adj[2]) or tostring(adj[1])
+    end
     for index, st in ipairs(steps or {}) do
         local rec = PD.StepRecipe(st) or recOf[st[3]]
         if not rec and rin then rec = rin[st[3]] end
@@ -13156,7 +13189,7 @@ function PD.RowsLeveling(rows)
             count = format("%d/%d", tp.casts, st[4] or 0)
         end
         cntOf[st], costOf[st] = count, cost
-        rngW = math.max(rngW, PD.TextW(PD.StepRange(st), PD.LV_FS))
+        rngW = math.max(rngW, PD.TextW(rngText(st), PD.LV_FS))
         cntW = math.max(cntW, PD.TextW(count, PD.LV_FS))
         costW = math.max(costW, PD.TextW(cost, PD.LV_FS))
         stepW = math.max(stepW, PD.TextW(tostring(st.stepIndex or st.index or index), PD.LV_FS))
@@ -13367,7 +13400,7 @@ function PD.RowsLeveling(rows)
                                or nil),
                 noTip = true,
                 stepIndex = st.stepIndex or st.index or index,
-                rng = PD.StepRange(st),
+                rng = rngText(st),
                 text = FitName(nm),
                 src = src,
                 cnt = cntOf[st] or format(L["~%s 次制作"], tostring(st[4])),
@@ -14287,37 +14320,6 @@ function PD.LevelTool()
         { key = "page_log",   text = L["制作记录"], on = onLog },
         { key = "page_rec",   text = L["回血"],     on = onRec },
     }
-    if PD.cur == "engineering" then
-        local G = ns.ProfGates
-        if G and G.GetChoiceSetting and G.EffectiveChoice then
-            local setting = G.GetChoiceSetting()
-            local actual = G.EngineeringChoice and G.EngineeringChoice() or "unknown"
-            local tip = {
-                { L["工程专精计划"], 1, 1, 1 },
-                { L["不指定时，自动使用角色已经学会的工程专精配方。"], 0.7, 0.7, 0.7 },
-            }
-            if actual == "unknown" then
-                tip[#tip + 1] = { L["角色专精状态尚未读取，请登录角色并打开工程学面板后重试。"], 0.95, 0.75, 0.4 }
-            elseif actual == "conflict" then
-                tip[#tip + 1] = { L["当前已同时学会地精与侏儒专精，需先重置其中一支。"], 0.88, 0.42, 0.38 }
-            elseif setting == "none" then
-                if actual == "goblin" or actual == "gnomish" then
-                    tip[#tip + 1] = { format(L["当前已学工程专精：%s。其专属配方已加入升级路线候选。"],
-                        PD.EngChoiceLabel(actual)), 0.8, 0.9, 0.7 }
-                else
-                    tip[#tip + 1] = { L["尚未学习工程专精；不会使用专精限定配方。"], 0.85, 0.85, 0.85 }
-                end
-            elseif actual ~= "none" and actual ~= setting then
-                tip[#tip + 1] = { format(L["已学专精与计划不一致：已学%s。"],
-                    PD.EngChoiceLabel(actual)), 0.88, 0.42, 0.38 }
-            end
-            list[#list + 1] = {
-                key = "eng_spec", dd = true, on = setting ~= "none",
-                text = setting == "none" and L["专精不指定"] or PD.EngChoiceLabel(setting),
-                tip = tip,
-            }
-        end
-    end
     if not onLog and not onRec and PD.autoPage ~= "shop" then
         local snap = (PD.autoSnapshotSlug == PD.cur) and PD.autoSnapshot or nil
         local notes = PD.warnNotes

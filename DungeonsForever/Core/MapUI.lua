@@ -50,9 +50,28 @@ function ZM.ClampTo(lx, ly)
     if ZM.k <= ZM.min then ZM.x, ZM.y = 0, 0 end
 end
 
+function M.PinScale()
+    local z = ZM.k
+    if not z or z <= 1 then return 1 end
+    return 1 + (z - 1) * 0.55
+end
+
+function M.PinArt(bt, s)
+    if not bt then return end
+    local size = (M.PIN_SIZE or 48) * s
+    if bt.entry then bt.entry:SetSize(size * 0.62, size * 0.62) end
+    if bt.__glow then bt.__glow:SetSize(size * M.PIN_GLOW_K, size * M.PIN_GLOW_K) end
+    if bt.__ring then bt.__ring:SetSize(size * M.PIN_RING_K, size * M.PIN_RING_K) end
+    if bt.__av then bt.__av:SetSize(size * 0.5625, size * 0.5625) end
+end
+
 function M.PinPoint(bt, p, cw, ch)
+    local s = M.PinScale()
+    bt:SetScale(1)
+    bt:SetSize((M.PIN_SIZE or 48) * s, (M.PIN_SIZE or 48) * s)
     bt:ClearAllPoints()
     bt:SetPoint("CENTER", bt:GetParent(), "TOPLEFT", (p.left / 100) * cw, -(p.top / 100) * ch)
+    M.PinArt(bt, s)
 end
 
 local function cursorUI()
@@ -65,12 +84,32 @@ local function cursorUI()
     return x / s, y / s
 end
 
+local function localPos(host)
+    if not (host and host.GetLeft) then return nil end
+    local l, t = host:GetLeft(), host:GetTop()
+    if not (l and t) then return nil end
+    local us = 1
+    if UIParent and UIParent.GetEffectiveScale then
+        us = UIParent:GetEffectiveScale() or 1
+    end
+    if not us or us <= 0 then us = 1 end
+    local hs = us
+    if host.GetEffectiveScale then
+        hs = host:GetEffectiveScale() or us
+    end
+    if not hs or hs <= 0 then hs = us end
+    local x, y = GetCursorPosition()
+    x, y = x / us, y / us
+    local k = us / hs
+    return (x - l) * k, (t - y) * k
+end
 local function dragUpdate(self)
     local frame = M.frame
     if not (frame and frame.baseW and frame.baseH) then return end
     if type(IsMouseButtonDown) == "function" and not IsMouseButtonDown("LeftButton") then
         self.__lx, self.__ly = nil, nil
         self:SetScript("OnUpdate", nil)
+        M.SetHoverMouse(frame.route, true)
         return
     end
     local x, y = cursorUI()
@@ -135,6 +174,22 @@ function M.ZoomSync()
     if not (frame and frame.clip) then return end
     if not (frame.baseW and frame.baseH) then return end
     M.Paint(M.curD)
+end
+
+function M.BeginDrag(host)
+    local frame = M.frame
+    if frame and host == frame.route then
+        M.SetHoverMouse(host, false)
+        local hit = frame.mapHit
+        if hit then
+            hit.__lx, hit.__ly = cursorUI()
+            hit:SetScript("OnUpdate", dragUpdate)
+        end
+        return
+    end
+    local W = ns.MapWorldModule
+    local v = W and W.view
+    if v and host == v.route and W.BeginDrag then W.BeginDrag() end
 end
 
 M.COLS, M.ROWS = 4, 3
@@ -662,6 +717,7 @@ local SHOW_FLOORS = {
     stratholme_main = { 1 },
     stratholme_service = { 2 },
     lower_blackrock_spire = { 7, 1, 2, 3, 4, 5, 6 },
+    sunken_temple = { 3, 2, 1 },
 }
 
 local FLOOR_NO = {
@@ -669,7 +725,7 @@ local FLOOR_NO = {
     blackrock_depths = { [1] = 1, [2] = 2, [3] = 3, [4] = 4 },
     lower_blackrock_spire = { [1] = 9, [2] = 1, [3] = 2, [4] = 3, [5] = 4, [6] = 5, [7] = 6 },
     maraudon = { [1] = 1, [2] = 2, [3] = 3, [4] = 4 },
-    sunken_temple = { [1] = 1, [2] = 2, [3] = 3 },
+    sunken_temple = { [1] = 3, [2] = 2, [3] = 1 },
 }
 
 local LAYER_PICK = {}
@@ -738,6 +794,13 @@ function M.NamePrefixFor(txt)
         end
     end
     return cand[1]
+end
+
+function M.ArtIdx(id, idx)
+    local pick = id and SHOW_FLOORS[id]
+    local i = idx or 1
+    if type(pick) == "table" and type(pick[i]) == "number" then return pick[i] end
+    return i
 end
 
 function M.LayersFor(id)
@@ -1243,7 +1306,8 @@ local function BuildPins()
         bt.nm:SetShadowColor(0, 0, 0, 1)
         bt.nm:SetShadowOffset(1, -1)
         bt.dot = bt:CreateTexture(nil, "OVERLAY")
-        bt.dot:SetAllPoints()
+        bt.dot:SetPoint("CENTER", bt, "CENTER", 0, 0)
+        bt.dot:SetSize(M.PIN_SIZE, M.PIN_SIZE)
         bt.dot:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\BossSkull")
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
@@ -1578,7 +1642,15 @@ function M.BuildSide(f, w, h, withBar, bgLayer)
     local detBack = Host.NewButton(detChild, L["全部首领"], 96, 24, 14)
     detBack:SetScript("OnClick", function() M.ShowList() end)
     detBack:SetPoint("TOPRIGHT", detChild, "TOPRIGHT", 0, 0)
-    if Host.AddBtnIcon then Host.AddBtnIcon(detBack, "BackChevron", 16, 6) end
+    local backChev = detBack:CreateTexture(nil, "OVERLAY")
+    backChev:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\BackChevron.tga")
+    backChev:SetSize(12, 12)
+    backChev:SetPoint("LEFT", detBack, "LEFT", 8, 0)
+    local backFS = detBack:GetFontString()
+    if backFS then
+        backFS:ClearAllPoints()
+        backFS:SetPoint("CENTER", detBack, "CENTER", 6, 0)
+    end
 
     local detName = MakeFS(detChild, 16, C_GOLD, "LEFT")
     detName:SetWordWrap(false)
@@ -1647,16 +1719,19 @@ function M.Build(detail, hero)
     mapHit:SetScript("OnMouseWheel", function(_, delta) M.ZoomWheel(delta) end)
     mapHit:SetScript("OnMouseDown", function(self, button)
         if button ~= "LeftButton" then return end
+        M.SetHoverMouse(frame.route, false)
         self.__lx, self.__ly = cursorUI()
         self:SetScript("OnUpdate", dragUpdate)
     end)
     mapHit:SetScript("OnMouseUp", function(self)
         self.__lx, self.__ly = nil, nil
         self:SetScript("OnUpdate", nil)
+        M.SetHoverMouse(frame.route, true)
     end)
     mapHit:SetScript("OnHide", function(self)
         self.__lx, self.__ly = nil, nil
         self:SetScript("OnUpdate", nil)
+        M.SetHoverMouse(frame.route, true)
     end)
 
     local canvas = CreateFrame("Frame", nil, clip)
@@ -1916,6 +1991,18 @@ function M.SetLayer(i)
     M.curLayer = i
     ZM.Reset()
     M.Paint(M.curD)
+end
+
+local ENTRY_LAYER = {
+    sunken_temple = 2,
+}
+
+function M.EntryLayer(id)
+    local v = id and ENTRY_LAYER[id]
+    if type(v) ~= "number" then return nil end
+    local layers = M.LayersFor(id)
+    if layers and v >= 1 and v <= #layers then return v end
+    return nil
 end
 
 function M.LayerOf(id, floorNum)
@@ -2220,7 +2307,7 @@ function M.NewSegHover(parent, paintFn)
         st.paint = paintFn
         return st
     end
-    st = { parent = parent, paint = paintFn, seg = nil, leaveAt = nil, acc = 0 }
+    st = { parent = parent, paint = paintFn, pool = {}, seg = nil, leaveAt = nil, acc = 0 }
     hovers[parent] = st
     function st:Set(si)
         if si == self.seg then
@@ -2234,16 +2321,13 @@ function M.NewSegHover(parent, paintFn)
     end
     function st:HideAll()
         self:Set(nil)
+        for i = 1, #self.pool do self.pool[i]:Hide() end
         self.hi = 0
     end
     function st:Build(host, arr, cnt)
         local hi = 0
         local step = M.HIT_STEP
-        local pts2 = self.pts
-        if not pts2 then
-            pts2 = {}
-            self.pts = pts2
-        end
+        local lvl = host:GetFrameLevel() + 1
         for si = 1, cnt do
             local pts = arr[si]
             if pts and #pts > 1 then
@@ -2256,17 +2340,34 @@ function M.NewSegHover(parent, paintFn)
                         for j = 0, k - 1 do
                             local u = j / k
                             hi = hi + 1
-                            local h = pts2[hi]
-                            if not h then
-                                h = {}
-                                pts2[hi] = h
+                            local btn = self.pool[hi]
+                            if not btn then
+                                btn = CreateFrame("Button", nil, host)
+                                btn:SetSize(M.HIT_SIZE, M.HIT_SIZE)
+                                btn:EnableMouse(true)
+                                btn:SetScript("OnEnter", function(b)
+                                    st.leaveAt = nil
+                                    st:Set(b.si)
+                                end)
+                                btn:SetScript("OnLeave", function(b)
+                                    if st.seg == b.si then st.leaveAt = GetTime() end
+                                end)
+                                btn:SetScript("OnMouseDown", function(_, button)
+                                    if button == "LeftButton" and M.BeginDrag then M.BeginDrag(host) end
+                                end)
+                                self.pool[hi] = btn
                             end
-                            h[1], h[2], h[3] = a[1] + dx * u, a[2] + dy * u, si
+                            if btn:GetFrameLevel() ~= lvl then btn:SetFrameLevel(lvl) end
+                            btn.si = si
+                            btn:ClearAllPoints()
+                            btn:SetPoint("CENTER", host, "TOPLEFT", a[1] + dx * u, -(a[2] + dy * u))
+                            btn:Show()
                         end
                     end
                 end
             end
         end
+        for i = hi + 1, #self.pool do self.pool[i]:Hide() end
         self.hi = hi
         self.parent = host
         return hi
@@ -2278,39 +2379,19 @@ function M.NewSegHover(parent, paintFn)
         st.acc = st.acc + el
         if st.acc < 0.05 then return end
         st.acc = 0
-        local host, pts2, hi = st.parent, st.pts, st.hi or 0
-        local near
-        if hi > 0 and host and host:IsShown() then
-            local l, t = host:GetLeft(), host:GetTop()
-            if l and t then
-                local cx, cy = cursorUI()
-                local px, py = cx - l, t - cy
-                local lim = M.HIT_SIZE * 0.5
-                local best = lim * lim
-                local w, hgt = host:GetWidth(), host:GetHeight()
-                if px > -lim and py > -lim and px < (w or 0) + lim and py < (hgt or 0) + lim then
-                    for i = 1, hi do
-                        local h = pts2[i]
-                        local dx, dy = px - h[1], py - h[2]
-                        local d = dx * dx + dy * dy
-                        if d < best then
-                            best = d
-                            near = h[3]
-                        end
-                    end
-                end
-            end
-        end
-        if near then
-            st.leaveAt = nil
-            st:Set(near)
-        elseif st.seg and not st.leaveAt then
-            st.leaveAt = GetTime()
-        elseif st.seg and st.leaveAt and (GetTime() - st.leaveAt) > 0.1 then
+        if st.seg and st.leaveAt and (GetTime() - st.leaveAt) > 0.1 then
             st:Set(nil)
         end
     end)
     return st
+end
+
+function M.SetHoverMouse(host, on)
+    local st = host and hovers[host]
+    if not st then return end
+    for i = 1, #st.pool do
+        st.pool[i]:EnableMouse(on and true or false)
+    end
 end
 
 function M.SyncRoute(id, floor, cw, ch)
@@ -2455,7 +2536,7 @@ function M.SyncNoBadges(host, tag, cw, ch, items)
     local p = noPoolFor(host, tag)
     local used = p.n
     p.n = 0
-    local d = noD()
+    local d = noD() * M.PinScale()
     local di = d * 0.7
     local dy = 0
     if items and cw and ch and cw > 0 and ch > 0 then
@@ -2672,6 +2753,7 @@ function M.SyncPins()
             local p = list[i]
             local bt = frame.pinBtns[n]
             local kind = p.kind or "boss"
+            local ps = M.PinScale()
             local skip = nil
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
@@ -2771,7 +2853,8 @@ function M.SyncPins()
                 bt.dot:Hide()
                 bt.__av:Show()
                 local isSel = (M.detailEn == p.en) or false
-                bpPaint(bt.__av, bpDisp(M.curId, p.en), cr, cg, cb, isSel and M.PIN_SIZE or M.PIN_MIN)
+                bpPaint(bt.__av, bpDisp(M.curId, p.en), cr, cg, cb,
+                    (isSel and M.PIN_SIZE or M.PIN_MIN) * ps)
             end
             local sel = (kind == "boss") and (M.detailEn == p.en) or false
             if kind == "boss" and not sel then nm = "" end
@@ -2783,13 +2866,8 @@ function M.SyncPins()
             end
             if bt.__ring then bt.__ring:Hide() end
             bt.nm:ClearAllPoints()
-            if kind == "boss" then
-                bt.nm:SetPoint("TOPLEFT", bt.dot, "BOTTOMLEFT", -2, -2)
-                bt.nm:SetJustifyH("LEFT")
-            else
-                bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
-                bt.nm:SetJustifyH("CENTER")
-            end
+            bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
+            bt.nm:SetJustifyH("CENTER")
             local fpath, _, fflags = bt.nm:GetFont()
             bt.nm:SetFont(fpath, sel and 14 or 12, fflags)
             bt.nm:SetTextColor(cr, cg, cb)
@@ -2803,12 +2881,9 @@ function M.SyncPins()
             else
                 dsz = sel and M.PIN_SIZE or M.PIN_MIN
             end
-            bt.dot:SetSize(dsz, dsz)
-            if kind == "note" then
-                bt:SetSize(M.NOTE_SIZE + 9, M.NOTE_SIZE + 9)
-            else
-                bt:SetSize(M.PIN_SIZE, M.PIN_SIZE)
-            end
+            bt.dot:SetSize(dsz * ps, dsz * ps)
+            local bsz = dsz + 8
+            bt:SetSize(bsz * ps, bsz * ps)
             bt:SetScript("OnClick", function(self) M.PinOnClick(self) end)
             bt:SetScript("OnEnter", M.PinOnEnter)
             bt:SetScript("OnLeave", M.PinOnLeave)
@@ -3562,7 +3637,7 @@ function M.Paint(d)
     local leftW, cw, ch, cx, cy = M.Box()
 
     if M.curId ~= id then
-        M.curId, M.curLayer, M.detailEn = id, 1, nil
+        M.curId, M.curLayer, M.detailEn = id, M.EntryLayer(id) or 1, nil
         ZM.Reset()
     end
 
@@ -3632,7 +3707,7 @@ function M.Paint(d)
     local lay = M.Layout(zw, zh)
     local path = M.PathAt(id, idx)
     local fixRow = id and TILE_FIX[id]
-    local fixTile = fixRow and fixRow[idx]
+    local fixTile = fixRow and fixRow[M.ArtIdx(id, idx)]
     local cpath, cv1 = M.CustomFloorFor(id, idx)
     for n = 1, M.N do frame.tiles[n]:Hide() end
     if cpath then
