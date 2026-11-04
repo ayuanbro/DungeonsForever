@@ -347,6 +347,51 @@ local function AutoRace()
     end
 end
 
+local function PaintSel(fr, on)
+    local bp = fr.__huiCard
+    if type(bp) ~= "table" then return end
+    if not (ns.hui and ns.hui.GlassPaint and ns.hui.layer and ns.hui.ACCENT) then return end
+    on = on and true or false
+    if fr.__selTint == on then return end
+    fr.__selTint = on
+    local base = ns.hui.layer.L3
+    local ac = ns.hui.ACCENT
+    local cb = ns.hui.CARD_BORDER or { 1, 1, 1, 0.10 }
+    local col = base
+    if on then
+        col = {
+            base[1] + (ac[1] - base[1]) * 0.28,
+            base[2] + (ac[2] - base[2]) * 0.28,
+            base[3] + (ac[3] - base[3]) * 0.28,
+            1,
+        }
+    end
+    if type(bp.fill) == "table" then
+        for i = 1, #bp.fill do
+            local t = bp.fill[i]
+            if t and t.__huiGlass then
+                t.__huiGlass.c = col
+                ns.hui.GlassPaint(t)
+            end
+        end
+    end
+    if type(bp.border) == "table" then
+        for _, tex in ipairs(bp.border) do
+            local c = on and ac or cb
+            tex:SetVertexColor(c[1], c[2], c[3])
+            tex:SetAlpha(on and 0.95 or (cb[4] or 1))
+        end
+    end
+end
+
+local function HookSelRepaint(fr)
+    if not (ns.hui and ns.hui.AddRepaint) then return end
+    ns.hui.AddRepaint(fr, function()
+        fr.__selTint = nil
+        PaintSel(fr, fr.__sel)
+    end)
+end
+
 local function Ensure()
     local child = TT.child
     if not child then return false end
@@ -529,6 +574,7 @@ local function Ensure()
         if ns.hui and ns.hui.HuiCardFX then
             ns.hui.HuiCardFX(fr, 5, 3)
         end
+        HookSelRepaint(fr)
         fr.arrow = MakeFS(fr, 14, C_DIM, "CENTER")
         fr.arrow:SetPoint("LEFT", fr, "LEFT", 9, 0)
         fr.arrow:SetWidth(10)
@@ -568,6 +614,7 @@ local function Ensure()
         if ns.hui and ns.hui.HuiCardFX then
             ns.hui.HuiCardFX(fr, 5, 3)
         end
+        HookSelRepaint(fr)
         fr.dot = fr:CreateTexture(nil, "ARTWORK")
         fr.dot:SetTexture(DOT_DONE)
         fr.dot:SetSize(14, 14)
@@ -841,17 +888,17 @@ local function TakeNpc()
     if not f then
         if pool.nNpc > NPC_MAX then return nil end
         f = CreateFrame("Button", nil, CQ.dchild)
-        f:SetSize(DetRowW(), 24)
+        f:SetSize(DetRowW(), 28)
         f:EnableMouse(true)
         f.fs = MakeFS(f, DET_FS, C_TEXT, "LEFT")
-        f.fs:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+        f.fs:SetPoint("LEFT", f, "LEFT", 0, 0)
         f.fs:SetWordWrap(false)
         f.fs:SetWidth(DetRowW() - 76)
-        local mb = NewButton(f, L["地图"], 62, 20, DET_FS)
+        local mb = NewButton(f, L["地图"], 62, 24, DET_FS)
         if AddBtnIcon then AddBtnIcon(mb, "EntryPin", 12, 4) end
         if TT.RoundButtonFill then TT.RoundButtonFill(mb) end
         SetButtonSelected(mb, false)
-        mb:SetPoint("RIGHT", f.fs, "RIGHT", 74, 0)
+        mb:SetPoint("RIGHT", f, "RIGHT", -2, 0)
         mb:SetScript("OnClick", function(self)
             local p = self:GetParent()
             if p.__npc and DG.MarkNPC then DG.MarkNPC(p.__npc, p.__loc) end
@@ -921,7 +968,7 @@ local function AddNpc(y, label, name, npcID, loc, zone, x, yy)
     if f.mark then
         if loc then f.mark:Show() else f.mark:Hide() end
     end
-    return putDet(f, DET_X, y, 24)
+    return putDet(f, DET_X, y, 28)
 end
 
 local function SpellName(id)
@@ -1555,6 +1602,7 @@ function CQ.Render()
             fr:ClearAllPoints()
             fr:SetPoint("TOPLEFT", TT.child, "TOPLEFT", 0, y)
             fr:Show()
+            PaintSel(fr, false)
             Hui(false, fr)
             y = y - HEAD_H - 4
         end
@@ -1572,14 +1620,15 @@ function CQ.Render()
         local st = (doneN >= #row.ids) and "done" or ((doneN > 0 or AnyActive(row.ids)) and "active" or "todo")
         PutDot(fr.dot, fr.sym, st)
         fr.name:SetText(row.t)
-        fr.name:SetTextColor(Unpack((st == "done") and C_DONE or (isSel and C_GOLD or C_TEXT)))
+        fr.name:SetTextColor(Unpack(isSel and C_WHITE or ((st == "done") and C_DONE or C_TEXT)))
         fr.name:SetWidth(RowW() - 34 - 52 - 46)
         fr.meta:SetText(format("%d/%d", doneN, #row.ids))
         fr.meta:SetTextColor(Unpack(C_DIM))
         fr.lv:SetText(LvTxt(row.lv))
         fr.lv:SetTextColor(Unpack(C_GREY))
-        fr.__sel = isSel or isOpen
-        Hui(fr.__sel, fr, isOpen and "hover" or nil)
+        fr.__sel = isSel
+        PaintSel(fr, isSel)
+        Hui(false, fr)
         fr.__act = function()
             CQ.open[row.key] = not CQ.open[row.key]
             CQ.sel = { type = "chain", row = row }
@@ -1603,13 +1652,14 @@ function CQ.Render()
                 local qn = QName(qid)
                 local qsel = (sel and sel.type == "quest" and sel.id == qid) and true or false
                 r.name:SetText(qn)
-                r.name:SetTextColor(Unpack((qst == "done") and C_DONE or (qsel and C_GOLD or C_TEXT)))
+                r.name:SetTextColor(Unpack(qsel and C_WHITE or ((qst == "done") and C_DONE or C_TEXT)))
                 r.name:SetWidth(RowW() - ROW_IND - 30 - 46)
                 local q = Info(qid)
                 r.lv:SetText(LvTxt(q and q.r))
                 r.lv:SetTextColor(Unpack(C_GREY))
                 r.__sel = qsel
-                Hui(qsel, r)
+                PaintSel(r, qsel)
+                Hui(false, r)
                 r.__act = function()
                     CQ.sel = { type = "quest", id = qid, chain = row }
                     CQ.ToTop()

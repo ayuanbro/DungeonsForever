@@ -19,9 +19,13 @@ Core\ModuleInit.lua
 Core\Data\Data_SpellBook.lua
 Core\Data\Data_SpellExtra.lua
 Core\Data\Data_WeaponTraining.lua
+Core\Data\Data_ClassTrainers.lua
 Core\Data\zhTW\Data_SpellBook.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_WeaponTraining.lua [AllowLoadTextLocale zhTW]
+Core\Data\zhTW\Data_ClassTrainers.lua [AllowLoadTextLocale zhTW]
 Core\Data\enUS\Data_SpellBook.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_ClassTrainers.lua [AllowLoadTextLocale enUS]
 Core\SpellTraining.lua
 Core\WeaponMasters.lua
+Core\ClassTrainers.lua
 Core\NativeSpellBook.lua

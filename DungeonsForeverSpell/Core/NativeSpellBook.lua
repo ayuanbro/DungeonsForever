@@ -7,7 +7,7 @@ ns.NativeSpellBook = NB
 
 local TAB_ICON = "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp"
 local TAB_ICON_FALLBACK = "Interface\\Icons\\INV_Misc_QuestionMark"
-local TAB_ICON_WEAPON = "Interface\\Icons\\INV_Sword_27"
+local TAB_ICON_WEAPON = "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\WeaponBook.blp"
 
 local TPL_SPELL = "SPELL"
 local TPL_HEADER = "HEADER"
@@ -28,6 +28,7 @@ local WGROUP_ORDER = {
 }
 
 local book, tabButton, weaponTabButton
+local subState = "class"
 local activePage
 local nativeTpl
 local ourProvider
@@ -578,12 +579,25 @@ local function EmptyGroup()
     return { { elements = {} } }
 end
 
+local function ClassGroups()
+    local ct = ns.ClassTrainers
+    if ct and ct.Groups then
+        local g = ct.Groups()
+        if g and #g > 0 then return g end
+    end
+    return nil
+end
+
 local function InstallOurs()
     local paged = Paged()
     if not paged then return false end
     local groups
     if activePage == "weapon" then
-        groups = BuildWeaponGroups()
+        if subState == "weapon" then
+            groups = BuildWeaponGroups()
+        else
+            groups = ClassGroups()
+        end
     else
         groups = BuildSpellGroups()
     end
@@ -592,6 +606,92 @@ local function InstallOurs()
     paged:SetDataProvider(CreateDataProvider(groups), false)
     ourProvider = paged.dataProvider
     return true
+end
+
+local subBar, subClassBtn, subWeaponBtn
+
+local function PageBox()
+    local paged = Paged()
+    if not paged then return nil end
+    for _, ch in ipairs({ paged:GetChildren() }) do
+        local n = 0
+        for _, c2 in ipairs({ ch:GetChildren() }) do
+            if c2.IsObjectType and c2:IsObjectType("Button") then n = n + 1 end
+        end
+        if n >= 2 then return ch end
+    end
+    return nil
+end
+
+local function SubPaint()
+    local items = { { subClassBtn, subState == "class" }, { subWeaponBtn, subState == "weapon" } }
+    for _, it in ipairs(items) do
+        local b, sel = it[1], it[2]
+        if b then
+            if b.label then
+                if sel then
+                    b.label:SetTextColor(1, 0.86, 0.45)
+                else
+                    b.label:SetTextColor(0.72, 0.68, 0.58)
+                end
+            end
+            if sel and b.LockHighlight then
+                b:LockHighlight()
+            elseif b.UnlockHighlight then
+                b:UnlockHighlight()
+            end
+        end
+    end
+end
+
+local function SetSub(key)
+    if subState == key then return end
+    subState = key
+    SubPaint()
+    if activePage == "weapon" then InstallOurs() end
+end
+
+local function BuildSubBar()
+    if subBar then return subBar end
+    local paged = Paged()
+    if not paged then return nil end
+    local box = PageBox()
+    local host = box or paged
+    subBar = CreateFrame("Frame", nil, host)
+    subBar:SetSize(190, 32)
+    if box then
+        subBar:SetPoint("BOTTOMRIGHT", box, "BOTTOMLEFT", -6, 0)
+    else
+        subBar:SetPoint("BOTTOMLEFT", paged, "BOTTOMLEFT", 10, 2)
+    end
+    local function mk(name, text, key, w)
+        local b = CreateFrame("Button", name, subBar, "UIPanelButtonTemplate")
+        b:SetSize(w, 32)
+        b:SetText("")
+        local fs = b:CreateFontString(nil, "OVERLAY")
+        fs:SetFont(ns.FONT, 13, "")
+        fs:SetPoint("CENTER", b, "CENTER", 0, 0)
+        fs:SetText(text)
+        b.label = fs
+        b:SetScript("OnClick", function() SetSub(key) end)
+        return b
+    end
+    subClassBtn = mk("DungeonsForeverSubClass", ns.L["职业训练师"], "class", 94)
+    subClassBtn:SetPoint("LEFT", subBar, "LEFT", 0, 0)
+    subWeaponBtn = mk("DungeonsForeverSubWeapon", ns.L["武器大师"], "weapon", 86)
+    subWeaponBtn:SetPoint("LEFT", subClassBtn, "RIGHT", 3, 0)
+    SubPaint()
+    return subBar
+end
+
+local function SyncSubBar(show)
+    local bar = BuildSubBar()
+    if not bar then return end
+    if show then
+        bar:Show()
+    else
+        bar:Hide()
+    end
 end
 
 local function RestoreNative()
@@ -738,6 +838,7 @@ ShowPage = function(key)
     if book.SettingsDropdown then book.SettingsDropdown:SetShown(not shown) end
     if book.SearchPreviewContainer then book.SearchPreviewContainer:Hide() end
     PaintTabs()
+    SyncSubBar(key == "weapon")
     ApplyData()
 end
 
@@ -825,9 +926,9 @@ local function AnchorTabs()
     tabButton.__anchorHost = host
     tabButton:ClearAllPoints()
     if host then
-        tabButton:SetPoint("LEFT", host, "RIGHT", 4, 0)
+        tabButton:SetPoint("LEFT", host, "RIGHT", 1, 0)
     else
-        tabButton:SetPoint("LEFT", book.CategoryTabSystem, "RIGHT", 8, 0)
+        tabButton:SetPoint("LEFT", book.CategoryTabSystem, "RIGHT", 1, 0)
     end
 end
 
@@ -847,15 +948,20 @@ local function Attach()
         if ok and id and id ~= 0 then iconFile = TAB_ICON end
     end
     tabButton:Init(0, nil, iconFile)
-    tabButton:SetPoint("LEFT", sb.CategoryTabSystem, "RIGHT", 8, 0)
-    tabButton:SetTooltipText(ns.L["训练师"])
+    tabButton:SetPoint("LEFT", sb.CategoryTabSystem, "RIGHT", 1, 0)
+    tabButton:SetTooltipText(ns.L["职业技能"])
     tabButton:SetScript("OnClick", function() OnTabClick("spell") end)
 
+    local wIconFile = TAB_ICON_FALLBACK
+    if GetFileIDFromPath then
+        local ok, wid = pcall(GetFileIDFromPath, TAB_ICON_WEAPON)
+        if ok and wid and wid ~= 0 then wIconFile = TAB_ICON_WEAPON end
+    end
     weaponTabButton = CreateFrame("Button", "DungeonsForeverWeaponBookTab", sb.CategoryTabSystem,
                                   "SpellBookCategoryTabTemplate")
-    weaponTabButton:Init(0, nil, TAB_ICON_WEAPON)
-    weaponTabButton:SetPoint("LEFT", tabButton, "RIGHT", 4, 0)
-    weaponTabButton:SetTooltipText(ns.L["武器技能"])
+    weaponTabButton:Init(0, nil, wIconFile)
+    weaponTabButton:SetPoint("LEFT", tabButton, "RIGHT", 1, 0)
+    weaponTabButton:SetTooltipText(ns.L["训练师"])
     weaponTabButton:SetScript("OnClick", function() OnTabClick("weapon") end)
 
     lastTab = sb.GetTab and sb:GetTab()
@@ -887,6 +993,7 @@ local function Attach()
         if NB.RefreshEnabled then NB.RefreshEnabled() end
         AnchorTabs()
         if sb.ResizeSearchBox then pcall(sb.ResizeSearchBox, sb) end
+        SyncSubBar(activePage == "weapon")
         if activePage then InstallOurs() end
         PaintTabs()
         if C_Timer and C_Timer.After then
