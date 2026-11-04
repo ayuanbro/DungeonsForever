@@ -2859,12 +2859,6 @@ end
 local function finalize(j,status)
     j.status=status
     j.phase="finalize"
-    local rebatchPending = j.best and j.rebatchFinal and not j.rebatchFinalized
-        and (status=="complete" or status=="incomplete")
-    if j.best and j.resultState==j.best and j.resultCache and not rebatchPending then
-        j.result=S.Result(j,j.best,status);j.finished=true
-        return
-    end
     j.finalizing=true
     j.co=coroutine.create(function()
         j.result=S.Result(j,j.best,status)
@@ -2873,7 +2867,7 @@ local function finalize(j,status)
     end)
 end
 function S.Run(j,budget)
-    if j.finished or j.status=="stopped" or coroutine.status(j.co)=="dead" then
+    if j.finished or j.cancelled or j.status=="stopped" and not j.finalizing or coroutine.status(j.co)=="dead" then
         S.RefreshStatus(j);return true
     end
     local start=clock();j.sliceStart=start;j.deadline=start+(budget or 2)
@@ -2882,29 +2876,14 @@ function S.Run(j,budget)
     if not j.finalizing and qualityBudgetDue(j) then
         j.budgetLimited=true;j.searchTermination="quality_budget"
         finalize(j,uncertainty(j.best)==0 and "complete" or "incomplete")
-        if j.finished then
-            local delta=max(0,clock()-start)
-            j.phaseCpuMs[phase]=(j.phaseCpuMs[phase] or 0)+delta
-            j.cpuUsed=max(before,j.cpuUsed)+delta;j.sliceStart=nil
-            if j.result then j.result.phaseCpuMs=E.Copy(j.phaseCpuMs) end
-            j.progressVersion=(j.progressVersion or 0)+1
-            S.RefreshStatus(j)
-            return true
-        end
     end
     if not j.finalizing and j.cpuUsed>=j.cpuLimitMs then
         j.budgetLimited=true;j.searchTermination="cpu_limit"
         finalize(j,j.best and (uncertainty(j.best)==0 and "complete" or "incomplete") or "incomplete")
-        if j.finished then
-            local delta=max(0,clock()-start)
-            j.phaseCpuMs[phase]=(j.phaseCpuMs[phase] or 0)+delta
-            j.cpuUsed=max(before,j.cpuUsed)+delta;j.sliceStart=nil
-            if j.result then j.result.phaseCpuMs=E.Copy(j.phaseCpuMs) end
-            j.progressVersion=(j.progressVersion or 0)+1;S.RefreshStatus(j);return true
-        end
     end
     local ok,why=coroutine.resume(j.co)
     local elapsed=max(0,clock()-start)
+    if ok and j.status~="searching" and coroutine.status(j.co)~="dead" then j.finalizing=true end
     if not ok then
         j.status="error";j.searchTermination="error";j.failures.error={code="solverError",detail=tostring(why)}
         j.error=why
@@ -2922,6 +2901,7 @@ function S.Run(j,budget)
     j.phaseCpuMs[phase]=(j.phaseCpuMs[phase] or 0)+delta
     j.cpuUsed=max(before,j.cpuUsed)+delta;j.sliceStart=nil
     local done=j.finished or coroutine.status(j.co)=="dead"
+    if done then j.finalizing=nil end
     if done and j.result then j.result.phaseCpuMs=E.Copy(j.phaseCpuMs) end    if done or not j.progressAt or clock()-j.progressAt>=200 then
         j.progressAt=clock();j.progressVersion=(j.progressVersion or 0)+1
     end
