@@ -1883,7 +1883,7 @@ function RA.SpecSig(slug)
     return G.SpecFingerprint(choice)
 end
 
-function RA.OptionsFor(slug, current)
+function RA.OptionsFor(slug, current, skipExecutionInventory)
     local PDm = ns.ProfModule
     if not (PDm and PDm.Setting) then return nil end
     local fish = PDm.CookingFishingMode and PDm.CookingFishingMode(slug) or false
@@ -1901,7 +1901,7 @@ function RA.OptionsFor(slug, current)
         scheme = slug=="first-aid" and "fixed" or fish and "fishing" or PDm.SettingRaw("autoScheme",slug),
         allowSecondaryLeveling = PDm.Setting("autoSecondaryLeveling",slug),
         secondaryProfession = pair and pair.partner or nil,
-        executionInventory = ns.ProfExecution and ns.ProfExecution.GetContinuation
+        executionInventory = not skipExecutionInventory and ns.ProfExecution and ns.ProfExecution.GetContinuation
             and ns.ProfExecution.GetContinuation(slug) or nil,
     }
 end

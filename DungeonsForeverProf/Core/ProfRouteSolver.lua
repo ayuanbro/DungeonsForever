@@ -1212,8 +1212,9 @@ function S.NewJob(slug,opts)
         log(t,{type="formula",item=f.id,count=f.bundleSize or 1,cost=f.cost or 0,source=f.source,owner=r.key,unpriced=f.unpriced,formula=E.Copy(f)})
         return t
     end
-    local function prepare(r,s,reason,path,emit)
-        local usable,learning=allowed(r,s,reason)
+    local function prepare(r,s,reason,path,emit,selectedLearning)
+        local usable,learning=true,selectedLearning
+        if not learning then usable,learning=allowed(r,s,reason) end
         if not usable then return end
         local skill=s.skill[r.profession]
         if not skill then fail("professionMissing",r); return end
@@ -1255,7 +1256,7 @@ function S.NewJob(slug,opts)
         local t=clone(s); t.cap[p]=nextCap
         return t
     end
-    craft=function(s,r,n,reason,path,emit)
+    craft=function(s,r,n,reason,path,emit,learning)
         tick(); if j.seedAborted or pruned(s) then return end
         prepare(r,s,reason,path,function(base)
             local function reagents(t,i)
@@ -1295,7 +1296,7 @@ function S.NewJob(slug,opts)
                 if not pruned(t) then emit(t) end
             end
             reagents(base,1)
-        end)
+        end,learning)
     end
     acquire=function(s,id,need,reason,path,emit,used)
         tick()
@@ -1382,13 +1383,14 @@ function S.NewJob(slug,opts)
                     if j.seedAborted or trials>=3 then break end
                     if selected and not uncertain and candidate.estimate>=selected.money-s.money-1e-7 then break end
                     local r=candidate.recipe
-                    if allowed(r,s,"material") then
+                    local usable,learning=allowed(r,s,"material")
+                    if usable then
                         local u=E.Copy(used);u[r.key]=true
                         trials=trials+1
                         j.workCounters.seedCraftComparisons=j.workCounters.seedCraftComparisons+1
                         craft(s,r,candidate.count,"material",pth,function(t)
                             if available(t,id)>=need and better(t,selected) then selected=t end
-                        end)
+                        end,learning)
                     end
                     tick()
                 end
@@ -1457,13 +1459,15 @@ function S.NewJob(slug,opts)
                 local materialProfession=opts.materialProfession or slug
                 local own=path.ownProfessionOnly and r.profession==path.ownProfessionOnly
                     or not path.ownProfessionOnly and (j.purchasePriced[id] or r.profession==materialProfession or materialProfession=="__purchase")
-                if own and not used[r.key] and allowed(r,s,"material") then
+                local usable,learning
+                if own and not used[r.key] then usable,learning=allowed(r,s,"material") end
+                if usable then
                     had=true; local u=E.Copy(used); u[r.key]=true
                     local limit=ceil(missing/r.count)
                     for n=1,limit do
                         if j.seedAborted then return end
                         if (not j.directSeed or n==limit) and (not j.seeding or n==1 or n==limit) then
-                        craft(s,r,n,"material",pth,function(t) acquire(t,id,need,reason,path,emit,u) end)
+                        craft(s,r,n,"material",pth,function(t) acquire(t,id,need,reason,path,emit,u) end,learning)
                         if j.directSeed and localBest then finalEmit(localBest); return end
                         tick()
                         end
@@ -1664,7 +1668,9 @@ function S.NewJob(slug,opts)
             end
             for _,r in ipairs(levelRecipes(p,s.skill[p])) do
                 local sk=s.skill[p]
-                if r.learn<=sk and sk<r.grey and allowed(r,s,"level")
+                local usable,learning
+                if r.learn<=sk and sk<r.grey then usable,learning=allowed(r,s,"level") end
+                if usable
                     and (not j.referenceSeed or not j.referenceRecipes[r.key] or s.lastRecipe==r.key) then
                     any=true
                     local n=(opts.specializationRecipeScore or j.smoothSeed) and 1
@@ -1686,12 +1692,12 @@ function S.NewJob(slug,opts)
                         end
                         rate=value/max(.000001,E.Gain(r,sk))
                     end
-                    candidates[#candidates+1]={recipe=r,count=n,estimate=estimate,rate=rate}
+                    candidates[#candidates+1]={recipe=r,count=n,estimate=estimate,rate=rate,learning=p==slug and learning or nil}
                     if j.hasFiniteSupply and n>1 then
                         local partialCost=0
                         if f and not f.known and not s.formulaPaid[f.id or r.key] then partialCost=f.cost or 0 end
                         for _,m in ipairs(r.mats) do partialCost=partialCost+quote(m[1],m[2]) end
-                        candidates[#candidates+1]={recipe=r,count=1,estimate=partialCost*n}
+                        candidates[#candidates+1]={recipe=r,count=1,estimate=partialCost*n,learning=p==slug and learning or nil}
                     end
                 end
                 tick()
@@ -1722,7 +1728,7 @@ function S.NewJob(slug,opts)
                     craft(s,candidate.recipe,candidate.count,p==slug and "level" or "secondary",path,function(t)
                         if (t.skill[p]>s.skill[p] or t.skill[p]==s.skill[p] and (t.progress[p] or 0)>(s.progress[p] or 0))
                             and better(t,winner) then winner=t end
-                    end)
+                    end,candidate.learning)
                     local score=winner and opts.specializationRecipeScore and opts.specializationRecipeScore(candidate.recipe,s,j.snap,winner.money-s.money)
                     if winner and (score and (not selectedScore or score<selectedScore-1e-7
                         or math.abs(score-selectedScore)<1e-7 and better(winner,selected))
@@ -1736,11 +1742,13 @@ function S.NewJob(slug,opts)
         end
         for _,r in ipairs(levelRecipes(p,s.skill[p])) do
             local sk=s.skill[p]
-            if r.learn<=sk and sk<r.grey and allowed(r,s,"level") then
+            local usable,learning
+            if r.learn<=sk and sk<r.grey then usable,learning=allowed(r,s,"level") end
+            if usable then
                 any=true
                 local g=E.Gain(r,sk)
                 local n=greedy and max(1,ceil((1-(s.progress[p] or 0))/max(.000001,g)-1e-7)) or 1
-                craft(s,r,n,p==slug and "level" or "secondary",path,emit)
+                craft(s,r,n,p==slug and "level" or "secondary",path,emit,p==slug and learning or nil)
             end
             tick()
         end
@@ -2022,6 +2030,7 @@ function S.NewJob(slug,opts)
                 local seeding,direct,aborted=j.seeding,j.directSeed,j.seedAborted
                 j.seeding=true;j.directSeed=true;j.seedAborted=false
                 local rebuilt=rebuildBatches(candidate)
+                if rebuilt and not better(rebuilt,candidate) then rebuilt=nil end
                 local limits={}
                 for _=1,3 do
                     local advanced,retry=rebuildBatches(candidate,limits)

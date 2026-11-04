@@ -29,14 +29,15 @@ local function learningStale(result)
     return result
 end
 local function now() return time and time() or 0 end
-local function copy(value, seen)
+local function copy(value, seen, preserveSnapshot)
     if type(value) ~= "table" then return value end
     local view=getmetatable(value)
     if type(view)=="table" and type(view.__profLearningMaterialize)=="function" then value=view.__profLearningMaterialize(value) end
     seen = seen or {}; if seen[value] then return seen[value] end
     local out = {}; seen[value] = out
     for k,v in pairs(value) do
-        if type(k) == "string" or type(k) == "number" then
+        if preserveSnapshot and k=="snapshot" then out[k]=v
+        elseif type(k) == "string" or type(k) == "number" then
             local kind = type(v)
             if kind == "table" then out[k] = copy(v, seen)
             elseif kind == "string" or kind == "number" or kind == "boolean" then out[k] = v end
@@ -68,7 +69,7 @@ local function setting(key, fallback, slug)
     return fallback
 end
 function RA.OptionsFor(slug, current)
-    local opts = baseOptions and baseOptions(slug, current) or {}
+    local opts = baseOptions and baseOptions(slug, current, true) or {}
     opts.fromCurrent = setting("autoFromCurrent", true,slug)
     opts.cpuLimitMs = 8000
     opts.autoCraftTools = setting("autoCraftTools", true,slug)
@@ -87,7 +88,7 @@ function RA.OptionsFor(slug, current)
     return opts
 end
 local function options(slug, supplied)
-    local opts = copy(supplied or RA.OptionsFor(slug))
+    local opts = copy(supplied or RA.OptionsFor(slug),nil,true)
     if supplied and supplied.snapshot then opts.snapshot = supplied.snapshot end
     opts.scheme = opts.scheme or "cheapest"
     opts.profession = slug
@@ -300,10 +301,16 @@ local function discardScope(scope)
     if key then results[key]=nil end
     active[scope]=nil
 end
+local function pause(job,reason)
+    if not job.cancelled then
+        job.resumeStatus=job.status;job.resumeTermination=job.searchTermination
+    end
+    job.cancelled=true;job.status="stopped";job.searchTermination=reason
+end
 local function pump(job)
     if job.invalid or job.cancelled or job.finished then return true end
     if replicatePrerequisite(job.slug,job.opts) then
-        job.cancelled=true;job.status="stopped";job.searchTermination="replicate_scan_required"
+        pause(job,"replicate_scan_required")
         if job.published then
             job.published.status="stopped";job.published.inFlight=false
             job.published.searchTermination="replicate_scan_required"
@@ -518,7 +525,7 @@ function RA.Recalculate(slug, supplied)
         if RA.Cancel then RA.Cancel(slug) end
         return RA.FixedPlan(slug,supplied or RA.OptionsFor(slug))
     end
-    local opts=options(slug,supplied);local sigOpts=copy(opts);sigOpts.snapshot=opts.snapshot
+    local opts=options(slug,supplied);local sigOpts=copy(opts,nil,true);sigOpts.snapshot=opts.snapshot
     local blocked=replicatePrerequisite(slug,opts)
     if blocked then return blocked end
     if not opts.snapshot then local _,cacheError=saved();if cacheError then return gate(slug,opts,cacheError) end end
@@ -551,7 +558,7 @@ function RA.SavePlanPrev(slug)
     local xp=ns.ProfExecution
     if xp and not xp.CanRevertCandidate(slug) then planPrevMem[scope]=nil;return end
     local key=active[scope];local result=key and results[key]
-    if type(result)~="table" or type(result.steps)~="table" or #result.steps==0 then return end
+    if type(result)~="table" or result.finalizing or type(result.steps)~="table" or #result.steps==0 then return end
     local previous=copy(result)
     if previous.status=="searching" then
         previous.status="stopped";previous.searchTermination="user_stopped"
@@ -562,7 +569,8 @@ end
 function RA.HasPlanPrev(slug)
     if not slug then return false end
     local xp=ns.ProfExecution
-    return (not xp or xp.CanRevertCandidate(slug)) and planPrevMem[character().."|"..slug]~=nil
+    local previous=planPrevMem[character().."|"..slug]
+    return (not xp or xp.CanRevertCandidate(slug)) and previous~=nil and not previous.result.finalizing
 end
 function RA.RevertPlan(slug,supplied)
     if not RA.HasPlanPrev(slug) then return false end
@@ -610,7 +618,7 @@ function RA.Cancel(slug)
     local changed=false
     for _,job in pairs(jobs) do
         if (not slug or job.slug==slug) and not job.finished and not job.invalid then
-            job.cancelled=true;job.status="stopped";job.searchTermination="user_stopped";job.scheduled=false;job.scheduleVersion=(job.scheduleVersion or 0)+1
+            pause(job,"user_stopped");job.scheduled=false;job.scheduleVersion=(job.scheduleVersion or 0)+1
             local result=job.published
             if result then result.status="stopped";result.inFlight=false;result.searchTermination="user_stopped";publish(job,result) end
             changed=true
@@ -622,8 +630,9 @@ function RA.Continue(slug)
     if replicatePrerequisite(slug,{}) then return false end
     for _,job in pairs(jobs) do
         if (not slug or job.slug==slug) and job.cancelled and not job.finished and not job.invalid then
-            job.cancelled=false;job.status="searching";job.searchTermination=nil
-            if job.published then job.published.status="searching";job.published.searchTermination=nil end
+            job.cancelled=false;job.status=job.resumeStatus or "searching";job.searchTermination=job.resumeTermination
+            job.resumeStatus=nil;job.resumeTermination=nil
+            if job.published then job.published.status=job.status;job.published.searchTermination=job.searchTermination end
             schedule(job)
         end
     end
@@ -665,7 +674,7 @@ if run then
     end
     run.Start=function(slug,opts,hooks)
         local supplied=opts
-        opts=copy(opts or RA.OptionsFor(slug));opts.cpuLimitMs=opts.cpuLimitMs or 8000
+        opts=copy(opts or RA.OptionsFor(slug),nil,true);opts.cpuLimitMs=opts.cpuLimitMs or 8000
         if supplied and supplied.snapshot then opts.snapshot=supplied.snapshot end
         local result=RA.Recalculate(slug,opts)
         local key,scope=identity(slug,options(slug,opts))
