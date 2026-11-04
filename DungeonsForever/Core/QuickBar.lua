@@ -710,59 +710,8 @@ function QB:EnsureSettings()
         hy = hy - SET_HDR_H
     end
 
-    local dropPanels = {}
-    local dropGuard
     local dropBaseY = hy
     local blocks = {}
-
-    local function GuardDrops()
-        if dropGuard then return end
-        dropGuard = CreateFrame("Frame")
-        dropGuard:RegisterEvent("GLOBAL_MOUSE_DOWN")
-        dropGuard:SetScript("OnEvent", function()
-            for k = 1, #dropPanels do
-                local d = dropPanels[k]
-                if d:IsShown() and not d:IsMouseOver()
-                    and not (d.owner and d.owner:IsMouseOver()) then
-                    d:Hide()
-                end
-            end
-        end)
-    end
-
-    local function CheckRow(p, idx, text)
-        local row = CreateFrame("Button", nil, p)
-        row:SetSize(190, 24)
-        row:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -4 - (idx - 1) * 24)
-        local hl = row:CreateTexture(nil, "BACKGROUND")
-        hl:SetAllPoints()
-        hl:SetColorTexture(0, 0, 0, 0)
-        row:SetScript("OnEnter", function()
-            local L5 = ns.hui and ns.hui.layer and ns.hui.layer.L5
-            if L5 then hl:SetColorTexture(L5[1], L5[2], L5[3], 1) end
-        end)
-        row:SetScript("OnLeave", function()
-            hl:SetColorTexture(0, 0, 0, 0)
-        end)
-        local bx = CreateFrame("Frame", nil, row)
-        bx:SetSize(16, 16)
-        bx:SetPoint("LEFT", row, "LEFT", 10, 0)
-        row.ring = bx:CreateTexture(nil, "ARTWORK")
-        row.ring:SetAllPoints()
-        row.ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing")
-        row.ring:SetVertexColor(0.42, 0.41, 0.38, 0.9)
-        row.disc = bx:CreateTexture(nil, "ARTWORK")
-        row.disc:SetAllPoints()
-        row.disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
-        row.disc:SetVertexColor(0.91, 0.78, 0.42)
-        row.tick = bx:CreateTexture(nil, "OVERLAY")
-        row.tick:SetAllPoints()
-        row.tick:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
-        row.label = Fs(row, 14, C_TEXT)
-        row.label:SetPoint("LEFT", bx, "RIGHT", 7, 0)
-        row.label:SetText(text)
-        return row
-    end
 
     local function Relayout()
         local y = dropBaseY
@@ -783,7 +732,6 @@ function QB:EnsureSettings()
         end
         hy = y
         host:SetHeight(8 - y)
-        for k = 1, #dropPanels do dropPanels[k]:Hide() end
         if ns.LayoutSettingsStack then ns.LayoutSettingsStack() end
     end
 
@@ -803,20 +751,7 @@ function QB:EnsureSettings()
         arw:SetPoint("RIGHT", bt, "RIGHT", -8, 0)
         arw:SetText("\226\150\188")
 
-        local panel, rows = nil, {}
-
         local function Paint()
-            for k = 1, #items do
-                local on = opts.get(items[k].key) and true or false
-                local r = rows[k]
-                if r then
-                    r.ring:SetShown(not on)
-                    r.disc:SetShown(on)
-                    r.tick:SetShown(on)
-                    local c = on and C_TEXT or C_DIM
-                    r.label:SetTextColor(c[1], c[2], c[3])
-                end
-            end
             bfs:SetText(opts.summary())
             if ns.QuickCfg().on then
                 bt:Enable()
@@ -828,50 +763,33 @@ function QB:EnsureSettings()
             arw:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
         end
 
-        local function BuildPanel()
-            if panel then return panel end
-            GuardDrops()
-            local p = CreateFrame("Frame", nil, pop, "BackdropTemplate")
-            p:SetFrameLevel((host:GetFrameLevel() or 500) + 20)
-            p:SetSize(192, #items * 24 + 8)
-            p:EnableMouse(true)
-            p:SetScript("OnMouseWheel", function() end)
-            if ns.hui and ns.hui.SkinPopup then
-                ns.hui.SkinPopup(p, 8, "both", ns.hui.layer.L0)
-            end
-            p.owner = bt
+        local function MenuItems()
+            local list = {}
             for k = 1, #items do
                 local it = items[k]
-                local row = CheckRow(p, k, it.label)
-                row:SetScript("OnClick", function()
-                    ns.PlaySound(1)
-                    opts.click(it.key)
-                    Paint()
-                    QB:SyncSettings()
-                    QB:Apply()
-                    if opts.single then p:Hide() end
-                end)
-                rows[k] = row
+                list[#list + 1] = {
+                    text = it.label,
+                    checked = opts.get(it.key) and true or false,
+                    func = function()
+                        ns.PlaySound(1)
+                        opts.click(it.key)
+                        Paint()
+                        QB:SyncSettings()
+                        QB:Apply()
+                        if not opts.single then
+                            ns.hui.ShowMenu(MenuItems(), { owner = bt, anchor = bt })
+                        end
+                    end,
+                }
             end
-            panel = p
-            dropPanels[#dropPanels + 1] = p
-            return p
+            return list
         end
 
         bt:SetScript("OnClick", function(self)
             ns.PlaySound(1)
-            local p = BuildPanel()
-            if p:IsShown() then
-                p:Hide()
-                return
-            end
-            for k = 1, #dropPanels do
-                if dropPanels[k] ~= p then dropPanels[k]:Hide() end
-            end
-            p:ClearAllPoints()
-            p:SetPoint("TOPLEFT", self, "BOTTOMLEFT", 0, -4)
-            p:Show()
+            if not (ns.hui and ns.hui.ShowMenu) then return end
             Paint()
+            ns.hui.ShowMenu(MenuItems(), { owner = self, anchor = self })
         end)
 
         blocks[#blocks + 1] = {

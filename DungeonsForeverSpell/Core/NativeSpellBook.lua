@@ -831,17 +831,6 @@ local function AnchorTabs()
     end
 end
 
-local function AutoYield()
-    local ui = ns.DB and ns.DB().ui
-    if not ui then return false end
-    if ui.spellEnh ~= nil then return false end
-    if not NB.OthersOccupied() then return false end
-    if activePage then ShowPage(nil) end
-    if tabButton then tabButton:Hide() end
-    if weaponTabButton then weaponTabButton:Hide() end
-    return true
-end
-
 local function Attach()
     local psf = PlayerSpellsFrame
     local sb = psf and psf.SpellBookFrame
@@ -895,7 +884,7 @@ local function Attach()
         end
     end)
     sb:HookScript("OnShow", function()
-        AutoYield()
+        if NB.RefreshEnabled then NB.RefreshEnabled() end
         AnchorTabs()
         if sb.ResizeSearchBox then pcall(sb.ResizeSearchBox, sb) end
         if activePage then InstallOurs() end
@@ -903,6 +892,9 @@ local function Attach()
         if C_Timer and C_Timer.After then
             C_Timer.After(0.3, PaintTabs)
             C_Timer.After(1.2, PaintTabs)
+            C_Timer.After(1.2, function()
+                if NB.RefreshEnabled then NB.RefreshEnabled() end
+            end)
         end
     end)
     AnchorTabs()
@@ -1012,7 +1004,12 @@ ns.Init(function()
         retryLeft = 6
         ApplyEnabled()
         if C_Timer and C_Timer.After then
-            C_Timer.After(2.0, function() AutoYield() end)
+            C_Timer.After(2.0, function()
+                if NB.RefreshEnabled then NB.RefreshEnabled() end
+            end)
+            C_Timer.After(6.0, function()
+                if NB.RefreshEnabled then NB.RefreshEnabled() end
+            end)
         end
     end)
 end)

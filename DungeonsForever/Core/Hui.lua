@@ -1551,7 +1551,8 @@ do
                 disc:SetShown(on)
                 tick:SetShown(on)
                 if on then
-                    disc:SetVertexColor(0.91, 0.78, 0.42)
+                    local ac = ns.hui.ACCENT
+                    disc:SetVertexColor(ac[1], ac[2], ac[3])
                     tick:SetVertexColor(1, 1, 1, 1)
                 else
                     ring:SetVertexColor(0.42, 0.41, 0.38, 0.9)

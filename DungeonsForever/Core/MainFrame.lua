@@ -1108,104 +1108,29 @@ function BuildTipCard()
     ddar:SetPoint("RIGHT", dd, "RIGHT", -8, 0)
     ddar:SetText("\226\150\188")
 
-    local ddPanel, ddRows
-
-    local function PaintTipRows()
+    local function TipMenuItems()
         local cfg = ns.TipCfg()
-        for i, it in ipairs(TIP_ITEMS) do
-            local row = ddRows and ddRows[i]
-            if row then
-                local on = cfg[it.key] and true or false
-                row.ring:SetShown(not on)
-                row.disc:SetShown(on)
-                row.tick:SetShown(on)
-                if on then
-                    row.label:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
-                else
-                    row.label:SetTextColor(0.55, 0.58, 0.65)
-                end
-            end
+        local items = {}
+        for _, it in ipairs(TIP_ITEMS) do
+            items[#items + 1] = {
+                text = it.label,
+                checked = cfg[it.key] and true or false,
+                func = function()
+                    ns.PlaySound(1)
+                    local c = ns.TipCfg()
+                    c[it.key] = not (c[it.key] and true)
+                    if ns.TipLines.RefreshPreview then ns.TipLines.RefreshPreview() end
+                    ns.hui.ShowMenu(TipMenuItems(), { owner = dd, anchor = dd })
+                end,
+            }
         end
-    end
-
-    local function BuildTipPanel()
-        if ddPanel then return ddPanel end
-        local p = CreateFrame("Frame", nil, settingsPop, "BackdropTemplate")
-        p:SetFrameLevel((card:GetFrameLevel() or 512) + 20)
-        p:SetSize(192, #TIP_ITEMS * 26 + 8)
-        p:EnableMouse(true)
-        p:SetScript("OnMouseWheel", function() end)
-        if ns.hui and ns.hui.SkinPopup then
-            ns.hui.SkinPopup(p, 8, "both", ns.hui.layer.L0)
-        else
-            p:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
-            p:SetBackdropColor(0x10 / 255, 0x13 / 255, 0x1A / 255, 1)
-        end
-        ddRows = {}
-        for i, it in ipairs(TIP_ITEMS) do
-            local row = CreateFrame("Button", nil, p)
-            row:SetSize(190, 26)
-            row:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -4 - (i - 1) * 26)
-            local hl = row:CreateTexture(nil, "BACKGROUND")
-            hl:SetAllPoints()
-            hl:SetColorTexture(0, 0, 0, 0)
-            row:SetScript("OnEnter", function()
-                local L5 = ns.hui and ns.hui.layer and ns.hui.layer.L5
-                if L5 then hl:SetColorTexture(L5[1], L5[2], L5[3], 1) end
-            end)
-            row:SetScript("OnLeave", function()
-                hl:SetColorTexture(0, 0, 0, 0)
-            end)
-            local bx = CreateFrame("Frame", nil, row)
-            bx:SetSize(16, 16)
-            bx:SetPoint("LEFT", row, "LEFT", 10, 0)
-            row.ring = bx:CreateTexture(nil, "ARTWORK")
-            row.ring:SetAllPoints()
-            row.ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing")
-            row.ring:SetVertexColor(0.42, 0.41, 0.38, 0.9)
-            row.disc = bx:CreateTexture(nil, "ARTWORK")
-            row.disc:SetAllPoints()
-            row.disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
-            row.disc:SetVertexColor(0.91, 0.78, 0.42)
-            row.tick = bx:CreateTexture(nil, "OVERLAY")
-            row.tick:SetAllPoints()
-            row.tick:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
-            row.label = row:CreateFontString(nil, "OVERLAY")
-            row.label:SetFont(ns.FONT, 14, "")
-            row.label:SetPoint("LEFT", bx, "RIGHT", 7, 0)
-            row.label:SetText(it.label)
-            row:SetScript("OnClick", function()
-                ns.PlaySound(1)
-                local cfg = ns.TipCfg()
-                cfg[it.key] = not (cfg[it.key] and true)
-                PaintTipRows()
-                if ns.TipLines.RefreshPreview then ns.TipLines.RefreshPreview() end
-            end)
-            ddRows[i] = row
-        end
-        ddPanel = p
-        local ev = CreateFrame("Frame")
-        ev:RegisterEvent("GLOBAL_MOUSE_DOWN")
-        ev:SetScript("OnEvent", function()
-            if not (ddPanel and ddPanel:IsShown()) then return end
-            if ddPanel:IsMouseOver() then return end
-            if dd and dd:IsMouseOver() then return end
-            ddPanel:Hide()
-        end)
-        return p
+        return items
     end
 
     dd:SetScript("OnClick", function(self)
         ns.PlaySound(1)
-        local p = BuildTipPanel()
-        if p:IsShown() then
-            p:Hide()
-            return
-        end
-        p:ClearAllPoints()
-        p:SetPoint("TOPLEFT", self, "BOTTOMLEFT", 0, -4)
-        p:Show()
-        PaintTipRows()
+        if not (ns.hui and ns.hui.ShowMenu) then return end
+        ns.hui.ShowMenu(TipMenuItems(), { owner = self, anchor = self })
     end)
 
     local bt = CreateFrame("Button", nil, card, "BackdropTemplate")
@@ -1251,7 +1176,7 @@ function BuildTipCard()
     settingsPop:HookScript("OnHide", function()
         tipPreviewOn = false
         PaintTipPreview(false)
-        if ddPanel then ddPanel:Hide() end
+        if ns.hui and ns.hui.HideDFMenu then ns.hui.HideDFMenu() end
         if ns.TipLines.HidePreview then ns.TipLines.HidePreview() end
     end)
 end

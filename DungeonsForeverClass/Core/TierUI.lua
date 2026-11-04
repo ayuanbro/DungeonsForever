@@ -1743,7 +1743,7 @@ function TT.RenderRank()
         local tier = tiers[i]
         ui.frame:Hide()
         if i % 2 == 0 then PY() end
-        if tier then
+        if tier and tier.specs and #tier.specs > 0 then
             local key = tier.key
             local specs = tier.specs or {}
             local col = TT.COLOR[key] or TT.COLOR.D

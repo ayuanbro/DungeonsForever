@@ -172,8 +172,9 @@ function ns.SpellTabsTaken()
 end
 
 function ns.SpellEnhOn()
+    if ns.SpellTabsTaken() then return false end
     local v = DB().ui.spellEnh
-    if v == nil then return not ns.SpellTabsTaken() end
+    if v == nil then return true end
     return v == true
 end
 
@@ -226,6 +227,7 @@ function ns.ConfirmReload(msg)
 end
 
 function ns.SetSpellEnh(on)
+    if on and ns.SpellTabsTaken() then on = false end
     DB().ui.spellEnh = on and true or false
     if ns.NativeSpellBook and ns.NativeSpellBook.SetEnabled then
         ns.NativeSpellBook.SetEnabled(on and true or false)
