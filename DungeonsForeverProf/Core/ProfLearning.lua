@@ -499,7 +499,7 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
         context.allowLimitedFormulas=context.allowLimitedFormulas==true
     end
     if acquisition.nonAuctionable==true then
-        context.nonAuctionable=shallow(context.nonAuctionable);context.nonAuctionable[id]=true
+        context.nonAuctionable={[id]=true}
     end
     local offers=context.formulaOffers and context.formulaOffers[id]
     if not offers and not snapshot and ns.VendorPriceDB and ns.VendorPriceDB.GetFormulaOffers then

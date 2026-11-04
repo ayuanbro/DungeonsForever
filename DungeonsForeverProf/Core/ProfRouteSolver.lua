@@ -222,11 +222,12 @@ local function stampReserve(job,result,status)
 end
 local function finishResult(job,result,state,status)
     stampReserve(job,result,status)
+    local tick=coroutine.running()==job.co and job.tick or nil
     if job.snap and job.snap.auctionPriceInputs then
-        result.auctionPriceInputs=E.Copy(job.snap.auctionPriceInputs)
+        result.auctionPriceInputs=E.Copy(job.snap.auctionPriceInputs,tick)
     end
-    stampFreshResult(result,job.snap,coroutine.running()==job.co and job.tick or nil)
-    E.SummarizeAuctionSupply(result,job.snap)
+    stampFreshResult(result,job.snap,tick)
+    E.SummarizeAuctionSupply(result,job.snap,tick)
     local essence=ns.ProfEssences
     if job.snap and job.snap.essenceConversions and essence and essence.MissingQuotes then
         local bought={}
@@ -326,6 +327,7 @@ function S.Result(job,state,status)
     end
     local entry=state.log
     while entry do
+        resultTick(job)
         local action=entry.action
         if action.type=="craft" then
             local key=action.profession..":"..action.spell
@@ -1765,14 +1767,14 @@ function S.NewJob(slug,opts)
             return raw
         end
         j.workCounters.batchedPlans=j.workCounters.batchedPlans+1
-        local original=actions(raw)
+        local original=actions(raw,tick)
         local function replay(list,start)
             j.workCounters.replayCalls=j.workCounters.replayCalls+1
-            local t=start or initial(j.snap,slug,opts)
+            local t=start or initial(j.snap,slug,opts,tick)
             local greenCrafts=t.rebatchGreenCrafts or 0
             t.diagnostics={}
             local active={}
-            for _,a in ipairs(list) do if a.type=="craft" then active[a.profession..":"..a.spell]=true end end
+            for _,a in ipairs(list) do if a.type=="craft" then active[a.profession..":"..a.spell]=true end;tick() end
             for _,a in ipairs(list) do
                 if a.type=="buy" then
                     local bundle=a.bundleSize or 1
@@ -1820,10 +1822,12 @@ function S.NewJob(slug,opts)
                     t=finishGoal(t,goal)
                 elseif a.type=="craft" then
                     local r=j.snap.byKey[a.profession..":"..a.spell]
-                    if not r or not allowed(r,t,a.reason) or (t.skill[r.profession] or 0)<r.learn then return end
+                    if not r then return end
+                    local usable,learning=allowed(r,t,a.reason)
+                    if not usable or (t.skill[r.profession] or 0)<r.learn then return end
                     local n=a.count;local from=t.skill[r.profession];local progressFrom=t.progress[r.profession] or 0
                     for _,m in ipairs(r.mats) do if available(t,m[1])<m[2]*n then return end end
-                    t=learnFormula(t,r);if not t then return end
+                    t=learnFormula(t,r,nil,learning);if not t then return end
                     local inputs={}
                     for _,m in ipairs(r.mats) do inputs[#inputs+1]={m[1],m[2]*n};consume(t,m[1],m[2]*n) end
                     local gainSum=0
@@ -1854,7 +1858,7 @@ function S.NewJob(slug,opts)
         end
         local function rebuildBatches(candidate,advance)
             local list=actions(candidate)
-            local current=initial(j.snap,slug,opts)
+            local current=initial(j.snap,slug,opts,tick)
             if advance then
                 local useful
                 for _,a in ipairs(list) do
@@ -2049,7 +2053,7 @@ function S.NewJob(slug,opts)
                 return result or candidate
             end
         end
-        local trace=actions(first);local need,keep,quantities,owners,needOwner={},{},{},{},{}
+        local trace=actions(first,tick);local need,keep,quantities,owners,needOwner={},{},{},{},{}
         local changed=false
         for i=#trace,1,-1 do
             local a=trace[i]
@@ -2090,15 +2094,22 @@ function S.NewJob(slug,opts)
                     if n~=a.count then changed=true end
                 else changed=true end
             elseif a.type=="formula" or a.type=="gather" then keep[i]=true end
+            tick()
         end
-        local selected={}
-        for i,a in ipairs(trace) do if keep[i] then
-            local event=E.Copy(a)
-            if quantities[i] then event.cost=event.cost*quantities[i]/event.count;event.count=quantities[i] end
-            if owners[i] then event.owner=owners[i] end
-            selected[#selected+1]=event
-        end end
-        local t=replay(selected)
+        local selected,identical={},true
+        for i,a in ipairs(trace) do
+            if keep[i] then
+                local event=a
+                if quantities[i] and quantities[i]~=a.count or owners[i] and owners[i]~=a.owner then
+                    event=E.Copy(a,tick);identical=false
+                    if quantities[i] then event.cost=event.cost*quantities[i]/event.count;event.count=quantities[i] end
+                    if owners[i] then event.owner=owners[i] end
+                end
+                selected[#selected+1]=event
+            else identical=false end
+            tick()
+        end
+        local t=identical and first or replay(selected)
         if not t or (requireGoal and not goalsComplete(j,t)) then fail("executionInvalid");return end
         if changed then restrict(j,"chronological_replay_reduction") end
         local purchases,formulaStock={},{}
@@ -2117,7 +2128,7 @@ function S.NewJob(slug,opts)
             if entry.skip or entry.events<2 or #materialVendorOffers(id)==0 then purchases[id]=nil end
         end
         if not next(purchases) then t.batched=true;return t end
-        local base=initial(j.snap,slug,opts)
+        local base=initial(j.snap,slug,opts,tick)
         local balance,demand={},{}
         for id in pairs(purchases) do balance[id]=available(base,id);demand[id]=0 end
         for _,a in ipairs(selected) do

@@ -805,7 +805,7 @@ function E.AuctionSupplyChanged(result)
     end
     return false
 end
-function E.SummarizeFormulaSupply(result,context)
+function E.SummarizeFormulaSupply(result,context,tick)
     context=formulaContext(context)
     local inputs={}
     local needed={}
@@ -815,6 +815,7 @@ function E.SummarizeFormulaSupply(result,context)
                 local id=entry.id or entry[1]
                 if id then needed[id]=(needed[id] or 0)+(entry.count or entry[2] or 1) end
             end
+            if tick then tick() end
         end
     end
     local function candidate(id)
@@ -831,6 +832,7 @@ function E.SummarizeFormulaSupply(result,context)
                 end
             end
         end
+        if tick then tick() end
     end
     for _,entry in ipairs(result.formulas or {}) do
         if not entry.known then
@@ -849,20 +851,22 @@ function E.SummarizeFormulaSupply(result,context)
                 entry.supplyMethod=supply and supply.method
             end
         end
+        if tick then tick() end
     end
     result.formulaAuctionSupplyInputs=inputs
     return result
 end
-function E.SummarizeAuctionSupply(result,context)
-    E.SummarizeFormulaSupply(result,context)
+function E.SummarizeAuctionSupply(result,context,tick)
+    E.SummarizeFormulaSupply(result,context,tick)
     result.considerAuctionSupply=E.ConsiderAuctionSupply(context)
     if not result.considerAuctionSupply then
         result.auctionSupplyUnknown=nil;result.auctionSupplyObserved=nil;result.supplyComplete=nil
         result.auctionSupplyInputs={};result.auctionSupplyCandidates={};result.auctionSupplyShortages={}
         result.purchaseVerified=false;result.auctionSupplyRevision=3
-        for _,entry in ipairs(result.mats or {}) do entry.considerAuctionSupply=false end
+        for _,entry in ipairs(result.mats or {}) do entry.considerAuctionSupply=false;if tick then tick() end end
         for _,entry in ipairs(result.formulas or {}) do
             entry.considerAuctionSupply=(entry.source=="ah" or entry.source=="auction") and not entry.known
+            if tick then tick() end
         end
         return result
     end
@@ -881,12 +885,15 @@ function E.SummarizeAuctionSupply(result,context)
     for _,r in ipairs(context and context.recipes or {}) do
         for _,m in ipairs(r.mats or {}) do candidate(m[1]) end
         if r.formula and not (context.known or {})[r.key] then candidate(r.formula) end
+        if tick then tick() end
     end
     for id in pairs(context and context.prices or {}) do
         result.auctionSupplyInputs[id]=supplyIdentity(E.AuctionSupplyOf(context,id))
+        if tick then tick() end
     end
     for id in pairs(context and context.auctionSupply or {}) do
-        result.auctionSupplyInputs[id]=supplyIdentity(E.AuctionSupplyOf(context,id))
+        if result.auctionSupplyInputs[id]==nil then result.auctionSupplyInputs[id]=supplyIdentity(E.AuctionSupplyOf(context,id)) end
+        if tick then tick() end
     end
     for _,list in ipairs({result.mats or {},result.formulas or {}}) do
         for _,entry in ipairs(list) do
@@ -926,6 +933,7 @@ function E.SummarizeAuctionSupply(result,context)
                 end
                 seen[id]=true
             end
+            if tick then tick() end
         end
     end
     for _,list in ipairs({result.mats or {},result.formulas or {}}) do
@@ -935,6 +943,7 @@ function E.SummarizeAuctionSupply(result,context)
                 entry.supplyRequired=needed[id]
                 entry.supplyLimited=needed[id]>(entry.availableCount or 0) or nil
             end
+            if tick then tick() end
         end
     end
     local shortages={}
@@ -944,8 +953,8 @@ function E.SummarizeAuctionSupply(result,context)
         end
     end
     if result.targetReached~=true then
-        for _,d in ipairs(result.blockingDiagnostics or {}) do shortage(d) end
-        if result.feasible==false then for _,d in ipairs(result.diagnostics or {}) do shortage(d) end end
+        for _,d in ipairs(result.blockingDiagnostics or {}) do shortage(d);if tick then tick() end end
+        if result.feasible==false then for _,d in ipairs(result.diagnostics or {}) do shortage(d);if tick then tick() end end end
     end
     result.supplyComplete=result.supplyComplete and #result.auctionSupplyShortages==0
     result.purchaseVerified=result.targetReached==true and result.supplyComplete and result.costComplete~=false
