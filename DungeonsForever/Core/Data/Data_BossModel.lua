@@ -191,6 +191,7 @@ ns.BossModelDisplay = {
         ["Odo the Blindwatcher"] = 522,
         ["Razorclaw the Butcher"] = 524,
         ["Rethilgore"] = 524,
+        ["Sever"] = 1061,
         ["Wolf Master Nandos"] = 11179,
     },
     ["sm_armory"] = {
@@ -207,6 +208,7 @@ ns.BossModelDisplay = {
         ["Fallen Champion"] = 5230,
         ["Interrogator Vishas"] = 2044,
         ["Ironspine"] = 5231,
+        ["Scorn"] = 16197,
     },
     ["sm_library"] = {
         ["Arcanist Doan"] = 5266,

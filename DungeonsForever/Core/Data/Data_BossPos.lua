@@ -120,11 +120,11 @@ ns.BossPos = {
         ["Shadetooth"] = { { 44.5, 63 } },
     },
     ["sm_graveyard"] = {
-        ["Azshir the Sleepless"] = { { 41.6, 67.9 }, { 40.9, 46.6 }, { 36.7, 43.9 }, { 35.5, 66.4 } },
-        ["Bloodmage Thalnos"] = { { 24.4, 50.8 } },
-        ["Fallen Champion"] = { { 41.6, 67.9 }, { 40.9, 46.6 }, { 36.7, 43.9 }, { 35.5, 66.4 } },
-        ["Interrogator Vishas"] = { { 71.5, 58.9 } },
-        ["Ironspine"] = { { 41.6, 67.9 }, { 40.9, 46.6 }, { 36.7, 43.9 }, { 35.5, 66.4 } },
+        ["Azshir the Sleepless"] = { { 32, 66.6 } },
+        ["Bloodmage Thalnos"] = { { 24.4, 56.3 } },
+        ["Fallen Champion"] = { { 41.3, 45.7 } },
+        ["Interrogator Vishas"] = { { 71.9, 60.2 } },
+        ["Ironspine"] = { { 41.8, 66.6 } },
     },
     ["sm_library"] = {
         ["Arcanist Doan"] = { { 83.7, 74.7 }, { 83.2, 74.5, 2 } },

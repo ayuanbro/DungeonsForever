@@ -395,6 +395,7 @@ local function bpPaint(host, disp, cr, cg, cb, size)
 end
 
 M.MAX_LIST = 30
+M.SHOW_NPC_ID = true
 
 M.BOSS_PALETTE = {
     { 0.94, 0.30, 0.28 },
@@ -915,6 +916,31 @@ local function BossZhAll()
     return BOSS_ZH_ALL
 end
 
+function M.RareBoss(id, en)
+    if not (id and en) then return false end
+    local cache = M.__rareCache
+    if not cache then
+        cache = {}
+        M.__rareCache = cache
+    end
+    local set = cache[id]
+    if not set then
+        set = {}
+        local loot = (ns.DungeonLoot or {})[id]
+        if type(loot) == "table" then
+            for i = 1, #loot do
+                local s = loot[i]
+                if type(s) == "table" and s[1] and type(s[3]) == "string"
+                   and s[3]:find(IN_ZH_RARE, 1, true) then
+                    set[s[1]] = true
+                end
+            end
+        end
+        cache[id] = set
+    end
+    return set[en] == true
+end
+
 function M.PinsFor(id, floor)
     local bosses = M.BossesFor(id)
     local out
@@ -1374,6 +1400,8 @@ local function BuildListRows()
         r.fs = MakeFS(r, 14, C_TEXT, "LEFT")
         r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
         r.fs:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+        r.npc = MakeFS(r, 12, C_GREY, "LEFT")
+        r.npc:Hide()
         if ns.hui and ns.hui.MakeSolidChip and ns.hui.ChipH then
             r.rare = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 2, ns.hui.ChipH(14))
             ns.hui.PaintSolidChip(r.rare, L["稀有"], RARE_INK)
@@ -2849,6 +2877,9 @@ function M.SyncPins()
             local bt = frame.pinBtns[n]
             local kind = p.kind or "boss"
             local ps = M.PinScale()
+            local dim = (kind == "boss") and M.RareBoss(M.curId, p.en) or false
+            bt:SetAlpha(dim and 0.5 or 1)
+            bt.nm:SetAlpha(dim and 0.5 or 1)
             local skip = nil
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
@@ -3616,6 +3647,16 @@ function M.SyncSide()
         r.fs:SetText(bosses[i].zh or bosses[i].en)
         r.fs:ClearAllPoints()
         r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
+        local npcId = M.SHOW_NPC_ID and bosses[i].npc
+        if npcId and npcId ~= "" then
+            r.npc:SetText("#" .. npcId)
+            r.npc:ClearAllPoints()
+            r.npc:SetPoint("LEFT", r.fs, "LEFT", (r.fs:GetStringWidth() or 0) + 6, 0)
+            r.npc:Show()
+        else
+            r.npc:SetText("")
+            r.npc:Hide()
+        end
         if r.rare then
             if bosses[i].rare then
                 local cw = r.rare:GetWidth() or 0

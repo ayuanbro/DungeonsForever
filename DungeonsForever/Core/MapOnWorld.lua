@@ -686,6 +686,9 @@ local function syncPins(view, id, floor, cw, ch)
             local bt = view.pinBtns[i]
             local kind = p.kind or "boss"
             local ps = M.PinScale()
+            local dim = (kind == "boss") and M.RareBoss(id, p.en) or false
+            bt:SetAlpha(dim and 0.5 or 1)
+            bt.nm:SetAlpha(dim and 0.5 or 1)
             local skip
             n = i
             bt.__kind, bt.__p = kind, p
