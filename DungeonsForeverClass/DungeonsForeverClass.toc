@@ -23,6 +23,7 @@ Core\Data\Data_ClassCombat.lua
 Core\Data\Data_ClassQuest.lua
 Core\Data\Data_TalentTrees.lua
 Core\Data\Data_TalentPlans.lua
+Core\Data\Data_LegacyPlan.lua
 Core\Data\zhTW\Data_ClassGuide.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ClassTier.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ClassCombat.lua [AllowLoadTextLocale zhTW]
@@ -34,3 +35,4 @@ Core\ClassCombatUI.lua
 Core\ClassQuestUI.lua
 Core\TalentTabUI.lua
 Core\NativeTalentPage.lua
+Core\LegacyTreePage.lua

@@ -589,6 +589,132 @@ function BuildAbout()
         div:SetVertexColor(d2[1], d2[2], d2[3], 1)
     end)
 
+    local donateShade
+    local donateBuilt
+    local function HideDonate()
+        if donateShade and donateShade:IsShown() then donateShade:Hide() end
+    end
+    local function BuildDonate()
+        if donateBuilt then return end
+        donateBuilt = true
+        local shade = CreateFrame("Button", "DungeonsForeverDonate", about)
+        shade:SetAllPoints(about)
+        shade:SetFrameLevel(about:GetFrameLevel() + 20)
+        local bg = shade:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0, 0, 0, 0.52)
+        shade:SetScript("OnClick", function() HideDonate() end)
+        shade:Hide()
+        table.insert(UISpecialFrames, "DungeonsForeverDonate")
+
+        local pop = CreateFrame("Frame", nil, shade, "BackdropTemplate")
+        pop:SetSize(260, 330)
+        pop:SetPoint("CENTER", about, "CENTER", 0, 0)
+        pop:SetFrameLevel(shade:GetFrameLevel() + 2)
+        pop:SetClampedToScreen(true)
+        pop:EnableMouse(true)
+        if pop.SetBackdropColor then pop:SetBackdropColor(0, 0, 0, 0) end
+        if pop.SetBackdropBorderColor then pop:SetBackdropBorderColor(0, 0, 0, 0) end
+        if ns.hui.SkinPopup then ns.hui.SkinPopup(pop, 10, nil, ns.hui.layer.L0) end
+        if ns.hui.SkinShadow then ns.hui.SkinShadow(pop) end
+        local t = pop:CreateFontString(nil, "OVERLAY")
+        t:SetFont(ns.FONT, 15, "")
+        t:SetText(L["微信赞赏"])
+        t:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
+        t:SetPoint("TOP", pop, "TOP", 0, -16)
+
+        local close = CreateFrame("Button", nil, pop)
+        close:SetSize(24, 24)
+        close:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -8, -8)
+        close:SetFrameLevel(pop:GetFrameLevel() + 3)
+        close:SetHitRectInsets(-4, -4, -4, -4)
+        local ci = close:CreateTexture(nil, "ARTWORK")
+        ci:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\textures\\YY_close")
+        ci:SetSize(14, 14)
+        ci:SetPoint("CENTER")
+        local cg = 0xa0 / 255
+        ci:SetVertexColor(cg, cg, cg)
+        close:SetScript("OnEnter", function() ci:SetVertexColor(1, 1, 1) end)
+        close:SetScript("OnLeave", function() ci:SetVertexColor(cg, cg, cg) end)
+        close:SetScript("OnClick", function()
+            ns.PlaySound(1)
+            HideDonate()
+        end)
+
+        local plate = CreateFrame("Frame", nil, pop, "BackdropTemplate")
+        plate:SetSize(216, 216)
+        plate:SetPoint("TOP", pop, "TOP", 0, -52)
+        plate:SetFrameLevel(pop:GetFrameLevel() + 1)
+        if plate.SetBackdropColor then plate:SetBackdropColor(0, 0, 0, 0) end
+        if plate.SetBackdropBorderColor then plate:SetBackdropBorderColor(0, 0, 0, 0) end
+        ns.hui.BuildRoundedBG(plate, 6, ns.hui.layer.L2, "both", false)
+
+        local qr = plate:CreateTexture(nil, "ARTWORK")
+        qr:SetAllPoints()
+        qr:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\About\\wechat-support.tga")
+
+        local h1 = pop:CreateFontString(nil, "OVERLAY")
+        h1:SetFont(ns.FONT, 13, "")
+        h1:SetText(L["手机微信扫一扫"])
+        h1:SetTextColor(C_AB_VAL[1], C_AB_VAL[2], C_AB_VAL[3])
+        h1:SetPoint("TOP", pop, "TOP", 0, -282)
+
+        local h2 = pop:CreateFontString(nil, "OVERLAY")
+        h2:SetFont(ns.FONT, 12, "")
+        h2:SetText(L["点击空白处或按 Esc 关闭"])
+        h2:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
+        h2:SetPoint("TOP", pop, "TOP", 0, -304)
+
+        donateShade = shade
+    end
+    local function ToggleDonate()
+        BuildDonate()
+        if donateShade:IsShown() then
+            donateShade:Hide()
+        else
+            donateShade:Show()
+        end
+    end
+
+    local dbtn = CreateFrame("Button", nil, card, "BackdropTemplate")
+    dbtn:SetSize(76, 22)
+    dbtn:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9.5)
+    dbtn:SetFrameLevel(card:GetFrameLevel() + 3)
+    dbtn:SetHitRectInsets(-2, -2, -2, -2)
+    if dbtn.SetBackdropColor then dbtn:SetBackdropColor(0, 0, 0, 0) end
+    if dbtn.SetBackdropBorderColor then dbtn:SetBackdropBorderColor(0, 0, 0, 0) end
+    local C_DN = { 0xc4 / 255, 0x34 / 255, 0x28 / 255, 1 }
+    local C_DN_HOT = { 0xd4 / 255, 0x44 / 255, 0x36 / 255, 1 }
+    local dFill = ns.hui.BuildRoundedBG(dbtn, 6, C_DN, "both", false)
+    local dHot = ns.hui.BuildRoundedBG(dbtn, 6, C_DN_HOT, "both", false)
+    for i = 1, #dHot do dHot[i]:Hide() end
+
+    local dText = dbtn:CreateFontString(nil, "OVERLAY")
+    dText:SetFont(ns.FONT, 12, "")
+    dText:SetText(L["赞赏"])
+    dText:SetTextColor(1, 1, 1)
+    dText:SetPoint("CENTER", dbtn, "CENTER", 0, 0)
+
+    dbtn:SetScript("OnEnter", function(self)
+        for i = 1, #dFill do dFill[i]:Hide() end
+        for i = 1, #dHot do dHot[i]:Show() end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(L["赞赏"], 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    dbtn:SetScript("OnLeave", function()
+        for i = 1, #dHot do dHot[i]:Hide() end
+        for i = 1, #dFill do dFill[i]:Show() end
+        GameTooltip:Hide()
+    end)
+    dbtn:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        ToggleDonate()
+    end)
+    if dbtn.SetCursor then dbtn:SetCursor("Interface/Cursor/Point") end
+
+    about:HookScript("OnHide", function() HideDonate() end)
+
     BarUpdate()
 end
 

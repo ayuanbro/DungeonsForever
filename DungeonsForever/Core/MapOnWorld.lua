@@ -15,6 +15,32 @@ local C_TEXT = Host.C_TEXT
 local W = {}
 ns.MapWorldModule = W
 
+local pendingMap
+
+local function applyMap(id)
+    if not (id and WorldMapFrame and WorldMapFrame.SetMapID) then return end
+    pcall(WorldMapFrame.SetMapID, WorldMapFrame, id)
+end
+
+local function setMap(id)
+    if not id then return end
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then
+        pendingMap = id
+        return
+    end
+    pendingMap = nil
+    applyMap(id)
+end
+
+local regen = CreateFrame("Frame")
+regen:RegisterEvent("PLAYER_REGEN_ENABLED")
+regen:SetScript("OnEvent", function()
+    local id = pendingMap
+    pendingMap = nil
+    if not (id and WorldMapFrame and WorldMapFrame:IsShown()) then return end
+    applyMap(id)
+end)
+
 local EUIS
 local function euiBtn(bt)
     if not (bt and EUIS) then return end
@@ -1290,9 +1316,9 @@ function W.Show(id, why)
     local q = questPanel()
     if q then q:Hide() end
     view:Show()
-    if W.zoneMap and worldMapID() ~= W.zoneMap and WorldMapFrame.SetMapID then
-        pcall(WorldMapFrame.SetMapID, WorldMapFrame, W.zoneMap)
-        if q then q:Hide() end
+    if W.zoneMap and worldMapID() ~= W.zoneMap then
+        setMap(W.zoneMap)
+        if q then pcall(q.Hide, q) end
     end
     W.Sync()
 end
@@ -2282,9 +2308,8 @@ local function onShow()
             lastSig = signature(id)
             lastAW, lastAH = mapAreaSize()
         else
-            if W.pinned and W.pinnedMap and WorldMapFrame.SetMapID
-                and worldMapID() ~= W.pinnedMap then
-                pcall(WorldMapFrame.SetMapID, WorldMapFrame, W.pinnedMap)
+            if W.pinned and W.pinnedMap and worldMapID() ~= W.pinnedMap then
+                setMap(W.pinnedMap)
             end
             W.Hide()
         end
@@ -2298,18 +2323,16 @@ end
 local function guardToggle()
     if W.__guarded or type(_G.ToggleWorldMap) ~= "function" then return end
     W.__guarded = true
-    local old = _G.ToggleWorldMap
-    _G.ToggleWorldMap = function(...)
+    if type(hooksecurefunc) ~= "function" then return end
+    hooksecurefunc("ToggleWorldMap", function()
         local wmf = WorldMapFrame
-        if wmf and wmf:IsShown() then
-            local q = questPanel()
-            if W.Active() or (q and not q:IsShown()) then
-                wmf:Hide()
-                return
-            end
+        if not (wmf and wmf:IsShown()) then return end
+        if W.shownAt and (GetTime() - W.shownAt) < 0.2 then return end
+        local q = questPanel()
+        if W.Active() or (q and not q:IsShown()) then
+            pcall(wmf.Hide, wmf)
         end
-        return old(...)
-    end
+    end)
 end
 
 function W.Hook()
