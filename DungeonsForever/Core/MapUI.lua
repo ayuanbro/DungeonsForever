@@ -262,6 +262,8 @@ M.ROUTE_DASH_ON, M.ROUTE_DASH_OFF = 13, 9
 M.ROUTE_DOT_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_dot"
 M.MAX_ROUTE_DOTS = 2400
 M.HIT_STEP, M.HIT_SIZE = 16, 18
+M.HOVER_GUARD = 26
+M.HOVER_PIN_R = 56
 M.ROUTE_PALETTES = {
     { id = "rainbow", stops = {
         { 0.00, 0.961, 0.278, 0.227 },
@@ -2328,6 +2330,7 @@ function M.NewSegHover(parent, paintFn)
             return
         end
         if self.seg then self.paint(self.seg, false) end
+        self.pinAt = nil
         self.seg = si
         self.leaveAt = nil
         if si then self.paint(si, true) end
@@ -2337,53 +2340,81 @@ function M.NewSegHover(parent, paintFn)
         for i = 1, #self.pool do self.pool[i]:Hide() end
         self.hi = 0
     end
-    function st:Build(host, arr, cnt)
-        local hi = 0
+    function st:Build(host, arr, cnt, guards)
         local step = M.HIT_STEP
-        local lvl = host:GetFrameLevel() + 1
+        local lvl = host:GetFrameLevel()
+        local gr = M.HOVER_GUARD or 26
+        local gr2 = gr * gr
+        local pts = self.pts
+        if not pts then
+            pts = {}
+            self.pts = pts
+        end
+        local hi, shown = 0, 0
         for si = 1, cnt do
-            local pts = arr[si]
-            if pts and #pts > 1 then
-                for i = 2, #pts do
-                    local a, b = pts[i - 1], pts[i]
+            local line = arr[si]
+            if line and #line > 1 then
+                for i = 2, #line do
+                    local a, b = line[i - 1], line[i]
                     local dx, dy = b[1] - a[1], b[2] - a[2]
                     local d = math.sqrt(dx * dx + dy * dy)
                     if d > 1 then
                         local k = math.max(1, math.ceil(d / step))
                         for j = 0, k - 1 do
                             local u = j / k
+                            local x, y = a[1] + dx * u, a[2] + dy * u
                             hi = hi + 1
-                            local btn = self.pool[hi]
-                            if not btn then
-                                btn = CreateFrame("Button", nil, host)
-                                btn:SetSize(M.HIT_SIZE, M.HIT_SIZE)
-                                btn:EnableMouse(true)
-                                btn:SetScript("OnEnter", function(b)
-                                    st.leaveAt = nil
-                                    st:Set(b.si)
-                                end)
-                                btn:SetScript("OnLeave", function(b)
-                                    if st.seg == b.si then st.leaveAt = GetTime() end
-                                end)
-                                btn:SetScript("OnMouseDown", function(_, button)
-                                    if button == "LeftButton" and M.BeginDrag then M.BeginDrag(host) end
-                                end)
-                                self.pool[hi] = btn
+                            local h = pts[hi]
+                            if not h then
+                                h = {}
+                                pts[hi] = h
                             end
-                            if btn:GetFrameLevel() ~= lvl then btn:SetFrameLevel(lvl) end
-                            btn.si = si
-                            btn:ClearAllPoints()
-                            btn:SetPoint("CENTER", host, "TOPLEFT", a[1] + dx * u, -(a[2] + dy * u))
-                            btn:Show()
+                            h[1], h[2], h[3] = x, y, si
+                            local free = true
+                            if guards then
+                                for gi = 1, #guards do
+                                    local g = guards[gi]
+                                    local gx, gy = x - g[1], y - g[2]
+                                    if gx * gx + gy * gy < gr2 then
+                                        free = false
+                                        break
+                                    end
+                                end
+                            end
+                            if free then
+                                shown = shown + 1
+                                local btn = self.pool[shown]
+                                if not btn then
+                                    btn = CreateFrame("Button", nil, host)
+                                    btn:SetSize(M.HIT_SIZE, M.HIT_SIZE)
+                                    btn:EnableMouse(true)
+                                    btn:SetScript("OnEnter", function(bb)
+                                        st.leaveAt = nil
+                                        st:Set(bb.si)
+                                    end)
+                                    btn:SetScript("OnLeave", function(bb)
+                                        if st.seg == bb.si then st.leaveAt = GetTime() end
+                                    end)
+                                    btn:SetScript("OnMouseDown", function(_, button)
+                                        if button == "LeftButton" and M.BeginDrag then M.BeginDrag(host) end
+                                    end)
+                                    self.pool[shown] = btn
+                                end
+                                if btn:GetFrameLevel() ~= lvl then btn:SetFrameLevel(lvl) end
+                                btn.si = si
+                                btn:ClearAllPoints()
+                                btn:SetPoint("CENTER", host, "TOPLEFT", x, -y)
+                                btn:Show()
+                            end
                         end
                     end
                 end
             end
         end
-        for i = hi + 1, #self.pool do self.pool[i]:Hide() end
+        for i = shown + 1, #self.pool do self.pool[i]:Hide() end
         self.hi = hi
         self.parent = host
-        return hi
+        return shown
     end
     local tick = CreateFrame("Button", nil, parent)
     tick:SetSize(1, 1)
@@ -2393,6 +2424,9 @@ function M.NewSegHover(parent, paintFn)
         if st.acc < 0.05 then return end
         st.acc = 0
         if st.seg and st.leaveAt and (GetTime() - st.leaveAt) > 0.1 then
+            st:Set(nil)
+        elseif st.seg and st.pinAt and (GetTime() - st.pinAt) > 0.9 then
+            st.pinAt = nil
             st:Set(nil)
         end
     end)
@@ -2404,6 +2438,43 @@ function M.SetHoverMouse(host, on)
     if not st then return end
     for i = 1, #st.pool do
         st.pool[i]:EnableMouse(on and true or false)
+    end
+end
+
+function M.HoverFromPin(bt)
+    if not (bt and bt.GetCenter and bt.GetParent) then return end
+    local frame = M.frame
+    local W = ns.MapWorldModule
+    local v = W and W.view
+    local pins = bt:GetParent()
+    local host, canvas
+    if frame and pins == frame.pins then
+        host, canvas = frame.route, frame.canvas
+    elseif v and pins == v.pins then
+        host, canvas = v.route, v.canvas
+    end
+    if not host then return end
+    local st = hovers[host]
+    if not (st and st.pts and st.hi and st.hi > 0) then return end
+    local cx, cy = bt:GetCenter()
+    local cl = canvas and canvas:GetLeft()
+    local ct = canvas and canvas:GetTop()
+    if not (cx and cy and cl and ct) then return end
+    local px, py = cx - cl, ct - cy
+    local best, seg = 1e12, nil
+    for i = 1, st.hi do
+        local p = st.pts[i]
+        local dx, dy = px - p[1], py - p[2]
+        local d = dx * dx + dy * dy
+        if d < best then
+            best, seg = d, p[3]
+        end
+    end
+    local rad = M.HOVER_PIN_R or 56
+    if seg and best < rad * rad then
+        st.leaveAt = nil
+        st:Set(seg)
+        if st.seg == seg then st.pinAt = GetTime() end
     end
 end
 
@@ -2482,7 +2553,18 @@ function M.SyncRoute(id, floor, cw, ch)
                     end
                 end
             end
-            built = hv:Build(host, arr, #segs)
+            local guards
+            local src = M.PinsFor(id, floor)
+            if type(src) == "table" then
+                guards = {}
+                for i = 1, #src do
+                    local p = src[i]
+                    if p and p.left and p.top then
+                        guards[#guards + 1] = { (p.left / 100) * cw, (p.top / 100) * ch }
+                    end
+                end
+            end
+            built = hv:Build(host, arr, #segs, guards)
         end
     end
     for i = n + 1, used do
@@ -3025,6 +3107,7 @@ end
 function M.PinOnEnter(self)
     local p = self.__p
     if not p then return end
+    M.HoverFromPin(self)
     if self.__kind == "boss" then
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:ClearLines()
@@ -3126,6 +3209,14 @@ end
 
 function M.PinOnLeave()
     GameTooltip:Hide()
+    local frame = M.frame
+    local W = ns.MapWorldModule
+    local v = W and W.view
+    local hosts = { frame and frame.route, v and v.route }
+    for i = 1, #hosts do
+        local st = hosts[i] and hovers[hosts[i]]
+        if st and st.seg then st.leaveAt = GetTime() end
+    end
 end
 
 function M.OnQuestData(id)

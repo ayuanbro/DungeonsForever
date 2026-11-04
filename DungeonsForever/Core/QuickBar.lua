@@ -31,7 +31,7 @@ local C_EDGE  = { 0.40, 0.43, 0.50 }
 QB.EDGE, QB.EDGE_HOT = C_EDGE, C_GOLD
 QB.FILL, QB.FILL_HOT = 0.04, 0.12
 
-local strbyte, strsub, format = string.byte, string.sub, format or string.format
+local strbyte, strsub, strfind, format = string.byte, string.sub, string.find, format or string.format
 
 local EXPLORE_DEFS = {
     { key = "books", text = L["40本书"] },
@@ -114,6 +114,20 @@ local function Fit(text, maxw, size)
         out[1] = Chars(text)[1]
     end
     return table.concat(out) .. "…"
+end
+
+local function FitName(text, maxw, size, isDungeon)
+    if EstW(text, size) <= maxw then return text end
+    if isDungeon then
+        local i = strfind(text, "：", 1, true)
+        if i then
+            local head, tail = strsub(text, 1, i - 1), strsub(text, i + 3)
+            local joined = head .. tail
+            if EstW(joined, size) <= maxw then return joined end
+            if EstW(tail, size) <= maxw then return tail end
+        end
+    end
+    return Fit(text, maxw, size)
 end
 
 local NAME_W = QB.CW - QB.TEXT_PAD * 2
@@ -375,7 +389,7 @@ function QB:Render()
                     wantIcon and self.NAME_ICON_X or self.TEXT_PAD, 0)
             end
             if wantIcon then SetIcon(r.icon, sp.icon) end
-            r.name:SetText(Fit(sp.text, NameW(wantIcon), self.FS_NAME))
+            r.name:SetText(FitName(sp.text, NameW(wantIcon), self.FS_NAME, sp.act == "dungeon"))
             if sp.dead then
                 r.name:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
             elseif sp.gold then
