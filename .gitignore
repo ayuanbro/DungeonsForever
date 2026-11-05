@@ -1,0 +1,16 @@
+# Local data pipeline and validation tools
+/data_pipeline/
+/validation/
+/test/
+
+# Python virtual environments and caches
+/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Pipeline outputs and temporary files
+/.pipeline-runtime/
+/dist/
+.pipeline-test-*/
+*.bak
