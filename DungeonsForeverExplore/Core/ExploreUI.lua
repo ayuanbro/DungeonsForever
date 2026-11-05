@@ -1829,6 +1829,8 @@ local function PaintAreaBtn(on)
     if on == nil then
         on = ns.ExploreAreaOn and ns.ExploreAreaOn() or false
     end
+    local pins = (ns.ExploreGraveOn and ns.ExploreGraveOn()) or false
+    bt:SetShown(pins)
     bt:SetText(on and L["复活区域：开"] or L["复活区域：关"])
     if SetButtonSelected then SetButtonSelected(bt, on) end
 end
@@ -1963,7 +1965,7 @@ local function RtMapPaint(mapID, x, y)
     for i = 1, #opool do opool[i]:Hide() end
     local vside = RtOvlSide()
     local vlist = {}
-    if ns.AreaVec and ns.AreaVec.ovl then
+    if ns.ExploreAreaOn and ns.ExploreAreaOn() and ns.AreaVec and ns.AreaVec.ovl then
         for _, it in pairs(ns.AreaVec.ovl) do
             if it.map == mapID and (it.side == 0 or it.side == vside) then
                 vlist[#vlist + 1] = it
@@ -4843,6 +4845,7 @@ Y()
                 local on
                 if ns.ExploreGraveToggle then on = ns.ExploreGraveToggle() end
                 PaintGraveBtn(on)
+                PaintAreaBtn()
                 if EG.RtMapRepaint then EG.RtMapRepaint() end
                 if ns.PlaySound then ns.PlaySound(1) end
             end)
@@ -4938,6 +4941,7 @@ Y()
                 local on
                 if ns.ExploreAreaToggle then on = ns.ExploreAreaToggle() end
                 PaintAreaBtn(on)
+                if EG.RtMapRepaint then EG.RtMapRepaint() end
                 if ns.PlaySound then ns.PlaySound(1) end
             end)
             bt:SetScript("OnEnter", function(self)

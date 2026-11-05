@@ -2889,7 +2889,7 @@ function M.SyncPins()
             else
                 bt:SetFrameLevel(frame.pins:GetFrameLevel())
             end
-            bt.__qState, bt.__qPre, bt.__qPreOf = nil, nil, nil
+            bt.__qState, bt.__qPre, bt.__qPreOf, bt.__qNeedLv = nil, nil, nil, nil
             M.PinPoint(bt, p, cw, ch)
             local nm, cr, cg, cb
             if kind == "boss" then
@@ -2922,9 +2922,17 @@ function M.SyncPins()
             end
             if kind == "quest" then
                 local st = DG.QuestState(p.id)
+                local qrow = DG.QuestRowByID and DG.QuestRowByID(p.id)
+                local needLv = (type(qrow) == "table") and qrow[3] or nil
+                bt.__qNeedLv = needLv
                 bt.__av:Hide()
                 if st ~= "todo" then
                     skip = true
+                elseif needLv and (UnitLevel("player") or 0) < needLv then
+                    bt.dot:SetShown(true)
+                    bt.dot:SetTexture(M.PIN_QUEST_LOCKED_TEX)
+                    bt.dot:SetVertexColor(1, 1, 1)
+                    bt.__qState = "lv"
                 elseif preBlock[p.id] then
                     bt.dot:SetShown(true)
                     bt.dot:SetTexture(M.PIN_QUEST_PRE_TEX)
@@ -3158,7 +3166,10 @@ function M.PinOnEnter(self)
         local st = self.__qState
         local nm, ok = DG.QuestName(p.id)
         if not ok then DG.RequestQuest(p.id) end
-        if st == "locked" then
+        if st == "lv" then
+            GameTooltip:AddLine(nm or L["任务"], 0.72, 0.76, 0.85, true)
+            GameTooltip:AddLine(format(L["等级未达到：需要角色等级 %d"], self.__qNeedLv or 0), 1, 0.82, 0, true)
+        elseif st == "locked" then
             local preNm, preOk = DG.QuestName(self.__qPre)
             if not preOk and self.__qPre then DG.RequestQuest(self.__qPre) end
             GameTooltip:AddLine(nm or L["任务"], 0.72, 0.76, 0.85, true)
@@ -3981,7 +3992,10 @@ local function wpPinAcquire(canvas)
                 if not nmOk then DG.RequestQuest(it.qid) end
                 nm = nm or tostring(it.qid)
                 local tag, sub
-                if it.blocked then
+                if it.lvLow then
+                    tag = "|cffc8c8c8[" .. L["未解锁"] .. "]|r"
+                    sub = format(L["等级未达到：需要角色等级 %d"], it.needLv)
+                elseif it.blocked then
                     tag = "|cffc8c8c8[" .. L["未解锁"] .. "]|r"
                     DG.RequestQuest(it.pre)
                     sub = format(L["需先完成：%s"], tostring(DG.QuestName and DG.QuestName(it.pre) or it.pre))
@@ -4028,7 +4042,7 @@ local function wpPinAcquire(canvas)
             local qid
             for i = 1, #qs do
                 local it = qs[i]
-                if not it.blocked and not it.blocking then qid = it.qid break end
+                if not it.blocked and not it.blocking and not it.lvLow then qid = it.qid break end
             end
             qid = qid or qs[1].qid
             local dk = wpStatic().qdk[qid]
@@ -4188,12 +4202,12 @@ function M.SyncWorldQuestPins()
                 if glv and wpGrey(glv) then return false end
             end
         end
-        if useAll then return true end
+        if useAll then return true, q[3] end
         if useLv then
-            if qlv ~= nil and qlv <= lv then return true end
+            if qlv ~= nil and qlv <= lv then return true, q[3] end
         end
-        if useReco and r and lv >= r[1] and lv <= r[2] then return true end
-        if useEnter and r and lv >= r[1] then return true end
+        if useReco and r and lv >= r[1] and lv <= r[2] then return true, q[3] end
+        if useEnter and r and lv >= r[1] then return true, q[3] end
         return false
     end
     local function segOk(seg)
@@ -4250,7 +4264,8 @@ function M.SyncWorldQuestPins()
     local byNpc = {}
     for i = 1, #data.rows do
         local q = data.rows[i]
-        if qHit(q) and DG.QuestState(q[1]) == "todo" and q[16] then
+        local hit, needLv = qHit(q)
+        if hit and DG.QuestState(q[1]) == "todo" and q[16] then
             local loc = ns.NPCLoc[q[16]]
             if type(loc) == "table" and loc[1] then
                 local e = byNpc[q[16]]
@@ -4263,6 +4278,8 @@ function M.SyncWorldQuestPins()
                     blocked = lockedPre[q[1]],
                     pre = lockedPre[q[1]],
                     blocking = preBlock[q[1]],
+                    needLv = needLv,
+                    lvLow = (needLv and lv < needLv) or nil,
                 }
             end
         end
@@ -4282,7 +4299,14 @@ function M.SyncWorldQuestPins()
                 if e.qs[k].qid == seg then seen = true break end
             end
             if not seen then
-                e.qs[#e.qs + 1] = { qid = seg, blocking = qid }
+                local srow = DG.QuestRowByID and DG.QuestRowByID(seg)
+                local nlv = (type(srow) == "table") and srow[3] or nil
+                e.qs[#e.qs + 1] = {
+                    qid = seg,
+                    blocking = qid,
+                    needLv = nlv,
+                    lvLow = (nlv and lv < nlv) or nil,
+                }
             end
             end
         end
@@ -4294,9 +4318,10 @@ function M.SyncWorldQuestPins()
         end
         if x then
             local hasReady, hasPre, hasLocked = false, false, false
-            for k = 1, #e.qs do
-                local it = e.qs[k]
-                if it.blocking then hasPre = true
+            for qi = 1, #e.qs do
+                local it = e.qs[qi]
+                if it.lvLow then hasLocked = true
+                elseif it.blocking then hasPre = true
                 elseif it.blocked then hasLocked = true
                 else hasReady = true end
             end

@@ -1122,6 +1122,7 @@ L["未翻译卷轴名字乱码、只有法师能读；很多怪物都会掉落�
 L["未翻译的卷轴"] = "Untranslated scrolls"
 L["未翻译的卷轴有四种，每一种需要的理解技能等级都更高。一种卷轴变灰之后就不会再提升技能：在技能到达它变灰的等级之前，换成下一种。"] = "There are four untranslated scrolls, each requiring a higher Comprehension skill. A greyed-out scroll no longer grants skill-ups: switch to the next one before your skill reaches its grey level."
 L["未解锁"] = "Locked"
+L["等级未达到：需要角色等级 %d"] = "Level requirement not met: requires character level %d"
 L["未识别物品 #%d"] = "Unresolved item #%d"
 L["未选来源"] = "No sources"
 L["本专业"] = "This profession"

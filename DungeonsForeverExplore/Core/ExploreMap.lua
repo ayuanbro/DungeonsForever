@@ -681,7 +681,7 @@ function ns.ExploreMapRefresh()
     end
     end
 
-    if c.showArea == true and ns.AreaVec and ns.AreaVec.ovl and ns.AreaDraw then
+    if c.showGrave == true and c.showArea == true and ns.AreaVec and ns.AreaVec.ovl and ns.AreaDraw then
         local vside = 2
         local f = UnitFactionGroup and UnitFactionGroup("player")
         if f == "Alliance" then vside = 1 end
@@ -1494,16 +1494,18 @@ function ns.ExploreGraveToggle()
 end
 
 function ns.ExploreAreaOn()
-    return cfg().showArea == true
+    local c = cfg()
+    return c.showGrave == true and c.showArea == true
 end
 
 function ns.ExploreAreaSet(v)
     cfg().showArea = v and true or false
     ns.ExploreMapRefresh()
-    return cfg().showArea
+    return ns.ExploreAreaOn()
 end
 
 function ns.ExploreAreaToggle()
+    if not ns.ExploreGraveOn() then return false end
     return ns.ExploreAreaSet(not cfg().showArea)
 end
 

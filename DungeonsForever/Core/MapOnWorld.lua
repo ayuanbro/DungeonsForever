@@ -725,7 +725,7 @@ local function syncPins(view, id, floor, cw, ch)
             else
                 bt:SetFrameLevel(view.pins:GetFrameLevel())
             end
-            bt.__qState, bt.__qPre, bt.__qPreOf = nil, nil, nil
+            bt.__qState, bt.__qPre, bt.__qPreOf, bt.__qNeedLv = nil, nil, nil, nil
             M.PinPoint(bt, p, cw, ch)
             local nm, cr, cg, cb
             if kind == "boss" then
@@ -749,9 +749,17 @@ local function syncPins(view, id, floor, cw, ch)
             end
             if kind == "quest" then
                 local st = DG.QuestState(p.id)
+                local qrow = DG.QuestRowByID and DG.QuestRowByID(p.id)
+                local needLv = (type(qrow) == "table") and qrow[3] or nil
+                bt.__qNeedLv = needLv
                 bt.__av:Hide()
                 if st ~= "todo" then
                     skip = true
+                elseif needLv and (UnitLevel("player") or 0) < needLv then
+                    bt.dot:SetShown(true)
+                    bt.dot:SetTexture(M.PIN_QUEST_LOCKED_TEX)
+                    bt.dot:SetVertexColor(1, 1, 1)
+                    bt.__qState = "lv"
                 elseif preBlock[p.id] then
                     bt.dot:SetShown(true)
                     bt.dot:SetTexture(M.PIN_QUEST_PRE_TEX)
@@ -959,7 +967,7 @@ local function ensureAreaBtn()
         GameTooltip:Show()
     end)
     areaBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    setPicked(areaBtn, ns.ExploreAreaOn and ns.ExploreAreaOn() or false)
+    setPicked(areaBtn, not (ns.ExploreAreaOn and ns.ExploreAreaOn()))
     W.areaBtn = areaBtn
     return areaBtn
 end
@@ -967,7 +975,11 @@ end
 local function syncAreaBtn()
     local ab = ensureAreaBtn()
     if not ab then return end
-    setPicked(ab, ns.ExploreAreaOn and ns.ExploreAreaOn() or false)
+    setPicked(ab, not (ns.ExploreAreaOn and ns.ExploreAreaOn()))
+    if not (ns.ExploreGraveOn and ns.ExploreGraveOn()) then
+        if ab:IsShown() then ab:Hide() end
+        return
+    end
     if W.Active() then
         if ab:IsShown() then ab:Hide() end
         return
