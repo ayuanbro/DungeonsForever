@@ -1557,6 +1557,20 @@ end)
 local reveal = { on = false, q = nil, total = 0, done = 0 }
 local revealBar, revealFill, revealText
 
+local function RevealNow()
+    local fn = debugprofilestop
+    if type(fn) == "function" then
+        local ok, v = pcall(fn)
+        if ok and type(v) == "number" then return v end
+    end
+    fn = GetTime
+    if type(fn) == "function" then
+        local ok, v = pcall(fn)
+        if ok and type(v) == "number" then return v * 1000 end
+    end
+    return 0
+end
+
 local function RevealUI()
     if revealBar then return end
     revealBar = CreateFrame("Frame", nil, f)
@@ -1584,15 +1598,18 @@ local function RevealUI()
     revealBar:Hide()
 end
 
+local REVEAL_MAX = 120
+
 local function RevealCollect(root)
     local order, queue = {}, { root }
     local i = 1
-    while i <= #queue do
+    while i <= #queue and #order < REVEAL_MAX do
         local fr = queue[i]
         i = i + 1
         if fr.GetChildren then
             local kids = { fr:GetChildren() }
             for _, c in ipairs(kids) do
+                if #order >= REVEAL_MAX then break end
                 if c.IsShown and c:IsShown() then
                     order[#order + 1] = c
                     queue[#queue + 1] = c
@@ -1616,13 +1633,24 @@ local function RevealFinishAll()
     local ghost = DungeonsForeverDB and DungeonsForeverDB.dfGhost
     reveal.on = false
     local q = reveal.q
+    local i = reveal.i or 1
     if q and not ghost then
-        for i = 1, #q do
-            local cfr = q[i]
+        for k = i, #q do
+            local cfr = q[k]
             if cfr and cfr.Show then pcall(cfr.Show, cfr) end
         end
     end
     reveal.q = nil
+    reveal.i = 1
+    reveal.deadline = nil
+    reveal.stallT = nil
+    if DungeonsForeverDB then
+        local ms = math.floor(RevealNow() - (reveal.t0 or RevealNow()))
+        local tail = reveal.bg and " bg" or ""
+        DungeonsForeverDB.dfRevealLog = string.format("%d/%d %dms%s", reveal.total or 0, reveal.done or 0, ms, tail)
+    end
+    reveal.t0 = nil
+    reveal.bg = nil
     if reveal.heavy and DungeonsForeverDB then
         DungeonsForeverDB.dfRevealHeavy = table.concat(reveal.heavy, " ")
         reveal.heavy = nil
@@ -1639,73 +1667,99 @@ local function RevealStart()
     RevealUI()
     if reveal.on then RevealFinishAll() end
     local order = RevealCollect(f)
-    if #order < 20 then return end
-    for i = 1, #order do
-        local cfr = order[i]
-        if cfr.Hide then pcall(cfr.Hide, cfr) end
+    if #order < 20 then
+        if DungeonsForeverDB then DungeonsForeverDB.dfRevealLog = "skip " .. tostring(#order) end
+        return
     end
+    local t0 = RevealNow()
     revealedOnce = true
     reveal.on = true
     reveal.q = order
+    reveal.i = 1
     reveal.total = #order
     reveal.done = 0
-    reveal.k = 3
-    reveal.lastT = nil
+    reveal.lastDone = 0
+    reveal.t0 = t0
+    reveal.deadline = t0 + 6000
+    reveal.stallT = t0
     reveal.heavy = nil
+    reveal.bg = nil
+    for i = 1, #order do
+        local cfr = order[i]
+        if cfr and cfr.Hide then pcall(cfr.Hide, cfr) end
+    end
     revealBar:Show()
     RevealPaint()
 end
 
 f:HookScript("OnUpdate", function()
     if not reveal.on then return end
-    local now = debugprofilestop()
-    local dt = now - (reveal.lastT or now)
-    reveal.lastT = now
-    if dt > 45 then
-        reveal.k = math.max(1, (reveal.k or 2) - 1)
-        reveal.pause = 1
-    elseif dt < 20 then
-        reveal.k = math.min(2, (reveal.k or 2) + 1)
-        reveal.pause = nil
-    end
+    local now = RevealNow()
     local q = reveal.q
-    if not q or #q == 0 then
+    local i = reveal.i or 1
+    if not q or i > #q then
         RevealFinishAll()
         return
     end
-    if not reveal.pause and not (DungeonsForeverDB and DungeonsForeverDB.dfGhost) then
-        local k = reveal.k or 2
-        for _ = 1, k do
-            local cfr = q[1]
-            if not cfr then break end
-            table.remove(q, 1)
-            local t0 = debugprofilestop()
-            if cfr.Show then pcall(cfr.Show, cfr) end
-            local cost = debugprofilestop() - t0
-            if cost > 30 then
-                local nm = "?"
-                if cfr.GetName then
-                    local gn = cfr:GetName()
-                    if type(gn) == "string" and gn ~= "" then nm = gn end
-                end
-                reveal.heavy = reveal.heavy or {}
-                local h = reveal.heavy
-                h[#h + 1] = format("%d%%:%s:%.0f", math.floor(reveal.done / math.max(1, reveal.total) * 100 + 0.5), nm, cost)
-            end
-            reveal.done = reveal.done + 1
-        end
+    local over = now - (reveal.deadline or now)
+    local budget = 2
+    if reveal.bg then
+        budget = 32
+    elseif over > 6000 then
+        budget = 32
+    elseif over > 0 then
+        budget = 8
     end
-    RevealPaint()
-    if #q == 0 then RevealFinishAll() end
+    local t0 = now
+    local startI = i
+    while i <= #q do
+        local cfr = q[i]
+        i = i + 1
+        local c0 = RevealNow()
+        if cfr and cfr.Show then pcall(cfr.Show, cfr) end
+        local c1 = RevealNow()
+        local cost = c1 - c0
+        if cost > 30 then
+            local nm = "?"
+            if cfr and cfr.GetName then
+                local gn = cfr:GetName()
+                if type(gn) == "string" and gn ~= "" then nm = gn end
+            end
+            reveal.heavy = reveal.heavy or {}
+            local h = reveal.heavy
+            h[#h + 1] = string.format("%d%%:%s:%.0f", math.floor(reveal.done / math.max(1, reveal.total) * 100 + 0.5), nm, cost)
+        end
+        reveal.done = reveal.done + 1
+        if c1 - t0 >= budget then break end
+        if (i - startI) >= 64 then break end
+    end
+    reveal.i = i
+    if not reveal.bg then RevealPaint() end
+    if i > #q then
+        RevealFinishAll()
+        return
+    end
+    if reveal.done ~= reveal.lastDone then
+        reveal.lastDone = reveal.done
+        reveal.stallT = now
+    elseif now - (reveal.stallT or now) > 4000 then
+        reveal.bg = now
+    end
 end)
 
 f:HookScript("OnHide", function()
-    if reveal.on then RevealFinishAll() end
+    if not reveal.on then return end
+    reveal.bg = RevealNow()
+    if revealBar then revealBar:Hide() end
 end)
 
 function ns.Open()
     if not f:IsShown() then
         f:Show()
+        if reveal.on and reveal.bg then
+            reveal.bg = nil
+            if revealBar then revealBar:Show() end
+        end
         RevealStart()
     end
     f:Raise()
