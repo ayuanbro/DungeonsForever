@@ -35,6 +35,20 @@ local ourProvider
 local restoring = false
 local lastTab
 
+local pending = false
+
+local function InCombat()
+    if type(InCombatLockdown) ~= "function" then return false end
+    local ok, v = pcall(InCombatLockdown)
+    return ok and v or false
+end
+
+local function DeferInCombat()
+    if not InCombat() then return false end
+    pending = true
+    return true
+end
+
 local function EUIOn()
     if not EllesmereUI then return false end
     if EllesmereUI.GetBlizzWindowStyle then
@@ -589,6 +603,7 @@ local function ClassGroups()
 end
 
 local function InstallOurs()
+    if DeferInCombat() then return false end
     local paged = Paged()
     if not paged then return false end
     local groups
@@ -685,6 +700,7 @@ local function BuildSubBar()
 end
 
 local function SyncSubBar(show)
+    if DeferInCombat() then return end
     local bar = BuildSubBar()
     if not bar then return end
     if show then
@@ -695,6 +711,7 @@ local function SyncSubBar(show)
 end
 
 local function RestoreNative()
+    if DeferInCombat() then return end
     local paged = Paged()
     if not (paged and nativeTpl) then return end
     local wasOurs = (ourProvider ~= nil and paged.dataProvider == ourProvider)
@@ -799,6 +816,7 @@ local function StyleOurTab(tb, sel)
 end
 
 local function PaintTabs()
+    if DeferInCombat() then return end
     if not book then return end
     local shown = activePage ~= nil
     StyleOurTab(tabButton, shown and activePage == "spell")
@@ -822,6 +840,7 @@ local function PaintTabs()
 end
 
 ShowPage = function(key)
+    if DeferInCombat() then return end
     if not book then return end
     if not nativeTpl then
         local paged = Paged()
@@ -920,6 +939,7 @@ local function LastForeignTab()
 end
 
 local function AnchorTabs()
+    if DeferInCombat() then return end
     if not tabButton or not book then return end
     local host = LastForeignTab()
     if tabButton.__anchorHost == host then return end
@@ -933,6 +953,7 @@ local function AnchorTabs()
 end
 
 local function Attach()
+    if DeferInCombat() then return false end
     local psf = PlayerSpellsFrame
     local sb = psf and psf.SpellBookFrame
     if not (sb and sb.CategoryTabSystem and sb.PagedSpellsFrame) then return false end
@@ -983,6 +1004,7 @@ local function Attach()
         if activePage then InstallOurs() end
     end)
     hooksecurefunc(sb, "ResizeSearchBox", function()
+        if DeferInCombat() then return end
         local rightmost = weaponTabButton or tabButton
         local left, right = rightmost and rightmost:GetRight(), sb.SearchBox:GetRight()
         if left and right then
@@ -990,6 +1012,7 @@ local function Attach()
         end
     end)
     sb:HookScript("OnShow", function()
+        if DeferInCombat() then return end
         if NB.RefreshEnabled then NB.RefreshEnabled() end
         AnchorTabs()
         if sb.ResizeSearchBox then pcall(sb.ResizeSearchBox, sb) end
@@ -1011,6 +1034,7 @@ end
 local retryTimer, retryLeft = nil, 0
 
 local function ApplyEnabled()
+    if DeferInCombat() then return false end
     local on = ns.SpellEnhOn and ns.SpellEnhOn()
     if on then
         if not (book and tabButton) then Attach() end
@@ -1037,6 +1061,7 @@ local function ApplyEnabled()
 end
 
 function NB.SetEnabled(on)
+    if DeferInCombat() then return end
     if on then
         retryLeft = 6
         if not (book and tabButton) then Attach() end
@@ -1053,6 +1078,7 @@ function NB.SetEnabled(on)
 end
 
 function NB.SetWeaponEnabled(on)
+    if DeferInCombat() then return end
     if on then
         retryLeft = 6
         if not (book and tabButton) then Attach() end
@@ -1074,12 +1100,27 @@ function NB.RefreshEnabled()
     return ApplyEnabled()
 end
 
+local function FlushPending()
+    if not pending then return end
+    pending = false
+    if activePage then InstallOurs() end
+    PaintTabs()
+    AnchorTabs()
+    SyncSubBar(activePage == "weapon")
+    ApplyEnabled()
+end
+
+local flush = CreateFrame("Frame")
+flush:RegisterEvent("PLAYER_REGEN_ENABLED")
+flush:SetScript("OnEvent", function() FlushPending() end)
+
 function NB.Refresh()
     if activePage then InstallOurs() end
     AnchorTabs()
 end
 
 function NB.Page(delta)
+    if DeferInCombat() then return end
     local paged = Paged()
     local pc = paged and paged.PagingControls
     if not (pc and activePage) then return end
