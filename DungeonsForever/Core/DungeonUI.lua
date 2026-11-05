@@ -1700,6 +1700,11 @@ function DG.EnsureCardPool()
     DG.RunSteps()
 end
 
+DG.Q_OV_DONE = { 0.25, 0.85, 0.35, 1 }
+DG.Q_OV_READY = { 0.15, 0.82, 0.78, 1 }
+DG.Q_OV_ACT = { 1, 0.82, 0, 1 }
+DG.Q_OV_TODO = { 0.55, 0.55, 0.55, 1 }
+
 function DG.EnsureQuestLane()
     if U.questLaneBuilt then return end
     local detail = U.dungeonDetail
@@ -2138,6 +2143,7 @@ function DG.EnsureQuestLane()
 
     local legend = {
         { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_DONE, "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark", { 0.043, 0.239, 0.102 }, DG.Q_OV_DONE, L["任务完成"] },
+        { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_READY, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn", { 0.020, 0.180, 0.172 }, DG.Q_OV_READY, L["完成未上交"] },
         { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_ACT, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk", { 0.227, 0.165, 0 }, DG.Q_OV_ACT, L["已接取"] },
         { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_TODO, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl", { 0.102, 0.102, 0.102 }, DG.Q_OV_TODO, L["未接取"] },
     }
@@ -2273,11 +2279,9 @@ end
 DG.Q_OV_W = 170
 DG.Q_OV_H = 42
 DG.Q_OV_GAP = 20
+DG.Q_OV_FOOT = 34
 DG.Q_OV_RAD = 6
 DG.Q_OV_COL = { 8, 8 + 170 + 24 }
-DG.Q_OV_DONE = { 0.25, 0.85, 0.35, 1 }
-DG.Q_OV_ACT = { 1, 0.82, 0, 1 }
-DG.Q_OV_TODO = { 0.55, 0.55, 0.55, 1 }
 function DG.PaintQuestOverview(d)
     local ov, canvas, pool = U.dungeonQOverviewF, U.dungeonQOVCanvas, U.dungeonQOVPool
     if not (ov and canvas and pool and d) then return end
@@ -2504,17 +2508,20 @@ function DG.PaintQuestOverview(d)
 
     local function nodeState(q)
         if DG.QuestDone(q[1]) then return DG.Q_OV_DONE end
+        if DG.QuestReady(q[1]) then return DG.Q_OV_READY end
         if DG.QuestActive(q[1]) then return DG.Q_OV_ACT end
         return DG.Q_OV_TODO
     end
     local MARK_ICON = {
         [DG.Q_OV_DONE] = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",
+        [DG.Q_OV_READY] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn",
         [DG.Q_OV_ACT] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
         [DG.Q_OV_TODO] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
     }
     local function extState(pid)
         local st = DG.QuestState(pid)
         if st == "done" then return DG.Q_OV_DONE end
+        if st == "ready" then return DG.Q_OV_READY end
         if st == "active" then return DG.Q_OV_ACT end
         return DG.Q_OV_TODO
     end
@@ -2544,6 +2551,7 @@ function DG.PaintQuestOverview(d)
     end
     local MARK_INK = {
         [DG.Q_OV_DONE] = { 0.043, 0.239, 0.102 },
+        [DG.Q_OV_READY] = { 0.020, 0.180, 0.172 },
         [DG.Q_OV_ACT] = { 0.227, 0.165, 0 },
         [DG.Q_OV_TODO] = { 0.102, 0.102, 0.102 },
     }
@@ -2678,6 +2686,7 @@ function DG.PaintQuestOverview(d)
     local RAD = DG.Q_OV_RAD or 6
     local function lineLvl(lc)
         if lc == DG.Q_OV_DONE then return 4 end
+        if lc == DG.Q_OV_READY then return 3 end
         if lc == DG.Q_OV_ACT then return 2 end
         return 0
     end
@@ -2806,6 +2815,9 @@ function DG.PaintQuestOverview(d)
         if DG.QuestDone(childQ[1]) or (srcQ and DG.QuestDone(srcQ[1])) then
             return DG.Q_OV_DONE
         end
+        if DG.QuestReady(childQ[1]) or (srcQ and DG.QuestReady(srcQ[1])) then
+            return DG.Q_OV_READY
+        end
         if DG.QuestActive(childQ[1]) or (srcQ and DG.QuestActive(srcQ[1])) then
             return DG.Q_OV_ACT
         end
@@ -2920,21 +2932,23 @@ function DG.PaintQuestOverview(d)
         local bend = (xR - xL) > bendR * 2
         local lo = bend and (xL + bendR) or xL
         local hi = bend and (xR - bendR) or xR
-        local anyDone, anyAct = false, false
+        local anyDone, anyRdy, anyAct = false, false, false
         local marks = {}
         for c = 1, nCols do
             local tq = chains[packs[c][1]][1]
             local dn = (tq and DG.QuestDone(tq[1])) or false
+            local rd = (tq and DG.QuestReady(tq[1])) or false
             local ac = (tq and DG.QuestActive(tq[1])) or false
             if dn then anyDone = true end
+            if rd then anyRdy = true end
             if ac then anyAct = true end
-            marks[#marks + 1] = { x = colX[c] + nw / 2, dn = dn, ac = ac, c = c, lc = lineColor(tq, nil) }
+            marks[#marks + 1] = { x = colX[c] + nw / 2, dn = dn, rd = rd, ac = ac, c = c, lc = lineColor(tq, nil) }
         end
         local onCol = false
         for c = 1, nCols do
             if math.abs(colX[c] + nw / 2 - xTop) < 0.5 then onCol = true break end
         end
-        if not onCol then marks[#marks + 1] = { x = xTop, dn = false, ac = false } end
+        if not onCol then marks[#marks + 1] = { x = xTop, dn = false, rd = false, ac = false } end
         table.sort(marks, function(p, r) return p.x < r.x end)
         local splitR = 0
         if not onCol and (spineY - DG.Q_OV_H) > RAD + 1 then
@@ -2960,7 +2974,7 @@ function DG.PaintQuestOverview(d)
             end
             if m.c then vtop[m.c] = spineY + (m.junc and FIL_R or LINEW / 2) end
         end
-        local rDoneL, rDoneR, rActL, rActR = 0, 0, 0, 0
+        local rDoneL, rDoneR, rRdyL, rRdyR, rActL, rActR = 0, 0, 0, 0, 0, 0
         for i = 1, #marks do
             local m = marks[i]
             local dl = xTop - m.x
@@ -2968,6 +2982,10 @@ function DG.PaintQuestOverview(d)
             if m.dn then
                 if dl > rDoneL then rDoneL = dl end
                 if dr > rDoneR then rDoneR = dr end
+            end
+            if m.rd then
+                if dl > rRdyL then rRdyL = dl end
+                if dr > rRdyR then rRdyR = dr end
             end
             if m.ac then
                 if dl > rActL then rActL = dl end
@@ -2982,6 +3000,8 @@ function DG.PaintQuestOverview(d)
             local lc = DG.Q_OV_TODO
             if outer <= (left and rDoneL or rDoneR) + 0.5 then
                 lc = DG.Q_OV_DONE
+            elseif outer <= (left and rRdyL or rRdyR) + 0.5 then
+                lc = DG.Q_OV_READY
             elseif outer <= (left and rActL or rActR) + 0.5 then
                 lc = DG.Q_OV_ACT
             end
@@ -3017,6 +3037,8 @@ function DG.PaintQuestOverview(d)
             local lcT = DG.Q_OV_TODO
             if lcNearL == DG.Q_OV_DONE or lcNearR == DG.Q_OV_DONE then
                 lcT = DG.Q_OV_DONE
+            elseif lcNearL == DG.Q_OV_READY or lcNearR == DG.Q_OV_READY then
+                lcT = DG.Q_OV_READY
             elseif lcNearL == DG.Q_OV_ACT or lcNearR == DG.Q_OV_ACT then
                 lcT = DG.Q_OV_ACT
             end
@@ -3027,6 +3049,8 @@ function DG.PaintQuestOverview(d)
             local lcT = DG.Q_OV_TODO
             if anyDone then
                 lcT = DG.Q_OV_DONE
+            elseif anyRdy then
+                lcT = DG.Q_OV_READY
             elseif anyAct then
                 lcT = DG.Q_OV_ACT
             end
@@ -3065,6 +3089,12 @@ function DG.PaintQuestOverview(d)
         end
         local corrY = endY - 10
         local xEndC = endCX + nw / 2
+        local function markColor(m)
+            if m.dn then return DG.Q_OV_DONE end
+            if m.rd then return DG.Q_OV_READY end
+            if m.ac then return DG.Q_OV_ACT end
+            return DG.Q_OV_TODO
+        end
         local bmarks = {}
         for c = 1, nCols do
             local bn = colBot[c]
@@ -3073,11 +3103,12 @@ function DG.PaintQuestOverview(d)
                     x = colX[c] + nw / 2,
                     y = bn.__oy + DG.Q_OV_H,
                     dn = (bn.__q and DG.QuestDone(bn.__q[1])) and true or false,
+                    rd = (bn.__q and DG.QuestReady(bn.__q[1])) and true or false,
                     ac = (bn.__q and DG.QuestActive(bn.__q[1])) and true or false,
                 }
             end
         end
-        bmarks[#bmarks + 1] = { x = xEndC, y = corrY, dn = allDone, ac = false }
+        bmarks[#bmarks + 1] = { x = xEndC, y = corrY, dn = allDone, rd = false, ac = false }
         table.sort(bmarks, function(p, r) return p.x < r.x end)
         local endOnCol = false
         for c = 1, nCols do
@@ -3109,7 +3140,7 @@ function DG.PaintQuestOverview(d)
         end
         local cLo = bmarks[1].x + RAD
         local cHi = bmarks[#bmarks].x - RAD
-        local hDoneL, hDoneR, hActL, hActR = 0, 0, 0, 0
+        local hDoneL, hDoneR, hRdyL, hRdyR, hActL, hActR = 0, 0, 0, 0, 0, 0
         for i = 1, #bmarks do
             local m = bmarks[i]
             local dl = xEndC - m.x
@@ -3117,6 +3148,10 @@ function DG.PaintQuestOverview(d)
             if m.dn then
                 if dl > hDoneL then hDoneL = dl end
                 if dr > hDoneR then hDoneR = dr end
+            end
+            if m.rd then
+                if dl > hRdyL then hRdyL = dl end
+                if dr > hRdyR then hRdyR = dr end
             end
             if m.ac then
                 if dl > hActL then hActL = dl end
@@ -3131,6 +3166,8 @@ function DG.PaintQuestOverview(d)
             local lc = DG.Q_OV_TODO
             if outer <= (left and hDoneL or hDoneR) + 0.5 then
                 lc = DG.Q_OV_DONE
+            elseif outer <= (left and hRdyL or hRdyR) + 0.5 then
+                lc = DG.Q_OV_READY
             elseif outer <= (left and hActL or hActR) + 0.5 then
                 lc = DG.Q_OV_ACT
             end
@@ -3154,7 +3191,7 @@ function DG.PaintQuestOverview(d)
         local singleCol = (#bmarks > 1) and (math.abs(bmarks[1].x - bmarks[#bmarks].x) < 0.5)
         for i = 1, #bmarks do
             local m = bmarks[i]
-            local lc = m.dn and DG.Q_OV_DONE or (m.ac and DG.Q_OV_ACT or DG.Q_OV_TODO)
+            local lc = markColor(m)
             local isHub = (hubR > 0) and (math.abs(m.x - xEndC) < 0.5)
             if i == 1 and not singleCol then
                 path(lc, { { m.x, m.y }, { m.x, corrY }, { m.x + RAD, corrY } })
@@ -3175,7 +3212,7 @@ function DG.PaintQuestOverview(d)
         for i = 1, #bmarks do
             local m = bmarks[i]
             if m.junc then
-                local lc = m.dn and DG.Q_OV_DONE or (m.ac and DG.Q_OV_ACT or DG.Q_OV_TODO)
+                local lc = markColor(m)
                 if m.x < xEndC then
                     fillet(m.x + FIL_R, corrY - FIL_R, -1, 1, lc)
                 else
@@ -3467,7 +3504,7 @@ function DG.PaintQuestOverview(d)
         end
     end
 
-    local cvh = (nCols > 0) and (rowY(maxRR) + DG.Q_OV_H + 8) or 10
+    local cvh = (nCols > 0) and (rowY(maxRR) + DG.Q_OV_H + 8 + DG.Q_OV_FOOT) or 10
     canvas:SetSize(canvasW, cvh)
     if hasCard then
         DG.PaintOverviewFlow(d, canvas, cardX, fwCard)
@@ -5858,22 +5895,36 @@ function DG.QuestActive(id)
     end
     return DG.QLCall("IsOnQuest", id) == true
 end
+function DG.QuestReady(id)
+    if not id then return false end
+    local sim = DG.questSim
+    if sim then
+        local st = sim[id]
+        if st ~= nil then return st == "ready" end
+    end
+    if DG.QuestDone(id) then return false end
+    if not DG.QuestActive(id) then return false end
+    local fn = C_QuestLog and C_QuestLog.ReadyForTurnIn
+    if not fn then return false end
+    local ok, r = pcall(fn, id)
+    return ok and r == true
+end
 DG.questSim = nil
-DG.QUEST_SIM_CYCLE = { "done", "active", "none" }
-DG.QUEST_SIM_TEXT = { done = "已完成", active = "已接取", none = "未接取" }
+DG.QUEST_SIM_CYCLE = { "done", "ready", "active", "none" }
+DG.QUEST_SIM_TEXT = { done = "已完成", ready = "完成未上交", active = "已接取", none = "未接取" }
 function DG.SimQuests(key, mode)
     local d
     for _, x in ipairs((ns.DungeonData and ns.DungeonData.dungeons) or {}) do
         if x.id == key then d = x break end
     end
     if not d then return nil end
-    if mode ~= "done" and mode ~= "active" and mode ~= "none" then mode = nil end
+    if mode ~= "done" and mode ~= "ready" and mode ~= "active" and mode ~= "none" then mode = nil end
     local list = DG.QuestList(d)
     local sim, out = {}, {}
     for i = 1, #list do
         local id = list[i][1]
         if type(id) == "number" then
-            local st = mode or DG.QUEST_SIM_CYCLE[((i - 1) % 3) + 1]
+            local st = mode or DG.QUEST_SIM_CYCLE[((i - 1) % 4) + 1]
             sim[id] = st
             out[#out + 1] = { id = id, st = st }
         end
@@ -5886,7 +5937,7 @@ function DG.SimQuests(key, mode)
                 local pid = tonumber(pre[k])
                 if pid and not sim[pid] then
                     nq = nq + 1
-                    local st = mode or DG.QUEST_SIM_CYCLE[((nq - 1) % 3) + 1]
+                    local st = mode or DG.QUEST_SIM_CYCLE[((nq - 1) % 4) + 1]
                     sim[pid] = st
                     out[#out + 1] = { id = pid, st = st }
                 end
@@ -5916,19 +5967,19 @@ if type(SlashCmdList) == "table" then
         local key = (a == "" or a == "demo" or a == "on") and "hall_of_thanes" or a
         local d, out = DG.SimQuests(key, b)
         if not d then
-            print(head .. "找不到副本 " .. key .. "。用法：/dfsim [副本id] [done|active|none] / /dfsim off")
+            print(head .. "找不到副本 " .. key .. "。用法：/dfsim [副本id] [done|ready|active|none] / /dfsim off")
             return
         end
         local n = out and #out or 0
         if ns.ShowDungeonDetail then ns.ShowDungeonDetail(d.id) end
         U.dungeonQView = "overview"
         if U.dungeonBuilt then U:RenderDungeonQuests() end
-        local sub = (b == "done" or b == "active" or b == "none") and ("全部 " .. DG.QUEST_SIM_TEXT[b]) or "三态轮转"
+        local sub = (b == "done" or b == "ready" or b == "active" or b == "none") and ("全部 " .. DG.QUEST_SIM_TEXT[b]) or "四态轮转"
         print(head .. (d.name or key) .. " · " .. n .. " 条任务 · " .. sub)
         for i = 1, n do
             local e = out[i]
             local nm = DG.QuestName(e.id)
-            print("  |cff9a9a9a" .. i .. ".|r " .. tostring(nm) .. "  |cff" .. (e.st == "done" and "40d95a" or (e.st == "active" and "ffd100" or "8c8c8c")) .. DG.QUEST_SIM_TEXT[e.st] .. "|r")
+            print("  |cff9a9a9a" .. i .. ".|r " .. tostring(nm) .. "  |cff" .. (e.st == "done" and "40d95a" or (e.st == "ready" and "26d1c7" or (e.st == "active" and "ffd100" or "8c8c8c"))) .. DG.QUEST_SIM_TEXT[e.st] .. "|r")
         end
     end
 end
@@ -6182,6 +6233,29 @@ function DG.QuestObjectives(id)
     return table.concat(parts, "\n")
 end
 
+function DG.BagItemCount(itemID)
+    if type(itemID) ~= "number" then return 0 end
+    local gen = DG.__bagGen or 0
+    local cache = DG.__bagCnt
+    if not cache or cache.gen ~= gen then
+        cache = { gen = gen }
+        DG.__bagCnt = cache
+    end
+    local hit = cache[itemID]
+    if hit ~= nil then return hit end
+    local n = 0
+    local api = C_Item
+    if api and api.GetItemCount then
+        local ok, got = pcall(api.GetItemCount, itemID, true, false, false)
+        if ok then
+            n = tonumber(got) or 0
+        end
+    end
+    if n < 0 then n = 0 end
+    cache[itemID] = n
+    return n
+end
+
 function DG.ItemObjectiveProgress(questID, itemID)
     if questID == nil or itemID == nil then return nil end
     local nm, ok = DG.ItemName(itemID)
@@ -6190,7 +6264,10 @@ function DG.ItemObjectiveProgress(questID, itemID)
     if not list then return nil end
     for _, ob in ipairs(list) do
         if ob[3] > 0 and ob[1]:find(nm, 1, true) then
-            return ob[2], ob[3]
+            local have = DG.BagItemCount(itemID)
+            if ob[2] > have then have = ob[2] end
+            if have > ob[3] then have = ob[3] end
+            return have, ob[3]
         end
     end
     return nil
@@ -6401,6 +6478,8 @@ function DG.ShowQuestTip(owner, q)
     local st = DG.QuestState(q[1])
     if st == "done" then
         GameTooltip:AddLine(L["已完成"], 0.25, 0.85, 0.35)
+    elseif st == "ready" then
+        GameTooltip:AddLine(L["完成未上交"], 0.15, 0.82, 0.78)
     elseif st == "active" then
         GameTooltip:AddLine(L["进行中"], 1, 0.82, 0)
     else
@@ -6458,8 +6537,8 @@ DG.Q_DET_W = DG.CHILD_W - DG.Q_LIST_W - DG.Q_DET_GAP - DG.Q_PAD * 2
 DG.Q_ROW_H = 34
 DG.Q_GAP_Y = 4
 DG.Q_X_NAME = 30
-DG.Q_X_LOC = 288
-DG.Q_X_LV = 386
+DG.Q_X_LOC = 248
+DG.Q_X_LV = 340
 DG.Q_W_NAME = 150
 DG.Q_W_LOC = 90
 DG.Q_BADGE_H = (ns.hui and ns.hui.ChipH and ns.hui.ChipH(14)) or 13.7
@@ -6492,11 +6571,13 @@ DG.Q_FLOW_DOT = 16
 DG.Q_FLOW_MARK = 14
 DG.Q_MARK_SYM = {
     done = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",
+    ready = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn",
     active = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
     todo = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
 }
 DG.Q_MARK_INK = {
     done = { 0.043, 0.239, 0.102 },
+    ready = { 0.020, 0.180, 0.172 },
     active = { 0.227, 0.165, 0 },
     todo = { 0.102, 0.102, 0.102 },
 }
@@ -6513,7 +6594,7 @@ DG.Q_HDR_H = 26
 DG.Q_GRP_GAP = 8
 DG.Q_SUM_H = 28
 DG.Q_HEAD_H = DG.Q_PAD + 24 + DG.Q_PAD
-DG.Q_STATUS_TAG = { done = L["已完成"], active = L["进行中"], todo = L["未完成"] }
+DG.Q_STATUS_TAG = { done = L["已完成"], ready = L["完成未上交"], active = L["进行中"], todo = L["未完成"] }
 DG.QFILTERS = { "all", "todo", "done" }
 DG.QFILTER_LABEL = { all = L["全部"], todo = L["未完成"], done = L["已完成"] }
 DG.QSIDE_LABEL = { all = L["全部"], A = L["联盟"], H = L["部落"] }
@@ -6797,6 +6878,7 @@ function DG.QuestState(id)
     if DG.QuestDone(id) then return "done" end
     local pd = DG.__preDone
     if pd and pd[id] then return "done" end
+    if DG.QuestReady(id) then return "ready" end
     if DG.QuestActive(id) then return "active" end
     return "todo"
 end
@@ -7251,7 +7333,7 @@ function U:RenderDungeonQuests()
                 local q = g.rows[i]
                 local r = takeRow()
                 local st = DG.QuestState(q[1])
-                local col = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
+                local col = (st == "done" and C_GREEN) or (st == "ready" and DG.Q_OV_READY) or (st == "active" and C_GOLD) or C_GREY
                 local nm, hasName = DG.QuestName(q[1])
                 local ftex = q[2] and DG.Q_FAC_ICON[q[2]] or nil
                 if ftex then
@@ -7266,6 +7348,8 @@ function U:RenderDungeonQuests()
                     r.name:SetTextColor(Unpack(C_GREY))
                 elseif st == "done" then
                     r.name:SetTextColor(Unpack(C_GREEN))
+                elseif st == "ready" then
+                    r.name:SetTextColor(Unpack(DG.Q_OV_READY))
                 elseif st == "active" then
                     r.name:SetTextColor(Unpack(C_GOLD))
                 else
@@ -7795,7 +7879,7 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
                 b.__npc, b.__q, b.__item = nil, tk.id, nil
                 if hasName then
                     local st = DG.QuestState(tk.id)
-                    local mc = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
+                    local mc = (st == "done" and C_GREEN) or (st == "ready" and DG.Q_OV_READY) or (st == "active" and C_GOLD) or C_GREY
                     DG.FlowMark(b, st, mc)
                     txt = format("《%s%s》", DG.Q_FLOW_IDEO, nm)
                     ob = "《"
@@ -8105,6 +8189,7 @@ function DG.PaintOverviewFlow(d, canvas, x, w)
 end
 
 function U:RenderQuestDetail()
+    DG.__bagGen = (DG.__bagGen or 0) + 1
     local d = U.dungeonDetailCur
     local child, pool = U.dungeonQDetChild, U.dungeonQDetPool
     if not (d and child and pool) then return end
@@ -8375,7 +8460,7 @@ function U:RenderQuestDetail()
 
     local nm, hasName = DG.QuestName(q[1])
     local st = DG.QuestState(q[1])
-    local col = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
+    local col = (st == "done" and C_GREEN) or (st == "ready" and DG.Q_OV_READY) or (st == "active" and C_GOLD) or C_GREY
     if hasName then nm = nm .. format(" |cff9a9a9a#%d|r", q[1]) end
     name:SetText(nm)
     name:SetTextColor(Unpack(hasName and C_GOLD or C_GREY))
@@ -8544,7 +8629,7 @@ function U:RenderQuestDetail()
                 if type(seg) == "number" then
                     local pnm, pok = DG.QuestName(seg)
                     local pst = DG.QuestState(seg)
-                    local pcol = (pst == "done" and C_GREEN) or (pst == "active" and C_GOLD) or C_GREY
+                    local pcol = (pst == "done" and C_GREEN) or (pst == "ready" and DG.Q_OV_READY) or (pst == "active" and C_GOLD) or C_GREY
                     r.name:SetText(pok and (pnm .. format(" |cff9a9a9a#%d|r", seg)) or pnm)
                     r.name:SetTextColor(Unpack(pok and pcol or C_GREY))
                     local stag = (pok and DG.Q_STATUS_TAG[pst]) or ""
@@ -8621,7 +8706,7 @@ function U:RenderQuestDetail()
                 local r = takeNode()
                 local fnm, fok = DG.QuestName(fq[1])
                 local fst = DG.QuestState(fq[1])
-                local fcol = (fst == "done" and C_GREEN) or (fst == "active" and C_GOLD) or C_GREY
+                local fcol = (fst == "done" and C_GREEN) or (fst == "ready" and DG.Q_OV_READY) or (fst == "active" and C_GOLD) or C_GREY
                 r.name:SetText(fok and (fnm .. format(" |cff9a9a9a#%d|r", fq[1])) or fnm)
                 r.name:SetTextColor(Unpack(fok and fcol or C_GREY))
                 r.st:SetText(fok and (DG.Q_STATUS_TAG[fst] or "") or "")
