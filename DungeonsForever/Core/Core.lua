@@ -470,6 +470,10 @@ function ns.SkinTipFont(tt, size, skipResize)
         for _, side in ipairs({ "TextLeft", "TextRight" }) do
             local fs = _G[prefix .. side .. i]
             if fs and fs.SetFont then
+                if not fs.__dfOrigFont then
+                    local p0, s0, f0 = fs:GetFont()
+                    if p0 then fs.__dfOrigFont = { p0, s0, f0 } end
+                end
                 local _, sz, flags = fs:GetFont()
                 pcall(fs.SetFont, fs, ns.FONT, want > 0 and want or tonumber(sz) or 14, flags or "")
             end
@@ -505,16 +509,73 @@ function ns.SkinTipFont(tt, size, skipResize)
     end
 end
 
+local TIP_FRAMES = { "GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2" }
+
+function ns.TipFontOn()
+    local db = DungeonsForeverDB
+    local ui = db and db.ui
+    local t = ui and ui.tip
+    return (t and t.global == true) and true or false
+end
+
+function ns.RestoreTipFont(tt)
+    tt = tt or _G.GameTooltip
+    if not (tt and tt.NumLines) then return end
+    local prefix = tt.GetName and tt:GetName()
+    if type(prefix) ~= "string" then return end
+    local n = tt:NumLines()
+    if type(n) ~= "number" then n = type(n) == "table" and #n or 0 end
+    for i = 1, n do
+        for _, side in ipairs({ "TextLeft", "TextRight" }) do
+            local fs = _G[prefix .. side .. i]
+            if fs and fs.SetFont then
+                local o = fs.__dfOrigFont
+                if o then
+                    pcall(fs.SetFont, fs, o[1], o[2], o[3])
+                elseif fs.SetFontObject and GameTooltipText then
+                    pcall(fs.SetFontObject, fs, GameTooltipText)
+                end
+            end
+        end
+    end
+end
+
+function ns.RefreshTipFonts()
+    local on = ns.TipFontOn()
+    for _, name in ipairs(TIP_FRAMES) do
+        local tt = _G[name]
+        if tt and tt.IsShown and tt:IsShown() then
+            if on then
+                ns.SkinTipFont(tt, nil, true)
+            else
+                ns.RestoreTipFont(tt)
+            end
+        end
+    end
+end
+
 function ns.HookTipFont(tt, size)
     if not (tt and tt.HookScript) or tt.__dfTipFont then return end
     tt.__dfTipFont = true
     tt.__dfTipFrames = -1
     tt:HookScript("OnShow", function(self)
+        if not ns.TipFontOn() then
+            if (self.__dfTipFrames or -1) >= 0 then
+                self.__dfTipFrames = -1
+                ns.RestoreTipFont(self)
+            end
+            return
+        end
         self.__dfTipFrames = 0
         ns.SkinTipFont(self, size, true)
     end)
     tt:HookScript("OnUpdate", function(self)
         if (self.__dfTipFrames or -1) < 0 then return end
+        if not ns.TipFontOn() then
+            self.__dfTipFrames = -1
+            ns.RestoreTipFont(self)
+            return
+        end
         self.__dfTipFrames = self.__dfTipFrames + 1
         if self.__dfTipFrames >= 2 then self.__dfTipFrames = -1 end
         ns.SkinTipFont(self, size, true)
@@ -523,7 +584,7 @@ function ns.HookTipFont(tt, size)
 end
 
 function ns.HookAllTipFont()
-    for _, name in ipairs({ "GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2" }) do
+    for _, name in ipairs(TIP_FRAMES) do
         local tt = _G[name]
         if tt then ns.HookTipFont(tt) end
     end

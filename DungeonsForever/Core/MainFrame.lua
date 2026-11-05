@@ -1204,6 +1204,7 @@ function BuildTipCard()
         local c = ns.TipCfg()
         c.global = not (c.global and true)
         self:SetChecked(c.global and true or false)
+        if ns.RefreshTipFonts then ns.RefreshTipFonts() end
         if ns.TipLines.RefreshPreview then ns.TipLines.RefreshPreview() end
     end)
 

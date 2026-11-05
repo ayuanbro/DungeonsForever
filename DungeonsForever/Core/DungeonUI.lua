@@ -267,6 +267,11 @@ DG.HERO_CAMELOT = {
     excavation_wetlands = 7963777,
     ruins_of_lordaeron = 7963782,
     hall_of_thanes = 7963781,
+    the_drowned_city = 7963741,
+    alcaz_prison = 7963734,
+    blackmaw_hold = 7963784,
+    shapers_terrace = 7963783,
+    kroldok_stronghold = 7963780,
 }
 local MEDIA_HERO = {
     onyxias_lair = "Interface\\AddOns\\DungeonsForever\\Media\\Loadings\\OnyxiasLairHero",

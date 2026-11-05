@@ -28,6 +28,16 @@ function ns.ModulePaint(prefix)
     local jobs, jobGen = {}, {}
     local paintBusy = false
 
+    local drv = CreateFrame("Frame", nil, UIParent)
+    drv:SetSize(1, 1)
+    drv:SetFrameStrata("BACKGROUND")
+    drv:Show()
+    local armed = false
+
+    local function idleNow()
+        return next(jobs) == nil and #qUrg == 0 and #qStep == 0 and #qNorm == 0
+    end
+
     local function stepJob(key, gen)
         local j = jobs[key]
         if not j or j.gen ~= gen then return true end
@@ -89,13 +99,17 @@ function ns.ModulePaint(prefix)
             end
             for i = 1, #keep do qNorm[#qNorm + 1] = keep[i] end
         end
+        if idleNow() then
+            armed = false
+            drv:SetScript("OnUpdate", nil)
+        end
     end
 
-    local drv = CreateFrame("Frame", nil, UIParent)
-    drv:SetSize(1, 1)
-    drv:SetFrameStrata("BACKGROUND")
-    drv:Show()
-    drv:SetScript("OnUpdate", pumpTick)
+    local function arm()
+        if armed then return end
+        armed = true
+        drv:SetScript("OnUpdate", pumpTick)
+    end
 
     local Idle = {}
     local Paint = {}
@@ -105,11 +119,13 @@ function ns.ModulePaint(prefix)
     function Idle.Add(fn)
         if type(fn) ~= "function" then return end
         qNorm[#qNorm + 1] = fn
+        arm()
     end
 
     function Idle.Urgent(fn)
         if type(fn) ~= "function" then return end
         qUrg[#qUrg + 1] = fn
+        arm()
     end
 
     function Idle.StepGC(frames, kb)
@@ -132,6 +148,7 @@ function ns.ModulePaint(prefix)
             onDone = onDone,
             cap = cap or CAP,
         }
+        arm()
         if not paintBusy then
             paintBusy = true
             pcall(stepJob, key, gen)
@@ -152,6 +169,7 @@ function ns.ModulePaint(prefix)
     function Step.Push(fn)
         if type(fn) ~= "function" then return end
         qStep[#qStep + 1] = fn
+        arm()
     end
 
     function Step.Run()
