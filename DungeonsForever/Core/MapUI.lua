@@ -46,6 +46,8 @@ end
 local M = {}
 ns.MapModule = M
 
+M.hideOtherPins = false
+
 local ZM = { k = 1, x = 0, y = 0, min = 1, max = 3 }
 ns.MapZoom = ZM
 
@@ -237,9 +239,25 @@ M.LOGO_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.
 M.LOGO_SIZE = 20
 M.LOGO_LIFT = 2.5
 M.PIN_BOSS_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\BossSkull"
-M.PIN_QUEST_READY_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinReady"
-M.PIN_QUEST_LOCKED_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinLocked"
-M.PIN_QUEST_PRE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestPinPre"
+M.PIN_QUEST_DISC_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
+M.PIN_QUEST_SYM = {
+    done = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",
+    ready = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn",
+    active = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
+    avail = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
+    todo = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
+    lv = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestSymLock",
+    locked = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestSymLock",
+    pre = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestSymPre",
+}
+M.PIN_QUEST_DISC = {
+    done = DG.Q_OV_DONE, ready = DG.Q_OV_READY, active = DG.Q_OV_ACT,
+    avail = DG.Q_OV_TODO, todo = DG.Q_OV_TODO, lv = DG.Q_OV_TODO,
+    locked = DG.Q_OV_TODO, pre = DG.Q_OV_TODO,
+}
+M.PIN_QUEST_RIM_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestRim"
+M.PIN_QUEST_RIM_RGB = { 0.91, 0.73, 0.19 }
+M.PIN_QUEST_SIZE = 18
 M.PIN_DOOR_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\MapDoor"
 M.PIN_NOTE_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\NotePin"
 M.PIN_STAIR_UP_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\StairsUp"
@@ -1167,6 +1185,38 @@ function M.HasKindPins(id, want)
     return (n > 0) and true or false
 end
 
+function M.HasStatePins(id, want)
+    if not id or not want then return false end
+    local ex = M.ExtraPinsFor(id, nil)
+    if not ex then return false end
+    for i = 1, #ex do
+        local p = ex[i]
+        if p.kind == "quest" and type(p.id) == "number" then
+            local st = DG.QuestState(p.id)
+            if want == "done" then
+                if st == "done" then return true end
+            elseif st == "active" or st == "ready" then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function M.HasHiddenQuestPins(id)
+    if not id then return false end
+    local ex = M.ExtraPinsFor(id, nil)
+    if not ex then return false end
+    for i = 1, #ex do
+        local p = ex[i]
+        if p.kind == "icon" then return true end
+        if p.kind == "quest" and type(p.id) == "number" then
+            if DG.QuestState(p.id) == "todo" then return true end
+        end
+    end
+    return false
+end
+
 function M.GuideFor(id, en)
     local g = (ns.DungeonGuide or {})[id]
     local bs = g and g.bosses
@@ -1328,6 +1378,22 @@ function M.Layout(cw, ch)
     return out
 end
 
+function M.PaintQuestPin(bt, key, a)
+    local col = M.PIN_QUEST_DISC[key] or M.PIN_QUEST_DISC.todo
+    local sym = M.PIN_QUEST_SYM[key] or M.PIN_QUEST_SYM.todo
+    local ink = DG.Q_MARK_INK[key] or DG.Q_MARK_INK.todo
+    a = a or 1
+    bt.dot:SetShown(true)
+    bt.dot:SetTexture(M.PIN_QUEST_DISC_TEX)
+    bt.dot:SetVertexColor(col[1], col[2], col[3], a)
+    bt.rim:SetShown(true)
+    bt.rim:SetTexture(M.PIN_QUEST_RIM_TEX)
+    bt.rim:SetVertexColor(M.PIN_QUEST_RIM_RGB[1], M.PIN_QUEST_RIM_RGB[2], M.PIN_QUEST_RIM_RGB[3], 1)
+    bt.sym:SetTexture(sym)
+    bt.sym:SetVertexColor(ink[1], ink[2], ink[3], a)
+    bt.sym:SetShown(true)
+end
+
 local function BuildPins()
     local frame = M.frame
     if not frame or frame.__pinsReady then return end
@@ -1352,6 +1418,14 @@ local function BuildPins()
         bt.dot:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\BossSkull")
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
+        bt.rim = bt:CreateTexture(nil, "OVERLAY", nil, 1)
+        bt.rim:SetAllPoints(bt.dot)
+        bt.rim:SetTexture(M.PIN_QUEST_RIM_TEX)
+        bt.rim:SetVertexColor(M.PIN_QUEST_RIM_RGB[1], M.PIN_QUEST_RIM_RGB[2], M.PIN_QUEST_RIM_RGB[3])
+        bt.rim:Hide()
+        bt.sym = bt:CreateTexture(nil, "OVERLAY", nil, 2)
+        bt.sym:SetAllPoints(bt.dot)
+        bt.sym:Hide()
         bt.entry = bt:CreateTexture(nil, "ARTWORK", nil, 2)
         bt.entry:SetPoint("CENTER", bt, "CENTER", 0, 0)
         bt.entry:SetSize(M.PIN_SIZE * 0.62, M.PIN_SIZE * 0.62)
@@ -1870,6 +1944,7 @@ function M.Build(detail, hero)
     M.hideBossPins = (pinStore and pinStore.mapBossHidden) and true or false
     M.hideQuestPins = (pinStore and pinStore.mapQuestHidden) and true or false
     M.hideNotePins = (pinStore and pinStore.mapNoteHidden) and true or false
+    M.hideOtherPins = (pinStore and pinStore.mapOtherHidden) and true or false
     M.frame = frame
     local queued = (type(DG) == "table" and type(DG.PushStep) == "function")
     if queued then
@@ -2843,7 +2918,8 @@ function M.SyncPins()
             local p = list[i]
             local k = p.kind or "boss"
             local hide = (M.hideBossPins and (k == "boss" or k == "rare"))
-                      or (M.hideQuestPins and (k == "quest" or k == "icon"))
+                      or (M.hideQuestPins and (k == "icon"
+                          or (k == "quest" and DG.QuestState(p.id) == "todo")))
                       or (M.hideNotePins and k == "note")
             if not hide then keep[#keep + 1] = p end
         end
@@ -2884,6 +2960,8 @@ function M.SyncPins()
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
             if bt.entry then bt.entry:Hide() end
+            if bt.rim then bt.rim:Hide() end
+            if bt.sym then bt.sym:Hide() end
             if kind == "note" or kind == "quest" or kind == "icon" then
                 bt:SetFrameLevel(frame.pins:GetFrameLevel() + 2)
             else
@@ -2926,28 +3004,27 @@ function M.SyncPins()
                 local needLv = (type(qrow) == "table") and qrow[3] or nil
                 bt.__qNeedLv = needLv
                 bt.__av:Hide()
-                if st ~= "todo" then
-                    skip = true
-                elseif needLv and (UnitLevel("player") or 0) < needLv then
-                    bt.dot:SetShown(true)
-                    bt.dot:SetTexture(M.PIN_QUEST_LOCKED_TEX)
-                    bt.dot:SetVertexColor(1, 1, 1)
-                    bt.__qState = "lv"
-                elseif preBlock[p.id] then
-                    bt.dot:SetShown(true)
-                    bt.dot:SetTexture(M.PIN_QUEST_PRE_TEX)
-                    bt.dot:SetVertexColor(1, 1, 1)
-                    bt.__qState, bt.__qPreOf = "pre", preBlock[p.id]
-                elseif lockedPre[p.id] then
-                    bt.dot:SetShown(true)
-                    bt.dot:SetTexture(M.PIN_QUEST_LOCKED_TEX)
-                    bt.dot:SetVertexColor(1, 1, 1)
-                    bt.__qState, bt.__qPre = "locked", lockedPre[p.id]
+                if st == "todo" then
+                    if needLv and (UnitLevel("player") or 0) < needLv then
+                        M.PaintQuestPin(bt, "lv", 1)
+                        bt.__qState = "lv"
+                    elseif preBlock[p.id] then
+                        M.PaintQuestPin(bt, "pre", 1)
+                        bt.__qState, bt.__qPreOf = "pre", preBlock[p.id]
+                    elseif lockedPre[p.id] then
+                        M.PaintQuestPin(bt, "locked", 1)
+                        bt.__qState, bt.__qPre = "locked", lockedPre[p.id]
+                    else
+                        M.PaintQuestPin(bt, "avail", 1)
+                        bt.__qState = "avail"
+                    end
                 else
-                    bt.dot:SetShown(true)
-                    bt.dot:SetTexture(M.PIN_QUEST_READY_TEX)
-                    bt.dot:SetVertexColor(1, 1, 1)
-                    bt.__qState = "ready"
+                    if M.hideOtherPins then
+                        skip = true
+                    else
+                        M.PaintQuestPin(bt, st, (st == "done" or st == "active") and 0.45 or 1)
+                        bt.__qState = st
+                    end
                 end
             elseif kind == "entrance" then
                 bt.dot:Hide()
@@ -2959,9 +3036,7 @@ function M.SyncPins()
                 bt.dot:SetVertexColor(1, 1, 1)
                 bt.__av:Hide()
             elseif kind == "icon" then
-                bt.dot:SetShown(true)
-                bt.dot:SetTexture(M.PIN_QUEST_READY_TEX)
-                bt.dot:SetVertexColor(1, 1, 1)
+                M.PaintQuestPin(bt, "avail", 1)
                 bt.__av:Hide()
             elseif kind == "prev" or kind == "next" then
                 bt.dot:SetShown(true)
@@ -3012,6 +3087,8 @@ function M.SyncPins()
                 dsz = M.NOTE_SIZE
             elseif kind == "prev" or kind == "next" then
                 dsz = M.STAIR_SIZE
+            elseif kind == "quest" or kind == "icon" then
+                dsz = M.PIN_QUEST_SIZE
             else
                 dsz = sel and M.PIN_SIZE or M.PIN_MIN
             end
@@ -3179,6 +3256,18 @@ function M.PinOnEnter(self)
             if not blkOk and self.__qPreOf then DG.RequestQuest(self.__qPreOf) end
             GameTooltip:AddLine(nm or L["任务"], 0.42, 0.62, 0.95, true)
             GameTooltip:AddLine(format(L["完成本任务后解锁：%s"], blkNm or ""), 1, 0.82, 0, true)
+        elseif st == "done" then
+            GameTooltip:AddLine(nm or L["任务"], 0.42, 0.72, 0.45, true)
+            GameTooltip:AddLine(L["已完成"], 0.25, 0.85, 0.35, true)
+        elseif st == "avail" then
+            GameTooltip:AddLine(nm or L["任务"], 0.78, 0.78, 0.78, true)
+            GameTooltip:AddLine(L["未接取"], 0.55, 0.55, 0.55, true)
+        elseif st == "ready" then
+            GameTooltip:AddLine(nm or L["任务"], 0.15, 0.72, 0.7, true)
+            GameTooltip:AddLine(L["完成未上交"], 0.15, 0.82, 0.78, true)
+        elseif st == "active" then
+            GameTooltip:AddLine(nm or L["任务"], 1, 0.82, 0, true)
+            GameTooltip:AddLine(L["进行中"], 1, 0.82, 0, true)
         else
             GameTooltip:AddLine(nm or L["任务"], 1, 0.82, 0, true)
         end
@@ -3286,8 +3375,9 @@ function M.SyncPinBtns()
         local any = M.HasKindPins(M.curId, "boss") or M.HasKindPins(M.curId, "quest")
             or M.HasKindPins(M.curId, "note") or M.HasKindPins(M.curId, "stairs")
         local dim = (M.hideBossPins and M.HasKindPins(M.curId, "boss"))
-            or (M.hideQuestPins and M.HasKindPins(M.curId, "quest"))
-            or (M.hideNotePins and M.HasKindPins(M.curId, "note")) or false
+            or (M.hideQuestPins and M.HasHiddenQuestPins(M.curId))
+            or (M.hideNotePins and M.HasKindPins(M.curId, "note"))
+            or (M.hideOtherPins and (M.HasStatePins(M.curId, "done") or M.HasStatePins(M.curId, "active"))) or false
         bb:SetText(L["图钉显示"])
         Host.SetButtonSelected(bb, dim)
         M.FitPinBtn(bb)
@@ -3324,12 +3414,22 @@ function M.ToggleNotePins()
     M.SyncPins()
 end
 
+function M.ToggleOtherPins()
+    M.hideOtherPins = not M.hideOtherPins
+    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
+    if type(s) == "table" then s.mapOtherHidden = M.hideOtherPins or nil end
+    M.SyncPins()
+end
+
 function M.ShowPinMenu(owner)
     local items = {}
     local kinds = {
         { key = "boss", label = L["首领图钉"], off = M.hideBossPins },
-        { key = "quest", label = L["任务图钉"], off = M.hideQuestPins },
+        { key = "quest", label = L["未接取任务图钉"], off = M.hideQuestPins },
         { key = "note", label = L["提示图钉"], off = M.hideNotePins },
+    }
+    local states = {
+        { key = "other", label = L["非未接取任务"], off = M.hideOtherPins },
     }
     for i = 1, #kinds do
         local kd = kinds[i]
@@ -3346,6 +3446,19 @@ function M.ShowPinMenu(owner)
                 else
                     M.ToggleNotePins()
                 end
+                M.SyncPinBtns()
+                M.ShowPinMenu(owner)
+            end,
+        }
+    end
+    for i = 1, #states do
+        local kd = states[i]
+        items[#items + 1] = {
+            text = kd.label,
+            checked = not kd.off,
+            color = kd.off and "|cff7a6a52" or nil,
+            func = function()
+                M.ToggleOtherPins()
                 M.SyncPinBtns()
                 M.ShowPinMenu(owner)
             end,
@@ -3979,8 +4092,12 @@ local function wpPinAcquire(canvas)
         p:SetSize(16, 16)
         p:EnableMouse(true)
         p:RegisterForClicks("LeftButtonUp")
-        p.tex = p:CreateTexture(nil, "OVERLAY")
-        p.tex:SetAllPoints()
+        p.dot = p:CreateTexture(nil, "OVERLAY")
+        p.dot:SetAllPoints()
+        p.rim = p:CreateTexture(nil, "OVERLAY", nil, 1)
+        p.rim:SetAllPoints()
+        p.sym = p:CreateTexture(nil, "OVERLAY", nil, 2)
+        p.sym:SetAllPoints()
         p:SetScript("OnEnter", function(self)
             if not GameTooltip or type(self.__qs) ~= "table" then return end
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -4066,12 +4183,12 @@ local function wpPinAcquire(canvas)
         end)
     end
     p:SetParent(canvas)
-    p.tex:SetDesaturated(false)
-    p.tex:SetAlpha(1)
+    p.dot:SetDesaturated(false)
+    p.dot:SetAlpha(1)
     return p
 end
 
-local WP_DEF = { size = 32, world = false, scope = { lv = true, reco = true, enter = true, all = false, grey = true } }
+local WP_DEF = { size = 18, world = false, scope = { lv = true, reco = true, enter = true, all = false, grey = true } }
 
 local function wpCfg()
     local db = ns.DB and ns.DB()
@@ -4081,6 +4198,10 @@ local function wpCfg()
     if type(c) ~= "table" then
         c = {}
         db.dungeon.mapQuestPinsCfg = c
+    end
+    if c.sizeVer ~= 2 then
+        c.sizeVer = 2
+        c.size = WP_DEF.size
     end
     if c.size == nil then c.size = WP_DEF.size end
     if c.world == nil then c.world = WP_DEF.world end
@@ -4132,17 +4253,23 @@ function M.SyncWorldQuestPins()
         local okS, v = pcall(sc.GetCanvasScale, sc)
         if okS and type(v) == "number" and v > 0 then scale = v end
     end
-    local size = wpCfg().size or 32
+    local size = wpCfg().size or WP_DEF.size
     local cs = canvas.GetScale and canvas:GetScale() or 1
     local k = (cs and cs > 0) and 1 / cs or 1
-    local lvl
+    local base
     if WorldMapFrame.GetPinFrameLevelsManager then
         local okL, mgr = pcall(WorldMapFrame.GetPinFrameLevelsManager, WorldMapFrame)
         if okL and mgr and mgr.GetValidFrameLevel then
-            local ok2, lv = pcall(mgr.GetValidFrameLevel, mgr, "PIN_FRAME_LEVEL_DUNGEON_ENTRANCE")
-            if ok2 and lv then lvl = lv end
+            local names = { "PIN_FRAME_LEVEL_MAP_ICON", "PIN_FRAME_LEVEL_DUNGEON_ENTRANCE",
+                "PIN_FRAME_LEVEL_QUEST", "PIN_FRAME_LEVEL_AREA_POI", "PIN_FRAME_LEVEL_VIGNETTE" }
+            for i = 1, #names do
+                local ok2, cand = pcall(mgr.GetValidFrameLevel, mgr, names[i])
+                if ok2 and type(cand) == "number" and (base == nil or cand > base) then base = cand end
+            end
         end
     end
+    local lvl
+    if base and base > 0 then lvl = base + 1 end
     local data = wpStatic()
     local cfg = wpCfg()
     local sc2 = cfg.scope
@@ -4328,10 +4455,8 @@ function M.SyncWorldQuestPins()
             local p = wpPinAcquire(canvas)
             p.__qs = e.qs
             p.__zone = e.loc[4]
-            p.tex:SetTexture((hasReady and M.PIN_QUEST_READY_TEX)
-                or (hasPre and M.PIN_QUEST_PRE_TEX)
-                or M.PIN_QUEST_LOCKED_TEX)
-            p.tex:SetVertexColor(1, 1, 1)
+            local key = hasReady and "avail" or (hasPre and "pre" or "locked")
+            M.PaintQuestPin(p, key, 1)
             p:SetSize(size, size)
             p:SetScale(k)
             p:ClearAllPoints()
@@ -4530,8 +4655,8 @@ local function wpCreatePanel()
     content:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -12, 12)
     local y = 0
     do
-        local row = wpStepperRow(content, y, L["图钉大小"], 16, 64, 4,
-            function() return wpCfg().size or 32 end,
+        local row = wpStepperRow(content, y, L["图钉大小"], 12, 48, 2,
+            function() return wpCfg().size or 18 end,
             function(v) wpCfg().size = v end,
             function(v) return tostring(v) end)
         syncers[#syncers + 1] = function() row:sync() end

@@ -673,7 +673,8 @@ local function pinList(id, floor)
             local p = list[i]
             local k = p.kind or "boss"
             local hide = (M.hideBossPins and (k == "boss" or k == "rare"))
-                or (M.hideQuestPins and (k == "quest" or k == "icon"))
+                or (M.hideQuestPins and (k == "icon"
+                    or (k == "quest" and DG.QuestState(p.id) == "todo")))
                 or (M.hideNotePins and k == "note")
             if not hide then keep[#keep + 1] = p end
         end
@@ -720,6 +721,8 @@ local function syncPins(view, id, floor, cw, ch)
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
             if bt.entry then bt.entry:Hide() end
+            if bt.rim then bt.rim:Hide() end
+            if bt.sym then bt.sym:Hide() end
             if kind == "note" or kind == "quest" or kind == "icon" then
                 bt:SetFrameLevel(view.pins:GetFrameLevel() + 2)
             else
@@ -753,28 +756,27 @@ local function syncPins(view, id, floor, cw, ch)
                 local needLv = (type(qrow) == "table") and qrow[3] or nil
                 bt.__qNeedLv = needLv
                 bt.__av:Hide()
-                if st ~= "todo" then
-                    skip = true
-                elseif needLv and (UnitLevel("player") or 0) < needLv then
-                    bt.dot:SetShown(true)
-                    bt.dot:SetTexture(M.PIN_QUEST_LOCKED_TEX)
-                    bt.dot:SetVertexColor(1, 1, 1)
-                    bt.__qState = "lv"
-                elseif preBlock[p.id] then
-                    bt.dot:SetShown(true)
-                    bt.dot:SetTexture(M.PIN_QUEST_PRE_TEX)
-                    bt.dot:SetVertexColor(1, 1, 1)
-                    bt.__qState, bt.__qPreOf = "pre", preBlock[p.id]
-                elseif lockedPre[p.id] then
-                    bt.dot:SetShown(true)
-                    bt.dot:SetTexture(M.PIN_QUEST_LOCKED_TEX)
-                    bt.dot:SetVertexColor(1, 1, 1)
-                    bt.__qState, bt.__qPre = "locked", lockedPre[p.id]
+                if st == "todo" then
+                    if needLv and (UnitLevel("player") or 0) < needLv then
+                        M.PaintQuestPin(bt, "lv", 1)
+                        bt.__qState = "lv"
+                    elseif preBlock[p.id] then
+                        M.PaintQuestPin(bt, "pre", 1)
+                        bt.__qState, bt.__qPreOf = "pre", preBlock[p.id]
+                    elseif lockedPre[p.id] then
+                        M.PaintQuestPin(bt, "locked", 1)
+                        bt.__qState, bt.__qPre = "locked", lockedPre[p.id]
+                    else
+                        M.PaintQuestPin(bt, "avail", 1)
+                        bt.__qState = "avail"
+                    end
                 else
-                    bt.dot:SetShown(true)
-                    bt.dot:SetTexture(M.PIN_QUEST_READY_TEX)
-                    bt.dot:SetVertexColor(1, 1, 1)
-                    bt.__qState = "ready"
+                    if M.hideOtherPins then
+                        skip = true
+                    else
+                        M.PaintQuestPin(bt, st, (st == "done" or st == "active") and 0.45 or 1)
+                        bt.__qState = st
+                    end
                 end
             elseif kind == "entrance" then
                 bt.dot:Hide()
@@ -786,9 +788,7 @@ local function syncPins(view, id, floor, cw, ch)
                 bt.dot:SetVertexColor(1, 1, 1)
                 bt.__av:Hide()
             elseif kind == "icon" then
-                bt.dot:SetShown(true)
-                bt.dot:SetTexture(M.PIN_QUEST_READY_TEX)
-                bt.dot:SetVertexColor(1, 1, 1)
+                M.PaintQuestPin(bt, "avail", 1)
                 bt.__av:Hide()
             elseif kind == "prev" or kind == "next" then
                 bt.dot:SetShown(true)
@@ -840,6 +840,8 @@ local function syncPins(view, id, floor, cw, ch)
                 dsz = M.NOTE_SIZE
             elseif kind == "prev" or kind == "next" then
                 dsz = M.STAIR_SIZE
+            elseif kind == "quest" or kind == "icon" then
+                dsz = M.PIN_QUEST_SIZE
             else
                 dsz = sel and M.PIN_SIZE or M.PIN_MIN
             end
@@ -916,8 +918,9 @@ local function syncButtons(view, id)
     local any = M.HasKindPins(id, "boss") or M.HasKindPins(id, "quest")
         or M.HasKindPins(id, "note") or M.HasKindPins(id, "stairs")
     local dim = (M.hideBossPins and M.HasKindPins(id, "boss"))
-        or (M.hideQuestPins and M.HasKindPins(id, "quest"))
-        or (M.hideNotePins and M.HasKindPins(id, "note")) or false
+        or (M.hideQuestPins and M.HasHiddenQuestPins(id))
+        or (M.hideNotePins and M.HasKindPins(id, "note"))
+        or (M.hideOtherPins and (M.HasStatePins(id, "done") or M.HasStatePins(id, "active"))) or false
     pb:SetText(L["图钉显示"])
     setPicked(pb, dim)
     pb:SetShown(any and true or false)
@@ -1997,6 +2000,14 @@ local function buildPinPool(view)
         bt.dot:SetTexture(M.PIN_BOSS_TEX)
         bt.dot:SetVertexColor(1, 0.82, 0)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.dot) end
+        bt.rim = bt:CreateTexture(nil, "OVERLAY", nil, 1)
+        bt.rim:SetAllPoints(bt.dot)
+        bt.rim:SetTexture(M.PIN_QUEST_RIM_TEX)
+        bt.rim:SetVertexColor(M.PIN_QUEST_RIM_RGB[1], M.PIN_QUEST_RIM_RGB[2], M.PIN_QUEST_RIM_RGB[3])
+        bt.rim:Hide()
+        bt.sym = bt:CreateTexture(nil, "OVERLAY", nil, 2)
+        bt.sym:SetAllPoints(bt.dot)
+        bt.sym:Hide()
         bt.entry = bt:CreateTexture(nil, "ARTWORK", nil, 2)
         bt.entry:SetPoint("CENTER", bt, "CENTER", 0, 0)
         bt.entry:SetSize(M.PIN_SIZE * 0.62, M.PIN_SIZE * 0.62)
@@ -2263,6 +2274,7 @@ local function signature(id)
     return table.concat({
         tostring(id), tostring(M.curLayer), tostring(M.detailEn),
         tostring(M.hideBossPins), tostring(M.hideQuestPins), tostring(M.hideNotePins),
+        tostring(M.hideOtherPins),
         tostring(M.routeThin), tostring(M.routePalette),
         tostring(vis), tostring(tot),
     }, "|")
