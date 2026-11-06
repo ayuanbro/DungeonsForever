@@ -255,6 +255,52 @@ local function ScanBook()
     return best
 end
 
+local function InStance(id, nm)
+    if type(GetNumShapeshiftForms) ~= "function" then return false end
+    local ok, n = pcall(GetNumShapeshiftForms)
+    if not ok or type(n) ~= "number" then return false end
+    for i = 1, n do
+        local oki, _, _, _, sid = pcall(GetShapeshiftFormInfo, i)
+        if oki and sid then
+            if id and sid == id then return true end
+            if nm and SpellName(sid) == nm then return true end
+        end
+    end
+    return false
+end
+
+local function InBar(id, nm, onBar)
+    if nm and onBar[nm] then return true end
+    if not id then return false end
+    if C_ActionBar and C_ActionBar.FindSpellActionButtons then
+        local ok, r = pcall(C_ActionBar.FindSpellActionButtons, id)
+        if ok and r then return true end
+    end
+    return InStance(id, nm)
+end
+
+local function IsAutoAttack(id)
+    if not id then return false end
+    if C_Spell and C_Spell.IsAutoAttackSpell then
+        local ok, v = pcall(C_Spell.IsAutoAttackSpell, id)
+        if ok then return v == true end
+    end
+    return false
+end
+
+local function IsPassive(id)
+    if not id then return false end
+    if C_Spell and C_Spell.IsSpellPassive then
+        local ok, v = pcall(C_Spell.IsSpellPassive, id)
+        if ok then return v == true end
+    end
+    if type(IsPassiveSpell) == "function" then
+        local ok, v = pcall(IsPassiveSpell, id)
+        if ok then return v == true end
+    end
+    return false
+end
+
 local cache
 local dirty = true
 
@@ -272,13 +318,14 @@ function SR.Scan()
         return out
     end
     local best = ScanBook()
-    local groups, order = {}, {}
+    local groups, order, onBar = {}, {}, {}
     for slot = 1, MAX_SLOT do
         local ok, kind, id = pcall(GetActionInfo, slot)
         if ok and kind == "spell" then
             id = Raw(id)
             if id then
                 local nm = SpellName(id)
+                if nm then onBar[nm] = true end
                 local target = nm and best[nm]
                 if nm and target and target ~= id then
                     local g = groups[nm]
@@ -294,6 +341,14 @@ function SR.Scan()
                     g.ids[id] = true
                 end
             end
+        end
+    end
+    for nm, target in pairs(best) do
+        if not groups[nm] and not InBar(target, nm, onBar)
+            and not IsPassive(target) and not IsAutoAttack(target) then
+            local g = { name = nm, bestId = target, slots = {}, ids = {}, seen = {}, noBar = true }
+            groups[nm] = g
+            order[#order + 1] = g
         end
     end
     for _, g in ipairs(order) do
@@ -313,13 +368,19 @@ function SR.Scan()
             to = RankText(g.bestId),
             icon = SpellIcon(g.bestId),
             white = SR.Whitelisted(key),
+            noBar = g.noBar and true or nil,
         }
         table.sort(row.slots)
         out.rows[#out.rows + 1] = row
         out.slots = out.slots + #row.slots
     end
-    table.sort(out.rows, function(a, b) return a.slots[1] < b.slots[1] end)
-    cache = out
+    local function slotKey(r) return r.slots[1] or 9999 end
+    table.sort(out.rows, function(a, b)
+        local ka, kb = slotKey(a), slotKey(b)
+        if ka ~= kb then return ka < kb end
+        return (a.name or "") < (b.name or "")
+    end)
+        cache = out
     return out
 end
 
@@ -393,15 +454,28 @@ end
 function SR.Pending()
     local v = 0
     for _, row in ipairs(SR.Scan().rows) do
-        if not row.white then v = v + 1 end
+        if not row.white and not row.noBar then v = v + 1 end
     end
     return v
+end
+
+function SR.PickupToBar(id)
+    if not id then return false end
+    if InCombat() then
+        Say(L["战斗中不能改动作条"])
+        return false
+    end
+    local ok = false
+    if C_Spell and C_Spell.PickupSpell then ok = pcall(C_Spell.PickupSpell, id) end
+    if not ok then return false end
+    Say(L["把法术拖到动作条的空槽上"])
+    return true
 end
 
 function SR.RowsForAll()
     local out = {}
     for _, row in ipairs(SR.Scan().rows) do
-        if not row.white then out[#out + 1] = row end
+        if not row.white and not row.noBar then out[#out + 1] = row end
     end
     return out
 end
@@ -435,15 +509,17 @@ end
 local function Run(rows, onDone)
     local done, bad = 0, {}
     for _, row in ipairs(rows or {}) do
-        local hit = 0
-        for _, slot in ipairs(row.slots) do
-            if Place(row, slot) then hit = hit + 1 end
-        end
-        if hit == #row.slots then
-            done = done + 1
-            DB().ignores[row.key] = nil
-        else
-            bad[#bad + 1] = row
+        if #(row.slots or {}) > 0 then
+            local hit = 0
+            for _, slot in ipairs(row.slots) do
+                if Place(row, slot) then hit = hit + 1 end
+            end
+            if hit == #row.slots then
+                done = done + 1
+                DB().ignores[row.key] = nil
+            else
+                bad[#bad + 1] = row
+            end
         end
     end
     SR.Dirty()
@@ -519,7 +595,7 @@ function SR.Boot()
         SR.Dirty()
         local rows, seen = {}, {}
         for _, row in ipairs(SR.Scan().rows) do
-            if not row.white and names[row.name] and not seen[row.name] then
+            if not row.white and not row.noBar and names[row.name] and not seen[row.name] then
                 seen[row.name] = true
                 rows[#rows + 1] = row
             end
@@ -538,7 +614,7 @@ function SR.Boot()
                     for _, row in ipairs(SR.Scan().rows) do
                         local k = tostring(row.key)
                         keys[#keys + 1] = k
-                        if lastKeys and not lastKeys[k] and not row.white then fresh[#fresh + 1] = row end
+                        if lastKeys and not lastKeys[k] and not row.white and not row.noBar then fresh[#fresh + 1] = row end
                     end
                     table.sort(keys)
                     local now = {}

@@ -12,7 +12,7 @@ local ACC = (ns.hui and ns.hui.ACCENT) or { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
 local TXT = HT[1] or { 0.95, 0.96, 0.98 }
 local SUB = HT[3] or { 0.63, 0.63, 0.63 }
 local DIM = HT[4] or { 0.53, 0.53, 0.53 }
-local WARN = { 0.78, 0.52, 0.14 }
+local GOLD = { 0.98, 0.84, 0.36 }
 local LAYER = (ns.hui and ns.hui.layer) or {}
 
 local MEDIA = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\"
@@ -28,7 +28,7 @@ local WIN_W, WIN_H = 460, 364
 local CARD_W = 440
 local ROW_H = 44
 local ROW_PITCH = 46
-local LIST_H = 252
+local LIST_H = 276
 local BTN_H = 24
 local BTN_W = 60
 
@@ -75,6 +75,34 @@ local function MakeCheck(parent, size)
     return c
 end
 
+local function ShowSpellTip(owner, d)
+    if not d then return end
+    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+    local ok = false
+    if d.bestId and GameTooltip.SetSpellByID then
+        ok = pcall(GameTooltip.SetSpellByID, GameTooltip, d.bestId)
+        if ok then ok = (GameTooltip:NumLines() or 0) > 0 end
+    end
+    if not ok then
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(d.name or L["未知法术"], 1, 1, 1)
+    end
+    if d.from or d.to then
+        GameTooltip:AddLine((d.from or "?") .. " → " .. (d.to or "?"), ACC[1], ACC[2], ACC[3])
+    end
+    if d.slots and #d.slots > 0 then
+        local t = {}
+        for i = 1, #d.slots do
+            local b = SR.BindFor(d.slots[i])
+            t[i] = b and (d.slots[i] .. " (" .. b .. ")") or tostring(d.slots[i])
+        end
+        GameTooltip:AddLine(L["槽位"] .. " " .. table.concat(t, "、"), 0.82, 0.86, 0.9, true)
+    elseif d.noBar then
+        GameTooltip:AddLine(L["技能书里有，动作条上没有"], 0.82, 0.86, 0.9, true)
+    end
+    GameTooltip:Show()
+end
+
 local function MakeRow(parent, w, mode)
     local r = CreateFrame("Button", nil, parent)
     r:SetSize(w, ROW_H)
@@ -111,23 +139,7 @@ local function MakeRow(parent, w, mode)
     end)
     r:SetScript("OnEnter", function(self)
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, "hover") end
-        if self.data and self.data.name and not self.data.all then
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:ClearLines()
-            GameTooltip:AddLine(self.data.name, 1, 1, 1)
-            if self.data.from or self.data.to then
-                GameTooltip:AddLine((self.data.from or "?") .. " → " .. (self.data.to or "?"), ACC[1], ACC[2], ACC[3])
-            end
-            if self.data.slots and #self.data.slots > 0 then
-                local t = {}
-                for i = 1, #self.data.slots do
-                    local b = SR.BindFor(self.data.slots[i])
-                    t[i] = b and (self.data.slots[i] .. " (" .. b .. ")") or tostring(self.data.slots[i])
-                end
-                GameTooltip:AddLine(L["槽位"] .. " " .. table.concat(t, "、"), 0.82, 0.86, 0.9, true)
-            end
-            GameTooltip:Show()
-        end
+        if self.data and not self.data.all then ShowSpellTip(self, self.data) end
     end)
     r:SetScript("OnLeave", function(self)
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, "norm") end
@@ -217,6 +229,14 @@ local function PendingRows()
     return out
 end
 
+local function ReplaceableRows()
+    local out = {}
+    for _, row in ipairs(SR.Scan().rows) do
+        if not row.white and not row.noBar and #(row.slots or {}) > 0 then out[#out + 1] = row end
+    end
+    return out
+end
+
 local function WhiteRows()
     local out = {}
     local w = SR.DB().whitelist
@@ -230,6 +250,7 @@ local function WhiteRows()
                 key = key,
                 name = hit.name,
                 icon = hit.icon,
+                bestId = hit.bestId,
                 slots = hit.slots,
                 slotText = SlotText(hit.slots),
                 from = hit.from,
@@ -244,6 +265,7 @@ local function WhiteRows()
                 key = key,
                 name = nm or SR.SpellName(id) or L["未知法术"],
                 icon = id and SR.SpellIcon(id) or "Interface\\Icons\\INV_Misc_QuestionMark",
+                bestId = id,
                 slots = {},
                 slotText = L["未上动作条"],
                 checked = false,
@@ -258,7 +280,6 @@ end
 local RefreshWin
 
 local viewKept = false
-local SetBanner
 
 local function CardButton(parent, text, w)
     local b = ns.CreateButton(parent)
@@ -319,18 +340,7 @@ local function MakeActRow(parent, w)
     r.bKeep:SetPoint("RIGHT", r, "RIGHT", -12, 0)
     r:SetScript("OnEnter", function(self)
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, "hover") end
-        if self.data and self.data.name then
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:ClearLines()
-            GameTooltip:AddLine(self.data.name, 1, 1, 1)
-            if self.data.from or self.data.to then
-                GameTooltip:AddLine((self.data.from or "?") .. " → " .. (self.data.to or "?"), ACC[1], ACC[2], ACC[3])
-            end
-            if self.data.slots and #self.data.slots > 0 then
-                GameTooltip:AddLine(L["槽位"] .. " " .. table.concat(self.data.slots, "、"), 0.82, 0.86, 0.9, true)
-            end
-            GameTooltip:Show()
-        end
+        ShowSpellTip(self, self.data)
     end)
     r:SetScript("OnLeave", function(self)
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, "norm") end
@@ -396,8 +406,8 @@ local function BuildWin()
     f.logo:SetPoint("LEFT", f, "TOPLEFT", 12, -20)
     f.title = FS(f, 16, TXT, "LEFT")
     f.title:SetPoint("LEFT", f, "TOPLEFT", 50, -20)
-    f.title:SetText(L["法术升级管理"])
-    f.count = FS(f, 14, SUB, "LEFT")
+    f.title:SetText(L["法术管理"])
+    f.count = FS(f, 14, GOLD, "LEFT")
     f.count:SetPoint("LEFT", f.title, "RIGHT", 8, 0)
 
     local close = CloseButton(f)
@@ -418,15 +428,9 @@ local function BuildWin()
         SR.ReportDiagnose()
     end)
 
-    f.banner = FS(f, 14, ACC, "LEFT")
-    f.banner:SetPoint("TOPLEFT", f, "TOPLEFT", 18, -44)
-    f.banner:SetWordWrap(false)
-    f.banner:SetWidth(WIN_W - 36)
-    f.banner:Hide()
-
     local holder = CreateFrame("Frame", nil, f)
     holder:SetSize(WIN_W - 24, LIST_H)
-    holder:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -68)
+    holder:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -44)
     local sf = CreateFrame("ScrollFrame", nil, holder)
     sf:SetSize(WIN_W - 24, LIST_H)
     sf:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, 0)
@@ -493,7 +497,7 @@ local function BuildWin()
     thumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) dragging = nil end)
 
     f.empty = FS(f, 14, DIM, "CENTER")
-    f.empty:SetPoint("TOP", holder, "TOP", 0, -80)
+    f.empty:SetPoint("TOP", holder, "TOP", 0, -120)
     f.empty:SetWidth(WIN_W - 80)
     f.empty:SetText(L["动作条上的法术都是最高阶"])
 
@@ -506,7 +510,7 @@ local function BuildWin()
             RefreshWin()
             return
         end
-        local rows = PendingRows()
+        local rows = ReplaceableRows()
         if #rows > 0 then SR.Apply(rows) end
     end)
 
@@ -633,7 +637,7 @@ RefreshWin = function()
         r.data = data
         r.name:SetText(data.name or "")
         r.icon:SetTexture(data.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-        r.sub:SetText(data.slotText or SlotText(data.slots))
+        r.sub:SetText(data.noBar and (data.to or L["无等级"]) or (data.slotText or SlotText(data.slots)))
         r:SetPoint("TOPLEFT", win.child, "TOPLEFT", 0, -y)
         if viewKept then
             r.rank:SetText(data.from or data.to or "")
@@ -650,12 +654,24 @@ RefreshWin = function()
             r.bDo:SetScript("OnClick", unkeep)
             r.__do = unkeep
             r.__keep = nil
+        elseif data.noBar then
+            r.rank:SetText("")
+            r.bDo:SetWidth(BTN_W * 2 + 8)
+            r.bDo:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+            r.bDo:SetText(L["拖入动作条"])
+            r.bDo:Show()
+            r.bKeep:Hide()
+            local function toBar() SR.PickupToBar(data.bestId) end
+            r.bDo:SetScript("OnClick", toBar)
+            r.__do = toBar
+            r.__keep = nil
         else
             r.rank:SetText(RankMarkup(data.from, data.to))
             r.rank:SetTextColor(TXT[1], TXT[2], TXT[3])
             r.bDo:SetWidth(BTN_W)
             r.bDo:SetPoint("RIGHT", r, "RIGHT", -80, 0)
             r.bDo:SetText(L["替换"])
+            r.bDo:Show()
             r.bKeep:Show()
             local function doIt() SR.Apply({ data }) end
             local function keepIt()
@@ -679,6 +695,7 @@ RefreshWin = function()
     if viewKept then
         win.title:SetText(L["已保留的法术"])
         win.count:SetText(#kept > 0 and tostring(#kept) or "")
+        win.count:SetTextColor(SUB[1], SUB[2], SUB[3])
         win.empty:SetText(L["白名单为空"])
         win.empty:SetShown(#kept == 0)
         win.doAll:ClearAllPoints()
@@ -688,17 +705,25 @@ RefreshWin = function()
         win.manage:Hide()
         if ns.hui and ns.hui.SetButtonSelected then ns.hui.SetButtonSelected(win.doAll, false) end
     else
-        win.title:SetText(L["法术升级管理"])
-        win.count:SetText(#pend > 0 and string.format(L["%d 项可升阶"], #pend) or "")
+        local repl = #ReplaceableRows()
+        local noBarN = #pend - repl
+        local cnt = repl > 0 and string.format(L["%d 项可升阶"], repl) or ""
+        if noBarN > 0 then
+            local s2 = string.format(L["%d 项未上动作条"], noBarN)
+            cnt = cnt ~= "" and (cnt .. " · " .. s2) or s2
+        end
+        win.title:SetText(L["法术管理"])
+        win.count:SetText(cnt)
+        win.count:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
         win.empty:SetText(#pend == 0 and L["动作条上的法术都是最高阶"]
             or L["这些法术里的低阶已全部替换"])
         win.empty:SetShown(#pend == 0)
         win.doAll:ClearAllPoints()
         win.doAll:SetPoint("TOPLEFT", win, "TOPLEFT", 12, -328)
         win.doAll:SetWidth((WIN_W - 24 - 8) / 2)
-        win.doAll:SetText(#pend > 0 and string.format(L["全部替换（%d）"], #pend) or L["全部替换"])
+        win.doAll:SetText(repl > 0 and string.format(L["全部替换（%d）"], repl) or L["全部替换"])
         if ns.hui and ns.hui.SetButtonSelected then
-            ns.hui.SetButtonSelected(win.doAll, #pend > 0, "main")
+            ns.hui.SetButtonSelected(win.doAll, repl > 0, "main")
         end
         win.manage:Show()
         win.manage:SetText(#kept > 0 and string.format(L["白名单管理（%d）"], #kept) or L["白名单管理"])
@@ -706,29 +731,13 @@ RefreshWin = function()
     return
 end
 
-SetBanner = function(txt)
-    if not win or not win.banner then return end
-    win.banner:SetText(txt or "")
-    win.banner:SetShown(txt ~= nil and txt ~= "")
-end
-
 UI.ShowLearn = function(rows)
     local n = #(rows or {})
     if n == 0 then return end
     if not win then BuildWin() end
-    local txt
-    if n == 1 then
-        local r = rows[1]
-        txt = string.format("%s　%s → %s", r.name or "?", r.from or "?", r.to or "?")
-    else
-        local names = {}
-        for i = 1, math.min(n, 3) do names[i] = rows[i].name or "?" end
-        txt = table.concat(names, "、") .. (n > 3 and "…" or "")
-    end
     SR.Dirty()
     viewKept = false
     RefreshWin()
-    SetBanner(string.format(L["刚学会：%s"], txt))
     win:Show()
 end
 
@@ -741,7 +750,6 @@ local function ShowWin()
 end
 
 UI.Open = function()
-    if win then SetBanner(nil) end
     ShowWin()
 end
 UI.Toggle = function()
@@ -778,7 +786,7 @@ local function BuildCard()
     f.logo:SetPoint("LEFT", f, "TOPLEFT", 12, -20)
     f.title = FS(f, 16, TXT, "LEFT")
     f.title:SetPoint("LEFT", f, "TOPLEFT", 50, -20)
-    f.title:SetText(L["法术升级管理"])
+    f.title:SetText(L["法术管理"])
     f.sub = FS(f, 14, SUB, "LEFT")
     f.sub:SetPoint("LEFT", f.title, "RIGHT", 8, 0)
     local close = CloseButton(f)
@@ -1051,7 +1059,7 @@ RefreshEntry = function()
     return vis
 end
 
-local ENTRY_TEXT = "法术升级管理"
+local ENTRY_TEXT = "法术管理"
 
 local function PaintEntry(n)
     if not entry then return end
