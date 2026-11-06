@@ -8519,14 +8519,19 @@ function U:RenderQuestDetail()
     local sn = (not q[16]) and DG.QuestStartNpc(q[1]) or nil
     if not startNpcID and sn then startNpcID = sn[1] end
     local smap, sx, sy, szone = DG.StartLoc(q[1], startNpcID)
-    local sloc = (smap and DG.LocText(smap, sx, sy, szone)) or DG.ZoneShort(q[6])
+    local slocFull = (smap and DG.LocText(smap, sx, sy, szone)) or DG.ZoneShort(q[6])
+    local slocShort = (smap and DG.ZoneLabel(smap, szone)) or DG.ZoneShort(q[6])
     local where = q[5] or ""
     if q[16] then
         local nm = (q[17] and q[17] ~= "" and q[17]) or q[5] or ""
         where = "|cffffd100" .. nm .. "|r" .. format(" |cff9a9a9a#%d|r", q[16])
     end
-    if sloc and sloc ~= "" then
-        where = (where ~= "" and (where .. " · " .. sloc) or sloc)
+    local whereFull, whereShort = where, where
+    if slocFull and slocFull ~= "" then
+        whereFull = (where ~= "" and (where .. " · " .. slocFull) or slocFull)
+    end
+    if slocShort and slocShort ~= "" then
+        whereShort = (where ~= "" and (where .. " · " .. slocShort) or slocShort)
     end
     if where ~= "" then
         local f
@@ -8536,12 +8541,18 @@ function U:RenderQuestDetail()
             if sn and sn[2] then
                 suffix = DG.Hex(C_DIM) .. format(L["（%s 掉落）"], sn[2]) .. "|r"
             end
-            f.fs:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. where .. suffix)
+            f.fs:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereFull .. suffix)
+            if FSW(f.fs) > DG.Q_DET_W - 76 then
+                f.fs:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereShort .. suffix)
+            end
             f.__npc = q[16] or sn[1]
             f.__loc = (smap and { smap, sx, sy }) or (sn and sn[3] and { sn[3], sn[4], sn[5] }) or nil
         else
             f = takeKv()
-            f:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. where)
+            f:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereFull)
+            if FSW(f) > DG.Q_DET_W - 8 then
+                f:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereShort)
+            end
         end
         put(f, 24)
     end
@@ -8558,17 +8569,26 @@ function U:RenderQuestDetail()
             else
                 txt = ""
             end
-            local zl = DG.LocText(emap, ex, ey, ezone)
-            if zl and zl ~= "" then txt = txt .. " · " .. zl end
+            local zlFull = DG.LocText(emap, ex, ey, ezone)
+            local zlShort = (emap and DG.ZoneLabel(emap, ezone)) or nil
+            local txtFull, txtShort = txt, txt
+            if zlFull and zlFull ~= "" then txtFull = txt .. " · " .. zlFull end
+            if zlShort and zlShort ~= "" then txtShort = txt .. " · " .. zlShort end
             local f
             if emap and ex and ey and MapUsable(emap) then
                 f = takeNpc()
-                f.fs:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txt)
+                f.fs:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtFull)
+                if FSW(f.fs) > DG.Q_DET_W - 76 then
+                    f.fs:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtShort)
+                end
                 f.__npc = enid
                 f.__loc = { emap, ex, ey }
             else
                 f = takeKv()
-                f:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txt)
+                f:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtFull)
+                if FSW(f) > DG.Q_DET_W - 8 then
+                    f:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtShort)
+                end
             end
             put(f, 24)
         end

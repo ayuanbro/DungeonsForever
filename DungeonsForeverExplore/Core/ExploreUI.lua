@@ -33,6 +33,9 @@ local BAG_CHAIN = {
     { key = "p1", no = "①", title = "…and that note you found", lvl = 22, xp = 1750,
       q = { A = 79008, H = 79007 },
       note = L["全链起点：无 NPC，在阿历克斯顿农场烧毁的田地点「烧焦的残骸」起链，旁边立着一块镶钉木板；两阵营从这里反向出发。"],
+      route = { body = {
+          L["炉石可以绑在十字路口。后面从西部荒野直接炉石回来，省掉一整套回程飞行。"],
+      } },
       loc = {
           A = { area = 40, x = 37.4, y = 50.6, zn = L["西部荒野 37.4,50.6"],
                 place = L["西部荒野 · 阿历克斯顿农场"], obj = L["烧焦的残骸"] },
@@ -42,6 +45,16 @@ local BAG_CHAIN = {
       rw = { { 2459 }, { 3388 } } },
     { key = "p2", no = "②", title = "Stepping Stones", lvl = 24, xp = 1950, q = 79192,
       note = L["两阵营互交互：在对方大陆的「烧焦的残骸 / 镶钉木板」上交①，再从镶钉木板接取本步；必给里的旧工具箱是 12 格包。"],
+      route = {
+          head = L["路线：奥格瑞玛坐飞艇 → 飞艇跳海 → 西部荒野"],
+          body = {
+              L["十字路口坐飞行点去奥格瑞玛，出城坐开往荆棘谷格罗姆高的飞艇。"],
+              L["飞艇飞出地图、画面切换的那一刻，立刻从飞艇左侧跳海下水。"],
+              L["朝两座小岛中间游，从两岛之间穿过去可以避开附近海里的野怪。"],
+              L["穿过小岛后继续朝西南方向游，直奔西部荒野南岸，从南边上岸。"],
+              { L["到西部荒野 "], { 40, 37.4, 50.6 }, L["，在损坏的马车旁交接任务。"] },
+          },
+      },
       loc = {
           A = { area = 17, x = 46.0, y = 74.0, zn = L["贫瘠之地 46,74"],
                 place = L["贫瘠之地 · 陶拉祖营地以南烧毁塔楼"], obj = L["烧焦的残骸"] },
@@ -53,6 +66,16 @@ local BAG_CHAIN = {
              { 221498, note = L["12 格包"] } } },
     { key = "p3", no = "③", title = "Scramble", lvl = 24, xp = 200, q = 79980,
       note = { L["从烈日石居东北 "], { 406, 50.9, 52.3 }, L[" 的小路离开大路，往西翻过山到废弃营地，点箱子上的「散落杂物」交接；烈日石居是部落据点，联盟会从守卫旁经过。"] },
+      route = {
+          head = L["路线：回程与石爪山"],
+          body = {
+              L["接完②直接炉石回十字路口，不要飞回去。"],
+              L["沿大路往西进石爪山脉，从烈日石居上方的小路上山，到废弃营地。"],
+              L["点箱子上的「散落杂物」完成②、接③。"],
+              L["贴着右侧山体继续向前，到悬崖上的任务点完成③、接④。"],
+              L["回烈日石居，坐飞行点回陶拉祖营地。"],
+          },
+      },
       loc = { area = 406, x = 40.7, y = 52.4, zn = L["石爪山脉 40.7,52.4"],
               place = L["石爪山脉 · 烈日石居上方废弃营地"], obj = L["散落杂物"] },
       rw = { { 3463, note = L["三选一 · 魔杖"] }, { 217314, note = L["三选一"] },
@@ -69,6 +92,25 @@ local BAG_CHAIN = {
       rw = { { 5432 }, { 20709 } } },
     { key = "p5", no = "⑤", title = "Eagle's Fist", lvl = 32, xp = 2550, q = 79975,
       note = L["沿巨石水坝走出去、面向北方湿地，跳到坝顶下方的矮人头像雕刻上交接；水坝有联盟守卫，部落小心。"],
+      route = {
+          head = L["路线：灵魂两次从塞拉摩坐船到湿地 → 洛克莫丹"],
+          body = {
+              L["原理：让灵魂虚弱阵亡在目的地、再用灵魂状态坐船过去复活。"],
+              { L["到贫瘠之地 "], { 17, 48, 64 }, L[" 附近，沿山脊一路登顶，再跳到尘泥沼泽（可以顺路开个飞行点）。"] },
+              L["自杀释放灵魂，不要找灵魂医者复活，保持灵魂状态跑向塞拉摩。"],
+              L["在塞拉摩坐船去湿地。"],
+              L["到湿地后控制灵魂跑进海里的疲劳区，让疲劳值耗尽再死一次。"],
+              L["再次释放，灵魂会被送回蕨墙村。不要和蕨墙村的灵魂医者对话。"],
+              L["保持灵魂状态再跑一次塞拉摩、再坐一次船去湿地。"],
+              L["到湿地后，跑到刚才灵魂死亡时那个尸体图标的位置，接受复活——活着的角色就到东部王国了。"],
+              L["复活后游向米奈希尔港，找卫兵或野怪自杀。"],
+              L["释放灵魂后直接和灵魂医者对话，虚弱复活到湿地地图中部。"],
+              L["从湿地中部一路向南，穿过丹奥加兹隧道进洛克莫丹。"],
+              L["尽量死在洛克莫丹地界可以少跑尸。"],
+              L["释放灵魂，直接在洛克莫丹虚弱复活。"],
+              L["从塞尔萨玛跑向洛克莫丹的巨石水坝。"],
+          },
+      },
       loc = { area = 38, x = 49.4, y = 12.9, zn = L["洛克莫丹 49.4,12.9"],
               place = L["洛克莫丹 · 巨石水坝矮人头像雕刻"], obj = L["雕刻塑像"] },
       rw = {} },
@@ -343,6 +385,19 @@ local function BagFac()
         if ok and eng == "Horde" then fac = "H" end
     end
     return fac
+end
+
+local function BagDone(fac)
+    fac = fac or BagFac()
+    local done, total = 0, 0
+    for _, e in ipairs(BAG_CHAIN) do
+        if not e.optional then
+            total = total + 1
+            local _, qid = BagStep(e, fac)
+            if BagQuestState(qid) == 2 then done = done + 1 end
+        end
+    end
+    return done, total
 end
 
 local function View()
@@ -960,18 +1015,17 @@ end
 function EG.OnItemData(itemID)
     if not EG.built or not itemID then return end
     if not ns.PageVisible(EG.page) then return end
+    EG._sweepFails = 0
     if not EG.needNames or EG._itemRepaint then return end
-    local evtNow = (type(GetTime) == "function") and GetTime() or 0
-    if EG.__evtT and (evtNow - EG.__evtT) < 1 then return end
-    EG.__evtT = evtNow
     EG._itemRepaint = true
     if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
-        C_Timer.After(0.05, function()
+        C_Timer.After(0.1, function()
             EG._itemRepaint = false
             if EG.needNames then EG.SweepNames() end
         end)
     else
         EG._itemRepaint = false
+        if EG.needNames then EG.SweepNames() end
     end
 end
 
@@ -1049,6 +1103,16 @@ local function PaintNav()
             if IsFound(rec[1]) then n = n + 1 end
         end
         EG.navBooks.__pv:SetText(format("%d/%d", n, #B))
+    end
+    local nb = EG.navBtns and EG.navBtns["bag"]
+    if nb and nb.__done then
+        local done, total = BagDone()
+        local on = total > 0 and done >= total
+        nb.__done:SetShown(on)
+        if on then
+            local ac = (ns.hui and ns.hui.ACCENT) or { 0.27, 0.75, 0.45 }
+            nb.__done:SetVertexColor(ac[1], ac[2], ac[3])
+        end
     end
 end
 
@@ -1310,7 +1374,10 @@ end
 local function PaintRewardCard(c, id, note)
     c.__id, c.__note = id, note
     local nm, ok = DG.ItemName(id)
-    if not ok then DG.RequestItem(id, true) end
+    if not ok then
+        DG.RequestItem(id, true)
+        EG.needNames = true
+    end
     local q = DG.QualOf(id)
     c.name:SetText(nm or "?")
     if ok then
@@ -1378,6 +1445,124 @@ local function FlowCards(y, list, idx0, ncol, parent, pool)
     return y + rows * 52, idx0 + n
 end
 
+local RT_LINE_H = 20
+
+local function TextH(f, avail)
+    local h = (type(f.GetStringHeight) == "function" and f:GetStringHeight()) or 0
+    if type(h) == "number" and h >= 16 then return h end
+    local w = (type(f.GetStringWidth) == "function" and f:GetStringWidth()) or 0
+    if type(w) ~= "number" or w <= 0 then
+        local t = f.GetText and f:GetText()
+        w = (type(t) == "string" and #t > 0) and (#t * 14) or 14
+    end
+    return math.max(1, math.ceil(w / math.max(avail, 1))) * RT_LINE_H
+end
+
+local function PaintBagRoute(rt, y, avail)
+    local host = EG.bagChild
+    local pool, btns = EG.bagRSegs, EG.bagRBtns
+    if not host or not pool then return y end
+    local nf, nb = 0, 0
+    local function Wipe()
+        for i = 1, #pool do pool[i]:SetShown(false) end
+        for i = 1, #(btns or {}) do btns[i]:SetShown(false) end
+    end
+    if type(rt) ~= "table" then
+        Wipe()
+        return y
+    end
+    local function Slot()
+        nf = nf + 1
+        local f = pool[nf]
+        if f then f:SetTextColor(Unpack(C_GREY)) end
+        return f
+    end
+    local function Pin(loc)
+        nb = nb + 1
+        local b = btns and btns[nb]
+        if b then b.__loc = loc end
+        return b
+    end
+    local function Head(text)
+        local f = Slot()
+        if not f then return end
+        f:SetWordWrap(true)
+        f:SetTextColor(Unpack(C_GOLD))
+        f:SetText(text)
+        f:ClearAllPoints()
+        f:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -y)
+        f:SetPoint("RIGHT", host, "RIGHT", -8, 0)
+        f:SetShown(true)
+        y = y + TextH(f, avail) + 4
+    end
+    local function Para(body)
+        local y0, row, nx = y, 0, 0
+        local list = (type(body) == "string") and { body } or body
+        for _, seg in ipairs(list or {}) do
+            if type(seg) == "table" then
+                local f = Slot()
+                if not f then break end
+                local b = Pin({ area = seg[1], x = seg[2], y = seg[3] })
+                f:SetWordWrap(false)
+                f:SetTextColor(Unpack(C_GOLD))
+                f:SetText(format("%.1f, %.1f", seg[2], seg[3]))
+                local cw = (type(f.GetStringWidth) == "function" and f:GetStringWidth()) or 0
+                if type(cw) ~= "number" or cw <= 0 then cw = 60 end
+                local bw = 62
+                if b then
+                    local ok, w2 = pcall(b.GetWidth, b)
+                    if ok and type(w2) == "number" and w2 > 0 then bw = w2 end
+                end
+                if nx > 0 and nx + cw + 8 + bw > avail then row, nx = row + 1, 0 end
+                local top = y0 + row * RT_LINE_H
+                f:ClearAllPoints()
+                f:SetPoint("TOPLEFT", host, "TOPLEFT", math.floor(8 + nx + 2), -(top + 3))
+                f:SetShown(true)
+                if b then
+                    b:ClearAllPoints()
+                    b:SetPoint("TOPLEFT", host, "TOPLEFT", math.floor(8 + nx + 2 + cw + 6), -top)
+                    b:SetShown(true)
+                end
+                nx = nx + cw + 8 + bw + 10
+            else
+                local txt = tostring(seg)
+                local f = Slot()
+                if not f then break end
+                f:SetText(txt)
+                local w = (type(f.GetStringWidth) == "function" and f.GetStringWidth(f)) or 0
+                if type(w) ~= "number" or w <= 0 then w = #txt * 14 end
+                if nx > 0 and nx + w > avail then row, nx = row + 1, 0 end
+                if nx == 0 and txt:find("^%s") then
+                    txt = txt:gsub("^%s+", "")
+                    f:SetText(txt)
+                    w = (type(f.GetStringWidth) == "function" and f.GetStringWidth(f)) or 0
+                    if type(w) ~= "number" or w <= 0 then w = #txt * 14 end
+                end
+                local top = y0 + row * RT_LINE_H
+                f:ClearAllPoints()
+                f:SetPoint("TOPLEFT", host, "TOPLEFT", math.floor(8 + nx), -(top + 3))
+                if w <= avail - nx then
+                    f:SetWordWrap(false)
+                    nx = nx + w
+                else
+                    f:SetWordWrap(true)
+                    f:SetPoint("RIGHT", host, "RIGHT", -8, 0)
+                    local h = TextH(f, avail - nx)
+                    row = row + math.max(1, math.ceil((h + 4) / RT_LINE_H)) - 1
+                    nx = 0
+                end
+                f:SetShown(true)
+            end
+        end
+        y = y0 + (row + 1) * RT_LINE_H + 4
+    end
+    if rt.head then Head(rt.head) end
+    for _, blk in ipairs(rt.body or {}) do Para(blk) end
+    for i = nf + 1, #pool do pool[i]:SetShown(false) end
+    for i = nb + 1, #(btns or {}) do btns[i]:SetShown(false) end
+    return y
+end
+
 local function HideChips(from, pool)
     pool = pool or EG.bagChips
     for i = from, #(pool or {}) do pool[i]:Hide() end
@@ -1405,15 +1590,42 @@ local function PaintBagDetail(fac)
     end
     local st = BagQuestState(qid)
     local stateTxt = st == 2 and L["已完成"] or (st == 1 and L["已接取"] or L["未完成"])
-    EG.bagDV[1]:SetText(stateTxt)
-    EG.bagDV[1]:SetTextColor(Unpack(st == 2 and C_GREEN or C_GOLD))
-    EG.bagDV[2]:SetText(format(L["%d 级可接 · 任务等级 Lv%d"], BAG_REQ_LVL, e.lvl or BAG_QUEST_LVL))
+    EG.bagDV[1]:SetText(format(L["%d 级可接 · 任务等级 Lv%d"], BAG_REQ_LVL, e.lvl or BAG_QUEST_LVL))
+    EG.bagDV[1]:SetTextColor(Unpack(C_TEXT))
+    EG.bagDV[2]:SetText(stateTxt)
+    EG.bagDV[2]:SetTextColor(Unpack(st == 2 and C_GREEN or C_GOLD))
     EG.bagDV[3]:SetText(format(L["由物件「%s」起始"], loc.obj or "—"))
     local sideTxt = L["两阵营通用"]
     if type(e.q) == "table" then
         sideTxt = (fac == "A") and L["联盟专属"] or L["部落专属"]
     end
     EG.bagDV[4]:SetText(sideTxt)
+    local GRID = EG.bagDGrid or { { 1, 2 }, { 3, 4 } }
+    local GRID_X, COL_GAP = 8, 18
+    local gw = {}
+    for fi = 1, 4 do
+        local glab, gval = EG.bagDL[fi], EG.bagDV[fi]
+        local glw = (type(glab.GetStringWidth) == "function" and glab:GetStringWidth()) or 0
+        if type(glw) ~= "number" or glw <= 0 then
+            glw = #tostring(glab.GetText and glab:GetText() or "") * 14
+        end
+        local gvw = (type(gval.GetStringWidth) == "function" and gval:GetStringWidth()) or 0
+        if type(gvw) ~= "number" or gvw <= 0 then
+            gvw = #tostring(gval.GetText and gval:GetText() or "") * 14
+        end
+        gw[fi] = glw + 2 + gvw
+    end
+    local colX = { GRID_X, GRID_X + math.max(gw[1] or 0, gw[3] or 0) + COL_GAP }
+    for ri, row in ipairs(GRID) do
+        local ry = 34 + (ri - 1) * 24
+        for ci, fi in ipairs(row) do
+            local lab, val = EG.bagDL[fi], EG.bagDV[fi]
+            lab:ClearAllPoints()
+            lab:SetPoint("TOPLEFT", det, "TOPLEFT", math.floor(colX[ci] or GRID_X), -ry)
+            val:ClearAllPoints()
+            val:SetPoint("LEFT", lab, "RIGHT", 2, 0)
+        end
+    end
     local choice, rest = {}, {}
     for _, it in ipairs(e.rw) do
         if it.note and tostring(it.note):find(L["选一"], 1, true) then
@@ -1477,10 +1689,10 @@ local function PaintBagDetail(fac)
     EG.bagDNH:SetShown(true)
     y = y + 22
     local segs = (type(e.note) == "table") and e.note or nil
+    local avail = (EG.bagRWd or 700) - 16
     if segs then
         EG.bagDN:SetShown(false)
         local pool = EG.bagNSegs or {}
-        local avail = (EG.bagRWd or 700) - 16
         local nx, used = 0, 0
         for si, seg in ipairs(segs) do
             used = si
@@ -1506,12 +1718,19 @@ local function PaintBagDetail(fac)
                 sb:SetShown(true)
                 nx = nx + block + 10
             else
+                local txt = tostring(seg)
                 f:SetWordWrap(false)
-                f:SetText(tostring(seg))
+                f:SetText(txt)
                 f:SetTextColor(Unpack(C_GREY))
                 local w = (type(f.GetStringWidth) == "function" and f:GetStringWidth()) or 0
-                if type(w) ~= "number" or w <= 0 then w = #tostring(seg) * 14 end
+                if type(w) ~= "number" or w <= 0 then w = #txt * 14 end
                 if nx > 0 and nx + w > avail then nx, y = 0, y + 26 end
+                if nx == 0 and txt:find("^%s") then
+                    txt = txt:gsub("^%s+", "")
+                    f:SetText(txt)
+                    w = (type(f.GetStringWidth) == "function" and f:GetStringWidth()) or 0
+                    if type(w) ~= "number" or w <= 0 then w = #txt * 14 end
+                end
                 if w > avail - nx then
                     f:ClearAllPoints()
                     f:SetPoint("TOPLEFT", EG.bagChild, "TOPLEFT", 8, -(y + 3))
@@ -1547,11 +1766,16 @@ local function PaintBagDetail(fac)
         EG.bagDN:SetPoint("RIGHT", EG.bagChild, "RIGHT", -8, 0)
         EG.bagDN:SetText(e.note or "")
         EG.bagDN:SetShown(true)
-        y = y + 24
+        y = y + TextH(EG.bagDN, avail) + 6
+    end
+    if e.route then
+        y = PaintBagRoute(e.route, y + 4, avail)
+    else
+        PaintBagRoute(nil, y, avail)
     end
     EG.bagTotal:SetShown(false)
     det:SetShown(true)
-    if EG.bagChild then EG.bagChild:SetHeight(math.max(y + 8, 1)) end
+    if EG.bagChild then EG.bagChild:SetHeight(math.max(y + 12, 1)) end
     if EG.UpdateBagScroll then EG.UpdateBagScroll() end
 end
 
@@ -1605,13 +1829,9 @@ local function PaintBag()
         if fs then fs:SetTextColor(Unpack(sel and C_WHITE or C_GREY)) end
         if bt.__icon then bt.__icon:SetAlpha(sel and 1 or 0.55) end
     end
-    local done = 0
-    for _, e in ipairs(BAG_CHAIN) do
-        local _, qid = BagStep(e, fac)
-        if BagQuestState(qid) == 2 then done = done + 1 end
-    end
+    local done, total = BagDone(fac)
     if EG.bagProg then
-        EG.bagProg:SetText(format(L["进度 %d / %d"], done, #BAG_CHAIN))
+        EG.bagProg:SetText(format(L["进度 %d / %d"], done, total))
     end
     if not EG.bagSel then
         for _, e in ipairs(BAG_CHAIN) do
@@ -1648,8 +1868,8 @@ local function BagLayoutRows()
     for i, r in ipairs(EG.bagRows or {}) do
         r:SetHeight(rh)
         r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", lc, "TOPLEFT", 8, -((i - 1) * (rh + gap)))
-        r:SetPoint("TOPRIGHT", lc, "TOPRIGHT", -8, -((i - 1) * (rh + gap)))
+        r:SetPoint("TOPLEFT", lc, "TOPLEFT", 0, -((i - 1) * (rh + gap)))
+        r:SetPoint("TOPRIGHT", lc, "TOPRIGHT", 0, -((i - 1) * (rh + gap)))
     end
 end
 EG.BagLayoutRows = BagLayoutRows
@@ -3144,8 +3364,8 @@ function EG.LayoutBody()
     end
     if EG.bagFrame then
         EG.bagFrame:ClearAllPoints()
-        EG.bagFrame:SetPoint("TOPLEFT", EG.page, "TOPLEFT", EG.X0, -EG.TOP_EDGE)
-        EG.bagFrame:SetPoint("BOTTOMRIGHT", EG.page, "BOTTOMRIGHT", -EG.EDGE, bot)
+        EG.bagFrame:SetPoint("TOPLEFT", EG.page, "TOPLEFT", EG.X0 + DG.GUTTER, -EG.TOP_EDGE)
+        EG.bagFrame:SetPoint("BOTTOMRIGHT", EG.page, "BOTTOMRIGHT", -(EG.EDGE + DG.GUTTER), bot + DG.GUTTER)
         if EG.bagScroll then
             local ok, vh = pcall(EG.bagScroll.GetHeight, EG.bagScroll)
             EG.bagViewH = (ok and type(vh) == "number" and vh > 100 and vh) or 300
@@ -3499,6 +3719,11 @@ function EG.Build(page)
         bt.__icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
         if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.__icon) end
         bt.__icon:SetTexture("Interface\\Icons\\inv_misc_bag_08")
+        bt.__done = bt:CreateTexture(nil, "OVERLAY")
+        bt.__done:SetSize(14, 14)
+        bt.__done:SetPoint("RIGHT", bt, "RIGHT", -7, 0)
+        bt.__done:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark")
+        bt.__done:Hide()
         bt:SetScript("OnClick", function() SetSub("bag") end)
         EG.navBtns["bag"] = bt
         coroutine.yield()
@@ -4134,14 +4359,18 @@ function EG.Build(page)
         EG.bagFrame = bag
         EG.bagMode, EG.bagSel = "detail", nil
         do
-            local CW = EG.RIGHT_W
+            local CW = EG.RIGHT_W - DG.GUTTER * 2
             local LW = 280
             local RWd = CW - LW - 8
-            local RWc = RWd - 8
-            EG.bagRWd = RWc
+            EG.bagRWd = RWd
+
+            local HEAD_Y, HEAD_H, DIV_GAP = 12, 24, 8
+            local DIV_Y = HEAD_Y + HEAD_H + DIV_GAP
+            local BODY_Y = DIV_Y + 1 + DIV_GAP
+            local DIVC = { 1, 1, 1, 0.10 }
 
             local title = MakeFS(bag, 16, C_WHITE, "LEFT")
-            title:SetPoint("TOPLEFT", bag, "TOPLEFT", 0, -8)
+            title:SetPoint("TOPLEFT", bag, "TOPLEFT", 0, -(HEAD_Y + (HEAD_H - 16) / 2))
             title:SetText(L["舒适睡袋"])
             title:SetWordWrap(false)
             local tw = title.GetStringWidth and title:GetStringWidth() or 0
@@ -4149,8 +4378,8 @@ function EG.Build(page)
 
             local fc = CreateFrame("Frame", nil, bag)
             Y()
-            fc:SetSize(186, 24)
-            fc:SetPoint("TOPLEFT", bag, "TOPLEFT", math.floor(tw + 14), -8)
+            fc:SetSize(186, HEAD_H)
+            fc:SetPoint("TOPLEFT", bag, "TOPLEFT", math.floor(tw + 14), -HEAD_Y)
             EG.bagFacBtns = {}
             for fi, f in ipairs({ "A", "H" }) do
                 local bt = NewButton(fc, f == "A" and L["联盟领地"] or L["部落领地"], 88, 24, 14)
@@ -4178,10 +4407,6 @@ function EG.Build(page)
                 end)
                 EG.bagFacBtns[f] = bt
             end
-            local tag1 = MakeFS(bag, 14, C_GOLD, "LEFT")
-            tag1:SetPoint("TOPLEFT", fc, "TOPRIGHT", 8, 0)
-            tag1:SetText(L["需 14 级"])
-            tag1:SetWordWrap(false)
             EG.bagProg = MakeFS(bag, 14, C_GOLD, "RIGHT")
             EG.bagProg:SetPoint("TOPRIGHT", bag, "TOPRIGHT", -166, -8)
             EG.bagProg:SetWordWrap(false)
@@ -4205,20 +4430,20 @@ function EG.Build(page)
                 if type(h) == "number" and h > est then est = h end
                 return est
             end
-            local NOTE_TW = CW - NCOL_W - NOTE_PAD * 2
+            local NOTE_TW = CW - NCOL_W
             local NOTE_H = NOTE_PAD + 16 + NOTE_PAD + 4
             local NOTE_ROW = {}
             NOTE_ROW[1] = math.max(24, Measure(NOTE_TAIL1, NOTE_TW))
             NOTE_H = NOTE_H + NOTE_ROW[1] + 6
-            local NOTE_SUBH = Measure(NOTE_SUB, CW - NOTE_PAD * 2)
+            local NOTE_SUBH = Measure(NOTE_SUB, CW)
             NOTE_H = NOTE_H + NOTE_SUBH + 6
             NOTE_ROW[2] = math.max(24, Measure(NOTE_TAIL2, NOTE_TW))
             NOTE_H = NOTE_H + NOTE_ROW[2] + NOTE_PAD
             EG.bagNoteH = NOTE_H
-            EG.bagNoteMetrics = { pad = NOTE_PAD, colW = NCOL_W, tw = NOTE_TW, row = NOTE_ROW, sub = NOTE_SUBH }
+            EG.bagNoteMetrics = { pad = NOTE_PAD, x = 0, colW = NCOL_W, tw = NOTE_TW, row = NOTE_ROW, sub = NOTE_SUBH }
             local lc = CreateFrame("Frame", nil, bag)
             lc:SetSize(LW, 10)
-            lc:SetPoint("TOPLEFT", bag, "TOPLEFT", 0, -32)
+            lc:SetPoint("TOPLEFT", bag, "TOPLEFT", 0, -BODY_Y)
             lc:SetPoint("BOTTOMRIGHT", bag, "BOTTOMRIGHT", -(RWd + 8), NOTE_H + 8)
             Y()
             EG.bagLC = lc
@@ -4226,8 +4451,8 @@ function EG.Build(page)
             for i, e in ipairs(BAG_CHAIN) do
                 local r = CreateFrame("Button", nil, lc, "BackdropTemplate")
                 r:SetHeight(36)
-                r:SetPoint("TOPLEFT", lc, "TOPLEFT", 8, -((i - 1) * 40))
-                r:SetPoint("TOPRIGHT", lc, "TOPRIGHT", -8, -((i - 1) * 40))
+                r:SetPoint("TOPLEFT", lc, "TOPLEFT", 0, -((i - 1) * 40))
+                r:SetPoint("TOPRIGHT", lc, "TOPRIGHT", 0, -((i - 1) * 40))
                 r.tint = r:CreateTexture(nil, "BORDER")
                 r.tint:SetAllPoints()
                 r.tint:SetColorTexture(1, 1, 1, 0)
@@ -4266,8 +4491,8 @@ function EG.Build(page)
                 EG.bagRows[i] = r
             end
             local eb = CreateFrame("Button", nil, bag, "BackdropTemplate")
-            eb:SetSize(150, 24)
-            eb:SetPoint("TOPRIGHT", bag, "TOPRIGHT", -8, -8)
+            eb:SetSize(150, HEAD_H)
+            eb:SetPoint("TOPRIGHT", bag, "TOPRIGHT", 0, -HEAD_Y)
             eb.__huiKeepTextColor = true
             if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(eb) end
             local ef = MakeFS(eb, 14, C_GOLD, "CENTER")
@@ -4290,9 +4515,16 @@ function EG.Build(page)
             EG.bagProg:ClearAllPoints()
             EG.bagProg:SetPoint("TOPRIGHT", eb, "TOPLEFT", -8, 0)
 
+            local headRule = bag:CreateTexture(nil, "OVERLAY")
+            headRule:SetColorTexture(DIVC[1], DIVC[2], DIVC[3], DIVC[4])
+            headRule:SetHeight(1)
+            headRule:SetPoint("TOPLEFT", bag, "TOPLEFT", 0, -DIV_Y)
+            headRule:SetPoint("TOPRIGHT", bag, "TOPRIGHT", 0, -DIV_Y)
+            EG.bagHeadRule = headRule
+
             local det = CreateFrame("Frame", nil, bag)
-            det:SetWidth(RWc)
-            det:SetPoint("TOPLEFT", bag, "TOPLEFT", LW + 8, -32)
+            det:SetWidth(RWd)
+            det:SetPoint("TOPLEFT", bag, "TOPLEFT", LW + 8, -BODY_Y)
             det:SetPoint("BOTTOMRIGHT", bag, "BOTTOMRIGHT", 0, EG.bagNoteH + 8)
             ns.hui.SkinPopup(det, 8, nil, ns.hui.layer.L2)
             det:EnableMouseWheel(true)
@@ -4311,9 +4543,9 @@ function EG.Build(page)
                 if EG.UpdateBagScroll then EG.UpdateBagScroll() end
             end)
             rc = CreateFrame("Frame", nil, rs)
-            rc:SetSize(RWc, 10)
+            rc:SetSize(RWd, 10)
             rs:SetScrollChild(rc)
-            rs:SetPoint("TOPLEFT", det, "TOPLEFT", 0, -132)
+            rs:SetPoint("TOPLEFT", det, "TOPLEFT", 0, -96)
             rs:SetPoint("BOTTOMRIGHT", det, "BOTTOMRIGHT", 0, 0)
             EG.bagScroll, EG.bagChild = rs, rc
 
@@ -4408,24 +4640,29 @@ function EG.Build(page)
             nc:SetHeight(EG.bagNoteH)
             nc:SetPoint("BOTTOMLEFT", bag, "BOTTOMLEFT", 0, 0)
             nc:SetPoint("BOTTOMRIGHT", bag, "BOTTOMRIGHT", 0, 0)
-            ns.hui.SkinPopup(nc, 8, nil, ns.hui.layer.L2)
+            local noteRule = bag:CreateTexture(nil, "OVERLAY")
+            noteRule:SetColorTexture(DIVC[1], DIVC[2], DIVC[3], DIVC[4])
+            noteRule:SetHeight(1)
+            noteRule:SetPoint("BOTTOMLEFT", bag, "BOTTOMLEFT", 0, EG.bagNoteH)
+            noteRule:SetPoint("BOTTOMRIGHT", bag, "BOTTOMRIGHT", 0, EG.bagNoteH)
+            EG.bagNoteRule = noteRule
             EG.bagNote = nc
+            local NM = EG.bagNoteMetrics
             local nHead = MakeFS(nc, 16, C_GOLD, "LEFT")
-            nHead:SetPoint("TOPLEFT", nc, "TOPLEFT", 8, -8)
+            nHead:SetPoint("TOPLEFT", nc, "TOPLEFT", NM.x, -8)
             nHead:SetText(L["注释"])
             nHead:SetWordWrap(false)
             local nHint = MakeFS(nc, 14, C_GREY, "RIGHT")
-            nHint:SetPoint("TOPRIGHT", nc, "TOPRIGHT", -8, -9)
+            nHint:SetPoint("TOPRIGHT", nc, "TOPRIGHT", -NM.x, -9)
             nHint:SetText(L["全程无 NPC · 点地面物件触发"])
             nHint:SetWordWrap(false)
             EG.bagNoteHint = nHint
             EG.bagNoteItems = {}
-            local NM = EG.bagNoteMetrics
             local ny = NM.pad + 16 + NM.pad
             local function NoteRow(id, tail, rowH)
                 local nb = CreateFrame("Button", nil, nc)
                 nb:SetSize(NM.colW - 10, 22)
-                nb:SetPoint("TOPLEFT", nc, "TOPLEFT", NM.pad, -(ny + (rowH - 22) / 2))
+                nb:SetPoint("TOPLEFT", nc, "TOPLEFT", NM.x, -(ny + (rowH - 22) / 2))
                 nb.__id = id
                 local ic = nb:CreateTexture(nil, "ARTWORK")
                 ic:SetSize(18, 18)
@@ -4439,7 +4676,7 @@ function EG.Build(page)
                 nb:SetScript("OnEnter", function(self) EG.BagChipTip(self, true) end)
                 nb:SetScript("OnLeave", function(self) EG.BagChipTip(self, false) end)
                 local tx = MakeFS(nc, 14, C_GREY, "LEFT")
-                tx:SetPoint("TOPLEFT", nc, "TOPLEFT", NM.pad + NM.colW, -(ny + (rowH - 18) / 2))
+                tx:SetPoint("TOPLEFT", nc, "TOPLEFT", NM.x + NM.colW, -(ny + (rowH - 18) / 2))
                 tx:SetWidth(NM.tw)
                 tx:SetWordWrap(true)
                 tx:SetJustifyV("TOP")
@@ -4449,8 +4686,8 @@ function EG.Build(page)
             NoteRow(216619, NOTE_TAIL1, NM.row[1])
             ny = ny + NM.row[1] + 6
             local nl2 = MakeFS(nc, 14, C_GREY, "LEFT")
-            nl2:SetPoint("TOPLEFT", nc, "TOPLEFT", NM.pad, -ny)
-            nl2:SetWidth(CW - NM.pad * 2)
+            nl2:SetPoint("TOPLEFT", nc, "TOPLEFT", NM.x, -ny)
+            nl2:SetWidth(CW - NM.x * 2)
             nl2:SetWordWrap(true)
             nl2:SetJustifyV("TOP")
             nl2:SetText(NOTE_SUB)
@@ -4504,10 +4741,11 @@ function EG.Build(page)
             EG.bagDCo = dCo
             Y()
             EG.bagDL, EG.bagDV = {}, {}
-            local FIELDS = { L["状态："], L["可接等级："], L["起始："], L["阵营："] }
+            local FIELDS = { L["可接等级："], L["状态："], L["起始："], L["阵营："] }
+            EG.bagDGrid = { { 1, 2 }, { 3, 4 } }
             for fi = 1, 4 do
                 local lab = MakeFS(det, 14, C_GREY, "LEFT")
-                lab:SetPoint("TOPLEFT", det, "TOPLEFT", 8, -(34 + (fi - 1) * 24))
+                lab:SetPoint("TOPLEFT", det, "TOPLEFT", 8, -(34 + math.floor((fi - 1) / 2) * 24))
                 lab:SetText(FIELDS[fi])
                 lab:SetWordWrap(false)
                 local val = MakeFS(det, 14, C_TEXT, "LEFT")
@@ -4547,11 +4785,7 @@ function EG.Build(page)
             Y()
             dN:Hide()
             EG.bagDN = dN
-            EG.bagNSegs = {}
-            for i = 1, 6 do
-                local sf = MakeFS(rc, 14, C_GREY, "LEFT")
-                sf:SetJustifyV("TOP")
-                sf:Hide()
+            local function BagPin()
                 local sb = CreateFrame("Button", nil, rc, "BackdropTemplate")
                 sb:SetHeight(24)
                 sb:SetPushedTextOffset(0, 0)
@@ -4585,12 +4819,27 @@ function EG.Build(page)
                 end)
                 sb:SetScript("OnLeave", function() if GameTooltip then pcall(GameTooltip.Hide, GameTooltip) end end)
                 sb:Hide()
-                EG.bagNSegs[i] = { fs = sf, btn = sb }
+                return sb
             end
+            EG.bagNSegs = {}
+            for i = 1, 6 do
+                local sf = MakeFS(rc, 14, C_GREY, "LEFT")
+                sf:SetJustifyV("TOP")
+                sf:Hide()
+                EG.bagNSegs[i] = { fs = sf, btn = BagPin() }
+            end
+            EG.bagRSegs, EG.bagRBtns = {}, {}
+            for i = 1, 34 do
+                local sf = MakeFS(rc, 14, C_GREY, "LEFT")
+                sf:SetJustifyV("TOP")
+                sf:Hide()
+                EG.bagRSegs[i] = sf
+            end
+            for i = 1, 6 do EG.bagRBtns[i] = BagPin() end
 
             local tot = CreateFrame("Frame", nil, bag)
-            tot:SetWidth(RWc)
-            tot:SetPoint("TOPLEFT", bag, "TOPLEFT", LW + 8, -32)
+            tot:SetWidth(RWd)
+            tot:SetPoint("TOPLEFT", bag, "TOPLEFT", LW + 8, -BODY_Y)
             tot:SetPoint("BOTTOMRIGHT", bag, "BOTTOMRIGHT", 0, EG.bagNoteH + 8)
             ns.hui.SkinPopup(tot, 8, nil, ns.hui.layer.L2)
             tot:EnableMouseWheel(true)
@@ -4610,7 +4859,7 @@ function EG.Build(page)
                 if EG.UpdateBagScroll then EG.UpdateBagScroll() end
             end)
             tc = CreateFrame("Frame", nil, ts)
-            tc:SetSize(RWc, 10)
+            tc:SetSize(RWd, 10)
             ts:SetScrollChild(tc)
             ts:SetPoint("TOPLEFT", tot, "TOPLEFT", 0, -124)
             ts:SetPoint("BOTTOMRIGHT", tot, "BOTTOMRIGHT", 0, 0)
@@ -4622,7 +4871,7 @@ function EG.Build(page)
             tTitle:SetText(L["任务线奖励总览"])
             tTitle:SetWordWrap(false)
             local fcard = CreateFrame("Frame", nil, tot)
-            fcard:SetSize(RWc - 16, 84)
+            fcard:SetSize(RWd - 16, 84)
             fcard:SetPoint("TOPLEFT", tot, "TOPLEFT", 8, -32)
             ns.hui.SkinPopup(fcard, 8, nil, ns.hui.layer.L3)
             local fIcon = fcard:CreateTexture(nil, "ARTWORK")
