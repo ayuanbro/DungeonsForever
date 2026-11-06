@@ -1866,10 +1866,11 @@ end
 
 function Provider:RefreshAllData()
     self:RemoveAllData()
+    self.groups = nil
+    if not (ns.MapEntryOn and ns.MapEntryOn()) then return end
     local map, mapID = CurMap(self)
     local rows = StitchedRows(mapID) or (mapID and W.EntriesIn(mapID))
     if ns.OpenMapBridge then rows = ns.OpenMapBridge.Keep(rows) end
-    self.groups = nil
     if not (rows and #rows > 0) then return end
     local canvas = map and map.GetCanvas and map:GetCanvas()
     if not canvas or (canvas:GetWidth() or 0) <= 1 then return end
@@ -1966,6 +1967,15 @@ local function driveEntryPins()
 end
 
 W.RefreshPins = driveEntryPins
+
+function W.ApplyEntryToggle()
+    epSig = nil
+    if entryProvider then
+        entryProvider:RemoveAllData()
+        entryProvider.groups = nil
+    end
+    driveEntryPins()
+end
 
 local function buildPinPool(view)
     local pins = view.pins

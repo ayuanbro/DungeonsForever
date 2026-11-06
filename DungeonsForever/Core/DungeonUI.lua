@@ -5871,6 +5871,16 @@ function DG.BuildQuestSnap()
     return true
 end
 
+function DG.InvalidateQuestDone(doneID)
+    DG.questDoneCache = {}
+    DG.__preDone = nil
+    local v = tonumber(doneID)
+    if v then
+        DG.questDoneCache[v] = true
+        if DG.questDoneSet then DG.questDoneSet[v] = true end
+    end
+end
+
 function DG.QuestDone(id)
     if not id then return false end
     local sim = DG.questSim
@@ -5878,10 +5888,10 @@ function DG.QuestDone(id)
         local st = sim[id]
         if st ~= nil then return st == "done" end
     end
-    local set = DG.questDoneSet
-    if set then return set[id] == true end
     local c = DG.questDoneCache[id]
     if c ~= nil then return c end
+    local set = DG.questDoneSet
+    if set and set[id] then return true end
     local v = (DG.QLCall("IsQuestFlaggedCompleted", id) == true)
     DG.questDoneCache[id] = v
     return v
@@ -6437,14 +6447,24 @@ function DG.EnsureQuestListener()
     ev:RegisterEvent("PLAYER_ENTERING_WORLD")
     ev:RegisterEvent("PLAYER_LOGIN")
     ev:RegisterEvent("QUEST_LOG_UPDATE")
+    pcall(ev.RegisterEvent, ev, "QUEST_ACCEPTED")
+    pcall(ev.RegisterEvent, ev, "QUEST_REMOVED")
     ev:SetScript("OnEvent", function(_, event, arg1)
         C_Timer.After(0, function()
             if event == "QUEST_TURNED_IN" then
-                if arg1 then
-                    if DG.questDoneSet then DG.questDoneSet[arg1] = true end
-                    DG.questDoneCache[arg1] = true
+                DG.InvalidateQuestDone(arg1)
+                local function retry()
+                    pcall(DG.InvalidateQuestDone)
+                    if U.RefreshQuestRows then pcall(U.RefreshQuestRows, U) end
                 end
+                C_Timer.After(1.5, retry)
+                C_Timer.After(4, retry)
             elseif event == "QUEST_LOG_UPDATE" then
+                DG.InvalidateQuestDone()
+            elseif event == "QUEST_ACCEPTED" then
+                DG.InvalidateQuestDone()
+            elseif event == "QUEST_REMOVED" then
+                DG.InvalidateQuestDone()
             else
                 DG.BuildQuestSnap()
             end
@@ -6452,6 +6472,9 @@ function DG.EnsureQuestListener()
         end)
     end)
     DG.__questEvt = ev
+    if DG.questDoneSet == nil then
+        C_Timer.After(0.5, function() pcall(DG.BuildQuestSnap) end)
+    end
     return ev
 end
 

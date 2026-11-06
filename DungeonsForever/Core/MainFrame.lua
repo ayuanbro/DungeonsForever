@@ -1031,6 +1031,7 @@ ns.PaintAppearance = PaintAppearance
 local enhCard
 local spellToggle
 local talentToggle
+local mapToggle
 
 local function SpellBlocked()
     return (ns.SpellTabsTaken and ns.SpellTabsTaken()) and true or false
@@ -1049,6 +1050,9 @@ local function SyncEnhCard()
     end
     if talentToggle then
         talentToggle:SetChecked((ns.TalentEnhOn and ns.TalentEnhOn()) and true or false)
+    end
+    if mapToggle then
+        mapToggle:SetChecked((ns.MapEntryOn and ns.MapEntryOn()) and true or false)
     end
 end
 
@@ -1114,7 +1118,7 @@ function BuildEnhCard()
     end
     enhCard = card
     AnchorEnhCard()
-    card:SetHeight(80)
+    card:SetHeight(108)
 
     local hd = card:CreateFontString(nil, "OVERLAY")
     hd:SetFont(ns.FONT, 14, "")
@@ -1129,6 +1133,7 @@ function BuildEnhCard()
                      L["两个插件不能同时往技能书里加页；关掉对方的技能页增强并重载后，这里会自动恢复。"] }
         end)
     talentToggle = EnhRow(card, -58, L["天赋页增强"], L["在原生天赋界面增加天赋模拟页与加点序号"])
+    mapToggle = EnhRow(card, -86, L["地图副本入口"], L["在世界地图上标出各副本的入口位置"])
 
     spellToggle:SetScript("OnClick", function(self)
         if SpellBlocked() then return end
@@ -1143,6 +1148,13 @@ function BuildEnhCard()
         local nv = not (ns.TalentEnhOn and ns.TalentEnhOn())
         self:SetChecked(nv)
         if ns.SetTalentEnh then ns.SetTalentEnh(nv) end
+        SyncEnhCard()
+    end)
+    mapToggle:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local nv = not (ns.MapEntryOn and ns.MapEntryOn())
+        self:SetChecked(nv)
+        if ns.SetMapEntry then ns.SetMapEntry(nv) end
         SyncEnhCard()
     end)
     SyncEnhCard()

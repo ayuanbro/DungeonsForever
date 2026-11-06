@@ -234,6 +234,18 @@ function ns.SetSpellEnh(on)
     end
 end
 
+function ns.MapEntryOn()
+    local v = DB().ui.mapEntry
+    if v == nil then return true end
+    return v == true
+end
+
+function ns.SetMapEntry(on)
+    DB().ui.mapEntry = on and true or false
+    local W = ns.MapWorldModule
+    if W and W.ApplyEntryToggle then W.ApplyEntryToggle() end
+end
+
 do
     local candidates = {}
     if GetLocale() == "zhCN" then
