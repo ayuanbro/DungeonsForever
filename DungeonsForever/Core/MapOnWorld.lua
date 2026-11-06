@@ -41,14 +41,6 @@ regen:SetScript("OnEvent", function()
     applyMap(id)
 end)
 
-local EUIS
-local function euiBtn(bt)
-    if not (bt and EUIS) then return end
-    pcall(EUIS.Button, bt)
-    if EUIS.WhiteButtonLabel then pcall(EUIS.WhiteButtonLabel, bt) end
-end
-W.EuiBtn = euiBtn
-
 local function fontPath()
     return ns.FONT or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
 end
@@ -95,6 +87,17 @@ local function makeNativeBtn(parent, text, w, h)
     local bt = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
     bt:SetSize(w, h)
     if text then bt:SetText(text) end
+    return bt
+end
+
+local function ndBtn(bt)
+    if not bt or not ns.NDuiOn or not ns.NDuiOn() then return bt end
+    ns.NDuiReskin(bt)
+    local fs = bt.GetFontString and bt:GetFontString()
+    if fs then
+        local ok, fn, size = pcall(fs.GetFont, fs)
+        if ok and fn and size then pcall(fs.SetFont, fs, fn, size, "") end
+    end
     return bt
 end
 
@@ -160,14 +163,6 @@ local function setPicked(bt, on)
     if not bt then return end
     local fs = bt:GetFontString()
     if not fs then return end
-    if EUIS then
-        if on then
-            fs:SetTextColor(0.55, 0.55, 0.55)
-        else
-            fs:SetTextColor(1, 1, 1)
-        end
-        return
-    end
     if on then
         fs:SetTextColor(0.62, 0.62, 0.62)
     else
@@ -954,7 +949,7 @@ local function ensureAreaBtn()
     if not nav then return nil end
     local areaBtn = makeNativeBtn(nav, L["复活区域"], BTN_W, BTN_H)
     areaBtn:SetFrameLevel(nav:GetFrameLevel() + 8)
-    euiBtn(areaBtn)
+    ndBtn(areaBtn)
     areaBtn:SetScript("OnClick", function(self)
         local on
         if ns.ExploreAreaToggle then on = ns.ExploreAreaToggle() end
@@ -1009,7 +1004,40 @@ local function syncAreaBtn()
     ab:SetPoint("TOPLEFT", wmf, "TOPLEFT", dx, -dy)
 end
 
+local CRUMB_X = 0
+local CRUMB_PAD = 60
+
+local function padFogBtn(box)
+    local wm = _G.WorldMapFrame
+    local bf = wm and wm.BorderFrame
+    local tc = bf and bf.TitleContainer
+    if not tc then return end
+    for _, ch in ipairs({ tc:GetChildren() }) do
+        if ch and ch.GetObjectType and ch:GetObjectType() == "CheckButton" then
+            if not ch.__dfPad then
+                ch.__dfPad = true
+                ch:ClearAllPoints()
+                ch:SetPoint("BOTTOMLEFT", box, "TOPLEFT", CRUMB_PAD, 0)
+            end
+        end
+    end
+end
+
+local function shiftCrumb()
+    local hb = _G.WorldMapFrameHomeButton
+    if not hb then return end
+    local box = hb:GetParent()
+    if not (box and box.GetPoint and box.SetPoint) then return end
+    local anchor, rel, relPoint, x, y = box:GetPoint(1)
+    if anchor ~= "TOPLEFT" or type(x) ~= "number" then return end
+    if x > CRUMB_X then
+        pcall(box.SetPoint, box, anchor, rel, relPoint, CRUMB_X, y)
+    end
+    padFogBtn(box)
+end
+
 local function layout(view)
+    shiftCrumb()
     local aw, ah = mapAreaSize()
     if aw <= 0 or ah <= 0 then return end
     local cw, ch, cx, cy = M.FitBox(aw, ah)
@@ -1621,7 +1649,7 @@ function W.EnsureNav()
     bt:Hide()
     W.navBtn = bt
     styleNavBtn(bt)
-    euiBtn(bt)
+    if ns.NDuiNavButton then ns.NDuiNavButton(bt) end
     return bt
 end
 
@@ -2106,11 +2134,7 @@ function W.Build()
     cover:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     local chl = cover:CreateTexture(nil, "OVERLAY")
     chl:SetAllPoints()
-    if EUIS then
-        chl:SetColorTexture(1, 1, 1, 0.10)
-    else
-        chl:SetColorTexture(1, 0.82, 0.42, 0.14)
-    end
+    chl:SetColorTexture(1, 1, 1, 0.10)
     chl:Hide()
     cover.hl = chl
     cover:SetScript("OnClick", function()
@@ -2181,7 +2205,7 @@ function W.Build()
     routeBtn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     routeBtn:SetScript("OnClick", routeToggle)
     routeBtn:Hide()
-    euiBtn(routeBtn)
+    ndBtn(routeBtn)
     view.routeBtn = routeBtn
 
     local pinBtn = makeNativeBtn(UIParent, L["图钉显示"], BTN_W, BTN_H)
@@ -2189,7 +2213,7 @@ function W.Build()
     pinBtn:SetFrameLevel(950)
     pinBtn:SetScript("OnClick", function(self) M.ShowPinMenu(self) end)
     pinBtn:Hide()
-    euiBtn(pinBtn)
+    ndBtn(pinBtn)
     view.pinBtn = pinBtn
 
     ensureAreaBtn()
@@ -2218,7 +2242,11 @@ function W.Build()
     taskBtn:SetSize(60, cbH)
     taskBtn:SetFrameStrata("TOOLTIP")
     taskBtn:SetFrameLevel(100)
-    if not skinCloseStyle(taskBtn) then
+    local curFlags = FLAGS
+    if ns.NDuiOn and ns.NDuiOn() then
+        curFlags = ""
+        ns.NDuiReskin(taskBtn)
+    elseif not skinCloseStyle(taskBtn) then
         taskBtn:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
@@ -2228,7 +2256,7 @@ function W.Build()
         taskBtn:SetBackdropBorderColor(0.55, 0.45, 0.2, 1)
     end
     local tfs = taskBtn:CreateFontString(nil, "OVERLAY")
-    tfs:SetFont(fontPath(), 13, FLAGS)
+    tfs:SetFont(fontPath(), 13, curFlags)
     tfs:SetTextColor(1, 0.82, 0)
     tfs:SetPoint("CENTER", taskBtn, "CENTER", 0, 0)
     taskBtn:SetFontString(tfs)
@@ -2243,7 +2271,6 @@ function W.Build()
     end)
     taskBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     taskBtn:Hide()
-    euiBtn(taskBtn)
     view.taskBtn = taskBtn
 
     local btns = {}
@@ -2442,21 +2469,3 @@ local function tryHook()
 end
 
 tryHook()
-
-if EllesmereUI and EllesmereUI.RegisterSkin then
-    EllesmereUI.RegisterSkin("DungeonsForever", function(S)
-        if S.IsEnabled and not S.IsEnabled() then return end
-        EUIS = S
-        W.euiSkin = true
-        euiBtn(W.navBtn)
-        local v = W.view
-        if v then
-            euiBtn(v.routeBtn)
-            euiBtn(v.pinBtn)
-            euiBtn(v.taskBtn)
-            if v.crumbCover and v.crumbCover.hl then
-                v.crumbCover.hl:SetColorTexture(1, 1, 1, 0.10)
-            end
-        end
-    end)
-end

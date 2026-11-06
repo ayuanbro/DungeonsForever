@@ -51,8 +51,9 @@ local function InitCustomFonts()
     body = "GameFontNormal",
     small = "GameFontHighlightSmall",
   }
+  local prefix = (addonName or "DungeonsForever") .. "Font_"
   for name, baseName in pairs(baseFonts) do
-    local customName = "YYBuffReminderFont_" .. name
+    local customName = prefix .. name
     local font = CreateFont(customName)
 
     local base = _G[baseName]

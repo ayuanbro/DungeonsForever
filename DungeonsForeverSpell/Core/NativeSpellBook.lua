@@ -419,14 +419,17 @@ local function RestoreFrame(frame)
     if frame.Name then
         frame.Name:SetAlpha(1)
         frame.Name:SetTextColor(ir, ig, ib)
+        ns.ThinFont(frame.Name)
     end
     if frame.SubName then
         frame.SubName:SetAlpha(1)
         frame.SubName:SetTextColor(ir, ig, ib)
+        ns.ThinFont(frame.SubName)
     end
     if frame.RequiredLevel then
         frame.RequiredLevel:SetAlpha(1)
         frame.RequiredLevel:SetTextColor(ir, ig, ib)
+        ns.ThinFont(frame.RequiredLevel)
     end
 end
 
@@ -445,6 +448,7 @@ local function HeaderInit(frame, d)
         if not eui then r, g, b = BookTextRGB() end
         frame.Text:SetTextColor(r, g, b)
         frame.Text:SetAlpha(1)
+        ns.ThinFont(frame.Text)
     end
     if frame.Backplate then
         frame.Backplate:SetAlpha(eui and 0 or 0.65)
@@ -602,6 +606,37 @@ local function ClassGroups()
     return nil
 end
 
+local function ThinAll()
+    local paged = Paged()
+    if not paged then return end
+    local function scan(f, d)
+        if d > 6 then return end
+        local regions = { f:GetRegions() }
+        for i = 1, #regions do
+            local r = regions[i]
+            if r.GetObjectType and r:GetObjectType() == "FontString" then
+                ns.ThinFont(r)
+            end
+        end
+        local kids = { f:GetChildren() }
+        for i = 1, #kids do
+            scan(kids[i], d + 1)
+        end
+    end
+    pcall(scan, paged, 0)
+end
+
+local hookedPaged
+local function EnsureThinHooks()
+    local paged = Paged()
+    if not paged or paged == hookedPaged then return end
+    hookedPaged = paged
+    pcall(hooksecurefunc, paged, "SetDataProvider", function()
+        C_Timer.After(0, ThinAll)
+        C_Timer.After(0.1, ThinAll)
+    end)
+end
+
 local function InstallOurs()
     if DeferInCombat() then return false end
     local paged = Paged()
@@ -620,6 +655,9 @@ local function InstallOurs()
     paged:SetElementTemplateData(OURS)
     paged:SetDataProvider(CreateDataProvider(groups), false)
     ourProvider = paged.dataProvider
+    EnsureThinHooks()
+    C_Timer.After(0, ThinAll)
+    C_Timer.After(0.15, ThinAll)
     return true
 end
 
@@ -689,6 +727,7 @@ local function BuildSubBar()
         fs:SetText(text)
         b.label = fs
         b:SetScript("OnClick", function() SetSub(key) end)
+        if ns.NDuiOn and ns.NDuiOn() then ns.NDuiReskin(b) end
         return b
     end
     subClassBtn = mk("DungeonsForeverSubClass", ns.L["职业训练师"], "class", 94)
@@ -959,6 +998,15 @@ local function Attach()
     local sb = psf and psf.SpellBookFrame
     if not (sb and sb.CategoryTabSystem and sb.PagedSpellsFrame) then return false end
     if book and tabButton then return true end
+    if psf and psf.HookScript and not psf.__dfThin then
+        psf.__dfThin = true
+        psf:HookScript("OnShow", function()
+            EnsureThinHooks()
+            C_Timer.After(0, ThinAll)
+            C_Timer.After(0.1, ThinAll)
+            C_Timer.After(0.3, ThinAll)
+        end)
+    end
     book = sb
     nativeTpl = sb.PagedSpellsFrame.elementTemplateData
 

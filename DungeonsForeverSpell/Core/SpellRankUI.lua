@@ -16,13 +16,15 @@ local WARN = { 0.78, 0.52, 0.14 }
 local LAYER = (ns.hui and ns.hui.layer) or {}
 
 local MEDIA = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\"
+local BRAND = "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\"
 local TEX = {
     ring = MEDIA .. "CheckRing",
     disc = MEDIA .. "CheckDisc",
     mark = MEDIA .. "CheckMark",
 }
+local LOGO_TEX = BRAND .. "DungeonsForever.blp"
 
-local WIN_W, WIN_H = 460, 424
+local WIN_W, WIN_H = 460, 364
 local CARD_W = 440
 local ROW_H = 44
 local ROW_PITCH = 46
@@ -207,21 +209,6 @@ local function LoadPos(f, key)
     return false
 end
 
-local function MakeToggle(parent, label, key)
-    local tg = CreateFrame("CheckButton", nil, parent)
-    tg:SetSize(36, 20)
-    tg:EnableMouse(true)
-    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
-    tg:SetChecked(SR.DB()[key] and true or false)
-    tg:SetScript("OnClick", function(self)
-        SR.Setting(key, self:GetChecked() and true or false)
-    end)
-    tg.label = FS(parent, 14, SUB, "LEFT")
-    tg.label:SetPoint("LEFT", tg, "RIGHT", 7, 0)
-    tg.label:SetText(label)
-    return tg
-end
-
 local function PendingRows()
     local out = {}
     for _, row in ipairs(SR.Scan().rows) do
@@ -403,8 +390,12 @@ local function BuildWin()
     end
     if not LoadPos(f, "winPos") then f:SetPoint("CENTER", UIParent, "CENTER", 0, 40) end
 
+    f.logo = f:CreateTexture(nil, "ARTWORK")
+    f.logo:SetTexture(LOGO_TEX)
+    f.logo:SetSize(30, 30)
+    f.logo:SetPoint("LEFT", f, "TOPLEFT", 12, -20)
     f.title = FS(f, 16, TXT, "LEFT")
-    f.title:SetPoint("LEFT", f, "TOPLEFT", 18, -20)
+    f.title:SetPoint("LEFT", f, "TOPLEFT", 50, -20)
     f.title:SetText(L["法术升级管理"])
     f.count = FS(f, 14, SUB, "LEFT")
     f.count:SetPoint("LEFT", f.title, "RIGHT", 8, 0)
@@ -412,8 +403,16 @@ local function BuildWin()
     local close = CloseButton(f)
     close:SetScript("OnClick", function() f:Hide() end)
 
+    f.gear = CreateFrame("Button", nil, f)
+    f.gear:SetSize(32, 32)
+    f.gear:SetPoint("RIGHT", close, "LEFT", 0, 0)
+    f.gear.tex = f.gear:CreateTexture(nil, "ARTWORK")
+    f.gear.tex:SetTexture(ns.SET_ICON or "Interface\\AddOns\\DungeonsForever\\Media\\textures\\DF_Settings")
+    f.gear.tex:SetSize(16, 16)
+    f.gear.tex:SetPoint("CENTER")
+
     f.check = CardButton(f, L["检查"], 60)
-    f.check:SetPoint("RIGHT", close, "LEFT", -8, 0)
+    f.check:SetPoint("RIGHT", f.gear, "LEFT", -8, 0)
     f.check:SetScript("OnClick", function()
         ns.PlaySound(1)
         SR.ReportDiagnose()
@@ -519,24 +518,100 @@ local function BuildWin()
         RefreshWin()
     end)
 
-    local tgTop = -368
-    f.tgh = MakeToggle(f, L["新技能时弹窗"], "hintLearn")
-    f.tgh:SetPoint("TOPLEFT", f, "TOPLEFT", 18, tgTop)
-    f.tgl = MakeToggle(f, L["登录时弹窗"], "hintLogin")
-    f.tgl:SetPoint("TOPLEFT", f, "TOPLEFT", 240, tgTop)
+    local pop = CreateFrame("Frame", "DungeonsForeverSpellRankSettings", f, "BackdropTemplate")
+    pop:SetSize(200, 80)
+    pop:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -42)
+    pop:SetFrameStrata(f:GetFrameStrata())
+    pop:SetFrameLevel(f:GetFrameLevel() + 20)
+    pop:EnableMouse(true)
+    pop:Hide()
+    if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(pop, 8) end
+    if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(pop) end
+    tinsert(UISpecialFrames, "DungeonsForeverSpellRankSettings")
 
-    local function tip(tg, txt)
-        tg:SetScript("OnEnter", function(self)
+    local catcher = CreateFrame("Frame", nil, f)
+    catcher:SetAllPoints(UIParent)
+    catcher:SetFrameStrata(f:GetFrameStrata())
+    catcher:SetFrameLevel(f:GetFrameLevel() + 19)
+    catcher:EnableMouse(true)
+    catcher:Hide()
+
+    local setRows = {}
+    local function MakeSetRow(idx, label, key, hint)
+        local row = CreateFrame("Button", nil, pop)
+        row:SetPoint("TOPLEFT", pop, "TOPLEFT", 8, -8 - (idx - 1) * 32)
+        row:SetSize(184, 32)
+        row.key = key
+        row.ck = MakeCheck(row, 14)
+        row.ck:SetPoint("LEFT", row, "LEFT", 6, 0)
+        row.label = FS(row, 14, TXT, "LEFT")
+        row.label:SetPoint("LEFT", row.ck, "RIGHT", 8, 0)
+        row.label:SetText(label)
+        row:SetScript("OnClick", function(self)
+            local v = not self.ck:IsOn()
+            self.ck:SetOn(v)
+            SR.Setting(self.key, v)
+            ns.PlaySound(1)
+        end)
+        row:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:ClearLines()
-            GameTooltip:AddLine(txt, 1, 1, 1, true)
+            GameTooltip:AddLine(hint, 0.82, 0.86, 0.9, true)
             GameTooltip:Show()
         end)
-        tg:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        setRows[#setRows + 1] = row
+        return row
     end
-    tip(f.tgh, L["学会新技能、且动作条上有低等级、且不在白名单时弹窗"])
-    tip(f.tgl, L["登录时、且动作条上有低等级、且不在白名单时弹窗"])
+    MakeSetRow(1, L["新技能时弹窗"], "hintLearn", L["学会新技能、且动作条上有低等级、且不在白名单时弹窗"])
+    MakeSetRow(2, L["登录时弹窗"], "hintLogin", L["登录时、且动作条上有低等级、且不在白名单时弹窗"])
 
+    local function SyncSetRows()
+        local db = SR.DB()
+        for i = 1, #setRows do
+            local r = setRows[i]
+            r.ck:SetOn(db[r.key] and true or false)
+        end
+    end
+
+    local function PaintGear()
+        if pop:IsShown() then
+            f.gear.tex:SetVertexColor(ACC[1], ACC[2], ACC[3])
+        elseif f.gear.hot then
+            f.gear.tex:SetVertexColor(1, 1, 1)
+        else
+            f.gear.tex:SetVertexColor(0.62, 0.62, 0.62)
+        end
+    end
+
+    local function CloseSetPop()
+        if pop:IsShown() then pop:Hide() end
+        if catcher:IsShown() then catcher:Hide() end
+        PaintGear()
+    end
+
+    f.gear:SetScript("OnEnter", function(self)
+        self.hot = true
+        PaintGear()
+    end)
+    f.gear:SetScript("OnLeave", function(self)
+        self.hot = nil
+        PaintGear()
+    end)
+    f.gear:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        if pop:IsShown() then
+            CloseSetPop()
+        else
+            SyncSetRows()
+            catcher:Show()
+            pop:Show()
+            PaintGear()
+        end
+    end)
+    catcher:SetScript("OnMouseDown", function() CloseSetPop() end)
+
+    f:HookScript("OnHide", function() CloseSetPop() end)
     f:Hide()
     tinsert(UISpecialFrames, "DungeonsForeverSpellRankFrame")
     win = f
@@ -697,8 +772,12 @@ local function BuildCard()
         f:SetBackdropColor(0.039, 0.047, 0.063, 1)
         f:SetBackdropBorderColor(1, 1, 1, 0.12)
     end
+    f.logo = f:CreateTexture(nil, "ARTWORK")
+    f.logo:SetTexture(LOGO_TEX)
+    f.logo:SetSize(30, 30)
+    f.logo:SetPoint("LEFT", f, "TOPLEFT", 12, -20)
     f.title = FS(f, 16, TXT, "LEFT")
-    f.title:SetPoint("LEFT", f, "TOPLEFT", 18, -20)
+    f.title:SetPoint("LEFT", f, "TOPLEFT", 50, -20)
     f.title:SetText(L["法术升级管理"])
     f.sub = FS(f, 14, SUB, "LEFT")
     f.sub:SetPoint("LEFT", f.title, "RIGHT", 8, 0)
@@ -825,15 +904,65 @@ local entryPage
 local RefreshEntry
 local UpdateEntry
 
-local function PickSpellbook()
+local function IsVis(f)
+    if not f then return false end
+    local ok, v = pcall(f.IsVisible, f)
+    return ok and v and true or false
+end
+
+local function InCombat()
+    if type(InCombatLockdown) ~= "function" then return false end
+    local ok, v = pcall(InCombatLockdown)
+    return ok and v or false
+end
+
+local function FrameLvl(f)
+    if not f then return 0 end
+    local ok, v = pcall(f.GetFrameLevel, f)
+    if ok and type(v) == "number" then return v end
+    return 0
+end
+
+local function PagedFrame()
     local psf = PlayerSpellsFrame
-    if psf and psf.SpellBookFrame and psf.SpellBookFrame.PagedSpellsFrame then
-        return psf.SpellBookFrame, psf
+    local sb = psf and psf.SpellBookFrame
+    return (sb and sb.PagedSpellsFrame) or nil
+end
+
+local function HostChain()
+    local nb = ns.NativeSpellBook
+    local seed = entry and entry.__box or nil
+    if not seed then seed = nb and nb.ContentBox and nb.ContentBox() or nil end
+    if not seed then
+        local psf = PlayerSpellsFrame
+        local sb = psf and psf.SpellBookFrame
+        seed = PagedFrame() or sb or psf
     end
-    if psf and psf.SpellBookFrame then return psf.SpellBookFrame, psf end
-    if type(SpellBookFrame) == "table" and SpellBookFrame then return SpellBookFrame, psf end
-    if psf then return psf, psf end
-    return nil, nil
+    if not seed and type(SpellBookFrame) == "table" then seed = SpellBookFrame end
+    local out = {}
+    local f, guard = seed, 0
+    while f and guard < 16 do
+        guard = guard + 1
+        if f ~= UIParent and f ~= WorldFrame then out[#out + 1] = f end
+        local ok, p = pcall(f.GetParent, f)
+        if not (ok and p) then break end
+        f = p
+    end
+    return out
+end
+
+local function PickHost()
+    local chain = HostChain()
+    local n = #chain
+    if n == 0 then return nil, nil end
+    local host
+    for i = n, 1, -1 do
+        if IsVis(chain[i]) then
+            host = chain[i]
+            break
+        end
+    end
+    return host or chain[n], chain[1]
 end
 
 local function HookWatch(f)
@@ -847,6 +976,11 @@ local function HookWatch(f)
         end
     end)
     f:HookScript("OnHide", function() RefreshEntry() end)
+end
+
+local function BookFrame()
+    local psf = PlayerSpellsFrame
+    return psf and psf.SpellBookFrame or nil
 end
 
 local function BoxAnchor()
@@ -870,15 +1004,54 @@ local function AdoptBox()
     return b
 end
 
-RefreshEntry = function()
-    if not entry then return false end
-    AdoptBox()
-    local vis = entryHost ~= nil and entryHost:IsVisible() and entryPage ~= "weapon"
-    entry:SetShown(vis and true or false)
-    return vis and true or false
+local function PageNow()
+    local nb = ns.NativeSpellBook
+    if nb and nb.CurrentPage then
+        local p = nb.CurrentPage()
+        if p ~= nil then return p end
+    end
+    return entryPage
 end
 
-local ENTRY_TEXT = "技能升级时动作条上的低等级技能自动替换"
+local function AnchorFrame()
+    return BoxAnchor() or PagedFrame() or entryHost
+end
+
+local function AnchorEntry()
+    if not entry then return end
+    local anch = AnchorFrame()
+    entry:ClearAllPoints()
+    if anch then
+        entry:SetPoint("BOTTOMRIGHT", anch, "BOTTOMLEFT", -6, 0)
+    elseif entryHost then
+        entry:SetPoint("BOTTOMLEFT", entryHost, "BOTTOMLEFT", 10, 2)
+    end
+end
+
+RefreshEntry = function()
+    if not entry then return false end
+    HookWatch(BookFrame())
+    local host = PickHost()
+    if host and host ~= entryHost then
+        entryHost = host
+        if not InCombat() and entry:GetParent() ~= host then entry:SetParent(host) end
+        AnchorEntry()
+        entry:SetFrameLevel(math.max(FrameLvl(host), FrameLvl(AnchorFrame())) + 5)
+        HookWatch(host)
+    end
+    if not entryHost then return false end
+    AdoptBox()
+    local par = entry:GetParent()
+    local page = PageNow()
+    local box = BoxAnchor()
+    local inBook = (box == nil) or IsVis(box)
+    local vis = IsVis(entryHost) and par ~= nil and IsVis(par) and page == "spell" and inBook
+    vis = vis and true or false
+    if entry:IsShown() ~= vis then entry:SetShown(vis) end
+    return vis
+end
+
+local ENTRY_TEXT = "法术升级管理"
 
 local function PaintEntry(n)
     if not entry then return end
@@ -894,50 +1067,66 @@ local function PaintEntry(n)
 end
 
 local function EnsureEntry()
-    if entry then return RefreshEntry() end
-    local host, watch = PickSpellbook()
+    if entry then
+        RefreshEntry()
+        return true
+    end
+    local host, watch = PickHost()
     if not host then return false end
-    local paged = host.PagedSpellsFrame
-    local bt = CreateFrame("Button", nil, paged or host, "UIPanelButtonTemplate")
+    local bt = CreateFrame("Button", nil, host, "UIPanelButtonTemplate")
     bt:SetSize(320, 32)
-    bt:SetFrameLevel((bt:GetParent():GetFrameLevel() or 1) + 5)
+    bt:SetFrameLevel(math.max(FrameLvl(host), FrameLvl(BoxAnchor() or PagedFrame())) + 5)
     bt:SetText("")
     local fs = bt:CreateFontString(nil, "OVERLAY")
     fs:SetFont(ns.FONT, 13, "")
     fs:SetPoint("CENTER", bt, "CENTER", 0, 0)
     fs:SetText("")
     bt.label = fs
-    if paged then
-        bt:SetPoint("BOTTOMRIGHT", BoxAnchor() or paged, "BOTTOMLEFT", -6, 0)
-    else
-        bt:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 10, 2)
-    end
     bt:SetScript("OnClick", function()
         ns.PlaySound(1)
         UI.Toggle()
     end)
+    if ns.NDuiOn and ns.NDuiOn() then ns.NDuiReskin(bt) end
     bt:Hide()
     entry = bt
     entryHost = host
     entryWatch = watch
+    AnchorEntry()
     HookWatch(host)
-    if watch ~= host then HookWatch(watch) end
+    if watch and watch ~= host then HookWatch(watch) end
+    HookWatch(BookFrame())
     PaintEntry(0)
-    local acc, life = 0, 0
+    local acc = 0
     local dog = CreateFrame("Frame")
-    dog:SetScript("OnUpdate", function(self, elapsed)
+    dog:SetScript("OnUpdate", function(_, elapsed)
         acc = acc + elapsed
-        life = life + elapsed
         if acc < 0.5 then return end
         acc = 0
-        if life > 180 then self:SetScript("OnUpdate", nil) return end
-        if RefreshEntry() then self:SetScript("OnUpdate", nil) end
+        UpdateEntry()
     end)
-    return RefreshEntry()
+    RefreshEntry()
+    return true
+end
+
+local function PageHook()
+    local nb = ns.NativeSpellBook
+    if not nb then return false end
+    if nb.__rankWrap and nb.OnPage == nb.__rankWrap then return true end
+    local prev = nb.OnPage
+    if prev == nb.__rankWrap then prev = nil end
+    local function wrap(p)
+        if prev then prev(p) end
+        UpdateEntry()
+    end
+    nb.OnPage = wrap
+    nb.__rankWrap = wrap
+    return true
 end
 
 UpdateEntry = function()
-    if not EnsureEntry() then return end
+    EnsureEntry()
+    PageHook()
+    if not entry then return end
     local n = SR.Pending()
     PaintEntry(n)
     local p = (ns.NativeSpellBook and ns.NativeSpellBook.CurrentPage and ns.NativeSpellBook.CurrentPage()) or nil
@@ -970,6 +1159,8 @@ UI.Debug = function()
         "CurrentPage = " .. tostring(nb and nb.CurrentPage and nb.CurrentPage() or nil),
         "host = " .. tostring(entryHost ~= nil),
         "host visible = " .. tostring(entryHost ~= nil and entryHost:IsVisible() or false),
+        "host name = " .. tostring(entryHost and entryHost:GetName() or nil),
+        "parent name = " .. tostring(entry and entry:GetParent() and entry:GetParent():GetName() or nil),
         "content box = " .. tostring(entryWatch ~= nil),
         "page = " .. tostring(entryPage),
         "OnPage hooked = " .. tostring(nb ~= nil and nb.OnPage ~= nil),
@@ -981,9 +1172,7 @@ UI.Debug = function()
 end
 
 local function Register()
-    if ns.NativeSpellBook then
-        ns.NativeSpellBook.OnPage = function() UpdateEntry() end
-    end
+    PageHook()
     SR.OnChanged = function() UI.Refresh() end
     SR.OnLogin = function(rows) UI.ShowCard(rows) end
     SR.OnLearn = function(rows) UI.ShowLearn(rows) end

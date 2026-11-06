@@ -277,6 +277,77 @@ do
     ns.FONT = ns.FONT or "Fonts\\FRIZQT__.TTF"
 end
 
+do
+    local hit
+    function ns.NDuiB()
+        if hit then return hit end
+        local nd = _G.NDui
+        local B = type(nd) == "table" and nd[1]
+        if type(B) ~= "table" or type(B.Reskin) ~= "function" then return nil end
+        local C = nd[2]
+        local skins = type(C) == "table" and C.db and C.db["Skins"]
+        if type(skins) == "table" and skins["BlizzardSkins"] == false then return nil end
+        hit = B
+        return B
+    end
+
+    function ns.NDuiOn()
+        return ns.NDuiB() ~= nil
+    end
+
+    function ns.NDuiReskin(frame)
+        if not frame or frame.__dfNd then return frame end
+        local B = ns.NDuiB()
+        if not B then return frame end
+        if pcall(B.Reskin, frame) then frame.__dfNd = true end
+        return frame
+    end
+
+    function ns.NDuiNavButton(frame)
+        if not frame or frame.__dfNav then return frame end
+        local B = ns.NDuiB()
+        if not B then return frame end
+        if not pcall(B.Reskin, frame) then return frame end
+        frame.__dfNav = true
+        frame.__dfNd = true
+        local names = { "arrowUp", "arrowDown" }
+        for i = 1, #names do
+            local tex = frame[names[i]]
+            if type(tex) == "table" and tex.SetAlpha then pcall(tex.SetAlpha, tex, 0) end
+        end
+        local nd = _G.NDui
+        local DB = type(nd) == "table" and nd[4]
+        local r = (DB and DB.r) or 0.3
+        local g = (DB and DB.g) or 0.3
+        local b = (DB and DB.b) or 0.3
+        local sel = frame.selected
+        if type(sel) == "table" then
+            pcall(sel.SetDrawLayer, sel, "BACKGROUND", 1)
+            pcall(sel.SetColorTexture, sel, r, g, b, 0.25)
+            if frame.__bg then pcall(sel.SetInside, sel, frame.__bg) end
+        end
+        return frame
+    end
+
+    local thinFonts, thinSeq = {}, 0
+    function ns.ThinFont(fs)
+        if not fs or not fs.GetFont or not fs.SetFontObject then return end
+        local ok, fn, size, flags = pcall(fs.GetFont, fs)
+        if not ok or type(fn) ~= "string" or not size then return end
+        if type(flags) == "string" and flags == "" then return end
+        local px = math.floor(size + 0.5)
+        local key = fn .. "#" .. px
+        local font = thinFonts[key]
+        if not font then
+            thinSeq = thinSeq + 1
+            font = CreateFont("DungeonsForeverThinFont_" .. thinSeq)
+            font:SetFont(fn, px, "")
+            thinFonts[key] = font
+        end
+        pcall(fs.SetFontObject, fs, font)
+    end
+end
+
 local loadedFuncs = {}
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("ADDON_LOADED")
