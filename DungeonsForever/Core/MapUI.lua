@@ -255,6 +255,29 @@ M.PIN_QUEST_DISC = {
     avail = DG.Q_OV_TODO, todo = DG.Q_OV_TODO, lv = DG.Q_OV_TODO,
     locked = DG.Q_OV_TODO, pre = DG.Q_OV_TODO,
 }
+M.PIN_WORLD_RIM_RGB = { 0.96, 0.77, 0.20 }
+M.PIN_WORLD_DISC = {
+    avail = { 0.23, 0.06, 0.05 }, pre = { 0.23, 0.06, 0.05 },
+    locked = { 0.23, 0.06, 0.05 }, todo = { 0.23, 0.06, 0.05 },
+    done = { 0.23, 0.06, 0.05 }, ready = { 0.23, 0.06, 0.05 },
+    active = { 0.23, 0.06, 0.05 }, lv = { 0.23, 0.06, 0.05 },
+}
+M.PIN_WORLD_INK = {
+    avail = { 0.90, 0.72, 0.19 }, pre = { 0.90, 0.72, 0.19 },
+    locked = { 0.60, 0.60, 0.60 }, todo = { 0.60, 0.60, 0.60 },
+    done = { 0.90, 0.72, 0.19 }, ready = { 0.90, 0.72, 0.19 },
+    active = { 0.90, 0.72, 0.19 }, lv = { 0.60, 0.60, 0.60 },
+}
+M.PIN_WORLD_SYM = {
+    avail = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
+    pre = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
+    locked = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestSymLock",
+    todo = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
+    done = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",
+    ready = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn",
+    active = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
+    lv = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestSymLock",
+}
 M.PIN_QUEST_RIM_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestRim"
 M.PIN_QUEST_RIM_RGB = { 0.91, 0.73, 0.19 }
 M.PIN_QUEST_SIZE = 18
@@ -1378,17 +1401,25 @@ function M.Layout(cw, ch)
     return out
 end
 
-function M.PaintQuestPin(bt, key, a)
+function M.PaintQuestPin(bt, key, a, style)
+    local world = (style == "world")
     local col = M.PIN_QUEST_DISC[key] or M.PIN_QUEST_DISC.todo
-    local sym = M.PIN_QUEST_SYM[key] or M.PIN_QUEST_SYM.todo
     local ink = DG.Q_MARK_INK[key] or DG.Q_MARK_INK.todo
+    local rim = M.PIN_QUEST_RIM_RGB
+    local sym = M.PIN_QUEST_SYM[key] or M.PIN_QUEST_SYM.todo
+    if world then
+        col = M.PIN_WORLD_DISC[key] or M.PIN_WORLD_DISC.todo
+        ink = M.PIN_WORLD_INK[key] or M.PIN_WORLD_INK.todo
+        rim = M.PIN_WORLD_RIM_RGB
+        sym = M.PIN_WORLD_SYM[key] or M.PIN_WORLD_SYM.todo
+    end
     a = a or 1
     bt.dot:SetShown(true)
     bt.dot:SetTexture(M.PIN_QUEST_DISC_TEX)
     bt.dot:SetVertexColor(col[1], col[2], col[3], a)
     bt.rim:SetShown(true)
     bt.rim:SetTexture(M.PIN_QUEST_RIM_TEX)
-    bt.rim:SetVertexColor(M.PIN_QUEST_RIM_RGB[1], M.PIN_QUEST_RIM_RGB[2], M.PIN_QUEST_RIM_RGB[3], 1)
+    bt.rim:SetVertexColor(rim[1], rim[2], rim[3], 1)
     bt.sym:SetTexture(sym)
     bt.sym:SetVertexColor(ink[1], ink[2], ink[3], a)
     bt.sym:SetShown(true)
@@ -4456,7 +4487,7 @@ function M.SyncWorldQuestPins()
             p.__qs = e.qs
             p.__zone = e.loc[4]
             local key = hasReady and "avail" or (hasPre and "pre" or "locked")
-            M.PaintQuestPin(p, key, 1)
+            M.PaintQuestPin(p, key, 1, "world")
             p:SetSize(size, size)
             p:SetScale(k)
             p:ClearAllPoints()

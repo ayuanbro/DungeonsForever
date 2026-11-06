@@ -1964,6 +1964,30 @@ SlashCmdList["DUNGEONSFOREVER"] = function(msg)
         ns.OpenChipCalib()
         return
     end
+    if cmd == "rank" or cmd == "动作条" or cmd == "法術" then
+        if ns.SpellRankUI then
+            ns.SpellRankUI.Toggle()
+        else
+            print("|cff46bf72[" .. L["无限副本手册"] .. "]|r " .. L["技能书模块未启用"])
+        end
+        return
+    end
+    if cmd == "rankcheck" then
+        if ns.SpellRank and ns.SpellRank.ReportDiagnose then
+            ns.SpellRank.ReportDiagnose()
+        else
+            print("|cff46bf72[" .. L["无限副本手册"] .. "]|r " .. L["技能书模块未启用"])
+        end
+        return
+    end
+    if cmd == "rankdebug" then
+        if ns.SpellRankUI and ns.SpellRankUI.Debug then
+            ns.SpellRankUI.Debug()
+        else
+            print("|cff46bf72[" .. L["无限副本手册"] .. "]|r " .. L["技能书模块未启用"])
+        end
+        return
+    end
     local key = PAGE_ALIASES[cmd:lower()]
     if key then
         if not ns.IsForever and key ~= "Dungeons" and key ~= "Raids" then
@@ -1974,7 +1998,7 @@ SlashCmdList["DUNGEONSFOREVER"] = function(msg)
         return
     end
     print("|cff46bf72[" .. L["无限副本手册"] .. "]|r " .. L["用法：/df 或 /fbsc 打开或关闭界面。"])
-    print("  /df fb|副本 · tb|团本 · zy|专业 · ts|探索 · hp|藏品 · wm|声望 · bis|配装 · zn|指南 — " .. L["直达对应页"])
+    print("  /df fb|副本 · tb|团本 · zy|专业 · ts|探索 · hp|藏品 · wm|声望 · bis|配装 · zn|指南 · rank|动作条 — " .. L["直达对应页"])
     print("  /dfspeed — " .. L["载入速度"]
           .. "（" .. L["省电"] .. " / " .. L["标准"] .. " / " .. L["激进"] .. "）")
     print("  /dfgate — " .. L["进度条"] .. "（demo / off）")

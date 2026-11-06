@@ -859,6 +859,7 @@ ShowPage = function(key)
     PaintTabs()
     SyncSubBar(key == "weapon")
     ApplyData()
+    if NB.OnPage then NB.OnPage(activePage) end
 end
 
 local function OnTabClick(key)
@@ -1117,6 +1118,14 @@ flush:SetScript("OnEvent", function() FlushPending() end)
 function NB.Refresh()
     if activePage then InstallOurs() end
     AnchorTabs()
+end
+
+function NB.CurrentPage()
+    return activePage
+end
+
+function NB.ContentBox()
+    return PageBox()
 end
 
 function NB.Page(delta)

@@ -11,7 +11,8 @@
 ## Notes-zhTW: 無限副本手冊 技能書模組：原生技能書增強（可在插件列表中單獨關閉）
 ## Notes-enUS: Spellbook module for DungeonsForever (can be disabled separately)
 ## Author: 圆圆
-## Version: 2.0.3
+## Version: 2.0.4
+## SavedVariables: DungeonsForeverSpellDB
 ## Dependencies: DungeonsForever
 ## LoadOnDemand: 1
 
@@ -29,3 +30,5 @@ Core\SpellTraining.lua
 Core\WeaponMasters.lua
 Core\ClassTrainers.lua
 Core\NativeSpellBook.lua
+Core\SpellRank.lua
+Core\SpellRankUI.lua
