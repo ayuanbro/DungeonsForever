@@ -1879,11 +1879,9 @@ function S.NewJob(slug,opts)
             return t
         end
         local function preservesProgress(candidate,t)
-            -- A prefix keeps its stopping skill so its frontier blockers remain valid.
             local complete=goalsComplete(j,candidate)
             if not t or not complete and t.skill[slug]~=candidate.skill[slug] then return false end
             for p,skill in pairs(candidate.skill) do
-                -- Fractional progress beyond a completed target is not another route goal.
                 local progressGoal=p==slug and complete and j.target or 300
                 if (t.skill[p] or 0)<skill or skill<progressGoal and t.skill[p]==skill
                     and (t.progress[p] or 0)+1e-7<(candidate.progress[p] or 0) then return false end
