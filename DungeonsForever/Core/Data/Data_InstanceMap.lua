@@ -6,10 +6,6 @@ ns.InstanceMap = {
     },
     map = {
     },
-    name = {
-        ["黑石塔"] = "lower_blackrock_spire",
-        ["Blackrock Spire"] = "lower_blackrock_spire",
-    },
     zone = {
         ["the_drowned_city"]       = 1434,
         ["alcaz_prison"]           = 1445,
