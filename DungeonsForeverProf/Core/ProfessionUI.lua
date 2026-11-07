@@ -302,6 +302,7 @@ PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.autoResidualMass = false
 PD.SETTING_DEF.autoReserveMode = "standard"
+PD.SETTING_DEF.computationSpeed = "normal"
 PD.SETTING_DEF.recoveryEnabled = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
@@ -408,6 +409,20 @@ function PD.SetRouteScheme(key)
     if PD.scroll then PD.scroll:SetVerticalScroll(0) end
     ns.PlaySound(1)
 end
+function PD.CycleComputationSpeed()
+    local current = PD.SettingRaw("computationSpeed")
+    local mode = current == "fast" and "turbo" or current == "turbo" and "normal" or "fast"
+    PD.SetSettingRaw("computationSpeed", mode)
+    PD.__turboPlanPaint = nil
+    PD.RequestRender()
+    ns.PlaySound(1)
+end
+
+function PD.ComputationSpeedLabel()
+    local mode = PD.SettingRaw("computationSpeed")
+    return mode == "fast" and L["快速"] or mode == "turbo" and L["极速"] or L["流畅（默认）"]
+end
+
 function PD.CycleReserveMode()
     local current=PD.SettingRaw("autoReserveMode")
     local mode=current=="off" and "standard" or current=="standard" and "ample" or "off"
@@ -14538,7 +14553,7 @@ PD.SET_MORE = ">"
 PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
 PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
-    { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling" }, 1 },
+    { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling", "computationSpeed" }, 1 },
     { L["采购与配方"], { "reserveMode", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
     { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools" }, 2 },
 }
@@ -14648,6 +14663,16 @@ function PD.RowsSettings(rows)
             local kk = key
             if kk == "recoveryFee" then
                 items[#items + 1] = pushFee
+            elseif kk=="computationSpeed" and not PD.FixedOnly() then
+                items[#items + 1] = function(col)
+                    rows[#rows + 1] = { kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
+                        text = L["计算速度"], right = PD.ComputationSpeedLabel(),
+                        act = PD.CycleComputationSpeed, help = { { L["计算速度"] },
+                            { L["点击切换：流畅（默认） / 快速 / 极速。"], 0.7, 0.7, 0.7 },
+                            { L["流畅保持当前计算节奏，优先减少对游戏帧率的影响。"], 0.7, 0.7, 0.7 },
+                            { L["快速每帧投入更多时间；极速进一步加速，可能明显掉帧或短暂卡顿。"], 0.7, 0.7, 0.7 },
+                            { L["全部专业共用；切换立即作用于进行中的计算，保留当前结果和制作进度。"], 0.7, 0.7, 0.7 } } }
+                end
             elseif kk=="reserveMode" and not PD.FixedOnly() then
                 items[#items+1]=function(col)
                     rows[#rows+1]={kind="row",h=PD.SET_ROW_H,col=col,fcol=col,fs=14,
@@ -15462,6 +15487,9 @@ end
 
 local _warmTok = 0
 local PD_WARM_PER_FRAME = 96
+local function turboCalculationRunning()
+    return PD.SettingRaw("computationSpeed") == "turbo" and RA and RA.HasWork and RA.HasWork(PD.cur)
+end
 function PD.WarmId(id)
     if not id then return end
     local _, got = PD.ItemName(id)
@@ -15473,6 +15501,7 @@ function PD.WarmId(id)
     if type(gi) == "function" then pcall(gi, id) end
 end
 function PD.WarmNames()
+    if turboCalculationRunning() then _warmTok = _warmTok + 1; return end
     local d = RGet(PD.cur)
     local all = d and d.rows
     if type(all) ~= "table" or #all == 0 then return end
@@ -15481,7 +15510,7 @@ function PD.WarmNames()
     local tok = _warmTok
     local i, n = 0, math.min(#all, PD.ROW_CAP)
     local function feed()
-        if tok ~= _warmTok then return end
+        if tok ~= _warmTok or turboCalculationRunning() then return end
         if DG.stepping then C_Timer.After(0, feed) return end
         local ok = pcall(function()
             local budget = PD_WARM_PER_FRAME
@@ -16464,8 +16493,27 @@ if RA and RA.OnPlanChanged then
             PD.autoSnapshot = frozen or plan
             PD.autoSnapshotSlug = slug
         end
-        if PD.built and ns.PageVisible(PD.page)
-           and (slug == nil or slug == PD.cur) then PD.RequestRender() end
+        local visible = PD.built and ns.PageVisible(PD.page)
+        if visible and (slug == nil or slug == PD.cur) then
+            local intermediate = PD.SettingRaw("computationSpeed") == "turbo" and plan and plan.planID
+                and plan.status == "searching" and not plan.finalizing
+            local at = intermediate and debugprofilestop and debugprofilestop()
+            if intermediate and type(at) == "number" then
+                local hadSteps = #(plan.executionSteps or {}) > 0 or #(plan.steps or {}) > 0
+                local reached = plan.targetReached == true
+                local last = PD.__turboPlanPaint
+                if last and last.slug == slug and last.planID == plan.planID
+                   and (not hadSteps or last.hadSteps) and (not reached or last.reached)
+                   and at >= last.at and at - last.at < 750 then return end
+                PD.__turboPlanPaint = { slug = slug, planID = plan.planID, at = at,
+                                        hadSteps = hadSteps, reached = reached }
+            else
+                PD.__turboPlanPaint = nil
+            end
+            PD.RequestRender()
+        elseif not visible then
+            PD.__turboPlanPaint = nil
+        end
     end)
     if RA.OnProgress then RA.OnProgress(function(slug)
         if slug==PD.cur and PD.built and ns.PageVisible(PD.page) then

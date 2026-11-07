@@ -916,6 +916,17 @@ function S.NewJob(slug,opts)
     end
     local function tick()
         ops=ops+1
+        -- Turbo amortizes timer calls, but still checks the first operation of
+        -- every resume and keeps the operation-count yield as a backstop.
+        if j.tickClockStride then
+            j.tickClockCountdown=(j.tickClockCountdown or 0)-1
+            if j.tickClockCountdown>0 and ops<1000 then return end
+            j.tickClockCountdown=j.tickClockStride
+            local now=clock()
+            if j.seedDeadline and j.cpuUsed+max(0,now-(j.sliceStart or now))>=j.seedDeadline then j.seedAborted=true end
+            if ops>=1000 or (j.deadline and now>=j.deadline) then ops=0;coroutine.yield("work") end
+            return
+        end
         if j.seedDeadline and cpuTime()>=j.seedDeadline then j.seedAborted=true end
         if ops>=1000 or (j.deadline and clock()>=j.deadline) then ops=0; coroutine.yield("work") end
     end
@@ -2788,8 +2799,10 @@ function S.NewJob(slug,opts)
                 and (old.money<t.money-1e-7 or math.abs(old.money-t.money)<1e-7 and old.switches<=t.switches)) then return end
             if #heap>=j.frontierLimit then j.budgetLimited=true;j.searchTermination="frontier_limit";return end
             if not old then j.memoStates=(j.memoStates or 0)+1 end
-            memo[key]={cost=cost,money=t.money,switches=t.switches}
+            memo[key]={cost=cost,money=t.money,switches=t.switches,
+                token=j.tickClockStride and (serial+1) or nil}
             serial=serial+1; local entry={state=t,score=bound(t),serial=serial,key=key}; local i=#heap+1
+            if j.tickClockStride then entry.memoToken=serial end
             while i>1 do local parent=floor(i/2); if not less(entry,heap[parent]) then break end; heap[i]=heap[parent]; i=parent end
             heap[i]=entry;j.frontierStates=#heap
         end
@@ -2815,8 +2828,18 @@ function S.NewJob(slug,opts)
                 if batched and better(batched,j.best) then j.best=batched; j.improvements=(j.improvements or 0)+1; j.result=S.Result(j,batched,"searching"); coroutine.yield("publish") end
             elseif not pruned(t,true) then
                 local known=memo[entry.key]
-                local cost=objective(t,j.recovery and j.snap or nil)
-                if known and math.abs(cost-known.cost)<1e-7 and math.abs(t.money-known.money)<1e-7 and t.switches==known.switches then
+                local currentMemo
+                if j.tickClockStride and entry.memoToken then
+                    -- A better equivalent state replaces the memo token. The
+                    -- queued state is immutable, so its token identifies it
+                    -- without recomputing recovery revenue on every pop.
+                    currentMemo=known and known.token==entry.memoToken
+                else
+                    local cost=objective(t,j.recovery and j.snap or nil)
+                    currentMemo=known and math.abs(cost-known.cost)<1e-7
+                        and math.abs(t.money-known.money)<1e-7 and t.switches==known.switches
+                end
+                if currentMemo then
                     local emitted=false
                     local collect=t.skill[slug]>=(j.blockedSkill or first.skill[slug])
                     if collect then j.collectFailures={} end
@@ -2875,11 +2898,12 @@ local function finalize(j,status)
         return "done"
     end)
 end
-function S.Run(j,budget)
+function S.Run(j,budget,deferStatus)
     if j.finished or j.cancelled or j.status=="stopped" and not j.finalizing or coroutine.status(j.co)=="dead" then
         S.RefreshStatus(j);return true
     end
     local start=clock();j.sliceStart=start;j.deadline=start+(budget or 2)
+    j.tickClockCountdown=0
     local phase=j.phase or (j.finalizing and "finalize" or not j.snap and "capture" or "initial_seed")
     local before=j.cpuUsed
     if not j.finalizing and qualityBudgetDue(j) then
@@ -2914,7 +2938,8 @@ function S.Run(j,budget)
     if done and j.result then j.result.phaseCpuMs=E.Copy(j.phaseCpuMs) end    if done or not j.progressAt or clock()-j.progressAt>=200 then
         j.progressAt=clock();j.progressVersion=(j.progressVersion or 0)+1
     end
-    S.RefreshStatus(j)
+    -- The turbo frame pump refreshes derived status once after its last resume.
+    if done or not deferStatus then S.RefreshStatus(j) end
     return done
 end
 function S.Compute(slug,opts)

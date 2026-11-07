@@ -68,6 +68,29 @@ local function setting(key, fallback, slug)
     end
     return fallback
 end
+local function computationClock()
+    return debugprofilestop and debugprofilestop() or (os and os.clock and os.clock()*1000) or 0
+end
+local function runSlice(job)
+    local speed=setting("computationSpeed","normal")
+    local turbo=speed=="turbo"
+    local budget=speed=="fast" and 8 or turbo and 60
+    job.tickClockStride=turbo and 16 or nil
+    if not budget then return S.Run(job,adaptiveSliceMs()) end
+    local started=computationClock()
+    local remaining=budget
+    -- Capture, publication and operation-count checkpoints can yield before the
+    -- deadline. Resume them within this frame's budget in the faster modes.
+    for pass=1,64 do
+        local done=S.Run(job,remaining,turbo)
+        if done or job.finished or job.cancelled or job.invalid then return true end
+        local elapsed=computationClock()-started
+        if elapsed<0 or elapsed>=budget then break end
+        remaining=budget-elapsed
+    end
+    if turbo then S.RefreshStatus(job) end
+    return false
+end
 function RA.OptionsFor(slug, current)
     local opts = baseOptions and baseOptions(slug, current, true) or {}
     opts.fromCurrent = setting("autoFromCurrent", true,slug)
@@ -325,7 +348,7 @@ local function pump(job)
         end
         return true
     end
-    local done=S.Run(job,adaptiveSliceMs())
+    local done=runSlice(job)
     if job.result and (job.result~=job.published or done) then publish(job,job.result)
     elseif job.published and job.progressVersion~=job.publishedProgressVersion then
         if S.Progress then
