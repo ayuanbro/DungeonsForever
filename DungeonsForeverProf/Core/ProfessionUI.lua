@@ -5784,7 +5784,99 @@ function PD.PaintTool(list, handler, yoff)
     return (rows > 0) and (rows * (PD.TOOL_H + PD.TOOL_GAP) + PD.TOOL_BODY_GAP) or 0
 end
 
+function PD.UpdateCalculationNotice()
+    local notice = PD.__calculationNotice
+    local speed = PD.SettingRaw("computationSpeed")
+    local SR = ns.ProfSolverRun
+    local active = PD.built and PD.page and ns.PageVisible(PD.page)
+        and PD.tab == "leveling" and not PD.setOpen and PD.cur and PD.cur ~= "__index"
+        and (speed == "fast" or speed == "turbo") and SR and SR.Active and SR.Active(PD.cur)
+    local job = active and active.job
+    if not job or job.finished or job.cancelled or job.invalid or job.status == "stopped" or job.status == "error" then
+        if notice then notice:Hide(); notice.slug = nil end
+        return false
+    end
+    if not notice then
+        notice = CreateFrame("Frame", nil, PD.page, "BackdropTemplate")
+        notice:SetAllPoints(PD.scroll or PD.page)
+        local level = PD.page:GetFrameLevel()
+        notice:SetFrameLevel((type(level) == "number" and level or 0) + 150)
+        notice:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
+        notice:SetBackdropColor(0, 0, 0, 0.55)
+        notice:EnableMouse(true)
+        notice:EnableMouseWheel(true)
+        notice:SetScript("OnMouseWheel", function() end)
+        local panel = CreateFrame("Frame", nil, notice, "BackdropTemplate")
+        panel:SetSize(440, 220)
+        panel:SetPoint("CENTER", notice, "CENTER", 0, 0)
+        if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
+            ns.hui.BuildRoundedBG(panel, 8, ns.hui.layer.L4, "both", true, 1)
+        else
+            panel:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+            panel:SetBackdropColor(0.08, 0.09, 0.11, 1)
+            panel:SetBackdropBorderColor(0.93, 0.76, 0.32, 1)
+        end
+        notice.panel = panel
+        local title = MakeFS(panel, 15, C_GOLD, "LEFT")
+        title:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -16)
+        title:SetWidth(408)
+        title:SetText(L["正在计算，请暂时不要操作"])
+        notice.title = title
+        local message = MakeFS(panel, 13, C_TEXT, "LEFT")
+        message:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -44)
+        message:SetSize(408, 64)
+        message:SetWordWrap(true)
+        message:SetJustifyV("TOP")
+        message:SetText(L["计算期间可能掉帧或短暂卡顿，路线内容会稍后刷新。计算完成后此提示自动关闭。"])
+        notice.message = message
+        local status = MakeFS(panel, 14, C_WHITE, "LEFT")
+        status:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -116)
+        status:SetWidth(408)
+        notice.status = status
+        local bar = CreateFrame("Frame", nil, panel)
+        bar:SetSize(408, 6)
+        bar:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -140)
+        local bg = bar:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints(); bg:SetColorTexture(0, 0, 0, 0.72)
+        local fill = bar:CreateTexture(nil, "ARTWORK")
+        fill:SetPoint("LEFT", bar, "LEFT", 1, 0)
+        fill:SetColorTexture(0.93, 0.76, 0.32, 1)
+        notice.fill = fill
+        notice.stop = NewButton(panel, L["停止计算"], 144, 26, 14)
+        notice.stop:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -16, 16)
+        notice.stop:SetScript("OnClick", function()
+            local slug = notice.slug
+            if not slug or slug ~= PD.cur then return end
+            PD.StopSolverRoute(slug)
+            PD.UpdateCalculationNotice()
+            PD.RequestRender()
+        end)
+        notice.smooth = NewButton(panel, L["切回流畅"], 144, 26, 14)
+        notice.smooth:SetPoint("RIGHT", notice.stop, "LEFT", -10, 0)
+        notice.smooth:SetScript("OnClick", function()
+            PD.SetSettingRaw("computationSpeed", "normal")
+            PD.__turboPlanPaint = nil
+            PD.UpdateCalculationNotice()
+            PD.RequestRender()
+            ns.PlaySound(1)
+        end)
+        PD.__calculationNotice = notice
+        PD.page:HookScript("OnHide", function() notice:Hide(); notice.slug = nil end)
+        PD.page:HookScript("OnShow", function() PD.UpdateCalculationNotice() end)
+    end
+    notice.slug = PD.cur
+    local text = PD.SolverText() or L["正在准备数据"]
+    if notice.__status ~= text then notice.status:SetText(text); notice.__status = text end
+    local fraction = math.max(0, math.min(1, tonumber(PD.solverFrac) or 0))
+    local width = math.max(1, math.floor(406 * fraction + 0.5))
+    if notice.__fillWidth ~= width then notice.fill:SetSize(width, 4); notice.__fillWidth = width end
+    if not notice:IsShown() then notice:Show() end
+    return true
+end
+
 function PD.PaintToolProgress(text, frac)
+    PD.UpdateCalculationNotice()
     local rf = PD.__progFs
     if not rf then
         local holder = CreateFrame("Frame", nil, PD.page)
@@ -15658,6 +15750,7 @@ end
 
 local RD_MIN_MS = 350
 function PD.RequestRender()
+    PD.UpdateCalculationNotice()
     HookTrack()
     if not PD.built then
         PD.wantOpen = true
@@ -16513,6 +16606,7 @@ if RA and RA.OnPlanChanged then
             PD.autoSnapshot = frozen or plan
             PD.autoSnapshotSlug = slug
         end
+        PD.UpdateCalculationNotice()
         local visible = PD.built and ns.PageVisible(PD.page)
         if visible and (slug == nil or slug == PD.cur) then
             local intermediate = PD.SettingRaw("computationSpeed") == "turbo" and plan and plan.planID
@@ -16537,6 +16631,7 @@ if RA and RA.OnPlanChanged then
     end)
     if RA.OnProgress then RA.OnProgress(function(slug)
         if slug==PD.cur and PD.built and ns.PageVisible(PD.page) then
+            PD.UpdateCalculationNotice()
             local text = PD.SolverText()
             PD.PaintToolProgress(text, PD.solverFrac)
         end
