@@ -109,6 +109,7 @@ local DIAG_TEXT = {
     professionMissing = L["角色尚未学习所需专业。"],
     skillRequired = L["另一专业技能不足，可开启联合升级或购买材料。"],
     secondaryRequired = L["请先选择联合升级的另一个专业。"],
+    secondaryDisabled = L["联合升级已关闭，请重新计算当前专业路线。"],
     pairingChanged = L["搭配专业已更改，点击重新计算应用。"],
     professionChanged = L["专业学习状态或旧路线规则已变化，请重新计算路线。"],
     formulaUnavailable = L["未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。"],
@@ -331,7 +332,7 @@ function E.RouteProfessions(slug, opts, professions)
     professions = professions or (opts.snapshot and opts.snapshot.professions) or E.Professions()
     local context = E.RouteContext(slug, opts, professions)
     if slug == "__purchase" then return professions, context end
-    if not context.unlearned then return professions, context end
+    if not context.unlearned and opts.allowSecondaryLeveling then return professions, context end
     local cap = learnedCap(professions)
     local selected = {}
     local target = professions[slug]
@@ -340,7 +341,7 @@ function E.RouteProfessions(slug, opts, professions)
     else
         selected[slug] = { cur = tonumber(opts.start) or 1, max = cap, primary = true }
     end
-    selected[slug].unlearned = true
+    if context.unlearned then selected[slug].unlearned = true end
     if context.requiresPartner and context.partnerValid then
         local partner = professions[context.partner]
         if partner and not partner.unlearned then
@@ -1246,6 +1247,14 @@ function E.Capture(slug, opts, tick)
         s.noFormula,s.learnedOnly,s.allowUnknownLearning=nil,nil,nil
         s.stamp=s.stamp or (time and time())
         s.professions, s.routeContext = E.RouteProfessions(slug, opts, opts.professions or s.professions or {})
+        if slug ~= "__purchase" and not opts.allowSecondaryLeveling then
+            local recipes = {}
+            for _, recipe in ipairs(s.recipes or {}) do
+                if recipe.profession == slug then recipes[#recipes + 1] = recipe end
+                tick()
+            end
+            s.recipes = recipes
+        end
         s.allowLimitedFormulas = E.AllowLimitedFormulas(opts)
         s.allowBindOnPickupFormulas=E.AllowBindOnPickupFormulas(opts)
         s.allowCurrencyFormulas=formulaPermission(opts,"allowCurrencyFormulas","autoAllowCurrencyFormulas")

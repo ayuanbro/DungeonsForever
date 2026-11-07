@@ -11065,7 +11065,7 @@ function PD.PlanStatusParts(plan)
             end
             local scanText=PD.ReplicateScanMessage(diagnostic.code)
             if scanText then return scanText end
-            if diagnostic.code=="learningPolicyChanged" and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
+            if (diagnostic.code=="learningPolicyChanged" or diagnostic.code=="secondaryDisabled") and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
                 return ns.ProfEconomy.DiagnosticText(diagnostic)
             end
         end
@@ -14587,8 +14587,8 @@ function PD.RowsSettings(rows)
           d1 = L["开启：适合练级中途打开手册直接照着做。"],
           d2 = L["关闭：查看从零开始的最优路线与总花费。"] },
         { k = "autoSecondaryLeveling", name = L["允许联合升级另一主专业"],
-          desc = L["总支出更低时，将另一主专业升到制作所需材料的最低等级。"],
-          d1 = L["默认关闭：仍可使用另一主专业当前能制作的材料。"],
+          desc = L["允许另一主专业参与材料制作和升级，以降低总支出。"],
+          d1 = L["默认关闭：只规划当前专业，其他专业制作的材料改为采购。"],
           d2 = L["开启后计入另一专业所需的材料费用，最高 300；查看未学专业时需先选择搭配主专业。"] },
         { k = "recoveryEnabled", name = L["回血模式"],
           desc = L["把「搓完卖掉能收回多少」计入路线决策，比较采购支出减去剩余产物预计收入。"],

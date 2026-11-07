@@ -2,7 +2,7 @@ local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages then return end
 local E=ns.ProfEconomy
 local S={}; ns.ProfRouteSolver=S
-S.ProcurementPolicyVersion=9
+S.ProcurementPolicyVersion=10
 S.FailureDiagnosticVersion=1
 local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
 local stockFields={"unlimited","limited","stock","maxStock","stockUnknown","stockStatus"}
@@ -997,6 +997,9 @@ function S.NewJob(slug,opts)
         return lower>j.best.money+1e-7 or (math.abs(lower-j.best.money)<1e-7 and (s.switches or 0)>=(j.best.switches or 0))
     end
     local function allowed(r,s,reason)
+        if slug~="__purchase" and r.profession~=slug and not opts.allowSecondaryLeveling then
+            fail("secondaryDisabled",r);return false
+        end
         local p=E.Policy(j.opts.exclusions,r)
         if p=="ban" or (p=="level" and reason~="material") then fail("excluded",r,r.item); return false end
         local skill=s.skill[r.profession]
@@ -2192,8 +2195,14 @@ function S.NewJob(slug,opts)
     end
     local function rebuildSkeleton(first)
         local skel=opts.routeSkeleton
-        if E.StepsHaveNIP(skel.steps) then
-            fail("catalogueFiltered")
+        local blocked=E.StepsHaveNIP(skel.steps) and "catalogueFiltered" or nil
+        if not opts.allowSecondaryLeveling then
+            for _,step in ipairs(skel.steps) do
+                if step.profession and step.profession~=slug then blocked="secondaryDisabled";break end
+            end
+        end
+        if blocked then
+            fail(blocked)
             j.status="recalculate_required";j.searchTermination="skeleton_rejected";j.exhausted=true
             j.result=S.Result(j,nil,j.status);j.finished=true
             return

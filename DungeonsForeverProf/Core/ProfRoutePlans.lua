@@ -143,7 +143,21 @@ local function identity(slug, opts)
     if opts.snapshot then scope = scope .. "|" .. tostring(opts.snapshot) end
     return scope .. "|" .. signature(slug, opts), scope
 end
+local function gate(slug, opts, code)
+    return {slug=slug, planVersion=2, executionVersion=1, scheme=opts.scheme, start=opts.start, target=opts.target,
+        status=code=="secondaryRequired" and "selection_required" or "recalculate_required", feasible=false,
+        steps={},executionSteps={},actions={},mats={},formulas={},gaps={},total=0,crafts=0,
+        diagnostics={{code=code}},completeCost=false}
+end
+local function scopeConflict(plan,slug,opts)
+    if opts.allowSecondaryLeveling or slug=="__purchase" then return false end
+    for _,step in ipairs(plan.executionSteps or plan.steps or {}) do
+        if step.profession and step.profession~=slug then return true end
+    end
+    return false
+end
 local function refreshFreshness(result,slug,opts)
+    if scopeConflict(result,slug,opts) then return gate(slug,opts,"secondaryDisabled") end
     if result.learningPolicyFingerprint and result.learningPolicyFingerprint~=learningPolicy() then return learningStale(result) end
     local diagnosticPolicyChanged=result.planVersion==2 and result.scheme~="fishing"
         and result.targetReached~=true and result.failureDiagnosticVersion~=S.FailureDiagnosticVersion
@@ -171,13 +185,6 @@ local function refreshFreshness(result,slug,opts)
         or marketChanged and "prices" or explicit and reason or nil
     return result
 end
-local function gate(slug, opts, code)
-    return {slug=slug, planVersion=2, executionVersion=1, scheme=opts.scheme, start=opts.start, target=opts.target,
-        status=code=="secondaryRequired" and "selection_required" or "recalculate_required", feasible=false,
-        steps={},executionSteps={},actions={},mats={},formulas={},gaps={},total=0,crafts=0,
-        diagnostics={{code=code}},completeCost=false}
-end
-
 local function replicatePrerequisite(slug,opts)
     if not ns.IsForever then return nil end
     local bridge=ns.AuctionBridge
@@ -448,7 +455,9 @@ function RA.Get(slug, supplied)
 end
 function RA.RebuildFromSkel(slug,skel,supplied)
     local request=options(slug,supplied)
+    if scopeConflict(skel,slug,request) then return gate(slug,request,"secondaryDisabled") end
     local restored=copy(skel.options)
+    if not request.allowSecondaryLeveling then restored.allowSecondaryLeveling=false end
     restored.start,restored.target,restored.scheme=skel.start,skel.target,skel.scheme
     local opts=options(slug,restored)
     opts.routeSkeleton=skel
