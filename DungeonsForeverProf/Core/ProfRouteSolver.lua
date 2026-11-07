@@ -916,8 +916,6 @@ function S.NewJob(slug,opts)
     end
     local function tick()
         ops=ops+1
-        -- Turbo amortizes timer calls, but still checks the first operation of
-        -- every resume and keeps the operation-count yield as a backstop.
         if j.tickClockStride then
             j.tickClockCountdown=(j.tickClockCountdown or 0)-1
             if j.tickClockCountdown>0 and ops<1000 then return end
@@ -2830,9 +2828,6 @@ function S.NewJob(slug,opts)
                 local known=memo[entry.key]
                 local currentMemo
                 if j.tickClockStride and entry.memoToken then
-                    -- A better equivalent state replaces the memo token. The
-                    -- queued state is immutable, so its token identifies it
-                    -- without recomputing recovery revenue on every pop.
                     currentMemo=known and known.token==entry.memoToken
                 else
                     local cost=objective(t,j.recovery and j.snap or nil)
@@ -2938,7 +2933,6 @@ function S.Run(j,budget,deferStatus)
     if done and j.result then j.result.phaseCpuMs=E.Copy(j.phaseCpuMs) end    if done or not j.progressAt or clock()-j.progressAt>=200 then
         j.progressAt=clock();j.progressVersion=(j.progressVersion or 0)+1
     end
-    -- The turbo frame pump refreshes derived status once after its last resume.
     if done or not deferStatus then S.RefreshStatus(j) end
     return done
 end

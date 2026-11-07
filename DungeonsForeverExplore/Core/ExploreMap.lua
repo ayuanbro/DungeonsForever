@@ -11,6 +11,9 @@ local UNVER = ns.ExploreUnverIDs or {}
 local SET_ORDER = { 1, 35, 45, 60 }
 local CONTINENT_PENALTY = 20000
 local UPDATE_TICK = 0.1
+local MINI_TICK = 0.1
+local MINI_POOL_MAX = 12
+local MINI_EDGE = 2.2
 
 local BOOK_ICON = "Interface\\Icons\\INV_Misc_Book_09"
 local DIAL_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_dial"
@@ -37,6 +40,8 @@ local tracker
 local updateTrackerFn
 local settingsFrame
 local pins, pinPool = {}, {}
+local miniPins, miniPool = {}, {}
+local miniCache, miniLastSig, mapSig = nil, nil, nil
 local graves, gravePool = {}, {}
 local areas, areaPool = {}, {}
 local lines, linePool = {}, {}
@@ -51,6 +56,8 @@ local DEF_CFG = {
     pinSize = 14,
     showNum = true,
     showPins = false,
+    showZonePins = true,
+    showMiniPins = true,
     showLines = false,
     showMeLine = true,
     showGrave = false,
@@ -98,6 +105,31 @@ local function worldPos(mapID, x, y)
     return nil
 end
 
+local function worldVec(mapID, x, y)
+    if not mapID or not (C_Map and C_Map.GetWorldPosFromMapPos and CreateVector2D) then
+        return nil, nil
+    end
+    local ok, cont, pos = pcall(C_Map.GetWorldPosFromMapPos, mapID, CreateVector2D(x, y))
+    if ok and cont and pos then return cont, pos end
+    return nil, nil
+end
+
+local function artTopLevel()
+    local a = _G.OpenMapAPI
+    if type(a) ~= "table" or type(a.IsStitched) ~= "function" then return 0 end
+    local ok, st = pcall(a.IsStitched)
+    if not (ok and st) then return 0 end
+    local ok2, top = pcall(a.ArtTopLevel)
+    if ok2 and type(top) == "number" then return top + 4 end
+    return 0
+end
+
+local function inMap(x, y, pad)
+    local e = pad or 0.005
+    return type(x) == "number" and type(y) == "number"
+        and x >= -e and x <= 1 + e and y >= -e and y <= 1 + e
+end
+
 local function playerPos()
     if not (C_Map and C_Map.GetBestMapForUnit and C_Map.GetPlayerMapPosition) then
         return nil
@@ -123,14 +155,34 @@ local function topParent(mapID)
     return mapID
 end
 
-local function project(uiMap, x, y, disp)
+local function project(uiMap, x, y, disp, pad)
     if not uiMap or not disp then return nil end
     if uiMap == disp then return x, y end
+    local e = pad or 0.005
+    local api = _G.OpenMapAPI
+    if type(api) == "table" and type(api.WorldFromMap) == "function"
+        and type(api.MapFromWorld) == "function" and artTopLevel() > 0 then
+        local oku, u, v = pcall(api.WorldFromMap, uiMap, x, y)
+        if oku and u and v then
+            local okm, cx, cy = pcall(api.MapFromWorld, disp, u, v)
+            if okm and type(cx) == "number" and type(cy) == "number" then
+                if inMap(cx, cy, math.max(e, 0.05)) then return cx, cy end
+                return nil
+            end
+        end
+    end
+    local cont, wp = worldVec(uiMap, x, y)
+    if cont and wp and C_Map and C_Map.GetMapPosFromWorldPos then
+        local ok, _, p = pcall(C_Map.GetMapPosFromWorldPos, cont, wp, disp)
+        if ok and p and inMap(p.x, p.y, e) then return p.x, p.y end
+    end
     if topParent(uiMap) ~= topParent(disp) then return nil end
     if not (C_Map and C_Map.GetMapRectOnMap) then return nil end
     local ok, left, right, top, bottom = pcall(C_Map.GetMapRectOnMap, uiMap, disp)
     if not ok or not left or right == left then return nil end
-    return left + x * (right - left), top + y * (bottom - top)
+    local rx, ry = left + x * (right - left), top + y * (bottom - top)
+    if inMap(rx, ry, math.max(e, 0.02)) then return rx, ry end
+    return nil
 end
 
 local function countDone()
@@ -442,29 +494,33 @@ local function pinTip(pin)
     GameTooltip:Show()
 end
 
+local function makePin(parent)
+    local p = CreateFrame("Button", nil, parent)
+    p.tex = p:CreateTexture(nil, "OVERLAY")
+    p.tex:SetAllPoints()
+    p.tex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    p.badge = p:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    p.badge:SetPoint("BOTTOMRIGHT", 3, -1)
+    p:RegisterForClicks("LeftButtonUp")
+    p:SetScript("OnEnter", pinTip)
+    p:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    p:SetScript("OnClick", function(self)
+        if IsShiftKeyDown() and self.rec then
+            if GameTooltip then GameTooltip:Hide() end
+            EG.ToggleBookFound(self.rec[1])
+            miniCache = nil
+        elseif self.rec and (cfg().bookMode or "manual") == "manual" then
+            manualTrack = self.rec
+            if updateTrackerFn then updateTrackerFn() end
+            if GameTooltip then GameTooltip:Hide() end
+        end
+    end)
+    return p
+end
+
 local function pinAcquire(canvas)
     local p = pinPool[#pinPool]
-    if p then pinPool[#pinPool] = nil else
-        p = CreateFrame("Button", nil, canvas)
-        p.tex = p:CreateTexture(nil, "OVERLAY")
-        p.tex:SetAllPoints()
-        p.tex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        p.badge = p:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-        p.badge:SetPoint("BOTTOMRIGHT", 3, -1)
-        p:RegisterForClicks("LeftButtonUp")
-        p:SetScript("OnEnter", pinTip)
-        p:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
-        p:SetScript("OnClick", function(self)
-            if IsShiftKeyDown() and self.rec then
-                if GameTooltip then GameTooltip:Hide() end
-                EG.ToggleBookFound(self.rec[1])
-            elseif self.rec and (cfg().bookMode or "manual") == "manual" then
-                manualTrack = self.rec
-                if updateTrackerFn then updateTrackerFn() end
-                if GameTooltip then GameTooltip:Hide() end
-            end
-        end)
-    end
+    if p then pinPool[#pinPool] = nil else p = makePin(canvas) end
     p:SetParent(canvas)
     p.tex:SetDesaturated(false)
     p.tex:SetAlpha(1)
@@ -478,6 +534,29 @@ local function releasePins()
         p:ClearAllPoints()
         pins[i] = nil
         pinPool[#pinPool + 1] = p
+    end
+end
+
+local function miniAcquire()
+    local mm = _G.Minimap
+    local p = miniPool[#miniPool]
+    if p then miniPool[#miniPool] = nil else p = makePin(mm) end
+    p:SetParent(mm)
+    p:SetFrameStrata(mm:GetFrameStrata())
+    p:SetFrameLevel(mm:GetFrameLevel() + 5)
+    p.badge:Hide()
+    p.tex:SetDesaturated(false)
+    p.tex:SetAlpha(1)
+    return p
+end
+
+local function releaseMiniPins()
+    for i = #miniPins, 1, -1 do
+        local p = miniPins[i]
+        p:Hide()
+        p:ClearAllPoints()
+        miniPins[i] = nil
+        miniPool[#miniPool + 1] = p
     end
 end
 
@@ -608,6 +687,211 @@ local function graveFit(disp, scale)
     return v
 end
 
+local function isSubMap(disp)
+    if not (C_Map and C_Map.GetMapInfo) then return false end
+    local ok, mi = pcall(C_Map.GetMapInfo, disp)
+    if not ok or not mi then return false end
+    if type(mi.mapType) == "number" then return mi.mapType >= 3 end
+    return type(mi.parentMapID) == "number" and mi.parentMapID > 0
+        and mi.parentMapID ~= disp
+end
+
+local function locsOf(rec)
+    local locs = {}
+    if type(rec[3]) == "number" and type(rec[4]) == "number" then
+        locs[#locs + 1] = { rec[2], rec[3] / 100, rec[4] / 100 }
+    end
+    local alt = rec[7]
+    if type(alt) == "table" then
+        for _, a in ipairs(alt) do
+            if type(a[2]) == "number" and type(a[3]) == "number" then
+                locs[#locs + 1] = { a[1], a[2] / 100, a[3] / 100 }
+            end
+        end
+    end
+    return locs
+end
+
+local function miniSignature()
+    local c = cfg()
+    return table.concat({
+        tostring(countDone()), tostring(c.showUnver == true),
+        tostring(routeOn), tostring(c.showPins == true),
+        tostring(c.showMiniPins ~= false),
+    }, "|")
+end
+
+local function miniBuild(m)
+    local c = cfg()
+    local mw, mh = 4200, 2800
+    if C_Map and C_Map.GetMapWorldSize then
+        local ok, a, b = pcall(C_Map.GetMapWorldSize, m)
+        if ok and type(a) == "number" and type(b) == "number" and a > 0 and b > 0 then
+            mw, mh = a, b
+        end
+    end
+    local items = {}
+    for _, rec in ipairs(BOOKS or {}) do
+        local isUnver = UNVER[rec[1]] == true
+        if not EG.IsBookFound(rec[1]) and not (isUnver and not c.showUnver) then
+            for _, loc in ipairs(locsOf(rec)) do
+                local ui = uiMapOf(loc[1])
+                local cont, wp = worldVec(ui, loc[2], loc[3])
+                if cont and wp and C_Map and C_Map.GetMapPosFromWorldPos then
+                    local ok, _, p = pcall(C_Map.GetMapPosFromWorldPos, cont, wp, m)
+                    if ok and p and p.x and p.y and inMap(p.x, p.y, 0.2) then
+                        local ic = DG and DG.ItemIcon and DG.ItemIcon(rec[1])
+                        items[#items + 1] = {
+                            rec = rec,
+                            bx = p.x,
+                            by = p.y,
+                            step = RouteStepOf(rec, loc[1], loc[2], loc[3]),
+                            icon = type(ic) == "string" and ic or BOOK_ICON,
+                            faded = isUnver,
+                        }
+                    end
+                end
+            end
+        end
+    end
+    return { map = m, mw = mw, mh = mh, items = items, sig = miniSignature() }
+end
+
+local MINI_FALLBACK_RADIUS = { 233.33, 200, 166.67, 133.33, 100, 66.67 }
+
+local function miniViewRadius(mm)
+    if C_Minimap and C_Minimap.GetViewRadius then
+        local ok, r = pcall(C_Minimap.GetViewRadius)
+        if ok and type(r) == "number" and r > 0 then return r end
+    end
+    local z = (mm.GetZoom and mm:GetZoom()) or 0
+    return MINI_FALLBACK_RADIUS[z + 1] or 100
+end
+
+local function miniRefresh()
+    local c = cfg()
+    if not (c.showPins == true and c.showMiniPins ~= false) then
+        releaseMiniPins()
+        miniCache, miniLastSig = nil, nil
+        return
+    end
+    local mm = _G.Minimap
+    if not (mm and mm.IsShown and mm:IsShown()) then
+        releaseMiniPins()
+        miniLastSig = nil
+        return
+    end
+    local okm, m = false, nil
+    if C_Map and C_Map.GetBestMapForUnit then
+        okm, m = pcall(C_Map.GetBestMapForUnit, "player")
+    end
+    if not (okm and m and alive(m)) then
+        releaseMiniPins()
+        miniLastSig = nil
+        return
+    end
+    local okp, pp = false, nil
+    if C_Map and C_Map.GetPlayerMapPosition then
+        okp, pp = pcall(C_Map.GetPlayerMapPosition, m, "player")
+    end
+    if not (okp and pp and type(pp.x) == "number" and type(pp.y) == "number")
+        or (pp.x == 0 and pp.y == 0) then
+        releaseMiniPins()
+        miniLastSig = nil
+        return
+    end
+    local sig = miniSignature()
+    if not miniCache or miniCache.map ~= m or miniCache.sig ~= sig then
+        miniCache = miniBuild(m)
+        miniLastSig = nil
+    end
+    local halfW = (mm:GetWidth() or 200) / 2
+    local halfH = (mm:GetHeight() or 200) / 2
+    if halfW <= 0 then halfW = 100 end
+    if halfH <= 0 then halfH = 100 end
+    local view = miniViewRadius(mm)
+    local ppx, ppy = halfW / view, halfH / view
+    local zoom = (mm.GetZoom and mm:GetZoom()) or 0
+    local mscale = mm:GetScale() or 1
+    local rotate = false
+    if GetCVar and GetCVar("rotateMinimap") == "1" then
+        rotate = true
+        if C_Minimap and C_Minimap.IsRotateMinimapIgnored then
+            local oki, ign = pcall(C_Minimap.IsRotateMinimapIgnored)
+            if oki and ign then rotate = false end
+        end
+    end
+    local facing = 0
+    if rotate then
+        local okf, f = pcall(GetPlayerFacing)
+        if okf and type(f) == "number" then
+            facing = f
+        else
+            rotate = false
+        end
+    end
+    local curSig = table.concat({
+        tostring(m), string.format("%.5f:%.5f", pp.x, pp.y),
+        tostring(zoom), tostring(mscale), tostring(view),
+        string.format("%.4f", facing), miniCache.sig,
+        tostring(c.pinSize or 14),
+    }, "|")
+    if curSig == miniLastSig then return end
+    miniLastSig = curSig
+    local cosF, sinF = math.cos(facing), math.sin(facing)
+    local shape = (GetMinimapShape and GetMinimapShape()) or "ROUND"
+    local square = (shape == "SQUARE")
+    local lim = halfW * 0.9
+    local size = math.max(12, math.min(26, c.pinSize or 14))
+    local n = 0
+    for _, it in ipairs(miniCache.items) do
+        local dx = (it.bx - pp.x) * miniCache.mw
+        local dy = (it.by - pp.y) * miniCache.mh
+        local sx, sy
+        if rotate then
+            sx = dx * cosF + dy * sinF
+            sy = dx * sinF - dy * cosF
+        else
+            sx, sy = dx, -dy
+        end
+        local ox, oy = sx * ppx, sy * ppy
+        local d = square and math.max(math.abs(ox), math.abs(oy))
+            or math.sqrt(ox * ox + oy * oy)
+        if d <= lim * MINI_EDGE then
+            n = n + 1
+            local p = miniPins[n]
+            if not p then
+                p = miniAcquire()
+                miniPins[n] = p
+            end
+            local fx, fy, edge = ox, oy, false
+            if d > lim then
+                local k = lim / d
+                fx, fy = ox * k, oy * k
+                edge = true
+            end
+            if p.rec ~= it.rec then
+                p.tex:SetTexture(it.icon)
+                pcall(p.tex.SetDesaturated, p.tex, it.faded == true)
+            end
+            p.tex:SetAlpha(edge and (it.faded and 0.4 or 0.72)
+                or (it.faded and 0.55 or 1))
+            p.rec, p.step = it.rec, it.step
+            p:SetSize(size, size)
+            p:ClearAllPoints()
+            p:SetPoint("CENTER", mm, "CENTER", fx, fy)
+            p:Show()
+        end
+    end
+    for i = #miniPins, n + 1, -1 do
+        local p = miniPins[i]
+        p:Hide()
+        p:ClearAllPoints()
+        miniPins[i] = nil
+        miniPool[#miniPool + 1] = p
+    end
+end
+
 function ns.ExploreMapRefresh()
     if ns.MapWorldModule and ns.MapWorldModule.Active and ns.MapWorldModule.Active() then
         releasePins()
@@ -639,46 +923,45 @@ function ns.ExploreMapRefresh()
     local scale = mapScale()
     local size = (c.pinSize or 20) / scale
 
-    if c.showPins == true then
+    local pinLevel = math.max((canvas:GetFrameLevel() or 0) + 7000, artTopLevel() + 1)
+    local subMap = isSubMap(disp)
+    local showHere = c.showPins == true
+        and (c.showZonePins ~= false or not subMap)
+
+    if showHere then
         for _, rec in ipairs(BOOKS or {}) do
-        local isUnver = UNVER[rec[1]] == true
-        if not EG.IsBookFound(rec[1]) and not (isUnver and not c.showUnver) then
-            local locs = {}
-            if type(rec[3]) == "number" and type(rec[4]) == "number" then
-                locs[#locs + 1] = { rec[2], rec[3] / 100, rec[4] / 100 }
-            end
-            local alt = rec[7]
-            if type(alt) == "table" then
-                for _, a in ipairs(alt) do
-                    if type(a[2]) == "number" and type(a[3]) == "number" then
-                        locs[#locs + 1] = { a[1], a[2] / 100, a[3] / 100 }
+            local isUnver = UNVER[rec[1]] == true
+            if not EG.IsBookFound(rec[1]) and not (isUnver and not c.showUnver) then
+                for _, loc in ipairs(locsOf(rec)) do
+                    local ui = uiMapOf(loc[1])
+                    local x, y = project(ui, loc[2], loc[3], disp, subMap and 0.3 or nil)
+                    if x then
+                        local ix = size / 2 / w
+                        local iy = size / 2 / h
+                        local cx = math.max(ix, math.min(1 - ix, x))
+                        local cy = math.max(iy, math.min(1 - iy, y))
+                        local onEdge = cx ~= x or cy ~= y
+                        x, y = cx, cy
+                        local p = pinAcquire(canvas)
+                        p.rec, p.step = rec, RouteStepOf(rec, loc[1], loc[2], loc[3])
+                        p.badge:SetText(p.step and tostring(p.step) or "")
+                        p.badge:SetShown(c.showNum ~= false)
+                        p.badge:SetScale(1 / scale)
+                        local ic = DG and DG.ItemIcon and DG.ItemIcon(rec[1])
+                        p.tex:SetTexture(type(ic) == "string" and ic or BOOK_ICON)
+                        if isUnver then
+                            pcall(p.tex.SetDesaturated, p.tex, true)
+                        end
+                        p.tex:SetAlpha((isUnver and 0.55 or 1) * (onEdge and 0.7 or 1))
+                        p:SetSize(size, size)
+                        p:SetPoint("CENTER", canvas, "TOPLEFT", x * w, -y * h)
+                        p:SetFrameLevel(pinLevel)
+                        p:Show()
+                        pins[#pins + 1] = p
                     end
-                end
-            end
-            for _, loc in ipairs(locs) do
-                local ui = uiMapOf(loc[1])
-                local x, y = project(ui, loc[2], loc[3], disp)
-                if x then
-                    local p = pinAcquire(canvas)
-                    p.rec, p.step = rec, RouteStepOf(rec, loc[1], loc[2], loc[3])
-                    p.badge:SetText(p.step and tostring(p.step) or "")
-                    p.badge:SetShown(c.showNum ~= false)
-                    p.badge:SetScale(1 / scale)
-                    local ic = DG and DG.ItemIcon and DG.ItemIcon(rec[1])
-                    p.tex:SetTexture(type(ic) == "string" and ic or BOOK_ICON)
-                    if isUnver then
-                        pcall(p.tex.SetDesaturated, p.tex, true)
-                        p.tex:SetAlpha(0.55)
-                    end
-                    p:SetSize(size, size)
-                    p:SetPoint("CENTER", canvas, "TOPLEFT", x * w, -y * h)
-                    p:SetFrameLevel(canvas:GetFrameLevel() + 20)
-                    p:Show()
-                    pins[#pins + 1] = p
                 end
             end
         end
-    end
     end
 
     if c.showGrave == true and c.showArea == true and ns.AreaVec and ns.AreaVec.ovl and ns.AreaDraw then
@@ -898,13 +1181,17 @@ local function applySettings()
         tracker:SetMovable(cfg().lockPos ~= true)
         relayoutTracker(tracker)
     end
+    miniCache, miniLastSig = nil, nil
     ns.ExploreMapRefresh()
+    miniRefresh()
 end
 
 local function recalcAll()
     BuildRoute()
     if updateTrackerFn then updateTrackerFn() end
+    miniCache, miniLastSig = nil, nil
     ns.ExploreMapRefresh()
+    miniRefresh()
 end
 
 local C_TXT  = { 0.88, 0.88, 0.88 }
@@ -1141,6 +1428,7 @@ local function createSettings()
 
     hdr(L["地图"])
     local syncShowLineRow
+    local pinRowSyncs = {}
     do
         local tg = mkToggleRow(content, y, L["显示图钉"],
             function() return cfg().showPins == true end,
@@ -1148,7 +1436,26 @@ local function createSettings()
                 cfg().showPins = v
                 recalcAll()
                 if syncShowLineRow then syncShowLineRow() end
+                for _, fn in ipairs(pinRowSyncs) do fn() end
             end)
+        syncers[#syncers + 1] = function() tg:sync() end
+        y = y - 24
+    end
+    do
+        local tg = mkToggleRow(content, y, L["区域地图图钉"],
+            function() return cfg().showZonePins ~= false end,
+            function(v) cfg().showZonePins = v recalcAll() end,
+            function() return cfg().showPins == true end)
+        pinRowSyncs[#pinRowSyncs + 1] = function() tg:sync() end
+        syncers[#syncers + 1] = function() tg:sync() end
+        y = y - 24
+    end
+    do
+        local tg = mkToggleRow(content, y, L["小地图图钉"],
+            function() return cfg().showMiniPins ~= false end,
+            function(v) cfg().showMiniPins = v recalcAll() end,
+            function() return cfg().showPins == true end)
+        pinRowSyncs[#pinRowSyncs + 1] = function() tg:sync() end
         syncers[#syncers + 1] = function() tg:sync() end
         y = y - 24
     end
@@ -1544,6 +1851,25 @@ function ns.ExploreMapToggle(force)
     if EG.built then pcall(EG.Render) end
 end
 
+local function mapSignature()
+    if not (WorldMapFrame and WorldMapFrame.GetMapID) then return "" end
+    local okID, id = pcall(WorldMapFrame.GetMapID, WorldMapFrame)
+    local okC, cv = pcall(WorldMapFrame.GetCanvas, WorldMapFrame)
+    local cs, cw, ch = 0, 0, 0
+    if okC and cv then
+        cs = cv:GetScale() or 0
+        cw = cv:GetWidth() or 0
+        ch = cv:GetHeight() or 0
+    end
+    local c = cfg()
+    return table.concat({
+        tostring(okID and id or 0), tostring(cs), tostring(cw), tostring(ch),
+        tostring(artTopLevel()), tostring(mapStitched()),
+        tostring(c.showPins == true), tostring(c.showZonePins ~= false),
+        tostring(routeOn), tostring(countDone()),
+    }, "|")
+end
+
 local function Init()
     if not WorldMapFrame then return end
     if hooksecurefunc then
@@ -1556,13 +1882,32 @@ local function Init()
             end)
         end
     end
-    local tickAcc = 0
+    if _G.Minimap then
+        for i = 1, MINI_POOL_MAX do
+            local p = makePin(_G.Minimap)
+            p:Hide()
+            miniPool[#miniPool + 1] = p
+        end
+    end
+    local tickAcc, miniAcc = 0, 0
     local ticker = CreateFrame("Frame")
     ticker:SetScript("OnUpdate", function(_, e)
+        miniAcc = miniAcc + e
+        if miniAcc >= MINI_TICK then
+            miniAcc = 0
+            miniRefresh()
+        end
         tickAcc = tickAcc + e
         if tickAcc < 0.2 then return end
         tickAcc = 0
         meLineMove()
+        if WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
+            local sig = mapSignature()
+            if sig ~= mapSig then
+                mapSig = sig
+                ns.ExploreMapRefresh()
+            end
+        end
     end)
     if WorldMapFrame.HookScript then
         pcall(WorldMapFrame.HookScript, WorldMapFrame, "OnShow", function()

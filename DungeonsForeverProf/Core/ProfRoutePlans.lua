@@ -79,8 +79,6 @@ local function runSlice(job)
     if not budget then return S.Run(job,adaptiveSliceMs()) end
     local started=computationClock()
     local remaining=budget
-    -- Capture, publication and operation-count checkpoints can yield before the
-    -- deadline. Resume them within this frame's budget in the faster modes.
     for pass=1,64 do
         local done=S.Run(job,remaining,turbo)
         if done or job.finished or job.cancelled or job.invalid then return true end

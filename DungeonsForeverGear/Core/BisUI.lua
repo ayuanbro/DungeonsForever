@@ -259,8 +259,8 @@ local function RoleOf(cls)
     return role
 end
 
-local function SpecWeights(cls, specId)
-    local role = RoleOfKey(cls, BG.wRole) or RoleOf(cls)
+local function SpecWeights(cls, specId, roleOverride)
+    local role = roleOverride or RoleOfKey(cls, BG.wRole) or RoleOf(cls)
     local phys = role == "phys"
     local heal = role == "heal"
     local w = {
@@ -286,6 +286,17 @@ local function SpecWeights(cls, specId)
         w.AGILITY = (PRIM_STAT[cls] == "AGILITY") and 1 or 0.66
         w.STRENGTH = (PRIM_STAT[cls] == "STRENGTH") and 1 or 0.05
         w[PRIM_STAT[cls] or "STRENGTH"] = 1
+        if cls == "paladin" then
+            w.INTELLECT = 0.08
+            w.SPIRIT = 0
+            w.STAMINA = 0.5
+        elseif cls == "shaman" then
+            w.INTELLECT = 0.05
+            w.SPIRIT = 0.05
+        elseif cls == "druid" then
+            w.INTELLECT = 0.3
+            w.SPIRIT = 0.16
+        end
         w.RANGED_ATTACK_POWER = w.ATTACK_POWER
         w.SPELL_DAMAGE_DONE = 0.08
         w.ARCANE_DAMAGE_DONE = 0.06
@@ -360,9 +371,9 @@ local function SpecWeights(cls, specId)
             w.STRENGTH = 0.5
             w.AGILITY = 0.3
             w.ATTACK_POWER = 0.25
-            w.INTELLECT = 0.4
-            w.SPIRIT = 0.08
-            w.SPELL_POWER = 0.55
+            w.INTELLECT = 0.05
+            w.SPIRIT = 0
+            w.SPELL_POWER = 0.38
             w.MANA_REGENERATION = 0.2
             w.WEAPON_DPS = 2.5
         end
@@ -554,6 +565,111 @@ local function ScanStatsTip(id)
     return out
 end
 
+function BG.RawStats(st)
+    if type(st) ~= "table" then return nil end
+    local out = {}
+    local av = st.RESISTANCE0_NAME
+    if type(av) == "number" and av > 0 then out.ARMOR = av end
+    for sk, sv in pairs(st) do
+        local b = StatBucket(sk)
+        if b and type(sv) == "number" then out[b] = sv end
+        if type(sv) == "number" and sv > 0 then
+            if sk == "RESISTANCE2_NAME" then out.FIRE_RESISTANCE = sv
+            elseif sk == "RESISTANCE3_NAME" then out.NATURE_RESISTANCE = sv
+            elseif sk == "RESISTANCE4_NAME" then out.FROST_RESISTANCE = sv
+            elseif sk == "RESISTANCE5_NAME" then out.SHADOW_RESISTANCE = sv
+            elseif sk == "RESISTANCE6_NAME" then out.ARCANE_RESISTANCE = sv end
+        end
+    end
+    if not next(out) then return nil end
+    return out
+end
+
+BG.ArmorShare = 12
+BG.ArmorRefW = 0.008
+BG.ArmorRefPerLv = 4
+
+function BG.ArmorRef(st, bst)
+    local a = type(st) == "table" and st.ARMOR or 0
+    local b = type(bst) == "table" and bst.ARMOR or 0
+    if type(a) ~= "number" or a < 0 then a = 0 end
+    if type(b) ~= "number" or b < 0 then b = 0 end
+    if a <= 0 and b <= 0 then return nil end
+    local ref = a > b and a or b
+    local lv = 1
+    if type(UnitLevel) == "function" then
+        local ok, v = pcall(UnitLevel, "player")
+        if ok and type(v) == "number" and v > 0 then lv = v end
+    end
+    local fl = BG.ArmorRefPerLv * lv
+    if ref < fl then ref = fl end
+    if ref <= 0 then return nil end
+    return ref
+end
+
+function BG.ScoreOfStats(st, id, w, armorRef)
+    local sum = 0
+    if type(st) == "table" then
+        for bkt, sv in pairs(st) do
+            local wv = w[bkt]
+            if type(wv) == "number" and type(sv) == "number" and sv > 0 then
+                if bkt == "ARMOR" and type(armorRef) == "number" and armorRef > 0 then
+                    sum = sum + (sv / armorRef) * BG.ArmorShare * (wv / BG.ArmorRefW)
+                else
+                    sum = sum + sv * wv
+                end
+            end
+        end
+    end
+    ScanDps(id)
+    local dps = dpsCache[id]
+    if type(dps) ~= "number" and type(st) == "table" and type(st.DAMAGE_PER_SECOND) == "number" then
+        dps = st.DAMAGE_PER_SECOND
+    end
+    if type(dps) == "number" then
+        local dw = w.WEAPON_DPS or 0
+        local fn = GetItemInfoInstant or (C_Item and C_Item.GetItemInfoInstant)
+        if type(fn) == "function" then
+            local ok, _, _, _, eq = pcall(fn, id)
+            if ok and (eq == "INVTYPE_RANGED" or eq == "INVTYPE_RANGEDRIGHT" or eq == "INVTYPE_THROWN") then
+                dw = w.RANGED_DPS or 0
+            end
+        end
+        if dw > 0 then sum = sum + dps * dw end
+    end
+    return sum
+end
+
+function BG.StatlessArmor(st)
+    if type(st) ~= "table" then return false end
+    if st.ARMOR == nil then return false end
+    for k in pairs(st) do
+        if k ~= "ARMOR" then return false end
+    end
+    return true
+end
+
+BG.liveStat = {}
+
+function BG.StatsFromLink(link)
+    if type(link) ~= "string" or link == "" then return nil end
+    local c = BG.liveStat[link]
+    if c ~= nil then return c end
+    local fn = _G.C_Item and _G.C_Item.GetItemStats
+    if type(fn) ~= "function" then return nil end
+    local ok, st = pcall(fn, link)
+    if not ok then return nil end
+    local out = BG.RawStats(st)
+    if not out then return nil end
+    BG.liveStatN = (BG.liveStatN or 0) + 1
+    if BG.liveStatN > 400 then
+        for k in pairs(BG.liveStat) do BG.liveStat[k] = nil end
+        BG.liveStatN = 0
+    end
+    BG.liveStat[link] = out
+    return out
+end
+
 local function ItemStatsOf(id)
     local link
     if DG.ItemLink then
@@ -565,21 +681,8 @@ local function ItemStatsOf(id)
         local ok, st = pcall(fn, link)
         if ok and type(st) == "table" then
             statSeen[id] = true
-            local out = {}
-            local av = st.RESISTANCE0_NAME
-            if type(av) == "number" and av > 0 then out.ARMOR = av end
-            for sk, sv in pairs(st) do
-                local b = StatBucket(sk)
-                if b and type(sv) == "number" then out[b] = sv end
-                if type(sv) == "number" and sv > 0 then
-                    if sk == "RESISTANCE2_NAME" then out.FIRE_RESISTANCE = sv
-                    elseif sk == "RESISTANCE3_NAME" then out.NATURE_RESISTANCE = sv
-                    elseif sk == "RESISTANCE4_NAME" then out.FROST_RESISTANCE = sv
-                    elseif sk == "RESISTANCE5_NAME" then out.SHADOW_RESISTANCE = sv
-                    elseif sk == "RESISTANCE6_NAME" then out.ARCANE_RESISTANCE = sv end
-                end
-            end
-            if next(out) then
+            local out = BG.RawStats(st)
+            if out then
                 statCache[id] = out
                 return out
             end
@@ -602,44 +705,28 @@ local function StatsKnown(id)
     return false
 end
 
-local function ItemScore(id, w)
+local function ItemScore(id, w, link, armorRef)
     if not id then return nil end
     local k = BG.cls .. ":" .. BG.spec .. ":" .. (BG.wGen or 0) .. ":" .. dpsGen
     if scoreKey ~= k then
         scoreCache, scoreKey = {}, k
     end
-    local v = scoreCache[id]
-    if v ~= nil then return v end
+    if type(link) == "string" then
+        local lst = BG.StatsFromLink(link)
+        if lst and not BG.StatlessArmor(lst) then
+            local lsum = BG.ScoreOfStats(lst, id, w, armorRef)
+            if lsum > 0 then return lsum end
+        end
+    end
+    if armorRef == nil then
+        local v = scoreCache[id]
+        if v ~= nil then return v end
+    end
     local st = ItemStatsOf(id)
-    local sum = 0
-    if type(st) == "table" then
-        local av = st.ARMOR
-        if type(av) == "number" and av > 0 and type(w.ARMOR) == "number" then
-            sum = sum + av * w.ARMOR
-        end
-        for bkt, sv in pairs(st) do
-            local wv = w[bkt]
-            if type(wv) == "number" and type(sv) == "number" and sv > 0 then sum = sum + sv * wv end
-        end
-    end
-    ScanDps(id)
-    local dps = dpsCache[id]
-    if type(dps) ~= "number" and type(st) == "table" and type(st.DAMAGE_PER_SECOND) == "number" then
-        dps = st.DAMAGE_PER_SECOND
-    end
-    if type(dps) == "number" then
-        local dw = w.WEAPON_DPS or 0
-        local fn = GetItemInfoInstant or (C_Item and C_Item.GetItemInfoInstant)
-        if type(fn) == "function" then
-            local ok, _, _, _, eq = pcall(fn, id)
-            if ok and (eq == "INVTYPE_RANGED" or eq == "INVTYPE_RANGEDRIGHT" or eq == "INVTYPE_THROWN") then
-                dw = w.RANGED_DPS or 0
-            end
-        end
-        if dw > 0 then sum = sum + dps * dw end
-    end
+    if BG.StatlessArmor(st) then return nil end
+    local sum = BG.ScoreOfStats(st, id, w, armorRef)
     if sum <= 0 then return nil end
-    scoreCache[id] = sum
+    if armorRef == nil then scoreCache[id] = sum end
     return sum
 end
 
@@ -691,6 +778,7 @@ end
 
 local function BumpWeights()
     BG.wGen = (BG.wGen or 0) + 1
+    if ns.BagArrow then ns.BagArrow.Revalidate() end
     if BG.built and BG.usingPlan == nil and BG.autoPlan then
         BG.UseAutoPlan(BG.autoPlan)
     end
@@ -1837,7 +1925,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 4
+BG.AUTO_GEN_REV = 6
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -3292,6 +3380,10 @@ end
 
 function BG.SyncFilterPop()
     if BG.usableTg then BG.usableTg:SetChecked(BG.onlyUsable) end
+    if BG.arrowTg and ns.BagArrow then BG.arrowTg:SetChecked(ns.BagArrow.On() and true or false) end
+    if BG.arrowScopeBtn and BG.arrowScopeBtn.lbl then
+        BG.arrowScopeBtn.lbl:SetText(BG.ArrowScopeText())
+    end
     if BG.filterLvBox then
         BG.filterLvBox:SetText(BG.filterLv and tostring(BG.filterLv) or "")
     end
@@ -3504,6 +3596,7 @@ function BG.SelectSpec(id)
         BG.RequestRender()
     end
     if BG.settingPop and BG.settingPop:IsShown() and BG.SyncSettingPop then BG.SyncSettingPop() end
+    if ns.BagArrow then ns.BagArrow.Revalidate() end
 end
 
 function BG.SavePlan()
@@ -4401,7 +4494,7 @@ local function BuildBrowser(parent)
         end)
     end
     local pop = CreateFrame("Frame", nil, parent)
-    pop:SetSize(170, 334)
+    pop:SetSize(170, 386)
     pop:EnableMouse(true)
     pop:SetFrameLevel(baseLv + 31)
     pop:Hide()
@@ -4535,6 +4628,32 @@ local function BuildBrowser(parent)
         BG.ToggleFilterPop()
         ns.PlaySound(1)
     end)
+
+    local ag = CreateFrame("CheckButton", nil, pop)
+    ag:SetSize(36, 20)
+    ag:EnableMouse(true)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(ag) end
+    ag:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -8, -330)
+    ag:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        if ns.BagArrow then ns.BagArrow.SetOn(self:GetChecked() and true or false) end
+    end)
+    BG.arrowTg = ag
+    local al = MakeFS(pop, 14, C_TEXT, "RIGHT")
+    al:SetPoint("RIGHT", ag, "LEFT", -6, 0)
+    al:SetWordWrap(false)
+    al:SetText(L["背包提升箭头"])
+
+    local sb = NewButton(pop, "", 154, 22, 12)
+    sb:SetPoint("TOPLEFT", pop, "TOPLEFT", 8, -356)
+    sb.lbl = sb:GetFontString()
+    SetButtonSelected(sb, false)
+    sb:SetScript("OnClick", function()
+        if ns.BagArrow then ns.BagArrow.CycleScope() end
+        ns.PlaySound(1)
+        if BG.SyncFilterPop then BG.SyncFilterPop() end
+    end)
+    BG.arrowScopeBtn = sb
 
     local spop = CreateFrame("Frame", "DungeonsForever_BisSettings", ns.MainFrame or UIParent, "BackdropTemplate")
     spop:SetFrameLevel(512)
@@ -4982,8 +5101,14 @@ local function InvIdOf(name)
     local ok, idx = pcall(GetInventorySlotInfo, name)
     if not ok or type(idx) ~= "number" then return nil end
     local ok2, eid = pcall(GetInventoryItemID, "player", idx)
-    if ok2 and type(eid) == "number" and eid > 0 then return eid end
-    return nil
+    local link
+    local fn = GetInventoryItemLink or (C_Item and C_Item.GetInventoryItemLink)
+    if type(fn) == "function" then
+        local ok3, l = pcall(fn, "player", idx)
+        if ok3 and type(l) == "string" and l ~= "" then link = l end
+    end
+    if ok2 and type(eid) == "number" and eid > 0 then return eid, link end
+    return nil, link
 end
 
 local function EquippedInSlot(slot, exceptId)
@@ -5029,33 +5154,209 @@ local function SlotOfAny(id)
     return nil
 end
 
-local function ScoreVsBis(id)
+local function ScoreFloor()
+    local lv = 1
+    if type(UnitLevel) == "function" then
+        local ok, v = pcall(UnitLevel, "player")
+        if ok and type(v) == "number" and v > 0 then lv = v end
+    end
+    if lv > 60 then lv = 60 end
+    return 0.5 + 0.0625 * lv
+end
+
+local function ScorePct(delta, bs)
+    if type(bs) ~= "number" or bs <= 0 then return nil end
+    local f = ScoreFloor()
+    if bs < f then bs = f end
+    local p = delta / bs * 100
+    return p < 0 and math.ceil(p - 0.5) or math.floor(p + 0.5)
+end
+
+local function ScoreVsBis(id, link)
     if type(id) ~= "number" then return nil end
     local slot = SlotOfAny(id)
     if type(slot) ~= "string" then return nil end
+    if slot == "two-hand" and BG.spec == "tank" and BG.cls ~= "druid" then return nil end
     local baseId = EquippedInSlot(slot, id)
     if type(baseId) ~= "number" or baseId == id then return nil end
     local w = EffWeights()
-    local my = ItemScore(id, w)
+    local st = type(link) == "string" and BG.StatsFromLink(link) or nil
+    local baseLink
+    local eid, el = InvIdOf(INV_SLOT_NAME[slot])
+    if eid == baseId then
+        baseLink = el
+    elseif PAIR_SLOT[slot] then
+        local _, pl = InvIdOf(INV_SLOT_NAME[PAIR_SLOT[slot]])
+        baseLink = pl
+    end
+    local bst = baseLink and BG.StatsFromLink(baseLink) or nil
+    local armorRef = bst and BG.ArmorRef(st, bst) or nil
+    local my = ItemScore(id, w, type(link) == "string" and link or nil, armorRef)
     if not my or my <= 0 then
         local DG = ns.DungeonModule
         if DG and DG.RequestItem then pcall(DG.RequestItem, id) end
         return nil
     end
-    local bs = ItemScore(baseId, w)
-    if not (statSeen[baseId] or dpsCache[baseId]) then
-        local DG = ns.DungeonModule
-        if DG and DG.RequestItem then pcall(DG.RequestItem, baseId) end
-        return nil
+    local bs
+    if bst then
+        bs = BG.ScoreOfStats(bst, baseId, w, armorRef)
+    else
+        bs = ItemScore(baseId, w, nil, armorRef)
+        if not (statSeen[baseId] or dpsCache[baseId]) then
+            local DG = ns.DungeonModule
+            if DG and DG.RequestItem then pcall(DG.RequestItem, baseId) end
+            return nil
+        end
     end
     local delta = my - (type(bs) == "number" and bs or 0)
-    local pct = nil
-    if type(bs) == "number" and bs > 0 then
-        local p = delta / bs * 100
-        pct = p < 0 and math.ceil(p - 0.5) or math.floor(p + 0.5)
-    end
-    return delta, pct
+    return delta, ScorePct(delta, bs)
 end
 
 BG.ScoreVsBis = ScoreVsBis
 BG.SlotOfAny = SlotOfAny
+
+function BG.ScoreVsBisAll(id, link)
+    if type(id) ~= "number" then return nil end
+    local slot = SlotOfAny(id)
+    if type(slot) ~= "string" then return nil end
+    local baseId = EquippedInSlot(slot, id)
+    if type(baseId) ~= "number" or baseId == id then return nil end
+    local st
+    if type(link) == "string" then st = BG.StatsFromLink(link) end
+    if not st then st = ItemStatsOf(id) end
+    if BG.StatlessArmor(st) then return nil end
+    local eid, el = InvIdOf(INV_SLOT_NAME[slot])
+    local baseLink = (eid == baseId) and el or nil
+    if not baseLink and PAIR_SLOT[slot] then
+        local _, pl = InvIdOf(INV_SLOT_NAME[PAIR_SLOT[slot]])
+        baseLink = pl
+    end
+    local bst = baseLink and BG.StatsFromLink(baseLink) or nil
+    if not bst then bst = ItemStatsOf(baseId) end
+    if type(st) ~= "table" and type(bst) ~= "table" then return nil end
+    local armorRef = BG.ArmorRef(st, bst)
+    local sch = BG.wActive and BG.wSchemes and BG.wSchemes[BG.wActive] or nil
+    local rows = {}
+    local twoHand = slot == "two-hand"
+    for _, sr in ipairs(SPEC_DIR[BG.cls] or {}) do
+        local skip = twoHand and sr.role == "tank" and BG.cls ~= "druid"
+        if not skip then
+            local sid = (sr.role == "tank") and "tank" or "pve"
+            local w = SpecWeights(BG.cls, sid, sr.role)
+            if sch and type(sch.w) == "table" then for k, v in pairs(sch.w) do w[k] = v end end
+            local my = BG.ScoreOfStats(st, id, w, armorRef)
+            if type(my) == "number" and my > 0 then
+                local bs = BG.ScoreOfStats(bst, baseId, w, armorRef)
+                if type(bs) ~= "number" then bs = 0 end
+                rows[#rows + 1] = { key = sr.key, label = L[sr.label] or sr.label,
+                                    role = sr.role, pct = ScorePct(my - bs, bs), delta = my - bs }
+            end
+        end
+    end
+    if #rows == 0 then return nil end
+    local rank = { phys = 1, spell = 1, tank = 2, heal = 3 }
+    table.sort(rows, function(a, b)
+        local ra, rb = rank[a.role] or 9, rank[b.role] or 9
+        if ra ~= rb then return ra < rb end
+        return (a.key or "") < (b.key or "")
+    end)
+    return rows
+end
+
+BG.TreeSpecMap = {
+    warrior = { "arms", "fury", "prot" },
+    paladin = { "holy", "prot", "ret" },
+    hunter = { "bm", "mm", "surv" },
+    rogue = { "assa", "combat", "sub" },
+    priest = { "disc", "holy", "shadow" },
+    shaman = { "ele", "enh", "resto" },
+    mage = { "arcane", "fire", "frost" },
+    warlock = { "affli", "demo", "destro" },
+    druid = { "balance", "cat", "resto" },
+}
+
+function BG.InvalidateSpec()
+    BG.__specCfg = nil
+    BG.__specKey = nil
+end
+
+function BG.DetectSpec()
+    local CT = _G.C_ClassTalents
+    local T = _G.C_Traits
+    if type(CT) ~= "table" or type(T) ~= "table" then return nil end
+    local okCfg, configID = pcall(CT.GetActiveConfigID)
+    if not okCfg or configID == nil then return nil end
+    if BG.__specCfg == configID and BG.__specKey then return BG.__specKey end
+    local okCI, ci = pcall(T.GetConfigInfo, configID)
+    if not okCI or type(ci) ~= "table" or type(ci.treeIDs) ~= "table" then return nil end
+    local treeID = ci.treeIDs[1]
+    if not treeID then return nil end
+    local okN, nodes = pcall(T.GetTreeNodes, treeID)
+    if not okN or type(nodes) ~= "table" or #nodes < 3 then return nil end
+    local pts, xs = {}, {}
+    for i = 1, #nodes do
+        local okI, n = pcall(T.GetNodeInfo, configID, nodes[i])
+        if okI and type(n) == "table" then
+            local x = tonumber(n.posX)
+            if x then
+                pts[#pts + 1] = { x = x, rp = tonumber(n.ranksPurchased) or 0 }
+                xs[#xs + 1] = x
+            end
+        end
+    end
+    if #pts < 3 then return nil end
+    table.sort(xs)
+    local dedup = {}
+    for i = 1, #xs do
+        if dedup[#dedup] ~= xs[i] then dedup[#dedup + 1] = xs[i] end
+    end
+    if #dedup < 3 then return nil end
+    local g1, g2, b1, b2 = -1, -1, nil, nil
+    for i = 1, #dedup - 1 do
+        local d = dedup[i + 1] - dedup[i]
+        if d > g1 then
+            g2, b2 = g1, b1
+            g1, b1 = d, (dedup[i] + dedup[i + 1]) / 2
+        elseif d > g2 then
+            g2, b2 = d, (dedup[i] + dedup[i + 1]) / 2
+        end
+    end
+    if not (b1 and b2) then return nil end
+    if b2 < b1 then b1, b2 = b2, b1 end
+    local sums = { 0, 0, 0 }
+    for i = 1, #pts do
+        local p = pts[i]
+        local k = (p.x < b1 and 1) or (p.x < b2 and 2) or 3
+        sums[k] = sums[k] + p.rp
+    end
+    local best, bi = 0, nil
+    for k = 1, 3 do
+        if sums[k] > best then best, bi = sums[k], k end
+    end
+    if not bi then return nil end
+    local key = (BG.TreeSpecMap[BG.cls] or {})[bi]
+    if key == "cat" and BG.spec == "tank" then key = "bear" end
+    for _, sr in ipairs(SPEC_DIR[BG.cls] or {}) do
+        if sr.key == key then
+            BG.__specCfg = configID
+            BG.__specKey = key
+            return key
+        end
+    end
+    return nil
+end
+
+function BG.SpecLabel(key)
+    for _, sr in ipairs(SPEC_DIR[BG.cls] or {}) do
+        if sr.key == key then return L[sr.label] or sr.label end
+    end
+    return nil
+end
+
+function BG.ArrowScopeText()
+    local s = ns.BagArrow and ns.BagArrow.Scope() or "spec"
+    if s == "all" then return L["任一专精"] end
+    if s == "manual" then return L["跟随 BiS 选择"] end
+    local lbl = BG.SpecLabel(BG.DetectSpec())
+    return L["当前天赋"] .. "：" .. (lbl or L["未识别"])
+end

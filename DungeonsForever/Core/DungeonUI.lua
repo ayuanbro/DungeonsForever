@@ -5852,9 +5852,11 @@ function DG.QLCall(name, id)
 end
 
 DG.questDoneCache = {}
+DG.questDoneStamp = {}
 function DG.QuestSnapReset()
     DG.questDoneSet = nil
     DG.questDoneCache = {}
+    DG.questDoneStamp = {}
 end
 function DG.BuildQuestSnap()
     DG.QuestSnapReset()
@@ -5873,6 +5875,7 @@ end
 
 function DG.InvalidateQuestDone(doneID)
     DG.questDoneCache = {}
+    DG.questDoneStamp = {}
     DG.__preDone = nil
     local v = tonumber(doneID)
     if v then
@@ -5888,12 +5891,20 @@ function DG.QuestDone(id)
         local st = sim[id]
         if st ~= nil then return st == "done" end
     end
-    local c = DG.questDoneCache[id]
-    if c ~= nil then return c end
+    if DG.questDoneCache[id] == true then return true end
     local set = DG.questDoneSet
     if set and set[id] then return true end
+    local gt = type(GetTime) == "function" and GetTime() or 0
+    local now = type(gt) == "number" and gt or 0
+    local stamp = DG.questDoneStamp[id]
+    if DG.questDoneCache[id] == false and stamp and (now - stamp) < 2 then return false end
     local v = (DG.QLCall("IsQuestFlaggedCompleted", id) == true)
     DG.questDoneCache[id] = v
+    if v then
+        DG.questDoneStamp[id] = nil
+    else
+        DG.questDoneStamp[id] = now
+    end
     return v
 end
 function DG.QuestActive(id)
@@ -6477,6 +6488,7 @@ function DG.EnsureQuestListener()
     end
     return ev
 end
+if ns.Init then ns.Init(function() DG.EnsureQuestListener() end) end
 
 function DG.ShowQuestTip(owner, q)
     if not q then return end

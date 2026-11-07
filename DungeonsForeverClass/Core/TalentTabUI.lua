@@ -54,6 +54,18 @@ local function TalDB()
     return t
 end
 
+local function CurPlan()
+    local ts = ns.ClassDB().talentSim
+    return ts and ts.cur or nil
+end
+
+local function SetCur(idx)
+    local cdb = ns.ClassDB()
+    if not cdb.talentSim then cdb.talentSim = {} end
+    cdb.talentSim.cur = idx
+    UI.curSeen = idx
+end
+
 local function SeqOn()
     local t = TalDB()
     if t.seqOn == nil then t.seqOn = true end
@@ -596,6 +608,7 @@ local function ApplyPreset(idx)
     local it = plans and plans[idx]
     if not it then return end
     ApplyPlan(it.alloc, idx, it.seq)
+    SetCur(idx)
 end
 
 OpenPlanPop = function()
@@ -725,6 +738,7 @@ OpenPlanPop = function()
         end
         bt:SetScript("OnClick", function()
             ApplyPlan(r.alloc, selIdx, r.seq)
+            SetCur(selIdx)
             UI.hl = nil
             UI.planOff = 0
             UI.planPop:Hide()
@@ -776,6 +790,7 @@ local function DecodeMock(code)
     UI.mock = { pts = pts }
     UI.planAlloc = nil
     UI.planSel = nil
+    SetCur(nil)
     UI.hl = nil
     return true
 end
@@ -1674,9 +1689,19 @@ function UI.Render()
     LayoutPlates()
     for i = 1, 4 do UI.plates[i]:Show() end
     local myKey = (UnitClass and select(2, UnitClass("player"))) or nil
-    if not UI.mock or UI.mockCls ~= cls then
+    local cur = CurPlan()
+    if not UI.mock or UI.mockCls ~= cls or UI.curSeen ~= cur then
         UI.mockCls = cls
-        ApplyPreset(1)
+        local plans = TP and TP[UI.cls] or {}
+        if type(cur) == 'number' and plans[cur] then
+            ApplyPreset(cur)
+        else
+            if not UI.mock then UI.mock = { pts = { {}, {}, {} } } end
+            UI.planAlloc = nil
+            UI.planSel = nil
+            UI.planSeq = nil
+            UI.curSeen = cur
+        end
         UI.liveBase = (cls == myKey) and ReadLiveTalents() or nil
         UI.hl = nil
         UI.planOff = 0

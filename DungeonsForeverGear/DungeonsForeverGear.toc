@@ -33,3 +33,4 @@ Core\Data\enUS\Data_Gear.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_BIS.lua [AllowLoadTextLocale enUS]
 Core\GearUI.lua
 Core\BisUI.lua
+Core\BagArrow.lua

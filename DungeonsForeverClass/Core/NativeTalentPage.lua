@@ -157,7 +157,7 @@ end
 
 local function SaveSim()
     if not NP.cls or not NP.pts then return end
-    local sig = SimSig()
+    local sig = SimSig() .. '|' .. tostring(NP.planIdx) .. '|' .. tostring(NP.viewMode)
     if NP.simSig == sig then return end
     NP.simSig = sig
     local pts = { {}, {}, {} }
@@ -167,15 +167,31 @@ local function SaveSim()
             if n > 0 then pts[t][i] = n end
         end
     end
-    DB().sim = { cls = NP.cls, pts = pts, pi = NP.planIdx, view = NP.viewMode }
+    DB().sim = { cls = NP.cls, pts = pts, view = NP.viewMode }
+end
+
+local function AllocSame(a, b)
+    for t = 1, 3 do
+        local x, y = a[t] or {}, b[t] or {}
+        for i, v in pairs(x) do if (y[i] or 0) ~= v then return false end end
+        for i, v in pairs(y) do if (x[i] or 0) ~= v then return false end end
+    end
+    return true
 end
 
 local function RestoreSim()
     local s = DB().sim
     if type(s) ~= 'table' or s.cls ~= NP.cls then return false end
-    if s.pi then
+    if s.pi and DB().cur == nil then
         local pl = Plans() or {}
-        if pl[s.pi] then NP.plan = pl[s.pi] end
+        local hit = nil
+        if type(s.pts) == 'table' then
+            for i = 2, #pl do
+                if AllocSame(s.pts, pl[i].alloc or {}) then hit = i break end
+            end
+        end
+        if not hit then return false end
+        DB().cur = hit
     end
     if s.view then NP.viewMode = s.view end
     if type(s.pts) ~= 'table' then return false end
@@ -698,7 +714,8 @@ end
 
 local function PlanName()
     local p = NP.plan
-    if p and p.name and p.name ~= '' then return p.name end
+    if not p then return L['未选择方案'] end
+    if p.name and p.name ~= '' then return p.name end
     return string.format(L['方案%d'], NP.planIdx or 1)
 end
 
@@ -788,6 +805,28 @@ local function ApplyAlloc(alloc)
             end
         end
     end
+end
+
+local function PtsAlloc()
+    local a = { {}, {}, {} }
+    for t = 1, 3 do
+        for i, v in pairs(NP.pts[t] or {}) do a[t][i] = v end
+    end
+    return a
+end
+
+local function SyncCur()
+    local c = DB().cur
+    if c == NP.curSeen then return end
+    NP.curSeen = c
+    local pl = (type(c) == 'number') and (Plans() or {})[c] or nil
+    if pl then
+        NP.plan, NP.planIdx = pl, c
+        ApplyAlloc(pl.alloc)
+    else
+        NP.plan, NP.planIdx = nil, nil
+    end
+    NP.seqFor, NP.seqCache = nil, nil
 end
 
 local function Encode()
@@ -883,11 +922,7 @@ local function SeqOf(plan)
             return s
         end
     end
-    local plans = Plans() or {}
-    local first = plans[1]
-    if not first then return nil end
-    if first.seq then return first.seq end
-    return SeqFromAlloc(first.alloc)
+    return nil
 end
 
 local function PendingSeq(base)
@@ -1061,13 +1096,13 @@ local function NativeSpellName(btn)
     return nil
 end
 
-local function BuildSeqMap()
+local function BuildSeqMap(pending)
     if NP.seqOn == nil then NP.seqOn = DB().seqOn ~= false end
-    if not NP.seqOn or not NP.cls then
+    if not NP.seqOn or not NP.cls or not NP.plan then
         NP.seqMap = nil
         return nil
     end
-    NP.seqMap = SeqMap(PendingSeq({ all = true }))
+    NP.seqMap = SeqMap(pending or PendingSeq())
     return NP.seqMap
 end
 
@@ -1115,7 +1150,6 @@ local function RefreshNativeSeq()
     local byName = NP.byName
     if not (map and byName) then return end
     local nos = NP.seqMap
-    if not nos then nos = BuildSeqMap() end
     local L = SeqLayer()
     if L then
         local T = NP.frame
@@ -1155,7 +1189,7 @@ local function HookNativeTalents()
     local TF = PF and PF.TalentsFrame
     if TF and not TF.__dfSeqHook then
         TF.__dfSeqHook = true
-        TF:HookScript('OnShow', function() RefreshNativeSeq() end)
+        TF:HookScript('OnShow', function() if NP.SyncPlan then NP.SyncPlan() end end)
     end
     RefreshNativeSeq()
     return TF and TF.__dfSeqHook and true or false
@@ -1247,9 +1281,9 @@ local function SpellAvail()
     return list
 end
 
-local function UpdateLists()
+local function UpdateLists(pending)
     local base = LiveBase()
-    local pending = PendingSeq(base)
+    if not pending then pending = PendingSeq(base) end
     local oop = base and OutOfPlan() or {}
     local shownRows = 0
     for i = 1, #oop do
@@ -1292,14 +1326,14 @@ local function UpdateLists()
         end
         row:Show()
     end
-    if shownRows == 0 and NP.viewMode ~= 'plan' then
+    if shownRows == 0 and (not NP.plan or NP.viewMode ~= 'plan') then
         local row = planRows[1]
         if row.seq then row.seq:SetText('') end
         row.ic:SetTexture('')
         row.ic:SetDesaturated(false)
         row.lv:SetText('')
         row.nm:SetTextColor(0.55, 0.58, 0.62)
-        row.nm:SetText(L['与当前方案一致'])
+        row.nm:SetText(NP.plan and L['与当前方案一致'] or L['未选择方案'])
         row.rk:SetTextColor(0.55, 0.58, 0.62)
         row.rk:SetText('')
         row:Show()
@@ -1335,14 +1369,24 @@ local function UpdateLists()
     if skillTitle then
         skillTitle:SetText(#avail > 0 and L['可学习的技能'] or L['暂无可学习的技能'])
     end
-    RefreshNativeSeq()
+end
+
+function NP.SyncPlan()
+    if not body then return end
+    NP.liveCache = nil
+    NP.liveBaseCache = nil
+    local pending = PendingSeq(LiveBase())
+    BuildSeqMap(pending)
+    UpdateLists(pending)
+    HookNativeTalents()
 end
 
 Refresh = function()
     if not body then return end
+    SyncCur()
+    NP.SyncPlan()
     local unspent = MaxPoints() - TotalSpent()
-    local pending = PendingSeq()
-    local smap = BuildSeqMap()
+    local smap = NP.seqMap
     for t = 1, 3 do
         local d = Data()
         local tree = d and d.trees[t]
@@ -1405,10 +1449,8 @@ Refresh = function()
         end
     end
     UpdateEdgeStates()
-    UpdateLists()
     CurrencyCard(true)
     SaveSim()
-    HookNativeTalents()
 end
 local function LiveRead()
     if type(CT) ~= 'table' or type(Traits) ~= 'table' then return nil end
@@ -1636,6 +1678,8 @@ local function ShowPlanMenu(anchor)
         r:SetScript('OnClick', function()
             NP.plan = rows[i].plan or { name = rows[i].label, alloc = alloc }
             NP.planIdx = rows[i].idx
+            DB().cur = rows[i].plan and rows[i].idx or nil
+            NP.curSeen = DB().cur
             ApplyAlloc(alloc)
             f:Hide()
             Refresh()
@@ -1675,7 +1719,10 @@ local function ImportDialog()
             local str = e and e:GetText() or ''
             if str ~= '' then
                 ApplyAlloc(Decode(str))
-                NP.plan = { name = L['导入方案'] }
+                NP.plan = { name = L['导入方案'], alloc = PtsAlloc() }
+                NP.planIdx = nil
+                DB().cur = nil
+                NP.curSeen = nil
                 Refresh()
             end
         end,
@@ -1729,11 +1776,7 @@ local function SaveBuild()
             local db = DB()
             db.builds[cls] = db.builds[cls] or {}
             local list = db.builds[cls]
-            local alloc = { {}, {}, {} }
-            for t = 1, 3 do
-                for i, v in pairs(NP.pts[t]) do alloc[t][i] = v end
-            end
-            list[#list + 1] = { name = name, alloc = alloc }
+            list[#list + 1] = { name = name, alloc = PtsAlloc() }
             print('|cff46bf72[天赋]|r ' .. string.format(L['已保存方案「%s」'], name))
         end,
     }
@@ -1762,6 +1805,10 @@ local function BuildStrip()
     bGet:SetScript('OnClick', function()
         if NP.SyncFromLive() then
             NP.seeded = true
+            NP.plan = { name = L['当前天赋'], alloc = PtsAlloc() }
+            NP.planIdx = nil
+            DB().cur = nil
+            NP.curSeen = nil
             Refresh()
             print('|cff46bf72[天赋]|r ' .. L['已读取角色当前天赋'])
         else
@@ -1881,9 +1928,11 @@ function NP.Build(T)
     NP.cls = ClassKey()
     if not NP.cls or not Data() then return end
     NP.pts = { {}, {}, {} }
-    NP.plan = (Plans() or {})[1]
-    NP.planIdx = 1
+    NP.plan = nil
+    NP.planIdx = nil
+    NP.curSeen = nil
     if RestoreSim() then NP.seeded = true end
+    SyncCur()
 
     body = CreateFrame('Frame', 'DungeonsForeverTalentPage', T)
     body:SetSize(BODY_W, BODY_H)
@@ -1923,15 +1972,25 @@ function NP.Build(T)
         g:RegisterEvent('PLAYER_TALENT_UPDATE')
         g:RegisterEvent('TRAIT_CONFIG_UPDATED')
         g:RegisterEvent('TRAIT_CONFIG_CREATED')
+        g:RegisterEvent('CHARACTER_POINTS_CHANGED')
         g:RegisterEvent('SPELLS_CHANGED')
         g:RegisterEvent('PLAYER_LEVEL_UP')
         g:SetScript('OnEvent', function()
-            NP.seqMap = nil
-            if NP.frame and body and NP.frame:GetTab() == NP.tabID then
+            if not body then return end
+            SyncCur()
+            if NP.frame and NP.frame:GetTab() == NP.tabID then
                 ApplyState(true)
                 Refresh()
+            else
+                NP.SyncPlan()
             end
-            HookNativeTalents()
+            if C_Timer and C_Timer.After and not NP.planDefer then
+                NP.planDefer = true
+                C_Timer.After(0.25, function()
+                    NP.planDefer = nil
+                    if body then NP.SyncPlan() end
+                end)
+            end
         end)
         NP.guard = g
         if hooksecurefunc then
@@ -1967,8 +2026,7 @@ function NP.Build(T)
     end
 
     NP.SyncShow()
-    BuildSeqMap()
-    HookNativeTalents()
+    if NP.frame:GetTab() ~= NP.tabID then NP.SyncPlan() end
     NativeSeqWatch()
 end
 

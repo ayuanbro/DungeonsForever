@@ -246,16 +246,36 @@ local function BisHit(id)
     return nil, true
 end
 
-local function ScoreLineOf(id)
+local C_SC_HEAD = { 0.66, 0.68, 0.74 }
+
+local function ScoreRows(id, link)
     local BG = ns.BisModule
-    if not (BG and BG.ScoreVsBis) then return nil end
-    local _, pct = BG.ScoreVsBis(id)
-    if type(pct) ~= "number" or pct == 0 then return nil end
-    if pct > 999 then pct = 999 elseif pct < -999 then pct = -999 end
-    return format(L["BIS 评分 %+d%%"], pct), pct > 0
+    if not (BG and BG.ScoreVsBisAll) then return nil end
+    local all = BG.ScoreVsBisAll(id, link)
+    if type(all) ~= "table" or #all == 0 then return nil end
+    local rows = {}
+    for _, r in ipairs(all) do
+        local p = r.pct
+        if type(p) == "number" then
+            if p > 999 then p = 999 elseif p < -999 then p = -999 end
+            rows[#rows + 1] = { r = r, p = p }
+        end
+    end
+    if #rows == 0 then return nil end
+    if #rows == 1 then
+        local one = rows[1]
+        if one.p == 0 then return nil end
+        return { { format(L["BIS 评分 %+d%%"], one.p), one.p > 0 and C_SC_UP or C_SC_DOWN, true } }
+    end
+    local out = { { L["BIS 评分"], C_SC_HEAD, true } }
+    for _, e in ipairs(rows) do
+        out[#out + 1] = { format("%s %+d%%", tostring(e.r.label or ""), e.p),
+                          e.p > 0 and C_SC_UP or C_SC_DOWN, false }
+    end
+    return out
 end
 
-function TL.Lines(id)
+function TL.Lines(id, link)
     if type(id) ~= "number" then return nil end
     local cfg = Cfg()
     local out
@@ -294,9 +314,12 @@ function TL.Lines(id)
         end
     end
     if cfg.bisScore then
-        local txt, up = ScoreLineOf(id)
-        if txt then
-            add(txt, up and C_SC_UP or C_SC_DOWN, nil, true)
+        local rows = ScoreRows(id, link)
+        if rows then
+            for i = 1, #rows do
+                local r = rows[i]
+                add(r[1], r[2], i > 1, r[3])
+            end
         end
     end
     if cfg.quest then
@@ -330,16 +353,18 @@ end
 TL.Append = Append
 
 local EXCLUDE = {
-    ShoppingTooltip1 = true, ShoppingTooltip2 = true,
-    ItemRefShoppingTooltip1 = true, ItemRefShoppingTooltip2 = true,
     TFItemScanTip = true,
+}
+local COMPARE_TIPS = {
+    "ShoppingTooltip1", "ShoppingTooltip2",
+    "ItemRefShoppingTooltip1", "ItemRefShoppingTooltip2",
 }
 local augStamp = {}
 
 local function TipItemID(tt)
     if type(tt.GetItem) ~= "function" then return nil end
     local ok, _, link = pcall(tt.GetItem, tt)
-    if ok and type(link) == "string" then return tonumber(link:match("item:(%d+)")) end
+    if ok and type(link) == "string" then return tonumber(link:match("item:(%d+)")), link end
     return nil
 end
 
@@ -431,7 +456,7 @@ local function InsertIlvl(tt, id)
 end
 TL.InsertIlvl = InsertIlvl
 
-local function Augment(tt)
+local function Augment(tt, data)
     if not tt then return end
     if tt.__dfOwn then return end
     local DG = ns.DungeonModule
@@ -439,15 +464,23 @@ local function Augment(tt)
     local nm = tt.GetName and tt:GetName()
     if nm and EXCLUDE[nm] then return end
     if not Cfg().global then return end
-    local id = TipItemID(tt)
+    local id, link = TipItemID(tt)
+    if not id and type(data) == "table" then
+        if type(data.hyperlink) == "string" then
+            id = tonumber(data.hyperlink:match("item:(%d+)"))
+            link = data.hyperlink
+        end
+        if not id and type(data.id) == "number" then id = data.id end
+    end
     if not id then return end
     if augStamp[tt] == id then
         InsertIlvl(tt, id)
         return
     end
     augStamp[tt] = id
+    tt.__dfAugId = id
     InsertIlvl(tt, id)
-    local lines = TL.Lines(id)
+    local lines = TL.Lines(id, link)
     Append(tt, lines, 0)
     if tt.IsShown and tt:IsShown() and tt.Show then pcall(tt.Show, tt) end
     local n = type(lines) == "table" and #lines or 0
@@ -465,19 +498,19 @@ local function Augment(tt)
             local DG2 = ns.DungeonModule
             if tt.__dfOwn or augStamp[tt] ~= id then return end
             if DG2 and DG2.__tipBusy then return end
-            if TipItemID(tt) ~= id then return end
-            local txt, up = ScoreLineOf(id)
-            if txt then
+            if tt.__dfAugId ~= id then return end
+            local rows = ScoreRows(id, link)
+            if rows then
                 if (tt.__dfAugN or 0) == 0 then
-                    local ls = TL.Lines(id)
+                    local ls = TL.Lines(id, link)
                     Append(tt, ls, 0)
                     tt.__dfAugN = type(ls) == "table" and #ls or 0
                 else
-                    tt:AddLine(LOGO_GAP .. txt,
-                        up and C_SC_UP[1] or C_SC_DOWN[1],
-                        up and C_SC_UP[2] or C_SC_DOWN[2],
-                        up and C_SC_UP[3] or C_SC_DOWN[3], true)
-                    tt.__dfAugN = (tt.__dfAugN or 0) + 1
+                    for i = 1, #rows do
+                        local r = rows[i]
+                        tt:AddLine(LOGO_GAP .. r[1], r[2][1], r[2][2], r[2][3], true)
+                        tt.__dfAugN = (tt.__dfAugN or 0) + 1
+                    end
                 end
                 tt.__dfScoreShown = true
             elseif tt.__dfAugTries > 0 then
@@ -489,18 +522,21 @@ local function Augment(tt)
     end
 end
 
-local function HookTip(tt)
+local function HookTip(tt, withSetItem)
     if not tt or tt.__dfAugHooked then return end
     if not tt.HookScript then return end
     tt.__dfAugHooked = true
     pcall(tt.HookScript, tt, "OnTooltipCleared", function(self)
         augStamp[self] = nil
+        self.__dfAugId = nil
         self.__dfAugN = nil
         self.__dfAugTries = nil
         self.__dfScoreShown = nil
         self.__dfIlvlShiftN = nil
     end)
-    pcall(tt.HookScript, tt, "OnTooltipSetItem", function() Augment(tt) end)
+    if withSetItem ~= false then
+        pcall(tt.HookScript, tt, "OnTooltipSetItem", function() Augment(tt) end)
+    end
 end
 
 local SAMPLE_CAP_WISH = 64
@@ -749,14 +785,18 @@ function TL.EnsurePreview(card)
             return
         end
         local id = previewId
-        if not id and type(self.GetItem) == "function" then
-            local ok2, _, link = pcall(self.GetItem, self)
-            if ok2 and type(link) == "string" then id = tonumber(link:match("item:(%d+)")) end
+        local link
+        if type(self.GetItem) == "function" then
+            local ok2, _, l = pcall(self.GetItem, self)
+            if ok2 and type(l) == "string" then
+                link = l
+                if not id then id = tonumber(l:match("item:(%d+)")) end
+            end
         end
         if not id then return end
         augStamp[self] = id
         InsertIlvl(self, id)
-        Append(self, TL.Lines(id))
+        Append(self, TL.Lines(id, link))
     end)
     tip:Hide()
     return tip
@@ -832,10 +872,13 @@ end
 do
     HookTip(_G.GameTooltip)
     HookTip(_G.ItemRefTooltip)
+    for i = 1, #COMPARE_TIPS do
+        HookTip(_G[COMPARE_TIPS[i]], false)
+    end
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         local td = Enum and Enum.TooltipDataType
         if td and td.Item ~= nil then
-            pcall(TooltipDataProcessor.AddTooltipPostCall, td.Item, function(tt) Augment(tt) end)
+            pcall(TooltipDataProcessor.AddTooltipPostCall, td.Item, function(tt, data) Augment(tt, data) end)
         end
     end
 end
