@@ -629,7 +629,7 @@ local function rebatchSameKeys(a, b)
     return true
 end
 
-local function rebatchEquivalent(a, b)
+local function rebatchEquivalent(a, b, progressGoals)
     if not a or not b or math.abs((a.money or 0) - (b.money or 0)) > 1e-7 then return false end
     if (b.greenLevelCrafts or 0)>(a.greenLevelCrafts or 0) then return false end
     if a.rebatchGreenCrafts~=nil and (b.rebatchGreenCrafts or 0)>a.rebatchGreenCrafts then return false end
@@ -643,7 +643,8 @@ local function rebatchEquivalent(a, b)
         local newSkill = b.skill[profession]
         if type(oldSkill) ~= "number" or type(newSkill) ~= "number"
             or newSkill < oldSkill then return false end
-        if newSkill == oldSkill and (b.progress and b.progress[profession] or 0) + 1e-7
+        if newSkill == oldSkill and oldSkill < (progressGoals and progressGoals[profession] or 300)
+            and (b.progress and b.progress[profession] or 0) + 1e-7
             < (a.progress and a.progress[profession] or 0) then return false end
     end
     return rebatchSameKeys(a.diagnostics, b.diagnostics)
@@ -827,7 +828,7 @@ local function rebatchGrayOrder(list,lo,hi,recipes,checkpoint)
     return out
 end
 
-function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMaterials)
+function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMaterials, progressGoals)
     if not original or type(replay) ~= "function" then return original end
     local list = actions(original)
     if #list < 3 or #list > 1600 then return original end
@@ -880,7 +881,7 @@ function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMa
         attempts=attempts+1
         if tick then tick() end
         local candidate=replay(candidateOrder)
-        if rebatchEquivalent(best,candidate) then
+        if rebatchEquivalent(best,candidate,progressGoals) then
             local score=rebatchSwitches(actions(candidate))
             if score<currentScore then best,order,currentScore=candidate,candidateOrder,score;return end
         end
@@ -1879,9 +1880,12 @@ function S.NewJob(slug,opts)
         end
         local function preservesProgress(candidate,t)
             -- A prefix keeps its stopping skill so its frontier blockers remain valid.
-            if not t or not goalsComplete(j,candidate) and t.skill[slug]~=candidate.skill[slug] then return false end
+            local complete=goalsComplete(j,candidate)
+            if not t or not complete and t.skill[slug]~=candidate.skill[slug] then return false end
             for p,skill in pairs(candidate.skill) do
-                if (t.skill[p] or 0)<skill or skill<300 and t.skill[p]==skill
+                -- Fractional progress beyond a completed target is not another route goal.
+                local progressGoal=p==slug and complete and j.target or 300
+                if (t.skill[p] or 0)<skill or skill<progressGoal and t.skill[p]==skill
                     and (t.progress[p] or 0)+1e-7<(candidate.progress[p] or 0) then return false end
             end
             for _,field in ipairs({"completedSpecializationGoals","completedToolGoals"}) do
@@ -2069,8 +2073,9 @@ function S.NewJob(slug,opts)
                 end
                 j.batchRecipes=nil;j.seeding,j.directSeed,j.seedAborted=seeding,direct,aborted
                 local baseline=candidate.rebatchGreenCrafts~=nil and candidate or replayFinal(actions(candidate))
-                local result = rebuilt or baseline and rebatchEquivalent(candidate,baseline)
-                    and S.RebatchChronological(baseline, replayFinal, tick, cpuTime, j.snap.byKey)
+                local progressGoals=goalsComplete(j,candidate) and {[slug]=j.target} or nil
+                local result = rebuilt or baseline and rebatchEquivalent(candidate,baseline,progressGoals)
+                    and S.RebatchChronological(baseline, replayFinal, tick, cpuTime, j.snap.byKey, nil, progressGoals)
                 if result then
                     local seen,last,split={},nil,false
                     for _,a in ipairs(actions(result)) do
@@ -2083,7 +2088,7 @@ function S.NewJob(slug,opts)
                             last=key
                         end
                     end
-                    if split then result=S.RebatchChronological(result,replayFinal,tick,cpuTime,j.snap.byKey,true) end
+                    if split then result=S.RebatchChronological(result,replayFinal,tick,cpuTime,j.snap.byKey,true,progressGoals) end
                 end
                 j.failures, j.collectFailures = failures, collected
                 j.restricted, j.restrictedReason = restricted, restriction
