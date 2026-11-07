@@ -212,7 +212,7 @@ function ST.Rows()
                 if fix and fix[sp.id] then baseLv = fix[sp.id] end
                 local row = {
                     name = sp.name, icon = sp.icon,
-                    tab = tab.name, learn = baseLv,
+                    tab = tab.name, learn = baseLv, base = sp.id,
                 }
                 local nr = sp.ranks and #sp.ranks or 0
                 local knownAny = false

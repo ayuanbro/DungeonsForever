@@ -7022,6 +7022,43 @@ function DG.QuestFollowers(id)
     return out
 end
 
+function DG.QuestFollowersDeep(id)
+    local seen = { [id] = true }
+    local out, queue = {}, { id }
+    while #queue > 0 do
+        local cur = table.remove(queue, 1)
+        for _, row in ipairs(DG.QuestFollowers(cur)) do
+            local fid = row[1]
+            if not seen[fid] then
+                seen[fid] = true
+                out[#out + 1] = row
+                queue[#queue + 1] = fid
+            end
+        end
+    end
+    return out
+end
+
+function DG.FilterBranchHeads(list)
+    local inList = {}
+    for _, q in ipairs(list) do inList[q[1]] = true end
+    local out = {}
+    for _, q in ipairs(list) do
+        local show = true
+        local pre = q[9]
+        if type(pre) == "table" then
+            for _, seg in ipairs(pre) do
+                if type(seg) == "number" and inList[seg] then
+                    show = false
+                    break
+                end
+            end
+        end
+        if show then out[#out + 1] = q end
+    end
+    return out
+end
+
 DG.Q_FAC_ICON = {
     A = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\FACTION\\FactionIcon_Alliance",
     H = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\FACTION\\FactionIcon_Horde",
@@ -7092,6 +7129,11 @@ function U:RenderDungeonQuests()
     DG.BuildPreDone(list)
     DG.PrefetchQuestData(list)
     local nAll = #list
+    local selInFull = false
+    for _, q in ipairs(list) do
+        if q[1] == U.dungeonQuestSel then selInFull = true break end
+    end
+    U.__qaSelInFull = selInFull
 
     local cnt = { all = nAll, A = 0, H = 0, todo = 0, done = 0 }
     local doneN = 0
@@ -7211,6 +7253,9 @@ function U:RenderDungeonQuests()
     U.dungeonQuestScroll:SetShown(true)
     U.dungeonQuestChild:SetShown(true)
 
+    list = DG.FilterBranchHeads(list)
+    nAll = #list
+
     local nVis, doneVis = 0, 0
     for i = 1, nAll do
         local q = list[i]
@@ -7231,11 +7276,14 @@ function U:RenderDungeonQuests()
     U.dungeonQuestSum:Hide()
     if U.dungeonQDoneTg then U.dungeonQDoneTg:SetChecked(status ~= "todo") end
 
-    local groups = { { inside = false, rows = {} }, { inside = true, rows = {} } }
+    local groups = { { kind = 1, rows = {} }, { kind = 2, rows = {} }, { kind = 3, rows = {} } }
     for i = 1, nAll do
         local q = list[i]
         if q[2] == side or not q[2] then
-            local key = q[8] and 2 or 1
+            local qn = q[5] or ""
+            local isItem = qn:find("^由物品", 1, true) ~= nil
+                or (qn == "" and q[8] and true or false)
+            local key = isItem and 3 or (q[8] and 2 or 1)
             local st = DG.QuestState(q[1])
             local hit = true
             if status == "done" then hit = (st == "done")
@@ -7248,14 +7296,14 @@ function U:RenderDungeonQuests()
     end
 
     local selOk = false
-    for gi = 1, 2 do
+    for gi = 1, 3 do
         for _, q in ipairs(groups[gi].rows) do
             if q[1] == U.dungeonQuestSel then selOk = true break end
         end
         if selOk then break end
     end
-    if not selOk and not U.dungeonQDetExt and not U.dungeonQFlow then
-        local first = groups[1].rows[1] or groups[2].rows[1]
+    if not selOk and not selInFull and not U.dungeonQDetExt and not U.dungeonQFlow then
+        local first = groups[1].rows[1] or groups[2].rows[1] or groups[3].rows[1]
         U.dungeonQuestSel = first and first[1] or nil
     end
 
@@ -7343,7 +7391,7 @@ function U:RenderDungeonQuests()
         return r
     end
 
-    for gi = 1, 2 do
+    for gi = 1, 3 do
         local g = groups[gi]
         if #g.rows > 0 then
             nH = nH + 1
@@ -7353,7 +7401,8 @@ function U:RenderDungeonQuests()
                        cnt = MakeFS(child, DG.Q_FS_META, C_GREY, "RIGHT") }
                 hdr[nH] = hd
             end
-            hd.name:SetText(g.inside and L["副本内领取 / 交付"] or L["进本前先去接"])
+            hd.name:SetText(g.kind == 2 and L["副本内接取"]
+                or (g.kind == 3 and L["拾取物品接取"] or L["进本前先去接"]))
             hd.name:ClearAllPoints()
             hd.name:SetPoint("TOPLEFT", child, "TOPLEFT", DG.Q_PAD + 4, y)
             hd.__vtop, hd.__vh, hd.__vgen = -y, DG.Q_HDR_H, DG.__vgen
@@ -8382,8 +8431,12 @@ function U:RenderQuestDetail()
                 end
                 GameTooltip:Hide()
             end)
-            r:SetScript("OnClick", function(self)
-                if self.__npc then DG.MarkNPC(self.__npc, self.__loc) end
+            r:SetScript("OnClick", function()
+                if r.__q then
+                    DG.OpenQuest(r.__q[1])
+                    return
+                end
+                if r.__npc then DG.MarkNPC(r.__npc, r.__loc) end
             end)
             r.name = MakeFS(r, 14, C_TEXT, "LEFT")
             r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -3)
@@ -8557,6 +8610,9 @@ function U:RenderQuestDetail()
     local slocFull = (smap and DG.LocText(smap, sx, sy, szone)) or DG.ZoneShort(q[6])
     local slocShort = (smap and DG.ZoneLabel(smap, szone)) or DG.ZoneShort(q[6])
     local where = q[5] or ""
+    if where ~= "" and not q[16] then
+        where = "|cffffd100" .. where .. "|r"
+    end
     if q[16] then
         local nm = (q[17] and q[17] ~= "" and q[17]) or q[5] or ""
         where = "|cffffd100" .. nm .. "|r" .. format(" |cff9a9a9a#%d|r", q[16])
@@ -8570,7 +8626,8 @@ function U:RenderQuestDetail()
     end
     if where ~= "" then
         local f
-        if q[16] or sn then
+        local slr = (not q[16]) and (not sn) and ns.DungeonQuestStartLoc and ns.DungeonQuestStartLoc[q[1]] or nil
+        if q[16] or sn or (slr and smap) then
             f = takeNpc()
             local suffix = ""
             if sn and sn[2] then
@@ -8580,7 +8637,7 @@ function U:RenderQuestDetail()
             if FSW(f.fs) > DG.Q_DET_W - 76 then
                 f.fs:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereShort .. suffix)
             end
-            f.__npc = q[16] or sn[1]
+            f.__npc = q[16] or (sn and sn[1]) or (slr and tonumber(slr[1])) or nil
             f.__loc = (smap and { smap, sx, sy }) or (sn and sn[3] and { sn[3], sn[4], sn[5] }) or nil
         else
             f = takeKv()
@@ -8590,6 +8647,31 @@ function U:RenderQuestDetail()
             end
         end
         put(f, 24)
+    elseif q[9] == nil and q[14] and d and ns.DungeonLoot then
+        local srcs = ns.DungeonLoot[d.id] or {}
+        local itemID, bossCN
+        for _, iid in ipairs(q[14]) do
+            for _, b in ipairs(srcs) do
+                for _, it in ipairs(b[5] or {}) do
+                    if it[1] == iid then
+                        itemID, bossCN = iid, b[2] or b[1]
+                        break
+                    end
+                end
+                if bossCN then break end
+            end
+            if itemID then break end
+        end
+        if itemID then
+            local nm = DG.ItemInfo(itemID)
+            local nmTxt = (type(nm) == "string" and nm ~= "")
+                and "|cffffd100" .. nm .. "|r"
+                or DG.Hex(C_DIM) .. format("#%d", itemID) .. "|r"
+            local f = takeKv()
+            f:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. nmTxt
+                .. (bossCN and (DG.Hex(C_DIM) .. format(L["（%s 掉落）"], bossCN) .. "|r") or ""))
+            put(f, 24)
+        end
     end
     do
         local en = DG.QuestEndNpc(q[1])
@@ -8722,8 +8804,11 @@ function U:RenderQuestDetail()
                     if not nid and ns.QuestPreNpcID then nid = ns.QuestPreNpcID[seg] end
                     local sn = (not nid) and DG.QuestStartNpc(seg) or nil
                     if sn then nid = sn[1] end
+                    local slp = (not nid) and (not sn) and ns.DungeonQuestStartLoc and ns.DungeonQuestStartLoc[seg] or nil
+                    if slp and not nid then nid = tonumber(slp[1]) or nid end
                     r.__npc = nid
-                    r.__loc = (sn and sn[3] and { sn[3], sn[4], sn[5] }) or nil
+                    r.__loc = (sn and sn[3] and { sn[3], sn[4], sn[5] })
+                        or (slp and slp[3] and { slp[3], slp[4], slp[5] }) or nil
                 else
                     r.name:SetText(seg)
                     r.name:SetTextColor(Unpack(C_GREY))
@@ -8752,7 +8837,7 @@ function U:RenderQuestDetail()
     end
 
     do
-        local fol = DG.QuestFollowers(q[1])
+        local fol = DG.QuestFollowersDeep(q[1])
         if #fol > 0 then
             local f = takeLab()
             f:SetText(L["后续任务"])
@@ -8775,7 +8860,8 @@ function U:RenderQuestDetail()
                 r.sub:SetText(sub)
                 r.__q = fq
                 local fsn = (not fq[16]) and DG.QuestStartNpc(fq[1]) or nil
-                r.__npc = fq[16] or (fsn and fsn[1]) or nil
+                local fsl = (not fq[16]) and (not fsn) and ns.DungeonQuestStartLoc and ns.DungeonQuestStartLoc[fq[1]] or nil
+                r.__npc = fq[16] or (fsn and fsn[1]) or (fsl and tonumber(fsl[1])) or nil
                 local fm, fx, fy = DG.StartLoc(fq[1], r.__npc)
                 r.__loc = (fm and { fm, fx, fy }) or (fsn and fsn[3] and { fsn[3], fsn[4], fsn[5] }) or nil
                 r:ClearAllPoints()
@@ -9635,6 +9721,8 @@ ns.Init(function()
         end
     end)
 end)
+
+ns.DungeonDG = DG
 
 ns.ProfHost = {
     U = U, DG = DG,

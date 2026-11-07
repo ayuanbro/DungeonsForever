@@ -915,6 +915,14 @@ ns.DungeonLoot = {
         } },
     },
     ["the_drowned_city"] = {
+        { "Zul'Alai", "Zul'Alai", "", "270882", {} },
+        { "Var'Taka", "Var'Taka", "", "270883", {} },
+        { "Captain Dreadrise", "Captain Dreadrise", "", "270884", {} },
+        { "Deathless Marrow", "Deathless Marrow", "", "270885", {} },
+        { "Gill", "Gill", "", "270888", {} },
+        { "Min'loth the Serpent", "Min'loth the Serpent", "", "270886", {} },
+        { "Umbra", "Umbra", "", "", {} },
+        { "Zin'aka", "Zin'aka", "", "", {} },
     },
     ["sm_armory"] = {
         { "Herod", "Herod", "", "3975", {

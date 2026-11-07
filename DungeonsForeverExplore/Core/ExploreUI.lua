@@ -265,6 +265,8 @@ EG.__qAsked = {}
 ns.ExploreModule = EG
 EG.BM_TIERS = BM_TIERS
 EG.BM_BUNDLE = BM_BUNDLE
+EG.BagChain = BAG_CHAIN
+EG.BagReward = BAG_FINAL_ID
 
 EG.NAV_X, EG.NAV_W = PAGE_INSET, 148
 EG.NAV_GROUP_H = 24

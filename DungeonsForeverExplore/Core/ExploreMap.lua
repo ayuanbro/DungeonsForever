@@ -712,6 +712,11 @@ local function locsOf(rec)
     return locs
 end
 
+local function refreshAuto()
+    if not (EG and EG.ScanAuto) then return end
+    pcall(EG.ScanAuto)
+end
+
 local function miniSignature()
     local c = cfg()
     return table.concat({
@@ -769,6 +774,7 @@ local function miniViewRadius(mm)
 end
 
 local function miniRefresh()
+    if not EG._auto then refreshAuto() end
     local c = cfg()
     if not (c.showPins == true and c.showMiniPins ~= false) then
         releaseMiniPins()
@@ -893,6 +899,7 @@ local function miniRefresh()
 end
 
 function ns.ExploreMapRefresh()
+    if not EG._auto then refreshAuto() end
     if ns.MapWorldModule and ns.MapWorldModule.Active and ns.MapWorldModule.Active() then
         releasePins()
         releaseGraves()
@@ -1872,6 +1879,23 @@ end
 
 local function Init()
     if not WorldMapFrame then return end
+    ns.EvtPool = ns.EvtPool or {}
+    local autoEv = ns.EvtPool.exploreAuto
+    if not autoEv then
+        autoEv = CreateFrame("Frame")
+        ns.EvtPool.exploreAuto = autoEv
+    end
+    if autoEv.RegisterEvent then
+        pcall(autoEv.RegisterEvent, autoEv, "BAG_UPDATE_DELAYED")
+        pcall(autoEv.RegisterEvent, autoEv, "QUEST_LOG_UPDATE")
+        pcall(autoEv.RegisterEvent, autoEv, "PLAYER_ENTERING_WORLD")
+        autoEv:SetScript("OnEvent", function()
+            refreshAuto()
+            if WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
+                ns.ExploreMapRefresh()
+            end
+        end)
+    end
     if hooksecurefunc then
         pcall(hooksecurefunc, WorldMapFrame, "OnMapChanged", function()
             ns.ExploreMapRefresh()
@@ -1911,6 +1935,7 @@ local function Init()
     end)
     if WorldMapFrame.HookScript then
         pcall(WorldMapFrame.HookScript, WorldMapFrame, "OnShow", function()
+            refreshAuto()
             ns.ExploreMapRefresh()
             if cfg().autoRoute and not routeOn and not manualOff then
                 ns.ExploreMapToggle(true)

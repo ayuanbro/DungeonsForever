@@ -1032,6 +1032,7 @@ local enhCard
 local spellToggle
 local talentToggle
 local mapToggle
+local zoneToggle
 
 local function SpellBlocked()
     return (ns.SpellTabsTaken and ns.SpellTabsTaken()) and true or false
@@ -1054,6 +1055,10 @@ local function SyncEnhCard()
     if mapToggle then
         mapToggle:SetChecked((ns.MapEntryOn and ns.MapEntryOn()) and true or false)
     end
+    if zoneToggle then
+        local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+        zoneToggle:SetChecked((c and c.on) and true or false)
+    end
 end
 
 local function AnchorEnhCard()
@@ -1069,18 +1074,12 @@ local function AnchorEnhCard()
     end
 end
 
-local function EnhRow(card, y, title, tip, noteFn)
-    local hd = card:CreateFontString(nil, "OVERLAY")
-    hd:SetFont(ns.FONT, 15, "")
-    hd:SetPoint("TOPLEFT", card, "TOPLEFT", 8, y)
-    hd:SetText(title)
-    hd:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
-
+local function EnhCell(card, x, y, title, tip, noteFn)
     local tg = CreateFrame("CheckButton", nil, card)
-    tg:SetSize(36, 20)
+    tg:SetSize(28, 16)
     tg:EnableMouse(true)
     if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
-    tg:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, y + 1)
+    tg:SetPoint("TOPLEFT", card, "TOPLEFT", x, y)
     tg:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:ClearLines()
@@ -1099,6 +1098,12 @@ local function EnhRow(card, y, title, tip, noteFn)
     tg:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
+    local lb = card:CreateFontString(nil, "OVERLAY")
+    lb:SetFont(ns.FONT, 12, "")
+    lb:SetPoint("LEFT", tg, "RIGHT", 3, 0)
+    lb:SetJustifyH("LEFT")
+    lb:SetText(title)
+    lb:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
     return tg
 end
 
@@ -1118,7 +1123,7 @@ function BuildEnhCard()
     end
     enhCard = card
     AnchorEnhCard()
-    card:SetHeight(108)
+    card:SetHeight(86)
 
     local hd = card:CreateFontString(nil, "OVERLAY")
     hd:SetFont(ns.FONT, 14, "")
@@ -1126,14 +1131,15 @@ function BuildEnhCard()
     hd:SetText(L["原生界面增强"])
     hd:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
 
-    spellToggle = EnhRow(card, -30, L["技能页增强"], L["在原生技能书里增加职业技能与训练师页"],
+    spellToggle = EnhCell(card, 2, -34, L["技能页增强"], L["在原生技能书里增加职业技能与训练师页"],
         function()
             if not SpellBlocked() then return nil end
             return { L["其它插件已占用技能书页签，本项暂不可用"],
                      L["两个插件不能同时往技能书里加页；关掉对方的技能页增强并重载后，这里会自动恢复。"] }
         end)
-    talentToggle = EnhRow(card, -58, L["天赋页增强"], L["在原生天赋界面增加天赋模拟页与加点序号"])
-    mapToggle = EnhRow(card, -86, L["地图副本入口"], L["在世界地图上标出各副本的入口位置"])
+    talentToggle = EnhCell(card, 113, -34, L["天赋页增强"], L["在原生天赋界面增加天赋模拟页与加点序号"])
+    mapToggle = EnhCell(card, 2, -58, L["地图副本入口"], L["在世界地图上标出各副本的入口位置"])
+    zoneToggle = EnhCell(card, 113, -58, L["地图待办"], L["进入地图时在屏幕左侧显示待办角标"])
 
     spellToggle:SetScript("OnClick", function(self)
         if SpellBlocked() then return end
@@ -1157,9 +1163,19 @@ function BuildEnhCard()
         if ns.SetMapEntry then ns.SetMapEntry(nv) end
         SyncEnhCard()
     end)
+    zoneToggle:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+        if not c then return end
+        c.on = self:GetChecked() and true or false
+        SyncEnhCard()
+        if ns.ZoneHint then ns.ZoneHint.CheckNow("manual") end
+    end)
     SyncEnhCard()
 end
 ns.BuildEnhCard = BuildEnhCard
+
+ns.SyncZoneHintCard = SyncEnhCard
 
 local function AnchorTipCard(card)
     local qbCard = ns.QuickBar and ns.QuickBar.cardBg
@@ -1810,6 +1826,25 @@ end)
 SLASH_DUNGEONSFOREVER1 = "/df"
 SLASH_DUNGEONSFOREVER2 = L["/副本手册"]
 SLASH_DUNGEONSFOREVER3 = "/fbsc"
+
+SLASH_DUNGEONSFOREVERLANG1 = "/dfcn"
+SLASH_DUNGEONSFOREVERLANG2 = L["/df中文"]
+SlashCmdList["DUNGEONSFOREVERLANG"] = function()
+    if type(GetLocale) ~= "function" then return end
+    local tag = "|cff46bf72[" .. L["无限副本手册"] .. "]|r "
+    if GetLocale() == "zhCN" then
+        print(tag .. L["当前客户端已是简体中文，无需切换"])
+        return
+    end
+    DungeonsForeverDB = DungeonsForeverDB or {}
+    local on = DungeonsForeverDB.langCN ~= true
+    DungeonsForeverDB.langCN = on
+    if ns.ConfirmReload then
+        ns.ConfirmReload(on and L["已切换为简体中文界面，重载界面后生效"]
+            or L["已恢复跟随客户端语言，重载界面后生效"])
+    end
+end
+
 local PAGE_ALIASES = {
     fb = "Dungeons",    ["副本"] = "Dungeons",
     tb = "Raids",       ["团本"] = "Raids",
@@ -1985,6 +2020,14 @@ SlashCmdList["DUNGEONSFOREVER"] = function(msg)
             ns.SpellRankUI.Debug()
         else
             print("|cff46bf72[" .. L["无限副本手册"] .. "]|r " .. L["技能书模块未启用"])
+        end
+        return
+    end
+    if cmd == "hint" or cmd == "模拟" or cmd == "待办" or cmd:match("^hint%s") or cmd:match("^模拟%s") then
+        if ns.ZoneHint and ns.ZoneHint.SimCommand then
+            ns.ZoneHint.SimCommand(cmd:match("^%S+%s*(.*)$"))
+        else
+            print("|cff46bf72[" .. L["无限副本手册"] .. "]|r " .. L["地图提醒模块未启用"])
         end
         return
     end

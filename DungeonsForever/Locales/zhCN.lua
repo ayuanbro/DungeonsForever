@@ -1,5 +1,12 @@
 local _, ns = ...
 
+do
+    local db = rawget(_G, "DungeonsForeverDB")
+    if type(db) == "table" and db.langCN == true and type(GetLocale) == "function" and GetLocale() ~= "zhCN" then
+        GetLocale = function() return "zhCN" end
+    end
+end
+
 local L = setmetatable({}, {
     __index = function(_, key)
         return tostring(key)
@@ -24,6 +31,8 @@ L["客户端详细数据加载中，稍后自动刷新"] = "客户端详细数�
 L["任务 #%d"] = "任务 #%d"
 L["客户端未收录此任务，暂时没有客户端数据"] = "客户端未收录此任务，暂时没有客户端数据"
 L["进本前先去接"] = "进本前先去接"
+L["副本内接取"] = "进本后才能接"
+L["拾取物品接取"] = "拾取物品接取"
 L["副本内领取 / 交付"] = "副本内领取 / 交付"
 L["副本内"] = "副本内"
 L["已完成"] = "已完成"

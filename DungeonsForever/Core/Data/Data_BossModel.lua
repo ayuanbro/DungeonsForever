@@ -256,6 +256,14 @@ ns.BossModelDisplay = {
         ["Zolo"] = 6699,
         ["Zul'Lor"] = 6701,
     },
+    ["the_drowned_city"] = {
+        ["Captain Dreadrise"] = 142144,
+        ["Deathless Marrow"] = 142245,
+        ["Gill"] = 144023,
+        ["Min'loth the Serpent"] = 142286,
+        ["Var'Taka"] = 144487,
+        ["Zul'Alai"] = 144475,
+    },
     ["the_deadmines"] = {
         ["Captain Greenskin"] = 7113,
         ["Cookie"] = 1305,

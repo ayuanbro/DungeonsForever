@@ -610,6 +610,7 @@ local CUSTOM = {
     hall_of_thanes      = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\HallOfThanes",
     ruins_of_lordaeron  = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\RuinsOfLordaeron",
     excavation_wetlands = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\ExcavationSite",
+    the_drowned_city    = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\TheDrownedCity",
 }
 M.CUSTOM = CUSTOM
 
@@ -851,6 +852,7 @@ function M.NamePrefixFor(txt)
             if cand[i] == cur then return cur end
         end
     end
+    if #cand > 1 then return nil end
     return cand[1]
 end
 
@@ -1972,11 +1974,7 @@ function M.Build(detail, hero)
     frame.route = routeLayer
     frame.bossPinBtn = bossPinBtn
     frame.routePinBtn = routePinBtn
-    local pinStore = DungeonsForeverDB and DungeonsForeverDB.dungeon
-    M.hideBossPins = (pinStore and pinStore.mapBossHidden) and true or false
-    M.hideQuestPins = (pinStore and pinStore.mapQuestHidden) and true or false
-    M.hideNotePins = (pinStore and pinStore.mapNoteHidden) and true or false
-    M.hideOtherPins = (pinStore and pinStore.mapOtherHidden) and true or false
+    M.LoadMapState()
     M.frame = frame
     local queued = (type(DG) == "table" and type(DG.PushStep) == "function")
     if queued then
@@ -2306,6 +2304,7 @@ function M.BossColor(id, en)
 end
 
 M.routeHidden = {}
+M.routeOff = false
 
 M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns = true, hall_of_thanes = true, ruins_of_lordaeron = true, the_deadmines = true,
                shadowfang_keep = true, the_stockade = true,
@@ -2315,7 +2314,8 @@ M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns 
                blackrock_depths = true, lower_blackrock_spire = true, upper_blackrock_spire = true,
                maraudon = true, zul_farrak = true, sunken_temple = true, scholomance = true,
                stratholme_main = true, stratholme_service = true,
-               dire_maul_east = true, dire_maul_north = true, dire_maul_west = true }
+               dire_maul_east = true, dire_maul_north = true, dire_maul_west = true,
+               the_drowned_city = true }
 
 function M.RouteOn(id)
     return id ~= nil and M.ROUTE_ON[id] == true
@@ -2325,6 +2325,104 @@ function M.RouteSegKey(id, floor, idx)
     return tostring(id) .. ":" .. tostring(floor) .. ":" .. tostring(idx)
 end
 
+function M.MapStore()
+    local db = DungeonsForeverDB
+    if type(db) ~= "table" then return nil end
+    local s = db.dungeon
+    if type(s) ~= "table" then
+        s = {}
+        db.dungeon = s
+    end
+    return s
+end
+
+local function segLabel(sg)
+    if type(sg) ~= "table" or sg.from == nil or sg.to == nil then return nil end
+    return tostring(sg.from) .. ">" .. tostring(sg.to)
+end
+
+function M.SaveMapFlags()
+    local s = M.MapStore()
+    if not s then return end
+    s.mapBossHidden = M.hideBossPins or nil
+    s.mapQuestHidden = M.hideQuestPins or nil
+    s.mapNoteHidden = M.hideNotePins or nil
+    s.mapOtherHidden = M.hideOtherPins or nil
+    s.mapRouteThin = M.routeThin and nil or false
+    s.mapRoutePal = M.routePalette
+    s.mapRouteOff = M.routeOff or nil
+end
+
+function M.SaveSegHidden(id, floor)
+    local s = M.MapStore()
+    if not (s and id and floor) then return end
+    local segs = ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
+    local all = s.mapSegHidden
+    if type(all) ~= "table" then
+        all = {}
+        s.mapSegHidden = all
+    end
+    local dun = all[id]
+    if type(dun) ~= "table" then
+        dun = {}
+        all[id] = dun
+    end
+    local keep, n = nil, 0
+    if type(segs) == "table" then
+        for i = 1, #segs do
+            if M.routeHidden[M.RouteSegKey(id, floor, i)] then
+                local k = segLabel(segs[i])
+                if k then
+                    if not keep then keep = {} end
+                    if not keep[k] then n = n + 1 end
+                    keep[k] = true
+                end
+            end
+        end
+    end
+    dun[floor] = keep
+    if n == 0 then
+        dun[floor] = nil
+        if next(dun) == nil then all[id] = nil end
+        if next(all) == nil then s.mapSegHidden = nil end
+    end
+end
+
+function M.LoadMapState()
+    local out = {}
+    local s = M.MapStore()
+    if not s then
+        M.routeHidden = out
+        return out
+    end
+    M.hideBossPins = s.mapBossHidden and true or false
+    M.hideQuestPins = s.mapQuestHidden and true or false
+    M.hideNotePins = s.mapNoteHidden and true or false
+    M.hideOtherPins = s.mapOtherHidden and true or false
+    M.routeThin = not (s.mapRouteThin == false)
+    M.routeOff = s.mapRouteOff and true or false
+    local pal = s.mapRoutePal
+    if type(pal) == "string" and M.ROUTE_PAL_NAMES[pal] then M.routePalette = pal end
+    local all = s.mapSegHidden
+    if type(all) == "table" then
+        for id, dun in pairs(all) do
+            if type(dun) == "table" then
+                for floor, set in pairs(dun) do
+                    local segs = ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
+                    if type(segs) == "table" and type(set) == "table" then
+                        for i = 1, #segs do
+                            local k = segLabel(segs[i])
+                            if k and set[k] then out[M.RouteSegKey(id, floor, i)] = true end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    M.routeHidden = out
+    return out
+end
+
 function M.RouteVisibleCount(id, floor)
     if not M.RouteOn(id) then return 0, 0 end
     local segs = id and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
@@ -2332,7 +2430,7 @@ function M.RouteVisibleCount(id, floor)
     local vis, tot = 0, 0
     for i = 1, #segs do
         tot = tot + 1
-        if not M.routeHidden[M.RouteSegKey(id, floor, i)] then
+        if not M.routeOff and not M.routeHidden[M.RouteSegKey(id, floor, i)] then
             vis = vis + 1
         end
     end
@@ -2623,7 +2721,8 @@ function M.SyncRoute(id, floor, cw, ch)
     if hv.seg then hv:Set(nil) end
     local built = 0
     local cwOk = type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0
-    if type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0 and M.RouteOn(id) then
+    if type(cw) == "number" and cw > 0 and type(ch) == "number" and ch > 0
+            and M.RouteOn(id) and not M.routeOff then
         local segs = floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
         if type(segs) == "table" and #segs > 0 then
             local arr, total, dsh = {}, 0, {}
@@ -2841,9 +2940,10 @@ function M.SyncRouteNo(id, floor, cw, ch)
     local frame = M.frame
     local host = frame and frame.route
     if not host then return end
-    local segs = M.RouteOn(id) and floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
+    local segs = M.RouteOn(id) and not M.routeOff
+        and floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
     local items = M.SegNoItems(id, floor, segs, cw, ch, function(i)
-        return M.routeHidden[M.RouteSegKey(id, floor, i)]
+        return M.routeOff or M.routeHidden[M.RouteSegKey(id, floor, i)]
     end)
     frame.noUsed = M.SyncNoBadges(host, "detail", cw, ch, items)
 end
@@ -2855,13 +2955,29 @@ function M.ShowRouteMenu(owner)
     if type(segs) ~= "table" or #segs == 0 then return end
     local items = {}
     items[#items + 1] = {
+        text = format(L["路线显示：%s"], M.routeOff and L["关"] or L["开"]),
+        checked = not M.routeOff,
+        color = M.routeOff and "|cff7a6a52" or nil,
+        func = function()
+            if M.routeOff then M.routeOff = nil else M.routeOff = true end
+            M.SaveMapFlags()
+            M.SyncRoute(id, floor, M.frame and M.frame.pinW, M.frame and M.frame.pinH)
+            M.SyncPinBtns()
+            M.ShowRouteMenu(owner)
+        end,
+    }
+    items[#items + 1] = {
         text = L["全部显示"],
         func = function()
+            M.routeOff = nil
+            M.SaveMapFlags()
             for i = 1, #segs do
                 M.routeHidden[M.RouteSegKey(id, floor, i)] = nil
             end
+            M.SaveSegHidden(id, floor)
             M.SyncRoute(id, floor, M.frame and M.frame.pinW, M.frame and M.frame.pinH)
             M.SyncPinBtns()
+            M.ShowRouteMenu(owner)
         end,
     }
     items[#items + 1] = {
@@ -2870,23 +2986,29 @@ function M.ShowRouteMenu(owner)
             for i = 1, #segs do
                 M.routeHidden[M.RouteSegKey(id, floor, i)] = true
             end
+            M.SaveSegHidden(id, floor)
             M.SyncRoute(id, floor, M.frame and M.frame.pinW, M.frame and M.frame.pinH)
             M.SyncPinBtns()
         end,
     }
     for i = 1, #segs do
         local k = M.RouteSegKey(id, floor, i)
-        local hid = M.routeHidden[k] and true or false
+        local hid = (M.routeOff or M.routeHidden[k]) and true or false
         items[#items + 1] = {
             text = FloorWord(segs[i].from) .. " → " .. FloorWord(segs[i].to),
             checked = not hid,
             color = hid and "|cff7a6a52" or nil,
             func = function()
-                if hid then
+                if M.routeOff then
+                    M.routeOff = nil
+                    M.routeHidden[k] = nil
+                    M.SaveMapFlags()
+                elseif hid then
                     M.routeHidden[k] = nil
                 else
                     M.routeHidden[k] = true
                 end
+                M.SaveSegHidden(id, floor)
                 M.SyncRoute(id, floor, M.frame and M.frame.pinW, M.frame and M.frame.pinH)
                 M.SyncPinBtns()
                 M.ShowRouteMenu(owner)
@@ -2898,6 +3020,7 @@ function M.ShowRouteMenu(owner)
         color = "|cffe0c060",
         func = function()
             M.CycleRoutePalette()
+            M.SaveMapFlags()
             M.SyncRoute(id, floor, M.frame and M.frame.pinW, M.frame and M.frame.pinH)
             M.ShowRouteMenu(owner)
         end,
@@ -2907,8 +3030,7 @@ function M.ShowRouteMenu(owner)
         color = "|cffe0c060",
         func = function()
             M.routeThin = not M.routeThin
-            local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
-            if type(s) == "table" then s.mapRouteThin = M.routeThin and nil or false end
+            M.SaveMapFlags()
             M.SyncRoute(id, floor, M.frame and M.frame.pinW, M.frame and M.frame.pinH)
             M.ShowRouteMenu(owner)
         end,
@@ -3427,29 +3549,25 @@ end
 
 function M.ToggleBossPins()
     M.hideBossPins = not M.hideBossPins
-    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
-    if type(s) == "table" then s.mapBossHidden = M.hideBossPins or nil end
+    M.SaveMapFlags()
     M.SyncPins()
 end
 
 function M.ToggleQuestPins()
     M.hideQuestPins = not M.hideQuestPins
-    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
-    if type(s) == "table" then s.mapQuestHidden = M.hideQuestPins or nil end
+    M.SaveMapFlags()
     M.SyncPins()
 end
 
 function M.ToggleNotePins()
     M.hideNotePins = not M.hideNotePins
-    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
-    if type(s) == "table" then s.mapNoteHidden = M.hideNotePins or nil end
+    M.SaveMapFlags()
     M.SyncPins()
 end
 
 function M.ToggleOtherPins()
     M.hideOtherPins = not M.hideOtherPins
-    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
-    if type(s) == "table" then s.mapOtherHidden = M.hideOtherPins or nil end
+    M.SaveMapFlags()
     M.SyncPins()
 end
 
@@ -4764,3 +4882,5 @@ end
 M.FloorName = FloorName
 M.PaintBossPin = bpPaint
 M.BossPinDisplay = bpDisp
+
+if ns.Init then ns.Init(function() M.LoadMapState() end) end

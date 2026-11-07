@@ -3380,10 +3380,6 @@ end
 
 function BG.SyncFilterPop()
     if BG.usableTg then BG.usableTg:SetChecked(BG.onlyUsable) end
-    if BG.arrowTg and ns.BagArrow then BG.arrowTg:SetChecked(ns.BagArrow.On() and true or false) end
-    if BG.arrowScopeBtn and BG.arrowScopeBtn.lbl then
-        BG.arrowScopeBtn.lbl:SetText(BG.ArrowScopeText())
-    end
     if BG.filterLvBox then
         BG.filterLvBox:SetText(BG.filterLv and tostring(BG.filterLv) or "")
     end
@@ -3509,6 +3505,10 @@ function BG.SyncSettingPop()
         end
     end
     if BG.wHint then BG.wHint:SetShown(not sch) end
+    if BG.arrowTg and ns.BagArrow then BG.arrowTg:SetChecked(ns.BagArrow.On() and true or false) end
+    if BG.arrowScopeBtn and BG.arrowScopeBtn.lbl then
+        BG.arrowScopeBtn.lbl:SetText(BG.ArrowScopeText())
+    end
 end
 
 function BG.GeneratePlan()
@@ -4494,7 +4494,7 @@ local function BuildBrowser(parent)
         end)
     end
     local pop = CreateFrame("Frame", nil, parent)
-    pop:SetSize(170, 386)
+    pop:SetSize(170, 330)
     pop:EnableMouse(true)
     pop:SetFrameLevel(baseLv + 31)
     pop:Hide()
@@ -4629,32 +4629,6 @@ local function BuildBrowser(parent)
         ns.PlaySound(1)
     end)
 
-    local ag = CreateFrame("CheckButton", nil, pop)
-    ag:SetSize(36, 20)
-    ag:EnableMouse(true)
-    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(ag) end
-    ag:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -8, -330)
-    ag:SetScript("OnClick", function(self)
-        ns.PlaySound(1)
-        if ns.BagArrow then ns.BagArrow.SetOn(self:GetChecked() and true or false) end
-    end)
-    BG.arrowTg = ag
-    local al = MakeFS(pop, 14, C_TEXT, "RIGHT")
-    al:SetPoint("RIGHT", ag, "LEFT", -6, 0)
-    al:SetWordWrap(false)
-    al:SetText(L["背包提升箭头"])
-
-    local sb = NewButton(pop, "", 154, 22, 12)
-    sb:SetPoint("TOPLEFT", pop, "TOPLEFT", 8, -356)
-    sb.lbl = sb:GetFontString()
-    SetButtonSelected(sb, false)
-    sb:SetScript("OnClick", function()
-        if ns.BagArrow then ns.BagArrow.CycleScope() end
-        ns.PlaySound(1)
-        if BG.SyncFilterPop then BG.SyncFilterPop() end
-    end)
-    BG.arrowScopeBtn = sb
-
     local spop = CreateFrame("Frame", "DungeonsForever_BisSettings", ns.MainFrame or UIParent, "BackdropTemplate")
     spop:SetFrameLevel(512)
     spop:SetFrameStrata("HIGH")
@@ -4779,7 +4753,7 @@ local function BuildBrowser(parent)
     wchild:SetSize(204, #W_KEYS * 16 + 12)
     wscroll:SetScrollChild(wchild)
     wscroll:SetPoint("TOPLEFT", spop, "TOPLEFT", 8, -66)
-    wscroll:SetPoint("BOTTOMRIGHT", spop, "BOTTOMRIGHT", -10, 34)
+    wscroll:SetPoint("BOTTOMRIGHT", spop, "BOTTOMRIGHT", -10, 114)
     wscroll:SetScript("OnMouseWheel", function(_, delta)
         if DG.WheelScroll then DG.WheelScroll(wscroll, wchild, delta) end
     end)
@@ -4833,9 +4807,42 @@ local function BuildBrowser(parent)
     end
 
     BG.wHint = MakeFS(spop, 14, C_DIM, "LEFT")
-    BG.wHint:SetPoint("BOTTOMLEFT", spop, "BOTTOMLEFT", 8, 12)
+    BG.wHint:SetPoint("BOTTOMLEFT", spop, "BOTTOMLEFT", 8, 96)
     BG.wHint:SetWordWrap(false)
     BG.wHint:SetText(L["默认只读，添加方案后可编辑"])
+
+    local aline = spop:CreateTexture(nil, "ARTWORK")
+    aline:SetColorTexture(1, 1, 1, 0.08)
+    aline:SetSize(204, 1)
+    aline:SetPoint("BOTTOMLEFT", spop, "BOTTOMLEFT", 8, 78)
+
+    local atg = CreateFrame("CheckButton", nil, spop)
+    atg:SetSize(36, 20)
+    atg:EnableMouse(true)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(atg) end
+    atg:SetPoint("BOTTOMRIGHT", spop, "BOTTOMRIGHT", -8, 46)
+    atg:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        if ns.BagArrow then ns.BagArrow.SetOn(self:GetChecked() and true or false) end
+    end)
+    BG.arrowTg = atg
+    local atl = MakeFS(spop, 14, C_TEXT, "LEFT")
+    atl:SetPoint("LEFT", atg, "LEFT", -166, 0)
+    atl:SetWidth(160)
+    atl:SetJustifyH("LEFT")
+    atl:SetWordWrap(false)
+    atl:SetText(L["背包提升箭头"])
+
+    local sb = NewButton(spop, "", 154, 22, 12)
+    sb:SetPoint("BOTTOMLEFT", spop, "BOTTOMLEFT", 8, 12)
+    sb.lbl = sb:GetFontString()
+    SetButtonSelected(sb, false)
+    sb:SetScript("OnClick", function()
+        if ns.BagArrow then ns.BagArrow.CycleScope() end
+        ns.PlaySound(1)
+        if BG.SyncSettingPop then BG.SyncSettingPop() end
+    end)
+    BG.arrowScopeBtn = sb
 end
 
 local function BuildEnchCard(parent)

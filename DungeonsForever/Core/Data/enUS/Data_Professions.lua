@@ -253,6 +253,12 @@ ns.ProfData = {
             recipes = 40,
             sub = 5,
             kinds = { Recipe=36, Blueprint=4 },
+            ranks = {
+                { "Apprentice", "75", "Learn from a cooking trainer.", nil },
+                { "Adept", "150", "Learn from a cooking trainer.", nil },
+                { "Expert", "225", "Learned from the book \"{book}\"; requires Cooking 125. Sold by Shandrina (Alliance) and Wulan (Horde).", 16082 },
+                { "Master", "300", "Reach Cooking 225, then complete Clamlette Surprise from Dirge Quikcleave in Gadgetzan. Requires level 35.", nil },
+            },
             camp = {
                 { 279981, "Apprentice Campfire Kit", "inv_camelot_camping_welcomingcampfire", 1, "A cooking campfire that can hold 3 camp objects", "", "A cooking campfire that can hold 3 camp objects", "", "", "3", { { 4470, 1 } }, nil },
                 { 279957, "Cookie's Feast", "inv_cooking_80_majorfeast", 140, "Provides stamina food to everyone at camp", "", "Provides stamina food to everyone at camp", "", "", "", { { 12037, 2 }, { 12204, 1 }, { 3713, 1 } }, { 273102, 0 } },
@@ -295,8 +301,8 @@ ns.ProfData = {
             ranks = {
                 { "Apprentice", "75", "Learn from a fishing trainer.", nil },
                 { "Adept", "150", "Learn from a fishing trainer.", nil },
-                { "Expert", "225", "Learned from the book \"{book}\"; requires level 20 and Fishing 125. Sold in Booty Bay in Classic Era.", 16083 },
-                { "Master", "300", "In Classic Era, earned via a quest from Nat Pagle in Dustwallow Marsh once fishing reaches 225.", nil },
+                { "Expert", "225", "Learned from the book \"{book}\"; requires level 20 and Fishing 125. Sold in Booty Bay.", 16083 },
+                { "Master", "300", "Reach Fishing 225, then take the quest from Nat Pagle in Dustwallow Marsh and complete it.", nil },
             },
             fishing = {
                 spells = {
@@ -346,6 +352,12 @@ ns.ProfData = {
             recipes = 32,
             sub = 7,
             kinds = { Manual=9, Blueprint=2 },
+            ranks = {
+                { "Apprentice", "75", "Learn from a first aid trainer.", nil },
+                { "Adept", "150", "Learn from a first aid trainer.", nil },
+                { "Expert", "225", "Learned from the book \"{book}\"; requires First Aid 125. Sold by Deneb Walker (Alliance) and Balai Lok'Wein (Horde).", 16084 },
+                { "Master", "300", "Reach First Aid 225, then complete the Triage quest from your faction's doctor in Theramore (Alliance) or Hammerfall (Horde). Requires level 35.", nil },
+            },
             camp = {
                 { 279968, "First Aid Kit", "inv_misc_bandage_11", 20, "Gives 56 Stamina to everyone sitting nearby, like Power Word: Fortitude (value at level 60, scales with level)", "56 Stamina", "Gives 56 Stamina to everyone sitting nearby, like Power Word: Fortitude", "", "Power Word: Fortitude", "", { { 1251, 3 }, { 159, 1 } }, nil },
                 { 279940, "Toxin Studies", "inv_misc_potiona3", 140, "Stores healing potions and antidotes, and provides the First Aid Kit buff", "", "Stores healing potions and antidotes", "First Aid Kit", "", "", { { 6452, 1 }, { 8544, 2 }, { 4470, 2 } }, { 273105, 0 } },

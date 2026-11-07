@@ -5,7 +5,6 @@ ns.InstanceMap = {
         [229] = "lower_blackrock_spire",
     },
     map = {
-        [947] = "lower_blackrock_spire",
     },
     name = {
         ["黑石塔"] = "lower_blackrock_spire",

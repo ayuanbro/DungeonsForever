@@ -86,15 +86,38 @@ local function professionData(slug)
     end
     return out
 end
+local function rangeSpan(text)
+    local lo,hi=string.match(tostring(text or ""),"^(%d+)%-(%d+)$")
+    return tonumber(lo),tonumber(hi)
+end
+local function rangeCovers(outer,inner)
+    local olo,ohi=rangeSpan(outer)
+    local ilo,ihi=rangeSpan(inner)
+    if not (olo and ilo) then return outer==inner end
+    return olo<=ilo and ohi>=ihi
+end
+local questMeta={
+    fishing={[4]={id=6607,name={"钓鱼专家纳特·帕格","釣魚專家納特·帕格","Nat Pagle, Angler Extreme"}}},
+    cooking={[4]={id=6610,name={"蚌肉大餐","蚌肉大餐","Clamlette Surprise"}}},
+}
+local function questOf(slug,rank)
+    local row=questMeta[slug] and questMeta[slug][rank]
+    if not row then return end
+    return row.id,row.name
+end
 local function sourcesFor(slug,entry,state)
     local out={}
     local data=trainerData(slug)
     for _,raw in ipairs(data and data.list or {}) do
-        if raw.rng==entry.trainerRange and (not state.faction or not raw.fac or raw.fac=="N" or raw.fac==state.faction) then
-            out[#out+1]={kind=entry.method=="book" and "vendor" or entry.method,
+        if rangeCovers(raw.rng,entry.trainerRange) and (not state.faction or not raw.fac or raw.fac=="N" or raw.fac=="B" or raw.fac==state.faction) then
+            local kind=entry.method=="book" and "vendor" or entry.method
+            local questID,questName
+            if kind=="quest" then questID,questName=questOf(slug,entry.rank) end
+            out[#out+1]={kind=kind,
                 name={zhCN=raw.zh,zhTW=raw.tw,enUS=raw.en},
                 zone={zhCN=raw.loc_zh,zhTW=raw.loc_tw,enUS=raw.loc_en},
-                faction=raw.fac,map=raw.map,x=raw.x,y=raw.y,npcID=raw.npcID,itemID=entry.bookItemID}
+                faction=raw.fac,map=raw.map,x=raw.x,y=raw.y,npcID=raw.npcID,itemID=entry.bookItemID,
+                questID=questID,questName=questName}
         end
     end
     if #out==0 then

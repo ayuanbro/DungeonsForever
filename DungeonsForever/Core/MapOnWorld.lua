@@ -563,7 +563,7 @@ local function syncRoute(view, id, floor, cw, ch)
     local hv = M.NewSegHover(view.route, function(si, on) paintSegWorld(view, si, on) end)
     if hv.seg then hv:Set(nil) end
     view.routeUsed = 0
-    if id and floor and M.RouteOn(id) then
+    if id and floor and M.RouteOn(id) and not M.routeOff then
         local segs = ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
         if type(segs) == "table" and #segs > 0 then
             local arr, total, dsh = {}, 0, {}
@@ -640,7 +640,7 @@ local function syncRoute(view, id, floor, cw, ch)
     end
     local rsegs = id and floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
     local nb = M.SyncNoBadges(view.route, "world", cw, ch, M.SegNoItems(id, floor, rsegs, cw, ch, function(i)
-        return M.routeHidden[M.RouteSegKey(id, floor, i)]
+        return M.routeOff or M.routeHidden[M.RouteSegKey(id, floor, i)]
     end))
     view.route:SetShown(n > 0 or (nb or 0) > 0)
 end
@@ -1424,13 +1424,21 @@ local function routeToggle(self, button)
         return
     end
     local floor = floorNumAt(id, M.curLayer or 1)
-    local segs = floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
-    if type(segs) ~= "table" or #segs == 0 then return end
-    local vis = M.RouteVisibleCount(id, floor)
-    local hideAll = (vis > 0)
-    for i = 1, #segs do
-        M.routeHidden[M.RouteSegKey(id, floor, i)] = hideAll or nil
+    local vis, tot = 0, 0
+    if floor then vis, tot = M.RouteVisibleCount(id, floor) end
+    if M.routeOff or (tot > 0 and vis < tot) then
+        M.routeOff = nil
+        local segs = floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
+        if type(segs) == "table" and #segs > 0 then
+            for i = 1, #segs do
+                M.routeHidden[M.RouteSegKey(id, floor, i)] = nil
+            end
+            M.SaveSegHidden(id, floor)
+        end
+    else
+        M.routeOff = true
     end
+    M.SaveMapFlags()
     W.Sync()
 end
 
@@ -2302,7 +2310,7 @@ local function signature(id)
         tostring(id), tostring(M.curLayer), tostring(M.detailEn),
         tostring(M.hideBossPins), tostring(M.hideQuestPins), tostring(M.hideNotePins),
         tostring(M.hideOtherPins),
-        tostring(M.routeThin), tostring(M.routePalette),
+        tostring(M.routeThin), tostring(M.routePalette), tostring(M.routeOff),
         tostring(vis), tostring(tot),
     }, "|")
 end

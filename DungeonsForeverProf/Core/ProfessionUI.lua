@@ -3714,6 +3714,19 @@ local function TrRngLow(rng)
     return tonumber(rng:match("^(%d+)")) or 0
 end
 
+local function TrRankFor(d, rng)
+    local ranks = d and d.ranks or {}
+    local hi, lo = tonumber(rng:match("(%d+)$")), TrRngLow(rng)
+    for i, r in ipairs(ranks) do
+        if tonumber(r.cap) == hi then
+            local prev = ranks[i - 1]
+            local pcap = prev and tonumber(prev.cap)
+            if pcap and lo < pcap then return r, prev end
+            return r
+        end
+    end
+end
+
 local function TrNameOf(t)
     local loc = (GetLocale() == "zhTW") and t.tw or t.zh
     return (loc and loc ~= "") and loc or t.en
@@ -3775,7 +3788,7 @@ function PD.FillTrainerBoard()
     local maxH = 0
     for ci, rng in ipairs(rngs) do
         local x0 = (ci - 1) * (COL_W + GAP)
-        local rk = d.ranks and d.ranks[ci]
+        local rk, rkLo = TrRankFor(d, rng)
         local rc = TR_RANK_COLOR[ci] or TR_RANK_COLOR[#TR_RANK_COLOR]
         fsN = fsN + 1
         local h1 = root.__fs[fsN]
@@ -3783,6 +3796,10 @@ function PD.FillTrainerBoard()
         h1:ClearAllPoints()
         h1:SetPoint("TOPLEFT", root, "TOPLEFT", x0, 0)
         local rkName = rk and (GetLocale() == "zhTW" and rk.tw or rk.zh) or nil
+        if rkLo then
+            local loName = GetLocale() == "zhTW" and rkLo.tw or rkLo.zh
+            if loName and loName ~= "" then rkName = loName .. "/" .. (rkName or "") end
+        end
         h1:SetText((rkName and (rkName .. " ") or "") .. rng)
         h1:Show()
         fsN = fsN + 1
@@ -5797,33 +5814,38 @@ function PD.UpdateCalculationNotice()
         return false
     end
     if not notice then
+        local hui = ns.hui
+        local LR = hui and hui.layer
         notice = CreateFrame("Frame", nil, PD.page, "BackdropTemplate")
         notice:SetAllPoints(PD.scroll or PD.page)
         local level = PD.page:GetFrameLevel()
         notice:SetFrameLevel((type(level) == "number" and level or 0) + 150)
+        local scrim = (LR and LR.L0) or { 0.04, 0.05, 0.06, 1 }
         notice:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
-        notice:SetBackdropColor(0, 0, 0, 0.55)
+        notice:SetBackdropColor(scrim[1], scrim[2], scrim[3], 0.62)
         notice:EnableMouse(true)
         notice:EnableMouseWheel(true)
         notice:SetScript("OnMouseWheel", function() end)
         local panel = CreateFrame("Frame", nil, notice, "BackdropTemplate")
         panel:SetSize(440, 220)
         panel:SetPoint("CENTER", notice, "CENTER", 0, 0)
-        if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
-            ns.hui.BuildRoundedBG(panel, 8, ns.hui.layer.L4, "both", true, 1)
+        if hui and hui.SkinPopup and LR then
+            hui.SkinPopup(panel, 8, "both", LR.L1)
+            if hui.SkinShadow then hui.SkinShadow(panel, nil, nil, 8) end
         else
             panel:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8",
                 edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
-            panel:SetBackdropColor(0.08, 0.09, 0.11, 1)
-            panel:SetBackdropBorderColor(0.93, 0.76, 0.32, 1)
+            panel:SetBackdropColor(0x10 / 255, 0x13 / 255, 0x1A / 255, 1)
+            panel:SetBackdropBorderColor(1, 1, 1, 0.1)
         end
         notice.panel = panel
-        local title = MakeFS(panel, 15, C_GOLD, "LEFT")
+        local headInk = (hui and hui.TEXT and hui.TEXT[1]) or C_WHITE
+        local title = MakeFS(panel, 16, headInk, "LEFT")
         title:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -16)
         title:SetWidth(408)
         title:SetText(L["正在计算，请暂时不要操作"])
         notice.title = title
-        local message = MakeFS(panel, 13, C_TEXT, "LEFT")
+        local message = MakeFS(panel, 14, C_TEXT, "LEFT")
         message:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -44)
         message:SetSize(408, 64)
         message:SetWordWrap(true)
@@ -5837,13 +5859,20 @@ function PD.UpdateCalculationNotice()
         local bar = CreateFrame("Frame", nil, panel)
         bar:SetSize(408, 6)
         bar:SetPoint("TOPLEFT", panel, "TOPLEFT", 16, -140)
-        local bg = bar:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints(); bg:SetColorTexture(0, 0, 0, 0.72)
+        local track = bar:CreateTexture(nil, "BACKGROUND")
+        track:SetAllPoints()
         local fill = bar:CreateTexture(nil, "ARTWORK")
         fill:SetPoint("LEFT", bar, "LEFT", 1, 0)
-        fill:SetColorTexture(0.93, 0.76, 0.32, 1)
         notice.fill = fill
-        notice.stop = NewButton(panel, L["停止计算"], 144, 26, 14)
+        local function paintBar()
+            local tk = (LR and LR.L0) or { 0.04, 0.05, 0.06, 1 }
+            track:SetColorTexture(tk[1], tk[2], tk[3], 1)
+            local ac = PD.PCAccent()
+            fill:SetColorTexture(ac[1], ac[2], ac[3], 1)
+        end
+        paintBar()
+        if hui and hui.AddRepaint then hui.AddRepaint(notice, paintBar) end
+        notice.stop = NewButton(panel, L["停止计算"], 144, 24, 14)
         notice.stop:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -16, 16)
         notice.stop:SetScript("OnClick", function()
             local slug = notice.slug
@@ -5852,8 +5881,8 @@ function PD.UpdateCalculationNotice()
             PD.UpdateCalculationNotice()
             PD.RequestRender()
         end)
-        notice.smooth = NewButton(panel, L["切回流畅"], 144, 26, 14)
-        notice.smooth:SetPoint("RIGHT", notice.stop, "LEFT", -10, 0)
+        notice.smooth = NewButton(panel, L["切回流畅"], 144, 24, 14)
+        notice.smooth:SetPoint("RIGHT", notice.stop, "LEFT", -8, 0)
         notice.smooth:SetScript("OnClick", function()
             PD.SetSettingRaw("computationSpeed", "normal")
             PD.__turboPlanPaint = nil
@@ -5916,11 +5945,17 @@ function PD.PaintToolBar(frac)
         bar:SetPoint("RIGHT", PD.__progFs, "LEFT", -8, 0)
         local bg = bar:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(0, 0, 0, 0.72)
         local fill = bar:CreateTexture(nil, "ARTWORK")
         fill:SetPoint("LEFT", bar, "LEFT", 1, 0)
         fill:SetSize(1, 4)
-        fill:SetColorTexture(0.93, 0.76, 0.32, 1)
+        local function paintBar()
+            local tk = (ns.hui and ns.hui.layer and ns.hui.layer.L0) or { 0.04, 0.05, 0.06, 1 }
+            bg:SetColorTexture(tk[1], tk[2], tk[3], 1)
+            local ac = PD.PCAccent()
+            fill:SetColorTexture(ac[1], ac[2], ac[3], 1)
+        end
+        paintBar()
+        if ns.hui and ns.hui.AddRepaint then ns.hui.AddRepaint(bar, paintBar) end
         PD.__progBar = bar
         PD.__progFill = fill
     end
@@ -6139,7 +6174,7 @@ function PD.PaintLvTiles()
     if not (tiles and tiles.mode) then return 0 end
     if PD.IsGatherRoute() then return PD.PaintGatherTiles() end
     if PD.tab ~= "leveling" or PD.setOpen then
-        for _, k in ipairs({ "mode", "scheme", "excl", "target" }) do
+        for _, k in ipairs({ "mode", "scheme", "excl", "target", "spec" }) do
             tiles[k].__use = false
             tiles[k]:Hide()
         end
@@ -6148,6 +6183,8 @@ function PD.PaintLvTiles()
         return 0
     end
     for _, k in ipairs({ "mode", "scheme", "excl", "target" }) do tiles[k].__use = true end
+    tiles.spec.__use = false
+    tiles.spec:SetScript("OnClick", nil)
     local s = PD.lvSummary or {}
     local _,scanBlocked=PD.ReplicateScanWarning()
     local scanNotice=PD.ScanSnapshotText()
