@@ -3039,12 +3039,12 @@ function M.SyncPins()
                     if needLv and (UnitLevel("player") or 0) < needLv then
                         M.PaintQuestPin(bt, "lv", 1)
                         bt.__qState = "lv"
-                    elseif preBlock[p.id] then
-                        M.PaintQuestPin(bt, "pre", 1)
-                        bt.__qState, bt.__qPreOf = "pre", preBlock[p.id]
                     elseif lockedPre[p.id] then
                         M.PaintQuestPin(bt, "locked", 1)
                         bt.__qState, bt.__qPre = "locked", lockedPre[p.id]
+                    elseif preBlock[p.id] then
+                        M.PaintQuestPin(bt, "pre", 1)
+                        bt.__qState, bt.__qPreOf = "pre", preBlock[p.id]
                     else
                         M.PaintQuestPin(bt, "avail", 1)
                         bt.__qState = "avail"
@@ -4475,18 +4475,16 @@ function M.SyncWorldQuestPins()
             x, y = wpProject(e.loc[1], (e.loc[2] or 0) / 100, (e.loc[3] or 0) / 100, disp)
         end
         if x then
-            local hasReady, hasPre, hasLocked = false, false, false
+            local hasReady, hasLocked = false, false
             for qi = 1, #e.qs do
                 local it = e.qs[qi]
-                if it.lvLow then hasLocked = true
-                elseif it.blocking then hasPre = true
-                elseif it.blocked then hasLocked = true
-                else hasReady = true end
+                if it.lvLow or it.blocked then hasLocked = true
+                elseif not it.blocking then hasReady = true end
             end
             local p = wpPinAcquire(canvas)
             p.__qs = e.qs
             p.__zone = e.loc[4]
-            local key = hasReady and "avail" or (hasPre and "pre" or "locked")
+            local key = hasReady and "avail" or (hasLocked and "locked" or "pre")
             M.PaintQuestPin(p, key, 1, "world")
             p:SetSize(size, size)
             p:SetScale(k)

@@ -755,12 +755,12 @@ local function syncPins(view, id, floor, cw, ch)
                     if needLv and (UnitLevel("player") or 0) < needLv then
                         M.PaintQuestPin(bt, "lv", 1)
                         bt.__qState = "lv"
-                    elseif preBlock[p.id] then
-                        M.PaintQuestPin(bt, "pre", 1)
-                        bt.__qState, bt.__qPreOf = "pre", preBlock[p.id]
                     elseif lockedPre[p.id] then
                         M.PaintQuestPin(bt, "locked", 1)
                         bt.__qState, bt.__qPre = "locked", lockedPre[p.id]
+                    elseif preBlock[p.id] then
+                        M.PaintQuestPin(bt, "pre", 1)
+                        bt.__qState, bt.__qPreOf = "pre", preBlock[p.id]
                     else
                         M.PaintQuestPin(bt, "avail", 1)
                         bt.__qState = "avail"

@@ -214,11 +214,19 @@ function ST.Rows()
                     name = sp.name, icon = sp.icon,
                     tab = tab.name, learn = baseLv,
                 }
-                if sp.isTalent then
+                local nr = sp.ranks and #sp.ranks or 0
+                local knownAny = false
+                if nr > 0 then
+                    for i = 1, nr do
+                        if ST.Knows(sp.ranks[i].id) then knownAny = true break end
+                    end
+                else
+                    knownAny = ST.Knows(sp.id)
+                end
+                if sp.isTalent and not knownAny then
                     row.id = sp.id
                     groups.talent[#groups.talent + 1] = row
                 else
-                    local nr = sp.ranks and #sp.ranks or 0
                     local curRank = nil
                     if nr > 0 then
                         for i = nr, 1, -1 do

@@ -53,7 +53,7 @@ ns.SpellBookData = {
                 { rank = 5, learn = 48, id = 9852 },
                 { rank = 6, learn = 58, id = 9853 },
                 } },
-                { name = "Nature's Grasp", icon = "Interface\\Icons\\Spell_Nature_Natureswrath", id = 17329, learnLv = 10, isTalent = true, ranks = {
+                { name = "Nature's Grasp", icon = "Interface\\Icons\\Spell_Nature_Natureswrath", id = 17329, learnLv = 10, ranks = {
                 { rank = 1, learn = 10, id = 16689 },
                 { rank = 2, learn = 18, id = 16810 },
                 { rank = 3, learn = 28, id = 16811 },
@@ -73,7 +73,7 @@ ns.SpellBookData = {
                 { rank = 2, learn = 38, id = 18657 },
                 { rank = 3, learn = 58, id = 18658 },
                 } },
-                { name = "Omen of Clarity", icon = "Interface\\Icons\\Spell_Nature_Crystalball", id = 16864, learnLv = 20, isTalent = true },
+                { name = "Omen of Clarity", icon = "Interface\\Icons\\Spell_Nature_Crystalball", id = 16864, learnLv = 20 },
                 { name = "Starfire", icon = "Interface\\Icons\\Spell_Arcane_Starfire", id = 25298, learnLv = 20, ranks = {
                 { rank = 1, learn = 20, id = 2912 },
                 { rank = 2, learn = 26, id = 8949 },
@@ -423,7 +423,7 @@ ns.SpellBookData = {
                 { rank = 6, learn = 60, id = 15632 },
                 } },
                 { name = "Multi-Shot", icon = "Interface\\Icons\\Ability_Upgrademoonglaive", id = 2643, learnLv = 18 },
-                { name = "Aimed Shot", icon = "Interface\\Icons\\Inv_Spear_07", id = 20904, learnLv = 20, isTalent = true, ranks = {
+                { name = "Aimed Shot", icon = "Interface\\Icons\\Inv_Spear_07", id = 20904, learnLv = 20, ranks = {
                 { rank = 1, learn = 20, id = 19434 },
                 { rank = 2, learn = 28, id = 20900 },
                 { rank = 3, learn = 36, id = 20901 },
@@ -885,7 +885,7 @@ ns.SpellBookData = {
                 { rank = 5, learn = 54, id = 19854 },
                 { rank = 6, learn = 60, id = 25290 },
                 } },
-                { name = "Consecration", icon = "Interface\\Icons\\Spell_Holy_Innerfire", id = 20924, learnLv = 20, isTalent = true, ranks = {
+                { name = "Consecration", icon = "Interface\\Icons\\Spell_Holy_Innerfire", id = 20924, learnLv = 20, ranks = {
                 { rank = 1, learn = 20, id = 26573 },
                 { rank = 2, learn = 30, id = 20116 },
                 { rank = 3, learn = 40, id = 20922 },
@@ -992,7 +992,7 @@ ns.SpellBookData = {
                 } },
                 { name = "Righteous Fury", icon = "Interface\\Icons\\Spell_Holy_Sealoffury", id = 25780, learnLv = 16 },
                 { name = "Blessing of Freedom", icon = "Interface\\Icons\\Spell_Holy_Sealofvalor", id = 1044, learnLv = 18 },
-                { name = "Blessing of Kings", icon = "Interface\\Icons\\Spell_Magic_Magearmor", id = 20217, learnLv = 20, isTalent = true },
+                { name = "Blessing of Kings", icon = "Interface\\Icons\\Spell_Magic_Magearmor", id = 20217, learnLv = 20 },
                 { name = "Concentration Aura", icon = "Interface\\Icons\\Spell_Holy_Mindsooth", id = 19746, learnLv = 22 },
                 { name = "Seal of Justice", icon = "Interface\\Icons\\Spell_Holy_Sealofwrath", id = 20164, learnLv = 22 },
                 { name = "Shadow Resistance Aura", icon = "Interface\\Icons\\Spell_Shadow_Sealofkings", id = 19896, learnLv = 28, ranks = {
@@ -1172,7 +1172,7 @@ ns.SpellBookData = {
                 { rank = 4, learn = 48, id = 10875 },
                 { rank = 5, learn = 56, id = 10876 },
                 } },
-                { name = "Divine Spirit", icon = "Interface\\Icons\\Spell_Holy_Divinespirit", id = 27841, learnLv = 30, isTalent = true, ranks = {
+                { name = "Divine Spirit", icon = "Interface\\Icons\\Spell_Holy_Divinespirit", id = 27841, learnLv = 30, ranks = {
                 { rank = 1, learn = 30, id = 14752 },
                 { rank = 2, learn = 40, id = 14818 },
                 { rank = 3, learn = 50, id = 14819 },
@@ -1315,7 +1315,7 @@ ns.SpellBookData = {
                 { rank = 4, learn = 58, id = 10965 },
                 { rank = 5, learn = 60, id = 25314 },
                 } },
-                { name = "Lightwell", icon = "Interface\\Icons\\Spell_Holy_Summonlightwell", id = 27871, learnLv = 40, isTalent = true, ranks = {
+                { name = "Lightwell", icon = "Interface\\Icons\\Spell_Holy_Summonlightwell", id = 27871, learnLv = 40, ranks = {
                 { rank = 1, learn = 40, id = 724 },
                 { rank = 2, learn = 50, id = 27870 },
                 { rank = 3, learn = 60, id = 27871 },
@@ -2242,7 +2242,7 @@ ns.SpellBookData = {
                 { rank = 3, learn = 44, id = 11584 },
                 { rank = 4, learn = 60, id = 11585 },
                 } },
-                { name = "Tactical Mastery", icon = "Interface\\Icons\\Spell_Nature_Enchantarmor", id = 1310185, learnLv = 14, isTalent = true },
+                { name = "Tactical Mastery", icon = "Interface\\Icons\\Spell_Nature_Enchantarmor", id = 1310185, learnLv = 14 },
                 { name = "Mocking Blow", icon = "Interface\\Icons\\Ability_Warrior_Punishingblow", id = 20560, learnLv = 16, ranks = {
                 { rank = 1, learn = 16, id = 694 },
                 { rank = 2, learn = 26, id = 7400 },
