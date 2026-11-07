@@ -1144,7 +1144,8 @@ function M.NotePinsFor(id, floor)
         if type(arr) == "table" and (floor == nil or fl == floor) then
             for i = 1, #arr do
                 local p = arr[i]
-                if type(p) == "table" and p[1] and p[2] then
+                if type(p) == "table" and p[1] and p[2]
+                    and M.SideOK((p[4] == "A" or p[4] == "H") and p[4] or nil) then
                     out = out or {}
                     out[#out + 1] = {
                         kind = "note", left = p[1], top = p[2],
