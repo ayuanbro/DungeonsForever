@@ -302,7 +302,7 @@ PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.autoResidualMass = false
 PD.SETTING_DEF.autoReserveMode = "standard"
-PD.SETTING_DEF.computationSpeed = "normal"
+PD.SETTING_DEF.computationSpeed = "fast"
 PD.SETTING_DEF.recoveryEnabled = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
@@ -420,7 +420,7 @@ end
 
 function PD.ComputationSpeedLabel()
     local mode = PD.SettingRaw("computationSpeed")
-    return mode == "fast" and L["快速"] or mode == "turbo" and L["极速"] or L["流畅（默认）"]
+    return mode == "fast" and L["快速（默认）"] or mode == "turbo" and L["极速"] or L["流畅"]
 end
 
 function PD.CycleReserveMode()
@@ -14817,8 +14817,8 @@ function PD.RowsSettings(rows)
                     rows[#rows + 1] = { kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
                         text = L["计算速度"], right = PD.ComputationSpeedLabel(),
                         act = PD.CycleComputationSpeed, help = { { L["计算速度"] },
-                            { L["点击切换：流畅（默认） / 快速 / 极速。"], 0.7, 0.7, 0.7 },
-                            { L["流畅保持当前计算节奏，优先减少对游戏帧率的影响。"], 0.7, 0.7, 0.7 },
+                            { L["点击切换：流畅 / 快速（默认） / 极速。"], 0.7, 0.7, 0.7 },
+                            { L["默认快速；如遇卡顿，可在提示框中点击「切回流畅」。"], 0.7, 0.7, 0.7 },
                             { L["快速每帧投入更多时间；极速进一步加速，可能明显掉帧或短暂卡顿。"], 0.7, 0.7, 0.7 },
                             { L["全部专业共用；切换立即作用于进行中的计算，保留当前结果和制作进度。"], 0.7, 0.7, 0.7 } } }
                 end

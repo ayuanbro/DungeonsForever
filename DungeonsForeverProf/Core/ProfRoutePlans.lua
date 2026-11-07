@@ -72,7 +72,7 @@ local function computationClock()
     return debugprofilestop and debugprofilestop() or (os and os.clock and os.clock()*1000) or 0
 end
 local function runSlice(job)
-    local speed=setting("computationSpeed","normal")
+    local speed=setting("computationSpeed","fast")
     local turbo=speed=="turbo"
     local budget=speed=="fast" and 8 or turbo and 60
     job.tickClockStride=turbo and 16 or nil
