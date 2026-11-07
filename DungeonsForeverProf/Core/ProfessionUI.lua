@@ -12108,11 +12108,11 @@ function PD.WindowShown()
     return (mf and mf.IsShown and mf:IsShown()) and true or false
 end
 
-function PD.StopSolverRoute()
+function PD.StopSolverRoute(slug)
     local SR = ns.ProfSolverRun
-    local aborting = (SR and SR.Running and SR.Running() and not PD.solverDone) and true or false
+    local aborting = (SR and SR.Running and SR.Running(slug) and not PD.solverDone) and true or false
     if aborting then PD.autoExact = nil end
-    if SR then SR.Stop() end
+    if SR then SR.Stop(slug) end
     PD.solverRunSerial = (PD.solverRunSerial or 0) + 1
     PD.solverSlug = nil
     PD.solverKey = nil
@@ -12256,6 +12256,14 @@ function PD.PlanRes(slug, opts)
     return PD.__planShown
 end
 
+function PD.AutoRouteEnabled(slug)
+    slug = slug or PD.cur
+    if not slug or PD.FixedOnly(slug) or PD.GATHER_SLUGS[slug] then return false end
+    if PD.CookingFishingMode(slug) or PD.Setting("autoRoute",slug) then return true end
+    local context = PD.RoutePairContext(slug)
+    return context and context.requiresPartner or false
+end
+
 function PD.BuildLvOpts(slug, current)
     if RA and RA.OptionsFor then return RA.OptionsFor(slug, current) end
     local fish = PD.CookingFishingMode(slug)
@@ -12297,13 +12305,12 @@ function PD.RevertPlan()
     PD.autoSnapshot, PD.autoSnapshotSlug = e, slug
     PD.autoExact = true
     PD.autoKey = PD.PlanKeyOf(slug, opts)
-    PD.forceExact = nil
     PD.exactFailed = {}
     return true
 end
 
-function PD.ClearPlanCache()
-    PD.StopSolverRoute()
+function PD.ClearPlanCache(slug)
+    PD.StopSolverRoute(slug)
     PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
     PD.autoKey, PD.autoExact = nil, nil
     if PD.exactFailed then
@@ -12318,7 +12325,6 @@ function PD.RecalcNeeded()
     local slug = PD.cur
     if not slug or slug == "__index" or PD.FixedOnly(slug) then return false end
     if PD.GATHER_SLUGS and PD.GATHER_SLUGS[slug] then return false end
-    if PD.forceExact then return false end
     local SR = ns.ProfSolverRun
     if SR and SR.Running and SR.Running(PD.cur) then return false end
     if not PD.Setting("autoRoute") and not PD.autoSnapshot then return false end
@@ -12929,9 +12935,7 @@ function PD.RowsLeveling(rows)
     local scheme = fishRoute and "fishing" or PD.SettingRaw("autoScheme")
     local pairContext = (not fishRoute) and PD.RoutePairContext() or nil
     local needPartner = (pairContext and pairContext.requiresPartner) and true or false
-    local smeltRoute = (PD.cur == "mining") and PD.GatherMode("mining") == "smelt"
-    local autoOn = (not PD.FixedOnly()) and (not smeltRoute) and (needPartner or (PD.WindowShown()
-                    and (fishRoute or PD.Setting("autoRoute")) and RA and true or false))
+    local autoOn = PD.AutoRouteEnabled() and (needPartner or PD.WindowShown()) and RA and true or false
     local target = PD.LvTarget()
     if PD.autoPage == nil or PD.autoPage == "route" then
         PD.RowsRankReminder(rows, target)
@@ -12951,11 +12955,7 @@ function PD.RowsLeveling(rows)
         opts.target = target
         PD.lvOpts = opts
         planKey = PD.PlanKeyOf(PD.cur, opts)
-        if PD.forceExact then
-            PD.forceExact=nil
-            opts.cpuLimitMs=8000
-            res=RA.Recalculate(PD.cur,opts)
-        else res=RA.Get(PD.cur,opts) end
+        res=RA.Get(PD.cur,opts)
         if res and res.slug and res.slug~=PD.cur then res=nil end
         if res and res.planVersion==2 then res.exact=true end
         if res and res.planVersion ~= 2 and not res.priced and scheme ~= "optim" then res = nil end
@@ -14341,6 +14341,7 @@ function PD.RouteSupplyNeedsRescan(plan)
 end
 
 function PD.LevelTool()
+    local routeSlug = PD.cur
     local fishRoute = PD.CookingFishingMode and PD.CookingFishingMode() or false
     local onLog = PD.autoPage == "log"
     local onRec = PD.autoPage == "recovery"
@@ -14411,12 +14412,17 @@ function PD.LevelTool()
         end
     end
     if not PD.FixedOnly() then
+        local automatic = PD.AutoRouteEnabled()
         local need = PD.RecalcNeeded()
-        local rec = { key = "recalc", align = "right", primary = true, glow = need, text = L["重新计算"] }
-        if PD.policyDirty and PD.policyDirty[PD.cur] then
+        local rec = { key = "recalc", align = "right", primary = true, glow = need,
+                      text = automatic and L["重新计算"] or L["刷新费用"] }
+        if automatic and PD.policyDirty and PD.policyDirty[PD.cur] then
             rec.text = L["重新计算（应用排除）"]
         end
-        if need then
+        if not automatic then
+            rec.tip = { { rec.text, 1, 0.82, 0 },
+                { L["按最新报价刷新固定参考路线的采购费用，配方顺序不变。"], 0.85, 0.85, 0.85 } }
+        elseif need then
             local why = L["按当前价格与设置重新计算，后台计算预算为 8 秒；结果不保证最优。"]
             rec.tip = { { rec.text, 1, 0.82, 0 }, { why, 0.85, 0.85, 0.85 } }
         end
@@ -14456,22 +14462,36 @@ function PD.LevelTool()
             if pf and pf.ImportShoppingList then pcall(pf.ImportShoppingList, PD.cur, name) end
             ns.PlaySound(1)
         elseif k == "recalc" then
+            if PD.cur ~= routeSlug then return end
+            local slug = routeSlug
             local follow = ns.ProfFollow
-            if follow and follow.SuspendAutoTrack then follow.SuspendAutoTrack(PD.cur, "recalculate") end
+            if follow and follow.SuspendAutoTrack then follow.SuspendAutoTrack(slug, "recalculate") end
             if RA and RA.EndExecution then
-                RA.EndExecution(PD.cur)
+                RA.EndExecution(slug)
             else
                 local T = ns.ProfExecution
-                if T and T.End then T.End(PD.cur, "ended") end
+                if T and T.End then T.End(slug, "ended") end
             end
             PD.exclusionsOpen = false
-            PD.ClearPlanCache()
+            PD.ClearPlanCache(slug)
             PD.exactFailed = {}
             local E = ns.ProfEconomy
-            if E and E.ApplyPolicies then E.ApplyPolicies(PD.cur) end
+            if E and E.ApplyPolicies then E.ApplyPolicies(slug) end
             if RA and RA.Invalidate then RA.Invalidate() end
-            if PD.policyDirty then PD.policyDirty[PD.cur] = nil end
-            PD.forceExact = true
+            if PD.policyDirty then PD.policyDirty[slug] = nil end
+            PD.autoPage = "route"
+            local learned = PD.ProfLearned and PD.ProfLearned() or {}
+            local opts = PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur)
+            opts.target = PD.LvTarget(slug)
+            local result
+            if PD.AutoRouteEnabled(slug) then
+                if RA and RA.Recalculate then result = RA.Recalculate(slug, opts) end
+            elseif RA and RA.FixedPlan then result = RA.FixedPlan(slug, opts) end
+            if result then
+                PD.autoSnapshot, PD.autoSnapshotSlug = result, slug
+                PD.autoKey = PD.PlanKeyOf(slug, opts)
+                PD.autoExact = result.planVersion == 2
+            end
             PD.RequestRender()
             ns.PlaySound(1)
         elseif k == "exclusions" then
