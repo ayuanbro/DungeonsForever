@@ -302,7 +302,7 @@ PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.autoResidualMass = false
 PD.SETTING_DEF.autoReserveMode = "standard"
-PD.SETTING_DEF.computationSpeed = "normal"
+PD.SETTING_DEF.computationSpeed = "fast"
 PD.SETTING_DEF.recoveryEnabled = false
 PD.SETTING_DEF.recoveryFeePercent = 5
 PD.SETTING_DEF.autoCraftTools = true
@@ -420,7 +420,7 @@ end
 
 function PD.ComputationSpeedLabel()
     local mode = PD.SettingRaw("computationSpeed")
-    return mode == "fast" and L["快速"] or mode == "turbo" and L["极速"] or L["流畅（默认）"]
+    return mode == "fast" and L["快速（默认）"] or mode == "turbo" and L["极速"] or L["流畅"]
 end
 
 function PD.CycleReserveMode()
@@ -11183,16 +11183,24 @@ end
 
 function PD.PlanStatusParts(plan)
     if not plan then return L["正在计算升级路线…"] end
+    local hasProgress=PD.PlanHasSteps(plan) or (tonumber(plan.plannedTo) or 0)>(tonumber(plan.start) or 1)
     if plan.referenceOnly then return L["固定攻略参考；逐配方资料待补全。"] end
     if plan.diagnosticPolicyChanged then return L["路线规则已更新，请重新计算。"] end
     if plan.learningBlockReason=="learningPolicyChanged" then return L["学习资料已更新，请重新计算；执行记录与进度已保留。"] end
     if PD.PlanLearningBlocked(plan) then
-        if PD.PlanHasSteps(plan) then return format(L["已计算至%d"],plan.plannedTo or plan.start or 1),L["后续学习资料缺失，暂时无法到达目标。"] end
+        if hasProgress then return format(L["%d后续资料缺失，暂时无路线"],plan.plannedTo or plan.start or 1) end
         return L["学习资料不足，当前无法到达目标。"]
     end
-    if plan.feasible==false then
+    if plan.feasible==false or plan.partial and not plan.targetReached then
         local blockers=plan.blockingDiagnostics
-        local diagnostics=blockers and #blockers>0 and blockers or plan.diagnostics or {}
+        local diagnostics=blockers or plan.diagnostics or {}
+        for _,diagnostic in ipairs(diagnostics) do
+            if diagnostic.code=="auctionSupplyLimited" and not plan.targetReached then
+                local message=format(L["当前拍卖行材料不足以升到%d级。"],plan.target or 300)
+                if hasProgress then return format(L["已计算至%d"],plan.plannedTo or plan.start or 1),message end
+                return message
+            end
+        end
         for _,diagnostic in ipairs(diagnostics) do
             if (diagnostic.code=="auctionSupplyLimited" or diagnostic.code=="materialUnavailable")
                 and ns.ProfEconomy and ns.ProfEconomy.DiagnosticText then
@@ -12198,21 +12206,6 @@ function PD.PlanDiagnostics(emit, plan)
     end
 end
 
-function PD.RowsLearningBlockers(rows,plan)
-    if not PD.PlanLearningBlocked(plan) or plan.diagnosticPolicyChanged then return end
-    local gaps=PD.BlockingLearningGaps(plan)
-    if #gaps==0 then return end
-    PushGap(rows,6)
-    for i=1,math.min(3,#gaps) do
-        PushText(rows,PD.LearningGapText(gaps[i]),12,{0.95,0.75,0.4})
-    end
-    if #gaps>3 then
-        PushText(rows,format(L["另有 %d 项学习资料缺口；可在配方目录查看具体原因。"],#gaps-3),11,C_GREY)
-    end
-    PushGap(rows,4)
-    PushText(rows,L["已学配方请打开专业窗口刷新；训练师配方请打开对应训练师窗口记录学习条件和费用。"],11,C_GREY)
-end
-
 function PD.SolverText()
     local SR = ns.ProfSolverRun
     if PD.tab ~= "leveling" or PD.setOpen or not SR or not SR.Running(PD.cur) then
@@ -13109,7 +13102,6 @@ function PD.RowsLeveling(rows)
         if statusText ~= scanWarning then
             PushText(rows, statusText, 12, {0.95, 0.75, 0.4})
         end
-        PD.RowsLearningBlockers(rows,res)
         return
     end
     if PD.exclusionsOpen and autoOn then
@@ -13128,7 +13120,6 @@ function PD.RowsLeveling(rows)
                         total = res and res.total, priced = res and res.total ~= nil}
         PD.CopyPlanSummary(res)
         PushHead(rows, res and PD.PlanStatusText(res) or L["正在计算升级路线…"])
-        PD.RowsLearningBlockers(rows,res)
         if PD.PlanNoUpgradeNeeded(res) then
             PushText(rows,L["如需查看全程路线，可在设置中关闭「从当前技能开始计算」。"],12,C_GREY)
         end
@@ -13225,7 +13216,6 @@ function PD.RowsLeveling(rows)
     PD.CopyPlanSummary(res)
     local shownSum = auto and res or fixedSum
     notes.plan = shownSum
-    PD.RowsLearningBlockers(rows,shownSum)
     if shownSum and shownSum.scheme=="stable" then
         if (shownSum.greenLevelCrafts or 0)>0 then
             warning(format(L["当前路线仍含 %d 次绿色冲点；可检查其他配方和材料来源后重算。"],shownSum.greenLevelCrafts),0.95,0.75,0.4)
@@ -14817,8 +14807,8 @@ function PD.RowsSettings(rows)
                     rows[#rows + 1] = { kind = "row", h = PD.SET_ROW_H, col = col, fcol = col, fs = 14,
                         text = L["计算速度"], right = PD.ComputationSpeedLabel(),
                         act = PD.CycleComputationSpeed, help = { { L["计算速度"] },
-                            { L["点击切换：流畅（默认） / 快速 / 极速。"], 0.7, 0.7, 0.7 },
-                            { L["流畅保持当前计算节奏，优先减少对游戏帧率的影响。"], 0.7, 0.7, 0.7 },
+                            { L["点击切换：流畅 / 快速（默认） / 极速。"], 0.7, 0.7, 0.7 },
+                            { L["默认快速；如遇卡顿，可在提示框中点击「切回流畅」。"], 0.7, 0.7, 0.7 },
                             { L["快速每帧投入更多时间；极速进一步加速，可能明显掉帧或短暂卡顿。"], 0.7, 0.7, 0.7 },
                             { L["全部专业共用；切换立即作用于进行中的计算，保留当前结果和制作进度。"], 0.7, 0.7, 0.7 } } }
                 end

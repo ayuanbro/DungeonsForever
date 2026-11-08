@@ -246,7 +246,7 @@ function S.Result(job,state,status)
     local partial=not state and prefix and (prefix.skill[job.slug]>(job.opts.start or 1) or completedGoals(prefix)>0)
     if partial then state=prefix; partial=not goalsComplete(job,state) end
     local finalStatus = status or job.status
-    if state and state == job.best and not job.rebatchFinalized
+    if state and (state == job.best or state == prefix) and not job.rebatchFinalized
         and (finalStatus == "complete" or finalStatus == "incomplete")
         and job.rebatchFinal and coroutine.running()==job.co then
         job.rebatchFinalized = true
@@ -255,8 +255,9 @@ function S.Result(job,state,status)
         local candidate = job.rebatchFinal(state)
         job.phase=previousPhase;job.finalizing=finalizing
         if candidate and candidate ~= state then
+            if state == job.best then job.best = candidate else job.preview = candidate end
             state = candidate
-            job.best = candidate
+            if partial then partial=not goalsComplete(job,state) end
             job.resultState = nil
             job.resultCache = nil
         end
@@ -628,7 +629,7 @@ local function rebatchSameKeys(a, b)
     return true
 end
 
-local function rebatchEquivalent(a, b)
+local function rebatchEquivalent(a, b, progressGoals)
     if not a or not b or math.abs((a.money or 0) - (b.money or 0)) > 1e-7 then return false end
     if (b.greenLevelCrafts or 0)>(a.greenLevelCrafts or 0) then return false end
     if a.rebatchGreenCrafts~=nil and (b.rebatchGreenCrafts or 0)>a.rebatchGreenCrafts then return false end
@@ -642,7 +643,8 @@ local function rebatchEquivalent(a, b)
         local newSkill = b.skill[profession]
         if type(oldSkill) ~= "number" or type(newSkill) ~= "number"
             or newSkill < oldSkill then return false end
-        if newSkill == oldSkill and (b.progress and b.progress[profession] or 0) + 1e-7
+        if newSkill == oldSkill and oldSkill < (progressGoals and progressGoals[profession] or 300)
+            and (b.progress and b.progress[profession] or 0) + 1e-7
             < (a.progress and a.progress[profession] or 0) then return false end
     end
     return rebatchSameKeys(a.diagnostics, b.diagnostics)
@@ -826,7 +828,7 @@ local function rebatchGrayOrder(list,lo,hi,recipes,checkpoint)
     return out
 end
 
-function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMaterials)
+function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMaterials, progressGoals)
     if not original or type(replay) ~= "function" then return original end
     local list = actions(original)
     if #list < 3 or #list > 1600 then return original end
@@ -879,7 +881,7 @@ function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMa
         attempts=attempts+1
         if tick then tick() end
         local candidate=replay(candidateOrder)
-        if rebatchEquivalent(best,candidate) then
+        if rebatchEquivalent(best,candidate,progressGoals) then
             local score=rebatchSwitches(actions(candidate))
             if score<currentScore then best,order,currentScore=candidate,candidateOrder,score;return end
         end
@@ -1876,6 +1878,19 @@ function S.NewJob(slug,opts)
             t.rebatchGreenCrafts=greenCrafts
             return t
         end
+        local function preservesProgress(candidate,t)
+            local complete=goalsComplete(j,candidate)
+            if not t or not complete and t.skill[slug]~=candidate.skill[slug] then return false end
+            for p,skill in pairs(candidate.skill) do
+                local progressGoal=p==slug and complete and j.target or 300
+                if (t.skill[p] or 0)<skill or skill<progressGoal and t.skill[p]==skill
+                    and (t.progress[p] or 0)+1e-7<(candidate.progress[p] or 0) then return false end
+            end
+            for _,field in ipairs({"completedSpecializationGoals","completedToolGoals"}) do
+                for id in pairs(candidate[field]) do if not t[field][id] then return false end end
+            end
+            return true
+        end
         local function rebuildBatches(candidate,advance)
             local list=actions(candidate)
             local current=initial(j.snap,slug,opts,tick)
@@ -2015,7 +2030,7 @@ function S.NewJob(slug,opts)
                 tick()
             end
             local verified=replay(actions(current))
-            if not verified or not goalsComplete(j,verified) or uncertainty(verified)>uncertainty(candidate) then return end
+            if not preservesProgress(candidate,verified) or uncertainty(verified)>uncertainty(candidate) then return end
             if advance and not next(advanced) then return end
             local retry
             for key,n in pairs(advanced) do
@@ -2041,6 +2056,10 @@ function S.NewJob(slug,opts)
                 j.failures, j.collectFailures = {}, nil
                 local seeding,direct,aborted=j.seeding,j.directSeed,j.seedAborted
                 j.seeding=true;j.directSeed=true;j.seedAborted=false
+                local function replayFinal(list)
+                    local t=replay(list)
+                    if preservesProgress(candidate,t) then return t end
+                end
                 local rebuilt=rebuildBatches(candidate)
                 if rebuilt and not better(rebuilt,candidate) then rebuilt=nil end
                 local limits={}
@@ -2051,9 +2070,10 @@ function S.NewJob(slug,opts)
                     tick()
                 end
                 j.batchRecipes=nil;j.seeding,j.directSeed,j.seedAborted=seeding,direct,aborted
-                local baseline=candidate.rebatchGreenCrafts~=nil and candidate or replay(actions(candidate))
-                local result = rebuilt or baseline and rebatchEquivalent(candidate,baseline)
-                    and S.RebatchChronological(baseline, replay, tick, cpuTime, j.snap.byKey)
+                local baseline=candidate.rebatchGreenCrafts~=nil and candidate or replayFinal(actions(candidate))
+                local progressGoals=goalsComplete(j,candidate) and {[slug]=j.target} or nil
+                local result = rebuilt or baseline and rebatchEquivalent(candidate,baseline,progressGoals)
+                    and S.RebatchChronological(baseline, replayFinal, tick, cpuTime, j.snap.byKey, nil, progressGoals)
                 if result then
                     local seen,last,split={},nil,false
                     for _,a in ipairs(actions(result)) do
@@ -2066,7 +2086,7 @@ function S.NewJob(slug,opts)
                             last=key
                         end
                     end
-                    if split then result=S.RebatchChronological(result,replay,tick,cpuTime,j.snap.byKey,true) end
+                    if split then result=S.RebatchChronological(result,replayFinal,tick,cpuTime,j.snap.byKey,true,progressGoals) end
                 end
                 j.failures, j.collectFailures = failures, collected
                 j.restricted, j.restrictedReason = restricted, restriction
