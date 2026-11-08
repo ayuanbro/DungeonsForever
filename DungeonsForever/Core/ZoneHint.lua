@@ -43,6 +43,7 @@ local function CFG()
     end
     if c.foodVoice == nil then c.foodVoice = true end
     if c.restedVoice == nil then c.restedVoice = true end
+    if c.turnin == nil then c.turnin = true end
     if c.onlyTodo == nil then c.onlyTodo = false end
     if c.mode == nil then c.mode = "auto" end
     if c.dur == nil then c.dur = 12 end
@@ -343,6 +344,68 @@ local function BookRows(ctx)
         }
     end
     return list
+end
+
+local TURNIN_AREA = 1497
+
+local function TurnInSpot()
+    local TI = ns.ExploreTurnIn
+    if type(TI) ~= "table" then return nil end
+    local side = (UnitFactionGroup and UnitFactionGroup("player")) or nil
+    if type(side) == "string" then side = side:sub(1, 1) end
+    local pick
+    for i = 1, #TI do
+        local o = TI[i]
+        if type(o) == "table" and type(o.x) == "number" and type(o.y) == "number" then
+            if side and o.side == side then return o end
+            if not pick and o.area == TURNIN_AREA then pick = o end
+        end
+    end
+    return pick
+end
+
+local function TurnInRows(ctx)
+    local EG = ns.ExploreModule
+    if not (EG and EG.CountInBags and EG.ScanAuto) then return nil end
+    if not HereArea(TURNIN_AREA, ctx) then return nil end
+    pcall(EG.ScanAuto)
+    local auto = EG._auto or {}
+    local books = ns.ExploreBooks
+    if type(books) ~= "table" then return nil end
+    local spot = TurnInSpot()
+    local subTxt, descTxt = L["可上交"], L["在幽暗城上交背包里的书"]
+    if spot then
+        subTxt = string.format("%s · %.1f, %.1f", L["可上交"], spot.x, spot.y)
+        local nm, pl = tostring(spot.npc or ""), tostring(spot.place or "")
+        if nm ~= "" and pl ~= "" then
+            descTxt = string.format("%s（%s）", nm, pl)
+        elseif nm ~= "" then
+            descTxt = nm
+        end
+    end
+    local list = {}
+    for bk, rec in pairs(books) do
+        local iid = (rec and rec[1]) or bk
+        if auto[iid] == "bag" and not Z.IsIgnored(ItemKey("turnin", iid)) then
+            local row = {
+                id = iid, base = iid, ikey = ItemKey("turnin", iid), ikind = "turnin",
+                name = ItemName(iid), icon = ItemIcon(iid),
+                sub = subTxt, desc = descTxt,
+            }
+            if spot then
+                row.areaID, row.x, row.y = spot.area, spot.x, spot.y
+            end
+            list[#list + 1] = row
+        end
+    end
+    local n = #list
+    if n == 0 then return nil end
+    table.sort(list, function(a, b) return tostring(a.name or "") < tostring(b.name or "") end)
+    return {
+        kind = "turnin", n = n, keys = {}, list = list,
+        title = L["探索 · 书籍上交"],
+        text = string.format(L["背包里有 %d 本可上交的书"], n),
+    }
 end
 
 local function BagRows(ctx)
@@ -836,6 +899,7 @@ local function PSpell(ctx)
 end
 
 Z.Register("collect", PCollect)
+Z.Register("turnin", TurnInRows)
 Z.Register("quest", PQuest)
 Z.Register("spell", PSpell)
 
@@ -1131,7 +1195,7 @@ function Z.Collect(ctx)
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
-    local order = { "collect", "quest", "spell", "buff" }
+    local order = { "collect", "turnin", "quest", "spell", "buff" }
     for i = 1, #order do
         local kind = order[i]
         local on = c[kind]
@@ -1267,13 +1331,13 @@ function Z.CheckNow(reason)
     return Z.Check(reason or "manual", 0)
 end
 
-local KIND_NAME = { collect = L["收集"], book = L["书籍"], quest = L["任务"], spell = L["技能"], buff = L["增益"] }
+local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], spell = L["技能"], buff = L["增益"] }
 function Z.KindName(kind)
     return KIND_NAME[kind] or L["条目"]
 end
 
 function Z.IconFor(kind, id)
-    if kind == "book" or kind == "collect" then return ItemIcon(id) end
+    if kind == "book" or kind == "collect" or kind == "turnin" then return ItemIcon(id) end
     if kind == "quest" then return "Interface\\GossipFrame\\AvailableQuestIcon" end
     if kind == "rested" then
         local f = GetItemIcon

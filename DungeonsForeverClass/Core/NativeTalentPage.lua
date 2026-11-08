@@ -498,14 +498,22 @@ local function BuildNode(t, i, nd)
 end
 
 local nodeStates = { {}, {}, {} }
-local edgeLayer, edgeObjs, edgeList, edgeIn
+local edgeLayer, edgeObjs, edgeList, edgeIn, preOf
 
 local function SyncEdges()
     edgeList, edgeIn = {}, { {}, {}, {} }
+    preOf = { {}, {}, {} }
     NP.edgeList, NP.edgeIn = edgeList, edgeIn
     if type(CT) ~= 'table' or type(Traits) ~= 'table' then return end
     local d = Data()
     if not d then return end
+    for t = 1, 3 do
+        local nl = d.trees[t] and d.trees[t].nodes or {}
+        for i = 1, #nl do
+            local nd = nl[i]
+            if nd.req and nl[nd.req] then preOf[t][i] = nd.req end
+        end
+    end
     local ok, cfg = pcall(CT.GetActiveConfigID)
     if not ok or not cfg then return end
     local ok2, ci = pcall(Traits.GetConfigInfo, cfg)
@@ -544,13 +552,17 @@ local function SyncEdges()
                 for _, e in ipairs(info.visibleEdges) do
                     local b = byName[nameOf(e.targetNode) or '']
                     if b and b.t == a.t then
-                        edgeList[#edgeList + 1] = { t = a.t, from = a.i, to = b.i }
-                        local ins = edgeIn[a.t][b.i]
-                        if not ins then
-                            ins = {}
-                            edgeIn[a.t][b.i] = ins
+                        local na = d.trees[a.t] and d.trees[a.t].nodes[a.i]
+                        local nb = d.trees[b.t] and d.trees[b.t].nodes[b.i]
+                        if na and nb and (nb.row or 0) >= (na.row or 0) then
+                            edgeList[#edgeList + 1] = { t = a.t, from = a.i, to = b.i }
+                            local ins = edgeIn[a.t][b.i]
+                            if not ins then
+                                ins = {}
+                                edgeIn[a.t][b.i] = ins
+                            end
+                            ins[#ins + 1] = a.i
                         end
-                        ins[#ins + 1] = a.i
                     end
                 end
             end
@@ -620,28 +632,18 @@ local function DrawEdges()
 end
 
 LinkOK = function(t, i)
-    local ins = edgeIn and edgeIn[t] and edgeIn[t][i]
-    if not ins then return true end
-    local d = Data()
-    local list = d and d.trees[t] and d.trees[t].nodes
-    if not list then return true end
-    for k = 1, #ins do
-        local nd = list[ins[k]]
-        if nd and ((NP.pts[t] or {})[ins[k]] or 0) < nd.max then return false end
-    end
-    return true
+    local r = preOf and preOf[t] and preOf[t][i]
+    if not r then return true end
+    local nd = NodeOf(t, r)
+    if not nd then return true end
+    return ((NP.pts[t] or {})[r] or 0) >= nd.max
 end
 
 LinkBlockName = function(t, i)
-    local ins = edgeIn and edgeIn[t] and edgeIn[t][i]
-    if not ins then return nil end
-    local d = Data()
-    local list = d and d.trees[t] and d.trees[t].nodes
-    if not list then return nil end
-    for k = 1, #ins do
-        local nd = list[ins[k]]
-        if nd and ((NP.pts[t] or {})[ins[k]] or 0) < nd.max then return nd.n end
-    end
+    local r = preOf and preOf[t] and preOf[t][i]
+    if not r then return nil end
+    local nd = NodeOf(t, r)
+    if nd and ((NP.pts[t] or {})[r] or 0) < nd.max then return nd.n end
     return nil
 end
 

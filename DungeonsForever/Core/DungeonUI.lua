@@ -4912,9 +4912,6 @@ function DG.ShowItemTipBody(owner, it, extra, title)
             if l1 then l1:SetText(title) end
         end
         GameTooltip:Show()
-        if ns.TipLines and ns.TipLines.InsertIlvl then
-            pcall(ns.TipLines.InsertIlvl, GameTooltip, id)
-        end
         return
     end
 
@@ -6076,6 +6073,8 @@ function DG.RequestQuest(id)
             if type(n) == "string" and n ~= "" then
                 DG.__qWatch[id] = nil
                 DG.OnQuestData(id)
+            elseif d == 3 then
+                DG.__qWatch[id] = nil
             end
         end)
     end

@@ -3449,6 +3449,51 @@ function M.PinOnEnter(self)
         local st = self.__qState
         local nm, ok = DG.QuestName(p.id)
         if not ok then DG.RequestQuest(p.id) end
+        local pend = nil
+        if not ok then
+            pend = { p.id }
+        end
+        if st == "locked" then
+            local _, preOk = DG.QuestName(self.__qPre)
+            if not preOk then
+                pend = pend or {}
+                pend[#pend + 1] = self.__qPre
+            end
+        elseif st == "pre" then
+            local _, blkOk = DG.QuestName(self.__qPreOf)
+            if not blkOk then
+                pend = pend or {}
+                pend[#pend + 1] = self.__qPreOf
+            end
+        end
+        if pend and C_Timer and C_Timer.After then
+            local bt = self
+            local got = {}
+            local delays = { 0.25, 0.7, 1.5, 3, 5, 8 }
+            local function probe(i)
+                C_Timer.After(delays[i], function()
+                    if bt.__kind ~= "quest" or bt.__p ~= p then return end
+                    if not (GameTooltip and GameTooltip.IsShown and GameTooltip:IsShown()) then return end
+                    if GameTooltip.GetOwner and GameTooltip:GetOwner() ~= bt then return end
+                    local hit, all = false, true
+                    for j = 1, #pend do
+                        local qid = pend[j]
+                        if not got[qid] then
+                            local _, ok2 = DG.QuestName(qid)
+                            if ok2 then
+                                got[qid] = true
+                                hit = true
+                            else
+                                all = false
+                            end
+                        end
+                    end
+                    if hit then M.PinOnEnter(bt) end
+                    if not all and i < #delays then probe(i + 1) end
+                end)
+            end
+            probe(1)
+        end
         if st == "lv" then
             GameTooltip:AddLine(nm or L["任务"], 0.72, 0.76, 0.85, true)
             GameTooltip:AddLine(format(L["等级未达到：需要角色等级 %d"], self.__qNeedLv or 0), 1, 0.82, 0, true)
@@ -3557,10 +3602,9 @@ function M.PinOnLeave()
 end
 
 function M.OnQuestData(id)
-    local frame = M.frame
-    if not (frame and frame.IsShown and frame:IsShown()) then return end
     local owner = GameTooltip and GameTooltip.GetOwner and GameTooltip:GetOwner()
     if not (owner and owner.__kind == "quest" and owner.__p) then return end
+    if GameTooltip.IsShown and not GameTooltip:IsShown() then return end
     local p = owner.__p
     if p.id == id or owner.__qPre == id or owner.__qPreOf == id then
         M.PinOnEnter(owner)

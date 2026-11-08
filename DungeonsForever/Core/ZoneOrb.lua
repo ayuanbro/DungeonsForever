@@ -120,6 +120,25 @@ local function StartTween(dur, apply, done)
     if tweener then tweener:Show() end
 end
 
+function O.ArmGhost()
+    if not orb or not orb:IsShown() or orb:GetAlpha() == 0 then return end
+    if orb.ghostPending then return end
+    orb.ghostPending = true
+    orb.ghostTok = (orb.ghostTok or 0) + 1
+    local my = orb.ghostTok
+    if type(C_Timer) ~= "table" or type(C_Timer.After) ~= "function" then return end
+    C_Timer.After(2.5, function()
+        orb.ghostPending = false
+        if my ~= orb.ghostTok then return end
+        if orb:IsMouseOver() or (panel and panel:IsShown()) or (opts and opts:IsShown()) then return end
+        local c = Cfg()
+        if c.on == false or not c.onlyTodo then return end
+        if current and (current.total or 0) > 0 then return end
+        if orb:GetAlpha() ~= 0 then orb:SetAlpha(0) end
+        orb.revealed = false
+    end)
+end
+
 local function Close()
     if not panel or not panel:IsShown() then return end
     hideToken = hideToken + 1
@@ -139,6 +158,7 @@ local function StartHideTimer()
     if type(C_Timer) ~= "table" or type(C_Timer.After) ~= "function" then return end
     C_Timer.After(d, function()
         if my ~= hideToken then return end
+        if opts and opts:IsShown() then return end
         if panel and panel:IsShown() and not hovered then Close() end
     end)
 end
@@ -346,7 +366,9 @@ local function MakeRow(i)
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(r, "hover") end
         r.name:SetTextColor(ACC[1], ACC[2], ACC[3])
         local sub = r.sub:GetText()
-        if r.ikind == "book" or r.ikind == "collect" or r.ikind == "rested" then
+        if r.ikind == "turnin" then
+            ItemTip(r, r.iid, r.ilabel, r.idesc or sub, L["点击在地图上定位上交 NPC"])
+        elseif r.ikind == "book" or r.ikind == "collect" or r.ikind == "rested" then
             local desc = sub
             if r.idesc and r.idesc ~= "" then
                 desc = (sub ~= "" and (sub .. " · " .. r.idesc)) or r.idesc
@@ -572,10 +594,23 @@ function O.Update(res)
     if not badge then return end
     local onc = Cfg()
     local n = (res and res.total) or 0
-    local wantOrb = onc.on ~= false and not (onc.onlyTodo and n == 0)
+    local settingsOpen = opts and opts.IsShown and opts:IsShown() or false
+    local wantOrb = onc.on ~= false
     if orb then
+        local ghost = wantOrb and (onc.onlyTodo and not settingsOpen) and n == 0
         if wantOrb and not orb:IsShown() then orb:Show() end
         if not wantOrb and orb:IsShown() then orb:Hide() end
+        if ghost then
+            if orb:IsMouseOver() or (panel and panel:IsShown()) then
+                if orb:GetAlpha() ~= 1 then orb:SetAlpha(1) end
+            elseif orb.revealed then
+                O.ArmGhost()
+            else
+                if orb:GetAlpha() ~= 0 then orb:SetAlpha(0) end
+            end
+        elseif orb:IsShown() then
+            if orb:GetAlpha() ~= 1 then orb:SetAlpha(1) end
+        end
     end
     PaintRing(n)
     if n > 0 then
@@ -848,7 +883,7 @@ function O.Init()
         if ns.ZoneHintList and ns.ZoneHintList.Open then ns.ZoneHintList.Open() end
     end)
 
-    gear = CreateFrame("Button", nil, panel)
+    gear = CreateFrame("Button", "DFZoneOrbGear", panel)
     gear:SetSize(SIDE_S, SIDE_S)
     gear:SetPoint("RIGHT", manage, "LEFT", -BTN_GAP, 0)
     gear:SetFrameLevel(panel:GetFrameLevel() + 4)
@@ -860,13 +895,22 @@ function O.Init()
 
     InitVoiceBtn()
     opts = CreateFrame("Frame", nil, panel, "BackdropTemplate")
-    opts:SetSize(184, 290)
+    opts:SetSize(184, 312)
     opts:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -40)
     opts:SetFrameLevel(panel:GetFrameLevel() + 8)
     if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
         ns.hui.SkinPopup(opts, 8, "both", ns.hui.layer.L2)
         if ns.hui.SkinShadow then ns.hui.SkinShadow(opts, nil, nil, 8) end
     end
+    opts:EnableMouse(true)
+    opts:SetScript("OnEnter", function()
+        hovered = true
+        hideToken = hideToken + 1
+    end)
+    opts:SetScript("OnLeave", function()
+        hovered = false
+        StartHideTimer()
+    end)
     opts:Hide()
 
     local oph = opts:CreateFontString(nil, "OVERLAY")
@@ -932,7 +976,16 @@ function O.Init()
         cb:SetScript("OnClick", function(self)
             ns.PlaySound(1)
             local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
-            if c then c[key] = self:GetChecked() and true or false end
+            if not c then return end
+            local nv = not (c[key] ~= false)
+            c[key] = nv
+            if self.SetChecked then self:SetChecked(nv) end
+            if C_Timer and C_Timer.After then
+                C_Timer.After(0, function()
+                    local c2 = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+                    if c2 and self.SetChecked then self:SetChecked(c2[key] ~= false) end
+                end)
+            end
             O.Refresh()
             if ns.MainFrame and ns.MainFrame.SyncZoneHintCard then ns.MainFrame.SyncZoneHintCard() end
         end)
@@ -945,33 +998,34 @@ function O.Init()
     end
 
     OptRow(-32, L["探索-书籍提醒"], "book", L["本图还有未收集的书时提示"])
-    OptRow(-54, L["探索-睡袋提醒"], "bag", L["本图有睡袋任务链的一步时提示"])
-    OptRow(-76, L["探索-火炬提醒"], "torch", L["本图有守夜人火炬可拾取时提示"])
-    OptRow(-98, L["探索-旗帜提醒"], "banner", L["本图有血色旗帜可拾取时提示"])
-    OptRow(-120, L["副本-任务提醒"], "quest", L["本图有可接的副本任务时提示"])
-    OptRow(-142, L["职业-技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
-    OptRow(-164, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
-    OptRow(-186, L["增益-睡袋提醒"], "rested", L["背包有睡袋且未休息或 buff 快到期时提示"], "restedVoice")
+    OptRow(-54, L["探索-书籍上交提醒"], "turnin", L["在幽暗城且背包有可上交的书时提示"])
+    OptRow(-76, L["探索-睡袋提醒"], "bag", L["本图有睡袋任务链的一步时提示"])
+    OptRow(-98, L["探索-火炬提醒"], "torch", L["本图有守夜人火炬可拾取时提示"])
+    OptRow(-120, L["探索-旗帜提醒"], "banner", L["本图有血色旗帜可拾取时提示"])
+    OptRow(-142, L["副本-任务提醒"], "quest", L["本图有可接的副本任务时提示"])
+    OptRow(-164, L["职业-技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
+    OptRow(-186, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
+    OptRow(-208, L["增益-睡袋提醒"], "rested", L["背包有睡袋且未休息或 buff 快到期时提示"], "restedVoice")
 
     local oph2 = opts:CreateFontString(nil, "OVERLAY")
     oph2:SetFont(ns.FONT, 14, "")
-    oph2:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -210)
+    oph2:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -232)
     oph2:SetText(L["窗口设置"])
     oph2:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
 
-    OptRow(-234, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"])
+    OptRow(-256, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"])
 
     local SIZES = { 24, 28, 32, 36, 40 }
 
     local szLabel = opts:CreateFontString(nil, "OVERLAY")
     szLabel:SetFont(ns.FONT, 14, "")
-    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -258)
+    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -280)
     szLabel:SetText(L["待办图标大小"])
     szLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
 
     local szBtn = CreateFrame("Button", nil, opts, "BackdropTemplate")
     szBtn:SetSize(36, 20)
-    szBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, -257)
+    szBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, -279)
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
         ns.hui.BuildRoundedBG(szBtn, 6, ns.hui.layer.L2, "both", true, 1)
     end
@@ -1011,6 +1065,7 @@ function O.Init()
         ns.PlaySound(1)
         if opts:IsShown() then
             opts:Hide()
+            if current then O.Update(current) end
         else
             local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
             for k, cb in pairs(optCbs) do
@@ -1018,6 +1073,10 @@ function O.Init()
                 elseif cb.PaintVoice then cb:PaintVoice() end
             end
             SyncSize()
+            local rx = (panel.GetRight and panel:GetRight() or 0) - 8
+            local ty = (panel.GetTop and panel:GetTop() or 0) - 40
+            opts:ClearAllPoints()
+            opts:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", rx, ty)
             opts:Show()
         end
     end)
@@ -1157,6 +1216,10 @@ function O.Init()
     orb:SetScript("OnEnter", function()
         hovered = true
         hideToken = hideToken + 1
+        orb.revealed = true
+        orb.ghostPending = false
+        orb.ghostTok = (orb.ghostTok or 0) + 1
+        if orb:GetAlpha() ~= 1 then orb:SetAlpha(1) end
         PaintRing((current and current.total) or 0)
         if icon then icon:SetVertexColor(1, 1, 1, 1) end
         local zone = (current and current.ctx and current.ctx.zone) or ""
@@ -1173,6 +1236,10 @@ function O.Init()
     orb:SetScript("OnLeave", function()
         hovered = false
         PaintRing((current and current.total) or 0)
+        local gc = Cfg()
+        if gc.on ~= false and gc.onlyTodo and (current and (current.total or 0) == 0) and not (opts and opts:IsShown()) and not (panel and panel:IsShown()) then
+            O.ArmGhost()
+        end
         if icon then icon:SetVertexColor(0.92, 0.93, 0.95, 1) end
         HideTip()
         if panel and panel:IsShown() then StartHideTimer() end
@@ -1227,6 +1294,7 @@ function O.Init()
         end
         if not found then table.insert(UISpecialFrames, "DFZoneOrbPanel") end
     end
+    panel:HookScript("OnHide", function() O.ArmGhost() end)
 
     if panel.title then panel.title:SetText("") end
     cards, heads, subRows = {}, {}, {}
@@ -1241,7 +1309,7 @@ function O.Refresh()
     if (res.total or 0) == 0 then
         lastN = 0
         if badge then badge:Hide() end
-        Close()
+        if not (opts and opts:IsShown()) then Close() end
     end
     return res
 end
