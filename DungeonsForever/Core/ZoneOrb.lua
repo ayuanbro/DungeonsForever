@@ -596,11 +596,13 @@ function O.Update(res)
             end
         end
     end
-    if sawFood and not lastFood and onc.voice == true and onc.foodVoice ~= false then
-        pcall(PlaySoundFile, FOOD_CUE, "Master")
-    end
-    if sawRested and not lastRested and onc.voice == true and onc.restedVoice ~= false then
-        pcall(PlaySoundFile, RESTED_CUE, "Master")
+    if onc.on ~= false then
+        if sawFood and not lastFood and onc.voice == true and onc.foodVoice ~= false then
+            pcall(PlaySoundFile, FOOD_CUE, "Master")
+        end
+        if sawRested and not lastRested and onc.voice == true and onc.restedVoice ~= false then
+            pcall(PlaySoundFile, RESTED_CUE, "Master")
+        end
     end
     lastFood, lastRested = sawFood, sawRested
     if panel and panel:IsShown() then Layout(res) end

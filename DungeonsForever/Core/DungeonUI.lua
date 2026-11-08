@@ -6618,14 +6618,21 @@ DG.Q_BADGE_BUY_BG = { 0.16, 0.38, 0.62, 1 }
 DG.Q_BADGE_MID_BG = { 0.42, 0.26, 0.60, 1 }
 DG.Q_RACE_TAG = { [1049] = { ok = { 2, 6, 8 }, label = "非亡灵" } }
 DG.Q_RACE_TAG_L = { ["非亡灵"] = L["非亡灵"] }
+function DG.QuestRaceOK(qid)
+    local rt = qid and DG.Q_RACE_TAG[qid]
+    if type(rt) ~= "table" then return true end
+    if not UnitRace then return true end
+    local _, _, rid = UnitRace("player")
+    if not rid then return true end
+    for k = 1, #rt.ok do
+        if rt.ok[k] == rid then return true end
+    end
+    return false
+end
 function DG.QuestRaceTag(qid)
     local rt = DG.Q_RACE_TAG[qid]
-    if not rt or not UnitRace then return nil end
-    local _, _, rid = UnitRace("player")
-    if not rid then return nil end
-    for k = 1, #rt.ok do
-        if rt.ok[k] == rid then return nil end
-    end
+    if not rt then return nil end
+    if DG.QuestRaceOK(qid) then return nil end
     return DG.Q_RACE_TAG_L[rt.label] or rt.label
 end
 DG.Q_FS_DET = 14

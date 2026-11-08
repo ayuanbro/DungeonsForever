@@ -1061,6 +1061,28 @@ function M.QuestSideOK(qid)
     return M.SideOK(sd)
 end
 
+function M.QuestClassOK(qid)
+    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
+    local cls = (type(row) == "table") and row[15] or nil
+    if type(cls) ~= "string" or cls == "" then return true end
+    if not UnitClass then return true end
+    local pc = UnitClass("player")
+    if not pc then return true end
+    local list = DG.QClassList and DG.QClassList(cls) or nil
+    if not list then return cls == pc end
+    for i = 1, #list do
+        if list[i] == pc then return true end
+    end
+    return false
+end
+
+function M.QuestPinOK(qid)
+    if not M.QuestSideOK(qid) then return false end
+    if not M.QuestClassOK(qid) then return false end
+    if DG.QuestRaceOK and not DG.QuestRaceOK(qid) then return false end
+    return true
+end
+
 function M.DetailOf(id)
     local list = ns.DungeonData and ns.DungeonData.dungeons
     if type(list) == "table" then
@@ -1115,7 +1137,7 @@ function M.ExtraPinsFor(id, floor)
                             end
                         else
                             local pf = p[(kind == "rare") and 5 or 4] or 1
-                            if (floor == nil or pf == floor) and (kind ~= "quest" or M.QuestSideOK(p[3])) then
+                            if (floor == nil or pf == floor) and (kind ~= "quest" or M.QuestPinOK(p[3])) then
                                 local txt
                                 if kind == "quest" and type(p[5]) == "string" then
                                     txt = p[5]
@@ -4490,6 +4512,7 @@ function M.SyncWorldQuestPins()
     local function qHit(q)
         if side and q[2] and q[2] ~= side then return false end
         if pcls and q[15] and q[15] ~= pcls then return false end
+        if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
         local r = data.qdk[q[1]] and dlv[data.qdk[q[1]]]
         local qlv = q[3]
         if qlv == nil and r then qlv = r[1] end
@@ -4524,6 +4547,7 @@ function M.SyncWorldQuestPins()
         if sq then
             if side and sq[2] and sq[2] ~= side then return false end
             if pcls and sq[15] and sq[15] ~= pcls then return false end
+            if DG.QuestRaceOK and not DG.QuestRaceOK(seg) then return false end
             local sp = sq[9]
             if type(sp) == "table" then
                 for _, ps in ipairs(sp) do

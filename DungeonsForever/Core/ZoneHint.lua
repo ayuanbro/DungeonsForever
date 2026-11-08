@@ -37,6 +37,10 @@ local function CFG()
     if c.food == nil then c.food = true end
     if c.rested == nil then c.rested = true end
     if c.voice == nil then c.voice = false end
+    if c.voiceInit == nil then
+        c.voiceInit = true
+        c.voice = false
+    end
     if c.foodVoice == nil then c.foodVoice = true end
     if c.restedVoice == nil then c.restedVoice = true end
     if c.onlyTodo == nil then c.onlyTodo = false end
