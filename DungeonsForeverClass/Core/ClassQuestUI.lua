@@ -1706,6 +1706,30 @@ function CQ.Focus(key)
     return true
 end
 
+function CQ.QuestChainKey(qid)
+    if not qid or type(ns.ClassQuestChains) ~= "table" then return nil end
+    for _, list in pairs(ns.ClassQuestChains) do
+        if type(list) == "table" then
+            for _, ch in ipairs(list) do
+                for _, sid in ipairs(ch.steps or {}) do
+                    if sid == qid then return ch.key end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+function CQ.FocusByQuest(qid)
+    local key = CQ.QuestChainKey(qid)
+    if not key then return false end
+    local tier = ns.ClassDB and ns.ClassDB().tier
+    if tier then tier.mode = "cq" end
+    CQ.Focus(key)
+    if TT and TT.RequestRender then TT.RequestRender() end
+    return true
+end
+
 function CQ.OnItemData(itemID)
     if not (CQ.built and CQ.sel) then return end
     local st = CQ.sel.type

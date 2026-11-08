@@ -101,6 +101,91 @@ local function ndBtn(bt)
     return bt
 end
 
+local function leaSkin(bt, flat)
+    if not bt or bt.__leaSkin then return bt end
+    bt.__leaSkin = true
+    pcall(bt.SetNormalTexture, bt, "")
+    pcall(bt.SetPushedTexture, bt, "")
+    pcall(bt.SetDisabledTexture, bt, "")
+    pcall(bt.SetHighlightTexture, bt, nil)
+    if flat then
+        local okr, regs = pcall(function() return { bt:GetRegions() } end)
+        if okr and type(regs) == "table" then
+            for _, reg in ipairs(regs) do
+                if reg.GetObjectType and reg:GetObjectType() == "Texture" then
+                    reg:Hide()
+                end
+            end
+        end
+    end
+    local fs = bt.GetFontString and bt:GetFontString()
+    if fs then fs:SetTextColor(1, 0.82, 0) end
+    if flat then return bt end
+    local bg = bt:CreateTexture(nil, "BACKGROUND")
+    bg:SetColorTexture(0.05, 0.05, 0.05, 0.92)
+    bg:SetAllPoints()
+    local function edge(p1, r1, p2, r2, horiz)
+        local e = bt:CreateTexture(nil, "BORDER")
+        e:SetColorTexture(0.3, 0.3, 0.3, 0.9)
+        e:SetPoint(p1, bt, r1, 0, 0)
+        e:SetPoint(p2, bt, r2, 0, 0)
+        if horiz then
+            e:SetHeight(1)
+        else
+            e:SetWidth(1)
+        end
+    end
+    edge("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT", true)
+    edge("BOTTOMLEFT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMRIGHT", true)
+    edge("TOPLEFT", "TOPLEFT", "BOTTOMLEFT", "BOTTOMLEFT", false)
+    edge("TOPRIGHT", "TOPRIGHT", "BOTTOMRIGHT", "BOTTOMRIGHT", false)
+    return bt
+end
+
+local LEA_ROW = 11
+local LEA_TASK_X = 29
+local LEA_ROUTE_L = 261
+
+local function leaTitleFS(want)
+    if not want or want == "" then return nil end
+    if W.leaTitleKey == want then return W.leaTitleFS end
+    local wmf = WorldMapFrame
+    local found
+    if wmf and wmf.GetChildren then
+        local ok, kids = pcall(function() return { wmf:GetChildren() } end)
+        if ok and type(kids) == "table" then
+            for _, f in ipairs(kids) do
+                if found then break end
+                if type(f) == "table" and f.GetChildren then
+                    local ok2, subs = pcall(function() return { f:GetChildren() } end)
+                    if ok2 and type(subs) == "table" then
+                        for _, sf in ipairs(subs) do
+                            if found then break end
+                            if type(sf) == "table" and sf.GetRegions then
+                                local ok3, regs = pcall(function() return { sf:GetRegions() } end)
+                                if ok3 and type(regs) == "table" then
+                                    for _, reg in ipairs(regs) do
+                                        if reg.GetObjectType and reg:GetObjectType() == "FontString" then
+                                            local ok4, txt = pcall(reg.GetText, reg)
+                                            if ok4 and txt and txt ~= "" and string.find(txt, want, 1, true) then
+                                                found = reg
+                                                break
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    W.leaTitleKey = want
+    W.leaTitleFS = found
+    return found
+end
+
 local function closeBtnAtlas()
     local cb = _G.WorldMapFrameCloseButton
     if not cb then return nil end
@@ -195,6 +280,101 @@ end
 local function questPanel()
     if not WorldMapFrame then return nil end
     return WorldMapFrame.QuestLog or WorldMapFrame.QuestMapFrame
+end
+
+local function setLogPanel(shown)
+    local q = questPanel()
+    if not q or shown == q:IsShown() then return end
+    local wmf = WorldMapFrame
+    local done
+    if wmf and type(wmf.SetQuestLogPanelShown) == "function" then
+        local ok = pcall(wmf.SetQuestLogPanelShown, wmf, shown)
+        done = ok and shown == q:IsShown()
+    end
+    if not done then
+        if shown then q:Show() else q:Hide() end
+    end
+end
+
+local leaOverlay
+
+local function leaFind()
+    if leaOverlay then return leaOverlay end
+    local sc = area()
+    if not (sc and sc.GetChildren) then return nil end
+    for _, ch in ipairs({ sc:GetChildren() }) do
+        if type(ch) == "table" and ch.bg and ch.levelMenu
+            and type(ch.canvas) == "table" and ch.canvas.art then
+            leaOverlay = ch
+            if type(hooksecurefunc) == "function" then
+                hooksecurefunc(ch, "Show", function()
+                    if W.Active() then ch:Hide() end
+                end)
+            end
+            return leaOverlay
+        end
+    end
+    return nil
+end
+
+local function leaSuppress()
+    if not W.Active() then return end
+    local ov = leaFind()
+    if ov and ov:IsShown() then ov:Hide() end
+end
+
+local function leaIconRows()
+    local wmf = WorldMapFrame
+    if not (wmf and wmf.GetCanvas) then return nil end
+    local ok, canvas = pcall(wmf.GetCanvas, wmf)
+    if not (ok and canvas and canvas.GetChildren) then return nil end
+    local out
+    for _, ch in ipairs({ canvas:GetChildren() }) do
+        local d = type(ch) == "table" and ch.data
+        if ch.isLeaMapsPin and type(d) == "table" then
+            local k = d[1]
+            if k == "Dungeon" or k == "Raid" or k == "Dunraid" then
+                local x, y = tonumber(d[2]), tonumber(d[3])
+                if x and y then
+                    out = out or {}
+                    out[#out + 1] = { x = x, y = y }
+                end
+            end
+        end
+    end
+    return out
+end
+
+local function dropLeaDupes(rows)
+    local icons = leaIconRows()
+    if not (icons and type(rows) == "table" and #rows > 0) then return rows end
+    local out
+    for i = 1, #rows do
+        local r = rows[i]
+        local hit
+        for j = 1, #icons do
+            local dx, dy = icons[j].x - r.x, icons[j].y - r.y
+            if dx * dx + dy * dy <= 64 then hit = true break end
+        end
+        if not hit then
+            out = out or {}
+            out[#out + 1] = r
+        end
+    end
+    return out or rows
+end
+
+local leaLastSig
+
+local function leaIconSig()
+    local icons = leaIconRows()
+    if not (icons and #icons > 0) then return "" end
+    local t = {}
+    for i = 1, #icons do
+        t[#t + 1] = string.format("%d:%d", icons[i].x * 10, icons[i].y * 10)
+    end
+    table.sort(t)
+    return table.concat(t, ";")
 end
 
 local function areaOffset()
@@ -973,6 +1153,7 @@ end
 local function syncAreaBtn()
     local ab = ensureAreaBtn()
     if not ab then return end
+    if W.leaUI then leaSkin(ab) end
     setPicked(ab, not (ns.ExploreAreaOn and ns.ExploreAreaOn()))
     if not (ns.ExploreGraveOn and ns.ExploreGraveOn()) then
         if ab:IsShown() then ab:Hide() end
@@ -1084,6 +1265,14 @@ local function layout(view)
             local w, h = q:GetWidth(), q:GetHeight()
             local qx = (q:GetLeft() or 0) - (WorldMapFrame:GetLeft() or 0)
             local qy = (WorldMapFrame:GetTop() or 0) - (q:GetTop() or 0)
+            if W.leaUI then
+                local sc = area()
+                local dy = (q:GetTop() or 0) - (sc and sc:GetTop() or 0)
+                if dy and dy ~= 0 then
+                    qy = qy + dy
+                    h = h - dy
+                end
+            end
             view.sideL, view.sideT = qx, qy
             view.side:ClearAllPoints()
             view.side:SetPoint("TOPLEFT", view, "TOPLEFT", qx, -qy)
@@ -1091,14 +1280,23 @@ local function layout(view)
         end
     end
     if view.taskBtn then
-        local cb = _G.WorldMapFrameCloseButton
+        if W.leaUI then
+            pcall(view.taskBtn.SetBackdropColor, view.taskBtn, 0, 0, 0, 0)
+            pcall(view.taskBtn.SetBackdropBorderColor, view.taskBtn, 0, 0, 0, 0)
+            leaSkin(view.taskBtn, true)
+        end
         view.taskBtn:ClearAllPoints()
-        if cb and cb:GetLeft() and cb:IsShown() then
-            view.taskBtn:SetPoint("RIGHT", cb, "LEFT", -(cb:GetWidth() + 7), 0)
-        elseif WorldMapFrame then
-            view.taskBtn:SetPoint("TOPRIGHT", WorldMapFrame, "TOPRIGHT", -76, -8)
+        if W.leaUI then
+            view.taskBtn:SetPoint("TOPRIGHT", area(), "TOPRIGHT", -LEA_TASK_X, LEA_ROW + 12)
         else
-            view.taskBtn:SetPoint("TOPRIGHT", view, "TOPRIGHT", -36, -12)
+            local cb = _G.WorldMapFrameCloseButton
+            if cb and cb:GetLeft() and cb:IsShown() then
+                view.taskBtn:SetPoint("RIGHT", cb, "LEFT", -(cb:GetWidth() + 7), 0)
+            elseif WorldMapFrame then
+                view.taskBtn:SetPoint("TOPRIGHT", WorldMapFrame, "TOPRIGHT", -76, -8)
+            else
+                view.taskBtn:SetPoint("TOPRIGHT", view, "TOPRIGHT", -36, -12)
+            end
         end
     end
     local nav = navBar()
@@ -1109,21 +1307,30 @@ local function layout(view)
         view.block:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
     end
     if nav then
-        local side = view.side
-        local lim = navTailLeft()
-        local sideL = (side and side:IsShown()) and side:GetLeft() or nil
-        if lim and sideL and sideL < lim then lim = sideL end
-        if not lim then lim = sideL end
-        view.pinBtn:ClearAllPoints()
-        if lim and view:GetLeft() and view:GetTop() then
-            local dx = (lim - BTN_GAP) - view:GetLeft() - BTN_W
-            local dy = (view:GetTop() - (nav:GetTop() or 0)) + NAV_PAD_T
-            view.pinBtn:SetPoint("TOPLEFT", view, "TOPLEFT", dx, -dy)
+        if W.leaUI then
+            leaSkin(view.pinBtn)
+            leaSkin(view.routeBtn)
+            view.pinBtn:ClearAllPoints()
+            view.pinBtn:SetPoint("RIGHT", view.taskBtn, "LEFT", -BTN_GAP, 0)
+            view.routeBtn:ClearAllPoints()
+            view.routeBtn:SetPoint("RIGHT", view.pinBtn, "LEFT", -BTN_GAP, 0)
         else
-            view.pinBtn:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -NAV_PAD_R, -NAV_PAD_T)
+            local side = view.side
+            local lim = navTailLeft()
+            local sideL = (side and side:IsShown()) and side:GetLeft() or nil
+            if lim and sideL and sideL < lim then lim = sideL end
+            if not lim then lim = sideL end
+            view.pinBtn:ClearAllPoints()
+            if lim and view:GetLeft() and view:GetTop() then
+                local dx = (lim - BTN_GAP) - view:GetLeft() - BTN_W
+                local dy = (view:GetTop() - (nav:GetTop() or 0)) + NAV_PAD_T
+                view.pinBtn:SetPoint("TOPLEFT", view, "TOPLEFT", dx, -dy)
+            else
+                view.pinBtn:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -NAV_PAD_R, -NAV_PAD_T)
+            end
+            view.routeBtn:ClearAllPoints()
+            view.routeBtn:SetPoint("RIGHT", view.pinBtn, "LEFT", -BTN_GAP, 0)
         end
-        view.routeBtn:ClearAllPoints()
-        view.routeBtn:SetPoint("RIGHT", view.pinBtn, "LEFT", -BTN_GAP, 0)
         if W.areaBtn and W.areaBtn:IsShown() then W.areaBtn:Hide() end
     end
     view.floorPanel:ClearAllPoints()
@@ -1302,7 +1509,7 @@ function W.ToggleSideTask()
             W.qLevel = q:GetFrameLevel()
             q:SetFrameStrata("HIGH")
             q:SetFrameLevel(v:GetFrameLevel() + 5)
-            q:Show()
+            setLogPanel(true)
         end
         if v.side then v.side:Hide() end
         if v.block then v.block:EnableMouse(false) end
@@ -1357,11 +1564,13 @@ function W.Show(id, why)
     W.zoneMap = W.ZoneOf(id)
     if not inside then W.zoneMap = worldMapID() or W.zoneMap end
     local q = questPanel()
+    if q and not W.Active() then W.qWas = q:IsShown() and true or false end
     if q then q:Hide() end
     view:Show()
+    leaSuppress()
     if W.zoneMap and worldMapID() ~= W.zoneMap then
         setMap(W.zoneMap)
-        if q then pcall(q.Hide, q) end
+        if q then q:Hide() end
     end
     W.Sync()
 end
@@ -1377,8 +1586,20 @@ function W.Hide()
     if dropDown then CloseDropDownMenus() end
     M.SideHost = nil
     W.ResetTask()
-    local q = questPanel()
-    if q then q:Show() end
+    if W.qWas ~= nil then
+        setLogPanel(W.qWas)
+        local q = questPanel()
+        local wmf = WorldMapFrame
+        if q and not q:IsShown() and wmf and wmf.minimizedWidth
+            and (wmf:GetWidth() or 0) > wmf.minimizedWidth + 2 then
+            pcall(function()
+                SetUIPanelAttribute(wmf, "extraWidth", 0)
+                wmf:SetWidth(wmf.minimizedWidth)
+                UpdateUIPanelPositions(wmf)
+            end)
+        end
+        W.qWas = nil
+    end
     view:Hide()
 end
 
@@ -1718,6 +1939,10 @@ syncNav = function(view)
     local nav = navBar()
     if not (bt and nav) then return end
     hookCrumbs(nav)
+    local navDead = (not nav:IsShown()) or ((nav.GetAlpha and nav:GetAlpha()) or 1) <= 0
+    local wantParent = navDead and WorldMapFrame or nav
+    if bt:GetParent() ~= wantParent then bt:SetParent(wantParent) end
+    W.leaUI = navDead and true or false
     local active = view and view:IsShown()
     local cover = view and view.crumbCover
     local zone = active and W.zoneMap or worldMapID()
@@ -1739,11 +1964,48 @@ syncNav = function(view)
     elseif bt.SetText then
         pcall(bt.SetText, bt, name)
     end
+    if navDead then
+        local sc = area()
+        leaSkin(bt, true)
+        local w = crumbTextWidth(bt) + NAV_ARROW
+        if w < NAV_MIN_W then w = NAV_MIN_W end
+        bt:SetWidth(w)
+        bt:ClearAllPoints()
+        local placed
+        if sc and sc.GetLeft and sc.GetRight then
+            local want
+            if C_Map and C_Map.GetMapInfo and WorldMapFrame.GetMapID then
+                local okm, minfo = pcall(C_Map.GetMapInfo, WorldMapFrame:GetMapID())
+                want = okm and minfo and minfo.name or nil
+            end
+            local fs = leaTitleFS(want)
+            local fsR = fs and fs.GetRight and fs:GetRight() or nil
+            local routeL = sc:GetRight() - LEA_ROUTE_L
+            if fsR and fsR > sc:GetLeft() and routeL - fsR > w + 24 then
+                local left = fsR + (routeL - fsR - w) / 2
+                bt:SetPoint("TOPLEFT", sc, "TOPLEFT", left - sc:GetLeft(), LEA_ROW + 15)
+                placed = true
+            end
+        end
+        if not placed then
+            bt:SetPoint("TOPRIGHT", sc or WorldMapFrame, "TOPRIGHT", -(LEA_ROUTE_L + 6), LEA_ROW + 15)
+        end
+        bt:SetFrameStrata("HIGH")
+        bt:SetFrameLevel(math.min((WorldMapFrame:GetFrameLevel() or 0) + 3000, 9300))
+        bt:Show()
+        if cover then
+            cover.__hover = nil
+            if cover.hl then cover.hl:Hide() end
+            cover:Hide()
+        end
+        return
+    end
     local navLeft = nav:GetLeft() or 0
     local x = 0
     local crumbRight, crumbLevel, crumbLast = lastCrumbRight(nav)
     if crumbRight then x = math.max(0, (crumbRight - navLeft) - NAV_OVL) end
     local baseLevel = nav:GetFrameLevel()
+    if bt:GetFrameStrata() ~= nav:GetFrameStrata() then bt:SetFrameStrata(nav:GetFrameStrata()) end
     local lv = (crumbLevel or (baseLevel + 1)) - 1
     if lv < baseLevel then lv = baseLevel end
     if bt:GetFrameLevel() ~= lv then bt:SetFrameLevel(lv) end
@@ -1903,6 +2165,66 @@ local function StitchedRows(host)
     return out
 end
 
+local function leaClickTakeover()
+    local sc = area()
+    if not (sc and sc.HookScript) or sc.__dfLeaClick then return end
+    sc.__dfLeaClick = true
+    sc:HookScript("OnMouseUp", function(_, button)
+        if button ~= "LeftButton" or W.Active() then return end
+        local map, mapID = CurMap(nil)
+        if not (map and mapID) then return end
+        local canvas = map.GetCanvas and map:GetCanvas()
+        if not (canvas and canvas.GetLeft and canvas.GetEffectiveScale) then return end
+        local cx, cy = GetCursorPosition()
+        local L, T = canvas:GetLeft(), canvas:GetTop()
+        local Wd, Hd = canvas:GetWidth(), canvas:GetHeight()
+        local es = canvas:GetEffectiveScale()
+        if not (L and T and Wd and Hd and Wd > 1 and Hd > 1 and es and es > 0) then return end
+        local px = (cx - L) / (Wd * es) * 100
+        local py = (T - cy) / (Hd * es) * 100
+        local leaPin
+        local okc, kids = pcall(function() return { canvas:GetChildren() } end)
+        if okc and type(kids) == "table" then
+            for _, ch in ipairs(kids) do
+                local d = type(ch) == "table" and ch.data
+                if ch.isLeaMapsPin and type(d) == "table" then
+                    local k = d[1]
+                    if k == "Dungeon" or k == "Raid" or k == "Dunraid" then
+                        local dx, dy = (tonumber(d[2]) or -999) - px, (tonumber(d[3]) or -999) - py
+                        if dx * dx + dy * dy <= 25 then leaPin = true break end
+                    end
+                end
+            end
+        end
+        if not leaPin then return end
+        local ov = leaFind()
+        if ov and ov:IsShown() then ov:Hide() end
+        local rows = StitchedRows(mapID) or W.EntriesIn(mapID)
+        local ids
+        if rows and #rows > 0 then
+            for i = 1, #rows do
+                local r = rows[i]
+                local dx, dy = r.x - px, r.y - py
+                if dx * dx + dy * dy <= 64 then
+                    ids = ids or {}
+                    ids[#ids + 1] = r.id
+                end
+            end
+        end
+        if not ids then
+            local list = W.DungeonsIn(mapID)
+            if list and #list > 0 then
+                for i = 1, #list do
+                    ids = ids or {}
+                    ids[#ids + 1] = list[i].id
+                end
+            end
+        end
+        if not ids then return end
+        W.OpenEntryMenu(ids)
+    end)
+end
+
 function Provider:RefreshAllData()
     self:RemoveAllData()
     self.groups = nil
@@ -1910,6 +2232,7 @@ function Provider:RefreshAllData()
     local map, mapID = CurMap(self)
     local rows = StitchedRows(mapID) or (mapID and W.EntriesIn(mapID))
     if ns.OpenMapBridge then rows = ns.OpenMapBridge.Keep(rows) end
+    rows = dropLeaDupes(rows)
     if not (rows and #rows > 0) then return end
     local canvas = map and map.GetCanvas and map:GetCanvas()
     if not canvas or (canvas:GetWidth() or 0) <= 1 then return end
@@ -2331,6 +2654,14 @@ local function tick_()
     driveEntryPins()
     local view = W.view
     if view then syncNav(view) end
+    if view and view:IsShown() then leaSuppress() end
+    if not (view and view:IsShown()) then
+        local sig = leaIconSig()
+        if sig ~= leaLastSig then
+            leaLastSig = sig
+            if entryProvider then entryProvider:RefreshAllData() end
+        end
+    end
     if not (view and view:IsShown()) then
         syncAreaBtn()
         if W.suppress then return end
@@ -2397,8 +2728,7 @@ local function guardToggle()
         local wmf = WorldMapFrame
         if not (wmf and wmf:IsShown()) then return end
         if W.shownAt and (GetTime() - W.shownAt) < 0.2 then return end
-        local q = questPanel()
-        if W.Active() or (q and not q:IsShown()) then
+        if W.Active() then
             pcall(wmf.Hide, wmf)
         end
     end)
@@ -2423,6 +2753,7 @@ function W.Hook()
     W.watch = watch
     guardToggle()
     attachPins()
+    leaClickTakeover()
     ensureAreaBtn()
     if WorldMapFrame:IsShown() then onShow() end
 end

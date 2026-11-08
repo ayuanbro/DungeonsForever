@@ -1869,7 +1869,7 @@ function DG.EnsureQuestLane()
         self:SetScript("OnUpdate", nil)
     end)
     U.dungeonQDetPool = {
-        lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {},
+        lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {}, jump = {},
         fLab = {}, fTxt = {}, fLink = {}, fNum = {},
     }
     U.dungeonQDetName = MakeFS(qdchild, 16, C_GOLD, "LEFT")
@@ -7836,7 +7836,8 @@ function DG.HideDetailRows(pool)
     for i = 1, #pool.node do pool.node[i]:Hide() end
     for i = 1, #pool.chip do pool.chip[i]:Hide() end
     for i = 1, #pool.npc do pool.npc[i]:Hide() end
-    pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc = 0, 0, 0, 0, 0, 0
+    for i = 1, #pool.jump do pool.jump[i]:Hide() end
+    pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc, pool.nJump = 0, 0, 0, 0, 0, 0, 0
     if U.dungeonQDetName then U.dungeonQDetName:Hide() end
     if U.dungeonQDetSt then U.dungeonQDetSt:Hide() end
 end
@@ -8310,7 +8311,7 @@ function U:RenderQuestDetail()
     end
     if U.dungeonQDetExt then q = DG.ExtQuestRow(U.dungeonQDetExt) end
 
-    pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc = 0, 0, 0, 0, 0, 0
+    pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc, pool.nJump = 0, 0, 0, 0, 0, 0, 0
     local y = -DG.Q_PAD
 
     local MARK_SYM = DG.Q_MARK_SYM
@@ -8385,6 +8386,53 @@ function U:RenderQuestDetail()
             mb:SetScript("OnLeave", function() GameTooltip:Hide() end)
             f.mark = mb
             pool.npc[i] = f
+        end
+        return f
+    end
+    local function takeJump()
+        pool.nJump = pool.nJump + 1
+        local i = pool.nJump
+        local f = pool.jump[i]
+        if not f then
+            f = CreateFrame("Button", nil, child, "BackdropTemplate")
+            f:SetHeight(30)
+            f:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8",
+                edgeSize = 1,
+            })
+            if not f.__huiCard then HuiCardFX(f, 6, 2) end
+            f:EnableMouse(true)
+            f:EnableMouseWheel(true)
+            f:SetScript("OnMouseWheel", function(_, delta)
+                DG.WheelScroll(U.dungeonQDet, U.dungeonQDetChild, delta)
+            end)
+            f.lab = MakeFS(f, 13, C_GOLD, "LEFT")
+            f.lab:SetPoint("LEFT", f, "LEFT", 10, 0)
+            f:SetScript("OnEnter", function(self)
+                if not HuiCardState(self, "hover") then
+                    self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG_HOVER)
+                    self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE_HOVER)
+                end
+            end)
+            f:SetScript("OnLeave", function(self)
+                if not HuiCardState(self, "norm") then
+                    self:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+                    self:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
+                end
+            end)
+            f:SetScript("OnClick", function(self)
+                local CQ = ns.ClassQuestUI
+                if self.__qid and CQ and CQ.FocusByQuest then
+                    ns.OpenPage("Tier")
+                    CQ.FocusByQuest(self.__qid)
+                end
+            end)
+            pool.jump[i] = f
+        end
+        if not f.__huiCard then
+            f:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
+            f:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
         end
         return f
     end
@@ -8899,6 +8947,15 @@ function U:RenderQuestDetail()
             t:SetTextColor(Unpack(C_TEXT))
             local h = FSH(t)
             put(t, (type(h) == "number" and h or 18) + 4)
+            y = y - 2
+        end
+        local CQ = ns.ClassQuestUI
+        if q[15] and CQ and CQ.QuestChainKey and CQ.FocusByQuest and CQ.QuestChainKey(q[1]) then
+            local f = takeJump()
+            f.__qid = q[1]
+            f.lab:SetText(format(L["查看职业指南 · %s 职业任务"], q[15]))
+            f:SetWidth(detW)
+            put(f, 30)
             y = y - 2
         end
     end

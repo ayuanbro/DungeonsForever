@@ -1276,19 +1276,20 @@ ns.DungeonGuide = {
         },
     },
     kroldok_stronghold = {
-        tagline = "A sprawling outdoor ogre stronghold in He-Rin, whose ogres raid villages and carry off their people, 40-45.",
+        tagline = "A giant outdoor ogre stronghold in the new Riverlands zone: ogres raid villages and carry off residents, level 40-45, 10-player dungeon.",
         tips = {
-            "The level range is 40-45 — Blizzard corrected it from an initially announced 40-55.",
-            "This is a huge outdoor dungeon: its ogres raid nearby villages and carry off inhabitants, so expect open-world style pulls rather than corridors.",
-            "The client files hold a Krol'dok Gate Key and a Krol'dok Ogre Key — entering the stronghold may require one of them.",
-            "Two quest-triggering Krol'dok Castings exist in the files.",
-            "No bosses or drops have public data yet (0 drops recorded), so this guide has no boss entries yet — it will fill in once the beta opens the area.",
+            "The level range is 40-45 - revised by Blizzard from the originally announced 40-55.",
+            "This is a giant outdoor dungeon: the experience plays more like open-world pulling than a corridor run.",
+            "There are 5 bosses in fight order: Slavecrusher Grox, Twilight Commander Zarmok, War Handler Ashka, Nar'gurk and Overlord Mugg - their mechanics are still unknown.",
+            "The client files contain a Krol'dok Gate Key and a Krol'dok Ogre Key - entering the stronghold may require one of them.",
+            "The files also include two Krol'dok Castings that trigger quests.",
+            "Boss drops have no public data yet (the client's adventure guide is empty too) - the loot table will be filled when sources catch up.",
         },
         entrance = {
-            H = "",
+            H = "The entrance is around 64.1, 60.3 in the Riverlands (site-approximate coords): look for the ogre-held stronghold in the middle of the zone.",
             A = {
-                "",
-                "",
+                "Travel to the new Riverlands zone (level 40-45);",
+                "Find the ogre stronghold entrance around 64.1, 60.3 (site-approximate coords, verify in game).",
             },
         },
     },
@@ -1298,7 +1299,7 @@ ns.DungeonGuide = {
             "The level range is 48-53, the range Blizzard gives.",
             "Alcaz Island sits in the sea off the eastern coast of Dustwallow Marsh and is ringed by water — as in Classic, expect to swim the final stretch to reach it.",
             "The lore has the Defias fighting the naga on the island, so both bandits and naga are likely inside.",
-            "No bosses or drops have public data yet (0 drops recorded), so this guide has no boss entries yet — it will fill in once the beta opens the area.",
+            "There are 5 bosses: Overseer Wrex, Tidemistress Ca'zass, Katerina the Cleaner, The Questioner and Blazeroar - their mechanics are still unknown.",
         },
         entrance = {
             H = "",
@@ -1315,7 +1316,7 @@ ns.DungeonGuide = {
             "The level range is 55-60, the range Blizzard gives.",
             "It is a furbolg city whose people are fighting corruption — expect corrupted furbolg throughout.",
             "Its tunnels lead toward the Barrow Deeps raid, so the dungeon connects to endgame raid content.",
-            "No bosses or drops have public data yet (0 drops recorded), so this guide has no boss entries yet — it will fill in once the beta opens the area.",
+            "There are 7 bosses: Withermaw, Impaan the Imprisoner, Elder Shaman Bloodmane, Bonesnout the Unbroken, Varrox Bleakhoof, Blackmaw Behemoth and Unbound Spirit - their mechanics are still unknown.",
         },
         entrance = {
             H = "",
@@ -1331,7 +1332,7 @@ ns.DungeonGuide = {
             "The level range is 58-60, the range Blizzard gives — a level-cap dungeon.",
             "Blizzard compares the area to Jurassic Park: titan structures, power crystals and aggressive wildlife fill the hills of Un'Goro.",
             "Un'Goro is a basin ringed by cliffs; as in Classic you enter by one of the slopes — from Tanaris on the west or Silithus to the northeast.",
-            "No bosses or drops have public data yet (0 drops recorded), so this guide has no boss entries yet — it will fill in once the beta opens the area.",
+            "There are 11 bosses (including grouped encounters): Titanosaur, Ravasaur Hunters, Thunderhoof, Venomridge, Direhorn Matriarch, Cinder, King Op, Snowtalon, Bolt, Vitrix and Nanaya - their mechanics are still unknown.",
         },
         entrance = {
             H = "",

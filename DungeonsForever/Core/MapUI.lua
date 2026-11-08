@@ -611,6 +611,8 @@ local CUSTOM = {
     ruins_of_lordaeron  = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\RuinsOfLordaeron",
     excavation_wetlands = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\ExcavationSite",
     the_drowned_city    = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\TheDrownedCity",
+    kroldok_stronghold  = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\KroldokStronghold",
+    the_drowned_city    = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\TheDrownedCity",
 }
 M.CUSTOM = CUSTOM
 
@@ -2334,7 +2336,7 @@ M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns 
                maraudon = true, zul_farrak = true, sunken_temple = true, scholomance = true,
                stratholme_main = true, stratholme_service = true,
                dire_maul_east = true, dire_maul_north = true, dire_maul_west = true,
-               the_drowned_city = true }
+               the_drowned_city = true, kroldok_stronghold = true }
 
 function M.RouteOn(id)
     return id ~= nil and M.ROUTE_ON[id] == true

@@ -921,7 +921,7 @@ ns.DungeonLoot = {
         { "Min'loth the Serpent", "毒蛇明洛斯", "", "270886", {} },
         { "Umbra", "乌姆布拉", "", "264172", {} },
         { "Zin'aka", "辛阿卡", "", "263742", {} },
-        { "Pyromancer Braxton", "「炎术师」布拉克斯顿", "稀有", "260468", {
+        { "Pyromancer Braxton", "\"炎术师\"布拉克斯顿", "稀有", "260468", {
             { 286651, 100, true },
         } },
     },
@@ -1062,6 +1062,11 @@ ns.DungeonLoot = {
         } },
     },
     ["kroldok_stronghold"] = {
+        { "Slavecrusher Grox", "碎奴者格罗克斯", "", "258966", {} },
+        { "Twilight Commander Zarmok", "暮光指挥官扎尔莫克", "", "258972", {} },
+        { "War Handler Ashka", "驯兽师阿什卡", "", "259281", {} },
+        { "Nar'gurk", "纳古克", "", "258964", {} },
+        { "Overlord Mugg", "监工莫格", "", "258968", {} },
     },
     ["uldaman"] = {
         { "Eric \"The Swift\"", "埃瑞克", "", "6907", {
@@ -1296,6 +1301,11 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
+        { "Overseer Wrex", "狱监雷克斯", "", "", {} },
+        { "Tidemistress Ca'zass", "海潮主母卡扎斯", "", "255997", {} },
+        { "Katerina the Cleaner", "清道夫卡特琳娜", "", "257016", {} },
+        { "The Questioner", "质问者", "", "256236", {} },
+        { "Blazeroar", "烈焰咆哮者", "", "255702", {} },
     },
     ["sunken_temple"] = {
         { "Loro", "洛若尔", "", "5714", {
@@ -1753,6 +1763,13 @@ ns.DungeonLoot = {
         } },
     },
     ["blackmaw_hold"] = {
+        { "Withermaw", "枯颌", "", "247195", {} },
+        { "Impaan the Imprisoner", "狱牢头鬼", "", "247206", {} },
+        { "Elder Shaman Bloodmane", "长者萨满血鬃", "", "247209", {} },
+        { "Bonesnout the Unbroken", "不屈的白骨之吻", "", "247198", {} },
+        { "Varrox Bleakhoof", "瓦罗克斯·暗蹄", "", "247234", {} },
+        { "Blackmaw Behemoth", "黑喉巨兽", "", "247207", {} },
+        { "Unbound Spirit", "不羁之魂", "", "247231", {} },
     },
     ["lower_blackrock_spire"] = {
         { "Burning Felguard", "燃烧地狱卫士", "稀有", "10263", {
@@ -2447,6 +2464,17 @@ ns.DungeonLoot = {
         } },
     },
     ["shapers_terrace"] = {
+        { "Titanosaur", "泰坦巨龙", "", "253201", {} },
+        { "Ravasaur Hunters", "暴掠龙猎手", "", "", {} },
+        { "Thunderhoof", "雷蹄", "", "261812", {} },
+        { "Venomridge", "毒脊", "", "261813", {} },
+        { "Direhorn Matriarch", "恐角龙母", "", "262127", {} },
+        { "Cinder", "烈火", "", "261974", {} },
+        { "King Op", "奥普国王", "", "261993", {} },
+        { "Snowtalon", "雪爪", "", "262297", {} },
+        { "Bolt", "霹雳", "", "262081", {} },
+        { "Vitrix", "翠鳞", "", "272561", {} },
+        { "Nanaya", "娜娜亚", "", "261809", {} },
     },
     ["stratholme_main"] = {
         { "Skul", "斯库尔", "稀有 · 58 级", "10393", {
