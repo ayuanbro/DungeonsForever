@@ -2241,6 +2241,38 @@ do
 
     local tooltipSkins = {}
 
+    local EXT_SKIN_PROBES = {
+        function()
+            local nd = _G.NDui
+            if type(nd) ~= "table" then return false end
+            local c = nd[2]
+            local skins = type(c) == "table" and c.db and c.db.Skins
+            if type(skins) == "table" and skins.Tooltips == false then return false end
+            return true
+        end,
+        function()
+            return type(_G.ElvUI) == "table"
+        end,
+    }
+
+    local extTipCache = false
+    local extTipScanT = 0
+    local function ExtTipSkin()
+        local now = GetTime and GetTime() or 0
+        if now - extTipScanT < 0.5 then return extTipCache end
+        extTipScanT = now
+        local hit = false
+        for _, probe in ipairs(EXT_SKIN_PROBES) do
+            if probe() then
+                hit = true
+                break
+            end
+        end
+        extTipCache = hit
+        return hit
+    end
+    ns.hui.ExternalTipSkin = ExtTipSkin
+
     local function IsOwnedFrame(f)
         if not f or not f.GetName then return false end
         local ok, name = pcall(f.GetName, f)
@@ -2360,6 +2392,13 @@ do
     local function ApplyTooltipSkin(tt, on)
         local s = tt and tooltipSkins[tt]
         if not s then return end
+        if ExtTipSkin() then
+            s.on = false
+            for _, tex in ipairs(s.fill) do tex:SetShown(false) end
+            for _, tex in ipairs(s.border) do tex:SetShown(false) end
+            for _, tex in ipairs(s.shadow) do tex:SetShown(false) end
+            return
+        end
         if ns.hui.TipWantsNative(tt) then on = false end
         s.on = on
         if tipApplying then return end
@@ -2417,8 +2456,14 @@ do
         end
         s.nineAlpha = tt.NineSlice and tt.NineSlice:GetAlpha() or 1
         s.nineTex = {}
-        for _, tex in ipairs(s.fill) do tex.__huiPiece = true end
-        for _, tex in ipairs(s.border) do tex.__huiPiece = true end
+        for _, tex in ipairs(s.fill) do
+            tex.__huiPiece = true
+            tex:Hide()
+        end
+        for _, tex in ipairs(s.border) do
+            tex.__huiPiece = true
+            tex:Hide()
+        end
         tooltipSkins[tt] = s
         hooksecurefunc(GameTooltip, "SetOwner", function(tt)
             local s2 = tooltipSkins[tt]
@@ -2432,6 +2477,7 @@ do
             end
         end)
         tt:HookScript("OnUpdate", function(f)
+            if ExtTipSkin() then return end
             local s2 = tooltipSkins[f]
             if not (s2 and s2.on) then return end
             if ns.hui.TipWantsNative(f) then return end
@@ -2455,6 +2501,7 @@ do
             s.on = nil
         end)
         tt:HookScript("OnShow", function()
+            if ExtTipSkin() then return end
             if ns.hui.TipWantsNative(tt) then
                 ApplyTooltipSkin(tt, false)
                 return
@@ -2484,7 +2531,7 @@ do
                 end)
             end
         end
-        local themeOn = ns.huiTheme == "hui"
+        local themeOn = ns.huiTheme == "hui" and not ExtTipSkin()
         for tt, s in pairs(tooltipSkins) do
             local on = themeOn
             if s.ownScoped then

@@ -4517,14 +4517,6 @@ function M.SyncWorldQuestPins()
         if useEnter and r and lv >= r[1] then return true, q[3] end
         return false
     end
-    local function IsOptPre(mid, pid)
-        local t = ns.DungeonQuestOptPre
-        if not (t and t[mid]) then return false end
-        for i = 1, #t[mid] do
-            if t[mid][i] == pid then return true end
-        end
-        return false
-    end
     local function segOk(seg)
         if (DG.QuestState and DG.QuestState(seg)) ~= "todo" then return false end
         local sq = DG.QuestRowByID and DG.QuestRowByID(seg)
@@ -4567,7 +4559,7 @@ function M.SyncWorldQuestPins()
             local pre = q[9]
             if type(pre) == "table" then
                 for _, seg in ipairs(pre) do
-                    if DG.QuestState(seg) ~= "done" and not IsOptPre(q[1], seg) then
+                    if DG.QuestState(seg) ~= "done" and not DG.IsOptPre(q[1], seg) then
                         lockedPre[q[1]] = seg
                         preBlock[seg] = q[1]
                         break
@@ -4619,7 +4611,7 @@ function M.SyncWorldQuestPins()
                 e.qs[#e.qs + 1] = {
                     qid = seg,
                     blocking = qid,
-                    opt = IsOptPre(qid, seg) or nil,
+                    opt = DG.IsOptPre(qid, seg) or nil,
                     needLv = nlv,
                     lvLow = (nlv and lv < nlv) or nil,
                 }

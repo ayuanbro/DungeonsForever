@@ -2363,7 +2363,11 @@ function DG.PaintQuestOverview(d)
         if anchor then
             for k = 1, #chains[r] do
                 if k ~= anchor and DG.QLCall("GetQuestType", chains[r][k][1]) ~= 81 then
-                    chainLab[chains[r][k][1]] = (k < anchor) and L["前置"] or L["后续"]
+                    if k < anchor then
+                        chainLab[chains[r][k][1]] = DG.IsOptPre(chains[r][anchor][1], chains[r][k][1]) and L["可选"] or L["前置"]
+                    else
+                        chainLab[chains[r][k][1]] = L["后续"]
+                    end
                 end
             end
         end
@@ -2589,7 +2593,8 @@ function DG.PaintQuestOverview(d)
         n.stbar:Show()
         n.stbar:SetSize(4, 24)
         local chainText = chainLab[q[1]]
-        n.posB.__wantCol = chainText and DG.Q_BADGE_PRE_BG or DG.Q_BADGE_IN_BG
+        local chainOpt = chainText == L["可选"]
+        n.posB.__wantCol = chainText and (chainOpt and DG.Q_BADGE_OPT_BG or DG.Q_BADGE_PRE_BG) or DG.Q_BADGE_IN_BG
         DG.BadgeTint(n.posB, n.posB.__wantCol)
         n.posB.lab:SetText(chainText or ((DG.QLCall("GetQuestType", q[1]) == 81) and L["地下城"] or L["副本内"]))
         local bw = FSW(n.posB.lab, 20) + DG.Q_BADGE_PAD * 2
@@ -2611,7 +2616,7 @@ function DG.PaintQuestOverview(d)
         n.__oy = y
         return n
     end
-    local function placeExt(pid, c, y, xo)
+    local function placeExt(pid, c, y, xo, mid)
         local n = takeNode()
         n:SetSize(nw, DG.Q_OV_H)
         n.name:SetWidth(nw - 8)
@@ -2626,9 +2631,23 @@ function DG.PaintQuestOverview(d)
         n.sub:SetText("")
         n.stbar:Show()
         n.stbar:SetSize(4, 24)
-        n.posB.__wantCol = DG.Q_BADGE_PRE_BG
+        local optPre = false
+        if mid then
+            optPre = DG.IsOptPre(mid, pid)
+        else
+            local opts = ns.DungeonQuestOptPre
+            if opts then
+                for _, olist in pairs(opts) do
+                    for i = 1, #olist do
+                        if olist[i] == pid then optPre = true break end
+                    end
+                    if optPre then break end
+                end
+            end
+        end
+        n.posB.__wantCol = optPre and DG.Q_BADGE_OPT_BG or DG.Q_BADGE_PRE_BG
         DG.BadgeTint(n.posB, n.posB.__wantCol)
-        n.posB.lab:SetText(L["前置"])
+        n.posB.lab:SetText(optPre and L["可选"] or L["前置"])
         local bw = FSW(n.posB.lab, 20) + DG.Q_BADGE_PAD * 2
         n.posB:SetWidth(bw)
         n.posB:ClearAllPoints()
@@ -2891,7 +2910,7 @@ function DG.PaintQuestOverview(d)
                                 end
                                 local lastN = nil
                                 for _, xid in ipairs(chainEx) do
-                                    local en = placeExt(xid, c, rowY(rr))
+                                    local en = placeExt(xid, c, rowY(rr), nil, q[1])
                                     nodeByExt[xid] = en
                                     rr = rr + 1
                                     if lastN then
@@ -5907,6 +5926,14 @@ function DG.QuestDone(id)
     end
     return v
 end
+function DG.IsOptPre(mid, pid)
+    local t = ns.DungeonQuestOptPre
+    if not (t and t[mid]) then return false end
+    for i = 1, #t[mid] do
+        if t[mid][i] == pid then return true end
+    end
+    return false
+end
 function DG.QuestActive(id)
     if not id then return false end
     local sim = DG.questSim
@@ -8506,12 +8533,14 @@ function U:RenderQuestDetail()
             r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 8, -23)
             r.sub:SetWidth(detW - 18)
             r.sub:SetWordWrap(false)
+            r.optB = DG.MakeBadge(r, DG.Q_BADGE_OPT_BG or DG.Q_BADGE_PRE_BG)
             pool.node[i] = r
         end
         if not r.__huiCard then
             r:SetBackdropColor(1, 1, 1, DG.LOOT_CARD_BG)
             r:SetBackdropBorderColor(1, 1, 1, DG.LOOT_CARD_EDGE)
         end
+        if r.optB then r.optB:Hide() end
         return r
     end
     local function takeChip()
@@ -8828,6 +8857,10 @@ function U:RenderQuestDetail()
                     r.st:SetText(stag)
                     r.st:SetTextColor(Unpack(pok and pcol or C_GREY))
                     r.st:Show()
+                    if DG.IsOptPre(q[1], seg) then
+                        local nw = FSW(r.name, 0)
+                        DG.PlaceBadge(r.optB, (DG.Q_X_NAME or 0) + 8 + nw + 12, L["可选"], detW - 132)
+                    end
                     rowMark(r, pok and pst or nil, pcol)
                     local prow = DG.QuestRowByID(seg) or DG.ExtQuestRow(seg)
                     local sub = ""

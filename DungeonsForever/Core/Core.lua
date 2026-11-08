@@ -595,6 +595,7 @@ end
 local TIP_FRAMES = { "GameTooltip", "ItemRefTooltip", "ShoppingTooltip1", "ShoppingTooltip2" }
 
 function ns.TipFontOn()
+    if ns.hui and ns.hui.ExternalTipSkin and ns.hui.ExternalTipSkin() then return false end
     local db = DungeonsForeverDB
     local ui = db and db.ui
     local t = ui and ui.tip

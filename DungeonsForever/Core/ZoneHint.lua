@@ -73,15 +73,6 @@ local function ItemKey(kind, id)
 end
 Z.ItemKey = ItemKey
 
-local function IsOptPre(mid, pid)
-    local t = ns.DungeonQuestOptPre
-    if not (t and t[mid]) then return false end
-    for i = 1, #t[mid] do
-        if t[mid][i] == pid then return true end
-    end
-    return false
-end
-
 function Z.IsIgnored(key)
     if not key then return false end
     return CFG().ignore[key] ~= nil
@@ -591,7 +582,7 @@ local function PQuest(ctx)
                 local ok = QHitPin(q, slug)
                 if ok and q[9] then
                     for k = 1, #q[9] do
-                        if not DG.QuestDone(q[9][k]) and not IsOptPre(q[1], q[9][k]) then ok = false break end
+                        if not DG.QuestDone(q[9][k]) and not DG.IsOptPre(q[1], q[9][k]) then ok = false break end
                     end
                 end
                 if ok and DG.QuestState and DG.QuestState(q[1]) ~= "todo" then ok = false end
@@ -660,13 +651,7 @@ local function PQuest(ctx)
             local pid = h.pre
             local ps = h.sloc
             local pe = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[pid]
-            local optPair = false
-            local opts = ns.DungeonQuestOptPre and ns.DungeonQuestOptPre[q[1]]
-            if opts then
-                for j = 1, #opts do
-                    if opts[j] == pid then optPair = true break end
-                end
-            end
+            local optPair = DG.IsOptPre(q[1], pid)
             local lvreq = pe and pe.lv or nil
             if lvreq and lvreq <= 0 then lvreq = nil end
             local st = DG.QuestState and DG.QuestState(pid)
@@ -704,7 +689,7 @@ local function PQuest(ctx)
             if lvreq and lv < lvreq then can = false end
             if can and q[9] then
                 for k = 1, #q[9] do
-                    if not DG.QuestDone(q[9][k]) and not IsOptPre(q[1], q[9][k]) then can = false break end
+                    if not DG.QuestDone(q[9][k]) and not DG.IsOptPre(q[1], q[9][k]) then can = false break end
                 end
             end
             local locdesc = dun
