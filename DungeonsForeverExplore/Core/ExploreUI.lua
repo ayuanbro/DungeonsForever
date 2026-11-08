@@ -701,7 +701,26 @@ local function Row(i)
         bt:Hide()
         bt:SetScript("OnClick", function(self)
             local loc = self.__loc
-            if loc then EG.MarkPoint(loc[1], loc[2], loc[3]) end
+            if loc then
+                if type(loc[4]) == "string" then
+                    local W, M = ns.MapWorldModule, ns.MapModule
+                    if W and W.OpenDungeon then
+                        W.OpenDungeon(loc[4])
+                    elseif W and W.Show then
+                        W.Show(loc[4], "explore")
+                    end
+                    if W and (W.OpenDungeon or W.Show) then
+                        if M and type(loc[5]) == "number" and M.curLayer ~= loc[5] then
+                            M.curLayer = loc[5]
+                            if W.Sync then W.Sync() end
+                        end
+                    elseif ns.ShowDungeonDetail then
+                        ns.ShowDungeonDetail(loc[4])
+                    end
+                else
+                    EG.MarkPoint(loc[1], loc[2], loc[3])
+                end
+            end
             ns.PlaySound(1)
         end)
         bt:SetScript("OnEnter", function(self)
@@ -807,11 +826,59 @@ function EG.PillOf(row, key)
     return PillGet(row, key)
 end
 
+local function SubPill(parent, side, txt)
+    local p = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    p:SetHeight((ns.hui and ns.hui.ChipH and ns.hui.ChipH(14)) or 14)
+    p:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8x8",
+        edgeFile = "Interface\\Buttons\\WHITE8x8",
+        edgeSize = 1,
+    })
+    local c = FAC_PILL[side] or FAC_PILL.A
+    if not HuiPillFX(p, 6, { c[4], c[5], c[6], 0.9 }) then
+        p:SetBackdropColor(0, 0, 0, 0.22)
+        p:SetBackdropBorderColor(c[4], c[5], c[6], 0.9)
+    end
+    local t = MakeFS(p, 11, nil, "CENTER")
+    t:SetPoint("CENTER", p, "CENTER", 0, (ns.hui and ns.hui.ChipLabelDY and ns.hui.ChipLabelDY(11)) or 0.5)
+    t:SetWordWrap(false)
+    t:SetText(txt or "")
+    t:SetTextColor(1, 1, 1)
+    if ns.hui and ns.hui.PaintSolidFill and p.__fillPieces then
+        ns.hui.PaintSolidFill(p.__fillPieces, ns.hui.ChipSolidBase({ c[1], c[2], c[3] }))
+    end
+    PillEdge(p, c[1], c[2], c[3], 1)
+    local tw = t.GetStringWidth and t:GetStringWidth()
+    if type(tw) ~= "number" or tw <= 0 then tw = #(txt or "") * 11 end
+    local pad = (ns.hui and ns.hui.CHIP_S_PAD) or 5
+    local minw = (ns.hui and ns.hui.CHIP_S_MIN_W) or 24
+    p:SetWidth(math.max(tw + pad * 2, minw))
+    return p
+end
+
+local function LocName(step)
+    if type(step) == "table" and type(step[4]) == "string" then
+        local list = ns.DungeonData and ns.DungeonData.dungeons
+        if type(list) == "table" then
+            for i = 1, #list do
+                local d = list[i]
+                if d.id == step[4] then return d.name end
+            end
+        end
+    end
+    return EG.ZoneName(step and step[1], tostring(step and step[1] or ""))
+end
+
 local function PaintCoords(r, rec)
     local route = rec[8]
     local last = route and route[#route] or nil
-    r.c:SetText(format("%.1f, %.1f", last and last[2] or rec[3] or 0,
-                                      last and last[3] or rec[4] or 0))
+    local dsg = (type(last) == "table" and type(last[4]) == "string") or false
+    if dsg then
+        r.c:SetText("")
+    else
+        r.c:SetText(format("%.1f, %.1f", last and last[2] or rec[3] or 0,
+                                          last and last[3] or rec[4] or 0))
+    end
     r.d:SetText(EG.ZoneName(rec[2], tostring(rec[2] or "")))
     r.c2:SetText("")
     r.arr:SetText("")
@@ -824,12 +891,18 @@ local function PaintCoords(r, rec)
     r.d:SetPoint("RIGHT", r.c, "LEFT", -6, 0)
     if route and #route >= 2 then
         local s1 = route[1]
-        local zn1 = EG.ZoneName(s1[1], tostring(s1[1] or ""))
-        local zn2 = EG.ZoneName(last[1], tostring(last[1] or ""))
-        if zn1 ~= zn2 then r.d:SetText(zn1) end
+        local zn1 = LocName(s1)
+        local zn2 = LocName(last)
+        if zn1 ~= zn2 or dsg then r.d:SetText(zn1) end
         r.c2:SetText(format("%.1f, %.1f", s1[2] or 0, s1[3] or 0))
         r.arr:SetText("→")
-        if zn1 == zn2 then
+        if dsg then
+            r.d2:SetText(zn2)
+            r.d2:ClearAllPoints()
+            r.d2:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -7)
+            r.arr:ClearAllPoints()
+            r.arr:SetPoint("RIGHT", r.d2, "LEFT", -4, 0)
+        elseif zn1 == zn2 then
             r.arr:ClearAllPoints()
             r.arr:SetPoint("RIGHT", r.c, "LEFT", -4, 0)
         else
@@ -859,7 +932,7 @@ local function PaintCoords(r, rec)
     end
     pin(r.s1, r.c2)
     if route and #route >= 2 then
-        pin(r.s2, r.c)
+        pin(r.s2, dsg and r.d2 or r.c)
     end
 end
 
@@ -1162,12 +1235,12 @@ local function PaintRewards()
         end
         local stTxt
         if card and card.state then
-            stTxt = done and L["任务已完成"] or L["任务未完成"]
+            stTxt = done and L["已完成"] or L["未完成"]
             card.state:SetText(stTxt)
             card.state:SetTextColor(Unpack(done and C_GOLD or C_GREY))
         end
         if card and card.lv then
-            card.lv:SetText(format(L["要求等级 %d"], tier.req or 0))
+            card.lv:SetText(format(L["要求%d级"], tier.req or 0))
             local sw = card.state and card.state.GetStringWidth and card.state:GetStringWidth()
             if type(sw) ~= "number" or sw <= 0 then sw = stTxt and (#stTxt * 7) or 70 end
             card.lv:SetPoint("TOPRIGHT", card, "TOPRIGHT", -(12 + sw + 6), -12)
@@ -4284,6 +4357,20 @@ function EG.Build(page)
             EG.howCard = card
             local HT = ns.ExploreHowTo or {}
             local iw = EG.RIGHT_W - 2 * PADX - 26
+            local probe = MakeFS(card, 14, C_GREY, "LEFT")
+            probe:Hide()
+            probe:SetWordWrap(true)
+            local function Measure(txt, w)
+                probe:SetWidth(w)
+                probe:SetWordWrap(true)
+                probe:SetText(txt or "")
+                local sw = (type(probe.GetStringWidth) == "function" and probe:GetStringWidth()) or 0
+                if type(sw) ~= "number" or sw <= 0 then sw = #tostring(txt or "") * 14 end
+                local est = math.max(1, math.ceil(sw / math.max(1, w))) * 19
+                local h = (type(probe.GetStringHeight) == "function" and probe:GetStringHeight()) or 0
+                if type(h) == "number" and h > est then est = h end
+                return est
+            end
             local cy = 12
             local htitle = MakeFS(card, 16, C_WHITE, "LEFT")
             htitle:SetPoint("TOPLEFT", card, "TOPLEFT", 13, -cy)
@@ -4293,12 +4380,14 @@ function EG.Build(page)
             hintro:SetPoint("TOPLEFT", card, "TOPLEFT", 13, -cy)
             hintro:SetWidth(iw)
             hintro:SetText(HT.intro or "")
-            cy = cy + 22
+            EG.howIntro = hintro
+            cy = cy + Measure(HT.intro or "", iw) + 6
             local hdetail = MakeFS(card, 14, { 0.94, 0.78, 0.35 }, "LEFT")
             hdetail:SetPoint("TOPLEFT", card, "TOPLEFT", 13, -cy)
             hdetail:SetWidth(iw)
             hdetail:SetText(HT.detail or "")
-            cy = cy + 34
+            EG.howDetail = hdetail
+            cy = cy + Measure(HT.detail or "", iw) + 12
             EG.howSteps = {}
             Y()
             local SGAP = 16
@@ -4327,9 +4416,69 @@ function EG.Build(page)
             Y()
             end
             Y()
-            cy = cy + maxStepH
-            card:SetHeight(cy + 4)
-            y = y + cy + 8
+            cy = cy + maxStepH + 4
+            local howH = cy + 10
+            card:SetHeight(howH)
+            y = y + howH + 8
+            local TI = ns.ExploreTurnIn or {}
+            if #TI > 0 then
+                Y()
+                local TGAP, TH = 8, 86
+                local tw = math.floor((EG.RIGHT_W - 2 * PADX - TGAP) / 2)
+                EG.turnCards = {}
+                for i, o in ipairs(TI) do
+                    local tc = CreateFrame("Button", nil, rw, "BackdropTemplate")
+                    tc:SetSize(tw, TH)
+                    tc:SetPoint("TOPLEFT", rw, "TOPLEFT", PADX + (i - 1) * (tw + TGAP), -y)
+                    if ns.hui and ns.hui.SkinPopup then
+                        ns.hui.SkinPopup(tc, 6, nil, ns.hui.layer.L2)
+                    else
+                        tc:SetBackdrop({
+                            bgFile = "Interface\\Buttons\\WHITE8x8",
+                            edgeFile = "Interface\\Buttons\\WHITE8x8",
+                            edgeSize = 1,
+                        })
+                        tc:SetBackdropColor(1, 1, 1, 0.03)
+                        tc:SetBackdropBorderColor(1, 1, 1, 0.05)
+                    end
+                    tc.__loc = o
+                    local head = MakeFS(tc, 16, C_WHITE, "LEFT")
+                    head:SetPoint("TOPLEFT", tc, "TOPLEFT", 13, -10)
+                    head:SetText(format("%s · %s", L["上交地点"],
+                        o.side == "A" and L["联盟"] or L["部落"]))
+                    local pill = SubPill(tc, o.side, o.side == "A" and L["联盟"] or L["部落"])
+                    pill:SetPoint("TOPLEFT", tc, "TOPLEFT", 13, -38)
+                    local nm = MakeFS(tc, 14, C_TEXT, "LEFT")
+                    nm:SetPoint("LEFT", pill, "RIGHT", 8, 0)
+                    nm:SetWordWrap(false)
+                    nm:SetText(o.npc or "")
+                    local pl = MakeFS(tc, 14, C_GREY, "LEFT")
+                    pl:SetPoint("TOPLEFT", tc, "TOPLEFT", 13, -60)
+                    pl:SetWordWrap(false)
+                    pl:SetText(o.place or "")
+                    local co = MakeFS(tc, 14, C_GOLD, "RIGHT")
+                    co:SetPoint("TOPRIGHT", tc, "TOPRIGHT", -13, -60)
+                    co:SetWordWrap(false)
+                    co:SetText(format("%.1f, %.1f", o.x or 0, o.y or 0))
+                    tc.head, tc.npc, tc.place, tc.coord = head, nm, pl, co
+                    tc:SetScript("OnEnter", function(self)
+                        self.coord:SetTextColor(1, 0.90, 0.55)
+                        self.place:SetTextColor(Unpack(C_TEXT))
+                    end)
+                    tc:SetScript("OnLeave", function(self)
+                        self.coord:SetTextColor(Unpack(C_GOLD))
+                        self.place:SetTextColor(Unpack(C_GREY))
+                    end)
+                    tc:SetScript("OnClick", function(self)
+                        local loc = self.__loc
+                        if loc then EG.MarkPoint(loc.area, loc.x, loc.y) end
+                    end)
+                    EG.turnCards[i] = tc
+                end
+                EG.turnCard = EG.turnCards[1] or nil
+                EG.turnRows = EG.turnCards
+                y = y + TH + 8
+            end
             local mh = MakeFS(rw, 16, C_WHITE, "LEFT")
             mh:SetPoint("TOPLEFT", rw, "TOPLEFT", PADX, -y)
             EG.rwMageHead = mh

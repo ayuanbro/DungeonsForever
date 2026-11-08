@@ -16,7 +16,7 @@ ns.ExploreBooks = {
     [10] = { 209845, 40, 45.4, 70.4, "月溪镇入口左侧第一间屋内的书架上" },
     [11] = { 209847, 17, 56.3, 8.8, "淤泥沼泽钻井平台顶，控制室的椅子上" },
     [12] = { 208800, 17, 62.7, 36.3, "棘齿城工程楼内，加兹鲁维旁边的箱子上" },
-    [13] = { 209846, 17, 52.8, 54.7, "甜水绿洲（46.0,36.5）进洞，靠哀嚎洞穴副本入口的迷雾洞穴里（洞穴地图 52.8,54.7；书在副本外，不用进本）", nil, nil, { {17, 46.0, 36.5}, {17, 52.8, 54.7} } },
+    [13] = { 209846, 17, 46.3, 36.4, "洞穴入口在十字路口西南的丰满绿洲（46.0,36.4）；书在洞穴内，一根双重岩石柱旁闪闪发光（不用进副本）", nil, nil, { {17, 46.3, 36.4}, {17, 52.8, 54.7, "wailing_caverns", 2} } },
     [14] = { 209851, 406, 74.4, 85.7, "恐怖图腾岗哨帐篷内的木桶上" },
     [15] = { 209849, 10, 16.6, 28.5, "从渡鸦岭墓穴进入的黎明森林地下墓穴，尽头木桌上" },
     [16] = { 209848, 11, 33.6, 47.9, "维尔加挖掘场最低层的陶瓮里" },
@@ -226,10 +226,15 @@ ns.ExploreHowTo = {
     steps = {
         { t = "Search books", d = "Books do not drop from mobs: each is looted from a fixed object — bookshelves, scroll piles, books on tables, etc." },
         { t = "Turn in to your librarian",
-          d = "Each book turned in yields a Comprehension Sigil. Alliance: Stormwind Mage Quarter 37.6, 80.8; Horde: Undercity Magic Quarter 73.4, 33.0." },
+          d = "Each book turned in yields a Comprehension Sigil; where to hand it in is listed in Turn-in below." },
         { t = "Claim at 10, 20 and 25 books",
           d = "交出第十本解锁项链奖励，第二十本解锁戒指奖励，第二十五本解锁三选一奖励（求真者之弓 / 阐明徽记 / 研究员的小夜灯 任选其一）。三档任务的接取等级依次为 1 级、20 级、30 级。" },
     },
+}
+
+ns.ExploreTurnIn = {
+    { side = "A", npc = "Librarian", place = "Stormwind · Mage Quarter", area = 1519, x = 37.6, y = 80.8 },
+    { side = "H", npc = "Librarian", place = "Undercity · Magic Quarter", area = 1497, x = 73.4, y = 33.0 },
 }
 
 ns.ExploreMageBonus = {

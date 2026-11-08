@@ -1,9 +1,7 @@
 local _, ns = ...
 
 ns.InstanceMap = {
-    inst = {
-        [229] = "lower_blackrock_spire",
-    },
+    inst = {},
     map = {
     },
     zone = {

@@ -448,6 +448,12 @@ local function nameIndex()
     return out
 end
 
+local function purgeLearn()
+    local db = DungeonsForeverDB
+    local s = type(db) == "table" and db.dungeon
+    if type(s) == "table" and s.instLearn ~= nil then s.instLearn = nil end
+end
+
 local function worldMapID()
     if not (WorldMapFrame and WorldMapFrame.GetMapID) then return nil end
     local ok, v = pcall(WorldMapFrame.GetMapID, WorldMapFrame)
@@ -1567,7 +1573,39 @@ function W.Show(id, why)
     local q = questPanel()
     if q and not W.Active() then W.qWas = q:IsShown() and true or false end
     if q then q:Hide() end
+    local fromHidden = not view:IsShown()
     view:Show()
+    if fromHidden then
+        local cur = view.__curtain
+        if not cur then
+            cur = view:CreateTexture(nil, "OVERLAY", nil, 7)
+            cur:SetTexture("Interface\\Buttons\\WHITE8X8")
+            cur:SetVertexColor(0.03, 0.03, 0.03, 1)
+            view.__curtain = cur
+        end
+        cur:ClearAllPoints()
+        cur:SetAllPoints(view)
+        cur:SetAlpha(1)
+        cur:Show()
+        local dur = 0.22
+        local el = 0
+        if view.__curtainTick then view.__curtainTick:Cancel() end
+        view.__curtainTick = C_Timer.NewTicker(0.03, function()
+            el = el + 0.03
+            if not view:IsShown() then
+                if view.__curtainTick then view.__curtainTick:Cancel() end
+                return
+            end
+            local a = 1 - el / dur
+            if a <= 0 then
+                cur:SetAlpha(0)
+                cur:Hide()
+                if view.__curtainTick then view.__curtainTick:Cancel() end
+            else
+                cur:SetAlpha(a)
+            end
+        end)
+    end
     leaSuppress()
     if W.zoneMap and worldMapID() ~= W.zoneMap then
         setMap(W.zoneMap)
@@ -2705,6 +2743,7 @@ local function onShow()
     if not W.hooked then return end
     W.suppress = nil
     W.shownAt = GetTime()
+    purgeLearn()
     C_Timer.After(0, function()
         if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
         local id, why = autoPick()
@@ -2716,6 +2755,14 @@ local function onShow()
             if W.pinned and W.pinnedMap and worldMapID() ~= W.pinnedMap then
                 setMap(W.pinnedMap)
             end
+            W.lastMiss = {
+                t = GetTime(),
+                inInst = inInstance(),
+                ii = instanceInfo(),
+                mid = worldMapID(),
+                zone = zoneText(),
+                pinned = W.pinned,
+            }
             W.Hide()
         end
     end)
@@ -2742,6 +2789,7 @@ end
 function W.Hook()
     if W.hooked or not WorldMapFrame then return end
     W.hooked = true
+    purgeLearn()
     local watch = CreateFrame("Frame", nil, WorldMapFrame)
     watch:SetAllPoints(WorldMapFrame)
     watch:SetScript("OnShow", onShow)
