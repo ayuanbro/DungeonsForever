@@ -6583,6 +6583,7 @@ DG.Q_BADGE_FS = 11
 DG.Q_BADGE_MIN_W = 24
 DG.Q_BADGE_CLS_BG = { 0.64, 0.61, 0.55, 1 }
 DG.Q_BADGE_PRE_BG = { 0.78, 0.60, 0.10, 1 }
+DG.Q_BADGE_OPT_BG = { 0.13, 0.50, 0.24, 1 }
 DG.Q_BADGE_SHARE_BG = { 0.16, 0.52, 0.26, 1 }
 DG.Q_BADGE_RACE_BG = { 0.78, 0.14, 0.12, 1 }
 DG.Q_BADGE_IN_BG = { 0.20, 0.45, 0.55, 1 }
@@ -7135,16 +7136,17 @@ function U:RenderDungeonQuests()
     end
     U.__qaSelInFull = selInFull
 
-    local cnt = { all = nAll, A = 0, H = 0, todo = 0, done = 0 }
+    local fh = DG.FilterBranchHeads(list)
+    local cnt = { all = #fh, A = 0, H = 0, todo = 0, done = 0 }
     local doneN = 0
-    for i = 1, nAll do
-        local s = list[i][2]
+    for i = 1, #fh do
+        local s = fh[i][2]
         if s == "A" or not s then cnt.A = cnt.A + 1 end
         if s == "H" or not s then cnt.H = cnt.H + 1 end
-        if DG.QuestDone(list[i][1]) then doneN = doneN + 1 end
+        if DG.QuestDone(fh[i][1]) then doneN = doneN + 1 end
     end
     cnt.done = doneN
-    cnt.todo = nAll - doneN
+    cnt.todo = #fh - doneN
 
     local view = U.dungeonQView
     if view ~= "overview" then view = "list" end

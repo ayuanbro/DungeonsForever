@@ -169,6 +169,8 @@ ns.DungeonQuests = {
         { 95789, nil, 34, 40, "Crank Fizzlebub", "Stranglethorn - Booty Bay", nil, true, nil, {279882, 279930}, "Collect 10 Voodoo-Infused Artifacts and bring them to Crank Fizzlebub in Booty Bay.", "Starts outside the dungeon (Booty Bay); the artifacts drop from Saltseer casters inside - both factions can take it.", {{34,1}, {36,2}, {38,3}, {43,4}, {49,5}}, {270333}, nil, 773, "Crank Fizzlebub", { xp = 10450, rep = { {21, 100, "Booty Bay"}, {470, 50, "Ratchet"}, {369, 50, "Gadgetzan"} } } },
         { 95791, nil, 34, 40, "Crank Fizzlebub", "Stranglethorn - Booty Bay", nil, true, nil, {279883, 279884}, "Slay Captain Dreadrise and the Saltseer Coroners, then report back to Crank Fizzlebub in Booty Bay.", "Kill targets: the Captain is one of the dungeon bosses; Coroners appear in groups along the route - both factions can take it.", {{34,1}, {36,2}, {38,3}, {43,4}, {49,5}}, nil, nil, 773, "Crank Fizzlebub", { xp = 10450, rep = { {21, 100, "Booty Bay"}, {369, 50, "Gadgetzan"}, {577, 50, "Everlook"} } } },
         { 97130, "A", 34, 40, "Archmage Timear", "Alterac Mountains", nil, true, nil, nil, "Recover the Ancient Gurubashi Idol and bring it to Archmage Timear of the Kirin Tor.", "Starts outside the dungeon (Alterac Mountains); the idol drops from the priest-look boss inside, shared with the Horde version.", {{34,1}, {36,2}, {38,3}, {43,4}, {49,5}}, {276894}, nil, 31439, "Archmage Timear", { xp = 10450, rep = { {2740, 300, "Kirin Tor"}, {72, 150, "Stormwind"} } } },
+        { 95798, "A", 30, 40, nil, nil, nil, false, {95788}, {279879, 279878}, "Take the I'lalai Fetish to the wand vendor Abra in Dalaran.", "Follow-up to Magics of the Drowned City: the fetishes collected there are this quest's turn-in item; the start NPC is that quest's turn-in NPC; not shareable.", {{30,1}, {36,2}, {38,3}, {43,4}, {49,5}}, nil, nil, nil, "Abra Cadabra", { xp = 2350, rep = { {72, 75, "Stormwind"} } } },
+        { 95799, "A", 30, 40, "Loremaster Dibbs", nil, nil, true, {95787}, {279880, 279881}, "Bring Loremaster Dibbs' I'lalai Translations to Historian Karnik in Ironforge.", "Follow-up to Take Two With Water: the translated tablets are this quest's turn-in item; Loremaster Dibbs (Explorer's League) starts it, Historian Karnik turns it in at Ironforge.", {{30,1}, {36,2}, {38,3}, {43,4}, {49,5}}, {272124}, nil, 2277, "Historian Karnik", { xp = 2350, rep = { {72, 75, "Stormwind"}, {47, 50, "Ironforge"} } } },
     },
     ["sm_armory"] = {
         { 1051, "H", 25, 33, "Vorrel Sengutz", "Scarlet Monastery - Graveyard", nil, true, nil, {7750, 4643, 7751}, "Return Vorrel Sengutz's wedding ring to Monika Sengutz in Tarren Mill.", "戒指在血色修道院墓地区前部的沃瑞尔·森加斯身上；南茜(奥特兰克山脉 31,32)也持有任务相关物品。", {{25,1}, {29,2}, {31,3}, {36,4}, {42,5}}, {5538}, nil, 3981, "Vorrel Sengutz", { xp = 3300, rep = { {68, 150, "Undercity"} } } },
@@ -240,6 +242,7 @@ ns.DungeonQuests = {
         { 2991, "A", 40, 47, "Thadius Grimshade", "Blasted Lands - Nethergarde Keep 66,19", "Thadius Grimshade", false, {2990}, nil, "Bring Nekrum's medallion to Thadius Grimshade in the Blasted Lands.", "系列始于狮鹫管理员沙拉克·鹰斧(辛特兰-蛮锤城堡 9,44)。耐克鲁姆在副本内：释放布莱后从大阶梯涌上的最后一波敌人里出现。", {{40,1}, {43,2}, {45,3}, {50,4}, {57,5}}, {9471}, nil, 8022, "Thadius Grimshade", { xp = 5250, money = 7000, rep = { {471, 150, "[UNUSED] Brother Milius"}, {47, 150, "Ironforge"} } } },
         { 3042, nil, 40, 45, "Trenton Lighthammer", "Tanaris - Gadgetzan 51,28", nil, false, nil, nil, "Collect 20 bottles of Troll Temper and bring them to Trenton Lighthammer in Gadgetzan.", "All the trolls can drop the temper.", {{40,1}, {41,2}, {43,3}, {48,4}, {55,5}}, {9523}, nil, 7804, "Trenton Lighthammer", { xp = 3900, money = 19500 } },
         { 3527, nil, 40, 47, "Yeh'kinya", "Tanaris - Steamwheedle Port 66,22", "The Prophecy of Mosh'aru", false, {3520}, nil, "Bring the first and second Mosh'aru Tablets to Yeh'kinya in Tanaris.", "The prerequisite is also taken from Yeh'kinya. The tablets drop from Martyr Seka and Hydromancer Velratha respectively.", {{40,1}, {43,2}, {45,3}, {50,4}, {57,5}}, {10660, 10661}, nil, 8579, "Yeh'kinya", { xp = 5250 } },
+        { 96770, "A", 39, 46, nil, nil, nil, true, nil, nil, "Venture into Zul'Farrak, destroy the witch doctor Zum'rah and bring back his head - intact.", "The quest giver has a grudge against Zum'rah (start NPC not listed on the site); Zum'rah is inside Zul'Farrak - loot the Zum'rah's Sigil after the kill and turn it in.", {{39,1}, {42,2}, {44,3}, {49,4}, {56,5}}, {277112}, nil, 220076, nil, { xp = 10100, rep = { {2740, 300, "Kirin Tor"} } } },
     },
     ["maraudon"] = {
         { 7068, "H", 38, 42, "Uthel'nay", "Orgrimmar - Valley of Spirits 39,86", nil, false, nil, {17772, 17773}, "Collect 10 Shadow Shards from Maraudon and bring them to Uthel'nay in Orgrimmar.", "The shards come from the Shadow Shard Prowlers and Shadow Shard Splitters outside the dungeon.", {{39,2}, {40,3}, {45,4}, {52,5}}, {17756}, nil, 7311, "Uthel'nay", { xp = 3450, rep = { {530, 150, "Darkspear Trolls"} } } },
@@ -535,6 +538,10 @@ ns.DungeonQuests = {
         { 6585, "H", 55, 60, "Emberstrife", "Dustwallow Marsh - Emberstrife's Cave 56.8,87.4", nil, false, {6582, 6583, 6584}, nil, "Kill Axtroz, the red dragon in the Wetlands, and bring his skull back to Emberstrife.", "前三场颅骨试炼交完才会开放。阿克特罗兹在格瑞姆巴托附近巡逻(约 85,49)，火焰免疫；想剥皮需要剥皮技能 310。", {{55,1}, {56,2}, {58,3}, {63,4}, {72,5}}, nil, nil, 10321, "Emberstrife", nil },
         { 6601, "H", 55, 60, "Emberstrife", "Dustwallow Marsh - Emberstrife's Cave 56.8,87.4", nil, false, {6585}, nil, "Take the Dull Drakefire Amulet to Rexxar in Desolace.", "任务描述让你回黑石塔找达基萨斯将军，但伪装护符在黑石塔里不生效——直接去凄凉之地找雷克萨（巡逻路线同《部落的勇士》）。", {{55,1}, {56,2}, {58,3}, {63,4}, {72,5}}, nil, nil, 10182, "Rokaro", nil },
     },
+
+    ["kroldok_stronghold"] = {
+        { 96771, "A", 37, 45, nil, nil, nil, true, nil, nil, "Travel to the Krol'dok Stronghold in the southeastern Riverglades and destroy Zalfan Moonshadow, a highborne consorting with the Twilight's Hammer.", "Started by a highborne NPC (not listed on the site); Zalfan Moonshadow is inside the Krol'dok Stronghold, serving the Twilight's Hammer with stolen arcane knowledge.", {{37,1}, {41,2}, {43,3}, {48,4}, {55,5}}, nil, nil, 268423, nil, { xp = 11500, rep = { {2740, 250, "Kirin Tor"}, {2826, 150, "Brotherhood of Ironhand"} } } },
+    },
 }
 
 ns.DungeonQuestAlias = {
@@ -802,6 +809,22 @@ ns.DungeonQuestPreExtra = {
 
 ns.DungeonQuestPreNote = {
     [2040] = "Note: quest 2041 is not required — this quest can be taken directly.",
+}
+
+ns.DungeonQuestOptPre = {
+    [2040] = { 2041 },
+    [2770] = { 2769 },
+    [2846] = { 2861 },
+    [2924] = { 2925 },
+    [2930] = { 2931 },
+    [3447] = { 3446 },
+    [4241] = { 4183 },
+    [4734] = { 4907 },
+    [7201] = { 3906 },
+    [7483] = { 7482 },
+    [7484] = { 7482 },
+    [7485] = { 7482 },
+    [7622] = { 7621 },
 }
 
 ns.DungeonQuestShare = {

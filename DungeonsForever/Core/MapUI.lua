@@ -4297,7 +4297,7 @@ local function wpPinAcquire(canvas)
                     DG.RequestQuest(it.pre)
                     sub = format(L["需先完成：%s"], tostring(DG.QuestName and DG.QuestName(it.pre) or it.pre))
                 elseif it.blocking then
-                    tag = "|cff8ca6ff[" .. L["前置"] .. "]|r"
+                    tag = it.opt and ("|cff7fd287[" .. L["可选"] .. "]|r") or ("|cff8ca6ff[" .. L["前置"] .. "]|r")
                     DG.RequestQuest(it.blocking)
                     sub = format(L["完成后解锁：%s"], tostring(DG.QuestName and DG.QuestName(it.blocking) or it.blocking))
                 else
@@ -4517,6 +4517,14 @@ function M.SyncWorldQuestPins()
         if useEnter and r and lv >= r[1] then return true, q[3] end
         return false
     end
+    local function IsOptPre(mid, pid)
+        local t = ns.DungeonQuestOptPre
+        if not (t and t[mid]) then return false end
+        for i = 1, #t[mid] do
+            if t[mid][i] == pid then return true end
+        end
+        return false
+    end
     local function segOk(seg)
         if (DG.QuestState and DG.QuestState(seg)) ~= "todo" then return false end
         local sq = DG.QuestRowByID and DG.QuestRowByID(seg)
@@ -4555,11 +4563,11 @@ function M.SyncWorldQuestPins()
     local lockedPre, preBlock = {}, {}
     for i = 1, #data.rows do
         local q = data.rows[i]
-        if qHit(q) then
+        if qHit(q) and DG.QuestState(q[1]) == "todo" then
             local pre = q[9]
             if type(pre) == "table" then
                 for _, seg in ipairs(pre) do
-                    if DG.QuestState(seg) ~= "done" then
+                    if DG.QuestState(seg) ~= "done" and not IsOptPre(q[1], seg) then
                         lockedPre[q[1]] = seg
                         preBlock[seg] = q[1]
                         break
@@ -4611,6 +4619,7 @@ function M.SyncWorldQuestPins()
                 e.qs[#e.qs + 1] = {
                     qid = seg,
                     blocking = qid,
+                    opt = IsOptPre(qid, seg) or nil,
                     needLv = nlv,
                     lvLow = (nlv and lv < nlv) or nil,
                 }
