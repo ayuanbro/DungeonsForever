@@ -1531,6 +1531,7 @@ end
 
 function W.Show(id, why)
     if not (WorldMapFrame and id and hasArt(id)) then return end
+    if ns.OpenMapBridge and ns.OpenMapBridge.Suspend then pcall(ns.OpenMapBridge.Suspend) end
     W.Build()
     local view = W.view
     if not view then return end
@@ -1600,6 +1601,7 @@ function W.Hide()
         end
         W.qWas = nil
     end
+    if ns.OpenMapBridge and ns.OpenMapBridge.Restore then pcall(ns.OpenMapBridge.Restore) end
     view:Hide()
 end
 
@@ -2654,7 +2656,10 @@ local function tick_()
     driveEntryPins()
     local view = W.view
     if view then syncNav(view) end
-    if view and view:IsShown() then leaSuppress() end
+    if view and view:IsShown() then
+        leaSuppress()
+        if ns.OpenMapBridge and ns.OpenMapBridge.Suspend then pcall(ns.OpenMapBridge.Suspend) end
+    end
     if not (view and view:IsShown()) then
         local sig = leaIconSig()
         if sig ~= leaLastSig then

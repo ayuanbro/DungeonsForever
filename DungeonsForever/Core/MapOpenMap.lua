@@ -54,6 +54,34 @@ function B.Active()
     return ok and st and true or false
 end
 
+local modDb
+local function worldDb()
+    if modDb then return modDb end
+    local OM = _G.OpenMap
+    if type(OM) ~= "table" or type(OM.modules) ~= "table" then return nil end
+    for _, m in pairs(OM.modules) do
+        if type(m) == "table" and type(m.db) == "table" and m.db.autoSwitch ~= nil then
+            modDb = m.db
+            return modDb
+        end
+    end
+    return nil
+end
+
+function B.Suspend()
+    local db = worldDb()
+    if not db or B.__asSaved ~= nil then return end
+    B.__asSaved = db.autoSwitch
+    db.autoSwitch = false
+end
+
+function B.Restore()
+    if B.__asSaved == nil then return end
+    local db = worldDb()
+    if db then db.autoSwitch = B.__asSaved end
+    B.__asSaved = nil
+end
+
 function B.Refresh()
     if B.__q then return end
     B.__q = true
