@@ -753,6 +753,15 @@ function LP.Toggle(on)
     UpdateCardState(on)
 end
 
+function LP.ApplyToggle(on)
+    if on then
+        if card then card:Show() end
+        return
+    end
+    LP.Toggle(false)
+    if card then card:Hide() end
+end
+
 local function HookCards(panel)
     if not (panel and panel.treeButtons) then return end
     for i = 1, #panel.treeButtons do
@@ -905,6 +914,7 @@ function LP.Apply()
 end
 
 local function Ensure()
+    if ns.LegacyEnhOn and not ns.LegacyEnhOn() then return false end
     if not host then return false end
     local tp = host.TreePage
     if not tp or not tp.LegacyTreeSelectionPanel then return false end
@@ -947,6 +957,7 @@ function LP.Attach(frame)
     if not frame.__dfLegacyHook then
         frame.__dfLegacyHook = true
         frame:HookScript('OnShow', function()
+            if ns.LegacyEnhOn and not ns.LegacyEnhOn() then return end
             if not Ensure() then Watch(frame) end
             if page then LP.Toggle(false) end
         end)
@@ -958,6 +969,7 @@ function LP.Attach(frame)
 end
 
 local function TryAttach()
+    if ns.LegacyEnhOn and not ns.LegacyEnhOn() then return false end
     if type(Traits) ~= 'table' then return false end
     local f = _G.LegacySystemFrame
     if not f and C_AddOns and C_AddOns.LoadAddOn then

@@ -37,8 +37,8 @@ local function CFG()
     if c.food == nil then c.food = true end
     if c.rested == nil then c.rested = true end
     if c.voice == nil then c.voice = false end
-    if c.voiceInit == nil then
-        c.voiceInit = true
+    if c.voiceInit ~= 2 then
+        c.voiceInit = 2
         c.voice = false
     end
     if c.foodVoice == nil then c.foodVoice = true end
@@ -490,6 +490,33 @@ local function FirstSeg(s)
     return s
 end
 
+local function InInstNow()
+    if type(GetInstanceInfo) ~= "function" then return nil end
+    local ok, nm, itype, _, _, _, _, _, iid = pcall(GetInstanceInfo)
+    if not ok then return nil end
+    local inside = (type(itype) == "string" and itype ~= "none") or (type(iid) == "number" and iid > 0)
+    if not inside and type(IsInInstance) == "function" then
+        local ok2, v = pcall(IsInInstance)
+        if ok2 and v then inside = true end
+    end
+    if not inside then return nil end
+    return nm
+end
+
+local function InstNamed(prefix)
+    if type(prefix) ~= "string" or #prefix < 2 then return false end
+    local nm = InInstNow()
+    if not nm then return false end
+    local cands = { nm, GetRealZoneText and GetRealZoneText() or nil, GetZoneText and GetZoneText() or nil }
+    for i = 1, #cands do
+        local s = cands[i]
+        if type(s) == "string" and s ~= "" and (SameName(s, prefix) or string.find(s, prefix, 1, true)) then
+            return true
+        end
+    end
+    return false
+end
+
 local function BannerRows(ctx)
     local bs = ns.ExploreBanner
     if type(bs) ~= "table" then return nil end
@@ -497,7 +524,7 @@ local function BannerRows(ctx)
     for i = 1, #bs do
         local b = bs[i]
         local iid, areaID = b[1], b[5]
-        local here = HereArea(areaID, ctx) or SameName(FirstSeg(b[8]) or "", ctx.zone)
+        local here = InstNamed(FirstSeg(b[8]) or "")
         if iid and here and not OwnItem(iid) and not Z.IsIgnored(ItemKey("collect", iid)) then
             local icon = b[2]
             if type(icon) == "string" and icon ~= "" then

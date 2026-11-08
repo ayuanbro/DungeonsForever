@@ -2719,6 +2719,8 @@ local function tick_()
     local mid = worldMapID()
     if W.zoneMap and mid and mid ~= W.zoneMap then
         if (GetTime() - (W.shownAt or 0)) < 0.8 then return end
+        if pendingMap ~= nil then return end
+        if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
         W.pinned = W.curId
         W.Hide()
         W.suppress = true

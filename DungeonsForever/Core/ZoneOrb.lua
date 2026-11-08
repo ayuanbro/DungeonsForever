@@ -20,9 +20,8 @@ local SIDE_S = 29
 local FOOD_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\todo_food.ogg"
 local RESTED_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\todo_rested.ogg"
 local ON_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_voice_on.ogg"
+local OFF_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\todo_voice_off.ogg"
 local MANAGE_S = 23
-local BTN_GAP = 4
-local BTN_GAP_MC = -2
 local GLYPH = 0xA0 / 255
 local TOP_Y = -48
 local TEXT = { 0.95, 0.96, 0.98 }
@@ -78,11 +77,11 @@ end
 local function PaintVoiceBtn()
     if not (voiceBtn and voiceBtn.tex) then return end
     local muted = Cfg().voice ~= true
-    if voiceBtn.hover then
-        voiceBtn.tex:SetVertexColor(1, 1, 1, 1)
-    elseif muted then
+    if muted then
+        voiceBtn.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_mute.tga")
         voiceBtn.tex:SetVertexColor(0.95, 0.32, 0.32, 0.98)
     else
+        voiceBtn.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_voice_on.tga")
         voiceBtn.tex:SetVertexColor(GLYPH, GLYPH, GLYPH, 1)
     end
 end
@@ -662,30 +661,28 @@ end
 local function InitVoiceBtn()
     voiceBtn = CreateFrame("Button", nil, panel)
     voiceBtn:SetSize(SIDE_S, SIDE_S)
-    voiceBtn:SetPoint("RIGHT", gear, "LEFT", -BTN_GAP, 0)
+    voiceBtn:SetPoint("CENTER", panel, "TOPRIGHT", -100, -22)
     voiceBtn:SetFrameLevel(panel:GetFrameLevel() + 4)
     voiceBtn.hover = false
     voiceBtn.tex = voiceBtn:CreateTexture(nil, "ARTWORK")
-    voiceBtn.tex:SetSize(13, 13)
+    voiceBtn.tex:SetSize(19, 19)
     voiceBtn.tex:SetPoint("CENTER", voiceBtn, "CENTER", 0, 0)
     voiceBtn.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_mute.tga")
     voiceBtn:SetScript("OnClick", function()
         ns.PlaySound(1)
-        voiceBtn.hover = false
         local c = Cfg()
-        c.voice = (c.voice == true) and false or true
+        c.voice = not (c.voice == true)
         PaintVoiceBtn()
-        if c.voice == true then pcall(PlaySoundFile, ON_CUE, "Master") end
+        if c.voice == true then pcall(PlaySoundFile, ON_CUE, "Master") else pcall(PlaySoundFile, OFF_CUE, "Master") end
+        if voiceBtn:IsMouseOver() then
+            Tip(voiceBtn, L["语音"], (c.voice == true) and L["语音提示：开启（点击静音）"] or L["语音提示：已静音（点击恢复）"])
+        end
     end)
     voiceBtn:SetScript("OnEnter", function()
-        voiceBtn.hover = true
-        PaintVoiceBtn()
         local c = Cfg()
         Tip(voiceBtn, L["语音"], (c.voice ~= true) and L["语音提示：已静音（点击恢复）"] or L["语音提示：开启（点击静音）"])
     end)
     voiceBtn:SetScript("OnLeave", function()
-        voiceBtn.hover = false
-        PaintVoiceBtn()
         HideTip()
     end)
     PaintVoiceBtn()
@@ -797,13 +794,13 @@ function O.Init()
 
     closeBtn = CreateFrame("Button", nil, panel, "BackdropTemplate")
     closeBtn:SetSize(CLOSE_S, CLOSE_S)
-    closeBtn:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -4, -4)
+    closeBtn:SetPoint("CENTER", panel, "TOPRIGHT", -22, -22)
     closeBtn:SetFrameLevel(panel:GetFrameLevel() + 4)
     if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(closeBtn, { noFrame = true }) end
     local ct = closeBtn:CreateTexture(nil, "ARTWORK")
     ct:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\textures\\YY_close")
-    ct:SetSize(26, 26)
-    ct:SetPoint("CENTER")
+    ct:SetSize(32, 32)
+    ct:SetPoint("CENTER", closeBtn, "CENTER", 0, 0.4)
     ct:SetVertexColor(GLYPH, GLYPH, GLYPH)
     closeBtn:SetScript("OnClick", function() Close() end)
     closeBtn:SetScript("OnEnter", function()
@@ -847,7 +844,7 @@ function O.Init()
 
     manage = CreateFrame("Button", nil, panel)
     manage:SetSize(MANAGE_S, MANAGE_S)
-    manage:SetPoint("RIGHT", closeBtn, "LEFT", -BTN_GAP_MC, 0)
+    manage:SetPoint("CENTER", panel, "TOPRIGHT", -48, -22)
     manage:SetFrameLevel(panel:GetFrameLevel() + 4)
     manage.tex = {}
     local function paintManage(v)
@@ -856,16 +853,16 @@ function O.Init()
     do
         local g = GLYPH
         for i = 1, 3 do
-            local yy = 5.6 - (i - 1) * 5.6
+            local yy = 6.3 - (i - 1) * 6.3
             local dot = manage:CreateTexture(nil, "ARTWORK")
             dot:SetColorTexture(g, g, g, 1)
-            dot:SetSize(2.4, 2.4)
-            dot:SetPoint("CENTER", manage, "CENTER", -5.6, yy)
+            dot:SetSize(2.7, 2.7)
+            dot:SetPoint("CENTER", manage, "CENTER", -6.3, yy)
             manage.tex[#manage.tex + 1] = dot
             local bar = manage:CreateTexture(nil, "ARTWORK")
             bar:SetColorTexture(g, g, g, 1)
-            bar:SetSize(8.8, 1.6)
-            bar:SetPoint("CENTER", manage, "CENTER", 0.8, yy)
+            bar:SetSize(10, 1.8)
+            bar:SetPoint("CENTER", manage, "CENTER", 0.9, yy)
             manage.tex[#manage.tex + 1] = bar
         end
     end
@@ -885,7 +882,7 @@ function O.Init()
 
     gear = CreateFrame("Button", "DFZoneOrbGear", panel)
     gear:SetSize(SIDE_S, SIDE_S)
-    gear:SetPoint("RIGHT", manage, "LEFT", -BTN_GAP, 0)
+    gear:SetPoint("CENTER", panel, "TOPRIGHT", -74, -22)
     gear:SetFrameLevel(panel:GetFrameLevel() + 4)
     local gt = gear:CreateTexture(nil, "ARTWORK")
     gt:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\textures\\DF_Settings")
@@ -924,46 +921,44 @@ function O.Init()
     local function OptRow(y, label, key, tip, vkey)
         local t = opts:CreateFontString(nil, "OVERLAY")
         t:SetFont(ns.FONT, 14, "")
-        t:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, y)
+        t:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, y - 4)
         t:SetText(label)
         t:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
         if vkey then
             local vb = CreateFrame("Button", nil, opts)
-            vb:SetSize(24, 20)
-            vb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -54, y + 1)
-            vb.hover = false
+            vb:SetSize(28, 22)
+            vb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -56, y + 1)
             vb.tex = vb:CreateTexture(nil, "ARTWORK")
-            vb.tex:SetSize(16, 16)
+            vb.tex:SetSize(21, 21)
             vb.tex:SetPoint("CENTER", vb, "CENTER", 0, 0)
             vb.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_mute.tga")
             local cue = (vkey == "foodVoice") and FOOD_CUE or RESTED_CUE
             local function paint()
                 local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
-                if vb.hover then
-                    vb.tex:SetVertexColor(1, 1, 1, 1)
-                elseif c[vkey] == false then
+                if c[vkey] == false then
+                    vb.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_mute.tga")
                     vb.tex:SetVertexColor(0xC6 / 255, 0xCB / 255, 0xD4 / 255, 1)
                 else
+                    vb.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_voice_on.tga")
                     vb.tex:SetVertexColor(ACC[1], ACC[2], ACC[3], 1)
                 end
             end
             vb.PaintVoice = paint
             vb:SetScript("OnClick", function()
                 ns.PlaySound(1)
-                vb.hover = false
                 local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
                 if c then c[vkey] = (c[vkey] == false) and true or false end
                 paint()
-                if c and c[vkey] ~= false then pcall(PlaySoundFile, cue, "Master") end
+                if c and c[vkey] ~= false then pcall(PlaySoundFile, cue, "Master") else pcall(PlaySoundFile, "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\todo_voice_off.ogg", "Master") end
+                if vb:IsMouseOver() then
+                    Tip(vb, L["语音"], (c and c[vkey] == false) and L["语音提示：已静音（点击恢复）"] or L["语音提示：开启（点击静音）"])
+                end
             end)
             vb:SetScript("OnEnter", function()
-                vb.hover = true
-                paint()
-                Tip(vb, L["语音"], L["提醒时播放语音"])
+                local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
+                Tip(vb, L["语音"], (c[vkey] == false) and L["语音提示：已静音（点击恢复）"] or L["语音提示：开启（点击静音）"])
             end)
             vb:SetScript("OnLeave", function()
-                vb.hover = false
-                paint()
                 HideTip()
             end)
             paint()
@@ -1001,7 +996,7 @@ function O.Init()
     OptRow(-54, L["探索-书籍上交提醒"], "turnin", L["在幽暗城且背包有可上交的书时提示"])
     OptRow(-76, L["探索-睡袋提醒"], "bag", L["本图有睡袋任务链的一步时提示"])
     OptRow(-98, L["探索-火炬提醒"], "torch", L["本图有守夜人火炬可拾取时提示"])
-    OptRow(-120, L["探索-旗帜提醒"], "banner", L["本图有血色旗帜可拾取时提示"])
+    OptRow(-120, L["探索-旗帜提醒"], "banner", L["进入血色修道院副本后，有未拾取的血色旗帜时提示"])
     OptRow(-142, L["副本-任务提醒"], "quest", L["本图有可接的副本任务时提示"])
     OptRow(-164, L["职业-技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
     OptRow(-186, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
@@ -1009,7 +1004,7 @@ function O.Init()
 
     local oph2 = opts:CreateFontString(nil, "OVERLAY")
     oph2:SetFont(ns.FONT, 14, "")
-    oph2:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -232)
+    oph2:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -236)
     oph2:SetText(L["窗口设置"])
     oph2:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
 
@@ -1019,7 +1014,7 @@ function O.Init()
 
     local szLabel = opts:CreateFontString(nil, "OVERLAY")
     szLabel:SetFont(ns.FONT, 14, "")
-    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -280)
+    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -284)
     szLabel:SetText(L["待办图标大小"])
     szLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
 

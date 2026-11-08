@@ -200,6 +200,22 @@ function ns.SetTalentEnh(on)
     end
 end
 
+function ns.LegacyEnhOn()
+    local v = DB().ui.legacyEnh
+    if v == nil then return true end
+    return v == true
+end
+
+function ns.SetLegacyEnh(on)
+    DB().ui.legacyEnh = on and true or false
+    local LP = ns.LegacyPage
+    if LP and LP.ApplyToggle then LP.ApplyToggle(on and true or false) end
+    if ns.ConfirmReload and ns.AddonLoaded and ns.AddonLoaded("DungeonsForeverClass") then
+        ns.ConfirmReload(on and ns.L["「传承点增强」已开启，重载界面后生效"]
+            or ns.L["「传承点增强」已关闭，重载后生效"])
+    end
+end
+
 function ns.ConfirmReload(msg)
     if not StaticPopupDialogs["DF_RELOAD_REQUIRED"] then
         StaticPopupDialogs["DF_RELOAD_REQUIRED"] = {

@@ -18,6 +18,7 @@ local LIST_W, LIST_ROW, LIST_STEP = 220, 22, 25
 local LIST_DROP = 20
 local BRAND_LIFT = 5
 local PLAN_ROWS, SKILL_ROWS = 7, 6
+local MAX_MENU_ROWS = ns.ClassMaxBuilds or 40
 
 local U0, U1, V0, V1 = 0.00049, 0.99951, 0.00049, 0.57520
 
@@ -790,7 +791,9 @@ local function PlanList()
         out[#out + 1] = { label = p.name or string.format(L['方案%d'], i), plan = p, idx = i }
     end
     local bl = DB().builds[NP.cls] or {}
-    for i = 1, #bl do
+    local bn = #bl
+    if bn > MAX_MENU_ROWS then bn = MAX_MENU_ROWS end
+    for i = 1, bn do
         out[#out + 1] = { label = bl[i].name, alloc = bl[i].alloc, idx = #plans + i, blIdx = i }
     end
     return out
@@ -1881,6 +1884,10 @@ SaveBuild = function()
             local db = DB()
             db.builds[cls] = db.builds[cls] or {}
             local list = db.builds[cls]
+            if #list >= MAX_MENU_ROWS then
+                print('|cff46bf72[天赋]|r ' .. string.format(L['方案数量已达上限 %d 条'], MAX_MENU_ROWS))
+                return
+            end
             list[#list + 1] = { name = name, alloc = PtsAlloc() }
             print('|cff46bf72[天赋]|r ' .. string.format(L['已保存方案「%s」'], name))
             if NP.planMenu and NP.planMenuAnchor then ShowPlanMenu(NP.planMenuAnchor) end

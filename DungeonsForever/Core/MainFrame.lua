@@ -836,10 +836,13 @@ settingsBtn:SetScript("OnClick", function()
     SyncSettingsGlyph()
 end)
 
+local ENH_CARD_H = 110
+local ENH_CARD_GROW = ENH_CARD_H - 86
+
 settingsPop = CreateFrame("Frame", nil, f, "BackdropTemplate")
 settingsPop:SetFrameLevel(512)
 settingsPop:SetPoint("TOPLEFT", f, "TOPRIGHT", 4, 0)
-settingsPop:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", 4, 0)
+settingsPop:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", 4, -ENH_CARD_GROW)
 settingsPop:SetWidth(220)
 settingsPop:EnableMouse(true)
 settingsPop:SetScript("OnMouseWheel", function() end)
@@ -1033,6 +1036,7 @@ local spellToggle
 local talentToggle
 local mapToggle
 local zoneToggle
+local legacyToggle
 
 local function SpellBlocked()
     return (ns.SpellTabsTaken and ns.SpellTabsTaken()) and true or false
@@ -1058,6 +1062,9 @@ local function SyncEnhCard()
     if zoneToggle then
         local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
         zoneToggle:SetChecked((c and c.on) and true or false)
+    end
+    if legacyToggle then
+        legacyToggle:SetChecked((ns.LegacyEnhOn and ns.LegacyEnhOn()) and true or false)
     end
 end
 
@@ -1123,7 +1130,7 @@ function BuildEnhCard()
     end
     enhCard = card
     AnchorEnhCard()
-    card:SetHeight(86)
+    card:SetHeight(ENH_CARD_H)
 
     local hd = card:CreateFontString(nil, "OVERLAY")
     hd:SetFont(ns.FONT, 14, "")
@@ -1140,6 +1147,7 @@ function BuildEnhCard()
     talentToggle = EnhCell(card, 113, -34, L["天赋页增强"], L["在原生天赋界面增加天赋模拟页与加点序号"])
     mapToggle = EnhCell(card, 2, -58, L["地图副本入口"], L["在世界地图上标出各副本的入口位置"])
     zoneToggle = EnhCell(card, 113, -58, L["地图待办"], L["进入地图时在屏幕左侧显示待办角标"])
+    legacyToggle = EnhCell(card, 2, -82, L["传承点增强"], L["在原生传承界面增加推荐加点卡片与方案页"])
 
     spellToggle:SetScript("OnClick", function(self)
         if SpellBlocked() then return end
@@ -1170,6 +1178,13 @@ function BuildEnhCard()
         c.on = self:GetChecked() and true or false
         SyncEnhCard()
         if ns.ZoneHint then ns.ZoneHint.CheckNow("manual") end
+    end)
+    legacyToggle:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local nv = not (ns.LegacyEnhOn and ns.LegacyEnhOn())
+        self:SetChecked(nv)
+        if ns.SetLegacyEnh then ns.SetLegacyEnh(nv) end
+        SyncEnhCard()
     end)
     SyncEnhCard()
 end
