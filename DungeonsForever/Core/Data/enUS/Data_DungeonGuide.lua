@@ -1239,7 +1239,7 @@ ns.DungeonGuide = {
             "The Horde quest The Drowned City (tablet rubbings) and the Alliance quest Magics of the Drowned City (I'lalai fetishes) can be picked up at level 30.",
             "After Var'Taka and Captain Dreadrise die, click the glowing pearl nearby to break the barrier blocking the way forward.",
             "The rare elite Umbra lurks in the city with 5 Saltscale murlocs: their bleeds stack fast - burn the boss first, then the adds.",
-            "Strategies for Zul'Alai, Gill and Zin'aka are still unknown; demo reports call Zin'aka a tank killer - tanks should save defensives.",
+            "Strategies for Zul'Alai, Gill, Primeval Elemental and Zin'aka are still unknown; demo reports call Zin'aka a tank killer - tanks should save defensives.",
         },
         entrance = {
             H = "The dungeon sits on Gillijim's Isle, an island southwest of Stranglethorn Vale. No boat or flight point reaches it; swim from the Wild Coast at the south of Stranglethorn, find the Sunken Hollow among the troll ruins, and take the blue portal at its end.",

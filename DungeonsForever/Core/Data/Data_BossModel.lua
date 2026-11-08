@@ -261,7 +261,10 @@ ns.BossModelDisplay = {
         ["Deathless Marrow"] = 142245,
         ["Gill"] = 144023,
         ["Min'loth the Serpent"] = 142286,
+        ["Primeval Elemental"] = 129945,
+        ["Umbra"] = 144022,
         ["Var'Taka"] = 144487,
+        ["Zin'aka"] = 143835,
         ["Zul'Alai"] = 144475,
     },
     ["the_deadmines"] = {

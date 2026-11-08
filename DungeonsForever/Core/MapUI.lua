@@ -2165,9 +2165,24 @@ end
 function M.StepTarget(dir, to)
     local layers = M.LayersFor(M.curId)
     local cur = M.curLayer
-    if not (layers and cur) then return nil end
-    local i = to and M.LayerOf(M.curId, to) or (dir and (cur + dir))
-    if not i or i < 1 or i > #layers or i == cur then return nil end
+    if not layers then
+        if not (M.CUSTOM and M.CUSTOM[M.curId]) then return nil end
+        layers, cur = { [1] = true }, 1
+    elseif not cur then
+        return nil
+    end
+    local i
+    if to then
+        if M.CUSTOM and M.CUSTOM[M.curId] then
+            i = 1
+        else
+            i = M.LayerOf(M.curId, to)
+        end
+    elseif dir then
+        i = cur + dir
+    end
+    if not i or i < 1 or i > #layers then return nil end
+    if i == cur and to == nil then return nil end
     local fn = SHOW_FLOORS[M.curId] and M.FloorNumAt(M.curId, i) or i
     return i, fn, FloorName(M.curId, fn) or format(L["第 %d 层"], fn)
 end
@@ -2180,6 +2195,7 @@ function M.StepFloor(dir, to)
 end
 
 function M.CurFloorNum()
+    if M.curId and M.CUSTOM and M.CUSTOM[M.curId] then return 1 end
     local idx = M.curLayer
     if not (M.curId and idx) then return nil end
     if M.LayersFor(M.curId) then return M.FloorNumAt(M.curId, idx) end
@@ -2219,6 +2235,9 @@ end
 
 function M.HighlightPin(btn, secs)
     if not (btn and btn.__ring) then return false end
+    if M.pulseBtn and M.pulseBtn ~= btn and M.pulseBtn.__ring then
+        M.pulseBtn.__ring:Hide()
+    end
     btn.__ring:SetSize(M.PIN_SIZE * M.PIN_RING_K, M.PIN_SIZE * M.PIN_RING_K)
     btn.__ring:SetAlpha(1)
     btn.__ring:Show()
@@ -2229,7 +2248,7 @@ function M.HighlightPin(btn, secs)
     return true
 end
 
-function M.ArriveAt(fromFloor, kind, tox, toy, host)
+function M.ArriveAt(fromFloor, kind, tox, toy, host, skip)
     local frame = host or M.frame
     if not (frame and frame.pinBtns and fromFloor) then return false end
     local want = (kind == "next" and "prev") or (kind == "prev" and "next") or nil
@@ -2238,7 +2257,7 @@ function M.ArriveAt(fromFloor, kind, tox, toy, host)
     for i = 1, M.MAX_PINS do
         local b = frame.pinBtns[i]
         local p = b and b.__p
-        if b and b:IsShown() and p then
+        if b and b ~= skip and b:IsShown() and p then
             local k = b.__kind
             if k == "prev" or k == "next" or k == "entrance" then
                 if tox and toy and p.left and p.top
@@ -3286,14 +3305,14 @@ function M.PinOnClick(self, inWorld)
         if M.StepFloor((kind == "next") and 1 or -1, p and p.to) then
             ns.PlaySound(1)
             M.PinOnLeave()
-            M.ArriveAt(from, kind, p and p.tox, p and p.toy)
+            M.ArriveAt(from, kind, p and p.tox, p and p.toy, nil, self)
         end
     elseif kind == "entrance" and p and p.to then
         local from = M.CurFloorNum()
         if M.StepFloor(nil, p.to) then
             ns.PlaySound(1)
             M.PinOnLeave()
-            M.ArriveAt(from, "entrance", p.tox, p.toy)
+            M.ArriveAt(from, "entrance", p.tox, p.toy, nil, self)
         end
     elseif kind == "dungeon" and p and p.id then
         M.GotoDungeon(p.id, inWorld)
@@ -3374,6 +3393,15 @@ function M.GotoQuest(qid, inWorld)
     M.QuestScrollTo(qid)
 end
 
+local function PinLinkTip(p, dir)
+    local _, _, lbl = M.StepTarget(dir, p and p.to)
+    if not lbl then return nil end
+    if p and p.to and p.to == M.CurFloorNum() then
+        return L["点击跳到本层落点"]
+    end
+    return format(L["点击切换地图：%s"], lbl)
+end
+
 function M.PinOnEnter(self)
     local p = self.__p
     if not p then return end
@@ -3446,9 +3474,9 @@ function M.PinOnEnter(self)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
-        local _, _, lbl = M.StepTarget(nil, p and p.to)
-        if lbl then
-            GameTooltip:AddLine(format(L["点击切换地图：%s"], lbl), 0.7, 0.9, 0.7, true)
+        local tip = PinLinkTip(p, nil)
+        if tip then
+            GameTooltip:AddLine(tip, 0.7, 0.9, 0.7, true)
         end
     elseif self.__kind == "icon" then
         GameTooltip:AddLine(L["任务"], 1, 0.82, 0, true)
@@ -3460,12 +3488,12 @@ function M.PinOnEnter(self)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
-        local _, _, lbl = M.StepTarget(-1, p and p.to)
-        if lbl then
-            if p.text and p.text ~= "" then
+        local tip = PinLinkTip(p, -1)
+        if tip then
+            if p.text and p.text ~= "" and p.to ~= M.CurFloorNum() then
                 GameTooltip:AddLine(L["点击切换地图"], 0.7, 0.9, 0.7, true)
             else
-                GameTooltip:AddLine(format(L["点击切换地图：%s"], lbl), 0.7, 0.9, 0.7, true)
+                GameTooltip:AddLine(tip, 0.7, 0.9, 0.7, true)
             end
         end
     elseif self.__kind == "next" then
@@ -3473,12 +3501,12 @@ function M.PinOnEnter(self)
         if p.text and p.text ~= "" then
             GameTooltip:AddLine(p.text, 1, 1, 1, true)
         end
-        local _, _, lbl = M.StepTarget(1, p and p.to)
-        if lbl then
-            if p.text and p.text ~= "" then
+        local tip = PinLinkTip(p, 1)
+        if tip then
+            if p.text and p.text ~= "" and p.to ~= M.CurFloorNum() then
                 GameTooltip:AddLine(L["点击切换地图"], 0.7, 0.9, 0.7, true)
             else
-                GameTooltip:AddLine(format(L["点击切换地图：%s"], lbl), 0.7, 0.9, 0.7, true)
+                GameTooltip:AddLine(tip, 0.7, 0.9, 0.7, true)
             end
         end
     elseif self.__kind == "rare" then

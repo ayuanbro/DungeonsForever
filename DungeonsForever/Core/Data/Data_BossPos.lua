@@ -8,6 +8,8 @@ ns.BossPos = {
         ["Min'loth the Serpent"] = { { 9.2, 50 } },
         ["Deathless Marrow"] = { { 27.3, 49.8 } },
         ["Zin'aka"] = { { 50.4, 49.4 } },
+        ["Umbra"] = { { 52, 85.2 } },
+        ["Primeval Elemental"] = { { 84.6, 75.9 } },
     },
     ["upper_blackrock_spire"] = {
         ["Pyroguard Emberseer"] = { { 30.5, 27, 2 } },

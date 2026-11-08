@@ -311,7 +311,7 @@ local function MakeRow(i)
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(r, "hover") end
         r.name:SetTextColor(ACC[1], ACC[2], ACC[3])
         local sub = r.sub:GetText()
-        if r.ikind == "book" or r.ikind == "collect" then
+        if r.ikind == "book" or r.ikind == "collect" or r.ikind == "rested" then
             local desc = sub
             if r.idesc and r.idesc ~= "" then
                 desc = (sub ~= "" and (sub .. " · " .. r.idesc)) or r.idesc
@@ -536,12 +536,12 @@ function O.Update(res)
     current = res
     if not badge then return end
     local onc = Cfg()
-    if onc.on == false then
-        if orb and orb:IsShown() then orb:Hide() end
-    elseif orb and not orb:IsShown() then
-        orb:Show()
-    end
     local n = (res and res.total) or 0
+    local wantOrb = onc.on ~= false and not (onc.onlyTodo and n == 0)
+    if orb then
+        if wantOrb and not orb:IsShown() then orb:Show() end
+        if not wantOrb and orb:IsShown() then orb:Hide() end
+    end
     if n > 0 then
         if badgeText then badgeText:SetText(n > 9 and "9+" or tostring(n)) end
         badge:Show()
@@ -773,7 +773,7 @@ function O.Init()
     gt:SetPoint("CENTER")
     gt:SetVertexColor(GLYPH, GLYPH, GLYPH)
     opts = CreateFrame("Frame", nil, panel, "BackdropTemplate")
-    opts:SetSize(184, 208)
+    opts:SetSize(184, 290)
     opts:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -40)
     opts:SetFrameLevel(panel:GetFrameLevel() + 8)
     if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
@@ -815,24 +815,34 @@ function O.Init()
         return cb
     end
 
-    OptRow(-32, L["书籍提醒"], "book", L["本图还有未收集的书时提示"])
-    OptRow(-56, L["睡袋提醒"], "bag", L["本图有睡袋任务链的一步时提示"])
-    OptRow(-80, L["火炬提醒"], "torch", L["本图有守夜人火炬可拾取时提示"])
-    OptRow(-104, L["旗帜提醒"], "banner", L["本图有血色旗帜可拾取时提示"])
-    OptRow(-128, L["任务提醒"], "quest", L["本图有可接的副本任务时提示"])
-    OptRow(-152, L["技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
+    OptRow(-32, L["探索-书籍提醒"], "book", L["本图还有未收集的书时提示"])
+    OptRow(-54, L["探索-睡袋提醒"], "bag", L["本图有睡袋任务链的一步时提示"])
+    OptRow(-76, L["探索-火炬提醒"], "torch", L["本图有守夜人火炬可拾取时提示"])
+    OptRow(-98, L["探索-旗帜提醒"], "banner", L["本图有血色旗帜可拾取时提示"])
+    OptRow(-120, L["副本-任务提醒"], "quest", L["本图有可接的副本任务时提示"])
+    OptRow(-142, L["职业-技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
+    OptRow(-164, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"])
+    OptRow(-186, L["增益-睡袋提醒"], "rested", L["背包有睡袋且未休息时提示"])
+
+    local oph2 = opts:CreateFontString(nil, "OVERLAY")
+    oph2:SetFont(ns.FONT, 14, "")
+    oph2:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -210)
+    oph2:SetText(L["窗口设置"])
+    oph2:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
+
+    OptRow(-234, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"])
 
     local SIZES = { 24, 28, 32, 36, 40 }
 
     local szLabel = opts:CreateFontString(nil, "OVERLAY")
     szLabel:SetFont(ns.FONT, 14, "")
-    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -176)
-    szLabel:SetText(L["图标大小"])
+    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -258)
+    szLabel:SetText(L["待办图标大小"])
     szLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
 
     local szBtn = CreateFrame("Button", nil, opts, "BackdropTemplate")
     szBtn:SetSize(36, 20)
-    szBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, -175)
+    szBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, -257)
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
         ns.hui.BuildRoundedBG(szBtn, 6, ns.hui.layer.L2, "both", true, 1)
     end
@@ -864,7 +874,7 @@ function O.Init()
         end
     end)
     szBtn:SetScript("OnEnter", function()
-        Tip(szBtn, L["图标大小"], L["点击切换待办圆球与条目的图标尺寸"])
+        Tip(szBtn, L["待办图标大小"], L["点击切换待办圆球与条目的图标尺寸"])
     end)
     szBtn:SetScript("OnLeave", HideTip)
 
@@ -919,28 +929,62 @@ function O.Init()
     end)
 
     orbMenu = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    orbMenu:SetHeight(36)
+    orbMenu:SetHeight(64)
     orbMenu:SetFrameStrata("FULLSCREEN_DIALOG")
     if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
         ns.hui.SkinPopup(orbMenu, 8, "both", ns.hui.layer.L2)
         if ns.hui.SkinShadow then ns.hui.SkinShadow(orbMenu, nil, nil, 8) end
     end
-    local oml = orbMenu:CreateFontString(nil, "OVERLAY")
-    oml:SetFont(ns.FONT, 13, "")
-    oml:SetPoint("LEFT", orbMenu, "LEFT", 12, 0)
-    oml:SetText(L["永久关闭"])
-    oml:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
-    local omb = CreateFrame("Button", nil, orbMenu)
-    omb:SetAllPoints(orbMenu)
-    omb:SetScript("OnEnter", function()
-        oml:SetTextColor(ACC[1], ACC[2], ACC[3])
-        Tip(omb, L["永久关闭"], L["等同于设置里的地图待办开关，可随时重新开启"])
+    local oml1 = orbMenu:CreateFontString(nil, "OVERLAY")
+    oml1:SetFont(ns.FONT, 13, "")
+    oml1:SetPoint("TOPLEFT", orbMenu, "TOPLEFT", 12, -11)
+    oml1:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    local omb1 = CreateFrame("Button", nil, orbMenu)
+    omb1:SetSize(10, 28)
+    omb1:SetPoint("TOPLEFT", orbMenu, "TOPLEFT", 0, 0)
+    omb1:SetPoint("TOPRIGHT", orbMenu, "TOPRIGHT", 0, 0)
+    omb1:SetScript("OnEnter", function()
+        oml1:SetTextColor(ACC[1], ACC[2], ACC[3])
+        Tip(omb1, L["仅有待办时显示"], L["没有待办时隐藏圆形按钮"])
     end)
-    omb:SetScript("OnLeave", function()
-        oml:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    omb1:SetScript("OnLeave", function()
+        oml1:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
         HideTip()
     end)
-    omb:SetScript("OnClick", function()
+    local oml2 = orbMenu:CreateFontString(nil, "OVERLAY")
+    oml2:SetFont(ns.FONT, 13, "")
+    oml2:SetPoint("TOPLEFT", orbMenu, "TOPLEFT", 12, -39)
+    oml2:SetText(L["永久关闭"])
+    oml2:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    local omb2 = CreateFrame("Button", nil, orbMenu)
+    omb2:SetSize(10, 28)
+    omb2:SetPoint("TOPLEFT", orbMenu, "TOPLEFT", 0, -30)
+    omb2:SetPoint("TOPRIGHT", orbMenu, "TOPRIGHT", 0, -30)
+    omb2:SetScript("OnEnter", function()
+        oml2:SetTextColor(ACC[1], ACC[2], ACC[3])
+        Tip(omb2, L["永久关闭"], L["等同于设置里的地图待办开关，可随时重新开启"])
+    end)
+    omb2:SetScript("OnLeave", function()
+        oml2:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+        HideTip()
+    end)
+    local function SyncMenuLabels()
+        local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
+        oml1:SetText(L["仅有待办时显示"] .. "：" .. ((c.onlyTodo and L["开"]) or L["关"]))
+    end
+    omb1:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+        if c then c.onlyTodo = not c.onlyTodo and true or false end
+        SyncMenuLabels()
+        if optCbs and optCbs.onlyTodo then optCbs.onlyTodo:SetChecked(c.onlyTodo and true or false) end
+        if current then
+            O.Update(current)
+        else
+            O.Refresh()
+        end
+    end)
+    omb2:SetScript("OnClick", function()
         ns.PlaySound(1)
         local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
         if c then c.on = false end
@@ -956,7 +1000,8 @@ function O.Init()
             orbMenu:Hide()
             return
         end
-        local w = TextW(oml, 60) + 24
+        SyncMenuLabels()
+        local w = math.max(TextW(oml1, 60), TextW(oml2, 60)) + 24
         if w < 120 then w = 120 end
         orbMenu:SetWidth(w)
         orbMenu:ClearAllPoints()

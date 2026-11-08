@@ -34,6 +34,9 @@ local function CFG()
     if c.banner == nil then c.banner = true end
     if c.quest == nil then c.quest = true end
     if c.spell == nil then c.spell = true end
+    if c.food == nil then c.food = true end
+    if c.rested == nil then c.rested = true end
+    if c.onlyTodo == nil then c.onlyTodo = false end
     if c.mode == nil then c.mode = "auto" end
     if c.dur == nil then c.dur = 12 end
     if c.icon == nil then c.icon = 32 end
@@ -828,6 +831,129 @@ Z.Register("collect", PCollect)
 Z.Register("quest", PQuest)
 Z.Register("spell", PSpell)
 
+local WELL_FED_SPELL = 19705
+local wellFedName = nil
+
+local function ResolveWellFedName()
+    if wellFedName then return wellFedName end
+    local f = C_Spell and C_Spell.GetSpellInfo
+    if f then
+        local ok, si = pcall(f, WELL_FED_SPELL)
+        if ok and type(si) == "table" and si.name and si.name ~= "" then
+            wellFedName = si.name
+        end
+    end
+    return wellFedName
+end
+
+local function WellFedIcon()
+    local f = C_Spell and C_Spell.GetSpellInfo
+    if f then
+        local ok, si = pcall(f, WELL_FED_SPELL)
+        if ok and type(si) == "table" and si.iconID then return si.iconID end
+    end
+    return "Interface\\Icons\\INV_Misc_Food_01"
+end
+
+local function HasWellFed()
+    local name = ResolveWellFedName()
+    local seen = false
+    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+        for i = 1, 40 do
+            local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+            if not ok then return true end
+            if not a then break end
+            seen = true
+            if a.spellId == WELL_FED_SPELL then return true end
+            if name and a.name == name then return true end
+        end
+    end
+    if not seen then return true end
+    return false
+end
+
+local function FoodRow(c)
+    if not c.food then return nil end
+    if HasWellFed() then return nil end
+    local lv = (UnitLevel and UnitLevel("player")) or 0
+    return {
+        id = WELL_FED_SPELL, base = WELL_FED_SPELL,
+        ikey = ItemKey("food", WELL_FED_SPELL), ikind = "food",
+        name = (lv >= 60) and L["食物"] or L["食物（推荐5%经验食物）"],
+        icon = WellFedIcon(),
+        sub = L["缺少进食充分"],
+        desc = L["吃任意食物获得进食充分效果，打怪经验 +5%"],
+    }
+end
+
+local SLEEP_BAG_ITEM = 211527
+local WELL_RESTED_SPELL = 429959
+local wellRestedName = nil
+
+local function ResolveWellRestedName()
+    if wellRestedName then return wellRestedName end
+    local f = C_Spell and C_Spell.GetSpellInfo
+    if f then
+        local ok, si = pcall(f, WELL_RESTED_SPELL)
+        if ok and type(si) == "table" and si.name and si.name ~= "" then
+            wellRestedName = si.name
+        end
+    end
+    return wellRestedName
+end
+
+local function HasWellRested()
+    local name = ResolveWellRestedName()
+    local seen = false
+    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+        for i = 1, 40 do
+            local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+            if not ok then return true end
+            if not a then break end
+            seen = true
+            if a.spellId == WELL_RESTED_SPELL then return true end
+            if name and a.name == name then return true end
+        end
+    end
+    if not seen then return true end
+    return false
+end
+
+local function SleepBagIcon()
+    local f = GetItemIcon
+    if f then
+        local ok, ic = pcall(f, SLEEP_BAG_ITEM)
+        if ok and ic then return ic end
+    end
+    return 133662
+end
+
+local function RestedRow(c)
+    if not c.rested then return nil end
+    if not OwnItem(SLEEP_BAG_ITEM) then return nil end
+    if HasWellRested() then return nil end
+    return {
+        id = SLEEP_BAG_ITEM, base = SLEEP_BAG_ITEM,
+        ikey = ItemKey("rested", SLEEP_BAG_ITEM), ikind = "rested",
+        name = L["使用舒适的睡袋"], icon = SleepBagIcon(),
+        sub = L["缺少精神饱满"],
+        desc = L["在睡袋中休息至少一分钟，获得的经验值提高 1%，最多叠加 3 次"],
+    }
+end
+
+local function PBuff(ctx)
+    local c = CFG()
+    local list = {}
+    local fr = FoodRow(c)
+    if fr then list[#list + 1] = fr end
+    local rr = RestedRow(c)
+    if rr then list[#list + 1] = rr end
+    if #list == 0 then return nil end
+    return { kind = "buff", n = #list, keys = {}, list = list, title = L["增益"] }
+end
+
+Z.Register("buff", PBuff)
+
 local sessionSkip = {}
 local shownPrint = {}
 local pending = nil
@@ -967,11 +1093,12 @@ function Z.Collect(ctx)
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
-    local order = { "collect", "quest", "spell" }
+    local order = { "collect", "quest", "spell", "buff" }
     for i = 1, #order do
         local kind = order[i]
         local on = c[kind]
         if kind == "collect" then on = (c.book or c.bag or c.torch or c.banner) end
+        if kind == "buff" then on = (c.food or c.rested) end
         if on and providers[kind] then
             local ok, res = pcall(providers[kind], ctx)
             if ok and type(res) == "table" and (res.n or 0) > 0 then
@@ -1102,7 +1229,7 @@ function Z.CheckNow(reason)
     return Z.Check(reason or "manual", 0)
 end
 
-local KIND_NAME = { collect = L["收集"], book = L["书籍"], quest = L["任务"], spell = L["技能"] }
+local KIND_NAME = { collect = L["收集"], book = L["书籍"], quest = L["任务"], spell = L["技能"], buff = L["增益"] }
 function Z.KindName(kind)
     return KIND_NAME[kind] or L["条目"]
 end
@@ -1110,7 +1237,15 @@ end
 function Z.IconFor(kind, id)
     if kind == "book" or kind == "collect" then return ItemIcon(id) end
     if kind == "quest" then return "Interface\\GossipFrame\\AvailableQuestIcon" end
-    if kind == "spell" then
+    if kind == "rested" then
+        local f = GetItemIcon
+        if f then
+            local ok, ic = pcall(f, id)
+            if ok and ic then return ic end
+        end
+        return 133662
+    end
+    if kind == "spell" or kind == "food" then
         local f = C_Spell and C_Spell.GetSpellInfo
         if f then
             local ok, si = pcall(f, id)
@@ -1160,9 +1295,16 @@ ns.Init(function()
     frame:RegisterEvent("PLAYER_REGEN_ENABLED")
     frame:RegisterEvent("BAG_UPDATE_DELAYED")
     frame:RegisterEvent("QUEST_LOG_UPDATE")
+    if frame.RegisterUnitEvent then
+        frame:RegisterUnitEvent("UNIT_AURA", "player")
+    else
+        frame:RegisterEvent("UNIT_AURA")
+    end
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
             Z.Check("login", 0)
+        elseif event == "UNIT_AURA" then
+            Z.ScheduleSoft()
         elseif event == "BAG_UPDATE_DELAYED" or event == "QUEST_LOG_UPDATE" then
             local EG = ns.ExploreModule
             if EG then EG._auto = nil end

@@ -919,10 +919,11 @@ ns.DungeonLoot = {
         { "Var'Taka", "Var'Taka", "", "270883", {} },
         { "Captain Dreadrise", "Captain Dreadrise", "", "270884", {} },
         { "Deathless Marrow", "Deathless Marrow", "", "270885", {} },
+        { "Primeval Elemental", "Primeval Elemental", "", "270887", {} },
         { "Gill", "Gill", "", "270888", {} },
         { "Min'loth the Serpent", "Min'loth the Serpent", "", "270886", {} },
-        { "Umbra", "Umbra", "", "", {} },
-        { "Zin'aka", "Zin'aka", "", "", {} },
+        { "Umbra", "Umbra", "", "264172", {} },
+        { "Zin'aka", "Zin'aka", "", "263742", {} },
     },
     ["sm_armory"] = {
         { "Herod", "Herod", "", "3975", {
