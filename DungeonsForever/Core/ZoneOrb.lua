@@ -16,6 +16,10 @@ local GAP = 8
 local SLIDE = 26
 local CLOSE_S = 36
 local SIDE_S = 29
+
+local FOOD_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\todo_food.ogg"
+local RESTED_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\todo_rested.ogg"
+local ON_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\prof_voice_on.ogg"
 local MANAGE_S = 23
 local BTN_GAP = 4
 local BTN_GAP_MC = -2
@@ -26,13 +30,14 @@ local DIM = { 0.63, 0.65, 0.68 }
 local FAINT = { 0.50, 0.51, 0.53 }
 local ACC = (ns.hui and ns.hui.ACCENT) or { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
 
-local orb, panel, badge, badgeText, tweener, icon, disc, ring
+local orb, panel, badge, badgeText, tweener, icon, disc, ring, voiceBtn
 local cards, heads, subRows, row, btnOpen, btnSkip, btnBlock, manage, moreText
 local closeBtn, gear, opts, optCbs
 local orbMenu, menuOpenedAt = nil, 0
 local job = nil
 local current = nil
 local hovered = false
+local lastFood, lastRested = false, false
 local openedAt = 0
 local hideToken = 0
 local lastN = -1
@@ -49,7 +54,37 @@ local function ApplyOrbSize()
     if sz > 44 then sz = 44 end
     local orbSz = sz + 16
     orb:SetSize(orbSz, orbSz)
-    if icon then icon:SetSize(sz * 1.25, sz * 1.25) end
+    local shown = sz * 1.25
+    local ringSz = shown * 55 / 36
+    if icon then icon:SetSize(shown, shown) end
+    if disc then disc:SetSize(ringSz * 0.80, ringSz * 0.80) end
+    if ring then ring:SetSize(ringSz, ringSz) end
+end
+
+local function PaintRing(n)
+    if not ring then return end
+    if hovered then
+        ring:SetDesaturated(false)
+        ring:SetVertexColor(1, 0.95, 0.65, 1)
+    elseif (n or 0) > 0 then
+        ring:SetDesaturated(false)
+        ring:SetVertexColor(1, 0.85, 0.4, 1)
+    else
+        ring:SetDesaturated(true)
+        ring:SetVertexColor(0.58, 0.58, 0.58, 1)
+    end
+end
+
+local function PaintVoiceBtn()
+    if not (voiceBtn and voiceBtn.tex) then return end
+    local muted = Cfg().voice ~= true
+    if voiceBtn.hover then
+        voiceBtn.tex:SetVertexColor(1, 1, 1, 1)
+    elseif muted then
+        voiceBtn.tex:SetVertexColor(0.95, 0.32, 0.32, 0.98)
+    else
+        voiceBtn.tex:SetVertexColor(GLYPH, GLYPH, GLYPH, 1)
+    end
 end
 
 local function TextW(fs, dflt)
@@ -542,6 +577,7 @@ function O.Update(res)
         if wantOrb and not orb:IsShown() then orb:Show() end
         if not wantOrb and orb:IsShown() then orb:Hide() end
     end
+    PaintRing(n)
     if n > 0 then
         if badgeText then badgeText:SetText(n > 9 and "9+" or tostring(n)) end
         badge:Show()
@@ -551,6 +587,22 @@ function O.Update(res)
         badge:Hide()
         lastN = 0
     end
+    local sawFood, sawRested = false, false
+    for _, it in ipairs(res and res.items or {}) do
+        if it.kind == "buff" and it.list then
+            for _, r in ipairs(it.list) do
+                if r.ikind == "food" then sawFood = true
+                elseif r.ikind == "rested" then sawRested = true end
+            end
+        end
+    end
+    if sawFood and not lastFood and onc.voice == true and onc.foodVoice ~= false then
+        pcall(PlaySoundFile, FOOD_CUE, "Master")
+    end
+    if sawRested and not lastRested and onc.voice == true and onc.restedVoice ~= false then
+        pcall(PlaySoundFile, RESTED_CUE, "Master")
+    end
+    lastFood, lastRested = sawFood, sawRested
     if panel and panel:IsShown() then Layout(res) end
 end
 
@@ -570,6 +622,38 @@ function O.Hide()
     if orb then orb:Hide() end
 end
 
+local function InitVoiceBtn()
+    voiceBtn = CreateFrame("Button", nil, panel)
+    voiceBtn:SetSize(SIDE_S, SIDE_S)
+    voiceBtn:SetPoint("RIGHT", gear, "LEFT", -BTN_GAP, 0)
+    voiceBtn:SetFrameLevel(panel:GetFrameLevel() + 4)
+    voiceBtn.hover = false
+    voiceBtn.tex = voiceBtn:CreateTexture(nil, "ARTWORK")
+    voiceBtn.tex:SetSize(13, 13)
+    voiceBtn.tex:SetPoint("CENTER", voiceBtn, "CENTER", 0, 0)
+    voiceBtn.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_mute.tga")
+    voiceBtn:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        voiceBtn.hover = false
+        local c = Cfg()
+        c.voice = (c.voice == true) and false or true
+        PaintVoiceBtn()
+        if c.voice == true then pcall(PlaySoundFile, ON_CUE, "Master") end
+    end)
+    voiceBtn:SetScript("OnEnter", function()
+        voiceBtn.hover = true
+        PaintVoiceBtn()
+        local c = Cfg()
+        Tip(voiceBtn, L["语音"], (c.voice ~= true) and L["语音提示：已静音（点击恢复）"] or L["语音提示：开启（点击静音）"])
+    end)
+    voiceBtn:SetScript("OnLeave", function()
+        voiceBtn.hover = false
+        PaintVoiceBtn()
+        HideTip()
+    end)
+    PaintVoiceBtn()
+end
+
 function O.Init()
     if orb then
         ApplyPos()
@@ -587,14 +671,13 @@ function O.Init()
     ApplyPos()
 
     disc = orb:CreateTexture(nil, "BACKGROUND")
-    disc:SetAllPoints(orb)
+    disc:SetPoint("CENTER", orb, "CENTER", 0, 0)
     disc:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
     disc:SetVertexColor(0x10 / 255, 0x13 / 255, 0x1A / 255, 1)
 
     ring = orb:CreateTexture(nil, "BORDER")
-    ring:SetAllPoints(orb)
-    ring:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckRing")
-    ring:SetVertexColor(0x38 / 255, 0x40 / 255, 0x4F / 255, 1)
+    ring:SetPoint("CENTER", orb, "CENTER", 0, 0)
+    ring:SetAtlas("Talents-Main-Ring-c60")
 
     icon = orb:CreateTexture(nil, "ARTWORK")
     icon:SetSize(30, 30)
@@ -771,7 +854,9 @@ function O.Init()
     gt:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\textures\\DF_Settings")
     gt:SetSize(19, 19)
     gt:SetPoint("CENTER")
-    gt:SetVertexColor(GLYPH, GLYPH, GLYPH)
+    gt:SetVertexColor(GLYPH, GLYPH, GLYPH, 1)
+
+    InitVoiceBtn()
     opts = CreateFrame("Frame", nil, panel, "BackdropTemplate")
     opts:SetSize(184, 290)
     opts:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -40)
@@ -790,12 +875,54 @@ function O.Init()
 
     optCbs = {}
 
-    local function OptRow(y, label, key, tip)
+    local function OptRow(y, label, key, tip, vkey)
         local t = opts:CreateFontString(nil, "OVERLAY")
         t:SetFont(ns.FONT, 14, "")
         t:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, y)
         t:SetText(label)
         t:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+        if vkey then
+            local vb = CreateFrame("Button", nil, opts)
+            vb:SetSize(24, 20)
+            vb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -54, y + 1)
+            vb.hover = false
+            vb.tex = vb:CreateTexture(nil, "ARTWORK")
+            vb.tex:SetSize(16, 16)
+            vb.tex:SetPoint("CENTER", vb, "CENTER", 0, 0)
+            vb.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Prof\\prof_mute.tga")
+            local cue = (vkey == "foodVoice") and FOOD_CUE or RESTED_CUE
+            local function paint()
+                local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
+                if vb.hover then
+                    vb.tex:SetVertexColor(1, 1, 1, 1)
+                elseif c[vkey] == false then
+                    vb.tex:SetVertexColor(0xC6 / 255, 0xCB / 255, 0xD4 / 255, 1)
+                else
+                    vb.tex:SetVertexColor(ACC[1], ACC[2], ACC[3], 1)
+                end
+            end
+            vb.PaintVoice = paint
+            vb:SetScript("OnClick", function()
+                ns.PlaySound(1)
+                vb.hover = false
+                local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+                if c then c[vkey] = (c[vkey] == false) and true or false end
+                paint()
+                if c and c[vkey] ~= false then pcall(PlaySoundFile, cue, "Master") end
+            end)
+            vb:SetScript("OnEnter", function()
+                vb.hover = true
+                paint()
+                Tip(vb, L["语音"], L["提醒时播放语音"])
+            end)
+            vb:SetScript("OnLeave", function()
+                vb.hover = false
+                paint()
+                HideTip()
+            end)
+            paint()
+            optCbs[vkey] = vb
+        end
         local cb = CreateFrame("CheckButton", nil, opts)
         cb:SetSize(36, 20)
         cb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, y + 1)
@@ -821,8 +948,8 @@ function O.Init()
     OptRow(-98, L["探索-旗帜提醒"], "banner", L["本图有血色旗帜可拾取时提示"])
     OptRow(-120, L["副本-任务提醒"], "quest", L["本图有可接的副本任务时提示"])
     OptRow(-142, L["职业-技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
-    OptRow(-164, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"])
-    OptRow(-186, L["增益-睡袋提醒"], "rested", L["背包有睡袋且未休息时提示"])
+    OptRow(-164, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
+    OptRow(-186, L["增益-睡袋提醒"], "rested", L["背包有睡袋且未休息或 buff 快到期时提示"], "restedVoice")
 
     local oph2 = opts:CreateFontString(nil, "OVERLAY")
     oph2:SetFont(ns.FONT, 14, "")
@@ -884,7 +1011,10 @@ function O.Init()
             opts:Hide()
         else
             local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
-            for k, cb in pairs(optCbs) do cb:SetChecked(c[k] and true or false) end
+            for k, cb in pairs(optCbs) do
+                if cb.SetChecked then cb:SetChecked(c[k] and true or false)
+                elseif cb.PaintVoice then cb:PaintVoice() end
+            end
             SyncSize()
             opts:Show()
         end
@@ -1025,9 +1155,7 @@ function O.Init()
     orb:SetScript("OnEnter", function()
         hovered = true
         hideToken = hideToken + 1
-        if ring then ring:SetVertexColor(ns.hui and ns.hui.ACCENT[1] or 0.27,
-            ns.hui and ns.hui.ACCENT[2] or 0.75,
-            ns.hui and ns.hui.ACCENT[3] or 0.45, 1) end
+        PaintRing((current and current.total) or 0)
         if icon then icon:SetVertexColor(1, 1, 1, 1) end
         local zone = (current and current.ctx and current.ctx.zone) or ""
         local n = (current and current.total) or 0
@@ -1042,7 +1170,7 @@ function O.Init()
 
     orb:SetScript("OnLeave", function()
         hovered = false
-        if ring then ring:SetVertexColor(0x38 / 255, 0x40 / 255, 0x4F / 255, 1) end
+        PaintRing((current and current.total) or 0)
         if icon then icon:SetVertexColor(0.92, 0.93, 0.95, 1) end
         HideTip()
         if panel and panel:IsShown() then StartHideTimer() end
@@ -1085,6 +1213,7 @@ function O.Init()
         if not panel or not panel:IsShown() then return end
         if now - openedAt < 0.2 then return end
         if panel:IsMouseOver() then return end
+        if opts and opts:IsShown() and opts:IsMouseOver() then return end
         if orb:IsMouseOver() then return end
         Close()
     end)

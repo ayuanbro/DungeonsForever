@@ -6704,6 +6704,20 @@ function DG.QClassLabel(cls)
     return nm
 end
 
+function DG.QClassShort(cls)
+    local nm = DG.QClassLabel(cls)
+    if not nm or nm == "" then return nil end
+    local b = string.byte(nm, 1)
+    if not b or b < 192 then return nm end
+    local n = 2
+    if b >= 240 then
+        n = 4
+    elseif b >= 224 then
+        n = 3
+    end
+    return string.sub(nm, 1, n)
+end
+
 function DG.QuestOverviewClsBadge(n, cls)
     local b = n.clsB
     if not b then return end
@@ -6711,7 +6725,7 @@ function DG.QuestOverviewClsBadge(n, cls)
         b:Hide()
         return
     end
-    local lab = DG.QClassLabel(cls) or cls
+    local lab = DG.QClassShort(cls) or cls
     b.lab:SetText(lab)
     local bw = FSW(b.lab, 20) + DG.Q_BADGE_PAD * 2
     if bw < DG.Q_BADGE_MIN_W then bw = DG.Q_BADGE_MIN_W end
@@ -8340,7 +8354,7 @@ function U:RenderQuestDetail()
     end
     if U.dungeonQDetExt then q = DG.ExtQuestRow(U.dungeonQDetExt) end
 
-    pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc, pool.nJump = 0, 0, 0, 0, 0, 0, 0
+    DG.HideDetailRows(pool)
     local y = -DG.Q_PAD
 
     local MARK_SYM = DG.Q_MARK_SYM

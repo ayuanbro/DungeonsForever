@@ -36,6 +36,9 @@ local function CFG()
     if c.spell == nil then c.spell = true end
     if c.food == nil then c.food = true end
     if c.rested == nil then c.rested = true end
+    if c.voice == nil then c.voice = false end
+    if c.foodVoice == nil then c.foodVoice = true end
+    if c.restedVoice == nil then c.restedVoice = true end
     if c.onlyTodo == nil then c.onlyTodo = false end
     if c.mode == nil then c.mode = "auto" end
     if c.dur == nil then c.dur = 12 end
@@ -856,6 +859,12 @@ local function WellFedIcon()
     return "Interface\\Icons\\INV_Misc_Food_01"
 end
 
+local function Sealed(v)
+    if type(issecretvalue) ~= "function" then return false end
+    local ok, s = pcall(issecretvalue, v)
+    return ok and s == true
+end
+
 local function HasWellFed()
     local name = ResolveWellFedName()
     local seen = false
@@ -865,8 +874,8 @@ local function HasWellFed()
             if not ok then return true end
             if not a then break end
             seen = true
-            if a.spellId == WELL_FED_SPELL then return true end
-            if name and a.name == name then return true end
+            if not Sealed(a.spellId) and a.spellId == WELL_FED_SPELL then return true end
+            if name and not Sealed(a.name) and a.name == name then return true end
         end
     end
     if not seen then return true end
@@ -903,21 +912,39 @@ local function ResolveWellRestedName()
     return wellRestedName
 end
 
-local function HasWellRested()
+local function WellRestedState()
     local name = ResolveWellRestedName()
+    local now = (GetTime and GetTime()) or 0
     local seen = false
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
         for i = 1, 40 do
             local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-            if not ok then return true end
+            if not ok then return true, nil end
             if not a then break end
             seen = true
-            if a.spellId == WELL_RESTED_SPELL then return true end
-            if name and a.name == name then return true end
+            if (not Sealed(a.spellId) and a.spellId == WELL_RESTED_SPELL)
+                or (name and not Sealed(a.name) and a.name == name) then
+                local rem = math.huge
+                local exp = a.expirationTime
+                if not Sealed(exp) and type(exp) == "number" and exp > 0 then
+                    rem = math.max(0, exp - now)
+                end
+                return true, rem
+            end
         end
     end
-    if not seen then return true end
-    return false
+    if not seen then return false, nil end
+    return false, nil
+end
+
+local function SleepBagCdReady()
+    local f = (C_Item and C_Item.GetItemCooldown) or GetItemCooldown
+    if not f then return true end
+    local ok, start, dur = pcall(f, SLEEP_BAG_ITEM)
+    if not ok or type(start) ~= "number" or type(dur) ~= "number" then return true end
+    if dur <= 0 then return true end
+    local now = (GetTime and GetTime()) or 0
+    return (start + dur - now) <= 0
 end
 
 local function SleepBagIcon()
@@ -932,12 +959,18 @@ end
 local function RestedRow(c)
     if not c.rested then return nil end
     if not OwnItem(SLEEP_BAG_ITEM) then return nil end
-    if HasWellRested() then return nil end
+    local buffed, rem = WellRestedState()
+    local sub = L["缺少精神饱满"]
+    if buffed then
+        if rem == nil or rem >= 1800 then return nil end
+        if not SleepBagCdReady() then return nil end
+        sub = L["精神饱满即将到期"]
+    end
     return {
         id = SLEEP_BAG_ITEM, base = SLEEP_BAG_ITEM,
         ikey = ItemKey("rested", SLEEP_BAG_ITEM), ikind = "rested",
         name = L["使用舒适的睡袋"], icon = SleepBagIcon(),
-        sub = L["缺少精神饱满"],
+        sub = sub,
         desc = L["在睡袋中休息至少一分钟，获得的经验值提高 1%，最多叠加 3 次"],
     }
 end
@@ -1301,10 +1334,11 @@ ns.Init(function()
     else
         frame:RegisterEvent("UNIT_AURA")
     end
+    pcall(frame.RegisterEvent, frame, "ITEM_COOLDOWN_UPDATE")
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
             Z.Check("login", 0)
-        elseif event == "UNIT_AURA" then
+        elseif event == "UNIT_AURA" or event == "ITEM_COOLDOWN_UPDATE" then
             Z.ScheduleSoft()
         elseif event == "BAG_UPDATE_DELAYED" or event == "QUEST_LOG_UPDATE" then
             local EG = ns.ExploreModule
