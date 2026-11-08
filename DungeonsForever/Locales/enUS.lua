@@ -1089,6 +1089,7 @@ L["是否包含本人拍卖：未核实"] = "May include your own auctions: unve
 L["显示"] = "Display"
 L["显示分组"] = "Show groups"
 L["显示图钉"] = "Show pins"
+L["图钉"] = "Pins"
 L["显示罗盘"] = "Show compass"
 L["显示范围"] = "Show scope"
 L["显示连线"] = "Show route line"

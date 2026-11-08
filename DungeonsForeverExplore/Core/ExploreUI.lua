@@ -1191,6 +1191,15 @@ local function PaintNav()
     end
 end
 
+local function ToolW(fs)
+    local sw = (fs and fs.GetStringWidth and fs:GetStringWidth()) or 0
+    if type(sw) ~= "number" or sw <= 0 then
+        local t = fs and fs.GetText and fs:GetText() or ""
+        sw = #tostring(t) * 12
+    end
+    return math.max(44, math.floor(sw + 20))
+end
+
 local function PaintRwBtn()
     local on = CurSub() == "rewards"
     SetButtonSelected(EG.rwBtn, on)
@@ -1203,6 +1212,14 @@ local function PaintRouteBtn()
     if not EG.routeBtn then return end
     SetButtonSelected(EG.routeBtn, on)
     local fs = EG.routeBtn.GetFontString and EG.routeBtn:GetFontString()
+    if fs then fs:SetTextColor(Unpack(on and C_WHITE or C_RW)) end
+end
+
+local function PaintPinsBtn()
+    local on = ns.ExplorePinsOn and ns.ExplorePinsOn() or false
+    if not EG.pinBtn then return end
+    SetButtonSelected(EG.pinBtn, on)
+    local fs = EG.pinBtn.GetFontString and EG.pinBtn:GetFontString()
     if fs then fs:SetTextColor(Unpack(on and C_WHITE or C_RW)) end
 end
 
@@ -3607,11 +3624,13 @@ function EG.Render()
     for _, lab in pairs(EG.tickLabs or {}) do lab:SetShown(booksVis) end
     for _, bt in pairs(EG.filterBtns or {}) do bt:SetShown(booksVis) end
     if EG.rwBtn then EG.rwBtn:SetShown(booksVis) end
+    if EG.pinBtn then EG.pinBtn:SetShown(booksVis) end
     if EG.routeBtn then EG.routeBtn:SetShown(booksVis) end
     if EG.mapSetBtn then EG.mapSetBtn:SetShown(booksVis) end
     if EG.routeFrame then EG.routeFrame:SetShown(isRoutes) end
     PaintNav()
     if EG.rwBtn then PaintRwBtn() end
+    if EG.pinBtn then PaintPinsBtn() end
     if EG.routeBtn then PaintRouteBtn() end
     if EG.rwFrame then
         EG.rwFrame:SetShown(isRw)
@@ -4018,13 +4037,14 @@ function EG.Build(page)
 
     do
         local rw = CreateFrame("Button", nil, page, "BackdropTemplate")
-        rw:SetSize(EG.TOOL_W, EG.TOOL_H)
+        rw:SetHeight(EG.TOOL_H)
         rw:SetPoint("LEFT", EG.filterBtns.todo, "RIGHT", 8, 0)
         local rf = MakeFS(rw, 14, C_RW, "CENTER")
         rf:SetAllPoints()
-        rf:SetText(L["奖励"] .. " ★")
+        rf:SetText(L["奖励"])
         rw:SetFontString(rf)
         rw.__huiKeepTextColor = true
+        rw:SetWidth(ToolW(rf))
         if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(rw) end
         rw:SetScript("OnClick", function()
             SetSub(CurSub() == "rewards" and "books" or "rewards")
@@ -4039,14 +4059,48 @@ function EG.Build(page)
     end
 
     do
+        local pn = CreateFrame("Button", nil, page, "BackdropTemplate")
+        pn:SetHeight(EG.TOOL_H)
+        pn:SetPoint("LEFT", EG.rwBtn, "RIGHT", 8, 0)
+        local pf = MakeFS(pn, 14, C_RW, "CENTER")
+        pf:SetAllPoints()
+        pf:SetText(L["图钉"])
+        pn:SetFontString(pf)
+        pn.__huiKeepTextColor = true
+        pn:SetWidth(ToolW(pf))
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(pn) end
+        pn:SetScript("OnClick", function()
+            local v = not (ns.ExplorePinsOn and ns.ExplorePinsOn() or false)
+            if ns.ExploreSetPins then pcall(ns.ExploreSetPins, v) end
+            PaintPinsBtn()
+            ns.PlaySound(1)
+        end)
+        pn:SetScript("OnEnter", function(self)
+            self:GetFontString():SetTextColor(Unpack(C_RW_HI))
+            if GameTooltip then
+                GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+                GameTooltip:SetText(L["显示图钉"], 1, 0.82, 0.24)
+                GameTooltip:Show()
+            end
+        end)
+        pn:SetScript("OnLeave", function(self)
+            if GameTooltip then GameTooltip:Hide() end
+            PaintPinsBtn()
+        end)
+        coroutine.yield()
+        EG.pinBtn = pn
+    end
+
+    do
         local rb = CreateFrame("Button", nil, page, "BackdropTemplate")
-        rb:SetSize(EG.TOOL_W, EG.TOOL_H)
-        rb:SetPoint("LEFT", EG.rwBtn, "RIGHT", 8, 0)
+        rb:SetHeight(EG.TOOL_H)
+        rb:SetPoint("LEFT", EG.pinBtn, "RIGHT", 8, 0)
         local rf = MakeFS(rb, 14, C_RW, "CENTER")
         rf:SetAllPoints()
         rf:SetText(L["找书HUD"])
         rb:SetFontString(rf)
         rb.__huiKeepTextColor = true
+        rb:SetWidth(ToolW(rf))
         if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(rb) end
         rb:SetScript("OnClick", function()
             if ns.ExploreMapToggle then pcall(ns.ExploreMapToggle) end
@@ -4064,8 +4118,8 @@ function EG.Build(page)
     do
         local gb = CreateFrame("Button", nil, page, "BackdropTemplate")
         gb:SetSize(EG.TOOL_H, EG.TOOL_H)
-        gb:SetPoint("TOPRIGHT", page, "TOPRIGHT", -EG.EDGE, -EG.TOOL_Y)
-        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(gb) end
+        gb:SetPoint("TOPRIGHT", page, "TOPRIGHT", -(EG.EDGE + EG.LIST_PAD), -EG.TOOL_Y)
+        if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(gb, true) end
         gb.gear = gb:CreateTexture(nil, "ARTWORK")
         gb.gear:SetAllPoints()
         gb.gear:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\textures\\DF_Settings")

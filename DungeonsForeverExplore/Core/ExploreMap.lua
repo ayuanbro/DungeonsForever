@@ -712,6 +712,10 @@ local function locsOf(rec)
     return locs
 end
 
+local PIN_NUDGE = {
+    [209846] = { 47.4, 33.6 },
+}
+
 local function refreshAuto()
     if not (EG and EG.ScanAuto) then return end
     pcall(EG.ScanAuto)
@@ -940,8 +944,11 @@ function ns.ExploreMapRefresh()
             local isUnver = UNVER[rec[1]] == true
             if not EG.IsBookFound(rec[1]) and not (isUnver and not c.showUnver) then
                 for _, loc in ipairs(locsOf(rec)) do
+                    local lx, ly = loc[2], loc[3]
+                    local nd = PIN_NUDGE[rec[1]]
+                    if nd and loc[1] == rec[2] then lx, ly = nd[1] / 100, nd[2] / 100 end
                     local ui = uiMapOf(loc[1])
-                    local x, y = project(ui, loc[2], loc[3], disp, subMap and 0.3 or nil)
+                    local x, y = project(ui, lx, ly, disp, subMap and 0.3 or nil)
                     if x then
                         local ix = size / 2 / w
                         local iy = size / 2 / h
@@ -1199,6 +1206,15 @@ local function recalcAll()
     miniCache, miniLastSig = nil, nil
     ns.ExploreMapRefresh()
     miniRefresh()
+end
+
+function ns.ExplorePinsOn()
+    return cfg().showPins == true
+end
+
+function ns.ExploreSetPins(v)
+    cfg().showPins = v and true or false
+    recalcAll()
 end
 
 local C_TXT  = { 0.88, 0.88, 0.88 }
