@@ -755,13 +755,13 @@ end
 local function PSpell(ctx)
     local c = CFG()
     if not c.spell then return nil end
-    if not (CITIES[ctx.zone] or CITIES[ctx.sub]) then return nil end
-    if not ZoneHasClassTrainer(ctx) then return nil end
     local ST = ns.SpellTraining
     if not (ST and ST.Rows) then return nil end
-    local ok, g = pcall(ST.Rows)
+    local ok, g, lv = pcall(ST.Rows)
     if not ok or type(g) ~= "table" or type(g.available) ~= "table" then return nil end
-    local avail = g.available
+    local inCity = (CITIES[ctx.zone] or CITIES[ctx.sub]) and true or false
+    local inTrainerZone = ZoneHasClassTrainer(ctx)
+    local avail = (inCity and inTrainerZone) and g.available or {}
     local list, n = {}, 0
     for i = 1, #avail do
         local row = avail[i]
@@ -775,6 +775,32 @@ local function PSpell(ctx)
                     name = row.name or "", icon = row.icon,
                     learn = row.learn, rank = row.rank, tab = row.tab,
                 }
+            end
+        end
+    end
+    local DG = ns.DungeonDG
+    for i = 1, #(g.quest or {}) do
+        local row = g.quest[i]
+        if type(row) == "table" and row.id then
+            local q = row.quest
+            local nearSource = q and q.uiMapId and q.uiMapId == ctx.mapID
+            if (inTrainerZone or nearSource) and not (lv and q and q.lv and q.lv > lv) then
+                local base = row.base or row.id
+                local key = ItemKey("spell", base)
+                if not Z.IsIgnored(key) then
+                    n = n + 1
+                    local sub = L["任务获得"]
+                    if q and q.name and q.name ~= "" then sub = sub .. " · " .. q.name end
+                    list[n] = {
+                        id = row.id, base = base, ikey = key,
+                        name = row.name or "", icon = row.icon,
+                        sub = sub,
+                        badge = (DG and DG.Q_BADGE_PRE_BG) and { t = L["任务"], col = DG.Q_BADGE_PRE_BG } or nil,
+                        mapID = q and q.uiMapId or nil,
+                        x = q and q.x or nil,
+                        y = q and q.y or nil,
+                    }
+                end
             end
         end
     end
@@ -1033,7 +1059,10 @@ end
 function Z.Check(reason, attempt)
     attempt = attempt or 0
     local c = CFG()
-    if not c.on then return false end
+    if not c.on then
+        if ns.ZoneOrb and ns.ZoneOrb.Hide then ns.ZoneOrb.Hide() end
+        return false
+    end
     local ctx = Z.Context()
     local key = Z.Key(ctx)
     if not key then return false end

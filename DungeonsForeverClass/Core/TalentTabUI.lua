@@ -73,10 +73,16 @@ local function SeqOn()
 end
 
 local function BuildsOf()
+    local ts = ns.TalentBuildStore and ns.TalentBuildStore() or nil
+    local key = string.lower(UI.cls or "")
+    if ts then
+        ts.builds[key] = ts.builds[key] or {}
+        return ts.builds[key]
+    end
     local t = TalDB()
     t.builds = t.builds or {}
-    t.builds[UI.cls] = t.builds[UI.cls] or {}
-    return t.builds[UI.cls]
+    t.builds[key] = t.builds[key] or {}
+    return t.builds[key]
 end
 
 local function BodyH()

@@ -1,6 +1,9 @@
 local _, ns = ...
 
 ns.MapPins = {
+    ["the_drowned_city"] = {
+        entrance = { { 91.6, 45.2, nil, 1 } },
+    },
     ["blackrock_mountain"] = {
         prev = { { 58.8, 89, 2, nil, nil, 1, 43.9, 44.3 } },
         next = { { 43.9, 44.3, 1, nil, nil, 2, 58.8, 89 } },

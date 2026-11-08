@@ -115,6 +115,7 @@ local function Skinnable(b)
 end
 
 local function DB()
+    if ns.TalentBuildStore then return ns.TalentBuildStore() end
     local t = ns.ClassDB().talentSim
     if not t then
         t = {}
@@ -295,6 +296,7 @@ local function NodeOf(t, i)
 end
 
 local Refresh
+local ShowPlanMenu, SaveBuild
 
 local function NewText(parent, size, r, g, b, anchor)
     local fs = parent:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
@@ -787,7 +789,7 @@ local function PlanList()
     end
     local bl = DB().builds[NP.cls] or {}
     for i = 1, #bl do
-        out[#out + 1] = { label = bl[i].name, alloc = bl[i].alloc, idx = #plans + i }
+        out[#out + 1] = { label = bl[i].name, alloc = bl[i].alloc, idx = #plans + i, blIdx = i }
     end
     return out
 end
@@ -1614,12 +1616,13 @@ function NP.ApplyLive()
     StaticPopup_Show('DF_TALENT_SIM_APPLY')
 end
 
-local function ShowPlanMenu(anchor)
+ShowPlanMenu = function(anchor)
     local menu = MenuUtil and MenuUtil.CreateContextMenu and nil
     local rows = PlanList()
+    NP.planMenuAnchor = anchor
     if NP.planMenu then NP.planMenu:Hide() end
     local f = CreateFrame('Frame', 'DungeonsForeverTalentPlanMenu', UIParent, 'BackdropTemplate')
-    f:SetSize(352, math.max(24, #rows * 24) + 12)
+    f:SetSize(352, (#rows + 1) * 24 + 12)
     f:SetPoint('TOPLEFT', anchor, 'BOTTOMLEFT', 0, -2)
     f:SetFrameStrata('FULLSCREEN_DIALOG')
     f:SetFrameLevel(200)
@@ -1675,6 +1678,93 @@ local function ShowPlanMenu(anchor)
         local lv = NewText(r, 14, 0.62, 0.68, 0.78, 'RIGHT')
         lv:SetPoint('RIGHT', r, 'RIGHT', -2, 0)
         lv:SetText(string.format(L['需要等级 %d'], total + StartLv() - 1))
+        if rows[i].blIdx then
+            local bi = rows[i].blIdx
+            local ren = CreateFrame('Button', nil, r)
+            ren:SetSize(18, 18)
+            ren:SetPoint('TOPLEFT', r, 'TOPLEFT', 80, -3)
+            ren:SetText('改')
+            local rt = ren:GetFontString()
+            if rt then
+                rt:SetFont(ns.FONT, 11, '')
+                rt:SetTextColor(0.6, 0.8, 1, 1)
+            end
+            ren:SetHighlightTexture(WHITE, 'ADD')
+            local rhl = ren:GetHighlightTexture()
+            if rhl then rhl:SetVertexColor(1, 1, 1, 0.12) end
+            ren:SetScript('OnClick', function()
+                StaticPopupDialogs['DF_TALENT_SIM_REN'] = {
+                    text = L['输入新的方案名'],
+                    button1 = L['确定'],
+                    button2 = L['取消'],
+                    hasEditBox = true,
+                    editBoxWidth = 260,
+                    maxLetters = 24,
+                    OnShow = function(self)
+                        if ns.SkinPopupFont then ns.SkinPopupFont(self) end
+                        local e = self.EditBox or self.editBox
+                        if e then
+                            e:SetText(rows[i].label)
+                            e:HighlightText()
+                            e:SetFocus()
+                        end
+                    end,
+                    OnAccept = function(self)
+                        local e = self.EditBox or self.editBox
+                        local nm = e and e:GetText() or ''
+                        nm = nm and nm:gsub('^%s+', ''):gsub('%s+$', '') or ''
+                        if nm ~= '' then
+                            local list = DB().builds[NP.cls]
+                            if list and list[bi] then list[bi].name = nm end
+                            if NP.planMenu and NP.planMenuAnchor then ShowPlanMenu(NP.planMenuAnchor) end
+                        end
+                    end,
+                    EditBoxOnEnterPressed = function(self)
+                        local p = self:GetParent()
+                        if p.button1 then p.button1:Click() end
+                    end,
+                    EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+                    timeout = 0,
+                    whileDead = true,
+                    hideOnEscape = true,
+                    preferredIndex = 3,
+                }
+                StaticPopup_Show('DF_TALENT_SIM_REN')
+            end)
+            local del = CreateFrame('Button', nil, r)
+            del:SetSize(18, 18)
+            del:SetPoint('TOPLEFT', r, 'TOPLEFT', 98, -3)
+            del:SetText('X')
+            local dt = del:GetFontString()
+            if dt then
+                dt:SetFont(ns.FONT, 11, '')
+                dt:SetTextColor(1, 0.4, 0.35, 1)
+            end
+            del:SetHighlightTexture(WHITE, 'ADD')
+            local dhl = del:GetHighlightTexture()
+            if dhl then dhl:SetVertexColor(1, 1, 1, 0.12) end
+            del:SetScript('OnClick', function()
+                StaticPopupDialogs['DF_TALENT_SIM_DEL'] = {
+                    text = string.format(L['删除方案「%s」？'], rows[i].label),
+                    button1 = L['确定'],
+                    button2 = L['取消'],
+                    OnShow = function(self)
+                        if ns.SkinPopupFont then ns.SkinPopupFont(self) end
+                    end,
+                    OnAccept = function()
+                        local list = DB().builds[NP.cls]
+                        if list and list[bi] then table.remove(list, bi) end
+                        if NP.planMenu and NP.planMenuAnchor then ShowPlanMenu(NP.planMenuAnchor) end
+                        Refresh()
+                    end,
+                    timeout = 0,
+                    whileDead = true,
+                    hideOnEscape = true,
+                    preferredIndex = 3,
+                }
+                StaticPopup_Show('DF_TALENT_SIM_DEL')
+            end)
+        end
         r:SetScript('OnClick', function()
             NP.plan = rows[i].plan or { name = rows[i].label, alloc = alloc }
             NP.planIdx = rows[i].idx
@@ -1685,6 +1775,19 @@ local function ShowPlanMenu(anchor)
             Refresh()
         end)
     end
+    local add = CreateFrame('Button', nil, f)
+    add:SetSize(340, 24)
+    add:SetPoint('TOPLEFT', f, 'TOPLEFT', 6, -(6 + #rows * 24))
+    add:SetHighlightTexture(WHITE, 'ADD')
+    local ahl = add:GetHighlightTexture()
+    if ahl then ahl:SetVertexColor(1, 1, 1, 0.1) end
+    local afs = NewText(add, 14, 1, 0.82, 0, 'LEFT')
+    afs:SetPoint('LEFT', add, 'LEFT', 3, 0)
+    afs:SetText('+ ' .. L['保存当前加点为新方案'])
+    add:SetScript('OnClick', function()
+        f:Hide()
+        SaveBuild()
+    end)
     f:EnableMouse(true)
     f:SetScript('OnHide', function()
         catcher:Hide()
@@ -1754,7 +1857,7 @@ local function ExportBox()
     StaticPopup_Show('DF_TALENT_SIM_EXPORT')
 end
 
-local function SaveBuild()
+SaveBuild = function()
     StaticPopupDialogs['DF_TALENT_SIM_SAVE'] = {
         text = L['输入方案名'],
         button1 = L['确定'],
@@ -1778,6 +1881,7 @@ local function SaveBuild()
             local list = db.builds[cls]
             list[#list + 1] = { name = name, alloc = PtsAlloc() }
             print('|cff46bf72[天赋]|r ' .. string.format(L['已保存方案「%s」'], name))
+            if NP.planMenu and NP.planMenuAnchor then ShowPlanMenu(NP.planMenuAnchor) end
         end,
     }
     StaticPopup_Show('DF_TALENT_SIM_SAVE')

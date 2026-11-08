@@ -123,6 +123,14 @@ local function BuildQuestIndex()
     if questIndex then return questIndex end
     local idx = {}
     questIndex = idx
+    if not ns.EnsureClassQuestInfo then
+        if C_AddOns and C_AddOns.EnableAddOn then pcall(C_AddOns.EnableAddOn, "DungeonsForeverClass") end
+        if C_AddOns and C_AddOns.LoadAddOn then
+            pcall(C_AddOns.LoadAddOn, "DungeonsForeverClass")
+        elseif type(LoadAddOn) == "function" then
+            pcall(LoadAddOn, "DungeonsForeverClass")
+        end
+    end
     local info = ns.EnsureClassQuestInfo and ns.EnsureClassQuestInfo()
     if not info then return idx end
     local cls = select(2, UnitClass("player"))
@@ -276,6 +284,9 @@ function ST.Rows()
             if ST.Knows(id) then
                 row.learn = nil
                 groups.known[#groups.known + 1] = row
+            elseif qidx[id] then
+                row.quest = qidx[id]
+                groups.quest[#groups.quest + 1] = row
             elseif need <= lv then
                 groups.available[#groups.available + 1] = row
             elseif need <= lv + 2 then

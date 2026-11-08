@@ -29,6 +29,7 @@ local ACC = (ns.hui and ns.hui.ACCENT) or { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
 local orb, panel, badge, badgeText, tweener, icon, disc, ring
 local cards, heads, subRows, row, btnOpen, btnSkip, btnBlock, manage, moreText
 local closeBtn, gear, opts, optCbs
+local orbMenu, menuOpenedAt = nil, 0
 local job = nil
 local current = nil
 local hovered = false
@@ -39,6 +40,16 @@ local pulseFrame, pulseT = nil, 0
 
 local function Cfg()
     return ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
+end
+
+local function ApplyOrbSize()
+    if not orb then return end
+    local sz = tonumber(Cfg().icon) or 32
+    if sz < 20 then sz = 20 end
+    if sz > 44 then sz = 44 end
+    local orbSz = sz + 16
+    orb:SetSize(orbSz, orbSz)
+    if icon then icon:SetSize(sz * 1.25, sz * 1.25) end
 end
 
 local function TextW(fs, dflt)
@@ -439,7 +450,7 @@ local function Layout(res)
                 r.itipid = s.id
                 r.idesc = s.desc
                 r.ilabel = s.name
-                if s.areaID or s.qid then
+                if s.areaID or s.qid or (s.mapID and s.x and s.y) then
                     r.jump = function() return MarkOnMap(s) end
                 else
                     r.jump = nil
@@ -524,6 +535,12 @@ end
 function O.Update(res)
     current = res
     if not badge then return end
+    local onc = Cfg()
+    if onc.on == false then
+        if orb and orb:IsShown() then orb:Hide() end
+    elseif orb and not orb:IsShown() then
+        orb:Show()
+    end
     local n = (res and res.total) or 0
     if n > 0 then
         if badgeText then badgeText:SetText(n > 9 and "9+" or tostring(n)) end
@@ -550,6 +567,7 @@ end
 
 function O.Hide()
     Close()
+    if orb then orb:Hide() end
 end
 
 function O.Init()
@@ -838,10 +856,15 @@ function O.Init()
         end
         c.icon = SIZES[idx % #SIZES + 1]
         SyncSize()
-        O.Refresh()
+        ApplyOrbSize()
+        if current then
+            O.Update(current)
+        else
+            O.Refresh()
+        end
     end)
     szBtn:SetScript("OnEnter", function()
-        Tip(szBtn, L["图标大小"], L["点击切换待办条目的图标尺寸"])
+        Tip(szBtn, L["图标大小"], L["点击切换待办圆球与条目的图标尺寸"])
     end)
     szBtn:SetScript("OnLeave", HideTip)
 
@@ -895,9 +918,63 @@ function O.Init()
         if ns.MainFrame and ns.MainFrame.SyncZoneHintCard then ns.MainFrame.SyncZoneHintCard() end
     end)
 
-    orb:SetScript("OnClick", function()
+    orbMenu = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    orbMenu:SetHeight(36)
+    orbMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+    if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
+        ns.hui.SkinPopup(orbMenu, 8, "both", ns.hui.layer.L2)
+        if ns.hui.SkinShadow then ns.hui.SkinShadow(orbMenu, nil, nil, 8) end
+    end
+    local oml = orbMenu:CreateFontString(nil, "OVERLAY")
+    oml:SetFont(ns.FONT, 13, "")
+    oml:SetPoint("LEFT", orbMenu, "LEFT", 12, 0)
+    oml:SetText(L["永久关闭"])
+    oml:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    local omb = CreateFrame("Button", nil, orbMenu)
+    omb:SetAllPoints(orbMenu)
+    omb:SetScript("OnEnter", function()
+        oml:SetTextColor(ACC[1], ACC[2], ACC[3])
+        Tip(omb, L["永久关闭"], L["等同于设置里的地图待办开关，可随时重新开启"])
+    end)
+    omb:SetScript("OnLeave", function()
+        oml:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+        HideTip()
+    end)
+    omb:SetScript("OnClick", function()
         ns.PlaySound(1)
-        Toggle()
+        local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+        if c then c.on = false end
+        orbMenu:Hide()
+        Close()
+        if orb then orb:Hide() end
+        if ns.MainFrame and ns.MainFrame.SyncZoneHintCard then ns.MainFrame.SyncZoneHintCard() end
+    end)
+    orbMenu:Hide()
+
+    local function ToggleOrbMenu()
+        if orbMenu:IsShown() then
+            orbMenu:Hide()
+            return
+        end
+        local w = TextW(oml, 60) + 24
+        if w < 120 then w = 120 end
+        orbMenu:SetWidth(w)
+        orbMenu:ClearAllPoints()
+        orbMenu:SetPoint("TOPLEFT", orb, "BOTTOMRIGHT", 4, -4)
+        orbMenu:Show()
+        menuOpenedAt = (GetTime and GetTime()) or 0
+    end
+
+    ApplyOrbSize()
+    orb:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    orb:SetScript("OnClick", function(_, btn)
+        ns.PlaySound(1)
+        if btn == "RightButton" then
+            ToggleOrbMenu()
+        else
+            if orbMenu then orbMenu:Hide() end
+            Toggle()
+        end
     end)
 
     orb:SetScript("OnEnter", function()
@@ -915,7 +992,7 @@ function O.Init()
         else
             desc = L["本图暂无待办"]
         end
-        Tip(orb, zone ~= "" and zone or L["当前地图"], desc, L["点击展开 · 拖拽移动"])
+        Tip(orb, zone ~= "" and zone or L["当前地图"], desc, L["左键展开 · 右键永久关闭 · 拖拽移动"])
     end)
 
     orb:SetScript("OnLeave", function()
@@ -953,8 +1030,14 @@ function O.Init()
     local watcher = CreateFrame("Frame")
     watcher:RegisterEvent("GLOBAL_MOUSE_DOWN")
     watcher:SetScript("OnEvent", function()
-        if not panel or not panel:IsShown() then return end
         local now = (GetTime and GetTime()) or 0
+        if orbMenu and orbMenu:IsShown() then
+            if now - menuOpenedAt >= 0.2 and not orbMenu:IsMouseOver() and not orb:IsMouseOver() then
+                orbMenu:Hide()
+            end
+            return
+        end
+        if not panel or not panel:IsShown() then return end
         if now - openedAt < 0.2 then return end
         if panel:IsMouseOver() then return end
         if orb:IsMouseOver() then return end
