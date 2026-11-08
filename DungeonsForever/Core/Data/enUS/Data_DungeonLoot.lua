@@ -924,6 +924,9 @@ ns.DungeonLoot = {
         { "Min'loth the Serpent", "Min'loth the Serpent", "", "270886", {} },
         { "Umbra", "Umbra", "", "264172", {} },
         { "Zin'aka", "Zin'aka", "", "263742", {} },
+        { "Pyromancer Braxton", "Pyromancer Braxton", "Rare", "260468", {
+            { 286651, 100, true },
+        } },
     },
     ["sm_armory"] = {
         { "Herod", "Herod", "", "3975", {

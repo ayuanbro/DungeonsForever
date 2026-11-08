@@ -1239,6 +1239,7 @@ ns.DungeonGuide = {
             "The Horde quest The Drowned City (tablet rubbings) and the Alliance quest Magics of the Drowned City (I'lalai fetishes) can be picked up at level 30.",
             "After Var'Taka and Captain Dreadrise die, click the glowing pearl nearby to break the barrier blocking the way forward.",
             "The rare elite Umbra lurks in the city with 5 Saltscale murlocs: their bleeds stack fast - burn the boss first, then the adds.",
+            "The rare elite \"Pyromancer\" Braxton lurks in the city: he always drops the Flamestarter's Signet ring - don't walk past.",
             "Strategies for Zul'Alai, Gill, Primeval Elemental and Zin'aka are still unknown; demo reports call Zin'aka a tank killer - tanks should save defensives.",
         },
         entrance = {
@@ -1268,6 +1269,8 @@ ns.DungeonGuide = {
               text = "A two-phase fight: in troll form he hits the tank hard and channels AoE damage; at zero he becomes a serpent, heals to full, and switches to AoE poison (dispel fast) and random Fear. Burn him down a second time to end the fight." },
             { en = "Umbra",
               text = "A rare elite accompanied by 5 Saltscale murlocs whose bleeds stack fast - focusing everything at once will kill people. Burn Umbra first, then clean up the murlocs; the boss itself has no other mechanics." },
+            { en = "Pyromancer Braxton",
+              text = "Rare elite: always drops the Flamestarter's Signet ring. Spawn point and abilities unknown - treat as a regular elite and burn him down." },
             { en = "Zin'aka",
               text = "Little is known: demo reports call it a tank killer, mechanics unpublished. Tanks should save defensives for the pull and the group should stay spread." },
         },

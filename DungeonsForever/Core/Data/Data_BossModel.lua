@@ -262,6 +262,7 @@ ns.BossModelDisplay = {
         ["Gill"] = 144023,
         ["Min'loth the Serpent"] = 142286,
         ["Primeval Elemental"] = 129945,
+        ["Pyromancer Braxton"] = 142457,
         ["Umbra"] = 144022,
         ["Var'Taka"] = 144487,
         ["Zin'aka"] = 143835,
