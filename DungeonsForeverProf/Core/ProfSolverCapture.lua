@@ -390,7 +390,7 @@ end
 function E.ToolFingerprint(slug, opts)
     local parts = {tostring(E.ToolPlanningEnabled(opts,slug)), tostring(ns.ProfTools and ns.ProfTools.revision or 0)}
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
-        parts[#parts+1] = table.concat({tool.spell or 0, tool.item or 0, tool.minSkill or 0, tostring(tool.bindOnPickup or false)}, ":")
+        parts[#parts+1] = table.concat({tool.spell or 0, tool.item or 0, tool.minSkill or 0, tostring(tool.bindOnPickup or false), tool.tier or 0}, ":")
     end
     return table.concat(parts, "|")
 end
@@ -400,14 +400,25 @@ local function planningToolRecipe(slug, spell, snapshot)
     end
     if not snapshot and E.FindRecipe then return E.FindRecipe(slug, spell) end
 end
-function E.RequiredLevelingTool(slug, tool)
-    return not tool.optional and not (slug=="alchemy" and (tool.item==9149 or tool.item==13503))
+function E.RequiredLevelingTool(slug, tool, start, snapshot)
+    if tool.optional or slug=="alchemy" and (tool.item==9149 or tool.item==13503) then return false end
+    start=tonumber(start) or snapshot and snapshot.professions and snapshot.professions[slug] and snapshot.professions[slug].cur
+    if slug=="enchanting" and tool.tier and start then
+        for _,higher in ipairs(ns.ProfTools and ns.ProfTools.enchanting or {}) do
+            if (higher.tier or 0)>tool.tier and not higher.optional then
+                local recipe=planningToolRecipe(slug,higher.spell,snapshot)
+                if recipe and recipe.item and type(recipe.learn)=="number" and recipe.learn<=start
+                    and not recipe.clientPending and not recipe.clientUnavailable then return false end
+            end
+        end
+    end
+    return true
 end
 function E.HasToolGoals(slug, opts)
     if not E.ToolPlanningEnabled(opts,slug) then return false end
     local target = tonumber(opts and opts.target) or 300
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
-        if E.RequiredLevelingTool(slug,tool) then
+        if E.RequiredLevelingTool(slug,tool,opts and opts.start,opts and opts.snapshot) then
             local recipe = planningToolRecipe(slug, tool.spell, opts and opts.snapshot)
             if not recipe or type(recipe.learn)~="number" or target>recipe.learn then return true end
         end
@@ -1189,12 +1200,12 @@ function E.CaptureToolGoals(s, slug, opts)
     local target = tonumber(opts and opts.target) or 300
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
         if tool.bindOnPickup then s.nonAuctionable[tool.item] = true; s.toolCraftOnlyItems[tool.item] = true end
-        if s.autoCraftTools and E.RequiredLevelingTool(slug,tool) then
+        if s.autoCraftTools and E.RequiredLevelingTool(slug,tool,opts and opts.start,s) then
             local recipe = planningToolRecipe(slug, tool.spell, s)
-            if recipe and recipe.item and type(recipe.learn)=="number" and not recipe.clientPending then
-                if G and G.ToolOwned(recipe.item) then
-                    s.ownedToolItems = s.ownedToolItems or {}; s.ownedToolItems[tool.item] = true
-                elseif target>recipe.learn then
+            if G and (G.ToolOwned(tool.item) or recipe and recipe.item and G.ToolOwned(recipe.item)) then
+                s.ownedToolItems = s.ownedToolItems or {}; s.ownedToolItems[tool.item] = true
+            elseif recipe and recipe.item and type(recipe.learn)=="number" and not recipe.clientPending then
+                if target>recipe.learn then
                     local goal = copy(tool);goal.profession=slug;goal.item=recipe.item;goal.minSkill=recipe.learn
                     goal.id=slug..":"..recipe.item
                     s.toolGoals[#s.toolGoals+1] = goal;s.retainedToolItems[goal.item] = 1
