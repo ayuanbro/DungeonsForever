@@ -2887,15 +2887,14 @@ function PD.BindRow(r, spec, h)
     if spec.kind == "vs" then
         local vs = PD.VsBlock(r)
         local W = tonumber(spec.vw) or tonumber(PD.splitRW) or 160
-        local stacked = W < 2 * PD.VS_MIN_W + PD.VS_GAP
-        local cw = stacked and W or math.floor((W - PD.VS_GAP) / 2)
+        local cw = math.floor((W - PD.VS_GAP) / 2)
         for k = 1, 2 do
             local d = spec.cards and spec.cards[k] or nil
             local c, z = vs.cards[k], vs.zones[k]
             if d then
                 c:ClearAllPoints()
-                if k == 1 or stacked then
-                    c:SetPoint("TOPLEFT", r, "TOPLEFT", 0, stacked and -(k - 1) * (PD.VS_CARD_H + PD.VS_GAP) or 0)
+                if k == 1 then
+                    c:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
                 else
                     c:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
                 end
@@ -2931,7 +2930,7 @@ function PD.BindRow(r, spec, h)
                 else
                     c.badge:Hide()
                 end
-                c.lab:SetWidth(math.max(1, cw - 16 - (d.win and (c.badge:GetWidth() + 6) or 0)))
+                c.lab:SetWidth(math.max(1, cw - 16))
                 c:Show()
                 z:ClearAllPoints()
                 z:SetPoint("TOPLEFT", c, "TOPLEFT", 0, 0)
@@ -7578,6 +7577,12 @@ function PD.PaintTag(r, tag)
     chip:SetSize(math.max(FSW(fs) + pad * 2, minw), ns.hui and ns.hui.ChipH and ns.hui.ChipH(13) or 15)
     chip:ClearAllPoints()
     chip:SetPoint("LEFT", r.a, "LEFT", FSW(r.a) + 8, (ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(13)) or -0.8)
+    if r.__spec and r.__spec.kind == "head" and r.__spec.col == 2 then
+        chip:ClearAllPoints()
+        chip:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+        r.a:SetWidth(math.max(1, (r:GetWidth() or 0) - (chip:GetWidth() or 0) - 52))
+        r.a:SetWordWrap(false)
+    end
     chip:Show()
     fs:Show()
 end
@@ -7647,9 +7652,9 @@ function PD.SubLink(r)
     return PD.SubLinkAt(r, 1)
 end
 
-PD.VS_CARD_H, PD.VS_GAP, PD.VS_MIN_W = 76, 8, 180
+PD.VS_CARD_H, PD.VS_GAP = 96, 8
 function PD.VsHeight(w)
-    return w < 2 * PD.VS_MIN_W + PD.VS_GAP and (2 * PD.VS_CARD_H + PD.VS_GAP) or PD.VS_CARD_H
+    return PD.VS_CARD_H
 end
 function PD.VsBlock(r)
     if r.__vs then return r.__vs end
@@ -7674,7 +7679,7 @@ function PD.VsBlock(r)
         local nm = MakeFS(host, 12, C_TEXT, "LEFT")
         nm:SetWordWrap(false)
         local price = MakeFS(host, 14, C_GOLD, "RIGHT")
-        price:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -26)
+        price:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -44)
         price:SetWordWrap(false)
         c.lab, c.ic, c.nm, c.price, c.host = lab, ic, nm, price, host
         local bd = CreateFrame("Frame", nil, host)
@@ -7683,7 +7688,7 @@ function PD.VsBlock(r)
         local bdFs = MakeFS(bd, 10, { 0.42, 0.94, 0.62 }, "CENTER")
         bdFs:SetPoint("CENTER", bd, "CENTER", 0, 0)
         bd:SetSize(32, 14)
-        bd:SetPoint("TOPRIGHT", host, "TOPRIGHT", -6, -6)
+        bd:SetPoint("TOPRIGHT", host, "TOPRIGHT", -6, -24)
         bd:Hide()
         c.badge, c.badgeFs = bd, bdFs
         cards[k] = c
