@@ -89,7 +89,14 @@ function ns.TalentBuildStore()
         ts.v = nil
     end
     if cdb.talent then cdb.talent.builds = nil end
-    if ts.v ~= STORE_VER then
+    local overflow = false
+    for cls, list in pairs(builds) do
+        if type(list) == "table" and #list > MAX_BUILDS then
+            overflow = true
+            break
+        end
+    end
+    if ts.v ~= STORE_VER or overflow then
         local dropped = 0
         for cls, list in pairs(builds) do
             local out, gone = Normalize(list)

@@ -545,9 +545,6 @@ M.ZONE_AREA = {
               "Shadowforge City", "Blackrock Spire", "Forgewright's Tomb",
               "The Grinding Quarry", "The Mason's Quarter" },
       mark = { "黑石", "Blackrock" } },
-    { id = "wailing_caverns", zone = { "贫瘠之地", "The Barrens", "哀嚎洞穴", "Wailing Caverns" },
-      sub = { "哀嚎洞穴", "哀嚎洞穴入口", "Wailing Caverns" },
-      mark = { "哀嚎洞穴", "Wailing Caverns" } },
 }
 
 M.ZONE_MENU = {
@@ -3837,7 +3834,11 @@ function M.SyncSide()
     local bosses = M.BossesFor(id)
     local MW = ns.MapWorldModule
     local inTask = M.sideTask and (MW and MW.view == frame)
-    frame.side:SetShown(not inTask)
+    if inTask then
+        frame.side:Hide()
+    else
+        frame.side:SetShown((frame.sideAvail or 999) >= 120)
+    end
 
     if M.detailEn then
         local zh, items
@@ -4252,7 +4253,6 @@ end
 
 local wpins, wpinPool = {}, {}
 local wpStaticRows
-local provider
 
 local function wpRelease()
     for i = #wpins, 1, -1 do
@@ -4720,23 +4720,8 @@ function M.SyncWorldQuestPins()
     end
 end
 
-local Provider = {}
-function Provider:RemoveAllData() wpRelease() end
-function Provider:RefreshAllData() M.SyncWorldQuestPins() end
-function Provider:OnHide() wpRelease() end
-function Provider:OnCanvasScaleChanged() M.SyncWorldQuestPins() end
-function Provider:OnCanvasSizeChanged() M.SyncWorldQuestPins() end
-
 local function wpInit()
     if not WorldMapFrame then return end
-    if WorldMapFrame.AddDataProvider and MapCanvasDataProviderMixin and not provider then
-        local okP = pcall(function()
-            provider = CreateFromMixins(MapCanvasDataProviderMixin, Provider)
-            WorldMapFrame:AddDataProvider(provider)
-        end)
-        if okP and provider then return end
-        provider = nil
-    end
     if hooksecurefunc then
         pcall(hooksecurefunc, WorldMapFrame, "OnMapChanged", M.SyncWorldQuestPins)
         if WorldMapFrame.OnCanvasScaleChanged then

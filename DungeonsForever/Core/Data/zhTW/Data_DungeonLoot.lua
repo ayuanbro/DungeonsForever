@@ -1069,7 +1069,7 @@ ns.DungeonLoot = {
         { "Twilight Commander Zarmok", "暮光指揮官扎爾莫克", "", "258972", {} },
         { "War Handler Ashka", "馴獸師阿什卡", "", "259281", {} },
         { "Nar'gurk", "納古克", "", "258964", {} },
-        { "Overlord Mugg", "監工莫格", "", "258968", {} },
+        { "Overlord Mugg", "霸主莫格", "", "258968", {} },
     },
     ["uldaman"] = {
         { "Eric \"The Swift\"", "埃瑞克", "", "6907", {

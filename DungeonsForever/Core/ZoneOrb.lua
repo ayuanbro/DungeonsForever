@@ -275,6 +275,29 @@ local function SpellTip(owner, id, name, sub, foot)
     GameTooltip:Show()
 end
 
+local function OpenQuestPage(qid, slug)
+    if not qid then return false end
+    local U = ns.DungeonUI
+    if not U then return false end
+    if slug and ns.ShowDungeonDetail then
+        if not pcall(ns.ShowDungeonDetail, slug) then return false end
+    elseif ns.Open then
+        pcall(ns.Open)
+    end
+    U.dungeonQView = "list"
+    U.dungeonQFlow = nil
+    U.dungeonQuestSel = qid
+    U.dungeonQListKey = nil
+    U.dungeonQDetKey = nil
+    local DG = ns.DungeonDG or (ns.ProfHost and ns.ProfHost.DG)
+    local row = (DG and DG.QuestRowByID) and DG.QuestRowByID(qid) or nil
+    local qsd = (type(row) == "table") and row[2] or nil
+    if (qsd == "A" or qsd == "H") and U.dungeonQSide ~= qsd then U.dungeonQSide = qsd end
+    if U.SetDungeonTab then pcall(U.SetDungeonTab, U, "quest") end
+    if ns.MapModule and ns.MapModule.QuestScrollTo then pcall(ns.MapModule.QuestScrollTo, qid) end
+    return true
+end
+
 local function MarkOnMap(it)
     if not it then return false end
     local EG = ns.ExploreModule
@@ -354,9 +377,15 @@ local function MakeRow(i)
         end
         O.Refresh()
     end)
-    r:SetScript("OnClick", function()
+    r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    r:SetScript("OnClick", function(_, btn)
         if not r.jump then return end
         if ns.ZoneHint and ns.ZoneHint.IsSim and ns.ZoneHint.IsSim() then return end
+        if btn == "RightButton" then
+            if r.ikind ~= "quest" then return end
+            if OpenQuestPage(r.qid or r.iid, r.slug) then Close() end
+            return
+        end
         ns.PlaySound(1)
         Close()
         r.jump()
@@ -374,7 +403,7 @@ local function MakeRow(i)
             end
             ItemTip(r, r.iid, r.ilabel, desc, L["点击在地图标出位置"])
         elseif r.ikind == "quest" then
-            Tip(r, r.ilabel, r.idesc or sub, L["点击在地图上定位"])
+            Tip(r, r.ilabel, r.idesc or sub, L["左键在地图上定位，右键查看任务详情"])
         else
             SpellTip(r, r.itipid or r.iid, r.ilabel, sub)
         end
@@ -504,6 +533,8 @@ local function Layout(res)
                 r.ikind = s.ikind or it.kind
                 r.iid = s.base or s.id
                 r.itipid = s.id
+                r.qid = s.qid
+                r.slug = s.slug
                 r.idesc = s.desc
                 r.ilabel = s.name
                 if s.areaID or s.qid or (s.mapID and s.x and s.y) then

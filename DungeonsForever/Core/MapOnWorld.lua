@@ -386,26 +386,12 @@ local function areaOffset()
     return ox, oy
 end
 
-local AREA_EDGE = 4
-
-local function sideLeft()
-    local v = W.view
-    if not v then return nil end
-    local dx, vl = v.sideL, v:GetLeft()
-    if type(dx) ~= "number" or type(vl) ~= "number" then return nil end
-    return vl + dx
-end
 
 local function mapAreaSize()
     local a = area()
     if not a then return 0, 0 end
     local aw, ah = a:GetWidth(), a:GetHeight()
     if type(aw) ~= "number" or type(ah) ~= "number" then return 0, 0 end
-    local lim, wmf = sideLeft(), WorldMapFrame
-    if lim and wmf and wmf:GetLeft() then
-        local room = lim - wmf:GetLeft() - AREA_EDGE
-        if room > 0 and aw > room then aw = room end
-    end
     return aw, ah
 end
 
@@ -502,30 +488,20 @@ end
 local function zoneAreaId()
     local tbl = M.ZONE_AREA
     if type(tbl) ~= "table" then return nil end
-    local zt, st = zoneText(), subZoneText()
-    if not zt then return nil end
+    local st = subZoneText()
+    if not st or st == "" then return nil end
     for i = 1, #tbl do
         local r = tbl[i]
         if r and hasArt(r.id) then
-            local zoneOK = false
-            if type(r.zone) == "table" then
-                for k = 1, #r.zone do
-                    if r.zone[k] == zt then zoneOK = true break end
+            if type(r.sub) == "table" then
+                for k = 1, #r.sub do
+                    if r.sub[k] == st then return r.id end
                 end
             end
-            if zoneOK then
-                local hit = false
-                if st and type(r.sub) == "table" then
-                    for k = 1, #r.sub do
-                        if r.sub[k] == st then hit = true break end
-                    end
+            if type(r.mark) == "table" then
+                for k = 1, #r.mark do
+                    if st:find(r.mark[k], 1, true) then return r.id end
                 end
-                if not hit and st and type(r.mark) == "table" then
-                    for k = 1, #r.mark do
-                        if st:find(r.mark[k], 1, true) then hit = true break end
-                    end
-                end
-                if hit then return r.id end
             end
         end
     end
@@ -577,6 +553,7 @@ function W.Resolve()
         end
         local zn = zoneText()
         local oid = zn and nameIndex()[nameKey(zn)]
+        if not hasArt(oid) and zn and M.NamePrefixFor then oid = M.NamePrefixFor(zn) end
         if hasArt(oid) and M.OUTSIDE_LAYER and M.OUTSIDE_LAYER[oid] then
             if cur and sameArt(cur, oid) then return cur, "cur" end
             return oid, "zone"
@@ -1267,22 +1244,19 @@ local function layout(view)
     end
     if view.side then
         local q = questPanel()
-        if q then
-            local w, h = q:GetWidth(), q:GetHeight()
-            local qx = (q:GetLeft() or 0) - (WorldMapFrame:GetLeft() or 0)
-            local qy = (WorldMapFrame:GetTop() or 0) - (q:GetTop() or 0)
-            if W.leaUI then
-                local sc = area()
-                local dy = (q:GetTop() or 0) - (sc and sc:GetTop() or 0)
-                if dy and dy ~= 0 then
-                    qy = qy + dy
-                    h = h - dy
-                end
-            end
-            view.sideL, view.sideT = qx, qy
+        local w = (q and q:GetWidth()) or 330
+        local x = ox + cx + cw + 6
+        local y = oy + cy
+        local avail = (view:GetWidth() or 0) - x - 6
+        view.sideAvail = avail
+        if avail >= 120 then
+            if w > avail then w = avail end
+            view.sideL, view.sideT = x, y
             view.side:ClearAllPoints()
-            view.side:SetPoint("TOPLEFT", view, "TOPLEFT", qx, -qy)
-            view.side:SetSize(w, h)
+            view.side:SetPoint("TOPLEFT", view, "TOPLEFT", x, -y)
+            view.side:SetSize(w, ch)
+        else
+            view.side:Hide()
         end
     end
     if view.taskBtn then
@@ -1340,7 +1314,7 @@ local function layout(view)
         if W.areaBtn and W.areaBtn:IsShown() then W.areaBtn:Hide() end
     end
     view.floorPanel:ClearAllPoints()
-    view.floorPanel:SetPoint("BOTTOMRIGHT", view.stage or view.canvas, "BOTTOMRIGHT", 0, 0)
+    view.floorPanel:SetPoint("BOTTOMLEFT", view.stage or view.canvas, "BOTTOMLEFT", 0, 0)
 end
 
 local function cursorUI()
@@ -1407,6 +1381,7 @@ end
 
 function W.ZoomWheel(delta)
     if not inStage() then return end
+    W.movedAt = GetTime()
     W.ZoomAt((delta > 0) and 1.15 or (1 / 1.15))
 end
 
@@ -1437,14 +1412,226 @@ function W.BeginDrag()
     local view = W.view
     local block = view and view.block
     if not block then return end
+    W.movedAt = GetTime()
     M.SetHoverMouse(view.route, false)
     block.__lx, block.__ly = cursorUI()
     block:SetScript("OnUpdate", dragWorld)
 end
 
+local function ensureWide()
+    if not W.Active() or W.folded or M.sideTask then return end
+    local wmf = WorldMapFrame
+    local qp = questPanel()
+    if not (wmf and wmf.minimizedWidth and wmf:IsShown() and qp) then return end
+    if qp:IsShown() then return end
+    if (wmf:GetWidth() or 0) > wmf.minimizedWidth + 2 then return end
+    pcall(function()
+        local extra = qp.GetPanelExtraWidth and qp:GetPanelExtraWidth() or 333
+        SetUIPanelAttribute(wmf, "extraWidth", extra)
+        wmf:SetWidth((wmf.minimizedWidth or 702) + (wmf.questLogWidth or 333))
+        UpdateUIPanelPositions(wmf)
+    end)
+end
+
+local function syncSpacer()
+    local wmf = WorldMapFrame
+    local spacer = wmf and wmf.TitleCanvasSpacerFrame
+    if not (spacer and spacer.GetNumPoints) then return end
+    local reserve
+    if W.Active() then
+        reserve = (wmf:GetWidth() or 0) > (wmf.minimizedWidth or 702) + 2
+    else
+        local q = questPanel()
+        reserve = (q and q:IsShown()) and true or false
+    end
+    local want = reserve and (-3 - (wmf.questLogWidth or 333)) or -3
+    local cur = -3
+    local n = spacer:GetNumPoints() or 0
+    for i = 1, n do
+        local pt, _, _, x = spacer:GetPoint(i)
+        if pt == "BOTTOMRIGHT" and type(x) == "number" then cur = x break end
+    end
+    ensureWide()
+    if math.abs(cur - want) < 1 then return end
+    pcall(spacer.SetPoint, spacer, "BOTTOMRIGHT", wmf, "TOPRIGHT", want, -67)
+    if wmf.OnFrameSizeChanged then pcall(wmf.OnFrameSizeChanged, wmf) end
+end
+
+local function syncQuestCVar()
+    if type(GetCVar) ~= "function" or type(SetCVar) ~= "function" then return end
+    if W.qLogCVar == nil then return end
+    local q = questPanel()
+    local want = (q and q:IsShown()) and "1" or "0"
+    local ok, cur = pcall(GetCVar, "questLogOpen")
+    if ok and cur ~= want then pcall(SetCVar, "questLogOpen", want) end
+end
+
+local function panelWideWidth()
+    local wmf = WorldMapFrame
+    if not wmf then return 0 end
+    return (wmf.minimizedWidth or 702) + (wmf.questLogWidth or 330)
+end
+
+local function syncPanelToggle()
+    local wmf = WorldMapFrame
+    local spt = wmf and wmf.SidePanelToggle
+    if not spt then return end
+    local q = questPanel()
+    if spt.Refresh then pcall(spt.Refresh, spt) end
+    if spt.OpenButton and spt.CloseButton and q then
+        local showOpen
+        if W.Active() then
+            showOpen = (wmf:GetWidth() or 0) <= (wmf.minimizedWidth or 702) + 2
+        else
+            showOpen = not q:IsShown()
+        end
+        if showOpen then
+            spt.OpenButton:Show()
+            spt.CloseButton:Hide()
+        else
+            spt.OpenButton:Hide()
+            spt.CloseButton:Show()
+        end
+    end
+end
+
+function W.ToggleSideTask()
+    local v = W.view
+    if not (v and v:IsShown()) then return end
+    local q = questPanel()
+    if M.sideTask then
+        W.ResetTask()
+        if q and not q:IsShown() then
+            local wmf = WorldMapFrame
+            if wmf and (wmf:GetWidth() or 0) < panelWideWidth() - 2 then
+                setLogPanel(true)
+                q:Hide()
+            end
+        end
+    else
+        M.sideTask = true
+        if q then
+            W.qStrata = q:GetFrameStrata()
+            W.qLevel = q:GetFrameLevel()
+            q:SetFrameStrata("HIGH")
+            q:SetFrameLevel(v:GetFrameLevel() + 5)
+            setLogPanel(true)
+        end
+        if v.side then v.side:Hide() end
+        if v.block then v.block:EnableMouse(false) end
+    end
+    syncPanelToggle()
+    syncSpacer()
+    syncQuestCVar()
+    W.UpdateTaskBtn()
+    C_Timer.After(0, function()
+        if W.Active() then W.Sync() end
+    end)
+end
+
+local function adoptPanelState()
+    local view = W.view
+    local q = questPanel()
+    if not (view and q) then return end
+    local shown = q:IsShown()
+    if shown and not M.sideTask then
+        q:Hide()
+        syncPanelToggle()
+        syncSpacer()
+        syncQuestCVar()
+        return
+    end
+    if shown then
+        if not W.qStrata then
+            W.qStrata = q:GetFrameStrata()
+            W.qLevel = q:GetFrameLevel()
+        end
+        q:SetFrameStrata("HIGH")
+        q:SetFrameLevel(view:GetFrameLevel() + 5)
+    end
+    if shown == (M.sideTask and true or false) then return end
+    M.sideTask = shown or nil
+    if shown then
+        if view.side then view.side:Hide() end
+        if view.block then view.block:EnableMouse(false) end
+    else
+        if W.qStrata then
+            q:SetFrameStrata(W.qStrata)
+            q:SetFrameLevel(W.qLevel or 0)
+            W.qStrata, W.qLevel = nil, nil
+        end
+        if view.side then view.side:Show() end
+        if view.block then view.block:EnableMouse(true) end
+    end
+    W.UpdateTaskBtn()
+    syncPanelToggle()
+    syncQuestCVar()
+end
+
+local function foldTogglePanel()
+    local wmf = WorldMapFrame
+    local q = questPanel()
+    local view = W.view
+    if not (wmf and q and view) then return end
+    local shown = q:IsShown()
+    local wide = (wmf:GetWidth() or 0) > (wmf.minimizedWidth or 702) + 2
+    if shown then
+        W.foldPrevTask = true
+        W.folded = true
+        if W.qStrata then
+            q:SetFrameStrata(W.qStrata)
+            q:SetFrameLevel(W.qLevel or 0)
+            W.qStrata, W.qLevel = nil, nil
+        end
+        setLogPanel(false)
+        M.sideTask = nil
+    elseif wide then
+        W.foldPrevTask = nil
+        W.folded = true
+        pcall(function()
+            SetUIPanelAttribute(wmf, "extraWidth", 0)
+            wmf:SetWidth(wmf.minimizedWidth)
+            UpdateUIPanelPositions(wmf)
+        end)
+        M.sideTask = nil
+    else
+        W.folded = nil
+        if W.foldPrevTask then
+            if not W.qStrata then
+                W.qStrata = q:GetFrameStrata()
+                W.qLevel = q:GetFrameLevel()
+            end
+            q:SetFrameStrata("HIGH")
+            q:SetFrameLevel(view:GetFrameLevel() + 5)
+            setLogPanel(true)
+            M.sideTask = true
+        else
+            pcall(function()
+                local extra = q.GetPanelExtraWidth and q:GetPanelExtraWidth() or 333
+                SetUIPanelAttribute(wmf, "extraWidth", extra)
+                wmf:SetWidth((wmf.minimizedWidth or 702) + (wmf.questLogWidth or 333))
+                UpdateUIPanelPositions(wmf)
+            end)
+            M.sideTask = nil
+        end
+    end
+    local nowShown = q:IsShown()
+    local sideOn = (not nowShown) and ((wmf:GetWidth() or 0) > (wmf.minimizedWidth or 702) + 2)
+    if view.side then view.side:SetShown(sideOn) end
+    if view.block then view.block:EnableMouse(not nowShown) end
+    W.UpdateTaskBtn()
+    syncPanelToggle()
+    syncSpacer()
+    syncQuestCVar()
+    C_Timer.After(0, function()
+        if W.Active() then W.Sync() end
+    end)
+end
+
 function W.Sync()
     local view = W.view
     if not (view and view:IsShown()) then return end
+    syncSpacer()
     local id = W.curId
     if not (id and hasArt(id)) then
         view:Hide()
@@ -1470,6 +1657,7 @@ function W.Sync()
     if view.side then
         M.SideHost = view
         M.SyncSide()
+        if (view.sideAvail or 0) < 120 then view.side:Hide() end
     end
     W.UpdateTaskBtn()
 end
@@ -1502,25 +1690,26 @@ function W.UpdateTaskBtn()
     bt:SetShown(W.Active() and true or false)
 end
 
-function W.ToggleSideTask()
-    local v = W.view
-    if not (v and v:IsShown()) then return end
-    local q = questPanel()
-    if M.sideTask then
-        W.ResetTask()
-    else
-        M.sideTask = true
-        if q then
-            W.qStrata = q:GetFrameStrata()
-            W.qLevel = q:GetFrameLevel()
-            q:SetFrameStrata("HIGH")
-            q:SetFrameLevel(v:GetFrameLevel() + 5)
-            setLogPanel(true)
+local function hookPanelToggle()
+    local wmf = WorldMapFrame
+    local spt = wmf and wmf.SidePanelToggle
+    if not (spt and spt.OpenButton and spt.CloseButton) then return end
+    if spt.__dfToggleHook then return end
+    spt.__dfToggleHook = true
+    for _, b in ipairs({ spt.OpenButton, spt.CloseButton }) do
+        local orig = b.GetScript and b:GetScript("OnClick") or nil
+        if b.SetScript then
+            b:SetScript("OnClick", function(bs, ...)
+                if W.Active() then
+                    local sk = _G.SOUNDKIT
+                    if sk then pcall(PlaySound, sk.IG_MAINMENU_OPTION_CHECKBOX_ON) end
+                    foldTogglePanel()
+                    return
+                end
+                if orig then orig(bs, ...) end
+            end)
         end
-        if v.side then v.side:Hide() end
-        if v.block then v.block:EnableMouse(false) end
     end
-    W.UpdateTaskBtn()
 end
 
 function W.OpenDungeon(id)
@@ -1570,6 +1759,10 @@ function W.Show(id, why)
     end
     W.zoneMap = W.ZoneOf(id)
     if not inside then W.zoneMap = worldMapID() or W.zoneMap end
+    W.movedAt = nil
+    W.foldPrevTask = nil
+    W.folded = nil
+    W.fixedMid = nil
     local q = questPanel()
     if q and not W.Active() then W.qWas = q:IsShown() and true or false end
     if q then q:Hide() end
@@ -1611,7 +1804,28 @@ function W.Show(id, why)
         setMap(W.zoneMap)
         if q then q:Hide() end
     end
+    if W.qLogCVar == nil then
+        local okc, v = pcall(GetCVar, "questLogOpen")
+        W.qLogCVar = okc and v or "1"
+    end
+    ensureWide()
+    for _, d in ipairs({ 0.15, 0.35, 0.6, 0.9, 1.3 }) do
+        C_Timer.After(d, ensureWide)
+    end
+    syncPanelToggle()
+    syncSpacer()
+    syncQuestCVar()
     W.Sync()
+end
+
+local function resetSideToggle()
+    local wmf = WorldMapFrame
+    local spt = wmf and wmf.SidePanelToggle
+    if not (spt and W.sptStrata) then return end
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
+    pcall(spt.SetFrameStrata, spt, W.sptStrata)
+    pcall(spt.SetFrameLevel, spt, W.sptLevel or 1)
+    W.sptStrata, W.sptLevel = nil, nil
 end
 
 function W.Hide()
@@ -1640,7 +1854,15 @@ function W.Hide()
         W.qWas = nil
     end
     if ns.OpenMapBridge and ns.OpenMapBridge.Restore then pcall(ns.OpenMapBridge.Restore) end
+    syncPanelToggle()
+    resetSideToggle()
+    W.folded = nil
     view:Hide()
+    syncSpacer()
+    if W.qLogCVar then
+        pcall(SetCVar, "questLogOpen", W.qLogCVar)
+        W.qLogCVar = nil
+    end
 end
 
 function W.Active()
@@ -1972,6 +2194,20 @@ local function hookCrumbs(nav)
             end)
         end
     end
+end
+
+local function raiseSideToggle()
+    local wmf = WorldMapFrame
+    local spt = wmf and wmf.SidePanelToggle
+    if not spt then return end
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
+    if W.sptStrata == nil then
+        W.sptStrata = spt:GetFrameStrata()
+        W.sptLevel = spt:GetFrameLevel()
+    end
+    if spt:GetFrameStrata() ~= "TOOLTIP" then pcall(spt.SetFrameStrata, spt, "TOOLTIP") end
+    local lv = math.min((wmf:GetFrameLevel() or 0) + 3000, 9300)
+    if (spt:GetFrameLevel() or 0) < lv then pcall(spt.SetFrameLevel, spt, lv) end
 end
 
 syncNav = function(view)
@@ -2327,25 +2563,12 @@ function Provider:OnCanvasSizeChanged() self:RefreshAllData() end
 
 function Provider:OnHide() self:RemoveAllData() end
 
-local function attachPins()
-    if entryProvider or not WorldMapFrame then return end
-    if type(CreateFromMixins) ~= "function" or type(MapCanvasDataProviderMixin) ~= "table" then return end
-    if type(WorldMapFrame.AddDataProvider) ~= "function" then return end
-    local ok, p = pcall(function()
-        return CreateFromMixins(MapCanvasDataProviderMixin, Provider)
-    end)
-    if not (ok and p) then return end
-    if not pcall(function() WorldMapFrame:AddDataProvider(p) end) then return end
-    entryProvider = p
-    W.pinProvider = p
-end
-
 local epSig
 
 local function driveEntryPins()
     if not (entryProvider and WorldMapFrame) then return end
-    local ok, map = pcall(entryProvider.GetMap, entryProvider)
-    if not (ok and map) then return end
+    local map = CurMap(nil)
+    if not (map and map.GetCanvas) then return end
     local lm = _G.WorldMapFrame
     local lid
     if lm and lm.GetMapID then
@@ -2369,6 +2592,27 @@ local function driveEntryPins()
 end
 
 W.RefreshPins = driveEntryPins
+
+local function attachPins()
+    if entryProvider or not WorldMapFrame then return end
+    if type(CreateFromMixins) ~= "function" or type(MapCanvasDataProviderMixin) ~= "table" then return end
+    local ok, p = pcall(function()
+        return CreateFromMixins(MapCanvasDataProviderMixin, Provider)
+    end)
+    if not (ok and p) then return end
+    entryProvider = p
+    W.pinProvider = p
+    if hooksecurefunc then
+        pcall(hooksecurefunc, WorldMapFrame, "OnMapChanged", driveEntryPins)
+        pcall(hooksecurefunc, WorldMapFrame, "OnCanvasScaleChanged", driveEntryPins)
+    end
+    if WorldMapFrame.HookScript then
+        pcall(WorldMapFrame.HookScript, WorldMapFrame, "OnShow", driveEntryPins)
+    end
+    if WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
+        pcall(driveEntryPins)
+    end
+end
 
 function W.ApplyEntryToggle()
     epSig = nil
@@ -2480,6 +2724,7 @@ function W.Build()
     block:SetScript("OnMouseDown", function(self, button)
         if button ~= "LeftButton" then return end
         if not inStage() then return end
+        W.movedAt = GetTime()
         M.SetHoverMouse(view.route, false)
         self.__lx, self.__ly = cursorUI()
         self:SetScript("OnUpdate", dragWorld)
@@ -2644,6 +2889,7 @@ function W.Build()
     taskBtn:Hide()
     view.taskBtn = taskBtn
 
+
     local btns = {}
     for i = 1, M.MAX_LAYERS do
         local bt = makeBtn(panel, "", FLOOR_MIN_W, FLOOR_H, 12)
@@ -2691,11 +2937,13 @@ end
 
 local function tick_()
     if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
+    syncSpacer()
     driveEntryPins()
     local view = W.view
     if view then syncNav(view) end
     if view and view:IsShown() then
         leaSuppress()
+        raiseSideToggle()
         if ns.OpenMapBridge and ns.OpenMapBridge.Suspend then pcall(ns.OpenMapBridge.Suspend) end
     end
     if not (view and view:IsShown()) then
@@ -2721,13 +2969,25 @@ local function tick_()
         if (GetTime() - (W.shownAt or 0)) < 0.8 then return end
         if pendingMap ~= nil then return end
         if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
+        local inside = inInstance()
+        W.lastMismatch = { t = GetTime(), mid = mid, zoneMap = W.zoneMap, curId = W.curId, inInst = inside }
+        local moved = W.movedAt and (GetTime() - W.movedAt) < 2
+        if inside or not moved then
+            if W.fixedMid ~= mid and (GetTime() - (W.fixedAt or 0)) > 1 then
+                W.fixedMid = mid
+                W.fixedAt = GetTime()
+                setMap(W.zoneMap)
+            end
+            return
+        end
+        W.fixedMid = nil
         W.pinned = W.curId
         W.Hide()
         W.suppress = true
         return
     end
-    local q = questPanel()
-    if q and q:IsShown() and not M.sideTask then q:Hide() end
+    W.fixedMid = nil
+    adoptPanelState()
     local aw, ah = mapAreaSize()
     local sig = signature(W.curId)
     if aw ~= lastAW or ah ~= lastAH then
@@ -2741,12 +3001,18 @@ local function tick_()
     end
 end
 
+local function mapPluginsOn()
+    if type(ns.AddonLoaded) ~= "function" then return true end
+    return (ns.AddonLoaded("Leatrix_Maps") or ns.AddonLoaded("OpenMap")) and true or false
+end
+
 local function onShow()
     if not W.hooked then return end
     W.suppress = nil
     W.shownAt = GetTime()
+    W.mapWasShown = true
     purgeLearn()
-    C_Timer.After(0, function()
+    local function attempt()
         if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
         local id, why = autoPick()
         if id then
@@ -2767,10 +3033,24 @@ local function onShow()
             }
             W.Hide()
         end
+    end
+    if not mapPluginsOn() then
+        attempt()
+        if W.Active() then
+            C_Timer.After(0, function()
+                if W.Active() then W.Sync() end
+            end)
+            return
+        end
+    end
+    C_Timer.After(0, function()
+        if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
+        if not W.Active() then attempt() end
     end)
 end
 
 local function onHide()
+    W.mapWasShown = false
     W.Hide()
 end
 
@@ -2783,6 +3063,8 @@ local function guardToggle()
         if not (wmf and wmf:IsShown()) then return end
         if W.shownAt and (GetTime() - W.shownAt) < 0.2 then return end
         if W.Active() then
+            pcall(wmf.Hide, wmf)
+        elseif W.mapWasShown then
             pcall(wmf.Hide, wmf)
         end
     end)
@@ -2800,10 +3082,11 @@ function W.Hook()
         if W.Active() then W.Sync() end
     end)
     watch:SetScript("OnUpdate", function(_, dt)
-        since = (since or 0) + dt
-        if since < 0.2 then return end
-        since = 0
-        tick_()
+    since = (since or 0) + dt
+    if since < 0.2 then return end
+    since = 0
+    hookPanelToggle()
+    tick_()
     end)
     W.watch = watch
     guardToggle()

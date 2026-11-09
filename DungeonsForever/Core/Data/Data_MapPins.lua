@@ -1,6 +1,9 @@
 local _, ns = ...
 
 ns.MapPins = {
+    ["kroldok_stronghold"] = {
+        entrance = { { 20.4, 80.6, nil, 1 } },
+    },
     ["the_drowned_city"] = {
         entrance = { { 91.6, 45.2, nil, 1 } },
         prev = { { 76.1, 68.1, 1, nil, nil, 1, 55.1, 57.4 }, { 79.8, 94.7, 1, nil, nil, 1, 57.3, 86.5 } },

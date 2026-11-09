@@ -1,6 +1,12 @@
 local _, ns = ...
 
 ns.BossPos = {
+    ["kroldok_stronghold"] = {
+        ["Slavecrusher Grox"] = { { 26.2, 64 } },
+        ["Twilight Commander Zarmok"] = { { 39.1, 69.4 } },
+        ["Nar'gurk"] = { { 34.7, 50.3 } },
+        ["Overlord Mugg"] = { { 71, 14.3 } },
+    },
     ["the_drowned_city"] = {
         ["Zul'Alai"] = { { 72.7, 51.6 } },
         ["Captain Dreadrise"] = { { 51, 26.3 } },

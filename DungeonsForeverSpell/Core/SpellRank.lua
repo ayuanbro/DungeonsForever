@@ -7,6 +7,13 @@ local L = ns.L or setmetatable({}, { __index = function(_, k) return k end })
 
 local MAX_SLOT = 180
 
+local function Say(msg)
+    if DEFAULT_CHAT_FRAME then
+        DEFAULT_CHAT_FRAME:AddMessage("|cff46bf72DungeonsForever|r " .. msg)
+    end
+end
+SR.Say = Say
+
 local BANK
 
 local function Bank()
@@ -479,13 +486,6 @@ function SR.RowsForAll()
     end
     return out
 end
-
-local function Say(msg)
-    if DEFAULT_CHAT_FRAME then
-        DEFAULT_CHAT_FRAME:AddMessage("|cff46bf72DungeonsForever|r " .. msg)
-    end
-end
-SR.Say = Say
 
 local function Place(row, slot)
     local ok = false

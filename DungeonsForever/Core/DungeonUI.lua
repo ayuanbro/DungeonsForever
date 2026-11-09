@@ -7087,22 +7087,92 @@ function DG.QuestFollowersDeep(id)
     return out
 end
 
-function DG.FilterBranchHeads(list)
-    local inList = {}
-    for _, q in ipairs(list) do inList[q[1]] = true end
-    local out = {}
-    for _, q in ipairs(list) do
-        local show = true
+DG.__qtCache = DG.__qtCache or {}
+
+function DG.QuestKind(qid)
+    if not qid then return nil end
+    local c = DG.__qtCache
+    local v = c[qid]
+    if v ~= nil then return v end
+    v = DG.QLCall("GetQuestType", qid)
+    if type(v) == "number" then c[qid] = v end
+    return v
+end
+
+function DG.FilterBranchHeads(list, side)
+    local pool = {}
+    for i = 1, #list do
+        local q = list[i]
+        if not side or q[2] == side or not q[2] then pool[#pool + 1] = q end
+    end
+    local inPool, idx = {}, {}
+    for i = 1, #pool do
+        inPool[pool[i][1]] = true
+        idx[pool[i][1]] = i
+    end
+    local parent = {}
+    for i = 1, #pool do
+        local q = pool[i]
         local pre = q[9]
         if type(pre) == "table" then
-            for _, seg in ipairs(pre) do
-                if type(seg) == "number" and inList[seg] then
-                    show = false
+            for k = 1, #pre do
+                local pid = pre[k]
+                if type(pid) == "number" and inPool[pid] then
+                    parent[q[1]] = pid
                     break
                 end
             end
         end
-        if show then out[#out + 1] = q end
+    end
+    local depth = {}
+    for i = 1, #pool do
+        local id = pool[i][1]
+        local cur, n = id, 0
+        while parent[cur] and n < 64 do
+            cur = parent[cur]
+            n = n + 1
+        end
+        depth[id] = n
+    end
+    local chains, order = {}, {}
+    for i = 1, #pool do
+        local q = pool[i]
+        local cur = q[1]
+        local guard = 0
+        while parent[cur] and guard < 64 do
+            cur = parent[cur]
+            guard = guard + 1
+        end
+        local ch = chains[cur]
+        if not ch then
+            ch = {}
+            chains[cur] = ch
+            order[#order + 1] = cur
+        end
+        ch[#ch + 1] = q
+    end
+    local pick = {}
+    for i = 1, #order do
+        local ch = chains[order[i]]
+        table.sort(ch, function(a, b)
+            local da, db = depth[a[1]] or 0, depth[b[1]] or 0
+            if da ~= db then return da < db end
+            return (idx[a[1]] or 0) < (idx[b[1]] or 0)
+        end)
+        local chosen = nil
+        for k = 1, #ch do
+            if DG.QuestKind(ch[k][1]) == 81 then
+                chosen = ch[k]
+                break
+            end
+        end
+        if not chosen then chosen = ch[1] end
+        pick[chosen[1]] = true
+    end
+    local out = {}
+    for i = 1, #list do
+        local q = list[i]
+        if pick[q[1]] then out[#out + 1] = q end
     end
     return out
 end
@@ -7183,17 +7253,15 @@ function U:RenderDungeonQuests()
     end
     U.__qaSelInFull = selInFull
 
-    local fh = DG.FilterBranchHeads(list)
-    local cnt = { all = #fh, A = 0, H = 0, todo = 0, done = 0 }
+    local fhA = DG.FilterBranchHeads(list, "A")
+    local fhH = DG.FilterBranchHeads(list, "H")
+    local cnt = { all = #fhA, A = #fhA, H = #fhH, todo = 0, done = 0 }
     local doneN = 0
-    for i = 1, #fh do
-        local s = fh[i][2]
-        if s == "A" or not s then cnt.A = cnt.A + 1 end
-        if s == "H" or not s then cnt.H = cnt.H + 1 end
-        if DG.QuestDone(fh[i][1]) then doneN = doneN + 1 end
+    for i = 1, #fhA do
+        if DG.QuestDone(fhA[i][1]) then doneN = doneN + 1 end
     end
     cnt.done = doneN
-    cnt.todo = #fh - doneN
+    cnt.todo = #fhA - doneN
 
     local view = U.dungeonQView
     if view ~= "overview" then view = "list" end
@@ -7302,7 +7370,7 @@ function U:RenderDungeonQuests()
     U.dungeonQuestScroll:SetShown(true)
     U.dungeonQuestChild:SetShown(true)
 
-    list = DG.FilterBranchHeads(list)
+    list = DG.FilterBranchHeads(list, side)
     nAll = #list
 
     local nVis, doneVis = 0, 0

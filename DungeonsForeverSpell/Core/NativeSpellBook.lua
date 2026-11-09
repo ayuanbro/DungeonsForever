@@ -626,17 +626,6 @@ local function ThinAll()
     pcall(scan, paged, 0)
 end
 
-local hookedPaged
-local function EnsureThinHooks()
-    local paged = Paged()
-    if not paged or paged == hookedPaged then return end
-    hookedPaged = paged
-    pcall(hooksecurefunc, paged, "SetDataProvider", function()
-        C_Timer.After(0, ThinAll)
-        C_Timer.After(0.1, ThinAll)
-    end)
-end
-
 local function InstallOurs()
     if DeferInCombat() then return false end
     local paged = Paged()
@@ -655,7 +644,6 @@ local function InstallOurs()
     paged:SetElementTemplateData(OURS)
     paged:SetDataProvider(CreateDataProvider(groups), false)
     ourProvider = paged.dataProvider
-    EnsureThinHooks()
     C_Timer.After(0, ThinAll)
     C_Timer.After(0.15, ThinAll)
     return true
@@ -982,13 +970,43 @@ local function AnchorTabs()
     if DeferInCombat() then return end
     if not tabButton or not book then return end
     local host = LastForeignTab()
-    if tabButton.__anchorHost == host then return end
-    tabButton.__anchorHost = host
+    local key = host or false
+    if tabButton.__anchorHost == key then return end
+    tabButton.__anchorHost = key
     tabButton:ClearAllPoints()
     if host then
         tabButton:SetPoint("LEFT", host, "RIGHT", 1, 0)
     else
         tabButton:SetPoint("LEFT", book.CategoryTabSystem, "RIGHT", 1, 0)
+    end
+end
+
+local function ReparentTabs()
+    local psf = PlayerSpellsFrame
+    local sys = book and book.CategoryTabSystem
+    if not (psf and sys and tabButton) then return end
+    local sc = 1
+    if sys.GetEffectiveScale and psf.GetEffectiveScale then
+        local a, b = sys:GetEffectiveScale(), psf:GetEffectiveScale()
+        if a and b and a > 0 and b > 0 then sc = a / b end
+    end
+    local lv = sys:GetFrameLevel() + 5
+    local strata = sys:GetFrameStrata()
+    if tabButton:GetParent() ~= psf then
+        tabButton:SetParent(psf)
+        tabButton:SetScale(sc)
+        tabButton:SetFrameStrata(strata)
+        tabButton:SetFrameLevel(lv)
+        tabButton.__anchorHost = false
+        tabButton:ClearAllPoints()
+        tabButton:SetPoint("LEFT", sys, "RIGHT", 1, 0)
+    end
+    if weaponTabButton and weaponTabButton:GetParent() ~= psf then
+        weaponTabButton:SetParent(psf)
+        weaponTabButton:SetScale(sc)
+        weaponTabButton:SetFrameStrata(strata)
+        weaponTabButton:SetFrameLevel(lv)
+        weaponTabButton.__anchorHost = nil
     end
 end
 
@@ -1001,7 +1019,6 @@ local function Attach()
     if psf and psf.HookScript and not psf.__dfThin then
         psf.__dfThin = true
         psf:HookScript("OnShow", function()
-            EnsureThinHooks()
             C_Timer.After(0, ThinAll)
             C_Timer.After(0.1, ThinAll)
             C_Timer.After(0.3, ThinAll)
@@ -1035,34 +1052,68 @@ local function Attach()
     weaponTabButton:SetScript("OnClick", function() OnTabClick("weapon") end)
 
     lastTab = sb.GetTab and sb:GetTab()
+    ReparentTabs()
 
-    hooksecurefunc(sb.CategoryTabSystem, "SetTab", function()
+    local function FitSearchBoxNow()
+        if DeferInCombat() then return end
+        local box = book and book.SearchBox
+        if not box then return end
+        local rightmost = weaponTabButton or tabButton
+        local left, right = rightmost and rightmost:GetRight(), box:GetRight()
+        if left and right then
+            box:SetWidth(math.max(1, math.min(300, right - left - 10)))
+        end
+    end
+
+    local function FitSearchBox()
+        if C_Timer and C_Timer.After then
+            C_Timer.After(0, FitSearchBoxNow)
+            C_Timer.After(0.2, FitSearchBoxNow)
+        else
+            FitSearchBoxNow()
+        end
+    end
+
+    local function OnSpellsRefresh()
         if restoring or not book then return end
         local id = book.GetTab and book:GetTab()
         if id ~= lastTab then
             lastTab = id
             if activePage then ShowPage(nil) end
+            return
         end
-    end)
-    hooksecurefunc(sb, "UpdateAllSpellData", function()
-        if restoring then return end
-        if activePage then InstallOurs() end
-    end)
-    hooksecurefunc(sb, "UpdateDisplayedSpells", function()
-        if restoring then return end
-        if activePage then InstallOurs() end
-    end)
-    hooksecurefunc(sb, "ResizeSearchBox", function()
-        if DeferInCombat() then return end
-        local rightmost = weaponTabButton or tabButton
-        local left, right = rightmost and rightmost:GetRight(), sb.SearchBox:GetRight()
-        if left and right then
-            sb.SearchBox:SetWidth(math.max(1, math.min(300, right - left - 10)))
+        if activePage then
+            InstallOurs()
+        elseif C_Timer and C_Timer.After then
+            C_Timer.After(0, ThinAll)
         end
-    end)
+        FitSearchBox()
+    end
+
+    local function DeferRefresh()
+        if C_Timer and C_Timer.After then
+            C_Timer.After(0, OnSpellsRefresh)
+        else
+            OnSpellsRefresh()
+        end
+    end
+
+    if EventRegistry and EventRegistry.RegisterCallback then
+        pcall(EventRegistry.RegisterCallback,
+            "PlayerSpellsFrame.SpellBookFrame.DisplayedSpellsChanged", DeferRefresh, tabButton)
+    end
+    if sb.HookScript then
+        sb:HookScript("OnSizeChanged", function()
+            if DeferInCombat() then return end
+            ReparentTabs()
+            AnchorTabs()
+            FitSearchBox()
+        end)
+    end
     sb:HookScript("OnShow", function()
         if DeferInCombat() then return end
         if NB.RefreshEnabled then NB.RefreshEnabled() end
+        ReparentTabs()
         AnchorTabs()
         if sb.ResizeSearchBox then pcall(sb.ResizeSearchBox, sb) end
         SyncSubBar(activePage == "weapon")

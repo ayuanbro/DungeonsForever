@@ -646,8 +646,10 @@ local function PQuest(ctx)
     local lv = (UnitLevel and UnitLevel("player")) or 60
     local side = DG.PlayerSide and DG.PlayerSide() or nil
     local function QHitPin(q, slug)
+        if ns.MapModule and ns.MapModule.QuestPinOK and not ns.MapModule.QuestPinOK(q[1]) then return false end
         if side and q[2] and q[2] ~= side then return false end
         if not QuestClassOK(q) then return false end
+        if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
         local r = DunLvRange(slug)
         local gt
         if type(q[13]) == "table" then
@@ -701,10 +703,14 @@ local function PQuest(ctx)
                 if QHitPin(q, slug) and (not DG.QuestState or DG.QuestState(q[1]) == "todo") then
                     for k = 1, #pre do
                         local pid = pre[k]
-                        if not preSeen[pid] and not directSeen[pid] and not (DG.QuestDone and DG.QuestDone(pid)) then
+                        local prow = DG.QuestRowByID and DG.QuestRowByID(pid) or nil
+                        local psd = (type(prow) == "table") and prow[2] or nil
+                        if not preSeen[pid] and not directSeen[pid] and not (DG.QuestDone and DG.QuestDone(pid))
+                           and not (side and psd and psd ~= side)
+                           and not (DG.QuestRaceOK and not DG.QuestRaceOK(pid))
+                           and not (ns.MapModule and ns.MapModule.QuestSideOK and not ns.MapModule.QuestSideOK(pid)) then
                             local ps = HereSloc(pid, ctx)
                             if ps and (not DG.QuestState or DG.QuestState(pid) == "todo") then
-                                local prow = DG.QuestRowByID and DG.QuestRowByID(pid) or nil
                                 local pe = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[pid]
                                 local plv = (type(prow) == "table" and type(prow[3]) == "number") and prow[3] or nil
                                 if plv == nil and type(pe) == "table" and type(pe.lv) == "number" then plv = pe.lv end
@@ -776,7 +782,7 @@ local function PQuest(ctx)
                 disc = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
                 sym = can and QSYM_CAN or QSYM_CANT,
                 symCol = can and QSYM_CANCOL or QSYM_CANTCOL,
-                qid = pid, mapName = ps[6], x = ps[4], y = ps[5],
+                qid = pid, mapName = ps[6], x = ps[4], y = ps[5], slug = h.slug,
             }
         else
             local mapName, place, x, y = SplitLoc(h.loc)
@@ -812,7 +818,7 @@ local function PQuest(ctx)
                 disc = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
                 sym = can and QSYM_CAN or QSYM_CANT,
                 symCol = can and QSYM_CANCOL or QSYM_CANTCOL,
-                qid = q[1], mapName = mapName, x = x, y = y,
+                qid = q[1], mapName = mapName, x = x, y = y, slug = h.slug,
             }
         end
         ids[i] = ids2
