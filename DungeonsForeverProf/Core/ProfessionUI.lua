@@ -2454,6 +2454,10 @@ function PD.BindRow(r, spec, h)
     for _, fs in ipairs({r.a,r.b,r.c,r.c2,r.d,r.e,r.f}) do
         fs:SetWidth(0)
     end
+    r.a:SetHeight(0)
+    r.a:SetWordWrap(false)
+    r.a:SetNonSpaceWrap(false)
+    r.a:SetJustifyV("MIDDLE")
     r.e:SetJustifyH("LEFT")
     if r.__costZone then r.__costZone:Hide() end
     r.__spec = spec
@@ -2512,7 +2516,7 @@ function PD.BindRow(r, spec, h)
         for k = 1, #r.__subLinks do r.__subLinks[k]:Hide() end
     end
     r.icon4:Hide()
-    for i = 1, 3 do
+    for i = 1, 4 do
         local s = r["__ha" .. i]
         if s then s[1]:Hide(); s[2]:Hide() end
     end
@@ -2789,6 +2793,13 @@ function PD.BindRow(r, spec, h)
 
     if spec.kind == "colhead" then
         PD.RegHeadRepaint(r)
+        if spec.priceCols then
+            PD.PaintCrateColumns(r, spec, h)
+            r.dv:Hide()
+            PD.HideSkillBar(r)
+            PD.PaintCard(r, nil)
+            return
+        end
         r.a:SetTextColor(Unpack(C_GREY))
         r.a:SetText(spec.text or "")
         r.a:ClearAllPoints()
@@ -2876,25 +2887,31 @@ function PD.BindRow(r, spec, h)
     if spec.kind == "vs" then
         local vs = PD.VsBlock(r)
         local W = tonumber(spec.vw) or tonumber(PD.splitRW) or 160
-        local cw = math.max(40, math.floor((W - 8) / 2))
+        local stacked = W < 2 * PD.VS_MIN_W + PD.VS_GAP
+        local cw = stacked and W or math.floor((W - PD.VS_GAP) / 2)
         for k = 1, 2 do
             local d = spec.cards and spec.cards[k] or nil
             local c, z = vs.cards[k], vs.zones[k]
             if d then
                 c:ClearAllPoints()
-                if k == 1 then
-                    c:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
+                if k == 1 or stacked then
+                    c:SetPoint("TOPLEFT", r, "TOPLEFT", 0, stacked and -(k - 1) * (PD.VS_CARD_H + PD.VS_GAP) or 0)
                 else
                     c:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
                 end
-                c:SetSize(cw, h)
+                c:SetSize(cw, PD.VS_CARD_H)
                 c.lab:SetText(d.lab or "")
                 c.lab:SetTextColor(Unpack(d.win and C_WHITE or C_GREY))
                 local pc = d.win and { 0.42, 0.94, 0.62 } or (d.priceOk and C_TEXT or C_GREY)
                 c.price:SetTextColor(Unpack(pc))
                 c.price:SetText(d.price or "—")
+                c.price:SetWidth(math.max(1, cw - 16))
                 c.nm:SetTextColor(Unpack(d.dim and C_GREY or C_TEXT))
                 c.nm:SetText(d.name or "")
+                local nx = d.it and 35 or 8
+                c.nm:ClearAllPoints()
+                c.nm:SetPoint("LEFT", c.host, "BOTTOMLEFT", nx, 17)
+                c.nm:SetWidth(math.max(1, cw - nx - 8))
                 if d.it then
                     c.ic:SetSize(22, 22)
                     SetIcon(c.ic, DG.ItemIcon(d.it))
@@ -2909,10 +2926,12 @@ function PD.BindRow(r, spec, h)
                 end
                 if d.win then
                     c.badgeFs:SetText(L["最省"])
+                    c.badge:SetWidth(math.max(32, math.ceil(FSW(c.badgeFs)) + 10))
                     c.badge:Show()
                 else
                     c.badge:Hide()
                 end
+                c.lab:SetWidth(math.max(1, cw - 16 - (d.win and (c.badge:GetWidth() + 6) or 0)))
                 c:Show()
                 z:ClearAllPoints()
                 z:SetPoint("TOPLEFT", c, "TOPLEFT", 0, 0)
@@ -3457,6 +3476,7 @@ function PD.BindRow(r, spec, h)
         end
     end
     if spec.recipeCols then PD.BoundRecipeColumns(r,spec,padL) end
+    if spec.priceCols then PD.PaintCrateColumns(r,spec,h,padL) end
 end
 
 PD.BT_COL1 = 88
@@ -7293,6 +7313,7 @@ function PD.PaintHeadRow(r)
         if spec.act then PD.PaintHeadArrow(r.__ha1[1], r.__ha1[2], spec.sortOn, false) end
         if spec.ownAct then PD.PaintHeadArrow(r.__ha2[1], r.__ha2[2], spec.ownOn, false) end
         if spec.craftAct then PD.PaintHeadArrow(r.__ha3[1], r.__ha3[2], spec.craftOn, false) end
+        if spec.unitAct and r.__ha4 then PD.PaintHeadArrow(r.__ha4[1], r.__ha4[2], spec.unitOn, false) end
     end
 end
 
@@ -7626,6 +7647,10 @@ function PD.SubLink(r)
     return PD.SubLinkAt(r, 1)
 end
 
+PD.VS_CARD_H, PD.VS_GAP, PD.VS_MIN_W = 76, 8, 180
+function PD.VsHeight(w)
+    return w < 2 * PD.VS_MIN_W + PD.VS_GAP and (2 * PD.VS_CARD_H + PD.VS_GAP) or PD.VS_CARD_H
+end
 function PD.VsBlock(r)
     if r.__vs then return r.__vs end
     local base = tonumber(r.GetFrameLevel and r:GetFrameLevel()) or 0
@@ -7639,7 +7664,8 @@ function PD.VsBlock(r)
         host:SetPoint("TOPLEFT", c, "TOPLEFT", 0, 0)
         host:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", 0, 0)
         local lab = MakeFS(host, 12, C_GREY, "LEFT")
-        lab:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -4)
+        lab:SetPoint("TOPLEFT", host, "TOPLEFT", 8, -6)
+        lab:SetWordWrap(false)
         local ic = host:CreateTexture(nil, "OVERLAY", nil, 2)
         ic:SetSize(22, 22)
         ic:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 8, 6)
@@ -7647,10 +7673,9 @@ function PD.VsBlock(r)
         ic:Hide()
         local nm = MakeFS(host, 12, C_TEXT, "LEFT")
         nm:SetWordWrap(false)
-        nm:SetPoint("LEFT", ic, "RIGHT", 5, 0)
-        nm:SetPoint("RIGHT", host, "RIGHT", -8, 0)
         local price = MakeFS(host, 14, C_GOLD, "RIGHT")
-        price:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -8)
+        price:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, -26)
+        price:SetWordWrap(false)
         c.lab, c.ic, c.nm, c.price, c.host = lab, ic, nm, price, host
         local bd = CreateFrame("Frame", nil, host)
         bd:SetFrameLevel(base + 5)
@@ -7658,7 +7683,7 @@ function PD.VsBlock(r)
         local bdFs = MakeFS(bd, 10, { 0.42, 0.94, 0.62 }, "CENTER")
         bdFs:SetPoint("CENTER", bd, "CENTER", 0, 0)
         bd:SetSize(32, 14)
-        bd:SetPoint("TOPRIGHT", host, "TOPRIGHT", -4, 9)
+        bd:SetPoint("TOPRIGHT", host, "TOPRIGHT", -6, -6)
         bd:Hide()
         c.badge, c.badgeFs = bd, bdFs
         cards[k] = c
@@ -8421,7 +8446,7 @@ function PD.WipeRow(r, keepShown)
     if r.__roleBadge then r.__roleBadge:Hide() end
     if r.icon4 then r.icon4:Hide() end
     for i = 1, 6 do local fs = r["h" .. i]; if fs then fs:Hide() end end
-    for i = 1, 3 do
+    for i = 1, 4 do
         local arrows = r["__ha" .. i]
         if arrows then arrows[1]:Hide(); arrows[2]:Hide() end
     end
@@ -14884,6 +14909,94 @@ function PD.OwnR()
     local lw = tonumber(PD.splitLW) or tonumber(PD.COL_LW) or 0
     return PD.CRATE_OWN_R + math.floor(lw * PD.OWN_SHIFT)
 end
+function PD.CrateColumns(writ)
+    local cols = {
+        { fs = "c2", value = "rightOwn", text = L["自身价格"], zone = "hsOwn", act = "ownAct", on = "ownOn", arrow = 2 },
+        { fs = "c", value = "right", text = writ and L["拍卖总价"] or L["总价格"], zone = "hsTot", act = "act", on = "sortOn", arrow = 1 },
+    }
+    if writ then cols[#cols + 1] = { fs = "d", value = "right2", text = L["制造总价"], zone = "hsCraft", act = "craftAct", on = "craftOn", arrow = 3 } end
+    cols[#cols + 1] = { fs = "e", value = "rightUnit", text = writ and L["每点声望最低成本"] or L["每点青睐的最低成本"], zone = "hsGap", act = "unitAct", on = "unitOn", arrow = 4 }
+    if not PD.crateMeasure then PD.crateMeasure = MakeFS(UIParent, 12, C_GREY, "RIGHT"); PD.crateMeasure:Hide() end
+    local measure = PD.crateMeasure
+    measure:SetFont(ns.FONT, 12, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+    measure:SetWidth(0)
+    measure:SetWordWrap(false)
+    local right = 6
+    for i = #cols, 1, -1 do
+        local c = cols[i]
+        measure:SetText(c.text)
+        c.textW = math.ceil(FSW(measure, PD.TextW(c.text, 12)))
+        c.w, c.r = math.max(88, c.textW + 24), right
+        right = right + c.w
+    end
+    cols.nameR = right + 6
+    local avail = PD.GRID_W - PD.OV_GUT
+    PD.splitLW = math.max(math.floor(avail * PD.CRATE_SPLIT), math.min(avail - 180, cols.nameR + 132))
+    PD.splitRW = avail - PD.splitLW
+    return cols
+end
+function PD.CrateRowHeight(text, cols)
+    local fs = PD.crateMeasure
+    fs:SetFont(ns.FONT, 13, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+    fs:SetWidth(math.max(1, PD.splitLW - cols.nameR - 32))
+    fs:SetWordWrap(true)
+    fs:SetNonSpaceWrap(true)
+    fs:SetText(text)
+    return math.max(56, math.ceil(fs:GetStringHeight() or 0) + 24)
+end
+function PD.PaintCrateColumns(r, spec, h, padL)
+    local head = spec.kind == "colhead"
+    if head then
+        r.a:SetText(spec.text or "")
+        r.a:SetTextColor(Unpack(C_GREY))
+        r.a:ClearAllPoints()
+        r.a:SetPoint("LEFT", r, "LEFT", 6, 0)
+        r.b:SetText(""); r.d:SetText(""); r.e:SetText(""); r.f:SetText("")
+    end
+    local nameW = math.max(0, (r:GetWidth() or 0) - spec.priceCols.nameR - (padL or 6))
+    r.a:SetWidth(nameW)
+    r.a:SetWordWrap(not head)
+    r.b:SetWidth(nameW)
+    if not head then
+        r.a:ClearAllPoints()
+        r.a:SetPoint("TOPLEFT", r, "TOPLEFT", padL or 6, -4)
+        r.a:SetHeight(h - 24)
+        r.a:SetNonSpaceWrap(true)
+        r.a:SetJustifyV("TOP")
+        r.b:SetFont(ns.FONT, 11, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+        r.b:ClearAllPoints()
+        r.b:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", padL or 6, 4)
+        if spec.tag and r.tagChip:IsShown() then
+            local tw = (r.tagChip:GetWidth() or 0) + 6
+            r.tagChip:ClearAllPoints()
+            r.tagChip:SetPoint("BOTTOMRIGHT", r, "BOTTOMLEFT", (padL or 6) + nameW, 4)
+            r.b:SetWidth(math.max(0, nameW - tw))
+        end
+    end
+    r.b:SetWordWrap(false)
+    for _, c in ipairs(spec.priceCols) do
+        local fs = r[c.fs]
+        fs:SetFont(ns.FONT, 12, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+        fs:SetText(head and c.text or spec[c.value] or "")
+        fs:SetTextColor(Unpack(head and C_GREY or c.value == "rightOwn" and C_TEXT or C_GOLD))
+        fs:SetJustifyH("RIGHT")
+        fs:SetWordWrap(false)
+        fs:ClearAllPoints()
+        fs:SetPoint("RIGHT", r, "RIGHT", -c.r, 0)
+        fs:SetWidth(head and c.textW or c.w - 12)
+        if head then
+            local up, dn = PD.HeadArrow(r, c.arrow)
+            PD.PaintHeadArrow(up, dn, spec[c.on], false)
+            PD.LayoutHeaderArrow(up, dn, fs, -4)
+            local z = r[c.zone]
+            z:ClearAllPoints()
+            z:SetPoint("RIGHT", r, "RIGHT", -c.r, 0)
+            z:SetSize(c.w - 4, h)
+            z.__act = spec[c.act]
+            z:Show()
+        end
+    end
+end
 PD.crateSel = nil
 PD.writSel = nil
 PD.crateSort = "total"
@@ -14939,9 +15052,10 @@ end
 
 function PD.CrateRows(rows)
     local list = CD.crates or {}
+    local cols = PD.CrateColumns(false)
     if not PD.crateSel and list[1] then PD.crateSel = list[1].id end
     local sel = PD.crateSel
-    local owns, bests = {}, {}
+    local owns, bests, units = {}, {}, {}
     for i, c in ipairs(list) do
         local own = RA.AHPriceOf and RA.AHPriceOf(c.id) or nil
         local mat
@@ -14951,22 +15065,30 @@ function PD.CrateRows(rows)
         end
         owns[i] = own
         bests[i] = (own and mat) and (own + mat) or nil
+        units[i] = (bests[i] and (c.favor or 0) > 0) and (bests[i] / c.favor) or nil
     end
     local mode = PD.crateSort
     local order = {}
     for i = 1, #list do order[i] = i end
     if mode then
-        local key = (mode == "own") and owns or bests
+        local key = (mode == "favor") and units or (mode == "own") and owns or bests
         table.sort(order, function(a, b)
             local ca, cb = key[a], key[b]
-            if ca and cb then return ca < cb end
-            if ca or cb then return ca ~= nil end
+            if ca ~= cb then
+                if ca and cb then return ca < cb end
+                return ca ~= nil
+            end
             return (list[a].id or 0) < (list[b].id or 0)
         end)
     end
-    rows[#rows + 1] = { kind = "colhead", col = 1, h = PD.TEXT_H,
+    rows[#rows + 1] = { kind = "colhead", col = 1, h = PD.TEXT_H, priceCols = cols,
                         text = L["名称"], right = L["总价格"], ownRight = L["自身价格"],
                         sortOn = (mode == "total"), ownOn = (mode == "own"),
+                        unitText = L["每点青睐的最低成本"], unitOn = (mode == "favor"),
+                        unitAct = function()
+                            PD.crateSort = (mode ~= "favor") and "favor" or nil
+                            PD.RequestRender()
+                        end,
                         act = function()
                             PD.crateSort = (mode ~= "total") and "total" or nil
                             PD.RequestRender()
@@ -14977,13 +15099,15 @@ function PD.CrateRows(rows)
                         end }
     for _, i in ipairs(order) do
         local c = list[i]
+        local name = PD.ItemName(c.id)
         rows[#rows + 1] = {
-            kind = "row", col = 1, h = PD.ROW_H,
+            kind = "row", col = 1, h = PD.CrateRowHeight(name, cols), priceCols = cols,
             it = { c.id }, qItem = c.id,
-            text = PD.ItemName(c.id),
+            text = name,
             sub = CRATE_TIERS[c.tier] or "?",
             right = bests[i] and RA.MoneyStr(bests[i]) or "",
             rightOwn = owns[i] and RA.MoneyStr(owns[i]) or "",
+            rightUnit = units[i] and RA.MoneyStr(units[i]) or "—",
             rightOwnColor = C_TEXT,
             cur = (c.id == sel),
             act = function()
@@ -15135,7 +15259,8 @@ end
 function PD.WritRows(rows)
     PD.secPadL = 0
     local list = CD.writs or {}
-    local order, owns, priced, craftT, pcts = {}, {}, {}, {}, {}
+    local cols = PD.CrateColumns(true)
+    local order, owns, priced, craftT, pcts, units = {}, {}, {}, {}, {}, {}
     local craftMap = CraftAllMap()
     for i = 1, #list do
         order[i] = i
@@ -15153,7 +15278,9 @@ function PD.WritRows(rows)
                 if p then csum = csum + p * (m[2] or 1) else ok = false end
             end
         end
-        craftT[i] = (own and ok) and math.floor(own + csum * (list[i].qty or 1) / (ci.rec[3] or 1) + 0.5) or nil
+        craftT[i] = (own and ok) and (own + math.floor(csum * math.ceil((list[i].qty or 1) / (ci.rec[3] or 1)) + 0.5)) or nil
+        local lowest = priced[i] and craftT[i] and math.min(priced[i], craftT[i]) or priced[i] or craftT[i]
+        units[i] = (lowest and (list[i].rep or 0) > 0) and (lowest / list[i].rep) or nil
         if craftT[i] and priced[i] and priced[i] > 0 then
             local d = math.floor((craftT[i] - priced[i]) / priced[i] * 100 + 0.5)
             if d > 0 then
@@ -15171,10 +15298,12 @@ function PD.WritRows(rows)
         local wa, wb = list[a], list[b]
         if mode then
             local key = priced
-            if mode == "own" then key = owns elseif mode == "craft" then key = craftT end
+            if mode == "own" then key = owns elseif mode == "craft" then key = craftT elseif mode == "rep" then key = units end
             local ca, cb = key[a], key[b]
-            if ca and cb then return ca < cb end
-            if ca or cb then return ca ~= nil end
+            if ca ~= cb then
+                if ca and cb then return ca < cb end
+                return ca ~= nil
+            end
             return (wa.target or 0) < (wb.target or 0)
         end
         if (wa.rep or 0) ~= (wb.rep or 0) then return (wa.rep or 0) > (wb.rep or 0) end
@@ -15187,10 +15316,15 @@ function PD.WritRows(rows)
         PD.writSel = list[order[1]].quest or list[order[1]].target
     end
     local sel = PD.writSel
-    rows[#rows + 1] = { kind = "colhead", col = 1, h = PD.ROW_H,
-                        text = L["工匠文书"], right = L["拍卖总价"], craftRight = L["制造总价"],
+    rows[#rows + 1] = { kind = "colhead", col = 1, h = PD.TEXT_H, priceCols = cols,
+                        text = L["名称"], right = L["拍卖总价"], craftRight = L["制造总价"],
                         ownRight = L["自身价格"],
                         sortOn = (mode == "total"), craftOn = (mode == "craft"), ownOn = (mode == "own"),
+                        unitText = L["每点声望最低成本"], unitOn = (mode == "rep"),
+                        unitAct = function()
+                            PD.writSort = (mode ~= "rep") and "rep" or nil
+                            PD.RequestRender()
+                        end,
                         act = function()
                             PD.writSort = (mode ~= "total") and "total" or nil
                             PD.RequestRender()
@@ -15208,10 +15342,11 @@ function PD.WritRows(rows)
         local wid = w.item or w.target
         local craft = craftMap[w.target]
         local tag = craft and WritBadge(craft, learned) or nil
+        local name = PD.ItemName(wid)
         rows[#rows + 1] = {
-            kind = "row", col = 1, h = PD.ROW_H,
+            kind = "row", col = 1, h = PD.CrateRowHeight(name, cols), priceCols = cols,
             it = { wid }, qItem = wid,
-            text = PD.ItemName(wid),
+            text = name,
             sub = format(L["声望 +%d"], w.rep or 0),
             tag = tag,
             right = priced[i] and RA.MoneyStr(priced[i]) or "",
@@ -15219,6 +15354,7 @@ function PD.WritRows(rows)
             right2Color = C_GOLD,
             pct = pcts[i],
             rightOwn = owns[i] and RA.MoneyStr(owns[i]) or "",
+            rightUnit = units[i] and RA.MoneyStr(units[i]) or "—",
             rightOwnColor = C_TEXT,
             cur = ((w.quest or w.target) == sel),
             act = function()
@@ -15283,7 +15419,7 @@ function PD.WritRows(rows)
             cards[1].win = true
         end
     end
-    rows[#rows + 1] = { kind = "vs", col = 2, h = 52, vw = PD.splitRW, cards = cards }
+    rows[#rows + 1] = { kind = "vs", col = 2, h = PD.VsHeight(PD.splitRW), vw = PD.splitRW, cards = cards }
     if craft and #craft[12] > 0 then
         PushGap(rows, PD.SEC_GAP + 2, 2)
         local secA = #rows + 1
