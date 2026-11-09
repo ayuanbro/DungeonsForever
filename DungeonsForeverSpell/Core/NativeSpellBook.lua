@@ -1019,6 +1019,12 @@ local function Attach()
     if psf and psf.HookScript and not psf.__dfThin then
         psf.__dfThin = true
         psf:HookScript("OnShow", function()
+            C_Timer.After(0, function()
+                if not (book and book:IsShown()) then
+                    if tabButton then tabButton:Hide() end
+                    if weaponTabButton then weaponTabButton:Hide() end
+                end
+            end)
             C_Timer.After(0, ThinAll)
             C_Timer.After(0.1, ThinAll)
             C_Timer.After(0.3, ThinAll)
@@ -1103,30 +1109,37 @@ local function Attach()
             "PlayerSpellsFrame.SpellBookFrame.DisplayedSpellsChanged", DeferRefresh, tabButton)
     end
     if sb.HookScript then
+        sb:HookScript("OnHide", function()
+            if subBar then subBar:Hide() end
+            if activePage then ShowPage(nil) end
+            if tabButton then tabButton:Hide() end
+            if weaponTabButton then weaponTabButton:Hide() end
+        end)
         sb:HookScript("OnSizeChanged", function()
             if DeferInCombat() then return end
             ReparentTabs()
             AnchorTabs()
             FitSearchBox()
         end)
+        sb:HookScript("OnShow", function()
+            if DeferInCombat() then return end
+            if NB.RefreshEnabled then NB.RefreshEnabled() end
+            ReparentTabs()
+            AnchorTabs()
+            if sb.ResizeSearchBox then pcall(sb.ResizeSearchBox, sb) end
+            FitSearchBox()
+            SyncSubBar(activePage == "weapon")
+            if activePage then InstallOurs() end
+            PaintTabs()
+            if C_Timer and C_Timer.After then
+                C_Timer.After(0.3, PaintTabs)
+                C_Timer.After(1.2, PaintTabs)
+                C_Timer.After(1.2, function()
+                    if NB.RefreshEnabled then NB.RefreshEnabled() end
+                end)
+            end
+        end)
     end
-    sb:HookScript("OnShow", function()
-        if DeferInCombat() then return end
-        if NB.RefreshEnabled then NB.RefreshEnabled() end
-        ReparentTabs()
-        AnchorTabs()
-        if sb.ResizeSearchBox then pcall(sb.ResizeSearchBox, sb) end
-        SyncSubBar(activePage == "weapon")
-        if activePage then InstallOurs() end
-        PaintTabs()
-        if C_Timer and C_Timer.After then
-            C_Timer.After(0.3, PaintTabs)
-            C_Timer.After(1.2, PaintTabs)
-            C_Timer.After(1.2, function()
-                if NB.RefreshEnabled then NB.RefreshEnabled() end
-            end)
-        end
-    end)
     AnchorTabs()
     return true
 end
@@ -1149,9 +1162,14 @@ local function ApplyEnabled()
             return false
         end
         retryLeft = 0
-        tabButton:Show()
-        if weaponTabButton then weaponTabButton:Show() end
-        AnchorTabs()
+        if book and book:IsShown() then
+            tabButton:Show()
+            if weaponTabButton then weaponTabButton:Show() end
+            AnchorTabs()
+        else
+            tabButton:Hide()
+            if weaponTabButton then weaponTabButton:Hide() end
+        end
         return true
     end
     if activePage then ShowPage(nil) end
@@ -1165,9 +1183,11 @@ function NB.SetEnabled(on)
     if on then
         retryLeft = 6
         if not (book and tabButton) then Attach() end
-        if tabButton then tabButton:Show() end
-        if weaponTabButton then weaponTabButton:Show() end
-        AnchorTabs()
+        if book and book:IsShown() then
+            if tabButton then tabButton:Show() end
+            if weaponTabButton then weaponTabButton:Show() end
+            AnchorTabs()
+        end
         if not tabButton then ApplyEnabled() end
     else
         retryLeft = 0
@@ -1182,7 +1202,9 @@ function NB.SetWeaponEnabled(on)
     if on then
         retryLeft = 6
         if not (book and tabButton) then Attach() end
-        if weaponTabButton then weaponTabButton:Show() end
+        if book and book:IsShown() and weaponTabButton then
+            weaponTabButton:Show()
+        end
     else
         if activePage == "weapon" then ShowPage(nil) end
         if weaponTabButton then weaponTabButton:Hide() end
