@@ -413,6 +413,7 @@ local function BagRows(ctx)
     local chain = EG and EG.BagChain
     if type(chain) ~= "table" then return nil end
     if OwnItem(BAG_TOY) then return nil end
+    if Z.IsIgnored(ItemKey("collect", BAG_TOY)) then return nil end
     local DG = DGRef()
     local side = (DG and DG.PlayerSide and DG.PlayerSide()) or "A"
     local step = 0
@@ -706,6 +707,7 @@ local function PQuest(ctx)
                         local prow = DG.QuestRowByID and DG.QuestRowByID(pid) or nil
                         local psd = (type(prow) == "table") and prow[2] or nil
                         if not preSeen[pid] and not directSeen[pid] and not (DG.QuestDone and DG.QuestDone(pid))
+                           and not Z.IsIgnored(ItemKey("quest", pid))
                            and not (side and psd and psd ~= side)
                            and not (DG.QuestRaceOK and not DG.QuestRaceOK(pid))
                            and not (ns.MapModule and ns.MapModule.QuestSideOK and not ns.MapModule.QuestSideOK(pid)) then
@@ -985,6 +987,7 @@ end
 
 local function FoodRow(c)
     if not c.food then return nil end
+    if Z.IsIgnored(ItemKey("food", WELL_FED_SPELL)) then return nil end
     if HasWellFed() then return nil end
     local lv = (UnitLevel and UnitLevel("player")) or 0
     return {
@@ -1059,6 +1062,7 @@ end
 
 local function RestedRow(c)
     if not c.rested then return nil end
+    if Z.IsIgnored(ItemKey("rested", SLEEP_BAG_ITEM)) then return nil end
     if not OwnItem(SLEEP_BAG_ITEM) then return nil end
     local buffed, rem = WellRestedState()
     local sub = L["缺少精神饱满"]
