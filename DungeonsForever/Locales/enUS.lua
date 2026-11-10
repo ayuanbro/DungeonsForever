@@ -1330,6 +1330,7 @@ L["点击进入[无限副本手册]任务详情"] = "Click to open [DungeonsFore
 L["点击追踪此书"] = "Click to track this book"
 L["点击：在地图上标记"] = "Click: mark on the map"
 L["点击：在地图上标记军需官位置"] = "Click: mark the quartermaster on the map"
+L["点击：填入聊天输入框"] = "Click: put this step into the chat box"
 L["点击：在地图上标记副本入口"] = "Click: mark the dungeon entrance on the map"
 L["点击：在地图上标记此位置"] = "Click: mark this location on the map"
 L["点击：在地图上标记此点"] = "Click: mark this point on the map"

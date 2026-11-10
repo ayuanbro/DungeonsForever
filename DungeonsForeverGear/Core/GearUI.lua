@@ -1027,7 +1027,6 @@ local function PaintRow(r)
     if e.hdr then
         r.icon:SetShown(false)
         if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
-        r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         SetTextC(r.name, e.hdr)
         r.name:SetTextColor(Unpack(C_GOLD))
@@ -1051,7 +1050,6 @@ local function PaintRow(r)
     if e.kind == "bonus" then
         r.icon:SetShown(false)
         if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(r.icon, nil) end
-        r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         SetTextC(r.name, "")
         SetTextC(r.meta, "")
@@ -1079,7 +1077,6 @@ local function PaintRow(r)
     r.src:SetWordWrap(false)
     if e.kind == "set" then
         local set = e.set or {}
-        r.newTag:SetShown(false)
         r.star:SetAlpha(0)
         local iconSet = set.class and SET_CLASS_ICON[set.class]
         local setQ = nil
@@ -1254,7 +1251,6 @@ local function PaintRow(r)
         if sw < 40 then sw = 40 end
         r.srcZone:SetWidth(sw + 6)
     end
-    r.newTag:SetShown(e.isNew ~= nil and e.isNew or false)
     local wid = e.id
     if wid and WishIs(wid) then
         SetTextC(r.star.tex, "★")
@@ -2040,17 +2036,6 @@ local function BuildRow(parent)
     r.sub:SetPoint("TOPLEFT", CARD_PAD + 40, -23)
     r.sub:SetWidth(180)
     r.sub:SetWordWrap(false)
-    r.newTag = CreateFrame("Frame", nil, r)
-    r.newTag:SetSize(34, 16)
-    r.newTag:SetPoint("LEFT", r.name, "RIGHT", 4, 0)
-    if ns.hui and ns.hui.BuildRoundedBG then
-        ns.hui.BuildRoundedBG(r.newTag, 4, ns.hui.layer.L2, "both", true, 1)
-    else
-        Cardify(r.newTag, 3, 2)
-    end
-    r.newTag.tex = MakeFS(r.newTag, 12, C_GOLD, "CENTER")
-    r.newTag.tex:SetAllPoints()
-    r.newTag.tex:SetText(L["新增"])
     r.ilvl = MakeFS(r, 14, C_GREY, "CENTER")
     r.ilvl:SetPoint("LEFT", CARD_PAD + 214, 0)
     r.ilvl:SetWidth(56)

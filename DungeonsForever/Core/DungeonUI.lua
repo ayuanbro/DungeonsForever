@@ -622,7 +622,7 @@ function DG.BuildList()
         ui.arrU:SetShown(isClosed)
         ui.hint:SetText(g.hint)
         ui.hint:ClearAllPoints()
-        ui.hint:SetPoint("TOPLEFT", ui.txt, "RIGHT", 10, 1)
+        ui.hint:SetPoint("LEFT", ui.txt, "RIGHT", 10, 0)
         ui.div:SetColorTexture(g.color[1], g.color[2], g.color[3], 0.30)
         ui.div:ClearAllPoints()
         ui.div:SetPoint("TOPLEFT", ui.txt, "BOTTOMLEFT", -(DG.GUTTER + 14), -6)
@@ -8069,6 +8069,7 @@ function DG.HideFlowRows(pool)
     for i = 1, #pool.fNum do
         pool.fNum[i].ic:Hide()
         pool.fNum[i].fs:Hide()
+        if pool.fNum[i].bt then pool.fNum[i].bt:Hide() end
     end
     pool.nFLab, pool.nFTxt, pool.nFLink, pool.nFNum = 0, 0, 0, 0
 end
@@ -8280,6 +8281,42 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
     return y - DG.Q_FLOW_H
 end
 
+function DG.FlowStepText(seg)
+    if type(seg) ~= "table" then return "" end
+    local out = {}
+    for k = 1, #seg do
+        local tk = seg[k]
+        if type(tk) == "table" then
+            local s
+            if tk.n then
+                s = tk.n
+            elseif tk.q then
+                local nm = DG.QuestName(tk.id)
+                if not nm or nm == "" then nm = tk.q end
+                s = format("《%s》", nm)
+            elseif tk.i then
+                local nm, hasName = DG.ItemName(tk.id)
+                if not hasName or not nm or nm == "" then nm = tk.i end
+                s = format("「%s」", nm)
+            else
+                s = tk.t
+            end
+            if type(s) == "string" and s ~= "" then out[#out + 1] = s end
+        end
+    end
+    local txt = table.concat(out)
+    txt = txt:gsub("^%s+", "")
+    txt = txt:gsub("%s+$", "")
+    return txt
+end
+
+function DG.SendFlowStepToChat(text)
+    if type(text) ~= "string" or text == "" then return false end
+    if type(ChatFrame_OpenChat) ~= "function" then return false end
+    ChatFrame_OpenChat(text)
+    return true
+end
+
 function DG.RenderQuestFlow(child, pool, d, keep)
     local flow = DG.CurQuestFlow(d)
     if not flow then return end
@@ -8313,8 +8350,39 @@ function DG.RenderQuestFlow(child, pool, d, keep)
                 num.ic:SetVertexColor(0.22, 0.25, 0.30, 1)
                 num.fs = MakeFS(child, 12, C_GREY, "CENTER")
                 num.fs:SetSize(DG.Q_FLOW_DOT, DG.Q_FLOW_DOT)
+                num.bt = CreateFrame("Button", nil, child)
+                num.bt:SetSize(DG.Q_FLOW_DOT + 4, DG.Q_FLOW_DOT + 2)
+                num.bt:EnableMouseWheel(true)
+                num.bt:SetScript("OnMouseWheel", function(_, delta)
+                    DG.WheelScroll(U.dungeonQDet, child, delta)
+                end)
+                num.bt:SetScript("OnEnter", function(self)
+                    local acc = ns.hui and ns.hui.ACCENT
+                    if acc then
+                        num.ic:SetVertexColor(acc[1], acc[2], acc[3], 1)
+                    else
+                        num.ic:SetVertexColor(0.32, 0.38, 0.46, 1)
+                    end
+                    num.fs:SetTextColor(1, 1, 1, 1)
+                    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                    GameTooltip:SetText(L["点击：填入聊天输入框"], 1, 1, 1)
+                end)
+                num.bt:SetScript("OnLeave", function()
+                    num.ic:SetVertexColor(0.22, 0.25, 0.30, 1)
+                    num.fs:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3], 1)
+                    GameTooltip:Hide()
+                end)
+                num.bt:SetScript("OnClick", function(self)
+                    if DG.SendFlowStepToChat(self.__txt) then
+                        if ns.PlaySound then ns.PlaySound(1) end
+                    end
+                end)
                 pool.fNum[ni] = num
             end
+            num.bt.__txt = DG.FlowStepText(sec.st[i])
+            num.bt:ClearAllPoints()
+            num.bt:SetPoint("CENTER", num.ic, "CENTER", 0, 0)
+            num.bt:Show()
             num.ic:ClearAllPoints()
             num.ic:SetPoint("TOPLEFT", child, "TOPLEFT", 0, y - 2)
             num.ic:Show()
@@ -8334,6 +8402,7 @@ function DG.RenderQuestFlow(child, pool, d, keep)
     for i = pool.nFNum + 1, #pool.fNum do
         pool.fNum[i].ic:Hide()
         pool.fNum[i].fs:Hide()
+        if pool.fNum[i].bt then pool.fNum[i].bt:Hide() end
     end
     child:SetHeight(math.max(10, -y + 12))
     DG.ClampScroll(U.dungeonQDet, child, keep)
