@@ -32,6 +32,25 @@ local layout
 local layoutMini
 local miniShell
 
+local MINI_ALPHA_DEF = 0.6
+local MINI_ALPHA_STEPS = { 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 }
+
+local function miniAlphaVal()
+    local s = M.MapStore and M.MapStore()
+    local v = s and s.miniAlpha
+    if type(v) ~= "number" or v < 0.1 or v > 1 then return MINI_ALPHA_DEF end
+    return v
+end
+
+local function applyMiniAlpha(hovered)
+    if not mini then return end
+    if hovered then
+        mini:SetAlpha(1)
+    else
+        mini:SetAlpha(miniAlphaVal())
+    end
+end
+
 local function cursorScaled()
     local x, y = GetCursorPosition()
     local s = UIParent and UIParent:GetEffectiveScale() or 1
@@ -341,6 +360,29 @@ local function showSettingsMenu(btn)
                 else
                     st.closeToMini = false
                 end
+            end,
+        },
+        {
+            text = format(L["迷你地图透明度：%d%%"], math.floor(miniAlphaVal() * 100 + 0.5)),
+            color = "|cffe0c060",
+            func = function()
+                local st = M.MapStore and M.MapStore()
+                if not st then return end
+                local cur = miniAlphaVal()
+                local nxt = MINI_ALPHA_STEPS[1]
+                for i = 1, #MINI_ALPHA_STEPS do
+                    if math.abs(MINI_ALPHA_STEPS[i] - cur) < 0.001 then
+                        nxt = MINI_ALPHA_STEPS[i % #MINI_ALPHA_STEPS + 1]
+                        break
+                    end
+                end
+                if math.abs(nxt - MINI_ALPHA_DEF) < 0.001 then
+                    st.miniAlpha = nil
+                else
+                    st.miniAlpha = nxt
+                end
+                applyMiniAlpha()
+                showSettingsMenu(btn)
             end,
         },
     }, { owner = btn, anchor = btn })
@@ -838,12 +880,14 @@ local function ensureMini()
     mf:EnableMouseWheel(true)
     local pillHideT
     mf:SetScript("OnEnter", function()
+        applyMiniAlpha(true)
         local p = mini and mini.pill
         if not p then return end
         if pillHideT then pillHideT:Cancel() pillHideT = nil end
         p:Show()
     end)
     mf:SetScript("OnLeave", function()
+        applyMiniAlpha(false)
         local p = mini and mini.pill
         if not p then return end
         if pillHideT then pillHideT:Cancel() end
@@ -1027,6 +1071,7 @@ function MW.MiniOpen()
     win:Hide()
     MiniRestorePos()
     mini:Show()
+    applyMiniAlpha()
     if ns.MapZoom then ns.MapZoom.Reset() end
     MW.MiniSync(true)
 end
@@ -1060,6 +1105,7 @@ function MW.MiniAuto(id, layer)
     M.detailEn = nil
     MiniRestorePos()
     mini:Show()
+    applyMiniAlpha()
     if ns.MapZoom then ns.MapZoom.Reset() end
     MW.MiniSync(true)
 end

@@ -9482,7 +9482,8 @@ function PD.BoundRecipeColumns(r,spec,padL)
     local sourceWidth=math.max(1,PD.DiffBarW()+PD.REC_COST_W+(spec.recipe and PD.REC_AH_W or 0)-8)
     if spec.dval then
         local prefix=math.min(FSW(r.d),math.floor(sourceWidth*0.45))
-        r.d:SetWidth(math.max(1,prefix));r.dv:SetWidth(math.max(1,sourceWidth-prefix))
+        local nameW=math.min(FSW(r.dv),math.max(1,sourceWidth-prefix))
+        r.d:SetWidth(math.max(1,prefix));r.dv:SetWidth(math.max(1,nameW))
     else r.d:SetWidth(sourceWidth) end
 end
 

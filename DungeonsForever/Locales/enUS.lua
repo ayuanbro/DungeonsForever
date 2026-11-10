@@ -2743,3 +2743,4 @@ L["左键吃「%s」，右键换一种"] = "Left click to eat %s, right click to
 L["缺少进食充分 · 吃「%s」×%d"] = "No Well Fed · eat %s x%d"
 L["选择食物"] = "Choose food"
 L["吃「%s」×%d"] = "Eat %s x%d"
+L["迷你地图透明度：%d%%"] = "Minimap opacity: %d%%"

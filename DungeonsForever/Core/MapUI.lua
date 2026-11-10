@@ -612,6 +612,9 @@ local CUSTOM = {
     excavation_wetlands = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\ExcavationSite",
     the_drowned_city    = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\TheDrownedCity",
     kroldok_stronghold  = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\KroldokStronghold",
+    alcaz_prison        = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\AlcazPrison",
+    blackmaw_hold       = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\BlackmawHold",
+    shapers_terrace     = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\ShapersTerrace",
     the_drowned_city    = "Interface\\AddOns\\DungeonsForever\\Media\\Maps\\TheDrownedCity",
 }
 M.CUSTOM = CUSTOM
