@@ -6010,6 +6010,7 @@ function DG.InvalidateQuestDone(doneID)
     DG.questDoneCache = {}
     DG.questDoneStamp = {}
     DG.__preDone = nil
+    DG.questRev = (DG.questRev or 0) + 1
     local v = tonumber(doneID)
     if v then
         DG.questDoneCache[v] = true

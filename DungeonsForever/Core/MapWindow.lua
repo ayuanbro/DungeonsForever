@@ -537,7 +537,7 @@ local function ensure()
     local content = buildMapContent(stage)
     for kk, vv in pairs(content) do v[kk] = vv end
 
-    local side = M.BuildSide(v, SIDE_W, MAP_H, true, nil, true)
+    local side = M.BuildSide(v, SIDE_W, MAP_H, true, nil, true, true)
     side:SetFrameLevel(v:GetFrameLevel() + 4)
     v.side = side
 
@@ -716,7 +716,7 @@ local function miniDragUpdate(self)
     if type(IsMouseButtonDown) == "function" and not IsMouseButtonDown("LeftButton") then
         self.__lx, self.__ly = nil, nil
         self:SetScript("OnUpdate", nil)
-        MW.MiniSync()
+        MW.MiniSync(true)
         return
     end
     local ZM = ns.MapZoom
@@ -861,7 +861,7 @@ local function ensureMini()
         ZM.k = nk
         local lx, ly = ZM.Limits(bw, bh)
         ZM.ClampTo(lx, ly)
-        MW.MiniSync()
+        MW.MiniSync(true)
     end)
     mf:SetScript("OnHide", function(self)
         self:SetScript("OnUpdate", nil)
@@ -916,19 +916,34 @@ local function ensureMini()
     return mview
 end
 
-function MW.MiniSync()
+function MW.MiniSync(force)
     local id = MW.curId
-    if not (mini and mview and mini:IsShown() and id) then return end
+    if not (mini and mview and mini:IsShown() and id) then
+        mview = mview or nil
+        if mview then mview.__sig = nil end
+        return
+    end
     local Rl = R or (ns.MapWorldModule and ns.MapWorldModule.Render)
     if not Rl then return end
     if not Rl.hasArt(id) then
         mini:Hide()
+        mview.__sig = nil
         return
     end
     layoutMini()
     local cw, ch = mview.zw or mview.cw or 0, mview.zh or mview.ch or 0
     if cw <= 0 or ch <= 0 then return end
     local idx = M.curLayer or 1
+    if not force then
+        local dg = ns.DungeonUI
+        local sig = tostring(id) .. "|" .. tostring(idx) .. "|" .. cw .. "|" .. ch
+            .. "|" .. tostring(mview.zw) .. "|" .. tostring(mview.zh)
+            .. "|" .. tostring(dg and dg.questRev)
+        if mview.__sig == sig and (GetTime() - (mview.__sigT or 0)) < 10 then return end
+        mview.__sig, mview.__sigT = sig, GetTime()
+    else
+        mview.__sig, mview.__sigT = nil, nil
+    end
     local floor = Rl.floorNumAt(id, idx)
     Rl.paintArt(mview, id, idx, cw, ch)
     Rl.paintArea(mview, id, floor, cw, ch)
@@ -967,7 +982,7 @@ function MW.MiniOpen()
     MiniRestorePos()
     mini:Show()
     if ns.MapZoom then ns.MapZoom.Reset() end
-    MW.MiniSync()
+    MW.MiniSync(true)
 end
 
 function MW.MiniAuto(id, layer)
@@ -1000,7 +1015,7 @@ function MW.MiniAuto(id, layer)
     MiniRestorePos()
     mini:Show()
     if ns.MapZoom then ns.MapZoom.Reset() end
-    MW.MiniSync()
+    MW.MiniSync(true)
 end
 
 function MW.MinioCardWanted()
