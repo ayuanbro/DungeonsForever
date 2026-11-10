@@ -35,4 +35,5 @@ ns.Supporters = {
     "在下铁头阿彪",
     "词不达意",
     "老李",
+    "Windinday",
 }

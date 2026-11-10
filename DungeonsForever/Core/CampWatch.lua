@@ -242,6 +242,10 @@ local function IsTent(u)
 end
 
 function C.TentUnit()
+    if type(IsInInstance) == "function" then
+        local ok, v = pcall(IsInInstance)
+        if ok and v then return nil end
+    end
     if IsTent("target") then return "target" end
     return nil
 end
