@@ -707,7 +707,7 @@ local function rebatchStages(list, recipes, rebuild, caps)
     return stages
 end
 
-local function rebatchDependencies(list, checkpoint, reorderLeveling)
+local function rebatchDependencies(list, checkpoint, reorderLeveling, reorderConsumers)
     local edges, pools, consumers, lastBuy, lastMade = {}, {}, {}, {}, {}
     local lastLevel
     local function edge(from,to)
@@ -739,14 +739,14 @@ local function rebatchDependencies(list, checkpoint, reorderLeveling)
             local single=#origins==1 and need==0 and origins[1] or nil
             local previous=consumers[m[1]]
             if not previous or not single or previous.single~=single then
-                for _,index in ipairs(previous or {}) do edge(index,i) end
+                if not reorderConsumers then for _,index in ipairs(previous or {}) do edge(index,i) end end
                 previous={single=single};consumers[m[1]]=previous
             end
             previous[#previous+1]=i
             edge(lastBuy[m[1]],i)
         end
         if a.type=="buy" or a.type=="seed" then
-            for _,index in ipairs(consumers[a.item] or {}) do edge(index,i) end
+            if not reorderConsumers then for _,index in ipairs(consumers[a.item] or {}) do edge(index,i) end end
             consumers[a.item]=nil
             if a.usableOutput~=false then add(a.item,a.count,i,false) end
         elseif a.usableOutput~=false then
@@ -888,7 +888,7 @@ function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMa
         return true
     end
     local stages=rebatchStages(list,recipes,grayMaterials,(reorderLeveling or grayMaterials) and (caps or original.cap))
-    local edges=grayMaterials and {} or rebatchDependencies(list,checkpoint,reorderLeveling)
+    local edges=grayMaterials and {} or rebatchDependencies(list,checkpoint,reorderLeveling,reorderLeveling)
     if not edges then return original end
     local currentScore = rebatchSwitches(list)
     local order=list
@@ -941,7 +941,7 @@ function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMa
                 checkpoint()
             end
             if currentScore<=n-1 then break end
-            edges=rebatchDependencies(list,checkpoint,reorderLeveling)
+            edges=rebatchDependencies(list,checkpoint,reorderLeveling,true)
             for pass=1,grayMaterials and 1 or 2 do
             stages=rebatchStages(list,recipes,grayMaterials or pass==2,caps or original.cap)
             local combined={}
