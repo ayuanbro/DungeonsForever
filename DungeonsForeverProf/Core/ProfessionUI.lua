@@ -8437,6 +8437,7 @@ function PD.ClearMats(r)
         if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
         b.nm:Hide()
         b.ct:Hide()
+        if b.tag then b.tag:Hide() end
         if b.zone then b.zone:Hide() end
     end
 end
@@ -8577,6 +8578,7 @@ function PD.PaintMats(r, blocks, cut, grey, rightX)
     for k = n + (cut and 1 or 0) + 1, #r.blk do
         local b = r.blk[k]
         b.ic:Hide(); b.nm:Hide(); b.ct:Hide(); b.zone:Hide()
+        if b.tag then b.tag:Hide() end
         if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(b.ic, nil) end
     end
 end
