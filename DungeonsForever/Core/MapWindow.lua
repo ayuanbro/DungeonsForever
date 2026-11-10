@@ -368,6 +368,17 @@ local function showDungeonMenu(btn)
     end
 end
 
+local function backToNative()
+    MW.Close()
+    local WM = WorldMapFrame
+    if not WM then return end
+    if ShowUIPanel then
+        pcall(ShowUIPanel, WM)
+    else
+        pcall(WM.Show, WM)
+    end
+end
+
 local function ensure()
     if win then return view end
     R = ns.MapWorldModule and ns.MapWorldModule.Render
@@ -509,6 +520,11 @@ local function ensure()
     rsb:Hide()
     win.routeSetBtn = rsb
 
+    local wb = newBtn(f, L["返回原生地图"], 118, 22)
+    wb:SetPoint("TOPLEFT", f, "TOPLEFT", EDGE, -(TOP_H + 2))
+    wb:SetScript("OnClick", function() backToNative() end)
+    win.worldBtn = wb
+
     local baseL = f:GetFrameLevel()
     strip:SetFrameLevel(baseL + 1)
     tb:SetFrameLevel(baseL + 6)
@@ -519,6 +535,7 @@ local function ensure()
     pb:SetFrameLevel(baseL + 8)
     rb:SetFrameLevel(baseL + 8)
     rsb:SetFrameLevel(baseL + 8)
+    wb:SetFrameLevel(baseL + 8)
 
     local v = CreateFrame("Frame", nil, f)
     v:SetSize(EDGE * 2 + GAP + SIDE_W + MAP_W, MAP_H)
@@ -543,6 +560,10 @@ local function ensure()
 
     stage:EnableMouse(true)
     stage:SetScript("OnMouseDown", function(self, btn)
+        if btn == "RightButton" then
+            backToNative()
+            return
+        end
         if btn ~= "LeftButton" then return end
         local ZM = ns.MapZoom
         if not ZM then return end

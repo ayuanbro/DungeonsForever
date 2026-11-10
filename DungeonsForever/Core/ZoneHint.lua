@@ -425,6 +425,8 @@ local function BagRows(ctx)
             if q then
                 local done = DG and DG.QuestDone and DG.QuestDone(q)
                 if not done then
+                    local qs = DG and DG.QuestState and DG.QuestState(q)
+                    if qs == "active" or qs == "ready" then return nil end
                     local loc = e.loc
                     if type(loc) == "table" and loc.area == nil then loc = loc[side] or loc.A end
                     if type(loc) == "table" and HereArea(loc.area, ctx) then
