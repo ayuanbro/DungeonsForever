@@ -1249,7 +1249,7 @@ local function Sig(res)
     local parts = {}
     for i = 1, #res.items do
         local it = res.items[i]
-        parts[i] = it.kind .. "=" .. tostring(it.n)
+        parts[i] = tostring(it.kind) .. "=" .. tostring(it.n)
     end
     return table.concat(parts, ";")
 end

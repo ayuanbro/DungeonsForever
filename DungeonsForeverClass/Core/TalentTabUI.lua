@@ -118,6 +118,12 @@ local function TreeSpent(t)
     return s
 end
 
+local function TotalSpent()
+    local s = 0
+    for t = 1, 3 do s = s + TreeSpent(t) end
+    return s
+end
+
 local function GateOK(t, row)
     if row <= 1 then return true end
     return TreeSpent(t) >= (row - 1) * 5
@@ -533,6 +539,14 @@ Refresh = function()
     local maps = BuildSeqMap()
     local total = 0
     for t = 1, 3 do total = total + TreeSpent(t) end
+    if UI.limitFs then
+        UI.limitFs:SetText(format(L["等级 %d · 天赋点 %d/%d"], total + 9, total, MAX_PT))
+        if total > MAX_PT then
+            UI.limitFs:SetTextColor(1, 0.4, 0.35, 1)
+        else
+            UI.limitFs:SetTextColor(Unpack(C_DIM))
+        end
+    end
     for t = 1, 3 do
         local tree = data.trees[t]
         if tree then
@@ -1432,6 +1446,9 @@ local function Ensure()
         UI.LiveApplyPlan()
     end, 14)
     liveBtn.__live = true
+    UI.limitFs = MakeFS(UI.navPlate, 12, C_DIM, "LEFT")
+    UI.limitFs:SetWordWrap(false)
+    UI.limitFs:Hide()
     actBtn(L["保存方案"], function()
         local bl = BuildsOf()
         bl[#bl + 1] = { name = format(L["我的方案%d"], #bl + 1), alloc = CopyAlloc(UI.mock.pts) }
@@ -1530,7 +1547,7 @@ local function RenderNodes()
                         end
                     else
                         local p = pts[i] or 0
-                        if p < nd.max and GateOK(t, nd.row) then
+                        if p < nd.max and GateOK(t, nd.row) and TotalSpent() < MAX_PT then
                             pts[i] = p + 1
                         end
                     end
@@ -1662,8 +1679,14 @@ Rebuild = function()
             liveBtn:ClearAllPoints()
             liveBtn:SetPoint("TOPLEFT", UI.navPlate, "TOPLEFT", PAD, -(NAV_H - 20) / 2)
             liveBtn:Show()
+            if UI.limitFs then
+                UI.limitFs:ClearAllPoints()
+                UI.limitFs:SetPoint("LEFT", liveBtn, "RIGHT", 10, 0)
+                UI.limitFs:Show()
+            end
         else
             liveBtn:Hide()
+            if UI.limitFs then UI.limitFs:Hide() end
         end
     end
     if UI.seqBtn then

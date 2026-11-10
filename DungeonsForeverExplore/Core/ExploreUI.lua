@@ -323,11 +323,41 @@ end
 EG.NECK_AT, EG.RING_AT, EG.CHOICE_AT = 10, 20, 25
 EG.SWEEP_AT = { 0.5, 1.5, 3, 5, 8 }
 
+local function CharKey()
+    local n = UnitName("player") or "?"
+    local realm
+    if UnitFullName then
+        local _, r = UnitFullName("player")
+        realm = r
+    end
+    if realm == nil or realm == "" then
+        if GetNormalizedRealmName then realm = GetNormalizedRealmName() end
+        if realm == nil or realm == "" then
+            realm = GetRealmName and GetRealmName() or "?"
+        end
+    end
+    return n .. "-" .. realm
+end
+
 local function Found()
     local db = ns.ExploreDB()
     db.explore = db.explore or {}
-    db.explore.found = db.explore.found or {}
-    return db.explore.found
+    local cf = db.explore.charFound
+    if type(cf) ~= "table" then
+        cf = {}
+        db.explore.charFound = cf
+    end
+    local key = CharKey()
+    local mine = cf[key]
+    if type(mine) ~= "table" then
+        mine = {}
+        cf[key] = mine
+        if type(db.explore.found) == "table" then
+            for k, v in pairs(db.explore.found) do mine[k] = v end
+            db.explore.found = nil
+        end
+    end
+    return mine
 end
 
 local function Comma(n)
@@ -421,6 +451,7 @@ local function CurSub()
     if db.explore.subPage == "torch" then return "torch" end
     if db.explore.subPage == "banner" then return "banner" end
     if db.explore.subPage == "routes" then return "routes" end
+    if db.explore.subPage == "dm" then return "dm" end
     return "books"
 end
 
@@ -704,12 +735,13 @@ local function Row(i)
             if loc then
                 if type(loc[4]) == "string" then
                     local W, M = ns.MapWorldModule, ns.MapModule
-                    if W and W.OpenDungeon then
+                    local can = (W and W.On and W.On() and (W.OpenDungeon or W.Show)) and true or false
+                    if can and W.OpenDungeon then
                         W.OpenDungeon(loc[4])
-                    elseif W and W.Show then
+                    elseif can then
                         W.Show(loc[4], "explore")
                     end
-                    if W and (W.OpenDungeon or W.Show) then
+                    if can then
                         if M and type(loc[5]) == "number" and M.curLayer ~= loc[5] then
                             M.curLayer = loc[5]
                             if W.Sync then W.Sync() end
@@ -2129,6 +2161,7 @@ function RtGo(mapID, x, y)
     end
     ns.PlaySound(1)
 end
+EG.RtGo = RtGo
 
 function RtTip(self, on, x, y)
     if not on then
@@ -3612,8 +3645,9 @@ function EG.Render()
     local isTorch = sub == "torch"
     local isBanner = sub == "banner"
     local isRoutes = sub == "routes"
+    local isDm = sub == "dm"
     local isCard = isPets or isTorch or isBanner
-    local isFull = isRw or isBag or isBm or isCard or isRoutes
+    local isFull = isRw or isBag or isBm or isCard or isRoutes or isDm
     if EG.listCard then EG.listCard:SetShown(not isRoutes) end
     EG.scroll:SetShown(not isFull)
     if EG.UpdateVScroll then EG.UpdateVScroll() end
@@ -3659,6 +3693,16 @@ function EG.Render()
         if isPets then PaintPets(PETS, false) return end
         if isTorch then PaintPets(TOYS, true) return end
         if isBanner then PaintPets(BANNER, true, true) return end
+    end
+    if EG.dmFrame then
+        EG.dmFrame:SetShown(isDm)
+        if isDm then
+            if EG.bagFrame then EG.bagFrame:Hide() end
+            if EG.bmFrame then EG.bmFrame:Hide() end
+            if EG.petFrame then EG.petFrame:Hide() end
+            if EG.routeFrame then EG.routeFrame:Hide() end
+            return
+        end
     end
     if EG.routeFrame then
         EG.routeFrame:SetShown(isRoutes)
@@ -3945,6 +3989,34 @@ function EG.Build(page)
         EG.navBtns["routes"] = bt
         coroutine.yield()
         EG.navRoutes = bt
+        navY = navY + EG.NAV_ITEM_H + EG.NAV_GAP
+    end
+
+    do
+        local glab = MakeFS(labelHost, 16, C_GREY, "LEFT")
+        glab:SetPoint("TOPLEFT", page, "TOPLEFT", EG.NAV_X + EG.NAV_PAD + 2, -(EG.NAV_TOP + navY))
+        coroutine.yield()
+        glab:SetText(L["活动"])
+        navY = navY + EG.NAV_GROUP_H
+    end
+    do
+        local bt = NewButton(page, L["暗月马戏团"], EG.NAV_W, EG.NAV_ITEM_H, 16)
+        bt:SetPoint("TOPLEFT", page, "TOPLEFT", EG.NAV_X + EG.NAV_PAD, -(EG.NAV_TOP + navY))
+        local fs = bt:GetFontString()
+        fs:ClearAllPoints()
+        fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
+        fs:SetJustifyH("LEFT")
+        bt.__huiKeepTextColor = true
+        bt.__icon = bt:CreateTexture(nil, "ARTWORK")
+        bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
+        bt.__icon:SetPoint("LEFT", bt, "LEFT", 5, 0)
+        bt.__icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.__icon) end
+        bt.__icon:SetTexture("Interface\\Icons\\inv_misc_ticket_darkmoon_01")
+        bt:SetScript("OnClick", function() SetSub("dm") end)
+        EG.navBtns["dm"] = bt
+        coroutine.yield()
+        EG.navDm = bt
         navY = navY + EG.NAV_ITEM_H + EG.NAV_GAP
     end
 
@@ -6055,6 +6127,14 @@ Y()
     if curSub == "routes" then
         EG.__subBuild.routes = nil
         buildRoutes()
+    end
+
+    EG.__subBuild.dm = function()
+        if ns.ExploreDarkmoonBuild then ns.ExploreDarkmoonBuild(EG, page) end
+    end
+    if curSub == "dm" then
+        EG.__subBuild.dm = function() end
+        if ns.ExploreDarkmoonBuild then ns.ExploreDarkmoonBuild(EG, page) end
     end
 
     EG.page = page

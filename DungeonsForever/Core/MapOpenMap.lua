@@ -114,6 +114,11 @@ function B.Keep(rows)
     return out
 end
 
+local function on()
+    local W = ns.MapWorldModule
+    return (W and W.On and W.On()) and true or false
+end
+
 local function openIds(ids, anchor)
     local W = ns.MapWorldModule
     if not (W and W.OpenEntryMenu) then return end
@@ -125,7 +130,7 @@ local function wrap(pin)
     if pin.OnClick ~= pin.__dfWrap then
         local old = pin.OnClick
         local w = function(p)
-            local ids = B.IdsAt(p.u, p.v)
+            local ids = on() and B.IdsAt(p.u, p.v) or nil
             if ids and #ids > 0 then
                 openIds(ids, p)
                 return
@@ -139,7 +144,7 @@ local function wrap(pin)
     if en ~= pin.__dfEnter then
         local e = function(p)
             if en then en(p) end
-            local ids = B.IdsAt(p.u, p.v)
+            local ids = on() and B.IdsAt(p.u, p.v) or nil
             if ids and #ids > 0 then
                 GameTooltip:AddLine(L["点击查看副本地图"], 0.55, 0.75, 0.55)
                 GameTooltip:Show()

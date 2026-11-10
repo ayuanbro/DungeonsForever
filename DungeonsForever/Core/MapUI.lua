@@ -299,6 +299,7 @@ M.NOTE_SIZE = 21
 M.STAIR_SIZE = 26
 M.ROUTE_STEP, M.ROUTE_DOT, M.ROUTE_DOT_EDGE = 1.6, 4.2, 8.0
 M.ROUTE_THIN_DOT, M.ROUTE_THIN_EDGE = 2.6, 5.0
+M.ROUTE_FINE_DOT, M.ROUTE_FINE_EDGE = 1.8, 3.6
 M.ROUTE_DASH_ON, M.ROUTE_DASH_OFF = 13, 9
 M.ROUTE_DOT_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\route_dot"
 M.MAX_ROUTE_DOTS = 2400
@@ -1513,8 +1514,8 @@ local function BuildPins()
     frame.pinBtns = pinBtns
 end
 
-local function BuildListRows()
-    local frame = M.SideHost or M.frame
+local function BuildListRows(host)
+    local frame = host or M.SideHost or M.frame
     if not frame or frame.__listReady then return end
     frame.__listReady = true
     local listChild, innerW = frame.listChild, frame.innerW
@@ -1560,8 +1561,8 @@ local function BuildListRows()
     frame.listRows = listRows
 end
 
-local function BuildBlocks()
-    local frame = M.SideHost or M.frame
+local function BuildBlocks(host)
+    local frame = host or M.SideHost or M.frame
     if not frame or frame.__blocksReady then return end
     frame.__blocksReady = true
     local detChild, innerW = frame.detChild, frame.innerW
@@ -1633,8 +1634,8 @@ local function BuildBlocks()
     frame.detGdTtl, frame.detGd = detGdTtl, detGd
 end
 
-local function BuildSideRows()
-    local frame = M.SideHost or M.frame
+local function BuildSideRows(host)
+    local frame = host or M.SideHost or M.frame
     if not frame or frame.__rowsReady then return end
     frame.__rowsReady = true
     local innerW = frame.innerW
@@ -1713,6 +1714,7 @@ local function BuildFinal()
     if not frame or frame.__poolsReady then return end
     frame.__poolsReady = true
     if frame:IsShown() then M.Paint(M.curD) end
+    if M.SyncSide then pcall(M.SyncSide, frame) end
 end
 M.EnsurePins = BuildPins
 M.EnsureListRows = BuildListRows
@@ -1752,22 +1754,24 @@ local function MakeSideBar(side, scroll, child)
     return bar
 end
 
-function M.BuildSide(f, w, h, withBar, bgLayer)
+function M.BuildSide(f, w, h, withBar, bgLayer, noCard)
     if not f then return end
     local side = CreateFrame("Frame", nil, f, "BackdropTemplate")
     side:SetSize(w, h)
     side:EnableMouse(true)
     side:EnableMouseWheel(true)
-    if ns.hui and ns.hui.BuildRoundedBG then
-        ns.hui.BuildRoundedBG(side, M.BLK_RADIUS, bgLayer or ns.hui.layer.L2, "both", true, 1)
-    else
-        side:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8X8",
-            edgeFile = "Interface\\Buttons\\WHITE8X8",
-            edgeSize = 1,
-        })
-        side:SetBackdropColor(1, 1, 1, 0.03)
-        side:SetBackdropBorderColor(1, 1, 1, 0.10)
+    if not noCard then
+        if ns.hui and ns.hui.BuildRoundedBG then
+            ns.hui.BuildRoundedBG(side, M.BLK_RADIUS, bgLayer or ns.hui.layer.L2, "both", true, 1)
+        else
+            side:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+            })
+            side:SetBackdropColor(1, 1, 1, 0.03)
+            side:SetBackdropBorderColor(1, 1, 1, 0.10)
+        end
     end
     side:Hide()
 
@@ -2000,9 +2004,9 @@ function M.Build(detail, hero)
     local queued = (type(DG) == "table" and type(DG.PushStep) == "function")
     if queued then
         DG.PushStep(BuildPins)
-        DG.PushStep(BuildListRows)
-        DG.PushStep(BuildBlocks)
-        DG.PushStep(BuildSideRows)
+        DG.PushStep(function() BuildListRows(frame) end)
+        DG.PushStep(function() BuildBlocks(frame) end)
+        DG.PushStep(function() BuildSideRows(frame) end)
         DG.PushStep(BuildFinal)
         DG.RunSteps()
     else
@@ -2388,9 +2392,14 @@ function M.SaveMapFlags()
     s.mapQuestHidden = M.hideQuestPins or nil
     s.mapNoteHidden = M.hideNotePins or nil
     s.mapOtherHidden = M.hideOtherPins or nil
-    s.mapRouteThin = M.routeThin and nil or false
+    if M.routeThin then
+        s.mapRouteThin = nil
+    else
+        s.mapRouteThin = false
+    end
     s.mapRoutePal = M.routePalette
     s.mapRouteOff = M.routeOff or nil
+    s.mapNoSize = ns.RouteNoSize
 end
 
 function M.SaveSegHidden(id, floor)
@@ -2441,6 +2450,8 @@ function M.LoadMapState()
     M.hideOtherPins = s.mapOtherHidden and true or false
     M.routeThin = not (s.mapRouteThin == false)
     M.routeOff = s.mapRouteOff and true or false
+    local nos = tonumber(s.mapNoSize)
+    if nos and nos >= 10 and nos <= 44 then ns.RouteNoSize = nos end
     local pal = s.mapRoutePal
     if type(pal) == "string" and M.ROUTE_PAL_NAMES[pal] then M.routePalette = pal end
     local all = s.mapSegHidden
@@ -2548,8 +2559,8 @@ local function routeTex(host, i)
 end
 
 local function routeDot(e, host, x, y, cr, cg, cb, si)
-    local edge = M.routeThin and M.ROUTE_THIN_EDGE or M.ROUTE_DOT_EDGE
-    local core = M.routeThin and M.ROUTE_THIN_DOT or M.ROUTE_DOT
+    local edge = M.routeThin and M.ROUTE_FINE_EDGE or M.ROUTE_THIN_EDGE
+    local core = M.routeThin and M.ROUTE_FINE_DOT or M.ROUTE_THIN_DOT
     e.si = si
     e.bx, e.by = x, y
     e.br, e.bg, e.bb = cr, cg, cb
@@ -2900,12 +2911,12 @@ local function noBadge(p)
     return e
 end
 
-function M.SyncNoBadges(host, tag, cw, ch, items)
+function M.SyncNoBadges(host, tag, cw, ch, items, uk)
     if not host then return 0 end
     local p = noPoolFor(host, tag)
     local used = p.n
     p.n = 0
-    local d = noD() * M.PinScale()
+    local d = noD() * M.PinScale() * (uk or 1)
     local di = d * 0.7
     local dy = 0
     if items and cw and ch and cw > 0 and ch > 0 then
@@ -3066,13 +3077,65 @@ function M.ShowRouteMenu(owner)
         end,
     }
     items[#items + 1] = {
-        text = format(L["路线粗细：%s"], M.routeThin and L["细"] or L["粗"]),
+        text = M.routeThin and L["路线改为粗线"] or L["路线改为细线"],
         color = "|cffe0c060",
         func = function()
             M.routeThin = not M.routeThin
             M.SaveMapFlags()
             M.SyncRoute(id, floor, M.frame and M.frame.pinW, M.frame and M.frame.pinH)
             M.ShowRouteMenu(owner)
+        end,
+    }
+    ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
+end
+
+local ROUTE_NO_SIZES = { 14, 20, 26, 34 }
+
+local function resyncRouteAll()
+    local id, floor = M.curId, M.FloorNumAt(M.curId or 0, M.curLayer or 1)
+    if id and floor and M.RouteOn(id) then
+        M.SyncRoute(id, floor, M.frame and M.frame.pinW, M.frame and M.frame.pinH)
+    end
+    local MWm = ns.MapWindowModule
+    if MWm and MWm.Sync then pcall(MWm.Sync) end
+end
+
+function M.ShowRouteSetMenu(owner)
+    if not (ns.hui and ns.hui.ShowMenu) then return end
+    local cur = tonumber(ns.RouteNoSize) or 20
+    local items = {}
+    items[#items + 1] = {
+        text = format(L["配色：%s"], M.ROUTE_PAL_NAMES[M.routePalette] or M.routePalette),
+        color = "|cffe0c060",
+        func = function()
+            M.CycleRoutePalette()
+            M.SaveMapFlags()
+            resyncRouteAll()
+            M.ShowRouteSetMenu(owner)
+        end,
+    }
+    items[#items + 1] = {
+        text = M.routeThin and L["路线改为粗线"] or L["路线改为细线"],
+        color = "|cffe0c060",
+        func = function()
+            M.routeThin = not M.routeThin
+            M.SaveMapFlags()
+            resyncRouteAll()
+            M.ShowRouteSetMenu(owner)
+        end,
+    }
+    items[#items + 1] = {
+        text = format(L["路线序号大小：%d"], cur),
+        color = "|cffe0c060",
+        func = function()
+            local nxt = ROUTE_NO_SIZES[1]
+            for i = 1, #ROUTE_NO_SIZES do
+                if ROUTE_NO_SIZES[i] == cur then nxt = ROUTE_NO_SIZES[i % #ROUTE_NO_SIZES + 1] break end
+            end
+            ns.RouteNoSize = nxt
+            M.SaveMapFlags()
+            resyncRouteAll()
+            M.ShowRouteSetMenu(owner)
         end,
     }
     ns.hui.ShowMenu(items, { owner = owner, anchor = owner })
@@ -3343,7 +3406,8 @@ end
 function M.GotoDungeon(id, inWorld)
     if not (id and M.DungeonPinName) then return end
     local MW = ns.MapWorldModule
-    if MW and MW.OpenDungeon and (inWorld or (MW.Active and MW.Active())) then
+    if MW and MW.OpenDungeon and (MW.On and MW.On())
+        and (inWorld or (MW.Active and MW.Active())) then
         MW.OpenDungeon(id)
         return
     end
@@ -3793,6 +3857,7 @@ function M.HideBossModel()
 end
 
 function M.SyncBossModel()
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
     local frame = M.frame
     if not (frame and frame.bossModel) then return end
     local npc, disp
@@ -3824,8 +3889,8 @@ function M.SyncBossModel()
     end
 end
 
-function M.SyncSide()
-    local frame = M.SideHost
+function M.SyncSide(forceFrame)
+    local frame = forceFrame or M.SideHost
     if not (frame and frame:IsShown()) then frame = M.frame end
     if not frame then return end
     M.SyncBossModel()
@@ -4053,7 +4118,11 @@ function M.SyncSide()
     local det = M.DetailOf(id)
     frame.listNote:SetShown(n == 0 and not (det and det.noList))
     frame.listChild:SetHeight(math.max(30, -y + 8))
-    frame.listScroll:SetVerticalScroll(0)
+    local listSig = tostring(id) .. "|" .. tostring(n) .. "|" .. tostring(M.curLayer or 1)
+    if frame.__listSig ~= listSig then
+        frame.__listSig = listSig
+        frame.listScroll:SetVerticalScroll(0)
+    end
     if frame.detBar then frame.detBar:Hide() end
     M.SyncScrollBar(frame.listScroll)
 end

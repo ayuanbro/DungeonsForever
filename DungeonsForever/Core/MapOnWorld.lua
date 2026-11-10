@@ -17,20 +17,43 @@ ns.MapWorldModule = W
 
 local pendingMap
 
+local function inCombat()
+    return type(InCombatLockdown) == "function" and InCombatLockdown() and true or false
+end
+
+local function euiMapSkin()
+    local E = _G.EllesmereUI
+    if not E then return false end
+    if E.GetBlizzWindowStyle then
+        local ok, s = pcall(E.GetBlizzWindowStyle, "worldmap")
+        if ok and s and s ~= false then return true end
+    end
+    local db = _G.EllesmereUIDB
+    return (db and db.reskinWorldMap) and true or false
+end
+W.EUIMapSkin = euiMapSkin
+
 local function applyMap(id)
-    if not (id and WorldMapFrame and WorldMapFrame.SetMapID) then return end
-    pcall(WorldMapFrame.SetMapID, WorldMapFrame, id)
+    if not id or not WorldMapFrame then return end
+    if C_Map and C_Map.OpenWorldMap and WorldMapFrame:IsShown() then
+        pcall(C_Map.OpenWorldMap, id)
+        return
+    end
+    if WorldMapFrame.SetMapID then
+        pcall(WorldMapFrame.SetMapID, WorldMapFrame, id)
+    end
 end
 
 local function setMap(id)
     if not id then return end
-    if type(InCombatLockdown) == "function" and InCombatLockdown() then
+    if inCombat() then
         pendingMap = id
         return
     end
     pendingMap = nil
     applyMap(id)
 end
+
 
 local regen = CreateFrame("Frame")
 regen:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -39,6 +62,7 @@ regen:SetScript("OnEvent", function()
     pendingMap = nil
     if not (id and WorldMapFrame and WorldMapFrame:IsShown()) then return end
     applyMap(id)
+    if W.pinProvider and W.pinProvider.RefreshAllData then pcall(W.pinProvider.RefreshAllData, W.pinProvider) end
 end)
 
 local function fontPath()
@@ -266,11 +290,14 @@ local VIEW_LEVEL = 900
 local syncNav
 
 local function enabled()
+    if ns.MapEntryOn and not ns.MapEntryOn() then return false end
     local d = DungeonsForeverDB
     local s = type(d) == "table" and d.dungeon or nil
     if type(s) ~= "table" then return true end
     return s.mapOnWorld ~= false
 end
+
+W.On = enabled
 
 local function area()
     if not WorldMapFrame then return nil end
@@ -682,8 +709,9 @@ local function routeDot(view, x, y, cr, cg, cb, si)
         view.routePool[i] = e
     end
     view.routeUsed = i
-    local edge = M.routeThin and M.ROUTE_THIN_EDGE or M.ROUTE_DOT_EDGE
-    local core = M.routeThin and M.ROUTE_THIN_DOT or M.ROUTE_DOT
+    local uk = view.__uiK or 1
+    local edge = (M.routeThin and M.ROUTE_THIN_EDGE or M.ROUTE_DOT_EDGE) * uk
+    local core = (M.routeThin and M.ROUTE_THIN_DOT or M.ROUTE_DOT) * uk
     e.si = si
     e.bedge, e.bcore = edge, core
     e.br, e.bg, e.bb = cr, cg, cb
@@ -804,7 +832,7 @@ local function syncRoute(view, id, floor, cw, ch)
     local rsegs = id and floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
     local nb = M.SyncNoBadges(view.route, "world", cw, ch, M.SegNoItems(id, floor, rsegs, cw, ch, function(i)
         return M.routeOff or M.routeHidden[M.RouteSegKey(id, floor, i)]
-    end))
+    end), view.__uiK)
     view.route:SetShown(n > 0 or (nb or 0) > 0)
 end
 
@@ -842,6 +870,8 @@ local function pinList(id, floor)
 end
 
 local function syncPins(view, id, floor, cw, ch)
+    local MWm = ns.MapWindowModule
+    view.__mini = (MWm and MWm.IsMiniView and MWm.IsMiniView(view)) and true or nil
     local list = id and floor and pinList(id, floor) or nil
     local n = 0
     local lockedPre, preBlock = {}, {}
@@ -870,13 +900,14 @@ local function syncPins(view, id, floor, cw, ch)
             local p = list[i]
             local bt = view.pinBtns[i]
             local kind = p.kind or "boss"
-            local ps = M.PinScale()
+            local ps = M.PinScale() * (view.__uiK or 1)
             local dim = (kind == "boss") and M.RareBoss(id, p.en) or false
             bt:SetAlpha(dim and 0.5 or 1)
             bt.nm:SetAlpha(dim and 0.5 or 1)
             local skip
             n = i
             bt.__kind, bt.__p = kind, p
+            bt.__dfView = view
             bt.__en, bt.__zh = p.en, p.zh
             if bt.entry then bt.entry:Hide() end
             if bt.rim then bt.rim:Hide() end
@@ -989,7 +1020,7 @@ local function syncPins(view, id, floor, cw, ch)
             bt.nm:SetJustifyH("CENTER")
             local fpath = bt.nm:GetFont()
             if type(fpath) ~= "string" then fpath = ns.FONT or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF" end
-            bt.nm:SetFont(fpath, sel and 14 or 12, PIN_FLAGS)
+            bt.nm:SetFont(fpath, math.floor(((sel and 14 or 12) * ps) + 0.5), PIN_FLAGS)
             bt.nm:SetTextColor(cr, cg, cb)
             bt.dot:ClearAllPoints()
             bt.dot:SetPoint("CENTER", bt, "CENTER", 0, 0)
@@ -998,6 +1029,8 @@ local function syncPins(view, id, floor, cw, ch)
                 dsz = M.NOTE_SIZE
             elseif kind == "prev" or kind == "next" then
                 dsz = M.STAIR_SIZE
+            elseif kind == "dungeon" then
+                dsz = M.PIN_MIN * 1.35
             elseif kind == "quest" or kind == "icon" then
                 dsz = M.PIN_QUEST_SIZE
             else
@@ -1082,6 +1115,10 @@ local function syncButtons(view, id)
     pb:SetText(L["图钉显示"])
     setPicked(pb, dim)
     pb:SetShown(any and true or false)
+    local rsb = view.routeSetBtn
+    if rsb then
+        rsb:SetShown(M.HasRoute(id) and true or false)
+    end
 end
 
 local navTail
@@ -1138,34 +1175,92 @@ local function syncAreaBtn()
     if not ab then return end
     if W.leaUI then leaSkin(ab) end
     setPicked(ab, not (ns.ExploreAreaOn and ns.ExploreAreaOn()))
-    if not (ns.ExploreGraveOn and ns.ExploreGraveOn()) then
-        if ab:IsShown() then ab:Hide() end
-        return
-    end
-    if W.Active() then
-        if ab:IsShown() then ab:Hide() end
-        return
-    end
-    if not ab:IsShown() then ab:Show() end
     local lim = navTailLeft()
     local nav = navBar()
     local wmf = WorldMapFrame
-    if not (lim and nav and wmf and wmf.GetLeft and wmf:GetLeft() and wmf:GetTop()) then
-        if not ab.__fb then
-            ab.__fb = true
-            ab.__dx, ab.__dy = nil, nil
+    if lim and nav and wmf and wmf.GetLeft and wmf:GetLeft() and wmf:GetTop() then
+        local dx = (lim - BTN_GAP) - wmf:GetLeft() - BTN_W
+        local dy = (wmf:GetTop() - (nav:GetTop() or 0)) + NAV_PAD_T
+        if ab.__dx ~= dx or ab.__dy ~= dy then
+            ab.__dx, ab.__dy = dx, dy
+            ab.__fb = nil
             ab:ClearAllPoints()
-            ab:SetPoint("TOPRIGHT", nav or wmf, "TOPRIGHT", -(NAV_PAD_R + BTN_W), -NAV_PAD_T)
+            ab:SetPoint("TOPLEFT", wmf, "TOPLEFT", dx, -dy)
         end
+    elseif not ab.__fb then
+        ab.__fb = true
+        ab.__dx, ab.__dy = nil, nil
+        ab:ClearAllPoints()
+        ab:SetPoint("TOPRIGHT", nav or wmf, "TOPRIGHT", -(NAV_PAD_R + BTN_W), -NAV_PAD_T)
+    end
+    if not (ns.ExploreGraveOn and ns.ExploreGraveOn()) then
+        if ab:IsShown() then ab:Hide() end
+    elseif W.Active() then
+        if ab:IsShown() then ab:Hide() end
+    else
+        if not ab:IsShown() then ab:Show() end
+    end
+end
+
+local function ensureOpenWinBtn()
+    if W.openWinBtn or not WorldMapFrame then return W.openWinBtn end
+    local nav = navBar()
+    if not nav then return nil end
+    local bt = makeNativeBtn(nav, L["副本地图"], BTN_W, BTN_H)
+    bt:SetFrameLevel(nav:GetFrameLevel() + 8)
+    ndBtn(bt)
+    bt:SetScript("OnClick", function()
+        local MWm = ns.MapWindowModule
+        if not (MWm and MWm.Open) then return end
+        local ok, id = pcall(W.Resolve)
+        if ok and id then MWm.Open(id) end
+    end)
+    bt:SetScript("OnEnter", function(self)
+        GameTooltip:ClearLines()
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        local tex = M.LOGO_TEX
+            or "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp"
+        GameTooltip:AddLine("|T" .. tex .. ":18|t " .. L["副本地图"], 1, 0.82, 0, true)
+        GameTooltip:AddLine(L["点击查看副本地图"], 0.75, 0.75, 0.75, true)
+        GameTooltip:Show()
+    end)
+    bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    bt:Hide()
+    W.openWinBtn = bt
+    return bt
+end
+
+local function syncOpenWinBtn()
+    local bt = ensureOpenWinBtn()
+    if not bt then return end
+    local want = false
+    if enabled() then
+        local ok, id = pcall(W.Resolve)
+        want = (ok and id) and true or false
+    end
+    if not want then
+        if bt:IsShown() then bt:Hide() end
         return
     end
-    ab.__fb = nil
-    local dx = (lim - BTN_GAP) - wmf:GetLeft() - BTN_W
-    local dy = (wmf:GetTop() - (nav:GetTop() or 0)) + NAV_PAD_T
-    if ab.__dx == dx and ab.__dy == dy then return end
-    ab.__dx, ab.__dy = dx, dy
-    ab:ClearAllPoints()
-    ab:SetPoint("TOPLEFT", wmf, "TOPLEFT", dx, -dy)
+    local lim = navTailLeft()
+    local nav = navBar()
+    local wmf = WorldMapFrame
+    if lim and nav and wmf and wmf.GetLeft and wmf:GetLeft() and wmf:GetTop() then
+        local dx = (lim - BTN_GAP) - wmf:GetLeft() - BTN_W
+        local dy = (wmf:GetTop() - (nav:GetTop() or 0)) + NAV_PAD_T
+        if bt.__dx ~= dx or bt.__dy ~= dy then
+            bt.__dx, bt.__dy = dx, dy
+            bt.__fb = nil
+            bt:ClearAllPoints()
+            bt:SetPoint("TOPLEFT", wmf, "TOPLEFT", dx, -dy)
+        end
+    elseif not bt.__fb then
+        bt.__fb = true
+        bt.__dx, bt.__dy = nil, nil
+        bt:ClearAllPoints()
+        bt:SetPoint("TOPRIGHT", nav or wmf, "TOPRIGHT", -(NAV_PAD_R + BTN_W), -NAV_PAD_T)
+    end
+    if not bt:IsShown() then bt:Show() end
 end
 
 local CRUMB_X = 0
@@ -1419,7 +1514,7 @@ function W.BeginDrag()
 end
 
 local function ensureWide()
-    if not W.Active() or W.folded or M.sideTask then return end
+    if not W.Active() or W.folded or M.sideTask or inCombat() then return end
     local wmf = WorldMapFrame
     local qp = questPanel()
     if not (wmf and wmf.minimizedWidth and wmf:IsShown() and qp) then return end
@@ -1452,7 +1547,7 @@ local function syncSpacer()
         if pt == "BOTTOMRIGHT" and type(x) == "number" then cur = x break end
     end
     ensureWide()
-    if math.abs(cur - want) < 1 then return end
+    if inCombat() or math.abs(cur - want) < 1 then return end
     pcall(spacer.SetPoint, spacer, "BOTTOMRIGHT", wmf, "TOPRIGHT", want, -67)
     if wmf.OnFrameSizeChanged then pcall(wmf.OnFrameSizeChanged, wmf) end
 end
@@ -1496,6 +1591,7 @@ local function syncPanelToggle()
 end
 
 function W.ToggleSideTask()
+    if inCombat() then return end
     local v = W.view
     if not (v and v:IsShown()) then return end
     local q = questPanel()
@@ -1569,6 +1665,7 @@ local function adoptPanelState()
 end
 
 local function foldTogglePanel()
+    if inCombat() then return end
     local wmf = WorldMapFrame
     local q = questPanel()
     local view = W.view
@@ -1629,6 +1726,7 @@ local function foldTogglePanel()
 end
 
 function W.Sync()
+    if inCombat() then return end
     local view = W.view
     if not (view and view:IsShown()) then return end
     syncSpacer()
@@ -1667,11 +1765,11 @@ function W.ResetTask()
     M.sideTask = nil
     local q = questPanel()
     if q then
-        if W.qStrata then
+        if W.qStrata and not inCombat() then
             q:SetFrameStrata(W.qStrata)
             W.qStrata = nil
         end
-        if W.qLevel then
+        if W.qLevel and not inCombat() then
             q:SetFrameLevel(W.qLevel)
             W.qLevel = nil
         end
@@ -1713,109 +1811,14 @@ local function hookPanelToggle()
 end
 
 function W.OpenDungeon(id)
-    if not (WorldMapFrame and id and hasArt(id)) then return end
-    W.suppress = nil
-    W.pinned, W.pinnedMap = nil, nil
-    if W.curId ~= id then
-        local o = (not inInstance()) and M.OUTSIDE_LAYER and M.OUTSIDE_LAYER[id]
-        M.curLayer = o or M.EntryLayer(id) or 1
-    end
-    if not WorldMapFrame:IsShown() then WorldMapFrame:Show() end
-    W.Show(id, "pick")
+    if not enabled() then return end
+    if not (id and hasArt(id)) then return end
+    local MWm = ns.MapWindowModule
+    if MWm and MWm.Open then MWm.Open(id) end
 end
 
 function W.Show(id, why)
-    if not (WorldMapFrame and id and hasArt(id)) then return end
-    if ns.OpenMapBridge and ns.OpenMapBridge.Suspend then pcall(ns.OpenMapBridge.Suspend) end
-    W.Build()
-    local view = W.view
-    if not view then return end
-    local prevId = W.curId
-    W.curId = id
-    if prevId ~= id and ns.MapZoom then ns.MapZoom.Reset() end
-    W.curStamp = instStamp()
-    W.why = why
-    M.curId = id
-    W.ResetTask()
-    local d = detailOf(id)
-    if d then M.curD = d end
-    local inside = inInstance()
-    local oLayer = (not inside) and M.OUTSIDE_LAYER and M.OUTSIDE_LAYER[id]
-    if not inside and not oLayer and why == "area" then oLayer = 1 end
-    local nLayer = #(M.LayersFor(id) or {})
-    if prevId ~= id then
-        local e = M.EntryLayer(id)
-        if e then M.curLayer = e end
-    end
-    if nLayer > 0 and (M.curLayer or 1) > nLayer then M.curLayer = 1 end
-    if W.inInst == nil then
-        W.inInst = inside
-        if oLayer then M.curLayer = oLayer end
-    elseif inside ~= W.inInst then
-        W.inInst = inside
-        M.curLayer = oLayer or M.EntryLayer(id) or 1
-    elseif prevId and prevId ~= id and oLayer and oLayer <= nLayer then
-        M.curLayer = oLayer
-    end
-    W.zoneMap = W.ZoneOf(id)
-    if not inside then W.zoneMap = worldMapID() or W.zoneMap end
-    W.movedAt = nil
-    W.foldPrevTask = nil
-    W.folded = nil
-    W.fixedMid = nil
-    local q = questPanel()
-    if q and not W.Active() then W.qWas = q:IsShown() and true or false end
-    if q then q:Hide() end
-    local fromHidden = not view:IsShown()
-    view:Show()
-    if fromHidden then
-        local cur = view.__curtain
-        if not cur then
-            cur = view:CreateTexture(nil, "OVERLAY", nil, 7)
-            cur:SetTexture("Interface\\Buttons\\WHITE8X8")
-            cur:SetVertexColor(0.03, 0.03, 0.03, 1)
-            view.__curtain = cur
-        end
-        cur:ClearAllPoints()
-        cur:SetAllPoints(view)
-        cur:SetAlpha(1)
-        cur:Show()
-        local dur = 0.22
-        local el = 0
-        if view.__curtainTick then view.__curtainTick:Cancel() end
-        view.__curtainTick = C_Timer.NewTicker(0.03, function()
-            el = el + 0.03
-            if not view:IsShown() then
-                if view.__curtainTick then view.__curtainTick:Cancel() end
-                return
-            end
-            local a = 1 - el / dur
-            if a <= 0 then
-                cur:SetAlpha(0)
-                cur:Hide()
-                if view.__curtainTick then view.__curtainTick:Cancel() end
-            else
-                cur:SetAlpha(a)
-            end
-        end)
-    end
-    leaSuppress()
-    if W.zoneMap and worldMapID() ~= W.zoneMap then
-        setMap(W.zoneMap)
-        if q then q:Hide() end
-    end
-    if W.qLogCVar == nil then
-        local okc, v = pcall(GetCVar, "questLogOpen")
-        W.qLogCVar = okc and v or "1"
-    end
-    ensureWide()
-    for _, d in ipairs({ 0.15, 0.35, 0.6, 0.9, 1.3 }) do
-        C_Timer.After(d, ensureWide)
-    end
-    syncPanelToggle()
-    syncSpacer()
-    syncQuestCVar()
-    W.Sync()
+    W.OpenDungeon(id)
 end
 
 local function resetSideToggle()
@@ -1839,12 +1842,12 @@ function W.Hide()
     if dropDown then CloseDropDownMenus() end
     M.SideHost = nil
     W.ResetTask()
-    if W.qWas ~= nil then
+    if W.qWas ~= nil and not inCombat() then
         setLogPanel(W.qWas)
         local q = questPanel()
         local wmf = WorldMapFrame
         if q and not q:IsShown() and wmf and wmf.minimizedWidth
-            and (wmf:GetWidth() or 0) > wmf.minimizedWidth + 2 then
+            and (wmf:GetWidth() or 0) > wmf.minimizedWidth + 2 and not inCombat() then
             pcall(function()
                 SetUIPanelAttribute(wmf, "extraWidth", 0)
                 wmf:SetWidth(wmf.minimizedWidth)
@@ -1859,7 +1862,7 @@ function W.Hide()
     W.folded = nil
     view:Hide()
     syncSpacer()
-    if W.qLogCVar then
+    if W.qLogCVar and not inCombat() then
         pcall(SetCVar, "questLogOpen", W.qLogCVar)
         W.qLogCVar = nil
     end
@@ -2197,6 +2200,7 @@ local function hookCrumbs(nav)
 end
 
 local function raiseSideToggle()
+    if not enabled() then return end
     local wmf = WorldMapFrame
     local spt = wmf and wmf.SidePanelToggle
     if not spt then return end
@@ -2208,6 +2212,27 @@ local function raiseSideToggle()
     if spt:GetFrameStrata() ~= "TOOLTIP" then pcall(spt.SetFrameStrata, spt, "TOOLTIP") end
     local lv = math.min((wmf:GetFrameLevel() or 0) + 3000, 9300)
     if (spt:GetFrameLevel() or 0) < lv then pcall(spt.SetFrameLevel, spt, lv) end
+end
+
+local function skinChrome()
+    local S = W.__dfSkin
+    if not (S and S.Button) then return end
+    if not (W.EUIMapSkin and W.EUIMapSkin()) then return end
+    local view = W.view
+    for _, bt in ipairs({ view and view.routeBtn, view and view.pinBtn, W.areaBtn, W.navBtn }) do
+        if bt and not bt.__dfSkinned then
+            bt.__dfSkinned = true
+            pcall(S.Button, bt)
+        end
+    end
+end
+W.skinChrome = skinChrome
+
+if EllesmereUI and EllesmereUI.RegisterSkin then
+    pcall(EllesmereUI.RegisterSkin, "DungeonsForever", function(S)
+        W.__dfSkin = S
+        pcall(skinChrome)
+    end)
 end
 
 syncNav = function(view)
@@ -2313,6 +2338,7 @@ syncNav = function(view)
             cover:Hide()
         end
     end
+    skinChrome()
 end
 
 local entryPins, entryProvider = {}, nil
@@ -2447,6 +2473,7 @@ local function leaClickTakeover()
     sc.__dfLeaClick = true
     sc:HookScript("OnMouseUp", function(_, button)
         if button ~= "LeftButton" or W.Active() then return end
+        if not enabled() then return end
         local map, mapID = CurMap(nil)
         if not (map and mapID) then return end
         local canvas = map.GetCanvas and map:GetCanvas()
@@ -2502,6 +2529,7 @@ local function leaClickTakeover()
 end
 
 function Provider:RefreshAllData()
+    if inCombat() then return end
     self:RemoveAllData()
     self.groups = nil
     if not (ns.MapEntryOn and ns.MapEntryOn()) then return end
@@ -2557,6 +2585,11 @@ function Provider:Relayout()
     end
 end
 
+function Provider:OnMapChanged()
+    if inCombat() then return end
+    self:RefreshAllData()
+end
+
 function Provider:OnCanvasScaleChanged() self:Relayout() end
 
 function Provider:OnCanvasSizeChanged() self:RefreshAllData() end
@@ -2567,6 +2600,7 @@ local epSig
 
 local function driveEntryPins()
     if not (entryProvider and WorldMapFrame) then return end
+    if inCombat() then return end
     local map = CurMap(nil)
     if not (map and map.GetCanvas) then return end
     local lm = _G.WorldMapFrame
@@ -2619,6 +2653,25 @@ function W.ApplyEntryToggle()
     if entryProvider then
         entryProvider:RemoveAllData()
         entryProvider.groups = nil
+    end
+    if enabled() then
+        W.suppress = nil
+        if not W.hooked and W.Hook then pcall(W.Hook) end
+        if W.watch and W.watchUpdate then
+            pcall(W.watch.SetScript, W.watch, "OnUpdate", W.watchUpdate)
+        end
+        if W.__onShow and WorldMapFrame and WorldMapFrame:IsShown() then pcall(W.__onShow) end
+    else
+        W.pinned, W.pinnedMap = nil, nil
+        if W.Active() then pcall(W.Hide) end
+        W.suppress = true
+        if W.watch then pcall(W.watch.SetScript, W.watch, "OnUpdate", nil) end
+        if W.navBtn then W.navBtn:Hide() end
+        local spt = WorldMapFrame and WorldMapFrame.SidePanelToggle
+        if spt and W.sptStrata then
+            pcall(spt.SetFrameStrata, spt, W.sptStrata)
+            if W.sptLevel then pcall(spt.SetFrameLevel, spt, W.sptLevel) end
+        end
     end
     driveEntryPins()
 end
@@ -2677,6 +2730,15 @@ local function buildPinPool(view)
         bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
         bt:SetScript("OnClick", function(self)
             local kind, p = self.__kind, self.__p
+            if kind == "boss" and self.__dfView and self.__dfView.__mini then
+                local MWm = ns.MapWindowModule
+                if MWm and MWm.Restore then
+                    MWm.Restore()
+                    M.Select(p and p.en)
+                    if MWm.Sync then MWm.Sync() end
+                end
+                return
+            end
             W.arrive = nil
             if p and (kind == "prev" or kind == "next" or (kind == "entrance" and p.to)) then
                 W.arrive = { from = M.CurFloorNum(), kind = kind, tox = p.tox, toy = p.toy }
@@ -2907,6 +2969,7 @@ function W.Build()
         side:SetFrameLevel(view:GetFrameLevel() + 4)
         view.side = side
     end
+    skinChrome()
 end
 
 local lastSig, lastAW, lastAH, since
@@ -2925,6 +2988,13 @@ local function signature(id)
 end
 
 local function autoPick()
+    if inInstance() and not (ns.InstanceMapOn and ns.InstanceMapOn()) then
+        W.pinned, W.pinnedMap = nil, nil
+        return nil
+    end
+    if not inInstance() and euiMapSkin() then
+        return nil
+    end
     local id, why = W.Resolve()
     if not id then
         W.pinned, W.pinnedMap = nil, nil
@@ -2937,68 +3007,7 @@ end
 
 local function tick_()
     if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
-    syncSpacer()
-    driveEntryPins()
-    local view = W.view
-    if view then syncNav(view) end
-    if view and view:IsShown() then
-        leaSuppress()
-        raiseSideToggle()
-        if ns.OpenMapBridge and ns.OpenMapBridge.Suspend then pcall(ns.OpenMapBridge.Suspend) end
-    end
-    if not (view and view:IsShown()) then
-        local sig = leaIconSig()
-        if sig ~= leaLastSig then
-            leaLastSig = sig
-            if entryProvider then entryProvider:RefreshAllData() end
-        end
-    end
-    if not (view and view:IsShown()) then
-        syncAreaBtn()
-        if W.suppress then return end
-        local id, why = autoPick()
-        if id then
-            W.Show(id, why)
-            lastSig = signature(id)
-            lastAW, lastAH = mapAreaSize()
-        end
-        return
-    end
-    local mid = worldMapID()
-    if W.zoneMap and mid and mid ~= W.zoneMap then
-        if (GetTime() - (W.shownAt or 0)) < 0.8 then return end
-        if pendingMap ~= nil then return end
-        if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
-        local inside = inInstance()
-        W.lastMismatch = { t = GetTime(), mid = mid, zoneMap = W.zoneMap, curId = W.curId, inInst = inside }
-        local moved = W.movedAt and (GetTime() - W.movedAt) < 2
-        if inside or not moved then
-            if W.fixedMid ~= mid and (GetTime() - (W.fixedAt or 0)) > 1 then
-                W.fixedMid = mid
-                W.fixedAt = GetTime()
-                setMap(W.zoneMap)
-            end
-            return
-        end
-        W.fixedMid = nil
-        W.pinned = W.curId
-        W.Hide()
-        W.suppress = true
-        return
-    end
-    W.fixedMid = nil
-    adoptPanelState()
-    local aw, ah = mapAreaSize()
-    local sig = signature(W.curId)
-    if aw ~= lastAW or ah ~= lastAH then
-        lastAW, lastAH = aw, ah
-        W.Sync()
-        return
-    end
-    if sig ~= lastSig then
-        lastSig = sig
-        W.Sync()
-    end
+    syncOpenWinBtn()
 end
 
 local function mapPluginsOn()
@@ -3008,91 +3017,29 @@ end
 
 local function onShow()
     if not W.hooked then return end
+    if not enabled() then return end
     W.suppress = nil
-    W.shownAt = GetTime()
-    W.mapWasShown = true
-    purgeLearn()
-    local function attempt()
-        if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
-        local id, why = autoPick()
-        if id then
-            W.Show(id, why)
-            lastSig = signature(id)
-            lastAW, lastAH = mapAreaSize()
-        else
-            if W.pinned and W.pinnedMap and worldMapID() ~= W.pinnedMap then
-                setMap(W.pinnedMap)
-            end
-            W.lastMiss = {
-                t = GetTime(),
-                inInst = inInstance(),
-                ii = instanceInfo(),
-                mid = worldMapID(),
-                zone = zoneText(),
-                pinned = W.pinned,
-            }
-            W.Hide()
-        end
-    end
-    if not mapPluginsOn() then
-        attempt()
-        if W.Active() then
-            C_Timer.After(0, function()
-                if W.Active() then W.Sync() end
-            end)
-            return
-        end
-    end
-    C_Timer.After(0, function()
-        if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
-        if not W.Active() then attempt() end
-    end)
 end
 
-local function onHide()
-    W.mapWasShown = false
-    W.Hide()
-end
-
-local function guardToggle()
-    if W.__guarded or type(_G.ToggleWorldMap) ~= "function" then return end
-    W.__guarded = true
-    if type(hooksecurefunc) ~= "function" then return end
-    hooksecurefunc("ToggleWorldMap", function()
-        local wmf = WorldMapFrame
-        if not (wmf and wmf:IsShown()) then return end
-        if W.shownAt and (GetTime() - W.shownAt) < 0.2 then return end
-        if W.Active() then
-            pcall(wmf.Hide, wmf)
-        elseif W.mapWasShown then
-            pcall(wmf.Hide, wmf)
-        end
-    end)
-end
-
-function W.Hook()
-    if W.hooked or not WorldMapFrame then return end
-    W.hooked = true
-    purgeLearn()
-    local watch = CreateFrame("Frame", nil, WorldMapFrame)
-    watch:SetAllPoints(WorldMapFrame)
-    watch:SetScript("OnShow", onShow)
-    watch:SetScript("OnHide", onHide)
-    watch:SetScript("OnSizeChanged", function()
-        if W.Active() then W.Sync() end
-    end)
-    watch:SetScript("OnUpdate", function(_, dt)
+local function watchUpdate(_, dt)
     since = (since or 0) + dt
     if since < 0.2 then return end
     since = 0
-    hookPanelToggle()
     tick_()
-    end)
+end
+
+function W.Hook()
+    if not enabled() then return end
+    if W.hooked or not WorldMapFrame then return end
+    W.hooked = true
+    purgeLearn()
+    W.__onShow = onShow
+    local watch = CreateFrame("Frame", nil, WorldMapFrame)
+    watch:SetAllPoints(WorldMapFrame)
+    watch:SetScript("OnShow", onShow)
+    watch:SetScript("OnUpdate", watchUpdate)
     W.watch = watch
-    guardToggle()
-    attachPins()
-    leaClickTakeover()
-    ensureAreaBtn()
+    W.watchUpdate = watchUpdate
     if WorldMapFrame:IsShown() then onShow() end
 end
 
@@ -3137,6 +3084,7 @@ end
 local hookTries = 0
 local function tryHook()
     if W.hooked then return end
+    if not enabled() then return end
     if not WorldMapFrame then
         hookTries = hookTries + 1
         if hookTries <= 15 then C_Timer.After(1, tryHook) end
@@ -3144,5 +3092,22 @@ local function tryHook()
     end
     W.Hook()
 end
+
+W.Render = {
+    hasArt = hasArt,
+    detailOf = detailOf,
+    floorNumAt = floorNumAt,
+    floorText = floorText,
+    setPicked = setPicked,
+    paintArt = paintArt,
+    paintArea = paintArea,
+    syncRoute = syncRoute,
+    syncPins = syncPins,
+    syncBar = syncBar,
+    syncButtons = syncButtons,
+    routeToggle = routeToggle,
+    ndBtn = ndBtn,
+    buildPinPool = buildPinPool,
+}
 
 tryHook()

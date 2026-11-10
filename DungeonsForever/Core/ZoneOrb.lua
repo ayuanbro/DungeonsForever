@@ -537,7 +537,9 @@ local function Layout(res)
                 r.slug = s.slug
                 r.idesc = s.desc
                 r.ilabel = s.name
-                if s.areaID or s.qid or (s.mapID and s.x and s.y) then
+                if s.jump then
+                    r.jump = s.jump
+                elseif s.areaID or s.qid or (s.mapID and s.x and s.y) then
                     r.jump = function() return MarkOnMap(s) end
                 else
                     r.jump = nil
@@ -591,6 +593,10 @@ end
 local function Open()
     if not panel or panel:IsShown() then return end
     if opts then opts:Hide() end
+    do
+        local MWm = ns.MapWindowModule
+        if MWm and MWm.MinioCardWanted and MWm.MinioCardWanted() then O.Refresh() end
+    end
     Layout(current)
     panel:SetAlpha(0)
     local function apply(e)
@@ -620,6 +626,20 @@ local function Pulse()
 end
 
 function O.Update(res)
+    do
+        local MWm = ns.MapWindowModule
+        if MWm and MWm.MinioCardWanted and MWm.MinioCardWanted() and MWm.TodoCard then
+            local g = MWm.TodoCard()
+            if g and g.list then
+                res = res or {}
+                res.items = res.items or {}
+                if not res.__dfMapCard then
+                    table.insert(res.items, 1, g)
+                    res.__dfMapCard = true
+                end
+            end
+        end
+    end
     current = res
     if not badge then return end
     local onc = Cfg()

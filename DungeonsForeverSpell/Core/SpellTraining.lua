@@ -210,12 +210,13 @@ function ST.Rows()
     if lv < 1 or lv > 60 then lv = 60 end
     local extra = ns.SpellExtra
     local fix = extra and extra.fix and extra.fix[clsKey]
+    local hide = extra and extra.hide and extra.hide[clsKey]
     local qidx = BuildQuestIndex()
 
     local groups = { available = {}, next = {}, notlevel = {}, quest = {}, known = {}, talent = {} }
     for _, tab in ipairs(cls.tabs or {}) do
         for _, sp in ipairs(tab.spells or {}) do
-            if ST.RaceShown(sp.races) then
+            if not (hide and hide[sp.id]) and ST.RaceShown(sp.races) then
                 local baseLv = sp.learnLv
                 if fix and fix[sp.id] then baseLv = fix[sp.id] end
                 local row = {

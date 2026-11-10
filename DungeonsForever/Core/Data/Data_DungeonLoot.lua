@@ -912,14 +912,34 @@ ns.DungeonLoot = {
         } },
     },
     ["the_drowned_city"] = {
-        { "Zul'Alai", "祖拉莱", "", "270882", {} },
-        { "Var'Taka", "瓦尔塔卡", "", "270883", {} },
-        { "Captain Dreadrise", "德雷德莱斯船长", "", "270884", {} },
+        { "Zul'Alai", "祖拉莱", "", "270882", {
+            { 274600, 67, true },
+            { 274598, 17, true },
+            { 274599, 17, true },
+        } },
+        { "Var'Taka", "瓦尔塔卡", "", "270883", {
+            { 274601, 50, true },
+            { 274602, 50, true },
+        } },
+        { "Captain Dreadrise", "德雷德莱斯船长", "", "270884", {
+            { 274605, 60, true },
+            { 274603, 20, true },
+            { 274604, 20, true },
+        } },
         { "Deathless Marrow", "不死骨髓", "", "270885", {} },
-        { "Primeval Elemental", "原始元素", "", "270887", {} },
-        { "Gill", "吉尔", "", "270888", {} },
-        { "Min'loth the Serpent", "毒蛇明洛斯", "", "270886", {} },
-        { "Umbra", "乌姆布拉", "", "264172", {} },
+        { "Primeval Elemental", "原始元素", "", "270887", {
+            { 274615, 50, true },
+            { 274612, 50, true },
+        } },
+        { "Gill", "吉尔", "稀有", "270888", {
+            { 286649, nil, true },
+            { 286646, nil, true },
+        } },
+        { "Min'loth the Serpent", "毒蛇明洛斯", "", "270886", {
+            { 274608, 67, true },
+            { 274609, 33, true },
+        } },
+        { "Umbra", "乌姆布拉", "稀有", "264172", {} },
         { "Zin'aka", "辛阿卡", "", "263742", {} },
         { "Pyromancer Braxton", "\"炎术师\"布拉克斯顿", "稀有", "260468", {
             { 286651, 100, true },
@@ -976,6 +996,7 @@ ns.DungeonLoot = {
             { 10770, 33, false },
         } },
         { "Glutton", "暴食者", "", "8567", {
+            { 274385, nil, true },
             { 10774, 48, false },
             { 10772, 50, false },
         } },
@@ -992,6 +1013,7 @@ ns.DungeonLoot = {
             { 10765, 27, false },
         } },
         { "Plaguemaw the Rotting", "腐烂的普雷莫尔", "", "7356", {
+            { 274380, nil, true },
             { 10766, 33, false },
             { 10760, 63, false },
         } },
@@ -1063,9 +1085,14 @@ ns.DungeonLoot = {
     },
     ["kroldok_stronghold"] = {
         { "Slavecrusher Grox", "碎奴者格罗克斯", "", "258966", {} },
-        { "Twilight Commander Zarmok", "暮光指挥官扎尔莫克", "", "258972", {} },
+        { "Twilight Commander Zarmok", "暮光指挥官扎尔莫克", "", "258972", {
+            { 267091, nil, true },
+            { 267234, nil, true },
+        } },
         { "War Handler Ashka", "驯兽师阿什卡", "", "259281", {} },
-        { "Nar'gurk", "纳古克", "", "258964", {} },
+        { "Nar'gurk", "纳古克", "", "258964", {
+            { 267104, nil, true },
+        } },
         { "Overlord Mugg", "霸主莫格", "", "258968", {} },
     },
     ["uldaman"] = {
@@ -1302,10 +1329,16 @@ ns.DungeonLoot = {
     },
     ["alcaz_prison"] = {
         { "Overseer Wrex", "狱监雷克斯", "", "", {} },
-        { "Tidemistress Ca'zass", "海潮主母卡扎斯", "", "255997", {} },
+        { "Tidemistress Ca'zass", "海潮主母卡扎斯", "", "255997", {
+            { 273883, nil, true },
+        } },
         { "Katerina the Cleaner", "清道夫卡特琳娜", "", "257016", {} },
-        { "The Questioner", "质问者", "", "256236", {} },
-        { "Blazeroar", "烈焰咆哮者", "", "255702", {} },
+        { "The Questioner", "质问者", "", "256236", {
+            { 274029, nil, true },
+        } },
+        { "Blazeroar", "烈焰咆哮者", "", "255702", {
+            { 276890, nil, true },
+        } },
     },
     ["sunken_temple"] = {
         { "Loro", "洛若尔", "", "5714", {
@@ -1763,11 +1796,21 @@ ns.DungeonLoot = {
         } },
     },
     ["blackmaw_hold"] = {
-        { "Withermaw", "枯颌", "", "247195", {} },
+        { "Withermaw", "枯颌", "", "247195", {
+            { 249697, nil, true },
+        } },
         { "Impaan the Imprisoner", "狱牢头鬼", "", "247206", {} },
-        { "Elder Shaman Bloodmane", "长者萨满血鬃", "", "247209", {} },
-        { "Bonesnout the Unbroken", "不屈的白骨之吻", "", "247198", {} },
-        { "Varrox Bleakhoof", "瓦罗克斯·暗蹄", "", "247234", {} },
+        { "Elder Shaman Bloodmane", "长者萨满血鬃", "", "247209", {
+            { 276893, nil, true },
+            { 286415, nil, true },
+        } },
+        { "Bonesnout the Unbroken", "不屈的白骨之吻", "", "247198", {
+            { 249696, nil, true },
+        } },
+        { "Varrox Bleakhoof", "瓦罗克斯·暗蹄", "", "247234", {
+            { 272027, nil, true },
+            { 249692, nil, true },
+        } },
         { "Blackmaw Behemoth", "黑喉巨兽", "", "247207", {} },
         { "Unbound Spirit", "不羁之魂", "", "247231", {} },
     },
@@ -2468,13 +2511,18 @@ ns.DungeonLoot = {
         { "Ravasaur Hunters", "暴掠龙猎手", "", "", {} },
         { "Thunderhoof", "雷蹄", "", "261812", {} },
         { "Venomridge", "毒脊", "", "261813", {} },
-        { "Direhorn Matriarch", "恐角龙母", "", "262127", {} },
+        { "Direhorn Matriarch", "恐角龙母", "", "262127", {
+            { 285951, nil, true },
+        } },
         { "Cinder", "烈火", "", "261974", {} },
         { "King Op", "奥普国王", "", "261993", {} },
         { "Snowtalon", "雪爪", "", "262297", {} },
         { "Bolt", "霹雳", "", "262081", {} },
         { "Vitrix", "翠鳞", "", "272561", {} },
-        { "Nanaya", "娜娜亚", "", "261809", {} },
+        { "Nanaya", "娜娜亚", "", "261809", {
+            { 272028, nil, true },
+            { 285952, nil, true },
+        } },
     },
     ["stratholme_main"] = {
         { "Skul", "斯库尔", "稀有 · 58 级", "10393", {

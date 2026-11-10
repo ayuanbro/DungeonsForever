@@ -6,6 +6,9 @@ ns.SpellExtra = {
     fix = {
         PALADIN = { [25780] = 10 },
     },
+    hide = {
+        HUNTER = { [5149] = true, [883] = true, [2641] = true, [6991] = true, [982] = true },
+    },
     passive = {
         WARRIOR = { { 3127, 6 }, { 674, 20 }, { 750, 40 } },
         PALADIN = { { 3127, 8 }, { 750, 40 } },

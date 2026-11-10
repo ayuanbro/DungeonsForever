@@ -14920,7 +14920,7 @@ function PD.CrateColumns(writ)
         { fs = "c", value = "right", text = writ and L["拍卖总价"] or L["总价格"], zone = "hsTot", act = "act", on = "sortOn", arrow = 1 },
     }
     if writ then cols[#cols + 1] = { fs = "d", value = "right2", text = L["制造总价"], zone = "hsCraft", act = "craftAct", on = "craftOn", arrow = 3 } end
-    cols[#cols + 1] = { fs = "e", value = "rightUnit", text = writ and L["每点声望最低成本"] or L["每点青睐的最低成本"], zone = "hsGap", act = "unitAct", on = "unitOn", arrow = 4 }
+    cols[#cols + 1] = { fs = "e", value = "rightUnit", text = writ and L["每点声望"] or L["每点青睐"], zone = "hsGap", act = "unitAct", on = "unitOn", arrow = 4 }
     if not PD.crateMeasure then PD.crateMeasure = MakeFS(UIParent, 12, C_GREY, "RIGHT"); PD.crateMeasure:Hide() end
     local measure = PD.crateMeasure
     measure:SetFont(ns.FONT, 12, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
@@ -14947,7 +14947,7 @@ function PD.CrateRowHeight(text, cols)
     fs:SetWordWrap(true)
     fs:SetNonSpaceWrap(true)
     fs:SetText(text)
-    return math.max(56, math.ceil(fs:GetStringHeight() or 0) + 24)
+    return math.max(44, math.ceil(fs:GetStringHeight() or 0) + 24)
 end
 function PD.PaintCrateColumns(r, spec, h, padL)
     local head = spec.kind == "colhead"
@@ -14965,16 +14965,16 @@ function PD.PaintCrateColumns(r, spec, h, padL)
     if not head then
         r.a:ClearAllPoints()
         r.a:SetPoint("TOPLEFT", r, "TOPLEFT", padL or 6, -4)
-        r.a:SetHeight(h - 24)
+        r.a:SetHeight(math.max(1, r.a:GetStringHeight() or 0))
         r.a:SetNonSpaceWrap(true)
         r.a:SetJustifyV("TOP")
         r.b:SetFont(ns.FONT, 11, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
         r.b:ClearAllPoints()
-        r.b:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", padL or 6, 4)
+        r.b:SetPoint("TOPLEFT", r.a, "BOTTOMLEFT", 0, -2)
         if spec.tag and r.tagChip:IsShown() then
             local tw = (r.tagChip:GetWidth() or 0) + 6
             r.tagChip:ClearAllPoints()
-            r.tagChip:SetPoint("BOTTOMRIGHT", r, "BOTTOMLEFT", (padL or 6) + nameW, 4)
+            r.tagChip:SetPoint("LEFT", r.b, "RIGHT", 8, 0)
             r.b:SetWidth(math.max(0, nameW - tw))
         end
     end
@@ -15004,8 +15004,8 @@ function PD.PaintCrateColumns(r, spec, h, padL)
 end
 PD.crateSel = nil
 PD.writSel = nil
-PD.crateSort = "total"
-PD.writSort = "total"
+PD.crateSort = "favor"
+PD.writSort = "rep"
 PD.plunderSel = nil
 PD.plunderSort = "cost"
 PD.recipeSort = nil
@@ -15089,7 +15089,7 @@ function PD.CrateRows(rows)
     rows[#rows + 1] = { kind = "colhead", col = 1, h = PD.TEXT_H, priceCols = cols,
                         text = L["名称"], right = L["总价格"], ownRight = L["自身价格"],
                         sortOn = (mode == "total"), ownOn = (mode == "own"),
-                        unitText = L["每点青睐的最低成本"], unitOn = (mode == "favor"),
+                        unitText = L["每点青睐"], unitOn = (mode == "favor"),
                         unitAct = function()
                             PD.crateSort = (mode ~= "favor") and "favor" or nil
                             PD.RequestRender()
@@ -15180,7 +15180,7 @@ function PD.CrateRows(rows)
     local total = (own and cheapest) and (own + cheapest) or nil
     CrateMetaRow(rows, L["合计"], total, total, 14)
     if total and (sc.favor or 0) > 0 then
-        CrateMetaRow(rows, L["每点青睐的最低成本"], total / sc.favor, true, 14)
+        CrateMetaRow(rows, L["每点青睐"], total / sc.favor, true, 14)
     end
     MarkSec(rows, secS, #rows, 3)
     PD.hasSecs = true
@@ -15325,7 +15325,7 @@ function PD.WritRows(rows)
                         text = L["名称"], right = L["拍卖总价"], craftRight = L["制造总价"],
                         ownRight = L["自身价格"],
                         sortOn = (mode == "total"), craftOn = (mode == "craft"), ownOn = (mode == "own"),
-                        unitText = L["每点声望最低成本"], unitOn = (mode == "rep"),
+                        unitText = L["每点声望"], unitOn = (mode == "rep"),
                         unitAct = function()
                             PD.writSort = (mode ~= "rep") and "rep" or nil
                             PD.RequestRender()
@@ -15493,7 +15493,7 @@ function PD.WritRows(rows)
             rightColor = { 0.42, 0.94, 0.62 },
         }
     end
-    CrateMetaRow(rows, L["每点声望最低成本"], repUnit, repUnit, 14)
+    CrateMetaRow(rows, L["每点声望"], repUnit, repUnit, 14)
     MarkSec(rows, secC, #rows, 4)
     PD.hasSecs = true
     PD.secCount = 4
@@ -15867,6 +15867,11 @@ end
 function PD.SetTab(key)
     PD.setOpen = false
     if not (PD.avail and PD.avail[key]) then return end
+    if key == "crate" then
+        PD.crateSort = "favor"
+    elseif key == "writ" then
+        PD.writSort = "rep"
+    end
     PD.tab = key
     PD.RequestRender()
 end

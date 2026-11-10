@@ -260,6 +260,122 @@ function ns.SetMapEntry(on)
     DB().ui.mapEntry = on and true or false
     local W = ns.MapWorldModule
     if W and W.ApplyEntryToggle then W.ApplyEntryToggle() end
+    if on and ns.WarnGamepadMap then pcall(ns.WarnGamepadMap) end
+end
+
+function ns.InstanceMapOn()
+    local v = DB().ui.instanceMap
+    if v == nil then return true end
+    return v == true
+end
+
+function ns.SetInstanceMap(on)
+    DB().ui.instanceMap = on and true or false
+    local W = ns.MapWorldModule
+    if W and W.ApplyEntryToggle then W.ApplyEntryToggle() end
+end
+
+local gpWarnFrame
+
+local function BuildGpWarn()
+    if gpWarnFrame then return gpWarnFrame end
+    local shade = CreateFrame("Button", "DungeonsForeverGamepadWarn", UIParent)
+    shade:SetAllPoints(UIParent)
+    shade:SetFrameStrata("FULLSCREEN_DIALOG")
+    shade:EnableMouse(true)
+    local dim = shade:CreateTexture(nil, "BACKGROUND")
+    dim:SetAllPoints()
+    dim:SetColorTexture(0, 0, 0, 0.55)
+
+    local card = CreateFrame("Frame", nil, shade, "BackdropTemplate")
+    card:SetSize(340, 190)
+    card:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+    card:SetFrameLevel(shade:GetFrameLevel() + 2)
+    card:EnableMouse(true)
+    if ns.hui and ns.hui.SkinPopup then
+        pcall(ns.hui.SkinPopup, card, 10, nil, ns.hui.layer and ns.hui.layer.L0)
+    else
+        card:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
+        card:SetBackdropColor(0x0A / 255, 0x0C / 255, 0x10 / 255, 1)
+    end
+    if ns.hui and ns.hui.SkinShadow then pcall(ns.hui.SkinShadow, card) end
+
+    local title = card:CreateFontString(nil, "OVERLAY")
+    title:SetFont(ns.FONT, 15, "")
+    title:SetPoint("TOPLEFT", card, "TOPLEFT", 16, -14)
+    title:SetText(ns.L["手柄模式提醒"])
+    title:SetTextColor(0.95, 0.96, 0.98)
+
+    local body = card:CreateFontString(nil, "OVERLAY")
+    body:SetFont(ns.FONT, 12, "")
+    body:SetPoint("TOPLEFT", card, "TOPLEFT", 16, -40)
+    body:SetPoint("TOPRIGHT", card, "TOPRIGHT", -16, -40)
+    body:SetJustifyH("LEFT")
+    body:SetText(ns.L["检测到手柄模式，而「地图增强」正开着。它在副本内会接管地图与任务面板，手柄操作可能失灵，建议关闭。"])
+    body:SetTextColor(0.80, 0.82, 0.86)
+
+    local function Close()
+        shade:Hide()
+    end
+
+    local bt1 = ns.CreateButton(card)
+    bt1:SetSize(140, 26)
+    bt1:SetPoint("BOTTOMLEFT", card, "BOTTOMLEFT", 16, 38)
+    bt1:SetText(ns.L["关闭地图增强"])
+    bt1:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        Close()
+        ns.SetMapEntry(false)
+        if ns.SyncZoneHintCard then pcall(ns.SyncZoneHintCard) end
+    end)
+
+    local bt2 = ns.CreateButton(card)
+    bt2:SetSize(140, 26)
+    bt2:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -16, 38)
+    bt2:SetText(ns.L["本次保留"])
+    bt2:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        Close()
+    end)
+
+    local link = card:CreateFontString(nil, "OVERLAY")
+    link:SetFont(ns.FONT, 11, "")
+    link:SetPoint("BOTTOM", card, "BOTTOM", 0, 14)
+    link:SetText(ns.L["以后不再提示"])
+    link:SetTextColor(0.48, 0.50, 0.54)
+    link:SetJustifyH("CENTER")
+
+    local linkBtn = CreateFrame("Button", nil, card)
+    linkBtn:SetAllPoints(link)
+    linkBtn:SetFrameLevel(card:GetFrameLevel() + 3)
+    linkBtn:SetScript("OnEnter", function() link:SetTextColor(0.85, 0.86, 0.90) end)
+    linkBtn:SetScript("OnLeave", function() link:SetTextColor(0.48, 0.50, 0.54) end)
+    linkBtn:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        DB().ui.gpWarnOff = true
+        Close()
+    end)
+
+    shade:SetScript("OnClick", Close)
+    shade:Hide()
+    table.insert(UISpecialFrames, "DungeonsForeverGamepadWarn")
+    gpWarnFrame = shade
+    return shade
+end
+
+function ns.WarnGamepadMap()
+    if ns.__gpWarned then return end
+    if DB().ui.gpWarnOff then return end
+    if not (ns.MapEntryOn and ns.MapEntryOn()) then return end
+    if not (InputUtil and InputUtil.IsGamepadUIEnabled and InputUtil.IsGamepadUIEnabled()) then return end
+    ns.__gpWarned = true
+    C_Timer.After(2, function()
+        if DB().ui.gpWarnOff then return end
+        if not (InputUtil and InputUtil.IsGamepadUIEnabled and InputUtil.IsGamepadUIEnabled()) then return end
+        if not (ns.MapEntryOn and ns.MapEntryOn()) then return end
+        local f = BuildGpWarn()
+        if f then f:Show() end
+    end)
 end
 
 do
@@ -407,29 +523,29 @@ do
     end
 
     local guard = CreateFrame("Frame")
+    local ticker
 
-    if InputUtil and InputUtil.RegisterForInterfaceTransitions and InputUtil.RegisterGamepadInit then
-        pcall(function()
-            InputUtil.RegisterForInterfaceTransitions(guard)
-            InputUtil.RegisterGamepadInit(guard, function()
-                UnregisterForbidden()
-            end)
-        end)
+    local function Stop()
+        if ticker then
+            ticker:Cancel()
+            ticker = nil
+        end
+    end
+
+    local function Try()
+        if not TrySilence() then return end
+        Stop()
+        if ns.WarnGamepadMap then pcall(ns.WarnGamepadMap) end
     end
 
     guard:RegisterEvent("PLAYER_LOGIN")
+    guard:RegisterEvent("PLAYER_ENTERING_WORLD")
+    guard:RegisterEvent("GAME_PAD_CONNECTED")
     guard:SetScript("OnEvent", function(self, event)
-        C_Timer.After(0, function()
-        if event == "PLAYER_LOGIN" then
-            self:UnregisterEvent("PLAYER_LOGIN")
-            if not TrySilence() then
-                self:RegisterEvent("PLAYER_ENTERING_WORLD")
-            end
-        else
-            self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-            TrySilence()
-        end
-        end)
+        if event == "PLAYER_LOGIN" then self:UnregisterEvent("PLAYER_LOGIN") end
+        if event == "PLAYER_ENTERING_WORLD" then self:UnregisterEvent("PLAYER_ENTERING_WORLD") end
+        if C_Timer and C_Timer.After then C_Timer.After(0, Try) end
+        if not ticker and C_Timer and C_Timer.NewTicker then ticker = C_Timer.NewTicker(2, Try) end
     end)
 end
 

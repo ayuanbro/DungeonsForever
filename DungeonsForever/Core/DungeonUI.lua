@@ -512,6 +512,13 @@ function DG.GroupOf(d, lv)
     return "now"
 end
 
+function DG.NameHit(d, q)
+    if q == "" then return true end
+    if d.name and string.find(string.lower(d.name), q, 1, true) then return true end
+    if d.nameEn and string.find(string.lower(d.nameEn), q, 1, true) then return true end
+    return false
+end
+
 function DG.BuildList()
     local data = ns.DungeonData
     local scroll, child, pool = U.dungeonListScroll, U.dungeonListChild, U.dungeonListPool
@@ -519,6 +526,7 @@ function DG.BuildList()
 
     local lv = UnitLevel("player") or 0
     U.dungeonListLevel = lv
+    local q = string.lower(U.dungeonSearchText or "")
 
     local cols, gx = DG.CARD_COLS, DG.CARD_GAP
     local cardW = DG.CARD_W
@@ -535,10 +543,18 @@ function DG.BuildList()
     }
     local buckets = { now = {}, rec = {}, up = {} }
     for _, d in ipairs(data.dungeons) do
-        if not d.noList then
+        if not d.noList and DG.NameHit(d, q) then
             local b = buckets[DG.GroupOf(d, lv)]
             b[#b + 1] = d
         end
+    end
+
+    if q ~= "" then
+        local vg = {}
+        for _, g in ipairs(groups) do
+            if #buckets[g.key] > 0 then vg[#vg + 1] = g end
+        end
+        groups = vg
     end
 
     local y = -4
@@ -554,7 +570,7 @@ function DG.BuildList()
         if not ui then
             ui = {
                 txt = MakeFS(child, 16, C_GOLD, "LEFT"),
-                hint = MakeFS(child, 14, C_DIM, "RIGHT"),
+                hint = MakeFS(child, 14, C_DIM, "LEFT"),
                 div = child:CreateTexture(nil, "ARTWORK"),
             }
             ui.div:SetHeight(1)
@@ -606,7 +622,7 @@ function DG.BuildList()
         ui.arrU:SetShown(isClosed)
         ui.hint:SetText(g.hint)
         ui.hint:ClearAllPoints()
-        ui.hint:SetPoint("TOPRIGHT", child, "TOPRIGHT", -DG.GUTTER, y - 1)
+        ui.hint:SetPoint("TOPLEFT", ui.txt, "RIGHT", 10, 1)
         ui.div:SetColorTexture(g.color[1], g.color[2], g.color[3], 0.30)
         ui.div:ClearAllPoints()
         ui.div:SetPoint("TOPLEFT", ui.txt, "BOTTOMLEFT", -(DG.GUTTER + 14), -6)
@@ -636,8 +652,13 @@ function DG.BuildList()
             card:ClearAllPoints()
             card:SetPoint("TOPLEFT", child, "TOPLEFT", DG.GUTTER + col * (cardW + gx), y - row * (DG.CARD_H + gx))
             local ea = (g.key == "up") and 0.30 or 0.70
-            card.__edge = { g.color[1], g.color[2], g.color[3], ea }
-            CardEdge(card, g.color[1], g.color[2], g.color[3], ea)
+            if q ~= "" then
+                card.__edge = { 1, 1, 1, 0.9 }
+                CardEdge(card, 1, 1, 1, 0.9)
+            else
+                card.__edge = { g.color[1], g.color[2], g.color[3], ea }
+                CardEdge(card, g.color[1], g.color[2], g.color[3], ea)
+            end
             DG.PaintArt(card.art, d, "wide")
             card.dim:SetColorTexture(0, 0, 0,
                 (g.key == "rec") and 0.38 or ((g.key == "now") and 0.52 or 0.66))
@@ -907,6 +928,41 @@ function DG.BuildDungeons()
     end
     U.dungeonListChild = listChild
     U.dungeonListPool = { card = {}, hdr = {} }
+
+    U.dungeonSearchText = ""
+    local sb = CreateFrame("Frame", nil, listChild, "BackdropTemplate")
+    sb:SetFrameLevel((listChild:GetFrameLevel() or 0) + 6)
+    sb:SetPoint("TOPRIGHT", listChild, "TOPRIGHT", -DG.GUTTER, -2)
+    sb:SetSize(190, 24)
+    if IsHui() and ns.hui and ns.hui.BuildRoundedBG then
+        ns.hui.BuildRoundedBG(sb, 5, ns.hui.layer.L2, "both", true, 1)
+    else
+        sb:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = 1,
+        })
+        sb:SetBackdropColor(0, 0, 0, 0.25)
+        sb:SetBackdropBorderColor(1, 1, 1, 0.08)
+    end
+    local eb = CreateFrame("EditBox", nil, sb)
+    eb:SetAllPoints()
+    eb:SetFont(Fnt(12))
+    eb:SetTextInsets(6, 6, 0, 0)
+    eb:SetAutoFocus(false)
+    eb:SetMaxLetters(30)
+    eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    local ph = MakeFS(sb, 12, C_DIM, "LEFT")
+    ph:SetPoint("LEFT", sb, "LEFT", 8, 0)
+    ph:SetText(L["搜索副本名称"])
+    eb:SetScript("OnTextChanged", function(self)
+        U.dungeonSearchText = string.lower(self:GetText() or "")
+        ph:SetShown(self:GetText() == "")
+        DG.BuildList()
+    end)
+    U.dungeonSearch = sb
+    U.dungeonSearchEdit = eb
+    U.dungeonSearchPH = ph
 
     local detail = CreateFrame("Frame", nil, page)
     detail:SetPoint("TOPLEFT", page, "TOPLEFT", PAGE_INSET, -DETAIL_Y)
@@ -2301,7 +2357,7 @@ function DG.PaintQuestOverview(d)
     end
     local inside = {}
     for i = 1, #list do inside[list[i][1]] = list[i] end
-    local parent, extOf, extSeen = {}, {}, {}
+    local parent, extOf, extSeen, extAll = {}, {}, {}, {}
     local parentsAll = {}
     for i = 1, #list do
         local q = list[i]
@@ -2317,9 +2373,12 @@ function DG.PaintQuestOverview(d)
                 end
                 if inside[pid] then
                     if not parent[q[1]] then parent[q[1]] = pid end
-                elseif not extSeen[pid] then
-                    extSeen[pid] = true
-                    extOf[q[1]] = pid
+                else
+                    if not extSeen[pid] then
+                        extSeen[pid] = true
+                        extOf[q[1]] = pid
+                    end
+                    extAll[q[1]] = pid
                 end
             end
         end
@@ -2354,8 +2413,39 @@ function DG.PaintQuestOverview(d)
             return (listIdx[a[1]] or 0) < (listIdx[b[1]] or 0)
         end)
     end
-    local chainLab = {}
+    local subOf, extMain, subMainOf = {}, {}, {}
     for _, r in ipairs(colOrder) do
+        local e = extAll[chains[r][1][1]]
+        if e and extMain[e] then
+            subMainOf[r] = extMain[e]
+            subOf[extMain[e]] = subOf[extMain[e]] or {}
+            subOf[extMain[e]][#subOf[extMain[e]] + 1] = r
+        elseif e then
+            extMain[e] = r
+        end
+    end
+    do
+        local flatOrder = {}
+        for _, r in ipairs(colOrder) do
+            if not subMainOf[r] then
+                flatOrder[#flatOrder + 1] = r
+                if subOf[r] then
+                    for _, sr in ipairs(subOf[r]) do flatOrder[#flatOrder + 1] = sr end
+                end
+            end
+        end
+        colOrder = flatOrder
+    end
+    local extRowOf, extNodeOf, subFirstOf = {}, {}, {}
+    local chainLab = {}
+    local labRoots = {}
+    for _, r in ipairs(colOrder) do
+        labRoots[#labRoots + 1] = r
+        if subOf[r] then
+            for _, sr in ipairs(subOf[r]) do labRoots[#labRoots + 1] = sr end
+        end
+    end
+    for _, r in ipairs(labRoots) do
         local anchor
         for k = 1, #chains[r] do
             if DG.QLCall("GetQuestType", chains[r][k][1]) == 81 then anchor = k break end
@@ -2890,8 +2980,14 @@ function DG.PaintQuestOverview(d)
         for c = 1, nCols do
             local rr = 0
             local prev = nil
+            local extLast, extRow = nil, nil
             for _, r in ipairs(packs[c]) do
                 local ch = chains[r]
+                local subMain = subMainOf[r]
+                if subMain then
+                    local rr0 = (extRowOf[subMain] or 0) + 1
+                    if rr < rr0 then rr = rr0 end
+                end
                 for k = 1, #ch do
                     local q = ch[k]
                     local pres = q[9]
@@ -2917,12 +3013,18 @@ function DG.PaintQuestOverview(d)
                                         vline(colX[c] + nw / 2, lastN.__oy + DG.Q_OV_H, en.__oy, lineColor({ en.__ext }, { lastN.__ext }))
                                     end
                                     lastN = en
+                                    extLast, extRow = en, rr - 1
+                                end
+                                if extRow then
+                                    extRowOf[r] = extRow
+                                    extNodeOf[r] = lastN
                                 end
                             end
                         end
                     end
                     local n = place(q, c, rowY(rr))
                     nodeByQid[q[1]] = n
+                    if k == 1 and subMainOf[r] then subFirstOf[r] = n end
                     placed[#placed + 1] = { q = q, n = n }
                     if prev then
                         local x = colX[c] + nw / 2
@@ -2961,7 +3063,9 @@ function DG.PaintQuestOverview(d)
             if dn then anyDone = true end
             if rd then anyRdy = true end
             if ac then anyAct = true end
-            marks[#marks + 1] = { x = colX[c] + nw / 2, dn = dn, rd = rd, ac = ac, c = c, lc = lineColor(tq, nil) }
+            if not subMainOf[packs[c][1]] then
+                marks[#marks + 1] = { x = colX[c] + nw / 2, dn = dn, rd = rd, ac = ac, c = c, lc = lineColor(tq, nil) }
+            end
         end
         local onCol = false
         for c = 1, nCols do
@@ -3080,14 +3184,27 @@ function DG.PaintQuestOverview(d)
             local topQ = chains[packs[c][1]][1]
             local lc = lineColor(topQ, nil)
             local xc = colX[c] + nw / 2
-            if bend and xc == xL then
-                path(lc, { { xL + bendR, spineY }, { xL, spineY }, { xL, rowY(0) } })
+            local subHead = subMainOf[packs[c][1]]
+            local yBot = subHead and rowY((extRowOf[subHead] or 0) + 1) or rowY(0)
+            local srcN = subHead and extNodeOf[subHead] or nil
+            local fN = subHead and subFirstOf[packs[c][1]] or nil
+            if subHead and srcN and fN then
+                local x1 = srcN.__ox + nw
+                local y1 = srcN.__oy + DG.Q_OV_H / 2
+                local y2 = fN.__oy
+                if y2 <= y1 + 1 then
+                    vline(xc, math.min(y1, y2), math.max(y1, y2), lc)
+                else
+                    path(lc, { { x1, y1 }, { xc, y1 }, { xc, y2 } })
+                end
+            elseif bend and xc == xL then
+                path(lc, { { xL + bendR, spineY }, { xL, spineY }, { xL, yBot } })
             elseif bend and xc == xR then
-                path(lc, { { xR - bendR, spineY }, { xR, spineY }, { xR, rowY(0) } })
+                path(lc, { { xR - bendR, spineY }, { xR, spineY }, { xR, yBot } })
             elseif oneCol then
-                vline(xc, DG.Q_OV_H, rowY(0), lc)
+                vline(xc, DG.Q_OV_H, yBot, lc)
             else
-                vline(xc, vtop[c] or (spineY + LINEW / 2), rowY(0), lc)
+                vline(xc, vtop[c] or (spineY + LINEW / 2), yBot, lc)
             end
         end
 
@@ -7011,9 +7128,14 @@ function DG.EnsureRowByID()
     if DG.__rowByID then return end
     local map, keys = {}, {}
     for k in pairs(ns.DungeonQuests or {}) do keys[#keys + 1] = k end
-    table.sort(keys)
+    table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
     for i = 1, #keys do
-        for _, q in ipairs(ns.DungeonQuests[keys[i]]) do map[q[1]] = q end
+        local rows = ns.DungeonQuests[keys[i]]
+        if type(rows) == "table" then
+            for _, q in ipairs(rows) do
+                if type(q) == "table" and type(q[1]) == "number" then map[q[1]] = q end
+            end
+        end
     end
     DG.__rowByID = map
 end
@@ -7040,10 +7162,12 @@ function DG.QuestFollowers(id)
             t[#t + 1] = fid
         end
         for _, rows in pairs(ns.DungeonQuests or {}) do
-            for _, q in ipairs(rows) do
-                if type(q[9]) == "table" then
-                    for _, seg in ipairs(q[9]) do
-                        if type(seg) == "number" then add(seg, q[1]) end
+            if type(rows) == "table" then
+                for _, q in ipairs(rows) do
+                    if type(q) == "table" and type(q[9]) == "table" then
+                        for _, seg in ipairs(q[9]) do
+                            if type(seg) == "number" then add(seg, q[1]) end
+                        end
                     end
                 end
             end

@@ -1,0 +1,17 @@
+## Interface: 11508, 11509, 16001, 20506, 30405, 38002, 40402, 50503, 50504, 50505, 120005, 120007, 120100
+## Title: <DF_CNLocale> |cff46bf72DF - Chinese Locale Switch|r
+## Title-zhCN: |cff46bf72无限副本手册 中文语言开关|r
+## Title-zhTW: |cff46bf72無限副本手冊 中文語言開關|r
+## Title-enUS: |cff46bf72DF - Chinese Locale Switch|r
+## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
+## Category: 圆圆的插件
+## Group: DungeonsForever
+## Notes: Holds one switch that forces the Chinese UI on non-Chinese clients; loaded before DungeonsForever
+## Notes-zhCN: 无限副本手册 中文语言开关：只存一个开关，供手册在加载前判定界面语言（非中文客户端用）
+## Notes-zhTW: 無限副本手冊 中文語言開關：只存一個開關，供手冊在載入前判定介面語言（非中文客戶端用）
+## Notes-enUS: Holds one switch that forces the Chinese UI on non-Chinese clients; loaded before DungeonsForever
+## Author: 圆圆
+## Version: 2.1.61
+## LoadOnDemand: 0
+## SavedVariables: DF_CN_FORCE
+DF_CNLocale.lua

@@ -17,6 +17,7 @@ ns.BossPos = {
         ["Umbra"] = { { 52, 85.2 } },
         ["Primeval Elemental"] = { { 84.6, 75.9 } },
         ["Pyromancer Braxton"] = { { 48.5, 20.4 } },
+        ["Gill"] = { { 79.9, 87.3 } },
     },
     ["upper_blackrock_spire"] = {
         ["Pyroguard Emberseer"] = { { 30.5, 27, 2 } },

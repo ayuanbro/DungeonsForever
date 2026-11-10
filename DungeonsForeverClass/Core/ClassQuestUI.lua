@@ -1407,6 +1407,13 @@ renderQuest = function(id, y)
     return y
 end
 
+function CQ.ToDetailTop()
+    if CQ.dscroll then
+        CQ.dscroll:SetVerticalScroll(0)
+        CQ.UpdateDBar()
+    end
+end
+
 function CQ.ToTop()
     if TT.scroll then
         TT.scroll:SetVerticalScroll(0)
@@ -1632,7 +1639,7 @@ function CQ.Render()
         fr.__act = function()
             CQ.open[row.key] = not CQ.open[row.key]
             CQ.sel = { type = "chain", row = row }
-            CQ.ToTop()
+            CQ.ToDetailTop()
             TT.RequestRender()
         end
         fr:ClearAllPoints()
@@ -1662,7 +1669,7 @@ function CQ.Render()
                 Hui(false, r)
                 r.__act = function()
                     CQ.sel = { type = "quest", id = qid, chain = row }
-                    CQ.ToTop()
+                    CQ.ToDetailTop()
                     TT.RequestRender()
                 end
                 r:ClearAllPoints()

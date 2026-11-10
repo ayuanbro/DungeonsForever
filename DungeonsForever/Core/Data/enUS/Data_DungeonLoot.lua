@@ -920,9 +920,9 @@ ns.DungeonLoot = {
         { "Captain Dreadrise", "Captain Dreadrise", "", "270884", {} },
         { "Deathless Marrow", "Deathless Marrow", "", "270885", {} },
         { "Primeval Elemental", "Primeval Elemental", "", "270887", {} },
-        { "Gill", "Gill", "", "270888", {} },
+        { "Gill", "Gill", "稀有", "270888", {} },
         { "Min'loth the Serpent", "Min'loth the Serpent", "", "270886", {} },
-        { "Umbra", "Umbra", "", "264172", {} },
+        { "Umbra", "Umbra", "稀有", "264172", {} },
         { "Zin'aka", "Zin'aka", "", "263742", {} },
         { "Pyromancer Braxton", "Pyromancer Braxton", "Rare", "260468", {
             { 286651, 100, true },

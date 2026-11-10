@@ -49,6 +49,24 @@ local function DeferInCombat()
     return true
 end
 
+local function BookShown()
+    if not (book and book.IsShown) then return false end
+    local ok, v = pcall(book.IsShown, book)
+    if not ok then return true end
+    return v and true or false
+end
+
+local function ShowTabs()
+    if not BookShown() then return end
+    if tabButton then tabButton:Show() end
+    if weaponTabButton then weaponTabButton:Show() end
+end
+
+local function HideTabs()
+    if tabButton then tabButton:Hide() end
+    if weaponTabButton then weaponTabButton:Hide() end
+end
+
 local function EUIOn()
     if not EllesmereUI then return false end
     if EllesmereUI.GetBlizzWindowStyle then
@@ -1053,6 +1071,7 @@ local function Attach()
 
     lastTab = sb.GetTab and sb:GetTab()
     ReparentTabs()
+    if not BookShown() then HideTabs() end
 
     local function FitSearchBoxNow()
         if DeferInCombat() then return end
@@ -1127,6 +1146,15 @@ local function Attach()
             end)
         end
     end)
+    sb:HookScript("OnHide", function()
+        HideTabs()
+    end)
+    local tf = psf.TalentsFrame
+    if tf and tf.HookScript then
+        tf:HookScript("OnShow", function()
+            HideTabs()
+        end)
+    end
     AnchorTabs()
     return true
 end
@@ -1149,8 +1177,7 @@ local function ApplyEnabled()
             return false
         end
         retryLeft = 0
-        tabButton:Show()
-        if weaponTabButton then weaponTabButton:Show() end
+        ShowTabs()
         AnchorTabs()
         return true
     end
@@ -1165,8 +1192,7 @@ function NB.SetEnabled(on)
     if on then
         retryLeft = 6
         if not (book and tabButton) then Attach() end
-        if tabButton then tabButton:Show() end
-        if weaponTabButton then weaponTabButton:Show() end
+        ShowTabs()
         AnchorTabs()
         if not tabButton then ApplyEnabled() end
     else
@@ -1182,7 +1208,7 @@ function NB.SetWeaponEnabled(on)
     if on then
         retryLeft = 6
         if not (book and tabButton) then Attach() end
-        if weaponTabButton then weaponTabButton:Show() end
+        if weaponTabButton and BookShown() then weaponTabButton:Show() end
     else
         if activePage == "weapon" then ShowPage(nil) end
         if weaponTabButton then weaponTabButton:Hide() end

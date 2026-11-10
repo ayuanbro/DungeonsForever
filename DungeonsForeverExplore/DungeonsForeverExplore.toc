@@ -22,6 +22,7 @@ Core\Data\Data_ExplorePets.lua
 Core\Data\Data_ExploreToys.lua
 Core\Data\Data_ExploreBanner.lua
 Core\Data\Data_ExploreRoutes.lua
+Core\Data\Data_Darkmoon.lua
 Core\Data\Data_CollectionMounts.lua
 Core\Data\Data_CollectionPets.lua
 Core\Data\Data_NameOverrides.lua
@@ -39,5 +40,6 @@ Core\Data\enUS\Data_ExploreBanner.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ExploreRoutes.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_CollectionPets.lua [AllowLoadTextLocale enUS]
 Core\ExploreUI.lua
+Core\ExploreDarkmoon.lua
 Core\ExploreMap.lua
 Core\CollectionUI.lua
