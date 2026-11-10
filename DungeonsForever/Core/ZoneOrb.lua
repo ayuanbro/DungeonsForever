@@ -65,12 +65,15 @@ local function Now()
     return (GetTime and GetTime()) or 0
 end
 
+local vBootHold = Now() + 30
+
 local function VoiceDrain()
     if #vq == 0 then return end
-    if Now() < vUntil then
+    local hold = (vUntil > vBootHold) and vUntil or vBootHold
+    if Now() < hold then
         if not vTimer and type(C_Timer) == "table" and type(C_Timer.After) == "function" then
             vTimer = true
-            C_Timer.After(vUntil - Now() + 0.04, function()
+            C_Timer.After(hold - Now() + 0.04, function()
                 vTimer = nil
                 VoiceDrain()
             end)
@@ -97,7 +100,7 @@ function O.SayVoice(path, urgent)
     if type(path) ~= "string" then return end
     if urgent == true then
         if vHandle and type(StopSound) == "function" then pcall(StopSound, vHandle) end
-        vHandle, vUntil = nil, 0
+        vHandle, vUntil, vBootHold = nil, 0, 0
         vq = {}
     else
         if Cfg().voice ~= true then return end
@@ -1151,7 +1154,9 @@ local function Layout(res)
         end
     end
     for i = hi + 1, #heads do heads[i]:Hide() end
-    for i = ri + 1, #subRows do subRows[i]:Hide() end
+    if not InCombatLockdown() then
+        for i = ri + 1, #subRows do subRows[i]:Hide() end
+    end
 
     local btY = (contentBottom or (TOP_Y + 4)) - GAP
     row:ClearAllPoints()
@@ -1159,11 +1164,14 @@ local function Layout(res)
     row:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -PAD, btY)
     row:SetHeight(24)
     row:Show()
-    panel:SetHeight(-btY + 24 + PAD)
+    if not (InCombatLockdown and InCombatLockdown()) then
+        panel:SetHeight(-btY + 24 + PAD)
+    end
 end
 
 local function Open(keep)
     if not panel or panel:IsShown() then return end
+    if InCombatLockdown and InCombatLockdown() then return end
     if opts then opts:Hide() end
     do
         local MWm = ns.MapWindowModule
@@ -1183,9 +1191,24 @@ local function Open(keep)
     StartHideTimer(keep)
 end
 
+local function CbTipBody()
+    local parts = {}
+    local items = current and current.items
+    if type(items) == "table" then
+        for _, it in ipairs(items) do
+            if #parts >= 8 then break end
+            local s = it.name
+            if type(s) == "string" and s ~= "" then parts[#parts + 1] = "· " .. s end
+        end
+    end
+    return table.concat(parts, "\n")
+end
+
 local function Toggle()
     if panel and panel:IsShown() then
         Close()
+    elseif InCombatLockdown and InCombatLockdown() then
+        O.CbPreviewToggle()
     else
         Open()
     end
@@ -1931,10 +1954,9 @@ function O.Init()
             O.ArmGhost()
         end
         if icon then icon:SetVertexColor(0.92, 0.93, 0.95, 1) end
-        HideTip()
+        if not O.CbTipHold() then HideTip() end
         if panel and panel:IsShown() then StartHideTimer() end
     end)
-
     orb:SetScript("OnDragStart", function()
         if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
         orb:StartMoving()
@@ -2030,6 +2052,79 @@ end
 
 local baseLayout = Layout
 Layout = function(res)
+    if InCombatLockdown and InCombatLockdown() then return end
     baseLayout(res)
     O.SetHeader(res)
 end
+
+local cbPanel = nil
+
+function O.CbTipHold()
+    return cbPanel ~= nil and cbPanel:IsShown()
+end
+
+function O.CbPreviewToggle()
+    if not orb then return end
+    if not cbPanel then
+        local f = CreateFrame("Frame", nil, orb, "BackdropTemplate")
+        f:SetWidth(248)
+        f:SetBackdrop({
+            bgFile = "Interface\\Tooltips\\TooltipBackground",
+            edgeFile = "Interface\\Tooltips\\TooltipBorder",
+            edgeSize = 12,
+            insets = { left = 4, right = 4, top = 4, bottom = 4 },
+        })
+        f:SetBackdropColor(0.06, 0.07, 0.09, 0.96)
+        f:SetBackdropBorderColor(0.25, 0.27, 0.31, 1)
+        f:SetPoint("LEFT", orb, "RIGHT", 8, 0)
+        f:SetFrameLevel(orb:GetFrameLevel() + 10)
+        f.title = f:CreateFontString(nil, "OVERLAY")
+        f.title:SetFont(ns.FONT, 14, "")
+        f.title:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -10)
+        f.title:SetTextColor(1, 1, 1)
+        f.title:SetJustifyH("LEFT")
+        f.count = f:CreateFontString(nil, "OVERLAY")
+        f.count:SetFont(ns.FONT, 12, "")
+        f.count:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -11)
+        f.count:SetTextColor(ACC[1], ACC[2], ACC[3])
+        f.count:SetJustifyH("RIGHT")
+        f.body = f:CreateFontString(nil, "OVERLAY")
+        f.body:SetFont(ns.FONT, 12, "")
+        f.body:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -32)
+        f.body:SetTextColor(0.85, 0.88, 0.92)
+        f.body:SetWidth(224)
+        f.body:SetJustifyH("LEFT")
+        f.body:SetJustifyV("TOP")
+        cbPanel = f
+    end
+    if cbPanel:IsShown() then
+        cbPanel:Hide()
+        return
+    end
+    local ctx = current and current.ctx
+    local zone = (ctx and ctx.zone) or ""
+    if zone == "" then zone = L["当前地图"] end
+    local n = (current and current.total) or 0
+    cbPanel.title:SetText(zone)
+    cbPanel.count:SetText(string.format(L["本图待办 %d"], n))
+    local body = CbTipBody()
+    if body == "" then body = L["本图暂无待办"] end
+    cbPanel.body:SetText(body)
+    local lines = select(2, body:gsub("\n", "")) + 1
+    cbPanel:SetHeight(46 + lines * 17)
+    cbPanel:Show()
+end
+
+local regenWatch = CreateFrame("Frame")
+regenWatch:RegisterEvent("PLAYER_REGEN_ENABLED")
+regenWatch:RegisterEvent("PLAYER_REGEN_DISABLED")
+regenWatch:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_REGEN_DISABLED" then
+        if cbPanel and cbPanel:IsShown() then cbPanel:Hide() end
+        if panel and panel:IsShown() then Close() end
+        if orbMenu and orbMenu:IsShown() then orbMenu:Hide() end
+        return
+    end
+    if cbPanel and cbPanel:IsShown() then cbPanel:Hide() end
+    if panel and panel:IsShown() and current then Layout(current) end
+end)
