@@ -2437,6 +2437,7 @@ function DG.PaintQuestOverview(d)
         colOrder = flatOrder
     end
     local extRowOf, extNodeOf, subFirstOf = {}, {}, {}
+    local extPos, subSrcNode, subRowOf = {}, {}, {}
     local chainLab = {}
     local labRoots = {}
     for _, r in ipairs(colOrder) do
@@ -2981,6 +2982,7 @@ function DG.PaintQuestOverview(d)
         local extDone = {}
         local placed = {}
         local colBot = {}
+        local colTop = {}
         for c = 1, nCols do
             local rr = 0
             local prev = nil
@@ -2991,6 +2993,23 @@ function DG.PaintQuestOverview(d)
                 if subMain then
                     local rr0 = (extRowOf[subMain] or 0) + 1
                     if rr < rr0 then rr = rr0 end
+                end
+                if not subMainOf[r] then
+                    local pv, guard, src = chains[r][1][1], 0, nil
+                    while guard < 16 do
+                        guard = guard + 1
+                        local pe = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[pv]
+                        local pid = (type(pe) == "table" and pe[1]) or nil
+                        if not pid then break end
+                        if extPos[pid] then src = extPos[pid] break end
+                        pv = pid
+                    end
+                    if src then
+                        subMainOf[r] = src.root
+                        subSrcNode[r] = src.n
+                        subRowOf[r] = src.row + 1
+                        if rr < src.row + 1 then rr = src.row + 1 end
+                    end
                 end
                 for k = 1, #ch do
                     local q = ch[k]
@@ -3008,10 +3027,22 @@ function DG.PaintQuestOverview(d)
                                     extDone[cur] = true
                                     table.insert(chainEx, 1, cur)
                                 end
+                                local xh = chainEx[1]
+                                local peh = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[xh]
+                                local ph = (type(peh) == "table" and peh[1]) or nil
+                                local sh = ph and extPos[ph]
+                                if sh and sh.root ~= r then
+                                    subMainOf[r] = sh.root
+                                    subSrcNode[r] = sh.n
+                                    subRowOf[r] = sh.row + 1
+                                    if rr < sh.row + 1 then rr = sh.row + 1 end
+                                end
                                 local lastN = nil
                                 for _, xid in ipairs(chainEx) do
                                     local en = placeExt(xid, c, rowY(rr), nil, q[1])
                                     nodeByExt[xid] = en
+                                    if not colTop[c] then colTop[c] = en end
+                                    if not extPos[xid] then extPos[xid] = { n = en, row = rr, root = r } end
                                     rr = rr + 1
                                     if lastN then
                                         vline(colX[c] + nw / 2, lastN.__oy + DG.Q_OV_H, en.__oy, lineColor({ en.__ext }, { lastN.__ext }))
@@ -3028,6 +3059,7 @@ function DG.PaintQuestOverview(d)
                     end
                     local n = place(q, c, rowY(rr))
                     nodeByQid[q[1]] = n
+                    if not colTop[c] then colTop[c] = n end
                     if k == 1 and subMainOf[r] then subFirstOf[r] = n end
                     placed[#placed + 1] = { q = q, n = n }
                     if prev then
@@ -3189,9 +3221,10 @@ function DG.PaintQuestOverview(d)
             local lc = lineColor(topQ, nil)
             local xc = colX[c] + nw / 2
             local subHead = subMainOf[packs[c][1]]
-            local yBot = subHead and rowY((extRowOf[subHead] or 0) + 1) or rowY(0)
-            local srcN = subHead and extNodeOf[subHead] or nil
-            local fN = subHead and subFirstOf[packs[c][1]] or nil
+            local subRow = subRowOf[packs[c][1]]
+            local yBot = subHead and rowY(subRow or ((extRowOf[subHead] or 0) + 1)) or rowY(0)
+            local srcN = subHead and (subSrcNode[packs[c][1]] or extNodeOf[subHead]) or nil
+            local fN = subHead and (colTop[c] or subFirstOf[packs[c][1]]) or nil
             if subHead and srcN and fN then
                 local x1 = srcN.__ox + nw
                 local y1 = srcN.__oy + DG.Q_OV_H / 2

@@ -350,6 +350,10 @@ function BuildAbout()
             { t = L["/副本手册"], cmd = L["/副本手册"] },
             { t = " — " .. L["开关窗口"] },
         } },
+        { key = L["语言"], parts = {
+            { t = "/dfcn", cmd = "/dfcn" },
+            { t = " — " .. L["切换至中文"] },
+        } },
         { key = L["页面"], parts = {
             { t = "/df fb", cmd = "/df fb" }, { t = " " .. L["副本"] }, { t = " · " },
             { t = "/df tb", cmd = "/df tb" }, { t = " " .. L["团本"] }, { t = " · " },

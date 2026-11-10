@@ -189,10 +189,18 @@ local function AnyActive(ids)
     return false
 end
 
-local function AnyDone(ids)
+local function StepState(row, idx, qid)
+    local st = DG.QuestState(qid)
+    if st == "done" or not row.linear then return st end
+    local nx = row.ids[idx + 1]
+    if nx and DG.QuestState(nx) == "done" then return "done" end
+    return st
+end
+
+local function AnyDone(r)
     local n = 0
-    for _, id in ipairs(ids) do
-        if DG.QuestDone(id) then n = n + 1 end
+    for i = 1, #r.ids do
+        if StepState(r, i, r.ids[i]) == "done" then n = n + 1 end
     end
     return n
 end
@@ -224,6 +232,7 @@ local function Build()
                 group = c.group,
                 note = c.note,
                 spell = c.spell,
+                linear = not (c.anyOrder or c.choice),
                 order = i,
             }
         end
@@ -260,7 +269,7 @@ local function Build()
 end
 
 local function RowState(r)
-    local doneN = AnyDone(r.ids)
+    local doneN = AnyDone(r)
     if doneN >= #r.ids then return "done" end
     if doneN > 0 or AnyActive(r.ids) then return "active" end
     return "todo"
@@ -1134,7 +1143,7 @@ renderChain = function(row, y)
         local r = TakeNode()
         if not r then break end
         local nm = QName(id)
-        local st = DG.QuestState(id)
+        local st = StepState(row, idx, id)
         local col = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
         r.name:SetText(format("%d. ", idx) .. nm)
         r.name:SetTextColor(Unpack(nm ~= "" and col or C_GREY))
@@ -1186,6 +1195,12 @@ renderQuest = function(id, y)
     CQ.title:SetTextColor(Unpack(ok and C_GOLD or C_GREY))
 
     local st = DG.QuestState(id)
+    local ch = CQ.sel and CQ.sel.chain
+    if ch and ch.ids then
+        for i = 1, #ch.ids do
+            if ch.ids[i] == id then st = StepState(ch, i, id) break end
+        end
+    end
     local col = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
     local sub = L["状态："] .. ((DG.Q_STATUS_TAG and DG.Q_STATUS_TAG[st]) or "")
     CQ.sub:SetTextColor(Unpack(ok and col or C_DARKGREY))
@@ -1530,6 +1545,7 @@ local function Layout()
 end
 
 function CQ.Hide()
+    CQ.active = false
     if CQ.built then
         ResetRows()
         if CQ.title then CQ.title:Hide() end
@@ -1560,6 +1576,7 @@ local function Placeholder(y)
 end
 
 function CQ.Render()
+    CQ.active = true
     CQ.cls = TT.PaintHeader()
     if not CQ.cls then return end
     if not Ensure() then return end
@@ -1623,7 +1640,7 @@ function CQ.Render()
         local isSel = (sel and sel.type == "chain" and sel.row.key == row.key) and true or false
         fr.arrow:SetText(isOpen and "-" or "+")
         fr.arrow:SetTextColor(Unpack(isOpen and C_GOLD or C_GREY))
-        local doneN = AnyDone(row.ids)
+        local doneN = AnyDone(row)
         local st = (doneN >= #row.ids) and "done" or ((doneN > 0 or AnyActive(row.ids)) and "active" or "todo")
         PutDot(fr.dot, fr.sym, st)
         fr.name:SetText(row.t)
@@ -1654,7 +1671,7 @@ function CQ.Render()
                 local qid = row.ids[j]
                 local r = TakeRow()
                 if not r then break end
-                local qst = DG.QuestState(qid)
+                local qst = StepState(row, j, qid)
                 PutDot(r.dot, r.sym, qst)
                 local qn = QName(qid)
                 local qsel = (sel and sel.type == "quest" and sel.id == qid) and true or false
@@ -1760,3 +1777,18 @@ function CQ.Cull(gen, vTop, vBot)
     for i = 1, HEAD_MAX do one(CQ.heads[i]) end
     for i = 1, ROW_MAX do one(CQ.rows[i]) end
 end
+
+local QuestEvt = CreateFrame("Frame")
+QuestEvt:RegisterEvent("QUEST_TURNED_IN")
+QuestEvt:RegisterEvent("QUEST_LOG_UPDATE")
+pcall(QuestEvt.RegisterEvent, QuestEvt, "QUEST_ACCEPTED")
+pcall(QuestEvt.RegisterEvent, QuestEvt, "QUEST_REMOVED")
+QuestEvt:SetScript("OnEvent", function()
+    if CQ.__qPend then return end
+    if not (CQ.active and CQ.built and CQ.title and CQ.title:IsShown()) then return end
+    CQ.__qPend = true
+    C_Timer.After(0.25, function()
+        CQ.__qPend = false
+        if CQ.active and CQ.built then TT.RequestRender() end
+    end)
+end)

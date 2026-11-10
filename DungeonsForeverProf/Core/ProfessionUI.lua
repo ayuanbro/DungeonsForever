@@ -1045,6 +1045,7 @@ PD.LV_STEP_X, PD.LV_STEP_W, PD.LV_RNG_X = 6, 34, 52
 PD.LV_ICON_X = PD.LV_RNG_X + 90 + PD.TBL_RNG_GAP
 PD.LV_NAME_X = PD.LV_ICON_X + PD.TBL_ICON + PD.TBL_NAME_GAP
 PD.LV_CNT_W = 78
+PD.LV_CNT_SUB_FS, PD.LV_CNT_DY = 12, 8
 PD.LV_COST_W, PD.LV_COST_R = 88, 6
 PD.LV_COUNT_R = 110
 PD.LV_MAT_X = 0
@@ -2555,6 +2556,7 @@ function PD.BindRow(r, spec, h)
     end
     if r.__pct then r.__pct:Hide() end
     if r.__costWhy then r.__costWhy:Hide() end
+    if r.__cntSub then r.__cntSub:Hide() end
     if r.blk then
         for _, b in ipairs(r.blk) do if b.tag then b.tag:Hide() end end
     end
@@ -3107,7 +3109,25 @@ function PD.BindRow(r, spec, h)
             whyFs:Hide()
         end
         r.c:ClearAllPoints()
-        r.c:SetPoint("RIGHT", r, "RIGHT", -PD.LV_COUNT_R, 0)
+        r.c:SetPoint("RIGHT", r, "RIGHT", -PD.LV_COUNT_R, spec.cntSub and PD.LV_CNT_DY or 0)
+        local subFs = r.__cntSub
+        if spec.cntSub then
+            if not subFs then
+                subFs = r:CreateFontString(nil, "OVERLAY")
+                subFs:SetFont(ns.FONT, PD.LV_CNT_SUB_FS,
+                              ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+                subFs:SetJustifyH("RIGHT")
+                subFs:SetWordWrap(false)
+                r.__cntSub = subFs
+            end
+            subFs:SetText(spec.cntSub)
+            subFs:SetTextColor(Unpack(spec.passed and C_DIM or C_GREY))
+            subFs:ClearAllPoints()
+            subFs:SetPoint("RIGHT", r, "RIGHT", -PD.LV_COUNT_R, -PD.LV_CNT_DY)
+            subFs:Show()
+        elseif subFs then
+            subFs:Hide()
+        end
         local nw = math.min(FSW(r.e), PD.LV_NAME_W)
         local chipX = PD.LV_NAME_X + nw
         local function placeChip(key, item, startX)
@@ -8451,6 +8471,7 @@ function PD.WipeRow(r, keepShown)
     PD.HideRowChips(r)
     if r.__pcOk then PD.PCWipe(r) end
     if r.__costWhy then r.__costWhy:Hide() end
+    if r.__cntSub then r.__cntSub:Hide() end
     if r.__toolBadge then r.__toolBadge:Hide() end
     if r.__roleBadge then r.__roleBadge:Hide() end
     if r.icon4 then r.icon4:Hide() end
@@ -13289,7 +13310,7 @@ function PD.RowsLeveling(rows)
                 tostring(goal.questName or ""), tostring(goal.zone or "")), 0.95, 0.75, 0.4)
         end
     end
-    local cntOf, costOf, cardOf, whyOf, whyLong, chipOf, roleChipOf = {}, {}, {}, {}, {}, {}, {}
+    local cntOf, cntSubOf, costOf, cardOf, whyOf, whyLong, chipOf, roleChipOf = {}, {}, {}, {}, {}, {}, {}, {}
     local rngW = PD.TextW(L["等级范围"], PD.LV_FS)
     local cntW = PD.TextW(L["制作次数"], PD.LV_FS)
     local costW = PD.TextW(L["成本"], PD.LV_FS)
@@ -13362,17 +13383,21 @@ function PD.RowsLeveling(rows)
                 end
             end
         end
-        if clipped and st._clip then count = count .. format(L[" · 按目标 %d 折算"], target) end
-        if st.kind == "specialization_quest" then count, cost = L["专精任务"], ""
-        elseif st.kind == "essence_conversion" or st.kind == "conversion" then count = L["手动转换"]
-        elseif st.checkpoint or st[3] == 0 then count, cost = L["实地采矿"], "" end
+        local sub
+        if clipped and st._clip then
+            sub = (format(L[" · 按目标 %d 折算"], target)):gsub("^%s*·%s*", "", 1)
+        end
+        if st.kind == "specialization_quest" then count, cost, sub = L["专精任务"], "", nil
+        elseif st.kind == "essence_conversion" or st.kind == "conversion" then count, sub = L["手动转换"], nil
+        elseif st.checkpoint or st[3] == 0 then count, cost, sub = L["实地采矿"], "", nil end
         local tp = trackAll and trackAll.steps[index]
         if tp and tp.casts > 0 and not (st.checkpoint or st[3] == 0 or st.kind == "specialization_quest") then
-            count = format("%d/%d", tp.casts, st[4] or 0)
+            count, sub = format("%d/%d", tp.casts, st[4] or 0), nil
         end
-        cntOf[st], costOf[st] = count, cost
+        cntOf[st], costOf[st], cntSubOf[st] = count, cost, sub
         rngW = math.max(rngW, PD.TextW(rngText(st), PD.LV_FS))
-        cntW = math.max(cntW, PD.TextW(count, PD.LV_FS))
+        cntW = math.max(cntW, PD.TextW(count, PD.LV_FS),
+                        sub and PD.TextW(sub, PD.LV_CNT_SUB_FS) or 0)
         costW = math.max(costW, PD.TextW(cost, PD.LV_FS))
         stepW = math.max(stepW, PD.TextW(tostring(st.stepIndex or st.index or index), PD.LV_FS))
         local cd = PD.CardOf(RawRow(st.profession or PD.cur, st[3]) or rec,
@@ -13588,6 +13613,7 @@ function PD.RowsLeveling(rows)
                 text = FitName(nm),
                 src = src,
                 cnt = cntOf[st] or format(L["~%s 次制作"], tostring(st[4])),
+                cntSub = cntSubOf[st],
                 cost = costOf[st] or "",
                 costWhy = whyLong[st] or (((tonumber(st.cost) or 0) <= 0 and (st[4] or 0) > 0)
                     and L["本步材料来自背包库存或前面步骤自制的中间产物，因此没有新增采购支出。"] or nil),

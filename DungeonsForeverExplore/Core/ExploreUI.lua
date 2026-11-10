@@ -506,7 +506,7 @@ function EG.CountInBags(id)
             for slot = 1, slots do
                 local okL, link = pcall(itemLink, bag, slot)
                 if okL and type(link) == "string" then
-                    local iid = tonumber(link:match("^item%:(%d+)"))
+                    local iid = tonumber(link:match("item%:(%d+)"))
                     if iid == id then n = n + 1 end
                 end
             end
@@ -3679,6 +3679,11 @@ function EG.Render()
     if EG.pinBtn then EG.pinBtn:SetShown(booksVis) end
     if EG.routeBtn then EG.routeBtn:SetShown(booksVis) end
     if EG.mapSetBtn then EG.mapSetBtn:SetShown(booksVis) end
+    if EG.rwFrame then EG.rwFrame:SetShown(isRw) end
+    if EG.bagFrame then EG.bagFrame:SetShown(isBag) end
+    if EG.bmFrame then EG.bmFrame:SetShown(isBm) end
+    if EG.petFrame then EG.petFrame:SetShown(isCard) end
+    if EG.dmFrame then EG.dmFrame:SetShown(isDm) end
     if EG.routeFrame then EG.routeFrame:SetShown(isRoutes) end
     PaintNav()
     if EG.rwBtn then PaintRwBtn() end

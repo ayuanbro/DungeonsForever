@@ -40,7 +40,7 @@ local function EnsureBIS()
             VOLS = { { lv = tonumber(BIS.default) or 0, classes = BIS.classes } }
         end
     end
-    N_PRESET = 3
+    N_PRESET = 4
     return BIS
 end
 local N_USER = 7
@@ -1068,24 +1068,89 @@ local function CatSrcOf(id)
     return ""
 end
 
+BG.NAME_SEPS = { "：", ":", "（", "(", " - ", "·", "—" }
+
+function BG.NameCore(s)
+    local cut = #s + 1
+    local list = BG.NAME_SEPS
+    for i = 1, #list do
+        local p = string.find(s, list[i], 1, true)
+        if p and p < cut then cut = p end
+    end
+    local out = (cut > #s) and s or string.sub(s, 1, cut - 1)
+    out = string.gsub(out, "^%s+", "")
+    return (string.gsub(out, "%s+$", ""))
+end
+
+function BG.InstPlace(place)
+    local t = BG.__instNames
+    if not t then
+        t = {}
+        local d = ns.DungeonData and ns.DungeonData.dungeons
+        if type(d) == "table" then
+            for i = 1, #d do
+                local nm, en = d[i].name, d[i].nameEn
+                if type(nm) == "string" and nm ~= "" then
+                    t[#t + 1] = nm
+                    local c1 = BG.NameCore(nm)
+                    if c1 ~= nm then t[#t + 1] = c1 end
+                end
+                if type(en) == "string" and en ~= "" then
+                    t[#t + 1] = en
+                    local c2 = BG.NameCore(en)
+                    if c2 ~= en then t[#t + 1] = c2 end
+                end
+            end
+        end
+        BG.__instNames = t
+    end
+    local core = BG.NameCore(place)
+    for i = 1, #t do
+        local nm = t[i]
+        if place == nm or core == nm then return true end
+        if #place > #nm and string.find(place, nm, 1, true) then return true end
+    end
+    return false
+end
+
 local function CatKind(id)
     local _, so = CatSrcOf(id)
     if so then return "boss" end
     local src = CatSrcOf(id)
     local kind, place = string.match(src, "^(.-)|(.*)$")
     if not kind then kind = src end
-    if kind == "首领掉落" or kind == "副本掉落" or kind == "多个首领" then return "boss" end
-    if kind == "任务奖励" or string.find(kind, "任务：", 1, true) then return "quest" end
+    if kind == "首领掉落" or kind == "首領掉落" or kind == "副本掉落"
+        or kind == "多个首领" or kind == "多個首領"
+        or kind == "Boss drop" or kind == "Dungeon drop" or kind == "Several bosses" then
+        return "boss"
+    end
+    if kind == "任务奖励" or kind == "任務獎勵" or string.find(kind, "任务：", 1, true)
+        or string.find(kind, "任務：", 1, true) then
+        return "quest"
+    end
+    if kind == "Quest reward" or string.find(kind, "Quest:", 1, true) then return "quest" end
     if kind == "商人" then return "vendor" end
-    if place == "专业制作" then return "craft" end
-    if string.find(kind, "制作", 1, true) or string.find(kind, "（", 1, true) then
+    if kind == "Vendor" then return "vendor" end
+    if place == "专业制作" or place == "專業製作" or place == "Crafted" then return "craft" end
+    if kind == "制造" or kind == "製造" or kind == "Crafted" then return "craft" end
+    if string.find(kind, "制作", 1, true) or string.find(kind, "製造", 1, true)
+        or string.find(kind, "（", 1, true) or string.find(kind, "(", 1, true) then
         return "craft"
     end
-    if kind == "世界掉落" or kind == "怪物掉落" or kind == "任何敌人"
-        or kind == "稀有掉落" or kind == "小怪掉落" or kind == "物件" then
+    if kind == "世界掉落" or kind == "怪物掉落" or kind == "任何敌人" or kind == "任何敵人"
+        or kind == "稀有掉落" or kind == "小怪掉落" or kind == "物件"
+        or kind == "World drop" or kind == "Mob drop" or kind == "Any enemy"
+        or kind == "Rare drop" or kind == "Rare spawn" or kind == "Trash drop"
+        or kind == "Object" then
         return "rare"
     end
-    if place and place ~= "" then return "boss" end
+    if place and place ~= "" then
+        if string.find(place, "稀有", 1, true) or string.find(place, "Rare", 1, true) then
+            return "rare"
+        end
+        if BG.InstPlace(place) then return "boss" end
+        return "rare"
+    end
     return "other"
 end
 
@@ -1920,12 +1985,13 @@ end
 do
 local AUTO_SRC_KNOWN = { craft = true, quest = true, boss = true, rare = true, vendor = true }
 local AUTO_SRC_DQ = { boss = true, quest = true }
+local AUTO_SRC_DG = { boss = true }
 local AUTO_SNAP_MAX = 6
 local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
-BG.AUTO_SRC = { known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 6
+BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
+BG.AUTO_GEN_REV = 7
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2072,14 +2138,13 @@ end
 
 local function AutoStale(mode)
     if not autoSnapsLoaded then LoadAutoSnaps() end
-    local best, any
+    local best
     for _, e in pairs(autoSnaps) do
-        if e.cls == BG.cls then
-            if e.mode == mode and (not best or (e.t or 0) > (best.t or 0)) then best = e end
-            if not any or (e.t or 0) > (any.t or 0) then any = e end
+        if e.cls == BG.cls and e.mode == mode and (not best or (e.t or 0) > (best.t or 0)) then
+            best = e
         end
     end
-    return best or any
+    return best
 end
 
 local autoJob, autoJobSeq = nil, 0
@@ -2422,7 +2487,8 @@ local function AutoJobStart(mode, cap, sig, srcSet)
     autoJob = {
         id = autoJobSeq, mode = mode, cap = cap, sig = sig,
         cls = BG.cls, tspec = BG.tspec, sp = sp, mk = MainKey(sp), w = EffWeights(),
-        srcSet = srcSet or ((mode == "known") and AUTO_SRC_KNOWN)
+        srcSet = srcSet or ((mode == "dungeon") and AUTO_SRC_DG)
+            or ((mode == "known") and AUTO_SRC_KNOWN)
             or ((mode == "dq") and AUTO_SRC_DQ) or nil,
         cat = nil, total = 0, ci = 0,
         phase = 1, buckets = {}, cur = {}, usedQ = {},
@@ -2494,6 +2560,7 @@ end
 local function PresetList()
     local out = {}
     local src = BG.AUTO_SRC or {}
+    out[#out + 1] = { auto = "dungeon", lv = BG.AutoLevel(), srcSet = src.dungeon }
     out[#out + 1] = { auto = "known", lv = BG.AutoLevel(), srcSet = src.known }
     out[#out + 1] = { auto = "dq", lv = BG.AutoLevel(), srcSet = src.dq }
     local mp = BG.ManualPlan()
@@ -3358,7 +3425,7 @@ function BG.Open()
     if not BG.built then return end
     BG._sweepFails = 0
     BG.__wantDefault = nil
-    if not BG.usingPlan then BG.UseAutoPlan(BG.autoPlan or "known") end
+    if not BG.usingPlan then BG.UseAutoPlan(BG.autoPlan or "dungeon") end
     if BG.needNames or BG.needScores then BG.ScheduleSweep() end
     BG.RequestRender()
 end
@@ -5040,7 +5107,7 @@ function BG.Build(page)
         C_Timer.After(0, function()
             if BG.built and BG.__wantDefault then
                 BG.__wantDefault = nil
-                BG.UseAutoPlan("known")
+                BG.UseAutoPlan("dungeon")
             end
         end)
     end

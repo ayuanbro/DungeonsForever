@@ -35,7 +35,13 @@ local function CFG()
     if c.quest == nil then c.quest = true end
     if c.spell == nil then c.spell = true end
     if c.food == nil then c.food = true end
+    if tonumber(c.preferFood) == nil then c.preferFood = 0 end
     if c.rested == nil then c.rested = true end
+    if c.camp == nil then c.camp = true end
+    if c.renew == nil then c.renew = true end
+    if c.tent == nil then c.tent = true end
+    if c.tentOwn == nil then c.tentOwn = true end
+    if tonumber(c.tentText) == nil then c.tentText = 1 end
     if c.voice == nil then c.voice = false end
     if c.voiceInit ~= 2 then
         c.voiceInit = 2
@@ -49,6 +55,7 @@ local function CFG()
     if c.dur == nil then c.dur = 12 end
     if c.icon == nil then c.icon = 32 end
     if type(c.blacklist) ~= "table" then c.blacklist = {} end
+    if type(c.asked) ~= "table" then c.asked = {} end
     if type(c.ignore) ~= "table" then c.ignore = {} end
     return c
 end
@@ -174,8 +181,20 @@ local function DGRef()
 end
 
 local softQueued = false
+local softForce = false
+local tentShown = false
+local tentPokeAt = nil
+local TENT_GAP = 60
 
-function Z.RefreshSoft()
+local function TentIn(res)
+    local items = (type(res) == "table" and res.items) or {}
+    for i = 1, #items do
+        if items[i].kind == "tent" then return true end
+    end
+    return false
+end
+
+function Z.RefreshSoft(force)
     local ctx = Z.Context()
     local res = Z.Collect(ctx)
     res.key = Z.Key(ctx)
@@ -183,15 +202,41 @@ function Z.RefreshSoft()
     if ns.ZoneHintList and ns.ZoneHintList.Refresh and ns.ZoneHintList.Count and ns.ZoneHintList.Count() > 0 then
         ns.ZoneHintList.Refresh()
     end
+    local hasTent = TentIn(res)
+    if not hasTent then
+        tentShown = false
+        tentPokeAt = nil
+        return
+    end
+    if force then
+        tentShown = false
+        tentPokeAt = nil
+    end
+    if tentShown then return end
+    local now = (GetTime and GetTime()) or 0
+    local c = CFG()
+    local busy = (type(InCombatLockdown) == "function") and InCombatLockdown()
+    if busy or not c.on then return end
+    if Z.IsBlocked(res.key) or Z.IsSessionSkipped(res.key) then return end
+    if tentPokeAt and (now - tentPokeAt) < TENT_GAP then
+        tentShown = true
+        return
+    end
+    tentShown = true
+    tentPokeAt = now
+    if ns.ZoneOrb and ns.ZoneOrb.Reveal then ns.ZoneOrb.Reveal(res, "tent") end
 end
 
-function Z.ScheduleSoft()
+function Z.ScheduleSoft(delay, force)
+    if force then softForce = true end
     if softQueued then return end
     softQueued = true
     if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
-        C_Timer.After(1.5, function()
+        C_Timer.After(delay or 1.5, function()
             softQueued = false
-            Z.RefreshSoft()
+            local f = softForce
+            softForce = false
+            Z.RefreshSoft(f)
         end)
     end
 end
@@ -639,6 +684,27 @@ local function HereSloc(pid, ctx)
     return nil
 end
 
+local function CurInstSlugs()
+    local nm = InInstNow()
+    if type(nm) ~= "string" or nm == "" then return nil end
+    local dd = ns.DungeonData and ns.DungeonData.dungeons
+    if type(dd) ~= "table" then return nil end
+    local exact, pref = {}, {}
+    for i = 1, #dd do
+        local d = dd[i]
+        if type(d) == "table" and d.id then
+            if SameName(nm, d.name) or SameName(nm, d.nameEn) then
+                exact[#exact + 1] = d.id
+            elseif type(d.name) == "string" and #nm >= 2 and string.find(d.name, nm, 1, true) == 1 then
+                pref[#pref + 1] = d.id
+            end
+        end
+    end
+    if #exact > 0 then return exact end
+    if #pref > 0 then return pref end
+    return nil
+end
+
 local function PQuest(ctx)
     local c = CFG()
     if not c.quest then return nil end
@@ -647,11 +713,15 @@ local function PQuest(ctx)
     if not (DG and all) then return nil end
     local lv = (UnitLevel and UnitLevel("player")) or 60
     local side = DG.PlayerSide and DG.PlayerSide() or nil
-    local function QHitPin(q, slug)
+    local function QOwn(q)
         if ns.MapModule and ns.MapModule.QuestPinOK and not ns.MapModule.QuestPinOK(q[1]) then return false end
         if side and q[2] and q[2] ~= side then return false end
         if not QuestClassOK(q) then return false end
         if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
+        return true
+    end
+    local function QHitPin(q, slug)
+        if not QOwn(q) then return false end
         local r = DunLvRange(slug)
         local gt
         if type(q[13]) == "table" then
@@ -734,6 +804,40 @@ local function PQuest(ctx)
                                     hits[n] = { q = q, slug = slug, pre = pid, sloc = ps }
                                 end
                             end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    local instSlugs = CurInstSlugs()
+    if instSlugs then
+        local seenQ = {}
+        for k in pairs(directSeen) do seenQ[k] = true end
+        for si = 1, #instSlugs do
+            local slug = instSlugs[si]
+            local rows = all[slug]
+            if type(rows) == "table" then
+                for i = 1, #rows do
+                    local q = rows[i]
+                    local st = DG.QuestState and DG.QuestState(q[1]) or "todo"
+                    if st ~= "ready" and st ~= "done" then
+                        local ok
+                        if st == "active" then
+                            ok = QOwn(q)
+                        else
+                            ok = QHitPin(q, slug)
+                            if ok and type(q[9]) == "table" then
+                                for k = 1, #q[9] do
+                                    if not DG.QuestDone(q[9][k]) and not DG.IsOptPre(q[1], q[9][k]) then ok = false break end
+                                end
+                            end
+                        end
+                        if ok and Z.IsIgnored(ItemKey("quest", q[1])) then ok = false end
+                        if ok and not seenQ[q[1]] then
+                            seenQ[q[1]] = true
+                            n = n + 1
+                            hits[n] = { q = q, slug = slug, loc = q[6], inst = true }
                         end
                     end
                 end
@@ -825,10 +929,14 @@ local function PQuest(ctx)
         end
         ids[i] = ids2
     end
+    local anyInst = false
+    for i = 1, n do
+        if hits[i].inst then anyInst = true break end
+    end
     return {
         kind = "quest", n = n, keys = ids, list = list,
         title = L["副本 · 任务"],
-        text = string.format(L["本图可接 %d 个副本任务"], n),
+        text = string.format(anyInst and L["本副本待办 %d 个任务"] or L["本图可接 %d 个副本任务"], n),
     }
 end
 
@@ -985,6 +1093,87 @@ local function HasWellFed()
     return false
 end
 
+local foodList, foodListAt = nil, 0
+
+local function ItemInfo(id)
+    local f = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+    if type(f) ~= "function" then return nil end
+    return f(id)
+end
+
+local function SlotInfo(bag, slot)
+    local f = C_Container and C_Container.GetContainerItemInfo
+    if type(f) == "function" then
+        local ok, info = pcall(f, bag, slot)
+        if ok and type(info) == "table" then
+            return tonumber(info.stackCount) or 1, info.iconFileID or info.icon
+        end
+    end
+    return 1, nil
+end
+
+local function FoodList()
+    local now = (GetTime and GetTime()) or 0
+    if foodList and (now - foodListAt) < 2 then return foodList end
+    foodListAt = now
+    foodList = {}
+    if type(C_Container) ~= "table" or type(C_Container.GetContainerItemID) ~= "function" then return foodList end
+    local drink, foodSpell
+    if type(C_Spell) == "table" and type(C_Spell.GetSpellName) == "function" then
+        local ok, n = pcall(C_Spell.GetSpellName, 430)
+        if ok then drink = n end
+        local ok2, n2 = pcall(C_Spell.GetSpellName, 433)
+        if ok2 then foodSpell = n2 end
+    end
+    local seen = {}
+    local bags = (type(NUM_BAG_SLOTS) == "number" and NUM_BAG_SLOTS) or 4
+    for bag = 0, bags do
+        local slots = C_Container.GetContainerNumSlots(bag) or 0
+        for slot = 1, slots do
+            local id = C_Container.GetContainerItemID(bag, slot)
+            if id then
+                local nm, _, _, ilvl, _, _, _, _, _, tex, _, cid, scid = ItemInfo(id)
+                if cid == 0 and scid == 5 then
+                    local ok2, sn = pcall(C_Item.GetItemSpell, id)
+                    if not (ok2 and drink and sn == drink) then
+                        local cnt, sic = SlotInfo(bag, slot)
+                        local e = seen[id]
+                        if e then
+                            e.count = e.count + cnt
+                        else
+                            e = { id = id, name = nm or tostring(id), ilvl = tonumber(ilvl) or 0,
+                                  count = cnt, icon = sic or tex, meal = (ok2 and foodSpell and sn == foodSpell) and true or false }
+                            seen[id] = e
+                            foodList[#foodList + 1] = e
+                        end
+                    end
+                end
+            end
+        end
+    end
+    table.sort(foodList, function(a, b)
+        if a.meal ~= b.meal then return a.meal end
+        if a.ilvl ~= b.ilvl then return a.ilvl > b.ilvl end
+        return a.id < b.id
+    end)
+    return foodList
+end
+
+Z.FoodList = FoodList
+
+local DEFAULT_FOOD_ITEM = 6890
+
+local function PreferredFood()
+    local list = FoodList()
+    local want = tonumber(CFG().preferFood) or 0
+    if want > 0 then
+        for i = 1, #list do if list[i].id == want then return list[i] end end
+        return list[1]
+    end
+    for i = 1, #list do if list[i].id == DEFAULT_FOOD_ITEM then return list[i] end end
+    return list[1]
+end
+
 local function FoodRow(c)
     if not c.food then return nil end
     if type(IsResting) == "function" then
@@ -992,14 +1181,27 @@ local function FoodRow(c)
         if ok and rest == true then return nil end
     end
     if HasWellFed() then return nil end
-    local lv = (UnitLevel and UnitLevel("player")) or 0
+    local f = PreferredFood()
+    local sub = L["缺少进食充分"]
+    local actTip, actLabel
+    if f then
+        sub = string.format(L["吃「%s」×%d"], f.name, f.count)
+        actTip = string.format(L["左键吃「%s」，右键换一种"], f.name)
+        actLabel = L["使用"]
+    else
+        actTip = L["背包里没有食物"]
+    end
     return {
         id = WELL_FED_SPELL, base = WELL_FED_SPELL,
         ikey = ItemKey("food", WELL_FED_SPELL), ikind = "food",
-        name = (lv >= 60) and L["食物"] or L["食物（推荐5%经验食物）"],
+        name = L["食物"],
+        note = L["5%经验"],
         icon = WellFedIcon(),
-        sub = L["缺少进食充分"],
+        sub = sub,
         desc = L["吃任意食物获得进食充分效果，打怪经验 +5%"],
+        foodID = f and f.id,
+        actLabel = actLabel,
+        actTip = actTip,
     }
 end
 
@@ -1079,6 +1281,9 @@ local function RestedRow(c)
         name = L["使用舒适的睡袋"], icon = SleepBagIcon(),
         sub = sub,
         desc = L["在睡袋中休息至少一分钟，获得的经验值提高 1%，最多叠加 3 次"],
+        useItem = SLEEP_BAG_ITEM,
+        actLabel = L["使用"],
+        actTip = L["左键铺开睡袋"],
     }
 end
 
@@ -1089,11 +1294,28 @@ local function PBuff(ctx)
     if fr then list[#list + 1] = fr end
     local rr = RestedRow(c)
     if rr then list[#list + 1] = rr end
+    local CW = ns.CampWatch
+    if CW and CW.Rows then
+        local ok, rows = pcall(CW.Rows)
+        if ok and type(rows) == "table" then
+            for i = 1, #rows do list[#list + 1] = rows[i] end
+        end
+    end
     if #list == 0 then return nil end
     return { kind = "buff", n = #list, keys = {}, list = list, title = L["增益"] }
 end
 
 Z.Register("buff", PBuff)
+
+local function PTent(ctx)
+    local CW = ns.CampWatch
+    if not (CW and CW.Card) then return nil end
+    local ok, card = pcall(CW.Card)
+    if not ok or type(card) ~= "table" then return nil end
+    return card
+end
+
+Z.Register("tent", PTent)
 
 local sessionSkip = {}
 local shownPrint = {}
@@ -1234,12 +1456,12 @@ function Z.Collect(ctx)
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
-    local order = { "collect", "turnin", "quest", "spell", "buff" }
+    local order = { "collect", "turnin", "quest", "spell", "buff", "tent" }
     for i = 1, #order do
         local kind = order[i]
         local on = c[kind]
         if kind == "collect" then on = (c.book or c.bag or c.torch or c.banner) end
-        if kind == "buff" then on = (c.food or c.rested) end
+        if kind == "buff" then on = (c.food or c.rested or c.camp or c.renew) end
         if on and providers[kind] then
             local ok, res = pcall(providers[kind], ctx)
             if ok and type(res) == "table" and (res.n or 0) > 0 then
@@ -1370,7 +1592,7 @@ function Z.CheckNow(reason)
     return Z.Check(reason or "manual", 0)
 end
 
-local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], spell = L["技能"], buff = L["增益"] }
+local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], spell = L["技能"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"] }
 function Z.KindName(kind)
     return KIND_NAME[kind] or L["条目"]
 end
@@ -1386,7 +1608,7 @@ function Z.IconFor(kind, id)
         end
         return 133662
     end
-    if kind == "spell" or kind == "food" then
+    if kind == "spell" or kind == "food" or kind == "camp" or kind == "campren" then
         local f = C_Spell and C_Spell.GetSpellInfo
         if f then
             local ok, si = pcall(f, id)
@@ -1442,11 +1664,24 @@ ns.Init(function()
         frame:RegisterEvent("UNIT_AURA")
     end
     pcall(frame.RegisterEvent, frame, "ITEM_COOLDOWN_UPDATE")
+    pcall(frame.RegisterEvent, frame, "SPELL_UPDATE_COOLDOWN")
+    pcall(frame.RegisterEvent, frame, "NAME_PLATE_UNIT_ADDED")
+    pcall(frame.RegisterEvent, frame, "NAME_PLATE_UNIT_REMOVED")
+    frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
             Z.Check("login", 0)
-        elseif event == "UNIT_AURA" or event == "ITEM_COOLDOWN_UPDATE" then
-            Z.ScheduleSoft()
+        elseif event == "UNIT_AURA" or event == "ITEM_COOLDOWN_UPDATE" or event == "SPELL_UPDATE_COOLDOWN" then
+            Z.ScheduleSoft(0.6)
+        elseif event == "PLAYER_TARGET_CHANGED" then
+            local CW = ns.CampWatch
+            if CW and CW.TentUnit and CW.TentUnit() then
+                Z.ScheduleSoft(0.1, true)
+            else
+                Z.ScheduleSoft(0.4)
+            end
+        elseif event == "NAME_PLATE_UNIT_ADDED" or event == "NAME_PLATE_UNIT_REMOVED" then
+            Z.ScheduleSoft(0.4)
         elseif event == "BAG_UPDATE_DELAYED" or event == "QUEST_LOG_UPDATE" then
             local EG = ns.ExploreModule
             if EG then EG._auto = nil end
@@ -1456,6 +1691,7 @@ ns.Init(function()
                 pending = nil
                 Z.Check("regen", 0)
             end
+            Z.ScheduleSoft(0.6)
         else
             Z.OnZoneChanged()
         end
