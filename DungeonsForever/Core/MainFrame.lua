@@ -443,6 +443,14 @@ function BuildAbout()
         ly = ly - math.max(28, vh + 10)
     end
 
+    local foot = left:CreateFontString(nil, "OVERLAY")
+    foot:SetFont(ns.FONT, 13, "")
+    foot:SetJustifyH("CENTER")
+    foot:SetWidth(AB_INNER_W)
+    foot:SetText(L["如遇到 bug 或数据错误，请到 QQ 群内反馈，谢谢。"])
+    foot:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
+    foot:SetPoint("BOTTOM", left, "BOTTOM", 0, 22)
+
     local card = CreateFrame("Frame", nil, about, "BackdropTemplate")
     card:SetSize(AB_CARD_W, AB_CARD_H)
     card:SetPoint("TOPLEFT", about, "TOPLEFT", AB_RIGHT_X, -AB_TOP)
