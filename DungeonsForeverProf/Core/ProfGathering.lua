@@ -38,7 +38,7 @@ function G.Steps(slug,target,opts)
     opts=opts or {}
     if slug=="mining" and opts.mode=="smelt" then return nil end
     local cap=actualCap(slug,opts)
-    target=math.min(300,tonumber(target) or 300)
+    target=math.min(300,tonumber(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285)
     local out={}
     local function add(lo,hi,locations,items)
         if cap then hi=hi and math.min(hi,cap) or cap end

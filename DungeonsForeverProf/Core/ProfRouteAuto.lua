@@ -7,6 +7,7 @@ ns.ProfRouteAuto = RA
 
 local CALLER = "DungeonsForever"
 local CAP = 300
+local DEF_TARGET = 285
 local MAX_STALE = 2
 local MAX_PER_RECIPE = 3
 local CACHE_TTL = 600
@@ -1229,7 +1230,7 @@ function RA.FixedPlan(slug, supplied)
     if not (guide and type(guide.steps)=="table") then return nil end
     local opts={}
     for key,value in pairs(supplied or {}) do opts[key]=value end
-    local target=math.max(1,math.min(300,math.floor(tonumber(opts.target) or 300)))
+    local target=math.max(1,math.min(CAP,math.floor(tonumber(opts.target) or DEF_TARGET)))
     opts.target,opts.scheme,opts.profession=target,"fixed",slug
     if slug=="first-aid" then opts.recoveryEnabled=false end
     local steps,clipped={},false
@@ -1450,7 +1451,7 @@ local function SpecContext(slug, opts)
     options.profession = slug or options.profession or "engineering"
     if options.target == nil then
         local db = ns.ProfDB().prof
-        options.target = tonumber(db and db.lvTarget and db.lvTarget[options.profession]) or 300
+        options.target = tonumber(db and db.lvTarget and db.lvTarget[options.profession]) or DEF_TARGET
     end
     return G.SpecializationContext(options)
 end

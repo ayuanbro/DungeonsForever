@@ -892,19 +892,22 @@ function PD.IsGatherRoute()
     return PD.GATHER_SLUGS[PD.cur] and not (PD.cur == "mining" and PD.GatherMode("mining") == "smelt")
 end
 
+PD.LV_CAP = 300
+PD.LV_DEF = 285
+
 function PD.GatherHUDSteps(slug,target)
     local routes=ns.ProfGatheringRoutes
     if not (routes and routes.HasRoute(slug)) then return nil end
-    return routes.Steps(slug,target or 300,{mode=PD.GatherMode(slug)})
+    return routes.Steps(slug,target or PD.LV_DEF,{mode=PD.GatherMode(slug)})
 end
 
 function PD.LvTarget(slug)
     slug=slug or PD.cur
-    if not slug then return 300 end
+    if not slug then return PD.LV_DEF end
     local db = ProfDB()
     local v = tonumber(db.lvTarget and db.lvTarget[slug])
-    if not v then return 300 end
-    return math.max(1, math.min(300, math.floor(v)))
+    if not v then return PD.LV_DEF end
+    return math.max(1, math.min(PD.LV_CAP, math.floor(v)))
 end
 
 PD.LIST_PAD = 8
@@ -4937,14 +4940,14 @@ function PD.Build(page)
         end
         local function ApplyTarget()
             if not PD.cur or not PD.tgtEditing then CloseTarget() return end
-            local v = tonumber(eb:GetText()) or 300
-            v = math.max(1, math.min(300, math.floor(v)))
+            local v = tonumber(eb:GetText()) or PD.LvTarget()
+            v = math.max(1, math.min(PD.LV_CAP, math.floor(v)))
             local db = ProfDB()
             db.lvTarget = db.lvTarget or {}
-            local old = tonumber(db.lvTarget[PD.cur]) or 300
+            local old = tonumber(db.lvTarget[PD.cur]) or PD.LV_DEF
             CloseTarget()
             if old == v then return end
-            if v >= 300 then db.lvTarget[PD.cur] = nil else db.lvTarget[PD.cur] = v end
+            if v == PD.LV_DEF then db.lvTarget[PD.cur] = nil else db.lvTarget[PD.cur] = v end
             if RA then RA.Invalidate() end
             local _pf = ns.ProfFollow
             if _pf and _pf.RefreshRoute then pcall(_pf.RefreshRoute, PD.cur) end
@@ -4964,7 +4967,7 @@ function PD.Build(page)
         tf:SetScript("OnClick", function()
             if PD.tgtEditing then return end
             local v = PD.LvTarget()
-            eb:SetText(v >= 300 and "" or tostring(v))
+            eb:SetText(tostring(v))
             PD.tgtEditing = true
             tf.val:Hide()
             eb:Show()
@@ -6366,7 +6369,7 @@ function PD.PaintLvTiles()
     tiles.target.label:SetText(L["目标等级"])
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
-    TipOn(tiles.target, { { L["每专业独立记忆；300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
+    TipOn(tiles.target, { { L["每专业独立记忆；默认 285，300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
     local engG = ns.ProfGates
     if PD.cur == "engineering" and engG and engG.GetChoiceSetting then
         local engSet = engG.GetChoiceSetting()
@@ -11226,7 +11229,7 @@ function PD.PlanStatusParts(plan)
         local diagnostics=blockers or plan.diagnostics or {}
         for _,diagnostic in ipairs(diagnostics) do
             if diagnostic.code=="auctionSupplyLimited" and not plan.targetReached then
-                local message=format(L["当前拍卖行材料不足以升到%d级。"],plan.target or 300)
+                local message=format(L["当前拍卖行材料不足以升到%d级。"],plan.target or PD.LV_DEF)
                 if hasProgress then return format(L["已计算至%d"],plan.plannedTo or plan.start or 1),message end
                 return message
             end
@@ -11258,7 +11261,7 @@ function PD.PlanStatusParts(plan)
     if plan.staleReason=="supply" then return PD.PlanCacheText(plan) end
     if plan.stale then return L["已保存路线；数据或设置已变化，点击重新计算更新。"] end
     if PD.PlanNoUpgradeNeeded(plan) then
-        return format(L["已达到目标等级 %d，无需继续升级。"],plan.target or 300)
+        return format(L["已达到目标等级 %d，无需继续升级。"],plan.target or PD.LV_DEF)
     end
     if plan.scheme == "fishing" and not plan.partial and plan.status == "complete" then return L["纯钓鱼路线已生成"] end
     if plan.inputModelOptimal and plan.catalogueCoverageComplete == false then return L["已知输入模型内最优；配方覆盖未确认"] end
@@ -12245,7 +12248,7 @@ function PD.SolverText()
     local st = SR.State(PD.cur)
     PD.solverFrac = st.fraction or 0
     if st.phase == "seed" then
-        return format(L["正在推演 %d/%d"], st.seedSkill or 1, st.target or 300)
+        return format(L["正在推演 %d/%d"], st.seedSkill or 1, st.target or PD.LV_DEF)
     elseif st.phase == "search" then
         local pct = math.min(100, math.floor((st.cpuUsed or 0) * 100 / math.max(1, st.cpuLimitMs or 8000) + 0.5))
         return format(L["正在优化 %d%%"], pct)
@@ -14261,7 +14264,7 @@ function PD.RowsAutoShop(rows, data)
     if mode == "auto" then
         title = L["购物清单（自动路线）"]
     else
-        title = format(L["购物清单（固定路线 1–%d）"], data.target or 300)
+        title = format(L["购物清单（固定路线 1–%d）"], data.target or PD.LV_DEF)
     end
     PushHead(rows, title, 1)
     rows[#rows].noHover = true

@@ -14,7 +14,7 @@ function M.Stamp(j)
     if j.finalizing then return "finalizing", 1 end
     if not j.snap then return "prepare", 0.01 end
     if not j.seedDone then
-        local target = j.target or 300
+        local target = j.target or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285
         local skill = j.seedSkill or 1
         local span = target - 1
         if span < 1 then span = 1 end

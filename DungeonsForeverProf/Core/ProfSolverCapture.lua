@@ -416,7 +416,7 @@ function E.RequiredLevelingTool(slug, tool, start, snapshot)
 end
 function E.HasToolGoals(slug, opts)
     if not E.ToolPlanningEnabled(opts,slug) then return false end
-    local target = tonumber(opts and opts.target) or 300
+    local target = tonumber(opts and opts.target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
         if E.RequiredLevelingTool(slug,tool,opts and opts.start,opts and opts.snapshot) then
             local recipe = planningToolRecipe(slug, tool.spell, opts and opts.snapshot)
@@ -1197,7 +1197,7 @@ function E.CaptureToolGoals(s, slug, opts)
     s.retainedToolItems, s.toolCraftOnlyItems = s.retainedToolItems or {}, s.toolCraftOnlyItems or {}
     s.nonAuctionable = s.nonAuctionable or {}
     local G = ns.ProfGates
-    local target = tonumber(opts and opts.target) or 300
+    local target = tonumber(opts and opts.target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285
     for _, tool in ipairs(ns.ProfTools and ns.ProfTools[slug] or {}) do
         if tool.bindOnPickup then s.nonAuctionable[tool.item] = true; s.toolCraftOnlyItems[tool.item] = true end
         if s.autoCraftTools and E.RequiredLevelingTool(slug,tool,opts and opts.start,s) then

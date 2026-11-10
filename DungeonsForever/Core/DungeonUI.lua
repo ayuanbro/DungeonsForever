@@ -2947,7 +2947,11 @@ function DG.PaintQuestOverview(d)
 
     local multiPre = false
     for _, ps in pairs(parentsAll) do
-        if #ps > 1 then multiPre = true break end
+        local cnt = 0
+        for k = 1, #ps do
+            if inside[ps[k]] then cnt = cnt + 1 end
+        end
+        if cnt > 1 then multiPre = true break end
     end
     local fwCard = nw * 2 + COL_GAP
     local hasCard = (nCols > 0) and (DG.CurQuestFlow(d) ~= nil)

@@ -987,6 +987,10 @@ end
 
 local function FoodRow(c)
     if not c.food then return nil end
+    if type(IsResting) == "function" then
+        local ok, rest = pcall(IsResting)
+        if ok and rest == true then return nil end
+    end
     if HasWellFed() then return nil end
     local lv = (UnitLevel and UnitLevel("player")) or 0
     return {

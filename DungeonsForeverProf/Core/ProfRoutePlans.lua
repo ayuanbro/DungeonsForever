@@ -116,7 +116,7 @@ local function options(slug, supplied)
     opts.learnedOnly,opts.noFormula,opts.allowUnknownLearning,opts.skipUnpricedFormulas=nil,nil,nil,nil
     opts.considerAuctionSupply=E.ConsiderAuctionSupply(opts)
     opts.start = math.max(1, math.min(300, math.floor(tonumber(opts.start) or 1)))
-    opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or 300)))
+    opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285)))
     if opts.residualMass == nil then opts.residualMass = setting("autoResidualMass", false,slug) end
     if opts.reserveMode == nil then opts.reserveMode = setting("autoReserveMode", "standard",slug) end
     if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false,slug) end

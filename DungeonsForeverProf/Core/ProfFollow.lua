@@ -221,6 +221,11 @@ local function skillOf(slug)
     return nil, nil
 end
 
+local function routeDefaultTarget()
+    local PD = ns.ProfModule
+    return (PD and PD.LV_DEF) or 285
+end
+
 local function routeTarget(slug)
     local PD = ns.ProfModule
     local v
@@ -230,7 +235,7 @@ local function routeTarget(slug)
         local db = dbProf()
         v = tonumber(db.lvTarget and db.lvTarget[slug])
     end
-    if not v then return 300 end
+    if not v then return routeDefaultTarget() end
     return math.max(1, math.min(300, math.floor(v)))
 end
 

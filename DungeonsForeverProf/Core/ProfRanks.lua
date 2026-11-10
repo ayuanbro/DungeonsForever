@@ -227,7 +227,7 @@ function R.RouteSteps(slug, target, opts)
     local out={}
     if not profession then return out end
     local state=R.Status(slug,opts)
-    target=number(target) or 300
+    target=number(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285
     local priorCap=0
     for _,entry in ipairs(rankChoices(profession)) do
         entry=copy(entry)
@@ -291,7 +291,7 @@ end
 function R.NextStep(slug, target, opts)
     local steps=R.RouteSteps(slug,target,opts)
     local state=steps[1] and steps[1].state
-    if state and state.known and (number(target) or 300)<=state.maxSkill then return nil end
+    if state and state.known and (number(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285)<=state.maxSkill then return nil end
     for _,step in ipairs(steps) do if not step.complete then return step end end
 end
 

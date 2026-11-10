@@ -894,7 +894,7 @@ end
 
 function S.NewJob(slug,opts)
     opts=opts or {}
-    local j={slug=slug,opts=opts,target=min(300,max(1,floor(opts.target or 300))),expanded=0,failures={},cpuUsed=0,cpuLimitMs=max(1,tonumber(opts.cpuLimitMs) or 8000),status="searching",generation=0,progressVersion=0,resultVersion=0,frontierLimit=max(1,floor(tonumber(opts.maxFrontier) or 20000))}
+    local j={slug=slug,opts=opts,target=min(300,max(1,floor(opts.target or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285))),expanded=0,failures={},cpuUsed=0,cpuLimitMs=max(1,tonumber(opts.cpuLimitMs) or 8000),status="searching",generation=0,progressVersion=0,resultVersion=0,frontierLimit=max(1,floor(tonumber(opts.maxFrontier) or 20000))}
     j.phase, j.phaseCpuMs = "capture", {}
     j.seedLeafPrices = {}
     j.workCounters = {fastSeedPurchases=0,fastSeedCrafts=0,seedCraftComparisons=0,
