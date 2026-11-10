@@ -299,7 +299,7 @@ local function OwnItem(iid)
         if ok and (n or 0) > 0 then return true end
     end
     if type(C_Item) == "table" and type(C_Item.GetItemCount) == "function" then
-        local ok, n = pcall(C_Item.GetItemCount, iid)
+        local ok, n = pcall(C_Item.GetItemCount, iid, true, false, true)
         if ok and (n or 0) > 0 then return true end
     end
     return false

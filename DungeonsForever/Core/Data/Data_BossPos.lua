@@ -124,11 +124,11 @@ ns.BossPos = {
     ["city_of_dalaran"] = {
         ["Arcane Anomaly"] = { { 60.9, 74.9 } },
         ["Arcanic Enigma"] = { { 65.3, 38.9 } },
-        ["Atrexis the Grave Knight"] = { { 54.8, 52.3, 2 } },
+        ["Atrexis the Grave Knight"] = { { 48.9, 45.6, 2 } },
         ["Fel Ancient"] = { { 53.2, 51.4 } },
-        ["Lyn the Ignored"] = { { 64.1, 13, 2 } },
+        ["Lyn the Ignored"] = { { 61.8, 14.9, 2 } },
         ["Mana Devourer"] = { { 49.2, 68.5 } },
-        ["Shade of the Archmage"] = { { 49.2, 25.4 } },
+        ["Shade of the Archmage"] = { { 45.7, 22.2 } },
         ["Unstable Sentinel"] = { { 58.3, 34 } },
     },
     ["excavation_wetlands"] = {

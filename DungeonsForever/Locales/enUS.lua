@@ -1502,7 +1502,7 @@ L["自动旋转 · 拖动旋转 · 滚轮缩放"] = "Auto-rotate · drag to rota
 L["自动计算"] = "Auto route"
 L["自动计算路线（材料采购）"] = "Automatic route (material purchases)"
 L["自动计算：比较采购、自制与配方依赖"] = "Automatic: compare purchases, crafting and recipe dependencies"
-L["自动识别：金格 = 已上交；绿格 = 背包有书未上交"] = "Auto-detect: gold cell = turned in; green cell = book in your bags, not yet turned in"
+L["自动识别：金格 = 已上交；绿格 = 已有这本书、未上交"] = "Auto-detect: gold cell = turned in; green cell = you have this book, not yet turned in"
 L["自动跟随"] = "Auto follow route"
 L["自动路线不可用"] = "Auto route unavailable"
 L["自定义…"] = "Custom…"

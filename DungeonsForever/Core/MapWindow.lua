@@ -368,8 +368,25 @@ local function showDungeonMenu(btn)
     end
 end
 
+local function miniStrata(st)
+    if not mini then return end
+    local function walk(f)
+        pcall(f.SetFrameStrata, f, st)
+        for _, c in ipairs({ f:GetChildren() }) do walk(c) end
+    end
+    walk(mini)
+    if miniShell then pcall(miniShell.SetFrameStrata, miniShell, st) end
+end
+
 local function backToNative()
-    MW.Close()
+    local s = M.MapStore and M.MapStore()
+    local wantMini = (not s or s.closeToMini ~= false) and MW.curId
+        and R and R.hasArt and R.hasArt(MW.curId)
+    if wantMini and win and win:IsShown() then
+        MW.MiniOpen()
+    else
+        MW.Close()
+    end
     local WM = WorldMapFrame
     if not WM then return end
     if ShowUIPanel then
@@ -605,6 +622,11 @@ local function ensure()
 
     applyScale(sv0 or 1.0)
 
+    if WorldMapFrame and WorldMapFrame.HookScript and not MW.__wmHideHook then
+        MW.__wmHideHook = true
+        pcall(WorldMapFrame.HookScript, WorldMapFrame, "OnHide", function() miniStrata("MEDIUM") end)
+    end
+
     tinsert(UISpecialFrames, "DungeonsForeverMapWindow")
     return view
 end
@@ -787,6 +809,9 @@ local function ensureMini()
         ns.hui.SkinPopup(mf, 8, "both", ns.hui.layer.L0)
     end
     mini = mf
+    if mini.HookScript then
+        pcall(mini.HookScript, mini, "OnHide", function() miniStrata("MEDIUM") end)
+    end
 
     local mv = CreateFrame("Frame", nil, mf)
     mv:SetSize(MINI_W, MINI_H)

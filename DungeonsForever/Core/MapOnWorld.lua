@@ -1014,7 +1014,17 @@ local function syncPins(view, id, floor, cw, ch)
                 bt.__glow:SetVertexColor(cr * g, cg * g, cb * g)
                 bt.__glow:SetShown(sel)
             end
-            if bt.__ring then bt.__ring:Hide() end
+            if bt.__ring then
+                if M.hoverQuestId and kind == "quest" and p.id == M.hoverQuestId then
+                    local c = M.PIN_HL_RING_RGB
+                    bt.__ring:SetVertexColor(c[1], c[2], c[3])
+                    bt.__ring:Show()
+                elseif bt == M.pulseBtn and (M.pulseUntil or 0) > GetTime() then
+                    bt.__ring:Show()
+                else
+                    bt.__ring:Hide()
+                end
+            end
             bt.nm:ClearAllPoints()
             bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
             bt.nm:SetJustifyH("CENTER")
@@ -1060,6 +1070,8 @@ local function syncPins(view, id, floor, cw, ch)
         and hb:GetParent() == view.pins and hb:IsShown() then
         hb.__ring:Show()
     end
+    M.RefreshPulse(view)
+    M.ResolvePendingArrive(view)
 end
 
 local function syncBar(view, id, layers, idx)
@@ -2748,7 +2760,7 @@ local function buildPinPool(view)
             W.Sync()
             local a = W.arrive
             if a and a.from and M.curLayer ~= was then
-                M.ArriveAt(a.from, a.kind, a.tox, a.toy, W.view)
+                M.ArriveAt(a.from, a.kind, a.tox, a.toy, self.__dfView or W.view)
             end
         end)
         bt:SetScript("OnEnter", function(self)

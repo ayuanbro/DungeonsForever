@@ -352,12 +352,21 @@ local function Found()
     if type(mine) ~= "table" then
         mine = {}
         cf[key] = mine
-        if type(db.explore.found) == "table" then
-            for k, v in pairs(db.explore.found) do mine[k] = v end
-            db.explore.found = nil
-        end
     end
     return mine
+end
+
+function EG.LegacyFound()
+    local db = ns.ExploreDB()
+    local f = db.explore and db.explore.found
+    if type(f) ~= "table" then return nil end
+    return f
+end
+
+local function FoundOf(id)
+    local m = EG.found and EG.found[id]
+    if m == nil then m = EG.seed and EG.seed[id] end
+    return m
 end
 
 local function Comma(n)
@@ -475,7 +484,7 @@ function EG.CountInBags(id)
         if ok and type(c) == "number" and c > 0 then return c end
     end
     if type(C_Item) == "table" and type(C_Item.GetItemCount) == "function" then
-        local ok, c = pcall(C_Item.GetItemCount, id)
+        local ok, c = pcall(C_Item.GetItemCount, id, true, false, true)
         if ok and type(c) == "number" and c > 0 then return c end
     end
     local numSlots, itemLink
@@ -486,8 +495,12 @@ function EG.CountInBags(id)
     numSlots = numSlots or GetContainerNumSlots
     itemLink = itemLink or GetContainerItemLink
     if type(numSlots) ~= "function" or type(itemLink) ~= "function" then return 0 end
+    local last = (type(NUM_BAG_SLOTS) == "number" and NUM_BAG_SLOTS) or 4
+    local bags = { 0, last, -1 }
+    for b = last + 1, last + 7 do bags[#bags + 1] = b end
     local n = 0
-    for bag = 0, 4 do
+    for i = 1, #bags do
+        local bag = bags[i]
         local okS, slots = pcall(numSlots, bag)
         if okS and type(slots) == "number" and slots > 0 then
             for slot = 1, slots do
@@ -516,14 +529,16 @@ function EG.ScanAuto()
     if GetItemCount or C_Item or C_Container or GetContainerItemLink then
         for _, rec in ipairs(B) do
             local ok, n = pcall(EG.CountInBags, rec[1])
-            if ok and (n or 0) > 0 and not t[rec[1]] then t[rec[1]] = "bag" end
+            if ok and (n or 0) > 0 and t[rec[1]] ~= "quest" then t[rec[1]] = "bag" end
         end
     end
     EG._auto = t
 end
 
 local function IsFound(id)
-    return (EG.found and EG.found[id]) or (EG._auto and EG._auto[id]) or false
+    local m = FoundOf(id)
+    if m then return m end
+    return (EG._auto and EG._auto[id]) or false
 end
 
 function EG.IsBookFound(id)
@@ -688,7 +703,9 @@ local function Row(i)
         local id = self:GetParent().__it
         if not id then return end
         local found = Found()
-        found[id] = (not found[id]) or nil
+        local cur = found[id]
+        if cur == nil then cur = EG.seed and EG.seed[id] end
+        if cur then found[id] = false else found[id] = true end
         EG.RequestRender()
         ns.PlaySound(1)
     end)
@@ -1016,7 +1033,7 @@ local function PaintRow(r, idx, y, rec, zebra)
         r.unStrike:Hide()
     end
 
-    local manual = EG.found and EG.found[id] or nil
+    local manual = FoundOf(id)
     local autoSt = EG._auto and EG._auto[id] or nil
     local done = (manual or autoSt == "quest") and true or false
     local inbag = (autoSt == "bag") and true or false
@@ -3633,6 +3650,7 @@ function EG.Render()
     if not EG.built then return end
     EG.EnsureSub()
     EG.found = Found()
+    EG.seed = EG.LegacyFound()
     EG.view = View()
     EG.ScanAuto()
     EG.PickFilter()
@@ -3810,6 +3828,7 @@ function EG.Build(page)
     ns.ExplorePhased(53, coroutine.create(function()
     if EG.built then return end
     EG.found = Found()
+    EG.seed = EG.LegacyFound()
     EG.view = View()
 
     EG.navBtns = {}
@@ -4024,7 +4043,7 @@ function EG.Build(page)
     EG.prog:SetPoint("TOPRIGHT", page, "TOPRIGHT", -(EG.EDGE + EG.LIST_PAD), -EG.TICK_Y)
     EG.note = MakeFS(labelHost, 14, { 0.55, 0.75, 0.55 }, "LEFT")
     EG.note:SetPoint("TOPLEFT", page, "TOPLEFT", EG.X0 + EG.LIST_PAD, -EG.NOTE_Y)
-    EG.note:SetText(L["自动识别：金格 = 已上交；绿格 = 背包有书未上交"])
+    EG.note:SetText(L["自动识别：金格 = 已上交；绿格 = 已有这本书、未上交"])
 
     local bar = CreateFrame("Frame", nil, page)
     bar:SetSize(EG.BAR_W, EG.BAR_H)

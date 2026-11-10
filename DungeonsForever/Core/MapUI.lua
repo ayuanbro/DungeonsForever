@@ -291,6 +291,7 @@ M.PIN_GLOW_GAIN = 0.85
 M.PIN_RING_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\PinRing"
 M.PIN_RING_K = 2.5
 M.PIN_RING_RGB = { 1.00, 0.78, 0.22 }
+M.PIN_HL_RING_RGB = { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
 M.PIN_RING_SECS = 6
 M.PIN_LINK_TOL = 2.5
 M.PIN_SIZE = 48
@@ -1560,31 +1561,15 @@ local function BuildListRows(host)
         listRows[i] = r
     end
     if frame.qToggleOK then
-        local qToggle = CreateFrame("Button", nil, listChild)
-        qToggle:SetSize(96, 20)
+        local qToggle = Host.NewButton(listChild, L["任务"], 96, 20, 14)
         qToggle:SetPoint("TOPRIGHT", listChild, "TOPRIGHT", 0, 0)
-        qToggle:RegisterForClicks("LeftButtonUp")
-        if ns.hui and ns.hui.BuildRoundedBG and ns.hui.BuildRoundBorder then
-            qToggle.__fill = ns.hui.BuildRoundedBG(qToggle, 8, { 1, 1, 1, 0.07 }, "both", false, nil, true)
-            qToggle.__edge = ns.hui.BuildRoundBorder(qToggle, 8, { 0.40, 0.43, 0.50 })
-        end
-        local qtfs = qToggle:CreateFontString(nil, "OVERLAY")
-        qtfs:SetFont(ns.FONT, 14, "")
-        qtfs:SetText(L["任务"])
-        qtfs:SetPoint("CENTER", qToggle, "CENTER", 0, 1)
-        qtfs:SetTextColor(0.88, 0.90, 0.92)
-        qToggle.fs = qtfs
         qToggle:SetScript("OnEnter", function(self)
-            for _, t in ipairs(self.__edge or {}) do t:SetVertexColor(1.00, 0.82, 0.00) end
-            self.fs:SetTextColor(1, 1, 1)
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
             GameTooltip:ClearLines()
             GameTooltip:AddLine(L["查看已接取的本副本任务"], 1, 1, 1, true)
             GameTooltip:Show()
         end)
-        qToggle:SetScript("OnLeave", function(self)
-            for _, t in ipairs(self.__edge or {}) do t:SetVertexColor(0.40, 0.43, 0.50) end
-            self.fs:SetTextColor(0.88, 0.90, 0.92)
+        qToggle:SetScript("OnLeave", function()
             GameTooltip:Hide()
         end)
         qToggle:SetScript("OnClick", function()
@@ -1800,6 +1785,7 @@ local function BuildQuestRows(host)
         end
         r:SetScript("OnEnter", function(self)
             PiecesSetShown(self.__hl, true)
+            M.QuestPinHint(self.__qid, true)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:ClearLines()
             GameTooltip:AddLine(L["点击查看任务详情"], 0.7, 0.7, 0.7, true)
@@ -1807,6 +1793,7 @@ local function BuildQuestRows(host)
         end)
         r:SetScript("OnLeave", function(self)
             PiecesSetShown(self.__hl, false)
+            M.QuestPinHint(nil, false)
             GameTooltip:Hide()
         end)
         r:SetScript("OnClick", function(self)
@@ -2340,32 +2327,44 @@ function M.CurFloorNum()
     return 1
 end
 
+local PIN_PULSE_K = M.PIN_SIZE * M.PIN_RING_K / (M.PIN_MIN + 8)
+
 local function pulseDrv()
     if M.pulseDriver then return M.pulseDriver end
     local d = CreateFrame("Frame")
     d:SetSize(1, 1)
     d:Hide()
-    d:SetScript("OnUpdate", function(self)
+    d:SetScript("OnUpdate", function(self, dt)
+        self.__acc = (self.__acc or 0) + (dt or 0)
+        if self.__acc < 0.033 then return end
+        self.__acc = 0
         local t = GetTime()
         local btn = M.pulseBtn
         local untilT = M.pulseUntil or 0
-        if not (btn and btn.__ring and btn:IsShown()) or t >= untilT then
+        if t >= untilT then
             if btn and btn.__ring then
                 btn.__ring:SetAlpha(1)
+                btn.__ring:SetScale(1)
                 btn.__ring:Hide()
             end
+            M.pulseBtn = nil
+            M.pulseSpec = nil
+            self:Hide()
+            return
+        end
+        if not (btn and btn.__ring and btn:IsShown()) then
+            if M.pulseSpec then return end
             M.pulseBtn = nil
             self:Hide()
             return
         end
         local ph = ((t - (M.pulseStart or t)) % 1.4) / 1.4
-        local base = M.PIN_SIZE * M.PIN_RING_K
-        local sz = base * (1 + 0.06 * math.sin(ph * 6.2832))
+        local s = math.sin(ph * 6.2832)
         local a = 0.88 + 0.12 * math.sin(ph * 6.2832 + 1.5708)
         local left = untilT - t
         if left < 0.7 then a = a * (left / 0.7) end
-        btn.__ring:SetSize(sz, sz)
         btn.__ring:SetAlpha(a)
+        btn.__ring:SetScale(1 + 0.05 * s)
     end)
     M.pulseDriver = d
     return d
@@ -2376,8 +2375,10 @@ function M.HighlightPin(btn, secs)
     if M.pulseBtn and M.pulseBtn ~= btn and M.pulseBtn.__ring then
         M.pulseBtn.__ring:Hide()
     end
-    btn.__ring:SetSize(M.PIN_SIZE * M.PIN_RING_K, M.PIN_SIZE * M.PIN_RING_K)
+    local base = (btn:GetWidth() or M.PIN_SIZE) * PIN_PULSE_K
+    btn.__ring:SetSize(base, base)
     btn.__ring:SetAlpha(1)
+    btn.__ring:SetScale(1)
     btn.__ring:Show()
     M.pulseBtn = btn
     M.pulseStart = GetTime()
@@ -2386,9 +2387,15 @@ function M.HighlightPin(btn, secs)
     return true
 end
 
-function M.ArriveAt(fromFloor, kind, tox, toy, host, skip)
-    local frame = host or M.frame
-    if not (frame and frame.pinBtns and fromFloor) then return false end
+function M.StartPinPulse(fromFloor, kind, tox, toy)
+    M.pulseSpec = { from = fromFloor, kind = kind, tox = tox, toy = toy }
+    M.pulseStart = GetTime()
+    M.pulseUntil = M.pulseStart + M.PIN_RING_SECS
+    pulseDrv():Show()
+end
+
+function M.PickArriveBtn(frame, fromFloor, kind, tox, toy, skip)
+    if not (frame and frame.pinBtns and fromFloor) then return nil end
     local want = (kind == "next" and "prev") or (kind == "prev" and "next") or nil
     local paired, exact, stair, anyTo, anyKind
     local tol = M.PIN_LINK_TOL
@@ -2415,9 +2422,48 @@ function M.ArriveAt(fromFloor, kind, tox, toy, host, skip)
             end
         end
     end
-    local pick = paired or exact or stair or anyTo or anyKind
-    if pick then return M.HighlightPin(pick) end
+    return paired or exact or stair or anyTo or anyKind
+end
+
+function M.ArriveAt(fromFloor, kind, tox, toy, host, skip)
+    local frame = host or M.frame
+    local pick = M.PickArriveBtn(frame, fromFloor, kind, tox, toy, skip)
+    if pick then
+        M.pendingArrive = nil
+        return M.HighlightPin(pick)
+    end
     return false
+end
+
+function M.RefreshPulse(host)
+    local sp = M.pulseSpec
+    if not sp then return end
+    if (M.pulseUntil or 0) <= GetTime() then
+        M.pulseSpec = nil
+        return
+    end
+    local pick = M.PickArriveBtn(host, sp.from, sp.kind, sp.tox, sp.toy)
+    M.pulseBtn = pick
+    if pick and pick.__ring then
+        local base = (pick:GetWidth() or M.PIN_SIZE) * PIN_PULSE_K
+        if math.abs((pick.__ring:GetWidth() or 0) - base) > 0.5 then
+            pick.__ring:SetSize(base, base)
+        end
+        pick.__ring:Show()
+    end
+end
+
+function M.ResolvePendingArrive(host)
+    local pa = M.pendingArrive
+    if not pa then return end
+    if (GetTime() - (pa.at or 0)) > 2 then
+        M.pendingArrive = nil
+        return
+    end
+    local want = pa.host or M.frame
+    if want ~= host then return end
+    M.pendingArrive = nil
+    M.ArriveAt(pa.from, pa.kind, pa.tox, pa.toy, host)
 end
 
 local SEQ_OK = {}
@@ -2873,6 +2919,41 @@ function M.HoverFromPin(bt)
         st:Set(seg)
         if st.seg == seg then st.pinAt = GetTime() end
     end
+end
+
+local function eachPinHost(fn)
+    local seen = {}
+    local function one(h)
+        if h and h.pinBtns and not seen[h] then
+            seen[h] = true
+            fn(h)
+        end
+    end
+    one(M.frame)
+    one(M.SideHost)
+    local Wm = ns.MapWorldModule
+    one(Wm and Wm.view)
+end
+
+function M.QuestPinHint(qid, on)
+    M.hoverQuestId = (on and qid) or nil
+    eachPinHost(function(host)
+        local btns = host.pinBtns
+        for i = 1, #btns do
+            local bt = btns[i]
+            if bt and bt.__ring and bt.__kind == "quest" and bt.__p then
+                local hit = M.hoverQuestId and bt.__p.id == M.hoverQuestId
+                    and bt:IsShown()
+                if hit then
+                    local c = M.PIN_HL_RING_RGB
+                    bt.__ring:SetVertexColor(c[1], c[2], c[3])
+                    bt.__ring:Show()
+                else
+                    bt.__ring:Hide()
+                end
+            end
+        end
+    end)
 end
 
 function M.SyncRoute(id, floor, cw, ch)
@@ -3443,7 +3524,17 @@ function M.SyncPins()
                 bt.__glow:SetVertexColor(cr * g, cg * g, cb * g)
                 bt.__glow:SetShown(sel)
             end
-            if bt.__ring then bt.__ring:Hide() end
+            if bt.__ring then
+                if M.hoverQuestId and kind == "quest" and p and p.id == M.hoverQuestId then
+                    local c = M.PIN_HL_RING_RGB
+                    bt.__ring:SetVertexColor(c[1], c[2], c[3])
+                    bt.__ring:Show()
+                elseif bt == M.pulseBtn and (M.pulseUntil or 0) > GetTime() then
+                    bt.__ring:Show()
+                else
+                    bt.__ring:Hide()
+                end
+            end
             bt.nm:ClearAllPoints()
             bt.nm:SetPoint("TOP", bt.dot, "BOTTOM", 0, -2)
             bt.nm:SetJustifyH("CENTER")
@@ -3488,6 +3579,8 @@ function M.SyncPins()
         end
     end
     frame.pins:SetShown(show)
+    M.RefreshPulse(frame)
+    M.ResolvePendingArrive(frame)
     M.SyncPinBtns()
 end
 
@@ -3502,14 +3595,16 @@ function M.PinOnClick(self, inWorld)
         if M.StepFloor((kind == "next") and 1 or -1, p and p.to) then
             ns.PlaySound(1)
             M.PinOnLeave()
-            M.ArriveAt(from, kind, p and p.tox, p and p.toy, nil, self)
+            M.StartPinPulse(from, kind, p and p.tox, p and p.toy)
+            M.ArriveAt(from, kind, p and p.tox, p and p.toy, self.__dfView, self)
         end
     elseif kind == "entrance" and p and p.to then
         local from = M.CurFloorNum()
         if M.StepFloor(nil, p.to) then
             ns.PlaySound(1)
             M.PinOnLeave()
-            M.ArriveAt(from, "entrance", p.tox, p.toy, nil, self)
+            M.StartPinPulse(from, "entrance", p.tox, p.toy)
+            M.ArriveAt(from, "entrance", p.tox, p.toy, self.__dfView, self)
         end
     elseif kind == "dungeon" and p and p.id then
         M.GotoDungeon(p.id, inWorld)
@@ -4277,6 +4372,7 @@ function M.SyncSide(forceFrame)
         for i = 1, M.MAX_QLIST do frame.questRows[i]:Hide() end
     end
     if frame.qNote then frame.qNote:Hide() end
+    if M.hoverQuestId then M.QuestPinHint(nil, false) end
     frame.listHdr:SetText(L["首领"])
     local n = 0
     local y = -26
