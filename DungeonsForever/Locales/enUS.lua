@@ -2670,3 +2670,5 @@ L["关闭副本地图时切换到迷你窗口"] = "Switch to mini map when closi
 L["界面缩放：%d%%"] = "UI scale: %d%%"
 L["界面缩放大"] = "Scale up"
 L["界面缩放小"] = "Scale down"
+L["查看已接取的本副本任务"] = "View accepted quests for this dungeon"
+L["尚未接取与这个副本相关的任务"] = "No accepted quests for this dungeon yet"

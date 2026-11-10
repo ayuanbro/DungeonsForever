@@ -455,6 +455,7 @@ M.BOSS_PALETTE = {
 }
 M.MAX_LOOT = 30
 M.MAX_SKILL = 8
+M.MAX_QLIST = 20
 M.LIST_H = 38
 M.LIST_GAP = 8
 
@@ -1520,8 +1521,7 @@ local function BuildListRows(host)
     frame.__listReady = true
     local listChild, innerW = frame.listChild, frame.innerW
     local listRows = {}
-    for i = 1, M.MAX_LIST do
-        local r = CreateFrame("Button", nil, listChild)
+    for i = 1, M.MAX_LIST do        local r = CreateFrame("Button", nil, listChild)
         r:SetSize(innerW, M.LIST_H)
         r.__av = CreateFrame("Frame", nil, r)
         r.__av:SetSize(32, 32)
@@ -1546,6 +1546,7 @@ local function BuildListRows(host)
             PiecesSetShown(r.__hl, false)
         end
         r.__idx = i
+        r.__frame = frame
         r:SetScript("OnClick", function(self) M.Select(self.__en) end)
         r:SetScript("OnEnter", function(self)
             U.dungeonMapHover = self
@@ -1557,6 +1558,43 @@ local function BuildListRows(host)
         end)
         r:Hide()
         listRows[i] = r
+    end
+    if frame.qToggleOK then
+        local qToggle = CreateFrame("Button", nil, listChild)
+        qToggle:SetSize(96, 20)
+        qToggle:SetPoint("TOPRIGHT", listChild, "TOPRIGHT", 0, 0)
+        qToggle:RegisterForClicks("LeftButtonUp")
+        if ns.hui and ns.hui.BuildRoundedBG and ns.hui.BuildRoundBorder then
+            qToggle.__fill = ns.hui.BuildRoundedBG(qToggle, 8, { 1, 1, 1, 0.07 }, "both", false, nil, true)
+            qToggle.__edge = ns.hui.BuildRoundBorder(qToggle, 8, { 0.40, 0.43, 0.50 })
+        end
+        local qtfs = qToggle:CreateFontString(nil, "OVERLAY")
+        qtfs:SetFont(ns.FONT, 14, "")
+        qtfs:SetText(L["任务"])
+        qtfs:SetPoint("CENTER", qToggle, "CENTER", 0, 1)
+        qtfs:SetTextColor(0.88, 0.90, 0.92)
+        qToggle.fs = qtfs
+        qToggle:SetScript("OnEnter", function(self)
+            for _, t in ipairs(self.__edge or {}) do t:SetVertexColor(1.00, 0.82, 0.00) end
+            self.fs:SetTextColor(1, 1, 1)
+            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(L["查看已接取的本副本任务"], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        qToggle:SetScript("OnLeave", function(self)
+            for _, t in ipairs(self.__edge or {}) do t:SetVertexColor(0.40, 0.43, 0.50) end
+            self.fs:SetTextColor(0.88, 0.90, 0.92)
+            GameTooltip:Hide()
+        end)
+        qToggle:SetScript("OnClick", function()
+            if not frame then return end
+            frame.sideQuests = true
+            M.detailEn = nil
+            ns.PlaySound(1)
+            M.SyncSide(frame)
+        end)
+        frame.qToggle = qToggle
     end
     frame.listRows = listRows
 end
@@ -1709,6 +1747,60 @@ local function BuildSideRows(host)
     frame.lootRows, frame.skillRows = lootRows, skillRows
 end
 
+local function BuildQuestRows(host)
+    local frame = host or M.SideHost or M.frame
+    if not frame or frame.__questsReady then return end
+    frame.__questsReady = true
+    local listChild, innerW = frame.listChild, frame.innerW
+    local qBack = Host.NewButton(listChild, L["全部首领"], 96, 20, 14)
+    qBack:SetScript("OnClick", function()
+        frame.sideQuests = nil
+        M.ShowList()
+    end)
+    qBack:SetPoint("TOPRIGHT", listChild, "TOPRIGHT", 0, 0)
+    local qNote = MakeFS(listChild, 14, C_GREY, "LEFT")
+    qNote:SetPoint("TOPLEFT", listChild, "TOPLEFT", 2, -26)
+    qNote:SetWidth(innerW - 4)
+    qNote:SetWordWrap(true)
+    qNote:SetText(L["尚未接取与这个副本相关的任务"])
+    qNote:Hide()
+    local rows = {}
+    for i = 1, M.MAX_QLIST do
+        local r = CreateFrame("Frame", nil, listChild)
+        r:SetSize(innerW, 40)
+        if ns.hui and ns.hui.BuildRoundedBG then
+            ns.hui.BuildRoundedBG(r, M.ROW_RADIUS, { 1, 1, 1, M.BLK_BG }, "both", true, 1)
+        end
+        r.ic = r:CreateTexture(nil, "ARTWORK")
+        r.ic:SetSize(20, 20)
+        r.ic:SetPoint("LEFT", r, "LEFT", 10, 0)
+        r.ic:Hide()
+        r.icg = r:CreateTexture(nil, "OVERLAY")
+        r.icg:SetSize(20, 20)
+        r.icg:SetPoint("LEFT", r.ic, "LEFT", 0, 0)
+        r.icg:Hide()
+        r.name = MakeFS(r, 14, C_TEXT, "LEFT")
+        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 106, -8)
+        r.name:SetWordWrap(false)
+        r.name:SetWidth(innerW - 116)
+        r.st = MakeFS(r, 12, C_GREY, "LEFT")
+        r.st:SetPoint("LEFT", r, "LEFT", 36, 0)
+        r.st:SetWidth(64)
+        r.st:SetWordWrap(false)
+        r.st:Hide()
+        r.obj = MakeFS(r, 13, C_GREY, "LEFT")
+        r.obj:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2)
+        r.obj:SetWidth(innerW - 116)
+        r.obj:SetWordWrap(true)
+        r.obj:Hide()
+        r:Hide()
+        rows[i] = r
+    end
+    frame.qBack = qBack
+    frame.qNote = qNote
+    frame.questRows = rows
+end
+
 local function BuildFinal()
     local frame = M.frame
     if not frame or frame.__poolsReady then return end
@@ -1720,6 +1812,7 @@ M.EnsurePins = BuildPins
 M.EnsureListRows = BuildListRows
 M.EnsureBlocks = BuildBlocks
 M.EnsureSideRows = BuildSideRows
+M.EnsureQuestRows = BuildQuestRows
 M.EnsureFinal = BuildFinal
 
 local function MakeSideBar(side, scroll, child)
@@ -1754,8 +1847,9 @@ local function MakeSideBar(side, scroll, child)
     return bar
 end
 
-function M.BuildSide(f, w, h, withBar, bgLayer, noCard)
+function M.BuildSide(f, w, h, withBar, bgLayer, noCard, qOK)
     if not f then return end
+    f.qToggleOK = qOK and true or nil
     local side = CreateFrame("Frame", nil, f, "BackdropTemplate")
     side:SetSize(w, h)
     side:EnableMouse(true)
@@ -3664,11 +3758,21 @@ end
 
 function M.OnQuestData(id)
     local owner = GameTooltip and GameTooltip.GetOwner and GameTooltip:GetOwner()
-    if not (owner and owner.__kind == "quest" and owner.__p) then return end
-    if GameTooltip.IsShown and not GameTooltip:IsShown() then return end
-    local p = owner.__p
-    if p.id == id or owner.__qPre == id or owner.__qPreOf == id then
-        M.PinOnEnter(owner)
+    if owner and owner.__kind == "quest" and owner.__p then
+        if GameTooltip.IsShown and GameTooltip:IsShown() then
+            local p = owner.__p
+            if p.id == id or owner.__qPre == id or owner.__qPreOf == id then
+                M.PinOnEnter(owner)
+            end
+        end
+    end
+    local f = M.frame
+    if f and f.sideQuests and f:IsShown() and not M.__qListT then
+        M.__qListT = C_Timer.After(0.25, function()
+            M.__qListT = nil
+            local ff = M.frame
+            if ff and ff.sideQuests and ff:IsShown() then M.SyncSide() end
+        end)
     end
 end
 
@@ -3905,6 +4009,78 @@ function M.SyncSide(forceFrame)
         frame.side:SetShown((frame.sideAvail or 999) >= 120)
     end
 
+    if frame.sideQuests and frame.qToggleOK then
+        frame.detScroll:Hide()
+        frame.listScroll:Show()
+        M.EnsureQuestRows(frame)
+        frame.listHdr:SetText(L["任务"])
+        frame.qBack:Show()
+        if frame.qToggle then frame.qToggle:Hide() end
+        for i = 1, M.MAX_LIST do frame.listRows[i]:Hide() end
+        frame.listNote:Hide()
+        local d = M.curD
+        local okRows, rows = pcall(DG.QuestRows, d)
+        local n = 0
+        local y = -26
+        local QMARK_INK = {
+            active = { 0.227, 0.165, 0 },
+            ready = { 0.020, 0.180, 0.172 },
+        }
+        local QMARK_STATE = {
+            active = { "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk", DG.Q_OV_ACT, L["已接取"] },
+            ready = { "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn", DG.Q_OV_READY, L["完成未上交"] },
+        }
+        if okRows and rows then
+            for i = 1, #rows do
+                local qid = type(rows[i]) == "table" and rows[i][1] or nil
+                local st = qid and DG.QuestState(qid) or nil
+                if (st == "active" or st == "ready") and n < M.MAX_QLIST then
+                    n = n + 1
+                    local r = frame.questRows[n]
+                    local nm = DG.QuestName(qid)
+                    r.name:SetText(format("《%s》", nm or tostring(qid)))
+                    local mk = QMARK_STATE[st]
+                    if mk then
+                        r.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
+                        r.ic:SetVertexColor(mk[2][1], mk[2][2], mk[2][3], 1)
+                        r.icg:SetTexture(mk[1])
+                        local ink = QMARK_INK[st]
+                        r.icg:SetVertexColor(ink[1], ink[2], ink[3], 1)
+                        r.ic:Show()
+                        r.icg:Show()
+                        r.st:SetText(mk[3])
+                        r.st:SetTextColor(mk[2][1], mk[2][2], mk[2][3], 1)
+                        r.st:Show()
+                    end
+                    local okOb, ob = pcall(DG.QuestObjectives, qid)
+                    ob = (okOb and type(ob) == "string") and ob or ""
+                    r.obj:SetShown(ob ~= "")
+                    r.obj:SetText(ob)
+                    r.name:SetWidth(frame.innerW - 116)
+                    local oh = r.obj:IsShown() and (r.obj:GetStringHeight() or 0) or 0
+                    local nh = r.name:GetStringHeight() or 16
+                    local h = math.max(36, 8 + nh + 2 + oh + 8)
+                    r:ClearAllPoints()
+                    r:SetPoint("TOPLEFT", frame.listChild, "TOPLEFT", 0, y)
+                    r:SetHeight(h)
+                    r:Show()
+                    y = y - h - M.ROW_GAP
+                end
+            end
+        end
+        for i = n + 1, M.MAX_QLIST do frame.questRows[i]:Hide() end
+        frame.qNote:SetShown(n == 0)
+        frame.listChild:SetHeight(math.max(30, -y + 8))
+        local listSig = "q|" .. tostring(M.curId) .. "|" .. tostring(n)
+        if frame.__listSig ~= listSig then
+            frame.__listSig = listSig
+            frame.listScroll:SetVerticalScroll(0)
+        end
+        if frame.detBar then frame.detBar:Hide() end
+        M.SyncScrollBar(frame.listScroll)
+        return
+    end
+
     if M.detailEn then
         local zh, items
         for i = 1, #(bosses or {}) do
@@ -4073,6 +4249,13 @@ function M.SyncSide(forceFrame)
 
     frame.detScroll:Hide()
     frame.listScroll:Show()
+    if frame.qBack then frame.qBack:Hide() end
+    if frame.qToggle then frame.qToggle:Show() end
+    if frame.questRows then
+        for i = 1, M.MAX_QLIST do frame.questRows[i]:Hide() end
+    end
+    if frame.qNote then frame.qNote:Hide() end
+    frame.listHdr:SetText(L["首领"])
     local n = 0
     local y = -26
     for i = 1, #(bosses or {}) do
@@ -4223,6 +4406,7 @@ function M.Paint(d)
 
     if M.curId ~= id then
         M.curId, M.curLayer, M.detailEn = id, M.EntryLayer(id) or 1, nil
+        frame.sideQuests = nil
         ZM.Reset()
     end
 
@@ -4813,6 +4997,14 @@ pcall(wpEv.RegisterEvent, wpEv, "QUEST_LOG_UPDATE")
 wpEv:SetScript("OnEvent", function()
     if WorldMapFrame and WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
         M.SyncWorldQuestPins()
+    end
+    local f = M.frame
+    if f and f.sideQuests and f:IsShown() and not M.__qLogT then
+        M.__qLogT = C_Timer.After(0.3, function()
+            M.__qLogT = nil
+            local ff = M.frame
+            if ff and ff.sideQuests and ff:IsShown() then M.SyncSide() end
+        end)
     end
 end)
 

@@ -115,8 +115,11 @@ ns.BossModelDisplay = {
     },
     ["maraudon"] = {
         ["Celebras the Cursed"] = 12350,
+        ["Gelk"] = 12372,
         ["Landslide"] = 12293,
+        ["Kolk"] = 12371,
         ["Lord Vyletongue"] = 12334,
+        ["Magra"] = 12374,
         ["Maraudos"] = 9441,
         ["Meshlok the Harvester"] = 9014,
         ["Noxxion"] = 11172,
