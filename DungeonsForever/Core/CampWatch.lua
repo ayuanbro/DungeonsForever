@@ -234,8 +234,11 @@ local function IsTent(u)
     if not (u and UnitExists(u)) then return false end
     local id = UnitCid(u)
     if id and TENT_IDS[id] then return true end
-    local nm = UnitName(u)
-    return nm ~= nil and TENT_NAMES[nm] == true
+    local ok, hit = pcall(function()
+        local nm = UnitName(u)
+        return nm ~= nil and TENT_NAMES[nm] == true
+    end)
+    return ok and hit == true
 end
 
 function C.TentUnit()
