@@ -237,7 +237,7 @@ M.BOSS_MODEL_UP = 66
 M.MAX_PINS = 48
 M.LOGO_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp"
 M.LOGO_SIZE = 20
-M.LOGO_LIFT = 2.5
+M.LOGO_LIFT = 0
 M.PIN_BOSS_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\BossSkull"
 M.PIN_QUEST_DISC_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
 M.PIN_QUEST_SYM = {
@@ -1766,8 +1766,9 @@ local function BuildQuestRows(host)
     qNote:Hide()
     local rows = {}
     for i = 1, M.MAX_QLIST do
-        local r = CreateFrame("Frame", nil, listChild)
+        local r = CreateFrame("Button", nil, listChild)
         r:SetSize(innerW, 40)
+        r:RegisterForClicks("LeftButtonUp")
         if ns.hui and ns.hui.BuildRoundedBG then
             ns.hui.BuildRoundedBG(r, M.ROW_RADIUS, { 1, 1, 1, M.BLK_BG }, "both", true, 1)
         end
@@ -1780,19 +1781,37 @@ local function BuildQuestRows(host)
         r.icg:SetPoint("LEFT", r.ic, "LEFT", 0, 0)
         r.icg:Hide()
         r.name = MakeFS(r, 14, C_TEXT, "LEFT")
-        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 106, -8)
+        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 38, -8)
         r.name:SetWordWrap(false)
-        r.name:SetWidth(innerW - 116)
-        r.st = MakeFS(r, 12, C_GREY, "LEFT")
-        r.st:SetPoint("LEFT", r, "LEFT", 36, 0)
-        r.st:SetWidth(64)
+        r.name:SetWidth(innerW - 58)
+        r.st = MakeFS(r, 12, C_GREY, "RIGHT")
+        r.st:SetPoint("TOPRIGHT", r, "TOPRIGHT", -10, -9)
         r.st:SetWordWrap(false)
         r.st:Hide()
         r.obj = MakeFS(r, 13, C_GREY, "LEFT")
         r.obj:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2)
-        r.obj:SetWidth(innerW - 116)
+        r.obj:SetWidth(innerW - 58)
         r.obj:SetWordWrap(true)
         r.obj:Hide()
+        if ns.hui and ns.hui.BuildRoundedBG then
+            r.__hl = FlattenPieces(ns.hui.BuildRoundedBG(r, M.ROW_RADIUS,
+                { 1, 1, 1, DG.LOOT_CARD_BG_HOVER }, "both", true, 1, true))
+            PiecesSetShown(r.__hl, false)
+        end
+        r:SetScript("OnEnter", function(self)
+            PiecesSetShown(self.__hl, true)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(L["点击查看任务详情"], 0.7, 0.7, 0.7, true)
+            GameTooltip:Show()
+        end)
+        r:SetScript("OnLeave", function(self)
+            PiecesSetShown(self.__hl, false)
+            GameTooltip:Hide()
+        end)
+        r:SetScript("OnClick", function(self)
+            if self.__qid and M.GotoQuest then M.GotoQuest(self.__qid, true) end
+        end)
         r:Hide()
         rows[i] = r
     end
@@ -1888,7 +1907,7 @@ function M.BuildSide(f, w, h, withBar, bgLayer, noCard, qOK)
     hdrLogo:SetPoint("TOPLEFT", listChild, "TOPLEFT", 0, M.LOGO_LIFT)
 
     local listHdr = MakeFS(listChild, 14, C_GOLD, "LEFT")
-    listHdr:SetPoint("TOPLEFT", listChild, "TOPLEFT", M.LOGO_SIZE + 6, 0)
+    listHdr:SetPoint("TOPLEFT", listChild, "TOPLEFT", M.LOGO_SIZE + 6, -3)
     listHdr:SetText(L["首领"])
 
     local listNote = MakeFS(listChild, 14, C_GREY, "LEFT")
@@ -4056,7 +4075,10 @@ function M.SyncSide(forceFrame)
                     ob = (okOb and type(ob) == "string") and ob or ""
                     r.obj:SetShown(ob ~= "")
                     r.obj:SetText(ob)
-                    r.name:SetWidth(frame.innerW - 116)
+                    r.__qid = qid
+                    r.__row = rows[i]
+                    local nw = r.st:IsShown() and ((r.st:GetStringWidth() or 0) + 16) or 0
+                    r.name:SetWidth(frame.innerW - 58 - nw)
                     local oh = r.obj:IsShown() and (r.obj:GetStringHeight() or 0) or 0
                     local nh = r.name:GetStringHeight() or 16
                     local h = math.max(36, 8 + nh + 2 + oh + 8)

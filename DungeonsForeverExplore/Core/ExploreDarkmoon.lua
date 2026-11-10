@@ -1165,7 +1165,7 @@ local function Build(EG, page)
                 end)
                 b:SetScript("OnLeave", function() GameTooltip:Hide() end)
                 b:SetScript("OnClick", function()
-                    if EG.RtGo then EG.RtGo(an.map, an.x, an.y) end
+                    if EG.MarkPoint then EG.MarkPoint(an.area, an.x, an.y) end
                 end)
             end
             prev = fs

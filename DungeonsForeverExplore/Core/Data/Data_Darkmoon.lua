@@ -152,8 +152,8 @@ DM.ROUTE_NOTES = {
 }
 
 DM.ANNOUNCERS = {
-    { city = L["铁炉堡"], name = L["梅尔南·黑石"], map = 1537, x = 29.7, y = 75.3 },
-    { city = L["奥格瑞玛"], name = L["克鲁本·暗刃"], map = 1637, x = 52.9, y = 66.6 },
+    { city = L["铁炉堡"], name = L["梅尔南·黑石"], area = 1537, x = 29.7, y = 75.3 },
+    { city = L["奥格瑞玛"], name = L["克鲁本·暗刃"], area = 1637, x = 52.9, y = 66.6 },
 }
 
 DM.FORTUNE_NOTES = {
