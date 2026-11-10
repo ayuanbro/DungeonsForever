@@ -154,7 +154,7 @@ local function signature(slug, opts)
     local sig=table.concat({"profession:"..tostring(slug), opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
         tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas), tostring(opts.considerAuctionSupply), tostring(opts.allowSecondaryLeveling),
         tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
-        "formula-channels:2", "profit-priority:20", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
+        "formula-channels:2", "profit-priority:20", "recipe-batches:2", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
         E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
     return sig

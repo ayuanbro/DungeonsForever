@@ -255,7 +255,12 @@ function S.Result(job,state,status)
         local candidate = job.rebatchFinal(state)
         job.phase=previousPhase;job.finalizing=finalizing
         if candidate and candidate ~= state then
-            if state == job.best then job.best = candidate else job.preview = candidate end
+            local complete=goalsComplete(job,candidate)
+            if state==job.best or complete then job.best=candidate end
+            if state==prefix then job.preview=candidate end
+            if complete and finalStatus=="incomplete" then
+                status=uncertainty(candidate)==0 and "complete" or "incomplete";job.status=status;finalStatus=status
+            end
             state = candidate
             if partial then partial=not goalsComplete(job,state) end
             job.resultState = nil
@@ -641,9 +646,10 @@ local function rebatchEquivalent(a, b, progressGoals)
     if not rebatchSameKeys(a.skill, b.skill) then return false end
     for profession, oldSkill in pairs(a.skill or {}) do
         local newSkill = b.skill[profession]
+        local goal=progressGoals and progressGoals[profession] or 300
         if type(oldSkill) ~= "number" or type(newSkill) ~= "number"
-            or newSkill < oldSkill then return false end
-        if newSkill == oldSkill and oldSkill < (progressGoals and progressGoals[profession] or 300)
+            or newSkill < min(oldSkill,goal) then return false end
+        if newSkill == oldSkill and oldSkill < goal
             and (b.progress and b.progress[profession] or 0) + 1e-7
             < (a.progress and a.progress[profession] or 0) then return false end
     end
@@ -668,11 +674,12 @@ local function rebatchSwitches(list)
     return switches
 end
 
-local function rebatchStages(list, recipes, rebuild)
+local function rebatchStages(list, recipes, rebuild, caps)
     local stages, skill = {}, {}
     for _, a in ipairs(list) do
         if a.profession and skill[a.profession]==nil then skill[a.profession]=a.from end
     end
+    caps=caps and copyStateMap(caps)
     local first, opening = 1, copyStateMap(skill)
     local function close(last)
         if last>=first then stages[#stages+1]={first,last} end
@@ -685,7 +692,10 @@ local function rebatchStages(list, recipes, rebuild)
             if not rebuild and r and r.learn>(opening[a.profession] or a.from or 0) then close(i-1) end
             skill[a.profession]=a.to or skill[a.profession]
             for _,cap in ipairs({75,150,225}) do
-                if (a.from or 0)<cap and (a.to or 0)>=cap then close(i);break end
+                if (a.from or 0)<cap and (a.to or 0)>=cap and (not caps or (caps[a.profession] or 300)<=cap) then
+                    if caps then caps[a.profession]=min(300,cap+75) end
+                    close(i);break
+                end
             end
         elseif a.type~="buy" and not (rebuild and a.type=="formula") then
             close(i-1)
@@ -697,7 +707,7 @@ local function rebatchStages(list, recipes, rebuild)
     return stages
 end
 
-local function rebatchDependencies(list, checkpoint)
+local function rebatchDependencies(list, checkpoint, reorderLeveling)
     local edges, pools, consumers, lastBuy, lastMade = {}, {}, {}, {}, {}
     local lastLevel
     local function edge(from,to)
@@ -742,15 +752,16 @@ local function rebatchDependencies(list, checkpoint)
         elseif a.usableOutput~=false then
             for _,m in ipairs(a.outputs or {}) do add(m[1],m[2],i,a.type=="craft") end
         end
-        if rebatchKey(a) and a.reason and a.reason~="material" then
+        if not reorderLeveling and rebatchKey(a) and a.reason and a.reason~="material" then
             edge(lastLevel,i);lastLevel=i
         end
     end
     return edges
 end
 
-local function rebatchStageOrder(list, edges, lo, hi, checkpoint)
+local function rebatchStageOrder(list, edges, lo, hi, checkpoint, preferred)
     local remaining, done, ready, byKey = {}, {}, {}, {}
+    local keys,external,seen={},{},{}
     local function push(heap,value)
         local i=#heap+1
         while i>1 do
@@ -784,21 +795,38 @@ local function rebatchStageOrder(list, edges, lo, hi, checkpoint)
         local key=rebatchKey(list[i]) or "buy"
         byKey[key]=byKey[key] or {};push(byKey[key],i)
     end
-    for i=lo,hi do remaining[i]=0 end
+    for i=lo,hi do
+        remaining[i]=0
+        local key=rebatchKey(list[i]) or "buy"
+        if not seen[key] then seen[key]=true;keys[#keys+1]=key;external[key]=0 end
+    end
     for i=lo,hi do
         if not checkpoint() then return end
-        for to in pairs(edges[i]) do if to<=hi then remaining[to]=remaining[to]+1 end end
+        for to in pairs(edges[i]) do if to<=hi then
+            remaining[to]=remaining[to]+1
+            local key=rebatchKey(list[to]) or "buy"
+            if key~="buy" and rebatchKey(list[i]) and key~=rebatchKey(list[i]) then external[key]=external[key]+1 end
+        end end
     end
     for i=lo,hi do if remaining[i]==0 then release(i) end end
     local out, previous = {}, nil
     for _=lo,hi do
         if not checkpoint() then return end
-        local index=peek(byKey.buy) or (previous and peek(byKey[previous])) or peek(ready)
+        local index=peek(byKey.buy) or preferred and peek(byKey[preferred]) or previous and peek(byKey[previous])
+        if not index then
+            for _,key in ipairs(keys) do
+                local candidate=external[key]==0 and peek(byKey[key])
+                if candidate and (not index or candidate<index) then index=candidate end
+            end
+        end
+        index=index or peek(ready)
         if not index then return end
         done[index]=true;out[#out+1]=list[index]
         previous=rebatchKey(list[index]) or previous
         for to in pairs(edges[index]) do if to<=hi then
             remaining[to]=remaining[to]-1
+            local key=rebatchKey(list[to]) or "buy"
+            if key~="buy" and rebatchKey(list[index]) and key~=rebatchKey(list[index]) then external[key]=external[key]-1 end
             if remaining[to]==0 then release(to) end
         end end
     end
@@ -828,10 +856,10 @@ local function rebatchGrayOrder(list,lo,hi,recipes,checkpoint)
     return out
 end
 
-function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMaterials, progressGoals)
+function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMaterials, progressGoals, reorderLeveling, caps)
     if not original or type(replay) ~= "function" then return original end
     local list = actions(original)
-    if #list < 3 or #list > 1600 then return original end
+    if #list < 3 then return original end
     local occurrences, duplicate = {}, false
     for _, action in ipairs(list) do
         local key = rebatchKey(action)
@@ -849,7 +877,7 @@ function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMa
     local started = useCPU and cpuTime()
         or (type(debugprofilestop)=="function" and debugprofilestop() or nil)
     local function timeExceeded()
-        if not started then return false end
+        if reorderLeveling or grayMaterials or not started then return false end
         return (useCPU and cpuTime() or debugprofilestop()) - started
             >= (useCPU and 60 or 200)
     end
@@ -859,11 +887,114 @@ function S.RebatchChronological(original, replay, tick, cpuTime, recipes, grayMa
         if work%64==0 then if tick then tick() end;return not timeExceeded() end
         return true
     end
-    local stages=rebatchStages(list,recipes,grayMaterials)
-    local edges=grayMaterials and {} or rebatchDependencies(list,checkpoint)
+    local stages=rebatchStages(list,recipes,grayMaterials,(reorderLeveling or grayMaterials) and (caps or original.cap))
+    local edges=grayMaterials and {} or rebatchDependencies(list,checkpoint,reorderLeveling)
     if not edges then return original end
     local currentScore = rebatchSwitches(list)
     local order=list
+    if reorderLeveling or grayMaterials then
+        local function accept(candidateOrder)
+            if rebatchSwitches(candidateOrder)>=currentScore then return false end
+            if tick then tick() end
+            local candidate=replay(candidateOrder)
+            if not rebatchEquivalent(original,candidate,progressGoals) then return false end
+            local score=rebatchSwitches(actions(candidate))
+            if score>=currentScore then return false end
+            best,currentScore=candidate,score
+            return true
+        end
+        local function replace(lo,hi,sorted)
+            local candidate={}
+            for i,a in ipairs(list) do candidate[i]=a;checkpoint() end
+            for i,a in ipairs(sorted) do candidate[lo+i-1]=a end
+            return accept(candidate)
+        end
+        local function merge(lo,hi,selected)
+            local marked,block,rest,positions={},{},{},{}
+            for _,i in ipairs(selected) do marked[i]=true;block[#block+1]=list[i] end
+            for i=lo,hi do if not marked[i] then rest[#rest+1]=list[i];positions[i]=#rest end;checkpoint() end
+            local first,last=0,#rest
+            for i=lo,hi do
+                for to in pairs(edges[i]) do if to<=hi then
+                    if marked[i] and not marked[to] then last=min(last,positions[to]-1)
+                    elseif not marked[i] and marked[to] then first=max(first,positions[i]) end
+                end end
+                checkpoint()
+            end
+            for slot=first,last do
+                local sorted={}
+                for i=1,slot do sorted[#sorted+1]=rest[i] end
+                for _,a in ipairs(block) do sorted[#sorted+1]=a end
+                for i=slot+1,#rest do sorted[#sorted+1]=rest[i] end
+                if replace(lo,hi,sorted) then return true end
+                checkpoint()
+            end
+            return false
+        end
+        local changed=true
+        while changed do
+            changed=false;list=actions(best,tick)
+            local distinct,n={},0
+            for _,a in ipairs(list) do
+                local key=rebatchKey(a)
+                if key and not distinct[key] then distinct[key]=true;n=n+1 end
+                checkpoint()
+            end
+            if currentScore<=n-1 then break end
+            edges=rebatchDependencies(list,checkpoint,reorderLeveling)
+            for pass=1,grayMaterials and 1 or 2 do
+            stages=rebatchStages(list,recipes,grayMaterials or pass==2,caps or original.cap)
+            local combined={}
+            for i,a in ipairs(list) do combined[i]=a;checkpoint() end
+            for _,range in ipairs(stages) do
+                local sorted=grayMaterials and rebatchGrayOrder(list,range[1],range[2],recipes,checkpoint)
+                    or rebatchStageOrder(list,edges,range[1],range[2],checkpoint)
+                if sorted then for i,a in ipairs(sorted) do combined[range[1]+i-1]=a end end
+            end
+            changed=accept(combined)
+            if not changed then for _,range in ipairs(stages) do
+                local lo,hi=range[1],range[2]
+                local sorted=grayMaterials and rebatchGrayOrder(list,lo,hi,recipes,checkpoint)
+                    or rebatchStageOrder(list,edges,lo,hi,checkpoint)
+                if sorted and replace(lo,hi,sorted) then changed=true;break end
+                local groups,keys,last={},{},nil
+                for i=lo,hi do
+                    local a=list[i];local key=rebatchKey(a);local r=key and recipes and recipes[key]
+                    if key then
+                        if not grayMaterials or r and a.reason=="material" and (a.from or 0)>=r.grey then
+                            if not groups[key] then groups[key]={};keys[#keys+1]=key end
+                            local runs=groups[key]
+                            if last~=key or #runs==0 then runs[#runs+1]={} end
+                            runs[#runs][#runs[#runs]+1]=i
+                        end
+                        last=key
+                    end
+                    checkpoint()
+                end
+                for _,key in ipairs(keys) do
+                    local runs=groups[key]
+                    if #runs>1 then
+                        sorted=rebatchStageOrder(list,edges,lo,hi,checkpoint,key)
+                        if sorted and replace(lo,hi,sorted) then changed=true;break end
+                        local selected={}
+                        for _,run in ipairs(runs) do for _,i in ipairs(run) do selected[#selected+1]=i end end
+                        if merge(lo,hi,selected) then changed=true;break end
+                        if #runs>2 then for i=1,#runs-1 do
+                            selected={}
+                            for _,index in ipairs(runs[i]) do selected[#selected+1]=index end
+                            for _,index in ipairs(runs[i+1]) do selected[#selected+1]=index end
+                            if merge(lo,hi,selected) then changed=true;break end
+                        end end
+                        if changed then break end
+                    end
+                end
+                if changed then break end
+            end end
+            if changed then break end
+            end
+        end
+        return best
+    end
     local function improve(lo,hi)
         if hi-lo<2 or attempts>=maxAttempts or probes>=maxProbes or timeExceeded() then return end
         probes=probes+1
@@ -1879,11 +2010,10 @@ function S.NewJob(slug,opts)
             return t
         end
         local function preservesProgress(candidate,t)
-            local complete=goalsComplete(j,candidate)
-            if not t or not complete and t.skill[slug]~=candidate.skill[slug] then return false end
+            if not t then return false end
             for p,skill in pairs(candidate.skill) do
-                local progressGoal=p==slug and complete and j.target or 300
-                if (t.skill[p] or 0)<skill or skill<progressGoal and t.skill[p]==skill
+                local progressGoal=p==slug and j.target or 300
+                if (t.skill[p] or 0)<min(skill,progressGoal) or skill<progressGoal and t.skill[p]==skill
                     and (t.progress[p] or 0)+1e-7<(candidate.progress[p] or 0) then return false end
             end
             for _,field in ipairs({"completedSpecializationGoals","completedToolGoals"}) do
@@ -1904,7 +2034,8 @@ function S.NewJob(slug,opts)
                 end
                 if not useful then return end
             end
-            local stages=rebatchStages(list,j.snap.byKey)
+            local caps={};for p,v in pairs(j.snap.professions) do caps[p]=v.max or 300 end
+            local stages=rebatchStages(list,j.snap.byKey,nil,caps)
             local ranges={};for _,range in ipairs(stages) do ranges[range[1]]=range[2] end
             local advanced={}
             local function advanceMaterials(first)
@@ -2054,8 +2185,8 @@ function S.NewJob(slug,opts)
                 local failures, collected = j.failures, j.collectFailures
                 local restricted, restriction = j.restricted, j.restrictedReason
                 j.failures, j.collectFailures = {}, nil
-                local seeding,direct,aborted=j.seeding,j.directSeed,j.seedAborted
-                j.seeding=true;j.directSeed=true;j.seedAborted=false
+                local seeding,direct,aborted,deadline,smooth=j.seeding,j.directSeed,j.seedAborted,j.seedDeadline,j.smoothSeed
+                j.seeding=true;j.directSeed=true;j.seedAborted=false;j.seedDeadline=nil;j.smoothSeed=nil
                 local function replayFinal(list)
                     local t=replay(list)
                     if preservesProgress(candidate,t) then return t end
@@ -2069,11 +2200,17 @@ function S.NewJob(slug,opts)
                     if not retry then break end
                     tick()
                 end
-                j.batchRecipes=nil;j.seeding,j.directSeed,j.seedAborted=seeding,direct,aborted
+                j.batchRecipes=nil
                 local baseline=candidate.rebatchGreenCrafts~=nil and candidate or replayFinal(actions(candidate))
-                local progressGoals=goalsComplete(j,candidate) and {[slug]=j.target} or nil
-                local result = rebuilt or baseline and rebatchEquivalent(candidate,baseline,progressGoals)
-                    and S.RebatchChronological(baseline, replayFinal, tick, cpuTime, j.snap.byKey, nil, progressGoals)
+                local progressGoals={[slug]=j.target}
+                local caps={};for p,v in pairs(j.snap.professions) do caps[p]=v.max or 300 end
+                local result=baseline and rebatchEquivalent(candidate,baseline,progressGoals) and baseline
+                if result then result=S.RebatchChronological(result,replayFinal,tick,cpuTime,j.snap.byKey,nil,progressGoals,true,caps) end
+                if rebuilt then
+                    rebuilt=S.RebatchChronological(rebuilt,replayFinal,tick,cpuTime,j.snap.byKey,nil,progressGoals,true,caps)
+                    if not result or not goalsComplete(j,candidate) and rebuilt.skill[slug]>result.skill[slug]
+                        or (goalsComplete(j,candidate) or rebuilt.skill[slug]==result.skill[slug]) and better(rebuilt,result) then result=rebuilt end
+                end
                 if result then
                     local seen,last,split={},nil,false
                     for _,a in ipairs(actions(result)) do
@@ -2086,8 +2223,16 @@ function S.NewJob(slug,opts)
                             last=key
                         end
                     end
-                    if split then result=S.RebatchChronological(result,replayFinal,tick,cpuTime,j.snap.byKey,true,progressGoals) end
+                    if split then result=S.RebatchChronological(result,replayFinal,tick,cpuTime,j.snap.byKey,true,progressGoals,nil,caps) end
                 end
+                if result and result.skill[slug]~=candidate.skill[slug] and not goalsComplete(j,result) then
+                    local advanced=false;j.failures={};j.collectFailures={};j.batchRecipes={}
+                    expand(result,slug,j.target,{},function() advanced=true end,true)
+                    j.blockedSkill=not advanced and result.skill[slug] or nil;j.blockers={}
+                    if not advanced then for _,d in pairs(j.collectFailures) do j.blockers[#j.blockers+1]=d end end
+                    j.batchRecipes=nil
+                end
+                j.seeding,j.directSeed,j.seedAborted,j.seedDeadline,j.smoothSeed=seeding,direct,aborted,deadline,smooth
                 j.failures, j.collectFailures = failures, collected
                 j.restricted, j.restrictedReason = restricted, restriction
                 if rebuilt then restrict(j,"batch_execution") end
@@ -2796,6 +2941,43 @@ function S.NewJob(slug,opts)
             publishPrefix(j.partial)
             j.result=S.Result(j,nil,"searching"); coroutine.yield("publish")
         end
+        if not stable and not j.recovery and not opts.procurementDemands
+            and (opts.scheme==nil or opts.scheme=="cheapest") and cpuTime()<j.cpuLimitMs*.72 then
+            local alternatives=false
+            for _,r in ipairs(j.snap.recipes) do
+                if r.green<r.grey and r.green<(r.profession==slug and j.target or 300)
+                    and r.grey>(first.skill[r.profession] or 300) then alternatives=true;break end
+            end
+            if alternatives then
+                local stableOpts=E.Copy(opts,nil,{snapshot=false})
+                stableOpts.snapshot=j.snap;stableOpts.scheme="stable";stableOpts.anytime=false
+                stableOpts.cpuLimitMs=max(1,(j.cpuLimitMs-cpuTime())*.5)
+                local candidateJob=S.NewJob(slug,stableOpts)
+                local previous,failures=nil,j.failures
+                j.phase="stable_candidate";j.comparingStable=true
+                repeat
+                    candidateJob.tickClockStride=j.tickClockStride
+                    local done=S.Run(candidateJob,max(.1,(j.deadline or clock()+2)-clock()),j.tickClockStride~=nil)
+                    if candidateJob.best and candidateJob.best~=previous then
+                        previous=candidateJob.best;j.failures={}
+                        local restricted,restriction=j.restricted,j.restrictedReason
+                        local candidate=batchPlan(clone(previous),true)
+                        if candidate and j.rebatchFinal then candidate=j.rebatchFinal(candidate) end
+                        j.failures=failures
+                        if candidate and goalsComplete(j,candidate) and better(candidate,j.best) then
+                            if candidateJob.restricted then restrict(j,candidateJob.restrictedReason) end
+                            j.best=candidate;j.improvements=(j.improvements or 0)+1
+                            j.initialTotal=j.initialTotal or candidate.money
+                            j.initialObjective=j.initialObjective or candidate.money
+                            j.result=S.Result(j,candidate,"searching");coroutine.yield("publish")
+                        else j.restricted,j.restrictedReason=restricted,restriction end
+                    end
+                    if done then break end
+                    tick()
+                until candidateJob.error
+                j.comparingStable=nil
+            end
+        end
         j.phase="frontier"
         local heap={}; local memo={}; local serial=0
         local function less(a,b)
@@ -2891,7 +3073,7 @@ function S.ChargeExternalWork(j,elapsed)
 end
 local function qualityBudgetDue(j)
     local opts=j.opts or {}
-    if j.finalizing or j.finished or not j.seedDone
+    if j.finalizing or j.finished or not j.seedDone or j.comparingStable
         or opts.fixedSteps or opts.procurementDemands
         or opts.specializationRecipeScore or opts.anytime==false
         or (opts.snapshot and opts.anytime~=true) then return false end
@@ -2904,6 +3086,7 @@ local function qualityBudgetDue(j)
         and (j.cpuUsed or 0)-j.firstFeasibleCpuMs>=extra or false
 end
 local function finalize(j,status)
+    j.comparingStable=nil
     j.status=status
     j.phase="finalize"
     j.finalizing=true

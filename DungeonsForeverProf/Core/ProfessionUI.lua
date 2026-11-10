@@ -15200,11 +15200,15 @@ local function CraftMapSlug(map, slug)
         local resolved = PD.RecipeData(rec, "rows", slug)
         local iid = resolved.item
         if not resolved.clientUnavailable and type(iid) == "number" and resolved.count and type(resolved.mats) == "table" and #resolved.mats > 0
-           and not map[iid] then
+           and (not map[iid] or map[iid].slug ~= slug and not (map[iid].alternatives and map[iid].alternatives[slug])) then
             local live = {}
             for k, v in pairs(rec) do live[k] = v end
             live[2], live[3], live[12] = iid, resolved.count, resolved.mats
-            map[iid] = { rec = live, slug = slug }
+            local entry = { rec = live, slug = slug }
+            if map[iid] then
+                map[iid].alternatives = map[iid].alternatives or {}
+                map[iid].alternatives[slug] = entry
+            else map[iid] = entry end
         end
     end
 end
@@ -15266,12 +15270,40 @@ local function WritBadge(cinfo, learned)
     return { text = p and p.name or cinfo.slug, color = { 0.55, 0.57, 0.62 } }
 end
 
+function PD.WritTool()
+    return {{ key = "writ_professions", text = L["仅显示本角色专业"], on = PD.Setting("writOwnProfessionsOnly"),
+        tip = {{L["按本角色已学专业筛选文书，不要求已学会对应配方。"], 0.85, 0.85, 0.85}} }}, function(k)
+        if k ~= "writ_professions" then return end
+        PD.SetSettingRaw("writOwnProfessionsOnly", not PD.Setting("writOwnProfessionsOnly"))
+        PD.__scrollV = 0
+        if PD.scroll then PD.scroll:SetVerticalScroll(0) end
+        PD.RequestRender()
+    end
+end
+
 function PD.WritRows(rows)
     PD.secPadL = 0
     local list = CD.writs or {}
     local cols = PD.CrateColumns(true)
     local order, owns, priced, craftT, pcts, units = {}, {}, {}, {}, {}, {}
     local craftMap = CraftAllMap()
+    local learned = PD.ProfLearned()
+    local ownOnly = PD.Setting("writOwnProfessionsOnly")
+    if ownOnly then
+        local filtered, ownMap = {}, {}
+        for _, w in ipairs(list) do
+            local craft = craftMap[w.target]
+            if craft and not learned[craft.slug] then
+                local match
+                for slug, entry in pairs(craft.alternatives or {}) do
+                    if learned[slug] then match = entry; break end
+                end
+                craft = match
+            end
+            if craft then filtered[#filtered + 1] = w; ownMap[w.target] = craft end
+        end
+        list, craftMap = filtered, ownMap
+    end
     for i = 1, #list do
         order[i] = i
         local wid = list[i].item or list[i].target
@@ -15302,7 +15334,6 @@ function PD.WritRows(rows)
             end
         end
     end
-    local learned = PD.ProfLearned()
     local mode = PD.writSort
     table.sort(order, function(a, b)
         local wa, wb = list[a], list[b]
@@ -15322,10 +15353,13 @@ function PD.WritRows(rows)
         if ca or cb then return ca ~= nil end
         return (wa.target or 0) < (wb.target or 0)
     end)
-    if not PD.writSel and list[order[1]] then
-        PD.writSel = list[order[1]].quest or list[order[1]].target
+    local sel
+    for _, i in ipairs(order) do
+        local key = list[i].quest or list[i].target
+        if key == PD.writSel then sel = key; break end
     end
-    local sel = PD.writSel
+    if not sel and list[order[1]] then sel = list[order[1]].quest or list[order[1]].target end
+    PD.writSel = sel
     rows[#rows + 1] = { kind = "colhead", col = 1, h = PD.TEXT_H, priceCols = cols,
                         text = L["名称"], right = L["拍卖总价"], craftRight = L["制造总价"],
                         ownRight = L["自身价格"],
@@ -15347,6 +15381,10 @@ function PD.WritRows(rows)
                             PD.writSort = (mode ~= "own") and "own" or nil
                             PD.RequestRender()
                         end }
+    if ownOnly and #order == 0 then
+        PushText(rows, not PD.craftAllFull and L["正在读取专业配方…"] or L["没有符合本角色专业的工匠文书。"], 12, C_GREY, 1)
+        return
+    end
     for _, i in ipairs(order) do
         local w = list[i]
         local wid = w.item or w.target
@@ -15666,6 +15704,7 @@ function PD.Render()
         tool, handler = PD.RecipeTool(RGet(PD.cur))
         PD.RowsRecipe(rows)
     elseif PD.tab == "crate" or PD.tab == "plunder" or PD.tab == "writ" then
+        if PD.tab == "writ" then tool, handler = PD.WritTool() end
         PD.RowsCrates(rows)
     elseif PD.tab == "gather" then
         PD.gridSplit = (PD.cur == "fishing")
@@ -16768,6 +16807,14 @@ if type(SlashCmdList) == "table" then
 end
 
 local function HookRoutePlans()
+if not PD.writSkillWatch then
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("SKILL_LINES_CHANGED")
+    frame:SetScript("OnEvent", function()
+        if PD.built and PD.tab == "writ" and PD.Setting("writOwnProfessionsOnly") and ns.PageVisible(PD.page) then PD.RequestRender() end
+    end)
+    PD.writSkillWatch = frame
+end
 local bridge=ns.AuctionBridge
 if bridge and bridge.OnChanged then bridge.OnChanged(function(_,reason)
     if (reason=="supply" or reason=="scan-status") and PD.built and ns.PageVisible(PD.page) then PD.RequestRender() end
