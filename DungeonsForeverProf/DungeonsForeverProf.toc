@@ -63,6 +63,7 @@ Core\ProfSolverCapture.lua
 Core\ProfLearning.lua
 Core\ProfClientScan.lua
 Core\ProfRanks.lua
+Core\ProfRisk.lua
 Core\ProfRouteSolver.lua
 Core\ProfReserve.lua
 Core\ProfFishing.lua
