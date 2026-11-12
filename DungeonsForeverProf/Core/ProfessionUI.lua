@@ -1604,7 +1604,6 @@ function PD.Row(i)
             GameTooltip:ClearLines()
             GameTooltip:AddLine(L["点击折叠 / 展开该组"], 1, 1, 1, true)
             GameTooltip:Show()
-            PD.UnifyTipFont(14)
         end
     end)
     r.foldZone:SetScript("OnLeave", function()
@@ -1656,7 +1655,6 @@ function PD.Row(i)
                 end
             end
             GameTooltip:Show()
-            PD.UnifyTipFont(14)
         elseif self.__it then
             local extra = self.__tipExtra
             if type(extra) == "function" then extra = extra() end
@@ -3574,7 +3572,6 @@ function PD.BuildBonusTable(parent)
         GameTooltip:AddLine(L["数值以 60 级为基准、随等级成长 —— 游戏内低等级看到的数字更小属正常缩放。"],
                             1, 1, 1, true)
         GameTooltip:Show()
-        PD.UnifyTipFont(14)
     end)
     tipBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     local rule = root:CreateTexture(nil, "ARTWORK")
@@ -3642,7 +3639,6 @@ function PD.BuildBonusTable(parent)
                     end
                 end
                 GameTooltip:Show()
-                PD.UnifyTipFont(14)
             end
         end)
         r:SetScript("OnLeave", function(self)
@@ -3962,7 +3958,6 @@ function PD.FillTrainerBoard()
                             end
                             GameTooltip:AddLine(L["点击：在地图上标记该 NPC"], 1, 0.82, 0)
                             GameTooltip:Show()
-                            PD.UnifyTipFont(14)
                         end)
                         c:SetScript("OnLeave", function(self)
                             if self.__huiCard then ns.hui.HuiCardState(self, "norm") end
@@ -5324,7 +5319,6 @@ function PD.Build(page)
                 end
             end
             GameTooltip:Show()
-            PD.UnifyTipFont(14)
         end)
         hp:SetScript("OnLeave", function(self)
             self.icon:SetVertexColor(C_HELP[1], C_HELP[2], C_HELP[3])
@@ -5680,7 +5674,6 @@ function PD.PaintTool(list, handler, yoff)
                         end
                     end
                     GameTooltip:Show()
-                    PD.UnifyTipFont(14)
                 end)
                 bt:HookScript("OnLeave", function() GameTooltip:Hide() end)
             end
@@ -5778,7 +5771,6 @@ function PD.PaintTool(list, handler, yoff)
                             end
                         end
                         GameTooltip:Show()
-                        PD.UnifyTipFont(14)
                     end)
                     bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
                 end
@@ -6090,53 +6082,6 @@ function PD.PaintToolStale(text)
     end
 end
 
-function PD.UnifyTipFont(size)
-    local n = (GameTooltip.NumLines and GameTooltip:NumLines()) or 0
-    if type(n) ~= "number" then n = (type(n) == "table") and #n or 0 end
-    if n <= 0 then return end
-    local base = _G["GameTooltipTextLeft1"]
-    local path, sz, flags
-    if base and base.GetFont then path, sz, flags = base:GetFont() end
-    if not path then return end
-    local want = tonumber(size) or tonumber(sz) or 13
-    flags = flags or ""
-    local sum0 = 0
-    for i = 1, n do
-        local l = _G["GameTooltipTextLeft" .. i]
-        if l and l.GetStringHeight then sum0 = sum0 + (l:GetStringHeight() or 0) end
-    end
-    for i = 1, n do
-        local l = _G["GameTooltipTextLeft" .. i]
-        if l and l.SetFont then l:SetFont(path, want, flags) end
-        local rr = _G["GameTooltipTextRight" .. i]
-        if rr and rr.SetFont then rr:SetFont(path, want, flags) end
-    end
-    local maxW = 0
-    for i = 1, n do
-        local l = _G["GameTooltipTextLeft" .. i]
-        if l and l.SetText and l.SetWidth then
-            l:SetWidth(4000)
-            l:SetText(l:GetText())
-            maxW = math.max(maxW, FSW(l))
-        end
-    end
-    maxW = math.min(maxW, 460)
-    local sum1 = 0
-    for i = 1, n do
-        local l = _G["GameTooltipTextLeft" .. i]
-        if l then
-            l:SetWidth(maxW)
-            l:SetText(l:GetText())
-            sum1 = sum1 + (l:GetStringHeight() or 0)
-        end
-    end
-    if GameTooltip.SetWidth and GameTooltip.SetHeight and maxW > 0 then
-        local pad = (GameTooltip:GetHeight() or 0) - sum0
-        GameTooltip:SetWidth(maxW + 20)
-        GameTooltip:SetHeight(sum1 + pad)
-    end
-end
-
 function PD.TipTile(tf, lines)
     tf:SetScript("OnEnter", function()
         if tf.__hov then for _, t in ipairs(tf.__hov) do t:Show() end end
@@ -6148,7 +6093,6 @@ function PD.TipTile(tf, lines)
             end
         end
         GameTooltip:Show()
-        PD.UnifyTipFont(14)
     end)
     tf:SetScript("OnLeave", function()
         if tf.__hov then for _, t in ipairs(tf.__hov) do t:Hide() end end
@@ -7605,7 +7549,6 @@ function PD.WarnChip(r, plainTip)
                     end
                 end
                 GameTooltip:Show()
-                PD.UnifyTipFont(14)
             end
         end)
         z:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -7799,7 +7742,6 @@ function PD.WireTipZone(z, r)
                 end
             end
             GameTooltip:Show()
-            PD.UnifyTipFont(14)
         elseif self.__spell and PD.ShowSpellTip then
             local extra = self.__tipExtra
             if type(extra) == "function" then extra = extra() end
@@ -9787,7 +9729,133 @@ function PD.DropBlockLines(lines, itemID)
     end
 end
 
-function PD.PriceTipLines(itemID, mats)
+function PD.MatPriceOn()
+    local cfg = ns.TipCfg and ns.TipCfg()
+    if type(cfg) ~= "table" then return true end
+    return cfg.matPrice ~= false
+end
+
+local patternIdx
+
+function PD.PatternIndex()
+    if patternIdx then return patternIdx end
+    patternIdx = {}
+    if ns.EnsureProfRecipes then pcall(ns.EnsureProfRecipes) end
+    for _, d in pairs(ns.ProfRecipes or {}) do
+        for _, r in ipairs((type(d) == "table" and d.rows) or {}) do
+            local f = r[13]
+            local fid = (type(f) == "table") and f[1] or f
+            if type(fid) == "number" and not patternIdx[fid] then
+                local e = { r = r, pid = fid }
+                patternIdx[fid] = e
+                local out = r[2]
+                if type(out) == "number" and out ~= fid and not patternIdx[out] then
+                    patternIdx[out] = e
+                end
+            end
+        end
+    end
+    return patternIdx
+end
+
+do
+    local writNeedSet
+
+    local function WritTargets()
+        if writNeedSet then return writNeedSet end
+        writNeedSet = {}
+        local CD = ns.CratesData
+        for _, w in ipairs((CD and CD.writs) or {}) do
+            if type(w) == "table" and type(w.target) == "number" then
+                writNeedSet[w.target] = true
+            end
+        end
+        return writNeedSet
+    end
+
+    function PD.WritNeedOf(id, title)
+        if type(id) ~= "number" then return nil end
+        local set = WritTargets()
+        if set[id] then return id end
+        local e = PD.PatternIndex()[id]
+        if not e then return nil end
+        if id ~= e.pid then
+            local pname = PD.ItemName(e.pid)
+            if not title or not pname or title ~= pname then return nil end
+        end
+        local prod = e.r and e.r[2]
+        if type(prod) == "number" and prod ~= id and set[prod] then return prod end
+        return nil
+    end
+
+    function PD.WritNeedLines(id, title)
+        if not PD.WritNeedOf(id, title) then return nil end
+        return { { "★ " .. L["工匠文书需求"], 1, 0.82, 0.4 } }
+    end
+end
+
+function PD.MatsCostText(mats)
+    if not (mats and #mats > 0) then return "—" end
+    local total, unpriced = RA.MatListCost(mats)
+    unpriced = unpriced or 0
+    if not total or total <= 0 or unpriced >= #mats then return "—" end
+    return (unpriced > 0 and "≈" or "") .. RA.MoneyStr(total, "copper")
+end
+
+function PD.MatsCostTextC(mats)
+    if not (mats and #mats > 0) then return "—" end
+    local total, unpriced = RA.MatListCost(mats)
+    unpriced = unpriced or 0
+    if not total or total <= 0 or unpriced >= #mats then return "—" end
+    return (unpriced > 0 and "≈" or "") .. RA.MoneyStrTip(total)
+end
+
+function PD.PatternTipLines(id, title)
+    if type(id) ~= "number" then return nil end
+    local e = PD.PatternIndex()[id]
+    if not e then return nil end
+    if id ~= e.pid then
+        local pname = PD.ItemName(e.pid)
+        if not title or not pname or title ~= pname then return nil end
+    end
+    local mats = e.r[12]
+    if not (mats and #mats > 0) then return nil end
+    return PD.MatPriceLines(mats, PD.MatsCostTextC(mats), e.r[2])
+end
+
+function PD.MatPriceLines(mats, costTxt, productID)
+    local lines = {}
+    if not (mats and #mats > 0) then return lines end
+    local MAX = 8
+    local showN = math.min(#mats, MAX)
+    for i = 1, showN do
+        local m = mats[i]
+        local n = m[2] or 1
+        local p = RA.MatPriceOf and RA.MatPriceOf(m[1]) or nil
+        local sub = p and RA.MoneyStrTip(p * n) or "—"
+        lines[#lines + 1] = { format("%s ×%d", tostring(PD.ItemName(m[1]) or "?"), n),
+                              1, 1, 1, nil, nil, sub, 1, 1, 1 }
+    end
+    if #mats > showN then
+        lines[#lines + 1] = { format("… +%d", #mats - showN), 0.6, 0.6, 0.6 }
+    end
+    lines[#lines + 1] = { L["自己制造总成本"], 1, 1, 1, nil, nil,
+                          costTxt or "—", 1, 1, 1 }
+    if productID then
+        local ah = RA.AHPriceOf and RA.AHPriceOf(productID) or nil
+        lines[#lines + 1] = { L["成品拍卖行价格"], 1, 1, 1, nil, nil,
+                              ah and RA.MoneyStrTip(ah) or "—", 1, 1, 1 }
+        local costVal = RA.MatListCost and select(1, RA.MatListCost(mats)) or nil
+        if ah and costVal and costVal > 0 then
+            local net = math.floor(ah * 0.95) - costVal
+            lines[#lines + 1] = { L["收益（扣除5%）"], 1, 1, 1, nil, nil,
+                                  RA.MoneyStrTip(net), 1, 1, 1 }
+        end
+    end
+    return lines
+end
+
+function PD.PriceTipLines(itemID, mats, opts)
     local lines = {}
     if not itemID then return lines end
     local ah = RA.AHPriceOf and RA.AHPriceOf(itemID) or nil
@@ -9811,7 +9879,12 @@ function PD.PriceTipLines(itemID, mats)
             costTxt = (approx and "≈" or "") .. RA.MoneyStr(cost, "copper")
         end
     end
-    lines[#lines + 1] = { format(L["成本: %s"], costTxt) }
+    if opts and opts.matDetail and nMats then
+        local mp = PD.MatPriceLines(mats, PD.MatsCostTextC(mats))
+        for i = 1, #mp do lines[#lines + 1] = mp[i] end
+    else
+        lines[#lines + 1] = { format(L["成本: %s"], costTxt) }
+    end
     if ah and cost and nMats and cost > 0 then
         local pre = approx and "≈" or ""
         local diff = ah - cost
@@ -9984,7 +10057,8 @@ function PD.RecipeSpec(r)
         spell = tonumber(resolved.spell),
         text = PD.ItemName(r[2]),
         tipExtra = function()
-            local lines = PD.RecipeSourceLines(PD.PriceTipLines(r[2], r[12]), resolved)
+            local lines = PD.RecipeSourceLines(PD.PriceTipLines(r[2], r[12],
+                PD.MatPriceOn() and { matDetail = true } or nil), resolved)
             if station then lines[#lines + 1] = { format(L["制作场地：%s"], station), 0.7, 0.7, 0.7 } end
             if clientPending then lines[#lines + 1] = { L["请打开对应专业或商人面板读取数据"], 0.95, 0.75, 0.4 } end
             if meta and meta.outputConflict and resolved.outputConflict and not (runtime and runtime.count) then
@@ -10121,7 +10195,8 @@ function PD.CraftedSpec(c)
         diffVal = tonumber(c[4]),
         gapVal = (ah and total) and (ah - total) or nil,
         sbdiff = (c[4] or c[5] or green or c[7]) and { c[4], c[5], green, c[7] } or nil,
-        tipExtra = function() return PD.RecipeSourceLines(PD.PriceTipLines(c[2], c[8]), resolved) end,
+        tipExtra = function() return PD.RecipeSourceLines(PD.PriceTipLines(c[2], c[8],
+            PD.MatPriceOn() and { matDetail = true } or nil), resolved) end,
         lines = sourceLines,
     }
 end
@@ -17156,4 +17231,100 @@ if RA and RA.OnPricesChanged then
             PD.RequestRender()
         end
     end)
+end
+
+do
+    local crateIdx, writIdx
+
+    local function CrateIndex()
+        if crateIdx then return crateIdx end
+        crateIdx = {}
+        for _, c in ipairs(CD.crates or {}) do
+            if type(c) == "table" and type(c.id) == "number" then crateIdx[c.id] = c end
+        end
+        return crateIdx
+    end
+
+    local function WritIndex()
+        if writIdx then return writIdx end
+        writIdx = {}
+        for _, w in ipairs(CD.writs or {}) do
+            if type(w) == "table" and type(w.item) == "number" then writIdx[w.item] = w end
+        end
+        return writIdx
+    end
+
+    function PD.CrateOf(id)
+        if type(id) ~= "number" then return nil end
+        return CrateIndex()[id]
+    end
+
+    function PD.WritOf(id)
+        if type(id) ~= "number" then return nil end
+        return WritIndex()[id]
+    end
+
+    function PD.CrateTipLines(id)
+        local c = PD.CrateOf(id)
+        if not c then return nil end
+        local list, best, bestOpt = {}, nil, nil
+        for _, o in ipairs(c.opts or {}) do
+            local v = CrateOptCost(o[1], o[2])
+            list[#list + 1] = { o = o, v = v }
+            if v and (not best or v < best) then best, bestOpt = v, o end
+        end
+        if not best then return nil end
+        table.sort(list, function(a, b)
+            if a.v and b.v then return a.v < b.v end
+            if a.v or b.v then return a.v ~= nil end
+            return a.o[1] < b.o[1]
+        end)
+        local rows = {}
+        for i = 1, #list do
+            local e = list[i]
+            local o = e.o
+            local isBest = bestOpt and o[1] == bestOpt[1] and o[2] == bestOpt[2]
+            local txt = PD.MatIconTex(o[1], 14) .. tostring(PD.ItemName(o[1])) .. " ×" .. tostring(o[2] or 1)
+            if isBest then txt = txt .. "  " .. L["最省"] end
+            local col = isBest and CRATE_GREEN or C_TEXT
+            rows[#rows + 1] = { txt, col[1], col[2], col[3], nil, nil,
+                                e.v and RA.MoneyStrTip(e.v) or "—", 1, 1, 1 }
+        end
+        return rows
+    end
+
+    function PD.WritTipLines(id)
+        local w = PD.WritOf(id)
+        if not w then return nil end
+        local qty = w.qty or 1
+        local unit = RA.AHPriceOf and RA.AHPriceOf(w.target) or nil
+        local buyAll = unit and (unit * qty) or nil
+        local craftCost
+        local ci = CraftAllMap()[w.target]
+        local rec = ci and ci.rec or nil
+        if rec then
+            local sum, all = 0, true
+            for _, m in ipairs(rec[12] or {}) do
+                local p = RA.AHPriceOf and RA.AHPriceOf(m[1]) or nil
+                if p then sum = sum + p * (m[2] or 1) else all = false end
+            end
+            if all then
+                craftCost = math.floor(sum * math.ceil(qty / (rec[3] or 1)) + 0.5)
+            end
+        end
+        if not buyAll and not craftCost then return nil end
+        local labBuy = L["交付物品拍卖行价格"]
+        local labCraft = L["制造交付物品价格"]
+        if qty > 1 then
+            local tag = " ×" .. tostring(qty)
+            labBuy = labBuy .. tag
+            labCraft = labCraft .. tag
+        end
+        local rows = {}
+        rows[#rows + 1] = { labBuy, C_TEXT[1], C_TEXT[2], C_TEXT[3], nil, nil,
+                            buyAll and RA.MoneyStrTip(buyAll) or "—", 1, 1, 1 }
+        rows[#rows + 1] = { labCraft, C_GOLD[1], C_GOLD[2], C_GOLD[3], nil, nil,
+                            craftCost and RA.MoneyStrTip(craftCost) or "—", 1, 1, 1 }
+        return rows
+    end
 end

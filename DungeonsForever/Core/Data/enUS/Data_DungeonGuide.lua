@@ -1142,7 +1142,7 @@ ns.DungeonGuide = {
     excavation_wetlands = {
         tagline = "A mist-shrouded dig site above Whelgar's Excavation in the Wetlands, where errant Titan constructs stir: 4 bosses.",
         tips = {
-            "The dungeon is listed at levels 24-29 (Group Finder says 26-33) and is now open in the beta — boss strategies below will be re-checked as the beta moves on.",
+            "The dungeon is listed at levels 26-33 — boss strategies below will be re-checked as the version moves on.",
             "The files name four areas inside: Lost Marsh, Stalker's Thicket, Site of the Guardian and Lost Dig Site.",
             "Around the portal live level 26 Highland Tortoises and elite Highland Lurkers of 28-29 — don't pull them while finding the entrance.",
             "The Legacy challenge counts the dungeon as done only when the last boss, the Relic Guardian, dies.",

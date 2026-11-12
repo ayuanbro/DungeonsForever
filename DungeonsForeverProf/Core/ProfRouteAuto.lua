@@ -315,6 +315,11 @@ function RA.MatListCost(mats)
     return MatListCost(mats)
 end
 
+function RA.MatPriceOf(id)
+    if not id then return nil end
+    return MatPrice(id, MATSOLD_EMPTY)
+end
+
 local function RequestProduct(id)
     local H = ns.ProfHost
     local dg = H and H.DG
@@ -396,6 +401,23 @@ function RA.MoneyStr(copper, opt)
     end
     if s > 0 then
         return format("%d%s%02d%s", s, ICON_S, c, ICON_C)
+    end
+    return format("%d%s", c, ICON_C)
+end
+
+function RA.MoneyStrTip(copper)
+    copper = tonumber(copper)
+    if not copper then return "—" end
+    if copper < 0 then return "-" .. RA.MoneyStrTip(-copper) end
+    if copper <= 0 then return "0" .. ICON_C end
+    local g = math.floor(copper / 10000)
+    local s = math.floor(copper / 100) % 100
+    local c = copper % 100
+    if g > 0 then
+        return format("%d %s%02d %s%02d%s", g, ICON_G, s, ICON_S, c, ICON_C)
+    end
+    if s > 0 then
+        return format("%d %s%02d%s", s, ICON_S, c, ICON_C)
     end
     return format("%d%s", c, ICON_C)
 end

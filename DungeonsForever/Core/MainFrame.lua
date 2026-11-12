@@ -907,12 +907,11 @@ settingsBtn:SetScript("OnClick", function()
 end)
 
 local ENH_CARD_H = 110
-local ENH_CARD_GROW = ENH_CARD_H - 86
 
 settingsPop = CreateFrame("Frame", nil, f, "BackdropTemplate")
 settingsPop:SetFrameLevel(512)
 settingsPop:SetPoint("TOPLEFT", f, "TOPRIGHT", 4, 0)
-settingsPop:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", 4, -ENH_CARD_GROW)
+settingsPop:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", 4, 0)
 settingsPop:SetWidth(220)
 settingsPop:EnableMouse(true)
 settingsPop:SetScript("OnMouseWheel", function() end)
@@ -1309,6 +1308,7 @@ function BuildTipCard()
     hd:SetText(L["提示框内容"])
     hd:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
 
+    local dd
     local gsw = CreateFrame("CheckButton", nil, card)
     gsw:SetSize(36, 20)
     gsw:EnableMouse(true)
@@ -1324,11 +1324,17 @@ function BuildTipCard()
     gsw:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
+    local function SyncTipState()
+        local on = ns.TipCfg().global and true or false
+        gsw:SetChecked(on)
+        if dd then dd:SetAlpha(on and 1 or 0.45) end
+    end
+    pcall(function() gsw:HookScript("OnShow", SyncTipState) end)
     gsw:SetScript("OnClick", function(self)
         ns.PlaySound(1)
         local c = ns.TipCfg()
         c.global = not (c.global and true)
-        self:SetChecked(c.global and true or false)
+        SyncTipState()
         if ns.TipLines.RefreshPreview then ns.TipLines.RefreshPreview() end
     end)
 
@@ -1339,9 +1345,12 @@ function BuildTipCard()
         { key = "wish",     label = L["心愿标记"] },
         { key = "quest",    label = L["任务来源"] },
         { key = "ilvl",     label = L["物品等级"] },
+        { key = "writNeed", label = L["工匠文书需求"] },
+        { key = "price",    label = L["板条箱"] .. " · " .. L["工匠文书"] .. " " .. L["价格"] },
+        { key = "matPrice", label = L["配方"] .. " · " .. L["材料"] .. " " .. L["价格"] },
     }
 
-    local dd = ns.CreateButton(card)
+    dd = ns.CreateButton(card)
     dd:SetSize(192, 24)
     dd:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -34)
     dd.__huiKeepTextColor = true
@@ -1358,6 +1367,7 @@ function BuildTipCard()
     ddar:SetFont(ns.FONT, 12, "")
     ddar:SetPoint("RIGHT", dd, "RIGHT", -8, 0)
     ddar:SetText("\226\150\188")
+    SyncTipState()
 
     local function TipMenuItems()
         local cfg = ns.TipCfg()

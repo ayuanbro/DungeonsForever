@@ -4957,21 +4957,6 @@ local function wpPinAcquire(canvas)
                 end
             end
             GameTooltip:AddLine((L["点击进入[无限副本手册]任务详情"] or ""):gsub("%[(.-)%]", "|cffffd100[%1]|r"), 0.62, 0.62, 0.62, true)
-            local nl = GameTooltip.NumLines and GameTooltip:NumLines() or 0
-            local bf, bs, bfl
-            for i = 2, nl do
-                local f = _G["GameTooltipTextLeft" .. i]
-                if f and f.GetFont then
-                    local f2, s2, fl2 = f:GetFont()
-                    if type(f2) == "string" and s2 then bf, bs, bfl = f2, s2, fl2 break end
-                end
-            end
-            if bf then
-                for i = 1, nl do
-                    local f = _G["GameTooltipTextLeft" .. i]
-                    if f then f:SetFont(bf, bs, bfl) end
-                end
-            end
             GameTooltip:Show()
         end)
         p:SetScript("OnLeave", function()

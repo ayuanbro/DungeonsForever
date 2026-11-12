@@ -34,6 +34,7 @@ local function CFG()
     if c.banner == nil then c.banner = true end
     if c.quest == nil then c.quest = true end
     if c.spell == nil then c.spell = true end
+    if c.talent == nil then c.talent = true end
     if c.food == nil then c.food = true end
     if tonumber(c.preferFood) == nil then c.preferFood = 0 end
     if c.rested == nil then c.rested = true end
@@ -1107,6 +1108,88 @@ local function Sealed(v)
     return ok and s == true
 end
 
+local TALENT_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+
+local function TalentCount()
+    local CT = _G.C_ClassTalents
+    if type(CT) ~= "table" or type(CT.HasUnspentTalentPoints) ~= "function" then return nil end
+    local ok, has, classPt, specPt = pcall(CT.HasUnspentTalentPoints)
+    if not ok or Sealed(has) then return nil end
+    local n = 0
+    if not Sealed(classPt) and type(classPt) == "number" then n = n + classPt end
+    if not Sealed(specPt) and type(specPt) == "number" then n = n + specPt end
+    if type(CT.HasUnspentHeroTalentPoints) == "function" then
+        local ok2, _, heroPt = pcall(CT.HasUnspentHeroTalentPoints)
+        if ok2 and not Sealed(heroPt) and type(heroPt) == "number" then n = n + heroPt end
+    end
+    if n > 0 then return n end
+    if has == true then return -1 end
+    return nil
+end
+
+local function TalentIcon()
+    local CSI = _G.C_SpecializationInfo
+    if type(CSI) == "table"
+        and type(CSI.GetSpecialization) == "function"
+        and type(CSI.GetSpecializationInfo) == "function" then
+        local ok, idx = pcall(CSI.GetSpecialization)
+        if ok and not Sealed(idx) and type(idx) == "number" and idx > 0 then
+            local ok2, _, _, _, icon = pcall(CSI.GetSpecializationInfo, idx)
+            if ok2 and icon then return icon end
+        end
+    end
+    return TALENT_ICON
+end
+
+local function OpenTalentPage()
+    local psf = _G.PlayerSpellsFrame
+    if type(psf) == "table" and type(psf.SetTab) == "function" then
+        if psf.IsShown and psf:IsShown() then
+            pcall(psf.SetTab, psf, 2)
+            return
+        end
+    end
+    if type(_G.TogglePlayerSpellsFrame) == "function" then
+        pcall(_G.TogglePlayerSpellsFrame)
+        if type(psf) == "table" and type(psf.SetTab) == "function" then
+            pcall(psf.SetTab, psf, 2)
+        end
+        return
+    end
+    if type(_G.ToggleTalentFrame) == "function" then pcall(_G.ToggleTalentFrame) end
+end
+
+local function PTalent()
+    local c = CFG()
+    if c.talent == false then return nil end
+    local key = ItemKey("talent", "talent")
+    if Z.IsIgnored(key) then return nil end
+    local n = TalentCount()
+    if not n then return nil end
+    local sub
+    if n > 0 then
+        sub = string.format(L["有 %d 点还没有分配"], n)
+    else
+        sub = L["有天赋点还没有分配"]
+    end
+    return {
+        kind = "talent", n = 1, keys = {}, title = L["天赋"],
+        list = {
+            {
+                id = "talent", base = "talent", ikey = key, ikind = "talent",
+                name = L["天赋点未分配"],
+                sub = sub,
+                desc = L["在天赋界面把点数用掉，角色会更强"],
+                icon = TalentIcon(),
+                jumpTip = L["点击打开天赋界面"],
+                jump = function() OpenTalentPage() end,
+            },
+        },
+    }
+end
+
+Z.Register("talent", PTalent)
+
 local function HasWellFed()
     local name = ResolveWellFedName()
     local seen = false
@@ -1487,7 +1570,7 @@ function Z.Collect(ctx)
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
-    local order = { "collect", "turnin", "quest", "spell", "buff", "tent" }
+    local order = { "collect", "turnin", "quest", "spell", "talent", "buff", "tent" }
     for i = 1, #order do
         local kind = order[i]
         local on = c[kind]
@@ -1623,13 +1706,14 @@ function Z.CheckNow(reason)
     return Z.Check(reason or "manual", 0)
 end
 
-local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], spell = L["技能"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"] }
+local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], spell = L["技能"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"] }
 function Z.KindName(kind)
     return KIND_NAME[kind] or L["条目"]
 end
 
 function Z.IconFor(kind, id)
     if kind == "book" or kind == "collect" or kind == "turnin" then return ItemIcon(id) end
+    if kind == "talent" then return TalentIcon() end
     if kind == "quest" then return "Interface\\GossipFrame\\AvailableQuestIcon" end
     if kind == "rested" then
         local f = GetItemIcon
@@ -1696,6 +1780,11 @@ ns.Init(function()
     end
     pcall(frame.RegisterEvent, frame, "ITEM_COOLDOWN_UPDATE")
     pcall(frame.RegisterEvent, frame, "SPELL_UPDATE_COOLDOWN")
+    pcall(frame.RegisterEvent, frame, "CHARACTER_POINTS_CHANGED")
+    pcall(frame.RegisterEvent, frame, "PLAYER_LEVEL_UP")
+    pcall(frame.RegisterEvent, frame, "PLAYER_SPECIALIZATION_CHANGED")
+    pcall(frame.RegisterEvent, frame, "TRAIT_CONFIG_UPDATED")
+    pcall(frame.RegisterEvent, frame, "ACTIVE_TALENT_GROUP_CHANGED")
     pcall(frame.RegisterEvent, frame, "NAME_PLATE_UNIT_ADDED")
     pcall(frame.RegisterEvent, frame, "NAME_PLATE_UNIT_REMOVED")
     frame:RegisterEvent("PLAYER_TARGET_CHANGED")
@@ -1723,6 +1812,10 @@ ns.Init(function()
                 Z.Check("regen", 0)
             end
             Z.ScheduleSoft(0.6)
+        elseif event == "CHARACTER_POINTS_CHANGED" or event == "PLAYER_LEVEL_UP"
+            or event == "PLAYER_SPECIALIZATION_CHANGED" or event == "TRAIT_CONFIG_UPDATED"
+            or event == "ACTIVE_TALENT_GROUP_CHANGED" then
+            Z.ScheduleSoft(0.4)
         else
             Z.OnZoneChanged()
         end

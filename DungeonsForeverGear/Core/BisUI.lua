@@ -4721,9 +4721,9 @@ local function BuildBrowser(parent)
     sty:SetText(L["评分权重"])
 
     local plus = CreateFrame("Button", nil, spop)
-    plus:SetSize(18, 18)
+    plus:SetSize(24, 24)
     plus:SetPoint("TOPRIGHT", spop, "TOPRIGHT", -8, -36)
-    plus.t = MakeFS(plus, 16, C_TEXT, "CENTER")
+    plus.t = MakeFS(plus, 18, C_TEXT, "CENTER")
     plus.t:SetAllPoints()
     plus.t:SetText("+")
     plus:SetScript("OnEnter", function() plus.t:SetTextColor(Unpack(C_GOLD)) end)
@@ -4735,7 +4735,7 @@ local function BuildBrowser(parent)
     BG.wBtns = {}
     local prev = nil
     for i = 1, 1 + 4 + W_SCHEME_MAX do
-        local bt = MakeWeightIcon(spop, 18)
+        local bt = MakeWeightIcon(spop, 24)
         if i == 1 then
             bt:SetPoint("RIGHT", plus, "LEFT", -4, 0)
         else

@@ -336,7 +336,7 @@ local function MakeActRow(parent, w)
     r.rank:SetWordWrap(false)
     r.bDo = CardButton(r, L["替换"], BTN_W)
     r.bDo:SetPoint("RIGHT", r, "RIGHT", -80, 0)
-    r.bKeep = CardButton(r, L["保留"], BTN_W)
+    r.bKeep = CardButton(r, L["不提醒"], BTN_W)
     r.bKeep:SetPoint("RIGHT", r, "RIGHT", -12, 0)
     r:SetScript("OnEnter", function(self)
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, "hover") end
@@ -514,7 +514,7 @@ local function BuildWin()
         if #rows > 0 then SR.Apply(rows) end
     end)
 
-    f.manage = CardButton(f, L["白名单管理"], halfW)
+    f.manage = CardButton(f, L["黑名单管理"], halfW)
     f.manage:SetPoint("LEFT", f.doAll, "RIGHT", 8, 0)
     f.manage:SetScript("OnClick", function()
         viewKept = not viewKept
@@ -567,8 +567,8 @@ local function BuildWin()
         setRows[#setRows + 1] = row
         return row
     end
-    MakeSetRow(1, L["新技能时弹窗"], "hintLearn", L["学会新技能、且动作条上有低等级、且不在白名单时弹窗"])
-    MakeSetRow(2, L["登录时弹窗"], "hintLogin", L["登录时、且动作条上有低等级、且不在白名单时弹窗"])
+    MakeSetRow(1, L["新技能时弹窗"], "hintLearn", L["学会新技能、且动作条上有低等级、且不在黑名单时弹窗"])
+    MakeSetRow(2, L["登录时弹窗"], "hintLogin", L["登录时、且动作条上有低等级、且不在黑名单时弹窗"])
 
     local function SyncSetRows()
         local db = SR.DB()
@@ -643,12 +643,13 @@ RefreshWin = function()
             r.rank:SetText(data.from or data.to or "")
             r.rank:SetTextColor(DIM[1], DIM[2], DIM[3])
             r.bKeep:Hide()
+            r.bDo:ClearAllPoints()
             r.bDo:SetWidth(76)
             r.bDo:SetPoint("RIGHT", r, "RIGHT", -12, 0)
-            r.bDo:SetText(L["取消保留"])
+            r.bDo:SetText(L["恢复提醒"])
             local function unkeep()
                 SR.RemoveWhitelist({ data.key })
-                SR.Say(string.format(L["已移出白名单 %d 项"], 1))
+                SR.Say(string.format(L["已移出黑名单 %d 项"], 1))
                 RefreshWin()
             end
             r.bDo:SetScript("OnClick", unkeep)
@@ -656,30 +657,46 @@ RefreshWin = function()
             r.__keep = nil
         elseif data.noBar then
             r.rank:SetText("")
-            r.bDo:SetWidth(BTN_W * 2 + 8)
-            r.bDo:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+            r.bKeep:ClearAllPoints()
+            r.bKeep:SetWidth(BTN_W)
+            r.bKeep:SetPoint("RIGHT", r, "RIGHT", -12, 0)
+            r.bKeep:SetText(L["不提醒"])
+            r.bKeep:Show()
+            r.bDo:ClearAllPoints()
+            r.bDo:SetWidth(96)
+            r.bDo:SetPoint("RIGHT", r.bKeep, "LEFT", -8, 0)
             r.bDo:SetText(L["拖入动作条"])
             r.bDo:Show()
-            r.bKeep:Hide()
             local function toBar() SR.PickupToBar(data.bestId) end
+            local function muteIt()
+                SR.AddWhitelist({ data })
+                SR.Say(string.format(L["已加入黑名单 %d 项"], 1))
+                RefreshWin()
+            end
             r.bDo:SetScript("OnClick", toBar)
+            r.bKeep:SetScript("OnClick", function() if r.__keep then r.__keep() end end)
             r.__do = toBar
-            r.__keep = nil
+            r.__keep = muteIt
         else
             r.rank:SetText(RankMarkup(data.from, data.to))
             r.rank:SetTextColor(TXT[1], TXT[2], TXT[3])
+            r.bDo:ClearAllPoints()
             r.bDo:SetWidth(BTN_W)
             r.bDo:SetPoint("RIGHT", r, "RIGHT", -80, 0)
             r.bDo:SetText(L["替换"])
             r.bDo:Show()
+            r.bKeep:ClearAllPoints()
+            r.bKeep:SetWidth(BTN_W)
+            r.bKeep:SetPoint("RIGHT", r, "RIGHT", -12, 0)
             r.bKeep:Show()
             local function doIt() SR.Apply({ data }) end
             local function keepIt()
                 SR.AddWhitelist({ data })
-                SR.Say(string.format(L["已保留 %d 项"], 1))
+                SR.Say(string.format(L["已加入黑名单 %d 项"], 1))
                 RefreshWin()
             end
             r.bDo:SetScript("OnClick", doIt)
+            r.bKeep:SetScript("OnClick", function() if r.__keep then r.__keep() end end)
             r.__do = doIt
             r.__keep = keepIt
         end
@@ -693,10 +710,10 @@ RefreshWin = function()
     local pend = PendingRows()
     local kept = WhiteRows()
     if viewKept then
-        win.title:SetText(L["已保留的法术"])
+        win.title:SetText(L["不再提醒的法术"])
         win.count:SetText(#kept > 0 and tostring(#kept) or "")
         win.count:SetTextColor(SUB[1], SUB[2], SUB[3])
-        win.empty:SetText(L["白名单为空"])
+        win.empty:SetText(L["黑名单为空"])
         win.empty:SetShown(#kept == 0)
         win.doAll:ClearAllPoints()
         win.doAll:SetPoint("TOPLEFT", win, "TOPLEFT", 12, -328)
@@ -726,7 +743,7 @@ RefreshWin = function()
             ns.hui.SetButtonSelected(win.doAll, repl > 0, "main")
         end
         win.manage:Show()
-        win.manage:SetText(#kept > 0 and string.format(L["白名单管理（%d）"], #kept) or L["白名单管理"])
+        win.manage:SetText(#kept > 0 and string.format(L["黑名单管理（%d）"], #kept) or L["黑名单管理"])
     end
     return
 end
@@ -821,7 +838,7 @@ local function BuildCard()
         f:Hide()
     end)
 
-    f.whiteBtn = CardButton(f, L["忽略并加入白名单"], (CARD_W - 32) / 2)
+    f.whiteBtn = CardButton(f, L["永久忽略"], (CARD_W - 32) / 2)
     f.whiteBtn:SetPoint("LEFT", f.ignoreBtn, "RIGHT", 8, 0)
     f.whiteBtn:SetScript("OnClick", function()
         local rows = {}
@@ -829,7 +846,7 @@ local function BuildCard()
             if row.checked then rows[#rows + 1] = row end
         end
         local n = SR.AddWhitelist(rows)
-        if n > 0 then SR.Say(string.format(L["已加入白名单 %d 项"], n)) end
+        if n > 0 then SR.Say(string.format(L["已加入黑名单 %d 项"], n)) end
         for _, row in ipairs(selCard) do SR.NoteIgnore({ row }) end
         f:Hide()
     end)

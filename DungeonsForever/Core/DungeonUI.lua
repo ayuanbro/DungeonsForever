@@ -667,8 +667,9 @@ function DG.BuildList()
             card.name:ClearAllPoints()
             card.name:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -5)
             card.name:SetPoint("RIGHT", card, "RIGHT", d.isNew and -24 or -8, 0)
+            local qd, qt = DG.QuestProgress(d)
             card.meta:SetText(d.levelMin .. "–" .. d.levelMax ..
-                (d.bossCount and (" · BOSS " .. d.bossCount) or ""))
+                (qt > 0 and format(L[" · 任务 %d/%d"], qd, qt) or ""))
             card.badge:SetShown(d.isNew and true or false)
             card.__tip = d.name .. "  " .. d.nameEn .. "\n" ..
                 format(L["等级 %d–%d · %s"], d.levelMin, d.levelMax, d.zone or L["位置未知"])
@@ -6185,10 +6186,12 @@ function DG.SimQuests(key, mode)
         end
     end
     DG.questSim = sim
+    DG.questRev = (DG.questRev or 0) + 1
     return d, out
 end
 function DG.ClearQuestSim()
     DG.questSim = nil
+    DG.questRev = (DG.questRev or 0) + 1
 end
 if type(SlashCmdList) == "table" then
     SLASH_DUNGEONSFOREVERQUESTSIM1 = "/dfsim"
@@ -7199,6 +7202,72 @@ function DG.QuestList(d)
         return out
     end
     return (ns.DungeonQuests or {})[d.id] or {}
+end
+
+function DG.QuestClassOK(qid)
+    local row = DG.QuestRowByID(qid)
+    local cls = (type(row) == "table") and row[15] or nil
+    if type(cls) ~= "string" or cls == "" then return true end
+    if not UnitClass then return true end
+    local pc = UnitClass("player")
+    if not pc then return true end
+    local list = DG.QClassList(cls)
+    if not list then return cls == pc end
+    for i = 1, #list do
+        if list[i] == pc then return true end
+    end
+    return false
+end
+
+DG.__optQuests = nil
+function DG.EnsureOptQuests()
+    if DG.__optQuests then return DG.__optQuests end
+    local set = {}
+    for _, pids in pairs(ns.DungeonQuestOptPre or {}) do
+        if type(pids) == "table" then
+            for i = 1, #pids do
+                local pid = tonumber(pids[i])
+                if pid then set[pid] = true end
+            end
+        end
+    end
+    DG.__optQuests = set
+    return set
+end
+
+DG.__qProgCache = nil
+function DG.QuestProgress(d)
+    if not d or not d.id then return 0, 0 end
+    local rev = DG.questRev or 0
+    local ps = DG.PlayerSide()
+    local pc = UnitClass and UnitClass("player") or nil
+    local prid
+    if UnitRace then
+        local _, _, rid = UnitRace("player")
+        prid = rid
+    end
+    local c = DG.__qProgCache
+    local hit = c and c[d.id]
+    if hit and hit.rev == rev and hit.side == ps and hit.cls == pc and hit.rid == prid then
+        return hit.done, hit.total
+    end
+    local list = DG.FilterBranchHeads(DG.QuestList(d), ps)
+    local opt = DG.EnsureOptQuests()
+    local done, total = 0, 0
+    for i = 1, #(list or {}) do
+        local q = list[i]
+        local qid = type(q) == "table" and q[1] or nil
+        local side = type(q) == "table" and q[2] or nil
+        if type(qid) == "number" and not opt[qid]
+            and (not side or side == "" or side == ps)
+            and DG.QuestClassOK(qid) and DG.QuestRaceOK(qid) then
+            total = total + 1
+            if DG.QuestDone(qid) then done = done + 1 end
+        end
+    end
+    DG.__qProgCache = DG.__qProgCache or {}
+    DG.__qProgCache[d.id] = { rev = rev, side = ps, cls = pc, rid = prid, done = done, total = total }
+    return done, total
 end
 
 DG.__rowByID = nil
