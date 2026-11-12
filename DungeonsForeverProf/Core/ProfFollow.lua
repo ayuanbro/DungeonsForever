@@ -223,7 +223,7 @@ end
 
 local function routeDefaultTarget()
     local PD = ns.ProfModule
-    return (PD and PD.LV_DEF) or 285
+    return (PD and PD.LV_DEF) or 300
 end
 
 local function routeTarget(slug)

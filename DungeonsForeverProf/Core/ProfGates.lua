@@ -319,7 +319,7 @@ end
 
 function G.SpecGoal(slug, target)
     if slug ~= "engineering" then return nil end
-    local target0 = tonumber(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285
+    local target0 = tonumber(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300
     local source = ns.ProfSpecializationQuests
     if not source then return nil end
     local actual = G.EngineeringChoice()
@@ -337,7 +337,7 @@ end
 function G.ToolGoals(slug, target)
     local data = ns.ProfTools
     if not data then return {} end
-    local target0 = tonumber(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285
+    local target0 = tonumber(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300
     local out = {}
     for _, tool in ipairs(data[slug] or {}) do
         if target0 > (tool.minSkill or 300) then

@@ -11,10 +11,10 @@ ns.ProfSolverRun = M
 function M.Stamp(j)
     if not j then return "idle", 0 end
     if j.finished then return "done", 1 end
-    if j.finalizing then return "finalizing", 1 end
+    if j.finalizing then return "finalizing", 0.90+0.10*math.max(0,math.min(0.99,tonumber(j.finalizeProgress) or 0)) end
     if not j.snap then return "prepare", 0.01 end
     if not j.seedDone then
-        local target = j.target or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285
+        local target = j.target or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300
         local skill = j.seedSkill or 1
         local span = target - 1
         if span < 1 then span = 1 end
@@ -26,5 +26,5 @@ function M.Stamp(j)
     if cap < 1 then cap = 1 end
     local used = (j.cpuUsed or 0) / cap
     if used < 0 then used = 0 elseif used > 1 then used = 1 end
-    return "search", 0.70 + 0.30 * used
+    return "search", 0.70 + 0.20 * used
 end

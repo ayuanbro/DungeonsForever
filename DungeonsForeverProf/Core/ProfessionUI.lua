@@ -894,7 +894,7 @@ function PD.IsGatherRoute()
 end
 
 PD.LV_CAP = 300
-PD.LV_DEF = 285
+PD.LV_DEF = 300
 
 function PD.GatherHUDSteps(slug,target)
     local routes=ns.ProfGatheringRoutes
@@ -6338,7 +6338,7 @@ function PD.PaintLvTiles()
     end
     tiles.scheme.val:SetTextColor(Unpack(C_WHITE))
     local schemeDesc = {
-        stable = L["优先橙黄配方减少绿色冲点，再比较采购成本；必要材料照常制作"],
+        stable = L["优先提高达标和后续配方解锁概率，降低补做风险，再比较采购成本"],
         cheapest = L["比较采购、自制与图纸支出；回血模式开启时比较净成本"],
         matcost = L["只按材料价选配方"],
         crafts = L["升点率高优先，同分取便宜"],
@@ -6442,7 +6442,7 @@ function PD.PaintLvTiles()
     tiles.target.label:SetText(L["目标等级"])
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
     tiles.target.val:SetTextColor(Unpack(C_WHITE))
-    TipOn(tiles.target, { { L["每专业独立记忆；默认 285，300 = 全程。点击修改"], 0.7, 0.7, 0.7 } })
+    TipOn(tiles.target, { { L["每专业独立记忆；默认全程（300）。点击修改"], 0.7, 0.7, 0.7 } })
     local engG = ns.ProfGates
     if PD.cur == "engineering" and engG and engG.GetChoiceSetting then
         local engSet = engG.GetChoiceSetting()
@@ -12380,7 +12380,8 @@ function PD.SolverText()
         local pct = math.min(100, math.floor((st.cpuUsed or 0) * 100 / math.max(1, st.cpuLimitMs or 8000) + 0.5))
         return format(L["正在优化 %d%%"], pct)
     elseif st.phase == "finalizing" then
-        return L["正在整理计算结果…"]
+        if st.batchSearch then return format(L["正在合并制作步骤：已检查 %d 种安排，当前 %d 步"],st.batchSearch.states or 0,st.batchSearch.bestSegments or 0) end
+        return format(L["正在整理计算结果 %d%%"],math.max(0,math.min(99,math.floor((st.finalizeProgress or 0)*100))))
     end
     return L["正在准备数据"]
 end
@@ -13376,9 +13377,11 @@ function PD.RowsLeveling(rows)
     PD.CopyPlanSummary(res)
     local shownSum = auto and res or fixedSum
     notes.plan = shownSum
-    if shownSum and shownSum.scheme=="stable" then
-        if (shownSum.greenLevelCrafts or 0)>0 then
-            warning(format(L["当前路线仍含 %d 次绿色冲点；可检查其他配方和材料来源后重算。"],shownSum.greenLevelCrafts),0.95,0.75,0.4)
+    if shownSum and shownSum.scheme=="stable" and shownSum.stability then
+        local risk=shownSum.stability
+        note(format(L["模型估计：无需补做达标 %.1f%%；后续配方技能门槛通过 %.1f%%"],100*risk.completionProbability,100*risk.unlockProbability),0.72,0.82,0.9)
+        if risk.completionProbability<1-1e-9 then
+            warning(format(L["无法沿用已备配方补足技能的风险 %.1f%%；补做需另备材料。"],100*risk.unrepairableProbability),0.95,0.75,0.4)
         end
     end
     if shownSum and shownSum.reserve and shownSum.reserve.mode~="off" then

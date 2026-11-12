@@ -116,7 +116,7 @@ local function options(slug, supplied)
     opts.learnedOnly,opts.noFormula,opts.allowUnknownLearning,opts.skipUnpricedFormulas=nil,nil,nil,nil
     opts.considerAuctionSupply=E.ConsiderAuctionSupply(opts)
     opts.start = math.max(1, math.min(300, math.floor(tonumber(opts.start) or 1)))
-    opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285)))
+    opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300)))
     if opts.residualMass == nil then opts.residualMass = setting("autoResidualMass", false,slug) end
     if opts.reserveMode == nil then opts.reserveMode = setting("autoReserveMode", "standard",slug) end
     if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false,slug) end
@@ -154,7 +154,7 @@ local function signature(slug, opts)
     local sig=table.concat({"profession:"..tostring(slug), opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
         tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas), tostring(opts.considerAuctionSupply), tostring(opts.allowSecondaryLeveling),
         tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
-        "formula-channels:2", "profit-priority:20", "recipe-batches:3", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
+        "formula-channels:2", "profit-priority:20", "recipe-batches:11:risk:1", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
         E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
     return sig
@@ -701,6 +701,7 @@ if run then
         if type(job)=="string" or not job then local entry=run.Active(job);job=entry and entry.job end
         local phase,fraction=run.Stamp(job)
         return {phase=phase,fraction=fraction,seedSkill=job and job.seedSkill,target=job and job.target,
+            finalizeProgress=job and job.finalizeProgress,batchSearch=job and job.batchSearch,
             expanded=job and job.expanded,cpuUsed=job and job.cpuUsed,cpuLimitMs=job and job.cpuLimitMs,status=job and job.status}
     end
     run.Start=function(slug,opts,hooks)
