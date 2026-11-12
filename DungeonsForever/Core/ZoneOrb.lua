@@ -42,6 +42,7 @@ local hovered = false
 local lastFood, lastRested = false, false
 local openedAt = 0
 local hideToken = 0
+local closePending = false
 local lastN = -1
 local pulseFrame, pulseT = nil, 0
 
@@ -66,6 +67,8 @@ local function Now()
 end
 
 local vBootHold = Now() + 30
+local VOICE_CD = 300
+local vLast = {}
 
 local function VoiceDrain()
     if #vq == 0 then return end
@@ -91,6 +94,7 @@ local function VoiceDrain()
     end
     local ok, _, h = pcall(PlaySoundFile, it.path, "Master")
     vHandle = (ok and h) or nil
+    vLast[it.path] = Now()
     local f = string.match(it.path, "([^\\]+)$") or ""
     vUntil = Now() + (VOICE_SEC[f] or 1.5) + 0.05
     if #vq > 0 then VoiceDrain() end
@@ -104,6 +108,8 @@ function O.SayVoice(path, urgent)
         vq = {}
     else
         if Cfg().voice ~= true then return end
+        local last = vLast[path]
+        if last and Now() - last < VOICE_CD then return end
         for i = 1, #vq do
             if vq[i].path == path then return end
         end
@@ -206,7 +212,15 @@ function O.ArmGhost()
 end
 
 local function Close()
-    if not panel or not panel:IsShown() then return end
+    if not panel or not panel:IsShown() then
+        closePending = false
+        return
+    end
+    if InCombatLockdown and InCombatLockdown() then
+        closePending = true
+        return
+    end
+    closePending = false
     if FoodMenuClose then FoodMenuClose() end
     hideToken = hideToken + 1
     StartTween(0.12, function(e)
@@ -215,6 +229,17 @@ local function Close()
         panel:Hide()
         panel:SetAlpha(1)
     end)
+end
+
+local function FlushClose()
+    if not closePending then return end
+    if InCombatLockdown and InCombatLockdown() then
+        if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+            C_Timer.After(0.2, FlushClose)
+        end
+        return
+    end
+    Close()
 end
 
 local function StartHideTimer(keep)
@@ -514,7 +539,7 @@ local function MakeRow(i)
     r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 48, -26)
     r.sub:SetTextColor(DIM[1], DIM[2], DIM[3])
     r.sub:SetWidth(PANEL_W - PAD * 2 - 82)
-    r.sub:SetWordWrap(false)
+    r.sub:SetWordWrap(true)
     r.sub:SetJustifyH("LEFT")
     r.btn = CreateFrame("Button", nil, r)
     r.btn:SetSize(24, 24)
@@ -564,7 +589,7 @@ local function MakeRow(i)
             if r.idesc and r.idesc ~= "" then
                 desc = (sub ~= "" and (sub .. " · " .. r.idesc)) or r.idesc
             end
-            ItemTip(r, r.iid, r.ilabel, desc, L["点击在地图标出位置"])
+            ItemTip(r, r.iid, r.ilabel, desc, r.jumpTip or L["点击在地图标出位置"])
         elseif r.ikind == "quest" then
             Tip(r, r.ilabel, r.idesc or sub, L["左键在地图上定位，右键查看任务详情"])
         else
@@ -820,13 +845,26 @@ local function Layout(res)
     local textLeft = iconSz + 16
     local textW = PANEL_W - PAD * 2 - textLeft - 36
 
+    local function SubExtraH(s)
+        local t = s and s.sub
+        if type(t) ~= "string" then return 0 end
+        local nl = 0
+        for _ in t:gmatch("\n") do nl = nl + 1 end
+        return nl * 16
+    end
+
     local function HeightFor(cap)
         local h = 0
         for i = 1, n do
             local c = want[i]
             if c and c > 0 then
                 local shown = c > cap and cap or c
-                h = h + HEAD_H + 2 + shown * (rowH + ROW_GAP)
+                local ex = 0
+                local sl = list[i].list
+                if sl then
+                    for k = 1, math.min(shown, #sl) do ex = ex + SubExtraH(sl[k]) end
+                end
+                h = h + HEAD_H + 2 + shown * (rowH + ROW_GAP) + ex
                 if c > shown then h = h + 18 end
             else
                 local cardH = CARD_H
@@ -896,6 +934,9 @@ local function Layout(res)
                 r.sub:SetWidth(textW)
                 r.name:SetText(s.name or "")
                 r.sub:SetText(s.sub or SubText(s))
+                local subH = r.sub:GetStringHeight() or 16
+                local rowHi = rowH
+                if 26 + subH + 4 > rowHi then rowHi = 26 + subH + 4 end
                 local nameW = TextW(r.name, 14)
                 if nameW > textW - 30 then nameW = textW - 30 end
                 local tailX = textLeft + nameW
@@ -933,7 +974,11 @@ local function Layout(res)
                             r.badge:SetWidth(bw)
                         end
                         r.badge:ClearAllPoints()
-                        r.badge:SetPoint("TOPLEFT", r.sub, "TOPLEFT", TextW(r.sub, 12) + 6, -1)
+                        if s.note then
+                            r.badge:SetPoint("TOPLEFT", r.note, "TOPRIGHT", 6, -1)
+                        else
+                            r.badge:SetPoint("TOPLEFT", r.name, "TOPLEFT", nameW + 6, -1)
+                        end
                         r.badge:Show()
                     elseif r.badge then
                         r.badge:Hide()
@@ -967,6 +1012,7 @@ local function Layout(res)
                 r.slug = s.slug
                 r.idesc = s.desc
                 r.ilabel = s.name
+                r.jumpTip = s.jumpTip
                 if s.jump then
                     r.jump = s.jump
                 elseif s.areaID or s.qid or (s.mapID and s.x and s.y) then
@@ -977,10 +1023,10 @@ local function Layout(res)
                 r:ClearAllPoints()
                 r:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, y)
                 r:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -PAD, y)
-                r:SetHeight(rowH)
+                r:SetHeight(rowHi)
                 r:Show()
-                contentBottom = y - rowH
-                y = y - (rowH + ROW_GAP)
+                contentBottom = y - rowHi
+                y = y - (rowHi + ROW_GAP)
             end
             if #subs > shown and moreText then
                 moreText:SetText(string.format(L["还有 %d 个，打开手册查看"], #subs - shown))
@@ -1452,7 +1498,12 @@ function O.Init()
     ct:SetSize(32, 32)
     ct:SetPoint("CENTER", closeBtn, "CENTER", 0, 0.4)
     ct:SetVertexColor(GLYPH, GLYPH, GLYPH)
-    closeBtn:SetScript("OnClick", function() Close() end)
+    closeBtn:SetScript("OnClick", function()
+        if InCombatLockdown and InCombatLockdown() then
+            print("|cff46bf72[无限副本手册]|r " .. L["战斗中无法关闭，脱战后自动收起"])
+        end
+        Close()
+    end)
     closeBtn:SetScript("OnEnter", function()
         ct:SetVertexColor(1, 1, 1)
         Tip(closeBtn, L["关闭"], L["收起抽屉，角标继续显示待办数"], nil)
@@ -1775,6 +1826,7 @@ function O.Init()
 
     gear:SetScript("OnClick", function()
         ns.PlaySound(1)
+        if InCombatLockdown and InCombatLockdown() then return end
         if opts:IsShown() then
             opts:Hide()
             if current then O.Update(current) end
@@ -2121,10 +2173,23 @@ regenWatch:RegisterEvent("PLAYER_REGEN_DISABLED")
 regenWatch:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_REGEN_DISABLED" then
         if cbPanel and cbPanel:IsShown() then cbPanel:Hide() end
-        if panel and panel:IsShown() then Close() end
         if orbMenu and orbMenu:IsShown() then orbMenu:Hide() end
+        if FoodMenuClose then FoodMenuClose() end
+        if panel and panel:IsShown() then
+            if InCombatLockdown and InCombatLockdown() then
+                closePending = true
+            else
+                hideToken = hideToken + 1
+                panel:SetAlpha(1)
+                panel:Hide()
+            end
+        end
         return
     end
     if cbPanel and cbPanel:IsShown() then cbPanel:Hide() end
-    if panel and panel:IsShown() and current then Layout(current) end
+    if closePending then
+        FlushClose()
+    elseif panel and panel:IsShown() and current then
+        Layout(current)
+    end
 end)

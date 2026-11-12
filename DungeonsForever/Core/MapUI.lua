@@ -496,6 +496,54 @@ local function PiecesSetShown(t, on)
     for i = 1, #(t or {}) do t[i]:SetShown(on) end
 end
 
+local CARD_FILL = { 0.10, 0.078, 0.058, 1 }
+local CARD_EDGE = { 0.42, 0.32, 0.20, 1 }
+
+local function PairBtn(main, nat)
+    local p = { main = main, nat = nat, want = true }
+    function p:Apply()
+        self.main:SetShown(self.want and not self.native)
+        self.nat:SetShown(self.want and self.native and true or false)
+    end
+    function p:Show()
+        self.want = true
+        self:Apply()
+    end
+    function p:Hide()
+        self.want = false
+        self:Apply()
+    end
+    function p:SetShown(on)
+        self.want = on and true or false
+        self:Apply()
+    end
+    function p:IsShown()
+        return self.want
+    end
+    return p
+end
+
+local function MakePair(frame, main, parent, w, h)
+    if not (frame and frame.__mapWin) then return main end
+    local text = main.GetText and main:GetText() or ""
+    local nat = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+    nat:SetSize(w, h)
+    nat:SetText(text)
+    local fs = nat:GetFontString()
+    if fs and fs.SetFont then pcall(fs.SetFont, fs, ns.FONT or fs:GetFont(), 12, "") end
+    if nat.SetPushedTextOffset then pcall(nat.SetPushedTextOffset, nat, 0, 0) end
+    nat:SetScript("OnClick", main:GetScript("OnClick"))
+    nat:SetScript("OnEnter", main:GetScript("OnEnter"))
+    nat:SetScript("OnLeave", main:GetScript("OnLeave"))
+    nat:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
+    local pair = PairBtn(main, nat)
+    pair.native = frame.__mapSkin == "native"
+    pair:Apply()
+    frame.__skinBtns = frame.__skinBtns or {}
+    table.insert(frame.__skinBtns, pair)
+    return pair
+end
+
 function M.CardClosed()
     local ui = ns.DB().ui
     local c = ui.mapCards
@@ -549,6 +597,9 @@ M.ZONE_AREA = {
               "The Grinding Quarry", "The Mason's Quarter" },
       mark = { "黑石", "Blackrock" } },
 }
+
+M.INSTANCE_SUBZONE = ns.SubzoneWing
+M.SUBZONE_LAYER = ns.SubzoneLayer
 
 M.ZONE_MENU = {
     [1428] = { "blackrock_mountain", "blackrock_depths", "upper_blackrock_spire", "lower_blackrock_spire" },
@@ -1545,13 +1596,16 @@ local function BuildListRows(host)
             r.__borderPieces = ns.hui.BuildRoundBorder(r, 6, { 1, 1, 1, 0.9 }, r, "BORDER", "both", 1)
         end
         if ns.hui and ns.hui.BuildRoundedBG then
+            r.__card = FlattenPieces(ns.hui.BuildRoundedBG(r, 6,
+                { 0.10, 0.078, 0.058, 1 }, "both", false, nil, true))
+            PiecesSetShown(r.__card, false)
             r.__hl = FlattenPieces(ns.hui.BuildRoundedBG(r, M.ROW_RADIUS,
                 { 1, 1, 1, DG.LOOT_CARD_BG_HOVER }, "both"))
             PiecesSetShown(r.__hl, false)
         end
         r.__idx = i
         r.__frame = frame
-        r:SetScript("OnClick", function(self) M.Select(self.__en) end)
+        r:SetScript("OnClick", function(self) M.Select(self.__en, self.__frame) end)
         r:SetScript("OnEnter", function(self)
             U.dungeonMapHover = self
             PiecesSetShown(self.__hl, true)
@@ -1578,11 +1632,11 @@ local function BuildListRows(host)
         qToggle:SetScript("OnClick", function()
             if not frame then return end
             frame.sideQuests = true
-            M.detailEn = nil
+            if frame.__mapWin then frame.__detailEn = nil else M.detailEn = nil end
             ns.PlaySound(1)
             M.SyncSide(frame)
         end)
-        frame.qToggle = qToggle
+        frame.qToggle = MakePair(frame, qToggle, listChild, 96, 22)
     end
     frame.listRows = listRows
 end
@@ -1597,7 +1651,14 @@ local function BuildBlocks(host)
         local b = CreateFrame("Frame", nil, detChild)
         b:EnableMouse(false)
         if ns.hui and ns.hui.BuildRoundedBG then
-            ns.hui.BuildRoundedBG(b, M.BLK_RADIUS, { 1, 1, 1, M.BLK_BG }, "both", true, 1)
+            local basePieces, baseBorder = ns.hui.BuildRoundedBG(b, M.BLK_RADIUS, { 1, 1, 1, M.BLK_BG }, "both", true, 1)
+            b.__basePieces, b.__baseBorder = basePieces, baseBorder
+            b.__card = FlattenPieces(ns.hui.BuildRoundedBG(b, M.BLK_RADIUS, CARD_FILL, "both", false, nil, true))
+            if ns.hui.BuildRoundBorder then
+                b.__cardBorder = ns.hui.BuildRoundBorder(b, M.BLK_RADIUS, CARD_EDGE, b, "BORDER", "both", 1)
+            end
+            PiecesSetShown(b.__card, false)
+            PiecesSetShown(b.__cardBorder, false)
         end
         b.hit = CreateFrame("Button", nil, b)
         b.hit:RegisterForClicks("LeftButtonUp")
@@ -1658,6 +1719,21 @@ local function BuildBlocks(host)
     frame.detLtTtl, frame.detLtCnt, frame.detLtNote = detLtTtl, detLtCnt, detLtNote
     frame.detSkTtl = detSkTtl
     frame.detGdTtl, frame.detGd = detGdTtl, detGd
+    frame.blkList = blocks
+end
+
+local function ApplyBlockSkin(frame, native)
+    local list = frame and frame.blkList
+    if not list then return end
+    for i = 1, #list do
+        local b = list[i]
+        if b.__card then
+            PiecesSetShown(b.__basePieces, not native)
+            PiecesSetShown(b.__baseBorder, not native)
+            PiecesSetShown(b.__card, native)
+            PiecesSetShown(b.__cardBorder, native)
+        end
+    end
 end
 
 local function BuildSideRows(host)
@@ -1743,7 +1819,7 @@ local function BuildQuestRows(host)
     local qBack = Host.NewButton(listChild, L["全部首领"], 96, 20, 14)
     qBack:SetScript("OnClick", function()
         frame.sideQuests = nil
-        M.ShowList()
+        M.ShowList(frame)
     end)
     qBack:SetPoint("TOPRIGHT", listChild, "TOPRIGHT", 0, 0)
     local qNote = MakeFS(listChild, 14, C_GREY, "LEFT")
@@ -1759,6 +1835,12 @@ local function BuildQuestRows(host)
         r:RegisterForClicks("LeftButtonUp")
         if ns.hui and ns.hui.BuildRoundedBG then
             ns.hui.BuildRoundedBG(r, M.ROW_RADIUS, { 1, 1, 1, M.BLK_BG }, "both", true, 1)
+            r.__card = FlattenPieces(ns.hui.BuildRoundedBG(r, M.ROW_RADIUS, CARD_FILL, "both", false, nil, true))
+            if ns.hui.BuildRoundBorder then
+                r.__cardBorder = ns.hui.BuildRoundBorder(r, M.ROW_RADIUS, CARD_EDGE, r, "BORDER", "both", 1)
+            end
+            PiecesSetShown(r.__card, false)
+            PiecesSetShown(r.__cardBorder, false)
         end
         r.ic = r:CreateTexture(nil, "ARTWORK")
         r.ic:SetSize(20, 20)
@@ -1776,11 +1858,27 @@ local function BuildQuestRows(host)
         r.st:SetPoint("TOPRIGHT", r, "TOPRIGHT", -10, -9)
         r.st:SetWordWrap(false)
         r.st:Hide()
-        r.obj = MakeFS(r, 13, C_GREY, "LEFT")
-        r.obj:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2)
-        r.obj:SetWidth(innerW - 58)
-        r.obj:SetWordWrap(true)
-        r.obj:Hide()
+        r.nameSk = r:CreateTexture(nil, "OVERLAY")
+        r.nameSk:SetTexture("Interface\\Buttons\\WHITE8X8")
+        r.nameSk:SetHeight(1)
+        r.nameSk:SetPoint("LEFT", r.name, "LEFT", 0, 0)
+        r.nameSk:SetVertexColor(0.62, 0.62, 0.62, 0.9)
+        r.nameSk:Hide()
+        r.objs = {}
+        r.objSk = {}
+        for j = 1, 8 do
+            local fs = MakeFS(r, 13, C_GREY, "LEFT")
+            fs:SetWidth(innerW - 58)
+            fs:SetWordWrap(true)
+            fs:Hide()
+            r.objs[j] = fs
+            local sk = r:CreateTexture(nil, "OVERLAY")
+            sk:SetTexture("Interface\\Buttons\\WHITE8X8")
+            sk:SetHeight(1)
+            sk:SetVertexColor(0.62, 0.62, 0.62, 0.9)
+            sk:Hide()
+            r.objSk[j] = sk
+        end
         if ns.hui and ns.hui.BuildRoundedBG then
             r.__hl = FlattenPieces(ns.hui.BuildRoundedBG(r, M.ROW_RADIUS,
                 { 1, 1, 1, DG.LOOT_CARD_BG_HOVER }, "both", true, 1, true))
@@ -1805,7 +1903,7 @@ local function BuildQuestRows(host)
         r:Hide()
         rows[i] = r
     end
-    frame.qBack = qBack
+    frame.qBack = MakePair(frame, qBack, listChild, 96, 22)
     frame.qNote = qNote
     frame.questRows = rows
 end
@@ -1918,8 +2016,18 @@ function M.BuildSide(f, w, h, withBar, bgLayer, noCard, qOK)
         M.WheelScroll(self, detChild, delta)
     end)
 
+    local function HostOf(region)
+        local f = region
+        while f do
+            if f.__mapWin then return f end
+            if f == M.frame then return nil end
+            f = f:GetParent()
+        end
+        return nil
+    end
+
     local detBack = Host.NewButton(detChild, L["全部首领"], 96, 24, 14)
-    detBack:SetScript("OnClick", function() M.ShowList() end)
+    detBack:SetScript("OnClick", function(self) M.ShowList(HostOf(self)) end)
     detBack:SetPoint("TOPRIGHT", detChild, "TOPRIGHT", 0, 0)
     local backChev = detBack:CreateTexture(nil, "OVERLAY")
     backChev:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\BackChevron.tga")
@@ -1948,7 +2056,7 @@ function M.BuildSide(f, w, h, withBar, bgLayer, noCard, qOK)
     f.listNote = listNote
     f.detScroll = detScroll
     f.detChild = detChild
-    f.detBack = detBack
+    f.detBack = MakePair(f, detBack, detChild, 96, 24)
     f.detName = detName
     f.detChildW = innerW - M.BLK_PAD * 2
 
@@ -4110,15 +4218,35 @@ function M.SyncBossModel()
     end
 end
 
+local function SideCtx(frame)
+    if frame and frame.__mapWin and ns.MapWindowModule then
+        local MWm = ns.MapWindowModule
+        local Wm = ns.MapWorldModule
+        return MWm.curId or M.curId, (Wm and Wm.curD) or M.curD, frame.__detailEn, frame
+    end
+    return M.curId, M.curD, M.detailEn, nil
+end
+
 function M.SyncSide(forceFrame)
     local frame = forceFrame or M.SideHost
     if not (frame and frame:IsShown()) then frame = M.frame end
     if not frame then return end
     M.SyncBossModel()
     if not (frame.__listReady and frame.__blocksReady and frame.__rowsReady) then return end
-    local id = M.curId
+    local id, sideD, detailEn, mapFrame = SideCtx(frame)
     local bosses = M.BossesFor(id)
     local MW = ns.MapWorldModule
+    local MWin = ns.MapWindowModule
+    local nativeRow = frame.__mapWin and MWin and MWin.Skin and MWin.Skin() == "native" and true or false
+    frame.__mapSkin = nativeRow and "native" or nil
+    if frame.__skinBtns then
+        for i = 1, #frame.__skinBtns do
+            local p = frame.__skinBtns[i]
+            p.native = nativeRow
+            p:Apply()
+        end
+    end
+    ApplyBlockSkin(frame, nativeRow)
     local inTask = M.sideTask and (MW and MW.view == frame)
     if inTask then
         frame.side:Hide()
@@ -4135,7 +4263,7 @@ function M.SyncSide(forceFrame)
         if frame.qToggle then frame.qToggle:Hide() end
         for i = 1, M.MAX_LIST do frame.listRows[i]:Hide() end
         frame.listNote:Hide()
-        local d = M.curD
+        local d = sideD
         local okRows, rows = pcall(DG.QuestRows, d)
         local n = 0
         local y = -26
@@ -4170,14 +4298,65 @@ function M.SyncSide(forceFrame)
                         r.st:Show()
                     end
                     local okOb, ob = pcall(DG.QuestObjectives, qid)
-                    ob = (okOb and type(ob) == "string") and ob or ""
-                    r.obj:SetShown(ob ~= "")
-                    r.obj:SetText(ob)
+                    local obLines = {}
+                    if okOb and type(ob) == "string" and ob ~= "" then
+                        for ln in ob:gmatch("[^\r\n]+") do
+                            obLines[#obLines + 1] = ln
+                        end
+                    end
+                    if #obLines > 8 then
+                        local tail = {}
+                        for j = 9, #obLines do tail[#tail + 1] = obLines[j] end
+                        obLines[8] = table.concat(tail, "\n")
+                        for j = #obLines, 9, -1 do obLines[j] = nil end
+                    end
                     r.__qid = qid
                     r.__row = rows[i]
+                    local rowDone = st == "ready"
+                    if r.nameSk then
+                        if rowDone then
+                            r.nameSk:SetWidth(math.min(r.name:GetStringWidth() or 1, r.name:GetWidth() or 999))
+                            r.nameSk:Show()
+                        else
+                            r.nameSk:Hide()
+                        end
+                    end
+                    if r.__card then PiecesSetShown(r.__card, nativeRow) end
+                    if r.__cardBorder then PiecesSetShown(r.__cardBorder, nativeRow) end
+                    local prevFS
+                    local oh = 0
+                    for j = 1, 8 do
+                        local fs = r.objs[j]
+                        local sk = r.objSk[j]
+                        local ln = obLines[j]
+                        if ln then
+                            fs:SetText(ln:gsub("(%d+/%d+)", "|cffffffff%1|r"))
+                            fs:ClearAllPoints()
+                            if prevFS then
+                                fs:SetPoint("TOPLEFT", prevFS, "BOTTOMLEFT", 0, -3)
+                            else
+                                fs:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2)
+                            end
+                            fs:Show()
+                            prevFS = fs
+                            local cur, need = ln:match("(%d+)/(%d+)")
+                            cur, need = tonumber(cur), tonumber(need)
+                            if cur and need and need > 0 and cur >= need then
+                                sk:ClearAllPoints()
+                                sk:SetPoint("TOPLEFT", fs, "TOPLEFT", 0, -((fs:GetStringHeight() or 16) / 2))
+                                sk:SetWidth(math.min(fs:GetStringWidth() or 1, fs:GetWidth() or 999))
+                                sk:Show()
+                            else
+                                sk:Hide()
+                            end
+                            oh = oh + (fs:GetStringHeight() or 0) + ((j > 1) and 3 or 0)
+                        else
+                            fs:Hide()
+                            sk:Hide()
+                        end
+                    end
                     local nw = r.st:IsShown() and ((r.st:GetStringWidth() or 0) + 16) or 0
                     r.name:SetWidth(frame.innerW - 58 - nw)
-                    local oh = r.obj:IsShown() and (r.obj:GetStringHeight() or 0) or 0
                     local nh = r.name:GetStringHeight() or 16
                     local h = math.max(36, 8 + nh + 2 + oh + 8)
                     r:ClearAllPoints()
@@ -4191,7 +4370,7 @@ function M.SyncSide(forceFrame)
         for i = n + 1, M.MAX_QLIST do frame.questRows[i]:Hide() end
         frame.qNote:SetShown(n == 0)
         frame.listChild:SetHeight(math.max(30, -y + 8))
-        local listSig = "q|" .. tostring(M.curId) .. "|" .. tostring(n)
+        local listSig = "q|" .. tostring(id) .. "|" .. tostring(n)
         if frame.__listSig ~= listSig then
             frame.__listSig = listSig
             frame.listScroll:SetVerticalScroll(0)
@@ -4201,16 +4380,18 @@ function M.SyncSide(forceFrame)
         return
     end
 
-    if M.detailEn then
+    if detailEn then
         local zh, items
         for i = 1, #(bosses or {}) do
-            if bosses[i].en == M.detailEn then
+            if bosses[i].en == detailEn then
                 zh = bosses[i].zh
                 items = bosses[i].items
                 break
             end
         end
-        if not zh then M.detailEn = nil end
+        if not zh then
+            if mapFrame then mapFrame.__detailEn = nil else M.detailEn = nil end
+        end
         if zh then
             frame.listScroll:Hide()
             frame.detScroll:Show()
@@ -4235,7 +4416,7 @@ function M.SyncSide(forceFrame)
                 nLoot = nLoot + 1
             end
 
-            local sk = M.SkillsFor(id, M.detailEn)
+            local sk = M.SkillsFor(id, detailEn)
             local nSk = 0
             for _i = 1, #(sk or {}) do
                 if nSk >= M.MAX_SKILL then break end
@@ -4266,7 +4447,7 @@ function M.SyncSide(forceFrame)
                 srow[i] = { ic = ic, h = rh }
             end
 
-            local guide = M.GuideFor(id, M.detailEn)
+            local guide = M.GuideFor(id, detailEn)
             local hasGuide = (type(guide) == "string" and guide ~= "")
             local showGd = hasGuide or (nSk == 0)
             frame.detGd:SetText(hasGuide and guide or L["攻略待补充"])
@@ -4411,7 +4592,12 @@ function M.SyncSide(forceFrame)
         end
         local cr, cg, cb = M.BossColor(id, bosses[i].en)
         bpPaint(r.__av, bpDisp(id, bosses[i].en), cr, cg, cb, 32)
-        for _, t in ipairs(r.__borderPieces or {}) do t:SetVertexColor(cr, cg, cb) end
+        if r.__card then PiecesSetShown(r.__card, nativeRow) end
+        if nativeRow then
+            for _, t in ipairs(r.__borderPieces or {}) do t:SetVertexColor(0.42, 0.32, 0.20) end
+        else
+            for _, t in ipairs(r.__borderPieces or {}) do t:SetVertexColor(cr, cg, cb) end
+        end
         PiecesSetShown(r.__hl, false)
         r:ClearAllPoints()
         r:SetPoint("TOPLEFT", frame.listChild, "TOPLEFT", 0, y)
@@ -4446,8 +4632,9 @@ function M.BossLayer(id, en)
     return first
 end
 
-function M.Select(en)
-    local id = M.curId
+function M.Select(en, host)
+    local mapWin = host and host.__mapWin and ns.MapWindowModule or nil
+    local id = mapWin and mapWin.curId or M.curId
     if not (id and en) then return end
     local bosses = M.BossesFor(id)
     local hit = false
@@ -4455,15 +4642,27 @@ function M.Select(en)
         if bosses[i].en == en then hit = true break end
     end
     if not hit then return end
-    if M.detailEn == en then en = nil end
-    M.detailEn = en
+    local cur = mapWin and host.__detailEn or M.detailEn
+    if cur == en then en = nil end
+    if mapWin then
+        host.__detailEn = en
+    else
+        M.detailEn = en
+    end
     if en then
         local idx = M.BossLayer(id, en)
-        if idx and idx ~= M.curLayer then
-            if M.frame and M.frame:IsShown() then
-                M.SetLayer(idx)
-            else
-                M.curLayer = idx
+        if idx then
+            if mapWin then
+                if mapWin.curLayer ~= idx then
+                    mapWin.curLayer = idx
+                    mapWin.Sync()
+                end
+            elseif idx ~= M.curLayer then
+                if M.frame and M.frame:IsShown() then
+                    M.SetLayer(idx)
+                else
+                    M.curLayer = idx
+                end
             end
         end
     end
@@ -4471,8 +4670,12 @@ function M.Select(en)
     M.SyncSide()
 end
 
-function M.ShowList()
-    M.detailEn = nil
+function M.ShowList(host)
+    if host and host.__mapWin then
+        host.__detailEn = nil
+    else
+        M.detailEn = nil
+    end
     M.SyncPins()
     M.SyncSide()
 end
@@ -4480,12 +4683,13 @@ end
 function M.OnItemData(itemID)
     local frame = M.SideHost or M.frame
     if not (frame and frame:IsShown() and frame.__listReady and frame.__blocksReady and frame.__rowsReady) then return end
-    if not (M.detailEn and M.curId) then return end
+    local id, _, detailEn = SideCtx(frame)
+    if not (detailEn and id) then return end
     if type(itemID) ~= "number" then return end
-    local bosses = M.BossesFor(M.curId)
+    local bosses = M.BossesFor(id)
     local hit
     for i = 1, #(bosses or {}) do
-        if bosses[i].en == M.detailEn then
+        if bosses[i].en == detailEn then
             local its = bosses[i].items
             for k = 1, #(its or {}) do
                 if its[k][1] == itemID then hit = true break end
@@ -4501,7 +4705,7 @@ function M.OnItemData(itemID)
     end
     M.__oidT = C_Timer.After(0.25, function()
         M.__oidT = nil
-        if M.frame and M.frame:IsShown() and M.detailEn then M.SyncSide() end
+        if M.frame and M.frame:IsShown() and select(3, SideCtx(M.frame)) then M.SyncSide() end
     end)
 end
 

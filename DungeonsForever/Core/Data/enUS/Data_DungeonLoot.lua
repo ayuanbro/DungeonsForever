@@ -1065,11 +1065,35 @@ ns.DungeonLoot = {
         } },
     },
     ["kroldok_stronghold"] = {
-        { "Slavecrusher Grox", "Slavecrusher Grox", "", "258966", {} },
-        { "Twilight Commander Zarmok", "Twilight Commander Zarmok", "", "258972", {} },
-        { "War Handler Ashka", "War Handler Ashka", "", "259281", {} },
-        { "Nar'gurk", "Nar'gurk", "", "258964", {} },
-        { "Overlord Mugg", "Overlord Mugg", "", "258968", {} },
+        { "Slavecrusher Grox", "Slavecrusher Grox", "", "258966", {
+            { 274996, nil, false },
+            { 274997, nil, false },
+            { 274995, nil, false },
+        } },
+        { "Twilight Commander Zarmok", "Twilight Commander Zarmok", "", "258972", {
+            { 274999, nil, false },
+            { 274998, nil, false },
+            { 275000, nil, false },
+            { 267091, nil, true },
+            { 267234, nil, true },
+        } },
+        { "War Handler Ashka", "War Handler Ashka", "", "259281", {
+            { 275001, nil, false },
+            { 275002, nil, false },
+            { 275003, nil, false },
+        } },
+        { "Nar'gurk", "Nar'gurk", "", "258964", {
+            { 275004, nil, false },
+            { 275005, nil, false },
+            { 275006, nil, false },
+            { 267104, nil, true },
+        } },
+        { "Overlord Mugg", "Overlord Mugg", "", "258968", {
+            { 275008, nil, false },
+            { 275009, nil, false },
+            { 275010, nil, false },
+            { 267086, nil, true },
+        } },
     },
     ["uldaman"] = {
         { "Eric \"The Swift\"", "Eric", "", "6907", {

@@ -1084,16 +1084,35 @@ ns.DungeonLoot = {
         } },
     },
     ["kroldok_stronghold"] = {
-        { "Slavecrusher Grox", "碎奴者格罗克斯", "", "258966", {} },
+        { "Slavecrusher Grox", "碎奴者格罗克斯", "", "258966", {
+            { 274996, nil, false },
+            { 274997, nil, false },
+            { 274995, nil, false },
+        } },
         { "Twilight Commander Zarmok", "暮光指挥官扎尔莫克", "", "258972", {
+            { 274999, nil, false },
+            { 274998, nil, false },
+            { 275000, nil, false },
             { 267091, nil, true },
             { 267234, nil, true },
         } },
-        { "War Handler Ashka", "驯兽师阿什卡", "", "259281", {} },
+        { "War Handler Ashka", "驯兽师阿什卡", "", "259281", {
+            { 275001, nil, false },
+            { 275002, nil, false },
+            { 275003, nil, false },
+        } },
         { "Nar'gurk", "纳古克", "", "258964", {
+            { 275004, nil, false },
+            { 275005, nil, false },
+            { 275006, nil, false },
             { 267104, nil, true },
         } },
-        { "Overlord Mugg", "霸主莫格", "", "258968", {} },
+        { "Overlord Mugg", "霸主莫格", "", "258968", {
+            { 275008, nil, false },
+            { 275009, nil, false },
+            { 275010, nil, false },
+            { 267086, nil, true },
+        } },
     },
     ["uldaman"] = {
         { "Eric \"The Swift\"", "埃瑞克", "", "6907", {

@@ -907,10 +907,10 @@ end
 
 local entry
 local entryHost
-local entryWatch
 local entryPage
 local RefreshEntry
 local UpdateEntry
+local UpdateEntryCombat
 
 local function IsVis(f)
     if not f then return false end
@@ -922,6 +922,11 @@ local function InCombat()
     if type(InCombatLockdown) ~= "function" then return false end
     local ok, v = pcall(InCombatLockdown)
     return ok and v or false
+end
+
+local function FeatureOn()
+    if SR.FeatureOn then return SR.FeatureOn() end
+    return true
 end
 
 local function FrameLvl(f)
@@ -973,22 +978,21 @@ local function PickHost()
     return host or chain[n], chain[1]
 end
 
-local function HookWatch(f)
-    if not (f and f.HookScript) or f.__rankHooked then return end
-    f.__rankHooked = true
-    f:HookScript("OnShow", function()
-        if C_Timer and C_Timer.After then
-            C_Timer.After(0.1, function() UpdateEntry() end)
-        else
-            UpdateEntry()
-        end
-    end)
-    f:HookScript("OnHide", function() RefreshEntry() end)
+local function FrameStrata(f)
+    if not (f and f.GetFrameStrata) then return "MEDIUM" end
+    local ok, v = pcall(f.GetFrameStrata, f)
+    if ok and type(v) == "string" then return v end
+    return "MEDIUM"
 end
 
-local function BookFrame()
-    local psf = PlayerSpellsFrame
-    return psf and psf.SpellBookFrame or nil
+local function FrameScaleToUIParent(f)
+    if not (f and f.GetEffectiveScale) then return 1 end
+    local ok, a = pcall(f.GetEffectiveScale, f)
+    local oku, b = pcall(UIParent.GetEffectiveScale, UIParent)
+    if ok and oku and type(a) == "number" and type(b) == "number" and b > 0 then
+        return a / b
+    end
+    return 1
 end
 
 local function BoxAnchor()
@@ -1008,7 +1012,6 @@ local function AdoptBox()
     entry.__box = b
     entry:ClearAllPoints()
     entry:SetPoint("BOTTOMRIGHT", b, "BOTTOMLEFT", -6, 0)
-    HookWatch(b)
     return b
 end
 
@@ -1036,18 +1039,26 @@ local function AnchorEntry()
     end
 end
 
+local ENTRY_STRATA = "DIALOG"
+local ENTRY_NAME = "DungeonsForeverSpellRankEntry"
+
 RefreshEntry = function()
     if not entry then return false end
-    HookWatch(BookFrame())
     local host = PickHost()
     if host and host ~= entryHost then
         entryHost = host
-        if not InCombat() and entry:GetParent() ~= host then entry:SetParent(host) end
+        if not InCombat() and entry:GetParent() ~= UIParent then entry:SetParent(UIParent) end
+        if not InCombat() then entry:SetFrameStrata(ENTRY_STRATA) end
+        entry:SetScale(FrameScaleToUIParent(host))
         AnchorEntry()
         entry:SetFrameLevel(math.max(FrameLvl(host), FrameLvl(AnchorFrame())) + 5)
-        HookWatch(host)
     end
     if not entryHost then return false end
+    local wantScale = FrameScaleToUIParent(entryHost)
+    if entry.__sc ~= wantScale then
+        entry.__sc = wantScale
+        entry:SetScale(wantScale)
+    end
     AdoptBox()
     local par = entry:GetParent()
     local page = PageNow()
@@ -1079,10 +1090,12 @@ local function EnsureEntry()
         RefreshEntry()
         return true
     end
-    local host, watch = PickHost()
+    local host = PickHost()
     if not host then return false end
-    local bt = CreateFrame("Button", nil, host, "UIPanelButtonTemplate")
+    local bt = CreateFrame("Button", ENTRY_NAME, UIParent, "UIPanelButtonTemplate")
     bt:SetSize(320, 32)
+    bt:SetFrameStrata(ENTRY_STRATA)
+    bt:SetScale(FrameScaleToUIParent(host))
     bt:SetFrameLevel(math.max(FrameLvl(host), FrameLvl(BoxAnchor() or PagedFrame())) + 5)
     bt:SetText("")
     local fs = bt:CreateFontString(nil, "OVERLAY")
@@ -1098,20 +1111,8 @@ local function EnsureEntry()
     bt:Hide()
     entry = bt
     entryHost = host
-    entryWatch = watch
     AnchorEntry()
-    HookWatch(host)
-    if watch and watch ~= host then HookWatch(watch) end
-    HookWatch(BookFrame())
     PaintEntry(0)
-    local acc = 0
-    local dog = CreateFrame("Frame")
-    dog:SetScript("OnUpdate", function(_, elapsed)
-        acc = acc + elapsed
-        if acc < 0.5 then return end
-        acc = 0
-        UpdateEntry()
-    end)
     RefreshEntry()
     return true
 end
@@ -1124,7 +1125,7 @@ local function PageHook()
     if prev == nb.__rankWrap then prev = nil end
     local function wrap(p)
         if prev then prev(p) end
-        UpdateEntry()
+        if InCombat() then UpdateEntryCombat() else UpdateEntry() end
     end
     nb.OnPage = wrap
     nb.__rankWrap = wrap
@@ -1132,8 +1133,13 @@ local function PageHook()
 end
 
 UpdateEntry = function()
-    EnsureEntry()
     PageHook()
+    if not FeatureOn() then
+        if entry then entry:Hide() end
+        if win and win:IsShown() then win:Hide() end
+        return
+    end
+    EnsureEntry()
     if not entry then return end
     local n = SR.Pending()
     PaintEntry(n)
@@ -1145,13 +1151,42 @@ UpdateEntry = function()
     RefreshEntry()
 end
 
+local function SyncEntryVisibility()
+    if not entry then return end
+    local psf = PlayerSpellsFrame
+    local sb = psf and psf.SpellBookFrame
+    local bookVis = true
+    if sb and sb.IsVisible then
+        local okb, vb = pcall(sb.IsVisible, sb)
+        bookVis = (okb and vb) and true or false
+    end
+    local page = PageNow()
+    local box = BoxAnchor()
+    local inBook = (box == nil) or IsVis(box)
+    local vis = bookVis and IsVis(entryHost) and IsVis(entry:GetParent()) and page == "spell" and inBook
+    vis = vis and true or false
+    if entry:IsShown() ~= vis then entry:SetShown(vis) end
+end
+
+UpdateEntryCombat = function()
+    if not FeatureOn() then
+        if entry then entry:Hide() end
+        return
+    end
+    SyncEntryVisibility()
+end
+
 UI.Refresh = function()
-    UpdateEntry()
+    if InCombat() then UpdateEntryCombat() else UpdateEntry() end
     if win and win:IsShown() then RefreshWin() end
 end
 
 UI.OnPage = function()
-    UpdateEntry()
+    if InCombat() then UpdateEntryCombat() else UpdateEntry() end
+end
+
+UI.SyncEntry = function(force)
+    if force or InCombat() then UpdateEntryCombat() else UpdateEntry() end
 end
 
 UI.Debug = function()
@@ -1169,15 +1204,28 @@ UI.Debug = function()
         "host visible = " .. tostring(entryHost ~= nil and entryHost:IsVisible() or false),
         "host name = " .. tostring(entryHost and entryHost:GetName() or nil),
         "parent name = " .. tostring(entry and entry:GetParent() and entry:GetParent():GetName() or nil),
-        "content box = " .. tostring(entryWatch ~= nil),
+        "content box = " .. tostring(BoxAnchor() ~= nil),
         "page = " .. tostring(entryPage),
         "OnPage hooked = " .. tostring(nb ~= nil and nb.OnPage ~= nil),
         "entry = " .. tostring(entry ~= nil),
         "entry shown = " .. tostring(entry ~= nil and entry:IsShown() or false),
+        "entry geom = " .. (function()
+            if not entry then return "nil" end
+            local ok, s = pcall(function()
+                return string.format("L=%s B=%s %sx%s sc=%.2f lvl=%s st=%s a=%.2f",
+                    tostring(entry:GetLeft()), tostring(entry:GetBottom()),
+                    tostring(entry:GetWidth()), tostring(entry:GetHeight()),
+                    entry:GetEffectiveScale() or 0, tostring(entry:GetFrameLevel()),
+                    tostring(entry:GetFrameStrata()), entry:GetAlpha() or 0)
+            end)
+            return ok and s or ("err:" .. tostring(s))
+        end)(),
         "pending = " .. tostring(SR.Pending()),
     }
     for i = 1, #lines do SR.Say(lines[i]) end
 end
+
+UI.Entry = function() return entry end
 
 local function Register()
     PageHook()
@@ -1193,11 +1241,22 @@ local function Register()
         end
         UI.Refresh()
     end
-    SR.Boot()
+    local nb = ns.NativeSpellBook
+    if nb and nb.SetEnabled and not nb.__rankSync then
+        local prev = nb.SetEnabled
+        nb.SetEnabled = function(on)
+            prev(on)
+            SR.Sync()
+            UI.Refresh()
+        end
+        nb.__rankSync = true
+    end
+    SR.Sync()
     local f = CreateFrame("Frame")
     f:RegisterEvent("PLAYER_ENTERING_WORLD")
     f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function()
+    f:SetScript("OnEvent", function(_, event)
+        if event == "PLAYER_ENTERING_WORLD" then SR.Sync() end
         if C_Timer and C_Timer.After then
             C_Timer.After(1, UpdateEntry)
             C_Timer.After(3, UpdateEntry)
@@ -1205,15 +1264,19 @@ local function Register()
             UpdateEntry()
         end
     end)
-    local tries = 0
+    local acc = 0
     local tick = CreateFrame("Frame")
-    tick:SetScript("OnUpdate", function(self, elapsed)
-        tries = tries + elapsed
-        if entry then self:SetScript("OnUpdate", nil) return end
-        if tries > 1 then
-            tries = 0
-            UpdateEntry()
+    tick:SetScript("OnUpdate", function(_, elapsed)
+        acc = acc + elapsed
+        if InCombat() then
+            if acc < 0.1 then return end
+            acc = 0
+            UpdateEntryCombat()
+            return
         end
+        if acc < 0.5 then return end
+        acc = 0
+        UpdateEntry()
     end)
     UpdateEntry()
 end

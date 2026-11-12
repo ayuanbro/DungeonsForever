@@ -180,6 +180,57 @@ local AB_DIV_Y = AB_PAD + AB_HDR_H + 10
 local AB_GRID_TOP = AB_DIV_Y + 10
 local AB_GRID_H = AB_CARD_H - AB_GRID_TOP - AB_PAD
 
+local SUP_MEDAL_RANKS = 3
+local SUP_MEDAL_IND = 30
+local SUP_MEDAL_INSET = 10
+local SUP_MEDAL_H = 33
+local SUP_MEDAL_W = SUP_MEDAL_H * 77 / 96
+local SUP_MEDAL_U0, SUP_MEDAL_U1 = 26 / 128, 103 / 128
+local SUP_MEDAL_V0, SUP_MEDAL_V1 = 16 / 128, 112 / 128
+local SUP_MEDAL_TINT = {
+    { 1.00, 0.80, 0.28 },
+    { 0.74, 0.78, 0.84 },
+    { 0.83, 0.54, 0.28 },
+}
+
+local function BuildSupportMedal(parent, anchor, rank)
+    local host = CreateFrame("Frame", nil, parent)
+    host:SetSize(SUP_MEDAL_W, SUP_MEDAL_H)
+    host:SetFrameLevel(parent:GetFrameLevel() + 3)
+    host:SetPoint("LEFT", anchor, "LEFT", -SUP_MEDAL_IND, 0)
+
+    local c = SUP_MEDAL_TINT[rank] or SUP_MEDAL_TINT[SUP_MEDAL_RANKS]
+
+    local glow = host:CreateTexture(nil, "ARTWORK")
+    glow:SetAllPoints()
+    glow:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\About\\supporter_medal_glow.tga")
+    glow:SetTexCoord(SUP_MEDAL_U0, SUP_MEDAL_U1, SUP_MEDAL_V0, SUP_MEDAL_V1)
+    glow:SetDesaturated(true)
+    glow:SetVertexColor(c[1], c[2], c[3], 1)
+
+    local line = host:CreateTexture(nil, "OVERLAY")
+    line:SetAllPoints()
+    line:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\About\\supporter_medal_line.tga")
+    line:SetTexCoord(SUP_MEDAL_U0, SUP_MEDAL_U1, SUP_MEDAL_V0, SUP_MEDAL_V1)
+
+    local ag = host:CreateAnimationGroup()
+    ag:SetLooping("REPEAT")
+    local a1 = ag:CreateAnimation("Alpha")
+    a1:SetFromAlpha(1)
+    a1:SetToAlpha(0.55)
+    a1:SetDuration(2.4)
+    a1:SetSmoothing("IN_OUT")
+    a1:SetOrder(1)
+    local a2 = ag:CreateAnimation("Alpha")
+    a2:SetFromAlpha(0.55)
+    a2:SetToAlpha(1)
+    a2:SetDuration(2.4)
+    a2:SetSmoothing("IN_OUT")
+    a2:SetOrder(2)
+    ag:Play()
+    return host
+end
+
 local C_AB_VAL = { 0.88, 0.90, 0.93 }
 local C_AB_DIM = { 0.62, 0.62, 0.68 }
 local C_AB_HEAD = { 0.95, 0.96, 0.98 }
@@ -496,17 +547,24 @@ function BuildAbout()
     for i = 1, #members do
         local col = (i - 1) % AB_COLS
         local row = math.floor((i - 1) / AB_COLS)
+        local ind = (i <= SUP_MEDAL_RANKS) and SUP_MEDAL_IND or 0
         local nm = child:CreateFontString(nil, "OVERLAY")
         nm:SetFont(ns.FONT, 14, "")
         nm:SetJustifyH("LEFT")
         nm:SetWordWrap(false)
-        nm:SetTextColor(1, 1, 1)
+        local tc = SUP_MEDAL_TINT[i]
+        if ind > 0 and tc then
+            nm:SetTextColor(tc[1], tc[2], tc[3])
+        else
+            nm:SetTextColor(1, 1, 1)
+        end
         nm:SetPoint("TOPLEFT", child, "TOPLEFT",
-            col * (AB_COL_W + AB_COL_GAP),
-            -(row * AB_ROW_H))
-        AbFit(nm, members[i], AB_COL_W - 4)
+            col * (AB_COL_W + AB_COL_GAP) + ind,
+            -(row * AB_ROW_H + SUP_MEDAL_INSET))
+        AbFit(nm, members[i], AB_COL_W - 4 - ind)
+        if ind > 0 then BuildSupportMedal(child, nm, i) end
     end
-    local cy = math.ceil(#members / AB_COLS) * AB_ROW_H
+    local cy = math.ceil(#members / AB_COLS) * AB_ROW_H + SUP_MEDAL_INSET
     child:SetHeight(math.max(cy, AB_GRID_H))
 
     if #members == 0 then
@@ -1271,7 +1329,6 @@ function BuildTipCard()
         local c = ns.TipCfg()
         c.global = not (c.global and true)
         self:SetChecked(c.global and true or false)
-        if ns.RefreshTipFonts then ns.RefreshTipFonts() end
         if ns.TipLines.RefreshPreview then ns.TipLines.RefreshPreview() end
     end)
 

@@ -1,3 +1,4 @@
+
 local _, ns = ...
 
 ns.BossSkills = {
@@ -389,6 +390,41 @@ ns.BossSkills = {
             { "", "", 8988, "spell_holy_silence" },
         },
     },
+    the_drowned_city = {
+        ["Zul'Alai"] = {
+            { "", "", 1282504 },
+            { "", "", 1282517 },
+            { "", "", 1282511 },
+        },
+        ["Var'Taka"] = {
+            { "", "", 1282615 },
+            { "", "", 1283413 },
+        },
+        ["Captain Dreadrise"] = {
+            { "", "", 1282842 },
+            { "", "", 1282860 },
+        },
+        ["Deathless Marrow"] = {
+            { "", "", 1283034 },
+            { "", "", 1283081 },
+        },
+        ["Primeval Elemental"] = {
+            { "", "", 1290978 },
+            { "", "", 1290980 },
+        },
+        ["Gill"] = {
+            { "", "", 1291692 },
+        },
+        ["Min'loth the Serpent"] = {
+            { "", "", 1283250 },
+            { "", "", 1283233 },
+            { "", "", 1283313 },
+            { "", "", 1283347 },
+        },
+        ["Umbra"] = {
+            { "", "", 1290240 },
+        },
+    },
     sm_armory = {
         ["Herod"] = {
             { "", "", 1680, "ability_whirlwind" },
@@ -457,6 +493,24 @@ ns.BossSkills = {
             { "", "", 12039, "spell_holy_heal" },
             { "", "", 9256, "spell_nature_sleep" },
             { "", "", 22187, "spell_holy_powerwordshield" },
+        },
+    },
+    kroldok_stronghold = {
+        ["Slavecrusher Grox"] = {
+            { "", "", 1245940 },
+        },
+        ["Twilight Commander Zarmok"] = {
+            { "", "", 1296130 },
+        },
+        ["War Handler Ashka"] = {
+            { "", "", 1282076 },
+        },
+        ["Nar'gurk"] = {
+            { "", "", 1314274 },
+        },
+        ["Overlord Mugg"] = {
+            { "", "", 1282396 },
+            { "", "", 1282386 },
         },
     },
     uldaman = {

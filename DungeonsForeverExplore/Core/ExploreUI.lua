@@ -3770,8 +3770,8 @@ function EG.Open()
 end
 
 function EG.ShowSub(key)
-    if not EG.built then return end
     SetSub(key)
+    if not EG.built then return end
     EG.EnsureSub()
 end
 

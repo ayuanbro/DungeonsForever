@@ -2983,7 +2983,35 @@ function DG.PaintQuestOverview(d)
         local placed = {}
         local colBot = {}
         local colTop = {}
+        local cardPos = {}
+        local colOfQ = {}
         for c = 1, nCols do
+            local chq = chains[packs[c][1]]
+            for k = 1, #chq do colOfQ[chq[k][1]] = c end
+        end
+        local pOrder, pDone = {}, {}
+        local grew = true
+        while grew do
+            grew = false
+            for c = 1, nCols do
+                if not pDone[c] then
+                    local gp = ns.DungeonQuestGraft and ns.DungeonQuestGraft[chains[packs[c][1]][1][1]]
+                    local dep = gp and colOfQ[gp] or nil
+                    if not dep or pDone[dep] then
+                        pDone[c] = true
+                        pOrder[#pOrder + 1] = c
+                        grew = true
+                    end
+                end
+            end
+        end
+        for c = 1, nCols do
+            if not pDone[c] then
+                pDone[c] = true
+                pOrder[#pOrder + 1] = c
+            end
+        end
+        for _, c in ipairs(pOrder) do
             local rr = 0
             local prev = nil
             local extLast, extRow = nil, nil
@@ -2996,7 +3024,11 @@ function DG.PaintQuestOverview(d)
                 end
                 if not subMainOf[r] then
                     local pv, guard, src = chains[r][1][1], 0, nil
-                    while guard < 16 do
+                    local gp = ns.DungeonQuestGraft and ns.DungeonQuestGraft[pv]
+                    if gp then
+                        src = cardPos[gp] or extPos[gp]
+                    end
+                    while not src and guard < 16 do
                         guard = guard + 1
                         local pe = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[pv]
                         local pid = (type(pe) == "table" and pe[1]) or nil
@@ -3059,6 +3091,7 @@ function DG.PaintQuestOverview(d)
                     end
                     local n = place(q, c, rowY(rr))
                     nodeByQid[q[1]] = n
+                    if not cardPos[q[1]] then cardPos[q[1]] = { n = n, row = rr, root = r } end
                     if not colTop[c] then colTop[c] = n end
                     if k == 1 and subMainOf[r] then subFirstOf[r] = n end
                     placed[#placed + 1] = { q = q, n = n }
@@ -3083,8 +3116,15 @@ function DG.PaintQuestOverview(d)
 
         local spineY = (DG.Q_OV_H + rowY(0)) / 2
         local xTop = startCX + nw / 2
-        local xL = math.min(xTop, colX[1] + nw / 2)
-        local xR = colX[nCols] + nw / 2
+        local xL, xR = xTop, 0
+        for c = 1, nCols do
+            if not subMainOf[packs[c][1]] then
+                local xc = colX[c] + nw / 2
+                if xc < xL then xL = xc end
+                if xc > xR then xR = xc end
+            end
+        end
+        if xR == 0 then xR = colX[nCols] + nw / 2 end
         local bendR = math.min(RAD, rowY(0) - spineY)
         local bend = (xR - xL) > bendR * 2
         local lo = bend and (xL + bendR) or xL
@@ -3226,7 +3266,7 @@ function DG.PaintQuestOverview(d)
             local srcN = subHead and (subSrcNode[packs[c][1]] or extNodeOf[subHead]) or nil
             local fN = subHead and (colTop[c] or subFirstOf[packs[c][1]]) or nil
             if subHead and srcN and fN then
-                local x1 = srcN.__ox + nw
+                local x1 = (xc < srcN.__ox + nw / 2) and srcN.__ox or (srcN.__ox + nw)
                 local y1 = srcN.__oy + DG.Q_OV_H / 2
                 local y2 = fN.__oy
                 if y2 <= y1 + 1 then

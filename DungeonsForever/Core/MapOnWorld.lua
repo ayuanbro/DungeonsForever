@@ -358,7 +358,8 @@ local function leaIconRows()
     local out
     for _, ch in ipairs({ canvas:GetChildren() }) do
         local d = type(ch) == "table" and ch.data
-        if ch.isLeaMapsPin and type(d) == "table" then
+        if type(ch) == "table" and ch.isLeaMapsPin and type(d) == "table"
+            and not ch.__dfSup and (not ch.IsShown or ch:IsShown()) then
             local k = d[1]
             if k == "Dungeon" or k == "Raid" or k == "Dunraid" then
                 local x, y = tonumber(d[2]), tonumber(d[3])
@@ -509,6 +510,13 @@ local function subZoneText()
         local ok, v = pcall(GetSubZoneText)
         if ok and type(v) == "string" and v ~= "" then return v end
     end
+    if type(GetMinimapZoneText) == "function" then
+        local ok, v = pcall(GetMinimapZoneText)
+        if ok and type(v) == "string" and v ~= "" then
+            local zn = zoneText()
+            if not zn or nameKey(v) ~= nameKey(zn) then return v end
+        end
+    end
     return nil
 end
 
@@ -589,6 +597,16 @@ function W.Resolve()
     end
     local info = instanceInfo()
     local instID = info and info.instID
+    local szn = subZoneText()
+    local sk = szn and nameKey(szn) or nil
+    if sk and instID and type(M.INSTANCE_SUBZONE) == "table" then
+        local row = M.INSTANCE_SUBZONE[instID]
+        local sid = type(row) == "table" and row[sk] or nil
+        if sid and hasArt(sid) then
+            if cur == sid then return cur, "cur" end
+            return sid, "sub"
+        end
+    end
     if instID and IM and type(IM.inst) == "table" then
         local id = IM.inst[instID]
         if hasArt(id) then
@@ -618,6 +636,74 @@ function W.Resolve()
     end
     if cur and W.curStamp and W.curStamp == instStamp() then return cur, "cur" end
     return nil
+end
+
+local function subZoneKey()
+    local s = subZoneText()
+    if type(s) ~= "string" or s == "" then return nil end
+    return nameKey(s)
+end
+
+function W.SubzoneLayerFor(id)
+    local tbl = M.SUBZONE_LAYER
+    if not (id and type(tbl) == "table" and type(tbl[id]) == "table") then return nil end
+    local sk = subZoneKey()
+    if not sk then return nil end
+    local idx = tbl[id][sk]
+    if type(idx) ~= "number" then return nil end
+    return idx
+end
+
+function W.ResolveCandidates()
+    if not enabled() then return nil end
+    local zn
+    if inInstance() then
+        local info = instanceInfo()
+        zn = info and info.name
+    end
+    zn = zn or zoneText()
+    if not zn or zn == "" then return nil end
+    local zk = nameKey(zn)
+    if not zk or zk == "" then return nil end
+    local list = ns.DungeonData and ns.DungeonData.dungeons
+    if type(list) ~= "table" then return nil end
+    local out = {}
+    for i = 1, #list do
+        local d = list[i]
+        if hasArt(d.id) then
+            local k1, k2 = nameKey(d.name), nameKey(d.nameEn)
+            if (k1 and #k1 >= #zk and k1:sub(1, #zk) == zk)
+                or (k2 and #k2 >= #zk and k2:sub(1, #zk) == zk) then
+                out[#out + 1] = { id = d.id, name = d.name }
+            end
+        end
+    end
+    if #out == 0 then return nil end
+    local sk = subZoneKey()
+    local sinfo = inInstance() and instanceInfo() or nil
+    local srow = (sinfo and sinfo.instID and type(M.INSTANCE_SUBZONE) == "table") and M.INSTANCE_SUBZONE[sinfo.instID] or nil
+    if sk and type(srow) == "table" then
+        local pick = srow[sk]
+        if pick then
+            for i = 1, #out do
+                if out[i].id == pick then return { out[i] } end
+            end
+        end
+    end
+    if #out == 1 then return out end
+    if sk and #out > 1 then
+        local pick = {}
+        for i = 1, #out do
+            local suf = out[i].name:match("[：:]%s*([^%s：:]+)%s*$")
+                or out[i].nameEn:match(":%s*([^%s:]+)%s*$")
+            local skk = suf and nameKey(suf)
+            if skk and skk ~= "" and (sk == skk or sk:find(skk, 1, true) or skk:find(sk, 1, true)) then
+                pick[#pick + 1] = out[i]
+            end
+        end
+        if #pick == 1 then return pick end
+    end
+    return out
 end
 
 local function floorNumAt(id, idx)
@@ -2072,6 +2158,29 @@ end
 
 local dropDown
 
+local DROP_COL = {
+    rec = { 1, 0.82, 0 },
+    now = { 0.74, 0.80, 0.90 },
+    up = { 0.74, 0.72, 0.68 },
+}
+
+local function dropHex(c)
+    return string.format("%02x%02x%02x",
+        math.floor(c[1] * 255 + 0.5),
+        math.floor(c[2] * 255 + 0.5),
+        math.floor(c[3] * 255 + 0.5))
+end
+
+local function dropName(d)
+    local full = detailOf(d.id) or d
+    local dg = ns.DungeonDG
+    local lv = (type(UnitLevel) == "function") and (UnitLevel("player") or 0) or 0
+    local g = (dg and dg.GroupOf and full.levelMin) and dg.GroupOf(full, lv) or nil
+    local c = g and DROP_COL[g]
+    if not (c and d.name) then return d.name end
+    return "|cff" .. dropHex(c) .. d.name .. "|r"
+end
+
 local function dropdownInit(_, level)
     local list = W.menuList
     local info = UIDropDownMenu_CreateInfo()
@@ -2085,7 +2194,7 @@ local function dropdownInit(_, level)
     for i = 1, #list do
         local d = list[i]
         info = UIDropDownMenu_CreateInfo()
-        info.text = d.name
+        info.text = dropName(d)
         info.checked = (d.id == W.curId) or nil
         info.func = function() W.OpenDungeon(d.id) end
         UIDropDownMenu_AddButton(info, level)
@@ -2502,7 +2611,8 @@ local function leaClickTakeover()
         if okc and type(kids) == "table" then
             for _, ch in ipairs(kids) do
                 local d = type(ch) == "table" and ch.data
-                if ch.isLeaMapsPin and type(d) == "table" then
+                if type(ch) == "table" and ch.isLeaMapsPin and type(d) == "table"
+                    and (not ch.IsShown or ch:IsShown()) then
                     local k = d[1]
                     if k == "Dungeon" or k == "Raid" or k == "Dunraid" then
                         local dx, dy = (tonumber(d[2]) or -999) - px, (tonumber(d[3]) or -999) - py
@@ -2538,6 +2648,31 @@ local function leaClickTakeover()
         if not ids then return end
         W.OpenEntryMenu(ids)
     end)
+end
+
+local function leaPinEntry(pin)
+    local d = type(pin) == "table" and pin.data
+    if type(d) ~= "table" then return nil end
+    local k = d[1]
+    if not (k == "Dungeon" or k == "Raid" or k == "Dunraid") then return nil end
+    local x, y = tonumber(d[2]), tonumber(d[3])
+    if not (x and y) then return nil end
+    local wmf = _G.WorldMapFrame
+    if not (wmf and wmf.GetMapID) then return nil end
+    local ok, mapID = pcall(wmf.GetMapID, wmf)
+    if not (ok and type(mapID) == "number") then return nil end
+    local rows = W.EntriesIn(mapID)
+    if not (rows and #rows > 0) then return nil end
+    local best, bestD = nil, 25
+    for i = 1, #rows do
+        local r = rows[i]
+        if r.x and r.y then
+            local dx, dy = r.x - x, r.y - y
+            local dd = dx * dx + dy * dy
+            if dd <= bestD then best, bestD = r.id, dd end
+        end
+    end
+    return best
 end
 
 function Provider:RefreshAllData()
@@ -2638,6 +2773,40 @@ local function driveEntryPins()
 end
 
 W.RefreshPins = driveEntryPins
+
+local leaSupAt = 0
+
+local function leaSuppressPins()
+    if not enabled() then return end
+    local now = GetTime()
+    if now - leaSupAt < 0.2 then return end
+    leaSupAt = now
+    local wmf = WorldMapFrame
+    if not (wmf and wmf.GetCanvas) then return end
+    local ok, canvas = pcall(wmf.GetCanvas, wmf)
+    if not (ok and canvas and canvas.GetChildren) then return end
+    local hid
+    for _, ch in ipairs({ canvas:GetChildren() }) do
+        if type(ch) == "table" and ch.isLeaMapsPin and leaPinEntry(ch) then
+            if not ch.__dfSup then
+                ch.__dfSup = true
+                if ch.HookScript then
+                    pcall(ch.HookScript, ch, "OnShow", function(p)
+                        if leaPinEntry(p) then p:Hide() end
+                    end)
+                end
+            end
+            if ch:IsShown() then
+                ch:Hide()
+                hid = true
+            end
+        end
+    end
+    if hid then
+        epSig = nil
+        pcall(driveEntryPins)
+    end
+end
 
 local function attachPins()
     if entryProvider or not WorldMapFrame then return end
@@ -3020,6 +3189,9 @@ end
 local function tick_()
     if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
     syncOpenWinBtn()
+    leaSuppressPins()
+    driveEntryPins()
+    if not W.Active() then syncAreaBtn() end
 end
 
 local function mapPluginsOn()
@@ -3052,6 +3224,8 @@ function W.Hook()
     watch:SetScript("OnUpdate", watchUpdate)
     W.watch = watch
     W.watchUpdate = watchUpdate
+    attachPins()
+    leaClickTakeover()
     if WorldMapFrame:IsShown() then onShow() end
 end
 

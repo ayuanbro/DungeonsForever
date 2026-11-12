@@ -227,6 +227,13 @@ local function BindFor(slot)
 end
 SR.BindFor = BindFor
 
+local function RankNum(id)
+    local t = RankText(id)
+    if type(t) ~= "string" then return 0 end
+    local n = tonumber(t:match("(%d+)"))
+    return n or 0
+end
+
 local function ScanBook()
     local best = {}
     local bank = Bank()
@@ -253,7 +260,14 @@ local function ScanBook()
                     end
                     if isSpell and not low and not info.isOffSpec then
                         local nm = info.name or SpellName(info.spellID)
-                        if nm and best[nm] == nil then best[nm] = info.spellID end
+                        if nm then
+                            local cur = best[nm]
+                            if cur == nil then
+                                best[nm] = info.spellID
+                            elseif RankNum(info.spellID) > RankNum(cur) then
+                                best[nm] = info.spellID
+                            end
+                        end
                     end
                 end
             end
@@ -310,14 +324,25 @@ end
 
 local cache
 local dirty = true
+local EMPTY = { rows = {}, slots = 0 }
 
 function SR.Dirty()
     dirty = true
     if SR.OnDirty then SR.OnDirty() end
 end
 
+function SR.IsDirty()
+    return dirty
+end
+
+function SR.Clear()
+    cache = nil
+    dirty = true
+end
+
 function SR.Scan()
     if cache and not dirty then return cache end
+    if InCombat() then return cache or EMPTY end
     dirty = false
     local out = { rows = {}, slots = 0 }
     if not (C_SpellBook and C_SpellBook.GetSpellBookItemInfo) then
@@ -325,6 +350,10 @@ function SR.Scan()
         return out
     end
     local best = ScanBook()
+    if not next(best) then
+        dirty = true
+        return cache or out
+    end
     local groups, order, onBar = {}, {}, {}
     for slot = 1, MAX_SLOT do
         local ok, kind, id = pcall(GetActionInfo, slot)
@@ -378,8 +407,10 @@ function SR.Scan()
             noBar = g.noBar and true or nil,
         }
         table.sort(row.slots)
-        out.rows[#out.rows + 1] = row
-        out.slots = out.slots + #row.slots
+        if row.noBar or row.to ~= nil or row.from ~= nil then
+            out.rows[#out.rows + 1] = row
+            out.slots = out.slots + #row.slots
+        end
     end
     local function slotKey(r) return r.slots[1] or 9999 end
     table.sort(out.rows, function(a, b)
@@ -392,6 +423,7 @@ function SR.Scan()
 end
 
 function SR.Diagnose()
+    if InCombat() then return { rows = {}, spells = 0 } end
     local best = ScanBook()
     local rows, index = {}, {}
     local spells = 0
@@ -487,18 +519,34 @@ function SR.RowsForAll()
     return out
 end
 
-local function Place(row, slot)
-    local ok = false
-    if C_Spell and C_Spell.PickupSpell then
-        ok = pcall(C_Spell.PickupSpell, row.bestId)
-    end
-    if not ok and C_SpellBook and C_SpellBook.PickupSpellBookItem then
-        local oks, bslot, bbank = pcall(C_SpellBook.FindSpellBookSlotForSpell, row.bestId)
-        if oks and bslot then
-            ok = pcall(C_SpellBook.PickupSpellBookItem, bslot, bbank or Bank())
+local function CursorSpell()
+    if type(CursorHasSpell) ~= "function" then return true end
+    local ok, v = pcall(CursorHasSpell)
+    return ok and v == true
+end
+
+local function Pickup(id)
+    if C_SpellBook and C_SpellBook.FindSpellBookSlotForSpell and C_SpellBook.PickupSpellBookItem then
+        local ok, bslot, bbank = pcall(C_SpellBook.FindSpellBookSlotForSpell, id)
+        if ok and bslot then
+            pcall(C_SpellBook.PickupSpellBookItem, bslot, bbank or Bank())
+            if CursorSpell() then return true end
         end
     end
-    if not ok then return false end
+    if C_Spell and type(C_Spell.PickupSpell) == "function" then
+        pcall(C_Spell.PickupSpell, id)
+        if CursorSpell() then return true end
+    end
+    return false
+end
+
+local function Place(row, slot)
+    if InCombat() then return false end
+    if not row.bestId then return false end
+    if not Pickup(row.bestId) then
+        if type(ClearCursor) == "function" then pcall(ClearCursor) end
+        return false
+    end
     local okp = pcall(PlaceAction, slot)
     if type(ClearCursor) == "function" then pcall(ClearCursor) end
     if not okp then return false end
@@ -527,7 +575,13 @@ local function Run(rows, onDone)
         Say(string.format(L["已升级 %d 项动作条法术"], done))
     end
     if #bad > 0 then
-        Say(string.format(L["%d 项未能升级，请手动拖动"], #bad))
+        local names = {}
+        for i, row in ipairs(bad) do
+            if i <= 5 then names[#names + 1] = row.name or "?" end
+        end
+        local tail = ""
+        if #names > 0 then tail = "：" .. table.concat(names, "、") end
+        Say(string.format(L["%d 项未能升级，请手动拖动"], #bad) .. tail)
     end
     if onDone then onDone(done, bad) end
     return done, bad
@@ -571,12 +625,50 @@ function SR.Apply(rows, onDone)
 end
 
 local booted
+local bootFrame
+
+local function FeatureOn()
+    if not DB().on then return false end
+    if ns.SpellEnhOn and not ns.SpellEnhOn() then return false end
+    return true
+end
+SR.FeatureOn = FeatureOn
+
+function SR.Stop()
+    if not booted then return end
+    booted = false
+    if bootFrame then
+        bootFrame:UnregisterAllEvents()
+        bootFrame:SetScript("OnEvent", nil)
+        bootFrame:Hide()
+        bootFrame = nil
+    end
+    if queueFrame then
+        queueFrame:UnregisterAllEvents()
+        queueFrame:SetScript("OnEvent", nil)
+        queueFrame:Hide()
+        queueFrame = nil
+    end
+    queued = nil
+    SR.Clear()
+end
+
+function SR.Sync()
+    if FeatureOn() then
+        SR.Boot()
+    else
+        SR.Stop()
+    end
+    return booted
+end
 
 function SR.Boot()
     if booted then return end
+    if not FeatureOn() then return end
     booted = true
     if not (C_SpellBook and C_SpellBook.GetSpellBookItemInfo) then return end
     local f = CreateFrame("Frame")
+    bootFrame = f
     local learned, learnedAt
     local loginDone
     local barPending
@@ -587,7 +679,15 @@ function SR.Boot()
     f:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
     f:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
     f:RegisterEvent("UPDATE_BINDINGS")
+    f:RegisterEvent("PLAYER_REGEN_ENABLED")
     local function FlushLearned()
+        if InCombat() then
+            if C_Timer and C_Timer.After then
+                learnedAt = true
+                C_Timer.After(1, FlushLearned)
+            end
+            return
+        end
         learnedAt = nil
         local names = learned
         learned = nil
@@ -606,10 +706,20 @@ function SR.Boot()
         if SR.OnChanged then SR.OnChanged() end
     end
     f:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
-        if event == "SPELLS_CHANGED" then
+        if event == "PLAYER_REGEN_ENABLED" then
+            if not (dirty or barPending or learned) then return end
+            barPending = false
+            if learned then
+                FlushLearned()
+                return
+            end
+            SR.Dirty()
+            if SR.OnChanged then SR.OnChanged() end
+        elseif event == "SPELLS_CHANGED" then
             SR.Dirty()
             if C_Timer and C_Timer.After then
                 C_Timer.After(0.6, function()
+                    if InCombat() then return end
                     local keys, fresh, seen = {}, {}, {}
                     for _, row in ipairs(SR.Scan().rows) do
                         local k = tostring(row.key)
@@ -645,18 +755,20 @@ function SR.Boot()
             if C_Timer and C_Timer.After then
                 C_Timer.After(0.2, function()
                     barPending = false
+                    if InCombat() then return end
                     SR.Dirty()
                     if SR.OnChanged then SR.OnChanged() end
                 end)
             else
                 barPending = false
-                if SR.OnChanged then SR.OnChanged() end
+                if not InCombat() and SR.OnChanged then SR.OnChanged() end
             end
         elseif event == "PLAYER_LOGIN" then
             if loginDone then return end
             loginDone = true
             if C_Timer and C_Timer.After then
                 C_Timer.After(3, function()
+                    if InCombat() then return end
                     SR.Dirty()
                     local keys = {}
                     for _, row in ipairs(SR.Scan().rows) do keys[tostring(row.key)] = true end

@@ -584,6 +584,13 @@ local function BannerRows(ctx)
                 name = ItemName(iid) or L["血色旗帜"], icon = icon,
                 sub = L["副本内"],
                 desc = b[8], areaID = areaID,
+                jump = function()
+                    if ns.OpenPage then ns.OpenPage("Explore") end
+                    local EG = ns.ExploreModule
+                    if EG and EG.ShowSub then pcall(EG.ShowSub, "banner") end
+                    return true
+                end,
+                jumpTip = L["点击查看获取步骤"],
             }
         end
     end
@@ -911,6 +918,30 @@ local function PQuest(ctx)
             end
             local qt = DG.QLCall and DG.QLCall("GetQuestType", q[1]) or nil
             local btext = (qt == 81) and L["地下城"] or L["副本内"]
+            local progSub = nil
+            local inDun = false
+            if instSlugs then
+                for _, s in ipairs(instSlugs) do
+                    if s == h.slug then inDun = true break end
+                end
+            end
+            if inDun and DG.QuestState and DG.QuestState(q[1]) == "active" then
+                local objs = DG.QuestObjectiveList and DG.QuestObjectiveList(q[1]) or nil
+                if objs then
+                    local parts = {}
+                    for oi = 1, #objs do
+                        local ob = objs[oi]
+                        if type(ob[1]) == "string" and ob[1] ~= "" then
+                            if ob[3] > 0 and not ob[1]:find("%d+/%d+") then
+                                parts[#parts + 1] = string.format("%d/%d %s", ob[2], ob[3], ob[1])
+                            else
+                                parts[#parts + 1] = ob[1]
+                            end
+                        end
+                    end
+                    if #parts > 0 then progSub = table.concat(parts, "\n") end
+                end
+            end
             ids2 = q[1]
             local qname, qok = nil, false
             if DG.QuestName then qname, qok = DG.QuestName(q[1]) end
@@ -919,7 +950,7 @@ local function PQuest(ctx)
                 id = q[1], base = q[1], ikey = ItemKey("quest", q[1]),
                 name = qname or tostring(q[1]),
                 icon = "Interface\\GossipFrame\\AvailableQuestIcon",
-                sub = dun, desc = locdesc, lvreq = lvreq, can = can,
+                sub = progSub or dun, desc = locdesc, lvreq = lvreq, can = can,
                 badge = { t = btext, col = DG.Q_BADGE_IN_BG },
                 disc = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
                 sym = can and QSYM_CAN or QSYM_CANT,

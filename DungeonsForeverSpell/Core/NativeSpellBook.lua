@@ -30,10 +30,9 @@ local WGROUP_ORDER = {
 local book, tabButton, weaponTabButton
 local subState = "class"
 local activePage
-local nativeTpl
-local ourProvider
 local restoring = false
 local lastTab
+local openGuard = 0
 
 local pending = false
 
@@ -51,9 +50,13 @@ end
 
 local function BookShown()
     if not (book and book.IsShown) then return false end
-    local ok, v = pcall(book.IsShown, book)
-    if not ok then return true end
-    return v and true or false
+    if book.IsVisible then
+        local ok, v = pcall(book.IsVisible, book)
+        if ok then return v and true or false end
+    end
+    local ok2, v2 = pcall(book.IsShown, book)
+    if not ok2 then return true end
+    return v2 and true or false
 end
 
 local function ShowTabs()
@@ -493,18 +496,6 @@ local function HeaderInit(frame, d)
     end
 end
 
-local OURS = {
-    [TPL_HEADER] = {
-        template = "SpellBookHeaderTemplate",
-        initFunc = HeaderInit,
-    },
-    [TPL_SPELL] = {
-        template = "SpellBookItemTemplate",
-        initFunc = ItemInit,
-        resetFunc = ItemReset,
-    },
-}
-
 local function Paged()
     if not book then
         local psf = PlayerSpellsFrame
@@ -512,6 +503,418 @@ local function Paged()
         if sb then book = sb end
     end
     return book and book.PagedSpellsFrame
+end
+
+local OVL_ROW_H = 60
+local OVL_ROW_STEP = 70
+local OVL_COL_GAP = 14
+
+local ovl, ovlClip, ovlArt, listHost, ovlPager
+local tabCatcher
+local pageSeq = 0
+local SyncTabCatcher
+local artPool = {}
+local itemPool, headPool = {}, {}
+local pageSet, pageNo
+local ovlPaging = false
+
+local function RectInPsf(f)
+    local psf = PlayerSpellsFrame
+    if not (f and psf) then return nil end
+    local ok1, l = pcall(f.GetLeft, f)
+    local ok2, t = pcall(f.GetTop, f)
+    local ok3, w = pcall(f.GetWidth, f)
+    local ok4, h = pcall(f.GetHeight, f)
+    local ok5, pl = pcall(psf.GetLeft, psf)
+    local ok6, pt = pcall(psf.GetTop, psf)
+    if not (ok1 and ok2 and ok3 and ok4 and ok5 and ok6) then return nil end
+    if type(l) ~= "number" or type(t) ~= "number" or type(w) ~= "number" or type(h) ~= "number" then return nil end
+    if type(pl) ~= "number" or type(pt) ~= "number" then return nil end
+    local sc = 1
+    local okA, a = pcall(f.GetEffectiveScale, f)
+    local okB, b = pcall(psf.GetEffectiveScale, psf)
+    if okA and okB and type(a) == "number" and type(b) == "number" and a > 0 and b > 0 then sc = a / b end
+    return (l - pl) * sc, (pt - t) * sc, w * sc, h * sc
+end
+
+local function ViewList()
+    local paged = Paged()
+    if not paged then return nil end
+    local v1, v2 = paged.View1, paged.View2
+    if not v1 and paged.ViewFrames then v1, v2 = paged.ViewFrames[1], paged.ViewFrames[2] end
+    if not v1 then return nil end
+    local okv, vis = pcall(v1.IsVisible, v1)
+    if okv and not vis then return nil end
+    local list = { v1 }
+    if v2 then
+        local ok, sh = pcall(v2.IsShown, v2)
+        local l1, _, w1 = RectInPsf(v1)
+        local l2, _, w2 = RectInPsf(v2)
+        local pw = 0
+        local psf = PlayerSpellsFrame
+        if psf then pw = psf:GetWidth() or 0 end
+        local apart = (l1 and l2 and w1 and w1 > 0) and (math.abs(l2 - l1) >= w1 * 0.5)
+        local fits = (l2 and w2 and pw > 0) and (l2 + w2 <= pw + 4)
+        if ok and sh and apart and fits then list[2] = v2 end
+    end
+    return list
+end
+
+local function PagerFrame()
+    local paged = Paged()
+    if not paged then return nil end
+    if paged.PagingControls and paged.PagingControls.GetObjectType then return paged.PagingControls end
+    for _, ch in ipairs({ paged:GetChildren() }) do
+        local n = 0
+        for _, c in ipairs({ ch:GetChildren() }) do
+            if c.IsObjectType and c:IsObjectType("Button") then n = n + 1 end
+        end
+        if n >= 2 then return ch end
+    end
+    return nil
+end
+
+local function Metrics()
+    local views = ViewList()
+    if not views then return nil end
+    local _, _, vw, vh = RectInPsf(views[1])
+    if not vw or vw <= 0 or not vh or vh <= 0 then return nil end
+    local paged = Paged()
+    local cols = paged and paged.columnsPerRow or 2
+    if type(cols) ~= "number" or cols < 1 then cols = 2 end
+    local cellW = (vw - OVL_COL_GAP * (cols - 1)) / cols
+    local rows = math.floor((vh - OVL_ROW_H) / OVL_ROW_STEP) + 1
+    if rows < 1 then rows = 1 end
+    return cols, cellW, rows
+end
+
+local function ArtCopies()
+    local psf = PlayerSpellsFrame
+    local out = {}
+    if not psf then return out end
+    local function scan(f, d)
+        if d > 5 then return end
+        for _, r in ipairs({ f:GetRegions() }) do
+            local ok, atlas = pcall(r.GetAtlas, r)
+            if ok and type(atlas) == "string" and atlas:find("^spellbook%-Page") then
+                local okv, v = pcall(r.IsVisible, r)
+                if okv and v then
+                    local l, t, w, h = RectInPsf(r)
+                    if l and w > 8 and h > 8 then
+                        out[#out + 1] = { atlas = atlas, l = l, t = t, w = w, h = h }
+                    end
+                end
+            end
+        end
+        for _, ch in ipairs({ f:GetChildren() }) do scan(ch, d + 1) end
+    end
+    scan(psf, 0)
+    return out
+end
+
+local function EnsureOverlay()
+    if ovl then return ovl end
+    local psf = PlayerSpellsFrame
+    if not psf then return nil end
+    if InCombat() then return nil end
+    ovl = CreateFrame("Frame", "DungeonsForeverBookOverlay", psf)
+    ovl:SetAllPoints(psf)
+    ovl:SetFrameStrata(psf:GetFrameStrata())
+    ovl:SetFrameLevel(104)
+    ovlClip = CreateFrame("Frame", nil, ovl)
+    ovlClip:SetFrameLevel(105)
+    ovlClip:SetClipsChildren(true)
+    ovlClip:EnableMouse(true)
+    ovlClip:EnableMouseWheel(true)
+    ovlClip:SetScript("OnMouseWheel", function(_, delta)
+        if not delta then return end
+        if delta > 0 then
+            NB.Page(-1)
+        else
+            NB.Page(1)
+        end
+    end)
+    ovlArt = CreateFrame("Frame", nil, ovlClip)
+    ovlArt:SetFrameLevel(106)
+    listHost = CreateFrame("Frame", nil, ovl)
+    listHost:SetAllPoints(ovl)
+    listHost:SetFrameLevel(120)
+    listHost:EnableMouse(false)
+    ovl:Hide()
+    return ovl
+end
+
+local function ThinItem(f)
+    local function thin(o)
+        if not o or not o.GetObjectType then return end
+        local ok, t = pcall(o.GetObjectType, o)
+        if ok and t == "FontString" then ns.ThinFont(o) end
+    end
+    thin(f.Name)
+    thin(f.SubName)
+    thin(f.RequiredLevel)
+end
+
+local function NewItem()
+    local ok, f = pcall(CreateFrame, "Frame", nil, listHost, "SpellBookItemTemplate")
+    if not ok or not f then
+        ok, f = pcall(CreateFrame, "Button", nil, listHost, "SpellBookItemTemplate")
+    end
+    if not ok or not f then return nil end
+    return f
+end
+
+local function NewHead()
+    local ok, f = pcall(CreateFrame, "Frame", nil, listHost, "SpellBookHeaderTemplate")
+    if not ok or not f then return nil end
+    return f
+end
+
+local function PrebuildPool()
+    if InCombat() or not listHost then return end
+    for i = #itemPool + 1, 40 do
+        local f = NewItem()
+        if not f then break end
+        f:Hide()
+        itemPool[i] = f
+    end
+    for i = #headPool + 1, 12 do
+        local h = NewHead()
+        if not h then break end
+        h:Hide()
+        headPool[i] = h
+    end
+end
+
+local function PackGroups(groups, cols, rows, viewCount)
+    local pages = {}
+    local page, view, row, col
+    local function newPage()
+        page = { views = {} }
+        for i = 1, viewCount do page.views[i] = {} end
+        pages[#pages + 1] = page
+        view, row, col = 1, 0, 0
+    end
+    newPage()
+    local function advance()
+        col = 0
+        row = row + 1
+    end
+    local function nextView()
+        if view < viewCount then
+            view, row, col = view + 1, 0, 0
+            return true
+        end
+        newPage()
+        return false
+    end
+    for _, g in ipairs(groups) do
+        local head = g.header and g.header.text
+        if head then
+            if col > 0 then advance() end
+            while row >= rows do
+                nextView()
+            end
+            local slots = page.views[view]
+            slots[#slots + 1] = { head = head, row = row }
+            advance()
+        end
+        for _, d in ipairs(g.elements or {}) do
+            if col >= cols then advance() end
+            while row >= rows do
+                nextView()
+            end
+            local slots = page.views[view]
+            slots[#slots + 1] = { d = d, row = row, col = col }
+            col = col + 1
+        end
+    end
+    return pages
+end
+
+local function PaintPage()
+    if not (ovl and pageSet) then return end
+    local views = ViewList()
+    if not views then return end
+    local cols, cellW, rows = Metrics()
+    if not cols then return end
+    local page = pageSet[pageNo]
+    local ii, hi = 0, 0
+    for vIdx, v in ipairs(views) do
+        local l, t = RectInPsf(v)
+        if l then
+            local slots = page and page.views[vIdx]
+            for _, s in ipairs(slots or {}) do
+                local top = t + s.row * OVL_ROW_STEP
+                if s.head then
+                    hi = hi + 1
+                    local h = headPool[hi]
+                    if not h then
+                        h = NewHead()
+                        headPool[hi] = h
+                    end
+                    if h then
+                        HeaderInit(h, { text = s.head })
+                        h:ClearAllPoints()
+                        h:SetPoint("TOPLEFT", listHost, "TOPLEFT", l, -top)
+                        h:SetSize(cellW * cols + OVL_COL_GAP * (cols - 1), OVL_ROW_H)
+                        h:Show()
+                    end
+                else
+                    ii = ii + 1
+                    local f = itemPool[ii]
+                    if not f then
+                        f = NewItem()
+                        itemPool[ii] = f
+                    end
+                    if f then
+                        ItemInit(f, s.d)
+                        ThinItem(f)
+                        f:ClearAllPoints()
+                        f:SetPoint("TOPLEFT", listHost, "TOPLEFT", l + s.col * (cellW + OVL_COL_GAP), -top)
+                        f:SetSize(cellW, OVL_ROW_H)
+                        f:Show()
+                    end
+                end
+            end
+        end
+    end
+    for i = ii + 1, #itemPool do itemPool[i]:Hide() end
+    for i = hi + 1, #headPool do headPool[i]:Hide() end
+end
+
+local function PagerSync()
+    local pg = ovlPager
+    if not pg then return end
+    local total = pageSet and #pageSet or 1
+    if total < 1 then total = 1 end
+    ovlPaging = true
+    if pg.SetMaxPages then pcall(pg.SetMaxPages, pg, total) end
+    if pg.SetCurrentPage then pcall(pg.SetCurrentPage, pg, pageNo or 1) end
+    if pg.PageText then pcall(pg.PageText.SetText, pg.PageText, string.format("%d/%d%s", pageNo or 1, total, "页")) end
+    ovlPaging = false
+end
+
+local function SetPage(n)
+    if not pageSet or #pageSet == 0 then return end
+    if n < 1 then n = 1 end
+    if n > #pageSet then n = #pageSet end
+    if n == pageNo then return end
+    pageNo = n
+    PaintPage()
+    PagerSync()
+end
+
+local function EnsurePager()
+    if ovlPager then return ovlPager end
+    if not ovl then return nil end
+    local ok, f = pcall(CreateFrame, "Frame", "DungeonsForeverBookPager", ovl, "PagingControlsHorizontalTemplate")
+    if not ok or not f then return nil end
+    ovlPager = f
+    f:SetSize(114, 32)
+    f:SetFrameLevel(140)
+    f:EnableMouseWheel(false)
+    if f.PageText then pcall(f.PageText.SetFontObject, f.PageText, "SystemFont_Med3") end
+    f.GetPageDelta = function() return 1 end
+    ovl.OnPageChanged = function()
+        if ovlPaging then return end
+        local cur
+        local okc, v = pcall(f.GetCurrentPage, f)
+        if okc and type(v) == "number" then cur = v end
+        if not cur or cur == pageNo then return end
+        if not pageSet or #pageSet == 0 then return end
+        if cur < 1 then cur = 1 end
+        if cur > #pageSet then cur = #pageSet end
+        pageNo = cur
+        PaintPage()
+        PagerSync()
+    end
+    return f
+end
+
+local function LayoutOverlay()
+    local psf = PlayerSpellsFrame
+    if not (psf and ovl) then return false end
+    local views = ViewList()
+    if not views then return false end
+    local minX, minT, maxX, maxB
+    local function absorb(l, t, w, h)
+        if not l then return end
+        if not minX then
+            minX, minT, maxX, maxB = l, t, l + w, t + h
+        else
+            minX = math.min(minX, l)
+            minT = math.min(minT, t)
+            maxX = math.max(maxX, l + w)
+            maxB = math.max(maxB, t + h)
+        end
+    end
+    for _, v in ipairs(views) do
+        absorb(RectInPsf(v))
+    end
+    if not minX then return false end
+    local arts = ArtCopies()
+    for _, it in ipairs(arts) do
+        absorb(it.l, it.t, it.w, it.h)
+    end
+    local tabs = book and book.CategoryTabSystem
+    if tabs then
+        local _, tt, _, th = RectInPsf(tabs)
+        if tt and th then minT = math.max(minT, tt + th + 6) end
+    end
+    local pg = PagerFrame()
+    if pg then
+        absorb(RectInPsf(pg))
+    end
+    local pw, ph = psf:GetWidth(), psf:GetHeight()
+    minX = math.max(0, minX)
+    minT = math.max(0, minT)
+    maxX = math.min(pw, maxX)
+    maxB = math.min(ph, maxB)
+    if maxB - minT < 8 or maxX - minX < 8 then return false end
+    ovlClip:ClearAllPoints()
+    ovlClip:SetPoint("TOPLEFT", ovl, "TOPLEFT", minX, -minT)
+    ovlClip:SetSize(maxX - minX, maxB - minT)
+    ovlArt:ClearAllPoints()
+    ovlArt:SetPoint("TOPLEFT", ovlClip, "TOPLEFT", -minX, minT)
+    ovlArt:SetSize(pw, ph)
+    local used = 0
+    for i = 1, #arts do
+        local it = arts[i]
+        local tex = artPool[i]
+        if not tex then
+            tex = ovlArt:CreateTexture(nil, "BACKGROUND")
+            artPool[i] = tex
+        end
+        local okat = pcall(tex.SetAtlas, tex, it.atlas, true)
+        if okat then
+            tex:ClearAllPoints()
+            tex:SetPoint("TOPLEFT", ovlArt, "TOPLEFT", it.l, -it.t)
+            tex:SetSize(it.w, it.h)
+            tex:Show()
+            used = i
+        else
+            tex:Hide()
+        end
+    end
+    for i = used + 1, #artPool do artPool[i]:Hide() end
+    local pgf = EnsurePager()
+    if pgf and pg then
+        local l, t, w, h = RectInPsf(pg)
+        if l then
+            pgf:ClearAllPoints()
+            pgf:SetPoint("TOPLEFT", ovl, "TOPLEFT", l, -t)
+            pgf:SetSize(w, h)
+            pgf:Show()
+        else
+            pgf:Hide()
+        end
+    end
+    return true
+end
+
+local function HideOverlay()
+    if ovl then ovl:Hide() end
 end
 
 local function LevelText(lv)
@@ -644,26 +1047,67 @@ local function ThinAll()
     pcall(scan, paged, 0)
 end
 
-local function InstallOurs()
-    if DeferInCombat() then return false end
-    local paged = Paged()
-    if not paged then return false end
-    local groups
+local groupCache = {}
+
+local function BuildGroups()
     if activePage == "weapon" then
         if subState == "weapon" then
-            groups = BuildWeaponGroups()
-        else
-            groups = ClassGroups()
+            return BuildWeaponGroups()
         end
+        return ClassGroups()
+    end
+    return BuildSpellGroups()
+end
+
+local function CacheKey()
+    if activePage == "weapon" then
+        return subState == "weapon" and "weapon" or "class"
+    end
+    return "spell"
+end
+
+local function WarmCache()
+    if InCombat() then return end
+    local g = BuildSpellGroups()
+    if g and #g > 0 then groupCache.spell = g end
+    g = ClassGroups()
+    if g and #g > 0 then groupCache["class"] = g end
+    g = BuildWeaponGroups()
+    if g and #g > 0 then groupCache.weapon = g end
+end
+
+local function InstallOurs()
+    if not book then return false end
+    if not BookShown() then
+        if ovl then ovl:Hide() end
+        return false
+    end
+    if not EnsureOverlay() then return false end
+    local key = CacheKey()
+    local groups
+    if InCombat() then
+        groups = groupCache[key]
+        if not groups then groups = BuildGroups() end
     else
-        groups = BuildSpellGroups()
+        groups = BuildGroups()
+        if groups and #groups > 0 then groupCache[key] = groups end
     end
     if not groups or #groups == 0 then groups = EmptyGroup() end
-    paged:SetElementTemplateData(OURS)
-    paged:SetDataProvider(CreateDataProvider(groups), false)
-    ourProvider = paged.dataProvider
-    C_Timer.After(0, ThinAll)
-    C_Timer.After(0.15, ThinAll)
+    local cols, _, rows = Metrics()
+    local views = ViewList()
+    if not cols or not views then
+        HideOverlay()
+        return false
+    end
+    pageSet = PackGroups(groups, cols, rows, #views)
+    pageNo = 1
+    if not LayoutOverlay() then
+        HideOverlay()
+        return false
+    end
+    PaintPage()
+    PagerSync()
+    ovl:Show()
     return true
 end
 
@@ -718,6 +1162,7 @@ local function BuildSubBar()
     local host = box or paged
     subBar = CreateFrame("Frame", nil, host)
     subBar:SetSize(190, 32)
+    subBar:SetFrameLevel(150)
     if box then
         subBar:SetPoint("BOTTOMRIGHT", box, "BOTTOMLEFT", -6, 0)
     else
@@ -745,9 +1190,12 @@ local function BuildSubBar()
 end
 
 local function SyncSubBar(show)
-    if DeferInCombat() then return end
-    local bar = BuildSubBar()
-    if not bar then return end
+    local bar = subBar
+    if not bar then
+        if InCombat() then return end
+        bar = BuildSubBar()
+        if not bar then return end
+    end
     if show then
         bar:Show()
     else
@@ -756,27 +1204,7 @@ local function SyncSubBar(show)
 end
 
 local function RestoreNative()
-    if DeferInCombat() then return end
-    local paged = Paged()
-    if not (paged and nativeTpl) then return end
-    local wasOurs = (ourProvider ~= nil and paged.dataProvider == ourProvider)
-    paged:SetElementTemplateData(nativeTpl)
-    restoring = true
-    if book and book.UpdateDisplayedSpells then
-        pcall(book.UpdateDisplayedSpells, book, true, true)
-    end
-    if wasOurs and paged.dataProvider == ourProvider and book and book.UpdateAllSpellData then
-        pcall(book.UpdateAllSpellData, book, true)
-    end
-    restoring = false
-    ourProvider = nil
-    for _, v in ipairs({ paged.View1, paged.View2 }) do
-        if v then
-            for _, f in ipairs({ v:GetChildren() }) do
-                RestoreFrame(f)
-            end
-        end
-    end
+    HideOverlay()
 end
 
 local function ApplyData()
@@ -785,6 +1213,12 @@ local function ApplyData()
     else
         RestoreNative()
     end
+end
+
+local function SyncLastTab()
+    if not (book and book.GetTab) then return end
+    local ok, id = pcall(book.GetTab, book)
+    if ok and id ~= nil then lastTab = id end
 end
 
 local ShowPage
@@ -860,61 +1294,158 @@ local function StyleOurTab(tb, sel)
     TabLineShow(tb, sel)
 end
 
-local function PaintTabs()
-    if DeferInCombat() then return end
+local function StyleOurTabs()
     if not book then return end
     local shown = activePage ~= nil
     StyleOurTab(tabButton, shown and activePage == "spell")
     StyleOurTab(weaponTabButton, shown and activePage == "weapon")
+end
+
+local function PaintNativeTabs()
+    if not book then return end
+    local shown = activePage ~= nil
     local sys = book.CategoryTabSystem
     for _, tab in ipairs((sys and sys.tabs) or {}) do
-        if not tab.__dfClick then
-            tab.__dfClick = true
-            tab:HookScript("OnClick", function()
-                if activePage then ShowPage(nil) end
-            end)
-        end
         local active = not shown and tab:IsSelected()
         if tab.SquareBackground then tab.SquareBackground:SetShown(not active) end
         if tab.SquareBackgroundActive then tab.SquareBackgroundActive:SetShown(active) end
         if tab.SquareBackgroundActiveGlow then tab.SquareBackgroundActiveGlow:SetShown(active) end
         local ul = TabLine(tab)
         if ul then ul:SetShown(active) end
-        if tab.SetEnabled then tab:SetEnabled(not tab:IsForceDisabled()) end
     end
 end
 
+local function PaintTabs()
+    StyleOurTabs()
+    if InCombat() then return end
+    PaintNativeTabs()
+end
+
 ShowPage = function(key)
-    if DeferInCombat() then return end
     if not book then return end
-    if not nativeTpl then
-        local paged = Paged()
-        if paged then nativeTpl = paged.elementTemplateData end
-    end
-    if not nativeTpl then return end
     if activePage == key then
         if key then ApplyData() end
         return
     end
     activePage = key
+    if key then pageSeq = pageSeq + 1 end
+    if GetTime then openGuard = GetTime() + 1.2 end
     local shown = key ~= nil
-    if book.SearchBox then book.SearchBox:SetShown(not shown) end
-    if book.SettingsDropdown then book.SettingsDropdown:SetShown(not shown) end
-    if book.SearchPreviewContainer then book.SearchPreviewContainer:Hide() end
-    PaintTabs()
+    StyleOurTabs()
     SyncSubBar(key == "weapon")
+    if not InCombat() then
+        if book.SearchBox then pcall(book.SearchBox.SetShown, book.SearchBox, not shown) end
+        if book.SettingsDropdown then book.SettingsDropdown:SetShown(not shown) end
+        if book.SearchPreviewContainer then book.SearchPreviewContainer:Hide() end
+        PaintNativeTabs()
+    end
+    if key and not BookShown() then
+        local psf = PlayerSpellsFrame
+        if psf and not InCombat() then
+            pcall(psf.SetTab, psf, 3)
+            if C_Timer and C_Timer.After then
+                C_Timer.After(0.05, function()
+                    if activePage == key then ApplyData(); SyncLastTab() end
+                end)
+                C_Timer.After(0.3, function()
+                    if activePage == key then ApplyData(); SyncLastTab() end
+                end)
+                C_Timer.After(1.0, function()
+                    if activePage == key then SyncLastTab() end
+                end)
+            end
+        end
+    end
     ApplyData()
+    if not InCombat() then SyncLastTab() end
+    if SyncTabCatcher then SyncTabCatcher() end
     if NB.OnPage then NB.OnPage(activePage) end
 end
 
-local function OnTabClick(key)
-    if InCombatLockdown then
-        local ok, busy = pcall(InCombatLockdown)
-        if ok and busy then
-            print(ns.L["战斗中无法打开训练师"])
-            return
+local function NativeTabClicked()
+    if not activePage then return end
+    local seq = pageSeq
+    local function leave()
+        if not activePage or pageSeq ~= seq then return end
+        ShowPage(nil)
+        SyncLastTab()
+        PaintTabs()
+    end
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0, leave)
+    else
+        leave()
+    end
+end
+
+local function HookNativeTabs()
+    local sys = book and book.CategoryTabSystem
+    for _, t in ipairs((sys and sys.tabs) or {}) do
+        if t and t.HookScript and not t.__dfTabHook then
+            local ok = pcall(t.HookScript, t, "OnClick", NativeTabClicked)
+            if ok then t.__dfTabHook = true end
         end
     end
+end
+
+local function EnsureTabCatcher()
+    if tabCatcher then return tabCatcher end
+    local psf = PlayerSpellsFrame
+    if not psf then return nil end
+    if InCombat() then return nil end
+    tabCatcher = CreateFrame("Button", "DungeonsForeverTabCatcher", psf)
+    tabCatcher:SetFrameLevel(108)
+    tabCatcher:RegisterForClicks("AnyUp")
+    tabCatcher:SetScript("OnClick", function() NativeTabClicked() end)
+    tabCatcher:SetScript("OnEnter", function(self)
+        local t = self.__target
+        local f = t and t.GetScript and t:GetScript("OnEnter")
+        if f then pcall(f, t) end
+    end)
+    tabCatcher:SetScript("OnLeave", function(self)
+        local t = self.__target
+        local f = t and t.GetScript and t:GetScript("OnLeave")
+        if f then pcall(f, t) end
+    end)
+    tabCatcher:Hide()
+    return tabCatcher
+end
+
+SyncTabCatcher = function()
+    local sys = book and book.CategoryTabSystem
+    if not (sys and tabCatcher) then return end
+    if not activePage or not BookShown() then
+        if tabCatcher:IsShown() then tabCatcher:Hide() end
+        return
+    end
+    local target
+    for _, t in ipairs(sys.tabs or {}) do
+        if t and t.IsShown and t:IsShown() and t.IsSelected and t:IsSelected() then
+            target = t
+            break
+        end
+    end
+    if not target then
+        for _, t in ipairs(sys.tabs or {}) do
+            if t and t.IsShown and t:IsShown() and t.IsEnabled and not t:IsEnabled() then
+                target = t
+                break
+            end
+        end
+    end
+    if not target then
+        if tabCatcher:IsShown() then tabCatcher:Hide() end
+        return
+    end
+    if tabCatcher.__target ~= target then
+        tabCatcher.__target = target
+        tabCatcher:ClearAllPoints()
+        tabCatcher:SetAllPoints(target)
+    end
+    if not tabCatcher:IsShown() then tabCatcher:Show() end
+end
+
+local function OnTabClick(key)
     if SOUNDKIT and SOUNDKIT.U_CHAT_SCROLL_BUTTON then
         pcall(PlaySound, SOUNDKIT.U_CHAT_SCROLL_BUTTON)
     end
@@ -987,6 +1518,7 @@ end
 local function AnchorTabs()
     if DeferInCombat() then return end
     if not tabButton or not book then return end
+    HookNativeTabs()
     local host = LastForeignTab()
     local key = host or false
     if tabButton.__anchorHost == key then return end
@@ -1034,16 +1566,7 @@ local function Attach()
     local sb = psf and psf.SpellBookFrame
     if not (sb and sb.CategoryTabSystem and sb.PagedSpellsFrame) then return false end
     if book and tabButton then return true end
-    if psf and psf.HookScript and not psf.__dfThin then
-        psf.__dfThin = true
-        psf:HookScript("OnShow", function()
-            C_Timer.After(0, ThinAll)
-            C_Timer.After(0.1, ThinAll)
-            C_Timer.After(0.3, ThinAll)
-        end)
-    end
     book = sb
-    nativeTpl = sb.PagedSpellsFrame.elementTemplateData
 
     tabButton = CreateFrame("Button", "DungeonsForeverSpellBookTab", sb.CategoryTabSystem,
                             "SpellBookCategoryTabTemplate")
@@ -1096,16 +1619,24 @@ local function Attach()
     local function OnSpellsRefresh()
         if restoring or not book then return end
         local id = book.GetTab and book:GetTab()
+        if id ~= nil and lastTab == nil then
+            lastTab = id
+            return
+        end
         if id ~= lastTab then
+            local now = GetTime and GetTime() or 0
+            if activePage and now <= openGuard then return end
             lastTab = id
             if activePage then ShowPage(nil) end
             return
         end
         if activePage then
             InstallOurs()
+            if SyncTabCatcher then SyncTabCatcher() end
         elseif C_Timer and C_Timer.After then
             C_Timer.After(0, ThinAll)
         end
+        HookNativeTabs()
         FitSearchBox()
     end
 
@@ -1121,19 +1652,52 @@ local function Attach()
         pcall(EventRegistry.RegisterCallback,
             "PlayerSpellsFrame.SpellBookFrame.DisplayedSpellsChanged", DeferRefresh, tabButton)
     end
-    if sb.HookScript then
-        sb:HookScript("OnSizeChanged", function()
-            if DeferInCombat() then return end
-            ReparentTabs()
-            AnchorTabs()
-            FitSearchBox()
-        end)
+    local function SbShown(f)
+        if not (f and f.IsShown) then return false end
+        if f.IsVisible then
+            local ok, v = pcall(f.IsVisible, f)
+            if ok then return v and true or false end
+        end
+        local ok2, v2 = pcall(f.IsShown, f)
+        return (ok2 and v2) and true or false
     end
-    sb:HookScript("OnShow", function()
-        if DeferInCombat() then return end
+
+    local function OnBookShown()
+        if InCombat() then
+            ShowTabs()
+            StyleOurTabs()
+            if C_Timer and C_Timer.After then
+                C_Timer.After(0.05, ShowTabs)
+                C_Timer.After(0.3, ShowTabs)
+                C_Timer.After(0.9, ShowTabs)
+            end
+            if activePage then
+                InstallOurs()
+                if C_Timer and C_Timer.After then
+                    C_Timer.After(0.1, function()
+                        if activePage then InstallOurs() end
+                    end)
+                    C_Timer.After(0.35, function()
+                        if activePage then InstallOurs() end
+                    end)
+                    C_Timer.After(0.9, function()
+                        if activePage then InstallOurs() end
+                    end)
+                end
+            end
+            return
+        end
+        if C_Timer and C_Timer.After then
+            C_Timer.After(0, ThinAll)
+            C_Timer.After(0.1, ThinAll)
+            C_Timer.After(0.3, ThinAll)
+        else
+            ThinAll()
+        end
         if NB.RefreshEnabled then NB.RefreshEnabled() end
         ReparentTabs()
         AnchorTabs()
+        ShowTabs()
         if sb.ResizeSearchBox then pcall(sb.ResizeSearchBox, sb) end
         SyncSubBar(activePage == "weapon")
         if activePage then InstallOurs() end
@@ -1145,17 +1709,109 @@ local function Attach()
                 if NB.RefreshEnabled then NB.RefreshEnabled() end
             end)
         end
-    end)
-    sb:HookScript("OnHide", function()
-        HideTabs()
-    end)
-    local tf = psf.TalentsFrame
-    if tf and tf.HookScript then
-        tf:HookScript("OnShow", function()
-            HideTabs()
-        end)
     end
+
+    local function OnBookHidden()
+        HideTabs()
+        HideOverlay()
+        if subBar then subBar:Hide() end
+        if tabCatcher then tabCatcher:Hide() end
+    end
+
+    local function OnBookResized()
+        if DeferInCombat() then return end
+        ReparentTabs()
+        AnchorTabs()
+        FitSearchBox()
+        if activePage then
+            InstallOurs()
+            if C_Timer and C_Timer.After then
+                C_Timer.After(0.15, function()
+                    if activePage and not InCombat() then InstallOurs() end
+                end)
+                C_Timer.After(0.45, function()
+                    if activePage and not InCombat() then InstallOurs() end
+                end)
+            end
+        end
+    end
+
+    local beatAcc, lastShown, lastW, lastH, lastTal, lastSig = 0, nil, nil, nil, nil, nil
+    local lastPsf = nil
+    local beat = CreateFrame("Frame")
+    beat:RegisterEvent("UI_SCALE_CHANGED")
+    beat:RegisterEvent("DISPLAY_SIZE_CHANGED")
+    beat:SetScript("OnEvent", function()
+        if activePage and not InCombat() then InstallOurs() end
+    end)
+    beat:SetScript("OnUpdate", function(_, elapsed)
+        beatAcc = beatAcc + elapsed
+        if beatAcc < 0.2 then return end
+        beatAcc = 0
+        local psf = PlayerSpellsFrame
+        local psfShown = false
+        if psf then
+            local okp, vp = pcall(psf.IsVisible, psf)
+            psfShown = (okp and vp) and true or false
+        end
+        if psfShown ~= lastPsf then
+            lastPsf = psfShown
+            if psfShown then
+                if not InCombat() then AnchorTabs() end
+                ShowTabs()
+            elseif not InCombat() then
+                HideTabs()
+            end
+        end
+        local shown = SbShown(sb)
+        if shown ~= lastShown then
+            lastShown = shown
+            lastW, lastH, lastSig = nil, nil, nil
+            if shown then OnBookShown() else OnBookHidden() end
+        end
+        if sb.GetTab then
+            local okt, id = pcall(sb.GetTab, sb)
+            if okt and id ~= lastTab then
+                local now = GetTime and GetTime() or 0
+                if not (activePage and now <= openGuard) then
+                    lastTab = id
+                    if activePage then ShowPage(nil) end
+                end
+            end
+        end
+        if activePage and ovl and not ovl:IsVisible() and BookShown() then InstallOurs() end
+        if SyncTabCatcher then SyncTabCatcher() end
+        if tabButton and not tabButton:IsShown() and BookShown() and (ns.SpellEnhOn and ns.SpellEnhOn()) then ShowTabs() end
+        if InCombat() then return end
+        if shown then
+            local w, h = sb:GetWidth(), sb:GetHeight()
+            local views = ViewList()
+            local pw, ph = 0, 0
+            local psf = PlayerSpellsFrame
+            if psf then pw, ph = psf:GetWidth(), psf:GetHeight() end
+            local sig = tostring(w) .. "x" .. tostring(h) .. "@" .. math.floor(pw) .. "x" .. math.floor(ph)
+                .. "#" .. tostring(views and #views or 0)
+            if views and views[1] then
+                local _, _, vw, vh = RectInPsf(views[1])
+                if vw and vh then
+                    sig = sig .. ":" .. math.floor(vw) .. "x" .. math.floor(vh)
+                end
+            end
+            if sig ~= lastSig then
+                lastSig = sig
+                lastW, lastH = w, h
+                OnBookResized()
+            end
+        end
+    end)
     AnchorTabs()
+    if not InCombat() then
+        EnsureOverlay()
+        EnsureTabCatcher()
+        PrebuildPool()
+        EnsurePager()
+        WarmCache()
+    end
     return true
 end
 
@@ -1229,6 +1885,7 @@ end
 local function FlushPending()
     if not pending then return end
     pending = false
+    WarmCache()
     if activePage then InstallOurs() end
     PaintTabs()
     AnchorTabs()
@@ -1249,24 +1906,33 @@ function NB.CurrentPage()
     return activePage
 end
 
+function NB.CacheInfo()
+    local t = {}
+    for _, k in ipairs({ "spell", "class", "weapon" }) do
+        local g = groupCache[k]
+        if g then
+            local n = 0
+            for _, grp in ipairs(g) do n = n + #(grp.elements or {}) end
+            t[k] = n
+        else
+            t[k] = -1
+        end
+    end
+    return t
+end
+
 function NB.ContentBox()
     return PageBox()
 end
 
 function NB.Page(delta)
-    if DeferInCombat() then return end
-    local paged = Paged()
-    local pc = paged and paged.PagingControls
-    if not (pc and activePage) then return end
-    if delta < 0 then
-        pc:PreviousPage()
-    else
-        pc:NextPage()
-    end
+    if not pageSet or (not activePage) then return end
+    SetPage(pageNo + (delta < 0 and -1 or 1))
 end
 
 if ns.SpellTraining then
     ns.SpellTraining.OnDirty = function()
+        WarmCache()
         if activePage then InstallOurs() end
     end
 end

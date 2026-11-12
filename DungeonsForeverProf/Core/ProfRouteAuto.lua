@@ -7,7 +7,7 @@ ns.ProfRouteAuto = RA
 
 local CALLER = "DungeonsForever"
 local CAP = 300
-local DEF_TARGET = 300
+local DEF_TARGET = 285
 local MAX_STALE = 2
 local MAX_PER_RECIPE = 3
 local CACHE_TTL = 600

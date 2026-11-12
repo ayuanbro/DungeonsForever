@@ -67,7 +67,7 @@ function P.Compute(opts)
     opts=opts or {};local data=fishingData(opts);local snap=P.Capture(opts)
     local routes={cookingSteps=opts.cookingGuide or guide}
     local start=max(1,min(300,floor(opts.start or (snap.professions.cooking or {}).cur or 1)))
-    local target=max(start,min(300,floor(opts.target or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300)))
+    local target=max(start,min(300,floor(opts.target or (ns.ProfModule and ns.ProfModule.LV_DEF) or 285)))
     local out={planVersion=2,scheme="fishing",routeMode="fishing",start=start,target=target,steps={},executionSteps={},actions={},
         mats={},fishMaterials={},formulas={},diagnostics={},blockingDiagnostics={},firstAt={},gaps={},
         total=0,matTotal=0,vendorTotal=0,ahTotal=0,formulasTotal=0,formulaAHTotal=0,formulaVendorTotal=0,
