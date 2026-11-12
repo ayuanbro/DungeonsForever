@@ -1345,7 +1345,7 @@ function BuildTipCard()
         { key = "wish",     label = L["心愿标记"] },
         { key = "quest",    label = L["任务来源"] },
         { key = "ilvl",     label = L["物品等级"] },
-        { key = "writNeed", label = L["工匠文书需求"] },
+        { key = "need",     label = L["板条箱/工匠文书"] .. " " .. L["需求"] },
         { key = "price",    label = L["板条箱"] .. " · " .. L["工匠文书"] .. " " .. L["价格"] },
         { key = "matPrice", label = L["配方"] .. " · " .. L["材料"] .. " " .. L["价格"] },
     }

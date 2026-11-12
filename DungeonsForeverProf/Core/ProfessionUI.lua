@@ -1064,6 +1064,7 @@ PD.GR_LOC_X = 88
 PD.GR_ICON_W = 20
 
 PD.ROW_CAP = 300
+PD.RECIPE_CAP = 900
 PD.ROW_POOL_CAP = 32
 PD.TOOL_MAX = 20
 
@@ -1942,7 +1943,8 @@ PD.StealRowFrame = function(idx)
     local vT, vB = v - 40, v + vh + 160
     local cnt, staleJ = 0, nil
     local nCur = PD.curN or 0
-    for j = 1, PD.ROW_CAP do
+    local cap = PD.capNow or PD.ROW_CAP
+    for j = 1, cap do
         if PD.rows[j] then
             cnt = cnt + 1
             if not staleJ and j > nCur then staleJ = j end
@@ -1957,7 +1959,7 @@ PD.StealRowFrame = function(idx)
     end
     if cnt < (PD.ROW_POOL_CAP or 140) then return nil end
     local bestJ, bestD, nilJ
-    for j = 1, PD.ROW_CAP do
+    for j = 1, cap do
         local rr = PD.rows[j]
         if rr then
             local gt = rr.__top
@@ -2179,7 +2181,8 @@ function PD.PaintRows(rows)
     local zc = { 0, 0 }
     local n = #rows
     local truncated = 0
-    if n > PD.ROW_CAP then truncated = n - PD.ROW_CAP; n = PD.ROW_CAP end
+    local cap = PD.capNow or PD.ROW_CAP
+    if n > cap then truncated = n - cap; n = cap end
     local grid = PD.gridSplit and true or false
     local gTop, gBot
     local sideFix = (PD.sideFixed and PD.side) and true or false
@@ -9760,6 +9763,7 @@ end
 
 do
     local writNeedSet
+    local crateNeedSet
 
     local function WritTargets()
         if writNeedSet then return writNeedSet end
@@ -9771,6 +9775,22 @@ do
             end
         end
         return writNeedSet
+    end
+
+    local function CrateMats()
+        if crateNeedSet then return crateNeedSet end
+        crateNeedSet = {}
+        local CD = ns.CratesData
+        for _, c in ipairs((CD and CD.crates) or {}) do
+            if type(c) == "table" and type(c.opts) == "table" then
+                for _, o in ipairs(c.opts) do
+                    if type(o) == "table" and type(o[1]) == "number" then
+                        crateNeedSet[o[1]] = true
+                    end
+                end
+            end
+        end
+        return crateNeedSet
     end
 
     function PD.WritNeedOf(id, title)
@@ -9791,6 +9811,26 @@ do
     function PD.WritNeedLines(id, title)
         if not PD.WritNeedOf(id, title) then return nil end
         return { { "★ " .. L["工匠文书需求"], 1, 0.82, 0.4 } }
+    end
+
+    function PD.CrateNeedOf(id, title)
+        if type(id) ~= "number" then return nil end
+        local set = CrateMats()
+        if set[id] then return id end
+        local e = PD.PatternIndex()[id]
+        if not e then return nil end
+        if id ~= e.pid then
+            local pname = PD.ItemName(e.pid)
+            if not title or not pname or title ~= pname then return nil end
+        end
+        local prod = e.r and e.r[2]
+        if type(prod) == "number" and prod ~= id and set[prod] then return prod end
+        return nil
+    end
+
+    function PD.CrateNeedLines(id, title)
+        if not PD.CrateNeedOf(id, title) then return nil end
+        return { { "★ " .. L["板条箱需求"], 1, 0.82, 0.4 } }
     end
 end
 
@@ -10797,11 +10837,12 @@ function PD.ScanRecipe()
     local fk = PD.EffKeyFilter(d)
 
     local n, maxW = 0, 0
+    local cap = PD.capNow or PD.ROW_CAP
     for _, r in ipairs(d.rows or {}) do
         if (not r.nip) and PD.RowKeyOK(r, fk) then
             if PD.RawHit(r, q) then
                 n = n + 1
-                if n <= PD.ROW_CAP then
+                if n <= cap then
                     local nm = PD.ItemName(r[2])
                     local w = (nm and nm ~= "" and PD.TextW(nm, 13)) or 0
                     local sw = PD.TextW(PD.KitSub(tostring(r[5] or ""), r[6], r[2]), 11) + (r[11] and PD.RECIPE_BADGE_W or 0)
@@ -10836,12 +10877,13 @@ function PD.RowsRecipe(rows)
         return
     end
     if not d then return end
+    local cap = PD.capNow or PD.ROW_CAP
     local realN, maxW = PD.ScanRecipe()
     local list
     if realN then
-        list = PD.RecipeList(math.min(realN, PD.ROW_CAP), PD.searchQ)
+        list = PD.RecipeList(math.min(realN, cap), PD.searchQ)
     else
-        list = PD.SearchFilter(PD.RecipeList())
+        list = PD.SearchFilter(PD.RecipeList(cap))
         realN, maxW = #list, nil
     end
     if PD.recipeSort then
@@ -10873,7 +10915,7 @@ function PD.RowsRecipe(rows)
         return
     end
     local trunc = 0
-    if realN > PD.ROW_CAP then trunc = realN - PD.ROW_CAP end
+    if realN > cap then trunc = realN - cap end
     if realN > 0 then
         rows[#rows + 1] = { kind = "rechead", h = 26, col = 1, noTip = true, noHover = true }
     end
@@ -10882,7 +10924,7 @@ function PD.RowsRecipe(rows)
         PushGap(rows)
         PushText(rows, format(
             L["列表只画前 %d 条，还有 %d 条没显示 —— 用上方分类缩小范围。"],
-            PD.ROW_CAP, trunc), 12, C_GOLD)
+            cap, trunc), 12, C_GOLD)
     end
 end
 
@@ -15997,6 +16039,7 @@ function PD.Render()
     PD.hideDivider = false
     PD.pcSpanAll = false
     PD.secCount = 0
+    PD.capNow = PD.ROW_CAP
     PD.__pendRows = {}
     do
         local pk = tostring(PD.cur) .. "|" .. tostring(PD.tab) .. "|"
@@ -16034,6 +16077,7 @@ function PD.Render()
     elseif PD.tab == "trainer" then
         PD.wantTrainerBoard = true
     elseif PD.tab == "recipe" then
+        PD.capNow = PD.RECIPE_CAP
         tool, handler = PD.RecipeTool(RGet(PD.cur))
         PD.RowsRecipe(rows)
     elseif PD.tab == "crate" or PD.tab == "plunder" or PD.tab == "writ" then
@@ -16179,7 +16223,7 @@ function PD.WarmNames()
     if not (C_Timer and C_Timer.After) then return end
     _warmTok = _warmTok + 1
     local tok = _warmTok
-    local i, n = 0, math.min(#all, PD.ROW_CAP)
+    local i, n = 0, math.min(#all, PD.capNow or PD.ROW_CAP)
     local function feed()
         if tok ~= _warmTok or turboCalculationRunning() then return end
         if DG.stepping then C_Timer.After(0, feed) return end
@@ -16222,7 +16266,7 @@ function PD.RequestRows(rows)
         if type(gi) == "function" then pcall(gi, id) end
         wait[#wait + 1] = id
     end
-    local n = math.min(#rows, PD.ROW_CAP)
+    local n = math.min(#rows, PD.capNow or PD.ROW_CAP)
     for i = 1, n do
         local spec = rows[i]
         if spec.it then want(spec.it[1]) end

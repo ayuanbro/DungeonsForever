@@ -16,10 +16,10 @@ local LOGO = "|TInterface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForeve
 local LOGO_GAP = "|TInterface\\AddOns\\DungeonsForever\\Media\\Brand\\DF_Blank.tga:16:16:0:0:32:32:0:32:0:32|t "
 
 local TIP_VER = 1
-local TIP_KEYS = { "src", "bis", "bisScore", "wish", "quest", "ilvl", "writNeed", "price", "matPrice" }
+local TIP_KEYS = { "src", "bis", "bisScore", "wish", "quest", "ilvl", "need", "price", "matPrice" }
 local TIP_DEF = {
     src = true, bis = false, bisScore = true, wish = false,
-    quest = false, ilvl = true, writNeed = true, price = true, matPrice = true,
+    quest = false, ilvl = true, need = true, price = true, matPrice = true,
 }
 
 local function Cfg()
@@ -35,6 +35,11 @@ local function Cfg()
         t = { ver = TIP_VER }
         ui.tip = t
     end
+    if t.need == nil and (t.crateNeed ~= nil or t.writNeed ~= nil) then
+        t.need = not (t.crateNeed == false or t.writNeed == false)
+    end
+    t.crateNeed = nil
+    t.writNeed = nil
     for _, k in ipairs(TIP_KEYS) do
         if t[k] == nil then t[k] = TIP_DEF[k] end
     end
@@ -311,20 +316,31 @@ local function WritNeedRows(id, title)
     return PM.WritNeedLines(id, title)
 end
 
+local function CrateNeedRows(id, title)
+    local PM = ns.ProfModule
+    if not PM or not PM.CrateNeedLines then return nil end
+    return PM.CrateNeedLines(id, title)
+end
+
 local function ExtraRows(id, title)
     local cfg = Cfg()
     local out
-    if cfg.writNeed then
-        local rows = WritNeedRows(id, title)
+    if cfg.need then
+        local rows = CrateNeedRows(id, title)
         if rows then
-            out = {}
+            out = out or {}
             for i = 1, #rows do out[#out + 1] = rows[i] end
+        end
+        local wrows = WritNeedRows(id, title)
+        if wrows then
+            out = out or {}
+            for i = 1, #wrows do out[#out + 1] = wrows[i] end
         end
     end
     if cfg.price then
         local rows = PriceRows(id)
         if rows then
-            out = {}
+            out = out or {}
             for i = 1, #rows do out[#out + 1] = rows[i] end
         end
     end

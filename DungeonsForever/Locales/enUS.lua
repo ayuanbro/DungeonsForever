@@ -1078,6 +1078,7 @@ L["工具：拾取绑定，无法购买，须自行制作。"] = "Tool: binds on
 L["工匠"] = "Artisan"
 L["工匠文书"] = "Artisan Writs"
 L["工匠文书需求"] = "Artisan writ required"
+L["板条箱需求"] = "Crate material"
 L["工匠文书 %d"] = "Artisan Writs: %d"
 L["工程专精计划"] = "Engineering specialization plan"
 L["工程学"] = "Engineering"
