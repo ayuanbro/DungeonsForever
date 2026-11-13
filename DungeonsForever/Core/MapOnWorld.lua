@@ -16,6 +16,9 @@ local W = {}
 ns.MapWorldModule = W
 
 local pendingMap
+-- 前向声明：W.Hide 在文件后段的 dropdownInit 之前就要用到它，
+-- 原先 local 声明在使用点之后 200 多行，W.Hide 读到的是全局 nil。
+local dropDown
 
 local function inCombat()
     return type(InCombatLockdown) == "function" and InCombatLockdown() and true or false
@@ -2155,8 +2158,6 @@ function W.EntriesIn(mapID)
     end
     return out
 end
-
-local dropDown
 
 local DROP_COL = {
     rec = { 1, 0.82, 0 },
