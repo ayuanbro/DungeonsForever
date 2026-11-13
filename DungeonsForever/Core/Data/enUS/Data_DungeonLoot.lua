@@ -364,6 +364,10 @@ ns.DungeonLoot = {
             { 273030, nil, true },
             { 273097, nil, true },
         } },
+        { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
+            { 287068, nil, true },
+            { 286983, nil, true },
+        } },
     },
     ["blackfathom_deeps"] = {
         { "Ghamoo-ra", "Ghamoo-ra", "", "4887", {
@@ -587,6 +591,13 @@ ns.DungeonLoot = {
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 276160, nil, true },
             { 276158, nil, true },
+            { 286987, nil, true },
+            { 286989, nil, true },
+            { 286988, nil, true },
+            { 286992, nil, true },
+            { 286995, nil, true },
+            { 286994, nil, true },
+            { 286991, nil, true },
         } },
     },
     ["gnomeregan"] = {
@@ -1088,11 +1099,23 @@ ns.DungeonLoot = {
             { 275006, nil, false },
             { 267104, nil, true },
         } },
+        { "Bossman Toof", "Bossman Toof", "", "264773", {
+            { 286429, nil, false },
+            { 286428, nil, false },
+            { 286430, nil, false },
+        } },
         { "Overlord Mugg", "Overlord Mugg", "", "258968", {
             { 275008, nil, false },
             { 275009, nil, false },
             { 275010, nil, false },
+            { 275007, nil, false },
             { 267086, nil, true },
+        } },
+        { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
+            { 287008, nil, true },
+            { 287012, nil, true },
+            { 287013, nil, true },
+            { 287014, nil, true },
         } },
     },
     ["uldaman"] = {
@@ -1125,6 +1148,11 @@ ns.DungeonLoot = {
         } },
         { "Obsidian Sentinel", "Obsidian Sentinel", "", "7023", {
             { 8053, nil, false },
+            { 274430, nil, true },
+            { 274428, nil, true },
+            { 274425, nil, true },
+            { 274485, nil, true },
+            { 251400, nil, true },
         } },
         { "Ancient Stone Keeper", "Ancient Stone Keeper", "", "7206", {
             { 9410, 48, false },

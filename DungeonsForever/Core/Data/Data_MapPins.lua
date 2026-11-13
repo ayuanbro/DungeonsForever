@@ -7,6 +7,7 @@ ns.MapPins = {
         next = { { 64.3, 21.6, 1, nil, nil, 1, 32.6, 33.5 } },
     },
     ["kroldok_stronghold"] = {
+        quest = { { 69.1, 46.8, 94973, 1 }, { 69.1, 46.6, 94980, 1 } },
         entrance = { { 20.4, 80.6, nil, 1 } },
     },
     ["the_drowned_city"] = {

@@ -44,6 +44,7 @@ Core\Data\Data_QuestStartLoc.lua
 Core\Data\Data_QuestEndNpc.lua
 Core\Data\Data_Professions.lua
 Core\Data\Data_Crates.lua
+Core\Data\Data_WritZone.lua
 Core\Data\Data_Plunder.lua
 Core\Data\Data_Supporters.lua
 Core\Data\Data_LootFilter.lua
@@ -87,6 +88,7 @@ Core\LootFilterUI.lua
 Core\RaidUI.lua
 Core\VendorPriceDB.lua
 Core\MainFrame.lua
+Core\UpdatePopup.lua
 Core\QuickBar.lua
 Core\CampWatch.lua
 Core\ZoneHint.lua

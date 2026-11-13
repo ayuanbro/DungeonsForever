@@ -33,6 +33,15 @@ f:SetScript("OnKeyDown", function(self, key)
     if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
     if key == "ESCAPE" and self:IsShown() then
         self:SetPropagateKeyboardInput(false)
+        local up = ns.UpdatePopup
+        if up and up:IsShown() then
+            if ns.UpdatePopupClose then
+                ns.UpdatePopupClose()
+            else
+                up:Hide()
+            end
+            return
+        end
         if not (ns.GearDismissPopups and ns.GearDismissPopups()) then
             self:Hide()
         end
@@ -180,6 +189,14 @@ local AB_DIV_Y = AB_PAD + AB_HDR_H + 10
 local AB_GRID_TOP = AB_DIV_Y + 10
 local AB_GRID_H = AB_CARD_H - AB_GRID_TOP - AB_PAD
 
+local AB_LIFT = 94
+local AB_FOOT_GAP = 12
+local AB_HIS_LINE_GAP = 18
+local AB_HIS_TITLE_GAP = 22
+local AB_HIS_BTN_GAP = 14
+local AB_HIS_BTN_H = 24
+local AB_HIS_BTN_MIN_W = 96
+
 local SUP_MEDAL_RANKS = 3
 local SUP_MEDAL_IND = 30
 local SUP_MEDAL_INSET = 10
@@ -302,24 +319,24 @@ function BuildAbout()
     local icon = left:CreateTexture(nil, "ARTWORK")
     icon:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp")
     icon:SetSize(88, 88)
-    icon:SetPoint("CENTER", left, "CENTER", 0, 146)
+    icon:SetPoint("CENTER", left, "CENTER", 0, 146 + AB_LIFT)
 
     local brand = left:CreateFontString(nil, "OVERLAY")
     brand:SetFont(ns.FONT, 16, "")
     brand:SetText(L["无限副本手册"])
-    brand:SetPoint("CENTER", left, "CENTER", 0, 72)
+    brand:SetPoint("CENTER", left, "CENTER", 0, 72 + AB_LIFT)
     brand:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
 
     local sub = left:CreateFontString(nil, "OVERLAY")
     sub:SetFont(ns.FONT, 14, "")
     sub:SetText("DungeonsForever" .. (DF_VERSION and (" · v" .. DF_VERSION) or ""))
-    sub:SetPoint("CENTER", left, "CENTER", 0, 46)
+    sub:SetPoint("CENTER", left, "CENTER", 0, 46 + AB_LIFT)
     sub:SetTextColor(0.55, 0.62, 0.70)
 
     local studio = left:CreateFontString(nil, "OVERLAY")
     studio:SetFont(ns.FONT, 14, "")
     studio:SetText(L["黑科研研究所"])
-    studio:SetPoint("CENTER", left, "CENTER", 0, 20)
+    studio:SetPoint("CENTER", left, "CENTER", 0, 20 + AB_LIFT)
     studio:SetTextColor(0.55, 0.62, 0.70)
 
     local QQ_NUM = "728916609"
@@ -439,7 +456,7 @@ function BuildAbout()
     end
 
     local lines = {}
-    local ly = -8
+    local ly = -8 + AB_LIFT
     for i = 1, #rows do
         local row = rows[i]
         local ln = left:CreateFontString(nil, "OVERLAY")
@@ -500,7 +517,47 @@ function BuildAbout()
     foot:SetWidth(AB_INNER_W)
     foot:SetText(L["如遇到 bug 或数据错误，请到 QQ 群内反馈，谢谢。"])
     foot:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
-    foot:SetPoint("BOTTOM", left, "BOTTOM", 0, 22)
+    local lastLn = lines[#lines] and lines[#lines].fs
+    if lastLn then
+        foot:SetPoint("TOP", lastLn, "BOTTOM", 0, -AB_FOOT_GAP)
+    else
+        foot:SetPoint("BOTTOM", left, "BOTTOM", 0, 118)
+    end
+
+    local histLine = left:CreateTexture(nil, "ARTWORK")
+    histLine:SetTexture("Interface\\Buttons\\WHITE8x8")
+    histLine:SetHeight(1)
+    local hlv = ns.hui.layer.L3
+    histLine:SetVertexColor(hlv[1], hlv[2], hlv[3], 1)
+    histLine:SetPoint("TOPLEFT", foot, "BOTTOMLEFT", -AB_PAD, -AB_HIS_LINE_GAP)
+    histLine:SetPoint("TOPRIGHT", foot, "BOTTOMRIGHT", AB_PAD, -AB_HIS_LINE_GAP)
+
+    local histTitle = left:CreateFontString(nil, "OVERLAY")
+    histTitle:SetFont(ns.FONT, 14, "")
+    histTitle:SetText(L["更新记录"])
+    histTitle:SetPoint("TOP", histLine, "BOTTOM", 0, -AB_HIS_TITLE_GAP)
+    histTitle:SetTextColor(0.80, 0.82, 0.86)
+
+    local histBtn = ns.CreateButton(left)
+    histBtn:SetHeight(AB_HIS_BTN_H)
+    histBtn:SetPoint("TOP", histTitle, "BOTTOM", 0, -AB_HIS_BTN_GAP)
+    histBtn:SetFrameLevel(left:GetFrameLevel() + 2)
+    histBtn:SetHitRectInsets(-2, -2, -2, -2)
+    histBtn:SetPushedTextOffset(0, 0)
+    histBtn:SetText("v" .. (DF_VERSION or ""))
+    local histText = histBtn:GetFontString()
+    local histW = 0
+    if histText then
+        histText:SetFont(ns.FONT, 14, "")
+        local okw, vw = pcall(histText.GetStringWidth, histText)
+        if okw and type(vw) == "number" and vw > 0 then histW = vw end
+    end
+    histBtn:SetWidth(math.max(AB_HIS_BTN_MIN_W, math.floor(histW + 18)))
+    histBtn:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        if ns.ShowUpdatePopup then ns.ShowUpdatePopup() end
+    end)
+    if histBtn.SetCursor then histBtn:SetCursor("Interface/Cursor/Point") end
 
     local card = CreateFrame("Frame", nil, about, "BackdropTemplate")
     card:SetSize(AB_CARD_W, AB_CARD_H)
@@ -657,6 +714,8 @@ function BuildAbout()
         ns.hui.PaintSolidFill(thumb.__fill, thumb.__hover and ns.hui.layer.L5 or ns.hui.layer.L4)
         local d2 = ns.hui.layer.DIV
         div:SetVertexColor(d2[1], d2[2], d2[3], 1)
+        local h2 = ns.hui.layer.L3
+        histLine:SetVertexColor(h2[1], h2[2], h2[3], 1)
     end)
 
     local donateShade
@@ -1345,7 +1404,7 @@ function BuildTipCard()
         { key = "wish",     label = L["心愿标记"] },
         { key = "quest",    label = L["任务来源"] },
         { key = "ilvl",     label = L["物品等级"] },
-        { key = "need",     label = L["板条箱/工匠文书"] .. " " .. L["需求"] },
+        { key = "need",     label = L["材料用处"] },
         { key = "price",    label = L["板条箱"] .. " · " .. L["工匠文书"] .. " " .. L["价格"] },
         { key = "matPrice", label = L["配方"] .. " · " .. L["材料"] .. " " .. L["价格"] },
     }
@@ -1442,6 +1501,31 @@ function BuildTipCard()
     end)
 end
 ns.BuildTipCard = BuildTipCard
+
+function ns.OpenTipSettings()
+    if not f:IsShown() then ns.Open() else f:Raise() end
+    if not settingsPop then return end
+    if about then about:Hide() end
+    SyncAboutGlyph()
+    if ns.LootFilterUI and ns.LootFilterUI.CloseConfig then ns.LootFilterUI:CloseConfig() end
+    if ns.CloseExploreMapSettings then ns.CloseExploreMapSettings() end
+    if ns.CloseQuestPinSettings then ns.CloseQuestPinSettings() end
+    if ns.CloseBisSettings then ns.CloseBisSettings() end
+    if ns.QuickBar then ns.QuickBar:SyncSettings() end
+    BuildTipCard()
+    BuildAppearanceCard()
+    BuildEnhCard()
+    settingsPop:Show()
+    SyncSettingsGlyph()
+    if tipCard and ns.TipLines and ns.TipLines.ShowPreview then
+        tipPreviewOn = true
+        PaintTipPreview(true)
+        if not ns.TipLines.ShowPreview(tipCard) then
+            tipPreviewOn = false
+            PaintTipPreview(false)
+        end
+    end
+end
 
 function ns.LayoutSettingsStack()
     if tipCard then

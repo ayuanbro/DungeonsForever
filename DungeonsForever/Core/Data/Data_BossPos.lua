@@ -6,6 +6,8 @@ ns.BossPos = {
         ["Twilight Commander Zarmok"] = { { 39.1, 69.4 } },
         ["Nar'gurk"] = { { 34.7, 50.3 } },
         ["Overlord Mugg"] = { { 71, 14.3 } },
+        ["War Handler Ashka"] = { { 60.1, 50.1 } },
+        ["Bossman Toof"] = { { 62.7, 39.1 } },
     },
     ["the_drowned_city"] = {
         ["Zul'Alai"] = { { 72.7, 51.6 } },
@@ -104,7 +106,7 @@ ns.BossPos = {
         ["Earthcaller Halmgar"] = { { 49.4, 47.1 } },
         ["Overlord Ramtusk"] = { { 56.9, 29.8 } },
         ["Razorfen Spearhide"] = { { 53.4, 35.5 } },
-        ["Roogug"] = { { 64.8, 42.1 } },
+        ["Roogug"] = { { 44.1, 58.5 } },
     },
     ["hall_of_thanes"] = {
         ["Durgen Dirgehammer"] = { { 50.5, 23.1 } },

@@ -322,6 +322,40 @@ local function CrateNeedRows(id, title)
     return PM.CrateNeedLines(id, title)
 end
 
+local dmTierIdx
+
+local function DarkmoonTiers()
+    if dmTierIdx then return dmTierIdx end
+    local DM = ns.Darkmoon
+    if type(DM) ~= "table" or type(DM.LINES) ~= "table" then return nil end
+    local idx = {}
+    for _, ln in ipairs(DM.LINES) do
+        if type(ln) == "table" then
+            local mats = ln.mats
+            if type(mats) == "table" then
+                for t = 1, #mats do
+                    local mid = mats[t]
+                    if type(mid) == "number" and idx[mid] == nil then idx[mid] = t end
+                end
+            end
+            local alt = ln.alt
+            if type(alt) == "table" and type(alt.id) == "number" and type(alt.t) == "number" and idx[alt.id] == nil then
+                idx[alt.id] = alt.t
+            end
+        end
+    end
+    dmTierIdx = idx
+    return idx
+end
+
+local function DarkmoonNeedRows(id)
+    local idx = DarkmoonTiers()
+    local tier = idx and idx[id]
+    if not tier then return nil end
+    return { { L["需求"] .. ": " .. L["暗月马戏团"] .. " | " .. format(L["档次 %d"], tier), 1, 0.82, 0.4 } }
+end
+TL.DarkmoonNeedRows = DarkmoonNeedRows
+
 local function ExtraRows(id, title)
     local cfg = Cfg()
     local out
@@ -335,6 +369,11 @@ local function ExtraRows(id, title)
         if wrows then
             out = out or {}
             for i = 1, #wrows do out[#out + 1] = wrows[i] end
+        end
+        local drows = DarkmoonNeedRows(id)
+        if drows then
+            out = out or {}
+            for i = 1, #drows do out[#out + 1] = drows[i] end
         end
     end
     if cfg.price then

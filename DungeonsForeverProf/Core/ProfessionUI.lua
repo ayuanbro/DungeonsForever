@@ -9793,6 +9793,48 @@ do
         return crateNeedSet
     end
 
+    local writZoneIdx, zoneNames
+
+    local function WritZones()
+        if writZoneIdx then return writZoneIdx end
+        writZoneIdx = {}
+        local Z = ns.WritZone
+        local CD = ns.CratesData
+        if type(Z) == "table" then
+            for _, w in ipairs((CD and CD.writs) or {}) do
+                if type(w) == "table" and type(w.target) == "number" then
+                    local z = w.item and Z[w.item]
+                    if type(z) == "number" and not writZoneIdx[w.target] then
+                        writZoneIdx[w.target] = z
+                    end
+                end
+            end
+        end
+        return writZoneIdx
+    end
+
+    function PD.WritZoneOf(targetId)
+        if type(targetId) ~= "number" then return nil end
+        return WritZones()[targetId]
+    end
+
+    function PD.ZoneNameOf(zone)
+        if type(zone) ~= "number" then return nil end
+        zoneNames = zoneNames or {}
+        local nm = zoneNames[zone]
+        if nm == nil then
+            local mi = C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(zone)
+            if type(mi) == "table" and type(mi.name) == "string" and mi.name ~= "" then
+                nm = mi.name
+            else
+                nm = false
+            end
+            zoneNames[zone] = nm
+        end
+        if nm == false then return nil end
+        return nm
+    end
+
     function PD.WritNeedOf(id, title)
         if type(id) ~= "number" then return nil end
         local set = WritTargets()
@@ -9809,8 +9851,12 @@ do
     end
 
     function PD.WritNeedLines(id, title)
-        if not PD.WritNeedOf(id, title) then return nil end
-        return { { "★ " .. L["工匠文书需求"], 1, 0.82, 0.4 } }
+        local tid = PD.WritNeedOf(id, title)
+        if not tid then return nil end
+        local txt = L["需求"] .. ": " .. L["工匠文书"]
+        local nm = PD.ZoneNameOf(PD.WritZoneOf(tid))
+        if nm then txt = txt .. " | " .. nm end
+        return { { txt, 1, 0.82, 0.4 } }
     end
 
     function PD.CrateNeedOf(id, title)
@@ -9830,7 +9876,7 @@ do
 
     function PD.CrateNeedLines(id, title)
         if not PD.CrateNeedOf(id, title) then return nil end
-        return { { "★ " .. L["板条箱需求"], 1, 0.82, 0.4 } }
+        return { { L["需求"] .. ": " .. L["板条箱"], 1, 0.82, 0.4 } }
     end
 end
 
@@ -17337,6 +17383,26 @@ do
         return rows
     end
 
+    local prodRecipeCache
+    local function ProductRecipe(id)
+        if type(id) ~= "number" then return nil end
+        if prodRecipeCache == nil then
+            prodRecipeCache = {}
+            local ok, idx = pcall(PD.PatternIndex)
+            if ok and type(idx) == "table" then
+                for pid, e in pairs(idx) do
+                    if type(e) == "table" and e.pid == pid and type(e.r) == "table" then
+                        local prod = e.r[2]
+                        if type(prod) == "number" and prodRecipeCache[prod] == nil then
+                            prodRecipeCache[prod] = e.r
+                        end
+                    end
+                end
+            end
+        end
+        return prodRecipeCache[id]
+    end
+
     function PD.WritTipLines(id)
         local w = PD.WritOf(id)
         if not w then return nil end
@@ -17346,6 +17412,7 @@ do
         local craftCost
         local ci = CraftAllMap()[w.target]
         local rec = ci and ci.rec or nil
+        if not rec then rec = ProductRecipe(w.target) end
         if rec then
             local sum, all = 0, true
             for _, m in ipairs(rec[12] or {}) do

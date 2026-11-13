@@ -273,6 +273,7 @@ ns.BossModelDisplay = {
     },
     ["kroldok_stronghold"] = {
         ["Nar'gurk"] = 141215,
+        ["Bossman Toof"] = 14424,
         ["Overlord Mugg"] = 141218,
         ["Slavecrusher Grox"] = 141217,
         ["Twilight Commander Zarmok"] = 141219,
