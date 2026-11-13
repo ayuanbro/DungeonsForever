@@ -1142,24 +1142,6 @@ local function TalentIcon()
     return TALENT_ICON
 end
 
-local function OpenTalentPage()
-    local psf = _G.PlayerSpellsFrame
-    if type(psf) == "table" and type(psf.SetTab) == "function" then
-        if psf.IsShown and psf:IsShown() then
-            pcall(psf.SetTab, psf, 2)
-            return
-        end
-    end
-    if type(_G.TogglePlayerSpellsFrame) == "function" then
-        pcall(_G.TogglePlayerSpellsFrame)
-        if type(psf) == "table" and type(psf.SetTab) == "function" then
-            pcall(psf.SetTab, psf, 2)
-        end
-        return
-    end
-    if type(_G.ToggleTalentFrame) == "function" then pcall(_G.ToggleTalentFrame) end
-end
-
 local function PTalent()
     local c = CFG()
     if c.talent == false then return nil end
@@ -1183,7 +1165,6 @@ local function PTalent()
                 desc = L["在天赋界面把点数用掉，角色会更强"],
                 icon = TalentIcon(),
                 jumpTip = L["点击打开天赋界面"],
-                jump = function() OpenTalentPage() end,
             },
         },
     }

@@ -1513,6 +1513,7 @@ function PD.Row(i)
     r.blk = {}
     r.a = MakeFS(r, 13, C_TEXT, "LEFT")
     r.b = MakeFS(r, 11, C_GREY, "LEFT")
+    r.b2 = MakeFS(r, 11, C_GREY, "LEFT")
     r.c = MakeFS(r, 12, C_GOLD, "RIGHT")
     r.c2 = MakeFS(r, 12, C_GOLD, "RIGHT")
     r.d = MakeFS(r, 11, C_GREY, "RIGHT")
@@ -1569,7 +1570,7 @@ function PD.Row(i)
     r.__cardTx:SetText("")
     r.__cardTx:SetWordWrap(false)
     r.__cardTx:Hide()
-    for _, f in ipairs({ r.a, r.b, r.c, r.c2, r.d, r.e, r.f }) do f:SetWordWrap(false) end
+    for _, f in ipairs({ r.a, r.b, r.b2, r.c, r.c2, r.d, r.e, r.f }) do f:SetWordWrap(false) end
     if ns.hui and ns.hui.MakeSolidChip then
         r.tagChip = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 1, ns.hui.ChipH(13))
         r.tagFs = r.tagChip.t
@@ -2491,6 +2492,7 @@ function PD.BindRow(r, spec, h)
     r.__tipTitle = spec.tipTitle
     r.__tipExtra = spec.tipExtra
     r.__named = false
+    if r.b2 then r.b2:SetText(""); r.b2:Hide() end
     r.h1:Hide(); r.h2:Hide(); r.h3:Hide(); r.h4:Hide(); r.h5:Hide(); r.h6:Hide()
     if r.__toolBadge then r.__toolBadge:Hide() end
     if r.__roleBadge then r.__roleBadge:Hide() end
@@ -9763,6 +9765,7 @@ end
 
 do
     local writNeedSet
+    local writItemSet
     local crateNeedSet
 
     local function WritTargets()
@@ -9775,6 +9778,18 @@ do
             end
         end
         return writNeedSet
+    end
+
+    local function WritItems()
+        if writItemSet then return writItemSet end
+        writItemSet = {}
+        local CD = ns.CratesData
+        for _, w in ipairs((CD and CD.writs) or {}) do
+            if type(w) == "table" and type(w.item) == "number" and type(w.target) == "number" then
+                writItemSet[w.item] = w.target
+            end
+        end
+        return writItemSet
     end
 
     local function CrateMats()
@@ -9838,7 +9853,9 @@ do
     function PD.WritNeedOf(id, title)
         if type(id) ~= "number" then return nil end
         local set = WritTargets()
-        if set[id] then return id end
+        if set[id] then return id, false end
+        local wi = WritItems()[id]
+        if wi then return wi, true end
         local e = PD.PatternIndex()[id]
         if not e then return nil end
         if id ~= e.pid then
@@ -9846,15 +9863,19 @@ do
             if not title or not pname or title ~= pname then return nil end
         end
         local prod = e.r and e.r[2]
-        if type(prod) == "number" and prod ~= id and set[prod] then return prod end
+        if type(prod) == "number" and prod ~= id and set[prod] then return prod, false end
         return nil
     end
 
     function PD.WritNeedLines(id, title)
-        local tid = PD.WritNeedOf(id, title)
+        local tid, isItem = PD.WritNeedOf(id, title)
         if not tid then return nil end
-        local txt = L["需求"] .. ": " .. L["工匠文书"]
         local nm = PD.ZoneNameOf(PD.WritZoneOf(tid))
+        if isItem then
+            if not nm then return nil end
+            return { { L["上交地点"] .. ": " .. nm, 1, 0.82, 0.4 } }
+        end
+        local txt = L["需求"] .. ": " .. L["工匠文书"]
         if nm then txt = txt .. " | " .. nm end
         return { { txt, 1, 0.82, 0.4 } }
     end
@@ -15241,14 +15262,46 @@ function PD.CrateColumns(writ)
     PD.splitRW = avail - PD.splitLW
     return cols
 end
-function PD.CrateRowHeight(text, cols)
+function PD.ShortItemName(name)
+    if type(name) ~= "string" or name == "" then return name end
+    local i, n = 1, #name
+    while i <= n do
+        local c = string.byte(name, i)
+        if c == 0x3A then
+            local s = string.sub(name, i + 1)
+            return (s ~= "") and s or name
+        end
+        if c == 0xEF then
+            local b2, b3 = string.byte(name, i + 1, i + 2)
+            if b2 == 0xBC and b3 == 0x9A then
+                local s = string.sub(name, i + 3)
+                return (s ~= "") and s or name
+            end
+        end
+        if c < 0x80 then
+            i = i + 1
+        elseif c >= 0xF0 then
+            i = i + 4
+        elseif c >= 0xE0 then
+            i = i + 3
+        elseif c >= 0xC0 then
+            i = i + 2
+        else
+            return name
+        end
+    end
+    return name
+end
+function PD.CrateRowHeight(text, cols, extraSub)
     local fs = PD.crateMeasure
     fs:SetFont(ns.FONT, 13, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
     fs:SetWidth(math.max(1, PD.splitLW - cols.nameR - 32))
-    fs:SetWordWrap(true)
+    fs:SetWordWrap(false)
     fs:SetNonSpaceWrap(true)
     fs:SetText(text)
-    return math.max(44, math.ceil(fs:GetStringHeight() or 0) + 24)
+    local h = math.max(44, math.ceil(fs:GetStringHeight() or 0) + 24)
+    if extraSub then h = math.max(56, h + 16) end
+    return h
 end
 function PD.PaintCrateColumns(r, spec, h, padL)
     local head = spec.kind == "colhead"
@@ -15261,17 +15314,43 @@ function PD.PaintCrateColumns(r, spec, h, padL)
     end
     local nameW = math.max(0, (r:GetWidth() or 0) - spec.priceCols.nameR - (padL or 6))
     r.a:SetWidth(nameW)
-    r.a:SetWordWrap(not head)
+    r.a:SetWordWrap(false)
+    local _, afs = r.a:GetFont()
+    r.a:SetText(PD.Fit(r.a:GetText() or "", afs or 13, nameW))
     r.b:SetWidth(nameW)
     if not head then
+        local topPad = 4
+        local gapAB = 2
+        local gapB2 = 2
+        r.b:SetFont(ns.FONT, 11, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+        local b2 = r.b2
+        if spec.sub2 then
+            b2:SetFont(ns.FONT, 11, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+            b2:SetText(spec.sub2)
+            b2:SetTextColor(Unpack(C_GREY))
+            b2:SetWidth(nameW)
+            b2:SetHeight(math.max(1, b2:GetStringHeight() or 0))
+            b2:Show()
+            local nameH = math.max(1, r.a:GetStringHeight() or 0)
+            local subH = math.max(1, r.b:GetStringHeight() or 0)
+            local sub2H = math.max(1, b2:GetStringHeight() or 0)
+            gapAB = 4
+            gapB2 = 3
+            local rowH = r:GetHeight() or h or 0
+            local total = nameH + gapAB + subH + gapB2 + sub2H
+            topPad = math.floor((rowH - total) / 2 + 0.5)
+            if topPad < 4 then topPad = 4 end
+        else
+            b2:SetText("")
+            b2:Hide()
+        end
         r.a:ClearAllPoints()
-        r.a:SetPoint("TOPLEFT", r, "TOPLEFT", padL or 6, -4)
+        r.a:SetPoint("TOPLEFT", r, "TOPLEFT", padL or 6, -topPad)
         r.a:SetHeight(math.max(1, r.a:GetStringHeight() or 0))
         r.a:SetNonSpaceWrap(true)
         r.a:SetJustifyV("TOP")
-        r.b:SetFont(ns.FONT, 11, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
         r.b:ClearAllPoints()
-        r.b:SetPoint("TOPLEFT", r.a, "BOTTOMLEFT", 0, -2)
+        r.b:SetPoint("TOPLEFT", r.a, "BOTTOMLEFT", 0, -gapAB)
         if spec.tag and r.tagChip:IsShown() then
             local chipW = r.tagChip:GetWidth() or 0
             local chipX = math.max(0, nameW - chipW)
@@ -15282,6 +15361,11 @@ function PD.PaintCrateColumns(r, spec, h, padL)
             r.tagChip:ClearAllPoints()
             r.tagChip:SetPoint("LEFT", r.b, "LEFT", chipX, 0)
             r.b:SetWidth(nameW)
+        end
+        if spec.sub2 then
+            b2:ClearAllPoints()
+            b2:SetPoint("TOPLEFT", r.b, "BOTTOMLEFT", 0, -gapB2)
+            b2:SetWidth(nameW)
         end
     end
     r.b:SetWordWrap(false)
@@ -15438,9 +15522,9 @@ function PD.CrateRows(rows)
         local c = list[i]
         local name = PD.ItemName(c.id)
         rows[#rows + 1] = {
-            kind = "row", col = 1, h = PD.CrateRowHeight(name, cols), priceCols = cols,
+            kind = "row", col = 1, h = PD.CrateRowHeight(PD.ShortItemName(name), cols), priceCols = cols,
             it = { c.id }, qItem = c.id,
-            text = name,
+            text = PD.ShortItemName(name),
             sub = CRATE_TIERS[c.tier] or "?",
             right = bests[i] and RA.MoneyStr(bests[i]) or "",
             rightOwn = owns[i] and RA.MoneyStr(owns[i]) or "",
@@ -15804,11 +15888,14 @@ function PD.WritRows(rows)
         local craft = craftMap[w.target]
         local tag = craft and WritBadge(craft, learned) or nil
         local name = PD.ItemName(wid)
+        local disp = PD.ShortItemName(name)
+        local zone = PD.ZoneNameOf(PD.WritZoneOf(w.target))
         rows[#rows + 1] = {
-            kind = "row", col = 1, h = PD.CrateRowHeight(name, cols), priceCols = cols,
+            kind = "row", col = 1, h = PD.CrateRowHeight(disp, cols, zone ~= nil), priceCols = cols,
             it = { wid }, qItem = wid,
-            text = name,
+            text = disp,
             sub = format(L["声望 +%d"], w.rep or 0),
+            sub2 = zone and format(L["地点: %s"], zone) or nil,
             tag = tag,
             right = priced[i] and RA.MoneyStr(priced[i]) or "",
             right2 = craftT[i] and RA.MoneyStr(craftT[i]) or "",

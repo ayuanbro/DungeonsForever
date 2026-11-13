@@ -2103,7 +2103,7 @@ if type(hooksecurefunc) == "function" then
                         end,
                     }
                 end
-                ns.hui.ShowMenu(items, { owner = WorldMapFrame or UIParent, anchor = WorldMapFrame or UIParent })
+                ns.hui.ShowMenu(items, { owner = UIParent, anchor = UIParent })
             end
             return
         end

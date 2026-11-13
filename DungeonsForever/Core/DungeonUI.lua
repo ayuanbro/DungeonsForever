@@ -512,6 +512,25 @@ function DG.GroupOf(d, lv)
     return "now"
 end
 
+local function questDiffColor(qlv, lv)
+    local ok, c = pcall(GetQuestDifficultyColor, qlv)
+    if ok and type(c) == "table" and c.r then return c.r, c.g, c.b end
+    local dlt = qlv - lv
+    if dlt >= 3 then return 1, 0.3, 0.25 end
+    if dlt >= -2 then return 1, 0.82, 0 end
+    if dlt >= -5 then return 0.25, 0.78, 0.27 end
+    return 0.6, 0.6, 0.6
+end
+
+function DG.DiffColor(d, lv)
+    local lo, hi = d and d.levelMin, d and d.levelMax
+    if type(lo) ~= "number" or lo <= 0 then return nil end
+    lv = lv or 0
+    if lv < lo then return questDiffColor(lo, lv) end
+    if hi and lv > hi then return questDiffColor(hi, lv) end
+    return 0.25, 0.78, 0.27
+end
+
 function DG.NameHit(d, q)
     if q == "" then return true end
     if d.name and string.find(string.lower(d.name), q, 1, true) then return true end
@@ -8041,11 +8060,11 @@ function DG.MarkEntrance(dungeonID)
     end
 end
 
-function DG.ShowEntranceTip(owner)
+function DG.ShowEntranceTip(owner, dungeonID)
     if not GameTooltip then return end
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
     GameTooltip:AddLine(L["点击：在地图上标记副本入口"], 1, 0.82, 0)
-    local d = U.dungeonDetailCur
+    local d = dungeonID and { id = dungeonID } or U.dungeonDetailCur
     local loc = d and ns.DungeonEntry and ns.DungeonEntry[d.id]
     if loc then
         local route = d and ns.DungeonEntryRoute and ns.DungeonEntryRoute[d.id]

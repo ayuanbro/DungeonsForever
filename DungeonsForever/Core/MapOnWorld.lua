@@ -2158,12 +2158,6 @@ end
 
 local dropDown
 
-local DROP_COL = {
-    rec = { 1, 0.82, 0 },
-    now = { 0.74, 0.80, 0.90 },
-    up = { 0.74, 0.72, 0.68 },
-}
-
 local function dropHex(c)
     return string.format("%02x%02x%02x",
         math.floor(c[1] * 255 + 0.5),
@@ -2174,11 +2168,14 @@ end
 local function dropName(d)
     local full = detailOf(d.id) or d
     local dg = ns.DungeonDG
-    local lv = (type(UnitLevel) == "function") and (UnitLevel("player") or 0) or 0
-    local g = (dg and dg.GroupOf and full.levelMin) and dg.GroupOf(full, lv) or nil
-    local c = g and DROP_COL[g]
-    if not (c and d.name) then return d.name end
-    return "|cff" .. dropHex(c) .. d.name .. "|r"
+    if d.name and dg and dg.DiffColor and full then
+        local lv = (type(UnitLevel) == "function") and (UnitLevel("player") or 0) or 0
+        local r, g, b = dg.DiffColor(full, lv)
+        if r then
+            return "|cff" .. dropHex({ r, g, b }) .. d.name .. "|r"
+        end
+    end
+    return d.name
 end
 
 local function dropdownInit(_, level)

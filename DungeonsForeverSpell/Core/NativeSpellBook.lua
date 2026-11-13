@@ -537,14 +537,16 @@ local function RectInPsf(f)
     return (l - pl) * sc, (pt - t) * sc, w * sc, h * sc
 end
 
-local function ViewList()
+local function ViewList(allowHidden)
     local paged = Paged()
     if not paged then return nil end
     local v1, v2 = paged.View1, paged.View2
     if not v1 and paged.ViewFrames then v1, v2 = paged.ViewFrames[1], paged.ViewFrames[2] end
     if not v1 then return nil end
-    local okv, vis = pcall(v1.IsVisible, v1)
-    if okv and not vis then return nil end
+    if not allowHidden then
+        local okv, vis = pcall(v1.IsVisible, v1)
+        if okv and not vis then return nil end
+    end
     local list = { v1 }
     if v2 then
         local ok, sh = pcall(v2.IsShown, v2)
@@ -555,7 +557,7 @@ local function ViewList()
         if psf then pw = psf:GetWidth() or 0 end
         local apart = (l1 and l2 and w1 and w1 > 0) and (math.abs(l2 - l1) >= w1 * 0.5)
         local fits = (l2 and w2 and pw > 0) and (l2 + w2 <= pw + 4)
-        if ok and sh and apart and fits then list[2] = v2 end
+        if (ok and sh or allowHidden) and apart and fits then list[2] = v2 end
     end
     return list
 end
@@ -574,8 +576,8 @@ local function PagerFrame()
     return nil
 end
 
-local function Metrics()
-    local views = ViewList()
+local function Metrics(allowHidden)
+    local views = ViewList(allowHidden)
     if not views then return nil end
     local _, _, vw, vh = RectInPsf(views[1])
     if not vw or vw <= 0 or not vh or vh <= 0 then return nil end
@@ -734,9 +736,9 @@ end
 
 local function PaintPage()
     if not (ovl and pageSet) then return end
-    local views = ViewList()
+    local views = ViewList(true)
     if not views then return end
-    local cols, cellW, rows = Metrics()
+    local cols, cellW, rows = Metrics(true)
     if not cols then return end
     local page = pageSet[pageNo]
     local ii, hi = 0, 0
@@ -816,6 +818,15 @@ local function EnsurePager()
     f:EnableMouseWheel(false)
     if f.PageText then pcall(f.PageText.SetFontObject, f.PageText, "SystemFont_Med3") end
     f.GetPageDelta = function() return 1 end
+    local function WirePageButton(btn, delta)
+        if not (btn and btn.SetScript) then return end
+        pcall(btn.SetScript, btn, "OnClick", function()
+            if not pageSet or #pageSet == 0 then return end
+            SetPage((pageNo or 1) + delta)
+        end)
+    end
+    WirePageButton(f.PrevPageButton, -1)
+    WirePageButton(f.NextPageButton, 1)
     ovl.OnPageChanged = function()
         if ovlPaging then return end
         local cur

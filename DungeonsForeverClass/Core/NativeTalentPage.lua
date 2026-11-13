@@ -470,28 +470,17 @@ local function BuildNode(t, i, nd)
     end)
 
     b:SetScript('OnEnter', function(self)
-        TipBegin(self, 'ANCHOR_RIGHT')
-        GameTooltip:ClearLines()
         local p = (NP.pts[self.tree] or {})[self.idx] or 0
-        GameTooltip:AddLine(self.nd.n, 1, 0.82, 0)
-        GameTooltip:AddLine(string.format(L['第%d行第%d列'], self.nd.row, self.nd.col), 0.7, 0.75, 0.82)
-        if self.nd.passive then GameTooltip:AddLine(L['被动'], 0.55, 0.78, 1) end
-        local di = math.min(math.max(p, 1), #self.nd.desc)
-        if self.nd.desc[di] then
-            GameTooltip:AddLine(self.nd.desc[di], 0.9, 0.92, 0.96, true)
-        end
-        if p < self.nd.max and self.nd.desc[p + 1] then
-            GameTooltip:AddLine(string.format(L['下一级：%s'], self.nd.desc[p + 1]), 0.6, 0.65, 0.75, true)
+        local need = 0
+        if not GateOK(self.tree, self.nd.row) then
+            need = (self.nd.row - 1) * 5 - (RowAbove(self.tree)[self.nd.row] or 0)
         end
         local blocker = LinkBlockName and LinkBlockName(self.tree, self.idx)
-        if blocker then
-            GameTooltip:AddLine(string.format(L['需先点满 %s'], blocker), 0.95, 0.45, 0.4, true)
-        elseif not GateOK(self.tree, self.nd.row) then
-            local need = (self.nd.row - 1) * 5
-            local have = RowAbove(self.tree)[self.nd.row] or 0
-            GameTooltip:AddLine(string.format(L['需本系再投入 %d 点'], need - have), 0.95, 0.45, 0.4, true)
+        local d = Data()
+        local tname = d and d.trees[self.tree] and d.trees[self.tree].name or ''
+        if ns.TalentTip then
+            ns.TalentTip(self, self.nd, p, tname, need, blocker ~= nil)
         end
-        GameTooltip:Show()
     end)
     b:SetScript('OnLeave', function() GameTooltip:Hide() end)
 

@@ -1321,7 +1321,8 @@ end
 
 function BG.OneHandMode()
     if BG.fOneHand ~= true then return false end
-    return BG.cls == "warrior" and BG.tspec == "fury"
+    if BG.cls == "warrior" then return BG.tspec == "fury" end
+    return BG.cls == "hunter"
 end
 
 local function PlayerLevel()
@@ -1953,7 +1954,8 @@ local function PaintDoll()
         cell.dot:SetShown(not empty and BG.cur[dkey] ~= nil)
     end
     if BG.oneHandTg then
-        local show = BG.cls == "warrior" and (BG.tspec == "arms" or BG.tspec == "fury")
+        local show = BG.cls == "hunter"
+            or (BG.cls == "warrior" and (BG.tspec == "arms" or BG.tspec == "fury"))
         BG.oneHandTg:SetShown(show)
         if BG.oneHandLbl then BG.oneHandLbl:SetShown(show) end
         BG.oneHandTg:SetChecked(BG.fOneHand and true or false)

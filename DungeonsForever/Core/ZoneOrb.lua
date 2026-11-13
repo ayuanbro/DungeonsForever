@@ -512,6 +512,33 @@ local function MarkOnMap(it)
     return false
 end
 
+local function TalentClick(r)
+    if r.talentClick or InCombatLockdown() then return r.talentClick end
+    local click = CreateFrame("Button", nil, r, "SecureActionButtonTemplate,SecureHandlerStateTemplate")
+    click:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
+    click:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -34, 0)
+    click:SetFrameLevel(r:GetFrameLevel() + 4)
+    click:SetAttribute("type", "click")
+    click:SetAttribute("clickbutton", _G.TalentMicroButton)
+    click:SetAttribute("useOnKeyDown", false)
+    click:RegisterForClicks("AnyUp", "AnyDown")
+    click:SetScript("OnEnter", function() local f = r:GetScript("OnEnter"); if f then f(r) end end)
+    click:SetScript("OnLeave", function() local f = r:GetScript("OnLeave"); if f then f(r) end end)
+    if RegisterStateDriver then
+        RegisterStateDriver(click, "combatlock", "[combat] combat; nocombat")
+        click:SetAttribute("_onstate-combatlock", [[
+            if newstate == 'combat' then
+                self:SetAttribute('type', nil)
+            else
+                self:SetAttribute('type', 'click')
+            end
+        ]])
+    end
+    click:Hide()
+    r.talentClick = click
+    return click
+end
+
 local function MakeRow(i)
     local r = subRows[i]
     if r then return r end
@@ -603,6 +630,9 @@ local function MakeRow(i)
         r.name:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
         HideTip()
     end)
+    if not InCombatLockdown() then
+        TalentClick(r)
+    end
     subRows[i] = r
     return r
 end
@@ -1015,6 +1045,14 @@ local function Layout(res)
                 r.idesc = s.desc
                 r.ilabel = s.name
                 r.jumpTip = s.jumpTip
+                if not r.talentClick then TalentClick(r) end
+                if r.talentClick then
+                    local yes = (r.ikind == "talent") and _G.TalentMicroButton ~= nil
+                    if not InCombatLockdown() then
+                        r.talentClick:SetShown(yes)
+                        r.talentClick:EnableMouse(yes)
+                    end
+                end
                 if s.jump then
                     r.jump = s.jump
                 elseif s.areaID or s.qid or (s.mapID and s.x and s.y) then

@@ -2182,6 +2182,18 @@ function M.Build(detail, hero)
     routePinBtn:SetScript("OnClick", function() M.ShowRouteMenu(routePinBtn) end)
     routePinBtn:Hide()
 
+    local locPinBtn = Host.NewButton(frame, "", M.PIN_BTN_W, M.BAR_H, 14)
+    locPinBtn:SetFrameLevel(frame:GetFrameLevel() + 2)
+    Host.SetButtonSelected(locPinBtn, false)
+    locPinBtn:SetScript("OnClick", function()
+        if M.curId and DG.MarkEntrance then DG.MarkEntrance(M.curId) end
+    end)
+    locPinBtn:SetScript("OnEnter", function(self)
+        if M.curId and DG.ShowEntranceTip then DG.ShowEntranceTip(self, M.curId) end
+    end)
+    locPinBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    locPinBtn:Hide()
+
     if hero then
         local bossModel = CreateFrame("PlayerModel", nil, hero)
         bossModel:SetWidth(M.BOSS_MODEL_W)
@@ -2210,6 +2222,7 @@ function M.Build(detail, hero)
     frame.route = routeLayer
     frame.bossPinBtn = bossPinBtn
     frame.routePinBtn = routePinBtn
+    frame.locPinBtn = locPinBtn
     M.LoadMapState()
     M.frame = frame
     local queued = (type(DG) == "table" and type(DG.PushStep) == "function")
@@ -2293,6 +2306,9 @@ function M.SyncBar(layers, cur)
         ws[i] = math.max(M.LAYER_W, math.ceil(tw) + pad)
     end
     local avail = M.FRAME_W - M.SIDE_PAD * 2
+    if frame.locPinBtn and frame.locPinBtn:IsShown() then
+        avail = avail - frame.locPinBtn:GetWidth() - M.PIN_BTN_GAP
+    end
     if frame.bossPinBtn and frame.bossPinBtn:IsShown() then
         avail = avail - frame.bossPinBtn:GetWidth() - M.PIN_BTN_GAP
     end
@@ -3699,7 +3715,7 @@ end
 function M.PinOnClick(self, inWorld)
     local kind, p = self.__kind, self.__p
     if kind == "boss" and p and p.en then
-        M.Select(p.en)
+        M.Select(p.en, self.__dfView)
     elseif kind == "quest" and p and p.id then
         M.GotoQuest(p.id, inWorld)
     elseif kind == "prev" or kind == "next" then
@@ -4011,6 +4027,19 @@ end
 function M.SyncPinBtns()
     local frame = M.frame
     if not frame then return end
+    local hdr = frame.hdrCard
+    local prev = hdr
+    local lb = frame.locPinBtn
+    if lb then
+        local has = (M.curId and ns.DungeonEntry and ns.DungeonEntry[M.curId]
+            and DG.MarkEntrance and DG.ShowEntranceTip) and true or false
+        lb:SetText(L["副本定位"])
+        M.FitPinBtn(lb)
+        lb:ClearAllPoints()
+        lb:SetPoint("LEFT", hdr, "LEFT", M.SIDE_PAD, 0)
+        lb:SetShown(has)
+        if has then prev = lb end
+    end
     local bb = frame.bossPinBtn
     if bb then
         local any = M.HasKindPins(M.curId, "boss") or M.HasKindPins(M.curId, "quest")
@@ -4022,7 +4051,14 @@ function M.SyncPinBtns()
         bb:SetText(L["图钉显示"])
         Host.SetButtonSelected(bb, dim)
         M.FitPinBtn(bb)
+        bb:ClearAllPoints()
+        if prev == hdr then
+            bb:SetPoint("LEFT", hdr, "LEFT", M.SIDE_PAD, 0)
+        else
+            bb:SetPoint("LEFT", prev, "RIGHT", M.PIN_BTN_GAP, 0)
+        end
         bb:SetShown(any)
+        if any then prev = bb end
     end
     local rb = frame.routePinBtn
     if rb then
@@ -4030,6 +4066,12 @@ function M.SyncPinBtns()
         rb:SetText(L["路线显示"])
         Host.SetButtonSelected(rb, vis < tot)
         M.FitPinBtn(rb)
+        rb:ClearAllPoints()
+        if prev == hdr then
+            rb:SetPoint("LEFT", hdr, "LEFT", M.SIDE_PAD, 0)
+        else
+            rb:SetPoint("LEFT", prev, "RIGHT", M.PIN_BTN_GAP, 0)
+        end
         rb:SetShown(M.HasRoute(M.curId))
     end
 end
@@ -4635,6 +4677,13 @@ end
 
 function M.Select(en, host)
     local mapWin = host and host.__mapWin and ns.MapWindowModule or nil
+    if not mapWin then
+        local sh = M.SideHost
+        if sh and sh.__mapWin and sh.IsShown and sh:IsShown() then
+            mapWin = ns.MapWindowModule
+            host = sh
+        end
+    end
     local id = mapWin and mapWin.curId or M.curId
     if not (id and en) then return end
     local bosses = M.BossesFor(id)
@@ -4647,18 +4696,21 @@ function M.Select(en, host)
     if cur == en then en = nil end
     if mapWin then
         host.__detailEn = en
-    else
         M.detailEn = en
+        if en then
+            host.sideQuests = nil
+            local idx = M.BossLayer(id, en)
+            if idx then mapWin.curLayer = idx end
+        end
+        mapWin.Sync()
+        return
     end
+    M.detailEn = en
     if en then
+        if M.frame then M.frame.sideQuests = nil end
         local idx = M.BossLayer(id, en)
         if idx then
-            if mapWin then
-                if mapWin.curLayer ~= idx then
-                    mapWin.curLayer = idx
-                    mapWin.Sync()
-                end
-            elseif idx ~= M.curLayer then
+            if idx ~= M.curLayer then
                 if M.frame and M.frame:IsShown() then
                     M.SetLayer(idx)
                 else
@@ -4672,10 +4724,12 @@ function M.Select(en, host)
 end
 
 function M.ShowList(host)
+    M.detailEn = nil
     if host and host.__mapWin then
         host.__detailEn = nil
-    else
-        M.detailEn = nil
+        local MWm = ns.MapWindowModule
+        if MWm and MWm.Sync then MWm.Sync() end
+        return
     end
     M.SyncPins()
     M.SyncSide()
@@ -4758,6 +4812,8 @@ function M.Paint(d)
     frame.bar:SetPoint("RIGHT", frame.hdrCard, "RIGHT", -M.SIDE_PAD, 0)
     frame.bossPinBtn:ClearAllPoints()
     frame.bossPinBtn:SetPoint("LEFT", frame.hdrCard, "LEFT", M.SIDE_PAD, 0)
+    frame.locPinBtn:ClearAllPoints()
+    frame.locPinBtn:SetPoint("LEFT", frame.bossPinBtn, "RIGHT", M.PIN_BTN_GAP, 0)
     frame.routePinBtn:ClearAllPoints()
     frame.routePinBtn:SetPoint("LEFT", frame.bossPinBtn, "RIGHT", M.PIN_BTN_GAP, 0)
 

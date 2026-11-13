@@ -2,7 +2,7 @@ local _, ns = ...
 
 ns.MapPins = {
     ["shapers_terrace"] = {
-        entrance = { { 28.7, 68.4, nil, 1 } },
+        entrance = { { 32.4, 65.9, nil, 1 } },
     },
     ["blackmaw_hold"] = {
         entrance = { { 14.5, 55.2, nil, 1 }, { 80, 77.2, nil, 1 } },

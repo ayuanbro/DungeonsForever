@@ -233,7 +233,7 @@ function ST.Rows()
                     knownAny = ST.Knows(sp.id)
                 end
                 if sp.isTalent and not knownAny then
-                    row.id = sp.id
+                    row.id = (nr > 0 and sp.ranks[1].id) or sp.id
                     groups.talent[#groups.talent + 1] = row
                 else
                     local curRank = nil

@@ -142,27 +142,20 @@ local function plate()
 end
 
 local function NodeTip(btn, tree, nd, p)
-    GameTooltip:SetOwner(btn, "ANCHOR_BOTTOMRIGHT")
-    GameTooltip:ClearLines()
-    local cr, cg, cb = ClassColorOf(UI.cls)
-    GameTooltip:AddLine(nd.n, cr, cg, cb)
-    GameTooltip:AddLine(tree.name .. " · " .. format(L["第%d行第%d列"], nd.row, nd.col), 0.7, 0.75, 0.82)
-    if nd.passive then
-        GameTooltip:AddLine(L["被动"], 0.55, 0.78, 1)
+    local t = tree.__ti or 1
+    local need = 0
+    if p == 0 and not GateOK(t, nd.row) then
+        need = (nd.row - 1) * 5 - TreeSpent(t)
     end
-    local di = math.min(math.max(p, 1), #nd.desc)
-    if nd.desc[di] then
-        GameTooltip:AddLine(nd.desc[di], 0.9, 0.92, 0.96, true)
+    local noPre = false
+    local src = nd.req and tree.nodes and tree.nodes[nd.req]
+    if src then
+        local have = (UI.mock and UI.mock.pts[t] and UI.mock.pts[t][nd.req]) or 0
+        if have < (src.max or 1) then noPre = true end
     end
-    if p > 0 and p < nd.max and nd.desc[p + 1] then
-        GameTooltip:AddLine(format("%s%d：%s", L["下一级"], p + 1, nd.desc[p + 1]), 0.6, 0.65, 0.75, true)
+    if ns.TalentTip then
+        ns.TalentTip(btn, nd, p, tree.name, need, noPre)
     end
-    if p == 0 and not GateOK(tree.__ti, nd.row) then
-        local need = (nd.row - 1) * 5 - TreeSpent(tree.__ti)
-        GameTooltip:AddLine(format(L["需本系再投入 %d 点"], need), 0.95, 0.45, 0.4, true)
-    end
-    GameTooltip:AddLine(L["左键加点 · 右键减点"], 0.5, 0.55, 0.65)
-    GameTooltip:Show()
 end
 
 local function HideTip()
