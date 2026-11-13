@@ -17,7 +17,7 @@ ns.BossPos = {
     },
     ["blackmaw_hold"] = {
         ["Withermaw"] = { { 47.5, 20.3 } },
-        ["Bonesnout the Unbroken"] = { { 38.6, 45.9 } },
+        ["Bonesnout the Unbroken"] = { { 44.6, 42.6 } },
         ["Impaan the Imprisoner"] = { { 29.3, 57.2 } },
         ["Unbound Spirit"] = { { 81.1, 67.6 } },
         ["Elder Shaman Bloodmane"] = { { 84.7, 25 } },
