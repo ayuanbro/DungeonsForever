@@ -1646,6 +1646,9 @@ local function BuildBlocks(host)
     if not frame or frame.__blocksReady then return end
     frame.__blocksReady = true
     local detChild, innerW = frame.detChild, frame.innerW
+    -- detScroll 由 M.BuildSide 挂在 frame 上；原先闭包直接引用它时，
+    -- 同作用域的 local 声明还没出现，解析成全局 nil，滚轮滚动因此静默失效。
+    local detScroll = frame.detScroll
     local blocks = {}
     for i = 1, 3 do
         local b = CreateFrame("Frame", nil, detChild)

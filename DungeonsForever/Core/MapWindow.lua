@@ -1034,7 +1034,10 @@ local function ensure()
         MW.Sync()
     end)
 
-    applyScale(sv0 or 1.0)
+    -- 恢复上次保存的窗口缩放：原先这里引用未定义的 sv0，恒为 nil，
+    -- 导致主窗口每次登录都回到 100%（迷你窗 miniWinScale 的读取是正常的）。
+    local store = M.MapStore and M.MapStore()
+    applyScale((store and tonumber(store.mapWinScale)) or 1.0)
 
     if WorldMapFrame and WorldMapFrame.HookScript and not MW.__wmHideHook then
         MW.__wmHideHook = true
