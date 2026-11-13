@@ -51,6 +51,7 @@ local function CFG()
     if c.foodVoice == nil then c.foodVoice = true end
     if c.restedVoice == nil then c.restedVoice = true end
     if c.turnin == nil then c.turnin = true end
+    if c.keyitem == nil then c.keyitem = true end
     if c.onlyTodo == nil then c.onlyTodo = false end
     if c.noZonePopup == nil then c.noZonePopup = true end
     if c.mode == nil then c.mode = "auto" end
@@ -1074,9 +1075,60 @@ local function PSpell(ctx)
     }
 end
 
+local KEY_ITEMS = {
+    { "shadowfang_keep", { 276561, 275989 },
+      L["达拉然隐藏 BOSS 激活物品"],
+      L["阿鲁高书桌上拾取；带到银松森林 63.4, 64.3 换得召唤用书，用于召唤达拉然隐藏 BOSS"] },
+}
+
+local function OwnAny(ids)
+    for i = 1, #ids do
+        if OwnItem(ids[i]) then return true end
+    end
+    return false
+end
+
+local function PKeyItem(ctx)
+    local c = CFG()
+    if c.keyitem == false then return nil end
+    local slugs = CurInstSlugs()
+    if not slugs then return nil end
+    local here = {}
+    for i = 1, #slugs do here[slugs[i]] = true end
+    local list, n = {}, 0
+    for i = 1, #KEY_ITEMS do
+        local e = KEY_ITEMS[i]
+        local ids = e[2]
+        local iid = ids[1]
+        if e[1] and here[e[1]] and not OwnAny(ids) and not Z.IsIgnored(ItemKey("collect", iid)) then
+            n = n + 1
+            list[n] = {
+                id = iid, base = iid, ikey = ItemKey("collect", iid), ikind = "collect",
+                name = ItemName(iid), icon = ItemIcon(iid),
+                sub = e[3], desc = e[4],
+                jump = function()
+                    if ns.ShowDungeonDetail then
+                        pcall(ns.ShowDungeonDetail, e[1])
+                        return true
+                    end
+                    return false
+                end,
+                jumpTip = L["点击打开副本详情"],
+            }
+        end
+    end
+    if n == 0 then return nil end
+    return {
+        kind = "keyitem", n = n, keys = {}, list = list,
+        title = L["副本 · 必备物品"],
+        text = string.format(L["还差 %d 件必备物品"], n),
+    }
+end
+
 Z.Register("collect", PCollect)
 Z.Register("turnin", TurnInRows)
 Z.Register("quest", PQuest)
+Z.Register("keyitem", PKeyItem)
 Z.Register("spell", PSpell)
 
 local WELL_FED_SPELL = 19705
@@ -1552,7 +1604,7 @@ function Z.Collect(ctx)
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
-    local order = { "collect", "turnin", "quest", "spell", "talent", "buff", "tent" }
+    local order = { "collect", "turnin", "quest", "keyitem", "spell", "talent", "buff", "tent" }
     for i = 1, #order do
         local kind = order[i]
         local on = c[kind]
@@ -1690,7 +1742,7 @@ function Z.CheckNow(reason)
     return Z.Check(reason or "manual", 0)
 end
 
-local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], spell = L["技能"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"] }
+local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], keyitem = L["必备物品"], spell = L["技能"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"] }
 function Z.KindName(kind)
     return KIND_NAME[kind] or L["条目"]
 end

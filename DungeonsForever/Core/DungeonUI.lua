@@ -1765,8 +1765,17 @@ function DG.EnsureCardPool()
     U.cardPoolBuilt = true
     pool.card = {}
     local maxG = 0
+    local per = DG.LOOT_CARD_ITEMS_MAX
     for _, srcs in pairs(ns.DungeonLoot or {}) do
-        local n = #srcs
+        local n = 0
+        for _, s in ipairs(srcs) do
+            local cnt = #(s[5] or {})
+            if DG.IsTrashSrc(s) and cnt > per then
+                n = n + math.ceil(cnt / per)
+            else
+                n = n + 1
+            end
+        end
         if n > maxG then maxG = n end
     end
     DG.LOOT_CARD_MAX = math.max(maxG, 6)
@@ -4479,6 +4488,7 @@ DG.LOOT_CARD_ROW_GAP = 4
 DG.LOOT_CARD_NAME_R = 52
 DG.LOOT_CARD_HDR_H = DG.LOOT_HDR_H
 DG.LOOT_CARD_MIN_H = DG.LOOT_CARD_HDR_H + DG.LOOT_CARD_PAD
+DG.LOOT_CARD_ITEMS_MAX = 8
 
 DG.LOOT_TRASH = "__trash"
 DG.LOOT_TRASH_LABEL = L["小怪"]
@@ -5192,12 +5202,20 @@ function U:SetDungeonFilter(key)
     U:RenderDungeonLoot()
 end
 
+function DG.IsTrashSrc(s)
+    if type(s) ~= "table" then return false end
+    if s[1] == "Trash mobs" then return true end
+    local note = s[3]
+    if type(note) ~= "string" then return false end
+    return note:find("敌人", 1, true) ~= nil or note:find("敵人", 1, true) ~= nil
+end
+
 function DG.LootBossNames(loot)
     local seen, out = {}, {}
     for _, s in ipairs(loot or {}) do
         local nm = s[2]
         local note = s[3] or ""
-        local special = note:find("敌人", 1, true) or note:find("物件", 1, true)
+        local special = DG.IsTrashSrc(s) or note:find("物件", 1, true)
         if not special and type(nm) == "string" and nm ~= "" and not seen[nm] then
             seen[nm] = true
             out[#out + 1] = nm
@@ -5232,8 +5250,7 @@ function DG.OpenLootBossMenu(owner)
     local items = { { text = L["全部"], func = function() U:SetLootBoss(nil) end } }
     local hasTrash = false
     for _, s in ipairs(loot) do
-        local note = s[3] or ""
-        if note:find("敌人", 1, true) then hasTrash = true break end
+        if DG.IsTrashSrc(s) then hasTrash = true break end
     end
     if hasTrash then
         items[#items + 1] = { text = DG.LOOT_TRASH_LABEL,
@@ -5367,8 +5384,7 @@ function U:RenderDungeonLoot()
     if bossSel == DG.LOOT_TRASH then
         local has = false
         for _, s in ipairs(loot) do
-            local note = s[3] or ""
-            if note:find("敌人", 1, true) then has = true break end
+            if DG.IsTrashSrc(s) then has = true break end
         end
         if not has then bossSel = nil end
     elseif bossSel then
@@ -5386,8 +5402,7 @@ function U:RenderDungeonLoot()
         srcs = {}
         for _, s in ipairs(loot) do
             if bossSel == DG.LOOT_TRASH then
-                local note = s[3] or ""
-                if note:find("敌人", 1, true) then srcs[#srcs + 1] = s end
+                if DG.IsTrashSrc(s) then srcs[#srcs + 1] = s end
             elseif s[2] == bossSel then
                 srcs[#srcs + 1] = s
             end
@@ -5455,7 +5470,7 @@ function U:RenderDungeonLoot()
                     local tk = DG.LootTypeKey(it[1])
                     local g = byKey[tk]
                     if not g then
-                        g = { src = { "", tk, "", "", {} }, items = {} }
+                        g = { src = { "", tk, "", "", {} }, items = {}, trash = trashMode }
                         byKey[tk] = g
                         tg[#tg + 1] = g
                     end
@@ -5474,7 +5489,7 @@ function U:RenderDungeonLoot()
                     items[#items + 1] = it
                 end
             end
-            local g = { src = s, items = items }
+            local g = { src = s, items = items, trash = DG.IsTrashSrc(s) }
             if s[4] ~= "" then named[#named + 1] = g else special[#special + 1] = g end
         end
         groups = {}
@@ -5733,6 +5748,38 @@ function U:RenderDungeonLoot()
     U.dungeonDetailScroll:SetVerticalScroll(0)
 end
 
+function DG.LootCardUnits(groups, filter, fold, id, per, raidWide)
+    local units = {}
+    fold = fold or {}
+    per = per or DG.LOOT_CARD_ITEMS_MAX
+    for gi = 1, #groups do
+        local g = groups[gi]
+        local items = g.items or {}
+        if filter == "all" or #items > 0 then
+            local key = id .. "#" .. gi
+            local closed = fold[key] and true or false
+            local parts = 1
+            if g.trash and not raidWide and #items > per then
+                parts = math.ceil(#items / per)
+            end
+            for p = 1, parts do
+                if not (closed and p > 1) then
+                    local sub = items
+                    if parts > 1 then
+                        sub = {}
+                        for k = (p - 1) * per + 1, math.min(p * per, #items) do
+                            sub[#sub + 1] = items[k]
+                        end
+                    end
+                    units[#units + 1] = { gi = gi, key = key, src = g.src,
+                                          items = sub, all = items, closed = closed }
+                end
+            end
+        end
+    end
+    return units
+end
+
 function U:RenderDungeonLootCards(groups, filter, takeRow, makeRow, bossMode, bossEn, bossNpc)
     DG.EnsureCardPool()
     local d = U.dungeonDetailCur
@@ -5774,102 +5821,110 @@ function U:RenderDungeonLootCards(groups, filter, takeRow, makeRow, bossMode, bo
     local colY = {}
     for c = 1, cols do colY[c] = 0 end
 
+    local per = DG.LOOT_CARD_ITEMS_MAX
+    local units = DG.LootCardUnits(groups, filter, fold, d.id, per, raidWide)
+
+    if #units > (DG.LOOT_CARD_MAX or 0) then
+        DG.LOOT_CARD_MAX = #units
+        DG.PushStep(DG.BuildCardPool)
+        DG.RunSteps()
+        return
+    end
+
     local nC, nR = 0, 0
-    for gi = 1, #groups do
-        local g = groups[gi]
-        local items = g.items
-        if filter == "all" or #items > 0 then
-            nC = nC + 1
-            local card = cards[nC]
-            if not card then break end
-            local s = g.src
-            local key = d.id .. "#" .. gi
-            local closed = fold[key] and true or false
-            local n = closed and 0 or #items
-            local visRows = n
-            if raidWide and n > 0 then visRows = math.ceil(n / wideCols) end
-            local h = DG.LOOT_CARD_HDR_H + DG.LOOT_CARD_PAD
-            if n > 0 then h = h + visRows * DG.LOOT_CARD_H + (visRows - 1) * DG.LOOT_CARD_ROW_GAP end
-            local col = ((nC - 1) % cols) + 1
-            local cx, cy = (col - 1) * stepX, colY[col]
-            colY[col] = cy - (h + DG.LOOT_GAP_Y)
+    for ui = 1, #units do
+        local u = units[ui]
+        local items = u.items
+        nC = nC + 1
+        local card = cards[nC]
+        if not card then break end
+        local s = u.src
+        local key = u.key
+        local closed = u.closed
+        local n = closed and 0 or #items
+        local visRows = n
+        if raidWide and n > 0 then visRows = math.ceil(n / wideCols) end
+        local h = DG.LOOT_CARD_HDR_H + DG.LOOT_CARD_PAD
+        if n > 0 then h = h + visRows * DG.LOOT_CARD_H + (visRows - 1) * DG.LOOT_CARD_ROW_GAP end
+        local col = ((nC - 1) % cols) + 1
+        local cx, cy = (col - 1) * stepX, colY[col]
+        colY[col] = cy - (h + DG.LOOT_GAP_Y)
 
-            local en = s[1] or ""
-            local sub = s[3] or ""
-            if sub ~= "" then en = (en ~= "" and (en .. " · " .. sub) or sub) end
-            card.__gid = key
-            card.hit.__key = key
-            card.hit.__g = { gi = gi, items = items, srcName = s[2] or "", enName = en }
-            card:ClearAllPoints()
-            card:SetPoint("TOPLEFT", child, "TOPLEFT", cx, cy)
-            card:SetSize(cw, h)
-            card.__vtop, card.__vh, card.__vgen = -cy, h, DG.__vgen
-            card.hit:SetPoint("TOPLEFT", card, "TOPLEFT", 0, 0)
-            card.hit:SetPoint("TOPRIGHT", card, "TOPRIGHT", 0, 0)
-            card.arrD:SetShown(not closed)
-            card.arrU:SetShown(closed)
-            card.name:SetText(DG.FitText(s[2] or "", DG.LOOT_FS_HDR, nameW))
-            card.name:SetWidth(nameW)
-            card.cnt:SetText(format(L["%d 件"], #items))
-            card:Show()
-            card.hit:SetHeight(DG.LOOT_CARD_MIN_H)
+        local en = s[1] or ""
+        local sub = s[3] or ""
+        if sub ~= "" then en = (en ~= "" and (en .. " · " .. sub) or sub) end
+        card.__gid = key
+        card.hit.__key = key
+        card.hit.__g = { gi = u.gi, items = u.all, srcName = s[2] or "", enName = en }
+        card:ClearAllPoints()
+        card:SetPoint("TOPLEFT", child, "TOPLEFT", cx, cy)
+        card:SetSize(cw, h)
+        card.__vtop, card.__vh, card.__vgen = -cy, h, DG.__vgen
+        card.hit:SetPoint("TOPLEFT", card, "TOPLEFT", 0, 0)
+        card.hit:SetPoint("TOPRIGHT", card, "TOPRIGHT", 0, 0)
+        card.arrD:SetShown(not closed)
+        card.arrU:SetShown(closed)
+        card.name:SetText(DG.FitText(s[2] or "", DG.LOOT_FS_HDR, nameW))
+        card.name:SetWidth(nameW)
+        card.cnt:SetText(format(L["%d 件"], closed and #u.all or #items))
+        card:Show()
+        card.hit:SetHeight(DG.LOOT_CARD_MIN_H)
 
-            for ii = 1, n do
-                nR = nR + 1
-                local it = items[ii]
-                local rx = cx + DG.LOOT_CARD_PAD
-                local ry = cy - DG.LOOT_CARD_HDR_H - (ii - 1) * (DG.LOOT_CARD_H + DG.LOOT_CARD_ROW_GAP)
-                if raidWide then
-                    local cc = ((ii - 1) % wideCols) + 1
-                    local rr = math.floor((ii - 1) / wideCols)
-                    rx = rx + (cc - 1) * (rowW + DG.LOOT_GAP_X)
-                    ry = cy - DG.LOOT_CARD_HDR_H - rr * wideStepY
-                end
-                takeRow(makeRow, function(r)
-                    r:SetSize(rowW, DG.LOOT_CARD_H)
-                    r.note:Hide()
-                    r.icon:SetTexture(DG.ItemIcon(it[1]))
-                    r.icon:Show()
-                    if ns.hui and ns.hui.SetIconRing then
-                        ns.hui.SetIconRing(r.icon, { ns.hui.QColor(DG.QualOf(it[1])) })
-                    end
-                    local nm, hasName = DG.ItemName(it[1])
-                    local nbudget = it[3] and (rowW - ix - DG.LOOT_TAG_W) or (rowW - ix - DG.LOOT_TEXT_R)
-                    r.name:SetText(DG.FitText(nm, DG.LOOT_FS_NAME, nbudget))
-                    if hasName then
-                        r.name:SetTextColor(DG.QColor(DG.QualOf(it[1])))
-                    else
-                        r.name:SetTextColor(Unpack(C_GREY))
-                    end
-                    r.__named = hasName
-                    r.name:Show()
-                    if it[3] then
-                        r.name:SetWidth(rowW - ix - DG.LOOT_TAG_W)
-                        r.tag:Show()
-                    else
-                        r.name:SetWidth(rowW - ix - DG.LOOT_TEXT_R)
-                        r.tag:Hide()
-                    end
-                    r.tp:SetText(DG.ItemMeta(it[1]))
-                    r.tp:Show()
-                    r.ch:SetText(DG.Pct(it[2]) or "")
-                    r.ch:Show()
-                    r.__it = it
-                    PaintWishStar(r.wishBt, it[1])
-                    local LF = ns.LootFilter
-                    if LF and LF.Apply then LF.Apply(r) end
-                    if r.__huiCard then
-                        HuiCardState(r, "flat")
-                    else
-                        r:SetBackdropColor(1, 1, 1, 0)
-                        r:SetBackdropBorderColor(1, 1, 1, 0)
-                    end
-                    r:ClearAllPoints()
-                    r:SetPoint("TOPLEFT", child, "TOPLEFT", rx, ry)
-                    r.__vtop, r.__vh, r.__vgen = -ry, DG.LOOT_CARD_H, DG.__vgen
-                    r:Show()
-                end)
+        for ii = 1, n do
+            nR = nR + 1
+            local it = items[ii]
+            local rx = cx + DG.LOOT_CARD_PAD
+            local ry = cy - DG.LOOT_CARD_HDR_H - (ii - 1) * (DG.LOOT_CARD_H + DG.LOOT_CARD_ROW_GAP)
+            if raidWide then
+                local cc = ((ii - 1) % wideCols) + 1
+                local rr = math.floor((ii - 1) / wideCols)
+                rx = rx + (cc - 1) * (rowW + DG.LOOT_GAP_X)
+                ry = cy - DG.LOOT_CARD_HDR_H - rr * wideStepY
             end
+            takeRow(makeRow, function(r)
+                r:SetSize(rowW, DG.LOOT_CARD_H)
+                r.note:Hide()
+                r.icon:SetTexture(DG.ItemIcon(it[1]))
+                r.icon:Show()
+                if ns.hui and ns.hui.SetIconRing then
+                    ns.hui.SetIconRing(r.icon, { ns.hui.QColor(DG.QualOf(it[1])) })
+                end
+                local nm, hasName = DG.ItemName(it[1])
+                local nbudget = it[3] and (rowW - ix - DG.LOOT_TAG_W) or (rowW - ix - DG.LOOT_TEXT_R)
+                r.name:SetText(DG.FitText(nm, DG.LOOT_FS_NAME, nbudget))
+                if hasName then
+                    r.name:SetTextColor(DG.QColor(DG.QualOf(it[1])))
+                else
+                    r.name:SetTextColor(Unpack(C_GREY))
+                end
+                r.__named = hasName
+                r.name:Show()
+                if it[3] then
+                    r.name:SetWidth(rowW - ix - DG.LOOT_TAG_W)
+                    r.tag:Show()
+                else
+                    r.name:SetWidth(rowW - ix - DG.LOOT_TEXT_R)
+                    r.tag:Hide()
+                end
+                r.tp:SetText(DG.ItemMeta(it[1]))
+                r.tp:Show()
+                r.ch:SetText(DG.Pct(it[2]) or "")
+                r.ch:Show()
+                r.__it = it
+                PaintWishStar(r.wishBt, it[1])
+                local LF = ns.LootFilter
+                if LF and LF.Apply then LF.Apply(r) end
+                if r.__huiCard then
+                    HuiCardState(r, "flat")
+                else
+                    r:SetBackdropColor(1, 1, 1, 0)
+                    r:SetBackdropBorderColor(1, 1, 1, 0)
+                end
+                r:ClearAllPoints()
+                r:SetPoint("TOPLEFT", child, "TOPLEFT", rx, ry)
+                r.__vtop, r.__vh, r.__vgen = -ry, DG.LOOT_CARD_H, DG.__vgen
+                r:Show()
+            end)
         end
     end
 

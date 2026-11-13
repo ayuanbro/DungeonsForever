@@ -18,6 +18,7 @@
 
 Core\ModuleInit.lua
 Core\Data\Data_Gear.lua
+Core\Data\Data_GearSets.lua
 Core\Data\Data_GearCls.lua
 Core\Data\Data_GearQuestChain.lua
 Core\Data\Data_GearQuestReward.lua

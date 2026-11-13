@@ -511,6 +511,7 @@ local tipStatCache = {}
 local function ScanStatsTip(id)
     if type(id) ~= "number" or BG.__dpsDead then return nil end
     local c = tipStatCache[id]
+    if c == false then return nil end
     if c ~= nil then return c end
     if not DG.ItemInfo(id) then return nil end
     if (BG.__dpsDepth or 0) > 0 then return nil end
@@ -555,8 +556,8 @@ local function ScanStatsTip(id)
     end)
     BG.__dpsDepth = BG.__dpsDepth - 1
     if not okScan then return nil end
+    tipStatCache[id] = next(out) and out or false
     if not next(out) then return nil end
-    tipStatCache[id] = out
     BG.__statCacheN = (BG.__statCacheN or 0) + 1
     if BG.__statCacheN > 2500 then
         for k in pairs(tipStatCache) do tipStatCache[k] = nil end

@@ -73,6 +73,7 @@ local STAT_LABELS = {
 }
 
 local RS = ns.RaidSetData
+local GSD = ns.GearSetData
 
 local SET_CLASS_ICON = {
     WARRIOR = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\CLASS\\ClassIcon_Warrior",
@@ -639,8 +640,187 @@ local function WishViewEntries()
     return out
 end
 
+local AUTO_ARMOR = {
+    { key = "cloth",   label = L["布甲套装"], u = 1 },
+    { key = "leather", label = L["皮甲套装"], u = 2 },
+    { key = "mail",    label = L["锁甲套装"], u = 3 },
+    { key = "plate",   label = L["板甲套装"], u = 4 },
+    { key = "misc",    label = L["其他套装"], u = 0 },
+}
+local AUTO_ARMOR_LABEL = {}
+for _, a in ipairs(AUTO_ARMOR) do AUTO_ARMOR_LABEL[a.key] = a.label end
+
+local function SetNameOf(sid, fallback)
+    local c = G.__setNames
+    if not c then
+        c = {}
+        G.__setNames = c
+    end
+    local v = c[sid]
+    if v == nil then
+        local fn = C_Item and C_Item.GetItemSetInfo
+        local ok, nm = false, nil
+        if type(fn) == "function" then ok, nm = pcall(fn, sid) end
+        v = (ok and type(nm) == "string" and nm ~= "") and nm or false
+        c[sid] = v
+    end
+    return v or fallback or format(L["套装 #%d"], sid)
+end
+
+local function SetTitleOf(set)
+    if not set then return "" end
+    if set.auto then return SetNameOf(set.sid) end
+    if set.id then return SetNameOf(set.id, set.name) end
+    return set.name or ""
+end
+
+local autoCache
+local function AutoSetList()
+    if autoCache then return autoCache end
+    local out = {}
+    if GSD and type(GSD.sets) == "table" then
+        local totals = GSD.total
+        for sid, ids in pairs(GSD.sets) do
+            if type(ids) == "table" and #ids > 0 then
+                local u = 0
+                for i = 1, math.min(#ids, 6) do
+                    local rec = recs[ids[i]]
+                    if rec then
+                        u = rec.u or 0
+                        break
+                    end
+                end
+                local key = "misc"
+                for _, a in ipairs(AUTO_ARMOR) do
+                    if a.u ~= 0 and a.u == u then key = a.key break end
+                end
+                out[#out + 1] = {
+                    auto = true, sid = sid, ids = ids, armor = key, u = u,
+                    n = (totals and totals[sid]) or #ids,
+                }
+            end
+        end
+    end
+    table.sort(out, function(a, b) return a.sid < b.sid end)
+    autoCache = out
+    return out
+end
+
+local function AutoSetOf(sid)
+    for _, s in ipairs(AutoSetList()) do
+        if s.sid == sid then return s end
+    end
+    return nil
+end
+
+local function ParseSetBonus(lines)
+    local out, inSet = {}, false
+    for _, ln in ipairs(lines) do
+        local t = ln.leftText or ""
+        if not inSet then
+            if t:find("（%d+/%d+）") or t:find("%(%d+/%d+%)") then inSet = true end
+        else
+            local n, body = t:match("^%((%d+)%)%s*(.-)%s*$")
+            if n then
+                n = tonumber(n)
+                local cut
+                local p1 = body:find("：", 1, true)
+                if p1 then
+                    cut = p1 + #"："
+                else
+                    local p2 = body:find(":", 1, true)
+                    if p2 then cut = p2 + 1 end
+                end
+                local txt = cut and body:sub(cut):gsub("^%s+", "") or body
+                if n and n >= 2 and n <= 9 and txt ~= "" then out[n] = txt end
+            elseif t:match("%S") and not t:match("^%s%s") then
+                break
+            end
+        end
+    end
+    if next(out) then return out end
+    return nil
+end
+
+local function SetBonusOf(s)
+    if not s or not s.sid then return false end
+    local cache = G.__setBonus
+    if not cache then
+        cache = {}
+        G.__setBonus = cache
+    end
+    local hit = cache[s.sid]
+    if hit ~= nil then return hit end
+    local pend = G.__setBonusPend
+    if not pend then
+        pend = {}
+        G.__setBonusPend = pend
+    end
+    if pend[s.sid] then return nil end
+    local tt = C_TooltipInfo and C_TooltipInfo.GetItemByID
+    if type(tt) ~= "function" then
+        cache[s.sid] = false
+        return false
+    end
+    local targets = {}
+    for i = 1, #(s.ids or {}) do
+        if recs[s.ids[i]] then targets[#targets + 1] = s.ids[i] end
+    end
+    local target = targets[1]
+    if not target then
+        cache[s.sid] = false
+        return false
+    end
+    local function probe()
+        for i = 1, #targets do
+            local got = tt(targets[i])
+            local bons = got and got.lines and ParseSetBonus(got.lines)
+            if bons then return bons end
+        end
+        return nil
+    end
+    local parsed = probe()
+    if parsed then
+        cache[s.sid] = parsed
+        return parsed
+    end
+    pend[s.sid] = true
+    local ticks, asked = 0, 0
+    if ns.GearIdle then
+        ns.GearIdle.Urgent(function()
+            ticks = ticks + 1
+            if ticks % 6 ~= 0 then return false end
+            asked = asked + 1
+            if asked > 300 then
+                pend[s.sid] = nil
+                cache[s.sid] = false
+                BumpView()
+                return true
+            end
+            local got = probe()
+            if got then
+                cache[s.sid] = got
+                pend[s.sid] = nil
+                BumpView()
+                if G.Refresh then pcall(G.Refresh) end
+                return true
+            end
+            if C_Item and C_Item.RequestLoadItemDataByID then
+                G.AskItem(targets[1 + asked % #targets])
+            end
+            return false
+        end)
+    else
+        pend[s.sid] = nil
+        cache[s.sid] = false
+    end
+    return nil
+end
+
 local function IsSetCat(k)
-    return k == "SETS" or (type(k) == "string" and k:sub(1, 4) == "SET:")
+    if k == "SETS" then return true end
+    if type(k) ~= "string" then return false end
+    return k:sub(1, 4) == "SET:" or k:sub(1, 8) == "AUTOSET:" or k:sub(1, 6) == "AUTOG:"
 end
 
 local function SetKeyOf(set, idx)
@@ -649,7 +829,6 @@ end
 
 local function SetsViewEntries()
     local out = {}
-    if not RS or type(RS.sets) ~= "table" then return out end
     local function emitSet(set, idx, withItems)
         local skey = SetKeyOf(set, idx)
         out[#out + 1] = { kind = "set", set = set, skey = skey }
@@ -666,26 +845,65 @@ local function SetsViewEntries()
             end
         end
     end
-    if G.cat == "SETS" then
-        local batches = RS.batches
-        if type(batches) ~= "table" or #batches == 0 then
-            batches = { { key = "t1", label = RS.raid or "" } }
+    local function emitAuto(s, withItems)
+        local skey = "AUTOSET:" .. s.sid
+        out[#out + 1] = { kind = "set", set = s, skey = skey, auto = s }
+        if not withItems and G.setOpen ~= skey then return end
+        for _, pid in ipairs(s.ids or {}) do
+            out[#out + 1] = { id = pid }
         end
-        for _, bt in ipairs(batches) do
-            local any = false
-            for idx, set in ipairs(RS.sets) do
-                if (set.batch or "t1") == bt.key then any = true break end
+        local bons = SetBonusOf(s)
+        if type(bons) == "table" then
+            for n = 2, 9 do
+                if bons[n] then out[#out + 1] = { kind = "bonus", n = n, text = bons[n] } end
             end
-            if any then
-                out[#out + 1] = { hdr = bt.label or bt.key }
+        elseif bons == nil then
+            out[#out + 1] = { kind = "bonus", n = 0, text = L["正在读取套装效果…"], dim = true }
+        end
+    end
+    local hasRS = RS and type(RS.sets) == "table"
+    if G.cat == "SETS" then
+        if hasRS then
+            local batches = RS.batches
+            if type(batches) ~= "table" or #batches == 0 then
+                batches = { { key = "t1", label = RS.raid or "" } }
+            end
+            for _, bt in ipairs(batches) do
+                local any = false
                 for idx, set in ipairs(RS.sets) do
-                    if (set.batch or "t1") == bt.key then
-                        emitSet(set, idx, false)
+                    if (set.batch or "t1") == bt.key then any = true break end
+                end
+                if any then
+                    out[#out + 1] = { hdr = bt.label or bt.key }
+                    for idx, set in ipairs(RS.sets) do
+                        if (set.batch or "t1") == bt.key then
+                            emitSet(set, idx, false)
+                        end
                     end
                 end
             end
         end
-    elseif IsSetCat(G.cat) then
+        for _, a in ipairs(AUTO_ARMOR) do
+            local n = 0
+            for _, s in ipairs(AutoSetList()) do
+                if s.armor == a.key then n = n + 1 end
+            end
+            if n > 0 then
+                out[#out + 1] = { hdr = a.label }
+                for _, s in ipairs(AutoSetList()) do
+                    if s.armor == a.key then emitAuto(s, false) end
+                end
+            end
+        end
+    elseif G.cat:sub(1, 6) == "AUTOG:" then
+        local key = G.cat:sub(7)
+        for _, s in ipairs(AutoSetList()) do
+            if s.armor == key then emitAuto(s, false) end
+        end
+    elseif G.cat:sub(1, 8) == "AUTOSET:" then
+        local s = AutoSetOf(tonumber(G.cat:sub(9)) or -1)
+        if s then emitAuto(s, true) end
+    elseif hasRS and IsSetCat(G.cat) then
         local rest = G.cat:sub(5)
         local si = rest:match(":(%d+)$")
         if si then
@@ -1007,6 +1225,11 @@ local function SetTexC(tex, p)
     end
 end
 
+local function IconTex(ic)
+    if type(ic) == "number" then return ic end
+    return "Interface\\Icons\\" .. ic
+end
+
 local function PaintRow(r)
     local e = r.entry
     if not e then
@@ -1083,10 +1306,17 @@ local function PaintRow(r)
         if iconSet then
             SetTexC(r.icon, iconSet)
         else
-            local rec = recs[(set.ids or {})[1]]
-            if rec and rec.icon and rec.icon ~= "" then
-                SetTexC(r.icon, "Interface\\Icons\\" .. rec.icon)
-                setQ = rec.q
+            local picked
+            for i = 1, math.min(#(set.ids or {}), 8) do
+                local rec = recs[set.ids[i]]
+                if rec and rec.icon and rec.icon ~= "" then
+                    picked = rec
+                    break
+                end
+            end
+            if picked then
+                SetTexC(r.icon, IconTex(picked.icon))
+                setQ = picked.q
             else
                 SetTexC(r.icon, FALLBACK_ICON)
             end
@@ -1108,10 +1338,13 @@ local function PaintRow(r)
                 cr, cg, cb = Unpack(C_TEXT)
             end
         end
-        SetTextC(r.name, (G.setOpen == e.skey and "- " or "+ ") .. (set.name or ""))
+        local setNm = SetTitleOf(set)
+        SetTextC(r.name, (G.setOpen == e.skey and "- " or "+ ") .. setNm)
         r.name:SetTextColor(cr, cg, cb)
         local meta
-        if set.armor and set.spec then
+        if set.auto then
+            meta = SUB_LABEL["4:" .. tostring(set.u or 0)] or ""
+        elseif set.armor and set.spec then
             meta = set.armor .. " · " .. set.spec
         else
             meta = set.armor or set.spec or ""
@@ -1119,7 +1352,7 @@ local function PaintRow(r)
         SetTextC(r.meta, meta)
         SetTextC(r.req, "")
         SetTextC(r.ilvl, "")
-        SetTextC(r.src, format(L["%d 件套"], #(set.ids or {})))
+        SetTextC(r.src, format(L["%d 件套"], set.auto and (set.n or #(set.ids or {})) or #(set.ids or {})))
         r.src:SetTextColor(Unpack(C_GREY))
         r.__h = ROW_H
         return
@@ -1127,8 +1360,8 @@ local function PaintRow(r)
     local rec = FillRec(e.id)
     if rec then
         local k = rec.icon
-        if type(k) == "string" and k ~= "" then
-            SetTexC(r.icon, "Interface\\Icons\\" .. k)
+        if type(k) == "number" or (type(k) == "string" and k ~= "") then
+            SetTexC(r.icon, IconTex(k))
         else
             SetTexC(r.icon, FALLBACK_ICON)
         end
@@ -2391,6 +2624,17 @@ function G.PaintCats()
                 end
                 paintNode(key, n .. " 套")
             end
+        elseif key:sub(1, 8) == "AUTOSET:" then
+            local sid = tonumber(key:sub(9))
+            local s = sid and AutoSetOf(sid)
+            paintNode(key, s and ((s.n or #(s.ids or {})) .. " 件") or "")
+        elseif key:sub(1, 6) == "AUTOG:" then
+            local akey = key:sub(7)
+            local n = 0
+            for _, s in ipairs(AutoSetList()) do
+                if s.armor == akey then n = n + 1 end
+            end
+            paintNode(key, n .. " 套")
         elseif key ~= "ALL" and key ~= "WISH" and key ~= "SETS" then
             paintNode(key)
         end
@@ -2402,7 +2646,7 @@ function G.PaintCats()
     if RS and type(RS.sets) == "table" then
         setShown = #RS.sets
     end
-    paintNode("SETS", setShown .. " 套")
+    paintNode("SETS", (setShown + #AutoSetList()) .. " 套")
 end
 
 function G.EmptyHint()
@@ -2585,7 +2829,7 @@ local function BuildCats(parent)
             else
                 for idx, set in ipairs(RS.sets) do
                     if (set.batch or "t1") == bt.key then
-                        local kb = Node(SetKeyOf(set, idx), set.name or ("#" .. idx), 2)
+                        local kb = Node(SetKeyOf(set, idx), SetTitleOf(set), 2)
                         if set.revealed == false then
                             kb.f.txt:SetTextColor(Unpack(C_DIM))
                         end
@@ -2597,6 +2841,22 @@ local function BuildCats(parent)
                 local bn = Node("SET:" .. bt.key, bt.label or bt.key, 1, true, 2)
                 bn.kids = bKids
                 setKids[#setKids + 1] = bn
+            end
+        end
+    end
+    local autoList = AutoSetList()
+    if #autoList > 0 then
+        for _, a in ipairs(AUTO_ARMOR) do
+            local gKids = {}
+            for _, s in ipairs(autoList) do
+                if s.armor == a.key then
+                    gKids[#gKids + 1] = Node("AUTOSET:" .. s.sid, SetNameOf(s.sid), 2)
+                end
+            end
+            if #gKids > 0 then
+                local gn = Node("AUTOG:" .. a.key, a.label, 1, true, 2)
+                gn.kids = gKids
+                setKids[#setKids + 1] = gn
             end
         end
     end
@@ -3473,7 +3733,7 @@ function G.StartIconWarm()
         local ic = GD_ITEMS[i][ROW_FIELDS.icon]
         if ic and ic ~= "" and not seen[ic] then
             seen[ic] = true
-            list[#list + 1] = "Interface\\Icons\\" .. ic
+            list[#list + 1] = IconTex(ic)
         end
     end
     local n = #list
@@ -3712,6 +3972,7 @@ function G.BuildCatalog()
     end
     G.srcOf = srcOf
     G.catalog = GD_ITEMS
+    autoCache = nil
 end
 
 local function RefreshSoon()

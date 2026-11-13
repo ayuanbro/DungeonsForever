@@ -55,21 +55,31 @@ ns.DungeonLoot = {
             { 272999, nil, true },
             { 272996, nil, true },
             { 272998, nil, true },
+            { 252781, nil, true },
+            { 252782, nil, true },
         } },
         { "Taragaman the Hungerer", "Taragaman the Hungerer", "Lv 16", "7970", {
             { 14149, 35, false },
             { 14148, 33, false },
             { 14145, 18, false },
+            { 251361, nil, true },
+            { 251362, nil, true },
+            { 251363, nil, true },
         } },
         { "Jergosh the Invoker", "Jergosh the Invoker", "Lv 16", "11429", {
             { 14150, 36, false },
             { 14147, 37, false },
             { 14151, 18, false },
+            { 251360, nil, true },
+            { 253906, nil, true },
         } },
         { "Bazzalan", "Bazzalan", "", "2007", {
             { 273003, nil, true },
             { 273007, nil, true },
             { 273005, nil, true },
+            { 252780, nil, true },
+            { 253908, nil, true },
+            { 253910, nil, true },
         } },
     },
     ["ruins_of_lordaeron"] = {
@@ -77,6 +87,7 @@ ns.DungeonLoot = {
             { 271204, nil, true },
             { 271205, nil, true },
             { 271206, nil, true },
+            { 280438, nil, true },
         } },
         { "Witherfang", "Rot Fang", "", "250625", {
             { 271201, nil, true },
@@ -113,6 +124,9 @@ ns.DungeonLoot = {
             { 286980, nil, true },
             { 286979, nil, true },
             { 286978, nil, true },
+            { 268535, nil, true },
+            { 286981, nil, true },
+            { 286977, nil, true },
         } },
     },
     ["wailing_caverns"] = {
@@ -122,6 +136,7 @@ ns.DungeonLoot = {
             { 6465, 55, false },
             { 253908, nil, true },
             { 252778, nil, true },
+            { 9738, nil, false },
         } },
         { "Lady Anacondra", "Lady Anacondra", "Lv 20", "3671", {
             { 10412, 9.6, false },
@@ -132,6 +147,7 @@ ns.DungeonLoot = {
 
             { 273088, nil, true },
             { 273098, nil, true },
+            { 9739, nil, false },
         } },
         { "Kresh", "Kresh", "Lv 20", "3653", {
             { 13245, 13, false },
@@ -143,6 +159,7 @@ ns.DungeonLoot = {
             { 6473, 55, false },
             { 273089, nil, true },
             { 253938, nil, true },
+            { 9740, nil, false },
         } },
         { "Skum", "Skum", "", "3674", {
             { 6449, 45, false },
@@ -159,6 +176,7 @@ ns.DungeonLoot = {
 
             { 6459, 23, false },
             { 273087, nil, true },
+            { 9741, nil, false },
         } },
         { "Verdan the Everliving", "Vuldan the Eternal", "", "5775", {
             { 6630, 39, false },
@@ -175,6 +193,7 @@ ns.DungeonLoot = {
         { "Deviate Faerie Dragon", "Mutated Faerie Dragon", "Rare", "5912", {
             { 5243, 42, false },
             { 6632, 45, false },
+            { 252781, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 10413, 2.4, false },
@@ -186,6 +205,9 @@ ns.DungeonLoot = {
             { 5187, 73, false },
             { 273289, nil, true },
             { 251363, nil, true },
+            { 251362, nil, true },
+            { 251364, nil, true },
+            { 253906, nil, true },
         } },
         { "Miner Johnson", "Miner Johnson", "Rare · Lv 19", "3586", {
             { 5443, 40, false },
@@ -196,6 +218,8 @@ ns.DungeonLoot = {
             { 5195, 67, false },
             { 273293, nil, true },
             { 273092, nil, true },
+            { 251360, nil, true },
+            { 253902, nil, true },
         } },
         { "Sneed's Shredder", "Sneed's Shredder", "Lv 20", "642", {
             { 1937, 9.5, false },
@@ -207,12 +231,19 @@ ns.DungeonLoot = {
             { 5199, 57, false },
             { 273297, nil, true },
             { 273086, nil, true },
+            { 252777, nil, true },
+            { 252778, nil, true },
+            { 252780, nil, true },
+            { 252782, nil, true },
+            { 253904, nil, true },
         } },
         { "Mr. Smite", "Mr. Smite", "Lv 20", "646", {
             { 7230, 19, false },
             { 5192, 38, false },
             { 5196, 37, false },
             { 284715, nil, true },
+            { 252779, nil, true },
+            { 252781, nil, true },
         } },
         { "Captain Greenskin", "Captain Greenskin", "Lv 20", "7113", {
             { 5201, 38, false },
@@ -229,6 +260,12 @@ ns.DungeonLoot = {
             { 5191, 16, false },
             { 2874, 56, false },
             { 253940, nil, true },
+            { 252799, nil, true },
+            { 252800, nil, true },
+            { 252801, nil, true },
+            { 252803, nil, true },
+            { 253938, nil, true },
+            { 253948, nil, true },
         } },
         { "Cookie", "Cookie", "Lv 20", "645", {
             { 5198, 33, false },
@@ -236,6 +273,8 @@ ns.DungeonLoot = {
             { 8490, 10, false },
             { 273298, nil, true },
             { 273102, nil, true },
+            { 253910, nil, true },
+            { 253912, nil, true },
         } },
         { "Defias Gunpowder", "Defias Powder", "Chest or object", "", {
             { 5397, nil, false },
@@ -265,6 +304,26 @@ ns.DungeonLoot = {
         { "Fel Steed / Shadow Charger", "Evil / Shadow Warhorse", "", "1952", {
             { 6341, 6.2, false },
             { 932, 19, false },
+            { 251341, nil, true },
+            { 251362, nil, true },
+            { 251363, nil, true },
+            { 251364, nil, true },
+            { 252781, nil, true },
+            { 252782, nil, true },
+            { 253902, nil, true },
+            { 253904, nil, true },
+            { 253906, nil, true },
+            { 253908, nil, true },
+            { 253910, nil, true },
+            { 253912, nil, true },
+            { 251381, nil, true },
+            { 251382, nil, true },
+            { 252799, nil, true },
+            { 252801, nil, true },
+            { 252803, nil, true },
+            { 253940, nil, true },
+            { 253946, nil, true },
+            { 253948, nil, true },
         } },
         { "Razorclaw the Butcher", "Butcher Lazzaklau", "", "3886", {
             { 1292, 9.8, false },
@@ -301,6 +360,7 @@ ns.DungeonLoot = {
             { 6340, 74, false },
             { 3230, 17, false },
             { 273646, nil, true },
+            { 251380, nil, true },
         } },
         { "Wolf Master Nandos", "Wolf Master Nandos", "", "3927", {
             { 3748, 57, false },
@@ -363,6 +423,7 @@ ns.DungeonLoot = {
 
             { 273030, nil, true },
             { 273097, nil, true },
+            { 270866, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 287068, nil, true },
@@ -374,6 +435,10 @@ ns.DungeonLoot = {
             { 6907, 37, false },
             { 6908, 56, false },
             { 273839, nil, true },
+            { 251382, nil, true },
+            { 252801, nil, true },
+            { 253940, nil, true },
+            { 253942, nil, true },
         } },
         { "Lady Sarevess", "Salivas", "", "4831", {
             { 888, 37, false },
@@ -382,6 +447,9 @@ ns.DungeonLoot = {
 
             { 11121, 39, false },
 
+            { 252798, nil, true },
+            { 251383, nil, true },
+            { 253944, nil, true },
         } },
         { "Gelihast", "Grihast", "", "6243", {
             { 273840, nil, true },
@@ -401,6 +469,12 @@ ns.DungeonLoot = {
             { 252456, nil, true },
             { 252513, nil, true },
             { 252514, nil, true },
+            { 251375, nil, true },
+            { 251377, nil, true },
+            { 252821, nil, true },
+            { 252825, nil, true },
+            { 253978, nil, true },
+            { 253980, nil, true },
         } },
         { "Lorgus Jett", "Lorgus Jett", "", "12902", {
             { 273843, nil, true },
@@ -414,6 +488,7 @@ ns.DungeonLoot = {
             { 252513, nil, true },
             { 252820, nil, true },
             { 252512, nil, true },
+            { 253982, nil, true },
         } },
         { "Baron Aquanis", "Baron Aquanis", "", "12876", {
             { 16782, 93, false },
@@ -434,6 +509,7 @@ ns.DungeonLoot = {
             { 252820, nil, true },
             { 252455, nil, true },
             { 252515, nil, true },
+            { 252823, nil, true },
         } },
         { "Old Serra'kis", "Seragis", "", "4830", {
             { 6901, 39, false },
@@ -461,6 +537,10 @@ ns.DungeonLoot = {
             { 252820, nil, true },
             { 252456, nil, true },
             { 252514, nil, true },
+            { 251376, nil, true },
+            { 251378, nil, true },
+            { 252824, nil, true },
+            { 253984, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 1486, 0.04, false },
@@ -489,6 +569,9 @@ ns.DungeonLoot = {
             { 252455, nil, true },
             { 252512, nil, true },
             { 252513, nil, true },
+            { 251379, nil, true },
+            { 252825, nil, true },
+            { 252815, nil, true },
         } },
         { "Targorr the Dread", "Targorr the Dread", "", "1696", {
             { 273804, nil, true },
@@ -497,6 +580,9 @@ ns.DungeonLoot = {
 
             { 273806, nil, true },
 
+            { 251380, nil, true },
+            { 251382, nil, true },
+            { 253942, nil, true },
         } },
         { "Hamhock", "Hamhock", "", "1717", {
             { 273809, nil, true },
@@ -504,6 +590,7 @@ ns.DungeonLoot = {
             { 273811, nil, true },
             { 252513, nil, true },
             { 252822, nil, true },
+            { 251377, nil, true },
         } },
         { "Bazil Thredd", "Bazil Thredd", "", "1716", {
             { 273824, nil, true },
@@ -518,6 +605,9 @@ ns.DungeonLoot = {
             { 252455, nil, true },
             { 252456, nil, true },
             { 252515, nil, true },
+            { 252824, nil, true },
+            { 253976, nil, true },
+            { 253986, nil, true },
         } },
         { "Dextren Ward", "Dextren Ward", "", "1663", {
             { 273817, nil, true },
@@ -533,6 +623,9 @@ ns.DungeonLoot = {
             { 252512, nil, true },
             { 252820, nil, true },
             { 252456, nil, true },
+            { 251375, nil, true },
+            { 251376, nil, true },
+            { 252821, nil, true },
         } },
         { "Bruegal Ironknuckle", "Brugal Ironfist", "Rare", "1720", {
             { 3228, 56, false },
@@ -587,6 +680,11 @@ ns.DungeonLoot = {
             { 273051, 37, true },
             { 273052, 24, true },
             { 273103, 6.4, true },
+        } },
+        { "Mana Elemental", "Mana Elemental", "", "", {
+            { 273045, nil, true },
+            { 273044, nil, true },
+            { 273043, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 276160, nil, true },
@@ -720,6 +818,8 @@ ns.DungeonLoot = {
             { 252822, nil, true },
             { 252513, nil, true },
             { 252515, nil, true },
+            { 251379, nil, true },
+            { 252821, nil, true },
         } },
         { "Razorfen Spearhide", "Razorfen Bristleback Guard", "", "4438", {
             { 6679, 60, false },
@@ -735,6 +835,7 @@ ns.DungeonLoot = {
             { 252820, nil, true },
             { 252512, nil, true },
             { 252513, nil, true },
+            { 251378, nil, true },
         } },
         { "Blind Hunter", "Blind Hunter", "Rare", "4425", {
             { 6695, 27, false },
@@ -926,17 +1027,56 @@ ns.DungeonLoot = {
         } },
     },
     ["the_drowned_city"] = {
-        { "Zul'Alai", "Zul'Alai", "", "270882", {} },
-        { "Var'Taka", "Var'Taka", "", "270883", {} },
-        { "Captain Dreadrise", "Captain Dreadrise", "", "270884", {} },
+        { "Zul'Alai", "Zul'Alai", "", "270882", {
+            { 274600, 67, true },
+            { 274598, 17, true },
+            { 274599, 17, true },
+            { 271718, nil, true },
+        } },
+        { "Var'Taka", "Var'Taka", "", "270883", {
+            { 274601, 50, true },
+            { 274602, 50, true },
+            { 274613, nil, true },
+        } },
+        { "Captain Dreadrise", "Captain Dreadrise", "", "270884", {
+            { 274605, 60, true },
+            { 274603, 20, true },
+            { 274604, 20, true },
+        } },
         { "Deathless Marrow", "Deathless Marrow", "", "270885", {} },
-        { "Primeval Elemental", "Primeval Elemental", "", "270887", {} },
-        { "Gill", "Gill", "稀有", "270888", {} },
-        { "Min'loth the Serpent", "Min'loth the Serpent", "", "270886", {} },
-        { "Umbra", "Umbra", "稀有", "264172", {} },
+        { "Primeval Elemental", "Primeval Elemental", "", "270887", {
+            { 274615, 50, true },
+            { 274612, 50, true },
+            { 274611, nil, true },
+        } },
+        { "Gill", "Gill", "稀有", "270888", {
+            { 286649, nil, true },
+            { 286646, nil, true },
+        } },
+        { "Min'loth the Serpent", "Min'loth the Serpent", "", "270886", {
+            { 274608, 67, true },
+            { 274609, 33, true },
+            { 274610, nil, true },
+        } },
+        { "Umbra", "Umbra", "稀有", "264172", {
+            { 286662, nil, true },
+            { 286658, nil, true },
+        } },
         { "Zin'aka", "Zin'aka", "", "263742", {} },
         { "Pyromancer Braxton", "Pyromancer Braxton", "Rare", "260468", {
             { 286651, 100, true },
+            { 286650, nil, true },
+        } },
+        { "Deathless Guardians", "Deathless Guardians", "", "", {
+            { 274607, nil, true },
+            { 274606, nil, true },
+            { 274614, nil, true },
+            { 271718, nil, true },
+        } },
+        { "Trash mobs", "小怪", "副本内任意敌人", "", {
+            { 287002, nil, true },
+            { 286997, nil, true },
+            { 287005, nil, true },
         } },
     },
     ["sm_armory"] = {
@@ -945,6 +1085,7 @@ ns.DungeonLoot = {
             { 7718, 34, false },
             { 10330, 14, false },
             { 7717, 14, false },
+            { 274295, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 5819, 0.01, false },
@@ -990,13 +1131,16 @@ ns.DungeonLoot = {
             { 10770, 33, false },
         } },
         { "Glutton", "The Glutton", "", "8567", {
+            { 274385, nil, true },
             { 10774, 48, false },
             { 10772, 50, false },
+            { 251402, nil, true },
         } },
         { "Ragglesnout", "Ragnosnaut", "Rare", "7354", {
             { 10768, 39, false },
             { 10767, 39, false },
             { 10758, 20, false },
+            { 251399, nil, true },
         } },
         { "Amnennar the Coldbringer", "Amnennar the Coldbringer", "", "7358", {
             { 10763, 37, false },
@@ -1004,8 +1148,10 @@ ns.DungeonLoot = {
             { 10764, 29, false },
             { 10761, 19, false },
             { 10765, 27, false },
+            { 274381, nil, true },
         } },
         { "Plaguemaw the Rotting", "Rotting Premlor", "", "7356", {
+            { 274380, nil, true },
             { 10766, 33, false },
             { 10760, 63, false },
         } },
@@ -1080,6 +1226,7 @@ ns.DungeonLoot = {
             { 274996, nil, false },
             { 274997, nil, false },
             { 274995, nil, false },
+            { 273101, nil, true },
         } },
         { "Twilight Commander Zarmok", "Twilight Commander Zarmok", "", "258972", {
             { 274999, nil, false },
@@ -1116,6 +1263,8 @@ ns.DungeonLoot = {
             { 287012, nil, true },
             { 287013, nil, true },
             { 287014, nil, true },
+            { 287010, nil, true },
+            { 287007, nil, true },
         } },
     },
     ["uldaman"] = {
@@ -1174,6 +1323,7 @@ ns.DungeonLoot = {
             { 11118, 62, false },
             { 9413, 14, false },
             { 9418, 13, false },
+            { 274432, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 9431, 0.02, false },
@@ -1223,16 +1373,25 @@ ns.DungeonLoot = {
         } },
         { "Theka the Martyr", "Martyr Seka", "Quest summon", "6696", {
             { 10660, 44, false },
+            { 274641, nil, true },
+            { 274639, nil, true },
+            { 274638, nil, true },
         } },
         { "Sandarr Dunereaver", "Sandarr Dunereaver", "Rare · Lv 45", "9291", {
             { 9523, 4.9, false },
+            { 274660, nil, true },
+            { 274659, nil, true },
         } },
         { "Witch Doctor Zum'rah", "Witch Doctor Zum'rah", "Lv 46", "6434", {
             { 18083, 35, false },
             { 18082, 15, false },
+            { 274642, nil, true },
         } },
         { "Nekrum Gutchewer", "Nekrum Gutchewer", "Quest summon", "6690", {
             { 9471, 39, false },
+            { 274644, nil, true },
+            { 274645, nil, true },
+            { 274643, nil, true },
         } },
         { "Shadowpriest Sezz'ziz", "Shadow Priest Sarvis", "", "6441", {
             { 9470, 23, false },
@@ -1242,21 +1401,30 @@ ns.DungeonLoot = {
         } },
         { "Dustwraith", "Dust Wraith", "Rare", "9292", {
             { 12471, 22, false },
+            { 12469, nil, false },
         } },
         { "Sandfury Executioner", "Sandfury Executioner", "Lv 46", "6440", {
             { 8444, 77, false },
+            { 274654, nil, true },
+            { 274655, nil, true },
         } },
         { "Sergeant Bly", "Sergeant Bly", "Quest summon · Lv 45", "7604", {
             { 8548, 67, false },
             { 5616, 0.01, false },
+            { 274646, nil, true },
+            { 274647, nil, true },
+            { 274648, nil, true },
+            { 252896, nil, true },
         } },
         { "Hydromancer Velratha", "Hydromancer Velratha", "Quest summon · Lv 46", "6685", {
             { 9234, 62, false },
             { 10661, 49, false },
+            { 274653, nil, true },
         } },
         { "Gahz'rilla", "Gahz'rilla", "Lv 46", "7271", {
             { 9469, 45, false },
             { 9467, 46, false },
+            { 274657, nil, true },
         } },
         { "Chief Ukorz Sandscalp", "Ukkez Sandtop", "", "6439", {
             { 9479, 9.4, false },
@@ -1267,6 +1435,7 @@ ns.DungeonLoot = {
         } },
         { "Zerillis", "Zerillis", "Rare · Lv 45", "9293", {
             { 12470, 18, false },
+            { 274658, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 9512, nil, false },
@@ -1356,11 +1525,39 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
-        { "Overseer Wrex", "Overseer Wrex", "", "255391", {} },
-        { "Tidemistress Ca'zass", "Tidemistress Ca'zass", "", "255997", {} },
-        { "Katerina the Cleaner", "Katerina the Cleaner", "", "257016", {} },
-        { "The Questioner", "The Questioner", "", "256236", {} },
-        { "Blazeroar", "Blazeroar", "", "255702", {} },
+        { "Overseer Wrex", "Overseer Wrex", "", "255391", {
+            { 276734, nil, true },
+            { 276733, nil, true },
+            { 276732, nil, true },
+        } },
+        { "Tidemistress Ca'zass", "Tidemistress Ca'zass", "", "255997", {
+            { 273883, nil, true },
+            { 276736, nil, true },
+            { 276735, nil, true },
+            { 276737, nil, true },
+        } },
+        { "Katerina the Cleaner", "Katerina the Cleaner", "", "257016", {
+            { 276739, nil, true },
+            { 276738, nil, true },
+            { 276740, nil, true },
+        } },
+        { "The Questioner", "The Questioner", "", "256236", {
+            { 274029, nil, true },
+            { 276742, nil, true },
+            { 276743, nil, true },
+            { 276741, nil, true },
+        } },
+        { "Blazeroar", "Blazeroar", "", "255702", {
+            { 276890, nil, true },
+            { 276744, nil, true },
+            { 276745, nil, true },
+            { 276746, nil, true },
+        } },
+        { "Trash mobs", "小怪", "副本内任意敌人", "", {
+            { 287021, nil, true },
+            { 287019, nil, true },
+            { 287018, nil, true },
+        } },
     },
     ["sunken_temple"] = {
         { "Loro", "Loro", "", "5714", {
@@ -1712,6 +1909,25 @@ ns.DungeonLoot = {
             { 11932, 16, false },
             { 12033, 3.2, false },
         } },
+        { "Hurley Blackbreath", "Hurley Blackbreath", "", "", {
+            { 18044, nil, false },
+            { 18043, nil, false },
+            { 22275, nil, false },
+            { 11735, nil, false },
+        } },
+        { "Ribbly Screwspigot", "Ribbly Screwspigot", "", "", {
+            { 11612, nil, false },
+            { 11742, nil, false },
+            { 2662, nil, false },
+            { 2663, nil, false },
+        } },
+        { "Plugger Spazzring", "Plugger Spazzring", "", "", {
+            { 12793, nil, false },
+            { 12791, nil, false },
+        } },
+        { "Theldren", "Theldren", "", "16059", {
+            { 22305, nil, false },
+        } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 12549, 0.03, false },
             { 12552, 0.02, false },
@@ -1751,6 +1967,7 @@ ns.DungeonLoot = {
         { "Pusillin", "Pusillin", "Lv 57", "7552", {
             { 18267, 83, false },
             { 18249, 100, false },
+            { 18316, nil, false },
         } },
         { "Zevrim Thornhoof", "Serem Spinehoof", "Lv 57", "11335", {
             { 18319, 10, false },
@@ -1859,6 +2076,24 @@ ns.DungeonLoot = {
             { 280072, nil, true },
             { 280073, nil, true },
         } },
+        { "Moontouched Wanderer", "Moontouched Wanderer", "", "269104", {
+            { 280080, nil, true },
+            { 280079, nil, true },
+        } },
+        { "Gortek the Apprentice", "Gortek the Apprentice", "", "269111", {
+            { 280077, nil, true },
+            { 280078, nil, true },
+        } },
+        { "Tunnelweb Matriarch", "Tunnelweb Matriarch", "", "250034", {
+            { 280085, nil, true },
+            { 280086, nil, true },
+        } },
+        { "Trash mobs", "小怪", "副本内任意敌人", "", {
+            { 287032, nil, true },
+            { 251453, nil, true },
+            { 287034, nil, true },
+            { 287036, nil, true },
+        } },
     },
     ["lower_blackrock_spire"] = {
         { "Burning Felguard", "Burning Felguard", "Rare", "5047", {
@@ -1930,6 +2165,7 @@ ns.DungeonLoot = {
             { 13259, 17, false },
             { 13178, 17, false },
             { 18784, 13, false },
+            { 13053, nil, false },
         } },
         { "Quartermaster Zigris", "Quartermaster Zigris", "Lv 59", "9738", {
             { 13247, 26, false },
@@ -2556,6 +2792,7 @@ ns.DungeonLoot = {
         { "Titanosaur", "Titanosaur", "", "253201", {
             { 280010, nil, true },
             { 280009, nil, true },
+            { 280011, nil, true },
         } },
         { "Tor'Rel", "Tor'Rel", "", "261811", {
             { 280014, nil, true },
@@ -2605,6 +2842,14 @@ ns.DungeonLoot = {
             { 272028, nil, true },
             { 285952, nil, true },
         } },
+        { "Ravasaur Hunters", "Ravasaur Hunters", "", "", {
+            { 280014, nil, true },
+            { 280013, nil, true },
+            { 280012, nil, true },
+        } },
+        { "Trash mobs", "小怪", "副本内任意敌人", "", {
+            { 287037, nil, true },
+        } },
     },
     ["stratholme_main"] = {
         { "Skul", "Shriek", "Rare · Lv 58", "2606", {
@@ -2651,6 +2896,8 @@ ns.DungeonLoot = {
         } },
         { "Malor the Zealous", "Zealous Maro", "Lv 60", "10458", {
             { 12845, 100, false },
+            { 276398, nil, true },
+            { 276399, nil, true },
         } },
         { "Crimson Hammersmith", "Crimson Hammerer", "Lv 60", "10637", {
             { 18781, 63, false },

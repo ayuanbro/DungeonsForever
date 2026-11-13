@@ -356,6 +356,18 @@ local function DarkmoonNeedRows(id)
 end
 TL.DarkmoonNeedRows = DarkmoonNeedRows
 
+local USE_TEXT = {
+    [276561] = L["阿鲁高书桌上拾取；在银松森林 63.4, 64.3 安波米尔室内最内侧蓝色水晶旁使用，获得召唤达拉然隐藏 BOSS 道具书"],
+    [275989] = L["达拉然隐藏 BOSS 激活物品"],
+}
+
+local function UseRows(id)
+    local txt = USE_TEXT[id]
+    if not txt then return nil end
+    return { { txt, 1, 0.82, 0.4 } }
+end
+TL.UseRows = UseRows
+
 local function ExtraRows(id, title)
     local cfg = Cfg()
     local out
@@ -374,6 +386,11 @@ local function ExtraRows(id, title)
         if drows then
             out = out or {}
             for i = 1, #drows do out[#out + 1] = drows[i] end
+        end
+        local urows = UseRows(id)
+        if urows then
+            out = out or {}
+            for i = 1, #urows do out[#out + 1] = urows[i] end
         end
     end
     if cfg.price then
