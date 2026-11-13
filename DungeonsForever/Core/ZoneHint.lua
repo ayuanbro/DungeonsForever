@@ -52,6 +52,7 @@ local function CFG()
     if c.restedVoice == nil then c.restedVoice = true end
     if c.turnin == nil then c.turnin = true end
     if c.onlyTodo == nil then c.onlyTodo = false end
+    if c.noZonePopup == nil then c.noZonePopup = true end
     if c.mode == nil then c.mode = "auto" end
     if c.dur == nil then c.dur = 12 end
     if c.icon == nil then c.icon = 32 end
@@ -1684,6 +1685,8 @@ function Z.Check(reason, attempt)
     if ns.ZoneOrb and ns.ZoneOrb.Update then ns.ZoneOrb.Update(res) end
 
     if res.total == 0 then return false end
+
+    if reason == "zone" and c.noZonePopup ~= false then return false end
 
     if type(InCombatLockdown) == "function" and InCombatLockdown() then
         pending = key

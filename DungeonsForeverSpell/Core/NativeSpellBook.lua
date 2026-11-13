@@ -878,23 +878,26 @@ local function LayoutOverlay()
     ovlArt:ClearAllPoints()
     ovlArt:SetPoint("TOPLEFT", ovlClip, "TOPLEFT", -minX, minT)
     ovlArt:SetSize(pw, ph)
+    local paintArt = not EUIOn()
     local used = 0
-    for i = 1, #arts do
-        local it = arts[i]
-        local tex = artPool[i]
-        if not tex then
-            tex = ovlArt:CreateTexture(nil, "BACKGROUND")
-            artPool[i] = tex
-        end
-        local okat = pcall(tex.SetAtlas, tex, it.atlas, true)
-        if okat then
-            tex:ClearAllPoints()
-            tex:SetPoint("TOPLEFT", ovlArt, "TOPLEFT", it.l, -it.t)
-            tex:SetSize(it.w, it.h)
-            tex:Show()
-            used = i
-        else
-            tex:Hide()
+    if paintArt then
+        for i = 1, #arts do
+            local it = arts[i]
+            local tex = artPool[i]
+            if not tex then
+                tex = ovlArt:CreateTexture(nil, "BACKGROUND")
+                artPool[i] = tex
+            end
+            local okat = pcall(tex.SetAtlas, tex, it.atlas, true)
+            if okat then
+                tex:ClearAllPoints()
+                tex:SetPoint("TOPLEFT", ovlArt, "TOPLEFT", it.l, -it.t)
+                tex:SetSize(it.w, it.h)
+                tex:Show()
+                used = i
+            else
+                tex:Hide()
+            end
         end
     end
     for i = used + 1, #artPool do artPool[i]:Hide() end
@@ -913,7 +916,33 @@ local function LayoutOverlay()
     return true
 end
 
+local hiddenNative = {}
+
+local function HideNativeList()
+    local paged = Paged()
+    if not paged then return end
+    local function hide(f)
+        if f and f.IsShown and f:IsShown() then
+            hiddenNative[#hiddenNative + 1] = f
+            f:Hide()
+        end
+    end
+    hide(paged.View1)
+    hide(paged.View2)
+    if paged.ViewFrames then
+        for _, v in ipairs(paged.ViewFrames) do hide(v) end
+    end
+end
+
+local function RestoreNativeList()
+    for _, f in ipairs(hiddenNative) do
+        if f.IsShown then f:Show() end
+    end
+    hiddenNative = {}
+end
+
 local function HideOverlay()
+    RestoreNativeList()
     if ovl then ovl:Hide() end
 end
 
@@ -1083,6 +1112,7 @@ local function InstallOurs()
         return false
     end
     if not EnsureOverlay() then return false end
+    RestoreNativeList()
     local key = CacheKey()
     local groups
     if InCombat() then
@@ -1107,6 +1137,7 @@ local function InstallOurs()
     end
     PaintPage()
     PagerSync()
+    HideNativeList()
     ovl:Show()
     return true
 end

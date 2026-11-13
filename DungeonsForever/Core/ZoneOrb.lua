@@ -1595,7 +1595,7 @@ function O.Init()
 
     InitVoiceBtn()
     opts = CreateFrame("Frame", nil, panel, "BackdropTemplate")
-    opts:SetSize(184, 444)
+    opts:SetSize(184, 466)
     opts:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -40)
     opts:SetFrameLevel(panel:GetFrameLevel() + 8)
     if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
@@ -1780,18 +1780,19 @@ function O.Init()
     oph2:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
 
     OptRow(-388, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"])
+    OptRow(-410, L["进新场景不弹窗"], "noZonePopup", L["进入新的场景时不再自动弹出待办窗口，可点击圆球查看"])
 
     local SIZES = { 24, 28, 32, 36, 40 }
 
     local szLabel = opts:CreateFontString(nil, "OVERLAY")
     szLabel:SetFont(ns.FONT, 14, "")
-    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -416)
+    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -438)
     szLabel:SetText(L["待办图标大小"])
     szLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
 
     local szBtn = CreateFrame("Button", nil, opts, "BackdropTemplate")
     szBtn:SetSize(36, 20)
-    szBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, -411)
+    szBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, -433)
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
         ns.hui.BuildRoundedBG(szBtn, 6, ns.hui.layer.L2, "both", true, 1)
     end

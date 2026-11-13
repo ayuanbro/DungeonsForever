@@ -1,6 +1,29 @@
 local _, ns = ...
 
 ns.BossPos = {
+    ["shapers_terrace"] = {
+        ["Bolt"] = { { 50.2, 63.1 } },
+        ["Venomridge"] = { { 46.8, 63 } },
+        ["Nanaya"] = { { 72, 57.4 } },
+        ["Direhorn Matriarch"] = { { 80.5, 56.8 } },
+        ["Vitrix"] = { { 56.2, 32.7 } },
+        ["Snowtalon"] = { { 23.7, 21.3 } },
+        ["Thunderhoof"] = { { 64, 66.7 } },
+        ["Titanosaur"] = { { 24.7, 44.3 } },
+        ["Cinder"] = { { 27.9, 61.7 } },
+        ["King Op"] = { { 85.3, 71.4 } },
+        ["Tor'Rel"] = { { 80.8, 42 } },
+        ["Izha'Rel"] = { { 78.4, 43.5 } },
+    },
+    ["blackmaw_hold"] = {
+        ["Withermaw"] = { { 47.5, 20.3 } },
+        ["Bonesnout the Unbroken"] = { { 38.6, 45.9 } },
+        ["Impaan the Imprisoner"] = { { 29.3, 57.2 } },
+        ["Unbound Spirit"] = { { 81.1, 67.6 } },
+        ["Elder Shaman Bloodmane"] = { { 84.7, 25 } },
+        ["Varrox Bleakhoof"] = { { 82.8, 81.3 } },
+        ["Blackmaw Behemoth"] = { { 78.5, 45.1 } },
+    },
     ["alcaz_prison"] = {
         ["Overseer Wrex"] = { { 68.5, 66.2 } },
         ["The Questioner"] = { { 76.5, 22.2 } },

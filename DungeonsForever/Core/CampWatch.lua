@@ -421,15 +421,25 @@ function C.AskTarget(name)
     if type(n) ~= "string" then return nil end
     n = n:gsub("^%s+", ""):gsub("%s+$", "")
     if n == "" then return nil end
-    local head = n:match("^(%S+)")
-    if head and head ~= "" then return head end
-    return nil
+    return n
+end
+
+local function SendAsk(who)
+    if type(SendChatMessage) ~= "function" then return false end
+    local ok = pcall(SendChatMessage, C.AskText(), "WHISPER", nil, who)
+    if not ok then return false end
+    return true
 end
 
 function C.Ask(name)
     local who = C.AskTarget(name)
     if not who then return false end
     if not (ChatFrame_OpenChat and DEFAULT_CHAT_FRAME) then return false end
+    if who:find("%s") then
+        if not SendAsk(who) then return false end
+        Arm(name, "w")
+        return true
+    end
     ChatFrame_OpenChat("/w " .. who .. " " .. C.AskText(), DEFAULT_CHAT_FRAME)
     Arm(name, "w")
     return true

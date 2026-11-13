@@ -1,6 +1,14 @@
 local _, ns = ...
 
 ns.MapPins = {
+    ["shapers_terrace"] = {
+        entrance = { { 28.7, 68.4, nil, 1 } },
+    },
+    ["blackmaw_hold"] = {
+        entrance = { { 14.5, 55.2, nil, 1 }, { 80, 77.2, nil, 1 } },
+        prev = { { 56.6, 46.7, 1, nil, nil, 1, 49.5, 46.1 }, { 88.5, 89.1, 1, nil, nil, 1, 80, 51.6 } },
+        next = { { 28.1, 27.2, 1 }, { 49.5, 46.1, 1, nil, nil, 1, 56.6, 46.7 }, { 80, 51.6, 1, nil, nil, 1, 88.5, 89.1 } },
+    },
     ["alcaz_prison"] = {
         quest = { { 26.6, 80.2, 96335, 1 } },
         entrance = { { 89.8, 34.4, nil, 1 } },

@@ -953,6 +953,7 @@ local SLOT_GEAR = {
     shirt = { "Shirt" }, tabard = { "Tabard" },
     ["two-hand"] = { "Two-Hand" }, ["main-hand"] = { "One-Hand", "Main Hand" },
     ["off-hand"] = { "Off Hand", "Held In Off-hand", "Shield" },
+    ["off-wep"] = { "One-Hand", "Off Hand" },
     ranged = { "Ranged", "Thrown", "Relic" },
 }
 
@@ -1287,6 +1288,7 @@ local function LoadFilterPrefs()
     local s = DB()
     if s.fOnlyUsable == nil then s.fOnlyUsable = true end
     BG.onlyUsable = s.fOnlyUsable and true or false
+    BG.fOneHand = (s.fOneHand == true)
     local lv = s.fFilterLv
     BG.filterLv = (type(lv) == "number" and lv >= 1 and lv <= 60) and math.floor(lv) or nil
     if s.fSrcVer ~= 3 then
@@ -1308,12 +1310,18 @@ end
 local function SaveFilterPrefs()
     local s = DB()
     s.fOnlyUsable = BG.onlyUsable and true or nil
+    s.fOneHand = BG.fOneHand and true or nil
     s.fFilterLv = BG.filterLv
     local ss = {}
     for _, f in ipairs(FILTERS) do
         if BG.srcSet[f.id] then ss[f.id] = true end
     end
     s.fSrcSet = ss
+end
+
+function BG.OneHandMode()
+    if BG.fOneHand ~= true then return false end
+    return BG.cls == "warrior" and BG.tspec == "fury"
 end
 
 local function PlayerLevel()
@@ -1944,6 +1952,12 @@ local function PaintDoll()
         end
         cell.dot:SetShown(not empty and BG.cur[dkey] ~= nil)
     end
+    if BG.oneHandTg then
+        local show = BG.cls == "warrior" and (BG.tspec == "arms" or BG.tspec == "fury")
+        BG.oneHandTg:SetShown(show)
+        if BG.oneHandLbl then BG.oneHandLbl:SetShown(show) end
+        BG.oneHandTg:SetChecked(BG.fOneHand and true or false)
+    end
 end
 
 local function PaintStats()
@@ -2091,6 +2105,7 @@ local function AutoSig(mode, cap)
         tostring(BG.cls or ""),
         tostring(BG.spec or ""), tostring(BG.tspec or ""), tostring(mode),
         tostring(cap), tostring(BG.wGen or 0), tostring(BG.wActive or 0),
+        tostring(BG.OneHandMode and BG.OneHandMode() and 1 or 0),
         PlayerFac() or "" }, "|")
 end
 
@@ -2338,13 +2353,19 @@ local function AutoPick(job)
         if not job.curKey then
             job.curKey = keys[job.ki]
             job.dk = DataKey(job.sp, job.curKey)
+            if job.dual and job.curKey == "main-hand" then job.dk = "main-hand" end
             if job.curKey == "off-hand" and job.mk == "two-hand" then
+                job.cur[job.dk] = nil
+                job.ki = job.ki + 1
+                job.curKey = nil
+            elseif job.dual and job.curKey == "two-hand" then
                 job.cur[job.dk] = nil
                 job.ki = job.ki + 1
                 job.curKey = nil
             else
                 local rkey = RowsKey(job.curKey)
                 if rkey == "main-hand" then rkey = job.mk end
+                if job.dual and rkey == "off-hand" then rkey = "off-wep" end
                 job.groups = SLOT_GEAR[rkey] or {}
                 job.gi, job.bi = 1, 1
                 job.best, job.bestScore = nil, nil
@@ -2391,6 +2412,8 @@ local function AutoPick(job)
                 else
                     job.bi = job.bi + 1
                     if UsableAt(r.id, job.cap, r.req or 0) and not job.usedQ[r.id]
+                        and not (job.dual and job.curKey == "off-hand"
+                            and r.id == job.cur["main-hand"])
                         and StatsKnown(r.id) then
                         local sc = ItemScore(r.id, job.w)
                         if sc and (job.bestScore == nil or sc > job.bestScore) then
@@ -2484,9 +2507,11 @@ local function AutoJobStart(mode, cap, sig, srcSet)
     autoJobSeq = autoJobSeq + 1
     local sp = SpecRec()
     if not sp then return end
+    local dual = (BG.OneHandMode and BG.OneHandMode()) and true or nil
     autoJob = {
         id = autoJobSeq, mode = mode, cap = cap, sig = sig,
-        cls = BG.cls, tspec = BG.tspec, sp = sp, mk = MainKey(sp), w = EffWeights(),
+        cls = BG.cls, tspec = BG.tspec, sp = sp,
+        mk = dual and "main-hand" or MainKey(sp), dual = dual, w = EffWeights(),
         srcSet = srcSet or ((mode == "dungeon") and AUTO_SRC_DG)
             or ((mode == "known") and AUTO_SRC_KNOWN)
             or ((mode == "dq") and AUTO_SRC_DQ) or nil,
@@ -4161,6 +4186,30 @@ local function BuildDoll(parent, lt)
     off:SetPoint("TOPLEFT", parent, "TOPLEFT", 8, -(wy + 44 + 8))
     off:SetScript("OnClick", ClickSlot("off"))
     BG.dollCells["off"] = off
+    local tg = CreateFrame("CheckButton", nil, parent)
+    tg:SetSize(36, 20)
+    tg:EnableMouse(true)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg) end
+    tg:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -(wy + 44 + 8 + 44 + 6))
+    if tg.SetHitRectInsets then tg:SetHitRectInsets(-8, -110, -6, -6) end
+    tg:SetScript("OnClick", function(self)
+        BG.fOneHand = not BG.fOneHand
+        self:SetChecked(BG.fOneHand)
+        SaveFilterPrefs()
+        ns.PlaySound(1)
+        if BG.usingPlan == nil and BG.autoPlan then
+            BG.UseAutoPlan(BG.autoPlan)
+        else
+            BG.RequestRender()
+        end
+    end)
+    tg:SetChecked(BG.fOneHand and true or false)
+    BG.oneHandTg = tg
+    local tl = MakeFS(parent, 14, C_TEXT, "LEFT")
+    tl:SetPoint("LEFT", tg, "RIGHT", 6, 0)
+    tl:SetWordWrap(false)
+    tl:SetText(L["推荐单手武器"])
+    BG.oneHandLbl = tl
     return wy + 44 + 8 + 44
 end
 

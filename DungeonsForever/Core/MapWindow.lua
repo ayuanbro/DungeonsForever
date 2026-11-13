@@ -570,7 +570,7 @@ end
 
 local function backToNative()
     local s = M.MapStore and M.MapStore()
-    local wantMini = (not s or s.closeToMini ~= false) and MW.curId
+    local wantMini = (not s or s.closeToMini ~= false) and not MW.miniSkip and MW.curId
         and R and R.hasArt and R.hasArt(MW.curId)
     if wantMini and win and win:IsShown() then
         MW.MiniOpen()
@@ -713,7 +713,7 @@ local function ensure()
     end
     cb:SetScript("OnClick", function()
         local s = M.MapStore and M.MapStore()
-        if (not s or s.closeToMini ~= false) and MW.curId and R.hasArt(MW.curId) then
+        if (not s or s.closeToMini ~= false) and not MW.miniSkip and MW.curId and R.hasArt(MW.curId) then
             MW.MiniOpen()
             return
         end
@@ -839,7 +839,7 @@ local function ensure()
     hct:SetVertexColor(GLYPH, GLYPH, GLYPH)
     hcb:SetScript("OnClick", function()
         local s = M.MapStore and M.MapStore()
-        if (not s or s.closeToMini ~= false) and MW.curId and R.hasArt(MW.curId) then
+        if (not s or s.closeToMini ~= false) and not MW.miniSkip and MW.curId and R.hasArt(MW.curId) then
             MW.MiniOpen()
             return
         end
@@ -1294,6 +1294,10 @@ layoutMini = function()
         mview.pins:SetPoint("TOPLEFT", mview.canvas, "TOPLEFT", 0, 0)
         mview.pins:SetSize(zw, zh)
     end
+    if mini.skipBtn then
+        local need = (mini.skipBtn:GetWidth() or 88) + 56
+        mini.skipBtn:SetShown(w >= need)
+    end
 end
 
 local function miniDragUpdate(self)
@@ -1669,6 +1673,27 @@ local function ensureMini()
     end)
     mini.xbtn = xbtn
 
+    local sbtn = CreateFrame("Button", nil, mf, "BackdropTemplate")
+    sbtn:SetSize(88, 24)
+    sbtn:SetPoint("RIGHT", xbtn, "LEFT", -6, 0)
+    sbtn:SetFrameLevel(mf:GetFrameLevel() + 12)
+    if ns.hui and ns.hui.SkinButton then pcall(ns.hui.SkinButton, sbtn) end
+    local sfs = sbtn:CreateFontString(nil, "OVERLAY")
+    sfs:SetFont(ns.FONT, 14, "")
+    sfs:SetPoint("CENTER", sbtn, "CENTER", 0, 0)
+    sfs:SetJustifyH("CENTER")
+    sfs:SetText(L["本次不提醒"])
+    sbtn:SetFontString(sfs)
+    local sw = sfs:GetStringWidth() + 18
+    if sw < 72 then sw = 72 end
+    sbtn:SetWidth(sw)
+    sbtn:SetScript("OnClick", function()
+        MW.miniSkip = true
+        MW.miniClosed = true
+        if mini then mini:Hide() end
+    end)
+    mini.skipBtn = sbtn
+
     mv:SetScript("OnUpdate", function(self, dt)
         self.__t = (self.__t or 0) + dt
         if self.__t < 0.5 then return end
@@ -1838,6 +1863,7 @@ function MW.Retarget(id, layer)
 end
 
 function MW.MiniAuto(id, layer)
+    if MW.miniSkip then return end
     if MW.miniClosed then return end
     local sa = M.MapStore and M.MapStore()
     if sa and sa.autoMini == false then return end
@@ -2046,7 +2072,7 @@ if type(hooksecurefunc) == "function" then
             return
         end
         if MW.Visible() then
-            local toMini = (not s or s.closeToMini ~= false) and (MW.curId ~= nil)
+            local toMini = (not s or s.closeToMini ~= false) and not MW.miniSkip and (MW.curId ~= nil)
             if not inCombat then hideNativeSoon() end
             if toMini then
                 MW.MiniOpen()

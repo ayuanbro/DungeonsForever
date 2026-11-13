@@ -2630,7 +2630,7 @@ M.ROUTE_ON = { blackfathom_deeps = true, ragefire_chasm = true, wailing_caverns 
                stratholme_main = true, stratholme_service = true,
                dire_maul_east = true, dire_maul_north = true, dire_maul_west = true,
                the_drowned_city = true, kroldok_stronghold = true,
-               alcaz_prison = true }
+               alcaz_prison = true, blackmaw_hold = true, shapers_terrace = true }
 
 function M.RouteOn(id)
     return id ~= nil and M.ROUTE_ON[id] == true

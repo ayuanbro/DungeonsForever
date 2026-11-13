@@ -30,9 +30,11 @@ f:Hide()
 
 f:EnableKeyboard(true)
 f:SetScript("OnKeyDown", function(self, key)
-    if type(InCombatLockdown) == "function" and InCombatLockdown() then return end
+    local isCombat = type(InCombatLockdown) == "function" and InCombatLockdown()
     if key == "ESCAPE" and self:IsShown() then
-        self:SetPropagateKeyboardInput(false)
+        if not isCombat then
+            self:SetPropagateKeyboardInput(false)
+        end
         local up = ns.UpdatePopup
         if up and up:IsShown() then
             if ns.UpdatePopupClose then
@@ -45,7 +47,9 @@ f:SetScript("OnKeyDown", function(self, key)
         if not (ns.GearDismissPopups and ns.GearDismissPopups()) then
             self:Hide()
         end
-    else
+        return
+    end
+    if not isCombat then
         self:SetPropagateKeyboardInput(true)
     end
 end)

@@ -1356,7 +1356,7 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
-        { "Overseer Wrex", "監工雷克斯", "", "", {} },
+        { "Overseer Wrex", "監工雷克斯", "", "255391", {} },
         { "Tidemistress Ca'zass", "海潮主母卡扎斯", "", "255997", {} },
         { "Katerina the Cleaner", "清道夫卡特琳娜", "", "257016", {} },
         { "The Questioner", "質問者", "", "256236", {} },
@@ -1818,13 +1818,47 @@ ns.DungeonLoot = {
         } },
     },
     ["blackmaw_hold"] = {
-        { "Withermaw", "枯頜", "", "247195", {} },
-        { "Impaan the Imprisoner", "獄牢頭鬼", "", "247206", {} },
-        { "Elder Shaman Bloodmane", "長者薩滿血鬃", "", "247209", {} },
-        { "Bonesnout the Unbroken", "不屈的白骨之吻", "", "247198", {} },
-        { "Varrox Bleakhoof", "瓦羅克斯·暗蹄", "", "247234", {} },
-        { "Blackmaw Behemoth", "黑喉巨獸", "", "247207", {} },
-        { "Unbound Spirit", "不羈之魂", "", "247231", {} },
+        { "Withermaw", "枯頜", "", "247195", {
+            { 249697, nil, true },
+            { 280062, nil, true },
+            { 280063, nil, true },
+            { 280064, nil, true },
+        } },
+        { "Impaan the Imprisoner", "獄牢頭鬼", "", "247206", {
+            { 280056, nil, true },
+            { 280057, nil, true },
+            { 280058, nil, true },
+        } },
+        { "Elder Shaman Bloodmane", "長者薩滿血鬃", "", "247209", {
+            { 276893, nil, true },
+            { 286415, nil, true },
+            { 280068, nil, true },
+            { 280069, nil, true },
+            { 280070, nil, true },
+        } },
+        { "Bonesnout the Unbroken", "不屈的白骨之吻", "", "247198", {
+            { 249696, nil, true },
+            { 280059, nil, true },
+            { 280060, nil, true },
+            { 280061, nil, true },
+        } },
+        { "Varrox Bleakhoof", "瓦羅克斯·暗蹄", "", "247234", {
+            { 272027, nil, true },
+            { 249692, nil, true },
+            { 280074, nil, true },
+            { 280075, nil, true },
+            { 280076, nil, true },
+        } },
+        { "Blackmaw Behemoth", "克勞伯特", "", "247207", {
+            { 280065, nil, true },
+            { 280066, nil, true },
+            { 280067, nil, true },
+        } },
+        { "Unbound Spirit", "不羈之魂", "", "247231", {
+            { 280071, nil, true },
+            { 280072, nil, true },
+            { 280073, nil, true },
+        } },
     },
     ["lower_blackrock_spire"] = {
         { "Burning Felguard", "燃燒地獄衛士", "稀有", "5047", {
@@ -2519,17 +2553,58 @@ ns.DungeonLoot = {
         } },
     },
     ["shapers_terrace"] = {
-        { "Titanosaur", "泰坦巨龍", "", "253201", {} },
-        { "Ravasaur Hunters", "暴掠龍獵手", "", "", {} },
-        { "Thunderhoof", "雷蹄", "", "261812", {} },
-        { "Venomridge", "毒脊", "", "261813", {} },
-        { "Direhorn Matriarch", "恐角龍母", "", "262127", {} },
-        { "Cinder", "烈火", "", "261974", {} },
+        { "Titanosaur", "泰坦巨龍", "", "253201", {
+            { 280010, nil, true },
+            { 280009, nil, true },
+        } },
+        { "Tor'Rel", "托瑞爾", "", "261811", {
+            { 280014, nil, true },
+            { 280013, nil, true },
+            { 280012, nil, true },
+        } },
+        { "Izha'Rel", "伊扎雷爾", "", "253218", {} },
+        { "Thunderhoof", "雷蹄", "", "261812", {
+            { 280018, nil, true },
+            { 280020, nil, true },
+            { 280019, nil, true },
+        } },
+        { "Venomridge", "毒脊", "", "261813", {
+            { 280016, nil, true },
+            { 280017, nil, true },
+            { 280015, nil, true },
+        } },
+        { "Direhorn Matriarch", "恐角龍母", "", "262127", {
+            { 280022, nil, true },
+            { 280021, nil, true },
+            { 280045, nil, true },
+            { 285951, nil, true },
+        } },
+        { "Cinder", "烈火", "", "261974", {
+            { 280028, nil, true },
+            { 280029, nil, true },
+        } },
         { "King Op", "奧普國王", "", "261993", {} },
-        { "Snowtalon", "雪爪", "", "262297", {} },
-        { "Bolt", "霹靂", "", "262081", {} },
-        { "Vitrix", "翠鱗", "", "272561", {} },
-        { "Nanaya", "娜娜亞", "", "261809", {} },
+        { "Snowtalon", "雪爪", "", "262297", {
+            { 280027, nil, true },
+            { 280026, nil, true },
+        } },
+        { "Bolt", "霹靂", "", "262081", {
+            { 280031, nil, true },
+            { 280032, nil, true },
+        } },
+        { "Vitrix", "翠鱗", "", "272561", {
+            { 280026, nil, true },
+            { 280027, nil, true },
+            { 280032, nil, true },
+        } },
+        { "Nanaya", "娜娜亞", "", "261809", {
+            { 273128, nil, true },
+            { 280023, nil, true },
+            { 280024, nil, true },
+            { 280025, nil, true },
+            { 272028, nil, true },
+            { 285952, nil, true },
+        } },
     },
     ["stratholme_main"] = {
         { "Skul", "斯庫爾", "稀有 · 58 級", "2606", {

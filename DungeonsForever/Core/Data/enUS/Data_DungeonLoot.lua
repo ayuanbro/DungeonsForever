@@ -1356,7 +1356,7 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
-        { "Overseer Wrex", "Overseer Wrex", "", "", {} },
+        { "Overseer Wrex", "Overseer Wrex", "", "255391", {} },
         { "Tidemistress Ca'zass", "Tidemistress Ca'zass", "", "255997", {} },
         { "Katerina the Cleaner", "Katerina the Cleaner", "", "257016", {} },
         { "The Questioner", "The Questioner", "", "256236", {} },
@@ -1818,13 +1818,47 @@ ns.DungeonLoot = {
         } },
     },
     ["blackmaw_hold"] = {
-        { "Withermaw", "Withermaw", "", "247195", {} },
-        { "Impaan the Imprisoner", "Impaan the Imprisoner", "", "247206", {} },
-        { "Elder Shaman Bloodmane", "Elder Shaman Bloodmane", "", "247209", {} },
-        { "Bonesnout the Unbroken", "Bonesnout the Unbroken", "", "247198", {} },
-        { "Varrox Bleakhoof", "Varrox Bleakhoof", "", "247234", {} },
-        { "Blackmaw Behemoth", "Blackmaw Behemoth", "", "247207", {} },
-        { "Unbound Spirit", "Unbound Spirit", "", "247231", {} },
+        { "Withermaw", "Withermaw", "", "247195", {
+            { 249697, nil, true },
+            { 280062, nil, true },
+            { 280063, nil, true },
+            { 280064, nil, true },
+        } },
+        { "Impaan the Imprisoner", "Impaan the Imprisoner", "", "247206", {
+            { 280056, nil, true },
+            { 280057, nil, true },
+            { 280058, nil, true },
+        } },
+        { "Elder Shaman Bloodmane", "Elder Shaman Bloodmane", "", "247209", {
+            { 276893, nil, true },
+            { 286415, nil, true },
+            { 280068, nil, true },
+            { 280069, nil, true },
+            { 280070, nil, true },
+        } },
+        { "Bonesnout the Unbroken", "Bonesnout the Unbroken", "", "247198", {
+            { 249696, nil, true },
+            { 280059, nil, true },
+            { 280060, nil, true },
+            { 280061, nil, true },
+        } },
+        { "Varrox Bleakhoof", "Varrox Bleakhoof", "", "247234", {
+            { 272027, nil, true },
+            { 249692, nil, true },
+            { 280074, nil, true },
+            { 280075, nil, true },
+            { 280076, nil, true },
+        } },
+        { "Blackmaw Behemoth", "Blackmaw Behemoth", "", "247207", {
+            { 280065, nil, true },
+            { 280066, nil, true },
+            { 280067, nil, true },
+        } },
+        { "Unbound Spirit", "Unbound Spirit", "", "247231", {
+            { 280071, nil, true },
+            { 280072, nil, true },
+            { 280073, nil, true },
+        } },
     },
     ["lower_blackrock_spire"] = {
         { "Burning Felguard", "Burning Felguard", "Rare", "5047", {
@@ -2519,17 +2553,58 @@ ns.DungeonLoot = {
         } },
     },
     ["shapers_terrace"] = {
-        { "Titanosaur", "Titanosaur", "", "253201", {} },
-        { "Ravasaur Hunters", "Ravasaur Hunters", "", "", {} },
-        { "Thunderhoof", "Thunderhoof", "", "261812", {} },
-        { "Venomridge", "Venomridge", "", "261813", {} },
-        { "Direhorn Matriarch", "Direhorn Matriarch", "", "262127", {} },
-        { "Cinder", "Cinder", "", "261974", {} },
+        { "Titanosaur", "Titanosaur", "", "253201", {
+            { 280010, nil, true },
+            { 280009, nil, true },
+        } },
+        { "Tor'Rel", "Tor'Rel", "", "261811", {
+            { 280014, nil, true },
+            { 280013, nil, true },
+            { 280012, nil, true },
+        } },
+        { "Izha'Rel", "Izha'Rel", "", "253218", {} },
+        { "Thunderhoof", "Thunderhoof", "", "261812", {
+            { 280018, nil, true },
+            { 280020, nil, true },
+            { 280019, nil, true },
+        } },
+        { "Venomridge", "Venomridge", "", "261813", {
+            { 280016, nil, true },
+            { 280017, nil, true },
+            { 280015, nil, true },
+        } },
+        { "Direhorn Matriarch", "Direhorn Matriarch", "", "262127", {
+            { 280022, nil, true },
+            { 280021, nil, true },
+            { 280045, nil, true },
+            { 285951, nil, true },
+        } },
+        { "Cinder", "Cinder", "", "261974", {
+            { 280028, nil, true },
+            { 280029, nil, true },
+        } },
         { "King Op", "King Op", "", "261993", {} },
-        { "Snowtalon", "Snowtalon", "", "262297", {} },
-        { "Bolt", "Bolt", "", "262081", {} },
-        { "Vitrix", "Vitrix", "", "272561", {} },
-        { "Nanaya", "Nanaya", "", "261809", {} },
+        { "Snowtalon", "Snowtalon", "", "262297", {
+            { 280027, nil, true },
+            { 280026, nil, true },
+        } },
+        { "Bolt", "Bolt", "", "262081", {
+            { 280031, nil, true },
+            { 280032, nil, true },
+        } },
+        { "Vitrix", "Vitrix", "", "272561", {
+            { 280026, nil, true },
+            { 280027, nil, true },
+            { 280032, nil, true },
+        } },
+        { "Nanaya", "Nanaya", "", "261809", {
+            { 273128, nil, true },
+            { 280023, nil, true },
+            { 280024, nil, true },
+            { 280025, nil, true },
+            { 272028, nil, true },
+            { 285952, nil, true },
+        } },
     },
     ["stratholme_main"] = {
         { "Skul", "Shriek", "Rare · Lv 58", "2606", {

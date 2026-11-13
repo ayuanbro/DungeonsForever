@@ -1375,7 +1375,7 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
-        { "Overseer Wrex", "监工雷克斯", "", "", {} },
+        { "Overseer Wrex", "监工雷克斯", "", "255391", {} },
         { "Tidemistress Ca'zass", "海潮主母卡扎斯", "", "255997", {
             { 273883, nil, true },
         } },
@@ -1845,21 +1845,45 @@ ns.DungeonLoot = {
     ["blackmaw_hold"] = {
         { "Withermaw", "枯颌", "", "247195", {
             { 249697, nil, true },
+            { 280062, nil, true },
+            { 280063, nil, true },
+            { 280064, nil, true },
         } },
-        { "Impaan the Imprisoner", "狱牢头鬼", "", "247206", {} },
+        { "Impaan the Imprisoner", "狱牢头鬼", "", "247206", {
+            { 280056, nil, true },
+            { 280057, nil, true },
+            { 280058, nil, true },
+        } },
         { "Elder Shaman Bloodmane", "长者萨满血鬃", "", "247209", {
             { 276893, nil, true },
             { 286415, nil, true },
+            { 280068, nil, true },
+            { 280069, nil, true },
+            { 280070, nil, true },
         } },
         { "Bonesnout the Unbroken", "不屈的白骨之吻", "", "247198", {
             { 249696, nil, true },
+            { 280059, nil, true },
+            { 280060, nil, true },
+            { 280061, nil, true },
         } },
         { "Varrox Bleakhoof", "瓦罗克斯·暗蹄", "", "247234", {
             { 272027, nil, true },
             { 249692, nil, true },
+            { 280074, nil, true },
+            { 280075, nil, true },
+            { 280076, nil, true },
         } },
-        { "Blackmaw Behemoth", "黑喉巨兽", "", "247207", {} },
-        { "Unbound Spirit", "不羁之魂", "", "247231", {} },
+        { "Blackmaw Behemoth", "克劳伯特", "", "247207", {
+            { 280065, nil, true },
+            { 280066, nil, true },
+            { 280067, nil, true },
+        } },
+        { "Unbound Spirit", "不羁之魂", "", "247231", {
+            { 280071, nil, true },
+            { 280072, nil, true },
+            { 280073, nil, true },
+        } },
     },
     ["lower_blackrock_spire"] = {
         { "Burning Felguard", "燃烧地狱卫士", "稀有", "10263", {
@@ -2554,19 +2578,55 @@ ns.DungeonLoot = {
         } },
     },
     ["shapers_terrace"] = {
-        { "Titanosaur", "泰坦巨龙", "", "253201", {} },
-        { "Ravasaur Hunters", "暴掠龙猎手", "", "", {} },
-        { "Thunderhoof", "雷蹄", "", "261812", {} },
-        { "Venomridge", "毒脊", "", "261813", {} },
+        { "Titanosaur", "泰坦巨龙", "", "253201", {
+            { 280010, nil, true },
+            { 280009, nil, true },
+        } },
+        { "Tor'Rel", "托瑞尔", "", "261811", {
+            { 280014, nil, true },
+            { 280013, nil, true },
+            { 280012, nil, true },
+        } },
+        { "Izha'Rel", "伊扎雷尔", "", "253218", {} },
+        { "Thunderhoof", "雷蹄", "", "261812", {
+            { 280018, nil, true },
+            { 280020, nil, true },
+            { 280019, nil, true },
+        } },
+        { "Venomridge", "毒脊", "", "261813", {
+            { 280016, nil, true },
+            { 280017, nil, true },
+            { 280015, nil, true },
+        } },
         { "Direhorn Matriarch", "恐角龙母", "", "262127", {
+            { 280022, nil, true },
+            { 280021, nil, true },
+            { 280045, nil, true },
             { 285951, nil, true },
         } },
-        { "Cinder", "烈火", "", "261974", {} },
+        { "Cinder", "烈火", "", "261974", {
+            { 280028, nil, true },
+            { 280029, nil, true },
+        } },
         { "King Op", "奥普国王", "", "261993", {} },
-        { "Snowtalon", "雪爪", "", "262297", {} },
-        { "Bolt", "霹雳", "", "262081", {} },
-        { "Vitrix", "翠鳞", "", "272561", {} },
+        { "Snowtalon", "雪爪", "", "262297", {
+            { 280027, nil, true },
+            { 280026, nil, true },
+        } },
+        { "Bolt", "霹雳", "", "262081", {
+            { 280031, nil, true },
+            { 280032, nil, true },
+        } },
+        { "Vitrix", "翠鳞", "", "272561", {
+            { 280026, nil, true },
+            { 280027, nil, true },
+            { 280032, nil, true },
+        } },
         { "Nanaya", "娜娜亚", "", "261809", {
+            { 273128, nil, true },
+            { 280023, nil, true },
+            { 280024, nil, true },
+            { 280025, nil, true },
             { 272028, nil, true },
             { 285952, nil, true },
         } },
