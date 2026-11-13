@@ -2,6 +2,7 @@ local _, ns = ...
 
 ns.MapPins = {
     ["alcaz_prison"] = {
+        quest = { { 26.6, 80.2, 96335, 1 } },
         entrance = { { 89.8, 34.4, nil, 1 } },
         prev = { { 32.6, 33.5, 1, nil, nil, 1, 64.3, 21.6 } },
         next = { { 64.3, 21.6, 1, nil, nil, 1, 32.6, 33.5 } },

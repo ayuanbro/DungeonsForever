@@ -1,6 +1,13 @@
 local _, ns = ...
 
 ns.BossPos = {
+    ["alcaz_prison"] = {
+        ["Overseer Wrex"] = { { 68.5, 66.2 } },
+        ["The Questioner"] = { { 76.5, 22.2 } },
+        ["Tidemistress Ca'zass"] = { { 49.6, 34.1 } },
+        ["Katerina the Cleaner"] = { { 20.1, 49.8 } },
+        ["Blazeroar"] = { { 20.3, 79.9 } },
+    },
     ["kroldok_stronghold"] = {
         ["Slavecrusher Grox"] = { { 26.2, 64 } },
         ["Twilight Commander Zarmok"] = { { 39.1, 69.4 } },

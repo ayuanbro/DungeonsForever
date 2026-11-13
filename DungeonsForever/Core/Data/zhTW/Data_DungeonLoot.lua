@@ -1356,7 +1356,7 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
-        { "Overseer Wrex", "獄監雷克斯", "", "", {} },
+        { "Overseer Wrex", "監工雷克斯", "", "", {} },
         { "Tidemistress Ca'zass", "海潮主母卡扎斯", "", "255997", {} },
         { "Katerina the Cleaner", "清道夫卡特琳娜", "", "257016", {} },
         { "The Questioner", "質問者", "", "256236", {} },
