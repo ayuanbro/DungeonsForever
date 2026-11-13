@@ -4364,7 +4364,11 @@ function DG.BuildDungeonOverview()
         end
         local lv = MakeFS(bar, 14, C_GREY, "LEFT")
         lv:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 7, 4)
-        lv:SetText(d.levelMin .. "–" .. d.levelMax .. (d.bossCount and (" · BOSS " .. d.bossCount) or ""))
+        -- BOSS 数量直接由掉落表推导：数据里手写的 d.bossCount 会和实际条目脱节
+        -- （目前有 4 个副本人為漂移，例如沉没的神庙标 12 实际 18）
+        local lootTable = ns.DungeonLoot and ns.DungeonLoot[d.id]
+        local bossNum = (lootTable and #lootTable) or d.bossCount
+        lv:SetText(d.levelMin .. "–" .. d.levelMax .. (bossNum and (" · BOSS " .. bossNum) or ""))
 
         SetTip(bar, d.name .. "  " .. d.nameEn .. "\n" ..
             format(L["等级 %d–%d · %s"], d.levelMin, d.levelMax, d.zone or L["位置未知"]))
