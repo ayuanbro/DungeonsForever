@@ -309,9 +309,6 @@ end
 
 local function TipBegin(owner, anchor)
     GameTooltip:SetOwner(owner, anchor or 'ANCHOR_RIGHT')
-    if ns.hui and ns.hui.ShowNativeTip then
-        pcall(ns.hui.ShowNativeTip, GameTooltip)
-    end
 end
 
 local function BuildBackground(b)

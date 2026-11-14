@@ -1789,6 +1789,24 @@ DG.Q_OV_DONE = { 0.25, 0.85, 0.35, 1 }
 DG.Q_OV_READY = { 0.15, 0.82, 0.78, 1 }
 DG.Q_OV_ACT = { 1, 0.82, 0, 1 }
 DG.Q_OV_TODO = { 0.55, 0.55, 0.55, 1 }
+DG.Q_OV_REP = { 0.62, 0.50, 0.86, 1 }
+function DG.QuestRepeat(id)
+    local t = ns.DungeonQuestRepeat
+    if not t or not id then return false end
+    return t[id] == true
+end
+function DG.QuestBadgeState(id)
+    local st = DG.QuestState(id)
+    if st == "todo" and DG.QuestRepeat(id) then return "rep" end
+    return st
+end
+function DG.QStateColor(s)
+    if s == "done" then return C_GREEN end
+    if s == "ready" then return DG.Q_OV_READY end
+    if s == "active" then return C_GOLD end
+    if s == "rep" then return DG.Q_OV_REP end
+    return C_GREY
+end
 
 function DG.EnsureQuestLane()
     if U.questLaneBuilt then return end
@@ -2231,6 +2249,7 @@ function DG.EnsureQuestLane()
         { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_READY, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn", { 0.020, 0.180, 0.172 }, DG.Q_OV_READY, L["完成未上交"] },
         { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_ACT, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk", { 0.227, 0.165, 0 }, DG.Q_OV_ACT, L["已接取"] },
         { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_TODO, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl", { 0.102, 0.102, 0.102 }, DG.Q_OV_TODO, L["未接取"] },
+        { "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc", DG.Q_OV_REP, "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk", { 0.18, 0.14, 0.26 }, DG.Q_OV_REP, L["可重复"] },
     }
     local legf = CreateFrame("Frame", nil, card)
     legf:SetFrameLevel(sf:GetFrameLevel() + 10)
@@ -2643,6 +2662,7 @@ function DG.PaintQuestOverview(d)
         if DG.QuestDone(q[1]) then return DG.Q_OV_DONE end
         if DG.QuestReady(q[1]) then return DG.Q_OV_READY end
         if DG.QuestActive(q[1]) then return DG.Q_OV_ACT end
+        if DG.QuestRepeat(q[1]) then return DG.Q_OV_REP end
         return DG.Q_OV_TODO
     end
     local MARK_ICON = {
@@ -2650,12 +2670,14 @@ function DG.PaintQuestOverview(d)
         [DG.Q_OV_READY] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn",
         [DG.Q_OV_ACT] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
         [DG.Q_OV_TODO] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
+        [DG.Q_OV_REP] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
     }
     local function extState(pid)
         local st = DG.QuestState(pid)
         if st == "done" then return DG.Q_OV_DONE end
         if st == "ready" then return DG.Q_OV_READY end
         if st == "active" then return DG.Q_OV_ACT end
+        if st == "todo" and DG.QuestRepeat(pid) then return DG.Q_OV_REP end
         return DG.Q_OV_TODO
     end
     local function nodeBorder(n, c)
@@ -2687,6 +2709,7 @@ function DG.PaintQuestOverview(d)
         [DG.Q_OV_READY] = { 0.020, 0.180, 0.172 },
         [DG.Q_OV_ACT] = { 0.227, 0.165, 0 },
         [DG.Q_OV_TODO] = { 0.102, 0.102, 0.102 },
+        [DG.Q_OV_REP] = { 0.18, 0.14, 0.26 },
     }
     local function setMark(n, c)
         if n.okD then
@@ -2836,6 +2859,7 @@ function DG.PaintQuestOverview(d)
         if lc == DG.Q_OV_DONE then return 4 end
         if lc == DG.Q_OV_READY then return 3 end
         if lc == DG.Q_OV_ACT then return 2 end
+        if lc == DG.Q_OV_REP then return 1 end
         return 0
     end
     local function rawSeg(x1, y1, x2, y2, lc)
@@ -2968,6 +2992,9 @@ function DG.PaintQuestOverview(d)
         end
         if DG.QuestActive(childQ[1]) or (srcQ and DG.QuestActive(srcQ[1])) then
             return DG.Q_OV_ACT
+        end
+        if DG.QuestRepeat(childQ[1]) or (srcQ and DG.QuestRepeat(srcQ[1])) then
+            return DG.Q_OV_REP
         end
         return DG.Q_OV_TODO
     end
@@ -5127,7 +5154,6 @@ function DG.ShowItemTipBody(owner, it, extra, title)
     end
     if id and cached and GameTooltip.SetHyperlink then
         local ok = pcall(GameTooltip.SetHyperlink, GameTooltip, "item:" .. tostring(id))
-        if ns.hui and ns.hui.MarkTipItem then ns.hui.MarkTipItem(GameTooltip, true) end
         if ok then
             GameTooltip:Show()
             local n = GameTooltip.NumLines and GameTooltip:NumLines() or 0
@@ -5137,7 +5163,6 @@ function DG.ShowItemTipBody(owner, it, extra, title)
     if not native and id then DG.RequestItem(id) end
 
     if native then
-        if ns.hui and ns.hui.MarkTipItem then ns.hui.MarkTipItem(GameTooltip, true) end
         local tl = ns.TipLines and ns.TipLines.Lines(id)
         DG.TipAppendMerged(extra, tl)
         if title then
@@ -6817,13 +6842,15 @@ function DG.ShowQuestTip(owner, q)
     GameTooltip:ClearLines()
     local nm, hasName = DG.QuestName(q[1])
     GameTooltip:AddLine(nm, 1, 1, 1, true)
-    local st = DG.QuestState(q[1])
+    local st = DG.QuestBadgeState(q[1])
     if st == "done" then
         GameTooltip:AddLine(L["已完成"], 0.25, 0.85, 0.35)
     elseif st == "ready" then
         GameTooltip:AddLine(L["完成未上交"], 0.15, 0.82, 0.78)
     elseif st == "active" then
         GameTooltip:AddLine(L["进行中"], 1, 0.82, 0)
+    elseif st == "rep" then
+        GameTooltip:AddLine(L["可重复"], 0.62, 0.50, 0.86)
     else
         GameTooltip:AddLine(L["未完成"], 0.6, 0.6, 0.6)
     end
@@ -6924,12 +6951,14 @@ DG.Q_MARK_SYM = {
     ready = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn",
     active = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
     todo = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
+    rep = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
 }
 DG.Q_MARK_INK = {
     done = { 0.043, 0.239, 0.102 },
     ready = { 0.020, 0.180, 0.172 },
     active = { 0.227, 0.165, 0 },
     todo = { 0.102, 0.102, 0.102 },
+    rep = { 0.18, 0.14, 0.26 },
 }
 DG.Q_FLOW_SEC_GAP = 6
 DG.Q_FLOW_ST_GAP = 3
@@ -6944,7 +6973,7 @@ DG.Q_HDR_H = 26
 DG.Q_GRP_GAP = 8
 DG.Q_SUM_H = 28
 DG.Q_HEAD_H = DG.Q_PAD + 24 + DG.Q_PAD
-DG.Q_STATUS_TAG = { done = L["已完成"], ready = L["完成未上交"], active = L["进行中"], todo = L["未完成"] }
+DG.Q_STATUS_TAG = { done = L["已完成"], ready = L["完成未上交"], active = L["进行中"], todo = L["未完成"], rep = L["可重复"] }
 DG.QFILTERS = { "all", "todo", "done" }
 DG.QFILTER_LABEL = { all = L["全部"], todo = L["未完成"], done = L["已完成"] }
 DG.QSIDE_LABEL = { all = L["全部"], A = L["联盟"], H = L["部落"] }
@@ -7344,8 +7373,10 @@ function DG.QuestProgress(d)
         if type(qid) == "number" and not opt[qid]
             and (not side or side == "" or side == ps)
             and DG.QuestClassOK(qid) and DG.QuestRaceOK(qid) then
-            total = total + 1
-            if DG.QuestDone(qid) then done = done + 1 end
+            if not DG.QuestRepeat(qid) then
+                total = total + 1
+                if DG.QuestDone(qid) then done = done + 1 end
+            end
         end
     end
     DG.__qProgCache = DG.__qProgCache or {}
@@ -7619,12 +7650,13 @@ function U:RenderDungeonQuests()
     local fhA = DG.FilterBranchHeads(list, "A")
     local fhH = DG.FilterBranchHeads(list, "H")
     local cnt = { all = #fhA, A = #fhA, H = #fhH, todo = 0, done = 0 }
-    local doneN = 0
+    local doneN, repN = 0, 0
     for i = 1, #fhA do
         if DG.QuestDone(fhA[i][1]) then doneN = doneN + 1 end
+        if DG.QuestRepeat(fhA[i][1]) then repN = repN + 1 end
     end
     cnt.done = doneN
-    cnt.todo = #fhA - doneN
+    cnt.todo = #fhA - doneN - repN
 
     local view = U.dungeonQView
     if view ~= "overview" then view = "list" end
@@ -7740,8 +7772,10 @@ function U:RenderDungeonQuests()
     for i = 1, nAll do
         local q = list[i]
         if q[2] == side or not q[2] then
-            nVis = nVis + 1
-            if DG.QuestDone(q[1]) then doneVis = doneVis + 1 end
+            if not DG.QuestRepeat(q[1]) then
+                nVis = nVis + 1
+                if DG.QuestDone(q[1]) then doneVis = doneVis + 1 end
+            end
         end
     end
     local seg = ""
@@ -7896,8 +7930,8 @@ function U:RenderDungeonQuests()
             for i = 1, #g.rows do
                 local q = g.rows[i]
                 local r = takeRow()
-                local st = DG.QuestState(q[1])
-                local col = (st == "done" and C_GREEN) or (st == "ready" and DG.Q_OV_READY) or (st == "active" and C_GOLD) or C_GREY
+                local st = DG.QuestBadgeState(q[1])
+                local col = DG.QStateColor(st)
                 local nm, hasName = DG.QuestName(q[1])
                 local ftex = q[2] and DG.Q_FAC_ICON[q[2]] or nil
                 if ftex then
@@ -8442,8 +8476,8 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
                 col = C_LINK_Q
                 b.__npc, b.__q, b.__item = nil, tk.id, nil
                 if hasName then
-                    local st = DG.QuestState(tk.id)
-                    local mc = (st == "done" and C_GREEN) or (st == "ready" and DG.Q_OV_READY) or (st == "active" and C_GOLD) or C_GREY
+                    local st = DG.QuestBadgeState(tk.id)
+                    local mc = DG.QStateColor(st)
                     DG.FlowMark(b, st, mc)
                     txt = format("《%s%s》", DG.Q_FLOW_IDEO, nm)
                     ob = "《"
@@ -9144,8 +9178,8 @@ function U:RenderQuestDetail()
     DG.RequestQuestRewardData(q[1])
 
     local nm, hasName = DG.QuestName(q[1])
-    local st = DG.QuestState(q[1])
-    local col = (st == "done" and C_GREEN) or (st == "ready" and DG.Q_OV_READY) or (st == "active" and C_GOLD) or C_GREY
+    local st = DG.QuestBadgeState(q[1])
+    local col = DG.QStateColor(st)
     if hasName then nm = nm .. format(" |cff9a9a9a#%d|r", q[1]) end
     name:SetText(nm)
     name:SetTextColor(Unpack(hasName and C_GOLD or C_GREY))
@@ -9362,8 +9396,8 @@ function U:RenderQuestDetail()
                 local r = takeNode()
                 if type(seg) == "number" then
                     local pnm, pok = DG.QuestName(seg)
-                    local pst = DG.QuestState(seg)
-                    local pcol = (pst == "done" and C_GREEN) or (pst == "ready" and DG.Q_OV_READY) or (pst == "active" and C_GOLD) or C_GREY
+                    local pst = DG.QuestBadgeState(seg)
+                    local pcol = DG.QStateColor(pst)
                     r.name:SetText(pok and (pnm .. format(" |cff9a9a9a#%d|r", seg)) or pnm)
                     r.name:SetTextColor(Unpack(pok and pcol or C_GREY))
                     local stag = (pok and DG.Q_STATUS_TAG[pst]) or ""
@@ -9446,8 +9480,8 @@ function U:RenderQuestDetail()
             for _, fq in ipairs(fol) do
                 local r = takeNode()
                 local fnm, fok = DG.QuestName(fq[1])
-                local fst = DG.QuestState(fq[1])
-                local fcol = (fst == "done" and C_GREEN) or (fst == "ready" and DG.Q_OV_READY) or (fst == "active" and C_GOLD) or C_GREY
+                local fst = DG.QuestBadgeState(fq[1])
+                local fcol = DG.QStateColor(fst)
                 r.name:SetText(fok and (fnm .. format(" |cff9a9a9a#%d|r", fq[1])) or fnm)
                 r.name:SetTextColor(Unpack(fok and fcol or C_GREY))
                 r.st:SetText(fok and (DG.Q_STATUS_TAG[fst] or "") or "")

@@ -99,7 +99,6 @@ end
 
 local function ReleaseTip()
     if GameTooltip then GameTooltip:Hide() end
-    if ns.hui then ns.hui.nativeTipOwner = nil end
 end
 
 local cmpTip, cmpOwner
@@ -233,7 +232,6 @@ local function ItemEnter(btn)
     if not d then return end
     local GT = GameTooltip
     if not GT then return end
-    if ns.hui then ns.hui.nativeTipOwner = frame end
     GT:SetOwner(btn or frame, "ANCHOR_RIGHT")
     GT:ClearLines()
     local ok = false
@@ -257,7 +255,6 @@ local function ItemEnter(btn)
         GT:AddLine(ns.L["左键：打开职业任务页"], 1, 0.82, 0, true)
         GT:AddLine(ns.L["右键：在地图上标记"], 1, 0.82, 0, true)
     end
-    if ns.hui and ns.hui.ShowNativeTip then ns.hui.ShowNativeTip(GT) end
     GT:Show()
     TrackCompare(frame, d.knownId)
     if frame.Button and frame.Button.IconHighlight and not EUIOn() then

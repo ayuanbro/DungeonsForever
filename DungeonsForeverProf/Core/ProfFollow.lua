@@ -1390,11 +1390,7 @@ end
 
 TipOn = function(bt, title, body)
     bt:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:ClearLines()
-        GameTooltip:AddLine(title, 1, 0.82, 0, true)
-        if body then GameTooltip:AddLine(body, 1, 1, 1, true) end
-        GameTooltip:Show()
+        ns.ProfModule.TipShow(self, { { title, 1, 0.82, 0 }, { body } }, "ANCHOR_TOP")
     end)
     bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
@@ -1850,23 +1846,17 @@ local function BuildBody()
     f.rankHint:EnableMouse(true)
     f.rankHint:SetScript("OnEnter", function(self)
         if self.statusTitle and GameTooltip then
-            GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:ClearLines()
-            GameTooltip:AddLine(self.statusTitle, 1, 0.82, 0, true)
-            GameTooltip:AddLine(self.statusDetail, 1, 1, 1, true)
-            GameTooltip:Show()
+            ns.ProfModule.TipShow(self, { { self.statusTitle, 1, 0.82, 0 }, { self.statusDetail } }, "ANCHOR_TOP")
             return
         end
         local ranks = ns.ProfRanks
         if not (ranks and GameTooltip and self.tasks and #self.tasks > 0) then return end
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:ClearLines()
-        GameTooltip:AddLine(L["专业晋级"], 1, 0.82, 0, true)
+        local lines = { { L["专业晋级"], 1, 0.82, 0 } }
         for _, step in ipairs(self.tasks) do
-            GameTooltip:AddLine(ranks.Title(step), 0.95, 0.78, 0.35, true)
-            for _, text in ipairs(ranks.Lines(step)) do GameTooltip:AddLine(text, 1, 1, 1, true) end
+            lines[#lines + 1] = { ranks.Title(step), 0.95, 0.78, 0.35 }
+            for _, text in ipairs(ranks.Lines(step)) do lines[#lines + 1] = { text } end
         end
-        GameTooltip:Show()
+        ns.ProfModule.TipShow(self, lines, "ANCHOR_TOP")
     end)
     f.rankHint:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     f.rankHint:Hide()

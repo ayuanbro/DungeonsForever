@@ -175,7 +175,6 @@ function ns.TalentTip(owner, nd, rank, treeName, need, noPre)
     rank = tonumber(rank) or 0
     local maxRank = tonumber(nd.max) or 0
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
-    if ns.hui and ns.hui.ShowNativeTip then pcall(ns.hui.ShowNativeTip, GameTooltip) end
     GameTooltip:ClearLines()
     GameTooltip:AddLine(name or nd.n or "", 1, 1, 1)
     GameTooltip:AddLine(string.format("%s %s%d|r/%d", L["等级"] or "等级", TIP_WHITE, rank, maxRank), 1, 1, 1)

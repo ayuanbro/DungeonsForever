@@ -158,6 +158,8 @@ aboutBtn:SetScript("OnClick", function()
     ns.ShowAbout()
 end)
 
+local aboutCopyPop
+
 about = CreateFrame("Frame", nil, f, "BackdropTemplate")
 about:SetFrameLevel(505)
 about:SetAllPoints(f)
@@ -165,6 +167,10 @@ about:EnableMouse(true)
 about:SetScript("OnMouseWheel", function() end)
 about:SetScript("OnMouseUp", function()
     ns.PlaySound(1)
+    if aboutCopyPop and aboutCopyPop:IsShown() then
+        aboutCopyPop:Hide()
+        return
+    end
     about:Hide()
     SyncAboutGlyph()
 end)
@@ -206,6 +212,7 @@ local AB_HIS_BTN_MIN_W = 96
 local AB_HIS_TITLE_H = 18
 local AB_FOOT_COL_GAP = 16
 local AB_ROW_BLANK = 20
+local AB_LINK_GAP = 18
 
 local C_AB_VAL = { 0.88, 0.90, 0.93 }
 local C_AB_DIM = { 0.62, 0.62, 0.68 }
@@ -304,6 +311,10 @@ function BuildAbout()
 
     local QQ_NUM = "728916609"
     local KOOK_URL = "https://kook.vip/Imf23q"
+    local linkIcons = {
+        { file = "qq.tga", title = L["QQ群"], value = QQ_NUM, w = 34, h = 34 },
+        { file = "kook.tga", title = L["KOOK"], value = KOOK_URL, w = 41, h = 41 },
+    }
     local copyPops = {}
     local function ShowCopyPop(anchor, title, text)
         local p = copyPops[title]
@@ -350,12 +361,21 @@ function BuildAbout()
                 eb:ClearFocus()
                 self:Hide()
             end)
+            p:SetScript("OnHide", function(self)
+                if aboutCopyPop == self then aboutCopyPop = nil end
+            end)
             p.eb = eb
             copyPops[title] = p
         end
+        if aboutCopyPop == p and p:IsShown() then
+            p:Hide()
+            return
+        end
+        if aboutCopyPop then aboutCopyPop:Hide() end
         p:ClearAllPoints()
-        p:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", -24, -10)
+        p:SetPoint("BOTTOM", anchor, "TOP", 0, 10)
         p:Show()
+        aboutCopyPop = p
         p.eb:SetText(text)
         p.eb:HighlightText()
         if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
@@ -375,8 +395,6 @@ function BuildAbout()
         { key = L["作者"], parts = { { t = L["圆圆"] } } },
         { key = L["制作团队"], parts = { { t = L["专业增强"] .. " wzk" } } },
         { key = L["鸣谢"], parts = { { t = L["黑科研 · 胡里胡涂"] } } },
-        { key = L["QQ群"], qq = true, parts = { { t = QQ_NUM } } },
-        { key = L["KOOK"], copy = true, gapAfter = true, parts = { { t = KOOK_URL } } },
         { key = L["指令"], parts = {
             { t = "/df", cmd = "/df" },
             { t = " · " },
@@ -401,13 +419,14 @@ function BuildAbout()
             { t = "/df wm", cmd = "/df wm" }, { t = " " .. L["声望"] }, { t = " · " },
             { t = "/df bis", cmd = "/df bis" }, { t = " " .. L["配装"] },
         } },
+        { link = true },
     }
 
     local function BuildLine(row, hot)
         local out = C_AB_KEYHEX .. row.key .. "|r　"
         for pi = 1, #row.parts do
             local p = row.parts[pi]
-            if p.cmd or ((row.qq or row.copy) and pi == 1) then
+            if p.cmd then
                 out = out .. ((hot == pi) and "|cffffffff" or AbAccentHex()) .. p.t .. "|r"
             else
                 out = out .. p.t
@@ -424,62 +443,118 @@ function BuildAbout()
 
     local lines = {}
     local ly = -8 + AB_LIFT
+
+    local function DrawLinkRow()
+        local maxH = 0
+        local totalW = 0
+        for ii = 1, #linkIcons do
+            local it = linkIcons[ii]
+            if it.h > maxH then maxH = it.h end
+            totalW = totalW + it.w
+        end
+        totalW = totalW + AB_LINK_GAP * (#linkIcons - 1)
+
+        local strip = CreateFrame("Frame", nil, left)
+        strip:SetSize(innerW, maxH)
+        local ac = (ns.hui and ns.hui.ACCENT) or { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
+        local x = -totalW / 2
+        for ii = 1, #linkIcons do
+            local it = linkIcons[ii]
+            local b = CreateFrame("Button", nil, strip)
+            b:SetSize(it.w, it.h)
+            b:SetPoint("CENTER", strip, "CENTER", x + it.w / 2, 0)
+            x = x + it.w + AB_LINK_GAP
+            b:SetFrameLevel(left:GetFrameLevel() + 2)
+            b:EnableMouse(true)
+            local tex = b:CreateTexture(nil, "ARTWORK")
+            tex:SetAllPoints(b)
+            tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\About\\" .. it.file)
+            tex:SetVertexColor(0.90, 0.92, 0.96)
+            b:SetScript("OnEnter", function(self)
+                tex:SetVertexColor(ac[1], ac[2], ac[3])
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:ClearLines()
+                GameTooltip:AddLine(it.title, 1, 1, 1, true)
+                GameTooltip:AddLine(it.value, ac[1], ac[2], ac[3], true)
+                GameTooltip:AddLine(L["点击复制"], 0.78, 0.80, 0.84, true)
+                GameTooltip:Show()
+            end)
+            b:SetScript("OnLeave", function()
+                tex:SetVertexColor(0.90, 0.92, 0.96)
+                GameTooltip:Hide()
+            end)
+            b:SetScript("OnClick", function(self)
+                ns.PlaySound(1)
+                GameTooltip:Hide()
+                ShowCopyPop(self, it.title, it.value)
+            end)
+            if b.SetCursor then b:SetCursor("Interface/Cursor/Point") end
+        end
+        return strip, maxH
+    end
+
+    local linkStrip, linkH
     for i = 1, #rows do
         local row = rows[i]
-        local ln = left:CreateFontString(nil, "OVERLAY")
-        ln:SetFont(ns.FONT, 14, "")
-        ln:SetJustifyH("CENTER")
-        ln:SetWidth(innerW)
-        ln:SetPoint("TOP", left, "CENTER", 0, ly)
-        ln:SetTextColor(C_AB_VAL[1], C_AB_VAL[2], C_AB_VAL[3])
+        if row.link then
+            linkStrip, linkH = DrawLinkRow()
+        else
+            local ln = left:CreateFontString(nil, "OVERLAY")
+            ln:SetFont(ns.FONT, 14, "")
+            ln:SetJustifyH("CENTER")
+            ln:SetWidth(innerW)
+            ln:SetPoint("TOP", left, "CENTER", 0, ly)
+            ln:SetTextColor(C_AB_VAL[1], C_AB_VAL[2], C_AB_VAL[3])
 
-        ln:SetText(row.key)
-        local keyW = ln:GetStringWidth() or 0
-        ln:SetText(row.key .. "　")
-        local headW = ln:GetStringWidth() or 0
-        if headW < keyW then headW = keyW + 14 end
+            ln:SetText(row.key)
+            local keyW = ln:GetStringWidth() or 0
+            ln:SetText(row.key .. "　")
+            local headW = ln:GetStringWidth() or 0
+            if headW < keyW then headW = keyW + 14 end
 
-        local widths = {}
-        local totalW = headW
-        for pi = 1, #row.parts do
-            ln:SetText(row.parts[pi].t)
-            local w = ln:GetStringWidth() or 0
-            widths[pi] = w
-            totalW = totalW + w
-        end
-
-        ln:SetText(BuildLine(row, 0))
-
-        local cursor = (innerW - totalW) / 2 + headW
-        for pi = 1, #row.parts do
-            local p = row.parts[pi]
-            local w = widths[pi]
-            if p.cmd or ((row.qq or row.copy) and pi == 1) then
-                local b = CreateFrame("Button", nil, left)
-                b:SetSize(w + 2, 20)
-                b:SetPoint("LEFT", ln, "LEFT", cursor - 1, 0)
-                b:SetFrameLevel(left:GetFrameLevel() + 2)
-                b:EnableMouse(true)
-                if p.cmd then
-                    b:SetScript("OnClick", function() SendCmd(p.cmd) end)
-                else
-                    b:SetScript("OnClick", function(self) ShowCopyPop(self, row.key, p.t) end)
-                end
-                b:SetScript("OnEnter", function() ln:SetText(BuildLine(row, pi)) end)
-                b:SetScript("OnLeave", function() ln:SetText(BuildLine(row, 0)) end)
-                if b.SetCursor then b:SetCursor("Interface/Cursor/Point") end
+            local widths = {}
+            local totalW = headW
+            for pi = 1, #row.parts do
+                ln:SetText(row.parts[pi].t)
+                local w = ln:GetStringWidth() or 0
+                widths[pi] = w
+                totalW = totalW + w
             end
-            cursor = cursor + w
-        end
 
-        lines[#lines + 1] = { fs = ln, row = row }
-        local vh = ln:GetStringHeight()
-        if type(vh) ~= "number" or vh <= 0 then vh = 14 end
-        ly = ly - math.max(28, vh + 10)
-        if row.gapAfter then ly = ly - AB_ROW_BLANK end
+            ln:SetText(BuildLine(row, 0))
+
+            local cursor = (innerW - totalW) / 2 + headW
+            for pi = 1, #row.parts do
+                local p = row.parts[pi]
+                local w = widths[pi]
+                if p.cmd then
+                    local b = CreateFrame("Button", nil, left)
+                    b:SetSize(w + 2, 20)
+                    b:SetPoint("LEFT", ln, "LEFT", cursor - 1, 0)
+                    b:SetFrameLevel(left:GetFrameLevel() + 2)
+                    b:EnableMouse(true)
+                    b:SetScript("OnClick", function() SendCmd(p.cmd) end)
+                    b:SetScript("OnEnter", function() ln:SetText(BuildLine(row, pi)) end)
+                    b:SetScript("OnLeave", function() ln:SetText(BuildLine(row, 0)) end)
+                    if b.SetCursor then b:SetCursor("Interface/Cursor/Point") end
+                end
+                cursor = cursor + w
+            end
+
+            lines[#lines + 1] = { fs = ln, row = row }
+            local vh = ln:GetStringHeight()
+            if type(vh) ~= "number" or vh <= 0 then vh = 14 end
+            ly = ly - math.max(28, vh + 10)
+            if row.gapAfter then ly = ly - AB_ROW_BLANK end
+        end
     end
 
     local footY = AB_PAD + AB_HIS_BTN_H + AB_HIS_BTN_GAP + AB_HIS_TITLE_H + AB_HIS_TITLE_GAP
+
+    if linkStrip then
+        local divY = -AB_CARD_H / 2 + footY
+        linkStrip:SetPoint("TOP", left, "CENTER", 0, (ly + 10 + divY) / 2 + linkH / 2)
+    end
 
     local histLine = left:CreateTexture(nil, "ARTWORK")
     histLine:SetTexture("Interface\\Buttons\\WHITE8x8")

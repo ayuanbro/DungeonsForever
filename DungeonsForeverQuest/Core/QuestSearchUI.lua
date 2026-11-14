@@ -1582,7 +1582,6 @@ local function ItemTip(self, id)
         pcall(GameTooltip.SetItemByID, GameTooltip, id)
     end
     GameTooltip:Show()
-    if hui and type(hui.SkinGameTooltip) == "function" then pcall(hui.SkinGameTooltip, GameTooltip) end
     if DG and type(DG.RequestItem) == "function" then pcall(DG.RequestItem, id) end
 end
 

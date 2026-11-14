@@ -298,7 +298,6 @@ local function ShowTip(b)
     if nd.name == L['未知'] then
         GameTooltip:AddLine(L['该节点尚未开放'], GREY[1], GREY[2], GREY[3], true)
     end
-    if ns.hui and ns.hui.ShowNativeTip then pcall(ns.hui.ShowNativeTip, GameTooltip) end
     GameTooltip:Show()
 end
 
@@ -818,8 +817,7 @@ local function BuildCard()
         GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
         GameTooltip:SetText(L['传承推荐加点'], 1, 0.82, 0)
         GameTooltip:AddLine(L['三棵树并排展示推荐方案，点开后再点一次收起'], 0.9, 0.9, 0.9, true)
-        if ns.hui and ns.hui.ShowNativeTip then pcall(ns.hui.ShowNativeTip, GameTooltip) end
-        GameTooltip:Show()
+            GameTooltip:Show()
     end)
     card:SetScript('OnLeave', function()
         GameTooltip:Hide()
