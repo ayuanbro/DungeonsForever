@@ -130,6 +130,20 @@ end
 
 local supplyRevision = 0
 local supplyListeners = {}
+local forcedUntil = 0
+function AB.ForceExpiredWindow(seconds)
+    local now = time and time() or 0
+    forcedUntil = now + math.max(30, tonumber(seconds) or 180)
+    supplyRevision = supplyRevision + 1
+    return forcedUntil
+end
+function AB.ForceExpiredActive()
+    return forcedUntil > 0 and (time and time() or 0) <= forcedUntil
+end
+function AB.ForceExpiredLeft()
+    if not AB.ForceExpiredActive() then return 0 end
+    return math.max(0, forcedUntil - (time and time() or 0))
+end
 local function MarketKey()
     return tostring(GetRealmName and GetRealmName() or "") .. ":"
         .. tostring(UnitFactionGroup and UnitFactionGroup("player") or "")
@@ -155,6 +169,19 @@ local function ReleaseFullBatch(reason,observation,snapshotStatus)
     if type(batch)=="table" then
         fullFailure.mk,fullFailure.ob=batch.mk,batch.ob
         if WholeNumber(batch.t) and batch.t>0 then fullFailure.t=batch.t end
+        if reason=="expired" and type(batch.items)=="table" then
+            local keep={}
+            for id,item in pairs(batch.items) do
+                if WholeNumber(id) and id>0 and type(item)=="table" then
+                    local q=tonumber(item.q)
+                    if q and q>=0 and q==math.floor(q) then
+                        local p=tonumber(item.p)
+                        if p and p>0 and p<math.huge then keep[id]={q=q,p=p} else keep[id]={q=q} end
+                    end
+                end
+            end
+            fullFailure.items=keep
+        end
     end
     fullBatch=nil
     ScanDB().auctionFullScan=fullFailure
@@ -163,7 +190,7 @@ local function FullBatchFailure(batch)
     if batch.v~=SNAPSHOT_VERSION or batch.c~=true or type(batch.items)~="table" then return "incomplete" end
     local stamp=batch.t;local now=time and time() or 0
     if not WholeNumber(stamp) or stamp<=0 or stamp>now then return "incomplete" end
-    if now-stamp>SUPPLY_MAX_AGE then return "expired" end
+    if now-stamp>SUPPLY_MAX_AGE and not AB.ForceExpiredActive() then return "expired" end
     if batch.mk~=MarketKey() or batch.ob~=ObserverKey() then return "unverified" end
 end
 
@@ -193,10 +220,17 @@ function AB.FullScanSnapshotStatus()
     local failure=batch and FullBatchFailure(batch)
     if failure and failure~="unverified" then ReleaseFullBatch(failure);batch=nil end
     local meta=batch or fullFailure
+    local forced=AB.ForceExpiredActive()
+    local staleUsable=forced and type(meta)=="table" and meta.failure=="expired"
+    local staleItems=type(meta)=="table" and meta.failure=="expired" and type(meta.items)=="table" and next(meta.items)~=nil
     local status=batch and (failure=="unverified" and "mismatch" or "available")
+        or staleUsable and "available"
         or meta and (meta.failure=="expired" and "expired" or meta.snapshotStatus=="missing" and "missing" or "invalid") or "missing"
     return {status=status,observedAt=meta and meta.t,
         expiresAt=meta and meta.t and meta.t+SUPPLY_MAX_AGE,
+        forced=(forced and (batch~=nil or staleUsable)) or nil,
+        canForce=(not batch and type(meta)=="table" and meta.failure=="expired") or nil,
+        staleIncomplete=(type(meta)=="table" and meta.failure=="expired" and not staleItems) or nil,
         restored=restoredSnapshot,completedAt=batch and batch.completedAt}
 end
 
@@ -207,7 +241,16 @@ local function SupplyRecord(id)
         if failure=="unverified" then return {mk=batch.mk,ob=batch.ob,failure=failure} end
         if failure then ReleaseFullBatch(failure);batch=nil end
     end
-    if not batch then return fullFailure end
+    if not batch then
+        if AB.ForceExpiredActive() and type(fullFailure)=="table" and fullFailure.failure=="expired"
+            and type(fullFailure.items)=="table" and next(fullFailure.items)~=nil then
+            local item=fullFailure.items[id]
+            return {q=item and item.q or 0,p=item and item.p,t=fullFailure.t,
+                mk=fullFailure.mk,ob=fullFailure.ob,c=true,ox=true,
+                s="client-auction-results",v=SNAPSHOT_VERSION,method="auctionator-full-scan"}
+        end
+        return fullFailure
+    end
     if AB.ReplicateScanReady and AB.ReplicateScanReady()~=true then
         return fullFailure or {mk=batch.mk,ob=batch.ob,failure="unverified"}
     end
@@ -238,7 +281,8 @@ function AB.GetAuctionSupplyStatus(id)
     if rec.mk ~= MarketKey() or rec.ob ~= ObserverKey() then return "unverified" end
     if rec.c ~= true or rec.ox ~= true or rec.s ~= "client-auction-results" then return "incomplete" end
     if not qty or qty < 0 or qty == math.huge or qty ~= math.floor(qty) then return "incomplete" end
-    if not stamp or stamp~=stamp or stamp <= 0 or stamp > now or now-stamp > SUPPLY_MAX_AGE then return "expired" end
+    if not stamp or stamp~=stamp or stamp <= 0 or stamp > now then return "expired" end
+    if now-stamp > SUPPLY_MAX_AGE and not AB.ForceExpiredActive() then return "expired" end
     return "verified"
 end
 
@@ -256,7 +300,8 @@ function AB.GetAuctionSupply(id, live)
         observer = rec.ob,
         method = rec.method,
         schemaVersion = rec.v,
-        expiresAt = rec.t + SUPPLY_MAX_AGE,
+        forced = AB.ForceExpiredActive() or nil,
+        expiresAt = math.max(tonumber(rec.t) or 0, AB.ForceExpiredActive() and (time and time() or 0) or 0) + SUPPLY_MAX_AGE,
     }
 end
 
@@ -529,7 +574,7 @@ local function InitializeAuctionatorStock()
         elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION and saved.items==nil
             and saved.failure=="incomplete" and saved.snapshotStatus=="missing" then
             fullFailure=saved
-        elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION and saved.items==nil
+        elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION
             and saved.failure=="expired" and WholeNumber(saved.t) and saved.t>0
             and (time and time() or 0)-saved.t>SUPPLY_MAX_AGE then
             fullFailure=saved

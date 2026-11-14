@@ -10,18 +10,8 @@ if not (ns.hui and ns.hui.layer and ns.hui.BuildRoundedBG) then return end
 local hui = ns.hui
 local LAY = hui.layer
 
-local VER
-do
-    local v
-    if type(C_AddOns) == "table" and type(C_AddOns.GetAddOnMetadata) == "function" then
-        v = C_AddOns.GetAddOnMetadata("DungeonsForever", "Version")
-    end
-    if (v == nil or v == "") and type(GetAddOnMetadata) == "function" then
-        v = GetAddOnMetadata("DungeonsForever", "Version")
-    end
-    if type(v) == "string" and v ~= "" then VER = v end
-end
-if not VER then return end
+local VER = ns.UpdateVer
+if type(VER) ~= "string" or VER == "" then return end
 
 local PW, PH = 920, 580
 local PAD = 24
@@ -62,10 +52,20 @@ local function Cfg()
     return t
 end
 
+local function VerNum(s)
+    if type(s) ~= "string" then return nil end
+    local a, b, c = s:match("^(%d+)%.(%d+)%.(%d+)$")
+    if not a then return nil end
+    return tonumber(a) * 1000000 + tonumber(b) * 1000 + tonumber(c)
+end
+
 local function ShouldShow()
     local c = Cfg()
     if c.off then return false end
-    return c.ver ~= VER
+    if c.ver == VER then return false end
+    local seen, cur = VerNum(c.ver), VerNum(VER)
+    if seen and cur and seen >= cur then return false end
+    return true
 end
 
 local popup = CreateFrame("Frame", "DungeonsForever_UpdatePopup", f, "BackdropTemplate")
@@ -233,7 +233,7 @@ FillCapsule(btSkip, C_WARN)
 local cbNoTip = CreateFrame("CheckButton", nil, popup)
 cbNoTip:SetSize(36, 20)
 cbNoTip:EnableMouse(true)
-if hui.ReskinToggle then hui.ReskinToggle(cbNoTip) end
+if hui.ReskinToggle then pcall(hui.ReskinToggle, cbNoTip) end
 cbNoTip:SetFrameLevel(popup:GetFrameLevel() + 6)
 cbNoTip:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -PAD, PAD)
 

@@ -1,6 +1,6 @@
 local _, ns = ...
 
-ns.Supporters = {
+ns.Thanks = {
     "朝阳",
     "盒子-0b***2e",
     "Key",

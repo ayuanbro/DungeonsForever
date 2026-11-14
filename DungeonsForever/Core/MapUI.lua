@@ -1096,6 +1096,14 @@ function M.QuestPinsOn()
     return s.mapQuestPins ~= false
 end
 
+function M.QuestTakeableOnly()
+    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
+    local c = s and s.mapQuestPinsCfg
+    if type(c) ~= "table" then return true end
+    if type(c.scope) ~= "table" then return true end
+    return c.scope.take ~= false
+end
+
 function M.SideOK(sd)
     if not sd then return true end
     if sd ~= "A" and sd ~= "H" then return true end
@@ -5054,7 +5062,7 @@ local function wpPinAcquire(canvas)
     return p
 end
 
-local WP_DEF = { size = 18, world = false, scope = { lv = true, reco = true, enter = true, all = false, grey = true } }
+local WP_DEF = { size = 18, world = false, scope = { lv = true, reco = true, enter = true, all = false, grey = true, take = true } }
 
 local function wpCfg()
     local db = ns.DB and ns.DB()
@@ -5498,7 +5506,7 @@ local function wpCreatePanel()
     local title = wpSetFs(f, 16, WP_WHT)
     title:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -8)
     title:SetJustifyH("LEFT")
-    title:SetText(L["图钉设置"])
+    title:SetText(L["任务设置"])
     local syncers = {}
     local resetB = wpMkBtn(f, L["重置"], 56)
     resetB:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -6)
@@ -5520,6 +5528,19 @@ local function wpCreatePanel()
             function(v) wpCfg().size = v end,
             function(v) return tostring(v) end)
         syncers[#syncers + 1] = function() row:sync() end
+        y = y - 30
+    end
+    do
+        local tg = wpToggleRow(content, y, L["不显示无法接取的任务"],
+            function() return wpCfg().scope.take == true end,
+            function(v)
+                wpCfg().scope.take = v
+                local du = ns.DungeonUI
+                if du and type(du.RenderDungeonQuests) == "function" then
+                    pcall(du.RenderDungeonQuests, du)
+                end
+            end)
+        syncers[#syncers + 1] = function() tg:sync() end
         y = y - 30
     end
     y = y - 8

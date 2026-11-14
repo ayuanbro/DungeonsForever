@@ -10,7 +10,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 2.1.94
+## Version: 2.1.95
 ## SavedVariables: DungeonsForeverDB
 ## OptionalDeps: EllesmereUI
 ## LoadOnDemand: 0
@@ -46,7 +46,7 @@ Core\Data\Data_Professions.lua
 Core\Data\Data_Crates.lua
 Core\Data\Data_WritZone.lua
 Core\Data\Data_Plunder.lua
-Core\Data\Data_Supporters.lua
+Core\Data\Data_Thanks.lua
 Core\Data\Data_LootFilter.lua
 Core\Data\Data_RaidSets.lua
 Core\Data\Data_VendorPrices.lua
@@ -87,6 +87,7 @@ Core\MapWindow.lua
 Core\LootFilterUI.lua
 Core\RaidUI.lua
 Core\VendorPriceDB.lua
+Core\AboutSupport.lua
 Core\MainFrame.lua
 Core\UpdatePopup.lua
 Core\QuickBar.lua

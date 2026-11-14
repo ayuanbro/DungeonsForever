@@ -2384,6 +2384,15 @@ function DG.PaintQuestOverview(d)
         end
         list = fl
     end
+    local takeOnly = (ns.MapModule and ns.MapModule.QuestTakeableOnly and ns.MapModule.QuestTakeableOnly()) and true or false
+    if takeOnly then
+        local fl = {}
+        for i = 1, #list do
+            local q = list[i]
+            if DG.QuestTakeable(q[1]) then fl[#fl + 1] = q end
+        end
+        list = fl
+    end
     local inside = {}
     for i = 1, #list do inside[list[i][1]] = list[i] end
     local parent, extOf, extSeen, extAll = {}, {}, {}, {}
@@ -4250,7 +4259,7 @@ function DG.BuildDetailFilterRow()
         bt:SetScript("OnEnter", function(self)
             if GameTooltip then
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                GameTooltip:AddLine(L["图钉设置"], 1, 0.82, 0)
+                GameTooltip:AddLine(L["任务设置"], 1, 0.82, 0)
                 GameTooltip:Show()
             end
             self.hot = true
@@ -7444,11 +7453,20 @@ function DG.QuestKind(qid)
     return v
 end
 
+function DG.QuestTakeable(qid)
+    if not DG.QuestClassOK(qid) then return false end
+    if DG.QuestRaceOK and not DG.QuestRaceOK(qid) then return false end
+    return true
+end
+
 function DG.FilterBranchHeads(list, side)
+    local takeOnly = (ns.MapModule and ns.MapModule.QuestTakeableOnly and ns.MapModule.QuestTakeableOnly()) and true or false
     local pool = {}
     for i = 1, #list do
         local q = list[i]
-        if not side or q[2] == side or not q[2] then pool[#pool + 1] = q end
+        if (not side or q[2] == side or not q[2]) and (not takeOnly or DG.QuestTakeable(q[1])) then
+            pool[#pool + 1] = q
+        end
     end
     local inPool, idx = {}, {}
     for i = 1, #pool do
@@ -8048,14 +8066,12 @@ function DG.MarkNPC(npcID, locOverride)
         end
         return
     end
-    if UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint
+    if C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D
         and (not C_Map.CanSetUserWaypointOnMap or pcall(C_Map.CanSetUserWaypointOnMap, mapID)) then
-        local ok, pt = pcall(UiMapPoint.CreateFromCoordinates, mapID, loc[2] / 100, loc[3] / 100)
-        if ok and pt then
-            pcall(C_Map.SetUserWaypoint, pt)
-            if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
-                pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
-            end
+        local pt = { uiMapID = mapID, position = _G.CreateVector2D(loc[2] / 100, loc[3] / 100) }
+        pcall(C_Map.SetUserWaypoint, pt)
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
     end
     if C_Map and C_Map.OpenWorldMap then
@@ -8100,10 +8116,10 @@ function DG.MarkEntrance(dungeonID)
         end
         return
     end
-    if UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint
+    if C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D
         and (not C_Map.CanSetUserWaypointOnMap or pcall(C_Map.CanSetUserWaypointOnMap, mapID)) then
-        local ok, pt = pcall(UiMapPoint.CreateFromCoordinates, mapID, loc[2] / 100, loc[3] / 100)
-        if ok and pt then pcall(C_Map.SetUserWaypoint, pt) end
+        local pt = { uiMapID = mapID, position = _G.CreateVector2D(loc[2] / 100, loc[3] / 100) }
+        pcall(C_Map.SetUserWaypoint, pt)
         if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
             pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
@@ -8174,10 +8190,10 @@ function DG.MarkEntranceAt(dungeonID, idx)
         end
         return
     end
-    if UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint
+    if C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D
         and (not C_Map.CanSetUserWaypointOnMap or pcall(C_Map.CanSetUserWaypointOnMap, p.mapID)) then
-        local ok, wp = pcall(UiMapPoint.CreateFromCoordinates, p.mapID, p.x / 100, p.y / 100)
-        if ok and wp then pcall(C_Map.SetUserWaypoint, wp) end
+        local wp = { uiMapID = p.mapID, position = _G.CreateVector2D(p.x / 100, p.y / 100) }
+        pcall(C_Map.SetUserWaypoint, wp)
         if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
             pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
@@ -9844,7 +9860,7 @@ function U:RenderDungeonTab()
     DG.ApplyDetailChrome(cur)
 end
 DG.CAPSULE_LIFT = 20
-DG.CAPSULE_W = 82
+DG.CAPSULE_W = 72
 local function BuildSubTabs()
     local defs = {
         { key = "Dungeons", text = L["5人本"], width = DG.CAPSULE_W },
@@ -9860,10 +9876,9 @@ local function BuildSubTabs()
             { key = "Tier", text = L["职业指南"] },
             { key = "PvP", text = L["PvP"] },
             { key = "Gear", text = L["装备库"] },
+            { key = "QuestSearch", text = L["搜索"] },
         }) do
-            if ns.ModuleOn(t.key) then
-                defs[#defs + 1] = { key = t.key, text = t.text, width = DG.CAPSULE_W }
-            end
+            defs[#defs + 1] = { key = t.key, text = t.text, width = DG.CAPSULE_W }
         end
     end
     local BTN_H = IsHui() and 20 or 26
@@ -9931,7 +9946,7 @@ function ns.ApplyTabVisibility()
     for _, tab in ipairs(U.subTabs) do
         local bt = tab.button
         if bt then
-            local show = (cfg[tab.key] ~= false)
+            local show = (cfg[tab.key] ~= false) and ns.ModuleOn(tab.key)
             bt:SetShown(show)
             if show then
                 bt:ClearAllPoints()
@@ -9953,14 +9968,14 @@ function ns.ApplyTabVisibility()
     if U.subCtrl then
         local vis = {}
         for _, tab in ipairs(U.subTabs) do
-            if cfg[tab.key] ~= false and tab.button then vis[#vis + 1] = tab.button end
+            if cfg[tab.key] ~= false and ns.ModuleOn(tab.key) and tab.button then vis[#vis + 1] = tab.button end
         end
         U.subCtrl:AttachButtons(vis)
     end
     local cur = U.curSub
-    if cur and cfg[cur] == false then
+    if cur and (cfg[cur] == false or not ns.ModuleOn(cur)) then
         U.curSub = firstVis
-        if U.built then U:SwitchSub(firstVis) end
+        if U.built and firstVis then U:SwitchSub(firstVis) end
     end
 end
 
@@ -9998,6 +10013,9 @@ function U:EnsureBuilt(k)
     elseif k == "Gear" and ns.GearModule and U.gearPage then
         U.subBuilt[k] = true
         ns.GearModule.Build(U.gearPage)
+    elseif k == "QuestSearch" and ns.QuestSearchModule and U.questSearchPage then
+        U.subBuilt[k] = true
+        ns.QuestSearchModule.Build(U.questSearchPage)
     end
 end
 
@@ -10025,15 +10043,18 @@ function U:SwitchSub(key)
         k = "PvP"
     elseif key == "Gear" and ns.ModuleOn("Gear") then
         k = "Gear"
+    elseif key == "QuestSearch" and ns.ModuleOn("QuestSearch") then
+        k = "QuestSearch"
     end
     U.curSub = k
     DB().subTab = k
     DG.Gate.HideUI()
-    ns.OpenPerf.Begin(({ Dungeons = "副本", Raids = "团本", Professions = "专业", Explore = "探索", Collections = "收藏", Factions = "阵营", Bis = "BIS", Tier = "职业指南", PvP = "PvP", Gear = "装备库" })[k] or k)
+    ns.OpenPerf.Begin(({ Dungeons = "副本", Raids = "团本", Professions = "专业", Explore = "探索", Collections = "收藏", Factions = "阵营", Bis = "BIS", Tier = "职业指南", PvP = "PvP", Gear = "装备库", QuestSearch = "搜索" })[k] or k)
     local isDun, isRaid, isProf, isExpl, isColl, isBis, isTier = (k == "Dungeons"), (k == "Raids"), (k == "Professions"), (k == "Explore"), (k == "Collections"), (k == "Bis"), (k == "Tier")
     local isPvP = (k == "PvP")
     local isFac = (k == "Factions")
     local isGear = (k == "Gear")
+    local isQS = (k == "QuestSearch")
     local function applyPages()
         if U.dungeonPage then U.dungeonPage:SetShown(isDun) end
         if U.raidPage then U.raidPage:SetShown(isRaid) end
@@ -10045,6 +10066,7 @@ function U:SwitchSub(key)
         if U.pvpPage then U.pvpPage:SetShown(isPvP) end
         if U.factionPage then U.factionPage:SetShown(isFac) end
         if U.gearPage then U.gearPage:SetShown(isGear) end
+        if U.questSearchPage then U.questSearchPage:SetShown(isQS) end
     end
     applyPages()
     if isRaid then
@@ -10080,6 +10102,11 @@ function U:SwitchSub(key)
     elseif isGear and ns.GearModule then
         U:EnsureBuilt("Gear")
         ns.GearModule.Open()
+    elseif isQS then
+        U:EnsureBuilt("QuestSearch")
+        if ns.QuestSearchModule and ns.QuestSearchModule.Open then
+            ns.QuestSearchModule.Open()
+        end
     end
     applyPages()
     ns.OpenPerf.Mark("就绪")
@@ -10132,6 +10159,10 @@ function U:UpdateActiveSub()
         if ns.GearModule then ns.GearModule.Refresh() end
         return
     end
+    if self.curSub == "QuestSearch" then
+        if ns.QuestSearchModule then ns.QuestSearchModule.Refresh() end
+        return
+    end
     self:UpdateDungeons()
 end
 
@@ -10161,6 +10192,8 @@ function U:Build()
         U.curSub = "Factions"
     elseif saved == "Gear" and ns.ModuleOn("Gear") then
         U.curSub = "Gear"
+    elseif saved == "QuestSearch" and ns.ModuleOn("QuestSearch") then
+        U.curSub = "QuestSearch"
     else
         U.curSub = "Dungeons"
     end
@@ -10199,6 +10232,9 @@ function U:Build()
         U.gearPage = CreateFrame("Frame", nil, panel)
         U.gearPage:SetAllPoints(panel)
         U.gearPage:Hide()
+        U.questSearchPage = CreateFrame("Frame", nil, panel)
+        U.questSearchPage:SetAllPoints(panel)
+        U.questSearchPage:Hide()
     end
 
     U.dungeonBuilt = false

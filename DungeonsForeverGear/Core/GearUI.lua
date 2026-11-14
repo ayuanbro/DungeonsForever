@@ -1553,17 +1553,13 @@ local function MarkQuest(qid, loc)
         end
         return
     end
-    if loc[2] and UiMapPoint and UiMapPoint.CreateFromCoordinates
-            and C_Map and C_Map.SetUserWaypoint
+    if loc[2] and C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D
             and (not C_Map.CanSetUserWaypointOnMap
                  or C_Map.CanSetUserWaypointOnMap(loc[1])) then
-        local ok, pt = pcall(UiMapPoint.CreateFromCoordinates,
-                             loc[1], loc[2] / 100, loc[3] / 100)
-        if ok and pt then
-            pcall(C_Map.SetUserWaypoint, pt)
-            if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
-                pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
-            end
+        local pt = { uiMapID = loc[1], position = _G.CreateVector2D(loc[2] / 100, loc[3] / 100) }
+        pcall(C_Map.SetUserWaypoint, pt)
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
     end
     if C_Map and C_Map.OpenWorldMap then
@@ -2048,17 +2044,13 @@ local function GearMarkVendor(loc)
         GearVendorMsg(L["该商人的位置暂未收录"])
         return
     end
-    if UiMapPoint and UiMapPoint.CreateFromCoordinates
-            and C_Map and C_Map.SetUserWaypoint
+    if C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D
             and (not C_Map.CanSetUserWaypointOnMap
                  or C_Map.CanSetUserWaypointOnMap(mapID)) then
-        local ok, pt = pcall(UiMapPoint.CreateFromCoordinates,
-                             mapID, (loc[3] or 0) / 100, (loc[4] or 0) / 100)
-        if ok and pt then
-            pcall(C_Map.SetUserWaypoint, pt)
-            if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
-                pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
-            end
+        local pt = { uiMapID = mapID, position = _G.CreateVector2D((loc[3] or 0) / 100, (loc[4] or 0) / 100) }
+        pcall(C_Map.SetUserWaypoint, pt)
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
     end
     if C_Map and C_Map.OpenWorldMap then

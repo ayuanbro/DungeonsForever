@@ -91,7 +91,8 @@ local function quote(id,s,fee,stamp,live,residualMass)
     local reliable=type(supply)=="table" and amount(supply.quantity) and supply.quantity==floor(supply.quantity)
         and supply.complete==true and supply.ownerExcluded==true
         and supply.source=="client-auction-results"
-        and age and age>=0 and age<=ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds() or false
+        and (b and b.ForceExpiredActive and b.ForceExpiredActive()
+            or (age and age>=0 and age<=ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds())) or false
     local estimated=false
     if not reliable then
         local history

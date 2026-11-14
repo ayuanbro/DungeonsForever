@@ -493,17 +493,14 @@ local function MarkOnMap(it)
         if ok then return true end
     end
     local mapID = it.mapID or (current and current.ctx and current.ctx.mapID)
-    if mapID and it.x and it.y and UiMapPoint and UiMapPoint.CreateFromCoordinates
-       and C_Map and C_Map.SetUserWaypoint then
-        local ok, pt = pcall(UiMapPoint.CreateFromCoordinates, mapID, it.x / 100, it.y / 100)
-        if ok and pt then
-            pcall(C_Map.SetUserWaypoint, pt)
-            if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
-                pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
-            end
-            if C_Map.OpenWorldMap then pcall(C_Map.OpenWorldMap, mapID) end
-            return true
+    if mapID and it.x and it.y and C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D then
+        local pt = { uiMapID = mapID, position = _G.CreateVector2D(it.x / 100, it.y / 100) }
+        pcall(C_Map.SetUserWaypoint, pt)
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
+        if C_Map.OpenWorldMap then pcall(C_Map.OpenWorldMap, mapID) end
+        return true
     end
     if it.qid and ns.MapUI and ns.MapUI.GotoQuest then
         pcall(ns.MapUI.GotoQuest, it.qid, false)

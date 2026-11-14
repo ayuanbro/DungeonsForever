@@ -18,6 +18,7 @@ _G.DF_NS = ns
 ns.huiTheme = "hui"
 
 ns.CONTENT_TOP = 46
+ns.UpdateVer = "2.1.90"
 
 ns.SET_ICON = "Interface\\AddOns\\DungeonsForever\\Media\\textures\\DF_Settings"
 ns.SET_ICON_IDLE = { 0.55, 0.62, 0.70 }
@@ -44,6 +45,7 @@ ns.MODULES = {
     { key = "Factions",    addon = "DungeonsForeverFaction", sv = "DungeonsForeverFactionDB", legacy = { "factions" }, label = "声望", probe = "FactionModule" },
     { key = "PvP",         addon = "DungeonsForeverPvP",     sv = nil, legacy = nil, label = "PvP", probe = "PvPModule" },
     { key = "Spell",       addon = "DungeonsForeverSpell",   sv = "DungeonsForeverSpellDB", legacy = nil, label = "技能书", probe = "NativeSpellBook" },
+    { key = "QuestSearch", addon = "DungeonsForeverQuest",   sv = nil, legacy = nil, label = "搜索", probe = "QuestSearchModule", gate = "questie" },
 }
 
 ns.MODULE_BY_TAB = {}
@@ -65,9 +67,24 @@ function ns.AddonLoaded(name)
     return false
 end
 
+function ns.QuestieOn()
+    if not (ns.AddonLoaded("Questie") and ns.AddonLoaded("QuestieDB")) then return false end
+    local ql = _G.QuestieLoader
+    local m = type(ql) == "table" and ql._modules
+    return type(m) == "table" and type(m.QuestieDB) == "table"
+end
+
+function ns.ModuleGateOK(tabKey)
+    local m = ns.MODULE_BY_TAB[tabKey]
+    if not m or not m.gate then return true end
+    if m.gate == "questie" then return ns.QuestieOn() end
+    return true
+end
+
 function ns.ModuleOn(tabKey)
     local m = ns.MODULE_BY_TAB[tabKey]
     if not m then return true end
+    if not ns.ModuleGateOK(tabKey) then return false end
     if m.probe and ns[m.probe] ~= nil then return true end
     return ns.AddonLoaded(m.addon)
 end
@@ -131,7 +148,7 @@ if ns.options.buttonSound == nil then ns.options.buttonSound = true end
 ns.QUICK_VER = 1
 ns.QUICK_GROUPS = { "dungeon", "prof", "explore" }
 ns.QUICK_EXPLORE = { "books", "bag" }
-ns.QUICK_TABS = { "Dungeons", "Raids", "Professions", "Explore", "Collections", "Factions", "Bis", "Tier", "PvP", "Gear" }
+ns.QUICK_TABS = { "Dungeons", "Raids", "Professions", "Explore", "Collections", "Factions", "Bis", "Tier", "PvP", "Gear", "QuestSearch" }
 
 local QUICK_EXPLORE_SET = {}
 for _, k in ipairs(ns.QUICK_EXPLORE) do QUICK_EXPLORE_SET[k] = true end
@@ -1197,3 +1214,32 @@ moduleBoot:SetScript("OnEvent", function(self, event, name)
         DEFAULT_CHAT_FRAME:AddMessage("|cffff5555DungeonsForever|r 有 " .. bad .. " 项页面模块初始化失败，请检查对应子插件是否已启用。")
     end
 end)
+
+function ns.RefreshTabEntry()
+    if type(ns.ApplyTabVisibility) == "function" then pcall(ns.ApplyTabVisibility) end
+end
+
+do
+    local seen, tries = nil, 0
+    local function Check()
+        tries = tries + 1
+        local on = ns.QuestieOn()
+        if seen == nil then seen = on end
+        if on ~= seen then
+            seen = on
+            ns.RefreshTabEntry()
+        end
+        if not on and tries < 10 and C_Timer and C_Timer.After then
+            C_Timer.After(0.7, Check)
+        end
+    end
+
+    local ev = CreateFrame("Frame")
+    ev:RegisterEvent("ADDON_LOADED")
+    ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+    ev:SetScript("OnEvent", function(_, event, name)
+        if event == "ADDON_LOADED" and name ~= "Questie" and name ~= "QuestieDB" then return end
+        tries = 0
+        if C_Timer and C_Timer.After then C_Timer.After(0.2, Check) end
+    end)
+end

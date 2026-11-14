@@ -118,6 +118,16 @@ local function SyncAboutGlyph()
     end
 end
 
+function ns.ShowAbout()
+    if not aboutBuilt then
+        about:Show()
+        BuildAbout()
+        about:Hide()
+    end
+    about:SetShown(not about:IsShown())
+    SyncAboutGlyph()
+end
+
 local aboutBtn = CreateFrame("Button", nil, f, "BackdropTemplate")
 aboutBtn:SetSize(32, 32)
 aboutBtn:SetFrameLevel(510)
@@ -145,13 +155,7 @@ aboutBtn:SetScript("OnLeave", function()
 end)
 aboutBtn:SetScript("OnClick", function()
     ns.PlaySound(1)
-    if not aboutBuilt then
-        about:Show()
-        BuildAbout()
-        about:Hide()
-    end
-    about:SetShown(not about:IsShown())
-    SyncAboutGlyph()
+    ns.ShowAbout()
 end)
 
 about = CreateFrame("Frame", nil, f, "BackdropTemplate")
@@ -181,6 +185,7 @@ local AB_PAD = 8
 local AB_BAR = 8
 local AB_CARD_W = (W - AB_EDGE_X * 2 - AB_GAP) / 2
 local AB_RIGHT_X = AB_EDGE_X + AB_CARD_W + AB_GAP
+local AB_CARD_FULL_W = W - AB_EDGE_X * 2
 local AB_CARD_H = H - AB_TOP - AB_EDGE_B
 local AB_INNER_W = AB_CARD_W - AB_PAD * 2
 local AB_HDR_H = 24
@@ -194,63 +199,13 @@ local AB_GRID_TOP = AB_DIV_Y + 10
 local AB_GRID_H = AB_CARD_H - AB_GRID_TOP - AB_PAD
 
 local AB_LIFT = 94
-local AB_FOOT_GAP = 12
-local AB_HIS_LINE_GAP = 18
 local AB_HIS_TITLE_GAP = 22
 local AB_HIS_BTN_GAP = 14
 local AB_HIS_BTN_H = 24
 local AB_HIS_BTN_MIN_W = 96
-
-local SUP_MEDAL_RANKS = 3
-local SUP_MEDAL_IND = 30
-local SUP_MEDAL_INSET = 10
-local SUP_MEDAL_H = 33
-local SUP_MEDAL_W = SUP_MEDAL_H * 77 / 96
-local SUP_MEDAL_U0, SUP_MEDAL_U1 = 26 / 128, 103 / 128
-local SUP_MEDAL_V0, SUP_MEDAL_V1 = 16 / 128, 112 / 128
-local SUP_MEDAL_TINT = {
-    { 1.00, 0.80, 0.28 },
-    { 0.74, 0.78, 0.84 },
-    { 0.83, 0.54, 0.28 },
-}
-
-local function BuildSupportMedal(parent, anchor, rank)
-    local host = CreateFrame("Frame", nil, parent)
-    host:SetSize(SUP_MEDAL_W, SUP_MEDAL_H)
-    host:SetFrameLevel(parent:GetFrameLevel() + 3)
-    host:SetPoint("LEFT", anchor, "LEFT", -SUP_MEDAL_IND, 0)
-
-    local c = SUP_MEDAL_TINT[rank] or SUP_MEDAL_TINT[SUP_MEDAL_RANKS]
-
-    local glow = host:CreateTexture(nil, "ARTWORK")
-    glow:SetAllPoints()
-    glow:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\About\\supporter_medal_glow.tga")
-    glow:SetTexCoord(SUP_MEDAL_U0, SUP_MEDAL_U1, SUP_MEDAL_V0, SUP_MEDAL_V1)
-    glow:SetDesaturated(true)
-    glow:SetVertexColor(c[1], c[2], c[3], 1)
-
-    local line = host:CreateTexture(nil, "OVERLAY")
-    line:SetAllPoints()
-    line:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\About\\supporter_medal_line.tga")
-    line:SetTexCoord(SUP_MEDAL_U0, SUP_MEDAL_U1, SUP_MEDAL_V0, SUP_MEDAL_V1)
-
-    local ag = host:CreateAnimationGroup()
-    ag:SetLooping("REPEAT")
-    local a1 = ag:CreateAnimation("Alpha")
-    a1:SetFromAlpha(1)
-    a1:SetToAlpha(0.55)
-    a1:SetDuration(2.4)
-    a1:SetSmoothing("IN_OUT")
-    a1:SetOrder(1)
-    local a2 = ag:CreateAnimation("Alpha")
-    a2:SetFromAlpha(0.55)
-    a2:SetToAlpha(1)
-    a2:SetDuration(2.4)
-    a2:SetSmoothing("IN_OUT")
-    a2:SetOrder(2)
-    ag:Play()
-    return host
-end
+local AB_HIS_TITLE_H = 18
+local AB_FOOT_COL_GAP = 16
+local AB_ROW_BLANK = 20
 
 local C_AB_VAL = { 0.88, 0.90, 0.93 }
 local C_AB_DIM = { 0.62, 0.62, 0.68 }
@@ -312,8 +267,12 @@ function BuildAbout()
     if aboutBuilt then return end
     aboutBuilt = true
 
+    local hasSup = type(ns.BuildAboutSupport) == "function"
+    local cardW = hasSup and AB_CARD_W or AB_CARD_FULL_W
+    local innerW = cardW - AB_PAD * 2
+
     local left = CreateFrame("Frame", nil, about, "BackdropTemplate")
-    left:SetSize(AB_CARD_W, AB_CARD_H)
+    left:SetSize(cardW, AB_CARD_H)
     left:SetPoint("TOPLEFT", about, "TOPLEFT", AB_EDGE_X, -AB_TOP)
     left:SetFrameLevel(about:GetFrameLevel() + 1)
     if left.SetBackdropColor then left:SetBackdropColor(0, 0, 0, 0) end
@@ -344,10 +303,12 @@ function BuildAbout()
     studio:SetTextColor(0.55, 0.62, 0.70)
 
     local QQ_NUM = "728916609"
-    local qqPop
-    local function ShowQQPop(anchor)
-        if not qqPop then
-            local p = CreateFrame("Frame", nil, about, "BackdropTemplate")
+    local KOOK_URL = "https://kook.vip/Imf23q"
+    local copyPops = {}
+    local function ShowCopyPop(anchor, title, text)
+        local p = copyPops[title]
+        if not p then
+            p = CreateFrame("Frame", nil, about, "BackdropTemplate")
             p:SetSize(248, 110)
             p:SetFrameLevel(about:GetFrameLevel() + 12)
             p:EnableMouse(true)
@@ -358,7 +319,7 @@ function BuildAbout()
 
             local t = p:CreateFontString(nil, "OVERLAY")
             t:SetFont(ns.FONT, 14, "")
-            t:SetText(L["QQ群"])
+            t:SetText(title)
             t:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
             t:SetPoint("TOPLEFT", p, "TOPLEFT", 12, -12)
 
@@ -370,7 +331,7 @@ function BuildAbout()
             eb:SetTextColor(1, 1, 1)
             eb:SetTextInsets(8, 8, 0, 0)
             eb:SetJustifyH("LEFT")
-            eb:SetMaxLetters(32)
+            eb:SetMaxLetters(64)
             if eb.SetBackdropColor then eb:SetBackdropColor(0, 0, 0, 0) end
             if eb.SetBackdropBorderColor then eb:SetBackdropBorderColor(0, 0, 0, 0) end
             ns.hui.BuildRoundedBG(eb, 6, ns.hui.layer.L2, "both", true)
@@ -390,30 +351,32 @@ function BuildAbout()
                 self:Hide()
             end)
             p.eb = eb
-            qqPop = p
+            copyPops[title] = p
         end
-        qqPop:ClearAllPoints()
-        qqPop:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", -24, -10)
-        qqPop:Show()
-        qqPop.eb:SetText(QQ_NUM)
-        qqPop.eb:HighlightText()
+        p:ClearAllPoints()
+        p:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", -24, -10)
+        p:Show()
+        p.eb:SetText(text)
+        p.eb:HighlightText()
         if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
             C_Timer.After(0, function()
-                if qqPop and qqPop:IsShown() then
-                    qqPop.eb:SetFocus()
-                    qqPop.eb:HighlightText()
+                if p:IsShown() then
+                    p.eb:SetFocus()
+                    p.eb:HighlightText()
                 end
             end)
         else
-            qqPop.eb:SetFocus()
+            p.eb:SetFocus()
         end
     end
+
 
     local rows = {
         { key = L["作者"], parts = { { t = L["圆圆"] } } },
         { key = L["制作团队"], parts = { { t = L["专业增强"] .. " wzk" } } },
         { key = L["鸣谢"], parts = { { t = L["黑科研 · 胡里胡涂"] } } },
         { key = L["QQ群"], qq = true, parts = { { t = QQ_NUM } } },
+        { key = L["KOOK"], copy = true, gapAfter = true, parts = { { t = KOOK_URL } } },
         { key = L["指令"], parts = {
             { t = "/df", cmd = "/df" },
             { t = " · " },
@@ -444,7 +407,7 @@ function BuildAbout()
         local out = C_AB_KEYHEX .. row.key .. "|r　"
         for pi = 1, #row.parts do
             local p = row.parts[pi]
-            if p.cmd or (row.qq and pi == 1) then
+            if p.cmd or ((row.qq or row.copy) and pi == 1) then
                 out = out .. ((hot == pi) and "|cffffffff" or AbAccentHex()) .. p.t .. "|r"
             else
                 out = out .. p.t
@@ -466,7 +429,7 @@ function BuildAbout()
         local ln = left:CreateFontString(nil, "OVERLAY")
         ln:SetFont(ns.FONT, 14, "")
         ln:SetJustifyH("CENTER")
-        ln:SetWidth(AB_INNER_W)
+        ln:SetWidth(innerW)
         ln:SetPoint("TOP", left, "CENTER", 0, ly)
         ln:SetTextColor(C_AB_VAL[1], C_AB_VAL[2], C_AB_VAL[3])
 
@@ -487,11 +450,11 @@ function BuildAbout()
 
         ln:SetText(BuildLine(row, 0))
 
-        local cursor = (AB_INNER_W - totalW) / 2 + headW
+        local cursor = (innerW - totalW) / 2 + headW
         for pi = 1, #row.parts do
             local p = row.parts[pi]
             local w = widths[pi]
-            if p.cmd or (row.qq and pi == 1) then
+            if p.cmd or ((row.qq or row.copy) and pi == 1) then
                 local b = CreateFrame("Button", nil, left)
                 b:SetSize(w + 2, 20)
                 b:SetPoint("LEFT", ln, "LEFT", cursor - 1, 0)
@@ -500,7 +463,7 @@ function BuildAbout()
                 if p.cmd then
                     b:SetScript("OnClick", function() SendCmd(p.cmd) end)
                 else
-                    b:SetScript("OnClick", function(self) ShowQQPop(self) end)
+                    b:SetScript("OnClick", function(self) ShowCopyPop(self, row.key, p.t) end)
                 end
                 b:SetScript("OnEnter", function() ln:SetText(BuildLine(row, pi)) end)
                 b:SetScript("OnLeave", function() ln:SetText(BuildLine(row, 0)) end)
@@ -513,33 +476,28 @@ function BuildAbout()
         local vh = ln:GetStringHeight()
         if type(vh) ~= "number" or vh <= 0 then vh = 14 end
         ly = ly - math.max(28, vh + 10)
+        if row.gapAfter then ly = ly - AB_ROW_BLANK end
     end
 
-    local foot = left:CreateFontString(nil, "OVERLAY")
-    foot:SetFont(ns.FONT, 13, "")
-    foot:SetJustifyH("CENTER")
-    foot:SetWidth(AB_INNER_W)
-    foot:SetText(L["如遇到 bug 或数据错误，请到 QQ 群内反馈，谢谢。"])
-    foot:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
-    local lastLn = lines[#lines] and lines[#lines].fs
-    if lastLn then
-        foot:SetPoint("TOP", lastLn, "BOTTOM", 0, -AB_FOOT_GAP)
-    else
-        foot:SetPoint("BOTTOM", left, "BOTTOM", 0, 118)
-    end
+    local footY = AB_PAD + AB_HIS_BTN_H + AB_HIS_BTN_GAP + AB_HIS_TITLE_H + AB_HIS_TITLE_GAP
 
     local histLine = left:CreateTexture(nil, "ARTWORK")
     histLine:SetTexture("Interface\\Buttons\\WHITE8x8")
     histLine:SetHeight(1)
     local hlv = ns.hui.layer.L3
     histLine:SetVertexColor(hlv[1], hlv[2], hlv[3], 1)
-    histLine:SetPoint("TOPLEFT", foot, "BOTTOMLEFT", -AB_PAD, -AB_HIS_LINE_GAP)
-    histLine:SetPoint("TOPRIGHT", foot, "BOTTOMRIGHT", AB_PAD, -AB_HIS_LINE_GAP)
+    histLine:SetPoint("BOTTOMLEFT", left, "BOTTOMLEFT", -AB_PAD, footY)
+    histLine:SetPoint("BOTTOMRIGHT", left, "BOTTOMRIGHT", AB_PAD, footY)
+
+    local footHalf = math.floor((innerW - AB_FOOT_COL_GAP) / 2)
+    local cxLeft = -math.floor((innerW - footHalf) / 2)
+    local cxRight = math.floor((innerW - footHalf) / 2)
+    local acc = (ns.hui and ns.hui.ACCENT) or { 0x46 / 255, 0xbf / 255, 0x72 / 255 }
 
     local histTitle = left:CreateFontString(nil, "OVERLAY")
     histTitle:SetFont(ns.FONT, 14, "")
     histTitle:SetText(L["更新记录"])
-    histTitle:SetPoint("TOP", histLine, "BOTTOM", 0, -AB_HIS_TITLE_GAP)
+    histTitle:SetPoint("TOP", histLine, "BOTTOM", cxLeft, -AB_HIS_TITLE_GAP)
     histTitle:SetTextColor(0.80, 0.82, 0.86)
 
     local histBtn = ns.CreateButton(left)
@@ -548,7 +506,7 @@ function BuildAbout()
     histBtn:SetFrameLevel(left:GetFrameLevel() + 2)
     histBtn:SetHitRectInsets(-2, -2, -2, -2)
     histBtn:SetPushedTextOffset(0, 0)
-    histBtn:SetText("v" .. (DF_VERSION or ""))
+    histBtn:SetText("v" .. (ns.UpdateVer or DF_VERSION or ""))
     local histText = histBtn:GetFontString()
     local histW = 0
     if histText then
@@ -563,185 +521,26 @@ function BuildAbout()
     end)
     if histBtn.SetCursor then histBtn:SetCursor("Interface/Cursor/Point") end
 
-    local card = CreateFrame("Frame", nil, about, "BackdropTemplate")
-    card:SetSize(AB_CARD_W, AB_CARD_H)
-    card:SetPoint("TOPLEFT", about, "TOPLEFT", AB_RIGHT_X, -AB_TOP)
-    card:SetFrameLevel(about:GetFrameLevel() + 2)
-    card:EnableMouse(true)
-    card:SetScript("OnMouseUp", function()
-        ns.PlaySound(1)
-        about:Hide()
-        SyncAboutGlyph()
-    end)
-    if card.SetBackdropColor then card:SetBackdropColor(0, 0, 0, 0) end
-    if card.SetBackdropBorderColor then card:SetBackdropBorderColor(0, 0, 0, 0) end
-    ns.hui.BuildRoundedBG(card, 8, ns.hui.layer.L1, "both", true)
+    local FB_URL = "https://docs.qq.com/form/page/DR01ocU1CbHVza29K"
+    local fbShade
+    local fbBuilt
 
-    local hdr = card:CreateFontString(nil, "OVERLAY")
-    hdr:SetFont(ns.FONT, 16, "")
-    hdr:SetText(L["支持榜"])
-    hdr:SetPoint("TOPLEFT", card, "TOPLEFT", AB_PAD, -(AB_PAD + 4))
-    hdr:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
+    local function BuildFeedback()
+        if fbBuilt then return end
+        fbBuilt = true
 
-    local members = ns.Supporters or {}
-    local cnt = card:CreateFontString(nil, "OVERLAY")
-    cnt:SetFont(ns.FONT, 14, "")
-    cnt:SetText(string.format(L["共 %d 位"], #members))
-    cnt:SetPoint("LEFT", hdr, "RIGHT", 8, 0)
-    cnt:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
-
-    local div = card:CreateTexture(nil, "ARTWORK")
-    div:SetTexture("Interface\\Buttons\\WHITE8x8")
-    local dv = ns.hui.layer.DIV
-    div:SetVertexColor(dv[1], dv[2], dv[3], 1)
-    div:SetHeight(1)
-    div:SetPoint("TOPLEFT", card, "TOPLEFT", AB_PAD, -AB_DIV_Y)
-    div:SetPoint("TOPRIGHT", card, "TOPRIGHT", -AB_PAD, -AB_DIV_Y)
-
-    local scroll = CreateFrame("ScrollFrame", nil, card)
-    scroll:SetPoint("TOPLEFT", card, "TOPLEFT", AB_PAD, -AB_GRID_TOP)
-    scroll:SetSize(AB_AVAIL_W, AB_GRID_H)
-    local child = CreateFrame("Frame", nil, scroll)
-    child:SetSize(AB_AVAIL_W, AB_GRID_H)
-    scroll:SetScrollChild(child)
-
-    for i = 1, #members do
-        local col = (i - 1) % AB_COLS
-        local row = math.floor((i - 1) / AB_COLS)
-        local ind = (i <= SUP_MEDAL_RANKS) and SUP_MEDAL_IND or 0
-        local nm = child:CreateFontString(nil, "OVERLAY")
-        nm:SetFont(ns.FONT, 14, "")
-        nm:SetJustifyH("LEFT")
-        nm:SetWordWrap(false)
-        local tc = SUP_MEDAL_TINT[i]
-        if ind > 0 and tc then
-            nm:SetTextColor(tc[1], tc[2], tc[3])
-        else
-            nm:SetTextColor(1, 1, 1)
-        end
-        nm:SetPoint("TOPLEFT", child, "TOPLEFT",
-            col * (AB_COL_W + AB_COL_GAP) + ind,
-            -(row * AB_ROW_H + SUP_MEDAL_INSET))
-        AbFit(nm, members[i], AB_COL_W - 4 - ind)
-        if ind > 0 then BuildSupportMedal(child, nm, i) end
-    end
-    local cy = math.ceil(#members / AB_COLS) * AB_ROW_H + SUP_MEDAL_INSET
-    child:SetHeight(math.max(cy, AB_GRID_H))
-
-    if #members == 0 then
-        local empty = card:CreateFontString(nil, "OVERLAY")
-        empty:SetFont(ns.FONT, 14, "")
-        empty:SetText(L["还没有记录"])
-        empty:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
-        empty:SetPoint("CENTER", scroll, "CENTER", 0, 0)
-    end
-
-    local track = CreateFrame("Frame", nil, card)
-    track:SetSize(7, AB_GRID_H - 4)
-    track:SetPoint("TOPLEFT", scroll, "TOPRIGHT", 0, -2)
-    track:SetFrameLevel(card:GetFrameLevel() + 10)
-    track.__fill = ns.hui.BuildSolidFill(track, 3, ns.hui.layer.L2)
-    track:Hide()
-
-    local thumb = CreateFrame("Frame", nil, card)
-    thumb:SetSize(5, 24)
-    thumb:SetFrameLevel(card:GetFrameLevel() + 11)
-    thumb.__fill = ns.hui.BuildSolidFill(thumb, 2, ns.hui.layer.L4)
-    thumb:EnableMouse(true)
-    thumb:Hide()
-
-    local function BarUpdate()
-        local ch = child:GetHeight() or 0
-        local vh = scroll:GetHeight() or 0
-        if vh <= 0 or ch <= vh + 2 then
-            track:Hide()
-            thumb:Hide()
-            return
-        end
-        track:Show()
-        thumb:Show()
-        local th = math.max(24, track:GetHeight() * vh / ch)
-        thumb:SetHeight(th)
-        local vp = scroll:GetVerticalScroll()
-        if type(vp) ~= "number" then vp = 0 end
-        local frac = 0
-        local maxs = ch - vh
-        if maxs > 0 then frac = vp / maxs end
-        if frac < 0 then frac = 0 elseif frac > 1 then frac = 1 end
-        local span = math.max(0, track:GetHeight() - th)
-        thumb:ClearAllPoints()
-        thumb:SetPoint("TOP", track, "TOP", 0, -(frac * span))
-    end
-
-    card:SetScript("OnMouseWheel", function(_, delta)
-        if not track:IsShown() then return end
-        local maxs = (child:GetHeight() or 0) - (scroll:GetHeight() or 0)
-        local v = (scroll:GetVerticalScroll() or 0) - delta * 48
-        if v < 0 then v = 0 elseif v > maxs then v = maxs end
-        scroll:SetVerticalScroll(v)
-        BarUpdate()
-    end)
-
-    thumb:SetScript("OnMouseDown", function(self)
-        local scale = UIParent:GetEffectiveScale()
-        local _, cy0 = GetCursorPosition()
-        self.__y0 = cy0 / scale
-        self.__s0 = scroll:GetVerticalScroll() or 0
-        self:SetScript("OnUpdate", function(me)
-            local span = (track:GetHeight() or 0) - (me:GetHeight() or 0)
-            if span <= 0 then return end
-            local _, cy1 = GetCursorPosition()
-            local maxs = (child:GetHeight() or 0) - (scroll:GetHeight() or 0)
-            local v = me.__s0 + (me.__y0 - cy1 / scale) / span * maxs
-            if v < 0 then v = 0 elseif v > maxs then v = maxs end
-            scroll:SetVerticalScroll(v)
-            BarUpdate()
-        end)
-    end)
-    thumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
-    thumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
-    thumb:SetScript("OnEnter", function(self)
-        self.__hover = true
-        ns.hui.PaintSolidFill(self.__fill, ns.hui.layer.L5)
-    end)
-    thumb:SetScript("OnLeave", function(self)
-        self.__hover = false
-        ns.hui.PaintSolidFill(self.__fill, ns.hui.layer.L4)
-    end)
-
-    ns.hui.AddRepaint(about, function()
-        for i = 1, #lines do
-            local r = lines[i]
-            r.fs:SetText(BuildLine(r.row, 0))
-        end
-        ns.hui.PaintSolidFill(track.__fill, ns.hui.layer.L2)
-        ns.hui.PaintSolidFill(thumb.__fill, thumb.__hover and ns.hui.layer.L5 or ns.hui.layer.L4)
-        local d2 = ns.hui.layer.DIV
-        div:SetVertexColor(d2[1], d2[2], d2[3], 1)
-        local h2 = ns.hui.layer.L3
-        histLine:SetVertexColor(h2[1], h2[2], h2[3], 1)
-    end)
-
-    local donateShade
-    local donateBuilt
-    local function HideDonate()
-        if donateShade and donateShade:IsShown() then donateShade:Hide() end
-    end
-    local function BuildDonate()
-        if donateBuilt then return end
-        donateBuilt = true
-        local shade = CreateFrame("Button", "DungeonsForeverDonate", about)
+        local shade = CreateFrame("Button", "DungeonsForeverFeedback", about)
         shade:SetAllPoints(about)
         shade:SetFrameLevel(about:GetFrameLevel() + 20)
-        local bg = shade:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetColorTexture(0, 0, 0, 0.52)
-        shade:SetScript("OnClick", function() HideDonate() end)
+        local shBg = shade:CreateTexture(nil, "BACKGROUND")
+        shBg:SetAllPoints()
+        shBg:SetColorTexture(0, 0, 0, 0.52)
+        shade:SetScript("OnClick", function() shade:Hide() end)
         shade:Hide()
-        table.insert(UISpecialFrames, "DungeonsForeverDonate")
+        table.insert(UISpecialFrames, "DungeonsForeverFeedback")
 
         local pop = CreateFrame("Frame", nil, shade, "BackdropTemplate")
-        pop:SetSize(260, 330)
+        pop:SetSize(352, 372)
         pop:SetPoint("CENTER", about, "CENTER", 0, 0)
         pop:SetFrameLevel(shade:GetFrameLevel() + 2)
         pop:SetClampedToScreen(true)
@@ -750,11 +549,12 @@ function BuildAbout()
         if pop.SetBackdropBorderColor then pop:SetBackdropBorderColor(0, 0, 0, 0) end
         if ns.hui.SkinPopup then ns.hui.SkinPopup(pop, 10, nil, ns.hui.layer.L0) end
         if ns.hui.SkinShadow then ns.hui.SkinShadow(pop) end
+
         local t = pop:CreateFontString(nil, "OVERLAY")
         t:SetFont(ns.FONT, 15, "")
-        t:SetText(L["微信赞赏"])
+        t:SetText(L["问题反馈"])
         t:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
-        t:SetPoint("TOP", pop, "TOP", 0, -16)
+        t:SetPoint("TOP", pop, "TOP", 0, -14)
 
         local close = CreateFrame("Button", nil, pop)
         close:SetSize(24, 24)
@@ -771,12 +571,12 @@ function BuildAbout()
         close:SetScript("OnLeave", function() ci:SetVertexColor(cg, cg, cg) end)
         close:SetScript("OnClick", function()
             ns.PlaySound(1)
-            HideDonate()
+            shade:Hide()
         end)
 
         local plate = CreateFrame("Frame", nil, pop, "BackdropTemplate")
-        plate:SetSize(216, 216)
-        plate:SetPoint("TOP", pop, "TOP", 0, -52)
+        plate:SetSize(208, 208)
+        plate:SetPoint("TOP", pop, "TOP", 0, -46)
         plate:SetFrameLevel(pop:GetFrameLevel() + 1)
         if plate.SetBackdropColor then plate:SetBackdropColor(0, 0, 0, 0) end
         if plate.SetBackdropBorderColor then plate:SetBackdropBorderColor(0, 0, 0, 0) end
@@ -784,71 +584,152 @@ function BuildAbout()
 
         local qr = plate:CreateTexture(nil, "ARTWORK")
         qr:SetAllPoints()
-        qr:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\About\\wechat-support.tga")
+        qr:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\About\\feedback-qr.tga")
 
-        local h1 = pop:CreateFontString(nil, "OVERLAY")
-        h1:SetFont(ns.FONT, 13, "")
-        h1:SetText(L["手机微信扫一扫"])
-        h1:SetTextColor(C_AB_VAL[1], C_AB_VAL[2], C_AB_VAL[3])
-        h1:SetPoint("TOP", pop, "TOP", 0, -282)
+        local eb = CreateFrame("EditBox", nil, pop, "BackdropTemplate")
+        eb:SetSize(320, 26)
+        eb:SetPoint("TOP", pop, "TOP", 0, -288)
+        eb:SetAutoFocus(false)
+        eb:SetFont(ns.FONT, 11, "")
+        eb:SetTextColor(1, 1, 1)
+        eb:SetTextInsets(8, 8, 0, 0)
+        eb:SetJustifyH("LEFT")
+        eb:SetMaxLetters(96)
+        if eb.SetBackdropColor then eb:SetBackdropColor(0, 0, 0, 0) end
+        if eb.SetBackdropBorderColor then eb:SetBackdropBorderColor(0, 0, 0, 0) end
+        ns.hui.BuildRoundedBG(eb, 6, ns.hui.layer.L2, "both", true)
+        eb:SetText(FB_URL)
+        eb:SetCursorPosition(0)
+        eb:SetScript("OnEscapePressed", function(self)
+            self:ClearFocus()
+            shade:Hide()
+        end)
+        eb:SetScript("OnEditFocusGained", function(self)
+            self:HighlightText()
+        end)
 
-        local h2 = pop:CreateFontString(nil, "OVERLAY")
-        h2:SetFont(ns.FONT, 12, "")
-        h2:SetText(L["点击空白处或按 Esc 关闭"])
-        h2:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
-        h2:SetPoint("TOP", pop, "TOP", 0, -304)
+        local hit = CreateFrame("Button", nil, pop)
+        hit:SetAllPoints(eb)
+        hit:SetFrameLevel(eb:GetFrameLevel() + 1)
+        hit:SetScript("OnClick", function()
+            ns.PlaySound(1)
+            eb:SetFocus()
+            eb:HighlightText()
+        end)
 
-        donateShade = shade
+        local link = CreateFrame("Button", nil, pop)
+        link:SetSize(200, 20)
+        link:SetPoint("TOP", pop, "TOP", 0, -262)
+        local lt = link:CreateFontString(nil, "OVERLAY")
+        lt:SetFont(ns.FONT, 13, "")
+        lt:SetText(L["前往腾讯文档反馈 bug"])
+        lt:SetTextColor(acc[1], acc[2], acc[3])
+        lt:SetPoint("CENTER")
+        link:SetScript("OnClick", function()
+            ns.PlaySound(1)
+            eb:SetText(FB_URL)
+            eb:SetFocus()
+            eb:HighlightText()
+        end)
+        link:SetScript("OnEnter", function() lt:SetTextColor(1, 1, 1) end)
+        link:SetScript("OnLeave", function() lt:SetTextColor(acc[1], acc[2], acc[3]) end)
+        if link.SetCursor then link:SetCursor("Interface/Cursor/Point") end
+
+        local tip = pop:CreateFontString(nil, "OVERLAY")
+        tip:SetFont(ns.FONT, 12, "")
+        tip:SetText(L["手机扫码填写 · 电脑点击复制链接"])
+        tip:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
+        tip:SetPoint("TOP", pop, "TOP", 0, -320)
+
+        local esc = pop:CreateFontString(nil, "OVERLAY")
+        esc:SetFont(ns.FONT, 12, "")
+        esc:SetText(L["点击空白处或按 Esc 关闭"])
+        esc:SetTextColor(C_AB_DIM[1], C_AB_DIM[2], C_AB_DIM[3])
+        esc:SetPoint("TOP", pop, "TOP", 0, -340)
+
+        shade.eb = eb
+        fbShade = shade
     end
-    local function ToggleDonate()
-        BuildDonate()
-        if donateShade:IsShown() then
-            donateShade:Hide()
-        else
-            donateShade:Show()
-        end
+
+    local fbTitle = left:CreateFontString(nil, "OVERLAY")
+    fbTitle:SetFont(ns.FONT, 14, "")
+    fbTitle:SetText(L["反馈"])
+    fbTitle:SetPoint("TOP", histLine, "BOTTOM", cxRight, -AB_HIS_TITLE_GAP)
+    fbTitle:SetTextColor(0.80, 0.82, 0.86)
+
+    local fbBtn = ns.CreateButton(left)
+    fbBtn:SetHeight(AB_HIS_BTN_H)
+    fbBtn:SetPoint("TOP", fbTitle, "BOTTOM", 0, -AB_HIS_BTN_GAP)
+    fbBtn:SetFrameLevel(left:GetFrameLevel() + 2)
+    fbBtn:SetHitRectInsets(-2, -2, -2, -2)
+    fbBtn:SetPushedTextOffset(0, 0)
+    fbBtn:SetText(L["问题反馈"])
+    fbBtn.__huiKeepTextColor = true
+    local fbText = fbBtn:GetFontString()
+    local fbW = 0
+    if fbText then
+        fbText:SetFont(ns.FONT, 14, "")
+        fbText:SetTextColor(acc[1], acc[2], acc[3])
+        local okw, vw = pcall(fbText.GetStringWidth, fbText)
+        if okw and type(vw) == "number" and vw > 0 then fbW = vw end
     end
-
-    local dbtn = CreateFrame("Button", nil, card, "BackdropTemplate")
-    dbtn:SetSize(76, 22)
-    dbtn:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9.5)
-    dbtn:SetFrameLevel(card:GetFrameLevel() + 3)
-    dbtn:SetHitRectInsets(-2, -2, -2, -2)
-    if dbtn.SetBackdropColor then dbtn:SetBackdropColor(0, 0, 0, 0) end
-    if dbtn.SetBackdropBorderColor then dbtn:SetBackdropBorderColor(0, 0, 0, 0) end
-    local C_DN = { 0xc4 / 255, 0x34 / 255, 0x28 / 255, 1 }
-    local C_DN_HOT = { 0xd4 / 255, 0x44 / 255, 0x36 / 255, 1 }
-    local dFill = ns.hui.BuildRoundedBG(dbtn, 6, C_DN, "both", false)
-    local dHot = ns.hui.BuildRoundedBG(dbtn, 6, C_DN_HOT, "both", false)
-    for i = 1, #dHot do dHot[i]:Hide() end
-
-    local dText = dbtn:CreateFontString(nil, "OVERLAY")
-    dText:SetFont(ns.FONT, 12, "")
-    dText:SetText(L["赞赏"])
-    dText:SetTextColor(1, 1, 1)
-    dText:SetPoint("CENTER", dbtn, "CENTER", 0, 0)
-
-    dbtn:SetScript("OnEnter", function(self)
-        for i = 1, #dFill do dFill[i]:Hide() end
-        for i = 1, #dHot do dHot[i]:Show() end
+    fbBtn:SetWidth(math.max(AB_HIS_BTN_MIN_W, math.floor(fbW + 18)))
+    fbBtn:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        BuildFeedback()
+        fbShade.eb:ClearFocus()
+        fbShade.eb:SetText(FB_URL)
+        fbShade.eb:SetCursorPosition(0)
+        fbShade:Show()
+    end)
+    fbBtn:SetScript("OnEnter", function(self)
+        if fbText then fbText:SetTextColor(1, 1, 1) end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine(L["赞赏"], 1, 1, 1, true)
+        GameTooltip:AddLine(L["问题反馈"], 1, 1, 1, true)
+        GameTooltip:AddLine(FB_URL, acc[1], acc[2], acc[3], true)
         GameTooltip:Show()
     end)
-    dbtn:SetScript("OnLeave", function()
-        for i = 1, #dHot do dHot[i]:Hide() end
-        for i = 1, #dFill do dFill[i]:Show() end
+    fbBtn:SetScript("OnLeave", function()
+        if fbText then fbText:SetTextColor(acc[1], acc[2], acc[3]) end
         GameTooltip:Hide()
     end)
-    dbtn:SetScript("OnClick", function()
-        ns.PlaySound(1)
-        ToggleDonate()
+    if fbBtn.SetCursor then fbBtn:SetCursor("Interface/Cursor/Point") end
+    about:HookScript("OnHide", function()
+        if fbShade then fbShade:Hide() end
     end)
-    if dbtn.SetCursor then dbtn:SetCursor("Interface/Cursor/Point") end
 
-    about:HookScript("OnHide", function() HideDonate() end)
+    if type(ns.BuildAboutSupport) == "function" then
+        ns.BuildAboutSupport(about, {
+            x = AB_RIGHT_X,
+            top = AB_TOP,
+            w = AB_CARD_W,
+            h = AB_CARD_H,
+            pad = AB_PAD,
+            divY = AB_DIV_Y,
+            gridTop = AB_GRID_TOP,
+            gridH = AB_GRID_H,
+            availW = AB_AVAIL_W,
+            colW = AB_COL_W,
+            cols = AB_COLS,
+            colGap = AB_COL_GAP,
+            rowH = AB_ROW_H,
+            bar = AB_BAR,
+            fit = AbFit,
+            sync = SyncAboutGlyph,
+            head = C_AB_HEAD,
+            val = C_AB_VAL,
+            dim = C_AB_DIM,
+        })
+    end
 
-    BarUpdate()
+    ns.hui.AddRepaint(about, function()
+        for i = 1, #lines do
+            local r = lines[i]
+            r.fs:SetText(BuildLine(r.row, 0))
+        end
+        local h2 = ns.hui.layer.L3
+        histLine:SetVertexColor(h2[1], h2[2], h2[3], 1)
+    end)
 end
 
 local settingsGlyph

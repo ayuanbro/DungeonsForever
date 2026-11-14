@@ -581,13 +581,11 @@ function EG.MarkPoint(areaID, x, y)
         return
     end
     if type(x) == "number" and type(y) == "number"
-       and UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint then
-        local pok, pt = pcall(UiMapPoint.CreateFromCoordinates, mapID, x / 100, y / 100)
-        if pok and pt then
-            pcall(C_Map.SetUserWaypoint, pt)
-            if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
-                pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
-            end
+       and C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D then
+        local pt = { uiMapID = mapID, position = _G.CreateVector2D(x / 100, y / 100) }
+        pcall(C_Map.SetUserWaypoint, pt)
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
     end
     if C_Map and C_Map.OpenWorldMap then
@@ -2161,14 +2159,11 @@ end
 
 function RtGo(mapID, x, y)
     if type(x) == "number" and type(y) == "number"
-       and UiMapPoint and UiMapPoint.CreateFromCoordinates
-       and C_Map and C_Map.SetUserWaypoint then
-        local pok, pt = pcall(UiMapPoint.CreateFromCoordinates, mapID, x / 100, y / 100)
-        if pok and pt then
-            pcall(C_Map.SetUserWaypoint, pt)
-            if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
-                pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
-            end
+       and C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D then
+        local pt = { uiMapID = mapID, position = _G.CreateVector2D(x / 100, y / 100) }
+        pcall(C_Map.SetUserWaypoint, pt)
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
     end
     if C_Map and C_Map.OpenWorldMap then

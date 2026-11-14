@@ -754,7 +754,8 @@ local function validSupply(entry,stamp,live)
     if live or entry.source=="client-auction-results" then
         if entry.source~="client-auction-results" or entry.complete~=true or entry.ownerExcluded~=true
             or type(entry.observedAt)~="number" or entry.observedAt<=0 then return false end
-        if stamp and (entry.observedAt>stamp or stamp - entry.observedAt > ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds()) then return false end
+        local forced=ns.AuctionBridge and ns.AuctionBridge.ForceExpiredActive and ns.AuctionBridge.ForceExpiredActive()
+        if not forced and stamp and (entry.observedAt>stamp or stamp - entry.observedAt > ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds()) then return false end
     end
     return true
 end

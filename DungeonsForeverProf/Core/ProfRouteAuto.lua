@@ -61,8 +61,14 @@ local function AHPrice(id)
             local age = CallAPI(Auctionator.API.v1.GetAuctionAgeByItemID, id)
             if type(age) == "number" then
                 if age > MAX_STALE then
-                    ahReason[id], ahAge[id] = "stale", age
-                    p = nil
+                    local bridge = ns.AuctionBridge
+                    if bridge and bridge.ForceExpiredActive and bridge.ForceExpiredActive() then
+                        ahAge[id] = age
+                        ahReason[id] = nil
+                    else
+                        ahReason[id], ahAge[id] = "stale", age
+                        p = nil
+                    end
                 end
                 if age < (priceCache.__minAge or math.huge) then
                     priceCache.__minAge = age
@@ -85,6 +91,12 @@ local function AHPrice(id)
 end
 
 local vendorCache = {}
+
+function RA.ResetPrices()
+    priceCache = {}
+    vendorCache = {}
+    ahReason, ahAge = {}, {}
+end
 
 local function VendorPrice(id)
     local hit = vendorCache[id]
@@ -1611,9 +1623,11 @@ function RA.StampSupply(result, context)
         local mid = e.id or e[1]
         if mid and not e.vendor and (e.source == nil or e.source == "ah") then
             local rec = SupplyOf(mid)
+            local forced = AB and AB.ForceExpiredActive and AB.ForceExpiredActive()
             if rec and rec.complete and rec.ownerExcluded and rec.source == "client-auction-results"
                 and type(rec.quantity) == "number" and rec.observedAt > 0
-                and rec.observedAt <= now and now - rec.observedAt <= RA.MaxAuctionSupplyAgeSeconds() then
+                and rec.observedAt <= now
+                and (forced or now - rec.observedAt <= RA.MaxAuctionSupplyAgeSeconds()) then
                 e.source = e.source or "ah"
                 e.availableCount = rec.quantity
                 e.supplyObserved = true

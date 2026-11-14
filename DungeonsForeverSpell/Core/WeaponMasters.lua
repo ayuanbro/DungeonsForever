@@ -115,14 +115,12 @@ function WM.MarkNPC(tr)
         end
         return
     end
-    if UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint
+    if C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D
         and (not C_Map.CanSetUserWaypointOnMap or C_Map.CanSetUserWaypointOnMap(tr.uiMapId)) then
-        local ok, pt = pcall(UiMapPoint.CreateFromCoordinates, tr.uiMapId, tr.x / 100, tr.y / 100)
-        if ok and pt then
-            pcall(C_Map.SetUserWaypoint, pt)
-            if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
-                pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
-            end
+        local pt = { uiMapID = tr.uiMapId, position = _G.CreateVector2D(tr.x / 100, tr.y / 100) }
+        pcall(C_Map.SetUserWaypoint, pt)
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end
     end
     if C_Map and C_Map.OpenWorldMap then

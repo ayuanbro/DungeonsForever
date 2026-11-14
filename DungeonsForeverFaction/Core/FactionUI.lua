@@ -215,10 +215,10 @@ function FV:MarkQM()
         end
         return
     end
-    if UiMapPoint and UiMapPoint.CreateFromCoordinates and C_Map and C_Map.SetUserWaypoint
+    if C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D
         and (not C_Map.CanSetUserWaypointOnMap or C_Map.CanSetUserWaypointOnMap(mapID)) then
-        local ok, wp = pcall(UiMapPoint.CreateFromCoordinates, mapID, qx / 100, qy / 100)
-        if ok and wp then pcall(C_Map.SetUserWaypoint, wp) end
+        local wp = { uiMapID = mapID, position = _G.CreateVector2D(qx / 100, qy / 100) }
+        pcall(C_Map.SetUserWaypoint, wp)
         if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
             pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
         end

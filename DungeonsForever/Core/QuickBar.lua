@@ -576,7 +576,7 @@ function QB:EnsureSettings()
         local TAB_LABEL = {
             Dungeons = "5人本", Raids = "团本", Professions = "专业", Explore = "探索",
             Collections = "藏品", Factions = "声望", Bis = "BIS配装", Tier = "职业指南",
-            PvP = "PvP", Gear = "装备库",
+            PvP = "PvP", Gear = "装备库", QuestSearch = "搜索",
         }
         local function tabLabel(k)
             local t = TAB_LABEL[k]
@@ -634,8 +634,10 @@ function QB:EnsureSettings()
             { key = "Tier",        label = L["职业指南"] },
             { key = "PvP",         label = L["PvP"] },
             { key = "Gear",        label = L["装备库"] },
+            { key = "QuestSearch", label = L["搜索"] },
         }) do
-            if ns.LoadForeverPages or def.key == "Dungeons" or def.key == "Raids" then
+            if (ns.LoadForeverPages or def.key == "Dungeons" or def.key == "Raids")
+                and ns.ModuleGateOK(def.key) then
                 vis[#vis + 1] = def
             end
         end
