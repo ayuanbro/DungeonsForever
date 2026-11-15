@@ -941,6 +941,7 @@ local function HideNativeList()
     if paged.ViewFrames then
         for _, v in ipairs(paged.ViewFrames) do hide(v) end
     end
+    hide(paged.PagingControls)
 end
 
 local function RestoreNativeList()
@@ -948,6 +949,9 @@ local function RestoreNativeList()
         if f.IsShown then f:Show() end
     end
     hiddenNative = {}
+    local paged = Paged()
+    local pc = paged and paged.PagingControls
+    if pc and pc.Show then pc:Show() end
 end
 
 local function HideOverlay()
@@ -1194,7 +1198,7 @@ local function BuildSubBar()
     local paged = Paged()
     if not paged then return nil end
     local box = PageBox()
-    local host = box or paged
+    local host = book or paged
     subBar = CreateFrame("Frame", nil, host)
     subBar:SetSize(190, 32)
     subBar:SetFrameLevel(150)
@@ -1811,6 +1815,11 @@ local function Attach()
             end
         end
         if activePage and ovl and not ovl:IsVisible() and BookShown() then InstallOurs() end
+        if activePage then
+            local paged = Paged()
+            local pc = paged and paged.PagingControls
+            if pc and pc.IsShown and pc:IsShown() then pc:Hide() end
+        end
         if SyncTabCatcher then SyncTabCatcher() end
         if tabButton and not tabButton:IsShown() and BookShown() and (ns.SpellEnhOn and ns.SpellEnhOn()) then ShowTabs() end
         if InCombat() then return end

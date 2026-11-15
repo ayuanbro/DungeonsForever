@@ -13,6 +13,5 @@
 ## Author: 圆圆
 ## Version: 2.0.0
 ## Dependencies: DungeonsForever
-## OptionalDeps: Questie, QuestieDB
 
 Core\QuestSearchUI.lua

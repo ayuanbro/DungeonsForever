@@ -8051,6 +8051,25 @@ function DG.QuestieNpcLoc(npcID)
     return spare
 end
 
+function DG.NpcLocFallback(npcID, slug)
+    if type(npcID) ~= "number" or npcID <= 0 then return nil, nil end
+    local loc = ns.NPCLoc and ns.NPCLoc[npcID]
+    if loc and loc[1] and loc[2] and loc[3] and MapUsable(loc[1]) then
+        return { loc[1], loc[2], loc[3] }, nil
+    end
+    local q = DG.QuestieNpcLoc(npcID)
+    if q and q[1] and MapUsable(q[1]) then
+        return { q[1], q[2], q[3] }, nil
+    end
+    local e = slug and ns.DungeonEntry and ns.DungeonEntry[slug]
+    if e and e[1] and MapUsable(e[1]) then
+        return { e[1], e[2], e[3] }, L["副本入口"]
+    end
+    if loc and loc[1] and loc[2] and loc[3] then return { loc[1], loc[2], loc[3] }, nil end
+    if q and q[1] and q[2] and q[3] then return { q[1], q[2], q[3] }, nil end
+    return nil, nil
+end
+
 function DG.MarkNPC(npcID, locOverride)
     local ver = select(4, GetBuildInfo()) or 0
     if ver < 16000 or ver > 16999 then
@@ -9286,7 +9305,18 @@ function U:RenderQuestDetail()
                 f.fs:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereShort .. suffix)
             end
             f.__npc = q[16] or (sn and sn[1]) or (slr and tonumber(slr[1])) or nil
-            f.__loc = (smap and { smap, sx, sy }) or (sn and sn[3] and { sn[3], sn[4], sn[5] }) or nil
+            local floc, ftag
+            if smap then
+                floc = { smap, sx, sy }
+            elseif sn and sn[3] then
+                floc = { sn[3], sn[4], sn[5] }
+            else
+                floc, ftag = DG.NpcLocFallback(f.__npc, d.id)
+            end
+            if ftag then
+                f.fs:SetText(f.fs:GetText() .. DG.Hex(C_DIM) .. " · " .. ftag .. "|r")
+            end
+            f.__loc = floc
         else
             f = takeKv()
             f:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereFull)
@@ -9340,14 +9370,29 @@ function U:RenderQuestDetail()
             if zlFull and zlFull ~= "" then txtFull = txt .. " · " .. zlFull end
             if zlShort and zlShort ~= "" then txtShort = txt .. " · " .. zlShort end
             local f
+            local eloc, etag
             if emap and ex and ey and MapUsable(emap) then
+                eloc = { emap, ex, ey }
+            else
+                eloc, etag = DG.NpcLocFallback(enid, d.id)
+            end
+            if eloc then
+                local tag = etag and (DG.Hex(C_DIM) .. " · " .. etag .. "|r") or ""
+                f = takeNpc()
+                f.fs:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtFull .. tag)
+                if FSW(f.fs) > DG.Q_DET_W - 76 then
+                    f.fs:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtShort .. tag)
+                end
+                f.__npc = enid
+                f.__loc = eloc
+            elseif enid then
                 f = takeNpc()
                 f.fs:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtFull)
                 if FSW(f.fs) > DG.Q_DET_W - 76 then
                     f.fs:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtShort)
                 end
                 f.__npc = enid
-                f.__loc = { emap, ex, ey }
+                f.__loc = nil
             else
                 f = takeKv()
                 f:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. txtFull)

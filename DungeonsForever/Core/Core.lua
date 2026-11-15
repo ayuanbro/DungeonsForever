@@ -1186,24 +1186,67 @@ local function drainLazy(list, label)
     return bad
 end
 
+local gateBoot, gateFrame = {}, CreateFrame("Frame")
+local function drainGateBoot()
+    local list = gateBoot
+    gateBoot = {}
+    for i = 1, #list do
+        local m = list[i]
+        if ns.ModuleWant(m) and not ns.AddonLoaded(m.addon) then
+            if type(C_AddOns) == "table" and C_AddOns.EnableAddOn then pcall(C_AddOns.EnableAddOn, m.addon) end
+            if type(C_AddOns) == "table" and C_AddOns.LoadAddOn then
+                pcall(C_AddOns.LoadAddOn, m.addon)
+            elseif type(LoadAddOn) == "function" then
+                pcall(LoadAddOn, m.addon)
+            end
+        end
+    end
+    if type(ns.RefreshTabEntry) == "function" then pcall(ns.RefreshTabEntry) end
+end
+gateFrame:SetScript("OnEvent", function(self)
+    self:UnregisterAllEvents()
+    if type(C_Timer) == "table" and C_Timer.After then
+        C_Timer.After(1, drainGateBoot)
+    else
+        drainGateBoot()
+    end
+end)
+
 local moduleBoot = CreateFrame("Frame")
 moduleBoot:RegisterEvent("ADDON_LOADED")
 moduleBoot:SetScript("OnEvent", function(self, event, name)
     if name ~= "DungeonsForever" then return end
     self:UnregisterEvent("ADDON_LOADED")
+    local boom = function(m)
+        if type(C_AddOns) == "table" and C_AddOns.EnableAddOn then pcall(C_AddOns.EnableAddOn, m.addon) end
+        if type(C_AddOns) == "table" and C_AddOns.LoadAddOn then
+            pcall(C_AddOns.LoadAddOn, m.addon)
+        elseif type(LoadAddOn) == "function" then
+            pcall(LoadAddOn, m.addon)
+        end
+    end
     for _, m in ipairs(ns.MODULES) do
         local want = ns.ModuleWant(m)
         if want then
             if not ns.AddonLoaded(m.addon) then
-                if type(C_AddOns) == "table" and C_AddOns.EnableAddOn then pcall(C_AddOns.EnableAddOn, m.addon) end
-                if type(C_AddOns) == "table" and C_AddOns.LoadAddOn then
-                    pcall(C_AddOns.LoadAddOn, m.addon)
-                elseif type(LoadAddOn) == "function" then
-                    pcall(LoadAddOn, m.addon)
+                if m.gate then
+                    gateBoot[#gateBoot + 1] = m
+                else
+                    boom(m)
                 end
             end
         elseif type(C_AddOns) == "table" and C_AddOns.DisableAddOn then
             pcall(C_AddOns.DisableAddOn, m.addon)
+        end
+    end
+    if #gateBoot > 0 then
+        gateFrame:RegisterEvent("PLAYER_LOGIN")
+        if type(IsLoggedIn) == "function" and IsLoggedIn() then
+            if type(C_Timer) == "table" and C_Timer.After then
+                C_Timer.After(1, drainGateBoot)
+            else
+                drainGateBoot()
+            end
         end
     end
     local bad = drainLazy(_G.DF_PROF_LAZY, "专业模块")

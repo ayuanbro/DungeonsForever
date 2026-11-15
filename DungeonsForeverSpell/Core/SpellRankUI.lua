@@ -1082,7 +1082,7 @@ RefreshEntry = function()
     local par = entry:GetParent()
     local page = PageNow()
     local box = BoxAnchor()
-    local inBook = (box == nil) or IsVis(box)
+    local inBook = (box == nil) or (page ~= nil) or IsVis(box)
     local vis = IsVis(entryHost) and par ~= nil and IsVis(par) and page == "spell" and inBook
     vis = vis and true or false
     if entry:IsShown() ~= vis then entry:SetShown(vis) end
@@ -1185,7 +1185,7 @@ SyncEntryVisibility = function()
     end
     local page = PageNow()
     local box = BoxAnchor()
-    local inBook = (box == nil) or IsVis(box)
+    local inBook = (box == nil) or (page ~= nil) or IsVis(box)
     local vis = bookVis and IsVis(entryHost) and IsVis(entry:GetParent()) and page == "spell" and inBook
     vis = vis and true or false
     if entry:IsShown() ~= vis then entry:SetShown(vis) end
