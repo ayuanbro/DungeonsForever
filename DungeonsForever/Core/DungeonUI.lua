@@ -1972,7 +1972,7 @@ function DG.EnsureQuestLane()
         self:SetScript("OnUpdate", nil)
     end)
     U.dungeonQDetPool = {
-        lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {}, jump = {},
+        lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {}, jump = {}, badge = {},
         fLab = {}, fTxt = {}, fLink = {}, fNum = {},
     }
     U.dungeonQDetName = MakeFS(qdchild, 16, C_GOLD, "LEFT")
@@ -2658,11 +2658,12 @@ function DG.PaintQuestOverview(d)
         return l
     end
 
-    local function nodeState(q)
-        if DG.QuestDone(q[1]) then return DG.Q_OV_DONE end
-        if DG.QuestReady(q[1]) then return DG.Q_OV_READY end
-        if DG.QuestActive(q[1]) then return DG.Q_OV_ACT end
-        if DG.QuestRepeat(q[1]) then return DG.Q_OV_REP end
+    local function ovState(id)
+        local st = DG.QuestBadgeState(id)
+        if st == "done" then return DG.Q_OV_DONE end
+        if st == "ready" then return DG.Q_OV_READY end
+        if st == "active" then return DG.Q_OV_ACT end
+        if st == "rep" then return DG.Q_OV_REP end
         return DG.Q_OV_TODO
     end
     local MARK_ICON = {
@@ -2672,14 +2673,6 @@ function DG.PaintQuestOverview(d)
         [DG.Q_OV_TODO] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
         [DG.Q_OV_REP] = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
     }
-    local function extState(pid)
-        local st = DG.QuestState(pid)
-        if st == "done" then return DG.Q_OV_DONE end
-        if st == "ready" then return DG.Q_OV_READY end
-        if st == "active" then return DG.Q_OV_ACT end
-        if st == "todo" and DG.QuestRepeat(pid) then return DG.Q_OV_REP end
-        return DG.Q_OV_TODO
-    end
     local function nodeBorder(n, c)
         local hc = n.__huiCard
         local bd = hc and hc.border
@@ -2756,7 +2749,7 @@ function DG.PaintQuestOverview(d)
         n.posB:Show()
         DG.QuestOverviewClsBadge(n, q[15])
         n.sub:SetText("")
-        applyState(n, nodeState(q))
+        applyState(n, ovState(q[1]))
         n.tint:Hide()
         n.__tintC = nil
         n.__selNow = (q[1] == U.dungeonQuestSel)
@@ -2805,7 +2798,7 @@ function DG.PaintQuestOverview(d)
         n.posB:ClearAllPoints()
         n.posB:SetPoint("TOPLEFT", n, "TOPLEFT", 6, -24)
         n.posB:Show()
-        applyState(n, extState(pid))
+        applyState(n, ovState(pid))
         n.tint:Hide()
         n.__tintC = nil
         n.__selNow = (U.dungeonQDetExt ~= nil and pid == U.dungeonQDetExt)
@@ -2984,19 +2977,11 @@ function DG.PaintQuestOverview(d)
         path(lc, { { x1, y1 }, { x1, midY }, { x2, midY }, { x2, y2 } })
     end
     local function lineColor(childQ, srcQ)
-        if DG.QuestDone(childQ[1]) or (srcQ and DG.QuestDone(srcQ[1])) then
-            return DG.Q_OV_DONE
-        end
-        if DG.QuestReady(childQ[1]) or (srcQ and DG.QuestReady(srcQ[1])) then
-            return DG.Q_OV_READY
-        end
-        if DG.QuestActive(childQ[1]) or (srcQ and DG.QuestActive(srcQ[1])) then
-            return DG.Q_OV_ACT
-        end
-        if DG.QuestRepeat(childQ[1]) or (srcQ and DG.QuestRepeat(srcQ[1])) then
-            return DG.Q_OV_REP
-        end
-        return DG.Q_OV_TODO
+        local c = ovState(childQ[1])
+        if not srcQ then return c end
+        local s = ovState(srcQ[1])
+        if (lineLvl(s) or 0) > (lineLvl(c) or 0) then return s end
+        return c
     end
 
     local function hline(y, x1, x2, lc)
@@ -3198,9 +3183,10 @@ function DG.PaintQuestOverview(d)
         local marks = {}
         for c = 1, nCols do
             local tq = chains[packs[c][1]][1]
-            local dn = (tq and DG.QuestDone(tq[1])) or false
-            local rd = (tq and DG.QuestReady(tq[1])) or false
-            local ac = (tq and DG.QuestActive(tq[1])) or false
+            local tst = (tq and ovState(tq[1])) or DG.Q_OV_TODO
+            local dn = (tst == DG.Q_OV_DONE)
+            local rd = (tst == DG.Q_OV_READY)
+            local ac = (tst == DG.Q_OV_ACT)
             if dn then anyDone = true end
             if rd then anyRdy = true end
             if ac then anyAct = true end
@@ -3354,7 +3340,7 @@ function DG.PaintQuestOverview(d)
         local endCX = startCX
         local allDone = true
         for i = 1, #list do
-            if not DG.QuestDone(list[i][1]) then
+            if ovState(list[i][1]) ~= DG.Q_OV_DONE then
                 allDone = false
                 break
             end
@@ -3380,9 +3366,9 @@ function DG.PaintQuestOverview(d)
                 bmarks[#bmarks + 1] = {
                     x = colX[c] + nw / 2,
                     y = bn.__oy + DG.Q_OV_H,
-                    dn = (bn.__q and DG.QuestDone(bn.__q[1])) and true or false,
-                    rd = (bn.__q and DG.QuestReady(bn.__q[1])) and true or false,
-                    ac = (bn.__q and DG.QuestActive(bn.__q[1])) and true or false,
+                    dn = (bn.__q and ovState(bn.__q[1]) == DG.Q_OV_DONE) and true or false,
+                    rd = (bn.__q and ovState(bn.__q[1]) == DG.Q_OV_READY) and true or false,
+                    ac = (bn.__q and ovState(bn.__q[1]) == DG.Q_OV_ACT) and true or false,
                 }
             end
         end
@@ -6195,7 +6181,6 @@ end
 function DG.InvalidateQuestDone(doneID)
     DG.questDoneCache = {}
     DG.questDoneStamp = {}
-    DG.__preDone = nil
     DG.questRev = (DG.questRev or 0) + 1
     local v = tonumber(doneID)
     if v then
@@ -7224,53 +7209,8 @@ function DG.ClsBadgeAt(r, i)
     return b
 end
 
-DG.__preDone = nil
-function DG.BuildPreDone(list)
-    local set = {}
-    local function pres(id)
-        local out = {}
-        local row = DG.QuestRowByID(id)
-        local q = row and row[9]
-        if type(q) == "table" then
-            for i = 1, #q do
-                local v = tonumber(q[i])
-                if v then out[#out + 1] = v end
-            end
-        end
-        local pe = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[id]
-        if type(pe) == "table" then
-            local v = tonumber(pe[1])
-            if v then out[#out + 1] = v end
-        end
-        return out
-    end
-    local function walk(id, depth)
-        if depth > 16 then return end
-        local ps = pres(id)
-        for i = 1, #ps do
-            local pid = ps[i]
-            if not set[pid] then
-                set[pid] = true
-                walk(pid, depth + 1)
-            end
-        end
-    end
-    if type(list) == "table" then
-        for i = 1, #list do
-            local id = list[i] and list[i][1]
-            if type(id) == "number" and (DG.QuestDone(id) or DG.QuestActive(id)) then
-                walk(id, 1)
-            end
-        end
-    end
-    DG.__preDone = set
-    return set
-end
-
 function DG.QuestState(id)
     if DG.QuestDone(id) then return "done" end
-    local pd = DG.__preDone
-    if pd and pd[id] then return "done" end
     if DG.QuestReady(id) then return "ready" end
     if DG.QuestActive(id) then return "active" end
     return "todo"
@@ -7638,7 +7578,6 @@ function U:RenderDungeonQuests()
     if not (d and child and pool) then return end
     DG.EnsureQuestListener()
     local list = DG.QuestList(d)
-    DG.BuildPreDone(list)
     DG.PrefetchQuestData(list)
     local nAll = #list
     local selInFull = false
@@ -8350,7 +8289,9 @@ function DG.HideDetailRows(pool)
     for i = 1, #pool.chip do pool.chip[i]:Hide() end
     for i = 1, #pool.npc do pool.npc[i]:Hide() end
     for i = 1, #pool.jump do pool.jump[i]:Hide() end
+    if pool.badge then for i = 1, #pool.badge do pool.badge[i]:Hide() end end
     pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc, pool.nJump = 0, 0, 0, 0, 0, 0, 0
+    pool.nBadge = 0
     if U.dungeonQDetName then U.dungeonQDetName:Hide() end
     if U.dungeonQDetSt then U.dungeonQDetSt:Hide() end
 end
@@ -8886,7 +8827,6 @@ function U:RenderQuestDetail()
 
     local q
     local qlist = DG.QuestList(d)
-    DG.BuildPreDone(qlist)
     for _, row in ipairs(qlist) do
         if row[1] == U.dungeonQuestSel then q = row end
     end
@@ -8936,6 +8876,48 @@ function U:RenderQuestDetail()
             pool.kv[i] = f
         end
         return f
+    end
+    local function takeBadge()
+        pool.nBadge = (pool.nBadge or 0) + 1
+        local i = pool.nBadge
+        local b = pool.badge[i]
+        if not b then
+            b = DG.MakeBadge(child, DG.Q_BADGE_CLS_BG)
+            pool.badge[i] = b
+        end
+        return b
+    end
+    local function fitChip(b, text, col)
+        if col then DG.BadgeTint(b, col) end
+        local w = FSW(b.lab, 20) + DG.Q_BADGE_PAD * 2
+        if w < DG.Q_BADGE_MIN_W then w = DG.Q_BADGE_MIN_W end
+        if ns.hui and ns.hui.PaintSolidChip and b.__chipFill then
+            ns.hui.PaintSolidChip(b, text, b.__chipCol, w)
+        else
+            b.lab:SetText(text)
+            b:SetWidth(w)
+        end
+        b:Show()
+        return w
+    end
+    local function nodeClsChip(r, prow)
+        local cbs = r.clsB
+        if type(cbs) == "table" then
+            for k = 1, #cbs do cbs[k]:Hide() end
+        end
+        local pcls = prow and prow[15] or nil
+        local plist = pcls and DG.QClassList(pcls) or nil
+        if not (plist and #plist > 0) then
+            r.sub:SetWidth(detW - 18)
+            return 0
+        end
+        local cb = DG.ClsBadgeAt(r, 1)
+        local clab = DG.QClassLabel(plist[1]) or plist[1]
+        local cw = fitChip(cb, clab, DG.QClassColor(plist[1]))
+        cb:ClearAllPoints()
+        cb:SetPoint("TOPRIGHT", r, "TOPRIGHT", -12, -25)
+        r.sub:SetWidth(detW - 18 - cw - 8)
+        return cw
     end
     local function takeNpc()
         pool.nNpc = pool.nNpc + 1
@@ -9357,8 +9339,12 @@ function U:RenderQuestDetail()
     end
     if q[15] then
         local f = takeKv()
-        f:SetText(DG.Hex(C_GREY) .. L["职业"] .. "：|r"
-            .. DG.Hex(DG.QClassColor(q[15])) .. format(L["%s专属"], q[15]) .. "|r")
+        f:SetText(DG.Hex(C_GREY) .. L["职业"] .. "：|r")
+        local lab = format(L["%s专属"], q[15])
+        local cb = takeBadge()
+        fitChip(cb, lab, DG.QClassColor(q[15]))
+        cb:ClearAllPoints()
+        cb:SetPoint("TOPLEFT", child, "TOPLEFT", FSW(f) + 2, y - 5)
         put(f, 24)
     end
     y = y - 4
@@ -9432,6 +9418,7 @@ function U:RenderQuestDetail()
                         end
                     end
                     if sub == "" then sub = L["本表未收录起始信息"] end
+                    nodeClsChip(r, prow)
                     r.sub:SetText(sub)
                     r.__q = prow
                     r.__preID = seg
@@ -9449,6 +9436,7 @@ function U:RenderQuestDetail()
                     r.name:SetTextColor(Unpack(C_GREY))
                     r.st:Hide()
                     rowMark(r, nil)
+                    nodeClsChip(r, nil)
                     r.sub:SetText(L["前置 ID 未收录，查不了状态"])
                     r.__q = nil
                     r.__preID = nil
@@ -9492,6 +9480,7 @@ function U:RenderQuestDetail()
                 local nl = DG.NodeLoc(fq[1], fq[16], fq[6])
                 if nl and nl ~= "" then sub = (sub ~= "" and (sub .. " · " .. nl) or nl) end
                 if sub == "" then sub = L["本表未收录起始信息"] end
+                nodeClsChip(r, fq)
                 r.sub:SetText(sub)
                 r.__q = fq
                 local fsn = (not fq[16]) and DG.QuestStartNpc(fq[1]) or nil

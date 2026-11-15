@@ -8539,7 +8539,8 @@ function PD.LearningOriginCard(recipe,view)
                 local row=byID[id]
                 if not row then row={id=id};byID[id]=row;src.vendors[#src.vendors+1]=row end
                 for key,v in pairs(value)do if row[key]==nil then row[key]=v end end
-                row.name=row.name or ns.ProfVendorNames and ns.ProfVendorNames[id] or "#"..id
+                local vName=ns.ProfVendorNames and ns.ProfVendorNames[id]
+                row.name=vName or row.name or "#"..id
                 row.cur=row.cur or row.currencyID;row.amt=row.amt or row.currencyAmount
             end
         end

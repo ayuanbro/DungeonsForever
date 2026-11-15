@@ -81,6 +81,44 @@ FV.ROW_H = 36
 FV.LIST_GAP = 4
 FV.COLS = 3
 
+FV.QCOL = 196
+FV.QGAP = GUTTER
+FV.QDET = FV.RW - 28 - FV.QCOL - GUTTER
+FV.QBAR = 7
+FV.QTXT = FV.QDET - FV.QBAR - 8
+FV.QTOP = 40
+FV.QROW_H = 40
+FV.QROW_PITCH = 42
+FV.QROW_W = FV.QCOL - FV.QBAR
+FV.QHEAD_H = 22
+FV.QST_H = (ns.hui and ns.hui.ChipH and ns.hui.ChipH(14)) or 13.7
+FV.QTIERS = { "buy", "fr", "ho" }
+FV.QTIER_W = { 80, 56, 56 }
+
+local QT_LABEL = { buy = L["中立 → 友善"], fr = L["友善"], ho = L["尊敬"] }
+local QT_BTN = { buy = L["中立"], fr = L["友善"], ho = L["尊敬"] }
+local QT_COLOR = { buy = STANDINGS[4].color, fr = STANDINGS[5].color, ho = STANDINGS[6].color }
+local QSIDE_TXT = { both = L["双阵营"], ally = L["联盟"], horde = L["部落"] }
+local Q_STATE_TXT = {
+    done = L["你已完成此任务。"],
+    ready = L["你已完成任务目标，回去交付吧。"],
+    active = L["你已接取此任务，尚未完成。"],
+    todo = L["你还没有接取此任务。"],
+    rep = L["可重复任务，可反复完成。"],
+}
+local TAB_DEF = {
+    { key = "reward", text = L["奖励"] },
+    { key = "quest", text = L["任务"] },
+}
+local Q_GREEN = { 0x6F / 255, 0xBF / 255, 0x5A / 255 }
+local Q_RED = { 0xC7 / 255, 0x4A / 255, 0x3C / 255 }
+local Q_PIN = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin"
+local Q_ROWSEL = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\DF_RowSelGradFac"
+local Q_INK_DIM = "|cff9a9a9a"
+local Q_INK_GREY = "|cff8c8c8c"
+local Q_INK_GOLD = "|cffffd100"
+local Q_END = "|r"
+
 local function Cfg()
     local db = ns.FactionDB()
     db.factions = db.factions or {}
@@ -410,9 +448,7 @@ local function MakeRow(parent)
     end)
     r:SetScript("OnClick", function(self)
         ns.PlaySound(1)
-        Cfg().sel = self.__fid
-        FV:PaintList()
-        FV:PaintDetail()
+        FV:SelectFaction(self.__fid)
     end)
     r:SetScript("OnMouseWheel", function(_, delta)
         WheelTo(FV.lScroll, FV.lChild, delta)
@@ -420,6 +456,488 @@ local function MakeRow(parent)
     end)
     r:Hide()
     return r
+end
+
+local function QuestListOf(fid)
+    local all = type(ns.FactionQuests) == "table" and ns.FactionQuests[fid] or nil
+    if type(all) ~= "table" then return nil end
+    return all
+end
+
+local function NpcInfo(nid)
+    local n = type(ns.FactionNpcs) == "table" and ns.FactionNpcs[nid] or nil
+    return type(n) == "table" and n or nil
+end
+
+local function NpcName(nid)
+    local n = NpcInfo(nid)
+    if n and type(n.name) == "string" and n.name ~= "" then return n.name end
+    return format(L["NPC #%d"], nid or 0)
+end
+
+local function NpcLoc(nid)
+    local n = NpcInfo(nid)
+    if not n then return nil end
+    if type(n.x) == "number" and type(n.y) == "number" then
+        return { type(n.map) == "number" and n.map or 1443, n.x, n.y }
+    end
+    return nil
+end
+
+local function QNameByID(id)
+    if id and DG and DG.QuestName then
+        local ok, nm = pcall(DG.QuestName, id)
+        if ok and type(nm) == "string" and nm ~= "" then return nm end
+    end
+    return format(L["任务 #%d"], id or 0)
+end
+
+local function QName(q)
+    local id = (type(q.id) == "table") and (q.id[1] or q.id[2]) or nil
+    return QNameByID(id)
+end
+
+local function FindQuest(list, qid)
+    if not (type(list) == "table" and type(qid) == "number") then return nil end
+    for _, q in ipairs(list) do
+        local ids = q.id
+        if type(ids) == "table" then
+            for _, id in ipairs(ids) do
+                if id == qid then return q end
+            end
+        end
+    end
+    return nil
+end
+
+local function QStateOf(qid)
+    if qid and DG and DG.QuestBadgeState then
+        local ok, st = pcall(DG.QuestBadgeState, qid)
+        if ok and type(st) == "string" then return st end
+    end
+    return "todo"
+end
+
+local function QStateCol(st)
+    if DG and DG.QStateColor then
+        local ok, c = pcall(DG.QStateColor, st)
+        if ok and type(c) == "table" and type(c[1]) == "number" then return c end
+    end
+    return C_GREY
+end
+
+local Q_TEX_DISC = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
+local Q_TEX_TICK = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark"
+local Q_TEX_IN = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn"
+local Q_TEX_ASK = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk"
+local Q_TEX_EXCL = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl"
+
+local function QBadgeSpec(st)
+    local g = DG or {}
+    if st == "done" then return g.Q_OV_DONE, Q_TEX_TICK, { 0.043, 0.239, 0.102 } end
+    if st == "ready" then return g.Q_OV_READY, Q_TEX_IN, { 0.020, 0.180, 0.172 } end
+    if st == "active" then return g.Q_OV_ACT, Q_TEX_ASK, { 0.227, 0.165, 0 } end
+    if st == "rep" then return g.Q_OV_REP, Q_TEX_ASK, { 0.18, 0.14, 0.26 } end
+    return g.Q_OV_TODO, Q_TEX_EXCL, { 0.102, 0.102, 0.102 }
+end
+
+local function QuestXP(qid)
+    local idx
+    if C_QuestLog and C_QuestLog.GetLogIndexForQuestID then
+        local ok, v = pcall(C_QuestLog.GetLogIndexForQuestID, qid)
+        if ok and type(v) == "number" then idx = v end
+    end
+    if not idx and type(GetQuestLogIndexByID) == "function" then
+        local ok, v = pcall(GetQuestLogIndexByID, qid)
+        if ok and type(v) == "number" then idx = v end
+    end
+    if type(idx) == "number" and idx > 0 and type(GetQuestLogRewardXP) == "function" then
+        local ok, xp = pcall(GetQuestLogRewardXP, idx)
+        if ok and type(xp) == "number" then return xp end
+    end
+    return nil
+end
+
+local function FacNameByID(fid)
+    local d = FacData(fid)
+    if d and type(d.name) == "string" and d.name ~= "" then return d.name end
+    if type(GetFactionInfoByID) == "function" then
+        local ok, nm = pcall(GetFactionInfoByID, fid)
+        if ok and type(nm) == "string" and nm ~= "" then return nm end
+    end
+    local x = FacBySel(fid)
+    if x then return FacName(x) end
+    return format("#%d", fid or 0)
+end
+
+local function TxtH(fs, fallback)
+    if not fs then return fallback or 20 end
+    local h = fs.GetStringHeight and fs:GetStringHeight() or 0
+    if type(h) ~= "number" or h <= 0 then h = fallback or 20 end
+    return h
+end
+
+local function Hex(c)
+    if DG and DG.Hex then return DG.Hex(c) end
+    return format("|cff%02x%02x%02x", floor(c[1] * 255), floor(c[2] * 255), floor(c[3] * 255))
+end
+
+local function StageOf(list)
+    local d = ns.FactionDB()
+    local st = d.fqstage
+    if st ~= "buy" and st ~= "fr" and st ~= "ho" then st = "buy" end
+    if type(list) == "table" then
+        local hit = 0
+        for _, q in ipairs(list) do
+            if q.tier == st then hit = hit + 1 end
+        end
+        if hit == 0 then
+            for _, key in ipairs(FV.QTIERS) do
+                for _, q in ipairs(list) do
+                    if q.tier == key then st = key hit = 1 break end
+                end
+                if hit > 0 then break end
+            end
+        end
+    end
+    d.fqstage = st
+    return st
+end
+
+local function SelQuestOf(fid, list, stage)
+    if type(list) ~= "table" then return nil end
+    local d = ns.FactionDB()
+    d.fqsel = d.fqsel or {}
+    local want = d.fqsel[fid]
+    local first
+    for _, q in ipairs(list) do
+        if q.tier == stage then
+            if not first then first = q end
+            local ids = q.id
+            if want and type(ids) == "table" then
+                for _, id in ipairs(ids) do
+                    if id == want then return q end
+                end
+            end
+        end
+    end
+    if first then
+        d.fqsel[fid] = first.id[1]
+        return first
+    end
+    return nil
+end
+
+local function MakeScrollBar(sc, ch, host)
+    local bar = CreateFrame("Frame", nil, host, "BackdropTemplate")
+    if HUI and ns.hui.BuildCapsule then
+        ns.hui.BuildCapsule(bar, 3, ns.hui.layer.L2)
+    else
+        bar:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = 1,
+        })
+        bar:SetBackdropColor(0, 0, 0, 0.25)
+        bar:SetBackdropBorderColor(1, 1, 1, 0.08)
+    end
+    bar:SetWidth(FV.QBAR)
+    bar:SetPoint("TOPRIGHT", sc, "TOPRIGHT", 0, -2)
+    bar:SetPoint("BOTTOMRIGHT", sc, "BOTTOMRIGHT", 0, 2)
+    bar:SetFrameLevel((sc:GetFrameLevel() or 0) + 10)
+    bar:Hide()
+    local thumb = CreateFrame("Button", nil, bar)
+    thumb:SetWidth(5)
+    thumb:EnableMouse(true)
+    local tp
+    if HUI and ns.hui.BuildCapsule then
+        tp = ns.hui.BuildCapsule(thumb, 2, ns.hui.layer.L4)
+    else
+        local tx = thumb:CreateTexture(nil, "OVERLAY")
+        tx:SetAllPoints()
+        tx:SetColorTexture(1, 1, 1, 0.30)
+        tp = { tx }
+    end
+    thumb:SetScript("OnEnter", function()
+        local c5 = ns.hui and ns.hui.layer and ns.hui.layer.L5
+        if not (tp and c5) then return end
+        for _, t in ipairs(tp) do t:SetVertexColor(c5[1], c5[2], c5[3]) end
+    end)
+    thumb:SetScript("OnLeave", function()
+        local c4 = ns.hui and ns.hui.layer and ns.hui.layer.L4
+        if not (tp and c4) then return end
+        for _, t in ipairs(tp) do t:SetVertexColor(c4[1], c4[2], c4[3]) end
+    end)
+    thumb:SetPoint("TOP", bar, "TOP", 0, -1)
+    local function Update()
+        if not sc:IsShown() then bar:Hide() return end
+        local viewH = tonumber(sc.GetHeight and sc:GetHeight())
+        local contentH = tonumber(ch.GetHeight and ch:GetHeight())
+        if not (viewH and contentH) or contentH <= viewH + 2 or viewH <= 0 then
+            bar:Hide()
+            return
+        end
+        bar:Show()
+        local trackH = bar:GetHeight() - 2
+        local maxScroll = contentH - viewH
+        local v = tonumber(sc.GetVerticalScroll and sc:GetVerticalScroll()) or 0
+        local frac = min(1, max(0, v / maxScroll))
+        local th = max(24, trackH * viewH / contentH)
+        thumb:SetHeight(th)
+        thumb:ClearAllPoints()
+        thumb:SetPoint("TOP", bar, "TOP", 0, -1 - frac * (trackH - th))
+    end
+    thumb:SetScript("OnMouseDown", function(self, btn)
+        if btn ~= "LeftButton" then return end
+        local scale = UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale() or 1
+        local cy0 = select(2, GetCursorPosition()) / scale
+        local sc0 = tonumber(sc.GetVerticalScroll and sc:GetVerticalScroll()) or 0
+        self:SetScript("OnUpdate", function(self)
+            local cy = select(2, GetCursorPosition()) / scale
+            local trackH = bar:GetHeight() - 2
+            local span = trackH - thumb:GetHeight()
+            if span <= 0 then return end
+            local contentH = tonumber(ch.GetHeight()) or 0
+            local viewH = tonumber(sc:GetHeight()) or 0
+            local maxScroll = contentH - viewH
+            if maxScroll <= 0 then return end
+            sc:SetVerticalScroll(min(maxScroll, max(0, sc0 + (cy0 - cy) / span * maxScroll)))
+        end)
+    end)
+    thumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+    thumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
+    return bar, Update
+end
+
+local function MakeMapBtn(parent)
+    local bt = NewButton(parent, L["地图"], 68, 24, 14)
+    local t = bt:CreateTexture(nil, "OVERLAY")
+    t:SetTexture(Q_PIN)
+    t:SetSize(12, 12)
+    t:SetPoint("LEFT", bt, "LEFT", 4, 0)
+    local fs = bt:GetFontString()
+    if fs then
+        fs:ClearAllPoints()
+        fs:SetPoint("TOPLEFT", bt, "TOPLEFT", 18, 0)
+        fs:SetPoint("BOTTOMRIGHT", bt, "BOTTOMRIGHT", -2, 0)
+        fs:SetJustifyH("CENTER")
+    end
+    return bt
+end
+
+local function MakeQRow(parent)
+    local r = CreateFrame("Button", nil, parent)
+    r:SetSize(FV.QROW_W, FV.QROW_H)
+    if HUI and ns.hui.HuiCardFX then
+        ns.hui.HuiCardFX(r, 6, 2)
+    end
+    r.stDisc = r:CreateTexture(nil, "ARTWORK")
+    r.stDisc:SetSize(FV.QST_H, FV.QST_H)
+    r.stDisc:SetPoint("RIGHT", r, "RIGHT", -8, 0)
+    r.stDisc:SetTexture(Q_TEX_DISC)
+    r.stGlyph = r:CreateTexture(nil, "OVERLAY")
+    r.stGlyph:SetAllPoints(r.stDisc)
+    r.name = MakeFS(r, 14, C_TEXT, "LEFT")
+    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 12, -5)
+    r.name:SetWidth(FV.QROW_W - 12 - FV.QST_H - 14)
+    r.name:SetWordWrap(false)
+    r.sub = MakeFS(r, 12, C_GREY, "LEFT")
+    r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 12, -24)
+    r.sub:SetWidth(FV.QROW_W - 12 - FV.QST_H - 14)
+    r.sub:SetWordWrap(false)
+    r:EnableMouse(true)
+    r:SetScript("OnEnter", function(self)
+        if self.__huiCard and ns.hui.HuiCardState and not self.__selActive then
+            ns.hui.HuiCardState(self, "hover")
+            self.__hst = "hover"
+        end
+        if self.__tip and SetTip then SetTip(self, self.__tip) end
+    end)
+    r:SetScript("OnLeave", function(self)
+        if self.__huiCard and ns.hui.HuiCardState and not self.__selActive then
+            ns.hui.HuiCardState(self, "norm")
+            self.__hst = "norm"
+        end
+        GameTooltip:Hide()
+    end)
+    r:SetScript("OnClick", function(self)
+        if not self.__qid then return end
+        ns.PlaySound(1)
+        FV:SelectQuest(self.__qid)
+    end)
+    r:SetScript("OnMouseWheel", function(_, delta)
+        WheelTo(FV.qScroll, FV.qChild, delta)
+        FV:PaintQuestList()
+    end)
+    r:Hide()
+    return r
+end
+
+local function MakeQNpc(parent)
+    local f = CreateFrame("Button", nil, parent)
+    f:SetSize(FV.QTXT, 24)
+    f:EnableMouse(true)
+    f:EnableMouseWheel(true)
+    f:SetScript("OnMouseWheel", function(_, delta)
+        WheelTo(FV.qdScroll, FV.qdChild, delta)
+        FV:CullQuestDetail()
+    end)
+    f.fs = MakeFS(f, 14, C_TEXT, "LEFT")
+    f.fs:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    f.fs:SetWordWrap(false)
+    f.btn = MakeMapBtn(f)
+    f.btn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    f.btn:SetScript("OnClick", function(self)
+        local row = self:GetParent()
+        FV:MarkNpc(row.__npc, row.__loc)
+    end)
+    f.btn:SetScript("OnEnter", function(self)
+        if not GameTooltip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(L["在地图上标记该 NPC"], 1, 0.82, 0)
+        GameTooltip:Show()
+    end)
+    f.btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    f:Hide()
+    return f
+end
+
+local function MakeQPre(parent)
+    local f = CreateFrame("Button", nil, parent)
+    f:SetSize(FV.QTXT, 30)
+    if HUI and ns.hui.HuiCardFX then
+        ns.hui.HuiCardFX(f, 6, 2)
+    end
+    f:EnableMouse(true)
+    f:EnableMouseWheel(true)
+    f:SetScript("OnMouseWheel", function(_, delta)
+        WheelTo(FV.qdScroll, FV.qdChild, delta)
+        FV:CullQuestDetail()
+    end)
+    f.txt = MakeFS(f, 14, C_GOLD, "LEFT")
+    f.txt:SetPoint("LEFT", f, "LEFT", 10, 0)
+    f.txt:SetWordWrap(false)
+    f:SetScript("OnEnter", function(self)
+        if self.__huiCard and ns.hui.HuiCardState then
+            ns.hui.HuiCardState(self, "hover")
+            self.__hst = "hover"
+        end
+    end)
+    f:SetScript("OnLeave", function(self)
+        if self.__huiCard and ns.hui.HuiCardState then
+            ns.hui.HuiCardState(self, "norm")
+            self.__hst = "norm"
+        end
+    end)
+    f:SetScript("OnClick", function(self)
+        if not self.__qid then return end
+        ns.PlaySound(1)
+        FV:SelectQuest(self.__qid)
+    end)
+    f:Hide()
+    return f
+end
+
+local function MakeQGoal(parent)
+    local f = CreateFrame("Frame", nil, parent)
+    f:SetSize(FV.QTXT, 20)
+    f.dot = f:CreateTexture(nil, "ARTWORK")
+    f.dot:SetSize(4, 4)
+    f.dot:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -8)
+    f.dot:SetColorTexture(0.55, 0.55, 0.55, 1)
+    f.txt = MakeFS(f, 14, C_TEXT, "LEFT")
+    f.txt:SetPoint("TOPLEFT", f, "TOPLEFT", 10, 0)
+    f.txt:SetWidth(FV.QTXT - 12)
+    f.txt:SetWordWrap(false)
+    f:Hide()
+    return f
+end
+
+local function MakeQItem(parent)
+    local cd = CreateFrame("Button", nil, parent)
+    cd:SetSize(FV.QTXT, 44)
+    if HUI and ns.hui.HuiCardFX then
+        ns.hui.HuiCardFX(cd, 12, 2)
+    end
+    cd.iconTex = cd:CreateTexture(nil, "ARTWORK")
+    cd.iconTex:SetSize(32, 32)
+    cd.iconTex:SetPoint("LEFT", cd, "LEFT", 6, 0)
+    cd.iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if HUI and ns.hui.RoundIcon then ns.hui.RoundIcon(cd.iconTex) end
+    cd.name = MakeFS(cd, 14, C_TEXT, "LEFT")
+    cd.name:SetPoint("TOPLEFT", cd, "TOPLEFT", 46, -6)
+    cd.name:SetWidth(FV.QTXT - 54)
+    cd.name:SetWordWrap(false)
+    cd.meta = MakeFS(cd, 12, C_GREY, "LEFT")
+    cd.meta:SetPoint("TOPLEFT", cd, "TOPLEFT", 46, -26)
+    cd.meta:SetWordWrap(false)
+    cd:EnableMouse(true)
+    cd:EnableMouseWheel(true)
+    cd:SetScript("OnMouseWheel", function(_, delta)
+        WheelTo(FV.qdScroll, FV.qdChild, delta)
+        FV:CullQuestDetail()
+    end)
+    cd:SetScript("OnEnter", function(self)
+        if self.__huiCard and ns.hui.HuiCardState then
+            ns.hui.HuiCardState(self, "hover")
+            self.__hst = "hover"
+        end
+        if self.__id and DG and DG.ShowItemTip then DG.ShowItemTip(self, { self.__id }) end
+    end)
+    cd:SetScript("OnLeave", function(self)
+        if self.__huiCard and ns.hui.HuiCardState then
+            ns.hui.HuiCardState(self, "norm")
+            self.__hst = "norm"
+        end
+        GameTooltip:Hide()
+    end)
+    cd:SetScript("OnClick", function(self, button)
+        if DG and DG.ItemShiftClick then DG.ItemShiftClick(self, button) end
+    end)
+    cd:Hide()
+    return cd
+end
+
+function FV:MarkNpc(nid, loc)
+    if type(loc) ~= "table" then return end
+    local mapID, qx, qy = loc[1], loc[2], loc[3]
+    if type(mapID) ~= "number" or type(qx) ~= "number" or type(qy) ~= "number" then return end
+    if C_Map and C_Map.SetUserWaypoint and _G.CreateVector2D then
+        local wp = { uiMapID = mapID, position = _G.CreateVector2D(qx / 100, qy / 100) }
+        pcall(C_Map.SetUserWaypoint, wp)
+        if C_SuperTrack and C_SuperTrack.SetSuperTrackedUserWaypoint then
+            pcall(C_SuperTrack.SetSuperTrackedUserWaypoint, false)
+        end
+    end
+    if C_Map and C_Map.OpenWorldMap then
+        pcall(C_Map.OpenWorldMap, mapID)
+    elseif OpenWorldMap then
+        pcall(OpenWorldMap, mapID)
+    end
+end
+
+function FV:PaintQItem(cd, id)
+    cd.__id = id
+    local nm, ok
+    if DG and DG.ItemName then nm, ok = DG.ItemName(id) end
+    if ok then
+        local budget = cd.__nameW or (FV.QTXT - 54)
+        cd.name:SetText((DG and DG.FitText and DG.FitText(nm, 14, budget)) or nm)
+        if DG and DG.QColor and DG.QualOf then
+            local qr, qg, qb = DG.QColor(DG.QualOf(id))
+            if qr then cd.name:SetTextColor(qr, qg, qb) end
+        end
+    else
+        cd.name:SetText(format(L["物品 #%d"], id or 0))
+        cd.name:SetTextColor(Unpack(C_GREY))
+        if DG and DG.RequestItem then DG.RequestItem(id) end
+    end
+    cd.meta:SetText((DG and DG.ItemMeta and DG.ItemMeta(id)) or "")
+    if DG and DG.ItemIcon then cd.iconTex:SetTexture(DG.ItemIcon(id)) end
+    if ns.hui and ns.hui.SetIconRing then
+        local qq = (DG and DG.QualOf) and DG.QualOf(id) or nil
+        ns.hui.SetIconRing(cd.iconTex, qq and { ns.hui.QColor(qq) } or nil)
+    end
 end
 
 FV.Build = function(page)
@@ -515,7 +1033,7 @@ FV.Build = function(page)
             local c = Cfg()
             c[opt.key] = not c[opt.key]
             FV:SyncPopup()
-            FV:PaintList()
+            FV.RequestRender()
         end)
         FV.optRows[i] = bt
     end
@@ -641,8 +1159,21 @@ FV.Build = function(page)
     FV:PaintList()
     coroutine.yield()
 
+    FV.tabs = {}
+    for i, def in ipairs(TAB_DEF) do
+        local bt = NewButton(rightCard, def.text, 60, 24, 14)
+        bt:SetPoint("TOPLEFT", rightCard, "TOPLEFT", 14 + (i - 1) * 68, -8)
+        bt.__key = def.key
+        bt:SetScript("OnClick", function(self)
+            ns.PlaySound(1)
+            FV:SetTab(self.__key)
+        end)
+        FV.tabs[i] = bt
+        coroutine.yield()
+    end
+
     local dScroll = CreateFrame("ScrollFrame", nil, rightCard)
-    dScroll:SetPoint("TOPLEFT", rightCard, "TOPLEFT", 0, 0)
+    dScroll:SetPoint("TOPLEFT", rightCard, "TOPLEFT", 0, -FV.QTOP)
     dScroll:SetPoint("BOTTOMRIGHT", rightCard, "BOTTOMRIGHT", 0, 0)
     dScroll:EnableMouseWheel(true)
     dScroll:SetScript("OnMouseWheel", function(_, delta)
@@ -718,8 +1249,144 @@ FV.Build = function(page)
 
     FV.rCards = {}
 
+    local qPage = CreateFrame("Frame", nil, rightCard)
+    qPage:SetPoint("TOPLEFT", rightCard, "TOPLEFT", 14, -FV.QTOP)
+    qPage:SetPoint("BOTTOMRIGHT", rightCard, "BOTTOMRIGHT", -14, 12)
+    qPage:Hide()
+    FV.qPage = qPage
+
+    FV.stageBtns = {}
+    local sx = 0
+    for i, key in ipairs(FV.QTIERS) do
+        local bt = NewButton(qPage, QT_BTN[key], FV.QTIER_W[i], 24, 12)
+        bt:SetPoint("TOPLEFT", qPage, "TOPLEFT", sx, 0)
+        bt.__huiKeepTextColor = true
+        bt.__key = key
+        bt:SetScript("OnClick", function(self)
+            ns.PlaySound(1)
+            FV:SetStage(self.__key)
+        end)
+        FV.stageBtns[i] = bt
+        sx = sx + FV.QTIER_W[i] + 2
+        coroutine.yield()
+    end
+
+    local qScroll = CreateFrame("ScrollFrame", nil, qPage)
+    qScroll:SetPoint("TOPLEFT", qPage, "TOPLEFT", 0, -28)
+    qScroll:SetPoint("BOTTOMRIGHT", qPage, "BOTTOMLEFT", FV.QCOL, 0)
+    qScroll:EnableMouseWheel(true)
+    qScroll:SetScript("OnMouseWheel", function(_, delta)
+        WheelTo(qScroll, FV.qChild, delta)
+        FV:PaintQuestList()
+    end)
+    local qChild = CreateFrame("Frame", nil, qScroll)
+    qChild:SetSize(FV.QROW_W, 10)
+    qScroll:SetScrollChild(qChild)
+    qScroll:HookScript("OnVerticalScroll", function() FV:PaintQuestList() end)
+    FV.qScroll, FV.qChild = qScroll, qChild
+    coroutine.yield()
+
+    local dqScroll = CreateFrame("ScrollFrame", nil, qPage)
+    dqScroll:SetPoint("TOPLEFT", qPage, "TOPLEFT", FV.QCOL + FV.QGAP, 0)
+    dqScroll:SetPoint("BOTTOMRIGHT", qPage, "BOTTOMRIGHT", -FV.QBAR, 0)
+    dqScroll:EnableMouseWheel(true)
+    dqScroll:SetScript("OnMouseWheel", function(_, delta)
+        WheelTo(dqScroll, FV.qdChild, delta)
+        FV:CullQuestDetail()
+    end)
+    local dqChild = CreateFrame("Frame", nil, dqScroll)
+    dqChild:SetSize(FV.QTXT, 10)
+    dqScroll:SetScrollChild(dqChild)
+    dqScroll:HookScript("OnVerticalScroll", function() FV:CullQuestDetail() end)
+    FV.qdScroll, FV.qdChild = dqScroll, dqChild
+    coroutine.yield()
+
+    FV.qlBar, FV.UpdateQlBar = MakeScrollBar(qScroll, qChild, qPage)
+    FV.qdBar, FV.UpdateQdBar = MakeScrollBar(dqScroll, dqChild, qPage)
+    coroutine.yield()
+
+    local head = CreateFrame("Frame", nil, qChild)
+    head:SetSize(FV.QROW_W, FV.QHEAD_H)
+    head.lab = MakeFS(head, 13, C_TEXT, "LEFT")
+    head.lab:SetPoint("LEFT", head, "LEFT", 0, 0)
+    head.lab:SetWordWrap(false)
+    head.line = head:CreateTexture(nil, "ARTWORK")
+    head.line:SetHeight(1)
+    head:Hide()
+    FV.qHead = head
+
+    FV.qEmpty = MakeFS(qChild, 14, C_GREY, "LEFT")
+    FV.qEmpty:SetPoint("TOPLEFT", qChild, "TOPLEFT", 0, 0)
+    FV.qEmpty:SetText(L["本阵营暂无任务数据"])
+    FV.qEmpty:Hide()
+    coroutine.yield()
+
+    FV.qdName = MakeFS(dqChild, 16, C_GOLD, "LEFT")
+    FV.qdName:SetWordWrap(false)
+    FV.qdSub = MakeFS(dqChild, 14, C_GREY, "LEFT")
+    FV.qdSub:SetWordWrap(false)
+    FV.qdChip = {}
+    for i = 1, 3 do
+        local ch = MakeChip(dqChild)
+        ch:Hide()
+        FV.qdChip[i] = ch
+    end
+    coroutine.yield()
+
+    FV.qdNpc = {}
+    for i = 1, 4 do
+        FV.qdNpc[i] = MakeQNpc(dqChild)
+        coroutine.yield()
+    end
+
+    FV.qdPre = {}
+    for i = 1, 3 do
+        FV.qdPre[i] = MakeQPre(dqChild)
+    end
+
+    FV.qdLab = {}
+    for i = 1, 8 do
+        local f = MakeFS(dqChild, 14, C_TEXT, "LEFT")
+        f:SetWordWrap(false)
+        f:Hide()
+        FV.qdLab[i] = f
+    end
+    coroutine.yield()
+
+    FV.qdObj = MakeFS(dqChild, 14, C_TEXT, "LEFT")
+    FV.qdObj:Hide()
+    FV.qdDesc = MakeFS(dqChild, 14, C_GREY, "LEFT")
+    FV.qdDesc:Hide()
+
+    FV.qdGoal = {}
+    for i = 1, 4 do
+        FV.qdGoal[i] = MakeQGoal(dqChild)
+    end
+    FV.qdItem = {}
+    for i = 1, 3 do
+        FV.qdItem[i] = MakeQItem(dqChild)
+        coroutine.yield()
+    end
+    FV.qdGain = {}
+    for i = 1, 4 do
+        local f = MakeFS(dqChild, 14, C_TEXT, "LEFT")
+        f:SetWordWrap(false)
+        f:Hide()
+        FV.qdGain[i] = f
+    end
+    FV.qdSep = CreateFrame("Frame", nil, dqChild)
+    FV.qdSep:SetSize(FV.QTXT, 1)
+    local sline = FV.qdSep:CreateTexture(nil, "BACKGROUND")
+    sline:SetAllPoints(FV.qdSep)
+    sline:SetColorTexture(0x1B / 255, 0x20 / 255, 0x29 / 255, 1)
+    FV.qdSep:Hide()
+    FV.qdState = MakeFS(dqChild, 14, C_GREY, "LEFT")
+    FV.qdState:Hide()
+    FV.qRows = {}
+    coroutine.yield()
+
     local qb = NewButton(rightCard, L["军需官位置"], 104, 24, 14)
-    qb:SetPoint("TOPRIGHT", rightCard, "TOPRIGHT", -14, -10)
+    qb:SetPoint("TOPRIGHT", rightCard, "TOPRIGHT", -14, -8)
     local qfs = qb:GetFontString()
     local qt = qb:CreateTexture(nil, "OVERLAY")
     qt:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin")
@@ -738,7 +1405,14 @@ FV.Build = function(page)
 
     FV.built = true
     FV.building = false
-    FV:PaintDetail()
+    FV:SyncTabShown()
+    FV:PaintTab()
+    if FV:Tab() == "quest" then
+        FV:PaintQuestList()
+        FV:PaintQuestDetail()
+    else
+        FV:PaintDetail()
+    end
     end))
 end
 
@@ -751,6 +1425,18 @@ end
 function FV:CullRight()
     if not FV.dCull then return end
     Cull(FV.dScroll, FV.dCull)
+end
+
+function FV:CullQuestList()
+    if not FV.qCull then return end
+    Cull(FV.qScroll, FV.qCull)
+    if FV.UpdateQlBar then FV.UpdateQlBar() end
+end
+
+function FV:CullQuestDetail()
+    if not FV.qdCull then return end
+    Cull(FV.qdScroll, FV.qdCull)
+    if FV.UpdateQdBar then FV.UpdateQdBar() end
 end
 
 local function MouseOverSafe(f)
@@ -823,6 +1509,103 @@ function FV:SyncPopup()
         FV.filterBtn:SetText("▽ " .. L["筛选"])
     else
         FV.filterBtn:SetText("▽ " .. L["筛选"] .. " " .. n)
+    end
+end
+
+function FV:Tab()
+    local d = ns.FactionDB()
+    return (d.ftab == "quest") and "quest" or "reward"
+end
+
+function FV:SyncTabShown()
+    local k = FV:Tab()
+    if FV.dScroll then FV.dScroll:SetShown(k == "reward") end
+    if FV.qPage then FV.qPage:SetShown(k == "quest") end
+end
+
+function FV:PaintTab()
+    if not FV.tabs then return end
+    local k = FV:Tab()
+    for _, bt in ipairs(FV.tabs) do
+        SetButtonSelected(bt, bt.__key == k, "tab")
+    end
+end
+
+function FV:SelectFaction(fid)
+    Cfg().sel = fid
+    local tab = FV:Tab()
+    if tab == "quest" then FV:WarmQuests(fid) end
+    FV:PaintTab()
+    FV:PaintList()
+    if tab == "quest" then
+        FV:PaintQuestList()
+        FV:PaintQuestDetail()
+    else
+        FV:PaintDetail()
+    end
+end
+
+function FV:SetTab(key)
+    local d = ns.FactionDB()
+    d.ftab = (key == "quest") and "quest" or "reward"
+    FV:SyncTabShown()
+    if FV:Tab() == "quest" then FV:WarmQuests(Cfg().sel) end
+    FV.RequestRender()
+end
+
+function FV:SetStage(key)
+    if key ~= "buy" and key ~= "fr" and key ~= "ho" then key = "buy" end
+    local d = ns.FactionDB()
+    d.fqstage = key
+    local fid = Cfg().sel
+    local list = QuestListOf(fid)
+    d.fqsel = d.fqsel or {}
+    if type(list) == "table" then
+        for _, q in ipairs(list) do
+            if q.tier == key then
+                d.fqsel[fid] = q.id[1]
+                break
+            end
+        end
+    end
+    if FV.qScroll and FV.qScroll.SetVerticalScroll then FV.qScroll:SetVerticalScroll(0) end
+    FV:PaintQuestList()
+    FV:PaintQuestDetail()
+end
+
+function FV:SelectQuest(qid)
+    local fid = Cfg().sel
+    local list = QuestListOf(fid)
+    local q = FindQuest(list, qid)
+    if not q then return end
+    local d = ns.FactionDB()
+    d.fqsel = d.fqsel or {}
+    d.fqsel[fid] = qid
+    d.fqstage = q.tier
+    FV:PaintQuestList()
+    FV:PaintQuestDetail()
+end
+
+function FV:WarmQuests(fid)
+    if not fid then return end
+    local list = QuestListOf(fid)
+    if type(list) ~= "table" then return end
+    FV.__qWarm = FV.__qWarm or {}
+    if FV.__qWarm[fid] then return end
+    FV.__qWarm[fid] = true
+    local miss = false
+    if DG and DG.QuestName then
+        for _, q in ipairs(list) do
+            for _, id in ipairs(q.id or {}) do
+                local ok, nm, has = pcall(DG.QuestName, id)
+                if not (ok and has) then miss = true end
+            end
+        end
+    end
+    if miss and C_Timer and C_Timer.NewTimer then
+        C_Timer.NewTimer(1.2, function()
+            if FV.built then FV.RequestRender() end
+        end)
     end
 end
 
@@ -976,13 +1759,18 @@ end
 
 function FV.OnItemData(itemID)
     if not FV.built then return end
-    for _, f in ipairs(FV.rCards) do
+    for _, f in ipairs(FV.rCards or {}) do
         if f:IsShown() then
             if f.__id == itemID then
                 FV:PaintRewardCard(f, itemID, f.__fam, f.__key)
             elseif CostOf(f.__fam, f.__key) == itemID then
                 FV:PaintRewardCard(f, f.__id, f.__fam, f.__key)
             end
+        end
+    end
+    for _, f in ipairs(FV.qdItem or {}) do
+        if f:IsShown() and f.__id == itemID then
+            FV:PaintQItem(f, itemID)
         end
     end
 end
@@ -998,7 +1786,7 @@ function FV:PaintDetail()
     local innerW = FV.RW - 28
     local cardW = floor((innerW - (FV.COLS - 1) * GUTTER) / FV.COLS)
     local nCard = 0
-    local y = 12
+    local y = 0
 
     if not x then
         FV.dTitle:ClearAllPoints()
@@ -1221,21 +2009,417 @@ function FV:PaintDetail()
     FV:CullRight()
 end
 
+function FV:PaintQuestList()
+    if not FV.qRows then return end
+    local fid = Cfg().sel
+    local list = QuestListOf(fid)
+    local stage = StageOf(list)
+    local cull = {}
+    FV.qCull = cull
+
+    for _, bt in ipairs(FV.stageBtns or {}) do
+        local n = 0
+        if type(list) == "table" then
+            for _, q in ipairs(list) do
+                if q.tier == bt.__key then n = n + 1 end
+            end
+        end
+        bt:SetText(format("%s |cff5a6274%d|r", QT_BTN[bt.__key], n))
+        local on = (bt.__key == stage)
+        SetButtonSelected(bt, on, "tab")
+        local fs = bt.GetFontString and bt:GetFontString()
+        if fs then
+            if on then
+                fs:SetTextColor(1, 1, 1)
+            else
+                local col = QT_COLOR[bt.__key]
+                fs:SetTextColor(col[1], col[2], col[3])
+            end
+        end
+    end
+
+    for i = 1, #FV.qRows do
+        local r = FV.qRows[i]
+        r.__active = false
+        r:Hide()
+    end
+    FV.qHead.__active = false
+    FV.qHead:Hide()
+    FV.qEmpty:Hide()
+
+    if type(list) ~= "table" then
+        FV.qEmpty:ClearAllPoints()
+        FV.qEmpty:SetPoint("TOPLEFT", FV.qChild, "TOPLEFT", 0, 0)
+        FV.qEmpty:Show()
+        FV.qChild:SetHeight(24)
+        FV:CullQuestList()
+        return
+    end
+
+    local rows = {}
+    for _, q in ipairs(list) do
+        if q.tier == stage then rows[#rows + 1] = q end
+    end
+    local cur = SelQuestOf(fid, list, stage)
+    local y = 0
+
+    local head = FV.qHead
+    local hcol = QT_COLOR[stage]
+    head:ClearAllPoints()
+    head:SetPoint("TOPLEFT", FV.qChild, "TOPLEFT", 0, 0)
+    head.lab:SetText(QT_LABEL[stage])
+    head.lab:SetTextColor(hcol[1], hcol[2], hcol[3])
+    head.line:ClearAllPoints()
+    head.line:SetPoint("LEFT", head.lab, "RIGHT", 6, 0)
+    head.line:SetPoint("RIGHT", head, "RIGHT", 0, 0)
+    head.line:SetColorTexture(hcol[1], hcol[2], hcol[3], 0.5)
+    head:Show()
+    head.__active = true
+    head.__vtop = 0
+    head.__vh = FV.QHEAD_H
+    cull[#cull + 1] = head
+    y = FV.QHEAD_H + 4
+
+    local n = #rows
+    if n == 0 then
+        FV.qEmpty:ClearAllPoints()
+        FV.qEmpty:SetPoint("TOPLEFT", FV.qChild, "TOPLEFT", 0, -y)
+        FV.qEmpty:Show()
+    end
+
+    for i, q in ipairs(rows) do
+        local r = FV.qRows[i]
+        if not r then
+            r = MakeQRow(FV.qChild)
+            FV.qRows[i] = r
+        end
+        local qid = q.id[1]
+        local sel = false
+        if cur then
+            for _, id in ipairs(cur.id or {}) do
+                if id == qid then sel = true end
+            end
+        end
+        local own
+        for _, rr in ipairs(q.rep or {}) do
+            if rr[1] == fid then own = rr[2] break end
+        end
+        r.__qid = qid
+        r.__selActive = sel or nil
+        r.name:SetText(QName(q))
+        if sel then
+            r.name:SetTextColor(1, 1, 1)
+        elseif own and own > 0 and not q.rp then
+            r.name:SetTextColor(Unpack(C_TEXT))
+        else
+            r.name:SetTextColor(Unpack(C_GREY))
+        end
+        local bits = {}
+        if own then bits[#bits + 1] = format("%s%d", own > 0 and "+" or "", own) end
+        if q.lv then bits[#bits + 1] = format("L%d", q.lv) end
+        if q.rp then bits[#bits + 1] = L["可重复"] end
+        r.sub:SetText(table.concat(bits, " · "))
+        local dc, gtex, gc = QBadgeSpec(QStateOf(qid))
+        r.stDisc:SetVertexColor(dc[1], dc[2], dc[3], 1)
+        r.stGlyph:SetTexture(gtex)
+        r.stGlyph:SetVertexColor(gc[1], gc[2], gc[3], 1)
+        if HUI and r.__huiCard and ns.hui.HuiCardState then
+            ns.hui.HuiCardState(r, "norm")
+            r.__hst = "norm"
+        end
+        if HUI and ns.hui.PaintRowSelect then
+            ns.hui.PaintRowSelect(r, sel, Q_ROWSEL)
+        end
+        r:ClearAllPoints()
+        r:SetPoint("TOPLEFT", FV.qChild, "TOPLEFT", 0, -y)
+        r:Show()
+        r.__active = true
+        r.__vtop = y
+        r.__vh = FV.QROW_H
+        cull[#cull + 1] = r
+        y = y + FV.QROW_PITCH
+        if i % 6 == 0 then PY() end
+    end
+
+    FV.qChild:SetHeight(max(10, y + 4))
+    local viewH = tonumber(FV.qScroll.GetHeight and FV.qScroll:GetHeight()) or 0
+    local maxScroll = FV.qChild:GetHeight() - viewH
+    if maxScroll < 0 then maxScroll = 0 end
+    local v = tonumber(FV.qScroll.GetVerticalScroll and FV.qScroll:GetVerticalScroll()) or 0
+    if v > maxScroll and FV.qScroll.SetVerticalScroll then FV.qScroll:SetVerticalScroll(maxScroll) end
+    FV:CullQuestList()
+end
+
+function FV:PaintQuestDetail()
+    if not FV.qdName then return end
+    local child = FV.qdChild
+    local fid = Cfg().sel
+    local list = QuestListOf(fid)
+    local stage = StageOf(list)
+    local q = SelQuestOf(fid, list, stage)
+    local W = FV.QTXT
+    local cull = {}
+    FV.qdCull = cull
+    local y = 0
+    local nChip, nNpc, nPre, nLab, nGoal, nItem, nGain = 0, 0, 0, 0, 0, 0, 0
+
+    for _, pool in ipairs({ FV.qdChip, FV.qdNpc, FV.qdPre, FV.qdLab, FV.qdGoal, FV.qdItem, FV.qdGain }) do
+        for _, f in ipairs(pool) do
+            f.__active = false
+            f:Hide()
+        end
+    end
+    for _, f in ipairs({ FV.qdName, FV.qdSub, FV.qdObj, FV.qdDesc, FV.qdSep, FV.qdState }) do
+        f.__active = false
+        f:Hide()
+    end
+
+    local function put(f, h)
+        f:ClearAllPoints()
+        f:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -y)
+        f:Show()
+        f.__active = true
+        f.__vtop = y
+        f.__vh = h
+        cull[#cull + 1] = f
+        y = y + h
+    end
+
+    local function gap(h)
+        y = y + h
+    end
+
+    local function sect(text)
+        gap(8)
+        nLab = nLab + 1
+        local f = FV.qdLab[nLab]
+        if not f then return end
+        f:SetText(text)
+        f:SetTextColor(Unpack(C_TEXT))
+        f:SetWidth(W)
+        put(f, 20)
+    end
+
+    if not q then
+        FV.qdName:SetText(L["点左侧任务查看详情"])
+        FV.qdName:SetTextColor(Unpack(C_GREY))
+        FV.qdName:SetWidth(W)
+        put(FV.qdName, 24)
+        child:SetHeight(60)
+        FV:CullQuestDetail()
+        return
+    end
+
+    local qid = q.id[1]
+    FV.qdName:SetText(QName(q))
+    FV.qdName:SetTextColor(Unpack(C_GOLD))
+    FV.qdName:SetWidth(W)
+    put(FV.qdName, 22)
+
+    local sub = {}
+    if q.lv then sub[#sub + 1] = format(L["等级 %d"], q.lv) end
+    if q.req then sub[#sub + 1] = format(L["需要 %d"], q.req) end
+    if q.side and QSIDE_TXT[q.side] then sub[#sub + 1] = QSIDE_TXT[q.side] end
+    FV.qdSub:SetText(table.concat(sub, "   ·   "))
+    FV.qdSub:SetWidth(W)
+    put(FV.qdSub, 20)
+
+    local chipY = y + 2
+    local chipX = 0
+    local function addChip(text, color)
+        nChip = nChip + 1
+        local f = FV.qdChip[nChip]
+        if not f then return end
+        f:ClearAllPoints()
+        f:SetPoint("TOPLEFT", child, "TOPLEFT", chipX, -chipY)
+        PaintChip(f, text, color)
+        f:Show()
+        f.__active = true
+        f.__vtop = chipY
+        f.__vh = 18
+        cull[#cull + 1] = f
+        chipX = chipX + f:GetWidth() + 6
+    end
+    for _, rr in ipairs(q.rep or {}) do
+        local delta = rr[2] or 0
+        local txt = format("%s%s %s", delta > 0 and "+" or "", NumStr(delta), FacNameByID(rr[1]))
+        addChip(txt, delta >= 0 and Q_GREEN or Q_RED)
+    end
+    if q.rp then addChip(L["可重复"], Q_GREEN) end
+    if nChip > 0 then y = chipY + 20 end
+
+    local function addNpcRow(label, nid)
+        nNpc = nNpc + 1
+        local f = FV.qdNpc[nNpc]
+        if not f then return end
+        local loc = NpcLoc(nid)
+        local info = NpcInfo(nid)
+        local txt = Q_INK_GREY .. label .. Q_END .. Q_INK_GOLD .. NpcName(nid) .. Q_END
+        if loc then
+            txt = txt .. format(" %s%.1f, %.1f%s", Q_INK_DIM, loc[2], loc[3], Q_END)
+        elseif info and type(info.place) == "string" and info.place ~= "" then
+            txt = txt .. " " .. Q_INK_DIM .. info.place .. Q_END
+        end
+        f.__npc = nid
+        f.__loc = loc
+        f.fs:SetText(txt)
+        f.fs:SetWidth(loc and (W - 74) or W)
+        f.btn:SetShown(loc and true or false)
+        put(f, 24)
+    end
+
+    local sN = 0
+    for _, nid in ipairs(q.start or {}) do
+        if sN < 2 then
+            addNpcRow(sN == 0 and L["起始："] or "", nid)
+            sN = sN + 1
+        end
+    end
+    local eN = 0
+    for _, nid in ipairs(q.finish or {}) do
+        if eN < 2 then
+            addNpcRow(eN == 0 and L["结束："] or "", nid)
+            eN = eN + 1
+        end
+    end
+
+    local pres = q.pre
+    if type(pres) == "table" and #pres > 0 then
+        sect(L["前置任务"])
+        for _, pid in ipairs(pres) do
+            if nPre < 3 then
+                nPre = nPre + 1
+                local f = FV.qdPre[nPre]
+                f.__qid = pid
+                f.txt:SetText(format("《%s》", QNameByID(pid)))
+                f.txt:SetWidth(W - 20)
+                put(f, 30)
+                gap(6)
+            end
+        end
+    end
+
+    if type(q.obj) == "string" and q.obj ~= "" then
+        sect(L["目标"])
+        FV.qdObj:SetWidth(W)
+        FV.qdObj:SetText(q.obj)
+        put(FV.qdObj, TxtH(FV.qdObj, 20))
+    end
+
+    local goals = q.goals
+    if type(goals) == "table" and #goals > 0 then
+        sect(L["任务要求"])
+        for _, g in ipairs(goals) do
+            if nGoal < 4 then
+                nGoal = nGoal + 1
+                local f = FV.qdGoal[nGoal]
+                local nm = g[1] or ""
+                local gn = tonumber(g[2]) or 0
+                if gn > 0 then
+                    f.txt:SetText(format("%s%s%s ×%d", Q_INK_GOLD, nm, Q_END, gn))
+                else
+                    f.txt:SetText(Q_INK_GOLD .. nm .. Q_END)
+                end
+                put(f, 20)
+            end
+        end
+    end
+
+    if type(q.desc) == "string" and q.desc ~= "" then
+        sect(L["任务说明"])
+        FV.qdDesc:SetWidth(W)
+        FV.qdDesc:SetText(q.desc)
+        put(FV.qdDesc, TxtH(FV.qdDesc, 20))
+    end
+
+    local rw = q.reward
+    if type(rw) == "table" and #rw > 0 then
+        sect(format(L["任务奖励（%d 选 1）"], #rw))
+        for _, id in ipairs(rw) do
+            if nItem < 3 then
+                nItem = nItem + 1
+                local c = FV.qdItem[nItem]
+                FV:PaintQItem(c, id)
+                if c.__huiCard and ns.hui.HuiCardState then
+                    ns.hui.HuiCardState(c, "norm")
+                    c.__hst = "norm"
+                end
+                put(c, 44)
+                gap(6)
+            end
+        end
+    end
+
+    sect(L["收获"])
+    for _, rr in ipairs(q.rep or {}) do
+        if nGain < 4 then
+            nGain = nGain + 1
+            local f = FV.qdGain[nGain]
+            local delta = rr[2] or 0
+            local col = delta >= 0 and Q_GREEN or Q_RED
+            f:SetText(format("%s%s %s %s%s%s", Q_INK_GREY, FacNameByID(rr[1]), L["声望"],
+                Hex(col), format("%s%s", delta > 0 and "+" or "", NumStr(delta)), Q_END))
+            put(f, 20)
+        end
+    end
+    if nGain < 4 then
+        nGain = nGain + 1
+        local f = FV.qdGain[nGain]
+        local xp = QuestXP(qid)
+        if xp then
+            f:SetText(format("%s%s %s%s%s", Q_INK_GREY, L["经验值"], Q_INK_GOLD, NumStr(xp), Q_END))
+        else
+            f:SetText(format("%s%s %s—%s %s%s%s", Q_INK_GREY, L["经验值"], Q_INK_DIM, Q_END,
+                Q_INK_GREY, L["接取后按客户端显示"], Q_END))
+        end
+        put(f, 20)
+    end
+
+    gap(10)
+    FV.qdSep:ClearAllPoints()
+    FV.qdSep:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -y)
+    FV.qdSep:Show()
+    FV.qdSep.__active = true
+    FV.qdSep.__vtop = y
+    FV.qdSep.__vh = 1
+    cull[#cull + 1] = FV.qdSep
+    y = y + 9
+
+    local st = QStateOf(qid)
+    FV.qdState:SetText(Q_STATE_TXT[st] or Q_STATE_TXT.todo)
+    FV.qdState:SetTextColor(Unpack(QStateCol(st)))
+    FV.qdState:SetWidth(W)
+    put(FV.qdState, 20)
+
+    child:SetHeight(max(10, y + 12))
+    if FV.__lastQSel ~= qid then
+        FV.__lastQSel = qid
+        if FV.qdScroll and FV.qdScroll.SetVerticalScroll then FV.qdScroll:SetVerticalScroll(0) end
+    end
+    FV:CullQuestDetail()
+end
+
 function FV.RequestRender()
     if not FV.built then return end
-    if not (ns.FactionPaint and ns.FactionIdle) then
+    local function paint()
+        FV:PaintTab()
         FV:PaintList()
-        FV:PaintDetail()
+        if FV:Tab() == "quest" then
+            FV:PaintQuestList()
+            FV:PaintQuestDetail()
+        else
+            FV:PaintDetail()
+        end
+    end
+    if not (ns.FactionPaint and ns.FactionIdle) then
+        paint()
         return
     end
     if ns.FactionPaint.Active("Factions") then
         FV.__pend = true
         return
     end
-    ns.FactionPaint.Run("Factions", function()
-        FV:PaintList()
-        FV:PaintDetail()
-    end, function()
+    ns.FactionPaint.Run("Factions", paint, function()
         if FV.__pend then
             FV.__pend = false
             FV.RequestRender()
@@ -1255,6 +2439,8 @@ function FV.Open()
             end
         end
     end
+    FV:SyncTabShown()
+    if FV:Tab() == "quest" then FV:WarmQuests(c.sel) end
     FV.RequestRender()
 end
 

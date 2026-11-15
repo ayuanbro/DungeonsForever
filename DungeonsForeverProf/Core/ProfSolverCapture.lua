@@ -1039,7 +1039,7 @@ function E.FormulaFor(r,context,auctionRemaining,purchaseSource)
     local vendors,seen={},{}
     for _,o in ipairs(entry.vendorOffers) do
         if o.npcID and not seen[o.npcID] then
-            vendors[#vendors+1]={id=o.npcID,name=o.npcName or o.name or (ns.ProfVendorNames and ns.ProfVendorNames[o.npcID]) or ("#"..o.npcID),zone=o.zone}
+            vendors[#vendors+1]={id=o.npcID,name=(ns.ProfVendorNames and ns.ProfVendorNames[o.npcID]) or o.npcName or o.name or ("#"..o.npcID),zone=o.zone}
             seen[o.npcID]=true
         end
     end

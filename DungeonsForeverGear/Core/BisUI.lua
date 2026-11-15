@@ -962,16 +962,16 @@ local USABLE = {
     warrior = { armor = { 1, 2, 3, 4 },
                 weapon = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 13, 15, 16, 18 },
                 shield = true },
-    paladin = { armor = { 1, 2, 3, 4 }, weapon = { 0, 1, 4, 5, 6 },
+    paladin = { armor = { 1, 2, 3, 4 }, weapon = { 0, 1, 4, 5, 6, 7, 8 },
                 shield = true, relic = { 7 } },
     hunter = { armor = { 1, 2, 3 },
-               weapon = { 0, 1, 2, 3, 7, 10, 13, 15, 16, 18 } },
-    rogue = { armor = { 1, 2 }, weapon = { 0, 2, 3, 4, 7, 13, 15, 16, 18 } },
+               weapon = { 0, 1, 2, 3, 6, 7, 8, 10, 13, 15, 16, 18 } },
+    rogue = { armor = { 1, 2 }, weapon = { 2, 3, 4, 7, 13, 15, 16, 18 } },
     priest = { armor = { 1 }, weapon = { 4, 10, 15, 19 } },
     mage = { armor = { 1 }, weapon = { 7, 10, 15, 19 } },
     warlock = { armor = { 1 }, weapon = { 7, 10, 15, 19 } },
-    druid = { armor = { 1, 2 }, weapon = { 4, 5, 10, 13, 15 }, relic = { 8 } },
-    shaman = { armor = { 1, 2, 3 }, weapon = { 0, 1, 4, 5, 6, 10, 13, 15 },
+    druid = { armor = { 1, 2 }, weapon = { 4, 5, 6, 10, 13, 15 }, relic = { 8 } },
+    shaman = { armor = { 1, 2, 3 }, weapon = { 0, 1, 4, 5, 10, 13, 15 },
                shield = true, relic = { 9 } },
 }
 
@@ -2178,7 +2178,12 @@ local function PaintDoll()
             cell.icon:SetTexture(ItemIcon(id))
             cell.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
             if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(cell.icon, { ns.hui.QColor(ItemQuality(sp, id, q)) }) end
-            cell.name:SetText(DG.ItemName(id))
+            local nm, named = DG.ItemName(id)
+            cell.name:SetText(nm)
+            if not named then
+                BG.needNames = true
+                if DG.RequestItem then DG.RequestItem(id) end
+            end
             cell.name:SetTextColor(Unpack(QColor(ItemQuality(sp, id, q))))
         end
         local capLv = nil
@@ -2249,7 +2254,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 10
+BG.AUTO_GEN_REV = 11
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2832,6 +2837,8 @@ function BG.UseManualPlan()
     end
     BG.usingPlan = p
     BG.autoPlan = nil
+    BG._sweepFails = 0
+    BG._sweepMiss = nil
     if not (autoJob and autoJob.mode == "manual") then AutoJobCancel() end
     BG.RequestRender()
 end
@@ -4059,6 +4066,8 @@ function BG.UsePlan(plan)
             end
         end
     end
+    BG._sweepFails = 0
+    BG._sweepMiss = nil
     BG.RequestRender()
 end
 
@@ -4151,7 +4160,7 @@ function BG.SweepNames()
     BG.scanBudget = nil
     local prevMiss = BG._sweepMiss
     BG._sweepMiss = miss
-    if not prevMiss or miss < prevMiss then
+    if miss < 1 or prevMiss == nil or miss < prevMiss then
         BG._sweepFails = 0
     else
         BG._sweepFails = math.min((BG._sweepFails or 0) + 1, 6)
@@ -4178,15 +4187,18 @@ function BG.ScheduleSweep()
 end
 
 function BG.OnItemData()
-    if not BG.built or BG._itemRepaint then return end
-    if not ns.PageVisible(BG.page) then return end
+    if not BG.built then return end
     BG.needNames = true
-    local evtNow = (type(GetTime) == "function") and GetTime() or 0
-    if BG.__evtT and (evtNow - BG.__evtT) < 1 then return end
-    BG.__evtT = evtNow
+    if not ns.PageVisible(BG.page) then return end
+    if BG._itemRepaint then return end
+    local nowMs = 0
+    if type(debugprofilestop) == "function" then nowMs = debugprofilestop() end
+    local wait = 0.05
+    if nowMs > 0 and BG.__evtT and (nowMs - BG.__evtT) < 250 then wait = 0.25 end
+    BG.__evtT = nowMs
     BG._itemRepaint = true
     if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
-        C_Timer.After(0.05, function()
+        C_Timer.After(wait, function()
             BG._itemRepaint = false
             if BG.needNames then BG.SweepNames() end
         end)
