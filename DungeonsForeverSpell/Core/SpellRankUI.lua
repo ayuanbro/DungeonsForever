@@ -925,9 +925,11 @@ end
 local entry
 local entryHost
 local entryPage
+local entryDirty = false
 local RefreshEntry
 local UpdateEntry
 local UpdateEntryCombat
+local SyncEntryVisibility
 
 local function IsVis(f)
     if not f then return false end
@@ -1166,9 +1168,13 @@ UpdateEntry = function()
         entry.__hdr = nil
     end
     RefreshEntry()
+    if entryDirty then
+        entryDirty = false
+        SyncEntryVisibility()
+    end
 end
 
-local function SyncEntryVisibility()
+SyncEntryVisibility = function()
     if not entry then return end
     local psf = PlayerSpellsFrame
     local sb = psf and psf.SpellBookFrame
@@ -1190,7 +1196,7 @@ UpdateEntryCombat = function()
         if entry then entry:Hide() end
         return
     end
-    SyncEntryVisibility()
+    if entry then entryDirty = true end
 end
 
 UI.Refresh = function()

@@ -1114,6 +1114,7 @@ local function WarmCache()
 end
 
 local function InstallOurs()
+    if DeferInCombat() then return false end
     if not book then return false end
     if not BookShown() then
         if ovl then ovl:Hide() end
@@ -1122,14 +1123,8 @@ local function InstallOurs()
     if not EnsureOverlay() then return false end
     RestoreNativeList()
     local key = CacheKey()
-    local groups
-    if InCombat() then
-        groups = groupCache[key]
-        if not groups then groups = BuildGroups() end
-    else
-        groups = BuildGroups()
-        if groups and #groups > 0 then groupCache[key] = groups end
-    end
+    local groups = BuildGroups()
+    if groups and #groups > 0 then groupCache[key] = groups end
     if not groups or #groups == 0 then groups = EmptyGroup() end
     local cols, _, rows = Metrics()
     local views = ViewList()
@@ -1361,6 +1356,7 @@ local function PaintTabs()
 end
 
 ShowPage = function(key)
+    if DeferInCombat() then return end
     if not book then return end
     if activePage == key then
         if key then ApplyData() end
@@ -1402,6 +1398,7 @@ ShowPage = function(key)
 end
 
 local function NativeTabClicked()
+    if DeferInCombat() then return end
     if not activePage then return end
     local seq = pageSeq
     local function leave()
@@ -1414,16 +1411,6 @@ local function NativeTabClicked()
         C_Timer.After(0, leave)
     else
         leave()
-    end
-end
-
-local function HookNativeTabs()
-    local sys = book and book.CategoryTabSystem
-    for _, t in ipairs((sys and sys.tabs) or {}) do
-        if t and t.HookScript and not t.__dfTabHook then
-            local ok = pcall(t.HookScript, t, "OnClick", NativeTabClicked)
-            if ok then t.__dfTabHook = true end
-        end
     end
 end
 
@@ -1557,7 +1544,6 @@ end
 local function AnchorTabs()
     if DeferInCombat() then return end
     if not tabButton or not book then return end
-    HookNativeTabs()
     local host = LastForeignTab()
     local key = host or false
     if tabButton.__anchorHost == key then return end
@@ -1656,6 +1642,7 @@ local function Attach()
     end
 
     local function OnSpellsRefresh()
+        if DeferInCombat() then return end
         if restoring or not book then return end
         local id = book.GetTab and book:GetTab()
         if id ~= nil and lastTab == nil then
@@ -1675,7 +1662,6 @@ local function Attach()
         elseif C_Timer and C_Timer.After then
             C_Timer.After(0, ThinAll)
         end
-        HookNativeTabs()
         FitSearchBox()
     end
 
@@ -1703,27 +1689,7 @@ local function Attach()
 
     local function OnBookShown()
         if InCombat() then
-            ShowTabs()
-            StyleOurTabs()
-            if C_Timer and C_Timer.After then
-                C_Timer.After(0.05, ShowTabs)
-                C_Timer.After(0.3, ShowTabs)
-                C_Timer.After(0.9, ShowTabs)
-            end
-            if activePage then
-                InstallOurs()
-                if C_Timer and C_Timer.After then
-                    C_Timer.After(0.1, function()
-                        if activePage then InstallOurs() end
-                    end)
-                    C_Timer.After(0.35, function()
-                        if activePage then InstallOurs() end
-                    end)
-                    C_Timer.After(0.9, function()
-                        if activePage then InstallOurs() end
-                    end)
-                end
-            end
+            pending = true
             return
         end
         if C_Timer and C_Timer.After then
@@ -1787,6 +1753,10 @@ local function Attach()
         beatAcc = beatAcc + elapsed
         if beatAcc < 0.2 then return end
         beatAcc = 0
+        if InCombat() then
+            pending = true
+            return
+        end
         local psf = PlayerSpellsFrame
         local psfShown = false
         if psf then

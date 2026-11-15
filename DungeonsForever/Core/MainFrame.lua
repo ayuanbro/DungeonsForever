@@ -811,6 +811,7 @@ local settingsGlyph
 local settingsPop
 local BuildTipCard
 local BuildAppearanceCard
+local BuildEnhCard
 local appearanceCard
 local appearanceBtn
 local appearanceDot
