@@ -254,10 +254,10 @@ ns.ProfData = {
             sub = 5,
             kinds = { Recipe=36, Blueprint=4 },
             ranks = {
-                { "Apprentice", "75", "Learn from a cooking trainer.", nil },
-                { "Adept", "150", "Learn from a cooking trainer.", nil },
-                { "Expert", "225", "Learned from the book \"{book}\"; requires Cooking 125. Sold by Shandrina (Alliance) and Wulan (Horde).", 16082 },
-                { "Master", "300", "Reach Cooking 225, then complete Clamlette Surprise from Dirge Quikcleave in Gadgetzan. Requires level 35.", nil },
+                { "Apprentice", "75", "从烹饪训练师处学习。", nil },
+                { "Adept", "150", "从烹饪训练师处学习。", nil },
+                { "Expert", "225", "通过书籍《{book}》学习，需要烹饪 125，联盟在银风庇护所、部落在坠影村有售。", 16082 },
+                { "Master", "300", "烹饪达到 225 后，从加基森的迪尔格·奎克里弗处接取任务，完成后获得（需要 35 级）。", nil },
             },
             camp = {
                 { 279981, "Apprentice Campfire Kit", "inv_camelot_camping_welcomingcampfire", 1, "A cooking campfire that can hold 3 camp objects", "", "A cooking campfire that can hold 3 camp objects", "", "", "3", { { 4470, 1 } }, nil },
@@ -301,8 +301,8 @@ ns.ProfData = {
             ranks = {
                 { "Apprentice", "75", "Learn from a fishing trainer.", nil },
                 { "Adept", "150", "Learn from a fishing trainer.", nil },
-                { "Expert", "225", "Learned from the book \"{book}\"; requires level 20 and Fishing 125. Sold in Booty Bay.", 16083 },
-                { "Master", "300", "Reach Fishing 225, then take the quest from Nat Pagle in Dustwallow Marsh and complete it.", nil },
+                { "Expert", "225", "通过书籍《{book}》学习，需要 20 级且钓鱼 125，藏宝海湾有售。", 16083 },
+                { "Master", "300", "钓鱼达到 225 后，从尘泥沼泽的纳特·帕格处接取任务，完成后获得。", nil },
             },
             fishing = {
                 spells = {
@@ -353,10 +353,10 @@ ns.ProfData = {
             sub = 7,
             kinds = { Manual=9, Blueprint=2 },
             ranks = {
-                { "Apprentice", "75", "Learn from a first aid trainer.", nil },
-                { "Adept", "150", "Learn from a first aid trainer.", nil },
-                { "Expert", "225", "Learned from the book \"{book}\"; requires First Aid 125. Sold by Deneb Walker (Alliance) and Balai Lok'Wein (Horde).", 16084 },
-                { "Master", "300", "Reach First Aid 225, then complete the Triage quest from your faction's doctor in Theramore (Alliance) or Hammerfall (Horde). Requires level 35.", nil },
+                { "Apprentice", "75", "从急救训练师处学习。", nil },
+                { "Adept", "150", "从急救训练师处学习。", nil },
+                { "Expert", "225", "通过书籍《{book}》学习，需要急救 125，联盟在激流堡、部落在蕨墙村有售。", 16084 },
+                { "Master", "300", "急救达到 225 后，向医生接取晋级任务，联盟在塞拉摩岛、部落在落锤镇，完成后获得（需要 35 级）。", nil },
             },
             camp = {
                 { 279968, "First Aid Kit", "inv_misc_bandage_11", 20, "Gives 56 Stamina to everyone sitting nearby, like Power Word: Fortitude (value at level 60, scales with level)", "56 Stamina", "Gives 56 Stamina to everyone sitting nearby, like Power Word: Fortitude", "", "Power Word: Fortitude", "", { { 1251, 3 }, { 159, 1 } }, nil },

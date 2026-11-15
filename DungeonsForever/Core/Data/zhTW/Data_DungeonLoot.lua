@@ -73,7 +73,7 @@ ns.DungeonLoot = {
             { 251360, nil, true },
             { 253906, nil, true },
         } },
-        { "Bazzalan", "巴扎蘭", "", "2007", {
+        { "Bazzalan", "巴扎蘭", "", "11519", {
             { 273003, nil, true },
             { 273007, nil, true },
             { 273005, nil, true },
@@ -116,7 +116,7 @@ ns.DungeonLoot = {
             { 271212, nil, true },
             { 271218, nil, true },
         } },
-        { "Lordaeron Captain", "洛丹倫上尉", "稀有", "139050", {
+        { "Lordaeron Captain", "洛丹倫上尉", "稀有", "255699", {
             { 6641, nil, false },
             { 6642, nil, false },
         } },
@@ -245,7 +245,7 @@ ns.DungeonLoot = {
             { 252779, nil, true },
             { 252781, nil, true },
         } },
-        { "Captain Greenskin", "綠皮船長", "20 級", "7113", {
+        { "Captain Greenskin", "綠皮船長", "20 級", "647", {
             { 5201, 38, false },
 
             { 10403, 27, false },
@@ -301,7 +301,7 @@ ns.DungeonLoot = {
             { 273457, nil, true },
             { 273456, nil, true },
         } },
-        { "Fel Steed / Shadow Charger", "邪惡戰馬 / 暗影戰馬", "", "1952", {
+        { "Fel Steed / Shadow Charger", "邪惡戰馬 / 暗影戰馬", "", "3864", {
             { 6341, 6.2, false },
             { 932, 19, false },
             { 251341, nil, true },
@@ -353,7 +353,7 @@ ns.DungeonLoot = {
             { 6642, 35, false },
             { 6641, 58, false },
         } },
-        { "Arugal's Voidwalker", "阿魯高的虛空行者", "", "1131", {
+        { "Arugal's Voidwalker", "阿魯高的虛空行者", "", "4627", {
             { 5943, 2.5, false },
         } },
         { "Fenrus the Devourer", "吞噬者芬魯斯", "", "4274", {
@@ -699,7 +699,7 @@ ns.DungeonLoot = {
         } },
     },
     ["gnomeregan"] = {
-        { "Techbot", "科技機器人", "26 級", "7288", {
+        { "Techbot", "科技機器人", "26 級", "6231", {
             { 9444, 48, false },
         } },
         { "Grubbis", "格魯比斯", "", "6533", {
@@ -707,7 +707,7 @@ ns.DungeonLoot = {
             { 274043, nil, true },
             { 274042, nil, true },
         } },
-        { "Viscous Fallout", "粘性輻射塵", "", "5497", {
+        { "Viscous Fallout", "粘性輻射塵", "", "7079", {
             { 9454, 61, false },
             { 9453, 18, false },
             { 9452, 19, false },
@@ -722,7 +722,7 @@ ns.DungeonLoot = {
             { 6893, 79, false },
             { 252822, nil, true },
         } },
-        { "Crowd Pummeler 9-60", "群體打擊者9-60", "", "6774", {
+        { "Crowd Pummeler 9-60", "群體打擊者9-60", "", "6229", {
             { 9449, 33, false },
 
             { 9450, 65, false },
@@ -730,7 +730,7 @@ ns.DungeonLoot = {
             { 274068, nil, true },
             { 274049, nil, true },
         } },
-        { "Dark Iron Ambassador", "黑鐵大師", "稀有", "6669", {
+        { "Dark Iron Ambassador", "黑鐵大師", "稀有", "6228", {
             { 9455, 43, false },
 
             { 9456, 32, false },
@@ -821,7 +821,7 @@ ns.DungeonLoot = {
             { 251379, nil, true },
             { 252821, nil, true },
         } },
-        { "Razorfen Spearhide", "剃刀沼澤刺鬃守衛", "", "4438", {
+        { "Razorfen Spearhide", "剃刀沼澤刺鬃守衛", "稀有", "4438", {
             { 6679, 60, false },
         } },
         { "Agathelos the Raging", "暴怒的阿迦賽羅斯", "", "4422", {
@@ -895,7 +895,7 @@ ns.DungeonLoot = {
             { 252456, nil, true },
             { 252514, nil, true },
         } },
-        { "Azshir the Sleepless", "永醒的艾希爾", "稀有", "5534", {
+        { "Azshir the Sleepless", "永醒的艾希爾", "稀有", "6490", {
             { 7709, 31, false },
 
             { 7708, 32, false },
@@ -904,7 +904,7 @@ ns.DungeonLoot = {
             { 252512, nil, true },
             { 252456, nil, true },
         } },
-        { "Fallen Champion", "死靈勇士", "稀有", "5230", {
+        { "Fallen Champion", "死靈勇士", "稀有", "6488", {
             { 7691, 39, false },
 
             { 7690, 39, false },
@@ -913,7 +913,7 @@ ns.DungeonLoot = {
             { 252820, nil, true },
             { 252456, nil, true },
         } },
-        { "Ironspine", "鐵脊死靈", "稀有", "5231", {
+        { "Ironspine", "鐵脊死靈", "稀有", "6489", {
             { 7688, 33, false },
 
             { 7687, 21, false },
@@ -1067,13 +1067,13 @@ ns.DungeonLoot = {
             { 286651, 100, true },
             { 286650, nil, true },
         } },
-        { "Deathless Guardians", "不滅的守護者", "", "", {
+        { "Deathless Guardians", "不死守護者", "", "", {
             { 274607, nil, true },
             { 274606, nil, true },
             { 274614, nil, true },
             { 271718, nil, true },
         } },
-        { "Trash mobs", "小怪", "副本内任意敌人", "", {
+        { "Trash mobs", "小怪", "副本內任意敵人", "", {
             { 287002, nil, true },
             { 286997, nil, true },
             { 287005, nil, true },
@@ -1185,7 +1185,7 @@ ns.DungeonLoot = {
             { 7726, 43, false },
             { 7723, 19, false },
         } },
-        { "High Inquisitor Whitemane", "大檢察官懷特邁恩", "", "2043", {
+        { "High Inquisitor Whitemane", "大檢察官懷特邁恩", "", "3977", {
             { 7720, 38, false },
             { 7722, 37, false },
             { 7721, 19, false },
@@ -1377,7 +1377,7 @@ ns.DungeonLoot = {
             { 274639, nil, true },
             { 274638, nil, true },
         } },
-        { "Sandarr Dunereaver", "杉達爾·沙掠者", "稀有 · 45 級", "9291", {
+        { "Sandarr Dunereaver", "杉達爾·沙掠者", "稀有 · 45 級", "10080", {
             { 9523, 4.9, false },
             { 274660, nil, true },
             { 274659, nil, true },
@@ -1399,7 +1399,7 @@ ns.DungeonLoot = {
             { 9474, 21, false },
             { 9475, 22, false },
         } },
-        { "Dustwraith", "灰塵怨靈", "稀有", "9292", {
+        { "Dustwraith", "灰塵怨靈", "稀有", "10081", {
             { 12471, 22, false },
             { 12469, nil, false },
         } },
@@ -1421,7 +1421,7 @@ ns.DungeonLoot = {
             { 10661, 49, false },
             { 274653, nil, true },
         } },
-        { "Gahz'rilla", "加茲瑞拉", "46 級", "7271", {
+        { "Gahz'rilla", "加茲瑞拉", "46 級", "7273", {
             { 9469, 45, false },
             { 9467, 46, false },
             { 274657, nil, true },
@@ -1433,7 +1433,7 @@ ns.DungeonLoot = {
             { 9477, 24, false },
             { 11086, 0.86, false },
         } },
-        { "Zerillis", "澤雷利斯", "稀有 · 45 級", "9293", {
+        { "Zerillis", "澤雷利斯", "稀有 · 45 級", "10082", {
             { 12470, 18, false },
             { 274658, nil, true },
         } },
@@ -1467,7 +1467,7 @@ ns.DungeonLoot = {
             { 17750, 24, false },
             { 17751, 24, false },
         } },
-        { "Maraudos", "瑪拉多斯", "任務召喚", "9441", {
+        { "Maraudos", "瑪拉多斯", "任務召喚", "13739", {
             { 17764, 90, false },
         } },
         { "Lord Vyletongue", "維利塔恩", "", "12334", {
@@ -1475,12 +1475,12 @@ ns.DungeonLoot = {
             { 17754, 29, false },
             { 17752, 28, false },
         } },
-        { "Meshlok the Harvester", "收割者麥什洛克", "稀有 · 48 級", "9014", {
+        { "Meshlok the Harvester", "收割者麥什洛克", "稀有 · 48 級", "12237", {
             { 17767, 30, false },
             { 17741, 31, false },
             { 17742, 32, false },
         } },
-        { "Celebras the Cursed", "被詛咒的塞雷布拉斯", "", "12350", {
+        { "Celebras the Cursed", "被詛咒的塞雷布拉斯", "", "12225", {
             { 17740, 30, false },
             { 17739, 32, false },
             { 17738, 33, false },
@@ -1491,7 +1491,7 @@ ns.DungeonLoot = {
             { 17737, 25, false },
             { 17943, 26, false },
         } },
-        { "Tinkerer Gizlock", "工匠吉茲洛克", "", "7125", {
+        { "Tinkerer Gizlock", "工匠吉茲洛克", "", "13601", {
             { 17718, 33, false },
             { 17717, 33, false },
             { 17719, 33, false },
@@ -1514,7 +1514,7 @@ ns.DungeonLoot = {
         { "The Nameless Prophet", "無名先知", "寶箱或物件", "9426", {
             { 17757, 49, false },
         } },
-        { "Kolk", "庫爾克", "寶箱或物件", "4860", {
+        { "Kolk", "庫爾克", "寶箱或物件", "", {
             { 17761, 86, false },
         } },
         { "Gelk", "蓋爾克", "寶箱或物件", "9427", {
@@ -1553,7 +1553,7 @@ ns.DungeonLoot = {
             { 276745, nil, true },
             { 276746, nil, true },
         } },
-        { "Trash mobs", "小怪", "副本内任意敌人", "", {
+        { "Trash mobs", "小怪", "副本內任意敵人", "", {
             { 287021, nil, true },
             { 287019, nil, true },
             { 287018, nil, true },
@@ -1591,7 +1591,7 @@ ns.DungeonLoot = {
             { 10798, 37, false },
             { 10799, 18, false },
         } },
-        { "Spawn of Hakkar", "哈卡的後代", "", "4065", {
+        { "Spawn of Hakkar", "哈卡的後代", "", "5708", {
             { 10801, 47, false },
             { 10802, 24, false },
         } },
@@ -1614,7 +1614,7 @@ ns.DungeonLoot = {
             { 10803, 30, false },
             { 10804, 31, false },
         } },
-        { "Dreamscythe", "德姆塞卡爾", "", "7553", {
+        { "Dreamscythe", "德姆塞卡爾", "", "5721", {
             { 12465, 9.5, false },
             { 12466, 9.7, false },
             { 12464, 8.5, false },
@@ -1624,7 +1624,7 @@ ns.DungeonLoot = {
             { 10795, 9.4, false },
             { 10796, 9.2, false },
         } },
-        { "Weaver", "德拉維沃爾", "", "6375", {
+        { "Weaver", "德拉維沃爾", "", "5720", {
             { 12465, 8.6, false },
             { 12466, 9.2, false },
             { 12464, 7.5, false },
@@ -1634,7 +1634,7 @@ ns.DungeonLoot = {
             { 10795, 10, false },
             { 10796, 9.3, false },
         } },
-        { "Hazzas", "哈扎斯", "", "9584", {
+        { "Hazzas", "哈扎斯", "", "5722", {
             { 12465, 8.1, false },
             { 12466, 8.5, false },
             { 12464, 8.2, false },
@@ -1644,7 +1644,7 @@ ns.DungeonLoot = {
             { 10795, 9.6, false },
             { 10796, 8.8, false },
         } },
-        { "Morphaz", "摩弗拉斯", "", "7975", {
+        { "Morphaz", "摩弗拉斯", "", "5719", {
             { 12465, 7.9, false },
             { 12466, 8.2, false },
             { 12464, 6.9, false },
@@ -1654,7 +1654,7 @@ ns.DungeonLoot = {
             { 10795, 7.3, false },
             { 10796, 8.3, false },
         } },
-        { "Shade of Eranikus", "伊蘭尼庫斯的陰影", "", "7806", {
+        { "Shade of Eranikus", "伊蘭尼庫斯的陰影", "", "5709", {
             { 10847, 0.19, false },
             { 10833, 31, false },
             { 10829, 32, false },
@@ -1705,7 +1705,7 @@ ns.DungeonLoot = {
         } },
     },
     ["blackrock_depths"] = {
-        { "Lord Roccor", "洛考爾", "51 級", "5781", {
+        { "Lord Roccor", "洛考爾", "51 級", "9025", {
             { 22234, 23, false },
             { 11632, 24, false },
             { 11631, 24, false },
@@ -1713,7 +1713,7 @@ ns.DungeonLoot = {
             { 11630, 18, false },
             { 11813, 18, false },
         } },
-        { "High Interrogator Gerstahn", "審訊官格斯塔恩", "52 級", "8761", {
+        { "High Interrogator Gerstahn", "審訊官格斯塔恩", "52 級", "9018", {
             { 11626, 9.2, false },
             { 11624, 28, false },
             { 22240, 12, false },
@@ -1726,32 +1726,32 @@ ns.DungeonLoot = {
             { 11628, 9.5, false },
             { 11629, 9.1, false },
         } },
-        { "Ring of Law: Gorosh the Dervish", "競技場：修行者高羅什", "", "8760", {
+        { "Ring of Law: Gorosh the Dervish", "競技場：修行者高羅什", "", "9027", {
             { 11726, 14, false },
             { 22271, 19, false },
             { 22257, 16, false },
             { 22266, 13, false },
         } },
-        { "Ring of Law: Grizzle", "競技場：格里茲爾", "", "7873", {
+        { "Ring of Law: Grizzle", "競技場：格里茲爾", "", "9028", {
             { 11722, 23, false },
             { 11703, 31, false },
             { 22270, 13, false },
             { 11702, 31, false },
             { 11610, 93, false },
         } },
-        { "Ring of Law: Eviscerator", "競技場：腕眼者", "", "523", {
+        { "Ring of Law: Eviscerator", "競技場：腕眼者", "", "9029", {
             { 11685, 32, false },
             { 11679, 35, false },
             { 11686, 18, false },
             { 11730, 12, false },
         } },
-        { "Ring of Law: Ok'thor the Breaker", "競技場：破壞者奧科索爾", "", "11538", {
+        { "Ring of Law: Ok'thor the Breaker", "競技場：破壞者奧科索爾", "", "9030", {
             { 11665, 28, false },
             { 11662, 30, false },
             { 11728, 17, false },
             { 11824, 21, false },
         } },
-        { "Ring of Law: Anub'shiah", "競技場：阿努希爾", "", "3004", {
+        { "Ring of Law: Anub'shiah", "競技場：阿努希爾", "", "9031", {
             { 11678, 22, false },
             { 11677, 32, false },
             { 11675, 35, false },
@@ -1763,7 +1763,7 @@ ns.DungeonLoot = {
             { 11635, 22, false },
             { 11729, 9.6, false },
         } },
-        { "Pyromancer Loregrain", "控火師羅格雷恩", "稀有 · 52 級", "8762", {
+        { "Pyromancer Loregrain", "控火師羅格雷恩", "稀有 · 52 級", "9024", {
             { 11747, 24, false },
             { 11749, 24, false },
             { 11748, 28, false },
@@ -1789,7 +1789,7 @@ ns.DungeonLoot = {
             { 11783, 28, false },
             { 11784, 22, false },
         } },
-        { "Verek", "維雷克", "", "9019", {
+        { "Verek", "維雷克", "", "9042", {
             { 11755, 8.1, false },
             { 22242, 7.7, false },
         } },
@@ -1806,7 +1806,7 @@ ns.DungeonLoot = {
             { 11841, 23, false },
             { 11840, 2.8, false },
         } },
-        { "Lord Incendius", "伊森迪奧斯", "", "1204", {
+        { "Lord Incendius", "伊森迪奧斯", "", "9017", {
             { 11766, 12, false },
             { 11764, 13, false },
             { 11765, 12, false },
@@ -1820,7 +1820,7 @@ ns.DungeonLoot = {
             { 11805, 4.8, false },
             { 11803, 34, false },
         } },
-        { "General Angerforge", "安格弗將軍", "", "8756", {
+        { "General Angerforge", "安格弗將軍", "", "9033", {
             { 11820, 29, false },
             { 11821, 11, false },
             { 11810, 5.6, false },
@@ -1828,13 +1828,13 @@ ns.DungeonLoot = {
             { 11816, 29, false },
             { 11841, 24, false },
         } },
-        { "Golem Lord Argelmach", "傀儡統帥阿格曼奇", "", "8759", {
+        { "Golem Lord Argelmach", "傀儡統帥阿格曼奇", "", "8983", {
             { 11823, 37, false },
             { 11822, 37, false },
             { 11669, 9.5, false },
             { 11819, 8.9, false },
         } },
-        { "Guzzler", "黑鐵酒吧", "55 級", "8658", {
+        { "Guzzler", "黑鐵酒吧", "55 級", "", {
             { 11735, 7.6, false },
             { 18043, 20, false },
             { 22275, 23, false },
@@ -1852,7 +1852,7 @@ ns.DungeonLoot = {
             { 11325, 1.6, false },
             { 11602, 0.16, false },
         } },
-        { "Phalanx", "法拉克斯", "55 級", "8177", {
+        { "Phalanx", "法拉克斯", "55 級", "9502", {
             { 22212, 25, false },
             { 11745, 31, false },
             { 11744, 25, false },
@@ -1866,7 +1866,7 @@ ns.DungeonLoot = {
             { 11809, 9.6, false },
             { 23320, nil, false },
         } },
-        { "Panzor the Invincible", "無敵的潘佐爾", "稀有", "8270", {
+        { "Panzor the Invincible", "無敵的潘佐爾", "稀有", "8923", {
             { 22245, 22, false },
             { 11787, 22, false },
             { 11785, 22, false },
@@ -1964,7 +1964,7 @@ ns.DungeonLoot = {
         } },
     },
     ["dire_maul_east"] = {
-        { "Pusillin", "普希林", "57 級", "7552", {
+        { "Pusillin", "普希林", "57 級", "14354", {
             { 18267, 83, false },
             { 18249, 100, false },
             { 18316, nil, false },
@@ -1976,7 +1976,7 @@ ns.DungeonLoot = {
             { 18308, 25, false },
             { 18306, 25, false },
         } },
-        { "Hydrospawn", "海多斯博恩", "57 級", "5489", {
+        { "Hydrospawn", "海多斯博恩", "57 級", "13280", {
             { 18317, 19, false },
             { 18322, 20, false },
             { 18324, 9.7, false },
@@ -1984,7 +1984,7 @@ ns.DungeonLoot = {
             { 18305, 24, false },
             { 18307, 24, false },
         } },
-        { "Lethtendris", "蕾瑟塔蒂絲", "57 級", "14378", {
+        { "Lethtendris", "蕾瑟塔蒂絲", "57 級", "14327", {
             { 18325, 29, false },
             { 18311, 9.4, false },
             { 18301, 28, false },
@@ -2088,7 +2088,7 @@ ns.DungeonLoot = {
             { 280085, nil, true },
             { 280086, nil, true },
         } },
-        { "Trash mobs", "小怪", "副本内任意敌人", "", {
+        { "Trash mobs", "小怪", "副本內任意敵人", "", {
             { 287032, nil, true },
             { 251453, nil, true },
             { 287034, nil, true },
@@ -2096,11 +2096,11 @@ ns.DungeonLoot = {
         } },
     },
     ["lower_blackrock_spire"] = {
-        { "Burning Felguard", "燃燒地獄衛士", "稀有", "5047", {
+        { "Burning Felguard", "燃燒地獄衛士", "稀有", "10263", {
             { 13181, 31, false },
             { 13182, 32, false },
         } },
-        { "Spirestone Butcher", "尖石屠夫", "稀有 · 57 級", "11574", {
+        { "Spirestone Butcher", "尖石屠夫", "稀有 · 57 級", "9219", {
             { 12608, 59, false },
             { 13286, 37, false },
         } },
@@ -2114,11 +2114,11 @@ ns.DungeonLoot = {
             { 12336, 27, false },
             { 12534, 90, false },
         } },
-        { "Spirestone Battle Lord", "尖石統帥", "稀有 · 58 級", "11576", {
+        { "Spirestone Battle Lord", "尖石統帥", "稀有 · 58 級", "9218", {
             { 13284, 56, false },
             { 13285, 38, false },
         } },
-        { "Spirestone Lord Magus", "尖石首席法師", "稀有", "11578", {
+        { "Spirestone Lord Magus", "尖石首席法師", "稀有", "9217", {
             { 13282, 25, false },
             { 13283, 48, false },
             { 13261, 21, false },
@@ -2142,7 +2142,7 @@ ns.DungeonLoot = {
             { 12335, 35, false },
             { 13175, 0.92, false },
         } },
-        { "Bannok Grimaxe", "班諾克·巨斧", "稀有 · 59 級", "9668", {
+        { "Bannok Grimaxe", "班諾克·巨斧", "稀有 · 59 級", "9596", {
             { 12637, 33, false },
             { 12634, 30, false },
             { 12621, 30, false },
@@ -2154,12 +2154,12 @@ ns.DungeonLoot = {
             { 13213, 12, false },
             { 13183, 1.4, false },
         } },
-        { "Crystal Fang", "水晶之牙", "稀有 · 60 級", "9755", {
+        { "Crystal Fang", "水晶之牙", "稀有 · 60 級", "10376", {
             { 13185, 35, false },
             { 13184, 32, false },
             { 13218, 15, false },
         } },
-        { "Urok Doomhowl", "烏洛克", "60 級", "10601", {
+        { "Urok Doomhowl", "烏洛克", "60 級", "10584", {
             { 13258, 22, false },
             { 22232, 17, false },
             { 13259, 17, false },
@@ -2173,19 +2173,19 @@ ns.DungeonLoot = {
             { 13252, 18, false },
             { 12835, 14, false },
         } },
-        { "Halycon", "哈雷肯", "59 級", "9567", {
+        { "Halycon", "哈雷肯", "59 級", "10220", {
             { 13212, 28, false },
             { 22313, 17, false },
             { 13211, 28, false },
             { 13210, 17, false },
         } },
-        { "Gizrul the Slavener", "奴役者基茲魯爾", "60 級", "9564", {
+        { "Gizrul the Slavener", "奴役者基茲魯爾", "60 級", "10268", {
             { 16718, 18, false },
             { 13208, 24, false },
             { 13206, 26, false },
             { 13205, 25, false },
         } },
-        { "Ghok Bashguud", "霍克·巴什古德", "稀有 · 59 級", "11809", {
+        { "Ghok Bashguud", "霍克·巴什古德", "稀有 · 59 級", "9718", {
             { 13203, 39, false },
             { 13198, 22, false },
             { 13204, 34, false },
@@ -2226,7 +2226,7 @@ ns.DungeonLoot = {
         } },
     },
     ["dire_maul_north"] = {
-        { "Guard Mol'dar", "衛兵摩爾達", "59 級", "11561", {
+        { "Guard Mol'dar", "衛兵摩爾達", "59 級", "14326", {
             { 18494, 6.7, false },
             { 18493, 6.5, false },
             { 18496, 6.4, false },
@@ -2243,7 +2243,7 @@ ns.DungeonLoot = {
             { 18250, 14, false },
             { 18268, 48, false },
         } },
-        { "Stomper Kreeg", "踐踏者克雷格", "59 級", "11545", {
+        { "Stomper Kreeg", "踐踏者克雷格", "59 級", "14322", {
             { 18425, 57, false },
             { 18269, nil, false },
             { 18284, nil, false },
@@ -2251,7 +2251,7 @@ ns.DungeonLoot = {
             { 18288, nil, false },
             { 9260, nil, false },
         } },
-        { "Guard Fengus", "衛兵芬古斯", "59 級", "11561", {
+        { "Guard Fengus", "衛兵芬古斯", "59 級", "14321", {
             { 18450, 13, false },
             { 18458, 10, false },
             { 18459, 13, false },
@@ -2263,7 +2263,7 @@ ns.DungeonLoot = {
             { 18250, 13, false },
             { 18266, 1.1, false },
         } },
-        { "Guard Slip'kik", "衛兵斯里基克", "59 級", "11561", {
+        { "Guard Slip'kik", "衛兵斯里基克", "59 級", "14323", {
             { 18494, 7, false },
             { 18493, 5.5, false },
             { 18496, 6.7, false },
@@ -2294,19 +2294,19 @@ ns.DungeonLoot = {
             { 18258, nil, false },
             { 18240, 34, false },
         } },
-        { "Captain Kromcrush", "克羅卡斯", "61 級", "11564", {
+        { "Captain Kromcrush", "克羅卡斯", "61 級", "14325", {
             { 18503, 23, false },
             { 18505, 21, false },
             { 18507, 23, false },
             { 18502, 22, false },
         } },
-        { "Cho'Rush the Observer", "觀察者克魯什", "60 級", "11537", {
+        { "Cho'Rush the Observer", "觀察者克魯什", "60 級", "14324", {
             { 18490, 7.9, false },
             { 18483, 7.9, false },
             { 18485, 7.9, false },
             { 18484, 8.2, false },
         } },
-        { "King Gordok", "戈多克大王", "62 級", "11583", {
+        { "King Gordok", "戈多克大王", "62 級", "11501", {
             { 18526, 24, false },
             { 18525, 24, false },
             { 18527, 24, false },
@@ -2374,7 +2374,7 @@ ns.DungeonLoot = {
         } },
     },
     ["dire_maul_west"] = {
-        { "Tendris Warpwood", "特迪斯·扭木", "60 級", "14383", {
+        { "Tendris Warpwood", "特迪斯·扭木", "60 級", "11489", {
             { 18393, 24, false },
             { 18390, 25, false },
             { 18352, 24, false },
@@ -2394,7 +2394,7 @@ ns.DungeonLoot = {
             { 18351, 23, false },
             { 22309, 0.4, false },
         } },
-        { "Tsu'zee", "蘇斯", "稀有 · 60 級", "11250", {
+        { "Tsu'zee", "蘇斯", "稀有 · 60 級", "11467", {
             { 18387, 30, false },
             { 18346, 29, false },
             { 18345, 33, false },
@@ -2411,7 +2411,7 @@ ns.DungeonLoot = {
             { 18370, 8.7, false },
             { 18372, 9.5, false },
         } },
-        { "Prince Tortheldrin", "托塞德林王子", "61 級", "11256", {
+        { "Prince Tortheldrin", "托塞德林王子", "61 級", "11486", {
             { 18382, 24, false },
             { 18373, 9.5, false },
             { 18375, 17, false },
@@ -2455,7 +2455,7 @@ ns.DungeonLoot = {
         { "Shen'dralar Provisioner", "辛德拉聖職者", "寶箱或物件", "14371", {
             { 18487, nil, false },
         } },
-        { "Lord Hel'nurath", "赫爾努拉斯", "寶箱或物件", "14556", {
+        { "Lord Hel'nurath", "赫爾努拉斯", "寶箱或物件", "14506", {
             { 18757, 22, false },
             { 18754, 24, false },
             { 18755, 26, false },
@@ -2842,17 +2842,17 @@ ns.DungeonLoot = {
             { 272028, nil, true },
             { 285952, nil, true },
         } },
-        { "Ravasaur Hunters", "狩獵暴掠龍", "", "", {
+        { "Ravasaur Hunters", "暴掠龍獵手", "", "", {
             { 280014, nil, true },
             { 280013, nil, true },
             { 280012, nil, true },
         } },
-        { "Trash mobs", "小怪", "副本内任意敌人", "", {
+        { "Trash mobs", "小怪", "副本內任意敵人", "", {
             { 287037, nil, true },
         } },
     },
     ["stratholme_main"] = {
-        { "Skul", "斯庫爾", "稀有 · 58 級", "2606", {
+        { "Skul", "斯庫爾", "稀有 · 58 級", "10393", {
             { 13395, 30, false },
             { 13394, 30, false },
             { 13396, 30, false },
@@ -2865,7 +2865,7 @@ ns.DungeonLoot = {
             { 13306, 40, false },
             { 13302, 39, false },
         } },
-        { "Hearthsinger Forresten", "弗雷斯特恩", "稀有 · 57 級", "10482", {
+        { "Hearthsinger Forresten", "弗雷斯特恩", "稀有 · 57 級", "10558", {
             { 16682, 13, false },
             { 13378, 29, false },
             { 13384, 18, false },
@@ -2899,7 +2899,7 @@ ns.DungeonLoot = {
             { 276398, nil, true },
             { 276399, nil, true },
         } },
-        { "Crimson Hammersmith", "紅衣鑄錘師", "60 級", "10637", {
+        { "Crimson Hammersmith", "紅衣鑄錘師", "60 級", "", {
             { 18781, 63, false },
         } },
         { "Cannon Master Willey", "炮手威利", "60 級", "10674", {
@@ -2988,7 +2988,7 @@ ns.DungeonLoot = {
         } },
     },
     ["stratholme_service"] = {
-        { "Magistrate Barthilas", "巴瑟拉斯鎮長", "58 級", "10433", {
+        { "Magistrate Barthilas", "巴瑟拉斯鎮長", "58 級", "10435", {
             { 18727, 16, false },
             { 13376, 15, false },
             { 18726, 15, false },
@@ -2997,12 +2997,12 @@ ns.DungeonLoot = {
             { 18725, 16, false },
             { 12382, 100, false },
         } },
-        { "Stonespine", "石脊", "稀有 · 60 級", "7856", {
+        { "Stonespine", "石脊", "稀有 · 60 級", "10809", {
             { 13397, 31, false },
             { 13954, 30, false },
             { 13399, 34, false },
         } },
-        { "Baroness Anastari", "安娜絲塔麗男爵夫人", "59 級", "10698", {
+        { "Baroness Anastari", "安娜絲塔麗男爵夫人", "59 級", "10436", {
             { 16704, 18, false },
             { 18728, 18, false },
             { 18730, 19, false },
@@ -3014,7 +3014,7 @@ ns.DungeonLoot = {
             { 13539, 11, false },
             { 13514, 8.9, false },
         } },
-        { "Black Guard Swordsmith", "黑衣守衛鑄劍師", "", "775", {
+        { "Black Guard Swordsmith", "黑衣守衛鑄劍師", "", "11121", {
             { 18783, 42, false },
         } },
         { "Nerub'enkan", "奈魯布恩坎", "60 級", "9793", {
@@ -3042,7 +3042,7 @@ ns.DungeonLoot = {
             { 13509, 8.7, false },
             { 12833, 8, false },
         } },
-        { "Ramstein the Gorger", "吞嚥者拉姆斯登", "61 級", "12818", {
+        { "Ramstein the Gorger", "吞嚥者拉姆斯登", "61 級", "10439", {
             { 16737, 18, false },
             { 18723, 12, false },
             { 13374, 12, false },
@@ -3122,7 +3122,7 @@ ns.DungeonLoot = {
         } },
     },
     ["upper_blackrock_spire"] = {
-        { "Pyroguard Emberseer", "烈焰衛士艾博希爾", "60 級", "2172", {
+        { "Pyroguard Emberseer", "烈焰衛士艾博希爾", "60 級", "9816", {
             { 16672, 18, false },
             { 12929, 12, false },
             { 12927, 11, false },
@@ -3138,7 +3138,7 @@ ns.DungeonLoot = {
             { 12606, 17, false },
             { 18657, 8.1, false },
         } },
-        { "Jed Runewatcher", "傑德", "稀有 · 59 級", "9686", {
+        { "Jed Runewatcher", "傑德", "稀有 · 59 級", "10509", {
             { 12604, 33, false },
             { 12930, 30, false },
             { 12605, 33, false },
@@ -3163,7 +3163,7 @@ ns.DungeonLoot = {
             { 12952, 21, false },
             { 13522, 3.3, false },
         } },
-        { "Warchief Rend Blackhand", "大酋長雷德·黑手", "62 級", "9778", {
+        { "Warchief Rend Blackhand", "大酋長雷德·黑手", "62 級", "10429", {
             { 12590, 1.9, false },
             { 16733, 18, false },
             { 12587, 21, false },

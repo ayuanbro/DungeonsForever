@@ -919,8 +919,18 @@ function FV:PaintList()
     if FV.UpdateLeftBar then FV.UpdateLeftBar() end
 end
 
-function FV:PaintRewardCard(f, id)
+local function CostOf(x, key)
+    local c = (type(x) == "table") and x.cost
+    if type(c) ~= "table" then return nil end
+    local item, n = c.item, c[key]
+    if type(item) == "number" and type(n) == "number" and n > 0 then return item, n end
+    return nil
+end
+
+function FV:PaintRewardCard(f, id, fam, key)
     f.__id = id
+    f.__fam = fam
+    f.__key = key
     local nm, ok
     if DG and DG.ItemName then nm, ok = DG.ItemName(id) end
     if ok then
@@ -930,14 +940,30 @@ function FV:PaintRewardCard(f, id)
             local qr, qg, qb = DG.QColor(DG.QualOf(id))
             if qr then f.name:SetTextColor(qr, qg, qb) end
         end
-        local meta = ""
-        if DG.ItemMeta then meta = DG.ItemMeta(id) or "" end
-        f.meta:SetText(type(meta) == "string" and meta or "")
     else
         f.name:SetText(format(L["物品 #%d"], id or 0))
         f.name:SetTextColor(Unpack(C_GREY))
-        f.meta:SetText("")
         if DG and DG.RequestItem then DG.RequestItem(id) end
+    end
+    local cItem, cNum = CostOf(fam, key)
+    if cItem then
+        if DG and DG.RequestItem then DG.RequestItem(cItem) end
+        f.priceTex:ClearAllPoints()
+        f.priceTex:SetPoint("TOPLEFT", f, "TOPLEFT", 46, -24)
+        f.priceTex:SetTexture((DG and DG.ItemIcon and DG.ItemIcon(cItem)) or nil)
+        f.priceTex:Show()
+        f.meta:ClearAllPoints()
+        f.meta:SetPoint("TOPLEFT", f.priceTex, "TOPRIGHT", 3, 0)
+        f.meta:SetText(format("%d", cNum))
+        f.meta:SetTextColor(Unpack(GOLD))
+    else
+        f.priceTex:Hide()
+        f.meta:ClearAllPoints()
+        f.meta:SetPoint("TOPLEFT", f, "TOPLEFT", 46, -26)
+        local meta = ""
+        if DG and DG.ItemMeta then meta = DG.ItemMeta(id) or "" end
+        f.meta:SetText(type(meta) == "string" and meta or "")
+        f.meta:SetTextColor(Unpack(C_GREY))
     end
     if DG and DG.ItemIcon then
         f.iconTex:SetTexture(DG.ItemIcon(id))
@@ -951,7 +977,13 @@ end
 function FV.OnItemData(itemID)
     if not FV.built then return end
     for _, f in ipairs(FV.rCards) do
-        if f.__id == itemID and f:IsShown() then FV:PaintRewardCard(f, itemID) end
+        if f:IsShown() then
+            if f.__id == itemID then
+                FV:PaintRewardCard(f, itemID, f.__fam, f.__key)
+            elseif CostOf(f.__fam, f.__key) == itemID then
+                FV:PaintRewardCard(f, f.__id, f.__fam, f.__key)
+            end
+        end
     end
 end
 
@@ -1118,6 +1150,9 @@ function FV:PaintDetail()
                     cd.meta = MakeFS(cd, 12, C_GREY, "LEFT")
                     cd.meta:SetPoint("TOPLEFT", cd, "TOPLEFT", 46, -26)
                     cd.meta:SetWordWrap(false)
+                    cd.priceTex = cd:CreateTexture(nil, "ARTWORK")
+                    cd.priceTex:SetSize(13, 13)
+                    cd.priceTex:Hide()
                     cd.__nameW = cardW - 53
                     cd:EnableMouse(true)
                     cd:SetScript("OnEnter", function(self)
@@ -1146,7 +1181,7 @@ function FV:PaintDetail()
                 if col == 0 then rowTop = y end
                 cd:ClearAllPoints()
                 cd:SetPoint("TOPLEFT", FV.dChild, "TOPLEFT", 14 + col * (cardW + GUTTER), -rowTop)
-                FV:PaintRewardCard(cd, id)
+                FV:PaintRewardCard(cd, id, x, key)
                 if cd.__huiCard and ns.hui.HuiCardState then
                     ns.hui.HuiCardState(cd, "norm")
                     cd.__hst = "norm"

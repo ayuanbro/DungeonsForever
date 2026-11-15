@@ -44,6 +44,11 @@ local INK_KIND = { 0.45, 0.62, 0.86 }
 
 local KIND_ORDER = { "quest", "npc", "object", "item" }
 local TAB_KINDS = { "quest", "npc", "item" }
+local PTR_KEY = {
+    quest = "QuestPointers", npc = "NPCPointers",
+    object = "ObjectPointers", item = "ItemPointers",
+}
+local strlower, strfind, strsub, tostr = string.lower, string.find, string.sub, tostring
 
 local QS = {}
 ns.QuestSearchModule = QS
@@ -53,14 +58,6 @@ local function QDB()
     local m = type(ql) == "table" and ql._modules
     local db = type(m) == "table" and m.QuestieDB
     if type(db) == "table" then return db end
-    return nil
-end
-
-local function QSEARCH()
-    local ql = _G.QuestieLoader
-    local m = type(ql) == "table" and ql._modules
-    local s = type(m) == "table" and m.QuestieSearch
-    if type(s) == "table" then return s end
     return nil
 end
 
@@ -244,20 +241,42 @@ local function SortIds(ids, kind)
 end
 
 function QS.DoSearch(text)
-    local S = QSEARCH()
-    if not S then return false end
+    local DB = QDB()
+    if not DB then return false end
     ResetRes()
-    local ok, res = pcall(function()
-        if tonumber(text) ~= nil then return S:ByID(text) end
-        return S:ByName(text)
-    end)
-    if not ok or type(res) ~= "table" then return false end
+    local q = tostr(text or "")
+    local head, tail = strsub(q, 1, 1), strsub(q, -1)
+    local strict = false
+    if #q >= 2 and (head == "\"" or head == "'") and tail == head then
+        strict = true
+        q = strsub(q, 2, -2)
+    end
+    q = strlower(q)
+    if q == "" then return true end
+    local byId = tonumber(q) ~= nil
     for _, kind in ipairs(KIND_ORDER) do
+        local fn = QueryFn(kind)
+        local ptr = DB[PTR_KEY[kind]]
         local ids = {}
-        local src = res[kind]
-        if type(src) == "table" then
-            for id in pairs(src) do
-                if type(id) == "number" then ids[#ids + 1] = id end
+        if type(fn) == "function" and type(ptr) == "table" then
+            for id in pairs(ptr) do
+                if type(id) == "number" then
+                    local hit = false
+                    if byId then
+                        hit = strfind(tostr(id), q, 1, true) and true or false
+                    else
+                        local nm = fn(id, "name")
+                        if type(nm) == "string" then
+                            local ln = strlower(nm)
+                            if strict then
+                                hit = (ln == q)
+                            else
+                                hit = strfind(ln, q, 1, true) and true or false
+                            end
+                        end
+                    end
+                    if hit then ids[#ids + 1] = id end
+                end
             end
         end
         if #ids > 0 then SortIds(ids, kind) end
@@ -268,7 +287,10 @@ function QS.DoSearch(text)
 end
 
 function QS.SearchState()
-    if QSEARCH() then return "ready" end
+    local DB = QDB()
+    if DB and type(DB.QuestPointers) == "table" and type(DB.NPCPointers) == "table" then
+        return "ready"
+    end
     return "idle"
 end
 
@@ -597,13 +619,16 @@ local function BuildSearchCard(page)
 
     eb:SetScript("OnTextChanged", function(self)
         local t = self:GetText() or ""
-        QS.text = t
         if #t > 0 then ph:Hide() else ph:Show() end
-        QS.Request()
+    end)
+    eb:SetScript("OnEnterPressed", function(self)
+        QS.Commit(self:GetText() or "")
+        self:ClearFocus()
     end)
     eb:SetScript("OnEscapePressed", function(self)
         self:SetText("")
         self:ClearFocus()
+        QS.Commit("")
     end)
 
     QS.tab = TabRow(card, 8, -52, {
@@ -1854,21 +1879,12 @@ local function BuildDetailCard(page)
     DET.note:SetText(L["左侧输入关键词，点任意一条结果查看详情与位置"])
 end
 
-local REQ_GEN = 0
-
-function QS.Request()
-    REQ_GEN = REQ_GEN + 1
-    local gen = REQ_GEN
-    if _G.C_Timer and _G.C_Timer.After then
-        _G.C_Timer.After(0.16, function()
-            if gen ~= REQ_GEN then return end
-            QS.Apply()
-            QS.PaintList()
-        end)
-    else
-        QS.Apply()
-        QS.PaintList()
-    end
+function QS.Commit(text)
+    QS.text = text or ""
+    QS.lastQuery = nil
+    QS.Apply()
+    QS.PaintList()
+    if QS.PaintDetail then QS.PaintDetail() end
 end
 
 function QS.Apply()
@@ -1881,7 +1897,8 @@ function QS.Apply()
     if #text == 0 then
         ResetRes()
     else
-        QS.DoSearch(text)
+        local ok = pcall(QS.DoSearch, text)
+        if not ok then ResetRes() end
     end
     QS.sel = nil
     if QS.kind == "object" or COUNT[QS.kind] == 0 then

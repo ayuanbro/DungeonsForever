@@ -19,12 +19,10 @@ ns.DungeonEntry = {
     ["stratholme_main"] = { 1423, 27.1, 10.7, "Eastern Plaguelands" },
     ["stratholme_service"] = { 1423, 43.5, 19.4, "Eastern Plaguelands" },
     ["gnomeregan"] = { 1426, 24.4, 39.8, "Dun Morogh" },
-    ["blackrock_depths"] = { 1427, 45.6, 89.4, "Searing Gorge" },
-    ["lower_blackrock_spire"] = { 1428, 33.0, 25.2, "Burning Steppes" },
-    ["upper_blackrock_spire"] = { 1428, 33.0, 25.2, "Burning Steppes" },
-    ["the_drowned_city"] = { 1434, 21.5, 27.7, "Stranglethorn Vale" },
     ["sunken_temple"] = { 1435, 69.5, 52.5, "Swamp of Sorrows" },
     ["the_deadmines"] = { 1436, 42.5, 71.7, "Westfall" },
+    ["the_drowned_city"] = { 1434, 21.5, 27.7, "Stranglethorn Vale" },
+    ["kroldok_stronghold"] = { 2548, 37.5, 37.9, "河林" },
     ["excavation_wetlands"] = { 1437, 47.8, 56.3, "Wetlands" },
     ["blackfathom_deeps"] = { 1440, 14.1, 13.1, "Ashenvale" },
     ["maraudon"] = { 1443, 29.1, 62.5, "Desolace" },
@@ -39,7 +37,9 @@ ns.DungeonEntry = {
     ["the_stockade"] = { 1453, 50.4, 66.4, "Stormwind City" },
     ["ragefire_chasm"] = { 1454, 51.5, 49.7, "Orgrimmar" },
     ["hall_of_thanes"] = { 1455, 28.2, 47.7, "Ironforge" },
-    ["kroldok_stronghold"] = { 2548, 37.5, 37.9, "Riverglades" },
+    ["blackrock_depths"] = { 1427, 45.6, 89.4, "Searing Gorge" },
+    ["lower_blackrock_spire"] = { 1428, 33.0, 25.2, "Burning Steppes" },
+    ["upper_blackrock_spire"] = { 1428, 33.0, 25.2, "Burning Steppes" },
 }
 
 ns.DungeonEntryRoute = {

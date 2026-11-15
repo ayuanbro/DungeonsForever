@@ -19,12 +19,10 @@ ns.DungeonEntry = {
     ["stratholme_main"] = { 1423, 27.1, 10.7, "東瘟疫之地" },
     ["stratholme_service"] = { 1423, 43.5, 19.4, "東瘟疫之地" },
     ["gnomeregan"] = { 1426, 24.4, 39.8, "丹莫羅" },
-    ["blackrock_depths"] = { 1427, 45.6, 89.4, "灼熱峽谷" },
-    ["lower_blackrock_spire"] = { 1428, 33.0, 25.2, "燃燒平原" },
-    ["upper_blackrock_spire"] = { 1428, 33.0, 25.2, "燃燒平原" },
-    ["the_drowned_city"] = { 1434, 21.5, 27.7, "荊棘谷" },
     ["sunken_temple"] = { 1435, 69.5, 52.5, "悲傷沼澤" },
     ["the_deadmines"] = { 1436, 42.5, 71.7, "西部荒野" },
+    ["the_drowned_city"] = { 1434, 21.5, 27.7, "荊棘谷" },
+    ["kroldok_stronghold"] = { 2548, 37.5, 37.9, "河林" },
     ["excavation_wetlands"] = { 1437, 47.8, 56.3, "溼地" },
     ["blackfathom_deeps"] = { 1440, 14.1, 13.1, "灰谷" },
     ["maraudon"] = { 1443, 29.1, 62.5, "淒涼之地" },
@@ -39,7 +37,9 @@ ns.DungeonEntry = {
     ["the_stockade"] = { 1453, 50.4, 66.4, "暴風城" },
     ["ragefire_chasm"] = { 1454, 51.5, 49.7, "奧格瑞瑪" },
     ["hall_of_thanes"] = { 1455, 28.2, 47.7, "鐵爐堡" },
-    ["kroldok_stronghold"] = { 2548, 37.5, 37.9, "河林" },
+    ["blackrock_depths"] = { 1427, 45.6, 89.4, "灼熱峽谷" },
+    ["lower_blackrock_spire"] = { 1428, 33.0, 25.2, "燃燒平原" },
+    ["upper_blackrock_spire"] = { 1428, 33.0, 25.2, "燃燒平原" },
 }
 
 ns.DungeonEntryRoute = {
