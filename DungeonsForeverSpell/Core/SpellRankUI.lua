@@ -1288,6 +1288,7 @@ local function Register()
         end
     end)
     local acc = 0
+    local lastPsfVis = false
     local tick = CreateFrame("Frame")
     tick:SetScript("OnUpdate", function(_, elapsed)
         acc = acc + elapsed
@@ -1297,7 +1298,19 @@ local function Register()
             UpdateEntryCombat()
             return
         end
-        if acc < 0.5 then return end
+        local psf = PlayerSpellsFrame
+        local pv = false
+        if psf and psf.IsVisible then
+            local okp, vp = pcall(psf.IsVisible, psf)
+            pv = (okp and vp) and true or false
+        end
+        if pv ~= lastPsfVis then
+            lastPsfVis = pv
+            acc = 0
+            UpdateEntry()
+            return
+        end
+        if acc < (lastPsfVis and 0.1 or 0.5) then return end
         acc = 0
         UpdateEntry()
     end)

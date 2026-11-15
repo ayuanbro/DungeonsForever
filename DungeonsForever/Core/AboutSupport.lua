@@ -206,7 +206,7 @@ function ns.BuildAboutSupport(about, G)
             table.insert(UISpecialFrames, "DungeonsForeverDonate")
 
             local pop = CreateFrame("Frame", nil, shade, "BackdropTemplate")
-            pop:SetSize(260, 330)
+            pop:SetSize(260, 310)
             pop:SetPoint("CENTER", about, "CENTER", 0, 0)
             pop:SetFrameLevel(shade:GetFrameLevel() + 2)
             pop:SetClampedToScreen(true)
@@ -215,11 +215,6 @@ function ns.BuildAboutSupport(about, G)
             if pop.SetBackdropBorderColor then pop:SetBackdropBorderColor(0, 0, 0, 0) end
             if hui.SkinPopup then hui.SkinPopup(pop, 10, nil, hui.layer.L0) end
             if hui.SkinShadow then hui.SkinShadow(pop) end
-            local t = pop:CreateFontString(nil, "OVERLAY")
-            t:SetFont(ns.FONT, 15, "")
-            t:SetText(L["微信赞赏"])
-            t:SetTextColor(head[1], head[2], head[3])
-            t:SetPoint("TOP", pop, "TOP", 0, -16)
 
             local close = CreateFrame("Button", nil, pop)
             close:SetSize(24, 24)
@@ -241,7 +236,7 @@ function ns.BuildAboutSupport(about, G)
 
             local plate = CreateFrame("Frame", nil, pop, "BackdropTemplate")
             plate:SetSize(216, 216)
-            plate:SetPoint("TOP", pop, "TOP", 0, -52)
+            plate:SetPoint("TOP", pop, "TOP", 0, -34)
             plate:SetFrameLevel(pop:GetFrameLevel() + 1)
             if plate.SetBackdropColor then plate:SetBackdropColor(0, 0, 0, 0) end
             if plate.SetBackdropBorderColor then plate:SetBackdropBorderColor(0, 0, 0, 0) end
@@ -255,13 +250,13 @@ function ns.BuildAboutSupport(about, G)
             h1:SetFont(ns.FONT, 13, "")
             h1:SetText(L["手机微信扫一扫"])
             h1:SetTextColor(val[1], val[2], val[3])
-            h1:SetPoint("TOP", pop, "TOP", 0, -282)
+            h1:SetPoint("TOP", pop, "TOP", 0, -262)
 
             local h2 = pop:CreateFontString(nil, "OVERLAY")
             h2:SetFont(ns.FONT, 12, "")
             h2:SetText(L["点击空白处或按 Esc 关闭"])
             h2:SetTextColor(dim[1], dim[2], dim[3])
-            h2:SetPoint("TOP", pop, "TOP", 0, -304)
+            h2:SetPoint("TOP", pop, "TOP", 0, -282)
 
             donateShade = shade
         end
@@ -274,42 +269,7 @@ function ns.BuildAboutSupport(about, G)
             end
         end
 
-        local dbtn = CreateFrame("Button", nil, card, "BackdropTemplate")
-        dbtn:SetSize(76, 22)
-        dbtn:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -9.5)
-        dbtn:SetFrameLevel(card:GetFrameLevel() + 3)
-        dbtn:SetHitRectInsets(-2, -2, -2, -2)
-        if dbtn.SetBackdropColor then dbtn:SetBackdropColor(0, 0, 0, 0) end
-        if dbtn.SetBackdropBorderColor then dbtn:SetBackdropBorderColor(0, 0, 0, 0) end
-        local C_DN = { 0xc4 / 255, 0x34 / 255, 0x28 / 255, 1 }
-        local C_DN_HOT = { 0xd4 / 255, 0x44 / 255, 0x36 / 255, 1 }
-        local dFill = hui.BuildRoundedBG(dbtn, 6, C_DN, "both", false)
-        local dHot = hui.BuildRoundedBG(dbtn, 6, C_DN_HOT, "both", false)
-        for i = 1, #dHot do dHot[i]:Hide() end
-
-        local dText = dbtn:CreateFontString(nil, "OVERLAY")
-        dText:SetFont(ns.FONT, 12, "")
-        dText:SetText(L["赞赏"])
-        dText:SetTextColor(1, 1, 1)
-        dText:SetPoint("CENTER", dbtn, "CENTER", 0, 0)
-
-        dbtn:SetScript("OnEnter", function(self)
-            for i = 1, #dFill do dFill[i]:Hide() end
-            for i = 1, #dHot do dHot[i]:Show() end
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:AddLine(L["赞赏"], 1, 1, 1, true)
-            GameTooltip:Show()
-        end)
-        dbtn:SetScript("OnLeave", function()
-            for i = 1, #dHot do dHot[i]:Hide() end
-            for i = 1, #dFill do dFill[i]:Show() end
-            GameTooltip:Hide()
-        end)
-        dbtn:SetScript("OnClick", function()
-            ns.PlaySound(1)
-            ToggleDonate()
-        end)
-        if dbtn.SetCursor then dbtn:SetCursor("Interface/Cursor/Point") end
+        ns.ToggleDonate = ToggleDonate
 
         about:HookScript("OnHide", function() HideDonate() end)
     end

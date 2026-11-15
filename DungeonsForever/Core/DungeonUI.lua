@@ -8017,6 +8017,40 @@ local function MapUsable(mapID)
     return ok and info ~= nil
 end
 
+function DG.QuestieNpcLoc(npcID)
+    if type(npcID) ~= "number" or npcID <= 0 then return nil end
+    if not (ns.QuestieOn and ns.QuestieOn()) then return nil end
+    local ql = _G.QuestieLoader
+    local m = type(ql) == "table" and ql._modules
+    local DB = type(m) == "table" and m.QuestieDB
+    if type(DB) ~= "table" or type(DB.QueryNPCSingle) ~= "function" then return nil end
+    local ok, sp = pcall(DB.QueryNPCSingle, npcID, "spawns")
+    if not ok or type(sp) ~= "table" then return nil end
+    local Z = type(m) == "table" and m.ZoneDB
+    local spare
+    for area, pts in pairs(sp) do
+        local an = tonumber(area)
+        if an and type(pts) == "table" then
+            local mp = an
+            if Z and type(Z.GetUiMapIdByAreaId) == "function" then
+                local okz, v = pcall(Z.GetUiMapIdByAreaId, Z, an)
+                if okz and type(v) == "number" and v > 0 then mp = v end
+            end
+            for i = 1, #pts do
+                local p = pts[i]
+                local x = type(p) == "table" and tonumber(p[1]) or nil
+                local y = type(p) == "table" and tonumber(p[2]) or nil
+                if x and y and x > 0 and y > 0 then
+                    local rec = { mp, x, y, "" }
+                    if MapUsable(mp) then return rec end
+                    spare = spare or rec
+                end
+            end
+        end
+    end
+    return spare
+end
+
 function DG.MarkNPC(npcID, locOverride)
     local ver = select(4, GetBuildInfo()) or 0
     if ver < 16000 or ver > 16999 then
@@ -8026,6 +8060,7 @@ function DG.MarkNPC(npcID, locOverride)
         return
     end
     local loc = locOverride or (ns.NPCLoc and ns.NPCLoc[npcID])
+    if not loc then loc = DG.QuestieNpcLoc(npcID) end
     if not loc then
         if UIErrorsFrame and UIErrorsFrame.AddMessage then
             pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, format(L["NPC #%d 未收录地图位置"], npcID), 1, 0.4, 0.4)
@@ -9429,8 +9464,8 @@ function U:RenderQuestDetail()
                     local slp = (not nid) and (not sn) and ns.DungeonQuestStartLoc and ns.DungeonQuestStartLoc[seg] or nil
                     if slp and not nid then nid = tonumber(slp[1]) or nid end
                     r.__npc = nid
-                    r.__loc = (sn and sn[3] and { sn[3], sn[4], sn[5] })
-                        or (slp and slp[3] and { slp[3], slp[4], slp[5] }) or nil
+                    local sm, sx, sy = DG.StartLoc(seg, nid)
+                    r.__loc = (sm and { sm, sx, sy }) or (sn and sn[3] and { sn[3], sn[4], sn[5] }) or nil
                 else
                     r.name:SetText(seg)
                     r.name:SetTextColor(Unpack(C_GREY))

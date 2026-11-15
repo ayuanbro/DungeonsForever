@@ -33,6 +33,7 @@ local activePage
 local restoring = false
 local lastTab
 local openGuard = 0
+local tabPending, tabPendingAt
 
 local pending = false
 
@@ -1397,6 +1398,26 @@ ShowPage = function(key)
     if NB.OnPage then NB.OnPage(activePage) end
 end
 
+local function TabExitCheck(id)
+    local now = GetTime and GetTime() or 0
+    if not (activePage and now <= openGuard) then
+        tabPending = nil
+        lastTab = id
+        if activePage then ShowPage(nil) end
+        return
+    end
+    if tabPending ~= id then
+        tabPending = id
+        tabPendingAt = now
+        return
+    end
+    if now - tabPendingAt >= 0.05 then
+        tabPending = nil
+        lastTab = id
+        ShowPage(nil)
+    end
+end
+
 local function NativeTabClicked()
     if DeferInCombat() then return end
     if not activePage then return end
@@ -1650,10 +1671,7 @@ local function Attach()
             return
         end
         if id ~= lastTab then
-            local now = GetTime and GetTime() or 0
-            if activePage and now <= openGuard then return end
-            lastTab = id
-            if activePage then ShowPage(nil) end
+            TabExitCheck(id)
             return
         end
         if activePage then
@@ -1721,6 +1739,12 @@ local function Attach()
         HideOverlay()
         if subBar then subBar:Hide() end
         if tabCatcher then tabCatcher:Hide() end
+        if activePage then
+            ShowPage(nil)
+            pageSeq = pageSeq + 1
+            openGuard = 0
+            tabPending = nil
+        end
     end
 
     local function OnBookResized()
@@ -1751,7 +1775,7 @@ local function Attach()
     end)
     beat:SetScript("OnUpdate", function(_, elapsed)
         beatAcc = beatAcc + elapsed
-        if beatAcc < 0.2 then return end
+        if beatAcc < (lastPsf and 0.05 or 0.2) then return end
         beatAcc = 0
         if InCombat() then
             pending = true
@@ -1780,12 +1804,10 @@ local function Attach()
         end
         if sb.GetTab then
             local okt, id = pcall(sb.GetTab, sb)
-            if okt and id ~= lastTab then
-                local now = GetTime and GetTime() or 0
-                if not (activePage and now <= openGuard) then
-                    lastTab = id
-                    if activePage then ShowPage(nil) end
-                end
+            if okt and id ~= nil and id ~= lastTab then
+                TabExitCheck(id)
+            elseif okt then
+                tabPending = nil
             end
         end
         if activePage and ovl and not ovl:IsVisible() and BookShown() then InstallOurs() end
