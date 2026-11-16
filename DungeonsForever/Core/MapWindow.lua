@@ -1034,7 +1034,8 @@ local function ensure()
         MW.Sync()
     end)
 
-    applyScale(sv0 or 1.0)
+    local store = M.MapStore and M.MapStore()
+    applyScale((store and tonumber(store.mapWinScale)) or 1.0)
 
     if WorldMapFrame and WorldMapFrame.HookScript and not MW.__wmHideHook then
         MW.__wmHideHook = true

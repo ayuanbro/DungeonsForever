@@ -276,6 +276,13 @@ local function FlushClose()
     end
 end
 
+local function PanelHover()
+    if not (panel and panel:IsShown()) then return false end
+    if not _G.MouseIsOver then return false end
+    local ok, on = pcall(_G.MouseIsOver, panel)
+    return ok and on and true or false
+end
+
 local function StartHideTimer(keep)
     hideToken = hideToken + 1
     local my = hideToken
@@ -286,8 +293,18 @@ local function StartHideTimer(keep)
         if my ~= hideToken then return end
         if foodMenu and foodMenu:IsShown() then return end
         if opts and opts:IsShown() then return end
-        if panel and panel:IsShown() and not hovered then Close() end
+        if panel and panel:IsShown() and not hovered and not PanelHover() then Close() end
     end)
+end
+
+local function HoverOn()
+    hovered = true
+    hideToken = hideToken + 1
+end
+
+local function HoverOff()
+    hovered = false
+    StartHideTimer()
 end
 
 local function SubText(s)
@@ -576,6 +593,7 @@ local function MakeRow(i)
     local r = subRows[i]
     if r then return r end
     r = CreateFrame("Button", nil, panel, "BackdropTemplate")
+    if not InCombatLockdown() then r:SetFrameLevel(panel:GetFrameLevel() + 2) end
     local fx = ns.hui and ns.hui.HuiCardFX and ns.hui.HuiCardFX(r, 6, 1)
     if not fx and ns.hui and ns.hui.SkinPopup and ns.hui.layer then
         ns.hui.SkinPopup(r, 8, "both", ns.hui.layer.L1)
@@ -611,10 +629,12 @@ local function MakeRow(i)
     r.xt:SetText("×")
     r.xt:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
     r.btn:SetScript("OnEnter", function()
+        HoverOn()
         r.xt:SetTextColor(0.89, 0.30, 0.29)
         Tip(r.btn, L["忽略此条"], L["以后不再提醒这一条"], L["可在管理忽略里恢复"])
     end)
     r.btn:SetScript("OnLeave", function()
+        HoverOff()
         r.xt:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
         HideTip()
     end)
@@ -639,6 +659,7 @@ local function MakeRow(i)
         r.jump()
     end)
     r:SetScript("OnEnter", function()
+        HoverOn()
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(r, "hover") end
         r.name:SetTextColor(ACC[1], ACC[2], ACC[3])
         local sub = r.sub:GetText()
@@ -659,6 +680,7 @@ local function MakeRow(i)
         end
     end)
     r:SetScript("OnLeave", function()
+        HoverOff()
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(r, "norm") end
         r.name:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
         HideTip()
@@ -695,9 +717,10 @@ local function ActBtn(host, key)
         end
     end)
     btn:SetScript("OnEnter", function(self)
+        HoverOn()
         if self.tipText then Tip(self, self.tipText, nil) end
     end)
-    btn:SetScript("OnLeave", function() HideTip() end)
+    btn:SetScript("OnLeave", function() HoverOff() HideTip() end)
     btn:HookScript("OnClick", function(self, mouse, down)
         if down then return end
         if mouse == "RightButton" and self.onRight then self.onRight() end

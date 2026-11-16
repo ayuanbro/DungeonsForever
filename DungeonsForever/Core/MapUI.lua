@@ -1673,6 +1673,7 @@ local function BuildBlocks(host)
     if not frame or frame.__blocksReady then return end
     frame.__blocksReady = true
     local detChild, innerW = frame.detChild, frame.innerW
+    local detScroll = frame.detScroll
     local blocks = {}
     for i = 1, 3 do
         local b = CreateFrame("Frame", nil, detChild)
@@ -2209,18 +2210,6 @@ function M.Build(detail, hero)
     routePinBtn:SetScript("OnClick", function() M.ShowRouteMenu(routePinBtn) end)
     routePinBtn:Hide()
 
-    local locPinBtn = Host.NewButton(frame, "", M.PIN_BTN_W, M.BAR_H, 14)
-    locPinBtn:SetFrameLevel(frame:GetFrameLevel() + 2)
-    Host.SetButtonSelected(locPinBtn, false)
-    locPinBtn:SetScript("OnClick", function()
-        if M.curId and DG.MarkEntrance then DG.MarkEntrance(M.curId) end
-    end)
-    locPinBtn:SetScript("OnEnter", function(self)
-        if M.curId and DG.ShowEntranceTip then DG.ShowEntranceTip(self, M.curId) end
-    end)
-    locPinBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    locPinBtn:Hide()
-
     if hero then
         local bossModel = CreateFrame("PlayerModel", nil, hero)
         bossModel:SetWidth(M.BOSS_MODEL_W)
@@ -2249,7 +2238,6 @@ function M.Build(detail, hero)
     frame.route = routeLayer
     frame.bossPinBtn = bossPinBtn
     frame.routePinBtn = routePinBtn
-    frame.locPinBtn = locPinBtn
     M.LoadMapState()
     M.frame = frame
     local queued = (type(DG) == "table" and type(DG.PushStep) == "function")
@@ -2333,9 +2321,6 @@ function M.SyncBar(layers, cur)
         ws[i] = math.max(M.LAYER_W, math.ceil(tw) + pad)
     end
     local avail = M.FRAME_W - M.SIDE_PAD * 2
-    if frame.locPinBtn and frame.locPinBtn:IsShown() then
-        avail = avail - frame.locPinBtn:GetWidth() - M.PIN_BTN_GAP
-    end
     if frame.bossPinBtn and frame.bossPinBtn:IsShown() then
         avail = avail - frame.bossPinBtn:GetWidth() - M.PIN_BTN_GAP
     end
@@ -4056,17 +4041,6 @@ function M.SyncPinBtns()
     if not frame then return end
     local hdr = frame.hdrCard
     local prev = hdr
-    local lb = frame.locPinBtn
-    if lb then
-        local has = (M.curId and ns.DungeonEntry and ns.DungeonEntry[M.curId]
-            and DG.MarkEntrance and DG.ShowEntranceTip) and true or false
-        lb:SetText(L["副本定位"])
-        M.FitPinBtn(lb)
-        lb:ClearAllPoints()
-        lb:SetPoint("LEFT", hdr, "LEFT", M.SIDE_PAD, 0)
-        lb:SetShown(has)
-        if has then prev = lb end
-    end
     local bb = frame.bossPinBtn
     if bb then
         local any = M.HasKindPins(M.curId, "boss") or M.HasKindPins(M.curId, "quest")
@@ -4839,8 +4813,6 @@ function M.Paint(d)
     frame.bar:SetPoint("RIGHT", frame.hdrCard, "RIGHT", -M.SIDE_PAD, 0)
     frame.bossPinBtn:ClearAllPoints()
     frame.bossPinBtn:SetPoint("LEFT", frame.hdrCard, "LEFT", M.SIDE_PAD, 0)
-    frame.locPinBtn:ClearAllPoints()
-    frame.locPinBtn:SetPoint("LEFT", frame.bossPinBtn, "RIGHT", M.PIN_BTN_GAP, 0)
     frame.routePinBtn:ClearAllPoints()
     frame.routePinBtn:SetPoint("LEFT", frame.bossPinBtn, "RIGHT", M.PIN_BTN_GAP, 0)
 

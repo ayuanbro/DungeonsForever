@@ -16,6 +16,7 @@ local W = {}
 ns.MapWorldModule = W
 
 local pendingMap
+local dropDown
 
 local function inCombat()
     return type(InCombatLockdown) == "function" and InCombatLockdown() and true or false
@@ -2326,8 +2327,6 @@ function W.EntriesIn(mapID)
     end
     return out
 end
-
-local dropDown
 
 local function dropHex(c)
     return string.format("%02x%02x%02x",

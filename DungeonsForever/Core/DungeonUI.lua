@@ -4633,9 +4633,11 @@ function DG.BuildDungeonOverview()
                 badge:SetPoint("RIGHT", bar, "RIGHT", -4, 0)
             end
         end
+        local bossList = ns.MapModule and ns.MapModule.BossesFor and ns.MapModule.BossesFor(d.id)
+        local bossNum = (bossList and #bossList > 0) and #bossList or d.bossCount
         local lv = MakeFS(bar, 14, C_GREY, "LEFT")
         lv:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 7, 4)
-        lv:SetText(d.levelMin .. "–" .. d.levelMax .. (d.bossCount and (" · BOSS " .. d.bossCount) or ""))
+        lv:SetText(d.levelMin .. "–" .. d.levelMax .. (bossNum and (" · BOSS " .. bossNum) or ""))
 
         SetTip(bar, d.name .. "  " .. d.nameEn .. "\n" ..
             format(L["等级 %d–%d · %s"], d.levelMin, d.levelMax, d.zone or L["位置未知"]))

@@ -87,7 +87,7 @@ ns.DungeonGuide = {
         },
     },
     ragefire_chasm = {
-        tagline = "A lava cave beneath Orgrimmar: 4 bosses on a short linear route with trivial mechanics, widely considered the easiest dungeon in the game.",
+        tagline = "A lava cave beneath Orgrimmar: a short linear route with trivial mechanics, widely considered the easiest dungeon in the game.",
         tips = {
             "The dungeon sits deep in the Cleft of Shadow inside Orgrimmar — the entrance is right there, and the Spirit Healer at the door makes for a short corpse run.",
             "All 5 dungeon quests are Horde-exclusive — pick them all up before entering.",
@@ -115,7 +115,7 @@ ns.DungeonGuide = {
         },
     },
     wailing_caverns = {
-        tagline = "A serpent-filled cavern beneath the Lushwater Oasis in the Northern Barrens: 7 bosses across a confusing non-linear layout, with the Druids of the Fang's sleep spell as the biggest threat throughout.",
+        tagline = "A serpent-filled cavern beneath the Lushwater Oasis in the Northern Barrens: a confusing non-linear layout, with the Druids of the Fang's sleep spell as the biggest threat throughout.",
         tips = {
             "This is the game's first non-linear dungeon with many forks — new groups get lost easily, so study the map before entering.",
             "Every Druid of the Fang, boss or trash, casts Sleep Druid's Slumber — up to a 15-second incapacitate that can hit your tank or healer. Interrupt it immediately, every time.",
@@ -158,7 +158,7 @@ ns.DungeonGuide = {
         },
     },
     the_deadmines = {
-        tagline = "A pirate den deep in the Moonbrook mine of Westfall: 8 bosses (one rare) on a linear route — most Alliance players' first dungeon.",
+        tagline = "A pirate den deep in the Moonbrook mine of Westfall: a linear route with a rare spawn — most Alliance players' first dungeon.",
         tips = {
             "Many pulls pack 5-6 mobs: bring crowd control (Polymorph, Freezing Trap, etc.) and mark a kill target on every pull.",
             "In the Goblin Foundry, engineers cast Summon Remote-Controlled Golem to summon a deadly robot: stun the cast, or kill the engineer first — the golem despawns with its summoner.",
@@ -204,7 +204,7 @@ ns.DungeonGuide = {
         },
     },
     shadowfang_keep = {
-        tagline = "A worgen-infested keep in Silverpine Forest: 8 bosses on a linear route — a Classic Horde leveling staple, though a long trip for the Alliance.",
+        tagline = "A worgen-infested keep in Silverpine Forest: a linear route — a Classic Horde leveling staple, though a long trip for the Alliance.",
         tips = {
             "Mobs here love Curses, Magic and Disease debuffs — bring a dispeller. Many mobs are skinnable too, a nice perk for skinners.",
             "Shadowfang Moonwalkers gain Anti-Magic Shield, 10 seconds of full magic immunity: bring at least one extra melee besides the tank to burn them through it faster.",
@@ -251,7 +251,7 @@ ns.DungeonGuide = {
         },
     },
     blackfathom_deeps = {
-        tagline = "A sunken temple off the Zoram Strand in Ashenvale: 6 bosses across a long, watery layout — keep an eye on your breath meter.",
+        tagline = "A sunken temple off the Zoram Strand in Ashenvale: a long, watery layout — keep an eye on your breath meter.",
         tips = {
             "The entrance is underwater — swim in through a submerged tunnel, and sections like Old Serra'kis' lair require diving. Breath meters run out much faster in Classic, so plan ahead.",
             "Per Patch 1.12 rules up to 10 players may enter together, though 5 remains the typical group size.",
@@ -284,7 +284,7 @@ ns.DungeonGuide = {
         },
     },
     the_stockade = {
-        tagline = "The prison beneath Stormwind's Mage Quarter: 5 bosses plus a rare, a very short linear run packed with dense pulls — one of the fastest XP dungeons for the Alliance.",
+        tagline = "The prison beneath Stormwind's Mage Quarter: a very short linear run packed with dense pulls and a rare spawn — one of the fastest XP dungeons for the Alliance.",
         tips = {
             "The dungeon sits in the northeast corner of Stormwind's Mage Quarter with the Meeting Stone right outside — you're in the instance as soon as you're in the city.",
             "Almost every pack is melee humanoids: perfect for AoE farming, and easily crowd-controlled with Polymorph and friends.",
@@ -320,7 +320,7 @@ ns.DungeonGuide = {
         },
     },
     gnomeregan = {
-        tagline = "The gnomes' former capital beneath Dun Morogh: 5 bosses plus a rare across a sprawling, maze-like layout — one of Classic's most confusing dungeons to navigate.",
+        tagline = "The gnomes' former capital beneath Dun Morogh: a sprawling, maze-like layout with a rare spawn — one of Classic's most confusing dungeons to navigate.",
         tips = {
             "The dungeon has two entrances in the Train Depot: the front entrance (west side) leads to the Clockwerk Run, the backdoor entrance (north side) leads to the Engineering Labs — the backdoor requires the Workman's Key or engineering skill of at least 150.",
             "Horde have a teleport shortcut: pick up the Chief Engineer Scooty quest from at the shop in Orgrimmar (available at level 20), take the boat from Ratchet to Booty Bay, find on the lower docks floor near the inn, and get beamed straight into the dungeon with the Goblin Transponder.",
@@ -1140,7 +1140,7 @@ ns.DungeonGuide = {
         },
     },
     excavation_wetlands = {
-        tagline = "A mist-shrouded dig site above Whelgar's Excavation in the Wetlands, where errant Titan constructs stir: 4 bosses.",
+        tagline = "A mist-shrouded dig site above Whelgar's Excavation in the Wetlands, where errant Titan constructs stir.",
         tips = {
             "副本 26-33 级 —— 下列 boss 打法随版本更新持续核对。",
             "The files name four areas inside: Lost Marsh, Stalker's Thicket, Site of the Guardian and Lost Dig Site.",
@@ -1175,7 +1175,7 @@ ns.DungeonGuide = {
         },
     },
     city_of_dalaran = {
-        tagline = "The rebuilt dome-less city of Dalaran: sneak into this magical capital through its sewers and face rogue arcane constructs and rampant fel energy — 8 bosses (1 of them hidden).",
+        tagline = "The rebuilt dome-less city of Dalaran: sneak into this magical capital through its sewers and face rogue arcane constructs and rampant fel energy — with one boss hidden out of sight.",
         tips = {
             "The entrance is not on the streets: drop through a grate into the sewers, cross the Underbelly and follow a long pipe to a purple portal. The Horde-side gate is opened with a Dalaran Sewer Key.",
             "Nearly every mob in the dungeon is immune to Arcane damage: Arcane damage spells (Arcane Missiles, Arcane Explosion, etc.) and interrupts cast as Arcane (like Counterspell) all fail here — mind your damage composition when forming the group. Constructs and elementals are also immune to Bleed and Poison, and treants are immune to Nature damage.",
