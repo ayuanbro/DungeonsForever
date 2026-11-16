@@ -195,12 +195,13 @@ ns.SpellBookData = {
                 { rank = 3, learn = 52, id = 9892 },
                 } },
                 { name = "旅行形態", icon = "Interface\\Icons\\Ability_Druid_Travelform", id = 783, learnLv = 30 },
-                { name = "兇猛撕咬", icon = "Interface\\Icons\\Ability_Druid_Ferociousbite", id = 31018, learnLv = 32, ranks = {
-                { rank = 1, learn = 32, id = 22568 },
-                { rank = 2, learn = 40, id = 22827 },
-                { rank = 3, learn = 48, id = 22828 },
-                { rank = 4, learn = 56, id = 22829 },
-                { rank = 5, learn = 60, id = 31018 },
+                { name = "兇猛撕咬", icon = "Interface\\Icons\\Ability_Druid_Ferociousbite", id = 31018, learnLv = 24, ranks = {
+                { rank = 1, learn = 24, id = 1328618 },
+                { rank = 2, learn = 32, id = 22568 },
+                { rank = 3, learn = 40, id = 22827 },
+                { rank = 4, learn = 48, id = 22828 },
+                { rank = 5, learn = 56, id = 22829 },
+                { rank = 6, learn = 60, id = 31018 },
                 } },
                 { name = "毀滅", icon = "Interface\\Icons\\Ability_Druid_Ravage", id = 9867, learnLv = 32, ranks = {
                 { rank = 1, learn = 32, id = 6785 },

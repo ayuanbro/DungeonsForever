@@ -871,6 +871,7 @@ function PF.Toggle(slug)
     PF.InvalidateRoute()
     if PF.f then
         PF.Sync()
+        if PF.ReplayBids then PF.ReplayBids(5) end
         PF.view = 0
         PF.f:Show()
         PF.Paint()
@@ -881,6 +882,7 @@ function PF.Toggle(slug)
     PF.onBuilt = function()
         if not PF.f then return end
         PF.Sync()
+        if PF.ReplayBids then PF.ReplayBids(5) end
         PF.view = 0
         PF.f:Show()
         PF.Paint()
@@ -1322,7 +1324,14 @@ function PF.ShoppingSourceText(entry)
 end
 
 function PF.ShoppingSourceDetail(entry)
-    if not entry.planPurchases then return PF.ShoppingSourceText(entry) end
+    local pending = PF.BidPending and PF.BidPending(entry.id, entry.have or 0) or 0
+    if not entry.planPurchases then
+        local text = PF.ShoppingSourceText(entry)
+        if pending <= 0 then return text end
+        local notice = format(L["已竞标 %d 件，邮件待收"], pending)
+        if type(text) ~= "string" or text == "" then return notice end
+        return format("%s · %s", text, notice)
+    end
     local cost=type(entry.planPurchaseCost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(entry.planPurchaseCost,"copper") or L["请核对价格"]
     local parts={PF.ShoppingSourceText(entry) or "",
         format(L["原料需 %d；原计划购入 %d，费用 %s"],entry.need or 0,entry.planPurchaseCount or 0,cost)}
@@ -1337,6 +1346,7 @@ function PF.ShoppingSourceDetail(entry)
     if entry.auctionUnknown then parts[#parts+1]=L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"] end
     if (entry.auctionShortage or 0)>0 then parts[#parts+1]=L["本次扫描的材料数量不够；请用 Auctionator 完整扫描后重新计算，或更换货源。"] end
     if entry.purchaseUncovered and entry.purchaseUncovered>0 then parts[#parts+1]=format(L["原计划货源还缺 %d 件，请重新计算。"],entry.purchaseUncovered) end
+    if pending > 0 then parts[#parts+1]=format(L["已竞标 %d 件，邮件待收"], pending) end
     if entry.inventoryUnknown then parts[#parts+1]=L["请打开背包和银行，再查看需要购买的数量。"] end
     return table.concat(parts,"\n")
 end
@@ -1698,6 +1708,161 @@ local function DoImport(slug, profName)
 end
 PF.ImportShoppingList=DoImport
 
+local BID_TTL = 7 * 24 * 3600
+local BID_SEEN = 30
+local BID_PATTERNS = {
+    "你赢得了对(.-)的竞标", "你贏得了對(.-)的競標",
+    "你赢得了对(.-)的拍卖", "你贏得了對(.-)的拍賣",
+    "^You won the bid on (.-)%.?$", "^You won an auction for (.-)%.?$",
+}
+local bidNameCache, bidNameKey
+
+local function bidStore()
+    local p = dbProf()
+    local all = p.bidPending
+    if type(all) ~= "table" then all = {}; p.bidPending = all end
+    local k = charKey()
+    local s = all[k]
+    if type(s) ~= "table" then s = {}; all[k] = s end
+    return s
+end
+
+function PF.BidPending(id, have)
+    if type(id) ~= "number" then return 0 end
+    local s = bidStore()
+    local rec = s[id]
+    if type(rec) ~= "table" then return 0 end
+    local now = time and time() or 0
+    if (rec.at or 0) > 0 and now > 0 and now - rec.at > BID_TTL then s[id] = nil; return 0 end
+    local got = math.max(0, (tonumber(have) or 0) - (rec.base or 0))
+    local left = math.max(0, (rec.n or 0) - got)
+    if left <= 0 then s[id] = nil; return 0 end
+    return left
+end
+
+local function bidNameMap(force)
+    local s = st()
+    local slug = s and s.slug
+    if not slug then return nil end
+    if not force and bidNameCache and bidNameKey == slug then return bidNameCache end
+    local map = {}
+    local function add(id)
+        if type(id) ~= "number" then return end
+        local nm = DG.ItemName(id)
+        if type(nm) == "string" and nm ~= "" then map[nm] = id end
+    end
+    local book = ns.ProfRecipes and ns.ProfRecipes[slug]
+    for _, row in ipairs(book and book.rows or {}) do
+        add(row[2])
+        local formula = row[13]
+        if type(formula) == "table" then add(formula[1]) end
+        for _, m in ipairs(recMats(row) or {}) do
+            add(type(m) == "table" and m[1] or m)
+        end
+    end
+    if PF.ShoppingList then
+        local ok, list = pcall(PF.ShoppingList, slug, false)
+        if ok and type(list) == "table" then
+            for _, e in ipairs(list) do add(e.id) end
+        end
+    end
+    bidNameCache, bidNameKey = map, slug
+    return map
+end
+
+local function noteBid(text, replay)
+    if type(text) ~= "string" then return false end
+    if not (text:find("竞标", 1, true) or text:find("競標", 1, true)
+        or text:find("拍卖", 1, true) or text:find("拍賣", 1, true)
+        or text:find("bid", 1, true) or text:find("auction", 1, true)) then return false end
+    local body, n = text, 1
+    local cnt = body:match("（(%d+)）%s*$") or body:match("%((%d+)%)%s*$")
+    if cnt then
+        n = tonumber(cnt) or 1
+        body = body:gsub("（%d+）%s*$", ""):gsub("%(%d+%)%s*$", "")
+    end
+    local name
+    for _, p in ipairs(BID_PATTERNS) do
+        name = body:match(p)
+        if name and name ~= "" then break end
+    end
+    if not name or name == "" then return false end
+    local map = bidNameMap()
+    if not map then return false end
+    local id = map[name]
+    if not id then
+        map = bidNameMap(true)
+        id = map and map[name]
+    end
+    if not id then
+        local best, bestLen = nil, 0
+        for nm, v in pairs(map or {}) do
+            if #nm > bestLen and body:find(nm, 1, true) then best, bestLen = v, #nm end
+        end
+        id = best
+    end
+    if not id then return false end
+    local now = time and time() or 0
+    local have = Have(id)
+    local s = bidStore()
+    local rec = s[id]
+    if type(rec) == "table" then
+        if replay or rec.body == body and now - (rec.at or 0) <= BID_SEEN then
+            rec.n = math.max(rec.n or 0, n)
+        else
+            rec.n = (rec.n or 0) + n
+        end
+        rec.body, rec.at = body, now
+    else
+        s[id] = { n = n, base = have, at = now, body = body }
+    end
+    if not replay and craftNotify then craftNotify(format(L["已记录竞拍：%s ×%d（邮件待收）"], name, n)) end
+    return true
+end
+PF.NoteBid = noteBid
+
+function PF.ReplayBids(count)
+    local now = time and time() or 0
+    if now > 0 and (PF.bidReplayAt or 0) > 0 and now - PF.bidReplayAt < 5 then return 0 end
+    PF.bidReplayAt = now
+    local cf = SELECTED_CHAT_FRAME or ChatFrame1
+    if not (cf and cf.GetNumMessages and cf.GetMessageInfo) then return 0 end
+    local ok, total = pcall(cf.GetNumMessages, cf)
+    if not ok or type(total) ~= "number" or total <= 0 then return 0 end
+    local from = math.max(1, total - (tonumber(count) or 5) + 1)
+    local hits = 0
+    for i = total, from, -1 do
+        local ok2, txt = pcall(cf.GetMessageInfo, cf, i)
+        if ok2 and type(txt) == "string" and noteBid(txt, true) then hits = hits + 1 end
+    end
+    return hits
+end
+
+function PF.ScanChatBids()
+    local cf = SELECTED_CHAT_FRAME or ChatFrame1
+    if not (cf and cf.GetNumMessages and cf.GetMessageInfo) then return 0 end
+    local ok, total = pcall(cf.GetNumMessages, cf)
+    if not ok or type(total) ~= "number" then return 0 end
+    local from = PF.bidScanCount
+    if not from or total < from then
+        PF.bidScanCount = total
+        return 0
+    end
+    if total == from then return 0 end
+    local hits = 0
+    for i = from + 1, total do
+        local ok2, txt = pcall(cf.GetMessageInfo, cf, i)
+        if ok2 and type(txt) == "string" and noteBid(txt) then hits = hits + 1 end
+    end
+    PF.bidScanCount = total
+    if hits > 0 then
+        local hud = _G.DFProfFollowHUD
+        if hud and hud:IsShown() then PF.Paint() end
+        if PF.RefreshMainUI then PF.RefreshMainUI() end
+    end
+    return hits
+end
+
 local f
 
 local rowsShop = {}
@@ -1764,7 +1929,14 @@ local function BuildBody()
         PF.view = math.max(-(s.step - 1), math.min(#steps - s.step + 1, (PF.view or 0) - delta))
         PF.Paint()
     end)
-    f:SetScript("OnEvent", function()
+    f:SetScript("OnEvent", function(_, event, message)
+        if event == "CHAT_MSG_SYSTEM" then
+            if noteBid(message) then
+                PF.Paint()
+                if PF.RefreshMainUI then PF.RefreshMainUI() end
+            end
+            return
+        end
         if f:IsShown() and not trackingPaused() then
             C_Timer.After(0, function()
                 if trackingPaused() then return end
@@ -1775,6 +1947,12 @@ local function BuildBody()
     end)
     f:RegisterEvent("BAG_UPDATE_DELAYED")
     f:RegisterEvent("CHAT_MSG_SKILL")
+    f:RegisterEvent("CHAT_MSG_SYSTEM")
+    if C_Timer and C_Timer.NewTicker and not PF.bidTicker then
+        PF.bidScanCount = nil
+        PF.bidTicker = C_Timer.NewTicker(2, function() if PF.ScanChatBids then PF.ScanChatBids() end end)
+    end
+    C_Timer.After(2, function() if PF.ReplayBids then PF.ReplayBids(5) end end)
 
     f:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -2288,14 +2466,17 @@ local function paintMats(card, seg, rm, sold, w, remaining, resR)
         for _, m in ipairs(mats) do
             local per = (m[2] or 1)
             if per > 0 then
-                local c = math.floor(Have(m[1]) / per)
+                local raw = Have(m[1])
+                local c = math.floor((raw + PF.BidPending(m[1], raw)) / per)
                 canCraft = (canCraft == nil) and c or math.min(canCraft, c)
             end
         end
         card.matHead:Hide()
         for i, m in ipairs(mats) do
             if i > MAT_MAX then break end
-            local have = Have(m[1])
+            local raw = Have(m[1])
+            local pend = PF.BidPending(m[1], raw)
+            local have = raw + pend
             local per = (m[2] or 1)
             local need = per * math.max(0, remaining or 0)
             local ok = have >= need
@@ -2304,7 +2485,8 @@ local function paintMats(card, seg, rm, sold, w, remaining, resR)
             local line = rowsMat[i]
             line:SetTextColor(Unpack(ok and C_OK or C_BAD))
             local txt = format("%s %d/%d", nm, have, need)
-            if sold[m[1]] then txt = txt .. " · " .. L[(st() and st().slug=="poisons") and "商人直卖" or "NPC也有出售"] end
+            if pend > 0 then txt = txt .. " · " .. L["已竞拍"]
+            elseif sold[m[1]] then txt = txt .. " · " .. L[(st() and st().slug=="poisons") and "商人直卖" or "NPC也有出售"] end
             line:SetText(txt)
             line:ClearAllPoints()
             line:SetPoint("TOPLEFT", card, "TOPLEFT", 36, -(61 + (i - 1) * 26))
@@ -2703,11 +2885,14 @@ function PF.Paint()
         local function pushRow(e)
             local nm, got = DG.ItemName(e.id)
             if not got then DG.RequestItem(e.id) pending = true end
+            local raw = tonumber(e.have) or 0
+            local pend = PF.BidPending(e.id, raw)
             local row = {
                 nm = e.formula and (L["图纸"].." · "..nm) or nm,
-                have = e.have,
+                have = raw,
+                pending = pend,
                 need = e.need,
-                missing = e.missing,
+                missing = math.max(0, (tonumber(e.missing) or 0) - pend),
                 inventoryUnknown = not e.haveKnown,
                 at = e.at or 0,
                 src = srcByID and srcByID[e.id] or nil,
@@ -2718,10 +2903,8 @@ function PF.Paint()
             end
             local w1 = tw(row.nm)
             if w1 > nameW then nameW = w1 end
-            local w2 = tw(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have, row.need), row.need))
+            local w2 = tw(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have + (row.pending or 0), row.need), row.need))
             if w2 > numW then numW = w2 end
-            local w3 = tw(row.inventoryUnknown and L["请检查背包"] or row.missing > 0 and format(L["缺%d"], row.missing) or L["已备齐"]) + 10
-            if w3 > missW then missW = w3 end
             local w5 = tw(row.gate and L["全程"] or format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
             if row.src then
@@ -2742,6 +2925,12 @@ function PF.Paint()
                 end
                 row.srcText = clipText(row.srcText, SRC_TEXT_W)
             end
+            local missText = row.inventoryUnknown and L["请检查背包"]
+                or row.missing > 0 and format(L["缺%d"], row.missing)
+                or ((row.pending or 0) > 0 or row.srcKind == 2 or row.srcKind == 4) and L["已竞拍"]
+                or L["已备齐"]
+            local w3 = tw(missText) + 10
+            if w3 > missW then missW = w3 end
             rows[#rows + 1] = row
         end
         if stepView then
@@ -2821,7 +3010,7 @@ function PF.Paint()
                 nmFS:SetText((tw(row.nm) > nameW) and clipText(row.nm, nameW) or row.nm)
                 nmFS:SetWidth(nameW)
                 num:SetWidth(numW)
-                num:SetText(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have, row.need), row.need))
+                num:SetText(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have + (row.pending or 0), row.need), row.need))
                 nmFS:ClearAllPoints()
                 nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
                 nmFS:Show()
@@ -2834,7 +3023,8 @@ function PF.Paint()
                     paintPill(mp, format(L["缺%d"], row.missing), xMiss, missW, Unpack(C_BAD))
                 else
                     local okr, okg, okb = Unpack(C_OK)
-                    paintPill(mp, L["已备齐"], xMiss, missW, okr, okg, okb, 0.5)
+                    local done = ((row.pending or 0) > 0 or row.srcKind == 2 or row.srcKind == 4) and L["已竞拍"] or L["已备齐"]
+                    paintPill(mp, done, xMiss, missW, okr, okg, okb, 0.5)
                 end
                 sp:Hide()
                 if row.src and row.srcText then
