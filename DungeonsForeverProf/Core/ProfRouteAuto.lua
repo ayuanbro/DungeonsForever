@@ -339,6 +339,13 @@ local function RequestProduct(id)
 end
 
 local function SnapshotSec()
+    if ns.IsForever then
+        local bridge=ns.AuctionBridge
+        local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+        local stamp=snapshot and snapshot.status=="available" and tonumber(snapshot.observedAt)
+        if not stamp or stamp<=0 then return nil end
+        return math.max(0,(time and time() or 0)-stamp)
+    end
     local A = Auctionator
     local st = (type(A) == "table") and A.SavedState
     if type(st) ~= "table" then return nil end

@@ -568,7 +568,7 @@ function RA.Recalculate(slug, supplied)
         if source then
             opts.executionInventory=inventory or {};opts.executionSourcePlanID=source
             local professions=E.Professions and E.Professions() or {}
-            opts.start=(professions[slug] or {}).cur or opts.start
+            if opts.fromCurrent~=false then opts.start=(professions[slug] or {}).cur or opts.start end
         end
     end
     local _,scope=identity(slug,opts)

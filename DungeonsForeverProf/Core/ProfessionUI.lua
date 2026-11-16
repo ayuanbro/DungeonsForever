@@ -111,6 +111,11 @@ function PD.AuctionatorStatusText()
     return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
 end
 
+function PD.SnapshotAge(s)
+    if ns.IsForever then return RA and RA.SnapshotAge and RA.SnapshotAge() or nil end
+    return s and s.snapshotAge,s and s.snapshotDays
+end
+
 function PD.ScanSnapshotText()
     if not ns.IsForever then return end
     local bridge=ns.AuctionBridge
@@ -390,8 +395,8 @@ function PD.SnapshotBadgeState(s)
     if st == "disabled" then return "disabled" end
     if st == "loading" then return "loading" end
     if st == "noprice" then return "noprice" end
-    local sec = tonumber(s.snapshotAge)
-    if not sec and (s.priced or s.planVersion == 2) and RA and RA.SnapshotAge then
+    local sec = tonumber((PD.SnapshotAge(s)))
+    if not ns.IsForever and not sec and (s.priced or s.planVersion == 2) and RA and RA.SnapshotAge then
         sec = tonumber(RA.SnapshotAge())
     end
     if sec and sec >= PD.SNAP_STALE_SEC then return "stale", sec end
@@ -417,6 +422,10 @@ function PD.SnapshotBadgeText(s)
         if st=="unpriced" or st=="noprice" then return L["价格待补全"],0.95,0.75,0.4 end
     end
     if st == "no_plan" then return nil end
+    if ns.IsForever and (not snapshot or snapshot.status~="available")
+        and (st=="verified" or st=="frame" or st=="ageunknown") then
+        return L["请扫描拍卖行"],0.95,0.75,0.4
+    end
     if st=="recipe_reference" then return L["配方资料待补全"],0.95,0.75,0.4 end
     if st == "learning_reference" then return L["含未知学习来源"], 0.95, 0.75, 0.4 end
     if st == "rules_changed" then return L["路线待重算"], 0.95, 0.75, 0.4 end
@@ -5651,7 +5660,9 @@ function PD.Build(page)
             if self.__key then
                 PD.SetSettingRaw(self.__key,not PD.Setting(self.__key))
                 self:SetChecked(PD.Setting(self.__key))
-                if string.sub(self.__key, 1, 4) == "auto" and RA then
+                if self.__key=="autoFromCurrent" then
+                    PD.LvRecalc()
+                elseif string.sub(self.__key, 1, 4) == "auto" and RA then
                     RA.Invalidate()
                 end
             end
@@ -6592,7 +6603,7 @@ function PD.PaintLvTiles()
             ns.PlaySound(1)
         end)
     end
-    local snapSec, snapDays = s.snapshotAge, s.snapshotDays
+    local snapSec, snapDays = PD.SnapshotAge(s)
     local TipOn = PD.TipTile
     if fixedOnly then
         tiles.mode.label:SetText(L["模式"])
@@ -15909,7 +15920,7 @@ function PD.RowsAutoShop(rows, data)
     end
     if data.formulas then PD.RowsFormulaShop(rows, data, "shop_formulas") end
 
-    local snapSec, snapDays = data.snapshotAge, data.snapshotDays
+    local snapSec, snapDays = PD.SnapshotAge(data)
     local tip = {}
     local function note(text, r, g, b)
         if text and text ~= "" then
@@ -15967,6 +15978,8 @@ function PD.RowsAutoShop(rows, data)
     if data.planVersion == 2 then
         atxt = PD.PlanStatusText(data)
     elseif vendorOnly then
+    elseif ns.IsForever then
+        atxt=PD.ScanSnapshotText() or L["请扫描拍卖行"]
     elseif snapDays then
         atxt = (snapDays <= 0) and L["价格快照：今天（Auctionator）"]
                or format(L["价格快照 %d 天前（Auctionator）"], snapDays)
@@ -15984,6 +15997,7 @@ function PD.RowsAutoShop(rows, data)
         atxt = L["请扫描拍卖行"]
     end
     if atxt then note(atxt) end
+    if ns.IsForever and data.planVersion==2 then note(PD.ScanSnapshotText()) end
     local progress = PD.PlanProgressText(data)
     if progress then note(progress) end
     local supply = PD.PlanSupplyText(data)
@@ -16675,6 +16689,7 @@ local function CrateOptCost(itemId, qty)
 end
 
 local function CrateSnapText()
+    if ns.IsForever then return PD.ScanSnapshotText() or L["请扫描拍卖行"] end
     if not (RA.HasPriceData and RA.HasPriceData()) then
         return PD.AuctionatorStatusText()
     end
