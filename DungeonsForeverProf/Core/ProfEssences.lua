@@ -1,32 +1,41 @@
 local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages then return end
-local X = { revision = 1 }
+local X = { revision = 1, DataSchema = 1 }
 ns.ProfEssences = X
 
-local pairsList = {
-    { lesserID = 10938, greaterID = 10939 },
-    { lesserID = 10998, greaterID = 11082 },
-    { lesserID = 11134, greaterID = 11135 },
-    { lesserID = 11174, greaterID = 11175 },
-    { lesserID = 16202, greaterID = 16203 },
-}
-local byOutput, byItem = {}, {}
-for _, pair in ipairs(pairsList) do
-    pair.key = pair.lesserID .. ":" .. pair.greaterID
-    byItem[pair.lesserID], byItem[pair.greaterID] = pair, pair
-    for _, direction in ipairs({
-        { pair.lesserID, 3, pair.greaterID, 1 },
-        { pair.greaterID, 1, pair.lesserID, 3 },
-    }) do
-        byOutput[direction[3]] = {
-            key = pair.key, lesserID = pair.lesserID, greaterID = pair.greaterID,
-            inputItemID = direction[1], inputCount = direction[2],
-            outputItemID = direction[3], outputCount = direction[4],
-            status = "confirmed", noSkillGain = true, manual = true,
-        }
+local pairsList,byOutput,byItem={},{},{}
+local dataSource,dataRevision,initialized
+local function refresh()
+    local source=ns.ProfData and ns.ProfData.runtime
+    local revision=source and source.revision
+    if initialized and dataSource==source and dataRevision==revision then return end
+    initialized=true
+    dataSource,dataRevision=source,revision
+    pairsList,byOutput,byItem={},{},{}
+    X.revision=revision or 1
+    if type(source)=="table" and source.schema==1 then
+        local seen={}
+        for _,entry in ipairs(source.essenceConversions or {}) do
+            if type(entry)=="table" and type(entry.inputItemID)=="number" and type(entry.outputItemID)=="number"
+                and type(entry.key)=="string" and type(entry.lesserID)=="number" and type(entry.greaterID)=="number"
+                and type(entry.inputCount)=="number" and entry.inputCount>0
+                and type(entry.outputCount)=="number" and entry.outputCount>0 then
+                local pair=seen[entry.key]
+                if not pair then
+                    pair={key=entry.key,lesserID=entry.lesserID,greaterID=entry.greaterID}
+                    seen[entry.key]=pair;pairsList[#pairsList+1]=pair
+                end
+                byItem[entry.inputItemID],byItem[entry.outputItemID]=pair,pair
+                byOutput[entry.outputItemID]=entry
+            end
+        end
+        return
     end
+
 end
+refresh()
 function X.Name(id)
+    refresh()
     if not byItem[id] then return end
     local getter = C_Item and C_Item.GetItemInfo or GetItemInfo
     if type(getter) == "function" then
@@ -36,9 +45,10 @@ function X.Name(id)
     local names = ns.ProfItemNames
     return type(names) == "table" and names[id] or nil
 end
-function X.Pair(id) return byItem[id] end
-function X.Pairs() return pairsList end
+function X.Pair(id) refresh();return byItem[id] end
+function X.Pairs() refresh();return pairsList end
 function X.ForItem(id)
+    refresh()
     local value = byOutput[id]
     if not value then return end
     local out = {}; for key, item in pairs(value) do out[key] = item end
@@ -52,6 +62,7 @@ function X.Enabled(slug, opts, snapshot)
         or false
 end
 function X.ExpandItems(items)
+    refresh()
     local extra = {}
     for id in pairs(items) do
         local conversion = byOutput[id]
@@ -61,12 +72,14 @@ function X.ExpandItems(items)
     return items
 end
 function X.Contains(mats)
+    refresh()
     for _, mat in ipairs(mats or {}) do
         if byItem[mat.id or mat[1]] then return true end
     end
     return false
 end
 function X.MissingQuotes(snapshot, items)
+    refresh()
     local missing, seen = {}, {}
     local function known(id)
         if snapshot.nonAuctionable and snapshot.nonAuctionable[id] then return true end

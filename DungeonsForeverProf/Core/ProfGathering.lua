@@ -1,8 +1,7 @@
 local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages then return end
-local G={};ns.ProfGatheringRoutes=G
+local G={DataSchema=2};ns.ProfGatheringRoutes=G
 local allowed={mining=true,herbalism=true,skinning=true,fishing=true}
-local skinBands={[1]={1,9},[11]={10,100},[21]={105,150},[31]={155,200},[41]={205,250},[51]={255,300}}
 local function text(key)
     return ns.L and ns.L[key] or key
 end
@@ -24,12 +23,15 @@ local function zoneNames(locations)
         local id=area.areaID or area.zoneID or area[1]
         if id and not seen[id] then
             seen[id]=true;names[#names+1]=dg and dg.ZoneName and dg.ZoneName(id) or ("#"..id)
+        elseif not id and type(area.name)=="string" and not seen[area.name] then
+            seen[area.name]=true;names[#names+1]=area.name
         end
     end
     return table.concat(names," / ")
 end
 function G.HasRoute(slug)
     local data=ns.ProfGathering and ns.ProfGathering[slug]
+    if type(data)=="table" and data.schema==2 then return allowed[slug] and #(data.guideSteps or {})>0 or false end
     return allowed[slug] and (slug=="fishing" and ns.ProfFishingRoutes and #(ns.ProfFishingRoutes.fishingSteps or {})>0
         or type(data)=="table" and #data>0) or false
 end
@@ -38,7 +40,9 @@ function G.Steps(slug,target,opts)
     opts=opts or {}
     if slug=="mining" and opts.mode=="smelt" then return nil end
     local cap=actualCap(slug,opts)
-    target=math.min(300,tonumber(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300)
+    local source=slug=="fishing" and ns.ProfFishingRoutes or ns.ProfGathering and ns.ProfGathering[slug]
+    target=tonumber(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300
+    if not source or source.schema~=2 then target=math.min(300,target) end
     local out={}
     local function add(lo,hi,locations,items)
         if cap then hi=hi and math.min(hi,cap) or cap end
@@ -57,9 +61,15 @@ function G.Steps(slug,target,opts)
         return #out>0 and out or nil
     end
     local data=ns.ProfGathering[slug]
+    if data.schema==2 then
+        for _,stage in ipairs(data.guideSteps or {}) do
+            if type(stage.from)=="number" and type(stage.to)=="number" then add(stage.from,stage.to,stage.areas or {},stage.itemIDs) end
+        end
+        return #out>0 and out or nil
+    end
     if slug=="skinning" then
         for _,row in ipairs(data) do
-            local range=skinBands[row[1] and row[1][1]]
+            local range=data.skillBands and data.skillBands[row[1] and row[1][1]]
             if range then add(range[1],range[2],row[3],row[2]) end
         end
     else

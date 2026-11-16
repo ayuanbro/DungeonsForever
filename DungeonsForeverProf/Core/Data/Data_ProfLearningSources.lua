@@ -183,4 +183,4 @@ end
 local function SpecializationGroups(slug,spell)
  return SPECIALIZATIONS[slug]and SPECIALIZATIONS[slug][spell]
 end
-ns.ProfLearningSources={meta=meta,Get=Get,ForProfession=ForProfession,Each=Each,Materialize=Materialize,AutomaticSkillRank=AutomaticSkillRank,SpecializationGroups=SpecializationGroups}
+ns.ProfLearningSources={bindingSupplement={ [234271]=1,[234272]=1,[238782]=1,[238783]=1,[238784]=1,[238785]=1,[238786]=1,[238787]=1,[238788]=1,[274049]=1 },meta=meta,Get=Get,ForProfession=ForProfession,Each=Each,Materialize=Materialize,AutomaticSkillRank=AutomaticSkillRank,SpecializationGroups=SpecializationGroups}

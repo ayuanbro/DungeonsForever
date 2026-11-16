@@ -4,10 +4,32 @@ if not ns.LoadForeverPages then return end
 
 local G = {}
 ns.ProfGates = G
+G.DataSchema = 2
 
 local floor, max = math.floor, math.max
 
-local SPEC_ABILITIES = { 20219, 20222, 9787, 9788, 17039, 17040, 17041, 10656, 10658, 10660 }
+local SPEC_ABILITIES = {}
+local abilitySource,recipeSource,questSource,abilityRevision
+local function refreshAbilities()
+    local revision=ns.ProfSpecializationsMeta and ns.ProfSpecializationsMeta.fpr
+    if abilitySource==ns.ProfSpecializationAbilities and recipeSource==ns.ProfSpecializations
+        and questSource==ns.ProfSpecializationQuests and abilityRevision==revision then return end
+    abilitySource,recipeSource,questSource,abilityRevision=ns.ProfSpecializationAbilities,ns.ProfSpecializations,ns.ProfSpecializationQuests,revision
+    local ids = {}
+    for id in pairs(ns.ProfSpecializationAbilities or {}) do if type(id)=="number" and id>0 then ids[id]=true end end
+    for _,rec in pairs(ns.ProfSpecializations or {}) do
+        local id=type(rec)=="table" and tonumber(rec[2])
+        if id and id>0 then ids[id]=true end
+    end
+    for _,def in pairs(ns.ProfSpecializationQuests or {}) do
+        local id=type(def)=="table" and tonumber(def.abilityID)
+        if id and id>0 then ids[id]=true end
+    end
+    for i=#SPEC_ABILITIES,1,-1 do SPEC_ABILITIES[i]=nil end
+    for id in pairs(ids) do SPEC_ABILITIES[#SPEC_ABILITIES+1]=id end
+    table.sort(SPEC_ABILITIES)
+end
+refreshAbilities()
 G.SpecAbilities = SPEC_ABILITIES
 
 local cache
@@ -27,6 +49,7 @@ end
 
 function G.Invalidate()
     cache = nil
+    refreshAbilities()
 end
 
 function G.Abilities()
@@ -40,23 +63,16 @@ function G.Abilities()
     return out
 end
 
-local SPEC_NAMES = {
-    [20219] = "侏儒工程学",
-    [20222] = "地精工程学",
-    [9787] = "护甲锻造",
-    [9788] = "武器锻造",
-    [17039] = "铸剑大师",
-    [17040] = "铸斧大师",
-    [17041] = "铸锤大师",
-    [10656] = "龙鳞制皮",
-    [10658] = "元素制皮",
-    [10660] = "部族制皮",
-}
-
 function G.AbilityLabel(id)
-    local L = ns.L
-    local key = SPEC_NAMES[id]
-    return key and L[key] or tostring(id)
+    local meta = ns.ProfSpecializationsMeta or {}
+    local name = meta.abilityNames and meta.abilityNames[id]
+    if name then return ns.L and ns.L[name] or name end
+    local fn = C_Spell and C_Spell.GetSpellName or GetSpellInfo
+    if type(fn)=="function" then
+        local ok,value=pcall(fn,id)
+        if ok and type(value)=="string" then return value end
+    end
+    return tostring(id)
 end
 
 local function SpecRec(spell)
@@ -87,13 +103,19 @@ function G.HasPending(spell)
     return SpecFlags(SpecRec(spell)) % 8 >= 4
 end
 
+local function choiceAbility(choice)
+    local def=ns.ProfSpecializationQuests and ns.ProfSpecializationQuests[choice]
+    return type(def)=="table" and tonumber(def.abilityID) or nil
+end
+
 function G.Allowed(slug, spell)
     local ability = G.RequiredAbility(spell)
     if ability == 0 then return true end
-    if ability == 20219 or ability == 20222 then
+    local gnomish,goblin=choiceAbility("gnomish"),choiceAbility("goblin")
+    if ability == gnomish or ability == goblin then
         local choice = G.EffectiveChoice()
-        if choice == "gnomish" and ability == 20219 then return true end
-        if choice == "goblin" and ability == 20222 then return true end
+        if choice == "gnomish" and ability == gnomish then return true end
+        if choice == "goblin" and ability == goblin then return true end
         return false, G.AbilityLabel(ability)
     end
     local v = G.Abilities()[ability]
@@ -144,7 +166,7 @@ end
 
 function G.EngineeringChoice()
     local abilities = G.Abilities()
-    local gn, gob = abilities[20219], abilities[20222]
+    local gn, gob = abilities[choiceAbility("gnomish")], abilities[choiceAbility("goblin")]
     if gn and gob then return "conflict" end
     if gn then return "gnomish" end
     if gob then return "goblin" end
@@ -213,7 +235,30 @@ local function buildSpecGoal(def, faction)
     local prerequisites = {}
     for _, id in ipairs(goal.prerequisiteQuestIDs or {}) do prerequisites[#prerequisites+1] = id end
     goal.prerequisiteQuestIDs = prerequisites
+    local groups={}
+    if type(goal.prerequisiteQuestGroups)=="table" then
+        for _,group in ipairs(goal.prerequisiteQuestGroups) do
+            local copy={};for _,id in ipairs(group) do copy[#copy+1]=id end
+            groups[#groups+1]=copy
+        end
+    else
+        for _,id in ipairs(prerequisites) do groups[#groups+1]={id} end
+    end
+    goal.prerequisiteQuestGroups=groups
     return goal
+end
+
+function G.PrerequisiteText(goal)
+    local groups=goal and goal.prerequisiteQuestGroups
+    if type(groups)~="table" then
+        groups={};for _,id in ipairs(goal and goal.prerequisiteQuestIDs or {}) do groups[#groups+1]={id} end
+    end
+    local out={}
+    for _,group in ipairs(groups) do
+        local parts={};for _,id in ipairs(group) do parts[#parts+1]="#"..id end
+        if #parts>0 then out[#out+1]=#parts>1 and "("..table.concat(parts," | ")..")" or parts[1] end
+    end
+    return table.concat(out,", ")
 end
 
 local function questProgressOf(goal)
@@ -229,6 +274,23 @@ local function questProgressOf(goal)
             local ok, v = pcall(fn, goal.questID)
             if ok and type(v) == "boolean" then out[probe[1]] = v end
         end
+    end
+    if not out.completed and not out.inLog and type(Q.IsQuestFlaggedCompleted)=="function" then
+        local all,unknown=true,false
+        out.prerequisiteGroups={}
+        for i,group in ipairs(goal.prerequisiteQuestGroups or {}) do
+            local done,missing=false,false
+            for _,id in ipairs(group) do
+                local ok,value=pcall(Q.IsQuestFlaggedCompleted,id)
+                if ok and value==true then done=true
+                elseif not ok or type(value)~="boolean" then missing=true end
+            end
+            if done then out.prerequisiteGroups[i]=true
+            elseif missing then unknown=true
+            else out.prerequisiteGroups[i]=false;all=false end
+        end
+        if not all then out.prerequisitesComplete=false
+        elseif not unknown then out.prerequisitesComplete=true end
     end
     return out
 end
@@ -269,7 +331,7 @@ function G.SpecializationContext(opts)
         if type(v) == "boolean" then abilities[id] = v end
     end
     local actual = "unknown"
-    local gn, gob = abilities[20219], abilities[20222]
+    local gn, gob = abilities[choiceAbility("gnomish")], abilities[choiceAbility("goblin")]
     if gn and gob then
         actual = "conflict"
     elseif gn then

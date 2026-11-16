@@ -1,7 +1,7 @@
 local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages then return end
 
-local M = { built = false, offerCount = 0, itemCount = 0 }
+local M = { built = false, offerCount = 0, itemCount = 0, DataSchema = 2 }
 ns.ProfSupply = M
 
 local SIDES = { "A", "H", "N" }
@@ -45,20 +45,21 @@ local function Allowed(side, mine)
 end
 
 local function Compare(a, b)
-    local ca = (a.currencyID or 0) > 0 and 1 or 0
-    local cb = (b.currencyID or 0) > 0 and 1 or 0
+    local ca = (a.hasExtendedCost or (a.currencyID or 0) > 0) and 1 or 0
+    local cb = (b.hasExtendedCost or (b.currencyID or 0) > 0) and 1 or 0
     if ca ~= cb then return ca < cb end
     local ua, ub
     if ca == 1 then
-        ua, ub = a.currencyAmount or 0, b.currencyAmount or 0
+        ua, ub = a.npcID or 0, b.npcID or 0
     else
         local qa, qb = a.quantity, b.quantity
         if type(qa) ~= "number" or qa < 1 then qa = 1 end
         if type(qb) ~= "number" or qb < 1 then qb = 1 end
-        ua, ub = (a.price or 0) / qa, (b.price or 0) / qb
+        ua, ub = (a.price or math.huge) / qa, (b.price or math.huge) / qb
     end
     if ua ~= ub then return ua < ub end
-    return (a.npcID or 0) < (b.npcID or 0)
+    if (a.npcID or 0) ~= (b.npcID or 0) then return (a.npcID or 0) < (b.npcID or 0) end
+    return (a.sourceOrder or 0) < (b.sourceOrder or 0)
 end
 
 local function BuildList(itemID)
@@ -114,6 +115,36 @@ function M.FormulaFacts(itemID)
 end
 
 local function BuildFormulaList(itemID, withCurrency)
+    if ns.ProfSourcesMeta and ns.ProfSourcesMeta.schemaVersion == 2 then
+        local sources = ns.EnsureProfSources and ns.EnsureProfSources()
+        local source = sources and sources[itemID]
+        local list = {}
+        for index, v in ipairs(source and source.v or EMPTY) do
+            if Int(v.id, 1) and (withCurrency or not v.hasExtendedCost) then
+                local o = {}
+                for k, value in pairs(v) do o[k] = value end
+                o.npcID = v.id
+                o.sourceOrder = index
+                o.faction = v.side == "a" and "A" or v.side == "h" and "H" or "N"
+                o.areaID = v.area
+                o.bundleSize = v.quantity
+                o.unlimited = v.stock == -1
+                o.limited = Int(v.stock, 0) and v.stock or nil
+                o.maxStock = o.limited
+                o.stockUnknown = v.stock == nil or nil
+                o.available = v.stock ~= 0
+                o.purchasable = true
+                o.reference = true
+                o.source = "formula-offers"
+                o.priceVerified = Int(v.price, 0) and Int(v.quantity, 1)
+                o.priceUsable = o.priceVerified and not v.hasExtendedCost
+                o.verifiedAt = M.formulaVerifiedAt
+                list[#list + 1] = o
+            end
+        end
+        table.sort(list, Compare)
+        return list
+    end
     local flat = ns.EnsureProfFormulaOffers()[itemID]
     if type(flat) ~= "table" then return nil end
     local total = #flat

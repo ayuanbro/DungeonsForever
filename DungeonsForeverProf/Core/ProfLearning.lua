@@ -1,17 +1,13 @@
 local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages or not ns.ProfEconomy then return end
 local E = ns.ProfEconomy
+ns.ProfLearningDataSchema=1
 local eligibility, sourceOf = E.LearningEligibility, E.LearningSource
 local capture, findRecipe, formulaFor = E.Capture, E.FindRecipe, E.FormulaFor
 local floor = math.floor
 local firstAidTrainerDefault
-local bindingSupplement={ [234271]=1,[234272]=1,[238782]=1,[238783]=1,[238784]=1,
-    [238785]=1,[238786]=1,[238787]=1,[238788]=1,[274049]=1 }
 local bindingViews=setmetatable({}, {__mode="kv"})
 local specializationCache=setmetatable({}, {__mode="k"})
-local shippedFingerprint="c0b5dba91ed30145734fcce393ceaeb6d8e2966a5856a2a731a8616050f1f3b4"
-local shippedSpecializations={engineering={ [12716]={{20222}},[13240]={{20222}},
-    [15628]={{20222}},[15633]={{20219}} } }
 local function specializationGroups(info)
     if not info then return end
     local cached=specializationCache[info]
@@ -52,7 +48,8 @@ function E.GetLearningInfo(slug,spell)
     local ok,info=pcall(data.Get,slug,spell)
     if ok and type(info)=="table" and info.spell==spell and info.profession==slug
         and type(info.routes)=="table" then
-        if data.meta.build~="1.60.1.70685" then return info end
+        local bindingSupplement=data.bindingSupplement
+        if type(bindingSupplement)~="table" or data.meta.source=="wowhead" then return info end
         if bindingViews[info] then return bindingViews[info] end
         local view
         for i,route in ipairs(info.routes)do
@@ -90,8 +87,6 @@ function E.AttachLearningInfo(recipe,known)
     local info,groups
     if known~=true then info=E.GetLearningInfo(slug,spell)
     elseif data and data.SpecializationGroups then groups=data.SpecializationGroups(slug,spell)
-    elseif data and data.meta.fingerprint==shippedFingerprint then
-        groups=shippedSpecializations[slug] and shippedSpecializations[slug][spell]
     else groups=specializationGroups(E.GetLearningInfo(slug,spell)) end
     recipe.learningSpecializations=groups
     if known~=true then recipe.learningInfo=info end
@@ -557,6 +552,7 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
     local canBound=E.AllowBindOnPickupFormulas and E.AllowBindOnPickupFormulas(context,recipe.profession)
     local canCurrency=E.AllowCurrencyFormulas and E.AllowCurrencyFormulas(context,recipe.profession)
     local kind,offer,currencyLimited
+    local exchangeOffers = {}
     local playerFaction=snapshot and snapshot.faction or not snapshot and UnitFactionGroup and UnitFactionGroup("player")
     local function sourceAllowed(source,native)
         local pass,pending=check(source.conditions,recipe,snapshot,state,true)
@@ -578,11 +574,12 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
             if currency and npc and npc>0 and sourceAllowed(o,native) and not unlimited
                 and not E.AllowLimitedFormulas(context) then currencyLimited=true end
             if currency and npc and npc>0 and sourceAllowed(o,native) and stockOK then
-                kind,offer="currency",o
+                local candidate=o
                 if not o.faction and native and native.faction then
-                    offer=shallow(o);offer.faction=native.faction
+                    candidate=shallow(o);candidate.faction=native.faction
                 end
-                break
+                exchangeOffers[#exchangeOffers+1]=candidate
+                if not offer then kind,offer="currency",candidate end
             end
         end
     end
@@ -601,7 +598,7 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
         common.id=id;common.recipe=recipe;common.source="acquire";common.sourceType="acquire"
         common.usable=true;common.blocked=false;common.costComplete=false;common.unpriced=true
         common.acquisitionPending=true;common.acquisitionKind=kind;common.acquisition=acquisition
-        common.acquisitionOffer=offer;common.acquisitionOffers=offer and {offer} or nil;common.sources=view.source
+        common.acquisitionOffer=offer;common.acquisitionOffers=offer and exchangeOffers or nil;common.sources=view.source
         if offer then
             common.cost=type(offer.price)=="number" and offer.price>=0 and offer.price or nil
             common.totalCost=common.cost;common.knownGoldCost=common.cost
@@ -663,8 +660,10 @@ function E.SelectLearningRoute(recipe,snapshot,state,remaining,purchaseSource,pr
         local choice=snapshot and (snapshot.engineeringSpecialization
             or snapshot.specializationContext and snapshot.specializationContext.choice)
             or not snapshot and G and G.GetPlannedChoice and G.GetPlannedChoice()
-        if ability==20219 and choice~="gnomish" then return false end
-        if ability==20222 and choice~="goblin" then return false end
+        for _,key in ipairs({"gnomish","goblin"}) do
+            local definition=ns.ProfSpecializationQuests and ns.ProfSpecializationQuests[key]
+            if definition and ability==definition.abilityID and choice~=key then return false end
+        end
         return conditionResult({kind="ability",value=ability},recipe,snapshot,state)~=false
     end
     local ability=G and G.RequiredAbility(spellOf(recipe)) or 0

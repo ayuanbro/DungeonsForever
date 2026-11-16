@@ -1,4 +1,10 @@
 local ns = _G.DF_NS or {}
+ns.ProfOverviewDataSchema = 2
+ns.ProfGuideDataSchema = 1
+ns.ProfPaymentDataSchema = 2
+ns.ProfReferenceDataSchema = 2
+ns.ProfGuideActivityDataSchema = 1
+ns.ProfNavigationDataSchema = 1
 
 if not ns.LoadForeverPages then return end
 
@@ -903,6 +909,7 @@ end
 
 function PD.VendorCostText(o)
     if type(o) ~= "table" then return nil end
+    if o.options or o.hasExtendedCost or o.currencies or o.costItems then return PD.FormulaCostText(o) end
     local cid = tonumber(o.currencyID) or 0
     if cid > 0 then
         local am = tonumber(o.currencyAmount) or 0
@@ -932,7 +939,9 @@ function PD.VendorBestOffer(vs, offers)
             am = tonumber(o.currencyAmount) or 0
         end
         local kind, key
-        if cid == 0 and pr > 0 then
+        if o and (o.options or o.hasExtendedCost or o.currencies or o.costItems) then
+            kind, key = 1, i
+        elseif cid == 0 and pr > 0 then
             kind, key = 0, pr
         elseif cid > 0 and am > 0 then
             kind, key = 1, am
@@ -1453,9 +1462,9 @@ end
 PD.TIER_HEX = { "|cffffd100", "|cff40d940", "|cff8c8c8c" }
 PD.TierText = function(a, b, c)
     return format("%s%s|r/%s%s|r/%s%s|r",
-                  PD.TIER_HEX[1], tostring(a),
-                  PD.TIER_HEX[2], tostring(b),
-                  PD.TIER_HEX[3], tostring(c))
+                  PD.TIER_HEX[1], tostring(a or "—"),
+                  PD.TIER_HEX[2], tostring(b or "—"),
+                  PD.TIER_HEX[3], tostring(c or "—"))
 end
 
 local function ColTextW(col)
@@ -5734,13 +5743,6 @@ function PD.Build(page)
     end))
 end
 
-local NAV_SKILL_SLUG = {
-    [171] = "alchemy",     [164] = "blacksmithing", [333] = "enchanting",
-    [202] = "engineering", [165] = "leatherworking", [197] = "tailoring",
-    [186] = "mining",      [182] = "herbalism",     [393] = "skinning",
-    [185] = "cooking",     [356] = "fishing",       [129] = "first-aid",
-}
-
 local learnedMemo, learnedT
 function PD.ProfLearned(cached)
     local now = cached and GetTime and GetTime() or nil
@@ -5750,11 +5752,13 @@ function PD.ProfLearned(cached)
     local ok, a, b, c, d, e, f = pcall(GetProfessions)
     if not ok then return out end
     local slots = { a, b, c, d, e, f }
+    local source=ns.ProfData and ns.ProfData.runtime
+    local skillIDs=source and source.schema==1 and source.skillIDs or {}
     for i = 1, 6 do
         local idx = slots[i]
         if idx then
             local oki, _, _, cur, mx, _, _, sid = pcall(GetProfessionInfo, idx)
-            local slug = NAV_SKILL_SLUG[sid]
+            local slug = skillIDs[sid]
             if oki and slug and cur and mx then
                 out[slug] = { cur = tonumber(cur) or 0, max = tonumber(mx) or 0 }
             end
@@ -5813,7 +5817,7 @@ function PD.TabsFor(slug)
     if slug == "crates" then return { "crate", "writ" } end
     local p = D.pro[slug]
     local out = { "overview" }
-    if slug == "poisons" then out = {} end
+    if slug == "poisons" and not (p and p.guideTopics and #p.guideTopics > 0) then out = {} end
     if not p then return out end
     local TRD = ns.EnsureProfTrainers()[slug]
     if TRD and TRD.list and #TRD.list > 0 then out[#out + 1] = "trainer" end
@@ -6915,42 +6919,95 @@ end
 local C_ALLIANCE = { 0.40, 0.80, 0.94 }
 local C_HORDE = { 1.00, 0.30, 0.25 }
 
+function PD.PushLibraryCards(rows, library)
+    if type(library)~="table" then return end
+    if library.quests and #library.quests>0 then
+        PushHead(rows,L["书籍上交"],1)
+        local cards={}
+        for _,quest in ipairs(library.quests)do
+            local card=PD.GuideReference({kind="quest",id=quest.quest,name=quest.name})
+            if card then
+                local text={format(L["所需书籍：%s"],tostring(quest.booksRequired or "—"))}
+                if quest.requiredLevel then text[#text+1]=L["角色等级"]..": "..tostring(quest.requiredLevel) end
+                local rewards={}
+                for _,ref in ipairs(quest.rewardRefs or {})do
+                    local reward=PD.GuideReference(ref)
+                    if reward then rewards[#rewards+1]=reward.name end
+                end
+                if #rewards==0 then
+                    for _,id in ipairs(quest.rewards or {})do rewards[#rewards+1]=PD.ItemName(id).." (#"..tostring(id)..")" end
+                end
+                if #rewards>0 then
+                    local label=quest.rewardMode=="choose-one" and L["奖励（任选一项）"] or L["奖励（选取方式未公布）"]
+                    text[#text+1]=label..": "..table.concat(rewards," · ")
+                end
+                card.tx=table.concat(text,"\n")
+                cards[#cards+1]=card
+            end
+        end
+        PD.PushCardRow(rows,cards)
+        PushGap(rows,PD.OV_GUT,1)
+    end
+    if library.books and #library.books>0 then
+        PushHead(rows,L["书籍"],1)
+        local cards={}
+        for _,book in ipairs(library.books)do
+            local text={}
+            if book.container and book.container~="" then text[#text+1]=format(L["容器：%s"],book.container) end
+            if book.zone and book.zone~="" then text[#text+1]=book.zone end
+            if book.coordinates and book.coordinates~="" then text[#text+1]=book.coordinates end
+            local url=book.sourceURL or library.sourceURL
+            cards[#cards+1]={name=book.name or "—",tx=table.concat(text,"\n"),
+                it=book.items and #book.items>0 and book.items or nil,
+                tags=url and L["点击查看来源链接"] or nil,
+                tipLines=url and {{L["点击查看来源链接"]},{url}} or nil,
+                act=url and function()PD.ShowGuideSource(url)end or nil}
+        end
+        PD.PushCardRow(rows,cards)
+        PushGap(rows,PD.OV_GUT,1)
+    end
+end
+
 function PD.RowsComprOverview(rows)
     local EM = ns.ExploreModule
-    local tiers = EM and EM.BM_TIERS or nil
+    local p = ns.ProfData and ns.ProfData.pro and ns.ProfData.pro.comprehension
+    local tiers = p and p.tiers or EM and EM.BM_TIERS
     PushGap(rows, 4, 1)
     if tiers and #tiers > 0 then
         PushHead(rows, L["提升技能"], 1)
         PD.PushWideCard(rows, { flat = true,
-            tx = L["未翻译的卷轴有四种，每一种需要的理解技能等级都更高。一种卷轴变灰之后就不会再提升技能：在技能到达它变灰的等级之前，换成下一种。"] })
+            tx = L["不同卷轴的理解技能要求各不相同；未公布的门槛显示为“—”。"] })
         PushGap(rows, 6, 1)
         local list = {}
         for _, t in ipairs(tiers) do
             list[#list + 1] = {
-                name = t.tier,
+                name = t.tier or L["未翻译的卷轴"],
                 icon = t.unc and t.unc[1] or nil,
                 it = t.unc and t.unc[1] and { t.unc[1] } or nil,
-                tx = format("%s %d · %s %d", L["可破译于"], t.req or 0, L["变灰于"], t.gray or 0),
+                tx = format("%s %s · %s %s", L["可破译于"], tostring(t.req or "—"), L["变灰于"], tostring(t.gray or "—")),
             }
         end
         PD.PushCardRow(rows, list)
         PushGap(rows, PD.OV_GUT, 1)
     end
-    local bundle = EM and EM.BM_BUNDLE or nil
+    local bundle = p and p.bundle or EM and EM.BM_BUNDLE
     if bundle and #bundle > 0 then
-        PushHead(rows, L["「一捆卷轴」开出率（17 捆样本）"], 1)
+        local title = L["「一捆卷轴」开出率"]
+        if p and type(p.bundleSamples)=="number" then title=title.." · "..format(L["样本数：%d"],p.bundleSamples) end
+        PushHead(rows, title, 1)
         local list = {}
         for _, b in ipairs(bundle) do
             list[#list + 1] = {
                 name = PD.ItemName(b[1]),
                 icon = b[1],
                 it = { b[1] },
-                right = format("%d%%", b[2] or 0),
+                right = type(b[2])=="number" and format("%g%%", b[2]) or "—",
             }
         end
         PD.PushCardRow(rows, list)
         PushGap(rows, PD.OV_GUT, 1)
     end
+    PD.PushLibraryCards(rows,p and p.library)
 end
 
 local RACE_SLUG = {
@@ -7069,8 +7126,10 @@ function PD.CampTipLines(c)
     add(L["取代"], c[8])
     add(L["互斥"], c[9])
     add(L["容量"], c[10])
-    if c[11] and #c[11] > 0 then
+    if c.materialsKnown~=false and c[11] and #c[11] > 0 then
         lines[#lines + 1] = { format(L["材料：%s"], PD.MatText(c[11])), 0.7, 0.7, 0.7 }
+    elseif not c.materialsKnown and type(c.reagentsText)=="string" and c.reagentsText~="" then
+        lines[#lines+1]={format(L["材料：%s"],c.reagentsText),0.7,0.7,0.7}
     end
     if c[12] and c[12][1] then
         lines[#lines + 1] = { format(L["图纸：%s"], DG.ItemName(c[12][1])) }
@@ -7092,20 +7151,34 @@ end
 function PD.PushCampCards(rows, p)
     local list = {}
     for _, c in ipairs(p.camp or {}) do
-        list[#list + 1] = {
-            name = c[2] or "?",
-            icon = c[3],
-            right = format(L["技能 %d"], c[4] or 0),
-            tx = c[5] or "",
-            tags = PD.CampTagText(c),
-            tipLines = PD.CampTipLines(c),
-        }
+        local card=PD.GuideReference({kind=c[1] and "item" or "spell",id=c[1] or c.spell,name=c[2],url=c.wowhead}) or {}
+        card.name=c[2] or "?"
+        card.icon=c[3] or card.icon
+        card.right=(c.tier and format(L["档位 %d"],c.tier).." · " or "")..format(L["技能 %d"],c[4] or 0)
+        card.tx=c[5] or ""
+        card.tags=PD.CampTagText(c)
+        card.tipLines=PD.CampTipLines(c)
+        list[#list+1]=card
     end
     PD.PushCardRow(rows, list)
 end
 
 function PD.PushCampNavCards(rows, lv)
     local list = {}
+    if lv.schema == 2 then
+        PushHead(rows, L["军需官"], 1)
+        for _, v in ipairs(lv.campVendors or {}) do
+            local card = PD.GuideReference({kind="npc",id=v.id,name=v.name})
+            if v.map and v.x and v.y then
+                card.right = format("%.1f, %.1f",v.x,v.y)
+                card.tags = L["点击：在地图上标记该 NPC"]
+                card.act = function() PD.MarkMapPoint(v.map,v.x,v.y) end
+            end
+            list[#list+1] = card
+        end
+        PD.PushCardRow(rows,list)
+        return
+    end
     local anyVendor = false
     for _, side in ipairs({ "a", "h" }) do
         if lv.vendor and lv.vendor[side] then anyVendor = true end
@@ -7163,6 +7236,107 @@ function PD.PushCampNavCards(rows, lv)
     PD.PushCardRow(rows, list)
 end
 
+function PD.ShowGuideSource(url)
+    if type(url) ~= "string" or not url:match("^https://www%.wowhead%.com/forever/") then return false end
+    if not StaticPopupDialogs or not StaticPopup_Show then return false end
+    StaticPopupDialogs.DF_PROF_GUIDE_SOURCE = StaticPopupDialogs.DF_PROF_GUIDE_SOURCE or {
+        text = L["Wowhead 资料来源 · Ctrl+C 复制链接"],
+        button1 = L["关闭"], hasEditBox = true, editBoxWidth = 420,
+        timeout = 0, whileDead = true, hideOnEscape = true,
+        OnShow = function(self, data)
+            local edit = self.editBox or self.EditBox
+            if edit then
+                edit:SetText(data or self.data or "")
+                edit:SetFocus()
+                edit:HighlightText()
+            end
+        end,
+        EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+    }
+    StaticPopup_Show("DF_PROF_GUIDE_SOURCE", nil, nil, url)
+    return true
+end
+
+function PD.GuideReference(ref)
+    if type(ref) ~= "table" then return nil end
+    local id = tonumber(ref.id)
+    local kind = ref.kind
+    local kinds = { item=true, spell=true, quest=true, npc=true, skill=true,
+                    zone=true, faction=true, object=true, currency=true }
+    if not kinds[kind] or not id or id <= 0 or id ~= math.floor(id) then return nil end
+    local name = type(ref.name) == "string" and ref.name ~= "" and ref.name or kind .. " #" .. id
+    local url = ref.url or "https://www.wowhead.com/forever/" .. kind .. "=" .. id
+    return {
+        name = name, right = "#" .. id,
+        icon = kind == "item" and id or nil,
+        it = kind == "item" and { id } or nil,
+        spell = kind == "spell" and id or nil,
+        tags = L["点击查看来源链接"],
+        tipLines = { { name, 1, 0.82, 0 }, { kind .. " #" .. id }, { L["点击查看来源链接"] } },
+        act = function() PD.ShowGuideSource(url) end,
+    }
+end
+
+function PD.PushGuideTopics(rows, p)
+    for _, topic in ipairs(p.guideTopics or {}) do
+        PushHead(rows, topic.title or L["专业指南"], 1)
+        local text, references, seen = {}, {}, {}
+        local function reference(ref)
+            local card = PD.GuideReference(ref)
+            local key = card and ref.kind .. ":" .. tostring(ref.id)
+            if key and not seen[key] then
+                references[#references + 1] = card
+                seen[key] = true
+            end
+        end
+        for _, fact in ipairs(topic.facts or {}) do
+            local values = {}
+            if fact.value ~= nil and tostring(fact.value) ~= "" then values[#values + 1] = tostring(fact.value) end
+            for _, ref in ipairs(fact.entities or {}) do
+                local card = PD.GuideReference(ref)
+                if card then values[#values + 1] = card.name end
+                reference(ref)
+            end
+            if #values > 0 then
+                local label = type(fact.label) == "string" and fact.label ~= "" and fact.label .. ": " or ""
+                text[#text + 1] = label .. table.concat(values, " · ")
+            end
+        end
+        for _, note in ipairs(topic.notes or {}) do
+            if type(note) == "string" and note ~= "" then text[#text + 1] = note end
+        end
+        local url = topic.sourceURL
+        PD.PushWideCard(rows, {
+            flat = true, tx = table.concat(text, "\n"),
+            tags = url and L["点击查看来源链接"] or nil,
+            tipLines = url and { { L["点击查看来源链接"] }, { url } } or nil,
+            act = url and function() PD.ShowGuideSource(url) end or nil,
+        })
+        for _, ref in ipairs(topic.references or {}) do reference(ref) end
+        PD.PushCardRow(rows, references)
+        PushGap(rows, PD.OV_GUT, 1)
+    end
+    local cert = p.cert
+    if type(cert) == "table" and cert[1] then
+        PushHead(rows, L["专业认证"], 1)
+        local card = PD.GuideReference({kind="item",id=cert[1],name=cert[2]})
+        if card then
+            card.icon = cert[3] or cert[1]
+            local text = {}
+            if cert[4] then text[#text + 1] = format(L["技能要求：%s"], tostring(cert[4])) end
+            if cert[5] then text[#text + 1] = format(L["解锁称号：%s"], tostring(cert[5])) end
+            card.tx = table.concat(text, "\n")
+            PD.PushWideCard(rows, card)
+        end
+        PushGap(rows, PD.OV_GUT, 1)
+    end
+    if p.unknowns and #p.unknowns > 0 then
+        PushHead(rows, L["尚缺资料"], 1)
+        PD.PushWideCard(rows, { flat=true, tx=table.concat(p.unknowns, "\n") })
+        PushGap(rows, PD.OV_GUT, 1)
+    end
+end
+
 function PD.PushStepCards(rows, p)
     local list = {}
     for i, st in ipairs(p.steps or {}) do
@@ -7197,9 +7371,8 @@ function PD.RowsOverview(rows)
     PD.pcSpanAll = true
     if PD.cur == "comprehension" then
         PD.RowsComprOverview(rows)
-        return
-    end
-    PushGap(rows, 4, 1)
+    else
+        PushGap(rows, 4, 1)
 
     local hasPerks = p.perks and #p.perks > 0
     if hasPerks then
@@ -7210,7 +7383,7 @@ function PD.RowsOverview(rows)
 
     local lv = LV[PD.cur]
     local hasCampObjs = p.camp and #p.camp > 0
-    local hasCampPts = lv and (lv.camps or lv.vendor) and true or false
+    local hasCampPts = lv and (lv.camps or lv.vendor or #(lv.campVendors or {}) > 0) and true or false
     if hasCampObjs then
         PushHead(rows, L["营地"], 1)
         PD.PushCampCards(rows, p)
@@ -7220,7 +7393,7 @@ function PD.RowsOverview(rows)
         PD.PushCampNavCards(rows, lv)
         PushGap(rows, PD.OV_GUT, 1)
     end
-    if p.steps and #p.steps > 0 then
+    if p.guideTopics == nil and p.steps and #p.steps > 0 then
         PushHead(rows, p.steps_title or L["怎么开始"], 1)
         if p.steps_note then PD.PushWideCard(rows, { flat = true, tx = p.steps_note }) end
         PD.PushStepCards(rows, p)
@@ -7232,9 +7405,22 @@ function PD.RowsOverview(rows)
         PushGap(rows, PD.OV_GUT, 1)
     end
 
-    if PD.cur == "camping" and PD.campView == "bonus" then
+    if PD.cur == "camping" and PD.campView == "bonus" and p.campProfessions==nil then
         PushHead(rows, L["全部专业的营地物件档位对照"], nil, 16)
         rows[#rows].noSec = true
+    end
+    end
+    PD.PushGuideTopics(rows, p)
+    if PD.cur=="camping" and type(p.campProfessions)=="table" then
+        PD.wantBonusTable=false
+        for _,slug in ipairs(p.campProfessions)do
+            local profession=D.pro[slug]
+            if profession and profession.camp and #profession.camp>0 then
+                PushHead(rows,profession.name or slug,1)
+                PD.PushCampCards(rows,profession)
+                PushGap(rows,PD.OV_GUT,1)
+            end
+        end
     end
 
     local secN = 0
@@ -9030,8 +9216,9 @@ function PD.FormulaOffersByNpc(fid)
             local cur = map[o.npcID]
             if not cur then
                 map[o.npcID] = o
-            elseif (cur.currencyID or 0) > 0 and (o.currencyID or 0) == 0 then
-                map[o.npcID] = o
+            else
+                if not cur.options then cur = {options={cur}}; map[o.npcID] = cur end
+                cur.options[#cur.options + 1] = o
             end
         end
     end
@@ -9044,9 +9231,12 @@ function PD.VendorLines(s, fid)
     local vs = PD.VendorListOf(s)
     if #vs == 0 then return out end
     local offers = PD.FormulaOffersByNpc(fid)
+    local seen = {}
     for i = 1, #vs do
         local v = vs[i]
-        if v and (v.name or v.zone) then
+        local id = v and (v.id or v.npcID)
+        if v and (v.name or v.zone) and not (id and seen[id]) then
+            if id then seen[id] = true end
             local nm = format(L["商人：%s"], PD.VendorName(v))
             if v.zone and v.zone ~= "" then nm = nm .. " · " .. tostring(v.zone) end
             local o = offers and offers[v.id or v.npcID]
@@ -9071,6 +9261,11 @@ end
 
 function PD.FormulaCostText(offer)
     if type(offer) ~= "table" then return L["请核对价格"] end
+    if offer.options then
+        local options = {}
+        for _, option in ipairs(offer.options) do options[#options + 1] = "(" .. PD.FormulaCostText(option) .. ")" end
+        return table.concat(options, " / ")
+    end
     local parts = {}
     local curID = tonumber(offer.currencyID) or 0
     if type(offer.currencies)=="table" and #offer.currencies>0 then
@@ -9078,12 +9273,13 @@ function PD.FormulaCostText(offer)
             parts[#parts+1]=PD.FormulaCostText({currencyID=cost.id,currencyAmount=cost.count})
         end
     elseif curID > 0 then
-        local name, icon
+        local names = ns.ProfSourcesMeta and ns.ProfSourcesMeta.currencyNames
+        local name, icon = names and names[curID]
         if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
             local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, curID)
-            if ok and type(info) == "table" then name, icon = info.name, info.iconFileID end
+            if ok and type(info) == "table" then name, icon = name or info.name, info.iconFileID end
         end
-        if not name then
+        if not name and not (ns.ProfSourcesMeta and ns.ProfSourcesMeta.schemaVersion == 2) then
             local inm = DG.ItemName(curID)
             if inm then name, icon = inm, DG.ItemIcon and DG.ItemIcon(curID) end
         end
@@ -9092,9 +9288,13 @@ function PD.FormulaCostText(offer)
         parts[#parts + 1] = (icon and format("|T%s:14:14|t", icon) or "") .. name .. " ×" .. tostring(amt)
     end
     for _,cost in ipairs(offer.costItems or {})do
-        parts[#parts+1]=DG.ItemName(cost.id).." ×"..tostring(cost.count)
+        parts[#parts+1]=(DG.ItemName(cost.id) or ("item #"..tostring(cost.id))).." ×"..tostring(cost.count)
     end
     if (tonumber(offer.price) or 0)>0 then parts[#parts+1]=RA.MoneyStr(offer.price,"copper")end
+    if #parts == 0 then
+        if offer.price == 0 and offer.priceVerified then parts[1] = RA.MoneyStr(0,"copper")
+        else return L["请核对价格"] end
+    end
     local qty = tonumber(offer.quantity) or 0
     if qty > 1 then parts[#parts + 1] = format(L["每组 %d 件"], qty) end
     if #parts == 0 then return L["请核对价格"] end
@@ -9673,6 +9873,7 @@ end
 
 function PD.EnchantSpec(en)
     local resolved = PD.RecipeData(en, "enchants")
+    local meta = ns.ProfRecipeMeta and ns.ProfRecipeMeta[resolved.spell]
     local original = en
     en = {}; for key, value in pairs(original) do en[key] = value end
     en[9] = resolved.mats
@@ -9742,6 +9943,7 @@ function PD.EnchantSpec(en)
         vlines = PD.DropLines(en[10])
     end
     local lines = PD.RecipeSourceLines({ { en[1] or "" } }, resolved)
+    PD.RecipeGuideLines(lines, meta)
     if en[4] and en[4] ~= "" then lines[#lines + 1] = { en[4] } end
     if learningCard then for _,line in ipairs(learningCard.lines)do lines[#lines+1]=line end else
     if en[10] then lines[#lines + 1] = { PD.SourceText(en[10]) or "", 0.7, 0.7, 0.7 } end
@@ -9790,10 +9992,14 @@ function PD.EnchantSpec(en)
         diffVal = tonumber(en[5]),
         gapVal = (ah and total) and (ah - total) or nil,
         sbdiff = (en[5] or en[6] or en[7] or en[8]) and { en[5], en[6], en[7], en[8] } or nil,
-        tipExtra = ((type(en[15]) == "number") and en[15])
-                   and function() return PD.RecipeSourceLines(PD.PriceTipLines(en[15], en[9],
-                       { recipe = true, matDetail = PD.MatPriceOn(),
-                         patternCost = PD.PatternVendorCost(resolved) }), resolved) end or nil,
+        tipExtra = function()
+            local extra = {}
+            if type(en[15]) == "number" then
+                extra = PD.RecipeSourceLines(PD.PriceTipLines(en[15], en[9],
+                    { recipe=true, matDetail=PD.MatPriceOn(), patternCost=PD.PatternVendorCost(resolved) }), resolved)
+            end
+            return PD.RecipeGuideLines(extra, meta)
+        end,
         lines = lines,
         act = dact,
     }
@@ -9953,6 +10159,8 @@ end
 
 function PD.CurrencyOf(curID)
     if type(curID) ~= "number" or curID <= 0 then return nil end
+    local names = ns.ProfSourcesMeta and ns.ProfSourcesMeta.currencyNames
+    if names and names[curID] then return names[curID] end
     local cache = PD.__curCache
     if not cache then cache = {} PD.__curCache = cache end
     local hit = cache[curID]
@@ -9989,6 +10197,12 @@ end
 
 function PD.VendorOffersOf(itemID)
     if type(itemID) ~= "number" then return nil end
+    if ns.ProfSourcesMeta and ns.ProfSourcesMeta.schemaVersion == 2 then
+        local list = ns.ProfSupply.DisplayList(itemID)
+        if list and #list > 0 then return list end
+        local fid = ns.ProfMakeSrc and ns.ProfMakeSrc[itemID]
+        return fid and ns.ProfSupply.DisplayList(fid) or nil
+    end
     local out, seen = {}, {}
     local function add(entry)
         local npcID=entry.npcID
@@ -10063,7 +10277,7 @@ function PD.VendorBlockLines(lines, itemID)
             return
         end
     end
-    local shown = math.min(#list, PD.VENDOR_SHOW_MAX or 2)
+    local shown = ns.ProfSourcesMeta and ns.ProfSourcesMeta.schemaVersion == 2 and #list or math.min(#list, PD.VENDOR_SHOW_MAX or 2)
     for i = 1, shown do
         local o = list[i]
         local nm = PD.VendorName(o)
@@ -10078,7 +10292,9 @@ function PD.VendorBlockLines(lines, itemID)
         local stock=PD.FormulaStockText(o)
         if stock then lines[#lines+1]={stock,Unpack(C_MT)} end
         local ptxt, isCur
-        if o.cur and o.amt then
+        if o.paymentOption ~= nil then
+            ptxt, isCur = PD.FormulaCostText(o), true
+        elseif o.cur and o.amt then
             local cnm, cicon = PD.CurrencyOf(o.cur)
             if cnm then
                 isCur = true
@@ -10638,10 +10854,32 @@ function PD.KitSub(sub, desc, itemID)
     return table.concat(parts, " ")
 end
 
+function PD.RecipeGuideLines(lines, meta)
+    for _, source in ipairs(meta and meta.guideSources or {}) do
+        local text = source.sourceText
+        if source.sourceUnknown then
+            lines[#lines + 1] = { L["指南尚未注明获取来源。"], 0.95, 0.75, 0.4 }
+        elseif type(text) == "string" and text ~= "" then
+            lines[#lines + 1] = { format(L["指南来源：%s"], text), 0.7, 0.7, 0.7 }
+        end
+        local minimum = source.minimumSkillText or source.minimumSkill
+        if minimum ~= nil then
+            lines[#lines + 1] = { format(L["指南最低技能：%s"], tostring(minimum)), 0.7, 0.7, 0.7 }
+        end
+        for _, ref in ipairs(source.refs or {}) do
+            local card = PD.GuideReference(ref)
+            if card then lines[#lines + 1] = { card.name .. " · " .. ref.kind .. " #" .. ref.id, 0.7, 0.7, 0.7 } end
+        end
+        if source.sourceURL then lines[#lines + 1] = { source.sourceURL, 0.55, 0.75, 0.9 } end
+    end
+    return lines
+end
+
 function PD.RecipeSpec(r)
     local catalogue = r
     if ns.ProfSourceMerge then ns.ProfSourceMerge.Fill(catalogue) end
     local meta = ns.ProfRecipeMeta and ns.ProfRecipeMeta[r[1]]
+    local guideMeta = meta
     local runtime = ns.ProfRecipeRuntime and ns.ProfRecipeRuntime[r[1]]
     if PD.cur=="poisons" then meta,runtime=nil,nil end
     local resolved = PD.RecipeData(r, "rows")
@@ -10650,10 +10888,10 @@ function PD.RecipeSpec(r)
     r[2], r[3], r[12] = resolved.item, resolved.count, resolved.mats
     r[7], r[8], r[9], r[10] = resolved.learn, resolved.yellow, resolved.green, resolved.grey
     local clientPending = resolved.clientPending
-    local station = meta and ({ forge = L["熔炉"], blackForge = L["黑铁熔炉"], moltenFoundry = L["熔火铸造厂"] })[meta.station]
+    local station = meta and (meta.stationNames and meta.stationNames[type(GetLocale)=="function" and GetLocale() or "zhCN"] or meta.stationName or ({ forge = L["熔炉"], blackForge = L["黑铁熔炉"], moltenFoundry = L["熔火铸造厂"] })[meta.station])
     local vs = (r[14] and PD.VendorListOf(r[14])) or {}
     local hasVendor = #vs > 0
-    local acq = hasVendor and L["商人售卖"] or L["世界掉落"]
+    local acq = hasVendor and L["商人售卖"] or (resolved.legacyPoisonGuide and L["来源未知"] or L["世界掉落"])
     local base
     if clientPending then
         base = L["客户端数据待读取"]
@@ -10662,7 +10900,7 @@ function PD.RecipeSpec(r)
     elseif r[13] then
         base = L["图纸"] .. " · " .. acq
     else
-        base = L["训练师"]
+        base = resolved.legacyPoisonGuide and L["来源未知"] or L["训练师"]
     end
     local learningCard=PD.RecipeLearningCard(resolved,false)
     if learningCard then
@@ -10719,6 +10957,7 @@ function PD.RecipeSpec(r)
                 { recipe = true, matDetail = PD.MatPriceOn(),
                   patternCost = PD.PatternVendorCost(resolved) }), resolved)
             if station then lines[#lines + 1] = { format(L["制作场地：%s"], station), 0.7, 0.7, 0.7 } end
+            PD.RecipeGuideLines(lines, guideMeta)
             if clientPending then lines[#lines + 1] = { L["请打开对应专业或商人面板读取数据"], 0.95, 0.75, 0.4 } end
             if meta and meta.outputConflict and resolved.outputConflict and not (runtime and runtime.count) then
                 lines[#lines + 1] = { L["参考产量存在冲突；当前按目录值显示，客户端读取后覆盖。"], 0.95, 0.75, 0.4 }
@@ -10933,6 +11172,15 @@ function PD.CurKeysOfFid(fid)
         if hit == false then return nil end
         return hit
     end
+    if ns.ProfSourcesMeta and ns.ProfSourcesMeta.schemaVersion == 2 then
+        local ks = {}
+        for _, offer in ipairs(ns.ProfSupply.DisplayList(fid) or {}) do
+            for _, cost in ipairs(offer.currencies or {}) do ks[cost.id] = true end
+            if not offer.hasExtendedCost and offer.priceVerified then ks[0] = true end
+        end
+        m[fid] = next(ks) and ks or false
+        return next(ks) and ks or nil
+    end
     local flat = ns.EnsureProfFormulaOffers()[fid]
     local ks
     if type(flat) == "table" then
@@ -11037,6 +11285,13 @@ function PD.CurCounts(d)
                 for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
             end
         end
+    end
+    for _, row in ipairs(d.crafted or {}) do
+        local fid = tonumber(row[9])
+        local ks = PD.CurKeysOfFid(fid)
+        for key in pairs(ks or {}) do c[key] = (c[key] or 0) + 1 end
+        local bucket = PD.SrcBucketOf({nip=row.nip,[13]=fid and {fid}})
+        if bucket then c[bucket] = (c[bucket] or 0) + 1 end
     end
     if d.favor and #d.favor > 0 then
         c[PD.FAVOR_CURID] = (c[PD.FAVOR_CURID] or 0) + #d.favor
@@ -11341,6 +11596,14 @@ function PD.RecipeList(limit, q)
                     out[#out + 1] = PD.EnchantSpec(e)
                     if #out >= cap then return out end
                 end
+            end
+        end
+        for _, c in ipairs(d.crafted or {}) do
+            local fid = tonumber(c[9])
+            if PD.RowCurHit({nip=c.nip,[13]=fid and {fid}}) and PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then
+                local spec = PD.CraftedSpec(c)
+                if PD.SearchHit(spec) then out[#out+1] = spec end
+                if #out >= cap then return out end
             end
         end
         if PD.moneyKey == PD.FAVOR_CURID then
@@ -12059,12 +12322,65 @@ local function ClipFixedSteps(steps, target)
     return out, clipped
 end
 
+function PD.FixedActivityList(slug, target)
+    local result = {}
+    for _, activity in ipairs(LV[slug] and LV[slug].referenceActivities or {}) do
+        local low, high = tonumber(activity.from), tonumber(activity.to)
+        if low and high and low < high and (not target or low < target) then
+            local value = {}
+            for key, field in pairs(activity) do value[key] = field end
+            value.from, value.to = low, target and math.min(high, target) or high
+            result[#result + 1] = value
+        end
+    end
+    table.sort(result, function(a,b) return a.from < b.from end)
+    return result
+end
+
+function PD.FixedActivitySummary(summary, slug, target, current)
+    if not summary then return summary end
+    local pending = {}
+    for _, activity in ipairs(PD.FixedActivityList(slug, target)) do
+        if current == nil or current < activity.to then pending[#pending + 1] = activity end
+    end
+    if #pending == 0 then return summary end
+    local result = {}
+    for key, value in pairs(summary) do result[key] = value end
+    result.manualActivities, result.manualActivityPending = pending, true
+    result.feasible, result.targetReached, result.status = false, false, "manual_activity"
+    return result
+end
+
+function PD.PushFixedActivitiesThrough(rows, activities, nextIndex, beforeSkill, current)
+    while activities[nextIndex] and (beforeSkill == nil or activities[nextIndex].from <= beforeSkill) do
+        local activity = activities[nextIndex]
+        local complete = current ~= nil and current >= activity.to
+        local text = activity.text or ""
+        local url = activity.sourceURL
+        local card = {
+            name = format("%d–%d · %s", activity.from, activity.to, L["手动步骤"]),
+            tx = text, right = complete and L["已完成该技能阶段"] or nil,
+            tags = url and L["点击查看来源链接"] or nil,
+            tipLines = {{text,0.85,0.85,0.85}},
+            act = url and function() PD.ShowGuideSource(url) end or nil,
+        }
+        PD.PushWideCard(rows, card)
+        nextIndex = nextIndex + 1
+    end
+    return nextIndex
+end
+
 local function FixedShopData(target)
+    local learned = PD.ProfLearned()
+    local current = learned and learned[PD.cur] and learned[PD.cur].cur
+    local function finish(summary)
+        return PD.FixedActivitySummary(summary, PD.cur, target, current)
+    end
     if RA and RA.FixedPlan then
         local opts=PD.BuildLvOpts(PD.cur)
         opts.target=target
         local summary=RA.FixedPlan(PD.cur,opts)
-        if summary then return summary end
+        if summary then return finish(summary) end
     end
     local lv = LV[PD.cur]
     local steps, clipped = ClipFixedSteps(lv.steps or {}, target)
@@ -12075,11 +12391,11 @@ local function FixedShopData(target)
             sum.mode = "fixed"
             sum.target = target
             sum.clipped = clipped
-            return sum
+            return finish(sum)
         end
     end
-    return { mode = "fixed", target = target, mats = {}, clientPending = true,
-             steps = lv.steps or {}, priced = false }
+    return finish({ mode = "fixed", target = target, mats = {}, clientPending = true,
+             steps = lv.steps or {}, priced = false })
 end
 
 local function CountUnpriced(sum)
@@ -12111,6 +12427,7 @@ end
 
 function PD.PlanStatusParts(plan)
     if not plan then return L["正在计算升级路线…"] end
+    if plan.manualActivityPending then return L["先完成指南中的手动步骤，再按当前技能重新查看路线。"] end
     local hasProgress=PD.PlanHasSteps(plan) or (tonumber(plan.plannedTo) or 0)>(tonumber(plan.start) or 1)
     if plan.referenceOnly then return L["固定攻略参考；逐配方资料待补全。"] end
     if plan.diagnosticPolicyChanged then return L["路线规则已更新，请重新计算。"] end
@@ -12461,7 +12778,7 @@ function PD.PlanCostText(plan)
 end
 
 function PD.CopyPlanSummary(plan)
-    if not plan or (plan.planVersion ~= 2 and not plan.referenceOnly)
+    if not plan or (plan.planVersion ~= 2 and not plan.referenceOnly and not plan.manualActivityPending)
         or (plan.slug and plan.slug ~= PD.cur) then return end
     local s = PD.lvSummary or {}
     for _, key in ipairs({"planVersion", "status", "optimal", "feasible", "completeCost", "costComplete", "learningComplete",
@@ -12475,7 +12792,8 @@ function PD.CopyPlanSummary(plan)
                            "learningGaps","learningCoverageComplete","learningBlocked","learningBlockReason",
                            "blockingLearningGaps","blockingDiagnostics","diagnostics",
                            "failureDiagnosticVersion","diagnosticPolicyChanged",
-                           "referenceOnly","referenceShopping","referenceQuoted","referenceCostComplete","matTotal"}) do s[key] = plan[key] end
+                           "referenceOnly","referenceShopping","referenceQuoted","referenceCostComplete","matTotal",
+                           "manualActivityPending","manualActivities"}) do s[key] = plan[key] end
     s.ahOK = true
     s.priced = plan.referenceOnly and plan.referenceQuoted or plan.total ~= nil and plan.feasible ~= false
     PD.lvSummary = s
@@ -12972,6 +13290,10 @@ function PD.SpecQuestLines(goal)
     end
     if #mats > 0 then
         out[#out + 1] = { format(L["需要材料：%s"], table.concat(mats, "、")), 0.75, 0.75, 0.75 }
+    end
+    local prerequisites=ns.ProfGates and ns.ProfGates.PrerequisiteText(goal) or ""
+    if prerequisites~="" then
+        out[#out + 1]={format(L["先完成前置任务并与导师对话：%s"],prerequisites),0.7,0.7,0.7}
     end
     local state, r, g, b = PD.SpecQuestState(goal)
     out[#out + 1] = { state, r, g, b }
@@ -14412,6 +14734,10 @@ function PD.RowsLeveling(rows)
 
     if PD.autoPage == "shop" then
         local data = auto and res or FixedShopData(target)
+        if not auto and data.manualActivityPending then
+            PD.autoSnapshot, PD.autoSnapshotSlug = data, PD.cur
+            PD.PushFixedActivitiesThrough(rows, PD.FixedActivityList(PD.cur, target), 1, nil, curLv)
+        end
         PD.lvSummary = {
             target = target, auto = auto,
             scheme = auto and res.scheme or nil,
@@ -14464,7 +14790,8 @@ function PD.RowsLeveling(rows)
         fixedSum.start=steps[1] and steps[1][1] or 1
         PD.autoSnapshot,PD.autoSnapshotSlug=fixedSum,PD.cur
         if fixedSum.feasible==false and not scanWarning then
-            warning(fixedSum.referenceShopping and L["请使用 Auctionator 完整扫描一次拍卖行，并在购物清单核对材料和图纸费用后开始执行。"]
+            warning(fixedSum.manualActivityPending and L["先完成指南中的手动步骤，再按当前技能重新查看路线。"]
+                or fixedSum.referenceShopping and L["请使用 Auctionator 完整扫描一次拍卖行，并在购物清单核对材料和图纸费用后开始执行。"]
                 or PD.FixedOnly() and L["固定路线中有配方资料或学习条件未确认，请在游戏中核对。"]
                 or L["固定攻略包含不可执行步骤，请切换自动规划或先满足学习条件。"],0.95,0.75,0.4)
         end
@@ -14494,7 +14821,7 @@ function PD.RowsLeveling(rows)
         PD.RowsRecoveryDetail(rows, auto and res or fixedSum)
         return
     end
-    PD.CopyPlanSummary(res)
+    PD.CopyPlanSummary(auto and res or fixedSum)
     local shownSum = auto and res or fixedSum
     notes.plan = shownSum
     if shownSum and shownSum.scheme=="stable" and shownSum.stability then
@@ -14693,6 +15020,8 @@ function PD.RowsLeveling(rows)
         PushGap(rows, 4)
     end
 
+    local guideActivities = not auto and PD.FixedActivityList(PD.cur, target) or {}
+    local nextActivity = 1
     if steps and #steps > 0 then
         if auto then
             local warn = {}
@@ -14767,6 +15096,9 @@ function PD.RowsLeveling(rows)
         rows[#rows + 1] = { kind = "lvhead", h = 18, col = 1, noTip = true }
         local producedBefore = {}
         for index, st in ipairs(steps) do
+            if not auto then
+                nextActivity = PD.PushFixedActivitiesThrough(rows, guideActivities, nextActivity, tonumber(st[1]), curLv)
+            end
             local rec = PD.StepRecipe(st) or recOf[st[3]]
             local ri = nil
             if rec and (rec.mats or rec.learn) then
@@ -14882,6 +15214,7 @@ function PD.RowsLeveling(rows)
             end
         end
     end
+    if not auto then PD.PushFixedActivitiesThrough(rows, guideActivities, nextActivity, nil, curLv) end
     if trackAll then
         for _, spec in ipairs(rows) do
             if spec.trackCur then spec.cur = true; break end
@@ -15944,7 +16277,9 @@ function PD.LevelTool()
                 if ready then bound,reason=T.StartNew(PD.cur,res) end
 
                 if not bound then
-                    local msg = PD.ReplicateScanMessage(reason) or PD.ReplicateScanWarning()
+                    local msg = res and res.manualActivityPending
+                        and L["先完成指南中的手动步骤，再按当前技能重新查看路线。"]
+                        or PD.ReplicateScanMessage(reason) or PD.ReplicateScanWarning()
                         or T and T.IsCombatPaused and T.IsCombatPaused()
                         and L["战斗中暂停追踪，脱战后自动恢复。"] or computing
                         and L["正在计算升级路线…"]
@@ -16470,6 +16805,9 @@ function PD.CrateRows(rows)
     }
     local favTxt = sc.favor and format(L["青睐 +%d"], sc.favor) or L["青睐未验证"]
     PushText(rows, favTxt .. format(L[" · 需等级 %d"], sc.level or 0), 12, C_GREY, 2)
+    for _, reward in ipairs(sc.rewards or {}) do
+        PushText(rows, ("quest #"..tostring(reward.quest)..": "..PD.FormulaCostText(reward)),12,C_GREY,2)
+    end
     MarkSec(rows, secH, #rows, 1)
     PushGap(rows, PD.SEC_GAP + 2 * PD.SEC_PAD - 2, 2)
     local secO = #rows + 1

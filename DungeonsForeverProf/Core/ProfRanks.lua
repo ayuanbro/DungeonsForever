@@ -2,20 +2,16 @@ local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages then return end
 local R = {}
 ns.ProfRanks = R
+ns.ProfRanksDataSchema=2
 
-local ids = { [171]="alchemy", [164]="blacksmithing", [333]="enchanting", [202]="engineering",
-    [165]="leatherworking", [197]="tailoring", [186]="mining", [182]="herbalism", [393]="skinning",
-    [185]="cooking", [129]="first-aid", [356]="fishing" }
-local names = {
-    alchemy={"炼金术","鍊金術","Alchemy"}, blacksmithing={"锻造","鍛造","Blacksmithing"},
-    enchanting={"附魔","附魔","Enchanting"}, engineering={"工程学","工程學","Engineering"},
-    leatherworking={"制皮","製皮","Leatherworking"}, tailoring={"裁缝","裁縫","Tailoring"},
-    mining={"采矿","採礦","Mining"}, herbalism={"采药","草藥學","Herbalism"},
-    skinning={"剥皮","剝皮","Skinning"}, cooking={"烹饪","烹飪","Cooking"},
-    ["first-aid"]={"急救","急救","First Aid"}, fishing={"钓鱼","釣魚","Fishing"},
-}
-local ranks = {{"初级","初級","Apprentice"}, {"中级","中級","Journeyman"},
-    {"高级","高級","Expert"}, {"专家级","專家級","Artisan"}}
+local function rankDefaults()
+    local source=ns.ProfData and ns.ProfData.runtime
+    return source and source.rankDefaults or {}
+end
+local function skillSlug(id)
+    local source=ns.ProfData and ns.ProfData.runtime
+    if source and source.schema==1 then return source.skillIDs and source.skillIDs[id] end
+end
 local function locale()
     return DF_Locale and DF_Locale() or "zhCN"
 end
@@ -51,6 +47,21 @@ local function professionData(slug)
     if not data then return end
     local info=ns.ProfData and ns.ProfData.pro and ns.ProfData.pro[slug]
     local out={name=info and info.name,ranks={}}
+    if data.schema==2 then
+        for index,raw in ipairs(data.ranks or {}) do
+            local entry=copy(raw)
+            entry.rank=raw.rank or index
+            entry.skillRequired=raw.skillRequired or raw.sk
+            entry.levelRequired=raw.levelRequired or raw.lv
+            entry.name=raw.name or {zhCN=raw.zh,zhTW=raw.tw,enUS=raw.en}
+            entry.method=raw.method or "unknown"
+            entry.sourceSchema=2
+            entry.status=raw.status or "unknown"
+            entry.conditionsKnown=raw.conditionsKnown==true
+            out.ranks[#out.ranks+1]=entry
+        end
+        return out
+    end
     local prior=1
     local rawRanks=data.ranks or {}
     if #rawRanks==0 then
@@ -61,16 +72,16 @@ local function professionData(slug)
         end
         table.sort(caps)
         rawRanks={}
-        local reminders={[75]=0,[150]=50,[225]=125,[300]=225}
+        local defaults=rankDefaults()
+        local reminders=defaults.reminderSkills or {}
         for index,cap in ipairs(caps) do
-            local name=ranks[index] or {}
+            local name=defaults.ranks and defaults.ranks[index] or {}
             rawRanks[#rawRanks+1]={cap=cap,zh=name[1],tw=name[2],en=name[3],reminderSkill=reminders[cap]}
         end
     end
     for index, raw in ipairs(rawRanks) do
-        local method="trainer"
-        if (slug=="cooking" or slug=="first-aid" or slug=="fishing") and index==3 then method="book"
-        elseif (slug=="cooking" or slug=="first-aid" or slug=="fishing") and index==4 then method="quest" end
+        local methods=rankDefaults().methods
+        local method=methods and methods[slug] and methods[slug][index] or "trainer"
         local note,book
         for _,row in ipairs(info and info.ranks or {}) do
             if tonumber(row[2])==raw.cap and type(row[3])=="string" then note=row[3];book=row[4];break end
@@ -96,17 +107,23 @@ local function rangeCovers(outer,inner)
     if not (olo and ilo) then return outer==inner end
     return olo<=ilo and ohi>=ihi
 end
-local questMeta={
-    fishing={[4]={id=6607,name={"钓鱼专家纳特·帕格","釣魚專家納特·帕格","Nat Pagle, Angler Extreme"}}},
-    cooking={[4]={id=6610,name={"蚌肉大餐","蚌肉大餐","Clamlette Surprise"}}},
-}
 local function questOf(slug,rank)
-    local row=questMeta[slug] and questMeta[slug][rank]
+    local quests=rankDefaults().quests or {}
+    local row=quests[slug] and quests[slug][rank]
     if not row then return end
     return row.id,row.name
 end
 local function sourcesFor(slug,entry,state)
     local out={}
+    if entry.sourceSchema==2 then
+        for _,source in ipairs(entry.sources or {}) do
+            local faction=source.faction
+            if not state.faction or not faction or faction=="N" or faction=="B" or faction=="Both" or faction==state.faction then
+                out[#out+1]=copy(source)
+            end
+        end
+        return out
+    end
     local data=trainerData(slug)
     for _,raw in ipairs(data and data.list or {}) do
         if rangeCovers(raw.rng,entry.trainerRange) and (not state.faction or not raw.fac or raw.fac=="N" or raw.fac=="B" or raw.fac==state.faction) then
@@ -121,28 +138,16 @@ local function sourcesFor(slug,entry,state)
         end
     end
     if #out==0 then
-        local id,map,x,y,name,zone,questID,questName
-        if slug=="fishing" and entry.rank==3 then
-            id=2626;name={"老人海明","老人海明","Old Man Heming"}
-            zone={"藏宝海湾 · 荆棘谷","藏寶海灣 · 荊棘谷","Booty Bay, Stranglethorn Vale"}
-        elseif slug=="cooking" and entry.rank==4 then
-            id=8125;name={"迪尔格·奎克里弗","迪爾格·奎克里弗","Dirge Quikcleave"}
-            zone={"加基森 · 塔纳利斯","加基森 · 塔納利斯","Gadgetzan, Tanaris"}
-            questID=6610;questName={"蚌肉大餐","蚌肉大餐","Clamlette Surprise"}
-        elseif slug=="fishing" and entry.rank==4 then
-            id,map,x,y=12919,1445,58.6,60.0
-            name={"纳特·帕格","納特·帕格","Nat Pagle"}
-            zone={"尘泥沼泽","塵泥沼澤","Dustwallow Marsh"}
-            questID=6607;questName={"钓鱼专家纳特·帕格","釣魚專家納特·帕格","Nat Pagle, Angler Extreme"}
-        end
-        if id then
-            local loc=ns.ProfVendors and ns.ProfVendors[id]
+        local sources=rankDefaults().sources
+        local raw=sources and sources[slug] and sources[slug][entry.rank]
+        if raw then
+            local loc=ns.ProfVendors and ns.ProfVendors[raw.npcID]
             local locations=ns.EnsureProfNPCLocs and ns.EnsureProfNPCLocs()
-            loc=loc or locations and locations[id] and locations[id][1]
-            out[1]={kind=entry.method=="book" and "vendor" or entry.method,name=name,zone=zone,
-                faction="N",npcID=id,itemID=entry.bookItemID or (entry.method=="book" and 16083 or nil),
-                map=loc and loc[2] or map,x=loc and loc[3] or x,y=loc and loc[4] or y,
-                questID=questID,questName=questName}
+            loc=loc or locations and locations[raw.npcID] and locations[raw.npcID][1]
+            out[1]={kind=entry.method=="book" and "vendor" or entry.method,name=raw.name,zone=raw.zone,
+                faction="N",npcID=raw.npcID,itemID=entry.bookItemID or raw.itemID,
+                map=loc and loc[2] or raw.map,x=loc and loc[3] or raw.x,y=loc and loc[4] or raw.y,
+                questID=raw.questID,questName=raw.questName}
         end
     end
     return out
@@ -159,8 +164,8 @@ function R.Status(slug, opts)
             for i=1,6 do
                 if slots[i] then
                     local success,name,_,cur,cap,_,_,skillID=safe(GetProfessionInfo,slots[i])
-                    if not success or not name or not ids[skillID] then valid=false end
-                    if success and ids[skillID]==slug then
+                    if not success or not name or not skillSlug(skillID) then valid=false end
+                    if success and skillSlug(skillID)==slug then
                         found=true
                         state.skill, state.maxSkill=number(cur),number(cap,1)
                         state.learned=true
@@ -242,18 +247,20 @@ function R.RouteSteps(slug, target, opts)
                 entry.skillRequired=entry.skillRequired or observed.skill
             end
         end
-        local preferences={rankReminders={cooking={[4]=200},["first-aid"]={[4]=200},fishing={[4]=200}},rankReminderWindow=25}
+        local defaults=rankDefaults()
+        local preferences={rankReminders=defaults.routeReminders,rankReminderWindow=25}
         local reminders=preferences.rankReminders or {}
         reminders=reminders[slug] or {}
         local reminder=reminders[entry.spell] or reminders[tostring(entry.spell)] or reminders[entry.rank]
             or entry.reminderSkill or entry.skillRequired or math.max(0,priorCap-(preferences.rankReminderWindow or 25))
+        if entry.sourceSchema==2 then reminder=entry.reminderSkill or entry.skillRequired or priorCap end
         if reminder<=target then
             local step={}
             for key,value in pairs(entry) do step[key]=value end
             step.id="rank:"..slug..":"..tostring(entry.rank)
             step.profession,step.reminderSkill=slug,reminder
-            step.name=label(entry.name) or label(ranks[entry.rank]) or tostring(entry.rank)
-            step.professionName=label(profession.name) or label(names[slug]) or slug
+            step.name=label(entry.name) or (entry.sourceSchema~=2 and label(defaults.ranks and defaults.ranks[entry.rank])) or tostring(entry.rank)
+            step.professionName=label(profession.name) or slug
             step.state=state
             step.sources=sourcesFor(slug,entry,state)
             local factsKnown=entry.conditionsKnown==true

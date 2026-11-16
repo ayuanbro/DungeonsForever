@@ -26,17 +26,10 @@ end
 
 local function VendorEntry(v)
     local zone = ZoneName(v.area)
-    return {
-        id = v.id,
-        name = v.name,
-        zone = (zone ~= "" and zone or nil),
-        area = v.area,
-        side = v.side,
-        price = v.price,
-        cur = v.cur,
-        amt = v.amt,
-        stock = v.stock,
-    }
+    local result = {}
+    for k, value in pairs(v) do result[k] = value end
+    result.zone = zone ~= "" and zone or v.zone
+    return result
 end
 
 local function DropEntry(d)
@@ -106,6 +99,10 @@ function M.Fill(row)
     s.__srcDone = true
     local vs = src.v
     if type(vs) == "table" and #vs > 0 then
+        if ns.ProfSourcesMeta and ns.ProfSourcesMeta.schemaVersion == 2 then
+            s.vendors = {}
+            for _, v in ipairs(vs) do s.vendors[#s.vendors + 1] = VendorEntry(v) end
+        else
         local list = s.vendors
         if type(list) ~= "table" then
             list = {}
@@ -119,6 +116,7 @@ function M.Fill(row)
         for i = 1, #vs do
             local v = vs[i]
             if type(v) == "table" and v.id then MergeVendor(byId, list, v) end
+        end
         end
     end
     local ds = src.d
@@ -168,7 +166,9 @@ function M.Primary(src)
             if type(v) == "table" then
                 local price = tonumber(v.price) or 0
                 local cur = tonumber(v.cur) or 0
-                if price > 0 then
+                if v.hasExtendedCost or #(v.currencies or {}) > 0 or #(v.costItems or {}) > 0 then
+                    currency = true
+                elseif price > 0 or v.price == 0 and v.priceVerified then
                     gold = true
                 elseif cur ~= 0 then
                     currency = true
@@ -193,7 +193,8 @@ function M.CurrencyCount(src)
     if not vs then return n end
     for i = 1, #vs do
         local v = vs[i]
-        if type(v) == "table" and (tonumber(v.price) or 0) <= 0 and (tonumber(v.cur) or 0) ~= 0 then
+        if type(v) == "table" and (v.hasExtendedCost or (tonumber(v.cur) or 0) ~= 0
+            or #(v.currencies or {}) > 0 or #(v.costItems or {}) > 0) then
             n = n + 1
         end
     end

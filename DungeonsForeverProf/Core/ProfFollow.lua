@@ -338,10 +338,9 @@ function PF.SpecializationQuestInfo(seg)
     if type(goal.x)=="number" and type(goal.y)=="number" then
         lines[#lines+1]=format(L["参考坐标 %.2f, %.2f"],goal.x,goal.y)
     end
-    local prerequisites={}
-    for _,id in ipairs(goal.prerequisiteQuestIDs or {}) do prerequisites[#prerequisites+1]="#"..id end
-    if #prerequisites>0 then
-        lines[#lines+1]=format(L["先完成前置任务并与导师对话：%s"],table.concat(prerequisites,", "))
+    local prerequisites=ns.ProfGates and ns.ProfGates.PrerequisiteText(goal) or ""
+    if prerequisites~="" then
+        lines[#lines+1]=format(L["先完成前置任务并与导师对话：%s"],prerequisites)
     end
     local progress={}
     for key,value in pairs(goal.questProgress or {}) do progress[key]=value end

@@ -4,6 +4,7 @@ if not ns.LoadForeverPages then return end
 
 local E = ns.ProfEconomy
 if not E then return end
+ns.ProfCaptureDataSchema=1
 
 local floor, min, max = math.floor, math.min, math.max
 local L = ns.L
@@ -184,9 +185,8 @@ function E.Professions()
     if not next(list) and type(GetProfessions)=="function" and type(GetProfessionInfo)=="function" then
         local ok, a, b, c, d, e, f = pcall(GetProfessions)
         if ok then
-            local ids = E.SkillIDs or {[171]="alchemy",[164]="blacksmithing",[333]="enchanting",[202]="engineering",
-                [165]="leatherworking",[197]="tailoring",[186]="mining",[182]="herbalism",[393]="skinning",
-                [185]="cooking",[129]="first-aid",[356]="fishing",[40]="poisons"}
+            local source=ns.ProfData and ns.ProfData.runtime
+            local ids=source and source.schema==1 and source.skillIDs or {}
             for _, index in pairs({a,b,c,d,e,f}) do
                 local found, _, _, cur, cap, _, _, id = pcall(GetProfessionInfo, index)
                 if found and ids[id] and type(cur)=="number" and type(cap)=="number" then list[ids[id]]={cur=cur,max=cap} end

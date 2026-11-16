@@ -1,14 +1,18 @@
 local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages or not ns.ProfEconomy then return end
 local E = ns.ProfEconomy
+ns.ProfRuntimeDataSchema=1
 local activeScans = {}
 local floor = math.floor
 local function store() return E.ClientStore() end
-local skillIDs = {[171]="alchemy",[164]="blacksmithing",[333]="enchanting",[202]="engineering",
-    [165]="leatherworking",[197]="tailoring",[186]="mining",[182]="herbalism",[393]="skinning",
-    [185]="cooking",[129]="first-aid",[356]="fishing",[40]="poisons"}
-E.SkillIDs = skillIDs
-function E.ProfessionSlug(id) return skillIDs[id] end
+local initial=ns.ProfData and ns.ProfData.runtime
+E.SkillIDs=initial and initial.schema==1 and initial.skillIDs or {}
+function E.ProfessionSlug(id)
+    local source=ns.ProfData and ns.ProfData.runtime
+    local values=source and source.schema==1 and source.skillIDs or {}
+    E.SkillIDs=values
+    return values and values[id]
+end
 local function call(name, ...)
     local parent, key = name:match("^([^.]+)%.(.+)$")
     local fn = parent and _G[parent] and _G[parent][key] or (not parent and _G[name])
@@ -236,7 +240,7 @@ function E.ScanRecipes(tick)
         local ok,ids=call("C_TradeSkillUI.GetAllRecipeIDs")
         if not ok or type(ids)~="table" then return end
         local baseOk,base=call("C_TradeSkillUI.GetBaseProfessionInfo")
-        local slug=baseOk and type(base)=="table" and skillIDs[base.professionID]
+        local slug=baseOk and type(base)=="table" and E.ProfessionSlug(base.professionID)
         local changingOk,changing=call("C_TradeSkillUI.IsDataSourceChanging")
         local readyOk,ready=call("C_TradeSkillUI.IsTradeSkillReady")
         local complete=slug and E.Professions()[slug] and changingOk and changing==false and (not readyOk or ready==true) and #ids>0
@@ -253,7 +257,7 @@ function E.ScanRecipes(tick)
         end
         local endBaseOk,endBase=call("C_TradeSkillUI.GetBaseProfessionInfo")
         local endChangingOk,endChanging=call("C_TradeSkillUI.IsDataSourceChanging")
-        if complete and unlearned and endBaseOk and type(endBase)=="table" and skillIDs[endBase.professionID]==slug and endChangingOk and endChanging==false then
+        if complete and unlearned and endBaseOk and type(endBase)=="table" and E.ProfessionSlug(endBase.professionID)==slug and endChangingOk and endChanging==false then
             local d=store(); d.recipeRosters=d.recipeRosters or {}
             local previous=d.recipeRosters[slug]
             local same=previous and previous.complete and type(previous.ids)=="table"
@@ -385,7 +389,7 @@ function E.ScanRecipeDetails(ids,tick)
     local readyOk,ready=call("C_TradeSkillUI.IsTradeSkillReady")
     local linkedOk,linked=call("C_TradeSkillUI.IsTradeSkillLinked")
     local guildOk,guild=call("C_TradeSkillUI.IsTradeSkillGuild")
-    local slug=baseOk and type(base)=="table" and skillIDs[base.professionID]
+    local slug=baseOk and type(base)=="table" and E.ProfessionSlug(base.professionID)
     if not slug or not E.Professions()[slug] or not changingOk or changing~=false
         or not readyOk or ready~=true or (linkedOk and linked) or (guildOk and guild) then return false end
     for spell in pairs(ids) do

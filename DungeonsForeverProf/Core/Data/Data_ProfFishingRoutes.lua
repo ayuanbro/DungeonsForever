@@ -28,6 +28,7 @@ W.salmon[1].note = salmonNote
 W.salmon[2].note = salmonNote
 
 ns.ProfFishingRoutes = {
+    cookingSteps={{from=1,to=50,spell=7751},{from=50,to=100,spell=7753},{from=100,to=175,spell=7755},{from=175,to=225,spell=20916},{from=225,to=300,spell=18238},},
     fish = {
         [6291]  = { a = W.start,     rate = 0.60 },
         [6289]  = { a = W.city },

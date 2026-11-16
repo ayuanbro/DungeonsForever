@@ -1,13 +1,8 @@
 local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages then return end
 local E=ns.ProfEconomy
-local P={};ns.ProfFishing=P
+local P={DataSchema=1};ns.ProfFishing=P
 local floor,ceil,min,max=math.floor,math.ceil,math.min,math.max
-local guide={
-    {from=1,to=50,spell=7751},{from=50,to=100,spell=7753},
-    {from=100,to=175,spell=7755},{from=175,to=225,spell=20916},
-    {from=225,to=300,spell=18238},
-}
 local function fishingData(opts)
     local source=opts.fishingData or opts.snapshot and opts.snapshot.fishingRoutes or ns.ProfFishingRoutes or {}
     local out={fish={}}
@@ -65,7 +60,8 @@ local function ease(fish)
 end
 function P.Compute(opts)
     opts=opts or {};local data=fishingData(opts);local snap=P.Capture(opts)
-    local routes={cookingSteps=opts.cookingGuide or guide}
+    local source=opts.fishingData or opts.snapshot and opts.snapshot.fishingRoutes or ns.ProfFishingRoutes or {}
+    local routes={cookingSteps=opts.cookingGuide or source.cookingSteps or {}}
     local start=max(1,min(300,floor(opts.start or (snap.professions.cooking or {}).cur or 1)))
     local target=max(start,min(300,floor(opts.target or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300)))
     local out={planVersion=2,scheme="fishing",routeMode="fishing",start=start,target=target,steps={},executionSteps={},actions={},
