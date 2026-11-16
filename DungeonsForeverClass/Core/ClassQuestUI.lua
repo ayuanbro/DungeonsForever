@@ -48,6 +48,7 @@ local ROW_IND = 20
 local C_DONE = { 0.25, 0.85, 0.35 }
 local C_ACT = { 1.00, 0.82, 0.00 }
 local C_TODO = { 0.58, 0.60, 0.63 }
+local C_OPT = { 0.62, 0.62, 0.68 }
 
 local DOT_DONE = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
 local DOT_SYM = {
@@ -112,6 +113,40 @@ local function StepIDs(chain)
     end
     walk(chain.steps)
     return out
+end
+
+local function StepGroups(chain)
+    local st = chain.steps
+    local out = {}
+    if type(st) ~= "table" then return out end
+    local nested = false
+    for i = 1, #st do
+        if type(st[i]) == "table" then nested = true break end
+    end
+    if nested then
+        for i = 1, #st do
+            local v = st[i]
+            local g = {}
+            if type(v) == "number" then
+                g[1] = v
+            elseif type(v) == "table" then
+                for k = 1, #v do
+                    if type(v[k]) == "number" then g[#g + 1] = v[k] end
+                end
+            end
+            if #g > 0 then out[#out + 1] = g end
+        end
+    else
+        for i = 1, #st do
+            if type(st[i]) == "number" then out[#out + 1] = { st[i] } end
+        end
+    end
+    return out
+end
+
+local function GroupOf(row, idx)
+    local gi = row.gidx
+    return gi and gi[idx] or nil
 end
 
 local function Info(id)
@@ -194,17 +229,45 @@ end
 local function StepState(row, idx, qid)
     local st = DG.QuestState(qid)
     if st == "done" or not row.linear then return st end
+    local gi = GroupOf(row, idx)
+    if gi then
+        local g = row.groups and row.groups[gi]
+        if g and #g > 1 then return st end
+    end
     local nx = row.ids[idx + 1]
     if nx and DG.QuestState(nx) == "done" then return "done" end
     return st
 end
 
-local function AnyDone(r)
-    local n = 0
-    for i = 1, #r.ids do
-        if StepState(r, i, r.ids[i]) == "done" then n = n + 1 end
+local function GroupDone(r, gi)
+    local g = r.groups and r.groups[gi]
+    if not g then return false end
+    for i = 1, #g do
+        if DG.QuestState(g[i]) == "done" then return true end
     end
-    return n
+    return false
+end
+
+local function RowFlags(r)
+    local n = r.groups and #r.groups or 0
+    local f = {}
+    for i = 1, n do f[i] = GroupDone(r, i) end
+    return f, n
+end
+
+local function RowProg(r)
+    local f, n = RowFlags(r)
+    local d = 0
+    for i = 1, n do
+        if f[i] then d = d + 1 end
+    end
+    local st = "todo"
+    if n > 0 and d >= n then
+        st = "done"
+    elseif d > 0 or AnyActive(r.ids) then
+        st = "active"
+    end
+    return d, n, st
 end
 
 local function Build()
@@ -224,10 +287,17 @@ local function Build()
                     if RACE_ZH[rs[k]] then raceSeen[rs[k]] = true end
                 end
             end
+            local groups = StepGroups(c)
+            local gidx = {}
+            for gi = 1, #groups do
+                for k = 1, #groups[gi] do gidx[#gidx + 1] = gi end
+            end
             list[#list + 1] = {
                 key = c.key or tostring(i),
                 t = c.t or "",
                 ids = ids,
+                groups = groups,
+                gidx = gidx,
                 lv = ChainLevel(ids),
                 side = cs,
                 races = rs,
@@ -271,10 +341,8 @@ local function Build()
 end
 
 local function RowState(r)
-    local doneN = AnyDone(r)
-    if doneN >= #r.ids then return "done" end
-    if doneN > 0 or AnyActive(r.ids) then return "active" end
-    return "todo"
+    local _, _, st = RowProg(r)
+    return st
 end
 
 local function ApplyFilter(list)
@@ -637,6 +705,10 @@ local function Ensure()
         fr.name:SetWordWrap(false)
         fr.lv = MakeFS(fr, 14, C_DIM, "RIGHT")
         fr.lv:SetPoint("RIGHT", fr, "RIGHT", -6, 0)
+        if DG.MakeBadge then
+            fr.opt = DG.MakeBadge(fr, C_OPT)
+            fr.opt:SetPoint("RIGHT", fr.lv, "LEFT", -6, (ns.hui and ns.hui.ChipDY and ns.hui.ChipDY(14)) or 0)
+        end
         fr:SetScript("OnEnter", function(self)
             if not self.__sel and ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, "hover") end
         end)
@@ -695,6 +767,7 @@ local function TakeRow()
         fr.sym:Show()
         fr.name:Show()
         fr.lv:Show()
+        if fr.opt then fr.opt:Hide() end
     end
     return fr
 end
@@ -705,6 +778,24 @@ local function PutDot(tex, sym, st)
     sym:SetTexture(DOT_SYM[st] or DOT_SYM.todo)
     local ink = DOT_INK[st] or DOT_INK.todo
     sym:SetVertexColor(ink[1], ink[2], ink[3], 1)
+end
+
+local function PutOpt(b, txt)
+    if not (b and b.lab) then return 0 end
+    local pad = DG.Q_BADGE_PAD or 5
+    local minW = DG.Q_BADGE_MIN_W or 24
+    b.lab:SetText(txt)
+    local w = b.lab:GetStringWidth()
+    if type(w) ~= "number" or w <= 0 then w = minW end
+    w = w + pad * 2
+    if w < minW then w = minW end
+    if ns.hui and ns.hui.PaintSolidChip then
+        ns.hui.PaintSolidChip(b, txt, C_OPT, w)
+    else
+        b:SetWidth(w)
+        b:Show()
+    end
+    return w
 end
 
 local function RowMark(r, st, col)
@@ -1195,7 +1286,7 @@ renderChain = function(row, y)
     DetReset()
     CQ.title:SetText(row.t)
     CQ.title:SetTextColor(Unpack(C_GOLD))
-    local sub = format(L["%d 级"], row.lv) .. " · " .. format(L["%d 步"], #row.ids)
+    local sub = format(L["%d 级"], row.lv) .. " · " .. format(L["%d 步"], #(row.groups or row.ids))
     if row.side == "A" then
         sub = sub .. " · " .. DG.Hex(DG.C_FAC_A) .. L["联盟"] .. "|r"
     elseif row.side == "H" then
@@ -1224,39 +1315,51 @@ renderChain = function(row, y)
         y = putDet(lab, DET_X, y - 2, 20)
     end
 
-    for idx, id in ipairs(row.ids) do
-        local r = TakeNode()
-        if not r then break end
-        local nm = QName(id)
-        local st = StepState(row, idx, id)
-        local col = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
-        r.name:SetText(format("%d. ", idx) .. nm)
-        r.name:SetTextColor(Unpack(nm ~= "" and col or C_GREY))
-        r.st:SetText((DG.Q_STATUS_TAG and DG.Q_STATUS_TAG[st]) or "")
-        r.st:SetTextColor(Unpack(col))
-        RowMark(r, nm ~= "" and st or nil, col)
-        local q = Info(id)
-        local pts = q and StartPts(q) or {}
-        local sub2 = ""
-        if pts[1] then
-            sub2 = (pts[1][3] or "")
-            if pts[1][2] and pts[1][2] ~= "" then
-                sub2 = (sub2 ~= "" and (sub2 .. " · ") or "") .. pts[1][2]
+    local fi = 0
+    local full = false
+    for gi = 1, #(row.groups or {}) do
+        local g = row.groups[gi]
+        for k = 1, #g do
+            fi = fi + 1
+            local id = g[k]
+            local r = TakeNode()
+            if not r then full = true break end
+            local nm = QName(id)
+            local st = StepState(row, fi, id)
+            local col = (st == "done" and C_GREEN) or (st == "active" and C_GOLD) or C_GREY
+            if k == 1 then
+                r.name:SetText(format("%d. ", gi) .. nm)
+            else
+                r.name:SetText("   · " .. nm)
             end
+            r.name:SetTextColor(Unpack(nm ~= "" and col or C_GREY))
+            r.st:SetText((DG.Q_STATUS_TAG and DG.Q_STATUS_TAG[st]) or "")
+            r.st:SetTextColor(Unpack(col))
+            RowMark(r, nm ~= "" and st or nil, col)
+            local q = Info(id)
+            local pts = q and StartPts(q) or {}
+            local sub2 = ""
+            if pts[1] then
+                sub2 = (pts[1][3] or "")
+                if pts[1][2] and pts[1][2] ~= "" then
+                    sub2 = (sub2 ~= "" and (sub2 .. " · ") or "") .. pts[1][2]
+                end
+            end
+            if q and q.r and q.r > 0 then
+                sub2 = (sub2 ~= "" and (sub2 .. " · ") or "") .. format(L["%d 级可接"], q.r)
+            end
+            if sub2 == "" then sub2 = L["本表未收录起始信息"] end
+            r.sub:SetText(sub2)
+            r.__act = function()
+                CQ.sel = { type = "quest", id = id, chain = row }
+                TT.RequestRender()
+            end
+            r:ClearAllPoints()
+            r:SetPoint("TOPLEFT", CQ.dchild, "TOPLEFT", DET_X, y)
+            r:Show()
+            y = y - 38
         end
-        if q and q.r and q.r > 0 then
-            sub2 = (sub2 ~= "" and (sub2 .. " · ") or "") .. format(L["%d 级可接"], q.r)
-        end
-        if sub2 == "" then sub2 = L["本表未收录起始信息"] end
-        r.sub:SetText(sub2)
-        r.__act = function()
-            CQ.sel = { type = "quest", id = id, chain = row }
-            TT.RequestRender()
-        end
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", CQ.dchild, "TOPLEFT", DET_X, y)
-        r:Show()
-        y = y - 38
+        if full then break end
     end
 
     local items, spell = ChainTotal(row)
@@ -1378,9 +1481,11 @@ renderQuest = function(id, y)
         for i = 1, #chain.ids do
             if chain.ids[i] == id then idx = i break end
         end
-        if idx then
+        local gi = idx and GroupOf(chain, idx)
+        local stepN = chain.groups and #chain.groups or #chain.ids
+        if gi then
             y = AddLine(y, DG.Hex(C_GREY) .. L["链内进度"] .. "：|r"
-                .. format(L["第 %d / %d 步"], idx, #chain.ids)
+                .. format(L["第 %d / %d 步"], gi, stepN)
                 .. " · " .. DG.Hex(C_GREY) .. chain.t .. "|r", C_TEXT, 24)
         end
     end
@@ -1713,13 +1818,12 @@ function CQ.Render()
         local isSel = (sel and sel.type == "chain" and sel.row.key == row.key) and true or false
         fr.arrow:SetText(isOpen and "-" or "+")
         fr.arrow:SetTextColor(Unpack(isOpen and C_GOLD or C_GREY))
-        local doneN = AnyDone(row)
-        local st = (doneN >= #row.ids) and "done" or ((doneN > 0 or AnyActive(row.ids)) and "active" or "todo")
+        local doneN, stepN, st = RowProg(row)
         PutDot(fr.dot, fr.sym, st)
         fr.name:SetText(row.t)
         fr.name:SetTextColor(Unpack(isSel and C_WHITE or ((st == "done") and C_DONE or C_TEXT)))
         fr.name:SetWidth(RowW() - 34 - 52 - 46)
-        fr.meta:SetText(format("%d/%d", doneN, #row.ids))
+        fr.meta:SetText(format("%d/%d", doneN, stepN))
         fr.meta:SetTextColor(Unpack(C_DIM))
         fr.lv:SetText(LvTxt(row.lv))
         fr.lv:SetTextColor(Unpack(C_GREY))
@@ -1750,7 +1854,13 @@ function CQ.Render()
                 local qsel = (sel and sel.type == "quest" and sel.id == qid) and true or false
                 r.name:SetText(qn)
                 r.name:SetTextColor(Unpack(qsel and C_WHITE or ((qst == "done") and C_DONE or C_TEXT)))
-                r.name:SetWidth(RowW() - ROW_IND - 30 - 46)
+                local nmW = RowW() - ROW_IND - 30 - 46
+                local grp = row.groups and row.groups[GroupOf(row, j) or 0]
+                if grp and #grp > 1 and r.opt then
+                    local bw = PutOpt(r.opt, L["可选"])
+                    if bw and bw > 0 then nmW = math.max(nmW - bw - 8, 80) end
+                end
+                r.name:SetWidth(nmW)
                 local q = Info(qid)
                 r.lv:SetText(LvTxt(q and q.r))
                 r.lv:SetTextColor(Unpack(C_GREY))
@@ -1805,12 +1915,20 @@ end
 
 function CQ.QuestChainKey(qid)
     if not qid or type(ns.ClassQuestChains) ~= "table" then return nil end
+    local function has(t)
+        for _, v in ipairs(t) do
+            if type(v) == "table" then
+                if has(v) then return true end
+            elseif v == qid then
+                return true
+            end
+        end
+        return false
+    end
     for _, list in pairs(ns.ClassQuestChains) do
         if type(list) == "table" then
             for _, ch in ipairs(list) do
-                for _, sid in ipairs(ch.steps or {}) do
-                    if sid == qid then return ch.key end
-                end
+                if type(ch.steps) == "table" and has(ch.steps) then return ch.key end
             end
         end
     end

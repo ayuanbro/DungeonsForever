@@ -989,8 +989,10 @@ local function syncPins(view, id, floor, cw, ch)
             local kind = p.kind or "boss"
             local ps = M.PinScale() * (view.__uiK or 1)
             local dim = (kind == "boss") and M.RareBoss(id, p.en) or false
-            bt:SetAlpha(dim and 0.5 or 1)
-            bt.nm:SetAlpha(dim and 0.5 or 1)
+            local killed = (kind == "boss") and M.BossKilled and M.BossKilled(id, p.en) or false
+            local pa = dim and 0.5 or 1
+            bt:SetAlpha(pa)
+            bt.nm:SetAlpha(pa)
             local skip
             n = i
             bt.__kind, bt.__p = kind, p
@@ -1090,8 +1092,15 @@ local function syncPins(view, id, floor, cw, ch)
                 bt.dot:Hide()
                 bt.__av:Show()
                 local isSel = (M.detailEn == p.en) or false
-                M.PaintBossPin(bt.__av, M.BossPinDisplay(id, p.en), cr, cg, cb,
-                    (isSel and M.PIN_SIZE or M.PIN_MIN) * ps)
+                local asz = (isSel and M.PIN_SIZE or M.PIN_MIN) * ps
+                M.PaintBossPin(bt.__av, M.BossPinDisplay(id, p.en), cr, cg, cb, asz)
+                if M.PaintBossDim then
+                    local a = (killed and not dim) and (M.DEAD_ALPHA or 0.45) or 1
+                    M.PaintBossDim(bt.__av, a)
+                end
+                if M.PaintBossDead then
+                    M.PaintBossDead(bt.__av, killed, asz, view.__mini)
+                end
             end
             local sel = (kind == "boss") and (M.detailEn == p.en) or false
             if kind == "boss" and not sel then nm = "" end

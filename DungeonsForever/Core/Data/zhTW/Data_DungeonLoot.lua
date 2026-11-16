@@ -1811,6 +1811,7 @@ ns.DungeonLoot = {
             { 17755, 27, false },
             { 17754, 29, false },
             { 17752, 28, false },
+            { 275864, nil, true },
         } },
         { "Meshlok the Harvester", "收割者麥什洛克", "稀有 · 48 級", "12237", {
             { 17767, 30, false },
@@ -2228,6 +2229,7 @@ ns.DungeonLoot = {
             { 11745, 31, false },
             { 11744, 25, false },
             { 11743, 8.4, false },
+            { 276879, nil, true },
         } },
         { "Ambassador Flamelash", "弗萊拉斯大使", "", "8329", {
             { 11808, 0.28, false },
@@ -2892,6 +2894,13 @@ ns.DungeonLoot = {
             { 18758, 25, false },
             { 18759, 22, false },
         } },
+        { "Kormok", "庫爾莫克", "", "", {
+            { 22332, nil, false },
+            { 22303, nil, false },
+            { 22326, nil, false },
+            { 21984, nil, false },
+            { 22046, nil, false },
+        } },
         { "Marduk Blackpool", "馬杜克·布萊克波爾", "58 級", "10433", {
             { 18692, 7, false },
             { 14576, 6.5, false },
@@ -3290,9 +3299,18 @@ ns.DungeonLoot = {
             { 12845, 100, false },
             { 276398, nil, true },
             { 276399, nil, true },
+            { 276397, nil, true },
         } },
         { "Crimson Hammersmith", "紅衣鑄錘師", "60 級", "", {
             { 18781, 63, false },
+        } },
+        { "Ezra Grimm", "艾茲拉·格里姆", "61 級", "", {
+            { 276396, nil, true },
+            { 276395, nil, true },
+            { 276394, nil, true },
+            { 13172, nil, false },
+            { 273129, nil, true },
+            { 273117, nil, true },
         } },
         { "Cannon Master Willey", "炮手威利", "60 級", "10674", {
             { 16708, 14, false },
@@ -3467,6 +3485,7 @@ ns.DungeonLoot = {
             { 16668, 4.1, false },
             { 16728, 6.8, false },
             { 16732, 8.7, false },
+            { 13251, nil, false },
         } },
         { "Trash mobs", "小怪", "副本內任意敵人", "", {
             { 16697, 1.3, false },

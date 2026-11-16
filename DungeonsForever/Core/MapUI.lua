@@ -437,6 +437,73 @@ local function bpPaint(host, disp, cr, cg, cb, size)
     end
 end
 
+local DEAD_DISC_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
+local DEAD_X_TEX = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CrossMark"
+local DEAD_DISC_RGB = { 0.60, 0.10, 0.09, 0.96 }
+local DEAD_X_RGB = { 1, 0.97, 0.95 }
+
+M.DEAD_ALPHA = 0.45
+
+local DEAD_SIZE = { r = 0.54, min = 11, max = 30, x = 0.58, off = 0.30 }
+local DEAD_SIZE_MINI = { r = 0.68, min = 17, max = 46, x = 0.66, off = 0.26 }
+
+local function bpDead(host, dead, size, mini)
+    if not host then return end
+    local rim, disc, mark = host.avDeadRim, host.avDead, host.avDeadX
+    if not dead then
+        if rim then rim:Hide() end
+        if disc then disc:Hide() end
+        if mark then mark:Hide() end
+        return
+    end
+    local cfg = mini and DEAD_SIZE_MINI or DEAD_SIZE
+    local s = (size or M.PIN_MIN) * cfg.r
+    if s < cfg.min then s = cfg.min elseif s > cfg.max then s = cfg.max end
+    if not disc then
+        rim = host:CreateTexture(nil, "OVERLAY", nil, 4)
+        rim:SetTexture(DEAD_DISC_TEX)
+        rim:SetVertexColor(0, 0, 0, 0.55)
+        disc = host:CreateTexture(nil, "OVERLAY", nil, 5)
+        disc:SetTexture(DEAD_DISC_TEX)
+        disc:SetVertexColor(DEAD_DISC_RGB[1], DEAD_DISC_RGB[2], DEAD_DISC_RGB[3], DEAD_DISC_RGB[4])
+        mark = host:CreateTexture(nil, "OVERLAY", nil, 6)
+        mark:SetTexture(DEAD_X_TEX)
+        mark:SetVertexColor(DEAD_X_RGB[1], DEAD_X_RGB[2], DEAD_X_RGB[3])
+        host.avDeadRim, host.avDead, host.avDeadX = rim, disc, mark
+    end
+    local off = s * cfg.off
+    disc:SetSize(s, s)
+    disc:ClearAllPoints()
+    disc:SetPoint("TOPRIGHT", host, "TOPRIGHT", off, off)
+    disc:Show()
+    rim:SetSize(s + 2.5, s + 2.5)
+    rim:ClearAllPoints()
+    rim:SetPoint("CENTER", disc, "CENTER", 0, 0)
+    rim:Show()
+    local xs = s * cfg.x
+    mark:SetSize(xs, xs)
+    mark:ClearAllPoints()
+    mark:SetPoint("CENTER", disc, "CENTER", 0, 0)
+    mark:Show()
+end
+
+M.PaintBossDead = bpDead
+
+local function bpDim(host, a)
+    if not host then return end
+    if host.avRing then host.avRing:SetAlpha(a) end
+    if host.avBase then host.avBase:SetAlpha(a) end
+    if host.avFace then host.avFace:SetAlpha(a) end
+end
+
+M.PaintBossDim = bpDim
+
+local function bossKilled(id, en)
+    local fn = M.BossKilled
+    if not fn then return false end
+    return (fn(id, en)) and true or false
+end
+
 M.MAX_LIST = 30
 M.SHOW_NPC_ID = true
 
@@ -3545,8 +3612,10 @@ function M.SyncPins()
             local kind = p.kind or "boss"
             local ps = M.PinScale()
             local dim = (kind == "boss") and M.RareBoss(M.curId, p.en) or false
-            bt:SetAlpha(dim and 0.5 or 1)
-            bt.nm:SetAlpha(dim and 0.5 or 1)
+            local dead = (kind == "boss") and bossKilled(M.curId, p.en) or false
+            local pa = dim and 0.5 or 1
+            bt:SetAlpha(pa)
+            bt.nm:SetAlpha(pa)
             local skip = nil
             bt.__kind, bt.__p = kind, p
             bt.__en, bt.__zh = p.en, p.zh
@@ -3653,8 +3722,10 @@ function M.SyncPins()
                 bt.dot:Hide()
                 bt.__av:Show()
                 local isSel = (M.detailEn == p.en) or false
-                bpPaint(bt.__av, bpDisp(M.curId, p.en), cr, cg, cb,
-                    (isSel and M.PIN_SIZE or M.PIN_MIN) * ps)
+                local asz = (isSel and M.PIN_SIZE or M.PIN_MIN) * ps
+                bpPaint(bt.__av, bpDisp(M.curId, p.en), cr, cg, cb, asz)
+                bpDim(bt.__av, (dead and not dim) and M.DEAD_ALPHA or 1)
+                bpDead(bt.__av, dead, asz)
             end
             local sel = (kind == "boss") and (M.detailEn == p.en) or false
             if kind == "boss" and not sel then nm = "" end
@@ -4636,6 +4707,7 @@ function M.SyncSide(forceFrame)
         end
         local cr, cg, cb = M.BossColor(id, bosses[i].en)
         bpPaint(r.__av, bpDisp(id, bosses[i].en), cr, cg, cb, 32)
+        bpDead(r.__av, bossKilled(id, bosses[i].en), 32)
         if r.__card then PiecesSetShown(r.__card, nativeRow) end
         if nativeRow then
             for _, t in ipairs(r.__borderPieces or {}) do t:SetVertexColor(0.42, 0.32, 0.20) end

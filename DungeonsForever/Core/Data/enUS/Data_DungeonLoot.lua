@@ -1811,6 +1811,7 @@ ns.DungeonLoot = {
             { 17755, 27, false },
             { 17754, 29, false },
             { 17752, 28, false },
+            { 275864, nil, true },
         } },
         { "Meshlok the Harvester", "Reaper Mishlock", "Rare · Lv 48", "12237", {
             { 17767, 30, false },
@@ -2228,6 +2229,7 @@ ns.DungeonLoot = {
             { 11745, 31, false },
             { 11744, 25, false },
             { 11743, 8.4, false },
+            { 276879, nil, true },
         } },
         { "Ambassador Flamelash", "Ambassador Flamelash", "", "8329", {
             { 11808, 0.28, false },
@@ -2892,6 +2894,13 @@ ns.DungeonLoot = {
             { 18758, 25, false },
             { 18759, 22, false },
         } },
+        { "Kormok", "Kormok", "", "", {
+            { 22332, nil, false },
+            { 22303, nil, false },
+            { 22326, nil, false },
+            { 21984, nil, false },
+            { 22046, nil, false },
+        } },
         { "Marduk Blackpool", "Marduk Blackpoole", "Lv 58", "10433", {
             { 18692, 7, false },
             { 14576, 6.5, false },
@@ -3290,9 +3299,18 @@ ns.DungeonLoot = {
             { 12845, 100, false },
             { 276398, nil, true },
             { 276399, nil, true },
+            { 276397, nil, true },
         } },
         { "Crimson Hammersmith", "Crimson Hammerer", "Lv 60", "", {
             { 18781, 63, false },
+        } },
+        { "Ezra Grimm", "Ezra Grimm", "Lv 61", "", {
+            { 276396, nil, true },
+            { 276395, nil, true },
+            { 276394, nil, true },
+            { 13172, nil, false },
+            { 273129, nil, true },
+            { 273117, nil, true },
         } },
         { "Cannon Master Willey", "Cannoneer Wiley", "Lv 60", "10674", {
             { 16708, 14, false },
@@ -3467,6 +3485,7 @@ ns.DungeonLoot = {
             { 16668, 4.1, false },
             { 16728, 6.8, false },
             { 16732, 8.7, false },
+            { 13251, nil, false },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 16697, 1.3, false },
