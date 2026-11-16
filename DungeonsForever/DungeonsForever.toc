@@ -10,7 +10,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 2.1.102
+## Version: 2.1.103
 ## SavedVariables: DungeonsForeverDB
 ## OptionalDeps: EllesmereUI
 ## LoadOnDemand: 0
@@ -54,7 +54,6 @@ Core\Data\zhTW\Data_Dungeons.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonLoot.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonQuests.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonGuide.lua [AllowLoadTextLocale zhTW]
-Core\Data\zhTW\Data_BossSkills.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_MapPins.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_NPCLoc.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_DungeonEntry.lua [AllowLoadTextLocale zhTW]
@@ -66,7 +65,6 @@ Core\Data\enUS\Data_Dungeons.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_DungeonLoot.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_DungeonQuests.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_DungeonGuide.lua [AllowLoadTextLocale enUS]
-Core\Data\enUS\Data_BossSkills.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_MapPins.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_NPCLoc.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_DungeonEntry.lua [AllowLoadTextLocale enUS]

@@ -617,6 +617,32 @@ function RA.RevertPlan(slug,supplied)
     for _,fn in ipairs(listeners) do pcall(fn,slug,result) end
     return result
 end
+function RA.SkeletonOf(plan)
+    if type(plan)~="table" then return nil end
+    return planSkeleton(plan,plan.executionOptions or {},plan.status)
+end
+function RA.SnapshotPlan(plan)
+    if type(plan)~="table" then return nil end
+    if type(plan.steps)~="table" or #plan.steps==0 then return nil end
+    return copy(plan)
+end
+function RA.RestorePlan(slug,snapshot,supplied)
+    if not slug or type(snapshot)~="table" then return false end
+    if type(snapshot.steps)~="table" or #snapshot.steps==0 then return false end
+    local db=saved();if not db then return false end
+    local result=copy(snapshot)
+    local scope=character().."|"..slug    local key=result.cacheSignature or result.key
+    if not key then return false end
+    discardScope(scope)
+    revision=revision+1;result.revision=revision
+    result.inFlight=false;result.finalizing=nil
+    if result.status=="searching" then result.status="stopped" end
+    results[key]=result;active[scope]=key
+    refreshFreshness(result,slug,options(slug,supplied))
+    remember({slug=slug,signature=result.cacheSignature,opts=result.executionOptions or {}},result)
+    for _,fn in ipairs(listeners) do pcall(fn,slug,result) end
+    return result
+end
 function RA.Invalidate(reason)
     clearPrices()
     if reason==nil then return end

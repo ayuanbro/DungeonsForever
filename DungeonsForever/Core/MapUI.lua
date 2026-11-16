@@ -1096,6 +1096,25 @@ function M.QuestPinsOn()
     return s.mapQuestPins ~= false
 end
 
+function M.PinsHidden()
+    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
+    if type(s) ~= "table" then return false end
+    return s.mapPinsHidden == true
+end
+
+function M.SetPinsHidden(v)
+    local db = DungeonsForeverDB
+    if type(db) ~= "table" then return end
+    db.dungeon = db.dungeon or {}
+    db.dungeon.mapPinsHidden = v and true or false
+    if M.SyncPins then pcall(M.SyncPins, M) end
+    if M.SyncWorldQuestPins then pcall(M.SyncWorldQuestPins) end
+    if ns.MapWorldModule and ns.MapWorldModule.ResetPins then
+        pcall(ns.MapWorldModule.ResetPins)
+    end
+    if ns.ExploreMapRefresh then pcall(ns.ExploreMapRefresh) end
+end
+
 function M.QuestTakeableOnly()
     local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
     local c = s and s.mapQuestPinsCfg
@@ -5106,7 +5125,7 @@ end
 function M.SyncWorldQuestPins()
     if not (WorldMapFrame and WorldMapFrame.IsShown and WorldMapFrame:IsShown()
             and WorldMapFrame.GetMapID) then return end
-    if not M.QuestPinsOn() then
+    if not M.QuestPinsOn() or M.PinsHidden() then
         wpRelease()
         return
     end

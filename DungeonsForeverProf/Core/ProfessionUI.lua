@@ -1369,6 +1369,44 @@ function PD.ItemIcon(id)
     return tex
 end
 
+function PD.EnsureTipNameRefresh()
+    if PD.__nmEvt then return end
+    local ev = CreateFrame("Frame")
+    ev:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+    pcall(ev.RegisterEvent, ev, "ITEM_DATA_LOAD_RESULT")
+    ev:SetScript("OnEvent", function(_, _, itemID, success)
+        if itemID == nil or success == false then return end
+        _nmNeg[itemID] = nil
+        _icNeg[itemID] = nil
+        local r = PD.hoverRow
+        if not (r and r.__spell and r.__tipExtra and r:IsMouseOver()) then return end
+        if PD.__nmT then return end
+        PD.__nmT = C_Timer.NewTimer(0.15, function()
+            PD.__nmT = nil
+            local rr = PD.hoverRow
+            if not (rr and rr.__spell and rr.__tipExtra and rr:IsMouseOver()) then return end
+            local extra = rr.__tipExtra
+            if type(extra) == "function" then extra = extra() end
+            PD.ShowSpellTip(rr, extra)
+        end)
+    end)
+    PD.__nmEvt = ev
+end
+
+function PD.PrimeNames(mats)
+    if type(mats) ~= "table" then return end
+    PD.EnsureTipNameRefresh()
+    for i = 1, #mats do
+        local m = mats[i]
+        local id = type(m) == "table" and m[1] or nil
+        if type(id) == "number" then
+            _nmNeg[id] = nil
+            _icNeg[id] = nil
+            DG.RequestItem(id)
+        end
+    end
+end
+
 PD.Wrap = function(text, fs, width)
     local out = {}
     if type(text) ~= "string" or text == "" or not width then return out end
@@ -4975,7 +5013,13 @@ function PD.Build(page)
         SetButtonSelected(bt, false)
         bt:Hide()
         bt:SetScript("OnClick", function(self)
-            if self.__key and PD.onTool then PD.onTool(self.__key) end
+            local k = self.__key
+            if not k then return end
+            if k == "route_history" then
+                PD.ToggleRouteHistory()
+            elseif PD.onTool then
+                PD.onTool(k)
+            end
             ns.PlaySound(1)
         end)
         PD.toolBtns[i] = bt
@@ -10216,6 +10260,7 @@ end
 function PD.MatPriceLines(mats, costTxt, productID)
     local lines = {}
     if not (mats and #mats > 0) then return lines end
+    PD.PrimeNames(mats)
     local MAX = 8
     local showN = math.min(#mats, MAX)
     for i = 1, showN do
@@ -10257,6 +10302,7 @@ end
 function PD.PriceTipLines(itemID, mats, opts)
     local lines = {}
     if not itemID then return lines end
+    PD.PrimeNames(mats)
     local ah = RA.AHPriceOf and RA.AHPriceOf(itemID) or nil
     local sell = RA.NPCSellPriceOf and RA.NPCSellPriceOf(itemID) or nil
     local cost, unpriced, nMats
@@ -10294,6 +10340,7 @@ function PD.PriceTipLines(itemID, mats, opts)
             lines[#lines + 1] = { L["NPC 配方价格"], 0.92, 0.94, 0.98, false, nil,
                                   o.patternCost, 1, 1, 1 }
         end
+        lines[#lines + 1] = { format(L["卖店: %s"], sell and RA.MoneyStr(sell, "copper") or "—") }
     else
         lines[#lines + 1] = { format(L["拍卖: %s"], ah and RA.MoneyStr(ah, "copper") or "—") }
         PD.VendorBlockLines(lines, itemID)
@@ -13672,6 +13719,324 @@ function PD.ReserveWarningLines(reserve)
     return lines
 end
 
+PD.HISTORY_MAX = 5
+PD.HIST_W, PD.HIST_PAD, PD.HIST_TOP, PD.HIST_ROW_H = 360, 12, 60, 24
+PD.HIST_TIME_W, PD.HIST_COST_W = 96, 130
+PD.HIST_HEAD_Y = 38
+
+function PD.RouteHistoryList(slug)
+    slug = slug or PD.cur
+    local prof = ProfDB()
+    prof.routeHistory = prof.routeHistory or {}
+    local bucket = slug and prof.routeHistory[slug]
+    if type(bucket) ~= "table" then return {} end
+    return bucket
+end
+
+function PD.RouteHistorySig(plan)
+    local steps = PD.PlanHasSteps(plan) and #plan.steps or 0
+    local total = tonumber(plan.total)
+    return table.concat({ tostring(steps), tostring(total and math.floor(total + 0.5) or -1),
+        tostring(plan.completeCost ~= false), tostring(plan.scheme or ""),
+        tostring(plan.start or 0), tostring(plan.target or 0) }, "|")
+end
+
+function PD.RecordRouteHistory(plan, slug)
+    if type(plan) ~= "table" then return end
+    slug = slug or plan.slug or PD.cur
+    if not slug or slug ~= PD.cur then return end
+    if plan.status == "searching" or plan.finalizing then return end
+    local steps = PD.PlanHasSteps(plan) and #plan.steps or 0
+    if steps <= 0 then return end
+    local total = tonumber(plan.total)
+    if total == nil and not plan.referenceOnly then return end
+    local prof = ProfDB()
+    prof.routeHistory = prof.routeHistory or {}
+    local bucket = prof.routeHistory[slug]
+    if type(bucket) ~= "table" then bucket = {}; prof.routeHistory[slug] = bucket end
+    local sig = PD.RouteHistorySig(plan)
+    if bucket[1] and bucket[1].sig == sig then
+        PD.KeepHistoryPlan(slug, sig, plan)
+        if bucket[1].skel == nil and RA and RA.SkeletonOf then
+            bucket[1].skel = RA.SkeletonOf(plan)
+        end
+        return
+    end
+    for i = #bucket, 1, -1 do
+        if bucket[i].sig == sig then table.remove(bucket, i) end
+    end
+    table.insert(bucket, 1, {
+        stamp = tonumber(plan.stamp) or (time and time() or 0),
+        steps = steps,
+        total = total and math.floor(total + 0.5) or 0,
+        complete = plan.completeCost ~= false,
+        sig = sig,
+        skel = RA and RA.SkeletonOf and RA.SkeletonOf(plan) or nil,
+    })
+    while #bucket > PD.HISTORY_MAX do table.remove(bucket) end
+    PD.KeepHistoryPlan(slug, sig, plan)
+    if PD.histPopup and PD.histPopup:IsShown() then PD.FillRouteHistory() end
+end
+
+function PD.KeepHistoryPlan(slug, sig, plan)
+    if not slug or not sig then return end
+    PD.histPlans = PD.histPlans or {}
+    local box = PD.histPlans[slug]
+    if type(box) == "table" and box[sig] then return end
+    if not (RA and RA.SnapshotPlan) then return end
+    local snap = RA.SnapshotPlan(plan)
+    if not snap then return end
+    if type(box) ~= "table" then box = {}; PD.histPlans[slug] = box end
+    box[sig] = snap
+    local bucket = PD.RouteHistoryList(slug)
+    local alive = {}
+    for i = 1, #bucket do alive[tostring(bucket[i].sig)] = true end
+    for k in pairs(box) do
+        if not alive[tostring(k)] then box[k] = nil end
+    end
+end
+
+function PD.HistoryPlanOf(slug, entry)
+    local box = PD.histPlans and PD.histPlans[slug]
+    if type(box) ~= "table" or type(entry) ~= "table" then return nil end
+    return box[entry.sig]
+end
+
+function PD.RestoreHistoryPlan(entry)
+    local slug = PD.histOpenSlug or PD.cur
+    if not slug then return nil end
+    local snap = PD.HistoryPlanOf(slug, entry)
+    if not snap then
+        local skel = type(entry) == "table" and entry.skel or nil
+        if type(skel) == "table" and RA and RA.RebuildFromSkel then
+            local ok, res = pcall(RA.RebuildFromSkel, slug, skel)
+            if ok and res then return res, "pending" end
+        end
+        return nil, "expired"
+    end
+    if not (RA and RA.RestorePlan) then return nil, "unsupported" end
+    local res = RA.RestorePlan(slug, snap)
+    if not res then return nil, "failed" end
+    PD.solverPaintRes, PD.solverFrac = nil, nil
+    PD.autoSnapshot, PD.autoSnapshotSlug = res, slug
+    PD.autoExact = true
+    local learned = PD.ProfLearned and PD.ProfLearned(true) or {}
+    PD.autoKey = PD.PlanKeyOf(slug, PD.BuildLvOpts(slug, learned[slug] and learned[slug].cur))
+    PD.exactFailed = {}
+    PD.__planShown, PD.__planPending = nil, nil
+    return res
+end
+
+function PD.RouteHistoryTime(stamp)
+    stamp = tonumber(stamp)
+    if not stamp or stamp <= 0 then return "--" end
+    local ok, out = pcall(date, "%m-%d %H:%M", stamp)
+    if ok and type(out) == "string" then return out end
+    return "--"
+end
+
+function PD.RouteHistoryCost(entry)
+    local text = RA.MoneyStr(tonumber(entry.total) or 0, "copper")
+    if entry.complete == false then text = "≥" .. text end
+    return text
+end
+
+function PD.FillRouteHistory()
+    local f = PD.histPopup
+    if not f then return end
+    local list = PD.RouteHistoryList(PD.histOpenSlug or PD.cur)
+    if #list == 0 then f.empty:Show() else f.empty:Hide() end
+    for i = 1, PD.HISTORY_MAX do
+        local bt, entry = f.rows[i], list[i]
+        if entry then
+            bt.__entry = entry
+            bt.__time:SetText(PD.RouteHistoryTime(entry.stamp))
+            bt.__steps:SetText(format(L["%d 步"], tonumber(entry.steps) or 0))
+            bt.__cost:SetText(PD.RouteHistoryCost(entry))
+            bt:Show()
+        else
+            bt.__entry = nil
+            bt:Hide()
+        end
+    end
+    if #list == 0 then
+        f:SetHeight(PD.HIST_TOP + 56 + 12)
+    else
+        f:SetHeight(PD.HIST_TOP + #list * PD.HIST_ROW_H + 12)
+    end
+end
+
+function PD.BuildRouteHistoryPopup()
+    if PD.histPopup then return PD.histPopup end
+    local f = CreateFrame("Frame", "DungeonsForeverRouteHistory", UIParent)
+    f:SetFrameStrata("FULLSCREEN_DIALOG")
+    f:SetToplevel(true)
+    f:SetClampedToScreen(true)
+    f:EnableMouse(true)
+    f:SetSize(PD.HIST_W, PD.HIST_TOP + PD.HISTORY_MAX * PD.HIST_ROW_H + 12)
+    local title = MakeFS(f, 16, C_GOLD, "LEFT")
+    title:SetPoint("TOPLEFT", f, "TOPLEFT", PD.HIST_PAD, -12)
+    title:SetText(L["历史路线"])
+    local note = MakeFS(f, 14, C_GREY, "RIGHT")
+    note:SetPoint("TOPRIGHT", f, "TOPRIGHT", -PD.HIST_PAD, -13)
+    note:SetText(format(L["最近 %d 次"], PD.HISTORY_MAX))
+    local heads = {
+        { L["时间"], "LEFT", PD.HIST_PAD },
+        { L["步数"], "RIGHT", -(PD.HIST_PAD + PD.HIST_COST_W + 12) },
+        { L["总花费"], "RIGHT", -PD.HIST_PAD },
+    }
+    for _, h in ipairs(heads) do
+        local fs = MakeFS(f, 14, C_GREY, h[2])
+        local side = h[2] == "LEFT" and "TOPLEFT" or "TOPRIGHT"
+        fs:SetPoint(side, f, side, h[3], -PD.HIST_HEAD_Y)
+        fs:SetText(h[1])
+    end
+    local HOVER = ns.hui and ns.hui.layer and ns.hui.layer.L5 or { 0.22, 0.25, 0.31 }
+    f.rows = {}
+    for i = 1, PD.HISTORY_MAX do
+        local bt = CreateFrame("Button", nil, f)
+        bt:SetSize(PD.HIST_W - PD.HIST_PAD * 2, PD.HIST_ROW_H)
+        bt:SetPoint("TOPLEFT", f, "TOPLEFT", PD.HIST_PAD, -(PD.HIST_TOP + (i - 1) * PD.HIST_ROW_H))
+        local hl = bt:CreateTexture(nil, "BACKGROUND")
+        hl:SetAllPoints()
+        hl:SetColorTexture(0, 0, 0, 0)
+        bt.__hl = hl
+        local t = MakeFS(bt, 14, C_TEXT, "LEFT")
+        t:SetPoint("LEFT", bt, "LEFT", 0, 0)
+        t:SetWidth(PD.HIST_TIME_W)
+        t:SetWordWrap(false)
+        bt.__time = t
+        local s = MakeFS(bt, 14, C_GREY, "RIGHT")
+        s:SetPoint("RIGHT", bt, "RIGHT", -(PD.HIST_COST_W + 12), 0)
+        s:SetWordWrap(false)
+        bt.__steps = s
+        local c = MakeFS(bt, 14, C_WHITE, "RIGHT")
+        c:SetPoint("RIGHT", bt, "RIGHT", 0, 0)
+        c:SetWordWrap(false)
+        bt.__cost = c
+        bt:SetScript("OnEnter", function(self)
+            self.__hl:SetColorTexture(HOVER[1], HOVER[2], HOVER[3], 1)
+        end)
+        bt:SetScript("OnLeave", function(self) self.__hl:SetColorTexture(0, 0, 0, 0) end)
+        bt:SetScript("OnClick", function(self)
+            local entry = self.__entry
+            if not entry then return end
+            local slug = PD.histOpenSlug or PD.cur
+            PD.HideRouteHistory()
+            local res, why = PD.RestoreHistoryPlan(entry)
+            local head = "|cff33ff99无限副本手册:|r "
+            if DEFAULT_CHAT_FRAME then
+                if res and why == "pending" then
+                    DEFAULT_CHAT_FRAME:AddMessage(head .. format(L["正在按 %s 那版重算，完成后自动切回。"],
+                        PD.RouteHistoryTime(entry.stamp)), 1, 1, 1)
+                elseif res then
+                    DEFAULT_CHAT_FRAME:AddMessage(head .. format(L["已切回 %s · %d 步 · 总花费 %s"],
+                        PD.RouteHistoryTime(entry.stamp), tonumber(entry.steps) or 0,
+                        PD.RouteHistoryCost(entry)), 1, 1, 1)
+                else
+                    local msg = why == "expired" and L["这条记录没有存下路线内容，只能查看；之后的每次计算都会连路线一起保留。"]
+                        or L["这条记录已无法切回，请重新计算。"]
+                    DEFAULT_CHAT_FRAME:AddMessage(head .. msg, 1, 1, 1)
+                end
+            end
+            if slug == PD.cur then PD.RequestRender() end
+        end)
+        f.rows[i] = bt
+    end
+    local empty = MakeFS(f, 14, C_GREY)
+    empty:SetPoint("TOPLEFT", f, "TOPLEFT", PD.HIST_PAD, -(PD.HIST_TOP + 6))
+    empty:SetWidth(PD.HIST_W - PD.HIST_PAD * 2)
+    empty:SetWordWrap(true)
+    empty:SetText(L["还没有历史记录；点「重新计算」后会自动保存最近 5 次的时间、步数与总花费。"])
+    empty:Hide()
+    f.empty = empty
+    if ns.hui and ns.hui.SkinPopup then
+        ns.hui.SkinPopup(f, 8, "both", ns.hui.layer.L0)
+    end
+    f:SetScript("OnHide", function()
+        if PD.histClick then PD.histClick:UnregisterEvent("GLOBAL_MOUSE_DOWN") end
+        if PD.histOpenSlug then
+            PD.histOpenSlug = nil
+            local function refresh()
+                if not PD.histOpenSlug and PD.RequestRender then PD.RequestRender() end
+            end
+            if C_Timer and C_Timer.After then C_Timer.After(0, refresh) else refresh() end
+        end
+    end)
+    f:SetScript("OnUpdate", function(self, elapsed)
+        local now = GetTime and GetTime() or 0
+        if PD.histOpenAt and (now - PD.histOpenAt) < 0.6 then return end
+        if not PD.histOpenSlug or PD.histOpenSlug ~= PD.cur then
+            PD.HistTrace("slug")
+            PD.HideRouteHistory()
+            return
+        end
+        if PD.page and PD.page:IsVisible() then
+            self.__gone = 0
+        else
+            self.__gone = (self.__gone or 0) + (elapsed or 0.1)
+            if self.__gone > 0.4 then PD.HistTrace("page-gone") PD.HideRouteHistory() end
+        end
+    end)
+    if UISpecialFrames then
+        local listed = false
+        for i = 1, #UISpecialFrames do
+            if UISpecialFrames[i] == "DungeonsForeverRouteHistory" then listed = true break end
+        end
+        if not listed then tinsert(UISpecialFrames, "DungeonsForeverRouteHistory") end
+    end
+    PD.histPopup = f
+    return f
+end
+
+function PD.HistTrace(msg)
+    PD.histTrace = PD.histTrace or {}
+    local t = PD.histTrace
+    t[#t + 1] = (GetTime and string.format("%.1f ", GetTime()) or "") .. tostring(msg)
+    while #t > 14 do tremove(t, 1) end
+end
+
+function PD.HideRouteHistory()
+    PD.HistTrace("hide")
+    if PD.histPopup then PD.histPopup:Hide() end
+end
+
+function PD.ToggleRouteHistory()
+    PD.HistTrace(PD.histPopup and PD.histPopup:IsShown() and "click-close" or "click-open")
+    if PD.histPopup and PD.histPopup:IsShown() then PD.HideRouteHistory() return end
+    local owner
+    for i = 1, #(PD.toolBtns or {}) do
+        local bt = PD.toolBtns[i]
+        if bt.__key == "route_history" and bt:IsShown() then owner = bt break end
+    end
+    if not owner then PD.HistTrace("no-owner") return end
+    if not PD.histClick then
+        local cf = CreateFrame("Frame")
+        cf:SetScript("OnEvent", function(self)
+            if not (PD.histPopup and PD.histPopup:IsShown()) then
+                self:UnregisterEvent("GLOBAL_MOUSE_DOWN")
+                return
+            end
+            if GetTime and PD.histOpenAt and (GetTime() - PD.histOpenAt) < 0.25 then return end
+            if PD.histPopup:IsMouseOver() then return end
+            if PD.histOwner and PD.histOwner.IsMouseOver and PD.histOwner:IsMouseOver() then return end
+            PD.HistTrace("outside")
+            PD.HideRouteHistory()
+        end)
+        PD.histClick = cf
+    end
+    local f = PD.BuildRouteHistoryPopup()
+    PD.histOwner, PD.histOpenSlug = owner, PD.cur
+    PD.histOpenAt = GetTime and GetTime() or 0
+    PD.FillRouteHistory()
+    f.__gone = 0
+    f:ClearAllPoints()
+    f:SetPoint("TOPRIGHT", owner, "BOTTOMRIGHT", 0, -4)
+    f:Show()
+    PD.histClick:RegisterEvent("GLOBAL_MOUSE_DOWN")
+    PD.RequestRender()
+end
+
 function PD.RowsLeveling(rows)
     PD.warnNotes = nil
     local activeRun, activePlan = TrackRunOf(PD.cur)
@@ -13756,11 +14121,13 @@ function PD.RowsLeveling(rows)
             PushText(rows,scanForced,14,{0.95,0.72,0.42},1)
             PushGap(rows,4,1)
         else
-            if scanNotice then
+            if scanNotice and scanAdvice then
+                PushText(rows,scanNotice.."   |cffa1a1a1"..scanAdvice.."|r",14,{0.55,0.85,0.6},1)
+                PushGap(rows,4,1)
+            elseif scanNotice then
                 PushText(rows,scanNotice,14,{0.55,0.85,0.6},1)
-                PushGap(rows,2,1)
-            end
-            if scanAdvice then
+                PushGap(rows,4,1)
+            elseif scanAdvice then
                 PushText(rows,scanAdvice,14,C_DIM,1)
                 PushGap(rows,4,1)
             end
@@ -13907,6 +14274,7 @@ function PD.RowsLeveling(rows)
                 or L["固定攻略包含不可执行步骤，请切换自动规划或先满足学习条件。"],0.95,0.75,0.4)
         end
     end
+    PD.RecordRouteHistory(auto and res or fixedSum, PD.cur)
     local trackRun, trackAll = TrackStepsFor(PD.cur, steps)
 
     PD.lvSummary = {
@@ -15258,6 +15626,11 @@ function PD.LevelTool()
     if not PD.FixedOnly() then
         local automatic = PD.AutoRouteEnabled()
         local need = PD.RecalcNeeded()
+        local hist = { key = "route_history", align = "right",
+                       text = L["历史路线"], on = (PD.histOpenSlug == PD.cur),
+                       tip = { { L["历史路线"], 1, 0.82, 0 },
+                           { format(L["最近 %d 次计算的时间、步数与总花费。"], PD.HISTORY_MAX), 0.85, 0.85, 0.85 } } }
+        list[#list + 1] = hist
         local rec = { key = "recalc", align = "right", primary = true, glow = need,
                       text = automatic and L["重新计算"] or L["刷新费用"] }
         if automatic and PD.policyDirty and PD.policyDirty[PD.cur] then
@@ -15305,6 +15678,8 @@ function PD.LevelTool()
             local name = (D.pro and D.pro[PD.cur] and D.pro[PD.cur].name) or PD.cur
             if pf and pf.ImportShoppingList then pcall(pf.ImportShoppingList, PD.cur, name) end
             ns.PlaySound(1)
+        elseif k == "route_history" then
+            PD.ToggleRouteHistory()
         elseif k == "recalc" then
             if PD.cur ~= routeSlug then return end
             PD.DoRecalc(routeSlug)
@@ -16778,6 +17153,7 @@ end
 
 function PD.SetTab(key)
     PD.setOpen = false
+    PD.ResetItemNameMemo()
     if not (PD.avail and PD.avail[key]) then return end
     local wasCrate = (PD.tab == "crate" or PD.tab == "writ")
     local nowCrate = (key == "crate" or key == "writ")
@@ -16886,6 +17262,7 @@ function PD.Open()
         PD.wantOpen = true
         return
     end
+    PD.ResetItemNameMemo()
     PD.EnsureCur()
     PD.RequestRender()
 end

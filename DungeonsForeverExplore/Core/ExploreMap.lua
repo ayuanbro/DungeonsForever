@@ -911,6 +911,19 @@ function ns.ExploreMapRefresh()
         releaseLines()
         return
     end
+    if ns.MapModule and ns.MapModule.PinsHidden and ns.MapModule.PinsHidden() then
+        releasePins()
+        releaseGraves()
+        releaseAreas()
+        releaseLines()
+        if ns.AreaDraw then
+            for cv in pairs(areaHosts) do
+                local h = areaHosts[cv]
+                if h then pcall(ns.AreaDraw.Clear, h) end
+            end
+        end
+        return
+    end
     if not (WorldMapFrame and WorldMapFrame.IsShown and WorldMapFrame:IsShown()
             and WorldMapFrame.GetMapID) then return end
     if routeOn and cfg().autoRecalc ~= false and route[1]

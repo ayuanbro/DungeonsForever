@@ -219,6 +219,15 @@ local ROLE_CONST = {
     warrior = "phys", rogue = "phys",
 }
 local PURE_PHYS = { warrior = true, rogue = true, hunter = true }
+BG.SCHOOL_OK = {
+    paladin = { HOLY = true },
+    priest = { HOLY = true, SHADOW = true },
+    shaman = { NATURE = true, FROST = true, FIRE = true },
+    mage = { FIRE = true, FROST = true, ARCANE = true },
+    warlock = { FIRE = true, SHADOW = true },
+    druid = { NATURE = true, ARCANE = true },
+}
+BG.SCHOOL_KEYS = { "ARCANE", "FIRE", "FROST", "NATURE", "SHADOW", "HOLY" }
 local __tprof, __tprofDirty = nil, true
 
 local function TalentSpent(tab)
@@ -273,7 +282,7 @@ local function SpecWeights(cls, specId, roleOverride)
         SPELL_POWER = phys and 0.4 or 1,
         CRIT_RATING = phys and 0.75 or 0.7,
         HIT_RATING = 1.1, HASTE_RATING = 0.5,
-        WEAPON_DPS = 0, RANGED_DPS = 0,
+        WEAPON_DPS = 0, RANGED_DPS = 0, PHYSICAL_DAMAGE_DONE = 0,
         MANA_REGENERATION = 0,
         HEALTH_REGEN = 0, BLOCK_VALUE = 0, SPELL_PENETRATION = 0,
         SPELL_DAMAGE_DONE = 0, SPELL_HEALING_DONE = 0,
@@ -290,6 +299,7 @@ local function SpecWeights(cls, specId, roleOverride)
             w.INTELLECT = 0.08
             w.SPIRIT = 0
             w.STAMINA = 0.5
+            w.HOLY_DAMAGE_DONE = 0.12
         elseif cls == "shaman" then
             w.INTELLECT = 0.05
             w.SPIRIT = 0.05
@@ -325,6 +335,11 @@ local function SpecWeights(cls, specId, roleOverride)
         w.NATURE_DAMAGE_DONE = 0.05
         w.SHADOW_DAMAGE_DONE = 0.05
         w.HEALTH_REGEN = 0.04
+        if cls == "paladin" then
+            w.HOLY_DAMAGE_DONE = 0.05
+        elseif cls == "priest" then
+            w.HOLY_DAMAGE_DONE = 0.05
+        end
     else
         w.SPIRIT = 0.35
         w.CRIT_RATING = 0.7
@@ -353,6 +368,19 @@ local function SpecWeights(cls, specId, roleOverride)
         w.CRIT_RATING = 0.3
         w.HIT_RATING = 0.7
         w.HASTE_RATING = 0.3
+        w.INTELLECT = 0
+        w.SPIRIT = 0
+        w.SPELL_POWER = 0
+        w.SPELL_DAMAGE_DONE = 0
+        w.SPELL_HEALING_DONE = 0
+        w.SPELL_PENETRATION = 0
+        w.MANA_REGENERATION = 0
+        w.ARCANE_DAMAGE_DONE = 0
+        w.FIRE_DAMAGE_DONE = 0
+        w.FROST_DAMAGE_DONE = 0
+        w.NATURE_DAMAGE_DONE = 0
+        w.SHADOW_DAMAGE_DONE = 0
+        w.HOLY_DAMAGE_DONE = 0
         if cls == "warrior" then
             w.STRENGTH = 0.55
             w.AGILITY = 0.45
@@ -364,16 +392,14 @@ local function SpecWeights(cls, specId, roleOverride)
             w.ATTACK_POWER = 0.35
             w.WEAPON_DPS = 3.5
             w.BLOCK_RATING = 0
-            w.INTELLECT = 0
-            w.SPIRIT = 0
-            w.SPELL_POWER = 0
         elseif cls == "paladin" then
             w.STRENGTH = 0.5
             w.AGILITY = 0.3
             w.ATTACK_POWER = 0.25
             w.INTELLECT = 0.05
-            w.SPIRIT = 0
             w.SPELL_POWER = 0.38
+            w.SPELL_DAMAGE_DONE = 0.2
+            w.HOLY_DAMAGE_DONE = 0.3
             w.MANA_REGENERATION = 0.2
             w.WEAPON_DPS = 2.5
         end
@@ -390,6 +416,11 @@ local function SpecWeights(cls, specId, roleOverride)
         w.NATURE_DAMAGE_DONE = 0
         w.SHADOW_DAMAGE_DONE = 0
     end
+    local okSchool = BG.SCHOOL_OK[cls]
+    for _, sk in ipairs(BG.SCHOOL_KEYS) do
+        if not (okSchool and okSchool[sk]) then w[sk .. "_DAMAGE_DONE"] = 0 end
+    end
+    w.PHYSICAL_DAMAGE_DONE = (w.WEAPON_DPS or 0) * 0.385
     return w
 end
 
@@ -410,6 +441,7 @@ local W_KEYS = {
     { "MANA_REGENERATION", L["5秒回蓝"] }, { "HEALTH_REGEN", L["5秒回血"] },
     { "ATTACK_POWER", L["攻击强度"] }, { "RANGED_ATTACK_POWER", L["远程攻强"] },
     { "WEAPON_DPS", L["武器伤害"] }, { "RANGED_DPS", L["远程武器伤害"] },
+    { "PHYSICAL_DAMAGE_DONE", L["武器伤害加成"], L["武器伤害"] },
     { "SPELL_POWER", L["法术强度"] }, { "SPELL_DAMAGE_DONE", L["法术伤害"] },
     { "SPELL_HEALING_DONE", L["治疗效果"] }, { "SPELL_PENETRATION", L["法术穿透"] },
     { "ARCANE_DAMAGE_DONE", L["奥术伤害"] }, { "FIRE_DAMAGE_DONE", L["火焰伤害"] },
@@ -544,7 +576,7 @@ local function ScanStatsTip(id)
                     end
                 end
                 for _, wk in ipairs(W_KEYS) do
-                    local k, nm = wk[1], wk[2]
+                    local k, nm = wk[1], (wk[3] or wk[2])
                     if k ~= "WEAPON_DPS" and type(nm) == "string" and nm ~= "" then
                         local nv = MatchStatNum(t, nm)
                         if nv and nv > 0 then out[k] = (out[k] or 0) + nv end
@@ -764,6 +796,8 @@ local function LoadWeightPrefs()
     BG.wActive = (a and BG.wSchemes[a]) and a or nil
     local r = s.wRole
     BG.wRole = (type(r) == "string" and r ~= "") and r or nil
+    local ts = s.tSpec
+    BG.__tspecSV = (type(ts) == "string" and ts ~= "") and ts or nil
 end
 
 local function SaveWeightPrefs()
@@ -775,6 +809,7 @@ local function SaveWeightPrefs()
     s.wSchemes = list
     s.wActive = BG.wActive
     s.wRole = BG.wRole
+    s.tSpec = BG.tspec
 end
 
 local function BumpWeights()
@@ -954,6 +989,7 @@ local SLOT_GEAR = {
     shirt = { "Shirt" }, tabard = { "Tabard" },
     ["two-hand"] = { "Two-Hand" }, ["main-hand"] = { "One-Hand", "Main Hand" },
     ["off-hand"] = { "Off Hand", "Held In Off-hand", "Shield" },
+    ["shield"] = { "Shield" },
     ["off-wep"] = { "One-Hand", "Off Hand" },
     ranged = { "Ranged", "Thrown", "Relic" },
 }
@@ -974,6 +1010,11 @@ local USABLE = {
     shaman = { armor = { 1, 2, 3 }, weapon = { 0, 1, 4, 5, 10, 13, 15 },
                shield = true, relic = { 9 } },
 }
+
+function BG.OneHandOnly()
+    if not BG.tspec or BG.tspec ~= "prot" then return false end
+    return BG.cls == "warrior" or BG.cls == "paladin"
+end
 
 local function InList(list, v)
     for i = 1, #list do if list[i] == v then return true end end
@@ -1042,11 +1083,12 @@ end
 function BG.CatRowsForMain()
     local cap = UsableCap and UsableCap() or 60
     local key = "main+2h:" .. tostring(cap) .. ":" .. tostring(BG.cls) .. ":" .. tostring(BG.instGen or 0)
+        .. ":" .. tostring(BG.OneHandOnly() and 1 or 0)
     local c = BG.__mainRows
     if c and c.key == key then return c.rows end
     local out, seen = {}, {}
     local a, b = CatRowsFor("main-hand"), CatRowsFor("two-hand")
-    for li = 1, 2 do
+    for li = 1, (BG.OneHandOnly() and 1 or 2) do
         local src = (li == 1) and a or b
         for i = 1, #src do
             local r = src[i]
@@ -1666,6 +1708,7 @@ local function SideHas(sp, slotKey, side)
 end
 
 local function MainKey(sp, side)
+    if BG.OneHandOnly() then return "main-hand" end
     if not sp then return "main-hand" end
     side = side or CurSide()
     if SideHas(sp, "two-hand", side) then return "two-hand" end
@@ -1698,7 +1741,12 @@ function BG.FixDupTrinket(t)
 end
 
 function BG.FixWeaponPair(t)
-    if type(t) ~= "table" or not t["two-hand"] then return false end
+    if type(t) ~= "table" then return false end
+    if BG.OneHandOnly() and t["two-hand"] then
+        t["two-hand"] = nil
+        return true
+    end
+    if not t["two-hand"] then return false end
     local had = t["main-hand"] ~= nil or t["off-hand"] ~= nil
         or t["held"] ~= nil or t["shield"] ~= nil
     t["main-hand"] = nil
@@ -1709,6 +1757,7 @@ function BG.FixWeaponPair(t)
 end
 
 local function OffKey(sp, side)
+    if BG.OneHandOnly() then return "shield" end
     if not sp then return "off-hand" end
     side = side or CurSide()
     for _, k in ipairs({ "off-hand", "held", "shield" }) do
@@ -2254,7 +2303,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 11
+BG.AUTO_GEN_REV = 14
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2355,7 +2404,8 @@ local function AutoSig(mode, cap)
         tostring(BG.cls or ""),
         tostring(BG.spec or ""), tostring(BG.tspec or ""), tostring(mode),
         tostring(cap), tostring(BG.wGen or 0), tostring(BG.wActive or 0),
-        tostring(BG.OneHandMode and BG.OneHandMode() and 1 or 0),
+        tostring((BG.OneHandMode and BG.OneHandMode() and 1 or 0)
+            + (BG.OneHandOnly and BG.OneHandOnly() and 2 or 0)),
         tostring(BG.instGen or 0),
         PlayerFac() or "" }, "|")
 end
@@ -2625,10 +2675,14 @@ local function AutoPick(job)
                 job.cur[job.dk] = nil
                 job.ki = job.ki + 1
                 job.curKey = nil
+            elseif job.oneOnly and job.curKey == "two-hand" then
+                job.ki = job.ki + 1
+                job.curKey = nil
             else
                 local rkey = RowsKey(job.curKey)
                 if rkey == "main-hand" then rkey = job.mk end
                 if job.dual and rkey == "off-hand" then rkey = "off-wep" end
+                if job.shield and rkey == "off-hand" then rkey = "shield" end
                 job.groups = SLOT_GEAR[rkey] or {}
                 job.gi, job.bi = 1, 1
                 job.best, job.bestScore = nil, nil
@@ -2786,6 +2840,8 @@ local function AutoJobStart(mode, cap, sig, srcSet)
         id = autoJobSeq, mode = mode, cap = cap, sig = sig,
         cls = BG.cls, tspec = BG.tspec, sp = sp,
         mk = dual and "main-hand" or MainKey(sp), dual = dual, w = EffWeights(),
+        shield = BG.OneHandOnly() or nil,
+        oneOnly = BG.OneHandOnly() or nil,
         instSet = BG.AutoInstCopy(),
         srcSet = srcSet or ((mode == "dungeon") and AUTO_SRC_DG)
             or ((mode == "known") and AUTO_SRC_KNOWN)
@@ -3490,6 +3546,8 @@ local function PaintBrowser()
     if rkey == "main-hand" then
         rkey = MainKey(sp)
         mainBoth = (BG.sel == "main")
+    elseif rkey == "off-hand" and BG.OneHandOnly() then
+        rkey = "shield"
     end
     local offLocked = (BG.sel == "off" and BG.MainDisp(sp) == "two-hand")
     BG.offLocked = offLocked
@@ -3684,6 +3742,12 @@ function BG.Render()
     BG.FixDupTrinket(BG.cur)
     if not BG.vol then BG.vol = DefaultVol() end
     if not BG.sel then BG.sel = SLOTS_LEFT[1] end
+    if not BG.tspec and BG.__tspecSV then
+        for _, sr in ipairs(SPEC_DIR[BG.cls] or {}) do
+            if sr.key == BG.__tspecSV then BG.tspec = sr.key break end
+        end
+        if BG.tspec and RoleOfKey(BG.cls, BG.tspec) == "tank" then BG.spec = "tank" end
+    end
     if not BG.tspec then
         local tk, nt
         for _, sr in ipairs(SPEC_DIR[BG.cls] or {}) do
@@ -3904,7 +3968,7 @@ function BG.SetSlot(slotKey, itemID)
         if itemID == nil then
             BG.cur["two-hand"] = nil
             BG.cur["main-hand"] = nil
-        elseif BG.SlotOfAny and BG.SlotOfAny(itemID) == "two-hand" then
+        elseif BG.SlotOfAny and BG.SlotOfAny(itemID) == "two-hand" and not BG.OneHandOnly() then
             dk = "two-hand"
             BG.cur["main-hand"] = nil
             BG.cur["off-hand"] = nil
@@ -4077,6 +4141,11 @@ function BG.ResetToRec()
     BG.usingPlan = nil
     BG.autoPlan = nil
     BG.AutoJobCancel()
+    local sp = SpecRec()
+    if sp and BG.tspec and sp.tspec ~= BG.tspec then
+        BG.UseAutoPlan("dungeon")
+        return
+    end
     BG.RequestRender()
 end
 
@@ -5871,22 +5940,34 @@ function BG.ScoreVsBisAll(id, link)
     if type(id) ~= "number" then return nil end
     local slot = SlotOfAny(id)
     if type(slot) ~= "string" then return nil end
-    local baseId = EquippedInSlot(slot, id)
-    if type(baseId) ~= "number" or baseId == id then return nil end
+    local bases, blinks = {}, {}
+    if PAIR_SLOT[slot] then
+        local b1, l1 = InvIdOf(INV_SLOT_NAME[slot])
+        local b2, l2 = InvIdOf(INV_SLOT_NAME[PAIR_SLOT[slot]])
+        if b1 == id or b2 == id then return nil end
+        if b1 then bases[1] = b1 blinks[1] = l1 end
+        if b2 then bases[#bases + 1] = b2 blinks[#blinks + 1] = l2 end
+    else
+        local baseId = EquippedInSlot(slot, id)
+        if type(baseId) ~= "number" or baseId == id then return nil end
+        local eid, el = InvIdOf(INV_SLOT_NAME[slot])
+        bases[1] = baseId
+        blinks[1] = (eid == baseId) and el or nil
+    end
+    if #bases == 0 then return nil end
     local st
     if type(link) == "string" then st = BG.StatsFromLink(link) end
     if not st then st = ItemStatsOf(id) end
     if BG.StatlessArmor(st) then return nil end
-    local eid, el = InvIdOf(INV_SLOT_NAME[slot])
-    local baseLink = (eid == baseId) and el or nil
-    if not baseLink and PAIR_SLOT[slot] then
-        local _, pl = InvIdOf(INV_SLOT_NAME[PAIR_SLOT[slot]])
-        baseLink = pl
+    local bsts, bnames = {}, {}
+    for i = 1, #bases do
+        local bst = blinks[i] and BG.StatsFromLink(blinks[i]) or nil
+        if not bst then bst = ItemStatsOf(bases[i]) end
+        bsts[i] = bst
+        bnames[i] = "#" .. i
     end
-    local bst = baseLink and BG.StatsFromLink(baseLink) or nil
-    if not bst then bst = ItemStatsOf(baseId) end
-    if type(st) ~= "table" and type(bst) ~= "table" then return nil end
-    local armorRef = BG.ArmorRef(st, bst)
+    if type(st) ~= "table" and type(bsts[1]) ~= "table" and type(bsts[2]) ~= "table" then return nil end
+    local armorRef = BG.ArmorRef(st, bsts[1] or bsts[2])
     local sch = BG.wActive and BG.wSchemes and BG.wSchemes[BG.wActive] or nil
     local rows = {}
     local twoHand = slot == "two-hand"
@@ -5898,10 +5979,19 @@ function BG.ScoreVsBisAll(id, link)
             if sch and type(sch.w) == "table" then for k, v in pairs(sch.w) do w[k] = v end end
             local my = BG.ScoreOfStats(st, id, w, armorRef)
             if type(my) == "number" and my > 0 then
-                local bs = BG.ScoreOfStats(bst, baseId, w, armorRef)
-                if type(bs) ~= "number" then bs = 0 end
-                rows[#rows + 1] = { key = sr.key, label = L[sr.label] or sr.label,
-                                    role = sr.role, pct = ScorePct(my - bs, bs), delta = my - bs }
+                local pcts, deltas = {}, {}
+                for i = 1, #bases do
+                    local bs = BG.ScoreOfStats(bsts[i], bases[i], w, armorRef)
+                    if type(bs) ~= "number" then bs = 0 end
+                    deltas[i] = my - bs
+                    pcts[i] = ScorePct(my - bs, bs)
+                end
+                local bi = 1
+                if type(pcts[2]) == "number" and type(pcts[1]) == "number" and pcts[2] > pcts[1] then bi = 2 end
+                rows[#rows + 1] = { key = sr.key, label = L[sr.label] or sr.label, role = sr.role,
+                                    pct = pcts[bi], delta = deltas[bi],
+                                    p1 = pcts[1], d1 = deltas[1], b1 = bnames[1],
+                                    p2 = pcts[2], d2 = deltas[2], b2 = bnames[2] }
             end
         end
     end

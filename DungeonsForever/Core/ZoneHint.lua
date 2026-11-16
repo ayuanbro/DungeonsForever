@@ -353,14 +353,31 @@ local function OwnItem(iid)
     return false
 end
 
+local function BookLoc(rec, ctx)
+    if type(rec[3]) == "number" and type(rec[4]) == "number" and HereArea(rec[2], ctx) then
+        return { area = rec[2], x = rec[3], y = rec[4] }
+    end
+    local alt = rec[7]
+    if type(alt) ~= "table" then return nil end
+    for i = 1, #alt do
+        local a = alt[i]
+        if type(a) == "table" and type(a[2]) == "number" and type(a[3]) == "number"
+           and HereArea(a[1], ctx) then
+            return { area = a[1], x = a[2], y = a[3], alt = true }
+        end
+    end
+    return nil
+end
+
 local function BookRows(ctx)
     local EG = ns.ExploreModule
     if not (EG and EG.IsBookFound) then return nil end
     local books = ns.ExploreBooks
     if type(books) ~= "table" then return nil end
-    local keys = {}
+    local keys, locs = {}, {}
     for bk, rec in pairs(books) do
-        if HereArea(rec and rec[2], ctx) then
+        local loc = BookLoc(rec, ctx)
+        if loc then
             local iid = (rec and rec[1]) or bk
             local found = false
             local ok, v = pcall(EG.IsBookFound, bk)
@@ -371,6 +388,7 @@ local function BookRows(ctx)
             end
             if not found and not Z.IsIgnored(ItemKey("book", iid)) then
                 keys[#keys + 1] = bk
+                locs[bk] = loc
             end
         end
     end
@@ -381,14 +399,17 @@ local function BookRows(ctx)
     for i = 1, n do
         local bk = keys[i]
         local rec = books[bk]
+        local loc = locs[bk]
         local iid = rec[1] or bk
         local desc = rec[5]
         if type(desc) ~= "string" then desc = nil end
+        local sub = string.format("%.1f, %.1f", loc.x, loc.y)
+        if loc.alt then sub = sub .. " · " .. L["另一位置"] end
         list[i] = {
             id = iid, base = iid, ikey = ItemKey("book", iid), ikind = "book",
             name = ItemName(iid), icon = ItemIcon(iid),
-            sub = string.format("%.1f, %.1f", rec[3] or 0, rec[4] or 0), desc = desc,
-            areaID = rec[2], x = rec[3], y = rec[4],
+            sub = sub, desc = desc,
+            areaID = loc.area, x = loc.x, y = loc.y,
         }
     end
     return list

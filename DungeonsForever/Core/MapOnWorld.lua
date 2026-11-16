@@ -1361,6 +1361,177 @@ local function syncOpenWinBtn()
     if not bt:IsShown() then bt:Show() end
 end
 
+local PINLOGO_TEX = M.LOGO_TEX or "Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever.blp"
+local PINLOGO_SLOT = 32
+local PINLOGO_X = 3
+local pinLogoCands = {}
+
+local function pinLogoOn()
+    if M.PinsHidden then return not M.PinsHidden() end
+    local s = DungeonsForeverDB and DungeonsForeverDB.dungeon
+    if type(s) ~= "table" then return true end
+    return s.mapPinsHidden ~= true
+end
+
+local function pinLogoHost()
+    local wmf = WorldMapFrame
+    if not wmf then return nil end
+    if wmf.GetCanvasContainer then
+        local ok, h = pcall(wmf.GetCanvasContainer, wmf)
+        if ok and h then return h end
+    end
+    return wmf
+end
+
+local function pinLogoFrames()
+    local n = 0
+    local wmf = WorldMapFrame
+    local ov = wmf and wmf.overlayFrames
+    if ov then
+        for i = 1, #ov do
+            local f = ov[i]
+            if f and f ~= W.pinLogo then
+                n = n + 1
+                pinLogoCands[n] = f
+            end
+        end
+    end
+    local Q = _G.Questie
+    local qb = Q and Q.WorldMap and Q.WorldMap.Button
+    if qb and qb ~= W.pinLogo then
+        n = n + 1
+        pinLogoCands[n] = qb
+    end
+    local okL, lib = pcall(function()
+        return LibStub and LibStub("Krowi_WorldMapButtons-1.4", true)
+    end)
+    local lbt = (okL and type(lib) == "table") and lib.Buttons or nil
+    if lbt then
+        for i = 1, #lbt do
+            local f = lbt[i]
+            if f and f ~= W.pinLogo then
+                n = n + 1
+                pinLogoCands[n] = f
+            end
+        end
+    end
+    return n
+end
+
+local function pinLogoDrop(host)
+    local top, left = host:GetTop(), host:GetLeft()
+    if not (top and left) then return PINLOGO_SLOT end
+    local drop = 0
+    local n = pinLogoFrames()
+    for i = 1, n do
+        local f = pinLogoCands[i]
+        if f and f.IsShown and f:IsShown() then
+            local l, t = f:GetLeft(), f:GetTop()
+            if l and t then
+                local dx, dy = l - left, top - t
+                if dx >= -6 and dx <= 10 and dy >= -8 and dy <= 240 and dy > drop then
+                    drop = dy
+                end
+            end
+        end
+    end
+    return drop + PINLOGO_SLOT
+end
+
+local function pinLogoArt(bt)
+    local on = pinLogoOn()
+    bt.__on = on
+    if on then
+        bt.icon:SetDesaturated(false)
+        bt.icon:SetVertexColor(1, 1, 1, 1)
+        if bt.dim:IsShown() then bt.dim:Hide() end
+    else
+        bt.icon:SetDesaturated(true)
+        bt.icon:SetVertexColor(0.55, 0.55, 0.55, 1)
+        if not bt.dim:IsShown() then bt.dim:Show() end
+    end
+end
+
+local syncPinLogo
+
+local function pinLogoSet(on)
+    if M.SetPinsHidden then
+        pcall(M.SetPinsHidden, not on)
+    else
+        local db = DungeonsForeverDB
+        if type(db) ~= "table" then return end
+        db.dungeon = db.dungeon or {}
+        db.dungeon.mapPinsHidden = not on
+        if M.SyncPins then pcall(M.SyncPins, M) end
+        if M.SyncWorldQuestPins then pcall(M.SyncWorldQuestPins) end
+    end
+    if syncPinLogo then syncPinLogo() end
+end
+
+local function ensurePinLogo()
+    if W.pinLogo or not WorldMapFrame then return W.pinLogo end
+    local host = pinLogoHost()
+    local bt = CreateFrame("Button", "DungeonsForeverMapPinLogo", WorldMapFrame)
+    bt:SetSize(PINLOGO_SLOT, PINLOGO_SLOT)
+    bt:SetFrameStrata("HIGH")
+    local hl = (host and host.GetFrameLevel and host:GetFrameLevel()) or 0
+    bt:SetFrameLevel(hl + 20)
+    bt.bg = bt:CreateTexture(nil, "BACKGROUND", nil, -1)
+    bt.bg:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
+    bt.bg:SetSize(25, 25)
+    bt.bg:SetPoint("TOPLEFT", 2, -4)
+    bt.icon = bt:CreateTexture(nil, "ARTWORK")
+    bt.icon:SetTexture(PINLOGO_TEX)
+    bt.icon:SetSize(22, 22)
+    bt.icon:SetPoint("TOPLEFT", 6, -5)
+    bt.dim = bt:CreateTexture(nil, "OVERLAY")
+    bt.dim:SetColorTexture(0, 0, 0, 0.4)
+    bt.dim:SetPoint("TOPLEFT", bt.icon, "TOPLEFT")
+    bt.dim:SetPoint("BOTTOMRIGHT", bt.icon, "BOTTOMRIGHT")
+    bt.dim:Hide()
+    bt.ring = bt:CreateTexture(nil, "OVERLAY", nil, 1)
+    bt.ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    bt.ring:SetSize(54, 54)
+    bt.ring:SetPoint("TOPLEFT")
+    bt:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight", "ADD")
+    bt:SetScript("OnEnter", function(self)
+        GameTooltip:ClearLines()
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine("|T" .. PINLOGO_TEX .. ":18|t " .. L["无限副本手册"], 1, 0.82, 0, true)
+        GameTooltip:AddLine(L[pinLogoOn() and "左键：隐藏地图图例" or "左键：显示地图图例"], 0.75, 0.75, 0.75, true)
+        GameTooltip:Show()
+    end)
+    bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    bt:SetScript("OnClick", function(_, button)
+        if button ~= "LeftButton" then return end
+        pinLogoSet(not pinLogoOn())
+    end)
+    W.pinLogo = bt
+    pinLogoArt(bt)
+    return bt
+end
+
+syncPinLogo = function()
+    local bt = ensurePinLogo()
+    if not bt then return end
+    if not enabled() or W.Active() then
+        if bt:IsShown() then bt:Hide() end
+        return
+    end
+    local host = pinLogoHost()
+    if not host then return end
+    local drop = pinLogoDrop(host)
+    if bt.__drop ~= drop then
+        bt.__drop = drop
+        bt:ClearAllPoints()
+        bt:SetPoint("TOPLEFT", host, "TOPLEFT", PINLOGO_X, -drop)
+    end
+    if bt.__on ~= pinLogoOn() then pinLogoArt(bt) end
+    if not bt:IsShown() then bt:Show() end
+end
+
+W.SyncPinLogo = syncPinLogo
+
 local CRUMB_X = 0
 local CRUMB_PAD = 60
 
@@ -2745,6 +2916,13 @@ local epSig
 local function driveEntryPins()
     if not (entryProvider and WorldMapFrame) then return end
     if inCombat() then return end
+    if M.PinsHidden and M.PinsHidden() then
+        if epSig ~= "hidden" then
+            epSig = "hidden"
+            entryProvider:RemoveAllData()
+        end
+        return
+    end
     local map = CurMap(nil)
     if not (map and map.GetCanvas) then return end
     local lm = _G.WorldMapFrame
@@ -2770,6 +2948,10 @@ local function driveEntryPins()
 end
 
 W.RefreshPins = driveEntryPins
+W.ResetPins = function()
+    epSig = nil
+    pcall(driveEntryPins)
+end
 
 local leaSupAt = 0
 
@@ -3186,6 +3368,7 @@ end
 local function tick_()
     if not (WorldMapFrame and WorldMapFrame:IsShown()) then return end
     syncOpenWinBtn()
+    syncPinLogo()
     leaSuppressPins()
     driveEntryPins()
     if not W.Active() then syncAreaBtn() end

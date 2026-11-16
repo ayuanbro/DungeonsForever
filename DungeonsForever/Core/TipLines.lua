@@ -260,6 +260,16 @@ local function BisHit(id)
 end
 
 local C_SC_HEAD = { 0.66, 0.68, 0.74 }
+local SC_UP = "|cff78d973"
+local SC_DN = "|cffeb6b61"
+local SC_TAG = "|cffa8adbd"
+
+local function PctSeg(nm, p)
+    if p > 999 then p = 999 elseif p < -999 then p = -999 end
+    local txt = format("%s%+d%%|r", p > 0 and SC_UP or SC_DN, p)
+    if type(nm) == "string" and nm ~= "" then return SC_TAG .. nm .. "|r " .. txt end
+    return txt
+end
 
 local function ScoreRows(id, link)
     local BG = ns.BisModule
@@ -278,12 +288,21 @@ local function ScoreRows(id, link)
     if #rows == 1 then
         local one = rows[1]
         if one.p == 0 then return nil end
+        if type(one.r.p2) == "number" then
+            return { { format("%s  %s · %s", L["BIS 评分"], PctSeg(one.r.b1, one.r.p1), PctSeg(one.r.b2, one.r.p2)),
+                      C_SC_HEAD, true } }
+        end
         return { { format(L["BIS 评分 %+d%%"], one.p), one.p > 0 and C_SC_UP or C_SC_DOWN, true } }
     end
     local out = { { L["BIS 评分"], C_SC_HEAD, true } }
     for _, e in ipairs(rows) do
-        out[#out + 1] = { format("%s %+d%%", tostring(e.r.label or ""), e.p),
-                          e.p > 0 and C_SC_UP or C_SC_DOWN, false }
+        local txt
+        if type(e.r.p2) == "number" then
+            txt = format("%s  %s · %s", tostring(e.r.label or ""), PctSeg(e.r.b1, e.r.p1), PctSeg(e.r.b2, e.r.p2))
+        else
+            txt = format("%s %+d%%", tostring(e.r.label or ""), e.p)
+        end
+        out[#out + 1] = { txt, e.p > 0 and C_SC_UP or C_SC_DOWN, false }
     end
     return out
 end
@@ -368,10 +387,56 @@ local function UseRows(id)
 end
 TL.UseRows = UseRows
 
+local bookIdx
+local function BookIdx()
+    if bookIdx then return bookIdx end
+    local books = ns.ExploreBooks
+    if type(books) ~= "table" then return nil end
+    bookIdx = {}
+    for _, rec in pairs(books) do
+        local iid = type(rec) == "table" and rec[1] or nil
+        if type(iid) == "number" then bookIdx[iid] = rec end
+    end
+    return bookIdx
+end
+
+local function BookSpot()
+    local TI = ns.ExploreTurnIn
+    if type(TI) ~= "table" then return nil end
+    local side = type(UnitFactionGroup) == "function" and UnitFactionGroup("player") or nil
+    if type(side) == "string" then side = side:sub(1, 1) end
+    local pick
+    for i = 1, #TI do
+        local o = TI[i]
+        if type(o) == "table" and type(o.x) == "number" and type(o.y) == "number" then
+            if side and o.side == side then return o end
+            if not pick then pick = o end
+        end
+    end
+    return pick
+end
+
+local function BookNeedRows(id)
+    local idx = BookIdx()
+    if not (idx and idx[id]) then return nil end
+    local spot = BookSpot()
+    if not spot then return nil end
+    local where = tostring(spot.place or "")
+    if where ~= "" then where = where .. " " end
+    return { { format(L["探索书籍 · 交给「%s」（%s%.1f, %.1f）"],
+        tostring(spot.npc or "?"), where, spot.x, spot.y), 1, 0.82, 0.4 } }
+end
+TL.BookNeedRows = BookNeedRows
+
 local function ExtraRows(id, title)
     local cfg = Cfg()
     local out
     if cfg.need then
+        local brows = BookNeedRows(id)
+        if brows then
+            out = out or {}
+            for i = 1, #brows do out[#out + 1] = brows[i] end
+        end
         local rows = CrateNeedRows(id, title)
         if rows then
             out = out or {}

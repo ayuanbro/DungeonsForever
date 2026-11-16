@@ -461,6 +461,7 @@ local function CurSub()
     if db.explore.subPage == "banner" then return "banner" end
     if db.explore.subPage == "routes" then return "routes" end
     if db.explore.subPage == "dm" then return "dm" end
+    if db.explore.subPage == "sg" then return "sg" end
     return "books"
 end
 
@@ -1138,6 +1139,7 @@ function EG.OnItemData(itemID)
     if not EG.built or not itemID then return end
     if not ns.PageVisible(EG.page) then return end
     EG._sweepFails = 0
+    if EG.sgRefreshNames then pcall(EG.sgRefreshNames) end
     if not EG.needNames or EG._itemRepaint then return end
     EG._itemRepaint = true
     if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
@@ -3509,6 +3511,9 @@ function EG.LayoutBody()
         end
         BagLayoutRows()
     end
+    if EG.sgFrame and ns.ExploreSunGlassesLayout then
+        ns.ExploreSunGlassesLayout(EG)
+    end
     if EG.bmFrame then
         EG.bmFrame:ClearAllPoints()
         EG.bmFrame:SetPoint("TOPLEFT", EG.page, "TOPLEFT", EG.X0, -EG.TOP_EDGE)
@@ -3659,8 +3664,9 @@ function EG.Render()
     local isBanner = sub == "banner"
     local isRoutes = sub == "routes"
     local isDm = sub == "dm"
+    local isSg = sub == "sg"
     local isCard = isPets or isTorch or isBanner
-    local isFull = isRw or isBag or isBm or isCard or isRoutes or isDm
+    local isFull = isRw or isBag or isBm or isCard or isRoutes or isDm or isSg
     if EG.listCard then EG.listCard:SetShown(not isRoutes) end
     EG.scroll:SetShown(not isFull)
     if EG.UpdateVScroll then EG.UpdateVScroll() end
@@ -3680,6 +3686,7 @@ function EG.Render()
     if EG.petFrame then EG.petFrame:SetShown(isCard) end
     if EG.dmFrame then EG.dmFrame:SetShown(isDm) end
     if EG.routeFrame then EG.routeFrame:SetShown(isRoutes) end
+    if EG.sgFrame then EG.sgFrame:SetShown(isSg) end
     PaintNav()
     if EG.rwBtn then PaintRwBtn() end
     if EG.pinBtn then PaintPinsBtn() end
@@ -3719,6 +3726,18 @@ function EG.Render()
             if EG.bmFrame then EG.bmFrame:Hide() end
             if EG.petFrame then EG.petFrame:Hide() end
             if EG.routeFrame then EG.routeFrame:Hide() end
+            return
+        end
+    end
+    if EG.sgFrame then
+        EG.sgFrame:SetShown(isSg)
+        if isSg then
+            if EG.bagFrame then EG.bagFrame:Hide() end
+            if EG.bmFrame then EG.bmFrame:Hide() end
+            if EG.petFrame then EG.petFrame:Hide() end
+            if EG.dmFrame then EG.dmFrame:Hide() end
+            if EG.routeFrame then EG.routeFrame:Hide() end
+            if ns.ExploreSunGlassesRefresh then ns.ExploreSunGlassesRefresh(EG) end
             return
         end
     end
@@ -3907,6 +3926,26 @@ function EG.Build(page)
         coroutine.yield()
         navY = navY + EG.NAV_ITEM_H + EG.NAV_GAP
     end
+    do
+        local bt = NewButton(page, L["太阳眼镜"], EG.NAV_W, EG.NAV_ITEM_H, 16)
+        bt:SetPoint("TOPLEFT", page, "TOPLEFT", EG.NAV_X + EG.NAV_PAD, -(EG.NAV_TOP + navY))
+        local fs = bt:GetFontString()
+        fs:ClearAllPoints()
+        fs:SetPoint("LEFT", bt, "LEFT", 5 + EG.NAV_ICON + 5, 0)
+        fs:SetJustifyH("LEFT")
+        bt.__huiKeepTextColor = true
+        bt.__icon = bt:CreateTexture(nil, "ARTWORK")
+        bt.__icon:SetSize(EG.NAV_ICON, EG.NAV_ICON)
+        bt.__icon:SetPoint("LEFT", bt, "LEFT", 5, 0)
+        bt.__icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(bt.__icon) end
+        bt.__icon:SetTexture(133149)
+        bt:SetScript("OnClick", function() SetSub("sg") end)
+        EG.navBtns["sg"] = bt
+        coroutine.yield()
+        EG.navSg = bt
+        navY = navY + EG.NAV_ITEM_H + EG.NAV_GAP
+    end
 
     do
         local glab = MakeFS(labelHost, 16, C_GREY, "LEFT")
@@ -4038,7 +4077,6 @@ function EG.Build(page)
         EG.navDm = bt
         navY = navY + EG.NAV_ITEM_H + EG.NAV_GAP
     end
-
     EG.prog = MakeFS(labelHost, 14, C_TEXT, "RIGHT")
     EG.prog:SetPoint("TOPRIGHT", page, "TOPRIGHT", -(EG.EDGE + EG.LIST_PAD), -EG.TICK_Y)
     EG.note = MakeFS(labelHost, 14, { 0.55, 0.75, 0.55 }, "LEFT")
@@ -6146,6 +6184,14 @@ Y()
     if curSub == "routes" then
         EG.__subBuild.routes = nil
         buildRoutes()
+    end
+
+    EG.__subBuild.sg = function()
+        if ns.ExploreSunGlassesBuild then ns.ExploreSunGlassesBuild(EG, page) end
+    end
+    if curSub == "sg" then
+        EG.__subBuild.sg = function() end
+        if ns.ExploreSunGlassesBuild then ns.ExploreSunGlassesBuild(EG, page) end
     end
 
     EG.__subBuild.dm = function()

@@ -45,10 +45,16 @@ local hideToken = 0
 local closePending = false
 local lastN = -1
 local pulseFrame, pulseT = nil, 0
+local orbSizeDirty = false
 
 local function Cfg()
     return ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
 end
+
+local function InCombat()
+    return type(InCombatLockdown) == "function" and InCombatLockdown()
+end
+O.InCombat = InCombat
 
 local VOICE_SEC = {
     ["todo_food.ogg"] = 1.45,
@@ -121,6 +127,11 @@ end
 
 local function ApplyOrbSize()
     if not orb then return end
+    if InCombat() then
+        orbSizeDirty = true
+        return
+    end
+    orbSizeDirty = false
     local sz = tonumber(Cfg().icon) or 32
     if sz < 20 then sz = 20 end
     if sz > 44 then sz = 44 end
@@ -177,6 +188,7 @@ local function SavePos()
 end
 
 local function ApplyPos()
+    if InCombat() then return end
     local c = Cfg()
     local o = c.orb
     orb:ClearAllPoints()
@@ -211,13 +223,26 @@ function O.ArmGhost()
     end)
 end
 
+local function CombatHide()
+    if not panel then return end
+    closePending = true
+    hideToken = hideToken + 1
+    job = nil
+    if tweener then tweener:Hide() end
+    if panel.escProxy and panel.escProxy:IsShown() then panel.escProxy:Hide() end
+    if panel:IsShown() then
+        panel:SetAlpha(0)
+        if panel.hoverCatch then panel.hoverCatch:EnableMouse(false) end
+    end
+end
+
 local function Close()
     if not panel or not panel:IsShown() then
         closePending = false
         return
     end
-    if InCombatLockdown and InCombatLockdown() then
-        closePending = true
+    if InCombat() then
+        CombatHide()
         return
     end
     closePending = false
@@ -228,18 +253,27 @@ local function Close()
     end, function()
         panel:Hide()
         panel:SetAlpha(1)
+        if panel.hoverCatch then panel.hoverCatch:EnableMouse(true) end
     end)
 end
 
 local function FlushClose()
     if not closePending then return end
-    if InCombatLockdown and InCombatLockdown() then
+    if InCombat() then
         if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
             C_Timer.After(0.2, FlushClose)
         end
         return
     end
-    Close()
+    closePending = false
+    hideToken = hideToken + 1
+    job = nil
+    if tweener then tweener:Hide() end
+    if panel then
+        if panel:IsShown() then panel:Hide() end
+        panel:SetAlpha(1)
+        if panel.hoverCatch then panel.hoverCatch:EnableMouse(true) end
+    end
 end
 
 local function StartHideTimer(keep)
@@ -420,6 +454,8 @@ end
 
 Tip = function(owner, title, desc, foot)
     if not (GameTooltip and owner) then return end
+    hovered = true
+    hideToken = hideToken + 1
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
     GameTooltip:ClearLines()
     GameTooltip:AddLine(title or "", 1, 1, 1, true)
@@ -855,6 +891,7 @@ function O.FoodMenu()
 end
 
 local function Layout(res)
+    if InCombat() then return end
     local list = (res and res.items) or {}
     local n = #list
     local ci, hi, ri = 0, 0, 0
@@ -1254,7 +1291,7 @@ end
 
 local function Open(keep)
     if not panel or panel:IsShown() then return end
-    if InCombatLockdown and InCombatLockdown() then return end
+    if InCombat() then return end
     if opts then opts:Hide() end
     do
         local MWm = ns.MapWindowModule
@@ -1262,7 +1299,9 @@ local function Open(keep)
     end
     Layout(current)
     panel:SetAlpha(0)
+    if panel.hoverCatch then panel.hoverCatch:EnableMouse(true) end
     local function apply(e)
+        if InCombat() then return end
         panel:ClearAllPoints()
         panel:SetPoint("LEFT", orb, "RIGHT", 8 - SLIDE * (1 - e), 0)
         panel:SetAlpha(e)
@@ -1297,7 +1336,29 @@ local function Toggle()
     end
 end
 
+local pendShow = {}
+
+local function WantShow(f, want)
+    if not f then return end
+    if want then
+        if f:IsShown() then
+            pendShow[f] = nil
+            return
+        end
+        if InCombat() then
+            pendShow[f] = true
+            return
+        end
+        pendShow[f] = nil
+        f:Show()
+        return
+    end
+    pendShow[f] = nil
+    if f:IsShown() then f:Hide() end
+end
+
 local function Pulse()
+    if InCombat() then return end
     if not badge or not badge:IsShown() then return end
     pulseT = 0
     if pulseFrame then pulseFrame:Show() end
@@ -1326,8 +1387,7 @@ function O.Update(res)
     local wantOrb = onc.on ~= false
     if orb then
         local ghost = wantOrb and (onc.onlyTodo and not settingsOpen) and n == 0
-        if wantOrb and not orb:IsShown() then orb:Show() end
-        if not wantOrb and orb:IsShown() then orb:Hide() end
+        WantShow(orb, wantOrb)
         if ghost then
             if orb:IsMouseOver() or (panel and panel:IsShown()) then
                 if orb:GetAlpha() ~= 1 then orb:SetAlpha(1) end
@@ -1343,11 +1403,11 @@ function O.Update(res)
     PaintRing(n)
     if n > 0 then
         if badgeText then badgeText:SetText(n > 9 and "9+" or tostring(n)) end
-        badge:Show()
+        WantShow(badge, true)
         if lastN ~= n then Pulse() end
         lastN = n
     else
-        badge:Hide()
+        WantShow(badge, false)
         lastN = 0
     end
     local sawFood, sawRested = false, false
@@ -1485,6 +1545,12 @@ function O.Init()
             tweener:Hide()
             return
         end
+        if O.InCombat() then
+            job = nil
+            tweener:Hide()
+            Close()
+            return
+        end
         job.t = job.t + dt
         local k = job.t / job.dur
         if k > 1 then k = 1 end
@@ -1504,11 +1570,35 @@ function O.Init()
     panel:SetFrameStrata("MEDIUM")
     panel:SetFrameLevel(400)
     panel:SetClampedToScreen(true)
-    panel:EnableMouse(true)
+    panel:EnableMouse(false)
+    panel.escProxy = CreateFrame("Frame", "DFZoneOrbEscProxy", UIParent)
+    panel.escProxy:Hide()
+    panel.escProxy:SetScript("OnHide", function()
+        if panel and panel:IsShown() then Close() end
+    end)
+    panel:HookScript("OnShow", function()
+        if panel.escProxy and not panel.escProxy:IsShown() then panel.escProxy:Show() end
+    end)
+    panel:HookScript("OnHide", function()
+        if panel.escProxy and panel.escProxy:IsShown() then panel.escProxy:Hide() end
+    end)
     panel:Hide()
     if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
         ns.hui.SkinPopup(panel, 10, "both", ns.hui.layer.L0)
     end
+
+    panel.hoverCatch = CreateFrame("Frame", nil, panel)
+    panel.hoverCatch:SetAllPoints(panel)
+    panel.hoverCatch:SetFrameLevel(panel:GetFrameLevel() + 1)
+    panel.hoverCatch:EnableMouse(true)
+    panel.hoverCatch:SetScript("OnEnter", function()
+        hovered = true
+        hideToken = hideToken + 1
+    end)
+    panel.hoverCatch:SetScript("OnLeave", function()
+        hovered = false
+        StartHideTimer()
+    end)
 
     panel.title = panel:CreateFontString(nil, "OVERLAY")
     panel.title:SetFont(ns.FONT, 16, "")
@@ -1996,6 +2086,7 @@ function O.Init()
             orbMenu:Hide()
             return
         end
+        if O.InCombat() then return end
         SyncMenuLabels()
         local w = math.max(TextW(oml1, 60), TextW(oml2, 60)) + 24
         if w < 120 then w = 120 end
@@ -2057,6 +2148,7 @@ function O.Init()
     orb:SetScript("OnDragStop", function()
         orb:StopMovingOrSizing()
         SavePos()
+        if O.InCombat() then return end
         if panel and panel:IsShown() then
             panel:ClearAllPoints()
             panel:SetPoint("LEFT", orb, "RIGHT", 8, 0)
@@ -2093,11 +2185,11 @@ function O.Init()
     end)
 
     if UISpecialFrames then
-        local found = false
-        for i = 1, #UISpecialFrames do
-            if UISpecialFrames[i] == "DFZoneOrbPanel" then found = true break end
+        for i = #UISpecialFrames, 1, -1 do
+            local n = UISpecialFrames[i]
+            if n == "DFZoneOrbPanel" or n == "DFZoneOrbEscProxy" then table.remove(UISpecialFrames, i) end
         end
-        if not found then table.insert(UISpecialFrames, "DFZoneOrbPanel") end
+        table.insert(UISpecialFrames, "DFZoneOrbEscProxy")
     end
     panel:HookScript("OnHide", function()
         if FoodMenuClose then FoodMenuClose() end
@@ -2106,6 +2198,7 @@ function O.Init()
 
     if panel.title then panel.title:SetText("") end
     cards, heads, subRows = {}, {}, {}
+    panel:EnableMouse(false)
 end
 
 function O.Refresh()
@@ -2157,6 +2250,11 @@ end
 
 function O.CbPreviewToggle()
     if not orb then return end
+    if cbPanel and cbPanel:IsShown() then
+        cbPanel:Hide()
+        return
+    end
+    if InCombat() and not cbPanel then return end
     if not cbPanel then
         local f = CreateFrame("Frame", nil, orb, "BackdropTemplate")
         f:SetWidth(248)
@@ -2203,7 +2301,7 @@ function O.CbPreviewToggle()
     if body == "" then body = L["本图暂无待办"] end
     cbPanel.body:SetText(body)
     local lines = select(2, body:gsub("\n", "")) + 1
-    cbPanel:SetHeight(46 + lines * 17)
+    if not InCombat() then cbPanel:SetHeight(46 + lines * 17) end
     cbPanel:Show()
 end
 
@@ -2215,16 +2313,14 @@ regenWatch:SetScript("OnEvent", function(_, event)
         if cbPanel and cbPanel:IsShown() then cbPanel:Hide() end
         if orbMenu and orbMenu:IsShown() then orbMenu:Hide() end
         if FoodMenuClose then FoodMenuClose() end
-        if panel and panel:IsShown() then
-            if InCombatLockdown and InCombatLockdown() then
-                closePending = true
-            else
-                hideToken = hideToken + 1
-                panel:SetAlpha(1)
-                panel:Hide()
-            end
-        end
+        if panel and panel:IsShown() then CombatHide() end
         return
+    end
+    if orb and orb:GetNumPoints() == 0 then ApplyPos() end
+    if orbSizeDirty then ApplyOrbSize() end
+    for f in pairs(pendShow) do
+        pendShow[f] = nil
+        if not f:IsShown() then f:Show() end
     end
     if cbPanel and cbPanel:IsShown() then cbPanel:Hide() end
     if closePending then

@@ -360,6 +360,8 @@ function QB:Render()
     self:Reanchor()
     local specs = self:Collect()
     self.specs = specs
+    local DGd = ns.DungeonDG
+    local hereSlug = (DGd and DGd.HereSlug) and DGd.HereSlug() or nil
 
     local y, nRow, nGrp = -2, 0, 0
     for _, sp in ipairs(specs) do
@@ -394,6 +396,8 @@ function QB:Render()
                 r.name:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
             elseif sp.gold then
                 r.name:SetTextColor(C_GOLD[1], C_GOLD[2], C_GOLD[3])
+            elseif hereSlug and sp.act == "dungeon" and sp.id == hereSlug then
+                r.name:SetTextColor(Accent())
             elseif sp.known then
                 r.name:SetTextColor(Accent())
             else
@@ -925,7 +929,18 @@ ns.Init(function()
     ev:RegisterEvent("PLAYER_LEVEL_UP")
     ev:RegisterEvent("PLAYER_ENTERING_WORLD")
     ev:RegisterEvent("SKILL_LINES_CHANGED")
-    ev:SetScript("OnEvent", function()
+    pcall(ev.RegisterEvent, ev, "ZONE_CHANGED_NEW_AREA")
+    pcall(ev.RegisterEvent, ev, "ZONE_CHANGED")
+    local zoneJob
+    ev:SetScript("OnEvent", function(_, event)
+        if event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
+            if zoneJob then zoneJob:Cancel() end
+            zoneJob = C_Timer.After(0.6, function()
+                zoneJob = nil
+                if QB.built then QB:Render() end
+            end)
+            return
+        end
         C_Timer.After(0, function()
         if QB.built then QB:Render() end
         local mf = ns.MainFrame
