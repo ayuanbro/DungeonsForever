@@ -2090,6 +2090,7 @@ if type(hooksecurefunc) == "function" then
             if not inCombat then hideNativeSoon() end
             if #cands == 1 then
                 MW.Open(cands[1].id)
+                if Wm.NoteInstPick then pcall(Wm.NoteInstPick, cands[1].id) end
                 if inCombat and win and win:IsShown() then win:Raise() end
                 return
             end
@@ -2100,6 +2101,7 @@ if type(hooksecurefunc) == "function" then
                         text = cands[i].name,
                         func = function()
                             MW.Open(cands[i].id)
+                            if Wm.NoteInstPick then pcall(Wm.NoteInstPick, cands[i].id) end
                             if inCombat and win and win:IsShown() then win:Raise() end
                         end,
                     }

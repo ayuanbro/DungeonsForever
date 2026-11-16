@@ -577,7 +577,39 @@ local function instStamp()
     return tostring(info.instID or "") .. "|" .. tostring(info.name or "")
 end
 
-function W.Resolve()
+local INST_PICK, INST_N = {}, 0
+
+local function instMemoGet()
+    local k = instStamp()
+    if not k then return nil end
+    return INST_PICK[k]
+end
+
+local function instMemoSet(id)
+    local k = instStamp()
+    if not (k and type(id) == "string" and id ~= "" and hasArt(id)) then return end
+    if INST_PICK[k] == id then return end
+    if INST_PICK[k] == nil then
+        INST_N = INST_N + 1
+        if INST_N > 64 then
+            INST_PICK, INST_N = {}, 1
+        end
+    end
+    INST_PICK[k] = id
+end
+
+function W.NoteInstPick(id)
+    instMemoSet(id)
+end
+
+local memoDriver = CreateFrame("Frame")
+memoDriver:RegisterEvent("PLAYER_ENTERING_WORLD")
+memoDriver:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+memoDriver:SetScript("OnEvent", function()
+    INST_PICK, INST_N = {}, 0
+end)
+
+local function resolveCore()
     if not enabled() then return nil end
     local IM = mapTable()
     local cur = hasArt(M.curId) and M.curId or nil
@@ -615,6 +647,8 @@ function W.Resolve()
             return id, "inst"
         end
     end
+    local memo = instMemoGet()
+    if memo then return memo, "memo" end
     local names = { info and info.name, zoneText() }
     for i = 1, #names do
         local nm = names[i]
@@ -637,6 +671,12 @@ function W.Resolve()
     end
     if cur and W.curStamp and W.curStamp == instStamp() then return cur, "cur" end
     return nil
+end
+
+function W.Resolve()
+    local id, why = resolveCore()
+    if id then instMemoSet(id) end
+    return id, why
 end
 
 local function subZoneKey()
