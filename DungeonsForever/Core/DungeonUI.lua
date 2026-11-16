@@ -5752,7 +5752,7 @@ function U:RenderDungeonLoot()
     end
 
     local function makeRow()
-        r = CreateFrame("Button", nil, child, "BackdropTemplate")
+        local r = CreateFrame("Button", nil, child, "BackdropTemplate")
         r:SetSize(cw, DG.LOOT_CARD_H)
         r:SetBackdrop({
             bgFile = "Interface\\Buttons\\WHITE8x8",

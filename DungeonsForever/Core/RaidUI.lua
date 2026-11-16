@@ -753,7 +753,8 @@ function RU.PaintBatchChips()
         if item and item.bt then
             local sel = (item.key == cur)
             SetButtonSelected(item.bt, sel)
-            fs:SetAlpha(sel and 1 or 0.82)
+            local fs = item.bt.GetFontString and item.bt:GetFontString()
+            if fs then fs:SetAlpha(sel and 1 or 0.82) end
         end
     end
 end

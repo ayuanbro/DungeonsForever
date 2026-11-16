@@ -9,6 +9,8 @@ local NewButton = Host.NewButton
 local C_GOLD, C_GREY, C_DIM, C_WHITE, C_TEXT = Host.C_GOLD, Host.C_GREY, Host.C_DIM, Host.C_WHITE, Host.C_TEXT
 local Unpack = Host.Unpack
 
+local FALLBACK_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+
 local function SpellTex(sid)
     local t = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(sid) or nil
     if type(t) ~= "number" and type(t) ~= "string" then return FALLBACK_ICON end
@@ -41,7 +43,6 @@ local ROW_GAP = 8
 local SEC_GAP = 22
 local CARD_H = 44
 local CARD_GAP = 8
-local FALLBACK_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 
 local STEPS = {
     {

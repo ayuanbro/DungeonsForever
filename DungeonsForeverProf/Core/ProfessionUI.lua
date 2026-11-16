@@ -8570,7 +8570,7 @@ function PD.LearningOriginCard(recipe,view)
         if not recipe.trainerObserved and route and route.acquisition and route.acquisition.kind=="skillGrant"then
             return {kind=AUTO_SKILL_CARD.kind,text=AUTO_SKILL_CARD.text,lines={AUTO_SKILL_CARD.lines[1]}}
         end
-        return {kind="trainer",text=TRAINER_CARD.text,lines={{TRAINER_CARD.lines[1][1],0.81,0.85,0.89}}}
+        return PD.TrainerCard(recipe and recipe.spell)
     end
     local fid=route and route.teachingItemID or recipe.formula or recipe.formulaID
     if not fid then return end
@@ -8666,7 +8666,7 @@ function PD.RecipeLearningCard(recipe, frozen)
     local route,quote=view.route,view.quote
     if route and route.kind=="trainer" then
         return (quote and quote.automatic or route.acquisition and route.acquisition.kind=="skillGrant")
-            and AUTO_SKILL_CARD or TRAINER_CARD
+            and AUTO_SKILL_CARD or PD.TrainerCard(recipe.spell)
     end
     local fid=route and (route.teachingItemID or route.itemID)
     if not fid then
@@ -9145,6 +9145,120 @@ function PD.VendorAct(s)
             PD.VendorPickToggle(zone, ents)
         end
     end
+end
+
+PD.TEACH_SHOW = 10
+PD.TEACH_LOCALE = nil
+PD.TEACH_CACHE = {}
+
+function PD.TeachLocaleIdx()
+    local idx = PD.TEACH_LOCALE
+    if idx then return idx end
+    local loc = (type(GetLocale) == "function") and GetLocale() or "zhCN"
+    idx = (loc == "enUS") and 1 or (loc == "zhTW") and 3 or 2
+    PD.TEACH_LOCALE = idx
+    return idx
+end
+
+function PD.TeachName(rec)
+    if type(rec) ~= "table" then return "?" end
+    local nm = rec[PD.TeachLocaleIdx()]
+    if (not nm) or nm == "" then nm = rec[1] end
+    return (nm and nm ~= "") and nm or "?"
+end
+
+function PD.TeachRoster(spell)
+    local all = ns.ProfTeach
+    local t = spell and all and all[spell]
+    if not t then return nil end
+    local cnt = tonumber(t[1]) or 0
+    if cnt <= 0 then return nil end
+    local db, out = ns.ProfTeachNpc, {}
+    for i = 2, #t do
+        local rec = db and db[t[i]]
+        if rec then
+            local mp = tonumber(rec[4])
+            local loc = (mp and mp > 0) and { nil, mp, rec[5], rec[6] } or nil
+            out[#out + 1] = {
+                name = PD.TeachName(rec),
+                loc = loc,
+                zone = loc and (PD.MapName(mp, "") or "") or "",
+            }
+        end
+    end
+    return cnt, out
+end
+
+function PD.TeachInfo(spell)
+    spell = tonumber(spell) or spell
+    local cache = PD.TEACH_CACHE
+    local hit = spell and cache[spell]
+    if hit ~= nil then
+        if hit == false then return nil end
+        return hit[1], hit[2]
+    end
+    local cnt, list = PD.TeachRoster(spell)
+    local out = {}
+    if cnt and cnt <= PD.TEACH_SHOW then
+        for i = 1, #(list or {}) do
+            if list[i].loc then out[#out + 1] = list[i] end
+        end
+    end
+    if (not cnt) or #out == 0 then
+        if spell then cache[spell] = false end
+        return nil
+    end
+    if spell then cache[spell] = { cnt, out } end
+    return cnt, out
+end
+
+function PD.TeachVal(spell)
+    local cnt, list = PD.TeachInfo(spell)
+    if not cnt then return nil end
+    if #list <= 1 then return list[1].name end
+    return format(L["%s 等 %d 人"], list[1].name, #list)
+end
+
+function PD.TeachLines(spell, plain)
+    local cnt, list = PD.TeachInfo(spell)
+    if not cnt then return nil end
+    local out = {}
+    for i = 1, #list do
+        local e = list[i]
+        local nm = format(L["训练师：%s"], e.name)
+        if e.zone ~= "" then nm = nm .. " · " .. e.zone end
+        out[#out + 1] = { nm, 0.75, 0.75, 0.75 }
+    end
+    if not plain then
+        out[#out + 1] = { #list == 1 and L["点击：在地图上标记该 NPC"]
+            or L["点击：选择要标记的 NPC"], 1, 0.82, 0 }
+    end
+    return out
+end
+
+function PD.TeachAct(spell)
+    return function(zone)
+        local cnt, list = PD.TeachInfo(spell)
+        if not (list and #list > 0) then return end
+        if #list == 1 then
+            PD.HideVendorPick()
+            PD.MarkVendorLoc(list[1].loc)
+        else
+            PD.VendorPickToggle(zone, list, L["选择要标记的训练师"])
+        end
+    end
+end
+
+function PD.TrainerCard(spell)
+    local lines = { { TRAINER_CARD.lines[1][1], 0.81, 0.85, 0.89 } }
+    local extra = PD.TeachLines(spell)
+    if extra then
+        for i = 1, #extra do lines[#lines + 1] = extra[i] end
+    end
+    return {
+        kind = "trainer", text = TRAINER_CARD.text, lines = lines,
+        act = extra and PD.TeachAct(spell) or nil,
+    }
 end
 
 function PD.DropName(dd)
@@ -10497,9 +10611,17 @@ function PD.RecipeSpec(r)
         vs=PD.VendorListOf(r[14]);hasVendor=#vs>0
         base=learningCard.text
     end
-    local dpre, dval, dname, dcost
+    local dpre, dval, dname, dcost, dlines, dact, dtip
     if hasVendor then
         dpre, dval, dname, dcost = PD.VendorSrcLine(r[14], (type(r[13]) == "table") and r[13][1] or nil)
+    elseif (not r[13]) and base == L["训练师"] then
+        local sid = resolved.spell or r[1]
+        local tval = PD.TeachVal(sid)
+        if tval then
+            dpre, dval = L["训练师"] .. ":", tval
+            dlines, dact = PD.TeachLines(sid), PD.TeachAct(sid)
+            dtip = PD.TeachLines(sid, true)
+        end
     end
     local costStr, total, unpriced, ah
     if r[12] and #r[12] > 0 then
@@ -10538,6 +10660,9 @@ function PD.RecipeSpec(r)
                 lines[#lines + 1] = { format(L["客户端每次产量：%d"], runtime.count), 0.55, 0.85, 0.6 }
             end
             if meta and meta.availabilityUnknown and not resolved.clientAvailable then lines[#lines + 1] = { L["学习方式尚未确认；已学习后才参与计算。"], 0.95, 0.75, 0.4 } end
+            if dtip then
+                for i = 1, #dtip do lines[#lines + 1] = dtip[i] end
+            end
             return lines
         end,
         sub = station or PD.KitSub(tostring(r[5] or ""), r[6], r[2]),
@@ -10548,7 +10673,8 @@ function PD.RecipeSpec(r)
         right2 = (not dval) and base or nil,
         right2Fs = PD.SRC_FS,
         src = r[14],
-        vlines = hasVendor and PD.VendorLines(r[14], type(r[13]) == "table" and r[13][1] or nil) or nil,
+        vlines = hasVendor and PD.VendorLines(r[14], type(r[13]) == "table" and r[13][1] or nil) or dlines,
+        dact = dact,
         dpre = dpre,
         dval = dval,
         dname = dname,
@@ -14795,9 +14921,18 @@ function PD.RowsFormulaShop(rows, data, foldKey)
             local spell=entry.spell or entry.recipe and entry.recipe.spell or 0
             local name=C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spell)
                 or GetSpellInfo and GetSpellInfo(spell) or format(L["技能 #%d"],spell)
-            rows[#rows+1]={kind="row",h=PD.ROW_H,col=1,text=name,
+            local tlines=PD.TeachLines(spell)
+            local tcnt=PD.TeachInfo(spell)
+            local lines={{L["训练师"]},{L["此步骤采用已确认的训练师学习路径，无需购买教材。"],0.7,0.7,0.7}}
+            local links
+            if tlines then
+                for _,line in ipairs(tlines) do lines[#lines+1]=line end
+                links={{text=format(L["训练师 %d 位"],tcnt or 1),lines=tlines,
+                    color={0.58,0.86,1},act=PD.TeachAct(spell)}}
+            end
+            rows[#rows+1]={kind="row",h=PD.ROW_H,col=1,text=name,links=links,
                 tag={text=L["训练师"],color=PD.TAG_INK.vendor},right2=money(entry.cost),
-                lines={{L["训练师"]},{L["此步骤采用已确认的训练师学习路径，无需购买教材。"],0.7,0.7,0.7}}}
+                lines=lines}
             if entry.costComplete==false then PushText(rows,L["请打开训练师页面核对学习费用。"],11,C_GREY,1) end
         else
         local id, count = entry.id, entry.count or 1
@@ -15831,7 +15966,6 @@ function PD.RowsSettings(rows)
     for _, d in ipairs(defs) do byKey[d.k] = d end
     local function allowed(k)
         if PD.FixedOnly() then return k == "greyPassed" or k == "hlCurrent" end
-        if cheapest and k == "autoOnlyAH" then return false end
         return true
     end
     local fee = tonumber(PD.SettingRaw("recoveryFeePercent")) or 5

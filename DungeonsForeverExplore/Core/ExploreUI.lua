@@ -4861,6 +4861,7 @@ function EG.Build(page)
             det:SetPoint("TOPLEFT", bag, "TOPLEFT", LW + 8, -BODY_Y)
             det:SetPoint("BOTTOMRIGHT", bag, "BOTTOMRIGHT", 0, EG.bagNoteH + 8)
             ns.hui.SkinPopup(det, 8, nil, ns.hui.layer.L2)
+            local rs, rc
             det:EnableMouseWheel(true)
             det:SetScript("OnMouseWheel", function(_, delta)
                 DG.WheelScroll(rs, rc, delta)
@@ -4868,8 +4869,7 @@ function EG.Build(page)
             end)
             EG.bagDetail = det
 
-            local rc
-            local rs = CreateFrame("ScrollFrame", nil, det)
+            rs = CreateFrame("ScrollFrame", nil, det)
             if rs.SetClipsChildren then rs:SetClipsChildren(true) end
             rs:EnableMouseWheel(true)
             rs:SetScript("OnMouseWheel", function(_, delta)
@@ -5176,6 +5176,7 @@ function EG.Build(page)
             tot:SetPoint("TOPLEFT", bag, "TOPLEFT", LW + 8, -BODY_Y)
             tot:SetPoint("BOTTOMRIGHT", bag, "BOTTOMRIGHT", 0, EG.bagNoteH + 8)
             ns.hui.SkinPopup(tot, 8, nil, ns.hui.layer.L2)
+            local ts, tc
             tot:EnableMouseWheel(true)
             tot:SetScript("OnMouseWheel", function(_, delta)
                 DG.WheelScroll(ts, tc, delta)
@@ -5184,8 +5185,7 @@ function EG.Build(page)
             tot:Hide()
             EG.bagTotal = tot
 
-            local tc
-            local ts = CreateFrame("ScrollFrame", nil, tot)
+            ts = CreateFrame("ScrollFrame", nil, tot)
             if ts.SetClipsChildren then ts:SetClipsChildren(true) end
             ts:EnableMouseWheel(true)
             ts:SetScript("OnMouseWheel", function(_, delta)
