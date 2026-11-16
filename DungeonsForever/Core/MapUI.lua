@@ -5053,7 +5053,8 @@ local function wpPinAcquire(canvas)
     return p
 end
 
-local WP_DEF = { size = 18, world = false, scope = { lv = true, reco = true, enter = true, all = false, grey = true, take = true } }
+local WP_DEF = { size = 18, world = false, layer = "below", scope = { lv = true, reco = true, enter = true, all = false, grey = true, take = true } }
+local WP_LAYER_BELOW = 2019
 
 local function wpCfg()
     local db = ns.DB and ns.DB()
@@ -5070,6 +5071,7 @@ local function wpCfg()
     end
     if c.size == nil then c.size = WP_DEF.size end
     if c.world == nil then c.world = WP_DEF.world end
+    if c.layer ~= "above" and c.layer ~= "below" then c.layer = WP_DEF.layer end
     if type(c.scope) ~= "table" then c.scope = {} end
     for k, v in pairs(WP_DEF.scope) do
         if c.scope[k] == nil then c.scope[k] = v end
@@ -5134,7 +5136,12 @@ function M.SyncWorldQuestPins()
         end
     end
     local lvl
-    if base and base > 0 then lvl = base + 1 end
+    if base and base > 0 then
+        lvl = base + 1
+        if wpCfg().layer ~= "above" then
+            lvl = math.min(WP_LAYER_BELOW, lvl)
+        end
+    end
     local data = wpStatic()
     local cfg = wpCfg()
     local sc2 = cfg.scope
@@ -5473,6 +5480,64 @@ local function wpStepperRow(content, y, label, minv, maxv, step, get, set, fmt)
     }
 end
 
+local function wpOptRow(content, y, label, opts, get, set)
+    local lab = wpSetFs(content, 14, WP_TXT)
+    lab:SetJustifyH("LEFT")
+    lab:SetPoint("TOPLEFT", content, "TOPLEFT", 0, y - 5)
+    lab:SetText(label)
+    local cw = content.GetWidth and content:GetWidth() or 0
+    if type(cw) ~= "number" or cw <= 1 then cw = 196 end
+    local btns = {}
+    local paint
+    for i = 1, #opts do
+        local o = opts[i]
+        local b = wpMkBtn(content, o[2], cw)
+        b.__key = o[1]
+        if i == 1 then
+            b:SetPoint("TOPLEFT", content, "TOPLEFT", 0, y - 26)
+        else
+            b:SetPoint("TOPLEFT", btns[i - 1], "BOTTOMLEFT", 0, -8)
+        end
+        b:SetScript("OnEnter", function(self)
+            self.__hot = true
+            paint()
+        end)
+        b:SetScript("OnLeave", function(self)
+            self.__hot = false
+            paint()
+        end)
+        b:SetScript("OnClick", function(self)
+            set(self.__key)
+            paint()
+            ns.PlaySound(1)
+            M.SyncWorldQuestPins()
+        end)
+        btns[i] = b
+    end
+    paint = function()
+        local cur = get()
+        for i = 1, #btns do
+            local b = btns[i]
+            local on = b.__key == cur
+            local a = on and 0.20 or ((b.__hot and 0.14) or 0.06)
+            for _, t in ipairs(b.fills or {}) do t:SetAlpha(a) end
+            if b.bg then b.bg:SetAlpha(a) end
+            local fs = b.GetFontString and b:GetFontString() or nil
+            if fs then
+                if on then
+                    fs:SetTextColor(1, 0.82, 0)
+                else
+                    fs:SetTextColor(WP_TXT[1], WP_TXT[2], WP_TXT[3])
+                end
+            end
+        end
+    end
+    paint()
+    return {
+        sync = function() paint() end,
+    }
+end
+
 local function wpCreatePanel()
     local host = ns.MainFrame or UIParent
     local f = CreateFrame("Frame", "DFQuestPinSettings", host, "BackdropTemplate")
@@ -5486,7 +5551,7 @@ local function wpCreatePanel()
         f:SetPoint("BOTTOMLEFT", host, "BOTTOMRIGHT", 4, 0)
     else
         f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-        f:SetHeight(390)
+        f:SetHeight(430)
     end
     f:Hide()
     f:SetScript("OnHide", function()
@@ -5562,6 +5627,16 @@ local function wpCreatePanel()
             function(v) wpCfg().world = v end)
         syncers[#syncers + 1] = function() tg:sync() end
         y = y - 24
+    end
+    y = y - 8
+    do
+        local row = wpOptRow(content, y, L["地图图钉层级"], {
+            { "above", L["Questie 之上"] },
+            { "below", L["Questie 之下"] },
+        },
+            function() return wpCfg().layer end,
+            function(v) wpCfg().layer = v end)
+        syncers[#syncers + 1] = function() row:sync() end
     end
     f.syncAll = function()
         for _, fn in ipairs(syncers) do fn() end

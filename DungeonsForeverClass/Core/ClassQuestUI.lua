@@ -41,6 +41,8 @@ local TXT_MAX = 24
 local NODE_MAX = 40
 local CHIP_MAX = 40
 local NPC_MAX = 16
+local RACE_MAX = 12
+local RACE_GAP = 4
 local ROW_IND = 20
 
 local C_DONE = { 0.25, 0.85, 0.35 }
@@ -649,7 +651,7 @@ local function Ensure()
     end
 
     local detW = DetRowW()
-    CQ.det = { lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {} }
+    CQ.det = { lab = {}, kv = {}, txt = {}, node = {}, chip = {}, npc = {}, race = {} }
 
     CQ.title = MakeFS(CQ.dchild, 16, C_GOLD, "LEFT")
     CQ.title:SetWordWrap(false)
@@ -722,13 +724,15 @@ end
 
 local function DetReset()
     local pool = CQ.det
-    pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc = 0, 0, 0, 0, 0, 0
+    pool.race = pool.race or {}
+    pool.nLab, pool.nKv, pool.nTxt, pool.nNode, pool.nChip, pool.nNpc, pool.nRace = 0, 0, 0, 0, 0, 0, 0
     for i = 1, #pool.lab do pool.lab[i]:Hide() end
     for i = 1, #pool.kv do pool.kv[i]:Hide() end
     for i = 1, #pool.txt do pool.txt[i]:Hide() end
     for i = 1, #pool.node do pool.node[i]:Hide() end
     for i = 1, #pool.chip do pool.chip[i]:Hide() end
     for i = 1, #pool.npc do pool.npc[i]:Hide() end
+    for i = 1, #pool.race do pool.race[i]:Hide() end
 end
 
 local function TakeLab()
@@ -1007,6 +1011,85 @@ local function ItemQual(iid)
     return nil
 end
 
+local RACE_INK_N = { 0.74, 0.76, 0.82 }
+
+local function RaceInk(rid)
+    local side = RACE_FAC[rid]
+    if side == "A" then return DG.C_FAC_A end
+    if side == "H" then return DG.C_FAC_H end
+    return RACE_INK_N
+end
+
+local function TakeRaceChip()
+    local pool = CQ.det
+    pool.race = pool.race or {}
+    pool.nRace = (pool.nRace or 0) + 1
+    local r = pool.race[pool.nRace]
+    if not r then
+        if pool.nRace > RACE_MAX then return nil end
+        if not (ns.hui and ns.hui.MakeSolidChip and ns.hui.ChipH) then return nil end
+        r = ns.hui.MakeSolidChip(CQ.dchild, (CQ.dchild:GetFrameLevel() or 1) + 1, ns.hui.ChipH(DET_FS))
+        pool.race[pool.nRace] = r
+    end
+    return r
+end
+
+local function AddRaceChips(y, races)
+    if type(races) ~= "table" or #races == 0 then return y end
+    local list, seen = {}, {}
+    for _, rid in ipairs(races) do
+        local rn = RACE_ZH[rid]
+        if rn and not seen[rn] then
+            seen[rn] = true
+            list[#list + 1] = { n = rn, id = rid }
+        end
+    end
+    if #list == 0 then return y end
+    if not (ns.hui and ns.hui.MakeSolidChip and ns.hui.PaintSolidChip and ns.hui.ChipDY) then
+        local names = {}
+        for i = 1, #list do names[i] = list[i].n end
+        return AddLine(y, DG.Hex(C_GREY) .. L["限定种族"] .. "：|r" .. table.concat(names, "、"), C_TEXT, 24)
+    end
+    local chipH = ns.hui.ChipH(DET_FS)
+    local lineH = chipH + RACE_GAP
+    local maxW = DetRowW()
+    local lab = TakeLab()
+    local prev, head, rows, usedW = nil, nil, 1, 0
+    if lab then
+        lab:SetText(L["限定种族"])
+        lab:SetTextColor(Unpack(C_GREY))
+        putDet(lab, DET_X, y, 20)
+        local lw = lab:GetStringWidth()
+        usedW = (type(lw) == "number" and lw or 0) + 6
+    end
+    for i = 1, #list do
+        local chip = TakeRaceChip()
+        if not chip then break end
+        ns.hui.PaintSolidChip(chip, list[i].n, RaceInk(list[i].id))
+        local w = chip:GetWidth()
+        if type(w) ~= "number" then w = 0 end
+        chip:ClearAllPoints()
+        if not prev then
+            if lab then
+                chip:SetPoint("LEFT", lab, "RIGHT", 6, ns.hui.ChipDY(DET_FS))
+            else
+                chip:SetPoint("TOPLEFT", CQ.dchild, "TOPLEFT", DET_X, y - 3)
+            end
+            head = chip
+        elseif usedW + RACE_GAP + w > maxW then
+            chip:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 0, -RACE_GAP)
+            head = chip
+            rows = rows + 1
+            usedW = w
+        else
+            chip:SetPoint("LEFT", prev, "RIGHT", RACE_GAP, 0)
+            usedW = usedW + RACE_GAP + w
+        end
+        prev = chip
+    end
+    return y - (20 + (rows - 1) * lineH) - 6
+end
+
 local function ChipRow(y, items, spell)
     local detW = DetRowW()
     local ncol = 2
@@ -1121,6 +1204,8 @@ renderChain = function(row, y)
         sub = sub .. " · " .. L["双阵营共有"]
     end
     y = DetHead(sub)
+
+    y = AddRaceChips(y, row.races)
 
     if row.note and row.note ~= "" then
         local f = TakeTxt()
@@ -1285,19 +1370,7 @@ renderQuest = function(id, y)
     y = AddLine(y, DG.Hex(C_GREY) .. L["阵营"] .. "：|r"
         .. (facCol and DG.Hex(facCol) or "") .. fac .. (facCol and "|r" or ""), C_TEXT, 24)
 
-    if type(q.races) == "table" and #q.races > 0 then
-        local seen, names = {}, {}
-        for _, rid in ipairs(q.races) do
-            local rn = RACE_ZH[rid]
-            if rn and not seen[rn] then
-                seen[rn] = true
-                names[#names + 1] = rn
-            end
-        end
-        if #names > 0 then
-            y = AddLine(y, DG.Hex(C_GREY) .. L["限定种族"] .. "：|r" .. table.concat(names, "、"), C_TEXT, 24)
-        end
-    end
+    y = AddRaceChips(y, q.races)
 
     local chain = CQ.sel and CQ.sel.chain
     if chain then

@@ -1866,7 +1866,7 @@ ns.Init(function()
         elseif event == "BAG_UPDATE_DELAYED" or event == "QUEST_LOG_UPDATE" then
             local EG = ns.ExploreModule
             if EG then EG._auto = nil end
-            Z.RefreshSoft()
+            Z.ScheduleSoft(0.6)
         elseif event == "PLAYER_REGEN_ENABLED" then
             if pending then
                 pending = nil

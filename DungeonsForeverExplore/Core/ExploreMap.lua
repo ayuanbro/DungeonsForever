@@ -721,6 +721,22 @@ local function refreshAuto()
     pcall(EG.ScanAuto)
 end
 
+local autoQueued = false
+
+local function refreshAutoLater()
+    if autoQueued then return end
+    autoQueued = true
+    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+        C_Timer.After(0.5, function()
+            autoQueued = false
+            refreshAuto()
+        end)
+    else
+        autoQueued = false
+        refreshAuto()
+    end
+end
+
 local function miniSignature()
     local c = cfg()
     return table.concat({
@@ -1919,10 +1935,12 @@ local function Init()
         pcall(autoEv.RegisterEvent, autoEv, "QUEST_LOG_UPDATE")
         pcall(autoEv.RegisterEvent, autoEv, "PLAYER_ENTERING_WORLD")
         autoEv:SetScript("OnEvent", function()
-            refreshAuto()
             if WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
+                refreshAuto()
                 ns.ExploreMapRefresh()
+                return
             end
+            refreshAutoLater()
         end)
     end
     if hooksecurefunc then
