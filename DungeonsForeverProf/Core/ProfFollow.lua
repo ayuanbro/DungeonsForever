@@ -424,7 +424,7 @@ local function routeForCalc(slug, skill)
         return "auto",{}
     end
     local PD = ns.ProfModule
-    local fixedOnly=slug=="first-aid" or slug=="poisons" or slug=="mining" and PD and PD.GatherMode and PD.GatherMode(slug)=="smelt"
+    local fixedOnly=slug=="first-aid" or slug=="poisons"
     if frozen and fixedOnly and frozen.mode~="fixed" then
         PF.pendingPlans=PF.pendingPlans or {}
         PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code="fixedOnlyChanged"}}}
@@ -434,9 +434,8 @@ local function routeForCalc(slug, skill)
     local ended = PF.endedPlan and PF.endedPlan[slug]
     if ended and PF.Following and PF.Following(slug) then return ended.mode == "fixed" and "fixed" or "auto", ended.executionSteps or ended.steps,ended end
     local scheme = PD and PD.SettingRaw and PD.SettingRaw("autoScheme",slug) or "cheapest"
-    local smelt = slug == "mining" and PD and PD.GatherMode and PD.GatherMode(slug) == "smelt"
     local fish = PD and PD.CookingFishingMode and PD.CookingFishingMode(slug)
-    local auto = not fixedOnly and not smelt and PD and PD.Setting and (PD.Setting("autoRoute",slug) or fish) and RA
+    local auto = not fixedOnly and PD and (PD.AutoRouteEnabled and PD.AutoRouteEnabled(slug) or not PD.AutoRouteEnabled and PD.Setting and (PD.Setting("autoRoute",slug) or fish)) and RA
     PF.pendingPlans = PF.pendingPlans or {}
     if auto then
         local opts = RA.OptionsFor and RA.OptionsFor(slug, skill) or {

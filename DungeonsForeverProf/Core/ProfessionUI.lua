@@ -1059,8 +1059,9 @@ function PD.GatherMode(slug)
     if not (LV and type(LV.mining) == "table") then return "gather" end
         return (ProfDB().gatherMode == "smelt") and "smelt" or "gather"
 end
-function PD.IsGatherRoute()
-    return PD.GATHER_SLUGS[PD.cur] and not (PD.cur == "mining" and PD.GatherMode("mining") == "smelt")
+function PD.IsGatherRoute(slug)
+    slug=slug or PD.cur
+    return PD.GATHER_SLUGS[slug] and not (slug == "mining" and PD.GatherMode(slug) == "smelt")
 end
 
 PD.LV_CAP = 300
@@ -13308,7 +13309,7 @@ end
 
 function PD.AutoRouteEnabled(slug)
     slug = slug or PD.cur
-    if not slug or PD.FixedOnly(slug) or PD.GATHER_SLUGS[slug] then return false end
+    if not slug or PD.FixedOnly(slug) or PD.IsGatherRoute(slug) then return false end
     if PD.CookingFishingMode(slug) or PD.Setting("autoRoute",slug) then return true end
     local context = PD.RoutePairContext(slug)
     return context and context.requiresPartner or false
@@ -13374,7 +13375,7 @@ end
 function PD.RecalcNeeded()
     local slug = PD.cur
     if not slug or slug == "__index" or PD.FixedOnly(slug) then return false end
-    if PD.GATHER_SLUGS and PD.GATHER_SLUGS[slug] then return false end
+    if PD.IsGatherRoute(slug) then return false end
     local SR = ns.ProfSolverRun
     if SR and SR.Running and SR.Running(PD.cur) then return false end
     if not PD.Setting("autoRoute") and not PD.autoSnapshot then return false end
@@ -13495,7 +13496,7 @@ end
 
 function PD.LvRecalc()
     if not PD.cur or PD.cur == "__index" or PD.FixedOnly() then return end
-    if PD.GATHER_SLUGS and PD.GATHER_SLUGS[PD.cur] then return end
+    if PD.IsGatherRoute() then return end
     PD.ClearPlanCache()
     if RA then
         if RA.Recalculate then

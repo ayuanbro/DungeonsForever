@@ -289,6 +289,7 @@ function S.Result(job,state,status)
         return S.RefreshStatus(job,job.resultCache,status)
     end
     local out={planVersion=2,executionVersion=1,scheme="cheapest",steps={},executionSteps={},actions={},mats={},firstAt={},gaps={},total=0,matTotal=0,vendorTotal=0,ahTotal=0,crafts=0,productAH=0,productNPC=0,productPartial=false,start=job.opts.start or 1,target=job.target,status=status or "searching",feasible=state~=nil,priced=true,optimal=false,diagnostics={},stamp=(time and time()) or 0,expanded=job.expanded or 0,improvements=job.improvements or 0,initialTotal=job.initialTotal,searchComplete=job.exhausted or false,budgetLimited=job.budgetLimited or false}
+    out.batchOptimizationLimited=job.batchOptimizationLimited or false
     out.searchTermination=job.searchTermination
     out.procurementPolicyVersion=S.ProcurementPolicyVersion
     out.searchCpuMs=job.cpuUsed or 0
@@ -1759,6 +1760,7 @@ function S.ScheduleBatches(original,initialState,advance,tick,progressGoals,pres
         return rebatchEquivalent(requirements,state,progressGoals,preserveGreen,true)
     end
     local completed,work=0,0
+    local workLimit=options and options.workLimit
     local stats={states=0,transitions=0,pruned=0,skillPruned=0,greenPruned=0,cacheRotations=0,pending=1}
     local cacheLimit=options and tonumber(options.cacheEntries) or 50000
     if not cacheLimit or cacheLimit~=cacheLimit or cacheLimit==math.huge then cacheLimit=50000 end
@@ -1941,6 +1943,7 @@ function S.ScheduleBatches(original,initialState,advance,tick,progressGoals,pres
     end
     while #stack>0 do
         checkpoint()
+        if workLimit and work>=workLimit then stats.exhausted=true;stats.pending=0;report(1);return best end
         if bestScore==distinct then stats.pending=0;report(1);return best end
         local frame=stack[#stack]
         if not frame.children then
@@ -2031,6 +2034,7 @@ function S.ScheduleBatches(original,initialState,advance,tick,progressGoals,pres
                         table.sort(taskOrder,function(a,b) return priority[a]<priority[b] or priority[a]==priority[b] and a<b end)
                     end
                     for position,entry in ipairs(taskOrder) do
+                        if workLimit and work>=workLimit then break end
                         local i=options and options.firstFeasible and entry or position
                         local task=tasks[i]
                         local score=frame.score+(task.key and task.key~=frame.lastKey and 1 or 0)
@@ -2038,6 +2042,7 @@ function S.ScheduleBatches(original,initialState,advance,tick,progressGoals,pres
                             local state=frame.state;local batch,byCount={},options and options.firstFeasible and {} or nil
                             local lastKey=task.key or frame.lastKey
                             for count=1,frame.remaining[i] do
+                                if workLimit and work>=workLimit then break end
                                 if count==1 and frame.first and frame.first[i]~=nil then state=frame.first[i] or nil
                                 else state=advance(state,task.action);stats.transitions=stats.transitions+1 end
                                 checkpoint()
@@ -3536,18 +3541,21 @@ function S.NewJob(slug,opts)
                         checked=max(checked,(limit-distinct+1)/progressSpan)
                         finalizeProgress(j,from+(to-from)*checked)
                     end
-                    if state.risk then
+                    local control={remainingWork=100000,remainingReplays=256}
+                    if state.risk or not model then
                         local function warmReplay(list,checkpoint) return replay(list,nil,checkpoint) end
-                        best=S.RebatchChronological(best,warmReplay,tick,nil,j.snap.byKey,false,progressGoals,true,start.cap,true)
-                        best=S.RebatchChronological(best,warmReplay,tick,nil,j.snap.byKey,true,progressGoals,true,start.cap,true)
+                        best=S.RebatchChronological(best,warmReplay,tick,nil,j.snap.byKey,false,progressGoals,stable,start.cap,true,control)
+                        best=S.RebatchChronological(best,warmReplay,tick,nil,j.snap.byKey,true,progressGoals,stable,start.cap,true,control)
                         checked=max(checked,(initialSegments-rebatchSwitches(actions(best,tick))-1)/progressSpan)
                         finalizeProgress(j,from+(to-from)*checked)
                     end
+                    if control.exhausted then j.batchOptimizationLimited=true end
                     return S.ScheduleBatches(state,start,advance,tick,progressGoals,stable,
                         function(fraction,stats)
+                            if stats.exhausted then j.batchOptimizationLimited=true end
                             finalizeProgress(j,from+(to-from)*(checked+(1-checked)*fraction))
                             j.batchSearch=fraction<1 and {states=inspected+stats.states,bestSegments=stats.bestSegments} or nil
-                        end,{incumbent=best,requirements=requirements,prebuy=true,recipes=j.snap.byKey,equivalentReasons=equivalentReasons,ignoreStateFields={lastRecipe=true},eager=function(current,action)
+                        end,{workLimit=100000,incumbent=best,requirements=requirements,prebuy=true,recipes=j.snap.byKey,equivalentReasons=equivalentReasons,ignoreStateFields={lastRecipe=true},eager=function(current,action)
                             if action.type=="tool_goal" and current.risk and R.Apply(current.risk,action)==current.risk then return advance(current,action) end
                         end,completed=function(current,action)
                             return action.type=="formula" and action.formula and current.formulaPaid[action.formula.id or action.owner]
