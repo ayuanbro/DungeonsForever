@@ -10,9 +10,9 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 2.1.110
+## Version: 2.1.111
 ## SavedVariables: DungeonsForeverDB
-## OptionalDeps: EllesmereUI
+## OptionalDeps: EllesmereUI, DF_CNLocale
 ## LoadOnDemand: 0
 Locales\zhCN.lua
 Locales\zhTW.lua [AllowLoadTextLocale zhTW]

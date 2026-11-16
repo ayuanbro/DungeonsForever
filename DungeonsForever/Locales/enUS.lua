@@ -1,6 +1,6 @@
 local _, ns = ...
 
-if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
+if (type(DF_Locale) ~= "function") or DF_Locale() ~= "enUS" then return end
 
 local L = ns.L
 
@@ -2349,6 +2349,12 @@ L["自动路线不可用"] = "Auto route unavailable"
 L["自定义…"] = "Custom…"
 L["自己制造"] = "Craft it yourself"
 L["自己制造总成本"] = "Craft-all total"
+L["制造总成本"] = "Craft total"
+L["卖商人价格"] = "Vendor price"
+L["拍卖行价格"] = "Auction price"
+L["专业制造（%s%d）"] = "Crafted (%s %d)"
+L["推荐直接卖商人"] = "Sell to a vendor instead"
+L["只显示已学专业"] = "Learned professions only"
 L["自己制造材料明细"] = "Craft materials"
 L["自己已有帐篷时，不再在待办里弹出蹭帐篷卡片"] = "Do not show the tent-share card when you already own a tent"
 L["自己造省"] = "Crafting saves"

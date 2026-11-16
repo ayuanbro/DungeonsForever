@@ -1,4 +1,4 @@
-local gl = (type(GetLocale) == 'function') and GetLocale() or 'zhCN'
+local gl = (type(DF_Locale) == 'function') and DF_Locale() or 'zhCN'
 if gl ~= 'zhTW' then return end
 
 local ns = _G.DF_NS or {}

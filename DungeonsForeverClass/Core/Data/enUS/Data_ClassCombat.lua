@@ -1,6 +1,6 @@
 local ns = _G.DF_NS or {}
 
-if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
+if (type(DF_Locale) ~= "function") or DF_Locale() ~= "enUS" then return end
 
 ns.ClassCombat = {
     meta = { patch = "1.60.1", level = 60, ranks = "game-client" },

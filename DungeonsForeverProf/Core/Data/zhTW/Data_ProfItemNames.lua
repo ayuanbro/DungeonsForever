@@ -1,6 +1,6 @@
 local ns = _G.DF_NS or {}
 
-if (type(GetLocale) ~= "function") or GetLocale() ~= "zhTW" then return end
+if (type(DF_Locale) ~= "function") or DF_Locale() ~= "zhTW" then return end
 
 local base = ns.ProfItemNames
 ns.ProfItemNames = {

@@ -17,7 +17,7 @@ local names = {
 local ranks = {{"初级","初級","Apprentice"}, {"中级","中級","Journeyman"},
     {"高级","高級","Expert"}, {"专家级","專家級","Artisan"}}
 local function locale()
-    return GetLocale and GetLocale() or "zhCN"
+    return DF_Locale and DF_Locale() or "zhCN"
 end
 local function tr(zh, tw, en)
     local loc=locale()

@@ -5667,7 +5667,7 @@ function U:ShowDungeonDetail(d)
     DG.PrewarmLoot(d)
 
     local titleFs = U.dungeonDetailTitle
-    local loc = (type(GetLocale) == "function" and GetLocale()) or "zhCN"
+    local loc = (type(DF_Locale) == "function" and DF_Locale()) or "zhCN"
     local nameTxt = d.name
     if loc ~= "zhCN" and loc ~= "zhTW" then nameTxt = d.nameEn or d.name end
     local tail = "  |cff8b8b8b" .. format(L["等级 %d-%d"], d.levelMin, d.levelMax) .. "|r"

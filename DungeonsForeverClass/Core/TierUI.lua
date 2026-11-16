@@ -28,7 +28,7 @@ TT.EDGE = PAGE_INSET
 TT.CARD_TOP = 8
 TT.NAV_X, TT.NAV_PAD = TT.EDGE, 8
 TT.NAV_TOP = TT.CARD_TOP + 8
-TT.NAV_W = ((type(GetLocale) == "function") and GetLocale() == "enUS") and 184 or 148
+TT.NAV_W = ((type(DF_Locale) == "function") and DF_Locale() == "enUS") and 184 or 148
 TT.NAV_ITEM_H, TT.NAV_ICON, TT.NAV_FS = 24, 20, 16
 TT.NAV_ITEM_GAP = 8
 TT.NAV_ITEM_STEP = TT.NAV_ITEM_H + TT.NAV_ITEM_GAP

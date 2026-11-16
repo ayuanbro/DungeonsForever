@@ -875,92 +875,115 @@ local function paintSegWorld(view, si, on)
     end
 end
 
+local function routeJobKey(view)
+    return "dfRoute:" .. tostring(view)
+end
+
+local function cancelRouteJob(view)
+    if view and ns.PaintJob then ns.PaintJob.Cancel(routeJobKey(view)) end
+end
+
 local function syncRoute(view, id, floor, cw, ch)
+    if ns.PaintJob then ns.PaintJob.Cancel(routeJobKey(view)) end
     local used = view.routeUsed or 0
-    local n = 0
     local hv = M.NewSegHover(view.route, function(si, on) paintSegWorld(view, si, on) end)
     if hv.seg then hv:Set(nil) end
     view.routeUsed = 0
-    if id and floor and M.RouteOn(id) and not M.routeOff then
-        local segs = ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
-        if type(segs) == "table" and #segs > 0 then
-            local arr, total, dsh = {}, 0, {}
-            for si = 1, #segs do
-                if M.routeHidden[M.RouteSegKey(id, floor, si)] then
-                    arr[si] = nil
-                else
-                    local src = segs[si].pts
-                    local dst = {}
-                    for i = 1, #src do
-                        dst[i] = { (src[i][1] / 100) * cw, (src[i][2] / 100) * ch }
-                    end
-                    dst = smoothPts(dst)
-                    for i = 2, #dst do
-                        total = total + math.sqrt((dst[i][1] - dst[i - 1][1]) ^ 2
-                            + (dst[i][2] - dst[i - 1][2]) ^ 2)
-                    end
-                    arr[si] = dst
-                    if segs[si].dash then dsh[si] = true end
-                end
-            end
-            local step = M.ROUTE_STEP
-            local cap = MAX_ROUTE * 0.95
-            if total > 0 and total / step > cap then
-                step = total / cap
-            end
-            local acc = 0
-            local full = false
-            for si = 1, #segs do
-                if full then break end
-                local pts = arr[si]
-                if pts then
-                    local dash = dsh[si]
-                    local period = M.ROUTE_DASH_ON + M.ROUTE_DASH_OFF
-                    local sd = 0
-                    for i = 2, #pts do
-                        if full then break end
-                        local a, b = pts[i - 1], pts[i]
-                        local dx, dy = b[1] - a[1], b[2] - a[2]
-                        local d = math.sqrt(dx * dx + dy * dy)
-                        if d > 0.01 then
-                            local k = math.max(1, math.ceil(d / step))
-                            local du = d / k
-                            for j = 1, k do
-                                if n >= MAX_ROUTE then
-                                    full = true
-                                    break
-                                end
-                                local u = (j - 0.5) / k
-                                local ds = sd + du * (j - 0.5)
-                                if (not dash) or (ds % (M.ROUTE_DASH_ON + M.ROUTE_DASH_OFF) < M.ROUTE_DASH_ON) then
-                                    n = n + 1
-                                    local t = (total > 0) and ((acc + d * u) / total) or 0
-                                    local cr, cg, cb = M.RouteColor(t)
-                                    routeDot(view, a[1] + dx * u, a[2] + dy * u, cr, cg, cb, si)
-                                end
-                            end
-                            sd = sd + d
+    local canYield = ns.PaintJob and true or false
+    local body = function()
+        local n = 0
+        if id and floor and M.RouteOn(id) and not M.routeOff then
+            local segs = ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
+            if type(segs) == "table" and #segs > 0 then
+                local arr, total, dsh = {}, 0, {}
+                for si = 1, #segs do
+                    if M.routeHidden[M.RouteSegKey(id, floor, si)] then
+                        arr[si] = nil
+                    else
+                        local src = segs[si].pts
+                        local dst = {}
+                        for i = 1, #src do
+                            dst[i] = { (src[i][1] / 100) * cw, (src[i][2] / 100) * ch }
                         end
-                        acc = acc + d
+                        dst = smoothPts(dst)
+                        for i = 2, #dst do
+                            total = total + math.sqrt((dst[i][1] - dst[i - 1][1]) ^ 2
+                                + (dst[i][2] - dst[i - 1][2]) ^ 2)
+                        end
+                        arr[si] = dst
+                        if segs[si].dash then dsh[si] = true end
                     end
                 end
+                local step = M.ROUTE_STEP
+                local cap = MAX_ROUTE * 0.95
+                if total > 0 and total / step > cap then
+                    step = total / cap
+                end
+                local acc = 0
+                local full = false
+                local batch = 0
+                for si = 1, #segs do
+                    if full then break end
+                    local pts = arr[si]
+                    if pts then
+                        local dash = dsh[si]
+                        local period = M.ROUTE_DASH_ON + M.ROUTE_DASH_OFF
+                        local sd = 0
+                        for i = 2, #pts do
+                            if full then break end
+                            local a, b = pts[i - 1], pts[i]
+                            local dx, dy = b[1] - a[1], b[2] - a[2]
+                            local d = math.sqrt(dx * dx + dy * dy)
+                            if d > 0.01 then
+                                local k = math.max(1, math.ceil(d / step))
+                                local du = d / k
+                                for j = 1, k do
+                                    if n >= MAX_ROUTE then
+                                        full = true
+                                        break
+                                    end
+                                    local u = (j - 0.5) / k
+                                    local ds = sd + du * (j - 0.5)
+                                    if (not dash) or (ds % (M.ROUTE_DASH_ON + M.ROUTE_DASH_OFF) < M.ROUTE_DASH_ON) then
+                                        n = n + 1
+                                        local t = (total > 0) and ((acc + d * u) / total) or 0
+                                        local cr, cg, cb = M.RouteColor(t)
+                                        routeDot(view, a[1] + dx * u, a[2] + dy * u, cr, cg, cb, si)
+                                        batch = batch + 1
+                                        if canYield and batch >= 64 then
+                                            batch = 0
+                                            coroutine.yield()
+                                        end
+                                    end
+                                end
+                                sd = sd + d
+                            end
+                            acc = acc + d
+                        end
+                    end
+                end
+                hv:Build(view.route, arr, #segs)
             end
-            hv:Build(view.route, arr, #segs)
         end
-    end
-    if n == 0 then hv:HideAll() end
-    for i = n + 1, used do
-        local e = view.routePool[i]
-        if e then
-            e.o:Hide()
-            e.c:Hide()
+        if n == 0 then hv:HideAll() end
+        for i = n + 1, used do
+            local e = view.routePool[i]
+            if e then
+                e.o:Hide()
+                e.c:Hide()
+            end
         end
+        local rsegs = id and floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
+        local nb = M.SyncNoBadges(view.route, "world", cw, ch, M.SegNoItems(id, floor, rsegs, cw, ch, function(i)
+            return M.routeOff or M.routeHidden[M.RouteSegKey(id, floor, i)]
+        end), view.__uiK)
+        view.route:SetShown(n > 0 or (nb or 0) > 0)
     end
-    local rsegs = id and floor and ns.DungeonRoute and ns.DungeonRoute[id] and ns.DungeonRoute[id][floor]
-    local nb = M.SyncNoBadges(view.route, "world", cw, ch, M.SegNoItems(id, floor, rsegs, cw, ch, function(i)
-        return M.routeOff or M.routeHidden[M.RouteSegKey(id, floor, i)]
-    end), view.__uiK)
-    view.route:SetShown(n > 0 or (nb or 0) > 0)
+    if canYield then
+        ns.PaintJob.Run(routeJobKey(view), body, nil, 4)
+    else
+        body()
+    end
 end
 
 local function pinList(id, floor)
@@ -2153,6 +2176,7 @@ end
 function W.Hide()
     local view = W.view
     if not view then return end
+    cancelRouteJob(view)
     if ns.MapZoom then ns.MapZoom.Reset() end
     if view.routeBtn then view.routeBtn:Hide() end
     if view.pinBtn then view.pinBtn:Hide() end
@@ -3516,6 +3540,7 @@ W.Render = {
     paintArt = paintArt,
     paintArea = paintArea,
     syncRoute = syncRoute,
+    cancelRoute = cancelRouteJob,
     syncPins = syncPins,
     syncBar = syncBar,
     syncButtons = syncButtons,

@@ -872,7 +872,7 @@ local function FloorName(id, idx)
     local arr = FLOOR_NAMES[FLOOR_KEY[id] or id]
     local t = arr and arr[idx]
     if not t then return nil end
-    local gl = (type(GetLocale) == "function") and GetLocale() or "zhCN"
+    local gl = (type(DF_Locale) == "function") and DF_Locale() or "zhCN"
     if gl == "enUS" then return t[1] end
     if gl == "zhTW" then return t[3] end
     return t[2]

@@ -444,7 +444,7 @@ PD.CARD_INSET = PAGE_INSET
 PD.CARD_TOP = 8
 PD.NAV_PAD = 8
 PD.NAV_X, PD.NAV_TOP = PD.CARD_INSET + PD.NAV_PAD, PD.CARD_TOP + PD.NAV_PAD
-PD.NAV_W = ((type(GetLocale) == "function") and GetLocale() == "enUS") and 184 or 148
+PD.NAV_W = ((type(DF_Locale) == "function") and DF_Locale() == "enUS") and 184 or 148
 PD.NAV_FS, PD.NAV_ICON = 16, 20
 PD.NAV_ITEM_H, PD.NAV_GROUP_H, PD.NAV_GAP = 24, 26, 8
 PD.NAV_LV_FS = 14
@@ -1085,7 +1085,7 @@ PD.LIST_PAD = 8
 PD.GRID_X = 0
 PD.GRID_W = PD.RIGHT_W - PD.LIST_PAD
 PD.COL_GAP = 12
-local LV_SPLIT = ((type(GetLocale) == "function") and GetLocale() == "enUS") and 0.75 or 0.80
+local LV_SPLIT = ((type(DF_Locale) == "function") and DF_Locale() == "enUS") and 0.75 or 0.80
 PD.COL_LW = math.floor((PD.GRID_W - PD.COL_GAP) * LV_SPLIT)
 PD.COL_RW = PD.GRID_W - PD.COL_GAP - PD.COL_LW
 
@@ -4055,7 +4055,7 @@ local function TrRankFor(d, rng)
 end
 
 local function TrNameOf(t)
-    local loc = (GetLocale() == "zhTW") and t.tw or t.zh
+    local loc = (DF_Locale() == "zhTW") and t.tw or t.zh
     return (loc and loc ~= "") and loc or t.en
 end
 
@@ -4075,7 +4075,7 @@ end
 local function TrLocOf(t)
     local zone = TrZoneOf(t)
     if zone and zone ~= "" then return zone end
-    local loc = GetLocale()
+    local loc = DF_Locale()
     local txt = (loc == "zhTW") and t.loc_tw or (loc == "enUS") and t.loc_en or t.loc_zh
     if not txt then return t.loc_en end
     local big = txt:match("· ([^·]+)$")
@@ -4122,9 +4122,9 @@ function PD.FillTrainerBoard()
         if not h1 then h1 = MakeFS(root, 14, C_GOLD, "LEFT"); root.__fs[fsN] = h1 end
         h1:ClearAllPoints()
         h1:SetPoint("TOPLEFT", root, "TOPLEFT", x0, 0)
-        local rkName = rk and (GetLocale() == "zhTW" and rk.tw or rk.zh) or nil
+        local rkName = rk and (DF_Locale() == "zhTW" and rk.tw or rk.zh) or nil
         if rkLo then
-            local loName = GetLocale() == "zhTW" and rkLo.tw or rkLo.zh
+            local loName = DF_Locale() == "zhTW" and rkLo.tw or rkLo.zh
             if loName and loName ~= "" then rkName = loName .. "/" .. (rkName or "") end
         end
         h1:SetText((rkName and (rkName .. " ") or "") .. rng)
@@ -9154,7 +9154,7 @@ PD.TEACH_CACHE = {}
 function PD.TeachLocaleIdx()
     local idx = PD.TEACH_LOCALE
     if idx then return idx end
-    local loc = (type(GetLocale) == "function") and GetLocale() or "zhCN"
+    local loc = (type(DF_Locale) == "function") and DF_Locale() or "zhCN"
     idx = (loc == "enUS") and 1 or (loc == "zhTW") and 3 or 2
     PD.TEACH_LOCALE = idx
     return idx
@@ -10371,6 +10371,62 @@ function PD.PatternTipLines(id, title)
     return PD.MatPriceLines(mats, PD.MatsCostTextC(mats), e.r[2])
 end
 
+local productIdx
+
+function PD.ProductIndex()
+    if productIdx then return productIdx end
+    productIdx = {}
+    if ns.EnsureProfRecipes then pcall(ns.EnsureProfRecipes) end
+    for _, slug in ipairs(ns.ProfRecipeKeys or {}) do
+        local d = ns.ProfRecipes and ns.ProfRecipes[slug]
+        for _, r in ipairs((type(d) == "table" and d.rows) or {}) do
+            local pid = r[2]
+            if type(pid) == "number" and not r.nip and not productIdx[pid] then
+                productIdx[pid] = { r = r, slug = slug }
+            end
+        end
+    end
+    return productIdx
+end
+
+function PD.ProductCraftTitle(id)
+    if type(id) ~= "number" then return nil end
+    local e = PD.ProductIndex()[id]
+    if not e then return nil end
+    local p = D.pro and D.pro[e.slug]
+    local nm = tostring(p and p.name or e.slug)
+    local sk = e.r[7]
+    if type(sk) == "number" and sk > 0 then
+        return format(L["专业制造（%s%d）"], nm, sk)
+    end
+    return format(L["专业制造（%s）"], nm)
+end
+
+function PD.ProfKnows(id)
+    if type(id) ~= "number" then return false end
+    local e = PD.ProductIndex()[id]
+    if not e then return false end
+    return PD.ProfLearned()[e.slug] and true or false
+end
+
+function PD.ProductTipLines(id, title)
+    if type(id) ~= "number" then return nil end
+    local e = PD.ProductIndex()[id]
+    if not e then return nil end
+    local mats = e.r[12]
+    if not (type(mats) == "table" and #mats > 0) then return nil end
+    local nm = PD.ItemName(id)
+    if title and nm and title ~= nm then return nil end
+    local cfg = ns.TipCfg and ns.TipCfg()
+    local lines = {}
+    if not (type(cfg) == "table" and cfg.src) then
+        lines[#lines + 1] = { PD.ProductCraftTitle(id), 1, 0.82, 0 }
+    end
+    local mp = PD.MatPriceLines(mats, PD.MatsCostTextC(mats), id)
+    for i = 1, #mp do lines[#lines + 1] = mp[i] end
+    return lines
+end
+
 function PD.MatPriceLines(mats, costTxt, productID)
     local lines = {}
     if not (mats and #mats > 0) then return lines end
@@ -10388,11 +10444,14 @@ function PD.MatPriceLines(mats, costTxt, productID)
     if #mats > showN then
         lines[#lines + 1] = { format("… +%d", #mats - showN), 0.6, 0.6, 0.6 }
     end
-    lines[#lines + 1] = { L["自己制造总成本"], 1, 1, 1, nil, nil,
+    lines[#lines + 1] = { L["制造总成本"], 1, 1, 1, nil, nil,
                           costTxt or "—", 1, 1, 1 }
     if productID then
         local ah = RA.AHPriceOf and RA.AHPriceOf(productID) or nil
-        lines[#lines + 1] = { L["成品拍卖行价格"], 1, 1, 1, nil, nil,
+        local sell = RA.NPCSellPriceOf and RA.NPCSellPriceOf(productID) or nil
+        lines[#lines + 1] = { L["卖商人价格"], 1, 1, 1, nil, nil,
+                              sell and RA.MoneyStrTip(sell) or "—", 1, 1, 1 }
+        lines[#lines + 1] = { L["拍卖行价格"], 1, 1, 1, nil, nil,
                               ah and RA.MoneyStrTip(ah) or "—", 1, 1, 1 }
         local costVal = RA.MatListCost and select(1, RA.MatListCost(mats)) or nil
         if ah and costVal and costVal > 0 then
@@ -10610,6 +10669,13 @@ function PD.RecipeSpec(r)
         r[14]=learningCard.source
         vs=PD.VendorListOf(r[14]);hasVendor=#vs>0
         base=learningCard.text
+    end
+    if learningCard and learningCard.kind == "drop" and not hasVendor then
+        local fid = type(r[13]) == "table" and r[13][1] or nil
+        local price = fid and RA.AHPriceOf and RA.AHPriceOf(fid)
+        if type(price) == "number" and price > 0 then
+            base = base .. " · " .. format(L["拍卖行：%s"], RA.MoneyStr(price, "copper"))
+        end
     end
     local dpre, dval, dname, dcost, dlines, dact, dtip
     if hasVendor then

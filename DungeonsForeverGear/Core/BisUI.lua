@@ -1368,7 +1368,7 @@ function BG.InstDefs()
 end
 
 function BG.InstLabel(e)
-    local lc = (type(GetLocale) == "function") and GetLocale() or "zhCN"
+    local lc = (type(DF_Locale) == "function") and DF_Locale() or "zhCN"
     if lc == "enUS" and type(e.nameEn) == "string" and e.nameEn ~= "" then
         return e.nameEn
     end

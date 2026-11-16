@@ -5,7 +5,7 @@ addon.LibHUI = addon.LibHUI or {}
 local L = {}
 addon.LibHUI.L = L
 
-local locale = GetLocale()
+local locale = DF_Locale()
 
 if locale == "zhCN" then
   L.noneSelected  = "未选择"

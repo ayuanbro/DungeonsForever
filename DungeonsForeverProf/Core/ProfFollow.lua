@@ -293,7 +293,7 @@ function PF.SpecializationQuestInfo(seg)
     local goal=xp.SpecializationQuest(seg)
     local function label(value)
         if type(value)~="table" then return value end
-        local locale=GetLocale and GetLocale() or "zhCN"
+        local locale=DF_Locale and DF_Locale() or "zhCN"
         return value[locale] or value.zhCN or value.enUS
     end
     local name=label(goal.questName or goal.name) or L["专业专精任务"]

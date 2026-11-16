@@ -1420,8 +1420,20 @@ do
 
     local menuPopup = nil
     local menuOwner = nil
+    local subPopup = nil
+    local subOwner = nil
+
+    local function HideSubDFMenu()
+        if subPopup then
+            subPopup:Hide()
+            subPopup:SetParent(nil)
+        end
+        subPopup = nil
+        subOwner = nil
+    end
 
     local function HideDFMenu()
+        HideSubDFMenu()
         if menuPopup then
             menuPopup:Hide()
             menuPopup:SetParent(nil)
@@ -1451,6 +1463,7 @@ do
     MENU_EV:SetScript("OnEvent", function()
         if not (menuPopup and menuPopup:IsShown()) then return end
         if menuPopup:IsMouseOver() then return end
+        if subPopup and subPopup:IsShown() and subPopup:IsMouseOver() then return end
         if menuOwner and menuOwner.IsMouseOver and menuOwner:IsMouseOver() then return end
         HideDFMenu()
     end)
@@ -1459,26 +1472,12 @@ do
         HideDFMenu()
     end
 
-    function ns.hui.ShowMenu(items, opts)
-        if type(items) ~= "table" or #items == 0 then return end
-        opts = opts or {}
-        if menuPopup and menuPopup:IsShown() and opts.owner and opts.owner == menuOwner then
-            HideDFMenu()
-            return
-        end
-        if menuPopup then
-            menuPopup:Hide()
-            menuPopup:SetParent(nil)
-            menuPopup = nil
-        end
-        menuOwner = opts.owner
-
+    local function BuildMenu(items, opts)
         local popup = CreateFrame("Frame", nil, UIParent)
         popup:SetFrameStrata("FULLSCREEN_DIALOG")
         popup:SetToplevel(true)
         popup:SetClampedToScreen(true)
         popup:EnableMouse(true)
-        menuPopup = popup
 
         local rowH = 24
         local fsSz = tonumber(opts.fs) or 14
@@ -1500,6 +1499,7 @@ do
             if it.swatch then w = w + 14 + 7 end
             if it.icon then w = w + (it.iconSize or iconSz) + iconGap end
             if it.checked ~= nil then w = w + chkSz + chkGap end
+            if it.sub then w = w + 24 end
             if w > maxW then maxW = w end
         end
         maxW = math.max(120, math.min(maxW + 6, 360))
@@ -1597,12 +1597,34 @@ do
                 HideDFMenu()
                 if type(fn) == "function" then fn() end
             end)
+            if it.sub then
+                local more = CreateFrame("Button", nil, row)
+                more:SetSize(24, rowH)
+                more:SetPoint("RIGHT", row, "RIGHT", -1, 0)
+                local mfs = more:CreateFontString(nil, "OVERLAY")
+                mfs:SetFont(ns.FONT, fsSz + 5, "")
+                mfs:SetPoint("CENTER", more, "CENTER", 0, 1)
+                mfs:SetText("›")
+                mfs:SetTextColor(cr, cg, cb, ca)
+                local sub = it.sub
+                more:SetScript("OnClick", function()
+                    if type(sub) == "function" then sub() end
+                end)
+                local mh = more:CreateTexture(nil, "BACKGROUND")
+                mh:SetAllPoints()
+                mh:SetColorTexture(0, 0, 0, 0)
+                more:SetScript("OnEnter", function() mh:SetColorTexture(L5[1], L5[2], L5[3], 1) end)
+                more:SetScript("OnLeave", function() mh:SetColorTexture(0, 0, 0, 0) end)
+            end
         end
 
         ns.hui.SkinPopup(popup, 8, "both", ns.hui.layer.L0)
 
         local scale = UIParent:GetEffectiveScale()
-        if opts.anchor and opts.anchor.IsObjectType and opts.anchor:IsObjectType("Frame") then
+        if opts.rightOf and opts.rightOf.IsObjectType and opts.rightOf:IsObjectType("Frame") then
+            popup:ClearAllPoints()
+            popup:SetPoint("TOPLEFT", opts.rightOf, "TOPRIGHT", 4, 0)
+        elseif opts.anchor and opts.anchor.IsObjectType and opts.anchor:IsObjectType("Frame") then
             popup:ClearAllPoints()
             if opts.up then
                 popup:SetPoint("BOTTOMLEFT", opts.anchor, "TOPLEFT", 0, 4)
@@ -1615,6 +1637,37 @@ do
             popup:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", cx / scale + 2, cy / scale - 4)
         end
         popup:Show()
+        return popup
+    end
+
+    function ns.hui.ShowMenu(items, opts)
+        if type(items) ~= "table" or #items == 0 then return end
+        opts = opts or {}
+        if menuPopup and menuPopup:IsShown() and opts.owner and opts.owner == menuOwner then
+            HideDFMenu()
+            return
+        end
+        HideDFMenu()
+        menuOwner = opts.owner
+        menuPopup = BuildMenu(items, opts)
+    end
+
+    function ns.hui.ShowSubMenu(items, opts)
+        if type(items) ~= "table" or #items == 0 then return end
+        opts = opts or {}
+        if subPopup and subPopup:IsShown() and opts.owner and opts.owner == subOwner then
+            HideSubDFMenu()
+            return
+        end
+        HideSubDFMenu()
+        subOwner = opts.owner
+        local keep = opts
+        keep.rightOf = menuPopup
+        subPopup = BuildMenu(items, keep)
+    end
+
+    function ns.hui.HideSubMenu()
+        HideSubDFMenu()
     end
 
     function ns.hui.AttachContentPanel(page, anchor, topInset, bottomInset, sideInset)

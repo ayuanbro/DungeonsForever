@@ -5,6 +5,12 @@ local L = ns.L
 local TL = {}
 ns.TipLines = TL
 
+local function IsSecret(v)
+    if type(issecretvalue) ~= "function" then return false end
+    local ok, s = pcall(issecretvalue, v)
+    return (ok and s) and true or false
+end
+
 local C_SRC = { 1, 0.82, 0 }
 local C_WISH = { 1, 0.82, 0.4 }
 local C_BIS = { 0.47, 0.75, 0.45 }
@@ -16,10 +22,11 @@ local LOGO = "|TInterface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForeve
 local LOGO_GAP = "|TInterface\\AddOns\\DungeonsForever\\Media\\Brand\\DF_Blank.tga:16:16:0:0:32:32:0:32:0:32|t "
 
 local TIP_VER = 1
-local TIP_KEYS = { "src", "bis", "bisScore", "wish", "quest", "ilvl", "need", "price", "matPrice" }
+local TIP_KEYS = { "src", "bis", "bisScore", "wish", "quest", "ilvl", "need", "price", "matPrice", "prodPrice", "prodOwnOnly", "vendorRec" }
 local TIP_DEF = {
     src = true, bis = false, bisScore = true, wish = false,
     quest = false, ilvl = true, need = true, price = true, matPrice = true,
+    prodPrice = false, prodOwnOnly = true, vendorRec = true,
 }
 
 local function Cfg()
@@ -42,6 +49,10 @@ local function Cfg()
     t.writNeed = nil
     for _, k in ipairs(TIP_KEYS) do
         if t[k] == nil then t[k] = TIP_DEF[k] end
+    end
+    if t.prodPriceDefault ~= 2 then
+        t.prodPriceDefault = 2
+        t.prodPrice = false
     end
     if t.global == nil then t.global = true end
     return t
@@ -323,10 +334,31 @@ local function PriceRows(id)
     return rows
 end
 
+local C_VENDOR_REC = { 1, 0.82, 0 }
+
+local function VendorRecRows(id)
+    local RA = ns.ProfRouteAuto
+    if not RA or not RA.AHPriceOf or not RA.NPCSellPriceOf then return nil end
+    local ah = RA.AHPriceOf(id)
+    local sell = RA.NPCSellPriceOf(id)
+    if type(ah) ~= "number" or type(sell) ~= "number" then return nil end
+    if ah <= 0 or sell <= 0 then return nil end
+    local net = math.floor(ah * 0.95) - math.floor(sell * 0.05)
+    if net > sell then return nil end
+    return { { ">>" .. L["推荐直接卖商人"] .. "<<", C_VENDOR_REC[1], C_VENDOR_REC[2], C_VENDOR_REC[3] } }
+end
+
 local function PatternRows(id, title)
     local PM = ns.ProfModule
     if not PM or not PM.PatternTipLines then return nil end
     return PM.PatternTipLines(id, title)
+end
+
+local function ProductRows(id, title)
+    local PM = ns.ProfModule
+    if not PM or not PM.ProductTipLines then return nil end
+    if Cfg().prodOwnOnly and PM.ProfKnows and not PM.ProfKnows(id) then return nil end
+    return PM.ProductTipLines(id, title)
 end
 
 local function WritNeedRows(id, title)
@@ -404,7 +436,7 @@ local function BookSpot()
     local TI = ns.ExploreTurnIn
     if type(TI) ~= "table" then return nil end
     local side = type(UnitFactionGroup) == "function" and UnitFactionGroup("player") or nil
-    if type(side) == "string" then side = side:sub(1, 1) end
+    if type(side) == "string" and not IsSecret(side) then side = side:sub(1, 1) else side = nil end
     local pick
     for i = 1, #TI do
         local o = TI[i]
@@ -472,6 +504,20 @@ local function ExtraRows(id, title)
             for i = 1, #rows do out[#out + 1] = rows[i] end
         end
     end
+    if cfg.prodPrice then
+        local prows = ProductRows(id, title)
+        if prows then
+            out = out or {}
+            for i = 1, #prows do out[#out + 1] = prows[i] end
+        end
+    end
+    if cfg.vendorRec then
+        local rows = VendorRecRows(id)
+        if rows then
+            out = out or {}
+            for i = 1, #rows do out[#out + 1] = rows[i] end
+        end
+    end
     return out
 end
 
@@ -508,7 +554,11 @@ function TL.Lines(id, link, title)
         else
             local cn = BuildCraft()
             local nm = cn and cn[id]
-            if nm then
+            local PM = ns.ProfModule
+            local ttl = PM and PM.ProductCraftTitle and PM.ProductCraftTitle(id) or nil
+            if ttl then
+                add(ttl, C_SRC)
+            elseif nm then
                 add(format(L["专业制造（%s）"], nm), C_SRC)
             end
         end
@@ -609,7 +659,7 @@ local augStamp = {}
 local function TipItemID(tt)
     if type(tt.GetItem) ~= "function" then return nil end
     local ok, _, link = pcall(tt.GetItem, tt)
-    if ok and type(link) == "string" then return tonumber(link:match("item:(%d+)")), link end
+    if ok and type(link) == "string" and not IsSecret(link) then return tonumber(link:match("item:(%d+)")), link end
     return nil
 end
 
@@ -617,7 +667,7 @@ local function PlainWidth(fs)
     if not fs or not fs.GetWidth then return nil end
     local ok, w = pcall(fs.GetWidth, fs)
     if not ok or w == nil then return nil end
-    if issecretvalue and issecretvalue(w) then return nil end
+    if IsSecret(w) then return nil end
     if type(w) ~= "number" or w <= 0 then return nil end
     return w
 end
@@ -628,7 +678,7 @@ local function TipTitle(tt)
     local fs = _G[nm .. "TextLeft1"]
     if not (fs and fs.GetText) then return nil end
     local ok, s = pcall(fs.GetText, fs)
-    if ok and type(s) == "string" and s ~= "" then return s end
+    if ok and type(s) == "string" and not IsSecret(s) and s ~= "" then return s end
     return nil
 end
 
@@ -643,11 +693,11 @@ local function Augment(tt, data)
     if not cfg.global then return end
     local id, link = TipItemID(tt)
     if not id and type(data) == "table" then
-        if type(data.hyperlink) == "string" then
+        if type(data.hyperlink) == "string" and not IsSecret(data.hyperlink) then
             id = tonumber(data.hyperlink:match("item:(%d+)"))
             link = data.hyperlink
         end
-        if not id and type(data.id) == "number" then id = data.id end
+        if not id and type(data.id) == "number" and not IsSecret(data.id) then id = data.id end
     end
     if not id then return end
     if augStamp[tt] == id then
@@ -982,7 +1032,7 @@ function TL.EnsurePreview(card)
         local link
         if type(self.GetItem) == "function" then
             local ok2, _, l = pcall(self.GetItem, self)
-            if ok2 and type(l) == "string" then
+            if ok2 and type(l) == "string" and not IsSecret(l) then
                 link = l
                 if not id then id = tonumber(l:match("item:(%d+)")) end
             end

@@ -1,6 +1,6 @@
 local _, ns = ...
 
-if (type(GetLocale) ~= "function") or GetLocale() ~= "enUS" then return end
+if (type(DF_Locale) ~= "function") or DF_Locale() ~= "enUS" then return end
 local AddonName, ns = ...
 if not ns.IsTitan then return end
 

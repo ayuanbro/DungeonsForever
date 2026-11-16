@@ -88,7 +88,7 @@ local function SizeText(n)
 end
 
 local function IsCnClient()
-    return type(GetLocale) == "function" and GetLocale() == "zhCN"
+    return type(DF_Locale) == "function" and DF_Locale() == "zhCN"
 end
 
 function RU.DayShift(cn)

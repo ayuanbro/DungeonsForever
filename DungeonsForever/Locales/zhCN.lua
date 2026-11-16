@@ -1,5 +1,16 @@
 local _, ns = ...
 
+if type(_G.DF_Locale) ~= "function" then
+    if type(_G.GetLocale) == "function" then
+        _G.DF_Locale = _G.GetLocale
+    else
+        _G.DF_Locale = function() return "enUS" end
+    end
+end
+if type(_G.DF_REAL_LOCALE) ~= "function" and type(_G.GetLocale) == "function" then
+    _G.DF_REAL_LOCALE = _G.GetLocale
+end
+
 local L = setmetatable({}, {
     __index = function(_, key)
         return tostring(key)
@@ -8,14 +19,14 @@ local L = setmetatable({}, {
 ns.L = L
 
 ns.DL = function(s)
-    local lc = (type(GetLocale) == 'function') and GetLocale() or nil
+    local lc = (type(DF_Locale) == 'function') and DF_Locale() or nil
     if lc == 'zhTW' or lc == 'enUS' then
         return L[s]
     end
     return s
 end
 
-local gl = (type(GetLocale) == 'function') and GetLocale() or 'zhCN'
+local gl = (type(DF_Locale) == 'function') and DF_Locale() or 'zhCN'
 if gl == 'zhTW' or gl == 'enUS' then return end
 
 L["暂时没有客户端数据"] = "暂时没有客户端数据"

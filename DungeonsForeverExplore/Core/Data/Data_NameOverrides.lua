@@ -1,6 +1,6 @@
 local ns = _G.DF_NS or {}
 
-if (type(GetLocale) == "function") and GetLocale() ~= "zhCN" then return end
+if (type(DF_Locale) == "function") and DF_Locale() ~= "zhCN" then return end
 
 ns.NameOverrides = {
     spell = {

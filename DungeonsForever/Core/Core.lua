@@ -397,7 +397,7 @@ end
 
 do
     local candidates = {}
-    if GetLocale() == "zhCN" then
+    if DF_Locale() == "zhCN" then
         candidates[#candidates + 1] = "ARHei.ttf"
     end
     for _, name in ipairs({
