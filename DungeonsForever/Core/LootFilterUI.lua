@@ -49,8 +49,8 @@ UI.ICON_CHOICES = {
     "Interface\\Icons\\INV_Jewelry_Ring_01", "Interface\\Icons\\INV_Jewelry_Necklace_01",
     "Interface\\Icons\\INV_Jewelry_Talisman_01", "Interface\\Icons\\INV_Misc_Gem_01",
     "Interface\\Icons\\INV_Misc_Book_01", "Interface\\Icons\\INV_Misc_QuestionMark",
-    "Interface\\Icons\\Ability_Warrior_DefensiveStance", "Interface\\Icons\\Ability_Warrior_Charge",
-    "Interface\\Icons\\Spell_Holy_DevotionAura", "Interface\\Icons\\Spell_Holy_HolyBolt",
+    "Interface\\Icons\\inv_shield_06", "Interface\\Icons\\ability_rogue_eviscerate",
+    "Interface\\Icons\\spell_holy_holybolt", "Interface\\Icons\\spell_holy_auraoflight",
     "Interface\\Icons\\Spell_DeathKnight_BloodPresence", "Interface\\Icons\\Spell_DeathKnight_FrostPresence",
 }
 
@@ -110,6 +110,15 @@ local function MakeToggle(parent)
     tg.label = MakeFS(parent, 14, C_TEXT, "LEFT")
     tg.label:SetPoint("LEFT", tg, "RIGHT", 4, 0)
     return tg
+end
+
+local function MakeChoice(parent)
+    local bt = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    bt:SetSize(36, 20)
+    if ns.hui and ns.hui.SkinButton then ns.hui.SkinButton(bt) end
+    bt.label = MakeFS(parent, 14, C_TEXT, "LEFT")
+    bt.label:SetPoint("LEFT", bt, "RIGHT", 4, 0)
+    return bt
 end
 
 local function MakePager(parent, right)
@@ -408,7 +417,7 @@ function UI:EnsureConfig()
     reset:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -CFG_PAD, CFG_HDR_Y)
     reset:SetScript("OnClick", function(self)
         ns.PlaySound(1)
-        local list = LF.LoadPresets(LF.PlayerClass())
+        local list = LF.LoadPresets(LF.ViewClass())
         local menu = {}
         for i = 1, #list do
             local p = list[i]
@@ -418,7 +427,7 @@ function UI:EnsureConfig()
                 local st = LF.GetStore()
                 local sch = st.chooseID and st[st.chooseID]
                 if not sch then UI:ConfigHint(L["请先选择一个方案"]); return end
-                LF.ApplyPreset(sch, LF.PlayerClass(), pick)
+                LF.ApplyPreset(sch, LF.ViewClass(), pick)
                 UI:RefreshBar(); LF.ApplyAll(); UI:RefreshConfig()
             end }
         end
@@ -513,6 +522,49 @@ function UI:EnsureConfig()
                 cfg.cells[#cfg.cells + 1] = { tg = tg, group = gkey }
                 cfg.toggles[#cfg.toggles + 1] = tg
             end
+        end
+
+        if gkey == "Other" then
+            local bt = MakeChoice(content)
+            cfg.classBtn = bt
+            bt:SetScript("OnClick", function(self)
+                local menu = {}
+                menu[#menu + 1] = { text = L["跟随角色"], func = function()
+                    LF.SetViewClass(nil)
+                    local pc = LF.PlayerClass()
+                    local st = LF.GetStore()
+                    local sch = st.chooseID and st[st.chooseID]
+                    if sch and pc then
+                        LF.ApplyPreset(sch, pc, LF.ResolvePresetIndex(sch, LF.LoadPresets(pc)))
+                    end
+                    UI:RefreshBar()
+                    UI:RefreshConfig()
+                end }
+                for _, tok in ipairs({ "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST",
+                                       "SHAMAN", "MAGE", "WARLOCK", "DRUID", "DEATHKNIGHT", "MONK" }) do
+                    if D.Presets[tok] or D.ClassUsable[tok] then
+                        local pick = tok
+                        menu[#menu + 1] = { text = LF.ClassName(pick), func = function()
+                            LF.SetViewClass(pick)
+                            local st = LF.GetStore()
+                            local sch = st.chooseID and st[st.chooseID]
+                            if sch then
+                                LF.ApplyPreset(sch, pick, LF.ResolvePresetIndex(sch, LF.LoadPresets(pick)))
+                            end
+                            UI:RefreshBar()
+                            UI:RefreshConfig()
+                        end }
+                    end
+                end
+                menu[#menu + 1] = { text = L["按此职业重建"], func = function()
+                    LF.RebuildForClass(LF.ViewClass())
+                    UI:RefreshBar()
+                    UI:RefreshConfig()
+                end }
+                OpenMenu(self, menu)
+            end)
+            cfg.cells[#cfg.cells + 1] = { tg = bt, group = gkey }
+            cfg.toggles[#cfg.toggles + 1] = bt
         end
     end
 
@@ -665,10 +717,18 @@ function UI:RefreshConfig()
     cfg.right:EnableMouse(canR)
 
     for _, tg in ipairs(cfg.toggles) do
-        local on = false
-        if sch and type(sch[tg.dim]) == "table" and sch[tg.dim][tg.key] == 1 then on = true end
-        tg:SetChecked(on)
-        if sch then tg:Enable() else tg:Disable() end
+        if tg.dim then
+            local on = false
+            if sch and type(sch[tg.dim]) == "table" and sch[tg.dim][tg.key] == 1 then on = true end
+            tg:SetChecked(on)
+            if sch then tg:Enable() else tg:Disable() end
+        end
+    end
+
+    if cfg.classBtn then
+        local vc = LF.ViewClass()
+        cfg.classBtn.label:SetText(L["过滤职业"] .. "：" .. (LF.ClassName(vc) or L["跟随角色"]))
+        cfg.classBtn:Enable()
     end
 end
 

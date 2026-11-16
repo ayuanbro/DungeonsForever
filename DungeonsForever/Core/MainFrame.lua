@@ -634,7 +634,7 @@ function BuildAbout()
 
         local t = pop:CreateFontString(nil, "OVERLAY")
         t:SetFont(ns.FONT, 15, "")
-        t:SetText(L["问题反馈"])
+        t:SetText(L["建议/问题反馈"])
         t:SetTextColor(C_AB_HEAD[1], C_AB_HEAD[2], C_AB_HEAD[3])
         t:SetPoint("TOP", pop, "TOP", 0, -14)
 
@@ -745,7 +745,7 @@ function BuildAbout()
     fbBtn:SetFrameLevel(left:GetFrameLevel() + 2)
     fbBtn:SetHitRectInsets(-2, -2, -2, -2)
     fbBtn:SetPushedTextOffset(0, 0)
-    fbBtn:SetText(L["问题反馈"])
+    fbBtn:SetText(L["建议/问题反馈"])
     fbBtn.__huiKeepTextColor = true
     local fbText = fbBtn:GetFontString()
     local fbW = 0
@@ -767,7 +767,7 @@ function BuildAbout()
     fbBtn:SetScript("OnEnter", function(self)
         if fbText then fbText:SetTextColor(1, 1, 1) end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine(L["问题反馈"], 1, 1, 1, true)
+        GameTooltip:AddLine(L["建议/问题反馈"], 1, 1, 1, true)
         GameTooltip:AddLine(FB_URL, acc[1], acc[2], acc[3], true)
         GameTooltip:Show()
     end)

@@ -2753,8 +2753,44 @@ function DG.PaintQuestOverview(d)
         nw = math.floor((availW - 16 - 4 * COL_GAP) / 5)
         if nw < 72 then nw = 72 end
     end
+    local qovHasBranch = false
+    do
+        local qovPreT = ns.DungeonQuestPreExtra
+        if type(qovPreT) == "table" then
+            local function qovChainBr(pid, seen)
+                if seen[pid] then return false end
+                seen[pid] = true
+                local pe = qovPreT[pid]
+                if type(pe) == "table" then
+                    local ii = 2
+                    while type(pe[ii]) == "number" do
+                        if not inside[pe[ii]] then return true end
+                        ii = ii + 1
+                    end
+                    local p1 = pe[1]
+                    if type(p1) == "number" and not inside[p1] then
+                        return qovChainBr(p1, seen)
+                    end
+                end
+                return false
+            end
+            for i = 1, #list do
+                local pres = DG.PreForSide(list[i][9], side)
+                if type(pres) == "table" then
+                    for _, pid in ipairs(pres) do
+                        if type(pid) == "number" and not inside[pid] then
+                            if qovChainBr(pid, {}) then qovHasBranch = true break end
+                        end
+                    end
+                end
+                if qovHasBranch then break end
+            end
+        end
+    end
+    local qovBrShift = qovHasBranch and (nw + COL_GAP) or 0
+    local qovBranchX = 8
     local colX = {}
-    for c = 1, nCols do colX[c] = 8 + (c - 1) * (nw + COL_GAP) end
+    for c = 1, nCols do colX[c] = 8 + qovBrShift + (c - 1) * (nw + COL_GAP) end
 
     local nodes = {}
     local nNode = 0
@@ -3383,6 +3419,53 @@ function DG.PaintQuestOverview(d)
             end
             if rr > maxRR then maxRR = rr end
             colBot[c] = prev
+        end
+
+        do
+            local function cellTaken(x, y)
+                for _, nn in pairs(nodeByQid) do
+                    if nn and math.abs((nn.__ox or 0) - x) < 2 and math.abs((nn.__oy or 0) - y) < 2 then return true end
+                end
+                for _, nn in pairs(nodeByExt) do
+                    if nn and math.abs((nn.__ox or 0) - x) < 2 and math.abs((nn.__oy or 0) - y) < 2 then return true end
+                end
+                return false
+            end
+            local function parentCol(x)
+                local best, bd = 1, 1e9
+                for cc = 1, nCols do
+                    local d = math.abs(colX[cc] - x)
+                    if d < bd then bd, best = d, cc end
+                end
+                return best
+            end
+            local extra = {}
+            for xid, pn in pairs(nodeByExt) do
+                local pe = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[xid]
+                if type(pe) == "table" then
+                    local ii = 2
+                    while type(pe[ii]) == "number" do
+                        local bid = pe[ii]
+                        if not inside[bid] and not nodeByExt[bid] then
+                            extra[#extra + 1] = { bid, xid, pn }
+                        end
+                        ii = ii + 1
+                    end
+                end
+            end
+            for _, ex in ipairs(extra) do
+                local bid, xid, pn = ex[1], ex[2], ex[3]
+                local pc = parentCol(pn.__ox or colX[1])
+                local py = pn.__oy or rowY(0)
+                local bx, by = qovBranchX, py
+                local guard = 0
+                while cellTaken(bx, by) and guard < 24 do guard = guard + 1; by = by + ROWH end
+                local bn = placeExt(bid, pc, by, bx, xid)
+                nodeByExt[bid] = bn
+                if not colTop[pc] then colTop[pc] = bn end
+                if not extPos[bid] then extPos[bid] = { n = bn, row = math.floor(by / ROWH), root = 0 } end
+                hline(py + DG.Q_OV_H / 2, bx + nw, pn.__ox or colX[1], lineColor({ bid }, { xid }))
+            end
         end
 
         local spineY = (DG.Q_OV_H + rowY(0)) / 2
@@ -7550,12 +7633,19 @@ function DG.QuestClassOK(qid)
     local cls = (type(row) == "table") and row[15] or nil
     if type(cls) ~= "string" or cls == "" then return true end
     if not UnitClass then return true end
-    local pc = UnitClass("player")
-    if not pc then return true end
+    local cn, tok = UnitClass("player")
+    if not cn then return true end
     local list = DG.QClassList(cls)
-    if not list then return cls == pc end
+    if not list then
+        if cn == cls then return true end
+        local t = DG.QCLASS_TOKEN[cls]
+        return (t and tok and t == tok) and true or false
+    end
     for i = 1, #list do
-        if list[i] == pc then return true end
+        local s = list[i]
+        if s == cn then return true end
+        local t = DG.QCLASS_TOKEN[s]
+        if t and tok and t == tok then return true end
     end
     return false
 end

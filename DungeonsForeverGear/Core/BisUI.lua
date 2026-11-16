@@ -1016,6 +1016,19 @@ function BG.OneHandOnly()
     return BG.cls == "warrior" or BG.cls == "paladin"
 end
 
+function BG.OneOnlyShown()
+    return BG.cls == "hunter"
+        or (BG.cls == "warrior" and (BG.tspec == "arms" or BG.tspec == "fury"))
+end
+
+function BG.OneOnlyLock()
+    return BG.fOneHand == true and BG.fOneOnly == true and BG.OneOnlyShown()
+end
+
+function BG.OneOnly()
+    return BG.OneHandOnly() or BG.OneOnlyLock()
+end
+
 local function InList(list, v)
     for i = 1, #list do if list[i] == v then return true end end
     return false
@@ -1083,12 +1096,12 @@ end
 function BG.CatRowsForMain()
     local cap = UsableCap and UsableCap() or 60
     local key = "main+2h:" .. tostring(cap) .. ":" .. tostring(BG.cls) .. ":" .. tostring(BG.instGen or 0)
-        .. ":" .. tostring(BG.OneHandOnly() and 1 or 0)
+        .. ":" .. tostring(BG.OneOnly() and 1 or 0)
     local c = BG.__mainRows
     if c and c.key == key then return c.rows end
     local out, seen = {}, {}
     local a, b = CatRowsFor("main-hand"), CatRowsFor("two-hand")
-    for li = 1, (BG.OneHandOnly() and 1 or 2) do
+    for li = 1, (BG.OneOnly() and 1 or 2) do
         local src = (li == 1) and a or b
         for i = 1, #src do
             local r = src[i]
@@ -1532,6 +1545,7 @@ local function LoadFilterPrefs()
     if s.fOnlyUsable == nil then s.fOnlyUsable = true end
     BG.onlyUsable = s.fOnlyUsable and true or false
     BG.fOneHand = (s.fOneHand == true)
+    BG.fOneOnly = (s.fOneOnly == true)
     local lv = s.fFilterLv
     BG.filterLv = (type(lv) == "number" and lv >= 1 and lv <= 60) and math.floor(lv) or nil
     if s.fSrcVer ~= 3 then
@@ -1576,6 +1590,7 @@ local function SaveFilterPrefs()
     local s = DB()
     s.fOnlyUsable = BG.onlyUsable and true or nil
     s.fOneHand = BG.fOneHand and true or nil
+    s.fOneOnly = BG.fOneOnly and true or nil
     s.fFilterLv = BG.filterLv
     local ss = {}
     for _, f in ipairs(FILTERS) do
@@ -1708,7 +1723,7 @@ local function SideHas(sp, slotKey, side)
 end
 
 local function MainKey(sp, side)
-    if BG.OneHandOnly() then return "main-hand" end
+    if BG.OneOnly() then return "main-hand" end
     if not sp then return "main-hand" end
     side = side or CurSide()
     if SideHas(sp, "two-hand", side) then return "two-hand" end
@@ -1719,13 +1734,14 @@ end
 
 function BG.MainDisp(sp)
     local cur = BG.cur
+    local lock = BG.OneOnly()
     if cur then
-        if cur["two-hand"] then return "two-hand" end
+        if cur["two-hand"] and not lock then return "two-hand" end
         if cur["main-hand"] then return "main-hand" end
     end
     local pl = BG.usingPlan
     if pl and pl.items then
-        if pl.items["two-hand"] then return "two-hand" end
+        if pl.items["two-hand"] and not lock then return "two-hand" end
         if pl.items["main-hand"] then return "main-hand" end
     end
     return MainKey(sp)
@@ -1742,7 +1758,7 @@ end
 
 function BG.FixWeaponPair(t)
     if type(t) ~= "table" then return false end
-    if BG.OneHandOnly() and t["two-hand"] then
+    if BG.OneOnly() and t["two-hand"] then
         t["two-hand"] = nil
         return true
     end
@@ -1758,6 +1774,7 @@ end
 
 local function OffKey(sp, side)
     if BG.OneHandOnly() then return "shield" end
+    if BG.OneOnlyLock() then return "off-hand" end
     if not sp then return "off-hand" end
     side = side or CurSide()
     for _, k in ipairs({ "off-hand", "held", "shield" }) do
@@ -2250,11 +2267,16 @@ local function PaintDoll()
         cell.dot:SetShown(not empty and BG.cur[dkey] ~= nil)
     end
     if BG.oneHandTg then
-        local show = BG.cls == "hunter"
-            or (BG.cls == "warrior" and (BG.tspec == "arms" or BG.tspec == "fury"))
+        local show = BG.OneOnlyShown()
         BG.oneHandTg:SetShown(show)
         if BG.oneHandLbl then BG.oneHandLbl:SetShown(show) end
         BG.oneHandTg:SetChecked(BG.fOneHand and true or false)
+    end
+    if BG.oneOnlyTg then
+        local show = BG.OneOnlyShown() and BG.fOneHand == true
+        BG.oneOnlyTg:SetShown(show)
+        if BG.oneOnlyLbl then BG.oneOnlyLbl:SetShown(show) end
+        BG.oneOnlyTg:SetChecked(BG.fOneOnly and true or false)
     end
 end
 
@@ -2405,7 +2427,8 @@ local function AutoSig(mode, cap)
         tostring(BG.spec or ""), tostring(BG.tspec or ""), tostring(mode),
         tostring(cap), tostring(BG.wGen or 0), tostring(BG.wActive or 0),
         tostring((BG.OneHandMode and BG.OneHandMode() and 1 or 0)
-            + (BG.OneHandOnly and BG.OneHandOnly() and 2 or 0)),
+            + (BG.OneHandOnly and BG.OneHandOnly() and 2 or 0)
+            + (BG.OneOnlyLock and BG.OneOnlyLock() and 4 or 0)),
         tostring(BG.instGen or 0),
         PlayerFac() or "" }, "|")
 end
@@ -2671,7 +2694,7 @@ local function AutoPick(job)
                 job.cur[job.dk] = nil
                 job.ki = job.ki + 1
                 job.curKey = nil
-            elseif job.dual and job.curKey == "two-hand" then
+            elseif (job.dual or job.oneLock) and job.curKey == "two-hand" then
                 job.cur[job.dk] = nil
                 job.ki = job.ki + 1
                 job.curKey = nil
@@ -2681,7 +2704,7 @@ local function AutoPick(job)
             else
                 local rkey = RowsKey(job.curKey)
                 if rkey == "main-hand" then rkey = job.mk end
-                if job.dual and rkey == "off-hand" then rkey = "off-wep" end
+                if (job.dual or job.oneLock) and rkey == "off-hand" then rkey = "off-wep" end
                 if job.shield and rkey == "off-hand" then rkey = "shield" end
                 job.groups = SLOT_GEAR[rkey] or {}
                 job.gi, job.bi = 1, 1
@@ -2729,7 +2752,7 @@ local function AutoPick(job)
                 else
                     job.bi = job.bi + 1
                     if UsableAt(r.id, job.cap, r.req or 0) and not job.usedQ[r.id]
-                        and not (job.dual and job.curKey == "off-hand"
+                        and not ((job.dual or job.oneLock) and job.curKey == "off-hand"
                             and r.id == job.cur["main-hand"])
                         and not ((job.curKey == "trinket" and r.id == job.cur["trinket2"])
                             or (job.curKey == "trinket2" and r.id == job.cur["trinket"]))
@@ -2841,7 +2864,8 @@ local function AutoJobStart(mode, cap, sig, srcSet)
         cls = BG.cls, tspec = BG.tspec, sp = sp,
         mk = dual and "main-hand" or MainKey(sp), dual = dual, w = EffWeights(),
         shield = BG.OneHandOnly() or nil,
-        oneOnly = BG.OneHandOnly() or nil,
+        oneOnly = BG.OneOnly() or nil,
+        oneLock = BG.OneOnlyLock() or nil,
         instSet = BG.AutoInstCopy(),
         srcSet = srcSet or ((mode == "dungeon") and AUTO_SRC_DG)
             or ((mode == "known") and AUTO_SRC_KNOWN)
@@ -3548,6 +3572,8 @@ local function PaintBrowser()
         mainBoth = (BG.sel == "main")
     elseif rkey == "off-hand" and BG.OneHandOnly() then
         rkey = "shield"
+    elseif rkey == "off-hand" and BG.OneOnlyLock() then
+        rkey = "off-wep"
     end
     local offLocked = (BG.sel == "off" and BG.MainDisp(sp) == "two-hand")
     BG.offLocked = offLocked
@@ -3594,7 +3620,7 @@ local function PaintBrowser()
             return (a.req or 0) < (b.req or 0)
         end)
         local isWep = rkey == "main-hand" or rkey == "two-hand"
-            or rkey == "off-hand" or rkey == "ranged"
+            or rkey == "off-hand" or rkey == "off-wep" or rkey == "ranged"
         BG.baseWep = isWep
         local cap = 120
         for i = 1, #pool do
@@ -3959,6 +3985,7 @@ end
 
 function BG.SetSlot(slotKey, itemID)
     if not slotKey then return end
+    if itemID and BG.OneOnly() and BG.SlotOfAny and BG.SlotOfAny(itemID) == "two-hand" then return end
     local sp = SpecRec()
     local dk = DataKey(sp, slotKey)
     if slotKey == "off" then
@@ -4580,6 +4607,32 @@ local function BuildDoll(parent, lt)
     tl:SetWordWrap(false)
     tl:SetText(L["推荐单手武器"])
     BG.oneHandLbl = tl
+    local tg2 = CreateFrame("CheckButton", nil, parent)
+    tg2:SetSize(36, 20)
+    tg2:EnableMouse(true)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(tg2) end
+    tg2:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -(wy + 44 + 8 + 44 + 6 + 25))
+    if tg2.SetHitRectInsets then tg2:SetHitRectInsets(-8, -120, -6, -6) end
+    tg2:SetScript("OnClick", function(self)
+        BG.fOneOnly = not BG.fOneOnly
+        self:SetChecked(BG.fOneOnly)
+        SaveFilterPrefs()
+        ns.PlaySound(1)
+        if BG.usingPlan == nil and BG.autoPlan then
+            BG.UseAutoPlan(BG.autoPlan)
+        else
+            BG.RequestRender()
+        end
+    end)
+    tg2:SetChecked(BG.fOneOnly and true or false)
+    tg2:Hide()
+    BG.oneOnlyTg = tg2
+    local tl2 = MakeFS(parent, 14, C_TEXT, "LEFT")
+    tl2:SetPoint("LEFT", tg2, "RIGHT", 6, 0)
+    tl2:SetWordWrap(false)
+    tl2:SetText(L["仅推荐单手武器"])
+    tl2:Hide()
+    BG.oneOnlyLbl = tl2
     return wy + 44 + 8 + 44
 end
 

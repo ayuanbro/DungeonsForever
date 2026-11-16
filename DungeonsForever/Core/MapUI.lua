@@ -1214,12 +1214,19 @@ function M.QuestClassOK(qid)
     local cls = (type(row) == "table") and row[15] or nil
     if type(cls) ~= "string" or cls == "" then return true end
     if not UnitClass then return true end
-    local pc = UnitClass("player")
-    if not pc then return true end
+    local cn, tok = UnitClass("player")
+    if not cn then return true end
     local list = DG.QClassList and DG.QClassList(cls) or nil
-    if not list then return cls == pc end
+    if not list then
+        if cn == cls then return true end
+        local t = DG.QCLASS_TOKEN and DG.QCLASS_TOKEN[cls]
+        return (t and tok and t == tok) and true or false
+    end
     for i = 1, #list do
-        if list[i] == pc then return true end
+        local s = list[i]
+        if s == cn then return true end
+        local t = DG.QCLASS_TOKEN and DG.QCLASS_TOKEN[s]
+        if t and tok and t == tok then return true end
     end
     return false
 end
@@ -5231,7 +5238,25 @@ function M.SyncWorldQuestPins()
         useLv, useReco, useEnter = sc2.lv == true, sc2.reco == true, sc2.enter == true
     end
     local dlv = wpDlv()
-    local pcls = (UnitClass and UnitClass("player")) or nil
+    local pcn, ptok
+    if UnitClass then pcn, ptok = UnitClass("player") end
+    local function wpClassOK(raw)
+        if not raw or raw == "" then return true end
+        if not pcn then return true end
+        local list = DG.QClassList and DG.QClassList(raw)
+        if not list then
+            if pcn == raw then return true end
+            local t = DG.QCLASS_TOKEN and DG.QCLASS_TOKEN[raw]
+            return (t and ptok and t == ptok) and true or false
+        end
+        for i = 1, #list do
+            local s = list[i]
+            if s == pcn then return true end
+            local t = DG.QCLASS_TOKEN and DG.QCLASS_TOKEN[s]
+            if t and ptok and t == ptok then return true end
+        end
+        return false
+    end
     local function wpGrey(qlv)
         if GetQuestDifficultyColor then
             local ok, c = pcall(GetQuestDifficultyColor, qlv)
@@ -5253,7 +5278,7 @@ function M.SyncWorldQuestPins()
     end
     local function qHit(q)
         if side and q[2] and q[2] ~= side then return false end
-        if pcls and q[15] and q[15] ~= pcls then return false end
+        if not wpClassOK(q[15]) then return false end
         if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
         local r = data.qdk[q[1]] and dlv[data.qdk[q[1]]]
         local qlv = q[3]
@@ -5288,7 +5313,7 @@ function M.SyncWorldQuestPins()
         local qlv
         if sq then
             if side and sq[2] and sq[2] ~= side then return false end
-            if pcls and sq[15] and sq[15] ~= pcls then return false end
+            if not wpClassOK(sq[15]) then return false end
             if DG.QuestRaceOK and not DG.QuestRaceOK(seg) then return false end
             local sp = sq[9]
             if type(sp) == "table" then

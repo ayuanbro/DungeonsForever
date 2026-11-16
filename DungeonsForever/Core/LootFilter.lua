@@ -10,6 +10,7 @@ local LF = {}
 ns.LootFilter = LF
 
 LF.VER = 3
+LF.ICON_REV = 1
 LF.ALPHA_DIM = 0.4
 LF.ALPHA_FULL = 1
 LF.MAX_SCHEMES = 6
@@ -38,6 +39,31 @@ function LF.PlayerClass()
     local locName, classFile = UnitClass("player")
     if not classFile then return nil, nil end
     return classFile, (LF.ClassName(classFile) or locName)
+end
+
+function LF.ViewClass()
+    local lf = ns.DB().ui.lootFilter
+    local v = type(lf) == "table" and lf.viewClass or nil
+    if type(v) == "string" and (D.Presets[v] or D.ClassUsable[v]) then return v end
+    return LF.PlayerClass()
+end
+
+function LF.SetViewClass(token)
+    local ui = ns.DB().ui
+    if type(ui.lootFilter) ~= "table" then ui.lootFilter = {} end
+    local target
+    if token == nil or token == "player" then
+        target = nil
+    elseif type(token) == "string" and (D.Presets[token] or D.ClassUsable[token]) then
+        target = token
+    else
+        return
+    end
+    ui.lootFilter.viewClass = target
+    local pc = LF.PlayerClass()
+    if target == nil or target == pc then LF.NormalizeSchemes(LF.GetStore(), pc) end
+    LF.ClearResults()
+    LF.ApplyAll()
 end
 
 local function HasAny(text, list)
@@ -221,11 +247,89 @@ function LF.ApplyPreset(scheme, classFile, idx)
     LF.ClearResults()
 end
 
-function LF.PopulateFirstTime(c)
-    local classFile = LF.PlayerClass()
+function LF.PopulateFor(c, classFile)
     local list = LF.LoadPresets(classFile)
     for i = 1, math.min(#list, LF.MAX_SCHEMES) do c[i] = list[i] end
     c.chooseID = nil
+end
+
+function LF.PopulateFirstTime(c)
+    LF.PopulateFor(c, LF.ViewClass())
+end
+
+function LF.RebuildForClass(classFile)
+    local c = LF.GetStore()
+    for i = 1, LF.MAX_SCHEMES do c[i] = nil end
+    LF.PopulateFor(c, classFile)
+    c.__lastClass = classFile
+    LF.ClearResults()
+    LF.ApplyAll()
+end
+
+local function presetNameSet(classFile)
+    local set = {}
+    for _, p in ipairs(LF.LoadPresets(classFile)) do set[p.Name] = true end
+    return set
+end
+
+function LF.ForeignOnly(c, classFile)
+    if not classFile then return false end
+    local mine = presetNameSet(classFile)
+    local foreign = 0
+    for i = 1, LF.MAX_SCHEMES do
+        local s = c[i]
+        if type(s) == "table" and type(s.Name) == "string" and not mine[s.Name] then
+            for cf in pairs(D.Presets) do
+                if presetNameSet(cf)[s.Name] then foreign = foreign + 1; break end
+            end
+        end
+    end
+    return foreign > 0
+end
+
+function LF.SchemeForeignIndex(c, classFile)
+    if not classFile then return nil end
+    local mine = presetNameSet(classFile)
+    for i = 1, LF.MAX_SCHEMES do
+        local s = c[i]
+        if type(s) == "table" and type(s.Name) == "string" and not mine[s.Name] then
+            for cf in pairs(D.Presets) do
+                if presetNameSet(cf)[s.Name] then return i end
+            end
+        end
+    end
+    return nil
+end
+
+function LF.NormalizeSchemes(c, classFile)
+    if not c or not classFile then return end
+    local list = LF.LoadPresets(classFile)
+    local mine = presetNameSet(classFile)
+    local changed = false
+    for i = LF.MAX_SCHEMES, 1, -1 do
+        local s = c[i]
+        if type(s) == "table" and type(s.Name) == "string" and not mine[s.Name] then
+            local foreignIdx
+            for cf in pairs(D.Presets) do
+                for j, p in ipairs(LF.LoadPresets(cf)) do
+                    if p.Name == s.Name then foreignIdx = j; break end
+                end
+                if foreignIdx then break end
+            end
+            if foreignIdx and list[foreignIdx] then
+                LF.ApplyPreset(s, classFile, foreignIdx)
+                s.Name = list[foreignIdx].Name
+                changed = true
+            elseif foreignIdx then
+                table.remove(c, i)
+                local ch = c.chooseID
+                if ch == i then c.chooseID = nil
+                elseif ch and ch > i then c.chooseID = ch - 1 end
+                changed = true
+            end
+        end
+    end
+    if changed then LF.ClearResults() end
 end
 
 function LF.BackfillPresetIdx(c)
@@ -235,7 +339,7 @@ function LF.BackfillPresetIdx(c)
         if type(s) == "table" and type(s.PresetIdx) ~= "number" then missing = true; break end
     end
     if not missing then return end
-    local classFile = LF.PlayerClass()
+    local classFile = LF.ViewClass()
     if not classFile then return end
     local list = LF.LoadPresets(classFile)
     for i = 1, #c do
@@ -297,6 +401,25 @@ function LF.GetStore()
     if type(c) ~= "table" then c = {}; r[char] = c; LF.PopulateFirstTime(c) end
 
     ShapeStore(c)
+    if (c.__iconRev or 0) < (LF.ICON_REV or 0) then
+        local view = LF.ViewClass() or LF.PlayerClass()
+        if view then
+            local list = LF.LoadPresets(view)
+            for i = 1, LF.MAX_SCHEMES do
+                local s = c[i]
+                if type(s) == "table" then
+                    local src = list[LF.ResolvePresetIndex(s, list)]
+                    if src and src.Icon and src.Name == s.Name then s.Icon = src.Icon end
+                end
+            end
+        end
+        c.__iconRev = LF.ICON_REV
+    end
+    local pc = LF.PlayerClass()
+    if pc and not (type(lf) == "table" and lf.viewClass) then
+        LF.NormalizeSchemes(c, pc)
+    end
+    c.__lastClass = pc
     LF.__store = c
     return c
 end
@@ -439,7 +562,7 @@ function LF.Evaluate(scheme, typeID, equipLoc, subID, tip)
     if tip ~= "" and scheme.Class and scheme.Class[D.FLAG_CLASS] then
         local pre = D.ClassPrefix
         if pre and pre ~= "" and strfind(tip, pre, 1, true) then
-            local _, myName = LF.PlayerClass()
+            local myName = LF.ClassName(LF.ViewClass())
             if not (myName and strfind(tip, myName, 1, true)) then return true end
         end
     end

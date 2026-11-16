@@ -10854,6 +10854,7 @@ PD.FAVOR_CURID = 3402
 PD.NO_SELL_KEY = "__none"
 PD.DD_TYPE = "__ddtype"
 PD.DD_MONEY = "__ddmoney"
+PD.DD_WRIT_ZONE = "__ddwritzone"
 
 PD.__curOfFid = {}
 
@@ -11133,10 +11134,11 @@ function PD.RecipeCurItems(d)
     return items
 end
 
-function PD.RecipeChipText(txt, dflt)
+function PD.RecipeChipText(txt, dflt, maxW)
     if type(txt) ~= "string" or txt == "" then txt = dflt end
     if type(txt) ~= "string" then txt = "" end
-    local room = PD.TOOL_MAX_W - PD.TOOL_PADX - PD.DD_ARR_RESERVE
+    local room = (type(maxW) == "number" and maxW or PD.TOOL_MAX_W) - PD.TOOL_PADX - PD.DD_ARR_RESERVE
+    if room < 12 then room = 12 end
     if PD.TextW(txt, 14) <= room then return txt end
     local short = string.gsub(txt, "%s+%d+$", "")
     if short ~= txt and short ~= "" and PD.TextW(short, 14) <= room then
@@ -16246,6 +16248,7 @@ function PD.PaintCrateColumns(r, spec, h, padL)
 end
 PD.crateSel = nil
 PD.writSel = nil
+PD.writZone = nil
 PD.crateSort = "favor"
 PD.writSort = "rep"
 PD.plunderSel = nil
@@ -16533,10 +16536,73 @@ local function WritBadge(cinfo, learned)
     return { text = p and p.name or cinfo.slug, color = { 0.55, 0.57, 0.62 } }
 end
 
+local function WritOwnList(list)
+    local craftMap = CraftAllMap()
+    local learned = PD.ProfLearned()
+    local filtered, ownMap = {}, {}
+    for _, w in ipairs(list) do
+        local craft = craftMap[w.target]
+        if craft and not learned[craft.slug] then
+            local match
+            for slug, entry in pairs(craft.alternatives or {}) do
+                if learned[slug] then match = entry; break end
+            end
+            craft = match
+        end
+        if craft then filtered[#filtered + 1] = w; ownMap[w.target] = craft end
+    end
+    return filtered, ownMap
+end
+
+function PD.WritZoneItems()
+    local list = CD.writs or {}
+    if PD.Setting("writOwnProfessionsOnly") then list = WritOwnList(list) end
+    local counts, order = {}, {}
+    for _, w in ipairs(list) do
+        local z = PD.WritZoneOf(w.target)
+        if z then
+            if not counts[z] then counts[z] = 0; order[#order + 1] = z end
+            counts[z] = counts[z] + 1
+        end
+    end
+    local items = { { text = format(L["全部地点 %d"], #list) } }
+    for _, z in ipairs(order) do
+        items[#items + 1] = { v = z, text = format("%s %d", PD.ZoneNameOf(z) or tostring(z), counts[z]) }
+    end
+    return items
+end
+
 function PD.WritTool()
-    return {{ key = "writ_professions", text = L["仅显示本角色专业"], on = PD.Setting("writOwnProfessionsOnly"),
-        subRow = (PD.subTabEndX or (2 * PD.SUB_STEP)) + 6,
-        tip = {{L["按本角色已学专业筛选文书，不要求已学会对应配方。"], 0.85, 0.85, 0.85}} }}, function(k)
+    local x1 = (PD.subTabEndX or (2 * PD.SUB_STEP)) + 6
+    local w1 = PD.ToolSize(L["仅显示本角色专业"], false)
+    local x2 = x1 + w1 + PD.TOOL_GAP
+    local zItems = PD.WritZoneItems()
+    if PD.writZone then
+        local ok = false
+        for i = 2, #zItems do
+            if zItems[i].v == PD.writZone then ok = true; break end
+        end
+        if not ok then PD.writZone = nil end
+    end
+    local ztxt = L["全部地点"]
+    if PD.writZone then ztxt = PD.RecipeItemText(zItems, PD.writZone) or L["全部地点"] end
+    local room = math.min(PD.TOOL_MAX_W, PD.RIGHT_W - (PD.LIST_PAD + PD.SEARCH_W + 16) - x2)
+    return {
+        { key = "writ_professions", text = L["仅显示本角色专业"], on = PD.Setting("writOwnProfessionsOnly"),
+          subRow = x1,
+          tip = {{L["按本角色已学专业筛选文书，不要求已学会对应配方。"], 0.85, 0.85, 0.85}} },
+        { key = PD.DD_WRIT_ZONE, text = PD.RecipeChipText(ztxt, L["全部地点"], room),
+          on = (PD.writZone ~= nil), dd = true, subRow = x2 },
+    }, function(k)
+        if k == PD.DD_WRIT_ZONE then
+            PD.RecipeMenu(zItems, PD.RecipeChip(PD.DD_WRIT_ZONE), PD.writZone, function(v)
+                PD.writZone = v
+                if PD.scroll then PD.scroll:SetVerticalScroll(0) end
+                ns.PlaySound(1)
+                PD.RequestRender()
+            end)
+            return
+        end
         if k ~= "writ_professions" then return end
         PD.SetSettingRaw("writOwnProfessionsOnly", not PD.Setting("writOwnProfessionsOnly"))
         PD.__scrollV = 0
@@ -16611,19 +16677,15 @@ function PD.WritRows(rows)
     local learned = PD.ProfLearned()
     local ownOnly = PD.Setting("writOwnProfessionsOnly")
     if ownOnly then
-        local filtered, ownMap = {}, {}
+        list, craftMap = WritOwnList(list)
+    end
+    local zoneKey = PD.writZone
+    if zoneKey then
+        local f = {}
         for _, w in ipairs(list) do
-            local craft = craftMap[w.target]
-            if craft and not learned[craft.slug] then
-                local match
-                for slug, entry in pairs(craft.alternatives or {}) do
-                    if learned[slug] then match = entry; break end
-                end
-                craft = match
-            end
-            if craft then filtered[#filtered + 1] = w; ownMap[w.target] = craft end
+            if PD.WritZoneOf(w.target) == zoneKey then f[#f + 1] = w end
         end
-        list, craftMap = filtered, ownMap
+        list = f
     end
     local q = PD.CrateQuery()
     if q then
@@ -16644,6 +16706,10 @@ function PD.WritRows(rows)
                         if PD.CrateNameHit(m[1], q) then hit = true break end
                     end
                 end
+            end
+            if not hit then
+                local zn = PD.ZoneNameOf(PD.WritZoneOf(w.target))
+                if zn and string.find(string.lower(zn), q, 1, true) then hit = true end
             end
             if hit then f[#f + 1] = w end
         end
@@ -16726,12 +16792,16 @@ function PD.WritRows(rows)
                             PD.writSort = (mode ~= "own") and "own" or nil
                             PD.RequestRender()
                         end }
-    if ownOnly and #order == 0 then
-        PushText(rows, not PD.craftAllFull and L["正在读取专业配方…"] or L["没有符合本角色专业的工匠文书。"], 12, C_GREY, 1)
-        return
-    end
     if q and #order == 0 then
         PushText(rows, L["没有匹配的条目"], 12, C_GREY, 1)
+        return
+    end
+    if zoneKey and #order == 0 then
+        PushText(rows, L["没有匹配的条目"], 12, C_GREY, 1)
+        return
+    end
+    if ownOnly and #order == 0 then
+        PushText(rows, not PD.craftAllFull and L["正在读取专业配方…"] or L["没有符合本角色专业的工匠文书。"], 12, C_GREY, 1)
         return
     end
     for _, i in ipairs(order) do
@@ -17143,7 +17213,7 @@ function PD.Render()
             sBox:SetPoint("TOPRIGHT", PD.page, "TOPRIGHT",
                           -(PD.CARD_INSET + PD.LIST_PAD), -(PD.SUB_Y))
             sBox.label:Hide()
-            sBox.eb.ph:SetText(L["搜索"])
+            sBox.eb.ph:SetText(PD.tab == "writ" and L["名称 / 地点"] or L["搜索"])
             sBox:Show()
             local has = (sBox.eb:GetText() or "") ~= ""
             if not has and not sBox.eb:HasFocus() then sBox.eb.ph:Show() else sBox.eb.ph:Hide() end

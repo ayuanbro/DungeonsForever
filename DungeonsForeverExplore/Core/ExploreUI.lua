@@ -33,9 +33,9 @@ local BAG_CHAIN = {
     { key = "p1", no = "①", title = "…and that note you found", lvl = 22, xp = 1750,
       q = { A = 79008, H = 79007 },
       note = L["全链起点：无 NPC，在阿历克斯顿农场烧毁的田地点「烧焦的残骸」起链，旁边立着一块镶钉木板；两阵营从这里反向出发。"],
-      route = { body = {
+      route = { H = { body = {
           L["炉石可以绑在十字路口。后面从西部荒野直接炉石回来，省掉一整套回程飞行。"],
-      } },
+      } } },
       loc = {
           A = { area = 40, x = 37.4, y = 50.6, zn = L["西部荒野 37.4,50.6"],
                 place = L["西部荒野 · 阿历克斯顿农场"], obj = L["烧焦的残骸"] },
@@ -45,7 +45,7 @@ local BAG_CHAIN = {
       rw = { { 2459 }, { 3388 } } },
     { key = "p2", no = "②", title = "Stepping Stones", lvl = 24, xp = 1950, q = 79192,
       note = L["两阵营互交互：在对方大陆的「烧焦的残骸 / 镶钉木板」上交①，再从镶钉木板接取本步；必给里的旧工具箱是 12 格包。"],
-      route = {
+      route = { H = {
           head = L["路线：奥格瑞玛坐飞艇 → 飞艇跳海 → 西部荒野"],
           body = {
               L["十字路口坐飞行点去奥格瑞玛，出城坐开往荆棘谷格罗姆高的飞艇。"],
@@ -54,7 +54,7 @@ local BAG_CHAIN = {
               L["穿过小岛后继续朝西南方向游，直奔西部荒野南岸，从南边上岸。"],
               { L["到西部荒野 "], { 40, 37.4, 50.6 }, L["，在损坏的马车旁交接任务。"] },
           },
-      },
+      } },
       loc = {
           A = { area = 17, x = 46.0, y = 74.0, zn = L["贫瘠之地 46,74"],
                 place = L["贫瘠之地 · 陶拉祖营地以南烧毁塔楼"], obj = L["烧焦的残骸"] },
@@ -66,7 +66,7 @@ local BAG_CHAIN = {
              { 221498, note = L["12 格包"] } } },
     { key = "p3", no = "③", title = "Scramble", lvl = 24, xp = 200, q = 79980,
       note = { L["从烈日石居东北 "], { 406, 50.9, 52.3 }, L[" 的小路离开大路，往西翻过山到废弃营地，点箱子上的「散落杂物」交接；烈日石居是部落据点，联盟会从守卫旁经过。"] },
-      route = {
+      route = { H = {
           head = L["路线：回程与石爪山"],
           body = {
               L["接完②直接炉石回十字路口，不要飞回去。"],
@@ -75,7 +75,7 @@ local BAG_CHAIN = {
               L["贴着右侧山体继续向前，到悬崖上的任务点完成③、接④。"],
               L["回烈日石居，坐飞行点回陶拉祖营地。"],
           },
-      },
+      } },
       loc = { area = 406, x = 40.7, y = 52.4, zn = L["石爪山脉 40.7,52.4"],
               place = L["石爪山脉 · 烈日石居上方废弃营地"], obj = L["散落杂物"] },
       rw = { { 3463, note = L["三选一 · 魔杖"] }, { 217314, note = L["三选一"] },
@@ -92,7 +92,7 @@ local BAG_CHAIN = {
       rw = { { 5432 }, { 20709 } } },
     { key = "p5", no = "⑤", title = "Eagle's Fist", lvl = 32, xp = 2550, q = 79975,
       note = L["沿巨石水坝走出去、面向北方湿地，跳到坝顶下方的矮人头像雕刻上交接；水坝有联盟守卫，部落小心。"],
-      route = {
+      route = { H = {
           head = L["路线：灵魂两次从塞拉摩坐船到湿地 → 洛克莫丹"],
           body = {
               L["原理：让灵魂虚弱阵亡在目的地、再用灵魂状态坐船过去复活。"],
@@ -110,7 +110,7 @@ local BAG_CHAIN = {
               L["释放灵魂，直接在洛克莫丹虚弱复活。"],
               L["从塞尔萨玛跑向洛克莫丹的巨石水坝。"],
           },
-      },
+      } },
       loc = { area = 38, x = 49.4, y = 12.9, zn = L["洛克莫丹 49.4,12.9"],
               place = L["洛克莫丹 · 巨石水坝矮人头像雕刻"], obj = L["雕刻塑像"] },
       rw = {} },
@@ -403,6 +403,13 @@ local function BagStep(entry, fac)
     if loc.A then loc = loc[fac] or loc.A end
     local qid = type(entry.q) == "table" and entry.q[fac] or entry.q
     return loc, qid
+end
+
+local function BagRoute(entry, fac)
+    local rt = entry and entry.route
+    if type(rt) ~= "table" then return nil end
+    if rt.A or rt.H then return rt[fac] end
+    return rt
 end
 
 local function ToyQuestTitle(qid)
@@ -1909,8 +1916,9 @@ local function PaintBagDetail(fac)
         EG.bagDN:SetShown(true)
         y = y + TextH(EG.bagDN, avail) + 6
     end
-    if e.route then
-        y = PaintBagRoute(e.route, y + 4, avail)
+    local rt = BagRoute(e, fac)
+    if rt then
+        y = PaintBagRoute(rt, y + 4, avail)
     else
         PaintBagRoute(nil, y, avail)
     end
