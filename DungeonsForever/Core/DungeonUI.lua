@@ -10233,21 +10233,6 @@ function U:RenderQuestDetail()
         end
     end
     do
-        local desc = DG.QuestDescription(q[1]) or q[20]
-        if desc then
-            local f = takeLab()
-            f:SetText(L["任务说明"])
-            put(f, 20)
-            local t = takeTxt()
-            t:SetText(desc)
-            t:SetTextColor(Unpack(C_TEXT))
-            local h = FSH(t)
-            put(t, (type(h) == "number" and h or 18) + 4)
-            y = y - 2
-        end
-    end
-
-    do
         local en = DG.QuestEndNpc(q[1])
         if en then
             local enid, ename, emap, ex, ey, ezone = en[1], en[2], en[3], en[4], en[5], en[6]
@@ -10537,6 +10522,21 @@ function U:RenderQuestDetail()
             end
         end
         y = y - 4
+    end
+
+    do
+        local desc = DG.QuestDescription(q[1]) or q[20]
+        if desc then
+            local f = takeLab()
+            f:SetText(L["任务说明"])
+            put(f, 20)
+            local t = takeTxt()
+            t:SetText(desc)
+            t:SetTextColor(Unpack(C_TEXT))
+            local h = FSH(t)
+            put(t, (type(h) == "number" and h or 18) + 4)
+            y = y - 2
+        end
     end
 
     do

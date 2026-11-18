@@ -1224,12 +1224,57 @@ local function SeqBadge(btn)
     return fs, bg
 end
 
+function NP.SeqGlow(btn)
+    local lay = SeqLayer()
+    if not lay then return nil end
+    local tx, ag = btn.__dfGlow, btn.__dfGlowAg
+    if tx and tx:GetParent() == lay then return tx, ag end
+    tx = lay:CreateTexture(nil, 'OVERLAY')
+    if tx.SetAtlas then tx:SetAtlas('talents-node-square-greenglow', false) end
+    local w = (btn.GetWidth and btn:GetWidth()) or 40
+    if type(w) ~= 'number' or w <= 0 then w = 40 end
+    tx:SetSize(w * 2.1, w * 2.1)
+    tx:SetPoint('CENTER', btn, 'CENTER', 0, 0)
+    tx:SetBlendMode('ADD')
+    tx:SetAlpha(0)
+    ag = tx:CreateAnimationGroup()
+    ag:SetLooping('BOUNCE')
+    local a = ag:CreateAnimation('Alpha')
+    a:SetFromAlpha(0.30)
+    a:SetToAlpha(0.95)
+    a:SetDuration(1.4)
+    a:SetSmoothing('IN_OUT')
+    btn.__dfGlow, btn.__dfGlowAg = tx, ag
+    return tx, ag
+end
+
+function NP.SeqGlowStop()
+    local b = NP.glowBtn
+    if not b then return end
+    if b.__dfGlowAg then b.__dfGlowAg:Stop() end
+    if b.__dfGlow then b.__dfGlow:SetAlpha(0) end
+    NP.glowBtn = nil
+end
+
+function NP.SeqGlowTo(btn)
+    if NP.glowBtn == btn then return end
+    NP.SeqGlowStop()
+    if not btn then return end
+    local tx, ag = NP.SeqGlow(btn)
+    if tx then tx:SetAlpha(0.30) end
+    if ag then ag:Play() end
+    NP.glowBtn = btn
+end
+
 local function RefreshNativeSeq()
     local PF = _G.PlayerSpellsFrame
     local TF = PF and PF.TalentsFrame
     local map = TF and TF.nodeIDToButton
     local byName = NP.byName
-    if not (map and byName) then return end
+    if not (map and byName) then
+        NP.SeqGlowStop()
+        return
+    end
     local nos = NP.seqMap
     local L = SeqLayer()
     if L then
@@ -1245,13 +1290,14 @@ local function RefreshNativeSeq()
         end
         if L:GetFrameLevel() ~= peak then L:SetFrameLevel(peak) end
     end
+    local nextBtn
     for _, btn in pairs(map) do
         local fs, bg = SeqBadge(btn)
-        local txt
+        local txt, list
         if nos and fs then
             local pos = byName[NativeSpellName(btn) or '']
             if pos then
-                local list = nos[pos.t] and nos[pos.t][pos.i]
+                list = nos[pos.t] and nos[pos.t][pos.i]
                 if list and #list > 0 then txt = SeqText(list) end
             end
         end
@@ -1260,11 +1306,18 @@ local function RefreshNativeSeq()
             bg:SetWidth(math.max(20, fs:GetStringWidth() + 6))
             fs:Show()
             bg:Show()
+            if list and list[1] == 1 then nextBtn = btn end
         elseif fs then
             fs:Hide()
             bg:Hide()
         end
     end
+    if Mine() then nextBtn = nil end
+    NP.SeqGlowTo(nextBtn)
+end
+
+function NP.RefreshNativeSeq()
+    RefreshNativeSeq()
 end
 
 local function HookNativeTalents()
@@ -2386,7 +2439,11 @@ function NP.SyncShow()
     if not (T and body) then return end
     local on = Mine()
     ApplyState(on)
-    if on then Refresh() end
+    if on then
+        Refresh()
+    else
+        RefreshNativeSeq()
+    end
 end
 
 function NP.Enter()
@@ -2410,6 +2467,7 @@ function NP.Leave()
     NP.ours = false
     NP.paintPending = nil
     ApplyState(false)
+    RefreshNativeSeq()
 end
 
 function NP.Build(T)

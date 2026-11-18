@@ -227,16 +227,7 @@ local function AnyActive(ids)
 end
 
 local function StepState(row, idx, qid)
-    local st = DG.QuestState(qid)
-    if st == "done" or not row.linear then return st end
-    local gi = GroupOf(row, idx)
-    if gi then
-        local g = row.groups and row.groups[gi]
-        if g and #g > 1 then return st end
-    end
-    local nx = row.ids[idx + 1]
-    if nx and DG.QuestState(nx) == "done" then return "done" end
-    return st
+    return DG.QuestState(qid)
 end
 
 local function GroupDone(r, gi)
