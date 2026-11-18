@@ -51,6 +51,9 @@ PV.CARD_TX = 6 + PV.CARD_ICON + 5
 PV.CARD_COLS = 2
 PV.REP_COLS = 4
 PV.CARD_GAP = 8
+PV.MORE_BTN_W = 72
+PV.ELITE_PAD = 8
+PV.ELITE_BAR_W = 7
 PV.SETS_LIST_W = 252
 PV.SETS_DET_X = PV.SETS_LIST_W + 24
 PV.MARK_TOP = 8
@@ -98,6 +101,21 @@ local SPEC_LABEL = {
     holydisc = L["神圣和戒律"], enhance = L["增强"], resto = L["恢复"], ele = L["元素"],
     feral = L["野性战斗"], balance = L["平衡"],
 }
+
+local ELITE_GROUP_KEYS = {
+    L["精锐军团士兵"], L["精锐骑士队长"], L["精锐大元帅"], L["精锐高阶督军"], L["其他精锐护腕腰带"],
+}
+
+local function EliteGroups()
+    local groups = {}
+    for i = 1, 5 do
+        local ids = SD["eliteG" .. i] or {}
+        if #ids > 0 then
+            groups[#groups + 1] = { title = ELITE_GROUP_KEYS[i], ids = ids }
+        end
+    end
+    return groups
+end
 
 local TASK_TEXTS = {
     L["完成 3 场战歌峡谷 / 阿拉希盆地 / 暗矛群岛战斗"],
@@ -271,6 +289,7 @@ local TAB_DEFS = {
     { key = "week",  text = L["本周"] },
     { key = "rep",   text = L["声望"] },
     { key = "sets",  text = L["套装"] },
+    { key = "elite", text = L["精锐散件"] },
 }
 
 local REP_DEFS = {
@@ -361,7 +380,9 @@ function PV.NewChip(parent)
         GameTooltip:Hide()
     end)
     f:SetScript("OnClick", function(self, button)
-        if Host.DG and Host.DG.ItemShiftClick then Host.DG.ItemShiftClick(self, button) end
+        if not self.__id then return end
+        local it = self.__it or { self.__id }
+        if Host.DG and Host.DG.ItemShiftClick then Host.DG.ItemShiftClick({ __it = it }, button) end
     end)
     ForwardWheel(f)
     return f
@@ -410,7 +431,9 @@ function PV.NewCard(parent)
         GameTooltip:Hide()
     end)
     f:SetScript("OnClick", function(self, button)
-        if Host.DG and Host.DG.ItemShiftClick then Host.DG.ItemShiftClick(self, button) end
+        if not self.__id then return end
+        local it = self.__it or { self.__id }
+        if Host.DG and Host.DG.ItemShiftClick then Host.DG.ItemShiftClick({ __it = it }, button) end
     end)
     ForwardWheel(f)
     return f
@@ -457,6 +480,83 @@ function PV.PaintCard(f, id)
     end
 end
 
+local function MakeScrollBar(sc, ch, host)
+    local HUI = ns.hui
+    local bar = CreateFrame("Frame", nil, host)
+    local tp
+    if HUI and HUI.BuildCapsule then
+        HUI.BuildCapsule(bar, 3, HUI.layer.L2)
+    else
+        local t = bar:CreateTexture(nil, "BACKGROUND")
+        t:SetAllPoints(); t:SetColorTexture(0, 0, 0, 0.25)
+    end
+    bar:SetWidth(PV.ELITE_BAR_W)
+    bar:SetFrameLevel((sc:GetFrameLevel() or 0) + 10)
+    bar:Hide()
+    local thumb = CreateFrame("Button", nil, bar)
+    thumb:SetWidth(5)
+    thumb:EnableMouse(true)
+    local tpr
+    if HUI and HUI.BuildCapsule then
+        tpr = HUI.BuildCapsule(thumb, 2, HUI.layer.L4)
+    else
+        local tx = thumb:CreateTexture(nil, "OVERLAY")
+        tx:SetAllPoints(); tx:SetColorTexture(1, 1, 1, 0.30)
+        tpr = { tx }
+    end
+    thumb:SetScript("OnEnter", function()
+        local c5 = HUI and HUI.layer and HUI.layer.L5
+        if not (tpr and c5) then return end
+        for _, t in ipairs(tpr) do t:SetVertexColor(c5[1], c5[2], c5[3]) end
+    end)
+    thumb:SetScript("OnLeave", function()
+        local c4 = HUI and HUI.layer and HUI.layer.L4
+        if not (tpr and c4) then return end
+        for _, t in ipairs(tpr) do t:SetVertexColor(c4[1], c4[2], c4[3]) end
+    end)
+    thumb:SetPoint("TOP", bar, "TOP", 0, -1)
+    local function Update()
+        if not sc:IsShown() then bar:Hide() return end
+        local viewH = sc.GetHeight and sc:GetHeight() or 0
+        local contentH = ch.GetHeight and ch:GetHeight() or 0
+        if not (viewH and contentH) or contentH <= viewH + 2 or viewH <= 0 then
+            bar:Hide()
+            return
+        end
+        bar:Show()
+        local trackH = bar:GetHeight() - 2
+        local maxScroll = contentH - viewH
+        local v = sc.GetVerticalScroll and sc:GetVerticalScroll() or 0
+        if type(v) ~= "number" then v = 0 end
+        local frac = math.min(1, math.max(0, v / maxScroll))
+        local th = math.max(24, trackH * viewH / contentH)
+        thumb:SetHeight(th)
+        thumb:ClearAllPoints()
+        thumb:SetPoint("TOP", bar, "TOP", 0, -1 - frac * (trackH - th))
+    end
+    thumb:SetScript("OnMouseDown", function(self, btn)
+        if btn ~= "LeftButton" then return end
+        local scale = UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale() or 1
+        local cy0 = select(2, GetCursorPosition()) / scale
+        local sc0 = sc.GetVerticalScroll and sc:GetVerticalScroll() or 0
+        if type(sc0) ~= "number" then sc0 = 0 end
+        self:SetScript("OnUpdate", function(self)
+            local cy = select(2, GetCursorPosition()) / scale
+            local trackH = bar:GetHeight() - 2
+            local span = trackH - thumb:GetHeight()
+            if span <= 0 then return end
+            local contentH = ch.GetHeight and ch:GetHeight() or 0
+            local viewH = sc.GetHeight and sc:GetHeight() or 0
+            local maxScroll = contentH - viewH
+            if maxScroll <= 0 then return end
+            sc:SetVerticalScroll(math.min(maxScroll, math.max(0, sc0 + (cy0 - cy) / span * maxScroll)))
+        end)
+    end)
+    thumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+    thumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
+    return bar, Update
+end
+
 function PV.TakeCard(idx)
     local c = PV.cards[idx]
     if not c then
@@ -464,6 +564,18 @@ function PV.TakeCard(idx)
         c:Hide()
         PV.cards[idx] = c
         if idx > PV.nCard then PV.nCard = idx end
+    end
+    return c
+end
+
+local function TakeEliteCard(idx)
+    if not PV.eliteCards then PV.eliteCards = {}; PV.nEliteCard = 0 end
+    local c = PV.eliteCards[idx]
+    if not c then
+        c = PV.NewCard(PV.eliteChild)
+        c:Hide()
+        PV.eliteCards[idx] = c
+        if idx > PV.nEliteCard then PV.nEliteCard = idx end
     end
     return c
 end
@@ -483,6 +595,17 @@ function PV.OnItemData(itemID)
     for i = 1, PV.nCard do
         local f = PV.cards[i]
         if f and f.__id == itemID and f:IsShown() then PV.PaintCard(f, itemID) end
+    end
+    for i = 1, (PV.nEliteCard or 0) do
+        local f = PV.eliteCards and PV.eliteCards[i]
+        if f and f.__id == itemID and f:IsShown() then PV.PaintCard(f, itemID) end
+    end
+    local pop = PV.rankPop
+    if pop then
+        for i = 1, (pop.nCard or 0) do
+            local f = pop.cards[i]
+            if f and f.__id == itemID and f:IsShown() then PV.PaintCard(f, itemID) end
+        end
     end
 end
 
@@ -643,9 +766,16 @@ function PV.Build(page)
         r.pts:SetPoint("TOPRIGHT", r, "TOPLEFT", 210, -9)
         r.cum = MakeFS(r, 14, C_GREY, "RIGHT")
         r.cum:SetPoint("TOPRIGHT", r, "TOPLEFT", 280, -9)
-        r.more = MakeFS(r, 14, C_GREY, "LEFT")
-        r.more:SetPoint("TOPLEFT", r, "TOPLEFT", 378, -11)
-        r.more:SetWordWrap(false)
+        r.more = NewButton(r, "", PV.MORE_BTN_W, 24, 14)
+        r.more:SetPoint("RIGHT", r, "RIGHT", 0, 0)
+        r.more:SetScript("OnEnter", function(self)
+            if self.__rank and self.__total and self.__total > 3 and SetTip then
+                SetTip(self, format(L["查看全部 %d 件奖励"], self.__total))
+            end
+        end)
+        r.more:SetScript("OnClick", function(self)
+            if self.__total and self.__total > 3 then PV.OpenRankPop(self.__rank) end
+        end)
         r.sep = r:CreateTexture(nil, "BACKGROUND")
         r.sep:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 0, 0)
         r.sep:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", 0, 0)
@@ -1096,6 +1226,82 @@ function PV.Build(page)
     end
 
     coroutine.yield()
+
+    local POP_W, POP_H = PV.W - 40, 372
+    local pop = CreateFrame("Frame", "DungeonsForeverPvPRankPop", page, "BackdropTemplate")
+    pop:SetSize(POP_W, POP_H)
+    pop:SetPoint("CENTER", page, "CENTER", 0, 0)
+    pop:SetFrameStrata("DIALOG")
+    pop:SetFrameLevel(page:GetFrameLevel() + 30)
+    pop:EnableMouse(true)
+    if ns.hui and ns.huiTheme == "hui" and ns.hui.SkinPopup and ns.hui.layer then
+        ns.hui.SkinPopup(pop, 8, "both", ns.hui.layer.L1)
+        if ns.hui.SkinShadow then ns.hui.SkinShadow(pop, nil, nil, 8) end
+    elseif ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
+        ns.hui.BuildRoundedBG(pop, 8, ns.hui.layer.L1, "both", true, 1)
+    else
+        local b = pop:CreateTexture(nil, "BACKGROUND")
+        b:SetAllPoints(pop)
+        b:SetColorTexture(0x0A/255, 0x0C/255, 0x10/255, 0.97)
+    end
+    pop.title = MakeFS(pop, 16, C_GOLD, "LEFT")
+    pop.title:SetPoint("TOPLEFT", pop, "TOPLEFT", 12, -12)
+    pop.sub = MakeFS(pop, 14, C_GREY, "LEFT")
+    pop.sub:SetPoint("TOPLEFT", pop, "TOPLEFT", 12, -36)
+    pop.pageTx = MakeFS(pop, 14, C_TEXT, "RIGHT")
+    local close = NewButton(pop, L["关闭"], 60, 24, 14)
+    close:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -12, -8)
+    close:SetScript("OnClick", function() pop:Hide() end)
+    pop.cards = {}
+    pop.nCard = 0
+    pop.next = NewButton(pop, L["下一页"], 70, 24, 14)
+    pop.next:SetPoint("BOTTOMRIGHT", pop, "BOTTOMRIGHT", -12, 12)
+    pop.next:SetScript("OnClick", function() PV.PopPage(PV.popPage + 1) end)
+    pop.prev = NewButton(pop, L["上一页"], 70, 24, 14)
+    pop.prev:SetPoint("BOTTOMRIGHT", pop, "BOTTOMRIGHT", -12 - 70 - 8, 12)
+    pop.prev:SetScript("OnClick", function() PV.PopPage(PV.popPage - 1) end)
+    pop.pageTx:SetPoint("RIGHT", pop.prev, "LEFT", -8, 0)
+    pop:EnableMouseWheel(true)
+    pop:SetScript("OnMouseWheel", function(_, d)
+        PV.PopPage(PV.popPage + (d > 0 and -1 or 1))
+    end)
+
+    page:HookScript("OnHide", function()
+        if pop:IsShown() then pop:Hide() end
+    end)
+
+    local escReady = false
+    for i = 1, #UISpecialFrames do
+        if UISpecialFrames[i] == "DungeonsForeverPvPRankPop" then escReady = true end
+    end
+    if not escReady then tinsert(UISpecialFrames, "DungeonsForeverPvPRankPop") end
+
+    pop:Hide()
+    PV.rankPop = pop
+
+    local eliteCard = NewRoundCard(PV.W, PV.VIEW_H)
+    eliteCard:SetPoint("TOPLEFT", child, "TOPLEFT", 0, 0)
+    local eliteScroll = CreateFrame("ScrollFrame", nil, eliteCard)
+    eliteScroll:SetPoint("TOPLEFT", eliteCard, "TOPLEFT", PV.ELITE_PAD, -PV.ELITE_PAD)
+    eliteScroll:SetPoint("BOTTOMRIGHT", eliteCard, "BOTTOMRIGHT", -PV.ELITE_PAD, PV.ELITE_PAD)
+    eliteScroll:EnableMouseWheel(true)
+    local eliteChild = CreateFrame("Frame", nil, eliteScroll)
+    eliteChild:SetSize(PV.W - 2 * PV.ELITE_PAD - PV.ELITE_BAR_W - 2, 10)
+    eliteScroll:SetScrollChild(eliteChild)
+    local ebar, ebarUpdate = MakeScrollBar(eliteScroll, eliteChild, eliteCard)
+    ebar:SetPoint("TOPRIGHT", eliteScroll, "TOPRIGHT", PV.ELITE_BAR_W, -2)
+    ebar:SetPoint("BOTTOMRIGHT", eliteScroll, "BOTTOMRIGHT", PV.ELITE_BAR_W, 2)
+    eliteScroll:SetScript("OnVerticalScroll", function() ebarUpdate() end)
+    eliteScroll:SetScript("OnMouseWheel", function(_, delta)
+        local maxScroll = (eliteChild:GetHeight() or 0) - (eliteScroll:GetHeight() or 0)
+        if maxScroll > 0 and Host.DG and Host.DG.WheelScroll then
+            Host.DG.WheelScroll(eliteScroll, eliteChild, delta)
+        end
+    end)
+    eliteCard:Hide()
+    PV.eliteCard, PV.eliteScroll, PV.eliteChild = eliteCard, eliteScroll, eliteChild
+    PV.eliteBar, PV.eliteBarUpdate = ebar, ebarUpdate
+
     PV.built = true
     PV.building = false
     end))
@@ -1123,6 +1329,74 @@ function PV.RequestRender()
     end)
 end
 
+PV.popRank = nil
+PV.popPage = 1
+PV.POP_COLS = 4
+PV.POP_ROWS = 5
+PV.POP_PER = PV.POP_COLS * PV.POP_ROWS
+
+function PV.PopItems()
+    if not PV.popRank or not RD.ranks[PV.popRank] then return {} end
+    local rec = RD.ranks[PV.popRank]
+    local own = (PV.faction == "H") and rec.h or rec.a
+    local all = {}
+    for _, id in ipairs(own) do all[#all + 1] = id end
+    for _, id in ipairs(rec.s) do all[#all + 1] = id end
+    local seen, uniq = {}, {}
+    for i = 1, #all do
+        local id = all[i]
+        if not seen[id] then seen[id] = true; uniq[#uniq + 1] = id end
+    end
+    return uniq
+end
+
+function PV.PopPage(page)
+    local pop = PV.rankPop
+    if not pop then return end
+    local items = PV.PopItems()
+    local pages = math.max(1, math.ceil(#items / PV.POP_PER))
+    PV.popPage = math.min(pages, math.max(1, page))
+    pop.pageTx:SetText(format(L["%d / %d 页"], PV.popPage, pages))
+    pop.prev:SetEnabled(PV.popPage > 1)
+    pop.next:SetEnabled(PV.popPage < pages)
+    local start = (PV.popPage - 1) * PV.POP_PER + 1
+    local cw = floor((pop:GetWidth() - 24 - (PV.POP_COLS - 1) * PV.CARD_GAP) / PV.POP_COLS)
+    for i = 1, PV.POP_PER do
+        local card = pop.cards[i]
+        if not card then
+            card = PV.NewCard(pop)
+            pop.cards[i] = card
+            if i > pop.nCard then pop.nCard = i end
+        end
+        local id = items[start + i - 1]
+        if id then
+            card:SetWidth(cw)
+            card.name:SetWidth(cw - PV.CARD_TX - 7)
+            card.name.__pw = cw - PV.CARD_TX - 7
+            PV.PaintCard(card, id)
+            local col = (i - 1) % PV.POP_COLS
+            local rowi = floor((i - 1) / PV.POP_COLS)
+            card:SetPoint("TOPLEFT", pop, "TOPLEFT", 12 + col * (cw + PV.CARD_GAP), -(58 + rowi * (PV.CARD_H + 8)))
+            card:Show()
+            if Host.DG and Host.DG.RequestItem then Host.DG.RequestItem(id) end
+        else
+            card:Hide()
+        end
+    end
+end
+
+function PV.OpenRankPop(rank)
+    local pop = PV.rankPop
+    if not pop or not rank then return end
+    PV.popRank = rank
+    local items = PV.PopItems()
+    local nm = RANK_NAMES[rank]
+    pop.title:SetText(format(L["R%d · %s · 全部奖励"], rank, PV.faction == "H" and nm.h or nm.a))
+    pop.sub:SetText(format(L["该等级可兑换的全部装备 · 共 %d 件"], #items))
+    PV.PopPage(1)
+    pop:Show()
+end
+
 function PV.SetTab(key)
     if not PV.built then return end
     local ok
@@ -1130,6 +1404,7 @@ function PV.SetTab(key)
         if def.key == key then ok = true end
     end
     if not ok then key = "ranks" end
+    if PV.rankPop and PV.rankPop:IsShown() then PV.rankPop:Hide() end
     PV.cur = key
     for _, def in ipairs(TAB_DEFS) do
         local bt = PV.tabs[def.key]
@@ -1152,7 +1427,9 @@ local function HideAll()
         if ns.hui and ns.hui.SetIconRing then ns.hui.SetIconRing(PV.chips[i].iconTex, nil) end
     end
     for i = 1, PV.nCard do PV.cards[i]:Hide() end
-    for i = 1, 14 do PV.rankRows[i]:Hide() end
+    for i = 1, 14 do
+        PV.rankRows[i]:Hide()
+    end
     for i = 1, 10 do PV.capRows[i]:Hide() end
     for i = 1, 10 do PV.wkRows[i]:Hide() end
     PV.rankCard:Hide()
@@ -1171,6 +1448,10 @@ local function HideAll()
     for i = 1, #TASK_TEXTS do PV.taskRows[i]:Hide() end
     for i = 1, #LEGACY_TEXTS do PV.legacyRows[i]:Hide() end
     for k in pairs(PV.labels) do PV.labels[k]:Hide() end
+    if PV.eliteLabels then for i = 1, #PV.eliteLabels do if PV.eliteLabels[i] then PV.eliteLabels[i]:Hide() end end end
+    for i = 1, (PV.nEliteCard or 0) do if PV.eliteCards and PV.eliteCards[i] then PV.eliteCards[i]:Hide() end end
+    if PV.eliteCard then PV.eliteCard:Hide() end
+    if PV.eliteBar then PV.eliteBar:Hide() end
     PV.setDetailIcon:Hide()
     PV.facBtn1:Hide()
     PV.facBtn2:Hide()
@@ -1199,6 +1480,8 @@ function PV.Render()
         PV.RenderRep()
     elseif PV.cur == "sets" then
         PV.RenderSets()
+    elseif PV.cur == "elite" then
+        PV.RenderElite()
     else
         PV.RenderRanks()
     end
@@ -1282,8 +1565,10 @@ function PV.RenderRanks()
             if Host.DG and Host.DG.RequestItem then Host.DG.RequestItem(all[k]) end
             chip:SetParent(row)
         end
+        row.more.__rank = i
+        row.more.__total = #all
         if #all > 3 then
-            row.more:SetText(format("+%d", #all - 3))
+            row.more:SetText(format(L["详情(%d)"], #all - 3))
             row.more:Show()
         else
             row.more:Hide()
@@ -1484,6 +1769,57 @@ function PV.RenderSets()
     local rightBottom = cy + 4 + noteH + 12
     PV.setsRightCard:SetHeight(math.max(rightBottom, PV.VIEW_H))
     PV.child:SetHeight(math.max(listBottom, rightBottom, PV.VIEW_H))
+end
+
+PV.eliteLabels = PV.eliteLabels or {}
+
+function PV.RenderElite()
+    local ec, esc, ech = PV.eliteCard, PV.eliteScroll, PV.eliteChild
+    if not ec then return end
+    ec:Show()
+    PV.child:SetHeight(PV.VIEW_H)
+
+    PV.facBtn1:ClearAllPoints()
+    PV.facBtn1:SetPoint("TOPRIGHT", PV.headCard, "TOPRIGHT", -PV.HEAD_PAD, -PV.TAB_Y)
+    PV.facBtn1:Show()
+    PV.facBtn2:ClearAllPoints()
+    PV.facBtn2:SetPoint("TOPRIGHT", PV.facBtn1, "TOPLEFT", -8, 0)
+    PV.facBtn2:Show()
+
+    local groups = EliteGroups()
+    local innerW = ech:GetWidth() or (PV.W - 32)
+    local cardW = floor((innerW - 16 - (PV.REP_COLS - 1) * PV.CARD_GAP) / PV.REP_COLS)
+    local y = 8
+    local cursor = 1
+    for gi = 1, #groups do
+        local g = groups[gi]
+        local lb = PV.eliteLabels[gi]
+        if not lb then
+            lb = MakeFS(ech, 14, C_GOLD, "LEFT")
+            PV.eliteLabels[gi] = lb
+        end
+        lb:SetPoint("TOPLEFT", ech, "TOPLEFT", 8, -y)
+        lb:SetText(format(L["%s · %d 件"], g.title, #g.ids))
+        lb:Show()
+        y = y + 26
+        for k = 1, #g.ids do
+            local id = g.ids[k]
+            local card = TakeEliteCard(cursor)
+            cursor = cursor + 1
+            card:SetWidth(cardW)
+            card.name:SetWidth(cardW - PV.CARD_TX - 7)
+            card.name.__pw = cardW - PV.CARD_TX - 7
+            PV.PaintCard(card, id)
+            local col = (k - 1) % PV.REP_COLS
+            local rowi = floor((k - 1) / PV.REP_COLS)
+            card:SetPoint("TOPLEFT", ech, "TOPLEFT", 8 + col * (cardW + PV.CARD_GAP), -(y + rowi * (PV.CARD_H + 8)))
+            card:Show()
+        end
+        y = y + math.ceil(#g.ids / PV.REP_COLS) * (PV.CARD_H + 8) + 14
+        if gi % 3 == 0 then PY() end
+    end
+    ech:SetHeight(math.max(y + 12, (esc:GetHeight() or PV.VIEW_H) + 2))
+    PV.eliteBarUpdate()
 end
 
 function PV.RenderHonorBody(y)

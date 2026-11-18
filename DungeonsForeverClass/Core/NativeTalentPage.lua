@@ -216,6 +216,20 @@ local function Plans()
     return cls and TP and TP[string.upper(cls)]
 end
 
+function NP.RecPlan()
+    local list = Plans() or {}
+    if NP.recPlan and NP.recPlanCls == NP.cls then return NP.recPlan end
+    local pick = list[1]
+    for i = 1, #list do
+        if list[i].seq and list[i].name then
+            pick = list[i]
+            break
+        end
+    end
+    NP.recPlan, NP.recPlanCls = pick, NP.cls
+    return pick
+end
+
 local function SimSig()
     local out = {}
     for t = 1, 3 do
@@ -780,7 +794,7 @@ local function BuildHeaderRow(y, cols)
 end
 
 local function PlanName()
-    local p = NP.plan
+    local p = NP.plan or NP.RecPlan()
     if not p then return L['未选择方案'] end
     if p.name and p.name ~= '' then return p.name end
     return string.format(L['方案%d'], NP.planIdx or 1)
@@ -995,7 +1009,7 @@ local function SeqOf(plan)
 end
 
 local function PendingSeq(base)
-    local seq = SeqOf(NP.plan)
+    local seq = SeqOf(NP.plan or NP.RecPlan())
     local out = {}
     if not seq then return out end
     local need = {}
@@ -1133,6 +1147,7 @@ end
 
 local function SeqMap(pending)
     local map = { {}, {}, {} }
+    local off = StartLv() - 1
     for i = 1, #pending do
         local p = pending[i]
         local m = map[p.t]
@@ -1141,7 +1156,7 @@ local function SeqMap(pending)
             list = {}
             m[p.i] = list
         end
-        list[#list + 1] = i
+        list[#list + 1] = (p.lv or (off + i)) - off
     end
     return map
 end
@@ -1177,11 +1192,15 @@ end
 
 local function BuildSeqMap(pending)
     if NP.seqOn == nil then NP.seqOn = DB().seqOn ~= false end
-    if not NP.seqOn or not NP.cls or not NP.plan then
+    if not NP.seqOn or not NP.cls or not (NP.plan or NP.RecPlan()) then
         NP.seqMap = nil
+        NP.nextPending = nil
         return nil
     end
-    NP.seqMap = SeqMap(pending or PendingSeq())
+    pending = pending or PendingSeq()
+    NP.seqMap = SeqMap(pending)
+    local first = pending[1]
+    NP.nextPending = first and { t = first.t, i = first.i } or nil
     return NP.seqMap
 end
 
@@ -1291,6 +1310,7 @@ local function RefreshNativeSeq()
         if L:GetFrameLevel() ~= peak then L:SetFrameLevel(peak) end
     end
     local nextBtn
+    local nxt = NP.nextPending
     for _, btn in pairs(map) do
         local fs, bg = SeqBadge(btn)
         local txt, list
@@ -1299,6 +1319,7 @@ local function RefreshNativeSeq()
             if pos then
                 list = nos[pos.t] and nos[pos.t][pos.i]
                 if list and #list > 0 then txt = SeqText(list) end
+                if nxt and pos.t == nxt.t and pos.i == nxt.i then nextBtn = btn end
             end
         end
         if txt then
@@ -1509,7 +1530,6 @@ end
 
 function NP.SyncPlan()
     if not body then return end
-    if InCombat() then return end
     NP.liveCache = nil
     NP.liveBaseCache = nil
     local pending = PendingSeq(LiveBase())
@@ -2537,6 +2557,7 @@ function NP.Build(T)
                 ApplyState(true)
                 Refresh()
             else
+                if NP.viewMode ~= 'plan' then NP.SyncFromLive() end
                 NP.SyncPlan()
             end
             if C_Timer and C_Timer.After and not NP.planDefer then
@@ -2653,6 +2674,15 @@ local function Follow()
                 if NP.ours then NP.SyncShow() end
             elseif NP.RequestNativeTab then
                 NP.RequestNativeTab()
+            end
+        end
+        local liveSpent = LiveCached()
+        local spentNow = liveSpent and liveSpent.spent or nil
+        if spentNow and spentNow ~= NP.liveSpentSeen then
+            NP.liveSpentSeen = spentNow
+            if not Mine() and NP.viewMode ~= 'plan' then
+                NP.SyncFromLive()
+                NP.SyncPlan()
             end
         end
         local T = NP.frame

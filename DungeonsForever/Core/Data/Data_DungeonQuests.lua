@@ -975,7 +975,7 @@ ns.DungeonQuestOVMap = {
 }
 
 ns.DungeonQuestRepeat = {
-    [2951] = true, [2952] = true, [2953] = true,
+    [1192] = true, [2951] = true, [2952] = true, [2953] = true,
 }
 
 ns.DungeonQuestOptPre = {

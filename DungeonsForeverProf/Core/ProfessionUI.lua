@@ -242,6 +242,10 @@ function PD.ScanHeadline()
     if status=="expired" then return L["完整扫描数据已超过 2 天"] end
     if status=="mismatch" then return L["已保存的完整扫描与当前规则集或阵营不匹配"] end
     if status=="invalid" then return L["已保存的完整扫描数据无效"] end
+    local scan=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    if scan and (status==nil or status=="missing") and scan.status=="noresponse" then
+        return L["这次完整扫描没有得到拍卖行的回应"]
+    end
     return PD.ScanSnapshotText()
 end
 
@@ -261,6 +265,11 @@ function PD.ScanFixLines()
     local partial=snapshot and snapshot.status=="expired" and snapshot.staleIncomplete
     local out={}
     local eb=ns.EasyBridge
+    if capture=="noresponse" then
+        out[#out+1]=L["拍卖行没有返回扫描数据：距上次完整扫描不足 15 分钟时，服务器会忽略请求。"]
+        out[#out+1]=L["请等 15 分钟后到拍卖行再点一次「完整扫描」，扫描期间不要关闭拍卖行。"]
+        return out
+    end
     if eb and eb.Available and eb.Available() and snapshot and snapshot.source=="easyauction" then
         out[#out+1]=L["EasyAuction 行情已超过 2 天，请打开拍卖行让它重新扫描。"]
         return out
@@ -371,7 +380,16 @@ function PD.ScanCaptureText()
     local st=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
     local status=st and st.status
     if status=="ready" then return L["扫描捕获：已就绪"],"ok" end
-    if status=="scanning" or status=="processing" then return L["扫描捕获：扫描中"],"warn" end
+    if status=="scanning" then
+        local pct=math.max(0,math.min(99,math.floor((tonumber(st and st.pct) or 0)*100)))
+        return format(L["扫描捕获：正在读取拍卖行 %d%%"],pct),"warn"
+    end
+    if status=="processing" then
+        local done,total=tonumber(st and st.done),tonumber(st and st.total)
+        local pct=(done and total and total>0) and math.floor(done/total*100) or 0
+        return format(L["扫描捕获：正在整理数据 %d%%"],math.max(0,math.min(100,pct))),"warn"
+    end
+    if status=="noresponse" then return L["扫描捕获：拍卖行没有回应"],"bad" end
     if status=="complete" then return L["扫描捕获：已完整捕获"],"ok" end
     if status=="failed" or status=="incomplete" or status=="unverified" then return L["扫描捕获：本次失败"],"bad" end
     if status=="mode-changed" then return L["扫描捕获：模式刚切换，请重扫"],"warn" end
@@ -391,6 +409,19 @@ function PD.ScanSnapshotAgeText()
     local bridge=ns.AuctionBridge
     local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
     if not snapshot then return L["上次完整扫描：无法读取"],"bad" end
+    local scan=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    local capture=scan and scan.status
+    if snapshot.status=="missing" and capture=="scanning" then
+        return L["上次完整扫描：正在扫描，等拍卖行返回"],"warn"
+    end
+    if snapshot.status=="missing" and capture=="processing" then
+        local done,total=tonumber(scan.done),tonumber(scan.total)
+        local pct=(done and total and total>0) and math.floor(done/total*100) or 0
+        return format(L["上次完整扫描：正在整理数据 %d%%"],math.max(0,math.min(100,pct))),"warn"
+    end
+    if snapshot.status=="missing" and capture=="noresponse" then
+        return L["上次完整扫描：这次扫描没有得到回应"],"bad"
+    end
     if snapshot.status=="expired" then
         local stamp=tonumber(snapshot.observedAt)
         if not stamp or stamp<=0 then return L["上次完整扫描：已超过 2 天有效期"],"bad" end

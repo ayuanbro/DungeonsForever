@@ -154,6 +154,7 @@ end
 local SUPPLY_MAX_AGE = (ns.ProfRouteAuto and ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds
     and ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds()) or 172800
 local SNAPSHOT_VERSION = 3
+local SCAN_SILENT_SEC = 45
 local function WholeNumber(n)
     return type(n)=="number" and n>=0 and n<math.huge and n==math.floor(n)
 end
@@ -542,12 +543,13 @@ function AB.GetAuctionPriceObservedAt(id)
     return nil
 end
 
-local fullBus,fullListener,fullEvents,fullRead,fullTimer
+local fullBus,fullListener,fullEvents,fullRead,fullTimer,fullWatchdog
 local fullGeneration=0
 local fullState={status="unavailable"}
 local function StopFullImport()
     fullGeneration=fullGeneration+1
     if fullTimer then fullTimer:Cancel();fullTimer=nil end
+    if fullWatchdog then fullWatchdog:Cancel();fullWatchdog=nil end
     fullRead=nil
 end
 local function ScheduleFullExpiry()
@@ -628,17 +630,33 @@ local function ImportFullRows(scan,rows)
         rowCount=rowCount+1
     end
     if rowCount~=scan.expected then scan.complete=false end
-    fullState={status="processing",done=0,total=scan.expected}
+    fullState={status="processing",done=0,total=scan.expected,startedAt=time and time() or 0}
+    local lastDecile=0
     local generation=fullGeneration
+    local function Clock()
+        if debugprofilestop then return debugprofilestop() end
+        if GetTime then return GetTime()*1000 end
+        return 0
+    end
     local function step()
         if generation~=fullGeneration then return end
         fullTimer=nil
         if not scan.mk or scan.mk~=MarketKey() then
             ImportFailed("unverified");return
         end
-        local last=math.min(scan.index+249,scan.expected)
-        for index=scan.index,last do FullRow(scan,rows[index]) end
-        scan.index=last+1;fullState.done=last
+        local startAt=Clock()
+        local index=scan.index
+        local counter=0
+        while index<=scan.expected do
+            FullRow(scan,rows[index])
+            index=index+1
+            counter=counter+1
+            if counter>=3000 then break end
+            if counter%64==0 and Clock()-startAt>=8 then break end
+        end
+        scan.index=index;fullState.done=index-1
+        local decile=math.floor((index-1)/scan.expected*10)
+        if decile~=lastDecile then lastDecile=decile;ScanStatusChanged() end
         if scan.index<=scan.expected then
             if C_Timer and C_Timer.NewTimer then fullTimer=C_Timer.NewTimer(0,step)
             else ImportFailed("unavailable") end
@@ -655,7 +673,7 @@ local function ImportFullRows(scan,rows)
             scan.depthIDs={};scan.depthIndex=1
             for id in pairs(scan.items) do scan.depthIDs[#scan.depthIDs+1]=id end
         end
-        local depthLast=math.min(scan.depthIndex+249,#scan.depthIDs)
+        local depthLast=math.min(scan.depthIndex+799,#scan.depthIDs)
         for index=scan.depthIndex,depthLast do
             local item=scan.items[scan.depthIDs[index]]
             local prices,depth={},{}
@@ -680,6 +698,7 @@ local function ImportFullRows(scan,rows)
         fullState.status=scan.complete and "complete" or "incomplete"
         fullState.observedAt=scan.observedAt
         fullRead=nil
+        Say(format(L["扫描数据已就绪（%d 种物品），可以重新计算路线了。"],#scan.depthIDs))
         SupplyChanged(nil)
     end
     if C_Timer and C_Timer.NewTimer then fullTimer=C_Timer.NewTimer(0,step)
@@ -720,10 +739,30 @@ function AB.ConnectAuctionatorStock()
             fullRead={startedAt=time and time() or 0,mk=MarketKey(),ob=ObserverKey(),
                 modern=ev.ScanStart=="replicate_scan_start",
                 modeGeneration=mode.generation,scanSerial=mode.scanSerial}
-            fullState={status="scanning"}
+            local token=fullRead
+            fullState={status="scanning",pct=0,startedAt=token.startedAt}
+            if C_Timer and C_Timer.NewTimer then
+                fullWatchdog=C_Timer.NewTimer(SCAN_SILENT_SEC,function()
+                    fullWatchdog=nil
+                    if fullRead~=token or token.gotRows then return end
+                    if fullState.status~="scanning" then return end
+                    StopFullImport()
+                    fullState={status="noresponse",startedAt=token.startedAt}
+                    ScanStatusChanged()
+                end)
+            end
             ScanStatusChanged()
-        elseif event==ev.ScanProgress and fullRead and type(data)=="number" and data>=0.2 then
-            ExpectedFullRows(fullRead)
+        elseif event==ev.ScanProgress and fullRead and type(data)=="number" then
+            if fullState.status=="scanning" then
+                local before=math.floor((tonumber(fullState.pct) or 0)*10)
+                fullState.pct=data
+                if math.floor(data*10)~=before then ScanStatusChanged() end
+            end
+            if data>=0.2 then
+                fullRead.gotRows=true
+                if fullWatchdog then fullWatchdog:Cancel();fullWatchdog=nil end
+                ExpectedFullRows(fullRead)
+            end
         elseif event==ev.ScanFailed then
             ImportFailed("failed")
         elseif event==ev.ScanComplete and fullRead and fullState.status=="scanning" then

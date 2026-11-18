@@ -665,7 +665,7 @@ local function MakeRow(i)
         local sub = r.sub:GetText()
         if r.ikind == "turnin" then
             ItemTip(r, r.iid, r.ilabel, r.idesc or sub, L["点击在地图上定位上交 NPC"])
-        elseif r.ikind == "book" or r.ikind == "collect" or r.ikind == "rested" then
+        elseif r.ikind == "book" or r.ikind == "collect" or r.ikind == "rested" or r.ikind == "equip" then
             local desc = sub
             if r.idesc and r.idesc ~= "" then
                 desc = (sub ~= "" and (sub .. " · " .. r.idesc)) or r.idesc
@@ -1613,6 +1613,7 @@ function O.Init()
     end)
     panel:HookScript("OnHide", function()
         if panel.escProxy and panel.escProxy:IsShown() then panel.escProxy:Hide() end
+        if opts and opts:IsShown() then opts:Hide() end
     end)
     panel:Hide()
     if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
@@ -1751,9 +1752,10 @@ function O.Init()
     gt:SetVertexColor(GLYPH, GLYPH, GLYPH, 1)
 
     InitVoiceBtn()
-    opts = CreateFrame("Frame", nil, panel, "BackdropTemplate")
-    opts:SetSize(184, 488)
+    opts = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    opts:SetSize(620, 330)
     opts:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -40)
+    opts:SetFrameStrata("DIALOG")
     opts:SetFrameLevel(panel:GetFrameLevel() + 8)
     if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
         ns.hui.SkinPopup(opts, 8, "both", ns.hui.layer.L2)
@@ -1770,6 +1772,29 @@ function O.Init()
     end)
     opts:Hide()
 
+    local OPTS_MARGIN = 8
+    local function PlaceOpts()
+        local sw = (UIParent.GetWidth and UIParent:GetWidth()) or 1920
+        local sh = (UIParent.GetHeight and UIParent:GetHeight()) or 1080
+        local pr = (panel.GetRight and panel:GetRight()) or sw
+        local pl = (panel.GetLeft and panel:GetLeft()) or 0
+        local pt = (panel.GetTop and panel:GetTop()) or sh
+        local w = opts:GetWidth() or 620
+        local h = opts:GetHeight() or 330
+        local ty = pt - 46
+        if ty < h + OPTS_MARGIN then ty = h + OPTS_MARGIN end
+        if ty > sh - OPTS_MARGIN then ty = sh - OPTS_MARGIN end
+        opts:ClearAllPoints()
+        local right = pr - 8
+        if right - w >= OPTS_MARGIN then
+            opts:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", right, ty)
+        else
+            local left = pl + 8
+            if left + w > sw - OPTS_MARGIN then left = math.max(OPTS_MARGIN, sw - OPTS_MARGIN - w) end
+            opts:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, ty)
+        end
+    end
+
     local oph = opts:CreateFontString(nil, "OVERLAY")
     oph:SetFont(ns.FONT, 14, "")
     oph:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -8)
@@ -1778,16 +1803,35 @@ function O.Init()
 
     optCbs = {}
 
-    local function OptRow(y, label, key, tip, vkey)
+    local COL_STEP = 152
+    local colRow = { 0, 0, 0, 0 }
+    local function ColX(col) return 10 + (col - 1) * COL_STEP end
+    local function ColNext(col)
+        local y = -34 - colRow[col] * 22
+        colRow[col] = colRow[col] + 1
+        return y
+    end
+    local function ColHead(col, text)
+        local y = ColNext(col)
+        local h = opts:CreateFontString(nil, "OVERLAY")
+        h:SetFont(ns.FONT, 14, "")
+        h:SetPoint("TOPLEFT", opts, "TOPLEFT", ColX(col), y - 4)
+        h:SetText(text)
+        h:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
+    end
+
+    local function OptRow(col, label, key, tip, vkey)
+        local y = ColNext(col)
+        local bx = ColX(col)
         local t = opts:CreateFontString(nil, "OVERLAY")
         t:SetFont(ns.FONT, 14, "")
-        t:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, y - 4)
+        t:SetPoint("TOPLEFT", opts, "TOPLEFT", bx, y - 4)
         t:SetText(label)
         t:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
         if vkey then
             local vb = CreateFrame("Button", nil, opts)
             vb:SetSize(28, 22)
-            vb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -56, y + 1)
+            vb:SetPoint("TOPRIGHT", opts, "TOPLEFT", bx + 81, y + 1)
             vb.tex = vb:CreateTexture(nil, "ARTWORK")
             vb.tex:SetSize(21, 21)
             vb.tex:SetPoint("CENTER", vb, "CENTER", 0, 0)
@@ -1826,7 +1870,7 @@ function O.Init()
         end
         local cb = CreateFrame("CheckButton", nil, opts)
         cb:SetSize(36, 20)
-        cb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, y + 1)
+        cb:SetPoint("TOPRIGHT", opts, "TOPLEFT", bx + 132, y + 1)
         if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(cb) end
         cb:SetScript("OnClick", function(self)
             ns.PlaySound(1)
@@ -1852,32 +1896,43 @@ function O.Init()
         return cb
     end
 
-    OptRow(-32, L["探索-书籍提醒"], "book", L["本图还有未收集的书时提示"])
-    OptRow(-54, L["探索-书籍上交提醒"], "turnin", L["在幽暗城且背包有可上交的书时提示"])
-    OptRow(-76, L["探索-睡袋提醒"], "bag", L["本图有睡袋任务链的一步时提示"])
-    OptRow(-98, L["探索-火炬提醒"], "torch", L["本图有守夜人火炬可拾取时提示"])
-    OptRow(-120, L["探索-旗帜提醒"], "banner", L["进入血色修道院副本后，有未拾取的血色旗帜时提示"])
-    OptRow(-142, L["副本-任务提醒"], "quest", L["本图有可接的副本任务时提示"])
-    OptRow(-164, L["副本-必备物品提醒"], "keyitem", L["在副本里且背包没有该副本要用的物品时提示"])
-    OptRow(-186, L["专业-冷却可做提醒"], "profcd", L["本账号任意角色的冷却配方可再做时，在待办里提示"])
-    OptRow(-208, L["职业-技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
-    OptRow(-230, L["职业-天赋提醒"], "talent", L["有未分配的天赋点时提示，点击可直接打开天赋界面"])
-    OptRow(-252, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
-    OptRow(-274, L["增益-睡袋提醒"], "rested", L["背包有睡袋且未休息或 buff 快到期时提示"], "restedVoice")
-    OptRow(-296, L["增益-露营提醒"], "camp", L["在营火旁且没有强化休息时提示"])
-    OptRow(-318, L["增益-到期提醒"], "renew", L["强化休息快到期时提示回营地续一次"])
-    OptRow(-340, L["增益-蹭帐篷卡片"], "tent", L["找到营地玩家且自己还没有强化休息时，在待办里弹出卡片"])
-    OptRow(-362, L["有帐篷时不提示"], "tentOwn", L["自己已有帐篷时，不再在待办里弹出蹭帐篷卡片"])
+    ColHead(1, L["探索"])
+    OptRow(1, L["书籍提醒"], "book", L["本图还有未收集的书时提示"])
+    OptRow(1, L["书籍上交提醒"], "turnin", L["在幽暗城且背包有可上交的书时提示"])
+    OptRow(1, L["睡袋提醒"], "bag", L["本图有睡袋任务链的一步时提示"])
+    OptRow(1, L["火炬提醒"], "torch", L["本图有守夜人火炬可拾取时提示"])
+    OptRow(1, L["旗帜提醒"], "banner", L["进入血色修道院副本后，有未拾取的血色旗帜时提示"])
+    ColHead(1, L["职业"])
+    OptRow(1, L["技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
+    OptRow(1, L["天赋提醒"], "talent", L["有未分配的天赋点时提示，点击可直接打开天赋界面"])
+    ColHead(1, L["专业"])
+    OptRow(1, L["冷却可做提醒"], "profcd", L["本账号任意角色的冷却配方可再做时，在待办里提示"])
 
+    ColHead(2, L["副本"])
+    OptRow(2, L["必备物品提醒"], "keyitem", L["在副本里且背包没有该副本要用的物品时提示"])
+    ColHead(2, L["副本任务"])
+    OptRow(2, L["未接任务提醒"], "quest", L["本图有可接的副本任务时提示"])
+    OptRow(2, L["已接任务提醒"], "questTaken", L["已接取、进行中的副本任务需要操作时提示"])
+
+    ColHead(3, L["增益"])
+    OptRow(3, L["食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
+    OptRow(3, L["睡袋提醒"], "rested", L["背包有睡袋且未休息或 buff 快到期时提示"], "restedVoice")
+    OptRow(3, L["露营提醒"], "camp", L["在营火旁且没有强化休息时提示"])
+    OptRow(3, L["到期提醒"], "renew", L["强化休息快到期时提示回营地续一次"])
+    OptRow(3, L["蹭帐篷卡片"], "tent", L["找到营地玩家且自己还没有强化休息时，在待办里弹出卡片"])
+    OptRow(3, L["有帐篷时不提示"], "tentOwn", L["自己已有帐篷时，不再在待办里弹出蹭帐篷卡片"])
+
+    local ttY = ColNext(3)
+    local ttBX = ColX(3)
     local ttLabel = opts:CreateFontString(nil, "OVERLAY")
     ttLabel:SetFont(ns.FONT, 14, "")
-    ttLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -366)
+    ttLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", ttBX, ttY - 4)
     ttLabel:SetText(L["蹭帐篷密语"])
     ttLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
 
     local ttBtn = CreateFrame("Button", nil, opts, "BackdropTemplate")
     ttBtn:SetSize(56, 20)
-    ttBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, -363)
+    ttBtn:SetPoint("TOPRIGHT", opts, "TOPLEFT", ttBX + 132, ttY + 1)
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
         ns.hui.BuildRoundedBG(ttBtn, 6, ns.hui.layer.L2, "both", true, 1)
     end
@@ -1932,26 +1987,23 @@ function O.Init()
     ttBtn:SetScript("OnLeave", HideTip)
     SyncTentText()
 
-    local oph2 = opts:CreateFontString(nil, "OVERLAY")
-    oph2:SetFont(ns.FONT, 14, "")
-    oph2:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -390)
-    oph2:SetText(L["窗口设置"])
-    oph2:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
-
-    OptRow(-410, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"])
-    OptRow(-432, L["进新场景不弹窗"], "noZonePopup", L["进入新的场景时不再自动弹出待办窗口，可点击圆球查看"])
+    ColHead(4, L["窗口"])
+    OptRow(4, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"])
+    OptRow(4, L["进新场景不弹窗"], "noZonePopup", L["进入新的场景时不再自动弹出待办窗口，可点击圆球查看"])
 
     local SIZES = { 24, 28, 32, 36, 40 }
 
+    local szY = ColNext(4)
+    local szBX = ColX(4)
     local szLabel = opts:CreateFontString(nil, "OVERLAY")
     szLabel:SetFont(ns.FONT, 14, "")
-    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", 10, -460)
+    szLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", szBX, szY - 4)
     szLabel:SetText(L["待办图标大小"])
     szLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
 
     local szBtn = CreateFrame("Button", nil, opts, "BackdropTemplate")
     szBtn:SetSize(36, 20)
-    szBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -8, -455)
+    szBtn:SetPoint("TOPRIGHT", opts, "TOPLEFT", szBX + 132, szY + 1)
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
         ns.hui.BuildRoundedBG(szBtn, 6, ns.hui.layer.L2, "both", true, 1)
     end
@@ -2001,10 +2053,7 @@ function O.Init()
             end
             SyncSize()
             SyncTentText()
-            local rx = (panel.GetRight and panel:GetRight() or 0) - 8
-            local ty = (panel.GetTop and panel:GetTop() or 0) - 40
-            opts:ClearAllPoints()
-            opts:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", rx, ty)
+            PlaceOpts()
             opts:Show()
         end
     end)

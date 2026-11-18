@@ -16,12 +16,24 @@ local CITIES = {
 local DELAYS = { 0.5, 1.5, 3, 6 }
 
 local QDISC = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
-local QSYM_CAN = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl"
-local QSYM_CANT = "Interface\\AddOns\\DungeonsForever\\Media\\Pins\\QuestSymLock"
-local QDISC_CAN = { 1, 0.82, 0 }
-local QDISC_CANT = { 0.45, 0.47, 0.50 }
-local QSYM_CANCOL = { 0.227, 0.165, 0 }
-local QSYM_CANTCOL = { 0.08, 0.08, 0.09 }
+local OV_LEGEND = {
+    done   = { col = { 0.25, 0.85, 0.35, 1 }, sym = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",        ink = { 0.043, 0.239, 0.102 } },
+    ready  = { col = { 0.15, 0.82, 0.78, 1 }, sym = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkTurnIn",  ink = { 0.020, 0.180, 0.172 } },
+    active = { col = { 1, 0.82, 0, 1 },       sym = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",     ink = { 0.227, 0.165, 0 } },
+    todo   = { col = { 0.55, 0.55, 0.55, 1 }, sym = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",    ink = { 0.102, 0.102, 0.102 } },
+    rep    = { col = { 0.62, 0.50, 0.86, 1 }, sym = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",     ink = { 0.18, 0.14, 0.26 } },
+}
+local OV_KEY = { done = "DONE", ready = "READY", active = "ACT", todo = "TODO", rep = "REP" }
+
+local function OVDiscCol(DG, st)
+    local k = OV_KEY[st]
+    if DG and k and DG["Q_OV_" .. k] then
+        local c = DG["Q_OV_" .. k]
+        return { c[1], c[2], c[3] }
+    end
+    local e = OV_LEGEND[st] or OV_LEGEND.todo
+    return { e.col[1], e.col[2], e.col[3] }
+end
 
 local function CFG()
     local db = ns.DB()
@@ -33,6 +45,7 @@ local function CFG()
     if c.torch == nil then c.torch = true end
     if c.banner == nil then c.banner = true end
     if c.quest == nil then c.quest = true end
+    if c.questTaken == nil then c.questTaken = false end
     if c.spell == nil then c.spell = true end
     if c.talent == nil then c.talent = true end
     if c.food == nil then c.food = true end
@@ -97,6 +110,13 @@ function Z.IsIgnored(key)
     return CFG().ignore[key] ~= nil
 end
 
+local function NotifyList()
+    local B = ns.ZoneHintList
+    if type(B) == "table" and type(B.Notify) == "function" then
+        pcall(B.Notify)
+    end
+end
+
 function Z.IgnoreItem(kind, id, label)
     local key = ItemKey(kind, id)
     if not key then return nil end
@@ -106,11 +126,17 @@ function Z.IgnoreItem(kind, id, label)
         label = label or key,
         seq = NextSeq(),
     }
+    Z.IgnoreRev = (Z.IgnoreRev or 0) + 1
+    NotifyList()
     return key
 end
 
 function Z.UnignoreItem(key)
-    if key then CFG().ignore[key] = nil end
+    if key then
+        CFG().ignore[key] = nil
+        Z.IgnoreRev = (Z.IgnoreRev or 0) + 1
+        NotifyList()
+    end
 end
 
 function Z.ItemList()
@@ -140,7 +166,10 @@ end
 
 function Z.ClearItems()
     local c = CFG()
-    for k in pairs(c.ignore) do c.ignore[k] = nil end
+    local n = 0
+    for k in pairs(c.ignore) do c.ignore[k] = nil; n = n + 1 end
+    if n > 0 then Z.IgnoreRev = (Z.IgnoreRev or 0) + 1 end
+    NotifyList()
 end
 
 function Z.Context()
@@ -294,6 +323,18 @@ local function ItemIcon(id)
         if ok and type(ic) == "string" and ic ~= "" then return ic end
     end
     return "Interface\\Icons\\INV_Misc_Book_09"
+end
+
+local function QuestBadge(qid)
+    local DG = DGRef()
+    local st = "todo"
+    if DG and DG.QuestBadgeState and qid then st = DG.QuestBadgeState(qid) or "todo" end
+    return DG, st, OV_LEGEND[st] or OV_LEGEND.todo
+end
+
+local function QuestIconState(qid)
+    local _, _, e = QuestBadge(qid)
+    return e.sym
 end
 
 local function SplitLoc(s)
@@ -748,13 +789,15 @@ local questCache = { key = nil, t = 0, res = nil }
 
 local function PQuest(ctx)
     local c = CFG()
-    if not c.quest then return nil end
+    local wantTodo = (c.quest ~= false)
+    local wantTaken = (c.questTaken == true)
+    if not wantTodo and not wantTaken then return nil end
     local DG = DGRef()
     local all = ns.DungeonQuests
     if not (DG and all) then return nil end
     local lv = (UnitLevel and UnitLevel("player")) or 60
     local side = DG.PlayerSide and DG.PlayerSide() or nil
-    local ck = tostring(ctx and ctx.zone) .. "|" .. tostring(ctx and ctx.sub) .. "|" .. tostring(lv) .. "|" .. tostring(side)
+    local ck = tostring(ctx and ctx.zone) .. "|" .. tostring(ctx and ctx.sub) .. "|" .. tostring(lv) .. "|" .. tostring(side) .. "|" .. tostring(Z.IgnoreRev or 0) .. "|" .. tostring(wantTodo) .. tostring(wantTaken)
     local nowT = (GetTime and GetTime()) or 0
     if questCache.key == ck and (nowT - questCache.t) < 30 then return questCache.res end
     local function QOwn(q)
@@ -802,7 +845,7 @@ local function PQuest(ctx)
                 end
                 if ok and DG.QuestState and DG.QuestState(q[1]) ~= "todo" then ok = false end
                 if ok and Z.IsIgnored(ItemKey("quest", q[1])) then ok = false end
-                if ok then
+                if ok and wantTodo then
                     n = n + 1
                     hits[n] = { q = q, slug = slug, loc = loc, sloc = sloc }
                     directSeen[q[1]] = true
@@ -815,7 +858,7 @@ local function PQuest(ctx)
         for i = 1, #rows do
             local q = rows[i]
             local pre = q[9]
-            if type(pre) == "table" and not q[8] and not directSeen[q[1]] then
+            if type(pre) == "table" and not q[8] and not directSeen[q[1]] and wantTodo then
                 if QHitPin(q, slug) and (not DG.QuestState or DG.QuestState(q[1]) == "todo") then
                     for k = 1, #pre do
                         local pid = pre[k]
@@ -879,7 +922,7 @@ local function PQuest(ctx)
                             end
                         end
                         if ok and Z.IsIgnored(ItemKey("quest", q[1])) then ok = false end
-                        if ok and not seenQ[q[1]] then
+                        if ok and not seenQ[q[1]] and ((st == "active" and wantTaken) or (st ~= "active" and wantTodo)) then
                             seenQ[q[1]] = true
                             n = n + 1
                             hits[n] = { q = q, slug = slug, loc = q[6], inst = true }
@@ -927,15 +970,15 @@ local function PQuest(ctx)
             end
             locdesc = locdesc .. " · " .. string.format(L["完成后解锁《%s》"], mainName or dun)
             ids2 = pid
+            local _, bst, ovl = QuestBadge(pid)
             list[i] = {
                 id = pid, base = pid, ikey = ItemKey("quest", pid),
                 name = qname or tostring(pid),
-                icon = "Interface\\GossipFrame\\AvailableQuestIcon",
+                icon = ovl.sym,
                 sub = sub, desc = locdesc, lvreq = lvreq, can = can,
                 badge = { t = optPair and L["可选"] or L["前置"], col = optPair and (DG.Q_BADGE_OPT_BG or DG.Q_BADGE_PRE_BG) or DG.Q_BADGE_PRE_BG },
-                discTex = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
-                sym = can and QSYM_CAN or QSYM_CANT,
-                symCol = can and QSYM_CANCOL or QSYM_CANTCOL,
+                discTex = QDISC, discCol = OVDiscCol(DG, bst),
+                sym = ovl.sym, symCol = { ovl.ink[1], ovl.ink[2], ovl.ink[3] },
                 qid = pid, mapName = ps[6], x = ps[4], y = ps[5], slug = h.slug,
             }
         else
@@ -987,15 +1030,15 @@ local function PQuest(ctx)
             local qname, qok = nil, false
             if DG.QuestName then qname, qok = DG.QuestName(q[1]) end
             if not qok then Z.ScheduleSoft() end
+            local _, bst, ovl = QuestBadge(q[1])
             list[i] = {
                 id = q[1], base = q[1], ikey = ItemKey("quest", q[1]),
                 name = qname or tostring(q[1]),
-                icon = "Interface\\GossipFrame\\AvailableQuestIcon",
+                icon = ovl.sym,
                 sub = progSub or dun, desc = locdesc, lvreq = lvreq, can = can,
                 badge = { t = btext, col = DG.Q_BADGE_IN_BG },
-                discTex = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
-                sym = can and QSYM_CAN or QSYM_CANT,
-                symCol = can and QSYM_CANCOL or QSYM_CANTCOL,
+                discTex = QDISC, discCol = OVDiscCol(DG, bst),
+                sym = ovl.sym, symCol = { ovl.ink[1], ovl.ink[2], ovl.ink[3] },
                 qid = q[1], mapName = mapName, x = x, y = y, slug = h.slug,
             }
         end
@@ -1193,13 +1236,95 @@ local function OwnAny(ids)
     return false
 end
 
+local ARGENT_FACTION = 529
+local ARGENT_TRINKET = 12846
+local TRINKET_SLOTS = { 13, 14 }
+local ARGENT_TTL = 2
+local argentCache = { t = -1e9, need = false }
+local argentEventAt = 0
+
+local function ArgentExalted()
+    if C_Reputation and C_Reputation.GetFactionDataByID then
+        local ok, d = pcall(C_Reputation.GetFactionDataByID, ARGENT_FACTION)
+        if ok and type(d) == "table" and type(d.reaction) == "number" then
+            return d.reaction >= 8
+        end
+    end
+    if type(GetFactionInfoByID) == "function" then
+        local ok, _, _, standing = pcall(GetFactionInfoByID, ARGENT_FACTION)
+        if ok and type(standing) == "number" then return standing >= 8 end
+    end
+    return false
+end
+
+local function TrinketEquipped()
+    if type(GetInventoryItemID) ~= "function" then return false end
+    for i = 1, #TRINKET_SLOTS do
+        local ok, id = pcall(GetInventoryItemID, "player", TRINKET_SLOTS[i])
+        if ok and id == ARGENT_TRINKET then return true end
+    end
+    return false
+end
+
+local function NeedArgentTrinket()
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then
+        return argentCache.need
+    end
+    local now = (GetTime and GetTime()) or 0
+    if now - argentCache.t < ARGENT_TTL then return argentCache.need end
+    argentCache.t = now
+    local need = false
+    if not ArgentExalted() and not TrinketEquipped() then need = true end
+    argentCache.need = need
+    return need
+end
+
+local function InStratholme(slugs, ctx)
+    if type(slugs) == "table" then
+        for i = 1, #slugs do
+            if slugs[i] == "stratholme_main" or slugs[i] == "stratholme_service" then return true end
+        end
+    end
+    local cands = { ctx and ctx.zone, GetRealZoneText and GetRealZoneText() }
+    for i = 1, #cands do
+        local z = cands[i]
+        if type(z) == "string" and (string.find(z, "斯坦索姆", 1, true) or string.find(z, "Stratholme", 1, true)) then
+            return true
+        end
+    end
+    return false
+end
+
+local argentName
+local function ArgentTrinketName()
+    if argentName then return argentName end
+    local DG = DGRef()
+    if DG and DG.ItemName then
+        local ok, nm = pcall(DG.ItemName, ARGENT_TRINKET)
+        if ok and type(nm) == "string" and nm ~= "" and nm ~= L["暂时没有客户端数据"] then
+            argentName = nm
+            return nm
+        end
+    end
+    if C_Item and C_Item.GetItemNameByID then
+        local ok, nm = pcall(C_Item.GetItemNameByID, ARGENT_TRINKET)
+        if ok and type(nm) == "string" and nm ~= "" then
+            argentName = nm
+            return nm
+        end
+    end
+    AskName(ARGENT_TRINKET)
+    return L["银色黎明委任徽章"]
+end
+
 local function PKeyItem(ctx)
     local c = CFG()
     if c.keyitem == false then return nil end
     local slugs = CurInstSlugs()
-    if not slugs then return nil end
     local here = {}
-    for i = 1, #slugs do here[slugs[i]] = true end
+    if slugs then
+        for i = 1, #slugs do here[slugs[i]] = true end
+    end
     local list, n = {}, 0
     for i = 1, #KEY_ITEMS do
         local e = KEY_ITEMS[i]
@@ -1222,6 +1347,16 @@ local function PKeyItem(ctx)
             }
         end
     end
+    if InStratholme(slugs, ctx) and NeedArgentTrinket()
+       and not Z.IsIgnored(ItemKey("equip", ARGENT_TRINKET)) then
+        n = n + 1
+        list[n] = {
+            id = ARGENT_TRINKET, base = ARGENT_TRINKET,
+            ikey = ItemKey("equip", ARGENT_TRINKET), ikind = "equip",
+            name = ArgentTrinketName(), icon = ItemIcon(ARGENT_TRINKET),
+            sub = L["未装备 · 饰品栏"], desc = L["把「银色黎明委任徽章」放在饰品栏，刷亡灵才享受声望加成；崇拜后不再提醒"],
+        }
+    end
     if n == 0 then return nil end
     return {
         kind = "keyitem", n = n, keys = {}, list = list,
@@ -1237,6 +1372,21 @@ Z.Register("keyitem", PKeyItem)
 Z.Register("spell", PSpell)
 Z.Register("learn", PLearn)
 
+local function CDClassHex(cls)
+    local c = cls and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cls]
+    if not c then return nil end
+    return format("%02x%02x%02x",
+        math.floor((c.r or 1) * 255 + 0.5),
+        math.floor((c.g or 1) * 255 + 0.5),
+        math.floor((c.b or 1) * 255 + 0.5))
+end
+
+local function CDReadyLine(nm, cls)
+    local hex = CDClassHex(cls)
+    if hex and nm and nm ~= "" then nm = "|cff" .. hex .. nm .. "|r" end
+    return nm .. " " .. L["CD就绪了"]
+end
+
 local function PProfCD(ctx)
     local c = CFG()
     if c.profcd == false then return nil end
@@ -1247,17 +1397,33 @@ local function PProfCD(ctx)
     local items, names = {}, {}
     for i = 1, #list do
         local e = list[i]
-        if not Z.IsIgnored(ItemKey("profcd", e.spell)) then
+        local ign = Z.IsIgnored(ItemKey("profcd", e.spell))
+        if not ign and e.item then ign = Z.IsIgnored(ItemKey("profcd", e.item)) end
+        if not ign then
             local nm = e.name or L["冷却配方"]
             names[#names + 1] = nm
             local slug = e.slug
-            local bys = table.concat(e.by or {}, " · ")
+            local byc = e.byc
+            local lines = {}
+            if type(byc) == "table" and #byc > 0 then
+                for j = 1, #byc do
+                    local ch = byc[j]
+                    lines[#lines + 1] = CDReadyLine(ch and ch.name or "", ch and ch.cls)
+                end
+            else
+                local by = e.by
+                if type(by) == "table" and #by > 0 then
+                    for j = 1, #by do lines[#lines + 1] = CDReadyLine(by[j], nil) end
+                else
+                    lines[#lines + 1] = L["可再做"]
+                end
+            end
             items[#items + 1] = {
                 id = e.item or e.spell, base = e.item or e.spell,
                 ikey = ItemKey("profcd", e.spell), ikind = "profcd",
                 name = nm,
                 icon = e.item and ItemIcon(e.item) or nil,
-                sub = (bys ~= "") and (L["可再做"] .. " · " .. bys) or L["可再做"],
+                sub = table.concat(lines, "\n"),
                 desc = L["专业冷却"],
                 jump = function()
                     if ns.OpenPage then pcall(ns.OpenPage, "Professions") end
@@ -1373,18 +1539,14 @@ Z.Register("talent", PTalent)
 
 local function HasWellFed()
     local name = ResolveWellFedName()
-    local seen = false
-    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-        for i = 1, 40 do
-            local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-            if not ok then return true end
-            if not a then break end
-            seen = true
-            if not Sealed(a.spellId) and a.spellId == WELL_FED_SPELL then return true end
-            if name and not Sealed(a.name) and a.name == name then return true end
-        end
+    if not (C_UnitAuras and C_UnitAuras.GetAuraDataByIndex) then return false end
+    for i = 1, 40 do
+        local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if not ok then return false end
+        if not a then break end
+        if not Sealed(a.spellId) and a.spellId == WELL_FED_SPELL then return true end
+        if name and not Sealed(a.name) and a.name == name then return true end
     end
-    if not seen then return true end
     return false
 end
 
@@ -1524,7 +1686,7 @@ local function WellRestedState()
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
         for i = 1, 40 do
             local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-            if not ok then return true, nil end
+            if not ok then return false, nil end
             if not a then break end
             seen = true
             if (not Sealed(a.spellId) and a.spellId == WELL_RESTED_SPELL)
@@ -1700,15 +1862,15 @@ local function SimQuests(n)
     for i = 1, n do
         local t = SIM_QUESTS[(i - 1) % #SIM_QUESTS + 1]
         local lap = math.floor((i - 1) / #SIM_QUESTS)
+        local simOv = OV_LEGEND.todo
         list[i] = {
             id = 700000 + i, base = 700000 + i,
-            name = t[1], icon = "Interface\\GossipFrame\\AvailableQuestIcon",
+            name = t[1], icon = simOv.sym,
             sub = string.format(L["%s · 可接等级 %d"], t[2], t[6]),
             desc = string.format("%s · %s %.0f,%.0f", t[2], t[3], t[4] + lap, t[5]),
             lvreq = t[6], can = t[7],
-            discTex = QDISC, discCol = t[7] and QDISC_CAN or QDISC_CANT,
-            sym = t[7] and QSYM_CAN or QSYM_CANT,
-            symCol = t[7] and QSYM_CANCOL or QSYM_CANTCOL,
+            discTex = QDISC, discCol = OVDiscCol(nil, "todo"),
+            sym = simOv.sym, symCol = { simOv.ink[1], simOv.ink[2], simOv.ink[3] },
             qid = 700000 + i, x = t[4] + lap, y = t[5],
         }
     end
@@ -1801,16 +1963,19 @@ function Z.Block(key, name, kinds)
         kinds = kinds or "all",
         seq = NextSeq(),
     }
+    NotifyList()
 end
 
 function Z.Unblock(key)
     if not key then return end
     CFG().blacklist[key] = nil
+    NotifyList()
 end
 
 function Z.ClearBlock()
     local c = CFG()
     for k in pairs(c.blacklist) do c.blacklist[k] = nil end
+    NotifyList()
 end
 
 function Z.BlockList()
@@ -1892,15 +2057,15 @@ function Z.CheckNow(reason)
     return Z.Check(reason or "manual", 0)
 end
 
-local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], keyitem = L["必备物品"], spell = L["技能"], learn = L["学习"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"] }
+local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], keyitem = L["必备物品"], equip = L["饰品"], spell = L["技能"], learn = L["学习"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"], food = L["食物"], profcd = L["冷却"], rested = L["睡袋"], bag = L["睡袋"], torch = L["火炬"], banner = L["旗帜"], map = L["整张地图"] }
 function Z.KindName(kind)
     return KIND_NAME[kind] or L["条目"]
 end
 
 function Z.IconFor(kind, id)
-    if kind == "book" or kind == "collect" or kind == "turnin" then return ItemIcon(id) end
+    if kind == "book" or kind == "collect" or kind == "turnin" or kind == "equip" then return ItemIcon(id) end
     if kind == "talent" then return TalentIcon() end
-    if kind == "quest" then return "Interface\\GossipFrame\\AvailableQuestIcon" end
+    if kind == "quest" then return QuestIconState(id) end
     if kind == "rested" then
         local f = GetItemIcon
         if f then
@@ -1908,6 +2073,16 @@ function Z.IconFor(kind, id)
             if ok and ic then return ic end
         end
         return 133662
+    end
+    if kind == "profcd" then
+        local ic = ItemIcon(id)
+        if ic then return ic end
+        local f = C_Spell and C_Spell.GetSpellInfo
+        if f then
+            local ok, si = pcall(f, id)
+            if ok and type(si) == "table" and si.iconID then return si.iconID end
+        end
+        return "Interface\\Icons\\INV_Misc_QuestionMark"
     end
     if kind == "spell" or kind == "learn" or kind == "food" or kind == "camp" or kind == "campren" then
         local f = C_Spell and C_Spell.GetSpellInfo
@@ -1971,6 +2146,8 @@ ns.Init(function()
     pcall(frame.RegisterEvent, frame, "PLAYER_SPECIALIZATION_CHANGED")
     pcall(frame.RegisterEvent, frame, "TRAIT_CONFIG_UPDATED")
     pcall(frame.RegisterEvent, frame, "ACTIVE_TALENT_GROUP_CHANGED")
+    pcall(frame.RegisterEvent, frame, "PLAYER_EQUIPMENT_CHANGED")
+    pcall(frame.RegisterEvent, frame, "UPDATE_FACTION")
     frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
@@ -1992,6 +2169,15 @@ ns.Init(function()
             if EG then EG._auto = nil end
             questCache.t = -1e9
             Z.ScheduleSoft(0.6, true)
+        elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "UPDATE_FACTION" then
+            local nowT = (GetTime and GetTime()) or 0
+            if nowT - argentEventAt >= 1 then
+                argentEventAt = nowT
+                if type(InCombatLockdown) ~= "function" or not InCombatLockdown() then
+                    argentCache.t = -1e9
+                end
+                Z.ScheduleSoft(0.8)
+            end
         elseif event == "PLAYER_REGEN_ENABLED" then
             if pending then
                 pending = nil

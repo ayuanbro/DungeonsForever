@@ -440,6 +440,9 @@ function W.ScanAll()
         else
             local pd = ns.ProfModule
             if pd and pd.RequestRender then pd.RequestRender() end
+            if ns.ZoneHint and ns.ZoneHint.ScheduleSoft then
+                pcall(ns.ZoneHint.ScheduleSoft, 1)
+            end
         end
     end
     if #list_ == 0 then return 0 end
@@ -648,25 +651,30 @@ function W.TodoList()
     for spell, slug in pairs(l) do
         if W.Enabled(spell) and W.TodoOn(spell) then
             local by = type(db[spell]) == "table" and db[spell] or {}
-            local names, seen = {}, {}
+            local names, byc, seen = {}, {}, {}
             for key, rec in pairs(by) do
                 local marks = k[key]
                 if type(marks) == "table" and marks[spell] and type(rec) == "table"
                    and (rec.prof == nil or rec.prof == slug) then
                     local left = (type(rec.u) == "number") and (rec.u - t) or nil
                     if left == nil or left <= 0 then
-                        names[#names + 1] = rec.n or key
+                        local nm = rec.n or key
+                        names[#names + 1] = nm
+                        byc[#byc + 1] = { name = nm, cls = clsOf(key, rec) }
                         seen[key] = true
                     end
                 end
             end
             for key, marks in pairs(k) do
                 if type(marks) == "table" and marks[spell] and type(by[key]) ~= "table" then
-                    names[#names + 1] = marks[spell]
+                    local nm = marks[spell]
+                    names[#names + 1] = nm
+                    byc[#byc + 1] = { name = nm, cls = clsOf(key, nil) }
                 end
             end
             if #names > 0 then
                 table.sort(names)
+                table.sort(byc, function(a, b) return (a.name or "") < (b.name or "") end)
                 local row = recipeRow(slug, spell)
                 local item = row and row[2] or nil
                 out[#out + 1] = {
@@ -675,6 +683,7 @@ function W.TodoList()
                     item = item,
                     name = itemName(item) or format(L["法术 #%d"], spell),
                     by = names,
+                    byc = byc,
                 }
             end
         end

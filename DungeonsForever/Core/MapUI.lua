@@ -5284,6 +5284,7 @@ function M.SyncWorldQuestPins()
         return qlv <= g
     end
     local function qHit(q)
+        if DG.QuestRepeat and DG.QuestRepeat(q[1]) then return false end
         if side and q[2] and q[2] ~= side then return false end
         if not wpClassOK(q[15]) then return false end
         if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
