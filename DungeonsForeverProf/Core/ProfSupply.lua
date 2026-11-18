@@ -1,7 +1,7 @@
 local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages then return end
 
-local M = { built = false, offerCount = 0, itemCount = 0, DataSchema = 2 }
+local M = { built = false, offerCount = 0, itemCount = 0, DataSchema = 2, SourceQuestSchema = 1, SourceAccessSchema = 1, SourcePurchaseSchema = 1 }
 ns.ProfSupply = M
 
 local SIDES = { "A", "H", "N" }
@@ -67,6 +67,26 @@ local function BuildList(itemID)
     if type(supply) ~= "table" then return nil end
     local flat = supply[itemID]
     if type(flat) ~= "table" then return nil end
+    if ns.ProfSourcesMeta and ns.ProfSourcesMeta.schemaVersion==2 then
+        local sources=ns.EnsureProfSources and ns.EnsureProfSources()
+        local source=sources and sources[itemID]
+        if source then
+            local list={}
+            for _,v in ipairs(source.v or {}) do
+                if v.stock==-1 and not v.hasExtendedCost and Int(v.price,0) and Int(v.quantity,1) then
+                    local o={};for key,value in pairs(v) do o[key]=value end
+                    o.npcID,o.itemID,o.bundleSize=v.id,itemID,v.quantity
+                    o.unlimited,o.available,o.purchasable=true,true,true
+                    o.reference,o.priceVerified=true,true
+                    o.source,o.verifiedAt="supply-verified",M.verifiedAt
+                    o.faction=v.side=="a" and "A" or v.side=="h" and "H" or "N"
+                    list[#list+1]=o
+                end
+            end
+            table.sort(list,Compare)
+            return list
+        end
+    end
     local total = #flat
     if total < 5 or total % 5 ~= 0 then return nil end
     local verifiedAt = M.verifiedAt
@@ -76,7 +96,8 @@ local function BuildList(itemID)
         if Int(npcID, 1) and Int(price, 0) and Int(quantity, 1) then
             list = list or {}
             list[#list + 1] = {
-                npcID = npcID, price = price, quantity = quantity, bundleSize = quantity,
+                npcID = npcID, itemID=itemID, price = price, quantity = quantity, bundleSize = quantity,
+                questRequired=ns.VendorPriceDB and ns.VendorPriceDB.SourceRequiresQuest("vendor",npcID,itemID) or nil,
                 unlimited = true, available = true,
                 hasExtendedCost = false, currencyID = 0,
                 reference = true, priceVerified = true,
@@ -124,6 +145,7 @@ local function BuildFormulaList(itemID, withCurrency)
                 local o = {}
                 for k, value in pairs(v) do o[k] = value end
                 o.npcID = v.id
+                o.itemID = itemID
                 o.sourceOrder = index
                 o.faction = v.side == "a" and "A" or v.side == "h" and "H" or "N"
                 o.areaID = v.area
@@ -131,7 +153,7 @@ local function BuildFormulaList(itemID, withCurrency)
                 o.unlimited = v.stock == -1
                 o.limited = Int(v.stock, 0) and v.stock or nil
                 o.maxStock = o.limited
-                o.stockUnknown = v.stock == nil or nil
+                o.stockUnknown = not o.unlimited and o.limited == nil or nil
                 o.available = v.stock ~= 0
                 o.purchasable = true
                 o.reference = true
@@ -159,6 +181,7 @@ local function BuildFormulaList(itemID, withCurrency)
             local limited = (type(stock) == "number" and stock >= 0) and stock or nil
             local entry = {
                 npcID = npcID,
+                itemID = itemID,
                 quantity = Int(pack, 1) and pack or nil,
                 unlimited = unlimited, limited = limited,
                 maxStock = limited and stock or nil,
@@ -279,7 +302,7 @@ function M.Price(itemID)
     local mine = PlayerSide()
     local best, bestNpc
     for _, offer in ipairs(list) do
-        if Allowed(offer.faction, mine) then
+        if Allowed(offer.faction, mine) and (not ns.VendorPriceDB or ns.VendorPriceDB.OfferAccessible(offer,{faction=mine or offer.faction})) then
             local unit = offer.price / offer.quantity
             if not best or unit < best then best, bestNpc = unit, offer.npcID end
         end

@@ -14,7 +14,7 @@ local CACHE_TTL = 600
 local CACHE_SLOTS = 4
 local G_YELLOW, G_GREEN = 0.5, 0.05
 
-local SCHEME_ORDER = { "cheapest", "stable", "matcost", "crafts", "optim" }
+local SCHEME_ORDER = { "cheapest", "matcost", "crafts", "optim" }
 local SCHEME_LABEL = {
     cheapest = "最省钱",
     stable = "稳定升级",
@@ -143,8 +143,16 @@ function RA.MaterialPurchases(id,need,opts)
         or not snap and economy and economy.NonAuctionableItem and economy.NonAuctionableItem(id) then auction=nil end
     local available=opts.auctionRemaining and opts.auctionRemaining[id]
     if available==nil and supply then available=supply.quantity end
+    local depth=ns.ProfAuctionDepth
+    local book=snap and snap.auctionDepth and snap.auctionDepth[id]
+    local used=opts.auctionUsed and opts.auctionUsed[id] or 0
+    if book then
+        available=math.min(available or math.huge,math.max(0,book.total-used))
+        if not (snap.nonAuctionable or {})[id] then auction=book.prices[1] end
+    end
     return economy.MaterialPurchases(id,need,{offers=offers,auction=auction,supply=supply,
-        available=available,faction=snap and snap.faction})
+        available=available,faction=snap and snap.faction,
+        auctionCost=book and function(count)return depth.Cost(book,used,count)end or nil})
 end
 
 function RA.PreferSharedFormula(entry,materialNeed,opts)
@@ -1631,7 +1639,7 @@ function RA.StampSupply(result, context)
         if mid and not e.vendor and (e.source == nil or e.source == "ah") then
             local rec = SupplyOf(mid)
             local forced = AB and AB.ForceExpiredActive and AB.ForceExpiredActive()
-            if rec and rec.complete and rec.ownerExcluded and rec.source == "client-auction-results"
+            if rec and rec.complete and rec.source == "client-auction-results"
                 and type(rec.quantity) == "number" and rec.observedAt > 0
                 and rec.observedAt <= now
                 and (forced or now - rec.observedAt <= RA.MaxAuctionSupplyAgeSeconds()) then
@@ -1641,7 +1649,7 @@ function RA.StampSupply(result, context)
                 e.supplyObservedAt = rec.observedAt
                 e.supplySource = rec.source
                 e.supplyComplete = true
-                e.supplyOwnerExcluded = true
+                e.supplyOwnerExcluded = rec.ownerExcluded==true
                 if type(rec.market) == "number" and rec.market > 0 then e.supplyObservedPrice = rec.market end
             else
                 e.supplyObserved = false

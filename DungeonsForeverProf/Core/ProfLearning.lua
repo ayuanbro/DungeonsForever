@@ -2,6 +2,9 @@ local ns = _G.DF_NS or {}
 if not ns.LoadForeverPages or not ns.ProfEconomy then return end
 local E = ns.ProfEconomy
 ns.ProfLearningDataSchema=1
+ns.ProfSourceQuestDataSchema=1
+ns.ProfSourceAccessDataSchema=1
+ns.ProfSourcePurchaseLearningSchema=1
 local eligibility, sourceOf = E.LearningEligibility, E.LearningSource
 local capture, findRecipe, formulaFor = E.Capture, E.FindRecipe, E.FormulaFor
 local floor = math.floor
@@ -38,7 +41,7 @@ end
 function E.LearningPolicyFingerprint()
     if ns.IsForever then
         local data=provider()
-        return "native-learning:17:first-aid-trainer-default:"..tostring(data and data.meta.fingerprint or "missing")
+        return "native-learning:18:explicit-unlimited-stock:"..tostring(data and data.meta.fingerprint or "missing")
     end
     return "native-learning:8:poisons-class-policy"
 end
@@ -148,6 +151,20 @@ local function standing(factionID)
 end
 local function conditionResult(condition,recipe,snapshot,state)
     local kind,value=condition.kind,condition.value
+    if kind=="questGroup" then
+        return ns.VendorPriceDB and ns.VendorPriceDB.QuestGroupsState(condition.groups,snapshot)
+    end
+    if kind=="sourceItem" then return ns.VendorPriceDB and ns.VendorPriceDB.SourceItemState(value,snapshot) end
+    if kind=="sourceQuest" then
+        if not ns.VendorPriceDB then return nil end
+        local unknown=false
+        for _,npc in ipairs(condition.npcIDs or {}) do
+            local result=ns.VendorPriceDB.SourceAccessState(condition.sourceKind,npc,value,snapshot)
+            if result==true then return true elseif result==nil then unknown=true end
+        end
+        if unknown then return nil end
+        return false
+    end
     if CLASS_CONDITIONS[kind] then return true end
     if kind=="raceIDs" then
         local ids=condition.values
@@ -343,10 +360,11 @@ local function known(recipe,snapshot,state)
     return E.Known(spell)
 end
 local CONDITION_REASON={raceIDs="characterRaceRequired",raceMask="characterRaceRequired",
-    reputation="reputationRequired",quest="questRequired",faction="learningFactionRequired",
+    reputation="reputationRequired",quest="questRequired",questGroup="questRequired",sourceQuest="questRequired",sourceItem="learningConditionFailed",faction="learningFactionRequired",
     level="characterLevelRequired",skill="skillRequired",profession="professionMissing",ability="specializationRequired"}
 local function sourceConditionUnknown(condition)
     local kind=condition.kind
+    if kind=="questGroup" then return type(condition.groups)~="table" or #condition.groups==0 end
     if CLASS_CONDITIONS[kind] then return false end
     if kind=="abilityRaceMask0" or kind=="abilityRaceMask1" then
         return tonumber(condition.value)~=0
@@ -503,7 +521,9 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
     local added={}
     local supply=ns.ProfSupply
     local vendorFacts=supply and supply.FormulaFacts and supply.FormulaFacts(id) or {}
-    for _,o in ipairs(offers or {})do added[#added+1]=o end
+    for _,o in ipairs(offers or {})do
+        if not ns.VendorPriceDB or ns.VendorPriceDB.SourceAccessState("vendor",o.npcID or o.id,id,snapshot,o.conditions)==true then added[#added+1]=o end
+    end
     if acquisitionOK and not acquisitionPending then
         local have={};for _,o in ipairs(added)do
             if o.npcID and o.source~="catalogue" then have[o.npcID]=true end
@@ -514,6 +534,7 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
             local native=npc and vendorFacts[npc]
             local side=o.faction or native and native.faction
             local allowed,pending=check(o.conditions,recipe,snapshot,state,true)
+            allowed=allowed and (not ns.VendorPriceDB or ns.VendorPriceDB.SourceAccessState("vendor",npc,id,snapshot,o.conditions)==true)
             if allowed and not pending and o.available~=false and o.purchasable~=false and o.priceUsable~=false
                 and (not native or native.available~=false and native.purchasable~=false)
                 and npc and npc>0 and quantity and quantity>0 and quantity==floor(quantity)
@@ -554,8 +575,10 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
     local kind,offer,currencyLimited
     local exchangeOffers = {}
     local playerFaction=snapshot and snapshot.faction or not snapshot and UnitFactionGroup and UnitFactionGroup("player")
-    local function sourceAllowed(source,native)
+    local function sourceAllowed(source,native,vendor)
         local pass,pending=check(source.conditions,recipe,snapshot,state,true)
+        local npc=source.npcID or source.id
+        if vendor and ns.VendorPriceDB and ns.VendorPriceDB.SourceAccessState("vendor",npc,id,snapshot,source.conditions)~=true then return false end
         local side=source.faction or native and native.faction
         side=side and faction(side)
         return pass and not pending and source.available~=false and source.purchasable~=false
@@ -568,12 +591,12 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
                 or #(o.currencies or {})>0 or #(o.costItems or {})>0
             local npc=tonumber(o.id or o.npcID)
             local native=npc and vendorFacts[npc]
-            local unlimited=o.unlimited==true or type(o.stock)=="number" and o.stock<0
+            local unlimited=o.unlimited==true or o.stock==-1
             local stockOK=unlimited or E.AllowLimitedFormulas(context)
                 and (o.stock==nil or type(o.stock)=="number" and o.stock>=1)
-            if currency and npc and npc>0 and sourceAllowed(o,native) and not unlimited
+            if currency and npc and npc>0 and sourceAllowed(o,native,true) and not unlimited
                 and not E.AllowLimitedFormulas(context) then currencyLimited=true end
-            if currency and npc and npc>0 and sourceAllowed(o,native) and stockOK then
+            if currency and npc and npc>0 and sourceAllowed(o,native,true) and stockOK then
                 local candidate=o
                 if not o.faction and native and native.faction then
                     candidate=shallow(o);candidate.faction=native.faction
@@ -603,7 +626,7 @@ local function routeQuote(recipe,route,snapshot,remaining,purchaseSource,state,p
             common.cost=type(offer.price)=="number" and offer.price>=0 and offer.price or nil
             common.totalCost=common.cost;common.knownGoldCost=common.cost
             common.npcID=tonumber(offer.id or offer.npcID);common.stock=offer.stock
-            common.unlimited=offer.unlimited==true or type(offer.stock)=="number" and offer.stock<0
+            common.unlimited=offer.unlimited==true or offer.stock==-1
             common.limited=not common.unlimited and E.LimitedFormulaOffer(offer) or nil
             common.stockUnknown=not common.unlimited and not common.limited or nil
             common.stockStatus=common.unlimited and "unlimited" or common.limited and "limited" or "unknown"
@@ -717,6 +740,19 @@ function E.SelectLearningRoute(recipe,snapshot,state,remaining,purchaseSource,pr
     local best,bestCost,unpriced,failure,failureReason
     for _,entry in ipairs(routesFor(recipe,info))do
         local route=entry.route
+        if route.kind=="trainer" and ns.VendorPriceDB then
+            local trainers={}
+            for _,npc in ipairs(route.trainerIDs or {}) do
+                if ns.VendorPriceDB.SourceAccessState("trainer",npc,spellOf(recipe),snapshot)==true then trainers[#trainers+1]=npc end
+            end
+            if route.trainerIDs and #trainers~=#route.trainerIDs then
+                route=shallow(route);route.trainerIDs=trainers
+                if #trainers==0 then
+                    route.conditions=shallow(route.conditions or {})
+                    route.conditions[#route.conditions+1]={kind="sourceQuest",value=spellOf(recipe),sourceKind="trainer",npcIDs=entry.route.trainerIDs}
+                end
+            end
+        end
         if route.kind=="item" or route.kind=="trainer" and route.status=="confirmed" and route.conditionsKnown==true then
             local allowed,blocked,abilities,conflicts=requirements(route.conditions,entry.supplemental)
             local detail=decision(recipe,info,allowed and "allowed" or "blocked",route)
@@ -798,6 +834,7 @@ end
 
 local trackedQuests,trackedReputations={},{}
 local questFacts,reputationFacts={},{}
+local trackedSourceItems,sourceItemFacts={},{}
 local observationRevision=0
 local pendingObservationEvents={}
 local contextState
@@ -822,7 +859,7 @@ function E.LearningObservationFingerprint()
 end
 function E.QueueLearningObservationEvent(event)
     if event=="UPDATE_FACTION" or event=="PLAYER_LOGIN" or event=="QUEST_TURNED_IN"
-        or event=="QUEST_LOG_UPDATE" or event=="QUEST_ACCEPTED" then pendingObservationEvents[event]=true end
+        or event=="QUEST_LOG_UPDATE" or event=="QUEST_ACCEPTED" or event=="BAG_UPDATE_DELAYED" or event=="PLAYER_EQUIPMENT_CHANGED" then pendingObservationEvents[event]=true end
 end
 local function observationChanged()
     observationRevision=observationRevision+1
@@ -845,6 +882,13 @@ function E.RefreshLearningObservations(event,tick)
     local changed=false
     local events=event and {[event]=true} or pendingObservationEvents
     pendingObservationEvents={}
+    if events.BAG_UPDATE_DELAYED or events.PLAYER_EQUIPMENT_CHANGED or events.PLAYER_LOGIN then
+        for id in pairs(trackedSourceItems) do
+            local value=fact(ns.VendorPriceDB and ns.VendorPriceDB.SourceItemState(id))
+            if sourceItemFacts[id] and sourceItemFacts[id]~=value then changed=true end
+            sourceItemFacts[id]=value
+        end
+    end
     if events.UPDATE_FACTION or events.PLAYER_LOGIN then
         for id in pairs(trackedReputations)do
             local value=fact(standing(id))
@@ -869,14 +913,29 @@ end
 
 function E.CaptureLearningFacts(snapshot,tick)
     local ids,reputations,abilities,items={},{},{},{}
+    local sourceItems={}
     local changed=false
     local function collect(conditions)
         for _,condition in ipairs(conditions or {})do
+            if condition.kind=="sourceItem" then sourceItems[condition.value]=true end
+            if condition.kind=="questGroup" then
+                for _,group in ipairs(condition.groups or {}) do for _,id in ipairs(group) do ids[id]=true end end
+            end
             if condition.kind=="quest" and type(condition.value)=="number" and condition.value>0 then ids[condition.value]=true end
             if condition.kind=="reputation" and type(condition.factionID)=="number" and condition.factionID>0 then reputations[condition.factionID]=true end
             if condition.kind=="ability" and type(condition.value)=="number" and condition.value>0 then abilities[condition.value]=true end
         end
     end
+    for _,npcs in pairs(ns.ProfSourceQuestUnlocks and ns.ProfSourceQuestUnlocks.rules or {}) do
+        for _,targets in pairs(npcs) do
+            for _,rule in pairs(targets) do
+                if rule.requiredItemID then sourceItems[rule.requiredItemID]=true end
+                for _,group in ipairs(rule.groups or {}) do for _,id in ipairs(group) do ids[id]=true end end
+            end
+        end
+    end
+    for _,id in ipairs(ns.ProfSourcesMeta and ns.ProfSourcesMeta.questIDs or {}) do ids[id]=true end
+    for _,id in ipairs(ns.ProfSourcesMeta and ns.ProfSourcesMeta.reputationIDs or {}) do reputations[id]=true end
     for _,recipe in ipairs(snapshot.recipes or {})do
         if not known(recipe,snapshot) then
             collect(recipe.learningConstraints)
@@ -897,6 +956,17 @@ function E.CaptureLearningFacts(snapshot,tick)
     snapshot.reputations=snapshot.reputations or {}
     snapshot.learningAbilities=snapshot.learningAbilities or {}
     snapshot.ownedTeachingItems=snapshot.ownedTeachingItems or {}
+    snapshot.ownedSourceItems={}
+    for id in pairs(sourceItems) do
+        local count=ns.VendorPriceDB and ns.VendorPriceDB.SourceItemCount(id)
+        snapshot.ownedSourceItems[id]=count
+        local present
+        if type(count)=="number" then present=count>0 end
+        local value=fact(present)
+        if sourceItemFacts[id] and sourceItemFacts[id]~=value then changed=true end
+        trackedSourceItems[id],sourceItemFacts[id]=true,value
+        if tick then tick() end
+    end
     for id in pairs(ids)do
         local value=questDone(id);snapshot.completedQuests[id]=value
         if questFacts[id] and questFacts[id]~=fact(value) then changed=true end

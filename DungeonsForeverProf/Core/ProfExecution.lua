@@ -411,6 +411,7 @@ local function ready(result)
         and not result.finalizing
         and result.status ~= "selection_required"
         and result.status ~= "recalculate_required"
+        and not result.pricingPolicyStale
         and #steps(result) > 0
 end
 local function originSignature(plan)
@@ -583,6 +584,7 @@ function XP.Bind(slug,result,opts)
         ids[old]=id;seg.segmentID=id;seg.actionID=id
     end
     for _,seg in ipairs(steps(plan)) do for _,a in ipairs(seg.allocations or {}) do if ids[a.consumerID] then a.consumerID=ids[a.consumerID] end end end
+    for _,a in ipairs(plan.seedAllocations or {}) do if ids[a.consumerID] then a.consumerID=ids[a.consumerID] end end
     for _,seg in ipairs(steps(plan)) do for _,a in ipairs(seg.reserve and seg.reserve.allocations or {}) do
         if ids[a.consumerID] then a.consumerID=ids[a.consumerID] end
     end end
@@ -669,8 +671,21 @@ local function creditsFor(run,target,skillSnapshot)
         local o={seg=seg,index=index,record=record,funded=funded,required=requiredOutputs(seg,run),
             consumed={},waived={},destinations={},released={}}
         list[#list+1]=o;bySegment[seg.segmentID]=o;used[seg.segmentID]={}
+        local alias=type(seg.segmentID)=="string" and seg.segmentID:match("(segment:.*)$")
+        if alias then bySegment[alias]=o end
         for _,m in ipairs(recipe(seg,run.slug).mats or {}) do
             used[seg.segmentID][m[1]]=(used[seg.segmentID][m[1]] or 0)+m[2]*casts
+        end
+    end
+    local seedReservations={}
+    for _,allocation in ipairs(run.plan.seedAllocations or {}) do
+        local id=allocation.consumerID
+        local consumer=bySegment[id] or type(id)=="string" and bySegment[id:match("(segment:.*)$")]
+        local item=allocation.itemID
+        if item and (allocation.count or 0)>0 then
+            local spent=consumer and min(allocation.count,used[consumer.seg.segmentID][item] or 0) or 0
+            if consumer then used[consumer.seg.segmentID][item]=(used[consumer.seg.segmentID][item] or 0)-spent end
+            seedReservations[#seedReservations+1]={item=item,count=allocation.count-spent,consumer=consumer}
         end
     end
     for _,o in ipairs(list) do
@@ -707,6 +722,17 @@ local function creditsFor(run,target,skillSnapshot)
     end
     local function allocateBags()
         local stock=copy(inventory)
+        local released={}
+        for _,reservation in ipairs(seedReservations) do
+            local item=reservation.item
+            local consumer=reservation.consumer
+            local key=consumer and consumer.seg.segmentID
+            local byItem=key and released[key] or {}
+            if key then released[key]=byItem end
+            local skip=consumer and max(0,(consumer.released[item] or 0)-(byItem[item] or 0)) or 0
+            skip=min(skip,reservation.count);byItem[item]=(byItem[item] or 0)+skip
+            if stock[item] then stock[item]=max(0,stock[item]-reservation.count+skip) end
+        end
         for _,o in ipairs(list) do
             o.credited={};o.available={};o.unknown=false
             for item,required in pairs(o.required) do

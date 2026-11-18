@@ -145,8 +145,21 @@ function AB.ForceExpiredLeft()
     return math.max(0, forcedUntil - (time and time() or 0))
 end
 local function MarketKey()
-    return tostring(GetRealmName and GetRealmName() or "") .. ":"
-        .. tostring(UnitFactionGroup and UnitFactionGroup("player") or "")
+    local rules=C_GameRules
+    local ids=Enum and Enum.GameRule
+    local faction=UnitFactionGroup and UnitFactionGroup("player")
+    local region=GetCurrentRegion and GetCurrentRegion()
+    if not (rules and type(rules.IsGameRuleActive)=="function" and ids
+        and WholeNumber(region) and region>0 and (faction=="Alliance" or faction=="Horde")) then return end
+    local bits={}
+    for _,name in ipairs({"PvPRuleset","RPRuleset","HardcoreRuleset"}) do
+        if ids[name]==nil then return end
+        local ok,value=pcall(rules.IsGameRuleActive,ids[name])
+        if not ok or type(value)~="boolean" then return end
+        bits[#bits+1]=value and "1" or "0"
+    end
+    local product=ns.IsForever and "forever" or ns.IsRetail and "retail" or tostring(WOW_PROJECT_ID or "wow")
+    return "rules:1:"..product..":"..region..":"..table.concat(bits)..":"..faction
 end
 local function ObserverKey()
     return tostring(UnitGUID and UnitGUID("player") or UnitName and UnitName("player") or "")
@@ -161,13 +174,25 @@ end
 
 local fullBatch,fullFailure,fullExpiryTimer,fullExpiryToken,replicateState
 local restoredSnapshot=false
+local currentMarket=false
+local SelectMarket
+local function StoreBatch(batch)
+    local key=batch.mk or currentMarket
+    if type(key)~="string" or key=="" then return end
+    batch.mk=key
+    local db=ScanDB()
+    if db.auctionFullScans~=nil and type(db.auctionFullScans)~="table" then return false end
+    db.auctionFullScans=db.auctionFullScans or {}
+    db.auctionFullScans[key]=batch
+    return true
+end
 local function ReleaseFullBatch(reason,observation,snapshotStatus)
     if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
     fullExpiryToken=nil
     local batch=observation or fullBatch or fullFailure
     fullFailure={v=SNAPSHOT_VERSION,failure=reason,snapshotStatus=snapshotStatus}
     if type(batch)=="table" then
-        fullFailure.mk,fullFailure.ob=batch.mk,batch.ob
+        fullFailure.mk,fullFailure.ob,fullFailure.ox=batch.mk,batch.ob,batch.ox
         if WholeNumber(batch.t) and batch.t>0 then fullFailure.t=batch.t end
         if reason=="expired" and type(batch.items)=="table" then
             local keep={}
@@ -177,64 +202,102 @@ local function ReleaseFullBatch(reason,observation,snapshotStatus)
                     if q and q>=0 and q==math.floor(q) then
                         local p=tonumber(item.p)
                         if p and p>0 and p<math.huge then keep[id]={q=q,p=p} else keep[id]={q=q} end
+                        keep[id].d=item.d;keep[id].failure=item.failure
                     end
                 end
             end
             fullFailure.items=keep
+            fullFailure.dv=batch.dv
         end
     end
     fullBatch=nil
-    ScanDB().auctionFullScan=fullFailure
+    StoreBatch(fullFailure)
 end
 local function FullBatchFailure(batch)
+    local key=MarketKey()
+    if not key or batch.mk~=key then return "unverified" end
     if batch.v~=SNAPSHOT_VERSION or batch.c~=true or type(batch.items)~="table" then return "incomplete" end
     local stamp=batch.t;local now=time and time() or 0
     if not WholeNumber(stamp) or stamp<=0 or stamp>now then return "incomplete" end
     if now-stamp>SUPPLY_MAX_AGE and not AB.ForceExpiredActive() then return "expired" end
-    if batch.mk~=MarketKey() or batch.ob~=ObserverKey() then return "unverified" end
 end
 
 
 local function ValidSavedBatch(batch)
     local now=time and time() or 0
     if type(batch)~="table" or batch.v~=SNAPSHOT_VERSION or batch.c~=true
-        or batch.s~="client-auction-results" or batch.ox~=true
+        or batch.s~="client-auction-results" or type(batch.ox)~="boolean"
         or type(batch.mk)~="string" or batch.mk=="" or type(batch.ob)~="string" or batch.ob==""
         or not WholeNumber(batch.t) or batch.t<=0 or batch.t>now
         or not WholeNumber(batch.completedAt) or batch.completedAt<batch.t or batch.completedAt>now
         or not WholeNumber(batch.expected) or batch.received~=batch.expected or type(batch.items)~="table" then return false end
+    if batch.dv~=nil and batch.dv~=1 then return false end
     local count=0
     for id,item in pairs(batch.items) do
         if not WholeNumber(id) or id==0 or type(item)~="table" or not WholeNumber(item.q)
             or item.failure~=nil and item.failure~="incomplete"
             or item.p~=nil and (type(item.p)~="number" or item.p~=item.p or item.p<=0 or item.p==math.huge)
             or item.q>0 and item.p==nil then return false end
+        if batch.dv==1 then
+            if type(item.d)~="table" then return false end
+            local total,last=0,0
+            local entries=0
+            for index,level in pairs(item.d) do
+                if not WholeNumber(index) or index<1 or index>#item.d then return false end
+                entries=entries+1
+            end
+            if entries~=#item.d then return false end
+            for _,level in ipairs(item.d) do
+                if type(level)~="table" or type(level[1])~="number" or level[1]~=level[1]
+                    or level[1]<=last or level[1]==math.huge or not WholeNumber(level[2]) or level[2]==0 then return false end
+                last=level[1];total=total+level[2]
+            end
+            if total~=item.q then return false end
+        end
         count=count+1
     end
     return count<=batch.expected
 end
 
 
+local function PruneLegacyBatch(batch)
+    if batch.dv~=1 or batch.mk~=MarketKey() or not ValidSavedBatch(batch) then return end
+    local db=ScanDB()
+    local old=db.auctionFullScan
+    if type(old)~="table" then return end
+    local realm=GetRealmName and GetRealmName()
+    local faction=UnitFactionGroup and UnitFactionGroup("player")
+    local legacy=realm and faction and realm..":"..faction
+    if old.mk~=batch.mk and old.mk~=legacy then return end
+    if type(db.auctionFullScans)=="table" and old.mk~=batch.mk then db.auctionFullScans[old.mk]=nil end
+    db.auctionFullScan=nil
+end
+
 function AB.FullScanSnapshotStatus()
+    if SelectMarket then SelectMarket() end
     local batch=fullBatch
     local failure=batch and FullBatchFailure(batch)
     if failure and failure~="unverified" then ReleaseFullBatch(failure);batch=nil end
     local meta=batch or fullFailure
     local forced=AB.ForceExpiredActive()
-    local staleUsable=forced and type(meta)=="table" and meta.failure=="expired"
+    local key=MarketKey()
+    local matched=key and meta and meta.mk==key
+    local staleUsable=forced and matched and meta.failure=="expired"
     local staleItems=type(meta)=="table" and meta.failure=="expired" and type(meta.items)=="table" and next(meta.items)~=nil
     local status=batch and (failure=="unverified" and "mismatch" or "available")
+        or meta and not matched and "mismatch"
         or staleUsable and "available"
         or meta and (meta.failure=="expired" and "expired" or meta.snapshotStatus=="missing" and "missing" or "invalid") or "missing"
-    return {status=status,observedAt=meta and meta.t,
+    return {status=status,observedAt=meta and meta.t,marketKey=meta and meta.mk,
         expiresAt=meta and meta.t and meta.t+SUPPLY_MAX_AGE,
-        forced=(forced and (batch~=nil or staleUsable)) or nil,
-        canForce=(not batch and type(meta)=="table" and meta.failure=="expired") or nil,
-        staleIncomplete=(type(meta)=="table" and meta.failure=="expired" and not staleItems) or nil,
+        forced=(forced and (matched and batch~=nil or staleUsable)) or nil,
+        canForce=(matched and not batch and meta.failure=="expired") or nil,
+        staleIncomplete=(matched and meta.failure=="expired" and not staleItems) or nil,
         restored=restoredSnapshot,completedAt=batch and batch.completedAt}
 end
 
 local function SupplyRecord(id)
+    if SelectMarket then SelectMarket() end
     local batch=fullBatch
     if batch then
         local failure=FullBatchFailure(batch)
@@ -242,11 +305,11 @@ local function SupplyRecord(id)
         if failure then ReleaseFullBatch(failure);batch=nil end
     end
     if not batch then
-        if AB.ForceExpiredActive() and type(fullFailure)=="table" and fullFailure.failure=="expired"
+        if AB.ForceExpiredActive() and type(fullFailure)=="table" and fullFailure.mk==MarketKey() and fullFailure.failure=="expired"
             and type(fullFailure.items)=="table" and next(fullFailure.items)~=nil then
             local item=fullFailure.items[id]
             return {q=item and item.q or 0,p=item and item.p,t=fullFailure.t,
-                mk=fullFailure.mk,ob=fullFailure.ob,c=true,ox=true,
+                mk=fullFailure.mk,ob=fullFailure.ob,c=not (item and item.failure),failure=item and item.failure,ox=fullFailure.ox~=false,
                 s="client-auction-results",v=SNAPSHOT_VERSION,method="auctionator-full-scan"}
         end
         return fullFailure
@@ -262,7 +325,7 @@ local function SupplyRecord(id)
         return {mk=batch.mk,ob=batch.ob,failure="incomplete"}
     end
     return {q=item and item.q or 0,p=item and item.p,t=batch.t,mk=batch.mk,ob=batch.ob,
-        c=batch.c==true and not (item and item.failure),ox=true,s="client-auction-results",v=SNAPSHOT_VERSION,
+        c=batch.c==true and not (item and item.failure),ox=batch.ox,s="client-auction-results",v=SNAPSHOT_VERSION,
         failure=item and item.failure or batch.c~=true and "incomplete" or nil,
         method="auctionator-full-scan"}
 end
@@ -278,8 +341,8 @@ function AB.GetAuctionSupplyStatus(id)
     local now = time and time() or 0
     local qty, stamp = tonumber(rec.q), tonumber(rec.t)
     if rec.failure then return rec.failure end
-    if rec.mk ~= MarketKey() or rec.ob ~= ObserverKey() then return "unverified" end
-    if rec.c ~= true or rec.ox ~= true or rec.s ~= "client-auction-results" then return "incomplete" end
+    if not MarketKey() or rec.mk ~= MarketKey() then return "unverified" end
+    if rec.c ~= true or type(rec.ox) ~= "boolean" or rec.s ~= "client-auction-results" then return "incomplete" end
     if not qty or qty < 0 or qty == math.huge or qty ~= math.floor(qty) then return "incomplete" end
     if not stamp or stamp~=stamp or stamp <= 0 or stamp > now then return "expired" end
     if now-stamp > SUPPLY_MAX_AGE and not AB.ForceExpiredActive() then return "expired" end
@@ -307,6 +370,17 @@ end
 
 function AB.SupplyFresh(id)
     return AB.GetAuctionSupply(id)
+end
+
+function AB.GetAuctionDepth(id)
+    if AB.GetAuctionSupplyStatus(id)~="verified" then return end
+    local batch=fullBatch or AB.ForceExpiredActive() and fullFailure
+    if not batch or batch.dv~=1 then return end
+    local item=batch.items[id]
+    local levels={}
+    for i,row in ipairs(item and item.d or {}) do levels[i]={row[1],row[2]} end
+    return {levels=levels,quantity=item and item.q or 0,observedAt=batch.t,
+        marketKey=batch.mk,version=1}
 end
 
 function AB.SupplyEstimate(id)
@@ -399,7 +473,10 @@ local function ScheduleFullExpiry()
     if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
     if not fullBatch then return end
     local failure=FullBatchFailure(fullBatch)
-    if failure and failure~="unverified" then ReleaseFullBatch(failure);return end
+    if failure then
+        if failure~="unverified" then ReleaseFullBatch(failure) end
+        return
+    end
     if not (C_Timer and C_Timer.NewTimer) then return end
     local token={};fullExpiryToken=token
     fullExpiryTimer=C_Timer.NewTimer(math.max(1,fullBatch.t+SUPPLY_MAX_AGE+1-(time and time() or 0)),function()
@@ -447,18 +524,16 @@ local function FullRow(scan,row)
         or type(info[14])=="string" or type(info[15])=="string"
     local buyout=info[classic and 10 or 9]
     if not WholeNumber(qty) or type(buyout)~="number" or buyout~=buyout
-        or buyout<0 or buyout==math.huge or info[18]==false then item.failure="incomplete";return end
+        or buyout<0 or buyout==math.huge then item.failure="incomplete";return end
     if qty==0 or buyout==0 then return end
-    local owner=info[classic and 15 or 12]
-    if classic and (type(owner)~="string" or owner=="") then owner=info[14] end
-    if type(owner)~="string" or owner=="" then item.failure="incomplete";return end
-    local player=UnitName and UnitName("player")
-    if owner==player or owner:match("^[^-]+") == player then return end
     local oldQty = item.q
     local newQty = oldQty + qty
 
     item.p = ((item.p or 0) * oldQty + buyout) / newQty
     item.q = newQty
+    item.d=item.d or {}
+    local unit=buyout/qty
+    item.d[unit]=(item.d[unit] or 0)+qty
 end
 
 local function ImportFullRows(scan,rows)
@@ -477,7 +552,7 @@ local function ImportFullRows(scan,rows)
     local function step()
         if generation~=fullGeneration then return end
         fullTimer=nil
-        if scan.mk~=MarketKey() or scan.ob~=ObserverKey() then
+        if not scan.mk or scan.mk~=MarketKey() then
             ImportFailed("unverified");return
         end
         local last=math.min(scan.index+249,scan.expected)
@@ -495,14 +570,31 @@ local function ImportFullRows(scan,rows)
             ImportFailed("unverified");return
         end
         if not scan.complete then ImportFailed("incomplete");return end
-        local candidate={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,
-            c=true,v=SNAPSHOT_VERSION,s="client-auction-results",ox=true,
+        if not scan.depthIDs then
+            scan.depthIDs={};scan.depthIndex=1
+            for id in pairs(scan.items) do scan.depthIDs[#scan.depthIDs+1]=id end
+        end
+        local depthLast=math.min(scan.depthIndex+249,#scan.depthIDs)
+        for index=scan.depthIndex,depthLast do
+            local item=scan.items[scan.depthIDs[index]]
+            local prices,depth={},{}
+            for price in pairs(item.d or {}) do prices[#prices+1]=price end
+            table.sort(prices)
+            for _,price in ipairs(prices) do depth[#depth+1]={price,item.d[price]} end
+            item.d=depth
+        end
+        scan.depthIndex=depthLast+1
+        if scan.depthIndex<=#scan.depthIDs then
+            fullTimer=C_Timer.NewTimer(0,step);return
+        end
+        local candidate={items=scan.items,t=scan.observedAt,mk=scan.mk,ob=scan.ob,dv=1,
+            c=true,v=SNAPSHOT_VERSION,s="client-auction-results",ox=false,
             completedAt=time and time() or scan.observedAt,expected=scan.expected,received=rowCount}
-        if not ValidSavedBatch(candidate) then ImportFailed("incomplete");return end
+        if not ValidSavedBatch(candidate) or not StoreBatch(candidate) then ImportFailed("incomplete");return end
+        PruneLegacyBatch(candidate)
         fullBatch=candidate
         fullFailure=nil
         restoredSnapshot=false
-        ScanDB().auctionFullScan=fullBatch
         ScheduleFullExpiry()
         fullState.status=scan.complete and "complete" or "incomplete"
         fullState.observedAt=scan.observedAt
@@ -540,6 +632,8 @@ function AB.ConnectAuctionatorStock()
         local enabled,mode=AB.ObserveReplicateMode()
         if enabled~=true or self~=fullListener then return end
         if event==ev.ScanStart then
+            SelectMarket()
+            if not MarketKey() then ImportFailed("unverified");return end
             StopFullImport()
             mode.scanSerial=mode.scanSerial+1
             fullRead={startedAt=time and time() or 0,mk=MarketKey(),ob=ObserverKey(),
@@ -563,23 +657,35 @@ function AB.ConnectAuctionatorStock()
     return true
 end
 
+SelectMarket=function()
+    local key=MarketKey()
+    if currentMarket==key then return end
+    StopFullImport()
+    if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
+    fullExpiryToken=nil;forcedUntil=0
+    currentMarket=key;fullBatch=nil;fullFailure=nil;restoredSnapshot=false
+    fullState={status=fullBus and "ready" or "unavailable"}
+    local db=ScanDB()
+    local saved=key and type(db.auctionFullScans)=="table" and db.auctionFullScans[key] or nil
+    if saved==nil then saved=db.auctionFullScan end
+    if saved==nil then return end
+    restoredSnapshot=true
+    if ValidSavedBatch(saved) then
+        if key and type(db.auctionFullScans)=="table" and db.auctionFullScans[key]==saved then PruneLegacyBatch(saved) end
+        fullBatch=saved;ScheduleFullExpiry()
+    elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION and saved.items==nil
+        and saved.failure=="incomplete" and saved.snapshotStatus=="missing" then
+        fullFailure=saved
+    elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION
+        and saved.failure=="expired" and WholeNumber(saved.t) and saved.t>0
+        and (time and time() or 0)-saved.t>SUPPLY_MAX_AGE then
+        fullFailure=saved
+    else ReleaseFullBatch("incomplete",saved) end
+end
 local function InitializeAuctionatorStock()
     local db=ScanDB()
     db.auctionReplicateGate=nil;db.replicateRequiredAfter=nil
-    local saved=db.auctionFullScan
-    if saved~=nil then
-        restoredSnapshot=true
-        if ValidSavedBatch(saved) then
-            fullBatch=saved;ScheduleFullExpiry()
-        elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION and saved.items==nil
-            and saved.failure=="incomplete" and saved.snapshotStatus=="missing" then
-            fullFailure=saved
-        elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION
-            and saved.failure=="expired" and WholeNumber(saved.t) and saved.t>0
-            and (time and time() or 0)-saved.t>SUPPLY_MAX_AGE then
-            fullFailure=saved
-        else ReleaseFullBatch("incomplete") end
-    end
+    SelectMarket()
     AB.ConnectAuctionatorStock()
     AB.ObserveReplicateMode()
     AB.HookReplicateModeSetting()

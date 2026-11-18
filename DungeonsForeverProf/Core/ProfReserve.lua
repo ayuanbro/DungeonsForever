@@ -196,14 +196,28 @@ function R.Build(plan,snapshot,opts,tick)
             offers=E.Copy(snapshot.offers and snapshot.offers[id] or {})
             frozen.prices[id]=snapshot.prices and snapshot.prices[id]
         end
+        if plan.useBagMaterials then
+            offers=E.Copy(snapshot.offers and snapshot.offers[id] or {})
+            frozen.prices[id]=snapshot.prices and snapshot.prices[id]
+        end
+        local book=snapshot.auctionDepth and snapshot.auctionDepth[id]
+        if book then
+            frozen.auctionDepth={[id]=book}
+            offers=E.Copy(snapshot.offers and snapshot.offers[id] or offers)
+        end
         frozen.offers[id]=offers
         local supply=snapshot.auctionSupply and snapshot.auctionSupply[id]
         local remaining=snapshot.considerAuctionSupply~=false and supply and max(0,(supply.quantity or 0)-(baseAH[id] or 0)) or nil
+        if book then remaining=max(0,min(supply and supply.quantity or book.total,book.total)-(baseAH[id] or 0)) end
         if supply then frozen.auctionSupply[id]=E.Copy(supply);frozen.auctionSupply[id].quantity=remaining end
+        local function procure(quantity)
+            return ns.ProfRouteAuto.MaterialPurchases(id,quantity,{snapshot=frozen,
+                auctionRemaining={[id]=remaining},auctionUsed={[id]=baseAH[id] or 0}})
+        end
         local need=requests[id] or 0
-        local purchases,cost,complete=ns.ProfRouteAuto.MaterialPurchases(id,need,{snapshot=frozen,auctionRemaining={[id]=remaining}})
+        local purchases,cost,complete=procure(need)
         if need==0 then
-            local templates=ns.ProfRouteAuto.MaterialPurchases(id,1,{snapshot=frozen,auctionRemaining={[id]=remaining}})
+            local templates=procure(1)
             for _,entry in ipairs(templates or {}) do
                 local quote=E.Copy(entry);quote[2]=0;quote.count=0;quote.need=0;quote.cost=0
                 quote.reserve=true;quote.unavailable=nil;quote.unpriced=nil
@@ -234,9 +248,11 @@ end
 function R.Rebuild(plan,mode)
     local opts=E.Copy(plan.executionOptions or {})
     opts.reserveMode=R.Mode(mode);opts.profession=plan.slug
-    local snapshot={professions={},offers={},prices={},auctionSupply={},nonAuctionable={},
+    local snapshot={professions={},offers={},prices={},auctionSupply={},auctionDepth={},nonAuctionable={},
         considerAuctionSupply=plan.considerAuctionSupply}
-    if opts.reserveMode~="off" then
+    if plan.useBagMaterials and plan.bagMaterialQuotes then
+        snapshot=E.Copy(plan.bagMaterialQuotes);snapshot.professions={}
+    elseif opts.reserveMode~="off" then
         local ra,vdb=ns.ProfRouteAuto,ns.VendorPriceDB
         local faction=UnitFactionGroup and UnitFactionGroup("player")
         snapshot.faction=faction=="Alliance" and "A" or faction=="Horde" and "H" or faction
@@ -248,6 +264,9 @@ function R.Rebuild(plan,mode)
         end
         for id in pairs(items) do
             snapshot.prices[id]=ra.AHPriceOf and ra.AHPriceOf(id)
+            local bridge=ns.AuctionBridge
+            local depth=bridge and bridge.GetAuctionDepth and bridge.GetAuctionDepth(id)
+            if depth then snapshot.auctionDepth[id]=ns.ProfAuctionDepth.Build(depth.levels) end
             snapshot.offers[id]=E.Copy(vdb and vdb.GetOffers and vdb.GetOffers(id,context) or {})
             snapshot.auctionSupply[id]=E.AuctionSupplyOf and E.AuctionSupplyOf(nil,id)
             snapshot.nonAuctionable[id]=E.NonAuctionableItem and E.NonAuctionableItem(id) or false

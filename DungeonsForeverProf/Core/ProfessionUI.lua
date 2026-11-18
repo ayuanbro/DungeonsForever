@@ -5,6 +5,9 @@ ns.ProfPaymentDataSchema = 2
 ns.ProfReferenceDataSchema = 2
 ns.ProfGuideActivityDataSchema = 1
 ns.ProfNavigationDataSchema = 1
+ns.ProfMetadataUnknownSchema = 1
+ns.ProfThresholdUnknownSchema = 1
+ns.ProfMaterialsUnknownSchema = 1
 
 if not ns.LoadForeverPages then return end
 
@@ -133,7 +136,7 @@ function PD.ScanSnapshotText()
     elseif snapshot.status=="expired" then
         return L["完整扫描数据已超过 2 天，请更新后重新计算。"]
     elseif snapshot.status=="mismatch" then
-        return L["已保存的完整扫描属于其他角色或市场，请用当前角色完成一次完整扫描。"]
+        return L["已保存的完整扫描与当前规则集或阵营不匹配，请在当前市场完成一次完整扫描。"]
     elseif snapshot.status=="invalid" then
         return L["已保存的完整扫描数据无效，请重新完成一次完整扫描。"]
     end
@@ -145,7 +148,7 @@ function PD.ScanHeadline()
     local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
     local status=snapshot and snapshot.status
     if status=="expired" then return L["完整扫描数据已超过 2 天"] end
-    if status=="mismatch" then return L["已保存的完整扫描属于其他角色或市场"] end
+    if status=="mismatch" then return L["已保存的完整扫描与当前规则集或阵营不匹配"] end
     if status=="invalid" then return L["已保存的完整扫描数据无效"] end
     return PD.ScanSnapshotText()
 end
@@ -263,7 +266,7 @@ function PD.ScanSnapshotAgeText()
         if age then return format(L["上次完整扫描：%s前，已超过 2 天有效期"],age),"bad" end
         return L["上次完整扫描：已超过 2 天有效期"],"bad"
     end
-    if snapshot.status=="mismatch" then return L["上次完整扫描：其他角色或市场"],"bad" end
+    if snapshot.status=="mismatch" then return L["上次完整扫描：规则集或阵营不匹配"],"bad" end
     if snapshot.status=="invalid" then return L["上次完整扫描：数据无效"],"bad" end
     if snapshot.status=="available" then
         local stamp=tonumber(snapshot.observedAt)
@@ -480,6 +483,7 @@ PD.ROW_H, PD.ROW_H1, PD.TEXT_H = 34, 24, 24
 PD.SETTING_DEF = { greyPassed = true, hlCurrent = true }
 PD.SETTING_DEF.autoRoute = false
 PD.SETTING_DEF.autoOnlyAH = true
+PD.SETTING_DEF.autoUseBagMaterials = false
 PD.SETTING_DEF.autoConsiderAuctionSupply = false
 PD.SETTING_DEF.autoBuyLimitedFormulas = false
 PD.SETTING_DEF.autoAllowBindOnPickupFormulas = false
@@ -487,7 +491,7 @@ PD.SETTING_DEF.autoAllowCurrencyFormulas = false
 PD.SETTING_DEF.autoScheme = "cheapest"
 PD.SETTING_DEF.autoSecondaryLeveling = false
 PD.SETTING_DEF.autoResidualMass = false
-PD.SETTING_DEF.autoReserveMode = "standard"
+PD.SETTING_DEF.autoSkillBudget = "balanced"
 PD.SETTING_DEF.computationSpeed = "fast"
 PD.SETTING_DEF.recoveryEnabled = false
 PD.SETTING_DEF.recoveryFeePercent = 5
@@ -509,10 +513,10 @@ local function RememberLast()
         db.lastTab = PD.tab
     end
 end
-PD.PROF_SETTING_KEYS={autoRoute=true,autoScheme=true,autoOnlyAH=true,autoConsiderAuctionSupply=true,
+PD.PROF_SETTING_KEYS={autoRoute=true,autoScheme=true,autoOnlyAH=true,autoConsiderAuctionSupply=true,autoUseBagMaterials=true,
     autoBuyLimitedFormulas=true,autoAllowBindOnPickupFormulas=true,autoAllowCurrencyFormulas=true,
     autoSecondaryLeveling=true,autoFromCurrent=true,autoStartSkill=true,autoCraftTools=true,
-    recoveryEnabled=true,recoveryFeePercent=true,autoResidualMass=true,autoReserveMode=true}
+    recoveryEnabled=true,recoveryFeePercent=true,autoResidualMass=true,autoSkillBudget=true,autoReserveMode=true}
 
 function PD.AutoStartSkillOf(slug, current)
     if PD.Setting("autoFromCurrent", slug) then
@@ -549,11 +553,48 @@ function PD.SettingRaw(k,slug)
     local values=PD.PROF_SETTING_KEYS[k] and db.professionSettings and db.professionSettings[slug]
     local v=values and values[k]
     if v==nil then v=db[k] end
+    if k=="autoScheme" and v=="stable" then return "cheapest" end
+    if k=="autoSkillBudget" and v==nil then
+        local function prior(key) return values and values[key] or db[key] end
+        if prior("autoScheme")=="stable" then return "pessimistic" end
+        local budget=prior("autoGreenBudget")
+        if budget then return budget end
+        local reserve=prior("autoReserveMode")
+        return reserve=="ample" and "pessimistic" or reserve=="off" and "optimistic" or "balanced"
+    end
     if v == nil then return PD.SETTING_DEF[k] end
     return v
 end
 
 function PD.Setting(k,slug) return PD.SettingRaw(k,slug) and true or false end
+
+function PD.BagMaterialsAvailable(slug)
+    slug=slug or PD.cur
+    return PD.AutoRouteEnabled and PD.AutoRouteEnabled(slug)
+        and not PD.CookingFishingMode(slug) and not PD.FixedOnly(slug) or false
+end
+
+function PD.ChangeRouteSetting(key,value,slug)
+    if RA and RA.Cancel then RA.Cancel(slug,"settings") end
+    PD.SetSettingRaw(key,value,slug)
+    local xp=ns.ProfExecution
+    local plans={RA and RA.Peek and RA.Peek(slug) or false,
+        xp and xp.GetPlan and xp.GetPlan(slug) or false,
+        PD.autoSnapshotSlug==slug and PD.autoSnapshot or false}
+    for _,plan in ipairs(plans) do
+        if type(plan)=="table" then plan.settingsChanged=true;plan.stale=true;plan.staleReason="settings" end
+    end
+    PD.RequestRender()
+end
+function PD.SetUseBagMaterials(on,slug)
+    slug=slug or PD.cur
+    if not PD.BagMaterialsAvailable(slug) then return end
+    on=on and true or false
+    if PD.Setting("autoUseBagMaterials",slug)~=on then PD.ChangeRouteSetting("autoUseBagMaterials",on,slug) end
+end
+function PD.GreenBudgetLabel(mode)
+    return mode=="optimistic" and L["升点预算·乐观"] or mode=="pessimistic" and L["升点预算·悲观"] or L["升点预算·均衡"]
+end
 
 function PD.SetSettingRaw(k,value,slug)
     if k=="autoLearnedOnly" or k=="autoAllowUnknownLearning" or k=="autoSkipUnpricedFormulas" or k=="autoNoFormula" then return end
@@ -563,6 +604,9 @@ function PD.SetSettingRaw(k,value,slug)
     if PD.PROF_SETTING_KEYS[k] and type(slug)=="string" and slug~="__index" then
         db.professionSettings=db.professionSettings or {}
         db.professionSettings[slug]=db.professionSettings[slug] or {}
+        if k=="autoScheme" and db.professionSettings[slug].autoSkillBudget==nil then
+            db.professionSettings[slug].autoSkillBudget=PD.SettingRaw("autoSkillBudget",slug)
+        end
         db.professionSettings[slug][k]=value
     else db[k]=value end
 end
@@ -628,19 +672,6 @@ end
 function PD.ComputationSpeedLabel()
     local mode = PD.SettingRaw("computationSpeed")
     return mode == "fast" and L["快速（默认）"] or mode == "turbo" and L["极速"] or L["流畅"]
-end
-
-function PD.CycleReserveMode()
-    local current=PD.SettingRaw("autoReserveMode")
-    local mode=current=="off" and "standard" or current=="standard" and "ample" or "off"
-    PD.SetSettingRaw("autoReserveMode",mode)
-    if RA and RA.ChangeReserveMode then
-        local _,reason=RA.ChangeReserveMode(PD.cur,mode)
-        if reason then PD.SetSettingRaw("autoReserveMode",current) end
-    end
-    if ns.ProfFollow and ns.ProfFollow.Paint then ns.ProfFollow.Paint() end
-    PD.autoSnapshot,PD.autoSnapshotSlug=nil,nil
-    PD.RequestRender()
 end
 
 function PD.ShowSchemeMenu(owner)
@@ -3546,7 +3577,7 @@ function PD.BindRow(r, spec, h)
         local costZone = r.__costZone
         if costZone then
             costZone.__tipLines = {{L["成本"] .. ": " .. (spec.cost or "")},
-                {L["成本为本步骤新增采购；已在中间产物步骤计入的费用不重复计入。"], 0.7, 0.7, 0.7}}
+                {spec.costBasis or L["成本为本步骤新增采购；已在中间产物步骤计入的费用不重复计入。"], 0.7, 0.7, 0.7}}
             if spec.costWhy then
                 costZone.__tipLines[#costZone.__tipLines + 1] = {spec.costWhy, 0.95, 0.75, 0.4}
             end
@@ -5680,9 +5711,12 @@ function PD.Build(page)
         ns.hui.ReskinToggle(tg)
         tg:SetScript("OnClick", function(self)
             if self.__key then
-                PD.SetSettingRaw(self.__key,not PD.Setting(self.__key))
+                if self.__key=="autoUseBagMaterials" then
+                    PD.SetUseBagMaterials(not PD.Setting(self.__key))
+                else PD.SetSettingRaw(self.__key,not PD.Setting(self.__key)) end
                 self:SetChecked(PD.Setting(self.__key))
-                if self.__key=="autoFromCurrent" then
+                if self.__key=="autoUseBagMaterials" then
+                elseif self.__key=="autoFromCurrent" then
                     PD.LvRecalc()
                 elseif string.sub(self.__key, 1, 4) == "auto" and RA then
                     RA.Invalidate()
@@ -6718,7 +6752,7 @@ function PD.PaintLvTiles()
         if nBan == 0 then lines[#lines + 1] = { L["点击管理不使用的图样与材料"], 0.7, 0.7, 0.7 } end
         TipOn(tiles.excl, lines)
     end
-    tiles.cost.label:SetText(s.referenceOnly and L["材料参考价"] or s.partial and L["已计算支出"] or L["预计总花费"])
+    tiles.cost.label:SetText(s.referenceOnly and L["材料参考价"] or s.useBagMaterials and L["预计额外支出"] or s.partial and L["已计算支出"] or L["预计总花费"])
     local costLines
     if s.referenceOnly then
         tiles.cost.val:SetText(PD.PlanCostText(s))
@@ -6747,6 +6781,8 @@ function PD.PaintLvTiles()
         tiles.cost.val:SetTextColor(Unpack(C_GREY))
         costLines = { { scanNotice or PD.AuctionatorStatusText(), 0.7, 0.7, 0.7 } }
     end
+    if s.greenBudget then costLines[#costLines+1]={PD.GreenBudgetLabel(s.greenBudget),0.7,0.85,1} end
+    if s.useBagMaterials then costLines[#costLines+1]={L["已计入背包材料"],0.55,0.85,0.6} end
     if (s.np or 0) > 0 then
         costLines[#costLines + 1] = { format(L["含无价材料 %d 种：花费为估算下限"], s.np),
                                       0.95, 0.75, 0.4 }
@@ -6763,10 +6799,14 @@ function PD.PaintLvTiles()
     elseif ahState == "stale" or ahState == "noprice" then
         costLines[#costLines + 1] = { scanNotice or L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 0.7, 0.7, 0.7 }
     end
+    if s.auctionDepthComplete==false then costLines[#costLines+1]={L["按方案单价估算"].."："..L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"],0.95,0.75,0.4} end
     if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local net = s.netTotal or ((s.total or 0) - s.recoveryTotal)
         costLines[#costLines + 1] = { format(L["预计回血 %s · 净成本 %s"],
             PD.RecoveryMoney(s.recoveryTotal), PD.RecoveryMoney(net)), 0.55, 0.85, 0.6 }
+        if s.greenBudget and s.greenBudget~="optimistic" and s.priorityTotal and math.abs(s.priorityTotal-net)>=1 then
+            costLines[#costLines+1]={format(L["选方采用的净成本 %s"],PD.RecoveryMoney(s.priorityTotal)),0.7,0.85,1}
+        end
         if s.recoveryFeePercent then
             costLines[#costLines + 1] = { format(L["按 %d%% 手续费折算，剩余产物假设全部成交"], s.recoveryFeePercent),
                                           0.7, 0.7, 0.7 }
@@ -8601,7 +8641,7 @@ function PD.LvTier(skill, learn, yellow, green, grey)
 end
 
 function PD.SBValPos(skill, learn, yellow, green, grey, up)
-    if not skill or type(learn) ~= "number" then return nil end
+    if not skill or not (learn and yellow and green and grey) then return nil end
     if up then
         local thr = { learn, yellow, green, grey }
         local k = nil
@@ -8632,7 +8672,7 @@ function PD.PaintSkillBar(r, vals, lvLo, lvHi, dim)
         tx:SetPoint("CENTER", bg, "CENTER", 0, 0)
         tx:SetTextColor(Unpack(PD.SB_INK[k]))
         tx:SetAlpha(a2)
-        tx:SetText(vals[k] and tostring(vals[k]) or "")
+        tx:SetText(tostring(vals[k] or "—"))
         tx:Show()
     end
     local lvs = { lvLo, lvHi }
@@ -8809,7 +8849,7 @@ function PD.LearningOriginCard(recipe,view)
         if not recipe.trainerObserved and route and route.acquisition and route.acquisition.kind=="skillGrant"then
             return {kind=AUTO_SKILL_CARD.kind,text=AUTO_SKILL_CARD.text,lines={AUTO_SKILL_CARD.lines[1]}}
         end
-        return PD.TrainerCard(recipe and recipe.spell)
+        return PD.TrainerCard(recipe.spell)
     end
     local fid=route and route.teachingItemID or recipe.formula or recipe.formulaID
     if not fid then return end
@@ -9300,6 +9340,7 @@ function PD.VendorLines(s, fid)
             end
             if o then nm = nm .. " · " .. PD.FormulaCostText(o) end
             out[#out + 1] = { nm, 0.75, 0.75, 0.75 }
+            PD.PurchaseConditionLines(out,id,fid,o or v)
         end
     end
     local ents = PD.VendorEntries(s)
@@ -9433,6 +9474,7 @@ function PD.TeachRoster(spell)
             local mp = tonumber(rec[4])
             local loc = (mp and mp > 0) and { nil, mp, rec[5], rec[6] } or nil
             out[#out + 1] = {
+                npcID = t[i],
                 name = PD.TeachName(rec),
                 loc = loc,
                 zone = loc and (PD.MapName(mp, "") or "") or "",
@@ -9481,6 +9523,12 @@ function PD.TeachLines(spell, plain)
         local nm = format(L["训练师：%s"], e.name)
         if e.zone ~= "" then nm = nm .. " · " .. e.zone end
         out[#out + 1] = { nm, 0.75, 0.75, 0.75 }
+        if e.npcID then
+            local quest=PD.SourceQuestText("trainer",e.npcID,spell)
+            local access=PD.SourceAccessText("trainer",e.npcID,spell)
+            if quest then out[#out+1]={"  "..quest,0.81,0.85,0.89} end
+            if access then out[#out+1]={"  "..access,0.81,0.85,0.89} end
+        end
     end
     if not plain then
         out[#out + 1] = { #list == 1 and L["点击：在地图上标记该 NPC"]
@@ -9732,7 +9780,7 @@ end
 function PD.RecipeData(row, kind, slug)
     if (slug or PD.cur)=="poisons" then
         return {profession="poisons",spell=row[1],item=row[2],count=row[3],mats=row[12],
-            learn=row[7],yellow=row[8],green=row[9],grey=row[10],legacyPoisonGuide=true}
+            orange=row.orange,learn=row[7],yellow=row[8],green=row[9],grey=row[10],legacyPoisonGuide=true}
     end
     local E = ns.ProfEconomy
     if E and E.Normalize then
@@ -9750,6 +9798,7 @@ function PD.RecipeData(row, kind, slug)
     else
         r = {spell=row[1], item=row[2], count=row[3], mats=row[12], learn=row[7], yellow=row[8], green=row[9], grey=row[10]}
     end
+    r.orange = row.orange
     if E and E.ResolveRecipe then return E.ResolveRecipe(r, slug or PD.cur) end
     r.dataSource = "catalogue"
     r.clientPending = type(r.mats) ~= "table" or (r.item and not r.count)
@@ -9923,6 +9972,10 @@ function PD.JoinTop(list, n, sep)
     return table.concat(head, sep) .. format(L[" 等 %d 项"], #u - n)
 end
 
+function PD.RecipeColors(orange, yellow, green, grey)
+    if orange or yellow or green or grey then return { orange, yellow, green, grey } end
+end
+
 function PD.EnchantSpec(en)
     local resolved = PD.RecipeData(en, "enchants")
     local meta = ns.ProfRecipeMeta and ns.ProfRecipeMeta[resolved.spell]
@@ -9931,6 +9984,7 @@ function PD.EnchantSpec(en)
     en[9] = resolved.mats
     if resolved.item then en[15] = resolved.item end
     en[5], en[6], en[7], en[8] = resolved.learn, resolved.yellow, resolved.green, resolved.grey
+    local colors = PD.RecipeColors(resolved.orange, resolved.yellow, resolved.green, resolved.grey)
     local clientPending = resolved.clientPending
     local matCol, _, _, matSg = PD.MatCol(en[9], PD.MAT_FS, PD.MAT_W)
     local costStr, total, unpriced, ah
@@ -9995,7 +10049,7 @@ function PD.EnchantSpec(en)
         vlines = PD.DropLines(en[10])
     end
     local lines = PD.RecipeSourceLines({ { en[1] or "" } }, resolved)
-    PD.RecipeGuideLines(lines, meta)
+    PD.RecipeGuideLines(lines, meta, resolved)
     if en[4] and en[4] ~= "" then lines[#lines + 1] = { en[4] } end
     if learningCard then for _,line in ipairs(learningCard.lines)do lines[#lines+1]=line end else
     if en[10] then lines[#lines + 1] = { PD.SourceText(en[10]) or "", 0.7, 0.7, 0.7 } end
@@ -10024,9 +10078,7 @@ function PD.EnchantSpec(en)
         sub = table.concat(PD.UniqList({ tostring(en[3] or ""), effectShort }), " · "),
         mats = clientPending and L["客户端数据待读取"] or matCol,
         matSegs = matSg,
-        right = not (en[5] or en[6] or en[7] or en[8])
-                and format("%s · %s", format(L["学 %s"], tostring(en[5])),
-                           PD.TierText(en[6], en[7], en[8])) or nil,
+        right = not colors and format(L["学 %s"], tostring(en[5] or "—")) or nil,
         right2 = clientPending and L["客户端数据待读取"] or (resolved.clientUnavailable and L["未实装"]) or ((not dval) and base or nil),
         right2Fs = PD.SRC_FS,
         src = en[10],
@@ -10043,14 +10095,14 @@ function PD.EnchantSpec(en)
         costVal = total,
         diffVal = tonumber(en[5]),
         gapVal = (ah and total) and (ah - total) or nil,
-        sbdiff = (en[5] or en[6] or en[7] or en[8]) and { en[5], en[6], en[7], en[8] } or nil,
+        sbdiff = colors,
         tipExtra = function()
             local extra = {}
             if type(en[15]) == "number" then
                 extra = PD.RecipeSourceLines(PD.PriceTipLines(en[15], en[9],
                     { recipe=true, matDetail=PD.MatPriceOn(), patternCost=PD.PatternVendorCost(resolved) }), resolved)
             end
-            return PD.RecipeGuideLines(extra, meta)
+            return PD.RecipeGuideLines(extra, meta, resolved)
         end,
         lines = lines,
         act = dact,
@@ -10176,7 +10228,7 @@ function PD.PaintDiffBar(r, vals)
         tx:ClearAllPoints()
         tx:SetPoint("CENTER", bg, "CENTER", 0, 0)
         tx:SetTextColor(ink[k][1], ink[k][2], ink[k][3])
-        tx:SetText(vals[k] and tostring(vals[k]) or "")
+        tx:SetText(tostring(vals[k] or "—"))
         tx:Show()
         right = right + seg
     end
@@ -10305,6 +10357,50 @@ function PD.VendorOffersOf(itemID)
     return out
 end
 
+ns.ProfSourceAccessUIDataSchema=1
+ns.ProfSourcePurchaseUIDataSchema=1
+function PD.PurchaseConditionLines(lines,npc,itemID,offer)
+    local variants=offer.options or {offer}
+    local seen={}
+    for _,variant in ipairs(variants) do
+        local prefix=#variants>1 and (PD.FormulaCostText(variant).." · ") or ""
+        local function add(text)
+            if text and not seen[prefix..text] then lines[#lines+1]={prefix..text,0.75,0.75,0.75};seen[prefix..text]=true end
+        end
+        add(PD.SourceQuestText("vendor",npc,itemID,variant.conditions))
+        add(PD.SourceAccessText("vendor",npc,itemID,variant.conditions))
+        for _,text in ipairs(variant.purchaseRequirementTexts or {}) do add(text) end
+    end
+end
+
+function PD.SourceAccessText(kind,npc,itemID,conditions)
+    local data=ns.ProfSourceQuestUnlocks
+    local rules=data and data.rules and data.rules[kind]
+    local targets=rules and rules[npc]
+    local items={}
+    for _,key in ipairs(itemID and itemID~=0 and {0,itemID} or {0}) do
+        local rule=targets and targets[key]
+        if rule and rule.requiredItemID then items[rule.requiredItemID]=true end
+    end
+    for _,condition in ipairs(conditions or {}) do if condition.kind=="sourceItem" then items[condition.value]=true end end
+    local ids,names={},{}
+    for id in pairs(items) do ids[#ids+1]=id end;table.sort(ids)
+    for _,id in ipairs(ids) do names[#names+1]=ns.ProfItemNames and ns.ProfItemNames[id] or "item #"..id end
+    if #names>0 then return format(L["交谈所需物品：%s"],table.concat(names,", ")) end
+end
+
+function PD.SourceQuestText(kind,npc,itemID,conditions)
+    local db=ns.VendorPriceDB
+    if not db then return end
+    local required=db.SourceRequiresQuest(kind,npc,itemID)
+    for _,condition in ipairs(conditions or {}) do if condition.kind=="questGroup" then required=true end end
+    if not required then return end
+    local state=db.SourceQuestState(kind,npc,itemID,nil,conditions)
+    if state==true then return L["任务解锁：已完成"] end
+    if state==false then return L["任务解锁：未完成"] end
+    return L["任务解锁：状态未知"]
+end
+
 function PD.VendorBlockLines(lines, itemID)
     local C_NM, C_MT, C_PR = { 0.92, 0.94, 0.98 }, { 0.63, 0.65, 0.70 }, { 0.55, 0.85, 0.60 }
     local list = PD.VendorOffersOf(itemID)
@@ -10335,6 +10431,7 @@ function PD.VendorBlockLines(lines, itemID)
         local nm = PD.VendorName(o)
         if type(nm) ~= "string" or nm == "" or nm == "?" then nm = L["位置未收录的商人"] end
         lines[#lines + 1] = { format(L["商人：%s"], nm), Unpack(C_NM) }
+        PD.PurchaseConditionLines(lines,o.npcID or o.id,o.itemID or itemID,o)
         local zone = o.area and PD.CampZoneName(o.area) or nil
         local stbl = ns.ProfVendorSide
         local side = (type(stbl) == "table" and stbl[o.npcID]) or o.side
@@ -10906,7 +11003,23 @@ function PD.KitSub(sub, desc, itemID)
     return table.concat(parts, " ")
 end
 
-function PD.RecipeGuideLines(lines, meta)
+function PD.RecipeGuideLines(lines, meta, recipe)
+    if recipe then lines[#lines + 1] = { format(L["学 %s"], tostring(recipe.learn or "—")) } end
+    if meta and meta.requiresMaterialsUnknownSchema == 1 then
+        lines[#lines + 1] = { L["材料用量：来源未公布，暂不用于升级计算"], 0.95, 0.75, 0.4 }
+    end
+    if meta and meta.requiresThresholdUnknownSchema == 1 then
+        lines[#lines + 1] = { L["技能门槛：来源未公布，暂不用于升级计算"], 0.95, 0.75, 0.4 }
+    end
+    local evidence = meta and meta.fieldEvidence
+    for _, field in ipairs({"station", "tools"}) do
+        local source = evidence and evidence[field]
+        if source and source.status == "notPublished" then
+            local label = field == "station" and L["制作场地：%s"] or L["所需工具：%s"]
+            lines[#lines + 1] = { format(label, L["来源未公布"]), 0.95, 0.75, 0.4 }
+            if source.sourceURL then lines[#lines + 1] = { source.sourceURL, 0.55, 0.75, 0.9 } end
+        end
+    end
     for _, source in ipairs(meta and meta.guideSources or {}) do
         local text = source.sourceText
         if source.sourceUnknown then
@@ -10939,6 +11052,7 @@ function PD.RecipeSpec(r)
     for key, value in pairs(catalogue) do r[key] = value end
     r[2], r[3], r[12] = resolved.item, resolved.count, resolved.mats
     r[7], r[8], r[9], r[10] = resolved.learn, resolved.yellow, resolved.green, resolved.grey
+    local colors = PD.RecipeColors(resolved.orange, resolved.yellow, resolved.green, resolved.grey)
     local clientPending = resolved.clientPending
     local station = meta and (meta.stationNames and meta.stationNames[ns.DF_REAL_LOCALE and ns.DF_REAL_LOCALE() or "zhCN"] or meta.stationName or ({ forge = L["熔炉"], blackForge = L["黑铁熔炉"], moltenFoundry = L["熔火铸造厂"] })[meta.station])
     local vs = (r[14] and PD.VendorListOf(r[14])) or {}
@@ -11009,7 +11123,7 @@ function PD.RecipeSpec(r)
                 { recipe = true, matDetail = PD.MatPriceOn(),
                   patternCost = PD.PatternVendorCost(resolved) }), resolved)
             if station then lines[#lines + 1] = { format(L["制作场地：%s"], station), 0.7, 0.7, 0.7 } end
-            PD.RecipeGuideLines(lines, guideMeta)
+            PD.RecipeGuideLines(lines, guideMeta, resolved)
             if clientPending then lines[#lines + 1] = { L["请打开对应专业或商人面板读取数据"], 0.95, 0.75, 0.4 } end
             if meta and meta.outputConflict and resolved.outputConflict and not (runtime and runtime.count) then
                 lines[#lines + 1] = { L["参考产量存在冲突；当前按目录值显示，客户端读取后覆盖。"], 0.95, 0.75, 0.4 }
@@ -11025,9 +11139,7 @@ function PD.RecipeSpec(r)
         end,
         sub = station or PD.KitSub(tostring(r[5] or ""), r[6], r[2]),
         mats = clientPending and L["客户端数据待读取"] or nil,
-        right = not ((r[7] or r[8] or r[9] or r[10]))
-                and format("%s · %s", format(L["学 %s"], tostring(r[7])),
-                           PD.TierText(r[8], r[9], r[10])) or nil,
+        right = not colors and format(L["学 %s"], tostring(r[7] or "—")) or nil,
         right2 = (not dval) and base or nil,
         right2Fs = PD.SRC_FS,
         src = r[14],
@@ -11046,14 +11158,14 @@ function PD.RecipeSpec(r)
         gapVal = (ah and total) and (ah - total) or nil,
         gapStr = gapStr,
         gapColor = gapColor,
-        sbdiff = (r[7] or r[8] or r[9] or r[10]) and { r[7], r[8], r[9], r[10] } or nil,
+        sbdiff = colors,
         mkLines = function()
             local lines = {}
             local eff = (type(r[6]) == "string" and r[6] ~= "") and r[6] or PD.KitEffectOf(r[2])
             if eff then lines[#lines + 1] = { eff } end
             local mt = PD.MatText(r[12])
             lines[#lines + 1] = { format(L["材料：%s"], mt ~= "" and mt or L["无"]) }
-            lines[#lines + 1] = { format(L["技能：学 %s · %s"], tostring(r[7]),
+            lines[#lines + 1] = { format(L["技能：学 %s · %s"], tostring(r[7] or "—"),
                                          PD.TierText(r[8], r[9], r[10])) }
             if r[15] and #r[15] > 0 then
                 lines[#lines + 1] = { format(L["改版前材料：%s"], PD.MatText(r[15])), 0.9, 0.7, 0.4 }
@@ -11078,17 +11190,15 @@ end
 
 function PD.CraftedSpec(c)
     local resolved = PD.RecipeData(c, "crafted")
+    local meta = ns.ProfRecipeMeta and ns.ProfRecipeMeta[resolved.spell]
     local original = c
     c = {}; for key, value in pairs(original) do c[key] = value end
     c[8], c[3], c[2] = resolved.mats, resolved.count, resolved.item
     c[4], c[5], c[6], c[7] = resolved.learn, resolved.yellow, resolved.green, resolved.grey
+    local colors = PD.RecipeColors(resolved.orange, resolved.yellow, resolved.green, resolved.grey)
     local clientPending = resolved.clientPending
     local mats = PD.MatText(c[8])
     local matCol, _, _, matSg = PD.MatCol(c[8], PD.MAT_FS, PD.MAT_W)
-    local green = c[6]
-    if not green and c[5] and c[7] then
-        green = math.floor((c[5] + c[7]) / 2)
-    end
     local fid = tonumber(c[9])
     local base = nil
     if fid then
@@ -11110,6 +11220,7 @@ function PD.CraftedSpec(c)
     local learningCard=PD.RecipeLearningCard(resolved,false)
     if learningCard then base=learningCard.text;fid=learningCard.fid end
     local sourceLines={{format(L["材料：%s"],clientPending and L["客户端数据待读取"] or (mats~="" and mats or L["无"]))}}
+    PD.RecipeGuideLines(sourceLines, meta, resolved)
     if learningCard then for _,line in ipairs(learningCard.lines)do sourceLines[#sourceLines+1]=line end
     elseif fid then sourceLines[#sourceLines+1]={format(L["图纸：%s"],DG.ItemName(fid)),1,0.82,0.35}end
     local costStr, total, unpriced, ah
@@ -11133,9 +11244,7 @@ function PD.CraftedSpec(c)
         sub = "",
         mats = clientPending and L["客户端数据待读取"] or matCol,
         matSegs = matSg,
-        right = not (c[4] or c[5] or green or c[7])
-                and format("%s · %s", format(L["学 %s"], tostring(c[4])),
-                           PD.TierText(c[5], green, c[7])) or nil,
+        right = not colors and format(L["学 %s"], tostring(c[4] or "—")) or nil,
         right2 = clientPending and L["客户端数据待读取"] or (resolved.clientUnavailable and L["未实装"]) or base,
         src = learningCard and learningCard.source,
         vlines = learningCard and learningCard.lines,
@@ -11148,10 +11257,10 @@ function PD.CraftedSpec(c)
         costVal = total,
         diffVal = tonumber(c[4]),
         gapVal = (ah and total) and (ah - total) or nil,
-        sbdiff = (c[4] or c[5] or green or c[7]) and { c[4], c[5], green, c[7] } or nil,
-        tipExtra = function() return PD.RecipeSourceLines(PD.PriceTipLines(c[2], c[8],
+        sbdiff = colors,
+        tipExtra = function() return PD.RecipeGuideLines(PD.RecipeSourceLines(PD.PriceTipLines(c[2], c[8],
             { recipe = true, matDetail = PD.MatPriceOn(),
-              patternCost = PD.PatternVendorCost(resolved) }), resolved) end,
+              patternCost = PD.PatternVendorCost(resolved) }), resolved), meta, resolved) end,
         lines = sourceLines,
     }
 end
@@ -12480,6 +12589,7 @@ end
 function PD.PlanStatusParts(plan)
     if not plan then return L["正在计算升级路线…"] end
     if plan.manualActivityPending then return L["先完成指南中的手动步骤，再按当前技能重新查看路线。"] end
+    if plan.bagInventoryUnknown then return L["背包材料读取失败，请稍后重新计算。"] end
     local hasProgress=PD.PlanHasSteps(plan) or (tonumber(plan.plannedTo) or 0)>(tonumber(plan.start) or 1)
     if plan.referenceOnly then return L["固定攻略参考；逐配方资料待补全。"] end
     if plan.diagnosticPolicyChanged then return L["路线规则已更新，请重新计算。"] end
@@ -12521,6 +12631,7 @@ function PD.PlanStatusParts(plan)
     end
     local search = plan.searchState
     if search and search.running then return L["后台优化中"] end
+    if plan.bagInventoryChanged then return L["背包材料已变化，重新计算可更新路线。"] end
     if plan.staleReason=="procurement-policy" then return L["采购规则已更新，请重新计算路线。"] end
     if plan.staleReason=="supply" then return PD.PlanCacheText(plan) end
     if plan.stale then return L["已保存路线；数据或设置已变化，点击重新计算更新。"] end
@@ -12575,6 +12686,8 @@ function PD.PlanProgressText(plan)
 end
 
 function PD.PlanCacheText(plan)
+    if plan and plan.bagInventoryUnknown then return L["背包材料读取失败，请稍后重新计算。"] end
+    if plan and plan.bagInventoryChanged then return L["背包材料已变化，重新计算可更新路线。"] end
     if plan and plan.diagnosticPolicyChanged then return L["路线规则已更新，请重新计算。"] end
     if plan and plan.staleReason=="procurement-policy" then return L["采购规则已更新，请重新计算路线。"] end
     if plan and plan.staleReason=="supply" then
@@ -12691,7 +12804,7 @@ function PD.AuctionSupplyLines(entry)
         if text then add(text) end
         if tonumber(entry.availableCount) then
             add(format(L["数量观测：%s"], PD.AuctionObservationText(entry.supplyObservedAt)))
-            if entry.supplyMethod=="auctionator-full-scan" then
+            if entry.supplyMethod=="auctionator-full-scan" and entry.supplyOwnerExcluded==true then
                 add(L["数量来源：Auctionator 完整扫描（已排除本人拍卖）"])
             elseif entry.supplySource == "client-auction-results" then
                 add(L["数量来源：客户端拍卖结果"])
@@ -12707,7 +12820,7 @@ function PD.AuctionSupplyLines(entry)
             else
                 add(L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"])
             end
-            add(entry.supplyOwnerExcluded == true and L["已排除本人拍卖"] or L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"])
+            if entry.supplyOwnerExcluded==true then add(L["已排除本人拍卖"]) end
             local stamp = tonumber(entry.supplyObservedAt)
             local now = type(time) == "function" and time() or nil
             if stamp and now and now - stamp > PD.SNAP_STALE_SEC then
@@ -12837,9 +12950,10 @@ function PD.CopyPlanSummary(plan)
                            "revision", "partial", "plannedTo", "targetReached", "alreadyAtTarget", "start", "target",
                            "expanded", "improvements", "initialTotal", "savings", "searchComplete", "budgetLimited",
                            "inputModelOptimal", "catalogueCoverageComplete", "quoteComplete", "searchTermination", "searchState",
-                           "costSearchPerformed", "costSearchStatus",
+                           "costSearchPerformed", "costSearchStatus", "greenBudget", "greenLevelCrafts", "priorityTotal", "useBagMaterials", "bagInventoryChanged", "bagInventoryUnknown",
+                           "bagInventory", "bagInventoryStamp", "bagInventoryFingerprint", "bagInventoryVersion", "bagMaterialQuotes", "seedInventory", "seedAllocations",
                            "stale", "staleReason", "cached", "settingsChanged", "referencePrices", "pricePending", "referenceRoute",
-                           "considerAuctionSupply", "allowBindOnPickupFormulas", "allowCurrencyFormulas", "auctionSupplyUnknown", "auctionSupplyObserved", "supplyComplete", "auctionSupplyShortages", "purchaseVerified",
+                           "considerAuctionSupply", "allowBindOnPickupFormulas", "allowCurrencyFormulas", "auctionSupplyUnknown", "auctionSupplyObserved", "supplyComplete", "auctionSupplyShortages", "purchaseVerified", "auctionDepthRevision", "auctionDepthComplete", "auctionDepthInputs", "auctionDepthFallbackItems", "pricingPolicyStale",
                            "formulasTotal", "formulaTotal", "formulaComplete", "formulaBlocked", "procurementPolicyVersion",
                            "learningGaps","learningCoverageComplete","learningBlocked","learningBlockReason",
                            "blockingLearningGaps","blockingDiagnostics","diagnostics",
@@ -13697,6 +13811,7 @@ function PD.BuildLvOpts(slug, current)
     return {
         start = PD.AutoStartSkillOf(slug, lv),
         onlyAH = PD.Setting("autoOnlyAH",slug),
+        useBagMaterials = PD.BagMaterialsAvailable(slug) and PD.Setting("autoUseBagMaterials",slug),
         considerAuctionSupply = PD.Setting("autoConsiderAuctionSupply",slug),
         allowBindOnPickupFormulas = PD.Setting("autoAllowBindOnPickupFormulas",slug),
         allowCurrencyFormulas = PD.Setting("autoAllowCurrencyFormulas",slug),
@@ -14307,7 +14422,8 @@ function PD.RouteHistorySig(plan)
     local total = tonumber(plan.total)
     return table.concat({ tostring(steps), tostring(total and math.floor(total + 0.5) or -1),
         tostring(plan.completeCost ~= false), tostring(plan.scheme or ""),
-        tostring(plan.start or 0), tostring(plan.target or 0) }, "|")
+        tostring(plan.start or 0), tostring(plan.target or 0), tostring(plan.useBagMaterials==true),
+        tostring(plan.bagInventoryFingerprint or ""), tostring(plan.greenBudget or "optimistic") }, "|")
 end
 
 function PD.RecordRouteHistory(plan, slug)
@@ -14937,7 +15053,7 @@ function PD.RowsLeveling(rows)
                 tostring(goal.questName or ""), tostring(goal.zone or "")), 0.95, 0.75, 0.4)
         end
     end
-    local cntOf, cntSubOf, costOf, cardOf, whyOf, whyLong, chipOf, roleChipOf = {}, {}, {}, {}, {}, {}, {}, {}
+    local cntOf, cntSubOf, costOf, cardOf, whyOf, whyLong, chipOf, roleChipOf, costBasisOf = {}, {}, {}, {}, {}, {}, {}, {}, {}
     local rngW = PD.TextW(L["等级范围"], PD.LV_FS)
     local cntW = PD.TextW(L["制作次数"], PD.LV_FS)
     local costW = PD.TextW(L["成本"], PD.LV_FS)
@@ -14997,8 +15113,12 @@ function PD.RowsLeveling(rows)
                 whyLong[st] = PD.UnpriceWhy(st)
             else
                 local spend = tonumber(st.cost) or 0
-                local shown, consumeOnly = spend, false
-                if RA.StepConsumeCost then
+                local production = tonumber(st.productionCost)
+                local shown, consumeOnly = production or spend, false
+                if production then
+                    costBasisOf[st] = L["本步显示所耗材料和学习费用的预算，包含上游自制成本。路线总预算按采购计划汇总，中间产物不重复计费。"]
+                    whyLong[st] = format(L["分配到本步的采购预算：%s"], RA.MoneyStr(spend))
+                elseif not (res and res.useBagMaterials) and RA.StepConsumeCost then
                     local cc = RA.StepConsumeCost(st)
                     if cc and cc > 0 then shown, consumeOnly = cc, true end
                 end
@@ -15190,8 +15310,9 @@ function PD.RowsLeveling(rows)
                         local seed = res and res.seedInventory or {}
                         local XPe = ns.ProfExecution
                         local live = XPe and XPe.BagCount and (XPe.BagCount(b.id) or 0) or nil
-                        local have = live or (tonumber(seed[b.id]) or 0)
-                        if type(GetItemCount) == "function" and have <= 0 then
+                        local bagMode=res and res.useBagMaterials
+                        local have = live or (not bagMode and tonumber(seed[b.id])) or 0
+                        if type(GetItemCount) == "function" and have <= 0 and not bagMode then
                             local ok, n = pcall(GetItemCount, b.id)
                             if ok and type(n) == "number" then have = n end
                             local ok2, n2 = pcall(GetItemCount, b.id, true)
@@ -15247,6 +15368,7 @@ function PD.RowsLeveling(rows)
                 cnt = cntOf[st] or format(L["~%s 次制作"], tostring(st[4])),
                 cntSub = cntSubOf[st],
                 cost = costOf[st] or "",
+                costBasis = costBasisOf[st],
                 costWhy = whyLong[st] or (((tonumber(st.cost) or 0) <= 0 and (st[4] or 0) > 0)
                     and L["本步材料来自背包库存或前面步骤自制的中间产物，因此没有新增采购支出。"] or nil),
                 costWhyShort = whyOf[st],
@@ -15255,10 +15377,8 @@ function PD.RowsLeveling(rows)
                 roleChip = roleChipOf[st],
                 _mats = mats,
                 blocks = blocks, matCut = cut,
-                sbVals = (rec and (rec[7] or rec[8] or rec[9] or rec[10]))
-                         and { rec[7], rec[8], rec[9], rec[10] }
-                         or (ri and (ri.yellow or ri.grey))
-                            and { ri.learn, ri.yellow, ri.green, ri.grey } or nil,
+                sbVals = rec and PD.RecipeColors(rec.orange, rec[8], rec[9], rec[10])
+                         or ri and PD.RecipeColors(ri.orange, ri.yellow, ri.green, ri.grey),
                 sbLo = segLo, sbHi = segHi,
                 card = cardOf[st],
                 act = auto and st[3] ~= 0 and function(_, button)
@@ -15371,14 +15491,21 @@ function PD.FormulaBlockedText(entry)
     return text and text~=reason and text or L["此图纸尚未取得且没有可靠购买来源；固定路线仅供参考。"]
 end
 
-function PD.RowsFormulaShop(rows, data, foldKey)
+function PD.RowsFormulaShop(rows, data, foldKey, represented)
     local formulas = data.formulas or {}
-    local hasTraining=false
-    for _,entry in ipairs(formulas) do if entry.source=="trainer" then hasTraining=true;break end end
-    PushHead(rows, format(hasTraining and L["学习费用（%d 项）"] or L["图纸（%d 种）"], #formulas), 1)
-    if foldKey then
-        rows[#rows].foldKey = foldKey
-        if PD.FoldOn(foldKey) then return end
+    local hasTraining,count=false,0
+    for _,entry in ipairs(formulas) do
+        if not (represented and represented[entry.id]) then
+            count=count+1
+            if entry.source=="trainer" then hasTraining=true end
+        end
+    end
+    if count>0 or #formulas==0 then
+        PushHead(rows, format(hasTraining and L["学习费用（%d 项）"] or L["图纸（%d 种）"], count), 1)
+        if foldKey then
+            rows[#rows].foldKey = foldKey
+            if PD.FoldOn(foldKey) then return end
+        end
     end
     if #formulas == 0 then
         PushText(rows, L["没有需要购买的图纸。"], 11, C_GREY, 1)
@@ -15387,11 +15514,13 @@ function PD.RowsFormulaShop(rows, data, foldKey)
     local function money(value)
         return type(value) == "number" and RA.MoneyStr(value, "copper") or L["请核对价格"]
     end
-    local function sourceRow(text, lines, act)
-        rows[#rows + 1] = {kind = "row", h = PD.ROW_H1, col = 1, fs = 11,
-            text = text, lines = lines, act = act}
-    end
     for _, entry in ipairs(formulas) do
+        local parent=rows
+        local rows={}
+        local function sourceRow(text, lines, act)
+            rows[#rows + 1] = {kind = "row", h = PD.ROW_H1, col = 1, fs = 11,
+                text = text, lines = lines, act = act}
+        end
         if entry.source=="trainer" then
             local spell=entry.spell or entry.recipe and entry.recipe.spell or 0
             local name=C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spell)
@@ -15536,6 +15665,22 @@ function PD.RowsFormulaShop(rows, data, foldKey)
         end
         if blockedText then PushText(rows, blockedText, 11, {1, 0.5, 0.4}, 1) end
         end
+        local targets=represented and represented[entry.id]
+        if targets then
+            for _,target in ipairs(targets) do
+                for _,detail in ipairs(rows) do
+                    if detail.it and detail.it[1]==entry.id then
+                        target.links,target.chip=detail.links,detail.chip
+                    elseif detail.act then
+                        target.links=target.links or {}
+                        target.links[#target.links+1]={text=detail.text,lines=detail.lines,act=detail.act}
+                    elseif detail.text then target.lines[#target.lines+1]={detail.text,.95,.75,.4} end
+                    for _,line in ipairs(detail.lines or {}) do target.lines[#target.lines+1]=line end
+                end
+            end
+        else
+            for _,row in ipairs(rows) do parent[#parent+1]=row end
+        end
     end
 end
 
@@ -15677,7 +15822,7 @@ function PD.ShopMatRow(rows, e, data, priced, extraTip, final)
     if seg then sub = format(L["首用于 %d–%d 段"], seg[1], seg[2]) end
     local right, right2
     if priced and not unpriced then
-        right = format(L["×%d · %s"], n or 0, RA.MoneyStr(unit, "copper"))
+        right = format(L[e.averageQuote and "×%d · 均价 %s" or "×%d · %s"], n or 0, RA.MoneyStr(unit, "copper"))
         right2 = RA.MoneyStr(cost, "copper")
     else
         right = format("×%d", n or 0)
@@ -15862,7 +16007,7 @@ function PD.RowsReserveShopping(rows,data)
         rows[#rows].foldKey = "shop_mats"
         if PD.FoldOn("shop_mats") then return end
     end
-    local display,byID={},{}
+    local display,byID,prepared,auctionItems,represented={},{},{},{},{}
     for key,value in pairs(data) do display[key]=value end
     display.mats={}
     local function add(entry,purchase,count,cost)
@@ -15871,6 +16016,7 @@ function PD.RowsReserveShopping(rows,data)
         item.id,item.count,item.cost=entry.id,count or 0,cost
         item.unit=count and count>0 and type(cost)=="number" and cost/count or nil
         item.source=PD.PurchaseSourceKind(purchase)
+        if item.source=="auction" then item.source="ah" end
         item.unpriced=cost==nil or purchase.unpriced
         if item.source=="ah" or item.source=="auction" then
             item.availableCount,item.supplyObserved,item.supplyStatus=entry.availableCount,entry.supplyObserved,entry.supplyStatus
@@ -15879,10 +16025,25 @@ function PD.RowsReserveShopping(rows,data)
         end
         item.need,item.have,item.used,item.usedCount,item.actualNeed=nil,nil,nil,nil,nil
         item.netDemand=true
-        display.mats[#display.mats+1]=item
+        local previous=item.source=="ah" and auctionItems[entry.id]
+        if previous then
+            previous.count=previous.count+item.count
+            previous.averageQuote=true
+            previous.unpriced=previous.unpriced or item.unpriced
+            previous.unavailable=previous.unavailable or item.unavailable
+            if item.costComplete==false then previous.costComplete=false end
+            previous.cost=type(previous.cost)=="number" and type(item.cost)=="number" and previous.cost+item.cost or nil
+            previous.unit=previous.cost and previous.count>0 and previous.cost/previous.count or nil
+            previous.supplyRequired=previous.count
+        else
+            display.mats[#display.mats+1]=item
+            if item.source=="ah" then auctionItems[entry.id]=item end
+        end
         byID[entry.id]=entry
     end
     for _,entry in ipairs(list) do
+        if data.useBagMaterials and not ProfDB().shopOnlyMiss and entry.haveKnown
+            and (entry.need or 0)>0 and entry.purchaseCount==0 then prepared[#prepared+1]=entry end
         for _,purchase in ipairs(entry.purchases or {}) do
             add(entry,purchase,purchase.count,purchase.cost)
         end
@@ -15900,6 +16061,8 @@ function PD.RowsReserveShopping(rows,data)
         local row=rows[index]
         local entry=row.it and byID[row.it[1]]
         if entry then
+            represented[entry.id]=represented[entry.id] or {}
+            represented[entry.id][#represented[entry.id]+1]=row
             local have=entry.haveKnown and tostring(entry.have) or L["请检查背包"]
             local summary=reserve and format(L["基础 %d · 备用 %d · 背包 %s"],entry.baseNeed or entry.need,
                 entry.reserveNeed or 0,have) or format(L["需求 %d · 背包 %s"],entry.need,have)
@@ -15911,10 +16074,25 @@ function PD.RowsReserveShopping(rows,data)
                 or row.purchaseSource=="unknown" and (entry.purchaseUncovered or 0)>0 then
                 row.right,row.right2=entry.inventoryUnknown and L["请检查背包"] or L["请扫描拍卖行"],L["请核对价格"]
                 row.purchaseCount,row.purchaseCost=nil,nil
-                row.lines={{summary,.7,.7,.7},{detail or (entry.inventoryUnknown and L["请打开背包和银行确认数量"] or L["请扫描拍卖行"]),.95,.75,.4}}
+                if entry.requiresRecalculation then row.right,row.right2=L["重新计算"],nil end
+                row.lines={{summary,.7,.7,.7},{detail or (entry.inventoryUnknown and (data.useBagMaterials and L["请检查背包"] or L["请打开背包和银行确认数量"]) or L["请扫描拍卖行"]),.95,.75,.4}}
             end
         end
     end
+    if #prepared>0 then
+        PushHead(rows,L["已备齐"],1)
+        for _,entry in ipairs(prepared) do
+            local summary=format(L["需求 %d · 背包 %s"],entry.need,tostring(entry.have))
+            rows[#rows+1]={kind="row",h=PD.ROW_H2,col=1,it={entry.id},
+                fs=PD.ROW2_FS,bFs=PD.ROW2_SUB_FS,iconPx=PD.ROW2_ICON,
+                text=PD.Fit(DG.ItemName(entry.id),PD.ROW2_FS,(PD.splitLW or PD.COL_LW)-130),
+                sub=summary,right=L["已备齐"],tag={text=L["库存"],color=C_GREY},
+                lines={{summary,.7,.7,.7},{L["已计入背包材料"],.55,.85,.6}}}
+            represented[entry.id]=represented[entry.id] or {}
+            represented[entry.id][#represented[entry.id]+1]=rows[#rows]
+        end
+    end
+    return represented
 end
 
 function PD.RowsAutoShop(rows, data)
@@ -15945,7 +16123,8 @@ function PD.RowsAutoShop(rows, data)
         if not data.referenceShopping then return end
     end
     if #mats == 0 and #(data.fishMaterials or {}) == 0 and #(data.formulas or {})==0
-        and not (data.reserve and #data.reserve.mats>0) then
+        and not (data.reserve and #data.reserve.mats>0)
+        and not (data.useBagMaterials and next(data.seedInventory or {})) then
         PushText(rows, L["没有需要准备的材料。"], 12, C_GREY, 1)
     end
     if #(data.fishMaterials or {}) > 0 then
@@ -15969,8 +16148,9 @@ function PD.RowsAutoShop(rows, data)
         end
         PushText(rows, format(L["当前制作步骤背包还缺：%s"], table.concat(parts, "、")), 12, { 0.95, 0.75, 0.4 }, 1)
     end
+    local represented
     if follow and follow.ShoppingForPlan and (data.planVersion==2 or data.reserve and data.reserve.mode~="off") then
-        PD.RowsReserveShopping(rows,data)
+        represented=PD.RowsReserveShopping(rows,data)
     elseif PD.shopGroup then
         if #mats > 0 then PD.PushTripGroups(rows, data) end
     else
@@ -15980,7 +16160,7 @@ function PD.RowsAutoShop(rows, data)
             for _,entry in ipairs(mats) do PD.ShopMatRow(rows,entry,data,priced) end
         end
     end
-    if data.formulas then PD.RowsFormulaShop(rows, data, "shop_formulas") end
+    if data.formulas then PD.RowsFormulaShop(rows, data, "shop_formulas",represented) end
 
     local snapSec, snapDays = PD.SnapshotAge(data)
     local tip = {}
@@ -15990,7 +16170,7 @@ function PD.RowsAutoShop(rows, data)
         end
     end
     PushGap(rows, 8, 2)
-    PushHead(rows, L["总共需要"], 2)
+    PushHead(rows, data.useBagMaterials and L["预计额外支出"] or L["总共需要"], 2)
     rows[#rows].warn = tip
     if priced then
         PushText(rows, PD.PlanCostText(data), 20, C_GOLD, 2)
@@ -16026,6 +16206,7 @@ function PD.RowsAutoShop(rows, data)
             note(L["图纸获取尚未全部确认；当前总额只包含已知支出。"], 0.95, 0.75, 0.4)
         end
     end
+    if data.useBagMaterials then note(L["已计入背包材料"]) end
     if data.referencePrices then note(L["含商人参考报价，实际报价可能因声望而异。"]) end
     local vendorOnly = #mats > 0 or #(data.formulas or {}) > 0
     for _, entry in ipairs(mats) do
@@ -16244,6 +16425,12 @@ function PD.LevelTool()
                        tip = { { L["历史路线"], 1, 0.82, 0 },
                            { format(L["最近 %d 次计算的时间、起始与目标等级、步数与总花费。"], PD.HISTORY_MAX), 0.85, 0.85, 0.85 } } }
         list[#list + 1] = hist
+        if automatic and not fishRoute and not onLog and not onRec and PD.autoPage~="shop" then
+            local label=PD.GreenBudgetLabel(PD.SettingRaw("autoSkillBudget",routeSlug))
+            list[#list+1]={key="green_budget",align="right",text=label,tip={{label,1,.82,0},
+                {L["乐观按平均次数计算。均衡和悲观分别按单点 80% 和 95% 把握计算，悲观还将绿方的估算升点率减半。选方和购物单使用同一份用量。点击切换，再重新计算。"]},
+                {L["开启回血时，选方只按平均会做出的冲点成品估算收益。"]}}}
+        end
         local rec = { key = "recalc", align = "right", primary = true, glow = need,
                       text = automatic and L["重新计算"] or L["刷新费用"] }
         if automatic and PD.policyDirty and PD.policyDirty[PD.cur] then
@@ -16293,6 +16480,9 @@ function PD.LevelTool()
             ns.PlaySound(1)
         elseif k == "route_history" then
             PD.ToggleRouteHistory()
+        elseif k=="green_budget" and PD.cur==routeSlug then
+            local mode=PD.SettingRaw("autoSkillBudget",routeSlug)
+            PD.ChangeRouteSetting("autoSkillBudget",mode=="optimistic" and "balanced" or mode=="pessimistic" and "optimistic" or "pessimistic",routeSlug)
         elseif k == "recalc" then
             if PD.cur ~= routeSlug then return end
             PD.DoRecalc(routeSlug)
@@ -16378,7 +16568,7 @@ PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
 PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
     { L["路线"], { "autoRoute", "autoFromCurrent", "autoStartSkill", "autoSecondaryLeveling", "computationSpeed" }, 1 },
-    { L["采购与配方"], { "reserveMode", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
+    { L["采购与配方"], { "autoUseBagMaterials", "reserveMode", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
     { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools" }, 2 },
 }
 
@@ -16399,16 +16589,16 @@ function PD.RowsSettings(rows)
           d2 = L["关闭后：不显示外框，该段落样式与其他行一致。"] },
         { k = "autoRoute", name = L["自动计算路线（材料采购）"],
           desc = L["关闭显示固定参考路线；开启比较商人、拍卖行和自制材料。"],
-          d1 = L["不使用背包或银行库存，只计算路线需要采购的材料。"],
+          d1 = L["可选择使用背包材料，按零成本参与路线计算；不包含银行。"],
           d2 = L["路线与购物清单在「升级」页签顶部的按钮切换。"] },
+        { k = "autoUseBagMaterials", name = L["使用背包材料（按零成本）"],
+          desc = L["按当前背包材料减少额外采购并选择路线，不包含银行。"],
+          d1 = L["已有材料按实际数量使用，缺口继续比较商人、拍卖行与自制费用。"],
+          d2 = L["切换或背包材料变化后，点击重新计算更新路线。"] },
         { k = "autoOnlyAH", name = L["只使用拍卖行可购材料的配方"],
           desc = L["材料在拍卖行/商人都查不到价格时，该配方不参与计算（商人直售材料不受限）"],
           d1 = L["开启：路线更可靠，但可能出现无配方可用的缺口区间。"],
           d2 = L["关闭：可先查看路线；请使用 Auctionator 完整扫描后重新计算费用。"] },
-        { k = "autoConsiderAuctionSupply", name = L["考虑拍卖行的销售数量"],
-          desc = L["先用 Auctionator 完整扫描一次拍卖行。开启后按扫描数量安排材料采购；拍卖行图纸也需要扫描确认在售。"],
-          d1 = L["开启：材料和图纸共用可购数量，数量不足时尝试其他货源或配方。"],
-          d2 = L["关闭：材料只按价格规划；拍卖行图纸仍需完整扫描后才能参与路线。"] },
         { k = "autoBuyLimitedFormulas", name = L["允许NPC限量销售图纸"],
           desc = L["允许限量商人报价与拍卖行报价比较，选择更便宜的购买渠道。"],
           d1 = L["默认关闭；关闭时仍可使用有价格且近期在售数量至少1张的拍卖行图纸。"],
@@ -16445,6 +16635,7 @@ function PD.RowsSettings(rows)
     local byKey = {}
     for _, d in ipairs(defs) do byKey[d.k] = d end
     local function allowed(k)
+        if k=="autoUseBagMaterials" then return PD.BagMaterialsAvailable() end
         if PD.FixedOnly() then return k == "greyPassed" or k == "hlCurrent" end
         return true
     end

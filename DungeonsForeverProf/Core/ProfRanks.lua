@@ -1,4 +1,6 @@
 local ns = _G.DF_NS or {}
+ns.ProfSourceQuestRankSchema=1
+ns.ProfSourceAccessRankSchema=1
 if not ns.LoadForeverPages then return end
 local R = {}
 ns.ProfRanks = R
@@ -278,6 +280,20 @@ function R.RouteSteps(slug, target, opts)
             step.available=not step.complete and factsKnown and qualificationAllowed and state.known and state.skill>=entry.skillRequired
                 and (entry.levelRequired==0 or state.level~=nil and state.level>=entry.levelRequired) or false
             if observed and observed.available==true and not step.complete then step.available=true end
+            if ns.VendorPriceDB and #step.sources>0 and not step.complete then
+                local available,unknown=false,false
+                for _,source in ipairs(step.sources) do
+                    local kind=source.kind
+                    local npc=source.npcID or source.npc
+                    local target=kind=="vendor" and (source.itemID or entry.bookItemID) or (source.spellID or entry.spell)
+                    local context=opts and opts.completedQuests and {completedQuests=opts.completedQuests,ownedSourceItems=opts.ownedSourceItems} or nil
+                    local met=ns.VendorPriceDB.SourceAccessState(kind,npc,target,context,source.conditions)
+                    source.questRequired=ns.VendorPriceDB.SourceRequiresQuest(kind,npc,target) or nil
+                    if source.questRequired then source.questUnlocked=met end
+                    if met==true then available=true elseif met==nil then unknown=true end
+                end
+                if not available then step.available=false;qualificationAllowed=false;if unknown then factsKnown=false end end
+            end
             step.due=not step.complete and state.skill~=nil and state.skill>=reminder
             if step.complete then step.status="complete"
             elseif step.available then step.status="available"

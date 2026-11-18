@@ -429,6 +429,11 @@ local function routeForCalc(slug, skill)
         PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code="fixedOnlyChanged"}}}
         return "fixed",{}
     end
+    if frozen and frozen.pricingPolicyStale then
+        PF.pendingPlans=PF.pendingPlans or {}
+        PF.pendingPlans[slug]={status="recalculate_required",feasible=false,diagnostics={{code="pricingPolicyChanged"}}}
+        return "auto",{}
+    end
     if frozen then return frozen.mode == "fixed" and "fixed" or "auto", frozen.executionSteps or frozen.steps,frozen end
     local ended = PF.endedPlan and PF.endedPlan[slug]
     if ended and PF.Following and PF.Following(slug) then return ended.mode == "fixed" and "fixed" or "auto", ended.executionSteps or ended.steps,ended end
@@ -634,6 +639,11 @@ local function allocatePurchases(row)
     row.missing=left
     row.baseMissing=math.max(0,(row.baseNeed or row.need)-row.have)
     row.reserveMissing=math.max(0,left-row.baseMissing)
+    if left>0 and row.craftedIntermediate and (row.formulaNeed or 0)==0 then
+        row.requiresRecalculation=true;row.purchaseUnknown=true;row.purchaseUncovered=left
+        row.purchaseCount,row.purchaseCost=nil,nil
+        return
+    end
     local bridge=ns.AuctionBridge
     local useSupply=row.considerAuctionSupply~=false
     local available=useSupply and row.availableCount or nil
@@ -686,10 +696,56 @@ local function allocatePurchases(row)
             else quotesComplete=false end
         end
     end
-    if available~=nil then ahLimit=math.min(ahLimit,math.max(0,available-formulaAH)) end
+    local bagQuotes=row.bagMaterialQuotes
+    local vdb=ns.VendorPriceDB
+    local cached=(row.materialNeed or 0)>0 and (row.formulaNeed or 0)==0
+        and vdb and vdb.GetCachedOffer and vdb.GetCachedOffer(row.id)
+    if cached then
+        local depth=bridge and bridge.GetAuctionDepth and bridge.GetAuctionDepth(row.id)
+        local previous
+        for _,offer in ipairs(offers) do
+            local unit=offer.price/offer.quantity
+            if not previous or unit<previous then previous=unit end
+        end
+        if not previous and bagQuotes then for _,offer in ipairs(bagQuotes.offers and bagQuotes.offers[row.id] or {}) do
+            local unit=offer.unit or offer.price and offer.price/(offer.quantity or offer.bundleSize or 1)
+            if type(unit)=="number" and (not previous or unit<previous) then previous=unit end
+        end end
+        local changed=previous and previous~=cached.unit or not previous and auction and cached.unit<auction
+        if depth or changed then
+            local book=depth and ns.ProfAuctionDepth.Build(depth.levels)
+                or bagQuotes and bagQuotes.auctionDepth and bagQuotes.auctionDepth[row.id]
+            local supply=(useSupply or depth) and bridge and bridge.GetAuctionSupply and bridge.GetAuctionSupply(row.id)
+            local price=book and book.prices[1] or bagQuotes and bagQuotes.prices and bagQuotes.prices[row.id] or auction
+            available=supply and supply.quantity or depth and depth.quantity or available
+            bagQuotes={prices={[row.id]=price},offers={[row.id]={cached}},auctionDepth={[row.id]=book},
+                auctionSupply={[row.id]=supply},faction=bagQuotes and bagQuotes.faction,
+                nonAuctionable=bagQuotes and bagQuotes.nonAuctionable or {}}
+        end
+    end
+    if bagQuotes then
+        hasMaterials=true
+        local book=bagQuotes.auctionDepth and bagQuotes.auctionDepth[row.id]
+        local supply=bagQuotes.auctionSupply and bagQuotes.auctionSupply[row.id]
+        available=available or supply and supply.quantity or book and book.total
+        ahLimit=available and math.max(0,available-formulaAH) or math.huge
+        row.availableCount=available
+    elseif available~=nil then ahLimit=math.min(ahLimit,math.max(0,available-formulaAH)) end
     if left>0 and hasMaterials then
         local entries,complete
-        if quotesComplete and RA and RA.MaterialPurchases then
+        if bagQuotes then
+            local economy=ns.ProfEconomy
+            local price=bagQuotes.prices and bagQuotes.prices[row.id]
+            local book=bagQuotes.auctionDepth and bagQuotes.auctionDepth[row.id]
+            if (bagQuotes.nonAuctionable or {})[row.id] or type(price)~="number" or price<=0 then price=nil end
+            local total
+            entries,total,complete=economy.MaterialPurchases(row.id,left,{
+                offers=bagQuotes.offers and bagQuotes.offers[row.id] or {},auction=price,
+                supply=bagQuotes.auctionSupply and bagQuotes.auctionSupply[row.id],available=available and ahLimit or nil,
+                faction=bagQuotes.faction,auctionCost=book and function(count)
+                    return economy and ns.ProfAuctionDepth.Cost(book,formulaAH,count) or math.huge
+                end or nil})
+        elseif quotesComplete and RA and RA.MaterialPurchases then
             local snap={prices={[row.id]=auction},offers={[row.id]=offers},auctionSupply={},considerAuctionSupply=useSupply}
             if available~=nil then snap.auctionSupply[row.id]={quantity=ahLimit} end
             local total
@@ -715,11 +771,14 @@ local function allocatePurchases(row)
                     if count~=requested then cost=entry.unit and entry.unit*count or (type(entry.cost)=="number" and requested>0 and entry.cost*count/requested) or nil end
                 end
                 add(entry,count,cost)
-                if purchaseSource(entry)~=nil then covered=covered+count end
+                if purchaseSource(entry)~=nil and (not bagQuotes or not entry.unavailable and not entry.unpriced) then covered=covered+count end
             end
             if complete==false or covered<left then row.purchaseUncovered=(row.purchaseUncovered or 0)+math.max(0,left-covered) end
         end
     elseif left>0 then row.purchaseUncovered=(row.purchaseUncovered or 0)+left end
+    if bagQuotes and (row.purchaseUncovered or 0)>0 then
+        row.purchaseUnknown=true;row.purchaseCost=nil;row.costUnknown=true
+    end
     if row.purchaseCount then row.packSurplus=math.max(0,row.purchaseCount-row.missing) end
     if useSupply and row.ahCount>0 then
         row.auctionUnknown=available==nil
@@ -1078,6 +1137,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
     if suppliedPlan then plan=suppliedPlan;steps=plan.executionSteps or plan.steps
     else _,steps,plan=routeFor(s.slug,s.skill) end
     if not steps then return {} end
+    if plan and plan.useBagMaterials then bagsOnly=true end
     local rm = recMap(s.slug)
     local totals, order = {}, {}
     local futureOutputs,futureSpells={},{}
@@ -1088,7 +1148,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
     local matching=run and plan and (run.plan==plan or plan.planID and run.originPlanID==plan.planID)
     local projected=not onlyStep and not matching and plan and xp and xp.PreviewProgress and xp.PreviewProgress(s.slug,plan)
     local casts,completed,baseRemaining={},{},{}
-    if reserve and (matching or projected) then for _,seg in ipairs(steps) do
+    if not onlyStep and (matching or projected) then for _,seg in ipairs(steps) do
         local progress=matching and readProgress(seg.segmentID) or projected[seg.segmentID]
         if progress and progress.segmentID==seg.segmentID then
             casts[seg.segmentID]=progress.casts;completed[seg.segmentID]=progress.complete
@@ -1108,7 +1168,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         end
         if projected and projected[seg.segmentID] and (seg.reason=="material" or seg.role=="material" or xp.IsConversion(seg)) then
             crafts=math.min(crafts,projected[seg.segmentID].baseCrafts or crafts)
-        elseif reserve and matching then
+        elseif not onlyStep and matching then
             crafts=math.min(crafts,baseRemaining[seg.segmentID] or 0)
         end
         if crafts>0 then
@@ -1188,6 +1248,14 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             if formula then leaf.formulaCost=(leaf.formulaCost or 0)+(entry.cost or 0) end
         end
         for _,entry in ipairs(plan.mats or {}) do purchase(entry) end
+        if plan.useBagMaterials then
+            for id,count in pairs(plan.seedInventory or {}) do
+                local amount=type(count)=="table" and count.count or count
+                if type(amount)=="number" and amount>0 and not leaves[id] then
+                    leaves[id]={planPurchaseCount=0,planPurchaseCost=0,planAHCount=0,planVendorCount=0,planPurchases={}}
+                end
+            end
+        end
         if reserve then for _,entry in ipairs(plan.reserve.mats or {}) do purchase(entry) end end
         for id,quantity in pairs(plan.retainedToolItems or {}) do
             if leaves[id] then
@@ -1228,9 +1296,11 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             local row,leaf=totals[id],leaves[id]
             if leaf then
                 for key,value in pairs(leaf) do row[key]=value end
+                if plan.useBagMaterials then row.bagMaterialQuotes=plan.bagMaterialQuotes;row.useBagMaterials=true end
                 local tools=tonumber((plan.retainedToolItems or {})[id]) or 0
                 if tools==0 then for _,tool in ipairs(plan.toolItems or {}) do if tool==id then tools=1;break end end end
                 row.planDemand=math.max(0,(originalNeeds[id] or 0)-(originalOutputs[id] or 0))+tools+(row.formulaNeed or 0)
+                row.craftedIntermediate=leaf.planPurchaseCount==0 and (originalOutputs[id] or 0)>0 or nil
             end
         end
         if reserve then
@@ -1278,7 +1348,8 @@ end
 
 function PF.ShoppingSourceText(entry)
     if entry.planPurchases then
-        if entry.inventoryUnknown then return L["请打开背包和银行，再查看需要购买的数量。"] end
+        if entry.requiresRecalculation then return format(L["原计划货源还缺 %d 件，请重新计算。"],entry.purchaseUncovered or 0) end
+        if entry.inventoryUnknown then return entry.useBagMaterials and L["请检查背包"] or L["请打开背包和银行，再查看需要购买的数量。"] end
         if entry.purchaseUnknown then return L["请核对价格"] end
         local parts={}
         if (entry.reserveNeed or 0)>0 then
@@ -1345,7 +1416,7 @@ function PF.ShoppingSourceDetail(entry)
     if (entry.auctionShortage or 0)>0 then parts[#parts+1]=L["本次扫描的材料数量不够；请用 Auctionator 完整扫描后重新计算，或更换货源。"] end
     if entry.purchaseUncovered and entry.purchaseUncovered>0 then parts[#parts+1]=format(L["原计划货源还缺 %d 件，请重新计算。"],entry.purchaseUncovered) end
     if pending > 0 then parts[#parts+1]=format(L["已竞标 %d 件，邮件待收"], pending) end
-    if entry.inventoryUnknown then parts[#parts+1]=L["请打开背包和银行，再查看需要购买的数量。"] end
+    if entry.inventoryUnknown then parts[#parts+1]=entry.useBagMaterials and L["请检查背包"] or L["请打开背包和银行，再查看需要购买的数量。"] end
     return table.concat(parts,"\n")
 end
 
@@ -1614,7 +1685,7 @@ local function jumpCraft(stepIdx)
     jumpPending = nil
     local s = st()
     if not (s and s.slug) then return end
-    local _, steps = routeFor(s.slug, s.skill)
+    local _, steps, plan = routeFor(s.slug, s.skill)
     local index = stepIdx or (s.step or 1)
     local seg = steps and steps[index]
     if not seg then return end
@@ -1633,7 +1704,7 @@ local function jumpCraft(stepIdx)
     local mats = recMats(rec)
     if mats then
         for _, m in ipairs(mats) do
-            if (Have(m[1]) or 0) < (m[2] or 1) then
+            if (Have(m[1],not (plan and plan.useBagMaterials)) or 0) < (m[2] or 1) then
                 local sup = PF.SupplementNeeds(s.slug)
                 if sup then
                     craftNotify(format(L["本步材料不足：缺 %d 种共 %d 件，先按购物清单补齐"], sup.kinds, sup.qty))
@@ -2460,21 +2531,24 @@ local function paintMats(card, seg, rm, sold, w, remaining, resR)
     local n = 0
     local pending = false
     local canCraft
+    local state=st()
+    local bagMode=false
+    if state then local _,_,plan=routeFor(state.slug,state.skill);bagMode=plan and plan.useBagMaterials or false end
     if mats and #mats > 0 then
         for _, m in ipairs(mats) do
             local per = (m[2] or 1)
             if per > 0 then
-                local raw = Have(m[1])
-                local c = math.floor((raw + PF.BidPending(m[1], raw)) / per)
+                local raw = Have(m[1],not bagMode)
+                local c = math.floor((raw + (bagMode and 0 or PF.BidPending(m[1], raw))) / per)
                 canCraft = (canCraft == nil) and c or math.min(canCraft, c)
             end
         end
         card.matHead:Hide()
         for i, m in ipairs(mats) do
             if i > MAT_MAX then break end
-            local raw = Have(m[1])
+            local raw = Have(m[1],not bagMode)
             local pend = PF.BidPending(m[1], raw)
-            local have = raw + pend
+            local have = raw + (bagMode and 0 or pend)
             local per = (m[2] or 1)
             local need = per * math.max(0, remaining or 0)
             local ok = have >= need
@@ -2888,9 +2962,10 @@ function PF.Paint()
             local row = {
                 nm = e.formula and (L["图纸"].." · "..nm) or nm,
                 have = raw,
+                availableHave = raw + (e.useBagMaterials and 0 or pend),
                 pending = pend,
                 need = e.need,
-                missing = math.max(0, (tonumber(e.missing) or 0) - pend),
+                missing = math.max(0, (tonumber(e.missing) or 0) - (e.useBagMaterials and 0 or pend)),
                 inventoryUnknown = not e.haveKnown,
                 at = e.at or 0,
                 src = srcByID and srcByID[e.id] or nil,
@@ -2901,7 +2976,7 @@ function PF.Paint()
             end
             local w1 = tw(row.nm)
             if w1 > nameW then nameW = w1 end
-            local w2 = tw(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have + (row.pending or 0), row.need), row.need))
+            local w2 = tw(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.availableHave, row.need), row.need))
             if w2 > numW then numW = w2 end
             local w5 = tw(row.gate and L["全程"] or format("%d+", row.at)) + 10
             if w5 > tagW then tagW = w5 end
@@ -3008,7 +3083,7 @@ function PF.Paint()
                 nmFS:SetText((tw(row.nm) > nameW) and clipText(row.nm, nameW) or row.nm)
                 nmFS:SetWidth(nameW)
                 num:SetWidth(numW)
-                num:SetText(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.have + (row.pending or 0), row.need), row.need))
+                num:SetText(row.inventoryUnknown and ("? / "..row.need) or format("%d/%d", math.min(row.availableHave, row.need), row.need))
                 nmFS:ClearAllPoints()
                 nmFS:SetPoint("TOPLEFT", f.shop, "TOPLEFT", xName, ry)
                 nmFS:Show()

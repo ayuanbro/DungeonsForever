@@ -89,7 +89,7 @@ local function quote(id,s,fee,stamp,live,residualMass)
     local supply=live and b and b.GetAuctionSupply and b.GetAuctionSupply(id,true) or s.auctionSupply and s.auctionSupply[id]
     local age=type(supply)=="table" and type(supply.observedAt)=="number" and stamp-supply.observedAt
     local reliable=type(supply)=="table" and amount(supply.quantity) and supply.quantity==floor(supply.quantity)
-        and supply.complete==true and supply.ownerExcluded==true
+        and supply.complete==true
         and supply.source=="client-auction-results"
         and (b and b.ForceExpiredActive and b.ForceExpiredActive()
             or (age and age>=0 and age<=ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds())) or false

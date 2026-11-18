@@ -95,13 +95,16 @@ function RA.OptionsFor(slug, current)
     opts.cpuLimitMs = 8000
     opts.autoCraftTools = setting("autoCraftTools", true,slug)
     opts.residualMass = setting("autoResidualMass", false,slug)
-    opts.reserveMode = setting("autoReserveMode", "standard",slug)
+    opts.reserveMode = "off"
+    opts.skillBudgetAll = true
+    opts.greenBudget = E.GreenBudgetMode(setting("autoSkillBudget","balanced",slug))
     opts.recoveryEnabled = setting("recoveryEnabled", false,slug)
     opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug)
     opts.allowLimitedFormulas = setting("autoBuyLimitedFormulas", false,slug)
     opts.allowBindOnPickupFormulas = setting("autoAllowBindOnPickupFormulas", false,slug)
     opts.allowCurrencyFormulas = setting("autoAllowCurrencyFormulas", false,slug)
     opts.considerAuctionSupply = setting("autoConsiderAuctionSupply", false,slug)
+    opts.useBagMaterials = setting("autoUseBagMaterials", false,slug)
     if slug=="first-aid" or slug=="poisons" then opts.scheme="fixed";opts.autoCraftTools=false end
     opts.exclusions = copy(E.GetPolicies and E.GetPolicies(slug) or {})
     if E.GetRoutePartner then opts.secondaryProfession = E.GetRoutePartner(slug) end
@@ -112,13 +115,18 @@ local function options(slug, supplied)
     local opts = copy(supplied or RA.OptionsFor(slug),nil,true)
     if supplied and supplied.snapshot then opts.snapshot = supplied.snapshot end
     opts.scheme = opts.scheme or "cheapest"
+    if opts.useBagMaterials==nil then opts.useBagMaterials=setting("autoUseBagMaterials",false,slug) end
+    opts.useBagMaterials=opts.useBagMaterials==true and slug~="first-aid" and slug~="poisons"
+        and opts.scheme~="fixed" and opts.scheme~="fishing" and slug~="fishing"
     opts.profession = slug
     opts.learnedOnly,opts.noFormula,opts.allowUnknownLearning,opts.skipUnpricedFormulas=nil,nil,nil,nil
     opts.considerAuctionSupply=E.ConsiderAuctionSupply(opts)
     opts.start = math.max(1, math.min(300, math.floor(tonumber(opts.start) or 1)))
     opts.target = math.max(1, math.min(300, math.floor(tonumber(opts.target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300)))
     if opts.residualMass == nil then opts.residualMass = setting("autoResidualMass", false,slug) end
-    if opts.reserveMode == nil then opts.reserveMode = setting("autoReserveMode", "standard",slug) end
+    if opts.skillBudgetAll==nil then opts.skillBudgetAll=true end
+    if opts.skillBudgetAll or opts.reserveMode==nil then opts.reserveMode="off" end
+    opts.greenBudget=E.GreenBudgetMode(opts.greenBudget or setting("autoSkillBudget","balanced",slug))
     if opts.recoveryEnabled == nil then opts.recoveryEnabled = setting("recoveryEnabled", false,slug) end
     if opts.recoveryFeePercent == nil then opts.recoveryFeePercent = setting("recoveryFeePercent", 5,slug) end
     if opts.autoCraftTools == nil then opts.autoCraftTools = setting("autoCraftTools", true,slug) end
@@ -134,7 +142,7 @@ local function options(slug, supplied)
     if opts.scheme == "fishing" then opts.allowSecondaryLeveling=false; opts.secondaryProfession=nil end
     if opts.scheme~="cheapest" and opts.scheme~="fishing" and opts.scheme~="stable" then
         opts.specializationRecipeScore=function(recipe,state,snapshot,incremental)
-            local gain=E.Gain(recipe,(state.skill or {})[recipe.profession] or 1)
+            local gain=E.PlanningGain(recipe,(state.skill or {})[recipe.profession] or 1,opts.greenBudget,opts.skillBudgetAll)
             if gain<=0 then return math.huge end
             if opts.scheme=="crafts" then return 1/gain end
             if opts.scheme=="optim" then
@@ -153,10 +161,11 @@ local function signature(slug, opts)
     local policy = E.PolicyFingerprint and E.PolicyFingerprint(opts.exclusions) or ""
     local sig=table.concat({"profession:"..tostring(slug), opts.scheme, tostring(opts.target), start, tostring(opts.onlyAH),
         tostring(opts.allowBindOnPickupFormulas), tostring(opts.allowCurrencyFormulas), tostring(opts.considerAuctionSupply), tostring(opts.allowSecondaryLeveling),
-        tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas),
-        "formula-channels:2", "profit-priority:20", "recipe-batches:11:risk:1", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
+        tostring(opts.secondaryProfession), tostring(opts.autoCraftTools), tostring(opts.allowLimitedFormulas), tostring(opts.useBagMaterials==true),
+        "formula-channels:2", "profit-priority:20", "recipe-batches:12:risk:1", "auction-depth:1", tostring(opts.reserveMode), tostring(opts.residualMass), tostring(opts.recoveryEnabled), tostring(opts.recoveryFeePercent),
         tostring(opts.targetUnlearned), RA.SpecSig and RA.SpecSig(slug) or "", policy,learningPolicy(),
         E.LearningObservationFingerprint and E.LearningObservationFingerprint() or ""}, "|")
+    if opts.scheme~="fixed" and opts.scheme~="fishing" then sig=sig..(opts.skillBudgetAll and "|skill-budget:2:" or "|green-budget:1:")..E.GreenBudgetMode(opts.greenBudget) end
     return sig
 end
 local function identity(slug, opts)
@@ -183,10 +192,15 @@ local function refreshFreshness(result,slug,opts)
     local diagnosticPolicyChanged=result.planVersion==2 and result.scheme~="fishing"
         and result.targetReached~=true and result.failureDiagnosticVersion~=S.FailureDiagnosticVersion
     local settingsChanged=result.cacheSignature and result.cacheSignature~=signature(slug,opts) or false
+    local bagChanged,bagUnknown=false,false
+    if E.BagInventoryChanged then bagChanged,bagUnknown=E.BagInventoryChanged(result) end
+    result.bagInventoryChanged=bagChanged or nil
+    result.bagInventoryUnknown=bagUnknown or result.bagInventoryUnknown or nil
     local procurementPolicyChanged=result.planVersion==2 and
         (result.scheme=="fishing" and result.fishingRouteRevision~=2
             or result.scheme~="fishing" and result.procurementPolicyVersion~=S.ProcurementPolicyVersion)
-    local marketChanged=false
+    local marketChanged=(E.AuctionDepthChanged and E.AuctionDepthChanged(result))
+        or (E.VendorPricesChanged and E.VendorPricesChanged(result)) or false
     if result.auctionPriceInputs and RA.AHPriceOf then
         for id,previous in pairs(result.auctionPriceInputs) do
             local price=RA.AHPriceOf(id)
@@ -201,9 +215,9 @@ local function refreshFreshness(result,slug,opts)
         or reason=="prices" and not result.auctionPriceInputs)
     result.settingsChanged=settingsChanged or nil
     result.diagnosticPolicyChanged=diagnosticPolicyChanged or nil
-    result.stale=(diagnosticPolicyChanged or procurementPolicyChanged or settingsChanged or marketChanged or supplyChanged or explicit) and true or nil
+    result.stale=(diagnosticPolicyChanged or procurementPolicyChanged or settingsChanged or marketChanged or supplyChanged or bagChanged or result.bagInventoryUnknown or explicit) and true or nil
     result.staleReason=diagnosticPolicyChanged and "diagnostic-policy" or procurementPolicyChanged and "procurement-policy" or settingsChanged and "settings" or supplyChanged and "supply"
-        or marketChanged and "prices" or explicit and reason or nil
+        or marketChanged and "prices" or result.bagInventoryUnknown and "inventory-unknown" or bagChanged and "inventory" or explicit and reason or nil
     return result
 end
 local function replicatePrerequisite(slug,opts)
@@ -226,7 +240,7 @@ local skeletonStepFields={"profession","kind","reason","checkpoint","segmentID",
     "goalID","questID","abilityID","sourceItem","targetItem"}
 local skeletonOptionFields={"fromCurrent","onlyAH","allowSecondaryLeveling","secondaryProfession",
     "autoCraftTools","allowLimitedFormulas","allowBindOnPickupFormulas","allowCurrencyFormulas",
-    "considerAuctionSupply","reserveMode","residualMass","recoveryEnabled","recoveryFeePercent","engineeringSpecialization"}
+    "considerAuctionSupply","reserveMode","greenBudget","skillBudgetAll","residualMass","recoveryEnabled","recoveryFeePercent","engineeringSpecialization","useBagMaterials"}
 local function planSkeleton(result,opts,status)
     local rows=result.executionSteps or result.steps
     if type(rows)~="table" or #rows==0 then return end
@@ -249,18 +263,27 @@ local function planSkeleton(result,opts,status)
     end
     local settings={}
     for _,key in ipairs(skeletonOptionFields) do settings[key]=opts[key] end
+    settings.skillBudgetAll=result.skillBudgetAll==true
+    settings.greenBudget=result.greenBudget or settings.greenBudget or "optimistic"
+    settings.useBagMaterials=result.useBagMaterials==true
     settings.exclusions=copy(opts.exclusions or {})
+    if result.useBagMaterials then
+        settings.bagInventory=copy(result.bagInventory or {})
+        settings.bagInventoryStamp=result.bagInventoryStamp
+        settings.bagInventoryFingerprint=result.bagInventoryFingerprint
+        settings.bagInventoryVersion=result.bagInventoryVersion
+    end
     settings.engineeringSpecialization=result.specializationPolicy and result.specializationPolicy.choice or settings.engineeringSpecialization
-    return {v=1,slug=result.slug,pv=result.planVersion,sig=result.cacheSignature,
+    return {v=1,slug=result.slug,pv=result.planVersion,sig=result.cacheSignature,auctionDepthRevision=result.auctionDepthRevision,
         planID=result.planID,start=result.start,target=result.target,scheme=result.scheme,
         stamp=now(),status=status or result.status,steps=steps,options=settings}
 end
 local function remember(job,result,status)
-    if job.opts.snapshot or job.opts.routeSkeleton or result.status=="searching" and not status then return end
+    if job.opts.snapshot or job.opts.routeSkeleton and not (job.opts.regroupSaved and result.targetReached) or result.status=="searching" and not status then return end
     local skeleton=planSkeleton(result,job.opts,status)
     if not skeleton then return end
     local db=saved();if not db then return end
-    db.routes[job.signature]={slug=job.slug,skeleton=skeleton,model=MODEL}
+    db.routes[job.signature]={slug=job.slug,skeleton=skeleton,model=MODEL,batchVersion=4}
     db.active[job.slug]=job.signature
     for key,row in pairs(db.routes) do
         if key~=job.signature and type(row)=="table" and row.slug==job.slug then db.routes[key]=nil end
@@ -274,6 +297,15 @@ local searchFields={"status","expanded","improvements","initialTotal","bestTotal
 local function updateExecution(job, result)
     local xp=ns.ProfExecution
     if job.opts.snapshot or not xp then return end
+    if job.finished and job.deferBagPreparation and result.feasible and not result.bagInventoryUnknown then
+        job.deferBagPreparation=nil
+        local _,source,reason=xp.PrepareRecalculate(job.slug)
+        if reason then result.bagInventoryUnknown=true;result.stale=true;return end
+        if source then
+            job.opts.executionSourcePlanID=source
+            result.executionOptions.executionSourcePlanID=source
+        end
+    end
     if job.finished and not job.opts.routeSkeleton and xp.PlanRecalculated then xp.PlanRecalculated(job.slug,result) end
     local frozen=xp.GetPlan and xp.GetPlan(job.slug)
     if not frozen then return end
@@ -288,19 +320,36 @@ local function updateExecution(job, result)
 end
 local function publish(job, result)
     if not result or job.invalid then return end
+    if result.bagInventoryUnknown and not result.feasible and job.previousBagPlan then
+        result=job.previousBagPlan;result.bagInventoryUnknown=true;result.stale=true;result.staleReason="inventory-unknown"
+        local xp=ns.ProfExecution
+        local frozen=xp and xp.GetPlan and xp.GetPlan(job.slug)
+        if frozen then frozen.bagInventoryUnknown=true;frozen.stale=true;frozen.staleReason="inventory-unknown" end
+        job.result=result;job.previousBagPlan=nil
+        job.deferBagPreparation=nil
+        job.published=result;results[job.key]=result;active[job.scope]=job.key
+        for _,fn in ipairs(listeners) do pcall(fn,job.slug,result) end
+        return
+    end
     local started=debugprofilestop and debugprofilestop()
     revision=revision+1
     result.slug=job.slug;result.revision=revision;result.planID=job.planID;result.routeModel=MODEL
     result.learningPolicyFingerprint=learningPolicy()
     local executionOptions={}
     for key,value in pairs(job.opts) do
-        if key~="snapshot" and key~="routeSkeleton" then executionOptions[key]=value end
+        if key~="snapshot" and key~="routeSkeleton" and key~="regroupSaved" and key~="deferBagPreparation" then executionOptions[key]=value end
     end
     result.executionOptions=copy(executionOptions)
+    if result.useBagMaterials then
+        result.executionOptions.bagInventory=copy(result.bagInventory or {})
+        result.executionOptions.bagInventoryStamp=result.bagInventoryStamp
+        result.executionOptions.bagInventoryVersion=result.bagInventoryVersion
+    end
     if result.reserve and result.reserve.mode~=ns.ProfReserve.Mode(job.opts.reserveMode) then
         ns.ProfReserve.Rebuild(result,job.opts.reserveMode)
     end
     result.stale=job.stale or nil;result.staleReason=job.staleReason
+    if result.bagInventoryUnknown then result.stale=true;result.staleReason="inventory-unknown" end
     if RA.StampSpecializations then RA.StampSpecializations(result,job.slug,job.opts,job.snap) end
     result.quoteSignature=RA.QuoteSig and RA.QuoteSig(job.slug) or ""
     result.cacheSignature=job.signature
@@ -312,7 +361,8 @@ local function publish(job, result)
         result.costSearchPerformed=false
         refreshFreshness(result,job.slug,job.requestOptions or job.opts)
     end
-    remember(job,result);updateExecution(job,result)
+    if result.useBagMaterials and not job.opts.snapshot then refreshFreshness(result,job.slug,job.requestOptions or job.opts) end
+    updateExecution(job,result);remember(job,result)
     for _,fn in ipairs(listeners) do pcall(fn,job.slug,result) end
     if started and S.ChargeExternalWork and job.co then S.ChargeExternalWork(job,math.max(0,debugprofilestop()-started)) end
 end
@@ -393,8 +443,8 @@ local function start(slug, opts, sigOpts)
     serial=serial+1
     local skel=opts.routeSkeleton
     local db=not opts.snapshot and saved()
-    if db and not skel then db.nextID=(db.nextID or 0)+1 end
-    local id=skel and skel.planID or character()..":route:"..tostring(db and db.nextID or serial)
+    if db and (not skel or opts.regroupSaved) then db.nextID=(db.nextID or 0)+1 end
+    local id=skel and not opts.regroupSaved and skel.planID or character()..":route:"..tostring(db and db.nextID or serial)
     if opts.scheme=="fishing" then
         local result=quickCompute(slug,opts)
         if not result then return nil end
@@ -406,6 +456,13 @@ local function start(slug, opts, sigOpts)
         publish(job,result);return result
     end
     local job=S.NewJob(slug,opts)
+    job.deferBagPreparation=opts.deferBagPreparation
+    if opts.useBagMaterials then
+        local previous=active[scope] and results[active[scope]]
+        local xp=ns.ProfExecution
+        previous=not opts.snapshot and xp and xp.GetPlan and xp.GetPlan(slug) or previous
+        if previous and #(previous.steps or {})>0 then job.previousBagPlan=copy(previous) end
+    end
     job.key,job.scope,job.slug,job.planID=key,scope,slug,id
     job.signature=skel and skel.sig or signature(slug,sigOpts or opts)
     job.requestOptions=sigOpts
@@ -470,18 +527,38 @@ function RA.Get(slug, supplied)
             or type(skel.steps)~="table" or #skel.steps==0 or type(skel.options)~="table" then
             return gate(slug,opts,"historyUnreadable")
         end
+        if ((record.batchVersion or 0)<4 and skel.status=="complete" or skel.status=="interrupted")
+            and skel.scheme~="fixed" and skel.scheme~="fishing" then
+            local seen,previous,repeated,reached={},nil,false,false
+            for _,step in ipairs(skel.steps) do
+                local key=not step.kind and not step.checkpoint and (step[3] or 0)>0 and (step.profession or slug)..":"..step[3]
+                if key and seen[key] and key~=previous then repeated=true end
+                if (step.profession or slug)==slug and (step[2] or 0)>=skel.target then reached=true end
+                if key then seen[key]=true end
+                previous=key
+            end
+            if reached and (repeated or skel.status=="interrupted") then return RA.RebuildFromSkel(slug,skel,opts,true) end
+        end
         return RA.RebuildFromSkel(slug,skel,opts)
     end
     return start(slug,opts)
 end
-function RA.RebuildFromSkel(slug,skel,supplied)
+function RA.RebuildFromSkel(slug,skel,supplied,regroup)
     local request=options(slug,supplied)
+    if skel.pricingPolicyStale then return gate(slug,request,"pricingPolicyChanged") end
     if scopeConflict(skel,slug,request) then return gate(slug,request,"secondaryDisabled") end
     local restored=copy(skel.options)
+    restored.skillBudgetAll=restored.skillBudgetAll==true
+    restored.greenBudget=restored.greenBudget or "optimistic"
+    restored.useBagMaterials=restored.useBagMaterials==true
+    if restored.useBagMaterials and (restored.bagInventoryVersion~=1 or type(restored.bagInventory)~="table") then
+        return gate(slug,request,"historyUnreadable")
+    end
     if not request.allowSecondaryLeveling then restored.allowSecondaryLeveling=false end
     restored.start,restored.target,restored.scheme=skel.start,skel.target,skel.scheme
     local opts=options(slug,restored)
     opts.routeSkeleton=skel
+    opts.regroupSaved=regroup or nil
     return start(slug,opts,request)
 end
 function RA.ChangeReserveMode(slug,mode)
@@ -501,6 +578,7 @@ function RA.ChangeReserveMode(slug,mode)
         local ok,reason=xp.SetReserveMode(slug,mode)
         if not ok then return nil,reason end
         local opts=options(slug,frozen.executionOptions)
+        opts.greenBudget=frozen.greenBudget or "optimistic"
         frozen.cacheSignature=signature(slug,opts)
     end
     local pending={}
@@ -519,6 +597,7 @@ function RA.ChangeReserveMode(slug,mode)
     end
     if selected then
         local opts=copy(selected.executionOptions or RA.OptionsFor(slug,selected.start))
+        opts.greenBudget=selected.greenBudget or "optimistic"
         opts.reserveMode=mode
         if selected~=frozen and selected.scheme~="fixed" and selected.feasible and selected.executionSteps then
             reserve.Rebuild(selected,mode)
@@ -562,7 +641,14 @@ function RA.Recalculate(slug, supplied)
     if not opts.snapshot then local _,cacheError=saved();if cacheError then return gate(slug,opts,cacheError) end end
     if not opts.snapshot then RA.SavePlanPrev(slug) end
     local xp=not opts.snapshot and ns.ProfExecution
-    if xp and xp.PrepareRecalculate then
+    opts.bagInventory=nil;opts.bagInventoryStamp=nil;opts.bagInventoryFingerprint=nil;opts.bagInventoryVersion=nil
+    if xp and xp.PrepareRecalculate and opts.useBagMaterials then
+        opts.deferBagPreparation=true
+        if opts.fromCurrent~=false then
+            local professions=E.Professions and E.Professions() or {}
+            opts.start=(professions[slug] or {}).cur or opts.start
+        end
+    elseif xp and xp.PrepareRecalculate then
         local inventory,source,errorCode=xp.PrepareRecalculate(slug)
         if errorCode then return gate(slug,opts,errorCode) end
         if source then
@@ -571,8 +657,7 @@ function RA.Recalculate(slug, supplied)
             if opts.fromCurrent~=false then opts.start=(professions[slug] or {}).cur or opts.start end
         end
     end
-    local _,scope=identity(slug,opts)
-    discardScope(scope);clearPrices()
+    clearPrices()
     if opts.partnerRequired then return gate(slug,opts,"secondaryRequired") end
     return start(slug,opts,sigOpts)
 end
@@ -671,11 +756,12 @@ function RA.HasWork(slug)
     for _,job in pairs(jobs) do if (not slug or job.slug==slug) and not job.cancelled and not job.finished and not job.invalid then return true end end
     return false
 end
-function RA.Cancel(slug)
+function RA.Cancel(slug,reason)
     local changed=false
     for _,job in pairs(jobs) do
         if (not slug or job.slug==slug) and not job.finished and not job.invalid then
             pause(job,"user_stopped");job.scheduled=false;job.scheduleVersion=(job.scheduleVersion or 0)+1
+            if reason=="settings" then job.bagSettingChanged=true end
             local result=job.published
             if result then result.status="stopped";result.inFlight=false;result.searchTermination="user_stopped";publish(job,result) end
             changed=true
@@ -687,6 +773,7 @@ function RA.Continue(slug)
     if replicatePrerequisite(slug,{}) then return false end
     for _,job in pairs(jobs) do
         if (not slug or job.slug==slug) and job.cancelled and not job.finished and not job.invalid then
+            if job.bagSettingChanged then return false end
             job.cancelled=false;job.status=job.resumeStatus or "searching";job.searchTermination=job.resumeTermination
             job.resumeStatus=nil;job.resumeTermination=nil
             if job.published then job.published.status=job.status;job.published.searchTermination=job.searchTermination end
@@ -761,7 +848,19 @@ local function initialize()
     local frame=CreateFrame and CreateFrame("Frame")
     if frame then
         frame:RegisterEvent("PLAYER_LOGOUT")
-        frame:SetScript("OnEvent",function()
+        frame:RegisterEvent("BAG_UPDATE_DELAYED")
+        frame:SetScript("OnEvent",function(_,event)
+            if event=="BAG_UPDATE_DELAYED" then
+                for _,result in pairs(results) do
+                    if result.useBagMaterials then refreshFreshness(result,result.slug,result.executionOptions or {}) end
+                end
+                local xp=ns.ProfExecution
+                if xp and xp.GetPlan then for _,slug in ipairs(E.PrimaryOrder or {}) do
+                    local plan=xp.GetPlan(slug)
+                    if plan and plan.useBagMaterials then refreshFreshness(plan,slug,plan.executionOptions or {}) end
+                end end
+                return
+            end
             for _,job in pairs(jobs) do
                 local result=job.published
                 if result and #(result.steps or {})>0 then

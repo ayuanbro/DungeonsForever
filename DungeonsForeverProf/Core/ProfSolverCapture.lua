@@ -5,6 +5,11 @@ if not ns.LoadForeverPages then return end
 local E = ns.ProfEconomy
 if not E then return end
 ns.ProfCaptureDataSchema=1
+ns.ProfSourceQuestCaptureSchema=1
+ns.ProfSourceAccessCaptureSchema=1
+ns.ProfSourcePurchaseCaptureSchema=1
+ns.ProfThresholdUnknownSchema=1
+ns.ProfMaterialsUnknownSchema=1
 
 local floor, min, max = math.floor, math.min, math.max
 local L = ns.L
@@ -113,6 +118,7 @@ local DIAG_TEXT = {
     secondaryDisabled = L["联合升级已关闭，请重新计算当前专业路线。"],
     pairingChanged = L["搭配专业已更改，点击重新计算应用。"],
     professionChanged = L["专业学习状态或旧路线规则已变化，请重新计算路线。"],
+    pricingPolicyChanged = L["专业学习状态或旧路线规则已变化，请重新计算路线。"],
     formulaUnavailable = L["未学配方的图纸没有可靠的购买报价；任务图纸需先学会或取得拍卖行报价。"],
     bindOnPickupFormulaDisabled = L["非金币获取的拾取绑定图纸未开启；此配方暂不参与路线。"],
     currencyFormulaDisabled = L["非金币拾取绑定与通货兑换均未开启；此配方暂不参与路线。"],
@@ -166,16 +172,35 @@ end
 
 function E.Gain(r, skill)
     if type(r) ~= "table" then return 0 end
-    local learn, grey = r.learn, r.grey
-    if type(learn) ~= "number" or type(grey) ~= "number" then return 0 end
-    local yellow = r.yellow or learn
-    local green = r.green or yellow
-    if skill < learn or skill >= grey then return 0 end
+    if not E.HasGainThresholds(r) then return 0 end
+    local yellow, green, grey = r.yellow, r.green, r.grey
+    if skill < r.learn or (r.orange and skill < r.orange) or skill >= grey then return 0 end
     if skill < yellow then return 1 end
     if skill < green then
         return 1 - ((skill - yellow) / max(1, green - yellow)) * .5
     end
     return max(.05, .5 - ((skill - green) / max(1, grey - green)) * .45)
+end
+
+local greenMiss={balanced=math.log(.20),pessimistic=math.log(.05)}
+local greenRates={balanced={},pessimistic={}}
+function E.GreenBudgetMode(mode)
+    return (mode=="optimistic" or mode=="pessimistic") and mode or "balanced"
+end
+function E.PlanningGain(r,skill,mode,allColors)
+    local p=E.Gain(r,skill)
+    local cache=greenRates[mode]
+    if not cache or p<=0 or p>=1 then return p,1 end
+    local green=skill>=r.green
+    if not allColors and not green then return p,1 end
+    local assumed=mode=="pessimistic" and green and p*.5 or p
+    local gain=cache[assumed]
+    if not gain then
+        local attempts=math.ceil(greenMiss[mode]/math.log(1-assumed)-1e-10)
+        gain=min(p,math.ceil(1000000/attempts)/1000000)
+        cache[assumed]=gain
+    end
+    return gain,floor(gain/p*65536+.5)/65536
 end
 
 function E.Professions()
@@ -484,29 +509,50 @@ function E.ResolveRecipe(seed, slug)
     r.key = r.profession and r.spell and r.profession .. ":" .. r.spell or r.key
     return r
 end
-function E.Normalize(row, slug, kind)
-    if type(row) ~= "table" then return end
-    local spell = row.spell or (kind == "enchants" and row[14] or row[1])
-    if E.RecipeNIP(spell, row) then return end
-    local r
-    if row.spell then r = copy(row)
+function E.ThresholdsUnknown(r)
+    local meta = r and ns.ProfRecipeMeta and ns.ProfRecipeMeta[r.spell]
+    return r and (r.thresholdsUnknown == true or meta and meta.requiresThresholdUnknownSchema == 1) or false
+end
+function E.HasGainThresholds(r)
+    return not E.ThresholdsUnknown(r) and type(r.learn)=="number" and type(r.yellow)=="number"
+        and type(r.green)=="number" and type(r.grey)=="number" and (r.orange==nil or type(r.orange)=="number")
+end
+function E.MaterialFactsUnknown(r)
+    local meta = r and ns.ProfRecipeMeta and ns.ProfRecipeMeta[r.spell]
+    return r and (r.materialsUnknown == true or meta and meta.requiresMaterialsUnknownSchema == 1) or false
+end
+local function recipeSpell(row, kind)
+    if kind == "enchants" then return row.spell or row[14] end
+    return row.spell or row[1]
+end
+function E.DecodeRecipeRow(row, kind, spell)
+    if kind == "rinfo" or row.spell then
+        local r = copy(row)
+        r.spell = spell or r.spell
+        r.item = r.item or r.makes
+        r.formula = r.formula or r.formulaID
+        return r
     elseif kind == "enchants" then
-        r = {spell=row[14], item=row[15], count=1, mats=row[9], learn=row[5], yellow=row[6], green=row[7], grey=row[8], source=row[10]}
+        return {spell=row[14], item=row[15], count=1, mats=row[9], learn=row[5], orange=row.orange, yellow=row[6], green=row[7], grey=row[8], source=row[10]}
     elseif kind == "crafted" then
-        r = {spell=row[1], item=row[2], count=row[3], mats=row[8], learn=row[4], yellow=row[5], green=row[6], grey=row[7], formula=tonumber(row[9])}
-    else
-        local formula = row[13]
-        r = {spell=row[1], item=row[2], count=row[3], mats=row[12], learn=row[7], yellow=row[8], green=row[9], grey=row[10],
-            source=row[14], formula=type(formula)=="table" and formula[1] or nil, category=row[4]}
+        return {spell=row[1], item=row[2], count=row[3], mats=row[8], learn=row[4], orange=row.orange, yellow=row[5], green=row[6], grey=row[7], formula=tonumber(row[9])}
     end
+    local formula = row[13]
+    return {spell=row[1], item=row[2], count=row[3], mats=row[12], learn=row[7], orange=row.orange, yellow=row[8], green=row[9], grey=row[10],
+        source=row[14], formula=type(formula)=="table" and formula[1] or nil, category=row[4]}
+end
+function E.Normalize(row, slug, kind, spell)
+    if type(row) ~= "table" or E.RecipeNIP(spell or recipeSpell(row, kind), row) then return end
+    local r = E.DecodeRecipeRow(row, kind, spell)
     if not positiveInteger(r.spell) then return end
     if not r.item and r.count == nil then r.count = 0 end
     if r.count == nil then r.count = 1 end
     r.profession = slug or r.profession
-    r.yellow = r.yellow or r.learn
-    r.green = r.green or (r.yellow and r.grey and (r.yellow+r.grey)/2) or r.yellow
+    r.thresholdsUnknown = E.ThresholdsUnknown(r) or nil
     r.catalogue = true
     r = E.ResolveRecipe(r, r.profession)
+    r.materialsUnknown = E.MaterialFactsUnknown(r) or nil
+    if r.materialsUnknown then r.clientPending = true end
     local verifyCooldown = r.cooldownVerificationRequired == true or r.cooldownVerificationRequired == 1
         or r.category == "Transmutes" or r.spell == 18560
     if r.cooldown == nil then
@@ -526,17 +572,13 @@ function E.FindRecipe(slug, spell)
     if E.RecipeNIP(spell) then return end
     local group = ns.ProfRecipes and ns.ProfRecipes[slug]
     for _, row in ipairs(group and group.rows or {}) do
-        if row[1] == spell then return E.Normalize(row, slug, "rows") end
+        if recipeSpell(row, "rows") == spell then return E.Normalize(row, slug, "rows") end
     end
     local ri = ns.ProfLeveling and ns.ProfLeveling[slug] and ns.ProfLeveling[slug].rinfo and ns.ProfLeveling[slug].rinfo[spell]
-    if ri then
-        local r = copy(ri); r.spell=spell; r.item=r.item or r.makes
-        r.formula=r.formula or r.formulaID
-        return E.Normalize(r, slug)
-    end
+    if ri then return E.Normalize(ri, slug, "rinfo", spell) end
     for _, kind in ipairs({"crafted", "enchants"}) do
         for _, row in ipairs(group and group[kind] or {}) do
-            if (kind=="enchants" and row[14] or row[1]) == spell then return E.Normalize(row, slug, kind) end
+            if recipeSpell(row, kind) == spell then return E.Normalize(row, slug, kind) end
         end
     end
 end
@@ -590,11 +632,105 @@ function E.PreferredVendorOffers(offers, eligible)
     return db and db.PreferredOffers and db.PreferredOffers(offers,eligible) or (offers or {})
 end
 
+local D={};ns.ProfAuctionDepth=D
+local floor,min,huge=math.floor,math.min,math.huge
+function D.Build(rows)
+    local byPrice={}
+    for _,row in ipairs(rows) do
+        local p,q=row[1],row[2]
+        assert(type(p)=="number" and p>0 and p<huge and p==p,"invalid unit price")
+        assert(type(q)=="number" and q>=0 and q<huge and q==floor(q),"invalid quantity")
+        if q>0 then byPrice[p]=(byPrice[p] or 0)+q end
+    end
+    local prices={};for p in pairs(byPrice) do prices[#prices+1]=p end;table.sort(prices)
+    local book={prices=prices,quantity={},cost={},total=0,totalCost=0}
+    for i,p in ipairs(prices) do
+        book.total=book.total+byPrice[p];book.totalCost=book.totalCost+p*byPrice[p]
+        book.quantity[i]=book.total;book.cost[i]=book.totalCost
+    end
+    return book
+end
+function D.Prefix(book,q)
+    if type(q)~="number" or q~=q or q~=floor(q) then return nil end
+    if q==0 then return 0 end
+    if q<0 or q>book.total then return nil end
+    local lo,hi=1,#book.prices
+    while lo<hi do
+        local mid=floor((lo+hi)/2)
+        if book.quantity[mid]<q then lo=mid+1 else hi=mid end
+    end
+    return (book.cost[lo-1] or 0)+(q-(book.quantity[lo-1] or 0))*book.prices[lo]
+end
+function D.Cost(book,used,q)
+    used=used or 0
+    if type(used)~="number" or type(q)~="number" or q<0 or q~=floor(q) then return nil end
+    local begin=D.Prefix(book,used)
+    local finish=D.Prefix(book,used+q)
+    if not begin or not finish then return nil end
+    return finish-begin
+end
+function D.Quote(snapshot,id,used,q)
+    local book=snapshot.auctionDepth and snapshot.auctionDepth[id]
+    if book then
+        return D.Cost(book,used,q)
+    end
+    return (snapshot.prices[id] or 0)*q
+end
+function D.Identity(entry)
+    if not entry then return false end
+    local hash=0
+    for _,row in ipairs(entry.levels or {}) do
+        local text=string.format("%.17g:%d;",row[1],row[2])
+        for i=1,#text do hash=(hash*131+string.byte(text,i))%2147483647 end
+    end
+    return table.concat({entry.marketKey or "",entry.observedAt or 0,entry.quantity or 0,hash},":")
+end
+function E.AuctionDepthChanged(result)
+    local bridge=ns.AuctionBridge
+    for id,previous in pairs(result.auctionDepthInputs or {}) do
+        local current=bridge and bridge.GetAuctionDepth and bridge.GetAuctionDepth(id)
+        if previous~=D.Identity(current) then return true end
+    end
+    return false
+end
+
+function E.VendorPricesChanged(result)
+    local vdb=ns.VendorPriceDB
+    if not (result and vdb and vdb.GetCachedOffer) then return false end
+    local inputs=result.vendorPriceInputs
+    if not inputs then
+        inputs={}
+        for id,offers in pairs(result.bagMaterialQuotes and result.bagMaterialQuotes.offers or {}) do
+            inputs[id]=false
+            for _,offer in ipairs(offers) do if offer.source=="auctionator-vendor" then inputs[id]=offer.unit or offer.price;break end end
+        end
+        for _,entry in ipairs(result.mats or {}) do
+            if entry.priceSource=="auctionator-vendor" or entry.quoteSource=="auctionator-vendor" then inputs[entry.id or entry[1]]=entry.unit end
+        end
+    end
+    for id,previous in pairs(inputs) do
+        local current=vdb.GetCachedOffer(id)
+        if (current and current.unit or false)~=previous then return true end
+    end
+    return false
+end
+if ns.ProfRouteAuto then
+    ns.ProfRouteAuto.VendorQuotesChanged=E.VendorPricesChanged
+    ns.ProfRouteAuto.ValidateVendorQuotes=function(result)
+        if E.VendorPricesChanged(result) then result.stale=true;result.staleReason="prices" end
+        return result
+    end
+end
+
 function E.MaterialPurchases(id,need,context,tick)
     need=math.max(0,math.ceil(tonumber(need) or 0))
     if need==0 then return {},0,true end
     local offers,auction,supply=context.offers or {},context.auction,context.supply
     local available,faction=context.available,context.faction
+    local function auctionCost(n)
+        if context.auctionCost then return context.auctionCost(n) or math.huge end
+        return n*(auction or 0)
+    end
     local limit=auction and math.min(need,math.max(0,math.floor(available or need))) or 0
     local byPack,reliable,maxPack={},{},1
     for _,offer in ipairs(offers) do
@@ -637,14 +773,14 @@ function E.MaterialPurchases(id,need,context,tick)
     for quantity=0,maximum do
         local rest=math.max(0,need-quantity)
         if costs[quantity] and (rest==0 or auction and rest<=limit) then
-            local cost=costs[quantity]+rest*(auction or 0)
+            local cost=costs[quantity]+auctionCost(rest)
             if not best or cost<best-1e-9 or math.abs(cost-best)<1e-9 and rest<bestAH then
                 best,bestNPC,bestAH=cost,quantity,rest
             end
         end
     end
     local function ahRow(count)
-        return {id,count,id=id,count=count,need=count,cost=(auction or 0)*count,unit=auction or 0,
+        return {id,count,id=id,count=count,need=count,cost=auctionCost(count),unit=count>0 and auctionCost(count)/count or 0,
             source="ah",vendor=false,availableCount=available,supplyRequired=count,
             supplyObserved=available~=nil,supplyComplete=supply and supply.complete,
             supplyObservedAt=supply and supply.observedAt,supplySource=supply and supply.source,
@@ -655,6 +791,7 @@ function E.MaterialPurchases(id,need,context,tick)
         if auction then entry=ahRow(need)
         else entry={id,need,id=id,count=need,need=need,cost=0,unit=0,unpriced=true} end
         entry.unavailable=true;entry.costComplete=false
+        if type(entry.cost)=="number" and entry.cost==math.huge then entry.cost=nil;entry.unit=nil;entry.unpriced=true end
         return {entry},entry.cost,false,auction and "auctionSupplyLimited" or "materialUnavailable"
     end
     local list,counts={},{}
@@ -748,11 +885,11 @@ end
 local function validSupply(entry,stamp,live)
     if type(entry)~="table" or type(entry.quantity)~="number" or entry.quantity<0
         or entry.quantity==math.huge or entry.quantity~=floor(entry.quantity)
-        or entry.complete==false or entry.ownerExcluded==false then return false end
+        or entry.complete==false then return false end
     if entry.source=="auctionator-daily-maximum" or entry.source=="auctionator-update"
         or entry.source=="auctionator-history" then return false end
     if live or entry.source=="client-auction-results" then
-        if entry.source~="client-auction-results" or entry.complete~=true or entry.ownerExcluded~=true
+        if entry.source~="client-auction-results" or entry.complete~=true
             or type(entry.observedAt)~="number" or entry.observedAt<=0 then return false end
         local forced=ns.AuctionBridge and ns.AuctionBridge.ForceExpiredActive and ns.AuctionBridge.ForceExpiredActive()
         if not forced and stamp and (entry.observedAt>stamp or stamp - entry.observedAt > ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds()) then return false end
@@ -811,7 +948,7 @@ function E.AuctionSupplyChanged(result)
         if (previous~=false)~=(current~=nil) then return true end
         if current then
             for _,key in ipairs(supplyIdentityFields) do
-                if key~="observedAt" and key~="batch" and previous[key]~=current[key] then return true end
+                if key~="observedAt" and key~="batch" and key~="observer" and previous[key]~=current[key] then return true end
             end
         end
     end
@@ -821,7 +958,7 @@ function E.AuctionSupplyChanged(result)
         if (previous~=false)~=(current~=nil) then return true end
         if current then
             for _,key in ipairs(supplyIdentityFields) do
-                if key~="observedAt" and key~="batch" and previous[key]~=current[key] then return true end
+                if key~="observedAt" and key~="batch" and key~="observer" and previous[key]~=current[key] then return true end
             end
         end
     end
@@ -950,7 +1087,7 @@ function E.SummarizeAuctionSupply(result,context,tick)
                     needed[id]=(needed[id] or 0)+(entry.count or entry[2] or 1)
                     entry.supplyLimited=needed[id]>supply.quantity or nil
                     result.supplyComplete=result.supplyComplete and supply.complete~=false
-                        and supply.ownerExcluded~=false and not entry.supplyLimited
+                        and not entry.supplyLimited
                 else
                     entry.availableCount=nil;entry.supplyComplete=false;result.supplyComplete=false
                     if not seen[id] then result.auctionSupplyUnknown=result.auctionSupplyUnknown+1 end
@@ -1134,7 +1271,7 @@ end
 function E.Index(s, tick)
     local recipes = {}
     for _, r in ipairs(s.recipes or {}) do
-        if not E.RecipeNIP(r.spell, r) then recipes[#recipes + 1] = r end
+        if not E.RecipeNIP(r.spell, r) and E.HasGainThresholds(r) and not E.MaterialFactsUnknown(r) then recipes[#recipes + 1] = r end
         if tick then tick() end
     end
     s.recipes = recipes
@@ -1145,8 +1282,6 @@ function E.Index(s, tick)
         r.mats = r.mats or {}
         if not r.clientPending then
             r.count = r.count or 1
-            r.yellow = r.yellow or r.learn
-            r.green = r.green or r.yellow
         end
         s.byKey[r.key] = r
         local p = s.byProfession[r.profession]
@@ -1170,6 +1305,13 @@ function E.Index(s, tick)
         if tick then tick() end
     end
     s.auctionSupply = supply
+    for id,book in pairs(s.auctionDepth or {}) do
+        if book.prices[1] then s.prices[id]=book.prices[1] end
+        s.auctionSupply[id]=s.auctionSupply[id] or {quantity=book.total,complete=true,source="observed"}
+        s.auctionSupply[id].quantity=math.min(s.auctionSupply[id].quantity,book.total)
+        s.considerAuctionSupply=true
+        if tick then tick() end
+    end
     for _,recipe in ipairs(s.recipes or {}) do
         if not (s.known or {})[recipe.key] then
             local item=recipe.formula or recipe.formulaID
@@ -1233,9 +1375,9 @@ function E.CaptureSpecializations(s, opts, slug)
     end
     return s
 end
-local function addRecipe(s, slug, row, kind)
-    local r = E.Normalize(row, slug, kind)
-    if not r or type(r.learn)~="number" or type(r.grey)~="number" or (r.grey<r.learn and not r.knownAtCurrentSkill)
+local function addRecipe(s, slug, row, kind, spell)
+    local r = E.Normalize(row, slug, kind, spell)
+    if not r or not E.HasGainThresholds(r) or E.MaterialFactsUnknown(r) or (r.grey<r.learn and not r.knownAtCurrentSkill)
         or not materialsValid(r.mats) then return end
     if s.byKey[r.key] then return end
     s.recipes[#s.recipes+1] = r;s.byKey[r.key] = r
@@ -1247,6 +1389,81 @@ function E.NonAuctionableItem(id)
     if type(fn)~="function" then return false end
     local fields = {pcall(fn, id)}
     return fields[1] and (fields[15]==1 or fields[15]==4) or false
+end
+local bagRevision=0
+local bagChecks=setmetatable({}, {__mode="k"})
+function E.BagInventoryRevision() return bagRevision end
+local function bagCount(id)
+    local xp=ns.ProfExecution
+    if xp and xp.BagCount then return xp.BagCount(id) end
+    local fn=C_Item and C_Item.GetItemCount or GetItemCount
+    if type(fn)=="function" then
+        local ok,n=pcall(fn,id,false,false,false)
+        if ok and type(n)=="number" and n>=0 and n<math.huge and n==floor(n) then return n end
+    end
+end
+function E.BagInventoryFingerprint(inventory)
+    local ids,parts={},{}
+    for id in pairs(inventory) do ids[#ids+1]=id end
+    table.sort(ids)
+    for _,id in ipairs(ids) do parts[#parts+1]=id..":"..inventory[id] end
+    return table.concat(parts,";")
+end
+function E.CaptureBagInventory(s,opts,tick)
+    if not opts.useBagMaterials or opts.procurementDemands or opts.scheme=="fixed" or opts.scheme=="fishing"
+        or opts.profession=="first-aid" or opts.profession=="poisons" then return end
+    local items={}
+    for _,r in ipairs(s.recipes or {}) do for _,m in ipairs(r.mats or {}) do items[m[1]]=true end end
+    for _,goal in ipairs(s.toolGoals or {}) do items[goal.item]=true end
+    for _,goal in ipairs(s.specializationGoals or {}) do for _,m in ipairs(goal.inputs or {}) do items[m[1]]=true end end
+    if s.essenceConversions and ns.ProfEssences then ns.ProfEssences.ExpandItems(items) end
+    local supplied=opts.bagInventory or s.bagInventory
+    local ids={};for id in pairs(items) do ids[#ids+1]=id end;table.sort(ids)
+    if supplied then for id in pairs(supplied) do
+        if type(id)~="number" or id<=0 or id~=floor(id) then s.bagInventoryUnknown=true;return end
+        if not items[id] then ids[#ids+1]=id;items[id]=true end
+    end end
+    table.sort(ids)
+    for attempt=1,3 do
+        local revision=bagRevision
+        local inventory={}
+        for _,id in ipairs(ids) do
+            local n
+            if supplied then n=supplied[id] or 0 else n=bagCount(id) end
+            if type(n)~="number" or n<0 or n>=math.huge or n~=floor(n) then s.bagInventoryUnknown=true;return end
+            inventory[id]=n;tick()
+        end
+        if supplied or revision==bagRevision then
+            s.bagInventory=inventory;s.bagInventoryVersion=1
+            s.bagInventoryStamp=opts.bagInventoryStamp or s.bagInventoryStamp or (time and time() or 0)
+            s.bagInventoryFingerprint=E.BagInventoryFingerprint(inventory)
+            s.bagInventoryUnknown=nil
+            s.bagMaterialQuotes={prices=copy(s.prices or {}),offers=copy(s.offers or {}),
+                auctionSupply=copy(s.auctionSupply or {}),auctionDepth=copy(s.auctionDepth or {}),
+                nonAuctionable=copy(s.nonAuctionable or {}),faction=s.faction,considerAuctionSupply=s.considerAuctionSupply}
+            return
+        end
+        tick()
+    end
+    s.bagInventoryUnknown=true
+end
+function E.BagInventoryChanged(result)
+    if not result.useBagMaterials then return false,false end
+    local previous=bagChecks[result]
+    if previous and previous.revision==bagRevision and previous.inventory==result.bagInventory then return previous.changed,previous.unknown end
+    local changed,unknown=false,false
+    for id,n in pairs(result.bagInventory or {}) do
+        local current=bagCount(id)
+        if current==nil then unknown=true elseif current~=n then changed=true end
+    end
+    bagChecks[result]={revision=bagRevision,inventory=result.bagInventory,changed=changed,unknown=unknown}
+    return changed,unknown
+end
+local bagEvents=CreateFrame and CreateFrame("Frame")
+if bagEvents then
+    bagEvents:RegisterEvent("BAG_UPDATE_DELAYED")
+    bagEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
+    bagEvents:SetScript("OnEvent",function() bagRevision=bagRevision+1 end)
 end
 function E.Capture(slug, opts, tick)
     opts, tick = shallow(opts or {}), tick or function() end
@@ -1275,6 +1492,7 @@ function E.Capture(slug, opts, tick)
         if s.toolGoals == nil then E.CaptureToolGoals(s, slug, opts) end
         if s.specializationContext == nil and ns.ProfGates then E.CaptureSpecializations(s, opts, slug) end
         s = E.Index(s, tick)
+        E.CaptureBagInventory(s,opts,tick)
         if ns.ProfRecovery then ns.ProfRecovery.Capture(s, opts, tick) end
         return s
     end
@@ -1305,7 +1523,7 @@ function E.Capture(slug, opts, tick)
         if E.IndexClientProfession then E.IndexClientProfession(p) end
         for _, kind in ipairs({"rows"}) do
             for _, row in ipairs(group and group[kind] or {}) do
-                local spell = kind=="enchants" and row[14] or row[1]
+                local spell = recipeSpell(row, kind)
                 if E.ReadRecipe and spell then E.ReadRecipe(spell) end
                 addRecipe(s,p,row,kind);tick()
             end
@@ -1313,12 +1531,11 @@ function E.Capture(slug, opts, tick)
         local lv = ns.ProfLeveling and ns.ProfLeveling[p]
         for spell, ri in pairs(lv and lv.rinfo or {}) do
             if E.ReadRecipe then E.ReadRecipe(spell) end
-            local r = copy(ri);r.spell=spell;r.item=r.item or r.makes;r.formula=r.formula or r.formulaID
-            addRecipe(s,p,r);tick()
+            addRecipe(s,p,ri,"rinfo",spell);tick()
         end
         for _, kind in ipairs({"crafted", "enchants"}) do
             for _, row in ipairs(group and group[kind] or {}) do
-                local spell = kind=="enchants" and row[14] or row[1]
+                local spell = recipeSpell(row, kind)
                 if E.ReadRecipe and spell then E.ReadRecipe(spell) end
                 addRecipe(s,p,row,kind);tick()
             end
@@ -1327,7 +1544,7 @@ function E.Capture(slug, opts, tick)
     E.CaptureSpecializations(s, opts, slug)
     E.CaptureToolGoals(s, slug, opts)
     if E.CaptureLearningFacts then E.CaptureLearningFacts(s,tick) end
-    local items = {};s.formulaItems={}
+    local items,materials = {},{};s.formulaItems={}
     for _, r in ipairs(s.recipes) do
         if positiveInteger(r.item) then items[r.item]=true end
         if r.formula and not s.known[r.key] and E.LearningSource(r)~="trainer" then
@@ -1344,7 +1561,7 @@ function E.Capture(slug, opts, tick)
                 end
             end
         end
-        for _, m in ipairs(r.mats) do items[m[1]]=true end
+        for _, m in ipairs(r.mats) do items[m[1]]=true;materials[m[1]]=true end
         tick()
     end
     for _, goal in ipairs(s.toolGoals or {}) do items[goal.item]=true end
@@ -1352,15 +1569,23 @@ function E.Capture(slug, opts, tick)
     s.essenceConversions = ns.ProfEssences and ns.ProfEssences.Enabled(slug, opts, s) or false
     if s.essenceConversions then ns.ProfEssences.ExpandItems(items) end
     local ra, vdb, bridge = ns.ProfRouteAuto, ns.VendorPriceDB, ns.AuctionBridge
-    local vendorContext = {character=s.character,faction=s.faction,professions=s.professions,level=s.level}
-    s.auctionPriceInputs={}
+    local vendorContext = {character=s.character,faction=s.faction,professions=s.professions,level=s.level,reputations=s.reputations,completedQuests=s.completedQuests,ownedSourceItems=s.ownedSourceItems,learningSourcesRequired=s.learningSourcesRequired}
+    s.auctionPriceInputs={};s.vendorPriceInputs={}
+    s.auctionDepth={};s.auctionDepthInputs={}
     for id in pairs(items) do
         if E.NonAuctionableItem(id) then s.nonAuctionable[id]=true end
         local price = ra and ra.AHPriceOf and ra.AHPriceOf(id)
         s.auctionPriceInputs[id]=type(price)=="number" and price>0 and price or false
         if type(price)=="number" and price>0 then s.prices[id]=price end
+        if materials[id] and not s.formulaItems[id] then
+            local depth=bridge and bridge.GetAuctionDepth and bridge.GetAuctionDepth(id)
+            s.auctionDepthInputs[id]=D.Identity(depth)
+            if depth then s.auctionDepth[id]=D.Build(depth.levels) end
+        end
         local offers = vdb and vdb.GetOffers and vdb.GetOffers(id, vendorContext)
         s.offers[id] = copy(offers or {})
+        s.vendorPriceInputs[id]=false
+        for _,offer in ipairs(offers or {}) do if offer.source=="auctionator-vendor" then s.vendorPriceInputs[id]=offer.unit or offer.price;break end end
         for _, offer in ipairs(offers or {}) do if vendorQuote(offer) then s.vendorItems[id]=true;break end end
         local supply = E.AuctionSupplyOf(nil, id)
         if supply then s.auctionSupply[id]=copy(supply) end
@@ -1394,6 +1619,7 @@ function E.Capture(slug, opts, tick)
         tick()
     end
     s = E.Index(s, tick)
+    E.CaptureBagInventory(s,opts,tick)
     if ns.ProfRecovery then ns.ProfRecovery.Capture(s, opts, tick) end
     return s
 end

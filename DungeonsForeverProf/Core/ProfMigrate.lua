@@ -6,8 +6,39 @@ local M = {}
 ns.ProfMigrate = M
 
 local STAMP = "1.9.32->pr10"
+local PRICED_SCHEMES={cheapest=true,stable=true,matcost=true,crafts=true,optim=true}
+function M.UpgradePricing()
+    local prof=ns.ProfDB().prof
+    if prof.pricingMigration==1 then return 0 end
+    local count=0
+    local function mark(plan)
+        if type(plan)=="table" and plan.auctionDepthRevision~=1 and PRICED_SCHEMES[plan.scheme] then
+            plan.pricingPolicyStale=true;plan.stale=true;plan.staleReason=plan.staleReason or "procurement-policy"
+            count=count+1
+        end
+    end
+    local plans=prof.routePlans
+    for _,character in pairs(type(plans)=="table" and plans.characters or {}) do
+        for _,record in pairs(type(character)=="table" and character.routes or {}) do
+            if type(record)=="table" then mark(record.skeleton) end
+        end
+    end
+    for _,character in pairs(prof.track or {}) do
+        for _,run in pairs(type(character)=="table" and character.runs or {}) do
+            if type(run)=="table" then mark(run.plan) end
+        end
+    end
+    for _,entries in pairs(prof.routeHistory or {}) do
+        for _,entry in pairs(type(entries)=="table" and entries or {}) do
+            if type(entry)=="table" then mark(entry.skel) end
+        end
+    end
+    prof.pricingMigration=1
+    return count
+end
 
 function M.Run()
+    M.UpgradePricing()
     local prof = ns.ProfDB().prof
     if type(prof) ~= "table" then return 0, 0 end
     if prof.migratedFrom == STAMP then return 0, 0 end
@@ -44,6 +75,7 @@ function M.Run()
     prof.migratedFrom = STAMP
     return dropped, flipped
 end
+if type(IsLoggedIn)=="function" and IsLoggedIn() then M.UpgradePricing() end
 
 local watch = type(CreateFrame) == "function" and CreateFrame("Frame") or nil
 if watch then
