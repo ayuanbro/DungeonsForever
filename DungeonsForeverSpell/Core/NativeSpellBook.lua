@@ -925,36 +925,50 @@ local function LayoutOverlay()
     return true
 end
 
-local hiddenNative = {}
+local dimNative = {}
+
+local function DimFrame(f)
+    if not (f and f.SetAlpha) then return end
+    if not f.__dfDim then
+        f.__dfDim = true
+        local a, m = 1, true
+        local ok, v = pcall(f.GetAlpha, f)
+        if ok and type(v) == "number" then a = v end
+        if f.IsMouseEnabled then
+            local okm, vm = pcall(f.IsMouseEnabled, f)
+            if okm and type(vm) == "boolean" then m = vm end
+        end
+        dimNative[#dimNative + 1] = { f = f, a = a, m = m }
+    end
+    pcall(f.SetAlpha, f, 0)
+    if f.EnableMouse then pcall(f.EnableMouse, f, false) end
+end
 
 local function HideNativeList()
     local paged = Paged()
     if not paged then return end
-    local function hide(f)
-        if f and f.IsShown and f:IsShown() then
-            hiddenNative[#hiddenNative + 1] = f
-            f:Hide()
-        end
-    end
-    hide(paged.View1)
-    hide(paged.View2)
+    DimFrame(paged.View1)
+    DimFrame(paged.View2)
     if paged.ViewFrames then
-        for _, v in ipairs(paged.ViewFrames) do hide(v) end
+        for _, v in ipairs(paged.ViewFrames) do DimFrame(v) end
     end
-    hide(paged.PagingControls)
+    DimFrame(paged.PagingControls)
 end
 
 local function RestoreNativeList()
-    for _, f in ipairs(hiddenNative) do
-        if f.IsShown then f:Show() end
+    for _, r in ipairs(dimNative) do
+        local f = r.f
+        if f then
+            if f.SetAlpha then pcall(f.SetAlpha, f, r.a) end
+            if f.EnableMouse then pcall(f.EnableMouse, f, r.m) end
+            f.__dfDim = nil
+        end
     end
-    hiddenNative = {}
-    local paged = Paged()
-    local pc = paged and paged.PagingControls
-    if pc and pc.Show then pc:Show() end
+    dimNative = {}
 end
 
 local function HideOverlay()
+    RestoreNativeList()
     if ovl then ovl:Hide() end
 end
 
@@ -1133,7 +1147,7 @@ end
 local function InstallOurs()
     if not book then return false end
     if not BookShown() then
-        if ovl then ovl:Hide() end
+        HideOverlay()
         return false
     end
     if not EnsureOverlay() then return false end
@@ -1155,6 +1169,7 @@ local function InstallOurs()
     end
     PaintPage()
     PagerSync()
+    if not InCombat() then HideNativeList() end
     ovl:Show()
     return true
 end
@@ -1815,6 +1830,14 @@ local function Attach()
         if SyncTabCatcher then SyncTabCatcher() end
         if tabButton and not tabButton:IsShown() and BookShown() and (ns.SpellEnhOn and ns.SpellEnhOn()) then ShowTabs() end
         if InCombat() then return end
+        if activePage then
+            local pv = Paged()
+            local v1 = pv and pv.View1
+            if v1 and v1.GetAlpha then
+                local oka, va = pcall(v1.GetAlpha, v1)
+                if oka and type(va) == "number" and va > 0 then HideNativeList() end
+            end
+        end
         if shown then
             local w, h = sb:GetWidth(), sb:GetHeight()
             local views = ViewList()

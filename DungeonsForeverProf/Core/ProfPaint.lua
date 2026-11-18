@@ -13,6 +13,7 @@ end
 local qUrg, qNorm, qStep = {}, {}, {}
 local jobs = {}
 local jobGen = {}
+local drv, armed = nil, false
 
 local function inCombat()
     return InCombatLockdown and InCombatLockdown() or false
@@ -37,6 +38,10 @@ local function stepJob(key, gen)
     jobs[key] = nil
     if type(j.onDone) == "function" then pcall(j.onDone) end
     return true
+end
+
+local function idleNow()
+    return next(jobs) == nil and #qUrg == 0 and #qStep == 0 and #qNorm == 0
 end
 
 local function pumpTick()
@@ -79,24 +84,35 @@ local function pumpTick()
         end
         for i = 1, #keep do qNorm[#qNorm + 1] = keep[i] end
     end
+    if idleNow() then
+        armed = false
+        drv:SetScript("OnUpdate", nil)
+    end
 end
 
-local drv = CreateFrame("Frame", nil, UIParent)
+drv = CreateFrame("Frame", nil, UIParent)
 drv:SetSize(1, 1)
 drv:SetFrameStrata("BACKGROUND")
 drv:Show()
-drv:SetScript("OnUpdate", pumpTick)
+
+local function arm()
+    if armed then return end
+    armed = true
+    drv:SetScript("OnUpdate", pumpTick)
+end
 
 ns.ProfIdle = {}
 
 function ns.ProfIdle.Add(fn)
     if type(fn) ~= "function" then return end
     qNorm[#qNorm + 1] = fn
+    arm()
 end
 
 function ns.ProfIdle.Urgent(fn)
     if type(fn) ~= "function" then return end
     qUrg[#qUrg + 1] = fn
+    arm()
 end
 
 function ns.ProfIdle.StepGC(frames, kb)
@@ -121,6 +137,7 @@ function ns.ProfPaint.Run(key, body, onDone, cap)
         onDone = onDone,
         cap = cap or CAP,
     }
+    arm()
     return gen
 end
 
@@ -138,6 +155,7 @@ ns.ProfStep = {}
 function ns.ProfStep.Push(fn)
     if type(fn) ~= "function" then return end
     qStep[#qStep + 1] = fn
+    arm()
 end
 
 function ns.ProfStep.Run()

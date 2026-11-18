@@ -28,11 +28,17 @@ function RA.SchemeLabel(s)
     return type(L) == "table" and L[k] or k
 end
 
-function RA.Available()
+local function AuctionatorReady()
     return type(Auctionator) == "table"
         and type(Auctionator.API) == "table"
         and type(Auctionator.API.v1) == "table"
         and type(Auctionator.API.v1.GetAuctionPriceByItemID) == "function"
+end
+
+function RA.Available()
+    if AuctionatorReady() then return true end
+    local eb = ns.EasyBridge
+    return (eb and eb.Available and eb.Available()) and true or false
 end
 
 local function CallAPI(fn, ...)
@@ -54,7 +60,7 @@ local function AHPrice(id)
         if t0 and (now - t0) < NEG_TTL then return nil end
     end
     local p
-    if RA.Available() then
+    if AuctionatorReady() then
         p = CallAPI(Auctionator.API.v1.GetAuctionPriceByItemID, id)
         if type(p) ~= "number" or p <= 0 then p = nil end
         if p and type(Auctionator.API.v1.GetAuctionAgeByItemID) == "function" then
@@ -76,7 +82,7 @@ local function AHPrice(id)
             end
         end
     else
-        ahReason[id] = "noapi"
+        ahReason[id] = RA.Available() and "norec" or "noapi"
     end
     if not p and ahReason[id] ~= "stale" and ahReason[id] ~= "noapi" then
         ahReason[id] = "norec"
@@ -371,6 +377,8 @@ end
 
 function RA.HasPriceData()
     if priceCache.__any then return true end
+    local eb = ns.EasyBridge
+    if eb and eb.Available and eb.Available() then return true end
     local supply = ns.ProfSupply
     return (supply and supply.Ready and supply.Ready()) and true or false
 end

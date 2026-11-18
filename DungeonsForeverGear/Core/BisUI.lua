@@ -1305,18 +1305,18 @@ BG.INST_BOSS = {
 }
 
 BG.INST_EXTRA = {
-    { key = "mc", name = "熔火之心", nameEn = "Molten Core", group = "raid" },
-    { key = "bwl", name = "黑翼之巢", nameEn = "Blackwing Lair", group = "raid" },
-    { key = "aq40", name = "安其拉神殿", nameEn = "Temple of Ahn'Qiraj", group = "raid" },
-    { key = "aq20", name = "安其拉废墟", nameEn = "Ruins of Ahn'Qiraj", group = "raid" },
-    { key = "zg", name = "祖尔格拉布", nameEn = "Zul'Gurub", group = "raid" },
-    { key = "naxx", name = "纳克萨玛斯", nameEn = "Naxxramas", group = "raid" },
-    { key = "ony", name = "奥妮克希亚的巢穴", nameEn = "Onyxia's Lair", group = "raid" },
-    { key = "emerald", name = "四绿龙", nameEn = "Emerald Dragons", group = "world" },
-    { key = "azuregos", name = "蓝龙", nameEn = "Azuregos", group = "world" },
-    { key = "kazzak", name = "卡扎克", nameEn = "Lord Kazzak", group = "world" },
-    { key = "silithus", name = "安其拉开门首领", nameEn = "Ahn'Qiraj War Leaders", group = "world" },
-    { key = "av", name = "奥特兰克山谷首领", nameEn = "Alterac Valley Bosses", group = "world" },
+    { key = "mc", name = "熔火之心", nameEn = "Molten Core", nameTw = "熔火之心", group = "raid" },
+    { key = "bwl", name = "黑翼之巢", nameEn = "Blackwing Lair", nameTw = "黑翼之巢", group = "raid" },
+    { key = "aq40", name = "安其拉神殿", nameEn = "Temple of Ahn'Qiraj", nameTw = "安其拉神殿", group = "raid" },
+    { key = "aq20", name = "安其拉废墟", nameEn = "Ruins of Ahn'Qiraj", nameTw = "安其拉廢墟", group = "raid" },
+    { key = "zg", name = "祖尔格拉布", nameEn = "Zul'Gurub", nameTw = "祖爾格拉布", group = "raid" },
+    { key = "naxx", name = "纳克萨玛斯", nameEn = "Naxxramas", nameTw = "納克薩瑪斯", group = "raid" },
+    { key = "ony", name = "奥妮克希亚的巢穴", nameEn = "Onyxia's Lair", nameTw = "奧妮克希亞的巢穴", group = "raid" },
+    { key = "emerald", name = "四绿龙", nameEn = "Emerald Dragons", nameTw = "四綠龍", group = "world" },
+    { key = "azuregos", name = "蓝龙", nameEn = "Azuregos", nameTw = "藍龍", group = "world" },
+    { key = "kazzak", name = "卡扎克", nameEn = "Lord Kazzak", nameTw = "卡扎克", group = "world" },
+    { key = "silithus", name = "安其拉开门首领", nameEn = "Ahn'Qiraj War Leaders", nameTw = "安其拉開門首領", group = "world" },
+    { key = "av", name = "奥特兰克山谷首领", nameEn = "Alterac Valley Bosses", nameTw = "奧特蘭克山谷首領", group = "world" },
 }
 
 BG.INST_FIX = { onyxias_lair = "ony" }
@@ -1339,6 +1339,43 @@ function BG.InstKeyOf(place, kind)
         if BG.INST_ALIAS[kind] then return BG.INST_ALIAS[kind] end
     end
     return nil
+end
+
+function BG.InstNameHit(place, core, ...)
+    local n = #place
+    local tail = string.find(place, "%a") ~= nil
+    for i = 1, select("#", ...) do
+        local s = select(i, ...)
+        if type(s) == "string" and s ~= "" then
+            if place == s or core == s then return true end
+            if string.find(place, s, 1, true) then return true end
+            if string.sub(s, 1, n) == place then return true end
+            if tail and string.sub(s, -n) == place then return true end
+        end
+    end
+    return false
+end
+
+function BG.InstKeysOf(place, kind, def)
+    local out, seen = {}, {}
+    local k0 = BG.InstKeyOf(place, kind)
+    if k0 and def[k0] then
+        out[1] = k0
+        return k0
+    end
+    if type(place) == "string" and place ~= "" then
+        local core = BG.NameCore(place)
+        for k, e in pairs(def) do
+            if not seen[k] and e.group ~= "world"
+                and BG.InstNameHit(place, core, e.name, e.nameEn, e.nameTw) then
+                seen[k] = true
+                out[#out + 1] = k
+            end
+        end
+    end
+    if #out == 0 then return nil end
+    if #out == 1 then return out[1] end
+    return out
 end
 
 function BG.InstBuild()
@@ -1367,13 +1404,22 @@ function BG.InstBuild()
     local gs = ns.EnsureGearSrc and ns.EnsureGearSrc()
     if type(gs) == "table" then
         for id, src in pairs(gs) do
-            if type(src) == "string" and src ~= "" and CatKind(id) == "boss" then
-                local kind, place = string.match(src, "^(.-)|(.*)$")
-                if not kind then kind, place = src, "" end
-                local k = BG.InstKeyOf(place, kind)
-                if k and def[k] then
-                    map[id] = k
-                    def[k].n = def[k].n + 1
+            if type(src) == "string" and src ~= "" then
+                local ck = CatKind(id)
+                if ck == "boss" or ck == "quest" then
+                    local kind, place = string.match(src, "^(.-)|(.*)$")
+                    if not kind then kind, place = src, "" end
+                    local k = BG.InstKeysOf(place, kind, def)
+                    if k then
+                        map[id] = k
+                        if ck == "boss" then
+                            if type(k) == "table" then
+                                for i = 1, #k do def[k[i]].n = def[k[i]].n + 1 end
+                            else
+                                def[k].n = def[k].n + 1
+                            end
+                        end
+                    end
                 end
             end
         end
@@ -1411,11 +1457,21 @@ function BG.InstOf(id)
     return nil
 end
 
+function BG.InstAllowed(set, id)
+    local key = BG.InstOf(id)
+    if key == nil then return true end
+    if type(key) == "table" then
+        for i = 1, #key do
+            if set and set[key[i]] == true then return true end
+        end
+        return false
+    end
+    return (set and set[key] == true) or false
+end
+
 function BG.InstPass(id)
     if BG.instReady ~= true then return true end
-    local key = BG.InstOf(id)
-    if not key then return true end
-    return BG.instSet[key] == true
+    return BG.InstAllowed(BG.instSet, id)
 end
 
 function BG.InstCount()
@@ -2344,7 +2400,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 15
+BG.AUTO_GEN_REV = 17
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2629,12 +2685,10 @@ local function AutoRawOK(id, cap)
 end
 
 function BG.AutoInstOK(job, id, kind)
-    if kind ~= "boss" then return true end
+    if kind ~= "boss" and kind ~= "quest" then return true end
     local set = job.instSet
     if not set then return true end
-    local key = BG.InstOf(id)
-    if not key then return true end
-    return set[key] == true
+    return BG.InstAllowed(set, id)
 end
 
 local function AutoBuckets(job)
@@ -3614,7 +3668,7 @@ local function PaintBrowser()
         for _, r in ipairs(mainBoth and BG.CatRowsForMain() or CatRowsFor(rkey)) do
             local kind = CatKind(r.id)
             local pass = not (next(BG.srcSet) ~= nil and not BG.srcSet[kind])
-            if pass and kind == "boss" and not BG.InstPass(r.id) then pass = false end
+            if pass and (kind == "boss" or kind == "quest") and not BG.InstPass(r.id) then pass = false end
             if pass and lv and not UsableAt(r.id, lv, r.req or 0) then pass = false end
             if pass and BG.search ~= "" then
                 local nm = string.lower(DG.ItemName(r.id) or "")

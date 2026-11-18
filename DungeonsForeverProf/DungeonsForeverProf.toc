@@ -73,4 +73,5 @@ Core\ProfGathering.lua
 Core\ProfExecution.lua
 Core\ProfSolverRun.lua
 Core\ProfRoutePlans.lua
+Core\EasyAuctionBridge.lua
 Core\AuctionatorBridge.lua

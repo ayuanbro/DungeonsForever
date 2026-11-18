@@ -60,6 +60,9 @@ function R.Fee(snapshot,opts)
     local constants=type(Auctionator)=="table" and Auctionator.Constants
     local factor=type(constants)=="table" and constants.AfterAHCut
     if amount(factor) and factor<=1 then return (1-factor)*100,"auctionator-reference",true end
+    local eb=ns.EasyBridge
+    local cut=eb and eb.AuctionCut and eb.AuctionCut()
+    if amount(cut) and cut>=0 and cut<100 then return cut,"easyauction-reference",true end
     return nil,"unknown",false
 end
 local function livePrice(id)

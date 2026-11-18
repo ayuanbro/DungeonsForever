@@ -1759,7 +1759,7 @@ local function DoImport(slug, profName)
                 if e.purchaseUnknown then lack=0 end
                 if not e.planPurchases and e.source=="mixed" then lack=math.min(lack,e.ahCount or 0) end
                 if lack > 0 then
-                    items[#items + 1] = { name = nm, need = lack }
+                    items[#items + 1] = { name = nm, need = lack, id = e.id }
                 end
             end
         end

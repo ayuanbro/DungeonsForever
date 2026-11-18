@@ -126,6 +126,9 @@ function PD.ScanSnapshotText()
     if not snapshot then return end
     if snapshot.status=="available" then
         local minutes=math.max(0,math.floor(((time and time() or 0)-snapshot.observedAt)/60))
+        if snapshot.source=="easyauction" then
+            return format(L["使用 %d 分钟前的 EasyAuction 行情"],minutes)
+        end
         local scan=bridge.FullScanStatus and bridge.FullScanStatus()
         if scan and (scan.status=="scanning" or scan.status=="processing") then
             return L["正在更新扫描，当前使用上次完整扫描"]
@@ -168,6 +171,11 @@ function PD.ScanFixLines()
     local capture=st and st.status
     local partial=snapshot and snapshot.status=="expired" and snapshot.staleIncomplete
     local out={}
+    local eb=ns.EasyBridge
+    if eb and eb.Available and eb.Available() and snapshot and snapshot.source=="easyauction" then
+        out[#out+1]=L["EasyAuction 行情已超过 2 天，请打开拍卖行让它重新扫描。"]
+        return out
+    end
     if enabled~=true then
         out[#out+1]=L["设置 → 插件 → Auctionator → 高级里勾选「较慢的备用扫描模式」"]
         out[#out+1]=L["重载界面后再到拍卖行完整扫描一次。"]
@@ -182,6 +190,9 @@ function PD.ScanFixLines()
 end
 
 function PD.ReplicateScanMessage(reason)
+    if reason=="easyauctionStale" then
+        return L["EasyAuction 行情已超过 2 天，请打开拍卖行让它重新扫描。"]
+    end
     if reason=="replicateModeDisabled" or reason=="replicateScanRequired" or reason=="replicateModeUnknown" then
         local bridge=ns.AuctionBridge
         local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
@@ -13400,7 +13411,9 @@ function PD.AuctionSupplyLines(entry)
         if text then add(text) end
         if tonumber(entry.availableCount) then
             add(format(L["数量观测：%s"], PD.AuctionObservationText(entry.supplyObservedAt)))
-            if entry.supplyMethod=="auctionator-full-scan" and entry.supplyOwnerExcluded==true then
+            if entry.supplyMethod=="easyauction-db" then
+                add(L["数量来源：EasyAuction 完整扫描"])
+            elseif entry.supplyMethod=="auctionator-full-scan" and entry.supplyOwnerExcluded==true then
                 add(L["数量来源：Auctionator 完整扫描（已排除本人拍卖）"])
             elseif entry.supplySource == "client-auction-results" then
                 add(L["数量来源：客户端拍卖结果"])
@@ -13416,7 +13429,9 @@ function PD.AuctionSupplyLines(entry)
             else
                 add(L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"])
             end
-            if entry.supplyOwnerExcluded==true then add(L["已排除本人拍卖"]) end
+            if entry.supplyMethod=="easyauction-db" then
+                add(L["统计含本人挂单"])
+            elseif entry.supplyOwnerExcluded==true then add(L["已排除本人拍卖"]) end
             local stamp = tonumber(entry.supplyObservedAt)
             local now = type(time) == "function" and time() or nil
             if stamp and now and now - stamp > PD.SNAP_STALE_SEC then
@@ -19671,6 +19686,21 @@ do
         return WritIndex()[id]
     end
 
+    local favorIco
+    local function FavorIcoTex(px)
+        px = px or 14
+        if favorIco == nil then
+            local ic
+            if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
+                local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, PD.FAVOR_CURID)
+                if ok and type(info) == "table" then ic = info.iconFileID end
+            end
+            if type(ic) ~= "number" or ic <= 0 then favorIco = 0 else favorIco = ic end
+        end
+        if favorIco == 0 then return "" end
+        return format("|T%d:%d:%d|t", favorIco, px, px)
+    end
+
     function PD.CrateTipLines(id)
         local c = PD.CrateOf(id)
         if not c then return nil end
@@ -19696,6 +19726,14 @@ do
             local col = isBest and CRATE_GREEN or C_TEXT
             rows[#rows + 1] = { txt, col[1], col[2], col[3], nil, nil,
                                 e.v and RA.MoneyStrTip(e.v) or "—", 1, 1, 1 }
+        end
+        local fav = tonumber(c.favor) or 0
+        local own = RA.AHPriceOf and RA.AHPriceOf(c.id) or nil
+        local total = (own and best) and (own + best) or nil
+        if fav > 0 and total then
+            rows[#rows + 1] = { FavorIcoTex(14) .. L["每点青睐"],
+                                C_TEXT[1], C_TEXT[2], C_TEXT[3], nil, nil,
+                                RA.MoneyStrTip(math.floor(total / fav + 0.5)), 1, 1, 1 }
         end
         return rows
     end

@@ -198,10 +198,16 @@ local function TentIn(res)
     return false
 end
 
+local softRes = { key = nil, t = 0 }
+
 function Z.RefreshSoft(force)
     local ctx = Z.Context()
+    local nowT = (GetTime and GetTime()) or 0
+    local key = Z.Key(ctx)
+    if not force and key and softRes.key == key and (nowT - softRes.t) < 1 then return end
     local res = Z.Collect(ctx)
-    res.key = Z.Key(ctx)
+    res.key = key
+    softRes.key, softRes.t = key, nowT
     if ns.ZoneOrb and ns.ZoneOrb.Update then ns.ZoneOrb.Update(res) end
     if ns.ZoneHintList and ns.ZoneHintList.Refresh and ns.ZoneHintList.Count and ns.ZoneHintList.Count() > 0 then
         ns.ZoneHintList.Refresh()
@@ -438,7 +444,7 @@ local function TurnInRows(ctx)
     local EG = ns.ExploreModule
     if not (EG and EG.CountInBags and EG.ScanAuto) then return nil end
     if not HereArea(TURNIN_AREA, ctx) then return nil end
-    pcall(EG.ScanAuto)
+    if not EG._auto then pcall(EG.ScanAuto) end
     local auto = EG._auto or {}
     local books = ns.ExploreBooks
     if type(books) ~= "table" then return nil end
@@ -738,6 +744,8 @@ local function CurInstSlugs()
     return nil
 end
 
+local questCache = { key = nil, t = 0, res = nil }
+
 local function PQuest(ctx)
     local c = CFG()
     if not c.quest then return nil end
@@ -746,6 +754,9 @@ local function PQuest(ctx)
     if not (DG and all) then return nil end
     local lv = (UnitLevel and UnitLevel("player")) or 60
     local side = DG.PlayerSide and DG.PlayerSide() or nil
+    local ck = tostring(ctx and ctx.zone) .. "|" .. tostring(ctx and ctx.sub) .. "|" .. tostring(lv) .. "|" .. tostring(side)
+    local nowT = (GetTime and GetTime()) or 0
+    if questCache.key == ck and (nowT - questCache.t) < 30 then return questCache.res end
     local function QOwn(q)
         if ns.MapModule and ns.MapModule.QuestPinOK and not ns.MapModule.QuestPinOK(q[1]) then return false end
         if side and q[2] and q[2] ~= side then return false end
@@ -878,7 +889,10 @@ local function PQuest(ctx)
             end
         end
     end
-    if n == 0 then return nil end
+    if n == 0 then
+        questCache.key, questCache.t, questCache.res = ck, nowT, nil
+        return nil
+    end
     table.sort(hits, function(a, b)
         local oa, ob = DungeonOrder(a.slug), DungeonOrder(b.slug)
         if oa ~= ob then return oa < ob end
@@ -991,11 +1005,13 @@ local function PQuest(ctx)
     for i = 1, n do
         if hits[i].inst then anyInst = true break end
     end
-    return {
+    local res = {
         kind = "quest", n = n, keys = ids, list = list,
         title = L["副本 · 任务"],
         text = string.format(anyInst and L["本副本待办 %d 个任务"] or L["本图可接 %d 个副本任务"], n),
     }
+    questCache.key, questCache.t, questCache.res = ck, nowT, res
+    return res
 end
 
 local function ZoneHasClassTrainer(ctx)
@@ -1894,14 +1910,15 @@ ns.Init(function()
     pcall(frame.RegisterEvent, frame, "PLAYER_SPECIALIZATION_CHANGED")
     pcall(frame.RegisterEvent, frame, "TRAIT_CONFIG_UPDATED")
     pcall(frame.RegisterEvent, frame, "ACTIVE_TALENT_GROUP_CHANGED")
-    pcall(frame.RegisterEvent, frame, "NAME_PLATE_UNIT_ADDED")
-    pcall(frame.RegisterEvent, frame, "NAME_PLATE_UNIT_REMOVED")
     frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
+            questCache.t = -1e9
             Z.Check("login", 0)
-        elseif event == "UNIT_AURA" or event == "ITEM_COOLDOWN_UPDATE" or event == "SPELL_UPDATE_COOLDOWN" then
-            Z.ScheduleSoft(0.6)
+        elseif event == "UNIT_AURA" then
+            Z.ScheduleSoft(5)
+        elseif event == "ITEM_COOLDOWN_UPDATE" or event == "SPELL_UPDATE_COOLDOWN" then
+            Z.ScheduleSoft(1.2)
         elseif event == "PLAYER_TARGET_CHANGED" then
             local CW = ns.CampWatch
             if CW and CW.TentUnit and CW.TentUnit() then
@@ -1909,12 +1926,11 @@ ns.Init(function()
             else
                 Z.ScheduleSoft(0.4)
             end
-        elseif event == "NAME_PLATE_UNIT_ADDED" or event == "NAME_PLATE_UNIT_REMOVED" then
-            Z.ScheduleSoft(0.4)
         elseif event == "BAG_UPDATE_DELAYED" or event == "QUEST_LOG_UPDATE" then
             local EG = ns.ExploreModule
             if EG then EG._auto = nil end
-            Z.ScheduleSoft(0.6)
+            questCache.t = -1e9
+            Z.ScheduleSoft(0.6, true)
         elseif event == "PLAYER_REGEN_ENABLED" then
             if pending then
                 pending = nil
@@ -1924,7 +1940,7 @@ ns.Init(function()
         elseif event == "CHARACTER_POINTS_CHANGED" or event == "PLAYER_LEVEL_UP"
             or event == "PLAYER_SPECIALIZATION_CHANGED" or event == "TRAIT_CONFIG_UPDATED"
             or event == "ACTIVE_TALENT_GROUP_CHANGED" then
-            Z.ScheduleSoft(0.4)
+            Z.ScheduleSoft(0.4, true)
         else
             Z.OnZoneChanged()
         end

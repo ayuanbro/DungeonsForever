@@ -1983,16 +1983,21 @@ local function Init()
         ns.EvtPool.exploreAuto = autoEv
     end
     local tickAcc = 0
+    local gateAcc = 0
     local ticker = CreateFrame("Frame")
     local function tick(_, e)
+        gateAcc = gateAcc + e
+        if gateAcc < 0.05 then return end
+        local dt = gateAcc
+        gateAcc = 0
         if miniTick > 0.5 then
-            moveAcc = moveAcc + e
+            moveAcc = moveAcc + dt
             if moveAcc >= MOVE_POLL then
                 moveAcc = 0
                 if playerMoved() then miniKick() end
             end
         end
-        miniAcc = miniAcc + e
+        miniAcc = miniAcc + dt
         if miniAcc >= miniTick then
             miniAcc = 0
             miniTick = miniRefresh() or MINI_IDLE_TICK
@@ -2001,7 +2006,7 @@ local function Init()
             tickAcc = 0
             return
         end
-        tickAcc = tickAcc + e
+        tickAcc = tickAcc + dt
         if tickAcc < MAP_TICK then return end
         tickAcc = 0
         meLineMove()

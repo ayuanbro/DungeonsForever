@@ -69,11 +69,13 @@ end
 
 local POPUP = "DungeonsForever_AuctionImport"
 local pendingImportText = ""
-function AB.ShowCopy(text)
+local pendingImportHint = nil
+function AB.ShowCopy(text, hint)
     pendingImportText = text or ""
+    pendingImportHint = hint
     if not StaticPopupDialogs[POPUP] then
         StaticPopupDialogs[POPUP] = {
-            text = L["未检测到 Auctionator，请复制以下导入串"],
+            text = L["未检测到可写入的购物清单插件，请复制以下导入串"],
             button1 = L["关闭"],
             timeout = 0,
             whileDead = true,
@@ -82,6 +84,8 @@ function AB.ShowCopy(text)
             hasEditBox = true,
             editBoxWidth = 320,
             OnShow = function(self)
+                local label = self.text or _G[(self:GetName() or "") .. "Text"]
+                if label and pendingImportHint then label:SetText(pendingImportHint) end
                 local edit = self.EditBox or self.editBox
                 edit:SetText(pendingImportText)
                 edit:HighlightText()
@@ -99,13 +103,21 @@ function AB.ShowCopy(text)
     StaticPopup_Show(POPUP)
 end
 
+local function NativeAuctionator()
+    return type(Auctionator) == "table"
+        and Auctionator.EasyAuctionCompat == nil
+        and type(Auctionator.API) == "table"
+        and type(Auctionator.API.v1) == "table"
+        and type(Auctionator.API.v1.CreateShoppingList) == "function"
+end
+
 function AB.DoImport(profName, items)
     if not (type(items) == "table" and #items > 0) then
         Say(L["购物清单为空，没有可导入的物品"])
         return
     end
     local listName = AB.ListName(profName)
-    if AB.Available() then
+    if NativeAuctionator() then
         local ok, err = AB.Import(listName, items)
         if ok then
             Say(format(L["已导入 Auctionator：%s（共 %d 种）"], listName, #items))
@@ -114,8 +126,29 @@ function AB.DoImport(profName, items)
         end
         return
     end
-    AB.ShowCopy(AB.ExportString(listName, items))
-    Say(L["未检测到 Auctionator，请在 Auctionator → 购物清单 → 导入 中粘贴"])
+    local eb = ns.EasyBridge
+    if eb and eb.CanLists and eb.CanLists() then
+        local ok, err, count = eb.ReplaceList(listName, items)
+        if ok then
+            Say(format(L["已导入 EasyAuction：%s（共 %d 种）"], listName, count or #items))
+            return
+        end
+        local text = eb.ShareText and eb.ShareText(listName, items)
+        if text then
+            AB.ShowCopy(text, L["EasyAuction 清单写入失败，请复制以下分享码在 EasyAuction 中导入"])
+            return
+        end
+        Say(L["导入失败："] .. tostring(err or "?"))
+        return
+    end
+    if eb and eb.ShareText and type(_G.EasyAuction12) == "table" then
+        local text = eb.ShareText(listName, items)
+        if text then
+            AB.ShowCopy(text, L["EasyAuction 清单写入失败，请复制以下分享码在 EasyAuction 中导入"])
+            return
+        end
+    end
+    AB.ShowCopy(AB.ExportString(listName, items), L["未检测到 Auctionator，请复制以下导入串"])
 end
 
 local SUPPLY_MAX_AGE = (ns.ProfRouteAuto and ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds
@@ -273,7 +306,7 @@ local function PruneLegacyBatch(batch)
     db.auctionFullScan=nil
 end
 
-function AB.FullScanSnapshotStatus()
+local function OwnSnapshotStatus()
     if SelectMarket then SelectMarket() end
     local batch=fullBatch
     local failure=batch and FullBatchFailure(batch)
@@ -296,7 +329,26 @@ function AB.FullScanSnapshotStatus()
         restored=restoredSnapshot,completedAt=batch and batch.completedAt}
 end
 
-local function SupplyRecord(id)
+function AB.FullScanSnapshotStatus()
+    local own=OwnSnapshotStatus()
+    if own.status~="available" then
+        local eb=ns.EasyBridge
+        local ea=eb and eb.Snapshot and eb.Snapshot()
+        if type(ea)=="table" then
+            if ea.status=="available" then return ea end
+            if AB.ForceExpiredActive() then
+                local forced={}
+                for key,value in pairs(ea) do forced[key]=value end
+                forced.status,forced.forced="available",true
+                return forced
+            end
+            return ea
+        end
+    end
+    return own
+end
+
+local function OwnRecord(id)
     if SelectMarket then SelectMarket() end
     local batch=fullBatch
     if batch then
@@ -330,7 +382,26 @@ local function SupplyRecord(id)
         method="auctionator-full-scan"}
 end
 
+local function SupplyRecord(id)
+    local rec=OwnRecord(id)
+    local eb=ns.EasyBridge
+    local ea=eb and eb.Record and eb.Record(id)
+    if type(rec)=="table" and not rec.failure then
+        if (tonumber(rec.q) or 0)==0 and type(ea)=="table"
+            and (tonumber(ea.q) or 0)>0
+            and tonumber(ea.t) and tonumber(rec.t) and ea.t>rec.t then return ea end
+        return rec
+    end
+    if type(ea)=="table" then return ea end
+    return rec
+end
+
 function AB.SupplyRevision()
+    local eb=ns.EasyBridge
+    local info=eb and eb.Snapshot and eb.Snapshot()
+    if type(info)=="table" and tonumber(info.observedAt) then
+        return supplyRevision+tonumber(info.observedAt)
+    end
     return supplyRevision
 end
 
@@ -339,6 +410,14 @@ function AB.GetAuctionSupplyStatus(id)
     local rec = SupplyRecord(id)
     if type(rec) ~= "table" then return "unknown" end
     local now = time and time() or 0
+    if rec.ea then
+        if rec.failure then return rec.failure end
+        if rec.c ~= true then return "incomplete" end
+        local stamp = tonumber(rec.t)
+        if not stamp or stamp <= 0 or stamp > now then return "expired" end
+        if now - stamp > SUPPLY_MAX_AGE and not AB.ForceExpiredActive() then return "expired" end
+        return "verified"
+    end
     local qty, stamp = tonumber(rec.q), tonumber(rec.t)
     if rec.failure then return rec.failure end
     if not MarketKey() or rec.mk ~= MarketKey() then return "unverified" end
@@ -374,6 +453,8 @@ end
 
 function AB.GetAuctionDepth(id)
     if AB.GetAuctionSupplyStatus(id)~="verified" then return end
+    local rec=SupplyRecord(id)
+    if type(rec)=="table" and rec.ea then return end
     local batch=fullBatch or AB.ForceExpiredActive() and fullFailure
     if not batch or batch.dv~=1 then return end
     local item=batch.items[id]
@@ -452,7 +533,7 @@ end
 function AB.GetAuctionPriceObservedAt(id)
     if type(id) ~= "number" or id <= 0 then return nil end
     local rec = SupplyRecord(id)
-    if type(rec) == "table" and rec.mk==MarketKey() and tonumber(rec.p) and rec.p>0
+    if type(rec) == "table" and (rec.ea or rec.mk==MarketKey()) and tonumber(rec.p) and rec.p>0
         and tonumber(rec.t) and rec.t>0 then return tonumber(rec.t) end
     local est = AB.SupplyEstimate(id)
     if type(est) == "table" and tonumber(est.observedAt) and est.observedAt > 0 then
@@ -752,6 +833,8 @@ end
 function AB.ReplicateScanReady()
     if not ns.IsForever then return true end
     if AB.FullScanSnapshotStatus().status=="available" then return true end
+    local eb=ns.EasyBridge
+    if eb and eb.Available and eb.Available() then return false,"easyauctionStale" end
     local enabled,state=AB.ObserveReplicateMode()
     if enabled==nil then return nil,"replicateModeUnknown" end
     if not enabled then return false,"replicateModeDisabled" end

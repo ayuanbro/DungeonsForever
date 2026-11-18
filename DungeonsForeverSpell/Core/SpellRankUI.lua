@@ -1299,14 +1299,15 @@ local function Register()
             UpdateEntry()
         end
     end)
-    local acc = 0
+    local acc, idleAcc = 0, 0
     local lastPsfVis = false
     local tick = CreateFrame("Frame")
     tick:SetScript("OnUpdate", function(_, elapsed)
         acc = acc + elapsed
+        if acc < 0.1 then return end
+        local step = acc
+        acc = 0
         if InCombat() then
-            if acc < 0.1 then return end
-            acc = 0
             UpdateEntryCombat()
             return
         end
@@ -1318,13 +1319,15 @@ local function Register()
         end
         if pv ~= lastPsfVis then
             lastPsfVis = pv
-            acc = 0
+            idleAcc = 0
             UpdateEntry()
             return
         end
-        if acc < (lastPsfVis and 0.1 or 0.5) then return end
-        acc = 0
-        UpdateEntry()
+        idleAcc = idleAcc + step
+        if pv or idleAcc >= 0.5 then
+            idleAcc = 0
+            UpdateEntry()
+        end
     end)
     UpdateEntry()
 end
