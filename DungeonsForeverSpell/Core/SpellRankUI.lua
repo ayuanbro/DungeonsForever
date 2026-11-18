@@ -1138,7 +1138,7 @@ local function EnsureEntry()
         ns.PlaySound(1)
         UI.Toggle()
     end)
-    if ns.NDuiOn and ns.NDuiOn() then ns.NDuiReskin(bt) end
+    if ns.SkinBtn then ns.SkinBtn(bt) end
     bt:Hide()
     entry = bt
     entryHost = host

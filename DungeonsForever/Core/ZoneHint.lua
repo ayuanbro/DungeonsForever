@@ -1075,32 +1075,6 @@ local function PSpell(ctx)
             end
         end
     end
-    local DG = ns.DungeonDG
-    for i = 1, #(g.quest or {}) do
-        local row = g.quest[i]
-        if type(row) == "table" and row.id then
-            local q = row.quest
-            local nearSource = q and q.uiMapId and q.uiMapId == ctx.mapID
-            if (inTrainerZone or nearSource) and not (lv and q and q.lv and q.lv > lv) then
-                local base = row.base or row.id
-                local key = ItemKey("spell", base)
-                if not Z.IsIgnored(key) then
-                    n = n + 1
-                    local sub = L["任务获得"]
-                    if q and q.name and q.name ~= "" then sub = sub .. " · " .. q.name end
-                    list[n] = {
-                        id = row.id, base = base, ikey = key,
-                        name = row.name or "", icon = row.icon,
-                        sub = sub,
-                        badge = (DG and DG.Q_BADGE_PRE_BG) and { t = L["任务"], col = DG.Q_BADGE_PRE_BG } or nil,
-                        mapID = q and q.uiMapId or nil,
-                        x = q and q.x or nil,
-                        y = q and q.y or nil,
-                    }
-                end
-            end
-        end
-    end
     if n == 0 then return nil end
     local names, limit = {}, (n > 3 and 3 or n)
     for i = 1, limit do
@@ -1117,6 +1091,91 @@ local function PSpell(ctx)
     return {
         kind = "spell", n = n, keys = {}, list = list,
         title = L["训练 · 技能"],
+        text = text,
+    }
+end
+
+local function PLearn(ctx)
+    local c = CFG()
+    if not c.spell then return nil end
+    local ST = ns.SpellTraining
+    if not (ST and ST.Rows) then return nil end
+    local ok, g, lv = pcall(ST.Rows)
+    if not ok or type(g) ~= "table" then return nil end
+    local inTrainerZone = ZoneHasClassTrainer(ctx)
+    local DG = ns.DungeonDG
+    local list, n, nBook, nQuest = {}, 0, 0, 0
+    local function put(row, src, q)
+        local base = row.base or row.id
+        local key = ItemKey("spell", base)
+        if Z.IsIgnored(key) then return end
+        n = n + 1
+        local it = {
+            id = row.id, base = base, ikey = key,
+            name = row.name or "", icon = row.icon,
+            learn = row.learn, rank = row.rank,
+        }
+        if src == "quest" then
+            nQuest = nQuest + 1
+            it.sub = L["任务获得"]
+            if q and q.name and q.name ~= "" then it.sub = it.sub .. " · " .. q.name end
+            it.badge = (DG and DG.Q_BADGE_PRE_BG) and { t = L["任务"], col = DG.Q_BADGE_PRE_BG } or nil
+            it.mapID = q and q.uiMapId or nil
+            it.x = q and q.x or nil
+            it.y = q and q.y or nil
+        elseif src == "misc" then
+            it.sub = L["其他途径"]
+            it.badge = (DG and DG.Q_BADGE_IN_BG) and { t = L["其他"], col = DG.Q_BADGE_IN_BG } or nil
+        else
+            nBook = nBook + 1
+            local nm = row.book and ItemName(row.book) or nil
+            it.sub = nm and nm or L["书"]
+            it.badge = (DG and DG.Q_BADGE_IN_BG) and { t = L["书"], col = DG.Q_BADGE_IN_BG } or nil
+        end
+        list[n] = it
+    end
+    for i = 1, #(g.quest or {}) do
+        local row = g.quest[i]
+        if type(row) == "table" and row.id then
+            local q = row.quest
+            local nearSource = q and q.uiMapId and q.uiMapId == ctx.mapID
+            if (inTrainerZone or nearSource) and not (lv and q and q.lv and q.lv > lv) then
+                put(row, "quest", q)
+            end
+        end
+    end
+    if inTrainerZone then
+        for i = 1, #(g.learn or {}) do
+            local row = g.learn[i]
+            if type(row) == "table" and row.id then put(row, row.src or "book", nil) end
+        end
+    end
+    if n == 0 then return nil end
+    local names, limit = {}, (n > 3 and 3 or n)
+    for i = 1, limit do
+        local nm = list[i].name
+        if nm and nm ~= "" then names[#names + 1] = nm end
+    end
+    local text
+    if #names > 0 then
+        text = table.concat(names, " · ")
+        if n > limit then text = text .. string.format(L[" 等 %d 个"], n) end
+    else
+        text = string.format(L["%d 个技能可学"], n)
+    end
+    local title
+    if nBook > 0 and nQuest > 0 then
+        title = L["学习 · 书 / 任务"]
+    elseif nBook > 0 then
+        title = L["学习 · 书"]
+    elseif nQuest > 0 then
+        title = L["学习 · 任务"]
+    else
+        title = L["学习 · 其他途径"]
+    end
+    return {
+        kind = "learn", n = n, keys = {}, list = list,
+        title = title,
         text = text,
     }
 end
@@ -1176,6 +1235,7 @@ Z.Register("turnin", TurnInRows)
 Z.Register("quest", PQuest)
 Z.Register("keyitem", PKeyItem)
 Z.Register("spell", PSpell)
+Z.Register("learn", PLearn)
 
 local function PProfCD(ctx)
     local c = CFG()
@@ -1693,10 +1753,11 @@ function Z.Collect(ctx)
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
-    local order = { "collect", "turnin", "quest", "keyitem", "spell", "profcd", "talent", "buff", "tent" }
+    local order = { "collect", "turnin", "quest", "keyitem", "spell", "learn", "profcd", "talent", "buff", "tent" }
     for i = 1, #order do
         local kind = order[i]
         local on = c[kind]
+        if kind == "learn" then on = c.spell end
         if kind == "collect" then on = (c.book or c.bag or c.torch or c.banner) end
         if kind == "buff" then on = (c.food or c.rested or c.camp or c.renew) end
         if on and providers[kind] then
@@ -1831,7 +1892,7 @@ function Z.CheckNow(reason)
     return Z.Check(reason or "manual", 0)
 end
 
-local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], keyitem = L["必备物品"], spell = L["技能"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"] }
+local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], keyitem = L["必备物品"], spell = L["技能"], learn = L["学习"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"] }
 function Z.KindName(kind)
     return KIND_NAME[kind] or L["条目"]
 end
@@ -1848,7 +1909,7 @@ function Z.IconFor(kind, id)
         end
         return 133662
     end
-    if kind == "spell" or kind == "food" or kind == "camp" or kind == "campren" then
+    if kind == "spell" or kind == "learn" or kind == "food" or kind == "camp" or kind == "campren" then
         local f = C_Spell and C_Spell.GetSpellInfo
         if f then
             local ok, si = pcall(f, id)

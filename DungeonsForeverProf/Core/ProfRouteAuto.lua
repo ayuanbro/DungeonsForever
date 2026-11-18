@@ -1894,13 +1894,15 @@ function RA.OnPricesChanged(fn)
     if type(fn) == "function" then priceWatchers[#priceWatchers + 1] = fn end
 end
 
+function RA.NotifyPricesChanged()
+    RA.Invalidate()
+    for _, fn in ipairs(priceWatchers) do pcall(fn) end
+end
+
 local ahWatch = CreateFrame("Frame")
 ahWatch:RegisterEvent("AUCTION_HOUSE_CLOSED")
 ahWatch:SetScript("OnEvent", function()
-    C_Timer.After(0, function()
-        RA.Invalidate()
-        for _, fn in ipairs(priceWatchers) do pcall(fn) end
-    end)
+    C_Timer.After(0, function() RA.NotifyPricesChanged() end)
 end)
 
 local function Fingerprint(opts, slug)

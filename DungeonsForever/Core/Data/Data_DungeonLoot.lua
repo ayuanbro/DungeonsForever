@@ -2235,6 +2235,7 @@ ns.DungeonLoot = {
             { 11832, 8.7, false },
             { 11809, 9.6, false },
             { 23320, nil, false },
+            { 273122, nil, true },
         } },
         { "Panzor the Invincible", "无敌的潘佐尔", "稀有", "8923", {
             { 22245, 22, false },
@@ -2295,6 +2296,7 @@ ns.DungeonLoot = {
         { "Plugger Spazzring", "普拉格", "", "", {
             { 12793, nil, false },
             { 12791, nil, false },
+            { 276877, nil, true },
         } },
         { "Theldren", "塞尔德伦", "", "16059", {
             { 22305, nil, false },
@@ -2765,6 +2767,7 @@ ns.DungeonLoot = {
             { 18390, 25, false },
             { 18352, 24, false },
             { 18353, 24, false },
+            { 273120, nil, true },
         } },
         { "Illyanna Ravenoak", "伊琳娜·暗木", "60 级", "11270", {
             { 18383, 24, false },
@@ -2897,6 +2900,8 @@ ns.DungeonLoot = {
             { 22326, nil, false },
             { 21984, nil, false },
             { 22046, nil, false },
+            { 22331, nil, false },
+            { 22333, nil, false },
         } },
         { "Marduk Blackpool", "马杜克·布莱克波尔", "58 级", "10433", {
             { 18692, 7, false },
@@ -2905,6 +2910,7 @@ ns.DungeonLoot = {
         { "Vectus", "维克图斯", "60 级", "10432", {
             { 18691, 6.8, false },
             { 14577, 7.5, false },
+            { 273121, nil, true },
         } },
         { "Ras Frostwhisper", "莱斯·霜语", "62 级", "10508", {
             { 13314, 0.38, false },
@@ -2982,6 +2988,7 @@ ns.DungeonLoot = {
             { 23200, 0.45, false },
             { 18680, 1.5, false },
             { 18683, 1.4, false },
+            { 273118, nil, true },
         } },
         { "Lorekeeper Polkelt", "博学者普克尔特", "60 级", "10901", {
             { 16705, 5.2, false },
@@ -3237,6 +3244,7 @@ ns.DungeonLoot = {
             { 280025, nil, true },
             { 272028, nil, true },
             { 285952, nil, true },
+            { 273116, nil, true },
         } },
         { "Ravasaur Hunters", "暴掠龙猎手", "", "", {
             { 280014, nil, true },
@@ -3420,6 +3428,7 @@ ns.DungeonLoot = {
             { 13537, 11, false },
             { 13539, 11, false },
             { 13514, 8.9, false },
+            { 273124, nil, true },
         } },
         { "Black Guard Swordsmith", "黑衣守卫铸剑师", "", "11121", {
             { 18783, 42, false },
@@ -3600,6 +3609,7 @@ ns.DungeonLoot = {
             { 12969, 13, false },
             { 24101, 3.7, false },
             { 19227, 6.6, false },
+            { 273109, nil, true },
         } },
         { "General Drakkisath", "达基萨斯将军", "62 级", "10115", {
             { 12592, 1.1, false },

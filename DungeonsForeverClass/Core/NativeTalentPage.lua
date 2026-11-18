@@ -120,6 +120,16 @@ local skinRegistered = false
 
 local euiBG = { 0.05, 0.05, 0.06, 0.62 }
 
+local function SkinTabEUI()
+    local b = NP.tab
+    if not (b and skinFacade and skinFacade.Tab) then return false end
+    local ok = pcall(skinFacade.Tab, b, { darkActive = true })
+    if ok and skinFacade.SetTabSelection then
+        pcall(skinFacade.SetTabSelection, b, b.__check == true)
+    end
+    return ok
+end
+
 local function SkinButtonEUI(b)
     if not b or b.__dfSkin then return end
     b.__dfSkin = true
@@ -165,6 +175,7 @@ local function TrySkinRegister()
                 if b.__dfBg then b.__dfBg:SetColorTexture(euiBG[1], euiBG[2], euiBG[3], euiBG[4]) end
             end
         end
+        SkinTabEUI()
     end)
     return true
 end
@@ -2064,6 +2075,23 @@ end
 local function TabMark(tab, on)
     if not tab then return end
     if tab.SetTabSelected then pcall(tab.SetTabSelected, tab, on and true or false) end
+    if skinFacade and skinFacade.SetTabSelection then pcall(skinFacade.SetTabSelection, tab, on and true or false) end
+end
+
+local function NativeTabSelect(on)
+    local ts = NP.frame and NP.frame.TabSystem
+    local tabs = ts and ts.tabs
+    if not (tabs and skinFacade and skinFacade.SetTabSelection) then return end
+    for i = 1, #tabs do
+        local t = tabs[i]
+        if t then
+            if on then
+                pcall(skinFacade.SetTabSelection, t, false)
+            else
+                pcall(skinFacade.SetTabSelection, t, nil)
+            end
+        end
+    end
 end
 
 local CHECK_MARK = ' |A:Talents-Checkmark-c60:15:20:0:0|a '
@@ -2224,6 +2252,7 @@ local function SyncTabs(on)
     if not InCombat() then NativeTabsPaint(on) end
     TabMark(NP.tab, on and true or false)
     TabCheck(NP.tab, on and true or false)
+    NativeTabSelect(on)
     local c = NP.catcher
     if c then
         if on then
@@ -2548,6 +2577,7 @@ local function BuildTab(ts)
     end
     btn.__dfMine = true
     NP.tab = btn
+    SkinTabEUI()
     return true
 end
 

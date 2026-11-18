@@ -148,7 +148,7 @@ function AB.DoImport(profName, items)
             return
         end
     end
-    AB.ShowCopy(AB.ExportString(listName, items), L["未检测到 Auctionator，请复制以下导入串"])
+    AB.ShowCopy(AB.ExportString(listName, items), L["未检测到 EasyAuction 或 Auctionator，请复制以下导入串"])
 end
 
 local SUPPLY_MAX_AGE = (ns.ProfRouteAuto and ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds
@@ -854,6 +854,22 @@ function AB.HookReplicateModeSetting()
     end)
     if ok then hookedModeConfig=cfg end
     return ok
+end
+
+function AB.ClearSavedScans()
+    StopFullImport()
+    local db=ScanDB()
+    db.auctionFullScan=nil
+    db.auctionFullScans=nil
+    if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
+    fullExpiryToken=nil;forcedUntil=0
+    fullBatch=nil;fullFailure=nil;restoredSnapshot=false;currentMarket=false
+    SelectMarket()
+    supplyRevision=supplyRevision+1
+    for _,fn in ipairs(supplyListeners) do pcall(fn,nil,"supply") end
+    local RA=ns.ProfRouteAuto
+    if RA and RA.NotifyPricesChanged then pcall(RA.NotifyPricesChanged) end
+    return true
 end
 
 if ns.Init then ns.Init(InitializeAuctionatorStock) else InitializeAuctionatorStock() end

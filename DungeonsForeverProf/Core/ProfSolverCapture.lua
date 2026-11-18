@@ -123,13 +123,13 @@ local DIAG_TEXT = {
     bindOnPickupFormulaDisabled = L["非金币获取的拾取绑定图纸未开启；此配方暂不参与路线。"],
     currencyFormulaDisabled = L["非金币拾取绑定与通货兑换均未开启；此配方暂不参与路线。"],
     formulaAcquisitionPending = L["请先取得并学习所需图纸，再开始制作。"],
-    formulaAuctionSupplyUnknown = L["请使用 Auctionator 完整扫描一次拍卖行，确认图纸在售后重新计算路线。"],
-    formulaAuctionSupplyInsufficient = L["本次扫描的图纸数量不够；请用 Auctionator 完整扫描后重新计算，或选择其他图纸来源。"],
+    formulaAuctionSupplyUnknown = L["请打开拍卖行完成一次完整扫描，确认图纸在售后重新计算路线。"],
+    formulaAuctionSupplyInsufficient = L["本次扫描的图纸数量不够；请打开拍卖行完成一次完整扫描后重新计算，或选择其他图纸来源。"],
     limitedFormulaDisabled = L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少1张的拍卖行图纸。"],
-    formulaPriceUnknown = L["请在购物清单核对图纸费用；拍卖行报价请用 Auctionator 完整扫描后更新。"],
+    formulaPriceUnknown = L["请在购物清单核对图纸费用；拍卖行报价请在完整扫描后更新。"],
     learningPriceUnknown = L["请打开训练师页面核对学习费用。"],
     formulaStockUnknown = L["请向商人核对图纸现货；限量图纸可能需要等待刷新。"],
-    auctionSupplyLimited = L["本次扫描的材料数量不够；请用 Auctionator 完整扫描后重新计算，或更换货源。"],
+    auctionSupplyLimited = L["本次扫描的材料数量不够；请打开拍卖行完成一次完整扫描后重新计算，或更换货源。"],
     fishingRecipeGap = L["当前技能没有符合纯钓鱼条件的可用配方，请检查食谱、材料来源或排除设置。"],
     fishingRequirementsUnknown = L["鱼类的钓取门槛或时间限制尚未确认，暂不用于纯钓鱼路线。"],
     professionCapUnknown = L["当前专业技能上限尚未读取，暂不推断最后一段采集目标。"],
@@ -140,7 +140,7 @@ local DIAG_TEXT = {
     vendorPending = L["商人购买价格尚未配置。"],
     characterLevelRequired = L["角色等级不足，无法学习所需专业等级。"],
     vendorPriceUnknown = L["请向商人核对购买价格。"],
-    materialPriceUnknown = L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"],
+    materialPriceUnknown = L["请打开拍卖行完成一次完整扫描，再重新计算路线。"],
     batchDependency = L["合并制作所需的材料或学习等级尚未满足。"],
     batchSkillGap = L["合并制作后无法达到目标技能，请调整配方限制。"],
     executionInvalid = L["制作顺序或材料用途无法验证，请调整限制后重新计算。"],
@@ -165,7 +165,7 @@ function E.DiagnosticText(d)
     if type(code) ~= "string" then return nil end
     if code=="auctionSupplyLimited" and d.item and d.required and d.available then
         local name=GetItemInfo and GetItemInfo(d.item) or ("#"..tostring(d.item))
-        return string.format(L["%s：扫描记录有 %d 件，需要 %d 件；请用 Auctionator 完整扫描后重新计算，或更换货源。"],name,d.available,d.required)
+        return string.format(L["%s：扫描记录有 %d 件，需要 %d 件；请打开拍卖行完成一次完整扫描后重新计算，或更换货源。"],name,d.available,d.required)
     end
     return DIAG_TEXT[code] or code
 end

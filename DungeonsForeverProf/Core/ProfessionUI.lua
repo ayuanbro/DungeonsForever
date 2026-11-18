@@ -64,8 +64,10 @@ end
 local PD = {}
 ns.ProfModule = PD
 
-local function AuctionatorAddonState()
-    if PD.__ahAddonState ~= nil then return PD.__ahAddonState end
+local AH_EA, AH_AU = "EasyAuction", "Auctionator"
+local AH_LINK = "dfah:"
+
+local function AddonLoadState(name)
     local numFn = (C_AddOns and C_AddOns.GetNumAddOns) or GetNumAddOns
     local infoFn = (C_AddOns and C_AddOns.GetAddOnInfo) or GetAddOnInfo
     local loadedFn = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
@@ -74,7 +76,7 @@ local function AuctionatorAddonState()
     if ok and type(total) == "number" and type(infoFn) == "function" then
         for i = 1, total do
             local got, nm = pcall(infoFn, i)
-            if got and nm == "Auctionator" then
+            if got and nm == name then
                 st = "disabled"
                 if type(loadedFn) == "function" then
                     local okL, loaded = pcall(loadedFn, i)
@@ -84,8 +86,80 @@ local function AuctionatorAddonState()
             end
         end
     end
-    PD.__ahAddonState = st
     return st
+end
+
+function PD.AHStates()
+    if PD.__ahStates then return PD.__ahStates.ea, PD.__ahStates.au end
+    PD.__ahStates = { ea = AddonLoadState(AH_EA), au = AddonLoadState(AH_AU) }
+    return PD.__ahStates.ea, PD.__ahStates.au
+end
+
+function PD.AHSourceName()
+    local bridge = ns.AuctionBridge
+    local snap = bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
+    local src = snap and snap.source
+    if src == "easyauction" then return AH_EA end
+    if src == "auctionator" then return AH_AU end
+    local ea, au = PD.AHStates()
+    if au == "loaded" and ea ~= "loaded" then return AH_AU end
+    if ea == "loaded" and au ~= "loaded" then return AH_EA end
+    return AH_AU
+end
+
+local ahCopyAt, ahCopyName
+
+local function AHName(name)
+    return format("|cff7fd4ff|H%s%s|h%s|h|r", AH_LINK, name, name)
+end
+
+local function AHCopy(link)
+    if type(link) ~= "string" or string.sub(link, 1, #AH_LINK) ~= AH_LINK then return false end
+    local name = string.sub(link, #AH_LINK + 1)
+    if name ~= AH_EA and name ~= AH_AU then return false end
+    local now = (type(GetTime) == "function") and GetTime() or 0
+    if ahCopyName == name and now - (ahCopyAt or 0) < 0.3 then return true end
+    ahCopyName, ahCopyAt = name, now
+    local bridge = ns.AuctionBridge
+    if bridge and bridge.ShowCopy then
+        bridge.ShowCopy(name, format(L["插件名称：%s（已全选，Ctrl+C 复制）"], name))
+        return true
+    end
+    if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        DEFAULT_CHAT_FRAME:AddMessage(name)
+    end
+    return true
+end
+
+local function InstallAHCopy()
+    if PD.__ahCopyReady then return end
+    PD.__ahCopyReady = true
+    if type(EventRegistry) == "table" and type(EventRegistry.RegisterCallback) == "function" then
+        pcall(EventRegistry.RegisterCallback, EventRegistry, "SetItemRef",
+            function(_, link) AHCopy(link) end, PD)
+    end
+    if type(hooksecurefunc) == "function" and type(_G.SetItemRef) == "function" then
+        pcall(hooksecurefunc, "SetItemRef", function(link) AHCopy(link) end)
+    end
+    if type(GameTooltip) == "table" and type(GameTooltip.SetHyperlinksEnabled) == "function" then
+        pcall(GameTooltip.SetHyperlinksEnabled, GameTooltip, true)
+    end
+end
+
+if ns.Init then ns.Init(InstallAHCopy) else InstallAHCopy() end
+
+function PD.AHEnableHint(short)
+    local ea, au = PD.AHStates()
+    if ea == "loaded" or au == "loaded" then return L["请扫描拍卖行"] end
+    if ea == "missing" and au == "missing" then
+        return short and L["请装行情插件"] or L["请安装行情插件"]
+    end
+    if short then return L["请启用行情插件"] end
+    if ea == "disabled" and au == "disabled" then
+        return format(L["请启用 %s 或 %s"], AHName(AH_EA), AHName(AH_AU))
+    end
+    if ea == "disabled" then return format(L["请启用 %s"], AHName(AH_EA)) end
+    return format(L["请启用 %s"], AHName(AH_AU))
 end
 
 function PD.AuctionatorState()
@@ -96,9 +170,9 @@ function PD.AuctionatorState()
     local avail = (bridge and bridge.Available and bridge.Available())
         or (RA and RA.Available and RA.Available())
     if not avail then
-        local ad = AuctionatorAddonState()
-        if ad == "missing" then return "missing" end
-        if ad == "disabled" then return "disabled" end
+        local ea, au = PD.AHStates()
+        if ea == "missing" and au == "missing" then return "missing" end
+        if ea ~= "loaded" and au ~= "loaded" then return "disabled" end
         return "loading"
     end
     if not (RA and RA.HasPriceData and RA.HasPriceData()) then return "noprice" end
@@ -107,11 +181,24 @@ end
 
 function PD.AuctionatorStatusText()
     local st = PD.AuctionatorState()
-    if st == "missing" then return L["未安装 Auctionator"] end
-    if st == "disabled" then return L["Auctionator 已安装但未启用，请启用后重载界面。"] end
-    if st == "loading" then return L["Auctionator 正在初始化"] end
+    local ea, au = PD.AHStates()
+    if st == "missing" then
+        return format(L["未安装 %s 或 %s；装好其中一个后在拍卖行完成一次完整扫描。"],
+            AHName(AH_EA), AHName(AH_AU))
+    end
+    if st == "disabled" then
+        if ea == "disabled" and au == "disabled" then
+            return format(L["%s 和 %s 均安装但未启用，请启用一个后重载界面。"],
+                AHName(AH_EA), AHName(AH_AU))
+        end
+        if ea == "disabled" then
+            return format(L["%s 已安装但未启用，请启用后重载界面。"], AHName(AH_EA))
+        end
+        return format(L["%s 已安装但未启用，请启用后重载界面。"], AHName(AH_AU))
+    end
+    if st == "loading" then return L["拍卖行价格读取中…"] end
     if st == "ok" then return L["拍卖行价格可用"] end
-    return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
+    return L["请在拍卖行完成一次完整扫描后重新计算路线。"]
 end
 
 function PD.SnapshotAge(s)
@@ -119,7 +206,7 @@ function PD.SnapshotAge(s)
     return s and s.snapshotAge,s and s.snapshotDays
 end
 
-function PD.ScanSnapshotText()
+function PD.ScanSnapshotText(extraOnly)
     if not ns.IsForever then return end
     local bridge=ns.AuctionBridge
     local snapshot=bridge and bridge.FullScanSnapshotStatus and bridge.FullScanSnapshotStatus()
@@ -127,6 +214,7 @@ function PD.ScanSnapshotText()
     if snapshot.status=="available" then
         local minutes=math.max(0,math.floor(((time and time() or 0)-snapshot.observedAt)/60))
         if snapshot.source=="easyauction" then
+            if extraOnly then return nil end
             return format(L["使用 %d 分钟前的 EasyAuction 行情"],minutes)
         end
         local scan=bridge.FullScanStatus and bridge.FullScanStatus()
@@ -135,6 +223,7 @@ function PD.ScanSnapshotText()
         elseif scan and (scan.status=="failed" or scan.status=="incomplete" or scan.status=="unverified") then
             return format(L["本次扫描失败，沿用 %d 分钟前的完整扫描"],minutes)
         end
+        if extraOnly then return nil end
         return format(L["使用 %d 分钟前的完整扫描"],minutes)
     elseif snapshot.status=="expired" then
         return L["完整扫描数据已超过 2 天，请更新后重新计算。"]
@@ -177,8 +266,13 @@ function PD.ScanFixLines()
         return out
     end
     if enabled~=true then
-        out[#out+1]=L["设置 → 插件 → Auctionator → 高级里勾选「较慢的备用扫描模式」"]
-        out[#out+1]=L["重载界面后再到拍卖行完整扫描一次。"]
+        local ea, au = PD.AHStates()
+        if au ~= "loaded" and ea == "loaded" then
+            out[#out+1]=L["EasyAuction 会随拍卖行打开自动扫描；如果仍提示过期，请重载界面后再打开一次拍卖行。"]
+        else
+            out[#out+1]=L["设置 → 插件 → Auctionator → 高级里勾选「较慢的备用扫描模式」"]
+            out[#out+1]=L["重载界面后再到拍卖行完整扫描一次。"]
+        end
     elseif capture=="summary" or capture=="mode-changed" then
         out[#out+1]=L["如果你已经完整扫描过，这里仍然提示过期，说明插件没收到这次扫描；请重载界面后再扫一次。"]
     elseif partial then
@@ -187,6 +281,14 @@ function PD.ScanFixLines()
         out[#out+1]=L["数据已过有效期；请到拍卖行再做一次完整扫描，或点上面那行用过期数据算一次。"]
     end
     return out
+end
+
+function PD.AHReplicateFix()
+    local ea, au = PD.AHStates()
+    if au ~= "loaded" and ea == "loaded" then
+        return L["EasyAuction 会随拍卖行打开自动扫描；如果仍提示过期，请重载界面后再打开一次拍卖行。"]
+    end
+    return L["请在「设置选项 → 插件 → Auctionator → 高级」中确认已勾选「默认使用较慢的备用扫描模式」，然后到拍卖行完成一次完整扫描。"]
 end
 
 function PD.ReplicateScanMessage(reason)
@@ -201,16 +303,16 @@ function PD.ReplicateScanMessage(reason)
         end
     end
     if reason=="replicateModeDisabled" then
-        return L["请在「设置选项 → 插件 → Auctionator → 高级」中确认已勾选「默认使用较慢的备用扫描模式」，然后到拍卖行使用 Auctionator 完成一次完整扫描。"]
+        return PD.AHReplicateFix()
     elseif reason=="replicateScanRequired" then
         if ns.AuctionBridge and ns.AuctionBridge.FullScanSnapshotStatus then
-            return L["尚无可用的完整扫描数据，请使用 Auctionator 完成一次完整扫描。"]
+            return L["尚无可用的完整扫描数据，请打开拍卖行完成一次完整扫描。"]
         end
-        return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
+        return L["请打开拍卖行完成一次完整扫描，再重新计算路线。"]
     elseif reason=="replicateModeUnknown" then
         local st=PD.AuctionatorState()
         if st=="missing" or st=="disabled" or st=="loading" then return PD.AuctionatorStatusText() end
-        return L["请在「设置选项 → 插件 → Auctionator → 高级」中确认已勾选「默认使用较慢的备用扫描模式」，然后到拍卖行使用 Auctionator 完成一次完整扫描。"]
+        return PD.AHReplicateFix()
     end
 end
 
@@ -243,6 +345,25 @@ local function SnapAgePhrase(sec)
         return format(L["%d 小时"], math.max(1, math.floor(sec / 3600 + 0.5)))
     end
     return format(L["%d 天"], math.max(1, math.floor(sec / 86400)))
+end
+
+function PD.PriceStampText(sec)
+    if not sec then return nil end
+    local src = PD.AHSourceName()
+    if sec < 60 then return format(L["价格快照：刚刚（%s）"], src) end
+    if sec < 90 * 60 then
+        return format(L["价格快照 %d 分钟前（%s）"], math.max(1, math.floor(sec / 60 + 0.5)), src)
+    end
+    if sec < 48 * 3600 then
+        return format(L["价格快照 %d 小时前（%s）"], math.max(1, math.floor(sec / 3600 + 0.5)), src)
+    end
+    return format(L["价格快照 %d 天前（%s）"], math.floor(sec / 86400 + 0.5), src)
+end
+
+function PD.PriceStampDaysText(days)
+    local src = PD.AHSourceName()
+    if (tonumber(days) or 0) <= 0 then return format(L["价格快照：今天（%s）"], src) end
+    return format(L["价格快照 %d 天前（%s）"], days, src)
 end
 
 function PD.ScanCaptureText()
@@ -451,8 +572,8 @@ function PD.SnapshotBadgeText(s)
     if st == "stock_changed" then return L["请扫描拍卖行"], 0.95, 0.75, 0.4 end
     if st == "stock_short" then return L["库存不足"], 0.95, 0.75, 0.4 end
     if st == "stock_unknown" then return L["请扫描拍卖行"], 0.95, 0.75, 0.4 end
-    if st == "missing" then return L["需装 Auctionator 扫描价格"], 0.95, 0.75, 0.4 end
-    if st == "disabled" then return L["Auctionator 未启用"], 0.95, 0.75, 0.4 end
+    if st == "missing" then return L["未安装拍卖行插件"], 0.95, 0.75, 0.4 end
+    if st == "disabled" then return L["拍卖行插件未启用"], 0.95, 0.75, 0.4 end
     if st == "loading" then return L["拍卖行价格读取中…"], 0.95, 0.75, 0.4 end
     if st == "stale" then return L["请扫描拍卖行"], 0.9, 0.35, 0.35 end
     if st == "noprice" then return L["请扫描拍卖行"], 0.9, 0.35, 0.35 end
@@ -523,6 +644,7 @@ PD.GATHER_SLUGS = { mining = true, herbalism = true, skinning = true, fishing = 
 PD.SETTING_DEF.autoFromCurrent = true
 PD.SETTING_DEF.autoStartSkill = 1
 PD.SETTING_TOG_MAX = 16
+PD.SETTING_HELP_MAX = 18
 local function ProfDB()
     return ns.ProfDB().prof
 end
@@ -1519,6 +1641,22 @@ function PD.PrimeNames(mats)
     end
 end
 
+PD.EscStep = function(s, i)
+    if string.sub(s, i, i) ~= "|" then return nil end
+    local nxt = string.sub(s, i + 1, i + 1)
+    if nxt == "c" then
+        local hex = string.sub(s, i + 2, i + 9)
+        if #hex == 8 and not string.find(hex, "[^%x]") then return 10 end
+        return nil
+    end
+    if nxt == "r" or nxt == "n" or nxt == "h" then return 2 end
+    if nxt == "H" then
+        local he = string.find(s, "|h", i + 1, true)
+        if he then return he + 2 - i end
+    end
+    return nil
+end
+
 PD.Wrap = function(text, fs, width)
     local out = {}
     if type(text) ~= "string" or text == "" or not width then return out end
@@ -1545,15 +1683,21 @@ PD.Wrap = function(text, fs, width)
         else
             local i, n = 1, #tk.t
             while i <= n do
-                local ch, step, k = CharStep(tk.t, i)
-                local cw = k * fs
-                if w + cw > width and line ~= "" then
-                    out[#out + 1] = line
-                    line, w = "", 0
+                local skip = PD.EscStep(tk.t, i)
+                if skip then
+                    line = line .. string.sub(tk.t, i, i + skip - 1)
+                    i = i + skip
+                else
+                    local ch, step, k = CharStep(tk.t, i)
+                    local cw = k * fs
+                    if w + cw > width and line ~= "" then
+                        out[#out + 1] = line
+                        line, w = "", 0
+                    end
+                    line = line .. ch
+                    w = w + cw
+                    i = i + step
                 end
-                line = line .. ch
-                w = w + cw
-                i = i + step
             end
         end
     end
@@ -1808,6 +1952,8 @@ function PD.Row(i)
     r.__hlOn = false
     PD.SetRowHover(r, false)
     r:EnableMouse(true)
+    if type(r.SetHyperlinksEnabled) == "function" then pcall(r.SetHyperlinksEnabled, r, true) end
+    r:SetScript("OnHyperlinkClick", function(_, link) AHCopy(link) end)
     r.icon = r:CreateTexture(nil, "ARTWORK")
     r.icon:SetSize(20, 20)
     r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -6178,7 +6324,7 @@ function PD.Build(page)
     end
 
     PD.setHelps = {}
-    for i = 1, PD.SETTING_TOG_MAX do
+    for i = 1, PD.SETTING_HELP_MAX do
         local hp = CreateFrame("Button", nil, child)
         hp:SetSize(16, 16)
         hp.icon = hp:CreateTexture(nil, "ARTWORK")
@@ -7256,8 +7402,13 @@ function PD.PaintLvTiles()
         tiles.cost.val:SetTextColor(Unpack(C_GOLD))
         costLines = {}
         if s.recipes then
-            costLines[#costLines + 1] = { format(L["配方 %d 种 · %d 次制作"], s.recipes, s.crafts or 0) }
-            costLines[#costLines + 1] = { format(L["商人直售 %s"], RA.MoneyStr(s.vendorTotal or 0)), 0.7, 0.7, 0.7 }
+            local vendor = s.vendorTotal or 0
+            if vendor > 0 then
+                costLines[#costLines + 1] = { format(L["配方 %d 种 · %d 次制作 · 商人直售 %s"],
+                    s.recipes, s.crafts or 0, RA.MoneyStr(vendor)) }
+            else
+                costLines[#costLines + 1] = { format(L["配方 %d 种 · %d 次制作"], s.recipes, s.crafts or 0) }
+            end
         else
             costLines[#costLines + 1] = { format(L["材料 %d 种"], s.matsN or 0) }
         end
@@ -7266,7 +7417,9 @@ function PD.PaintLvTiles()
         tiles.cost.val:SetTextColor(Unpack(C_GREY))
         costLines = { { scanNotice or PD.AuctionatorStatusText(), 0.7, 0.7, 0.7 } }
     end
-    if s.greenBudget then costLines[#costLines+1]={PD.GreenBudgetLabel(s.greenBudget),0.7,0.85,1} end
+    if s.greenBudget and not tiles.budget.__use then
+        costLines[#costLines+1]={PD.GreenBudgetLabel(s.greenBudget),0.7,0.85,1}
+    end
     if s.useBagMaterials then costLines[#costLines+1]={L["已计入背包材料"],0.55,0.85,0.6} end
     if (s.np or 0) > 0 then
         costLines[#costLines + 1] = { format(L["含无价材料 %d 种：花费为估算下限"], s.np),
@@ -7274,35 +7427,35 @@ function PD.PaintLvTiles()
     end
     local ahState
     if s.scheme ~= "optim" or s.planVersion==2 then ahState = PD.SnapshotBadgeState(s) end
-    if ahState == "missing" then
-        costLines[#costLines + 1] = { L["未安装 Auctionator"], 0.95, 0.75, 0.4 }
-        costLines[#costLines + 1] = { L["安装 Auctionator 后在拍卖行扫描一次完整价格，再重新计算路线。"], 0.7, 0.7, 0.7 }
-    elseif ahState == "disabled" then
-        costLines[#costLines + 1] = { L["Auctionator 已安装但未启用，请启用后重载界面。"], 0.95, 0.75, 0.4 }
+    if ahState == "missing" or ahState == "disabled" then
+        costLines[#costLines + 1] = { PD.AuctionatorStatusText(), 0.95, 0.75, 0.4 }
     elseif ahState == "loading" then
         costLines[#costLines + 1] = { L["拍卖行价格读取中…"], 0.7, 0.7, 0.7 }
     elseif ahState == "stale" or ahState == "noprice" then
-        costLines[#costLines + 1] = { scanNotice or L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 0.7, 0.7, 0.7 }
+        costLines[#costLines + 1] = { PD.ScanSnapshotText(true)
+            or L["请打开拍卖行完成一次完整扫描，再重新计算路线。"], 0.95, 0.75, 0.4 }
     end
-    if s.auctionDepthComplete==false then costLines[#costLines+1]={L["按方案单价估算"].."："..L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"],0.95,0.75,0.4} end
     if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
         local net = s.netTotal or ((s.total or 0) - s.recoveryTotal)
-        costLines[#costLines + 1] = { format(L["预计回血 %s · 净成本 %s"],
-            PD.RecoveryMoney(s.recoveryTotal), PD.RecoveryMoney(net)), 0.55, 0.85, 0.6 }
+        local netTxt = format(L["预计回血 %s · 净成本 %s"],
+            PD.RecoveryMoney(s.recoveryTotal), PD.RecoveryMoney(net))
+        if s.recoveryFeePercent then
+            netTxt = netTxt .. format(L["（已扣 %d%% 手续费，剩余产物按全部成交计）"], s.recoveryFeePercent)
+        end
+        costLines[#costLines + 1] = { netTxt, 0.55, 0.85, 0.6 }
         if s.greenBudget and s.greenBudget~="optimistic" and s.priorityTotal and math.abs(s.priorityTotal-net)>=1 then
             costLines[#costLines+1]={format(L["选方采用的净成本 %s"],PD.RecoveryMoney(s.priorityTotal)),0.7,0.85,1}
         end
-        if s.recoveryFeePercent then
-            costLines[#costLines + 1] = { format(L["按 %d%% 手续费折算，剩余产物假设全部成交"], s.recoveryFeePercent),
-                                          0.7, 0.7, 0.7 }
-        end
         if (s.recoveryMissing or 0) > 0 then
-            costLines[#costLines + 1] = { format(L["其中 %d 种产物尚未计入回血；请使用 Auctionator 完整扫描后重新计算。"], s.recoveryMissing),
+            costLines[#costLines + 1] = { format(L["其中 %d 种产物尚未计入回血；请打开拍卖行完成一次完整扫描后重新计算。"], s.recoveryMissing),
                                           0.95, 0.75, 0.4 }
         end
     end
+    if s.auctionDepthComplete==false then
+        costLines[#costLines+1]={L["单价按方案估算，未用逐档行情"],0.7,0.7,0.7}
+    end
     if s.planVersion == 2 then
-        if s.completeCost == false then costLines[#costLines + 1] = { L["请使用 Auctionator 完整扫描一次拍卖行，并在购物清单核对材料和图纸费用后开始执行。"], 0.95, 0.75, 0.4 } end
+        if s.completeCost == false then costLines[#costLines + 1] = { L["请打开拍卖行完成一次完整扫描，并在购物清单核对材料和图纸费用后开始执行。"], 0.95, 0.75, 0.4 } end
     end
     tiles.target.label:SetText(L["目标等级"])
     tiles.target.val:SetText(v >= 300 and L["全程"] or tostring(v))
@@ -7348,18 +7501,21 @@ function PD.PaintLvTiles()
     elseif s.scheme == "optim" then
         atxt = L["乐观计数 · 不依赖价格插件"]
     elseif s.priced and snapDays then
-        atxt = (snapDays <= 0) and L["今天Auctionator"]
-               or format(L["%d 天前Auctionator"], snapDays)
+        atxt = PD.MarketLineText(nil, snapDays)
     elseif s.priced and snapSec then
-        atxt = PD.SnapshotSecText(snapSec)
+        atxt = PD.MarketLineText(snapSec)
     elseif s.priced then
         atxt = scanNotice or L["请扫描拍卖行"]
     end
     local detailText=atxt or scanNotice or PD.AuctionatorStatusText()
     local details = { { detailText, 0.7, 0.7, 0.7 } }
-    if scanNotice and scanNotice~=detailText then details[#details+1]={scanNotice,0.7,0.7,0.7} end
-    if snapSec then
-        details[#details + 1] = { format(L["上次扫描： %s"], PD.SnapshotSecText(snapSec)), 0.7, 0.7, 0.7 }
+    if not s.referenceOnly and (snapSec or snapDays) then
+        local market = snapSec and PD.MarketLineText(snapSec) or PD.MarketLineText(nil, snapDays)
+        if market ~= detailText then details[#details + 1] = { market, 0.7, 0.7, 0.7 } end
+    end
+    local scanExtra = PD.ScanSnapshotText(true)
+    if scanExtra and scanExtra ~= detailText then
+        details[#details+1]={scanExtra,0.95,0.75,0.4}
     end
     local progress = PD.PlanProgressText(s)
     if progress then details[#details + 1] = { progress, 0.7, 0.7, 0.7 } end
@@ -7388,7 +7544,7 @@ function PD.PaintLvTiles()
             { L["按当前方案的产物售价估算，未扣拍卖行手续费以外的损耗"], 0.7, 0.7, 0.7 },
         }
         if (s.recoveryMissing or 0) > 0 then
-            costLines[#costLines + 1] = { format(L["其中 %d 种产物尚未计入回血；请使用 Auctionator 完整扫描后重新计算。"], s.recoveryMissing),
+            costLines[#costLines + 1] = { format(L["其中 %d 种产物尚未计入回血；请打开拍卖行完成一次完整扫描后重新计算。"], s.recoveryMissing),
                                           0.95, 0.75, 0.4 }
         end
         PD.SetBadge(L["按快照售价估算"], 0.7, 0.7, 0.7)
@@ -7400,16 +7556,10 @@ function PD.PaintLvTiles()
         costLines[#costLines + 1] = { L["盈利优先每配方最多20次；多余产物仍计入预计回血。"], 0.7, 0.7, 0.7 }
     end
     if PD.autoPage ~= "log" and s.recoveryEstimated then
-        costLines[#costLines + 1] = { L["回血暂按历史数据估算；请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 0.95, 0.75, 0.4 }
+        costLines[#costLines + 1] = { L["回血暂按历史数据估算；重新计算可更新。"], 0.95, 0.75, 0.4 }
     end
-    if ns.IsForever then
-        local advice=PD.ScanModeAdvice()
-        if advice then
-            costLines[#costLines+1]={advice,0.7,0.7,0.7}
-            costLines[#costLines+1]={L["切回摘要模式：在「设置选项 → 插件 → Auctionator → 高级」中取消勾选「默认使用较慢的备用扫描模式」。"],0.7,0.7,0.7}
-        end
-        costLines[#costLines+1]={L["摘要模式下，本插件不监听或保存扫描数据；仍可使用 2 天内的完整扫描快照计算。"],0.7,0.7,0.7}
-        costLines[#costLines+1]={L["完整扫描快照保留 2 天，过期后自动删除；重载或切换扫描模式不会延长有效期。"],0.7,0.7,0.7}
+    if ns.IsForever and PD.ScanModeAdvice() then
+        costLines[#costLines+1]={PD.AHReplicateFix(),0.7,0.7,0.7}
     end
     local uniqueLines,seenLines={},{}
     for _,line in ipairs(costLines) do
@@ -13181,16 +13331,21 @@ function PD.MaterialKindCount(entries)
     return count
 end
 
-function PD.SnapshotSecText(sec)
-    if not sec then return nil end
-    if sec < 60 then return L["刚刚Auctionator"] end
+function PD.MarketLineText(sec, days)
+    local src = PD.AHSourceName() or AH_AU
+    if days then
+        if (tonumber(days) or 0) <= 0 then return format(L["行情 %s · 今天"], src) end
+        return format(L["行情 %s · %d 天前"], src, days)
+    end
+    if not sec then return format(L["行情 %s"], src) end
+    if sec < 60 then return format(L["行情 %s · 刚刚"], src) end
     if sec < 90 * 60 then
-        return format(L["%d 分钟前Auctionator"], math.max(1, math.floor(sec / 60 + 0.5)))
+        return format(L["行情 %s · %d 分钟前"], src, math.max(1, math.floor(sec / 60 + 0.5)))
     end
-    if sec < 24 * 3600 then
-        return format(L["%d 小时前Auctionator"], math.max(1, math.floor(sec / 3600 + 0.5)))
+    if sec < 48 * 3600 then
+        return format(L["行情 %s · %d 小时前"], src, math.max(1, math.floor(sec / 3600 + 0.5)))
     end
-    return format(L["%d 天前Auctionator"], math.floor(sec / 86400 + 0.5))
+    return format(L["行情 %s · %d 天前"], src, math.floor(sec / 86400 + 0.5))
 end
 
 function PD.PlanStatusParts(plan)
@@ -13251,7 +13406,7 @@ function PD.PlanStatusParts(plan)
     if plan.partial then
         return format(L["已计算至%d"], plan.plannedTo or plan.start or 1), L["后续路线待补全"]
     end
-    if plan.pricePending and PD.PlanHasSteps(plan) then return L["路线已生成；请用 Auctionator 完整扫描后更新材料价格。"] end
+    if plan.pricePending and PD.PlanHasSteps(plan) then return L["路线已生成；请打开拍卖行完成一次完整扫描后更新材料价格。"] end
     if plan.feasible == false and PD.PlanHasSteps(plan) then
         return L["可先完成已计算步骤；后续路线待补全"]
     end
@@ -13283,13 +13438,14 @@ function PD.PlanProgressText(plan)
     plan = plan and (plan.searchState or plan)
     if plan and not plan.running and plan.status ~= "searching" then return nil end
     if not plan or plan.expanded == nil then return nil end
-    if plan.expanded == 0 and plan.initialTotal == nil then return nil end
-    if plan.initialTotal == nil then return format(L["仍在优化：已比较 %d 种组合"], plan.expanded or 0) end
+    if (plan.expanded or 0) <= 0 then return nil end
+    if plan.initialTotal == nil then return format(L["仍在优化 · 已比较 %d 种组合"], plan.expanded or 0) end
     local savings = plan.savings
     if savings == nil and plan.initialTotal and plan.total then
         savings = math.max(0, plan.initialTotal - plan.total)
     end
-    return format(L["仍在优化：已比较 %d 种组合，较初始方案节省 %s"], plan.expanded or 0, RA.MoneyStr(savings or 0))
+    if (savings or 0) <= 0 then return format(L["仍在优化 · 已比较 %d 种组合"], plan.expanded or 0) end
+    return format(L["仍在优化 · 已比较 %d 种组合 · 省 %s"], plan.expanded or 0, RA.MoneyStr(savings or 0))
 end
 
 function PD.PlanCacheText(plan)
@@ -13305,7 +13461,7 @@ function PD.PlanCacheText(plan)
             if warning then return warning end
             return L["部分物品库存未知"]
         end
-        return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
+        return L["请打开拍卖行完成一次完整扫描，再重新计算路线。"]
     end
     if plan and plan.stale then return L["路线输入已更新，点击重新计算。"] end
 end
@@ -13326,7 +13482,7 @@ function PD.PlanSupplyParts(plan)
     if shortages and #shortages>0 then
         local d=shortages[1]
         local detail=ns.ProfEconomy and ns.ProfEconomy.DiagnosticText(d)
-        return format(L["有 %d 种物品在扫描记录中数量不够；请用 Auctionator 完整扫描后重新计算，并检查购物清单。"],#shortages),detail
+        return format(L["有 %d 种物品在扫描记录中数量不够；请打开拍卖行完成一次完整扫描后重新计算，并检查购物清单。"],#shortages),detail
     end
     local names, seen, count = {}, {}, 0
     for _, list in ipairs({plan and plan.mats or {}, plan and plan.formulas or {}}) do
@@ -13347,7 +13503,7 @@ function PD.PlanSupplyParts(plan)
     end
     local unknown=math.max(plan and tonumber(plan.auctionSupplyUnknown) or 0,count)
     if unknown<=0 then return nil end
-    local head = format(L["有 %d 种物品需要更新在售数量；请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], unknown)
+    local head = format(L["有 %d 种物品需要更新在售数量；请打开拍卖行完成一次完整扫描，再重新计算路线。"], unknown)
     local detail
     if count > #names then
         detail = format(L["需要更新：%s，另有 %d 种（详见购物清单）。"], table.concat(names, " / "), count - #names)
@@ -13369,18 +13525,18 @@ function PD.AuctionSupplyText(entry)
     local source = PD.PurchaseSourceKind(entry)
     if source ~= "ah" and source ~= "auction" then return end
     if PD.AuctionSupplyUnverified(entry) then
-        return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
+        return L["请打开拍卖行完成一次完整扫描，再重新计算路线。"]
     end
     local available = tonumber(entry.availableCount)
     if available then
         local need = entry.supplyRequired or entry.count or entry.need or entry[2] or 0
         if available < need then
-            return format(L["扫描记录有 %d 件，需要 %d 件；请用 Auctionator 完整扫描后重新计算。"], available, need)
+            return format(L["扫描记录有 %d 件，需要 %d 件；请打开拍卖行完成一次完整扫描后重新计算。"], available, need)
         end
         return format(L["拍卖行数量快照：%d 件；本路线购买 %d 件。"], available, need)
     end
     if entry.supplyObserved ~= true or not available then
-        return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
+        return L["请打开拍卖行完成一次完整扫描，再重新计算路线。"]
     end
 end
 
@@ -13420,14 +13576,14 @@ function PD.AuctionSupplyLines(entry)
             elseif entry.supplySource == "auctionator-update" then
                 add(L["数量来源：Auctionator 最近更新（扫描汇总估计）"])
             else
-                add(L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"])
+                add(L["请打开拍卖行完成一次完整扫描，再重新计算路线。"])
             end
             if entry.supplyComplete == true then
                 add(L["扫描范围：完整结果"])
             elseif entry.supplyComplete == false and entry.supplySource ~= "auctionator-update" then
                 add(L["扫描范围：部分结果，仅代表已读取数量"])
             else
-                add(L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"])
+                add(L["请打开拍卖行完成一次完整扫描，再重新计算路线。"])
             end
             if entry.supplyMethod=="easyauction-db" then
                 add(L["统计含本人挂单"])
@@ -13435,18 +13591,18 @@ function PD.AuctionSupplyLines(entry)
             local stamp = tonumber(entry.supplyObservedAt)
             local now = type(time) == "function" and time() or nil
             if stamp and now and now - stamp > PD.SNAP_STALE_SEC then
-                add(L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], true)
+                add(L["请打开拍卖行完成一次完整扫描，再重新计算路线。"], true)
             end
             add(L["最近观测数量不保证当前仍在售，也不保证全部可按最低价格购买。"])
             if type(entry.supplyObservedPrice) == "number" then
                 add(format(L["数量观测时加权平均单价：%s"], RA.MoneyStr(entry.supplyObservedPrice, "copper")))
             end
         elseif entry.supplyObserved ~= true or tonumber(entry.availableCount)==nil then
-            add(L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], true)
+            add(L["请打开拍卖行完成一次完整扫描，再重新计算路线。"], true)
         end
         local history = tonumber(entry.supplyHistoryQuantity)
         if history and history >= 0 then
-            add(format(L["Auctionator 当日最高数量：%d（仅供参考，不限制路线）"], history))
+            add(format(L["当日最高数量：%d（仅供参考，不限制路线）"], history))
             add(format(L["历史数量日期：%s"], PD.AuctionObservationText(entry.supplyHistoryObservedAt)))
         end
     end
@@ -14626,7 +14782,7 @@ function PD.UnpriceShort(entry)
     elseif code == "novendor" then
         return L["请向商人核价"]
     elseif code == "noapi" then
-        return L["请启用 Auctionator"]
+        return PD.AHEnableHint(true)
     elseif mats and #mats > 0 then
         return format(L["请更新 %d 项报价"], #mats)
     end
@@ -14657,23 +14813,23 @@ end
 function PD.UnpriceWhy(entry, itemID)
     local matsText = PD.UnpriceMatsText(entry)
     if matsText then
-        return format(L["请先使用 Auctionator 完整扫描一次拍卖行，再核对 %s 的报价。"], matsText)
+        return format(L["请先打开拍卖行完成一次完整扫描，再核对 %s 的报价。"], matsText)
     end
     local code = entry and (entry.unpricedReason or entry.reason)
     local id = itemID or (entry and (entry.id or entry.unpricedMat))
     local who = (id and DG.ItemName(id)) or "?"
     if code == "stale" then
-        return format(L["%s 的报价已过期；请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], tostring(who))
+        return format(L["%s 的报价已过期；请打开拍卖行完成一次完整扫描，再重新计算路线。"], tostring(who))
     elseif code == "noquote" then
-        return format(L["请先使用 Auctionator 完整扫描一次拍卖行，再核对 %s 的报价。"], tostring(who))
+        return format(L["请先打开拍卖行完成一次完整扫描，再核对 %s 的报价。"], tostring(who))
     elseif code == "noscan" then
-        return format(L["请先使用 Auctionator 完整扫描一次拍卖行，再核对 %s 的报价。"], tostring(who))
+        return format(L["请先打开拍卖行完成一次完整扫描，再核对 %s 的报价。"], tostring(who))
     elseif code == "novendor" then
         return format(L["%s：请向售卖该物品的商人核对价格。"], tostring(who))
     elseif code == "noapi" then
-        return L["请安装并启用 Auctionator，再完整扫描一次拍卖行。"]
+        return PD.AuctionatorStatusText()
     end
-    return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
+    return L["请打开拍卖行完成一次完整扫描，再重新计算路线。"]
 end
 
 function PD.UnpriceWhyShort(entry)
@@ -14687,7 +14843,7 @@ function PD.UnpriceWhyShort(entry)
     elseif code == "novendor" then
         return L["请向商人核价"]
     elseif code == "noapi" then
-        return L["请启用 Auctionator"]
+        return PD.AHEnableHint(true)
     elseif entry and entry.unpricedMats and #entry.unpricedMats > 0 then
         return format(L["请更新 %d 项报价"], #entry.unpricedMats)
     end
@@ -14987,7 +15143,7 @@ function PD.ReserveWarningLines(reserve)
         end
     end
     local messages = {
-        quote = L["备用材料 %s 需要更新报价；请使用 Auctionator 完整扫描一次拍卖行后重新计算。"],
+        quote = L["备用材料 %s 需要更新报价；请打开拍卖行完成一次完整扫描后重新计算。"],
         supply = L["备用材料货源不足：%s；请查看购物清单，补充货源后重新计算。"],
         yield = L["产量不固定，备用可能不足：%s；请在制作时按实际缺口补料。"],
         skill = L["部分步骤无法准备足够的升级备用：%s；请检查配方技能范围后重新计算。"],
@@ -15591,7 +15747,7 @@ function PD.RowsLeveling(rows)
         PD.autoSnapshot,PD.autoSnapshotSlug=fixedSum,PD.cur
         if fixedSum.feasible==false and not scanWarning then
             warning(fixedSum.manualActivityPending and L["先完成指南中的手动步骤，再按当前技能重新查看路线。"]
-                or fixedSum.referenceShopping and L["请使用 Auctionator 完整扫描一次拍卖行，并在购物清单核对材料和图纸费用后开始执行。"]
+                or fixedSum.referenceShopping and L["请打开拍卖行完成一次完整扫描，并在购物清单核对材料和图纸费用后开始执行。"]
                 or PD.FixedOnly() and L["固定路线中有配方资料或学习条件未确认，请在游戏中核对。"]
                 or L["固定攻略包含不可执行步骤，请切换自动规划或先满足学习条件。"],0.95,0.75,0.4)
         end
@@ -15831,7 +15987,7 @@ function PD.RowsLeveling(rows)
             local warn = {}
             for _, st in ipairs(res.steps or {}) do
                 if st.est and not st.unpricedFallback then
-                    warn[#warn + 1] = { format(L["技能 %d–%d 的材料需要更新报价；请使用 Auctionator 完整扫描后重新计算。"],
+                    warn[#warn + 1] = { format(L["技能 %d–%d 的材料需要更新报价；请打开拍卖行完成一次完整扫描后重新计算。"],
                                           st[1], st[2]), 0.95, 0.75, 0.4 }
                 end
             end
@@ -15841,7 +15997,7 @@ function PD.RowsLeveling(rows)
             end
             local np = CountUnpriced(res)
             if np > 0 and not res.fallbackSteps and not res.looseMats then
-                warn[#warn + 1] = { format(L["%d 种材料需要更新报价；请使用 Auctionator 完整扫描一次拍卖行后重新计算。"], np), 0.95, 0.75, 0.4 }
+                warn[#warn + 1] = { format(L["%d 种材料需要更新报价；请打开拍卖行完成一次完整扫描后重新计算。"], np), 0.95, 0.75, 0.4 }
             end
             for _, w in ipairs(warn) do
                 warning(w[1], w[2], w[3], w[4])
@@ -15869,7 +16025,7 @@ function PD.RowsLeveling(rows)
                 PushGap(rows, 2)
             end
             if res.looseMats then
-                PushText(rows, format(L["%d 种材料需要更新报价；请使用 Auctionator 完整扫描一次拍卖行后重新计算。"], np),
+                PushText(rows, format(L["%d 种材料需要更新报价；请打开拍卖行完成一次完整扫描后重新计算。"], np),
                          14, { 0.95, 0.75, 0.4 })
                 PushGap(rows, 2)
             end
@@ -15880,11 +16036,11 @@ function PD.RowsLeveling(rows)
                 note(L["固定路线的制作次数来自参考指南；材料和产量优先读取客户端，缺失时使用参考资料。"])
             end
             if fixedSum and not fixedSum.priced and not fixedSum.referenceOnly then
-                warn[#warn + 1] = { L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 0.95, 0.75, 0.4, warning = true }
+                warn[#warn + 1] = { L["请打开拍卖行完成一次完整扫描，再重新计算路线。"], 0.95, 0.75, 0.4, warning = true }
             elseif fixedSum then
                 local np = CountUnpriced(fixedSum)
                 if np > 0 then
-                    warn[#warn + 1] = { format(L["%d 种材料需要更新报价；请使用 Auctionator 完整扫描一次拍卖行后重新计算。"], np), 0.95, 0.75, 0.4, warning = true }
+                    warn[#warn + 1] = { format(L["%d 种材料需要更新报价；请打开拍卖行完成一次完整扫描后重新计算。"], np), 0.95, 0.75, 0.4, warning = true }
                 end
             end
             if clipped then
@@ -16088,9 +16244,9 @@ function PD.FormulaBlockedText(entry)
             and AB.ReplicateScanEnabled()
 
         if enabled == false then
-            return L["请在「设置选项 → 插件 → Auctionator → 高级」中确认已勾选「默认使用较慢的备用扫描模式」，然后到拍卖行使用 Auctionator 完成一次完整扫描。"]
+            return PD.AHReplicateFix()
         elseif enabled == nil then
-            return L["请在「设置选项 → 插件 → Auctionator → 高级」中确认已勾选「默认使用较慢的备用扫描模式」，然后到拍卖行使用 Auctionator 完成一次完整扫描。"]
+            return PD.AHReplicateFix()
         end
     end
     if reason=="learningDataMissing" or reason=="learningRequirementsUnknown" then
@@ -16516,7 +16672,7 @@ function PD.RowsRecoveryDetail(rows, src)
         PushText(rows, L["请设置回血手续费，当前按卖店价估算"], 12, C_GREY, 1)
     end
     if src and src.recoveryEstimated then
-        PushText(rows, L["回血暂按历史数据估算；请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"], 12, {0.95, 0.75, 0.4}, 1)
+        PushText(rows, L["回血暂按历史数据估算；请打开拍卖行完成一次完整扫描，再重新计算路线。"], 12, {0.95, 0.75, 0.4}, 1)
     end
     do
         local newest, nQuota = nil, 0
@@ -16601,7 +16757,7 @@ function PD.RowsRecoveryDetail(rows, src)
                     right = L["—"],
                     lines = {
                         { format(L["%d 件"], n) },
-                        { L["这部分暂未计入回血；请使用 Auctionator 完整扫描一次拍卖行，并在商人处核对卖价。"], 0.95, 0.75, 0.4 },
+                        { L["这部分暂未计入回血；请打开拍卖行完成一次完整扫描，并在商人处核对卖价。"], 0.95, 0.75, 0.4 },
                     },
                 }
             end
@@ -16836,18 +16992,9 @@ function PD.RowsAutoShop(rows, data)
     elseif ns.IsForever then
         atxt=PD.ScanSnapshotText() or L["请扫描拍卖行"]
     elseif snapDays then
-        atxt = (snapDays <= 0) and L["价格快照：今天（Auctionator）"]
-               or format(L["价格快照 %d 天前（Auctionator）"], snapDays)
+        atxt = PD.PriceStampDaysText(snapDays)
     elseif snapSec then
-        if snapSec < 60 then
-            atxt = L["价格快照：刚刚（Auctionator）"]
-        elseif snapSec < 90 * 60 then
-            atxt = format(L["价格快照 %d 分钟前（Auctionator）"], math.max(1, math.floor(snapSec / 60 + 0.5)))
-        elseif snapSec < 48 * 3600 then
-            atxt = format(L["价格快照 %d 小时前（Auctionator）"], math.max(1, math.floor(snapSec / 3600 + 0.5)))
-        else
-            atxt = format(L["价格快照 %d 天前（Auctionator）"], math.floor(snapSec / 86400 + 0.5))
-        end
+        atxt = PD.PriceStampText(snapSec)
     else
         atxt = L["请扫描拍卖行"]
     end
@@ -16867,7 +17014,7 @@ function PD.RowsAutoShop(rows, data)
                             text = L["商人直售购入"],
                             right = RA.MoneyStr(vendorTotal, "copper") }
         if completeCost == false then
-            note(L["请使用 Auctionator 完整扫描一次拍卖行，并在购物清单核对材料和图纸费用后开始执行。"], 0.95, 0.75, 0.4)
+            note(L["请打开拍卖行完成一次完整扫描，并在购物清单核对材料和图纸费用后开始执行。"], 0.95, 0.75, 0.4)
         end
         local np = CountUnpriced(data)
         if np > 0 then
@@ -17165,6 +17312,28 @@ function PD.LevelTool()
     end
 end
 
+function PD.ClearScanData()
+    local bridge = ns.AuctionBridge
+    if not (bridge and bridge.ClearSavedScans) then return false end
+    PD.autoSnapshot = nil
+    PD.autoSnapshotSlug = nil
+    bridge.ClearSavedScans()
+    if PD.built and ns.PageVisible(PD.page) then PD.RequestRender() end
+    return true
+end
+
+function PD.AskClearScanData()
+    if not (StaticPopupDialogs and StaticPopup_Show) then return PD.ClearScanData() end
+    StaticPopupDialogs.DF_PROF_CLEAR_SCAN = StaticPopupDialogs.DF_PROF_CLEAR_SCAN or {
+        text = L["清空本插件复制的行情扫描数据？清空后需要重新扫描才能按最新价格计算。"],
+        button1 = L["清空"], button2 = L["取消"],
+        OnAccept = function() PD.ClearScanData() end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+    StaticPopup_Show("DF_PROF_CLEAR_SCAN")
+    return true
+end
+
 PD.SET_ROW_H = 24
 PD.SET_MORE = ">"
 PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
@@ -17173,6 +17342,7 @@ PD.SET_GROUPS = {
     { L["路线"], { "autoRoute", "autoFromCurrent", "autoStartSkill", "autoSecondaryLeveling", "computationSpeed" }, 1 },
     { L["采购与配方"], { "autoUseBagMaterials", "reserveMode", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
     { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools" }, 2 },
+    { L["扫描数据"], { "clearScanData" }, 1 },
 }
 
 function PD.RowsSettings(rows)
@@ -17201,7 +17371,7 @@ function PD.RowsSettings(rows)
         { k = "autoOnlyAH", name = L["只使用拍卖行可购材料的配方"],
           desc = L["材料在拍卖行/商人都查不到价格时，该配方不参与计算（商人直售材料不受限）"],
           d1 = L["开启：路线更可靠，但可能出现无配方可用的缺口区间。"],
-          d2 = L["关闭：可先查看路线；请使用 Auctionator 完整扫描后重新计算费用。"] },
+          d2 = L["关闭：可先查看路线；请打开拍卖行完成一次完整扫描后重新计算费用。"] },
         { k = "autoBuyLimitedFormulas", name = L["允许NPC限量销售图纸"],
           desc = L["允许限量商人报价与拍卖行报价比较，选择更便宜的购买渠道。"],
           d1 = L["默认关闭；关闭时仍可使用有价格且近期在售数量至少1张的拍卖行图纸。"],
@@ -17308,6 +17478,19 @@ function PD.RowsSettings(rows)
                         help={{L["自定义起始技能点数开始计算"]},
                             {L["「从当前技能开始计算」关闭时生效：路线从该点数开始计算，而不是 1。"],.7,.7,.7},
                             {L["1–300 之间的整数，默认 1；上方开关打开时此设置不生效。"],.7,.7,.7}}}
+                end
+            elseif kk=="clearScanData" and not PD.FixedOnly() then
+                items[#items+1]=function(col)
+                    rows[#rows+1]={kind="row",h=PD.SET_ROW_H,col=col,fcol=col,fs=14,
+                        text=L["清空行情扫描副本"],right=L["清空"],rightColor={0.98,0.62,0.5},
+                        act=PD.AskClearScanData,
+                        help={{L["清空行情扫描副本"]},
+                            {L["删除本插件从行情插件复制过来的价格与在售数量。"],.7,.7,.7},
+                            {L["清空后本插件的扫描状态回到「无记录」；装有行情插件时，界面仍会显示它的行情。"],.7,.7,.7},
+                            {L["需要到拍卖行重新完整扫描一次，才能按最新价格计算路线。"],.7,.7,.7},
+                            {L["只清本插件复制的那份数据；拍卖行插件自己保存的数据不受影响。"],.7,.7,.7},
+                            {L["摘要模式下，本插件不监听或保存扫描数据；仍可使用 2 天内的完整扫描快照计算。"],.7,.7,.7},
+                            {L["完整扫描快照保留 2 天，过期后自动删除；重载或切换扫描模式不会延长有效期。"],.7,.7,.7}}}
                 end
             elseif byKey[kk] and allowed(kk) then
                 local d = byKey[kk]
@@ -17573,16 +17756,9 @@ local function CrateSnapText()
     local sec = RA.SnapshotAge and RA.SnapshotAge() or nil
     if not sec then return L["请扫描拍卖行"] end
     if sec >= 48 * 3600 then
-        return L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"]
+        return L["请打开拍卖行完成一次完整扫描，再重新计算路线。"]
     end
-    if sec < 60 then return L["价格快照：刚刚（Auctionator）"] end
-    if sec < 90 * 60 then
-        return format(L["价格快照 %d 分钟前（Auctionator）"], math.max(1, math.floor(sec / 60 + 0.5)))
-    end
-    if sec < 48 * 3600 then
-        return format(L["价格快照 %d 小时前（Auctionator）"], math.max(1, math.floor(sec / 3600 + 0.5)))
-    end
-    return format(L["价格快照 %d 天前（Auctionator）"], math.floor(sec / 86400 + 0.5))
+    return PD.PriceStampText(sec)
 end
 
 local function CrateMetaRow(rows, label, val, valOk, fs)

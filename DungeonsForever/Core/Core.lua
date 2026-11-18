@@ -508,6 +508,71 @@ do
     end
 end
 
+do
+    local queue, reg, fac = {}, false, nil
+    local MAXQ = 96
+
+    local function Apply(S, it)
+        if not (S and it and it.f) then return end
+        if it.k == "page" then
+            pcall(S.PageButton, it.f, it.c or ">")
+        elseif it.k == "font" then
+            pcall(S.Font, it.f)
+        else
+            pcall(S.Button, it.f)
+        end
+    end
+
+    local function Drain()
+        if not fac then return end
+        for i = 1, #queue do Apply(fac, queue[i]) end
+        queue = {}
+    end
+
+    local function Wait()
+        if reg then return fac ~= nil end
+        local E = _G.EllesmereUI
+        if not (E and E.RegisterSkin) then return false end
+        reg = true
+        E.RegisterSkin("DungeonsForeverButtons", function(S)
+            fac = S
+            Drain()
+        end)
+        return fac ~= nil
+    end
+
+    function ns.EUISkin(frame, kind, ch)
+        if not frame then return frame end
+        if fac then
+            Apply(fac, { f = frame, k = kind, c = ch })
+            return frame
+        end
+        if #queue < MAXQ then queue[#queue + 1] = { f = frame, k = kind, c = ch } end
+        Wait()
+        return frame
+    end
+
+    function ns.SkinBtn(frame)
+        if not frame then return frame end
+        if ns.NDuiOn() then return ns.NDuiReskin(frame) end
+        return ns.EUISkin(frame, "button")
+    end
+
+    function ns.SkinPageBtn(frame, ch)
+        if not frame then return frame end
+        if ns.NDuiOn() then return ns.NDuiReskin(frame) end
+        return ns.EUISkin(frame, "page", ch)
+    end
+
+    local wait = CreateFrame("Frame")
+    wait:RegisterEvent("PLAYER_LOGIN")
+    wait:SetScript("OnEvent", function(self)
+        self:UnregisterEvent("PLAYER_LOGIN")
+        Wait()
+        Drain()
+    end)
+end
+
 local loadedFuncs = {}
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("ADDON_LOADED")

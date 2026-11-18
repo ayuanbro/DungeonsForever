@@ -200,6 +200,26 @@ local function BuildQuestIndex()
     return idx
 end
 
+local function CutRanks(sp, cut)
+    if not cut then return sp.ranks end
+    local src = sp.ranks
+    if not src or #src == 0 then
+        if cut[sp.id] then return false end
+        return src
+    end
+    local hit = false
+    for i = 1, #src do
+        if cut[src[i].id] then hit = true break end
+    end
+    if not hit then return src end
+    local out = {}
+    for i = 1, #src do
+        if not cut[src[i].id] then out[#out + 1] = src[i] end
+    end
+    if #out == 0 then return false end
+    return out
+end
+
 function ST.Rows()
     local data = ns.SpellBookData
     if not (data and data.classes) or not UnitClass then return nil end
@@ -211,35 +231,38 @@ function ST.Rows()
     local extra = ns.SpellExtra
     local fix = extra and extra.fix and extra.fix[clsKey]
     local hide = extra and extra.hide and extra.hide[clsKey]
+    local cut = extra and extra.cut and extra.cut[clsKey]
+    local srct = extra and extra.src and extra.src[clsKey]
     local qidx = BuildQuestIndex()
 
-    local groups = { available = {}, next = {}, notlevel = {}, quest = {}, known = {}, talent = {} }
+    local groups = { available = {}, next = {}, notlevel = {}, quest = {}, learn = {}, known = {}, talent = {} }
     for _, tab in ipairs(cls.tabs or {}) do
         for _, sp in ipairs(tab.spells or {}) do
-            if not (hide and hide[sp.id]) and ST.RaceShown(sp.races) then
+            local ranks = CutRanks(sp, cut)
+            if ranks ~= false and not (hide and hide[sp.id]) and ST.RaceShown(sp.races) then
                 local baseLv = sp.learnLv
                 if fix and fix[sp.id] then baseLv = fix[sp.id] end
                 local row = {
                     name = sp.name, icon = sp.icon,
                     tab = tab.name, learn = baseLv, base = sp.id,
                 }
-                local nr = sp.ranks and #sp.ranks or 0
+                local nr = ranks and #ranks or 0
                 local knownAny = false
                 if nr > 0 then
                     for i = 1, nr do
-                        if ST.Knows(sp.ranks[i].id) then knownAny = true break end
+                        if ST.Knows(ranks[i].id) then knownAny = true break end
                     end
                 else
                     knownAny = ST.Knows(sp.id)
                 end
                 if sp.isTalent and not knownAny then
-                    row.id = (nr > 0 and sp.ranks[1].id) or sp.id
+                    row.id = (nr > 0 and ranks[1].id) or sp.id
                     groups.talent[#groups.talent + 1] = row
                 else
                     local curRank = nil
                     if nr > 0 then
                         for i = nr, 1, -1 do
-                            if ST.Knows(sp.ranks[i].id) then
+                            if ST.Knows(ranks[i].id) then
                                 curRank = i
                                 break
                             end
@@ -249,21 +272,26 @@ function ST.Rows()
                     end
                     local isFull = (nr > 0 and curRank == nr) or (nr == 0 and curRank ~= nil)
                     if isFull then
-                        row.id = nr > 0 and sp.ranks[nr].id or sp.id
+                        row.id = nr > 0 and ranks[nr].id or sp.id
                         row.rank = nil
                         row.learn = nil
                         groups.known[#groups.known + 1] = row
                     else
-                        local r = nr > 0 and sp.ranks[(curRank or 0) + 1] or nil
+                        local r = nr > 0 and ranks[(curRank or 0) + 1] or nil
                         local l = (r and (r.learn or baseLv)) or baseLv or 60
                         row.rank = r and ((curRank or 0) + 1) or nil
                         row.learn = l
                         row.id = (r and r.id) or sp.id
-                        if r and curRank then row.knownId = sp.ranks[curRank].id end
+                        if r and curRank then row.knownId = ranks[curRank].id end
                         local q = qidx[row.id]
+                        local sr = srct and srct[row.id]
                         if q then
                             row.quest = q
                             groups.quest[#groups.quest + 1] = row
+                        elseif sr and l <= lv then
+                            row.src = sr[1]
+                            row.book = sr[2]
+                            groups.learn[#groups.learn + 1] = row
                         elseif l <= lv then
                             groups.available[#groups.available + 1] = row
                         elseif l <= lv + 2 then

@@ -157,13 +157,25 @@ local function migrate()
     local db = store()
     for _, by in pairs(db) do
         if type(by) == "table" and type(by[old]) == "table" then
-            if by[newKey] == nil then by[newKey] = by[old] end
+            local src, dst = by[old], by[newKey]
+            if type(dst) ~= "table" then
+                by[newKey] = src
+            elseif type(src.u) == "number" and (type(dst.u) ~= "number" or src.u > dst.u) then
+                by[newKey] = src
+            end
             by[old] = nil
             if type(by[newKey]) == "table" then by[newKey].n = full end
         end
     end
     if type(k[old]) == "table" then
-        if k[newKey] == nil then k[newKey] = k[old] end
+        local src, dst = k[old], k[newKey]
+        if type(dst) ~= "table" then
+            k[newKey] = src
+        else
+            for spell, v in pairs(src) do
+                if dst[spell] == nil then dst[spell] = v end
+            end
+        end
         k[old] = nil
     end
     local marks = k[newKey]
@@ -268,6 +280,34 @@ local function recipeInfo(spell)
     return nil
 end
 
+local function openRecipes()
+    local api = C_TradeSkillUI
+    if not (api and api.GetAllRecipeIDs) then return nil end
+    local ok, ids = pcall(api.GetAllRecipeIDs)
+    if not ok or type(ids) ~= "table" or #ids == 0 then return nil end
+    if api.IsDataSourceChanging then
+        local ok2, changing = pcall(api.IsDataSourceChanging)
+        if ok2 and changing == true then return nil end
+    end
+    if api.IsTradeSkillReady then
+        local ok3, ready = pcall(api.IsTradeSkillReady)
+        if ok3 and ready == false then return nil end
+    end
+    local set = {}
+    for i = 1, #ids do
+        local id = ids[i]
+        if type(id) == "number" then set[id] = true end
+    end
+    return set
+end
+
+local function confirmedUnlearned(spell, info)
+    if type(info) ~= "table" or info.learned ~= false then return false end
+    if type(info.recipeID) == "number" and info.recipeID ~= spell then return false end
+    local set = openRecipes()
+    return set ~= nil and set[spell] == true
+end
+
 local function slugOf(spell)
     local l = list()
     if type(l[spell]) == "string" then return l[spell] end
@@ -332,7 +372,7 @@ local function scanRows(slug)
                         local left, dur = liveCD(spell)
                         if left and W.Record(spell, slug, left, dur) then hit = hit + 1 end
                     end
-                elseif info and info.learned == false then
+                elseif confirmedUnlearned(spell, info) then
                     W.UnmarkChar(spell, key)
                     local by = store()[spell]
                     if type(by) == "table" then by[key] = nil end

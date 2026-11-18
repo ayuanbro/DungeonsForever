@@ -1041,10 +1041,11 @@ local function InList(list, v)
 end
 
 BG.ARMOR_TOP = { warrior = 4, paladin = 4, druid = 2 }
+BG.ARMOR_TOP_MIN_LV = { [4] = 40 }
 BG.ARMOR_SLOTS = { Head = true, Shoulder = true, Chest = true, Wrist = true,
                    Hands = true, Waist = true, Legs = true, Feet = true }
 
-local function ClassWear(cls, c, u, specKey, slotName)
+local function ClassWear(cls, c, u, specKey, slotName, lv)
     local t = USABLE[cls]
     if not t then return true end
     if c == 2 then return InList(t.weapon, u) end
@@ -1054,6 +1055,10 @@ local function ClassWear(cls, c, u, specKey, slotName)
         if u >= 1 and u <= 4 then
             if InList(t.armor, u) then
                 local top = BG.ARMOR_TOP[cls]
+                if top then
+                    local need = BG.ARMOR_TOP_MIN_LV[top]
+                    if need and (tonumber(lv) or 60) < need then top = top - 1 end
+                end
                 if top and slotName and BG.ARMOR_SLOTS[slotName]
                     and u ~= top and RoleOfKey(cls, specKey or BG.tspec) == "tank" then return false end
                 return true
@@ -1102,7 +1107,7 @@ local function CatRowsFor(rkey)
     if cat and slots then
         for i = 1, #cat do
             local r = cat[i]
-            if r.s and InList(slots, r.s) and ClassWear(BG.cls, r.c, r.u, BG.tspec, r.s) and ClsOK(r.id)
+            if r.s and InList(slots, r.s) and ClassWear(BG.cls, r.c, r.u, BG.tspec, r.s, cap) and ClsOK(r.id)
                 and (r.req or 0) <= cap then
                 out[#out + 1] = r
             end
@@ -2400,7 +2405,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 17
+BG.AUTO_GEN_REV = 18
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2699,7 +2704,7 @@ local function AutoBuckets(job)
         i = i + 1
         local r = cat[i]
         local kind = AutoKind(r.id)
-        if r.s and ClassWear(job.cls, r.c, r.u, job.tspec, r.s) and ClsOK(r.id) and (r.req or 0) <= job.cap
+        if r.s and ClassWear(job.cls, r.c, r.u, job.tspec, r.s, job.cap) and ClsOK(r.id) and (r.req or 0) <= job.cap
             and AutoRawOK(r.id, job.cap)
             and not (job.srcSet and not job.srcSet[kind])
             and BG.AutoInstOK(job, r.id, kind) then

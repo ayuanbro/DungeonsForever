@@ -17,6 +17,7 @@ local GROUP_ORDER = {
     { key = "next",      name = "即将学" },
     { key = "notlevel",  name = "等级不够" },
     { key = "quest",     name = "任务获得" },
+    { key = "learn",     name = "书 / 其他获得" },
     { key = "talent",    name = "天赋获得" },
     { key = "known",     name = "已学" },
 }
@@ -36,6 +37,13 @@ local openGuard = 0
 local tabPending, tabPendingAt
 
 local pending = false
+
+local function ItemLabel(id)
+    if not id or not (C_Item and C_Item.GetItemNameByID) then return nil end
+    local ok, nm = pcall(C_Item.GetItemNameByID, id)
+    if ok and type(nm) == "string" and nm ~= "" then return nm end
+    return nil
+end
 
 local function InCombat()
     if type(InCombatLockdown) ~= "function" then return false end
@@ -815,6 +823,11 @@ local function EnsurePager()
     f:SetFrameLevel(140)
     f:EnableMouseWheel(false)
     if f.PageText then pcall(f.PageText.SetFontObject, f.PageText, "SystemFont_Med3") end
+    if ns.EUISkin then
+        ns.EUISkin(f.PageText, "font")
+        ns.EUISkin(f.PrevPageButton, "page", "<")
+        ns.EUISkin(f.NextPageButton, "page", ">")
+    end
     f.GetPageDelta = function() return 1 end
     local function WirePageButton(btn, delta)
         if not (btn and btn.SetScript) then return end
@@ -1015,6 +1028,17 @@ local function BuildSpellGroups()
                     el.sub = row.quest.name or ""
                     el.req = QuestWhere(row.quest)
                     el.dim = (gd.key == "notlevel") or ((row.quest.lv or 0) > plv)
+                elseif row.src then
+                    local label = row.src == "book" and ItemLabel(row.book)
+                    if row.src == "book" then
+                        el.sub = label and string.format(ns.L["书：%s"], label) or ns.L["书"]
+                    elseif row.src == "quest" then
+                        el.sub = ns.L["任务获得"]
+                    else
+                        el.sub = ns.L["其他途径"]
+                    end
+                    el.req = LevelText(row.learn)
+                    el.dim = (gd.key == "notlevel")
                 else
                     el.sub = (row.rank and format(ns.L["等级 %d"], row.rank)) or ((row.tab and row.tab ~= row.name) and row.tab) or ""
                     el.req = gd.known and ns.L["已学"] or LevelText(row.learn)
@@ -1241,7 +1265,7 @@ local function BuildSubBar()
         fs:SetText(text)
         b.label = fs
         b:SetScript("OnClick", function() SetSub(key) end)
-        if ns.NDuiOn and ns.NDuiOn() then ns.NDuiReskin(b) end
+        if ns.SkinBtn then ns.SkinBtn(b) end
         return b
     end
     subClassBtn = mk("DungeonsForeverSubClass", ns.L["职业训练师"], "class", 94)

@@ -1412,8 +1412,8 @@ function PF.ShoppingSourceDetail(entry)
         parts[#parts+1]=format("%s ×%d · %s",PF.ShoppingSourceText(item) or L["尚无购买来源"],item.count,
             type(item.cost)=="number" and RA and RA.MoneyStr and RA.MoneyStr(item.cost,"copper") or L["请核对价格"])
     end
-    if entry.auctionUnknown then parts[#parts+1]=L["请使用 Auctionator 完整扫描一次拍卖行，再重新计算路线。"] end
-    if (entry.auctionShortage or 0)>0 then parts[#parts+1]=L["本次扫描的材料数量不够；请用 Auctionator 完整扫描后重新计算，或更换货源。"] end
+    if entry.auctionUnknown then parts[#parts+1]=L["请打开拍卖行完成一次完整扫描，再重新计算路线。"] end
+    if (entry.auctionShortage or 0)>0 then parts[#parts+1]=L["本次扫描的材料数量不够；请打开拍卖行完成一次完整扫描后重新计算，或更换货源。"] end
     if entry.purchaseUncovered and entry.purchaseUncovered>0 then parts[#parts+1]=format(L["原计划货源还缺 %d 件，请重新计算。"],entry.purchaseUncovered) end
     if pending > 0 then parts[#parts+1]=format(L["已竞标 %d 件，邮件待收"], pending) end
     if entry.inventoryUnknown then parts[#parts+1]=entry.useBagMaterials and L["请检查背包"] or L["请打开背包和银行，再查看需要购买的数量。"] end
@@ -2377,7 +2377,7 @@ local function BuildBody()
     end)
     f.shopImp:SetPoint("RIGHT", f.shop.missTog, "LEFT", -(labW + 10), 0)
     TipOn(f.shopImp, L["一键导入到拍卖行"],
-          L["将拍卖行采购的缺口导入 Auctionator；NPC 货物和自制材料不导入，同名清单将被覆盖。"])
+          L["将拍卖行采购的缺口导入拍卖行插件的购物清单；NPC 货物和自制材料不导入，同名清单将被覆盖。"])
 
     f.shopStep = NewButton(f.shop, L["分步"], 48, 20, 13)
     f.shopStep:SetScript("OnClick", function()
@@ -3276,7 +3276,7 @@ function PF.PaintImportBtn(bt, slug)
         DoImport(slug, name)
         ns.PlaySound(1)
     end)
-    TipOn(bt, text, L["将拍卖行采购的缺口导入 Auctionator；NPC 货物和自制材料不导入，同名清单将被覆盖。"])
+    TipOn(bt, text, L["将拍卖行采购的缺口导入拍卖行插件的购物清单；NPC 货物和自制材料不导入，同名清单将被覆盖。"])
     local ifs = bt.GetFontString and bt:GetFontString()
     if ifs then
         ifs:ClearAllPoints()
