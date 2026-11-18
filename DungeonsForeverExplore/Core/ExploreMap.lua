@@ -11,7 +11,11 @@ local UNVER = ns.ExploreUnverIDs or {}
 local SET_ORDER = { 1, 35, 45, 60 }
 local CONTINENT_PENALTY = 20000
 local UPDATE_TICK = 0.1
-local MINI_TICK = 0.1
+local MINI_MOVE_TICK = 0.2
+local MINI_IDLE_TICK = 5
+local MINI_MOVE_EPS = 0.0003
+local MOVE_POLL = 0.25
+local MAP_TICK = 0.2
 local MINI_POOL_MAX = 12
 local MINI_EDGE = 2.2
 
@@ -68,11 +72,14 @@ local DEF_CFG = {
     lockPos = false,
     hudScale = 1,
 }
+local cfgCache
 local function cfg()
     local db = ns.ExploreDB()
     if not db then return DEF_CFG end
+    local s = db.explore and db.explore.mapCfg
+    if s and s == cfgCache then return s end
     db.explore = db.explore or {}
-    local s = db.explore.mapCfg
+    s = db.explore.mapCfg
     if not s then
         s = {}
         db.explore.mapCfg = s
@@ -82,6 +89,7 @@ local function cfg()
     end
     s.gravePx = nil
     s.gravePinSize = nil
+    cfgCache = s
     return s
 end
 
@@ -793,19 +801,55 @@ local function miniViewRadius(mm)
     return MINI_FALLBACK_RADIUS[z + 1] or 100
 end
 
+local rotOn, rotAt = nil, -1
+local function rotateOn()
+    local now = GetTime()
+    if rotOn ~= nil and now - rotAt < 3 then return rotOn end
+    rotOn = (GetCVar and GetCVar("rotateMinimap") == "1") and true or false
+    rotAt = now
+    return rotOn
+end
+
+local miniLastX, miniLastY
+local miniAcc, miniTick = 0, MINI_MOVE_TICK
+local moveAcc = 0
+
+local function miniKick()
+    miniAcc = 1e9
+    miniTick = MINI_MOVE_TICK
+end
+
+local function playerMoved()
+    if not miniLastX then return false end
+    local okm, m = false, nil
+    if C_Map and C_Map.GetBestMapForUnit then
+        okm, m = pcall(C_Map.GetBestMapForUnit, "player")
+    end
+    if not (okm and m) then return false end
+    local okp, pp = false, nil
+    if C_Map and C_Map.GetPlayerMapPosition then
+        okp, pp = pcall(C_Map.GetPlayerMapPosition, m, "player")
+    end
+    if not (okp and pp and type(pp.x) == "number" and type(pp.y) == "number") then return false end
+    if pp.x == 0 and pp.y == 0 then return false end
+    return math.abs(pp.x - miniLastX) > MINI_MOVE_EPS
+        or math.abs(pp.y - miniLastY) > MINI_MOVE_EPS
+end
+
 local function miniRefresh()
     if not EG._auto then refreshAuto() end
     local c = cfg()
     if not (c.showPins == true and c.showMiniPins ~= false) then
         releaseMiniPins()
         miniCache, miniLastSig = nil, nil
-        return
+        miniLastX, miniLastY = nil, nil
+        return MINI_IDLE_TICK
     end
     local mm = _G.Minimap
     if not (mm and mm.IsShown and mm:IsShown()) then
         releaseMiniPins()
         miniLastSig = nil
-        return
+        return MINI_IDLE_TICK
     end
     local okm, m = false, nil
     if C_Map and C_Map.GetBestMapForUnit then
@@ -814,7 +858,7 @@ local function miniRefresh()
     if not (okm and m and alive(m)) then
         releaseMiniPins()
         miniLastSig = nil
-        return
+        return MINI_IDLE_TICK
     end
     local okp, pp = false, nil
     if C_Map and C_Map.GetPlayerMapPosition then
@@ -824,12 +868,19 @@ local function miniRefresh()
         or (pp.x == 0 and pp.y == 0) then
         releaseMiniPins()
         miniLastSig = nil
-        return
+        return MINI_IDLE_TICK
     end
+    local moved = true
+    if miniLastX and math.abs(pp.x - miniLastX) <= MINI_MOVE_EPS
+        and math.abs(pp.y - miniLastY) <= MINI_MOVE_EPS then
+        moved = false
+    end
+    miniLastX, miniLastY = pp.x, pp.y
     local sig = miniSignature()
     if not miniCache or miniCache.map ~= m or miniCache.sig ~= sig then
         miniCache = miniBuild(m)
         miniLastSig = nil
+        moved = true
     end
     local halfW = (mm:GetWidth() or 200) / 2
     local halfH = (mm:GetHeight() or 200) / 2
@@ -839,13 +890,10 @@ local function miniRefresh()
     local ppx, ppy = halfW / view, halfH / view
     local zoom = (mm.GetZoom and mm:GetZoom()) or 0
     local mscale = mm:GetScale() or 1
-    local rotate = false
-    if GetCVar and GetCVar("rotateMinimap") == "1" then
-        rotate = true
-        if C_Minimap and C_Minimap.IsRotateMinimapIgnored then
-            local oki, ign = pcall(C_Minimap.IsRotateMinimapIgnored)
-            if oki and ign then rotate = false end
-        end
+    local rotate = rotateOn()
+    if rotate and C_Minimap and C_Minimap.IsRotateMinimapIgnored then
+        local oki, ign = pcall(C_Minimap.IsRotateMinimapIgnored)
+        if oki and ign then rotate = false end
     end
     local facing = 0
     if rotate then
@@ -856,13 +904,16 @@ local function miniRefresh()
             rotate = false
         end
     end
+    local active = moved or rotate
     local curSig = table.concat({
         tostring(m), string.format("%.5f:%.5f", pp.x, pp.y),
         tostring(zoom), tostring(mscale), tostring(view),
         string.format("%.4f", facing), miniCache.sig,
         tostring(c.pinSize or 14),
     }, "|")
-    if curSig == miniLastSig then return end
+    if curSig == miniLastSig then
+        return active and MINI_MOVE_TICK or MINI_IDLE_TICK
+    end
     miniLastSig = curSig
     local cosF, sinF = math.cos(facing), math.sin(facing)
     local shape = (GetMinimapShape and GetMinimapShape()) or "ROUND"
@@ -916,6 +967,7 @@ local function miniRefresh()
         miniPins[i] = nil
         miniPool[#miniPool + 1] = p
     end
+    return active and MINI_MOVE_TICK or MINI_IDLE_TICK
 end
 
 function ns.ExploreMapRefresh()
@@ -1930,11 +1982,47 @@ local function Init()
         autoEv = CreateFrame("Frame")
         ns.EvtPool.exploreAuto = autoEv
     end
+    local tickAcc = 0
+    local ticker = CreateFrame("Frame")
+    local function tick(_, e)
+        if miniTick > 0.5 then
+            moveAcc = moveAcc + e
+            if moveAcc >= MOVE_POLL then
+                moveAcc = 0
+                if playerMoved() then miniKick() end
+            end
+        end
+        miniAcc = miniAcc + e
+        if miniAcc >= miniTick then
+            miniAcc = 0
+            miniTick = miniRefresh() or MINI_IDLE_TICK
+        end
+        if not (WorldMapFrame.IsShown and WorldMapFrame:IsShown()) then
+            tickAcc = 0
+            return
+        end
+        tickAcc = tickAcc + e
+        if tickAcc < MAP_TICK then return end
+        tickAcc = 0
+        meLineMove()
+        local sig = mapSignature()
+        if sig ~= mapSig then
+            mapSig = sig
+            ns.ExploreMapRefresh()
+        end
+    end
+    ticker:SetScript("OnUpdate", tick)
     if autoEv.RegisterEvent then
         pcall(autoEv.RegisterEvent, autoEv, "BAG_UPDATE_DELAYED")
         pcall(autoEv.RegisterEvent, autoEv, "QUEST_LOG_UPDATE")
         pcall(autoEv.RegisterEvent, autoEv, "PLAYER_ENTERING_WORLD")
-        autoEv:SetScript("OnEvent", function()
+        pcall(autoEv.RegisterEvent, autoEv, "ZONE_CHANGED_NEW_AREA")
+        autoEv:SetScript("OnEvent", function(_, event)
+            if event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+                miniCache, miniLastSig = nil, nil
+                miniLastX, miniLastY = nil, nil
+            end
+            miniKick()
             if WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
                 refreshAuto()
                 ns.ExploreMapRefresh()
@@ -1960,26 +2048,6 @@ local function Init()
             miniPool[#miniPool + 1] = p
         end
     end
-    local tickAcc, miniAcc = 0, 0
-    local ticker = CreateFrame("Frame")
-    ticker:SetScript("OnUpdate", function(_, e)
-        miniAcc = miniAcc + e
-        if miniAcc >= MINI_TICK then
-            miniAcc = 0
-            miniRefresh()
-        end
-        tickAcc = tickAcc + e
-        if tickAcc < 0.2 then return end
-        tickAcc = 0
-        meLineMove()
-        if WorldMapFrame.IsShown and WorldMapFrame:IsShown() then
-            local sig = mapSignature()
-            if sig ~= mapSig then
-                mapSig = sig
-                ns.ExploreMapRefresh()
-            end
-        end
-    end)
     if WorldMapFrame.HookScript then
         pcall(WorldMapFrame.HookScript, WorldMapFrame, "OnShow", function()
             refreshAuto()

@@ -4663,7 +4663,11 @@ function M.SyncSide(forceFrame)
             y = y + M.BLK_GAP
 
             frame.detChild:SetHeight(math.max(30, -y + 10))
-            frame.detScroll:SetVerticalScroll(0)
+            local detKey = tostring(id) .. "|" .. tostring(detailEn)
+            if frame.__detKey ~= detKey then
+                frame.__detKey = detKey
+                frame.detScroll:SetVerticalScroll(0)
+            end
             if frame.listBar then frame.listBar:Hide() end
             M.SyncScrollBar(frame.detScroll)
             return
@@ -4807,10 +4811,13 @@ function M.ShowList(host)
     M.detailEn = nil
     if host and host.__mapWin then
         host.__detailEn = nil
+        host.__detKey = nil
         local MWm = ns.MapWindowModule
         if MWm and MWm.Sync then MWm.Sync() end
         return
     end
+    if M.frame then M.frame.__detKey = nil end
+    if M.SideHost then M.SideHost.__detKey = nil end
     M.SyncPins()
     M.SyncSide()
 end
@@ -5492,30 +5499,8 @@ local function wpSetFs(parent, size, col)
 end
 
 local function wpMkBtn(parent, text, w)
-    local b = CreateFrame("Button", nil, parent)
-    b:SetSize(w or 46, 24)
-    b:EnableMouse(true)
-    if ns.hui and ns.hui.BuildRoundedBG and ns.hui.BuildRoundBorder then
-        b.fills = ns.hui.BuildRoundedBG(b, 8, { 1, 1, 1, 0.06 }, "both", false, nil, true)
-        b.edges = ns.hui.BuildRoundBorder(b, 8, { 0.40, 0.43, 0.50 })
-    else
-        b.bg = b:CreateTexture(nil, "BACKGROUND")
-        b.bg:SetAllPoints()
-        b.bg:SetColorTexture(1, 1, 1, 0.06)
-    end
-    local fs = wpSetFs(b, 14, WP_TXT)
-    fs:SetJustifyH("CENTER")
-    fs:SetAllPoints()
-    fs:SetText(text)
-    b:SetFontString(fs)
-    b:SetScript("OnEnter", function(self)
-        for _, t in ipairs(self.fills or {}) do t:SetAlpha(0.14) end
-        if self.bg then self.bg:SetAlpha(0.14) end
-    end)
-    b:SetScript("OnLeave", function(self)
-        for _, t in ipairs(self.fills or {}) do t:SetAlpha(0.06) end
-        if self.bg then self.bg:SetAlpha(0.06) end
-    end)
+    local b = Host.NewButton(parent, text, w or 46, 24, 14)
+    if b.SetPushedTextOffset then pcall(b.SetPushedTextOffset, b, 0, 0) end
     return b
 end
 
@@ -5555,7 +5540,7 @@ local function wpStepperRow(content, y, label, minv, maxv, step, get, set, fmt)
     local plus = wpMkBtn(content, "+", 24)
     plus:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, y)
     local minus = wpMkBtn(content, "-", 24)
-    minus:SetPoint("TOPRIGHT", plus, "TOPLEFT", -4, 0)
+    minus:SetPoint("TOPRIGHT", plus, "TOPLEFT", -8, 0)
     local val = wpSetFs(content, 14, WP_TXT)
     val:SetJustifyH("RIGHT")
     val:SetPoint("RIGHT", minus, "LEFT", -6, 0)
@@ -5595,14 +5580,6 @@ local function wpOptRow(content, y, label, opts, get, set)
         else
             b:SetPoint("TOPLEFT", btns[i - 1], "BOTTOMLEFT", 0, -8)
         end
-        b:SetScript("OnEnter", function(self)
-            self.__hot = true
-            paint()
-        end)
-        b:SetScript("OnLeave", function(self)
-            self.__hot = false
-            paint()
-        end)
         b:SetScript("OnClick", function(self)
             set(self.__key)
             paint()
@@ -5614,19 +5591,7 @@ local function wpOptRow(content, y, label, opts, get, set)
     paint = function()
         local cur = get()
         for i = 1, #btns do
-            local b = btns[i]
-            local on = b.__key == cur
-            local a = on and 0.20 or ((b.__hot and 0.14) or 0.06)
-            for _, t in ipairs(b.fills or {}) do t:SetAlpha(a) end
-            if b.bg then b.bg:SetAlpha(a) end
-            local fs = b.GetFontString and b:GetFontString() or nil
-            if fs then
-                if on then
-                    fs:SetTextColor(1, 0.82, 0)
-                else
-                    fs:SetTextColor(WP_TXT[1], WP_TXT[2], WP_TXT[3])
-                end
-            end
+            Host.SetButtonSelected(btns[i], btns[i].__key == cur)
         end
     end
     paint()

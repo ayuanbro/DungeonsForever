@@ -622,6 +622,12 @@ BG.ArmorShare = 12
 BG.ArmorRefW = 0.008
 BG.ArmorRefPerLv = 4
 
+function BG.ArmorRefOf(cap)
+    local lv = math.floor(tonumber(cap) or 60)
+    if lv < 1 then lv = 1 elseif lv > 60 then lv = 60 end
+    return BG.ArmorRefPerLv * lv
+end
+
 function BG.ArmorRef(st, bst)
     local a = type(st) == "table" and st.ARMOR or 0
     local b = type(bst) == "table" and bst.ARMOR or 0
@@ -1034,14 +1040,26 @@ local function InList(list, v)
     return false
 end
 
-local function ClassWear(cls, c, u)
+BG.ARMOR_TOP = { warrior = 4, paladin = 4, druid = 2 }
+BG.ARMOR_SLOTS = { Head = true, Shoulder = true, Chest = true, Wrist = true,
+                   Hands = true, Waist = true, Legs = true, Feet = true }
+
+local function ClassWear(cls, c, u, specKey, slotName)
     local t = USABLE[cls]
     if not t then return true end
     if c == 2 then return InList(t.weapon, u) end
     if c == 4 then
         if u == nil or u == 0 or u == 5 then return true end
         if u == 6 then return t.shield and true or false end
-        if u >= 1 and u <= 4 then return InList(t.armor, u) end
+        if u >= 1 and u <= 4 then
+            if InList(t.armor, u) then
+                local top = BG.ARMOR_TOP[cls]
+                if top and slotName and BG.ARMOR_SLOTS[slotName]
+                    and u ~= top and RoleOfKey(cls, specKey or BG.tspec) == "tank" then return false end
+                return true
+            end
+            return false
+        end
         if t.relic then return InList(t.relic, u) end
         return false
     end
@@ -1076,6 +1094,7 @@ local UsableCap
 local function CatRowsFor(rkey)
     local cap = UsableCap and UsableCap() or 60
     local key = rkey .. ":" .. tostring(cap) .. ":" .. BG.cls .. ":" .. tostring(BG.instGen or 0)
+        .. ":" .. tostring(BG.tspec or "")
     if catKey == key then return catItems end
     local slots = SLOT_GEAR[rkey]
     local out = {}
@@ -1083,7 +1102,7 @@ local function CatRowsFor(rkey)
     if cat and slots then
         for i = 1, #cat do
             local r = cat[i]
-            if r.s and InList(slots, r.s) and ClassWear(BG.cls, r.c, r.u) and ClsOK(r.id)
+            if r.s and InList(slots, r.s) and ClassWear(BG.cls, r.c, r.u, BG.tspec, r.s) and ClsOK(r.id)
                 and (r.req or 0) <= cap then
                 out[#out + 1] = r
             end
@@ -1096,7 +1115,7 @@ end
 function BG.CatRowsForMain()
     local cap = UsableCap and UsableCap() or 60
     local key = "main+2h:" .. tostring(cap) .. ":" .. tostring(BG.cls) .. ":" .. tostring(BG.instGen or 0)
-        .. ":" .. tostring(BG.OneOnly() and 1 or 0)
+        .. ":" .. tostring(BG.OneOnly() and 1 or 0) .. ":" .. tostring(BG.tspec or "")
     local c = BG.__mainRows
     if c and c.key == key then return c.rows end
     local out, seen = {}, {}
@@ -2325,7 +2344,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 14
+BG.AUTO_GEN_REV = 15
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2626,7 +2645,7 @@ local function AutoBuckets(job)
         i = i + 1
         local r = cat[i]
         local kind = AutoKind(r.id)
-        if r.s and ClassWear(job.cls, r.c, r.u) and ClsOK(r.id) and (r.req or 0) <= job.cap
+        if r.s and ClassWear(job.cls, r.c, r.u, job.tspec, r.s) and ClsOK(r.id) and (r.req or 0) <= job.cap
             and AutoRawOK(r.id, job.cap)
             and not (job.srcSet and not job.srcSet[kind])
             and BG.AutoInstOK(job, r.id, kind) then
@@ -2757,7 +2776,7 @@ local function AutoPick(job)
                         and not ((job.curKey == "trinket" and r.id == job.cur["trinket2"])
                             or (job.curKey == "trinket2" and r.id == job.cur["trinket"]))
                         and StatsKnown(r.id) then
-                        local sc = ItemScore(r.id, job.w)
+                        local sc = ItemScore(r.id, job.w, nil, job.armorRef)
                         if sc and (job.bestScore == nil or sc > job.bestScore) then
                             job.best, job.bestScore = r.id, sc
                         end
@@ -2863,6 +2882,7 @@ local function AutoJobStart(mode, cap, sig, srcSet)
         id = autoJobSeq, mode = mode, cap = cap, sig = sig,
         cls = BG.cls, tspec = BG.tspec, sp = sp,
         mk = dual and "main-hand" or MainKey(sp), dual = dual, w = EffWeights(),
+        armorRef = BG.ArmorRefOf(cap),
         shield = BG.OneHandOnly() or nil,
         oneOnly = BG.OneOnly() or nil,
         oneLock = BG.OneOnlyLock() or nil,
@@ -3586,8 +3606,9 @@ local function PaintBrowser()
     if BG.sel and rkey and not offLocked then
         local w = EffWeights()
         local lv = BG.onlyUsable and (BG.filterLv or PlayerLevel() or 60) or nil
+        local aref = BG.ArmorRefOf(lv or 60)
         local baseId = CurItem(sp, BG.sel)
-        BG.baseScore = baseId and ItemScore(baseId, w) or nil
+        BG.baseScore = baseId and ItemScore(baseId, w, nil, aref) or nil
         BG.baseId = baseId
         local pool = {}
         for _, r in ipairs(mainBoth and BG.CatRowsForMain() or CatRowsFor(rkey)) do
@@ -3606,7 +3627,7 @@ local function PaintBrowser()
         BG.scanBudget = 0
         for i = 1, #pool do
             local r = pool[i]
-            sMap[r] = ItemScore(r.id, w)
+            sMap[r] = ItemScore(r.id, w, nil, aref)
         end
         BG.scanBudget = nil
         table.sort(pool, function(a, b)

@@ -567,7 +567,7 @@ local function BuildWin()
         setRows[#setRows + 1] = row
         return row
     end
-    MakeSetRow(1, L["新技能时弹窗"], "hintLearn", L["学会新技能、且动作条上有低等级、且不在黑名单时弹窗"])
+    MakeSetRow(1, L["新技能时弹窗"], "hintLearn", L["学会新技能时弹窗（含未放入动作条的新技能）"])
     MakeSetRow(2, L["登录时弹窗"], "hintLogin", L["登录时、且动作条上有低等级、且不在黑名单时弹窗"])
 
     local function SyncSetRows()
@@ -1004,14 +1004,23 @@ local function FrameStrata(f)
     return "MEDIUM"
 end
 
-local function FrameScaleToUIParent(f)
-    if not (f and f.GetEffectiveScale) then return 1 end
-    local ok, a = pcall(f.GetEffectiveScale, f)
-    local oku, b = pcall(UIParent.GetEffectiveScale, UIParent)
-    if ok and oku and type(a) == "number" and type(b) == "number" and b > 0 then
+local function ScaleInto(host, par)
+    if not (host and par and host.GetEffectiveScale and par.GetEffectiveScale) then return 1 end
+    local ok1, a = pcall(host.GetEffectiveScale, host)
+    local ok2, b = pcall(par.GetEffectiveScale, par)
+    if ok1 and ok2 and type(a) == "number" and type(b) == "number" and b > 0 then
         return a / b
     end
     return 1
+end
+
+local function BookFrame()
+    local nb = ns.NativeSpellBook
+    local b = nb and nb.Book and nb.Book() or nil
+    if b then return b end
+    local psf = PlayerSpellsFrame
+    if psf and psf.SpellBookFrame then return psf.SpellBookFrame end
+    return psf
 end
 
 local function BoxAnchor()
@@ -1063,17 +1072,20 @@ local ENTRY_NAME = "DungeonsForeverSpellRankEntry"
 
 RefreshEntry = function()
     if not entry then return false end
+    if not InCombat() then
+        local want = BookFrame()
+        if want and entry:GetParent() ~= want then entry:SetParent(want) end
+        entry:SetFrameStrata(ENTRY_STRATA)
+    end
     local host = PickHost()
     if host and host ~= entryHost then
         entryHost = host
-        if not InCombat() and entry:GetParent() ~= UIParent then entry:SetParent(UIParent) end
-        if not InCombat() then entry:SetFrameStrata(ENTRY_STRATA) end
-        entry:SetScale(FrameScaleToUIParent(host))
+        entry:SetScale(ScaleInto(host, entry:GetParent() or UIParent))
         AnchorEntry()
         entry:SetFrameLevel(math.max(FrameLvl(host), FrameLvl(AnchorFrame())) + 5)
     end
     if not entryHost then return false end
-    local wantScale = FrameScaleToUIParent(entryHost)
+    local wantScale = ScaleInto(entryHost, entry:GetParent() or UIParent)
     if entry.__sc ~= wantScale then
         entry.__sc = wantScale
         entry:SetScale(wantScale)
@@ -1114,7 +1126,7 @@ local function EnsureEntry()
     local bt = CreateFrame("Button", ENTRY_NAME, UIParent, "UIPanelButtonTemplate")
     bt:SetSize(320, 32)
     bt:SetFrameStrata(ENTRY_STRATA)
-    bt:SetScale(FrameScaleToUIParent(host))
+    bt:SetScale(ScaleInto(host, UIParent))
     bt:SetFrameLevel(math.max(FrameLvl(host), FrameLvl(BoxAnchor() or PagedFrame())) + 5)
     bt:SetText("")
     local fs = bt:CreateFontString(nil, "OVERLAY")

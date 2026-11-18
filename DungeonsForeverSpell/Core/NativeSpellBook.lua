@@ -955,7 +955,6 @@ local function RestoreNativeList()
 end
 
 local function HideOverlay()
-    RestoreNativeList()
     if ovl then ovl:Hide() end
 end
 
@@ -1119,14 +1118,12 @@ local function WarmCache()
 end
 
 local function InstallOurs()
-    if DeferInCombat() then return false end
     if not book then return false end
     if not BookShown() then
         if ovl then ovl:Hide() end
         return false
     end
     if not EnsureOverlay() then return false end
-    RestoreNativeList()
     local key = CacheKey()
     local groups = BuildGroups()
     if groups and #groups > 0 then groupCache[key] = groups end
@@ -1145,7 +1142,6 @@ local function InstallOurs()
     end
     PaintPage()
     PagerSync()
-    HideNativeList()
     ovl:Show()
     return true
 end
@@ -1361,7 +1357,6 @@ local function PaintTabs()
 end
 
 ShowPage = function(key)
-    if DeferInCombat() then return end
     if not book then return end
     if activePage == key then
         if key then ApplyData() end
@@ -1378,23 +1373,6 @@ ShowPage = function(key)
         if book.SettingsDropdown then book.SettingsDropdown:SetShown(not shown) end
         if book.SearchPreviewContainer then book.SearchPreviewContainer:Hide() end
         PaintNativeTabs()
-    end
-    if key and not BookShown() then
-        local psf = PlayerSpellsFrame
-        if psf and not InCombat() then
-            pcall(psf.SetTab, psf, 3)
-            if C_Timer and C_Timer.After then
-                C_Timer.After(0.05, function()
-                    if activePage == key then ApplyData(); SyncLastTab() end
-                end)
-                C_Timer.After(0.3, function()
-                    if activePage == key then ApplyData(); SyncLastTab() end
-                end)
-                C_Timer.After(1.0, function()
-                    if activePage == key then SyncLastTab() end
-                end)
-            end
-        end
     end
     ApplyData()
     if not InCombat() then SyncLastTab() end
@@ -1423,7 +1401,6 @@ local function TabExitCheck(id)
 end
 
 local function NativeTabClicked()
-    if DeferInCombat() then return end
     if not activePage then return end
     local seq = pageSeq
     local function leave()
@@ -1782,6 +1759,13 @@ local function Attach()
         if beatAcc < (lastPsf and 0.05 or 0.2) then return end
         beatAcc = 0
         if InCombat() then
+            if activePage and sb and sb.GetTab then
+                local okt, id = pcall(sb.GetTab, sb)
+                if okt and id ~= nil and id ~= lastTab then
+                    lastTab = id
+                    ShowPage(nil)
+                end
+            end
             pending = true
             return
         end
@@ -1815,11 +1799,6 @@ local function Attach()
             end
         end
         if activePage and ovl and not ovl:IsVisible() and BookShown() then InstallOurs() end
-        if activePage then
-            local paged = Paged()
-            local pc = paged and paged.PagingControls
-            if pc and pc.IsShown and pc:IsShown() then pc:Hide() end
-        end
         if SyncTabCatcher then SyncTabCatcher() end
         if tabButton and not tabButton:IsShown() and BookShown() and (ns.SpellEnhOn and ns.SpellEnhOn()) then ShowTabs() end
         if InCombat() then return end
@@ -1944,6 +1923,10 @@ end
 
 function NB.CurrentPage()
     return activePage
+end
+
+function NB.Book()
+    return book
 end
 
 function NB.CacheInfo()

@@ -496,6 +496,7 @@ PD.RECOVERY_FEES = { 0, 5, 10, 15, 20 }
 
 PD.GATHER_SLUGS = { mining = true, herbalism = true, skinning = true, fishing = true }
 PD.SETTING_DEF.autoFromCurrent = true
+PD.SETTING_DEF.autoStartSkill = 1
 PD.SETTING_TOG_MAX = 16
 local function ProfDB()
     return ns.ProfDB().prof
@@ -510,8 +511,28 @@ local function RememberLast()
 end
 PD.PROF_SETTING_KEYS={autoRoute=true,autoScheme=true,autoOnlyAH=true,autoConsiderAuctionSupply=true,
     autoBuyLimitedFormulas=true,autoAllowBindOnPickupFormulas=true,autoAllowCurrencyFormulas=true,
-    autoSecondaryLeveling=true,autoFromCurrent=true,autoCraftTools=true,
+    autoSecondaryLeveling=true,autoFromCurrent=true,autoStartSkill=true,autoCraftTools=true,
     recoveryEnabled=true,recoveryFeePercent=true,autoResidualMass=true,autoReserveMode=true}
+
+function PD.AutoStartSkillOf(slug, current)
+    if PD.Setting("autoFromCurrent", slug) then
+        local lv = tonumber(current)
+        return lv and math.max(1, math.floor(lv)) or 1
+    end
+    local n = tonumber(PD.SettingRaw("autoStartSkill", slug)) or 1
+    if n < 1 then n = 1 elseif n > 300 then n = 300 end
+    return math.floor(n)
+end
+
+function PD.SetStartSkill(v)
+    local n = tonumber(v)
+    if not n then return end
+    n = math.floor(n)
+    if n < 1 then n = 1 elseif n > 300 then n = 300 end
+    if tonumber(PD.SettingRaw("autoStartSkill")) == n then return end
+    PD.SetSettingRaw("autoStartSkill", n)
+    PD.LvRecalc()
+end
 function PD.FixedOnly(slug)
     slug=slug or PD.cur
     return slug=="first-aid" or slug=="poisons"
@@ -4866,7 +4887,7 @@ end
 function PD.Build(page)
     if PD.built or PD.building then return end
     PD.building = true
-    PD.rows, PD.toolBtns, PD.setToggles = {}, {}, {}
+    PD.rows, PD.toolBtns, PD.setToggles, PD.setEdits = {}, {}, {}, {}
     PD.perkOpen, PD.__pendRows = {}, {}
     ns.ProfPhased(36, coroutine.create(function()
     PD.page = page
@@ -5024,6 +5045,7 @@ function PD.Build(page)
     coroutine.yield()
 
     PD.setToggles = {}
+    PD.setEdits = {}
     PD.toolBtns = {}
 
     for i = 1, PD.TOOL_MAX do
@@ -5672,6 +5694,24 @@ function PD.Build(page)
         PD.setToggles[i] = tg
     end
     coroutine.yield()
+
+    PD.setEdits = {}
+    for i = 1, PD.SETTING_TOG_MAX do
+        local eb = ns.CreateEditBox(child, 52)
+        eb:SetNumeric(true)
+        eb:SetMaxLetters(3)
+        eb:SetJustifyH("CENTER")
+        eb:SetScript("OnEnterPressed", function(self)
+            self:ClearFocus()
+            PD.SetStartSkill(self:GetText())
+        end)
+        eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+        eb:SetScript("OnEditFocusLost", function(self)
+            PD.SetStartSkill(self:GetText())
+        end)
+        PD.setEdits[i] = eb
+        coroutine.yield()
+    end
 
     PD.setHelps = {}
     for i = 1, PD.SETTING_TOG_MAX do
@@ -7905,6 +7945,7 @@ function PD.HideRowChips(r)
     if r.tagChip then r.tagChip:Hide() end
     if r.tagFs then r.tagFs:Hide() end
     if r.__skchip then r.__skchip:Hide() end
+    if r.__scanChip then r.__scanChip:Hide() end
     if r.__pct then r.__pct:Hide() end
     if r.__cardBg then r.__cardBg:Hide() end
     if type(r.__subLinks) == "table" then
@@ -10899,7 +10940,7 @@ function PD.RecipeSpec(r)
     r[2], r[3], r[12] = resolved.item, resolved.count, resolved.mats
     r[7], r[8], r[9], r[10] = resolved.learn, resolved.yellow, resolved.green, resolved.grey
     local clientPending = resolved.clientPending
-    local station = meta and (meta.stationNames and meta.stationNames[type(GetLocale)=="function" and GetLocale() or "zhCN"] or meta.stationName or ({ forge = L["熔炉"], blackForge = L["黑铁熔炉"], moltenFoundry = L["熔火铸造厂"] })[meta.station])
+    local station = meta and (meta.stationNames and meta.stationNames[ns.DF_REAL_LOCALE and ns.DF_REAL_LOCALE() or "zhCN"] or meta.stationName or ({ forge = L["熔炉"], blackForge = L["黑铁熔炉"], moltenFoundry = L["熔火铸造厂"] })[meta.station])
     local vs = (r[14] and PD.VendorListOf(r[14])) or {}
     local hasVendor = #vs > 0
     local acq = hasVendor and L["商人售卖"] or (resolved.legacyPoisonGuide and L["来源未知"] or L["世界掉落"])
@@ -13654,7 +13695,7 @@ function PD.BuildLvOpts(slug, current)
     local pair = (not fish) and PD.RoutePairContext(slug) or nil
     local lv = tonumber(current)
     return {
-        start = (PD.Setting("autoFromCurrent",slug) and lv) and math.max(1, lv) or 1,
+        start = PD.AutoStartSkillOf(slug, lv),
         onlyAH = PD.Setting("autoOnlyAH",slug),
         considerAuctionSupply = PD.Setting("autoConsiderAuctionSupply",slug),
         allowBindOnPickupFormulas = PD.Setting("autoAllowBindOnPickupFormulas",slug),
@@ -14248,8 +14289,8 @@ function PD.ReserveWarningLines(reserve)
 end
 
 PD.HISTORY_MAX = 5
-PD.HIST_W, PD.HIST_PAD, PD.HIST_TOP, PD.HIST_ROW_H = 360, 12, 60, 24
-PD.HIST_TIME_W, PD.HIST_COST_W = 96, 130
+PD.HIST_W, PD.HIST_PAD, PD.HIST_TOP, PD.HIST_ROW_H = 420, 12, 60, 24
+PD.HIST_TIME_W, PD.HIST_LV_GAP, PD.HIST_COST_W = 96, 10, 130
 PD.HIST_HEAD_Y = 38
 
 function PD.RouteHistoryList(slug)
@@ -14284,6 +14325,8 @@ function PD.RecordRouteHistory(plan, slug)
     if type(bucket) ~= "table" then bucket = {}; prof.routeHistory[slug] = bucket end
     local sig = PD.RouteHistorySig(plan)
     if bucket[1] and bucket[1].sig == sig then
+        if bucket[1].start == nil then bucket[1].start = tonumber(plan.start) end
+        if bucket[1].target == nil then bucket[1].target = tonumber(plan.target) end
         PD.KeepHistoryPlan(slug, sig, plan)
         if bucket[1].skel == nil and RA and RA.SkeletonOf then
             bucket[1].skel = RA.SkeletonOf(plan)
@@ -14298,6 +14341,8 @@ function PD.RecordRouteHistory(plan, slug)
         steps = steps,
         total = total and math.floor(total + 0.5) or 0,
         complete = plan.completeCost ~= false,
+        start = tonumber(plan.start),
+        target = tonumber(plan.target),
         sig = sig,
         skel = RA and RA.SkeletonOf and RA.SkeletonOf(plan) or nil,
     })
@@ -14369,6 +14414,17 @@ function PD.RouteHistoryCost(entry)
     return text
 end
 
+function PD.RouteHistoryLevels(entry)
+    if type(entry) ~= "table" then return "--" end
+    local from, to = tonumber(entry.start), tonumber(entry.target)
+    if not from or not to then
+        local a, b = tostring(entry.sig or ""):match("|(%-?%d+)|(%-?%d+)$")
+        from, to = tonumber(a), tonumber(b)
+    end
+    if not from or not to or from <= 0 or to <= 0 then return "--" end
+    return format(L["%d-%d"], math.floor(from + 0.5), math.floor(to + 0.5))
+end
+
 function PD.FillRouteHistory()
     local f = PD.histPopup
     if not f then return end
@@ -14379,6 +14435,7 @@ function PD.FillRouteHistory()
         if entry then
             bt.__entry = entry
             bt.__time:SetText(PD.RouteHistoryTime(entry.stamp))
+            bt.__lv:SetText(PD.RouteHistoryLevels(entry))
             bt.__steps:SetText(format(L["%d 步"], tonumber(entry.steps) or 0))
             bt.__cost:SetText(PD.RouteHistoryCost(entry))
             bt:Show()
@@ -14410,6 +14467,7 @@ function PD.BuildRouteHistoryPopup()
     note:SetText(format(L["最近 %d 次"], PD.HISTORY_MAX))
     local heads = {
         { L["时间"], "LEFT", PD.HIST_PAD },
+        { L["起始-目标"], "LEFT", PD.HIST_PAD + PD.HIST_TIME_W + PD.HIST_LV_GAP },
         { L["步数"], "RIGHT", -(PD.HIST_PAD + PD.HIST_COST_W + 12) },
         { L["总花费"], "RIGHT", -PD.HIST_PAD },
     }
@@ -14434,6 +14492,10 @@ function PD.BuildRouteHistoryPopup()
         t:SetWidth(PD.HIST_TIME_W)
         t:SetWordWrap(false)
         bt.__time = t
+        local lv = MakeFS(bt, 14, C_GOLD, "LEFT")
+        lv:SetPoint("LEFT", bt, "LEFT", PD.HIST_TIME_W + PD.HIST_LV_GAP, 0)
+        lv:SetWordWrap(false)
+        bt.__lv = lv
         local s = MakeFS(bt, 14, C_GREY, "RIGHT")
         s:SetPoint("RIGHT", bt, "RIGHT", -(PD.HIST_COST_W + 12), 0)
         s:SetWordWrap(false)
@@ -14475,7 +14537,7 @@ function PD.BuildRouteHistoryPopup()
     empty:SetPoint("TOPLEFT", f, "TOPLEFT", PD.HIST_PAD, -(PD.HIST_TOP + 6))
     empty:SetWidth(PD.HIST_W - PD.HIST_PAD * 2)
     empty:SetWordWrap(true)
-    empty:SetText(L["还没有历史记录；点「重新计算」后会自动保存最近 5 次的时间、步数与总花费。"])
+    empty:SetText(L["还没有历史记录；点「重新计算」后会自动保存最近 5 次的时间、起始与目标等级、步数与总花费。"])
     empty:Hide()
     f.empty = empty
     if ns.hui and ns.hui.SkinPopup then
@@ -16180,7 +16242,7 @@ function PD.LevelTool()
         local hist = { key = "route_history", align = "right",
                        text = L["历史路线"], on = (PD.histOpenSlug == PD.cur),
                        tip = { { L["历史路线"], 1, 0.82, 0 },
-                           { format(L["最近 %d 次计算的时间、步数与总花费。"], PD.HISTORY_MAX), 0.85, 0.85, 0.85 } } }
+                           { format(L["最近 %d 次计算的时间、起始与目标等级、步数与总花费。"], PD.HISTORY_MAX), 0.85, 0.85, 0.85 } } }
         list[#list + 1] = hist
         local rec = { key = "recalc", align = "right", primary = true, glow = need,
                       text = automatic and L["重新计算"] or L["刷新费用"] }
@@ -16315,7 +16377,7 @@ PD.SET_MORE = ">"
 PD.SET_GRP_COLOR = { 0.60, 0.66, 0.76 }
 PD.SET_GROUPS = {
     { L["显示"], { "greyPassed", "hlCurrent" }, 1 },
-    { L["路线"], { "autoRoute", "autoFromCurrent", "autoSecondaryLeveling", "computationSpeed" }, 1 },
+    { L["路线"], { "autoRoute", "autoFromCurrent", "autoStartSkill", "autoSecondaryLeveling", "computationSpeed" }, 1 },
     { L["采购与配方"], { "reserveMode", "autoOnlyAH", "autoConsiderAuctionSupply", "autoBuyLimitedFormulas", "autoAllowBindOnPickupFormulas", "autoAllowCurrencyFormulas" }, 2 },
     { L["收益与工具"], { "recoveryEnabled", "recoveryFee", "autoResidualMass", "autoCraftTools" }, 2 },
 }
@@ -16445,6 +16507,14 @@ function PD.RowsSettings(rows)
                             {L["切换后立即更新路线和购物清单，保留已完成的制作进度。"],.7,.7,.7},
                             {L["不准备余量只保留基础用量；固定攻略不额外备料。"],.7,.7,.7}}}
                 end
+            elseif kk=="autoStartSkill" and not PD.Setting("autoFromCurrent") and not PD.FixedOnly() then
+                items[#items+1]=function(col)
+                    rows[#rows+1]={kind="row",h=PD.SET_ROW_H,col=col,fcol=col,fs=14,
+                        text=L["自定义起始技能点数开始计算"],editKey="autoStartSkill",
+                        help={{L["自定义起始技能点数开始计算"]},
+                            {L["「从当前技能开始计算」关闭时生效：路线从该点数开始计算，而不是 1。"],.7,.7,.7},
+                            {L["1–300 之间的整数，默认 1；上方开关打开时此设置不生效。"],.7,.7,.7}}}
+                end
             elseif byKey[kk] and allowed(kk) then
                 local d = byKey[kk]
                 items[#items + 1] = function(col) pushToggle(d, col) end
@@ -16464,7 +16534,7 @@ end
 
 function PD.PlaceSettingsToggles(rows)
     local n = math.min(#(rows or {}), PD.ROW_CAP)
-    local ti, hi = 0, 0
+    local ti, hi, ei = 0, 0, 0
     for i = 1, n do
         local spec = rows[i]
         local rr = PD.rows[i]
@@ -16481,6 +16551,18 @@ function PD.PlaceSettingsToggles(rows)
                 tg.__key = spec.togKey
                 tg:Show()
             end
+            if spec.editKey then
+                ei = ei + 1
+                local eb = PD.setEdits[ei]
+                if eb then
+                    eb:ClearAllPoints()
+                    eb:SetPoint("RIGHT", rr, "RIGHT", -8, 0)
+                    eb:SetFrameLevel((rr:GetFrameLevel() or 0) + 10)
+                    local cur = tonumber(PD.SettingRaw(spec.editKey)) or 1
+                    if not eb:HasFocus() then eb:SetText(tostring(cur)) end
+                    eb:Show()
+                end
+            end
             if spec.help then
                 hi = hi + 1
                 local hp = PD.setHelps[hi]
@@ -16496,6 +16578,7 @@ function PD.PlaceSettingsToggles(rows)
         end
     end
     for j = ti + 1, #PD.setToggles do PD.setToggles[j]:Hide() end
+    for j = ei + 1, #PD.setEdits do PD.setEdits[j]:Hide() end
     for j = hi + 1, #PD.setHelps do PD.setHelps[j]:Hide() end
 end
 

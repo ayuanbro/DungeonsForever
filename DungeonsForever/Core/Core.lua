@@ -562,7 +562,7 @@ do
         if event == "PLAYER_LOGIN" then self:UnregisterEvent("PLAYER_LOGIN") end
         if event == "PLAYER_ENTERING_WORLD" then self:UnregisterEvent("PLAYER_ENTERING_WORLD") end
         if C_Timer and C_Timer.After then C_Timer.After(0, Try) end
-        if not ticker and C_Timer and C_Timer.NewTicker then ticker = C_Timer.NewTicker(2, Try) end
+        if not ticker and C_Timer and C_Timer.NewTicker then ticker = C_Timer.NewTicker(5, Try) end
     end)
 end
 
@@ -1257,6 +1257,60 @@ moduleBoot:SetScript("OnEvent", function(self, event, name)
         DEFAULT_CHAT_FRAME:AddMessage("|cffff5555DungeonsForever|r 有 " .. bad .. " 项页面模块初始化失败，请检查对应子插件是否已启用。")
     end
 end)
+
+do
+    local LINE2SLUG = {
+        [171] = "alchemy", [164] = "blacksmithing", [333] = "enchanting",
+        [202] = "engineering", [165] = "leatherworking", [197] = "tailoring",
+        [186] = "mining", [182] = "herbalism", [393] = "skinning",
+        [185] = "cooking", [356] = "fishing", [129] = "first-aid",
+        [755] = "jewelcrafting",
+    }
+    local memo, stamp = nil, -1
+
+    function ns.PlayerProfSet()
+        local now = (type(GetTime) == "function") and GetTime() or 0
+        if memo and (now - stamp) < 1 then return memo end
+        local out = {}
+        if type(GetProfessions) == "function" and type(GetProfessionInfo) == "function" then
+            local ok, a, b, c, d, e, f = pcall(GetProfessions)
+            if ok then
+                local slots = { a, b, c, d, e, f }
+                for i = 1, 6 do
+                    local idx = slots[i]
+                    if idx then
+                        local oki, _, _, cur, _, _, _, sid = pcall(GetProfessionInfo, idx)
+                        local slug = oki and LINE2SLUG[sid] or nil
+                        if slug then out[slug] = tonumber(cur) or 0 end
+                    end
+                end
+            else
+                out.__unknown = true
+            end
+        else
+            out.__unknown = true
+        end
+        memo, stamp = out, now
+        return out
+    end
+
+    function ns.HasProf(slug)
+        if not slug then return true end
+        local set = ns.PlayerProfSet()
+        if set.__unknown then return true end
+        return set[slug] ~= nil
+    end
+
+    function ns.ProfLevel(slug)
+        if not slug then return 0 end
+        return ns.PlayerProfSet()[slug] or 0
+    end
+
+    local ev = CreateFrame("Frame")
+    ev:RegisterEvent("SKILL_LINES_CHANGED")
+    ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+    ev:SetScript("OnEvent", function() memo, stamp = nil, -1 end)
+end
 
 function ns.RefreshTabEntry()
     if type(ns.ApplyTabVisibility) == "function" then pcall(ns.ApplyTabVisibility) end

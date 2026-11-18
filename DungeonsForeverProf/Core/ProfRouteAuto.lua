@@ -1935,7 +1935,7 @@ function RA.OptionsFor(slug, current, skipExecutionInventory)
     local target = PDm.LvTarget and PDm.LvTarget(slug) or CAP
     local lv = tonumber(current)
     return {
-        start = (PDm.Setting("autoFromCurrent",slug) and lv) and math.max(1, lv) or 1,
+        start = PDm.AutoStartSkillOf and PDm.AutoStartSkillOf(slug, lv) or ((PDm.Setting("autoFromCurrent",slug) and lv) and math.max(1, lv) or 1),
         onlyAH = PDm.Setting("autoOnlyAH",slug),
         considerAuctionSupply = PDm.Setting("autoConsiderAuctionSupply",slug),
         allowLimitedFormulas = PDm.Setting("autoBuyLimitedFormulas",slug),

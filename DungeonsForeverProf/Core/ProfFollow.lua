@@ -438,7 +438,7 @@ local function routeForCalc(slug, skill)
     PF.pendingPlans = PF.pendingPlans or {}
     if auto then
         local opts = RA.OptionsFor and RA.OptionsFor(slug, skill) or {
-            start = (PD.Setting("autoFromCurrent",slug) and skill) and math.max(1, skill) or 1,
+            start = PD.AutoStartSkillOf and PD.AutoStartSkillOf(slug, skill) or ((PD.Setting("autoFromCurrent",slug) and skill) and math.max(1, skill) or 1),
             onlyAH = PD.Setting("autoOnlyAH",slug),
             allowLimitedFormulas=PD.Setting("autoBuyLimitedFormulas",slug),
             allowBindOnPickupFormulas=PD.Setting("autoAllowBindOnPickupFormulas",slug),

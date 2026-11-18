@@ -14,6 +14,7 @@ local MAX_PT = 51
 local COLW, GX, TOP = 303, 41, 50
 local GRID_Y, ROW_STEP, NODE_SIZE = 200, 60, 40
 local BODY_W, BODY_H = 1212, 595
+local BODY_EXT = 44
 local LIST_W, LIST_ROW, LIST_STEP = 220, 22, 25
 local LIST_DROP = 20
 local BRAND_LIFT = 5
@@ -59,13 +60,13 @@ local function LayerScan()
     local pf = _G.PlayerSpellsFrame
     local T = pf and pf.TalentsFrame
     if not (pf and T) then return nil end
-    local lo, hi, seen = nil, nil, 0
+    local lo, hi, medAll, seen = nil, nil, nil, 0
     local function scan(f, depth)
-        if depth > 12 or seen > 8000 then return end
+        if depth > 12 or seen > 30000 then return end
         local kids = { f:GetChildren() }
         for i = 1, #kids do
             seen = seen + 1
-            if seen > 8000 then return end
+            if seen > 30000 then return end
             local c = kids[i]
             if not c.__dfMine then
                 local s, l = c:GetFrameStrata(), c:GetFrameLevel() or 0
@@ -73,13 +74,14 @@ local function LayerScan()
                     local tag = (s == 'HIGH') and (10000 + l) or l
                     if not lo or tag < lo then lo = tag end
                     if not hi or tag > hi then hi = tag end
+                    if s == 'MEDIUM' and (not medAll or l > medAll) then medAll = l end
                 end
                 scan(c, depth + 1)
             end
         end
     end
     scan(pf, 0)
-    NP.nativeLo, NP.nativeHi = lo, hi
+    NP.nativeLo, NP.nativeHi, NP.nativeMedAll = lo, hi, medAll
     return BASE_S, BASE_L
 end
 NP.LayerScan = LayerScan
@@ -374,10 +376,13 @@ end
 local function BuildBackground(b)
     local d = Data()
     local art = d and ART[d.key] or ART.rogue
+    local base = b:CreateTexture(nil, 'BACKGROUND')
+    base:SetAllPoints(b)
+    base:SetColorTexture(0.05, 0.04, 0.03, 1)
     for i = 1, 4 do
         local t = b:CreateTexture(nil, 'OVERLAY', nil, 1)
         t:SetPoint('TOPLEFT', b, 'TOPLEFT', (i - 1) * COLW, 0)
-        t:SetSize(COLW, BODY_H)
+        t:SetSize(COLW, BODY_H + BODY_EXT)
         t:SetTexture(art)
         local a, c = U0 + (U1 - U0) * (i - 1) / 3, U0 + (U1 - U0) * i / 3
         if i == 4 then
@@ -1282,6 +1287,7 @@ local function LiveCached()
     local now = (GetTime and GetTime()) or 0
     local c = NP.liveCache
     if c and (now - c.at) < 1.0 then return c.read end
+    if InCombat() then return c and c.read or nil end
     local read = NP.LiveRead and NP.LiveRead() or nil
     NP.liveCache = { at = now, read = read }
     return read
@@ -1439,6 +1445,7 @@ end
 
 function NP.SyncPlan()
     if not body then return end
+    if InCombat() then return end
     NP.liveCache = nil
     NP.liveBaseCache = nil
     local pending = PendingSeq(LiveBase())
@@ -1555,8 +1562,7 @@ end
 
 NP.LiveRead = LiveRead
 
-function NP.SyncFromLive()
-    local read = LiveRead()
+local function SeedFromRead(read)
     if not read then return false end
     local d = Data()
     if not d then return false end
@@ -1571,6 +1577,10 @@ function NP.SyncFromLive()
         end
     end
     return true
+end
+
+function NP.SyncFromLive()
+    return SeedFromRead(LiveRead())
 end
 
 local function DoApply(read, queue, cap)
@@ -2014,19 +2024,19 @@ local function BuildStrip()
 end
 
 local function BuildApplyButton(T)
-    applyBtn = Skinnable(CreateFrame('Button', nil, T, 'UIPanelButtonNoTooltipTemplate'))
+    applyBtn = Skinnable(CreateFrame('Button', nil, body, 'UIPanelButtonNoTooltipTemplate'))
     applyBtn.__dfMine = true
     applyBtn:SetSize(164, 22)
-    applyBtn:SetPoint('TOPLEFT', T, 'TOPLEFT', 524, -651)
+    applyBtn:SetPoint('TOPLEFT', body, 'TOPLEFT', 524, -601)
     applyBtn:SetFrameLevel(body:GetFrameLevel() + 13)
     applyBtn:SetText(L['一键加点'])
     applyBtn:SetScript('OnClick', function() NP.ApplyLive() end)
     applyBtn:Hide()
 
-    resetBtn = CreateFrame('Button', 'DungeonsForeverTalentReset', T)
+    resetBtn = CreateFrame('Button', 'DungeonsForeverTalentReset', body)
     resetBtn.__dfMine = true
     resetBtn:SetSize(25, 25)
-    resetBtn:SetPoint('TOPLEFT', T, 'TOPLEFT', 702, -650)
+    resetBtn:SetPoint('TOPLEFT', body, 'TOPLEFT', 702, -600)
     resetBtn:SetFrameLevel(body:GetFrameLevel() + 13)
     local ic = resetBtn:CreateTexture(nil, 'ARTWORK')
     ic:SetAtlas('talents-button-undo')
@@ -2178,13 +2188,40 @@ local function Relayer()
 end
 NP.Relayer = Relayer
 
+local function NativeTabsPaint(on)
+    local T = NP.frame
+    local ts = T and T.TabSystem
+    if not (ts and ts.tabs) then return end
+    for _, tab in ipairs(ts.tabs) do
+        if tab and tab ~= NP.tab then
+            local sel = (not on) and tab.IsSelected and tab:IsSelected() and true or false
+            for _, r in ipairs({ tab:GetRegions() }) do
+                if r and r.GetAtlas then
+                    local ok, a = pcall(r.GetAtlas, r)
+                    if ok and a then
+                        if string.find(a, 'activetab', 1, true) then
+                            pcall(r.SetShown, r, sel)
+                        elseif string.find(a, 'uiframe-tab', 1, true) then
+                            local oka, al = pcall(r.GetAlpha, r)
+                            if oka and type(al) == 'number' and al >= 0.99 then
+                                pcall(r.SetShown, r, not sel)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+NP.NativeTabsPaint = NativeTabsPaint
+
 local function SyncTabs(on)
     if not on then CardLayer(false) end
     NP.layerDirty = true
     Relayer()
     if on then CardLayer(true) end
     if not NP.tab then return end
-    NativeMask(on and true or false)
+    if not InCombat() then NativeTabsPaint(on) end
     TabMark(NP.tab, on and true or false)
     TabCheck(NP.tab, on and true or false)
     local c = NP.catcher
@@ -2219,19 +2256,7 @@ end
 local function PaintNative(on)
     local T = NP.frame
     if not T then return end
-    local keep = not on
     if on and T.SetDisabledOverlayShown then pcall(T.SetDisabledOverlayShown, T, false) end
-    NativeAlpha(T.ActiveSpec, keep)
-    NativeAlpha(T.ButtonsParent, keep)
-    NativeAlpha(T.ApplyButton, keep)
-    NativeAlpha(T.ResetButton, keep)
-    NativeAlpha(T.UndoButton, keep)
-    if T.treeHeaders then
-        for i = 1, #T.treeHeaders do NativeAlpha(T.treeHeaders[i], keep) end
-    end
-    NativeMouse(T.ApplyButton, keep)
-    NativeMouse(T.ResetButton, keep)
-    NativeMouse(T.UndoButton, keep)
     SyncTabs(on)
 end
 
@@ -2241,7 +2266,11 @@ local function ApplyState(on)
     if on then
         if not NP.pts then NP.pts = { {}, {}, {} } end
         if not NP.seeded then
-            NP.seeded = NP.SyncFromLive() or true
+            if InCombat() then
+                SeedFromRead(LiveCached())
+            else
+                NP.seeded = NP.SyncFromLive() or true
+            end
         end
         body:Show()
         if NP.seqLayer then NP.seqLayer:Hide() end
@@ -2327,20 +2356,12 @@ function NP.SyncShow()
     local T = NP.frame
     if not (T and body) then return end
     local on = Mine()
-    if on and InCombat() then
-        NP.paintPending = true
-        return
-    end
     ApplyState(on)
     if on then Refresh() end
 end
 
 function NP.Enter()
     if not body or not NP.frame then return end
-    if InCombat() then
-        print('|cff46bf72[天赋]|r ' .. L['战斗中无法打开加点页'])
-        return
-    end
     if not TalentPageOn() then
         if C_Timer and C_Timer.After then
             C_Timer.After(0, function()
@@ -2376,7 +2397,7 @@ function NP.Build(T)
 
     body = CreateFrame('Frame', 'DungeonsForeverTalentPage', _G.UIParent)
     body.__dfMine = true
-    body:SetSize(BODY_W, BODY_H)
+    body:SetSize(BODY_W, BODY_H + BODY_EXT)
     body:EnableMouse(true)
     local layS, layL = Layer()
     body:SetFrameStrata(layS)
