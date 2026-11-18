@@ -52,6 +52,7 @@ local function CFG()
     if c.restedVoice == nil then c.restedVoice = true end
     if c.turnin == nil then c.turnin = true end
     if c.keyitem == nil then c.keyitem = true end
+    if c.profcd == nil then c.profcd = true end
     if c.onlyTodo == nil then c.onlyTodo = false end
     if c.noZonePopup == nil then c.noZonePopup = true end
     if c.mode == nil then c.mode = "auto" end
@@ -918,7 +919,7 @@ local function PQuest(ctx)
                 icon = "Interface\\GossipFrame\\AvailableQuestIcon",
                 sub = sub, desc = locdesc, lvreq = lvreq, can = can,
                 badge = { t = optPair and L["可选"] or L["前置"], col = optPair and (DG.Q_BADGE_OPT_BG or DG.Q_BADGE_PRE_BG) or DG.Q_BADGE_PRE_BG },
-                disc = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
+                discTex = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
                 sym = can and QSYM_CAN or QSYM_CANT,
                 symCol = can and QSYM_CANCOL or QSYM_CANTCOL,
                 qid = pid, mapName = ps[6], x = ps[4], y = ps[5], slug = h.slug,
@@ -978,7 +979,7 @@ local function PQuest(ctx)
                 icon = "Interface\\GossipFrame\\AvailableQuestIcon",
                 sub = progSub or dun, desc = locdesc, lvreq = lvreq, can = can,
                 badge = { t = btext, col = DG.Q_BADGE_IN_BG },
-                disc = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
+                discTex = QDISC, discCol = can and QDISC_CAN or QDISC_CANT,
                 sym = can and QSYM_CAN or QSYM_CANT,
                 symCol = can and QSYM_CANCOL or QSYM_CANTCOL,
                 qid = q[1], mapName = mapName, x = x, y = y, slug = h.slug,
@@ -1036,6 +1037,11 @@ local function PSpell(ctx)
     local inCity = (CITIES[ctx.zone] or CITIES[ctx.sub]) and true or false
     local inTrainerZone = ZoneHasClassTrainer(ctx)
     local avail = (inCity and inTrainerZone) and g.available or {}
+    local disc, discTip
+    if ns.TrainerDiscount and ns.TrainerDiscount.Hint then
+        local ok, r, t = pcall(ns.TrainerDiscount.Hint)
+        if ok then disc, discTip = r, t end
+    end
     local list, n = {}, 0
     for i = 1, #avail do
         local row = avail[i]
@@ -1048,6 +1054,7 @@ local function PSpell(ctx)
                     id = row.id, base = base, ikey = key,
                     name = row.name or "", icon = row.icon,
                     learn = row.learn, rank = row.rank, tab = row.tab,
+                    disc = disc, discTip = discTip,
                 }
             end
         end
@@ -1153,6 +1160,47 @@ Z.Register("turnin", TurnInRows)
 Z.Register("quest", PQuest)
 Z.Register("keyitem", PKeyItem)
 Z.Register("spell", PSpell)
+
+local function PProfCD(ctx)
+    local c = CFG()
+    if c.profcd == false then return nil end
+    local W = ns.ProfCDWatch
+    if not (type(W) == "table" and type(W.TodoList) == "function") then return nil end
+    local ok, list = pcall(W.TodoList)
+    if not ok or type(list) ~= "table" or #list == 0 then return nil end
+    local items, names = {}, {}
+    for i = 1, #list do
+        local e = list[i]
+        if not Z.IsIgnored(ItemKey("profcd", e.spell)) then
+            local nm = e.name or L["冷却配方"]
+            names[#names + 1] = nm
+            local slug = e.slug
+            local bys = table.concat(e.by or {}, " · ")
+            items[#items + 1] = {
+                id = e.item or e.spell, base = e.item or e.spell,
+                ikey = ItemKey("profcd", e.spell), ikind = "profcd",
+                name = nm,
+                icon = e.item and ItemIcon(e.item) or nil,
+                sub = (bys ~= "") and (L["可再做"] .. " · " .. bys) or L["可再做"],
+                desc = L["专业冷却"],
+                jump = function()
+                    if ns.OpenPage then pcall(ns.OpenPage, "Professions") end
+                    local pd = ns.ProfModule
+                    if pd and slug and pd.Show then pcall(pd.Show, slug) end
+                    return true
+                end,
+                jumpTip = L["点击打开专业页"],
+            }
+        end
+    end
+    if #items == 0 then return nil end
+    return {
+        kind = "profcd", n = #items, keys = {}, list = items,
+        title = L["专业 · 冷却可做"],
+        text = table.concat(names, " · "),
+    }
+end
+Z.Register("profcd", PProfCD)
 
 local WELL_FED_SPELL = 19705
 local wellFedName = nil
@@ -1582,7 +1630,7 @@ local function SimQuests(n)
             sub = string.format(L["%s · 可接等级 %d"], t[2], t[6]),
             desc = string.format("%s · %s %.0f,%.0f", t[2], t[3], t[4] + lap, t[5]),
             lvreq = t[6], can = t[7],
-            disc = QDISC, discCol = t[7] and QDISC_CAN or QDISC_CANT,
+            discTex = QDISC, discCol = t[7] and QDISC_CAN or QDISC_CANT,
             sym = t[7] and QSYM_CAN or QSYM_CANT,
             symCol = t[7] and QSYM_CANCOL or QSYM_CANTCOL,
             qid = 700000 + i, x = t[4] + lap, y = t[5],
@@ -1629,7 +1677,7 @@ function Z.Collect(ctx)
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
-    local order = { "collect", "turnin", "quest", "keyitem", "spell", "talent", "buff", "tent" }
+    local order = { "collect", "turnin", "quest", "keyitem", "spell", "profcd", "talent", "buff", "tent" }
     for i = 1, #order do
         local kind = order[i]
         local on = c[kind]

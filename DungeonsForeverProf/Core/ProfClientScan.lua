@@ -137,6 +137,13 @@ function E.ReadRecipe(spell, observedInfo, infoAlreadyRead)
     if info then
         if type(info.learned)=="boolean" then r.learned=info.learned end
         if type(info.hasCooldown)=="boolean" then r.cooldown=info.hasCooldown; r.cooldownVerified=true end
+        local cw=ns.ProfCDWatch
+        if cw and info.learned==true and cw.MarkChar then
+            pcall(cw.MarkChar,spell,cw.CharKey(),cw.Name and cw.Name() or UnitName("player"))
+        end
+        if info.hasCooldown==true then
+            if cw and cw.Observe then pcall(cw.Observe,spell) end
+        end
         local skill=info.requiredSkillRank or info.skillRequired
         if positiveInteger(skill) then r.learn=skill end
     end

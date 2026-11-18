@@ -7,7 +7,7 @@ local L = ns.L
 local QB = {}
 ns.QuickBar = QB
 
-QB.W = 120
+QB.W = 160
 QB.SLOT1 = 4
 QB.SLOT2 = 228
 QB.PAD = 8
@@ -143,6 +143,35 @@ local function PlayerLevel()
     return UnitLevel("player") or 0
 end
 
+local function MyClass()
+    if type(UnitClass) ~= "function" then return nil end
+    local _, token = UnitClass("player")
+    return token
+end
+
+local function MyClassName()
+    if type(UnitClass) ~= "function" then return nil end
+    return (UnitClass("player"))
+end
+
+local function HasClassGuide(cls)
+    local get = ns.EnsureClassGuide
+    if not cls or type(get) ~= "function" then return false end
+    local cg = get()
+    return (type(cg) == "table" and type(cg.specs) == "table" and cg.specs[cls]) and true or false
+end
+
+local function CrateIcon(DG)
+    local CD = ns.CratesData
+    local first = CD and CD.crates and CD.crates[1]
+    local id = first and first.id
+    if not (id and DG and DG.ItemIcon) then return nil end
+    local tex = DG.ItemIcon(id)
+    if type(tex) == "number" then return tex end
+    if type(tex) == "string" and tex ~= "" and tex ~= FALLBACK_ICON then return tex end
+    return nil
+end
+
 local function DungeonRow(d)
     return {
         text = d.name,
@@ -158,7 +187,7 @@ function QB:Collect()
     local cfg = ns.QuickCfg()
     local DG = ns.ProfHost and ns.ProfHost.DG
     local out = {}
-    local n = { dungeon = 0, prof = 0, explore = 0 }
+    local n = { dungeon = 0, prof = 0, explore = 0, tier = 0 }
 
     if cfg.groups.dungeon then
         out[#out + 1] = { text = L["全部副本"], act = "page", key = "Dungeons", gold = true }
@@ -183,16 +212,29 @@ function QB:Collect()
         for _, slug in ipairs((D and D.order) or {}) do
             local p = D.pro and D.pro[slug]
             local known = learned[slug]
-            if p and (cfg.profMode == "all" or known) then
+            local crate = (p and p.kind == "crates") and true or false
+            local show
+            if crate then
+                show = cfg.profCrate and true or false
+            else
+                show = (cfg.profMode == "all" or known) and true or false
+            end
+            if p and show then
                 local tip = p.name or slug
-                if known then
-                    tip = tip .. "\n" .. format(L["熟练度 %d/%d"], known.cur or 0, known.max or 0)
-                else
-                    tip = tip .. "\n" .. L["未学习"]
+                if not crate then
+                    if known then
+                        tip = tip .. "\n" .. format(L["熟练度 %d/%d"], known.cur or 0, known.max or 0)
+                    else
+                        tip = tip .. "\n" .. L["未学习"]
+                    end
+                end
+                local icon = p.icon
+                if crate then
+                    icon = CrateIcon(DG)
                 end
                 out[#out + 1] = {
                     text = p.name or slug,
-                    icon = p.icon,
+                    icon = icon,
                     tip = tip,
                     act = "prof",
                     slug = slug,
@@ -214,6 +256,30 @@ function QB:Collect()
             for _, e in ipairs(picked) do
                 out[#out + 1] = { text = e.text, act = "explore", key = e.key }
                 n.explore = n.explore + 1
+            end
+        end
+    end
+
+    if cfg.groups.tier and ns.LoadForeverPages and ns.ModuleOn("Tier") then
+        local cls, cname = MyClass(), MyClassName()
+        local picked = {}
+        if cfg.tier["class"] and HasClassGuide(cls) then
+            picked[#picked + 1] = { text = L["本职业"], key = "class" }
+        end
+        if cfg.tier.prep then picked[#picked + 1] = { text = L["团本前推荐任务"], key = "prep" } end
+        if #picked > 0 then
+            out[#out + 1] = { grp = L["职业指南"] }
+            for _, e in ipairs(picked) do
+                local tip
+                if e.key == "prep" then
+                    tip = L["团本前推荐任务"]
+                elseif cname then
+                    tip = cname .. " · " .. L["职业指南"]
+                else
+                    tip = L["职业指南"]
+                end
+                out[#out + 1] = { text = e.text, act = "tier", key = e.key, tip = tip }
+                n.tier = n.tier + 1
             end
         end
     end
@@ -428,6 +494,26 @@ function QB:Click(spec)
         ns.OpenPage("Explore")
         if ns.ExploreModule and ns.ExploreModule.ShowSub then
             ns.ExploreModule.ShowSub(spec.key)
+        end
+    elseif spec.act == "tier" then
+        if not ns.TierModule then return end
+        local cdb = ns.ClassDB
+        local tierDB
+        if type(cdb) == "function" then
+            local t = cdb().tier
+            if type(t) == "table" then tierDB = t end
+        end
+        if spec.key == "prep" then
+            if tierDB then tierDB.nav = "prep" end
+            ns.OpenPage("Tier")
+            if ns.TierModule.RequestRender then ns.TierModule.RequestRender() end
+        else
+            local cls = MyClass()
+            if tierDB and HasClassGuide(cls) then
+                tierDB.nav = "spec"
+                tierDB.cls = cls
+            end
+            ns.OpenPage("Tier")
         end
     elseif spec.act == "page" then
         ns.OpenPage(spec.key)
@@ -756,9 +842,60 @@ function QB:EnsureSettings()
         if ns.LayoutSettingsStack then ns.LayoutSettingsStack() end
     end
 
-    local function DropRow(label, items, opts)
+    do
+        local groups = {}
+        groups[#groups + 1] = { key = "dungeon", label = L["推荐五人本"] }
+        if ns.LoadForeverPages then
+            local function ProfMode()
+                local m = ns.QuickCfg().profMode
+                if m ~= "all" then m = "learned" end
+                return m
+            end
+            groups[#groups + 1] = {
+                key = "prof", label = L["专业"],
+                subs = {
+                    { key = "learned", label = L["只看已学"],
+                        get = function() return ProfMode() == "learned" end,
+                        set = function() ns.QuickCfg().profMode = "learned" end },
+                    { key = "all", label = L["全部"],
+                        get = function() return ProfMode() == "all" end,
+                        set = function() ns.QuickCfg().profMode = "all" end },
+                    { key = "crate", label = L["板条箱"],
+                        get = function() return ns.QuickCfg().profCrate end,
+                        set = function()
+                            local q = ns.QuickCfg()
+                            q.profCrate = not (q.profCrate and true)
+                        end },
+                },
+            }
+            groups[#groups + 1] = {
+                key = "explore", label = L["探索"],
+                subs = {
+                    { key = "books", label = L["40本书"] },
+                    { key = "bag", label = L["睡袋"] },
+                },
+                get = function(k) return ns.QuickCfg().expl[k] end,
+                set = function(k)
+                    local e = ns.QuickCfg().expl
+                    e[k] = not (e[k] and true)
+                end,
+            }
+            groups[#groups + 1] = {
+                key = "tier", label = L["职业指南"],
+                subs = {
+                    { key = "class", label = L["本职业"] },
+                    { key = "prep", label = L["团本前推荐任务"] },
+                },
+                get = function(k) return ns.QuickCfg().tier[k] end,
+                set = function(k)
+                    local t = ns.QuickCfg().tier
+                    t[k] = not (t[k] and true)
+                end,
+            }
+        end
+
         local hfs = Fs(host, self.FS_AUX, C_DIM)
-        hfs:SetText(label)
+        hfs:SetText(L["显示分组"])
 
         local bt = CreateFrame("Button", nil, host, "BackdropTemplate")
         bt:SetSize(192, 24)
@@ -772,8 +909,20 @@ function QB:EnsureSettings()
         arw:SetPoint("RIGHT", bt, "RIGHT", -8, 0)
         arw:SetText("\226\150\188")
 
+        local function Summary()
+            local on = {}
+            for i = 1, #groups do
+                if ns.QuickCfg().groups[groups[i].key] then
+                    on[#on + 1] = groups[i].label
+                end
+            end
+            if #on == 0 then return L["未选择"] end
+            if #on == #groups then return L["全部分组"] end
+            return table.concat(on, "、")
+        end
+
         local function Paint()
-            bfs:SetText(opts.summary())
+            bfs:SetText(Summary())
             if ns.QuickCfg().on then
                 bt:Enable()
                 bfs:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
@@ -784,22 +933,50 @@ function QB:EnsureSettings()
             arw:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
         end
 
-        local function MenuItems()
+        local OpenGroup, MenuItems
+
+        OpenGroup = function(g)
+            if not (g.subs and ns.hui and ns.hui.ShowSubMenu) then return end
             local list = {}
-            for k = 1, #items do
-                local it = items[k]
-                list[#list + 1] = {
-                    text = it.label,
-                    checked = opts.get(it.key) and true or false,
+            for i = 1, #g.subs do
+                local s = g.subs[i]
+                local get = s.get or g.get
+                local set = s.set or g.set
+                list[i] = {
+                    text = s.label,
+                    checked = (get and get(s.key)) and true or false,
                     func = function()
                         ns.PlaySound(1)
-                        opts.click(it.key)
+                        if set then set(s.key) end
                         Paint()
                         QB:SyncSettings()
                         QB:Apply()
-                        if not opts.single then
-                            ns.hui.ShowMenu(MenuItems(), { owner = bt, anchor = bt })
-                        end
+                        ns.hui.ShowMenu(MenuItems(), { owner = bt, anchor = bt })
+                        OpenGroup(g)
+                    end,
+                }
+            end
+            ns.hui.ShowSubMenu(list, { owner = bt, anchor = bt })
+        end
+
+        MenuItems = function()
+            local list = {}
+            for i = 1, #groups do
+                local g = groups[i]
+                local subFn
+                if g.subs then subFn = function() OpenGroup(g) end end
+                list[i] = {
+                    text = g.label,
+                    checked = ns.QuickCfg().groups[g.key] and true or false,
+                    sub = subFn,
+                    func = function()
+                        ns.PlaySound(1)
+                        local gg = ns.QuickCfg().groups
+                        gg[g.key] = not (gg[g.key] and true)
+                        Paint()
+                        QB:SyncSettings()
+                        QB:Apply()
+                        ns.hui.ShowMenu(MenuItems(), { owner = bt, anchor = bt })
                     end,
                 }
             end
@@ -816,82 +993,11 @@ function QB:EnsureSettings()
         blocks[#blocks + 1] = {
             label = hfs,
             btn = bt,
-            show = opts.show or function() return true end,
+            show = function() return true end,
         }
+        set.repaint = set.repaint or {}
+        set.repaint[#set.repaint + 1] = Paint
         Paint()
-        return bt
-    end
-
-    do
-        local groupItems = { { key = "dungeon", label = L["推荐五人本"] } }
-        if ns.LoadForeverPages then
-            groupItems[#groupItems + 1] = { key = "prof", label = L["专业"] }
-            groupItems[#groupItems + 1] = { key = "explore", label = L["探索"] }
-        end
-        DropRow(L["显示分组"], groupItems, {
-            get = function(k) return ns.QuickCfg().groups[k] end,
-            click = function(k)
-                local g = ns.QuickCfg().groups
-                g[k] = not (g[k] and true)
-            end,
-            summary = function()
-                local out = {}
-                for k = 1, #groupItems do
-                    if ns.QuickCfg().groups[groupItems[k].key] then
-                        out[#out + 1] = groupItems[k].label
-                    end
-                end
-                return (#out > 0) and table.concat(out, "、") or L["未选择"]
-            end,
-        })
-    end
-
-    do
-        local profItems = {
-            { key = "learned", label = L["只看已学"] },
-            { key = "all", label = L["全部"] },
-        }
-        DropRow(L["专业列表"], profItems, {
-            single = true,
-            show = function()
-                return ns.LoadForeverPages and ns.QuickCfg().groups.prof and true or false
-            end,
-            get = function(k)
-                local mode = ns.QuickCfg().profMode
-                if mode ~= "all" then mode = "learned" end
-                return mode == k
-            end,
-            click = function(k) ns.QuickCfg().profMode = k end,
-            summary = function()
-                return (ns.QuickCfg().profMode == "all") and L["全部"] or L["只看已学"]
-            end,
-        })
-    end
-
-    do
-        local explItems = {
-            { key = "books", label = L["40本书"] },
-            { key = "bag", label = L["睡袋"] },
-        }
-        DropRow(L["探索子页"], explItems, {
-            show = function()
-                return ns.LoadForeverPages and ns.QuickCfg().groups.explore and true or false
-            end,
-            get = function(k) return ns.QuickCfg().expl[k] end,
-            click = function(k)
-                local e = ns.QuickCfg().expl
-                e[k] = not (e[k] and true)
-            end,
-            summary = function()
-                local out = {}
-                for k = 1, #explItems do
-                    if ns.QuickCfg().expl[explItems[k].key] then
-                        out[#out + 1] = explItems[k].label
-                    end
-                end
-                return (#out > 0) and table.concat(out, "、") or L["未选择"]
-            end,
-        })
     end
 
     Relayout()

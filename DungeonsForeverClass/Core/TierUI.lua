@@ -34,8 +34,9 @@ TT.NAV_ITEM_GAP = 8
 TT.NAV_ITEM_STEP = TT.NAV_ITEM_H + TT.NAV_ITEM_GAP
 TT.NAV_HEAD_Y  = TT.NAV_TOP + 2
 TT.NAV_RANK_Y  = TT.NAV_TOP + 22
-TT.NAV_GROUP_Y = TT.NAV_TOP + 56
-TT.NAV_FIRST_Y = TT.NAV_TOP + 82
+TT.NAV_PREP_Y  = TT.NAV_TOP + 54
+TT.NAV_GROUP_Y = TT.NAV_TOP + 88
+TT.NAV_FIRST_Y = TT.NAV_TOP + 114
 TT.NAV_HEAD_FS = 16
 TT.TAB_FS = 14
 TT.CLASS_ICON_DIR = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\CLASS\\"
@@ -138,7 +139,7 @@ local function DB()
         ns.ClassDB().tier = s
     end
     if not s.tab then s.tab = T.pages[1].key end
-    if s.nav ~= "spec" then s.nav = "rank" end
+    if s.nav ~= "spec" and s.nav ~= "prep" then s.nav = "rank" end
     if s.mode ~= "rotation" and s.mode ~= "macro" and s.mode ~= "talents" and s.mode ~= "cq" then s.mode = "text" end
     return s
 end
@@ -424,6 +425,26 @@ local function BuildNav(page)
     end)
     TT.navBtn = bt
 
+    local pb = NewButton(page, L["团本前推荐任务"], TT.NAV_W, TT.NAV_ITEM_H, TT.NAV_FS)
+    pb:SetPoint("TOPLEFT", page, "TOPLEFT", TT.NAV_X + TT.NAV_PAD, -TT.NAV_PREP_Y)
+    SetButtonSelected(pb, false, "tab")
+    pb.__name = L["团本前推荐任务"]
+    local pfs = pb:GetFontString()
+    pfs:ClearAllPoints()
+    pfs:SetPoint("LEFT", pb, "LEFT", 5 + TT.NAV_ICON + 5, 0)
+    pfs:SetJustifyH("LEFT")
+    local ptile, picon = MakeIconTile(pb, TT.NAV_ICON)
+    ptile:SetPoint("LEFT", pb, "LEFT", 5, 0)
+    SetIcon(picon, "Interface\\Icons\\inv_scroll_02")
+    pb.__tile = ptile
+    pb.__icon = picon
+    pb:SetScript("OnClick", function()
+        DB().nav = "prep"
+        TT.RequestRender()
+        ns.PlaySound(1)
+    end)
+    TT.navPrepBtn = pb
+
     G = EnsureCG()
     if not G then return end
     local glabel = MakeFS(page, TT.NAV_HEAD_FS, C_GREY, "LEFT")
@@ -530,6 +551,984 @@ local function BuildSubTabs(page)
 end
 
 local RenderSpec
+local RenderPrep
+
+local PREP = {}
+TT.PREP = PREP
+local PREP_W = 244
+local PREP_GAP = 8
+local PREP_HDR_Y = 16
+local PREP_HDR_H = 24
+local PREP_DIV_Y = 44
+local PREP_BODY = 48
+local PREP_PAD = 12
+local PREP_STEP_H = 88
+local PREP_DX = TT.RIGHT_X + PREP_W + PREP_GAP
+local PREP_DW = CONTENT_W - TT.EDGE - TT.INSET - PREP_DX
+local PREP_INK = {
+    done = { 0.498, 0.690, 0.412 },
+    active = { 0.906, 0.808, 0.561 },
+    todo = { 0.620, 0.620, 0.680 },
+}
+local PREP_FILL = {
+    done = { 0.498, 0.690, 0.412 },
+    active = { 0.906, 0.808, 0.561 },
+    todo = { 0.420, 0.455, 0.518 },
+}
+local PREP_MARK_INK = {
+    done = { 0.043, 0.239, 0.102 },
+    active = { 0.227, 0.165, 0 },
+    todo = { 0.102, 0.102, 0.102 },
+}
+local PREP_FAC_TXT = {
+    H = { 1.00, 0.36, 0.26 },
+    A = { 0.40, 0.62, 1.00 },
+}
+local PREP_DISC = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc"
+local PREP_MARK = {
+    done = "Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckMark",
+    active = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
+    todo = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
+}
+
+local function PrepCardBG(f, lvl, hover)
+    if ns.hui and ns.hui.HuiCardFX and ns.hui.HuiCardFX(f, hover and 6 or nil, lvl) then return end
+    Cardify(f, 0.03)
+end
+
+local function PrepStateText(st)
+    if st == "done" then return L["已完成"] end
+    if st == "active" then return L["进行中"] end
+    return L["未接"]
+end
+
+local function PrepStateColor(st)
+    local c = PREP_FILL[st] or PREP_FILL.todo
+    return c[1], c[2], c[3]
+end
+
+local function PrepQuestState(qid)
+    if not qid then return "todo" end
+    if C_QuestLog and type(C_QuestLog.IsQuestFlaggedCompleted) == "function" then
+        local ok, done = pcall(C_QuestLog.IsQuestFlaggedCompleted, qid)
+        if ok and done then return "done" end
+    end
+    if C_QuestLog and type(C_QuestLog.GetQuestLogIndexByID) == "function" then
+        local ok, idx = pcall(C_QuestLog.GetQuestLogIndexByID, qid)
+        if ok and type(idx) == "number" and idx > 0 then return "active" end
+    end
+    return "todo"
+end
+
+local function PrepIcon(id)
+    if not id then return FALLBACK_ICON end
+    local ok, _, _, _, _, icon = pcall(DG.ItemInfoInstant, id)
+    if ok and icon then return icon end
+    return FALLBACK_ICON
+end
+
+local function PrepQual(id)
+    local ok, q = pcall(DG.QualOf, id)
+    if ok and type(q) == "number" then return q end
+    return 1
+end
+
+local function PrepItemColor(id)
+    local ok, r, g, b = pcall(DG.QColor, PrepQual(id))
+    if ok and r then return r, g, b end
+    return 1, 1, 1
+end
+
+local function PrepTip(btn, id, host)
+    if not id then return end
+    btn:SetScript("OnEnter", function(self)
+        if DG.ShowItemTip then DG.ShowItemTip(self, { id }) end
+        if host and ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(host, "hover") end
+    end)
+    btn:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+        if host and ns.hui and ns.hui.HuiCardState then
+            ns.hui.HuiCardState(host, host.__on and "hover" or "norm")
+        end
+    end)
+    btn:EnableMouse(true)
+end
+
+local function PrepMakeItem(parent, size)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(size, size)
+    b.__sz = size
+    b.ic = b:CreateTexture(nil, "ARTWORK")
+    b.ic:SetSize(size, size)
+    b.ic:SetPoint("LEFT", b, "LEFT", 0, 0)
+    if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(b.ic) end
+    b.nm = MakeFS(b, 14, C_TEXT, "LEFT")
+    b.nm:SetPoint("LEFT", b, "LEFT", size + 6, 0)
+    b.nm:SetWordWrap(false)
+    b:Hide()
+    return b
+end
+
+local function PrepPlaceItem(b, id, host)
+    b.ic:SetTexture(PrepIcon(id))
+    b.__id = id
+    if DG.RequestItem then DG.RequestItem(id) end
+    PrepTip(b, id, host)
+    local r, g, bb = PrepItemColor(id)
+    b.nm:SetText(DG.ItemName(id))
+    b.nm:SetTextColor(r, g, bb)
+    local tw = b.nm:GetStringWidth()
+    if type(tw) ~= "number" or tw < 10 then tw = #(DG.ItemName(id)) * 12 end
+    b:SetWidth(b.__sz + 6 + tw)
+    b:Show()
+    return b.__sz + 6 + tw
+end
+
+local function PrepMapBtn(parent)
+    local b = NewButton(parent, "", 24, 24, 14)
+    b:SetPushedTextOffset(0, 0)
+    local fs = b:GetFontString()
+    if fs then
+        fs:SetText("")
+        fs:Hide()
+    end
+    local t = b:CreateTexture(nil, "OVERLAY")
+    t:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin")
+    t:SetSize(14, 14)
+    t:SetPoint("CENTER", b, "CENTER", 0, 0)
+    b.__pin = t
+    b:SetScript("OnClick", function(self)
+        if self.__npc or self.__loc then
+            DG.MarkNPC(self.__npc, self.__loc)
+        elseif UIErrorsFrame and UIErrorsFrame.AddMessage then
+            pcall(UIErrorsFrame.AddMessage, UIErrorsFrame, L["该任务没有可标记的位置"], 1, 0.7, 0.3)
+        end
+    end)
+    b:SetScript("OnEnter", function(self)
+        if self.__npc or self.__loc then DG.ShowNpcTip(self, self.__npc, self.__loc) end
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    b:Hide()
+    return b
+end
+
+function PREP.StateOf(d)
+    local prog, total, act = 0, 0, false
+    for i = 1, #(d.flow or {}) do
+        local st = PrepQuestState(d.flow[i].id)
+        total = total + 1
+        if st == "done" then prog = prog + 1
+        elseif st == "active" then act = true end
+    end
+    if total > 0 and prog >= total then return "done" end
+    if prog > 0 or act then return "active" end
+    return "todo"
+end
+
+function PREP.BuildHeader()
+    if PREP.host then return end
+    local host = CreateFrame("Frame", nil, TT.page)
+    host:SetAllPoints(TT.page)
+    host:SetFrameLevel((TT.contentCard and TT.contentCard:GetFrameLevel() or 0) + 6)
+    PREP.host = host
+
+    PREP.title = MakeFS(host, 16, C_WHITE, "LEFT")
+    PREP.title:SetPoint("LEFT", TT.page, "TOPLEFT", TT.RIGHT_X, -(PREP_HDR_Y + PREP_HDR_H / 2))
+    PREP.title:SetText(L["团本前推荐任务"])
+    PREP.title:SetWordWrap(false)
+
+    host:EnableMouseWheel(true)
+    host:SetScript("OnMouseWheel", function(_, delta)
+        if not PREP.shown then return end
+        local scale = (UIParent and UIParent:GetEffectiveScale()) or 1
+        local cx = select(1, GetCursorPosition()) / scale
+        local edge = PREP.card and PREP.card:GetLeft()
+        if edge and cx < edge then
+            if PREP.LeftWheel then PREP.LeftWheel(delta) end
+        elseif PREP.RightWheel then
+            PREP.RightWheel(delta)
+        end
+    end)
+
+    local div = host:CreateTexture(nil, "ARTWORK")
+    div:SetHeight(1)
+    div:SetPoint("TOPLEFT", TT.page, "TOPLEFT", TT.RIGHT_X, -PREP_DIV_Y)
+    div:SetPoint("TOPRIGHT", TT.page, "TOPRIGHT", -(TT.EDGE + TT.INSET), -PREP_DIV_Y)
+    div:SetColorTexture(1, 1, 1, 0.06)
+    PREP.div = div
+
+    PREP.fac = {}
+    for k = 1, 2 do
+        local key = (k == 1) and "H" or "A"
+        local label = (k == 1) and L["部落"] or L["联盟"]
+        local bt = NewButton(host, label, 72, PREP_HDR_H, 14)
+        bt:SetPushedTextOffset(0, 0)
+        bt.__fac = key
+        bt.__huiKeepTextColor = true
+        local fs = bt:GetFontString()
+        local ic = bt:CreateTexture(nil, "OVERLAY")
+        ic:SetTexture(DG.Q_FAC_ICON and DG.Q_FAC_ICON[key] or nil)
+        ic:SetSize(16, 16)
+        ic:SetPoint("LEFT", bt, "LEFT", 7, 0)
+        if ns.hui and ns.hui.RoundIcon then ns.hui.RoundIcon(ic) end
+        bt.__facIc = ic
+        local tw = fs:GetStringWidth()
+        if type(tw) ~= "number" or tw <= 0 then tw = #label * 14 end
+        bt:SetWidth(7 + 16 + 5 + tw + 9)
+        fs:ClearAllPoints()
+        fs:SetPoint("LEFT", bt, "LEFT", 7 + 16 + 5, 0)
+        fs:SetJustifyH("LEFT")
+        local c = PREP_FAC_TXT[key]
+        fs:SetTextColor(c[1], c[2], c[3])
+        bt:SetScript("OnClick", function(self)
+            PREP.side = self.__fac
+            DB().prepSide = self.__fac
+            PREP.Refresh()
+            ns.PlaySound(1)
+        end)
+        bt:Hide()
+        PREP.fac[k] = bt
+    end
+end
+
+function PREP.PaintHeader(side, both)
+    local fx = -(TT.EDGE + TT.INSET)
+    local right = PREP.fac[2]
+    local left = PREP.fac[1]
+    right:ClearAllPoints()
+    right:SetPoint("TOPRIGHT", TT.page, "TOPRIGHT", fx, -PREP_HDR_Y)
+    left:ClearAllPoints()
+    left:SetPoint("RIGHT", right, "LEFT", -8, 0)
+    for k = 1, 2 do
+        local bt = PREP.fac[k]
+        bt:SetShown(true)
+        SetButtonSelected(bt, side == bt.__fac)
+        local c = PREP_FAC_TXT[bt.__fac]
+        local fs = bt:GetFontString()
+        if fs then fs:SetTextColor(c[1], c[2], c[3]) end
+    end
+end
+
+function PREP.BuildLeftScroll()
+    if PREP.ls then return end
+    local pageH = TT.page:GetHeight() or 648
+    local h = pageH - PREP_BODY - (TT.EDGE + TT.INSET)
+    local ls = CreateFrame("ScrollFrame", nil, TT.page)
+    ls:SetPoint("TOPLEFT", TT.page, "TOPLEFT", TT.RIGHT_X, -PREP_BODY)
+    ls:SetSize(PREP_W, h)
+    ls:EnableMouseWheel(true)
+    local lc = CreateFrame("Frame", nil, ls)
+    lc:SetSize(PREP_W, 10)
+    if ls.SetScrollChild then ls:SetScrollChild(lc) end
+    PREP.ls, PREP.lc = ls, lc
+
+    local track = CreateFrame("Frame", nil, TT.page)
+    if ns.hui and ns.hui.BuildCapsule then
+        ns.hui.BuildCapsule(track, 3, ns.hui.layer.L2)
+    end
+    track:SetWidth(7)
+    track:SetPoint("TOPRIGHT", TT.page, "TOPLEFT", PREP_DX - 1, -PREP_BODY)
+    track:SetPoint("BOTTOMRIGHT", TT.page, "TOPLEFT", PREP_DX - 1, -(PREP_BODY + h))
+    local thumb = CreateFrame("Button", nil, track)
+    thumb:SetWidth(5)
+    thumb:EnableMouse(true)
+    if ns.hui and ns.hui.BuildCapsule then
+        ns.hui.BuildCapsule(thumb, 2, ns.hui.layer.L4)
+        thumb.__hov = ns.hui.BuildCapsule(thumb, 2, ns.hui.layer.L5)
+        for _, t in ipairs(thumb.__hov) do t:Hide() end
+        thumb:SetScript("OnEnter", function(self) for _, t in ipairs(self.__hov) do t:Show() end end)
+        thumb:SetScript("OnLeave", function(self) for _, t in ipairs(self.__hov) do t:Hide() end end)
+    end
+    thumb:SetPoint("TOP", track, "TOP", 0, -1)
+    thumb:Hide()
+    track:Hide()
+    PREP.trackL, PREP.thumbL = track, thumb
+
+    local function maxScroll()
+        local mh = (lc.GetHeight and lc:GetHeight()) or 0
+        local vh = (ls.GetHeight and ls:GetHeight()) or 0
+        return math.max(0, mh - vh)
+    end
+    local function syncRange()
+        if ls.UpdateScrollChildRect then pcall(ls.UpdateScrollChildRect, ls) end
+    end
+    local function setV(v)
+        local ms = maxScroll()
+        if v < 0 then v = 0 elseif v > ms then v = ms end
+        syncRange()
+        ls:SetVerticalScroll(v)
+        local cur = ls:GetVerticalScroll()
+        if type(cur) ~= "number" then cur = v end
+        if v > 0 and cur < 1 and ms > 0 then
+            pcall(ls.SetScrollChild, ls, lc)
+            syncRange()
+            ls:SetVerticalScroll(v)
+            cur = ls:GetVerticalScroll()
+            if type(cur) ~= "number" then cur = v end
+        end
+        if v > 0 and cur < 1 then
+            lc:SetPoint("TOPLEFT", ls, "TOPLEFT", 0, v)
+            cur = v
+        end
+        PREP.lv = cur
+        PREP.UpdateBarL()
+    end
+    PREP.SyncRangeL = syncRange
+    PREP.SetLeftV = setV
+    PREP.LeftWheel = function(delta) setV((PREP.lv or 0) - delta * 48) end
+
+    ls:SetScript("OnMouseWheel", function(_, delta) PREP.LeftWheel(delta) end)
+    lc:EnableMouseWheel(true)
+    lc:SetScript("OnMouseWheel", function(_, delta) PREP.LeftWheel(delta) end)
+    thumb:SetScript("OnMouseDown", function(self, btn)
+        if btn ~= "LeftButton" then return end
+        local scale = UIParent and UIParent:GetEffectiveScale() or 1
+        local cy0 = select(2, GetCursorPosition()) / scale
+        local v0 = PREP.lv or 0
+        self:SetScript("OnUpdate", function()
+            local cy = select(2, GetCursorPosition()) / scale
+            local th = self:GetHeight()
+            local span = (track:GetHeight() or 0) - th
+            if span <= 0 then return end
+            setV(v0 + (cy0 - cy) / span * maxScroll())
+        end)
+    end)
+    thumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+    thumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
+end
+
+function PREP.UpdateBarL()
+    local ls, lc, track, thumb = PREP.ls, PREP.lc, PREP.trackL, PREP.thumbL
+    if not (ls and lc and track and thumb) then return end
+    local vh = (ls.GetHeight and ls:GetHeight()) or 0
+    local mh = (lc.GetHeight and lc:GetHeight()) or 0
+    if mh <= vh + 2 then
+        track:Hide()
+        thumb:Hide()
+        return
+    end
+    track:Show()
+    track:SetFrameLevel((TT.contentCard:GetFrameLevel() or 0) + 10)
+    local th2 = (track:GetHeight() or 0) - 2
+    local maxS = mh - vh
+    local frac = math.min(1, math.max(0, (PREP.lv or 0) / maxS))
+    local th = math.max(24, th2 * vh / mh)
+    thumb:SetHeight(th)
+    thumb:ClearAllPoints()
+    thumb:SetPoint("TOP", track, "TOP", 0, -1 - frac * (th2 - th))
+    thumb:Show()
+end
+
+function PREP.BuildCards()
+    PREP.cards = PREP.cards or {}
+    local list = ns.ClassPrep or {}
+    for i = 1, #list do
+        local c = PREP.cards[i]
+        if not c then
+            c = CreateFrame("Button", nil, PREP.lc)
+            c:SetSize(PREP_W, 92)
+            PrepCardBG(c, 2, true)
+            c.no = MakeFS(c, 14, C_GOLD, "LEFT")
+            c.no:SetPoint("TOPLEFT", c, "TOPLEFT", 12, -10)
+            c.nm = MakeFS(c, 14, C_WHITE, "LEFT")
+            c.nm:SetPoint("LEFT", c.no, "RIGHT", 6, 0)
+            c.nm:SetWidth(146)
+            c.nm:SetWordWrap(false)
+            c.st = MakeFS(c, 14, C_GREY, "RIGHT")
+            c.st:SetPoint("TOPRIGHT", c, "TOPRIGHT", -12, -10)
+            c.zone = MakeFS(c, 14, C_DIM, "LEFT")
+            c.zone:SetPoint("TOPLEFT", c, "TOPLEFT", 32, -36)
+            c.zone:SetWidth(132)
+            c.zone:SetWordWrap(false)
+            c.lv = MakeFS(c, 14, C_GREY, "RIGHT")
+            c.lv:SetPoint("TOPRIGHT", c, "TOPRIGHT", -12, -36)
+            c.rew = {}
+            for k = 1, 4 do
+                local b = PrepMakeItem(c, 18)
+                b:EnableMouseWheel(true)
+                b:SetScript("OnMouseWheel", function(_, delta) PREP.LeftWheel(delta) end)
+                b:SetPoint("TOPLEFT", c, "TOPLEFT", 34, -58 - (k - 1) * 24)
+                b.nm:SetFont(ns.FONT, 14, "")
+                c.rew[k] = b
+            end
+            c:EnableMouseWheel(true)
+            c:SetScript("OnMouseWheel", function(_, delta) PREP.LeftWheel(delta) end)
+            c:SetScript("OnClick", function(self)
+                if not self.__idx then return end
+                PREP.cur = self.__idx
+                PREP.Refresh()
+                ns.PlaySound(1)
+            end)
+            c:SetScript("OnEnter", function(self)
+                if self.__on then return end
+                if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, "hover") end
+            end)
+            c:SetScript("OnLeave", function(self)
+                if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(self, self.__on and "hover" or "norm") end
+            end)
+            PREP.cards[i] = c
+        end
+        c:Show()
+    end
+    for i = #list + 1, #PREP.cards do PREP.cards[i]:Hide() end
+end
+
+local PREP_CARD_GAP = 8
+
+local function PrepLayoutCard(c, rw)
+    c.no:ClearAllPoints()
+    c.no:SetPoint("TOPLEFT", c, "TOPLEFT", 12, -10)
+    c.st:ClearAllPoints()
+    c.st:SetPoint("TOPRIGHT", c, "TOPRIGHT", -12, -10)
+    c.zone:ClearAllPoints()
+    c.zone:SetPoint("TOPLEFT", c, "TOPLEFT", 32, -36)
+    c.lv:ClearAllPoints()
+    c.lv:SetPoint("TOPRIGHT", c, "TOPRIGHT", -12, -36)
+    local rx = 32
+    local by = -60
+    local rows = 1
+    for k = 1, 4 do
+        local b = c.rew[k]
+        local id = rw[k]
+        if id then
+            local w = PrepPlaceItem(b, id, c)
+            if rx > 32 and rx + w > PREP_W - 6 then
+                rx = 32
+                by = by - 24
+                rows = rows + 1
+            end
+            b:ClearAllPoints()
+            b:SetPoint("TOPLEFT", c, "TOPLEFT", rx, by)
+            rx = rx + w + 10
+        else
+            b:Hide()
+        end
+    end
+    return rows
+end
+
+local function PrepVisible(d, side)
+    local h, a = false, false
+    for i = 1, #(d.flow or {}) do
+        local v = d.flow[i].s
+        if v == "H" then h = true elseif v == "A" then a = true end
+    end
+    if not h and not a then return true end
+    if side == "A" then return a end
+    return h
+end
+
+function PREP.PaintCards()
+    local list = ns.ClassPrep or {}
+    local n = #list
+    if n == 0 then return end
+    local side = PREP.side or DB().prepSide
+    if side ~= "H" and side ~= "A" then
+        side = (DG.PlayerSide and DG.PlayerSide()) or "H"
+        if side ~= "H" and side ~= "A" then side = "H" end
+    end
+    local order = {}
+    for i = 1, n do order[i] = i end
+    table.sort(order, function(a, b)
+        local la, lb = list[a].lv or 0, list[b].lv or 0
+        if la ~= lb then return la < lb end
+        return a < b
+    end)
+    local vis = {}
+    for k = 1, n do
+        local i = order[k]
+        if PrepVisible(list[i], side) then vis[#vis + 1] = i end
+    end
+    if #vis == 0 then
+        for i = 1, #(PREP.cards or {}) do PREP.cards[i]:Hide() end
+        PREP.lc:SetHeight(10)
+        return
+    end
+    local ok = false
+    for k = 1, #vis do
+        if vis[k] == PREP.cur then ok = true end
+    end
+    if not ok then PREP.cur = vis[1] end
+    local y = 0
+    for k = 1, #vis do
+        local i = vis[k]
+        local d = list[i]
+        local c = PREP.cards[k]
+        c.__idx = i
+        c:Show()
+        local on = (i == PREP.cur)
+        c.__on = on
+        if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(c, on and "hover" or "norm") end
+        c.no:SetText(format("%02d", k))
+        c.nm:SetText("《" .. d.name .. "》")
+        c.lv:SetText(format(L["%d 级起"], d.lv))
+        c.zone:SetText(d.zone or "")
+        local st = PREP.StateOf(d)
+        c.st:SetText(PrepStateText(st))
+        c.st:SetTextColor(PrepStateColor(st))
+        local rw = (PREP.side == "A" and d.rewA) or d.rew or {}
+        c:SetHeight(90)
+        local rows = PrepLayoutCard(c, rw)
+        local h = 60 + (rows - 1) * 24 + 24 + 8
+        c:SetHeight(h)
+        c:ClearAllPoints()
+        c:SetPoint("TOPLEFT", PREP.lc, "TOPLEFT", 0, -y)
+        y = y + h + PREP_CARD_GAP
+    end
+    for k = #vis + 1, #(PREP.cards or {}) do
+        PREP.cards[k].__idx = nil
+        PREP.cards[k]:Hide()
+    end
+    PREP.lc:SetHeight(math.max(10, y - PREP_CARD_GAP))
+    if PREP.SyncRangeL then PREP.SyncRangeL() end
+    PREP.SetLeftV(PREP.lv or 0)
+end
+
+function PREP.BuildRight()
+    if PREP.rs then return end
+    local card = CreateFrame("Frame", nil, TT.page, "BackdropTemplate")
+    Cardify(card)
+    card:SetPoint("TOPLEFT", TT.page, "TOPLEFT", PREP_DX, -PREP_BODY)
+    card:SetPoint("BOTTOMRIGHT", TT.page, "BOTTOMRIGHT", -(TT.EDGE + TT.INSET), TT.EDGE + TT.INSET)
+    card:EnableMouse(true)
+    PREP.card = card
+
+    local w = PREP_DW - PREP_PAD * 2
+    local sc = CreateFrame("ScrollFrame", nil, card)
+    sc:SetPoint("TOPLEFT", card, "TOPLEFT", PREP_PAD, -PREP_PAD)
+    sc:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -PREP_PAD, PREP_PAD)
+    sc:EnableMouseWheel(true)
+    local ch = CreateFrame("Frame", nil, sc)
+    ch:SetSize(w, 10)
+    if sc.SetScrollChild then sc:SetScrollChild(ch) end
+    PREP.rs, PREP.rc = sc, ch
+
+    local track = CreateFrame("Frame", nil, card)
+    if ns.hui and ns.hui.BuildCapsule then
+        ns.hui.BuildCapsule(track, 3, ns.hui.layer.L2)
+    end
+    track:SetWidth(7)
+    track:SetPoint("TOPRIGHT", card, "TOPRIGHT", -1, -PREP_PAD)
+    track:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -1, PREP_PAD)
+    local thumb = CreateFrame("Button", nil, track)
+    thumb:SetWidth(5)
+    thumb:EnableMouse(true)
+    if ns.hui and ns.hui.BuildCapsule then
+        ns.hui.BuildCapsule(thumb, 2, ns.hui.layer.L4)
+        thumb.__hov = ns.hui.BuildCapsule(thumb, 2, ns.hui.layer.L5)
+        for _, t in ipairs(thumb.__hov) do t:Hide() end
+        thumb:SetScript("OnEnter", function(self) for _, t in ipairs(self.__hov) do t:Show() end end)
+        thumb:SetScript("OnLeave", function(self) for _, t in ipairs(self.__hov) do t:Hide() end end)
+    end
+    thumb:SetPoint("TOP", track, "TOP", 0, -1)
+    thumb:Hide()
+    track:Hide()
+    PREP.track, PREP.thumb = track, thumb
+
+    local function maxScroll()
+        local mh = (ch.GetHeight and ch:GetHeight()) or 0
+        local vh = (sc.GetHeight and sc:GetHeight()) or 0
+        return math.max(0, mh - vh)
+    end
+    local function syncRange()
+        if sc.UpdateScrollChildRect then pcall(sc.UpdateScrollChildRect, sc) end
+    end
+    local function setV(v)
+        local ms = maxScroll()
+        if v < 0 then v = 0 elseif v > ms then v = ms end
+        syncRange()
+        sc:SetVerticalScroll(v)
+        local cur = sc:GetVerticalScroll()
+        if type(cur) ~= "number" then cur = v end
+        if v > 0 and cur < 1 and ms > 0 then
+            pcall(sc.SetScrollChild, sc, ch)
+            syncRange()
+            sc:SetVerticalScroll(v)
+            cur = sc:GetVerticalScroll()
+            if type(cur) ~= "number" then cur = v end
+        end
+        if v > 0 and cur < 1 then
+            ch:SetPoint("TOPLEFT", sc, "TOPLEFT", 0, v)
+            cur = v
+        end
+        PREP.v = cur
+        PREP.UpdateBar()
+    end
+    PREP.SyncRangeR = syncRange
+    PREP.SetV = setV
+
+    local function wheel(delta) setV((PREP.v or 0) - delta * 48) end
+    PREP.RightWheel = wheel
+    local function hookWheel(f)
+        f:EnableMouseWheel(true)
+        f:SetScript("OnMouseWheel", function(_, delta) wheel(delta) end)
+    end
+    hookWheel(card)
+    hookWheel(ch)
+
+    hookWheel(sc)
+    thumb:SetScript("OnMouseDown", function(self, btn)
+        if btn ~= "LeftButton" then return end
+        local scale = UIParent and UIParent:GetEffectiveScale() or 1
+        local cy0 = select(2, GetCursorPosition()) / scale
+        local sc0 = PREP.v or 0
+        self:SetScript("OnUpdate", function()
+            local cy = select(2, GetCursorPosition()) / scale
+            local th = self:GetHeight()
+            local span = (track:GetHeight() or 0) - th
+            if span <= 0 then return end
+            setV(sc0 + (cy0 - cy) / span * maxScroll())
+        end)
+    end)
+    thumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+    thumb:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
+    hookWheel(thumb)
+
+    ch.title = MakeFS(ch, 18, C_WHITE, "LEFT")
+    ch.title:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, -4)
+    ch.title:SetWidth(w - 120)
+    ch.title:SetWordWrap(false)
+
+    if ns.hui and ns.hui.MakeSolidChip then
+        ch.stChip = ns.hui.MakeSolidChip(ch, nil, ns.hui.ChipH(14) + 4)
+        ch.stChip:SetPoint("TOPRIGHT", ch, "TOPRIGHT", 0, -4)
+    end
+
+    ch.rwLab = MakeFS(ch, 14, C_DIM, "LEFT")
+    ch.rwLab:SetText(L["物品奖励"])
+    ch.rw = {}
+    for k = 1, 5 do
+        local b = PrepMakeItem(ch, 22)
+        hookWheel(b)
+        b:Hide()
+        ch.rw[k] = b
+    end
+
+    ch.kv = {}
+    for k = 1, 3 do
+        local f = MakeFS(ch, 14, C_TEXT, "LEFT")
+        f:SetWidth(w)
+        f:SetWordWrap(false)
+        ch.kv[k] = f
+    end
+
+    ch.sec = MakeFS(ch, 14, C_GOLD, "LEFT")
+    ch.sec:SetText(L["路线"])
+
+    ch.steps = {}
+    for i = 1, 40 do
+        local f = CreateFrame("Frame", nil, ch)
+        f:SetSize(w, PREP_STEP_H)
+        PrepCardBG(f, 3, false)
+        f.disc = f:CreateTexture(nil, "ARTWORK")
+        f.disc:SetSize(14, 14)
+        f.disc:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -11)
+        f.mark = f:CreateTexture(nil, "OVERLAY")
+        f.mark:SetAllPoints(f.disc)
+        hookWheel(f)
+        f.q = MakeFS(f, 14, C_WHITE, "LEFT")
+        f.q:SetPoint("TOPLEFT", f, "TOPLEFT", 34, -10)
+        f.q:SetWidth(w - 230)
+        f.q:SetWordWrap(false)
+        f.lvl = MakeFS(f, 14, C_DIM, "LEFT")
+        f.lvl:SetWordWrap(false)
+        f.from = MakeFS(f, 14, C_TEXT, "LEFT")
+        f.from:SetPoint("TOPLEFT", f, "TOPLEFT", 34, -36)
+        f.from:SetWidth(w - 78)
+        f.from:SetWordWrap(false)
+        f.to = MakeFS(f, 14, C_TEXT, "LEFT")
+        f.to:SetPoint("TOPLEFT", f, "TOPLEFT", 34, -62)
+        f.to:SetWidth(w - 78)
+        f.to:SetWordWrap(false)
+        f.go = MakeFS(f, 14, C_DIM, "LEFT")
+        f.go:SetPoint("TOPLEFT", f, "TOPLEFT", 34, -88)
+        f.go:SetWidth(w - 46)
+        f.go:SetWordWrap(true)
+        f.mapS = PrepMapBtn(f)
+        f.mapS:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -31)
+        f.mapE = PrepMapBtn(f)
+        f.mapE:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -57)
+        f.rw = {}
+        for k = 1, 2 do
+            local b = PrepMakeItem(f, 22)
+            hookWheel(b)
+            b.nm:Hide()
+            b:SetSize(22, 22)
+            f.rw[k] = b
+        end
+        ch.steps[i] = f
+    end
+
+    ch.note = MakeFS(ch, 14, C_DIM, "LEFT")
+    ch.note:SetWidth(w)
+    ch.note:SetWordWrap(true)
+end
+
+function PREP.UpdateBar()
+    local sc, ch, track, thumb = PREP.rs, PREP.rc, PREP.track, PREP.thumb
+    if not (sc and ch and track and thumb) then return end
+    local vh = (sc.GetHeight and sc:GetHeight()) or 0
+    local mh = (ch.GetHeight and ch:GetHeight()) or 0
+    if mh <= vh + 2 then
+        track:Hide()
+        thumb:Hide()
+        return
+    end
+    track:Show()
+    track:SetFrameLevel((PREP.card:GetFrameLevel() or 0) + 10)
+    local th2 = (track:GetHeight() or 0) - 2
+    local maxS = mh - vh
+    local frac = math.min(1, math.max(0, (PREP.v or 0) / maxS))
+    local th = math.max(24, th2 * vh / mh)
+    thumb:SetHeight(th)
+    thumb:ClearAllPoints()
+    thumb:SetPoint("TOP", track, "TOP", 0, -1 - frac * (th2 - th))
+    thumb:Show()
+end
+
+function PREP.PaintRight()
+    local list = ns.ClassPrep or {}
+    local d = list[PREP.cur] or list[1]
+    if not d then return end
+    local ch = PREP.rc
+    local w = ch:GetWidth() or 1
+
+    local hH, hA = false, false
+    for i = 1, #(d.flow or {}) do
+        local s = d.flow[i].s
+        if s == "H" then hH = true elseif s == "A" then hA = true end
+    end
+    local both = hH and hA
+    PREP.ResolveSide()
+    local side = PREP.side or "H"
+    local hasSide = false
+    for i = 1, #(d.flow or {}) do
+        if d.flow[i].s == side then hasSide = true break end
+    end
+    if both and not hasSide then
+        side = (side == "H") and "A" or "H"
+        PREP.side = side
+    end
+
+    PREP.PaintHeader(side, both)
+
+    ch.title:SetText("《" .. d.name .. "》")
+    local st = PREP.StateOf(d)
+    if ch.stChip then
+        ns.hui.PaintSolidChip(ch.stChip, PrepStateText(st), PREP_INK[st] or PREP_INK.todo, nil, 14)
+    end
+
+    local rw = (both and side == "A" and d.rewA) or d.rew or {}
+    ch.rwLab:ClearAllPoints()
+    ch.rwLab:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, -40)
+    local labW = ch.rwLab:GetStringWidth()
+    if type(labW) ~= "number" then labW = 56 end
+    local rx = labW + 12
+    local ry = -36
+    for k = 1, 5 do
+        local b = ch.rw[k]
+        local id = rw[k]
+        if id then
+            PrepPlaceItem(b, id)
+            local bw = b:GetWidth()
+            if rx > labW + 12 and rx + bw > w then
+                rx = labW + 12
+                ry = ry - 26
+            end
+            b:ClearAllPoints()
+            b:SetPoint("TOPLEFT", ch, "TOPLEFT", rx, ry)
+            rx = rx + bw + 12
+        else
+            b:Hide()
+        end
+    end
+    local y = ry - 30
+
+    local flow = {}
+    for i = 1, #(d.flow or {}) do
+        local f = d.flow[i]
+        if (not both) or f.s == side then flow[#flow + 1] = f end
+    end
+    local first = flow[1] or {}
+    local last = flow[#flow] or {}
+    local fac
+    if both then
+        fac = format("%s %d %s", (side == "H") and L["部落"] or L["联盟"], #flow, L["步"])
+    elseif hH then fac = L["部落专属"]
+    elseif hA then fac = L["联盟专属"]
+    else fac = L["双阵营通用"] end
+
+    local kv = ch.kv
+    kv[1]:ClearAllPoints()
+    kv[1]:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, y)
+    kv[1]:SetText(format("|cff8a93a6%s|r  |cffc8a95b%s|r |cff6b7484· %s|r", L["起始"], first.f or "", first.fl or ""))
+    kv[2]:ClearAllPoints()
+    kv[2]:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, y - 22)
+    kv[2]:SetText(format("|cff8a93a6%s|r  |cffc8a95b%s|r |cff6b7484· %s|r", L["结束"], last.t or "", last.tl or ""))
+    kv[3]:ClearAllPoints()
+    kv[3]:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, y - 44)
+    kv[3]:SetText(format("|cff8a93a6%s|r  |cffd8dce4%s · %s|r", L["等级"], format(L["%d 级起"], d.lv), fac))
+    y = y - 72
+
+    ch.sec:ClearAllPoints()
+    ch.sec:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, y)
+    y = y - 26
+
+    for i = 1, 40 do
+        local f = ch.steps[i]
+        local s = flow[i]
+        if s then
+            local ist = PrepQuestState(s.id)
+            local mk = (ist == "done") and "done" or "todo"
+            local fill = PREP_FILL[mk] or PREP_FILL.todo
+            local ink = PREP_MARK_INK[mk] or PREP_MARK_INK.todo
+            f.disc:SetTexture(PREP_DISC)
+            f.disc:SetVertexColor(fill[1], fill[2], fill[3], 1)
+            f.mark:SetTexture(PREP_MARK[mk])
+            f.mark:SetVertexColor(ink[1], ink[2], ink[3], 1)
+            local qt = "《" .. (s.q or "") .. "》"
+            f.q:SetText(qt)
+            local qw = f.q:GetStringWidth()
+            if type(qw) ~= "number" or qw <= 0 then qw = TextChars(qt) * 14 end
+            if qw > w - 230 then qw = w - 230 end
+            local anc = f.q
+            if s.sl then
+                f.lvl:SetText(format(L["%d 级可接"], s.sl))
+                f.lvl:ClearAllPoints()
+                f.lvl:SetPoint("TOPLEFT", f, "TOPLEFT", 34 + qw + 10, -11)
+                f.lvl:Show()
+                anc = f.lvl
+            else
+                f.lvl:Hide()
+            end
+            f.from:SetText(format("|cff8a93a6%s|r |cffc8a95b%s|r |cff6b7484· %s|r", L["起始"], s.f or "", s.fl or ""))
+            f.to:SetText(format("|cff8a93a6%s|r |cffc8a95b%s|r |cff6b7484· %s|r", L["结束"], s.t or "", s.tl or ""))
+            f.go:SetText(s.go or "")
+            local chars = TextChars(s.go or "")
+            local per = math.max(8, math.floor((w - 48) / 14))
+            local lines = math.max(1, math.ceil(chars / per))
+            local h = 118 + (lines - 1) * 18
+            f:SetHeight(h)
+            f:ClearAllPoints()
+            f:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, y)
+            local rl = s.rw or {}
+            for k = 1, 2 do
+                local b = f.rw[k]
+                if rl[k] then
+                    PrepPlaceItem(b, rl[k])
+                    b.nm:Hide()
+                    b:SetSize(22, 22)
+                    b:ClearAllPoints()
+                    b:SetPoint("LEFT", anc, "RIGHT", 8 + (k - 1) * 26, 0)
+                    b:Show()
+                else
+                    b:Hide()
+                end
+            end
+            f.mapS.__npc, f.mapS.__loc = s.fn, s.floc
+            f.mapE.__npc, f.mapE.__loc = s.tn, s.tloc
+            f.mapS:SetShown(s.fn ~= nil or s.floc ~= nil)
+            f.mapE:SetShown(s.tn ~= nil or s.tloc ~= nil)
+            f:Show()
+            y = y - h - 8
+        else
+            f:Hide()
+        end
+    end
+
+    ch.note:ClearAllPoints()
+    ch.note:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, y - 6)
+    local noteTxt = (both and side == "A" and d.noteA) or d.note or ""
+    ch.note:SetText(noteTxt)
+    local nh = ch.note:GetStringHeight()
+    if type(nh) ~= "number" or nh < 14 then nh = 14 end
+    y = y - 6 - nh
+
+    ch:SetHeight(math.max(10, -y + PREP_PAD))
+    if PREP.SyncRangeR then PREP.SyncRangeR() end
+    PREP.UpdateBar()
+end
+
+function PREP.ResolveSide()
+    local side = PREP.side or DB().prepSide
+    if side ~= "H" and side ~= "A" then
+        side = (DG.PlayerSide and DG.PlayerSide()) or "H"
+        if side ~= "H" and side ~= "A" then side = "H" end
+    end
+    PREP.side = side
+end
+
+local prepWatch = CreateFrame("Frame")
+prepWatch:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+prepWatch:SetScript("OnEvent", function()
+    if not PREP.shown or PREP.__repaint then return end
+    PREP.__repaint = true
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.15, function()
+            PREP.__repaint = nil
+            if PREP.shown and PREP.built then
+                PREP.PaintCards()
+                PREP.PaintRight()
+                if PREP.SetV then PREP.SetV(PREP.v or 0) end
+            end
+        end)
+    end
+end)
+
+function PREP.Refresh()
+    if not PREP.built then return end
+    PREP.ResolveSide()
+    PREP.PaintCards()
+    PREP.PaintRight()
+    if PREP.SetV then PREP.SetV(PREP.v or 0) end
+end
+
+function TT.HidePrep()
+    if PREP.host then PREP.host:EnableMouseWheel(false) end
+    for i = 1, #(PREP.cards or {}) do PREP.cards[i]:Hide() end
+    if PREP.title then PREP.title:Hide() end
+    if PREP.div then PREP.div:Hide() end
+    if PREP.fac then
+        for k = 1, #PREP.fac do PREP.fac[k]:Hide() end
+    end
+    if PREP.card then PREP.card:Hide() end
+    if PREP.rs then PREP.rs:Hide() end
+    if PREP.ls then PREP.ls:Hide() end
+    if PREP.track then PREP.track:Hide() end
+    if PREP.trackL then PREP.trackL:Hide() end
+    PREP.shown = false
+end
+
+RenderPrep = function()
+    if not PREP.built then
+        PREP.BuildHeader()
+        PREP.BuildLeftScroll()
+        PREP.BuildCards()
+        PREP.BuildRight()
+        PREP.cur = PREP.cur or 1
+        PREP.built = true
+    end
+    if PREP.host then PREP.host:EnableMouseWheel(true) end
+    if PREP.title then PREP.title:Show() end
+    if PREP.div then PREP.div:Show() end
+    if PREP.card then PREP.card:Show() end
+    if PREP.ls then PREP.ls:Show() end
+    PREP.rs:Show()
+    PREP.ResolveSide()
+    PREP.PaintCards()
+    PREP.PaintRight()
+    if PREP.SetV then PREP.SetV(PREP.v or 0) end
+    PREP.shown = true
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.6, function()
+            if PREP.shown and PREP.built then
+                PREP.PaintCards()
+                PREP.PaintRight()
+                if PREP.SetV then PREP.SetV(PREP.v or 0) end
+            end
+        end)
+    end
+end
 
 local function BuildSecTabs(page)
     G = EnsureCG()
@@ -1525,9 +2524,11 @@ end
 
 function TT.PaintNav()
     local db = DB()
+    local prepMode = (db.nav == "prep")
     local specMode = (db.nav == "spec") and (EnsureCG() ~= nil) or false
-    local rankSel = not specMode
+    local rankSel = not specMode and not prepMode
     SetButtonSelected(TT.navBtn, rankSel, "tab")
+    if TT.navPrepBtn then SetButtonSelected(TT.navPrepBtn, prepMode, "tab") end
     if TT.classBtns then
         for cls, cb in pairs(TT.classBtns) do
             local sel = specMode and (cls == db.cls)
@@ -1665,6 +2666,16 @@ end
 function TT.Render()
     if not TT.built then return end
     TT.__renderGen = (TT.__renderGen or 0) + 1
+    local db0 = DB()
+    if db0.nav == "prep" then
+        TT.PaintNav()
+        TT.HideRank()
+        TT.HideSpec()
+        TT.__mode = "prep"
+        RenderPrep()
+        return
+    end
+    if TT.HidePrep then TT.HidePrep() end
     local specMode = TT.PaintNav()
     TT.__mode = specMode and "spec" or "rank"
     PY()

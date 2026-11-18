@@ -970,6 +970,14 @@ local function QuestWhere(q)
     return LevelText(q.lv)
 end
 
+local function DiscountHeader()
+    local td = ns.TrainerDiscount
+    if not (td and td.Header) then return nil end
+    local ok, v = pcall(td.Header)
+    if ok and type(v) == "string" and v ~= "" then return v end
+    return nil
+end
+
 local function BuildSpellGroups()
     local st = ns.SpellTraining
     if not (st and st.Rows) then return nil end
@@ -1000,8 +1008,13 @@ local function BuildSpellGroups()
                 end
                 elements[#elements + 1] = el
             end
+            local headText = ns.L[gd.name]
+            if gd.key == "available" then
+                local hint = DiscountHeader()
+                if hint then headText = headText .. "  ·  " .. hint end
+            end
             groups[#groups + 1] = {
-                header = { templateKey = TPL_HEADER, text = ns.L[gd.name] },
+                header = { templateKey = TPL_HEADER, text = headText },
                 elements = elements,
             }
         end

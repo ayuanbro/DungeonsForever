@@ -146,12 +146,15 @@ ns.options = ns.options or {}
 if ns.options.buttonSound == nil then ns.options.buttonSound = true end
 
 ns.QUICK_VER = 1
-ns.QUICK_GROUPS = { "dungeon", "prof", "explore" }
+ns.QUICK_GROUPS = { "dungeon", "prof", "explore", "tier" }
 ns.QUICK_EXPLORE = { "books", "bag" }
+ns.QUICK_TIER = { "class", "prep" }
 ns.QUICK_TABS = { "Dungeons", "Raids", "Professions", "Explore", "Collections", "Factions", "Bis", "Tier", "PvP", "Gear", "QuestSearch" }
 
 local QUICK_EXPLORE_SET = {}
 for _, k in ipairs(ns.QUICK_EXPLORE) do QUICK_EXPLORE_SET[k] = true end
+local QUICK_TIER_SET = {}
+for _, k in ipairs(ns.QUICK_TIER) do QUICK_TIER_SET[k] = true end
 
 function ns.QuickCfg()
     local ui = DB().ui
@@ -166,12 +169,20 @@ function ns.QuickCfg()
         if q.groups[k] == nil then q.groups[k] = true end
     end
     if q.profMode ~= "all" then q.profMode = "learned" end
+    if q.profCrate == nil then q.profCrate = true end
     if type(q.expl) ~= "table" then q.expl = {} end
     for _, k in ipairs(ns.QUICK_EXPLORE) do
         if q.expl[k] == nil then q.expl[k] = true end
     end
     for k in pairs(q.expl) do
         if not QUICK_EXPLORE_SET[k] then q.expl[k] = nil end
+    end
+    if type(q.tier) ~= "table" then q.tier = {} end
+    for _, k in ipairs(ns.QUICK_TIER) do
+        if q.tier[k] == nil then q.tier[k] = true end
+    end
+    for k in pairs(q.tier) do
+        if not QUICK_TIER_SET[k] then q.tier[k] = nil end
     end
     if type(q.tabs) ~= "table" then q.tabs = {} end
     for _, k in ipairs(ns.QUICK_TABS) do

@@ -53,6 +53,7 @@ Core\Data\Data_ProfDropNames.lua
 Core\ProfPolicies.lua
 Core\ProfMigrate.lua
 Core\ProfRouteAuto.lua
+Core\ProfCDWatch.lua
 Core\ProfessionUI.lua
 Core\ProfFollow.lua
 Core\ProfSupply.lua

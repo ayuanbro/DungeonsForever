@@ -29,6 +29,7 @@ Core\Data\enUS\Data_ClassTrainers.lua [AllowLoadTextLocale enUS]
 Core\SpellTraining.lua
 Core\WeaponMasters.lua
 Core\ClassTrainers.lua
+Core\TrainerDiscount.lua
 Core\NativeSpellBook.lua
 Core\SpellRank.lua
 Core\SpellRankUI.lua

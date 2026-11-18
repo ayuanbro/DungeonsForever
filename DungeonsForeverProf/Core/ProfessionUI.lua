@@ -470,8 +470,18 @@ PD.CARD_NAV_R = PD.CARD_INSET + PD.NAV_W + 2 * PD.NAV_PAD
 PD.RIGHT_X = PD.CARD_NAV_R + (DG.GUTTER or 8) + 8
 PD.RIGHT_W = CONTENT_W - PD.RIGHT_X - PD.CARD_INSET
 PD.SUB_Y, PD.SUB_H, PD.SUB_W, PD.SUB_STEP = PD.CARD_TOP + 8, 24, 76, 84
+PD.SUB2_Y = PD.SUB_Y + PD.SUB_H + 8
 PD.BODY_TOP = PD.SUB_Y + PD.SUB_H + 8
+PD.BODY_TOP2 = PD.SUB2_Y + PD.SUB_H + 8
 PD.BODY_BOT = PD.CARD_INSET + 8
+PD.SUB2_DEF = { { key = "watch", text = L["关注信息"] },
+                { key = "doc",   text = L["文本资料"] } }
+PD.subTab = "watch"
+
+function PD.BodyTop()
+    if PD.tab == "overview" and not PD.setOpen then return PD.BODY_TOP2 end
+    return PD.BODY_TOP
+end
 PD.FAC_ICON = {
     a = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\FACTION\\FactionIcon_Alliance",
     h = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\FACTION\\FactionIcon_Horde",
@@ -596,6 +606,10 @@ function PD.GreenBudgetLabel(mode)
     return mode=="optimistic" and L["升点预算·乐观"] or mode=="pessimistic" and L["升点预算·悲观"] or L["升点预算·均衡"]
 end
 
+function PD.GreenBudgetShort(mode)
+    return mode=="optimistic" and L["乐观"] or mode=="pessimistic" and L["悲观"] or L["均衡"]
+end
+
 function PD.SetSettingRaw(k,value,slug)
     if k=="autoLearnedOnly" or k=="autoAllowUnknownLearning" or k=="autoSkipUnpricedFormulas" or k=="autoNoFormula" then return end
     slug=slug or PD.cur
@@ -672,6 +686,19 @@ end
 function PD.ComputationSpeedLabel()
     local mode = PD.SettingRaw("computationSpeed")
     return mode == "fast" and L["快速（默认）"] or mode == "turbo" and L["极速"] or L["流畅"]
+end
+
+function PD.CycleReserveMode()
+    local current = PD.SettingRaw("autoReserveMode")
+    local mode = current == "off" and "standard" or current == "standard" and "ample" or "off"
+    PD.SetSettingRaw("autoReserveMode", mode)
+    if RA and RA.ChangeReserveMode then
+        local _, reason = RA.ChangeReserveMode(PD.cur, mode)
+        if reason then PD.SetSettingRaw("autoReserveMode", current) end
+    end
+    if ns.ProfFollow and ns.ProfFollow.Paint then ns.ProfFollow.Paint() end
+    PD.autoSnapshot, PD.autoSnapshotSlug = nil, nil
+    PD.RequestRender()
 end
 
 function PD.ShowSchemeMenu(owner)
@@ -1253,6 +1280,9 @@ PD.PC_LH = 17
 PD.PC_NAME_LH = 20
 PD.PC_CHIP_GAP = 4
 PD.PC_MAXLV = 5
+PD.PC_ROW_MAX = 4
+PD.PC_ROWH = 26
+PD.PC_ROWS_TOP = 14
 PD.PC_ICON_GAP = 8
 PD.PC_NAME_DY = 8
 PD.PC_LV_DY = 44
@@ -1542,14 +1572,15 @@ local function ColTextW(col)
     return PD.TEXT_W
 end
 
-local function PushText(rows, text, fs, color, col)
+local function PushText(rows, text, fs, color, col, h)
     for _, ln in ipairs(PD.Wrap(text, fs or 12, ColTextW(col))) do
-        rows[#rows + 1] = { kind = "text", text = ln, fs = fs or 12, color = color, col = col }
+        rows[#rows + 1] = { kind = "text", text = ln, fs = fs or 12, color = color, col = col, h = h }
     end
 end
 
-local function PushHead(rows, text, col, fs)
-    rows[#rows + 1] = { kind = "head", text = text, col = col, fs = fs }
+local function PushHead(rows, text, col, fs, sub, subGap)
+    rows[#rows + 1] = { kind = "head", text = text, col = col, fs = fs,
+                        sub = sub, subGap = subGap, noHover = true }
 end
 
 local function PushGap(rows, h, col)
@@ -1993,7 +2024,7 @@ function PD.PCEnsure(r)
     bg:SetPoint("TOPLEFT", r, "TOPLEFT", PD.PC_INSET, -PD.PC_INSET)
     bg:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -PD.PC_INSET, PD.PC_INSET)
     bg:SetFrameLevel(r:GetFrameLevel() or 0)
-    if not (ns.hui and ns.hui.HuiCardFX and ns.hui.HuiCardFX(bg, nil, 2)) then
+    if not (ns.hui and ns.hui.HuiCardFX and ns.hui.HuiCardFX(bg, 1, 2)) then
         PD.PCSolid(bg, PD.PC_RAD, ns.hui.layer.L2, 1, true)
     end
     r.__pcBg = bg
@@ -2035,6 +2066,39 @@ function PD.PCEnsure(r)
         f:Hide()
         r.pcChips[k] = f
     end
+    r.__pcDiv = r:CreateTexture(nil, "ARTWORK")
+    r.__pcDiv:SetHeight(1)
+    r.__pcDiv:SetColorTexture(0, 0, 0, 1)
+    r.__pcDiv:SetAlpha(0.35)
+    r.__pcDiv:Hide()
+    r.pcRowName, r.pcRowChip = {}, {}
+    for k = 1, PD.PC_ROW_MAX do
+        local nm = MakeFS(r, PD.PC_FS_SM, C_TEXT, "LEFT")
+        nm:SetWordWrap(false)
+        nm:SetHeight(PD.PC_FS_SM + 4)
+        nm:SetText("")
+        nm:Hide()
+        r.pcRowName[k] = nm
+        local chip
+        if ns.hui and ns.hui.MakeSolidChip then
+            chip = ns.hui.MakeSolidChip(r, (r:GetFrameLevel() or 0) + 3, PD.PC_ChipH())
+            chip:EnableMouse(false)
+            chip:Hide()
+        end
+        r.pcRowChip[k] = chip
+    end
+    r.pcBtn = {}
+    for k = 1, 2 do
+        local btn
+        if type(ns.CreateButton) == "function" then
+            btn = ns.CreateButton(r)
+            btn:SetSize(62, 24)
+            btn:SetFrameLevel((r:GetFrameLevel() or 0) + 6)
+            if SetButtonSelected then SetButtonSelected(btn, false, "main") end
+            btn:Hide()
+        end
+        r.pcBtn[k] = btn
+    end
     return r
 end
 
@@ -2047,6 +2111,17 @@ function PD.PCWipe(r)
     if r.__pcRight then r.__pcRight:SetText(""); r.__pcRight:Hide() end
     if r.pcChips then
         for k = 1, PD.PC_MAXLV do r.pcChips[k]:Hide() end
+    end
+    if r.__pcDiv then r.__pcDiv:Hide() end
+    if r.pcRowName then
+        for k = 1, PD.PC_ROW_MAX do
+            r.pcRowName[k]:SetText("")
+            r.pcRowName[k]:Hide()
+            if r.pcRowChip[k] then r.pcRowChip[k]:Hide() end
+        end
+    end
+    if r.pcBtn then
+        for k = 1, 2 do if r.pcBtn[k] then r.pcBtn[k]:Hide() end end
     end
 end
 
@@ -2082,6 +2157,12 @@ function PD.PC_TxDy(d)
 end
 
 function PD.PCHeight(d, w)
+    if d.compact then return 68 end
+    if type(d.rows) == "table" and #d.rows > 0 then
+        local h = PD.PC_PAD + PD.PC_ICON + PD.PC_ROWS_TOP + #d.rows * PD.PC_ROWH + PD.PC_PAD
+        if h < 96 then h = 96 end
+        return h
+    end
     local lines = PD.PCLines(d.tx, w)
     local h = PD.PC_TxDy(d) + lines * PD.PC_LH
     if d.tags and d.tags ~= "" then h = h + PD.PC_TAG_GAP + PD.PC_TAG_H end
@@ -2143,6 +2224,76 @@ function PD.PCSetLv(r, lv)
     r.__pcTx:SetText(tx or "")
 end
 
+PD.CLASS_TOKEN = {
+    ["战士"] = "WARRIOR", ["圣骑士"] = "PALADIN", ["猎人"] = "HUNTER", ["盗贼"] = "ROGUE",
+    ["牧师"] = "PRIEST", ["萨满祭司"] = "SHAMAN", ["萨满"] = "SHAMAN", ["法师"] = "MAGE",
+    ["术士"] = "WARLOCK", ["德鲁伊"] = "DRUID", ["死亡骑士"] = "DEATHKNIGHT",
+    ["戰士"] = "WARRIOR", ["聖騎士"] = "PALADIN", ["獵人"] = "HUNTER", ["盜賊"] = "ROGUE",
+    ["牧師"] = "PRIEST", ["薩滿祭司"] = "SHAMAN", ["薩滿"] = "SHAMAN", ["法師"] = "MAGE",
+    ["術士"] = "WARLOCK", ["德魯伊"] = "DRUID", ["死亡騎士"] = "DEATHKNIGHT",
+}
+
+PD.CLASS_ID = {
+    [1] = "WARRIOR", [2] = "PALADIN", [3] = "HUNTER", [4] = "ROGUE",
+    [5] = "PRIEST", [6] = "DEATHKNIGHT", [7] = "SHAMAN", [8] = "MAGE",
+    [9] = "WARLOCK", [10] = "MONK", [11] = "DRUID",
+}
+
+function PD.RowClassColor(cls)
+    if type(cls) == "number" then cls = PD.CLASS_ID[cls] end
+    if type(cls) ~= "string" or cls == "" then return nil end
+    local tok = PD.CLASS_TOKEN[cls] or cls
+    local t = RAID_CLASS_COLORS and RAID_CLASS_COLORS[tok]
+    if t and t.r then return { t.r, t.g, t.b } end
+    if type(C_ClassColor) == "table" and type(C_ClassColor.GetClassColor) == "function" then
+        local ok, c = pcall(C_ClassColor.GetClassColor, tok)
+        if ok and c then
+            local r, g, b = c.r, c.g, c.b
+            if not r and type(c.GetRGB) == "function" then
+                local ok2, r2, g2, b2 = pcall(c.GetRGB, c)
+                if ok2 then r, g, b = r2, g2, b2 end
+            end
+            if type(r) == "number" then return { r, g, b } end
+        end
+    end
+    if type(DG) == "table" and type(DG.QClassColor) == "function" then
+        local c = DG.QClassColor(cls)
+        if type(c) == "table" and not (c[1] == C_GOLD[1] and c[2] == C_GOLD[2]
+                                       and c[3] == C_GOLD[3]) then
+            return { c[1], c[2], c[3] }
+        end
+    end
+    return nil
+end
+
+function PD.FitName(str, maxw, fs)
+    if type(str) ~= "string" or str == "" then return "" end
+    local cjk = fs * 1.06
+    local lat = fs * 0.56
+    local sum, i = 0, 1
+    local n = #str
+    while i <= n do
+        local b = str:byte(i)
+        local step = 1
+        if b and b >= 240 then step = 4
+        elseif b and b >= 224 then step = 3
+        elseif b and b >= 192 then step = 2 end
+        local adv = (step > 1) and cjk or lat
+        if sum + adv > maxw then
+            local cut = i - 1
+            while cut > 0 do
+                local cb = str:byte(cut)
+                if cb and cb >= 128 and cb < 192 then cut = cut - 1 else break end
+            end
+            if cut <= 0 then return "" end
+            return str:sub(1, cut) .. "\226\128\166"
+        end
+        sum = sum + adv
+        i = i + step
+    end
+    return str
+end
+
 function PD.PCApply(r, spec, w, h)
     PD.PCEnsure(r)
     r.__pcSpec = spec
@@ -2153,6 +2304,110 @@ function PD.PCApply(r, spec, w, h)
     local d = spec.pc or {}
     local pad = PD.PC_INSET + PD.PC_PAD
     r.__pcBg:Show()
+    if d.compact then
+        r.__pcNumBg:Hide()
+        r.__pcTx:Hide()
+        r.__pcTags:Hide()
+        if r.__pcDiv then r.__pcDiv:Hide() end
+        for k = 1, PD.PC_MAXLV do if r.pcChips[k] then r.pcChips[k]:Hide() end end
+        if r.pcRowName then
+            for k = 1, PD.PC_ROW_MAX do
+                r.pcRowName[k]:Hide()
+                if r.pcRowChip[k] then r.pcRowChip[k]:Hide() end
+            end
+        end
+        if d.icon then
+            r.icon:Show()
+            r.icon:SetSize(24, 24)
+            r.icon:ClearAllPoints()
+            r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -pad)
+            r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+            r.icon:SetDesaturated(false)
+            r.icon:SetAlpha(d.on and 1 or 0.45)
+            local tex = d.icon
+            if type(tex) == "number" and DG.ItemIcon then tex = DG.ItemIcon(tex) end
+            SetIcon(r.icon, tex)
+        else
+            r.icon:Hide()
+        end
+        local nx2 = d.icon and (pad + 26) or pad
+        local nw = w - nx2 - pad
+        local fl2 = ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE"
+        r.a:Show()
+        r.a:SetFont(ns.FONT, 14, fl2)
+        r.a:ClearAllPoints()
+        r.a:SetPoint("TOPLEFT", r, "TOPLEFT", nx2, -(pad + 2))
+        r.a:SetWidth(nw)
+        r.a:SetJustifyH("LEFT")
+        r.a:SetText(PD.FitName(d.name, nw, 14))
+        if d.on then
+            r.a:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
+        else
+            r.a:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
+        end
+        r.__pcRight:Hide()
+        local bx, by2 = pad, pad + 26
+        for i = 1, 2 do
+            local btn = r.pcBtn and r.pcBtn[i]
+            local b2 = d.btns and d.btns[i]
+            if btn then
+                if b2 then
+                    btn:SetText(b2.text)
+                    local fs = btn:GetFontString()
+                    local bw = 56
+                    if fs then
+                        local okw, tw = pcall(fs.GetStringWidth, fs)
+                        if okw and type(tw) == "number" then bw = math.max(tw + 20, 56) end
+                    end
+                    btn:SetWidth(bw)
+                    if SetButtonSelected then SetButtonSelected(btn, b2.on == true, "main") end
+                    btn:ClearAllPoints()
+                    btn:SetPoint("TOPLEFT", r, "TOPLEFT", bx, -by2)
+                    local act = b2.act
+                    btn:SetScript("OnClick", function(_, m)
+                        if m ~= "LeftButton" then return end
+                        if type(act) == "function" then act() end
+                    end)
+                    btn:Show()
+                    bx = bx + bw + 8
+                else
+                    btn:Hide()
+                end
+            end
+        end
+        r.__pcLeft = d
+        if not r.__pcHov then
+            r.__pcHov = true
+            r:SetScript("OnEnter", function(self)
+                local bg = self.__pcBg
+                if bg and ns.hui and ns.hui.HuiCardState then
+                    ns.hui.HuiCardState(bg, "hover")
+                end
+            end)
+            r:SetScript("OnLeave", function(self)
+                local bg = self.__pcBg
+                if bg and ns.hui and ns.hui.HuiCardState then
+                    ns.hui.HuiCardState(bg, nil)
+                end
+            end)
+        end
+        r:EnableMouse(true)
+        if not r.__pcClick then
+            r.__pcClick = true
+            r:SetScript("OnMouseUp", function(self, btn)
+                if btn ~= "LeftButton" then return end
+                local sp = self.__pcSpec
+                local pc = sp and sp.pc
+                if type(pc) == "table" and type(pc.onClick) == "function" then pc.onClick(pc) end
+            end)
+        end
+        return
+    end
+    r.__pcLeft = nil
+    if r.pcBtn then
+        for k = 1, 2 do if r.pcBtn[k] then r.pcBtn[k]:Hide() end end
+    end
+    if r.__pcClick and r:IsMouseEnabled() then r:EnableMouse(false) end
     r.icon:ClearAllPoints()
     r.icon:SetSize(PD.PC_ICON, PD.PC_ICON)
     r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -pad)
@@ -2176,21 +2431,39 @@ function PD.PCApply(r, spec, w, h)
         r.__pcNumBg:Hide()
         nx = pad
     end
+    r.__pcRight:ClearAllPoints()
+    r.__pcRight:SetPoint("TOPRIGHT", r, "TOPRIGHT", -pad, -PD.PC_NAME_DY)
+    local rfs = d.rightFs or PD.PC_FS_SM
+    if r.__rfs ~= rfs then
+        r.__rfs = rfs
+        r.__pcRight:SetFont(ns.FONT, rfs,
+            ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
+    end
+    local rc = d.rightColor
+    if rc then
+        r.__pcRight:SetTextColor(rc[1], rc[2], rc[3])
+    else
+        r.__pcRight:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3])
+    end
+    r.__pcRight:SetText(d.right or "")
+    local rw = 0
+    if (d.right or "") ~= "" then
+        r.__pcRight:Show()
+        local okw, ww = pcall(r.__pcRight.GetStringWidth, r.__pcRight)
+        if okw and type(ww) == "number" and ww > 0 then rw = ww end
+    else
+        r.__pcRight:Hide()
+    end
+    local nmMax = math.max(w - nx - pad - math.max(rw + 8, 24), 52)
     r.a:ClearAllPoints()
     r.a:SetFont(ns.FONT, PD.PC_FS_NAME, ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE")
     r.a:SetPoint("TOPLEFT", r, "TOPLEFT", nx, -PD.PC_NAME_DY)
-    r.a:SetWidth(math.max(w - nx - pad - 52, 60))
+    r.a:SetWidth(nmMax)
     r.a:SetJustifyH("LEFT")
-    local nmMax = math.max(w - nx - pad - 52, 60)
-    local nm = d.name or ""
-    if DG.ClipTo then r.a:SetText(DG.ClipTo(r.a, nm, nmMax)) else r.a:SetText(nm) end
+    r.a:SetText(PD.FitName(d.name, nmMax, PD.PC_FS_NAME))
     r.a:SetTextColor(d.nameColor and d.nameColor[1] or C_WHITE[1],
                      d.nameColor and d.nameColor[2] or C_WHITE[2],
                      d.nameColor and d.nameColor[3] or C_WHITE[3])
-    r.__pcRight:ClearAllPoints()
-    r.__pcRight:SetPoint("TOPRIGHT", r, "TOPRIGHT", -pad, -PD.PC_NAME_DY)
-    r.__pcRight:SetText(d.right or "")
-    if (d.right or "") ~= "" then r.__pcRight:Show() else r.__pcRight:Hide() end
     local n = d.maxLv or 0
     for k = 1, PD.PC_MAXLV do
         if k > n then r.pcChips[k]:Hide() end
@@ -2206,6 +2479,57 @@ function PD.PCApply(r, spec, w, h)
     r.__pcTags:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -(txDy + lines * PD.PC_LH + PD.PC_TAG_GAP))
     r.__pcTags:SetText(d.tags or "")
     if (d.tags or "") ~= "" then r.__pcTags:Show() else r.__pcTags:Hide() end
+    if type(d.rows) == "table" and #d.rows > 0 then
+        r.__pcTx:SetText("")
+        r.__pcTx:Hide()
+        r.__pcTags:SetText("")
+        r.__pcTags:Hide()
+        r.__pcDiv:ClearAllPoints()
+        r.__pcDiv:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -(pad + PD.PC_ICON + 6))
+        r.__pcDiv:SetWidth(math.max(w - 2 * pad, 40))
+        r.__pcDiv:Show()
+        local ry = pad + PD.PC_ICON + PD.PC_ROWS_TOP
+        local accent = PD.PCAccent()
+        local mute = { 0.62, 0.62, 0.68, 1 }
+        for k = 1, PD.PC_ROW_MAX do
+            local nm, chip = r.pcRowName[k], r.pcRowChip[k]
+            local row = d.rows[k]
+            if row then
+                local txt = row.text or ""
+                local used = 0
+                if chip and txt ~= "" then
+                    ns.hui.PaintSolidChip(chip, txt, row.free and accent or mute, nil, 11)
+                    chip:ClearAllPoints()
+                    chip:SetPoint("TOPRIGHT", r, "TOPRIGHT", -pad, -(ry + (k - 1) * PD.PC_ROWH))
+                    chip:Show()
+                    local okw, cw = pcall(chip.GetWidth, chip)
+                    if okw and type(cw) == "number" and cw > 0 then used = cw + 8 end
+                elseif chip then
+                    chip:Hide()
+                end
+                nm:ClearAllPoints()
+                nm:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -(ry + (k - 1) * PD.PC_ROWH))
+                nm:SetWidth(math.max(w - 2 * pad - used, 40))
+                if not nm.__dfOl then
+                    nm.__dfOl = true
+                    nm:SetFont(ns.FONT, PD.PC_FS_NAME, "OUTLINE")
+                end
+                nm:SetText(row.name or "")
+                local cc = PD.RowClassColor(row.cls)
+                if cc then
+                    nm:SetTextColor(cc[1], cc[2], cc[3])
+                elseif row.cur then
+                    nm:SetTextColor(accent[1], accent[2], accent[3])
+                else
+                    nm:SetTextColor(C_TEXT[1], C_TEXT[2], C_TEXT[3])
+                end
+                nm:Show()
+            else
+                nm:Hide()
+                if chip then chip:Hide() end
+            end
+        end
+    end
     if n > 0 then
         PD.PCSetLv(r, d.lv or n)
     end
@@ -2467,7 +2791,7 @@ end
 
 function PD.PaintRows(rows)
     local y0 = PD.hasSecs and PD.SEC_PAD or 0
-    local y = { y0, y0, y0 }
+    local y = { y0, y0, y0, y0, y0, y0 }
     local bb = {}
     local bgold = {}
     local zc = { 0, 0 }
@@ -2475,6 +2799,7 @@ function PD.PaintRows(rows)
     local truncated = 0
     local cap = PD.capNow or PD.ROW_CAP
     if n > cap then truncated = n - cap; n = cap end
+    PD.curHeadW = nil
     local grid = PD.gridSplit and true or false
     local gTop, gBot
     local sideFix = (PD.sideFixed and PD.side) and true or false
@@ -2524,8 +2849,8 @@ function PD.PaintRows(rows)
                 PD.__pendRows[#PD.__pendRows + 1] = { idx = i, gap = true, gen = gen }
             end
             if span then
-                local ny = math.max(y[1], y[2], y[3]) + h
-                y[1], y[2], y[3] = ny, ny, ny
+                local ny = math.max(y[1], y[2], y[3], y[4], y[5], y[6]) + h
+                y[1], y[2], y[3], y[4], y[5], y[6] = ny, ny, ny, ny, ny, ny
             else
                 local col = (spec.col == 2) and 2 or 1
                 y[col] = y[col] + h
@@ -2533,11 +2858,11 @@ function PD.PaintRows(rows)
         else
             local col, x, w, top
             if span then
-                top = math.max(y[1], y[2], y[3])
+                top = math.max(y[1], y[2], y[3], y[4], y[5], y[6])
                 x, w = PD.GRID_X, ROW_W
             else
                 if isPC then
-                    col = math.min(math.max(spec.col or 1, 1), PD.PC_COLS)
+                    col = math.min(math.max(spec.col or 1, 1), spec.cols or PD.PC_COLS)
                 elseif spec.fcol then
                     col = spec.fcol
                 elseif spec.col == 2 then
@@ -2549,8 +2874,9 @@ function PD.PaintRows(rows)
                 end
                 top = y[col]
                 if isPC then
-                    x = PD.GRID_X + (col - 1) * (PD.PC_COLW + PD.PC_GAP)
-                    w = PD.PC_COLW
+                    local cw = spec.colw or PD.PC_COLW
+                    x = PD.GRID_X + (col - 1) * (cw + PD.PC_GAP)
+                    w = cw
                 elseif PD.lvSplit then
                     local lw = PD.splitLW or PD.COL_LW
                     local rw = PD.splitRW or PD.COL_RW
@@ -2613,7 +2939,7 @@ function PD.PaintRows(rows)
                 end
             end
             if span then
-                y[1], y[2], y[3] = top + h + 2, top + h + 2, top + h + 2
+                y[1], y[2], y[3], y[4], y[5], y[6] = top + h + 2, top + h + 2, top + h + 2, top + h + 2, top + h + 2, top + h + 2
             else
                 y[col] = top + h + 2
             end
@@ -2693,7 +3019,7 @@ function PD.PaintRows(rows)
             end
         end
     end
-    local h1 = math.max(y[1], y[2], y[3])
+    local h1 = math.max(y[1], y[2], y[3], y[4], y[5], y[6])
     if PD.wantIndexGrid and PD.ixRoot then
         PD.placeIndexGrid(h1)
         h1 = h1 + (PD.ixGridH or 0) + 8
@@ -2726,11 +3052,35 @@ function PD.PaintRows(rows)
     elseif PD.trainerBoard then
         PD.trainerCard:Hide()
     end
-    local extraH = h1 - math.max(y[1], y[2], y[3])
+    local extraH = h1 - math.max(y[1], y[2], y[3], y[4], y[5], y[6])
     if sideFix then
         PD.child:SetHeight(y[1] + extraH + 10)
     else
-        PD.child:SetHeight(math.max(h1, y[2], y[3]) + 10)
+        PD.child:SetHeight(math.max(h1, y[1], y[2], y[3], y[4], y[5], y[6]) + 10)
+    end
+    if PD.mgrBtn then
+        if PD.wantMgrBtn and PD.child then
+            local bt = PD.mgrBtn
+            local txt = (PD.subTab == "mgr") and L["返回追踪"] or L["冷却管理"]
+            if bt.__txt ~= txt then
+                bt.__txt = txt
+                bt:SetText(txt)
+            end
+            local headW = PD.curHeadW or 0
+            if headW <= 0 and PD.mgrMsr then
+                PD.mgrMsr:SetText((PD.subTab == "mgr") and L["冷却管理"] or L["冷却追踪"])
+                local okw, v = pcall(PD.mgrMsr.GetStringWidth, PD.mgrMsr)
+                if okw and type(v) == "number" then headW = v end
+                PD.mgrMsr:SetText("")
+            end
+            bt:ClearAllPoints()
+            bt:SetPoint("TOPLEFT", PD.child, "TOPLEFT", PD.GRID_X + 6 + headW + 6,
+                        -(y0 + 4 + (PD.TEXT_H - PD.SUB_H) / 2))
+            bt:SetFrameLevel((PD.child:GetFrameLevel() or 0) + 200)
+            bt:Show()
+        else
+            PD.mgrBtn:Hide()
+        end
     end
     if PD.UpdateVScroll then PD.UpdateVScroll() end
     PD.FlushPendingRows()
@@ -2922,6 +3272,10 @@ function PD.BindRow(r, spec, h)
     if spec.kind == "head" then
         r.a:SetTextColor(Unpack(C_WHITE))
         r.a:SetText(spec.text or "")
+        if PD.curHeadW == nil then
+            local okw, ww = pcall(r.a.GetStringWidth, r.a)
+            if okw and type(ww) == "number" then PD.curHeadW = ww end
+        end
         r.a:ClearAllPoints()
         if itemID or iconName then
             r.icon:SetSize(20, 20)
@@ -2938,6 +3292,15 @@ function PD.BindRow(r, spec, h)
             r.a:SetPoint("LEFT", r, "LEFT", 6, 0)
         end
         r.b:SetText(""); r.d:SetText(""); r.e:SetText(""); r.f:SetText("")
+        if spec.sub and spec.sub ~= "" then
+            local sf = ns.hui and ns.hui.FontFlags and ns.hui.FontFlags("OUTLINE") or "OUTLINE"
+            r.b:SetFont(ns.FONT, 14, sf)
+            r.b:SetText(spec.sub)
+            r.b:SetTextColor(C_GREY[1], C_GREY[2], C_GREY[3])
+            r.b:ClearAllPoints()
+            r.b:SetPoint("LEFT", r.a, "RIGHT", spec.subGap or 12, 0)
+            r.b:Show()
+        end
         if spec.foldKey and r.foldZone and r.foldArrD then
             local key = spec.foldKey
             local open = not PD.FoldOn(key)
@@ -5010,6 +5373,27 @@ function PD.Build(page)
     end
     coroutine.yield()
 
+    PD.sub2Btns = {}
+    for _, def in ipairs(PD.SUB2_DEF) do
+        local bt = NewButton(page, def.text, PD.SUB_W, PD.SUB_H, 14)
+        SetButtonSelected(bt, false)
+        bt:Hide()
+        bt:SetScript("OnClick", function() PD.SetSubTab(def.key) end)
+        PD.sub2Btns[def.key] = bt
+    end
+    do
+        local bt = NewButton(page, L["冷却管理"], 96, PD.SUB_H, 14)
+        SetButtonSelected(bt, false)
+        bt:Hide()
+        bt:SetScript("OnClick", function()
+            PD.SetSubTab((PD.subTab == "mgr") and "watch" or "mgr")
+        end)
+        PD.mgrBtn = bt
+        PD.mgrMsr = MakeFS(page, 16, C_WHITE, "LEFT")
+        PD.mgrMsr:Hide()
+    end
+    coroutine.yield()
+
     PD.trFacBtns = {}
     for i = 1, 2 do
         local k = (i == 1) and "A" or "H"
@@ -5136,10 +5520,11 @@ function PD.Build(page)
     PD.setCard = setCard
     coroutine.yield()
     PD.lvTiles = {}
-    PD.chipOrder = { "mode", "scheme", "excl", "target", "spec" }
+    PD.chipOrder = { "mode", "scheme", "budget", "excl", "target", "spec" }
     for _, td in ipairs({
         { key = "mode",   text = L["模式"] },
         { key = "scheme", text = L["路线方案"] },
+        { key = "budget", text = L["升点预算"] },
         { key = "excl",   text = L["排除"] },
         { key = "target", text = L["目标等级"] },
         { key = "spec",   text = L["专精"] },
@@ -5271,11 +5656,45 @@ function PD.Build(page)
         res:ClearAllPoints()
         res:SetPoint("TOPLEFT", set, "TOPLEFT", setW + PD.LV_TILE_GAP, 0)
         res:Show()
-        local cw = math.floor((setW - 24 - (n - 1) * PD.SET_CHIP_GAP) / n)
+        local avail = setW - 24 - (n - 1) * PD.SET_CHIP_GAP
+        local evenW = math.floor(avail / n)
+        local wantW, sumW, needAdapt = {}, 0, false
+        for _, key in ipairs(PD.chipOrder) do
+            local tf = PD.lvTiles[key]
+            if tf.__use then
+                local lw = PD.TextW((tf.label and tf.label:GetText()) or "", 14)
+                local vw = PD.TextW((tf.val and tf.val:GetText()) or "", 16)
+                if vw > 0 then vw = vw * 0.875 end
+                local w = math.ceil(math.max(lw, vw)) + 12
+                if w < 46 then w = 46 end
+                if key == "target" then w = math.max(w, 70) end
+                wantW[key] = w
+                sumW = sumW + w
+                if w > evenW then needAdapt = true end
+            end
+        end
+        local widthOf = {}
+        if needAdapt and sumW <= avail then
+            local add = math.floor((avail - sumW) / n)
+            local rest = (avail - sumW) - add * n
+            for _, key in ipairs(PD.chipOrder) do
+                local tf = PD.lvTiles[key]
+                if tf.__use then
+                    local w = wantW[key] + add
+                    if rest > 0 then w, rest = w + 1, rest - 1 end
+                    widthOf[key] = w
+                end
+            end
+        else
+            for _, key in ipairs(PD.chipOrder) do
+                if PD.lvTiles[key].__use then widthOf[key] = evenW end
+            end
+        end
         local x = 12
         for _, key in ipairs(PD.chipOrder) do
             local tf = PD.lvTiles[key]
             if tf.__use then
+                local cw = widthOf[key] or evenW
                 tf:SetSize(cw, PD.SET_CHIP_H)
                 tf:ClearAllPoints()
                 tf:SetPoint("TOPLEFT", set, "TOPLEFT", x, -28)
@@ -5952,6 +6371,36 @@ function PD.PickTabs()
         if on then shown = shown + 1 end
     end
     PD.subTabEndX = shown * PD.SUB_STEP
+    if PD.sub2Btns then
+        local wide = (PD.tab == "overview" and PD.avail.overview and not PD.setOpen) and true or false
+        local idx = 0
+        for _, def in ipairs(PD.SUB2_DEF) do
+            local bt = PD.sub2Btns[def.key]
+            local sel = (PD.subTab == def.key)
+                          or (def.key == "watch" and PD.subTab == "mgr")
+            local key = (wide and "1" or "0") .. "|" .. idx .. "|" .. (sel and "1" or "0")
+            if bt.__sub2Key ~= key then
+                bt.__sub2Key = key
+                bt:SetShown(wide)
+                if wide then
+                    bt:ClearAllPoints()
+                    bt:SetPoint("TOPLEFT", PD.page, "TOPLEFT",
+                                PD.RIGHT_X + idx * PD.SUB_STEP, -PD.SUB2_Y)
+                    bt:SetText(def.text)
+                    SetButtonSelected(bt, sel)
+                    local sfs = bt:GetFontString()
+                    if sfs then
+                        if sel then
+                            sfs:SetTextColor(1, 1, 1, 1)
+                        else
+                            sfs:SetTextColor(Unpack(C_GREY))
+                        end
+                    end
+                end
+            end
+            if wide then idx = idx + 1 end
+        end
+    end
     if PD.revertBt then
         local ron = (PD.tab == "leveling") and PD.HasPlanPrev(PD.cur)
         if PD.revertBt.__shown ~= ron then
@@ -6559,7 +7008,7 @@ end
 function PD.PaintGatherTiles()
     local tiles = PD.lvTiles
     if PD.tab ~= "leveling" or PD.setOpen then
-        for _, k in ipairs({ "mode", "scheme", "excl", "target", "spec" }) do
+        for _, k in ipairs({ "mode", "scheme", "budget", "excl", "target", "spec" }) do
             tiles[k].__use = false
             tiles[k]:Hide()
         end
@@ -6643,7 +7092,7 @@ function PD.PaintLvTiles()
     if not (tiles and tiles.mode) then return 0 end
     if PD.IsGatherRoute() then return PD.PaintGatherTiles() end
     if PD.tab ~= "leveling" or PD.setOpen then
-        for _, k in ipairs({ "mode", "scheme", "excl", "target", "spec" }) do
+        for _, k in ipairs({ "mode", "scheme", "budget", "excl", "target", "spec" }) do
             tiles[k].__use = false
             tiles[k]:Hide()
         end
@@ -6681,13 +7130,13 @@ function PD.PaintLvTiles()
     local TipOn = PD.TipTile
     if fixedOnly then
         tiles.mode.label:SetText(L["模式"])
-        tiles.mode.val:SetText(L["固定路线"])
+        tiles.mode.val:SetText(L["固定"])
         tiles.mode.val:SetTextColor(Unpack(C_WHITE))
         PD.PaintTileBorder(tiles.mode, { 1, 1, 1, 0.10 })
         TipOn(tiles.mode, { { L["固定路线：按资料整理的分段练法逐段冲技能"], 0.7, 0.7, 0.7 } })
     else
         tiles.mode.label:SetText(L["模式"])
-        tiles.mode.val:SetText(fishRoute and L["纯钓鱼"] or (auto and L["自动计算"] or L["固定路线"]))
+        tiles.mode.val:SetText(fishRoute and L["纯钓鱼"] or (auto and L["自动"] or L["固定"]))
         tiles.mode.val:SetTextColor(Unpack(C_WHITE))
         PD.PaintTileBorder(tiles.mode, { 1, 1, 1, 0.10 })
         local modeLines = {
@@ -6740,6 +7189,31 @@ function PD.PaintLvTiles()
         schemeLines[#schemeLines + 1] = { L["点击选择路线方案"], 0.7, 0.7, 0.7 }
     end
     TipOn(tiles.scheme, schemeLines)
+    tiles.budget.__use = PD.AutoRouteEnabled() and not fishRoute
+    if tiles.budget.__use then
+        local bmode = PD.SettingRaw("autoSkillBudget", PD.cur)
+        tiles.budget.label:SetText(L["升点预算"])
+        tiles.budget.val:SetText(PD.GreenBudgetShort(bmode))
+        tiles.budget.val:SetTextColor(Unpack(C_WHITE))
+        PD.PaintTileBorder(tiles.budget, { 1, 1, 1, 0.10 })
+        tiles.budget:SetScript("OnClick", function()
+            local mode = PD.SettingRaw("autoSkillBudget", PD.cur)
+            PD.ChangeRouteSetting("autoSkillBudget",
+                mode == "optimistic" and "balanced"
+                or mode == "pessimistic" and "optimistic"
+                or "pessimistic", PD.cur)
+            ns.PlaySound(1)
+        end)
+        TipOn(tiles.budget, {
+            { PD.GreenBudgetLabel(bmode), 1, 0.82, 0 },
+            { L["乐观按平均次数计算。均衡和悲观分别按单点 80% 和 95% 把握计算，悲观还将绿方的估算升点率减半。选方和购物单使用同一份用量。点击切换，再重新计算。"] },
+            { L["开启回血时，选方只按平均会做出的冲点成品估算收益。"] },
+            { PD.GreenBudgetShort("optimistic") .. " / " .. PD.GreenBudgetShort("balanced")
+              .. " / " .. PD.GreenBudgetShort("pessimistic"), 0.7, 0.7, 0.7 },
+        })
+    else
+        tiles.budget:SetScript("OnClick", nil)
+    end
     do
         local banR, banM = PD.CountBans()
         local nBan = banR + banM
@@ -6957,7 +7431,7 @@ function PD.PaintLvTiles()
 end
 
 function PD.Layout(toolH)
-    local top = PD.BODY_TOP + (toolH or 0)
+    local top = PD.BodyTop() + (toolH or 0)
     local bot = PD.BODY_BOT
     PD.scroll:ClearAllPoints()
     PD.scroll:SetPoint("TOPLEFT", PD.page, "TOPLEFT", PD.RIGHT_X, -top)
@@ -7143,9 +7617,9 @@ function PD.PerkTipLines(pk, lvs, cur)
     return lines
 end
 
-function PD.PushCardRow(rows, list)
-    local W = PD.PC_COLW
-    local cols = PD.PC_COLS
+function PD.PushCardRow(rows, list, cols, colw)
+    local cols = cols or PD.PC_COLS
+    local W = colw or math.floor((PD.GRID_W - (cols - 1) * PD.PC_GAP) / cols)
     local i = 1
     while i <= #list do
         local h = 60
@@ -7160,7 +7634,8 @@ function PD.PushCardRow(rows, list)
             local d = list[i + k]
             if d then
                 rows[#rows + 1] = { kind = "pcard", col = k + 1, h = h, pc = d,
-                                    noHover = true, noSpan = true }
+                                    noHover = true, noSpan = true,
+                                    cols = cols, colw = W }
             end
         end
         i = i + cols
@@ -7524,6 +7999,127 @@ function PD.RowsOverview(rows)
         end
     end
     PD.secCount = secN
+end
+
+function PD.SyncSubTab(slug)
+    PD.subTabSlug = slug
+    if not slug or slug == "__index" then
+        PD.subTab = "doc"
+        return
+    end
+    local db = ProfDB()
+    local mem = type(db.subTab) == "table" and db.subTab[slug] or nil
+    if mem == "watch" or mem == "doc" then
+        PD.subTab = mem
+        return
+    end
+    local W = ns.ProfCDWatch
+    local has = false
+    if W and W.Cards then
+        local ok, cards = pcall(W.Cards, slug)
+        if ok and type(cards) == "table" and #cards > 0 then has = true end
+    end
+    PD.subTab = has and "watch" or "doc"
+end
+
+function PD.SetSubTab(key)
+    if key ~= "watch" and key ~= "doc" and key ~= "mgr" then return end
+    if PD.subTab == key then return end
+    PD.subTab = key
+    local db = ProfDB()
+    if type(db.subTab) ~= "table" then db.subTab = {} end
+    if PD.cur and PD.cur ~= "__index" and key ~= "mgr" then db.subTab[PD.cur] = key end
+    PD.RequestRender()
+    if ns.PlaySound then ns.PlaySound(1) end
+end
+
+function PD.RowsWatchMgr(rows)
+    PushGap(rows, 4, 1)
+    local W = ns.ProfCDWatch
+    if not (type(W) == "table" and type(W.Manage) == "function") then
+        PushHead(rows, L["冷却管理"], 1)
+        PushText(rows, L["专业冷却模块尚未就绪"], 14, C_GREY, 1)
+        return
+    end
+    local list = W.Manage(PD.cur)
+    if #list == 0 then
+        PushHead(rows, L["冷却管理"], 1)
+        PushText(rows, L["还没有扫描到带冷却的配方"], 14, C_GREY, 1)
+        PushText(rows, L["打开这个页面会自动扫描当前角色的冷却配方。"], 14, C_GREY, 1)
+        return
+    end
+    local on, todo = 0, 0
+    for i = 1, #list do
+        if list[i].on then on = on + 1 end
+        if list[i].todo then todo = todo + 1 end
+    end
+    PushHead(rows, L["冷却管理"], 1, nil,
+             format(L["共 %d 项 · 追踪 %d 项 · 待办 %d 项 · 点卡片上的按钮切换"], #list, on, todo), 112)
+    local cards = {}
+    for i = 1, #list do
+        local it = list[i]
+        local spell = it.spell
+        local wantOn, wantTodo = not it.on, not it.todo
+        cards[#cards + 1] = {
+            compact = true,
+            icon = it.item,
+            name = it.name,
+            on = it.on,
+            btns = {
+                { text = it.on and L["追踪中"] or L["追踪"],
+                  on = it.on,
+                  act = function() ns.ProfCDWatch.SetEnabled(spell, wantOn) end },
+                { text = it.todo and L["待办中"] or L["非待办"],
+                  on = it.todo,
+                  act = function() ns.ProfCDWatch.SetTodo(spell, wantTodo) end },
+            },
+        }
+    end
+    PD.PushCardRow(rows, cards, 4)
+end
+
+local NOTE_H = 20
+
+function PD.RowsWatch(rows)
+    PushGap(rows, 4, 1)
+    PushHead(rows, L["冷却追踪"], 1)
+    local W = ns.ProfCDWatch
+    if not (type(W) == "table" and type(W.Cards) == "function") then
+        PushText(rows, L["专业冷却模块尚未就绪"], 14, C_GREY, 1, NOTE_H)
+        return
+    end
+    local cards = W.Cards(PD.cur)
+    local hint = false
+    if #cards == 0 then
+        hint = true
+        local known = 0
+        if type(W.Manage) == "function" then known = #W.Manage(PD.cur) end
+        if known > 0 then
+            PushText(rows, L["还没确认角色是否学会这些配方"], 14, C_GREY, 1, NOTE_H)
+            PushText(rows, L["打开一次专业技能窗口（做东西的那个），就能认出每个角色学过哪些。"], 14, C_GREY, 1, NOTE_H)
+        else
+            PushText(rows, L["还没有扫描到带冷却的配方"], 14, C_GREY, 1, NOTE_H)
+            PushText(rows, L["打开这个页面会自动扫描当前角色的冷却配方。"], 14, C_GREY, 1, NOTE_H)
+        end
+    else
+        local list = {}
+        for i = 1, #cards do
+            local c = cards[i]
+            local item = { name = c.name, icon = c.item, rows = c.rows }
+            if type(c.gain) == "number" then
+                item.right = (c.gain >= 0 and "+" or "") .. PD.MoneyBrief(c.gain)
+                item.rightColor = (c.gain >= 0) and C_GOLD or { 0.90, 0.35, 0.35 }
+                item.rightFs = 14
+            else
+                item.right = L["价格待补全"]
+                item.rightFs = 14
+            end
+            list[#list + 1] = item
+        end
+        PD.PushCardRow(rows, list)
+    end
+    if not hint then PushGap(rows, PD.SEC_GAP, 1) end
+    PushText(rows, L["记录只在你登录该角色时更新；离线角色按最后记录时间推算，可能偏差。"], 14, C_GREY, 1, NOTE_H)
 end
 
 local CAMP_AREA_MAP = ns.AreaMap or {}
@@ -13289,10 +13885,10 @@ function PD.RowsExclusions(rows)
                 }
             end
             if #cards == 0 then
-                PushText(rows, L["没有需要准备的材料。"], 12, C_GREY)
+                PushText(rows, L["没有需要准备的材料。"], 14, C_GREY)
             end
         else
-            PushText(rows, L["先计算一条路线，再点击路线配方设置排除。"], 12, C_GREY)
+            PushText(rows, L["先计算一条路线，再点击路线配方设置排除。"], 14, C_GREY)
         end
         PD.notReady = (#wait > 0) and wait or nil
         if PD.notReady and not PD.sweeping then PD.ScheduleSweep() end
@@ -13308,7 +13904,7 @@ function PD.RowsExclusions(rows)
         return
     end
     if #recipeList == 0 then
-        PushText(rows, L["先计算一条路线，再点击路线配方设置排除。"], 12, C_GREY)
+        PushText(rows, L["先计算一条路线，再点击路线配方设置排除。"], 14, C_GREY)
         return
     end
     local function recipeInfo(profession, spell)
@@ -13529,7 +14125,7 @@ function PD.RowsRoutePartner(rows, context)
         end,
     }
     if not selected or PD.partnerPicker == target then
-        PushText(rows, L["仅使用目标专业和所选专业计算；选择后点击「重新计算」。"], 11, C_GREY)
+        PushText(rows, L["仅使用目标专业和所选专业计算；选择后点击「重新计算」。"], 14, C_GREY)
         for _, slug in ipairs(E and E.PartnerCandidates and E.PartnerCandidates(target) or {}) do
             local candidate, partner = D.pro[slug], slug
             rows[#rows + 1] = {
@@ -14783,10 +15379,10 @@ function PD.RowsLeveling(rows)
     local scanAdvice=PD.ScanModeAdvice()
     if scanWarning then
         warningSeen[scanWarning]=true
-        PushText(rows,PD.ScanHeadline() or scanWarning,15,{0.98,0.6,0.46},1)
+        PushText(rows,PD.ScanHeadline() or scanWarning,14,{0.98,0.6,0.46},1)
         if scanFix then
             for i=1,math.min(#scanFix,2) do
-                PushText(rows,scanFix[i],12,{0.9,0.74,0.5},1)
+                PushText(rows,scanFix[i],14,{0.9,0.74,0.5},1)
             end
         end
         if PD.ScanForceOffer() then
@@ -14803,7 +15399,7 @@ function PD.RowsLeveling(rows)
             for i=2,#scanCheck do
                 if scanCheck[i][3]=="bad" then bad=bad+1 end
             end
-            rows[#rows+1]={kind="head",col=1,h=PD.ROW_H1,fs=13,
+            rows[#rows+1]={kind="head",col=1,h=PD.ROW_H1,fs=14,
                 text=L["为什么无法重新计算"],foldKey="scan_diag",
                 right=bad>0 and format(L["%d 项异常"],bad) or L["全部正常"],
                 rightColor=bad>0 and {0.98,0.5,0.42} or {0.55,0.85,0.6}}
@@ -14813,7 +15409,7 @@ function PD.RowsLeveling(rows)
                     local cut=text:find("：",1,true)
                     local label,value=text,""
                     if cut then label,value=text:sub(1,cut-1),text:sub(cut+3) end
-                    rows[#rows+1]={kind="row",col=1,h=PD.ROW_H1,fs=13,
+                    rows[#rows+1]={kind="row",col=1,h=PD.ROW_H1,fs=14,
                         text=label,color={0.7,0.74,0.82},
                         right=value,rightColor=scanCheck[i][2]}
                 end
@@ -14891,7 +15487,7 @@ function PD.RowsLeveling(rows)
         PD.CopyPlanSummary(res)
         local statusText = PD.PlanStatusText(res)
         if statusText ~= scanWarning then
-            PushText(rows, statusText, 12, {0.95, 0.75, 0.4})
+            PushText(rows, statusText, 14, {0.95, 0.75, 0.4})
         end
         return
     end
@@ -14912,10 +15508,10 @@ function PD.RowsLeveling(rows)
         PD.CopyPlanSummary(res)
         PushHead(rows, res and PD.PlanStatusText(res) or L["正在计算升级路线…"])
         if PD.PlanNoUpgradeNeeded(res) then
-            PushText(rows,L["如需查看全程路线，可在设置中关闭「从当前技能开始计算」。"],12,C_GREY)
+            PushText(rows,L["如需查看全程路线，可在设置中关闭「从当前技能开始计算」。"],14,C_GREY)
         end
         local progress = PD.PlanProgressText(res)
-        if progress then PushText(rows, progress, 11, C_GREY) end
+        if progress then PushText(rows, progress, 14, C_GREY) end
         PD.lvRouteHead = { progress = (RA.HasWork and RA.HasWork(PD.cur)) and L["正在计算升级路线…"] or nil }
         if res then PD.PlanDiagnostics(note, res) end
         return
@@ -15249,17 +15845,17 @@ function PD.RowsLeveling(rows)
             if activePlan==res and progress then progress=format(L["已保存路线 · %s"],progress) end
             PD.lvRouteHead = { progress = progress }
             if PD.solverFallback and not (res and res.exact) then
-                PushText(rows, PD.SolverFallbackText(), 12, { 0.95, 0.75, 0.4 })
+                PushText(rows, PD.SolverFallbackText(), 14, { 0.95, 0.75, 0.4 })
                 PushGap(rows, 2)
             end
             if res.fallbackSteps and res.fallbackSteps > 0 then
                 PushText(rows, format(L["%d 步无有价配方，已按缺价兜底：这些步骤的费用为下限"], res.fallbackSteps),
-                         12, { 0.95, 0.75, 0.4 })
+                         14, { 0.95, 0.75, 0.4 })
                 PushGap(rows, 2)
             end
             if res.looseMats then
                 PushText(rows, format(L["%d 种材料需要更新报价；请使用 Auctionator 完整扫描一次拍卖行后重新计算。"], np),
-                         12, { 0.95, 0.75, 0.4 })
+                         14, { 0.95, 0.75, 0.4 })
                 PushGap(rows, 2)
             end
             PushGap(rows, 4)
@@ -15509,7 +16105,7 @@ function PD.RowsFormulaShop(rows, data, foldKey, represented)
         end
     end
     if #formulas == 0 then
-        PushText(rows, L["没有需要购买的图纸。"], 11, C_GREY, 1)
+        PushText(rows, L["没有需要购买的图纸。"], 14, C_GREY, 1)
         return
     end
     local function money(value)
@@ -16426,12 +17022,6 @@ function PD.LevelTool()
                        tip = { { L["历史路线"], 1, 0.82, 0 },
                            { format(L["最近 %d 次计算的时间、起始与目标等级、步数与总花费。"], PD.HISTORY_MAX), 0.85, 0.85, 0.85 } } }
         list[#list + 1] = hist
-        if automatic and not fishRoute and not onLog and not onRec and PD.autoPage~="shop" then
-            local label=PD.GreenBudgetLabel(PD.SettingRaw("autoSkillBudget",routeSlug))
-            list[#list+1]={key="green_budget",align="right",text=label,tip={{label,1,.82,0},
-                {L["乐观按平均次数计算。均衡和悲观分别按单点 80% 和 95% 把握计算，悲观还将绿方的估算升点率减半。选方和购物单使用同一份用量。点击切换，再重新计算。"]},
-                {L["开启回血时，选方只按平均会做出的冲点成品估算收益。"]}}}
-        end
         local rec = { key = "recalc", align = "right", primary = true, glow = need,
                       text = automatic and L["重新计算"] or L["刷新费用"] }
         if automatic and PD.policyDirty and PD.policyDirty[PD.cur] then
@@ -16481,9 +17071,6 @@ function PD.LevelTool()
             ns.PlaySound(1)
         elseif k == "route_history" then
             PD.ToggleRouteHistory()
-        elseif k=="green_budget" and PD.cur==routeSlug then
-            local mode=PD.SettingRaw("autoSkillBudget",routeSlug)
-            PD.ChangeRouteSetting("autoSkillBudget",mode=="optimistic" and "balanced" or mode=="pessimistic" and "optimistic" or "pessimistic",routeSlug)
         elseif k == "recalc" then
             if PD.cur ~= routeSlug then return end
             PD.DoRecalc(routeSlug)
@@ -17758,6 +18345,10 @@ function PD.Render()
     if not (PD.built and PD.page) or not PD.cur then return end
     PD.ResetItemNameMemo()
     PD.lvRouteHead = nil
+    if PD.tab == "overview" and not PD.setOpen and PD.cur ~= "__index"
+       and PD.subTabSlug ~= PD.cur then
+        PD.SyncSubTab(PD.cur)
+    end
     PD.PickNav()
     PD.PickTabs()
     local crateTab = (PD.tab == "crate" or PD.tab == "writ")
@@ -17769,6 +18360,10 @@ function PD.Render()
         end
     end
     RememberLast()
+    local cw = ns.ProfCDWatch
+    if cw and cw.AutoScan and PD.cur and PD.cur ~= "__index" then
+        pcall(cw.AutoScan, PD.cur)
+    end
 
     local rows = {}
     local tool, handler = {}, nil
@@ -17795,7 +18390,7 @@ function PD.Render()
         local pk = tostring(PD.cur) .. "|" .. tostring(PD.tab) .. "|"
                    .. tostring(PD.autoPage) .. "|" .. tostring(PD.setOpen) .. "|" .. tostring(PD.exclusionsOpen)
                    .. "|" .. tostring(PD.exSub) .. "|" .. tostring(PD.partnerPicker) .. "|" .. tostring(PD.partnerUIRevision)
-                   .. "|" .. tostring(PD.shopGroup)
+                   .. "|" .. tostring(PD.shopGroup) .. "|" .. tostring(PD.subTab)
         if pk ~= PD.__pageKey then
             PD.__pageKey = pk
             PD.gcOpen = {}
@@ -17810,6 +18405,7 @@ function PD.Render()
         end
     end
 
+    PD.wantMgrBtn = nil
     if PD.setOpen then
         PD.gridSplit = true
         PD.RowsSettings(rows)
@@ -17819,11 +18415,23 @@ function PD.Render()
         PD.hasSecs = true
         PD.noSecCard = true
         PD.hideDivider = true
-        if PD.cur == "camping" then
-            PD.campView = "bonus"
-            PD.wantBonusTable = true
+        if PD.cur == "__index" then
+            PD.RowsOverview(rows)
+        elseif PD.subTab == "watch" then
+            PD.pcSpanAll = true
+            PD.wantMgrBtn = true
+            PD.RowsWatch(rows)
+        elseif PD.subTab == "mgr" then
+            PD.pcSpanAll = true
+            PD.wantMgrBtn = true
+            PD.RowsWatchMgr(rows)
+        else
+            if PD.cur == "camping" then
+                PD.campView = "bonus"
+                PD.wantBonusTable = true
+            end
+            PD.RowsOverview(rows)
         end
-        PD.RowsOverview(rows)
     elseif PD.tab == "trainer" then
         PD.wantTrainerBoard = true
     elseif PD.tab == "recipe" then
@@ -18052,6 +18660,8 @@ end
 
 function PD.SetTab(key)
     PD.setOpen = false
+    PD.subTabSlug = nil
+    if PD.mgrBtn then PD.mgrBtn:Hide() end
     PD.ResetItemNameMemo()
     if not (PD.avail and PD.avail[key]) then return end
     local wasCrate = (PD.tab == "crate" or PD.tab == "writ")

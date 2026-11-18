@@ -676,7 +676,7 @@ local function MakeRow(i)
         elseif r.ikind == "talent" then
             Tip(r, r.ilabel, r.idesc or sub, r.jumpTip or L["点击打开天赋界面"])
         else
-            SpellTip(r, r.itipid or r.iid, r.ilabel, sub)
+            SpellTip(r, r.itipid or r.iid, r.ilabel, r.subBase or sub, r.discTip)
         end
     end)
     r:SetScript("OnLeave", function()
@@ -989,8 +989,8 @@ local function Layout(res)
                 local s = subs[k]
                 ri = ri + 1
                 local r = MakeRow(ri)
-                if s.disc then
-                    r.icon:SetTexture(s.disc)
+                if s.discTex then
+                    r.icon:SetTexture(s.discTex)
                     r.icon:SetTexCoord(0, 1, 0, 1)
                     local dc = s.discCol
                     if dc then
@@ -1022,7 +1022,16 @@ local function Layout(res)
                 r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", textLeft, -26)
                 r.sub:SetWidth(textW)
                 r.name:SetText(s.name or "")
-                r.sub:SetText(s.sub or SubText(s))
+                local subBase = s.sub or SubText(s)
+                if s.disc then
+                    r.sub:SetText(subBase .. " · " .. s.disc)
+                    local wide = (r.sub:GetStringWidth() or 0) > (textW + 2)
+                    r.sub:SetText(wide and (subBase .. "\n" .. s.disc) or (subBase .. " · " .. s.disc))
+                else
+                    r.sub:SetText(subBase)
+                end
+                r.subBase = subBase
+                r.discTip = s.discTip
                 local subH = r.sub:GetStringHeight() or 16
                 local rowHi = rowH
                 if 26 + subH + 4 > rowHi then rowHi = 26 + subH + 4 end
@@ -1850,14 +1859,15 @@ function O.Init()
     OptRow(-120, L["探索-旗帜提醒"], "banner", L["进入血色修道院副本后，有未拾取的血色旗帜时提示"])
     OptRow(-142, L["副本-任务提醒"], "quest", L["本图有可接的副本任务时提示"])
     OptRow(-164, L["副本-必备物品提醒"], "keyitem", L["在副本里且背包没有该副本要用的物品时提示"])
-    OptRow(-186, L["职业-技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
-    OptRow(-208, L["职业-天赋提醒"], "talent", L["有未分配的天赋点时提示，点击可直接打开天赋界面"])
-    OptRow(-230, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
-    OptRow(-252, L["增益-睡袋提醒"], "rested", L["背包有睡袋且未休息或 buff 快到期时提示"], "restedVoice")
-    OptRow(-274, L["增益-露营提醒"], "camp", L["在营火旁且没有强化休息时提示"])
-    OptRow(-296, L["增益-到期提醒"], "renew", L["强化休息快到期时提示回营地续一次"])
-    OptRow(-318, L["增益-蹭帐篷卡片"], "tent", L["找到营地玩家且自己还没有强化休息时，在待办里弹出卡片"])
-    OptRow(-340, L["有帐篷时不提示"], "tentOwn", L["自己已有帐篷时，不再在待办里弹出蹭帐篷卡片"])
+    OptRow(-186, L["专业-冷却可做提醒"], "profcd", L["本账号任意角色的冷却配方可再做时，在待办里提示"])
+    OptRow(-208, L["职业-技能提醒"], "spell", L["主城有训练师且技能可学时提示"])
+    OptRow(-230, L["职业-天赋提醒"], "talent", L["有未分配的天赋点时提示，点击可直接打开天赋界面"])
+    OptRow(-252, L["增益-食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
+    OptRow(-274, L["增益-睡袋提醒"], "rested", L["背包有睡袋且未休息或 buff 快到期时提示"], "restedVoice")
+    OptRow(-296, L["增益-露营提醒"], "camp", L["在营火旁且没有强化休息时提示"])
+    OptRow(-318, L["增益-到期提醒"], "renew", L["强化休息快到期时提示回营地续一次"])
+    OptRow(-340, L["增益-蹭帐篷卡片"], "tent", L["找到营地玩家且自己还没有强化休息时，在待办里弹出卡片"])
+    OptRow(-362, L["有帐篷时不提示"], "tentOwn", L["自己已有帐篷时，不再在待办里弹出蹭帐篷卡片"])
 
     local ttLabel = opts:CreateFontString(nil, "OVERLAY")
     ttLabel:SetFont(ns.FONT, 14, "")

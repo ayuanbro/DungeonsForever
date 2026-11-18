@@ -59,26 +59,26 @@ local function offs()
     return p.cdOff
 end
 
-local function todoOffs()
+local function todoOns()
     local p = prof()
-    if type(p.cdTodoOff) ~= "table" then p.cdTodoOff = {} end
-    return p.cdTodoOff
+    if type(p.cdTodoOn) ~= "table" then p.cdTodoOn = {} end
+    return p.cdTodoOn
 end
 
+local TODO_DEF = { [17187] = true, [1317279] = true }
+
 function W.TodoOn(spell)
-    return todoOffs()[spell] ~= true
+    local v = todoOns()[spell]
+    if v ~= nil then return v == true end
+    return TODO_DEF[spell] == true
 end
 
 function W.SetTodo(spell, on)
     if type(spell) ~= "number" then return false end
-    local o = todoOffs()
-    if on then
-        if o[spell] == nil then return false end
-        o[spell] = nil
-    else
-        if o[spell] == true then return false end
-        o[spell] = true
-    end
+    on = (on == true)
+    if W.TodoOn(spell) == on then return false end
+    local o = todoOns()
+    if on then o[spell] = true else o[spell] = false end
     local pd = ns.ProfModule
     if pd and pd.RequestRender then pd.RequestRender() end
     if ns.ZoneHint and ns.ZoneHint.RefreshSoft then
@@ -141,8 +141,9 @@ end
 
 local function migrate()
     local p = prof()
-    if p.cdMig == 5 then return end
-    p.cdMig = 5
+    if p.cdMig == 6 then return end
+    p.cdMig = 6
+    p.cdTodoOff = nil
     local full = W.Name()
     local ok, r = pcall(GetRealmName)
     if not ok or type(r) ~= "string" then r = "?" end

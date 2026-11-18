@@ -91,6 +91,22 @@ local function SortZones(zids, cur, idx)
     end)
 end
 
+local function CitySuffix(zid)
+    local td = ns.TrainerDiscount
+    if not (td and td.CityInfo) then return nil end
+    local ok, info = pcall(td.CityInfo, zid)
+    if not ok or type(info) ~= "table" then return nil end
+    local piece
+    if info.label and info.label ~= "" then
+        piece = string.format(ns.L["%d%%（%s）"], info.pct or 0, info.label)
+    else
+        piece = string.format("%d%%", info.pct or 0)
+    end
+    local text = string.format(ns.L["声望 %s"], piece)
+    if info.best then text = text .. " · " .. ns.L["最省"] end
+    return text
+end
+
 function CT.Groups()
     local data = ns.ClassTrainerData
     if not (data and data.classes) then return nil end
@@ -141,8 +157,13 @@ function CT.Groups()
                 },
             }
         end
+        local headText = zoneName
+        if zid ~= 0 then
+            local suffix = CitySuffix(zid)
+            if suffix then headText = headText .. " · " .. suffix end
+        end
         groups[#groups + 1] = {
-            header = { templateKey = TPL_HEADER, text = zoneName },
+            header = { templateKey = TPL_HEADER, text = headText },
             elements = elements,
         }
     end

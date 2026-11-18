@@ -9829,7 +9829,12 @@ function U:RenderQuestDetail()
             mb:SetPoint("RIGHT", f.fs, "RIGHT", 74, 0)
             mb:SetScript("OnClick", function(self)
                 local p = self:GetParent()
-                if p.__npc or p.__loc then DG.MarkNPC(p.__npc, p.__loc) end
+                if p.__npc or p.__loc then
+                    DG.MarkNPC(p.__npc, p.__loc)
+                elseif UIErrorsFrame and UIErrorsFrame.AddMessage then
+                    pcall(UIErrorsFrame.AddMessage, UIErrorsFrame,
+                          L["该任务没有可标记的位置"], 1, 0.7, 0.3)
+                end
             end)
             mb:SetScript("OnEnter", function(self)
                 local p = self:GetParent()
@@ -10170,11 +10175,13 @@ function U:RenderQuestDetail()
             end
             f.__loc = floc
         else
-            f = takeKv()
-            f:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereFull)
-            if FSW(f) > DG.Q_DET_W - 8 then
-                f:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereShort)
+            f = takeNpc()
+            f.fs:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereFull)
+            if FSW(f.fs) > DG.Q_DET_W - 76 then
+                f.fs:SetText(DG.Hex(C_GREY) .. L["起始："] .. "|r" .. whereShort)
             end
+            f.__npc = nil
+            f.__loc = nil
         end
         put(f, 24)
     elseif q[9] == nil and q[14] and d and ns.DungeonLoot then
@@ -10225,6 +10232,21 @@ function U:RenderQuestDetail()
             end
         end
     end
+    do
+        local desc = DG.QuestDescription(q[1]) or q[20]
+        if desc then
+            local f = takeLab()
+            f:SetText(L["任务说明"])
+            put(f, 20)
+            local t = takeTxt()
+            t:SetText(desc)
+            t:SetTextColor(Unpack(C_TEXT))
+            local h = FSH(t)
+            put(t, (type(h) == "number" and h or 18) + 4)
+            y = y - 2
+        end
+    end
+
     do
         local en = DG.QuestEndNpc(q[1])
         if en then
@@ -10515,21 +10537,6 @@ function U:RenderQuestDetail()
             end
         end
         y = y - 4
-    end
-
-    do
-        local desc = DG.QuestDescription(q[1]) or q[20]
-        if desc then
-            local f = takeLab()
-            f:SetText(L["任务说明"])
-            put(f, 20)
-            local t = takeTxt()
-            t:SetText(desc)
-            t:SetTextColor(Unpack(C_TEXT))
-            local h = FSH(t)
-            put(t, (type(h) == "number" and h or 18) + 4)
-            y = y - 2
-        end
     end
 
     do
