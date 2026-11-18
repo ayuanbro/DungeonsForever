@@ -9984,7 +9984,7 @@ function PD.EnchantSpec(en)
     en[9] = resolved.mats
     if resolved.item then en[15] = resolved.item end
     en[5], en[6], en[7], en[8] = resolved.learn, resolved.yellow, resolved.green, resolved.grey
-    local colors = PD.RecipeColors(resolved.orange, resolved.yellow, resolved.green, resolved.grey)
+    local colors = PD.RecipeColors(resolved.orange or resolved.learn, resolved.yellow, resolved.green, resolved.grey)
     local clientPending = resolved.clientPending
     local matCol, _, _, matSg = PD.MatCol(en[9], PD.MAT_FS, PD.MAT_W)
     local costStr, total, unpriced, ah
@@ -11052,7 +11052,7 @@ function PD.RecipeSpec(r)
     for key, value in pairs(catalogue) do r[key] = value end
     r[2], r[3], r[12] = resolved.item, resolved.count, resolved.mats
     r[7], r[8], r[9], r[10] = resolved.learn, resolved.yellow, resolved.green, resolved.grey
-    local colors = PD.RecipeColors(resolved.orange, resolved.yellow, resolved.green, resolved.grey)
+    local colors = PD.RecipeColors(resolved.orange or resolved.learn, resolved.yellow, resolved.green, resolved.grey)
     local clientPending = resolved.clientPending
     local station = meta and (meta.stationNames and meta.stationNames[ns.DF_REAL_LOCALE and ns.DF_REAL_LOCALE() or "zhCN"] or meta.stationName or ({ forge = L["熔炉"], blackForge = L["黑铁熔炉"], moltenFoundry = L["熔火铸造厂"] })[meta.station])
     local vs = (r[14] and PD.VendorListOf(r[14])) or {}
@@ -11195,7 +11195,7 @@ function PD.CraftedSpec(c)
     c = {}; for key, value in pairs(original) do c[key] = value end
     c[8], c[3], c[2] = resolved.mats, resolved.count, resolved.item
     c[4], c[5], c[6], c[7] = resolved.learn, resolved.yellow, resolved.green, resolved.grey
-    local colors = PD.RecipeColors(resolved.orange, resolved.yellow, resolved.green, resolved.grey)
+    local colors = PD.RecipeColors(resolved.orange or resolved.learn, resolved.yellow, resolved.green, resolved.grey)
     local clientPending = resolved.clientPending
     local mats = PD.MatText(c[8])
     local matCol, _, _, matSg = PD.MatCol(c[8], PD.MAT_FS, PD.MAT_W)
@@ -15377,8 +15377,9 @@ function PD.RowsLeveling(rows)
                 roleChip = roleChipOf[st],
                 _mats = mats,
                 blocks = blocks, matCut = cut,
-                sbVals = rec and PD.RecipeColors(rec.orange, rec[8], rec[9], rec[10])
-                         or ri and PD.RecipeColors(ri.orange, ri.yellow, ri.green, ri.grey),
+                sbVals = rec and PD.RecipeColors(rec.orange or rec.learn or rec[7],
+                                                 rec.yellow or rec[8], rec.green or rec[9], rec.grey or rec[10])
+                         or ri and PD.RecipeColors(ri.orange or ri.learn, ri.yellow, ri.green, ri.grey),
                 sbLo = segLo, sbHi = segHi,
                 card = cardOf[st],
                 act = auto and st[3] ~= 0 and function(_, button)
