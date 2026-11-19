@@ -24,6 +24,7 @@ local learningChecks = setmetatable({}, {__mode="k"})
 local performance = {creditBuilds=0,historyScans=0}
 local completionTimer, observationGeneration = false, 0
 local idleTimer, checkingIdle, combatPaused
+local changeTimer, pendingChanges = nil, {}
 local IDLE_LIMIT = 48 * 60 * 60
 local observedActive, observedReceipts
 local floor, ceil, max, min = math.floor, math.ceil, math.max, math.min
@@ -227,6 +228,11 @@ local function referencesChanged()
 end
 local function changed(run,lifecycleReason)
     run.progressVersion=(run.progressVersion or 0)+1;run.updatedAt=now()
+    if (not lifecycleReason or lifecycleReason=="progress" or lifecycleReason=="inventory")
+        and pendingChanges[run.planID] then
+        pendingChanges[run.planID]={slug=run.slug,run=run,reason=lifecycleReason or pendingChanges[run.planID].reason or "progress"}
+        return
+    end
     referencesChanged()
     if XP.GetRecipeTotals and readablePlan(run) then
         run.byRecipe=XP.GetRecipeTotals(run.slug,run.planID,true)
@@ -248,7 +254,28 @@ local function changed(run,lifecycleReason)
         end
         run.materialLedger=ledger
     end
-    for _,fn in ipairs(listeners) do pcall(fn,run.slug,run,lifecycleReason) end
+    if lifecycleReason=="ended" or lifecycleReason=="dropped" or lifecycleReason=="completed"
+        or lifecycleReason=="archived" or lifecycleReason=="catalogueFiltered" then
+        for _,fn in ipairs(listeners) do pcall(fn,run.slug,run,lifecycleReason) end
+        return
+    end
+    pendingChanges[run.planID]={slug=run.slug,run=run,reason=lifecycleReason or "progress"}
+    if changeTimer then return end
+    if C_Timer and C_Timer.After then
+        changeTimer=true
+        C_Timer.After(0.05,function()
+            changeTimer=nil
+            local batch=pendingChanges;pendingChanges={}
+            for _,notification in pairs(batch) do
+                for _,fn in ipairs(listeners) do pcall(fn,notification.slug,notification.run,notification.reason) end
+            end
+        end)
+    else
+        local batch=pendingChanges;pendingChanges={}
+        for _,notification in pairs(batch) do
+            for _,fn in ipairs(listeners) do pcall(fn,notification.slug,notification.run,notification.reason) end
+        end
+    end
 end
 function XP.PerformanceCounters()
     return {creditBuilds=performance.creditBuilds,historyScans=performance.historyScans}
@@ -993,6 +1020,7 @@ function XP.Sync(slug,result)
         end
     end
     local index=1
+    local previousIndex=run.currentIndex or 1
     local skillSnapshot=E and E.Professions and E.Professions()
     local credits={}
     while index<=#steps(run.plan) do local p=XP.Progress(slug,index,skillSnapshot,nil,credits);if not p.complete then break end;index=index+1 end
@@ -1005,7 +1033,8 @@ function XP.Sync(slug,result)
         if now()>=run.completionDue then XP.End(slug,"completed")
         elseif XP.RefreshObservation then XP.RefreshObservation() end
     else run.completionDue=nil end
-    if observed and run.status=="active" then changed(run) end
+    if observed and run.status=="active" then changed(run)
+    elseif run.currentIndex~=previousIndex and run.status=="active" then changed(run,"progress") end
     return run
 end
 local function matchingSegment(run,spell,id)

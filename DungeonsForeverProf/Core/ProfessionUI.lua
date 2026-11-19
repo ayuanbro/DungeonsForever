@@ -13836,50 +13836,6 @@ function PD.StepRange(st)
     return format(L["%d – %d"], math.floor(current + 0.5), math.floor(target + 0.5))
 end
 
-function PD.MaterialLevelPoint(st, allSteps)
-    if not st or not allSteps then return tonumber(st and st[1]) end
-    local consumerIDs = {}
-    for _, allocation in ipairs(st.allocations or {}) do
-        if allocation.consumerID and not allocation.consumerID:match("^tool:") then
-            consumerIDs[allocation.consumerID] = true
-        end
-    end
-    if not next(consumerIDs) then return tonumber(st[1]) end
-
-    local point
-    for candidateIndex, candidate in ipairs(allSteps) do
-        local match = false
-        for id in pairs(consumerIDs) do
-            if candidate.segmentID == id then match = true end
-            if candidate.segmentIDs then
-                for _, segmentID in ipairs(candidate.segmentIDs) do
-                    if segmentID == id then match = true; break end
-                end
-            end
-            if not match then
-                for _, actionID in ipairs(candidate.actionIDs or {}) do
-                    if actionID == id then match = true; break end
-                end
-            end
-            if match then break end
-        end
-        if match then
-            local start = tonumber(candidate[1])
-            if start then
-                point = point and math.min(point, start) or start
-                for priorIndex = 1, candidateIndex - 1 do
-                    local prior = allSteps[priorIndex]
-                    if prior ~= st and prior.role ~= "material" then
-                        local priorEnd = tonumber(prior.goalSkill) or tonumber(prior[2])
-                        if priorEnd and priorEnd >= point then point = math.max(point, priorEnd) end
-                    end
-                end
-            end
-        end
-    end
-    return point or tonumber(st[1])
-end
-
 function PD.PurchaseSource(entry)
     local source=PD.PurchaseSourceKind(entry)
     if source=="acquire" then return entry.acquisitionKind=="currency" and L["通货兑换"] or L["获取图纸"] end
