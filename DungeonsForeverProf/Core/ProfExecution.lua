@@ -386,7 +386,73 @@ local function pruneArchived(slug)
             if hasFacts then kept=kept+1 end
             if (not hasFacts or kept>3) and XP.Remove(slug,entry.id) then removed=true end
         end
-    until not removed
+        until not removed
+end
+local function dropRefs(run,gone)
+    if type(run)~="table" then return end
+    if gone[run.inheritedFrom] then run.inheritedFrom=nil end
+    if gone[run.originPlanID] then run.originPlanID=nil end
+    local plan=type(run.plan)=="table" and run.plan or nil
+    if not plan then return end
+    if gone[plan.executionSourcePlanID] then plan.executionSourcePlanID=nil end
+    local opts=type(plan.executionOptions)=="table" and plan.executionOptions or nil
+    if opts and gone[opts.executionSourcePlanID] then opts.executionSourcePlanID=nil end
+end
+function XP.PruneAll(limit)
+    limit=tonumber(limit) or 1
+    local prof=ns.ProfessionDB(false)
+    local track=type(prof)=="table" and prof.track or nil
+    if type(track)~="table" then return 0 end
+    local removed=0
+    for _,c in pairs(track) do
+        if type(c)=="table" and type(c.runs)=="table" then
+            local pinned={}
+            for _,id in pairs(c.active or {}) do pinned[id]=true end
+            for _,sources in ipairs({c.preparing or {},c.continuation or {}}) do
+                for _,source in pairs(sources) do
+                    if type(source)=="table" and source.sourcePlanID then pinned[source.sourcePlanID]=true end
+                end
+            end
+            local groups={}
+            for id,run in pairs(c.runs) do
+                if type(run)=="table" and run.status~="active" and not pinned[id] then
+                    local slug=tostring(run.slug or "")
+                    local bucket=groups[slug]
+                    if not bucket then bucket={};groups[slug]=bucket end
+                    bucket[#bucket+1]={id=id,at=tonumber(run.archivedAt or run.updatedAt or run.createdAt) or 0,fact=recorded(run)}
+                end
+            end
+            local gone={}
+            for _,bucket in pairs(groups) do
+                table.sort(bucket,function(a,b)
+                    if a.at~=b.at then return a.at>b.at end
+                    return tostring(a.id)>tostring(b.id)
+                end)
+                local kept=0
+                for _,entry in ipairs(bucket) do
+                    if entry.fact and kept<limit then kept=kept+1 else gone[entry.id]=true end
+                end
+            end
+            if next(gone) then
+                for id in pairs(gone) do
+                    local run=c.runs[id]
+                    c.runs[id]=nil
+                    for _,contracts in pairs(c.endedContracts or {}) do
+                        for signature,planID in pairs(contracts) do if planID==id then contracts[signature]=true end end
+                    end
+                    if type(run)=="table" then
+                        creditCaches[run]=nil
+                        if run.plan then learningChecks[run.plan]=nil end
+                    end
+                    removed=removed+1
+                end
+                for _,run in pairs(c.runs) do dropRefs(run,gone) end
+                referencesChanged()
+            end
+        end
+    end
+    if removed>0 and XP.RefreshObservation then pcall(XP.RefreshObservation) end
+    return removed
 end
 function XP.GetSummary(slug,planID)
     local run

@@ -397,6 +397,18 @@ function PD.ScanCaptureText()
     return L["扫描捕获：无法读取"],"bad"
 end
 
+function PD.AuctionParseText()
+    local bridge=ns.AuctionBridge
+    local st=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
+    if not st or st.status~="processing" then return nil end
+    local done,total=tonumber(st.done),tonumber(st.total)
+    if done and total and total>0 then
+        local frac=math.max(0,math.min(1,done/total))
+        return format(L["正在解析拍卖行数据 %d%%"],math.max(0,math.min(100,math.floor(frac*100)))),frac
+    end
+    return L["正在解析拍卖行数据"]
+end
+
 function PD.ScanModeText()
     local bridge=ns.AuctionBridge
     local enabled=bridge and bridge.ReplicateScanEnabled and bridge.ReplicateScanEnabled()
@@ -17364,20 +17376,40 @@ function PD.LevelTool()
     end
 end
 
+function PD.PurgeProfCaches()
+    local prof = ns.ProfessionDB and ns.ProfessionDB(false) or nil
+    if type(prof) ~= "table" then return false end
+    prof.routeCache = nil
+    prof.routeHistory = nil
+    local economy = type(prof.economy) == "table" and prof.economy or nil
+    if economy then
+        local me = ns.ProfEconomy and ns.ProfEconomy.CharacterKey and ns.ProfEconomy.CharacterKey() or nil
+        for key in pairs(economy) do
+            if key ~= me then economy[key] = nil end
+        end
+    end
+    local XP = ns.ProfExecution
+    if XP and XP.PruneAll then pcall(XP.PruneAll, 1) end
+    return true
+end
+
 function PD.ClearScanData()
     local bridge = ns.AuctionBridge
-    if not (bridge and bridge.ClearSavedScans) then return false end
+    local cleared = false
+    if bridge and bridge.ClearSavedScans then
+        cleared = bridge.ClearSavedScans() and true or false
+    end
     PD.autoSnapshot = nil
     PD.autoSnapshotSlug = nil
-    bridge.ClearSavedScans()
+    PD.PurgeProfCaches()
     if PD.built and ns.PageVisible(PD.page) then PD.RequestRender() end
-    return true
+    return cleared
 end
 
 function PD.AskClearScanData()
     if not (StaticPopupDialogs and StaticPopup_Show) then return PD.ClearScanData() end
     StaticPopupDialogs.DF_PROF_CLEAR_SCAN = StaticPopupDialogs.DF_PROF_CLEAR_SCAN or {
-        text = L["清空本插件复制的行情扫描数据？清空后需要重新扫描才能按最新价格计算。"],
+        text = L["清空扫描数据与无用缓存？行情扫描副本、旧版本路线缓存、其他角色的配方数据、已归档的路线执行记录与历史方案都会被删除；进行中的路线保留。"],
         button1 = L["清空"], button2 = L["取消"],
         OnAccept = function() PD.ClearScanData() end,
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
@@ -17534,15 +17566,17 @@ function PD.RowsSettings(rows)
             elseif kk=="clearScanData" and not PD.FixedOnly() then
                 items[#items+1]=function(col)
                     rows[#rows+1]={kind="row",h=PD.SET_ROW_H,col=col,fcol=col,fs=14,
-                        text=L["清空行情扫描副本"],right=L["清空"],rightColor={0.98,0.62,0.5},
+                        text=L["清理缓存与扫描数据"],right=L["清空"],rightColor={0.98,0.62,0.5},
                         act=PD.AskClearScanData,
-                        help={{L["清空行情扫描副本"]},
-                            {L["删除本插件从行情插件复制过来的价格与在售数量。"],.7,.7,.7},
+                        help={{L["清理缓存与扫描数据"]},
+                            {L["删除本插件复制的行情扫描数据，同时清理旧版本路线缓存、其他角色的配方数据、已归档的路线执行记录与历史方案。"],.7,.7,.7},
                             {L["清空后本插件的扫描状态回到「无记录」；装有行情插件时，界面仍会显示它的行情。"],.7,.7,.7},
+                            {L["清理后「升级」页的历史记录与历史路线会清空；进行中的路线与制作进度不受影响。"],.7,.7,.7},
                             {L["需要到拍卖行重新完整扫描一次，才能按最新价格计算路线。"],.7,.7,.7},
                             {L["只清本插件复制的那份数据；拍卖行插件自己保存的数据不受影响。"],.7,.7,.7},
                             {L["摘要模式下，本插件不监听或保存扫描数据；仍可使用 2 天内的完整扫描快照计算。"],.7,.7,.7},
-                            {L["完整扫描快照保留 2 天，过期后自动删除；重载或切换扫描模式不会延长有效期。"],.7,.7,.7}}}
+                            {L["完整扫描快照保留 2 天，过期后自动删除；重载或切换扫描模式不会延长有效期。"],.7,.7,.7},
+                            {L["存档体积在下次重载或退出游戏后更新。"],.7,.7,.7}}}
                 end
             elseif byKey[kk] and allowed(kk) then
                 local d = byKey[kk]
@@ -18728,7 +18762,10 @@ function PD.Render()
     local headText = tool and PD.lvRouteHead and PD.lvRouteHead.progress or nil
     local solverText = PD.SolverText()
     if solverText then headText = solverText end
-    PD.PaintToolProgress(headText, PD.solverFrac)
+    local parseText, parseFrac = PD.AuctionParseText()
+    local barFrac = PD.solverFrac
+    if parseText then headText, barFrac = parseText, parseFrac end
+    PD.PaintToolProgress(headText, barFrac)
     do
         local stale
         if tool and PD.tab == "leveling" and PD.autoSnapshotSlug == PD.cur
