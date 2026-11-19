@@ -722,7 +722,7 @@ local function MacroCard(d, cls, m)
     if #missing > 0 then
         color = CU.WARN
         state = L["还缺技能"]
-        tip = format(L["还缺技能：%s"], table.concat(missing, "、"))
+        tip = format(L["还缺技能：%s"], table.concat(missing, L["、"]))
     end
     local icon
     local firstKey = (m.body or ""):match("{(.-)}")

@@ -1933,7 +1933,7 @@ local function KitEff(text)
     if sp then parts[#parts + 1] = L["法术强度"] .. " +" .. sp end
     if def then parts[#parts + 1] = L["防御技能"] .. " +" .. def end
     if arm then parts[#parts + 1] = L["护甲"] .. " +" .. arm end
-    return table.concat(parts, "，")
+    return table.concat(parts, L["，"])
 end
 
 local function EnsureEnchDB()
@@ -2178,7 +2178,7 @@ local function EnchTip(owner, e)
         for _, m in ipairs(e.mats) do
             parts[#parts + 1] = (DG.ItemName(m[1]) or tostring(m[1])) .. " x" .. tostring(m[2] or 1)
         end
-        GameTooltip:AddLine(format(L["材料：%s"], table.concat(parts, "、")), 0.7, 0.7, 0.7, true)
+        GameTooltip:AddLine(format(L["材料：%s"], table.concat(parts, L["、"])), 0.7, 0.7, 0.7, true)
     end
     GameTooltip:Show()
 end

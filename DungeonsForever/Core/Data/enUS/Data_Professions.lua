@@ -393,7 +393,7 @@ ns.ProfData = {
             },
         },
         ["poisons"] = {
-            name = "毒药",
+            name = "Poisons",
             icon = 136242,
             kind = "secondary",
             section = "crafting",

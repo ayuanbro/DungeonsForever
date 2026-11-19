@@ -4584,9 +4584,9 @@ function PD.FillBonusTable()
             end
             SetIcon(r.icon, p.icon)
             r.name:SetText(p.name or slug)
-            r.cells[1]:SetText(table.concat(t1, "、"))
-            r.cells[2]:SetText(table.concat(t2, "、"))
-            r.cells[3]:SetText(table.concat(t3, "、"))
+            r.cells[1]:SetText(table.concat(t1, L["、"]))
+            r.cells[2]:SetText(table.concat(t2, L["、"]))
+            r.cells[3]:SetText(table.concat(t3, L["、"]))
             if buffTxt ~= "" then
                 r.cmp1:SetText(cmpName ~= "" and cmpName or L["营地增益"])
                 r.cmp1:SetTextColor(Unpack(C_GREY))
@@ -9592,7 +9592,7 @@ function PD.LearningGapText(diagnostic)
     if diagnostic and not diagnostic.item then
         for _,id in ipairs(diagnostic.missingItemIDs or {}) do identity=identity.." · "..format(L["教材 #%d"],id) end
     end
-    return identity..L["："]..table.concat(parts,"；")
+    return identity..L["："]..table.concat(parts,L["；"])
 end
 
 PD.CARD_FIXW = nil
@@ -11274,7 +11274,7 @@ function PD.VendorBlockLines(lines, itemID)
             if type(nm) == "string" and nm ~= "" and nm ~= "?" then names[#names + 1] = nm end
         end
         local txt = format(L["另有 %d 处"], #list - shown)
-        if #names > 0 then txt = txt .. " · " .. table.concat(names, "、") end
+        if #names > 0 then txt = txt .. " · " .. table.concat(names, L["、"]) end
         lines[#lines + 1] = { txt, Unpack(C_MT) }
     end
 end
@@ -14272,7 +14272,7 @@ function PD.SpecQuestLines(goal)
         mats[#mats + 1] = format("%s ×%d", nm, input[2] or 1)
     end
     if #mats > 0 then
-        out[#out + 1] = { format(L["需要材料：%s"], table.concat(mats, "、")), 0.75, 0.75, 0.75 }
+        out[#out + 1] = { format(L["需要材料：%s"], table.concat(mats, L["、"])), 0.75, 0.75, 0.75 }
     end
     local prerequisites=ns.ProfGates and ns.ProfGates.PrerequisiteText(goal) or ""
     if prerequisites~="" then
@@ -15865,7 +15865,7 @@ function PD.RowsLeveling(rows)
                 ranges[#ranges + 1] = format("%d–%d", b.from or 0, b.to or 0)
             end
             warning(format(L["有 %d 个步骤受专精限制（%s）：%s；请在配方页核对专精要求后重新计算。"], #shownSum.blockedSteps,
-                table.concat(names, " / "), table.concat(ranges, "、")), 0.95, 0.75, 0.4)
+                table.concat(names, " / "), table.concat(ranges, L["、"])), 0.95, 0.75, 0.4)
         end
     end
     do
@@ -16978,7 +16978,7 @@ function PD.RowsAutoShop(rows, data)
             local nm = DG.ItemName(it.id)
             parts[#parts + 1] = format("%s ×%d", nm or ("#" .. tostring(it.id)), it.lack)
         end
-        PushText(rows, format(L["当前制作步骤背包还缺：%s"], table.concat(parts, "、")), 12, { 0.95, 0.75, 0.4 }, 1)
+        PushText(rows, format(L["当前制作步骤背包还缺：%s"], table.concat(parts, L["、"])), 12, { 0.95, 0.75, 0.4 }, 1)
     end
     local represented
     if follow and follow.ShoppingForPlan and (data.planVersion==2 or data.reserve and data.reserve.mode~="off") then

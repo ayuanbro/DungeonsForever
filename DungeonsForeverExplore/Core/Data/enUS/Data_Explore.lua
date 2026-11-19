@@ -205,13 +205,13 @@ ns.ExploreUnverIDs = {
 
 ns.ExploreBookMeta = {
     updated = "2026-10-13",
-    quest10 = "图书馆之友",
+    quest10 = "Friend of the Library",
     quest20 = "图书馆的挚友",
     quest25 = "图书馆的挚友",
 }
 
 ns.ExploreBookRewards = {
-    [1] = { at = 10, req = 1, questID = 78150, quest = "图书馆之友",
+    [1] = { at = 10, req = 1, questID = 78150, quest = "Friend of the Library",
             items = { A = 277203, H = 277204 } },
     [2] = { at = 20, req = 20, questID = 79536, quest = "图书馆的挚友",
             items = { A = 281634, H = 281635 } },

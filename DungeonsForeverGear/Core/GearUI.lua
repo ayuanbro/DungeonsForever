@@ -269,8 +269,36 @@ local G = {}
 ns.GearModule = G
 
 local ROW_FIELDS = { id = 1, name = 2, pack = 3, icon = 4 }
+-- 非中文客户端：物品名按 ID 取客户端本地化名称（官方英文名），取不到再用数据里的名字。
+-- Non-Chinese clients: use the client's localized item name by ID, falling back to the data name.
+local ITEM_NAME_LOCAL = (function()
+    local lc = (type(DF_Locale) == "function" and DF_Locale()) or (GetLocale and GetLocale()) or "zhCN"
+    return lc ~= "zhCN" and lc ~= "zhTW"
+end)()
+local itemNameCache = {}
+local function LocalItemName(id)
+    local hit = itemNameCache[id]
+    if hit then return hit end
+    local nm
+    if C_Item and C_Item.GetItemNameByID then
+        local ok, v = pcall(C_Item.GetItemNameByID, id)
+        if ok then nm = v end
+    end
+    if not nm and GetItemInfo then
+        local ok, v = pcall(GetItemInfo, id)
+        if ok then nm = v end
+    end
+    if type(nm) == "string" and nm ~= "" then
+        itemNameCache[id] = nm
+        return nm
+    end
+end
+ns.LocalItemName = LocalItemName
 local ROW_MT = {
     __index = function(t, k)
+        if k == "name" and ITEM_NAME_LOCAL then
+            return LocalItemName(t[1]) or t[2]
+        end
         local f = ROW_FIELDS[k]
         if f then return t[f] end
         if k == "done" then return true end

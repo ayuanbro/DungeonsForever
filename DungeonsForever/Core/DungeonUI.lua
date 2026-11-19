@@ -7353,7 +7353,7 @@ function DG.GainsSegs(q)
         for _, rr in ipairs(g.rep) do
             rs[#rs + 1] = rr[3] .. " +" .. rr[2]
         end
-        seg[#seg + 1] = table.concat(rs, "、")
+        seg[#seg + 1] = table.concat(rs, L["、"])
     end
     return seg
 end
@@ -7552,7 +7552,7 @@ function DG.ShowQuestTip(owner, q)
             end
         end
         if #parts > 0 then
-            GameTooltip:AddLine(L["前置："] .. table.concat(parts, "、"), 0.75, 0.75, 0.75, true)
+            GameTooltip:AddLine(L["前置："] .. table.concat(parts, L["、"]), 0.75, 0.75, 0.75, true)
         end
     elseif q[7] then
         GameTooltip:AddLine(L["前置："] .. q[7], 0.75, 0.75, 0.75, true)

@@ -76,6 +76,9 @@ Core\Data\enUS\Data_DungeonEntry.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_SubzoneMaps.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_Professions.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_RaidSets.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_QuestStartNpc.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_QuestStartLoc.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_QuestEndNpc.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_ProfCraftIndex.lua
 Core\Data\Data_DungeonQuestFlow.lua
 Core\LootFilter.lua

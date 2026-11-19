@@ -31,6 +31,7 @@ Core\Data\zhTW\Data_ClassCombat.lua [AllowLoadTextLocale zhTW]
 Core\Data\enUS\Data_ClassGuide.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ClassTier.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ClassCombat.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_ClassQuest.lua [AllowLoadTextLocale enUS]
 Core\TierUI.lua
 Core\ClassCombatUI.lua
 Core\ClassQuestUI.lua

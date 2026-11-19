@@ -1080,7 +1080,7 @@ ns.SpellBookData = {
             },
         },
         {
-            name = "坐骑",
+            name = "Mounts",
             icon = "Interface\\Icons\\Ability_Hunter_Catlikereflexes",
             spells = {
                 { name = "Summon Warhorse", icon = "Interface\\Icons\\Spell_Nature_Swiftness", id = 1279399, learnLv = 40, ranks = {
@@ -2162,7 +2162,7 @@ ns.SpellBookData = {
             },
         },
         {
-            name = "坐骑",
+            name = "Mounts",
             icon = "Interface\\Icons\\Ability_Hunter_Catlikereflexes",
             spells = {
                 { name = "Summon Felsteed", icon = "Interface\\Icons\\Spell_Nature_Swiftness", id = 5784, learnLv = 40 },

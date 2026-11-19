@@ -475,7 +475,7 @@ function SR.ReportDiagnose()
         if r.state ~= "top" then
             n = n + 1
             if n <= 12 then
-                local slotText = table.concat(r.slots, "、")
+                local slotText = table.concat(r.slots, L["、"])
                 local from = r.cur or "-"
                 local to = r.best or "-"
                 if r.state == "old" then
@@ -587,7 +587,7 @@ local function Run(rows, onDone)
             if i <= 5 then names[#names + 1] = row.name or "?" end
         end
         local tail = ""
-        if #names > 0 then tail = L["："] .. table.concat(names, "、") end
+        if #names > 0 then tail = L["："] .. table.concat(names, L["、"]) end
         Say(string.format(L["%d 项未能升级，请手动拖动"], #bad) .. tail)
     end
     if onDone then onDone(done, bad) end

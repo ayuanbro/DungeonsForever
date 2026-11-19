@@ -96,7 +96,7 @@ local function ShowSpellTip(owner, d)
             local b = SR.BindFor(d.slots[i])
             t[i] = b and (d.slots[i] .. " (" .. b .. ")") or tostring(d.slots[i])
         end
-        GameTooltip:AddLine(L["槽位"] .. " " .. table.concat(t, "、"), 0.82, 0.86, 0.9, true)
+        GameTooltip:AddLine(L["槽位"] .. " " .. table.concat(t, L["、"]), 0.82, 0.86, 0.9, true)
     elseif d.noBar then
         GameTooltip:AddLine(L["技能书里有，动作条上没有"], 0.82, 0.86, 0.9, true)
     end
@@ -157,8 +157,8 @@ local function SlotText(slots)
         local k = SR.BindFor(slots[i])
         if k then b[#b + 1] = k end
     end
-    local s = L["槽位"] .. " " .. table.concat(a, "、")
-    if #b > 0 then s = s .. " · " .. L["按键"] .. " " .. table.concat(b, "、") end
+    local s = L["槽位"] .. " " .. table.concat(a, L["、"])
+    if #b > 0 then s = s .. " · " .. L["按键"] .. " " .. table.concat(b, L["、"]) end
     return s
 end
 

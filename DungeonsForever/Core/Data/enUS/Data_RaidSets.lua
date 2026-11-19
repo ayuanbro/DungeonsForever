@@ -12,7 +12,7 @@ ns.RaidSetData = {
         { key = "t1",        label = "Mount Hyjal T1", count = 18, revealed = true },
     },
     sets = {
-        { class = "WARRIOR", id = 2102, role = "dps", spec = "武器/狂怒", armor = "Plate", batch = "t1", revealed = true,
+        { class = "WARRIOR", id = 2102, role = "dps", spec = "Weapons/Fury", armor = "Plate", batch = "t1", revealed = true,
           name = "Glorious Battleplate",
           ids   = { 280904, 280903, 280902, 280899, 280901, 280900 },
           bonuses = {
@@ -80,7 +80,7 @@ ns.RaidSetData = {
               [5] = "使你的毒伤和刺骨的能量消耗减少 5 点。",
           },
           marks = { [3] = { st = "changed", where = "刺杀树 · 第 5 行" }, [5] = { st = "changed", where = "战斗树 · 第 1 行" } } },
-        { class = "PRIEST", id = 2104, role = "heal", spec = "戒律/神圣", armor = "Cloth", batch = "t1", revealed = true,
+        { class = "PRIEST", id = 2104, role = "heal", spec = "Discipline/Holy", armor = "Cloth", batch = "t1", revealed = true,
           name = "Faith Garb",
           ids   = { 280918, 280917, 280912, 280913, 280915, 280914 },
           bonuses = {

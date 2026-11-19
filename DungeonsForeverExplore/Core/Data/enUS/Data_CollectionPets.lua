@@ -153,12 +153,12 @@ ns.CollectionPets = {
         12, 40.4, 69.4, "商人出售",
         __display = 901,
         {
-            { t = "从弗里克（艾尔文森林 / 莫高雷）处购买", m = { { "弗里克", 12, 40.4, 69.4 } } },
+            { t = "从弗里克（艾尔文森林 / 莫高雷）处购买", m = { { "Flik", 12, 40.4, 69.4 } } },
         },
     },
     [20] = {
         11474, "inv_egg_02", nil, "quest",
-        false, false, false, "任务奖励",
+        false, false, false, "Quest rewards",
         __display = 6294,
         {
             { t = "完成任务「Becoming a Parent」获得" },

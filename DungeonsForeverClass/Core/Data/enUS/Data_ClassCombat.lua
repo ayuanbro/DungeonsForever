@@ -837,7 +837,7 @@ ns.ClassCombat = {
                     { spell = "Renew", note = "Keep on the Tank" },
                     { spell = "Heal", note = "Use as your primary heal" },
                     { spell = "Flash Heal", note = "Use if someone is in imminent danger" },
-                    { spell = "法术", note = "When the party is healthy, Wand trash to buy yourself time to regenerate mana. （ ​#371806） the \"five second rule\" we discussed earlier, and try to give yourself a clear window to regain mana" },
+                    { spell = "Spell", note = "When the party is healthy, Wand trash to buy yourself time to regenerate mana. （ ​#371806） the \"five second rule\" we discussed earlier, and try to give yourself a clear window to regain mana" },
                 },
                 aoe = {
                 },

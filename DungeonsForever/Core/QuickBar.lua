@@ -918,7 +918,7 @@ function QB:EnsureSettings()
             end
             if #on == 0 then return L["未选择"] end
             if #on == #groups then return L["全部分组"] end
-            return table.concat(on, "、")
+            return table.concat(on, L["、"])
         end
 
         local function Paint()
