@@ -13826,7 +13826,58 @@ function PD.StepRole(st)
 end
 
 function PD.StepRange(st)
-    return format(L["%s – %s"], tostring(st[1]), tostring(st[2]))
+    local current = st and tonumber(st.displayFrom) or st and tonumber(st[1])
+    local target = st and tonumber(st.displayTo) or st and tonumber(st.goalSkill)
+    if not target then target = st and tonumber(st[2]) end
+    if current == nil or target == nil then
+        return format(L["%s – %s"], tostring(st and st[1]), tostring(st and st[2]))
+    end
+    if current == target then return tostring(current) end
+    return format(L["%d – %d"], math.floor(current + 0.5), math.floor(target + 0.5))
+end
+
+function PD.MaterialLevelPoint(st, allSteps)
+    if not st or not allSteps then return tonumber(st and st[1]) end
+    local consumerIDs = {}
+    for _, allocation in ipairs(st.allocations or {}) do
+        if allocation.consumerID and not allocation.consumerID:match("^tool:") then
+            consumerIDs[allocation.consumerID] = true
+        end
+    end
+    if not next(consumerIDs) then return tonumber(st[1]) end
+
+    local point
+    for candidateIndex, candidate in ipairs(allSteps) do
+        local match = false
+        for id in pairs(consumerIDs) do
+            if candidate.segmentID == id then match = true end
+            if candidate.segmentIDs then
+                for _, segmentID in ipairs(candidate.segmentIDs) do
+                    if segmentID == id then match = true; break end
+                end
+            end
+            if not match then
+                for _, actionID in ipairs(candidate.actionIDs or {}) do
+                    if actionID == id then match = true; break end
+                end
+            end
+            if match then break end
+        end
+        if match then
+            local start = tonumber(candidate[1])
+            if start then
+                point = point and math.min(point, start) or start
+                for priorIndex = 1, candidateIndex - 1 do
+                    local prior = allSteps[priorIndex]
+                    if prior ~= st and prior.role ~= "material" then
+                        local priorEnd = tonumber(prior.goalSkill) or tonumber(prior[2])
+                        if priorEnd and priorEnd >= point then point = math.max(point, priorEnd) end
+                    end
+                end
+            end
+        end
+    end
+    return point or tonumber(st[1])
 end
 
 function PD.PurchaseSource(entry)
@@ -14899,7 +14950,13 @@ function PD.CurrentSegRow()
     local cur = learned and learned[PD.cur] and learned[PD.cur].cur
     if not cur then return nil end
     for i, row in ipairs(rows) do
-        if row.lvstep and row.sbLo and row.sbHi and cur >= row.sbLo and cur < row.sbHi then return i end
+        if row.lvstep and row.sbLo and row.sbHi then
+            if row.sbLo == row.sbHi then
+                if cur == row.sbLo then return i end
+            elseif cur >= row.sbLo and cur < row.sbHi then
+                return i
+            end
+        end
     end
 end
 
@@ -15864,10 +15921,14 @@ function PD.RowsLeveling(rows)
             local a, b = si[1], si[2]
             if type(a) == "number" and type(b) == "number" and a < b then
                 local lo, hi = a, b
-                for _, sj in ipairs(all) do
-                    local p, q = sj[1], sj[2]
-                    if type(p) == "number" and p == q and sj[3] ~= si[3] and a <= p and q <= b then
-                        if p == lo then lo = lo + 1 elseif q == hi then hi = hi - 1 end
+                for priorIndex, sj in ipairs(all) do
+                    if sj == si then break end
+                    if sj.role ~= "material" and not (sj.reason == "material" and sj.leveling ~= true) then
+                        local p = tonumber(sj[1])
+                        local q = tonumber(sj.goalSkill) or tonumber(sj[2])
+                        if p and q and q <= hi and q >= lo then
+                            lo = math.max(lo, q)
+                        end
                     end
                 end
                 if lo <= hi then rngAdj[si] = { lo, hi } end
@@ -15876,8 +15937,10 @@ function PD.RowsLeveling(rows)
     end
     local function rngText(st)
         local adj = rngAdj[st]
+        if st.displayFrom~=nil or st.displayTo~=nil then return PD.StepRange(st) end
         if not adj then return PD.StepRange(st) end
-        return (adj[2] > adj[1]) and format("%d - %d", adj[1], adj[2]) or tostring(adj[1])
+        if adj[2] > adj[1] then return format("%d - %d", adj[1], adj[2]) end
+        return PD.StepRange(st)
     end
     for index, st in ipairs(steps or {}) do
         local rec = PD.StepRecipe(st) or recOf[st[3]]
@@ -16137,8 +16200,10 @@ function PD.RowsLeveling(rows)
             elseif st.checkpoint or st[3] == 0 then src = L["不预先计入尚未采到的矿石"] end
             if (rec and rec.clientPending) or (ri and ri.clientPending) then src = L["客户端数据待读取"] end
             if shownSum and shownSum.referenceOnly and not rec and not ri then src=L["配方资料待补全"] end
-            local segLo = tonumber(st[1])
-            local segHi = tonumber(st[2])
+            local rangeStep = st
+            if st.displayFrom~=nil then rangeStep={ [1]=st.displayFrom,[2]=st.displayTo,goalSkill=st.displayTo } end
+            local segLo = tonumber(rangeStep[1])
+            local segHi = tonumber(rangeStep.goalSkill) or tonumber(rangeStep[2])
             local stepLv = _learned and _learned[st.profession or PD.cur]
             local actualLv = stepLv and stepLv.cur or curLv
             local over = (actualLv ~= nil and segHi ~= nil and segHi < actualLv) or nil

@@ -236,7 +236,7 @@ function RA.FixedPlan(slug,supplied)
 end
 
 local skeletonStepFields={"profession","kind","reason","checkpoint","segmentID",
-    "tool","toolItem","toolSpell","toolBop","fromProgress","toProgress",
+    "tool","toolItem","toolSpell","toolBop","fromProgress","toProgress","displayFrom","displayTo",
     "goalID","questID","abilityID","sourceItem","targetItem"}
 local skeletonOptionFields={"fromCurrent","onlyAH","allowSecondaryLeveling","secondaryProfession",
     "autoCraftTools","allowLimitedFormulas","allowBindOnPickupFormulas","allowCurrencyFormulas",

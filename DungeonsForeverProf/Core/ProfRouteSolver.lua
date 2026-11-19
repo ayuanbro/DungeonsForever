@@ -823,6 +823,48 @@ function S.Result(job,state,status)
         row.expectedCrafts=row[4]
         row.segments[#row.segments+1]={from=step[1],to=step[2],count=step[4],reason=step.reason}
     end
+    local priorDisplayTarget
+    for _,row in ipairs(out.steps) do
+        if row.role=="level" or row.role=="both" then
+            local rawFrom=tonumber(row[1])
+            local rawTo=tonumber(row.goalSkill) or tonumber(row[2])
+            row.displayFrom=priorDisplayTarget and rawFrom and math.max(rawFrom,priorDisplayTarget) or rawFrom
+            row.displayTo=rawTo
+            priorDisplayTarget=rawTo or priorDisplayTarget
+        end
+    end
+    for _,row in ipairs(out.steps) do
+        if row.role=="material" then
+            local point
+            for _,consumer in ipairs(out.steps) do
+                if consumer.role=="level" or consumer.role=="both" then
+                    for _,allocation in ipairs(row.allocations or {}) do
+                        local id=allocation.consumerID
+                        local matched=consumer.segmentID==id
+                        if not matched and type(consumer.segmentIDs)=="table" then
+                            local alias=type(id)== "string" and id:match("(segment:.*)$")
+                            for _,segmentID in ipairs(consumer.segmentIDs) do
+                                if segmentID==id or alias and segmentID==alias then matched=true;break end
+                            end
+                        end
+                        if matched then point=math.min(point or consumer.displayFrom or consumer[1],consumer.displayFrom or consumer[1]) end
+                    end
+                end
+            end
+            point=point or priorDisplayTarget or row[1]
+            row.displayFrom=point;row.displayTo=point
+        end
+    end
+    for _,step in ipairs(out.executionSteps) do
+        local row
+        for _,candidate in ipairs(out.steps) do
+            if candidate.segmentIDs then
+                for _,id in ipairs(candidate.segmentIDs) do if id==step.segmentID then row=candidate;break end end
+            end
+            if row then break end
+        end
+        if row then step.displayFrom=row.displayFrom;step.displayTo=row.displayTo end
+    end
     local ra=ns.ProfRouteAuto
     for id,n in pairs(crafted) do
         local left=min(n,state.produced[id] or 0)
