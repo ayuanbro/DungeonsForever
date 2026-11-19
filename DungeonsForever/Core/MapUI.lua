@@ -3313,7 +3313,7 @@ local function noBadge(p)
     e.inner:SetTexture(M.ROUTE_DOT_TEX)
     e.inner:SetVertexColor(0.06, 0.05, 0.04, 0.92)
     e.txt = p.host:CreateFontString(nil, "OVERLAY")
-    e.txt:SetFont("Fonts\\ARHei.ttf", 12, "OUTLINE")
+    e.txt:SetFont(ns.SafeFont("Fonts\\ARHei.ttf"), 12, "OUTLINE")
     e.txt:SetTextColor(1, 1, 1)
     p.list[i] = e
     return e
@@ -3339,7 +3339,7 @@ function M.SyncNoBadges(host, tag, cw, ch, items, uk)
             e.inner:ClearAllPoints()
             e.inner:SetPoint("CENTER", host, "TOPLEFT", x, y)
             e.inner:SetSize(di, di)
-            e.txt:SetFont("Fonts\\ARHei.ttf", math.floor(d * (it[7] and 0.44 or 0.58)), "OUTLINE")
+            e.txt:SetFont(ns.SafeFont("Fonts\\ARHei.ttf"), math.floor(d * (it[7] and 0.44 or 0.58)), "OUTLINE")
             e.txt:SetText(it[4])
             e.txt:ClearAllPoints()
             e.txt:SetPoint("CENTER", host, "TOPLEFT", x, y)
@@ -4066,7 +4066,7 @@ function M.PinOnEnter(self)
             end
         end
     elseif self.__kind == "rare" then
-        GameTooltip:AddLine(L["稀有"] .. "：" .. (p.name or ""), 0.72, 0.76, 0.85, true)
+        GameTooltip:AddLine(L["稀有"] .. L["："] .. (p.name or ""), 0.72, 0.76, 0.85, true)
     elseif self.__kind == "note" then
         GameTooltip:AddLine(L["注释"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
@@ -4405,7 +4405,7 @@ function M.SyncSide(forceFrame)
                     n = n + 1
                     local r = frame.questRows[n]
                     local nm = DG.QuestName(qid)
-                    r.name:SetText(format("《%s》", nm or tostring(qid)))
+                    r.name:SetText(format(L["《%s》"], nm or tostring(qid)))
                     local mk = QMARK_STATE[st]
                     if mk then
                         r.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")

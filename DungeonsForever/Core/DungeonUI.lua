@@ -1470,8 +1470,8 @@ function DG.Gate.Begin(n)
                 local fps = L0.__dt and L0.__dt > 0 and math.floor(1000 / L0.__dt) or -1
                 local pct = DG.Gate.total > 0 and math.floor(DG.Gate.done / DG.Gate.total * 100 + 0.5) or 0
                 local msg = "|cff46bf72[无限副本手册] 载入中|r "
-                    .. DG.Gate.done .. "/" .. DG.Gate.total .. "（" .. pct .. "%）"
-                    .. " fps～" .. tostring(fps)
+                    .. DG.Gate.done .. "/" .. DG.Gate.total .. L["（"] .. pct .. L["%）"]
+                    .. L[" fps～"] .. tostring(fps)
                     .. " 切片～" .. (L0.__sliceMs and math.floor(L0.__sliceMs * 10) / 10 or "?") .. "ms"
                     .. " 预算～" .. math.floor(L0.CurCap(DG.Gate.total - DG.Gate.done)) .. "ms"
                 print(msg)
@@ -1537,7 +1537,7 @@ if type(SlashCmdList) == "table" then
                 end
             end
             local msg = "|cff46bf72[无限副本手册] 载入诊断|r"
-                .. " fps～" .. tostring(fps)
+                .. L[" fps～"] .. tostring(fps)
                 .. " 切片～" .. (L0.__sliceMs and math.floor(L0.__sliceMs * 10) / 10 or "?") .. "ms"
                 .. " 预算～" .. math.floor(L0.CurCap(DG.Gate.total - DG.Gate.done)) .. "ms"
                 .. " 进度～" .. tostring(DG.Gate.done) .. "/" .. tostring(DG.Gate.total)
@@ -1605,12 +1605,12 @@ if type(SlashCmdList) == "table" then
         if DG.LOADER_PRESETS[k] then
             DG.Loader.SetBudget(k)
             print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. " = "
-                  .. (DG.LOADER_LABEL[k] or k) .. "（" .. math.floor(DG.Loader.CurCap()) .. "ms/帧）")
+                  .. (DG.LOADER_LABEL[k] or k) .. L["（"] .. math.floor(DG.Loader.CurCap()) .. "ms/帧）")
             return
         end
-        print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. "："
+        print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. L["："]
               .. L["省电"] .. " / " .. L["标准"] .. " / " .. L["激进"]
-              .. "（" .. L["当前"] .. " = " .. (DG.LOADER_LABEL[DG.Loader.preset] or "standard") .. "）")
+              .. L["（"] .. L["当前"] .. " = " .. (DG.LOADER_LABEL[DG.Loader.preset] or "standard") .. L["）"])
     end
 end
 
@@ -1734,7 +1734,7 @@ if type(SlashCmdList) == "table" then
         local pool = U.dungeonDetailPool
         local n = (pool and pool.item) and #pool.item or 0
         print("|cff46bf72[无限副本手册]|r " .. L["载入速度"] .. " = "
-              .. (DG.LOADER_LABEL[DG.Loader.preset] or DG.Loader.preset) .. "（" .. math.floor(DG.Loader.CurCap()) .. "ms/帧）")
+              .. (DG.LOADER_LABEL[DG.Loader.preset] or DG.Loader.preset) .. L["（"] .. math.floor(DG.Loader.CurCap()) .. "ms/帧）")
         print("  " .. L["进度条"] .. " " .. DG.Gate.done .. "/" .. DG.Gate.total
               .. " · " .. L["待建行"] .. " " .. #DG.__pendRows
               .. " · " .. L["行池"] .. " " .. n)
@@ -7222,7 +7222,7 @@ function DG.QuestObjectives(id)
     for _, ob in ipairs(list) do
         local need = ob[3]
         if need > 0 and not ob[1]:find("%d+/%d+") then
-            parts[#parts + 1] = format("%s（%d/%d）", ob[1], ob[2], need)
+            parts[#parts + 1] = format(L["%s（%d/%d）"], ob[1], ob[2], need)
         else
             parts[#parts + 1] = ob[1]
         end
@@ -7307,7 +7307,7 @@ function DG.NeedObjectivesText(questID, items)
         end
         if not taken then
             if ob[3] > 0 and not ob[1]:find("%d+/%d+") then
-                parts[#parts + 1] = format("%s（%d/%d）", ob[1], ob[2], ob[3])
+                parts[#parts + 1] = format(L["%s（%d/%d）"], ob[1], ob[2], ob[3])
             else
                 parts[#parts + 1] = ob[1]
             end
@@ -9372,7 +9372,7 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
                 b.ic:SetTexture(DG.ItemIcon(tk.id))
                 b.ic:SetVertexColor(1, 1, 1, 1)
                 b.ic:Show()
-                txt = format("「%s%s」", DG.Q_FLOW_IDEO, inm)
+                txt = format(L["「%s%s」"], DG.Q_FLOW_IDEO, inm)
                 ob = "「"
             else
                 local nm, hasName = DG.QuestName(tk.id)
@@ -9383,11 +9383,11 @@ function DG.FlowLine(child, pool, seg, x0, xEnd, y)
                     local st = DG.QuestBadgeState(tk.id)
                     local mc = DG.QStateColor(st)
                     DG.FlowMark(b, st, mc)
-                    txt = format("《%s%s》", DG.Q_FLOW_IDEO, nm)
+                    txt = format(L["《%s%s》"], DG.Q_FLOW_IDEO, nm)
                     ob = "《"
                 else
                     DG.FlowMark(b, nil)
-                    txt = format("《%s》", nm)
+                    txt = format(L["《%s》"], nm)
                 end
             end
             b.__col = col
@@ -9463,11 +9463,11 @@ function DG.FlowStepText(seg)
             elseif tk.q then
                 local nm = DG.QuestName(tk.id)
                 if not nm or nm == "" then nm = tk.q end
-                s = format("《%s》", nm)
+                s = format(L["《%s》"], nm)
             elseif tk.i then
                 local nm, hasName = DG.ItemName(tk.id)
                 if not hasName or not nm or nm == "" then nm = tk.i end
-                s = format("「%s」", nm)
+                s = format(L["「%s」"], nm)
             else
                 s = tk.t
             end
@@ -10202,14 +10202,14 @@ function U:RenderQuestDetail()
     do
         local push = DG.QLCall("IsPushableQuest", q[1])
         if push ~= nil then
-            shareSeg = DG.Hex(C_GREY) .. L["共享"] .. "：|r"
+            shareSeg = DG.Hex(C_GREY) .. L["共享"] .. L["：|r"]
                 .. (push and DG.Hex(C_GREEN) .. L["可分享"] .. "|r"
                         or DG.Hex(C_RED) .. L["不可共享"] .. "|r")
         end
     end
     if lvTxt ~= "" then
         local f = takeKv()
-        f:SetText(DG.Hex(C_GREY) .. L["可接等级"] .. "：|r" .. lvTxt
+        f:SetText(DG.Hex(C_GREY) .. L["可接等级"] .. L["：|r"] .. lvTxt
             .. (shareSeg and " · " .. shareSeg or ""))
         put(f, 24)
     elseif shareSeg then
@@ -10224,7 +10224,7 @@ function U:RenderQuestDetail()
             parts[#parts + 1] = DG.Hex(dc) .. tostring(d[1]) .. "|r"
         end
         local f = takeKv()
-        f:SetText(DG.Hex(C_GREY) .. L["任务难度"] .. "：|r" .. table.concat(parts, "  "))
+        f:SetText(DG.Hex(C_GREY) .. L["任务难度"] .. L["：|r"] .. table.concat(parts, "  "))
         put(f, 24)
     end
     local startNpcID = q[16]
@@ -10358,7 +10358,7 @@ function U:RenderQuestDetail()
             if #pts > 0 then
                 local zone = slr[6] or ""
                 local hf = takeKv()
-                hf:SetText(DG.Hex(C_GREY) .. L["刷新位置"] .. "：" .. zone .. "|r")
+                hf:SetText(DG.Hex(C_GREY) .. L["刷新位置"] .. L["："] .. zone .. "|r")
                 put(hf, 22)
                 local npcID = tonumber(slr[1])
                 local indent = 16
@@ -10451,13 +10451,13 @@ function U:RenderQuestDetail()
         else
             fac = L["双阵营共有"]
         end
-        f:SetText(DG.Hex(C_GREY) .. L["阵营"] .. "：|r"
+        f:SetText(DG.Hex(C_GREY) .. L["阵营"] .. L["：|r"]
             .. (facCol and DG.Hex(facCol) .. fac .. "|r" or fac))
         put(f, 24)
     end
     if q[15] then
         local f = takeKv()
-        f:SetText(DG.Hex(C_GREY) .. L["职业"] .. "：|r")
+        f:SetText(DG.Hex(C_GREY) .. L["职业"] .. L["：|r"])
         local lab = format(L["%s专属"], q[15])
         local cb = takeBadge()
         fitChip(cb, lab, DG.QClassColor(q[15]))
@@ -10963,7 +10963,7 @@ function U:RenderDungeonGuide()
             for i = 1, #g.bosses do
                 local b = g.bosses[i]
                 local cn = DG.GuideBossName(d.id, b.en)
-                rows[#rows + 1] = { t = (cn ~= b.en) and (cn .. "（" .. b.en .. "）") or b.en,
+                rows[#rows + 1] = { t = (cn ~= b.en) and (cn .. L["（"] .. b.en .. L["）"]) or b.en,
                                     c = C_GOLD, x = 0, gap = 3 }
                 rows[#rows + 1] = { t = b.text, c = C_TEXT, x = 0, gap = 9 }
             end

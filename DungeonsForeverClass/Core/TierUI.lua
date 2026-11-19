@@ -1060,7 +1060,7 @@ function PREP.PaintCards()
         c.__on = on
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(c, on and "hover" or "norm") end
         c.no:SetText(format("%02d", k))
-        c.nm:SetText("《" .. d.name .. "》")
+        c.nm:SetText(L["《"] .. d.name .. L["》"])
         c.lv:SetText(format(L["%d 级起"], d.lv))
         c.zone:SetText(d.zone or "")
         local st = PREP.StateOf(d)
@@ -1312,7 +1312,7 @@ function PREP.PaintRight()
 
     PREP.PaintHeader(side, both)
 
-    ch.title:SetText("《" .. d.name .. "》")
+    ch.title:SetText(L["《"] .. d.name .. L["》"])
     local st = PREP.StateOf(d)
     if ch.stChip then
         ns.hui.PaintSolidChip(ch.stChip, PrepStateText(st), PREP_INK[st] or PREP_INK.todo, nil, 14)
@@ -1386,7 +1386,7 @@ function PREP.PaintRight()
             f.disc:SetVertexColor(fill[1], fill[2], fill[3], 1)
             f.mark:SetTexture(PREP_MARK[mk])
             f.mark:SetVertexColor(ink[1], ink[2], ink[3], 1)
-            local qt = "《" .. (s.q or "") .. "》"
+            local qt = L["《"] .. (s.q or "") .. L["》"]
             f.q:SetText(qt)
             local qw = f.q:GetStringWidth()
             if type(qw) ~= "number" or qw <= 0 then qw = TextChars(qt) * 14 end

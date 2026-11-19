@@ -2224,7 +2224,7 @@ local function SrcText(src)
         return who .. (src.dung or L["副本"]) .. (src.rate and (" · " .. src.rate) or "")
     elseif t == "craft" then
         local pn = PROF_NAMES[src.prof] or src.prof or L["制造"]
-        return pn .. (src.lvl and format("（%d）", src.lvl) or "")
+        return pn .. (src.lvl and format(L["（%d）"], src.lvl) or "")
             .. (src.note and (" · " .. src.note) or "")
     elseif t == "rare" then
         return L["稀有 · "] .. (src.note or "")
@@ -6233,5 +6233,5 @@ function BG.ArrowScopeText()
     if s == "all" then return L["任一专精"] end
     if s == "manual" then return L["跟随 BiS 选择"] end
     local lbl = BG.SpecLabel(BG.DetectSpec())
-    return L["当前天赋"] .. "：" .. (lbl or L["未识别"])
+    return L["当前天赋"] .. L["："] .. (lbl or L["未识别"])
 end

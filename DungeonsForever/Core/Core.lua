@@ -438,6 +438,24 @@ do
 end
 
 do
+    -- 非中文客户端没有 ARKai/ARHei 等中文字体：SetFont 不报错只返回 false，字串会空白或成方块。
+    -- Non-CJK clients ship no ARKai/ARHei: probe once per path and fall back to ns.FONT.
+    local ok_cache = {}
+    function ns.SafeFont(path)
+        if type(path) ~= "string" then return ns.FONT end
+        local hit = ok_cache[path]
+        if hit == nil then
+            local probe = UIParent:CreateFontString()
+            probe:Hide()
+            local ok, res = pcall(probe.SetFont, probe, path, 12, "")
+            hit = (ok and res ~= false and probe:GetFont() ~= nil) and true or false
+            ok_cache[path] = hit
+        end
+        return hit and path or ns.FONT
+    end
+end
+
+do
     local hit
     function ns.NDuiB()
         if hit then return hit end

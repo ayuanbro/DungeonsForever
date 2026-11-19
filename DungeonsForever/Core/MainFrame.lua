@@ -425,7 +425,7 @@ function BuildAbout()
     }
 
     local function BuildLine(row, hot)
-        local out = C_AB_KEYHEX .. row.key .. "|r　"
+        local out = C_AB_KEYHEX .. row.key .. L["|r　"]
         for pi = 1, #row.parts do
             local p = row.parts[pi]
             if p.cmd then
@@ -516,7 +516,7 @@ function BuildAbout()
 
             ln:SetText(row.key)
             local keyW = ln:GetStringWidth() or 0
-            ln:SetText(row.key .. "　")
+            ln:SetText(row.key .. L["　"])
             local headW = ln:GetStringWidth() or 0
             if headW < keyW then headW = keyW + 14 end
 
@@ -2344,7 +2344,7 @@ SlashCmdList["DUNGEONSFOREVER"] = function(msg)
     print("|cff46bf72[" .. L["无限副本手册"] .. "]|r " .. L["用法：/df 或 /fbsc 打开或关闭界面。"])
     print("  /df fb|副本 · tb|团本 · zy|专业 · ts|探索 · hp|藏品 · wm|声望 · bis|配装 · zn|指南 · rank|动作条 — " .. L["直达对应页"])
     print("  /dfspeed — " .. L["载入速度"]
-          .. "（" .. L["省电"] .. " / " .. L["标准"] .. " / " .. L["激进"] .. "）")
-    print("  /dfgate — " .. L["进度条"] .. "（demo / off）")
+          .. L["（"] .. L["省电"] .. " / " .. L["标准"] .. " / " .. L["激进"] .. L["）"])
+    print("  /dfgate — " .. L["进度条"] .. L["（demo / off）"])
     print("  /df 对齐 — " .. L["卡片与文字对齐校准"])
 end

@@ -7374,7 +7374,7 @@ function PD.PaintLvTiles()
         local nm = (RA and RA.SchemeLabel) and RA.SchemeLabel(sk) or sk
         local head = curK and "|cffffd100" or "|cffffffff"
         schemeLines[#schemeLines + 1] = {
-            head .. nm .. "|r|cff8f8f8f：|r|cffb3b3b3" .. (schemeDesc[sk] or "") .. "|r",
+            head .. nm .. L["|r|cff8f8f8f：|r|cffb3b3b3"] .. (schemeDesc[sk] or "") .. "|r",
             1, 1, 1,
         }
     end
@@ -7888,7 +7888,7 @@ function PD.CampTipLines(c)
     end
     local function add(label, v)
         if type(v) == "string" and v ~= "" then
-            lines[#lines + 1] = { label .. "：" .. v }
+            lines[#lines + 1] = { label .. L["："] .. v }
         end
     end
     add(L["角色"], c[7])
@@ -9592,7 +9592,7 @@ function PD.LearningGapText(diagnostic)
     if diagnostic and not diagnostic.item then
         for _,id in ipairs(diagnostic.missingItemIDs or {}) do identity=identity.." · "..format(L["教材 #%d"],id) end
     end
-    return identity.."："..table.concat(parts,"；")
+    return identity..L["："]..table.concat(parts,"；")
 end
 
 PD.CARD_FIXW = nil
@@ -12882,7 +12882,7 @@ function PD.RowsFishing(rows)
                             v = format(L["%d 项"], #v)
                         end
                         if v ~= "" then
-                            lines[#lines + 1] = { format("%s：%s",
+                            lines[#lines + 1] = { format(L["%s：%s"],
                                 DG.FISH_FIELD_LABEL[i - 5], tostring(v)), 0.6, 0.9, 0.6 }
                         end
                     end
@@ -14263,7 +14263,7 @@ function PD.SpecQuestLines(goal)
     local out = {}
     out[#out + 1] = { format(L["%s入门任务"], PD.SpecQuestBranch(goal)), 1, 0.82, 0.35 }
     if goal.questName and goal.questName ~= "" then
-        out[#out + 1] = { format(L["任务名：%s"], "《" .. tostring(goal.questName) .. "》"), 0.82, 0.82, 0.82 }
+        out[#out + 1] = { format(L["任务名：%s"], L["《"] .. tostring(goal.questName) .. L["》"]), 0.82, 0.82, 0.82 }
     end
     out[#out + 1] = { format(L["接取地点：%s"], PD.SpecQuestWhere(goal)), 0.75, 0.75, 0.75 }
     local mats = {}
@@ -14299,7 +14299,7 @@ function PD.RowsSpecQuest(rows)
     local branch = PD.SpecQuestBranch(goal)
     local state, r, g, b = PD.SpecQuestState(goal)
     local primary = goal.questName and goal.questName ~= ""
-                    and ("《" .. tostring(goal.questName) .. "》") or branch
+                    and (L["《"] .. tostring(goal.questName) .. L["》"]) or branch
     rows[#rows + 1] = {
         kind = "row", h = PD.ROW_H, col = 1,
         text = format(L["专精入门任务：%s"], primary),
@@ -16314,7 +16314,7 @@ function PD.FormulaBlockedText(entry)
         end
     end
     if reason=="learningDataMissing" or reason=="learningRequirementsUnknown" then
-        return L["资料待补"].."："..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
+        return L["资料待补"]..L["："]..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
     elseif reason=="formulaLimited" or reason=="limitedFormulaDisabled" then
         return L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少1张的拍卖行图纸。"]
     end
@@ -19303,7 +19303,7 @@ local function pfWhere()
         local s = bt:GetText()
         if type(s) == "string" and s ~= "" then who = s end
     end
-    return string.format("「%s·%s」", tostring(who),
+    return string.format(L["「%s·%s」"], tostring(who),
                          PD.setOpen and "设置" or tostring(PD.tab or "?"))
 end
 

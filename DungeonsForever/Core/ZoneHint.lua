@@ -495,7 +495,7 @@ local function TurnInRows(ctx)
         subTxt = string.format("%s · %.1f, %.1f", L["可上交"], spot.x, spot.y)
         local nm, pl = tostring(spot.npc or ""), tostring(spot.place or "")
         if nm ~= "" and pl ~= "" then
-            descTxt = string.format("%s（%s）", nm, pl)
+            descTxt = string.format(L["%s（%s）"], nm, pl)
         elseif nm ~= "" then
             descTxt = nm
         end
@@ -2210,7 +2210,7 @@ function Z.SimCommand(msg)
         else
             print(head .. L["当前为真实数据"])
         end
-        print(head .. L["用法"] .. "： " .. SIM_USAGE)
+        print(head .. L["用法"] .. L["： "] .. SIM_USAGE)
         return
     end
     if s == "off" or s == "0" or s == "clear" or s == "关" then
@@ -2228,7 +2228,7 @@ function Z.SimCommand(msg)
     local mode = s:match("^mode%s+(%a+)$")
     if mode then
         if mode ~= "auto" and mode ~= "badge" and mode ~= "silent" then
-            print(head .. L["用法"] .. "： /dfhint mode auto|badge|silent")
+            print(head .. L["用法"] .. L["： /dfhint mode auto|badge|silent"])
             return
         end
         CFG().mode = mode
@@ -2246,14 +2246,14 @@ function Z.SimCommand(msg)
         elseif kind == "spell" or kind == "spells" or kind == "train" then
             cur.spell = v
         else
-            print(head .. L["用法"] .. "： " .. SIM_USAGE)
+            print(head .. L["用法"] .. L["： "] .. SIM_USAGE)
             return
         end
         Z.SimSet(cur.book, cur.quest, cur.spell)
     else
         local a, b, c = s:match("^(%d+)%s*(%d*)%s*(%d*)$")
         if not a then
-            print(head .. L["用法"] .. "： " .. SIM_USAGE)
+            print(head .. L["用法"] .. L["： "] .. SIM_USAGE)
             return
         end
         Z.SimSet(tonumber(a), tonumber(b), tonumber(c))
@@ -2270,7 +2270,7 @@ function Z.SimCommand(msg)
         if ns.ZoneOrb.ForceOpen then ns.ZoneOrb.ForceOpen(res) end
     end
     print(head .. string.format(L["模拟中：书 %d / 任务 %d / 技能 %d"], sim.book, sim.quest, sim.spell))
-    print(head .. L["关闭"] .. "： /dfhint off")
+    print(head .. L["关闭"] .. L["： /dfhint off"])
 end
 
 if type(SlashCmdList) == "table" then

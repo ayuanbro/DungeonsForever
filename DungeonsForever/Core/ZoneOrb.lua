@@ -2138,7 +2138,7 @@ function O.Init()
     end)
     local function SyncMenuLabels()
         local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
-        oml1:SetText(L["仅有待办时显示"] .. "：" .. ((c.onlyTodo and L["开"]) or L["关"]))
+        oml1:SetText(L["仅有待办时显示"] .. L["："] .. ((c.onlyTodo and L["开"]) or L["关"]))
     end
     omb1:SetScript("OnClick", function()
         ns.PlaySound(1)

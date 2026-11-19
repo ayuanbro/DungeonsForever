@@ -1829,7 +1829,7 @@ local function Build(EG, page)
         EG.dmBudget:SetText(format(L["上限 %d 张"], mt))
         local infoW = tcW - PAD - infoX - (EG.dmBudget:GetStringWidth() or 90) - GAP
         DG.ClipTo(EG.dmInfo, L["等级"] .. " " .. lvl .. " · " .. L["声望"] .. " " .. rep
-            .. "（" .. RepBand(rep) .. "）· " .. L["能交"] .. " "
+            .. L["（"] .. RepBand(rep) .. L["）· "] .. L["能交"] .. " "
             .. (#names > 0 and table.concat(names, " ") or L["已封顶"]), infoW)
 
         for i = 1, 5 do EG.dmRows[i]:Hide() end
@@ -1889,14 +1889,14 @@ local function Build(EG, page)
         else
             EG.dmSum:SetText(L["合计"] .. " " .. MoneyStr(total))
             local head = got .. " " .. L["张"]
-                .. (short > 0 and ("（" .. L["还差"] .. " " .. short .. " " .. L["张"] .. "）") or "")
+                .. (short > 0 and (L["（"] .. L["还差"] .. " " .. short .. " " .. L["张"] .. L["）"]) or "")
             if short > 0 then
                 EG.dmNote:SetText(head .. " · " .. L["交满只到"] .. " " .. mt .. " " .. L["张"]
-                    .. "；" .. L["声望"] .. " " .. DM.MORE_AT
+                    .. L["；"] .. L["声望"] .. " " .. DM.MORE_AT
                     .. " " .. L["后可改交「更多…」任务（20 张/次，不涨声望）。"])
             else
                 EG.dmNote:SetText(head .. " · " .. L["声望"] .. " " .. rep .. " → " .. (rep + 100 * res.turns)
-                    .. "（" .. res.turns .. " " .. L["次"] .. "）")
+                    .. L["（"] .. res.turns .. " " .. L["次"] .. L["）"])
             end
         end
 

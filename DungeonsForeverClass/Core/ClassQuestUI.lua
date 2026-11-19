@@ -1130,7 +1130,7 @@ local function AddRaceChips(y, races)
     if not (ns.hui and ns.hui.MakeSolidChip and ns.hui.PaintSolidChip and ns.hui.ChipDY) then
         local names = {}
         for i = 1, #list do names[i] = list[i].n end
-        return AddLine(y, DG.Hex(C_GREY) .. L["限定种族"] .. "：|r" .. table.concat(names, "、"), C_TEXT, 24)
+        return AddLine(y, DG.Hex(C_GREY) .. L["限定种族"] .. L["：|r"] .. table.concat(names, "、"), C_TEXT, 24)
     end
     local chipH = ns.hui.ChipH(DET_FS)
     local lineH = chipH + RACE_GAP
@@ -1414,7 +1414,7 @@ renderQuest = function(id, y)
         lvTxt = lvTxt .. (lvTxt ~= "" and " · " or "") .. (lc and DG.Hex(lc) .. seg .. "|r" or seg)
     end
     if lvTxt ~= "" then
-        y = AddLine(y, DG.Hex(C_GREY) .. L["可接等级"] .. "：|r" .. lvTxt, C_TEXT, 24)
+        y = AddLine(y, DG.Hex(C_GREY) .. L["可接等级"] .. L["：|r"] .. lvTxt, C_TEXT, 24)
     end
 
     local diffTxt
@@ -1431,7 +1431,7 @@ renderQuest = function(id, y)
         if tagn and tagn ~= "" then diffTxt = tostring(tagn) end
     end
     if diffTxt then
-        y = AddLine(y, DG.Hex(C_GREY) .. L["任务难度"] .. "：|r" .. diffTxt, C_TEXT, 24)
+        y = AddLine(y, DG.Hex(C_GREY) .. L["任务难度"] .. L["：|r"] .. diffTxt, C_TEXT, 24)
     end
 
     local pts = StartPts(q)
@@ -1461,7 +1461,7 @@ renderQuest = function(id, y)
     else
         fac = L["双阵营共有"]
     end
-    y = AddLine(y, DG.Hex(C_GREY) .. L["阵营"] .. "：|r"
+    y = AddLine(y, DG.Hex(C_GREY) .. L["阵营"] .. L["：|r"]
         .. (facCol and DG.Hex(facCol) or "") .. fac .. (facCol and "|r" or ""), C_TEXT, 24)
 
     y = AddRaceChips(y, q.races)
@@ -1475,7 +1475,7 @@ renderQuest = function(id, y)
         local gi = idx and GroupOf(chain, idx)
         local stepN = chain.groups and #chain.groups or #chain.ids
         if gi then
-            y = AddLine(y, DG.Hex(C_GREY) .. L["链内进度"] .. "：|r"
+            y = AddLine(y, DG.Hex(C_GREY) .. L["链内进度"] .. L["：|r"]
                 .. format(L["第 %d / %d 步"], gi, stepN)
                 .. " · " .. DG.Hex(C_GREY) .. chain.t .. "|r", C_TEXT, 24)
         end
@@ -1559,7 +1559,7 @@ renderQuest = function(id, y)
     end
     if type(q.spells) == "table" then
         for _, sid in ipairs(q.spells) do
-            segs[#segs + 1] = L["技能"] .. "：" .. (SpellName(sid) or format("#%d", sid))
+            segs[#segs + 1] = L["技能"] .. L["："] .. (SpellName(sid) or format("#%d", sid))
         end
     end
     if #segs > 0 then

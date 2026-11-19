@@ -1106,7 +1106,7 @@ local ENTRY_TEXT = "法术管理"
 local function PaintEntry(n)
     if not entry then return end
     local txt = L[ENTRY_TEXT]
-    if n and n > 0 then txt = txt .. "（" .. n .. "）" end
+    if n and n > 0 then txt = txt .. L["（"] .. n .. L["）"] end
     entry.label:SetText(txt)
     local ok, w = pcall(entry.label.GetStringWidth, entry.label)
     if ok and type(w) == "number" and w > 0 then

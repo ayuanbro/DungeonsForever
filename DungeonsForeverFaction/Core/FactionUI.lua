@@ -2291,7 +2291,7 @@ function FV:PaintQuestDetail()
                 nPre = nPre + 1
                 local f = FV.qdPre[nPre]
                 f.__qid = pid
-                f.txt:SetText(format("《%s》", QNameByID(pid)))
+                f.txt:SetText(format(L["《%s》"], QNameByID(pid)))
                 f.txt:SetWidth(W - 20)
                 put(f, 30)
                 gap(6)
