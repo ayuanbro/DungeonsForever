@@ -1054,7 +1054,7 @@ function M.BossesFor(id)
             out = out or {}
             local meta = s[3]
             out[#out + 1] = { en = s[1], zh = s[2] or s[1], npc = s[4] or "", items = s[5] or {},
-                rare = type(meta) == "string" and meta:find(IN_ZH_RARE, 1, true) ~= nil or false }
+                rare = type(meta) == "string" and (meta:find(IN_ZH_RARE, 1, true) ~= nil or meta:find("Rare", 1, true) ~= nil) or false }
         end
     end
     return out
@@ -1097,7 +1097,7 @@ function M.RareBoss(id, en)
             for i = 1, #loot do
                 local s = loot[i]
                 if type(s) == "table" and s[1] and type(s[3]) == "string"
-                   and s[3]:find(IN_ZH_RARE, 1, true) then
+                   and (s[3]:find(IN_ZH_RARE, 1, true) or s[3]:find("Rare", 1, true)) then
                     set[s[1]] = true
                 end
             end

@@ -548,7 +548,7 @@ local function SrcKindOf(id)
             for i = 1, #WBOSS_PLACE do
                 if place:find(WBOSS_PLACE[i], 1, true) then return "mob" end
             end
-            if place:find("稀有", 1, true) then return "mob" end
+            if place:find("稀有", 1, true) or place:find("Rare", 1, true) then return "mob" end
         end
         return "dungeon"
     end
